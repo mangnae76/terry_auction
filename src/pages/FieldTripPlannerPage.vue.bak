@@ -1,0 +1,831 @@
+<script setup lang="ts">
+import { Browser } from '@capacitor/browser';
+import { Clipboard } from '@capacitor/clipboard';
+import { Capacitor } from '@capacitor/core';
+import L from 'leaflet';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import FormattedNumberInput from '../components/FormattedNumberInput.vue';
+import { saveFieldTripPlan } from '../services/auctionRepository';
+import { buildOptimizedRoute, parseAddressLines, type GeoPoint } from '../services/routeOptimizer';
+import { fetchRouteForPath, type RouteLeg, type RouteMode } from '../services/roadRouting';
+import { useAuctionStore } from '../stores/auctionStore';
+
+const DEFAULT_HUB_ADDRESS = '청라린스트라우스';
+const store = useAuctionStore();
+
+const rawAddresses = ref('');
+const startAddress = ref(DEFAULT_HUB_ADDRESS);
+const endAddress = ref(DEFAULT_HUB_ADDRESS);
+const avgSpeedKmh = ref(28);
+const stayMinutesPerStop = ref(20);
+const lastAutoFilledInput = ref('');
+const travelMode = ref<RouteMode>('car');
+
+const orderedStops = ref<GeoPoint[]>([]);
+const fullPath = ref<GeoPoint[]>([]);
+const failedAddresses = ref<string[]>([]);
+const totalDistanceKm = ref(0);
+const driveMinutes = ref(0);
+const stayMinutes = ref(0);
+const totalMinutes = ref(0);
+const roadLegs = ref<RouteLeg[]>([]);
+const roadGeometry = ref<Array<[number, number]>>([]);
+const roadFailedLegs = ref<Array<{ from: string; to: string; reason: string }>>([]);
+const roadProgress = ref<{ done: number; total: number } | null>(null);
+const useRoadRouting = ref(true);
+
+const loading = ref(false);
+const message = ref('');
+const saveMessage = ref('');
+const lastCalculatedAt = ref('');
+const lastInputSignature = ref('');
+const visitedStops = ref<Record<string, boolean>>({});
+
+const stopCount = computed(() => orderedStops.value.length);
+const roadSuccessCount = computed(() =>
+  roadLegs.value.filter((leg) => leg.distanceKm > 0).length,
+);
+const routingSourceTag = computed(() => {
+  if (!useRoadRouting.value) return '직선';
+  if (roadLegs.value.length === 0) return '직선';
+  if (roadSuccessCount.value === 0) return '직선(API 실패)';
+  if (roadSuccessCount.value < roadLegs.value.length) return '일부 실도로';
+  return '실도로';
+});
+const tripInputRef = ref<HTMLTextAreaElement | null>(null);
+const tripInputMirrorRef = ref<HTMLElement | null>(null);
+const addressLineStates = computed(() =>
+  rawAddresses.value.split('\n').map((line) => {
+    const normalized = parseAddressLines(line)[0] ?? '';
+    return {
+      raw: line,
+      visited: normalized.length > 0 && Boolean(visitedStops.value[normalized]),
+    };
+  }),
+);
+const defaultFieldTripInput = computed(() =>
+  store.auctions
+    .filter((item) => item.status === '임장예정')
+    .map((item) => item.address.trim())
+    .filter((address, index, arr) => address.length > 0 && arr.indexOf(address) === index)
+    .join('\n'),
+);
+const currentInputSignature = computed(
+  () =>
+    JSON.stringify({
+      rawAddresses: rawAddresses.value,
+      startAddress: startAddress.value,
+      endAddress: endAddress.value,
+      avgSpeedKmh: avgSpeedKmh.value,
+      stayMinutesPerStop: stayMinutesPerStop.value,
+      travelMode: travelMode.value,
+    }),
+);
+const needsRecalculate = computed(
+  () => lastInputSignature.value.length > 0 && currentInputSignature.value !== lastInputSignature.value,
+);
+
+const toRad = (value: number) => (value * Math.PI) / 180;
+const segmentKm = (a: GeoPoint, b: GeoPoint) => {
+  const R = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+};
+
+const stopOrdinal = (idx: number): number => {
+  let count = 0;
+  for (let i = 0; i <= idx; i += 1) {
+    if (fullPath.value[i]?.kind === 'stop') count += 1;
+  }
+  return count;
+};
+
+const legInfo = (idx: number) => {
+  if (idx === 0) return null;
+  const road = roadLegs.value[idx - 1];
+  if (road && road.distanceKm > 0) {
+    return { km: road.distanceKm, mins: road.durationMinutes, source: 'road' as const };
+  }
+  const prev = fullPath.value[idx - 1];
+  const curr = fullPath.value[idx];
+  const km = segmentKm(prev, curr);
+  const mins = (km / Math.max(avgSpeedKmh.value, 1)) * 60;
+  return { km, mins, source: 'straight' as const };
+};
+
+let map: L.Map | null = null;
+let routeLayer: L.Polyline | null = null;
+let markerLayer: L.LayerGroup | null = null;
+
+const openNaverMap = async (address: string) => {
+  const encoded = encodeURIComponent(address);
+  const url = `https://map.naver.com/v5/search/${encoded}`;
+
+  if (Capacitor.isNativePlatform()) {
+    await Browser.open({ url });
+    return;
+  }
+
+  window.open(url, '_blank');
+};
+
+const openFullRouteNavigation = async () => {
+  const path = fullPath.value;
+  if (path.length < 2) {
+    message.value = '네비게이션을 열려면 최소 2개 지점이 필요합니다.';
+    return;
+  }
+  const start = path[0];
+  const end = path[path.length - 1];
+  const MAX_WAYPOINTS = 5;
+  const middleAll = path.slice(1, -1);
+  const waypoints = middleAll.slice(0, MAX_WAYPOINTS);
+  const truncated = middleAll.length - waypoints.length;
+
+  const toSegment = (p: GeoPoint) =>
+    `${p.lng},${p.lat},${encodeURIComponent(p.address)},,PLACE_POI`;
+
+  const segments = [toSegment(start), ...waypoints.map(toSegment), toSegment(end)];
+  const webUrl = `https://map.naver.com/p/directions/${segments.join('/')}/-/car`;
+
+  const nmapParams: string[] = [
+    `slat=${start.lat}`,
+    `slng=${start.lng}`,
+    `sname=${encodeURIComponent(start.address)}`,
+    `dlat=${end.lat}`,
+    `dlng=${end.lng}`,
+    `dname=${encodeURIComponent(end.address)}`,
+    `appname=com.terry.auction`,
+  ];
+  waypoints.forEach((wp, i) => {
+    const n = i + 1;
+    nmapParams.push(`v${n}lat=${wp.lat}`, `v${n}lng=${wp.lng}`, `v${n}name=${encodeURIComponent(wp.address)}`);
+  });
+  const naverScheme = `nmap://route/car?${nmapParams.join('&')}`;
+
+  if (truncated > 0) {
+    message.value = `네이버 네비는 경유지 최대 ${MAX_WAYPOINTS}개까지 지원되어 ${truncated}곳이 제외되었습니다.`;
+  }
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      window.location.href = naverScheme;
+      setTimeout(() => {
+        void Browser.open({ url: webUrl });
+      }, 1200);
+      return;
+    } catch {
+      /* fall through */
+    }
+    await Browser.open({ url: webUrl });
+    return;
+  }
+  window.open(webUrl, '_blank');
+};
+
+const resolveLeg = (idx: number): { start: GeoPoint; end: GeoPoint } | null => {
+  const end = fullPath.value[idx];
+  if (!end) return null;
+  const start = idx > 0 ? fullPath.value[idx - 1] : end;
+  return { start, end };
+};
+
+const openTmapLeg = async (idx: number) => {
+  const leg = resolveLeg(idx);
+  if (!leg) return;
+  const { start, end } = leg;
+  const r = (n: number) => n.toFixed(6);
+  const params = [
+    `rGoName=${encodeURIComponent(end.address)}`,
+    `rGoX=${r(end.lng)}`,
+    `rGoY=${r(end.lat)}`,
+    `rStName=${encodeURIComponent(start.address)}`,
+    `rStX=${r(start.lng)}`,
+    `rStY=${r(start.lat)}`,
+    `reqCoordType=WGS84GEO`,
+    `resCoordType=WGS84GEO`,
+  ];
+  const tmapScheme = `tmap://route?${params.join('&')}`;
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      window.location.href = tmapScheme;
+      setTimeout(() => {
+        void Browser.open({
+          url: 'https://play.google.com/store/apps/details?id=com.skt.tmap.ku',
+        });
+      }, 1500);
+    } catch {
+      await Browser.open({
+        url: 'https://play.google.com/store/apps/details?id=com.skt.tmap.ku',
+      });
+    }
+    return;
+  }
+  message.value = '티맵 네비는 모바일 앱에서만 동작합니다.';
+};
+
+const openKakaoLeg = async (idx: number) => {
+  const leg = resolveLeg(idx);
+  if (!leg) return;
+  const { start, end } = leg;
+  const kakaoMapScheme = `kakaomap://route?sp=${start.lat},${start.lng}&ep=${end.lat},${end.lng}&by=CAR`;
+  const webUrl = `https://map.kakao.com/?sName=${encodeURIComponent(start.address)}&sX=${start.lng}&sY=${start.lat}&eName=${encodeURIComponent(end.address)}&eX=${end.lng}&eY=${end.lat}&target=car`;
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      window.location.href = kakaoMapScheme;
+      setTimeout(() => {
+        void Browser.open({ url: webUrl });
+      }, 1500);
+      return;
+    } catch {
+      /* fall through */
+    }
+    await Browser.open({ url: webUrl });
+    return;
+  }
+  window.open(webUrl, '_blank');
+};
+
+const copyAddress = async (address: string) => {
+  if (Capacitor.isNativePlatform()) {
+    await Clipboard.write({ string: address });
+  } else {
+    await navigator.clipboard.writeText(address);
+  }
+  message.value = '주소를 복사했습니다.';
+};
+
+const syncTripInputScroll = () => {
+  if (!tripInputRef.value || !tripInputMirrorRef.value) {
+    return;
+  }
+  tripInputMirrorRef.value.scrollTop = tripInputRef.value.scrollTop;
+  tripInputMirrorRef.value.scrollLeft = tripInputRef.value.scrollLeft;
+};
+
+const toggleVisited = async (address: string) => {
+  const next = !visitedStops.value[address];
+  visitedStops.value = {
+    ...visitedStops.value,
+    [address]: next,
+  };
+  const matched = store.auctions.find((item) => item.address.trim() === address.trim());
+  if (!matched) {
+    return;
+  }
+  await store.setStatus(matched.id, next ? '임장완료' : '임장예정');
+};
+
+const ensureMap = async () => {
+  await nextTick();
+  if (map) {
+    return;
+  }
+  map = L.map('trip-map', {
+    zoomControl: true,
+  }).setView([37.545, 126.675], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap',
+  }).addTo(map);
+  markerLayer = L.layerGroup().addTo(map);
+};
+
+const makeBadgeIcon = (label: string, kind: 'start' | 'stop' | 'end') => {
+  const cls = `trip-marker-badge tone-${kind}`;
+  return L.divIcon({
+    className: 'trip-marker',
+    html: `<div class="${cls}"><span>${label}</span></div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
+};
+
+const makeArrowIcon = (angleDeg: number) =>
+  L.divIcon({
+    className: 'trip-arrow',
+    html: `<div class="trip-arrow-icon" style="transform:rotate(${angleDeg}deg)"></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
+
+const drawRouteMap = async () => {
+  await ensureMap();
+  if (!map || !markerLayer) {
+    return;
+  }
+  markerLayer.clearLayers();
+  if (routeLayer) {
+    map.removeLayer(routeLayer);
+    routeLayer = null;
+  }
+  if (fullPath.value.length === 0) {
+    return;
+  }
+
+  const hasRoadGeometry = roadGeometry.value.length > 1;
+  const latlngs: L.LatLngTuple[] = hasRoadGeometry
+    ? (roadGeometry.value as L.LatLngTuple[])
+    : fullPath.value.map((point) => [point.lat, point.lng] as L.LatLngTuple);
+  routeLayer = L.polyline(latlngs, {
+    color: '#2563eb',
+    weight: hasRoadGeometry ? 5 : 4,
+    opacity: 0.85,
+    dashArray: hasRoadGeometry ? '0' : '6 6',
+  }).addTo(map);
+
+  // Directional arrows: between stops for straight lines,
+  // or along each road leg for road geometry.
+  if (hasRoadGeometry) {
+    roadLegs.value.forEach((leg) => {
+      if (!leg.geometry || leg.geometry.length < 2) return;
+      const midIdx = Math.floor(leg.geometry.length / 2);
+      const a = leg.geometry[Math.max(midIdx - 1, 0)];
+      const b = leg.geometry[midIdx];
+      const angleDeg = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
+      const arrow = L.marker([b[0], b[1]], {
+        icon: makeArrowIcon(angleDeg),
+        interactive: false,
+        keyboard: false,
+      });
+      markerLayer!.addLayer(arrow);
+    });
+  } else {
+    for (let i = 0; i < fullPath.value.length - 1; i += 1) {
+      const a = fullPath.value[i];
+      const b = fullPath.value[i + 1];
+      const midLat = (a.lat + b.lat) / 2;
+      const midLng = (a.lng + b.lng) / 2;
+      const angleDeg =
+        (Math.atan2(b.lng - a.lng, b.lat - a.lat) * 180) / Math.PI;
+      const arrow = L.marker([midLat, midLng], {
+        icon: makeArrowIcon(angleDeg),
+        interactive: false,
+        keyboard: false,
+      });
+      markerLayer.addLayer(arrow);
+    }
+  }
+
+  // Numbered badge markers
+  fullPath.value.forEach((point, idx) => {
+    let label: string;
+    let kind: 'start' | 'stop' | 'end';
+    if (point.kind === 'start') {
+      label = 'S';
+      kind = 'start';
+    } else if (point.kind === 'end') {
+      label = 'E';
+      kind = 'end';
+    } else {
+      label = String(stopOrdinal(idx));
+      kind = 'stop';
+    }
+    const marker = L.marker([point.lat, point.lng], {
+      icon: makeBadgeIcon(label, kind),
+    }).bindPopup(
+      `<strong>${label}. ${point.address}</strong><br/>${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`,
+    );
+    markerLayer?.addLayer(marker);
+  });
+
+  map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+};
+
+watch(fullPath, () => {
+  void drawRouteMap();
+  const nextVisited: Record<string, boolean> = {};
+  fullPath.value.forEach((stop) => {
+    if (stop.kind !== 'stop') {
+      return;
+    }
+    nextVisited[stop.address] = Boolean(visitedStops.value[stop.address]);
+  });
+  visitedStops.value = nextVisited;
+});
+
+watch(
+  defaultFieldTripInput,
+  (nextInput) => {
+    if (!nextInput) {
+      return;
+    }
+    const current = rawAddresses.value.trim();
+    const previousAuto = lastAutoFilledInput.value.trim();
+    if (current.length === 0 || current === previousAuto) {
+      rawAddresses.value = nextInput;
+      lastAutoFilledInput.value = nextInput;
+    }
+  },
+  { immediate: true },
+);
+
+const optimizeRoute = async () => {
+  loading.value = true;
+  message.value = '';
+  saveMessage.value = '';
+  orderedStops.value = [];
+  fullPath.value = [];
+  failedAddresses.value = [];
+  totalDistanceKm.value = 0;
+  driveMinutes.value = 0;
+  stayMinutes.value = 0;
+  totalMinutes.value = 0;
+  roadLegs.value = [];
+  roadGeometry.value = [];
+  roadFailedLegs.value = [];
+  roadProgress.value = null;
+  try {
+    const parsedAddresses = parseAddressLines(rawAddresses.value);
+    const visitedBefore = { ...visitedStops.value };
+    const skippedVisited: string[] = [];
+    const addresses = parsedAddresses.filter((addr) => {
+      if (visitedBefore[addr]) {
+        skippedVisited.push(addr);
+        return false;
+      }
+      return true;
+    });
+    if (addresses.length < 2) {
+      message.value =
+        skippedVisited.length > 0
+          ? `미방문 주소가 ${addresses.length}개뿐입니다. 방문 체크를 해제하거나 주소를 추가해 주세요.`
+          : '최소 2개 이상의 임장 주소를 입력해 주세요.';
+      orderedStops.value = [];
+      fullPath.value = [];
+      return;
+    }
+    if (skippedVisited.length > 0) {
+      const skippedSet = new Set(skippedVisited);
+      const kept = rawAddresses.value
+        .split('\n')
+        .filter((line) => {
+          const normalized = parseAddressLines(line)[0] ?? '';
+          return normalized.length === 0 || !skippedSet.has(normalized);
+        });
+      rawAddresses.value = kept.join('\n');
+      const newVisited: Record<string, boolean> = {};
+      for (const [addr, flag] of Object.entries(visitedStops.value)) {
+        if (!skippedSet.has(addr)) newVisited[addr] = flag;
+      }
+      visitedStops.value = newVisited;
+    }
+    const result = await buildOptimizedRoute({
+      stopAddresses: addresses,
+      startAddress: startAddress.value,
+      endAddress: endAddress.value,
+      avgSpeedKmh: avgSpeedKmh.value,
+      stayMinutesPerStop: stayMinutesPerStop.value,
+    });
+    orderedStops.value = result.orderedStops;
+    fullPath.value = result.fullPath;
+    failedAddresses.value = result.failedAddresses;
+    totalDistanceKm.value = result.totalDistanceKm;
+    driveMinutes.value = result.driveMinutes;
+    stayMinutes.value = result.stayMinutes;
+    totalMinutes.value = result.totalMinutes;
+    message.value =
+      `최적 순서 ${result.orderedStops.length}곳 계산 완료` +
+      (skippedVisited.length > 0 ? ` (방문 완료 ${skippedVisited.length}곳 제외)` : '');
+    lastCalculatedAt.value = new Date().toLocaleTimeString('ko-KR');
+    lastInputSignature.value = currentInputSignature.value;
+
+    if (useRoadRouting.value && fullPath.value.length >= 2) {
+      try {
+        message.value = `${travelMode.value === 'car' ? '도로' : '도보'} 경로 조회 중...`;
+        const road = await fetchRouteForPath(fullPath.value, travelMode.value, (done, total) => {
+          roadProgress.value = { done, total };
+        });
+        roadLegs.value = road.legs;
+        roadGeometry.value = road.geometry;
+        roadFailedLegs.value = road.failedLegs;
+        if (road.totalDistanceKm > 0) {
+          totalDistanceKm.value = road.totalDistanceKm;
+          driveMinutes.value = road.totalDurationMinutes;
+          totalMinutes.value = driveMinutes.value + stayMinutes.value;
+        }
+        await drawRouteMap();
+        message.value = `${travelMode.value === 'car' ? '자동차' : '도보'} 경로 ${road.legs.length}개 구간 완료${
+          road.failedLegs.length > 0 ? ` · 실패 ${road.failedLegs.length}건` : ''
+        }`;
+      } catch (roadError) {
+        message.value =
+          roadError instanceof Error ? `실도로 경로 실패: ${roadError.message}` : '실도로 경로 실패';
+      } finally {
+        roadProgress.value = null;
+      }
+    }
+  } catch (error) {
+    message.value = error instanceof Error ? error.message : '동선 계산 중 오류가 발생했습니다.';
+  } finally {
+    loading.value = false;
+  }
+};
+
+const LOCAL_STORAGE_KEY = 'field-trip-plan/saved-v1';
+
+const snapshotCurrentPlan = () => ({
+  rawAddresses: rawAddresses.value,
+  startAddress: startAddress.value,
+  endAddress: endAddress.value,
+  avgSpeedKmh: avgSpeedKmh.value,
+  stayMinutesPerStop: stayMinutesPerStop.value,
+  travelMode: travelMode.value,
+  useRoadRouting: useRoadRouting.value,
+  orderedStops: orderedStops.value,
+  fullPath: fullPath.value,
+  failedAddresses: failedAddresses.value,
+  totalDistanceKm: totalDistanceKm.value,
+  driveMinutes: driveMinutes.value,
+  stayMinutes: stayMinutes.value,
+  totalMinutes: totalMinutes.value,
+  roadLegs: roadLegs.value,
+  roadGeometry: roadGeometry.value,
+  roadFailedLegs: roadFailedLegs.value,
+  visitedStops: visitedStops.value,
+  lastCalculatedAt: lastCalculatedAt.value,
+  lastInputSignature: lastInputSignature.value,
+  savedAt: new Date().toISOString(),
+});
+
+const restoreLocalPlan = () => {
+  try {
+    const raw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (typeof data !== 'object' || data === null) return;
+    if (typeof data.rawAddresses === 'string') rawAddresses.value = data.rawAddresses;
+    if (typeof data.startAddress === 'string') startAddress.value = data.startAddress;
+    if (typeof data.endAddress === 'string') endAddress.value = data.endAddress;
+    if (typeof data.avgSpeedKmh === 'number') avgSpeedKmh.value = data.avgSpeedKmh;
+    if (typeof data.stayMinutesPerStop === 'number') stayMinutesPerStop.value = data.stayMinutesPerStop;
+    if (data.travelMode === 'car' || data.travelMode === 'walk') travelMode.value = data.travelMode;
+    if (typeof data.useRoadRouting === 'boolean') useRoadRouting.value = data.useRoadRouting;
+    if (data.visitedStops && typeof data.visitedStops === 'object') visitedStops.value = data.visitedStops;
+    if (Array.isArray(data.orderedStops)) orderedStops.value = data.orderedStops;
+    if (Array.isArray(data.fullPath)) fullPath.value = data.fullPath;
+    if (Array.isArray(data.failedAddresses)) failedAddresses.value = data.failedAddresses;
+    if (typeof data.totalDistanceKm === 'number') totalDistanceKm.value = data.totalDistanceKm;
+    if (typeof data.driveMinutes === 'number') driveMinutes.value = data.driveMinutes;
+    if (typeof data.stayMinutes === 'number') stayMinutes.value = data.stayMinutes;
+    if (typeof data.totalMinutes === 'number') totalMinutes.value = data.totalMinutes;
+    if (Array.isArray(data.roadLegs)) roadLegs.value = data.roadLegs;
+    if (Array.isArray(data.roadGeometry)) roadGeometry.value = data.roadGeometry;
+    if (Array.isArray(data.roadFailedLegs)) roadFailedLegs.value = data.roadFailedLegs;
+    if (typeof data.lastCalculatedAt === 'string') lastCalculatedAt.value = data.lastCalculatedAt;
+    if (typeof data.lastInputSignature === 'string') lastInputSignature.value = data.lastInputSignature;
+    if (typeof data.savedAt === 'string') {
+      saveMessage.value = `저장된 경로를 불러왔습니다 (${new Date(data.savedAt).toLocaleString('ko-KR')}).`;
+    }
+  } catch {
+    /* ignore corrupted localStorage */
+  }
+};
+
+const savePlan = async () => {
+  if (fullPath.value.length === 0) {
+    saveMessage.value = '저장할 경로가 없습니다. 먼저 동선 최적화를 실행해 주세요.';
+    return;
+  }
+  try {
+    window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(snapshotCurrentPlan()));
+  } catch {
+    /* quota exceeded */
+  }
+  try {
+    const planId = `trip-${Date.now()}`;
+    await saveFieldTripPlan(planId, {
+      title: `임장 동선 ${new Date().toLocaleDateString('ko-KR')}`,
+      startAddress: startAddress.value.trim(),
+      endAddress: endAddress.value.trim(),
+      totalDistanceKm: totalDistanceKm.value,
+      driveMinutes: driveMinutes.value,
+      stayMinutes: stayMinutes.value,
+      totalMinutes: totalMinutes.value,
+      stopCount: orderedStops.value.length,
+      stops: fullPath.value.map((stop, index) => ({
+        order: index + 1,
+        kind: stop.kind ?? 'stop',
+        address: stop.address,
+        lat: stop.lat,
+        lng: stop.lng,
+      })),
+      createdAt: new Date().toISOString(),
+    });
+    saveMessage.value = '경로를 저장했습니다. 이 페이지를 다시 열어도 유지됩니다.';
+  } catch (error) {
+    saveMessage.value =
+      (error instanceof Error ? `Firestore 저장 실패: ${error.message}` : 'Firestore 저장 실패') +
+      ' (로컬에는 저장됨)';
+  }
+};
+
+onMounted(() => {
+  restoreLocalPlan();
+});
+</script>
+
+<template>
+  <section class="trip-page">
+    <header class="hero-card">
+      <div>
+        <h1>임장 동선 최적화</h1>
+        <p>출발지/도착지 고정 + 이동/체류시간 기반 최단 방문 순서를 계산합니다.</p>
+      </div>
+      <div class="trip-header-actions">
+        <div class="trip-mode-toggle" role="tablist" aria-label="이동 수단">
+          <button
+            :class="{ active: travelMode === 'car' }"
+            :disabled="loading"
+            role="tab"
+            type="button"
+            @click="travelMode = 'car'"
+          >
+            🚗 차로
+          </button>
+          <!-- <button
+            :class="{ active: travelMode === 'walk' }"
+            :disabled="loading"
+            role="tab"
+            type="button"
+            @click="travelMode = 'walk'"
+          >
+            🚶 도보
+          </button> -->
+        </div>
+        <label class="trip-mode-check">
+          <input v-model="useRoadRouting" type="checkbox" />
+          실도로 경로
+        </label>
+        <button class="ghost" :disabled="loading" type="button" @click="savePlan">경로 저장</button>
+        <button class="primary" :disabled="loading" type="button" @click="optimizeRoute">
+          {{ loading ? '계산 중...' : '동선 최적화' }}
+        </button>
+      </div>
+    </header>
+
+    <div v-if="fullPath.length > 0" class="trip-metrics">
+      <article>
+        <small>방문지</small>
+        <strong>{{ stopCount }}<em>곳</em></strong>
+      </article>
+      <article>
+        <small>총 이동거리 <span class="trip-metrics-tag" :class="{ warn: routingSourceTag.includes('실패') }">{{ routingSourceTag }}</span></small>
+        <strong>{{ totalDistanceKm.toFixed(2) }}<em>km</em></strong>
+      </article>
+      <article>
+        <small>이동 시간 <span class="trip-metrics-tag">{{ travelMode === 'car' ? '차로' : '도보' }}</span></small>
+        <strong>{{ driveMinutes.toFixed(0) }}<em>분</em></strong>
+      </article>
+      <article>
+        <small>체류 시간</small>
+        <strong>{{ stayMinutes.toFixed(0) }}<em>분</em></strong>
+      </article>
+      <article class="trip-metrics-total">
+        <small>총 소요시간</small>
+        <strong>{{ totalMinutes.toFixed(0) }}<em>분</em></strong>
+      </article>
+    </div>
+
+    <p v-if="roadProgress" class="sources">
+      실도로 경로 조회 중 · {{ roadProgress.done }}/{{ roadProgress.total }} 구간
+    </p>
+    <ul v-if="roadFailedLegs.length > 0" class="warning-list">
+      <li v-for="(leg, idx) in roadFailedLegs" :key="`rl-${idx}`">
+        {{ leg.from }} → {{ leg.to }}<br />
+        <small>사유: {{ leg.reason }}</small>
+      </li>
+    </ul>
+
+    <div class="trip-grid">
+      <article class="panel">
+        <h2>임장 설정</h2>
+        <div class="trip-input-grid">
+          <label>
+            출발지
+            <input v-model="startAddress" />
+          </label>
+          <label>
+            도착지
+            <input v-model="endAddress" />
+          </label>
+          <label>
+            평균 이동속도(km/h)
+            <FormattedNumberInput v-model="avgSpeedKmh" />
+          </label>
+          <label>
+            지점당 체류시간(분)
+            <FormattedNumberInput v-model="stayMinutesPerStop" />
+          </label>
+        </div>
+
+        <h2>임장 주소 입력</h2>
+        <div class="trip-textarea-stack">
+          <pre
+            v-if="rawAddresses.length > 0"
+            ref="tripInputMirrorRef"
+            class="trip-textarea-mirror"
+            aria-hidden="true"
+          ><span
+              v-for="(line, index) in addressLineStates"
+              :key="`line-${index}`"
+              :class="{ visited: line.visited }"
+            >{{ line.raw || ' ' }}</span></pre>
+          <textarea
+            ref="tripInputRef"
+            v-model="rawAddresses"
+            class="trip-textarea"
+            :class="{ 'has-overlay': rawAddresses.length > 0 }"
+            placeholder="예)&#10;인천광역시 서구 청라동 123-4&#10;인천광역시 서구 가정동 456-7"
+            rows="10"
+            @scroll="syncTripInputScroll"
+          />
+        </div>
+        <p v-if="message" class="sources">{{ message }}</p>
+        <p v-if="lastCalculatedAt" class="sources">
+          마지막 계산: {{ lastCalculatedAt }}
+          <span v-if="needsRecalculate"> · 입력 변경됨(재계산 필요)</span>
+        </p>
+        <p v-if="saveMessage" class="sources">{{ saveMessage }}</p>
+      </article>
+
+      <article class="panel trip-route-panel">
+        <div class="trip-route-head">
+          <h2>최적 방문 순서</h2>
+          <div v-if="fullPath.length >= 2" class="nav-icon-group">
+            <button
+              class="nav-icon-btn nav-icon-naver"
+              type="button"
+              title="네이버 네비 (전체 경유지)"
+              aria-label="네이버 네비"
+              @click="openFullRouteNavigation"
+            >N</button>
+          </div>
+        </div>
+        <ol v-if="fullPath.length > 0" class="trip-route-list">
+          <li v-for="(stop, idx) in fullPath" :key="`${stop.address}-${idx}`" :class="`kind-${stop.kind ?? 'stop'}`">
+            <span class="trip-route-index" :class="`tone-${stop.kind ?? 'stop'}`">
+              <template v-if="stop.kind === 'start'">S</template>
+              <template v-else-if="stop.kind === 'end'">E</template>
+              <template v-else>{{ stopOrdinal(idx) }}</template>
+            </span>
+            <div class="trip-route-body">
+              <strong>
+                <template v-if="stop.kind === 'start'">출발 · </template>
+                <template v-else-if="stop.kind === 'end'">도착 · </template>
+                {{ stop.address }}
+              </strong>
+              <p v-if="legInfo(idx)" class="leg-info">
+                ↳ 이전 지점에서 {{ legInfo(idx)!.km.toFixed(2) }}km · {{ legInfo(idx)!.mins.toFixed(0) }}분
+              </p>
+              <p class="coord">{{ stop.lat.toFixed(5) }}, {{ stop.lng.toFixed(5) }}</p>
+              <div class="stop-actions">
+                <button
+                  v-if="idx > 0"
+                  class="nav-icon-btn nav-icon-tmap"
+                  type="button"
+                  title="티맵으로 이전 지점 → 여기"
+                  aria-label="티맵 구간 네비"
+                  @click="openTmapLeg(idx)"
+                >T</button>
+                <button
+                  v-if="idx > 0"
+                  class="nav-icon-btn nav-icon-kakao"
+                  type="button"
+                  title="카카오맵으로 이전 지점 → 여기"
+                  aria-label="카카오맵 구간 네비"
+                  @click="openKakaoLeg(idx)"
+                >K</button>
+                <button class="ghost" type="button" @click="openNaverMap(stop.address)">지도</button>
+                <button class="ghost" type="button" @click="copyAddress(stop.address)">복사</button>
+                <label v-if="stop.kind === 'stop'" class="visited-check">
+                  <input :checked="Boolean(visitedStops[stop.address])" type="checkbox" @change="toggleVisited(stop.address)" />
+                  방문
+                </label>
+              </div>
+            </div>
+          </li>
+        </ol>
+        <p v-else class="trip-empty">동선 최적화를 실행하면 방문 순서가 여기에 표시됩니다.</p>
+        <ul v-if="failedAddresses.length > 0" class="warning-list">
+          <li v-for="address in failedAddresses" :key="address">{{ address }} (좌표 변환 실패)</li>
+        </ul>
+      </article>
+    </div>
+
+    <article class="panel">
+      <h2>지도 경로</h2>
+      <div class="trip-legend">
+        <span class="trip-legend-item"><i class="tone-start"></i>출발지</span>
+        <span class="trip-legend-item"><i class="tone-stop"></i>방문 순서(번호)</span>
+        <span class="trip-legend-item"><i class="tone-end"></i>도착지</span>
+      </div>
+      <div id="trip-map" class="trip-map" />
+    </article>
+  </section>
+</template>

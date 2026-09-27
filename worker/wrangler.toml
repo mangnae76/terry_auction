@@ -1,0 +1,15 @@
+name = "terry-auction-proxy"
+main = "src/index.ts"
+compatibility_date = "2025-01-15"
+
+# Deploy: npx wrangler deploy
+# Dev:    npx wrangler dev
+#
+# Required secrets (set via `npx wrangler secret put <NAME>`):
+#   KAKAO_REST_API_KEY              — Kakao REST key; injected as `Authorization: KakaoAK <key>` for /api-kakao, /api-kakao-navi
+#   FIREBASE_SERVICE_ACCOUNT_JSON   — Firebase Admin 서비스 계정 JSON 전체 (소셜 로그인 시 Custom Token 발급용)
+#                                     `npx wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON < path/to/service-account.json`
+#
+# Optional: `[vars]` here is for non-secret defaults. Keep secrets out of this file.
+[vars]
+ALLOWED_ORIGINS = "*"

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">마이턴옥션</string>
+    <string name="title_activity_main">마이턴옥션</string>
+    <string name="package_name">com.terry.auction</string>
+    <string name="custom_url_scheme">com.terry.auction</string>
+</resources>

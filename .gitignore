@@ -1,0 +1,51 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 환경변수 — 공공데이터·카카오·Firebase 실제 키가 들어 있다
+.env
+.env.local
+.env.*.local
+
+# Firebase 배포 캐시
+.firebase/
+
+# 네이티브 빌드 산출물 / 서명키
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/src/main/assets/public/
+ios/App/Pods/
+ios/App/build/
+ios/App/App/public/
+*.keystore
+*.jks
+
+# 로컬 메모
+"qwen 같은 llm?"
+"## Supported Tools.txt"
+
+# 실제 경매 PDF — 소유자·채무자 등 개인정보가 들어 있다
+docs/*.pdf

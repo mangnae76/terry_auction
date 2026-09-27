@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 사용자 프로필 — 본인 것만 읽고 쓸 수 있음
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 사용자별 앱 설정·임장경로 draft·즐겨찾기 등
+    match /userPrefs/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 경매 물건 — 본인이 소유한(uid 일치) 문서만 접근
+    match /auctions/{auctionId} {
+      allow read, update, delete:
+        if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create:
+        if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+
+    // 현장사진 — 장당 1문서(dataUrl은 압축된 base64). 본인 uid 일치 시에만 접근
+    match /auctionPhotos/{photoId} {
+      allow read, update, delete:
+        if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create:
+        if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+
+    // 사진 용량 누계 — 문서 ID가 곧 uid
+    match /photoUsage/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 임장 동선 저장
+    match /fieldTrips/{planId} {
+      allow read, update, delete:
+        if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create:
+        if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+
+    // 자금관리 4개 컬렉션 — 본인 uid 일치 시에만 접근
+    match /financeCashFlows/{id} {
+      allow read, update, delete:
+        if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create:
+        if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+    match /financeBusinessExpenses/{id} {
+      allow read, update, delete:
+        if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create:
+        if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+    match /financeFuelMeal/{id} {
+      allow read, update, delete:
+        if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create:
+        if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+    match /financeItemPurchases/{id} {
+      allow read, update, delete:
+        if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create:
+        if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+
+    // 그 외 컬렉션은 명시적 허용 없이는 거부 (기본 deny)
+  }
+}

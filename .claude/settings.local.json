@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx vue-tsc *)",
+      "Bash(tee /tmp/tsc.log)",
+      "Bash(echo \"---exit:$?---\")",
+      "Read(//private/tmp/**)"
+    ]
+  }
+}
