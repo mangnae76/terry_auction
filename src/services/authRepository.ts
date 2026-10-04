@@ -15,6 +15,7 @@ import {
   loginWithNaver as naverOAuthFlow,
   type SocialLoginResult,
 } from './socialAuth';
+import { isStaleSession } from './accessControl';
 
 export interface UserProfile {
   uid: string;
@@ -152,6 +153,12 @@ export const onAuthChange = (
   }
   return onAuthStateChanged(auth, async (user) => {
     if (!user) {
+      cb(null);
+      return;
+    }
+    // 기준 시각 이전에 로그인한 세션은 여기서 끊는다 (전체 강제 로그아웃)
+    if (isStaleSession(user.metadata?.lastSignInTime)) {
+      await signOut(auth!);
       cb(null);
       return;
     }

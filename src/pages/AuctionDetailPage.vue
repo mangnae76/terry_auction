@@ -1,12 +1,35 @@
+<script lang="ts">
+// 단지 전체 실거래 메모 — 목록↔상세를 오갈 때마다 다시 거르지 않게 모듈에 둔다.
+// <script setup> 안에 두면 컴포넌트가 새로 뜰 때마다 비워져서 매번 '조회중…'이 보였다.
+export type PlaceRow = {
+  kind: '매매' | '직거래' | '전세' | '월세';
+  contractDate: string;
+  amount: string;      // 보여 줄 금액 글자
+  areaM2: number;
+  floor: string;
+};
+const PLACE_MEMO_MAX = 30;   // 물건을 많이 열어도 메모리가 늘지 않게 오래된 것부터 버린다
+const samePlaceCache = new Map<string, PlaceRow[]>();
+const rememberPlaceRows = (id: string, rows: PlaceRow[]) => {
+  samePlaceCache.set(id, rows);
+  while (samePlaceCache.size > PLACE_MEMO_MAX) {
+    const oldest = samePlaceCache.keys().next().value;
+    if (oldest === undefined) break;
+    samePlaceCache.delete(oldest);
+  }
+};
+</script>
+
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
+import AppToast from '../components/AppToast.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { pickCurrentRound } from '../utils/auctionSchedule';
-import type { AgencyRow, AuctionDetail, MarketSurveyRow } from '../types/auction';
+import { AUCTION_STATUS_LABELS, AUCTION_STATUS_ORDER, type AgencyRow, type AuctionDetail, type AuctionStatus, type MarketSurveyRow } from '../types/auction';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
@@ -14,7 +37,8 @@ import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import alertIcon from '../assets/icones/triangle-alert.png';
 import fileTextIcon from '../assets/icones/file-text.png';
 import { resolveRegionFromAddress } from '../services/regionResolver';
-import { fetchRealTradeAverage, type RealTradeMatchRow } from '../services/publicDataApi';
+import { fetchRealTradeAverage, fetchPlaceHistory, fetchDongHouseholds, PLACE_HISTORY_YEARS, type RealTradeMatchRow } from '../services/publicDataApi';
+import { cached, cacheKey, readCache, writeCache, CACHE_TTL } from '../services/marketCache';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePhoto, isPhotoId, loadSitePhoto, saveSitePhoto } from '../services/sitePhotoRepository';
 import { fetchNearbyEnvironment, type NearbyEnvironment, type NearbyPlace } from '../services/kakaoNearby';
@@ -26,17 +50,24 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
+const route = useRoute();
 const store = useAuctionStore();
 const authStore = useAuthStore();
 
 type TabKey = 'basic' | 'rights' | 'profit' | 'verify' | 'survey';
-const activeTab = ref<TabKey>('basic');
+const TAB_KEYS: TabKey[] = ['basic', 'rights', 'profit', 'verify', 'survey'];
+// 다른 화면에서 ?tab=survey 로 들어오면 그 탭을 바로 연다
+const initialTab = (): TabKey => {
+  const wanted = String(route.query.tab ?? '');
+  return (TAB_KEYS as string[]).includes(wanted) ? (wanted as TabKey) : 'basic';
+};
+const activeTab = ref<TabKey>(initialTab());
 // 입지정보 카드 — 전체 / 500m 이내
 const areaView = ref<'all' | 'near'>('all');
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'basic', label: '물건정보' },
   { key: 'rights', label: '권리분석' },
-  { key: 'survey', label: '손품+\u200B현장' },
+  { key: 'survey', label: '손품+현장' },
   { key: 'verify', label: '가격정보' },
   { key: 'profit', label: '입찰가산정' },
 ];
@@ -75,8 +106,57 @@ const caseLabel = computed(() => auction.value?.caseNumber || '');
 const saleKind = computed(() => {
   const raw = auction.value?.saleClassification || '토지건물 일괄매각';
   const m = raw.match(/(토지[·.]?\s*건물\s*일괄매각)/);
-  return m?.[1] ?? raw.split(/[·,/]/)[0].trim();
+  // PDF에는 '토지·건물'로 적혀 오는데 가운뎃점은 빼고 보여 준다
+  return (m?.[1] ?? raw.split(/[·,/]/)[0]).replace(/토지[·.]\s*건물/, '토지건물').trim();
 });
+// 상단바 단계 드롭다운 — 관심/임장/입찰/낙찰/탈락. 목록으로 돌아가지 않고 여기서 바꾼다.
+// 쓰레기통 아이콘 — 번들 PNG가 흰색 단색이라 보이지 않아 데이터 URI SVG를 직접 쓴다
+const TRASH_ICON = 'data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%236b7280%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%206h18%27%2F%3E%3Cpath%20d%3D%27M8%206V4a1%201%200%200%201%201-1h6a1%201%200%200%201%201%201v2%27%2F%3E%3Cpath%20d%3D%27M19%206v14a2%202%200%200%201-2%202H7a2%202%200%200%201-2-2V6%27%2F%3E%3Cpath%20d%3D%27M10%2011v6%27%2F%3E%3Cpath%20d%3D%27M14%2011v6%27%2F%3E%3C%2Fsvg%3E';
+const stageOpen = ref(false);
+/** 단계 목록 — 마지막 '입찰진행'은 단계가 아니라 입찰상태라 따로 넣는다 */
+const STAGE_BID_RUNNING = '__bid_running__';
+const stageOptions = computed(() => [
+  ...AUCTION_STATUS_ORDER.map((st) => ({ key: st as string, label: AUCTION_STATUS_LABELS[st] })),
+  { key: STAGE_BID_RUNNING, label: '입찰진행' },
+]);
+const stageLabel = computed(() => {
+  if ((auction.value?.bidStatus ?? '').replace(/^입찰/, '') === '진행') return '입찰진행';
+  const st = auction.value?.status;
+  return st ? AUCTION_STATUS_LABELS[st] ?? String(st) : '단계';
+});
+const stageIsOn = (key: string) => {
+  const running = (auction.value?.bidStatus ?? '').replace(/^입찰/, '') === '진행';
+  if (key === STAGE_BID_RUNNING) return running;
+  return !running && auction.value?.status === key;
+};
+const pickStage = async (key: string) => {
+  stageOpen.value = false;
+  const target = auction.value;
+  if (!target) return;
+  if (key === STAGE_BID_RUNNING) {
+    target.bidStatus = '진행';
+    if (target.status !== '입찰') target.status = '입찰';
+    await store.saveAuction(target);
+    flashToast("'입찰진행'으로 바꿨습니다.", 'success');
+    return;
+  }
+  const st = key as AuctionStatus;
+  if (target.status === st && !target.bidStatus) return;
+  // 입찰진행 해제는 스토어의 setStatus 가 함께 처리한다
+  await store.setStatus(target.id, st);
+  flashToast(`단계를 '${AUCTION_STATUS_LABELS[st]}'으로 바꿨습니다.`, 'success');
+};
+
+// 숨기기 — 삭제가 아니라 '숨김'이다. 선정물건의 '숨긴 N건'에서 되살릴 수 있다.
+const hideThisAuction = async () => {
+  const target = auction.value;
+  if (!target) return;
+  const ok = window.confirm('목록에서 지우겠습니까?\n휴지통에서 복원할 수 있습니다. 단, 단계는 손품조사로 돌아갑니다.');
+  if (!ok) return;
+  await store.deleteAuction(target.id);
+  router.replace('/auctions/watchlist');
+};
+
 const jibunAddress = computed(() => auction.value?.address || '');
 const fullAddress = computed(() => auction.value?.address || auction.value?.roadAddress || '');
 // 건물명·동호수를 떼고 번지까지만 남긴 주소 (동일지번 검색 안내문구용)
@@ -130,7 +210,6 @@ const tenantOtherNotes = computed(() => stripWarnMarkers(auction.value?.tenantOt
 const tenantNotesOpen = ref(false);
 const registryClaimAmount = computed(() => auction.value?.rights?.totalClaimAmount ?? 0);
 
-const relatedCases = computed(() => auction.value?.relatedCaseRows ?? []);
 
 const tenantBaseDate = computed(() => auction.value?.cancellationBaseDate || '-');
 const tenantDistDate = computed(() => auction.value?.distributionRequestDate || '-');
@@ -323,12 +402,15 @@ let lbPinchStart = 0;
 let lbScaleStart = 1;
 let lbPanStart: { x: number; y: number; ox: number; oy: number } | null = null;
 let lbLastTap = 0;
+// 확대·이동 제스처 직후의 click으로 창이 닫히는 것을 막는다
+let lbGesture = false;
 const clampScale = (n: number) => Math.min(LB_MAX, Math.max(1, n));
 const resetLightboxZoom = () => { lbScale.value = 1; lbX.value = 0; lbY.value = 0; };
 const snapBackIfUnzoomed = () => { if (lbScale.value <= 1) { lbX.value = 0; lbY.value = 0; } };
 const openLightbox = (url: string) => { lightboxUrl.value = url; resetLightboxZoom(); };
 const closeLightbox = () => { lightboxUrl.value = ''; resetLightboxZoom(); };
 const lbDown = (e: PointerEvent) => {
+  lbGesture = false;
   (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
   lbPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (lbPointers.size === 2) {
@@ -355,9 +437,11 @@ const lbMove = (e: PointerEvent) => {
     const [a, b] = [...lbPointers.values()];
     const dist = Math.hypot(a.x - b.x, a.y - b.y);
     if (lbPinchStart > 0) lbScale.value = clampScale((lbScaleStart * dist) / lbPinchStart);
+    lbGesture = true;
     return;
   }
   if (lbPanStart && lbScale.value > 1) {
+    lbGesture = true;
     lbX.value = lbPanStart.ox + (e.clientX - lbPanStart.x);
     lbY.value = lbPanStart.oy + (e.clientY - lbPanStart.y);
   }
@@ -373,6 +457,11 @@ const lbUp = (e: PointerEvent) => {
 const lbWheel = (e: WheelEvent) => {
   lbScale.value = clampScale(lbScale.value * (e.deltaY < 0 ? 1.15 : 1 / 1.15));
   snapBackIfUnzoomed();
+};
+// 배경을 가볍게 톡 쳤을 때만 닫는다 — 확대했거나 방금 조작한 뒤에는 유지
+const lbStageClick = () => {
+  if (lbGesture || lbScale.value > 1) return;
+  closeLightbox();
 };
 const lbZoom = (dir: 1 | -1) => {
   lbScale.value = clampScale(lbScale.value * (dir > 0 ? 1.4 : 1 / 1.4));
@@ -482,27 +571,142 @@ const nearBidRows = computed(() => {
 });
 const realTradeRows = computed(() => auction.value?.excelAnalysis?.realTradeRows ?? []);
 
-const tradeView = ref<'pdf' | 'public'>('pdf');
-const tradeFilter = ref<'all' | '매매' | '전세' | '월세'>('all');
+// === 단지 전체 실거래 (국토부 API) ===
+// PDF 표는 이 호실과 '같은 전용면적'만 싣는다. 국토부 화면처럼 단지 전체를 보려면 따로 받아야 한다.
+const squash = (text: string) => String(text ?? '').replace(/\s+/g, '');
+const samePlaceRows = ref<PlaceRow[]>([]);
+const samePlaceLoading = ref(false);
+const samePlaceDone = ref(false);
+const samePlaceError = ref('');
+/** 최근 2년(오늘 기준) 같은 단지의 매매·전세·월세를 평수 가리지 않고 모두 받아 온다 */
+// 한 번 받은 결과는 들고 있는다 (samePlaceCache는 모듈에 있다 — 화면을 떠나도 남는다)
+// 못 받은 달 수 — 0이 아니면 '다시 조회'를 권한다
+const samePlaceMissed = ref(0);
+const loadSamePlaceTrades = async (forceReload = false) => {
+  if (!auction.value?.address || samePlaceLoading.value) return;
+  const memoKey = auction.value.id;
+  const memo = forceReload ? null : samePlaceCache.get(memoKey);
+  if (memo) {
+    samePlaceRows.value = memo;
+    samePlaceDone.value = true;
+    return;
+  }
+  samePlaceLoading.value = true;
+  samePlaceError.value = '';
+  try {
+    const region = await resolveRegionFromAddress(auction.value.address);
+    if (!region) { samePlaceError.value = '주소에서 지역을 찾지 못했습니다.'; return; }
+    const here = squash(auction.value?.address ?? '');
+    const mine = (name?: string) => {
+      const n = squash(name ?? '');
+      return n.length > 1 && here.includes(n);
+    };
+    // 받은 건 무조건 저장한다. 한 달이라도 실패하면 저장을 건너뛰게 해 뒀더니
+    // 매번 처음부터 다시 받고 있었다. 모자란 건 '다시 조회'로 메운다.
+    const placeKey = cacheKey(region.lawdCd5, publicTradeType.value, `y${PLACE_HISTORY_YEARS}`);
+    type PlacePayload = Awaited<ReturnType<typeof fetchPlaceHistory>>;
+    let data = forceReload
+      ? null
+      : await readCache<PlacePayload>('cachePlaceHistory', placeKey, CACHE_TTL.place);
+    if (!data) {
+      data = await fetchPlaceHistory({
+        lawdCd5: region.lawdCd5,
+        propertyType: publicTradeType.value,
+      });
+      if (data.trades.length > 0 || data.rents.length > 0) {
+        void writeCache('cachePlaceHistory', placeKey, data);
+      }
+    }
+    const { trades, rents, missedMonths } = data;
+    const rows: PlaceRow[] = [
+      ...trades.filter((r) => mine(r.apartmentName)).map((r) => ({
+        kind: (/직거래/.test(r.dealType ?? '') ? '직거래' : '매매') as PlaceRow['kind'],
+        contractDate: r.contractDate,
+        amount: formatWonSimple(r.price),
+        areaM2: r.areaM2,
+        floor: r.floor,
+      })),
+      ...rents.filter((r) => mine(r.apartmentName)).map((r) => ({
+        kind: r.kind as PlaceRow['kind'],
+        contractDate: r.contractDate,
+        amount: r.monthlyRent > 0
+          ? `보 ${r.deposit.toLocaleString('ko-KR')} / 월 ${r.monthlyRent.toLocaleString('ko-KR')}`
+          : `보 ${r.deposit.toLocaleString('ko-KR')}`,
+        areaM2: r.areaM2,
+        floor: r.floor,
+      })),
+    ].sort((a, b) => b.contractDate.localeCompare(a.contractDate));
+    samePlaceRows.value = rows;
+    samePlaceDone.value = true;
+    rememberPlaceRows(memoKey, rows);
+    samePlaceMissed.value = missedMonths;
+    if (rows.length === 0 && !samePlaceError.value) samePlaceError.value = '같은 단지의 실거래가 없습니다.';
+  } catch {
+    samePlaceError.value = '조회에 실패했습니다.';
+  } finally {
+    samePlaceLoading.value = false;
+  }
+};
+// 물건을 바꾸면 결과를 비운다 (앞 물건의 거래가 남지 않게).
+// 전에 본 물건이면 메모에서 바로 되살린다 — 뒤의 조회들을 기다리느라 '조회중…'이 뜨지 않게.
+watch(() => auction.value?.id, (id) => {
+  const memo = id ? samePlaceCache.get(id) : undefined;
+  samePlaceRows.value = memo ?? [];
+  samePlaceDone.value = !!memo;
+  samePlaceError.value = '';
+  samePlaceMissed.value = 0;
+}, { immediate: true });
+
+const tradeFilter = ref<'all' | '매매' | '전세' | '월세'>('매매');
 const tradeAreaFilter = ref('');
 const tradeYearFilter = ref('');
+
+// 해당물건 실거래가 — PDF 자료를 화면에 올린 시각
+const caseTradeUpdatedAt = ref('');
+const stampCaseTradeUpdate = () => {
+  const d = new Date();
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  caseTradeUpdatedAt.value =
+    `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+};
+watch(() => realTradeRows.value.length, () => stampCaseTradeUpdate(), { immediate: true });
+// 필터를 모두 풀고 저장된 자료를 처음부터 다시 읽는다
+const refreshCaseTrades = () => {
+  tradeAreaFilter.value = '';
+  tradeYearFilter.value = '';
+  stampCaseTradeUpdate();
+};
 
 // PDF 단지 자체 실거래가
 const tradeAreaOptions = computed(() => {
   const set = new Set<string>();
-  realTradeRows.value.forEach((r) => { if (r.area) set.add(r.area.split('(')[0].trim()); });
-  return [...set];
+  mergedTradeRows.value.forEach((r) => { if (r.areaM2 > 0) set.add(String(r.areaM2)); });
+  return [...set].sort((a, b) => Number(a) - Number(b));
 });
 const tradeYearOptions = computed(() => {
   const set = new Set<string>();
-  realTradeRows.value.forEach((r) => {
-    const y = r.contractDate?.match(/^(\d{2,4})/)?.[1];
-    if (y) set.add(y.length === 4 ? y.slice(2) : y);
+  mergedTradeRows.value.forEach((r) => {
+    const y = r.contractDate.slice(0, 4);
+    if (y) set.add(y);
   });
   return [...set].sort().reverse();
 });
-const filteredPdfTradeRows = computed(() => realTradeRows.value.filter((r) => {
-  if (tradeFilter.value !== 'all' && r.type !== tradeFilter.value) return false;
+// 면적·연도만 걸러 둔 목록 — 탭별 건수를 세는 데 쓴다
+/** 표에 쓰는 줄 — 국토부 자료만 쓴다 (PDF 표는 쓰지 않는다) */
+const mergedTradeRows = computed<PlaceRow[]>(() => samePlaceRows.value);
+/** 위쪽 탭·면적·연도 거르기 */
+const shownTradeRows = computed(() => mergedTradeRows.value.filter((r) => {
+  if (tradeFilter.value !== 'all' && !(r.kind === tradeFilter.value || (tradeFilter.value === '매매' && r.kind === '직거래'))) return false;
+  if (tradeAreaFilter.value && !String(r.areaM2).startsWith(tradeAreaFilter.value)) return false;
+  if (tradeYearFilter.value && r.contractDate.slice(0, 4) !== tradeYearFilter.value) return false;
+  return true;
+}));
+const mergedCounts = computed(() => {
+  const rows = mergedTradeRows.value;
+  const by = (t: string) => rows.filter((r) => r.kind === t || (t === '매매' && r.kind === '직거래')).length;
+  return { all: rows.length, 매매: by('매매'), 전세: by('전세'), 월세: by('월세') };
+});
+const pdfRowsNoType = computed(() => realTradeRows.value.filter((r) => {
   if (tradeAreaFilter.value && !r.area?.startsWith(tradeAreaFilter.value)) return false;
   if (tradeYearFilter.value) {
     const y = r.contractDate?.match(/^(\d{2,4})/)?.[1] ?? '';
@@ -511,20 +715,43 @@ const filteredPdfTradeRows = computed(() => realTradeRows.value.filter((r) => {
   }
   return true;
 }));
+const pdfTradeCounts = computed(() => {
+  const rows = pdfRowsNoType.value;
+  const by = (t: string) => rows.filter((r) => r.type === t).length;
+  return { all: rows.length, 매매: by('매매'), 전세: by('전세'), 월세: by('월세') };
+});
+// 선택한 탭에 맞춰 건수 박스의 제목과 숫자를 바꾼다
+const tradeCountLabel = computed(() => (tradeFilter.value === 'all' ? '전체' : tradeFilter.value));
+const tradeCountValue = computed(() =>
+  tradeFilter.value === 'all' ? pdfTradeCounts.value.all : pdfTradeCounts.value[tradeFilter.value],
+);
+// 해당 물건의 층 — 정보요약과 같은 값을 쓴다
+const tradeTypeClass = (t: string) =>
+  t === '전세' ? 'tt-jeon' : t === '월세' ? 'tt-wol' : 'tt-buy';
 
 const parsePriceNumber = (s: string | undefined | null) => {
   if (!s) return NaN;
   const n = Number(String(s).replace(/[^\d.-]/g, ''));
   return Number.isFinite(n) ? n : NaN;
 };
-const pdfTradeAvg = computed(() => {
-  const nums = filteredPdfTradeRows.value
-    .filter((r) => r.type !== '월세')
-    .map((r) => parsePriceNumber(r.price))
-    .filter((n) => Number.isFinite(n) && n > 0);
-  if (nums.length === 0) return NaN;
-  return Math.round(nums.reduce((s, n) => s + n, 0) / nums.length);
+// 최근 실거래가 — 면적·연도 필터를 적용한 매매 건 중 계약일이 가장 늦은 건
+const recentSaleTrade = computed(() => {
+  const dateKey = (r: { contractDate?: string }) => (r.contractDate ?? '').replace(/\D/g, '');
+  const sales = pdfRowsNoType.value.filter((r) => r.type === '매매' && parsePriceNumber(r.price) > 0);
+  if (sales.length === 0) return null;
+  return sales.reduce((best, r) => (dateKey(r) > dateKey(best) ? r : best), sales[0]);
 });
+const recentSaleTradePrice = computed(() => parsePriceNumber(recentSaleTrade.value?.price));
+// 평당가 — 그 거래의 전용면적 기준, 표기에 ㎡가 없으면 물건 전용면적으로 대신한다
+const recentSaleTradePyeong = computed(() => {
+  const price = recentSaleTradePrice.value;
+  if (!Number.isFinite(price) || price <= 0) return NaN;
+  const fromRow = Number(/([\d.]+)\s*㎡/.exec(recentSaleTrade.value?.area ?? '')?.[1]);
+  const m2 = Number.isFinite(fromRow) && fromRow > 0 ? fromRow : Number(auction.value?.buildingAreaM2) || 0;
+  if (m2 <= 0) return NaN;
+  return Math.round(price / (m2 / 3.305785));
+});
+
 
 // 입지조사 '실거래가' 초기값 — 해당단지 매매 평균 (필터 무관)
 const pdfMaeMaeAvg = computed(() => {
@@ -555,17 +782,33 @@ const parseContractToDate = (s: string | undefined | null): Date | null => {
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3] || 1));
 };
 
+// 조건식 패널의 면적·건축연도는 '구간'으로 고른다.
+// 실제 거래값을 그대로 늘어놓으면 빌라는 면적이 호실마다 달라 목록이 수백 줄이 되고,
+// 검색할 때마다 목록이 바뀌어 같은 조건을 다시 만들 수 없다.
+const PYEONG_STEPS = [10, 15, 20, 25, 30];
+/** 평형 사다리 — value는 ㎡(필터가 ㎡로 비교한다), 라벨은 '20평 (66.11㎡)' */
+const AREA_STEP_OPTIONS = PYEONG_STEPS.map((py) => ({
+  value: (py * 3.305785).toFixed(2),
+  label: `${py}평 (${(py * 3.305785).toFixed(2)}㎡)`,
+}));
+// 건축연도 사다리 — 5년 단위. 위 끝은 올해 다음 5년 경계까지 둔다.
+// (2026년이면 2030까지 나와 '2025~2030' 구간을 고를 수 있다. 해가 바뀌면 자동으로 늘어난다)
+const THIS_YEAR = new Date().getFullYear();
+/** '16년차' — 건축연도 아래에 연차를 같이 적는다 */
+const buildYearAge = (y: number | undefined | null) => {
+  if (!y || y < 1800) return '';
+  return `${Math.max(0, THIS_YEAR - y)}년차`;
+};
+const BUILD_YEAR_STEPS = (() => {
+  const top = Math.ceil((THIS_YEAR + 1) / 5) * 5;
+  const set = new Set<number>();
+  for (let y = top; y >= 1990; y -= 5) set.add(y);
+  // 연식 내비게이터가 쓰는 '5·10·15·20년차' 경계도 목록에 넣어, 구간을 누르면 콤보에 그대로 보이게 한다
+  [5, 10, 15, 20].forEach((n) => set.add(THIS_YEAR - n));
+  return [...set].sort((a, b) => b - a);
+})();
+
 // 옵션 목록 (드롭다운용)
-const publicAreaUniqueValues = computed(() => {
-  const set = new Set<number>();
-  publicRealTradeRows.value.forEach((r) => { if (r.areaM2 > 0) set.add(r.areaM2); });
-  return [...set].sort((a, b) => a - b);
-});
-const publicBuildYearUniqueValues = computed(() => {
-  const set = new Set<number>();
-  publicRealTradeRows.value.forEach((r) => { if (r.buildYear) set.add(r.buildYear); });
-  return [...set].sort((a, b) => a - b);
-});
 
 // 컬럼별 체크박스 필터
 type PubCol = 'contractDate' | 'price' | 'areaM2' | 'buildYear' | 'floor' | 'address';
@@ -573,8 +816,8 @@ const PUB_COLS: PubCol[] = ['contractDate', 'price', 'areaM2', 'buildYear', 'flo
 const PUB_COL_LABELS: Record<PubCol, string> = {
   contractDate: '계약일',
   price: '거래금액',
-  areaM2: '전용면적',
-  buildYear: '건축연도',
+  areaM2: '전용㎡/평',
+  buildYear: '건축',
   floor: '층',
   address: '주소',
 };
@@ -610,6 +853,7 @@ const pubColUniqueValues = computed(() => {
   const result: Record<PubCol, string[]> = {
     contractDate: [], price: [], areaM2: [], buildYear: [], floor: [], address: [],
   };
+  // 목록은 늘 전부 보여 준다 (무엇이 있었는지 알 수 있게)
   PUB_COLS.forEach((col) => {
     const set = new Set<string>();
     publicRealTradeRows.value.forEach((r) => set.add(rowValue(r, col)));
@@ -617,6 +861,24 @@ const pubColUniqueValues = computed(() => {
   });
   return result;
 });
+/** 다른 칸의 거르기까지 적용했을 때 그 칸에 실제로 남아 있는 값들.
+ *  따로 고른 게 없으면 이 값들만 체크된 것으로 보여 준다 — 목록은 전부 보이되
+ *  지금 쓸 수 있는 값이 무엇인지 체크로 드러난다. */
+const pubColAvailable = computed(() => {
+  const result: Record<PubCol, Set<string>> = {
+    contractDate: new Set(), price: new Set(), areaM2: new Set(),
+    buildYear: new Set(), floor: new Set(), address: new Set(),
+  };
+  PUB_COLS.forEach((col) => {
+    applyColFilters(pubRangeRows.value, col).forEach((r) => result[col].add(rowValue(r, col)));
+  });
+  return result;
+});
+const isPubColChecked = (col: PubCol, val: string) => (
+  pubColDraft.value[col].size === 0
+    ? pubColAvailable.value[col].has(val)
+    : pubColDraft.value[col].has(val)
+);
 const commitPubColDraft = (col: PubCol) => {
   publicColFilters.value = { ...publicColFilters.value, [col]: new Set(pubColDraft.value[col]) };
 };
@@ -641,7 +903,8 @@ const togglePubColValue = (col: PubCol, val: string) => {
   const all = pubColUniqueValues.value[col];
   let set = new Set(pubColDraft.value[col]);
   if (set.size === 0) {
-    set = new Set(all);
+    // 아무것도 안 고른 상태 = '지금 남아 있는 값 전부'에서 하나를 뺀다
+    set = new Set(pubColAvailable.value[col]);
     set.delete(val);
   } else if (set.has(val)) {
     set.delete(val);
@@ -691,15 +954,179 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', handleDocClickForSurveyMulti);
 });
 
-const filteredPublicTradeRows = computed(() => publicRealTradeRows.value.filter((r) => {
+// 'YYYY-MM-DD'를 new Date()에 그대로 넣으면 UTC 자정으로 읽혀, 거래일(로컬 자정)과
+// 9시간 어긋난다. 그 바람에 시작일 당일 거래가 통째로 빠지곤 했다 — 로컬 날짜로 직접 만든다.
+const parseYmdLocal = (ymd: string, endOfDay = false) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd.trim());
+  if (!m) return null;
+  const [, y, mo, d] = m;
+  return endOfDay
+    ? new Date(Number(y), Number(mo) - 1, Number(d), 23, 59, 59, 999)
+    : new Date(Number(y), Number(mo) - 1, Number(d));
+};
+
+// ===== 조건식 패널 위 '분포 내비게이터' =====
+// 받아 온 자료를 평형·층·연식 구간으로 묶어 건수를 보여 주고, 누르면 그 구간으로 걸러 준다.
+// 주의: 거래가 많은 구간 = 선호도가 높은 구간이 아니다(물량이 많아서일 수 있다).
+//      그래서 '선호'가 아니라 건수와 비중만 적는다.
+type NavBucket = { key: string; label: string; count: number };
+
+/** 기간만 적용한 행 — 구간을 눌러도 다른 구간 숫자가 흔들리지 않게 한다 */
+const navBaseRows = computed(() => publicRealTradeRows.value.filter((r) => {
+  const d = parseContractToDate(r.contractDate);
+  if (!d) return true;
+  const start = publicStartDate.value ? parseYmdLocal(publicStartDate.value) : null;
+  const end = publicEndDate.value ? parseYmdLocal(publicEndDate.value, true) : null;
+  if (start && d < start) return false;
+  if (end && d > end) return false;
+  return true;
+}));
+
+/** 평형 구간 — 사다리(10/15/20/25/30평)와 같은 경계를 쓴다 */
+const NAV_PYEONG_BANDS: Array<{ key: string; label: string; min: number | null; max: number | null }> = [
+  { key: 'p0', label: '~10평', min: null, max: 10 },
+  { key: 'p1', label: '10~15평', min: 10, max: 15 },
+  { key: 'p2', label: '15~20평', min: 15, max: 20 },
+  { key: 'p3', label: '20~25평', min: 20, max: 25 },
+  // 30평 이상은 빌라에서 거의 없어 따로 칸을 두지 않는다.
+  // 대신 마지막 칸을 열어 둬서 그 거래도 빠지지 않게 한다 (칸 수는 층·연식과 같은 5개).
+  { key: 'p4', label: '25평~', min: 25, max: null },
+];
+const navPyeongBuckets = computed<NavBucket[]>(() =>
+  NAV_PYEONG_BANDS.map((b) => ({
+    key: b.key,
+    label: b.label,
+    count: navBaseRows.value.filter((r) => {
+      const py = r.areaM2 / 3.305785;
+      if (py <= 0) return false;
+      if (b.min !== null && py < b.min) return false;
+      if (b.max !== null && py >= b.max) return false;
+      return true;
+    }).length,
+  })),
+);
+
+/** 층 구간 — 1~4층은 그대로, 5층 이상은 묶는다 */
+const floorNumOf = (r: RealTradeMatchRow) => {
+  const n = Number(String(r.floor ?? '').replace(/[^\d-]/g, ''));
+  return Number.isFinite(n) ? n : NaN;
+};
+const NAV_FLOOR_BANDS = [1, 2, 3, 4];
+const navFloorBuckets = computed<NavBucket[]>(() => {
+  const list: NavBucket[] = NAV_FLOOR_BANDS.map((f) => ({
+    key: `f${f}`,
+    label: `${f}층`,
+    count: navBaseRows.value.filter((r) => floorNumOf(r) === f).length,
+  }));
+  list.push({
+    key: 'f5',
+    label: '5층↑',
+    count: navBaseRows.value.filter((r) => floorNumOf(r) >= 5).length,
+  });
+  return list;
+});
+
+/** 연식 구간 — 건축년도 사다리와 같은 5년 단위 */
+// 연도보다 '몇 년차'가 직관적이라 연차로 적는다 (내부 비교는 건축연도로 한다)
+const NAV_YEAR_BANDS: Array<{ key: string; label: string; min: number | null; max: number | null }> = [
+  { key: 'y0', label: '5년↓', min: THIS_YEAR - 5, max: null },
+  { key: 'y1', label: '5~10년', min: THIS_YEAR - 10, max: THIS_YEAR - 6 },
+  { key: 'y2', label: '10~15년', min: THIS_YEAR - 15, max: THIS_YEAR - 11 },
+  { key: 'y3', label: '15~20년', min: THIS_YEAR - 20, max: THIS_YEAR - 16 },
+  { key: 'y4', label: '20년↑', min: null, max: THIS_YEAR - 21 },
+];
+const navYearBuckets = computed<NavBucket[]>(() =>
+  NAV_YEAR_BANDS.map((b) => ({
+    key: b.key,
+    label: b.label,
+    count: navBaseRows.value.filter((r) => {
+      const y = r.buildYear ?? 0;
+      if (!y) return false;
+      if (b.min !== null && y < b.min) return false;
+      if (b.max !== null && y > b.max) return false;
+      return true;
+    }).length,
+  })),
+);
+
+/** 국토부 houseType 정리 — '연립다세대'처럼 섞여 들어오는 값을 둘로 모은다 */
+const normalizeHouseType = (raw: string | undefined | null) => {
+  const v = String(raw ?? '').replace(/\s/g, '');
+  if (!v) return '';
+  if (v.startsWith('연립')) return '연립';
+  if (v.includes('다세대')) return '다세대';
+  if (v.includes('연립')) return '연립';
+  return '';
+};
+/** 각 줄에서 가장 많은 구간 — 파랗게 강조한다 */
+const topKeyOf = (buckets: NavBucket[]) => {
+  let best = '';
+  let max = 0;
+  buckets.forEach((b) => { if (b.count > max) { max = b.count; best = b.key; } });
+  return best;
+};
+const navPyeongTop = computed(() => topKeyOf(navPyeongBuckets.value));
+const navFloorTop = computed(() => topKeyOf(navFloorBuckets.value));
+const navYearTop = computed(() => topKeyOf(navYearBuckets.value));
+
+const navActive = ref({ pyeong: '', floor: '', year: '' });
+const m2Of = (pyeong: number) => (pyeong * 3.305785).toFixed(2);
+
+/** 평형 구간을 누르면 최소/최대 면적을 그 구간으로 채운다 (다시 누르면 전체) */
+const pickNavPyeong = (key: string) => {
+  const band = NAV_PYEONG_BANDS.find((b) => b.key === key);
+  if (!band) return;
+  if (navActive.value.pyeong === key) {
+    navActive.value.pyeong = '';
+    publicMinArea.value = '';
+    publicMaxArea.value = '';
+    return;
+  }
+  navActive.value.pyeong = key;
+  publicMinArea.value = band.min === null ? '' : m2Of(band.min);
+  publicMaxArea.value = band.max === null ? '' : m2Of(band.max);
+};
+
+/** 연식 구간을 누르면 건축년도 범위를 채운다 */
+const pickNavYear = (key: string) => {
+  const band = NAV_YEAR_BANDS.find((b) => b.key === key);
+  if (!band) return;
+  if (navActive.value.year === key) {
+    navActive.value.year = '';
+    publicMinBuildYear.value = '';
+    publicMaxBuildYear.value = '';
+    return;
+  }
+  navActive.value.year = key;
+  publicMinBuildYear.value = band.min === null ? '' : String(band.min);
+  publicMaxBuildYear.value = band.max === null ? '' : String(band.max);
+};
+
+/** 층 구간은 표 머리글의 층 필터(실제 값 체크박스)를 대신 채워 준다 */
+const pickNavFloor = (key: string) => {
+  if (navActive.value.floor === key) {
+    navActive.value.floor = '';
+    publicColFilters.value = { ...publicColFilters.value, floor: new Set<string>() };
+    return;
+  }
+  navActive.value.floor = key;
+  const want = (r: RealTradeMatchRow) =>
+    key === 'f5' ? floorNumOf(r) >= 5 : floorNumOf(r) === Number(key.slice(1));
+  const set = new Set<string>();
+  navBaseRows.value.forEach((r) => { if (want(r)) set.add(rowValue(r, 'floor')); });
+  publicColFilters.value = { ...publicColFilters.value, floor: set };
+};
+
+/** 위쪽 조건(기간·면적·건축연도)만 적용한 줄 — 머리글 거르기는 아직 안 건 상태 */
+const pubRangeRows = computed(() => publicRealTradeRows.value.filter((r) => {
   const d = parseContractToDate(r.contractDate);
   if (publicStartDate.value && d) {
-    const start = new Date(publicStartDate.value);
-    if (d < start) return false;
+    const start = parseYmdLocal(publicStartDate.value);
+    if (start && d < start) return false;
   }
   if (publicEndDate.value && d) {
-    const end = new Date(publicEndDate.value);
-    if (d > end) return false;
+    const end = parseYmdLocal(publicEndDate.value, true);
+    if (end && d > end) return false;
   }
   const minA = parseFloat(publicMinArea.value);
   const maxA = parseFloat(publicMaxArea.value);
@@ -709,23 +1136,22 @@ const filteredPublicTradeRows = computed(() => publicRealTradeRows.value.filter(
   const maxY = parseInt(publicMaxBuildYear.value, 10);
   if (Number.isFinite(minY) && minY > 0 && (r.buildYear ?? 0) < minY) return false;
   if (Number.isFinite(maxY) && maxY > 0 && (r.buildYear ?? 9999) > maxY) return false;
-  return PUB_COLS.every((col) => {
+  return true;
+}));
+/** 머리글 거르기를 건다. except 로 지정한 칸은 빼고 건다(그 칸의 보기 목록을 만들 때 쓴다) */
+const applyColFilters = (rows: RealTradeMatchRow[], except?: PubCol) => rows.filter(
+  (r) => PUB_COLS.every((col) => {
+    if (col === except) return true;
     const sel = publicColFilters.value[col];
     if (sel.size === 0) return true;
     return sel.has(rowValue(r, col));
-  });
-}));
+  }),
+);
+const filteredPublicTradeRows = computed(() => applyColFilters(pubRangeRows.value));
 
-const resetPublicFilters = () => {
-  populatePublicRangeDefaults();
-  PUB_COLS.forEach((col) => {
-    publicColFilters.value[col].clear();
-  });
-  publicColFilters.value = { ...publicColFilters.value };
-};
 
 // 데이터 로드 후 자동 범위 채우기
-const populatePublicRangeDefaults = () => {
+const populatePublicRangeDefaults = (months = 12) => {
   const rows = publicRealTradeRows.value;
   if (rows.length === 0) {
     publicStartDate.value = '';
@@ -736,46 +1162,93 @@ const populatePublicRangeDefaults = () => {
     publicMaxBuildYear.value = '';
     return;
   }
-  const dates = rows.map((r) => parseContractToDate(r.contractDate)).filter((d): d is Date => !!d).map((d) => d.getTime()).sort((a, b) => a - b);
-  if (dates.length > 0) {
-    const fmt = (t: number) => {
-      const d = new Date(t);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    };
-    publicStartDate.value = fmt(dates[0]);
-    publicEndDate.value = fmt(dates[dates.length - 1]);
-  }
-  const areas = publicAreaUniqueValues.value;
-  if (areas.length > 0) {
-    publicMinArea.value = String(areas[0]);
-    publicMaxArea.value = String(areas[areas.length - 1]);
-  }
-  const years = publicBuildYearUniqueValues.value;
-  if (years.length > 0) {
-    publicMinBuildYear.value = String(years[0]);
-    publicMaxBuildYear.value = String(years[years.length - 1]);
-  }
+  // 첫 화면의 기간 창을 '기간선택 N개월' 버튼과 똑같이 맞춘다.
+  // 예전에는 받아 온 자료의 최소·최대 날짜를 썼기 때문에, 버튼을 누르면 창이 달라져
+  // 평균·평당가가 바뀌어 보였다.
+  setPubMonths(months);
+  // 면적·건축연도는 비워 둬서 '전체'로 시작한다
+  publicMinArea.value = '';
+  publicMaxArea.value = '';
+  publicMinBuildYear.value = '';
+  publicMaxBuildYear.value = '';
 };
+// 건수 박스 앞 — 기간선택 버튼을 눌렀으면 개월수를, 날짜를 직접 고쳤으면 그 기간을 보여준다
+/** 소수점 두 자리에서 '자른다'(반올림하지 않는다). 자릿수는 항상 두 자리로 채워 줄을 맞춘다 */
+const trunc2 = (v: number) => {
+  // v * 100 은 부동소수 오차가 나서(66.1 → 6609.99…) 자릿수를 문자열에서 자른다
+  const [whole, frac = ''] = v.toFixed(4).split('.');
+  return `${whole}.${(frac + '00').slice(0, 2)}`;
+};
+/** 표 칸용 — '66.11 / 20.0' (단위는 머리글 '전용면적(㎡/평)'에 적어 폭을 아낀다) */
+const areaWithPyeong = (v: number) => {
+  if (!Number.isFinite(v) || v <= 0) return '-';
+  return `${trunc2(v)} / ${(v / 3.305785).toFixed(1)}`;
+};
+/** 문자열로 들어온 면적('38.28', '38.28㎡', '38.28 (11.58)')도 같은 형태로 */
+const areaTextWithPyeong = (raw: string | undefined | null) => {
+  // 괄호 안에 평수가 같이 적힌 자료가 있어 '첫 번째 숫자'만 집는다
+  const first = /\d+(?:\.\d+)?/.exec(String(raw ?? ''));
+  const n = first ? Number(first[0]) : NaN;
+  return Number.isFinite(n) && n > 0 ? areaWithPyeong(n) : (raw || '-');
+};
+
+// 연·월까지만 — 2025-09-27 → 25.09
+const shortDate = (v: string) => (v ? v.slice(2, 7).replace(/-/g, '.') : '');
+const publicRangeNote = computed(() => {
+  if (pubMonthPreset.value) return `${pubMonthPreset.value}개월`;
+  const start = shortDate(publicStartDate.value);
+  const end = shortDate(publicEndDate.value);
+  if (start && end) return `${start}~${end}`;
+  return start ? `${start}~` : end ? `~${end}` : '';
+});
+
 const publicTradeAvg = computed(() => {
   const nums = filteredPublicTradeRows.value.map((r) => r.price).filter((n) => n > 0);
   if (nums.length === 0) return NaN;
   return Math.round(nums.reduce((s, n) => s + n, 0) / nums.length);
 });
 
-// 해당물건 정보의 전용면적 — '38.28㎡ / 11.58평'
-const tradeMetaArea = computed(() => {
+// 평균 평당가 — 금액 합계 ÷ 전용면적 합계(평). 면적이 큰 거래에 치우치지 않게 합계로 나눈다
+const publicTradePyeongAvg = computed(() => {
+  const rows = filteredPublicTradeRows.value.filter((r) => r.price > 0 && r.areaM2 > 0);
+  if (rows.length === 0) return NaN;
+  const priceSum = rows.reduce((sum, r) => sum + r.price, 0);
+  const pyeongSum = rows.reduce((sum, r) => sum + r.areaM2 / 3.305785, 0);
+  if (pyeongSum <= 0) return NaN;
+  return Math.round(priceSum / pyeongSum);
+});
+
+
+// 가격정보 탭에서 늘 보이는 기준값 — 조건식 분석의 숫자를 견주어 읽을 때 쓴다.
+// 사용승인은 날짜 전체 대신 '08년(18년차)'로 줄여 한 줄에 담는다.
+/** 사건번호 줄에 붙는 한 줄 기준값 — '66.11㎡ · 2008년' */
+const headMetaLine = computed(() => {
   const m2 = Number(auction.value?.buildingAreaM2) || 0;
-  if (m2 <= 0) return '-';
-  return `${m2}㎡ / ${(m2 / 3.305785).toFixed(2)}평`;
+  const area = m2 > 0 ? `${trunc2(m2)}㎡/${(m2 / 3.305785).toFixed(1)}평` : '';
+  const raw = String(auction.value?.buildingHeader?.approvalDate || auction.value?.approvalDate || '').trim();
+  const y = Number(raw.match(/(\d{4})/)?.[1] ?? 0);
+  const year = y && y >= 1800 ? `${y}년(${Math.max(0, THIS_YEAR - y)}년차)` : '';
+  return [area, year].filter(Boolean).join(' · ');
 });
 
 const formatWonSimple = (n: number) =>
   Number.isFinite(n) && n > 0 ? n.toLocaleString('ko-KR') : '-';
 
-const fetchPublicTradeRows = async () => {
+// 실거래 비교 대상 종류 — 물건이 다세대/연립이면 연립다세대 자료만 본다.
+// 국토부 실거래가 공개시스템도 연립다세대를 한 묶음으로 제공한다(도시형생활주택 포함).
+const publicTradeType = computed<'apt' | 'villa' | 'officetel'>(() => {
+  const t = (auction.value?.propertyType ?? '').replace(/\s/g, '');
+  if (/아파트/.test(t)) return 'apt';
+  if (/오피스텔/.test(t)) return 'officetel';
+  return 'villa';
+});
+
+/** 국토부 API에 넘기는 종류를 사람이 읽는 말로 */
+const publicTradeTypeLabel = computed(() => (
+  { apt: '아파트', villa: '연립다세대', officetel: '오피스텔' }[publicTradeType.value]
+));
+
+const fetchPublicTradeRows = async (opts?: { months?: number; keepFilters?: boolean }) => {
   if (!auction.value || fetchingPublicTrade.value) return;
   fetchingPublicTrade.value = true;
   try {
@@ -783,44 +1256,142 @@ const fetchPublicTradeRows = async () => {
     if (!region) return;
     publicRealTradeSigungu.value = region.sigungu ?? '';
     publicRealTradeDong.value = region.dong ?? '';
-    const result = await fetchRealTradeAverage({
-      lawdCd5: region.lawdCd5,
-      dong: region.dong,
-      areaM2: auction.value.buildingAreaM2 || undefined,
-      propertyType: 'all',
-      months: 6,
-    });
+    const months = opts?.months ?? 12;
+    // 같은 동·같은 종류·같은 기간이면 누가 열든 결과가 같다 — 하루 동안 모아 둔 값을 쓴다
+    const result = await cached(
+      'cacheDongTrades',
+      cacheKey(region.lawdCd5, region.dong, publicTradeType.value, months),
+      CACHE_TTL.trades,
+      () => fetchRealTradeAverage({
+        lawdCd5: region.lawdCd5,
+        dong: region.dong,
+        // 면적으로 미리 거르지 않는다 — 패널 안에 면적 필터가 따로 있고 기본은 '전체'다.
+        propertyType: publicTradeType.value,
+        months,
+      }),
+      (r) => Number.isFinite(r.average) && (r.matchedRows?.length ?? 0) > 0,
+    );
     if (Number.isFinite(result.average)) {
       publicRealTradeRows.value = result.matchedRows ?? [];
       publicRealTradeDong.value = result.dongLabel ?? region.dong ?? '';
-      populatePublicRangeDefaults();
+      publicTradeWarning.value = result.error ?? '';
+      pubDirectCount.value = result.directCount ?? 0;
+      pubDirectRows.value = result.directRows ?? [];
+      pubCancelledRows.value = result.cancelledRows ?? [];
+      if (!opts?.keepFilters) populatePublicRangeDefaults(opts?.months ?? 12);
       stampPublicTradeUpdate();
+    } else {
+      publicTradeWarning.value = result.error ?? '';
     }
-  } catch {
-    // ignore
+  } catch (err) {
+    // 조용히 삼키면 '조회 중…'만 사라지고 왜 비었는지 알 수 없다
+    const aborted = err instanceof DOMException && err.name === 'AbortError';
+    publicTradeWarning.value = aborted
+      ? '국토부 응답이 없어 끊었습니다 — 잠시 뒤 다시 조회해 주세요.'
+      : `조회에 실패했습니다 — ${err instanceof Error ? err.message : '알 수 없는 오류'}`;
   } finally {
     fetchingPublicTrade.value = false;
   }
 };
 
+// 조건식 패널의 '검색' — 고른 기간으로 다시 조회하되 면적·연도 선택은 그대로 둔다
+// 수요공급의 12개월 거래량 — 동 전체 다세대·연립 1년치 건수를 따로 센다.
+// 가격정보 rows는 면적(±10%)으로 걸러져 있어 그대로 쓰면 적게 나온다.
+const fetchDeal12mCount = async () => {
+  const target = auction.value;
+  if (!target?.address) return;
+  try {
+    const region = await resolveRegionFromAddress(target.address);
+    if (!region) return;
+    const result = await cached(
+      'cacheDongTrades',
+      cacheKey(region.lawdCd5, region.dong, publicTradeType.value, 12),
+      CACHE_TTL.trades,
+      () => fetchRealTradeAverage({
+        lawdCd5: region.lawdCd5,
+        dong: region.dong,
+        propertyType: publicTradeType.value,
+        months: 12,
+      }),
+      (r) => Number.isFinite(r.average) && (r.matchedRows?.length ?? 0) > 0,
+    );
+    // 동으로 못 좁히고 시군구 전체로 넓어졌으면 그 동의 수가 아니다 — 자동 입력하지 않는다
+    deal12mAuto.value = result.fallbackUsed ? 0 : (result.matchedRows?.length ?? 0);
+    // 뺀 건수도 적어 둔다 — 가격정보 탭의 숫자와 맞춰 보면 검증이 된다
+    deal12mDirect.value = result.fallbackUsed ? 0 : (result.directCount ?? 0);
+    deal12mCancelled.value = result.fallbackUsed ? 0 : (result.cancelledCount ?? 0);
+  } catch {
+    deal12mAuto.value = 0;
+    deal12mDirect.value = 0;
+    deal12mCancelled.value = 0;
+  }
+};
+
+const searchPublicTrades = () =>
+  fetchPublicTradeRows({ months: pubMonthPreset.value || 12, keepFilters: true });
+
+// 낙찰일·매도일 — 편집 모드와 상관없이 바로 적는다
+// 중요도 별 — 선정물건 목록의 별과 같은 priority 값. 1→2→3→빈 별 순으로 돈다
+const priority = computed(() => auction.value?.priority ?? 0);
+const cyclePriority = async () => {
+  if (!auction.value) return;
+  auction.value.priority = (priority.value + 1) % 4;
+  await store.saveAuction(auction.value);
+};
+const setProfitDate = async (key: 'wonDate' | 'sellDate', value: string) => {
+  if (!auction.value) return;
+  auction.value[key] = value;
+  await store.saveAuction(auction.value);
+};
+const profitDateTarget = ref<'' | 'wonDate' | 'sellDate'>('');
+const profitDateValue = computed<string>({
+  get: () => {
+    const key = profitDateTarget.value;
+    if (!key || !auction.value) return '';
+    return auction.value[key] ?? '';
+  },
+  set: (value) => {
+    const key = profitDateTarget.value;
+    if (key) void setProfitDate(key, value);
+  },
+});
+
 // 값 복사 (앱에서는 Capacitor 클립보드)
 const copiedMsg = ref('');
+const copiedTone = ref<'info' | 'success' | 'error'>('success');
+/** 짧은 알림 — 앱 공통 토스트로 띄운다 */
+const flashToast = (text: string, tone: 'info' | 'success' | 'error' = 'success') => {
+  copiedTone.value = tone;
+  copiedMsg.value = text;
+  window.setTimeout(() => { copiedMsg.value = ''; }, 1600);
+};
+/** 주소 복사 — 표에서는 주소가 잘려 보이므로 복사한 전체 주소를 토스트 윗줄에 같이 보여 준다 */
+const copyAddressText = async (address: string) => {
+  const value = String(address ?? '').trim();
+  if (!value) return;
+  try {
+    if (Capacitor.isNativePlatform()) await Clipboard.write({ string: value });
+    else await navigator.clipboard.writeText(value);
+    flashToast(`${value}\n복사되었습니다.`, 'success');
+  } catch {
+    flashToast('복사에 실패했습니다.', 'error');
+  }
+};
+
 const copyText = async (text: string) => {
   const value = String(text ?? '').trim();
   if (!value) return;
   try {
     if (Capacitor.isNativePlatform()) await Clipboard.write({ string: value });
     else await navigator.clipboard.writeText(value);
-    copiedMsg.value = '복사했습니다.';
-    setTimeout(() => { copiedMsg.value = ''; }, 1500);
+    flashToast('복사되었습니다.', 'success');
   } catch {
-    copiedMsg.value = '복사에 실패했습니다.';
-    setTimeout(() => { copiedMsg.value = ''; }, 1500);
+    flashToast('복사에 실패했습니다.', 'error');
   }
 };
 
 // 기간 필터 — 3/6/12개월 버튼과 휠 달력
-const pubMonthPreset = ref(0);
+const pubMonthPreset = ref(12); // 기본 12개월
 const pubDateTarget = ref<'' | 'start' | 'end'>('');
 const pubDateValue = computed({
   get: () => (pubDateTarget.value === 'start' ? publicStartDate.value : pubDateTarget.value === 'end' ? publicEndDate.value : ''),
@@ -842,6 +1413,33 @@ const setPubMonths = (months: number) => {
 
 // 국토부 실거래가 — 마지막으로 불러오거나 검색 조건을 바꾼 시각
 const publicTradeUpdatedAt = ref('');
+// 일부 월 조회가 실패하면 건수가 조용히 적게 나온다 — 숨기지 말고 알린다
+const publicTradeWarning = ref('');
+// 검색 결과 표 — 머리줄(구분)만 남기고 접어 둔다. 기본은 접힘.
+const pubTableCollapsed = ref(true);
+// 집계에서 뺀 직거래 건수 — 몇 건을 뺐는지 눈에 보이게 한다
+const pubDirectCount = ref(0);
+const pubDirectRows = ref<RealTradeMatchRow[]>([]);
+const filteredDirectRows = computed(() => pubDirectRows.value);
+// 집계에서 뺀 계약해제 건 — 직거래와 같은 방식으로 따로 펼쳐 본다
+const pubCancelledRows = ref<RealTradeMatchRow[]>([]);
+const filteredCancelledRows = computed(() => pubCancelledRows.value);
+const pubCancelledCollapsed = ref(true);
+const pubDirectCollapsed = ref(true);
+// 둘을 동시에 펼치면 서로 가려 눌러도 반응이 없는 것처럼 보인다 — 하나만 열리게 한다
+// 셋 중 하나만 펼친다 — 두 표가 겹쳐 뜨면 어느 쪽 숫자인지 헷갈린다
+const toggleTradeList = () => {
+  pubTableCollapsed.value = !pubTableCollapsed.value;
+  if (!pubTableCollapsed.value) { pubDirectCollapsed.value = true; pubCancelledCollapsed.value = true; }
+};
+const toggleDirectList = () => {
+  pubDirectCollapsed.value = !pubDirectCollapsed.value;
+  if (!pubDirectCollapsed.value) { pubTableCollapsed.value = true; pubCancelledCollapsed.value = true; }
+};
+const toggleCancelledList = () => {
+  pubCancelledCollapsed.value = !pubCancelledCollapsed.value;
+  if (!pubCancelledCollapsed.value) { pubTableCollapsed.value = true; pubDirectCollapsed.value = true; }
+};
 const stampPublicTradeUpdate = () => {
   const d = new Date();
   const p2 = (n: number) => String(n).padStart(2, '0');
@@ -862,7 +1460,13 @@ watch(
   (id) => {
     if (!id || fetchedAuctionId.value === id) return;
     fetchedAuctionId.value = id;
-    void fetchPublicTradeRows();
+    // 급한 것부터 — 단지 전체(2년치 × 매매/전월세 = 50번 호출)를 먼저 던지면 이 둘이 밀려서 실패한다
+    void (async () => {
+      await fetchPublicTradeRows();
+      await fetchDeal12mCount();
+      await fetchDongUnits();
+      void loadSamePlaceTrades();
+    })();
   },
   { immediate: true },
 );
@@ -1067,7 +1671,9 @@ const myBidPct = computed(() => apprValue.value > 0 ? (myBid.value / apprValue.v
 
 const bc = computed(() => auction.value?.bidCost);
 
-// 필요비용 합계: 대출 제외, 취득세/법무비/이자/중도상환/매도중개료/미납관리비/수리비/명도비 합산
+// 광고비의 3.3%는 원천징수라 떼서 세무서에 내는 돈 — 지출 총액은 그대로다
+const advertisingNet = computed(() => bc.value?.advertisingCost ?? 0);
+// 필요경비합계: 대출 제외, 취득세/법무비/이자/중도상환/매도중개료/미납관리비/수리비/명도비/광고비 합산
 const totalCosts = computed(() => {
   const c = bc.value;
   if (!c) return 0;
@@ -1078,11 +1684,16 @@ const totalCosts = computed(() => {
     + (c.brokerageAmount ?? 0)
     + (c.arrearsFee ?? 0)
     + (c.repairCost ?? 0)
-    + (c.evictionCost ?? 0);
+    + (c.evictionCost ?? 0)
+    + advertisingNet.value;
 });
 const expectedSale = computed(() => auction.value?.expectedSaleValue ?? 0);
 const capitalGain = computed(() => expectedSale.value - myBid.value - totalCosts.value);
 const localTaxRate = computed(() => bc.value?.localTaxRate ?? 10);
+// 입찰보증금 — PDF 값이 있으면 그걸, 없으면 최저가의 10%
+const bidDeposit = computed(
+  () => auction.value?.metrics?.depositValue || Math.round((auction.value?.metrics?.minimumBidValue ?? 0) * 0.1),
+);
 // 종합소득세 누진세율 (양도차익 L 기준)
 const transferTaxAuto = computed(() => {
   const L = capitalGain.value;
@@ -1095,6 +1706,31 @@ const transferTaxAuto = computed(() => {
   if (L <= 500_000_000) return L * 0.4 - 25_940_000;
   if (L <= 1_000_000_000) return L * 0.42 - 35_940_000;
   return L * 0.45 - 65_940_000;
+});
+// 사업소득 금액이 걸리는 누진세율 구간 — 표의 '누진세율' 옆에 같이 보여 준다
+const incomeTaxBracket = computed(() => {
+  const L = capitalGain.value;
+  if (L <= 0) return '-';
+  if (L <= 14_000_000) return '6%';
+  if (L <= 50_000_000) return '15%';
+  if (L <= 88_000_000) return '24%';
+  if (L <= 150_000_000) return '35%';
+  if (L <= 300_000_000) return '38%';
+  if (L <= 500_000_000) return '40%';
+  if (L <= 1_000_000_000) return '42%';
+  return '45%';
+});
+// 그 구간에서 빼 주는 누진공제 — 세액이 어떻게 나왔는지 눈으로 보려고 같이 띄운다
+const incomeTaxDeductionText = computed(() => {
+  const L = capitalGain.value;
+  if (L <= 14_000_000) return '';
+  if (L <= 50_000_000) return '126만';
+  if (L <= 88_000_000) return '576만';
+  if (L <= 150_000_000) return '1,544만';
+  if (L <= 300_000_000) return '1,994만';
+  if (L <= 500_000_000) return '2,594만';
+  if (L <= 1_000_000_000) return '3,594만';
+  return '6,594만';
 });
 // 직접 넣은 금액이 있으면 그것을, 없으면 자동 계산값을 쓴다
 const transferTax = computed(() => bc.value?.incomeTaxAmount ?? transferTaxAuto.value);
@@ -1138,8 +1774,7 @@ const limitPct = (e: Event) => {
   if (el.value !== next) el.value = next;
 };
 const afterTaxProfit = computed(() => capitalGain.value - transferTax.value - localTax.value);
-const advertisingCost = computed(() => bc.value?.advertisingCost ?? 0);
-const netAfterTaxProfit = computed(() => afterTaxProfit.value - advertisingCost.value);
+const netAfterTaxProfit = computed(() => afterTaxProfit.value);
 const netInvestment = computed(() => myBid.value - (bc.value?.loanAmount ?? 0) + totalCosts.value);
 const totalInvest = computed(() => myBid.value + totalCosts.value);
 const afterTaxRate = computed(() => netInvestment.value > 0 ? (netAfterTaxProfit.value / netInvestment.value) * 100 : 0);
@@ -1261,13 +1896,17 @@ const saveProfit = async () => {
   editingProfit.value = false;
 };
 
-const collapsed = ref<Record<string, boolean>>({});
+/** 물건정보 탭의 기본 상태 — 정보요약·물건기본정보만 펴 두고 나머지는 접어 둔다.
+ *  (처음 들어왔을 때 한 화면에서 핵심만 보이게) */
+const collapsed = ref<Record<string, boolean>>({
+  bld: true, status: true, registry: true, apt: true, arrears: true, areaInfo: true,
+});
 const toggleSection = (key: string) => { collapsed.value[key] = !collapsed.value[key]; };
 // 상세 화면의 모든 카드 키 — 전체 접기/펼치기에 쓴다
 const ALL_SECTION_KEYS = [
-  'summary', 'base', 'tenant', 'bld', 'status', 'registry', 'cases', 'cases2', 'apt', 'arrears',
-  'areaInfo', 'photo', 'photos', 'rightsPhotos', 'rightsCheck',
-  'realUser', 'areaSurvey', 'survInd', 'survPrice', 'survField', 'trades', 'checklist',
+  'summary', 'base', 'tenant', 'bld', 'status', 'registry', 'cases', 'apt', 'arrears',
+  'areaInfo', 'photos', 'rightsPhotos', 'rightsCheck', 'sameLot', 'casePrice',
+  'realUser', 'demand', 'survPrice', 'survField', 'trades', 'checklist', 'profit', 'taxRef',
 ];
 const allCollapsed = computed(() => ALL_SECTION_KEYS.every((key) => collapsed.value[key]));
 const toggleAllSections = () => {
@@ -1277,6 +1916,7 @@ const toggleAllSections = () => {
   collapsed.value = map;
 };
 const isCollapsed = (key: string) => !!collapsed.value[key];
+
 
 // === 손품조사 폼 ===
 const defaultSurveyForm = () => ({
@@ -1291,7 +1931,7 @@ const defaultSurveyForm = () => ({
   mktPubPrice: '', mktRegionArea: '', mktRegionJeonse: '', mktRegionReal: '',
   mktCaseArea: '', mktCaseJeonse: '', mktUnitArea: '', mktUnitPrice: '',
   mktLowListName: '', mktRows: [] as MarketSurveyRow[], mktValues: {} as Record<string, string>,
-  agencyRows: [] as AgencyRow[],
+  agencyRows: [] as AgencyRow[], siteAgencyRows: [] as AgencyRow[],
   mktConcAvg: '', mktConcLow: '', mktConcPyeong: '', mktJeonseReset: false,
   fieldValues: {} as Record<string, string>,
   indivValues: {} as Record<string, string>, indivAvgPrice: '',
@@ -1400,28 +2040,27 @@ type IndivItem = {
 type IndivGroup = { title: string; items: IndivItem[] };
 const INDIV_GROUPS: IndivGroup[] = [
   {
-    title: '구역내 개별성',
+    title: '경매 빌라 개별성',
     items: [
       { id: 'ind.age', label: '년식', yearMonth: true, rate: '-15%' },
-      { id: 'ind.units', label: '해당면적세대', custom: 'units', rate: '10%' },
       { id: 'ind.parking', label: '주차수', text: true, half: true, rate: '5%' },
-      { id: 'ind.far', label: '용적률', text: true, suffix: '%', rate: '5%' },
       { id: 'ind.slope', label: '경사', survey: true, options: ['O', 'X'], rate: '-5%' },
-      { id: 'ind.piloti', label: '필로티', survey: true, options: ['O', 'X'], rate: '5%' },
       { id: 'ind.elevator', label: '엘베', options: ['O', 'X'], rate: '10%' },
-      { id: 'ind.parkLink', label: '지하주차장', survey: true, options: ['연결O', '연결X'], rate: '5%' },
       { id: 'ind.odor', label: '혐오시설', survey: true, options: ['O', 'X'], rate: '-5%' },
       { id: 'ind.corridor', label: '현관구조', options: ['계단식', '복도식'], rate: '10%' },
       {
-        id: 'ind.mgmt', label: '건물관리', survey: true, multi: true,
+        id: 'ind.mgmt', label: '건물외부', survey: true, multi: true,
         options: ['좋음', '양호', '나쁨', '지정주차', '곰팡이', '누수', '결로'], rate: '-5%',
+      },
+      {
+        id: 'ind.inside', label: '건물내부', survey: true, multi: true,
+        options: ['좋음', '양호', '나쁨', '청결', '계단청소', '보안'], rate: '5%',
       },
     ],
   },
   {
-    title: '단지내 개별성',
+    title: '경매호실 개별성',
     items: [
-      { id: 'ind.dong', label: '동', custom: 'dong', rate: '5%' },
       { id: 'ind.floorNum', label: '층', custom: 'floor', rate: '3%' },
       { id: 'ind.direction', label: '향', multi: true, options: ['동', '서', '남', '북'], rate: '5%' },
       { id: 'ind.view', label: '뷰', options: ['뻥뷰', '단지뷰'], rate: '5%' },
@@ -1435,14 +2074,6 @@ const INDIV_GROUPS: IndivGroup[] = [
         options: ['1방', '2방', '3방', '4방', '1화', '2화', '3화'], rate: '5%',
       },
       { id: 'ind.repair', label: '수리유무', survey: true, options: ['부분수리', '올수리'], note: '올수리 1500 > 부분수리 500~1000 현금, 샷시 판단', rate: '10%' },
-      {
-        id: 'ind.inside', label: '건물내부', survey: true, multi: true,
-        options: ['좋음', '양호', '나쁨', '청결', '계단청소', '보안'], rate: '5%',
-      },
-      {
-        id: 'ind.home', label: '집내부', survey: true, multi: true,
-        options: ['조사X', '좋음', '양호', '나쁨', '청결', '도배', '장판', '수도', '보일러'], rate: '5%',
-      },
     ],
   },
 ];
@@ -1486,7 +2117,7 @@ const indivFloorText = computed(() => {
 const indivDongText = computed(() => {
   const total = indivValue('ind.dongTotal');
   const note = indivValue('ind.dongNote');
-  const parts = [total ? `${total}개동` : '', note].filter(Boolean);
+  const parts = [total ? `총 ${total}개동` : '', note ? `입지조건 ${note}` : ''].filter(Boolean);
   return parts.length > 0 ? parts.join(' / ') : '-';
 });
 const indivParkingText = computed(() => {
@@ -1529,12 +2160,14 @@ const indivDisplay = (item: IndivItem) => {
   if (/^\d+$/.test(raw)) return Number(raw).toLocaleString('ko-KR');
   return raw;
 };
+// 가격율 기본값은 0 — 항목마다 정해 둔 비율은 참고용이고, 직접 적은 값만 쓴다.
+// (층은 아파트/빌라 규칙으로 자동 계산되는 값이 있으면 그것을 쓴다)
 const indivRateNum = (item: IndivItem) => {
   if (item.id === 'ind.floorNum') {
     const auto = indivFloorRate();
     if (auto) return auto;
   }
-  return item.rate.replace('%', '');
+  return '0';
 };
 const indivRateOf = (item: IndivItem) => `${indivValue(`${item.id}.rate`) || indivRateNum(item)}%`;
 // 가격율 합계와, 실거래평균가에 그 합계를 적용한 값
@@ -1643,7 +2276,7 @@ watch(
   { immediate: true },
 );
 
-const editingSurvey = ref({ field: false, location: false, deal: false, listing: false, individuality: false, realUser: false });
+const editingSurvey = ref({ field: false, location: false, deal: false, listing: false, individuality: false, realUser: false, demand: false });
 const persistSurvey = async () => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
@@ -1670,43 +2303,41 @@ type FieldRow = {
 };
 const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
   {
-    title: '탐문 (윗집, 옆집, 아래집, 동대표 중)',
+    title: '② 탐문 (윗집, 옆집, 아래집, 동대표 중)',
     items: [
-      { id: 'fs.roofLeak', label: '옥상누수확인', options: ['O', 'X', '확인불가'] },
+      { id: 'fs.roofLeak', label: '옥상누수', options: ['O', 'X', '확인불가'] },
       {
-        id: 'fs.maintFee', label: '미납 관리비', options: ['동대표', '관리소 연락처'],
-        extra: { id: 'fs.maintPhone', placeholder: '연락처' },
+        id: 'fs.maintFee', label: '미납관리비', options: ['동대표', '관리소'],
+        extra: { id: 'fs.maintPhone', placeholder: '연락처입력' },
       },
       {
-        id: 'fs.tenantContact', label: '임차인연락처', options: ['동대표', '차량확인'],
-        extra: { id: 'fs.tenantPhone', placeholder: '연락처' },
+        id: 'fs.tenantContact', label: '임차인연락처', options: ['동대표', '차확인'],
+        extra: { id: 'fs.tenantPhone', placeholder: '연락처입력' },
       },
-      { id: 'fs.doorCode', label: '출입문 비번', text: true, placeholder: '비밀번호 입력' },
+      { id: 'fs.doorCode', label: '출입문비번', text: true, placeholder: '비밀번호입력' },
+      { id: 'fs.entryCode', label: '현관비번', text: true, placeholder: '비밀번호입력' },
     ],
   },
   {
-    title: '우편물 확인',
+    title: '③ 우편물 및 공과금 현황',
     items: [
-      { id: 'fs.mailTax', label: '미납세금', options: ['O', 'X'], extra: { id: 'fs.mailTaxAmt', placeholder: '금액입력', money: true } },
       { id: 'fs.mailMaint', label: '미납관리비', options: ['O', 'X'], extra: { id: 'fs.mailMaintAmt', placeholder: '금액입력', money: true } },
-      { id: 'fs.mailPower', label: '전기', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액입력', money: true } },
-      { id: 'fs.mailWater', label: '수도', options: ['O', 'X'], extra: { id: 'fs.mailWaterAmt', placeholder: '금액입력', money: true } },
-      { id: 'fs.mailGas', label: '가스', options: ['O', 'X'], extra: { id: 'fs.mailGasAmt', placeholder: '금액입력', money: true } },
-      { id: 'fs.mailEtc', label: '기타', text: true, placeholder: '법원송달서류등' },
+      { id: 'fs.mailPower', label: '전기수도가스', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액입력', money: true } },
+      {
+        id: 'fs.cleanCo', label: '청소업체', options: ['O', 'X'],
+        extra: { id: 'fs.cleanPhone', placeholder: '업체명 / 연락처' },
+      },
+      { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'] },
+      { id: 'fs.parkList', label: '주차리스트', options: ['O', 'X'] },
+      { id: 'fs.bikeKeep', label: '자전거상태', options: ['상', '중', '하'] },
     ],
   },
   {
-    title: '수리상태',
+    title: '④ 수리상태',
     items: [
-      { id: 'fs.door', label: '도어', options: ['교체상태', '미교체'] },
-      { id: 'fs.doorLock', label: '도어락', options: ['교체상태', '미교체'] },
-      { id: 'fs.window', label: '샷시', options: ['교체상태', '미교체'] },
-    ],
-  },
-  {
-    title: '주차장',
-    items: [
-      { id: 'fs.parkingCount', label: '주차대수', text: true, placeholder: '0', suffix: '대' },
+      { id: 'fs.door', label: '도어', options: ['교체', '미교체'] },
+      { id: 'fs.doorLock', label: '도어락', options: ['교체', '미교체'] },
+      { id: 'fs.window', label: '샷시', options: ['교체', '미교체'] },
     ],
   },
 ];
@@ -1812,7 +2443,8 @@ const FIELD_COMFORT_CHECKS: Array<{ id: string; desc: string }> = [
 // 입지조사 — 항목마다 사진·링크와 비고를 둔다
 // aptOnly — 아실·호갱노노 단지 기준이라 아파트에서만 쓴다
 const AREA_SURVEY_ITEMS: Array<{ key: string; title: string; note?: string; aptOnly?: boolean }> = [
-  { key: 'areaSurvey', title: '지역조사', note: '호재, 공급' },
+  // 제목은 '① 입지조사'가 대신하므로 비워 둔다
+  { key: 'areaSurvey', title: '', note: '' },
   { key: 'zoneRank', title: '구역내(동네) 입지등수', note: '아실, 디스코 > 평단가 or 전세가 등수 확인', aptOnly: true },
   { key: 'resident', title: '호갱노노 주민이야기', note: '호재, 입지가치, 개별가치', aptOnly: true },
 ];
@@ -1820,6 +2452,218 @@ const setExtraNote = async (key: string, value: string) => {
   setFieldVal(`fs.${key}.note`, value);
   await persistSurvey();
 };
+
+// === 매매수요 (빌라) — 동단위 수요·공급 지표 ===
+// 주소는 시 > 구 > 동 순서로 받고, 시/도는 서울·경기·인천만 다룬다.
+// 매매수요는 편집 버튼 없이 바로 고친다 — 적는 즉시 저장한다
+const setDmVal = async (id: string, value: string) => {
+  setFieldVal(id, value);
+  await persistSurvey();
+};
+const dmNum = (id: string) => {
+  const n = Number(fieldVal(id).replace(/[^\d.]/g, ''));
+  return Number.isFinite(n) ? n : 0;
+};
+// ① 동단위 거래회전율 = 거래량 ÷ 총세대수 × 100
+// 조사 대상 동 이름 — 주소에서 '○○동/읍/면/리'를 뽑아 '검암동 거래회전율'처럼 쓴다.
+// (아파트 동 번호인 '101동' 같은 건 숫자로 시작하므로 걸러 낸다)
+const surveyDongName = computed(() => {
+  const address = auction.value?.address || auction.value?.roadAddress || '';
+  const hit = address
+    .trim()
+    .split(/\s+/)
+    .find((token) => /^[가-힣]+[0-9]*(동|읍|면|리|가)$/.test(token) && !/^\d/.test(token));
+  return hit ?? '';
+});
+/** 제목에 쓸 지역 이름 — 못 찾으면 예전처럼 '동단위' */
+const surveyAreaLabel = computed(() => surveyDongName.value || '동단위');
+
+// 다세대·연립 세대수는 자동으로 가져올 수 있는 무료 경로가 없다(공공데이터 키 발급 필요).
+// 그래서 그 동의 주택 종류별 통계를 바로 띄워 주고, 숫자는 눈으로 보고 넣게 돕는다.
+const openHouseholdLookup = () => {
+  const dong = surveyDongName.value;
+  if (!dong) {
+    flashToast('주소에서 동 이름을 찾지 못했습니다.', 'error');
+    return;
+  }
+  void copyText(dong);
+  const query = encodeURIComponent(`${dong} 주택의 종류별 주택`);
+  window.open(`https://kosis.kr/search/search.do?query=${query}`, '_blank');
+};
+
+// 총 매물수도 자동으로 받을 길이 없다 — 네이버 부동산에서 그 동을 띄워 주고 눈으로 세어 넣게 돕는다
+const openListingLookup = () => {
+  const dong = surveyDongName.value;
+  if (!dong) {
+    flashToast('주소에서 동 이름을 찾지 못했습니다.', 'error');
+    return;
+  }
+  // 네이버 부동산의 동 검색 주소는 지역에 따라 '없는 동'으로 떨어진다.
+  // 그래서 첫 화면만 띄우고, 검색어는 클립보드에 넣어 바로 붙여넣게 한다.
+  const area = (auction.value?.address ?? '').trim().split(/\s+/).slice(0, 2).join(' ');
+  const query = [area, dong].filter(Boolean).join(' ').trim() || dong;
+  void copyText(query);
+  window.open('https://m.land.naver.com/', '_blank');
+};
+
+// 12개월 거래량 기본값 — 그 동의 다세대·연립 실거래 1년치 건수.
+// 회전율 분모가 '동 전체 다세대·연립 세대수'라 면적 조건은 걸지 않는다.
+const deal12mAuto = ref(0);
+// 같은 조회에서 빠진 건수 — 툴팁에 적어 가격정보 탭과 대조할 수 있게 한다
+const deal12mDirect = ref(0);
+const deal12mCancelled = ref(0);
+// 그 동의 다세대·연립 세대수 — 건축물대장에서 합산한다 (직접 입력이 있으면 그 값이 우선)
+const unitsAuto = ref(0);
+const fetchDongUnits = async () => {
+  const address = auction.value?.address;
+  if (!address) return;
+  try {
+    const region = await resolveRegionFromAddress(address);
+    if (!region?.bCode10) return;
+    unitsAuto.value = await cached(
+      'cacheDongUnits',
+      cacheKey(region.bCode10),
+      CACHE_TTL.units,
+      () => fetchDongHouseholds(region.bCode10),
+      (n) => n > 0,
+    );
+  } catch {
+    unitsAuto.value = 0;
+  }
+};
+// 기준수치 칸의 도움말 — 갖다 대면 까만 말풍선으로 띄운다.
+// 브라우저 기본 툴팁(흰 네모)은 모양을 못 고쳐서 쓰지 않는다.
+type DmTipKey = '' | 'deal' | 'units' | 'listings' | 'monthly'
+  | 'turn' | 'burden' | 'clear' | 'absorb'
+  | 'total' | 'gTurn' | 'gBurden' | 'gClear' | 'gAbsorb';
+const dmTip = ref<DmTipKey>('');
+const DM_ROW1: DmTipKey[] = ['deal', 'units', 'listings', 'monthly'];
+const DM_ROW3: DmTipKey[] = ['total', 'gTurn', 'gBurden', 'gClear', 'gAbsorb'];
+/** 칸마다 띄울 설명 — 꼬리 위치(arrow)는 그 칸이 선 자리에 맞춘다 */
+const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, string]> }>>(() => ({
+  deal: { arrow: '12%', rows: [
+    ['출처', '국토부 실거래가 · 자동'],
+    ['범위', `${surveyAreaLabel.value} · ${publicTradeTypeLabel.value} · 최근 12개월`],
+    ['제외', `직거래 ${deal12mDirect.value}건 · 계약해제 ${deal12mCancelled.value}건`],
+  ] },
+  units: { arrow: '37%', rows: [
+    ['출처', '건축물대장(건축HUB) · 자동'],
+    ['범위', `${surveyAreaLabel.value} 공동주택 중 아파트 제외`],
+    ['합산', '건물마다의 세대수를 모두 더한 값'],
+    ['수정', '직접 입력하면 그 값이 우선 · 돋보기 → KOSIS'],
+  ] },
+  listings: { arrow: '62%', rows: [
+    ['입력', '직접 입력'],
+    ['이동', '돋보기 → 네이버 부동산'],
+    ['찾기', `${surveyAreaLabel.value} 매물 수`],
+  ] },
+  monthly: { arrow: '87%', rows: [
+    ['공식', '12개월 거래량 ÷ 12'],
+    ['의미', '1년 거래량을 나눈 한 달 평균 거래 건수'],
+  ] },
+  turn: { arrow: '12%', rows: [
+    ['공식', '12개월 거래량 ÷ 총 세대수 × 100'],
+    ['의미', `${surveyAreaLabel.value} 주택(다세대+연립) 중 1년에 몇 %가 손바뀜되나?`],
+    ['기준', 'A 3%↑ · B 1.5~3% · C 1.5%↓'],
+  ] },
+  burden: { arrow: '37%', rows: [
+    ['공식', '총 매물수 ÷ 총 세대수 × 100'],
+    ['의미', `${surveyAreaLabel.value} 주택(다세대+연립) 중 몇 %가 매물로 나와 있나?`],
+    ['기준', 'A 3%↓ · B 3~5% · C 5%↑'],
+  ] },
+  clear: { arrow: '62%', rows: [
+    ['공식', '총 매물수 ÷ 월평균 거래량'],
+    ['의미', '총 누적 매물이 다 팔리는 데 걸리는 달 수'],
+    ['기준', 'A 6개월↓ · B 6~12개월 · C 12개월↑'],
+  ] },
+  total: { arrow: '50%', rows: [
+    ['공식', '네 등급에 점수 — A 3 · B 2 · C 1 → 평균'],
+    ['대상', '회전율 · 부담률 · 소진기간 · 소화율'],
+    ['기준', '평균 2.5↑ A · 1.5↑ B · 그 아래 C'],
+    ['조건', '등급이 셋 이상 매겨져야 나온다'],
+  ] },
+  gTurn: { arrow: '12%', rows: [
+    ['기준', 'A 5%↑ · B 3~5% · C 1.5~3% · D 1.5%↓'],
+    ['해석', '1%↓ 매우 적음 · 1~2% 낮음 · 2~3% 보통'],
+    ['', '3~5% 비교적 활발 · 5%↑ 상당히 활발'],
+  ] },
+  gBurden: { arrow: '37%', rows: [
+    ['기준', 'A 3%↓ · B 3~5% · C 5~10% · D 10%↑'],
+    ['의미', '매물이 적을수록 경쟁이 덜하다'],
+  ] },
+  gClear: { arrow: '62%', rows: [
+    ['기준', 'A 6개월↓ · B 6~12개월 · C 12개월↑'],
+    ['의미', '짧을수록 빨리 팔린다'],
+  ] },
+  gAbsorb: { arrow: '87%', rows: [
+    ['기준', 'A 15%↑ · B 10~15% · C 10%↓'],
+    ['의미', '월평균 거래량 ÷ 총 매물수'],
+  ] },
+  absorb: { arrow: '87%', rows: [
+    ['공식', '월평균 거래량 ÷ 총 매물수 × 100'],
+    ['의미', '나와 있는 매물 중 한 달에 몇 %가 팔리나?'],
+    ['기준', 'A 15%↑ · B 10~15% · C 10%↓'],
+  ] },
+}));
+/** 12개월 거래량은 손으로 적지 않는다 — 국토부 실거래에서 센 값만 쓴다.
+ *  (손으로 적은 값이 우선이던 때, 한 번 잘못 들어간 숫자가 굳어 버리는 일이 있었다) */
+const deal12mValue = computed(() => deal12mAuto.value);
+const dmUnits = computed(() => dmNum('fs.dm.units') || unitsAuto.value); // 직접 입력 우선, 없으면 건축물대장
+const dmListings = computed(() => dmNum('fs.dm.listings'));  // 총 매물수 (네이버, 직접 입력)
+const dmMonthly = computed(() => deal12mValue.value / 12);   // 월평균 거래량
+// 연간 회전율 = 12개월 거래량 ÷ 총세대수 × 100
+const dmTurnover = computed(() => (dmUnits.value > 0 ? (deal12mValue.value / dmUnits.value) * 100 : 0));
+// 매물 부담률 = 총매물수 ÷ 총세대수 × 100 (내놓은 물건이 동네에서 차지하는 비중)
+const dmBurden = computed(() => (dmUnits.value > 0 ? (dmListings.value / dmUnits.value) * 100 : 0));
+// 매물 소진기간(개월) = 총매물수 ÷ 월평균 거래량 (지금 매물이 다 팔리는 데 걸리는 달 수)
+const dmClearMonths = computed(() => (dmMonthly.value > 0 ? dmListings.value / dmMonthly.value : 0));
+// 월간 매물 소화율 = 월평균 거래량 ÷ 총 매물수 × 100 (엑셀 M열)
+const dmAbsorb = computed(() => (dmListings.value > 0 ? (dmMonthly.value / dmListings.value) * 100 : 0));
+
+/** 등급 A~D. 값이 없으면 '-' */
+const levelTone = (level: string) => (
+  { A: 'good', B: 'ok2', C: 'ok' }[level] ?? 'none'
+);
+/** 엑셀 수식 그대로 — A·B·C 셋뿐이고, 기준 수치가 비면 빈칸('-') */
+const gradeOf = (ready: boolean, value: number, a: number, b: number, higherIsBetter: boolean) => {
+  if (!ready) return '-';
+  if (higherIsBetter) return value >= a ? 'A' : value >= b ? 'B' : 'C';
+  return value <= a ? 'A' : value <= b ? 'B' : 'C';
+};
+// I4 =IF(B4=0,"",IF(F4>=3%,"A",IF(F4>=1.5%,"B","C")))
+const dmTurnGrade = computed(() => gradeOf(dmUnits.value > 0, dmTurnover.value, 3, 1.5, true));
+// J4 =IF(B4=0,"",IF(G4<=3%,"A",IF(G4<=5%,"B","C")))
+const dmBurdenGrade = computed(() => gradeOf(dmUnits.value > 0, dmBurden.value, 3, 5, false));
+// K4 =IF(B4=0,"",IF(H4<=6,"A",IF(H4<=12,"B","C")))
+const dmClearGrade = computed(() => gradeOf(dmUnits.value > 0 && dmListings.value > 0, dmClearMonths.value, 6, 12, false));
+// N4 =IF(C4=0,"",IF(M4>=15%,"A",IF(M4>=10%,"B","C")))
+const dmAbsorbGrade = computed(() => gradeOf(dmListings.value > 0, dmAbsorb.value, 15, 10, true));
+
+/** 종합등급 (엑셀 L4) — 네 등급에 A 3 · B 2 · C 1 점을 주고 평균.
+ *  2.5 이상이면 A, 1.5 이상이면 B, 그 아래는 C. 등급이 셋 미만이면 빈칸. */
+const DM_LEVEL_SCORE: Record<string, number> = { A: 3, B: 2, C: 1 };
+/** 보기용 적합 표시 — A·B는 적합, C·D는 부적합 */
+const dmFitText = (grade: string) => (grade === '-' ? '' : (grade === 'A' || grade === 'B' ? '적합' : '부적합'));
+const dmCoreGrades = computed(() => [
+  dmTurnGrade.value, dmBurdenGrade.value, dmClearGrade.value, dmAbsorbGrade.value,
+]);
+const dmTotalReady = computed(
+  () => dmCoreGrades.value.filter((g) => g !== '-').length >= 3,
+);
+/** 매긴 등급들의 평균 점수 */
+const dmTotalScore = computed(() => {
+  const scored = dmCoreGrades.value.filter((g) => g !== '-').map((g) => DM_LEVEL_SCORE[g] ?? 0);
+  if (scored.length === 0) return 0;
+  return scored.reduce((a, b) => a + b, 0) / scored.length;
+});
+const dmTotalGrade = computed(() => {
+  if (!dmTotalReady.value) return '-';
+  const n = dmTotalScore.value;
+  return n >= 2.5 ? 'A' : n >= 1.5 ? 'B' : 'C';
+});
+/** 숫자를 천 단위로, 없으면 '-' */
+const dmIntText = (value: number) => (value > 0 ? Math.round(value).toLocaleString('ko-KR') : '-');
+const dmRateText = (value: number) => (value > 0 ? value.toFixed(2) : '-');
 
 // 본건사진 비고 — 입력하면 바로 저장한다
 const setPhotoNote = async (value: string) => {
@@ -1839,13 +2683,14 @@ const setFieldVal = (id: string, value: string) => {
   if (!sf.fieldValues) sf.fieldValues = {};
   sf.fieldValues[id] = value;
 };
-const fieldMoneyText = (id: string) => {
-  const n = Number(fieldVal(id).replace(/[^\d]/g, ''));
-  return n > 0 ? n.toLocaleString('ko-KR') : '-';
+// 현장조사는 편집 버튼 없이 바로 고친다 — 적는 즉시 저장한다
+const setFieldValNow = async (id: string, value: string) => {
+  setFieldVal(id, value);
+  await persistSurvey();
 };
 
 // === 현황조사서 멀티셀렉트 ===
-const SURVEY_REPORT_OPTIONS = ['임차인점유추정', '점유자관계미상', '폐문부재'];
+const SURVEY_REPORT_OPTIONS = ['임차인점유추정', '점유자관계미상', '폐문부재', '깔세 세입자'];
 const surveyReportOpen = ref(false);
 const surveyReportCustom = ref('');
 const toggleSurveyReportOption = (opt: string) => {
@@ -2013,22 +2858,40 @@ const setMktVal = (id: string, value: string | number) => {
   if (!sf.mktValues) sf.mktValues = {};
   sf.mktValues[id] = String(value ?? '');
 };
-// 가격정보 표에서 '매매' 중 가장 최근 거래 — 그 줄 금액 옆에만 보내기 버튼을 둔다
-const latestSaleTradeRow = computed(() => {
-  const dateKey = (r: { contractDate?: string }) => (r.contractDate ?? '').replace(/\D/g, '');
-  const sales = filteredPdfTradeRows.value.filter((r) => r.type === '매매' && parsePriceNumber(r.price) > 0);
-  if (sales.length === 0) return null;
-  return sales.reduce((best, r) => (dateKey(r) > dateKey(best) ? r : best), sales[0]);
-});
-// 그 금액을 손품+현장 > 해당경매물건 실거래가 > 실거래가 칸에 바로 넣는다
-const sendTradePriceToMarket = async (row: { price?: string }) => {
-  const n = parsePriceNumber(row.price);
-  if (!Number.isFinite(n) || n <= 0) return;
-  setMktVal('mkt.d.real', String(Math.round(n)));
+// 매매·직거래면 연식을 가리지 않고 모두 보내기 버튼을 둔다 — 오래된 거래도 손으로 골라 쓰는 일이 있다
+const canSendTrade = (row: PlaceRow) =>
+  (row.kind === '매매' || row.kind === '직거래') && parsePriceNumber(row.amount) > 0;
+// 고른 거래 한 줄을 손품+현장 1.실거래가 조사에 통째로 옮긴다.
+// ③ 실거래가 칸(전용면적·거래일자·실거래가)과 ② 평단가 칸(전용면적·평단가)을 함께 채운다.
+// '전용면적 X 평단가'는 두 값에서 자동 계산되는 칸이라 따로 쓰지 않는다.
+const sendTradePriceToMarket = async (row: PlaceRow) => {
+  const price = parsePriceNumber(row.amount);
+  if (!Number.isFinite(price) || price <= 0) return;
+  const areaM2 = Number(row.areaM2) || 0;
+  setMktVal(mk('d', 'real'), String(Math.round(price)));
+  if (row.contractDate) setMktVal(mk('d', 'year'), row.contractDate.slice(0, 10).replace(/\./g, '-'));
+  if (areaM2 > 0) {
+    setMktVal(mk('d', 'area'), String(areaM2));
+    setMktVal(mk('b', 'area'), String(areaM2));
+    // 화면에 보이는 평수(소수 2자리)로 나눠야 '전용면적 X 평단가'가 눈으로 검산된다
+    const pyeong = Number((areaM2 / PYEONG_TO_M2).toFixed(2));
+    if (pyeong > 0) setMktVal(mk('b', 'unit'), String(Math.round(price / pyeong)));
+  }
   await persistSurvey();
-  copiedMsg.value = '실거래가에 넣었습니다.';
-  setTimeout(() => { copiedMsg.value = ''; }, 1500);
+  flashToast('실거래가·평단가에 넣었습니다.', 'success');
 };
+// 해당 경매물건 자료가 없으면 비슷한 물건으로 대신 조사한다.
+// 모드를 바꾸면 저장 위치도 갈라져서 두 벌의 값을 따로 들고 있을 수 있다.
+const MKT_MODES = ['경매물건', '유사물건'];
+const mktMode = (group: 'b' | 'c' | 'd') => mktVal(`mkt.${group}.mode`) || MKT_MODES[0];
+const toggleMktMode = async (group: 'b' | 'c' | 'd') => {
+  setMktVal(`mkt.${group}.mode`, mktMode(group) === MKT_MODES[0] ? MKT_MODES[1] : MKT_MODES[0]);
+  await persistSurvey();
+};
+const mk = (group: 'b' | 'c' | 'd', field: string) =>
+  (mktMode(group) === '유사물건' ? `mkt.${group}.sim.${field}` : `mkt.${group}.${field}`);
+// 출처 안내 — 아파트와 빌라가 보는 사이트가 다르다
+
 const mktMoney = (id: string) => {
   const n = parseDigits(mktVal(id));
   return n > 0 ? n.toLocaleString('ko-KR') : '-';
@@ -2048,34 +2911,34 @@ const mktYmValue = computed({
   get: () => mktVal('mkt.a.approval'),
   set: (value: string) => setMktVal('mkt.a.approval', value),
 });
-// 실거래가 거래년월
+// 실거래가 거래일자 (YYYY-MM-DD)
 const mktDealYmOpen = ref(false);
 const mktDealYmValue = computed({
-  get: () => mktVal('mkt.d.year'),
-  set: (value: string) => setMktVal('mkt.d.year', value),
+  get: () => mktVal(mk('d', 'year')),
+  set: (value: string) => setMktVal(mk('d', 'year'), value),
 });
 // 전용면적 X 평단가
 const mktAreaXUnit = computed(() => {
   // 전용면적은 ㎡로 저장하고 평단가는 평 기준이라, 평으로 바꿔 곱한다.
   // 화면에 보이는 평수(소수 2자리)를 그대로 써야 눈으로 검산이 맞는다.
-  const pyeong = Number((parseArea(mktVal('mkt.b.area')) / PYEONG_TO_M2).toFixed(2));
-  const unit = parseDigits(mktVal('mkt.b.unit'));
+  const pyeong = Number((parseArea(mktVal(mk('b', 'area'))) / PYEONG_TO_M2).toFixed(2));
+  const unit = parseDigits(mktVal(mk('b', 'unit')));
   return pyeong > 0 && unit > 0 ? Math.round(pyeong * unit).toLocaleString('ko-KR') : '-';
 });
 // 전세가 = 공동주택가 × 비율(기본 127%)
 const MKT_JEONSE_RATE = 127;
 const mktJeonseRate = computed(() => {
-  const r = Number(mktVal('mkt.d.rate').replace(/[^\d.]/g, ''));
+  const r = Number(mktVal(mk('d', 'rate')).replace(/[^\d.]/g, ''));
   return Number.isFinite(r) && r > 0 ? r : MKT_JEONSE_RATE;
 });
 const mktJeonseFromPub = computed(() => {
-  const pub = parseDigits(mktVal('mkt.d.pub'));
+  const pub = parseDigits(mktVal(mk('d', 'pub')));
   return pub > 0 ? Math.round((pub * mktJeonseRate.value) / 100).toLocaleString('ko-KR') : '-';
 });
 // 비율 = 실거래가 / 공동주택가
 const mktCaseRatio = computed(() => {
-  const pub = parseDigits(mktVal('mkt.d.pub'));
-  const real = parseDigits(mktVal('mkt.d.real'));
+  const pub = parseDigits(mktVal(mk('d', 'pub')));
+  const real = parseDigits(mktVal(mk('d', 'real')));
   return pub > 0 && real > 0 ? `${((real / pub) * 100).toFixed(0)}%` : '-';
 });
 
@@ -2099,7 +2962,7 @@ watch(
     const fill = (id: string, value: string) => { if (!v[id] && value) v[id] = value; };
 
     // 면적을 평에서 ㎡로 바꾸면서, 예전에 평으로 저장해 둔 값은 한 번만 비운다
-    const areaIds = ['mkt.a.area', 'mkt.a.area2', 'mkt.b.area', 'mkt.c.area', 'mkt.d.area'];
+    const areaIds = ['mkt.a.area', 'mkt.a.area2', mk('b', 'area'), 'mkt.c.area', mk('d', 'area')];
     if (!v['mkt.areaInM2']) {
       areaIds.forEach((id) => { v[id] = ''; });
       v['mkt.areaInM2'] = '1';
@@ -2110,10 +2973,10 @@ watch(
     if (py > 0 && !sf.mktConcPyeong) sf.mktConcPyeong = py.toFixed(2);
     const around = num(publicTradeAvg.value);
     fill('mkt.a.sale', around > 0 ? String(around) : '');
-    if (around > 0 && py > 0) fill('mkt.b.unit', String(Math.round(around / py)));
-    fill('mkt.d.real', num(pdfMaeMaeAvg.value) > 0 ? String(Math.round(pdfMaeMaeAvg.value)) : '');
-    fill('mkt.d.pub', num(a.officialPriceValue) > 0 ? String(a.officialPriceValue) : '');
-    fill('mkt.d.rate', String(MKT_JEONSE_RATE));
+    if (around > 0 && py > 0) fill(mk('b', 'unit'), String(Math.round(around / py)));
+    fill(mk('d', 'real'), num(pdfMaeMaeAvg.value) > 0 ? String(Math.round(pdfMaeMaeAvg.value)) : '');
+    fill(mk('d', 'pub'), num(a.officialPriceValue) > 0 ? String(a.officialPriceValue) : '');
+    fill(mk('d', 'rate'), String(MKT_JEONSE_RATE));
     if (!/^\d{4}-\d{2}$/.test(v['mkt.a.approval'] ?? '')) {
       const am = (a.buildingHeader?.approvalDate || a.approvalDate || '').match(/(\d{4})[-./]?(\d{2})/);
       v['mkt.a.approval'] = am ? `${am[1]}-${am[2]}` : '';
@@ -2122,7 +2985,80 @@ watch(
     // 결론 줄
     if (!sf.mktConcAvg && v['mkt.a.sale']) sf.mktConcAvg = v['mkt.a.sale'];
     if (!sf.mktConcLow && v['mkt.c.saleAsk']) sf.mktConcLow = v['mkt.c.saleAsk'];
-    if (!sf.mktUnitPrice && v['mkt.b.unit']) sf.mktUnitPrice = v['mkt.b.unit'];
+    if (!sf.mktUnitPrice && v[mk('b', 'unit')]) sf.mktUnitPrice = v[mk('b', 'unit')];
+  },
+  { immediate: true },
+);
+
+/** 이 물건의 전용면적 (㎡) — 기본정보가 비어 있으면 표제부 전유면적, 그 다음 정보요약 값을 쓴다 */
+const subjectAreaM2 = computed(() => {
+  const a = auction.value;
+  if (!a) return 0;
+  const firstNum = (raw: unknown) => Number(String(raw ?? '').replace(/[^\d.]/g, '').match(/\d+(\.\d+)?/)?.[0]) || 0;
+  return Number(a.buildingAreaM2) || firstNum(a.buildingHeader?.unitExclusiveArea) || firstNum(a.basicSummary?.['sum.exclusiveArea']);
+});
+/** 단지 목록에서 '같은 전용면적'의 가장 최근 매매 — 소수 둘째 자리까지 같으면 같은 면적으로 본다 */
+const sameAreaLatestSale = computed(() => {
+  const target = subjectAreaM2.value;
+  if (!(target > 0)) return null;
+  const hits = samePlaceRows.value.filter(
+    (r) => r.kind === '매매'
+      && Math.abs(r.areaM2 - target) < 0.05
+      && parsePriceNumber(r.amount) > 0,
+  );
+  if (hits.length === 0) return null;
+  return hits.reduce((best, r) => (r.contractDate > best.contractDate ? r : best), hits[0]);
+});
+
+// 같은 면적의 최근 매매가 있으면 '경매물건' 칸을 그 값으로 채운다.
+// 없으면 채울 것이 없으니 '유사물건' 쪽으로 돌려 둔다 — 빈칸을 들여다보지 않게.
+watch(
+  [() => auction.value?.id, sameAreaLatestSale, () => samePlaceRows.value.length],
+  () => {
+    const sf = surveyForm.value;
+    if (!sf) return;
+    if (!sf.mktValues) sf.mktValues = {};
+    const v = sf.mktValues;
+    const hit = sameAreaLatestSale.value;
+    if (!hit) {
+      // 조회가 아직 안 끝났을 수도 있으니, 목록이 비어 있는 동안에는 건드리지 않는다
+      if (samePlaceRows.value.length === 0) return;
+      // 자동으로 손댄 적이 없을 때만 유사물건으로 돌린다 (손으로 고른 모드를 덮지 않게)
+      if (!v['mkt.autoPlace']) {
+        v['mkt.autoPlace'] = 'none';
+        v['mkt.b.mode'] = MKT_MODES[1];
+        v['mkt.d.mode'] = MKT_MODES[1];
+      }
+      return;
+    }
+    // 같은 줄을 이미 썼으면 손으로 고친 값은 그대로 두고, 빈 칸만 다시 메운다.
+    // (면적 단위를 ㎡로 바꾸면서 한 번 비워진 칸이 영영 빈 채로 남던 걸 막는다)
+    const sign = `${hit.contractDate}|${hit.areaM2}|${hit.amount}`;
+    const sameRow = v['mkt.autoPlace'] === sign;
+    // 0이나 '0원'처럼 숫자로 쳐서 0인 값도 빈 칸으로 본다 — 편집창을 열었다 닫으면 0이 눌러앉는다
+    const blank = (id: string) => {
+      const cur = v[id];
+      return !cur || !(Number(String(cur).replace(/[^\d.]/g, '')) > 0);
+    };
+    const put = (id: string, value: string) => {
+      if (!value) return;
+      if (!sameRow || blank(id)) v[id] = value;
+    };
+    if (!sameRow) {
+      v['mkt.autoPlace'] = sign;
+      v['mkt.b.mode'] = MKT_MODES[0];
+      v['mkt.d.mode'] = MKT_MODES[0];
+    }
+    const price = parsePriceNumber(hit.amount);
+    const area = String(hit.areaM2);
+    // ③ 경매물건 실거래가 — 전용면적 · 거래일자 · 실거래가
+    put('mkt.d.area', area);
+    put('mkt.d.year', hit.contractDate.slice(0, 10).replace(/\./g, '-'));
+    put('mkt.d.real', price > 0 ? String(Math.round(price)) : '');
+    // ② 경매물건 평단가 — 전용면적 · 평단가 (전용면적 X 평단가는 자동 계산)
+    put('mkt.b.area', area);
+    const pyeong = Number((hit.areaM2 / PYEONG_TO_M2).toFixed(2));
+    put('mkt.b.unit', pyeong > 0 && price > 0 ? String(Math.round(price / pyeong)) : '');
   },
   { immediate: true },
 );
@@ -2138,6 +3074,8 @@ const mktUnitTotalText = computed(() => {
 const AGENCY_INFO_OPTIONS = ['친절', '불친절', '적극', '비적극'];
 // 정보는 여러 개 고를 수 있다 — 저장은 기존처럼 쉼표로 이어 붙인 한 문자열
 const agencyInfoOpen = ref(-1);
+// 현장 상담표의 '정보' 드롭다운 — 유선 정보표와 따로 연다
+const siteAgencyInfoOpen = ref(-1);
 const agencyInfoList = (row: AgencyRow) =>
   (row.info ?? '').split(',').map((v) => v.trim()).filter(Boolean);
 const toggleAgencyInfo = (row: AgencyRow, opt: string) => {
@@ -2155,10 +3093,31 @@ watch(
     if (!sf) return;
     if (!sf.agencyRows) sf.agencyRows = [];
     while (sf.agencyRows.length < AGENCY_ROW_MIN) sf.agencyRows.push(emptyAgencyRow());
+    // 현장 상담표도 유선 상담표와 똑같이 빈 줄 하나를 깔아 둔다
+    if (!sf.siteAgencyRows) sf.siteAgencyRows = [];
+    while (sf.siteAgencyRows.length < AGENCY_ROW_MIN) sf.siteAgencyRows.push(emptyAgencyRow());
   },
   { immediate: true },
 );
 const agencyRows = computed<AgencyRow[]>(() => surveyForm.value.agencyRows ?? []);
+// 4. 부동산 현장 상담 — 유선 정보와 별개로 현장에서 들은 내용을 적는다
+const siteAgencyRows = computed<AgencyRow[]>(() => surveyForm.value.siteAgencyRows ?? []);
+const addSiteAgencyRow = async () => {
+  const sf = surveyForm.value;
+  if (!sf.siteAgencyRows) sf.siteAgencyRows = [];
+  sf.siteAgencyRows.push({ name: '', phone: '', info: '', monthly: '', jeonse: '', real: '', urgent: '' });
+  await persistSurvey();
+};
+const removeSiteAgencyRow = async (idx: number) => {
+  surveyForm.value.siteAgencyRows?.splice(idx, 1);
+  await persistSurvey();
+};
+// 1. 입지확인 — 매매수요에서 낸 평균등수를 가져오고, 직접 고칠 수도 있다
+const fieldRankAvg = computed(() => {
+  const manual = fieldVal('fs.rankAvg').trim();
+  if (manual) return manual;
+  return realUserRankSummary.value.filled > 0 ? String(realUserRankSummary.value.avg) : '';
+});
 const addAgencyRow = () => {
   surveyForm.value.agencyRows?.push(emptyAgencyRow());
 };
@@ -2172,7 +3131,7 @@ const RIGHTS_CHECK_ITEMS = [
   {
     id: 'distribution',
     label: '배당요구 종기일',
-    desc: '대항력 임차인인 경우, 배당 종기일이 지난 후 배당요구 경우 있다.\n배당신청 및 날짜까지 확인 필요하다. 이 경우 낙찰자 인수 이다.',
+    desc: '대항력 임차인인 경우, 배당종기일 지난 후 배당요구 경우 있다.\n배당신청, 날짜까지 확인 필요. 이 경우 낙찰자 인수 이다.',
   },
   {
     id: 'landRegistry',
@@ -2195,6 +3154,27 @@ const RIGHTS_CHECK_ITEMS = [
 const rightsDocInput = ref('');
 const rightsDocErrMsg = ref('');
 const rightsDocList = computed<string[]>(() => auction.value?.rightsDocUrls ?? []);
+
+/** 사진 카드 공통 규칙 — 사진이 이미 붙어 있으면 접은 채로 연다.
+ *  (아래 항목이 밀려 내려가지 않게. 사진이 없으면 펴 둬야 바로 붙일 수 있다)
+ *  사진 카드가 새로 생기면 여기 한 줄만 더하면 된다. */
+const PHOTO_SECTIONS: Array<{ key: string; count: () => number }> = [
+  { key: 'photos', count: () => propertyPhotos.value.length },          // 손품조사 · 본건사진
+  { key: 'rightsPhotos', count: () => rightsDocList.value.length },     // 권리분석 · 사진/서류
+];
+const photoCollapseSetFor = ref<string | null>(null);
+watch(
+  () => [auction.value?.id, ...PHOTO_SECTIONS.map((sec) => sec.count())] as const,
+  () => {
+    const id = auction.value?.id;
+    if (!id || photoCollapseSetFor.value === id) return;
+    photoCollapseSetFor.value = id;
+    const next = { ...collapsed.value };
+    PHOTO_SECTIONS.forEach((sec) => { next[sec.key] = sec.count() > 0; });
+    collapsed.value = next;
+  },
+  { immediate: true },
+);
 const addRightsDocUrl = async () => {
   if (!auction.value) return;
   const url = rightsDocInput.value.trim();
@@ -2324,19 +3304,21 @@ type RightsDocCell = {
   autoOccupancy?: boolean;
 };
 type RightsDocLine = { cells: RightsDocCell[] };
+// 현황조사서·세대열람의 점유 관련 선택칸 — 네 칸 모두 같은 목록을 쓴다
+const DOC_OCCUPANCY_OPTIONS = ['임차인점유', '폐문부재', '동거인O', '점유자미상', '전출'];
 const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
   {
-    id: 'doc.survey', label: '현황조사서',
+    id: 'doc.survey', label: '집행관 현황조사',
     dateId: 'doc.survey.date', datePlaceholder: '현황조사일',
     fields: [
-      { id: 'doc.survey.occupancy', placeholder: '부동산 점유관계 입력', autoOccupancy: true },
-      { id: 'doc.survey.note', placeholder: '기타사항입력', options: ['임차인점유', '폐문부재', '동거인O', '점유자미상'] },
+      { id: 'doc.survey.occupancy', placeholder: '부동산 점유관계 입력' },
+      { id: 'doc.survey.note', placeholder: '기타사항입력', options: DOC_OCCUPANCY_OPTIONS },
     ],
     line2: {
       dateId: 'doc.surveyTenant.date', datePlaceholder: '전입일자',
       fields: [
-        { id: 'doc.surveyTenant.name', placeholder: '임차인이름' },
-        { id: 'doc.surveyTenant.state', placeholder: '기타사항입력', options: ['임차인점유', '폐문부재', '동거인O', '점유자미상'] },
+        { id: 'doc.surveyTenant.name', placeholder: '임차인이름 입력' },
+        { id: 'doc.surveyTenant.state', placeholder: '기타사항입력', options: DOC_OCCUPANCY_OPTIONS },
       ],
     },
   },
@@ -2345,13 +3327,13 @@ const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
     lines: [
       { cells: [
         { kind: 'date', id: 'doc.residents.issueDate', placeholder: '발급일자' },
-        { kind: 'text', id: 'doc.residents.note1', placeholder: '비고' },
-        { kind: 'multi', id: 'doc.residents.note2', placeholder: '동거인', options: ['동거인 O', '동거인 X', '전출', '점유자미상'] },
+        { kind: 'text', id: 'doc.residents.note1', placeholder: '부동산 점유관계 입력' },
+        { kind: 'multi', id: 'doc.residents.note2', placeholder: '동거인', options: DOC_OCCUPANCY_OPTIONS },
       ] },
       { cells: [
         { kind: 'date', id: 'doc.residents.date', placeholder: '전입일자' },
-        { kind: 'text', id: 'doc.residents.head', placeholder: '세대주 이름 입력' },
-        { kind: 'multi', id: 'doc.residents.cohabit', placeholder: '동거인', options: ['동거인 O', '동거인 X', '전출', '점유자미상'] },
+        { kind: 'text', id: 'doc.residents.head', placeholder: '세대주입력' },
+        { kind: 'multi', id: 'doc.residents.cohabit', placeholder: '동거인', options: DOC_OCCUPANCY_OPTIONS },
       ] },
     ],
   },
@@ -2392,7 +3374,7 @@ const rightsDocNote = (id: string) => auction.value?.rightsDocNotes?.[id] ?? '';
 // 세대열람의 동거인 칸처럼 여러 개를 고르는 항목 — 쉼표로 이어 붙인 한 문자열로 저장
 const docMultiOpen = ref('');
 // 예전에 O/X 버튼으로 저장해 둔 값('O', 'X')을 지금 선택지 이름으로 바꾸고 중복을 없앤다
-const DOC_LEGACY_LABELS: Record<string, string> = { O: '동거인 O', X: '동거인 X' };
+const DOC_LEGACY_LABELS: Record<string, string> = { O: '동거인O', '동거인 O': '동거인O' };
 const docNoteList = (id: string) => {
   const seen = new Set<string>();
   return rightsDocNote(id)
@@ -2415,6 +3397,31 @@ const setRightsDocNote = async (id: string, value: string) => {
   auction.value.rightsDocNotes[id] = value;
   await store.saveAuction(auction.value);
 };
+
+// 자유 입력이던 칸이 선택칸으로 바뀌면서, 예전에 적어 둔 값이 목록에 없는데도 남아 있다.
+// 물건을 열 때 지금 선택지에 있는 것만 남기고 정리한다.
+watch(
+  () => auction.value?.id,
+  () => {
+    const notes = auction.value?.rightsDocNotes;
+    if (!notes) return;
+    RIGHTS_DOC_ITEMS.forEach((item) => docLines(item).forEach((ln) => ln.cells.forEach((c) => {
+      if (c.kind !== 'multi' && c.kind !== 'pick') return;
+      const options = c.options;
+      if (!options) return;
+      const cur = notes[c.id] ?? '';
+      if (!cur) return;
+      const picked = cur
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
+        .map((v) => DOC_LEGACY_LABELS[v] ?? v);
+      const kept = picked.filter((v) => options.includes(v));
+      if (kept.length !== picked.length) void setRightsDocNote(c.id, kept.join(', '));
+    })));
+  },
+  { immediate: true },
+);
 
 // 점유관계는 임차인 파싱 결과로 채워 둔다 — 임차인이 없으면 '미상'
 const occupancyDefault = computed(() => {
@@ -2459,7 +3466,7 @@ const REAL_USER_BANDS = [
     title: '15~17평',
     rooms: '큰 2룸',
     details: ['2인(신혼, 중장년)', '3인(신혼, 중장년 미취학)'],
-    conditions: ['일자리', '교통', '인프라', '유치원', '공원'],
+    conditions: ['교통', '인프라', '유치원', '공원'],
     maxPyeong: 16.5,
   },
   {
@@ -2484,6 +3491,14 @@ const selectedRealUserBand = computed(
   () => REAL_USER_BANDS.find((b) => b.id === auction.value?.realUserBandId) ?? autoRealUserBand.value,
 );
 
+// '12~14평' 같은 평형대를 ㎡로 바꿔 선택칸 아래에 같이 보여 준다
+const selectedRealUserBandM2 = computed(() => {
+  const nums = (selectedRealUserBand.value?.title ?? '').match(/[\d.]+/g);
+  if (!nums || nums.length === 0) return '';
+  const toM2 = (p: string) => (Number(p) * PYEONG_TO_M2).toFixed(1);
+  return nums.length >= 2 ? `${toM2(nums[0])}~${toM2(nums[1])}㎡` : `${toM2(nums[0])}㎡`;
+});
+
 const bandOpen = ref(false);
 
 // 입지조건별 등수.
@@ -2492,7 +3507,7 @@ const bandOpen = ref(false);
 const rankKey = (cond: string) => `${selectedRealUserBand.value?.id ?? ''}:${cond}`;
 const rankOf = (cond: string) => auction.value?.realUserRanks?.[rankKey(cond)] ?? '';
 const setRank = async (cond: string, value: string) => {
-  if (!auction.value || !editingSurvey.value.realUser) return;
+  if (!auction.value) return;
   if (!auction.value.realUserRanks) auction.value.realUserRanks = {};
   auction.value.realUserRanks[rankKey(cond)] = value;
   await store.saveAuction(auction.value);
@@ -2635,33 +3650,59 @@ const saveSummary = async () => {
   await store.saveAuction(auction.value);
   editingSummary.value = false;
 };
-// 면적 표시 단위 (㎡ ↔ 평)
-const summaryUnit = ref<'㎡' | '평'>('㎡');
-const toggleSummaryUnit = () => { summaryUnit.value = summaryUnit.value === '㎡' ? '평' : '㎡'; };
+
+/** '66.11 / 20.00' — 단위는 항목 이름에 적고 값에는 숫자만 둔다 */
 const areaText = (raw: string) => {
   const n = Number(String(raw).replace(/[^\d.]/g, ''));
   if (!Number.isFinite(n) || n <= 0) return '-';
-  return summaryUnit.value === '평' ? `${(n / 3.305785).toFixed(2)}평` : `${n}㎡`;
+  return `${trunc2(n)}㎡ / ${(n / 3.305785).toFixed(2)}평`;
 };
-const summaryApprovalPair = computed(() => {
-  const raw = sumVal('sum.approval');
-  if (!raw) return '-';
-  const m = raw.match(/^(\d{4})/);
-  if (!m) return raw;
+// 눈여겨볼 값(전용면적·호실·연차)은 파랗게 따로 뽑아 쓴다
+const summaryApprovalDate = computed(() => sumVal('sum.approval') || '-');
+
+// 관할법원 전화 — 다이얼러가 못 알아듣는 글자를 털어 내고 tel: 로 넘긴다
+const courtTelDigits = computed(() => (sumVal('sum.courtPhone') || '').replace(/[^0-9+*#,;]/g, ''));
+const canCallCourt = computed(() => courtTelDigits.value.replace(/\D/g, '').length >= 7);
+const callCourt = () => {
+  if (!canCallCourt.value) return;
+  window.location.href = `tel:${courtTelDigits.value}`;
+};
+const summaryApprovalAge = computed(() => {
+  const m = sumVal('sum.approval').match(/^(\d{4})/);
+  if (!m) return '';
   const years = new Date().getFullYear() - Number(m[1]) + 1;
-  return years > 0 ? `${raw} / ${years}년차` : raw;
+  return years > 0 ? `${years}년차` : '';
 });
-const summaryAreaPair = computed(() => `${areaText(sumVal('sum.supplyArea'))} / ${areaText(sumVal('sum.exclusiveArea'))}`);
+const summarySupplyArea = computed(() => areaText(sumVal('sum.supplyArea')));
+const summaryExclusiveArea = computed(() => areaText(sumVal('sum.exclusiveArea')));
+/** '주거용 전부 / 2021.05.25. ~ 2023.05.24.' — 옛 자료(슬래시 없음)도 같은 모양으로 맞춘다 */
+const tenantUsagePeriod = (raw: string) => {
+  const text = (raw ?? '').trim();
+  if (!text) return '-';
+  if (text.includes('/')) return text;
+  const m = text.match(/^(.*?)\s*(\d{4}\.\d{1,2}\.\d{1,2}\.?.*)$/);
+  return m && m[1].trim() ? `${m[1].trim()} / ${m[2].trim()}` : text;
+};
+/** 전입·확정·배당을 한 줄로 — 없는 값은 빼고 쉼표로 잇는다 */
+const tenantDatesText = (t: { moveIn?: string; fixed?: string; distribution?: string }) =>
+  [
+    t.moveIn ? `전입: ${t.moveIn}` : '',
+    t.fixed ? `확정: ${t.fixed}` : '',
+    t.distribution ? `배당: ${t.distribution}` : '',
+  ].filter(Boolean).join(', ') || '-';
+
+const summaryDongText = computed(() => (sumVal('sum.dong') ? `${sumVal('sum.dong')}동` : '-동'));
+const summaryHoText = computed(() => (sumVal('sum.ho') ? `${sumVal('sum.ho')}호` : '-호'));
 // 편집 중에도 전환한 단위로 보여 주고, 저장은 항상 ㎡로 되돌린다
 const summaryAreaInput = (id: string) => {
   const n = Number(sumVal(id).replace(/[^\d.]/g, ''));
   if (!Number.isFinite(n) || n <= 0) return '';
-  return summaryUnit.value === '평' ? (n / 3.305785).toFixed(2) : String(n);
+  return String(n);
 };
 const setSummaryArea = (id: string, raw: string) => {
   const n = Number(raw.replace(/[^\d.]/g, ''));
   if (!Number.isFinite(n) || n <= 0) { setSumVal(id, ''); return; }
-  setSumVal(id, summaryUnit.value === '평' ? (n * 3.305785).toFixed(2) : String(n));
+  setSumVal(id, String(n));
 };
 // 앞이 해당 물건의 층, 뒤가 그 동의 전체 층수
 const summaryFloorPair = computed(() => {
@@ -2669,12 +3710,6 @@ const summaryFloorPair = computed(() => {
   const cur = sumVal('sum.floorCurrent');
   if (!total && !cur) return '-';
   return `${cur || '-'}층 / ${total || '-'}층`;
-});
-const summaryUnitPair = computed(() => {
-  const dong = sumVal('sum.dong');
-  const ho = sumVal('sum.ho');
-  if (!dong && !ho) return '-';
-  return `${dong || '-'}동 / ${ho || '-'}호`;
 });
 // PDF에서 읽을 수 있는 값은 빈 칸일 때만 채운다
 watch(
@@ -2687,7 +3722,12 @@ watch(
     const fill = (id: string, value: string) => { if (!v[id] && value) v[id] = value; };
     const num = (raw: string | undefined) => (raw ?? '').replace(/[^\d.]/g, '');
 
-    fill('sum.court', a.courtName || '');
+    const courtRaw = (a.courtName || '').trim();
+    const courtParts = /^(.*?법원)\s*(.*)$/.exec(courtRaw);
+    fill('sum.court', courtParts ? courtParts[1] : courtRaw);
+    fill('sum.courtDept', a.courtDept || courtParts?.[2] || '');
+    fill('sum.courtPhone', a.courtPhone || '');
+    fill('sum.far', (a.buildingHeader?.floorAreaRatio ?? '').match(/[\d.]+/)?.[0] ?? '');
     fill('sum.landArea', a.landAreaM2 ? String(a.landAreaM2) : '');
     fill('sum.approval', a.buildingHeader?.approvalDate || a.approvalDate || '');
     // 세대수 — 단지정보 세대수가 우선, 없으면 표제부 '가구/세대/호'의 세대 칸
@@ -2715,10 +3755,18 @@ watch(
     const raw = a.buildingHeader?.unitLocation || a.address || '';
     const floorFromAddr = raw.match(/(\d+)\s*층/);
     fill('sum.floorCurrent', num(a.buildingHeader?.unitFloor) || (floorFromAddr ? floorFromAddr[1] : ''));
-    const dong = raw.match(/제?\s*(\d+)\s*동/);
-    const ho = raw.match(/제?\s*(\d+)\s*호/);
-    if (dong) fill('sum.dong', dong[1]);
-    if (ho) fill('sum.ho', ho[1]);
+    // '101동'·'A동'·'가동'은 잡고 '검암동'·'역삼동' 같은 행정동은 거른다
+    // (행정동은 동 앞 글자가 한글이라, 숫자이거나 '앞이 띄어쓰기인 한 글자'일 때만 본다)
+    const pickDong = (text: string) =>
+      text.match(/제?\s*(\d{1,4}[A-Za-z]?)\s*동(?![가-힣])/)?.[1]
+      ?? text.match(/(?:^|[\s,·])([A-Za-z가-힣])\s*동(?![가-힣])/)?.[1]
+      ?? '';
+    const pickHo = (text: string) => text.match(/제?\s*(\d{1,5})\s*호(?![가-힣])/)?.[1] ?? '';
+    // 전유부에 없으면 주소에서 찾는다 (한쪽만 보면 비는 경우가 생긴다)
+    const dong = pickDong(a.buildingHeader?.unitLocation ?? '') || pickDong(a.address ?? '');
+    const ho = pickHo(a.buildingHeader?.unitLocation ?? '') || pickHo(a.address ?? '');
+    if (dong) fill('sum.dong', dong);
+    if (ho) fill('sum.ho', ho);
   },
   { immediate: true },
 );
@@ -2788,8 +3836,38 @@ const goBack = () => router.back();
     <div class="adp-sticky-head">
       <header class="adp-topbar">
         <button class="adp-back" type="button" aria-label="뒤로" @click="goBack">‹</button>
-        <h1 class="adp-page-title">물건상세</h1>
-        <span class="adp-spacer" />
+        <h1 class="adp-page-title"><span class="adp-title-tag">경매</span>{{ caseLabel || '물건상세' }}</h1>
+        <span class="adp-top-right">
+          <button
+            v-if="pdfViewUrl"
+            type="button"
+            class="adp-pdf-btn"
+            :title="auction?.importMeta?.pdfFileName || pdfViewLabel"
+            @click="openSourcePdf"
+          >
+            <img :src="fileTextIcon" alt="" />{{ pdfViewLabel }}
+          </button>
+          <!-- 물건의 '단계' (관심~탈락). 입찰가산정의 '입찰 상태'와는 다른 값이다 -->
+          <span class="adp-stage-wrap">
+            <button type="button" :class="['adp-stage-btn', { hot: stageLabel === '입찰진행' }]" @click.stop="stageOpen = !stageOpen">
+              {{ stageLabel }}<img :src="chevronDownIcon" :class="['adp-chev sm', { up: !stageOpen }]" alt="" />
+            </button>
+            <template v-if="stageOpen">
+              <div class="adp-stage-backdrop" @click="stageOpen = false" />
+              <ul class="adp-stage-list" @click.stop>
+                <li
+                  v-for="opt in stageOptions"
+                  :key="opt.key"
+                  :class="['adp-stage-opt', { on: stageIsOn(opt.key), hot: opt.key === STAGE_BID_RUNNING }]"
+                  @click="pickStage(opt.key)"
+                >{{ opt.label }}</li>
+              </ul>
+            </template>
+          </span>
+          <button type="button" class="adp-hide-btn" aria-label="목록에서 숨기기" title="목록에서 숨기기" @click="hideThisAuction">
+            <img :src="TRASH_ICON" alt="" class="adp-hide-ico" />
+          </button>
+        </span>
       </header>
 
       <nav class="adp-tabs">
@@ -2805,18 +3883,12 @@ const goBack = () => router.back();
       <div class="adp-prop-head">
         <span class="adp-prop-kind">{{ propTypeLabel }}</span>
         <span class="adp-prop-line">
-          <strong class="adp-prop-case">{{ caseLabel }}</strong>
-          <span class="adp-prop-sale">{{ saleKind }}</span>
+          <!-- 면적·연식을 매각구분과 한 줄로 이어 모든 탭에서 보여 준다.
+               폭이 모자라면 뒤(매각구분)부터 말줄임된다 — 계속 참조하는 면적·연식이 남는다 -->
+          <span class="adp-prop-sale">
+            {{ saleKind }}<template v-if="headMetaLine"> · {{ headMetaLine }}</template>
+          </span>
         </span>
-        <button
-          v-if="pdfViewUrl"
-          type="button"
-          class="adp-pdf-btn"
-          :title="auction?.importMeta?.pdfFileName || pdfViewLabel"
-          @click="openSourcePdf"
-        >
-          <img :src="fileTextIcon" alt="" />{{ pdfViewLabel }}
-        </button>
         <p class="adp-prop-addr">{{ jibunAddress }}</p>
         <button
           type="button"
@@ -2834,67 +3906,57 @@ const goBack = () => router.back();
       <template v-if="activeTab === 'basic'">
         <!-- 정보요약 — PDF 값으로 채우고 필요한 칸은 직접 고친다 -->
         <section class="adp-card">
-          <header class="adp-card-head adp-survey-head">
-            <h2>정보요약</h2>
-            <button type="button" class="adp-mkt-unit-btn" aria-label="면적 단위 전환" @click="toggleSummaryUnit">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M21 3v5h-5" />
-                <path d="M21 12a9 9 0 0 1-15 6.7L3 16" /><path d="M3 21v-5h5" />
-              </svg>{{ summaryUnit === '㎡' ? '평' : '㎡' }}
-            </button>
-            <button v-if="!editingSummary" class="adp-edit-btn" type="button" @click="editingSummary = true">✎ 편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click="saveSummary">💾 저장</button>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('summary') }]" alt="" @click="toggleSection('summary')" />
+          <header class="adp-card-head adp-survey-head" @click="toggleSection('summary')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>정보요약</h2>
+            <button v-if="!editingSummary" class="adp-edit-btn" type="button" @click.stop="editingSummary = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSummary">💾 저장</button>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('summary') }]" alt="" />
           </header>
           <dl v-if="!isCollapsed('summary')" class="adp-base-rows adp-sum-rows">
-            <div class="adp-base-row"><dt>매각</dt><dd>{{ saleKind || '-' }}</dd></div>
             <div class="adp-base-row">
               <dt>관할법원</dt>
               <dd>
-                <input v-if="editingSummary" class="adp-sum-input wide" :value="sumVal('sum.court')" placeholder="법원명" @change="setSumVal('sum.court', ($event.target as HTMLInputElement).value)" />
-                <template v-else>{{ sumVal('sum.court') || '-' }}</template>
+                <template v-if="editingSummary">
+                  <input class="adp-sum-input" :value="sumVal('sum.court')" placeholder="법원명" @change="setSumVal('sum.court', ($event.target as HTMLInputElement).value)" />
+                  <input class="adp-sum-input dept" :value="sumVal('sum.courtDept')" placeholder="경매○계" @change="setSumVal('sum.courtDept', ($event.target as HTMLInputElement).value)" />
+                  <input class="adp-sum-input tel" :value="sumVal('sum.courtPhone')" placeholder="연락처입력" @change="setSumVal('sum.courtPhone', ($event.target as HTMLInputElement).value)" />
+                </template>
+                <template v-else>
+                  {{ sumVal('sum.court') || '-' }}<span v-if="sumVal('sum.courtDept')" class="adp-sum-dept">{{ sumVal('sum.courtDept') }}</span><a
+                    v-if="sumVal('sum.courtPhone')"
+                    :href="canCallCourt ? `tel:${courtTelDigits}` : undefined"
+                    class="adp-tel"
+                    :title="canCallCourt ? '전화 걸기' : ''"
+                    @click.prevent="callCourt"
+                  >
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z" />
+                    </svg>{{ sumVal('sum.courtPhone') }}</a>
+                </template>
               </dd>
             </div>
             <div class="adp-base-row">
               <dt>사용승인</dt>
               <dd>
                 <input v-if="editingSummary" class="adp-sum-input wide" :value="sumVal('sum.approval')" placeholder="YYYY-MM-DD" @change="setSumVal('sum.approval', ($event.target as HTMLInputElement).value)" />
-                <template v-else>{{ summaryApprovalPair }}</template>
+                <template v-else><span class="adp-sum-hi">{{ summaryApprovalDate }}<template v-if="summaryApprovalAge"> / {{ summaryApprovalAge }}</template></span></template>
               </dd>
             </div>
             <div class="adp-base-row">
-              <dt>세대수</dt>
-              <dd>
-                <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.units')" placeholder="0" @change="setSumVal('sum.units', ($event.target as HTMLInputElement).value)" />세대
-                </span>
-                <template v-else>{{ sumVal('sum.units') ? `${Number(sumVal('sum.units')).toLocaleString('ko-KR')}세대` : '-' }}</template>
-              </dd>
-            </div>
-            <div class="adp-base-row">
-              <dt>해당면적 세대수</dt>
-              <dd>
-                <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.areaUnits')" placeholder="0" @change="setSumVal('sum.areaUnits', ($event.target as HTMLInputElement).value)" />세대
-                </span>
-                <template v-else>{{ sumVal('sum.areaUnits') ? `${Number(sumVal('sum.areaUnits')).toLocaleString('ko-KR')}세대` : '-' }}</template>
-              </dd>
-            </div>
-            <div class="adp-base-row">
-              <dt>공급/전용면적</dt>
+              <dt>공급/전용면적(㎡/평)</dt>
               <dd>
                 <span v-if="editingSummary" class="adp-sum-pair">
                   <input class="adp-sum-input" inputmode="decimal" :value="summaryAreaInput('sum.supplyArea')" placeholder="공급" @change="setSummaryArea('sum.supplyArea', ($event.target as HTMLInputElement).value)" />/
-                  <input class="adp-sum-input" inputmode="decimal" :value="summaryAreaInput('sum.exclusiveArea')" placeholder="전용" @change="setSummaryArea('sum.exclusiveArea', ($event.target as HTMLInputElement).value)" />{{ summaryUnit }}
+                  <input class="adp-sum-input" inputmode="decimal" :value="summaryAreaInput('sum.exclusiveArea')" placeholder="전용" @change="setSummaryArea('sum.exclusiveArea', ($event.target as HTMLInputElement).value)" />㎡
                 </span>
-                <template v-else>{{ summaryAreaPair }}</template>
+                <template v-else>{{ summarySupplyArea }} / <span class="adp-sum-hi">{{ summaryExclusiveArea }}</span></template>
               </dd>
             </div>
             <div class="adp-base-row">
-              <dt>대지면적</dt>
+              <dt>대지면적(㎡/평)</dt>
               <dd>
                 <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input wide" inputmode="decimal" :value="summaryAreaInput('sum.landArea')" placeholder="0" @change="setSummaryArea('sum.landArea', ($event.target as HTMLInputElement).value)" />{{ summaryUnit }}
+                  <input class="adp-sum-input wide" inputmode="decimal" :value="summaryAreaInput('sum.landArea')" placeholder="0" @change="setSummaryArea('sum.landArea', ($event.target as HTMLInputElement).value)" />㎡
                 </span>
                 <template v-else>{{ areaText(sumVal('sum.landArea')) }}</template>
               </dd>
@@ -2916,7 +3978,35 @@ const goBack = () => router.back();
                   <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.dong')" placeholder="동" @change="setSumVal('sum.dong', ($event.target as HTMLInputElement).value)" />동 /
                   <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.ho')" placeholder="호" @change="setSumVal('sum.ho', ($event.target as HTMLInputElement).value)" />호
                 </span>
-                <template v-else>{{ summaryUnitPair }}</template>
+                <template v-else>{{ summaryDongText }} / <span class="adp-sum-hi">{{ summaryHoText }}</span></template>
+              </dd>
+            </div>
+            <div class="adp-base-row">
+              <dt>용적률</dt>
+              <dd>
+                <span v-if="editingSummary" class="adp-sum-pair">
+                  <input class="adp-sum-input" inputmode="decimal" :value="sumVal('sum.far')" placeholder="0" @change="setSumVal('sum.far', ($event.target as HTMLInputElement).value)" />%
+                </span>
+                <template v-else>{{ sumVal('sum.far') ? `${sumVal('sum.far')}%` : '-' }}</template>
+              </dd>
+            </div>
+            <div class="adp-base-row">
+              <dt>세대수</dt>
+              <dd>
+                <span v-if="editingSummary" class="adp-sum-pair">
+                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.units')" placeholder="0" @change="setSumVal('sum.units', ($event.target as HTMLInputElement).value)" />세대
+                </span>
+                <template v-else>{{ sumVal('sum.units') ? `${Number(sumVal('sum.units')).toLocaleString('ko-KR')}세대` : '-' }}</template>
+              </dd>
+            </div>
+            <!-- 해당면적 세대수는 같은 평형이 여러 세대인 아파트에서만 쓴다 -->
+            <div v-if="isApartment" class="adp-base-row">
+              <dt>해당면적 세대수</dt>
+              <dd>
+                <span v-if="editingSummary" class="adp-sum-pair">
+                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.areaUnits')" placeholder="0" @change="setSumVal('sum.areaUnits', ($event.target as HTMLInputElement).value)" />세대
+                </span>
+                <template v-else>{{ sumVal('sum.areaUnits') ? `${Number(sumVal('sum.areaUnits')).toLocaleString('ko-KR')}세대` : '-' }}</template>
               </dd>
             </div>
           </dl>
@@ -2925,7 +4015,7 @@ const goBack = () => router.back();
         <!-- 물건 기본정보 — 입찰일정 + 임차인현황 통합 카드 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('base')">
-            <h2>기본정보</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>기본정보</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('base') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('base')">
@@ -2936,7 +4026,6 @@ const goBack = () => router.back();
             <div class="adp-base-row"><dt>차수</dt><dd><span class="adp-base-round">{{ currentRoundLabel }}</span></dd></div>
           </dl>
 
-          <h3 class="adp-base-sub">감정평가 / 기일내역</h3>
           <dl class="adp-base-rows">
             <div class="adp-base-row">
               <dt>감정가</dt>
@@ -2947,7 +4036,7 @@ const goBack = () => router.back();
                 <span>{{ row.label }}</span>
                 <span v-if="row.rate" class="adp-base-chip pct">{{ row.rate }}</span>
                 <span v-if="row.status" :class="['adp-base-chip', roundTone(row.status)]">{{ row.status }}</span>
-                <span v-if="row.date" class="adp-base-date">{{ row.date }}</span>
+                <span v-if="row.date" :class="['adp-base-date', { now: roundTone(row.status) === 'st-now' }]">{{ row.date }}</span>
               </dt>
               <dd :class="['amt', { now: row.current }]">{{ formatMoney(row.price) }}원</dd>
             </div>
@@ -2960,59 +4049,9 @@ const goBack = () => router.back();
           </div>
         </section>
 
-        <!-- 임차인현황 -->
-        <section class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('tenant')">
-            <h2>임차인현황</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('tenant') }]" alt="" />
-          </header>
-          <div v-if="!isCollapsed('tenant')">
-          <p class="adp-base-note">말소기준 : {{ tenantBaseDate }} · 소액기준 : {{ tenantSmallDate }} · 배당종기 : {{ tenantDistDate }}</p>
-
-          <template v-if="tenantCards.length > 0">
-            <dl v-for="(tenant, i) in tenantCards" :key="i" class="adp-base-rows adp-base-tenant">
-              <div class="adp-base-row quad">
-                <dt>임차인</dt>
-                <dd class="quad-v">
-                  <strong>{{ tenant.name }}</strong>
-                  <small v-if="tenant.agency">{{ tenant.agency }}</small>
-                </dd>
-                <dt class="quad-l2">보증금</dt>
-                <dd class="quad-v nowrap">{{ tenant.deposit ? `보: ${tenant.deposit}` : '-' }}</dd>
-              </div>
-              <div class="adp-base-row quad">
-                <dt>점유기간</dt>
-                <dd class="quad-v">{{ tenant.occupationPeriod || '-' }}</dd>
-                <dt class="quad-l2">전/확/배</dt>
-                <dd class="quad-v stack">
-                  <span v-if="tenant.moveIn">전입: {{ tenant.moveIn }}</span>
-                  <span v-if="tenant.fixed">확정: {{ tenant.fixed }}</span>
-                  <span v-if="tenant.distribution">배당: {{ tenant.distribution }}</span>
-                  <span v-if="!tenant.moveIn && !tenant.fixed && !tenant.distribution">-</span>
-                </dd>
-              </div>
-            </dl>
-          </template>
-          <p v-else class="adp-empty">임차인 정보 없음</p>
-
-          <p v-if="tenantWarnText" class="adp-base-warn">
-            <img :src="alertIcon" alt="" class="adp-base-mini" />{{ tenantWarnText }}
-          </p>
-
-          <!-- PDF 임차인 현황의 '기타사항' 원문 -->
-          <div v-if="tenantOtherNotes" class="adp-base-more">
-            <button type="button" class="adp-note-toggle" @click="tenantNotesOpen = !tenantNotesOpen">
-              <span>기타사항</span>
-              <img :src="chevronDownIcon" :class="['adp-chev sm', { up: tenantNotesOpen }]" alt="" />
-            </button>
-            <p v-if="tenantNotesOpen" class="adp-base-note pre">{{ tenantOtherNotes }}</p>
-          </div>
-          </div>
-        </section>
-
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('bld')">
-            <h2>건축물정보</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M9 7h2M9 11h2M9 15h2M3 21h18M16 10h3a2 2 0 0 1 2 2v9"/></svg>건축물정보</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('bld') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('bld')">
@@ -3108,7 +4147,7 @@ const goBack = () => router.back();
 
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('status')">
-            <h2>물건현황정보</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="18" rx="2"/><path d="M9 2h6v4H9zM9 12h6M9 16h4"/></svg>물건현황</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('status') }]" alt="" />
           </header>
           <table v-if="!isCollapsed('status')" class="adp-table adp-kv-table">
@@ -3129,7 +4168,7 @@ const goBack = () => router.back();
 
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('registry')">
-            <h2>건물등기</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M4 17h16"/></svg>건물등기</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('registry') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('registry')">
@@ -3161,39 +4200,9 @@ const goBack = () => router.back();
           </div>
         </section>
 
-        <!-- 관련사건 — PDF '관련사건' 표에서 파싱 -->
-        <section class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('cases2')">
-            <h2>관련사건</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('cases2') }]" alt="" />
-          </header>
-          <div v-if="!isCollapsed('cases2')">
-            <table v-if="relatedCases.length > 0" class="adp-table adp-table-sm adp-case-table">
-              <colgroup>
-                <col style="width: 28%" />
-                <col />
-                <col style="width: 22%" />
-                <col style="width: 18%" />
-              </colgroup>
-              <thead>
-                <tr><th>관련법원</th><th class="c">관련사건번호</th><th class="c">관련사건구분</th><th class="c">종국결과</th></tr>
-              </thead>
-              <tbody>
-                <tr v-for="(r, i) in relatedCases" :key="i">
-                  <td>{{ r.court || '-' }}</td>
-                  <td class="c"><span class="adp-pill">{{ r.caseNumber || '-' }}</span></td>
-                  <td class="c">{{ r.kind || '-' }}</td>
-                  <td class="c">{{ r.result || '-' }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <p v-else class="adp-empty">관련사건 없음</p>
-          </div>
-        </section>
-
         <section v-if="isApartment && auction?.aptComplexInfo" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('apt')">
-            <h2>단지정보</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M10 21v-5h4v5"/></svg>단지정보</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('apt') }]" alt="" />
           </header>
           <table v-if="!isCollapsed('apt')" class="adp-table adp-kv-table">
@@ -3223,7 +4232,7 @@ const goBack = () => router.back();
 
         <section v-if="isApartment && auction?.arrearsInfo" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('arrears')">
-            <h2>체납내역</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z"/><path d="M12 9v4M12 17h.01"/></svg>체납내역</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('arrears') }]" alt="" />
           </header>
           <table v-if="!isCollapsed('arrears')" class="adp-table adp-kv-table">
@@ -3245,7 +4254,7 @@ const goBack = () => router.back();
         <!-- 입지정보 — 인근역세권·교육환경·주변환경을 한 카드로 묶는다 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('areaInfo')">
-            <h2>입지정보</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>입지정보</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('areaInfo') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('areaInfo')">
@@ -3461,25 +4470,80 @@ const goBack = () => router.back();
 
       <template v-if="activeTab === 'profit' && auction">
         <section class="adp-card">
-          <header class="adp-card-head adp-profit-head">
-            <h2>예상수익분석</h2>
-            <button v-if="!editingProfit" class="adp-edit-btn" type="button" @click="startEditProfit">✎ 편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click="saveProfit">💾 저장</button>
+          <header class="adp-card-head adp-profit-head" @click="toggleSection('profit')">
+            <h2>
+              <svg class="adp-profit-ico" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 17 9.5 10.5l4 4L21 7" /><path d="M15 7h6v6" />
+              </svg>
+              예상수익분석
+            </h2>
+            <span class="adp-auto-chip">✦ 자동계산</span>
+            <span class="adp-head-note">개인 매매 사업자 기준</span>
+            <button v-if="!editingProfit" class="adp-edit-btn" type="button" @click.stop="startEditProfit"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveProfit">💾 저장</button>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('profit') }]" alt="" />
           </header>
-          <table class="adp-table adp-profit-table v2">
+          <div v-if="!isCollapsed('profit')" class="adp-profit-dates">
+            <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
+              <em>낙찰일</em>
+              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ auction.wonDate || '날짜입력' }}</span></span>
+            </button>
+            <span class="adp-pd-sep">|</span>
+            <button type="button" class="adp-pd-item" @click="profitDateTarget = 'sellDate'">
+              <em>매도일</em>
+              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ auction.sellDate || '날짜입력' }}</span></span>
+            </button>
+            <button
+              type="button"
+              class="adp-star-btn"
+              :aria-label="`중요도 ${priority}`"
+              title="중요도 (1→2→3)"
+              @click.stop="cyclePriority"
+            >
+              <svg
+                v-for="n in 3"
+                :key="n"
+                viewBox="0 0 24 24"
+                width="15"
+                height="15"
+                :fill="priority >= n ? '#facc15' : 'none'"
+                :stroke="priority >= n ? '#eab308' : '#a8adb8'"
+                stroke-width="2"
+                stroke-linejoin="round"
+              >
+                <polygon points="12 2.6 15 9 22 9.8 17 14.5 18.3 21.4 12 18 5.7 21.4 7 14.5 2 9.8 9 9" />
+              </svg>
+            </button>
+          </div>
+          <table v-if="!isCollapsed('profit')" class="adp-table adp-profit-table v2">
             <thead>
               <tr><th>구분</th><th>상세</th><th class="r">비중 (%)</th><th class="r">금액</th></tr>
             </thead>
             <tbody>
               <tr>
-                <td rowspan="3" class="adp-cat">입찰가</td>
+                <td rowspan="3" class="adp-cat">입찰정보</td>
                 <td>감정가</td>
                 <td class="r"></td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="auction.metrics.appraisalValue" class="adp-cell-input" /><template v-else>{{ formatMoney(apprValue) }}</template>
                 </td>
               </tr>
+              <tr>
+                <td>{{ auction.auctionRound ? `${auction.auctionRound}(최저가)` : '최저가' }}</td>
+                <td class="r">{{ apprValue > 0 ? formatPct((auction.metrics.minimumBidValue / apprValue) * 100) : '' }}</td>
+                <td class="r">
+                  <FormattedNumberInput v-if="editingProfit" v-model="auction.metrics.minimumBidValue" class="adp-cell-input" /><template v-else>{{ formatMoney(auction.metrics.minimumBidValue) }}</template>
+                </td>
+              </tr>
+              <tr>
+                <td>보증금</td>
+                <td class="r blue">10%</td>
+                <td class="r blue">
+                  <FormattedNumberInput v-if="editingProfit" v-model="auction.metrics.depositValue" class="adp-cell-input" /><template v-else>{{ formatMoney(bidDeposit) }}</template>
+                </td>
+              </tr>
               <tr class="hi">
+                <td rowspan="2" class="adp-cat"></td>
                 <td><strong>입찰가</strong></td>
                 <td class="r">
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="myBidPct.toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setBidByApprPct(($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(myBidPct) }}</template>
@@ -3499,8 +4563,8 @@ const goBack = () => router.back();
               </tr>
 
               <tr>
-                <td rowspan="9" class="adp-cat">비용</td>
-                <td>취득세</td>
+                <td rowspan="10" class="adp-cat">비용</td>
+                <td><span class="adp-cost-no">①</span>취득세</td>
                 <td class="r">
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctOfBid(auction.bidCost.acquisitionTaxAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setAmountByPct('acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(pctOfBid(auction.bidCost.acquisitionTaxAmount)) }}</template>
                 </td>
@@ -3509,7 +4573,7 @@ const goBack = () => router.back();
                 </td>
               </tr>
               <tr>
-                <td>법무비/채권</td>
+                <td><span class="adp-cost-no">②</span>법무비/채권</td>
                 <td class="r">
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctOfBid(auction.bidCost.legalCostAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setAmountByPct('legalCostAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(pctOfBid(auction.bidCost.legalCostAmount)) }}</template>
                 </td>
@@ -3518,7 +4582,7 @@ const goBack = () => router.back();
                 </td>
               </tr>
               <tr>
-                <td>중도상환</td>
+                <td><span class="adp-cost-no">③</span>중도상환</td>
                 <td class="r">
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="rowPct(RATE_ROWS[0]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setRowPct(RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(rowPct(RATE_ROWS[0])) }}</template>
                 </td>
@@ -3527,7 +4591,7 @@ const goBack = () => router.back();
                 </td>
               </tr>
               <tr>
-                <td>이자(3M)</td>
+                <td><span class="adp-cost-no">④</span>이자(3M)</td>
                 <td class="r">
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="rowPct(RATE_ROWS[1]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setRowPct(RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(rowPct(RATE_ROWS[1])) }}</template>
                 </td>
@@ -3536,7 +4600,7 @@ const goBack = () => router.back();
                 </td>
               </tr>
               <tr>
-                <td>매도중개료</td>
+                <td><span class="adp-cost-no">⑤</span>매도중개료</td>
                 <td class="r">
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="rowPct(RATE_ROWS[2]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setRowPct(RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(rowPct(RATE_ROWS[2])) }}</template>
                 </td>
@@ -3545,79 +4609,86 @@ const goBack = () => router.back();
                 </td>
               </tr>
               <tr>
-                <td>미납관리비</td>
+                <td><span class="adp-cost-no">⑥</span>미납관리비</td>
                 <td class="r">-</td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.arrearsFee" class="adp-cell-input" /><template v-else>{{ auction.bidCost.arrearsFee > 0 ? formatMoney(auction.bidCost.arrearsFee) : '-' }}</template>
                 </td>
               </tr>
               <tr>
-                <td>수리비</td>
+                <td><span class="adp-cost-no">⑦</span>수리비</td>
                 <td class="r">-</td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.repairCost" class="adp-cell-input" /><template v-else>{{ auction.bidCost.repairCost > 0 ? formatMoney(auction.bidCost.repairCost) : '-' }}</template>
                 </td>
               </tr>
               <tr>
-                <td>명도비</td>
+                <td><span class="adp-cost-no">⑧</span>명도비</td>
                 <td class="r">-</td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.evictionCost" class="adp-cell-input" /><template v-else>{{ auction.bidCost.evictionCost > 0 ? formatMoney(auction.bidCost.evictionCost) : '-' }}</template>
                 </td>
               </tr>
+              <tr>
+                <td><span class="adp-cost-no">⑨</span>광고비</td>
+                <td class="r">3.3%</td>
+                <td class="r">
+                  <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.advertisingCost" class="adp-cell-input" /><template v-else>{{ advertisingNet > 0 ? formatMoney(advertisingNet) : '-' }}</template>
+                </td>
+              </tr>
               <tr class="hi">
-                <td><strong>비용</strong></td>
-                <td class="r"></td>
+                <td><strong>필요경비합계</strong></td>
+                <td class="r adp-formula">①+②+③+④+⑤+⑥+⑦+⑧+⑨</td>
                 <td class="r"><strong>{{ formatMoney(totalCosts) }}</strong></td>
               </tr>
 
-              <tr>
+              <tr class="pink">
                 <td rowspan="8" class="adp-cat">수익</td>
-                <td><strong>매도가</strong></td>
+                <td><strong>예상 매도가</strong></td>
                 <td class="r"></td>
                 <td class="r emph">
                   <FormattedNumberInput v-if="editingProfit" v-model="auction.expectedSaleValue" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(expectedSale) }}</strong></template>
                 </td>
               </tr>
               <tr>
-                <td><strong>총투자금</strong></td>
-                <td class="r adp-formula">(입찰가+비용)</td>
-                <td class="r"><strong>{{ formatMoney(totalInvest) }}</strong></td>
+                <td>총투자금</td>
+                <td class="r adp-formula">입찰가+비용</td>
+                <td class="r">{{ formatMoney(totalInvest) }}</td>
               </tr>
               <tr>
-                <td><strong>실투자금</strong></td>
-                <td class="r adp-formula">(입찰가-대출+비용)</td>
-                <td class="r"><strong>{{ formatMoney(netInvestment) }}</strong></td>
+                <td>실투자금</td>
+                <td class="r adp-formula">입찰가-대출+비용</td>
+                <td class="r">{{ formatMoney(netInvestment) }}</td>
               </tr>
               <tr>
-                <td><strong>양도차익</strong></td>
-                <td class="r adp-formula">(매가-입찰가-비용)</td>
+                <td><strong>사업소득금액</strong></td>
+                <td class="r adp-formula">매도가-입찰가-비용</td>
                 <td class="r" :class="capitalGain < 0 ? 'neg' : ''"><strong>{{ formatMoney(capitalGain) }}</strong></td>
               </tr>
               <tr>
-                <td>종합소득세</td>
-                <td class="r adp-formula">누진세율</td>
+                <td><strong>사업소득세</strong></td>
+                <td class="r adp-formula">과세표준 <span class="adp-bracket">{{ incomeTaxBracket }}</span><span v-if="incomeTaxDeductionText" class="adp-bracket"> − {{ incomeTaxDeductionText }}</span></td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="incomeTaxInput" class="adp-cell-input" /><template v-else>{{ formatMoney(transferTax) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="incomeTaxInput" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(transferTax) }}</strong></template>
                 </td>
               </tr>
               <tr>
-                <td>지방세</td>
+                <td><strong>지방세</strong></td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="localTaxRate.toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setLocalTaxRate(($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ localTaxRate.toFixed(2) }}%</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="String(localTaxRate)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setLocalTaxRate(($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ localTaxRate }}%</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="localTaxInput" class="adp-cell-input" /><template v-else>{{ formatMoney(localTax) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="localTaxInput" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(localTax) }}</strong></template>
                 </td>
               </tr>
               <tr class="hi">
-                <td><strong>세후이익</strong></td>
-                <td class="r adp-formula">(매가-총투자금-소득세)</td>
+                <td><strong>세후 순이익</strong></td>
+                <td class="r adp-formula">매도가-총투자금-소득세</td>
                 <td class="r"><strong :class="afterTaxProfit < 0 ? 'neg' : ''">{{ formatMoney(afterTaxProfit) }}</strong></td>
               </tr>
               <tr class="hi">
-                <td><strong>순투자수익율</strong></td>
-                <td class="r adp-formula">(세후이익/순투자금)</td>
+                <td><strong>세후 수익률</strong></td>
+                <td class="r adp-formula">세후이익/순투자금</td>
                 <td class="r"><strong :class="afterTaxRate < 0 ? 'neg' : ''">{{ formatPct(afterTaxRate) }}</strong></td>
               </tr>
             </tbody>
@@ -3625,8 +4696,11 @@ const goBack = () => router.back();
         </section>
 
         <section class="adp-card">
-          <header class="adp-card-head"><h2>개인소득세율 (종합소득세)</h2></header>
-          <table class="adp-table adp-tax-ref">
+          <header class="adp-card-head" @click="toggleSection('taxRef')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>개인소득세율 <span class="adp-head-note">종합소득세</span></h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('taxRef') }]" alt="" />
+          </header>
+          <table v-if="!isCollapsed('taxRef')" class="adp-table adp-tax-ref">
             <thead>
               <tr><th>과세표준</th><th class="r">세율</th><th class="r">누진공제</th></tr>
             </thead>
@@ -3645,49 +4719,54 @@ const goBack = () => router.back();
       </template>
 
       <template v-if="activeTab === 'verify'">
+        <!-- 경매사례 — ① 인근 매각사례 / ② 동일지번 매각물건 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('cases')">
-            <h2>매각사례</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7h14M7 7l-4 7h8zM17 7l-4 7h8z"/></svg>경매사례</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('cases') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('cases')">
-            <p class="adp-sub-note">({{ auction?.address?.split(' ').slice(0, 3).join(' ') || '' }} {{ auction?.propertyType || '' }})</p>
-            <table v-if="nearBidRows.length > 0" class="adp-table adp-cases-table">
-              <colgroup>
-                <col style="width: 24%" />
-                <col />
-                <col style="width: 22%" />
-                <col style="width: 26%" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th>구분</th>
-                  <th class="c">평균감정가<br>평균매각가</th>
-                  <th class="c">입찰인원<br>매각가율</th>
-                  <th class="c">매각사례에 의한<br>예상매각가</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(r, i) in nearBidRows" :key="i">
-                  <td class="c">{{ r.saleInfo }}</td>
-                  <td class="c pre"><span>{{ r.appraisal }}</span><span v-if="r.minimum" class="adp-line2">{{ r.minimum }}</span></td>
-                  <td class="c pre"><span>{{ r.winning }}</span><span v-if="r.rate" class="adp-line2 b-blue">{{ r.rate }}</span></td>
-                  <td class="c"><strong>{{ r.expectedWinning }}</strong></td>
-                </tr>
-              </tbody>
-            </table>
-            <p v-else class="adp-empty">매각사례 데이터 없음</p>
+            <!-- ① 인근 매각사례 -->
+            <div class="adp-mkt-block">
+              <div class="adp-mkt-block-head">
+                <span class="t">① 인근 매각사례 <span class="adp-head-note">{{ auction?.address?.split(' ').slice(0, 3).join(' ') || '' }} {{ auction?.propertyType || '' }}</span></span>
+              </div>
+              <table v-if="nearBidRows.length > 0" class="adp-table adp-cases-table">
+                <colgroup>
+                  <col style="width: 24%" />
+                  <col />
+                  <col style="width: 22%" />
+                  <col style="width: 26%" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th class="c">구분</th>
+                    <th class="c">평균감정가<br>평균매각가</th>
+                    <th class="c">입찰인원<br>매각가율</th>
+                    <th class="c">예상매각가</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(r, i) in nearBidRows" :key="i">
+                    <td class="c">{{ r.saleInfo }}</td>
+                    <td class="c pre"><span>{{ r.appraisal }}</span><span v-if="r.minimum" class="adp-line2">{{ r.minimum }}</span></td>
+                    <td class="c pre"><span>{{ r.winning }}</span><span v-if="r.rate" class="adp-line2 b-blue">{{ r.rate }}</span></td>
+                    <td class="c"><strong>{{ r.expectedWinning }}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p v-else class="adp-empty">매각사례 데이터 없음</p>
+            </div>
 
-            <!-- 경매 동일지번 매각물건 — 같은 지번의 다른 경매 결과를 캡처로 모은다 -->
-            <div class="adp-sub-block">
-              <div class="adp-mkt-block-head bare">
-                <span class="t">경매 동일지번 매각물건</span>
-                <small>({{ lotOnlyAddress }} / 종류:전체)</small>
+            <!-- ② 동일지번 매각물건 -->
+            <div class="adp-mkt-block">
+              <div class="adp-mkt-block-head">
+                <span class="t">② 동일지번 매각물건<span v-if="extraList('sameLot').length" class="adp-photo-mark" :title="`사진 ${extraList('sameLot').length}장`">{{ extraList('sameLot').length }}</span> <span class="adp-head-note">{{ lotOnlyAddress }}</span></span>
               </div>
               <div class="adp-plan-row">
                 <input
                   :value="extraInput.sameLot ?? ''"
-                  placeholder="링크 주소 입력 또는 이미지 붙여넣기"
+                  placeholder="링크 또는 이미지 붙여넣기"
                   class="adp-input"
                   @input="extraInput = { ...extraInput, sameLot: ($event.target as HTMLInputElement).value }"
                   @keydown.enter.prevent="addExtraUrl('sameLot')"
@@ -3713,31 +4792,28 @@ const goBack = () => router.back();
           </div>
         </section>
 
+        <!-- 해당물건 실거래가 — PDF 분석 자료 -->
         <section class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('trades')">
-            <h2>국토부 실거래가</h2>
-            <span v-if="publicTradeUpdatedAt" class="adp-update-time">UPDATE : {{ publicTradeUpdatedAt }}</span>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('trades') }]" alt="" />
+          <header class="adp-card-head" @click="toggleSection('casePrice')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 9.5 10.5l4 4L21 7"/><path d="M15 7h6v6"/></svg>해당물건 실거래가</h2>
+            <span v-if="caseTradeUpdatedAt" class="adp-update-time">UPDATE : {{ caseTradeUpdatedAt }}</span>
+            <button
+              type="button"
+              class="adp-refresh-btn"
+              aria-label="실거래가 다시 읽기"
+              title="필터를 풀고 실거래가를 다시 읽는다"
+              @click.stop="refreshCaseTrades"
+            >⟳</button>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('casePrice') }]" alt="" />
           </header>
-          <div v-if="!isCollapsed('trades')">
-            <div class="adp-trade-meta-row">
-              <span class="adp-trade-meta-title">해당물건정보</span>
-              <span class="adp-trade-meta">
-                <small>전용면적</small>
-                <strong>{{ tradeMetaArea }}</strong>
-              </span>
-              <span class="adp-trade-meta">
-                <small>사용승인</small>
-                <strong>{{ auction?.buildingHeader?.approvalDate || auction?.approvalDate || '-' }}</strong>
-              </span>
-            </div>
-
-            <div class="adp-trade-summary">
+          <div v-if="!isCollapsed('casePrice')">
+            <div class="adp-trade-summary cols3">
               <div class="adp-trade-sum-card">
-                <small>해당경매물건 실거래가 평균</small>
+                <small><span class="adp-sum-key">{{ recentSaleTrade?.contractDate?.slice(0, 4) || '-' }}</span> 실거래가</small>
                 <span class="adp-sum-value">
-                  <strong>{{ formatWonSimple(pdfTradeAvg) }}</strong>
-                  <button type="button" class="adp-copy-btn" aria-label="금액 복사" @click.stop="copyText(formatWonSimple(pdfTradeAvg))">
+                  <strong v-if="recentSaleTrade?.floor" class="adp-sum-floor">{{ recentSaleTrade.floor }}</strong>
+                  <strong>{{ formatWonSimple(recentSaleTradePrice) }}</strong>
+                  <button type="button" class="adp-copy-btn" aria-label="금액 복사" @click.stop="copyText(formatWonSimple(recentSaleTradePrice))">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <rect x="8" y="8" width="13" height="13" rx="2" />
                       <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
@@ -3746,7 +4822,98 @@ const goBack = () => router.back();
                 </span>
               </div>
               <div class="adp-trade-sum-card">
-                <small>국토부 실거래가 평균</small>
+                <small>평당가</small>
+                <span class="adp-sum-value">
+                  <strong>{{ formatWonSimple(recentSaleTradePyeong) }}</strong>
+                  <button type="button" class="adp-copy-btn" aria-label="금액 복사" @click.stop="copyText(formatWonSimple(recentSaleTradePyeong))">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="8" y="8" width="13" height="13" rx="2" />
+                      <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
+                    </svg>
+                  </button>
+                </span>
+              </div>
+              <div class="adp-trade-sum-card">
+                <small>{{ tradeCountLabel }}</small>
+                <span class="adp-sum-value"><strong>{{ tradeCountValue }}건</strong></span>
+              </div>
+            </div>
+
+            <div class="adp-trade-filter-row">
+              <div class="adp-trade-tabs">
+                <button :class="['adp-trade-tab','t-all',  { active: tradeFilter === 'all' }]" @click="tradeFilter = 'all'">전체 ({{ mergedCounts.all }})</button>
+                <button :class="['adp-trade-tab','t-buy',  { active: tradeFilter === '매매' }]" @click="tradeFilter = '매매'">매매 ({{ mergedCounts.매매 }})</button>
+                <button :class="['adp-trade-tab','t-jeon', { active: tradeFilter === '전세' }]" @click="tradeFilter = '전세'">전세 ({{ mergedCounts.전세 }})</button>
+                <button :class="['adp-trade-tab','t-wol',  { active: tradeFilter === '월세' }]" @click="tradeFilter = '월세'">월세 ({{ mergedCounts.월세 }})</button>
+              </div>
+            </div>
+              <div class="adp-trade-selects">
+                <select v-model="tradeAreaFilter" class="adp-select-sm">
+                  <option value="">전체면적(㎡/평)</option>
+                  <option v-for="opt in tradeAreaOptions" :key="opt" :value="opt">{{ areaTextWithPyeong(opt) }}</option>
+                </select>
+                <select v-model="tradeYearFilter" class="adp-select-sm">
+                  <option value="">거래년도</option>
+                  <option v-for="opt in tradeYearOptions" :key="opt" :value="opt">{{ opt }}</option>
+                </select>
+              </div>
+              <div class="adp-sp-bar">
+                <span class="adp-sp-lab">단지 전체 (국토부) <em>최근 {{ PLACE_HISTORY_YEARS }}년</em></span>
+                <strong v-if="samePlaceLoading" class="adp-sp-cnt">조회중…</strong>
+                <strong v-else-if="shownTradeRows.length > 0" class="adp-sp-cnt">{{ shownTradeRows.length }}건</strong>
+                <button
+                  v-if="!samePlaceLoading && samePlaceMissed > 0"
+                  type="button"
+                  class="adp-sp-again"
+                  :title="`${samePlaceMissed}개월치를 받지 못했습니다`"
+                  @click="loadSamePlaceTrades(true)"
+                >다시 조회</button>
+              </div>
+              <p v-if="samePlaceError" class="adp-sp-err">{{ samePlaceError }}</p>
+              <table v-if="shownTradeRows.length > 0" class="adp-table adp-trade-table">
+                <colgroup>
+                  <col style="width: 14%" /><col style="width: 22%" /><col style="width: 26%" /><col style="width: 28%" /><col style="width: 10%" />
+                </colgroup>
+                <thead>
+                  <tr><th>구분</th><th>계약일</th><th>거래금액</th><th>전용(㎡/평)</th><th class="r">층</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(r, i) in shownTradeRows" :key="`m${i}`">
+                    <td :class="['adp-trade-type', tradeTypeClass(r.kind === '직거래' ? '매매' : r.kind), { 'adp-sp-direct': r.kind === '직거래' }]">{{ r.kind }}</td>
+                    <td>{{ r.contractDate || '-' }}</td>
+                    <td>
+                      {{ r.amount }}
+                      <button
+                        v-if="canSendTrade(r)"
+                        type="button"
+                        class="adp-send-btn"
+                        aria-label="실거래가·평단가로 보내기"
+                        title="계약일·거래금액·전용면적을 1.실거래가 조사로 보냅니다"
+                        @click.stop="sendTradePriceToMarket(r)"
+                      >
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="m3 11 18-8-8 18-2-7z" />
+                        </svg>
+                      </button>
+                    </td>
+                    <td>{{ areaWithPyeong(r.areaM2) }}</td>
+                    <td class="r">{{ r.floor || '-' }}층</td>
+                  </tr>
+                </tbody>
+              </table>
+          </div>
+        </section>
+
+        <!-- 실거래가 조건식 분석 — 국토부 API를 조건으로 걸러 본다 -->
+        <section class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('trades')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>실거래가 조건식 분석</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('trades') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('trades')">
+            <div class="adp-trade-summary cols3">
+              <div class="adp-trade-sum-card">
+                <small><span class="adp-sum-key">{{ publicRealTradeDong || '동' }}</span> 실거래가 평균</small>
                 <span class="adp-sum-value">
                   <strong>{{ formatWonSimple(publicTradeAvg) }}</strong>
                   <button type="button" class="adp-copy-btn" aria-label="금액 복사" @click.stop="copyText(formatWonSimple(publicTradeAvg))">
@@ -3757,142 +4924,266 @@ const goBack = () => router.back();
                   </button>
                 </span>
               </div>
+              <div class="adp-trade-sum-card">
+                <small>평당가 평균</small>
+                <span class="adp-sum-value">
+                  <strong>{{ formatWonSimple(publicTradePyeongAvg) }}</strong>
+                  <button type="button" class="adp-copy-btn" aria-label="금액 복사" @click.stop="copyText(formatWonSimple(publicTradePyeongAvg))">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="8" y="8" width="13" height="13" rx="2" />
+                      <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
+                    </svg>
+                  </button>
+                </span>
+              </div>
+              <div class="adp-trade-sum-card">
+                <small><span v-if="publicRangeNote" class="adp-sum-key">{{ publicRangeNote }}</span> 총 거래건수</small>
+                <span class="adp-sum-value"><strong>{{ filteredPublicTradeRows.length }}건</strong></span>
+              </div>
             </div>
 
-            <div class="adp-trade-view-tabs">
-              <button :class="['adp-trade-view-tab', { active: tradeView === 'pdf' }]" @click="tradeView = 'pdf'">
-                해당경매물건 ({{ filteredPdfTradeRows.length }})
-              </button>
-              <button :class="['adp-trade-view-tab', { active: tradeView === 'public' }]" @click="tradeView = 'public'">
-                <span class="adp-tab-dot" /> {{ publicRealTradeSigungu || '주변' }} {{ publicRealTradeDong || '실거래가' }} ({{ filteredPublicTradeRows.length }})
-              </button>
+            <!-- 분포 내비게이터 — 누르면 아래 조건이 그 구간으로 채워진다 -->
+            <div v-if="navBaseRows.length > 0" class="adp-nav-dist">
+              <div class="adp-nav-line">
+                <span class="adp-nav-key">평형</span>
+                <button
+                  v-for="b in navPyeongBuckets"
+                  :key="b.key"
+                  type="button"
+                  :class="['adp-nav-chip', { top: b.key === navPyeongTop, on: navActive.pyeong === b.key }]"
+                  @click="pickNavPyeong(b.key)"
+                >
+                  <small>{{ b.label }}</small>
+                  <strong>{{ b.count }}<em>건</em></strong>
+                </button>
+              </div>
+              <div class="adp-nav-line">
+                <span class="adp-nav-key">층</span>
+                <button
+                  v-for="b in navFloorBuckets"
+                  :key="b.key"
+                  type="button"
+                  :class="['adp-nav-chip', { top: b.key === navFloorTop, on: navActive.floor === b.key }]"
+                  @click="pickNavFloor(b.key)"
+                >
+                  <small>{{ b.label }}</small>
+                  <strong>{{ b.count }}<em>건</em></strong>
+                </button>
+              </div>
+              <div class="adp-nav-line">
+                <span class="adp-nav-key">연식</span>
+                <button
+                  v-for="b in navYearBuckets"
+                  :key="b.key"
+                  type="button"
+                  :class="['adp-nav-chip', { top: b.key === navYearTop, on: navActive.year === b.key }]"
+                  @click="pickNavYear(b.key)"
+                >
+                  <small>{{ b.label }}</small>
+                  <strong>{{ b.count }}<em>건</em></strong>
+                </button>
+              </div>
             </div>
 
-            <template v-if="tradeView === 'pdf'">
-              <div class="adp-trade-filter-row">
-                <div class="adp-trade-tabs">
-                  <button :class="['adp-trade-tab','t-all',  { active: tradeFilter === 'all' }]" @click="tradeFilter = 'all'">전체</button>
-                  <button :class="['adp-trade-tab','t-buy',  { active: tradeFilter === '매매' }]" @click="tradeFilter = '매매'">매매</button>
-                  <button :class="['adp-trade-tab','t-jeon', { active: tradeFilter === '전세' }]" @click="tradeFilter = '전세'">전세</button>
-                  <button :class="['adp-trade-tab','t-wol',  { active: tradeFilter === '월세' }]" @click="tradeFilter = '월세'">월세</button>
-                </div>
-              </div>
-              <div class="adp-trade-selects">
-                <select v-model="tradeAreaFilter" class="adp-select-sm">
-                  <option value="">전체 면적</option>
-                  <option v-for="opt in tradeAreaOptions" :key="opt" :value="opt">{{ opt }}</option>
-                </select>
-                <select v-model="tradeYearFilter" class="adp-select-sm">
-                  <option value="">거래년도</option>
-                  <option v-for="opt in tradeYearOptions" :key="opt" :value="opt">{{ opt }}</option>
-                </select>
-              </div>
-              <table v-if="filteredPdfTradeRows.length > 0" class="adp-table adp-trade-table">
-                <colgroup>
-                  <col style="width: 12%" />
-                  <col style="width: 22%" />
-                  <col style="width: 28%" />
-                  <col style="width: 28%" />
-                  <col style="width: 10%" />
-                </colgroup>
-                <thead>
-                  <tr><th>구분</th><th>계약일</th><th>거래금액</th><th class="c">전용면적<br>㎡(평)</th><th class="r">층</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(r, i) in filteredPdfTradeRows" :key="i">
-                    <td>{{ r.type }}</td>
-                    <td>{{ r.contractDate }}</td>
-                    <td>
-                      <span class="adp-trade-price">
-                        <span>{{ r.price }}</span>
-                        <button
-                          v-if="r === latestSaleTradeRow"
-                          type="button"
-                          class="adp-copy-btn"
-                          aria-label="실거래가에 넣기"
-                          title="손품+현장 실거래가에 넣기"
-                          @click.stop="sendTradePriceToMarket(r)"
-                        >
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4Z" />
-                          </svg>
-                        </button>
-                      </span>
-                    </td>
-                    <td class="c">{{ r.area }}</td>
-                    <td class="r">{{ r.floor }}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <p v-else class="adp-empty">실거래가 데이터 없음</p>
-            </template>
-
-            <template v-else>
               <div class="adp-pub-filter">
-                <div class="adp-pub-row dates">
-                  <label class="adp-pub-cell narrow">
-                    <span>시작일</span>
+                <div class="adp-pub-row">
+                  <label class="adp-pub-cell span2">
+                    <span>기간선택</span>
+                    <span class="adp-pub-months">
+                      <button
+                        v-for="m in [1, 3, 6, 12]"
+                        :key="m"
+                        type="button"
+                        :class="['adp-pub-month-btn', { on: pubMonthPreset === m }]"
+                        @click="setPubMonths(m)"
+                      >{{ m }}개월</button>
+                    </span>
+                  </label>
+                </div>
+                <div class="adp-pub-row">
+                  <label class="adp-pub-cell">
+                    <span>시작일자</span>
                     <button type="button" class="adp-pub-input adp-pub-date" @click="pubDateTarget = 'start'">
                       {{ publicStartDate || '선택' }}
                     </button>
                   </label>
-                  <label class="adp-pub-cell narrow">
-                    <span>종료일</span>
+                  <label class="adp-pub-cell">
+                    <span>종료일자</span>
                     <button type="button" class="adp-pub-input adp-pub-date" @click="pubDateTarget = 'end'">
                       {{ publicEndDate || '선택' }}
                     </button>
                   </label>
-                  <span class="adp-pub-months">
-                    <button
-                      v-for="m in [3, 6, 12]"
-                      :key="m"
-                      type="button"
-                      :class="['adp-pub-month-btn', { on: pubMonthPreset === m }]"
-                      @click="setPubMonths(m)"
-                    >{{ m }}M</button>
-                  </span>
                 </div>
                 <div class="adp-pub-row">
                   <label class="adp-pub-cell">
                     <span>최소면적</span>
                     <select v-model="publicMinArea" class="adp-pub-input">
                       <option value="">전체</option>
-                      <option v-for="a in publicAreaUniqueValues" :key="a" :value="String(a)">{{ a }}</option>
+                      <option v-for="o in AREA_STEP_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
                     </select>
                   </label>
                   <label class="adp-pub-cell">
                     <span>최대면적</span>
                     <select v-model="publicMaxArea" class="adp-pub-input">
                       <option value="">전체</option>
-                      <option v-for="a in publicAreaUniqueValues" :key="a" :value="String(a)">{{ a }}</option>
+                      <option v-for="o in AREA_STEP_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
                     </select>
                   </label>
                 </div>
                 <div class="adp-pub-row">
-                  <label class="adp-pub-cell wide">
+                  <label class="adp-pub-cell span2 years">
                     <span>건축년도</span>
-                    <select v-model="publicMinBuildYear" class="adp-pub-input small">
+                    <select v-model="publicMinBuildYear" class="adp-pub-input">
                       <option value="">전체</option>
-                      <option v-for="y in publicBuildYearUniqueValues" :key="y" :value="String(y)">{{ y }}</option>
+                      <option v-for="y in BUILD_YEAR_STEPS" :key="y" :value="String(y)">{{ y }}년</option>
                     </select>
                     <span class="adp-pub-tilde">~</span>
-                    <select v-model="publicMaxBuildYear" class="adp-pub-input small">
+                    <select v-model="publicMaxBuildYear" class="adp-pub-input">
                       <option value="">전체</option>
-                      <option v-for="y in publicBuildYearUniqueValues" :key="y" :value="String(y)">{{ y }}</option>
+                      <option v-for="y in BUILD_YEAR_STEPS" :key="y" :value="String(y)">{{ y }}년</option>
                     </select>
                   </label>
-                  <button type="button" class="adp-pub-reset" @click="resetPublicFilters">초기화</button>
+                </div>
+                <div class="adp-pub-row actions">
+                  <button type="button" class="adp-pub-search" :disabled="fetchingPublicTrade" @click="searchPublicTrades">
+                    <span class="adp-pub-search-main">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                        <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+                      </svg><span>{{ fetchingPublicTrade ? '조회 중…' : '검색' }}</span>
+                    </span>
+                  </button>
                 </div>
               </div>
-              <div v-if="publicRealTradeRows.length > 0" class="adp-pub-table-wrap" @click.self="closePubColMenu">
+              <p v-if="publicTradeWarning" class="adp-pub-warn">일부 기간을 못 받아 건수가 실제보다 적을 수 있습니다 — {{ publicTradeWarning }}</p>
+              <div v-if="publicRealTradeRows.length > 0" class="adp-pub-result">
+                <div class="adp-pub-toggle-row">
+                  <span class="adp-pub-result-title">
+                    <strong>
+                      검색리스트
+                      <small v-if="publicTradeUpdatedAt" class="adp-pub-update">UPDATE : {{ publicTradeUpdatedAt }}</small>
+                    </strong>
+                  </span>
+                  <button type="button" class="adp-pub-toggle" @click="toggleTradeList">
+                    정상거래 <strong>{{ filteredPublicTradeRows.length }}</strong>건
+                    <img :src="chevronDownIcon" :class="['adp-chev sm', { up: pubTableCollapsed }]" alt="" />
+                  </button>
+                  <button
+                    type="button"
+                    class="adp-pub-direct"
+                    :disabled="filteredDirectRows.length === 0"
+                    @click="toggleDirectList"
+                  >
+                    직거래 <strong>{{ filteredDirectRows.length }}</strong>건
+                    <img :src="chevronDownIcon" :class="['adp-chev sm', { up: pubDirectCollapsed }]" alt="" />
+                  </button>
+                  <button
+                    type="button"
+                    class="adp-pub-direct"
+                    :disabled="filteredCancelledRows.length === 0"
+                    @click="toggleCancelledList"
+                  >
+                    계약해제 <strong>{{ filteredCancelledRows.length }}</strong>건
+                    <img :src="chevronDownIcon" :class="['adp-chev sm', { up: pubCancelledCollapsed }]" alt="" />
+                  </button>
+                </div>
+                <div v-if="!pubDirectCollapsed && filteredDirectRows.length > 0" class="adp-pub-direct-list">
+                  <p class="adp-pub-direct-note">시세와 동떨어진 경우가 많아 집계에서 뺐습니다.</p>
+                  <table class="adp-table adp-pub-table">
+                    <colgroup>
+                      <col style="width: 17%" />
+                      <col style="width: 19%" />
+                      <col style="width: 17%" />
+                      <col style="width: 13%" />
+                      <col style="width: 9%" />
+                      <col style="width: 25%" />
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>계약일</th><th>거래금액</th><th>전용㎡/평</th><th>건축</th><th>층</th><th>주소</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(r, i) in filteredDirectRows" :key="`d${i}`">
+                        <td>{{ r.contractDate || '-' }}</td>
+                        <td>{{ formatWonSimple(r.price) }}</td>
+                        <td class="adp-area-cell">
+                          <span>{{ areaWithPyeong(r.areaM2) }}</span>
+                          <small v-if="normalizeHouseType(r.houseType)">{{ normalizeHouseType(r.houseType) }}</small>
+                        </td>
+                        <td class="adp-pub-year">
+                          <span>{{ r.buildYear || '-' }}</span>
+                          <small v-if="r.buildYear">{{ buildYearAge(r.buildYear) }}</small>
+                        </td>
+                        <td>{{ r.floor || '-' }}</td>
+                        <td class="adp-pub-addr">
+                          <div class="adp-pub-addr-in">
+                            <span :title="rowAddress(r)">{{ rowAddress(r) }}</span>
+                            <button type="button" class="adp-copy-btn" aria-label="주소 복사" @click.stop="copyAddressText(rowAddress(r))">
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="8" y="8" width="13" height="13" rx="2" />
+                                <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div v-if="!pubCancelledCollapsed && filteredCancelledRows.length > 0" class="adp-pub-direct-list">
+                  <p class="adp-pub-direct-note">계약이 해제된 거래라 집계에서 뺐습니다.</p>
+                  <table class="adp-table adp-pub-table">
+                    <colgroup>
+                      <col style="width: 17%" />
+                      <col style="width: 19%" />
+                      <col style="width: 17%" />
+                      <col style="width: 13%" />
+                      <col style="width: 9%" />
+                      <col style="width: 25%" />
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>계약일</th><th>거래금액</th><th>전용㎡/평</th><th>건축</th><th>층</th><th>주소</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(r, i) in filteredCancelledRows" :key="`c${i}`">
+                        <td>{{ r.contractDate || '-' }}</td>
+                        <td>{{ formatWonSimple(r.price) }}</td>
+                        <td class="adp-area-cell">
+                          <span>{{ areaWithPyeong(r.areaM2) }}</span>
+                          <small v-if="normalizeHouseType(r.houseType)">{{ normalizeHouseType(r.houseType) }}</small>
+                        </td>
+                        <td class="adp-pub-year">
+                          <span>{{ r.buildYear || '-' }}</span>
+                          <small v-if="r.buildYear">{{ buildYearAge(r.buildYear) }}</small>
+                        </td>
+                        <td>{{ r.floor || '-' }}</td>
+                        <td class="adp-pub-addr">
+                          <div class="adp-pub-addr-in">
+                            <span :title="rowAddress(r)">{{ rowAddress(r) }}</span>
+                            <button type="button" class="adp-copy-btn" aria-label="주소 복사" @click.stop="copyAddressText(rowAddress(r))">
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="8" y="8" width="13" height="13" rx="2" />
+                                <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div v-if="publicRealTradeRows.length > 0 && pubDirectCollapsed && pubCancelledCollapsed" :class="['adp-pub-table-wrap', { 'dd-open': !!activePubCol }]" @click.self="closePubColMenu">
                 <table class="adp-table adp-pub-table">
                   <colgroup>
                     <col style="width: 17%" />
-                    <col style="width: 20%" />
+                    <col style="width: 19%" />
+                    <col style="width: 17%" />
                     <col style="width: 13%" />
-                    <col style="width: 12%" />
-                    <col style="width: 8%" />
-                    <col style="width: 30%" />
+                    <col style="width: 9%" />
+                    <col style="width: 25%" />
                   </colgroup>
                   <thead>
                     <tr>
@@ -3912,7 +5203,7 @@ const goBack = () => router.back();
                               class="adp-pub-dd-item"
                               @click="togglePubColValue(col, v)"
                             >
-                              <input type="checkbox" :checked="pubColDraft[col].size === 0 || pubColDraft[col].has(v)" @click.stop="togglePubColValue(col, v)" />
+                              <input type="checkbox" :checked="isPubColChecked(col, v)" @click.stop="togglePubColValue(col, v)" />
                               <span>{{ v }}</span>
                             </li>
                           </ul>
@@ -3920,21 +5211,29 @@ const goBack = () => router.back();
                       </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody v-if="!pubTableCollapsed">
                     <tr v-for="(r, i) in filteredPublicTradeRows" :key="i">
                       <td>{{ r.contractDate || '-' }}</td>
                       <td>{{ formatWonSimple(r.price) }}</td>
-                      <td class="c">{{ r.areaM2 || '-' }}</td>
-                      <td class="c">{{ r.buildYear || '-' }}</td>
-                      <td class="r">{{ r.floor || '-' }}</td>
+                      <td class="adp-area-cell">
+                        <span>{{ areaWithPyeong(r.areaM2) }}</span>
+                        <small v-if="normalizeHouseType(r.houseType)">{{ normalizeHouseType(r.houseType) }}</small>
+                      </td>
+                      <td class="adp-pub-year">
+                        <span>{{ r.buildYear || '-' }}</span>
+                        <small v-if="r.buildYear">{{ buildYearAge(r.buildYear) }}</small>
+                      </td>
+                      <td>{{ r.floor || '-' }}</td>
                       <td class="adp-pub-addr">
-                        <span>{{ rowAddress(r) }}</span>
-                        <button type="button" class="adp-copy-btn" aria-label="주소 복사" @click.stop="copyText(rowAddress(r))">
+                        <div class="adp-pub-addr-in">
+                        <span :title="rowAddress(r)">{{ rowAddress(r) }}</span>
+                        <button type="button" class="adp-copy-btn" aria-label="주소 복사" @click.stop="copyAddressText(rowAddress(r))">
                           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="8" y="8" width="13" height="13" rx="2" />
                             <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
                           </svg>
                         </button>
+                        </div>
                       </td>
                     </tr>
                     <tr v-if="filteredPublicTradeRows.length === 0">
@@ -3943,9 +5242,9 @@ const goBack = () => router.back();
                   </tbody>
                 </table>
               </div>
-              <p v-else-if="fetchingPublicTrade" class="adp-empty">주변 실거래가 조회 중…</p>
-              <p v-else class="adp-empty">주변 실거래가 데이터 없음</p>
-            </template>
+              <!-- '데이터 없음'은 자료가 정말 없을 때만 — 직거래를 펼쳐 표를 숨긴 경우와 섞이지 않게 조건을 따로 둔다 -->
+              <p v-if="publicRealTradeRows.length === 0 && fetchingPublicTrade" class="adp-empty">주변 실거래가 조회 중…</p>
+              <p v-else-if="publicRealTradeRows.length === 0" class="adp-empty">주변 실거래가 데이터 없음</p>
           </div>
         </section>
       </template>
@@ -3955,14 +5254,14 @@ const goBack = () => router.back();
         <!-- 매각물건명세서 등 서류 캡처·링크 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsPhotos')">
-            <h2>서류사진</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>서류사진<span v-if="rightsDocList.length" class="adp-photo-mark" :title="`사진 ${rightsDocList.length}장`">{{ rightsDocList.length }}</span></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsPhotos') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('rightsPhotos')">
             <div class="adp-plan-row">
               <input
                 v-model="rightsDocInput"
-                placeholder="링크 주소 입력 또는 이미지 붙여넣기"
+                placeholder="링크 또는 이미지 붙여넣기"
                 class="adp-input"
                 @keydown.enter.prevent="addRightsDocUrl"
                 @paste="pasteImageInto($event, 'rightsDoc')"
@@ -3978,9 +5277,56 @@ const goBack = () => router.back();
           </div>
         </section>
 
+        <!-- 임차인현황 -->
+        <section class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('tenant')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>임차인현황</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('tenant') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('tenant')">
+          <p class="adp-base-note adp-tn-base">말소기준 : <b class="adp-tn-date">{{ tenantBaseDate }}</b> · 배당종기 : <b class="adp-tn-date">{{ tenantDistDate }}</b> · 소액기준 : <b class="adp-tn-date">{{ tenantSmallDate }}</b></p>
+
+          <div class="adp-tn-box">
+          <template v-if="tenantCards.length > 0">
+            <dl v-for="(tenant, i) in tenantCards" :key="i" class="adp-base-rows adp-base-tenant">
+              <div class="adp-base-row">
+                <dt>임차인</dt>
+                <dd><strong>{{ tenant.name }}</strong><span v-if="tenant.agency"> / {{ tenant.agency }}</span></dd>
+              </div>
+              <div class="adp-base-row">
+                <dt>보증금</dt>
+                <dd class="amt">{{ tenant.deposit || '-' }}</dd>
+              </div>
+              <div class="adp-base-row">
+                <dt>점유/기간</dt>
+                <dd class="adp-tn-dates">{{ tenantUsagePeriod(tenant.occupationPeriod) }}</dd>
+              </div>
+              <div class="adp-base-row">
+                <dt>전입 확정 배당</dt>
+                <dd class="adp-tn-dates">{{ tenantDatesText(tenant) }}</dd>
+              </div>
+            </dl>
+          </template>
+          <p v-else class="adp-empty">임차인 정보 없음</p>
+
+          <p v-if="tenantWarnText" class="adp-base-warn">
+            <img :src="alertIcon" alt="" class="adp-base-mini" />{{ tenantWarnText }}
+          </p>
+
+          <!-- PDF 임차인 현황의 '기타사항' 원문 -->
+          <div v-if="tenantOtherNotes" class="adp-base-more">
+            <button type="button" class="adp-note-toggle" @click="tenantNotesOpen = !tenantNotesOpen">
+              <span>기타사항</span>
+              <img :src="chevronDownIcon" :class="['adp-chev sm', { up: tenantNotesOpen }]" alt="" />
+            </button>
+            <p v-if="tenantNotesOpen" class="adp-base-note pre">{{ tenantOtherNotes }}</p>
+          </div>
+          </div>
+          </div>
+        </section>
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsCheck')">
-            <h2>권리 분석</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 11 2 2 4-4"/></svg>권리분석</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsCheck') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('rightsCheck')">
@@ -3992,11 +5338,11 @@ const goBack = () => router.back();
               </colgroup>
               <tbody>
                 <tr>
-                  <td class="adp-rcheck-label"><strong>매각물건명세서 권리 케이스</strong></td>
+                  <td class="adp-rcheck-label"><strong>매각물건명세서</strong></td>
                   <td class="adp-rcheck-desc" colspan="2">
                     <!-- 기본 select는 펼친 목록과 닫힌 표시의 글자를 다르게 둘 수 없어 직접 만든다 -->
                     <div class="adp-rcase-dd">
-                      <button type="button" class="adp-rcase-select" @click="caseOpen = !caseOpen">
+                      <button type="button" :class="['adp-rcase-select', { picked: selectedRightsCase }]" @click="caseOpen = !caseOpen">
                         <span>{{ selectedRightsCase ? selectedRightsCase.title : '권리분석 케이스 선택' }}</span>
                         <span class="adp-rcase-caret">{{ caseOpen ? '▴' : '▾' }}</span>
                       </button>
@@ -4150,14 +5496,14 @@ const goBack = () => router.back();
         <!-- 본건사진 — 전경 + 평면도 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('photos')">
-            <h2>본건사진 <span class="adp-survey-note-inline">전경 + 평면도 추천</span></h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h4l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>본건사진<span v-if="propertyPhotos.length" class="adp-photo-mark" :title="`사진 ${propertyPhotos.length}장`">{{ propertyPhotos.length }}</span> <span class="adp-survey-note-inline">전경 + 평면도</span></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('photos') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('photos')">
             <div class="adp-plan-row">
               <input
                 v-model="exteriorInput"
-                placeholder="링크 주소 입력 또는 이미지 붙여넣기"
+                placeholder="링크 또는 이미지 붙여넣기"
                 class="adp-input"
                 @keydown.enter.prevent="addExteriorUrl"
                 @paste="pasteImageInto($event, 'exterior')"
@@ -4183,21 +5529,346 @@ const goBack = () => router.back();
         </section>
 
 
-        <!-- 입지조사 — 지역조사 / 구역내 입지등수 / 주민이야기 -->
+        <!-- 매매수요 — 동단위 수요·공급 (빌라) -->
         <section class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('areaSurvey')">
-            <h2>입지조사</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('areaSurvey') }]" alt="" />
+          <header class="adp-card-head adp-survey-head" @click="toggleSection('demand')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V10M9 21V4M15 21v-7M21 21v-11"/></svg>매매수요</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('demand') }]" alt="" />
           </header>
-          <div v-if="!isCollapsed('areaSurvey')">
+          <div v-if="!isCollapsed('demand')" class="adp-dm-body">
+            <div class="adp-dm-head">
+              <strong class="adp-dm-title">1. <span class="adp-dm-area">{{ surveyAreaLabel }}</span> 수요공급</strong>
+              <button v-if="!editingSurvey.demand" class="adp-edit-btn" type="button" @click.stop="editingSurvey.demand = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('demand')">💾 저장</button>
+            </div>
+
+            <!-- ① 기준수치 — 이름 칸에 대면 설명이 뜬다(칸이 작아 아이콘만으로는 누르기 어렵다) -->
+            <div class="adp-dm-block">
+              <div class="adp-dm-block-head">
+                <span class="t">① 기준수치</span>
+              </div>
+              <div class="adp-dm-rowwrap">
+              <div class="adp-mkt-cells c4">
+                <div class="cell split">
+                  <div class="cell-head">
+                    <small><span class="adp-dm-mon">12개월</span> 거래량</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="dmTip = 'deal'"
+                      @mouseleave="dmTip = ''"
+                      @click.stop="dmTip = dmTip === 'deal' ? '' : 'deal'"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-body">
+                    <strong class="hi-blue"><span class="num">{{ dmIntText(deal12mValue) }}</span><em>건</em></strong>
+                  </div>
+                </div>
+                <div class="cell split">
+                  <div class="cell-head">
+                    <small>총 세대수</small>
+                      <button
+                        type="button"
+                        class="adp-dm-lookup"
+                        aria-label="세대수 찾아보기"
+                        @mouseenter="dmTip = 'units'"
+                        @mouseleave="dmTip = ''"
+                        @click.stop="openHouseholdLookup"
+                      >
+                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                      </button>
+                  </div>
+                  <div class="cell-body">
+                    <span v-if="editingSurvey.demand" class="adp-dm-pair">
+                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.units')" :placeholder="unitsAuto > 0 ? String(unitsAuto) : '입력'" @change="setDmVal('fs.dm.units', ($event.target as HTMLInputElement).value)" />
+                    </span>
+                    <strong v-else class="hi-blue"><span class="num">{{ dmIntText(dmUnits) }}</span><em>건</em></strong>
+                  </div>
+                </div>
+                <div class="cell split">
+                  <div class="cell-head">
+                    <small>총 매물수</small>
+                      <button
+                        type="button"
+                        class="adp-dm-lookup"
+                        aria-label="매물 보기"
+                        @mouseenter="dmTip = 'listings'"
+                        @mouseleave="dmTip = ''"
+                        @click.stop="openListingLookup"
+                      >
+                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                      </button>
+                  </div>
+                  <div class="cell-body">
+                    <span v-if="editingSurvey.demand" class="adp-dm-pair">
+                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.listings')" placeholder="입력" @change="setDmVal('fs.dm.listings', ($event.target as HTMLInputElement).value)" />
+                    </span>
+                    <strong v-else class="hi-blue"><span class="num">{{ dmIntText(dmListings) }}</span><em>건</em></strong>
+                  </div>
+                </div>
+                <div class="cell split">
+                  <div class="cell-head">
+                    <small>월평균 거래량</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="dmTip = 'monthly'"
+                      @mouseleave="dmTip = ''"
+                      @click.stop="dmTip = dmTip === 'monthly' ? '' : 'monthly'"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-body">
+                    <strong class="hi-blue"><span class="num">{{ dmIntText(dmMonthly) }}</span><em>건</em></strong>
+                  </div>
+                </div>
+              </div>
+              <p v-if="dmTip && DM_ROW1.includes(dmTip)" class="adp-dm-bubble" :style="{ '--arrow': dmTipData[dmTip].arrow }" @click="dmTip = ''">
+                <span v-for="(row, ri) in dmTipData[dmTip].rows" :key="ri"><b>{{ row[0] }}</b>{{ row[1] }}</span>
+              </p>
+              </div>
+            </div>
+
+            <!-- ② 지표 — 이름 칸에 대면 계산식이 뜬다 -->
+            <div class="adp-dm-block">
+              <div class="adp-dm-block-head">
+                <span class="t">② 지표결과</span>
+                <small>기준수치로 자동계산</small>
+              </div>
+              <div class="adp-dm-rowwrap">
+              <div class="adp-mkt-cells c4">
+                <div class="cell split calc">
+                  <div class="cell-head">
+                    <small>연간 회전율</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="dmTip = 'turn'"
+                      @mouseleave="dmTip = ''"
+                      @click.stop="dmTip = dmTip === 'turn' ? '' : 'turn'"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-body">
+                    <strong class="hi-blue"><span class="num">{{ dmRateText(dmTurnover) }}</span><em>%</em></strong>
+                  </div>
+                </div>
+                <div class="cell split calc">
+                  <div class="cell-head">
+                    <small>매물 부담률</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="dmTip = 'burden'"
+                      @mouseleave="dmTip = ''"
+                      @click.stop="dmTip = dmTip === 'burden' ? '' : 'burden'"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-body">
+                    <strong class="hi-blue"><span class="num">{{ dmRateText(dmBurden) }}</span><em>%</em></strong>
+                  </div>
+                </div>
+                <div class="cell split calc">
+                  <div class="cell-head">
+                    <small>매물 소진기간</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="dmTip = 'clear'"
+                      @mouseleave="dmTip = ''"
+                      @click.stop="dmTip = dmTip === 'clear' ? '' : 'clear'"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-body">
+                    <strong class="hi-blue"><span class="num">{{ dmRateText(dmClearMonths) }}</span><em>개월</em></strong>
+                  </div>
+                </div>
+                <div class="cell split calc">
+                  <div class="cell-head">
+                    <small>월간 소화율</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="dmTip = 'absorb'"
+                      @mouseleave="dmTip = ''"
+                      @click.stop="dmTip = dmTip === 'absorb' ? '' : 'absorb'"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-body">
+                    <strong class="hi-blue"><span class="num">{{ dmRateText(dmAbsorb) }}</span><em>%</em></strong>
+                  </div>
+                </div>
+              </div>
+              <p v-if="dmTip && !DM_ROW1.includes(dmTip) && !DM_ROW3.includes(dmTip)" class="adp-dm-bubble" :style="{ '--arrow': dmTipData[dmTip].arrow }" @click="dmTip = ''">
+                <span v-for="(row, ri) in dmTipData[dmTip].rows" :key="ri"><b>{{ row[0] }}</b>{{ row[1] }}</span>
+              </p>
+              </div>
+            </div>
+
+            <!-- ③ 등급결과 — 지표를 구간에 넣어 A~D로, 적합 여부까지 -->
+            <div class="adp-dm-block">
+              <div class="adp-dm-block-head">
+                <span class="t">③ 등급결과</span>
+              <div class="adp-dm-total">
+                <span class="lab">
+                  종합등급
+                  <button
+                    type="button"
+                    class="adp-dm-info"
+                    aria-label="설명"
+                    @mouseenter="dmTip = 'total'"
+                    @mouseleave="dmTip = ''"
+                    @click.stop="dmTip = dmTip === 'total' ? '' : 'total'"
+                  >
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                    </svg>
+                  </button>
+                </span>
+                <strong :class="['adp-dm-grade', `g-${levelTone(dmTotalGrade)}`]">{{ dmTotalGrade }}</strong>
+                <span v-if="dmTotalGrade !== '-'" :class="['adp-dm-fit', { bad: dmTotalGrade === 'C' }]">/ {{ dmFitText(dmTotalGrade) }}</span>
+              </div>
+              </div>
+              <div class="adp-dm-rowwrap">
+              <div class="adp-mkt-cells c4">
+                <div class="cell split">
+                  <div class="cell-head">
+                    <small>회전율 등급</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="dmTip = 'gTurn'"
+                      @mouseleave="dmTip = ''"
+                      @click.stop="dmTip = dmTip === 'gTurn' ? '' : 'gTurn'"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-body">
+                    <strong :class="['adp-dm-grade', `g-${levelTone(dmTurnGrade)}`]">{{ dmTurnGrade }}</strong>
+                    <span v-if="dmTurnGrade !== '-'" :class="['adp-dm-fit', { bad: dmTurnGrade === 'C' }]">/ {{ dmFitText(dmTurnGrade) }}</span>
+                  </div>
+                </div>
+                <div class="cell split">
+                  <div class="cell-head">
+                    <small>부담률 등급</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="dmTip = 'gBurden'"
+                      @mouseleave="dmTip = ''"
+                      @click.stop="dmTip = dmTip === 'gBurden' ? '' : 'gBurden'"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-body">
+                    <strong :class="['adp-dm-grade', `g-${levelTone(dmBurdenGrade)}`]">{{ dmBurdenGrade }}</strong>
+                    <span v-if="dmBurdenGrade !== '-'" :class="['adp-dm-fit', { bad: dmBurdenGrade === 'C' }]">/ {{ dmFitText(dmBurdenGrade) }}</span>
+                  </div>
+                </div>
+                <div class="cell split">
+                  <div class="cell-head">
+                    <small>소진기간 등급</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="dmTip = 'gClear'"
+                      @mouseleave="dmTip = ''"
+                      @click.stop="dmTip = dmTip === 'gClear' ? '' : 'gClear'"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-body">
+                    <strong :class="['adp-dm-grade', `g-${levelTone(dmClearGrade)}`]">{{ dmClearGrade }}</strong>
+                    <span v-if="dmClearGrade !== '-'" :class="['adp-dm-fit', { bad: dmClearGrade === 'C' }]">/ {{ dmFitText(dmClearGrade) }}</span>
+                  </div>
+                </div>
+                <div class="cell split">
+                  <div class="cell-head">
+                    <small>소화율 등급</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="dmTip = 'gAbsorb'"
+                      @mouseleave="dmTip = ''"
+                      @click.stop="dmTip = dmTip === 'gAbsorb' ? '' : 'gAbsorb'"
+                    >
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-body">
+                    <strong :class="['adp-dm-grade', `g-${levelTone(dmAbsorbGrade)}`]">{{ dmAbsorbGrade }}</strong>
+                    <span v-if="dmAbsorbGrade !== '-'" :class="['adp-dm-fit', { bad: dmAbsorbGrade === 'C' }]">/ {{ dmFitText(dmAbsorbGrade) }}</span>
+                  </div>
+                </div>
+              </div>
+              <p v-if="dmTip && DM_ROW3.includes(dmTip)" class="adp-dm-bubble" :style="{ '--arrow': dmTipData[dmTip].arrow }" @click="dmTip = ''">
+                <span v-for="(row, ri) in dmTipData[dmTip].rows" :key="ri"><b>{{ row[0] }}</b>{{ row[1] }}</span>
+              </p>
+              </div>
+            </div>
+
+            <div class="adp-dm-head sec2">
+              <strong class="adp-dm-title">2. 입지/개별성<small>(구역내등수)</small></strong>
+            </div>
+
+            <!-- ① 입지조사 -->
+            <div class="adp-dm-block boxed">
+            <div class="adp-dm-sub">① 입지조사 <span class="adp-survey-note-inline">호재,공급, 입지조건등 조사 (호갱, 네부, 부플)</span></div>
             <div v-for="item in AREA_SURVEY_ITEMS.filter((i) => isApartment || !i.aptOnly)" :key="item.key" class="adp-sub-block">
-              <div class="adp-sub-head">
-                <h3>{{ item.title }} <span v-if="item.note" class="adp-survey-note-inline">{{ item.note }}</span></h3>
+              <div v-if="item.title" class="adp-sub-head">
+                <h3>{{ item.title }}<span v-if="extraList(item.key).length" class="adp-photo-mark" :title="`사진 ${extraList(item.key).length}장`">{{ extraList(item.key).length }}</span> <span v-if="item.note" class="adp-survey-note-inline">{{ item.note }}</span></h3>
               </div>
               <div class="adp-plan-row">
                 <input
                   :value="extraInput[item.key] ?? ''"
-                  placeholder="링크 주소 입력 또는 이미지 붙여넣기"
+                  placeholder="링크 또는 이미지 붙여넣기"
                   class="adp-input"
                   @input="extraInput = { ...extraInput, [item.key]: ($event.target as HTMLInputElement).value }"
                   @keydown.enter.prevent="addExtraUrl(item.key)"
@@ -4220,21 +5891,93 @@ const goBack = () => router.back();
                 />
               </div>
             </div>
-          </div>
-        </section>
 
-        <!-- 5. 개별성 분석 -->
-        <section class="adp-card">
-          <header class="adp-card-head adp-survey-head">
-            <h2 class="adp-head-wrap">
-              개별성 분석
-              <span class="adp-survey-note-inline below">호갱노노, 네이버부동산 분석 (다른 동 대비 개별성 파악 중요!)</span>
-            </h2>
-            <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click="editingSurvey.individuality = true">✎ 편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click="saveSurveyAndClose('individuality')">💾 저장</button>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survInd') }]" alt="" @click="toggleSection('survInd')" />
-          </header>
-          <div v-if="!isCollapsed('survInd')" class="adp-ind-body">
+            </div>
+
+            <!-- ② 실사용자 + 입지등수 -->
+            <div class="adp-dm-block boxed">
+            <div class="adp-dm-sub">② 실사용자 + 입지등수 <span class="adp-survey-note-inline">(호갱, 네부, 부플)</span></div>
+            <table class="adp-table adp-ruser-table">
+              <colgroup>
+              <col style="width: 33%" /><col style="width: 21%" /><col style="width: 18%" /><col style="width: 13%" /><col style="width: 15%" />
+              </colgroup>
+              <thead>
+              <tr>
+                <th>전용면적</th>
+                <th>세대구성</th>
+                <th>입지조건</th>
+                <th>등수</th>
+                <th>평균등수</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+                <td class="adp-ruser-cell vmid">
+                <div class="adp-rcase-dd">
+                  <button type="button" class="adp-rcase-select adp-ruser-select" @click="bandOpen = !bandOpen">
+                    <span class="adp-ruser-pick">
+                      <span class="band">{{ selectedRealUserBand ? selectedRealUserBand.title : '선택' }}</span>
+                      <span v-if="selectedRealUserBandM2" class="rooms">{{ selectedRealUserBandM2 }}</span>
+                    </span>
+                    <span class="adp-rcase-caret">{{ bandOpen ? '▴' : '▾' }}</span>
+                  </button>
+                  <template v-if="bandOpen">
+                    <div class="adp-rcase-backdrop" @click="bandOpen = false" />
+                    <ul class="adp-rcase-list adp-ruser-list">
+                      <li
+                        v-for="b in REAL_USER_BANDS"
+                        :key="b.id"
+                        :class="['adp-rcase-item', { on: b.id === selectedRealUserBand?.id }]"
+                        @click="pickRealUserBand(b.id)"
+                      >
+                        <strong>{{ b.title }}</strong>
+                        <small>{{ b.rooms }}</small>
+                      </li>
+                    </ul>
+                  </template>
+                </div>
+                <div v-if="selectedRealUserBand?.rooms" class="adp-ruser-m2">{{ selectedRealUserBand.rooms }}</div>
+                </td>
+                <td class="adp-ruser-cell">
+                <div v-for="d in selectedRealUserBand?.details ?? []" :key="d" class="adp-ruser-line">{{ d }}</div>
+                </td>
+                <!-- 입지조건 이름과 등수 입력을 열로 나눠 줄을 맞춘다 -->
+                <td class="adp-ruser-cell">
+                <div v-for="c in selectedRealUserBand?.conditions ?? []" :key="c" class="adp-ruser-cond-row">
+                  <span class="adp-ruser-cond-name">{{ c }}</span>
+                </div>
+                </td>
+                <td class="adp-ruser-cell center">
+                <div v-for="c in selectedRealUserBand?.conditions ?? []" :key="c" class="adp-ruser-cond-row center">
+                  <input
+                    class="adp-ruser-rank"
+                    inputmode="numeric"
+                    placeholder="등수"
+                    :value="rankOf(c)"
+                    @change="setRank(c, ($event.target as HTMLInputElement).value)"
+                  />
+                </div>
+                </td>
+                <td class="adp-ruser-cell center vmid">
+                <template v-if="realUserRankSummary.filled > 0">
+                  <strong class="adp-ruser-sum">{{ realUserRankSummary.avg }}</strong>
+                </template>
+                <span v-else class="adp-na">-</span>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+
+            </div>
+
+            <!-- ③ 개별성 분석 -->
+            <div class="adp-dm-block boxed">
+            <div class="adp-dm-sub">
+              ③ 개별성 분석 <span class="adp-survey-note-inline">해당 경매 물건 없을 시 유사 빌라와 비교 (호갱, 네부, 부플, 감평서)</span>
+              <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">💾 저장</button>
+            </div>
+          <div class="adp-ind-body">
             <table class="adp-table adp-ind-table">
               <colgroup>
                 <col style="width: 96px" /><col /><col style="width: 68px" />
@@ -4264,8 +6007,8 @@ const goBack = () => router.back();
                       </template>
                       <template v-else-if="item.custom === 'dong'">
                         <span v-if="editingSurvey.individuality" class="adp-sum-pair">
-                          <input class="adp-ind-input" inputmode="numeric" :value="indivValue('ind.dongTotal')" placeholder="총동" @change="setIndivValue('ind.dongTotal', ($event.target as HTMLInputElement).value)" />/
-                          <input class="adp-ind-input" :value="indivValue('ind.dongNote')" placeholder="입지조건" @change="setIndivValue('ind.dongNote', ($event.target as HTMLInputElement).value)" />
+                          총<input class="adp-ind-input" inputmode="numeric" :value="indivValue('ind.dongTotal')" placeholder="0" @change="setIndivValue('ind.dongTotal', ($event.target as HTMLInputElement).value)" />개동 /
+                          입지조건<input class="adp-ind-input" :value="indivValue('ind.dongNote')" placeholder="500m내" @change="setIndivValue('ind.dongNote', ($event.target as HTMLInputElement).value)" />
                         </span>
                         <strong v-else>{{ indivDongText }}</strong>
                       </template>
@@ -4452,33 +6195,41 @@ const goBack = () => router.back();
                 </tr>
                 <tr>
                   <th class="adp-ind-label">개별성 적용가</th>
-                  <td class="adp-ind-ctl" colspan="2">
+                  <!-- 예상 매매가와 같은 칸에 두어야 숫자 앞자리가 세로로 맞는다 -->
+                  <td class="adp-ind-ctl">
                     <div class="row"><strong class="hi">{{ indivAdjustedPrice }}</strong></div>
                   </td>
+                  <td class="adp-ind-rate" />
                 </tr>
               </tfoot>
             </table>
+          </div>
+          </div>
           </div>
         </section>
 
         <!-- 실거래가 조사 -->
         <section class="adp-card">
-          <header class="adp-card-head adp-survey-head">
-            <h2>실거래가 조사</h2>
-            <button v-if="!editingSurvey.location" class="adp-edit-btn" type="button" @click="editingSurvey.location = true">✎ 편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click="saveSurveyAndClose('location')">💾 저장</button>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survPrice') }]" alt="" @click="toggleSection('survPrice')" />
+          <header class="adp-card-head adp-survey-head" @click="toggleSection('survPrice')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>급매가</h2>
+            <button v-if="!editingSurvey.location" class="adp-edit-btn" type="button" @click.stop="editingSurvey.location = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('location')">💾 저장</button>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survPrice') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('survPrice')" class="adp-mkt-body">
-            <!-- 실거래가 현황 사진 -->
-            <div class="adp-sub-block">
-              <div class="adp-sub-head">
-                <h3>실거래가 현황 사진 <span class="adp-survey-note-inline">아실, 디스코</span></h3>
+            <div class="adp-dm-head">
+              <strong class="adp-dm-title">1. 실거래가 조사 <span class="adp-survey-note-inline">유사 입지/개별성 필터 (부플, 네부)</span></strong>
+            </div>
+
+            <!-- ① 평단가 비교 사진 -->
+            <div class="adp-mkt-block">
+              <div class="adp-mkt-block-head">
+                <span class="t">① 평단가 비교 사진<span v-if="tradePhotoList.length" class="adp-photo-mark" :title="`사진 ${tradePhotoList.length}장`">{{ tradePhotoList.length }}</span></span>
               </div>
               <div class="adp-plan-row">
                 <input
                   v-model="tradePhotoInput"
-                  placeholder="링크 주소 입력 또는 이미지 붙여넣기"
+                  placeholder="링크 또는 이미지 붙여넣기"
                   class="adp-input"
                   @keydown.enter.prevent="addTradePhotoUrl"
                   @paste="pasteImageInto($event, 'tradePhoto')"
@@ -4494,47 +6245,82 @@ const goBack = () => router.back();
             </div>
 
 
-            <!-- 본표 — 출처별 블록. 칸이 많아 2열로 접어 가로 스크롤을 없앴다 -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">해당경매물건 실거래가</span>
-                <small>아실/디스코, 부동산플래닛</small>
+                <span class="t">② <span :class="['mode', { sim: mktMode('b') === '유사물건' }]">{{ mktMode('b') }}</span> 평단가</span>
+                <button
+                  type="button"
+                  :class="['adp-mkt-mode', { sim: mktMode('b') === '유사물건' }]"
+                  title="누를 때마다 경매물건 ↔ 유사물건"
+                  @click="toggleMktMode('b')"
+                >{{ mktMode('b') }}</button>
               </div>
               <div class="adp-mkt-cells c3">
                 <div class="cell">
                   <small>전용면적</small>
                   <span v-if="editingSurvey.location" class="adp-mkt-unit">
-                    <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum('mkt.d.area')" placeholder="0" @change="setMktVal('mkt.d.area', ($event.target as HTMLInputElement).value)" />㎡
+                    <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(mk('b', 'area'))" placeholder="0" @change="setMktVal(mk('b', 'area'), ($event.target as HTMLInputElement).value)" />㎡
                   </span>
-                  <strong v-else>{{ mktAreaText('mkt.d.area') }}</strong>
+                  <strong v-else>{{ mktAreaText(mk('b', 'area')) }}</strong>
                 </div>
                 <div class="cell">
-                  <small>거래년도</small>
+                  <small>평단가</small>
+                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('b', 'unit'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('b', 'unit'), $event)" />
+                  <strong v-else class="hi">{{ mktMoney(mk('b', 'unit')) }}</strong>
+                </div>
+                <div class="cell calc">
+                  <small>전용면적 X 평단가</small>
+                  <strong>{{ mktAreaXUnit }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- 본표 — 출처별 블록. 칸이 많아 2열로 접어 가로 스크롤을 없앴다 -->
+            <div class="adp-mkt-block">
+              <div class="adp-mkt-block-head">
+                <span class="t">③ <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가</span>
+                <button
+                  type="button"
+                  :class="['adp-mkt-mode', { sim: mktMode('d') === '유사물건' }]"
+                  title="누를 때마다 경매물건 ↔ 유사물건"
+                  @click="toggleMktMode('d')"
+                >{{ mktMode('d') }}</button>
+              </div>
+              <div class="adp-mkt-cells c3">
+                <div class="cell">
+                  <small>전용면적</small>
+                  <span v-if="editingSurvey.location" class="adp-mkt-unit">
+                    <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(mk('d', 'area'))" placeholder="0" @change="setMktVal(mk('d', 'area'), ($event.target as HTMLInputElement).value)" />㎡
+                  </span>
+                  <strong v-else>{{ mktAreaText(mk('d', 'area')) }}</strong>
+                </div>
+                <div class="cell">
+                  <small>거래일자</small>
                   <button
                     v-if="editingSurvey.location"
                     type="button"
                     class="adp-mkt-input adp-mkt-ym"
                     @click="mktDealYmOpen = true"
-                  >{{ mktVal('mkt.d.year') || '연월' }}</button>
-                  <strong v-else>{{ mktVal('mkt.d.year') || '-' }}</strong>
+                  >{{ mktVal(mk('d', 'year')) || '연월일' }}</button>
+                  <strong v-else>{{ mktVal(mk('d', 'year')) || '-' }}</strong>
                 </div>
                 <div class="cell">
                   <small>실거래가</small>
-                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal('mkt.d.real')" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal('mkt.d.real', $event)" />
-                  <strong v-else class="hi">{{ mktMoney('mkt.d.real') }}</strong>
+                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'real'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'real'), $event)" />
+                  <strong v-else class="hi">{{ mktMoney(mk('d', 'real')) }}</strong>
                 </div>
               </div>
               <div class="adp-mkt-cells c3">
                 <div class="cell">
                   <small>공동주택가</small>
-                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal('mkt.d.pub')" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal('mkt.d.pub', $event)" />
-                  <strong v-else class="hi">{{ mktMoney('mkt.d.pub') }}</strong>
+                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'pub'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'pub'), $event)" />
+                  <strong v-else class="hi">{{ mktMoney(mk('d', 'pub')) }}</strong>
                 </div>
                 <div class="cell calc">
                   <small class="adp-mkt-rate">
                     전세가 (공주가 ×
                     <template v-if="editingSurvey.location">
-                      <input class="adp-mkt-rate-input" inputmode="numeric" :value="mktVal('mkt.d.rate')" placeholder="127" @input="setMktVal('mkt.d.rate', ($event.target as HTMLInputElement).value)" />%)
+                      <input class="adp-mkt-rate-input" inputmode="numeric" :value="mktVal(mk('d', 'rate'))" placeholder="127" @input="setMktVal(mk('d', 'rate'), ($event.target as HTMLInputElement).value)" />%)
                     </template>
                     <template v-else>{{ mktJeonseRate }}%)</template>
                   </small>
@@ -4549,8 +6335,12 @@ const goBack = () => router.back();
 
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">국토부 실거래가 평균</span>
-                <small>국토교통부</small>
+                <span class="t">④ 국토부 실거래가 평균</span>
+                <!-- 가격정보 탭에서 조회한 지역·건수와 조회 시각을 같이 보여 준다 -->
+                <small class="adp-mkt-region">
+                  <span class="adp-tab-dot" /> {{ publicRealTradeSigungu || '주변' }} {{ publicRealTradeDong || '실거래가' }} ({{ filteredPublicTradeRows.length }}건)
+                </small>
+                <span v-if="publicTradeUpdatedAt" class="adp-update-time">UPDATE : {{ publicTradeUpdatedAt }}</span>
               </div>
               <div class="adp-mkt-cells c3">
                 <div class="cell">
@@ -4578,46 +6368,50 @@ const goBack = () => router.back();
               </div>
             </div>
 
+            <div class="adp-dm-head sec2">
+              <strong class="adp-dm-title">2. 저렴매물조사 <span class="adp-survey-note-inline">유사 입지/개별성 필터 (부플, 네부)</span></strong>
+            </div>
+
+            <!-- ① 해당 빌라 저가 매물 — 줄을 늘려 가며 적는다 -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">해당경매물건 평단가</span>
-                <small>아실/디스코, 부동산플래닛</small>
+                <span class="t">① <span :class="['mode', { sim: mktMode('c') === '유사물건' }]">{{ mktMode('c') === '유사물건' ? '유사빌라' : '경매빌라' }}</span> 저가매물</span>
+                <button
+                  type="button"
+                  :class="['adp-mkt-mode', { sim: mktMode('c') === '유사물건' }]"
+                  title="누를 때마다 경매물건 ↔ 유사물건"
+                  @click="toggleMktMode('c')"
+                >{{ mktMode('c') }}</button>
               </div>
               <div class="adp-mkt-cells c3">
                 <div class="cell">
                   <small>전용면적</small>
                   <span v-if="editingSurvey.location" class="adp-mkt-unit">
-                    <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum('mkt.b.area')" placeholder="0" @change="setMktVal('mkt.b.area', ($event.target as HTMLInputElement).value)" />㎡
+                    <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(mk('c', 'area'))" placeholder="0" @change="setMktVal(mk('c', 'area'), ($event.target as HTMLInputElement).value)" />㎡
                   </span>
-                  <strong v-else>{{ mktAreaText('mkt.b.area') }}</strong>
+                  <strong v-else>{{ mktAreaText(mk('c', 'area')) }}</strong>
                 </div>
                 <div class="cell">
-                  <small>평단가</small>
-                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal('mkt.b.unit')" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal('mkt.b.unit', $event)" />
-                  <strong v-else class="hi">{{ mktMoney('mkt.b.unit') }}</strong>
+                  <small>현황</small>
+                  <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(mk('c', 'jeonseAsk'))" placeholder="현황" @change="setMktVal(mk('c', 'jeonseAsk'), ($event.target as HTMLInputElement).value)" />
+                  <strong v-else>{{ mktVal(mk('c', 'jeonseAsk')) || '-' }}</strong>
                 </div>
-                <div class="cell calc">
-                  <small>전용면적 X 평단가</small>
-                  <strong>{{ mktAreaXUnit }}</strong>
+                <div class="cell">
+                  <small>매매호가 (낮은금액)</small>
+                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('c', 'saleAsk'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('c', 'saleAsk'), $event)" />
+                  <strong v-else class="hi">{{ mktMoney(mk('c', 'saleAsk')) }}</strong>
                 </div>
               </div>
             </div>
 
-            <!-- 네이버 매물 조사 -->
-            <div class="adp-sub-block">
-              <div class="adp-sub-head">
-                <h3 class="adp-conc-title">네이버 매물 조사</h3>
-              </div>
-            </div>
-            <div class="adp-sub-block noline">
-              <div class="adp-mkt-block-head bare">
-                <span class="t">네이버부동산 매물 사진(최저가)</span>
-                <small>아실, 디스코</small>
+            <div class="adp-mkt-block">
+              <div class="adp-mkt-block-head">
+                <span class="t">② 네이버부동산 매물 사진(최저가)<span v-if="listPhotoList.length" class="adp-photo-mark" :title="`사진 ${listPhotoList.length}장`">{{ listPhotoList.length }}</span></span>
               </div>
               <div class="adp-plan-row">
                 <input
                   v-model="listPhotoInput"
-                  placeholder="링크 주소 입력 또는 이미지 붙여넣기"
+                  placeholder="링크 또는 이미지 붙여넣기"
                   class="adp-input"
                   @keydown.enter.prevent="addListPhotoUrl"
                   @paste="pasteImageInto($event, 'listPhoto')"
@@ -4632,45 +6426,13 @@ const goBack = () => router.back();
               </div>
             </div>
 
-            <div class="adp-mkt-block">
-              <div class="adp-mkt-block-head">
-                <span class="t">해당단지 저가매물</span>
-                <small>네이버부동산</small>
-              </div>
-              <div class="adp-mkt-cells c3">
-                <div class="cell">
-                  <small>전용면적</small>
-                  <span v-if="editingSurvey.location" class="adp-mkt-unit">
-                    <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum('mkt.c.area')" placeholder="0" @change="setMktVal('mkt.c.area', ($event.target as HTMLInputElement).value)" />㎡
-                  </span>
-                  <strong v-else>{{ mktAreaText('mkt.c.area') }}</strong>
-                </div>
-                <div class="cell">
-                  <small>비고</small>
-                  <input
-                    v-if="editingSurvey.location"
-                    class="adp-mkt-input"
-                    :value="mktVal('mkt.c.jeonseAsk')"
-                    placeholder="비고"
-                    @change="setMktVal('mkt.c.jeonseAsk', ($event.target as HTMLInputElement).value)"
-                  />
-                  <strong v-else>{{ mktVal('mkt.c.jeonseAsk') || '-' }}</strong>
-                </div>
-                <div class="cell">
-                  <small>매매호가 (낮은금액)</small>
-                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal('mkt.c.saleAsk')" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal('mkt.c.saleAsk', $event)" />
-                  <strong v-else class="hi">{{ mktMoney('mkt.c.saleAsk') }}</strong>
-                </div>
-              </div>
+
+            <!-- 3. 부동산 유선 상담 — 한 업체를 두 줄로 나눠 가로 스크롤 없이 담는다 -->
+            <div class="adp-dm-head sec2">
+              <strong class="adp-dm-title">3. 부동산 유선 상담</strong>
+              <button v-if="editingSurvey.location" type="button" class="adp-mkt-addrow" @click="addAgencyRow">+ 행 추가</button>
             </div>
-
-
-            <!-- 부동산 정보 — 한 업체를 두 줄로 나눠 가로 스크롤 없이 담는다 -->
-            <div class="adp-sub-block">
-              <div class="adp-sub-head">
-                <h3>부동산 정보</h3>
-                <button v-if="editingSurvey.location" type="button" class="adp-mkt-addrow" @click="addAgencyRow">+ 행 추가</button>
-              </div>
+            <div class="adp-sub-block noline">
               <div class="adp-agency-list">
                 <div v-for="(row, i) in agencyRows" :key="i" class="adp-agency-item">
                   <div class="adp-agency-line">
@@ -4743,115 +6505,258 @@ const goBack = () => router.back();
           </div>
         </section>
 
+        <section class="adp-card">
+          <header class="adp-card-head adp-survey-head" @click="toggleSection('survField')">
+            <h2 class="adp-head-blue"><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.8V20a1 1 0 0 0 1 1h5"/><circle cx="16.5" cy="16.5" r="3.5"/><path d="m21 21-2-2"/></svg>현장조사</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survField') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('survField')" class="adp-survey-body">
+            <!-- 1. 입지확인 -->
+            <div class="adp-dm-head tight">
+              <strong class="adp-dm-title">1. 입지확인</strong>
+              <span class="adp-dm-memo">손품조사 업데이트 진행</span>
+              <!-- 매매수요 '실사용자 + 입지등수'의 평균등수를 그대로 가져와 보여 준다 -->
+              <strong class="adp-fs-rank">{{ fieldRankAvg || '-' }}</strong>
+            </div>
+
+            <!-- 2. 건물/호실 개별성 확인 -->
+            <div class="adp-dm-head tight sec2">
+              <strong class="adp-dm-title">2. 건물/호실 개별성 확인</strong>
+              <span class="adp-dm-memo">손품조사 업데이트 진행</span>
+              <!-- 권리분석과 같은 빨간 체크 — 확인했는지 표시 -->
+              <input
+                type="checkbox"
+                class="adp-rcheck-box adp-dm-check"
+                :checked="fieldVal('fs.indivChecked') === 'Y'"
+                @change="setFieldValNow('fs.indivChecked', ($event.target as HTMLInputElement).checked ? 'Y' : ''); persistSurvey()"
+              />
+            </div>
+
+            <!-- 3. 탐문 -->
+            <div class="adp-dm-head sec2">
+              <strong class="adp-dm-title">3. 탐문</strong>
+            </div>
+            <div class="adp-fs-section">
+            <div class="adp-fs-title">① 입찰자 현황조사</div>
+            <div class="adp-survey-block">
+              <div class="adp-survey-block-head"><span class="i">ⓘ</span><strong>현장 특이사항</strong></div>
+              <textarea v-model="surveyForm.fieldNote" @change="persistSurvey()" class="adp-survey-area" rows="2" placeholder="현장 특이사항 입력" />
+            </div>
+            <div class="adp-survey-row">
+              <span class="lbl">입찰자 현황조사</span>
+              <div class="adp-multi-wrap">
+                <button
+                  type="button"
+                  class="adp-multi-trigger"
+                  @click="surveyReportOpen = !surveyReportOpen"
+                >
+                  <span v-if="surveyForm.surveyReport.length === 0" class="adp-multi-placeholder">선택</span>
+                  <span
+                    v-for="opt in surveyForm.surveyReport"
+                    :key="opt"
+                    class="adp-multi-chip"
+                    @click.stop="removeSurveyReportChip(opt)"
+                  >{{ opt }} <em>×</em></span>
+                  <span class="adp-multi-caret">▾</span>
+                </button>
+                <div v-if="surveyReportOpen" class="adp-multi-panel" @click.stop>
+                  <ul class="adp-multi-list">
+                    <li
+                      :class="['adp-multi-item', { selected: surveyForm.surveyReport.length === 0 }]"
+                      @click="surveyForm.surveyReport.splice(0); persistSurvey()"
+                    >
+                      <span>선택</span>
+                    </li>
+                    <li
+                      v-for="opt in SURVEY_REPORT_OPTIONS"
+                      :key="opt"
+                      :class="['adp-multi-item', { selected: surveyForm.surveyReport.includes(opt) }]"
+                      @click="toggleSurveyReportOption(opt)"
+                    >
+                      <span>{{ opt }}</span>
+                      <span v-if="surveyForm.surveyReport.includes(opt)" class="adp-multi-check">✓</span>
+                    </li>
+                  </ul>
+                  <div class="adp-multi-custom">
+                    <input
+                      v-model="surveyReportCustom"
+                      class="adp-multi-custom-input"
+                      placeholder="직접 입력"
+                      @keydown.enter.prevent="addSurveyReportCustom"
+                    />
+                    <button type="button" class="adp-multi-custom-btn" @click="addSurveyReportCustom">추가</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="adp-survey-row">
+              <span class="lbl">점유관계</span>
+              <select
+                
+                :class="['adp-fs-input', { ph: !fieldVal('fs.occupancy') }]"
+                :value="fieldVal('fs.occupancy')"
+                @change="setFieldValNow('fs.occupancy', ($event.target as HTMLSelectElement).value)"
+              >
+                <option value="">선택</option>
+                <option v-for="opt in FIELD_OCCUPANCY_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
+            </div>
+            </div>
+            <div v-for="sec in FIELD_SECTIONS" :key="sec.title" class="adp-fs-section">
+              <div class="adp-fs-title">{{ sec.title }}</div>
+              <template v-for="item in sec.items" :key="item.id">
+              <div class="adp-fs-row">
+                <span class="lbl">{{ item.label }}</span>
+                <!-- 글로 적는 칸만 폭을 다 쓴다. 선택 버튼은 아래 CSS로 오른쪽 끝에 모은다 -->
+                <span :class="['ctl', { wide: item.text }]">
+                  <template v-if="item.text">
+                    <span class="adp-fs-unit">
+                      <input class="adp-fs-input" :placeholder="item.placeholder" :value="fieldVal(item.id)" @change="setFieldValNow(item.id, ($event.target as HTMLInputElement).value)" />{{ item.suffix }}
+                    </span>
+                  </template>
+                  <template v-else>
+                    <!-- 선택지가 셋 이하면 버튼으로 바로 고른다 (다시 누르면 해제) -->
+                    <span v-if="(item.options?.length ?? 0) <= 3" class="adp-fs-toggles">
+                      <button
+                        v-for="opt in item.options"
+                        :key="opt"
+                        type="button"
+                        :class="['adp-toggle-btn', { active: fieldVal(item.id) === opt }]"
+                        @click="setFieldValNow(item.id, fieldVal(item.id) === opt ? '' : opt)"
+                      >{{ opt }}</button>
+                    </span>
+                    <select
+                      v-else
+                      class="adp-fs-input"
+                      :value="fieldVal(item.id)"
+                      @change="setFieldValNow(item.id, ($event.target as HTMLSelectElement).value)"
+                    >
+                      <option value="">선택</option>
+                      <option v-for="opt in item.options" :key="opt" :value="opt">{{ opt }}</option>
+                    </select>
+                  </template>
+                </span>
+                <span v-if="item.extra" class="ext">
+                  <FormattedNumberInput
+                    v-if="item.extra.money"
+                    :model-value="fieldVal(item.extra.id)"
+                    mode="string"
+                    class="adp-fs-input"
+                    :placeholder="item.extra.placeholder"
+                    @update:model-value="setFieldValNow(item.extra!.id, String($event))"
+                  />
+                  <input
+                    v-else
+                    class="adp-fs-input"
+                    :placeholder="item.extra.placeholder"
+                    :value="fieldVal(item.extra.id)"
+                    @change="setFieldValNow(item.extra!.id, ($event.target as HTMLInputElement).value)"
+                  />
+                </span>
+              </div>
+              </template>
+            </div>
+
+              <!-- ⑤ 현장사진 -->
+              <div class="adp-fs-section">
+                <div class="adp-fs-title">⑤ 현장사진</div>
+            <div class="adp-photo-actions two">
+              <button type="button" class="adp-photo-btn red" @click="cameraInputRef?.click()">📷 카메라</button>
+              <button type="button" class="adp-photo-btn blue" @click="galleryInputRef?.click()">🖼 사진추가</button>
+            </div>
+            <input ref="cameraInputRef" type="file" accept="image/*" capture="environment" class="adp-sr" @change="onCameraChange" />
+            <input ref="galleryInputRef" type="file" accept="image/*" multiple class="adp-sr" @change="onGalleryChange" />
+            <p v-if="photoUploading" class="adp-sub-note">사진 업로드 중…</p>
+            <p v-if="photoError" class="adp-plan-err">{{ photoError }}</p>
+            <div v-if="auction?.sitePhotos?.length" class="adp-photo-grid">
+              <div v-for="(entry, i) in auction.sitePhotos" :key="entry" class="adp-photo-thumb">
+                <img v-if="photoSrc(entry)" :src="photoSrc(entry)" alt="현장사진" @click="openLightbox(photoSrc(entry))" />
+                <button type="button" class="adp-photo-del" aria-label="삭제" @click.stop="removePhoto(i)">×</button>
+              </div>
+            </div>
+            <p v-else class="adp-empty">아직 등록된 현장사진이 없습니다.</p>
+              </div>
+
+            <!-- 4. 부동산 현장 상담 — 현장에서 들은 내용을 업체별로 적는다 -->
+            <div class="adp-dm-head sec2">
+              <strong class="adp-dm-title">4. 부동산 현장 상담</strong>
+              <button type="button" class="adp-mkt-addrow" @click="addSiteAgencyRow">+ 행 추가</button>
+            </div>
+            <div class="adp-agency-list">
+              <div v-for="(row, i) in siteAgencyRows" :key="i" class="adp-agency-item">
+                <div class="adp-agency-line">
+                  <label class="adp-agency-fld">
+                    <small>상호</small>
+                    <input v-model="row.name" class="adp-mkt-input left" placeholder="상호입력" />
+                  </label>
+                  <label class="adp-agency-fld">
+                    <small>연락처</small>
+                    <input v-model="row.phone" class="adp-mkt-input left" placeholder="연락처" />
+                  </label>
+                  <div class="adp-agency-fld">
+                    <small>정보</small>
+                    <div class="adp-agency-multi">
+                      <button
+                        type="button"
+                        class="adp-mkt-input left adp-agency-trigger"
+                        @click="siteAgencyInfoOpen = siteAgencyInfoOpen === i ? -1 : i"
+                      >
+                        <span :class="['txt', { ph: !row.info }]">{{ row.info || '선택' }}</span>
+                        <span class="caret">▾</span>
+                      </button>
+                      <template v-if="siteAgencyInfoOpen === i">
+                        <div class="adp-agency-backdrop" @click="siteAgencyInfoOpen = -1" />
+                        <ul class="adp-agency-options">
+                          <li
+                            v-for="opt in AGENCY_INFO_OPTIONS"
+                            :key="opt"
+                            :class="['adp-agency-option', { on: agencyInfoList(row).includes(opt) }]"
+                            @click="toggleAgencyInfo(row, opt); persistSurvey()"
+                          >
+                            <span>{{ opt }}</span>
+                            <span v-if="agencyInfoList(row).includes(opt)" class="ck">✓</span>
+                          </li>
+                        </ul>
+                      </template>
+                    </div>
+                  </div>
+                  <button
+                    v-if="siteAgencyRows.length > 1"
+                    type="button"
+                    class="adp-agency-del"
+                    aria-label="업체 삭제"
+                    @click="removeSiteAgencyRow(i)"
+                  >×</button>
+                </div>
+                <div class="adp-agency-line">
+                  <label class="adp-agency-fld">
+                    <small>전세가</small>
+                    <FormattedNumberInput v-model="row.jeonse" mode="string" class="adp-mkt-input" placeholder="0" />
+                  </label>
+                  <label class="adp-agency-fld">
+                    <small>실거래가</small>
+                    <FormattedNumberInput v-model="row.real" mode="string" class="adp-mkt-input" placeholder="0" />
+                  </label>
+                  <label class="adp-agency-fld">
+                    <small>급매가</small>
+                    <FormattedNumberInput v-model="row.urgent" mode="string" class="adp-mkt-input" placeholder="0" />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
         <!-- 손품결론 — 매매수요조사(등수·거래율·적체)와 급매가 결론을 한 카드로 모은다 -->
         <section class="adp-card">
-          <header class="adp-card-head adp-survey-head">
-            <h2>손품결론</h2>
-            <button v-if="!editingSurvey.realUser" class="adp-edit-btn" type="button" @click="editingSurvey.realUser = true">✎ 편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click="saveSurveyAndClose('realUser')">💾 저장</button>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('realUser') }]" alt="" @click="toggleSection('realUser')" />
+          <header class="adp-card-head adp-survey-head" @click="toggleSection('realUser')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg>손품결론</h2>
+            <button v-if="!editingSurvey.realUser" class="adp-edit-btn" type="button" @click.stop="editingSurvey.realUser = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('realUser')">💾 저장</button>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('realUser') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('realUser')">
-            <!-- 매매수요조사 — 실사용자 등수표 -->
-            <div class="adp-sub-head first">
-              <h3 class="adp-conc-title">매매수요조사</h3>
-            </div>
-            <p class="adp-conc-sub">실사용자 + 입지등수</p>
-            <table class="adp-table adp-ruser-table">
-              <colgroup>
-              <col style="width: 17%" /><col style="width: 14%" /><col style="width: 24%" /><col style="width: 33%" /><col style="width: 12%" />
-              </colgroup>
-              <thead>
-              <tr>
-                <th>전용면적</th>
-                <th>방</th>
-                <th>세대구성</th>
-                <th>입지조건 등수</th>
-                <th>평균등수</th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr>
-                <td class="adp-ruser-cell vmid">
-                <div class="adp-rcase-dd">
-                  <button type="button" class="adp-rcase-select adp-ruser-select" @click="bandOpen = !bandOpen">
-                    <span>{{ selectedRealUserBand ? selectedRealUserBand.title : '선택' }}</span>
-                    <span class="adp-rcase-caret">{{ bandOpen ? '▴' : '▾' }}</span>
-                  </button>
-                  <template v-if="bandOpen">
-                    <div class="adp-rcase-backdrop" @click="bandOpen = false" />
-                    <ul class="adp-rcase-list adp-ruser-list">
-                      <li
-                        v-for="b in REAL_USER_BANDS"
-                        :key="b.id"
-                        :class="['adp-rcase-item', { on: b.id === selectedRealUserBand?.id }]"
-                        @click="pickRealUserBand(b.id)"
-                      >
-                        <strong>{{ b.title }}</strong>
-                        <small>{{ b.rooms }}</small>
-                      </li>
-                    </ul>
-                  </template>
-                </div>
-                </td>
-                <td class="adp-ruser-cell center">{{ selectedRealUserBand?.rooms ?? '-' }}</td>
-                <td class="adp-ruser-cell">
-                <div v-for="d in selectedRealUserBand?.details ?? []" :key="d" class="adp-ruser-line">{{ d }}</div>
-                </td>
-                <td class="adp-ruser-cell">
-                <!-- 입지조건 한 줄에 하나씩, 옆에 등수 입력 -->
-                <div v-for="c in selectedRealUserBand?.conditions ?? []" :key="c" class="adp-ruser-cond-row">
-                  <span class="adp-ruser-cond-name">{{ c }}</span>
-                  <input
-                    class="adp-ruser-rank"
-                    inputmode="numeric"
-                    placeholder="등수"
-                    :disabled="!editingSurvey.realUser"
-                    :value="rankOf(c)"
-                    @change="setRank(c, ($event.target as HTMLInputElement).value)"
-                  />
-                </div>
-                </td>
-                <td class="adp-ruser-cell center vmid">
-                <template v-if="realUserRankSummary.filled > 0">
-                  <strong class="adp-ruser-sum">{{ realUserRankSummary.avg }}</strong>
-                </template>
-                <span v-else class="adp-na">-</span>
-                </td>
-              </tr>
-              </tbody>
-            </table>
-
-            <!-- 구역내 개별성 결론 -->
-            <div class="adp-sub-block">
-              <div class="adp-sub-head">
-                <h3>구역내 개별성</h3>
-              </div>
-              <div class="adp-photo-note">
-                <input
-                  class="adp-fs-input"
-                  placeholder="비고"
-                  :value="fieldVal('fs.zoneIndiv.note')"
-                  @change="setExtraNote('zoneIndiv', ($event.target as HTMLInputElement).value)"
-                />
-              </div>
-            </div>
-
-            <!-- 단지내 개별성 결론 -->
-            <div class="adp-sub-block">
-              <div class="adp-sub-head">
-                <h3>단지내 개별성</h3>
-              </div>
-              <div class="adp-photo-note">
-                <input
-                  class="adp-fs-input"
-                  placeholder="비고"
-                  :value="fieldVal('fs.complexIndiv.note')"
-                  @change="setExtraNote('complexIndiv', ($event.target as HTMLInputElement).value)"
-                />
-              </div>
-            </div>
-
             <!-- 거래율 — 아실 거래량 기준이라 아파트일 때만 쓴다 -->
             <div v-if="isApartment" class="adp-sub-block">
               <div class="adp-sub-head">
@@ -4925,14 +6830,7 @@ const goBack = () => router.back();
               </div>
             </div>
 
-            <!-- 급매가 -->
-            <div class="adp-sub-head">
-              <h3 class="adp-conc-title">급매가</h3>
-            </div>
-            <div class="adp-sub-block noline">
-              <div class="adp-conc-row">
-                <span class="adp-conc-label">경매호실 수리상태</span>
-              </div>
+            <div class="adp-sub-block">
               <div class="adp-photo-note">
                 <input
                   class="adp-fs-input"
@@ -4951,14 +6849,14 @@ const goBack = () => router.back();
               <table class="adp-table adp-mkt-table fit">
                 <thead>
                   <tr>
-                    <th>실거래가 평균</th>
-                    <th>네이버 매물 중 저가<small>(실거래가와 비교)</small></th>
+                    <th>국토부 실거래가 평균</th>
+                    <th>네이버 매물 저가<small>(실거래가와 비교)</small></th>
                     <th>평단가</th>
                     <th>
                       <input v-if="editingSurvey.realUser" v-model="surveyForm.mktConcPyeong" class="adp-mkt-input" placeholder="0.00" />
                       <span v-else>{{ surveyForm.mktConcPyeong || '-' }}평</span>
                     </th>
-                    <th class="red">급매가</th>
+                    <th class="red">예상 급매가</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -4987,150 +6885,10 @@ const goBack = () => router.back();
           </div>
         </section>
 
-        <!-- 1. 현장조사 -->
-        <section class="adp-card">
-          <header class="adp-card-head adp-survey-head">
-            <h2>현장조사</h2>
-            <button v-if="!editingSurvey.field" class="adp-edit-btn" type="button" @click="editingSurvey.field = true">✎ 편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click="saveSurveyAndClose('field')">💾 저장</button>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survField') }]" alt="" @click="toggleSection('survField')" />
-          </header>
-          <div v-if="!isCollapsed('survField')" class="adp-survey-body">
-            <div class="adp-survey-block">
-              <div class="adp-survey-block-head"><span class="i">ⓘ</span><strong>현장 특이사항</strong></div>
-              <textarea v-if="editingSurvey.field" v-model="surveyForm.fieldNote" class="adp-survey-area" rows="2" placeholder="현장 특이사항 입력" />
-              <p v-else class="adp-survey-note">{{ surveyForm.fieldNote || '등록된 특이사항이 없습니다.' }}</p>
-            </div>
-            <div class="adp-survey-row">
-              <span class="lbl">현황조사서</span>
-              <div v-if="editingSurvey.field" class="adp-multi-wrap">
-                <button
-                  type="button"
-                  class="adp-multi-trigger"
-                  @click="surveyReportOpen = !surveyReportOpen"
-                >
-                  <span v-if="surveyForm.surveyReport.length === 0" class="adp-multi-placeholder">선택</span>
-                  <span
-                    v-for="opt in surveyForm.surveyReport"
-                    :key="opt"
-                    class="adp-multi-chip"
-                    @click.stop="removeSurveyReportChip(opt)"
-                  >{{ opt }} <em>×</em></span>
-                  <span class="adp-multi-caret">▾</span>
-                </button>
-                <div v-if="surveyReportOpen" class="adp-multi-panel" @click.stop>
-                  <ul class="adp-multi-list">
-                    <li
-                      v-for="opt in SURVEY_REPORT_OPTIONS"
-                      :key="opt"
-                      :class="['adp-multi-item', { selected: surveyForm.surveyReport.includes(opt) }]"
-                      @click="toggleSurveyReportOption(opt)"
-                    >
-                      <span>{{ opt }}</span>
-                      <span v-if="surveyForm.surveyReport.includes(opt)" class="adp-multi-check">✓</span>
-                    </li>
-                  </ul>
-                  <div class="adp-multi-custom">
-                    <input
-                      v-model="surveyReportCustom"
-                      class="adp-multi-custom-input"
-                      placeholder="직접 입력"
-                      @keydown.enter.prevent="addSurveyReportCustom"
-                    />
-                    <button type="button" class="adp-multi-custom-btn" @click="addSurveyReportCustom">추가</button>
-                  </div>
-                </div>
-              </div>
-              <span v-else class="adp-multi-view">
-                <template v-if="surveyForm.surveyReport.length > 0">
-                  <span v-for="opt in surveyForm.surveyReport" :key="opt" class="adp-survey-pill">{{ opt }}</span>
-                </template>
-                <span v-else>-</span>
-              </span>
-            </div>
-            <div class="adp-survey-row">
-              <span class="lbl">점유관계</span>
-              <select
-                v-if="editingSurvey.field"
-                class="adp-fs-input"
-                :value="fieldVal('fs.occupancy')"
-                @change="setFieldVal('fs.occupancy', ($event.target as HTMLSelectElement).value)"
-              >
-                <option value="">선택</option>
-                <option v-for="opt in FIELD_OCCUPANCY_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
-              <span v-else>{{ fieldVal('fs.occupancy') || '-' }}</span>
-            </div>
-            <div class="adp-survey-row">
-              <span class="lbl">대항력 여부</span>
-              <div v-if="editingSurvey.field" class="adp-toggle-group">
-                <button v-for="opt in ['있음','없음','미확인']" :key="opt" type="button" :class="['adp-toggle-btn', { active: surveyForm.oppositionStatus === opt }]" @click="surveyForm.oppositionStatus = opt">{{ opt }}</button>
-              </div>
-              <span v-else class="adp-survey-pill">{{ surveyForm.oppositionStatus || '-' }}</span>
-            </div>
-            <div v-for="sec in FIELD_SECTIONS" :key="sec.title" class="adp-fs-section">
-              <div class="adp-fs-title">{{ sec.title }}</div>
-              <div v-for="item in sec.items" :key="item.id" class="adp-fs-row">
-                <span class="lbl">{{ item.label }}</span>
-                <span :class="['ctl', { wide: !item.extra }]">
-                  <template v-if="item.text">
-                    <span v-if="editingSurvey.field" class="adp-fs-unit">
-                      <input class="adp-fs-input" :placeholder="item.placeholder" :value="fieldVal(item.id)" @change="setFieldVal(item.id, ($event.target as HTMLInputElement).value)" />{{ item.suffix }}
-                    </span>
-                    <span v-else>{{ fieldVal(item.id) ? `${fieldVal(item.id)}${item.suffix ?? ''}` : '-' }}</span>
-                  </template>
-                  <template v-else>
-                    <!-- 선택지가 셋 이하면 버튼으로 바로 고른다 (다시 누르면 해제) -->
-                    <span v-if="editingSurvey.field && (item.options?.length ?? 0) <= 3" class="adp-fs-toggles">
-                      <button
-                        v-for="opt in item.options"
-                        :key="opt"
-                        type="button"
-                        :class="['adp-toggle-btn', { active: fieldVal(item.id) === opt }]"
-                        @click="setFieldVal(item.id, fieldVal(item.id) === opt ? '' : opt)"
-                      >{{ opt }}</button>
-                    </span>
-                    <select
-                      v-else-if="editingSurvey.field"
-                      class="adp-fs-input"
-                      :value="fieldVal(item.id)"
-                      @change="setFieldVal(item.id, ($event.target as HTMLSelectElement).value)"
-                    >
-                      <option value="">선택</option>
-                      <option v-for="opt in item.options" :key="opt" :value="opt">{{ opt }}</option>
-                    </select>
-                    <span v-else>{{ fieldVal(item.id) || '-' }}</span>
-                  </template>
-                </span>
-                <span v-if="item.extra" class="ext">
-                  <template v-if="editingSurvey.field">
-                    <FormattedNumberInput
-                      v-if="item.extra.money"
-                      :model-value="fieldVal(item.extra.id)"
-                      mode="string"
-                      class="adp-fs-input"
-                      :placeholder="item.extra.placeholder"
-                      @update:model-value="setFieldVal(item.extra!.id, String($event))"
-                    />
-                    <input
-                      v-else
-                      class="adp-fs-input"
-                      :placeholder="item.extra.placeholder"
-                      :value="fieldVal(item.extra.id)"
-                      @change="setFieldVal(item.extra!.id, ($event.target as HTMLInputElement).value)"
-                    />
-                  </template>
-                  <span v-else>{{ item.extra.money ? fieldMoneyText(item.extra.id) : (fieldVal(item.extra.id) || '-') }}</span>
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <!-- 현장 체크리스트 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('checklist')">
-            <h2>현장 체크리스트</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 7 2 2 4-4M3 17l2 2 4-4M13 8h8M13 18h8"/></svg>체크리스트</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('checklist') }]" alt="" />
           </header>
           <table v-if="!isCollapsed('checklist')" class="adp-table adp-rcheck-table adp-cl-table">
@@ -5216,39 +6974,15 @@ const goBack = () => router.back();
           </table>
         </section>
 
-        <!-- 1-1. 현장사진 -->
-        <section class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('photo')">
-            <h2>현장사진</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('photo') }]" alt="" />
-          </header>
-          <div v-if="!isCollapsed('photo')">
-            <div class="adp-photo-actions two">
-              <button type="button" class="adp-photo-btn red" @click="cameraInputRef?.click()">📷 카메라</button>
-              <button type="button" class="adp-photo-btn blue" @click="galleryInputRef?.click()">🖼 사진추가</button>
-            </div>
-            <input ref="cameraInputRef" type="file" accept="image/*" capture="environment" class="adp-sr" @change="onCameraChange" />
-            <input ref="galleryInputRef" type="file" accept="image/*" multiple class="adp-sr" @change="onGalleryChange" />
-            <p v-if="photoUploading" class="adp-sub-note">사진 업로드 중…</p>
-            <p v-if="photoError" class="adp-plan-err">{{ photoError }}</p>
-            <div v-if="auction?.sitePhotos?.length" class="adp-photo-grid">
-              <div v-for="(entry, i) in auction.sitePhotos" :key="entry" class="adp-photo-thumb">
-                <img v-if="photoSrc(entry)" :src="photoSrc(entry)" alt="현장사진" @click="openLightbox(photoSrc(entry))" />
-                <button type="button" class="adp-photo-del" aria-label="삭제" @click.stop="removePhoto(i)">×</button>
-              </div>
-            </div>
-            <p v-else class="adp-empty">아직 등록된 현장사진이 없습니다.</p>
-          </div>
-        </section>
 
       </template>
     </div>
 
     <AppMobileBottomNav active="watchlist" />
+    <AppToast :visible="!!copiedMsg" :text="copiedMsg" :tone="copiedTone" />
 
     <DateWheelPicker
       v-model="mktDealYmValue"
-      month-only
       :open="mktDealYmOpen"
       @close="mktDealYmOpen = false"
     />
@@ -5258,6 +6992,12 @@ const goBack = () => router.back();
       month-only
       :open="mktYmOpen"
       @close="mktYmOpen = false"
+    />
+
+    <DateWheelPicker
+      v-model="profitDateValue"
+      :open="profitDateTarget !== ''"
+      @close="profitDateTarget = ''"
     />
 
     <DateWheelPicker
@@ -5283,7 +7023,7 @@ const goBack = () => router.back();
       <button type="button" class="adp-lightbox-close" aria-label="닫기" @click="closeLightbox">×</button>
       <div
         class="adp-lightbox-stage"
-        @click.self="closeLightbox"
+        @click.self="lbStageClick"
         @pointerdown="lbDown"
         @pointermove="lbMove"
         @pointerup="lbUp"
@@ -5316,7 +7056,7 @@ const goBack = () => router.back();
 
 .adp-shell {
   display: flex; flex-direction: column;
-  min-height: 100vh; background: #f3f4f6;
+  min-height: 100vh; background: #dcdee3;
   padding-bottom: 76px;
 }
 
@@ -5330,34 +7070,84 @@ const goBack = () => router.back();
 
 .adp-topbar {
   display: flex; align-items: center; gap: 8px;
-  padding: 12px 4px 0;
+  padding: 8px 4px 7px;
   background: #fff;
+  /* 제목줄과 아래 탭을 구분하는 선 — 모든 탭에서 같이 보인다 */
+  border-bottom: 1px solid #e5e7eb;
 }
 .adp-back {
   width: 32px; height: 32px;
   border: none; background: transparent; cursor: pointer;
   font-size: 24px; color: #111827; line-height: 1; padding: 0;
 }
-.adp-page-title { flex: 1 1 auto; margin: 0; font-size: 20px; font-weight: 800; color: #111827; }
-.adp-spacer { width: 32px; }
+.adp-page-title {
+  flex: 1 1 auto; min-width: 0; margin: 0;
+  font-size: 20px; font-weight: 800; color: #111827;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* 사건번호 앞 '경매' — 짙은 남색 계열 */
+.adp-title-tag { color: #324f87; margin-right: 4px; }
+/* 단계 변경·숨기기는 '이 물건 전체'에 대한 동작이라 상단바 오른쪽에 둔다 */
+.adp-top-right { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.adp-stage-wrap { position: relative; }
+/* 선정물건의 단계 알약(.wlp-phase.phase-active)과 같은 모양·색을 쓴다 */
+.adp-stage-btn {
+  display: inline-flex; align-items: center; gap: 2px;
+  box-sizing: border-box; height: 26px; padding: 0 6px 0 14px;
+  border: 1.5px solid #6b85f0; border-radius: 999px; background: #dce5ff;
+  font-size: 11px; font-weight: 700; color: #3850c2; line-height: 1.4;
+  white-space: nowrap; cursor: pointer;
+}
+.adp-stage-backdrop { position: fixed; inset: 0; z-index: 70; }
+.adp-stage-list {
+  position: absolute; top: calc(100% + 4px); right: 0; z-index: 80;
+  list-style: none; margin: 0; padding: 4px; min-width: 92px;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+.adp-stage-opt {
+  padding: 8px 10px; border-radius: 7px; cursor: pointer;
+  font-size: 12.5px; color: #374151; white-space: nowrap;
+}
+.adp-stage-opt.on { color: #3850c2; font-weight: 800; background: #f2f5ff; }
+/* 입찰진행 — 마지막 단계라 빨간 글씨로 눈에 띄게 */
+.adp-stage-opt.hot { color: #c22e2e; font-weight: 800; }
+.adp-stage-opt.hot.on { background: #fdeeee; }
+.adp-stage-btn.hot { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; }
+/* 숨기기 — 아이콘 PNG가 흰색 단색이라 보이지 않아 선 그림(SVG)으로 직접 그린다 */
+.adp-hide-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  box-sizing: border-box; width: 30px; height: 26px;
+  border: 1px solid #d5dbe6; border-radius: 8px; background: #fff;
+  color: #6b7280; cursor: pointer;
+}
+.adp-hide-btn:active { background: #f3f4f6; }
+.adp-hide-ico { width: 15px; height: 15px; display: block; object-fit: contain; }
+
 
 .adp-tabs {
   display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
   background: #fff;
-  border-bottom: 1px solid #e5e7eb;
 }
 .adp-tab {
-  /* '손품+현장조사'는 두 줄로 접힌다 — U+200B가 '+' 뒤에만 줄바꿈 지점을 만든다 */
-  overflow: hidden; word-break: keep-all; line-height: 1.25;
-  border: none; background: transparent; padding: 10px 0;
-  font-size: 16px; font-weight: 700; color: #9ca3af;
+  /* 다섯 탭 모두 한 줄로 — 접히지 않게 글자를 줄이고 자간을 좁힌다 */
+  overflow: hidden; white-space: nowrap; line-height: 1.25;
+  border: none; background: transparent; padding: 9px 0;
+  font-size: 15.3px; font-weight: 700; color: #111827;
   cursor: pointer;
-  border-bottom: 2.5px solid transparent;
+  /* 밑줄은 선택된 칸에만 — ::after 막대로 그려 끝이 꺾이지 않는다 */
+  position: relative; border-bottom: none; padding-bottom: 14px;
   min-width: 0;
   letter-spacing: -0.8px;
   text-align: center;
 }
-.adp-tab.active { color: #111827; border-bottom-color: #111827; }
+/* 선택 — 글자는 검정 그대로, 아래에 곧은 막대 하나 */
+.adp-tab.active { color: #111827; }
+.adp-tab.active::after {
+  content: '';
+  position: absolute; left: 8%; right: 8%; bottom: 0;
+  height: 3px; background: #2a5fbf; border-radius: 2px;
+}
 /* 입지정보 카드 안의 소분류 (인근역세권·교육환경·주변환경) */
 .adp-area-block + .adp-area-block { margin-top: 10px; padding-top: 8px; border-top: 1px solid #eef1f6; }
 .adp-area-head { padding: 10px 0 6px; }
@@ -5368,37 +7158,46 @@ const goBack = () => router.back();
 }
 
 .adp-prop-head {
-  background: #f1f3f7; padding: 10px 4px;
+  background: #f1f3f7; padding: 7px 4px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 4px 8px;
+  gap: 2px 8px;
   position: relative;
 }
 .adp-prop-kind {
   background: #e0eaff; color: #2b6df3;
   border-radius: 999px;
-  padding: 7px 10px;
+  padding: 4px 10px;
   font-size: 12px; font-weight: 800;
-  grid-row: 1 / span 2;
+  /* 칩 + 주소가 윗줄, 면적·연식·매각구분이 아랫줄 */
+  grid-column: 1; grid-row: 1; align-self: center;
 }
 .adp-prop-line {
+  /* 윗줄 — 칩 옆에 매각구분·면적·연식 */
   grid-column: 2; grid-row: 1; min-width: 0;
   display: flex; align-items: baseline; gap: 8px; justify-content: space-between;
 }
-.adp-prop-case { font-size: 14px; font-weight: 800; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.adp-prop-sale { font-size: 12px; font-weight: 700; color: #2b6df3; white-space: nowrap; }
+.adp-prop-case {
+  font-size: 14px; font-weight: 800; color: #111827;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.adp-prop-sale {
+  font-size: 13px; font-weight: 400; line-height: 1.25; color: #2b6df3; white-space: nowrap;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+}
 /* 주소는 둘째 줄 — 오른쪽 PDF 버튼과 같은 줄에 놓는다 */
 .adp-prop-addr {
-  grid-column: 2; min-width: 0; margin: 0; font-size: 10.5px; font-weight: 500; color: #111827; line-height: 1.35;
+  grid-column: 2; grid-row: 2; min-width: 0; margin: 0; font-size: 13px; font-weight: 400; color: #111827; line-height: 1.25;
   white-space: nowrap; letter-spacing: -0.4px; overflow: hidden; text-overflow: ellipsis;
 }
+
 .adp-pdf-btn {
-  grid-column: 3; grid-row: 1; justify-self: end; align-self: center;
-  display: inline-flex; align-items: center; gap: 4px;
+  display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto;
   border: 1px solid #c7d7f7; border-radius: 8px;
   background: #fff; color: #2b6df3;
-  padding: 4px 7px; font-size: 10.5px; font-weight: 700;
+  box-sizing: border-box; height: 26px;
+  padding: 0 7px; font-size: 10.5px; font-weight: 700; line-height: 1;
   white-space: nowrap; cursor: pointer;
 }
 .adp-pdf-btn img { width: 11px; height: 11px; object-fit: contain; }
@@ -5413,10 +7212,13 @@ const goBack = () => router.back();
 .adp-fold-all .adp-chev { width: 16px; height: 16px; }
 .adp-prop-road { display: block; font-size: 11.5px; color: #6b7280; margin-top: 2px; }
 
-.adp-body { flex: 1 1 auto; padding: 8px 3px 12px; display: flex; flex-direction: column; gap: 10px; }
+.adp-body { flex: 1 1 auto; padding: 6px 5px 12px; display: flex; flex-direction: column; gap: 8px; }
 
 /* 내용이 카드 좌우 끝에 붙지 않게 여백을 준다 */
-.adp-card { background: #fff; padding: 0 4px; }
+/* 모서리를 둥글게 — overflow:hidden 은 쓰지 않는다(카드 밖으로 펼쳐지는
+   드롭다운·날짜 휠피커가 잘려 버린다). 대신 아래쪽에 여백을 줘서
+   내용이 둥근 모서리 바깥으로 삐져나오지 않게 한다 */
+.adp-card { background: #fff; padding: 0 8px 6px; border-radius: 8px; }
 /* ===== 물건 기본정보 카드 ===== */
 
 .adp-base-rows { margin: 0; }
@@ -5424,16 +7226,16 @@ const goBack = () => router.back();
   /* minmax(0,1fr) — 값이 길어도 칸 안에서 줄바꿈되게(1fr 단독이면 min-content 아래로 안 줄어듦) */
   display: grid; grid-template-columns: 84px minmax(0, 1fr);
   align-items: center; gap: 8px;
-  padding: 11px 0;
+  padding: 7px 0;
   border-bottom: 1px solid #f1f3f7;
-  min-height: 44px;
+  min-height: 36px;
 }
 .adp-base-rows > .adp-base-row:last-child { border-bottom: 0; }
 .adp-base-row dt { margin: 0; font-size: 13.5px; color: #6b7280; font-weight: 600; }
 .adp-base-row dd {
   margin: 0; min-width: 0;
   font-size: 14px; color: #111827; font-weight: 600;
-  text-align: right; line-height: 1.45; word-break: break-word;
+  text-align: right; line-height: 1.35; word-break: break-word;
 }
 .adp-base-row dd.link { color: #2563eb; font-weight: 700; }
 .adp-base-row dd.amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -5479,10 +7281,24 @@ const goBack = () => router.back();
 .adp-base-chip.st-failed { background: #fee2e2; color: #b91c1c; }
 .adp-base-chip.st-sold { background: #dcfce7; color: #15803d; }
 .adp-base-date { font-size: 11.5px; color: #9ca3af; font-weight: 600; }
+/* '진행' 칩이 있는 줄은 날짜도 같은 파랑으로 */
+.adp-base-date.now { color: #2563eb; }
 
 .adp-base-note { margin: 6px 0 2px; font-size: 12px; color: #9ca3af; line-height: 1.55; }
 .adp-base-note.pre { white-space: pre-line; color: #6b7280; }
 
+/* 임차인 네 줄 + 경고 + 기타사항을 한 묶음으로 */
+.adp-tn-box {
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 2px 10px 7px; margin-top: 5px; background: #fff;
+}
+.adp-tn-base { margin: 0 0 4px; }
+.adp-base-tenant .adp-base-row { padding: 4px 0; min-height: 0; }
+.adp-tn-box .adp-base-warn { margin: 5px 0 0; }
+.adp-tn-box .adp-base-more { margin-top: 5px; }
+.adp-tn-box .adp-note-toggle { padding-top: 4px; padding-bottom: 4px; }
+.adp-tn-box > .adp-base-warn:last-child,
+.adp-tn-box > .adp-base-more:last-child { margin-bottom: 0; }
 .adp-base-tenant { border-top: 1px solid #f1f3f7; }
 .adp-base-tenant:first-of-type { border-top: 0; }
 .adp-case-table { table-layout: fixed; }
@@ -5499,11 +7315,12 @@ const goBack = () => router.back();
 .adp-base-row .quad-v.nowrap { white-space: nowrap; }
 .adp-base-row .quad-v strong { display: block; font-size: 14px; font-weight: 800; }
 .adp-base-row .quad-v small { display: block; font-size: 11px; color: #9ca3af; font-weight: 600; margin-top: 1px; }
-.adp-base-row .quad-v.stack span { display: block; font-size: 12.5px; white-space: nowrap; }
+.adp-base-row .quad-v.stack span,
+.adp-base-row dd.stack span { display: block; font-size: 12.5px; white-space: nowrap; }
 
 .adp-base-warn {
   margin: 12px 0 0; padding: 12px 14px;
-  background: #fef2f2; border-radius: 10px;
+  background: #fef2f2; border-radius: 8px;
   font-size: 13px; font-weight: 700; color: #dc2626; line-height: 1.5;
 }
 
@@ -5520,12 +7337,45 @@ const goBack = () => router.back();
   padding: 7px 12px; font-size: 12px; font-weight: 700; color: #6b7280; cursor: pointer;
 }
 
-.adp-card-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 0 10px; cursor: pointer; }
-.adp-card-head h2 { margin: 0; font-size: 18px; font-weight: 800; color: #111827; }
+.adp-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 0 8px; cursor: pointer;
+  /* 탭마다 머리줄 높이가 달라져 첫 카드가 위아래로 흔들리던 것을 막는다 */
+  min-height: 44px; box-sizing: border-box;
+}
+.adp-card-head h2 {
+  margin: 0; font-size: 15.3px; font-weight: 800; color: #111827;
+  display: inline-flex; align-items: center; gap: 5px; min-width: 0;
+}
+/* 카드 제목 앞 아이콘 */
+/* 아이콘은 밝기를 한 단계 낮춘 파랑 — 제목 옆에서 튀지 않게 */
+.adp-h2-ico { flex: 0 0 auto; color: #2a5fbf; }
 .adp-chev { width: 22px; height: 22px; object-fit: contain; transition: transform 0.2s; }
 .adp-chev.up { transform: rotate(180deg); }
 
-.adp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; border-top: 1px solid #111827; }
+/* 표 공통 — 카드와 같은 라운드(8px).
+   overflow:hidden 은 쓰지 않는다(표 안에서 바깥으로 펼쳐지는 드롭다운이 잘린다).
+   대신 네 모서리 칸에 각각 radius 를 줘서 배경이 모서리를 따라 깎이게 한다.
+   radius 가 먹으려면 border-collapse 가 separate 여야 한다 — 칸에는 가로선만
+   있어서(세로선 없음) 선이 겹쳐 두꺼워질 일은 없다. */
+.adp-table {
+  width: 100%;
+  border-collapse: separate; border-spacing: 0;
+  font-size: 12.5px;
+  background: #fff;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+}
+/* 머리줄이 있으면 thead 첫 줄, 없으면 tbody 첫 줄이 위 모서리다.
+   표 대부분이 <colgroup>으로 시작해서 :first-child 로는 tbody 를 못 잡는다 */
+.adp-table > thead > tr:first-child > th:first-child { border-top-left-radius: 8px; }
+.adp-table > thead > tr:first-child > th:last-child { border-top-right-radius: 8px; }
+.adp-table:not(:has(> thead)) > tbody:first-of-type > tr:first-child > :first-child { border-top-left-radius: 8px; }
+.adp-table:not(:has(> thead)) > tbody:first-of-type > tr:first-child > :last-child { border-top-right-radius: 8px; }
+.adp-table > tbody:last-of-type > tr:last-child > :first-child { border-bottom-left-radius: 8px; }
+.adp-table > tbody:last-of-type > tr:last-child > :last-child { border-bottom-right-radius: 8px; }
+/* 마지막 줄 밑선은 표 테두리와 겹치니 지운다 */
+.adp-table > tbody:last-of-type > tr:last-child > td,
+.adp-table > tbody:last-of-type > tr:last-child > th { border-bottom: 0; }
 .adp-table th, .adp-table td { padding: 10px 8px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; color: #111827; }
 .adp-table thead th { background: #f9fafb; font-weight: 700; color: #374151; border-bottom: 1px solid #d1d5db; }
 .adp-table .r { text-align: right; }
@@ -5598,7 +7448,7 @@ const goBack = () => router.back();
 .adp-plan-row { display: flex; gap: 6px; padding: 4px 0 8px; }
 .adp-plan-preview {
   position: relative; padding: 4px 0 8px;
-  border-radius: 10px; background: #f9fafb;
+  border-radius: 8px; background: #f9fafb;
 }
 .adp-plan-img {
   /* 큰 이미지를 붙여넣어도 미리보기가 화면을 점령하지 않게 높이를 제한한다.
@@ -5643,10 +7493,12 @@ const goBack = () => router.back();
 .adp-lightbox-tools button:active { background: rgba(255, 255, 255, 0.34); }
 .adp-lightbox-tools span { min-width: 46px; text-align: center; font-size: 12px; font-weight: 700; color: #fff; }
 .adp-lightbox-close {
-  position: absolute; top: 16px; right: 16px;
+  position: absolute; top: 16px; right: 16px; z-index: 3;
   width: 40px; height: 40px; border-radius: 50%;
   border: none; background: rgba(255, 255, 255, 0.15); color: #fff;
-  font-size: 24px; line-height: 1; cursor: pointer;
+  /* 글꼴 기준선 때문에 × 가 아래로 쏠려 보이던 것을 flex로 정확히 가운데 둔다 */
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; line-height: 1; padding: 0; cursor: pointer;
 }
 .adp-lightbox-close:hover { background: rgba(255, 255, 255, 0.3); }
 .adp-plan-del {
@@ -5664,6 +7516,7 @@ const goBack = () => router.back();
   background: #fef2f2; border-radius: 6px;
 }
 .adp-input { flex: 1 1 auto; min-width: 0; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; font-size: 12.5px; background: #f9fafb; color: #111827; outline: none; }
+.adp-input::placeholder { color: #b6bcc7; opacity: 1; }
 .adp-icn-btn { flex: 0 0 auto; width: 40px; height: 40px; border: 1px solid #e5e7eb; background: #fff; border-radius: 8px; font-size: 18px; color: #6b7280; cursor: pointer; }
 
 .adp-photo-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 4px 0 8px; }
@@ -5705,11 +7558,13 @@ const goBack = () => router.back();
 }
 .adp-place-link:active { color: #1e40af; }
 .adp-refresh-btn {
-  border: 1px solid #e5e7eb; background: #fff; color: #2b6df3;
-  width: 32px; height: 28px; border-radius: 6px;
-  font-size: 14px; font-weight: 800; cursor: pointer;
-  margin-right: 6px;
+  border: none; background: transparent; color: #9ca3af;
+  width: 24px; height: 24px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  margin-right: 4px;
 }
+.adp-refresh-btn:active { color: #4b5563; }
 .adp-refresh-btn:disabled { opacity: 0.5; }
 
 .nearby-kakao-tab { display: inline-flex; align-items: center; gap: 4px; }
@@ -5723,10 +7578,75 @@ const goBack = () => router.back();
 .adp-kakao-mini.active { background: #181600; color: #FEE500; }
 .adp-kakao-mini:hover { transform: scale(1.05); }
 
-.adp-profit-head { gap: 8px; }
+.adp-profit-head { gap: 6px; cursor: pointer; }
+.adp-profit-head h2 { display: inline-flex; align-items: center; gap: 5px; }
+.adp-profit-ico { color: #2a5fbf; flex: 0 0 auto; }
+.adp-auto-chip {
+  flex: 0 0 auto;
+  background: #f1f3f7; color: #4b5563;
+  border-radius: 999px; padding: 3px 8px;
+  font-size: 10px; font-weight: 700; white-space: nowrap;
+}
+.adp-profit-head .adp-head-note {
+  margin-left: 0; font-size: 10.5px;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* 수정 버튼 — 테두리만 있는 알약형 */
+.adp-profit-head .adp-edit-btn { margin-left: auto; }
+/* 낙찰일 · 매도일 */
+.adp-profit-dates {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 2px 12px; border-bottom: 1px solid #eef1f6; margin-bottom: 10px;
+}
+.adp-pd-item {
+  border: none; background: transparent; padding: 0; cursor: pointer;
+  display: inline-flex; align-items: baseline; gap: 6px;
+}
+.adp-pd-item em { font-style: normal; font-size: 12.5px; font-weight: 500; color: #111827; }
+.adp-pd-box {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 4px 8px; background: #fff;
+  /* 값이 있든 없든 칸 크기가 흔들리지 않게 폭을 고정한다 */
+  width: 104px; box-sizing: border-box;
+}
+.adp-pd-box span { font-size: 12px; font-weight: 400; color: #111827; }
+.adp-pd-cal { color: #9ca3af; flex: 0 0 auto; }
+.adp-pd-sep { color: #d1d5db; }
+.adp-profit-dates .adp-bid-status { padding: 5px 10px; font-size: 11.5px; }
+/* 중요도 별 — 선정물건 목록의 별과 같은 모양 */
+/* 중요도 — 작은 별 3개를 순서대로 채운다 */
+.adp-star-btn {
+  margin-left: auto;
+  border: none; background: transparent; padding: 0; cursor: pointer;
+  height: 30px;
+  display: inline-flex; align-items: center; gap: 1px;
+}
+/* 입찰 상태 — 고른 값에 따라 색이 바뀌는 알약형 선택 */
+.adp-bid-status {
+  margin-left: auto;
+  border: none; border-radius: 999px;
+  padding: 6px 12px; font-size: 12px; font-weight: 800;
+  cursor: pointer; outline: none;
+  text-align: center; text-align-last: center;
+  background: #f3f4f6; color: #111827;
+}
+.adp-bid-status.none { font-weight: 400; }
+.adp-bid-status.hot { background: #fde2e2; color: #d23f3f; }
+.adp-bid-status.calm { background: #eef0f4; color: #111827; }
 .adp-pill-blue { background: #e0eaff; color: #2b6df3; border-radius: 999px; padding: 4px 10px; font-size: 11.5px; font-weight: 700; }
-.adp-edit-btn { background: #2b6df3; color: #fff; border: none; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
-.adp-edit-btn.save { background: #16a34a; }
+/* 선정물건 리스트의 '숨긴 N건' 버튼과 같은 사각 형태 — 높이 26px, 라운드 8px */
+.adp-edit-btn {
+  box-sizing: border-box; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #fff; color: #2b6df3;
+  border: 1px solid #c7d7f7; border-radius: 8px;
+  gap: 4px;
+  padding: 0 10px; font-size: 12px; font-weight: 700; line-height: 1;
+  white-space: nowrap; cursor: pointer;
+}
+.adp-edit-ico { flex: 0 0 auto; }
+.adp-edit-btn.save { background: #fff; color: #16a34a; border-color: #86efac; }
 .adp-cell-input {
   width: 100%; max-width: 110px;
   border: 1px solid #cbd5e1; border-radius: 4px;
@@ -5745,19 +7665,29 @@ const goBack = () => router.back();
 .adp-profit-table thead th { background: #1f3a72; color: #fff; border-bottom: none; }
 .adp-profit-table .adp-cat { background: #f3f4f6; font-weight: 700; color: #111827; text-align: center; vertical-align: middle; }
 .adp-profit-table .hi td, .adp-profit-table .hi-cell { background: #fefae0; font-weight: 700; }
+/* 구분 칸은 강조줄이라도 회색 그대로 */
+.adp-profit-table .hi td.adp-cat { background: #f3f4f6; }
+.adp-profit-table .hi td.adp-formula { font-weight: 500; }
+/* 예상 매도가 줄 */
+.adp-profit-table .pink td { background: #fdeef0; }
+.adp-profit-table .pink td.adp-cat { background: #f3f4f6; }
+.adp-profit-table.v2 tr.pink td.emph { background: #fdeef0; }
+/* 누진세율 구간 */
+.adp-profit-table .adp-formula .adp-bracket { color: #111827; font-weight: 500; }
 .adp-profit-table .neg { color: #dc2626; }
-.adp-profit-table .adp-formula { font-size: 11px; color: #94a3b8; font-weight: 500; }
+.adp-profit-table td.blue, .adp-profit-table td.blue strong { color: #2b6df3; font-weight: 800; }
+.adp-cost-no { color: #6b7280; font-weight: 700; margin-right: 4px; }
+.adp-profit-table .adp-formula { font-size: 11px; color: #64748b; font-weight: 500; }
 .adp-profit-table.v2 td.emph { background: #fff9e6; border: 2px solid #ef4444; }
 .adp-profit-table.v2 td { font-size: 12.5px; }
 
 .adp-tax-ref thead th { background: #1f3a72; color: #fff; }
-.adp-tax-ref tbody tr:nth-child(even) td:last-child { background: #fffbe6; }
-.adp-tax-ref td:last-child { color: #374151; font-weight: 600; }
+.adp-tax-ref td:last-child { color: #374151; font-weight: 400; }
 
 .adp-mini-summary .adp-table { border-top: none; }
 .adp-mini-summary th { background: #f3f4f6; width: 70px; }
 
-.adp-empty { margin: 12px 4px; padding: 24px 12px; text-align: center; color: #9ca3af; font-size: 12.5px; background: #fafafa; border: 1px dashed #e5e7eb; border-radius: 10px; }
+.adp-empty { margin: 12px 4px; padding: 24px 12px; text-align: center; color: #9ca3af; font-size: 12.5px; background: #fafafa; border: 1px dashed #e5e7eb; border-radius: 8px; }
 .adp-empty.sm { padding: 12px 8px; font-size: 11.5px; margin: 6px 0; }
 
 .adp-subblock-divider { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #e5e7eb; }
@@ -5781,24 +7711,34 @@ const goBack = () => router.back();
 }
 .adp-ruser-cell { padding: 8px 4px; vertical-align: middle; font-size: 11px; word-break: keep-all; }
 .adp-ruser-cell.center { text-align: center; font-weight: 700; }
-/* .adp-table td 의 vertical-align: top 을 덮어 세로 가운데 정렬 */
+/* .adp-table td 의 vertical-align: top 을 덮어 모든 칸을 세로 가운데로 */
+.adp-ruser-table td,
+.adp-ruser-table th,
 .adp-ruser-table td.vmid { vertical-align: middle; }
-.adp-ruser-sum { display: block; font-size: 15px; font-weight: 800; color: #1d4ed8; line-height: 1.2; }
-.adp-ruser-line { line-height: 1.5; }
+.adp-ruser-sum { display: block; font-size: 30px; font-weight: 800; color: #e0574a; line-height: 1.2; }
+.adp-ruser-line { line-height: 1.5; text-align: center; }
 .adp-ruser-line + .adp-ruser-line { margin-top: 6px; }
 /* '전용 18~25평'이 가장 길다 — 캐럿까지 칸 안에 들어오도록 */
-.adp-ruser-select { padding: 6px 4px; font-size: 10.5px; gap: 2px; min-height: 46px; }
-/* '18~25평'처럼 긴 값은 두 줄로 접어 보여 준다 */
+.adp-ruser-select { padding: 6px 3px; font-size: 10px; gap: 2px; min-height: 50px; }
+/* 평형대와 룸 표시를 위아래 두 줄로 나눠 보여 준다 */
 .adp-ruser-select > span:first-child {
-  flex: 1 1 auto; min-width: 0; white-space: normal; word-break: keep-all;
-  line-height: 1.25; text-align: center;
+  flex: 1 1 auto; min-width: 0; line-height: 1.25; text-align: center;
 }
+.adp-ruser-pick { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.adp-ruser-pick .band { font-size: 13.5px; font-weight: 800; color: #111827; white-space: nowrap; }
+.adp-ruser-pick .rooms { font-size: 11.5px; font-weight: 700; color: #4b5563; white-space: nowrap; }
+/* 선택칸 바깥 빈자리에 룸 표시 */
+.adp-ruser-m2 { margin-top: 5px; font-size: 18px; font-weight: 800; color: #374151; text-align: center; white-space: nowrap; }
 .adp-ruser-select .adp-rcase-caret { flex: none; }
 .adp-ruser-list { min-width: 190px; }
+/* 평형대·룸 표시를 또렷한 검은 글씨로 */
+.adp-ruser-list .adp-rcase-item strong,
+.adp-ruser-list .adp-rcase-item small { color: #111827; }
 /* 입지조건 한 줄 + 등수 입력 */
-.adp-ruser-cond-row { display: flex; align-items: center; gap: 4px; }
+.adp-ruser-cond-row { display: flex; align-items: center; gap: 4px; height: 26px; }
+.adp-ruser-cond-row.center { justify-content: center; }
 .adp-ruser-cond-row + .adp-ruser-cond-row { margin-top: 6px; }
-.adp-ruser-cond-name { flex: 1 1 auto; min-width: 0; font-weight: 700; color: #111827; font-size: 11px; white-space: nowrap; }
+.adp-ruser-cond-name { flex: 1 1 auto; min-width: 0; font-weight: 700; color: #111827; font-size: 11px; white-space: nowrap; text-align: center; }
 .adp-ruser-rank {
   flex: 0 0 28px; width: 28px; box-sizing: border-box; min-width: 0;
   border: 1px solid #d1d5db; border-radius: 6px;
@@ -5843,8 +7783,9 @@ const goBack = () => router.back();
 .adp-rdoc-survey input.adp-rdoc-input { display: block; line-height: 28px; }
 .adp-rdoc-survey .adp-date-btn > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .adp-rdoc-survey .adp-date-caret { flex: 0 0 auto; }
-/* 확인 문구는 앞 두 칸을 차지해 비고가 정확히 세 번째 자리에 온다 */
-.adp-rdoc-task.inline { grid-column: span 2; min-width: 0; align-self: center; }
+/* 문건송달 내역 — 확인 문구를 한 줄 쓰고 비고는 그 아래 줄에 길게 둔다 */
+.adp-rdoc-task.inline { grid-column: 1 / -1; min-width: 0; align-self: center; white-space: normal; }
+.adp-rdoc-task.inline + .adp-rdoc-input { grid-column: 1 / -1; margin-top: 4px; }
 .adp-rdoc-input:focus { border-color: #2b6df3; outline: none; }
 /* 편집 중이 아닐 때는 입력칸을 눌러도 바뀌지 않게 하고 테두리만 옅게 둔다 */
 .adp-rdoc-multi { min-width: 0; }
@@ -5852,7 +7793,8 @@ const goBack = () => router.back();
 /* 화살표를 옆 날짜칸과 같은 크기로 */
 .adp-rdoc-multi .adp-agency-trigger .caret { font-size: 15px; color: #6b7280; line-height: 1; }
 .adp-rdoc-table .adp-rcheck-desc { vertical-align: top; }
-/* 권리 케이스 표는 분홍, 서류 확인 표는 파랑으로 구분 */
+/* 권리 케이스 표는 분홍, 서류 확인 표는 파랑으로 구분 — 둘 사이를 띄워 구분이 더 분명하게 */
+.adp-rdoc-table { margin-top: 10px; }
 .adp-rdoc-table .adp-rcheck-label { background: #e3edfb; }
 
 .adp-rcase-dd { position: relative; }
@@ -5863,13 +7805,15 @@ const goBack = () => router.back();
   background: #fff; cursor: pointer; text-align: left;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
+/* 케이스를 고르고 나면 붉게 — 펼친 목록의 글자는 검은색 그대로 */
+.adp-rcase-select.picked { color: #e0574a; border-color: #f0d4d0; }
 .adp-rcase-caret { color: #6b7280; font-size: 15px; line-height: 1; }
 /* 목록 밖을 눌러 닫기 위한 투명 레이어 */
 .adp-rcase-backdrop { position: fixed; inset: 0; z-index: 40; }
 .adp-rcase-list {
   position: absolute; z-index: 41; left: 0; right: 0; top: calc(100% + 4px);
   margin: 0; padding: 4px 0; list-style: none;
-  background: #fff; border: 1px solid #d1d5db; border-radius: 10px;
+  background: #fff; border: 1px solid #d1d5db; border-radius: 8px;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
   max-height: 320px; overflow: auto;
 }
@@ -5879,7 +7823,7 @@ const goBack = () => router.back();
 }
 .adp-rcase-item + .adp-rcase-item { border-top: 1px solid #f1f5f9; }
 .adp-rcase-item strong { font-size: 12.5px; font-weight: 800; color: #111827; }
-.adp-rcase-item small { font-size: 11px; color: #9ca3af; line-height: 1.45; }
+.adp-rcase-item small { font-size: 11px; color: #111827; line-height: 1.45; }
 .adp-rcase-item.on { background: #eef4ff; }
 .adp-rcase-item.on strong { color: #1d4ed8; }
 .adp-rcase-item:active { background: #f3f4f6; }
@@ -5899,18 +7843,46 @@ const goBack = () => router.back();
   background: #eef2f7; font-size: 13px; font-weight: 800; color: #111827;
   text-align: left; padding: 7px 8px;
 }
+/* 임차인현황 머리줄 — 기준 이름은 회색, 날짜만 파랗게 */
+.adp-base-note .adp-tn-date { font-weight: 400; color: #2b6df3; }
+/* 네 항목을 한 줄씩, 다른 탭의 ①②③ 목차와 같은 모양으로 */
+/* '전입 확정 배당'이 한 줄에 들어가게 이름 칸을 넓힌다 */
+.adp-base-tenant .adp-base-row { grid-template-columns: 110px minmax(0, 1fr); }
+.adp-base-tenant .adp-base-row dt { font-size: 12.5px; white-space: nowrap; letter-spacing: -0.2px; }
+.adp-base-tenant .adp-base-row dd,
+.adp-base-tenant .adp-base-row dd strong,
+.adp-base-tenant .adp-base-row dd span { font-size: 12.5px; }
+.adp-base-row dd.adp-tn-dates { font-size: 12.5px; }
 .adp-rcheck-label { background: #fde7e7; text-align: center; color: #111827; font-weight: 700; }
 .adp-rcheck-label strong { font-size: 12px; }
 .adp-rcheck-desc { color: #4b5563; white-space: pre-line; }
 .adp-rcheck-cell { text-align: center; }
+/* 체크 마킹 — 기본 체크박스를 직접 그려 모서리를 둥글게(4px) 만든다 */
 .adp-rcheck-box {
+  appearance: none; -webkit-appearance: none;
+  box-sizing: border-box; position: relative; margin: 0;
   width: 22px; height: 22px; cursor: pointer;
-  accent-color: #dc2626;
+  border: 2px solid #b6bcc7;
+  border-radius: 4px;
+  background: #fff;
+  transition: background-color 0.12s, border-color 0.12s;
 }
+.adp-rcheck-box:checked { background: #dc2626; border-color: #dc2626; }
+.adp-rcheck-box:checked::after {
+  content: '';
+  position: absolute; left: 6px; top: 2.5px;
+  width: 5px; height: 10px;
+  border: solid #fff; border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+.adp-rcheck-box:disabled { opacity: 0.45; cursor: default; }
 
 /* 손품조사 */
 .adp-survey-head { gap: 8px; }
-.adp-survey-head h2 { flex: 1 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: 4px; }
+/* 현장에서 적는 카드라 제목을 파랗게 구분한다 */
+.adp-card-head h2.adp-head-blue { color: #2b6df3; }
+.adp-card-head h2.adp-head-blue .adp-h2-ico { color: #2a5fbf; }
+.adp-survey-head h2 { flex: 1 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: 5px; }
 /* 제목 옆 안내문구가 길면 다음 줄로 내린다 */
 .adp-survey-head h2.adp-head-wrap { flex-wrap: wrap; row-gap: 2px; }
 .adp-survey-note-inline.below { flex: 0 0 100%; margin-left: 0; }
@@ -5918,6 +7890,8 @@ const goBack = () => router.back();
 .adp-survey-head .adp-chev { flex: 0 0 auto; }
 .adp-survey-head h2 .q { font-size: 11px; color: #9ca3af; border: 1px solid #d1d5db; border-radius: 50%; width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
 .adp-survey-note-inline { font-size: 11px; color: #2b6df3; font-weight: 500; margin-left: 6px; }
+/* 제목 옆 회색 안내 */
+.adp-head-note { font-size: 11.5px; color: #111827; font-weight: 400; margin-left: 6px; }
 .adp-region-pills { display: inline-flex; gap: 4px; margin-left: 6px; vertical-align: middle; }
 .adp-region-pill {
   border: 1px solid #d5dbe6; background: #fff; color: #4b5563;
@@ -5977,6 +7951,13 @@ const goBack = () => router.back();
 .adp-ind-year { cursor: pointer; justify-content: flex-start; font-size: 10.5px; }
 .adp-ind-year:disabled { background: #fff; color: #111827; border-color: #eceff4; opacity: 1; cursor: default; }
 .adp-ind-years { flex: 0 0 auto; font-size: 12px; font-weight: 800; color: #2b6df3; white-space: nowrap; }
+/* 개별성 표의 입력칸·선택칸 글자는 모두 가운데로 */
+.adp-ind-ctl .adp-ind-input,
+.adp-ind-ctl .adp-ind-year,
+.adp-ind-ctl .adp-ind-input.half { text-align: center; }
+.adp-ind-ctl .adp-ind-year { justify-content: center; }
+.adp-ind-ctl .adp-agency-trigger .txt { flex: 1 1 auto; min-width: 0; text-align: center; }
+.adp-ind-ctl .adp-agency-trigger .caret { margin-left: 0; }
 .adp-ind-rate { font-size: 12.5px; font-weight: 700; color: #4b5563; background: #fafbfc; padding: 4px 3px; }
 .adp-ind-multi { flex: 1 1 auto; min-width: 0; }
 /* 선택지 셋 이하 — 콤보 대신 알약 버튼으로 고른다 */
@@ -6002,17 +7983,123 @@ const goBack = () => router.back();
 .adp-ind-rate-row { display: flex; align-items: center; justify-content: center; gap: 1px; font-size: 10px; font-weight: 700; }
 .adp-ind-input.rate { flex: 1 1 auto; min-width: 0; height: 24px; padding: 2px 2px; font-size: 10px; font-weight: 700; }
 .adp-ind-table tfoot th, .adp-ind-table tfoot td { background: #f7f9fc; }
-.adp-ind-table tfoot .adp-ind-ctl strong.hi { color: #2b6df3; font-size: 12.5px; }
+/* 예상 매매가와 글자 크기를 맞춘다 */
+.adp-ind-table tfoot .adp-ind-ctl strong.hi { color: #2b6df3; font-size: 13.5px; }
 .adp-ind-ctl .row .sign { flex: 0 0 auto; font-size: 10px; color: #6b7280; font-weight: 700; }
 
 .adp-mkt-body { padding: 4px 0 14px; }
+/* 매매수요 — 동단위 수요·공급 */
+.adp-dm-body { padding: 4px 0 14px; }
+.adp-dm-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 2px 2px 8px; }
+/* 카드 제목 > 큰 단락(1./3.) > 항목(①②③) 순으로 한 단계씩 작게 */
+.adp-dm-title { font-size: 15px; font-weight: 800; color: #111827; }
+.adp-dm-title small { font-size: 12px; font-weight: 700; color: #4b5563; }
+/* 급매가의 ①②③ 블록처럼 네모로 묶는다 */
+.adp-dm-block { border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; padding: 8px 10px 10px; }
+/* 기간 표기만 파랗게 — 어느 기간 거래량인지 눈에 들어오게 */
+.adp-dm-mon { color: #2b6df3; }
+/* 수요공급 — 숫자 뒤 단위(건·%·개월)는 값보다 뒤로 물러나게 회색 */
+.adp-dm-block .adp-mkt-cells .cell strong.hi-blue em { color: #6b7280; }
+/* 자동으로 채워지는 값이라는 표시 */
+.adp-dm-info {
+  border: none; background: transparent; padding: 0; cursor: pointer;
+  color: #2b6df3; display: inline-flex; align-items: center; vertical-align: -2px;
+}
+/* 말풍선 — 브라우저 기본 툴팁 대신 직접 그린다 (눌렀을 때만) */
+.adp-dm-rowwrap { position: relative; }
+.adp-dm-bubble {
+  position: absolute; left: 2px; right: 2px; top: calc(100% + 6px); z-index: 40;
+  margin: 0; padding: 8px 10px;
+  background: rgba(17, 24, 39, 0.92); color: #fff; border-radius: 10px;
+  font-size: 11px; font-weight: 400; line-height: 1.5; cursor: pointer;
+}
+.adp-dm-bubble span { display: block; }
+.adp-dm-bubble b {
+  display: inline-block; width: 32px; margin-right: 6px;
+  font-weight: 800; color: #9db9ef;
+}
+.adp-dm-bubble::before {
+  content: ''; position: absolute; top: -5px; left: var(--arrow, 12%);
+  border-left: 6px solid transparent; border-right: 6px solid transparent;
+  border-bottom: 6px solid rgba(17, 24, 39, 0.92);
+}
+/* 사진 카드 제목 옆 표시 — 접혀 있어도 사진이 몇 장 들어 있는지 보인다 */
+.adp-photo-mark {
+  display: inline-flex; align-items: center;
+  margin-left: 5px; padding: 1px 7px; border-radius: 999px;
+  background: #e4f6ea; color: #1f7a45;
+  font-size: 10.5px; font-weight: 800; vertical-align: 1px;
+}
+/* 조사 대상 동 이름 — 제목 안에서 눈에 띄게 */
+.adp-dm-area { color: #2b6df3; }
+/* 세대수 조회 바로가기 — 라벨 옆 작은 돋보기 */
+.adp-dm-lookup {
+  border: none; background: transparent; padding: 0 0 0 3px;
+  color: #2b6df3; cursor: pointer; vertical-align: -1px;
+  display: inline-flex; align-items: center;
+}
+.adp-dm-block + .adp-dm-block { margin-top: 10px; }
+.adp-dm-block.boxed + .adp-dm-block.boxed { margin-top: 10px; }
+.adp-dm-head.sec2 { margin-top: 16px; padding-top: 12px; border-top: 1px solid #eef1f6; }
+/* 단락 제목 줄의 버튼은 오른쪽 끝에 붙인다 */
+.adp-dm-head .adp-mkt-addrow,
+.adp-dm-head .adp-edit-btn { margin-left: auto; }
+/* 수요공급 숫자 — 칸 가운데에 두되, 숫자 상자를 같은 폭으로 잡아 끝자리를 맞춘다 */
+.adp-dm-block .adp-mkt-cells .cell strong { width: auto; text-align: center; }
+.adp-dm-block .adp-mkt-cells .cell strong .num {
+  display: inline-block; min-width: 56px; text-align: right;
+}
+/* 단위 글자 폭이 '개/세대/건'으로 달라 가운데 정렬하면 숫자 끝이 어긋난다.
+   단위도 같은 폭으로 잡아 블록끼리 끝자리가 정확히 맞게 한다 */
+.adp-dm-block .adp-mkt-cells .cell strong em {
+  display: inline-block; min-width: 26px; text-align: left; margin-left: 2px;
+}
+.adp-dm-block .adp-mkt-cells .cell .adp-mkt-input { text-align: right; }
+.adp-dm-block .adp-dm-result { width: 100%; justify-content: center; }
+.adp-dm-block .adp-dm-result > em { display: inline-block; min-width: 14px; text-align: left; }
+.adp-dm-block .adp-dm-judge { flex: 0 0 34px; text-align: right; }
+.adp-dm-sub { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 2px 2px; font-size: 13px; font-weight: 800; color: #111827; }
+.adp-dm-sub .adp-edit-btn { margin-left: auto; }
+.adp-dm-result em { font-size: 11px; font-style: normal; font-weight: 700; color: #4b5563; }
+.adp-dm-block-head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-bottom: 5px; padding: 0 2px; }
+/* ① 입지조사와 같은 뎁스 — 크기·굵기를 맞춘다 */
+.adp-dm-block-head .t { font-size: 13px; font-weight: 800; color: #111827; }
+.adp-dm-block-head small { font-size: 11px; color: #2b6df3; font-weight: 500; }
+.adp-dm-pair { display: flex; align-items: center; justify-content: center; gap: 3px; width: 100%; font-size: 11px; font-weight: 700; color: #4b5563; }
+.adp-dm-pair .adp-mkt-input { flex: 1 1 0; min-width: 0; }
+.adp-dm-std {
+  width: 34px; border: 1px solid #e3e8f0; border-radius: 5px; background: #fff;
+  padding: 1px 3px; font-size: 10px; font-weight: 700; color: #374151; text-align: center;
+}
+.adp-dm-std:focus { outline: none; border-color: #2b6df3; }
+.adp-dm-result { display: flex; align-items: baseline; justify-content: center; gap: 4px; width: 100%; }
+.adp-mkt-cells .cell strong.hi-blue { color: #2b6df3; font-size: 17px; }
+.adp-mkt-cells .cell strong.hi-blue em { font-size: 11px; font-style: normal; font-weight: 700; color: #111827; margin-left: 1px; }
+.adp-mkt-cells .cell strong.hi-blue small.sub { font-size: 10.5px; font-weight: 700; color: #6b7280; margin-left: 3px; }
+.adp-dm-judge { font-size: 11px; font-weight: 800; color: #e0574a; white-space: nowrap; }
+.adp-dm-judge.bad { color: #e0574a; }
 .adp-mkt-body > .adp-sub-block:first-child { border-top: none; margin-top: 0; padding-top: 0; }
 /* 시세조사 본문 — 표 대신 항목별 카드로 쪼개 가로 스크롤을 없앴다 */
-.adp-mkt-block { border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 10px 10px; background: #fff; }
+.adp-mkt-block { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px 10px; background: #fff; }
 .adp-mkt-block + .adp-mkt-block { margin-top: 8px; }
-.adp-mkt-block-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px; }
-.adp-mkt-block-head .t { font-size: 14.5px; font-weight: 800; color: #111827; }
+.adp-mkt-block-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; min-width: 0; flex-wrap: nowrap; }
+.adp-mkt-block-head .t { font-size: 13px; font-weight: 800; color: #111827; }
 .adp-mkt-block-head small { font-size: 11px; color: #2b6df3; font-weight: 500; }
+.adp-mkt-region { display: inline-flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #16a085 !important; font-weight: 700 !important; }
+.adp-mkt-block-head .adp-update-time { margin-left: auto; font-size: 10.5px; color: #6b7280; white-space: nowrap; }
+/* 경매물건 / 유사물건 전환 */
+/* 기본인 '경매물건'은 파란색, 대체 조사인 '유사물건'은 회색 */
+.adp-mkt-mode {
+  margin-left: auto; flex: 0 0 auto;
+  border: 1px solid #2b6df3; background: #eaf1ff; color: #2b6df3;
+  border-radius: 999px; padding: 2px 10px; font-size: 10.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.adp-mkt-mode.sim { border-color: #e0574a; background: #fdecea; color: #e0574a; }
+/* 제목의 '경매물건/유사물건' 글자도 버튼 색과 맞춘다 */
+.adp-mkt-block-head .t .mode { color: #2b6df3; }
+.adp-mkt-block-head .t .mode.sim { color: #e0574a; }
+.adp-mkt-mode:active { opacity: 0.7; }
+.adp-mkt-block .adp-mkt-cells + .adp-mkt-cells { margin-top: 6px; }
 /* 테두리 없이 쓸 때도 블록 안 제목과 같은 들여쓰기를 준다 */
 .adp-mkt-block-head.bare { padding: 0 10px; }
 .adp-mkt-cells { display: grid; gap: 6px; }
@@ -6020,6 +8107,52 @@ const goBack = () => router.back();
 .adp-mkt-cells + .adp-mkt-cells { margin-top: 10px; }
 .adp-mkt-cells.c2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .adp-mkt-cells.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.adp-mkt-cells.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.adp-mkt-cells.c4 .cell small { letter-spacing: -0.4px; }
+/* 이름 칸과 값 칸을 선으로 가른다 — 이름 칸 전체가 설명을 띄우는 영역 */
+.adp-mkt-cells .cell.split { padding: 0; gap: 0; overflow: hidden; }
+.adp-mkt-cells .cell.split .cell-head {
+  width: 100%; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; gap: 3px;
+  padding: 5px 3px; border-bottom: 1px solid #e3e8f0;
+}
+.adp-mkt-cells .cell.split .cell-body {
+  width: 100%; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center;
+  padding: 5px 3px;
+}
+.adp-mkt-cells .cell.split.calc .cell-head { border-bottom-color: #dcdfe5; }
+.adp-dm-block .adp-mkt-cells.c4 .cell strong .num { min-width: 0; }
+.adp-dm-block .adp-mkt-cells.c4 .cell strong em { min-width: 0; }
+.adp-mkt-cells.c4 .adp-mkt-input { width: 100%; min-width: 0; }
+/* 등급 뱃지 */
+.adp-dm-grade {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 28px; height: 24px; border-radius: 6px; padding: 0 6px;
+  font-size: 15px; font-weight: 800; color: #6b7280; background: #eef1f6;
+}
+/* 등급 옆 적합 여부 — 부적합만 빨갛게 */
+.adp-dm-fit { margin-left: 3px; font-size: 12px; font-weight: 800; color: #1f7a45; white-space: nowrap; }
+.adp-dm-fit.bad { color: #c22e2e; }
+/* 종합등급 — ③ 제목줄 오른쪽, 아래 3·4번째 칸과 같은 자리에 선다
+   (칸 폭 = (전체-12)/4, 두 칸 + 가운데 간격 = 50% - 2px) */
+.adp-dm-total {
+  margin-left: auto; width: calc(50% - 2px); box-sizing: border-box;
+  display: flex; align-items: center; gap: 6px;
+  background: #f1f4f9; border: 1px solid #e3e8f0; border-radius: 8px;
+  padding: 3px 8px;
+}
+.adp-dm-total .lab {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 13px; font-weight: 800; color: #111827; flex: 0 0 auto;
+}
+.adp-dm-total .adp-dm-grade { height: 21px; min-width: 28px; font-size: 14px; }
+.adp-dm-total .adp-dm-fit { font-size: 12px; }
+.adp-dm-grade.g-good { background: #e4f6ea; color: #1f7a45; }
+.adp-dm-grade.g-ok2 { background: #e6edff; color: #2b4fd1; }
+.adp-dm-grade.g-ok { background: #fdf0db; color: #9a6400; }
+.adp-dm-grade.g-warn { background: #ffe3e3; color: #c22e2e; }
+
 .adp-ind-suffix { display: inline-flex; align-items: center; gap: 2px; flex: 1 1 auto; min-width: 0; font-size: 11px; font-weight: 700; color: #4b5563; }
 .adp-ind-suffix .adp-ind-input { flex: 1 1 auto; min-width: 0; }
 /* 정보요약 — 항목명이 길어 라벨 칸을 조금 넓히고 한 줄로 고정한다 */
@@ -6040,12 +8173,26 @@ const goBack = () => router.back();
   width: 74px; min-width: 0; height: 26px; border: 1px solid #e3e8f0; border-radius: 6px;
   padding: 0 6px; font-size: 11.5px; color: #111827; background: #fff; text-align: right;
 }
+.adp-sum-input.dept { max-width: 86px; }
+/* 법원 전화번호 — 같은 줄 오른쪽 */
+.adp-tel {
+  margin-left: 6px; color: #2b6df3; font-weight: 700; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 3px; cursor: pointer;
+}
+.adp-sum-input.tel { max-width: 104px; }
+/* 법원명 옆 담당계 */
+.adp-sum-dept { margin-left: 5px; color: #4b5563; }
 .adp-sum-input.wide { width: 120px; }
+/* 정보요약에서 눈여겨볼 값 */
+.adp-sum-hi { color: #2b6df3; font-weight: 800; }
 .adp-sum-input:focus { outline: none; border-color: #2b6df3; }
+/* 면적 단위 전환 — 편집 버튼과 같은 사각 형태·높이 */
 .adp-mkt-unit-btn {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 3px;
+  margin-left: auto; box-sizing: border-box; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 3px;
   border: 1px solid #c7d7f7; background: #fff; color: #2b6df3;
-  border-radius: 999px; padding: 2px 8px; font-size: 10.5px; font-weight: 800; cursor: pointer;
+  border-radius: 8px; padding: 0 9px; font-size: 11.5px; font-weight: 800;
+  line-height: 1; white-space: nowrap; cursor: pointer;
 }
 .adp-mkt-unit-btn:active { background: #eaf1ff; }
 .adp-mkt-ym { cursor: pointer; text-align: center; justify-content: center; }
@@ -6097,11 +8244,11 @@ const goBack = () => router.back();
 }
 /* 부동산 정보 — 업체 1곳 = 두 줄 */
 .adp-agency-list { display: flex; flex-direction: column; gap: 8px; }
-.adp-agency-item { background: #f3f6fc; border: 1px solid #e0eaff; border-radius: 10px; padding: 8px 12px 10px; }
+.adp-agency-item { background: #f3f6fc; border: 1px solid #e0eaff; border-radius: 8px; padding: 8px 12px 10px; }
 .adp-agency-line { display: flex; align-items: flex-end; gap: 6px; }
 .adp-agency-line + .adp-agency-line { margin-top: 6px; padding-top: 6px; border-top: 1px solid #e3ecff; }
-.adp-agency-fld { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1px; text-align: left; }
-.adp-agency-fld small { font-size: 11.5px; color: #9ca3af; font-weight: 600; }
+.adp-agency-fld { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1px; text-align: center; }
+.adp-agency-fld small { font-size: 11.5px; color: #9ca3af; font-weight: 600; text-align: center; }
 .adp-agency-fld > span {
   font-size: 13.5px; font-weight: 700; color: #111827; line-height: 26px; height: 26px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -6125,11 +8272,36 @@ const goBack = () => router.back();
 /* 현장조사 항목 줄 */
 .adp-fs-section { padding-top: 10px; margin-top: 10px; border-top: 1px solid #eef1f6; }
 .adp-fs-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 6px; }
+/* 매매수요 '1. 수요공급'과 같은 배치 — 단락 제목도, ①②③④ 항목도 왼쪽 2px에서 시작한다 */
+.adp-survey-body .adp-agency-list { padding-left: 2px; padding-right: 2px; }
+/* 항목 제목은 매매수요의 '① 동단위 거래회전율'과 같은 크기·간격 */
+.adp-survey-body .adp-fs-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 5px; }
+/* 급매가의 ①②③④ 블록처럼 네모로 묶는다 */
+.adp-survey-body .adp-fs-section {
+  border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;
+  padding: 8px 10px 10px; margin-top: 0;
+}
+/* 1·2번 줄 — 제목 · 설명 · 오른쪽 값(등수/체크)을 한 줄에 */
+/* 제목·설명·값이 한 줄에 들어가도록 줄바꿈을 막는다 */
+.adp-dm-head.tight { padding: 4px 2px 8px; flex-wrap: nowrap; }
+.adp-dm-head.tight .adp-dm-memo { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adp-fs-rank { margin-left: auto; font-size: 17px; font-weight: 800; color: #e0574a; line-height: 1.2; }
+/* 두 줄의 설명 글자가 같은 자리에서 시작하도록 제목 칸 폭을 맞춘다 */
+.adp-dm-head.tight .adp-dm-title { flex: 0 0 auto; min-width: 132px; white-space: nowrap; }
+.adp-dm-memo { font-size: 11.5px; font-weight: 600; color: #9ca3af; }
+.adp-dm-check { margin-left: auto; flex: 0 0 auto; }
 .adp-fs-row {
-  display: grid; grid-template-columns: 74px minmax(0, 1fr) 132px;
+  display: grid; grid-template-columns: 88px minmax(0, 1fr) auto;
   align-items: center; gap: 5px; padding: 5px 0;
 }
-.adp-fs-row .lbl { font-size: 13px; color: #6b7280; font-weight: 600; }
+/* 선택 버튼은 항상 맨 오른쪽 칸에 둬서 '건물/호실 개별성 확인'의 체크와 끝이 맞는다.
+   옆칸 입력(연락처·금액)은 그 왼쪽으로 간다 */
+/* 버튼이 3번 칸, 입력칸이 2번 칸인데 DOM 순서가 반대라 그대로 두면
+   입력칸이 다음 줄로 밀린다. 둘 다 1행으로 못 박아 한 줄에 둔다 */
+.adp-fs-row .ctl { grid-column: 3; grid-row: 1; }
+.adp-fs-row .ext { grid-column: 2; grid-row: 1; }
+.adp-fs-row .ctl.wide { grid-row: 1; }
+.adp-fs-row .lbl { font-size: 13px; color: #6b7280; font-weight: 600; white-space: nowrap; }
 .adp-fs-row .ctl, .adp-fs-row .ext { min-width: 0; font-size: 13px; font-weight: 700; color: #111827; text-align: right; }
 /* 옆칸이 없는 항목(기타·수리상태 등)은 남은 폭을 모두 쓴다 */
 .adp-fs-row .ctl.wide { grid-column: 2 / -1; }
@@ -6138,12 +8310,19 @@ const goBack = () => router.back();
   padding: 0 6px; font-size: 12.5px; color: #111827; background: #fff;
 }
 .adp-fs-input:focus { outline: none; border-color: #2b6df3; }
+/* 탐문·우편물 줄의 입력칸 글자는 모두 왼쪽 정렬로 통일 */
+.adp-fs-row .adp-fs-input { text-align: left; padding-left: 8px; }
+/* 빈칸 안내 글자는 '점유관계'의 '선택'과 같은 회색으로 */
+.adp-survey-body input::placeholder,
+.adp-survey-body textarea::placeholder { color: #9ca3af; opacity: 1; }
 .adp-fs-unit { display: flex; align-items: center; justify-content: flex-end; gap: 3px; width: 100%; }
 .adp-fs-unit .adp-fs-input { flex: 1 1 auto; min-width: 0; }
 /* 선택 버튼은 줄바꿈 없이 한 줄에 둔다 */
 .adp-fs-toggles { display: flex; flex-wrap: nowrap; gap: 4px; justify-content: flex-end; min-width: 0; }
+/* 'O'·'X'처럼 한 글자인 버튼이 납작해지지 않게 최소 크기를 준다 */
 .adp-fs-toggles .adp-toggle-btn {
-  padding: 5px 7px; font-size: 10.5px; min-width: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 28px; height: 26px; padding: 0 9px; font-size: 10.5px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .adp-fs-multi { flex: 1 1 auto; min-width: 0; }
@@ -6154,7 +8333,7 @@ const goBack = () => router.back();
   width: 100%; cursor: pointer; font-size: 11.5px;
 }
 .adp-agency-trigger .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.adp-agency-trigger .txt.ph { color: #9ca3af; }
+.adp-agency-trigger .txt.ph { color: #9ca3af; font-weight: 400; }
 .adp-agency-trigger .caret { flex: 0 0 auto; color: #9ca3af; font-size: 9px; }
 .adp-agency-backdrop { position: fixed; inset: 0; z-index: 30; }
 .adp-agency-options {
@@ -6184,8 +8363,9 @@ const goBack = () => router.back();
   padding: 7px 9px; font-size: 12px; color: #111827; background: #fff;
 }
 .adp-demand-note:focus { outline: none; border-color: #2b6df3; }
-.adp-survey-body { padding: 4px 12px 14px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #f1f5f9; }
-.adp-survey-block { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; }
+/* 좌우 여백은 매매수요·급매가 카드와 같게 0으로 두고, 안쪽 요소에서 2px만 준다 */
+.adp-survey-body { padding: 4px 0 14px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #f1f5f9; }
+.adp-survey-block { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; }
 .adp-survey-block-head { display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: #2b6df3; margin-bottom: 6px; }
 .adp-survey-block-head .i { width: 16px; height: 16px; border-radius: 50%; background: #e0eaff; color: #2b6df3; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
 .adp-survey-note { margin: 0; font-size: 12px; color: #6b7280; }
@@ -6217,13 +8397,30 @@ const goBack = () => router.back();
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
   cursor: pointer; text-align: left; position: relative;
 }
-.adp-multi-placeholder { font-size: 12px; color: #9ca3af; }
+.adp-multi-placeholder { font-size: 12px; font-weight: 400; color: #9ca3af; }
+/* 아직 고르지 않은 선택 상자의 '선택' 글자도 같은 회색으로 */
+.adp-survey-body select.adp-fs-input.ph { color: #9ca3af; }
 .adp-multi-chip {
   display: inline-flex; align-items: center; gap: 3px;
   padding: 3px 8px; border-radius: 999px; background: #f3f4f6;
   font-size: 11.5px; font-weight: 700; color: #374151;
 }
 .adp-multi-chip em { font-style: normal; color: #9ca3af; font-size: 12px; }
+/* 현장조사의 기본 select를 '입찰자 현황조사서' 상자와 똑같이 맞춘다
+   (크기·테두리·시작 위치·▾ 화살표) */
+.adp-survey-body select.adp-fs-input {
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5l3.5 3.5 3.5-3.5z' fill='%236b7280'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+.adp-survey-row select.adp-fs-input {
+  flex: 1 1 auto; min-width: 0;
+  height: 36px; min-height: 36px;
+  padding: 6px 28px 6px 8px;
+  border: 1.5px solid #2b6df3; border-radius: 8px;
+  font-size: 12px; color: #111827; background-color: #fff;
+}
 .adp-multi-caret {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
   font-size: 14px; line-height: 1; color: #6b7280;
@@ -6232,7 +8429,7 @@ const goBack = () => router.back();
 .adp-multi-panel {
   position: absolute; left: 0; right: 0; top: calc(100% + 4px);
   z-index: 30;
-  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   padding: 6px;
 }
@@ -6256,7 +8453,7 @@ const goBack = () => router.back();
   flex: 0 0 auto; border: none; background: #2b6df3; color: #fff;
   border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer;
 }
-.adp-survey-subblock { background: #f3f6fc; border: 1px solid #e0eaff; border-radius: 10px; padding: 10px 12px; }
+.adp-survey-subblock { background: #f3f6fc; border: 1px solid #e0eaff; border-radius: 8px; padding: 10px 12px; }
 .adp-subblock-head { font-size: 12.5px; color: #2b6df3; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .adp-arrears-total {
   display: inline-flex; align-items: center; gap: 4px;
@@ -6277,27 +8474,27 @@ const goBack = () => router.back();
 }
 .adp-toggle-btn.active { background: #2b6df3; border-color: #2b6df3; color: #fff; }
 
-.adp-loc-row1 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px; background: #f3f4f6; border-radius: 10px; }
+.adp-loc-row1 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px; background: #f3f4f6; border-radius: 8px; }
 .adp-loc-row1 .cell { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
 .adp-loc-row1 .cell small { font-size: 11px; color: #6b7280; font-weight: 600; }
 .adp-loc-row1 .cell strong { font-size: 12px; color: #111827; font-weight: 700; }
 .adp-loc-row1 .cell .adp-survey-input { width: 100%; min-width: 0; padding: 6px 8px; font-size: 11.5px; }
 .adp-loc-grade { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.adp-loc-grade .g-cell { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.adp-loc-grade .g-cell { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .adp-loc-grade .g-cell small { font-size: 11px; color: #6b7280; font-weight: 600; }
 .adp-loc-grade .g-cell strong { font-size: 18px; font-weight: 900; color: #111827; line-height: 1; }
 .adp-loc-grade .g-cell strong em { font-size: 11px; font-style: normal; color: #6b7280; margin-left: 2px; }
-.adp-info-banner { background: #eff6ff; border: 1px solid #dbeafe; border-radius: 10px; padding: 10px 12px; font-size: 11.5px; color: #1e40af; line-height: 1.5; }
+.adp-info-banner { background: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px; padding: 10px 12px; font-size: 11.5px; color: #1e40af; line-height: 1.5; }
 .adp-info-banner strong { color: #2b6df3; }
 .adp-loc-icon-row { display: flex; flex-direction: column; gap: 6px; }
-.adp-loc-icon-row .ir { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.adp-loc-icon-row .ir { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .adp-loc-icon-row .ir .ic { font-size: 14px; }
 .adp-loc-icon-row .ir .lbl { color: #6b7280; min-width: 50px; }
 
 .adp-deal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 10px 12px 14px; }
 .adp-deal-grid .cell {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 8px 4px; background: #eff6ff; border-radius: 10px;
+  padding: 8px 4px; background: #eff6ff; border-radius: 8px;
   min-width: 0;
 }
 .adp-deal-grid .cell small { font-size: 12.5px; color: #6b7280; font-weight: 600; text-align: center; line-height: 1.2; }
@@ -6368,7 +8565,7 @@ const goBack = () => router.back();
 
 .adp-loc2-price-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 .adp-loc2-price-card {
-  background: #f3f4f6; border-radius: 10px; padding: 10px 6px;
+  background: #f3f4f6; border-radius: 8px; padding: 10px 6px;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
 .adp-loc2-price-card small { font-size: 11px; color: #6b7280; }
@@ -6440,7 +8637,7 @@ const goBack = () => router.back();
 .adp-dir-panel {
   position: absolute; top: calc(100% + 4px); right: 0; z-index: 30;
   list-style: none; margin: 0; padding: 4px;
-  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
   min-width: 110px;
 }
@@ -6461,7 +8658,7 @@ const goBack = () => router.back();
 .adp-ind-grid { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
 .adp-ind-section { display: grid; grid-template-columns: 64px 1fr; gap: 8px; align-items: stretch; }
 .adp-ind-side {
-  background: #f3f4f6; border-radius: 10px;
+  background: #f3f4f6; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 700; color: #374151;
   text-align: center; line-height: 1.4;
@@ -6514,20 +8711,46 @@ const goBack = () => router.back();
 .adp-trade-tabs { flex: 1 1 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 .adp-trade-tab {
   border: none; border-radius: 6px;
-  padding: 7px 6px; font-size: 12px; font-weight: 700; color: #fff; cursor: pointer;
-  opacity: 0.55; transition: opacity 0.15s;
+  padding: 7px 6px; font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
-.adp-trade-tab.active { opacity: 1; }
-.adp-trade-tab.t-all { background: #38bdf8; }
-.adp-trade-tab.t-buy { background: #2b6df3; }
-.adp-trade-tab.t-jeon { background: #22c55e; }
-.adp-trade-tab.t-wol { background: #f97316; }
+/* 비활성 — 연한 배경 + 해당 색 글씨로 흐리게 */
+.adp-trade-tab.t-all { background: #e4f4fd; color: #4bbbe8; }
+.adp-trade-tab.t-buy { background: #e6ecfd; color: #6690f5; }
+.adp-trade-tab.t-jeon { background: #e4f7ea; color: #4cc471; }
+.adp-trade-tab.t-wol { background: #fdeee3; color: #f79351; }
+/* 선택 — 진한 배경 + 흰 글씨 */
+.adp-trade-tab.active { color: #fff; font-weight: 800; box-shadow: 0 1px 4px rgba(17, 24, 39, 0.22); }
+.adp-trade-tab.t-all.active { background: #0284c7; }
+.adp-trade-tab.t-buy.active { background: #1d4ed8; }
+.adp-trade-tab.t-jeon.active { background: #15803d; }
+.adp-trade-tab.t-wol.active { background: #c2410c; }
 .adp-trade-refresh {
   flex: 0 0 auto; width: 38px; height: 32px;
   border: 1px solid #e5e7eb; background: #fff; border-radius: 6px;
   font-size: 16px; color: #2b6df3; cursor: pointer;
 }
 
+/* 단지 전체 조회 줄 — PDF 표와 섞이지 않게 위에 띄워 둔다 */
+.adp-sp-bar {
+  display: flex; align-items: center; gap: 6px;
+  margin: 8px 0 6px; padding-top: 8px; border-top: 1px dashed #e3e8f0;
+}
+.adp-sp-lab { font-size: 12px; font-weight: 800; color: #111827; flex: 0 0 auto; }
+.adp-sp-lab em { font-style: normal; font-size: 10.5px; font-weight: 400; color: #6b7280; margin-left: 3px; }
+.adp-sp-lab i { font-style: normal; font-size: 10.5px; font-weight: 400; color: #9ca3af; margin-left: 2px; }
+.adp-sp-cnt { margin-left: auto; font-size: 12px; font-weight: 800; color: #2b6df3; }
+.adp-sp-err { margin: 0 0 6px; font-size: 11px; color: #9a6400; }
+.adp-sp-again {
+  margin-left: 6px; border: 1px solid #c7d7f7; border-radius: 6px; background: #eef3fd;
+  padding: 2px 8px; font-size: 10.5px; font-weight: 700; color: #2b6df3; cursor: pointer;
+}
+.adp-sp-direct { color: #c22e2e !important; }
+/* 가장 최근 매매가를 손품조사 실거래가 칸으로 보낸다 */
+.adp-send-btn {
+  border: none; background: transparent; padding: 0 0 0 4px; cursor: pointer;
+  color: #2b6df3; vertical-align: -2px;
+}
 .adp-trade-selects { display: flex; gap: 6px; margin-bottom: 4px; }
 .adp-trade-selects .adp-select-sm { flex: 1 1 auto; padding: 6px 8px; }
 
@@ -6554,9 +8777,13 @@ const goBack = () => router.back();
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
   margin: 8px 0;
 }
+.adp-trade-summary.cols3 { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.adp-trade-summary.cols3 .adp-trade-sum-card { padding: 9px 6px; }
+.adp-trade-summary.cols3 .adp-trade-sum-card small { font-size: 10px; text-align: center; line-height: 1.3; }
+.adp-trade-summary.cols3 .adp-trade-sum-card strong { font-size: 13px; }
 .adp-trade-sum-card {
   background: #f3f6fc; border: 1px solid #e0eaff;
-  border-radius: 10px; padding: 10px 12px;
+  border-radius: 8px; padding: 10px 12px;
   display: flex; flex-direction: column; gap: 4px; align-items: center;
 }
 .adp-update-time { margin-left: auto; margin-right: 8px; font-size: 11px; color: #6b7280; }
@@ -6567,12 +8794,13 @@ const goBack = () => router.back();
   display: inline-flex; align-items: center; flex: 0 0 auto;
 }
 .adp-copy-btn:active { color: #2b6df3; }
-.adp-pub-addr { display: flex; align-items: center; gap: 3px; }
-.adp-pub-addr > span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* td 에 직접 display:flex 를 주면 '표의 칸'이 아니게 돼 줄이 어긋난다 — 안쪽 div 에 준다 */
+.adp-pub-addr-in { display: flex; align-items: center; gap: 3px; min-width: 0; }
+.adp-pub-addr-in > span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .adp-pub-row { flex-wrap: nowrap; }
 .adp-pub-cell.narrow { flex: 1 1 0; min-width: 0; }
 .adp-pub-cell.narrow .adp-pub-input { min-width: 0; padding: 5px 2px; font-size: 10.5px; }
-.adp-pub-date { cursor: pointer; text-align: center; }
+.adp-pub-date { cursor: pointer; text-align: center; font-weight: 400; }
 .adp-pub-months { display: inline-flex; flex: 0 0 auto; gap: 3px; margin-left: 4px; align-self: flex-end; }
 .adp-pub-month-btn {
   border: 1px solid #d5dbe6; background: #fff; color: #4b5563; white-space: nowrap;
@@ -6582,6 +8810,146 @@ const goBack = () => router.back();
 .adp-trade-meta-title { font-size: 11.5px; font-weight: 800; color: #111827; white-space: nowrap; }
 .adp-trade-sum-card small { font-size: 11px; color: #6b7280; font-weight: 600; }
 .adp-trade-sum-card strong { font-size: 15px; font-weight: 800; color: #111827; }
+.adp-sum-floor { font-size: 13px !important; margin-right: 2px; }
+.adp-sum-key { color: #2b6df3; font-weight: 800; }
+/* 기간 선택 — 최소면적 입력 시작점부터 최대면적 끝까지 4등분 */
+.adp-pub-cell.span2 { grid-column: 1 / -1; justify-content: flex-start; }
+/* 라벨 폭을 최소면적과 똑같이 고정해야 버튼 시작점이 입력칸과 맞는다 */
+.adp-pub-cell.span2 > span { flex: 0 0 50px; width: 50px; white-space: nowrap; font-size: 11px; }
+.adp-pub-cell.span2 .adp-pub-months {
+  margin-left: 0; align-self: center;
+  flex: 1 1 auto; min-width: 0;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+}
+.adp-pub-cell.span2 .adp-pub-month-btn { padding: 6px 2px; text-align: center; }
+/* 건축년도 — 두 드롭박스를 같은 폭으로 벌리고 물결을 그 사이 한가운데 둔다 */
+.adp-pub-cell.span2.years .adp-pub-input { flex: 1 1 0; min-width: 0; }
+.adp-pub-cell.span2.years > .adp-pub-tilde { flex: 0 0 auto; padding: 0; width: 20px; text-align: center; }
+.adp-pub-row.actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
+/* 분포 내비게이터 — 평형·층·연식 분포를 보여 주고 누르면 그 구간으로 걸러 준다 */
+.adp-nav-dist {
+  margin: 8px 2px 2px; padding: 8px 8px 6px;
+  background: #f7f9fc; border: 1px solid #eef1f6; border-radius: 8px;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.adp-nav-line { display: flex; align-items: center; gap: 3px; }
+.adp-nav-key {
+  flex: 0 0 24px; font-size: 10.5px; font-weight: 600; color: #374151; text-align: center;
+}
+/* 칸 생김새는 선정물건 상단 상태카드와 같은 규격을 쓴다 — 라벨 위, 숫자 아래 */
+.adp-nav-chip {
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  box-sizing: border-box; min-height: 38px; padding: 4px 2px;
+  border: 1px solid #e8ebf1; border-radius: 8px; background: #fff;
+  cursor: pointer; overflow: hidden;
+}
+/* 라벨 색·굵기는 조건식 패널의 '기간선택 / 시작일자' 라벨과 같은 값을 쓴다 */
+.adp-nav-chip small {
+  font-size: 9.5px; font-weight: 600; color: #374151;
+  white-space: nowrap; line-height: 1;
+}
+.adp-nav-chip strong {
+  font-size: 13px; font-weight: 800; color: #111827;
+  white-space: nowrap; line-height: 1;
+}
+.adp-nav-chip strong em { font-style: normal; font-size: 9px; font-weight: 400; color: #6b7280; margin-left: 1px; }
+/* 가장 많은 구간 — 박스는 다른 칸과 똑같이 두고 숫자 색으로만 표시한다.
+   배경까지 칠하면 '선택된 칸'과 헷갈린다. */
+.adp-nav-chip.top strong { color: #2b6df3; }
+/* 지금 걸러 보는 구간 */
+.adp-nav-chip.on { border-color: #2b6df3; background: #eaf1ff; box-shadow: 0 0 0 1.5px rgba(43, 109, 243, 0.2); }
+.adp-nav-chip.on strong { color: #2b6df3; }
+
+/* 건축연도 — 연도 아래에 연차를 작게 */
+.adp-pub-year { line-height: 1.25; }
+.adp-pub-year small { display: block; font-size: 9px; font-weight: 400; color: #2b6df3; }
+/* 전용면적 칸 — 숫자 폭을 고정해 줄을 맞춘다 */
+/* 전용면적 — 숫자 폭을 고정해 줄을 맞추고, 아래에 다세대/연립을 작게 */
+.adp-area-cell { font-variant-numeric: tabular-nums; white-space: nowrap; line-height: 1.25; }
+.adp-area-cell small { display: block; font-size: 9px; font-weight: 400; color: #111827; }
+.adp-pub-warn {
+  margin: 6px 2px 0; padding: 7px 9px; border-radius: 8px;
+  background: #fef2f2; border: 1px solid #fcdcdc;
+  font-size: 11px; font-weight: 400; color: #b91c1c; line-height: 1.45;
+}
+/* 검색 버튼 — 돋보기+검색은 가운데, 안내는 그 아랫줄 가운데 */
+/* '검색' 글자가 버튼 가운데에 오고 돋보기는 그 왼쪽에 매달린다 */
+.adp-pub-search-main { position: relative; display: inline-block; line-height: 1.2; }
+.adp-pub-search-main svg {
+  position: absolute; right: calc(100% + 6px); top: 50%; transform: translateY(-50%);
+}
+.adp-pub-search-note {
+  font-size: 9px; font-weight: 400; line-height: 1;
+  color: rgba(255, 255, 255, 0.85); white-space: nowrap;
+}
+/* 결과 표 접기 줄 */
+.adp-pub-result { margin: 12px 2px 8px; }
+/* 좁은 화면에서는 제목이 한 줄을 다 쓰고 건수 칩들이 아랫줄로 내려간다 —
+   한 줄에 욱여넣으면 '검색리스트'와 '정상거래'가 세로로 쪼개져 칩을 덮었다 */
+.adp-pub-toggle-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.adp-pub-result-title {
+  flex: 1 1 100%; min-width: 0; overflow: hidden;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.adp-pub-result-title > strong {
+  font-size: 13px; font-weight: 800; color: #111827;
+  display: flex; align-items: baseline; gap: 5px; min-width: 0; overflow: hidden;
+  white-space: nowrap;
+}
+.adp-pub-update { flex: 0 1 auto; min-width: 0; }
+/* 목록을 펼쳤을 때 표 위에 붙는 한 줄 안내 */
+.adp-pub-list-note { margin: 0 2px 6px; font-size: 10.5px; font-weight: 400; color: #6b7280; }
+/* 제외한 직거래 건수 — 실거래 박스와 같은 규격 */
+.adp-pub-direct {
+  display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+  flex: 1 1 auto; min-width: 0;
+  box-sizing: border-box; height: 26px; padding: 0 10px;
+  border: 1px solid #f0d2d2; border-radius: 8px; background: #fff;
+  font-size: 11.5px; font-weight: 400; color: #b45309; line-height: 1; white-space: nowrap;
+  cursor: pointer;
+}
+.adp-pub-direct strong { font-weight: 800; color: #b45309; }
+.adp-pub-update { font-size: 9.5px; font-weight: 400; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 직거래 목록 */
+.adp-pub-direct-list { margin-top: 8px; }
+.adp-pub-direct-note { margin: 0 2px 6px; font-size: 10.5px; font-weight: 400; color: #b45309; }
+.adp-pub-direct:disabled { opacity: 0.5; cursor: default; }
+.adp-pub-toggle {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  flex: 1 1 auto; min-width: 0;
+  box-sizing: border-box; height: 26px; padding: 0 10px;
+  border: 1px solid #d5dbe6; border-radius: 8px; background: #f5f7fb;
+  font-size: 11.5px; font-weight: 400; color: #4b5563; line-height: 1;
+  white-space: nowrap; cursor: pointer;
+}
+.adp-pub-toggle strong { font-weight: 800; color: #111827; }
+.adp-chev.sm { width: 15px; height: 15px; }
+.adp-pub-search {
+  border: none; border-radius: 8px; background: #1d4ed8; color: #fff;
+  padding: 9px 10px; font-size: 14px; font-weight: 800; cursor: pointer;
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+}
+.adp-pub-search:disabled { opacity: 0.6; }
+.adp-pub-search:active { background: #1e40af; }
+
+.adp-trade-head-meta {
+  margin-left: auto; margin-right: 6px; min-width: 0;
+  display: flex; flex-wrap: wrap; justify-content: flex-end;
+  align-items: baseline; gap: 2px 7px;
+  font-size: 10.5px; line-height: 1.35; text-align: right;
+}
+.adp-trade-head-meta.row {
+  margin-left: 2px; margin-right: 0; justify-content: flex-start;
+  text-align: left; font-size: 13.8px; padding: 3px 0 4px;
+}
+.adp-hm-pair { display: inline-flex; align-items: baseline; gap: 3px; white-space: nowrap; }
+.adp-trade-head-meta small { color: #6b7280; font-weight: 400; }
+.adp-trade-head-meta strong { color: #2b6df3; font-weight: 800; }
+.adp-trade-type { font-weight: 500; }
+.adp-trade-type.tt-buy { color: #2b6df3; }
+.adp-trade-type.tt-jeon { color: #16a34a; }
+.adp-trade-type.tt-wol { color: #ea580c; }
 
 .adp-trade-view-tabs {
   display: flex; gap: 4px; margin: 6px 0 4px;
@@ -6601,7 +8969,7 @@ const goBack = () => router.back();
 }
 
 .adp-pub-filter {
-  background: #fafafa; border: 1px solid #e5e7eb; border-radius: 10px;
+  background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px;
   padding: 10px; margin: 6px 0 8px;
   display: flex; flex-direction: column; gap: 6px;
 }
@@ -6611,7 +8979,7 @@ const goBack = () => router.back();
   font-size: 11.5px; color: #374151; font-weight: 600;
 }
 .adp-pub-cell.wide { grid-column: 1 / 2; }
-.adp-pub-cell > span { flex: 0 0 auto; min-width: 50px; }
+.adp-pub-cell > span { flex: 0 0 auto; min-width: 50px; font-size: 11px; }
 .adp-pub-input {
   flex: 1 1 auto; min-width: 0;
   border: 1px solid #e5e7eb; border-radius: 999px;
@@ -6619,12 +8987,15 @@ const goBack = () => router.back();
   background: #fff; outline: none;
 }
 .adp-pub-input.small { flex: 0 0 auto; width: 84px; max-width: 84px; }
+/* 최소/최대면적·건축년도 드롭다운 — 선택값을 칸 가운데에 */
+select.adp-pub-input { text-align: center; text-align-last: center; }
+select.adp-pub-input option { text-align: center; }
 .adp-pub-cell.wide > .adp-pub-tilde { padding: 0 6px; }
 .adp-pub-cell.wide { justify-content: flex-start; }
 /* 시작일·종료일·기간 버튼은 한 줄에 */
 .adp-pub-row.dates { display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; }
 .adp-pub-row.dates .adp-pub-cell { flex: 1 1 0; min-width: 0; gap: 3px; }
-.adp-pub-row.dates .adp-pub-cell > span { min-width: 0; font-size: 10.5px; }
+.adp-pub-row.dates .adp-pub-cell > span { min-width: 0; font-size: 11px; }
 .adp-pub-row.dates .adp-pub-input { min-width: 0; padding: 5px 2px; font-size: 10.5px; }
 .adp-pub-input:focus { border-color: #2b6df3; }
 .adp-pub-tilde { flex: 0 0 auto; padding: 0 4px; color: #6b7280; }
@@ -6636,13 +9007,24 @@ const goBack = () => router.back();
 }
 
 .adp-pub-table-wrap { position: relative; }
+/* 표를 접은 채 머리글 드롭다운을 열면 목록이 카드 밖으로 나가 잘려 보인다 — 열려 있는 동안만 자리를 만든다 */
+.adp-pub-table-wrap.dd-open { min-height: 400px; }
 .adp-pub-table { table-layout: fixed; }
-.adp-pub-table th, .adp-pub-table td { font-size: 11px; padding: 8px 4px; vertical-align: middle; }
-.adp-pub-th { position: relative; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.adp-pub-table th, .adp-pub-table td { font-size: 11px; padding: 8px 4px; vertical-align: middle; text-align: left; }
+.adp-pub-table th { font-size: 10.5px; }
+/* 머리글과 값은 칸마다 같은 들여쓰기를 쓴다 — 서로 다르면 줄이 어긋나 보인다 */
+.adp-pub-table th:nth-child(4), .adp-pub-table td:nth-child(4) { padding-left: 9px; }
+.adp-pub-table th:nth-child(5), .adp-pub-table td:nth-child(5) { padding-left: 3px; }
+.adp-pub-table th:nth-child(6), .adp-pub-table td:nth-child(6) { padding-left: 12px; }
+/* 머리글 글자만 자른다. th 를 자르면 드롭다운 목록까지 함께 잘려 안 보인다 */
+.adp-pub-table th { overflow: visible; }
+.adp-pub-th { max-width: 100%; min-width: 0; }
+.adp-pub-th > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.adp-pub-th { position: relative; display: inline-flex; align-items: center; gap: 1px; white-space: nowrap; }
 .adp-pub-th > span { white-space: nowrap; }
 .adp-pub-th-btn {
   border: none; background: transparent; cursor: pointer;
-  font-size: 8px; color: #9ca3af; padding: 1px 3px;
+  font-size: 8px; color: #9ca3af; padding: 1px 1px;
 }
 .adp-pub-th-btn.active { color: #2b6df3; }
 .adp-pub-dd {
@@ -6651,7 +9033,7 @@ const goBack = () => router.back();
   list-style: none; margin: 4px 0 0; padding: 0;
   background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
-  width: 100%; min-width: 200px; max-width: 90vw; max-height: 280px;
+  width: 100%; min-width: 200px; max-width: 90vw; max-height: 380px;
   overflow-y: auto;
 }
 /* For right-side columns, anchor the dropdown to the right edge so it stays inside the table */

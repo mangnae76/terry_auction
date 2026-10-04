@@ -1,12 +1,21 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { isKakaoLoginConfigured, isNaverLoginConfigured } from '../services/socialAuth';
+import { isAllowedEmail } from '../services/accessControl';
 import logoImg from '../assets/icones/log/LOGO_ENG.png';
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
+
+// 허용 목록에 없는 계정이라 가드가 내보낸 경우 — 왜 튕겼는지 알려 준다
+onMounted(() => {
+  if (route.query.denied) {
+    authStore.error = '이 계정은 사용 권한이 없습니다. 등록된 계정으로 로그인해 주세요.';
+  }
+});
 
 const email = ref('');
 const password = ref('');
@@ -23,7 +32,12 @@ const onSubmit = async () => {
   }
   submitting.value = true;
   try {
-    await authStore.login(email.value, password.value);
+    const profile = await authStore.login(email.value, password.value);
+    if (!isAllowedEmail(profile.email)) {
+      await authStore.logout();
+      authStore.error = '이 계정은 사용 권한이 없습니다.';
+      return;
+    }
     router.replace('/auctions/watchlist');
   } catch {
     /* error 메시지는 store.error에 반영됨 */
@@ -37,8 +51,14 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
   submitting.value = true;
   authStore.error = '';
   try {
-    if (provider === 'kakao') await authStore.loginWithKakao();
-    else await authStore.loginWithNaver();
+    const profile = provider === 'kakao'
+      ? await authStore.loginWithKakao()
+      : await authStore.loginWithNaver();
+    if (!isAllowedEmail(profile.email)) {
+      await authStore.logout();
+      authStore.error = '이 계정은 사용 권한이 없습니다.';
+      return;
+    }
     router.replace('/auctions/watchlist');
   } catch {
     /* error 메시지는 store.error에 반영됨 */
@@ -103,10 +123,6 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
         >네이버로 시작하기</button>
       </div>
 
-      <p class="lp-footer">
-        아직 계정이 없으신가요?
-        <router-link to="/signup" class="lp-link">회원가입</router-link>
-      </p>
     </div>
   </section>
 </template>

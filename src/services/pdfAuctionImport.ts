@@ -20,6 +20,8 @@ export interface ParsedPdfAuction {
   rawText: string;
   caseNumber: string;
   courtName: string;
+  courtDept: string;
+  courtPhone: string;
   address: string;
   roadAddress: string;
   propertyType: string;
@@ -911,16 +913,11 @@ const parseTenantInfoRows = (text: string) => {
 
     // 점유부분/기간 — "주거용 전부 2021.05.25. ~ 2023.05.24."
     const usage = compact.match(/주거용\s*(?:전부|일부)?/)?.[0]?.replace(/\s+/g, ' ').trim() ?? '';
-    const startDate = compact.match(/(\d{4}\.\d{1,2}\.\d{1,2}\.)/)?.[1] ?? '';
-    const endDate = compact.match(/~\s*(\d{4}\.\d{1,2}\.\d{1,2}\.)/)?.[1] ?? '';
-    const period = startDate
-      ? endDate
-        ? `${startDate} ~ ${endDate}`
-        : compact.includes('~')
-          ? `${startDate} ~`
-          : startDate
-      : '';
-    const occupationPeriod = [usage, period].filter(Boolean).join(' ');
+    // 권리신고의 점유기간은 '시작 ~ 끝' 꼴이다. '~'를 축으로 잡아야
+    // 같은 줄에 있는 전입일·확정일을 시작일로 잘못 집지 않는다.
+    const range = compact.match(/(\d{4}\.\d{1,2}\.\d{1,2}\.?)\s*~\s*(\d{4}\.\d{1,2}\.\d{1,2}\.?)?/);
+    const period = range ? (range[2] ? `${range[1]} ~ ${range[2]}` : `${range[1]} ~`) : '';
+    const occupationPeriod = [usage, period].filter(Boolean).join(' / ');
 
     // 대항력 — 최신 양식은 '인수 / 조건 / 변경'이 세 줄로 쪼개져 들어온다
     let opposition = '';
@@ -1445,6 +1442,26 @@ export const parseAuctionPdfText = (
     700,
   );
 
+  // 관할법원 — 이름 / 담당 경매계 / 전화번호
+  const court = (() => {
+    const m = /([가-힣]+지방법원(?:\s*[가-힣]+지원)?)\s*(?:경매\s*)?(\d+)\s*계/.exec(text);
+    const name = m?.[1]?.replace(/\s+/g, ' ').trim()
+      ?? firstMatch(text, [/([가-힣]+지방법원(?:\s*[가-힣]+지원)?)/]);
+    const dept = m ? `경매${m[2]}계` : '';
+    const normalize = (raw: string) =>
+      raw.replace(/\(/g, '').replace(/\)/g, '-').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/-$/, '');
+    const PHONE = /\(?0\d{1,2}\)?[-\s]?\d{3,4}[-\s]?\d{4}/;
+    let phone = '';
+    if (m) {
+      const from = m.index + m[0].length;
+      phone = PHONE.exec(text.slice(from, from + 200))?.[0] ?? '';
+    }
+    if (!phone) {
+      phone = /(?:전화|☎|연락처)[^0-9]{0,10}(\(?0\d{1,2}\)?[-\s]?\d{3,4}[-\s]?\d{4})/.exec(text)?.[1] ?? '';
+    }
+    return { name, dept, phone: phone ? normalize(phone) : '' };
+  })();
+
   return {
     sourceName,
     sourceUrl,
@@ -1452,7 +1469,9 @@ export const parseAuctionPdfText = (
     sourceFileId,
     rawText: text,
     caseNumber,
-    courtName: firstMatch(text, [/([가-힣]+지방법원)\s*\d+계/, /([가-힣]+지방법원)/]),
+    courtName: court.name,
+    courtDept: court.dept,
+    courtPhone: court.phone,
     address,
     roadAddress,
     propertyType: inferPropertyType(text),

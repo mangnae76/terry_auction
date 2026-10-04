@@ -961,7 +961,7 @@ watch(regionalProperty, () => {
 <template>
   <section class="tsp-shell">
     <header class="tsp-topbar">
-      <h1 class="tsp-page-title">부동산현황</h1>
+      <h1 class="tsp-page-title">부동산 시장정보</h1>
       <button class="tsp-topbar-btn" type="button" :disabled="loading" @click="loadStats" aria-label="새로고침">
         <img :src="chevronDownIcon" alt="" />
       </button>
@@ -1241,8 +1241,12 @@ watch(regionalProperty, () => {
 <style scoped>
 .tsp-shell { display: flex; flex-direction: column; min-height: 100vh; background: #f3f4f6; padding-bottom: 76px; }
 
-.tsp-topbar { display: flex; align-items: center; gap: 8px; padding: 18px 18px 10px; background: #fff; }
-.tsp-page-title { flex: 1 1 auto; margin: 0; font-size: 22px; font-weight: 900; color: #111827; letter-spacing: -0.4px; }
+.tsp-topbar {
+  display: flex; align-items: center; gap: 8px; padding: 8px 14px 6px; background: #fff;
+  /* 제목줄 아래 구분선 — 물건상세와 같게 */
+  border-bottom: 1px solid #e5e7eb;
+}
+.tsp-page-title { flex: 1 1 auto; margin: 0; font-size: 20px; font-weight: 800; color: #111827; letter-spacing: -0.4px; }
 .tsp-topbar-btn {
   border: none; background: transparent; padding: 4px;
   width: 32px; height: 32px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
@@ -1269,7 +1273,7 @@ watch(regionalProperty, () => {
 
 .tsp-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
 .tsp-card-head { display: flex; align-items: baseline; justify-content: space-between; padding: 16px 16px 12px; }
-.tsp-card-head h2 { margin: 0; font-size: 16px; font-weight: 800; color: #111827; }
+.tsp-card-head h2 { margin: 0; font-size: 15.3px; font-weight: 800; color: #111827; }
 .tsp-card-sub { font-size: 12px; color: #9ca3af; font-weight: 500; }
 
 .tsp-filter { display: flex; flex-direction: column; gap: 10px; padding: 0 14px 16px; }

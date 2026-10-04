@@ -1,3 +1,5 @@
+# GitHub 토큰은 github-token.local 로 옮겼다 (*.local 은 .gitignore 대상).
+
 
 https://console.firebase.google.com/u/0/project/terryauction-6b374/storage
 https://console.firebase.google.com/u/0/project/terryauction-6b374/firestore/databases/-default-/security/rules

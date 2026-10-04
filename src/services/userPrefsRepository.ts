@@ -9,7 +9,10 @@ export interface UserPrefs {
   // 임장경로 즐겨찾기 출발/도착 주소
   fieldTripFavorites?: string[];
   // PDF Import 화면
-  pdfImportFolderFavorites?: string[];   // 구글 드라이브 폴더 즐겨찾기
+  /** 구글 드라이브 폴더 즐겨찾기 — 예전 자료는 주소 문자열만 들어 있다 */
+  pdfImportFolderFavorites?: Array<string | { name?: string; url?: string }>;
+  /** 스캔에 쓰려고 체크해 둔 폴더 주소들 */
+  pdfImportSelectedFolders?: string[];
   pdfImportBanner?: string;              // 상단 안내 배너 텍스트
   pdfImportLastUpdate?: string;          // 마지막 import 시각
   pdfImportLastRows?: unknown[];         // 마지막 import 결과 미리보기

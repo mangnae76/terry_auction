@@ -102,17 +102,59 @@ const toLandLdCode = (value?: string) => {
   return '2823700000';
 };
 
-const RETRYABLE_STATUS = new Set([502, 503, 504, 408, 429]);
+// 429는 재시도 대상이 아니다 — data.go.kr의 429는 '일일 요청제한 초과'라
+// 다시 걸수록 한도만 더 깎인다. 끊김(502/503/504/408)만 다시 걸어 본다.
+const RETRYABLE_STATUS = new Set([502, 503, 504, 408]);
+
+/** 일일 한도를 다 쓰면 자정까지 아무리 불러도 429다 — 한 번 겪으면 그날은 더 안 부른다 */
+export const QUOTA_EXCEEDED_MSG = '국토부 API 일일 요청 한도를 다 썼습니다 — 자정이 지나면 다시 됩니다.';
+let quotaBlockedAt = 0;
+const quotaResetAt = (at: number) => {
+  const d = new Date(at);
+  d.setHours(24, 0, 0, 0); // 다음 자정
+  return d.getTime();
+};
+export const isQuotaBlocked = () => {
+  if (!quotaBlockedAt) return false;
+  if (Date.now() >= quotaResetAt(quotaBlockedAt)) {
+    quotaBlockedAt = 0;
+    return false;
+  }
+  return true;
+};
+const markQuotaBlocked = () => { quotaBlockedAt = Date.now(); };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// data.go.kr이 응답을 안 주고 매달리는 날이 있다. 그러면 프록시가 522를 뱉기 전까지
+// fetch가 영영 끝나지 않아 화면이 '조회 중…'에 멈춘다 — 직접 끊는다.
+const REQUEST_TIMEOUT_MS = 15000;
+const fetchWithTimeout = async (url: string, init: RequestInit = {}, ms = REQUEST_TIMEOUT_MS) => {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+};
+/** 끊긴 것·못 붙은 것은 다시 걸어 볼 값어치가 있다 */
+const isRetryableError = (err: unknown) =>
+  err instanceof TypeError || (err instanceof DOMException && err.name === 'AbortError');
+
 const requestJson = async (url: URL) => {
+  // 한도를 넘긴 날은 더 부르지 않는다 — 괜히 수십 번 더 던져 봐야 전부 429다
+  if (isQuotaBlocked()) throw new Error(QUOTA_EXCEEDED_MSG);
   let lastErr: unknown = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      const response = await fetch(url.toString(), {
+      const response = await fetchWithTimeout(url.toString(), {
         headers: { Accept: 'application/json, text/plain, */*' },
       });
       if (!response.ok) {
+        if (response.status === 429) {
+          markQuotaBlocked();
+          throw new Error(QUOTA_EXCEEDED_MSG);
+        }
         if (RETRYABLE_STATUS.has(response.status) && attempt < 2) {
           await sleep(400 * (attempt + 1));
           continue;
@@ -131,8 +173,8 @@ const requestJson = async (url: URL) => {
       }
     } catch (err) {
       lastErr = err;
-      // Network failures (no response) — retry
-      if (err instanceof TypeError && attempt < 2) {
+      // Network failures (no response) and timeouts — retry
+      if (isRetryableError(err) && attempt < 2) {
         await sleep(400 * (attempt + 1));
         continue;
       }
@@ -205,7 +247,7 @@ const fetchOnbidRows = async (keyword: string, path: string, fallback = false) =
   url.searchParams.set('cltrNm', keyword);
   url.searchParams.set('keyword', keyword);
 
-  const response = await fetch(url.toString(), {
+  const response = await fetchWithTimeout(url.toString(), {
     headers: {
       Accept: 'application/json, text/xml, application/xml, text/plain, */*',
     },
@@ -638,6 +680,10 @@ export interface RealTradeMatchRow {
   roadName?: string;
   /** 지번 (도로명이 없는 자료 대비) */
   jibun?: string;
+  /** 거래유형 — '중개거래' / '직거래' */
+  dealType?: string;
+  /** 주택유형 — 국토부 houseType ('다세대' / '연립' / '연립다세대') */
+  houseType?: string;
 }
 
 export interface RealTradeAverageResult {
@@ -649,6 +695,14 @@ export interface RealTradeAverageResult {
   error?: string;
   matchedRows?: RealTradeMatchRow[];
   dongLabel?: string;
+  /** 그 동에서 제외한 직거래 건수 */
+  directCount?: number;
+  /** 제외한 직거래 목록 — 화면에서 따로 펼쳐 볼 수 있게 같이 넘긴다 */
+  directRows?: RealTradeMatchRow[];
+  /** 그 동에서 제외한 계약해제 건수 */
+  cancelledCount?: number;
+  /** 계약해제된 거래 — 직거래와 같은 방식으로 따로 보여 준다 */
+  cancelledRows?: RealTradeMatchRow[];
 }
 
 const pathsForPropertyType = (type: RealTradeAverageParams['propertyType']): string[] => {
@@ -691,16 +745,31 @@ const fetchRealTradeRowsForMonth = async (
   dealYmd: string,
 ): Promise<MonthFetchResult> => {
   const typeLabel = propertyTypeLabel(path);
-  const url = buildApiUrl(path);
-  url.searchParams.set('serviceKey', API_KEY);
-  url.searchParams.set('LAWD_CD', lawdCd5);
-  url.searchParams.set('DEAL_YMD', dealYmd);
-  url.searchParams.set('numOfRows', '500');
-  url.searchParams.set('pageNo', '1');
-  url.searchParams.set('_type', 'json');
+  const PAGE_SIZE = 1000;
+  const MAX_PAGES = 10; // 한 달 1만 건이면 충분하다 — 무한 루프 방지
+  const buildPageUrl = (pageNo: number) => {
+    const url = buildApiUrl(path);
+    url.searchParams.set('serviceKey', API_KEY);
+    url.searchParams.set('LAWD_CD', lawdCd5);
+    url.searchParams.set('DEAL_YMD', dealYmd);
+    url.searchParams.set('numOfRows', String(PAGE_SIZE));
+    url.searchParams.set('pageNo', String(pageNo));
+    url.searchParams.set('_type', 'json');
+    return url;
+  };
   try {
-    const json = await requestJson(url);
-    const rawRows = asArray(json?.response?.body?.items?.item);
+    // 한 페이지(기존 500건)만 받으면 거래가 많은 시군구에서 조용히 잘린다.
+    // totalCount를 보고 남은 페이지까지 모두 받는다.
+    const first = await requestJson(buildPageUrl(1));
+    const rawRows = asArray(first?.response?.body?.items?.item);
+    const totalCount = Number(first?.response?.body?.totalCount ?? rawRows.length) || rawRows.length;
+    const pages = Math.min(MAX_PAGES, Math.ceil(totalCount / PAGE_SIZE));
+    if (pages > 1) {
+      const rest = await Promise.all(
+        Array.from({ length: pages - 1 }, (_, i) => requestJson(buildPageUrl(i + 2))),
+      );
+      rest.forEach((json) => rawRows.push(...asArray(json?.response?.body?.items?.item)));
+    }
     const tagged = rawRows.map((r) => ({ ...r, __typeLabel: typeLabel }));
     return { rows: tagged, typeLabel };
   } catch (error) {
@@ -715,6 +784,233 @@ const fetchRealTradeRowsForMonth = async (
   }
 };
 
+/** 전월세 한 줄 — 매매와 달리 보증금·월세가 따로 있다 */
+export interface RealRentRow {
+  contractDate: string;
+  kind: '전세' | '월세';
+  deposit: number;        // 만원
+  monthlyRent: number;    // 만원
+  areaM2: number;
+  floor: string;
+  umdNm: string;
+  apartmentName?: string;
+  buildYear?: number;
+  jibun?: string;
+}
+
+const rentPathForType = (type: RealTradeAverageParams['propertyType']) => {
+  if (type === 'officetel') return OFFICETEL_RENT_API_PATH;
+  if (type === 'apt') return APT_RENT_API_PATH;
+  return VILLA_RENT_API_PATH;
+};
+
+/** 그 시군구의 전월세를 최근 N개월치 받아 온다 (단지 추리기는 호출한 쪽에서) */
+export const fetchRealRentRows = async (params: {
+  lawdCd5: string;
+  propertyType: RealTradeAverageParams['propertyType'];
+  months: number;
+}): Promise<RealRentRow[]> => {
+  const path = rentPathForType(params.propertyType);
+  const dealYmds = recentDealYmds(Math.max(1, params.months));
+  const settled = await Promise.allSettled(
+    dealYmds.map((ymd) => fetchRealTradeRowsForMonth(path, params.lawdCd5, ymd)),
+  );
+  const rows: Record<string, unknown>[] = [];
+  settled.forEach((r) => { if (r.status === 'fulfilled') rows.push(...r.value.rows); });
+  const num = (raw: unknown) => Number(String(raw ?? '').replace(/[^\d.]/g, '')) || 0;
+  return rows.map((row) => {
+    const year = String(row.dealYear ?? '').padStart(4, '0');
+    const month = String(row.dealMonth ?? '').padStart(2, '0');
+    const day = String(row.dealDay ?? '').padStart(2, '0');
+    const monthlyRent = num(row.monthlyRent);
+    const buildYearRaw = num(row.buildYear);
+    return {
+      contractDate: year && month && day ? `${year}.${month}.${day}` : '',
+      kind: monthlyRent > 0 ? '월세' : '전세',
+      deposit: num(row.deposit),
+      monthlyRent,
+      areaM2: num(row.excluUseAr),
+      floor: String(row.floor ?? '').trim(),
+      umdNm: String(row.umdNm ?? '').trim(),
+      apartmentName: String(row.mhouseNm ?? row.aptNm ?? row.offiNm ?? '').trim() || undefined,
+      buildYear: buildYearRaw > 1800 ? buildYearRaw : undefined,
+      jibun: String(row.jibun ?? '').trim() || undefined,
+    } as RealRentRow;
+  }).filter((r) => r.contractDate);
+};
+
+/** 주어진 연·월부터 이번 달까지의 YYYYMM 목록 */
+const monthsFrom = (fromYear: number, fromMonth: number): string[] => {
+  const out: string[] = [];
+  const now = new Date();
+  const end = now.getFullYear() * 12 + now.getMonth();
+  for (let t = fromYear * 12 + (fromMonth - 1); t <= end; t += 1) {
+    out.push(`${Math.floor(t / 12)}${String((t % 12) + 1).padStart(2, '0')}`);
+  }
+  return out;
+};
+
+/** 오늘로부터 n년 전 날짜 — 'YYYY.MM.DD' (계약일과 같은 꼴이라 문자열끼리 비교하면 된다) */
+const yearsAgoDate = (years: number) => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - years);
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}.${p2(d.getMonth() + 1)}.${p2(d.getDate())}`;
+};
+
+const napMs = (ms: number) => new Promise((r) => { setTimeout(r, ms); });
+
+/** 막히거나 끊겨서 빈손으로 오면 조용히 넘기지 않고 다시 부른다.
+ *  (한 달이라도 빠지면 그 달 거래가 통째로 사라져, 볼 때마다 건수가 달라진다) */
+const fetchMonthWithRetry = async (
+  path: string,
+  lawdCd5: string,
+  dealYmd: string,
+  tries = 2,
+): Promise<MonthFetchResult> => {
+  let last: MonthFetchResult = { rows: [], error: '미조회', typeLabel: '' };
+  for (let i = 0; i < tries; i += 1) {
+    if (isQuotaBlocked()) return { rows: [], error: QUOTA_EXCEEDED_MSG, typeLabel: '' };
+    last = await fetchRealTradeRowsForMonth(path, lawdCd5, dealYmd);
+    if (!last.error) return last;
+    await napMs(300 * (i + 1));
+  }
+  return last;
+};
+
+/** 한 번에 다 던지면 data.go.kr이 막는다 — 12개씩 끊어 보낸다 */
+const inBatches = async <T>(jobs: Array<() => Promise<T>>, size = 5): Promise<T[]> => {
+  const out: T[] = [];
+  for (let i = 0; i < jobs.length; i += size) {
+    if (isQuotaBlocked()) break; // 한도를 넘겼으면 남은 달은 더 던지지 않는다
+    const chunk = await Promise.allSettled(jobs.slice(i, i + size).map((fn) => fn()));
+    chunk.forEach((r) => { if (r.status === 'fulfilled') out.push(r.value); });
+    if (i + size < jobs.length) await napMs(120); // 숨 고르기
+  }
+  return out;
+};
+
+export interface PlaceHistoryResult {
+  trades: RealTradeMatchRow[];
+  rents: RealRentRow[];
+  /** 세 번 눌러도 못 받은 달 수 — 0이 아니면 결과가 모자란다는 뜻 */
+  missedMonths: number;
+}
+
+/** 한 단지의 실거래 이력 — 매매와 전월세를 최근 n년치만 받아 온다 */
+const BLD_TITLE_API_PATH =
+  import.meta.env.VITE_BLD_TITLE_API_PATH ?? '/1613000/BldRgstHubService/getBrTitleInfo';
+
+/** 그 법정동의 다세대·연립 세대수 합 — 건축물대장 표제부를 모두 훑어 더한다.
+ *  주용도가 '공동주택'인 건물 중 아파트를 뺀 것이 다세대·연립(+도시형생활주택)이다. */
+export const fetchDongHouseholds = async (bCode10: string): Promise<number> => {
+  const sigunguCd = bCode10.slice(0, 5);
+  const bjdongCd = bCode10.slice(5, 10);
+  if (sigunguCd.length < 5 || bjdongCd.length < 5) return 0;
+  const PAGE = 100; // 이 API는 한 번에 100건까지만 준다
+  const call = async (pageNo: number) => {
+    const url = buildApiUrl(BLD_TITLE_API_PATH);
+    url.searchParams.set('serviceKey', API_KEY);
+    url.searchParams.set('sigunguCd', sigunguCd);
+    url.searchParams.set('bjdongCd', bjdongCd);
+    url.searchParams.set('numOfRows', String(PAGE));
+    url.searchParams.set('pageNo', String(pageNo));
+    url.searchParams.set('_type', 'json');
+    return requestJson(url);
+  };
+  const first = await call(1);
+  const total = Number(first?.response?.body?.totalCount ?? 0) || 0;
+  if (total === 0) return 0;
+  const pages = Math.min(40, Math.ceil(total / PAGE));
+  const rest = await inBatches(
+    Array.from({ length: Math.max(0, pages - 1) }, (_, i) => () => call(i + 2)),
+  );
+  const rows: Record<string, unknown>[] = [];
+  [first, ...rest].forEach((json) => rows.push(...asArray(json?.response?.body?.items?.item)));
+  // 같은 건물이 여러 번 올 수 있다 — 대장 고유번호로 한 번만 센다
+  const seen = new Map<string, Record<string, unknown>>();
+  rows.forEach((r) => seen.set(String(r.mgmBldrgstPk ?? `${r.platPlc}|${r.bldNm}|${r.dongNm}`), r));
+  let sum = 0;
+  seen.forEach((r) => {
+    if (String(r.mainPurpsCdNm ?? '') !== '공동주택') return;
+    if (/아파트/.test(String(r.etcPurps ?? ''))) return;
+    sum += Number(String(r.hhldCnt ?? '').replace(/[^\d]/g, '')) || 0;
+  });
+  return sum;
+};
+
+/** 단지 이력을 몇 년치 볼 것인가 — 그보다 오래된 거래는 시세로 쓰기 어렵다 */
+export const PLACE_HISTORY_YEARS = 2;
+
+export const fetchPlaceHistory = async (params: {
+  lawdCd5: string;
+  propertyType: RealTradeAverageParams['propertyType'];
+  /** 몇 년치를 받을지 (기본 2년) */
+  years?: number;
+}): Promise<PlaceHistoryResult> => {
+  const years = params.years ?? PLACE_HISTORY_YEARS;
+  const cutoff = yearsAgoDate(years);
+  const start = new Date();
+  start.setFullYear(start.getFullYear() - years);
+  const ymds = monthsFrom(start.getFullYear(), start.getMonth() + 1);
+  const tradePath = pathsForPropertyType(params.propertyType)[0];
+  const rentPath = rentPathForType(params.propertyType);
+  const num = (raw: unknown) => Number(String(raw ?? '').replace(/[^\d.]/g, '')) || 0;
+  const dateOf = (row: Record<string, unknown>) => {
+    const y = String(row.dealYear ?? '').padStart(4, '0');
+    const m = String(row.dealMonth ?? '').padStart(2, '0');
+    const d = String(row.dealDay ?? '').padStart(2, '0');
+    return y && m && d ? `${y}.${m}.${d}` : '';
+  };
+  // 매매를 다 받고 전월세를 받으면 두 배로 걸린다 — 한 줄로 섞어 보낸다
+  type MonthJob = { kind: 'trade' | 'rent'; res: MonthFetchResult };
+  const jobs: Array<() => Promise<MonthJob>> = [
+    ...ymds.map((ymd) => async (): Promise<MonthJob> => ({ kind: 'trade', res: await fetchMonthWithRetry(tradePath, params.lawdCd5, ymd) })),
+    ...ymds.map((ymd) => async (): Promise<MonthJob> => ({ kind: 'rent', res: await fetchMonthWithRetry(rentPath, params.lawdCd5, ymd) })),
+  ];
+  const all = await inBatches(jobs);
+  const tradeChunks = all.filter((r) => r.kind === 'trade').map((r) => r.res);
+  const rentChunks = all.filter((r) => r.kind === 'rent').map((r) => r.res);
+  const trades: RealTradeMatchRow[] = [];
+  tradeChunks.forEach((c) => c.rows.forEach((row) => {
+    const contractDate = dateOf(row);
+    if (!contractDate || contractDate < cutoff) return;
+    trades.push({
+      contractDate,
+      price: num(row.dealAmount) * 10000,
+      areaM2: num(row.excluUseAr),
+      floor: String(row.floor ?? '').trim(),
+      umdNm: String(row.umdNm ?? '').trim(),
+      propertyTypeLabel: '',
+      apartmentName: String(row.mhouseNm ?? row.aptNm ?? row.offiNm ?? '').trim() || undefined,
+      buildYear: num(row.buildYear) > 1800 ? num(row.buildYear) : undefined,
+      jibun: String(row.jibun ?? '').trim() || undefined,
+      dealType: String(row.dealingGbn ?? '').trim() || undefined,
+      houseType: String(row.houseType ?? '').trim() || undefined,
+    });
+  }));
+  const rents: RealRentRow[] = [];
+  rentChunks.forEach((c) => c.rows.forEach((row) => {
+    const contractDate = dateOf(row);
+    if (!contractDate || contractDate < cutoff) return;
+    const monthlyRent = num(row.monthlyRent);
+    rents.push({
+      contractDate,
+      kind: monthlyRent > 0 ? '월세' : '전세',
+      deposit: num(row.deposit),
+      monthlyRent,
+      areaM2: num(row.excluUseAr),
+      floor: String(row.floor ?? '').trim(),
+      umdNm: String(row.umdNm ?? '').trim(),
+      apartmentName: String(row.mhouseNm ?? row.aptNm ?? row.offiNm ?? '').trim() || undefined,
+      buildYear: num(row.buildYear) > 1800 ? num(row.buildYear) : undefined,
+      jibun: String(row.jibun ?? '').trim() || undefined,
+    });
+  }));
+  const missedMonths = all.filter((r) => r.res.error).length;
+  return { trades, rents, missedMonths };
+};
+
 export const fetchRealTradeAverage = async (
   params: RealTradeAverageParams,
 ): Promise<RealTradeAverageResult> => {
@@ -724,14 +1020,14 @@ export const fetchRealTradeAverage = async (
   const periodTo = dealYmds[0];
   const periodFrom = dealYmds[dealYmds.length - 1];
 
-  const tasks: Array<Promise<MonthFetchResult>> = [];
+  const tasks: Array<() => Promise<MonthFetchResult>> = [];
   for (const path of paths) {
     for (const dealYmd of dealYmds) {
-      tasks.push(fetchRealTradeRowsForMonth(path, params.lawdCd5, dealYmd));
+      tasks.push(() => fetchMonthWithRetry(path, params.lawdCd5, dealYmd));
     }
   }
 
-  const settled = await Promise.all(tasks);
+  const settled = await inBatches(tasks, 5);
   const allRows = settled.flatMap((r) => r.rows);
   const errSet = new Set(settled.map((r) => r.error).filter((v): v is string => !!v));
   const errorSummary = errSet.size > 0 ? Array.from(errSet).join(' / ') : undefined;
@@ -755,6 +1051,19 @@ export const fetchRealTradeAverage = async (
       })
     : allRows;
 
+  // 직거래는 시세와 동떨어진 경우가 많아 건수·평균에서 모두 뺀다 (국토부 엑셀의 '거래유형' 칸)
+  const isDirect = (row: Record<string, unknown>) =>
+    /직거래/.test(String(row.dealingGbn ?? row['거래유형'] ?? ''));
+  // 계약이 해제된 건도 뺀다 (엑셀의 '해제사유발생일' 칸 — cdealType이 'O'면 해제)
+  const isCancelled = (row: Record<string, unknown>) =>
+    String(row.cdealType ?? '').trim().toUpperCase() === 'O' ||
+    String(row.cdealDay ?? row['해제사유발생일'] ?? '').replace(/[^\d]/g, '').length >= 6;
+  const usable = (row: Record<string, unknown>) => !isDirect(row) && !isCancelled(row);
+  const brokeredOnly = dongFiltered.filter(usable);
+  const allBrokered = allRows.filter(usable);
+  const directCount = dongFiltered.filter(isDirect).length;
+  const cancelledCount = dongFiltered.filter((row) => !isDirect(row) && isCancelled(row)).length;
+
   const area = params.areaM2 ?? 0;
   const inArea = (row: Record<string, unknown>) => {
     if (!area || area <= 0) return true;
@@ -772,10 +1081,10 @@ export const fetchRealTradeAverage = async (
 
   // 단계적 완화: 동+면적 → 동만 → 시군구 전체+면적 → 시군구 전체
   const tryPools: Array<{ pool: Record<string, unknown>[]; fallback: boolean }> = [
-    { pool: dongFiltered.filter(inArea), fallback: false },
-    { pool: dongFiltered, fallback: true },
-    { pool: allRows.filter(inArea), fallback: true },
-    { pool: allRows, fallback: true },
+    { pool: brokeredOnly.filter(inArea), fallback: false },
+    { pool: brokeredOnly, fallback: true },
+    { pool: allBrokered.filter(inArea), fallback: true },
+    { pool: allBrokered, fallback: true },
   ];
 
   const toMatchedRow = (row: Record<string, unknown>): RealTradeMatchRow => {
@@ -798,7 +1107,9 @@ export const fetchRealTradeAverage = async (
     const houseNo = bon > 0 ? (bu > 0 ? `${bon}-${bu}` : String(bon)) : '';
     const roadName = [roadNm, houseNo].filter(Boolean).join(' ') || undefined;
     const jibun = String(row.jibun ?? row['지번'] ?? '').trim() || undefined;
-    return { contractDate, price: priceWon, areaM2, floor, umdNm, propertyTypeLabel, apartmentName, buildYear, roadName, jibun };
+    const dealType = String(row.dealingGbn ?? row['거래유형'] ?? '').trim() || undefined;
+    const houseType = String(row.houseType ?? row['주택유형'] ?? '').trim() || undefined;
+    return { contractDate, price: priceWon, areaM2, floor, umdNm, propertyTypeLabel, apartmentName, buildYear, roadName, jibun, dealType, houseType };
   };
 
   for (const { pool, fallback } of tryPools) {
@@ -814,6 +1125,16 @@ export const fetchRealTradeAverage = async (
       average,
       sampleCount: prices.length,
       fallbackUsed: fallback,
+      directCount,
+      directRows: dongFiltered
+        .filter(isDirect)
+        .map(toMatchedRow)
+        .sort((a, b) => b.contractDate.localeCompare(a.contractDate)),
+      cancelledCount,
+      cancelledRows: dongFiltered
+        .filter((row) => !isDirect(row) && isCancelled(row))
+        .map(toMatchedRow)
+        .sort((a, b) => b.contractDate.localeCompare(a.contractDate)),
       periodFrom,
       periodTo,
       matchedRows,

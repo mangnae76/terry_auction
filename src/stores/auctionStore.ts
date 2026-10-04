@@ -5,6 +5,7 @@ import type { ApiSourceError, ApiSourceStatus } from '../services/publicDataApi'
 import type { ParsedPdfAuction } from '../services/pdfAuctionImport';
 import type { AuctionDetail, AuctionSearchParams, AuctionStatus, AuctionSummary, NearBidRow, RealTradeRow } from '../types/auction';
 import {
+  deleteAuctionDoc,
   getFirestoreWarning,
   isFirestoreAvailable,
   subscribeAuctionList,
@@ -333,6 +334,13 @@ const defaultRightsChecklist = () => [
 ];
 
 const normalizeStatus = (status: string): AuctionStatus => {
+  // 단계에 '손품'이 추가됐는데 여기서 받아 주지 않아, 저장할 때마다 '임장예정'으로 되돌아갔다
+  if (status === '손품') {
+    return '손품';
+  }
+  if (status === '임장예정') {
+    return '임장예정';
+  }
   if (status === '임장완료' || status === '임장') {
     return '임장완료';
   }
@@ -345,7 +353,10 @@ const normalizeStatus = (status: string): AuctionStatus => {
   if (status === '보류') {
     return '보류';
   }
-  return '임장예정';
+  // 모르는 값(빈 값·옛 단계 이름)은 가장 앞 단계로 떨어뜨린다.
+  // 예전 기본값이 '임장예정'이라, 휴지통에서 꺼내는 것만으로 임장예정이 되고
+  // 그대로 동선 목록에까지 올라가 버렸다.
+  return '손품';
 };
 
 const normalizeRound = (round: string) => {
@@ -671,17 +682,28 @@ const createDraftAuction = (): AuctionDetail => ({
 
 const cloneAuction = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
+/** 목록 필터용 물건종류 묶음 */
+export const PROPERTY_TYPE_GROUPS: Record<string, RegExp> = {
+  아파트: /아파트/,
+  '다세대·연립·도생': /다세대|연립|도시형|빌라/,
+  다가구: /다가구/,
+  상가: /상가|근린|점포|오피스|사무/,
+};
+
 export const useAuctionStore = defineStore('auction', () => {
   // allAuctions = Firestore 원본(숨긴 것 포함). auctions = 화면에 보여줄 목록.
   // 삭제는 DB에서 지우지 않고 hidden 플래그만 세우므로, 모든 화면이 쓰는 이 한 곳에서 걸러낸다.
   const allAuctions = ref<AuctionDetail[]>([...sampleAuctions]);
   const auctions = computed(() => allAuctions.value.filter((item) => !item.hidden));
-  const hiddenCount = computed(() => allAuctions.value.filter((item) => item.hidden).length);
+  const hiddenAuctions = computed(() => allAuctions.value.filter((item) => item.hidden));
+  const hiddenCount = computed(() => hiddenAuctions.value.length);
   const activeStatus = ref<AuctionStatus | '전체'>('전체');
   const searchKeyword = ref('');
   const selectedCourt = ref('전체');
   const selectedRegion = ref('전체');
   const selectedBidDate = ref('');
+  /** 물건종류 묶음 — 비면 전체 */
+  const selectedPropertyType = ref('');
   const sortMode = ref<'latest' | 'court' | 'region'>('latest');
   const loading = ref(false);
   const apiWarning = ref('');
@@ -711,13 +733,16 @@ export const useAuctionStore = defineStore('auction', () => {
         const itemRegion = item.address.trim().split(/\s+/).slice(0, 2).join(' ');
         const regionMatched = selectedRegion.value === '전체' || itemRegion === selectedRegion.value;
         const bidDateMatched = selectedBidDate.value.length === 0 || item.eventDate === selectedBidDate.value;
+        const typeMatched =
+          selectedPropertyType.value.length === 0 ||
+          PROPERTY_TYPE_GROUPS[selectedPropertyType.value]?.test(item.propertyType ?? '') === true;
         const keyword = searchKeyword.value.trim().toLowerCase();
         const keywordMatched =
           keyword.length === 0 ||
           item.address.toLowerCase().includes(keyword) ||
           item.caseNumber.toLowerCase().includes(keyword) ||
           item.eventDate.includes(keyword);
-        return statusMatched && courtMatched && regionMatched && bidDateMatched && keywordMatched;
+        return statusMatched && courtMatched && regionMatched && bidDateMatched && typeMatched && keywordMatched;
       })
       .sort((a, b) => {
         if (sortMode.value === 'court') {
@@ -758,6 +783,10 @@ export const useAuctionStore = defineStore('auction', () => {
   const setSortMode = (mode: 'latest' | 'court' | 'region') => {
     sortMode.value = mode;
   };
+  const setPropertyType = (group: string) => {
+    selectedPropertyType.value = group;
+  };
+
   const setBidDate = (date: string) => {
     selectedBidDate.value = date;
   };
@@ -767,6 +796,7 @@ export const useAuctionStore = defineStore('auction', () => {
     selectedCourt.value = '전체';
     selectedRegion.value = '전체';
     selectedBidDate.value = '';
+    selectedPropertyType.value = '';
     searchKeyword.value = '';
     sortMode.value = 'latest';
   };
@@ -952,12 +982,33 @@ export const useAuctionStore = defineStore('auction', () => {
 
   const deleteAuction = async (id: string) => hideAuctions([id]);
 
+  /** 되살릴 수 없게 문서를 지운다 */
+  const purgeAuctions = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const target = new Set(ids);
+    allAuctions.value = allAuctions.value.filter((item) => !target.has(item.id));
+    if (!isFirestoreAvailable()) return;
+    await Promise.all(ids.map((id) => deleteAuctionDoc(id)));
+  };
+
   /** 숨긴 물건을 전부 다시 보이게 한다 */
-  const restoreHiddenAuctions = async () => {
+  /** ids를 주면 그 물건만, 안 주면 숨긴 물건 전부를 되살린다 */
+  const restoreHiddenAuctions = async (ids?: string[]) => {
+    const target = ids && ids.length > 0 ? new Set(ids) : null;
     const changed: AuctionDetail[] = [];
     allAuctions.value = allAuctions.value.map((item) => {
       if (!item.hidden) return item;
-      const next = { ...item, hidden: false };
+      if (target && !target.has(item.id)) return item;
+      // 복원은 '처음부터 다시 본다'는 뜻이다 — 단계를 손품조사로 되돌린다.
+      // 치울 때 단계를 그대로 살리면, 임장예정이던 물건이 꺼내자마자 임장경로에 올라가 버린다.
+      const next: AuctionDetail = {
+        ...item,
+        hidden: false,
+        status: '손품',
+        bidStatus: '',
+        isInterested: false,
+        isFieldTrip: false,
+      };
       changed.push(next);
       return next;
     });
@@ -1069,12 +1120,17 @@ export const useAuctionStore = defineStore('auction', () => {
         id: existing?.id ?? base.id,
         eventDate: parsed.eventDate || base.eventDate,
         courtName: parsed.courtName || base.courtName,
+        courtDept: parsed.courtDept || base.courtDept,
+        courtPhone: parsed.courtPhone || base.courtPhone,
         caseNumber: parsed.caseNumber || base.caseNumber,
         auctionKind: parsed.auctionKind ?? base.auctionKind,
         auctionRound: parsed.auctionRound || base.auctionRound,
-        status: existing?.status ?? '임장예정',
+        // 새로 들어온 물건은 '손품'부터 — 사용자가 '임장예정'으로 옮겨야 임장경로에 뜬다
+        status: existing?.status ?? '손품',
         isInterested: true,
-        hidden: false, // 감춰둔 물건을 다시 임포트하면 목록에 되살린다
+        // 휴지통에 넣어 둔 물건은 다시 스캔해도 되살리지 않는다 —
+        // 사용자가 일부러 치운 것이라, 스캔 한 번에 돌아오면 치운 의미가 없다
+        hidden: existing?.hidden ?? false,
         isFieldTrip: existing?.isFieldTrip ?? false,
         propertyType: parsed.propertyType || base.propertyType,
         address: parsed.address || base.address || parsed.sourceName,
@@ -1255,6 +1311,9 @@ export const useAuctionStore = defineStore('auction', () => {
     await saveAuction({
       ...current,
       status,
+      // 입찰 단계를 벗어나면 '입찰진행' 표시도 함께 내린다.
+      // 이 규칙을 화면마다 따로 두면 한쪽만 고쳐져 단계가 겹쳐 보인다 — 여기 한 곳에만 둔다.
+      bidStatus: status === '입찰' ? current.bidStatus : '',
       isInterested: status === '임장예정',
       isFieldTrip: status === '임장완료',
     });
@@ -1287,6 +1346,7 @@ export const useAuctionStore = defineStore('auction', () => {
 
   return {
     auctions,
+    hiddenAuctions,
     hiddenCount,
     loading,
     summary,
@@ -1295,6 +1355,7 @@ export const useAuctionStore = defineStore('auction', () => {
     selectedCourt,
     selectedRegion,
     selectedBidDate,
+    selectedPropertyType,
     sortMode,
     courtOptions,
     regionOptions,
@@ -1310,11 +1371,13 @@ export const useAuctionStore = defineStore('auction', () => {
     setCourt,
     setRegion,
     setBidDate,
+    setPropertyType,
     setSortMode,
     resetListFilters,
     getById,
     saveAuction,
     deleteAuction,
+    purgeAuctions,
     hideAuctions,
     restoreHiddenAuctions,
     importParsedPdfAuctions,

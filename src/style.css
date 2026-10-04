@@ -1949,6 +1949,16 @@ button:hover {
 .trip-marker-badge.tone-start { background: #16a34a; }
 .trip-marker-badge.tone-stop { background: #2563eb; }
 .trip-marker-badge.tone-end { background: #f97316; }
+/* 다녀온 곳 — 번호는 그대로 두고 흐리게, 오른쪽 아래에 체크 */
+.trip-marker-badge.done { background: #94a3b8; position: relative; }
+.trip-marker-badge.done::after {
+  content: '✓';
+  position: absolute; right: -2px; bottom: -2px;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: #2f7d4f; color: #fff; border: 1.5px solid #fff;
+  font-size: 8px; font-weight: 800; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
 
 .trade-map-marker-wrap {
   background: transparent !important;

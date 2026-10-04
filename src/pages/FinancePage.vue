@@ -4,6 +4,7 @@
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
+import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useFinanceStore } from '../stores/financeStore';
 import { useAuctionStore } from '../stores/auctionStore';
 import type {
@@ -14,6 +15,16 @@ import type {
   ItemPurchaseRecord,
   PeriodKey,
 } from '../types/finance';
+
+// 직접선택 기간 — 입찰가산정의 낙찰일과 같은 휠 날짜 선택기를 쓴다
+const rangeTarget = ref<'' | 'start' | 'end'>('');
+const rangeValue = computed({
+  get: () => (rangeTarget.value === 'start' ? customStart.value : rangeTarget.value === 'end' ? customEnd.value : ''),
+  set: (value: string) => {
+    if (rangeTarget.value === 'start') customStart.value = value;
+    if (rangeTarget.value === 'end') customEnd.value = value;
+  },
+});
 
 const finance = useFinanceStore();
 const auctionStore = useAuctionStore();
@@ -241,10 +252,10 @@ const exportExcel = () => {
     <header class="fin-header">
       <h1 class="fin-page-title">자금관리</h1>
       <nav class="fin-tabs">
-        <button :class="['fin-tab', { active: activeTab === 'cashFlow' }]" @click="activeTab = 'cashFlow'">자금입출금</button>
-        <button :class="['fin-tab', { active: activeTab === 'businessExpense' }]" @click="activeTab = 'businessExpense'">사업지출</button>
-        <button :class="['fin-tab', { active: activeTab === 'fuelMeal' }]" @click="activeTab = 'fuelMeal'">유류·식대</button>
-        <button :class="['fin-tab', { active: activeTab === 'itemPurchase' }]" @click="activeTab = 'itemPurchase'">물품구매</button>
+        <button :class="['fin-tab', { active: activeTab === 'cashFlow' }]" @click="activeTab = 'cashFlow'">사업계좌자금<br>입출금관리</button>
+        <button :class="['fin-tab', { active: activeTab === 'businessExpense' }]" @click="activeTab = 'businessExpense'">사업<br>지출내역</button>
+        <button :class="['fin-tab', { active: activeTab === 'fuelMeal' }]" @click="activeTab = 'fuelMeal'">유류&amp;식대<br>지출내역</button>
+        <button :class="['fin-tab', { active: activeTab === 'itemPurchase' }]" @click="activeTab = 'itemPurchase'">물품구매<br>지출내역</button>
       </nav>
     </header>
 
@@ -252,8 +263,8 @@ const exportExcel = () => {
       <h2 class="fin-title">
         <template v-if="activeTab === 'cashFlow'">사업계좌 자금입출금 관리</template>
         <template v-else-if="activeTab === 'businessExpense'">사업지출내역</template>
-        <template v-else-if="activeTab === 'fuelMeal'">유류비 & 식대지출 사용내역서</template>
-        <template v-else>물품구매 지출상세</template>
+        <template v-else-if="activeTab === 'fuelMeal'">유류&식대 지출내역</template>
+        <template v-else>물품구매 지출내역</template>
         <small v-if="activeTab !== 'cashFlow'" class="fin-vat-note">VAT 포함 입력 바랍니다</small>
       </h2>
       <div class="fin-toolbar-right">
@@ -263,13 +274,25 @@ const exportExcel = () => {
           <button :class="['fin-period-btn', { active: period === 'all' }]" @click="period = 'all'">총기간</button>
           <button :class="['fin-period-btn', { active: period === 'custom' }]" @click="period = 'custom'">직접선택</button>
         </div>
-        <button type="button" class="fin-excel" @click="exportExcel">⬇ 엑셀저장</button>
-        <button type="button" class="fin-add" @click="openAdd(activeTab as ModalKind)">+ 항목추가</button>
+        <button type="button" class="fin-excel" @click="exportExcel"><i>⬇</i>엑셀저장</button>
+        <button type="button" class="fin-add" @click="openAdd(activeTab as ModalKind)"><i>+</i>항목추가</button>
       </div>
     </div>
 
     <div v-if="period === 'custom'" class="fin-custom-range">
-      <input type="date" v-model="customStart" /> ~ <input type="date" v-model="customEnd" />
+      <button type="button" class="fin-date-box" @click="rangeTarget = 'start'">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" />
+        </svg>
+        <span>{{ customStart || '날짜입력' }}</span>
+      </button>
+      <span class="fin-date-sep">~</span>
+      <button type="button" class="fin-date-box" @click="rangeTarget = 'end'">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" />
+        </svg>
+        <span>{{ customEnd || '날짜입력' }}</span>
+      </button>
     </div>
 
     <!-- ========== TAB 1: 자금입출금 ========== -->
@@ -545,6 +568,12 @@ const exportExcel = () => {
       </div>
     </div>
 
+    <DateWheelPicker
+      v-model="rangeValue"
+      :open="rangeTarget !== ''"
+      @close="rangeTarget = ''"
+    />
+
     <AppMobileBottomNav active="finance" />
   </section>
 </template>
@@ -561,21 +590,28 @@ const exportExcel = () => {
   background: #fff; border-bottom: 1px solid #eef0f5;
 }
 .fin-page-title {
-  margin: 0; padding: 16px 18px 8px;
+  margin: 0; padding: 9px 14px 7px;
   font-size: 20px; font-weight: 800; color: #111827;
+  /* 제목줄 아래 구분선 — 물건상세와 같게 */
+  border-bottom: 1px solid #e5e7eb;
 }
 .fin-tabs {
-  display: flex; gap: 20px; padding: 0 18px;
+  /* 네 칸을 정확히 4등분한 알약 카드 */
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  margin: 0 14px 12px; padding: 4px;
+  background: #e2e8f2; border-radius: 12px;
 }
 .fin-tab {
-  border: none; background: transparent; padding: 8px 0 10px;
-  font-size: 14px; font-weight: 700; color: #9ca3af; cursor: pointer;
-  position: relative;
+  border: 1px solid transparent; background: transparent;
+  padding: 7px 2px; min-height: 50px; border-radius: 9px;
+  /* 선택 여부와 상관없이 같은 크기·굵기 — 글자 폭이 흔들리지 않게 색만 바꾼다 */
+  font-size: 14.5px; font-weight: 700; line-height: 1.3; letter-spacing: -0.3px; color: #6b7280;
+  text-align: center; white-space: normal; cursor: pointer;
+  display: flex; align-items: flex-start; justify-content: center;
 }
-.fin-tab.active { color: #111827; font-weight: 800; }
-.fin-tab.active::after {
-  content: ''; position: absolute; left: -4px; right: -4px; bottom: -1px;
-  height: 3px; background: #111827; border-radius: 2px;
+.fin-tab.active {
+  background: #fff; color: #111827;
+  border-color: #e3e7ef; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
 
 /* Toolbar */
@@ -584,34 +620,45 @@ const exportExcel = () => {
   display: flex; flex-direction: column; gap: 10px;
 }
 .fin-title {
-  margin: 0; font-size: 15px; font-weight: 800; color: #111827;
+  margin: 0; font-size: 15.3px; font-weight: 800; color: #111827;
   display: flex; align-items: center; gap: 8px;
 }
-.fin-vat-note { font-size: 11px; font-weight: 600; color: #dc2626; }
+.fin-vat-note { font-size: 11px; font-weight: 600; color: #2b6df3; }
+/* 기간 칩 4개 + 엑셀저장 + 항목추가 = 한 줄 6등분 */
 .fin-toolbar-right {
-  display: flex; gap: 6px; align-items: center; flex-wrap: nowrap;
-  overflow-x: auto;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+  align-items: stretch;
 }
-.fin-period { display: flex; gap: 0; background: #eef0f5; border-radius: 8px; padding: 2px; flex-shrink: 0; }
+.fin-period { display: contents; }
 .fin-period-btn {
-  padding: 5px 10px; border: none; background: transparent;
-  font-size: 11px; font-weight: 600; color: #6b7280;
-  border-radius: 6px; cursor: pointer; white-space: nowrap;
+  padding: 7px 2px; border: 1px solid #d5ddeb; background: #e2e8f2;
+  font-size: 11px; font-weight: 700; color: #6b7280; letter-spacing: -0.3px;
+  border-radius: 8px; cursor: pointer; white-space: nowrap; text-align: center;
 }
-.fin-period-btn.active { background: #fff; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+.fin-period-btn.active {
+  background: #fff; color: #111827;
+  border-color: #c7d2e8; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
 .fin-excel, .fin-add {
-  padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 8px;
-  background: #fff; font-size: 12px; font-weight: 600; cursor: pointer;
-  white-space: nowrap; flex-shrink: 0;
+  padding: 7px 2px; border: 1px solid #d1d5db; border-radius: 8px;
+  background: #fff; font-size: 11px; font-weight: 700; cursor: pointer;
+  white-space: nowrap; text-align: center; letter-spacing: -0.3px;
 }
 .fin-add { background: #2b6df3; color: #fff; border-color: #2b6df3; }
+/* 아이콘은 글자보다 작게 — 좁은 칸에서 글자를 밀어내지 않게 */
+.fin-excel i, .fin-add i { font-style: normal; font-size: 9px; margin-right: 2px; }
 .fin-custom-range {
-  padding: 0 14px 8px; font-size: 13px; color: #6b7280;
+  padding: 0 14px 8px; display: flex; align-items: center; gap: 8px;
 }
-.fin-custom-range input {
-  padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 6px;
-  font-size: 13px;
+.fin-date-box {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  width: 112px; box-sizing: border-box;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 5px 8px; background: #fff; cursor: pointer;
 }
+.fin-date-box svg { color: #9ca3af; flex: 0 0 auto; }
+.fin-date-box span { font-size: 12px; font-weight: 400; color: #9ca3af; }
+.fin-date-sep { color: #9ca3af; }
 
 /* Summary cards */
 .fin-summary {
@@ -619,18 +666,23 @@ const exportExcel = () => {
   gap: 6px; padding: 8px 14px 12px;
 }
 .sum-card {
-  padding: 10px 10px; border-radius: 10px;
+  padding: 10px 8px; border-radius: 10px;
   display: flex; flex-direction: column; gap: 4px;
+  align-items: center; text-align: center;
   min-width: 0;
 }
 .sum-card small { font-size: 11px; color: #6b7280; font-weight: 600; }
 .sum-card strong {
-  font-size: 13px; font-weight: 800; color: #111827;
+  font-size: 14px; font-weight: 800; color: #111827;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.sum-card.in { background: #ecfdf5; }
-.sum-card.out { background: #fef2f2; }
-.sum-card.bal { background: #f1f5f9; }
+.sum-card.in { background: #fdecec; border: 1px solid #f7d5d5; }
+.sum-card.out { background: #e9f0fd; border: 1px solid #d3e0fa; }
+.sum-card.bal { background: #f1f5f9; border: 1px solid #e2e8f0; }
+/* 표의 입금(빨강)·출금(파랑) 색과 맞춘다 */
+.sum-card.in strong { color: #dc2626; }
+.sum-card.out strong { color: #2563eb; }
+.sum-card.bal strong { color: #111827; }
 
 /* Table */
 .fin-table-wrap {
@@ -640,17 +692,18 @@ const exportExcel = () => {
   border: 1px solid #e5e7eb;
 }
 .fin-table {
-  width: 100%; border-collapse: collapse; font-size: 10px;
+  width: 100%; border-collapse: collapse; font-size: 11px;
 }
 .fin-table thead {
   background: #1f2a4d; color: #fff;
 }
 .fin-table th, .fin-table td {
-  padding: 5px 5px; text-align: left;
+  padding: 8px 6px; text-align: left;
   border-bottom: 1px solid #eef0f5;
   white-space: nowrap; vertical-align: middle;
 }
-.fin-table th { font-weight: 700; font-size: 10px; white-space: nowrap; }
+.fin-table th { font-weight: 700; font-size: 10.5px; white-space: nowrap; }
+.fin-table tbody tr:nth-child(even) { background: #fafbfd; }
 .fin-table tbody tr { cursor: pointer; }
 .fin-table tbody tr:hover { background: #f9fafb; }
 .fin-table td.r, .fin-table th.r { text-align: right; }

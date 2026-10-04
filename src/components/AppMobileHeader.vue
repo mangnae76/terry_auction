@@ -114,18 +114,22 @@ const onLogout = async () => {
   display: block;
   margin-top: 6px;
 }
+/* AUCTION의 마지막 N을 로고(MYTURN)의 마지막 N과 같은 세로선에 맞춘다.
+   .amh-brand는 세로 플렉스라 width:100%가 로고 폭이 되고, 오른쪽 정렬이면 끝이 맞는다.
+   letter-spacing은 마지막 글자 뒤에도 붙어 오른쪽에 빈틈을 남기므로 그만큼 당겨 준다. */
 .amh-brand-sub {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  font-size: 6px;
+  font-size: 7.2px;
   font-weight: 700;
   letter-spacing: 0.8px;
   color: #fff;
   opacity: 0.95;
   margin-top: -10px;
-  padding-left: calc(50% + 10px);
-  text-align: center;
+  padding-left: 0;
+  text-align: right;
+  margin-right: -0.8px;
 }
 
 .amh-info {
@@ -157,8 +161,8 @@ const onLogout = async () => {
   cursor: pointer; display: inline-flex; align-items: center;
 }
 
-.amh-greet { font-size: 11px; color: #ffb38a; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
-.amh-greet strong { color: #fff; font-weight: 800; margin: 0 2px; }
+.amh-greet { font-size: 11px; color: #ffb38a; font-weight: 400; white-space: nowrap; flex-shrink: 0; }
+.amh-greet strong { color: #fff; font-weight: 400; margin: 0 2px; }
 .amh-greet-nim { color: #fff; }
 .amh-greet-icon { width: 14px; height: 14px; flex-shrink: 0; }
 .amh-user-btn { border: none; background: transparent; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; }
@@ -188,7 +192,7 @@ const onLogout = async () => {
   .amh-info-cell { gap: 3px; }
   .amh-icon { width: 12px; height: 12px; }
   .amh-brand-logo { height: 30px; }
-  .amh-brand-sub { font-size: 5px; letter-spacing: 0.6px; padding-left: calc(50% + 10px); }
+  .amh-brand-sub { font-size: 6px; letter-spacing: 0.6px; padding-left: 0; text-align: right; margin-right: -0.6px; }
   .amh-greet { font-size: 11px; }
   .amh-greet-icon { width: 14px; height: 14px; }
 }

@@ -1,69 +1,93 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // 이 앱을 쓸 수 있는 계정 — 여기 없는 메일로 로그인하면 아무것도 읽지 못한다.
+    // src/services/accessControl.ts의 ALLOWED_EMAILS와 같이 맞춰야 한다.
+    // 소셜 로그인은 Worker가 발급하는 custom token의 email 클레임이 여기로 들어온다.
+    function isAllowedUser() {
+      return request.auth != null
+        && request.auth.token.email is string
+        && request.auth.token.email.lower() in [
+          'dark_0417@nate.com',
+          'mangnae760723@gmail.com'
+        ];
+    }
+
     // 사용자 프로필 — 본인 것만 읽고 쓸 수 있음
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAllowedUser() && request.auth.uid == uid;
     }
 
     // 사용자별 앱 설정·임장경로 draft·즐겨찾기 등
     match /userPrefs/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAllowedUser() && request.auth.uid == uid;
     }
 
     // 경매 물건 — 본인이 소유한(uid 일치) 문서만 접근
     match /auctions/{auctionId} {
       allow read, update, delete:
-        if request.auth != null && resource.data.uid == request.auth.uid;
+        if isAllowedUser() && resource.data.uid == request.auth.uid;
       allow create:
-        if request.auth != null && request.resource.data.uid == request.auth.uid;
+        if isAllowedUser() && request.resource.data.uid == request.auth.uid;
     }
 
     // 현장사진 — 장당 1문서(dataUrl은 압축된 base64). 본인 uid 일치 시에만 접근
     match /auctionPhotos/{photoId} {
       allow read, update, delete:
-        if request.auth != null && resource.data.uid == request.auth.uid;
+        if isAllowedUser() && resource.data.uid == request.auth.uid;
       allow create:
-        if request.auth != null && request.resource.data.uid == request.auth.uid;
+        if isAllowedUser() && request.resource.data.uid == request.auth.uid;
     }
 
     // 사진 용량 누계 — 문서 ID가 곧 uid
     match /photoUsage/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAllowedUser() && request.auth.uid == uid;
     }
 
     // 임장 동선 저장
     match /fieldTrips/{planId} {
       allow read, update, delete:
-        if request.auth != null && resource.data.uid == request.auth.uid;
+        if isAllowedUser() && resource.data.uid == request.auth.uid;
       allow create:
-        if request.auth != null && request.resource.data.uid == request.auth.uid;
+        if isAllowedUser() && request.resource.data.uid == request.auth.uid;
     }
 
     // 자금관리 4개 컬렉션 — 본인 uid 일치 시에만 접근
     match /financeCashFlows/{id} {
       allow read, update, delete:
-        if request.auth != null && resource.data.uid == request.auth.uid;
+        if isAllowedUser() && resource.data.uid == request.auth.uid;
       allow create:
-        if request.auth != null && request.resource.data.uid == request.auth.uid;
+        if isAllowedUser() && request.resource.data.uid == request.auth.uid;
     }
     match /financeBusinessExpenses/{id} {
       allow read, update, delete:
-        if request.auth != null && resource.data.uid == request.auth.uid;
+        if isAllowedUser() && resource.data.uid == request.auth.uid;
       allow create:
-        if request.auth != null && request.resource.data.uid == request.auth.uid;
+        if isAllowedUser() && request.resource.data.uid == request.auth.uid;
     }
     match /financeFuelMeal/{id} {
       allow read, update, delete:
-        if request.auth != null && resource.data.uid == request.auth.uid;
+        if isAllowedUser() && resource.data.uid == request.auth.uid;
       allow create:
-        if request.auth != null && request.resource.data.uid == request.auth.uid;
+        if isAllowedUser() && request.resource.data.uid == request.auth.uid;
     }
     match /financeItemPurchases/{id} {
       allow read, update, delete:
-        if request.auth != null && resource.data.uid == request.auth.uid;
+        if isAllowedUser() && resource.data.uid == request.auth.uid;
       allow create:
-        if request.auth != null && request.resource.data.uid == request.auth.uid;
+        if isAllowedUser() && request.resource.data.uid == request.auth.uid;
+    }
+
+    // 공공데이터 조회 결과 모아 두기 — 지역·단지 단위라 모든 사용자가 같이 쓴다.
+    // 개인 자료가 아니고, 누가 먼저 열든 같은 값이라 로그인한 사용자면 읽고 쓸 수 있다.
+    match /cacheDongTrades/{id} {
+      allow read, write: if isAllowedUser();
+    }
+    match /cachePlaceHistory/{id} {
+      allow read, write: if isAllowedUser();
+    }
+    match /cacheDongUnits/{id} {
+      allow read, write: if isAllowedUser();
     }
 
     // 그 외 컬렉션은 명시적 허용 없이는 거부 (기본 deny)

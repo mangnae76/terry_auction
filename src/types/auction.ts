@@ -1,4 +1,18 @@
-export type AuctionStatus = '임장예정' | '임장완료' | '입찰' | '낙찰' | '보류';
+export type AuctionStatus = '손품' | '임장예정' | '임장완료' | '입찰' | '낙찰' | '보류';
+
+/** 화면에 보여 주는 단계 이름 — 저장값과 글자가 달라 한 곳에서만 정의한다 */
+export const AUCTION_STATUS_LABELS: Record<AuctionStatus, string> = {
+  손품: '손품조사',
+  임장예정: '임장예정',
+  임장완료: '임장완료',
+  입찰: '입찰산정',
+  // 아래 둘은 단계에서 뺐다 — 옛 자료를 읽을 때만 쓴다
+  낙찰: '낙찰',
+  보류: '탈락',
+};
+/** 단계 순서 — 손품 → 임장 → 입찰 → 낙찰. '보류'(옛 탈락)는 단계에서 뺐다.
+ *  더 안 보는 물건은 휴지통으로 보낸다(복원 가능). */
+export const AUCTION_STATUS_ORDER: AuctionStatus[] = ['손품', '임장예정', '임장완료', '입찰'];
 
 export interface AuctionMetrics {
   appraisalValue: number;
@@ -359,6 +373,10 @@ export interface AuctionDetail {
   uid?: string;       // 소유 사용자 (Firebase Auth uid). 비어있는 옛 데이터는 어느 사용자에게도 안 보임.
   eventDate: string;
   courtName: string;
+  /** 담당 경매계 — '경매3계' */
+  courtDept?: string;
+  /** 담당계 전화번호 */
+  courtPhone?: string;
   caseNumber: string;
   propertyNumber: string;
   auctionKind: '임의' | '강제';
@@ -369,6 +387,12 @@ export interface AuctionDetail {
   hidden?: boolean;
   /** 별표로 매긴 중요도 — 없으면 빈 별, 1~3을 돌아가며 매긴다 */
   priority?: number;
+  /** 입찰 상태 — 입찰대기 / 입찰포기 / 입찰진행. status(관심·임장·입찰·낙찰·탈락)와는 별개 */
+  bidStatus?: string;
+  /** 예상수익분석에서 직접 적는 낙찰일 */
+  wonDate?: string;
+  /** 예상수익분석에서 직접 적는 매도일 */
+  sellDate?: string;
   isFieldTrip: boolean;
   propertyType: string;
   address: string;
@@ -464,6 +488,18 @@ export interface AuctionDetail {
   locationSummary?: LocationSummary;
 }
 
+/** 저렴매물조사 — 해당 빌라 저가 매물 한 줄 */
+export interface LowListingRow {
+  /** 전용면적(㎡) */
+  area: string;
+  /** 비고 */
+  note: string;
+  /** 매매호가(낮은금액) */
+  price: string;
+  /** '경매물건' | '유사물건' — 어느 쪽을 조사한 줄인지 */
+  mode?: string;
+}
+
 /** 시세조사 본표의 한 줄 (구분 라벨은 화면에 고정, 값만 저장) */
 export interface MarketSurveyRow {
   /** 거래일 */
@@ -545,10 +581,14 @@ export interface SurveyForm {
   mktLowListName?: string;
   /** 시세조사 본표 4줄 (해당구역 평균 / 해당경매물건 / 평단가 / 저가매물) — 옛 구조 */
   mktRows?: MarketSurveyRow[];
+  /** 저렴매물조사 — 해당 빌라 저가 매물 목록 */
+  mktLowRows?: LowListingRow[];
   /** 시세조사 항목값 — 'mkt.a.area' 같은 id별 입력값 */
   mktValues?: Record<string, string>;
   /** 부동산 정보 표 */
   agencyRows?: AgencyRow[];
+  /** 현장조사 4. 부동산 현장 상담 */
+  siteAgencyRows?: AgencyRow[];
   /** 시세 및 급매가 결론 — 기본값은 자동으로 채우고 사용자가 고칠 수 있다 */
   mktConcAvg?: string;
   mktConcLow?: string;

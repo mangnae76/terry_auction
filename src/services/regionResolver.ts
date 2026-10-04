@@ -79,15 +79,26 @@ const pickFromDoc = (doc: KakaoDoc): ResolvedRegion | null => {
   };
 };
 
+// 주소 변환이 매달리면 뒤의 실거래가 조회가 통째로 멈춘다 — 10초면 끊는다
+const GEOCODE_TIMEOUT_MS = 10000;
+
 const queryKakao = async (query: string): Promise<ResolvedRegion | null> => {
   if (!KAKAO_REST_API_KEY && !import.meta.env.DEV) return null;
   const url = new URL(`${KAKAO_GEOCODE_BASE_URL}/v2/local/search/address.json`, window.location.origin);
   url.searchParams.set('query', query);
-  const response = await fetch(url.toString(), {
-    headers: KAKAO_REST_API_KEY && !import.meta.env.DEV
-      ? { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` }
-      : undefined,
-  });
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), GEOCODE_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), {
+      signal: ctrl.signal,
+      headers: KAKAO_REST_API_KEY && !import.meta.env.DEV
+        ? { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` }
+        : undefined,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
   if (!response.ok) return null;
   const json = (await response.json()) as { documents?: KakaoDoc[] };
   const docs = json.documents ?? [];

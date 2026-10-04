@@ -3,16 +3,18 @@ import { Browser } from '@capacitor/browser';
 import { Clipboard } from '@capacitor/clipboard';
 import { Capacitor } from '@capacitor/core';
 import L from 'leaflet';
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { saveFieldTripPlan } from '../services/auctionRepository';
 import { buildOptimizedRoute, parseAddressLines, reverseGeocode, type GeoPoint } from '../services/routeOptimizer';
 import { fetchRouteForPath, type RouteLeg, type RouteMode } from '../services/roadRouting';
 import { apiPath } from '../services/apiBase';
 import { useAuctionStore } from '../stores/auctionStore';
+import { AUCTION_STATUS_LABELS, type AuctionDetail } from '../types/auction';
 import { useAuthStore } from '../stores/authStore';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
+import AppToast from '../components/AppToast.vue';
 import mapPinIcon from '../assets/icones/mappin (1).png';
 import flagIcon from '../assets/icones/flag (1).png';
 import mapPinPlusIcon from '../assets/icones/map-pin-plus (1).png';
@@ -27,7 +29,7 @@ import tmapNaviIcon from '../assets/icones/navi/TMAP_navi.png';
 import kakaoNaviIcon from '../assets/icones/navi/kakaonavi.png';
 
 const router = useRouter();
-const summaryCollapsed = ref(false);
+const routeListCollapsed = ref(false);
 const settingsCollapsed = ref(false);
 
 const DEFAULT_HUB_ADDRESS = '청라린스트라우스';
@@ -61,18 +63,240 @@ const saveMessage = ref('');
 const lastCalculatedAt = ref('');
 const lastInputSignature = ref('');
 const visitedStops = ref<Record<string, boolean>>({});
+/** 주소로 선정물건을 찾는다 — 띄어쓰기 차이로 못 찾아 단계가 안 바뀌던 문제를 막는다 */
+const auctionByAddress = (address: string) => {
+  const key = addrKey(address);
+  if (!key) return undefined;
+  return store.auctions.find((item) => addrKey(item.address) === key);
+};
+/** 방문 여부는 '물건의 단계'가 기준이다. 선정물건에서 임장완료로 바꿔도 여기 바로 반영된다.
+ *  선정물건에 없는 주소(직접 적은 주소)만 경로가 들고 있는 기록(visitedStops)으로 판단한다. */
+const isVisited = (address: string) => {
+  const target = String(address ?? '').trim();
+  if (!target) return false;
+  const matched = auctionByAddress(target);
+  if (matched) return matched.status === '임장완료';
+  return Boolean(visitedStops.value[target]);
+};
 
-const stopCount = computed(() => orderedStops.value.length);
-const pendingVisitCount = computed(
-  () => store.auctions.filter((item) => item.status === '임장예정').length,
+// 방문물건 = 동선최적화 목록에 실제로 있는 물건 줄 수 (번호 줄 + ⊕ 대기 줄).
+// 단계에서 역산하면 '경로에 없는 임장완료'가 방문물건과 경로제외물건에 두 번 세어진다.
+const stopCount = computed(() => routedKeys.value.length + queuedRows.value.length);
+// 방문완료 = 단계가 '임장완료'인 물건 수. 체크하면 번호 줄에서 아래로 내려가므로
+// 경로에 남은 수(방문물건)와 겹치지 않는다.
+// 방문완료 = 경로에 실린 물건 중 임장완료인 수.
+// 방문물건도 '경로 안'을 세므로 기준을 맞춰야 '2곳 중 3곳 완료' 같은 조합이 안 생긴다.
+const visitedCount = computed(
+  () => fullPath.value.filter(
+    (point) => (point.kind ?? 'stop') === 'stop' && isVisited(point.address),
+  ).length,
 );
-const defaultFieldTripInput = computed(() =>
+// 관심(임장예정) 건수와 경로에 실린 건수가 다를 때 그 차이가 어디서 났는지 알려 준다.
+// 중복 주소·형식 미달(6자 미만)은 parseAddressLines가, 방문완료는 optimizeRoute가 걸러 낸다.
+const interestAddresses = computed(() =>
   store.auctions
+    // '임장예정'만 가져온다 — 손품 단계 물건은 사용자가 임장예정으로 옮겨야 경로에 뜬다
     .filter((item) => item.status === '임장예정')
-    .map((item) => item.address.trim())
-    .filter((address, index, arr) => address.length > 0 && arr.indexOf(address) === index)
-    .join('\n'),
+    .map((item) => (item.address ?? '').trim())
+    .filter((address) => address.length > 0),
 );
+const routeSkipNote = computed(() => {
+  const raw = interestAddresses.value;
+  if (raw.length === 0) return '';
+  const parsed = parseAddressLines(raw.join('\n'));
+  const dropped = raw.length - parsed.length;
+  const failed = failedAddresses.value.length;
+  const parts: string[] = [];
+  if (dropped > 0) parts.push(`중복·주소형식 ${dropped}건`);
+  if (failed > 0) parts.push(`주소인식 실패 ${failed}건`);
+  if (parts.length === 0) return '';
+  return `관심 ${raw.length}건 중 ${parts.join(' · ')} 제외`;
+});
+
+// 주소를 비교할 때 쓰는 열쇠 — 주소칸/경로결과/물건주소를 같은 기준으로 본다.
+// 띄어쓰기는 PDF마다 들쭉날쭉해서 무시한다(공백 한 칸 차이로 다른 물건이 되면 숫자가 안 맞는다).
+const addrKey = (address: string) => {
+  const raw = String(address ?? '').trim();
+  return (parseAddressLines(raw)[0] ?? raw).replace(/\s+/g, '');
+};
+/** 선정물건리스트가 세는 기준과 똑같이 — 숨긴 물건·온비드 임시항목은 뺀다 */
+const listedAuctions = computed(() =>
+  store.auctions.filter((item) => !item.id.startsWith('onbid-')),
+);
+/** 휴지통까지 포함한 선정물건 전체 — 손으로 적은 주소와 가르는 데 쓴다 */
+const everyAuction = computed(() => [...store.auctions, ...store.hiddenAuctions]);
+const knownKeys = computed(() => new Set(everyAuction.value.map((item) => addrKey(item.address))));
+/** 경로에 있을 수 있는 단계 — 임장예정과 임장완료.
+ *  임장완료는 목록에서 내리지 않고 주소에 줄만 긋는다(다녀온 곳도 동선에 남아 있어야 읽힌다). */
+const ROUTE_STAGES: readonly string[] = ['임장예정', '임장완료'];
+const canRoute = (item: AuctionDetail) => ROUTE_STAGES.includes(item.status);
+const plannedKeys = computed(
+  () => new Set(listedAuctions.value.filter(canRoute).map((item) => addrKey(item.address))),
+);
+const failedKeys = computed(() => new Set(failedAddresses.value.map((address) => addrKey(address))));
+/** 경로에 실려 있는 정차지 주소 */
+const routedKeys = computed(
+  () => fullPath.value
+    .filter((point) => (point.kind ?? 'stop') === 'stop')
+    .map((point) => addrKey(point.address)),
+);
+
+/** 카드에 붙는 단계 이름 — 입찰은 입찰상태에 따라 '입찰진행'까지 갈라 준다 */
+const stageLabel = (item: AuctionDetail) => {
+  if (item.status === '입찰') {
+    return (item.bidStatus ?? '').replace(/^입찰/, '') === '진행' ? '입찰진행' : '입찰산정';
+  }
+  return AUCTION_STATUS_LABELS[item.status] ?? String(item.status);
+};
+/** 단계별 태그 색 — 선정물건 알약과 같은 뜻으로 읽히게 */
+const stageTone = (item: AuctionDetail) => {
+  if (item.status === '임장예정') return 'plan';
+  if (item.status === '손품') return 'desk';
+  if (item.status === '임장완료') return 'visited';
+  if (item.status === '입찰') {
+    return (item.bidStatus ?? '').replace(/^입찰/, '') === '진행' ? 'bidding' : 'bid';
+  }
+  return 'etc';
+};
+
+/** 경로제외물건 — 선정물건의 모든 단계가 여기로 내려온다.
+ *  번호 줄 + 이 줄 = 선정물건 전체 건수(1:1). 한 물건이 두 군데 나오지 않는다. */
+const missingPlanned = computed(() => {
+  // 같은 주소에 사건이 둘일 수 있으니 번호 줄은 '먼저 온 임장예정'이 하나씩 차지한다
+  const unclaimed = new Set(routedKeys.value);
+  const rows: Array<{
+    id: string;
+    address: string;
+    label: string;
+    tone: string;
+    failed: boolean;
+  }> = [];
+  for (const item of listedAuctions.value) {
+    const key = addrKey(item.address);
+    if (canRoute(item) && unclaimed.has(key)) {
+      unclaimed.delete(key);
+      continue; // 번호 줄로 올라가 있다
+    }
+    rows.push({
+      id: item.id,
+      address: item.address.trim(),
+      label: stageLabel(item),
+      tone: stageTone(item),
+      failed: item.status === '임장예정' && failedKeys.value.has(key),
+    });
+  }
+  return rows;
+});
+/** 임장예정인데 아직 번호를 못 받은 줄 — 동선최적화 목록 안(도착 줄 앞)에 '대기'로 선다.
+ *  단계가 임장예정이면 그 자체가 '가 볼 곳'이라는 뜻이므로 따로 등록 버튼을 두지 않는다. */
+const queuedRows = computed(() => missingPlanned.value.filter((row) => row.tone === 'plan'));
+/** 경로에 있을 수 없는 단계 — 아래 '경로제외물건'으로 내려간다 */
+const missingRows = computed(() => missingPlanned.value.filter((row) => row.tone !== 'plan'));
+/** 경로에 있어야 할 주소 = 임장예정·임장완료 물건 + 손으로 적어 넣은 주소 */
+const shouldRouteKeys = computed(() => {
+  const keys = new Set(listedAuctions.value.filter(canRoute).map((item) => addrKey(item.address)));
+  for (const line of parseAddressLines(rawAddresses.value)) {
+    const key = addrKey(line);
+    if (!knownKeys.value.has(key)) keys.add(key); // 선정물건에 없는 손입력 주소
+  }
+  return keys;
+});
+/** 계산에만 영향을 주는 설정 — 주소 목록과 따로 본다 */
+const settingsSignature = computed(() =>
+  JSON.stringify({
+    startAddress: startAddress.value,
+    endAddress: endAddress.value,
+    travelMode: travelMode.value,
+    useRoadRouting: useRoadRouting.value,
+  }),
+);
+const lastSettingsSignature = ref('');
+/** 계산이 끝난 뒤 경로에서 줄이 빠졌는가.
+ *  빠지면 '있어야 할 집합'과 '실린 집합'이 둘 다 줄어 같아져 버려서, 집합 비교만으로는 못 잡는다.
+ *  남은 곳들의 최적 순서·거리·시간은 그대로라 다시 계산해야 맞다. */
+const routeDirty = ref(false);
+/** 지도를 보고 손으로 순서를 고친 적이 있는가.
+ *  동선최적화는 처음부터 다시 묶으므로, 그 판단이 말없이 지워지지 않게 한 번 묻는다. */
+const manualOrder = ref(false);
+/** 지금 보이는 경로가 낡았는가 — '다시 눌러야 맞는 경로가 나온다'는 뜻.
+ *  주소칸 글자가 아니라 '물건의 집합'을 본다. 방문 체크처럼 경로가 그대로인 동작에는
+ *  울리지 않고, 휴지통·새 임장예정처럼 실제로 갈 곳이 달라졌을 때만 울린다. */
+const routeStale = computed(() => {
+  if (loading.value) return false;
+  // 좌표를 못 찾은 주소는 다시 눌러도 결과가 같다 — 계속 울리면 신호가 무뎌진다
+  const want = new Set([...shouldRouteKeys.value].filter((key) => !failedKeys.value.has(key)));
+  // 갈 곳이 아예 없으면 다시 계산할 것도 없다 — 재촉하지 않는다
+  if (want.size === 0) return false;
+  if (routeDirty.value) return true;
+  const have = new Set(routedKeys.value);
+  if (want.size !== have.size) return true;
+  for (const key of want) {
+    if (!have.has(key)) return true;
+  }
+  // 출발·도착지나 이동수단을 바꾸면 순서·시간이 달라진다
+  return lastSettingsSignature.value !== '' && lastSettingsSignature.value !== settingsSignature.value;
+});
+/** 대기 줄을 끼워 넣을 자리 = 도착(E) 줄 앞. 도착이 없으면 -1(목록 끝에 붙인다) */
+const queuedInsertIdx = computed(() => fullPath.value.findIndex((point) => point.kind === 'end'));
+
+/** 주소칸·경로를 단계에 맞춘다. 두 방향 모두 한다.
+ *   - 내리기: 경로에 있을 수 없는 단계(손품·입찰 등)는 경로와 주소칸에서 뺀다
+ *   - 올리기: 임장예정인데 주소칸에 없으면 넣는다 (휴지통에서 복원한 물건도 여기서 돌아온다)
+ *  덕분에 주소칸은 '단계 + 손으로 적은 주소'의 결과가 되고, 따로 등록할 일이 없다. */
+const syncRouteWithStages = () => {
+  if (everyAuction.value.length === 0) return;
+  const keep = (address: string) => {
+    const key = addrKey(address);
+    // 선정물건에 없는 주소(손으로 적은 주소)는 건드리지 않는다
+    if (!knownKeys.value.has(key)) return true;
+    return plannedKeys.value.has(key);
+  };
+  let changed = false;
+  const nextPath = fullPath.value.filter((point) => (point.kind ?? 'stop') !== 'stop' || keep(point.address));
+  if (nextPath.length !== fullPath.value.length) {
+    fullPath.value = nextPath;
+    changed = true;
+    routeDirty.value = true; // 계산된 경로에서 줄이 빠졌다
+  }
+  const nextOrdered = orderedStops.value.filter((point) => keep(point.address));
+  if (nextOrdered.length !== orderedStops.value.length) { orderedStops.value = nextOrdered; changed = true; }
+  const nextLines = rawAddresses.value.split('\n').filter((line) => {
+    const normalized = parseAddressLines(line)[0] ?? '';
+    return normalized.length === 0 || keep(normalized);
+  });
+  // 임장예정인데 주소칸에 없는 주소를 뒤에 더한다
+  const have = new Set(parseAddressLines(nextLines.join('\n')).map((line) => addrKey(line)));
+  const added: string[] = [];
+  for (const item of listedAuctions.value) {
+    if (item.status !== '임장예정') continue;
+    const address = item.address.trim();
+    const key = addrKey(address);
+    if (!address || have.has(key)) continue;
+    have.add(key);
+    added.push(address);
+  }
+  const nextRaw = [...nextLines.filter((line) => line.trim().length > 0), ...added].join('\n');
+  if (nextRaw !== rawAddresses.value) {
+    rawAddresses.value = nextRaw;
+    lastAutoFilledInput.value = nextRaw;
+    changed = true;
+  }
+  // 단계에 맞춰 정리한 결과도 저장해 둬야 다시 들어왔을 때 같은 화면이 나온다
+  if (changed) cacheCurrentPlanLocally();
+};
+// 선정물건의 단계가 바뀌면(어느 화면에서 바꿨든, 휴지통에서 복원했든) 경로를 바로 맞춘다
+watch(
+  () => everyAuction.value.map((item) => `${item.id}:${item.status}`).join('|'),
+  () => { syncRouteWithStages(); },
+);
+
+/** 아래 줄의 ✓ — 임장완료를 임장예정으로 되돌린다 */
+const undoVisited = async (id: string) => {
+  if (loading.value) return;
+  await store.setStatus(id, '임장예정');
+  showToast('임장예정으로 되돌렸습니다. 동선최적화를 눌러 주세요.', 'success');
+};
+
 const currentInputSignature = computed(
   () =>
     JSON.stringify({
@@ -85,6 +309,8 @@ const currentInputSignature = computed(
     }),
 );
 
+/** 경로 순서 그대로의 번호. 다녀온 곳도 제 번호를 지킨다 —
+ *  다시 계산할 때 그 자리에 고정하므로 숫자가 흔들리지 않는다. */
 const stopOrdinal = (idx: number): number => {
   let count = 0;
   for (let i = 0; i <= idx; i += 1) {
@@ -101,7 +327,10 @@ const stopRowIndexFromPoint = (x: number, y: number): number | null => {
   return Number.isInteger(idx) ? idx : null;
 };
 const onStopDragStart = (idx: number, e: PointerEvent) => {
-  if (fullPath.value[idx]?.kind !== 'stop') return;
+  if (loading.value) return;
+  const point = fullPath.value[idx];
+  if (point?.kind !== 'stop') return;
+  if (isVisited(point.address)) return; // 다녀온 줄은 순서를 바꿀 이유가 없다
   dragFromIdx.value = idx;
   (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
 };
@@ -110,7 +339,9 @@ const onStopDragMove = (e: PointerEvent) => {
   e.preventDefault();
   const over = stopRowIndexFromPoint(e.clientX, e.clientY);
   // 출발(S)·도착(E) 줄은 자리를 내주지 않는다
-  if (over === null || over === dragFromIdx.value || fullPath.value[over]?.kind !== 'stop') return;
+  const target = fullPath.value[over ?? -1];
+  if (over === null || over === dragFromIdx.value || target?.kind !== 'stop') return;
+  if (isVisited(target.address)) return; // 다녀온 줄 자리는 내주지 않는다
   const next = [...fullPath.value];
   const [moved] = next.splice(dragFromIdx.value, 1);
   next.splice(over, 0, moved);
@@ -381,31 +612,32 @@ const copyAddress = async (address: string) => {
 };
 
 // 목록 주소는 공백이 지워진 형태로 들어와서, 띄어쓰기를 무시하고 물건을 찾는다
-const normalizeAddr = (address: string) => address.replace(/\s+/g, '');
-const auctionIdByAddress = (address: string) => {
-  const key = normalizeAddr(address);
-  return store.auctions.find((item) => normalizeAddr(item.address ?? '') === key)?.id ?? '';
-};
+const auctionIdByAddress = (address: string) => auctionByAddress(address)?.id ?? '';
 const goDetailByAddress = (address: string) => {
   const id = auctionIdByAddress(address);
   if (!id) {
     showToast('연결된 물건을 찾지 못했습니다.', 'info');
     return;
   }
-  router.push(`/auctions/${id}`);
+  router.push({ path: `/auctions/${id}`, query: { tab: 'survey' } });
 };
 
 const toggleVisited = async (address: string) => {
-  const next = !visitedStops.value[address];
+  // 계산 중에는 경로가 통째로 다시 만들어지는 중이라, 지금 바꾸면 결과와 어긋난다
+  if (loading.value) return;
+  const next = !isVisited(address);
   visitedStops.value = {
     ...visitedStops.value,
     [address]: next,
   };
   autoSavePlan();
-  const matched = store.auctions.find((item) => item.address.trim() === address.trim());
+  const matched = auctionByAddress(address);
   if (!matched) {
+    // 조용히 넘어가면 경로에만 체크가 남고 선정물건 단계는 그대로여서 숫자가 어긋난다
+    showToast('연결된 물건을 찾지 못해 단계가 바뀌지 않았습니다.', 'error');
     return;
   }
+  // 방문 토글이 곧 '임장예정 ↔ 임장완료'다 — 글자가 뜻을 그대로 말해 준다
   await store.setStatus(matched.id, next ? '임장완료' : '임장예정');
 };
 
@@ -430,15 +662,6 @@ const unlockMap = () => {
   map.scrollWheelZoom.enable();
   map.doubleClickZoom.enable();
 };
-const mapBig = ref(false);
-const toggleMapSize = async () => {
-  mapBig.value = !mapBig.value;
-  await nextTick();
-  // 높이가 바뀌면 타일이 어긋나므로 다시 그려 준다
-  map?.invalidateSize();
-  if (routeLayer) map?.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
-};
-
 const ensureMap = async () => {
   await nextTick();
   if (map) {
@@ -453,10 +676,34 @@ const ensureMap = async () => {
   markerLayer = L.layerGroup().addTo(map);
   lockMap();
   map.on('click', unlockMap);
+  observeMapSize();
 };
 
-const makeBadgeIcon = (label: string, kind: 'start' | 'stop' | 'end') => {
-  const cls = `trip-marker-badge tone-${kind}`;
+// 지도 칸 크기가 바뀔 때마다 타일을 다시 채운다.
+// (크기 토글의 transition, 화면 회전, 위쪽 패널이 접히고 펴지는 것까지 모두 여기서 잡힌다)
+let mapResizeObserver: ResizeObserver | null = null;
+let mapResizeRaf = 0;
+const observeMapSize = () => {
+  if (mapResizeObserver || typeof ResizeObserver === 'undefined') return;
+  const el = document.getElementById('trip-map');
+  if (!el) return;
+  mapResizeObserver = new ResizeObserver(() => {
+    if (mapResizeRaf) cancelAnimationFrame(mapResizeRaf);
+    mapResizeRaf = requestAnimationFrame(() => {
+      mapResizeRaf = 0;
+      map?.invalidateSize({ animate: false });
+    });
+  });
+  mapResizeObserver.observe(el);
+};
+onBeforeUnmount(() => {
+  if (mapResizeRaf) cancelAnimationFrame(mapResizeRaf);
+  mapResizeObserver?.disconnect();
+  mapResizeObserver = null;
+});
+
+const makeBadgeIcon = (label: string, kind: 'start' | 'stop' | 'end', done = false) => {
+  const cls = `trip-marker-badge tone-${kind}${done ? ' done' : ''}`;
   return L.divIcon({
     className: 'trip-marker',
     html: `<div class="${cls}"><span>${label}</span></div>`,
@@ -546,7 +793,7 @@ const drawRouteMap = async () => {
       kind = 'stop';
     }
     const marker = L.marker([point.lat, point.lng], {
-      icon: makeBadgeIcon(label, kind),
+      icon: makeBadgeIcon(label, kind, kind === 'stop' && isVisited(point.address)),
     }).bindPopup(
       `<strong>${label}. ${point.address}</strong><br/>${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`,
     );
@@ -564,34 +811,26 @@ watch(fullPath, () => {
     if (stop.kind !== 'stop') {
       return;
     }
-    nextVisited[stop.address] = Boolean(visitedStops.value[stop.address]);
+    const matched = auctionByAddress(stop.address);
+    // 선정물건에 있는 주소는 단계를 그대로 따른다 — 옛 체크 기록이 되살아나지 않게
+    nextVisited[stop.address] = matched
+      ? matched.status === '임장완료'
+      : Boolean(visitedStops.value[stop.address]);
   });
   visitedStops.value = nextVisited;
 });
 
-watch(
-  defaultFieldTripInput,
-  (nextInput) => {
-    if (!nextInput) {
-      return;
-    }
-    const current = rawAddresses.value.trim();
-    const previousAuto = lastAutoFilledInput.value.trim();
-    if (current.length === 0 || current === previousAuto) {
-      rawAddresses.value = nextInput;
-      lastAutoFilledInput.value = nextInput;
-    }
-  },
-  { immediate: true },
-);
-
 // 순서를 바꾸면 이전 도로 경로는 맞지 않는다 — 직선으로 되돌린 뒤 새 순서로 다시 조회한다
 const refreshRouteAfterReorder = async () => {
+  manualOrder.value = true;
   orderedStops.value = fullPath.value.filter((p) => p.kind === 'stop');
   roadLegs.value = [];
   roadGeometry.value = [];
   roadFailedLegs.value = [];
   await drawRouteMap();
+  // 바뀐 순서를 바로 저장한다 — 선정물건의 '임장경로' 정렬이 이 값(fieldTripDraft.orderedStops)을 읽는다
+  cacheCurrentPlanLocally();
+  void savePlan({ silent: true });
   if (!useRoadRouting.value || fullPath.value.length < 2) {
     message.value = '순서를 바꿨습니다.';
     return;
@@ -611,68 +850,65 @@ const refreshRouteAfterReorder = async () => {
       totalMinutes.value = driveMinutes.value + stayMinutes.value;
     }
     await drawRouteMap();
-    message.value = `바꾼 순서로 ${road.legs.length}개 구간 다시 계산했습니다.`;
+    message.value = `바꾼 순서로 물건 ${orderedStops.value.length}곳을 다시 계산했습니다.`;
   } catch (error) {
     message.value = error instanceof Error ? `실도로 경로 실패: ${error.message}` : '실도로 경로 실패';
   } finally {
     loading.value = false;
     roadProgress.value = null;
+    // 도로 경로까지 다시 계산한 결과로 한 번 더 갱신해 둔다
+    cacheCurrentPlanLocally();
+    void savePlan({ silent: true });
   }
 };
 
 const optimizeRoute = async () => {
+  // 손으로 맞춘 순서는 사용자가 지도를 보고 내린 판단이다 — 말없이 지우지 않는다
+  if (manualOrder.value && fullPath.value.length > 0) {
+    const ok = window.confirm(
+      '지도를 보고 손으로 맞춘 순서가 있습니다.\n새로 계산하면 그 순서는 사라집니다. 계속할까요?',
+    );
+    if (!ok) return;
+  }
   loading.value = true;
   message.value = '';
   saveMessage.value = '';
   // 새로 계산한 동선은 새 경로로 본다 — 이전 저장본을 덮어쓰지 않도록 ID를 새로 발급
   currentPlanId.value = '';
-  orderedStops.value = [];
-  fullPath.value = [];
+  // 계산 중에도 지금 경로를 그대로 둔다 — 비워 버리면 임장완료 줄이 잠깐
+  // '경로제외물건'으로 내려갔다 올라와, 목록이 튀어 보인다.
+  // (결과가 오면 아래에서 통째로 바꾼다)
   failedAddresses.value = [];
-  totalDistanceKm.value = 0;
-  driveMinutes.value = 0;
-  stayMinutes.value = 0;
-  totalMinutes.value = 0;
-  roadLegs.value = [];
-  roadGeometry.value = [];
-  roadFailedLegs.value = [];
   roadProgress.value = null;
-  rawAddresses.value = defaultFieldTripInput.value;
-  lastAutoFilledInput.value = rawAddresses.value;
+  // 계산 직전에 한 번 더 맞춘다 — 임장예정은 빠짐없이, 그 외 단계는 하나도 들어가지 않게
+  syncRouteWithStages();
   try {
     const parsedAddresses = parseAddressLines(rawAddresses.value);
-    const visitedBefore = { ...visitedStops.value };
-    const skippedVisited: string[] = [];
-    const addresses = parsedAddresses.filter((addr) => {
-      if (visitedBefore[addr]) {
-        skippedVisited.push(addr);
-        return false;
-      }
-      return true;
-    });
-    if (addresses.length < 2) {
-      message.value =
-        skippedVisited.length > 0
-          ? `미방문 주소가 ${addresses.length}개뿐입니다. 방문 체크를 해제하거나 주소를 추가해 주세요.`
-          : '최소 2개 이상의 임장 주소를 입력해 주세요.';
+    // 방문완료한 곳도 경로에서 빼지 않는다 — 번호를 유지한 채 주소에만 줄을 긋는다.
+    // (예전처럼 몰래 빼면 주소칸에서도 지워져 목록 수가 어긋났다)
+    if (parsedAddresses.length === 0) {
+      message.value = '경로에 올린 물건이 없습니다. 선정물건에서 임장예정으로 옮겨 주세요.';
       orderedStops.value = [];
       fullPath.value = [];
+      // 계산할 게 없으면 '다시 계산해야 한다'는 표시도 내려야 한다 (안 그러면 영원히 쿵쿵거린다)
+      routeDirty.value = false;
+      manualOrder.value = false;
       return;
     }
-    if (skippedVisited.length > 0) {
-      const skippedSet = new Set(skippedVisited);
-      const kept = rawAddresses.value
-        .split('\n')
-        .filter((line) => {
-          const normalized = parseAddressLines(line)[0] ?? '';
-          return normalized.length === 0 || !skippedSet.has(normalized);
-        });
-      rawAddresses.value = kept.join('\n');
-      const newVisited: Record<string, boolean> = {};
-      for (const [addr, flag] of Object.entries(visitedStops.value)) {
-        if (!skippedSet.has(addr)) newVisited[addr] = flag;
-      }
-      visitedStops.value = newVisited;
+    // 다녀온 곳은 이미 지나온 길이다 — 순서를 다시 묶지 않고 제자리에 그대로 둔다.
+    // (번호·위치가 안 흔들려야 '내가 간 동선'으로 읽힌다)
+    const prevStops = fullPath.value.filter((point) => (point.kind ?? 'stop') === 'stop');
+    const frozen = new Map<number, GeoPoint>();
+    prevStops.forEach((point, i) => {
+      if (isVisited(point.address)) frozen.set(i, point);
+    });
+    const frozenKeys = new Set([...frozen.values()].map((point) => addrKey(point.address)));
+    const addresses = parsedAddresses.filter((addr) => !frozenKeys.has(addrKey(addr)));
+    if (addresses.length === 0) {
+      message.value = '다녀온 곳만 남아 있습니다. 다시 계산할 곳이 없습니다.';
+      routeDirty.value = false;
+      manualOrder.value = false;
+      return;
     }
     const result = await buildOptimizedRoute({
       stopAddresses: addresses,
@@ -681,8 +917,34 @@ const optimizeRoute = async () => {
       avgSpeedKmh: avgSpeedKmh.value,
       stayMinutesPerStop: stayMinutesPerStop.value,
     });
-    orderedStops.value = result.orderedStops;
-    fullPath.value = result.fullPath;
+    // 고정한 줄을 원래 자리에 다시 꽂고, 빈 자리를 새로 묶은 순서로 채운다
+    const merged: GeoPoint[] = [];
+    const frozenSorted = [...frozen.entries()].sort((a, b) => a[0] - b[0]);
+    const total = frozenSorted.length + result.orderedStops.length;
+    let fi = 0;
+    let pi = 0;
+    for (let i = 0; merged.length < total; i += 1) {
+      if (fi < frozenSorted.length && frozenSorted[fi][0] === i) {
+        merged.push(frozenSorted[fi][1]);
+        fi += 1;
+      } else if (pi < result.orderedStops.length) {
+        merged.push(result.orderedStops[pi]);
+        pi += 1;
+      } else if (fi < frozenSorted.length) {
+        merged.push(frozenSorted[fi][1]); // 줄이 줄어 자리가 밀린 경우
+        fi += 1;
+      } else {
+        break;
+      }
+    }
+    const startPoint = result.fullPath.find((point) => point.kind === 'start');
+    const endPoint = result.fullPath.find((point) => point.kind === 'end');
+    orderedStops.value = merged;
+    fullPath.value = [
+      ...(startPoint ? [startPoint] : []),
+      ...merged,
+      ...(endPoint ? [endPoint] : []),
+    ];
     failedAddresses.value = result.failedAddresses;
     totalDistanceKm.value = result.totalDistanceKm;
     driveMinutes.value = result.driveMinutes;
@@ -690,9 +952,12 @@ const optimizeRoute = async () => {
     totalMinutes.value = result.totalMinutes;
     message.value =
       `최적 순서 ${result.orderedStops.length}곳 계산 완료` +
-      (skippedVisited.length > 0 ? ` (방문 완료 ${skippedVisited.length}곳 제외)` : '');
+      (frozenSorted.length > 0 ? ` (다녀온 ${frozenSorted.length}곳은 자리 유지)` : '');
     lastCalculatedAt.value = new Date().toLocaleTimeString('ko-KR');
     lastInputSignature.value = currentInputSignature.value;
+    lastSettingsSignature.value = settingsSignature.value;
+    routeDirty.value = false;
+    manualOrder.value = false;
 
     if (useRoadRouting.value && fullPath.value.length >= 2) {
       try {
@@ -709,7 +974,8 @@ const optimizeRoute = async () => {
           totalMinutes.value = driveMinutes.value + stayMinutes.value;
         }
         await drawRouteMap();
-        message.value = `${travelMode.value === 'car' ? '자동차' : '도보'} 경로 ${road.legs.length}개 구간 완료${
+        // 구간(연결선) 수는 물건 수보다 늘 하나 많다 — 물건 수로 알려야 목록·통계와 숫자가 맞는다
+        message.value = `${travelMode.value === 'car' ? '자동차' : '도보'} 경로 완료 · 물건 ${orderedStops.value.length}곳${
           road.failedLegs.length > 0 ? ` · 실패 ${road.failedLegs.length}건` : ''
         }`;
       } catch (roadError) {
@@ -777,6 +1043,9 @@ const snapshotCurrentPlan = () => ({
   visitedStops: visitedStops.value,
   lastCalculatedAt: lastCalculatedAt.value,
   lastInputSignature: lastInputSignature.value,
+  lastSettingsSignature: lastSettingsSignature.value,
+  routeDirty: routeDirty.value,
+  manualOrder: manualOrder.value,
   savedAt: new Date().toISOString(),
 });
 const cacheCurrentPlanLocally = () => {
@@ -816,8 +1085,14 @@ const applyDraft = (data: Record<string, unknown> | null | undefined) => {
   if (Array.isArray(data.roadFailedLegs)) roadFailedLegs.value = data.roadFailedLegs as typeof roadFailedLegs.value;
   if (typeof data.lastCalculatedAt === 'string') lastCalculatedAt.value = data.lastCalculatedAt;
   if (typeof data.lastInputSignature === 'string') lastInputSignature.value = data.lastInputSignature;
+  if (typeof data.lastSettingsSignature === 'string') lastSettingsSignature.value = data.lastSettingsSignature;
+  if (typeof data.routeDirty === 'boolean') routeDirty.value = data.routeDirty;
+  if (typeof data.manualOrder === 'boolean') manualOrder.value = data.manualOrder;
   if (typeof data.savedAt === 'string') {
-    saveMessage.value = `저장된 경로를 불러왔습니다 (${new Date(data.savedAt).toLocaleString('ko-KR')}).`;
+    // 토스트가 한 줄에 담기도록 저장 시각을 'M/D HH:MM'으로 짧게 적는다
+    const at = new Date(data.savedAt);
+    const stamp = `${at.getMonth() + 1}/${at.getDate()} ${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
+    saveMessage.value = `저장된 경로를 불러왔습니다 (${stamp})`;
   }
 };
 
@@ -838,6 +1113,9 @@ const resetCurrentPlanState = () => {
   visitedStops.value = {};
   lastCalculatedAt.value = '';
   lastInputSignature.value = '';
+  lastSettingsSignature.value = '';
+  routeDirty.value = false;
+  manualOrder.value = false;
   saveMessage.value = '';
   favorites.value = [];
 };
@@ -852,6 +1130,8 @@ const restoreUserPlanFromCloud = async (uid: string) => {
   if (!prefs) return;
   if (prefs.fieldTripDraft) applyDraft(prefs.fieldTripDraft);
   if (Array.isArray(prefs.fieldTripFavorites)) favorites.value = prefs.fieldTripFavorites;
+  // 저장해 둔 경로가 그동안 바뀐 단계와 어긋날 수 있다 — 불러온 직후 한 번 맞춘다
+  syncRouteWithStages();
 };
 
 const authStore = useAuthStore();
@@ -1108,24 +1388,30 @@ const formatLastUpdate = computed(() => {
 });
 
 const removeStop = async (address: string) => {
+  if (loading.value) return;
   const target = address.trim();
+  // '탈락' 단계를 없앴으므로, 더 안 볼 물건은 휴지통으로 보낸다(복원 가능).
+  if (!window.confirm('목록에서 지우겠습니까?\n휴지통에서 복원할 수 있습니다. 단, 단계는 손품조사로 돌아갑니다.')) return;
+  const key = addrKey(target);
   const lines = rawAddresses.value.split('\n').filter((line) => {
     const normalized = parseAddressLines(line)[0] ?? '';
-    return normalized !== target;
+    return normalized.length === 0 || addrKey(normalized) !== key;
   });
   rawAddresses.value = lines.join('\n');
   lastAutoFilledInput.value = rawAddresses.value;
 
+  const beforeLen = fullPath.value.length;
   fullPath.value = fullPath.value.filter(
-    (p) => !(p.kind === 'stop' && p.address.trim() === target),
+    (p) => !(p.kind === 'stop' && addrKey(p.address) === key),
   );
-  orderedStops.value = orderedStops.value.filter((p) => p.address.trim() !== target);
+  if (fullPath.value.length !== beforeLen) routeDirty.value = true;
+  orderedStops.value = orderedStops.value.filter((p) => addrKey(p.address) !== key);
 
   autoSavePlan();
-  const matched = store.auctions.find((item) => item.address.trim() === target);
+  const matched = auctionByAddress(target);
   if (matched) {
-    await store.setStatus(matched.id, '보류');
-    showToast(`동선최적화를 다시 실행하세요.`, 'info');
+    await store.deleteAuction(matched.id);
+    showToast('휴지통으로 옮겼습니다.', 'success');
   } else {
     showToast('동선최적화를 다시 누르세요.', 'info');
   }
@@ -1168,33 +1454,13 @@ watch(() => authStore.uid, (newUid) => {
   <section class="ftp-shell">
     <div class="ftp-scroll" @scroll.passive="mapActive && lockMap()">
     <div class="ftp-fixed-top">
-    <div class="ftp-section-title">
+    <div class="ftp-section-title is-page">
       <span>임장경로</span>
-      <button type="button" class="ftp-collapse" :aria-expanded="!summaryCollapsed" @click="summaryCollapsed = !summaryCollapsed">
-        <img :src="chevronDownIcon" alt="" :class="['ftp-chev-img', { up: summaryCollapsed }]" />
-      </button>
-    </div>
-
-    <div v-if="!summaryCollapsed" class="ftp-stats-grid">
-      <article class="ftp-stat">
-        <small>물건방문</small>
-        <div class="ftp-stat-row">
-          <img :src="mapPinIcon" alt="" class="ftp-stat-icon" />
-          <strong>{{ stopCount || 0 }}<em>개</em></strong>
-        </div>
-      </article>
-      <article class="ftp-stat">
-        <small>방문예정 건수</small>
-        <div class="ftp-stat-row">
-          <img :src="mapPinPlusIcon" alt="" class="ftp-stat-icon" />
-          <strong>{{ pendingVisitCount }}<em>건</em></strong>
-        </div>
-      </article>
     </div>
 
     <div class="ftp-section-title">
       <span class="ftp-section-title-main">
-        경로설정
+        <svg class="ftp-sec-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>경로설정
       </span>
       <button type="button" class="ftp-collapse" :aria-expanded="!settingsCollapsed" @click="settingsCollapsed = !settingsCollapsed">
         <img :src="chevronDownIcon" alt="" :class="['ftp-chev-img', { up: settingsCollapsed }]" />
@@ -1304,40 +1570,93 @@ watch(() => authStore.uid, (newUid) => {
       </div>
 
       <div class="ftp-action-row">
-        <button type="button" class="ftp-action ftp-action-optimize" :disabled="loading" @click="optimizeRoute">
-          <img :src="infoIcon" alt="" class="ftp-action-icon-img" />{{ loading ? '계산중' : '동선최적화' }}
+        <button
+          type="button"
+          :class="['ftp-action', 'ftp-action-optimize', { needs: routeStale }]"
+          :disabled="loading"
+          :title="!routeStale ? '' : (manualOrder ? '목록이 바뀌었습니다 — 누르면 손으로 맞춘 순서가 사라집니다' : '목록이 바뀌었습니다 — 눌러서 다시 계산하세요')"
+          @click="optimizeRoute"
+        >
+          <img :src="infoIcon" alt="" class="ftp-action-icon-img" />동선최적화
         </button>
       </div>
+      <!-- 언제 계산한 경로인지 — 버튼 바로 아래 -->
+      <p class="ftp-update-under">UPDATE : {{ formatLastUpdate }}</p>
+      <p v-if="routeSkipNote" class="ftp-skip-note">{{ routeSkipNote }}</p>
 
     </div>
 
     <div class="ftp-update-bar">
-      <strong class="ftp-update-title">동선최적화</strong>
-      <span class="ftp-update-time">UPDATE : {{ formatLastUpdate }}</span>
+      <strong class="ftp-update-title">
+        <svg class="ftp-sec-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6" cy="19" r="3" /><circle cx="18" cy="5" r="3" />
+          <path d="M9 19h5a4 4 0 0 0 4-4V8M6 16V9a4 4 0 0 1 4-4h5" />
+        </svg>동선최적화
+      </strong>
       <button class="ftp-update-copy" type="button" aria-label="주소 일괄복사" @click="copyAddress(rawAddresses)">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="8" y="8" width="13" height="13" rx="2"/>
           <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>
         </svg>
       </button>
+      <button
+        type="button"
+        class="ftp-collapse"
+        :aria-expanded="!routeListCollapsed"
+        aria-label="동선최적화 목록 접기"
+        @click="routeListCollapsed = !routeListCollapsed"
+      >
+        <img :src="chevronDownIcon" alt="" :class="['ftp-chev-img', { up: routeListCollapsed }]" />
+      </button>
+      <span class="ftp-title-stats">
+        <img :src="mapPinIcon" alt="" />방문 <b>{{ stopCount || 0 }}</b>건
+        <img :src="mapPinPlusIcon" alt="" />완료 <b>{{ visitedCount }}</b>건
+      </span>
     </div>
 
     </div>
 
-      <div class="ftp-list">
+      <div v-if="!routeListCollapsed" class="ftp-list">
         <template v-if="fullPath.length > 0">
+          <template v-for="(stop, idx) in fullPath" :key="`${stop.kind ?? 'stop'}-${stop.address}`">
+          <!-- 경로추가로 올라온 줄 — 도착(E) 바로 앞에 세워 둔다 -->
+          <template v-if="idx === queuedInsertIdx">
+            <article v-for="row in queuedRows" :key="`q-${row.id}`" class="ftp-stop ftp-stop-queued">
+              <span class="ftp-stop-badge tone-queued"><svg
+                :class="['ftp-badge-plus', { spin: loading }]"
+                viewBox="0 0 24 24" width="11" height="11"
+                fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"
+              ><path d="M12 5v14M5 12h14" /></svg></span>
+              <span class="ftp-stop-addr" :title="row.address">{{ row.address }}</span>
+              <span v-if="loading" class="ftp-stage-tag tone-queued calc">계산중</span>
+              <span v-else-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못해 순번을 매기지 못했습니다">주소실패</span>
+              <span v-else class="ftp-stage-tag is-blank" aria-hidden="true" />
+              <span class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
+              <button
+                type="button"
+                class="ftp-stop-icon ftp-stop-delete"
+                :disabled="loading"
+                aria-label="휴지통으로"
+                title="휴지통으로 보내기"
+                @click="removeStop(row.address)"
+              >
+                <img :src="squareXIcon" alt="" class="ftp-stop-glyph-img" />
+              </button>
+            </article>
+          </template>
           <article
-            v-for="(stop, idx) in fullPath"
-            :key="`${stop.kind ?? 'stop'}-${stop.address}`"
             :data-idx="idx"
             :class="['ftp-stop', `kind-${stop.kind ?? 'stop'}`, {
-              visited: stop.kind === 'stop' && visitedStops[stop.address],
+              visited: stop.kind === 'stop' && isVisited(stop.address),
               dragging: dragFromIdx === idx,
             }]"
           >
             <span
-              :class="['ftp-stop-badge', `tone-${stop.kind ?? 'stop'}`, { drag: stop.kind === 'stop' }]"
-              :title="stop.kind === 'stop' ? '끌어서 순서 변경' : ''"
+              :class="['ftp-stop-badge', `tone-${stop.kind ?? 'stop'}`, {
+                drag: stop.kind === 'stop' && !isVisited(stop.address),
+                done: stop.kind === 'stop' && isVisited(stop.address),
+              }]"
+              :title="stop.kind === 'stop' && !isVisited(stop.address) ? '끌어서 순서 변경' : ''"
               @pointerdown="onStopDragStart(idx, $event)"
               @pointermove="onStopDragMove"
               @pointerup="onStopDragEnd"
@@ -1345,11 +1664,14 @@ watch(() => authStore.uid, (newUid) => {
             >
               <template v-if="stop.kind === 'start'">S</template>
               <template v-else-if="stop.kind === 'end'">E</template>
-              <template v-else>{{ stopOrdinal(idx) }}</template>
+              <template v-else>{{ stopOrdinal(idx) }}<i
+                v-if="isVisited(stop.address)"
+                class="ftp-badge-done"
+                aria-label="방문완료"
+              >✓</i></template>
             </span>
             <span
               class="ftp-stop-addr"
-              :title="stop.address"
               @click="toggleAddrBubble(idx)"
             >{{ stop.address }}</span>
             <div
@@ -1385,7 +1707,8 @@ watch(() => authStore.uid, (newUid) => {
               v-if="stop.kind === 'stop'"
               type="button"
               class="ftp-stop-icon"
-              :class="{ checked: visitedStops[stop.address] }"
+              :class="{ checked: isVisited(stop.address) }"
+              :disabled="loading"
               aria-label="방문완료"
               title="방문 토글"
               @click="toggleVisited(stop.address)"
@@ -1396,6 +1719,7 @@ watch(() => authStore.uid, (newUid) => {
               v-if="stop.kind === 'stop'"
               type="button"
               class="ftp-stop-icon ftp-stop-delete"
+              :disabled="loading"
               aria-label="삭제"
               title="목록에서 제거"
               @click="removeStop(stop.address)"
@@ -1405,28 +1729,118 @@ watch(() => authStore.uid, (newUid) => {
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
           </article>
+          </template>
+          <!-- 도착 지점이 없는 경로면 목록 끝에 붙인다 -->
+          <template v-if="queuedInsertIdx < 0">
+            <article v-for="row in queuedRows" :key="`q-${row.id}`" class="ftp-stop ftp-stop-queued">
+              <span class="ftp-stop-badge tone-queued"><svg
+                :class="['ftp-badge-plus', { spin: loading }]"
+                viewBox="0 0 24 24" width="11" height="11"
+                fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"
+              ><path d="M12 5v14M5 12h14" /></svg></span>
+              <span class="ftp-stop-addr" :title="row.address">{{ row.address }}</span>
+              <span v-if="loading" class="ftp-stage-tag tone-queued calc">계산중</span>
+              <span v-else-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못해 순번을 매기지 못했습니다">주소실패</span>
+              <span v-else class="ftp-stage-tag is-blank" aria-hidden="true" />
+              <span class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
+              <button
+                type="button"
+                class="ftp-stop-icon ftp-stop-delete"
+                :disabled="loading"
+                aria-label="휴지통으로"
+                title="휴지통으로 보내기"
+                @click="removeStop(row.address)"
+              >
+                <img :src="squareXIcon" alt="" class="ftp-stop-glyph-img" />
+              </button>
+            </article>
+          </template>
+
         </template>
-        <p v-else class="ftp-empty">관심리스트의 임장예정 주소를 자동으로 불러옵니다. 동선최적화를 누르세요.</p>
+        <template v-else-if="queuedRows.length > 0">
+            <article v-for="row in queuedRows" :key="`q-${row.id}`" class="ftp-stop ftp-stop-queued">
+              <span class="ftp-stop-badge tone-queued"><svg
+                :class="['ftp-badge-plus', { spin: loading }]"
+                viewBox="0 0 24 24" width="11" height="11"
+                fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"
+              ><path d="M12 5v14M5 12h14" /></svg></span>
+              <span class="ftp-stop-addr" :title="row.address">{{ row.address }}</span>
+              <span v-if="loading" class="ftp-stage-tag tone-queued calc">계산중</span>
+              <span v-else-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못해 순번을 매기지 못했습니다">주소실패</span>
+              <span v-else class="ftp-stage-tag is-blank" aria-hidden="true" />
+              <span class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
+              <button
+                type="button"
+                class="ftp-stop-icon ftp-stop-delete"
+                :disabled="loading"
+                aria-label="휴지통으로"
+                title="휴지통으로 보내기"
+                @click="removeStop(row.address)"
+              >
+                <img :src="squareXIcon" alt="" class="ftp-stop-glyph-img" />
+              </button>
+            </article>
+        </template>
+        <p v-else-if="missingRows.length === 0" class="ftp-empty guide">선정물건에서 임장예정으로 옮기면 여기에 담깁니다.</p>
+
+        <!-- 경로제외물건 — 선정물건의 모든 단계가 여기로 내려온다.
+             번호 줄 + 이 줄 = 선정물건 전체 건수(1:1). 한 물건이 두 군데 나오지 않는다. -->
+        <template v-if="missingRows.length > 0">
+          <div class="ftp-pending-head">
+            <strong class="ftp-pending-title">
+              <svg class="ftp-sec-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5.5 5.5A7 7 0 0 0 5 8c0 5 7 13 7 13s1.6-1.8 3.2-4.3" />
+                <path d="M9.9 4.2A7 7 0 0 1 19 8c0 1-.3 2.1-.8 3.2" />
+                <circle cx="12" cy="8" r="2.4" />
+                <line x1="3" y1="3" x2="21" y2="21" />
+              </svg>경로제외물건 <em>{{ missingRows.length }}건</em>
+            </strong>
+          </div>
+          <p class="ftp-pending-guide">선정물건에서 임장예정으로 바꾸면 경로에 올라갑니다</p>
+          <!-- 표 머리 — 어느 칸이 무슨 뜻인지 한 번 적어 둔다 -->
+          <div class="ftp-stop ftp-col-head" aria-hidden="true">
+            <span class="ftp-stop-badge is-head" />
+            <span class="ftp-stop-addr">주소</span>
+            <span class="ftp-col-state">상태</span>
+            <span class="ftp-stop-icon ftp-stop-spacer" />
+            <span class="ftp-stop-icon ftp-stop-spacer" />
+          </div>
+          <article
+            v-for="row in missingRows"
+            :key="`p-${row.id}`"
+            :class="['ftp-stop', 'ftp-stop-pending', `stage-${row.tone}`]"
+          >
+            <span class="ftp-stop-badge tone-pending">·</span>
+            <span class="ftp-stop-addr" :title="row.address">{{ row.address }}</span>
+            <span v-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못했습니다">주소실패</span>
+            <span v-else :class="['ftp-stage-tag', `tone-${row.tone}`]">{{ row.label }}</span>
+            <button
+              v-if="row.tone === 'visited'"
+              type="button"
+              class="ftp-stop-icon"
+              :disabled="loading"
+              aria-label="임장예정으로 되돌리기"
+              title="임장예정으로 되돌리기"
+              @click="undoVisited(row.id)"
+            >
+              <img :src="squareCheckIcon" alt="" class="ftp-stop-glyph-img" />
+            </button>
+            <span v-else class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
+            <span class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
+          </article>
+        </template>
       </div>
 
-      <div :class="['ftp-map-wrap', { big: mapBig }]">
+      <div class="ftp-map-wrap">
         <div id="trip-map" class="ftp-map" />
         <!-- 확대는 처음부터 되고, 한 손가락 이동만 눌러서 켠다 -->
         <span v-if="!mapActive" class="ftp-map-hint">두 손가락으로 확대 · 한 번 눌러 지도 이동</span>
-        <button type="button" class="ftp-map-top" :title="mapBig ? '지도 작게' : '지도 크게'" @click="toggleMapSize">
-          {{ mapBig ? '지도 작게' : '지도 크게' }}
-        </button>
       </div>
     </div>
 
     <AppMobileBottomNav active="field-trip" />
 
-    <transition name="ftp-toast-anim">
-      <div v-if="toastVisible" :class="['ftp-toast', `ftp-toast-${toastTone}`]" role="status">
-        <span class="ftp-toast-dot" />
-        <span class="ftp-toast-text">{{ toastText }}</span>
-      </div>
-    </transition>
+    <AppToast :visible="toastVisible" :text="toastText" :tone="toastTone" />
 
     <div v-if="showFavModal" class="ftp-fav-modal" @click.self="showFavModal = false">
       <div class="ftp-fav-modal-card">
@@ -1540,10 +1954,18 @@ watch(() => authStore.uid, (newUid) => {
 
 .ftp-section-title {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px 4px;
-  font-size: 14px; font-weight: 800; color: #111827;
+  padding: 6px 14px 3px;
+  font-size: 15.3px; font-weight: 800; color: #111827;
   background: #fff;
 }
+/* 화면 제목 — 물건상세·자금관리와 같은 크기 */
+.ftp-section-title.is-page {
+  font-size: 20px; padding-top: 9px; padding-bottom: 7px;
+  /* 제목줄 아래 구분선 — 물건상세와 같게 */
+  border-bottom: 1px solid #e5e7eb;
+}
+.ftp-section-title-main { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.ftp-sec-ico { flex: 0 0 auto; color: #2a5fbf; }
 .ftp-help {
   border: 1.5px solid #cbd5e1; background: #fff;
   width: 16px; height: 16px; border-radius: 50%;
@@ -1564,19 +1986,11 @@ watch(() => authStore.uid, (newUid) => {
 }
 .ftp-chev-img.up { transform: rotate(180deg); }
 
-.ftp-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  padding: 4px 10px 10px;
-  background: #fff;
-  border-bottom: 1px solid #eef0f5;
-}
 .ftp-stat {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: #fdeeee;
+  border: 1px solid #f3cfcf;
   border-radius: 10px;
-  padding: 8px 6px;
+  padding: 5px 6px;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   min-width: 0;
 }
@@ -1593,19 +2007,19 @@ watch(() => authStore.uid, (newUid) => {
 
 .ftp-settings {
   background: #fff;
-  padding: 8px 12px 12px;
+  padding: 5px 12px 8px;
   border-bottom: 1px solid #eef0f5;
 }
 .ftp-nav-launch-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .ftp-nav-launch-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   border: 1.5px solid #cbd5e1; background: #fff; color: #1f2937;
-  border-radius: 10px; padding: 8px 6px; font-size: 12px; font-weight: 700;
+  border-radius: 10px; padding: 5px 6px; font-size: 12px; font-weight: 700;
   cursor: pointer; white-space: nowrap; min-width: 0;
 }
 .ftp-nav-launch-btn:hover:not(:disabled) { background: #f3f6fc; border-color: #9ca3af; }
@@ -1627,7 +2041,7 @@ watch(() => authStore.uid, (newUid) => {
 }
 
 .ftp-od-row {
-  display: flex; gap: 6px; margin-bottom: 8px;
+  display: flex; gap: 6px; margin-bottom: 6px;
 }
 .ftp-od-fields {
   flex: 1 1 auto; min-width: 0; position: relative;
@@ -1739,29 +2153,154 @@ watch(() => authStore.uid, (newUid) => {
 .ftp-fav-icon-img { width: 20px; height: 20px; object-fit: contain; }
 .ftp-fav-text { font-size: 11px; font-weight: 700; }
 
-.ftp-action-row {
-  display: flex; align-items: center; justify-content: center;
+/* 아직 경로에 넣지 않은 물건 — 계산된 줄과 확실히 구분되게 회색으로 */
+.ftp-pending-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 10px 2px 5px; padding-top: 7px; border-top: 1px dashed #d5dbe6;
 }
+/* 동선최적화 제목과 같은 레벨로 읽히게 치수를 맞춘다 */
+.ftp-pending-title {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 15.3px; font-weight: 800; color: #111827;
+}
+.ftp-pending-title em { font-style: normal; font-weight: 800; color: #2b6df3; margin-left: 3px; }
+.ftp-pending-head button {
+  flex: 0 0 auto; border: 1px solid #c7d7f7; border-radius: 7px; background: #fff;
+  padding: 3px 9px; font-size: 11px; font-weight: 700; color: #2b6df3; cursor: pointer;
+}
+.ftp-pending-head button.is-run {
+  border-color: #2b6df3; background: #2b6df3; color: #fff;
+}
+.ftp-pending-head button:disabled { opacity: 0.6; }
+/* 위 제목은 규칙을, 여기는 할 일을 말한다 */
+.ftp-pending-guide {
+  margin: 0 2px 4px; font-size: 10px; font-weight: 400; color: #6b7280;
+}
+/* 표 머리 — 아래 줄들과 같은 칸 폭을 쓴다 */
+.ftp-stop.ftp-col-head {
+  background: #e8edf5; padding-top: 2px; padding-bottom: 2px;
+  margin-bottom: 3px; cursor: default;
+}
+.ftp-col-head .ftp-stop-addr { font-size: 10.5px; font-weight: 800; color: #6b7280; text-align: center; }
+.ftp-stop-badge.is-head { background: transparent; }
+.ftp-col-state {
+  flex: 0 0 auto; margin-left: auto;
+  box-sizing: border-box; min-width: 58px; text-align: center;
+  font-size: 10.5px; font-weight: 800; color: #6b7280;
+}
+.ftp-stop.ftp-stop-pending {
+  background: #f6f7f9;
+  padding-top: 4px; padding-bottom: 4px; margin-bottom: 4px;
+}
+.ftp-stop-pending .ftp-stop-addr { color: #6b7280; font-weight: 600; }
+.ftp-stop-badge.tone-pending { background: #d5dbe6; color: #fff; }
+/* 주소칸에는 들어갔고 계산만 남은 줄 — 곧 번호가 붙는다는 뜻으로 파란 기운을 준다 */
+.ftp-stop.ftp-stop-pending.queued { background: #eef3fd; }
+.ftp-stop-pending.queued .ftp-stop-badge.tone-pending { background: #9db9ef; }
+.ftp-stop-pending.queued .ftp-stop-addr { color: #41526b; }
+.ftp-stop.ftp-stop-pending.calc { animation: ftp-pending-pulse 1.1s ease-in-out infinite; }
+@keyframes ftp-pending-pulse {
+  0%, 100% { background: #eef3fd; }
+  50% { background: #dde8fb; }
+}
+/* 단계 태그 — 경로에 넣을 수 없는 단계는 지금 단계를 그대로 적어 준다 */
+.ftp-stage-tag {
+  flex: 0 0 auto; margin-left: auto;
+  box-sizing: border-box; min-width: 58px; text-align: center;
+  border: 1px solid #e5e7eb; border-radius: 5px; background: #fff;
+  padding: 2px 7px; font-size: 9.5px; font-weight: 700; color: #6b7280;
+  white-space: nowrap;
+}
+.ftp-stage-tag.tone-desk,
+.ftp-stage-tag.tone-visited,
+.ftp-stage-tag.tone-bid { border-color: #6b85f0; background: #dce5ff; color: #3850c2; }
+.ftp-stage-tag.tone-bidding { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; font-weight: 800; }
+.ftp-stage-tag.is-failed { border-color: #e5e7eb; background: #f9fafb; color: #9ca3af; }
+/* 경로추가로 올라와 계산만 기다리는 줄 — 번호 대신 '+' */
+.ftp-stage-tag.tone-queued { border-color: #c7d7f7; background: #eef3fd; color: #2b6df3; }
+/* 동선최적화가 도는 동안 — 멈춘 것처럼 보이지 않게 옅게 깜빡인다 */
+.ftp-stage-tag.tone-queued.calc { animation: ftp-tag-pulse 1.1s ease-in-out infinite; }
+@keyframes ftp-tag-pulse {
+  0%, 100% { background: #eef3fd; }
+  50% { background: #d9e6fd; }
+}
+.ftp-stop.ftp-stop-queued { background: #f7f9fe; }
+.ftp-stop-queued .ftp-stop-addr { color: #41526b; font-weight: 600; }
+/* 다녀온 곳 — 번호는 지키고 그 위에 작은 체크를 겹친다 */
+.ftp-stop-badge.done { background: #cbd5e1; color: #fff; cursor: default; position: relative; }
+.ftp-badge-done {
+  position: absolute; right: -3px; bottom: -3px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #2f7d4f; color: #fff; border: 1.5px solid #fff;
+  font-style: normal; font-size: 8px; font-weight: 800; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ftp-stop-badge.tone-queued {
+  background: #fff; color: #2b6df3; border: 1px dashed #9db9ef; font-weight: 800;
+}
+/* 계산하는 동안 '+'만 시계 방향으로 돈다 — 원(점선 테두리)은 그대로 둔다 */
+.ftp-badge-plus { display: block; transform-origin: 50% 50%; }
+.ftp-badge-plus.spin { animation: ftp-badge-spin 1.1s linear infinite; }
+@keyframes ftp-badge-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* 관심 건수와 경로 건수가 왜 다른지 한 줄로 알려 준다 */
+.ftp-skip-note {
+  margin: 6px 0 0; text-align: center;
+  font-size: 11px; font-weight: 600; color: #b45309;
+}
+/* 방문물건 · 방문예정 건수 · 동선최적화를 한 줄에 균등 배치 */
+.ftp-action-row { display: block; }
 .ftp-action {
-  border: none; border-radius: 12px;
-  padding: 14px 40px; font-size: 16px; font-weight: 800; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  border: none; border-radius: 10px;
+  padding: 12px 6px; font-size: 16px; font-weight: 800; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
   color: #fff;
   white-space: nowrap;
-  min-width: 220px;
+  min-width: 0;
 }
 .ftp-action:disabled { opacity: 0.55; cursor: not-allowed; }
 .ftp-action-optimize { background: #ef6b6b; }
+/* 동선최적화 버튼 바로 아래 — 언제 계산한 경로인지 */
+.ftp-update-under {
+  margin: 4px 0 0; text-align: right;
+  font-size: 10px; font-weight: 400; color: #2b6df3;
+}
+/* 아직 순번을 못 받은 물건이 있을 때 — 눌러야 한다는 신호 */
+.ftp-action-optimize.needs {
+  background: #ffdede; color: #c22e2e; border: 1.5px solid #ef6b6b;
+  animation: ftp-needs-pulse 1.5s ease-in-out infinite;
+}
+.ftp-action-optimize.needs .ftp-action-icon-img { filter: none; }
+@keyframes ftp-needs-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 107, 107, 0.45); }
+  70% { box-shadow: 0 0 0 7px rgba(239, 107, 107, 0); }
+}
+/* 태그 자리를 비워 둬도 폭은 지켜야 줄 시작점이 맞는다 */
+.ftp-stage-tag.is-blank { border-color: transparent; background: transparent; }
 .ftp-action-icon { font-size: 13px; }
-.ftp-action-icon-img { width: 20px; height: 20px; object-fit: contain; filter: brightness(0) invert(1); }
+.ftp-action-icon-img { width: 19px; height: 19px; object-fit: contain; filter: brightness(0) invert(1); }
+.ftp-action-optimize.needs .ftp-action-icon-img { filter: none; }
 
 .ftp-update-bar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 14px 6px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 6px 14px 4px;
   background: #f4f6fb;
 }
-.ftp-update-title { font-size: 13px; font-weight: 800; color: #111827; }
-.ftp-update-time { font-size: 11px; color: #6b7280; }
+/* 제목 아래 숫자 — '경로제외물건 8건'과 같은 치수 */
+.ftp-title-stats {
+  flex: 1 0 100%; margin-top: -1px;
+  display: inline-flex; align-items: center; gap: 4px;
+  min-width: 0; overflow: hidden; white-space: nowrap;
+  font-size: 15.3px; font-weight: 800; color: #111827;
+}
+.ftp-title-stats img { width: 15px; height: 15px; object-fit: contain; flex: 0 0 auto; }
+.ftp-title-stats img + img { margin-left: 10px; }
+.ftp-title-stats b { font-weight: 800; color: #2b6df3; margin-left: 2px; }
+.ftp-update-title { display: inline-flex; align-items: center; gap: 5px; font-size: 15.3px; font-weight: 800; color: #111827; flex: 0 0 auto; }
+
 .ftp-update-copy {
   margin-left: auto; border: none; background: transparent; cursor: pointer; color: #4b5563;
   padding: 6px;
@@ -1892,16 +2431,17 @@ watch(() => authStore.uid, (newUid) => {
   position: fixed; left: 50%; top: 50%;
   transform: translate(-50%, -50%);
   background: rgba(17, 24, 39, 0.92); color: #fff;
-  padding: 12px 18px; border-radius: 14px;
-  display: inline-flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: 14px;
+  display: inline-flex; align-items: center; gap: 8px;
   font-size: 13px; font-weight: 700;
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.35);
-  z-index: 9999; max-width: 84vw; min-width: 200px;
+  /* 되도록 한 줄에 담기도록 폭을 넓게 쓴다 */
+  z-index: 9999; max-width: 94vw; min-width: 200px;
   justify-content: center; text-align: center;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
-.ftp-toast-text { white-space: pre-wrap; }
+.ftp-toast-text { white-space: pre-wrap; word-break: keep-all; }
 .ftp-toast-dot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
   background: #60a5fa;
@@ -1919,12 +2459,27 @@ watch(() => authStore.uid, (newUid) => {
 }
 
 .ftp-list {
-  padding: 0 10px 10px;
+  padding: 0 12px 10px;
 }
 .ftp-empty {
   text-align: center; color: #9ca3af; font-size: 12px; padding: 20px 12px;
 }
+/* 안내 문구 — 눈에 잘 들어오게 파랗게 */
+.ftp-empty.guide { color: #2b6df3; font-size: 12.5px; font-weight: 700; }
+.ftp-empty.working { color: #2b6df3; font-size: 12.5px; font-weight: 700; }
+.ftp-empty.working strong { font-weight: 800; }
+/* 계산이 끝나 ⊕ 줄이 번호 줄로 바뀔 때 — 새 줄만 살짝 떠오르며 들어온다.
+   (자리가 그대로인 줄은 요소를 다시 만들지 않으므로 움직이지 않는다) */
+@keyframes ftp-row-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ftp-badge-in {
+  from { transform: scale(0.55); opacity: 0.2; }
+  to { transform: scale(1); opacity: 1; }
+}
 .ftp-stop {
+  animation: ftp-row-in 0.24s ease both;
   position: relative;
   display: flex; align-items: center; gap: 8px;
   background: #f1f5fb; border-radius: 10px;
@@ -1952,14 +2507,17 @@ watch(() => authStore.uid, (newUid) => {
   border-bottom: 5px solid #111827;
 }
 .ftp-addr-bubble.open { display: block; }
-/* 마우스가 있는 환경에서만 hover로 연다 — 터치에서는 탭으로 연다 */
+/* 마우스가 있는 환경에서만 hover로 연다 — 터치에서는 탭으로 연다.
+   행 전체가 아니라 '주소 글자' 위에서만 뜬다 — 오른쪽 아이콘(물건상세 ~ 목록에서 제거)
+   위를 지날 때 말풍선이 떠서 아랫줄 아이콘을 덮어 버리는 것을 막는다. */
 @media (hover: hover) {
-  .ftp-stop:hover .ftp-addr-bubble { display: block; }
+  .ftp-stop-addr:hover + .ftp-addr-bubble { display: block; pointer-events: none; }
 }
 .ftp-stop.kind-start { background: #e6f8ee; }
 .ftp-stop.kind-end { background: #fff3e0; }
 .ftp-stop.visited .ftp-stop-addr { text-decoration: line-through; color: #9ca3af; }
 .ftp-stop-badge {
+  animation: ftp-badge-in 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   flex-shrink: 0;
   width: 22px; height: 22px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
@@ -1970,6 +2528,8 @@ watch(() => authStore.uid, (newUid) => {
 .ftp-stop-badge.drag { cursor: grab; touch-action: none; user-select: none; }
 .ftp-stop-badge.drag:active { cursor: grabbing; }
 .ftp-stop.dragging { border-color: #2b6df3; background: #e8f0ff; }
+/* 끌고 있는 동안에는 번호를 빨갛게 — 어느 줄을 옮기는 중인지 바로 구분된다 */
+.ftp-stop.dragging .ftp-stop-badge { background: #dc2626; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18); }
 .ftp-stop-badge.tone-start { background: #16a085; }
 .ftp-stop-badge.tone-end { background: #f59e0b; }
 .ftp-stop-addr {
@@ -2003,10 +2563,10 @@ watch(() => authStore.uid, (newUid) => {
 
 .ftp-map-wrap {
   position: relative; flex: 0 0 auto;
-  height: 300px; margin: 0 10px 14px;
+  height: 900px; max-height: calc(100vh - 160px);
+  margin: 0 12px 14px;
   transition: height 0.18s ease;
 }
-.ftp-map-wrap.big { height: 70vh; }
 /* 잠김 안내 — 손가락을 가로채지 않게 표시만 한다 */
 .ftp-map-hint {
   position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%);
@@ -2021,15 +2581,6 @@ watch(() => authStore.uid, (newUid) => {
   border: 1px solid #e5e7eb;
   overflow: hidden;
 }
-/* 지도 크기 토글 — 지도 위에 항상 떠 있다 */
-.ftp-map-top {
-  position: absolute; top: 10px; right: 10px; z-index: 600;
-  border: 1px solid #d5dbe6; border-radius: 999px;
-  background: rgba(255, 255, 255, 0.95); color: #2b6df3;
-  padding: 5px 11px; font-size: 11.5px; font-weight: 800; cursor: pointer;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
-}
-.ftp-map-top:active { background: #eaf1ff; }
 
 .ftp-bottom-nav {
   position: fixed;
