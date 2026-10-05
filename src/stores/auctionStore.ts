@@ -685,7 +685,7 @@ const cloneAuction = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 /** 목록 필터용 물건종류 묶음 */
 export const PROPERTY_TYPE_GROUPS: Record<string, RegExp> = {
   아파트: /아파트/,
-  '다세대·연립·도생': /다세대|연립|도시형|빌라/,
+  '다세대·연립': /다세대|연립|도시형|빌라/,   // 도시형생활주택·빌라도 여기에 걸린다
   다가구: /다가구/,
   상가: /상가|근린|점포|오피스|사무/,
 };

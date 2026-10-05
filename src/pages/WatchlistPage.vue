@@ -5,10 +5,12 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { loadUserPrefs } from '../services/userPrefsRepository';
 import type { AuctionDetail, AuctionStatus } from '../types/auction';
+import { AUCTION_STATUS_LABELS } from '../types/auction';
 import AppMobileHeader from '../components/AppMobileHeader.vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
-import starIcon from '../assets/icones/memu/star_Main.png';
+import AppConfirm from '../components/AppConfirm.vue';
+import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import searchIcon from '../assets/icones/searchs (1).png';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import filesIcon from '../assets/icones/files (1).png';
@@ -61,7 +63,7 @@ const formatWon = (value: number) => {
   return Math.round(value).toLocaleString('ko-KR');
 };
 
-// 정렬 — 입찰일정순(기본, 빠른 날짜부터) / 임장경로순(임장경로에서 계산한 동선 순서)
+// 정렬 — 날짜순(기본, 입찰일이 빠른 것부터) / 임장순(임장경로에서 계산한 동선 순서)
 const SORT_MODE_KEY = 'wlp.sortMode';
 const readSortMode = (): 'reg' | 'route' => {
   try {
@@ -144,10 +146,23 @@ const goDetail = (id: string) => {
   router.push(`/auctions/${id}`);
 };
 
-const removeItem = async (id: string, evt: MouseEvent) => {
+// 확인창은 한 벌로 쓴다 — 브라우저 기본 confirm 에는 체크상자를 넣을 수 없어 직접 만들었다.
+// '오늘 하루 보지 않기'는 종류마다 따로 기억한다(하나를 꺼도 다른 것은 그대로 뜬다).
+const confirmBox = ref<ConfirmBox | null>(null);
+const askConfirm = (box: ConfirmBox) => {
+  if (skipsToday(box.skipKey)) { void box.run(); return; }
+  confirmBox.value = box;
+};
+
+const removeItem = (id: string, evt: MouseEvent) => {
   evt.stopPropagation();
-  if (!confirm('목록에서 지우겠습니까?\n휴지통에서 복원할 수 있습니다. 단, 단계는 손품조사로 돌아갑니다.')) return;
-  await store.deleteAuction(id);
+  askConfirm({
+    title: '목록에서 지우겠습니까?',
+    desc: '보관함에서 복원할 수 있습니다. 단, 단계는 손품조사로 돌아갑니다.',
+    okLabel: '삭제',
+    skipKey: 'wlp.skip.removeOne',
+    run: () => store.deleteAuction(id),
+  });
 };
 
 // 화면에서만 감춘다 — Firestore 문서는 지우지 않는다
@@ -155,32 +170,20 @@ const removeAll = async () => {
   const targets = displayedAuctions.value;
   if (targets.length === 0) return;
   const scope = searchQuery.value.trim() ? '검색된 물건' : '선정물건';
-  if (!confirm(`${scope} ${targets.length}건을 목록에서 모두 숨기시겠습니까?\n휴지통에서 복원할 수 있지만, 모든 물건의 단계가 손품조사로 돌아갑니다.`)) return;
-  await store.hideAuctions(targets.map((item) => item.id));
+  askConfirm({
+    title: `${scope} ${targets.length}건을 모두 지우겠습니까?`,
+    desc: '보관함에서 복원할 수 있지만, 모든 물건의 단계가 손품조사로 돌아갑니다.',
+    okLabel: '전체삭제',
+    skipKey: 'wlp.skip.removeAll',
+    run: () => store.hideAuctions(targets.map((item) => item.id)),
+  });
 };
 
 // 숨긴 물건 — 목록을 펼쳐 고른 것만 되살린다
 const hiddenOpen = ref(false);
 const hiddenPicked = ref<Record<string, boolean>>({});
-// 말풍선은 드롭다운 안에 두면 잘려서, 화면 좌표(fixed)로 띄운다
-const hiddenBubble = ref<{ id: string; text: string; top: number; left: number } | null>(null);
-const openHiddenBubble = (item: AuctionDetail, evt: MouseEvent) => {
-  const row = (evt.currentTarget as HTMLElement).closest('.wlp-hidden-item') as HTMLElement | null;
-  if (!row) return;
-  const r = row.getBoundingClientRect();
-  hiddenBubble.value = { id: item.id, text: item.address, top: r.bottom - 3, left: Math.max(8, r.left + 18) };
-};
-// 마우스가 없는 환경에서는 탭으로 열고 닫는다
-const toggleHiddenBubble = (item: AuctionDetail, evt: MouseEvent) => {
-  if (hiddenBubble.value?.id === item.id) {
-    hiddenBubble.value = null;
-    return;
-  }
-  openHiddenBubble(item, evt);
-};
 const toggleHiddenMenu = () => {
   hiddenOpen.value = !hiddenOpen.value;
-  hiddenBubble.value = null;
   if (hiddenOpen.value) hiddenPicked.value = {};
 };
 const toggleHiddenPick = (id: string) => {
@@ -203,11 +206,17 @@ const toggleAllHidden = () => {
 const purgePicked = async () => {
   const ids = pickedHiddenIds.value;
   if (ids.length === 0) return;
-  if (!confirm(`${ids.length}건을 완전히 삭제할까요?\n삭제하면 되살릴 수 없습니다.`)) return;
-  await store.purgeAuctions(ids);
-  hiddenPicked.value = {};
-  hiddenBubble.value = null;
-  if (store.hiddenAuctions.length === 0) hiddenOpen.value = false;
+  askConfirm({
+    title: `${ids.length}건을 완전히 삭제할까요?`,
+    desc: '삭제하면 되살릴 수 없습니다. 이 확인은 건너뛸 수 없습니다.',
+    okLabel: '완전삭제',
+    skipKey: '',
+    run: async () => {
+      await store.purgeAuctions(ids);
+      hiddenPicked.value = {};
+      if (store.hiddenAuctions.length === 0) hiddenOpen.value = false;
+    },
+  });
 };
 
 const restorePicked = async () => {
@@ -215,12 +224,13 @@ const restorePicked = async () => {
   if (ids.length === 0) return;
   await store.restoreHiddenAuctions(ids);
   hiddenPicked.value = {};
-  hiddenBubble.value = null;
   hiddenOpen.value = false;
 };
 
 // 복사 알림 — 앱 공통 토스트(AppToast)로 띄운다
 // 쓰레기통 아이콘 — 번들 PNG가 흰색 단색이라 보이지 않아 데이터 URI SVG를 직접 쓴다
+// 숨긴 물건 보관함 — 담긴 '곳'이라 상자, 버리는 '동작'인 휴지통과 구분한다
+const BOX_ICON = 'data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%236b7280%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Crect%20x%3D%272.5%27%20y%3D%274%27%20width%3D%2719%27%20height%3D%275%27%20rx%3D%271%27%2F%3E%3Cpath%20d%3D%27M4.5%209v9.5a1.5%201.5%200%200%200%201.5%201.5h12a1.5%201.5%200%200%200%201.5-1.5V9%27%2F%3E%3Cpath%20d%3D%27M10%2013h4%27%2F%3E%3C%2Fsvg%3E';
 const TRASH_ICON = 'data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%236b7280%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%206h18%27%2F%3E%3Cpath%20d%3D%27M8%206V4a1%201%200%200%201%201-1h6a1%201%200%200%201%201%201v2%27%2F%3E%3Cpath%20d%3D%27M19%206v14a2%202%200%200%201-2%202H7a2%202%200%200%201-2-2V6%27%2F%3E%3Cpath%20d%3D%27M10%2011v6%27%2F%3E%3Cpath%20d%3D%27M14%2011v6%27%2F%3E%3C%2Fsvg%3E';
 const toastText = ref('');
 const toastTone = ref<'info' | 'success' | 'error'>('success');
@@ -240,6 +250,16 @@ const copyItem = async (item: AuctionDetail, evt: MouseEvent) => {
 };
 
 type PhaseKey = 'desk' | 'plan' | 'visited' | 'bid';
+
+/** 보관함 목록의 단계 태그 — 더보기 > 보관함 화면과 같은 규칙을 쓴다 */
+const stageLabel = (item: AuctionDetail) => {
+  if (item.status === '입찰') {
+    return (item.bidStatus ?? '').replace(/^입찰/, '') === '진행' ? '입찰진행' : '입찰산정';
+  }
+  return AUCTION_STATUS_LABELS[item.status] ?? String(item.status);
+};
+const stageTone = (item: AuctionDetail) =>
+  (item.status === '입찰' && (item.bidStatus ?? '').replace(/^입찰/, '') === '진행' ? 'bidding' : 'normal');
 
 const PHASE_TO_STATUS: Record<PhaseKey, AuctionStatus> = {
   desk: '손품',
@@ -265,20 +285,23 @@ const showAllPhases = () => {
 };
 
 /* 하단 필터 — 기본 select는 화면 아래쪽에서 목록이 가려져, 위로 펼쳐지는 목록을 직접 만든다 */
-type FilterKey = '' | 'court' | 'region' | 'type';
+type FilterKey = '' | 'court' | 'type';
 const filterOpen = ref<FilterKey>('');
-const PROPERTY_TYPE_OPTIONS = ['아파트', '다세대·연립·도생', '다가구', '상가'];
+const PROPERTY_TYPE_OPTIONS = ['아파트', '다세대·연립', '다가구', '상가'];
+// 드롭다운 옵션 앞에 붙는 작은 그림 — 24x24 좌표의 path만 모아 둔다 ('' 는 '전체')
+const TYPE_ICON_PATHS: Record<string, string[]> = {
+  '': ['M4 4h7v7H4z', 'M13 4h7v7h-7z', 'M4 13h7v7H4z', 'M13 13h7v7h-7z'],
+  아파트: ['M4 21V4h11v17', 'M15 21V10h5v11', 'M3 21h18', 'M7 8h2', 'M11 8h1', 'M7 13h2', 'M11 13h1', 'M7 17h2', 'M11 17h1'],
+  '다세대·연립': ['M3 21V9l6-4 6 4v12', 'M15 21V12h5v9', 'M3 21h18', 'M6 12h2', 'M11 12h1', 'M6 16h2', 'M11 16h1'],
+  다가구: ['M3 10.5 12 4l9 6.5', 'M5 9.5V21h14V9.5', 'M9.5 21v-6h5v6'],
+  상가: ['M3 9h18l-2-5H5L3 9z', 'M5 9v12h14V9', 'M9 21v-6h6v6'],
+};
+const typeIcon = (opt: string) => TYPE_ICON_PATHS[opt] ?? [];
 const toggleFilter = (key: FilterKey) => {
   filterOpen.value = filterOpen.value === key ? '' : key;
 };
 const pickCourt = (v: string) => { store.setCourt(v); filterOpen.value = ''; };
-const pickRegion = (v: string) => { store.setRegion(v); filterOpen.value = ''; };
 const pickType = (v: string) => { store.setPropertyType(v); filterOpen.value = ''; };
-/* 날짜 칸은 어디를 눌러도 달력이 열리게 한다 */
-const openDatePicker = (evt: Event) => {
-  const el = evt.currentTarget as HTMLInputElement & { showPicker?: () => void };
-  el.showPicker?.();
-};
 
 const PHASE_LABELS: Array<{ key: PhaseKey; label: string; paths: string[] }> = [
   // 손품 — 집게손가락으로 짚어 보는 모양
@@ -360,21 +383,16 @@ const legacyFailed = computed(() =>
 const moveLegacyFailedToTrash = async () => {
   const targets = legacyFailed.value;
   if (targets.length === 0) return;
-  if (!confirm(`탈락 ${targets.length}건을 휴지통으로 옮기겠습니까?\n휴지통에서 복원할 수 있습니다. 단, 단계는 손품조사로 돌아갑니다.`)) return;
-  await store.hideAuctions(targets.map((item) => item.id));
-  flashToast(`${targets.length}건을 휴지통으로 옮겼습니다.`, 'success');
-};
-
-// 손품 물건을 한 번에 임장예정으로 — 스캔 직후 하나씩 누르는 번거로움을 없앤다
-const deskItems = computed(() =>
-  store.auctions.filter((item) => item.status === '손품' && !item.hidden),
-);
-const moveDeskToPlan = async () => {
-  const targets = deskItems.value;
-  if (targets.length === 0) return;
-  if (!confirm(`손품조사 ${targets.length}건을 모두 임장예정으로 옮기겠습니까?\n임장경로에 주소가 추가됩니다.`)) return;
-  for (const item of targets) await store.setStatus(item.id, '임장예정');
-  flashToast(`${targets.length}건을 임장예정으로 옮겼습니다.`, 'success');
+  askConfirm({
+    title: `탈락 ${targets.length}건을 보관함으로 옮기겠습니까?`,
+    desc: '보관함에서 복원할 수 있습니다. 단, 단계는 손품조사로 돌아갑니다.',
+    okLabel: '옮기기',
+    skipKey: 'wlp.skip.legacyFailed',
+    run: async () => {
+      await store.hideAuctions(targets.map((item) => item.id));
+      flashToast(`${targets.length}건을 보관함으로 옮겼습니다.`, 'success');
+    },
+  });
 };
 
 const setPhase = async (item: AuctionDetail, target: PhaseKey, evt: MouseEvent) => {
@@ -408,8 +426,8 @@ watch(
           v-model="searchQuery"
           type="search"
           class="wlp-search-input"
-          placeholder="사건명/주소검색"
-          aria-label="사건명/주소검색"
+          placeholder="선정물건리스트의 주소,사건명 검색..."
+          aria-label="선정물건리스트의 주소, 사건명 검색"
         />
         <button
           type="button"
@@ -422,53 +440,54 @@ watch(
         </button>
       </div>
 
-      <div v-if="!statsCollapsed" class="wlp-stats-grid">
-        <button
-          type="button"
-          :class="['wlp-stat', 'tone-all', { on: store.activeStatus === '전체' }]"
-          @click="showAllPhases"
-        >
-          <small class="wlp-stat-label">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
-              <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
-            </svg>전체
-          </small>
-          <strong class="wlp-stat-num">{{ totalPhaseCount }}<em>건</em></strong>
-        </button>
-        <button
-          v-for="p in PHASE_LABELS"
-          :key="p.key"
-          type="button"
-          :class="['wlp-stat', `tone-${p.key}`, { on: isPhaseFiltered(p.key) }]"
-          @click="filterByPhase(p.key)"
-        >
-          <small class="wlp-stat-label">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path v-for="(d, i) in p.paths" :key="i" :d="d" />
-            </svg>{{ p.label }}
-          </small>
-          <strong class="wlp-stat-num">{{ phaseCounts[p.key] }}<em>건</em></strong>
-        </button>
-        <button
-          type="button"
-          :class="['wlp-stat', 'tone-running', { on: bidRunningOnly }]"
-          @click="filterByBidRunning"
-        >
-          <small class="wlp-stat-label">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3v3M12 18v3M4.2 7.5l2.6 1.5M17.2 15l2.6 1.5M4.2 16.5l2.6-1.5M17.2 9l2.6-1.5" />
-              <circle cx="12" cy="12" r="3.4" />
-            </svg>입찰진행
-          </small>
-          <strong class="wlp-stat-num">{{ bidRunningCount }}<em>건</em></strong>
-        </button>
-      </div>
-
       <div v-if="!statsCollapsed" class="wlp-filter-bar">
         <div class="wlp-filter-cell">
-          <button type="button" class="wlp-filter-btn" @click="toggleFilter('court')">
-            {{ store.selectedCourt === '전체' ? '법원' : shortCourt(store.selectedCourt) }}
+          <button
+            type="button"
+            :class="['wlp-filter-btn', { on: !!store.selectedPropertyType }]"
+            @click="toggleFilter('type')"
+          >
+            <svg class="wlp-filter-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path v-for="(d, i) in typeIcon(store.selectedPropertyType)" :key="i" :d="d" />
+            </svg>
+            <span class="wlp-filter-txt">{{ store.selectedPropertyType || '전체' }}</span>
+          </button>
+          <template v-if="filterOpen === 'type'">
+            <div class="wlp-filter-backdrop" @click="filterOpen = ''" />
+            <ul class="wlp-filter-pop">
+              <li
+                :class="['wlp-filter-opt', { on: !store.selectedPropertyType }]"
+                @click="pickType('')"
+              >
+                <svg class="wlp-opt-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path v-for="(d, i) in typeIcon('')" :key="i" :d="d" />
+                </svg>
+                <span>전체</span>
+              </li>
+              <li
+                v-for="opt in PROPERTY_TYPE_OPTIONS"
+                :key="opt"
+                :class="['wlp-filter-opt', { on: store.selectedPropertyType === opt }]"
+                @click="pickType(opt)"
+              >
+                <svg class="wlp-opt-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path v-for="(d, i) in typeIcon(opt)" :key="i" :d="d" />
+                </svg>
+                <span>{{ opt }}</span>
+              </li>
+            </ul>
+          </template>
+        </div>
+        <div class="wlp-filter-cell">
+          <button
+            type="button"
+            :class="['wlp-filter-btn', { on: store.selectedCourt !== '전체' }]"
+            @click="toggleFilter('court')"
+          >
+            <svg class="wlp-filter-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 21h18M12 3 3 9h18L12 3ZM6 9v9M10 9v9M14 9v9M18 9v9" />
+            </svg>
+            <span class="wlp-filter-txt">{{ store.selectedCourt === '전체' ? '법원' : shortCourt(store.selectedCourt) }}</span>
           </button>
           <template v-if="filterOpen === 'court'">
             <div class="wlp-filter-backdrop" @click="filterOpen = ''" />
@@ -483,76 +502,39 @@ watch(
           </template>
         </div>
         <div class="wlp-filter-cell">
-          <button type="button" class="wlp-filter-btn" @click="toggleFilter('region')">
-            {{ store.selectedRegion === '전체' ? '지역' : store.selectedRegion }}
+          <button
+            type="button"
+            :class="['wlp-sort-btn', { on: sortMode === 'route' }]"
+            :title="sortMode === 'route' ? '임장순 (누르면 날짜순)' : '날짜순 (누르면 임장순)'"
+            :aria-label="sortMode === 'route' ? '정렬: 임장순. 누르면 날짜순으로 바뀝니다' : '정렬: 날짜순. 누르면 임장순으로 바뀝니다'"
+            @click="toggleSortMode"
+          >
+            <svg class="wlp-sort-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <!-- 임장순은 길 위의 핀, 날짜순은 큰 것부터 줄 세운 모양 -->
+              <template v-if="sortMode === 'route'">
+                <path d="M12 22s6.5-5.4 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 16.6 12 22 12 22Z" />
+                <circle cx="12" cy="11" r="2.3" />
+              </template>
+              <template v-else>
+                <path d="M4 6h11M4 12h7M4 18h4" />
+                <path d="M18.5 4v15M18.5 19l-2.5-2.6M18.5 19l2.5-2.6" />
+              </template>
+            </svg>
+            <span>{{ sortMode === 'route' ? '임장순' : '날짜순' }}</span>
           </button>
-          <template v-if="filterOpen === 'region'">
-            <div class="wlp-filter-backdrop" @click="filterOpen = ''" />
-            <ul class="wlp-filter-pop">
-              <li
-                v-for="opt in store.regionOptions"
-                :key="opt"
-                :class="['wlp-filter-opt', { on: store.selectedRegion === opt }]"
-                @click="pickRegion(opt)"
-              >{{ opt === '전체' ? '지역 전체' : opt }}</li>
-            </ul>
-          </template>
         </div>
-        <div class="wlp-filter-cell wlp-filter-date">
-          <input
-            :value="store.selectedBidDate"
-            :class="{ empty: !store.selectedBidDate }"
-            type="date"
-            aria-label="입찰일"
-            @click="openDatePicker"
-            @input="store.setBidDate(($event.target as HTMLInputElement).value)"
-          />
-          <span v-if="!store.selectedBidDate" class="wlp-filter-placeholder">날짜</span>
-        </div>
-        <div class="wlp-filter-cell">
-          <button type="button" class="wlp-filter-btn" @click="toggleFilter('type')">
-            {{ store.selectedPropertyType || '종류' }}
-          </button>
-          <template v-if="filterOpen === 'type'">
-            <div class="wlp-filter-backdrop" @click="filterOpen = ''" />
-            <ul class="wlp-filter-pop">
-              <li
-                :class="['wlp-filter-opt', { on: !store.selectedPropertyType }]"
-                @click="pickType('')"
-              >물건종류 전체</li>
-              <li
-                v-for="opt in PROPERTY_TYPE_OPTIONS"
-                :key="opt"
-                :class="['wlp-filter-opt', { on: store.selectedPropertyType === opt }]"
-                @click="pickType(opt)"
-              >{{ opt }}</li>
-            </ul>
-          </template>
-        </div>
-      </div>
-
-      <p v-if="store.activeStatus === '손품' && deskItems.length > 0" class="wlp-legacy-note plan">
-        손품조사 {{ deskItems.length }}건
-        <button type="button" @click="moveDeskToPlan">모두 임장예정으로</button>
-      </p>
-      <p v-if="legacyFailed.length > 0" class="wlp-legacy-note">
-        단계에서 <strong>탈락</strong>을 없앴습니다 — 남아 있는 {{ legacyFailed.length }}건
-        <button type="button" @click="moveLegacyFailedToTrash">휴지통으로 옮기기</button>
-      </p>
-      <div class="wlp-list-title">
-        <span class="wlp-list-title-left">
-          <strong class="wlp-list-title-text">
-            <span class="wlp-list-title-ico" :style="{ '--i': `url(${starIcon})` }" />선정물건리스트
-          </strong>
-        </span>
-        <span class="wlp-list-actions">
+        <div class="wlp-filter-cell fixed">
           <span class="wlp-hidden-note">
             <button type="button" class="wlp-restore-btn" :title="`숨긴 물건 ${store.hiddenCount}건`" @click.stop="toggleHiddenMenu">
-              <img :src="TRASH_ICON" alt="" class="wlp-restore-ico" /><em class="wlp-restore-x">×</em>{{ store.hiddenCount }}<span class="caret">▾</span>
+              <img :src="BOX_ICON" alt="" class="wlp-restore-ico" /><em class="wlp-restore-x">×</em>{{ store.hiddenCount }}
             </button>
             <template v-if="hiddenOpen">
               <div class="wlp-hidden-backdrop" @click="hiddenOpen = false" />
               <div class="wlp-hidden-panel" @click.stop>
+                <p class="wlp-hidden-title">
+                  보관함 <span class="x">×</span> {{ store.hiddenCount }}건
+                  <button type="button" class="close" aria-label="닫기" @click="hiddenOpen = false">×</button>
+                </p>
                 <p class="wlp-hidden-head">
                   <button type="button" @click="toggleAllHidden">{{ allHiddenPicked ? '전체해제' : '전체선택' }}</button>
                   <button
@@ -577,12 +559,13 @@ watch(
                     @click="toggleHiddenPick(item.id)"
                   >
                     <input type="checkbox" :checked="hiddenPicked[item.id] === true" @click.stop="toggleHiddenPick(item.id)" />
-                    <span
-                      class="addr"
-                      @click.stop="toggleHiddenBubble(item, $event)"
-                      @mouseenter="openHiddenBubble(item, $event)"
-                      @mouseleave="hiddenBubble = null"
-                    >{{ item.caseNumber }}</span>
+                    <span class="wlp-hidden-texts">
+                      <span class="case">
+                        {{ item.caseNumber }}
+                        <em :class="['wlp-hidden-tag', `tone-${stageTone(item)}`]">{{ stageLabel(item) }}</em>
+                      </span>
+                      <span class="addr">{{ item.address || '주소 없음' }}</span>
+                    </span>
                   </li>
                 </ul>
                 <button
@@ -593,22 +576,59 @@ watch(
               </div>
             </template>
           </span>
+        </div>
+        <div class="wlp-filter-cell fixed">
           <button
-            v-if="displayedAuctions.length > 0"
             type="button"
             class="wlp-clear-all"
+            :disabled="displayedAuctions.length === 0"
+            :title="displayedAuctions.length > 0 ? `전체삭제 (${displayedAuctions.length}건)` : '지울 물건이 없습니다'"
+            :aria-label="`보이는 물건 ${displayedAuctions.length}건 모두 삭제`"
             @click="removeAll"
-          >전체삭제</button>
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 6h18" />
+              <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+              <path d="M10 11v6" />
+              <path d="M14 11v6" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 단계 — 카드 대신 한 줄 글자 띠로. 흐름(▶)이 그대로 보인다 -->
+      <div v-if="!statsCollapsed" class="wlp-steps">
+        <button
+          type="button"
+          :class="['wlp-step', 'st-all', { on: store.activeStatus === '전체' }]"
+          @click="showAllPhases"
+        >전체 <em>({{ totalPhaseCount }})</em></button>
+        <template v-for="p in PHASE_LABELS" :key="p.key">
+          <span class="wlp-step-arrow">▶</span>
           <button
             type="button"
-            :class="['wlp-sort-btn', { on: sortMode === 'route' }]"
-            :title="sortMode === 'route' ? '임장경로 (누르면 입찰일순)' : '입찰일순 (누르면 임장경로)'"
-            @click="toggleSortMode"
-          >{{ sortMode === 'route' ? '임장경로' : '입찰일순' }}</button>
-          <button type="button" class="wlp-add-btn" @click="router.push('/auctions/import')">+ 물건등록</button>
-        </span>
+            :class="['wlp-step', `st-${p.key}`, { on: isPhaseFiltered(p.key) }]"
+            @click="filterByPhase(p.key)"
+          >{{ p.label }} <em>({{ phaseCounts[p.key] }})</em></button>
+        </template>
+        <span class="wlp-step-arrow">▶</span>
+        <button
+          type="button"
+          :class="['wlp-step', 'st-running', { on: bidRunningOnly }]"
+          @click="filterByBidRunning"
+        >입찰진행 <em>({{ bidRunningCount }})</em></button>
       </div>
+
+      <p v-if="legacyFailed.length > 0" class="wlp-legacy-note">
+        단계에서 <strong>탈락</strong>을 없앴습니다 — 남아 있는 {{ legacyFailed.length }}건
+        <button type="button" @click="moveLegacyFailedToTrash">휴지통으로 옮기기</button>
+      </p>
     </div>
+
+    <button type="button" class="wlp-fab" @click="router.push('/auctions/import')">
+      <span class="wlp-fab-plus">+</span> 선정물건등록
+    </button>
 
     <div class="wlp-list-scroll">
       <p v-if="store.storageWarning" class="wlp-warning">{{ store.storageWarning }}</p>
@@ -630,9 +650,9 @@ watch(
               {{ item.eventDate }}
             </span>
             <span class="wlp-meta-sep">·</span>
-            <span>{{ shortCourt(item.courtName) }}</span>
+            <span class="wlp-meta-court">{{ shortCourt(item.courtName) }}</span>
             <span class="wlp-meta-sep">·</span>
-            <span>{{ item.caseNumber }}</span>
+            <span class="wlp-meta-case">{{ item.caseNumber }}</span>
           </div>
           <div class="wlp-card-actions">
             <button
@@ -712,14 +732,7 @@ watch(
       </p>
     </div>
 
-    <Teleport to="body">
-      <div
-        v-if="hiddenBubble"
-        class="wlp-addr-bubble"
-        :style="{ top: `${hiddenBubble.top}px`, left: `${hiddenBubble.left}px` }"
-        @click="hiddenBubble = null"
-      >{{ hiddenBubble.text }}</div>
-    </Teleport>
+    <AppConfirm :box="confirmBox" @close="confirmBox = null" />
 
     <AppMobileBottomNav active="watchlist" />
     <AppToast :visible="!!toastText" :text="toastText" :tone="toastTone" />
@@ -732,14 +745,16 @@ watch(
   inset: 0;
   display: flex;
   flex-direction: column;
-  background: #e1e3e7;
+  /* 아래쪽(카드 목록) 바탕 — 물건정보 본문(.adp-shell)과 같은 값 */
+  background: #dcdee3;
   overflow: hidden;
   z-index: 100;
 }
 
 .wlp-fixed-top {
   flex: 0 0 auto;
-  background: #e1e3e7;
+  /* 위쪽 — 물건정보 고정 카드(.adp-prop-head)와 같은 값 */
+  background: #f1f3f7;
 }
 
 /* ===== Top header (blue) ===== */
@@ -805,11 +820,11 @@ watch(
 /* ===== Search row ===== */
 .wlp-search-row {
   background: #fff;
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   border: none;
   border-bottom: 1px solid #cbd5e1;
   border-radius: 0;
-  padding: 10px 14px;
+  padding: 8px 14px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -853,66 +868,43 @@ watch(
 
 /* ===== Stats grid (outline cards) ===== */
 /* 여섯 칸을 한 줄에 — 390px에서 칸당 약 59px이라 글자·아이콘을 그 폭에 맞춘다 */
-.wlp-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 3px;
-  padding: 4px 8px 8px;
-}
-.wlp-stat {
-  background: #fff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 4px 1px 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  cursor: pointer;
-  text-align: center;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-/* 이 상태로 걸러 보는 중 */
-/* 입찰진행 — 단계 알약과 같은 붉은 계열 */
-.wlp-stat.tone-running .wlp-stat-label { color: #c22e2e; }
-.wlp-stat.tone-running.on { border-color: #ef6b6b; background: #ffdede; }
-@media (max-width: 374px) {
-  .wlp-stats-grid { gap: 2px; padding-left: 6px; padding-right: 6px; }
-  .wlp-stat-label { font-size: 8.6px; letter-spacing: -0.6px; }
-  .wlp-stat-label svg { width: 9px; height: 9px; }
-  .wlp-stat-num { font-size: 13px; }
-}
-.wlp-stat.on {
-  border-color: #2a5fbf;
-  box-shadow: 0 0 0 1.5px rgba(42, 95, 191, 0.25);
-}
-.wlp-stat-label {
-  display: flex; align-items: center; justify-content: center; gap: 1px;
-  font-size: 9.2px;
-  letter-spacing: -0.4px;
-  color: #6b7280;
-  font-weight: 400;
-  white-space: nowrap;
-}
-.wlp-stat-label svg { width: 10px; height: 10px; flex-shrink: 0; }
-/* 아이콘은 글자와 같은 회색으로 — 색을 빼 담백하게 */
-.wlp-stat-label svg { flex-shrink: 0; }
-.wlp-stat-num {
-  text-align: center;
-  font-size: 14px;
-  font-weight: 800;
-  color: #111827;
-  white-space: nowrap;
+/* 단계 띠 — 한 줄에 쭉 늘어놓고 넘치면 가로로 민다 */
+.wlp-steps {
+  display: flex; align-items: center; justify-content: space-between; gap: 0;
+  padding: 2px 5px 9px;   /* 좌우 5px — 필터 줄·카드와 같은 선 */
   overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
 }
-.wlp-stat-num em {
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 800;
-  color: #111827;
-  margin-left: 1px;
+.wlp-steps::-webkit-scrollbar { display: none; }
+.wlp-step {
+  flex: 0 1 auto;
+  min-width: 0;
+  border: none; background: transparent; border-radius: 6px;
+  padding: 5px 5px;
+  font-family: inherit; font-size: 12px; font-weight: 400; line-height: 1.45;
+  letter-spacing: -0.5px; white-space: nowrap; cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.wlp-step em { font-style: normal; font-weight: 400; opacity: 0.95; }
+.wlp-step.on em { opacity: 0.85; }
+/* 고른 단계는 알약으로 채운다 — 글자색이 흰색으로 뒤집힌다.
+   흰색은 단계별 색 규칙과 자릿수가 같아 밀리므로 .st-*.on 쪽에 같이 적는다 */
+/* 단계가 이어진다는 표시 — 카드의 단계 화살표(▶ 10px)와 같은 모양에 절반 크기 */
+.wlp-step-arrow { flex: 0 0 auto; color: #9ca3af; font-size: 4px; margin: 0 -1px; }
+
+.wlp-step.st-all { color: #64748b; }
+.wlp-step.st-all.on { background: #64748b; color: #fff; }
+.wlp-step.st-desk { color: #2563eb; }
+.wlp-step.st-desk.on { background: #2563eb; color: #fff; }
+.wlp-step.st-plan { color: #16a34a; }
+.wlp-step.st-plan.on { background: #16a34a; color: #fff; }
+.wlp-step.st-visited { color: #15803d; }
+.wlp-step.st-visited.on { background: #15803d; color: #fff; }
+.wlp-step.st-bid { color: #dda40c; }
+.wlp-step.st-bid.on { background: #ca8a04; color: #fff; }
+.wlp-step.st-running { color: #dc2626; }
+.wlp-step.st-running.on { background: #dc2626; color: #fff; }
+@media (max-width: 374px) {
+  .wlp-step { font-size: 10.8px; padding: 5px 3px; letter-spacing: -0.7px; }
 }
 /* ===== List title ===== */
 /* '탈락' 단계를 없앤 뒤 남은 물건 안내 — 한 번 옮기면 사라진다 */
@@ -933,7 +925,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 12px 8px;
+  padding: 0 12px 4px;
   font-size: 14px;
   font-weight: 800;
   color: #111827;
@@ -962,33 +954,33 @@ watch(
 /* 제목 옆 남은 폭을 네 버튼이 균등 분할한다.
    폭이 모자라면 버튼이 아니라 제목이 먼저 줄어들어 카드 밖으로 밀려나지 않는다. */
 .wlp-list-actions {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  align-items: stretch;
-  gap: 6px;
-  flex: 1 1 auto;
-  min-width: 0;
-  margin-left: 8px;
-}
-.wlp-list-actions > * { min-width: 0; }
-.wlp-list-actions .wlp-restore-btn,
-.wlp-list-actions .wlp-sort-btn,
-.wlp-list-actions .wlp-clear-all,
-.wlp-list-actions .wlp-add-btn {
-  box-sizing: border-box;
-  width: 100%;
-  height: 29px;
-  padding: 0 2px;
-  font-size: 11.6px;
-  line-height: 1;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  gap: 6px;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
+.wlp-list-actions > * { min-width: 0; }
+/* 떠 있는 + 물건등록 — 최초판(a4e8b7b)의 왼쪽 아래 좌표 그대로 */
+.wlp-fab {
+  position: absolute;
+  left: 14px;
+  bottom: 116px;
+  background: #2b6df3;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 11px 18px;
+  font-size: 13px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(43, 109, 243, 0.35);
+  cursor: pointer;
+  z-index: 5;
+}
+.wlp-fab-plus { font-size: 16px; line-height: 1; font-weight: 900; }
 .wlp-restore-btn:disabled { opacity: 0.45; cursor: default; }
 /* 드롭다운은 사건번호만 보여 준다 — 자세한 카드는 휴지통 화면으로 */
 .wlp-hidden-more {
@@ -1000,8 +992,8 @@ watch(
 .wlp-hidden-more .arr { font-size: 13px; line-height: 1; }
 .wlp-hidden-more:active { background: #f6f8fc; }
 .wlp-hidden-empty { margin: 0; padding: 18px 8px; text-align: center; font-size: 11.5px; color: #9ca3af; }
-/* 정렬 전환 — 등록순 / 임장경로순 */
-/* 기본(입찰일정순)은 초록, 임장경로순으로 바꾸면 파랑 */
+/* 정렬 전환 — 날짜순 / 임장순 */
+/* 기본(날짜순)은 초록, 임장순으로 바꾸면 파랑 */
 .wlp-sort-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 3px;
   box-sizing: border-box; height: 26px;
@@ -1010,46 +1002,94 @@ watch(
   cursor: pointer; white-space: nowrap;
 }
 .wlp-sort-btn.on { border-color: #d2e2fb; background: #eaf1ff; color: #2b6df3; }
+/* 필터 줄에 놓인 정렬 버튼 — 옆 칸들과 높이·폭을 맞춘다 */
+.wlp-filter-cell .wlp-sort-btn { width: 100%; height: auto; padding: 5px 6px; gap: 2px; line-height: 1.35; }
+/* 그림은 글자와 같은 색을 따라간다 (날짜순 초록 → 임장순 파랑) */
+.wlp-sort-ico { flex: 0 0 auto; width: 13px; height: 13px; }
+/* 누르면 바뀌는 칸이라는 표시 — 오른쪽에 맞바꿈 화살표를 둔다.
+   옆 칸들이 펼침 화살표(▼)를 다는 자리와 같아서 '누를 수 있다'가 바로 읽힌다 */
+.wlp-filter-cell .wlp-sort-btn {
+  position: relative;
+  padding-right: 21px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='10' viewBox='0 0 12 10'%3E%3Cpath d='M1 3h9M7.6 0.6 10.4 3 7.6 5.4' fill='none' stroke='%2315803d' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M11 7H2M4.4 4.6 1.6 7 4.4 9.4' fill='none' stroke='%2315803d' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+}
+.wlp-filter-cell .wlp-sort-btn.on {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='10' viewBox='0 0 12 10'%3E%3Cpath d='M1 3h9M7.6 0.6 10.4 3 7.6 5.4' fill='none' stroke='%232b6df3' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M11 7H2M4.4 4.6 1.6 7 4.4 9.4' fill='none' stroke='%232b6df3' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+/* 전체삭제 — 글자도 상자도 떼고 빨간 휴지통만 (카드의 삭제와 같은 그림, 색으로 무게를 준다) */
 .wlp-clear-all {
   display: inline-flex; align-items: center; justify-content: center;
-  box-sizing: border-box; height: 26px;
+  box-sizing: border-box; height: 30px; width: 32px;
   border: 1px solid #f0d2d2; background: #fff; border-radius: 8px;
-  padding: 0 10px; font-size: 12px; font-weight: 400; line-height: 1; color: #d14343;
+  padding: 0; line-height: 1; color: #d14343;
   cursor: pointer;
 }
-.wlp-clear-all:active { background: #fdf2f2; }
+.wlp-clear-all svg { width: 18px; height: 18px; }
+.wlp-clear-all:active { opacity: 0.55; }
+/* 지울 것이 없어도 칸은 비우지 않는다 — 사라지면 옆 상자들이 들썩인다 */
+.wlp-clear-all:disabled { opacity: 0.35; cursor: default; }
 /* 숨긴 물건 드롭다운 */
 .wlp-hidden-note { position: relative; display: flex; min-width: 0; }
-.wlp-restore-btn .caret { margin-left: 3px; font-size: 9px; }
-/* 휴지통 × 7 — 숨긴 물건 수 */
-.wlp-restore-ico { width: 14px; height: 14px; object-fit: contain; display: block; flex: 0 0 auto; }
+/* 보관함 × 7 — 숨긴 물건 수 */
+.wlp-restore-ico { width: 20px; height: 20px; object-fit: contain; display: block; flex: 0 0 auto; }
 .wlp-restore-x { font-style: normal; font-size: 9.5px; color: #9ca3af; margin: 0 1px 0 2px; }
-.wlp-hidden-backdrop { position: fixed; inset: 0; z-index: 40; }
+.wlp-hidden-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(15, 23, 42, 0.45); }
+/* 보관함 — 버튼 아래 드롭다운이면 화면 밖으로 밀려나서 가운데 팝업으로 띄운다 */
 .wlp-hidden-panel {
-  position: absolute; top: 100%; left: 0; z-index: 50;
-  margin-top: 4px; width: 230px; max-width: 72vw;
-  background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  z-index: 50;
+  width: min(92vw, 420px);
+  max-height: 76vh;
+  display: flex; flex-direction: column;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
   overflow: hidden;
 }
+.wlp-hidden-title {
+  display: flex; align-items: center; gap: 6px; margin: 0;
+  padding: 11px 12px; border-bottom: 1px solid #eef1f6;
+  font-size: 14px; font-weight: 800; color: #111827;
+}
+.wlp-hidden-title .x { font-weight: 400; color: #9ca3af; }
+.wlp-hidden-title .close {
+  margin-left: auto; border: none; background: transparent; cursor: pointer;
+  font-size: 22px; line-height: 1; color: #6b7280; padding: 0 2px;
+}
+/* 사건번호는 굵게, 주소는 아랫줄에 회색으로 — 좁아서 못 보던 것을 다 보여 준다 */
+.wlp-hidden-texts { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.wlp-hidden-texts .case { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #111827; }
+/* 단계 태그 — 더보기 > 보관함 화면(.trs-stage)과 같은 모양.
+   오른쪽 끝에 붙여 '완전삭제' 버튼 끝과 줄을 맞춘다 */
+.wlp-hidden-tag {
+  flex: 0 0 auto; margin-left: auto; font-style: normal;
+  border: 1px solid #6b85f0; background: #dce5ff; color: #3850c2;
+  border-radius: 5px; padding: 2px 7px;
+  font-size: 9.5px; font-weight: 700; white-space: nowrap;
+}
+.wlp-hidden-tag.tone-bidding { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; font-weight: 800; }
+.wlp-hidden-texts .addr { font-size: 11.5px; font-weight: 400; color: #6b7280; line-height: 1.3; }
 .wlp-hidden-head {
-  display: flex; gap: 6px; margin: 0; padding: 6px;
+  display: flex; gap: 6px; margin: 0; padding: 8px 12px; flex: 0 0 auto;
   border-bottom: 1px solid #eef1f6; background: #fafafa;
 }
 .wlp-hidden-head button {
   flex: 1 1 0; min-width: 0; white-space: nowrap; border: 1px solid #d5dbe6; background: #fff;
-  border-radius: 6px; padding: 5px 6px;
-  font-size: 11px; font-weight: 700; color: #374151; cursor: pointer;
+  border-radius: 6px; padding: 0 6px; height: 30px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit; font-size: 11px; font-weight: 700; color: #374151; cursor: pointer;
 }
 .wlp-hidden-head button.apply { background: #2b6df3; border-color: #2b6df3; color: #fff; }
 .wlp-hidden-head button.purge { background: #fff; border-color: #f0d2d2; color: #d14343; }
 .wlp-hidden-head button.apply:disabled { opacity: 0.45; }
-.wlp-hidden-list { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; overflow-x: visible; }
+.wlp-hidden-list { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; overflow-y: auto; }
 .wlp-hidden-item {
   position: relative;
-  display: flex; align-items: center; gap: 6px;
-  padding: 7px 8px; border-bottom: 1px solid #f1f3f7; cursor: pointer;
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 12px; border-bottom: 1px solid #f1f3f7; cursor: pointer;
 }
+.wlp-hidden-item input { margin-top: 2px; flex: 0 0 auto; }
 /* 주소 말풍선 — 임장경로 목록과 같은 모양. 드롭다운 밖으로 나와야 해서 화면 기준으로 띄운다 */
 .wlp-addr-bubble {
   position: fixed; z-index: 9999;
@@ -1074,7 +1114,6 @@ watch(
   flex: 1 1 auto; min-width: 0; font-size: 11.5px; color: #111827;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.wlp-hidden-panel { width: 200px; }
 
 /* 제목 옆에 붙는 '숨긴 물건 N건 · 복원' */
 .wlp-hidden-note {
@@ -1082,13 +1121,15 @@ watch(
   margin-left: 0; white-space: nowrap;
 }
 /* 정렬 버튼(임장경로순)과 같은 크기·글자 */
+/* 보관함 — 필터 줄에 들어가며 옆 상자와 같은 규격을 쓴다 */
 .wlp-restore-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 3px;
-  box-sizing: border-box; height: 26px;
-  border: 1px solid #d5dbe6; background: #f5f7fb; border-radius: 8px;
-  padding: 0 8px; font-size: 12px; font-weight: 400; line-height: 1; color: #4b5563;
+  box-sizing: border-box; height: 30px;
+  border: 1px solid #e5e7eb; background: #fff; border-radius: 8px;
+  padding: 0 7px; font-size: 12px; font-weight: 400; line-height: 1; color: #111827;
   cursor: pointer; white-space: nowrap;
 }
+.wlp-restore-btn:active { opacity: 0.55; }
 .wlp-list-title-btn {
   border: none; background: transparent; padding: 2px;
   cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
@@ -1098,7 +1139,8 @@ watch(
 .wlp-list-scroll {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: 0 12px 220px;
+  /* 좌우 5px · 위 8px — 물건정보 본문(.adp-body)과 같은 여백 */
+  padding: 8px 5px 220px;
   -webkit-overflow-scrolling: touch;
 }
 .wlp-warning {
@@ -1120,8 +1162,12 @@ watch(
 .wlp-card {
   background: #fff;
   border-radius: 10px;
-  padding: 8px 10px 7px;
-  margin-bottom: 5px;
+  padding: 8px;
+  /* 줄 간격을 margin 제각각이 아니라 gap 하나로 — 모든 카드가 같은 간격이 된다 */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
   border: 1px solid #eef0f5;
   cursor: pointer;
@@ -1130,36 +1176,40 @@ watch(
 .wlp-card-compact {
   padding: 6px 10px;
 }
-.wlp-card-compact .wlp-card-top { margin-bottom: 2px; }
 .wlp-card-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 3px;
 }
+/* 첫 줄은 무슨 일이 있어도 한 줄 — 줄바꿈을 허용하면 사건번호가 내려가
+   카드마다 높이가 달라진다. 좁으면 법원 → 사건번호 차례로 줄임표로 접는다 */
 .wlp-card-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-size: 12px;
   color: #4b5563;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
 }
-.wlp-meta-date { color: #111827; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+.wlp-meta-date { color: #111827; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+/* 법원이 먼저 양보하고(shrink 3), 사건번호는 되도록 지킨다 */
+.wlp-meta-court { flex: 0 3 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wlp-meta-case { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wlp-meta-date-icon { width: 14px; height: 14px; object-fit: contain; flex-shrink: 0; }
-.wlp-meta-sep { color: #cbd5e1; }
+.wlp-meta-sep { color: #cbd5e1; flex: 0 0 auto; }
 .wlp-card-actions {
   display: inline-flex;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
   flex-shrink: 0;
   margin-left: auto;
 }
 .wlp-card-icon {
-  width: 30px;
+  width: 24px;
   height: 30px;
   border: none;
   background: transparent;
@@ -1172,7 +1222,8 @@ watch(
   padding: 0;
   flex-shrink: 0;
 }
-.wlp-card-icon img { width: 18px; height: 18px; object-fit: contain; display: block; }
+.wlp-card-icon img { width: 16px; height: 16px; object-fit: contain; display: block; }
+.wlp-card-icon svg { width: 16px; height: 16px; display: block; }
 .wlp-card-icon:active { background: #f1f5f9; }
 .wlp-card-close { color: #6b7280; }
 /* 중요도 별 — 채워지면 노란 별 안에 숫자를 얹는다 */
@@ -1180,7 +1231,11 @@ watch(
 .wlp-card-star {
   width: auto; height: 34px;
   display: inline-flex; align-items: center; gap: 1px;
+  /* 별 묶음과 옆 아이콘 사이가 별 사이 간격보다 넓어야 묶여 보인다 */
+  margin-right: 2px;
 }
+/* 별도 복사·휴지통과 같은 16px — 셋이 같은 크기로 보여야 한다 */
+.wlp-card-star svg { width: 16px; height: 16px; }
 
 .wlp-type-mark {
   display: inline-flex; align-items: center; justify-content: center;
@@ -1233,7 +1288,7 @@ watch(
   font-size: 13px;
   font-weight: 800;
   color: #111827;
-  margin: 2px 0 5px;
+  margin: 0;
   line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
@@ -1244,7 +1299,6 @@ watch(
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
-  margin-bottom: 5px;
 }
 .wlp-price-box {
   background: #f8fafc;
@@ -1257,7 +1311,7 @@ watch(
   min-width: 0;
 }
 .wlp-price-box small {
-  font-size: 9px;
+  font-size: 10px;
   color: #6b7280;
   font-weight: 400;
   flex-shrink: 0;
@@ -1275,6 +1329,7 @@ watch(
 }
 .wlp-price-box strong em {
   font-style: normal;
+  /* '원'은 '감정가·입찰가' 라벨과 같은 크기로 — 보조 글자끼리 한 값으로 묶는다 */
   font-size: 10px;
   font-weight: 400;
   color: #6b7280;
@@ -1361,16 +1416,22 @@ watch(
 /* ===== Filter bar ===== */
 /* 상단 상태 카드 바로 아래로 올린 필터 줄 */
 .wlp-filter-bar {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  align-items: center;
+  /* 물건종류 · 법원 · 정렬 · 보관함 · 전체삭제 — 앞 셋이 남는 폭을 나눠 갖는다 */
   background: transparent;
-  padding: 2px 12px 6px;
-  gap: 6px;
+  padding: 3px 5px 4px;   /* 좌우 5px — 아래 카드와 같은 선에 세운다 */
+  gap: 7px;
 }
 .wlp-filter-cell {
   position: relative;
   display: flex;
+  flex: 1 1 0;
+  min-width: 0;
 }
+/* 아이콘만 든 칸은 늘어나지 않는다 */
+.wlp-filter-cell.fixed { flex: 0 0 auto; }
+.wlp-filter-cell.fixed .wlp-hidden-note { display: flex; }
 /* 위로 펼쳐지는 필터 */
 .wlp-filter-backdrop { position: fixed; inset: 0; z-index: 40; }
 .wlp-filter-pop {
@@ -1381,14 +1442,19 @@ watch(
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
 }
 .wlp-filter-opt {
+  display: flex; align-items: center; gap: 7px;
   padding: 9px 10px; border-radius: 7px; cursor: pointer;
   font-size: 12.5px; color: #374151; white-space: nowrap;
 }
+.wlp-opt-ico { flex: 0 0 auto; width: 14px; height: 14px; color: #9ca3af; }
+/* 고른 줄은 그림도 같이 물든다 */
+.wlp-filter-opt.on .wlp-opt-ico { color: currentColor; }
 .wlp-filter-opt.on { color: #2a5fbf; }
 
+/* 바로 아래 자식만 — 안쪽 팝업의 체크박스까지 상자로 그려지면 안 된다 */
 .wlp-filter-btn,
-.wlp-filter-cell select,
-.wlp-filter-cell input {
+.wlp-filter-cell > select,
+.wlp-filter-cell > input {
   width: 100%;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -1398,7 +1464,7 @@ watch(
   line-height: 1.35;
   font-family: inherit;
   background: #fff;
-  color: #6b7280;
+  color: #111827;
   appearance: none;
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b7280' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
@@ -1407,14 +1473,44 @@ watch(
   padding-right: 22px;
 }
 .wlp-filter-btn {
+  display: flex; align-items: center; gap: 5px;
   text-align: left; cursor: pointer; font-weight: 400;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  overflow: hidden;
 }
+/* 무엇으로 걸러지고 있는지 한눈에 — 고른 칸만 파랗게 띄운다 */
+.wlp-filter-btn.on,
+.wlp-filter-date input.on {
+  border-color: #2a5fbf;
+  background-color: #eef3ff;
+  color: #2a5fbf;
+}
+.wlp-filter-btn.on {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%232a5fbf' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
+}
+.wlp-filter-btn.on .wlp-filter-ico,
+.wlp-filter-ico.on { color: #2a5fbf; }
+/* 글자만 줄임표로 자른다 — 아이콘은 줄어들지 않게 */
+.wlp-filter-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wlp-filter-ico { flex: 0 0 auto; width: 13px; height: 13px; color: #9ca3af; }
 .wlp-filter-date input {
   background-image: none;
   padding-right: 8px;
+  padding-left: 28px;   /* 겹쳐 둔 달력 아이콘 자리 */
+}
+/* input 안에는 아이콘을 넣을 수 없어 칸 위에 얹는다 */
+.wlp-filter-date .wlp-filter-ico {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; z-index: 1;
 }
 /* 날짜 글자는 input 안쪽 pseudo 요소가 그린다 — 옆 칸과 같은 크기로 못 박는다 */
+.wlp-filter-date input.on::-webkit-datetime-edit,
+.wlp-filter-date input.on::-webkit-datetime-edit-fields-wrapper,
+.wlp-filter-date input.on::-webkit-datetime-edit-text,
+.wlp-filter-date input.on::-webkit-datetime-edit-year-field,
+.wlp-filter-date input.on::-webkit-datetime-edit-month-field,
+.wlp-filter-date input.on::-webkit-datetime-edit-day-field {
+  color: #2a5fbf;
+}
 .wlp-filter-date input::-webkit-datetime-edit,
 .wlp-filter-date input::-webkit-datetime-edit-fields-wrapper,
 .wlp-filter-date input::-webkit-datetime-edit-text,
@@ -1424,7 +1520,7 @@ watch(
   font-size: 12px;
   font-weight: 400;
   font-family: inherit;
-  color: #6b7280;
+  color: #111827;
 }
 /* 날짜가 비었을 때 브라우저가 그리는 '연도-월-일'을 통째로 감춘다 — 우리 '입찰일'과 겹치지 않게.
    이 글자는 color가 아니라 내부 pseudo 요소로 그려져서 opacity로 지워야 한다 */
@@ -1434,7 +1530,7 @@ watch(
 /* 옆 칸(법원·지역·물건종류)의 글자와 같은 크기·색 */
 .wlp-filter-placeholder {
   position: absolute;
-  left: 10px;
+  left: 28px;
   top: 50%;
   transform: translateY(-50%);
   font-size: 12px;
@@ -1445,8 +1541,11 @@ watch(
   pointer-events: none;
   padding: 0;
 }
+/* 왼쪽에 달력 그림을 두었으니 브라우저가 오른쪽에 그리는 것은 치운다.
+   (지워도 칸 아무 데나 누르면 달력이 열린다 — openDatePicker가 받는다) */
 .wlp-filter-date input::-webkit-calendar-picker-indicator {
-  opacity: 0.6;
+  display: none;
+  -webkit-appearance: none;
 }
 
 /* ===== Bottom nav ===== */

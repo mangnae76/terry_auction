@@ -2,7 +2,12 @@ import { apiPath } from './apiBase';
 
 const KAKAO_GEOCODE_BASE_URL = import.meta.env.VITE_KAKAO_GEOCODE_BASE_URL ?? apiPath('/api-kakao');
 const KAKAO_REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY ?? '';
-const CACHE_KEY = 'region-resolver-cache-v1';
+// 기기에 저장해 둔 지역코드. 행정구역이 개편되면(예: 인천 서구 → 서해구·검단구)
+// 예전 코드로는 국토부 실거래가 한 건도 안 잡힌다. 그래서
+//  (1) 키에 버전을 달아 한 번 비우고,
+//  (2) 저장한 지 오래된 값은 다시 물어보게 한다.
+const CACHE_KEY = 'region-resolver-cache-v2';
+const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface ResolvedRegion {
   sido: string;
@@ -14,7 +19,8 @@ export interface ResolvedRegion {
   lat: number;
 }
 
-type CacheShape = Record<string, ResolvedRegion>;
+type CacheEntry = ResolvedRegion & { savedAt?: number };
+type CacheShape = Record<string, CacheEntry>;
 
 const readCache = (): CacheShape => {
   try {
@@ -27,6 +33,7 @@ const readCache = (): CacheShape => {
 
 const writeCache = (next: CacheShape) => {
   try {
+    localStorage.removeItem('region-resolver-cache-v1');
     localStorage.setItem(CACHE_KEY, JSON.stringify(next));
   } catch {
     /* ignore quota */
@@ -116,13 +123,14 @@ export const resolveRegionFromAddress = async (
   const key = normalizeQuery(address);
   if (!key) return null;
   const cache = readCache();
-  if (cache[key]) return cache[key];
+  const hit = cache[key];
+  if (hit && Date.now() - Number(hit.savedAt ?? 0) < CACHE_TTL_MS) return hit;
   const variants = buildQueryVariants(key);
   for (const variant of variants) {
     try {
       const resolved = await queryKakao(variant);
       if (resolved) {
-        cache[key] = resolved;
+        cache[key] = { ...resolved, savedAt: Date.now() };
         writeCache(cache);
         return resolved;
       }

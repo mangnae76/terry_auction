@@ -14,6 +14,8 @@ import { AUCTION_STATUS_LABELS, type AuctionDetail } from '../types/auction';
 import { useAuthStore } from '../stores/authStore';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
+import AppConfirm from '../components/AppConfirm.vue';
+import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import AppToast from '../components/AppToast.vue';
 import mapPinIcon from '../assets/icones/mappin (1).png';
 import flagIcon from '../assets/icones/flag (1).png';
@@ -862,14 +864,29 @@ const refreshRouteAfterReorder = async () => {
   }
 };
 
+// 확인창은 앱 전체가 같은 것을 쓴다 (AppConfirm)
+const confirmBox = ref<ConfirmBox | null>(null);
+const askConfirm = (box: ConfirmBox) => {
+  if (skipsToday(box.skipKey)) { void box.run(); return; }
+  confirmBox.value = box;
+};
+
 const optimizeRoute = async () => {
   // 손으로 맞춘 순서는 사용자가 지도를 보고 내린 판단이다 — 말없이 지우지 않는다
   if (manualOrder.value && fullPath.value.length > 0) {
-    const ok = window.confirm(
-      '지도를 보고 손으로 맞춘 순서가 있습니다.\n새로 계산하면 그 순서는 사라집니다. 계속할까요?',
-    );
-    if (!ok) return;
+    askConfirm({
+      title: '새로 계산할까요?',
+      desc: '지도를 보고 손으로 맞춘 순서가 있습니다. 새로 계산하면 그 순서는 사라집니다.',
+      okLabel: '새로 계산',
+      skipKey: 'ftp.skip.reorder',
+      run: () => runOptimize(),
+    });
+    return;
   }
+  await runOptimize();
+};
+
+const runOptimize = async () => {
   loading.value = true;
   message.value = '';
   saveMessage.value = '';
@@ -1391,7 +1408,6 @@ const removeStop = async (address: string) => {
   if (loading.value) return;
   const target = address.trim();
   // '탈락' 단계를 없앴으므로, 더 안 볼 물건은 휴지통으로 보낸다(복원 가능).
-  if (!window.confirm('목록에서 지우겠습니까?\n휴지통에서 복원할 수 있습니다. 단, 단계는 손품조사로 돌아갑니다.')) return;
   const key = addrKey(target);
   const lines = rawAddresses.value.split('\n').filter((line) => {
     const normalized = parseAddressLines(line)[0] ?? '';
@@ -1837,6 +1853,8 @@ watch(() => authStore.uid, (newUid) => {
         <span v-if="!mapActive" class="ftp-map-hint">두 손가락으로 확대 · 한 번 눌러 지도 이동</span>
       </div>
     </div>
+
+    <AppConfirm :box="confirmBox" @close="confirmBox = null" />
 
     <AppMobileBottomNav active="field-trip" />
 

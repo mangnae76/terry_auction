@@ -4,6 +4,8 @@
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
+import AppConfirm from '../components/AppConfirm.vue';
+import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useFinanceStore } from '../stores/financeStore';
 import { useAuctionStore } from '../stores/auctionStore';
@@ -174,8 +176,23 @@ const onSave = async () => {
   }
 };
 
-const onDelete = async () => {
-  if (!confirm('이 항목을 삭제하시겠습니까?')) return;
+// 확인창은 앱 전체가 같은 것을 쓴다 (AppConfirm)
+const confirmBox = ref<ConfirmBox | null>(null);
+const askConfirm = (box: ConfirmBox) => {
+  if (skipsToday(box.skipKey)) { void box.run(); return; }
+  confirmBox.value = box;
+};
+const onDelete = () => {
+  askConfirm({
+    title: '이 항목을 삭제할까요?',
+    desc: '삭제하면 되살릴 수 없습니다.',
+    okLabel: '삭제',
+    skipKey: 'fin.skip.deleteItem',
+    run: () => runDelete(),
+  });
+};
+
+const runDelete = async () => {
   try {
     if (modalKind.value === 'cashFlow' && cfDraft.value.id) {
       await finance.deleteCashFlow(cfDraft.value.id);
@@ -573,6 +590,8 @@ const exportExcel = () => {
       :open="rangeTarget !== ''"
       @close="rangeTarget = ''"
     />
+
+    <AppConfirm :box="confirmBox" @close="confirmBox = null" />
 
     <AppMobileBottomNav active="finance" />
   </section>

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-// 휴지통 — 선정물건에서 치운 물건을 카드로 펼쳐 본다.
+// 보관함 — 선정물건에서 치운 물건을 카드로 펼쳐 본다.
 // 목록 화면의 드롭다운은 주소 한 줄만 보여 줘서, 무엇을 지웠는지 알아보기 어려웠다.
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
+import AppConfirm from '../components/AppConfirm.vue';
+import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import { useAuctionStore } from '../stores/auctionStore';
 import { AUCTION_STATUS_LABELS } from '../types/auction';
 import type { AuctionDetail } from '../types/auction';
@@ -49,13 +51,26 @@ const restore = async (ids: string[]) => {
   picked.value = {};
   showToast(`${ids.length}건을 되살렸습니다.`, 'success');
 };
-/** 완전삭제는 되돌릴 수 없다 — 몇 건인지 적어 한 번 더 묻는다 */
-const purge = async (ids: string[]) => {
+// 확인창은 선정물건과 같은 것을 쓴다 (AppConfirm)
+const confirmBox = ref<ConfirmBox | null>(null);
+const askConfirm = (box: ConfirmBox) => {
+  if (skipsToday(box.skipKey)) { void box.run(); return; }
+  confirmBox.value = box;
+};
+/** 완전삭제는 되돌릴 수 없다 — 몇 건인지 적어 한 번 더 묻고, 건너뛰기도 내지 않는다 */
+const purge = (ids: string[]) => {
   if (ids.length === 0) return;
-  if (!window.confirm(`${ids.length}건을 완전히 삭제할까요?\n이 작업은 되돌릴 수 없습니다.`)) return;
-  await store.purgeAuctions(ids);
-  picked.value = {};
-  showToast(`${ids.length}건을 완전히 삭제했습니다.`, 'error');
+  askConfirm({
+    title: `${ids.length}건을 완전히 삭제할까요?`,
+    desc: '삭제하면 되살릴 수 없습니다. 이 확인은 건너뛸 수 없습니다.',
+    okLabel: '완전삭제',
+    skipKey: '',
+    run: async () => {
+      await store.purgeAuctions(ids);
+      picked.value = {};
+      showToast(`${ids.length}건을 완전히 삭제했습니다.`, 'error');
+    },
+  });
 };
 
 const formatWon = (value: number) => {
@@ -102,8 +117,8 @@ const stageTone = (item: AuctionDetail) => {
   <section class="trs-shell">
     <header class="trs-header">
       <button type="button" class="trs-back" aria-label="뒤로" @click="router.back()">‹</button>
-      <h1 class="trs-title">휴지통</h1>
-      <span class="trs-eyebrow">숨긴 물건 {{ store.hiddenCount }}건</span>
+      <h1 class="trs-title">보관함</h1>
+      <span class="trs-eyebrow">× {{ store.hiddenCount }}건</span>
     </header>
 
     <div v-if="store.hiddenAuctions.length > 0" class="trs-bar">
@@ -115,7 +130,7 @@ const stageTone = (item: AuctionDetail) => {
         class="trs-bar-btn restore"
         :disabled="pickedIds.length === 0"
         @click="restore(pickedIds)"
-      >복원{{ pickedIds.length > 0 ? ` ${pickedIds.length}` : '' }}</button>
+      >복원{{ pickedIds.length > 0 ? ` (${pickedIds.length})` : '' }}</button>
       <button
         type="button"
         class="trs-bar-btn purge"
@@ -129,7 +144,7 @@ const stageTone = (item: AuctionDetail) => {
     </p>
 
     <p v-if="store.hiddenAuctions.length === 0" class="trs-empty">
-      휴지통이 비어 있습니다.<br />
+      보관함이 비어 있습니다.<br />
       <small>선정물건에서 치운 물건이 여기에 모입니다.</small>
     </p>
 
@@ -178,6 +193,8 @@ const stageTone = (item: AuctionDetail) => {
       </article>
     </div>
 
+    <AppConfirm :box="confirmBox" @close="confirmBox = null" />
+
     <AppMobileBottomNav active="more" />
     <AppToast :visible="toastVisible" :text="toastText" :tone="toastTone" />
   </section>
@@ -201,6 +218,8 @@ const stageTone = (item: AuctionDetail) => {
 
 .trs-bar { display: flex; gap: 6px; padding: 0 12px 8px; }
 .trs-bar-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit; line-height: 1; padding: 0 6px;
   flex: 1 1 0; min-width: 0; height: 30px;
   border: 1px solid #cbd5e1; border-radius: 8px; background: #fff;
   font-size: 12px; font-weight: 700; color: #475569; cursor: pointer;
@@ -247,10 +266,14 @@ const stageTone = (item: AuctionDetail) => {
 .trs-addr {
   margin: 7px 0 0; font-size: 13px; font-weight: 400; color: #111827;
   line-height: 1.35; word-break: keep-all;
+  /* 종류 표시가 주소 아래로 처지지 않게 — 첫 줄 옆에 붙여 세운다 */
+  display: flex; align-items: flex-start; gap: 5px;
 }
 .trs-type-mark {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px; margin-right: 4px; vertical-align: -2px;
+  flex: 0 0 auto; width: 16px; height: 16px;
+  /* 주소 첫 줄(13px × 1.35 = 17.6px) 가운데에 오게 한 픽셀만 내린다 */
+  margin-top: 1px;
   border-radius: 50%; background: #eef3fd; color: #2b6df3;
   font-size: 9.5px; font-weight: 800;
 }
@@ -270,6 +293,8 @@ const stageTone = (item: AuctionDetail) => {
 
 .trs-card-actions { display: flex; gap: 6px; margin-top: 9px; }
 .trs-act {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit; line-height: 1;
   flex: 1 1 0; height: 29px; border-radius: 7px; background: #fff;
   font-size: 11.6px; font-weight: 700; cursor: pointer;
 }

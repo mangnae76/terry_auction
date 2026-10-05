@@ -203,7 +203,7 @@ const openFilePicker = () => {
   fileInputRef.value?.click();
 };
 
-/** 이번 스캔에서 휴지통에 있어 목록에 안 올라간 건수 — 배너에 알려 준다 */
+/** 이번 스캔에서 보관함에 있어 목록에 안 올라간 건수 — 배너에 알려 준다 */
 const skippedHidden = ref(0);
 const autoSaveReady = async () => {
   skippedHidden.value = 0;
@@ -255,7 +255,7 @@ const parseFiles = async (files: File[]) => {
     await autoSaveReady();
     lastUpdate.value = formatTime();
     banner.value = `${formatTime()} PDF ${rows.filter((r) => r.status === 'ready').length}건 등록 완료`
-      + (skippedHidden.value > 0 ? ` (휴지통 ${skippedHidden.value}건 제외)` : '');
+      + (skippedHidden.value > 0 ? ` (보관함 ${skippedHidden.value}건 제외)` : '');
   } finally {
     loading.value = false;
     loadingLabel.value = '';

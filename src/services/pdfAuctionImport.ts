@@ -1240,8 +1240,15 @@ export const parseAuctionPdfText = (
   const caseStartDate = toIsoDate(
     firstMatch(text, [/개시결정일?\s*:?\s*(\d{4}[.\-]\d{2}[.\-]\d{2})/]),
   );
+  // 표기가 제각각이다 — '말소기준일', '말소기준권리', 그냥 '말소기준' 모두 받는다.
+  // 단 '말소기준일(소액)'은 소액기준이라 제외한다.
   const cancellationBaseDate = toIsoDate(
-    firstMatch(text, [/말소기준일(?!\(소액\))\s*:?\s*(\d{4}[.\-]\d{2}[.\-]\d{2})/, /말소기준일\s+(\d{4}[.\-]\d{2}[.\-]\d{2})/]),
+    firstMatch(text, [
+      /말소기준권리(?:일자?)?\s*:?\s*(\d{4}[.\-]\d{2}[.\-]\d{2})/,
+      /말소기준일(?!\(소액\))\s*:?\s*(\d{4}[.\-]\d{2}[.\-]\d{2})/,
+      /말소기준일\s+(\d{4}[.\-]\d{2}[.\-]\d{2})/,
+      /말소기준(?!일?\s*\(소액\))\s*:?\s*(\d{4}[.\-]\d{2}[.\-]\d{2})/,
+    ]),
   );
   const distributionRequestDate = toIsoDate(
     firstMatch(text, [/배당요구종기일?\s*:?\s*(\d{4}[.\-]\d{2}[.\-]\d{2})/, /배당요구종기\s+(\d{4}[.\-]\d{2}[.\-]\d{2})/]),

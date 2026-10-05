@@ -5,6 +5,7 @@ import {
   mapStandardLandPriceToAuction,
 } from './auctionMapper';
 import { apiPath } from './apiBase';
+import { cacheKey, readCache, writeCache } from './marketCache';
 import type { AuctionDetail, AuctionSearchParams } from '../types/auction';
 
 interface ApiResult {
@@ -862,17 +863,38 @@ const napMs = (ms: number) => new Promise((r) => { setTimeout(r, ms); });
 
 /** 막히거나 끊겨서 빈손으로 오면 조용히 넘기지 않고 다시 부른다.
  *  (한 달이라도 빠지면 그 달 거래가 통째로 사라져, 볼 때마다 건수가 달라진다) */
+/** 한 달치를 얼마나 오래 두고 쓸 것인가.
+ *  지난 달 거래는 더 바뀌지 않는다. 다만 신고 기한(30일)과 계약해제 때문에
+ *  최근 석 달은 뒤늦게 채워지므로 그 구간만 날마다 다시 받는다. */
+const monthCacheTtl = (dealYmd: string) => {
+  const now = new Date();
+  const year = Number(dealYmd.slice(0, 4));
+  const month = Number(dealYmd.slice(4, 6));
+  if (!(year > 1900) || !(month >= 1 && month <= 12)) return 24 * 60 * 60 * 1000;
+  const age = (now.getFullYear() * 12 + now.getMonth()) - (year * 12 + (month - 1));
+  return age <= 2 ? 24 * 60 * 60 * 1000 : 365 * 24 * 60 * 60 * 1000;
+};
+
+/** 한 달치 실거래 — 지역·종류·달이 같으면 누가 묻든 결과가 같다.
+ *  그래서 물건이 아니라 '달' 단위로 모아 두고 다 같이 읽는다.
+ *  (제대로 받은 달만 적어 둔다 — 실패한 달이 굳어 버리면 영영 비어 보인다) */
 const fetchMonthWithRetry = async (
   path: string,
   lawdCd5: string,
   dealYmd: string,
   tries = 2,
 ): Promise<MonthFetchResult> => {
+  const id = cacheKey(lawdCd5, path, dealYmd);
+  const hit = await readCache<MonthFetchResult>('cacheTradeMonth', id, monthCacheTtl(dealYmd));
+  if (hit && !hit.error) return hit;
   let last: MonthFetchResult = { rows: [], error: '미조회', typeLabel: '' };
   for (let i = 0; i < tries; i += 1) {
     if (isQuotaBlocked()) return { rows: [], error: QUOTA_EXCEEDED_MSG, typeLabel: '' };
     last = await fetchRealTradeRowsForMonth(path, lawdCd5, dealYmd);
-    if (!last.error) return last;
+    if (!last.error) {
+      void writeCache('cacheTradeMonth', id, last);
+      return last;
+    }
     await napMs(300 * (i + 1));
   }
   return last;

@@ -593,6 +593,11 @@ export interface SurveyForm {
   mktConcAvg?: string;
   mktConcLow?: string;
   mktConcPyeong?: string;
+  /** 결론표 평단가 칸 — 경매물건/유사물건을 나란히 적는다 (면적은 평) */
+  mktSimUnitPrice?: string;
+  mktSimPyeong?: string;
+  /** 결론표에서 예전 필드가 없는 칸 — '<칸>.<줄>' (예: 'avg.area') 로 담는다 */
+  mktConcValues?: Record<string, string>;
   /** 전세가를 '공시가 × 비율' 자동 계산으로 바꾸면서 예전 자동값을 한 번 비웠는지 */
   mktJeonseReset?: boolean;
   /** 현장조사 항목값 — 'fs.roofLeak' 같은 id별 값 */

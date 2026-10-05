@@ -89,6 +89,10 @@ service cloud.firestore {
     match /cacheDongUnits/{id} {
       allow read, write: if isAllowedUser();
     }
+    // 달 단위 실거래 — 지역·종류·달이 같으면 값이 같아 모두가 나눠 쓴다
+    match /cacheTradeMonth/{id} {
+      allow read, write: if isAllowedUser();
+    }
 
     // 그 외 컬렉션은 명시적 허용 없이는 거부 (기본 deny)
   }
