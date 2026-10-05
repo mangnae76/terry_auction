@@ -2,6 +2,8 @@ import { handleSocialLogin } from './socialLogin';
 
 export interface Env {
   KAKAO_REST_API_KEY?: string;
+  /** 브이월드 오픈API 인증키 — 공동주택/개별주택 공시가격 조회 (query 의 key 로 붙는다) */
+  VWORLD_API_KEY?: string;
   ALLOWED_ORIGINS?: string;
   FIREBASE_SERVICE_ACCOUNT_JSON?: string;
 }
@@ -10,7 +12,8 @@ interface Route {
   prefix: string;
   target: string;
   headers?: Record<string, string>;
-  authKind?: 'kakao';
+  /** kakao = Authorization 헤더, vworld = query 의 key */
+  authKind?: 'kakao' | 'vworld';
 }
 
 const ROUTES: Route[] = [
@@ -36,6 +39,7 @@ const ROUTES: Route[] = [
   { prefix: '/api-kakao', target: 'https://dapi.kakao.com', authKind: 'kakao' },
   { prefix: '/api-kakao-navi', target: 'https://apis-navi.kakaomobility.com', authKind: 'kakao' },
   { prefix: '/api-osrm', target: 'https://router.project-osrm.org' },
+  { prefix: '/api-vworld', target: 'https://api.vworld.kr', authKind: 'vworld' },
   {
     prefix: '/api-court',
     target: 'https://www.courtauction.go.kr',
@@ -127,7 +131,14 @@ const handleProxy = async (request: Request, env: Env, route: Route): Promise<Re
   const origin = request.headers.get('origin') ?? '*';
   const cors = corsHeaders(origin, env);
   const url = new URL(request.url);
-  const rest = url.pathname.slice(route.prefix.length) + url.search;
+  // 브이월드는 인증키를 query 로 받는다 — 키가 브라우저로 나가지 않게 여기서 붙인다
+  let search = url.search;
+  if (route.authKind === 'vworld' && env.VWORLD_API_KEY) {
+    const params = new URLSearchParams(url.search);
+    params.set('key', env.VWORLD_API_KEY);
+    search = `?${params.toString()}`;
+  }
+  const rest = url.pathname.slice(route.prefix.length) + search;
   const targetUrl = `${route.target}${rest}`;
 
   const forwardHeaders = new Headers(request.headers);

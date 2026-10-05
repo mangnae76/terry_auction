@@ -41,6 +41,7 @@ import fileTextIcon from '../assets/icones/file-text.png';
 import { resolveRegionFromAddress } from '../services/regionResolver';
 import { fetchRealTradeAverage, fetchPlaceHistory, fetchDongHouseholds, PLACE_HISTORY_YEARS, type RealTradeMatchRow } from '../services/publicDataApi';
 import { cached, cacheKey, readCache, writeCache, CACHE_TTL } from '../services/marketCache';
+import { fetchApartHousingPrice } from '../services/vworldApi';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePhoto, isPhotoId, loadSitePhoto, saveSitePhoto } from '../services/sitePhotoRepository';
 import { fetchNearbyEnvironment, type NearbyEnvironment, type NearbyPlace } from '../services/kakaoNearby';
@@ -1499,6 +1500,7 @@ watch(
       await fetchPublicTradeRows();
       await fetchDeal12mCount();
       await fetchDongUnits();
+      void fetchOfficialPrice();
       void loadSamePlaceTrades();
     })();
   },
@@ -2551,6 +2553,35 @@ const deal12mDirect = ref(0);
 const deal12mCancelled = ref(0);
 // 그 동의 다세대·연립 세대수 — 건축물대장에서 합산한다 (직접 입력이 있으면 그 값이 우선)
 const unitsAuto = ref(0);
+/** 공동주택 공시가격 — 브이월드에서 그 호실의 최신 기준연도 값을 받아 온다.
+ *  PDF 파싱값은 단위가 깨져 들어오는 일이 있어(1,228 처럼) 이쪽을 우선한다. */
+const officialPriceAuto = ref(0);
+const officialPriceYear = ref('');
+const fetchOfficialPrice = async () => {
+  const target = auction.value;
+  if (!target?.address) return;
+  try {
+    const region = await resolveRegionFromAddress(target.address);
+    if (!region?.bCode10) return;
+    // '인천광역시 서구 검암동 670-4' 에서 지번만, 주소 끝의 '203호' 에서 호수만
+    const lot = lotOnlyAddress.value.split(/\s+/).pop() ?? '';
+    const ho = (target.address.match(/(\d+)\s*호/) ?? [])[1] ?? '';
+    const hit = await fetchApartHousingPrice({
+      bCode10: region.bCode10,
+      lotText: lot,
+      ho,
+      areaM2: subjectAreaM2.value,
+    });
+    if (!hit) return;
+    officialPriceAuto.value = hit.price;
+    officialPriceYear.value = hit.year;
+  } catch {
+    officialPriceAuto.value = 0;
+  }
+};
+/** 화면에 쓸 공동주택가 — 손으로 적은 값이 있으면 그 값, 없으면 받아 온 값 */
+const mktPubValue = computed(() => parseDigits(mktVal(mk('d', 'pub'))) || officialPriceAuto.value);
+const mktPubText = computed(() => (mktPubValue.value > 0 ? mktPubValue.value.toLocaleString('ko-KR') : '-'));
 const fetchDongUnits = async () => {
   const address = auction.value?.address;
   if (!address) return;
@@ -3085,19 +3116,19 @@ const mktJeonseRate = computed(() => {
   return Number.isFinite(r) && r > 0 ? r : MKT_JEONSE_RATE;
 });
 const mktJeonseFromPub = computed(() => {
-  const pub = parseDigits(mktVal(mk('d', 'pub')));
+  const pub = mktPubValue.value;
   return pub > 0 ? Math.round((pub * mktJeonseRate.value) / 100).toLocaleString('ko-KR') : '-';
 });
 /** 매매가율 = 전세가 ÷ 매매가(실거래가) × 100 */
 const mktJeonseToSale = computed(() => {
-  const pub = parseDigits(mktVal(mk('d', 'pub')));
+  const pub = mktPubValue.value;
   const jeonse = pub > 0 ? (pub * mktJeonseRate.value) / 100 : 0;
   const real = parseDigits(mktVal(mk('d', 'real')));
   return jeonse > 0 && real > 0 ? `${((jeonse / real) * 100).toFixed(0)}%` : '-';
 });
 // 공시대비율 = 실거래가 / 공동주택가
 const mktCaseRatio = computed(() => {
-  const pub = parseDigits(mktVal(mk('d', 'pub')));
+  const pub = mktPubValue.value;
   const real = parseDigits(mktVal(mk('d', 'real')));
   return pub > 0 && real > 0 ? `${((real / pub) * 100).toFixed(0)}%` : '-';
 });
@@ -3139,7 +3170,6 @@ watch(
     fill('mkt.a.sale', around > 0 ? String(around) : '');
     if (around > 0 && py > 0) fill(mk('b', 'unit'), String(Math.round(around / py)));
     fill(mk('d', 'real'), num(pdfMaeMaeAvg.value) > 0 ? String(Math.round(pdfMaeMaeAvg.value)) : '');
-    fill(mk('d', 'pub'), num(a.officialPriceValue) > 0 ? String(a.officialPriceValue) : '');
     fill(mk('d', 'rate'), String(MKT_JEONSE_RATE));
 
     // 결론 줄
@@ -5100,7 +5130,7 @@ const goBack = () => router.back();
                 </select>
               </div>
               <div class="adp-sp-bar">
-                <span class="adp-sp-lab">단지 전체 (국토부) <em>최근 {{ PLACE_HISTORY_YEARS }}년</em></span>
+                <span class="adp-sp-lab">단지전체 (국토부) <em>최근 {{ PLACE_HISTORY_YEARS }}년</em></span>
                 <strong v-if="samePlaceLoading" class="adp-sp-cnt">조회중…</strong>
                 <strong v-else-if="shownTradeRows.length > 0" class="adp-sp-cnt">{{ shownTradeRows.length }}건</strong>
                 <button
@@ -6460,8 +6490,8 @@ const goBack = () => router.back();
               <div class="adp-mkt-cells c4 adp-dm-table">
                 <div class="cell">
                   <small>공동주택가</small>
-                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'pub'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'pub'), $event)" />
-                  <strong v-else class="hi">{{ mktMoney(mk('d', 'pub')) }}</strong>
+                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'pub'))" mode="string" class="adp-mkt-input" :placeholder="officialPriceAuto > 0 ? officialPriceAuto.toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(mk('d', 'pub'), $event)" />
+                  <strong v-else class="hi">{{ mktPubText }}<small v-if="officialPriceYear && !mktVal(mk('d', 'pub'))" class="adp-pub-year">{{ officialPriceYear }}</small></strong>
                 </div>
                 <div class="cell calc">
                   <small class="adp-mkt-rate">
@@ -8493,6 +8523,8 @@ const goBack = () => router.back();
 /* 거래일자 아래 층 입력 — 날짜 버튼과 폭을 맞춘다 */
 .adp-mkt-cells .cell .adp-mkt-floor { width: 100%; }
 /* 사용승인 / 거래기간 — 두 줄이라 글자를 줄이고 볼드를 뺀다 */
+/* 공동주택가 옆 기준연도 */
+.adp-pub-year { font-size: 9.5px; font-weight: 700; color: #9ca3af; margin-left: 3px; }
 .adp-mkt-range2 { font-size: 11px; font-weight: 600; line-height: 1.4; color: #111827; text-align: center; }
 .adp-mkt-twoym { display: flex; gap: 3px; width: 100%; }
 .adp-mkt-twoym .adp-mkt-ym { flex: 1 1 0; min-width: 0; font-size: 10px; }

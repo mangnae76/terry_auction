@@ -93,6 +93,10 @@ service cloud.firestore {
     match /cacheTradeMonth/{id} {
       allow read, write: if isAllowedUser();
     }
+    // 공동주택 공시가격 — 호실 단위. 연 1회 공시라 한 번 받으면 오래 쓴다
+    match /cacheAptPrice/{id} {
+      allow read, write: if isAllowedUser();
+    }
 
     // 그 외 컬렉션은 명시적 허용 없이는 거부 (기본 deny)
   }
