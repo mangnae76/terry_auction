@@ -5,6 +5,8 @@ export type PlaceRow = {
   kind: '매매' | '직거래' | '전세' | '월세';
   contractDate: string;
   amount: string;      // 보여 줄 금액 글자
+  /** 전월세 보증금 (원) — 보여 주는 글자에서 되짚으면 단위를 틀리기 쉬워 숫자로 따로 들고 있는다 */
+  deposit?: number;
   areaM2: number;
   floor: string;
 };
@@ -658,12 +660,14 @@ const loadSamePlaceTrades = async (forceReload = false) => {
         areaM2: r.areaM2,
         floor: r.floor,
       })),
+      // 전월세는 국토부가 '만원'으로 준다 — 매매(원)와 한 칸에 서니 원으로 맞춰 적는다
       ...rents.filter((r) => mine(r.apartmentName)).map((r) => ({
         kind: r.kind as PlaceRow['kind'],
         contractDate: r.contractDate,
         amount: r.monthlyRent > 0
-          ? `보 ${r.deposit.toLocaleString('ko-KR')} / 월 ${r.monthlyRent.toLocaleString('ko-KR')}`
-          : `보 ${r.deposit.toLocaleString('ko-KR')}`,
+          ? `보 ${formatWonSimple(r.deposit * 10000)} / 월 ${formatWonSimple(r.monthlyRent * 10000)}`
+          : `보 ${formatWonSimple(r.deposit * 10000)}`,
+        deposit: r.deposit * 10000,
         areaM2: r.areaM2,
         floor: r.floor,
       })),
@@ -2592,7 +2596,7 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['참조', '가격정보 → 해당물건 실거래가'],
     ['자료', '단지전체 (국토부) 최근 2년'],
     ['항목', '전용면적 · 거래일자 / 층 · 매매 실거래가'],
-    ['보내기!', '그 표 매매 옆 초록 비행기 누르기'],
+    ['보내기!', '그 표 매매·전세 옆 초록 비행기 누르기'],
   ],
   rank: [
     ['등수', '입지조건에 따라 등수화한다'],
@@ -3030,6 +3034,19 @@ const canSendTrade = (row: PlaceRow) =>
 // 고른 거래 한 줄을 손품+현장 1.실거래가 조사에 통째로 옮긴다.
 // ③ 실거래가 칸(전용면적·거래일자·실거래가)과 ② 평단가 칸(전용면적·평단가)을 함께 채운다.
 // '전용면적 X 평단가'는 두 값에서 자동 계산되는 칸이라 따로 쓰지 않는다.
+/** 전세는 보증금만 있는 줄만 보낸다 — 월세는 보증금·월세가 섞여 한 값으로 못 쓴다 */
+const canSendJeonse = (row: PlaceRow) => row.kind === '전세' && (row.deposit ?? 0) > 0;
+/** 고른 전세 한 줄을 ② 경매물건 실거래가의 전세 줄로 옮긴다 */
+const sendJeonseToMarket = async (row: PlaceRow) => {
+  const price = row.deposit ?? 0;
+  if (!(price > 0)) return;
+  setMktVal(mk('d', 'jReal'), String(Math.round(price)));
+  if (row.contractDate) setMktVal(mk('d', 'jYear'), row.contractDate.slice(0, 10).replace(/\./g, '-'));
+  if (String(row.floor ?? '').trim()) setMktVal(mk('d', 'jFloor'), String(row.floor).trim());
+  if (Number(row.areaM2) > 0) setMktVal(mk('d', 'jArea'), String(Number(row.areaM2)));
+  await persistSurvey();
+  flashToast('급매가 → 경매물건 전세 실거래가에 적용하였습니다.', 'success');
+};
 const sendTradePriceToMarket = async (row: PlaceRow) => {
   const price = parsePriceNumber(row.amount);
   if (!Number.isFinite(price) || price <= 0) return;
@@ -3149,10 +3166,11 @@ const togglePhotoFold = (key: string) => {
   photoFold.value[key] = !photoFolded(key);
 };
 // 실거래가 거래일자 (YYYY-MM-DD)
-const mktDealYmOpen = ref(false);
+// 매매·전세 두 칸이 같은 휠을 쓴다 — 어느 칸을 열었는지 키로 들고 있는다
+const mktDealYmKey = ref('');
 const mktDealYmValue = computed({
-  get: () => mktVal(mk('d', 'year')),
-  set: (value: string) => setMktVal(mk('d', 'year'), value),
+  get: () => (mktDealYmKey.value ? mktVal(mktDealYmKey.value) : ''),
+  set: (value: string) => { if (mktDealYmKey.value) setMktVal(mktDealYmKey.value, value); },
 });
 // 전용면적 X 평단가
 /** ② 경매물건 실거래가 — 평단가는 '실거래가 ÷ 면적(평)'.
@@ -3202,12 +3220,24 @@ const mktFloorValue = computed(() => (
   mktVal(mk('d', 'floor')).trim() || (mktMode('d') === MKT_MODES[0] ? subjectFloor.value : '')
 ));
 /** 거래일자 아래에 층 — 보기 모드에서는 두 줄로 */
-const mktDealDateFloorText = computed(() => {
-  const date = mktVal(mk('d', 'year')) || '-';
-  const floor = mktFloorValue.value;
+const dateFloorText = (dateKey: string, floor: string) => {
+  const date = mktVal(dateKey) || '-';
   if (!floor) return date;
   // 한 줄에 담는다 — 칸이 좁아지는 만큼 글자는 .adp-mkt-area1 에서 줄인다
   return `${date} / ${/층$/.test(floor) ? floor : `${floor}층`}`;
+};
+const mktDealDateFloorText = computed(() => dateFloorText(mk('d', 'year'), mktFloorValue.value));
+
+// 전세 줄 — 매매 줄과 같은 모양·같은 계산을 쓴다. 저장 키만 'j' 가 붙는다
+const mktJeonseFloorValue = computed(() => (
+  mktVal(mk('d', 'jFloor')).trim() || (mktMode('d') === MKT_MODES[0] ? subjectFloor.value : '')
+));
+const mktJeonseDateFloorText = computed(() => dateFloorText(mk('d', 'jYear'), mktJeonseFloorValue.value));
+/** 전세 평단가 — 전세 실거래가 ÷ 면적(평) */
+const mktJeonseUnitText = computed(() => {
+  const price = parseDigits(mktVal(mk('d', 'jReal')));
+  const py = (Number(mktAreaNum(mk('d', 'jArea'))) || 0) / PYEONG_TO_M2;
+  return price > 0 && py > 0 ? Math.round(price / py).toLocaleString('ko-KR') : '-';
 });
 
 // 전세가 = 공동주택가 × 비율(기본 127%)
@@ -5369,11 +5399,21 @@ const goBack = () => router.back();
                         v-if="canSendTrade(r)"
                         type="button"
                         class="adp-send-btn"
-                        aria-label="실거래가·평단가로 보내기"
-                        title="계약일·거래금액·전용면적을 ② 경매물건 실거래가로 보냅니다"
+                        aria-label="매매 실거래가로 보내기"
                         @click.stop="sendTradePriceToMarket(r)"
                       >
-                        <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+                          <path d="m3 11 18-8-8 18-2-7z" />
+                        </svg>
+                      </button>
+                      <button
+                        v-else-if="canSendJeonse(r)"
+                        type="button"
+                        class="adp-send-btn"
+                        aria-label="전세 실거래가로 보내기"
+                        @click.stop="sendJeonseToMarket(r)"
+                      >
+                        <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
                           <path d="m3 11 18-8-8 18-2-7z" />
                         </svg>
                       </button>
@@ -6662,7 +6702,7 @@ const goBack = () => router.back();
             <!-- ② 실거래가 — 예전 '평단가' 블록을 이 줄에 합쳤다 (실거래가 옆이 평단가) -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가<span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
+                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가<span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
                 <button
                   type="button"
                   :class="['adp-mkt-mode', { sim: mktMode('d') === '유사물건' }]"
@@ -6684,7 +6724,7 @@ const goBack = () => router.back();
                     <button
                       type="button"
                       class="adp-mkt-input adp-mkt-ym"
-                      @click="mktDealYmOpen = true"
+                      @click="mktDealYmKey = mk('d', 'year')"
                     >{{ mktVal(mk('d', 'year')) || '연월일' }}</button>
                     <input class="adp-mkt-input adp-mkt-floor" :value="mktVal(mk('d', 'floor'))" :placeholder="(mktMode('d') === MKT_MODES[0] ? subjectFloor : '') || '층'" @change="setMktVal(mk('d', 'floor'), ($event.target as HTMLInputElement).value)" />
                   </template>
@@ -6698,6 +6738,37 @@ const goBack = () => router.back();
                 <div class="cell calc">
                   <small>평단가</small>
                   <strong class="hi">{{ mktUnitFromRealText }}</strong>
+                </div>
+              </div>
+              <!-- 전세 줄 — 매매 줄과 같은 네 칸. 단지전체 표의 전세 옆 비행기가 여기로 들어온다 -->
+              <div class="adp-mkt-cells c4 adp-dm-table center-y">
+                <div class="cell">
+                  <small>전용면적</small>
+                  <span v-if="editingSurvey.location" class="adp-mkt-unit">
+                    <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(mk('d', 'jArea'))" placeholder="0" @change="setMktVal(mk('d', 'jArea'), ($event.target as HTMLInputElement).value)" />㎡
+                  </span>
+                  <strong v-else class="adp-mkt-area1">{{ mktAreaText(mk('d', 'jArea')) }}</strong>
+                </div>
+                <div class="cell">
+                  <small>거래일자 / 층</small>
+                  <template v-if="editingSurvey.location">
+                    <button
+                      type="button"
+                      class="adp-mkt-input adp-mkt-ym"
+                      @click="mktDealYmKey = mk('d', 'jYear')"
+                    >{{ mktVal(mk('d', 'jYear')) || '연월일' }}</button>
+                    <input class="adp-mkt-input adp-mkt-floor" :value="mktVal(mk('d', 'jFloor'))" :placeholder="(mktMode('d') === MKT_MODES[0] ? subjectFloor : '') || '층'" @change="setMktVal(mk('d', 'jFloor'), ($event.target as HTMLInputElement).value)" />
+                  </template>
+                  <strong v-else class="adp-mkt-area1">{{ mktJeonseDateFloorText }}</strong>
+                </div>
+                <div class="cell">
+                  <small>전세 실거래가</small>
+                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'jReal'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'jReal'), $event)" />
+                  <strong v-else class="hi">{{ mktMoney(mk('d', 'jReal')) }}</strong>
+                </div>
+                <div class="cell calc">
+                  <small>평단가</small>
+                  <strong class="hi">{{ mktJeonseUnitText }}</strong>
                 </div>
               </div>
               <div class="adp-mkt-cells c4 adp-dm-table">
@@ -7296,8 +7367,8 @@ const goBack = () => router.back();
 
     <DateWheelPicker
       v-model="mktDealYmValue"
-      :open="mktDealYmOpen"
-      @close="mktDealYmOpen = false"
+      :open="mktDealYmKey !== ''"
+      @close="mktDealYmKey = ''"
     />
 
     <DateWheelPicker
