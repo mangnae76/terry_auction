@@ -67,7 +67,10 @@ const regionGroups: RegionGroup[] = [
       { label: '중구', lawdCode: '28110' }, { label: '동구', lawdCode: '28140' },
       { label: '미추홀구', lawdCode: '28177' }, { label: '연수구', lawdCode: '28185' },
       { label: '남동구', lawdCode: '28200' }, { label: '부평구', lawdCode: '28237' },
-      { label: '계양구', lawdCode: '28245' }, { label: '서해구', lawdCode: '28260' },
+      { label: '계양구', lawdCode: '28245' },
+      // 2026년 인천 서구가 서해구·검단구로 나뉘었다. 옛 서구 코드(28260)로는
+      // 실거래가 한 건도 오지 않는다 — 새 코드로 바꾸고 검단구를 더했다.
+      { label: '서해구', lawdCode: '28275' }, { label: '검단구', lawdCode: '28290' },
       { label: '강화군', lawdCode: '28710' }, { label: '옹진군', lawdCode: '28720' },
     ],
   },
