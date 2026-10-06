@@ -5383,7 +5383,6 @@ const goBack = () => router.back();
                 <tbody>
                   <tr v-for="(r, i) in shownTradeRows" :key="`m${i}`">
                     <td :class="['adp-trade-type', tradeTypeClass(r.kind === '직거래' ? '매매' : r.kind), { 'adp-sp-direct': r.kind === '직거래' }]">
-                      {{ r.kind }}
                       <button
                         v-if="canSendTrade(r)"
                         type="button"
@@ -5406,6 +5405,8 @@ const goBack = () => router.back();
                           <path d="m3 11 18-8-8 18-2-7z" />
                         </svg>
                       </button>
+                      <span v-else class="adp-send-gap" />
+                      {{ r.kind }}
                     </td>
                     <td>{{ r.contractDate || '-' }}</td>
                     <td>{{ r.amount }}</td>
@@ -6707,12 +6708,12 @@ const goBack = () => router.back();
                   </template>
                   <strong v-else class="adp-mkt-area1">{{ mktDealDateFloorText }}</strong>
                 </div>
-                <div class="cell">
+                <div class="cell num-r">
                   <small>매매 실거래가</small>
                   <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'real'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'real'), $event)" />
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'real')) }}</strong>
                 </div>
-                <div class="cell calc">
+                <div class="cell calc num-r">
                   <small>평단가</small>
                   <strong class="hi">{{ mktUnitFromRealText }}</strong>
                 </div>
@@ -6738,12 +6739,12 @@ const goBack = () => router.back();
                   </template>
                   <strong v-else class="adp-mkt-area1">{{ mktJeonseDateFloorText }}</strong>
                 </div>
-                <div class="cell">
+                <div class="cell num-r">
                   <small>전세 실거래가</small>
                   <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'jReal'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'jReal'), $event)" />
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'jReal')) }}</strong>
                 </div>
-                <div class="cell calc">
+                <div class="cell calc num-r">
                   <small>전세가율</small>
                   <strong class="hi">{{ mktJeonseRatioText }}</strong>
                 </div>
@@ -8775,6 +8776,13 @@ const goBack = () => router.back();
   display: inline-flex; align-items: baseline; justify-content: center;
 }
 .adp-mkt-cells .cell strong.hi { color: #111827; }
+/* 매매·전세 실거래가와 평단가는 자릿수가 달라도 끝자리가 세로로 맞아야
+   위아래 표를 눈으로 견줄 수 있다 — 가운데가 아니라 오른쪽에 붙인다 */
+.adp-mkt-cells .cell.num-r > strong,
+.adp-mkt-cells.center-y .cell.num-r > strong {
+  width: 100%; justify-content: flex-end; padding-right: 6px;
+}
+.adp-mkt-cells .cell.num-r .adp-mkt-input { text-align: right; padding-right: 6px; }
 .adp-mkt-cells .cell .adp-mkt-input { text-align: center; height: 26px; }
 .adp-mkt-rate { display: inline-flex; align-items: center; justify-content: center; gap: 1px; }
 .adp-mkt-rate-input {
@@ -9351,8 +9359,9 @@ const goBack = () => router.back();
 .adp-sp-direct { color: #c22e2e !important; }
 /* 그 줄을 ② 경매물건 실거래가로 보낸다 — 구분(매매) 바로 옆,
    받는 쪽 제목에도 같은 초록 비행기를 달아 둘이 한 쌍임을 보인다 */
+/* 구분 칸 맨 앞 — 매매든 전세든 같은 자리에서 누르게 하고, 글자는 오른쪽으로 민다 */
 .adp-send-btn {
-  border: none; background: transparent; padding: 0 0 0 3px; cursor: pointer;
+  border: none; background: transparent; padding: 0 4px 0 0; cursor: pointer;
   line-height: 0; vertical-align: -2px;
 }
 .adp-send-btn svg { fill: #16a34a; }
@@ -9557,6 +9566,8 @@ const goBack = () => router.back();
 .adp-trade-head-meta small { color: #6b7280; font-weight: 400; }
 .adp-trade-head-meta strong { color: #2b6df3; font-weight: 800; }
 .adp-trade-type { font-weight: 500; }
+/* 비행기가 붙는 줄과 안 붙는 줄(월세)의 글자가 같은 자리에 서게 — 빈 줄도 같은 폭을 비운다 */
+.adp-send-gap { display: inline-block; width: 17px; padding-right: 4px; }
 .adp-trade-type.tt-buy { color: #2b6df3; }
 .adp-trade-type.tt-jeon { color: #16a34a; }
 .adp-trade-type.tt-wol { color: #ea580c; }
