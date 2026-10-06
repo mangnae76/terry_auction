@@ -2588,6 +2588,12 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['조사', '지역 내 호재 · 공급 · 입지조건 (호갱, 네부)'],
     ['확인', '전세가 · 평당가로 등수 확인'],
   ],
+  recv: [
+    ['참조', '가격정보 → 해당물건 실거래가'],
+    ['자료', '단지전체 (국토부) 최근 2년'],
+    ['항목', '전용면적 · 거래일자 / 층 · 매매 실거래가'],
+    ['보내기!', '그 표 매매 옆 초록 비행기 누르기'],
+  ],
   rank: [
     ['등수', '입지조건에 따라 등수화한다'],
     ['기준', '입지조건에 가까운 거리 — 5분(400m) 1등 · 10분(800m) 2등 · 그 밖 3등'],
@@ -6656,8 +6662,7 @@ const goBack = () => router.back();
             <!-- ② 실거래가 — 예전 '평단가' 블록을 이 줄에 합쳤다 (실거래가 옆이 평단가) -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가<!--
-                  --><svg class="adp-send-mark" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><title>단지전체 표의 비행기를 누르면 이 칸에 들어옵니다</title><path d="m3 11 18-8-8 18-2-7z" /></svg></span>
+                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가<span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
                 <button
                   type="button"
                   :class="['adp-mkt-mode', { sim: mktMode('d') === '유사물건' }]"
@@ -6686,7 +6691,7 @@ const goBack = () => router.back();
                   <strong v-else class="adp-mkt-area1">{{ mktDealDateFloorText }}</strong>
                 </div>
                 <div class="cell">
-                  <small>실거래가</small>
+                  <small>매매 실거래가</small>
                   <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'real'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'real'), $event)" />
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'real')) }}</strong>
                 </div>
@@ -9304,7 +9309,8 @@ const goBack = () => router.back();
 }
 .adp-send-btn svg { fill: #16a34a; }
 .adp-send-btn:active svg { fill: #0f7a33; }
-.adp-send-mark { fill: #16a34a; margin-left: 4px; vertical-align: -2px; }
+.adp-send-mark { margin-left: 3px; padding: 0; line-height: 0; vertical-align: -2px; }
+.adp-send-mark svg { fill: #16a34a; }
 /* 층은 표 오른쪽 끝에 붙지 않게 안쪽으로 당겨 둔다 */
 .adp-trade-table th.adp-trade-floor,
 .adp-trade-table td.adp-trade-floor { text-align: center; padding-right: 0; }
