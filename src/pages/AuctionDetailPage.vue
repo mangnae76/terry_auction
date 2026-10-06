@@ -2599,10 +2599,8 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['자료', '위 두 줄의 실제 거래값을 그대로 나눈다'],
   ],
   recv: [
-    ['참조', '가격정보 → 해당물건 실거래가'],
+    ['참조', '가격정보 → 경매물건 실거래가'],
     ['자료', '단지전체 (국토부) 최근 2년'],
-    ['항목', '전용면적 · 거래일자 / 층 · 매매 실거래가'],
-    ['보내기!', '그 표 매매·전세 옆 초록 비행기 누르기'],
   ],
   rank: [
     ['등수', '입지조건에 따라 등수화한다'],
@@ -6750,7 +6748,7 @@ const goBack = () => router.back();
                   <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'jReal'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'jReal'), $event)" />
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'jReal')) }}</strong>
                 </div>
-                <div class="cell calc num-r">
+                <div class="cell calc">
                   <small>전세가율<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('jeonseRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('jeonseRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'jeonseRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('jeonseRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
                   <strong class="hi">{{ mktJeonseRatioText }}</strong>
                 </div>
