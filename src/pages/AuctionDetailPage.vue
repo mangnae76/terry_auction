@@ -2595,7 +2595,7 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['확인', '전세가 · 평당가로 등수 확인'],
   ],
   jeonseRatio: [
-    ['공식', '전세 실거래가 ÷ 매매 실거래가 × 100'],
+    ['공식', '전세가 ÷ 매매가 × 100'],
     ['의미', '매매가에서 전세보증금이 차지하는 몫'],
     ['높으면', '적은 돈으로 사지만 역전세·깡통 위험이 커진다'],
     ['자료', '위 두 줄의 실제 거래값을 그대로 나눈다'],
@@ -2618,9 +2618,20 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
   ],
 }));
 const noteRows = (key: string) => noteTipRows.value[key] ?? null;
+/** 자동으로 채워도 되는 공동주택가 — 유사물건은 다른 집이라 이 물건의 공시가를 쓰면 안 된다.
+ *  브이월드는 이 물건의 지번·호수로만 조회하므로 유사물건 값은 직접 찾아 적어야 한다. */
+const officialPriceUsable = computed(() => (
+  mktMode('d') === MKT_MODES[1] ? 0 : officialPriceAuto.value
+));
 /** 공동주택가 ⓘ — 어디서 온 값인지, 언제 기준인지 */
 const officialPriceRows = computed<Array<[string, string]>>(() => {
   if (mktVal(mk('d', 'pub'))) return [['입력', '직접 입력 · 자동값보다 우선']];
+  if (mktMode('d') === MKT_MODES[1]) {
+    return [
+      ['대상', '유사물건 — 다른 집이라 자동조회가 안 된다'],
+      ['찾기!', '부동산공시가격알리미에서 그 집 공시가 확인'],
+    ];
+  }
   if (officialPriceAuto.value <= 0) return [['조회', '결과 없음 · 직접 입력']];
   const rows: Array<[string, string]> = [
     ['출처', '국토교통부 공시가격 (브이월드)'],
@@ -2631,7 +2642,7 @@ const officialPriceRows = computed<Array<[string, string]>>(() => {
   return rows;
 });
 /** 화면에 쓸 공동주택가 — 손으로 적은 값이 있으면 그 값, 없으면 받아 온 값 */
-const mktPubValue = computed(() => parseDigits(mktVal(mk('d', 'pub'))) || officialPriceAuto.value);
+const mktPubValue = computed(() => parseDigits(mktVal(mk('d', 'pub'))) || officialPriceUsable.value);
 const mktPubText = computed(() => (mktPubValue.value > 0 ? mktPubValue.value.toLocaleString('ko-KR') : '-'));
 const fetchDongUnits = async () => {
   const address = auction.value?.address;
@@ -6759,7 +6770,7 @@ const goBack = () => router.back();
               <div class="adp-mkt-cells c4 adp-dm-table">
                 <div class="cell">
                   <small>공동주택가<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubPrice', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubPrice', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubPrice'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubPrice')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
-                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'pub'))" mode="string" class="adp-mkt-input" :placeholder="officialPriceAuto > 0 ? officialPriceAuto.toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(mk('d', 'pub'), $event)" />
+                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'pub'))" mode="string" class="adp-mkt-input" :placeholder="officialPriceUsable > 0 ? officialPriceUsable.toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(mk('d', 'pub'), $event)" />
                   <strong v-else class="hi">{{ mktPubText }}</strong>
                 </div>
                 <div class="cell calc">
