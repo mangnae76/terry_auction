@@ -764,6 +764,11 @@ const recentSaleTrade = computed(() => {
   return sales.reduce((best, r) => (dateKey(r) > dateKey(best) ? r : best), sales[0]);
 });
 const recentSaleTradePrice = computed(() => parsePriceNumber(recentSaleTrade.value?.amount));
+/** 그 거래가 언제였나 — 연도만으로는 어느 달인지 알 수 없어 월까지 적는다 ('2025-06') */
+const recentSaleTradeYm = computed(() => {
+  const d = (recentSaleTrade.value?.contractDate ?? '').replace(/\D/g, '');
+  return d.length >= 6 ? `${d.slice(0, 4)}-${d.slice(4, 6)}` : '-';
+});
 // 평당가 — 그 거래의 전용면적 기준, 줄에 면적이 없으면 물건 전용면적으로 대신한다
 const recentSaleTradePyeong = computed(() => {
   const price = recentSaleTradePrice.value;
@@ -2591,6 +2596,7 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['공원', '공원'],
     ['학교', '초등학교 · 어린이집'],
     ['학원가', '학원'],
+    ['룸수', '직접 고른다 — 세대구성이 따라 바뀐다'],
     ['평균', '조건별 등수를 평균 내어 최종 등수'],
     ['수요', '세대구성 → 입지조건 → 수요자'],
   ],
@@ -3841,7 +3847,6 @@ const REAL_USER_BANDS = [
     id: '12',
     title: '전용 12평',
     rooms: '1.5룸~2룸',
-    details: [{ who: '1인가구', kinds: [] }, { who: '2인가구', kinds: ['신혼', '중장년'] }],
     conditions: ['일자리', '교통', '인프라', '공원'],
     maxPyeong: 13.5,
   },
@@ -3849,7 +3854,6 @@ const REAL_USER_BANDS = [
     id: '15',
     title: '전용 15평',
     rooms: '큰 2룸',
-    details: [{ who: '2인', kinds: ['신혼', '중장년'] }, { who: '3인', kinds: ['신혼', '중장년', '미취학'] }],
     conditions: ['교통', '인프라', '유치원', '공원'],
     maxPyeong: 16.5,
   },
@@ -3857,7 +3861,6 @@ const REAL_USER_BANDS = [
     id: '18',
     title: '전용 18~25평',
     rooms: '3룸',
-    details: [{ who: '3인가족', kinds: [] }, { who: '4인가족', kinds: [] }],
     conditions: ['초등학교', '학원가', '인프라', '교통'],
     maxPyeong: Number.POSITIVE_INFINITY,
   },
@@ -3878,6 +3881,28 @@ const selectedRealUserBandM2 = computed(() => {
 });
 
 const bandOpen = ref(false);
+
+// 룸수 — 전용면적에서 자동으로 뽑지 않고 직접 고른다.
+// 같은 평수라도 방을 몇 개로 나눴느냐에 따라 들어와 사는 가족이 달라지기 때문이다.
+// 오른쪽 세대구성은 여기서 고른 룸수를 그대로 따라간다.
+const ROOM_TYPES = [
+  { id: '1', label: '1룸', details: [{ who: '1인가구', kinds: [] }] },
+  { id: '1.5', label: '1.5룸', details: [{ who: '1인가구', kinds: [] }, { who: '2인가구', kinds: ['신혼'] }] },
+  { id: '2', label: '2룸', details: [{ who: '1인가구', kinds: [] }, { who: '2인가구', kinds: ['신혼', '중장년'] }] },
+  { id: '2b', label: '큰 2룸', details: [{ who: '2인가구', kinds: ['신혼', '중장년'] }, { who: '3인가족', kinds: ['미취학'] }] },
+  { id: '3', label: '3룸', details: [{ who: '3인가족', kinds: [] }, { who: '4인가족', kinds: [] }] },
+  { id: '4', label: '4룸', details: [{ who: '4인가족', kinds: [] }, { who: '5인가족', kinds: [] }] },
+];
+const roomOpen = ref(false);
+const selectedRoomType = computed(
+  () => ROOM_TYPES.find((r) => r.id === auction.value?.realUserRoomId) ?? null,
+);
+const pickRoomType = async (id: string) => {
+  roomOpen.value = false;
+  if (!auction.value) return;
+  auction.value.realUserRoomId = id;
+  await store.saveAuction(auction.value);
+};
 
 // 입지조건별 등수.
 // 평수마다 따로 보관한다 — 키를 조건명만으로 두면 평수를 바꿔도 겹치는 조건(교통·인프라 등)의
@@ -5223,7 +5248,7 @@ const goBack = () => router.back();
           <div v-if="!isCollapsed('casePrice')">
             <div class="adp-trade-summary cols3">
               <div class="adp-trade-sum-card">
-                <small><span class="adp-sum-key">{{ recentSaleTrade?.contractDate ? `${recentSaleTrade.contractDate.slice(0, 4)}Y` : '-' }}</span> 실거래가</small>
+                <small><span class="adp-sum-key">{{ recentSaleTradeYm }}</span> 실거래가</small>
                 <span class="adp-sum-value">
                   <strong>{{ formatWonSimple(recentSaleTradePrice) }}</strong>
                   <button type="button" class="adp-copy-btn" aria-label="금액 복사" @click.stop="copyText(formatWonSimple(recentSaleTradePrice))">
@@ -6248,10 +6273,37 @@ const goBack = () => router.back();
                     </ul>
                   </template>
                 </div>
-                <div v-if="selectedRealUserBand?.rooms" class="adp-ruser-m2">{{ selectedRealUserBand.rooms }}</div>
+                <div class="adp-rcase-dd adp-ruser-room">
+                  <button type="button" class="adp-rcase-select adp-ruser-select room" @click="roomOpen = !roomOpen">
+                    <span class="adp-ruser-pick">
+                      <span class="band">{{ selectedRoomType ? selectedRoomType.label : '룸수 선택' }}</span>
+                    </span>
+                    <span class="adp-rcase-caret">{{ roomOpen ? '▴' : '▾' }}</span>
+                  </button>
+                  <template v-if="roomOpen">
+                    <div class="adp-rcase-backdrop" @click="roomOpen = false" />
+                    <ul class="adp-rcase-list adp-ruser-list">
+                      <li
+                        :class="['adp-rcase-item', { on: !selectedRoomType }]"
+                        @click="pickRoomType('')"
+                      >
+                        <strong>룸수 선택</strong>
+                      </li>
+                      <li
+                        v-for="r in ROOM_TYPES"
+                        :key="r.id"
+                        :class="['adp-rcase-item', { on: r.id === selectedRoomType?.id }]"
+                        @click="pickRoomType(r.id)"
+                      >
+                        <strong>{{ r.label }}</strong>
+                        <small>{{ r.details.map((d) => d.who).join(' · ') }}</small>
+                      </li>
+                    </ul>
+                  </template>
+                </div>
                 </td>
                 <td class="adp-ruser-cell">
-                <div v-for="d in selectedRealUserBand?.details ?? []" :key="d.who" class="adp-ruser-line">
+                <div v-for="d in selectedRoomType?.details ?? []" :key="d.who" class="adp-ruser-line">
                   <strong>{{ d.who }}</strong>
                   <span v-for="k in d.kinds" :key="k" class="kind">{{ k }}</span>
                 </div>
@@ -6267,9 +6319,9 @@ const goBack = () => router.back();
                   <input
                     class="adp-ruser-rank"
                     inputmode="numeric"
-                    :placeholder="autoRankOf(c) || '입력'"
+                    placeholder="입력"
                     :title="autoRankNote(c)"
-                    :value="rankOf(c)"
+                    :value="rankValue(c)"
                     @change="setRank(c, ($event.target as HTMLInputElement).value)"
                   />
                 </div>
@@ -7938,8 +7990,10 @@ const goBack = () => router.back();
 .adp-ruser-pick { display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .adp-ruser-pick .band { font-size: 13.5px; font-weight: 800; color: #111827; white-space: nowrap; }
 .adp-ruser-pick .rooms { font-size: 11.5px; font-weight: 700; color: #4b5563; white-space: nowrap; }
-/* 선택칸 바깥 빈자리에 룸 표시 */
-.adp-ruser-m2 { margin-top: 5px; font-size: 13px; font-weight: 800; color: #374151; text-align: center; white-space: nowrap; }
+/* 평형대 칸 바로 아래에 룸수 고르는 칸 */
+.adp-ruser-room { margin-top: 5px; }
+.adp-ruser-select.room { min-height: 32px; }
+.adp-ruser-select.room .band { font-size: 12.5px; }
 .adp-ruser-select .adp-rcase-caret { flex: none; }
 .adp-ruser-list { min-width: 190px; }
 /* 평형대·룸 표시를 또렷한 검은 글씨로 */

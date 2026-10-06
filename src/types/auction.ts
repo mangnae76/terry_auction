@@ -473,6 +473,8 @@ export interface AuctionDetail {
   rightsCaseId?: string;
   /** 실사용자 평형대 선택값 ('12'|'15'|'18'). 비어 있으면 전용 평수로 자동 판정 */
   realUserBandId?: string;
+  /** 룸수 선택값 — 세대구성이 이 값을 따라간다. 비어 있으면 세대구성도 비운다 */
+  realUserRoomId?: string;
   /** 입지조건별 등수 — 조건명이 키 */
   realUserRanks?: Record<string, string>;
   /** @deprecated 자유입력 방식이던 시절의 필드 — 남은 데이터 보존용 */
