@@ -6,7 +6,6 @@ import calendarIcon from '../assets/icones/calendar-days.png';
 import sunIcon from '../assets/icones/sun.png';
 import dollarIcon from '../assets/icones/circle-dollar-sign.png';
 import refreshIcon from '../assets/icones/refresh-cw.png';
-import fileUserIcon from '../assets/icones/file-user.png';
 import { useAuthStore } from '../stores/authStore';
 import { MY_PAGE_ITEMS, type MyPageItem } from '../services/myPageMenu';
 
@@ -82,7 +81,11 @@ const onLogout = async () => {
     <div class="amh-row amh-row-bottom">
       <span class="amh-greet">반가워요! <strong>{{ displayNickname }}</strong><span class="amh-greet-nim">님</span></span>
       <button type="button" class="amh-user-btn" aria-label="사용자 메뉴" @click="toggleMenu">
-        <img :src="fileUserIcon" alt="" class="amh-icon amh-greet-icon" />
+        <!-- 흉상 — 동그란 머리에 둥근 어깨. 그림 파일은 작게 줄이면 뭉개져서 선으로 그린다 -->
+        <svg class="amh-greet-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="7.5" r="4.5" />
+          <path d="M3 21.5c0-4.14 4.03-7 9-7s9 2.86 9 7a.5.5 0 0 1-.5.5h-17a.5.5 0 0 1-.5-.5Z" />
+        </svg>
       </button>
       <div v-if="menuOpen" class="amh-user-menu-wrap" @click.self="closeMenu">
         <ul class="amh-user-menu" @click.stop>
@@ -186,7 +189,7 @@ const onLogout = async () => {
 .amh-greet { font-size: 11px; color: #ffb38a; font-weight: 400; white-space: nowrap; flex-shrink: 0; }
 .amh-greet strong { color: #fff; font-weight: 400; margin: 0 2px; }
 .amh-greet-nim { color: #fff; }
-.amh-greet-icon { width: 14px; height: 14px; flex-shrink: 0; }
+.amh-greet-icon { width: 19px; height: 19px; flex-shrink: 0; fill: #fff; display: block; }
 .amh-user-btn { border: none; background: transparent; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; }
 .amh-user-menu-wrap {
   position: fixed; inset: 0; z-index: 250;

@@ -724,36 +724,26 @@ const tradeYearOptions = computed(() => {
 // 면적·연도만 걸러 둔 목록 — 탭별 건수를 세는 데 쓴다
 /** 표에 쓰는 줄 — 국토부 자료만 쓴다 (PDF 표는 쓰지 않는다) */
 const mergedTradeRows = computed<PlaceRow[]>(() => samePlaceRows.value);
-/** 위쪽 탭·면적·연도 거르기 */
-const shownTradeRows = computed(() => mergedTradeRows.value.filter((r) => {
-  if (tradeFilter.value !== 'all' && !(r.kind === tradeFilter.value || (tradeFilter.value === '매매' && r.kind === '직거래'))) return false;
+/** 면적·연도만 거른 줄 — 탭(매매/전세/월세)과 상관없이 쓴다.
+ *  위쪽 요약 박스가 이걸 보고, 표는 여기에 탭을 한 번 더 얹는다. */
+const tradeRowsByAreaYear = computed(() => mergedTradeRows.value.filter((r) => {
   if (tradeAreaFilter.value && !String(r.areaM2).startsWith(tradeAreaFilter.value)) return false;
   if (tradeYearFilter.value && r.contractDate.slice(0, 4) !== tradeYearFilter.value) return false;
   return true;
 }));
+/** 표에 그리는 줄 — 위에 탭 거르기까지 얹는다 */
+const shownTradeRows = computed(() => tradeRowsByAreaYear.value.filter((r) => (
+  tradeFilter.value === 'all' || r.kind === tradeFilter.value || (tradeFilter.value === '매매' && r.kind === '직거래')
+)));
 const mergedCounts = computed(() => {
-  const rows = mergedTradeRows.value;
+  const rows = tradeRowsByAreaYear.value;
   const by = (t: string) => rows.filter((r) => r.kind === t || (t === '매매' && r.kind === '직거래')).length;
   return { all: rows.length, 매매: by('매매'), 전세: by('전세'), 월세: by('월세') };
 });
-const pdfRowsNoType = computed(() => realTradeRows.value.filter((r) => {
-  if (tradeAreaFilter.value && !r.area?.startsWith(tradeAreaFilter.value)) return false;
-  if (tradeYearFilter.value) {
-    const y = r.contractDate?.match(/^(\d{2,4})/)?.[1] ?? '';
-    const yShort = y.length === 4 ? y.slice(2) : y;
-    if (yShort !== tradeYearFilter.value) return false;
-  }
-  return true;
-}));
-const pdfTradeCounts = computed(() => {
-  const rows = pdfRowsNoType.value;
-  const by = (t: string) => rows.filter((r) => r.type === t).length;
-  return { all: rows.length, 매매: by('매매'), 전세: by('전세'), 월세: by('월세') };
-});
-// 선택한 탭에 맞춰 건수 박스의 제목과 숫자를 바꾼다
+// 선택한 탭에 맞춰 건수 박스의 제목과 숫자를 바꾼다 — 탭에 적힌 수와 같아야 한다
 const tradeCountLabel = computed(() => (tradeFilter.value === 'all' ? '전체' : tradeFilter.value));
 const tradeCountValue = computed(() =>
-  tradeFilter.value === 'all' ? pdfTradeCounts.value.all : pdfTradeCounts.value[tradeFilter.value],
+  tradeFilter.value === 'all' ? mergedCounts.value.all : mergedCounts.value[tradeFilter.value],
 );
 // 해당 물건의 층 — 정보요약과 같은 값을 쓴다
 const tradeTypeClass = (t: string) =>
@@ -764,20 +754,22 @@ const parsePriceNumber = (s: string | undefined | null) => {
   const n = Number(String(s).replace(/[^\d.-]/g, ''));
   return Number.isFinite(n) ? n : NaN;
 };
-// 최근 실거래가 — 면적·연도 필터를 적용한 매매 건 중 계약일이 가장 늦은 건
+// 최근 실거래가 — 아래 표와 같은 줄에서 뽑는다.
+// 예전에는 PDF 표에서 뽑느라 표에는 2025년 매매가 있는데 박스는 2022년을 가리켰다.
 const recentSaleTrade = computed(() => {
-  const dateKey = (r: { contractDate?: string }) => (r.contractDate ?? '').replace(/\D/g, '');
-  const sales = pdfRowsNoType.value.filter((r) => r.type === '매매' && parsePriceNumber(r.price) > 0);
+  const dateKey = (r: PlaceRow) => r.contractDate.replace(/\D/g, '');
+  const sales = tradeRowsByAreaYear.value
+    .filter((r) => (r.kind === '매매' || r.kind === '직거래') && parsePriceNumber(r.amount) > 0);
   if (sales.length === 0) return null;
   return sales.reduce((best, r) => (dateKey(r) > dateKey(best) ? r : best), sales[0]);
 });
-const recentSaleTradePrice = computed(() => parsePriceNumber(recentSaleTrade.value?.price));
-// 평당가 — 그 거래의 전용면적 기준, 표기에 ㎡가 없으면 물건 전용면적으로 대신한다
+const recentSaleTradePrice = computed(() => parsePriceNumber(recentSaleTrade.value?.amount));
+// 평당가 — 그 거래의 전용면적 기준, 줄에 면적이 없으면 물건 전용면적으로 대신한다
 const recentSaleTradePyeong = computed(() => {
   const price = recentSaleTradePrice.value;
   if (!Number.isFinite(price) || price <= 0) return NaN;
-  const fromRow = Number(/([\d.]+)\s*㎡/.exec(recentSaleTrade.value?.area ?? '')?.[1]);
-  const m2 = Number.isFinite(fromRow) && fromRow > 0 ? fromRow : Number(auction.value?.buildingAreaM2) || 0;
+  const fromRow = recentSaleTrade.value?.areaM2 ?? 0;
+  const m2 = fromRow > 0 ? fromRow : Number(auction.value?.buildingAreaM2) || 0;
   if (m2 <= 0) return NaN;
   return Math.round(price / (m2 / 3.305785));
 });
@@ -5233,7 +5225,6 @@ const goBack = () => router.back();
               <div class="adp-trade-sum-card">
                 <small><span class="adp-sum-key">{{ recentSaleTrade?.contractDate ? `${recentSaleTrade.contractDate.slice(0, 4)}Y` : '-' }}</span> 실거래가</small>
                 <span class="adp-sum-value">
-                  <strong v-if="recentSaleTrade?.floor" class="adp-sum-floor">{{ recentSaleTrade.floor }}</strong>
                   <strong>{{ formatWonSimple(recentSaleTradePrice) }}</strong>
                   <button type="button" class="adp-copy-btn" aria-label="금액 복사" @click.stop="copyText(formatWonSimple(recentSaleTradePrice))">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -9265,7 +9256,6 @@ const goBack = () => router.back();
 .adp-trade-meta-title { font-size: 11.5px; font-weight: 800; color: #111827; white-space: nowrap; }
 .adp-trade-sum-card small { font-size: 11px; color: #6b7280; font-weight: 600; }
 .adp-trade-sum-card strong { font-size: 15px; font-weight: 800; color: #111827; }
-.adp-sum-floor { font-size: 13px !important; margin-right: 2px; }
 .adp-sum-key { color: #2b6df3; font-weight: 800; }
 /* 기간 선택 — 최소면적 입력 시작점부터 최대면적 끝까지 4등분 */
 .adp-pub-cell.span2 { grid-column: 1 / -1; justify-content: flex-start; }
