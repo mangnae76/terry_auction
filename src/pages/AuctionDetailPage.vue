@@ -3039,7 +3039,7 @@ const sendTradePriceToMarket = async (row: PlaceRow) => {
     if (pyeong > 0) setMktVal(mk('b', 'unit'), String(Math.round(price / pyeong)));
   }
   await persistSurvey();
-  flashToast('실거래가·평단가에 넣었습니다.', 'success');
+  flashToast('급매가 → 경매물건 실거래가에 적용하였습니다.', 'success');
 };
 // 해당 경매물건 자료가 없으면 비슷한 물건으로 대신 조사한다.
 // 모드를 바꾸면 저장 위치도 갈라져서 두 벌의 값을 따로 들고 있을 수 있다.
