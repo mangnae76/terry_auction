@@ -2720,7 +2720,7 @@ const tipAct = (label: string) => label.endsWith('!');
 const tipLabel = (label: string) => label.replace(/!$/, '');
 const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, string]> }>>(() => ({
   deal: { arrow: '12%', rows: [
-    ['출처', '국토부 실거래가 · 자동 입력'],
+    ['출처', '국토부 실거래가 API · 자동 입력'],
     ['범위', `${surveyAreaLabel.value} · ${publicTradeTypeLabel.value} · 최근 12개월`],
     ['제외', `직거래 ${deal12mDirect.value}건 · 계약해제 ${deal12mCancelled.value}건 · 합계 ${deal12mDirect.value + deal12mCancelled.value}건`],
     ['표시', '1년 거래량 | 월평균 거래량'],
