@@ -997,12 +997,12 @@ const navBaseRows = computed(() => publicRealTradeRows.value.filter((r) => {
 
 /** 평형 구간 — 사다리(10/15/20/25/30평)와 같은 경계를 쓴다 */
 const NAV_PYEONG_BANDS: Array<{ key: string; label: string; min: number | null; max: number | null }> = [
-  { key: 'p0', label: '~10평', min: null, max: 10 },
-  { key: 'p1', label: '10~15평', min: 10, max: 15 },
+  // 10평 미만은 빌라에서 손에 꼽을 만큼이라 아래 칸에 합쳤다
+  { key: 'p1', label: '~15평', min: null, max: 15 },
   { key: 'p2', label: '15~20평', min: 15, max: 20 },
   { key: 'p3', label: '20~25평', min: 20, max: 25 },
   // 30평 이상은 빌라에서 거의 없어 따로 칸을 두지 않는다.
-  // 대신 마지막 칸을 열어 둬서 그 거래도 빠지지 않게 한다 (칸 수는 층·연식과 같은 5개).
+  // 대신 마지막 칸을 열어 둬서 그 거래도 빠지지 않게 한다 (칸 수는 층·연식과 같은 4개).
   { key: 'p4', label: '25평~', min: 25, max: null },
 ];
 const navPyeongBuckets = computed<NavBucket[]>(() =>
@@ -1019,12 +1019,13 @@ const navPyeongBuckets = computed<NavBucket[]>(() =>
   })),
 );
 
-/** 층 구간 — 1~4층은 그대로, 5층 이상은 묶는다 */
+/** 층 구간 — 2~4층은 그대로, 5층 이상은 묶는다.
+ *  1층은 빼 뒀다 — 빌라는 1층을 주차장으로 쓰는 집이 많아 거래가 거의 없다. */
 const floorNumOf = (r: RealTradeMatchRow) => {
   const n = Number(String(r.floor ?? '').replace(/[^\d-]/g, ''));
   return Number.isFinite(n) ? n : NaN;
 };
-const NAV_FLOOR_BANDS = [1, 2, 3, 4];
+const NAV_FLOOR_BANDS = [2, 3, 4];
 const navFloorBuckets = computed<NavBucket[]>(() => {
   const list: NavBucket[] = NAV_FLOOR_BANDS.map((f) => ({
     key: `f${f}`,
@@ -1042,8 +1043,8 @@ const navFloorBuckets = computed<NavBucket[]>(() => {
 /** 연식 구간 — 건축년도 사다리와 같은 5년 단위 */
 // 연도보다 '몇 년차'가 직관적이라 연차로 적는다 (내부 비교는 건축연도로 한다)
 const NAV_YEAR_BANDS: Array<{ key: string; label: string; min: number | null; max: number | null }> = [
-  { key: 'y0', label: '5년↓', min: THIS_YEAR - 5, max: null },
-  { key: 'y1', label: '5~10년', min: THIS_YEAR - 10, max: THIS_YEAR - 6 },
+  // 5년 미만은 빌라 거래가 드물어 아래 칸에 합쳤다
+  { key: 'y1', label: '~10년', min: THIS_YEAR - 10, max: null },
   { key: 'y2', label: '10~15년', min: THIS_YEAR - 15, max: THIS_YEAR - 11 },
   { key: 'y3', label: '15~20년', min: THIS_YEAR - 20, max: THIS_YEAR - 16 },
   { key: 'y4', label: '20년↑', min: null, max: THIS_YEAR - 21 },
@@ -9524,7 +9525,8 @@ const goBack = () => router.back();
   display: flex; align-items: baseline; gap: 5px; min-width: 0; overflow: hidden;
   white-space: nowrap;
 }
-.adp-pub-update { flex: 0 1 auto; min-width: 0; }
+/* UPDATE 는 제목 줄의 오른쪽 끝 — 아래 계약해제 칸의 오른쪽 모서리와 맞는다 */
+.adp-pub-update { flex: 0 1 auto; min-width: 0; margin-left: auto; padding-right: 2px; }
 /* 목록을 펼쳤을 때 표 위에 붙는 한 줄 안내 */
 .adp-pub-list-note { margin: 0 2px 6px; font-size: 10.5px; font-weight: 400; color: #6b7280; }
 /* 제외한 직거래 건수 — 실거래 박스와 같은 규격 */
