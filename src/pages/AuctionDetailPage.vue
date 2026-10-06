@@ -3071,7 +3071,7 @@ const sendJeonseToMarket = async (row: PlaceRow) => {
   if (String(row.floor ?? '').trim()) setMktVal(mk('d', 'jFloor'), String(row.floor).trim());
   if (Number(row.areaM2) > 0) setMktVal(mk('d', 'jArea'), String(Number(row.areaM2)));
   await persistSurvey();
-  flashToast('급매가 → 경매물건 전세 실거래가에 적용하였습니다.', 'success');
+  flashToast('경매물건 전세 실거래가에 적용하였습니다.', 'success');
 };
 const sendTradePriceToMarket = async (row: PlaceRow) => {
   const price = parsePriceNumber(row.amount);
@@ -3088,7 +3088,7 @@ const sendTradePriceToMarket = async (row: PlaceRow) => {
     if (pyeong > 0) setMktVal(mk('b', 'unit'), String(Math.round(price / pyeong)));
   }
   await persistSurvey();
-  flashToast('급매가 → 경매물건 실거래가에 적용하였습니다.', 'success');
+  flashToast('경매물건 실거래가에 적용하였습니다.', 'success');
 };
 // 해당 경매물건 자료가 없으면 비슷한 물건으로 대신 조사한다.
 // 모드를 바꾸면 저장 위치도 갈라져서 두 벌의 값을 따로 들고 있을 수 있다.
@@ -6823,7 +6823,7 @@ const goBack = () => router.back();
 
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head wrapy">
-                <span class="t">③ 국토부 실거래가 조건식 분석</span>
+                <span class="t">③ 국토부 실거래가 조건식 분석 (자동 입력)</span>
                 <!-- 가격정보 탭에서 조회한 지역·건수와 조회 시각을 같이 보여 준다 -->
                 <small class="adp-mkt-region">
                   <span class="adp-tab-dot" /> {{ publicRealTradeSigungu || '주변' }} {{ publicRealTradeDong || '실거래가' }} ({{ filteredPublicTradeRows.length }}건)
