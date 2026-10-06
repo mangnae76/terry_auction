@@ -4,194 +4,11 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import chevronDownIcon from '../assets/icones/chevron-down.png';
 import {
-  fetchRawAptTrades,
   fetchTradeVolumeStats,
   type PropertyType,
-  type RawAptTrade,
   type TradeVolumeStat,
 } from '../services/publicDataApi';
 import { geocodeAddress } from '../services/routeOptimizer';
-
-// 수도권 16개 자치구 (LAWD_CD 5자리) — 거래랭킹 TOP 의 집계 대상
-// `sido`/`district`는 검색폼(regionGroups)과 매칭 — 행정시 sub-district인 경우 부모 시(시) 라벨 사용
-const REGIONAL_LAWD: Array<{ name: string; code: string; sido: string; district: string }> = [
-  { name: '강남구',        code: '11680', sido: '서울특별시', district: '강남구' },
-  { name: '서초구',        code: '11650', sido: '서울특별시', district: '서초구' },
-  { name: '송파구',        code: '11710', sido: '서울특별시', district: '송파구' },
-  { name: '용산구',        code: '11170', sido: '서울특별시', district: '용산구' },
-  { name: '마포구',        code: '11440', sido: '서울특별시', district: '마포구' },
-  { name: '성동구',        code: '11200', sido: '서울특별시', district: '성동구' },
-  { name: '노원구',        code: '11350', sido: '서울특별시', district: '노원구' },
-  { name: '양천구',        code: '11470', sido: '서울특별시', district: '양천구' },
-  { name: '영등포구',      code: '11560', sido: '서울특별시', district: '영등포구' },
-  { name: '강서구',        code: '11500', sido: '서울특별시', district: '강서구' },
-  { name: '성남시 분당구', code: '41135', sido: '경기도',     district: '성남시' },
-  { name: '용인시 수지구', code: '41465', sido: '경기도',     district: '용인시' },
-  { name: '수원시 영통구', code: '41117', sido: '경기도',     district: '수원시' },
-  { name: '화성시 동탄구', code: '41590', sido: '경기도',     district: '화성시' },
-  { name: '고양시 덕양구', code: '41281', sido: '경기도',     district: '고양시' },
-  { name: '인천 연수구',   code: '28185', sido: '인천광역시', district: '연수구' },
-  { name: '인천 중구',     code: '28110', sido: '인천광역시', district: '중구' },
-];
-// TOP 랭킹 카드들이 함께 쓰는 원자료
-const rawTrades = ref<RawAptTrade[]>([]);
-const rawLoading = ref(false);
-const rawError = ref('');
-
-// === 거래랭킹 탭 — 지역/아파트/거래량 TOP 10 ===
-type ToplistTab = 'region' | 'apt' | 'volume';
-const toplistTab = ref<ToplistTab>('region');
-interface ToplistRow { rank: number; name: string; pct: number; valueLabel: string; }
-
-const lawdNameMap = new Map(REGIONAL_LAWD.map((r) => [r.code, r.name]));
-
-const medianN = (arr: number[]): number => {
-  if (arr.length === 0) return 0;
-  const s = [...arr].sort((a, b) => a - b);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-};
-
-interface MonthBuckets<T> { curr: T[]; prev: T[]; }
-const splitByMonth = <T extends { date: string }>(rows: T[]): MonthBuckets<T> => {
-  const months = Array.from(new Set(rows.map((r) => r.date.slice(0, 7)))).sort();
-  if (months.length < 2) return { curr: rows, prev: [] };
-  const currKey = months[months.length - 1];
-  const prevKey = months[months.length - 2];
-  return {
-    curr: rows.filter((r) => r.date.startsWith(currKey)),
-    prev: rows.filter((r) => r.date.startsWith(prevKey)),
-  };
-};
-
-const toplistDateRange = computed(() => {
-  if (rawTrades.value.length === 0) return '';
-  const months = Array.from(new Set(rawTrades.value.map((t) => t.date.slice(0, 7)))).sort();
-  if (months.length === 0) return '';
-  const last = months[months.length - 1];
-  return `기준일 : ${last.replace('-', '-')}-01 ~ ${last.replace('-', '-')}-28`;
-});
-
-// 1) 지역(시군구) TOP — 평균 시세(만원/m²) 상승률
-const toplistRegion = computed<ToplistRow[]>(() => {
-  if (rawTrades.value.length === 0) return [];
-  const out: Array<{ name: string; currMed: number; prevMed: number; pct: number }> = [];
-  for (const r of REGIONAL_LAWD) {
-    const rows = rawTrades.value.filter((t) => t.lawdCd === r.code);
-    if (rows.length === 0) continue;
-    const { curr, prev } = splitByMonth(rows);
-    if (curr.length < 3 || prev.length < 3) continue;
-    const cm = medianN(curr.map((x) => x.pricePerM2));
-    const pm = medianN(prev.map((x) => x.pricePerM2));
-    if (pm <= 0) continue;
-    out.push({ name: r.name, currMed: cm, prevMed: pm, pct: ((cm - pm) / pm) * 100 });
-  }
-  return out
-    .sort((a, b) => b.pct - a.pct)
-    .slice(0, 10)
-    .map((it, i) => ({
-      rank: i + 1,
-      name: it.name,
-      pct: it.pct,
-      valueLabel: `${Math.round(it.currMed).toLocaleString('ko-KR')}만원/㎡`,
-    }));
-});
-
-// 2) 아파트(단지) TOP — 평균 거래가(억원) 상승률 (단지명 + 시군구로 키)
-const toplistApt = computed<ToplistRow[]>(() => {
-  if (rawTrades.value.length === 0) return [];
-  const map = new Map<string, RawAptTrade[]>();
-  for (const t of rawTrades.value) {
-    if (!t.apartment) continue;
-    const key = `${t.lawdCd}|${t.apartment}`;
-    const arr = map.get(key) ?? [];
-    arr.push(t);
-    map.set(key, arr);
-  }
-  const out: Array<{ name: string; currMed: number; pct: number }> = [];
-  for (const [key, rows] of map) {
-    const { curr, prev } = splitByMonth(rows);
-    if (curr.length < 2 || prev.length < 2) continue;
-    const cm = medianN(curr.map((x) => x.dealAmount)); // 만원
-    const pm = medianN(prev.map((x) => x.dealAmount));
-    if (pm <= 0) continue;
-    const [, name] = key.split('|');
-    out.push({ name, currMed: cm, pct: ((cm - pm) / pm) * 100 });
-  }
-  return out
-    .sort((a, b) => b.pct - a.pct)
-    .slice(0, 10)
-    .map((it, i) => ({
-      rank: i + 1,
-      name: it.name,
-      pct: it.pct,
-      valueLabel: `${(it.currMed / 10000).toFixed(2)}억원`,
-    }));
-});
-
-// 3) 거래량(시군구) TOP — 거래 건수 증가율
-const toplistVolume = computed<ToplistRow[]>(() => {
-  if (rawTrades.value.length === 0) return [];
-  const out: Array<{ name: string; currCount: number; prevCount: number; pct: number }> = [];
-  for (const r of REGIONAL_LAWD) {
-    const rows = rawTrades.value.filter((t) => t.lawdCd === r.code);
-    const { curr, prev } = splitByMonth(rows);
-    if (prev.length < 1) continue;
-    const pct = ((curr.length - prev.length) / prev.length) * 100;
-    out.push({ name: r.name, currCount: curr.length, prevCount: prev.length, pct });
-  }
-  return out
-    .sort((a, b) => b.pct - a.pct)
-    .slice(0, 10)
-    .map((it, i) => ({
-      rank: i + 1,
-      name: it.name,
-      pct: it.pct,
-      valueLabel: `${it.currCount}건`,
-    }));
-});
-
-const currentToplist = computed(() => {
-  if (toplistTab.value === 'region') return toplistRegion.value;
-  if (toplistTab.value === 'apt') return toplistApt.value;
-  return toplistVolume.value;
-});
-void lawdNameMap;
-
-// 지역/거래량 TOP 행 클릭 → 조건검색 자동 입력 + 검색 실행
-const onClickToplistRow = async (row: ToplistRow) => {
-  if (toplistTab.value === 'apt') return; // 단지 클릭은 검색 매핑 모호 — 비활성
-  const meta = REGIONAL_LAWD.find((r) => r.name === row.name);
-  if (!meta) return;
-  const sg = regionGroups.find((g) => g.sido === meta.sido);
-  if (!sg) return;
-  const district = sg.districts.find((d) => d.label === meta.district);
-  if (!district) return;
-  // selectedSido 변경 시 watch가 selectedDistrict를 첫 옵션(전체)으로 자동 리셋한다.
-  // → nextTick으로 그 watch가 끝난 뒤 district를 덮어써야 사용자가 원한 시군구가 유지됨.
-  selectedSido.value = meta.sido;
-  await nextTick();
-  selectedDistrict.value = district.label;
-  await nextTick();
-  void loadStats();
-};
-
-/** 거래랭킹 TOP 의 원자료 — 수도권 16개 자치구의 최근 4개월 아파트 매매 실거래 */
-const loadRawTrades = async () => {
-  rawLoading.value = true;
-  rawError.value = '';
-  try {
-    const codes = REGIONAL_LAWD.map((r) => r.code);
-    const { trades, errors } = await fetchRawAptTrades(codes, 4, 'apt');
-    rawTrades.value = trades;
-    if (trades.length === 0) rawError.value = errors[0] || '실거래 데이터 없음';
-    else if (errors.length > 0) rawError.value = `일부 지역 조회 실패 (${errors.length}건)`;
-  } catch (e) {
-    rawError.value = e instanceof Error ? e.message : String(e);
-  } finally {
-    rawLoading.value = false;
-  }
-};
 
 interface DistrictOption {
   label: string;
@@ -758,7 +575,6 @@ const loadStats = async () => {
 
 onMounted(() => {
   void ensureMap().then(() => loadStats());
-  void loadRawTrades();
 });
 </script>
 
@@ -772,50 +588,6 @@ onMounted(() => {
     </header>
 
     <div class="tsp-body">
-      <section class="tsp-card tsp-toplist-card">
-        <nav class="tsp-toplist-tabs">
-          <button :class="['tsp-toplist-tab', { active: toplistTab === 'region' }]" @click="toplistTab = 'region'">지역 TOP</button>
-          <button :class="['tsp-toplist-tab', { active: toplistTab === 'apt' }]" @click="toplistTab = 'apt'">아파트 TOP</button>
-          <button :class="['tsp-toplist-tab', { active: toplistTab === 'volume' }]" @click="toplistTab = 'volume'">거래량 TOP</button>
-        </nav>
-        <div class="tsp-toplist-header">
-          <span class="tsp-toplist-icon-sm">{{ toplistTab === 'volume' ? '💰' : toplistTab === 'apt' ? '🏢' : '🗺️' }}</span>
-          <span class="tsp-toplist-meta">{{ toplistDateRange || '-' }} · 수도권 16개 자치구 기준</span>
-        </div>
-        <p v-if="rawLoading" class="tsp-note">실거래 데이터 불러오는 중…</p>
-        <p v-else-if="currentToplist.length === 0" class="tsp-note warn">{{ rawError || '집계 가능한 데이터가 부족합니다.' }}</p>
-        <div v-else class="tsp-toplist-body">
-          <div class="tsp-toplist-top3">
-            <div
-              v-for="r in currentToplist.slice(0, 3)"
-              :key="r.rank"
-              :class="['tsp-top3-item', { clickable: toplistTab !== 'apt' }]"
-              @click="onClickToplistRow(r)"
-            >
-              <span class="rank">{{ r.rank }}</span>
-              <strong class="name">{{ r.name }}</strong>
-              <div class="metrics">
-                <span class="pct" :class="r.pct >= 0 ? 'up' : 'down'">{{ r.pct >= 0 ? '↑' : '↓' }}{{ Math.abs(r.pct).toFixed(2) }}%</span>
-                <span class="value">{{ r.valueLabel }}</span>
-              </div>
-            </div>
-          </div>
-          <ul class="tsp-toplist-rest">
-            <li
-              v-for="r in currentToplist.slice(3)"
-              :key="r.rank"
-              :class="['tsp-rest-item', { clickable: toplistTab !== 'apt' }]"
-              @click="onClickToplistRow(r)"
-            >
-              <span class="rank">{{ r.rank }}</span>
-              <span class="name">{{ r.name }}</span>
-              <span class="pct" :class="r.pct >= 0 ? 'up' : 'down'">{{ r.pct >= 0 ? '↑' : '↓' }}{{ Math.abs(r.pct).toFixed(2) }}%</span>
-              <span class="value">{{ r.valueLabel }}</span>
-            </li>
-          </ul>
-        </div>
-      </section>
-
       <section class="tsp-card">
         <header class="tsp-card-head">
           <h2>조건 검색</h2>
@@ -966,66 +738,6 @@ onMounted(() => {
 }
 .tsp-kpi .t-sub { font-size: 10.5px; color: #6b7280; font-weight: 600; }
 .tsp-kpi .kpi-suffix { font-size: 10px; color: #2b6df3; font-weight: 700; margin-left: 2px; }
-
-/* === 거래랭킹 TOP 카드 === */
-.tsp-toplist-card { padding: 0; overflow: hidden; }
-.tsp-toplist-tabs {
-  display: grid; grid-template-columns: 1fr 1fr 1fr;
-  border-bottom: 1px solid #e5e7eb;
-}
-.tsp-toplist-tab {
-  border: none; background: #fff; padding: 12px 8px;
-  font-size: 13px; font-weight: 700; color: #9ca3af; cursor: pointer;
-  border-right: 1px solid #f1f5f9;
-}
-.tsp-toplist-tab:last-child { border-right: none; }
-.tsp-toplist-tab.active { background: #1e3a5f; color: #fff; }
-.tsp-toplist-header {
-  display: flex; align-items: center; gap: 6px;
-  padding: 8px 14px 4px;
-}
-.tsp-toplist-icon-sm { font-size: 16px; flex: 0 0 auto; }
-.tsp-toplist-meta { font-size: 11px; color: #9ca3af; flex: 1 1 auto; text-align: right; }
-.tsp-toplist-body { padding: 6px 12px 14px; display: flex; flex-direction: column; gap: 8px; }
-
-.tsp-toplist-top3 { display: flex; flex-direction: column; gap: 6px; }
-.tsp-top3-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 4px; border-bottom: 1px solid #f1f5f9;
-}
-.tsp-top3-item.clickable { cursor: pointer; }
-.tsp-top3-item.clickable:hover { background: #f3f6fc; border-radius: 6px; }
-.tsp-top3-item:last-child { border-bottom: none; }
-.tsp-top3-item .rank {
-  flex: 0 0 auto; width: 18px; height: 18px;
-  background: #1e3a5f; color: #fff; border-radius: 4px;
-  font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center;
-}
-.tsp-top3-item .name { flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 800; color: #1e3a5f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tsp-top3-item .metrics { display: inline-flex; align-items: baseline; gap: 8px; flex: 0 0 auto; }
-.tsp-top3-item .pct { font-size: 13px; font-weight: 800; }
-.tsp-top3-item .pct.up { color: #ef4444; }
-.tsp-top3-item .pct.down { color: #2563eb; }
-.tsp-top3-item .value { font-size: 12px; color: #6b7280; font-weight: 600; }
-
-.tsp-toplist-rest { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.tsp-rest-item {
-  display: grid; grid-template-columns: 18px 1fr auto auto;
-  align-items: center; gap: 8px; padding: 6px 4px;
-  font-size: 12px;
-}
-.tsp-rest-item.clickable { cursor: pointer; border-radius: 6px; }
-.tsp-rest-item.clickable:hover { background: #f3f6fc; }
-.tsp-rest-item .rank {
-  width: 18px; height: 18px; background: #cbd5e1; color: #1e3a5f;
-  border-radius: 4px; font-size: 10.5px; font-weight: 800;
-  display: inline-flex; align-items: center; justify-content: center;
-}
-.tsp-rest-item .name { color: #374151; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tsp-rest-item .pct { font-size: 11.5px; font-weight: 800; }
-.tsp-rest-item .pct.up { color: #ef4444; }
-.tsp-rest-item .pct.down { color: #2563eb; }
-.tsp-rest-item .value { font-size: 11px; color: #6b7280; font-weight: 600; }
 
 .tsp-rank-list { list-style: none; margin: 0; padding: 4px 0 12px; }
 .tsp-rank-row {
