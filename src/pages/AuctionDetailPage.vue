@@ -2596,7 +2596,7 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['공원', '공원'],
     ['학교', '초등학교 · 어린이집'],
     ['학원가', '학원'],
-    ['룸수', '직접 고른다 — 세대구성이 따라 바뀐다'],
+    ['룸수', '직접 고른다 — 세대구성·입지조건이 따라 바뀐다'],
     ['평균', '조건별 등수를 평균 내어 최종 등수'],
     ['수요', '세대구성 → 입지조건 → 수요자'],
   ],
@@ -3846,21 +3846,18 @@ const REAL_USER_BANDS = [
   {
     id: '12',
     title: '전용 12평',
-    rooms: '1.5룸~2룸',
     conditions: ['일자리', '교통', '인프라', '공원'],
     maxPyeong: 13.5,
   },
   {
     id: '15',
     title: '전용 15평',
-    rooms: '큰 2룸',
     conditions: ['교통', '인프라', '유치원', '공원'],
     maxPyeong: 16.5,
   },
   {
     id: '18',
     title: '전용 18~25평',
-    rooms: '3룸',
     conditions: ['초등학교', '학원가', '인프라', '교통'],
     maxPyeong: Number.POSITIVE_INFINITY,
   },
@@ -3881,17 +3878,48 @@ const selectedRealUserBandM2 = computed(() => {
 });
 
 const bandOpen = ref(false);
+/** 등수를 매길 입지조건 — 사는 가족(룸수)을 따라간다.
+ *  룸수를 아직 안 골랐으면 예전처럼 평형대 기준을 그대로 쓴다. */
+const rankConditions = computed(
+  () => selectedRoomType.value?.conditions ?? selectedRealUserBand.value?.conditions ?? [],
+);
 
 // 룸수 — 전용면적에서 자동으로 뽑지 않고 직접 고른다.
 // 같은 평수라도 방을 몇 개로 나눴느냐에 따라 들어와 사는 가족이 달라지기 때문이다.
 // 오른쪽 세대구성은 여기서 고른 룸수를 그대로 따라간다.
+// 입지조건도 여기에 둔다 — 혼자 사는 사람은 일자리·교통을 보고,
+// 아이가 있는 집은 유치원·초등학교·학원가를 본다. 보는 것이 가족에 따라 달라진다.
 const ROOM_TYPES = [
-  { id: '1', label: '1룸', details: [{ who: '1인가구', kinds: [] }] },
-  { id: '1.5', label: '1.5룸', details: [{ who: '1인가구', kinds: [] }, { who: '2인가구', kinds: ['신혼'] }] },
-  { id: '2', label: '2룸', details: [{ who: '1인가구', kinds: [] }, { who: '2인가구', kinds: ['신혼', '중장년'] }] },
-  { id: '2b', label: '큰 2룸', details: [{ who: '2인가구', kinds: ['신혼', '중장년'] }, { who: '3인가족', kinds: ['미취학'] }] },
-  { id: '3', label: '3룸', details: [{ who: '3인가족', kinds: [] }, { who: '4인가족', kinds: [] }] },
-  { id: '4', label: '4룸', details: [{ who: '4인가족', kinds: [] }, { who: '5인가족', kinds: [] }] },
+  {
+    id: '1', label: '1룸',
+    details: [{ who: '1인가구', kinds: [] }],
+    conditions: ['일자리', '교통', '인프라', '공원'],
+  },
+  {
+    id: '1.5', label: '1.5룸',
+    details: [{ who: '1인가구', kinds: [] }, { who: '2인가구', kinds: ['신혼'] }],
+    conditions: ['일자리', '교통', '인프라', '공원'],
+  },
+  {
+    id: '2', label: '2룸',
+    details: [{ who: '1인가구', kinds: [] }, { who: '2인가구', kinds: ['신혼', '중장년'] }],
+    conditions: ['일자리', '교통', '인프라', '공원'],
+  },
+  {
+    id: '2b', label: '큰 2룸',
+    details: [{ who: '2인가구', kinds: ['신혼', '중장년'] }, { who: '3인가족', kinds: ['미취학'] }],
+    conditions: ['교통', '인프라', '유치원', '공원'],
+  },
+  {
+    id: '3', label: '3룸',
+    details: [{ who: '3인가족', kinds: [] }, { who: '4인가족', kinds: [] }],
+    conditions: ['초등학교', '학원가', '인프라', '교통'],
+  },
+  {
+    id: '4', label: '4룸',
+    details: [{ who: '4인가족', kinds: [] }, { who: '5인가족', kinds: [] }],
+    conditions: ['초등학교', '학원가', '인프라', '교통'],
+  },
 ];
 const roomOpen = ref(false);
 const selectedRoomType = computed(
@@ -3951,7 +3979,7 @@ const setRank = async (cond: string, value: string) => {
 };
 // 입지조건 등수 평균 — 낮을수록 좋은 등수. 입력한 항목만으로 평균을 낸다
 const realUserRankSummary = computed(() => {
-  const conditions = selectedRealUserBand.value?.conditions ?? [];
+  const conditions = rankConditions.value;
   const values = conditions
     .map((c) => Number(rankValue(c)))
     .filter((n) => Number.isFinite(n) && n > 0);
@@ -6280,7 +6308,6 @@ const goBack = () => router.back();
                         @click="pickRealUserBand(b.id)"
                       >
                         <strong>{{ b.title }}</strong>
-                        <small>{{ b.rooms }}</small>
                       </li>
                     </ul>
                   </template>
@@ -6322,12 +6349,12 @@ const goBack = () => router.back();
                 </td>
                 <!-- 입지조건 이름과 등수 입력을 열로 나눠 줄을 맞춘다 -->
                 <td class="adp-ruser-cell">
-                <div v-for="c in selectedRealUserBand?.conditions ?? []" :key="c" class="adp-ruser-cond-row">
+                <div v-for="c in rankConditions" :key="c" class="adp-ruser-cond-row">
                   <span class="adp-ruser-cond-name">{{ c }}</span>
                 </div>
                 </td>
                 <td class="adp-ruser-cell center">
-                <div v-for="c in selectedRealUserBand?.conditions ?? []" :key="c" class="adp-ruser-cond-row center">
+                <div v-for="c in rankConditions" :key="c" class="adp-ruser-cond-row center">
                   <input
                     class="adp-ruser-rank"
                     inputmode="numeric"
