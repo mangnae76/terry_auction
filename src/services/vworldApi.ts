@@ -6,6 +6,10 @@ import { apiPath } from './apiBase';
 import { cacheKey, readCache, writeCache } from './marketCache';
 
 const VWORLD_BASE = apiPath('/api-vworld');
+/** 브이월드 인증키 만료일 — 지나면 공시가격이 들어오지 않는다.
+ *  (개발키는 6개월, 최대 3회 연장. 길게 쓰려면 운영키 2년으로 바꾼다) */
+export const VWORLD_KEY_EXPIRES = '2027-04-06';
+
 /** 공시가격은 한 해에 한 번(1월 1일 기준) 나온다 — 한 호실을 평생 한 번만 물어보면 된다 */
 const PRICE_TTL = 365 * 24 * 60 * 60 * 1000;
 

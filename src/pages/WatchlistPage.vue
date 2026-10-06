@@ -879,8 +879,8 @@ watch(
   flex: 0 1 auto;
   min-width: 0;
   border: none; background: transparent; border-radius: 6px;
-  padding: 5px 5px;
-  font-family: inherit; font-size: 12px; font-weight: 400; line-height: 1.45;
+  padding: 5px 4px;
+  font-family: inherit; font-size: 11.5px; font-weight: 400; line-height: 1.45;
   letter-spacing: -0.5px; white-space: nowrap; cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
 }

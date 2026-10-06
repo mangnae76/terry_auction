@@ -29,6 +29,7 @@ import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import naverNaviIcon from '../assets/icones/navi/naver_navi.png';
 import tmapNaviIcon from '../assets/icones/navi/TMAP_navi.png';
 import kakaoNaviIcon from '../assets/icones/navi/kakaonavi.png';
+import { updateStamp } from '../services/updateStamp';
 
 const router = useRouter();
 const routeListCollapsed = ref(false);
@@ -970,7 +971,7 @@ const runOptimize = async () => {
     message.value =
       `최적 순서 ${result.orderedStops.length}곳 계산 완료` +
       (frozenSorted.length > 0 ? ` (다녀온 ${frozenSorted.length}곳은 자리 유지)` : '');
-    lastCalculatedAt.value = new Date().toLocaleTimeString('ko-KR');
+    lastCalculatedAt.value = updateStamp();
     lastInputSignature.value = currentInputSignature.value;
     lastSettingsSignature.value = settingsSignature.value;
     routeDirty.value = false;
@@ -1814,17 +1815,15 @@ watch(() => authStore.uid, (newUid) => {
           </div>
           <p class="ftp-pending-guide">선정물건에서 임장예정으로 바꾸면 경로에 올라갑니다</p>
           <!-- 표 머리 — 어느 칸이 무슨 뜻인지 한 번 적어 둔다 -->
-          <div class="ftp-stop ftp-col-head" aria-hidden="true">
+          <div class="ftp-stop ftp-col-head ftp-pending-row" aria-hidden="true">
             <span class="ftp-stop-badge is-head" />
             <span class="ftp-stop-addr">주소</span>
             <span class="ftp-col-state">상태</span>
-            <span class="ftp-stop-icon ftp-stop-spacer" />
-            <span class="ftp-stop-icon ftp-stop-spacer" />
           </div>
           <article
             v-for="row in missingRows"
             :key="`p-${row.id}`"
-            :class="['ftp-stop', 'ftp-stop-pending', `stage-${row.tone}`]"
+            :class="['ftp-stop', 'ftp-stop-pending', 'ftp-pending-row', `stage-${row.tone}`]"
           >
             <span class="ftp-stop-badge tone-pending">·</span>
             <span class="ftp-stop-addr" :title="row.address">{{ row.address }}</span>
@@ -1832,6 +1831,7 @@ watch(() => authStore.uid, (newUid) => {
             <span v-else :class="['ftp-stage-tag', `tone-${row.tone}`]">{{ row.label }}</span>
             <button
               v-if="row.tone === 'visited'"
+              style="margin-left: 4px"
               type="button"
               class="ftp-stop-icon"
               :disabled="loading"
@@ -1841,8 +1841,6 @@ watch(() => authStore.uid, (newUid) => {
             >
               <img :src="squareCheckIcon" alt="" class="ftp-stop-glyph-img" />
             </button>
-            <span v-else class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
-            <span class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
           </article>
         </template>
       </div>
@@ -2206,6 +2204,10 @@ watch(() => authStore.uid, (newUid) => {
   box-sizing: border-box; min-width: 58px; text-align: center;
   font-size: 10.5px; font-weight: 800; color: #6b7280;
 }
+/* 경로제외물건 줄 — 상태 태그를 상자 오른쪽 끝에 맞춘다. 빈 칸을 없애 주소가 더 나온다 */
+.ftp-pending-row .ftp-stop-addr { flex: 1 1 auto; min-width: 0; }
+.ftp-pending-row .ftp-stage-tag,
+.ftp-pending-row .ftp-col-state { margin-left: auto; }
 .ftp-stop.ftp-stop-pending {
   background: #f6f7f9;
   padding-top: 4px; padding-bottom: 4px; margin-bottom: 4px;

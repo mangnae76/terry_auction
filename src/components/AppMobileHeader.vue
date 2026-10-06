@@ -8,6 +8,7 @@ import dollarIcon from '../assets/icones/circle-dollar-sign.png';
 import refreshIcon from '../assets/icones/refresh-cw.png';
 import fileUserIcon from '../assets/icones/file-user.png';
 import { useAuthStore } from '../stores/authStore';
+import { MY_PAGE_ITEMS, type MyPageItem } from '../services/myPageMenu';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -28,6 +29,18 @@ const onRefresh = () => {
 };
 
 const toggleMenu = () => { menuOpen.value = !menuOpen.value; };
+/** 마이페이지 항목 — 더보기까지 가지 않고 여기서 바로 연다.
+ *  아직 화면이 없는 항목은 안내만 띄운다 (더보기와 같은 규칙) */
+const menuToast = ref('');
+const openMyPage = (item: MyPageItem) => {
+  menuOpen.value = false;
+  if (!item.path) {
+    menuToast.value = `${item.name} — 준비 중입니다.`;
+    setTimeout(() => { menuToast.value = ''; }, 1600);
+    return;
+  }
+  router.push({ path: item.path, query: item.query });
+};
 const closeMenu = () => { menuOpen.value = false; };
 
 const onLogout = async () => {
@@ -49,10 +62,10 @@ const onLogout = async () => {
         <span class="amh-brand-sub">AUCTION</span>
       </div>
       <div class="amh-info">
-        <span class="amh-info-cell">
+        <button type="button" class="amh-info-cell amh-cal-btn" aria-label="입찰 캘린더 열기" @click="router.push('/bid-calendar')">
           <img :src="calendarIcon" alt="" class="amh-icon" />
           <span>{{ formattedDate }}</span>
-        </span>
+        </button>
         <span class="amh-info-cell">
           <img :src="sunIcon" alt="" class="amh-icon" />
           <span>인천 23℃</span>
@@ -77,16 +90,25 @@ const onLogout = async () => {
             <strong>{{ displayNickname }}</strong>
             <small>{{ authStore.email }}</small>
           </li>
-          <li>
+          <li v-for="item in MY_PAGE_ITEMS" :key="item.name">
+            <button type="button" class="amh-user-menu-btn page" @click="openMyPage(item)">{{ item.name }}</button>
+          </li>
+          <li class="amh-user-menu-sep">
             <button type="button" class="amh-user-menu-btn" @click="onLogout">로그아웃</button>
           </li>
         </ul>
       </div>
     </div>
+    <p v-if="menuToast" class="amh-menu-toast">{{ menuToast }}</p>
   </header>
 </template>
 
 <style scoped>
+/* 날짜를 누르면 입찰 캘린더로 — 생김새는 옆 칸들과 똑같이 */
+.amh-cal-btn {
+  border: none; background: transparent; padding: 0; margin: 0;
+  font: inherit; color: inherit; cursor: pointer;
+}
 .amh {
   background: linear-gradient(180deg, #1f3a72 0%, #15295b 100%);
   color: #fff;
@@ -184,6 +206,14 @@ const onLogout = async () => {
 .amh-user-menu-btn {
   width: 100%; text-align: left; padding: 10px 14px; border: none; background: transparent;
   font-size: 13px; color: #dc2626; font-weight: 700; cursor: pointer;
+}
+/* 마이페이지 항목 — 로그아웃만 빨갛게 두고 나머지는 보통 글씨 */
+.amh-user-menu-btn.page { color: #111827; font-weight: 600; }
+.amh-user-menu-sep { border-top: 1px solid #f1f5f9; margin-top: 2px; padding-top: 2px; }
+.amh-menu-toast {
+  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 260;
+  margin: 0; padding: 9px 14px; border-radius: 999px;
+  background: rgba(17, 24, 39, 0.92); color: #fff; font-size: 12px; white-space: nowrap;
 }
 .amh-user-menu-btn:hover { background: #f9fafb; }
 

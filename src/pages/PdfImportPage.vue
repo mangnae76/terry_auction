@@ -19,6 +19,7 @@ import searchIcon from '../assets/icones/searchs.png';
 import filesIcon from '../assets/icones/files.png';
 import userStarIcon from '../assets/icones/user-star.png';
 import infoIcon from '../assets/icones/info.png';
+import { updateStamp } from '../services/updateStamp';
 
 type RowStatus = 'error' | '신규' | '변경' | '기존';
 
@@ -163,12 +164,8 @@ watch(favorites, (val) => {
 }, { deep: true });
 
 const formatTime = () => {
-  const d = new Date();
-  const h = d.getHours();
-  const m = String(d.getMinutes()).padStart(2, '0');
-  const ampm = h < 12 ? 'AM' : 'PM';
-  const hh = String(((h + 11) % 12) + 1).padStart(2, '0');
-  return `${ampm} ${hh}:${m}`;
+  // 'UPDATE : ' 뒤에 붙는 글자는 화면마다 같아야 한다 — 공통 모듈에서 만든다
+  return updateStamp();
 };
 
 const existingByCase = computed(() => {

@@ -129,6 +129,10 @@ export interface NearbyEnvironment {
   subway: NearbyPlace[];
   academy: NearbyPlace[];
   daycare: NearbyPlace[];
+  /** 초등학교 (SC4 학교 중 이름으로 거른다) */
+  school: NearbyPlace[];
+  /** 상권 — 음식점이 모인 곳을 상권으로 본다 */
+  commerce: NearbyPlace[];
 }
 
 export const fetchNearbyEnvironment = async (
@@ -149,6 +153,8 @@ export const fetchNearbyEnvironment = async (
     academy,
     daycare,
     clinic,
+    school,
+    commerce,
   ] = await Promise.all([
     searchByKeyword(lng, lat, '버스정류장', radius, 15),
     searchByCategory(lng, lat, 'HP8', radius, 15).then((items) =>
@@ -166,6 +172,10 @@ export const fetchNearbyEnvironment = async (
     searchByCategory(lng, lat, 'HP8', radius, 15).then((items) =>
       items.filter((p) => !/종합병원|대학병원/.test(p.category)),
     ),
+    searchByCategory(lng, lat, 'SC4', radius, 15).then((items) =>
+      items.filter((p) => /초등학교/.test(p.name)),
+    ),
+    searchByCategory(lng, lat, 'FD6', radius, 15),
   ]);
   return {
     busStop: dedupe(busStop),
@@ -180,5 +190,7 @@ export const fetchNearbyEnvironment = async (
     subway: dedupe(subway),
     academy: dedupe(academy),
     daycare: dedupe(daycare),
+    school: dedupe(school),
+    commerce: dedupe(commerce),
   };
 };
