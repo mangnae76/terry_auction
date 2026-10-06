@@ -4327,6 +4327,18 @@ const goBack = () => router.back();
             {{ saleKind }}<template v-if="headMetaLine"> · {{ headMetaLine }}</template>
           </span>
         </span>
+        <button
+          type="button"
+          class="adp-prop-copy"
+          aria-label="주소 복사"
+          title="지번주소 복사"
+          @click="copyText(jibunAddress)"
+        >
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="8" y="8" width="13" height="13" rx="2" />
+            <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
+          </svg>주소
+        </button>
         <p class="adp-prop-addr">{{ jibunAddress }}</p>
         <button
           type="button"
@@ -5310,32 +5322,32 @@ const goBack = () => router.back();
               <p v-if="samePlaceError" class="adp-sp-err">{{ samePlaceError }}</p>
               <table v-if="shownTradeRows.length > 0" class="adp-table adp-trade-table">
                 <colgroup>
-                  <col style="width: 14%" /><col style="width: 22%" /><col style="width: 26%" /><col style="width: 28%" /><col style="width: 10%" />
+                  <col style="width: 21%" /><col style="width: 20%" /><col style="width: 24%" /><col style="width: 23%" /><col style="width: 12%" />
                 </colgroup>
                 <thead>
-                  <tr><th>구분</th><th>계약일</th><th>거래금액</th><th>전용(㎡/평)</th><th class="r">층</th></tr>
+                  <tr><th>구분</th><th>계약일</th><th>거래금액</th><th>전용(㎡/평)</th><th class="adp-trade-floor">층</th></tr>
                 </thead>
                 <tbody>
                   <tr v-for="(r, i) in shownTradeRows" :key="`m${i}`">
-                    <td :class="['adp-trade-type', tradeTypeClass(r.kind === '직거래' ? '매매' : r.kind), { 'adp-sp-direct': r.kind === '직거래' }]">{{ r.kind }}</td>
-                    <td>{{ r.contractDate || '-' }}</td>
-                    <td>
-                      {{ r.amount }}
+                    <td :class="['adp-trade-type', tradeTypeClass(r.kind === '직거래' ? '매매' : r.kind), { 'adp-sp-direct': r.kind === '직거래' }]">
+                      {{ r.kind }}
                       <button
                         v-if="canSendTrade(r)"
                         type="button"
                         class="adp-send-btn"
                         aria-label="실거래가·평단가로 보내기"
-                        title="계약일·거래금액·전용면적을 1.실거래가 조사로 보냅니다"
+                        title="계약일·거래금액·전용면적을 ② 경매물건 실거래가로 보냅니다"
                         @click.stop="sendTradePriceToMarket(r)"
                       >
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
                           <path d="m3 11 18-8-8 18-2-7z" />
                         </svg>
                       </button>
                     </td>
+                    <td>{{ r.contractDate || '-' }}</td>
+                    <td>{{ r.amount }}</td>
                     <td>{{ areaWithPyeong(r.areaM2) }}</td>
-                    <td class="r">{{ r.floor || '-' }}층</td>
+                    <td class="adp-trade-floor">{{ r.floor || '-' }}층</td>
                   </tr>
                 </tbody>
               </table>
@@ -6617,7 +6629,8 @@ const goBack = () => router.back();
             <!-- ② 실거래가 — 예전 '평단가' 블록을 이 줄에 합쳤다 (실거래가 옆이 평단가) -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가</span>
+                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가<!--
+                  --><svg class="adp-send-mark" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><title>단지전체 표의 비행기를 누르면 이 칸에 들어옵니다</title><path d="m3 11 18-8-8 18-2-7z" /></svg></span>
                 <button
                   type="button"
                   :class="['adp-mkt-mode', { sim: mktMode('d') === '유사물건' }]"
@@ -7447,6 +7460,16 @@ const goBack = () => router.back();
   font-size: 13px; font-weight: 400; line-height: 1.25; color: #2b6df3; white-space: nowrap;
   min-width: 0; overflow: hidden; text-overflow: ellipsis;
 }
+/* 주소 복사 — 다세대 칩 바로 아래 빈칸. 주소와 줄을 나눠 둬야
+   주소가 길어져도 서로 밀어내지 않는다 */
+.adp-prop-copy {
+  grid-column: 1; grid-row: 2; justify-self: center; align-self: center;
+  display: inline-flex; align-items: center; gap: 3px;
+  border: 1px solid #c7d7f7; border-radius: 999px; background: #fff;
+  padding: 2px 8px 2px 6px; font: inherit; font-size: 10.5px; font-weight: 700;
+  color: #2b6df3; line-height: 1.4; cursor: pointer; white-space: nowrap;
+}
+.adp-prop-copy:active { background: #eaf1ff; }
 /* 주소는 둘째 줄 — 오른쪽 PDF 버튼과 같은 줄에 놓는다 */
 .adp-prop-addr {
   grid-column: 2; grid-row: 2; min-width: 0; margin: 0; font-size: 13px; font-weight: 400; color: #111827; line-height: 1.25;
@@ -9246,11 +9269,18 @@ const goBack = () => router.back();
   padding: 2px 8px; font-size: 10.5px; font-weight: 700; color: #2b6df3; cursor: pointer;
 }
 .adp-sp-direct { color: #c22e2e !important; }
-/* 가장 최근 매매가를 손품조사 실거래가 칸으로 보낸다 */
+/* 그 줄을 ② 경매물건 실거래가로 보낸다 — 구분(매매) 바로 옆,
+   받는 쪽 제목에도 같은 초록 비행기를 달아 둘이 한 쌍임을 보인다 */
 .adp-send-btn {
-  border: none; background: transparent; padding: 0 0 0 4px; cursor: pointer;
-  color: #2b6df3; vertical-align: -2px;
+  border: none; background: transparent; padding: 0 0 0 3px; cursor: pointer;
+  line-height: 0; vertical-align: -2px;
 }
+.adp-send-btn svg { fill: #16a34a; }
+.adp-send-btn:active svg { fill: #0f7a33; }
+.adp-send-mark { fill: #16a34a; margin-left: 4px; vertical-align: -2px; }
+/* 층은 표 오른쪽 끝에 붙지 않게 안쪽으로 당겨 둔다 */
+.adp-trade-table th.adp-trade-floor,
+.adp-trade-table td.adp-trade-floor { text-align: center; padding-right: 0; }
 .adp-trade-selects { display: flex; gap: 6px; margin-bottom: 4px; }
 .adp-trade-selects .adp-select-sm { flex: 1 1 auto; padding: 6px 8px; }
 
