@@ -2643,7 +2643,7 @@ const officialPriceRows = computed<Array<[string, string]>>(() => {
   }
   if (officialPriceAuto.value <= 0) return [['조회', '결과 없음 · 직접 입력']];
   const rows: Array<[string, string]> = [
-    ['출처', '국토교통부 공시가격 (브이월드)'],
+    ['출처', '국토교통부 공시가격 API · 실시간'],
     ['기준', `${officialPriceYear.value}-01-01 · 연 1회 공시`],
   ];
   if (officialPriceUnit.value) rows.push(['대상', officialPriceUnit.value]);
@@ -3181,8 +3181,11 @@ const pubYearRange = computed(() => {
 });
 /** 전용면적범위 — 시작 줄과 끝 줄, 각 줄에 ㎡ 와 평을 같이 */
 const areaPairText = (m2: number) => (m2 > 0 ? `${m2.toFixed(2)}㎡ / ${(m2 / PYEONG_TO_M2).toFixed(2)}평` : '-');
-const mktAreaStartM2 = computed(() => Number(mktAreaNum('mkt.a.area')) || pubAreaRange.value?.min || 0);
-const mktAreaEndM2 = computed(() => Number(mktAreaNum('mkt.a.area2')) || pubAreaRange.value?.max || 0);
+// ③ 의 세 칸은 가격정보 '실거래가 조건식 분석'의 지금 결과를 그대로 비춘다.
+// 거기서 기간·면적·건축년도를 고쳐 원하는 값을 만들고, 그 마지막 결과가 여기에 선다.
+// 그래서 여기서는 따로 적지 않는다 — 적어 두면 조건을 고쳐도 옛 값이 남아 두 화면이 어긋난다.
+const mktAreaStartM2 = computed(() => pubAreaRange.value?.min ?? 0);
+const mktAreaEndM2 = computed(() => pubAreaRange.value?.max ?? 0);
 const mktAreaRangeText = computed(() => `${areaPairText(mktAreaStartM2.value)} ~\n${areaPairText(mktAreaEndM2.value)}`);
 /** 국토부 실거래 평균 — 가격정보 '실거래가 조건식 분석'의 지금 결과를 그대로 비춘다.
  *  거기서 기간·면적·건축년도를 고쳐 가며 값을 만들고, 그 마지막 값이 여기에 선다.
@@ -3229,14 +3232,14 @@ const mktApprovalAuto = computed(() => {
   // 연도만 있는 자료라 범위의 양 끝을 그대로 쓴다 — 시작 해의 1월, 끝 해의 12월
   return `${yy(r.min)}.01~${yy(r.max)}.12`;
 });
-const mktApprovalText = computed(() => mktVal('mkt.a.approval') || mktApprovalAuto.value || '-');
+const mktApprovalText = computed(() => mktApprovalAuto.value || '-');
 /** 거래기간 — 가격정보 탭에서 조회한 기간. 손으로 적으면 그 값이 이긴다 */
 const pubPeriodText = computed(() => {
   const from = shortDate(publicStartDate.value);
   const to = shortDate(publicEndDate.value);
   return from && to ? `${from}~${to}` : publicRangeNote.value;
 });
-const mktPeriodText = computed(() => mktVal('mkt.a.period') || pubPeriodText.value || '-');
+const mktPeriodText = computed(() => pubPeriodText.value || '-');
 /** 이 물건의 층 — 정보요약에 적힌 값, 없으면 주소의 'N층'.
  *  거래 줄에서 못 받았을 때 쓴다 (이미 알고 있는 값이라 비워 둘 이유가 없다) */
 const subjectFloor = computed(() => {
@@ -6827,21 +6830,13 @@ const goBack = () => router.back();
                 </small>
               </div>
               <div class="adp-mkt-cells c3 adp-dm-table center-y">
-                <div class="cell">
+                <div class="cell calc">
                   <small>전용면적범위</small>
-                  <template v-if="editingSurvey.location">
-                    <span class="adp-mkt-unit"><input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum('mkt.a.area')" :placeholder="pubAreaRange ? pubAreaRange.min.toFixed(2) : '시작'" @change="setMktVal('mkt.a.area', ($event.target as HTMLInputElement).value)" />㎡</span>
-                    <span class="adp-mkt-unit"><input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum('mkt.a.area2')" :placeholder="pubAreaRange ? pubAreaRange.max.toFixed(2) : '끝'" @change="setMktVal('mkt.a.area2', ($event.target as HTMLInputElement).value)" />㎡</span>
-                  </template>
-                  <span v-else class="adp-mkt-range2">{{ mktAreaRangeText }}</span>
+                  <span class="adp-mkt-range2">{{ mktAreaRangeText }}</span>
                 </div>
-                <div class="cell">
+                <div class="cell calc">
                   <small>사용승인 / 거래기간</small>
-                  <template v-if="editingSurvey.location">
-                    <input class="adp-mkt-input" :value="mktVal('mkt.a.approval')" :placeholder="mktApprovalAuto || '사용승인'" @change="setMktVal('mkt.a.approval', ($event.target as HTMLInputElement).value)" />
-                    <input class="adp-mkt-input" :value="mktVal('mkt.a.period')" :placeholder="pubPeriodText || '거래기간'" @change="setMktVal('mkt.a.period', ($event.target as HTMLInputElement).value)" />
-                  </template>
-                  <span v-else class="adp-mkt-range2">{{ mktApprovalText }}<br />{{ mktPeriodText }}</span>
+                  <span class="adp-mkt-range2">{{ mktApprovalText }}<br />{{ mktPeriodText }}</span>
                 </div>
                 <div class="cell calc">
                   <small>국토부 실거래 평균</small>
