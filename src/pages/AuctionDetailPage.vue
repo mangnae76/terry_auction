@@ -2592,6 +2592,12 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['조사', '지역 내 호재 · 공급 · 입지조건 (호갱, 네부)'],
     ['확인', '전세가 · 평당가로 등수 확인'],
   ],
+  jeonseRatio: [
+    ['공식', '전세 실거래가 ÷ 매매 실거래가 × 100'],
+    ['의미', '매매가에서 전세보증금이 차지하는 몫'],
+    ['높으면', '적은 돈으로 사지만 역전세·깡통 위험이 커진다'],
+    ['자료', '위 두 줄의 실제 거래값을 그대로 나눈다'],
+  ],
   recv: [
     ['참조', '가격정보 → 해당물건 실거래가'],
     ['자료', '단지전체 (국토부) 최근 2년'],
@@ -5378,7 +5384,7 @@ const goBack = () => router.back();
                   <col style="width: 21%" /><col style="width: 20%" /><col style="width: 24%" /><col style="width: 23%" /><col style="width: 12%" />
                 </colgroup>
                 <thead>
-                  <tr><th>구분</th><th>계약일</th><th>거래금액</th><th>전용(㎡/평)</th><th class="adp-trade-floor">층</th></tr>
+                  <tr><th class="adp-trade-kind">구분</th><th>계약일</th><th>거래금액</th><th>전용(㎡/평)</th><th class="adp-trade-floor">층</th></tr>
                 </thead>
                 <tbody>
                   <tr v-for="(r, i) in shownTradeRows" :key="`m${i}`">
@@ -6745,7 +6751,7 @@ const goBack = () => router.back();
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'jReal')) }}</strong>
                 </div>
                 <div class="cell calc num-r">
-                  <small>전세가율</small>
+                  <small>전세가율<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('jeonseRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('jeonseRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'jeonseRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('jeonseRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
                   <strong class="hi">{{ mktJeonseRatioText }}</strong>
                 </div>
               </div>
@@ -9568,6 +9574,8 @@ const goBack = () => router.back();
 .adp-trade-type { font-weight: 500; }
 /* 비행기가 붙는 줄과 안 붙는 줄(월세)의 글자가 같은 자리에 서게 — 빈 줄도 같은 폭을 비운다 */
 .adp-send-gap { display: inline-block; width: 17px; padding-right: 4px; }
+/* 머리줄 '구분'도 비행기 자리만큼 밀어 아래 매매·전세 글자와 한 줄로 세운다 */
+.adp-trade-table th.adp-trade-kind { padding-left: 25px; }
 .adp-trade-type.tt-buy { color: #2b6df3; }
 .adp-trade-type.tt-jeon { color: #16a34a; }
 .adp-trade-type.tt-wol { color: #ea580c; }
