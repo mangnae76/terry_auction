@@ -1344,6 +1344,15 @@ const fetchDeal12mCount = async () => {
   }
 };
 
+/** 조회 조건을 처음 상태로 — 기간 12개월, 면적·건축년도 전체.
+ *  내비게이터로 걸어 둔 구간(평형·층·연식)도 같이 푼다. 그 칸들이
+ *  아래 조건을 채운 장본인이라, 조건만 비우면 칸만 눌린 채로 남는다. */
+const resetPublicFilters = () => {
+  populatePublicRangeDefaults(12);
+  navActive.value = { pyeong: '', floor: '', year: '' };
+  publicColFilters.value = { ...publicColFilters.value, floor: new Set<string>() };
+};
+
 const searchPublicTrades = async () => {
   await fetchPublicTradeRows({ months: pubMonthPreset.value || 12, keepFilters: true });
   // 검색을 누른 사람은 결과를 보려는 것이다 — 정상거래 목록을 펴 둔다
@@ -5564,6 +5573,16 @@ const goBack = () => router.back();
                       </svg><span>{{ fetchingPublicTrade ? '조회 중…' : '검색' }}</span>
                     </span>
                   </button>
+                  <button
+                    type="button"
+                    class="adp-pub-reset"
+                    title="기간·면적·건축년도를 처음 상태로"
+                    @click="resetPublicFilters"
+                  >
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" />
+                    </svg>초기화
+                  </button>
                 </div>
               </div>
               <p v-if="publicTradeWarning" class="adp-pub-warn">일부 기간을 못 받아 건수가 실제보다 적을 수 있습니다 — {{ publicTradeWarning }}</p>
@@ -9457,7 +9476,16 @@ const goBack = () => router.back();
 /* 건축년도 — 두 드롭박스를 같은 폭으로 벌리고 물결을 그 사이 한가운데 둔다 */
 .adp-pub-cell.span2.years .adp-pub-input { flex: 1 1 0; min-width: 0; }
 .adp-pub-cell.span2.years > .adp-pub-tilde { flex: 0 0 auto; padding: 0; width: 20px; text-align: center; }
-.adp-pub-row.actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
+/* 검색이 주인공 — 초기화는 옆에 작게 붙인다 */
+.adp-pub-row.actions { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.adp-pub-reset {
+  display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+  box-sizing: border-box; padding: 0 11px;
+  border: 1px solid #d7dce6; border-radius: 8px; background: #fff;
+  font-family: inherit; font-size: 11.5px; font-weight: 700; color: #4b5563;
+  white-space: nowrap; cursor: pointer;
+}
+.adp-pub-reset:active { background: #f3f4f6; }
 /* 분포 내비게이터 — 평형·층·연식 분포를 보여 주고 누르면 그 구간으로 걸러 준다 */
 .adp-nav-dist {
   margin: 8px 2px 2px; padding: 8px 8px 6px;
