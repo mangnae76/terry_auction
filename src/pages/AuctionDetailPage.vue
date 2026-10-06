@@ -3233,11 +3233,12 @@ const mktJeonseFloorValue = computed(() => (
   mktVal(mk('d', 'jFloor')).trim() || (mktMode('d') === MKT_MODES[0] ? subjectFloor.value : '')
 ));
 const mktJeonseDateFloorText = computed(() => dateFloorText(mk('d', 'jYear'), mktJeonseFloorValue.value));
-/** 전세 평단가 — 전세 실거래가 ÷ 면적(평) */
-const mktJeonseUnitText = computed(() => {
-  const price = parseDigits(mktVal(mk('d', 'jReal')));
-  const py = (Number(mktAreaNum(mk('d', 'jArea'))) || 0) / PYEONG_TO_M2;
-  return price > 0 && py > 0 ? Math.round(price / py).toLocaleString('ko-KR') : '-';
+/** 전세가율 = 전세 실거래가 ÷ 매매 실거래가 × 100.
+ *  위 표의 매매가와 이 표의 전세가, 둘 다 실제 거래값이라 그대로 나눈다. */
+const mktJeonseRatioText = computed(() => {
+  const jeonse = parseDigits(mktVal(mk('d', 'jReal')));
+  const sale = parseDigits(mktVal(mk('d', 'real')));
+  return jeonse > 0 && sale > 0 ? `${((jeonse / sale) * 100).toFixed(0)}%` : '-';
 });
 
 // 전세가 = 공동주택가 × 비율(기본 127%)
@@ -5310,7 +5311,7 @@ const goBack = () => router.back();
         <!-- 해당물건 실거래가 — PDF 분석 자료 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('casePrice')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 9.5 10.5l4 4L21 7"/><path d="M15 7h6v6"/></svg>해당물건 실거래가</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 9.5 10.5l4 4L21 7"/><path d="M15 7h6v6"/></svg>경매물건 실거래가</h2>
             <span v-if="caseTradeUpdatedAt" class="adp-update-time">UPDATE : {{ caseTradeUpdatedAt }}</span>
             <button
               type="button"
@@ -5327,24 +5328,12 @@ const goBack = () => router.back();
                 <small><span class="adp-sum-key">{{ recentSaleTradeYm }}</span> 실거래가</small>
                 <span class="adp-sum-value">
                   <strong>{{ formatWonSimple(recentSaleTradePrice) }}</strong>
-                  <button type="button" class="adp-copy-btn" aria-label="금액 복사" @click.stop="copyText(formatWonSimple(recentSaleTradePrice))">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect x="8" y="8" width="13" height="13" rx="2" />
-                      <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
-                    </svg>
-                  </button>
                 </span>
               </div>
               <div class="adp-trade-sum-card">
                 <small>평당가</small>
                 <span class="adp-sum-value">
                   <strong>{{ formatWonSimple(recentSaleTradePyeong) }}</strong>
-                  <button type="button" class="adp-copy-btn" aria-label="금액 복사" @click.stop="copyText(formatWonSimple(recentSaleTradePyeong))">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect x="8" y="8" width="13" height="13" rx="2" />
-                      <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
-                    </svg>
-                  </button>
                 </span>
               </div>
               <div class="adp-trade-sum-card">
@@ -5440,24 +5429,12 @@ const goBack = () => router.back();
                 <small><span class="adp-sum-key">{{ publicRealTradeDong || '동' }}</span> 실거래가 평균</small>
                 <span class="adp-sum-value">
                   <strong>{{ formatWonSimple(publicTradeAvg) }}</strong>
-                  <button type="button" class="adp-copy-btn" aria-label="금액 복사" @click.stop="copyText(formatWonSimple(publicTradeAvg))">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect x="8" y="8" width="13" height="13" rx="2" />
-                      <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
-                    </svg>
-                  </button>
                 </span>
               </div>
               <div class="adp-trade-sum-card">
                 <small>평당가 평균</small>
                 <span class="adp-sum-value">
                   <strong>{{ formatWonSimple(publicTradePyeongAvg) }}</strong>
-                  <button type="button" class="adp-copy-btn" aria-label="금액 복사" @click.stop="copyText(formatWonSimple(publicTradePyeongAvg))">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect x="8" y="8" width="13" height="13" rx="2" />
-                      <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
-                    </svg>
-                  </button>
                 </span>
               </div>
               <div class="adp-trade-sum-card">
@@ -6702,7 +6679,7 @@ const goBack = () => router.back();
             <!-- ② 실거래가 — 예전 '평단가' 블록을 이 줄에 합쳤다 (실거래가 옆이 평단가) -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가<span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
+                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가 (매매 · 전세)<span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
                 <button
                   type="button"
                   :class="['adp-mkt-mode', { sim: mktMode('d') === '유사물건' }]"
@@ -6767,8 +6744,8 @@ const goBack = () => router.back();
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'jReal')) }}</strong>
                 </div>
                 <div class="cell calc">
-                  <small>평단가</small>
-                  <strong class="hi">{{ mktJeonseUnitText }}</strong>
+                  <small>전세가율</small>
+                  <strong class="hi">{{ mktJeonseRatioText }}</strong>
                 </div>
               </div>
               <div class="adp-mkt-cells c4 adp-dm-table">
