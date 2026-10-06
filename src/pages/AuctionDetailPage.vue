@@ -6715,12 +6715,12 @@ const goBack = () => router.back();
                   </template>
                   <strong v-else class="adp-mkt-area1">{{ mktDealDateFloorText }}</strong>
                 </div>
-                <div class="cell num-r">
+                <div class="cell">
                   <small>매매 실거래가</small>
                   <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'real'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'real'), $event)" />
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'real')) }}</strong>
                 </div>
-                <div class="cell calc num-r">
+                <div class="cell calc">
                   <small>평단가</small>
                   <strong class="hi">{{ mktUnitFromRealText }}</strong>
                 </div>
@@ -6746,7 +6746,7 @@ const goBack = () => router.back();
                   </template>
                   <strong v-else class="adp-mkt-area1">{{ mktJeonseDateFloorText }}</strong>
                 </div>
-                <div class="cell num-r">
+                <div class="cell">
                   <small>전세 실거래가</small>
                   <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'jReal'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'jReal'), $event)" />
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'jReal')) }}</strong>
@@ -8783,13 +8783,6 @@ const goBack = () => router.back();
   display: inline-flex; align-items: baseline; justify-content: center;
 }
 .adp-mkt-cells .cell strong.hi { color: #111827; }
-/* 매매·전세 실거래가와 평단가는 자릿수가 달라도 끝자리가 세로로 맞아야
-   위아래 표를 눈으로 견줄 수 있다 — 가운데가 아니라 오른쪽에 붙인다 */
-.adp-mkt-cells .cell.num-r > strong,
-.adp-mkt-cells.center-y .cell.num-r > strong {
-  width: 100%; justify-content: flex-end; padding-right: 6px;
-}
-.adp-mkt-cells .cell.num-r .adp-mkt-input { text-align: right; padding-right: 6px; }
 .adp-mkt-cells .cell .adp-mkt-input { text-align: center; height: 26px; }
 .adp-mkt-rate { display: inline-flex; align-items: center; justify-content: center; gap: 1px; }
 .adp-mkt-rate-input {
