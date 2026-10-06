@@ -1437,7 +1437,8 @@ const publicTradeUpdatedAt = ref('');
 // 일부 월 조회가 실패하면 건수가 조용히 적게 나온다 — 숨기지 말고 알린다
 const publicTradeWarning = ref('');
 // 검색 결과 표 — 머리줄(구분)만 남기고 접어 둔다. 기본은 접힘.
-const pubTableCollapsed = ref(true);
+// 정상거래는 들어오자마자 보여 준다 — 매번 눌러 펴야 했다
+const pubTableCollapsed = ref(false);
 // 집계에서 뺀 직거래 건수 — 몇 건을 뺐는지 눈에 보이게 한다
 const pubDirectCount = ref(0);
 const pubDirectRows = ref<RealTradeMatchRow[]>([]);
@@ -5368,6 +5369,7 @@ const goBack = () => router.back();
                 <span class="adp-sp-lab">단지전체 (국토부) <em>최근 {{ PLACE_HISTORY_YEARS }}년</em></span>
                 <strong v-if="samePlaceLoading" class="adp-sp-cnt">조회중…</strong>
                 <strong v-else-if="shownTradeRows.length > 0" class="adp-sp-cnt">{{ shownTradeRows.length }}건</strong>
+                <span class="adp-sp-fill" />
                 <button
                   v-if="!samePlaceLoading && samePlaceMissed > 0"
                   type="button"
@@ -5431,7 +5433,7 @@ const goBack = () => router.back();
           <div v-if="!isCollapsed('trades')">
             <div class="adp-trade-summary cols3">
               <div class="adp-trade-sum-card">
-                <small><span class="adp-sum-key">{{ publicRealTradeDong || '동' }}</span> 실거래가 평균</small>
+                <small>실거래가 평균</small>
                 <span class="adp-sum-value">
                   <strong>{{ formatWonSimple(publicTradeAvg) }}</strong>
                 </span>
@@ -9354,7 +9356,9 @@ const goBack = () => router.back();
 .adp-sp-lab { font-size: 12px; font-weight: 800; color: #111827; flex: 0 0 auto; }
 .adp-sp-lab em { font-style: normal; font-size: 10.5px; font-weight: 400; color: #6b7280; margin-left: 3px; }
 .adp-sp-lab i { font-style: normal; font-size: 10.5px; font-weight: 400; color: #9ca3af; margin-left: 2px; }
-.adp-sp-cnt { margin-left: auto; font-size: 12px; font-weight: 800; color: #2b6df3; }
+/* 건수는 '최근 2년' 바로 옆에 붙인다 — 오른쪽 끝에 떨어뜨리면 무엇의 수인지 멀어진다 */
+.adp-sp-cnt { margin-left: 5px; font-size: 12px; font-weight: 800; color: #2b6df3; }
+.adp-sp-fill { flex: 1 1 auto; }
 .adp-sp-err { margin: 0 0 6px; font-size: 11px; color: #9a6400; }
 .adp-sp-again {
   margin-left: 6px; border: 1px solid #c7d7f7; border-radius: 6px; background: #eef3fd;
@@ -9403,8 +9407,8 @@ const goBack = () => router.back();
 }
 .adp-trade-summary.cols3 { grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .adp-trade-summary.cols3 .adp-trade-sum-card { padding: 9px 6px; }
-.adp-trade-summary.cols3 .adp-trade-sum-card small { font-size: 10px; text-align: center; line-height: 1.3; }
-.adp-trade-summary.cols3 .adp-trade-sum-card strong { font-size: 13px; }
+.adp-trade-summary.cols3 .adp-trade-sum-card small { font-size: 11px; text-align: center; line-height: 1.3; }
+.adp-trade-summary.cols3 .adp-trade-sum-card strong { font-size: 14.3px; }
 .adp-trade-sum-card {
   background: #f3f6fc; border: 1px solid #e0eaff;
   border-radius: 8px; padding: 10px 12px;
