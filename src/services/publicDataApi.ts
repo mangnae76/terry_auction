@@ -1173,7 +1173,7 @@ export const fetchRealTradeAverage = async (
   };
 };
 
-// === 주간추이 / 지역별 시세를 위한 raw 거래 fetch ===
+// === 거래랭킹 TOP 을 위한 raw 거래 fetch ===
 export interface RawAptTrade {
   date: string;          // YYYY-MM-DD
   pricePerM2: number;    // 만원/m² (반올림)

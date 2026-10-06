@@ -12,64 +12,7 @@ import {
 } from '../services/publicDataApi';
 import { geocodeAddress } from '../services/routeOptimizer';
 
-type TabKey = 'weekly' | 'regional' | 'ranking';
-const activeTab = ref<TabKey>('weekly');
-
-// === 주간 추이 (10주) — 국토부 RTMS API 실거래가 기반 ===
-interface WeeklyTrendPoint { week: string; priceChange: number; dealChange: number; }
-const weeklyTrendData = ref<WeeklyTrendPoint[]>([]);
-const weeklyTrendDateRange = ref('');
-const trendLoading = ref(false);
-const trendError = ref('');
-
-// 차트 좌표 계산 (viewBox: 800x300, 좌우 padding 40, 상하 padding 30)
-const W_CHART = 800;
-const H_CHART = 280;
-const W_PAD_X = 40;
-const W_PAD_Y = 30;
-const W_PRICE_MAX_DEFAULT = 1.2;
-const W_DEAL_MAX_DEFAULT = 16;
-// 데이터 분포에 맞춰 동적으로 ±스케일을 잡되, 최소값을 보장해 너무 펑퍼짐해지지 않도록 한다.
-const weeklyPriceScale = computed(() => {
-  const max = Math.max(0, ...weeklyTrendData.value.map((p) => Math.abs(p.priceChange)));
-  return Math.max(W_PRICE_MAX_DEFAULT, Math.ceil(max * 1.2));
-});
-const weeklyDealScale = computed(() => {
-  const max = Math.max(0, ...weeklyTrendData.value.map((p) => Math.abs(p.dealChange)));
-  return Math.max(W_DEAL_MAX_DEFAULT, Math.ceil(max * 1.2));
-});
-const xWeekly = (i: number) => {
-  const n = weeklyTrendData.value.length;
-  if (n <= 1) return W_PAD_X;
-  return W_PAD_X + ((W_CHART - 2 * W_PAD_X) * i) / (n - 1);
-};
-const yPriceWeekly = (v: number) => {
-  const max = weeklyPriceScale.value;
-  const t = (v + max) / (2 * max);
-  return H_CHART - W_PAD_Y - t * (H_CHART - 2 * W_PAD_Y);
-};
-const yDealWeekly = (v: number) => {
-  const max = weeklyDealScale.value;
-  const t = (v + max) / (2 * max);
-  return H_CHART - W_PAD_Y - t * (H_CHART - 2 * W_PAD_Y);
-};
-const weeklyPricePath = computed(() =>
-  weeklyTrendData.value
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${xWeekly(i).toFixed(1)} ${yPriceWeekly(p.priceChange).toFixed(1)}`)
-    .join(' '),
-);
-const weeklyDealPath = computed(() =>
-  weeklyTrendData.value
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${xWeekly(i).toFixed(1)} ${yDealWeekly(p.dealChange).toFixed(1)}`)
-    .join(' '),
-);
-
-// === 지역별 시세 — 국토부 RTMS API 실거래가 기반 ===
-interface RegionalRow {
-  name: string; priceAvg: number; prevPrice: number;
-  priceChange: number; deals: number; prevDeals: number; dealChange: number;
-}
-// 수도권 16개 자치구 (LAWD_CD 5자리)
+// 수도권 16개 자치구 (LAWD_CD 5자리) — 거래랭킹 TOP 의 집계 대상
 // `sido`/`district`는 검색폼(regionGroups)과 매칭 — 행정시 sub-district인 경우 부모 시(시) 라벨 사용
 const REGIONAL_LAWD: Array<{ name: string; code: string; sido: string; district: string }> = [
   { name: '강남구',        code: '11680', sido: '서울특별시', district: '강남구' },
@@ -90,20 +33,10 @@ const REGIONAL_LAWD: Array<{ name: string; code: string; sido: string; district:
   { name: '인천 연수구',   code: '28185', sido: '인천광역시', district: '연수구' },
   { name: '인천 중구',     code: '28110', sido: '인천광역시', district: '중구' },
 ];
-const regionalData = ref<RegionalRow[]>([]);
-const regionalDateRange = ref('');
-const regionalLoading = ref(false);
-const regionalError = ref('');
-// 마지막에 fetch한 raw 거래 (TOP 랭킹 카드들이 공유)
+// TOP 랭킹 카드들이 함께 쓰는 원자료
 const rawTrades = ref<RawAptTrade[]>([]);
-type RegionalProperty = 'apt' | 'villa' | 'single';
-type RegionalMetric = 'price' | 'deal';
-const regionalProperty = ref<RegionalProperty>('apt');
-const regionalMetric = ref<RegionalMetric>('price');
-const regionalChartMax = computed(() => {
-  const vals = regionalData.value.map((r) => Math.abs(regionalMetric.value === 'price' ? r.priceChange : r.dealChange));
-  return Math.max(...vals, regionalMetric.value === 'price' ? 2.7 : 16);
-});
+const rawLoading = ref(false);
+const rawError = ref('');
 
 // === 거래랭킹 탭 — 지역/아파트/거래량 TOP 10 ===
 type ToplistTab = 'region' | 'apt' | 'volume';
@@ -243,145 +176,20 @@ const onClickToplistRow = async (row: ToplistRow) => {
   void loadStats();
 };
 
-// 주차/주의 월요일 시작일 산정 (Mon=시작)
-const startOfWeekIso = (dateStr: string): string => {
-  const d = new Date(dateStr);
-  const day = d.getDay(); // 0=Sun .. 6=Sat
-  const diff = day === 0 ? -6 : 1 - day;
-  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff);
-  return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
-};
-const weekLabel = (mondayIso: string): string => {
-  const d = new Date(mondayIso);
-  const m = d.getMonth() + 1;
-  const wk = Math.ceil(d.getDate() / 7);
-  return `${m}/${wk}주`;
-};
-const formatYmd = (iso: string): string => iso.replaceAll('-', '.');
-
-const loadStatsTrendAndRegional = async () => {
-  trendLoading.value = true;
-  regionalLoading.value = true;
-  trendError.value = '';
-  regionalError.value = '';
+/** 거래랭킹 TOP 의 원자료 — 수도권 16개 자치구의 최근 4개월 아파트 매매 실거래 */
+const loadRawTrades = async () => {
+  rawLoading.value = true;
+  rawError.value = '';
   try {
     const codes = REGIONAL_LAWD.map((r) => r.code);
-    const { trades, errors } = await fetchRawAptTrades(codes, 4, regionalProperty.value);
+    const { trades, errors } = await fetchRawAptTrades(codes, 4, 'apt');
     rawTrades.value = trades;
-    if (trades.length === 0) {
-      trendError.value = errors[0] || '실거래 데이터 없음';
-      regionalError.value = errors[0] || '실거래 데이터 없음';
-      weeklyTrendData.value = [];
-      regionalData.value = [];
-      return;
-    }
-    // === 주간추이 ===
-    // mean 대신 median을 쓰면 그 주에 우연히 강남 고가 매물이 많이 거래되어
-    // 평균을 흔드는 표본 편향(mix shift)을 상당히 완화할 수 있다.
-    const median = (arr: number[]): number => {
-      if (arr.length === 0) return 0;
-      const s = [...arr].sort((a, b) => a - b);
-      const m = Math.floor(s.length / 2);
-      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-    };
-    const MIN_TRADES_PER_WEEK = 5;
-    const weekMap = new Map<string, typeof trades>();
-    for (const t of trades) {
-      const wk = startOfWeekIso(t.date);
-      const arr = weekMap.get(wk) ?? [];
-      arr.push(t);
-      weekMap.set(wk, arr);
-    }
-    const sortedWeeks = Array.from(weekMap.entries())
-      .filter(([, ts]) => ts.length >= MIN_TRADES_PER_WEEK)
-      .sort((a, b) => a[0].localeCompare(b[0]));
-    const last10 = sortedWeeks.slice(-10);
-    const trend: WeeklyTrendPoint[] = [];
-    for (let i = 0; i < last10.length; i += 1) {
-      const [, ts] = last10[i];
-      const med = median(ts.map((t) => t.pricePerM2));
-      const count = ts.length;
-      let priceChange = 0;
-      let dealChange = 0;
-      if (i > 0) {
-        const prev = last10[i - 1][1];
-        const prevMed = median(prev.map((t) => t.pricePerM2));
-        priceChange = prevMed > 0 ? ((med - prevMed) / prevMed) * 100 : 0;
-        dealChange = prev.length > 0 ? ((count - prev.length) / prev.length) * 100 : 0;
-      }
-      trend.push({ week: weekLabel(last10[i][0]), priceChange, dealChange });
-    }
-    weeklyTrendData.value = trend;
-    if (last10.length > 0) {
-      const start = last10[0][0];
-      const endMonday = last10[last10.length - 1][0];
-      const endSunday = (() => {
-        const d = new Date(endMonday);
-        d.setDate(d.getDate() + 6);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      })();
-      weeklyTrendDateRange.value = `${formatYmd(start)} ~ ${formatYmd(endSunday)}`;
-    }
-
-    // === 지역별 시세 (이번 주 vs 직전 주) ===
-    const recent2 = sortedWeeks.slice(-2);
-    if (recent2.length < 2) {
-      regionalError.value = '주간 비교를 위한 데이터가 부족합니다 (최소 2주 필요).';
-      regionalData.value = [];
-      return;
-    }
-    const [prevKey, prevTrades] = recent2[0];
-    const [currKey, currTrades] = recent2[1];
-    const grouped = (rows: typeof trades) => {
-      const map = new Map<string, typeof trades>();
-      for (const r of rows) {
-        const arr = map.get(r.lawdCd) ?? [];
-        arr.push(r);
-        map.set(r.lawdCd, arr);
-      }
-      return map;
-    };
-    const currByCode = grouped(currTrades);
-    const prevByCode = grouped(prevTrades);
-    const regional: RegionalRow[] = [];
-    for (const r of REGIONAL_LAWD) {
-      const curr = currByCode.get(r.code) ?? [];
-      const prev = prevByCode.get(r.code) ?? [];
-      // mean보다 mix shift에 강한 median 사용
-      const currAvg = median(curr.map((t) => t.pricePerM2));
-      const prevAvg = median(prev.map((t) => t.pricePerM2));
-      const priceChange = prevAvg > 0 ? ((currAvg - prevAvg) / prevAvg) * 100 : 0;
-      const dealChange = prev.length > 0 ? ((curr.length - prev.length) / prev.length) * 100 : 0;
-      regional.push({
-        name: r.name,
-        priceAvg: Math.round(currAvg),
-        prevPrice: Math.round(prevAvg),
-        priceChange,
-        deals: curr.length,
-        prevDeals: prev.length,
-        dealChange,
-      });
-    }
-    regionalData.value = regional;
-    const endSunday = (() => {
-      const d = new Date(currKey);
-      d.setDate(d.getDate() + 6);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    })();
-    regionalDateRange.value = `${formatYmd(currKey)} ~ ${formatYmd(endSunday)}`;
-    if (errors.length > 0) {
-      const summary = `일부 지역 조회 실패 (${errors.length}건)`;
-      trendError.value = trendError.value || summary;
-      regionalError.value = regionalError.value || summary;
-    }
-    void prevKey;
+    if (trades.length === 0) rawError.value = errors[0] || '실거래 데이터 없음';
+    else if (errors.length > 0) rawError.value = `일부 지역 조회 실패 (${errors.length}건)`;
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    trendError.value = msg;
-    regionalError.value = msg;
+    rawError.value = e instanceof Error ? e.message : String(e);
   } finally {
-    trendLoading.value = false;
-    regionalLoading.value = false;
+    rawLoading.value = false;
   }
 };
 
@@ -950,11 +758,7 @@ const loadStats = async () => {
 
 onMounted(() => {
   void ensureMap().then(() => loadStats());
-  void loadStatsTrendAndRegional();
-});
-
-watch(regionalProperty, () => {
-  void loadStatsTrendAndRegional();
+  void loadRawTrades();
 });
 </script>
 
@@ -967,147 +771,7 @@ watch(regionalProperty, () => {
       </button>
     </header>
 
-    <nav class="tsp-tabs">
-      <button
-        type="button"
-        :class="['tsp-tab', { active: activeTab === 'weekly' }]"
-        @click="activeTab = 'weekly'"
-      >주간추이</button>
-      <button
-        type="button"
-        :class="['tsp-tab', { active: activeTab === 'regional' }]"
-        @click="activeTab = 'regional'"
-      >지역별시세</button>
-      <button
-        type="button"
-        :class="['tsp-tab', { active: activeTab === 'ranking' }]"
-        @click="activeTab = 'ranking'"
-      >거래랭킹</button>
-    </nav>
-
     <div class="tsp-body">
-      <!-- 주간 추이 -->
-      <template v-if="activeTab === 'weekly'">
-        <section class="tsp-card tsp-trend-card">
-          <header class="tsp-trend-head">
-            <h2 class="tsp-trend-title"><span class="tsp-trend-icon">📊</span> 주간 수도권 시세·거래 추이</h2>
-            <p class="tsp-trend-sub">최근 10주<span v-if="weeklyTrendDateRange"> ({{ weeklyTrendDateRange }})</span></p>
-          </header>
-          <div class="tsp-trend-legend">
-            <span class="lg"><span class="dot price"></span>중간가격 변동률</span>
-            <span class="lg"><span class="dot deal"></span>거래량 변동률</span>
-          </div>
-          <p v-if="trendLoading" class="tsp-note">실거래 데이터 불러오는 중…</p>
-          <p v-else-if="weeklyTrendData.length === 0" class="tsp-note warn">{{ trendError || '표시할 데이터가 없습니다.' }}</p>
-          <div v-else class="tsp-trend-chart-wrap">
-            <svg :viewBox="`0 0 ${W_CHART} ${H_CHART}`" class="tsp-trend-svg" preserveAspectRatio="none">
-              <g class="tsp-grid">
-                <line v-for="t in [0.25, 0.5, 0.75]" :key="t"
-                  :x1="W_PAD_X" :x2="W_CHART - W_PAD_X"
-                  :y1="W_PAD_Y + t * (H_CHART - 2 * W_PAD_Y)"
-                  :y2="W_PAD_Y + t * (H_CHART - 2 * W_PAD_Y)" />
-              </g>
-              <path :d="weeklyDealPath" class="tsp-trend-line deal" />
-              <circle v-for="(p, i) in weeklyTrendData" :key="`d-${i}`"
-                :cx="xWeekly(i)" :cy="yDealWeekly(p.dealChange)" r="4" class="tsp-trend-dot deal" />
-              <path :d="weeklyPricePath" class="tsp-trend-line price" />
-              <circle v-for="(p, i) in weeklyTrendData" :key="`p-${i}`"
-                :cx="xWeekly(i)" :cy="yPriceWeekly(p.priceChange)" r="4" class="tsp-trend-dot price" />
-            </svg>
-            <div class="tsp-trend-xaxis">
-              <span v-for="(p, i) in weeklyTrendData" :key="i"
-                :style="{ left: `${weeklyTrendData.length > 1 ? (i / (weeklyTrendData.length - 1)) * 100 : 50}%` }">
-                {{ p.week }}
-              </span>
-            </div>
-            <div class="tsp-trend-yaxis-l">
-              <span>+{{ weeklyPriceScale.toFixed(1) }}%</span>
-              <span>+{{ (weeklyPriceScale / 2).toFixed(1) }}%</span>
-              <span>0%</span>
-              <span>-{{ (weeklyPriceScale / 2).toFixed(1) }}%</span>
-              <span>-{{ weeklyPriceScale.toFixed(1) }}%</span>
-            </div>
-            <div class="tsp-trend-yaxis-r">
-              <span>+{{ weeklyDealScale }}%</span>
-              <span>+{{ Math.round(weeklyDealScale / 2) }}%</span>
-              <span>0%</span>
-              <span>-{{ Math.round(weeklyDealScale / 2) }}%</span>
-              <span>-{{ weeklyDealScale }}%</span>
-            </div>
-          </div>
-          <p class="tsp-trend-source">출처: 국토교통부 RTMS 아파트 매매 실거래가(최근 4개월) — 16개 수도권 자치구. 가격은 주차별 만원/m²의 중간값(median) 변동률, 표본 5건 미만 주는 제외 (한국부동산원 공식 시세지수와는 다른 단순 계산값입니다).</p>
-        </section>
-      </template>
-
-      <!-- 지역별 시세 -->
-      <template v-if="activeTab === 'regional'">
-        <section class="tsp-card tsp-region-card">
-          <header class="tsp-region-head">
-            <h2 class="tsp-trend-title"><span class="tsp-trend-icon">📊</span> 주간 수도권 부동산 시세 동향</h2>
-            <p class="tsp-trend-sub">전주 대비 변동률<span v-if="regionalDateRange"> ({{ regionalDateRange }})</span></p>
-          </header>
-          <div class="tsp-region-controls">
-            <div class="tsp-seg">
-              <button :class="['tsp-seg-btn', { active: regionalProperty === 'apt' }]" @click="regionalProperty = 'apt'">아파트</button>
-              <button :class="['tsp-seg-btn', { active: regionalProperty === 'villa' }]" @click="regionalProperty = 'villa'">다세대</button>
-              <button :class="['tsp-seg-btn', { active: regionalProperty === 'single' }]" @click="regionalProperty = 'single'">단독주택</button>
-            </div>
-            <div class="tsp-seg">
-              <button :class="['tsp-seg-btn', { active: regionalMetric === 'price' }]" @click="regionalMetric = 'price'">시세변동</button>
-              <button :class="['tsp-seg-btn', { active: regionalMetric === 'deal' }]" @click="regionalMetric = 'deal'">거래변동</button>
-            </div>
-          </div>
-          <div class="tsp-region-legend">
-            <span class="lg"><span class="dot up"></span>상승</span>
-            <span class="lg"><span class="dot down"></span>하락</span>
-          </div>
-          <p v-if="regionalLoading" class="tsp-note">실거래 데이터 불러오는 중…</p>
-          <p v-else-if="regionalData.length === 0" class="tsp-note warn">{{ regionalError || '표시할 데이터가 없습니다.' }}</p>
-          <div v-else class="tsp-region-bars">
-            <div v-for="r in regionalData" :key="r.name" class="tsp-region-bar-cell">
-              <div class="tsp-region-bar-track">
-                <div
-                  :class="['tsp-region-bar', (regionalMetric === 'price' ? r.priceChange : r.dealChange) >= 0 ? 'up' : 'down']"
-                  :style="{ height: `${(Math.abs(regionalMetric === 'price' ? r.priceChange : r.dealChange) / regionalChartMax) * 100}%`,
-                            top: (regionalMetric === 'price' ? r.priceChange : r.dealChange) >= 0
-                              ? `calc(50% - ${(Math.abs(regionalMetric === 'price' ? r.priceChange : r.dealChange) / regionalChartMax) * 50}%)`
-                              : '50%' }"
-                >
-                  <span class="tsp-region-bar-label">
-                    {{ (regionalMetric === 'price' ? r.priceChange : r.dealChange) >= 0 ? '+' : '' }}{{ (regionalMetric === 'price' ? r.priceChange : r.dealChange).toFixed(1) }}%
-                  </span>
-                </div>
-                <div class="tsp-region-axis"></div>
-              </div>
-              <div class="tsp-region-bar-name">{{ r.name }}</div>
-            </div>
-          </div>
-          <table v-if="regionalData.length > 0" class="tsp-region-table">
-            <thead>
-              <tr>
-                <th>지역구</th>
-                <th class="r">평균 시세 <small>(만원/m²)</small></th>
-                <th class="r">시세 변동</th>
-                <th class="r">거래건수</th>
-                <th class="r">거래 변동</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="r in regionalData" :key="r.name">
-                <td>{{ r.name }}</td>
-                <td class="r">{{ r.priceAvg.toLocaleString('ko-KR') }} <span class="prev">(전주 {{ r.prevPrice.toLocaleString('ko-KR') }})</span></td>
-                <td :class="['r', r.priceChange >= 0 ? 'up' : 'down']">{{ r.priceChange >= 0 ? '+' : '' }}{{ r.priceChange.toFixed(2) }}%</td>
-                <td class="r">{{ r.deals }}건 <span class="prev">(전주 {{ r.prevDeals }})</span></td>
-                <td :class="['r', r.dealChange >= 0 ? 'up' : 'down']">{{ r.dealChange >= 0 ? '+' : '' }}{{ r.dealChange.toFixed(1) }}%</td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="tsp-trend-source">출처: 국토교통부 RTMS 아파트 매매 실거래가 — 이번 주 vs 직전 주 비교</p>
-        </section>
-      </template>
-
-      <!-- 거래랭킹 (기존 컨텐츠) -->
-      <template v-if="activeTab === 'ranking'">
       <section class="tsp-card tsp-toplist-card">
         <nav class="tsp-toplist-tabs">
           <button :class="['tsp-toplist-tab', { active: toplistTab === 'region' }]" @click="toplistTab = 'region'">지역 TOP</button>
@@ -1118,8 +782,8 @@ watch(regionalProperty, () => {
           <span class="tsp-toplist-icon-sm">{{ toplistTab === 'volume' ? '💰' : toplistTab === 'apt' ? '🏢' : '🗺️' }}</span>
           <span class="tsp-toplist-meta">{{ toplistDateRange || '-' }} · 수도권 16개 자치구 기준</span>
         </div>
-        <p v-if="trendLoading" class="tsp-note">실거래 데이터 불러오는 중…</p>
-        <p v-else-if="currentToplist.length === 0" class="tsp-note warn">집계 가능한 데이터가 부족합니다.</p>
+        <p v-if="rawLoading" class="tsp-note">실거래 데이터 불러오는 중…</p>
+        <p v-else-if="currentToplist.length === 0" class="tsp-note warn">{{ rawError || '집계 가능한 데이터가 부족합니다.' }}</p>
         <div v-else class="tsp-toplist-body">
           <div class="tsp-toplist-top3">
             <div
@@ -1231,7 +895,6 @@ watch(regionalProperty, () => {
         </header>
         <div id="trade-map" class="tsp-map" />
       </section>
-      </template>
     </div>
 
     <AppMobileBottomNav active="culture" />
@@ -1253,21 +916,6 @@ watch(regionalProperty, () => {
 }
 .tsp-topbar-btn:disabled { opacity: 0.4; }
 .tsp-topbar-btn img { width: 20px; height: 20px; opacity: 0.55; }
-
-.tsp-tabs {
-  display: flex; gap: 24px; padding: 0 18px;
-  background: #fff; border-bottom: 1px solid #eef0f5;
-}
-.tsp-tab {
-  border: none; background: transparent; padding: 12px 0 14px;
-  font-size: 17px; font-weight: 700; color: #9ca3af; cursor: pointer;
-  position: relative;
-}
-.tsp-tab.active { color: #111827; font-weight: 800; }
-.tsp-tab.active::after {
-  content: ''; position: absolute; left: -4px; right: -4px; bottom: -1px;
-  height: 3px; background: #111827; border-radius: 2px;
-}
 
 .tsp-body { flex: 1 1 auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -1409,92 +1057,4 @@ watch(regionalProperty, () => {
 
 .tsp-map { width: 100%; height: 320px; border-radius: 0 0 14px 14px; }
 
-/* === 주간 추이 === */
-.tsp-trend-card { padding: 16px; }
-.tsp-trend-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-.tsp-trend-title {
-  margin: 0; font-size: 15px; font-weight: 800; color: #111827;
-  display: inline-flex; align-items: center; gap: 6px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.tsp-trend-sub { margin: 0; font-size: 11.5px; color: #6b7280; font-weight: 500; }
-.tsp-trend-icon { font-size: 14px; }
-.tsp-trend-legend { display: flex; gap: 14px; font-size: 11px; color: #6b7280; margin-bottom: 8px; }
-.tsp-trend-legend .lg { display: inline-flex; align-items: center; gap: 4px; }
-.tsp-trend-legend .dot { width: 14px; height: 2px; border-radius: 2px; display: inline-block; }
-.tsp-trend-legend .dot.price { background: #ef4444; }
-.tsp-trend-legend .dot.deal { background: #3b82f6; }
-.tsp-trend-chart-wrap { position: relative; padding: 0 32px 24px 32px; }
-.tsp-trend-svg { width: 100%; height: 220px; }
-.tsp-trend-svg .tsp-grid line { stroke: #e5e7eb; stroke-width: 1; stroke-dasharray: 3 3; }
-.tsp-trend-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.tsp-trend-line.price { stroke: #ef4444; }
-.tsp-trend-line.deal { stroke: #3b82f6; }
-.tsp-trend-dot { stroke-width: 2; fill: #fff; }
-.tsp-trend-dot.price { stroke: #ef4444; }
-.tsp-trend-dot.deal { stroke: #3b82f6; }
-.tsp-trend-xaxis {
-  position: absolute; left: 32px; right: 32px; bottom: 4px; height: 14px;
-  font-size: 9.5px; color: #6b7280;
-}
-.tsp-trend-xaxis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
-.tsp-trend-yaxis-l, .tsp-trend-yaxis-r {
-  position: absolute; top: 0; bottom: 24px; width: 30px;
-  display: flex; flex-direction: column; justify-content: space-between;
-  font-size: 9.5px; color: #6b7280;
-}
-.tsp-trend-yaxis-l { left: 0; align-items: flex-start; }
-.tsp-trend-yaxis-r { right: 0; align-items: flex-end; }
-.tsp-trend-yaxis-l span:first-child { color: #ef4444; font-weight: 700; }
-.tsp-trend-yaxis-l span:last-child { color: #ef4444; }
-.tsp-trend-yaxis-r span:first-child { color: #3b82f6; font-weight: 700; }
-.tsp-trend-yaxis-r span:last-child { color: #3b82f6; }
-
-/* === 지역별 시세 === */
-.tsp-region-card { padding: 14px; }
-.tsp-region-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-.tsp-region-controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 10px; }
-.tsp-seg { display: inline-flex; background: #f3f4f6; border-radius: 8px; padding: 2px; }
-.tsp-seg-btn {
-  border: none; background: transparent; padding: 5px 10px; border-radius: 6px;
-  font-size: 11px; font-weight: 700; color: #6b7280; cursor: pointer;
-}
-.tsp-seg-btn.active { background: #fff; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
-.tsp-region-legend { display: flex; gap: 12px; font-size: 11px; color: #6b7280; margin-bottom: 6px; }
-.tsp-region-legend .lg { display: inline-flex; align-items: center; gap: 4px; }
-.tsp-region-legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.tsp-region-legend .dot.up { background: #ef4444; }
-.tsp-region-legend .dot.down { background: #3b82f6; }
-.tsp-region-bars {
-  display: grid; grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 4px; padding: 4px 2px 8px;
-  overflow-x: auto;
-}
-.tsp-region-bar-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 40px; }
-.tsp-region-bar-track { position: relative; width: 100%; height: 110px; }
-.tsp-region-axis { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #111827; }
-.tsp-region-bar {
-  position: absolute; left: 14%; right: 14%;
-  display: flex; align-items: flex-start; justify-content: center;
-}
-.tsp-region-bar.up { background: #fca5a5; }
-.tsp-region-bar.up.strong { background: #ef4444; }
-.tsp-region-bar.down { background: #93c5fd; }
-.tsp-region-bar-label { position: absolute; top: -14px; font-size: 9px; font-weight: 700; color: #374151; white-space: nowrap; }
-.tsp-region-bar.down .tsp-region-bar-label { top: auto; bottom: -14px; }
-.tsp-region-bar-name {
-  font-size: 9px; color: #6b7280; text-align: center; line-height: 1.1;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
-  transform: rotate(-30deg); transform-origin: top center; height: 24px;
-}
-
-.tsp-region-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
-.tsp-region-table th, .tsp-region-table td { padding: 8px 4px; border-bottom: 1px solid #f1f5f9; text-align: left; }
-.tsp-region-table th { background: #f9fafb; color: #6b7280; font-weight: 700; }
-.tsp-region-table th.r, .tsp-region-table td.r { text-align: right; }
-.tsp-region-table td.up { color: #dc2626; font-weight: 800; }
-.tsp-region-table td.down { color: #2563eb; font-weight: 800; }
-.tsp-region-table .prev { color: #9ca3af; font-size: 10px; margin-left: 2px; }
-.tsp-trend-source { font-size: 10.5px; color: #9ca3af; margin: 8px 0 0; text-align: right; }
-.tsp-seg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
