@@ -3184,6 +3184,11 @@ const areaPairText = (m2: number) => (m2 > 0 ? `${m2.toFixed(2)}㎡ / ${(m2 / PY
 const mktAreaStartM2 = computed(() => Number(mktAreaNum('mkt.a.area')) || pubAreaRange.value?.min || 0);
 const mktAreaEndM2 = computed(() => Number(mktAreaNum('mkt.a.area2')) || pubAreaRange.value?.max || 0);
 const mktAreaRangeText = computed(() => `${areaPairText(mktAreaStartM2.value)} ~\n${areaPairText(mktAreaEndM2.value)}`);
+/** 국토부 실거래 평균 — 가격정보 '실거래가 조건식 분석'의 지금 결과를 그대로 비춘다.
+ *  거기서 기간·면적·건축년도를 고쳐 가며 값을 만들고, 그 마지막 값이 여기에 선다.
+ *  예전에는 처음 한 번 찍어 두고 말아서, 조건을 고쳐도 옛 값이 남아 두 화면이 어긋났다. */
+const mktSaleAvgValue = computed(() => (Number.isFinite(publicTradeAvg.value) ? publicTradeAvg.value : 0));
+const mktSaleAvgText = computed(() => (mktSaleAvgValue.value > 0 ? mktSaleAvgValue.value.toLocaleString('ko-KR') : '-'));
 /** 사진 블록 접기 — 사진이 있으면 접힌 상태가 기본. 손으로 펴면 그 선택을 기억한다 */
 const photoFold = ref<Record<string, boolean>>({});
 /** 접혀 있나? — 손으로 고친 적이 없으면 PHOTO_AREAS 의 공통 규칙(사진 있으면 접힘)을 따른다 */
@@ -3332,13 +3337,12 @@ watch(
       sf.mktConcValues = { ...(sf.mktConcValues ?? {}), 'case.areaM2': m2.toFixed(2) };
     }
     const around = num(publicTradeAvg.value);
-    fill('mkt.a.sale', around > 0 ? String(around) : '');
     if (around > 0 && py > 0) fill(mk('b', 'unit'), String(Math.round(around / py)));
     fill(mk('d', 'real'), num(pdfMaeMaeAvg.value) > 0 ? String(Math.round(pdfMaeMaeAvg.value)) : '');
     fill(mk('d', 'rate'), String(MKT_JEONSE_RATE));
 
     // 결론 줄
-    if (!sf.mktConcAvg && v['mkt.a.sale']) sf.mktConcAvg = v['mkt.a.sale'];
+    if (!sf.mktConcAvg && around > 0) sf.mktConcAvg = String(around);
     if (!sf.mktConcLow && v['mkt.c.saleAsk']) sf.mktConcLow = v['mkt.c.saleAsk'];
     if (!sf.mktUnitPrice && v[mk('b', 'unit')]) sf.mktUnitPrice = v[mk('b', 'unit')];
   },
@@ -6839,10 +6843,9 @@ const goBack = () => router.back();
                   </template>
                   <span v-else class="adp-mkt-range2">{{ mktApprovalText }}<br />{{ mktPeriodText }}</span>
                 </div>
-                <div class="cell">
+                <div class="cell calc">
                   <small>국토부 실거래 평균</small>
-                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal('mkt.a.sale')" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal('mkt.a.sale', $event)" />
-                  <strong v-else class="hi">{{ mktMoney('mkt.a.sale') }}</strong>
+                  <strong class="hi">{{ mktSaleAvgText }}</strong>
                 </div>
               </div>
             </div>
