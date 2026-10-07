@@ -2758,7 +2758,7 @@ const noteLeave = () => { if (hasHover) noteTip.value = ''; };
 watch(dmTip, (v) => { if (v) noteTip.value = ''; });
 watch(noteTip, (v) => { if (v) dmTip.value = ''; });
 // 말풍선은 화면에 붙어 뜨기 때문에, 화면을 움직이면 엉뚱한 자리를 가린다 — 그때는 닫는다
-const closeTips = () => { dmTip.value = ''; noteTip.value = ''; addrTip.value = ''; };
+const closeTips = () => { dmTip.value = ''; noteTip.value = ''; addrTip.value = ''; mktLitKey.value = ''; };
 onMounted(() => window.addEventListener('scroll', closeTips, true));
 onBeforeUnmount(() => window.removeEventListener('scroll', closeTips, true));
 /** 말풍선 세로 위치 — 화면 기준(fixed)으로 띄워 가장자리에서 잘리지 않게 한다 */
@@ -3211,6 +3211,25 @@ const sendTradePriceToMarket = async (row: PlaceRow) => {
 // 해당 경매물건 자료가 없으면 비슷한 물건으로 대신 조사한다.
 // 모드를 바꾸면 저장 위치도 갈라져서 두 벌의 값을 따로 들고 있을 수 있다.
 const MKT_MODES = ['경매물건', '유사물건'];
+
+/** 계산 칸을 짚으면 그 값을 만든 칸이 같이 켜진다.
+ *  '이 숫자가 어디서 나왔나'를 눈으로 따라가게 하려는 것이다 —
+ *  말풍선을 열어 공식을 읽는 것보다 빠르다. */
+const MKT_LIT_LINKS: Record<string, string[]> = {
+  unit: ['unit', 'real', 'area'],                 // 평단가 = 매매 실거래가 ÷ 전용면적
+  jRatio: ['jRatio', 'jReal', 'real'],            // 전세가율 = 전세 ÷ 매매
+  jeonse: ['jeonse', 'pub'],                      // 전세가 = 공동주택가 × 비율(같은 칸 안에 있다)
+  pubRatio: ['pubRatio', 'real', 'pub'],          // 공시대비율 = 매매 ÷ 공동주택가
+  saleRatio: ['saleRatio', 'jeonse', 'real'],     // 매매가율 = 전세가 ÷ 매매
+  pub: ['pub', 'jeonse', 'pubRatio', 'saleRatio'], // 공동주택가는 거꾸로 — 이 값을 쓰는 칸들
+  real: ['real', 'unit', 'jRatio', 'pubRatio', 'saleRatio'],
+};
+const mktLitKey = ref('');
+const mktLit = (id: string) => (MKT_LIT_LINKS[mktLitKey.value] ?? []).includes(id);
+const litEnter = (id: string) => { if (hasHover) mktLitKey.value = id; };
+const litLeave = () => { if (hasHover) mktLitKey.value = ''; };
+/** 폰은 올려놓는 동작이 없다 — 눌러서 켜고 다시 눌러 끈다 */
+const litTap = (id: string) => { mktLitKey.value = mktLitKey.value === id ? '' : id; };
 /** 경매물건 칸은 손으로 적지 않는다.
  *  가격정보에서 비행기로 보낸 값·브이월드 공시가가 그대로 서는 자리다. 여기서 고치면
  *  어디서 온 숫자인지 알 수 없어진다. 손으로 적을 일은 유사물건 쪽에서 한다. */
@@ -6987,14 +7006,14 @@ const goBack = () => router.back();
                 >{{ mktMode('d') }}</button>
               </div>
               <div class="adp-mkt-cells c4 adp-dm-table center-y">
-                <div class="cell">
+                <div :class="['cell', { lit: mktLit('area') }]" @mouseenter="litEnter('area')" @mouseleave="litLeave()" @click="litTap('area')">
                   <small>전용면적</small>
                   <span v-if="mktCaseEditable" class="adp-mkt-unit">
                     <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(mk('d', 'area'))" placeholder="0" @change="setMktVal(mk('d', 'area'), ($event.target as HTMLInputElement).value)" />㎡
                   </span>
                   <strong v-else class="adp-mkt-area1">{{ mktAreaText(mk('d', 'area')) }}</strong>
                 </div>
-                <div class="cell">
+                <div :class="['cell', { lit: mktLit('date') }]" @mouseenter="litEnter('date')" @mouseleave="litLeave()" @click="litTap('date')">
                   <small>거래일자 / 층</small>
                   <template v-if="mktCaseEditable">
                     <button
@@ -7006,26 +7025,26 @@ const goBack = () => router.back();
                   </template>
                   <strong v-else class="adp-mkt-area1">{{ mktDealDateFloorText }}</strong>
                 </div>
-                <div class="cell">
+                <div :class="['cell', { lit: mktLit('real') }]" @mouseenter="litEnter('real')" @mouseleave="litLeave()" @click="litTap('real')">
                   <small>매매 실거래가</small>
                   <FormattedNumberInput v-if="mktCaseEditable" :model-value="mktVal(mk('d', 'real'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'real'), $event)" />
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'real')) }}</strong>
                 </div>
-                <div class="cell calc">
+                <div :class="['cell calc', { lit: mktLit('unit') }]" @mouseenter="litEnter('unit')" @mouseleave="litLeave()" @click="litTap('unit')">
                   <small>평단가</small>
                   <strong class="hi">{{ mktUnitFromRealText }}</strong>
                 </div>
               </div>
               <!-- 전세 줄 — 매매 줄과 같은 네 칸. 단지전체 표의 전세 옆 비행기가 여기로 들어온다 -->
               <div class="adp-mkt-cells c4 adp-dm-table center-y">
-                <div class="cell">
+                <div :class="['cell', { lit: mktLit('jArea') }]" @mouseenter="litEnter('jArea')" @mouseleave="litLeave()" @click="litTap('jArea')">
                   <small>전용면적</small>
                   <span v-if="mktCaseEditable" class="adp-mkt-unit">
                     <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(mk('d', 'jArea'))" placeholder="0" @change="setMktVal(mk('d', 'jArea'), ($event.target as HTMLInputElement).value)" />㎡
                   </span>
                   <strong v-else class="adp-mkt-area1">{{ mktAreaText(mk('d', 'jArea')) }}</strong>
                 </div>
-                <div class="cell">
+                <div :class="['cell', { lit: mktLit('jDate') }]" @mouseenter="litEnter('jDate')" @mouseleave="litLeave()" @click="litTap('jDate')">
                   <small>거래일자 / 층</small>
                   <template v-if="mktCaseEditable">
                     <button
@@ -7037,23 +7056,23 @@ const goBack = () => router.back();
                   </template>
                   <strong v-else class="adp-mkt-area1">{{ mktJeonseDateFloorText }}</strong>
                 </div>
-                <div class="cell">
+                <div :class="['cell', { lit: mktLit('jReal') }]" @mouseenter="litEnter('jReal')" @mouseleave="litLeave()" @click="litTap('jReal')">
                   <small>전세 실거래가</small>
                   <FormattedNumberInput v-if="mktCaseEditable" :model-value="mktVal(mk('d', 'jReal'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'jReal'), $event)" />
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'jReal')) }}</strong>
                 </div>
-                <div class="cell calc">
+                <div :class="['cell calc', { lit: mktLit('jRatio') }]" @mouseenter="litEnter('jRatio')" @mouseleave="litLeave()" @click="litTap('jRatio')">
                   <small>전세가율<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('jeonseRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('jeonseRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'jeonseRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('jeonseRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
                   <strong class="hi">{{ mktJeonseRatioText }}</strong>
                 </div>
               </div>
               <div class="adp-mkt-cells c4 adp-dm-table">
-                <div class="cell">
+                <div :class="['cell', { lit: mktLit('pub') }]" @mouseenter="litEnter('pub')" @mouseleave="litLeave()" @click="litTap('pub')">
                   <small><button type="button" class="adp-dm-link" @click.stop="openOfficialPriceSite">공동주택가</button><span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubPrice', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubPrice', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubPrice'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubPrice')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
                   <FormattedNumberInput v-if="mktCaseEditable" :model-value="mktVal(mk('d', 'pub'))" mode="string" class="adp-mkt-input" :placeholder="officialPriceUsable > 0 ? officialPriceUsable.toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(mk('d', 'pub'), $event)" />
                   <strong v-else class="hi">{{ mktPubText }}</strong>
                 </div>
-                <div class="cell calc">
+                <div :class="['cell calc', { lit: mktLit('jeonse') }]" @mouseenter="litEnter('jeonse')" @mouseleave="litLeave()" @click="litTap('jeonse')">
                   <small class="adp-mkt-rate">
                     전세가
                     <template v-if="editingSurvey.location">
@@ -7064,11 +7083,11 @@ const goBack = () => router.back();
                   </small>
                   <strong>{{ mktJeonseFromPub }}</strong>
                 </div>
-                <div class="cell calc">
+                <div :class="['cell calc', { lit: mktLit('pubRatio') }]" @mouseenter="litEnter('pubRatio')" @mouseleave="litLeave()" @click="litTap('pubRatio')">
                   <small>공시대비율<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
                   <strong>{{ mktCaseRatio }}</strong>
                 </div>
-                <div class="cell calc">
+                <div :class="['cell calc', { lit: mktLit('saleRatio') }]" @mouseenter="litEnter('saleRatio')" @mouseleave="litLeave()" @click="litTap('saleRatio')">
                   <small>매매가율<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('saleRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('saleRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'saleRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('saleRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
                   <strong>{{ mktJeonseToSale }}</strong>
                 </div>
@@ -9117,6 +9136,13 @@ const goBack = () => router.back();
 .adp-mkt-cells .cell .adp-mkt-twoym + .adp-mkt-input { width: 100%; margin-top: 3px; font-size: 10.5px; }
 /* 표로 묶인 줄에서는 계산 칸도 흰색 — 색은 머리줄에만 */
 .adp-mkt-cells.adp-dm-table .cell.calc { background: #fff; }
+/* 짚은 칸과 그 값을 만든 칸 — 분홍으로 묶어 보여 준다.
+   calc 칸이 흰 바탕을 따로 잡고 있어 선택자를 한 단계 좁혀야 이긴다 */
+.adp-mkt-cells .cell.lit,
+.adp-mkt-cells.adp-dm-table .cell.calc.lit {
+  background: #fdf0f5;
+  box-shadow: inset 0 0 0 1.5px #f3a7c4;
+}
 /* 줄 수가 다른 칸이 섞여 있으면 값이 위로 붙는다 — 가로·세로 모두 가운데로 */
 .adp-mkt-cells.center-y .cell > strong,
 .adp-mkt-cells.center-y .cell > span { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; }
