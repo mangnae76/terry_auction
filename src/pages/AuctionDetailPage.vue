@@ -3464,6 +3464,15 @@ watch(
     const fill = (id: string, value: string) => { if (!v[id] && value) v[id] = value; };
 
     // 면적을 평에서 ㎡로 바꾸면서, 예전에 평으로 저장해 둔 값은 한 번만 비운다
+    // 예전 빌드가 자동 채움을 유사물건 칸으로 흘려보냈다. 그때 들어간 다섯 칸만
+    // 한 번 비운다 — 사람이 적었거나 비행기로 보낸 다른 칸은 건드리지 않는다.
+    if (!v['mkt.simSeedCleared']) {
+      const strays = ['mkt.b.sim.area', 'mkt.b.sim.unit', 'mkt.d.sim.area', 'mkt.d.sim.real', 'mkt.d.sim.rate'];
+      const had = strays.some((id) => !!v[id]);
+      strays.forEach((id) => { v[id] = ''; });
+      v['mkt.simSeedCleared'] = '1';
+      if (had) void persistSurvey();
+    }
     // mk() 를 쓰면 안 된다 — 지금 켜져 있는 모드에 따라 키가 'sim' 쪽으로 간다.
     // 여기서 채우는 건 '이 물건의 값' 이라 늘 경매물건 칸이어야 한다.
     // 유사물건 칸은 사람이 직접 적는 자리인데, 켜 둔 채로 물건을 열면 그리로 들어갔다.
