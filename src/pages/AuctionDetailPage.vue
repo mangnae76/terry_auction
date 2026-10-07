@@ -2822,7 +2822,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['적정', '3% 이하 ↓ (낮을수록 좋다)'],
   ] },
   clear: { arrow: '62%', rows: [
-    ['공식', '총 매물수 ÷ 월평균 거래량'],
+    ['공식', '총 매물수 ÷ 연평균 거래량 (×12 = 달 수)'],
     ['의미', '총 누적 매물이 다 팔리는 데 걸리는 달 수'],
     ['기준', 'A 6M↓ · B 6~12M · C 12M↑'],
     ['적정', '6M 이하 ↓ (짧을수록 좋다)'],
@@ -2867,7 +2867,9 @@ const dmMonthly = computed(() => deal12mValue.value / 12);   // 월평균 거래
 const dmTurnover = computed(() => (dmUnits.value > 0 ? (deal12mValue.value / dmUnits.value) * 100 : 0));
 // 매물 부담률 = 총매물수 ÷ 총세대수 × 100 (내놓은 물건이 동네에서 차지하는 비중)
 const dmBurden = computed(() => (dmUnits.value > 0 ? (dmListings.value / dmUnits.value) * 100 : 0));
-// 매물 소진기간(개월) = 총매물수 ÷ 월평균 거래량 (지금 매물이 다 팔리는 데 걸리는 달 수)
+// 매물 소진기간 = 총매물수 ÷ 거래량 (지금 매물이 다 팔리는 데 걸리는 시간).
+// 월평균으로 나눠 '달 수'로 셈한다 — 연평균으로 나눈 '해 수'에 12를 곱한 것과 같은 값이다.
+// 화면에는 둘 다 적는다 ('111M / 9Y 3M').
 const dmClearMonths = computed(() => (dmMonthly.value > 0 ? dmListings.value / dmMonthly.value : 0));
 // 연간 매물 소화율 = 12개월 거래량 ÷ 총 매물수 × 100
 // (엑셀은 월 기준이었다. 한 해에 매물이 몇 번 소화되는지가 더 읽기 쉬워 연간으로 바꿨다)
