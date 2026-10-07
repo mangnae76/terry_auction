@@ -6125,19 +6125,17 @@ const goBack = () => router.back();
                 </div>
                 <div class="cell split">
                   <div class="cell-head">
-                    <small>총 세대수</small>
-                      <button
-                        type="button"
-                        class="adp-dm-lookup"
-                        aria-label="세대수 찾아보기"
-                        @mouseenter="tipEnter('units')"
-                        @mouseleave="tipLeave()"
-                        @click.stop="openHouseholdLookup"
-                      >
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                          <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                      </button>
+                    <button type="button" class="adp-dm-link" @click.stop="openHouseholdLookup">총 세대수</button>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="tipEnter('units')"
+                      @mouseleave="tipLeave()"
+                      @click.stop="dmTip = dmTip === 'units' ? '' : 'units'"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg>
+                    </button>
                   </div>
                   <div class="cell-body">
                     <span v-if="editingSurvey.demand" class="adp-dm-pair">
@@ -6148,19 +6146,17 @@ const goBack = () => router.back();
                 </div>
                 <div class="cell split">
                   <div class="cell-head">
-                    <small>총 매물수</small>
-                      <button
-                        type="button"
-                        class="adp-dm-lookup"
-                        aria-label="매물 보기"
-                        @mouseenter="tipEnter('listings')"
-                        @mouseleave="tipLeave()"
-                        @click.stop="openListingLookup"
-                      >
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                          <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                      </button>
+                    <button type="button" class="adp-dm-link" @click.stop="openListingLookup">총 매물수</button>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="tipEnter('listings')"
+                      @mouseleave="tipLeave()"
+                      @click.stop="dmTip = dmTip === 'listings' ? '' : 'listings'"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg>
+                    </button>
                   </div>
                   <div class="cell-body">
                     <span v-if="editingSurvey.demand" class="adp-dm-pair">
@@ -6346,7 +6342,7 @@ const goBack = () => router.back();
 
             <!-- ② 실사용자 + 입지등수 -->
             <div class="adp-dm-block boxed">
-            <div class="adp-dm-sub">② 실사용자 + 입지등수 <button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동으로</button> <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></div>
+            <div class="adp-dm-sub">② 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동으로</button></div>
             <table class="adp-table adp-ruser-table">
               <colgroup>
               <col style="width: 33%" /><col style="width: 21%" /><col style="width: 18%" /><col style="width: 13%" /><col style="width: 15%" />
@@ -8197,7 +8193,9 @@ const goBack = () => router.back();
 /* 손으로 적은 등수는 파랗게 — 거리로 매긴 자동값(검정)과 한눈에 가른다 */
 .adp-ruser-rank.typed { color: #2b6df3; border-color: #b9cdf7; }
 /* 손으로 적은 값을 지우고 자동값으로 — 되돌릴 게 있을 때만 뜬다 */
+/* 줄 오른쪽 끝 — 아래 평균등수 칸과 같은 쪽에 선다 */
 .adp-rank-reset {
+  margin-left: auto;
   display: inline-flex; align-items: center; gap: 3px;
   border: 1px solid #b9cdf7; border-radius: 999px; background: #fff;
   padding: 2px 8px 2px 6px; font-family: inherit; font-size: 10.5px; font-weight: 700;
@@ -8560,11 +8558,16 @@ const goBack = () => router.back();
    급매가 ① 블록 제목(13px)에 맞추고 굵기는 뺀다 */
 .adp-dm-addr { font-size: 13px; font-weight: 500; color: #2b6df3; }
 /* 세대수 조회 바로가기 — 라벨 옆 작은 돋보기 */
-.adp-dm-lookup {
-  border: none; background: transparent; padding: 0 0 0 3px;
-  color: #2b6df3; cursor: pointer; vertical-align: -1px;
-  display: inline-flex; align-items: center;
+/* 누르면 밖으로 나가는 이름 — 밑줄 하나로 알린다.
+   돋보기 한 단추가 설명과 이동을 겸하던 것을 갈랐다. 폰에는 '올려놓기'가 없어
+   누르면 무조건 이동이라, 설명은 영영 볼 수 없었다. */
+.adp-dm-link {
+  border: none; background: transparent; padding: 0; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 700; color: #6b7280;
+  line-height: 1.2; text-align: center;
+  text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px;
 }
+.adp-dm-link:active { color: #2b6df3; }
 .adp-dm-block + .adp-dm-block { margin-top: 10px; }
 .adp-dm-block.boxed + .adp-dm-block.boxed { margin-top: 10px; }
 .adp-dm-head.sec2 { margin-top: 9px; padding-top: 8px; border-top: 1px solid #eef1f6; }
