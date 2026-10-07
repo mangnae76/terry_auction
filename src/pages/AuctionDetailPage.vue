@@ -3577,13 +3577,24 @@ type ConcCol = { key: string; label: string; note?: string; tone?: 'red' };
 type ConcRow = { key: string; label: string; money: boolean; suffix?: string };
 // 왼쪽부터 '이 물건 자체 → 비슷한 물건 → 동네 평균 → 시장에 나온 값 → 결론' 순으로
 // 읽히게 세운다. 칸이 여섯이라 글자는 아래 .adp-conc-table 에서 줄여 뒀다.
+// 한 표에 여섯 칸을 욱여넣으니 글자가 뭉개졌다 — 성격이 다른 둘로 가른다.
+// '시세 결론'은 값을 모아 견주는 표, '급매가 결론'은 그걸 보고 적는 표.
+const CONC_MEAN_SRC = ['case', 'sim', 'avg', 'low'];
 const MKT_CONC_COLS: ConcCol[] = [
   { key: 'case', label: '경매물건\n실거래가' },
   { key: 'sim', label: '유사물건\n실거래가' },
   { key: 'avg', label: '실거래가\n조건분석 평균' },
   { key: 'low', label: '네이버\n저가매물' },
+  { key: 'mean', label: '평균' },
+];
+const MKT_URGENT_COLS: ConcCol[] = [
   { key: 'lot', label: '동일지번\n매각물건' },
   { key: 'urgent', label: '급매가', tone: 'red' },
+];
+/** 두 표는 생김새가 같다 — 마크업을 한 벌만 두고 제목과 칸만 갈아 끼운다 */
+const CONC_TABLES = [
+  { title: '시세 결론', cols: MKT_CONC_COLS, note: false },
+  { title: '급매가 결론', cols: MKT_URGENT_COLS, note: true },
 ];
 const MKT_CONC_ROWS: ConcRow[] = [
   { key: 'area', label: '면적', money: false },
@@ -3629,6 +3640,16 @@ const concAuto = (col: string, row: string): string => {
     // 저가매물은 평당가를 손으로 적을 수 있다 — 적었으면 그 값, 아니면 호가에서 낸다
     if (row === 'unit') return mktVal('mkt.c.unit') || concUnitFrom('mkt.c.area', 'mkt.c.saleAsk');
     if (row === 'price') return mktVal('mkt.c.saleAsk');
+  }
+  // 네 칸의 평균 — 빈 칸은 빼고 들어온 것만으로 낸다.
+  // 면적은 평균을 내지 않는다 (범위·한 건이 섞여 있어 뜻이 안 선다)
+  if (col === 'mean') {
+    if (row !== 'unit' && row !== 'price') return '';
+    const nums = CONC_MEAN_SRC
+      .map((k) => (row === 'unit' ? parseDigits(concVal(k, 'unit')) : concPriceValue(k)))
+      .filter((n) => n > 0);
+    if (nums.length === 0) return '';
+    return String(Math.round(nums.reduce((a, b) => a + b, 0) / nums.length));
   }
   // 동일지번도 평당가는 손으로 적을 일이 아니다 — 적어 둔 가격과 면적에서 낸다
   if (col === 'lot' && row === 'unit') {
@@ -3722,6 +3743,11 @@ const concPriceAuto = (col: string) => {
 const concPriceHint = (col: string) => {
   const auto = concPriceAuto(col);
   return auto > 0 ? auto.toLocaleString('ko-KR') : '가격';
+};
+/** 그 칸에 실제로 서는 가격 — 손으로 적은 값이 있으면 그 값, 없으면 평당가 × 면적 */
+const concPriceValue = (col: string) => {
+  const manual = parseDigits(concVal(col, 'price'));
+  return manual > 0 ? manual : concPriceAuto(col);
 };
 const concPriceText = (col: string) => {
   const manual = concVal(col, 'price');
@@ -6935,7 +6961,7 @@ const goBack = () => router.back();
             <!-- ② 실거래가 — 예전 '평단가' 블록을 이 줄에 합쳤다 (실거래가 옆이 평단가) -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가<em class="adp-mkt-auto">(매매 · 전세)</em><span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
+                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가<em class="adp-mkt-auto">(매매·전세)</em><span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
                 <button
                   type="button"
                   :class="['adp-mkt-mode', { sim: mktMode('d') === '유사물건' }]"
@@ -7262,22 +7288,22 @@ const goBack = () => router.back();
               </div>
             </div>
 
-            <!-- 시세 및 급매가 결론 -->
-            <div class="adp-sub-block">
+            <!-- 시세 결론 / 급매가 결론 — 생김새가 같아 한 벌로 그린다 -->
+            <div v-for="t in CONC_TABLES" :key="t.title" class="adp-sub-block">
               <div class="adp-sub-head">
-                <h3 class="red">시세 및 급매가 결론</h3>
+                <h3 class="red">{{ t.title }}</h3>
               </div>
               <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table">
                 <thead>
                   <tr>
-                    <th v-for="c in MKT_CONC_COLS" :key="c.key" :class="c.tone">
+                    <th v-for="c in t.cols" :key="c.key" :class="c.tone">
                       {{ c.label }}<small v-if="c.note">{{ c.note }}</small>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="r in MKT_CONC_ROWS" :key="r.key">
-                    <td v-for="c in MKT_CONC_COLS" :key="c.key" class="num">
+                    <td v-for="c in t.cols" :key="c.key" class="num">
                       <!-- 면적 — ㎡ 와 평을 같이 적는다. 한쪽만 적어도 나머지가 따라온다 -->
                       <template v-if="r.key === 'area'">
                         <template v-if="concEditable(c.key)">
@@ -7314,9 +7340,9 @@ const goBack = () => router.back();
                       </template>
                     </td>
                   </tr>
-                  <!-- 다섯째 줄 — 칸을 통으로 쓰는 비고 -->
-                  <tr>
-                    <td class="adp-conc-note" :colspan="MKT_CONC_COLS.length">
+                  <!-- 비고는 급매가 결론 표에만 — 결론을 적는 자리다 -->
+                  <tr v-if="t.note">
+                    <td class="adp-conc-note" :colspan="t.cols.length">
                       <input
                         v-if="editingSurvey.realUser"
                         class="adp-mkt-input"
