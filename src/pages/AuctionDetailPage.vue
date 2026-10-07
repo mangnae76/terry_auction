@@ -7100,13 +7100,13 @@ const goBack = () => router.back();
                   </small>
                   <strong>{{ mktJeonseFromPub }}</strong>
                 </div>
-                <div :class="['cell calc', { lit: mktLit('pubRatio') }]" @mouseenter="litEnter('pubRatio')" @mouseleave="litLeave()" @click="litTap('pubRatio')">
-                  <small>공시대비율<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
-                  <strong>{{ mktCaseRatio }}</strong>
-                </div>
                 <div :class="['cell calc', { lit: mktLit('saleRatio') }]" @mouseenter="litEnter('saleRatio')" @mouseleave="litLeave()" @click="litTap('saleRatio')">
                   <small>전세가율 / 갭<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('jeonseRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('jeonseRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'jeonseRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('jeonseRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
                   <strong class="adp-mkt-gap-wrap">{{ mktJeonseToSale }}<em v-if="mktGapText" class="adp-mkt-gap"> / {{ mktGapText }}</em></strong>
+                </div>
+                <div :class="['cell calc', { lit: mktLit('pubRatio') }]" @mouseenter="litEnter('pubRatio')" @mouseleave="litLeave()" @click="litTap('pubRatio')">
+                  <small>공시대비율<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
+                  <strong>{{ mktCaseRatio }}</strong>
                 </div>
               </div>
             </div>
