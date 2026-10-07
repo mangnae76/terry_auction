@@ -876,11 +876,18 @@ const activePubCol = ref<PubCol | null>(null);
  *  브라우저 기본 말풍선(title)은 흰색인 데다 폰에서는 아예 뜨지 않는다. */
 const addrTip = ref('');
 const addrTipTop = ref(0);
-const toggleAddrTip = (text: string, evt: Event) => {
-  if (addrTip.value === text) { addrTip.value = ''; return; }
+const placeAddrTip = (text: string, evt: Event) => {
   const el = evt.currentTarget as HTMLElement | null;
   if (el) addrTipTop.value = Math.round(el.getBoundingClientRect().bottom + 6);
   addrTip.value = text;
+};
+/** 마우스가 있는 환경(PC)에서는 올려놓기만 해도 뜬다 — 다른 설명들과 같은 규칙 */
+const addrEnter = (text: string, evt: Event) => { if (hasHover) placeAddrTip(text, evt); };
+const addrLeave = () => { if (hasHover) addrTip.value = ''; };
+/** 폰에서는 눌러야 뜬다 — 올려놓는 동작이 없다 */
+const toggleAddrTip = (text: string, evt: Event) => {
+  if (addrTip.value === text) { addrTip.value = ''; return; }
+  placeAddrTip(text, evt);
 };
 const rowAddress = (r: RealTradeMatchRow) => {
   // 도로명(+건물명) 우선, 자료에 도로명이 없으면 법정동+지번으로 대체
@@ -2572,7 +2579,7 @@ const openHouseholdLookup = () => {
  *  주소를 복사해 두면 그 창에 붙여 넣기만 하면 된다. */
 const openOfficialPriceSite = () => {
   void copyText(jibunAddress.value);
-  window.open('https://www.realtyprice.kr/notice/town/searchPastTownPrice.htm', '_blank');
+  window.open('https://www.realtyprice.kr/notice/town/nfSiteLink.htm', '_blank');
 };
 
 // 총 매물수도 자동으로 받을 길이 없다 — 네이버 부동산에서 그 동을 띄워 주고 눈으로 세어 넣게 돕는다
@@ -3530,11 +3537,14 @@ watch(
  *  지금은 모두 손으로 적는다. 자동으로 채울 칸은 나중에 지정해 이 표에만 손대면 된다. */
 type ConcCol = { key: string; label: string; note?: string; tone?: 'red' };
 type ConcRow = { key: string; label: string; money: boolean; suffix?: string };
+// 왼쪽부터 '이 물건 자체 → 비슷한 물건 → 동네 평균 → 시장에 나온 값 → 결론' 순으로
+// 읽히게 세운다. 칸이 여섯이라 글자는 아래 .adp-conc-table 에서 줄여 뒀다.
 const MKT_CONC_COLS: ConcCol[] = [
+  { key: 'case', label: '경매물건\n실거래가' },
+  { key: 'sim', label: '유사물건\n실거래가' },
   { key: 'avg', label: '국토부\n실거래가 평균' },
   { key: 'low', label: '네이버\n저가매물' },
-  { key: 'case', label: '해당 경매물건' },
-  { key: 'sim', label: '유사물건' },
+  { key: 'lot', label: '동일지번\n매각물건' },
   { key: 'urgent', label: '급매가', tone: 'red' },
 ];
 const MKT_CONC_ROWS: ConcRow[] = [
@@ -5748,7 +5758,7 @@ const goBack = () => router.back();
                         <td>{{ r.floor || '-' }}</td>
                         <td class="adp-pub-addr">
                           <div class="adp-pub-addr-in">
-                            <span class="adp-pub-addr-txt" @click.stop="toggleAddrTip(rowAddress(r), $event)">{{ rowAddress(r) }}</span>
+                            <span class="adp-pub-addr-txt" @mouseenter="addrEnter(rowAddress(r), $event)" @mouseleave="addrLeave()" @click.stop="toggleAddrTip(rowAddress(r), $event)">{{ rowAddress(r) }}</span>
                             <button type="button" class="adp-copy-btn" aria-label="주소 복사" @click.stop="copyAddressText(rowAddress(r))">
                               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="8" y="8" width="13" height="13" rx="2" />
@@ -5792,7 +5802,7 @@ const goBack = () => router.back();
                         <td>{{ r.floor || '-' }}</td>
                         <td class="adp-pub-addr">
                           <div class="adp-pub-addr-in">
-                            <span class="adp-pub-addr-txt" @click.stop="toggleAddrTip(rowAddress(r), $event)">{{ rowAddress(r) }}</span>
+                            <span class="adp-pub-addr-txt" @mouseenter="addrEnter(rowAddress(r), $event)" @mouseleave="addrLeave()" @click.stop="toggleAddrTip(rowAddress(r), $event)">{{ rowAddress(r) }}</span>
                             <button type="button" class="adp-copy-btn" aria-label="주소 복사" @click.stop="copyAddressText(rowAddress(r))">
                               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="8" y="8" width="13" height="13" rx="2" />
@@ -5857,7 +5867,7 @@ const goBack = () => router.back();
                       <td>{{ r.floor || '-' }}</td>
                       <td class="adp-pub-addr">
                         <div class="adp-pub-addr-in">
-                        <span class="adp-pub-addr-txt" @click.stop="toggleAddrTip(rowAddress(r), $event)">{{ rowAddress(r) }}</span>
+                        <span class="adp-pub-addr-txt" @mouseenter="addrEnter(rowAddress(r), $event)" @mouseleave="addrLeave()" @click.stop="toggleAddrTip(rowAddress(r), $event)">{{ rowAddress(r) }}</span>
                         <button type="button" class="adp-copy-btn" aria-label="주소 복사" @click.stop="copyAddressText(rowAddress(r))">
                           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="8" y="8" width="13" height="13" rx="2" />
@@ -8508,7 +8518,7 @@ const goBack = () => router.back();
 .adp-conc-table th { white-space: pre-line; }
 
 .adp-conc-table th small { display: block; font-size: 9.5px; font-weight: 600; color: #6b7280; }
-.adp-conc-table .adp-conc-v { font-size: 11.7px; font-weight: 400; color: #111827; white-space: nowrap; }
+.adp-conc-table .adp-conc-v { font-size: 10.5px; font-weight: 400; color: #111827; white-space: nowrap; }
 .adp-conc-table .adp-conc-v.red { color: #e0574a; }
 .adp-conc-table .adp-conc-v small { font-size: 9.5px; font-weight: 600; color: #9ca3af; margin-left: 1px; }
 .adp-conc-table .adp-mkt-input { width: 100%; }
@@ -8988,7 +8998,11 @@ const goBack = () => router.back();
 .adp-mkt-table.adp-conc-table tbody tr:nth-child(2) td.num,
 .adp-mkt-table.adp-conc-table tbody tr:nth-child(3) td.num { text-align: right; }
 /* 면적은 한 줄로 — 칸이 좁으면 글자를 줄인다 */
-.adp-conc-table .adp-conc-area { font-size: 11.7px; white-space: nowrap; letter-spacing: -0.4px; }
+/* 칸이 여섯이라 좁다 — 면적은 한 줄로 두되 글자를 줄인다 */
+.adp-conc-table .adp-conc-area { font-size: 9.5px; white-space: nowrap; letter-spacing: -0.6px; }
+/* 머리글의 줄바꿈(\n)을 그대로 살린다 */
+.adp-mkt-table.adp-conc-table thead th { white-space: pre-line; font-size: 9.5px; letter-spacing: -0.4px; }
+.adp-mkt-table.adp-conc-table td { padding: 6px 3px; }
 .adp-mkt-table.adp-conc-table .adp-conc-unit { justify-content: center; }
 .adp-mkt-table.adp-conc-table .adp-mkt-input { text-align: center; }
 .adp-mkt-table td.calc { background: #fafbfc; color: #6b7280; }
