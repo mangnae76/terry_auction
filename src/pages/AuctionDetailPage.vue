@@ -4065,6 +4065,20 @@ const autoRankNote = (cond: string) => {
 const rankOf = (cond: string) => auction.value?.realUserRanks?.[rankKey(cond)] ?? '';
 /** 화면·평균에 쓸 등수 — 손으로 적은 값이 있으면 그 값, 없으면 자동 */
 const rankValue = (cond: string) => rankOf(cond) || autoRankOf(cond);
+/** 손으로 적어 둔 등수가 하나라도 있나 — 되돌릴 게 없으면 단추를 띄우지 않는다 */
+const hasTypedRank = computed(() => rankConditions.value.some((c) => !!rankOf(c)));
+/** 손으로 적은 등수를 지운다 — 비우면 거리로 매긴 자동값이 다시 선다.
+ *  칸을 하나씩 지우는 길은 원래 있었지만, 폰에서 지우기가 까다로워 보이지 않았다. */
+const resetRanks = async () => {
+  if (!auction.value) return;
+  const ranks = auction.value.realUserRanks;
+  if (!ranks) return;
+  // delete 로 지우면 안 된다 — 저장이 merge 라서 서버에 남은 값이 그대로 돌아온다.
+  // 빈 값으로 덮어야 다음에 열었을 때도 자동값이 선다.
+  rankConditions.value.forEach((c) => { ranks[rankKey(c)] = ''; });
+  await store.saveAuction(auction.value);
+  flashToast('자동 등수로 되돌렸습니다.', 'success');
+};
 const setRank = async (cond: string, value: string) => {
   if (!auction.value) return;
   if (!auction.value.realUserRanks) auction.value.realUserRanks = {};
@@ -6328,7 +6342,7 @@ const goBack = () => router.back();
 
             <!-- ② 실사용자 + 입지등수 -->
             <div class="adp-dm-block boxed">
-            <div class="adp-dm-sub">② 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></div>
+            <div class="adp-dm-sub">② 실사용자 + 입지등수 <button v-if="hasTypedRank" type="button" class="adp-rank-reset" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동으로</button> <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></div>
             <table class="adp-table adp-ruser-table">
               <colgroup>
               <col style="width: 33%" /><col style="width: 21%" /><col style="width: 18%" /><col style="width: 13%" /><col style="width: 15%" />
@@ -8178,6 +8192,14 @@ const goBack = () => router.back();
 }
 /* 손으로 적은 등수는 파랗게 — 거리로 매긴 자동값(검정)과 한눈에 가른다 */
 .adp-ruser-rank.typed { color: #2b6df3; border-color: #b9cdf7; }
+/* 손으로 적은 값을 지우고 자동값으로 — 되돌릴 게 있을 때만 뜬다 */
+.adp-rank-reset {
+  display: inline-flex; align-items: center; gap: 3px;
+  border: 1px solid #b9cdf7; border-radius: 999px; background: #fff;
+  padding: 2px 8px 2px 6px; font-family: inherit; font-size: 10.5px; font-weight: 700;
+  color: #2b6df3; line-height: 1.4; cursor: pointer; white-space: nowrap;
+}
+.adp-rank-reset:active { background: #eaf1ff; }
 
 /* 권리분석 탭 — 첨부 / 케이스 배너 / 서류 확인 */
 .adp-rcase-banner {
