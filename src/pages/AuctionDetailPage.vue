@@ -3374,9 +3374,14 @@ const subjectFloor = computed(() => {
 });
 /** 화면에 쓸 층 — 손으로 적은 값이 있으면 그 값, 없으면 이 물건의 층 */
 // 유사물건은 다른 집이라 이 물건의 층을 넣으면 안 된다 — 경매물건일 때만 자동으로 채운다
-const mktFloorValue = computed(() => (
-  mktVal(mk('d', 'floor')).trim() || (mktMode('d') === MKT_MODES[0] ? subjectFloor.value : '')
-));
+const mktFloorValue = computed(() => {
+  const typed = mktVal(mk('d', 'floor')).trim();
+  if (typed) return typed;
+  // 거래가 들어온 줄에만 이 물건의 층을 대신 넣는다.
+  // 빈 줄에 층만 떠 있으면 없는 거래가 있는 것처럼 보인다.
+  const hasDeal = parseDigits(mktVal(mk('d', 'real'))) > 0;
+  return hasDeal && mktMode('d') === MKT_MODES[0] ? subjectFloor.value : '';
+});
 /** 거래일자 아래에 층 — 보기 모드에서는 두 줄로 */
 const dateFloorText = (dateKey: string, floor: string) => {
   const date = mktVal(dateKey) || '-';
@@ -3387,9 +3392,12 @@ const dateFloorText = (dateKey: string, floor: string) => {
 const mktDealDateFloorText = computed(() => dateFloorText(mk('d', 'year'), mktFloorValue.value));
 
 // 전세 줄 — 매매 줄과 같은 모양·같은 계산을 쓴다. 저장 키만 'j' 가 붙는다
-const mktJeonseFloorValue = computed(() => (
-  mktVal(mk('d', 'jFloor')).trim() || (mktMode('d') === MKT_MODES[0] ? subjectFloor.value : '')
-));
+const mktJeonseFloorValue = computed(() => {
+  const typed = mktVal(mk('d', 'jFloor')).trim();
+  if (typed) return typed;
+  const hasDeal = parseDigits(mktVal(mk('d', 'jReal'))) > 0;
+  return hasDeal && mktMode('d') === MKT_MODES[0] ? subjectFloor.value : '';
+});
 const mktJeonseDateFloorText = computed(() => dateFloorText(mk('d', 'jYear'), mktJeonseFloorValue.value));
 /** 전세가율 = 전세 실거래가 ÷ 매매 실거래가 × 100.
  *  위 표의 매매가와 이 표의 전세가, 둘 다 실제 거래값이라 그대로 나눈다. */
@@ -3559,7 +3567,7 @@ type ConcRow = { key: string; label: string; money: boolean; suffix?: string };
 const MKT_CONC_COLS: ConcCol[] = [
   { key: 'case', label: '경매물건\n실거래가' },
   { key: 'sim', label: '유사물건\n실거래가' },
-  { key: 'avg', label: '국토부\n실거래가 평균' },
+  { key: 'avg', label: '실거래가\n조건분석 평균' },
   { key: 'lot', label: '동일지번\n매각물건' },
   { key: 'low', label: '네이버\n저가매물' },
   { key: 'urgent', label: '급매가', tone: 'red' },
@@ -3585,20 +3593,28 @@ const CONC_MANUAL_COLS = ['lot', 'urgent'];
  *  여기서 따로 적어 두면 원본이 바뀌어도 옛 값이 남아 둘이 어긋난다 —
  *  그래서 적어 두지 않고 만들어진 곳을 그때그때 읽는다.
  *  경매물건·유사물건은 ② 실거래가, 국토부는 ③ 조건분석, 네이버는 2.저렴매물조사. */
+/** 그 줄의 평당가 = 가격 ÷ 면적(평). 적어 둔 값을 읽지 않는다 —
+ *  예전에 찍힌 평당가가 남아 있으면 가격이 비어 있는데도 평당가만 떠 버린다. */
+const concUnitFrom = (areaKey: string, priceKey: string): string => {
+  const price = parseDigits(mktVal(priceKey));
+  const py = (Number(mktAreaNum(areaKey)) || 0) / PYEONG_TO_M2;
+  return price > 0 && py > 0 ? String(Math.round(price / py)) : '';
+};
 const concAuto = (col: string, row: string): string => {
   if (col === 'case') {
     if (row === 'areaM2') return mktVal('mkt.d.area');
-    if (row === 'unit') return mktVal('mkt.b.unit');
+    if (row === 'unit') return concUnitFrom('mkt.d.area', 'mkt.d.real');
     if (row === 'price') return mktVal('mkt.d.real');
   }
   if (col === 'sim') {
     if (row === 'areaM2') return mktVal('mkt.d.sim.area');
-    if (row === 'unit') return mktVal('mkt.b.sim.unit');
+    if (row === 'unit') return concUnitFrom('mkt.d.sim.area', 'mkt.d.sim.real');
     if (row === 'price') return mktVal('mkt.d.sim.real');
   }
   if (col === 'low') {
     if (row === 'areaM2') return mktVal('mkt.c.area');
-    if (row === 'unit') return mktVal('mkt.c.unit');
+    // 저가매물은 평당가를 손으로 적을 수 있다 — 적었으면 그 값, 아니면 호가에서 낸다
+    if (row === 'unit') return mktVal('mkt.c.unit') || concUnitFrom('mkt.c.area', 'mkt.c.saleAsk');
     if (row === 'price') return mktVal('mkt.c.saleAsk');
   }
   if (col === 'avg') {
@@ -6878,7 +6894,7 @@ const goBack = () => router.back();
             <!-- ② 실거래가 — 예전 '평단가' 블록을 이 줄에 합쳤다 (실거래가 옆이 평단가) -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가 (매매 · 전세)<span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
+                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktMode('d') }}</span> 실거래가<em class="adp-mkt-auto">(매매 · 전세)</em><span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
                 <button
                   type="button"
                   :class="['adp-mkt-mode', { sim: mktMode('d') === '유사물건' }]"
