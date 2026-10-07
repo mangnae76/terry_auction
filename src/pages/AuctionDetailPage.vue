@@ -3591,16 +3591,18 @@ type ConcRow = { key: string; label: string; money: boolean; suffix?: string };
 // 읽히게 세운다. 칸이 여섯이라 글자는 아래 .adp-conc-table 에서 줄여 뒀다.
 // 한 표에 여섯 칸을 욱여넣으니 글자가 뭉개졌다 — 성격이 다른 둘로 가른다.
 // '시세 결론'은 값을 모아 견주는 표, '급매가 결론'은 그걸 보고 적는 표.
-const CONC_MEAN_SRC = ['case', 'sim', 'avg', 'low'];
+const CONC_MEAN_SRC = ['case', 'sim', 'avg', 'low', 'lowSim'];
 const MKT_CONC_COLS: ConcCol[] = [
   { key: 'case', label: '경매물건\n실거래가' },
   { key: 'sim', label: '유사물건\n실거래가' },
   { key: 'avg', label: '실거래가\n조건분석 평균' },
-  { key: 'low', label: '네이버\n저가매물' },
+  { key: 'low', label: '경매빌라\n저가매물' },
+  { key: 'lowSim', label: '유사빌라\n저가매물' },
   { key: 'mean', label: '평균' },
 ];
 const MKT_URGENT_COLS: ConcCol[] = [
   { key: 'lot', label: '동일지번\n매각물건' },
+  { key: 'near', label: '인근\n매각 평균' },
   { key: 'urgent', label: '급매가', tone: 'red' },
 ];
 /** 두 표는 생김새가 같다 — 마크업을 한 벌만 두고 제목과 칸만 갈아 끼운다 */
@@ -3624,7 +3626,7 @@ const MKT_CONC_LEGACY: Record<string, string> = {
   'urgent.price': 'urgentSalePrice',
 };
 /** 손으로 적는 칸 — 나머지는 다른 데서 만든 값을 그대로 비춘다 */
-const CONC_MANUAL_COLS = ['lot', 'urgent'];
+const CONC_MANUAL_COLS = ['lot', 'near', 'urgent'];
 /** 결론표 네 칸의 출처.
  *  여기서 따로 적어 두면 원본이 바뀌어도 옛 값이 남아 둘이 어긋난다 —
  *  그래서 적어 두지 않고 만들어진 곳을 그때그때 읽는다.
@@ -3647,11 +3649,13 @@ const concAuto = (col: string, row: string): string => {
     if (row === 'unit') return concUnitFrom('mkt.d.sim.area', 'mkt.d.sim.real');
     if (row === 'price') return mktVal('mkt.d.sim.real');
   }
-  if (col === 'low') {
-    if (row === 'areaM2') return mktVal('mkt.c.area');
-    // 저가매물은 평당가를 손으로 적을 수 있다 — 적었으면 그 값, 아니면 호가에서 낸다
-    if (row === 'unit') return mktVal('mkt.c.unit') || concUnitFrom('mkt.c.area', 'mkt.c.saleAsk');
-    if (row === 'price') return mktVal('mkt.c.saleAsk');
+  // 저가매물은 경매빌라·유사빌라를 따로 적는다 (2.저렴매물조사의 모드 전환과 같은 자리)
+  if (col === 'low' || col === 'lowSim') {
+    const base = col === 'low' ? 'mkt.c' : 'mkt.c.sim';
+    if (row === 'areaM2') return mktVal(`${base}.area`);
+    // 평당가를 손으로 적었으면 그 값, 아니면 호가에서 낸다
+    if (row === 'unit') return mktVal(`${base}.unit`) || concUnitFrom(`${base}.area`, `${base}.saleAsk`);
+    if (row === 'price') return mktVal(`${base}.saleAsk`);
   }
   // 네 칸의 평균 — 빈 칸은 빼고 들어온 것만으로 낸다.
   // 면적은 평균을 내지 않는다 (범위·한 건이 섞여 있어 뜻이 안 선다)
@@ -3663,10 +3667,10 @@ const concAuto = (col: string, row: string): string => {
     if (nums.length === 0) return '';
     return String(Math.round(nums.reduce((a, b) => a + b, 0) / nums.length));
   }
-  // 동일지번도 평당가는 손으로 적을 일이 아니다 — 적어 둔 가격과 면적에서 낸다
-  if (col === 'lot' && row === 'unit') {
-    const price = parseDigits(concVal('lot', 'price'));
-    const py = concAreaPy('lot');
+  // 손으로 적는 칸도 평당가는 적을 일이 아니다 — 적어 둔 가격과 면적에서 낸다
+  if (CONC_MANUAL_COLS.includes(col) && row === 'unit') {
+    const price = parseDigits(concVal(col, 'price'));
+    const py = concAreaPy(col);
     return price > 0 && py > 0 ? String(Math.round(price / py)) : '';
   }
   if (col === 'avg') {
