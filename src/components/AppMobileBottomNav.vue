@@ -64,7 +64,9 @@ const router = useRouter();
   z-index: 200;
 }
 @media (min-width: 768px) {
-  .amb { max-width: 480px; left: 50%; right: auto; transform: translateX(-50%); }
+  /* width:100% 가 있어야 한다 — right:auto 로 바꾸는 순간 폭이 글자 크기로 쪼그라들어
+     여섯 칸이 가운데 뭉쳤다 */
+  .amb { width: 100%; max-width: 480px; left: 50%; right: auto; transform: translateX(-50%); }
 }
 .amb-item {
   display: flex; flex-direction: column; align-items: center; justify-content: center;

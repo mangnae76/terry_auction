@@ -2153,3 +2153,36 @@ button:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== 넓은 화면(웹) — 폰 화면 그대로, 폭만 묶어 가운데에 둔다 =====
+ *
+ * 레이아웃을 따로 짜지 않는다. 폰에서 보던 그 화면이 480px 기둥으로 서고,
+ * 양옆은 바탕색만 깔린다. 그래서 폰은 한 줄도 바뀌지 않는다.
+ *
+ * 화면마다 껍데기 클래스가 달라 여기 한곳에 모아 적는다. 각 페이지는 scoped
+ * 스타일이지만 클래스 이름으로는 바깥에서도 닿는다. 새 화면을 만들면
+ * 껍데기 클래스를 아래 목록에 한 줄 더하면 된다.
+ */
+@media (min-width: 768px) {
+  /* 기둥 바깥 바탕 — 기둥과 톤을 달리해야 '가운데 한 단'으로 읽힌다 */
+  body { background: #e4e7ec; }
+
+  /* 흐름 속에 놓인 껍데기 */
+  .adp-shell, .tsp-shell, .fin-shell, .tax-shell, .trs-shell,
+  .cal-shell, .more-shell, .pip-shell, .lp-shell, .sp-shell,
+  /* 화면에 붙박인 껍데기 (position: fixed; inset: 0) — 좌우 auto 여백이 가운데로 민다 */
+  .ftp-shell, .wlp-shell {
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 0 0 1px #d7dbe3;
+  }
+
+  /* 화면 기준으로 뜨는 말풍선도 기둥 안에 — 그대로 두면 모니터 폭만큼 늘어난다 */
+  .adp-note-bubble {
+    left: 50%;
+    right: auto;
+    width: 460px;
+    transform: translateX(-50%);
+  }
+}
