@@ -3464,7 +3464,10 @@ watch(
     const fill = (id: string, value: string) => { if (!v[id] && value) v[id] = value; };
 
     // 면적을 평에서 ㎡로 바꾸면서, 예전에 평으로 저장해 둔 값은 한 번만 비운다
-    const areaIds = ['mkt.a.area', 'mkt.a.area2', mk('b', 'area'), 'mkt.c.area', mk('d', 'area')];
+    // mk() 를 쓰면 안 된다 — 지금 켜져 있는 모드에 따라 키가 'sim' 쪽으로 간다.
+    // 여기서 채우는 건 '이 물건의 값' 이라 늘 경매물건 칸이어야 한다.
+    // 유사물건 칸은 사람이 직접 적는 자리인데, 켜 둔 채로 물건을 열면 그리로 들어갔다.
+    const areaIds = ['mkt.a.area', 'mkt.a.area2', 'mkt.b.area', 'mkt.c.area', 'mkt.d.area'];
     if (!v['mkt.areaInM2']) {
       areaIds.forEach((id) => { v[id] = ''; });
       v['mkt.areaInM2'] = '1';
@@ -3485,14 +3488,14 @@ watch(
       sf.mktConcValues = { ...(sf.mktConcValues ?? {}), 'case.areaM2': m2.toFixed(2) };
     }
     const around = num(publicTradeAvg.value);
-    if (around > 0 && py > 0) fill(mk('b', 'unit'), String(Math.round(around / py)));
-    fill(mk('d', 'real'), num(pdfMaeMaeAvg.value) > 0 ? String(Math.round(pdfMaeMaeAvg.value)) : '');
-    fill(mk('d', 'rate'), String(MKT_JEONSE_RATE));
+    if (around > 0 && py > 0) fill('mkt.b.unit', String(Math.round(around / py)));
+    fill('mkt.d.real', num(pdfMaeMaeAvg.value) > 0 ? String(Math.round(pdfMaeMaeAvg.value)) : '');
+    fill('mkt.d.rate', String(MKT_JEONSE_RATE));
 
     // 결론 줄
     if (!sf.mktConcAvg && around > 0) sf.mktConcAvg = String(around);
     if (!sf.mktConcLow && v['mkt.c.saleAsk']) sf.mktConcLow = v['mkt.c.saleAsk'];
-    if (!sf.mktUnitPrice && v[mk('b', 'unit')]) sf.mktUnitPrice = v[mk('b', 'unit')];
+    if (!sf.mktUnitPrice && v['mkt.b.unit']) sf.mktUnitPrice = v['mkt.b.unit'];
   },
   { immediate: true },
 );
