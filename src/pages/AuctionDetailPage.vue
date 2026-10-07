@@ -6953,6 +6953,159 @@ const goBack = () => router.back();
           </div>
         </section>
 
+        <!-- 손품결론 — 매매수요조사(등수·거래율·적체)와 급매가 결론을 한 카드로 모은다 -->
+        <section class="adp-card adp-conc-card">
+          <header class="adp-card-head adp-survey-head" @click="toggleSection('realUser')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg>손품결론</h2>
+            <button v-if="!editingSurvey.realUser" class="adp-edit-btn" type="button" @click.stop="editingSurvey.realUser = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('realUser')">💾 저장</button>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('realUser') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('realUser')">
+            <!-- 거래율 — 아실 거래량 기준이라 아파트일 때만 쓴다 -->
+            <div v-if="isApartment" class="adp-sub-block">
+              <div class="adp-sub-head">
+                <h3>
+                  해당경매 물건지 거래율
+                  <span class="adp-survey-note-inline">아실 &gt; 평형 (타입) &gt; 거래량 확인</span>
+                  <span class="adp-region-pills below">
+                    <button
+                      v-for="reg in ['서울', '지방']"
+                      :key="reg"
+                      type="button"
+                      :class="['adp-region-pill', { on: surveyForm.dealRegion === reg }]"
+                      @click="setDealRegion(reg)"
+                    >{{ reg }} {{ reg === '서울' ? '7%' : '4%' }}</button>
+                  </span>
+                </h3>
+              </div>
+              <div class="adp-deal-grid">
+            <div class="cell">
+              <small>세대수</small>
+              <input v-if="editingSurvey.realUser" v-model="surveyForm.totalUnits" type="number" class="adp-survey-input" />
+              <strong v-else>{{ surveyForm.totalUnits ? Number(surveyForm.totalUnits).toLocaleString('ko-KR') : '-' }}</strong>
+            </div>
+            <div class="cell">
+              <small>연 거래건수</small>
+              <input v-if="editingSurvey.realUser" v-model="surveyForm.yearlyDeals" type="number" class="adp-survey-input" />
+              <strong v-else>{{ surveyForm.yearlyDeals ? Number(surveyForm.yearlyDeals).toLocaleString('ko-KR') : '-' }}</strong>
+            </div>
+            <div class="cell">
+              <small>월 거래건수</small>
+              <strong>{{ dealMonthlyComputed }}</strong>
+            </div>
+            <div class="cell">
+              <small>거래율</small>
+              <span class="adp-deal-rate-row">
+                <strong :class="['hi-blue', { low: dealRateOk === false }]">{{ dealRateComputed }}</strong>
+                <span v-if="dealRateJudge" :class="['adp-deal-judge', { bad: dealRateOk === false }]">{{ dealRateJudge }}</span>
+              </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 매물적체 — 아파트일 때만 -->
+            <div v-if="isApartment" class="adp-sub-block">
+              <div class="adp-sub-head">
+                <h3>해당경매 물건지 매물적체율 <span class="adp-survey-note-inline">5% 초과시 과다</span></h3>
+              </div>
+              <div class="adp-deal-grid">
+            <div class="cell">
+              <small>세대수</small>
+              <input v-if="editingSurvey.realUser" v-model="surveyForm.listingUnits" type="number" class="adp-survey-input" />
+              <strong v-else>{{ surveyForm.listingUnits ? Number(surveyForm.listingUnits).toLocaleString('ko-KR') : '-' }}</strong>
+            </div>
+            <div class="cell">
+              <small>매물수</small>
+              <input v-if="editingSurvey.realUser" v-model="surveyForm.listingCount" type="number" class="adp-survey-input" />
+              <strong v-else>{{ surveyForm.listingCount ? Number(surveyForm.listingCount).toLocaleString('ko-KR') : '-' }}</strong>
+            </div>
+            <div class="cell">
+              <small>적정매물</small>
+              <strong>{{ listingTargetComputed }}</strong>
+            </div>
+            <div class="cell">
+              <small>적체율</small>
+              <strong class="hi-blue">{{ listingBacklogComputed }}</strong>
+                </div>
+              </div>
+              <!-- 거래율·매물적체 묶음의 비고 — 구분선 위, 같은 블록 안에 둔다 -->
+              <div class="adp-photo-note">
+                <input v-model="surveyForm.saleDemandNote" class="adp-fs-input" placeholder="비고" @change="persistSurvey" />
+              </div>
+            </div>
+
+            <!-- 시세 및 급매가 결론 -->
+            <div class="adp-sub-block">
+              <div class="adp-sub-head">
+                <h3 class="red">시세 및 급매가 결론</h3>
+              </div>
+              <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table">
+                <thead>
+                  <tr>
+                    <th v-for="c in MKT_CONC_COLS" :key="c.key" :class="c.tone">
+                      {{ c.label }}<small v-if="c.note">{{ c.note }}</small>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="r in MKT_CONC_ROWS" :key="r.key">
+                    <td v-for="c in MKT_CONC_COLS" :key="c.key" class="num">
+                      <!-- 면적 — ㎡ 와 평을 같이 적는다. 한쪽만 적어도 나머지가 따라온다 -->
+                      <template v-if="r.key === 'area'">
+                        <template v-if="editingSurvey.realUser">
+                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'areaM2')" placeholder="0" @change="setConcArea(c.key, 'm2', ($event.target as HTMLInputElement).value)" />㎡</span>
+                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'area')" placeholder="0" @change="setConcArea(c.key, 'py', ($event.target as HTMLInputElement).value)" />평</span>
+                        </template>
+                        <span v-else class="adp-conc-v adp-conc-area">{{ concAreaText(c.key) }}</span>
+                      </template>
+                      <!-- 가격 — 평당가 × 면적(평). 손으로 적으면 그 값이 이긴다 -->
+                      <template v-else-if="r.key === 'price'">
+                        <FormattedNumberInput
+                          v-if="editingSurvey.realUser"
+                          :model-value="concVal(c.key, 'price')"
+                          mode="string"
+                          class="adp-mkt-input"
+                          :placeholder="concPriceHint(c.key)"
+                          @update:model-value="setConcVal(c.key, 'price', String($event ?? ''))"
+                        />
+                        <span v-else :class="['adp-conc-v', 'hi', { red: c.tone === 'red' }]">{{ concPriceText(c.key) }}</span>
+                      </template>
+                      <!-- 평단가 -->
+                      <template v-else>
+                        <FormattedNumberInput
+                          v-if="editingSurvey.realUser"
+                          :model-value="concVal(c.key, r.key)"
+                          mode="string"
+                          class="adp-mkt-input"
+                          :placeholder="r.label"
+                          @update:model-value="setConcVal(c.key, r.key, String($event ?? ''))"
+                        />
+                        <span v-else class="adp-conc-v">
+                          {{ concText(c.key, r) }}<small v-if="r.suffix && concVal(c.key, r.key)">{{ r.suffix }}</small>
+                        </span>
+                      </template>
+                    </td>
+                  </tr>
+                  <!-- 다섯째 줄 — 칸을 통으로 쓰는 비고 -->
+                  <tr>
+                    <td class="adp-conc-note" :colspan="MKT_CONC_COLS.length">
+                      <input
+                        v-if="editingSurvey.realUser"
+                        class="adp-mkt-input"
+                        placeholder="비고"
+                        :value="fieldVal('fs.urgentSale.note')"
+                        @change="setExtraNote('urgentSale', ($event.target as HTMLInputElement).value)"
+                      />
+                      <span v-else>{{ fieldVal('fs.urgentSale.note') || '비고' }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <section class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('survField')">
             <h2 class="adp-head-blue"><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.8V20a1 1 0 0 0 1 1h5"/><circle cx="16.5" cy="16.5" r="3.5"/><path d="m21 21-2-2"/></svg>현장조사</h2>
@@ -7144,158 +7297,6 @@ const goBack = () => router.back();
         </section>
 
 
-        <!-- 손품결론 — 매매수요조사(등수·거래율·적체)와 급매가 결론을 한 카드로 모은다 -->
-        <section class="adp-card adp-conc-card">
-          <header class="adp-card-head adp-survey-head" @click="toggleSection('realUser')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg>손품결론</h2>
-            <button v-if="!editingSurvey.realUser" class="adp-edit-btn" type="button" @click.stop="editingSurvey.realUser = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('realUser')">💾 저장</button>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('realUser') }]" alt="" />
-          </header>
-          <div v-if="!isCollapsed('realUser')">
-            <!-- 거래율 — 아실 거래량 기준이라 아파트일 때만 쓴다 -->
-            <div v-if="isApartment" class="adp-sub-block">
-              <div class="adp-sub-head">
-                <h3>
-                  해당경매 물건지 거래율
-                  <span class="adp-survey-note-inline">아실 &gt; 평형 (타입) &gt; 거래량 확인</span>
-                  <span class="adp-region-pills below">
-                    <button
-                      v-for="reg in ['서울', '지방']"
-                      :key="reg"
-                      type="button"
-                      :class="['adp-region-pill', { on: surveyForm.dealRegion === reg }]"
-                      @click="setDealRegion(reg)"
-                    >{{ reg }} {{ reg === '서울' ? '7%' : '4%' }}</button>
-                  </span>
-                </h3>
-              </div>
-              <div class="adp-deal-grid">
-            <div class="cell">
-              <small>세대수</small>
-              <input v-if="editingSurvey.realUser" v-model="surveyForm.totalUnits" type="number" class="adp-survey-input" />
-              <strong v-else>{{ surveyForm.totalUnits ? Number(surveyForm.totalUnits).toLocaleString('ko-KR') : '-' }}</strong>
-            </div>
-            <div class="cell">
-              <small>연 거래건수</small>
-              <input v-if="editingSurvey.realUser" v-model="surveyForm.yearlyDeals" type="number" class="adp-survey-input" />
-              <strong v-else>{{ surveyForm.yearlyDeals ? Number(surveyForm.yearlyDeals).toLocaleString('ko-KR') : '-' }}</strong>
-            </div>
-            <div class="cell">
-              <small>월 거래건수</small>
-              <strong>{{ dealMonthlyComputed }}</strong>
-            </div>
-            <div class="cell">
-              <small>거래율</small>
-              <span class="adp-deal-rate-row">
-                <strong :class="['hi-blue', { low: dealRateOk === false }]">{{ dealRateComputed }}</strong>
-                <span v-if="dealRateJudge" :class="['adp-deal-judge', { bad: dealRateOk === false }]">{{ dealRateJudge }}</span>
-              </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- 매물적체 — 아파트일 때만 -->
-            <div v-if="isApartment" class="adp-sub-block">
-              <div class="adp-sub-head">
-                <h3>해당경매 물건지 매물적체율 <span class="adp-survey-note-inline">5% 초과시 과다</span></h3>
-              </div>
-              <div class="adp-deal-grid">
-            <div class="cell">
-              <small>세대수</small>
-              <input v-if="editingSurvey.realUser" v-model="surveyForm.listingUnits" type="number" class="adp-survey-input" />
-              <strong v-else>{{ surveyForm.listingUnits ? Number(surveyForm.listingUnits).toLocaleString('ko-KR') : '-' }}</strong>
-            </div>
-            <div class="cell">
-              <small>매물수</small>
-              <input v-if="editingSurvey.realUser" v-model="surveyForm.listingCount" type="number" class="adp-survey-input" />
-              <strong v-else>{{ surveyForm.listingCount ? Number(surveyForm.listingCount).toLocaleString('ko-KR') : '-' }}</strong>
-            </div>
-            <div class="cell">
-              <small>적정매물</small>
-              <strong>{{ listingTargetComputed }}</strong>
-            </div>
-            <div class="cell">
-              <small>적체율</small>
-              <strong class="hi-blue">{{ listingBacklogComputed }}</strong>
-                </div>
-              </div>
-              <!-- 거래율·매물적체 묶음의 비고 — 구분선 위, 같은 블록 안에 둔다 -->
-              <div class="adp-photo-note">
-                <input v-model="surveyForm.saleDemandNote" class="adp-fs-input" placeholder="비고" @change="persistSurvey" />
-              </div>
-            </div>
-
-            <!-- 시세 및 급매가 결론 -->
-            <div class="adp-sub-block">
-              <div class="adp-sub-head">
-                <h3 class="red">시세 및 급매가 결론</h3>
-              </div>
-              <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table">
-                <thead>
-                  <tr>
-                    <th v-for="c in MKT_CONC_COLS" :key="c.key" :class="c.tone">
-                      {{ c.label }}<small v-if="c.note">{{ c.note }}</small>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="r in MKT_CONC_ROWS" :key="r.key">
-                    <td v-for="c in MKT_CONC_COLS" :key="c.key" class="num">
-                      <!-- 면적 — ㎡ 와 평을 같이 적는다. 한쪽만 적어도 나머지가 따라온다 -->
-                      <template v-if="r.key === 'area'">
-                        <template v-if="editingSurvey.realUser">
-                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'areaM2')" placeholder="0" @change="setConcArea(c.key, 'm2', ($event.target as HTMLInputElement).value)" />㎡</span>
-                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'area')" placeholder="0" @change="setConcArea(c.key, 'py', ($event.target as HTMLInputElement).value)" />평</span>
-                        </template>
-                        <span v-else class="adp-conc-v adp-conc-area">{{ concAreaText(c.key) }}</span>
-                      </template>
-                      <!-- 가격 — 평당가 × 면적(평). 손으로 적으면 그 값이 이긴다 -->
-                      <template v-else-if="r.key === 'price'">
-                        <FormattedNumberInput
-                          v-if="editingSurvey.realUser"
-                          :model-value="concVal(c.key, 'price')"
-                          mode="string"
-                          class="adp-mkt-input"
-                          :placeholder="concPriceHint(c.key)"
-                          @update:model-value="setConcVal(c.key, 'price', String($event ?? ''))"
-                        />
-                        <span v-else :class="['adp-conc-v', 'hi', { red: c.tone === 'red' }]">{{ concPriceText(c.key) }}</span>
-                      </template>
-                      <!-- 평단가 -->
-                      <template v-else>
-                        <FormattedNumberInput
-                          v-if="editingSurvey.realUser"
-                          :model-value="concVal(c.key, r.key)"
-                          mode="string"
-                          class="adp-mkt-input"
-                          :placeholder="r.label"
-                          @update:model-value="setConcVal(c.key, r.key, String($event ?? ''))"
-                        />
-                        <span v-else class="adp-conc-v">
-                          {{ concText(c.key, r) }}<small v-if="r.suffix && concVal(c.key, r.key)">{{ r.suffix }}</small>
-                        </span>
-                      </template>
-                    </td>
-                  </tr>
-                  <!-- 다섯째 줄 — 칸을 통으로 쓰는 비고 -->
-                  <tr>
-                    <td class="adp-conc-note" :colspan="MKT_CONC_COLS.length">
-                      <input
-                        v-if="editingSurvey.realUser"
-                        class="adp-mkt-input"
-                        placeholder="비고"
-                        :value="fieldVal('fs.urgentSale.note')"
-                        @change="setExtraNote('urgentSale', ($event.target as HTMLInputElement).value)"
-                      />
-                      <span v-else>{{ fieldVal('fs.urgentSale.note') || '비고' }}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
 
         <!-- 현장 체크리스트 -->
         <section class="adp-card">
