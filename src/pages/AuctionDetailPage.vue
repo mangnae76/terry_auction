@@ -2641,10 +2641,14 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['등수', '입지조건에 따라 등수화한다'],
     ['기준', '입지조건에 가까운 거리 — 5분(400m) 1등 · 10분(800m) 2등 · 그 밖 3등'],
     ['교통', '지하철 우선 · 버스정류장'],
-    ['인프라', '대형마트 · 대형병원 · 상권 · 학원가'],
-    ['공원', '공원'],
-    ['학교', '초등학교 · 어린이집'],
-    ['학원가', '학원'],
+    // 조건을 한 줄씩 늘어놓으니 어디까지가 한 묶음인지 보이지 않았다.
+    // '\n' 으로 줄을 나누면 말풍선이 값 칸 안에서 들여쓴 채 쌓아 준다
+    ['입지조건', [
+      '인프라 (대형마트, 대형병원, 상권)',
+      '공원 (공원)',
+      '학교 (초등학교, 어린이집)',
+      '학원가 (학원)',
+    ].join('\n')],
     ['룸수', '직접 고른다 — 세대구성·입지조건이 따라 바뀐다'],
     ['평균', '조건별 등수를 평균 내어 최종 등수'],
     ['수요', '세대구성 → 입지조건 → 수요자'],
@@ -6342,7 +6346,7 @@ const goBack = () => router.back();
 
             <!-- ② 실사용자 + 입지등수 -->
             <div class="adp-dm-block boxed">
-            <div class="adp-dm-sub">② 실사용자 + 입지등수 <button v-if="hasTypedRank" type="button" class="adp-rank-reset" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동으로</button> <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></div>
+            <div class="adp-dm-sub">② 실사용자 + 입지등수 <button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동으로</button> <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></div>
             <table class="adp-table adp-ruser-table">
               <colgroup>
               <col style="width: 33%" /><col style="width: 21%" /><col style="width: 18%" /><col style="width: 13%" /><col style="width: 15%" />
@@ -8200,6 +8204,8 @@ const goBack = () => router.back();
   color: #2b6df3; line-height: 1.4; cursor: pointer; white-space: nowrap;
 }
 .adp-rank-reset:active { background: #eaf1ff; }
+/* 되돌릴 게 없을 때 — 자리는 지키되 눌리지 않는다는 걸 회색으로 알린다 */
+.adp-rank-reset.off { border-color: #e3e8f0; color: #9ca3af; cursor: default; }
 
 /* 권리분석 탭 — 첨부 / 케이스 배너 / 서류 확인 */
 .adp-rcase-banner {
@@ -8359,9 +8365,11 @@ const goBack = () => router.back();
 }
 /* 라벨 + 사실 꼴 말풍선 — 지표결과(.adp-dm-bubble)와 같은 모양 */
 .adp-note-bubble.rows { text-align: left; }
-.adp-note-bubble.rows span { display: block; }
+/* flex 로 둬야 한 줄짜리 값이든 여러 줄짜리 값이든 값 칸에 맞춰 선다.
+   inline-block 이면 둘째 줄이 이름 칸 밑으로 흘러내린다 */
+.adp-note-bubble.rows span { display: flex; align-items: baseline; gap: 6px; }
 .adp-note-bubble.rows b {
-  display: inline-block; width: 44px; margin-right: 6px;
+  flex: 0 0 52px;
   font-weight: 800; color: #9db9ef;
 }
 .adp-note-bubble {
