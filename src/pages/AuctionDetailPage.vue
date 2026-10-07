@@ -1976,6 +1976,33 @@ watch(
 const startEditProfit = () => {
   editingProfit.value = true;
 };
+/** 비중 기본값 — services/auctionMapper 의 createBidCostDefaults 와 같은 값이다.
+ *  (두 곳이 갈라지면 '기본값' 이 두 가지가 되므로 고칠 때 같이 고친다) */
+const BID_COST_DEFAULT_RATES: Array<[BidCostAmountKey, number]> = [
+  ['loanAmount', 80],
+  ['acquisitionTaxAmount', 1.1],
+  ['legalCostAmount', 0.5],
+];
+/** 손으로 고친 비중을 기본값으로 되돌린다. 입찰가는 건드리지 않는다 —
+ *  그건 사용자가 정하는 값이지 기본값이 있는 자리가 아니다. */
+const resetBidCostRates = () => {
+  askConfirm({
+    title: '비중을 기본값으로 되돌릴까요?',
+    desc: '대출 80% · 취득세 1.10% · 법무비 0.50% 로 다시 계산합니다. 입찰가는 그대로 둡니다.',
+    okLabel: '되돌리기',
+    skipKey: 'adp.skip.resetBidCost',
+    run: async () => {
+      const c = auction.value?.bidCost;
+      if (!c) return;
+      BID_COST_DEFAULT_RATES.forEach(([key, pct]) => setAmountByPct(key, pct));
+      // 취득세는 비율을 따로 들고 있다 — 입찰가가 바뀔 때 이 비율로 다시 계산된다
+      c.acquisitionTaxRate = 1.1;
+      await store.saveAuction(auction.value!);
+      flashToast('비중을 기본값으로 되돌렸습니다.', 'success');
+    },
+  });
+};
+
 const saveProfit = async () => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
@@ -5357,6 +5384,11 @@ const goBack = () => router.back();
               <em>매도일</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ auction.sellDate || '날짜입력' }}</span></span>
             </button>
+            <button type="button" class="adp-pd-reset" title="대출·취득세·법무비 비중을 기본값으로" @click.stop="resetBidCostRates">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" />
+              </svg>비중 초기화
+            </button>
             <button
               type="button"
               class="adp-star-btn"
@@ -8322,15 +8354,17 @@ const goBack = () => router.back();
 /* 수정 버튼 — 테두리만 있는 알약형 */
 .adp-profit-head .adp-edit-btn { margin-left: auto; }
 /* 낙찰일 · 매도일 */
+/* 날짜 둘 + 비중 초기화 + 별. 자리가 모자라면 줄을 내린다 —
+   억지로 한 줄에 담으면 '낙찰일' 같은 글자가 세로로 쪼개진다 */
 .adp-profit-dates {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   padding: 8px 2px 12px; border-bottom: 1px solid #eef1f6; margin-bottom: 10px;
 }
 .adp-pd-item {
   border: none; background: transparent; padding: 0; cursor: pointer;
   display: inline-flex; align-items: baseline; gap: 6px;
 }
-.adp-pd-item em { font-style: normal; font-size: 12.5px; font-weight: 500; color: #111827; }
+.adp-pd-item em { font-style: normal; font-size: 12.5px; font-weight: 500; color: #111827; white-space: nowrap; }
 .adp-pd-box {
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   border: 1px solid #e5e7eb; border-radius: 8px;
@@ -8340,12 +8374,21 @@ const goBack = () => router.back();
 }
 .adp-pd-box span { font-size: 12px; font-weight: 400; color: #111827; }
 .adp-pd-cal { color: #9ca3af; flex: 0 0 auto; }
+/* 비중을 기본값으로 — 날짜 옆에 작게 */
+.adp-pd-reset {
+  display: inline-flex; align-items: center; gap: 3px;
+  border: 1px solid #d7dce6; border-radius: 999px; background: #fff;
+  padding: 3px 9px 3px 7px; font-family: inherit; font-size: 10.5px; font-weight: 700;
+  color: #4b5563; line-height: 1.3; cursor: pointer; white-space: nowrap; flex: 0 0 auto;
+}
+.adp-pd-reset:active { background: #f3f4f6; }
 .adp-pd-sep { color: #d1d5db; }
 .adp-profit-dates .adp-bid-status { padding: 5px 10px; font-size: 11.5px; }
 /* 중요도 별 — 선정물건 목록의 별과 같은 모양 */
 /* 중요도 — 작은 별 3개를 순서대로 채운다 */
 .adp-star-btn {
   margin-left: auto;
+  flex: 0 0 auto;
   border: none; background: transparent; padding: 0; cursor: pointer;
   height: 30px;
   display: inline-flex; align-items: center; gap: 1px;
