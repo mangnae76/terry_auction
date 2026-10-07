@@ -2753,7 +2753,10 @@ const noteLeave = () => { if (hasHover) noteTip.value = ''; };
 watch(dmTip, (v) => { if (v) noteTip.value = ''; });
 watch(noteTip, (v) => { if (v) dmTip.value = ''; });
 // 말풍선은 화면에 붙어 뜨기 때문에, 화면을 움직이면 엉뚱한 자리를 가린다 — 그때는 닫는다
-const closeTips = () => { dmTip.value = ''; noteTip.value = ''; addrTip.value = ''; mktLitKey.value = ''; };
+const closeTips = () => {
+  dmTip.value = ''; noteTip.value = ''; addrTip.value = '';
+  mktLitKey.value = ''; dmLitKey.value = '';
+};
 onMounted(() => window.addEventListener('scroll', closeTips, true));
 onBeforeUnmount(() => window.removeEventListener('scroll', closeTips, true));
 /** 말풍선 세로 위치 — 화면 기준(fixed)으로 띄워 가장자리에서 잘리지 않게 한다 */
@@ -3218,6 +3221,23 @@ const MKT_LIT_LINKS: Record<string, string[]> = {
   pub: ['pub', 'jeonse', 'pubRatio', 'saleRatio'], // 공동주택가는 거꾸로 — 이 값을 쓰는 칸들
   real: ['real', 'unit', 'pubRatio', 'saleRatio'],
 };
+/** 수요공급도 같은 규칙 — 지표를 짚으면 그 값을 만든 수치가 켜진다 */
+const DM_LIT_LINKS: Record<string, string[]> = {
+  turn: ['turn', 'deal', 'units'],        // 거래 회전율 = 거래량 ÷ 총세대수
+  absorb: ['absorb', 'deal', 'listings'], // 매물 소화율 = 거래량 ÷ 총매물수
+  burden: ['burden', 'listings', 'units'], // 매물 부담률 = 총매물수 ÷ 총세대수
+  clear: ['clear', 'listings', 'deal'],   // 매물 소진기간 = 총매물수 ÷ 월평균 거래량
+  // 수치 칸은 거꾸로 — 그 값을 쓰는 지표들이 켜진다
+  deal: ['deal', 'turn', 'absorb', 'clear'],
+  units: ['units', 'turn', 'burden'],
+  listings: ['listings', 'absorb', 'burden', 'clear'],
+};
+const dmLitKey = ref('');
+const dmLit = (id: string) => (DM_LIT_LINKS[dmLitKey.value] ?? []).includes(id);
+const dmLitEnter = (id: string) => { if (hasHover) dmLitKey.value = id; };
+const dmLitLeave = () => { if (hasHover) dmLitKey.value = ''; };
+const dmLitTap = (id: string) => { dmLitKey.value = dmLitKey.value === id ? '' : id; };
+
 const mktLitKey = ref('');
 const mktLit = (id: string) => (MKT_LIT_LINKS[mktLitKey.value] ?? []).includes(id);
 const litEnter = (id: string) => { if (hasHover) mktLitKey.value = id; };
@@ -6362,7 +6382,7 @@ const goBack = () => router.back();
               </div>
               <div class="adp-dm-rowwrap">
               <div class="adp-mkt-cells c3 adp-dm-table">
-                <div class="cell split">
+                <div :class="['cell split', { lit: dmLit('deal') }]" @mouseenter="dmLitEnter('deal')" @mouseleave="dmLitLeave()" @click="dmLitTap('deal')">
                   <div class="cell-head">
                     <button type="button" class="adp-dm-link" @click.stop="openMolitRtSite">거래량</button>
                     <button
@@ -6385,7 +6405,7 @@ const goBack = () => router.back();
                     <strong v-else class="hi-blue adp-dm-two"><em class="adp-dm-pre">연</em><span class="num">{{ dmIntText(deal12mValue) }}</span><em class="adp-dm-bar">|</em><em class="adp-dm-pre">월</em><span class="num">{{ dmIntText(dmMonthly) }}</span></strong>
                   </div>
                 </div>
-                <div class="cell split">
+                <div :class="['cell split', { lit: dmLit('units') }]" @mouseenter="dmLitEnter('units')" @mouseleave="dmLitLeave()" @click="dmLitTap('units')">
                   <div class="cell-head">
                     <button type="button" class="adp-dm-link" @click.stop="openHouseholdLookup">총 세대수</button>
                     <button
@@ -6406,7 +6426,7 @@ const goBack = () => router.back();
                     <strong v-else class="hi-blue"><span class="num">{{ dmIntText(dmUnits) }}</span></strong>
                   </div>
                 </div>
-                <div class="cell split">
+                <div :class="['cell split', { lit: dmLit('listings') }]" @mouseenter="dmLitEnter('listings')" @mouseleave="dmLitLeave()" @click="dmLitTap('listings')">
                   <div class="cell-head">
                     <button type="button" class="adp-dm-link" @click.stop="openListingLookup">총 매물수</button>
                     <button
@@ -6459,7 +6479,7 @@ const goBack = () => router.back();
               </div>
               <div class="adp-dm-rowwrap">
               <div class="adp-mkt-cells c4 adp-dm-table">
-                <div class="cell split calc">
+                <div :class="['cell split calc', { lit: dmLit('turn') }]" @mouseenter="dmLitEnter('turn')" @mouseleave="dmLitLeave()" @click="dmLitTap('turn')">
                   <div class="cell-head">
                     <small>거래 회전율</small>
                     <button
@@ -6483,7 +6503,7 @@ const goBack = () => router.back();
                     <span v-if="dmTurnGrade !== '-'" :class="['adp-dm-fit', { bad: dmTurnGrade === 'C' }]">/ {{ dmFitText(dmTurnGrade) }}</span>
                   </div>
                 </div>
-                <div class="cell split calc">
+                <div :class="['cell split calc', { lit: dmLit('absorb') }]" @mouseenter="dmLitEnter('absorb')" @mouseleave="dmLitLeave()" @click="dmLitTap('absorb')">
                   <div class="cell-head">
                     <small>매물 소화율</small>
                     <button
@@ -6507,7 +6527,7 @@ const goBack = () => router.back();
                     <span v-if="dmAbsorbGrade !== '-'" :class="['adp-dm-fit', { bad: dmAbsorbGrade === 'C' }]">/ {{ dmFitText(dmAbsorbGrade) }}</span>
                   </div>
                 </div>
-                <div class="cell split calc">
+                <div :class="['cell split calc', { lit: dmLit('burden') }]" @mouseenter="dmLitEnter('burden')" @mouseleave="dmLitLeave()" @click="dmLitTap('burden')">
                   <div class="cell-head">
                     <small>매물 부담률</small>
                     <button
@@ -6531,7 +6551,7 @@ const goBack = () => router.back();
                     <span v-if="dmBurdenGrade !== '-'" :class="['adp-dm-fit', { bad: dmBurdenGrade === 'C' }]">/ {{ dmFitText(dmBurdenGrade) }}</span>
                   </div>
                 </div>
-                <div class="cell split calc">
+                <div :class="['cell split calc', { lit: dmLit('clear') }]" @mouseenter="dmLitEnter('clear')" @mouseleave="dmLitLeave()" @click="dmLitTap('clear')">
                   <div class="cell-head">
                     <small>매물 소진기간</small>
                     <button
@@ -7242,7 +7262,7 @@ const goBack = () => router.back();
         <!-- 손품결론 — 매매수요조사(등수·거래율·적체)와 급매가 결론을 한 카드로 모은다 -->
         <section class="adp-card adp-conc-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('realUser')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg>손품결론</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg><span class="adp-head-red">손품결론</span></h2>
             <button v-if="!editingSurvey.realUser" class="adp-edit-btn" type="button" @click.stop="editingSurvey.realUser = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
             <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('realUser')">💾 저장</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('realUser') }]" alt="" />
@@ -7324,7 +7344,7 @@ const goBack = () => router.back();
             <!-- 시세 결론 / 급매가 결론 — 생김새가 같아 한 벌로 그린다 -->
             <div v-for="t in CONC_TABLES" :key="t.title" class="adp-sub-block">
               <div class="adp-sub-head">
-                <h3 class="red">{{ t.title }}</h3>
+                <h3>{{ t.title }}</h3>
               </div>
               <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table">
                 <thead>
@@ -8666,6 +8686,8 @@ const goBack = () => router.back();
 .adp-sub-head .adp-edit-btn { flex: 0 0 auto; }
 .adp-sub-head.first { padding-top: 2px; }
 .adp-sub-head h3.red { color: #e0574a; }
+/* 카드 제목만 붉게 — 그 안의 표 제목(시세 결론·급매가 결론)은 검은 글씨다 */
+.adp-head-red { color: #e0574a; }
 /* 결론표 비고 줄 — 칸 구분 없이 통으로 */
 .adp-conc-table .adp-conc-note { text-align: left; padding: 4px 5px; }
 .adp-conc-table .adp-conc-note > span { font-size: 11px; font-weight: 400; color: #9ca3af; }
@@ -9137,11 +9159,12 @@ const goBack = () => router.back();
    색은 앱이 쓰는 붉은 계열(#e0574a)에 맞췄다.
    calc 칸과 머리글이 각자 바탕을 잡고 있어 선택자를 한 단계씩 좁혀야 이긴다 */
 .adp-mkt-cells .cell.lit,
-.adp-mkt-cells.adp-dm-table .cell.calc.lit {
-  background: #fdecea;
-  box-shadow: inset 0 0 0 1.5px #eda69c;
-}
-.adp-mkt-cells.adp-dm-table .cell.lit > small { background: #fbdcd8; }
+.adp-mkt-cells.adp-dm-table .cell.calc.lit { background: #fdecea; }
+/* 머리줄·값줄이 각자 바탕을 잡고 있어 한 단계씩 좁혀 덮는다 */
+.adp-mkt-cells.adp-dm-table .cell.lit > small,
+.adp-mkt-cells.adp-dm-table .cell.lit .cell-head { background: #fbdcd8; }
+.adp-mkt-cells.adp-dm-table .cell.lit .cell-body,
+.adp-mkt-cells.adp-dm-table .cell.lit .cell-grade { background: #fdecea; }
 /* 줄 수가 다른 칸이 섞여 있으면 값이 위로 붙는다 — 가로·세로 모두 가운데로 */
 .adp-mkt-cells.center-y .cell > strong,
 .adp-mkt-cells.center-y .cell > span { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; }
