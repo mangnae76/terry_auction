@@ -178,6 +178,22 @@ const hideThisAuction = () => {
 
 const jibunAddress = computed(() => auction.value?.address || '');
 const fullAddress = computed(() => auction.value?.address || auction.value?.roadAddress || '');
+/** 동·층·호를 가리키는 토막인가 — '101동', '2층203호', '지하1층', 'B01호' */
+const isUnitToken = (t: string) => (/^제?\d/.test(t) && /[동층호]/.test(t)) || /^(지하|B\d)/i.test(t);
+/** 번지 + 건물명까지 — 동·층·호만 뗀다 ('… 493-4 정성드림빌').
+ *  같은 번지에 건물이 여러 동이면 이름까지 있어야 어느 건물인지 안다. */
+const lotWithBuildingAddress = computed(() => {
+  const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
+  let last = -1;
+  parts.forEach((t, i) => { if (/^\d+(-\d+)?$/.test(t)) last = i; });
+  if (last < 0) return jibunAddress.value;
+  const out = parts.slice(0, last + 1);
+  for (let i = last + 1; i < parts.length; i += 1) {
+    if (isUnitToken(parts[i])) break;
+    out.push(parts[i]);
+  }
+  return out.join(' ');
+});
 // 건물명·동호수를 떼고 번지까지만 남긴 주소 (동일지번 검색 안내문구용)
 const lotOnlyAddress = computed(() => {
   const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
@@ -6891,7 +6907,7 @@ const goBack = () => router.back();
 
             <!-- 3. 동일지번 매각물건 — 같은 번지에서 전에 팔린 물건. 값을 가늠하는 바로 옆 사례다 -->
             <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title">3. 동일지번 매각물건 <span class="adp-dm-area">{{ lotOnlyAddress }}</span></strong>
+              <strong class="adp-dm-title">3. 동일지번 매각물건 <span class="adp-dm-addr">{{ lotWithBuildingAddress }}</span></strong>
               <button type="button" class="adp-photo-fold" :aria-label="photoFolded('sameLot') ? '펼치기' : '접기'" @click.stop="togglePhotoFold('sameLot')"><img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('sameLot') }]" alt="" /></button>
             </div>
             <div class="adp-sub-block noline">
@@ -8498,6 +8514,9 @@ const goBack = () => router.back();
 }
 /* 조사 대상 동 이름 — 제목 안에서 눈에 띄게 */
 .adp-dm-area { color: #2b6df3; }
+/* 제목 옆 주소 — 제목만큼 크면 어느 쪽이 제목인지 흐려진다.
+   급매가 ① 블록 제목(13px)에 맞추고 굵기는 뺀다 */
+.adp-dm-addr { font-size: 13px; font-weight: 500; color: #2b6df3; }
 /* 세대수 조회 바로가기 — 라벨 옆 작은 돋보기 */
 .adp-dm-lookup {
   border: none; background: transparent; padding: 0 0 0 3px;
