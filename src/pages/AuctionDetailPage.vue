@@ -2575,6 +2575,12 @@ const openHouseholdLookup = () => {
   window.open(`https://kosis.kr/search/search.do?query=${query}`, '_blank');
 };
 
+/** 국토부 실거래가 공개시스템 — 거래량을 눈으로 확인하거나 더 캐 볼 때 */
+const openMolitRtSite = () => {
+  void copyText(surveyDongName.value || jibunAddress.value);
+  window.open('https://rt.molit.go.kr/', '_blank');
+};
+
 /** 국토부 공동주택가격 열람 — 유사물건은 자동조회가 안 되니 직접 찾아 적어야 한다.
  *  주소를 복사해 두면 그 창에 붙여 넣기만 하면 된다. */
 const openOfficialPriceSite = () => {
@@ -3200,6 +3206,12 @@ const sendTradePriceToMarket = async (row: PlaceRow) => {
 // 해당 경매물건 자료가 없으면 비슷한 물건으로 대신 조사한다.
 // 모드를 바꾸면 저장 위치도 갈라져서 두 벌의 값을 따로 들고 있을 수 있다.
 const MKT_MODES = ['경매물건', '유사물건'];
+/** 경매물건 칸은 손으로 적지 않는다.
+ *  가격정보에서 비행기로 보낸 값·브이월드 공시가가 그대로 서는 자리다. 여기서 고치면
+ *  어디서 온 숫자인지 알 수 없어진다. 손으로 적을 일은 유사물건 쪽에서 한다. */
+const mktCaseLocked = computed(() => mktMode('d') === MKT_MODES[0]);
+/** 그 칸을 지금 고칠 수 있나 */
+const mktCaseEditable = computed(() => editingSurvey.value.location && !mktCaseLocked.value);
 /** 저가매물은 줄을 늘려 가며 적는다. 첫 줄은 예전 키(mkt.c.area)를 그대로 써 자료가 이어진다. */
 const LOW_ROW_MAX = 10;
 const lowRowCount = computed(() => {
@@ -6194,7 +6206,7 @@ const goBack = () => router.back();
               <div class="adp-mkt-cells c3 adp-dm-table">
                 <div class="cell split">
                   <div class="cell-head">
-                    <small>거래량</small>
+                    <button type="button" class="adp-dm-link" @click.stop="openMolitRtSite">거래량</button>
                     <button
                       type="button"
                       class="adp-dm-info"
@@ -6834,14 +6846,14 @@ const goBack = () => router.back();
               <div class="adp-mkt-cells c4 adp-dm-table center-y">
                 <div class="cell">
                   <small>전용면적</small>
-                  <span v-if="editingSurvey.location" class="adp-mkt-unit">
+                  <span v-if="mktCaseEditable" class="adp-mkt-unit">
                     <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(mk('d', 'area'))" placeholder="0" @change="setMktVal(mk('d', 'area'), ($event.target as HTMLInputElement).value)" />㎡
                   </span>
                   <strong v-else class="adp-mkt-area1">{{ mktAreaText(mk('d', 'area')) }}</strong>
                 </div>
                 <div class="cell">
                   <small>거래일자 / 층</small>
-                  <template v-if="editingSurvey.location">
+                  <template v-if="mktCaseEditable">
                     <button
                       type="button"
                       class="adp-mkt-input adp-mkt-ym"
@@ -6853,7 +6865,7 @@ const goBack = () => router.back();
                 </div>
                 <div class="cell">
                   <small>매매 실거래가</small>
-                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'real'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'real'), $event)" />
+                  <FormattedNumberInput v-if="mktCaseEditable" :model-value="mktVal(mk('d', 'real'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'real'), $event)" />
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'real')) }}</strong>
                 </div>
                 <div class="cell calc">
@@ -6865,14 +6877,14 @@ const goBack = () => router.back();
               <div class="adp-mkt-cells c4 adp-dm-table center-y">
                 <div class="cell">
                   <small>전용면적</small>
-                  <span v-if="editingSurvey.location" class="adp-mkt-unit">
+                  <span v-if="mktCaseEditable" class="adp-mkt-unit">
                     <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(mk('d', 'jArea'))" placeholder="0" @change="setMktVal(mk('d', 'jArea'), ($event.target as HTMLInputElement).value)" />㎡
                   </span>
                   <strong v-else class="adp-mkt-area1">{{ mktAreaText(mk('d', 'jArea')) }}</strong>
                 </div>
                 <div class="cell">
                   <small>거래일자 / 층</small>
-                  <template v-if="editingSurvey.location">
+                  <template v-if="mktCaseEditable">
                     <button
                       type="button"
                       class="adp-mkt-input adp-mkt-ym"
@@ -6884,7 +6896,7 @@ const goBack = () => router.back();
                 </div>
                 <div class="cell">
                   <small>전세 실거래가</small>
-                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'jReal'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'jReal'), $event)" />
+                  <FormattedNumberInput v-if="mktCaseEditable" :model-value="mktVal(mk('d', 'jReal'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'jReal'), $event)" />
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'jReal')) }}</strong>
                 </div>
                 <div class="cell calc">
@@ -6895,7 +6907,7 @@ const goBack = () => router.back();
               <div class="adp-mkt-cells c4 adp-dm-table">
                 <div class="cell">
                   <small><button type="button" class="adp-dm-link" @click.stop="openOfficialPriceSite">공동주택가</button><span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubPrice', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubPrice', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubPrice'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubPrice')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
-                  <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'pub'))" mode="string" class="adp-mkt-input" :placeholder="officialPriceUsable > 0 ? officialPriceUsable.toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(mk('d', 'pub'), $event)" />
+                  <FormattedNumberInput v-if="mktCaseEditable" :model-value="mktVal(mk('d', 'pub'))" mode="string" class="adp-mkt-input" :placeholder="officialPriceUsable > 0 ? officialPriceUsable.toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(mk('d', 'pub'), $event)" />
                   <strong v-else class="hi">{{ mktPubText }}</strong>
                 </div>
                 <div class="cell calc">
@@ -6922,7 +6934,7 @@ const goBack = () => router.back();
 
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head wrapy">
-                <span class="t">③ 실거래가 조건분석 (자동 입력)</span>
+                <span class="t">③ 실거래가 조건분석<em class="adp-mkt-auto">(자동입력)</em></span>
                 <!-- 가격정보 탭에서 조회한 지역·건수와 조회 시각을 같이 보여 준다 -->
                 <small class="adp-mkt-region">
                   <span class="adp-tab-dot" /> {{ publicRealTradeSigungu || '주변' }} {{ publicRealTradeDong || '실거래가' }} ({{ filteredPublicTradeRows.length }}건)
@@ -8732,6 +8744,8 @@ const goBack = () => router.back();
 .adp-mkt-block + .adp-mkt-block { margin-top: 8px; }
 .adp-mkt-block-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; min-width: 0; flex-wrap: nowrap; }
 .adp-mkt-block-head .t { font-size: 13px; font-weight: 800; color: #111827; }
+/* '(자동입력)' 은 제목이 아니라 덧말 — 굵기를 빼고 바로 붙여 쓴다 */
+.adp-mkt-block-head .t .adp-mkt-auto { font-style: normal; font-weight: 400; color: #6b7280; }
 .adp-mkt-block-head small { font-size: 11px; color: #2b6df3; font-weight: 500; }
 .adp-mkt-region { display: inline-flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #16a085 !important; font-weight: 700 !important; }
 .adp-mkt-block-head .adp-update-time { margin-left: auto; font-size: 10.5px; color: #6b7280; white-space: nowrap; }
