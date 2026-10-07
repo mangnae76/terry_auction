@@ -744,6 +744,14 @@ const tradeYearOptions = computed(() => {
 // 면적·연도만 걸러 둔 목록 — 탭별 건수를 세는 데 쓴다
 /** 표에 쓰는 줄 — 국토부 자료만 쓴다 (PDF 표는 쓰지 않는다) */
 const mergedTradeRows = computed<PlaceRow[]>(() => samePlaceRows.value);
+/** 매매는 있는데 전세만 없나 — 전세가율을 못 내니 찾아 헤매기 전에 알려 준다.
+ *  거래가 아예 없을 때는 적지 않는다. 아래 '같은 단지의 실거래가 없습니다' 와 두 번 말하게 된다. */
+const noJeonseInPlace = computed(() => (
+  samePlaceDone.value
+  && !samePlaceLoading.value
+  && mergedTradeRows.value.length > 0
+  && !mergedTradeRows.value.some((r) => r.kind === '전세')
+));
 /** 면적·연도만 거른 줄 — 탭(매매/전세/월세)과 상관없이 쓴다.
  *  위쪽 요약 박스가 이걸 보고, 표는 여기에 탭을 한 번 더 얹는다. */
 const tradeRowsByAreaYear = computed(() => mergedTradeRows.value.filter((r) => {
@@ -5381,6 +5389,7 @@ const goBack = () => router.back();
                 <span class="adp-sp-lab">단지전체 (국토부) <em>최근 {{ PLACE_HISTORY_YEARS }}년</em></span>
                 <strong v-if="samePlaceLoading" class="adp-sp-cnt">조회중…</strong>
                 <strong v-else-if="shownTradeRows.length > 0" class="adp-sp-cnt">{{ shownTradeRows.length }}건</strong>
+                <span v-if="noJeonseInPlace" class="adp-sp-none">전세 데이터 없음</span>
                 <span class="adp-sp-fill" />
                 <button
                   v-if="!samePlaceLoading && samePlaceMissed > 0"
@@ -9402,6 +9411,8 @@ const goBack = () => router.back();
 /* 건수는 '최근 2년' 바로 옆에 붙인다 — 오른쪽 끝에 떨어뜨리면 무엇의 수인지 멀어진다 */
 .adp-sp-cnt { margin-left: 5px; font-size: 12px; font-weight: 800; color: #2b6df3; }
 .adp-sp-fill { flex: 1 1 auto; }
+/* 전세 거래가 아예 없는 단지 — 전세가율을 못 내니 찾아 헤매기 전에 알려 준다 */
+.adp-sp-none { margin-left: 6px; font-size: 11px; font-weight: 700; color: #2b6df3; white-space: nowrap; }
 .adp-sp-err { margin: 0 0 6px; font-size: 11px; color: #9a6400; }
 .adp-sp-again {
   margin-left: 6px; border: 1px solid #c7d7f7; border-radius: 6px; background: #eef3fd;
