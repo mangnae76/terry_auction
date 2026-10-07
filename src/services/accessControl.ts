@@ -2,7 +2,11 @@
 //
 // 화면 차단(라우터 가드)은 눈가림일 뿐이고, 진짜 차단은 firestore.rules가 한다.
 // 여기 목록을 고치면 firestore.rules의 isAllowedUser()도 같이 고치고 다시 배포해야 한다.
-export const ALLOWED_EMAILS = ['dark_0417@nate.com', 'mangnae760723@gmail.com'];
+export const ALLOWED_EMAILS = [
+  'dark_0417@nate.com',
+  'mangnae760723@gmail.com',
+  'hansun440@gmail.com',
+];
 
 export const isAllowedEmail = (email?: string | null): boolean => {
   const normalized = (email ?? '').trim().toLowerCase();
