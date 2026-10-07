@@ -6417,7 +6417,7 @@ const goBack = () => router.back();
                 <td class="adp-ruser-cell center">
                 <div v-for="c in rankConditions" :key="c" class="adp-ruser-cond-row center">
                   <input
-                    class="adp-ruser-rank"
+                    :class="['adp-ruser-rank', { typed: !!rankOf(c) }]"
                     inputmode="numeric"
                     placeholder="입력"
                     :title="autoRankNote(c)"
@@ -8176,6 +8176,8 @@ const goBack = () => router.back();
   padding: 4px 2px; font-size: 12px; font-weight: 800; text-align: center;
   color: #111827; font-family: inherit; background: #fff;
 }
+/* 손으로 적은 등수는 파랗게 — 거리로 매긴 자동값(검정)과 한눈에 가른다 */
+.adp-ruser-rank.typed { color: #2b6df3; border-color: #b9cdf7; }
 
 /* 권리분석 탭 — 첨부 / 케이스 배너 / 서류 확인 */
 .adp-rcase-banner {
