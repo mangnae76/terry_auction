@@ -3667,9 +3667,17 @@ const setConcArea = (col: string, unit: 'm2' | 'py', raw: string) => {
 // 한쪽만 저장돼 있던 예전 자료도 보이게 서로에게서 끌어온다
 const concAreaPy = (col: string) => concNum(col, 'area') || concNum(col, 'areaM2') / PYEONG_TO_M2;
 const concAreaM2 = (col: string) => concNum(col, 'areaM2') || concNum(col, 'area') * PYEONG_TO_M2;
+/** 한 칸짜리 면적 글자 — '52.23 / 15.80평' */
+const concAreaOne = (m2: number) => (m2 > 0 ? `${m2.toFixed(2)} / ${(m2 / PYEONG_TO_M2).toFixed(2)}평` : '');
 const concAreaText = (col: string) => {
+  // 조건분석 평균은 한 거래가 아니라 걸러 낸 묶음이다 — ③ 과 같은 범위로 적어야 뜻이 맞는다
+  if (col === 'avg') {
+    const lo = concAreaOne(mktAreaStartM2.value);
+    const hi = concAreaOne(mktAreaEndM2.value);
+    return lo && hi ? `${lo} ~\n${hi}` : (lo || hi || '-');
+  }
   const m2 = concAreaM2(col);
-  // 다섯 칸 모두 한 줄 — 글자는 .adp-conc-area 에서 줄여 맞춘다
+  // 나머지 칸은 한 줄 — 글자는 .adp-conc-area 에서 줄여 맞춘다
   return m2 > 0 ? `${m2.toFixed(2)} / ${concAreaPy(col).toFixed(2)}평` : '-';
 };
 /** 가격 = 평당가 × 면적(평). 손으로 적은 값이 있으면 그 값이 이긴다 */
@@ -9071,8 +9079,12 @@ const goBack = () => router.back();
 .adp-mkt-table.adp-conc-table tbody tr:nth-child(2) td.num,
 .adp-mkt-table.adp-conc-table tbody tr:nth-child(3) td.num { text-align: right; }
 /* 면적은 한 줄로 — 칸이 좁으면 글자를 줄인다 */
-/* 칸이 여섯이라 좁다 — 면적은 한 줄로 두되 글자를 줄인다 */
-.adp-conc-table .adp-conc-area { font-size: 9.5px; white-space: nowrap; letter-spacing: -0.6px; }
+/* 칸이 여섯이라 좁다 — 면적은 글자를 줄인다.
+   조건분석 평균 칸만 범위라 두 줄이 되므로 '\n' 을 살린다 */
+.adp-conc-table .adp-conc-area {
+  font-size: 9.5px; letter-spacing: -0.6px;
+  white-space: pre-line; line-height: 1.3;
+}
 /* 머리글의 줄바꿈(\n)을 그대로 살린다 */
 .adp-mkt-table.adp-conc-table thead th { white-space: pre-line; font-size: 9.5px; letter-spacing: -0.4px; }
 .adp-mkt-table.adp-conc-table td { padding: 6px 3px; }
