@@ -3600,9 +3600,10 @@ const MKT_CONC_COLS: ConcCol[] = [
   { key: 'lowSim', label: '유사빌라\n저가매물' },
   { key: 'mean', label: '평균' },
 ];
+// 칸이 셋뿐이라 폭이 넉넉하다 — 이름을 한 줄로 쓴다
 const MKT_URGENT_COLS: ConcCol[] = [
-  { key: 'lot', label: '동일지번\n매각물건' },
-  { key: 'near', label: '인근\n매각 평균' },
+  { key: 'lot', label: '동일지번 매각물건' },
+  { key: 'near', label: '인근 매각 평균' },
   { key: 'urgent', label: '급매가', tone: 'red' },
 ];
 /** 두 표는 생김새가 같다 — 마크업을 한 벌만 두고 제목과 칸만 갈아 끼운다 */
