@@ -5384,10 +5384,12 @@ const goBack = () => router.back();
               <em>매도일</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ auction.sellDate || '날짜입력' }}</span></span>
             </button>
+            <!-- 초기화와 별은 한 묶음 — 자리가 모자라 줄이 내려가도 둘이 같이 내려간다 -->
+            <span class="adp-pd-tail">
             <button type="button" class="adp-pd-reset" title="대출·취득세·법무비 비중을 기본값으로" @click.stop="resetBidCostRates">
               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" />
-              </svg>비중 초기화
+              </svg>초기화
             </button>
             <button
               type="button"
@@ -5410,6 +5412,7 @@ const goBack = () => router.back();
                 <polygon points="12 2.6 15 9 22 9.8 17 14.5 18.3 21.4 12 18 5.7 21.4 7 14.5 2 9.8 9 9" />
               </svg>
             </button>
+            </span>
           </div>
           <table v-if="!isCollapsed('profit')" class="adp-table adp-profit-table v2">
             <thead>
@@ -8383,6 +8386,9 @@ const goBack = () => router.back();
 }
 .adp-pd-reset:active { background: #f3f4f6; }
 .adp-pd-sep { color: #d1d5db; }
+/* 초기화와 별을 한 묶음으로 — 줄이 내려가도 둘이 같이 내려간다 */
+.adp-pd-tail { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; margin-left: auto; }
+.adp-profit-dates .adp-star-btn { margin-left: 0; }
 .adp-profit-dates .adp-bid-status { padding: 5px 10px; font-size: 11.5px; }
 /* 중요도 별 — 선정물건 목록의 별과 같은 모양 */
 /* 중요도 — 작은 별 3개를 순서대로 채운다 */
