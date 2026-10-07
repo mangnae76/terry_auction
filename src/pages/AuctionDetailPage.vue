@@ -3614,7 +3614,7 @@ const PHOTO_AREAS: Array<{ key: string; scope: 'card' | 'block'; count: () => nu
   { key: 'photos', scope: 'card', count: () => propertyPhotos.value.length },              // 손품조사 · 본건사진
   { key: 'rightsPhotos', scope: 'card', count: () => rightsDocList.value.length },         // 권리분석 · 사진/서류
   { key: 'site', scope: 'block', count: () => auction.value?.sitePhotos?.length ?? 0 },    // 손품+현장 · 현장사진
-  { key: 'sameLot', scope: 'block', count: () => extraList('sameLot').length },            // 경매사례 · 동일지번 매각물건
+  { key: 'sameLot', scope: 'block', count: () => extraList('sameLot').length },            // 급매가 · 동일지번 매각물건
   { key: 'tradePhoto', scope: 'block', count: () => tradePhotoList.value.length },         // 급매가 · 평단가 비교 사진
   { key: 'listPhoto', scope: 'block', count: () => listPhotoList.value.length },           // 급매가 · 네이버부동산 매물 사진
   { key: 'areaSurvey', scope: 'block', count: () => extraList('areaSurvey').length },       // 매매수요 · 입지조사 사진
@@ -5267,17 +5267,17 @@ const goBack = () => router.back();
       </template>
 
       <template v-if="activeTab === 'verify'">
-        <!-- 경매사례 — ① 인근 매각사례 / ② 동일지번 매각물건 -->
+        <!-- 경매사례 — 인근 매각사례. 동일지번은 손품+현장 급매가로 옮겼다 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('cases')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 7h14M7 7l-4 7h8zM17 7l-4 7h8z"/></svg>경매사례</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('cases') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('cases')">
-            <!-- ① 인근 매각사례 -->
+            <!-- 인근 매각사례 -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">① 인근 매각사례 <span class="adp-head-note">{{ auction?.address?.split(' ').slice(0, 3).join(' ') || '' }} {{ auction?.propertyType || '' }}</span></span>
+                <span class="t">인근 매각사례 <span class="adp-head-note">{{ auction?.address?.split(' ').slice(0, 3).join(' ') || '' }} {{ auction?.propertyType || '' }}</span></span>
               </div>
               <table v-if="nearBidRows.length > 0" class="adp-table adp-cases-table">
                 <colgroup>
@@ -5306,38 +5306,6 @@ const goBack = () => router.back();
               <p v-else class="adp-empty">매각사례 데이터 없음</p>
             </div>
 
-            <!-- ② 동일지번 매각물건 -->
-            <div class="adp-mkt-block">
-              <div class="adp-mkt-block-head">
-                <span class="t">② 동일지번 매각물건<span v-if="extraList('sameLot').length" class="adp-photo-mark" :title="`사진 ${extraList('sameLot').length}장`">{{ extraList('sameLot').length }}</span> <span class="adp-head-note">{{ lotOnlyAddress }}</span></span>
-                <button type="button" class="adp-photo-fold" :aria-label="photoFolded('sameLot') ? '펼치기' : '접기'" @click.stop="togglePhotoFold('sameLot')"><img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('sameLot') }]" alt="" /></button>
-              </div>
-              <div v-if="!photoFolded('sameLot')" class="adp-plan-row">
-                <input
-                  :value="extraInput.sameLot ?? ''"
-                  placeholder="링크 또는 이미지 붙여넣기"
-                  class="adp-input"
-                  @input="extraInput = { ...extraInput, sameLot: ($event.target as HTMLInputElement).value }"
-                  @keydown.enter.prevent="addExtraUrl('sameLot')"
-                  @paste="pasteImageInto($event, 'x:sameLot')"
-                />
-                <button type="button" class="adp-icn-btn" @click="addExtraUrl('sameLot')">+</button>
-              </div>
-              <p v-if="extraErr.sameLot && !photoFolded('sameLot')" class="adp-plan-err">{{ extraErr.sameLot }}</p>
-              <div v-for="(url, i) in (photoFolded('sameLot') ? [] : extraList('sameLot'))" :key="url" class="adp-plan-preview">
-                <img :src="photoSrc(url)" alt="동일지번 매각물건" class="adp-plan-img" @error="onImageError(url)" @click="openLightbox(photoSrc(url))" />
-                <button type="button" class="adp-plan-del" aria-label="사진 삭제" @click="removeExtraAt('sameLot', i)">×</button>
-                <p v-if="brokenImages[url]" class="adp-plan-err">이미지 로드 실패 — URL을 확인해 주세요.</p>
-              </div>
-              <div v-if="!photoFolded('sameLot')" class="adp-photo-note">
-                <input
-                  class="adp-fs-input"
-                  placeholder="비고"
-                  :value="fieldVal('fs.sameLot.note')"
-                  @change="setExtraNote('sameLot', ($event.target as HTMLInputElement).value)"
-                />
-              </div>
-            </div>
           </div>
         </section>
 
@@ -6921,9 +6889,42 @@ const goBack = () => router.back();
             </div>
 
 
-            <!-- 3. 부동산 유선 상담 — 한 업체를 두 줄로 나눠 가로 스크롤 없이 담는다 -->
+            <!-- 3. 동일지번 매각물건 — 같은 번지에서 전에 팔린 물건. 값을 가늠하는 바로 옆 사례다 -->
             <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title">3. 부동산 유선 상담</strong>
+              <strong class="adp-dm-title">3. 동일지번 매각물건 <span class="adp-dm-area">{{ lotOnlyAddress }}</span></strong>
+              <button type="button" class="adp-photo-fold" :aria-label="photoFolded('sameLot') ? '펼치기' : '접기'" @click.stop="togglePhotoFold('sameLot')"><img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('sameLot') }]" alt="" /></button>
+            </div>
+            <div class="adp-sub-block noline">
+              <div v-if="!photoFolded('sameLot')" class="adp-plan-row">
+                <input
+                  :value="extraInput.sameLot ?? ''"
+                  placeholder="링크 또는 이미지 붙여넣기"
+                  class="adp-input"
+                  @input="extraInput = { ...extraInput, sameLot: ($event.target as HTMLInputElement).value }"
+                  @keydown.enter.prevent="addExtraUrl('sameLot')"
+                  @paste="pasteImageInto($event, 'x:sameLot')"
+                />
+                <button type="button" class="adp-icn-btn" @click="addExtraUrl('sameLot')">+</button>
+              </div>
+              <p v-if="extraErr.sameLot && !photoFolded('sameLot')" class="adp-plan-err">{{ extraErr.sameLot }}</p>
+              <div v-for="(url, i) in (photoFolded('sameLot') ? [] : extraList('sameLot'))" :key="url" class="adp-plan-preview">
+                <img :src="photoSrc(url)" alt="동일지번 매각물건" class="adp-plan-img" @error="onImageError(url)" @click="openLightbox(photoSrc(url))" />
+                <button type="button" class="adp-plan-del" aria-label="사진 삭제" @click="removeExtraAt('sameLot', i)">×</button>
+                <p v-if="brokenImages[url]" class="adp-plan-err">이미지 로드 실패 — URL을 확인해 주세요.</p>
+              </div>
+              <div v-if="!photoFolded('sameLot')" class="adp-photo-note">
+                <input
+                  class="adp-fs-input"
+                  placeholder="비고"
+                  :value="fieldVal('fs.sameLot.note')"
+                  @change="setExtraNote('sameLot', ($event.target as HTMLInputElement).value)"
+                />
+              </div>
+            </div>
+
+            <!-- 4. 부동산 유선 상담 — 한 업체를 두 줄로 나눠 가로 스크롤 없이 담는다 -->
+            <div class="adp-dm-head sec2">
+              <strong class="adp-dm-title">4. 부동산 유선 상담</strong>
               <span class="adp-mkt-step">
                 <span class="lab">행</span>
                 <button type="button" aria-label="행 삭제" :disabled="agencyRows.length <= AGENCY_ROW_MIN" @click="removeLastAgencyRow">−</button>
