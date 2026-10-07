@@ -1265,6 +1265,11 @@ const publicTradeAvg = computed(() => {
   return Math.round(nums.reduce((s, n) => s + n, 0) / nums.length);
 });
 
+/** 걸러진 거래의 평균 전용면적 (㎡) — 평균가와 짝지어야 평당가를 낼 수 있다 */
+const publicAreaAvg = computed(() => {
+  const list = filteredPublicTradeRows.value.map((r) => Number(r.areaM2) || 0).filter((v) => v > 0);
+  return list.length > 0 ? list.reduce((a, b) => a + b, 0) / list.length : 0;
+});
 // 평균 평당가 — 금액 합계 ÷ 전용면적 합계(평). 면적이 큰 거래에 치우치지 않게 합계로 나눈다
 const publicTradePyeongAvg = computed(() => {
   const rows = filteredPublicTradeRows.value.filter((r) => r.price > 0 && r.areaM2 > 0);
@@ -3555,8 +3560,8 @@ const MKT_CONC_COLS: ConcCol[] = [
   { key: 'case', label: '경매물건\n실거래가' },
   { key: 'sim', label: '유사물건\n실거래가' },
   { key: 'avg', label: '국토부\n실거래가 평균' },
-  { key: 'low', label: '네이버\n저가매물' },
   { key: 'lot', label: '동일지번\n매각물건' },
+  { key: 'low', label: '네이버\n저가매물' },
   { key: 'urgent', label: '급매가', tone: 'red' },
 ];
 const MKT_CONC_ROWS: ConcRow[] = [
@@ -3574,12 +3579,50 @@ const MKT_CONC_LEGACY: Record<string, string> = {
   'sim.unit': 'mktSimUnitPrice',
   'urgent.price': 'urgentSalePrice',
 };
+/** 손으로 적는 칸 — 나머지는 다른 데서 만든 값을 그대로 비춘다 */
+const CONC_MANUAL_COLS = ['lot', 'urgent'];
+/** 결론표 네 칸의 출처.
+ *  여기서 따로 적어 두면 원본이 바뀌어도 옛 값이 남아 둘이 어긋난다 —
+ *  그래서 적어 두지 않고 만들어진 곳을 그때그때 읽는다.
+ *  경매물건·유사물건은 ② 실거래가, 국토부는 ③ 조건분석, 네이버는 2.저렴매물조사. */
+const concAuto = (col: string, row: string): string => {
+  if (col === 'case') {
+    if (row === 'areaM2') return mktVal('mkt.d.area');
+    if (row === 'unit') return mktVal('mkt.b.unit');
+    if (row === 'price') return mktVal('mkt.d.real');
+  }
+  if (col === 'sim') {
+    if (row === 'areaM2') return mktVal('mkt.d.sim.area');
+    if (row === 'unit') return mktVal('mkt.b.sim.unit');
+    if (row === 'price') return mktVal('mkt.d.sim.real');
+  }
+  if (col === 'low') {
+    if (row === 'areaM2') return mktVal('mkt.c.area');
+    if (row === 'unit') return mktVal('mkt.c.unit');
+    if (row === 'price') return mktVal('mkt.c.saleAsk');
+  }
+  if (col === 'avg') {
+    const m2 = publicAreaAvg.value;
+    const price = mktSaleAvgValue.value;
+    if (row === 'areaM2') return m2 > 0 ? m2.toFixed(2) : '';
+    if (row === 'price') return price > 0 ? String(price) : '';
+    // 평당가 — 평균가 ÷ 평균면적(평). 두 값이 같은 거래 묶음에서 나와야 뜻이 맞는다
+    if (row === 'unit') {
+      const py = m2 / PYEONG_TO_M2;
+      return price > 0 && py > 0 ? String(Math.round(price / py)) : '';
+    }
+  }
+  return '';
+};
 const concVal = (col: string, row: string): string => {
+  if (!CONC_MANUAL_COLS.includes(col)) return concAuto(col, row);
   const sf = surveyForm.value as unknown as Record<string, unknown>;
   const legacy = MKT_CONC_LEGACY[`${col}.${row}`];
   if (legacy) return String(sf[legacy] ?? '');
   return (sf.mktConcValues as Record<string, string> | undefined)?.[`${col}.${row}`] ?? '';
 };
+/** 그 칸을 손으로 적을 수 있나 — 비추기만 하는 칸은 편집 모드에서도 네모가 뜨지 않는다 */
+const concEditable = (col: string) => editingSurvey.value.realUser && CONC_MANUAL_COLS.includes(col);
 const setConcVal = (col: string, row: string, value: string) => {
   const sf = surveyForm.value as unknown as Record<string, unknown>;
   const legacy = MKT_CONC_LEGACY[`${col}.${row}`];
@@ -7180,7 +7223,7 @@ const goBack = () => router.back();
                     <td v-for="c in MKT_CONC_COLS" :key="c.key" class="num">
                       <!-- 면적 — ㎡ 와 평을 같이 적는다. 한쪽만 적어도 나머지가 따라온다 -->
                       <template v-if="r.key === 'area'">
-                        <template v-if="editingSurvey.realUser">
+                        <template v-if="concEditable(c.key)">
                           <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'areaM2')" placeholder="0" @change="setConcArea(c.key, 'm2', ($event.target as HTMLInputElement).value)" />㎡</span>
                           <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'area')" placeholder="0" @change="setConcArea(c.key, 'py', ($event.target as HTMLInputElement).value)" />평</span>
                         </template>
@@ -7189,7 +7232,7 @@ const goBack = () => router.back();
                       <!-- 가격 — 평당가 × 면적(평). 손으로 적으면 그 값이 이긴다 -->
                       <template v-else-if="r.key === 'price'">
                         <FormattedNumberInput
-                          v-if="editingSurvey.realUser"
+                          v-if="concEditable(c.key)"
                           :model-value="concVal(c.key, 'price')"
                           mode="string"
                           class="adp-mkt-input"
@@ -7201,7 +7244,7 @@ const goBack = () => router.back();
                       <!-- 평단가 -->
                       <template v-else>
                         <FormattedNumberInput
-                          v-if="editingSurvey.realUser"
+                          v-if="concEditable(c.key)"
                           :model-value="concVal(c.key, r.key)"
                           mode="string"
                           class="adp-mkt-input"
