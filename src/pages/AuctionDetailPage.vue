@@ -3437,13 +3437,20 @@ const mktJeonseFromPub = computed(() => {
   return pub > 0 ? Math.round((pub * mktJeonseRate.value) / 100).toLocaleString('ko-KR') : '-';
 });
 /** 전세가율 / 갭 — '79% / 30,332,000' */
+/** 전세가 ÷ 매매가 × 100 — 칸에 크게 서는 값 */
 const mktJeonseToSale = computed(() => {
   const pub = mktPubValue.value;
   const jeonse = pub > 0 ? (pub * mktJeonseRate.value) / 100 : 0;
   const real = parseDigits(mktVal(mk('d', 'real')));
-  if (!(jeonse > 0 && real > 0)) return '-';
-  // 갭 = 매매가 − 전세가. 들고 들어가야 하는 돈이라 비율만큼 중요하다
-  return `${((jeonse / real) * 100).toFixed(0)}% / ${Math.round(real - jeonse).toLocaleString('ko-KR')}`;
+  return jeonse > 0 && real > 0 ? `${((jeonse / real) * 100).toFixed(0)}%` : '-';
+});
+/** 갭 = 매매가 − 전세가. 들고 들어가야 하는 돈이라 같이 적되,
+ *  비율 옆에 작게 붙여 한 줄에 담는다 */
+const mktGapText = computed(() => {
+  const pub = mktPubValue.value;
+  const jeonse = pub > 0 ? (pub * mktJeonseRate.value) / 100 : 0;
+  const real = parseDigits(mktVal(mk('d', 'real')));
+  return jeonse > 0 && real > 0 ? Math.round(real - jeonse).toLocaleString('ko-KR') : '';
 });
 // 공시대비율 = 실거래가 / 공동주택가
 const mktCaseRatio = computed(() => {
@@ -7079,7 +7086,7 @@ const goBack = () => router.back();
                 </div>
                 <div :class="['cell calc', { lit: mktLit('saleRatio') }]" @mouseenter="litEnter('saleRatio')" @mouseleave="litLeave()" @click="litTap('saleRatio')">
                   <small>전세가율 / 갭<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('jeonseRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('jeonseRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'jeonseRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('jeonseRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
-                  <strong>{{ mktJeonseToSale }}</strong>
+                  <strong class="adp-mkt-gap-wrap">{{ mktJeonseToSale }}<em v-if="mktGapText" class="adp-mkt-gap"> / {{ mktGapText }}</em></strong>
                 </div>
               </div>
             </div>
@@ -9149,6 +9156,9 @@ const goBack = () => router.back();
   display: inline-flex; align-items: baseline; justify-content: center;
 }
 .adp-mkt-cells .cell strong.hi { color: #111827; }
+/* 전세가율 옆 갭 — 줄이 내려가지 않게 작게 붙인다 */
+.adp-mkt-gap-wrap { white-space: nowrap; }
+.adp-mkt-gap { font-style: normal; font-size: 0.72em; font-weight: 700; color: #6b7280; letter-spacing: -0.4px; }
 /* 손으로 적은 값은 파랗게 — 계산해 낸 값(검정)과 한눈에 가른다 */
 .adp-mkt-cells .cell strong.typed { color: #2b6df3; }
 .adp-mkt-cells .cell .adp-mkt-input { text-align: center; height: 26px; }
