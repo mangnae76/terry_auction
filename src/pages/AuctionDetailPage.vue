@@ -872,6 +872,16 @@ const pubColDraft = ref<Record<PubCol, Set<string>>>(emptyPubColSets());
 const activePubCol = ref<PubCol | null>(null);
 
 // 주소 = 도로명 + 건물명 (둘 다 없으면 법정동)
+/** 표의 주소는 칸이 좁아 잘린다. 눌러서 전문을 보여 준다 —
+ *  브라우저 기본 말풍선(title)은 흰색인 데다 폰에서는 아예 뜨지 않는다. */
+const addrTip = ref('');
+const addrTipTop = ref(0);
+const toggleAddrTip = (text: string, evt: Event) => {
+  if (addrTip.value === text) { addrTip.value = ''; return; }
+  const el = evt.currentTarget as HTMLElement | null;
+  if (el) addrTipTop.value = Math.round(el.getBoundingClientRect().bottom + 6);
+  addrTip.value = text;
+};
 const rowAddress = (r: RealTradeMatchRow) => {
   // 도로명(+건물명) 우선, 자료에 도로명이 없으면 법정동+지번으로 대체
   const base = r.roadName || [r.umdNm, r.jibun].filter(Boolean).join(' ');
@@ -1200,6 +1210,8 @@ const populatePublicRangeDefaults = (months = 12) => {
     publicMaxBuildYear.value = '';
     return;
   }
+  const saved = savedPubFilter.value;
+  if (saved) { applyPubFilter(saved); return; }
   // 첫 화면의 기간 창을 '기간선택 N개월' 버튼과 똑같이 맞춘다.
   // 예전에는 받아 온 자료의 최소·최대 날짜를 썼기 때문에, 버튼을 누르면 창이 달라져
   // 평균·평당가가 바뀌어 보였다.
@@ -1372,6 +1384,10 @@ const fetchDeal12mCount = async () => {
  *  내비게이터로 걸어 둔 구간(평형·층·연식)도 같이 푼다. 그 칸들이
  *  아래 조건을 채운 장본인이라, 조건만 비우면 칸만 눌린 채로 남는다. */
 const resetPublicFilters = () => {
+  // 적어 둔 조건도 같이 지운다 — 남겨 두면 다음에 열 때 되살아나 되돌린 뜻이 없어진다
+  setMktVal(PUB_FILTER_KEY, '');
+  pubFilterApplied.value = true;
+  void persistSurvey();
   populatePublicRangeDefaults(12);
   navActive.value = { pyeong: '', floor: '', year: '' };
   publicColFilters.value = { ...publicColFilters.value, floor: new Set<string>() };
@@ -2552,6 +2568,13 @@ const openHouseholdLookup = () => {
   window.open(`https://kosis.kr/search/search.do?query=${query}`, '_blank');
 };
 
+/** 국토부 공동주택가격 열람 — 유사물건은 자동조회가 안 되니 직접 찾아 적어야 한다.
+ *  주소를 복사해 두면 그 창에 붙여 넣기만 하면 된다. */
+const openOfficialPriceSite = () => {
+  void copyText(jibunAddress.value);
+  window.open('https://www.realtyprice.kr/notice/town/searchPastTownPrice.htm', '_blank');
+};
+
 // 총 매물수도 자동으로 받을 길이 없다 — 네이버 부동산에서 그 동을 띄워 주고 눈으로 세어 넣게 돕는다
 const openListingLookup = () => {
   const dong = surveyDongName.value;
@@ -2717,7 +2740,7 @@ const noteLeave = () => { if (hasHover) noteTip.value = ''; };
 watch(dmTip, (v) => { if (v) noteTip.value = ''; });
 watch(noteTip, (v) => { if (v) dmTip.value = ''; });
 // 말풍선은 화면에 붙어 뜨기 때문에, 화면을 움직이면 엉뚱한 자리를 가린다 — 그때는 닫는다
-const closeTips = () => { dmTip.value = ''; noteTip.value = ''; };
+const closeTips = () => { dmTip.value = ''; noteTip.value = ''; addrTip.value = ''; };
 onMounted(() => window.addEventListener('scroll', closeTips, true));
 onBeforeUnmount(() => window.removeEventListener('scroll', closeTips, true));
 /** 말풍선 세로 위치 — 화면 기준(fixed)으로 띄워 가장자리에서 잘리지 않게 한다 */
@@ -3082,6 +3105,55 @@ const setMktVal = (id: string, value: string | number) => {
   if (!sf.mktValues) sf.mktValues = {};
   sf.mktValues[id] = String(value ?? '');
 };
+// 조회 조건 저장은 mktVal·setMktVal 아래에 둬야 한다 — watch 가 등록되는 순간
+// 값을 한 번 읽는데, 위에 두면 그 둘이 아직 만들어지기 전이라 화면이 통째로 죽는다.
+/** 조건분석에서 맞춰 놓은 조회 조건을 이 물건에 적어 둔다.
+ *  조건분석은 값을 고쳐 가며 최종값을 만드는 곳이고, 그 최종값이 손품+현장 ③ 으로
+ *  그대로 간다. 조건이 기본값으로 돌아가 버리면 ③ 의 숫자도 같이 달라진다. */
+const PUB_FILTER_KEY = 'pub.filter';
+interface PubFilter {
+  months: number; start: string; end: string;
+  minA: string; maxA: string; minY: string; maxY: string;
+}
+const savedPubFilter = computed<PubFilter | null>(() => {
+  const raw = mktVal(PUB_FILTER_KEY);
+  if (!raw) return null;
+  try { return JSON.parse(raw) as PubFilter; } catch { return null; }
+});
+const applyPubFilter = (f: PubFilter) => {
+  pubMonthPreset.value = Number(f.months) || 0;
+  publicStartDate.value = f.start ?? '';
+  publicEndDate.value = f.end ?? '';
+  publicMinArea.value = f.minA ?? '';
+  publicMaxArea.value = f.maxA ?? '';
+  publicMinBuildYear.value = f.minY ?? '';
+  publicMaxBuildYear.value = f.maxY ?? '';
+};
+const savePublicFilters = async () => {
+  setMktVal(PUB_FILTER_KEY, JSON.stringify({
+    months: pubMonthPreset.value,
+    start: publicStartDate.value,
+    end: publicEndDate.value,
+    minA: publicMinArea.value,
+    maxA: publicMaxArea.value,
+    minY: publicMinBuildYear.value,
+    maxY: publicMaxBuildYear.value,
+  }));
+  await persistSurvey();
+  flashToast('조회 조건을 저장했습니다.', 'success');
+};
+/** 자료가 들어온 뒤 한 번만 — 저장해 둔 조건이 있으면 그 조건으로 세운다.
+ *  물건을 열 때 조사자료와 실거래가 들어오는 차례가 때마다 달라, 한쪽만 보고 있으면 놓친다. */
+const pubFilterApplied = ref(false);
+watch(
+  [savedPubFilter, () => publicRealTradeRows.value.length, () => auction.value?.id],
+  ([filter, rowCount], [, , prevId]) => {
+    if (auction.value?.id !== prevId) pubFilterApplied.value = false;
+    if (pubFilterApplied.value || !filter || !rowCount) return;
+    applyPubFilter(filter);
+    pubFilterApplied.value = true;
+  },
+);
 // 매매·직거래면 연식을 가리지 않고 모두 보내기 버튼을 둔다 — 오래된 거래도 손으로 골라 쓰는 일이 있다
 const canSendTrade = (row: PlaceRow) =>
   (row.kind === '매매' || row.kind === '직거래') && parsePriceNumber(row.amount) > 0;
@@ -5466,7 +5538,7 @@ const goBack = () => router.back();
         <!-- 실거래가 조건식 분석 — 국토부 API를 조건으로 걸러 본다 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('trades')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>실거래가 조건식 분석</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>실거래가 조건분석</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('trades') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('trades')">
@@ -5593,8 +5665,18 @@ const goBack = () => router.back();
                   </button>
                   <button
                     type="button"
+                    class="adp-pub-reset save"
+                    title="지금 조건을 이 물건에 적어 둔다"
+                    @click="savePublicFilters"
+                  >
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><path d="M17 21v-8H7v8M7 3v5h8" />
+                    </svg>저장
+                  </button>
+                  <button
+                    type="button"
                     class="adp-pub-reset"
-                    title="기간·면적·건축년도를 처음 상태로"
+                    title="기간·면적·건축년도를 처음 상태로. 적어 둔 조건도 지운다"
                     @click="resetPublicFilters"
                   >
                     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -5666,7 +5748,7 @@ const goBack = () => router.back();
                         <td>{{ r.floor || '-' }}</td>
                         <td class="adp-pub-addr">
                           <div class="adp-pub-addr-in">
-                            <span :title="rowAddress(r)">{{ rowAddress(r) }}</span>
+                            <span class="adp-pub-addr-txt" @click.stop="toggleAddrTip(rowAddress(r), $event)">{{ rowAddress(r) }}</span>
                             <button type="button" class="adp-copy-btn" aria-label="주소 복사" @click.stop="copyAddressText(rowAddress(r))">
                               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="8" y="8" width="13" height="13" rx="2" />
@@ -5710,7 +5792,7 @@ const goBack = () => router.back();
                         <td>{{ r.floor || '-' }}</td>
                         <td class="adp-pub-addr">
                           <div class="adp-pub-addr-in">
-                            <span :title="rowAddress(r)">{{ rowAddress(r) }}</span>
+                            <span class="adp-pub-addr-txt" @click.stop="toggleAddrTip(rowAddress(r), $event)">{{ rowAddress(r) }}</span>
                             <button type="button" class="adp-copy-btn" aria-label="주소 복사" @click.stop="copyAddressText(rowAddress(r))">
                               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="8" y="8" width="13" height="13" rx="2" />
@@ -5775,7 +5857,7 @@ const goBack = () => router.back();
                       <td>{{ r.floor || '-' }}</td>
                       <td class="adp-pub-addr">
                         <div class="adp-pub-addr-in">
-                        <span :title="rowAddress(r)">{{ rowAddress(r) }}</span>
+                        <span class="adp-pub-addr-txt" @click.stop="toggleAddrTip(rowAddress(r), $event)">{{ rowAddress(r) }}</span>
                         <button type="button" class="adp-copy-btn" aria-label="주소 복사" @click.stop="copyAddressText(rowAddress(r))">
                           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="8" y="8" width="13" height="13" rx="2" />
@@ -6802,7 +6884,7 @@ const goBack = () => router.back();
               </div>
               <div class="adp-mkt-cells c4 adp-dm-table">
                 <div class="cell">
-                  <small>공동주택가<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubPrice', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubPrice', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubPrice'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubPrice')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
+                  <small><button type="button" class="adp-dm-link" @click.stop="openOfficialPriceSite">공동주택가</button><span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubPrice', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubPrice', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubPrice'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubPrice')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
                   <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(mk('d', 'pub'))" mode="string" class="adp-mkt-input" :placeholder="officialPriceUsable > 0 ? officialPriceUsable.toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(mk('d', 'pub'), $event)" />
                   <strong v-else class="hi">{{ mktPubText }}</strong>
                 </div>
@@ -6830,7 +6912,7 @@ const goBack = () => router.back();
 
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head wrapy">
-                <span class="t">③ 국토부 실거래가 조건식 분석 (자동 입력)</span>
+                <span class="t">③ 실거래가 조건분석 (자동 입력)</span>
                 <!-- 가격정보 탭에서 조회한 지역·건수와 조회 시각을 같이 보여 준다 -->
                 <small class="adp-mkt-region">
                   <span class="adp-tab-dot" /> {{ publicRealTradeSigungu || '주변' }} {{ publicRealTradeDong || '실거래가' }} ({{ filteredPublicTradeRows.length }}건)
@@ -7413,6 +7495,8 @@ const goBack = () => router.back();
 
       </template>
     </div>
+
+    <span v-if="addrTip" class="adp-note-bubble" :style="{ top: `${addrTipTop}px` }" @click.stop="addrTip = ''">{{ addrTip }}</span>
 
     <AppConfirm :box="confirmBox" @close="confirmBox = null" />
 
@@ -9514,6 +9598,7 @@ const goBack = () => router.back();
 /* td 에 직접 display:flex 를 주면 '표의 칸'이 아니게 돼 줄이 어긋난다 — 안쪽 div 에 준다 */
 .adp-pub-addr-in { display: flex; align-items: center; gap: 3px; min-width: 0; }
 .adp-pub-addr-in > span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adp-pub-addr-txt { cursor: pointer; }
 .adp-pub-row { flex-wrap: nowrap; }
 .adp-pub-cell.narrow { flex: 1 1 0; min-width: 0; }
 .adp-pub-cell.narrow .adp-pub-input { min-width: 0; padding: 5px 2px; font-size: 10.5px; }
@@ -9542,7 +9627,8 @@ const goBack = () => router.back();
 .adp-pub-cell.span2.years .adp-pub-input { flex: 1 1 0; min-width: 0; }
 .adp-pub-cell.span2.years > .adp-pub-tilde { flex: 0 0 auto; padding: 0; width: 20px; text-align: center; }
 /* 검색이 주인공 — 초기화는 옆에 작게 붙인다 */
-.adp-pub-row.actions { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.adp-pub-row.actions { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; }
+.adp-pub-reset.save { border-color: #c7d7f7; color: #2b6df3; }
 .adp-pub-reset {
   display: inline-flex; align-items: center; justify-content: center; gap: 3px;
   box-sizing: border-box; padding: 0 11px;
