@@ -3257,6 +3257,19 @@ const toggleMktMode = async (group: 'b' | 'c' | 'd') => {
   await persistSurvey();
 };
 const lowKey = (index: number, field: string) => mk('c', index === 0 ? field : `${field}${index}`);
+/** 그 줄의 평당가 = 매매호가 ÷ 전용면적(평). 면적을 아는데 손으로 또 적을 일이 아니다 */
+const lowUnitAuto = (index: number) => {
+  const price = parseDigits(mktVal(lowKey(index, 'saleAsk')));
+  const py = (Number(mktAreaNum(lowKey(index, 'area'))) || 0) / PYEONG_TO_M2;
+  return price > 0 && py > 0 ? Math.round(price / py) : 0;
+};
+/** 손으로 적었나 — 적은 값은 파랗게, 계산해 낸 값은 검게 보여 준다 */
+const lowUnitTyped = (index: number) => parseDigits(mktVal(lowKey(index, 'unit'))) > 0;
+const lowUnitText = (index: number) => {
+  const typed = parseDigits(mktVal(lowKey(index, 'unit')));
+  const n = typed > 0 ? typed : lowUnitAuto(index);
+  return n > 0 ? n.toLocaleString('ko-KR') : '-';
+};
 const mk = (group: 'b' | 'c' | 'd', field: string) =>
   (mktMode(group) === '유사물건' ? `mkt.${group}.sim.${field}` : `mkt.${group}.${field}`);
 // 출처 안내 — 아파트와 빌라가 보는 사이트가 다르다
@@ -3568,8 +3581,8 @@ const MKT_CONC_COLS: ConcCol[] = [
   { key: 'case', label: '경매물건\n실거래가' },
   { key: 'sim', label: '유사물건\n실거래가' },
   { key: 'avg', label: '실거래가\n조건분석 평균' },
-  { key: 'lot', label: '동일지번\n매각물건' },
   { key: 'low', label: '네이버\n저가매물' },
+  { key: 'lot', label: '동일지번\n매각물건' },
   { key: 'urgent', label: '급매가', tone: 'red' },
 ];
 const MKT_CONC_ROWS: ConcRow[] = [
@@ -3617,6 +3630,12 @@ const concAuto = (col: string, row: string): string => {
     if (row === 'unit') return mktVal('mkt.c.unit') || concUnitFrom('mkt.c.area', 'mkt.c.saleAsk');
     if (row === 'price') return mktVal('mkt.c.saleAsk');
   }
+  // 동일지번도 평당가는 손으로 적을 일이 아니다 — 적어 둔 가격과 면적에서 낸다
+  if (col === 'lot' && row === 'unit') {
+    const price = parseDigits(concVal('lot', 'price'));
+    const py = concAreaPy('lot');
+    return price > 0 && py > 0 ? String(Math.round(price / py)) : '';
+  }
   if (col === 'avg') {
     const m2 = publicAreaAvg.value;
     const price = mktSaleAvgValue.value;
@@ -3631,11 +3650,25 @@ const concAuto = (col: string, row: string): string => {
   return '';
 };
 const concVal = (col: string, row: string): string => {
-  if (!CONC_MANUAL_COLS.includes(col)) return concAuto(col, row);
+  if (CONC_MANUAL_COLS.includes(col)) {
+    const sf = surveyForm.value as unknown as Record<string, unknown>;
+    const legacy = MKT_CONC_LEGACY[`${col}.${row}`];
+    const manual = legacy
+      ? String(sf[legacy] ?? '')
+      : (sf.mktConcValues as Record<string, string> | undefined)?.[`${col}.${row}`] ?? '';
+    if (manual) return manual;
+  }
+  return concAuto(col, row);
+};
+/** 손으로 적은 값인가 — 적은 값은 파랗게 보여 준다 */
+const concTyped = (col: string, row: string): boolean => {
+  if (!CONC_MANUAL_COLS.includes(col)) return false;
   const sf = surveyForm.value as unknown as Record<string, unknown>;
   const legacy = MKT_CONC_LEGACY[`${col}.${row}`];
-  if (legacy) return String(sf[legacy] ?? '');
-  return (sf.mktConcValues as Record<string, string> | undefined)?.[`${col}.${row}`] ?? '';
+  const manual = legacy
+    ? String(sf[legacy] ?? '')
+    : (sf.mktConcValues as Record<string, string> | undefined)?.[`${col}.${row}`] ?? '';
+  return !!manual;
 };
 /** 그 칸을 손으로 적을 수 있나 — 비추기만 하는 칸은 편집 모드에서도 네모가 뜨지 않는다 */
 const concEditable = (col: string) => editingSurvey.value.realUser && CONC_MANUAL_COLS.includes(col);
@@ -7059,8 +7092,8 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell">
                     <small>평당가</small>
-                    <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(lowKey(i - 1, 'unit'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(lowKey(i - 1, 'unit'), $event)" />
-                    <strong v-else>{{ mktMoney(lowKey(i - 1, 'unit')) }}</strong>
+                    <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(lowKey(i - 1, 'unit'))" mode="string" class="adp-mkt-input" :placeholder="lowUnitAuto(i - 1) > 0 ? lowUnitAuto(i - 1).toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(lowKey(i - 1, 'unit'), $event)" />
+                    <strong v-else :class="{ typed: lowUnitTyped(i - 1) }">{{ lowUnitText(i - 1) }}</strong>
                   </div>
                   <div class="cell">
                     <small>매매호가 (저가)</small>
@@ -7251,7 +7284,7 @@ const goBack = () => router.back();
                           <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'areaM2')" placeholder="0" @change="setConcArea(c.key, 'm2', ($event.target as HTMLInputElement).value)" />㎡</span>
                           <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'area')" placeholder="0" @change="setConcArea(c.key, 'py', ($event.target as HTMLInputElement).value)" />평</span>
                         </template>
-                        <span v-else class="adp-conc-v adp-conc-area">{{ concAreaText(c.key) }}</span>
+                        <span v-else :class="['adp-conc-v', 'adp-conc-area', { typed: concTyped(c.key, 'areaM2') || concTyped(c.key, 'area') }]">{{ concAreaText(c.key) }}</span>
                       </template>
                       <!-- 가격 — 평당가 × 면적(평). 손으로 적으면 그 값이 이긴다 -->
                       <template v-else-if="r.key === 'price'">
@@ -7263,7 +7296,7 @@ const goBack = () => router.back();
                           :placeholder="concPriceHint(c.key)"
                           @update:model-value="setConcVal(c.key, 'price', String($event ?? ''))"
                         />
-                        <span v-else :class="['adp-conc-v', 'hi', { red: c.tone === 'red' }]">{{ concPriceText(c.key) }}</span>
+                        <span v-else :class="['adp-conc-v', 'hi', { red: c.tone === 'red', typed: concTyped(c.key, 'price') }]">{{ concPriceText(c.key) }}</span>
                       </template>
                       <!-- 평단가 -->
                       <template v-else>
@@ -7275,7 +7308,7 @@ const goBack = () => router.back();
                           :placeholder="r.label"
                           @update:model-value="setConcVal(c.key, r.key, String($event ?? ''))"
                         />
-                        <span v-else class="adp-conc-v">
+                        <span v-else :class="['adp-conc-v', { typed: concTyped(c.key, r.key) }]">
                           {{ concText(c.key, r) }}<small v-if="r.suffix && concVal(c.key, r.key)">{{ r.suffix }}</small>
                         </span>
                       </template>
@@ -8597,6 +8630,10 @@ const goBack = () => router.back();
 .adp-conc-table th { white-space: pre-line; }
 
 .adp-conc-table th small { display: block; font-size: 9.5px; font-weight: 600; color: #6b7280; }
+/* 손으로 적은 값은 파랗게 — 계산해 낸 값(검정)과 한눈에 가른다.
+   .hi 가 색을 잡고 있어 선택자를 한 단계 좁혀야 이긴다 */
+.adp-conc-table .adp-conc-v.typed,
+.adp-conc-table .adp-conc-v.hi.typed { color: #2b6df3; }
 .adp-conc-table .adp-conc-v { font-size: 10.5px; font-weight: 400; color: #111827; white-space: nowrap; }
 .adp-conc-table .adp-conc-v.red { color: #e0574a; }
 .adp-conc-table .adp-conc-v small { font-size: 9.5px; font-weight: 600; color: #9ca3af; margin-left: 1px; }
@@ -9051,6 +9088,8 @@ const goBack = () => router.back();
   display: inline-flex; align-items: baseline; justify-content: center;
 }
 .adp-mkt-cells .cell strong.hi { color: #111827; }
+/* 손으로 적은 값은 파랗게 — 계산해 낸 값(검정)과 한눈에 가른다 */
+.adp-mkt-cells .cell strong.typed { color: #2b6df3; }
 .adp-mkt-cells .cell .adp-mkt-input { text-align: center; height: 26px; }
 .adp-mkt-rate { display: inline-flex; align-items: center; justify-content: center; gap: 1px; }
 .adp-mkt-rate-input {
