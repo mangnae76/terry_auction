@@ -2658,11 +2658,6 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['공식', '실거래가 ÷ 공동주택가 × 100'],
     ['의미', '공시가격 대비 실거래가 수준'],
   ],
-  saleRatio: [
-    ['공식', '전세가 ÷ 매매가 × 100'],
-    ['의미', '매매가 대비 전세가 수준'],
-    ['기준', '매매가는 실거래가로 대체한다'],
-  ],
   pubPrice: officialPriceRows.value,
   loc: [
     ['조사', '지역 내 호재 · 공급 · 입지조건 (호갱, 네부)'],
@@ -3217,12 +3212,11 @@ const MKT_MODES = ['경매물건', '유사물건'];
  *  말풍선을 열어 공식을 읽는 것보다 빠르다. */
 const MKT_LIT_LINKS: Record<string, string[]> = {
   unit: ['unit', 'real', 'area'],                 // 평단가 = 매매 실거래가 ÷ 전용면적
-  jRatio: ['jRatio', 'jReal', 'real'],            // 전세가율 = 전세 ÷ 매매
   jeonse: ['jeonse', 'pub'],                      // 전세가 = 공동주택가 × 비율(같은 칸 안에 있다)
   pubRatio: ['pubRatio', 'real', 'pub'],          // 공시대비율 = 매매 ÷ 공동주택가
   saleRatio: ['saleRatio', 'jeonse', 'real'],     // 매매가율 = 전세가 ÷ 매매
   pub: ['pub', 'jeonse', 'pubRatio', 'saleRatio'], // 공동주택가는 거꾸로 — 이 값을 쓰는 칸들
-  real: ['real', 'unit', 'jRatio', 'pubRatio', 'saleRatio'],
+  real: ['real', 'unit', 'pubRatio', 'saleRatio'],
 };
 const mktLitKey = ref('');
 const mktLit = (id: string) => (MKT_LIT_LINKS[mktLitKey.value] ?? []).includes(id);
@@ -3431,13 +3425,6 @@ const mktJeonseFloorValue = computed(() => {
   return hasDeal && mktMode('d') === MKT_MODES[0] ? subjectFloor.value : '';
 });
 const mktJeonseDateFloorText = computed(() => dateFloorText(mk('d', 'jYear'), mktJeonseFloorValue.value));
-/** 전세가율 = 전세 실거래가 ÷ 매매 실거래가 × 100.
- *  위 표의 매매가와 이 표의 전세가, 둘 다 실제 거래값이라 그대로 나눈다. */
-const mktJeonseRatioText = computed(() => {
-  const jeonse = parseDigits(mktVal(mk('d', 'jReal')));
-  const sale = parseDigits(mktVal(mk('d', 'real')));
-  return jeonse > 0 && sale > 0 ? `${((jeonse / sale) * 100).toFixed(0)}%` : '-';
-});
 
 // 전세가 = 공동주택가 × 비율(기본 127%)
 const MKT_JEONSE_RATE = 127;
@@ -3449,12 +3436,14 @@ const mktJeonseFromPub = computed(() => {
   const pub = mktPubValue.value;
   return pub > 0 ? Math.round((pub * mktJeonseRate.value) / 100).toLocaleString('ko-KR') : '-';
 });
-/** 매매가율 = 전세가 ÷ 매매가(실거래가) × 100 */
+/** 전세가율 / 갭 — '79% / 30,332,000' */
 const mktJeonseToSale = computed(() => {
   const pub = mktPubValue.value;
   const jeonse = pub > 0 ? (pub * mktJeonseRate.value) / 100 : 0;
   const real = parseDigits(mktVal(mk('d', 'real')));
-  return jeonse > 0 && real > 0 ? `${((jeonse / real) * 100).toFixed(0)}%` : '-';
+  if (!(jeonse > 0 && real > 0)) return '-';
+  // 갭 = 매매가 − 전세가. 들고 들어가야 하는 돈이라 비율만큼 중요하다
+  return `${((jeonse / real) * 100).toFixed(0)}% / ${Math.round(real - jeonse).toLocaleString('ko-KR')}`;
 });
 // 공시대비율 = 실거래가 / 공동주택가
 const mktCaseRatio = computed(() => {
@@ -7061,9 +7050,10 @@ const goBack = () => router.back();
                   <FormattedNumberInput v-if="mktCaseEditable" :model-value="mktVal(mk('d', 'jReal'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'jReal'), $event)" />
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'jReal')) }}</strong>
                 </div>
-                <div :class="['cell calc', { lit: mktLit('jRatio') }]" @mouseenter="litEnter('jRatio')" @mouseleave="litLeave()" @click="litTap('jRatio')">
-                  <small>전세가율<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('jeonseRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('jeonseRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'jeonseRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('jeonseRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
-                  <strong class="hi">{{ mktJeonseRatioText }}</strong>
+                <!-- 전세가율은 세 번째 표로 옮겼다 — 자리는 비워 둔다 -->
+                <div class="cell calc">
+                  <small>&nbsp;</small>
+                  <strong class="hi">&nbsp;</strong>
                 </div>
               </div>
               <div class="adp-mkt-cells c4 adp-dm-table">
@@ -7088,7 +7078,7 @@ const goBack = () => router.back();
                   <strong>{{ mktCaseRatio }}</strong>
                 </div>
                 <div :class="['cell calc', { lit: mktLit('saleRatio') }]" @mouseenter="litEnter('saleRatio')" @mouseleave="litLeave()" @click="litTap('saleRatio')">
-                  <small>매매가율<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('saleRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('saleRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'saleRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('saleRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
+                  <small>전세가율 / 갭<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('jeonseRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('jeonseRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'jeonseRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('jeonseRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
                   <strong>{{ mktJeonseToSale }}</strong>
                 </div>
               </div>
@@ -9136,13 +9126,15 @@ const goBack = () => router.back();
 .adp-mkt-cells .cell .adp-mkt-twoym + .adp-mkt-input { width: 100%; margin-top: 3px; font-size: 10.5px; }
 /* 표로 묶인 줄에서는 계산 칸도 흰색 — 색은 머리줄에만 */
 .adp-mkt-cells.adp-dm-table .cell.calc { background: #fff; }
-/* 짚은 칸과 그 값을 만든 칸 — 분홍으로 묶어 보여 준다.
-   calc 칸이 흰 바탕을 따로 잡고 있어 선택자를 한 단계 좁혀야 이긴다 */
+/* 짚은 칸과 그 값을 만든 칸 — 칸을 통째로 묶어 보여 준다.
+   색은 앱이 쓰는 붉은 계열(#e0574a)에 맞췄다.
+   calc 칸과 머리글이 각자 바탕을 잡고 있어 선택자를 한 단계씩 좁혀야 이긴다 */
 .adp-mkt-cells .cell.lit,
 .adp-mkt-cells.adp-dm-table .cell.calc.lit {
-  background: #fdf0f5;
-  box-shadow: inset 0 0 0 1.5px #f3a7c4;
+  background: #fdecea;
+  box-shadow: inset 0 0 0 1.5px #eda69c;
 }
+.adp-mkt-cells.adp-dm-table .cell.lit > small { background: #fbdcd8; }
 /* 줄 수가 다른 칸이 섞여 있으면 값이 위로 붙는다 — 가로·세로 모두 가운데로 */
 .adp-mkt-cells.center-y .cell > strong,
 .adp-mkt-cells.center-y .cell > span { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; }
