@@ -1325,7 +1325,7 @@ const fetchPublicTradeRows = async (opts?: { months?: number; keepFilters?: bool
     // 같은 동·같은 종류·같은 기간이면 누가 열든 결과가 같다 — 하루 동안 모아 둔 값을 쓴다
     const result = await cached(
       'cacheDongTrades',
-      cacheKey(region.lawdCd5, region.dong, publicTradeType.value, months),
+      cacheKey(region.lawdCd5, region.dong, publicTradeType.value, months, DONG_TRADE_CACHE_VER),
       CACHE_TTL.trades,
       () => fetchRealTradeAverage({
         lawdCd5: region.lawdCd5,
@@ -1370,7 +1370,7 @@ const fetchDeal12mCount = async () => {
     if (!region) return;
     const result = await cached(
       'cacheDongTrades',
-      cacheKey(region.lawdCd5, region.dong, publicTradeType.value, 12),
+      cacheKey(region.lawdCd5, region.dong, publicTradeType.value, 12, DONG_TRADE_CACHE_VER),
       CACHE_TTL.trades,
       () => fetchRealTradeAverage({
         lawdCd5: region.lawdCd5,
@@ -1493,6 +1493,10 @@ const setPubMonths = (months: number) => {
   publicEndDate.value = fmt(end);
   pubMonthPreset.value = months;
 };
+
+/** 조회 창을 '오늘 기준 12개월' 로 바로잡았다. 캐시에 남은 옛 숫자(한 달 모자란 값)가
+ *  하루 동안 그대로 보이지 않도록 열쇠에 표를 달아 둔다. 창을 또 손보면 이 수를 올린다. */
+const DONG_TRADE_CACHE_VER = 'w2';
 
 // 국토부 실거래가 — 마지막으로 불러오거나 검색 조건을 바꾼 시각
 const publicTradeUpdatedAt = ref('');

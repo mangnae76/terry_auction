@@ -713,16 +713,36 @@ const pathsForPropertyType = (type: RealTradeAverageParams['propertyType']): str
   return [APT_TRADE_API_PATH, VILLA_TRADE_API_PATH, OFFICETEL_TRADE_API_PATH];
 };
 
+/** '오늘부터 N개월 전' 의 그 날 — 12개월이면 작년 오늘의 다음 날부터 센다 */
+const windowStart = (months: number): Date => {
+  const d = new Date();
+  d.setMonth(d.getMonth() - months);
+  d.setDate(d.getDate() + 1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+/** 그 창을 덮는 달 목록 (최신 → 오래된 순).
+ *  이번 달부터 N칸만 세면 안 된다 — 오늘이 8일이면 그 달은 8일치뿐이라
+ *  창의 시작 달이 통째로 빠진다. 12개월이 11개월 8일이 되던 까닭이다. */
 const recentDealYmds = (months: number): string[] => {
-  const result: string[] = [];
+  const start = windowStart(months);
   const now = new Date();
-  for (let i = 0; i < months; i += 1) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    result.push(`${y}${m}`);
+  const result: string[] = [];
+  const d = new Date(now.getFullYear(), now.getMonth(), 1);
+  const last = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (d >= last) {
+    result.push(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`);
+    d.setMonth(d.getMonth() - 1);
   }
   return result;
+};
+/** 그 줄의 계약일 — 없으면 null */
+const rowDealDate = (row: Record<string, unknown>): Date | null => {
+  const y = Number(String(row.dealYear ?? row['년'] ?? '').replace(/\D/g, ''));
+  const m = Number(String(row.dealMonth ?? row['월'] ?? '').replace(/\D/g, ''));
+  const dd = Number(String(row.dealDay ?? row['일'] ?? '').replace(/\D/g, ''));
+  if (!y || !m || !dd) return null;
+  return new Date(y, m - 1, dd);
 };
 
 const normalizeDongName = (name: string) => name.replace(/\s+/g, '').trim();
@@ -1038,6 +1058,7 @@ export const fetchRealTradeAverage = async (
 ): Promise<RealTradeAverageResult> => {
   const months = Math.max(1, params.months ?? 3);
   const dealYmds = recentDealYmds(months);
+  const since = windowStart(months);
   const paths = pathsForPropertyType(params.propertyType);
   const periodTo = dealYmds[0];
   const periodFrom = dealYmds[dealYmds.length - 1];
@@ -1050,7 +1071,12 @@ export const fetchRealTradeAverage = async (
   }
 
   const settled = await inBatches(tasks, 5);
-  const allRows = settled.flatMap((r) => r.rows);
+  // 창의 양 끝 달은 통째로 받아 왔으니 날짜로 다시 자른다 —
+  // 그래야 '오늘 기준 딱 N개월' 이 된다
+  const allRows = settled.flatMap((r) => r.rows).filter((row) => {
+    const d = rowDealDate(row as Record<string, unknown>);
+    return !d || d >= since;
+  });
   const errSet = new Set(settled.map((r) => r.error).filter((v): v is string => !!v));
   const errorSummary = errSet.size > 0 ? Array.from(errSet).join(' / ') : undefined;
 
