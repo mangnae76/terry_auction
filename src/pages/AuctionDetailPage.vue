@@ -43,7 +43,7 @@ import alertIcon from '../assets/icones/triangle-alert.png';
 import fileTextIcon from '../assets/icones/file-text.png';
 import { resolveRegionFromAddress } from '../services/regionResolver';
 import { fetchRealTradeAverage, fetchPlaceHistory, fetchDongHouseholds, PLACE_HISTORY_YEARS, type RealTradeMatchRow } from '../services/publicDataApi';
-import { cached, cacheKey, readCache, writeCache, CACHE_TTL } from '../services/marketCache';
+import { cached, cachedEntry, cacheKey, readCache, writeCache, CACHE_TTL } from '../services/marketCache';
 import { fetchApartHousingPrice, VWORLD_KEY_EXPIRES } from '../services/vworldApi';
 import { updateStamp } from '../services/updateStamp';
 import { useAuthStore } from '../stores/authStore';
@@ -1368,7 +1368,7 @@ const fetchDeal12mCount = async () => {
   try {
     const region = await resolveRegionFromAddress(target.address);
     if (!region) return;
-    const result = await cached(
+    const entry = await cachedEntry(
       'cacheDongTrades',
       cacheKey(region.lawdCd5, region.dong, publicTradeType.value, 12, DONG_TRADE_CACHE_VER),
       CACHE_TTL.trades,
@@ -1380,6 +1380,9 @@ const fetchDeal12mCount = async () => {
       }),
       (r) => Number.isFinite(r.average) && (r.matchedRows?.length ?? 0) > 0,
     );
+    const result = entry.value;
+    // 이 숫자가 언제 받아 온 것인지 말풍선에 적는다 — 캐시를 읽었으면 '그때 받은 시각'이다
+    deal12mUpdatedAt.value = updateStamp(entry.savedAt);
     // 동으로 못 좁히고 시군구 전체로 넓어졌으면 그 동의 수가 아니다 — 자동 입력하지 않는다
     deal12mAuto.value = result.fallbackUsed ? 0 : (result.matchedRows?.length ?? 0);
     // 뺀 건수도 적어 둔다 — 가격정보 탭의 숫자와 맞춰 보면 검증이 된다
@@ -1389,6 +1392,7 @@ const fetchDeal12mCount = async () => {
     deal12mAuto.value = 0;
     deal12mDirect.value = 0;
     deal12mCancelled.value = 0;
+    deal12mUpdatedAt.value = '';
   }
 };
 
@@ -2580,6 +2584,15 @@ const setDmVal = async (id: string, value: string) => {
   setFieldVal(id, value);
   await persistSurvey();
 };
+/** 총 매물수는 네이버에서 사람이 세어 적는 값이라 받아 오는 시각이 없다.
+ *  대신 '적은 시각'을 같이 남겨 말풍선의 갱신 줄에 쓴다. 비우면 시각도 지운다.
+ *  (지우는 건 '' 로 해야 한다 — merge 저장이라 delete 로는 서버 값이 안 지워진다) */
+const LISTINGS_AT_ID = 'fs.dm.listingsAt';
+const setListingsVal = async (value: string) => {
+  setFieldVal('fs.dm.listings', value);
+  setFieldVal(LISTINGS_AT_ID, value.replace(/[^\d.]/g, '') ? updateStamp() : '');
+  await persistSurvey();
+};
 const dmNum = (id: string) => {
   const n = Number(fieldVal(id).replace(/[^\d.]/g, ''));
   return Number.isFinite(n) ? n : 0;
@@ -2645,8 +2658,11 @@ const deal12mAuto = ref(0);
 // 같은 조회에서 빠진 건수 — 툴팁에 적어 가격정보 탭과 대조할 수 있게 한다
 const deal12mDirect = ref(0);
 const deal12mCancelled = ref(0);
+// 이 숫자를 언제 받아 온 것인지 — 말풍선 '갱신' 줄에 적는다 (UPDATE 표기와 같은 모양)
+const deal12mUpdatedAt = ref('');
 // 그 동의 다세대·연립 세대수 — 건축물대장에서 합산한다 (직접 입력이 있으면 그 값이 우선)
 const unitsAuto = ref(0);
+const unitsUpdatedAt = ref('');
 /** 공동주택 공시가격 — 브이월드에서 그 호실의 최신 기준연도 값을 받아 온다.
  *  PDF 파싱값은 단위가 깨져 들어오는 일이 있어(1,228 처럼) 이쪽을 우선한다. */
 const officialPriceAuto = ref(0);
@@ -2759,15 +2775,18 @@ const fetchDongUnits = async () => {
   try {
     const region = await resolveRegionFromAddress(address);
     if (!region?.bCode10) return;
-    unitsAuto.value = await cached(
+    const entry = await cachedEntry(
       'cacheDongUnits',
       cacheKey(region.bCode10),
       CACHE_TTL.units,
       () => fetchDongHouseholds(region.bCode10),
       (n) => n > 0,
     );
+    unitsAuto.value = entry.value;
+    unitsUpdatedAt.value = updateStamp(entry.savedAt);
   } catch {
     unitsAuto.value = 0;
+    unitsUpdatedAt.value = '';
   }
 };
 // 기준수치 칸의 도움말 — 갖다 대면 까만 말풍선으로 띄운다.
@@ -2824,7 +2843,7 @@ const tipLabel = (label: string) => label.replace(/!$/, '');
 const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, string]> }>>(() => ({
   deal: { arrow: '12%', rows: [
     ['출처', '국토부 실거래가 API · 자동 입력'],
-    ['갱신', '물건을 열 때 받고 24시간 그 값을 쓴다'],
+    ['갱신', `24시간 후 업데이트${deal12mUpdatedAt.value ? ` (${deal12mUpdatedAt.value})` : ''}`],
     ['범위', `${surveyAreaLabel.value} · ${publicTradeTypeLabel.value} · 최근 12개월`],
     ['제외', `직거래 ${deal12mDirect.value}건 · 계약해제 ${deal12mCancelled.value}건 · 합계 ${deal12mDirect.value + deal12mCancelled.value}건`],
     ['표시', '1년 거래량 | 월평균 거래량'],
@@ -2832,7 +2851,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
   ] },
   units: { arrow: '37%', rows: [
     ['출처', '건축HUB(건축물대장) · 자동 입력'],
-    ['갱신', '물건을 열 때 받고 30일 그 값을 쓴다'],
+    ['갱신', `30일 후 업데이트${unitsUpdatedAt.value ? ` (${unitsUpdatedAt.value})` : ''}`],
     ['범위', `${surveyAreaLabel.value} 연립·다세대`],
     ['합산', '건물마다의 세대수를 모두 더한 값'],
     ['수정', '직접 입력하면 그 값이 우선'],
@@ -2840,6 +2859,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
   ] },
   listings: { arrow: '62%', rows: [
     ['입력', '직접 입력'],
+    ...(fieldVal(LISTINGS_AT_ID) ? [['갱신', `입력함 (${fieldVal(LISTINGS_AT_ID)})`] as [string, string]] : []),
     ['이동!', '네이버 부동산'],
     ['찾기!', `${surveyAreaLabel.value} 매물 수`],
   ] },
@@ -6490,7 +6510,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell-body">
                     <span v-if="editingSurvey.demand" class="adp-dm-pair">
-                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.listings')" placeholder="입력" @change="setDmVal('fs.dm.listings', ($event.target as HTMLInputElement).value)" />
+                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.listings')" placeholder="입력" @change="setListingsVal(($event.target as HTMLInputElement).value)" />
                     </span>
                     <strong v-else class="hi-blue"><span class="num">{{ dmIntText(dmListings) }}</span></strong>
                   </div>
