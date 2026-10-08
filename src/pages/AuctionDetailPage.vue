@@ -6432,7 +6432,7 @@ const goBack = () => router.back();
               <div class="adp-mkt-cells c3 adp-dm-table">
                 <div :class="['cell split', { lit: dmLit('deal') }]" @mouseenter="dmLitEnter('deal')" @mouseleave="dmLitLeave()" @click="dmLitTap('deal')">
                   <div class="cell-head">
-                    <button type="button" class="adp-dm-link" @click.stop="openMolitRtSite">거래량</button>
+                    <button type="button" class="adp-dm-link" @click.stop="openMolitRtSite">최근 12개월 거래량</button>
                     <button
                       type="button"
                       class="adp-dm-info"
