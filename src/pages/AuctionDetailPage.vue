@@ -2701,8 +2701,7 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['자료', '위 두 줄의 실제 거래값을 그대로 나눈다'],
   ],
   dong: [
-    ['출처', '경매 PDF 주소'],
-    ['방법', '주소에서 동·읍·면·리 로 끝나는 토막을 자른다'],
+    ['출처', 'PDF 주소'],
     ['주소', jibunAddress.value || '-'],
     ['쓰임', '거래량 조회 · 세대수/매물수 바로가기'],
   ],
@@ -2825,6 +2824,7 @@ const tipLabel = (label: string) => label.replace(/!$/, '');
 const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, string]> }>>(() => ({
   deal: { arrow: '12%', rows: [
     ['출처', '국토부 실거래가 API · 자동 입력'],
+    ['갱신', '물건을 열 때 받고 24시간 그 값을 쓴다'],
     ['범위', `${surveyAreaLabel.value} · ${publicTradeTypeLabel.value} · 최근 12개월`],
     ['제외', `직거래 ${deal12mDirect.value}건 · 계약해제 ${deal12mCancelled.value}건 · 합계 ${deal12mDirect.value + deal12mCancelled.value}건`],
     ['표시', '1년 거래량 | 월평균 거래량'],
@@ -2832,6 +2832,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
   ] },
   units: { arrow: '37%', rows: [
     ['출처', '건축HUB(건축물대장) · 자동 입력'],
+    ['갱신', '물건을 열 때 받고 30일 그 값을 쓴다'],
     ['범위', `${surveyAreaLabel.value} 연립·다세대`],
     ['합산', '건물마다의 세대수를 모두 더한 값'],
     ['수정', '직접 입력하면 그 값이 우선'],
@@ -8882,11 +8883,13 @@ const goBack = () => router.back();
   background: rgba(17, 24, 39, 0.92); color: #fff; border-radius: 10px;
   font-size: 12px; font-weight: 400; line-height: 1.5; cursor: pointer;
 }
-.adp-dm-bubble span { display: block; }
+/* 줄이 넘치면 둘째 줄도 값 칸에 맞춰 서야 한다 —
+   inline-block 이면 이름 칸 밑으로 흘러내린다 */
+.adp-dm-bubble span { display: flex; align-items: baseline; gap: 6px; }
 /* 사용자가 직접 해야 하는 일(이동·찾기)은 초록 — '적합'과 같은 색 */
 .adp-dm-bubble b.act, .adp-note-bubble.rows b.act { color: #4ade80; }
 .adp-dm-bubble b {
-  display: inline-block; width: 32px; margin-right: 6px;
+  flex: 0 0 32px;
   font-weight: 800; color: #9db9ef;
 }
 /* '적정' 줄은 한눈에 찾을 수 있게 초록으로 */
