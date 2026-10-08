@@ -2696,6 +2696,12 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['높으면', '적은 돈으로 사지만 역전세·깡통 위험이 커진다'],
     ['자료', '위 두 줄의 실제 거래값을 그대로 나눈다'],
   ],
+  dong: [
+    ['출처', '경매 PDF 주소'],
+    ['방법', '주소에서 동·읍·면·리 로 끝나는 토막을 자른다'],
+    ['주소', jibunAddress.value || '-'],
+    ['쓰임', '거래량 조회 · 세대수/매물수 바로가기'],
+  ],
   recv: [
     ['참조', '가격정보 → 경매물건 실거래가'],
     ['자료', '단지전체 (국토부) 최근 2년'],
@@ -6407,7 +6413,7 @@ const goBack = () => router.back();
           </header>
           <div v-if="!isCollapsed('demand')" class="adp-dm-body">
             <div class="adp-dm-head">
-              <strong class="adp-dm-title">1. <span class="adp-dm-area">{{ surveyAreaLabel }}</span> 수요공급</strong>
+              <strong class="adp-dm-title">1. <span class="adp-dm-area">{{ surveyAreaLabel }}</span> 수요공급 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="동 이름이 어디서 왔는지" @mouseenter="noteEnter('dong', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('dong', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'dong'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('dong')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></strong>
               <button v-if="!editingSurvey.demand" class="adp-edit-btn" type="button" @click.stop="editingSurvey.demand = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('demand')">💾 저장</button>
             </div>
