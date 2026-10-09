@@ -9486,15 +9486,15 @@ const goBack = () => router.back();
 .adp-deal-grid + .adp-photo-note { margin-top: -8px; padding: 0 12px 10px; }
 .adp-photo-note .adp-fs-input { width: 100%; height: 34px; }
 /* 손품+현장의 비고는 모두 빨갛게 — 숫자 사이에서 '내가 적어 둔 말'이 바로 집혀야 한다.
-   적은 글씨만 빨간 굵은 글씨이고, 안내문구는 그대로 회색이다. */
-.adp-photo-note .adp-fs-input { color: #e0574a; font-weight: 800; }
+   색만으로 충분해서 굵게는 쓰지 않는다. 안내문구는 그대로 회색이다. */
+.adp-photo-note .adp-fs-input { color: #e0574a; font-weight: 400; }
 .adp-photo-note .adp-fs-input::placeholder { color: #9ca3af; font-weight: 400; }
-.adp-mkt-cells.adp-dm-table .cell.adp-mkt-wide > .adp-mkt-input { color: #e0574a; font-weight: 800; }
+.adp-mkt-cells.adp-dm-table .cell.adp-mkt-wide > .adp-mkt-input { color: #e0574a; font-weight: 400; }
 .adp-mkt-cells.adp-dm-table .cell.adp-mkt-wide > .adp-mkt-input::placeholder { color: #9ca3af; font-weight: 400; }
-.adp-mkt-cells.adp-dm-table .cell.adp-mkt-wide > strong.filled { color: #e0574a; font-weight: 800; }
-.adp-conc-table .adp-conc-note > .adp-mkt-input { color: #e0574a; font-weight: 800; }
+.adp-mkt-cells.adp-dm-table .cell.adp-mkt-wide > strong.filled { color: #e0574a; font-weight: 400; }
+.adp-conc-table .adp-conc-note > .adp-mkt-input { color: #e0574a; font-weight: 400; }
 .adp-conc-table .adp-conc-note > .adp-mkt-input::placeholder { color: #9ca3af; font-weight: 400; }
-.adp-conc-table .adp-conc-note > span.filled { color: #e0574a; font-weight: 800; }
+.adp-conc-table .adp-conc-note > span.filled { color: #e0574a; font-weight: 400; }
 /* 현장조사 항목 줄 */
 .adp-fs-section { padding-top: 10px; margin-top: 10px; border-top: 1px solid #eef1f6; }
 .adp-fs-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 6px; }

@@ -168,10 +168,10 @@ const MONEY_FIELDS: Array<{ key: 'jeonse' | 'real' | 'urgent'; placeholder: stri
 .adp-mkt-input.left { text-align: left; }
 /* 비고 — 손품+현장의 다른 비고와 같은 규칙: 적은 글씨만 빨갛고 안내문구는 회색 */
 .adp-agency-fld.wide { flex: 1 1 100%; }
-.adp-mkt-input.note { color: #e0574a; font-weight: 800; }
+.adp-mkt-input.note { color: #e0574a; font-weight: 400; }
 .adp-mkt-input.note::placeholder { color: #9ca3af; font-weight: 400; }
 .adp-agency-fld > span.note-txt { font-size: 11.5px; font-weight: 400; color: #9ca3af; }
-.adp-agency-fld > span.note-txt.filled { color: #e0574a; font-weight: 800; }
+.adp-agency-fld > span.note-txt.filled { color: #e0574a; font-weight: 400; }
 .adp-mkt-input::placeholder { color: #9ca3af; }
 
 .adp-agency-multi { position: relative; }
