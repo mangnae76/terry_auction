@@ -4277,33 +4277,37 @@ type RightsDocCell = {
 type RightsDocLine = { cells: RightsDocCell[] };
 // 현황조사서·세대열람의 점유 관련 선택칸 — 네 칸 모두 같은 목록을 쓴다
 const DOC_OCCUPANCY_OPTIONS = ['임차인점유', '폐문부재', '동거인O', '점유관계미상', '전출'];
+// 세대열람 — 세대주가 올라와 있나 둘 중 하나
+const DOC_HEAD_OPTIONS = ['세대주 있음', '세대주 없음'];
 const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
   {
+    // 줄마다 '무슨 날짜인지' 를 왼쪽에 세우고, 날짜칸은 가운데, 고르는 칸은 오른쪽.
+    // 네 줄(현황조사·세대열람)이 같은 자리에 같은 종류의 칸을 두게 맞췄다.
     id: 'doc.survey', label: '집행관 현황조사',
-    dateId: 'doc.survey.date', datePlaceholder: '현황조사일',
-    fields: [
-      { id: 'doc.survey.occupancy', placeholder: '점유관계 입력' },
-      { id: 'doc.survey.note', placeholder: '기타사항입력', options: DOC_OCCUPANCY_OPTIONS },
+    lines: [
+      { cells: [
+        { kind: 'label', id: 'doc.survey.dateLabel', placeholder: '현황조사일' },
+        { kind: 'date', id: 'doc.survey.date', placeholder: '날짜입력' },
+        { kind: 'multi', id: 'doc.survey.note', placeholder: '기타사항입력', options: DOC_OCCUPANCY_OPTIONS },
+      ] },
+      { cells: [
+        { kind: 'label', id: 'doc.surveyTenant.dateLabel', placeholder: '전입일자' },
+        { kind: 'date', id: 'doc.surveyTenant.date', placeholder: '날짜입력' },
+        { kind: 'multi', id: 'doc.surveyTenant.state', placeholder: '기타사항입력', options: DOC_OCCUPANCY_OPTIONS },
+      ] },
     ],
-    line2: {
-      dateId: 'doc.surveyTenant.date', datePlaceholder: '전입일자',
-      fields: [
-        { id: 'doc.surveyTenant.name', placeholder: '세대주 입력' },
-        { id: 'doc.surveyTenant.state', placeholder: '기타사항입력', options: DOC_OCCUPANCY_OPTIONS },
-      ],
-    },
   },
   {
     id: 'doc.residents', label: '세대열람',
     lines: [
       { cells: [
         { kind: 'label', id: 'doc.residents.issueLabel', placeholder: '발급일자' },
-        { kind: 'date', id: 'doc.residents.issueDate', placeholder: '발급일자' },
-        { kind: 'multi', id: 'doc.residents.note2', placeholder: '동거인', options: DOC_OCCUPANCY_OPTIONS },
+        { kind: 'date', id: 'doc.residents.issueDate', placeholder: '날짜입력' },
+        { kind: 'pick', id: 'doc.residents.headExists', placeholder: '세대주', options: DOC_HEAD_OPTIONS },
       ] },
       { cells: [
-        { kind: 'date', id: 'doc.residents.date', placeholder: '전입일자' },
-        { kind: 'text', id: 'doc.residents.head', placeholder: '세대주 입력' },
+        { kind: 'label', id: 'doc.residents.dateLabel', placeholder: '전입일자' },
+        { kind: 'date', id: 'doc.residents.date', placeholder: '날짜입력' },
         { kind: 'multi', id: 'doc.residents.cohabit', placeholder: '동거인', options: DOC_OCCUPANCY_OPTIONS },
       ] },
     ],
