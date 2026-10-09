@@ -3781,8 +3781,9 @@ const MKT_URGENT_COLS: ConcCol[] = [
 ];
 /** 두 표는 생김새가 같다 — 마크업을 한 벌만 두고 제목과 칸만 갈아 끼운다 */
 const CONC_TABLES = [
-  { title: '시세 결론', cols: MKT_CONC_COLS, note: false },
-  { title: '급매가 결론', cols: MKT_URGENT_COLS, note: true },
+  // boldPrice — 값을 모아 견주는 표라 마지막 '가격' 줄이 한눈에 들어와야 한다
+  { title: '시세 결론', cols: MKT_CONC_COLS, note: false, boldPrice: true },
+  { title: '급매가 결론', cols: MKT_URGENT_COLS, note: true, boldPrice: false },
 ];
 const MKT_CONC_ROWS: ConcRow[] = [
   { key: 'area', label: '면적', money: false },
@@ -7512,7 +7513,7 @@ const goBack = () => router.back();
               <div class="adp-sub-head">
                 <h3>{{ t.title }}</h3>
               </div>
-              <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table">
+              <table :class="['adp-table', 'adp-mkt-table', 'fit', 'adp-dm-tbl', 'adp-conc-table', { 'bold-price': t.boldPrice }]">
                 <thead>
                   <tr>
                     <th v-for="c in t.cols" :key="c.key" :class="c.tone">
@@ -7522,7 +7523,7 @@ const goBack = () => router.back();
                 </thead>
                 <tbody>
                   <tr v-for="r in MKT_CONC_ROWS" :key="r.key">
-                    <td v-for="c in t.cols" :key="c.key" class="num">
+                    <td v-for="c in t.cols" :key="c.key" :class="['num', { mean: c.key === 'mean' }]">
                       <!-- 면적 — ㎡ 와 평을 같이 적는다. 한쪽만 적어도 나머지가 따라온다 -->
                       <template v-if="r.key === 'area'">
                         <template v-if="concEditable(c.key)">
@@ -8895,6 +8896,10 @@ const goBack = () => router.back();
    .hi 가 색을 잡고 있어 선택자를 한 단계 좁혀야 이긴다 */
 .adp-conc-table .adp-conc-v.typed,
 .adp-conc-table .adp-conc-v.hi.typed { color: #2b6df3; }
+/* 평균 칸 — 여러 칸을 모아 낸 값이라 금액처럼 파랗게, 굵게 세운다 */
+.adp-conc-table td.mean .adp-conc-v { color: #2b6df3; font-weight: 800; }
+/* 시세 결론의 마지막 '가격' 줄 — 견주는 표의 결론이라 줄 전체를 굵게 */
+.adp-conc-table.bold-price .adp-conc-v.hi { font-weight: 800; }
 .adp-conc-table .adp-conc-v { font-size: 10.5px; font-weight: 400; color: #111827; white-space: nowrap; }
 .adp-conc-table .adp-conc-v.red { color: #e0574a; }
 .adp-conc-table .adp-conc-v small { font-size: 9.5px; font-weight: 600; color: #9ca3af; margin-left: 1px; }
