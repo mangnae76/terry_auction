@@ -982,7 +982,10 @@ export const fetchDongHouseholds = async (bCode10: string): Promise<number> => {
 };
 
 /** 단지 이력을 몇 년치 볼 것인가 — 그보다 오래된 거래는 시세로 쓰기 어렵다 */
-export const PLACE_HISTORY_YEARS = 2;
+// 단지 전체 실거래 — 2년만 받았더니 '그 호실이 언제 얼마에 팔렸나'가 창 밖으로 나가
+// 빈 표가 되는 일이 많았다. 받을 수 있는 만큼 받는다(달 단위 호출 × 2종).
+// 결과는 시군구·종류 단위로 하루 모아 두고 모든 물건이 같이 쓴다.
+export const PLACE_HISTORY_YEARS = 10;
 
 export const fetchPlaceHistory = async (params: {
   lawdCd5: string;

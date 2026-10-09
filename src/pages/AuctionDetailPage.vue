@@ -763,12 +763,14 @@ const tradeYearOptions = computed(() => {
 const mergedTradeRows = computed<PlaceRow[]>(() => samePlaceRows.value);
 /** 매매는 있는데 전세만 없나 — 전세가율을 못 내니 찾아 헤매기 전에 알려 준다.
  *  거래가 아예 없을 때는 적지 않는다. 아래 '같은 단지의 실거래가 없습니다' 와 두 번 말하게 된다. */
-const noJeonseInPlace = computed(() => (
-  samePlaceDone.value
-  && !samePlaceLoading.value
-  && mergedTradeRows.value.length > 0
-  && !mergedTradeRows.value.some((r) => r.kind === '전세')
-));
+/** 지금 고른 탭에 거래가 없을 때 띄울 말 — '전세 데이터 없음' 처럼 탭 이름을 그대로 쓴다.
+ *  거래가 아예 없을 때는 적지 않는다. 아래 '같은 단지의 실거래가 없습니다' 와 두 번 말하게 된다. */
+const emptyTabNote = computed(() => {
+  if (!samePlaceDone.value || samePlaceLoading.value) return '';
+  if (mergedTradeRows.value.length === 0) return '';
+  if (tradeFilter.value === 'all') return '';
+  return shownTradeRows.value.length === 0 ? `${tradeFilter.value} 데이터 없음` : '';
+});
 /** 면적·연도만 거른 줄 — 탭(매매/전세/월세)과 상관없이 쓴다.
  *  위쪽 요약 박스가 이걸 보고, 표는 여기에 탭을 한 번 더 얹는다. */
 const tradeRowsByAreaYear = computed(() => mergedTradeRows.value.filter((r) => {
@@ -809,6 +811,18 @@ const recentSaleTrade = computed(() => {
   return sales.reduce((best, r) => (dateKey(r) > dateKey(best) ? r : best), sales[0]);
 });
 const recentSaleTradePrice = computed(() => parsePriceNumber(recentSaleTrade.value?.amount));
+/** ② 를 채울 때 쓰는 '가장 최근' 거래 — 표의 면적·연도 거르기와 상관없이 전체에서 고른다.
+ *  거르기는 눈으로 볼 때의 조건이지, 이 물건의 실거래가가 바뀌는 건 아니다. */
+const newestOf = (pick: (r: PlaceRow) => boolean) => {
+  const key = (r: PlaceRow) => r.contractDate.replace(/\D/g, '');
+  const rows = mergedTradeRows.value.filter(pick);
+  if (rows.length === 0) return null;
+  return rows.reduce((best, r) => (key(r) > key(best) ? r : best), rows[0]);
+};
+const newestSaleRow = computed(() => newestOf((r) => (
+  (r.kind === '매매' || r.kind === '직거래') && parsePriceNumber(r.amount) > 0
+)));
+const newestJeonseRow = computed(() => newestOf((r) => r.kind === '전세' && (r.deposit ?? 0) > 0));
 /** 그 거래가 언제였나 — 연도만으로는 어느 달인지 알 수 없어 월까지 적는다 ('2025-06') */
 const recentSaleTradeYm = computed(() => {
   const d = (recentSaleTrade.value?.contractDate ?? '').replace(/\D/g, '');
@@ -3395,6 +3409,41 @@ const sendTradePriceToMarket = async (row: PlaceRow) => {
   await persistSurvey();
   flashToast('경매지번 실거래가에 적용하였습니다.', 'success');
 };
+/** ② 경매지번 실거래가를 채운다 — 값은 가격정보의 '경매지번 실거래가' 표에서만 온다.
+ *  비행기로 한 줄을 고르면 그 줄이 서고, 고르기 전에는 가장 최근 거래가 선다.
+ *  표에 그런 거래가 없으면 빈칸으로 둔다 (PDF 평균으로 메우지 않는다 — 이 호실 값이 아니다). */
+watch(
+  [() => auction.value?.id, newestSaleRow, newestJeonseRow],
+  () => {
+    const sf = surveyForm.value;
+    if (!sf) return;
+    if (!sf.mktValues) sf.mktValues = {};
+    const v = sf.mktValues;
+    // 늘 경매물건 칸이다 — mk() 를 쓰면 켜 둔 모드에 따라 유사물건 칸으로 샌다
+    const put = (id: string, value: string) => { if (!v[id] && value) v[id] = value; };
+    const ymd = (raw: string) => raw.slice(0, 10).replace(/\./g, '-');
+    const sale = newestSaleRow.value;
+    if (sale) {
+      const price = Math.round(parsePriceNumber(sale.amount));
+      put('mkt.d.real', String(price));
+      put('mkt.d.year', ymd(sale.contractDate));
+      put('mkt.d.floor', String(sale.floor ?? '').trim());
+      if (Number(sale.areaM2) > 0) {
+        put('mkt.d.area', String(Number(sale.areaM2)));
+        put('mkt.b.area', String(Number(sale.areaM2)));
+      }
+    }
+    const jeonse = newestJeonseRow.value;
+    if (jeonse) {
+      put('mkt.d.jReal', String(Math.round(jeonse.deposit ?? 0)));
+      put('mkt.d.jYear', ymd(jeonse.contractDate));
+      put('mkt.d.jFloor', String(jeonse.floor ?? '').trim());
+      if (Number(jeonse.areaM2) > 0) put('mkt.d.jArea', String(Number(jeonse.areaM2)));
+    }
+  },
+  { immediate: true },
+);
+
 // 해당 경매물건 자료가 없으면 비슷한 물건으로 대신 조사한다.
 // 모드를 바꾸면 저장 위치도 갈라져서 두 벌의 값을 따로 들고 있을 수 있다.
 const MKT_MODES = ['경매물건', '유사물건'];
@@ -3742,7 +3791,6 @@ watch(
     }
     const around = num(publicTradeAvg.value);
     if (around > 0 && py > 0) fill('mkt.b.unit', String(Math.round(around / py)));
-    fill('mkt.d.real', num(pdfMaeMaeAvg.value) > 0 ? String(Math.round(pdfMaeMaeAvg.value)) : '');
     fill('mkt.d.rate', String(MKT_JEONSE_RATE));
 
     // 결론 줄
@@ -5919,7 +5967,7 @@ const goBack = () => router.back();
                 <span class="adp-sp-lab">단지전체 (국토부) <em>최근 {{ PLACE_HISTORY_YEARS }}년</em></span>
                 <strong v-if="samePlaceLoading" class="adp-sp-cnt">조회중…</strong>
                 <strong v-else-if="shownTradeRows.length > 0" class="adp-sp-cnt">{{ shownTradeRows.length }}건</strong>
-                <span v-if="noJeonseInPlace" class="adp-sp-none">전세 데이터 없음</span>
+                <span v-if="emptyTabNote" class="adp-sp-none">{{ emptyTabNote }}</span>
                 <span class="adp-sp-fill" />
                 <button
                   v-if="!samePlaceLoading && samePlaceMissed > 0"
