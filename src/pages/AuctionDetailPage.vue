@@ -3891,8 +3891,8 @@ const MKT_CONC_COLS: ConcCol[] = [
   { key: 'case', label: '경매지번\n실거래가' },
   { key: 'sim', label: '유사물건\n실거래가' },
   { key: 'avg', label: '실거래가\n조건분석 평균' },
-  { key: 'low', label: '경매빌라\n저가매물' },
-  { key: 'lowSim', label: '유사빌라\n저가매물' },
+  { key: 'low', label: '경매빌라\n매물' },
+  { key: 'lowSim', label: '유사빌라\n매물' },
   { key: 'mean', label: '평균' },
 ];
 // 칸이 셋뿐이라 폭이 넉넉하다 — 이름을 한 줄로 쓴다
@@ -7499,7 +7499,7 @@ const goBack = () => router.back();
             <!-- ① 해당 빌라 저가 매물 — 줄을 늘려 가며 적는다 -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">① <span :class="['mode', { sim: mktMode('c') === '유사물건' }]">{{ mktModeLabel('c', '경매빌라', '유사빌라') }}</span> 저가매물</span>
+                <span class="t">① <span :class="['mode', { sim: mktMode('c') === '유사물건' }]">{{ mktModeLabel('c', '경매빌라', '유사빌라') }}</span> 매물</span>
                 <span v-if="editingSurvey.location" class="adp-mkt-step">
                   <span class="lab">행</span>
                   <button type="button" aria-label="행 삭제" :disabled="lowRowCount <= 1" @click="removeLowRow">−</button>
