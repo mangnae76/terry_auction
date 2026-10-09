@@ -1920,8 +1920,10 @@ const taxDeductOf = (L: number) => {
 };
 /** 세율·누진공제는 사업소득금액이 걸리는 구간에서 저절로 서지만,
  *  구간을 달리 보거나 다른 소득과 합산할 때가 있어 손으로도 고칠 수 있게 둔다. */
-const scTaxRate = (sc: ProfitScenario) => sc.cost?.incomeTaxRateManual ?? taxRateOf(scGain(sc));
-const scTaxDeduct = (sc: ProfitScenario) => sc.cost?.incomeTaxDeduct ?? taxDeductOf(scGain(sc));
+// 0 은 '안 적었다' 로 본다 — 구간이 바뀌어도 0 이 남아 공제를 먹어 버리면
+// 세금이 조용히 많아진다. 6% 구간의 공제는 어차피 0 이라 잃는 것도 없다.
+const scTaxRate = (sc: ProfitScenario) => sc.cost?.incomeTaxRateManual || taxRateOf(scGain(sc));
+const scTaxDeduct = (sc: ProfitScenario) => sc.cost?.incomeTaxDeduct || taxDeductOf(scGain(sc));
 const scTransferTaxAuto = (sc: ProfitScenario) => {
   const L = scGain(sc);
   if (L <= 0) return 0;
@@ -1943,7 +1945,8 @@ const scSetTaxRate = (sc: ProfitScenario, raw: string) => {
 const scSetTaxDeduct = (sc: ProfitScenario, raw: string) => {
   const man = parseFloat(String(raw).replace(/[^\d.-]/g, ''));
   if (!Number.isFinite(man)) return;
-  sc.cost.incomeTaxDeduct = Math.round(man * 10_000);
+  // 0 은 비운 것으로 둔다 — 구간의 기본 공제로 돌아간다
+  sc.cost.incomeTaxDeduct = man > 0 ? Math.round(man * 10_000) : undefined;
   sc.cost.incomeTaxAmount = undefined;
   sc.cost.localTaxAmount = undefined;
 };
@@ -1957,6 +1960,49 @@ const scTotalInvest = (sc: ProfitScenario) => scBid(sc) + scTotalCosts(sc);
 const scAfterTaxRate = (sc: ProfitScenario) => (
   scNetInvestment(sc) > 0 ? (scAfterTaxProfit(sc) / scNetInvestment(sc)) * 100 : 0
 );
+/** 입찰가를 이만큼 썼다면 세후 순이익이 얼마가 되나 — 화면의 식을 그대로 옮긴 것이다.
+ *  입찰가가 바뀔 때 따라 바뀌는 건 취득세뿐이고(비율로 묶여 있다), 대출·중도상환·이자·
+ *  중개료는 대출금과 매도가에 묶여 있어 그대로다. */
+const scProfitAtBid = (sc: ProfitScenario, bid: number) => {
+  const c = sc.cost;
+  if (!c) return 0;
+  const acqRate = c.acquisitionTaxRate && c.acquisitionTaxRate > 0 ? c.acquisitionTaxRate : ACQ_TAX_DEFAULT_RATE;
+  const costs = Math.round((bid * acqRate) / 100)
+    + (c.legalCostAmount ?? 0)
+    + (c.interestAmount ?? 0)
+    + (c.midRepaymentAmount ?? 0)
+    + (c.brokerageAmount ?? 0)
+    + (c.arrearsFee ?? 0)
+    + (c.repairCost ?? 0)
+    + (c.evictionCost ?? 0)
+    + (c.advertisingCost ?? 0);
+  const gain = scSale(sc) - bid - costs;
+  if (gain <= 0) return gain;
+  const rate = c.incomeTaxRateManual || taxRateOf(gain);
+  const deduct = c.incomeTaxDeduct || taxDeductOf(gain);
+  const tax = Math.max(0, (gain * rate) / 100 - deduct);
+  const local = tax * ((c.localTaxRate ?? 10) / 100);
+  return gain - tax - local;
+};
+/** 세후 순이익을 적으면 그만큼 남기려면 입찰가를 얼마로 써야 하는지 거꾸로 푼다.
+ *  입찰가가 오르면 순이익은 줄기만 해서(단조) 반씩 좁혀 가며 찾는다. */
+const scSetAfterTaxProfit = (sc: ProfitScenario, value: number | string) => {
+  const target = Number(String(value).replace(/[^\d.-]/g, '')) || 0;
+  if (!sc.cost) return;
+  let lo = 0;
+  let hi = Math.max(scSale(sc), apprValue.value) * 2;
+  if (hi <= 0) return;
+  // 목표가 너무 커서 입찰가 0 으로도 못 미치면 더 줄일 방법이 없다
+  if (scProfitAtBid(sc, 0) < target) { sc.bid.myBidValue = 0; return; }
+  for (let i = 0; i < 40; i += 1) {
+    const mid = (lo + hi) / 2;
+    if (scProfitAtBid(sc, mid) >= target) lo = mid; else hi = mid;
+  }
+  sc.bid.myBidValue = Math.round(lo);
+  // 직접 적어 둔 세액이 있으면 새 입찰가와 어긋난다 — 풀어서 다시 자동 계산으로
+  sc.cost.incomeTaxAmount = undefined;
+  sc.cost.localTaxAmount = undefined;
+};
 const scPctOfBid = (sc: ProfitScenario, n: number | undefined | null) => (
   scBid(sc) > 0 && n ? (n / scBid(sc)) * 100 : 0
 );
@@ -2572,6 +2618,12 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
     title: '② 탐문 (윗집, 옆집, 아래집, 동대표 중)',
     items: [
       { id: 'fs.roofLeak', label: '옥상누수', options: ['O', 'X', '확인불가'] },
+      // 먼저 눈으로 보는 것 — 건물을 한 바퀴 돌며 채운다
+      { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'] },
+      { id: 'fs.parkList', label: '주차리스트', options: ['O', 'X'] },
+      { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'] },
+      { id: 'fs.bikeKeep', label: '자전거상태', options: ['상', '중', '하'] },
+      // 그다음 사람에게 묻는 것 — 연락처가 따라붙는 줄들
       {
         id: 'fs.maintFee', label: '미납관리비', options: ['동대표', '관리소'],
         extra: { id: 'fs.maintPhone', placeholder: '연락처입력' },
@@ -2580,15 +2632,10 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
         id: 'fs.tenantContact', label: '임차인연락처', options: ['동대표', '차확인'],
         extra: { id: 'fs.tenantPhone', placeholder: '연락처입력' },
       },
-      // 건물을 돌아보며 눈으로 보는 것들 — 문 앞에서 묻는 것과 같은 걸음에 본다
       {
         id: 'fs.cleanCo', label: '청소업체', options: ['O', 'X'],
         extra: { id: 'fs.cleanPhone', placeholder: '업체명 / 연락처 입력' },
       },
-      { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'] },
-      { id: 'fs.parkList', label: '주차리스트', options: ['O', 'X'] },
-      { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'] },
-      { id: 'fs.bikeKeep', label: '자전거상태', options: ['상', '중', '하'] },
       { id: 'fs.doorCode', label: '출입문비번', text: true, placeholder: '비밀번호입력' },
       { id: 'fs.entryCode', label: '현관비번', text: true, placeholder: '비밀번호입력' },
     ],
@@ -3895,8 +3942,8 @@ const MKT_CONC_COLS: ConcCol[] = [
   { key: 'case', label: '경매지번\n실거래가' },
   { key: 'sim', label: '유사물건\n실거래가' },
   { key: 'avg', label: '실거래가\n조건분석 평균' },
-  { key: 'low', label: '경매빌라\n매물' },
-  { key: 'lowSim', label: '유사빌라\n매물' },
+  { key: 'low', label: '경매빌라\n매물호가' },
+  { key: 'lowSim', label: '유사빌라\n매물호가' },
   { key: 'mean', label: '평균' },
 ];
 // 칸이 셋뿐이라 폭이 넉넉하다 — 이름을 한 줄로 쓴다
@@ -4495,7 +4542,7 @@ const toggleRightsCheck = async (id: string, checked: boolean) => {
 const RIGHTS_CASES = [
   { id: '1', title: '권리분석 케이스1', summary: '특수물건 : 3자권리인수 있음, 가등기/가처분' },
   { id: '2', title: '권리분석 케이스2', summary: '기본물건 : 3자권리인수 없음, 임차인 없음' },
-  { id: '3', title: '권리분석 케이스3', summary: '기본물건 : 임차인 있음, 대항력 없음' },
+  { id: '3', title: '권리분석 케이스3', summary: '기본물건 : 3자권리인수 없음, 임차인 있음, 대항력 없음' },
   { id: '4', title: '권리분석 케이스4', summary: '기본물건 : 임차인 있음, 대항력 없음, 우선변제' },
   { id: '5', title: '권리분석 케이스5', summary: '대항력 물건 : 대항력 있음, 우선변제권 없음' },
   { id: '6', title: '권리분석 케이스6', summary: '미배당인수 : 대항력 있음, 우선변제권 있음' },
@@ -5860,8 +5907,11 @@ const goBack = () => router.back();
               </tr>
               <tr class="hi">
                 <td><strong>세후 순이익</strong></td>
+                <!-- 여기에 목표 이익을 적으면 입찰가를 거꾸로 푼다 -->
                 <td class="r adp-formula">매도가-총투자금-소득세</td>
-                <td class="r"><strong :class="scAfterTaxProfit(sc) < 0 ? 'neg' : ''">{{ formatMoney(scAfterTaxProfit(sc)) }}</strong></td>
+                <td class="r emph">
+                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scAfterTaxProfit(sc))" class="adp-cell-input" live-group @update:model-value="scSetAfterTaxProfit(sc, $event)" /><template v-else><strong :class="scAfterTaxProfit(sc) < 0 ? 'neg' : ''">{{ formatMoney(scAfterTaxProfit(sc)) }}</strong></template>
+                </td>
               </tr>
               <tr class="hi">
                 <td><strong>세후 수익률</strong></td>
@@ -7503,7 +7553,7 @@ const goBack = () => router.back();
             <!-- ① 해당 빌라 저가 매물 — 줄을 늘려 가며 적는다 -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">① <span :class="['mode', { sim: mktMode('c') === '유사물건' }]">{{ mktModeLabel('c', '경매빌라', '유사빌라') }}</span> 매물</span>
+                <span class="t">① <span :class="['mode', { sim: mktMode('c') === '유사물건' }]">{{ mktModeLabel('c', '경매빌라', '유사빌라') }}</span> 매물호가</span>
                 <span v-if="editingSurvey.location" class="adp-mkt-step">
                   <span class="lab">행</span>
                   <button type="button" aria-label="행 삭제" :disabled="lowRowCount <= 1" @click="removeLowRow">−</button>
@@ -7705,7 +7755,7 @@ const goBack = () => router.back();
             <!-- 시세 결론 / 급매가 결론 — 생김새가 같아 한 벌로 그린다 -->
             <div v-for="t in CONC_TABLES" :key="t.title" class="adp-sub-block">
               <div class="adp-sub-head">
-                <h3>{{ t.title }}</h3>
+                <h3>{{ t.title }}<span v-if="t.boldPrice" class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('concMean', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('concMean', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'concMean'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">체크를 풀면 평균값에서 제외</span></span></h3>
               </div>
               <table :class="['adp-table', 'adp-mkt-table', 'fit', 'adp-dm-tbl', 'adp-conc-table', { 'bold-price': t.boldPrice }]">
                 <thead>
