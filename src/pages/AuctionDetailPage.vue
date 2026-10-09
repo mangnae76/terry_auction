@@ -6489,7 +6489,7 @@ const goBack = () => router.back();
                         v-for="(ln, li) in docLines(item)"
                         :key="li"
                         class="adp-rdoc-survey"
-                        :style="{ gridTemplateColumns: ln.cells[0]?.kind === 'label' ? '30px 62px 1fr 1fr' : `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
+                        :style="{ gridTemplateColumns: ln.cells[0]?.kind === 'label' ? '30px 76px 1fr 1fr' : `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
                       >
                         <template v-for="c in ln.cells" :key="c.id">
                           <span v-if="c.kind === 'label'" class="adp-rdoc-label">{{ c.placeholder }}</span>
@@ -7233,7 +7233,7 @@ const goBack = () => router.back();
               </tbody>
               <tfoot>
                 <tr>
-                  <th class="adp-ind-label">예상 매매가</th>
+                  <th class="adp-ind-label">실거래가 조건분석 평균</th>
                   <td class="adp-ind-ctl">
                     <div class="row">
                       <FormattedNumberInput v-if="editingSurvey.individuality" v-model="surveyForm.indivAvgPrice" mode="string" class="adp-ind-input sm" placeholder="0" />
@@ -7244,7 +7244,7 @@ const goBack = () => router.back();
                 </tr>
                 <tr>
                   <th class="adp-ind-label">개별성 적용가</th>
-                  <!-- 예상 매매가와 같은 칸에 두어야 숫자 앞자리가 세로로 맞는다 -->
+                  <!-- 조건분석 평균과 같은 칸에 두어야 숫자 앞자리가 세로로 맞는다 -->
                   <td class="adp-ind-ctl">
                     <div class="row"><strong class="hi">{{ indivAdjustedPrice }}</strong></div>
                   </td>
