@@ -2580,15 +2580,7 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
         id: 'fs.tenantContact', label: '임차인연락처', options: ['동대표', '차확인'],
         extra: { id: 'fs.tenantPhone', placeholder: '연락처입력' },
       },
-      { id: 'fs.doorCode', label: '출입문비번', text: true, placeholder: '비밀번호입력' },
-      { id: 'fs.entryCode', label: '현관비번', text: true, placeholder: '비밀번호입력' },
-    ],
-  },
-  {
-    title: '③ 우편물, 공과금 및 기타',
-    items: [
-      { id: 'fs.mailMaint', label: '미납관리비', options: ['O', 'X'], extra: { id: 'fs.mailMaintAmt', placeholder: '금액입력', money: true } },
-      { id: 'fs.mailPower', label: '전기수도가스', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액입력', money: true } },
+      // 건물을 돌아보며 눈으로 보는 것들 — 문 앞에서 묻는 것과 같은 걸음에 본다
       {
         id: 'fs.cleanCo', label: '청소업체', options: ['O', 'X'],
         extra: { id: 'fs.cleanPhone', placeholder: '업체명 / 연락처 입력' },
@@ -2597,6 +2589,18 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
       { id: 'fs.parkList', label: '주차리스트', options: ['O', 'X'] },
       { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'] },
       { id: 'fs.bikeKeep', label: '자전거상태', options: ['상', '중', '하'] },
+      { id: 'fs.doorCode', label: '출입문비번', text: true, placeholder: '비밀번호입력' },
+      { id: 'fs.entryCode', label: '현관비번', text: true, placeholder: '비밀번호입력' },
+    ],
+  },
+  {
+    title: '③ 우편물, 공과금 및 기타',
+    items: [
+      { id: 'fs.mailMaint', label: '미납관리비', options: ['O', 'X'], extra: { id: 'fs.mailMaintAmt', placeholder: '금액입력', money: true } },
+      // 셋을 한 줄에 묶어 두니 어느 것이 밀렸는지 적을 수가 없었다 — 줄을 나눈다
+      { id: 'fs.mailPower', label: '전기', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액입력', money: true } },
+      { id: 'fs.mailWater', label: '수도', options: ['O', 'X'], extra: { id: 'fs.mailWaterAmt', placeholder: '금액입력', money: true } },
+      { id: 'fs.mailGas', label: '가스', options: ['O', 'X'], extra: { id: 'fs.mailGasAmt', placeholder: '금액입력', money: true } },
     ],
   },
   {
