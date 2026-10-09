@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { nextTick, ref, watch } from 'vue';
 import { formatNumber, sanitizeNumericInput, toEditableNumberString, toFiniteNumber } from '../utils/numberFormat';
 
 const props = withDefaults(
@@ -11,6 +11,8 @@ const props = withDefaults(
     minFractionDigits?: number;
     maxFractionDigits?: number;
     align?: 'left' | 'center' | 'right';
+    /** 적는 중에도 천 단위 쉼표를 보여 줄 것인가 (금액칸처럼 자릿수가 헷갈리는 자리) */
+    liveGroup?: boolean;
   }>(),
   {
     readonly: false,
@@ -19,6 +21,7 @@ const props = withDefaults(
     minFractionDigits: 0,
     maxFractionDigits: 2,
     align: 'right',
+    liveGroup: false,
   },
 );
 
@@ -29,11 +32,34 @@ const emit = defineEmits<{
 const isFocused = ref(false);
 const displayValue = ref('');
 
+/** 적는 중의 숫자에 쉼표만 끼워 넣는다. 반올림·자릿수 보정은 하지 않는다 —
+ *  '1.' 처럼 아직 덜 적은 모양도 그대로 두어야 다음 글자를 이어 적을 수 있다. */
+const groupDigits = (v: string) => {
+  if (!v) return '';
+  const neg = v.startsWith('-');
+  const body = neg ? v.slice(1) : v;
+  const dot = body.indexOf('.');
+  const int = dot >= 0 ? body.slice(0, dot) : body;
+  const rest = dot >= 0 ? body.slice(dot) : '';
+  return `${neg ? '-' : ''}${int.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}${rest}`;
+};
+/** 쉼표를 끼우면 글자 수가 달라져 커서가 튄다 — '왼쪽에 숫자가 몇 개 있었나'로 되돌린다 */
+const putCaretAfterDigits = (el: HTMLInputElement, text: string, digits: number) => {
+  let i = 0;
+  let seen = 0;
+  while (i < text.length && seen < digits) {
+    if (/\d/.test(text[i])) seen += 1;
+    i += 1;
+  }
+  el.setSelectionRange(i, i);
+};
+
 const updateDisplayFromModel = () => {
   // 저장된 값이 없는 필드(optional)도 받을 수 있게 빈 값으로 보정한다
   const model = props.modelValue ?? '';
+  const editable = toEditableNumberString(model, { maxFractionDigits: props.maxFractionDigits });
   displayValue.value = isFocused.value
-    ? toEditableNumberString(model, { maxFractionDigits: props.maxFractionDigits })
+    ? (props.liveGroup ? groupDigits(editable) : editable)
     : formatNumber(model, {
         minFractionDigits: props.minFractionDigits,
         maxFractionDigits: props.maxFractionDigits,
@@ -65,14 +91,24 @@ const emitValue = (value: string, finalize = false) => {
 
 const onInput = (event: Event) => {
   const target = event.target as HTMLInputElement;
-  const normalized = sanitizeNumericInput(target.value, props.maxFractionDigits);
-  displayValue.value = normalized;
+  const raw = target.value;
+  const caret = target.selectionStart ?? raw.length;
+  const normalized = sanitizeNumericInput(raw, props.maxFractionDigits);
   emitValue(normalized);
+  if (!props.liveGroup) {
+    displayValue.value = normalized;
+    return;
+  }
+  const digitsBefore = raw.slice(0, caret).replace(/\D/g, '').length;
+  const grouped = groupDigits(normalized);
+  displayValue.value = grouped;
+  void nextTick(() => putCaretAfterDigits(target, grouped, digitsBefore));
 };
 
 const onFocus = () => {
   isFocused.value = true;
-  displayValue.value = toEditableNumberString(props.modelValue ?? '', { maxFractionDigits: props.maxFractionDigits });
+  const editable = toEditableNumberString(props.modelValue ?? '', { maxFractionDigits: props.maxFractionDigits });
+  displayValue.value = props.liveGroup ? groupDigits(editable) : editable;
 };
 
 const onBlur = () => {

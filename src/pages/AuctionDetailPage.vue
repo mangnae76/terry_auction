@@ -4277,6 +4277,10 @@ type RightsDocCell = {
 type RightsDocLine = { cells: RightsDocCell[] };
 // 현황조사서·세대열람의 점유 관련 선택칸 — 네 칸 모두 같은 목록을 쓴다
 const DOC_OCCUPANCY_OPTIONS = ['임차인점유', '폐문부재', '동거인O', '점유관계미상', '전출'];
+// 현황조사일 줄 — 집행관이 문 앞에서 본 것만 고른다
+const DOC_SURVEY_OPTIONS = ['임차인점유', '폐문부재', '점유관계미상'];
+// 전입일자 줄 — 전입 기록에서 읽히는 것만 고른다 (폐문부재·점유관계미상은 조사일 쪽 말이다)
+const DOC_MOVEIN_OPTIONS = ['임차인점유', '동거인O', '전출'];
 // 세대열람 — 세대주가 올라와 있나 둘 중 하나
 const DOC_HEAD_OPTIONS = ['세대주 있음', '세대주 없음'];
 const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
@@ -4286,14 +4290,15 @@ const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
     id: 'doc.survey', label: '집행관 현황조사',
     lines: [
       { cells: [
-        { kind: 'label', id: 'doc.survey.dateLabel', placeholder: '현황조사일' },
+        { kind: 'label', id: 'doc.survey.dateLabel', placeholder: '조사일' },
         { kind: 'date', id: 'doc.survey.date', placeholder: '날짜입력' },
-        { kind: 'multi', id: 'doc.survey.note', placeholder: '기타사항입력', options: DOC_OCCUPANCY_OPTIONS },
+        { kind: 'multi', id: 'doc.survey.note', placeholder: '기타사항입력', options: DOC_SURVEY_OPTIONS },
       ] },
       { cells: [
         { kind: 'label', id: 'doc.surveyTenant.dateLabel', placeholder: '전입일자' },
         { kind: 'date', id: 'doc.surveyTenant.date', placeholder: '날짜입력' },
-        { kind: 'multi', id: 'doc.surveyTenant.state', placeholder: '기타사항입력', options: DOC_OCCUPANCY_OPTIONS },
+        { kind: 'multi', id: 'doc.surveyTenant.state', placeholder: '기타사항입력', options: DOC_MOVEIN_OPTIONS },
+        { kind: 'text', id: 'doc.surveyTenant.extra', placeholder: '기타입력' },
       ] },
     ],
   },
@@ -5583,11 +5588,11 @@ const goBack = () => router.back();
           </header>
           <div v-if="!isCollapsed('profit')" class="adp-profit-dates">
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
-              <em>낙찰</em>
+              <em>낙찰일</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ auction.wonDate || '날짜입력' }}</span></span>
             </button>
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'sellDate'">
-              <em>매도</em>
+              <em>매도일</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ auction.sellDate || '날짜입력' }}</span></span>
             </button>
             <!-- 표 스텝퍼와 별은 한 묶음 — 자리가 모자라 줄이 내려가도 둘이 같이 내려간다 -->
@@ -5637,7 +5642,7 @@ const goBack = () => router.back();
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scBidPct(sc).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scBidPct(sc)) }}</template>
                 </td>
                 <td class="r emph">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.bid.myBidValue" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(scBid(sc)) }}</strong></template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.bid.myBidValue" class="adp-cell-input" live-group /><template v-else><strong>{{ formatMoney(scBid(sc)) }}</strong></template>
                 </td>
               </tr>
               <tr>
@@ -5646,7 +5651,7 @@ const goBack = () => router.back();
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.loanAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.loanAmount" class="adp-cell-input" /><template v-else>{{ formatMoney(sc.cost.loanAmount) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.loanAmount" class="adp-cell-input" live-group /><template v-else>{{ formatMoney(sc.cost.loanAmount) }}</template>
                 </td>
               </tr>
 
@@ -5657,7 +5662,7 @@ const goBack = () => router.back();
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.acquisitionTaxAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.acquisitionTaxAmount)) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.acquisitionTaxAmount" class="adp-cell-input" @update:model-value="scSyncAcqRate(sc)" /><template v-else>{{ formatMoney(sc.cost.acquisitionTaxAmount) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.acquisitionTaxAmount" class="adp-cell-input" live-group @update:model-value="scSyncAcqRate(sc)" /><template v-else>{{ formatMoney(sc.cost.acquisitionTaxAmount) }}</template>
                 </td>
               </tr>
               <tr>
@@ -5666,7 +5671,7 @@ const goBack = () => router.back();
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.legalCostAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetAmountByPct(sc, 'legalCostAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.legalCostAmount)) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.legalCostAmount" class="adp-cell-input" /><template v-else>{{ formatMoney(sc.cost.legalCostAmount) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.legalCostAmount" class="adp-cell-input" live-group /><template v-else>{{ formatMoney(sc.cost.legalCostAmount) }}</template>
                 </td>
               </tr>
               <tr>
@@ -5675,7 +5680,7 @@ const goBack = () => router.back();
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[0]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[0])) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.midRepaymentAmount" class="adp-cell-input" @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" /><template v-else>{{ formatMoney(sc.cost.midRepaymentAmount) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.midRepaymentAmount" class="adp-cell-input" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" /><template v-else>{{ formatMoney(sc.cost.midRepaymentAmount) }}</template>
                 </td>
               </tr>
               <tr>
@@ -5684,7 +5689,7 @@ const goBack = () => router.back();
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[1]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[1])) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.interestAmount" class="adp-cell-input" @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" /><template v-else>{{ formatMoney(sc.cost.interestAmount) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.interestAmount" class="adp-cell-input" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" /><template v-else>{{ formatMoney(sc.cost.interestAmount) }}</template>
                 </td>
               </tr>
               <tr>
@@ -5693,35 +5698,35 @@ const goBack = () => router.back();
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[2]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[2])) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.brokerageAmount" class="adp-cell-input" @update:model-value="scSyncRowRate(sc, RATE_ROWS[2])" /><template v-else>{{ formatMoney(sc.cost.brokerageAmount) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.brokerageAmount" class="adp-cell-input" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[2])" /><template v-else>{{ formatMoney(sc.cost.brokerageAmount) }}</template>
                 </td>
               </tr>
               <tr>
                 <td><span class="adp-cost-no">⑥</span>미납관리비</td>
                 <td class="r">-</td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.arrearsFee" class="adp-cell-input" /><template v-else>{{ sc.cost.arrearsFee > 0 ? formatMoney(sc.cost.arrearsFee) : '-' }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.arrearsFee" class="adp-cell-input" live-group /><template v-else>{{ sc.cost.arrearsFee > 0 ? formatMoney(sc.cost.arrearsFee) : '-' }}</template>
                 </td>
               </tr>
               <tr>
                 <td><span class="adp-cost-no">⑦</span>수리비</td>
                 <td class="r">-</td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.repairCost" class="adp-cell-input" /><template v-else>{{ sc.cost.repairCost > 0 ? formatMoney(sc.cost.repairCost) : '-' }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.repairCost" class="adp-cell-input" live-group /><template v-else>{{ sc.cost.repairCost > 0 ? formatMoney(sc.cost.repairCost) : '-' }}</template>
                 </td>
               </tr>
               <tr>
                 <td><span class="adp-cost-no">⑧</span>명도비</td>
                 <td class="r">-</td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.evictionCost" class="adp-cell-input" /><template v-else>{{ sc.cost.evictionCost > 0 ? formatMoney(sc.cost.evictionCost) : '-' }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.evictionCost" class="adp-cell-input" live-group /><template v-else>{{ sc.cost.evictionCost > 0 ? formatMoney(sc.cost.evictionCost) : '-' }}</template>
                 </td>
               </tr>
               <tr>
                 <td><span class="adp-cost-no">⑨</span>광고비</td>
                 <td class="r">3.3%</td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.advertisingCost" class="adp-cell-input" /><template v-else>{{ scAdvertising(sc) > 0 ? formatMoney(scAdvertising(sc)) : '-' }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.advertisingCost" class="adp-cell-input" live-group /><template v-else>{{ scAdvertising(sc) > 0 ? formatMoney(scAdvertising(sc)) : '-' }}</template>
                 </td>
               </tr>
               <tr class="hi">
@@ -5738,7 +5743,7 @@ const goBack = () => router.back();
                   <input v-if="editingProfit" :value="scSaleAlt(sc)" class="adp-cell-input note" placeholder="입금가" @input="scSetSaleAlt(sc, ($event.target as HTMLInputElement).value)" /><template v-else>{{ scSaleAlt(sc) }}</template>
                 </td>
                 <td class="r emph">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.sale.expectedSaleValue" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(scSale(sc)) }}</strong></template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.sale.expectedSaleValue" class="adp-cell-input" live-group /><template v-else><strong>{{ formatMoney(scSale(sc)) }}</strong></template>
                 </td>
               </tr>
               <tr>
@@ -5767,7 +5772,7 @@ const goBack = () => router.back();
                   <template v-else>과세표준 <span class="adp-bracket">{{ scBracket(sc) }}</span><span v-if="scDeductionText(sc)" class="adp-bracket"> − {{ scDeductionText(sc) }}</span></template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scTransferTax(sc))" class="adp-cell-input" @update:model-value="scSetIncomeTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scTransferTax(sc)) }}</strong></template>
+                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scTransferTax(sc))" class="adp-cell-input" live-group @update:model-value="scSetIncomeTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scTransferTax(sc)) }}</strong></template>
                 </td>
               </tr>
               <tr>
@@ -5776,7 +5781,7 @@ const goBack = () => router.back();
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="String(scLocalTaxRate(sc))" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ scLocalTaxRate(sc) }}%</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scLocalTax(sc))" class="adp-cell-input" @update:model-value="scSetLocalTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scLocalTax(sc)) }}</strong></template>
+                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scLocalTax(sc))" class="adp-cell-input" live-group @update:model-value="scSetLocalTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scLocalTax(sc)) }}</strong></template>
                 </td>
               </tr>
               <tr class="hi">
@@ -6486,7 +6491,7 @@ const goBack = () => router.back();
                         v-for="(ln, li) in docLines(item)"
                         :key="li"
                         class="adp-rdoc-survey"
-                        :style="{ gridTemplateColumns: `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
+                        :style="{ gridTemplateColumns: ln.cells[0]?.kind === 'label' ? '40px 1.4fr 1fr 1fr' : `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
                       >
                         <template v-for="c in ln.cells" :key="c.id">
                           <span v-if="c.kind === 'label'" class="adp-rdoc-label">{{ c.placeholder }}</span>
@@ -8826,8 +8831,9 @@ const goBack = () => router.back();
 .adp-rdoc-input .ph { color: #9ca3af; }
 /* 적는 칸이 아니라 '무슨 날짜인지' 를 세워 두는 글자 칸 — 옆 칸과 높이만 맞춘다 */
 .adp-rdoc-label {
-  display: flex; align-items: center; height: 30px; padding: 0 2px;
+  display: flex; align-items: center; height: 30px; padding: 0 1px;
   font-size: 10.5px; font-weight: 700; color: #4b5563; white-space: nowrap;
+  letter-spacing: -0.5px;
 }
 /* 한 항목을 두 줄로 쓸 때 줄 사이 간격 */
 .adp-rdoc-survey + .adp-rdoc-survey { margin-top: 4px; }
@@ -8835,11 +8841,11 @@ const goBack = () => router.back();
    (flex는 칸 종류에 따라 폭이 조금씩 달라져 그리드로 고정한다) */
 .adp-rdoc-survey {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: center; gap: 4px;
+  align-items: center; gap: 3px;
 }
 .adp-rdoc-survey > * { min-width: 0; }
 .adp-rdoc-survey .adp-rdoc-input {
-  width: 100%; height: 30px; padding: 0 6px; font-size: 10.5px;
+  width: 100%; height: 30px; padding: 0 4px; font-size: 10.5px;
   display: flex; align-items: center; line-height: 1;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
