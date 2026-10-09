@@ -664,10 +664,20 @@ const loadSamePlaceTrades = async (forceReload = false) => {
     const region = await resolveRegionFromAddress(auction.value.address);
     if (!region) { samePlaceError.value = '주소에서 지역을 찾지 못했습니다.'; return; }
     const here = squash(auction.value?.address ?? '');
-    const mine = (name?: string) => {
+    // 건물명으로 맞춘다 — 주소에 그 이름이 들어 있으면 이 단지 것이다
+    const byName = (name?: string) => {
       const n = squash(name ?? '');
       return n.length > 1 && here.includes(n);
     };
+    // 이름이 없는 물건('검암동 637-2 4층403호')은 이름으로 맞출 수가 없다.
+    // 그때는 동+지번으로 맞춘다 — 같은 지번이면 곧 이 경매지번의 거래다.
+    const lot = squash(lotOnlyAddress.value);
+    const byLot = (umdNm?: string, jibun?: string) => {
+      const d = squash(umdNm ?? '');
+      const j = squash(jibun ?? '');
+      return !!d && !!j && lot.endsWith(`${d}${j}`);
+    };
+    const mine = (name?: string, umdNm?: string, jibun?: string) => byName(name) || byLot(umdNm, jibun);
     // 받은 건 무조건 저장한다. 한 달이라도 실패하면 저장을 건너뛰게 해 뒀더니
     // 매번 처음부터 다시 받고 있었다. 모자란 건 '다시 조회'로 메운다.
     const placeKey = cacheKey(region.lawdCd5, publicTradeType.value, `y${PLACE_HISTORY_YEARS}`);
@@ -686,7 +696,7 @@ const loadSamePlaceTrades = async (forceReload = false) => {
     }
     const { trades, rents, missedMonths } = data;
     const rows: PlaceRow[] = [
-      ...trades.filter((r) => mine(r.apartmentName)).map((r) => ({
+      ...trades.filter((r) => mine(r.apartmentName, r.umdNm, r.jibun)).map((r) => ({
         kind: (/직거래/.test(r.dealType ?? '') ? '직거래' : '매매') as PlaceRow['kind'],
         contractDate: r.contractDate,
         amount: formatWonSimple(r.price),
@@ -694,7 +704,7 @@ const loadSamePlaceTrades = async (forceReload = false) => {
         floor: r.floor,
       })),
       // 전월세는 국토부가 '만원'으로 준다 — 매매(원)와 한 칸에 서니 원으로 맞춰 적는다
-      ...rents.filter((r) => mine(r.apartmentName)).map((r) => ({
+      ...rents.filter((r) => mine(r.apartmentName, r.umdNm, r.jibun)).map((r) => ({
         kind: r.kind as PlaceRow['kind'],
         contractDate: r.contractDate,
         amount: r.monthlyRent > 0
@@ -3442,21 +3452,19 @@ const sendJeonseToMarket = async (row: PlaceRow) => {
   setMktVal(mk('d', 'jReal'), String(Math.round(price)));
   if (row.contractDate) setMktVal(mk('d', 'jYear'), row.contractDate.slice(0, 10).replace(/\./g, '-'));
   if (String(row.floor ?? '').trim()) setMktVal(mk('d', 'jFloor'), String(row.floor).trim());
-  if (Number(row.areaM2) > 0) setMktVal(mk('d', 'jArea'), String(Number(row.areaM2)));
   await persistSurvey();
   flashToast('경매지번 전세 실거래가에 적용하였습니다.', 'success');
 };
 const sendTradePriceToMarket = async (row: PlaceRow) => {
   const price = parsePriceNumber(row.amount);
   if (!Number.isFinite(price) || price <= 0) return;
-  const areaM2 = Number(row.areaM2) || 0;
   setMktVal(mk('d', 'real'), String(Math.round(price)));
   if (row.contractDate) setMktVal(mk('d', 'year'), row.contractDate.slice(0, 10).replace(/\./g, '-'));
   if (String(row.floor ?? '').trim()) setMktVal(mk('d', 'floor'), String(row.floor).trim());
+  // 전용면적은 건드리지 않는다 — 그 칸은 PDF 기본정보(이 호실의 면적)가 쓰는 자리다.
+  // 평단가는 이 호실 면적으로 나눠야 '이 집 기준 평단가'가 된다.
+  const areaM2 = Number(mktVal(mk('d', 'area'))) || Number(row.areaM2) || 0;
   if (areaM2 > 0) {
-    setMktVal(mk('d', 'area'), String(areaM2));
-    setMktVal(mk('b', 'area'), String(areaM2));
-    // 화면에 보이는 평수(소수 2자리)로 나눠야 '전용면적 X 평단가'가 눈으로 검산된다
     const pyeong = Number((areaM2 / PYEONG_TO_M2).toFixed(2));
     if (pyeong > 0) setMktVal(mk('b', 'unit'), String(Math.round(price / pyeong)));
   }
@@ -3467,33 +3475,44 @@ const sendTradePriceToMarket = async (row: PlaceRow) => {
  *  비행기로 한 줄을 고르면 그 줄이 서고, 고르기 전에는 가장 최근 거래가 선다.
  *  표에 그런 거래가 없으면 빈칸으로 둔다 (PDF 평균으로 메우지 않는다 — 이 호실 값이 아니다). */
 watch(
-  [() => auction.value?.id, newestSaleRow, newestJeonseRow],
+  [() => auction.value?.id, newestSaleRow, newestJeonseRow, samePlaceDone, samePlaceMissed],
   () => {
     const sf = surveyForm.value;
     if (!sf) return;
+    // 다 받기 전에는 채우지 않는다 — 못 받은 달이 있으면 '가장 최근' 이 그때그때 달라진다
+    if (!samePlaceDone.value || samePlaceMissed.value > 0) return;
     if (!sf.mktValues) sf.mktValues = {};
     const v = sf.mktValues;
     // 늘 경매물건 칸이다 — mk() 를 쓰면 켜 둔 모드에 따라 유사물건 칸으로 샌다
-    const put = (id: string, value: string) => { if (!v[id] && value) v[id] = value; };
     const ymd = (raw: string) => raw.slice(0, 10).replace(/\./g, '-');
+    let changed = false;
+    const set = (id: string, value: string) => { if ((v[id] ?? '') !== value) { v[id] = value; changed = true; } };
+    const put = (id: string, value: string) => { if (!v[id] && value) { v[id] = value; changed = true; } };
+    // 비행기로 고른 줄은 날짜가 같이 들어온다 — 날짜가 있으면 사람이 고른 줄이니 그대로 둔다.
+    // 날짜가 없는 금액은 표에서 온 값이 아니다(옛 PDF 평균). 표의 가장 최근 거래로 갈아 끼우고,
+    // 표에 거래가 없으면 빈칸으로 둔다 — 이 칸은 표에서만 온다.
     const sale = newestSaleRow.value;
-    if (sale) {
-      const price = Math.round(parsePriceNumber(sale.amount));
-      put('mkt.d.real', String(price));
-      put('mkt.d.year', ymd(sale.contractDate));
-      put('mkt.d.floor', String(sale.floor ?? '').trim());
-      if (Number(sale.areaM2) > 0) {
-        put('mkt.d.area', String(Number(sale.areaM2)));
-        put('mkt.b.area', String(Number(sale.areaM2)));
-      }
+    if (!v['mkt.d.year']) {
+      const price = sale ? Math.round(parsePriceNumber(sale.amount)) : 0;
+      set('mkt.d.real', price > 0 ? String(price) : '');
+      set('mkt.d.year', sale ? ymd(sale.contractDate) : '');
+      set('mkt.d.floor', sale ? String(sale.floor ?? '').trim() : '');
+    }
+    if (sale && Number(sale.areaM2) > 0) {
+      // 전용면적은 PDF 기본정보가 먼저다 — 비어 있을 때만 거래의 면적으로 채운다
+      put('mkt.d.area', String(Number(sale.areaM2)));
+      put('mkt.b.area', String(Number(sale.areaM2)));
     }
     const jeonse = newestJeonseRow.value;
-    if (jeonse) {
-      put('mkt.d.jReal', String(Math.round(jeonse.deposit ?? 0)));
-      put('mkt.d.jYear', ymd(jeonse.contractDate));
-      put('mkt.d.jFloor', String(jeonse.floor ?? '').trim());
-      if (Number(jeonse.areaM2) > 0) put('mkt.d.jArea', String(Number(jeonse.areaM2)));
+    if (!v['mkt.d.jYear']) {
+      set('mkt.d.jReal', jeonse ? String(Math.round(jeonse.deposit ?? 0)) : '');
+      set('mkt.d.jYear', jeonse ? ymd(jeonse.contractDate) : '');
+      set('mkt.d.jFloor', jeonse ? String(jeonse.floor ?? '').trim() : '');
     }
+    // 전세 줄 전용면적도 이 호실의 면적을 쓴다 — 거래마다 면적이 달라도 집은 하나다
+    if (v['mkt.d.area']) put('mkt.d.jArea', v['mkt.d.area']);
+    else if (jeonse && Number(jeonse.areaM2) > 0) put('mkt.d.jArea', String(Number(jeonse.areaM2)));
+    if (changed) void persistSurvey();
   },
   { immediate: true },
 );
