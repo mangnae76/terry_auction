@@ -616,7 +616,7 @@ const createDraftAuction = (): AuctionDetail => ({
     bidRate: 0,
   },
   expectedSaleValue: 0,
-  expectedSaleValue2: 0,
+  expectedSaleValue2: '',
   expectedProfitRate: 0,
   fieldSurvey: {
     occupantNote: '',

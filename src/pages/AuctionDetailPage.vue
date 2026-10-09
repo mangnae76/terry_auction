@@ -1831,7 +1831,7 @@ type ProfitScenario = {
   label: string;
   /** 입찰가를 담은 그릇 — A안은 물건의 metrics 그대로다 */
   bid: { myBidValue: number };
-  sale: { expectedSaleValue: number; expectedSaleValue2?: number };
+  sale: { expectedSaleValue: number; expectedSaleValue2?: string };
   cost: BidCostAnalysis;
   /** 더 만든 표인가 — A안은 지울 수 없다 */
   extra: boolean;
@@ -1871,48 +1871,68 @@ const scTotalCosts = (sc: ProfitScenario) => {
 };
 const scSale = (sc: ProfitScenario) => sc.sale.expectedSaleValue ?? 0;
 /** 예비 매도가 — 적어 두기만 하는 값이다. 어떤 계산에도 쓰지 않는다 */
-const scSaleAlt = (sc: ProfitScenario) => sc.sale.expectedSaleValue2 ?? 0;
+/** 매도가 옆 자유 입력칸. 예전에 숫자 칸이던 때의 0 은 빈칸으로 본다 */
+const scSaleAlt = (sc: ProfitScenario) => {
+  // 예전에 숫자 칸이던 때 저장된 0 도 들어올 수 있어 문자로 맞춰 본다
+  const v = String(sc.sale.expectedSaleValue2 ?? '');
+  return v === '0' ? '' : v;
+};
+const scSetSaleAlt = (sc: ProfitScenario, value: string) => { sc.sale.expectedSaleValue2 = value; };
 const scGain = (sc: ProfitScenario) => scSale(sc) - scBid(sc) - scTotalCosts(sc);
 const scLocalTaxRate = (sc: ProfitScenario) => sc.cost?.localTaxRate ?? 10;
 
-// 종합소득세 누진세율 (사업소득금액 L 기준)
-const progressiveTax = (L: number) => {
-  if (L <= 0) return 0;
-  if (L <= 14_000_000) return L * 0.06;
-  if (L <= 50_000_000) return L * 0.15 - 1_260_000;
-  if (L <= 88_000_000) return L * 0.24 - 5_760_000;
-  if (L <= 150_000_000) return L * 0.35 - 15_440_000;
-  if (L <= 300_000_000) return L * 0.38 - 19_940_000;
-  if (L <= 500_000_000) return L * 0.4 - 25_940_000;
-  if (L <= 1_000_000_000) return L * 0.42 - 35_940_000;
-  return L * 0.45 - 65_940_000;
-};
 // 사업소득 금액이 걸리는 누진세율 구간 — 표의 '과세표준' 옆에 같이 보여 준다
-const taxBracketOf = (L: number) => {
-  if (L <= 0) return '-';
-  if (L <= 14_000_000) return '6%';
-  if (L <= 50_000_000) return '15%';
-  if (L <= 88_000_000) return '24%';
-  if (L <= 150_000_000) return '35%';
-  if (L <= 300_000_000) return '38%';
-  if (L <= 500_000_000) return '40%';
-  if (L <= 1_000_000_000) return '42%';
-  return '45%';
+const taxRateOf = (L: number) => {
+  if (L <= 0) return 0;
+  if (L <= 14_000_000) return 6;
+  if (L <= 50_000_000) return 15;
+  if (L <= 88_000_000) return 24;
+  if (L <= 150_000_000) return 35;
+  if (L <= 300_000_000) return 38;
+  if (L <= 500_000_000) return 40;
+  if (L <= 1_000_000_000) return 42;
+  return 45;
 };
 // 그 구간에서 빼 주는 누진공제 — 세액이 어떻게 나왔는지 눈으로 보려고 같이 띄운다
-const taxDeductionOf = (L: number) => {
-  if (L <= 14_000_000) return '';
-  if (L <= 50_000_000) return '126만';
-  if (L <= 88_000_000) return '576만';
-  if (L <= 150_000_000) return '1,544만';
-  if (L <= 300_000_000) return '1,994만';
-  if (L <= 500_000_000) return '2,594만';
-  if (L <= 1_000_000_000) return '3,594만';
-  return '6,594만';
+const taxDeductOf = (L: number) => {
+  if (L <= 14_000_000) return 0;
+  if (L <= 50_000_000) return 1_260_000;
+  if (L <= 88_000_000) return 5_760_000;
+  if (L <= 150_000_000) return 15_440_000;
+  if (L <= 300_000_000) return 19_940_000;
+  if (L <= 500_000_000) return 25_940_000;
+  if (L <= 1_000_000_000) return 35_940_000;
+  return 65_940_000;
 };
-const scTransferTaxAuto = (sc: ProfitScenario) => progressiveTax(scGain(sc));
-const scBracket = (sc: ProfitScenario) => taxBracketOf(scGain(sc));
-const scDeductionText = (sc: ProfitScenario) => taxDeductionOf(scGain(sc));
+/** 세율·누진공제는 사업소득금액이 걸리는 구간에서 저절로 서지만,
+ *  구간을 달리 보거나 다른 소득과 합산할 때가 있어 손으로도 고칠 수 있게 둔다. */
+const scTaxRate = (sc: ProfitScenario) => sc.cost?.incomeTaxRateManual ?? taxRateOf(scGain(sc));
+const scTaxDeduct = (sc: ProfitScenario) => sc.cost?.incomeTaxDeduct ?? taxDeductOf(scGain(sc));
+const scTransferTaxAuto = (sc: ProfitScenario) => {
+  const L = scGain(sc);
+  if (L <= 0) return 0;
+  return Math.max(0, (L * scTaxRate(sc)) / 100 - scTaxDeduct(sc));
+};
+const scBracket = (sc: ProfitScenario) => (scGain(sc) <= 0 ? '-' : `${scTaxRate(sc)}%`);
+const scDeductionText = (sc: ProfitScenario) => {
+  const d = scTaxDeduct(sc);
+  return d > 0 ? `${Math.round(d / 10_000).toLocaleString('ko-KR')}만` : '';
+};
+/** 세율이나 공제를 고치면 직접 적어 둔 세액은 풀고 다시 자동 계산으로 돌린다 */
+const scSetTaxRate = (sc: ProfitScenario, raw: string) => {
+  const pct = parseFloat(raw);
+  if (!Number.isFinite(pct)) return;
+  sc.cost.incomeTaxRateManual = pct;
+  sc.cost.incomeTaxAmount = undefined;
+  sc.cost.localTaxAmount = undefined;
+};
+const scSetTaxDeduct = (sc: ProfitScenario, raw: string) => {
+  const man = parseFloat(String(raw).replace(/[^\d.-]/g, ''));
+  if (!Number.isFinite(man)) return;
+  sc.cost.incomeTaxDeduct = Math.round(man * 10_000);
+  sc.cost.incomeTaxAmount = undefined;
+  sc.cost.localTaxAmount = undefined;
+};
 // 직접 넣은 금액이 있으면 그것을, 없으면 자동 계산값을 쓴다
 const scTransferTax = (sc: ProfitScenario) => sc.cost?.incomeTaxAmount ?? scTransferTaxAuto(sc);
 const scLocalTaxAuto = (sc: ProfitScenario) => scTransferTax(sc) * (scLocalTaxRate(sc) / 100);
@@ -2066,7 +2086,7 @@ const addProfitScenario = async () => {
   a.bidScenarios.push({
     myBidValue: a.metrics.myBidValue ?? 0,
     expectedSaleValue: a.expectedSaleValue ?? 0,
-    expectedSaleValue2: a.expectedSaleValue2 ?? 0,
+    expectedSaleValue2: a.expectedSaleValue2 ?? '',
     bidCost: JSON.parse(JSON.stringify(a.bidCost)) as BidCostAnalysis,
   });
   await store.saveAuction(a);
@@ -4248,26 +4268,27 @@ type RightsDocItem = {
 };
 // 한 줄 안의 칸 — 날짜 버튼 / 자유 입력 / 여러 개 고르기 / 하나 고르기
 type RightsDocCell = {
-  kind: 'date' | 'text' | 'multi' | 'pick';
+  /** label — 적는 칸이 아니라 '무슨 날짜인지' 를 세워 두는 글자 칸 */
+  kind: 'date' | 'text' | 'multi' | 'pick' | 'label';
   id: string; placeholder: string;
   options?: string[];
   autoOccupancy?: boolean;
 };
 type RightsDocLine = { cells: RightsDocCell[] };
 // 현황조사서·세대열람의 점유 관련 선택칸 — 네 칸 모두 같은 목록을 쓴다
-const DOC_OCCUPANCY_OPTIONS = ['임차인점유', '폐문부재', '동거인O', '점유자미상', '전출'];
+const DOC_OCCUPANCY_OPTIONS = ['임차인점유', '폐문부재', '동거인O', '점유관계미상', '전출'];
 const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
   {
     id: 'doc.survey', label: '집행관 현황조사',
     dateId: 'doc.survey.date', datePlaceholder: '현황조사일',
     fields: [
-      { id: 'doc.survey.occupancy', placeholder: '부동산 점유관계 입력' },
+      { id: 'doc.survey.occupancy', placeholder: '점유관계 입력' },
       { id: 'doc.survey.note', placeholder: '기타사항입력', options: DOC_OCCUPANCY_OPTIONS },
     ],
     line2: {
       dateId: 'doc.surveyTenant.date', datePlaceholder: '전입일자',
       fields: [
-        { id: 'doc.surveyTenant.name', placeholder: '임차인이름 입력' },
+        { id: 'doc.surveyTenant.name', placeholder: '세대주 입력' },
         { id: 'doc.surveyTenant.state', placeholder: '기타사항입력', options: DOC_OCCUPANCY_OPTIONS },
       ],
     },
@@ -4276,13 +4297,13 @@ const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
     id: 'doc.residents', label: '세대열람',
     lines: [
       { cells: [
+        { kind: 'label', id: 'doc.residents.issueLabel', placeholder: '발급일자' },
         { kind: 'date', id: 'doc.residents.issueDate', placeholder: '발급일자' },
-        { kind: 'text', id: 'doc.residents.note1', placeholder: '점유관계 입력' },
         { kind: 'multi', id: 'doc.residents.note2', placeholder: '동거인', options: DOC_OCCUPANCY_OPTIONS },
       ] },
       { cells: [
         { kind: 'date', id: 'doc.residents.date', placeholder: '전입일자' },
-        { kind: 'text', id: 'doc.residents.head', placeholder: '점유관계 입력' },
+        { kind: 'text', id: 'doc.residents.head', placeholder: '세대주 입력' },
         { kind: 'multi', id: 'doc.residents.cohabit', placeholder: '동거인', options: DOC_OCCUPANCY_OPTIONS },
       ] },
     ],
@@ -4922,6 +4943,27 @@ const goBack = () => router.back();
 
       <div class="adp-prop-head">
         <span class="adp-prop-kind">{{ propTypeLabel }}</span>
+        <button
+          type="button"
+          class="adp-star-btn adp-prop-star"
+          :aria-label="`중요도 ${priority}`"
+          title="중요도 (1→2→3)"
+          @click.stop="cyclePriority"
+        >
+          <svg
+            v-for="n in 3"
+            :key="n"
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            :fill="priority >= n ? '#facc15' : 'none'"
+            :stroke="priority >= n ? '#eab308' : '#a8adb8'"
+            stroke-width="2"
+            stroke-linejoin="round"
+          >
+            <polygon points="12 2.6 15 9 22 9.8 17 14.5 18.3 21.4 12 18 5.7 21.4 7 14.5 2 9.8 9 9" />
+          </svg>
+        </button>
         <span class="adp-prop-line">
           <!-- 면적·연식을 매각구분과 한 줄로 이어 모든 탭에서 보여 준다.
                폭이 모자라면 뒤(매각구분)부터 말줄임된다 — 계속 참조하는 면적·연식이 남는다 -->
@@ -5551,27 +5593,6 @@ const goBack = () => router.back();
               <button type="button" aria-label="산정표 삭제" :disabled="profitScenarios.length <= 1" @click.stop="removeProfitScenario">−</button>
               <button type="button" aria-label="산정표 추가" :disabled="profitScenarios.length >= PROFIT_MAX" @click.stop="addProfitScenario">＋</button>
             </span>
-            <button
-              type="button"
-              class="adp-star-btn"
-              :aria-label="`중요도 ${priority}`"
-              title="중요도 (1→2→3)"
-              @click.stop="cyclePriority"
-            >
-              <svg
-                v-for="n in 3"
-                :key="n"
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                :fill="priority >= n ? '#facc15' : 'none'"
-                :stroke="priority >= n ? '#eab308' : '#a8adb8'"
-                stroke-width="2"
-                stroke-linejoin="round"
-              >
-                <polygon points="12 2.6 15 9 22 9.8 17 14.5 18.3 21.4 12 18 5.7 21.4 7 14.5 2 9.8 9 9" />
-              </svg>
-            </button>
             </span>
           </div>
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
@@ -5710,7 +5731,7 @@ const goBack = () => router.back();
                 <td><strong>예상 매도가</strong></td>
                 <!-- 예비 칸 — 'B안이면 얼마'를 옆에 적어 두는 자리. 계산에는 들어가지 않는다 -->
                 <td class="r adp-sale-alt">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.sale.expectedSaleValue2" class="adp-cell-input" placeholder="예비" /><template v-else>{{ scSaleAlt(sc) > 0 ? formatMoney(scSaleAlt(sc)) : '' }}</template>
+                  <input v-if="editingProfit" :value="scSaleAlt(sc)" class="adp-cell-input note" placeholder="입금가" @input="scSetSaleAlt(sc, ($event.target as HTMLInputElement).value)" /><template v-else>{{ scSaleAlt(sc) }}</template>
                 </td>
                 <td class="r emph">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.sale.expectedSaleValue" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(scSale(sc)) }}</strong></template>
@@ -5733,7 +5754,14 @@ const goBack = () => router.back();
               </tr>
               <tr>
                 <td><strong>사업소득세</strong></td>
-                <td class="r adp-formula">과세표준 <span class="adp-bracket">{{ scBracket(sc) }}</span><span v-if="scDeductionText(sc)" class="adp-bracket"> − {{ scDeductionText(sc) }}</span></td>
+                <td class="r adp-formula">
+                  <template v-if="editingProfit">
+                    <span class="adp-pct-wrap"><input :value="scTaxRate(sc)" inputmode="decimal" class="adp-cell-input xs" @input="limitPct" @change="scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span>
+                    −
+                    <span class="adp-pct-wrap"><input :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" class="adp-cell-input xs" @change="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">만</span></span>
+                  </template>
+                  <template v-else>과세표준 <span class="adp-bracket">{{ scBracket(sc) }}</span><span v-if="scDeductionText(sc)" class="adp-bracket"> − {{ scDeductionText(sc) }}</span></template>
+                </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scTransferTax(sc))" class="adp-cell-input" @update:model-value="scSetIncomeTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scTransferTax(sc)) }}</strong></template>
                 </td>
@@ -6457,8 +6485,9 @@ const goBack = () => router.back();
                         :style="{ gridTemplateColumns: `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
                       >
                         <template v-for="c in ln.cells" :key="c.id">
+                          <span v-if="c.kind === 'label'" class="adp-rdoc-label">{{ c.placeholder }}</span>
                           <button
-                            v-if="c.kind === 'date'"
+                            v-else-if="c.kind === 'date'"
                             type="button"
                             class="adp-rdoc-input adp-date-btn date"
                             @click="docDatePickerId = c.id"
@@ -8153,6 +8182,11 @@ const goBack = () => router.back();
 }
 .adp-pdf-btn img { width: 11px; height: 11px; object-fit: contain; }
 .adp-pdf-btn:active { background: #f2f6ff; }
+/* 중요도 별 — 접기 버튼과 같은 열(3)의 윗줄. 둘 다 오른쪽 끝에 붙어 끝선이 맞는다 */
+.adp-prop-star {
+  grid-column: 3; grid-row: 1; justify-self: end; align-self: center;
+  margin-left: 0; height: 22px;
+}
 .adp-fold-all {
   grid-column: 3; grid-row: 2; justify-self: end; align-self: center;
   border: 1px solid #e3e8f0; background: #fff; border-radius: 8px;
@@ -8621,6 +8655,11 @@ const goBack = () => router.back();
   background: #fff; color: #111827; outline: none;
 }
 .adp-cell-input.sm { max-width: 64px; }
+/* 과세표준 줄에 세율·공제 둘이 같이 서야 해서 한 칸 더 좁은 입력칸 */
+.adp-cell-input.xs { max-width: 44px; padding: 4px 4px; }
+/* 매도가 옆 자유 입력칸 — 숫자가 아니라 메모라 왼쪽부터 쓴다 */
+.adp-cell-input.note { text-align: left; }
+.adp-cell-input::placeholder { color: #9ca3af; }
 .adp-cell-input:focus { border-color: #2b6df3; }
 /* %는 직접 숫자만 입력한다 — 스피너 화살표를 쓰지 않는다 */
 .adp-cell-input::-webkit-outer-spin-button,
@@ -8781,6 +8820,11 @@ const goBack = () => router.back();
   cursor: pointer; text-align: left;
 }
 .adp-rdoc-input .ph { color: #9ca3af; }
+/* 적는 칸이 아니라 '무슨 날짜인지' 를 세워 두는 글자 칸 — 옆 칸과 높이만 맞춘다 */
+.adp-rdoc-label {
+  display: flex; align-items: center; height: 30px; padding: 0 2px;
+  font-size: 10.5px; font-weight: 700; color: #4b5563; white-space: nowrap;
+}
 /* 한 항목을 두 줄로 쓸 때 줄 사이 간격 */
 .adp-rdoc-survey + .adp-rdoc-survey { margin-top: 4px; }
 /* 현황조사서·세대열람·문건송달 행 — 세 칸을 정확히 3등분해 행마다 같은 자리에 오게 한다.

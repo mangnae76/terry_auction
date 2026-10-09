@@ -161,6 +161,11 @@ export interface BidCostAnalysis {
   salePrice: number;
   incomeTaxRate: number;
   localTaxRate: number;
+  /** 과세표준 세율(%)·누진공제(원)을 손으로 고쳤을 때의 값.
+   *  비우면 사업소득금액이 걸리는 구간의 기본값을 쓴다.
+   *  (위의 incomeTaxRate 는 옛 화면이 쓰는 값이라 건드리지 않는다) */
+  incomeTaxRateManual?: number;
+  incomeTaxDeduct?: number;
   loanAmount: number;
   acquisitionTaxAmount: number;
   legalCostAmount: number;
@@ -178,7 +183,7 @@ export interface BidCostAnalysis {
 export interface BidScenario {
   myBidValue: number;
   expectedSaleValue: number;
-  expectedSaleValue2?: number;
+  expectedSaleValue2?: string;
   bidCost: BidCostAnalysis;
 }
 
@@ -440,8 +445,8 @@ export interface AuctionDetail {
   oppositionStatus: '대항력O' | '대항력X';
   metrics: AuctionMetrics;
   expectedSaleValue: number;
-  /** 예비 매도가 — 'B안이면 얼마' 를 옆에 적어 두는 칸. 계산에는 들어가지 않는다 */
-  expectedSaleValue2?: number;
+  /** 매도가 옆 자유 입력칸(입금가·메모) — 비고처럼 아무 말이나 적는다. 계산에 안 들어간다 */
+  expectedSaleValue2?: string;
   expectedProfitRate: number;
   /** A안 말고 더 만든 산정표 (B안·C안…) */
   bidScenarios?: BidScenario[];
