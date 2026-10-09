@@ -1840,6 +1840,8 @@ const totalCosts = computed(() => {
     + advertisingNet.value;
 });
 const expectedSale = computed(() => auction.value?.expectedSaleValue ?? 0);
+/** 예비 매도가 — 적어 두기만 하는 값이다. 어떤 계산에도 쓰지 않는다 */
+const expectedSaleAlt = computed(() => auction.value?.expectedSaleValue2 ?? 0);
 const capitalGain = computed(() => expectedSale.value - myBid.value - totalCosts.value);
 const localTaxRate = computed(() => bc.value?.localTaxRate ?? 10);
 // 입찰보증금 — PDF 값이 있으면 그걸, 없으면 최저가의 10%
@@ -5654,7 +5656,10 @@ const goBack = () => router.back();
               <tr class="pink">
                 <td rowspan="8" class="adp-cat">수익</td>
                 <td><strong>예상 매도가</strong></td>
-                <td class="r"></td>
+                <!-- 예비 칸 — 'B안이면 얼마'를 옆에 적어 두는 자리. 계산에는 들어가지 않는다 -->
+                <td class="r adp-sale-alt">
+                  <FormattedNumberInput v-if="editingProfit" v-model="auction.expectedSaleValue2" class="adp-cell-input" placeholder="예비" /><template v-else>{{ expectedSaleAlt > 0 ? formatMoney(expectedSaleAlt) : '' }}</template>
+                </td>
                 <td class="r emph">
                   <FormattedNumberInput v-if="editingProfit" v-model="auction.expectedSaleValue" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(expectedSale) }}</strong></template>
                 </td>
@@ -8598,6 +8603,11 @@ const goBack = () => router.back();
 .adp-profit-table td:not(.r):not(.adp-cat) { white-space: nowrap; }
 /* 머리줄까지 꺾이면 표 위가 두 줄이 된다 — '구분' 두 글자는 붙여 둔다 */
 .adp-profit-table thead th { white-space: nowrap; }
+/* 바로 아래 개인소득세율 표도 같은 간격으로 — 두 표의 줄 높이가 다르면 따로 논다 */
+.adp-tax-ref th, .adp-tax-ref td { padding: 7px 5px; }
+/* 예비 매도가 — 본 매도가 옆에 흐리게 선다. 계산에 안 들어가는 값이라 눈을 끌 필요가 없다 */
+.adp-profit-table td.adp-sale-alt { color: #9ca3af; font-weight: 600; }
+.adp-profit-table td.adp-sale-alt .adp-cell-input { color: #6b7280; }
 
 .adp-tax-ref thead th { background: #1f3a72; color: #fff; }
 .adp-tax-ref td:last-child { color: #374151; font-weight: 400; }

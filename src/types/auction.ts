@@ -431,6 +431,8 @@ export interface AuctionDetail {
   oppositionStatus: '대항력O' | '대항력X';
   metrics: AuctionMetrics;
   expectedSaleValue: number;
+  /** 예비 매도가 — 'B안이면 얼마' 를 옆에 적어 두는 칸. 계산에는 들어가지 않는다 */
+  expectedSaleValue2?: number;
   expectedProfitRate: number;
   fieldSurvey: FieldSurvey;
   rights: RightsAnalysis;
