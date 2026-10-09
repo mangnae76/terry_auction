@@ -1407,6 +1407,8 @@ const resetPublicFilters = () => {
   populatePublicRangeDefaults(12);
   navActive.value = { pyeong: '', floor: '', year: '' };
   publicColFilters.value = { ...publicColFilters.value, floor: new Set<string>() };
+  // 표 안에서 찾던 말도 같이 지운다 — 조건은 처음인데 줄만 줄어 있으면 비어 보인다
+  pubSearch.value = '';
 };
 
 const searchPublicTrades = async () => {
@@ -1518,6 +1520,45 @@ const pubCancelledRows = ref<RealTradeMatchRow[]>([]);
 const filteredCancelledRows = computed(() => pubCancelledRows.value);
 const pubCancelledCollapsed = ref(true);
 const pubDirectCollapsed = ref(true);
+
+// === 검색리스트 안에서 찾기 ===
+// 선정물건리스트의 검색창과 같은 방식 — 한 칸에 적으면 줄 전체를 훑는다.
+// 머리글 ▼ 거르기와는 역할이 다르다. 거르기는 '조건'이라 평균·③ 조건분석까지
+// 바뀌지만, 이 검색은 '찾기'라 보이는 줄만 줄인다. 찾다가 결론이 흔들리면 안 된다.
+const pubSearch = ref('');
+/** 띄어쓰기·대소문자는 무시한다 — '검암동 493' 과 '검암동493' 이 같이 걸리게 */
+const squish = (v: string) => v.replace(/\s+/g, '').toLowerCase();
+/** 한 줄에서 찾을 수 있는 글자 모음. 화면에 보이는 모양과 날 값을 둘 다 담는다 —
+ *  '146,000,000' 으로도 '146000000' 으로도 찾을 수 있어야 한다. */
+const pubRowHaystack = (r: RealTradeMatchRow) => squish([
+  r.contractDate ?? '',
+  formatWonSimple(r.price), String(r.price ?? ''),
+  areaWithPyeong(r.areaM2), String(r.areaM2 ?? ''),
+  normalizeHouseType(r.houseType),
+  r.buildYear ? String(r.buildYear) : '', buildYearAge(r.buildYear),
+  r.floor ?? '',
+  rowAddress(r),
+].join(' '));
+/** 적은 말과, 쉼표를 뺀 말 — 둘 중 하나만 걸려도 찾은 것으로 본다 */
+const pubSearchKeys = computed(() => {
+  const q = squish(pubSearch.value);
+  if (!q) return [];
+  const bare = q.replace(/,/g, '');
+  return bare === q ? [q] : [q, bare];
+});
+const pubSearchHit = (r: RealTradeMatchRow) => {
+  const keys = pubSearchKeys.value;
+  if (keys.length === 0) return true;
+  const hay = pubRowHaystack(r);
+  return keys.some((k) => hay.includes(k));
+};
+const shownPubRows = computed(() => filteredPublicTradeRows.value.filter(pubSearchHit));
+const shownDirectRows = computed(() => filteredDirectRows.value.filter(pubSearchHit));
+const shownCancelledRows = computed(() => filteredCancelledRows.value.filter(pubSearchHit));
+/** 세 표를 통틀어 몇 줄이 걸렸나 — 지금 접혀 있는 표에서 걸린 것도 세어 준다 */
+const pubSearchCount = computed(() => (
+  shownPubRows.value.length + shownDirectRows.value.length + shownCancelledRows.value.length
+));
 // 둘을 동시에 펼치면 서로 가려 눌러도 반응이 없는 것처럼 보인다 — 하나만 열리게 한다
 // 셋 중 하나만 펼친다 — 두 표가 겹쳐 뜨면 어느 쪽 숫자인지 헷갈린다
 const toggleTradeList = () => {
@@ -5991,6 +6032,20 @@ const goBack = () => router.back();
                     <img :src="chevronDownIcon" :class="['adp-chev sm', { up: pubCancelledCollapsed }]" alt="" />
                   </button>
                 </div>
+                <div class="adp-pub-find">
+                  <svg class="adp-pub-find-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+                  </svg>
+                  <input
+                    v-model="pubSearch"
+                    type="search"
+                    class="adp-pub-find-input"
+                    placeholder="계약일·금액·면적·건축년도·층·주소 검색..."
+                    aria-label="검색리스트 안에서 찾기"
+                  />
+                  <small v-if="pubSearch.trim()" class="adp-pub-find-count">{{ pubSearchCount }}건</small>
+                  <button v-if="pubSearch" type="button" class="adp-pub-find-x" aria-label="검색어 지우기" @click="pubSearch = ''">×</button>
+                </div>
                 <div v-if="!pubDirectCollapsed && filteredDirectRows.length > 0" class="adp-pub-direct-list">
                   <p class="adp-pub-direct-note">시세와 동떨어진 경우가 많아 집계에서 뺐습니다.</p>
                   <table class="adp-table adp-pub-table">
@@ -6008,7 +6063,7 @@ const goBack = () => router.back();
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="(r, i) in filteredDirectRows" :key="`d${i}`">
+                      <tr v-for="(r, i) in shownDirectRows" :key="`d${i}`">
                         <td>{{ r.contractDate || '-' }}</td>
                         <td>{{ formatWonSimple(r.price) }}</td>
                         <td class="adp-area-cell">
@@ -6031,6 +6086,9 @@ const goBack = () => router.back();
                             </button>
                           </div>
                         </td>
+                      </tr>
+                      <tr v-if="shownDirectRows.length === 0">
+                        <td colspan="6" class="adp-pub-empty-row">검색어에 맞는 거래가 없습니다.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -6052,7 +6110,7 @@ const goBack = () => router.back();
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="(r, i) in filteredCancelledRows" :key="`c${i}`">
+                      <tr v-for="(r, i) in shownCancelledRows" :key="`c${i}`">
                         <td>{{ r.contractDate || '-' }}</td>
                         <td>{{ formatWonSimple(r.price) }}</td>
                         <td class="adp-area-cell">
@@ -6075,6 +6133,9 @@ const goBack = () => router.back();
                             </button>
                           </div>
                         </td>
+                      </tr>
+                      <tr v-if="shownCancelledRows.length === 0">
+                        <td colspan="6" class="adp-pub-empty-row">검색어에 맞는 거래가 없습니다.</td>
                       </tr>
                     </tbody>
                   </table>
@@ -6117,7 +6178,7 @@ const goBack = () => router.back();
                     </tr>
                   </thead>
                   <tbody v-if="!pubTableCollapsed">
-                    <tr v-for="(r, i) in filteredPublicTradeRows" :key="i">
+                    <tr v-for="(r, i) in shownPubRows" :key="i">
                       <td>{{ r.contractDate || '-' }}</td>
                       <td>{{ formatWonSimple(r.price) }}</td>
                       <td class="adp-area-cell">
@@ -6141,8 +6202,8 @@ const goBack = () => router.back();
                         </div>
                       </td>
                     </tr>
-                    <tr v-if="filteredPublicTradeRows.length === 0">
-                      <td colspan="6" class="adp-pub-empty-row">필터 조건에 맞는 거래가 없습니다.</td>
+                    <tr v-if="shownPubRows.length === 0">
+                      <td colspan="6" class="adp-pub-empty-row">{{ pubSearch.trim() ? '검색어에 맞는 거래가 없습니다.' : '필터 조건에 맞는 거래가 없습니다.' }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -10032,6 +10093,28 @@ const goBack = () => router.back();
 }
 /* UPDATE 는 제목 줄의 오른쪽 끝 — 아래 계약해제 칸의 오른쪽 모서리와 맞는다 */
 .adp-pub-update { flex: 0 1 auto; min-width: 0; margin-left: auto; padding-right: 2px; }
+/* 표 안에서 찾기 — 선정물건리스트의 검색창과 같은 모양을 카드 폭에 맞춰 줄였다 */
+.adp-pub-find {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 8px; padding: 0 9px;
+  box-sizing: border-box; height: 30px;
+  border: 1px solid #d5dbe6; border-radius: 8px; background: #fff;
+}
+.adp-pub-find-ico { width: 14px; height: 14px; flex: none; color: #9ca3af; }
+.adp-pub-find-input {
+  flex: 1 1 auto; min-width: 0;
+  border: none; outline: none; background: transparent;
+  font-size: 11.5px; font-weight: 400; color: #111827;
+}
+.adp-pub-find-input::placeholder { color: #aab2c0; }
+/* 돋보기 검색칸의 기본 'x' 는 모양을 못 고쳐 지우고 우리 것을 쓴다 */
+.adp-pub-find-input::-webkit-search-cancel-button { display: none; }
+.adp-pub-find-count { flex: none; font-size: 10.5px; font-weight: 700; color: #2a5fbf; white-space: nowrap; }
+.adp-pub-find-x {
+  flex: none; width: 18px; height: 18px; padding: 0;
+  border: none; border-radius: 50%; background: #eef1f6;
+  font-size: 13px; line-height: 1; color: #6b7280; cursor: pointer;
+}
 /* 목록을 펼쳤을 때 표 위에 붙는 한 줄 안내 */
 .adp-pub-list-note { margin: 0 2px 6px; font-size: 10.5px; font-weight: 400; color: #6b7280; }
 /* 제외한 직거래 건수 — 실거래 박스와 같은 규격 */
