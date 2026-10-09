@@ -3453,7 +3453,7 @@ const sendJeonseToMarket = async (row: PlaceRow) => {
   if (row.contractDate) setMktVal(mk('d', 'jYear'), row.contractDate.slice(0, 10).replace(/\./g, '-'));
   if (String(row.floor ?? '').trim()) setMktVal(mk('d', 'jFloor'), String(row.floor).trim());
   await persistSurvey();
-  flashToast('경매지번 전세 실거래가에 적용하였습니다.', 'success');
+  flashToast('손품+현장 경매지번 전세 실거래가에 적용하였습니다.', 'success');
 };
 const sendTradePriceToMarket = async (row: PlaceRow) => {
   const price = parsePriceNumber(row.amount);
@@ -3469,7 +3469,7 @@ const sendTradePriceToMarket = async (row: PlaceRow) => {
     if (pyeong > 0) setMktVal(mk('b', 'unit'), String(Math.round(price / pyeong)));
   }
   await persistSurvey();
-  flashToast('경매지번 실거래가에 적용하였습니다.', 'success');
+  flashToast('손품+현장 경매지번 실거래가에 적용하였습니다.', 'success');
 };
 /** ② 경매지번 실거래가를 채운다 — 값은 가격정보의 '경매지번 실거래가' 표에서만 온다.
  *  비행기로 한 줄을 고르면 그 줄이 서고, 고르기 전에는 가장 최근 거래가 선다.
