@@ -3959,6 +3959,7 @@ const concAuto = (col: string, row: string): string => {
   if (col === 'mean') {
     if (row !== 'unit' && row !== 'price') return '';
     const nums = CONC_MEAN_SRC
+      .filter((k) => !concMeanOff(k))
       .map((k) => (row === 'unit' ? parseDigits(concVal(k, 'unit')) : concPriceValue(k)))
       .filter((n) => n > 0);
     if (nums.length === 0) return '';
@@ -3987,6 +3988,20 @@ const concAuto = (col: string, row: string): string => {
  *  손으로 덮어쓸 수 있어야 한다. 자동으로 채워 두는 칸(case.areaM2 같은)과 섞이지 않게
  *  'fix:' 를 붙여 따로 담는다 — 지우면 다시 비추는 값으로 돌아간다. */
 const CONC_FIX = 'fix:';
+/** 평균에서 뺀 칸 — 체크를 풀면 그 칸은 평균 계산에 들어가지 않는다.
+ *  값을 지우는 게 아니라 '이번 평균에는 넣지 말자' 는 표시라, 칸의 숫자는 그대로 남는다. */
+const CONC_OFF = 'meanOff:';
+const concMeanOff = (col: string): boolean => {
+  const sf = surveyForm.value as unknown as Record<string, unknown>;
+  return (sf?.mktConcValues as Record<string, string> | undefined)?.[`${CONC_OFF}${col}`] === '1';
+};
+const toggleConcMean = async (col: string) => {
+  const sf = surveyForm.value as unknown as Record<string, unknown>;
+  if (!sf) return;
+  const cur = (sf.mktConcValues as Record<string, string> | undefined) ?? {};
+  sf.mktConcValues = { ...cur, [`${CONC_OFF}${col}`]: concMeanOff(col) ? '' : '1' };
+  await persistSurvey();
+};
 const concFix = (col: string, row: string): string => {
   const sf = surveyForm.value as unknown as Record<string, unknown>;
   return (sf?.mktConcValues as Record<string, string> | undefined)?.[`${CONC_FIX}${col}.${row}`] ?? '';
@@ -7691,14 +7706,18 @@ const goBack = () => router.back();
               <table :class="['adp-table', 'adp-mkt-table', 'fit', 'adp-dm-tbl', 'adp-conc-table', { 'bold-price': t.boldPrice }]">
                 <thead>
                   <tr>
-                    <th v-for="c in t.cols" :key="c.key" :class="c.tone">
+                    <th v-for="c in t.cols" :key="c.key" :class="[c.tone, { off: concMeanOff(c.key) }]">
+                      <!-- 체크를 풀면 그 칸은 평균에서 빠진다. 값은 그대로 남는다 -->
+                      <label v-if="CONC_MEAN_SRC.includes(c.key)" class="adp-conc-pick">
+                        <input type="checkbox" :checked="!concMeanOff(c.key)" @change="toggleConcMean(c.key)" />
+                      </label>
                       {{ c.label }}<small v-if="c.note">{{ c.note }}</small>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="r in MKT_CONC_ROWS" :key="r.key">
-                    <td v-for="c in t.cols" :key="c.key" :class="['num', { mean: c.key === 'mean' }]">
+                    <td v-for="c in t.cols" :key="c.key" :class="['num', { mean: c.key === 'mean', off: concMeanOff(c.key) }]">
                       <!-- 면적 — ㎡ 와 평을 같이 적는다. 한쪽만 적어도 나머지가 따라온다 -->
                       <template v-if="r.key === 'area'">
                         <template v-if="concEditable(c.key, 'area')">
@@ -9128,6 +9147,11 @@ const goBack = () => router.back();
    .hi 가 색을 잡고 있어 선택자를 한 단계 좁혀야 이긴다 */
 .adp-conc-table .adp-conc-v.typed,
 .adp-conc-table .adp-conc-v.hi.typed { color: #2b6df3; }
+/* 평균에서 뺀 칸 — 숫자는 남기되 흐리게 해서 '이건 안 셌다' 가 보이게 한다 */
+.adp-conc-table th.off, .adp-conc-table td.off { opacity: 0.45; }
+/* 머리줄의 체크 — 이름 왼쪽에 작게 */
+.adp-conc-pick { display: block; line-height: 0; margin-bottom: 2px; }
+.adp-conc-pick input { width: 13px; height: 13px; margin: 0; accent-color: #2b6df3; }
 /* 평균 칸 — 여러 칸을 모아 낸 값이라 금액처럼 파랗게, 굵게 세운다 */
 .adp-conc-table td.mean .adp-conc-v { color: #2b6df3; font-weight: 800; }
 /* 시세 결론의 마지막 '가격' 줄 — 견주는 표의 결론이라 줄 전체를 굵게 */
