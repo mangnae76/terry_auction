@@ -6489,7 +6489,7 @@ const goBack = () => router.back();
                         v-for="(ln, li) in docLines(item)"
                         :key="li"
                         class="adp-rdoc-survey"
-                        :style="{ gridTemplateColumns: ln.cells[0]?.kind === 'label' ? '32px 1.35fr 1fr 1fr' : `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
+                        :style="{ gridTemplateColumns: ln.cells[0]?.kind === 'label' ? '30px 67px 1fr 1fr' : `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
                       >
                         <template v-for="c in ln.cells" :key="c.id">
                           <span v-if="c.kind === 'label'" class="adp-rdoc-label">{{ c.placeholder }}</span>
@@ -8875,6 +8875,9 @@ const goBack = () => router.back();
 .adp-rdoc-survey input.adp-rdoc-input { display: block; line-height: 28px; }
 .adp-rdoc-survey .adp-date-btn > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .adp-rdoc-survey .adp-date-caret { flex: 0 0 auto; }
+/* 날짜칸은 글자 길이가 정해져 있다 — 안쪽 여백을 줄여 폭을 아끼고
+   남는 자리를 옆의 고르는 칸·적는 칸에 넘긴다 */
+.adp-rdoc-survey .adp-date-btn { padding: 0 2px; gap: 2px; }
 /* 문건송달 내역 — 확인 문구를 한 줄 쓰고 비고는 그 아래 줄에 길게 둔다 */
 .adp-rdoc-task.inline { grid-column: 1 / -1; min-width: 0; align-self: center; white-space: normal; }
 .adp-rdoc-task.inline + .adp-rdoc-input { grid-column: 1 / -1; margin-top: 4px; }
