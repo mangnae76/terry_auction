@@ -2097,24 +2097,22 @@ const BID_COST_DEFAULT_RATES: Array<[BidCostAmountKey, number]> = [
   ['acquisitionTaxAmount', 1.1],
   ['legalCostAmount', 0.5],
 ];
-/** 손으로 고친 비중을 기본값으로 되돌린다. 입찰가는 건드리지 않는다 —
- *  그건 사용자가 정하는 값이지 기본값이 있는 자리가 아니다. */
-const resetBidCostRates = () => {
+/** 손으로 고친 비중을 그 표만 기본값으로 되돌린다. 입찰가는 건드리지 않는다 —
+ *  그건 사용자가 정하는 값이지 기본값이 있는 자리가 아니다.
+ *  표가 여럿이면 A안을 되돌리다 B안까지 지워지면 안 되므로 표 단위로 건다. */
+const resetScenarioRates = (sc: ProfitScenario) => {
   askConfirm({
-    title: '비중을 기본값으로 되돌릴까요?',
-    desc: '대출 80% · 취득세 1.10% · 법무비 0.50% 로 다시 계산합니다. 산정표가 여럿이면 모두 되돌립니다. 입찰가는 그대로 둡니다.',
+    title: `${sc.label} 비중을 기본값으로 되돌릴까요?`,
+    desc: '대출 80% · 취득세 1.10% · 법무비 0.50% 로 다시 계산합니다. 이 표만 바뀌고, 입찰가는 그대로 둡니다.',
     okLabel: '되돌리기',
     skipKey: 'adp.skip.resetBidCost',
     run: async () => {
-      if (!auction.value) return;
-      profitScenarios.value.forEach((sc) => {
-        if (!sc.cost) return;
-        BID_COST_DEFAULT_RATES.forEach(([key, pct]) => scSetAmountByPct(sc, key, pct));
-        // 취득세는 비율을 따로 들고 있다 — 입찰가가 바뀔 때 이 비율로 다시 계산된다
-        sc.cost.acquisitionTaxRate = 1.1;
-      });
+      if (!auction.value || !sc.cost) return;
+      BID_COST_DEFAULT_RATES.forEach(([key, pct]) => scSetAmountByPct(sc, key, pct));
+      // 취득세는 비율을 따로 들고 있다 — 입찰가가 바뀔 때 이 비율로 다시 계산된다
+      sc.cost.acquisitionTaxRate = 1.1;
       await store.saveAuction(auction.value);
-      flashToast('비중을 기본값으로 되돌렸습니다.', 'success');
+      flashToast(`${sc.label} 비중을 기본값으로 되돌렸습니다.`, 'success');
     },
   });
 };
@@ -5539,26 +5537,20 @@ const goBack = () => router.back();
           </header>
           <div v-if="!isCollapsed('profit')" class="adp-profit-dates">
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
-              <em>낙찰일</em>
+              <em>낙찰</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ auction.wonDate || '날짜입력' }}</span></span>
             </button>
-            <span class="adp-pd-sep">|</span>
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'sellDate'">
-              <em>매도일</em>
+              <em>매도</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ auction.sellDate || '날짜입력' }}</span></span>
             </button>
-            <!-- 초기화와 별은 한 묶음 — 자리가 모자라 줄이 내려가도 둘이 같이 내려간다 -->
+            <!-- 표 스텝퍼와 별은 한 묶음 — 자리가 모자라 줄이 내려가도 둘이 같이 내려간다 -->
             <span class="adp-pd-tail">
             <span class="adp-mkt-step">
               <span class="lab">표</span>
               <button type="button" aria-label="산정표 삭제" :disabled="profitScenarios.length <= 1" @click.stop="removeProfitScenario">−</button>
               <button type="button" aria-label="산정표 추가" :disabled="profitScenarios.length >= PROFIT_MAX" @click.stop="addProfitScenario">＋</button>
             </span>
-            <button type="button" class="adp-pd-reset" title="대출·취득세·법무비 비중을 기본값으로" @click.stop="resetBidCostRates">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" />
-              </svg>초기화
-            </button>
             <button
               type="button"
               class="adp-star-btn"
@@ -5584,7 +5576,14 @@ const goBack = () => router.back();
           </div>
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
           <template v-for="(sc, si) in profitScenarios" :key="sc.label">
-          <p v-if="!isCollapsed('profit') && profitScenarios.length > 1" class="adp-profit-label">{{ sc.label }}</p>
+          <div v-if="!isCollapsed('profit')" class="adp-profit-head-row">
+            <span v-if="profitScenarios.length > 1" class="adp-profit-label">{{ sc.label }}</span>
+            <button type="button" class="adp-pd-reset" title="이 표의 대출·취득세·법무비 비중을 기본값으로" @click.stop="resetScenarioRates(sc)">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" />
+              </svg>초기화
+            </button>
+          </div>
           <table v-if="!isCollapsed('profit')" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0 }]">
             <thead>
               <tr><th>구분</th><th>상세</th><th class="r">비중 (%)</th><th class="r">금액</th></tr>
@@ -5594,23 +5593,17 @@ const goBack = () => router.back();
                 <td rowspan="3" class="adp-cat">입찰정보</td>
                 <td>감정가</td>
                 <td class="r"></td>
-                <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.metrics.appraisalValue" class="adp-cell-input" /><template v-else>{{ formatMoney(apprValue) }}</template>
-                </td>
+                <td class="r">{{ formatMoney(apprValue) }}</td>
               </tr>
               <tr>
                 <td>{{ auction.auctionRound ? `${auction.auctionRound}(최저가)` : '최저가' }}</td>
                 <td class="r">{{ apprValue > 0 ? formatPct((auction.metrics.minimumBidValue / apprValue) * 100) : '' }}</td>
-                <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.metrics.minimumBidValue" class="adp-cell-input" /><template v-else>{{ formatMoney(auction.metrics.minimumBidValue) }}</template>
-                </td>
+                <td class="r">{{ formatMoney(auction.metrics.minimumBidValue) }}</td>
               </tr>
               <tr>
                 <td>보증금</td>
                 <td class="r blue">10%</td>
-                <td class="r blue">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.metrics.depositValue" class="adp-cell-input" /><template v-else>{{ formatMoney(bidDeposit) }}</template>
-                </td>
+                <td class="r blue">{{ formatMoney(bidDeposit) }}</td>
               </tr>
               <tr class="hi">
                 <td rowspan="2" class="adp-cat"></td>
@@ -8555,22 +8548,24 @@ const goBack = () => router.back();
 /* 날짜 둘 + 비중 초기화 + 별. 자리가 모자라면 줄을 내린다 —
    억지로 한 줄에 담으면 '낙찰일' 같은 글자가 세로로 쪼개진다 */
 .adp-profit-dates {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding: 8px 2px 12px; border-bottom: 1px solid #eef1f6; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 8px 0 12px; border-bottom: 1px solid #eef1f6; margin-bottom: 10px;
 }
 .adp-pd-item {
   border: none; background: transparent; padding: 0; cursor: pointer;
   display: inline-flex; align-items: baseline; gap: 6px;
 }
-.adp-pd-item em { font-style: normal; font-size: 12.5px; font-weight: 500; color: #111827; white-space: nowrap; }
+.adp-pd-item { gap: 4px; }
+.adp-pd-item em { font-style: normal; font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; }
 .adp-pd-box {
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   border: 1px solid #e5e7eb; border-radius: 8px;
   padding: 4px 8px; background: #fff;
-  /* 값이 있든 없든 칸 크기가 흔들리지 않게 폭을 고정한다 */
-  width: 104px; box-sizing: border-box;
+  /* 값이 있든 없든 칸 크기가 흔들리지 않게 폭을 고정한다.
+     날짜 둘·표 스텝퍼·별이 한 줄에 서야 해서 칸을 좁게 잡았다 */
+  width: 86px; box-sizing: border-box; padding: 4px 4px; gap: 2px;
 }
-.adp-pd-box span { font-size: 12px; font-weight: 400; color: #111827; }
+.adp-pd-box span { font-size: 11px; font-weight: 400; color: #111827; white-space: nowrap; }
 .adp-pd-cal { color: #9ca3af; flex: 0 0 auto; }
 /* 비중을 기본값으로 — 날짜 옆에 작게 */
 .adp-pd-reset {
@@ -8582,7 +8577,7 @@ const goBack = () => router.back();
 .adp-pd-reset:active { background: #f3f4f6; }
 .adp-pd-sep { color: #d1d5db; }
 /* 초기화와 별을 한 묶음으로 — 줄이 내려가도 둘이 같이 내려간다 */
-.adp-pd-tail { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; margin-left: auto; }
+.adp-pd-tail { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-left: auto; }
 .adp-profit-dates .adp-star-btn { margin-left: 0; }
 .adp-profit-dates .adp-bid-status { padding: 5px 10px; font-size: 11.5px; }
 /* 중요도 별 — 선정물건 목록의 별과 같은 모양 */
@@ -8667,10 +8662,18 @@ const goBack = () => router.back();
 .adp-profit-table thead th { white-space: nowrap; }
 /* 바로 아래 개인소득세율 표도 같은 간격으로 — 두 표의 줄 높이가 다르면 따로 논다 */
 .adp-tax-ref th, .adp-tax-ref td { padding: 7px 5px; }
-/* 산정표가 둘 이상일 때만 붙는 이름(A안·B안) — 표끼리 붙어 보이지 않게 위를 띄운다 */
-.adp-profit-label {
-  margin: 12px 2px 4px; font-size: 12.5px; font-weight: 800; color: #1f3a72;
+/* 표에 테두리 1px 이 있어 width:100% 만으로는 머리줄보다 2px 넓게 선다.
+   초기화 버튼의 끝점을 표 모서리에 맞추려면 테두리까지 폭에 넣어야 한다 */
+.adp-profit-table { box-sizing: border-box; }
+/* 표 머리줄 — 이름(A안·B안)은 왼쪽, 초기화는 오른쪽 끝.
+   좌우 여백을 0으로 둬서 초기화의 끝점이 표의 오른쪽 모서리와 맞는다 */
+.adp-profit-head-row {
+  display: flex; align-items: center; gap: 8px;
+  margin: 12px 0 4px; min-height: 24px;
 }
+.adp-profit-head-row .adp-pd-reset { margin-left: auto; }
+/* 산정표가 둘 이상일 때만 붙는 이름(A안·B안) */
+.adp-profit-label { font-size: 12.5px; font-weight: 800; color: #1f3a72; }
 .adp-profit-table.alt { border-color: #d7def0; }
 /* 예비 매도가 — 본 매도가 옆에 흐리게 선다. 계산에 안 들어가는 값이라 눈을 끌 필요가 없다 */
 .adp-profit-table td.adp-sale-alt { color: #9ca3af; font-weight: 600; }
