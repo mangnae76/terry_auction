@@ -173,6 +173,15 @@ export interface BidCostAnalysis {
   localTaxAmount?: number;
 }
 
+/** 산정표 한 벌 — 'B안이면 이 입찰가에 이 비용으로' 를 따로 담는다.
+ *  감정가·최저가·보증금은 물건의 사실이라 A안과 같이 쓴다. */
+export interface BidScenario {
+  myBidValue: number;
+  expectedSaleValue: number;
+  expectedSaleValue2?: number;
+  bidCost: BidCostAnalysis;
+}
+
 export interface MarketDemandAnalysis {
   practicalArea: string;
   practicalFamilyType: string;
@@ -434,6 +443,8 @@ export interface AuctionDetail {
   /** 예비 매도가 — 'B안이면 얼마' 를 옆에 적어 두는 칸. 계산에는 들어가지 않는다 */
   expectedSaleValue2?: number;
   expectedProfitRate: number;
+  /** A안 말고 더 만든 산정표 (B안·C안…) */
+  bidScenarios?: BidScenario[];
   fieldSurvey: FieldSurvey;
   rights: RightsAnalysis;
   excelAnalysis: ExcelAnalysis;

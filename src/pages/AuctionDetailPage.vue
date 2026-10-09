@@ -34,7 +34,7 @@ import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { pickCurrentRound } from '../utils/auctionSchedule';
-import { AUCTION_STATUS_LABELS, AUCTION_STATUS_ORDER, type AgencyRow, type AuctionDetail, type AuctionStatus, type MarketSurveyRow } from '../types/auction';
+import { AUCTION_STATUS_LABELS, AUCTION_STATUS_ORDER, type AgencyRow, type AuctionDetail, type AuctionStatus, type BidCostAnalysis, type MarketSurveyRow } from '../types/auction';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { Clipboard } from '@capacitor/clipboard';
@@ -1817,17 +1817,47 @@ const fetchNearbyForAuction = async () => {
 const editingProfit = ref(false);
 
 const apprValue = computed(() => auction.value?.metrics.appraisalValue ?? 0);
-const myBid = computed(() => auction.value?.metrics.myBidValue ?? auction.value?.metrics.minimumBidValue ?? 0);
-// 입찰가 비중 — 감정가 대비 내 입찰가
-const myBidPct = computed(() => apprValue.value > 0 ? (myBid.value / apprValue.value) * 100 : 0);
+// 입찰보증금 — PDF 값이 있으면 그걸, 없으면 최저가의 10%
+const bidDeposit = computed(
+  () => auction.value?.metrics?.depositValue || Math.round((auction.value?.metrics?.minimumBidValue ?? 0) * 0.1),
+);
 
-const bc = computed(() => auction.value?.bidCost);
+// === 산정표 ===
+// 'B안이면 얼마' 를 보려면 표가 한 벌 더 있어야 한다. A안은 물건에 바로 붙어 있는
+// 값을 쓰고, 더 만든 표는 auction.bidScenarios 에 한 벌씩 들어간다.
+// 감정가·최저가·보증금은 물건의 사실이라 모든 표가 같이 쓴다 — 표마다 다른 건
+// 입찰가·비용·매도가다. 계산은 전부 '표 한 벌(sc)'을 받아서 한다. 표가 늘어도 식은 하나다.
+type ProfitScenario = {
+  label: string;
+  /** 입찰가를 담은 그릇 — A안은 물건의 metrics 그대로다 */
+  bid: { myBidValue: number };
+  sale: { expectedSaleValue: number; expectedSaleValue2?: number };
+  cost: BidCostAnalysis;
+  /** 더 만든 표인가 — A안은 지울 수 없다 */
+  extra: boolean;
+};
+const PROFIT_LABELS = ['A안', 'B안', 'C안', 'D안'];
+const PROFIT_MAX = PROFIT_LABELS.length;
+const profitScenarios = computed<ProfitScenario[]>(() => {
+  const a = auction.value;
+  if (!a) return [];
+  const list: ProfitScenario[] = [
+    { label: PROFIT_LABELS[0], bid: a.metrics, sale: a, cost: a.bidCost, extra: false },
+  ];
+  (a.bidScenarios ?? []).forEach((s, i) => {
+    list.push({ label: PROFIT_LABELS[i + 1] ?? `${i + 2}안`, bid: s, sale: s, cost: s.bidCost, extra: true });
+  });
+  return list;
+});
 
+const scBid = (sc: ProfitScenario) => sc.bid.myBidValue || auction.value?.metrics.minimumBidValue || 0;
+/** 입찰가 비중 — 감정가 대비 내 입찰가 */
+const scBidPct = (sc: ProfitScenario) => (apprValue.value > 0 ? (scBid(sc) / apprValue.value) * 100 : 0);
 // 광고비의 3.3%는 원천징수라 떼서 세무서에 내는 돈 — 지출 총액은 그대로다
-const advertisingNet = computed(() => bc.value?.advertisingCost ?? 0);
+const scAdvertising = (sc: ProfitScenario) => sc.cost?.advertisingCost ?? 0;
 // 필요경비합계: 대출 제외, 취득세/법무비/이자/중도상환/매도중개료/미납관리비/수리비/명도비/광고비 합산
-const totalCosts = computed(() => {
-  const c = bc.value;
+const scTotalCosts = (sc: ProfitScenario) => {
+  const c = sc.cost;
   if (!c) return 0;
   return (c.acquisitionTaxAmount ?? 0)
     + (c.legalCostAmount ?? 0)
@@ -1837,20 +1867,16 @@ const totalCosts = computed(() => {
     + (c.arrearsFee ?? 0)
     + (c.repairCost ?? 0)
     + (c.evictionCost ?? 0)
-    + advertisingNet.value;
-});
-const expectedSale = computed(() => auction.value?.expectedSaleValue ?? 0);
+    + scAdvertising(sc);
+};
+const scSale = (sc: ProfitScenario) => sc.sale.expectedSaleValue ?? 0;
 /** 예비 매도가 — 적어 두기만 하는 값이다. 어떤 계산에도 쓰지 않는다 */
-const expectedSaleAlt = computed(() => auction.value?.expectedSaleValue2 ?? 0);
-const capitalGain = computed(() => expectedSale.value - myBid.value - totalCosts.value);
-const localTaxRate = computed(() => bc.value?.localTaxRate ?? 10);
-// 입찰보증금 — PDF 값이 있으면 그걸, 없으면 최저가의 10%
-const bidDeposit = computed(
-  () => auction.value?.metrics?.depositValue || Math.round((auction.value?.metrics?.minimumBidValue ?? 0) * 0.1),
-);
-// 종합소득세 누진세율 (양도차익 L 기준)
-const transferTaxAuto = computed(() => {
-  const L = capitalGain.value;
+const scSaleAlt = (sc: ProfitScenario) => sc.sale.expectedSaleValue2 ?? 0;
+const scGain = (sc: ProfitScenario) => scSale(sc) - scBid(sc) - scTotalCosts(sc);
+const scLocalTaxRate = (sc: ProfitScenario) => sc.cost?.localTaxRate ?? 10;
+
+// 종합소득세 누진세율 (사업소득금액 L 기준)
+const progressiveTax = (L: number) => {
   if (L <= 0) return 0;
   if (L <= 14_000_000) return L * 0.06;
   if (L <= 50_000_000) return L * 0.15 - 1_260_000;
@@ -1860,10 +1886,9 @@ const transferTaxAuto = computed(() => {
   if (L <= 500_000_000) return L * 0.4 - 25_940_000;
   if (L <= 1_000_000_000) return L * 0.42 - 35_940_000;
   return L * 0.45 - 65_940_000;
-});
-// 사업소득 금액이 걸리는 누진세율 구간 — 표의 '누진세율' 옆에 같이 보여 준다
-const incomeTaxBracket = computed(() => {
-  const L = capitalGain.value;
+};
+// 사업소득 금액이 걸리는 누진세율 구간 — 표의 '과세표준' 옆에 같이 보여 준다
+const taxBracketOf = (L: number) => {
   if (L <= 0) return '-';
   if (L <= 14_000_000) return '6%';
   if (L <= 50_000_000) return '15%';
@@ -1873,10 +1898,9 @@ const incomeTaxBracket = computed(() => {
   if (L <= 500_000_000) return '40%';
   if (L <= 1_000_000_000) return '42%';
   return '45%';
-});
+};
 // 그 구간에서 빼 주는 누진공제 — 세액이 어떻게 나왔는지 눈으로 보려고 같이 띄운다
-const incomeTaxDeductionText = computed(() => {
-  const L = capitalGain.value;
+const taxDeductionOf = (L: number) => {
   if (L <= 14_000_000) return '';
   if (L <= 50_000_000) return '126만';
   if (L <= 88_000_000) return '576만';
@@ -1885,39 +1909,40 @@ const incomeTaxDeductionText = computed(() => {
   if (L <= 500_000_000) return '2,594만';
   if (L <= 1_000_000_000) return '3,594만';
   return '6,594만';
-});
+};
+const scTransferTaxAuto = (sc: ProfitScenario) => progressiveTax(scGain(sc));
+const scBracket = (sc: ProfitScenario) => taxBracketOf(scGain(sc));
+const scDeductionText = (sc: ProfitScenario) => taxDeductionOf(scGain(sc));
 // 직접 넣은 금액이 있으면 그것을, 없으면 자동 계산값을 쓴다
-const transferTax = computed(() => bc.value?.incomeTaxAmount ?? transferTaxAuto.value);
-const localTaxAuto = computed(() => transferTax.value * (localTaxRate.value / 100));
-const localTax = computed(() => bc.value?.localTaxAmount ?? localTaxAuto.value);
+const scTransferTax = (sc: ProfitScenario) => sc.cost?.incomeTaxAmount ?? scTransferTaxAuto(sc);
+const scLocalTaxAuto = (sc: ProfitScenario) => scTransferTax(sc) * (scLocalTaxRate(sc) / 100);
+const scLocalTax = (sc: ProfitScenario) => sc.cost?.localTaxAmount ?? scLocalTaxAuto(sc);
+const scAfterTaxProfit = (sc: ProfitScenario) => scGain(sc) - scTransferTax(sc) - scLocalTax(sc);
+const scNetInvestment = (sc: ProfitScenario) => scBid(sc) - (sc.cost?.loanAmount ?? 0) + scTotalCosts(sc);
+const scTotalInvest = (sc: ProfitScenario) => scBid(sc) + scTotalCosts(sc);
+const scAfterTaxRate = (sc: ProfitScenario) => (
+  scNetInvestment(sc) > 0 ? (scAfterTaxProfit(sc) / scNetInvestment(sc)) * 100 : 0
+);
+const scPctOfBid = (sc: ProfitScenario, n: number | undefined | null) => (
+  scBid(sc) > 0 && n ? (n / scBid(sc)) * 100 : 0
+);
+
 // 자동 계산값과 같은 값이 들어오면 '직접 입력'으로 보지 않는다.
 // (입력칸이 포맷을 맞추며 같은 값을 다시 써 넣어도 자동 계산이 멈추지 않도록)
-const incomeTaxInput = computed({
-  get: () => Math.round(transferTax.value),
-  set: (value: number | string) => {
-    const c = auction.value?.bidCost;
-    if (!c) return;
-    const n = Number(value) || 0;
-    c.incomeTaxAmount = Math.abs(n - Math.round(transferTaxAuto.value)) < 1 ? undefined : n;
-  },
-});
-const localTaxInput = computed({
-  get: () => Math.round(localTax.value),
-  set: (value: number | string) => {
-    const c = auction.value?.bidCost;
-    if (!c) return;
-    const n = Number(value) || 0;
-    c.localTaxAmount = Math.abs(n - Math.round(localTaxAuto.value)) < 1 ? undefined : n;
-  },
-});
+const scSetIncomeTax = (sc: ProfitScenario, value: number | string) => {
+  const n = Number(value) || 0;
+  sc.cost.incomeTaxAmount = Math.abs(n - Math.round(scTransferTaxAuto(sc))) < 1 ? undefined : n;
+};
+const scSetLocalTax = (sc: ProfitScenario, value: number | string) => {
+  const n = Number(value) || 0;
+  sc.cost.localTaxAmount = Math.abs(n - Math.round(scLocalTaxAuto(sc))) < 1 ? undefined : n;
+};
 // 지방세율을 고치면 직접 입력해 둔 금액은 풀고 다시 자동 계산으로 돌린다
-const setLocalTaxRate = (raw: string) => {
-  const c = auction.value?.bidCost;
-  if (!c) return;
+const scSetLocalTaxRate = (sc: ProfitScenario, raw: string) => {
   const pct = parseFloat(raw);
   if (!Number.isFinite(pct)) return;
-  c.localTaxRate = pct;
-  c.localTaxAmount = undefined;
+  sc.cost.localTaxRate = pct;
+  sc.cost.localTaxAmount = undefined;
 };
 // %는 소수점 둘째 자리까지만 받는다
 const limitPct = (e: Event) => {
@@ -1927,12 +1952,6 @@ const limitPct = (e: Event) => {
   const next = m ? m[0] : '';
   if (el.value !== next) el.value = next;
 };
-const afterTaxProfit = computed(() => capitalGain.value - transferTax.value - localTax.value);
-const netAfterTaxProfit = computed(() => afterTaxProfit.value);
-const netInvestment = computed(() => myBid.value - (bc.value?.loanAmount ?? 0) + totalCosts.value);
-const totalInvest = computed(() => myBid.value + totalCosts.value);
-const afterTaxRate = computed(() => netInvestment.value > 0 ? (netAfterTaxProfit.value / netInvestment.value) * 100 : 0);
-const pctOfBid = (n: number | undefined | null) => myBid.value > 0 && n ? (n / myBid.value) * 100 : 0;
 
 type BidCostAmountKey =
   | 'loanAmount'
@@ -1946,45 +1965,28 @@ type BidCostAmountKey =
   | 'evictionCost'
   | 'advertisingCost';
 
-const setAmountByPct = (key: BidCostAmountKey, raw: string | number) => {
-  if (!auction.value?.bidCost) return;
+const scSetAmountByPct = (sc: ProfitScenario, key: BidCostAmountKey, raw: string | number) => {
   const pct = typeof raw === 'number' ? raw : parseFloat(raw);
   if (!Number.isFinite(pct)) return;
-  auction.value.bidCost[key] = Math.round((myBid.value * pct) / 100);
+  sc.cost[key] = Math.round((scBid(sc) * pct) / 100);
 };
-
-const setBidByApprPct = (raw: string | number) => {
-  if (!auction.value?.metrics) return;
+const scSetBidByApprPct = (sc: ProfitScenario, raw: string | number) => {
   const pct = typeof raw === 'number' ? raw : parseFloat(raw);
   if (!Number.isFinite(pct)) return;
-  auction.value.metrics.myBidValue = Math.round((apprValue.value * pct) / 100);
+  sc.bid.myBidValue = Math.round((apprValue.value * pct) / 100);
 };
 
 // 취득세 — 기본 1.10%. 입찰가가 바뀌면 이 비율로 다시 계산하고,
-// 금액이나 %를 직접 고치면 그 값이 비율로 저장돼 다음 계산에 쓰인다.
+// 금액을 직접 고치면 그 값이 비율로 저장돼 다음 계산에 쓰인다.
 const ACQ_TAX_DEFAULT_RATE = 1.1;
-watch(
-  [() => auction.value?.id, myBid],
-  () => {
-    const c = auction.value?.bidCost;
-    if (!c) return;
-    if (!c.acquisitionTaxRate || c.acquisitionTaxRate <= 0) c.acquisitionTaxRate = ACQ_TAX_DEFAULT_RATE;
-    const expected = Math.round((myBid.value * c.acquisitionTaxRate) / 100);
-    if (c.acquisitionTaxAmount !== expected) c.acquisitionTaxAmount = expected;
-  },
-  { immediate: true },
-);
-watch(
-  () => auction.value?.bidCost?.acquisitionTaxAmount,
-  (amount) => {
-    const c = auction.value?.bidCost;
-    if (!c || !amount || myBid.value <= 0) return;
-    const rate = Number((((amount as number) / myBid.value) * 100).toFixed(2));
-    if (Math.abs(rate - (c.acquisitionTaxRate ?? 0)) > 0.005) c.acquisitionTaxRate = rate;
-  },
-);
-
-const loanAmt = computed(() => auction.value?.bidCost?.loanAmount ?? 0);
+const scSyncAcqRate = (sc: ProfitScenario) => {
+  const c = sc.cost;
+  const bid = scBid(sc);
+  const amount = c?.acquisitionTaxAmount ?? 0;
+  if (!c || !amount || bid <= 0) return;
+  const rate = Number(((amount / bid) * 100).toFixed(2));
+  if (Math.abs(rate - (c.acquisitionTaxRate ?? 0)) > 0.005) c.acquisitionTaxRate = rate;
+};
 
 // 중도상환: amount = loan × pct/100
 // 기준 금액(대출금·매가)이 아직 0이면 %만 입력해도 금액이 0이라 값이 사라진 것처럼 보인다.
@@ -1992,54 +1994,98 @@ const loanAmt = computed(() => auction.value?.bidCost?.loanAmount ?? 0);
 type RateRow = {
   amountKey: BidCostAmountKey;
   rateKey: 'midRepaymentRate' | 'interestRate3m' | 'brokerageRate';
-  base: () => number;
+  base: (sc: ProfitScenario) => number;
   /** 연이율의 3개월분처럼 나눠 쓰는 경우 */
   divisor?: number;
 };
 const RATE_ROWS: RateRow[] = [
-  { amountKey: 'midRepaymentAmount', rateKey: 'midRepaymentRate', base: () => loanAmt.value },
-  { amountKey: 'interestAmount', rateKey: 'interestRate3m', base: () => loanAmt.value, divisor: 4 },
-  { amountKey: 'brokerageAmount', rateKey: 'brokerageRate', base: () => expectedSale.value },
+  { amountKey: 'midRepaymentAmount', rateKey: 'midRepaymentRate', base: (sc) => sc.cost?.loanAmount ?? 0 },
+  { amountKey: 'interestAmount', rateKey: 'interestRate3m', base: (sc) => sc.cost?.loanAmount ?? 0, divisor: 4 },
+  { amountKey: 'brokerageAmount', rateKey: 'brokerageRate', base: (sc) => scSale(sc) },
 ];
 // 화면에 보여 줄 % — 기준 금액이 있으면 금액에서, 없으면 저장해 둔 비율에서
-const rowPct = (row: RateRow) => {
-  const c = bc.value;
+const scRowPct = (sc: ProfitScenario, row: RateRow) => {
+  const c = sc.cost;
   if (!c) return 0;
-  const base = row.base();
+  const base = row.base(sc);
   const amount = c[row.amountKey] ?? 0;
   if (base > 0 && amount) return ((amount * (row.divisor ?? 1)) / base) * 100;
   return c[row.rateKey] ?? 0;
 };
-const setRowPct = (row: RateRow, raw: string) => {
-  const c = auction.value?.bidCost;
+const scSetRowPct = (sc: ProfitScenario, row: RateRow, raw: string) => {
+  const c = sc.cost;
   if (!c) return;
   const pct = parseFloat(raw);
   if (!Number.isFinite(pct)) return;
   c[row.rateKey] = pct;
-  c[row.amountKey] = Math.round((row.base() * pct) / 100 / (row.divisor ?? 1));
+  c[row.amountKey] = Math.round((row.base(sc) * pct) / 100 / (row.divisor ?? 1));
 };
 // 금액을 직접 고치면 비율도 같이 맞춰 둔다
-const syncRowRate = (row: RateRow) => {
-  const c = auction.value?.bidCost;
+const scSyncRowRate = (sc: ProfitScenario, row: RateRow) => {
+  const c = sc.cost;
   if (!c) return;
-  const base = row.base();
+  const base = row.base(sc);
   if (base <= 0) return;
   const rate = Number(((((c[row.amountKey] ?? 0) * (row.divisor ?? 1)) / base) * 100).toFixed(2));
   if (Math.abs(rate - (c[row.rateKey] ?? 0)) > 0.005) c[row.rateKey] = rate;
 };
+
+/** 비율로 묶인 금액을 다시 센다 — 표마다 따로 돈다.
+ *  입찰가·대출·매도가가 바뀌면 그 표의 취득세·중도상환·이자·중개료가 따라간다. */
+const profitSeeds = computed(() => profitScenarios.value.map((sc) => ({
+  bid: scBid(sc),
+  loan: sc.cost?.loanAmount ?? 0,
+  sale: scSale(sc),
+})));
 watch(
-  [loanAmt, expectedSale],
+  [() => auction.value?.id, profitSeeds],
   () => {
-    const c = auction.value?.bidCost;
-    if (!c) return;
-    RATE_ROWS.forEach((row) => {
-      const rate = c[row.rateKey] ?? 0;
-      if (rate <= 0) return;
-      const expected = Math.round((row.base() * rate) / 100 / (row.divisor ?? 1));
-      if (c[row.amountKey] !== expected) c[row.amountKey] = expected;
+    profitScenarios.value.forEach((sc) => {
+      const c = sc.cost;
+      if (!c) return;
+      if (!c.acquisitionTaxRate || c.acquisitionTaxRate <= 0) c.acquisitionTaxRate = ACQ_TAX_DEFAULT_RATE;
+      const expected = Math.round((scBid(sc) * c.acquisitionTaxRate) / 100);
+      if (c.acquisitionTaxAmount !== expected) c.acquisitionTaxAmount = expected;
+      RATE_ROWS.forEach((row) => {
+        const rate = c[row.rateKey] ?? 0;
+        if (rate <= 0) return;
+        const want = Math.round((row.base(sc) * rate) / 100 / (row.divisor ?? 1));
+        if (c[row.amountKey] !== want) c[row.amountKey] = want;
+      });
     });
   },
+  { deep: true, immediate: true },
 );
+
+/** 표 한 벌을 더 만든다 — 지금 표를 베껴 간다. 대개 입찰가만 고쳐 보기 때문이다 */
+const addProfitScenario = async () => {
+  const a = auction.value;
+  if (!a) return;
+  if (!a.bidScenarios) a.bidScenarios = [];
+  if (a.bidScenarios.length >= PROFIT_MAX - 1) return;
+  a.bidScenarios.push({
+    myBidValue: a.metrics.myBidValue ?? 0,
+    expectedSaleValue: a.expectedSaleValue ?? 0,
+    expectedSaleValue2: a.expectedSaleValue2 ?? 0,
+    bidCost: JSON.parse(JSON.stringify(a.bidCost)) as BidCostAnalysis,
+  });
+  await store.saveAuction(a);
+};
+/** 마지막 표를 지운다. A안은 지울 수 없다 */
+const removeProfitScenario = () => {
+  const a = auction.value;
+  if (!a?.bidScenarios?.length) return;
+  askConfirm({
+    title: '마지막 산정표를 지울까요?',
+    desc: '그 표에 적어 둔 값이 같이 사라집니다.',
+    okLabel: '지우기',
+    skipKey: 'adp.skip.removeProfitTable',
+    run: async () => {
+      a.bidScenarios?.pop();
+      await store.saveAuction(a);
+    },
+  });
+};
 
 const startEditProfit = () => {
   editingProfit.value = true;
@@ -2056,16 +2102,18 @@ const BID_COST_DEFAULT_RATES: Array<[BidCostAmountKey, number]> = [
 const resetBidCostRates = () => {
   askConfirm({
     title: '비중을 기본값으로 되돌릴까요?',
-    desc: '대출 80% · 취득세 1.10% · 법무비 0.50% 로 다시 계산합니다. 입찰가는 그대로 둡니다.',
+    desc: '대출 80% · 취득세 1.10% · 법무비 0.50% 로 다시 계산합니다. 산정표가 여럿이면 모두 되돌립니다. 입찰가는 그대로 둡니다.',
     okLabel: '되돌리기',
     skipKey: 'adp.skip.resetBidCost',
     run: async () => {
-      const c = auction.value?.bidCost;
-      if (!c) return;
-      BID_COST_DEFAULT_RATES.forEach(([key, pct]) => setAmountByPct(key, pct));
-      // 취득세는 비율을 따로 들고 있다 — 입찰가가 바뀔 때 이 비율로 다시 계산된다
-      c.acquisitionTaxRate = 1.1;
-      await store.saveAuction(auction.value!);
+      if (!auction.value) return;
+      profitScenarios.value.forEach((sc) => {
+        if (!sc.cost) return;
+        BID_COST_DEFAULT_RATES.forEach(([key, pct]) => scSetAmountByPct(sc, key, pct));
+        // 취득세는 비율을 따로 들고 있다 — 입찰가가 바뀔 때 이 비율로 다시 계산된다
+        sc.cost.acquisitionTaxRate = 1.1;
+      });
+      await store.saveAuction(auction.value);
       flashToast('비중을 기본값으로 되돌렸습니다.', 'success');
     },
   });
@@ -5498,6 +5546,11 @@ const goBack = () => router.back();
             </button>
             <!-- 초기화와 별은 한 묶음 — 자리가 모자라 줄이 내려가도 둘이 같이 내려간다 -->
             <span class="adp-pd-tail">
+            <span class="adp-mkt-step">
+              <span class="lab">표</span>
+              <button type="button" aria-label="산정표 삭제" :disabled="profitScenarios.length <= 1" @click.stop="removeProfitScenario">−</button>
+              <button type="button" aria-label="산정표 추가" :disabled="profitScenarios.length >= PROFIT_MAX" @click.stop="addProfitScenario">＋</button>
+            </span>
             <button type="button" class="adp-pd-reset" title="대출·취득세·법무비 비중을 기본값으로" @click.stop="resetBidCostRates">
               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" />
@@ -5526,7 +5579,10 @@ const goBack = () => router.back();
             </button>
             </span>
           </div>
-          <table v-if="!isCollapsed('profit')" class="adp-table adp-profit-table v2">
+          <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
+          <template v-for="(sc, si) in profitScenarios" :key="sc.label">
+          <p v-if="!isCollapsed('profit') && profitScenarios.length > 1" class="adp-profit-label">{{ sc.label }}</p>
+          <table v-if="!isCollapsed('profit')" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0 }]">
             <thead>
               <tr><th>구분</th><th>상세</th><th class="r">비중 (%)</th><th class="r">금액</th></tr>
             </thead>
@@ -5557,19 +5613,19 @@ const goBack = () => router.back();
                 <td rowspan="2" class="adp-cat"></td>
                 <td><strong>입찰가</strong></td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="myBidPct.toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setBidByApprPct(($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(myBidPct) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scBidPct(sc).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scBidPct(sc)) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.metrics.myBidValue" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(myBid) }}</strong></template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.bid.myBidValue" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(scBid(sc)) }}</strong></template>
                 </td>
               </tr>
               <tr>
                 <td>대출(사업자)</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctOfBid(auction.bidCost.loanAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setAmountByPct('loanAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(pctOfBid(auction.bidCost.loanAmount)) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.loanAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.loanAmount" class="adp-cell-input" /><template v-else>{{ formatMoney(auction.bidCost.loanAmount) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.loanAmount" class="adp-cell-input" /><template v-else>{{ formatMoney(sc.cost.loanAmount) }}</template>
                 </td>
               </tr>
 
@@ -5577,80 +5633,80 @@ const goBack = () => router.back();
                 <td rowspan="10" class="adp-cat">비용</td>
                 <td><span class="adp-cost-no">①</span>취득세</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctOfBid(auction.bidCost.acquisitionTaxAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setAmountByPct('acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(pctOfBid(auction.bidCost.acquisitionTaxAmount)) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.acquisitionTaxAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.acquisitionTaxAmount)) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.acquisitionTaxAmount" class="adp-cell-input" /><template v-else>{{ formatMoney(auction.bidCost.acquisitionTaxAmount) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.acquisitionTaxAmount" class="adp-cell-input" @update:model-value="scSyncAcqRate(sc)" /><template v-else>{{ formatMoney(sc.cost.acquisitionTaxAmount) }}</template>
                 </td>
               </tr>
               <tr>
                 <td><span class="adp-cost-no">②</span>법무비/채권</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctOfBid(auction.bidCost.legalCostAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setAmountByPct('legalCostAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(pctOfBid(auction.bidCost.legalCostAmount)) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.legalCostAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetAmountByPct(sc, 'legalCostAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.legalCostAmount)) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.legalCostAmount" class="adp-cell-input" /><template v-else>{{ formatMoney(auction.bidCost.legalCostAmount) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.legalCostAmount" class="adp-cell-input" /><template v-else>{{ formatMoney(sc.cost.legalCostAmount) }}</template>
                 </td>
               </tr>
               <tr>
                 <td><span class="adp-cost-no">③</span>중도상환</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="rowPct(RATE_ROWS[0]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setRowPct(RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(rowPct(RATE_ROWS[0])) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[0]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[0])) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.midRepaymentAmount" class="adp-cell-input" @update:model-value="syncRowRate(RATE_ROWS[0])" /><template v-else>{{ formatMoney(auction.bidCost.midRepaymentAmount) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.midRepaymentAmount" class="adp-cell-input" @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" /><template v-else>{{ formatMoney(sc.cost.midRepaymentAmount) }}</template>
                 </td>
               </tr>
               <tr>
                 <td><span class="adp-cost-no">④</span>이자(3M)</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="rowPct(RATE_ROWS[1]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setRowPct(RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(rowPct(RATE_ROWS[1])) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[1]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[1])) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.interestAmount" class="adp-cell-input" @update:model-value="syncRowRate(RATE_ROWS[1])" /><template v-else>{{ formatMoney(auction.bidCost.interestAmount) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.interestAmount" class="adp-cell-input" @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" /><template v-else>{{ formatMoney(sc.cost.interestAmount) }}</template>
                 </td>
               </tr>
               <tr>
                 <td><span class="adp-cost-no">⑤</span>매도중개료</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="rowPct(RATE_ROWS[2]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setRowPct(RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(rowPct(RATE_ROWS[2])) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[2]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[2])) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.brokerageAmount" class="adp-cell-input" @update:model-value="syncRowRate(RATE_ROWS[2])" /><template v-else>{{ formatMoney(auction.bidCost.brokerageAmount) }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.brokerageAmount" class="adp-cell-input" @update:model-value="scSyncRowRate(sc, RATE_ROWS[2])" /><template v-else>{{ formatMoney(sc.cost.brokerageAmount) }}</template>
                 </td>
               </tr>
               <tr>
                 <td><span class="adp-cost-no">⑥</span>미납관리비</td>
                 <td class="r">-</td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.arrearsFee" class="adp-cell-input" /><template v-else>{{ auction.bidCost.arrearsFee > 0 ? formatMoney(auction.bidCost.arrearsFee) : '-' }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.arrearsFee" class="adp-cell-input" /><template v-else>{{ sc.cost.arrearsFee > 0 ? formatMoney(sc.cost.arrearsFee) : '-' }}</template>
                 </td>
               </tr>
               <tr>
                 <td><span class="adp-cost-no">⑦</span>수리비</td>
                 <td class="r">-</td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.repairCost" class="adp-cell-input" /><template v-else>{{ auction.bidCost.repairCost > 0 ? formatMoney(auction.bidCost.repairCost) : '-' }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.repairCost" class="adp-cell-input" /><template v-else>{{ sc.cost.repairCost > 0 ? formatMoney(sc.cost.repairCost) : '-' }}</template>
                 </td>
               </tr>
               <tr>
                 <td><span class="adp-cost-no">⑧</span>명도비</td>
                 <td class="r">-</td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.evictionCost" class="adp-cell-input" /><template v-else>{{ auction.bidCost.evictionCost > 0 ? formatMoney(auction.bidCost.evictionCost) : '-' }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.evictionCost" class="adp-cell-input" /><template v-else>{{ sc.cost.evictionCost > 0 ? formatMoney(sc.cost.evictionCost) : '-' }}</template>
                 </td>
               </tr>
               <tr>
                 <td><span class="adp-cost-no">⑨</span>광고비</td>
                 <td class="r">3.3%</td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.bidCost.advertisingCost" class="adp-cell-input" /><template v-else>{{ advertisingNet > 0 ? formatMoney(advertisingNet) : '-' }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.advertisingCost" class="adp-cell-input" /><template v-else>{{ scAdvertising(sc) > 0 ? formatMoney(scAdvertising(sc)) : '-' }}</template>
                 </td>
               </tr>
               <tr class="hi">
                 <td><strong>필요경비합계</strong></td>
                 <td class="r adp-formula">①+②+③+④+⑤+⑥+⑦+⑧+⑨</td>
-                <td class="r"><strong>{{ formatMoney(totalCosts) }}</strong></td>
+                <td class="r"><strong>{{ formatMoney(scTotalCosts(sc)) }}</strong></td>
               </tr>
 
               <tr class="pink">
@@ -5658,55 +5714,56 @@ const goBack = () => router.back();
                 <td><strong>예상 매도가</strong></td>
                 <!-- 예비 칸 — 'B안이면 얼마'를 옆에 적어 두는 자리. 계산에는 들어가지 않는다 -->
                 <td class="r adp-sale-alt">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.expectedSaleValue2" class="adp-cell-input" placeholder="예비" /><template v-else>{{ expectedSaleAlt > 0 ? formatMoney(expectedSaleAlt) : '' }}</template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.sale.expectedSaleValue2" class="adp-cell-input" placeholder="예비" /><template v-else>{{ scSaleAlt(sc) > 0 ? formatMoney(scSaleAlt(sc)) : '' }}</template>
                 </td>
                 <td class="r emph">
-                  <FormattedNumberInput v-if="editingProfit" v-model="auction.expectedSaleValue" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(expectedSale) }}</strong></template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.sale.expectedSaleValue" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(scSale(sc)) }}</strong></template>
                 </td>
               </tr>
               <tr>
                 <td>총투자금</td>
                 <td class="r adp-formula">입찰가+비용</td>
-                <td class="r">{{ formatMoney(totalInvest) }}</td>
+                <td class="r">{{ formatMoney(scTotalInvest(sc)) }}</td>
               </tr>
               <tr>
                 <td>실투자금</td>
                 <td class="r adp-formula">입찰가-대출+비용</td>
-                <td class="r">{{ formatMoney(netInvestment) }}</td>
+                <td class="r">{{ formatMoney(scNetInvestment(sc)) }}</td>
               </tr>
               <tr>
                 <td><strong>사업소득금액</strong></td>
                 <td class="r adp-formula">매도가-입찰가-비용</td>
-                <td class="r" :class="capitalGain < 0 ? 'neg' : ''"><strong>{{ formatMoney(capitalGain) }}</strong></td>
+                <td class="r" :class="scGain(sc) < 0 ? 'neg' : ''"><strong>{{ formatMoney(scGain(sc)) }}</strong></td>
               </tr>
               <tr>
                 <td><strong>사업소득세</strong></td>
-                <td class="r adp-formula">과세표준 <span class="adp-bracket">{{ incomeTaxBracket }}</span><span v-if="incomeTaxDeductionText" class="adp-bracket"> − {{ incomeTaxDeductionText }}</span></td>
+                <td class="r adp-formula">과세표준 <span class="adp-bracket">{{ scBracket(sc) }}</span><span v-if="scDeductionText(sc)" class="adp-bracket"> − {{ scDeductionText(sc) }}</span></td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="incomeTaxInput" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(transferTax) }}</strong></template>
+                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scTransferTax(sc))" class="adp-cell-input" @update:model-value="scSetIncomeTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scTransferTax(sc)) }}</strong></template>
                 </td>
               </tr>
               <tr>
                 <td><strong>지방세</strong></td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="String(localTaxRate)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="setLocalTaxRate(($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ localTaxRate }}%</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="String(scLocalTaxRate(sc))" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ scLocalTaxRate(sc) }}%</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="localTaxInput" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(localTax) }}</strong></template>
+                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scLocalTax(sc))" class="adp-cell-input" @update:model-value="scSetLocalTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scLocalTax(sc)) }}</strong></template>
                 </td>
               </tr>
               <tr class="hi">
                 <td><strong>세후 순이익</strong></td>
                 <td class="r adp-formula">매도가-총투자금-소득세</td>
-                <td class="r"><strong :class="afterTaxProfit < 0 ? 'neg' : ''">{{ formatMoney(afterTaxProfit) }}</strong></td>
+                <td class="r"><strong :class="scAfterTaxProfit(sc) < 0 ? 'neg' : ''">{{ formatMoney(scAfterTaxProfit(sc)) }}</strong></td>
               </tr>
               <tr class="hi">
                 <td><strong>세후 수익률</strong></td>
                 <td class="r adp-formula">세후이익/순투자금</td>
-                <td class="r"><strong :class="afterTaxRate < 0 ? 'neg' : ''">{{ formatPct(afterTaxRate) }}</strong></td>
+                <td class="r"><strong :class="scAfterTaxRate(sc) < 0 ? 'neg' : ''">{{ formatPct(scAfterTaxRate(sc)) }}</strong></td>
               </tr>
             </tbody>
           </table>
+          </template>
         </section>
 
         <section class="adp-card">
@@ -8605,6 +8662,11 @@ const goBack = () => router.back();
 .adp-profit-table thead th { white-space: nowrap; }
 /* 바로 아래 개인소득세율 표도 같은 간격으로 — 두 표의 줄 높이가 다르면 따로 논다 */
 .adp-tax-ref th, .adp-tax-ref td { padding: 7px 5px; }
+/* 산정표가 둘 이상일 때만 붙는 이름(A안·B안) — 표끼리 붙어 보이지 않게 위를 띄운다 */
+.adp-profit-label {
+  margin: 12px 2px 4px; font-size: 12.5px; font-weight: 800; color: #1f3a72;
+}
+.adp-profit-table.alt { border-color: #d7def0; }
 /* 예비 매도가 — 본 매도가 옆에 흐리게 선다. 계산에 안 들어가는 값이라 눈을 끌 필요가 없다 */
 .adp-profit-table td.adp-sale-alt { color: #9ca3af; font-weight: 600; }
 .adp-profit-table td.adp-sale-alt .adp-cell-input { color: #6b7280; }
