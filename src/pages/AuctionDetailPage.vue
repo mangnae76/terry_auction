@@ -2866,7 +2866,10 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
   ],
   recv: [
     ['참조', '가격정보 → 경매지번 실거래가'],
-    ['자료', '단지전체 (국토부) 최근 2년'],
+    ['자료', `단지전체 (국토부) 최근 ${PLACE_HISTORY_YEARS}년`],
+    ['들어옴', '거래일자 · 층 · 매매/전세 실거래가 — 비행기로 고른 줄, 없으면 가장 최근 거래'],
+    ['전용면적', 'PDF 기본정보'],
+    ['계산', '평단가 = 매매 실거래가 ÷ 전용면적(평)'],
   ],
   rank: [
     ['등수', '입지조건에 따라 등수화한다'],
@@ -8925,7 +8928,10 @@ const goBack = () => router.back();
 .adp-rdoc-survey .adp-date-caret { flex: 0 0 auto; }
 /* 날짜칸은 글자 길이가 정해져 있다 — 안쪽 여백을 줄여 폭을 아끼고
    남는 자리를 옆의 고르는 칸·적는 칸에 넘긴다 */
-.adp-rdoc-survey .adp-date-btn { padding: 0 2px; gap: 2px; font-size: 10.3px; letter-spacing: -0.3px; }
+.adp-rdoc-survey .adp-date-btn { padding: 0 2px; gap: 2px; font-size: 10.5px; letter-spacing: -0.3px; }
+/* 세 박스의 글자는 한 크기로 — 칸마다 달라 보이면 같은 줄로 읽히지 않는다 */
+.adp-rdoc-survey .adp-rdoc-input,
+.adp-rdoc-survey .adp-agency-trigger .txt { font-size: 10.5px; }
 /* 문건송달 내역 — 확인 문구를 한 줄 쓰고 비고는 그 아래 줄에 길게 둔다 */
 .adp-rdoc-task.inline { grid-column: 1 / -1; min-width: 0; align-self: center; white-space: normal; }
 .adp-rdoc-task.inline + .adp-rdoc-input { grid-column: 1 / -1; margin-top: 4px; }
