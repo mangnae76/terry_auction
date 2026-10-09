@@ -7348,7 +7348,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell adp-mkt-wide">
                     <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'note'))" placeholder="비고" @change="setMktVal(lowKey(i - 1, 'note'), ($event.target as HTMLInputElement).value)" />
-                    <strong v-else>{{ mktVal(lowKey(i - 1, 'note')) || '비고' }}</strong>
+                    <strong v-else :class="{ filled: !!mktVal(lowKey(i - 1, 'note')) }">{{ mktVal(lowKey(i - 1, 'note')) || '비고' }}</strong>
                   </div>
                 </div>
               </template>
@@ -7570,7 +7570,7 @@ const goBack = () => router.back();
                         :value="fieldVal('fs.urgentSale.note')"
                         @change="setExtraNote('urgentSale', ($event.target as HTMLInputElement).value)"
                       />
-                      <span v-else>{{ fieldVal('fs.urgentSale.note') || '비고' }}</span>
+                      <span v-else :class="{ filled: !!fieldVal('fs.urgentSale.note') }">{{ fieldVal('fs.urgentSale.note') || '비고' }}</span>
                     </td>
                   </tr>
                 </tbody>
@@ -8587,6 +8587,17 @@ const goBack = () => router.back();
 .adp-profit-table .adp-formula { font-size: 11px; color: #64748b; font-weight: 500; }
 .adp-profit-table.v2 td.emph { background: #fff9e6; border: 2px solid #ef4444; }
 .adp-profit-table.v2 td { font-size: 12.5px; }
+/* 칸마다 위아래 빈 자리가 넓어 표가 쓸데없이 길었다. 글자 크기는 그대로 두고
+   여백만 줄인다. 좌우도 같이 줄여 '명도비' 같은 말이 두 줄로 꺾이지 않게 한다. */
+.adp-profit-table th, .adp-profit-table td { padding: 5px 5px; }
+.adp-profit-table .adp-cat { padding: 5px 2px; }
+/* 상세 칸은 꺾지 않는다 — '매도중개료'가 두 줄로 갈라지면서 그 줄만 키가
+   두 배가 됐다. 숫자·공식 칸(.r)은 그대로 둔다.
+   구분 칸(.adp-cat)은 여러 줄을 묶는 칸이라 꺾여도 표가 길어지지 않는다 —
+   여기서 폭을 양보해야 표가 화면 밖으로 밀려나지 않는다. */
+.adp-profit-table td:not(.r):not(.adp-cat) { white-space: nowrap; }
+/* 머리줄까지 꺾이면 표 위가 두 줄이 된다 — '구분' 두 글자는 붙여 둔다 */
+.adp-profit-table thead th { white-space: nowrap; }
 
 .adp-tax-ref thead th { background: #1f3a72; color: #fff; }
 .adp-tax-ref td:last-child { color: #374151; font-weight: 400; }
@@ -9464,11 +9475,16 @@ const goBack = () => router.back();
 /* 거래율·매물적체 칸과 좌우 폭을 맞추고 위 여백을 줄인다 */
 .adp-deal-grid + .adp-photo-note { margin-top: -8px; padding: 0 12px 10px; }
 .adp-photo-note .adp-fs-input { width: 100%; height: 34px; }
-/* 첨부 아래 비고는 눈에 띄게 — 적은 글씨는 빨간 굵은 글씨, 안내문구는 그대로 회색 */
-.adp-plan-row + .adp-photo-note .adp-fs-input,
-.adp-plan-preview + .adp-photo-note .adp-fs-input { color: #e0574a; font-weight: 800; }
-.adp-plan-row + .adp-photo-note .adp-fs-input::placeholder,
-.adp-plan-preview + .adp-photo-note .adp-fs-input::placeholder { color: #9ca3af; font-weight: 400; }
+/* 손품+현장의 비고는 모두 빨갛게 — 숫자 사이에서 '내가 적어 둔 말'이 바로 집혀야 한다.
+   적은 글씨만 빨간 굵은 글씨이고, 안내문구는 그대로 회색이다. */
+.adp-photo-note .adp-fs-input { color: #e0574a; font-weight: 800; }
+.adp-photo-note .adp-fs-input::placeholder { color: #9ca3af; font-weight: 400; }
+.adp-mkt-cells.adp-dm-table .cell.adp-mkt-wide > .adp-mkt-input { color: #e0574a; font-weight: 800; }
+.adp-mkt-cells.adp-dm-table .cell.adp-mkt-wide > .adp-mkt-input::placeholder { color: #9ca3af; font-weight: 400; }
+.adp-mkt-cells.adp-dm-table .cell.adp-mkt-wide > strong.filled { color: #e0574a; font-weight: 800; }
+.adp-conc-table .adp-conc-note > .adp-mkt-input { color: #e0574a; font-weight: 800; }
+.adp-conc-table .adp-conc-note > .adp-mkt-input::placeholder { color: #9ca3af; font-weight: 400; }
+.adp-conc-table .adp-conc-note > span.filled { color: #e0574a; font-weight: 800; }
 /* 현장조사 항목 줄 */
 .adp-fs-section { padding-top: 10px; margin-top: 10px; border-top: 1px solid #eef1f6; }
 .adp-fs-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 6px; }
