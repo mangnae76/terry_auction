@@ -194,6 +194,23 @@ const lotWithBuildingAddress = computed(() => {
   }
   return out.join(' ');
 });
+/** 건물 이름 + 동 — '정성드림빌 101동'. 번지 뒤부터 층·호가 나오기 직전까지다.
+ *  저가매물은 모두 이 건물 안의 매물이라, 줄마다 다시 적을 까닭이 없다. */
+const subjectBuildingLabel = computed(() => {
+  const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
+  let last = -1;
+  parts.forEach((t, i) => { if (/^\d+(-\d+)?$/.test(t)) last = i; });
+  if (last < 0) return '';
+  const out: string[] = [];
+  for (let i = last + 1; i < parts.length; i += 1) {
+    const t = parts[i];
+    // '101동'은 건물을 가리키니 남기고, '2층201호'처럼 호실까지 붙은 토막에서 멈춘다
+    if (/^제?\d+동$/.test(t)) { out.push(t.replace(/^제/, '')); continue; }
+    if (isUnitToken(t)) break;
+    out.push(t);
+  }
+  return out.join(' ');
+});
 // 건물명·동호수를 떼고 번지까지만 남긴 주소 (동일지번 검색 안내문구용)
 const lotOnlyAddress = computed(() => {
   const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
@@ -3408,6 +3425,20 @@ const lowUnitText = (index: number) => {
   const n = typed > 0 ? typed : lowUnitAuto(index);
   return n > 0 ? n.toLocaleString('ko-KR') : '-';
 };
+/** 경매빌라 저가매물의 주소. 같은 건물이라 빌라명·동은 늘 같으니 자동으로 붙이고,
+ *  줄마다 다른 층·호만 손으로 적게 한다. 유사빌라는 다른 건물이라 붙이지 않는다.
+ *  이미 빌라명을 적어 둔 줄(예전에 전체 주소를 적어 둔 경우)은 그대로 둔다. */
+const lowAddrAuto = computed(() => (mktMode('c') === MKT_MODES[0] ? subjectBuildingLabel.value : ''));
+const lowAddrText = (index: number) => {
+  const typed = mktVal(lowKey(index, 'addr')).trim();
+  const head = lowAddrAuto.value;
+  if (!head) return typed || '-';
+  if (!typed) return head;
+  const name = head.split(' ')[0];
+  return name && typed.includes(name) ? typed : `${head} ${typed}`;
+};
+/** 손으로 적은 줄은 파랗게 — 평당가와 같은 규칙 */
+const lowAddrTyped = (index: number) => !!mktVal(lowKey(index, 'addr')).trim();
 const mk = (group: 'b' | 'c' | 'd', field: string) =>
   (mktMode(group) === '유사물건' ? `mkt.${group}.sim.${field}` : `mkt.${group}.${field}`);
 // 출처 안내 — 아파트와 빌라가 보는 사이트가 다르다
@@ -7301,8 +7332,8 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell">
                     <small>주소</small>
-                    <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'addr'))" placeholder="빌라명 · 층" @change="setMktVal(lowKey(i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
-                    <strong v-else class="adp-mkt-area1">{{ mktVal(lowKey(i - 1, 'addr')) || '-' }}</strong>
+                    <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'addr'))" :placeholder="lowAddrAuto ? '3층 302호' : '빌라명 · 층'" @change="setMktVal(lowKey(i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
+                    <strong v-else :class="['adp-mkt-area1', { typed: lowAddrTyped(i - 1) }]">{{ lowAddrText(i - 1) }}</strong>
                   </div>
                   <div class="cell">
                     <small>평당가</small>
