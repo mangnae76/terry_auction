@@ -48,7 +48,7 @@ const moneyText = (raw: string | undefined) => {
 const MONEY_FIELDS: Array<{ key: 'jeonse' | 'real' | 'urgent'; placeholder: string }> = [
   { key: 'jeonse', placeholder: '전세가 입력' },
   { key: 'real', placeholder: '매매가 입력' },
-  { key: 'urgent', placeholder: '급매가 입력' },
+  { key: 'urgent', placeholder: '입금가 입력' },
 ];
 </script>
 
@@ -124,6 +124,19 @@ const MONEY_FIELDS: Array<{ key: 'jeonse' | 'real' | 'urgent'; placeholder: stri
           <span v-else>{{ moneyText(row[f.key]) }}</span>
         </label>
       </div>
+      <!-- 셋째 줄 — 금액으로는 안 남는 말을 적는 자리. 한 줄을 통으로 쓴다 -->
+      <div class="adp-agency-line">
+        <label class="adp-agency-fld wide">
+          <input
+            v-if="props.editing"
+            v-model="row.note"
+            class="adp-mkt-input left note"
+            placeholder="비고"
+            @change="emit('change')"
+          />
+          <span v-else :class="['note-txt', { filled: !!row.note }]">{{ row.note || '비고' }}</span>
+        </label>
+      </div>
     </div>
   </div>
 </template>
@@ -153,6 +166,12 @@ const MONEY_FIELDS: Array<{ key: 'jeonse' | 'real' | 'urgent'; placeholder: stri
 }
 .adp-mkt-input:focus { outline: none; border-color: #2b6df3; }
 .adp-mkt-input.left { text-align: left; }
+/* 비고 — 손품+현장의 다른 비고와 같은 규칙: 적은 글씨만 빨갛고 안내문구는 회색 */
+.adp-agency-fld.wide { flex: 1 1 100%; }
+.adp-mkt-input.note { color: #e0574a; font-weight: 800; }
+.adp-mkt-input.note::placeholder { color: #9ca3af; font-weight: 400; }
+.adp-agency-fld > span.note-txt { font-size: 11.5px; font-weight: 400; color: #9ca3af; }
+.adp-agency-fld > span.note-txt.filled { color: #e0574a; font-weight: 800; }
 .adp-mkt-input::placeholder { color: #9ca3af; }
 
 .adp-agency-multi { position: relative; }

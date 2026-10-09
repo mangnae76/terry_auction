@@ -533,6 +533,8 @@ export interface AgencyRow {
   jeonse: string;
   real: string;
   urgent: string;
+  /** 상담하면서 들은 말 — 금액으로는 안 남는 것들 */
+  note?: string;
 }
 
 export interface SurveyForm {

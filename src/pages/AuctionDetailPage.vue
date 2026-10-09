@@ -3949,7 +3949,7 @@ const concPriceText = (col: string) => {
   return auto > 0 ? auto.toLocaleString('ko-KR') : '-';
 };
 // 부동산 정보 — 최소 3줄은 항상 보이게 채워 둔다 (computed 안에서 고치면 순환이 생겨 watch로 뺀다)
-const emptyAgencyRow = (): AgencyRow => ({ name: '', phone: '', info: '', monthly: '', jeonse: '', real: '', urgent: '' });
+const emptyAgencyRow = (): AgencyRow => ({ name: '', phone: '', info: '', monthly: '', jeonse: '', real: '', urgent: '', note: '' });
 watch(
   () => auction.value?.id,
   () => {
@@ -3969,7 +3969,7 @@ const siteAgencyRows = computed<AgencyRow[]>(() => surveyForm.value.siteAgencyRo
 const addSiteAgencyRow = async () => {
   const sf = surveyForm.value;
   if (!sf.siteAgencyRows) sf.siteAgencyRows = [];
-  sf.siteAgencyRows.push({ name: '', phone: '', info: '', monthly: '', jeonse: '', real: '', urgent: '' });
+  sf.siteAgencyRows.push({ name: '', phone: '', info: '', monthly: '', jeonse: '', real: '', urgent: '', note: '' });
   await persistSurvey();
 };
 const removeSiteAgencyRow = async (idx: number) => {
