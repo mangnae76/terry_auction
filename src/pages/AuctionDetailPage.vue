@@ -2129,6 +2129,8 @@ const saveProfit = async () => {
  *  (처음 들어왔을 때 한 화면에서 핵심만 보이게) */
 const collapsed = ref<Record<string, boolean>>({
   bld: true, status: true, registry: true, apt: true, arrears: true, areaInfo: true,
+  // 세율표는 가끔 들춰 보는 참고 자료다 — 산정표 아래를 길게 차지하지 않게 접어 둔다
+  taxRef: true,
   // 현장에서만 쓰는 목록이라 평소에는 접어 둔다
   checklist: true,
 });
@@ -2551,7 +2553,7 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
     ],
   },
   {
-    title: '③ 우편물 및 공과금 현황',
+    title: '③ 우편물, 공과금 및 기타',
     items: [
       { id: 'fs.mailMaint', label: '미납관리비', options: ['O', 'X'], extra: { id: 'fs.mailMaintAmt', placeholder: '금액입력', money: true } },
       { id: 'fs.mailPower', label: '전기수도가스', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액입력', money: true } },
@@ -2561,6 +2563,7 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
       },
       { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'] },
       { id: 'fs.parkList', label: '주차리스트', options: ['O', 'X'] },
+      { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'] },
       { id: 'fs.bikeKeep', label: '자전거상태', options: ['상', '중', '하'] },
     ],
   },
@@ -5615,7 +5618,7 @@ const goBack = () => router.back();
                 <td class="r">
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scBidPct(sc).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scBidPct(sc)) }}</template>
                 </td>
-                <td class="r">
+                <td class="r emph">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.bid.myBidValue" class="adp-cell-input" /><template v-else><strong>{{ formatMoney(scBid(sc)) }}</strong></template>
                 </td>
               </tr>
@@ -8641,6 +8644,8 @@ const goBack = () => router.back();
 .adp-profit-table .pink td { background: #fdeef0; }
 .adp-profit-table .pink td.adp-cat { background: #f3f4f6; }
 .adp-profit-table.v2 tr.pink td.emph { background: #fdeef0; }
+/* 입찰가에도 같은 빨간 테두리 — 다만 바탕은 그 줄(강조줄)의 노란색 그대로 둔다 */
+.adp-profit-table.v2 tr.hi td.emph { background: #fefae0; }
 /* 누진세율 구간 */
 .adp-profit-table .adp-formula .adp-bracket { color: #111827; font-weight: 500; }
 .adp-profit-table .neg { color: #dc2626; }
