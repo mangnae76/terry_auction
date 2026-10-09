@@ -4273,16 +4273,14 @@ type RightsDocCell = {
   id: string; placeholder: string;
   options?: string[];
   autoOccupancy?: boolean;
+  /** 아랫줄 마지막 칸 끝까지 늘려 쓰는 칸 */
+  wide?: boolean;
 };
 type RightsDocLine = { cells: RightsDocCell[] };
-// 현황조사서·세대열람의 점유 관련 선택칸 — 네 칸 모두 같은 목록을 쓴다
-const DOC_OCCUPANCY_OPTIONS = ['임차인점유', '폐문부재', '동거인O', '점유관계미상', '전출'];
 // 현황조사일 줄 — 집행관이 문 앞에서 본 것만 고른다
 const DOC_SURVEY_OPTIONS = ['임차인점유', '폐문부재', '점유관계미상'];
 // 전입일자 줄 — 전입 기록에서 읽히는 것만 고른다 (폐문부재·점유관계미상은 조사일 쪽 말이다)
-const DOC_MOVEIN_OPTIONS = ['임차인점유', '동거인O', '전출'];
-// 세대열람 — 세대주가 올라와 있나 둘 중 하나
-const DOC_HEAD_OPTIONS = ['세대주 있음', '세대주 없음'];
+const DOC_MOVEIN_OPTIONS = ['임차인점유', '동거인O', '전출', '전입'];
 const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
   {
     // 줄마다 '무슨 날짜인지' 를 왼쪽에 세우고, 날짜칸은 가운데, 고르는 칸은 오른쪽.
@@ -4292,13 +4290,13 @@ const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
       { cells: [
         { kind: 'label', id: 'doc.survey.dateLabel', placeholder: '조사일' },
         { kind: 'date', id: 'doc.survey.date', placeholder: '날짜입력' },
-        { kind: 'multi', id: 'doc.survey.note', placeholder: '기타사항입력', options: DOC_SURVEY_OPTIONS },
+        { kind: 'multi', id: 'doc.survey.note', placeholder: '점유관계', options: DOC_SURVEY_OPTIONS, wide: true },
       ] },
       { cells: [
         { kind: 'label', id: 'doc.surveyTenant.dateLabel', placeholder: '전입일자' },
         { kind: 'date', id: 'doc.surveyTenant.date', placeholder: '날짜입력' },
-        { kind: 'multi', id: 'doc.surveyTenant.state', placeholder: '기타사항입력', options: DOC_MOVEIN_OPTIONS },
-        { kind: 'text', id: 'doc.surveyTenant.extra', placeholder: '기타입력' },
+        { kind: 'multi', id: 'doc.surveyTenant.state', placeholder: '점유관계', options: DOC_MOVEIN_OPTIONS },
+        { kind: 'text', id: 'doc.surveyTenant.extra', placeholder: '세대주 입력' },
       ] },
     ],
   },
@@ -4308,12 +4306,12 @@ const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
       { cells: [
         { kind: 'label', id: 'doc.residents.issueLabel', placeholder: '발급일자' },
         { kind: 'date', id: 'doc.residents.issueDate', placeholder: '날짜입력' },
-        { kind: 'pick', id: 'doc.residents.headExists', placeholder: '세대주', options: DOC_HEAD_OPTIONS },
       ] },
       { cells: [
         { kind: 'label', id: 'doc.residents.dateLabel', placeholder: '전입일자' },
         { kind: 'date', id: 'doc.residents.date', placeholder: '날짜입력' },
-        { kind: 'multi', id: 'doc.residents.cohabit', placeholder: '동거인', options: DOC_OCCUPANCY_OPTIONS },
+        { kind: 'multi', id: 'doc.residents.cohabit', placeholder: '점유관계', options: DOC_MOVEIN_OPTIONS },
+        { kind: 'text', id: 'doc.residents.head', placeholder: '세대주 입력' },
       ] },
     ],
   },
@@ -6495,6 +6493,30 @@ const goBack = () => router.back();
                       >
                         <template v-for="c in ln.cells" :key="c.id">
                           <span v-if="c.kind === 'label'" class="adp-rdoc-label">{{ c.placeholder }}</span>
+                          <div v-else-if="c.wide && (c.kind === 'multi' || c.kind === 'pick')" class="adp-agency-multi adp-rdoc-multi wide">
+                            <button
+                              type="button"
+                              class="adp-rdoc-input adp-agency-trigger"
+                              @click="docMultiOpen = docMultiOpen === c.id ? '' : c.id"
+                            >
+                              <span :class="['txt', { ph: !rightsDocNote(c.id) }]">{{ docNoteList(c.id).join(', ') || c.placeholder }}</span>
+                              <span class="caret">▾</span>
+                            </button>
+                            <template v-if="docMultiOpen === c.id">
+                              <div class="adp-agency-backdrop" @click="docMultiOpen = ''" />
+                              <ul class="adp-agency-options">
+                                <li
+                                  v-for="opt in c.options"
+                                  :key="opt"
+                                  :class="['adp-agency-option', { on: docNoteList(c.id).includes(opt) }]"
+                                  @click="c.kind === 'pick' ? pickDocNoteOption(c.id, opt) : toggleDocNoteOption(c.id, opt)"
+                                >
+                                  <span>{{ opt }}</span>
+                                  <span v-if="docNoteList(c.id).includes(opt)" class="ck">✓</span>
+                                </li>
+                              </ul>
+                            </template>
+                          </div>
                           <button
                             v-else-if="c.kind === 'date'"
                             type="button"
@@ -8859,6 +8881,8 @@ const goBack = () => router.back();
 .adp-rdoc-input:focus { border-color: #2b6df3; outline: none; }
 /* 편집 중이 아닐 때는 입력칸을 눌러도 바뀌지 않게 하고 테두리만 옅게 둔다 */
 .adp-rdoc-multi { min-width: 0; }
+/* 아랫줄 마지막 칸 끝까지 늘려 쓰는 칸 */
+.adp-rdoc-multi.wide { grid-column: 3 / -1; }
 .adp-rdoc-multi .adp-agency-trigger { width: 100%; font-size: 10.5px; }
 /* 화살표를 옆 날짜칸과 같은 크기로 */
 .adp-rdoc-multi .adp-agency-trigger .caret { font-size: 15px; color: #6b7280; line-height: 1; }
