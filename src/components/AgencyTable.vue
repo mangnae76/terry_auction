@@ -47,7 +47,7 @@ const moneyText = (raw: string | undefined) => {
 /** 칸 하나하나를 여기 적어 둔다 — 안내글을 바꾸려면 이 표만 고치면 된다 */
 const MONEY_FIELDS: Array<{ key: 'jeonse' | 'real' | 'urgent'; placeholder: string }> = [
   { key: 'jeonse', placeholder: '전세가 입력' },
-  { key: 'real', placeholder: '실거래가 입력' },
+  { key: 'real', placeholder: '매매가 입력' },
   { key: 'urgent', placeholder: '급매가 입력' },
 ];
 </script>

@@ -8589,8 +8589,8 @@ const goBack = () => router.back();
 .adp-profit-table.v2 td { font-size: 12.5px; }
 /* 칸마다 위아래 빈 자리가 넓어 표가 쓸데없이 길었다. 글자 크기는 그대로 두고
    여백만 줄인다. 좌우도 같이 줄여 '명도비' 같은 말이 두 줄로 꺾이지 않게 한다. */
-.adp-profit-table th, .adp-profit-table td { padding: 5px 5px; }
-.adp-profit-table .adp-cat { padding: 5px 2px; }
+.adp-profit-table th, .adp-profit-table td { padding: 7px 5px; }
+.adp-profit-table .adp-cat { padding: 7px 2px; }
 /* 상세 칸은 꺾지 않는다 — '매도중개료'가 두 줄로 갈라지면서 그 줄만 키가
    두 배가 됐다. 숫자·공식 칸(.r)은 그대로 둔다.
    구분 칸(.adp-cat)은 여러 줄을 묶는 칸이라 꺾여도 표가 길어지지 않는다 —
