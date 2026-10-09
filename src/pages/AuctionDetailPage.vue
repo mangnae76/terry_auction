@@ -4278,7 +4278,7 @@ type RightsDocCell = {
 };
 type RightsDocLine = { cells: RightsDocCell[] };
 // 현황조사일 줄 — 집행관이 문 앞에서 본 것만 고른다
-const DOC_SURVEY_OPTIONS = ['임차인점유', '폐문부재', '점유관계미상'];
+const DOC_SURVEY_OPTIONS = ['임차인점유', '폐문부재', '점유미상', '세대열람 O', '세대열람 X'];
 // 전입일자 줄 — 전입 기록에서 읽히는 것만 고른다 (폐문부재·점유관계미상은 조사일 쪽 말이다)
 const DOC_MOVEIN_OPTIONS = ['임차인점유', '동거인O', '전출', '전입'];
 const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
@@ -4293,7 +4293,7 @@ const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
         { kind: 'multi', id: 'doc.survey.note', placeholder: '점유관계', options: DOC_SURVEY_OPTIONS, wide: true },
       ] },
       { cells: [
-        { kind: 'label', id: 'doc.surveyTenant.dateLabel', placeholder: '전입일자' },
+        { kind: 'label', id: 'doc.surveyTenant.dateLabel', placeholder: '전입일' },
         { kind: 'date', id: 'doc.surveyTenant.date', placeholder: '날짜입력' },
         { kind: 'multi', id: 'doc.surveyTenant.state', placeholder: '점유관계', options: DOC_MOVEIN_OPTIONS },
         { kind: 'text', id: 'doc.surveyTenant.extra', placeholder: '세대주 입력' },
@@ -4304,11 +4304,11 @@ const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
     id: 'doc.residents', label: '세대열람',
     lines: [
       { cells: [
-        { kind: 'label', id: 'doc.residents.issueLabel', placeholder: '발급일자' },
+        { kind: 'label', id: 'doc.residents.issueLabel', placeholder: '발급일' },
         { kind: 'date', id: 'doc.residents.issueDate', placeholder: '날짜입력' },
       ] },
       { cells: [
-        { kind: 'label', id: 'doc.residents.dateLabel', placeholder: '전입일자' },
+        { kind: 'label', id: 'doc.residents.dateLabel', placeholder: '전입일' },
         { kind: 'date', id: 'doc.residents.date', placeholder: '날짜입력' },
         { kind: 'multi', id: 'doc.residents.cohabit', placeholder: '점유관계', options: DOC_MOVEIN_OPTIONS },
         { kind: 'text', id: 'doc.residents.head', placeholder: '세대주 입력' },
@@ -4352,7 +4352,7 @@ const rightsDocNote = (id: string) => auction.value?.rightsDocNotes?.[id] ?? '';
 // 세대열람의 동거인 칸처럼 여러 개를 고르는 항목 — 쉼표로 이어 붙인 한 문자열로 저장
 const docMultiOpen = ref('');
 // 예전에 O/X 버튼으로 저장해 둔 값('O', 'X')을 지금 선택지 이름으로 바꾸고 중복을 없앤다
-const DOC_LEGACY_LABELS: Record<string, string> = { O: '동거인O', '동거인 O': '동거인O' };
+const DOC_LEGACY_LABELS: Record<string, string> = { O: '동거인O', '동거인 O': '동거인O', 점유자미상: '점유미상', 점유관계미상: '점유미상' };
 const docNoteList = (id: string) => {
   const seen = new Set<string>();
   return rightsDocNote(id)
@@ -6489,7 +6489,7 @@ const goBack = () => router.back();
                         v-for="(ln, li) in docLines(item)"
                         :key="li"
                         class="adp-rdoc-survey"
-                        :style="{ gridTemplateColumns: ln.cells[0]?.kind === 'label' ? '40px 1.4fr 1fr 1fr' : `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
+                        :style="{ gridTemplateColumns: ln.cells[0]?.kind === 'label' ? '32px 1.35fr 1fr 1fr' : `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
                       >
                         <template v-for="c in ln.cells" :key="c.id">
                           <span v-if="c.kind === 'label'" class="adp-rdoc-label">{{ c.placeholder }}</span>
