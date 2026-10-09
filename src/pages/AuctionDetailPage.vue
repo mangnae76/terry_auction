@@ -2851,7 +2851,7 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['쓰임', '거래량 조회 · 세대수/매물수 바로가기'],
   ],
   recv: [
-    ['참조', '가격정보 → 경매집원 실거래가'],
+    ['참조', '가격정보 → 경매지번 실거래가'],
     ['자료', '단지전체 (국토부) 최근 2년'],
   ],
   rank: [
@@ -3376,7 +3376,7 @@ const sendJeonseToMarket = async (row: PlaceRow) => {
   if (String(row.floor ?? '').trim()) setMktVal(mk('d', 'jFloor'), String(row.floor).trim());
   if (Number(row.areaM2) > 0) setMktVal(mk('d', 'jArea'), String(Number(row.areaM2)));
   await persistSurvey();
-  flashToast('경매집원 전세 실거래가에 적용하였습니다.', 'success');
+  flashToast('경매지번 전세 실거래가에 적용하였습니다.', 'success');
 };
 const sendTradePriceToMarket = async (row: PlaceRow) => {
   const price = parsePriceNumber(row.amount);
@@ -3393,7 +3393,7 @@ const sendTradePriceToMarket = async (row: PlaceRow) => {
     if (pyeong > 0) setMktVal(mk('b', 'unit'), String(Math.round(price / pyeong)));
   }
   await persistSurvey();
-  flashToast('경매집원 실거래가에 적용하였습니다.', 'success');
+  flashToast('경매지번 실거래가에 적용하였습니다.', 'success');
 };
 // 해당 경매물건 자료가 없으면 비슷한 물건으로 대신 조사한다.
 // 모드를 바꾸면 저장 위치도 갈라져서 두 벌의 값을 따로 들고 있을 수 있다.
@@ -3837,7 +3837,7 @@ type ConcRow = { key: string; label: string; money: boolean; suffix?: string };
 // '시세 결론'은 값을 모아 견주는 표, '급매가 결론'은 그걸 보고 적는 표.
 const CONC_MEAN_SRC = ['case', 'sim', 'avg', 'low', 'lowSim'];
 const MKT_CONC_COLS: ConcCol[] = [
-  { key: 'case', label: '경매집원\n실거래가' },
+  { key: 'case', label: '경매지번\n실거래가' },
   { key: 'sim', label: '유사물건\n실거래가' },
   { key: 'avg', label: '실거래가\n조건분석 평균' },
   { key: 'low', label: '경매빌라\n저가매물' },
@@ -5866,7 +5866,7 @@ const goBack = () => router.back();
         <!-- 해당물건 실거래가 — PDF 분석 자료 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('casePrice')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 9.5 10.5l4 4L21 7"/><path d="M15 7h6v6"/></svg>경매집원 실거래가</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 9.5 10.5l4 4L21 7"/><path d="M15 7h6v6"/></svg>경매지번 실거래가</h2>
             <span v-if="caseTradeUpdatedAt" class="adp-update-time">UPDATE : {{ caseTradeUpdatedAt }}</span>
             <button
               type="button"
@@ -6489,7 +6489,7 @@ const goBack = () => router.back();
                         v-for="(ln, li) in docLines(item)"
                         :key="li"
                         class="adp-rdoc-survey"
-                        :style="{ gridTemplateColumns: ln.cells[0]?.kind === 'label' ? '30px 67px 1fr 1fr' : `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
+                        :style="{ gridTemplateColumns: ln.cells[0]?.kind === 'label' ? '30px 62px 1fr 1fr' : `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
                       >
                         <template v-for="c in ln.cells" :key="c.id">
                           <span v-if="c.kind === 'label'" class="adp-rdoc-label">{{ c.placeholder }}</span>
@@ -7298,7 +7298,7 @@ const goBack = () => router.back();
             <!-- ② 실거래가 — 예전 '평단가' 블록을 이 줄에 합쳤다 (실거래가 옆이 평단가) -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktModeLabel('d', '경매집원', '유사물건') }}</span> 실거래가<em class="adp-mkt-auto">(매매·전세)</em><span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
+                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktModeLabel('d', '경매지번', '유사물건') }}</span> 실거래가<em class="adp-mkt-auto">(매매·전세)</em><span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
                 <button
                   type="button"
                   :class="['adp-mkt-mode', { sim: mktMode('d') === '유사물건' }]"
@@ -8877,7 +8877,7 @@ const goBack = () => router.back();
 .adp-rdoc-survey .adp-date-caret { flex: 0 0 auto; }
 /* 날짜칸은 글자 길이가 정해져 있다 — 안쪽 여백을 줄여 폭을 아끼고
    남는 자리를 옆의 고르는 칸·적는 칸에 넘긴다 */
-.adp-rdoc-survey .adp-date-btn { padding: 0 2px; gap: 2px; }
+.adp-rdoc-survey .adp-date-btn { padding: 0 2px; gap: 2px; font-size: 9.8px; letter-spacing: -0.3px; }
 /* 문건송달 내역 — 확인 문구를 한 줄 쓰고 비고는 그 아래 줄에 길게 둔다 */
 .adp-rdoc-task.inline { grid-column: 1 / -1; min-width: 0; align-self: center; white-space: normal; }
 .adp-rdoc-task.inline + .adp-rdoc-input { grid-column: 1 / -1; margin-top: 4px; }
