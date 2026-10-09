@@ -3983,34 +3983,40 @@ const concAuto = (col: string, row: string): string => {
   }
   return '';
 };
-const concVal = (col: string, row: string): string => {
-  if (CONC_MANUAL_COLS.includes(col)) {
-    const sf = surveyForm.value as unknown as Record<string, unknown>;
-    const legacy = MKT_CONC_LEGACY[`${col}.${row}`];
-    const manual = legacy
-      ? String(sf[legacy] ?? '')
-      : (sf.mktConcValues as Record<string, string> | undefined)?.[`${col}.${row}`] ?? '';
-    if (manual) return manual;
-  }
-  return concAuto(col, row);
+/** 시세 결론은 다른 데서 만든 값을 비추는 표지만, 비춘 값이 못 미더울 때는
+ *  손으로 덮어쓸 수 있어야 한다. 자동으로 채워 두는 칸(case.areaM2 같은)과 섞이지 않게
+ *  'fix:' 를 붙여 따로 담는다 — 지우면 다시 비추는 값으로 돌아간다. */
+const CONC_FIX = 'fix:';
+const concFix = (col: string, row: string): string => {
+  const sf = surveyForm.value as unknown as Record<string, unknown>;
+  return (sf?.mktConcValues as Record<string, string> | undefined)?.[`${CONC_FIX}${col}.${row}`] ?? '';
 };
-/** 손으로 적은 값인가 — 적은 값은 파랗게 보여 준다 */
-const concTyped = (col: string, row: string): boolean => {
-  if (!CONC_MANUAL_COLS.includes(col)) return false;
+/** 급매가 결론처럼 '원래 손으로 적는 칸' 의 값 — 예전 필드를 그대로 쓴다 */
+const concOwn = (col: string, row: string): string => {
+  if (!CONC_MANUAL_COLS.includes(col)) return '';
   const sf = surveyForm.value as unknown as Record<string, unknown>;
   const legacy = MKT_CONC_LEGACY[`${col}.${row}`];
-  const manual = legacy
+  return legacy
     ? String(sf[legacy] ?? '')
     : (sf.mktConcValues as Record<string, string> | undefined)?.[`${col}.${row}`] ?? '';
-  return !!manual;
 };
-/** 그 칸을 손으로 적을 수 있나 — 비추기만 하는 칸은 편집 모드에서도 네모가 뜨지 않는다 */
-const concEditable = (col: string) => editingSurvey.value.realUser && CONC_MANUAL_COLS.includes(col);
+const concVal = (col: string, row: string): string => concOwn(col, row) || concFix(col, row) || concAuto(col, row);
+/** 손으로 적은 값인가 — 적은 값은 파랗게 보여 준다 */
+const concTyped = (col: string, row: string): boolean => !!concOwn(col, row) || !!concFix(col, row);
+/** 그 칸을 손으로 적을 수 있나.
+ *  조건분석 평균의 면적만 뺀다 — 한 값이 아니라 걸러 낸 범위라 한 칸에 적을 수가 없다. */
+const concEditable = (col: string, row = '') => (
+  editingSurvey.value.realUser && !(col === 'avg' && (row === 'area' || row === 'areaM2'))
+);
 const setConcVal = (col: string, row: string, value: string) => {
   const sf = surveyForm.value as unknown as Record<string, unknown>;
+  const cur = (sf.mktConcValues as Record<string, string> | undefined) ?? {};
+  if (!CONC_MANUAL_COLS.includes(col)) {
+    sf.mktConcValues = { ...cur, [`${CONC_FIX}${col}.${row}`]: value };
+    return;
+  }
   const legacy = MKT_CONC_LEGACY[`${col}.${row}`];
   if (legacy) { sf[legacy] = value; return; }
-  const cur = (sf.mktConcValues as Record<string, string> | undefined) ?? {};
   sf.mktConcValues = { ...cur, [`${col}.${row}`]: value };
 };
 /** 보기 모드 글자 — 면적은 적은 그대로, 돈은 천 단위 쉼표 */
@@ -7695,7 +7701,7 @@ const goBack = () => router.back();
                     <td v-for="c in t.cols" :key="c.key" :class="['num', { mean: c.key === 'mean' }]">
                       <!-- 면적 — ㎡ 와 평을 같이 적는다. 한쪽만 적어도 나머지가 따라온다 -->
                       <template v-if="r.key === 'area'">
-                        <template v-if="concEditable(c.key)">
+                        <template v-if="concEditable(c.key, 'area')">
                           <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'areaM2')" placeholder="0" @change="setConcArea(c.key, 'm2', ($event.target as HTMLInputElement).value)" />㎡</span>
                           <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'area')" placeholder="0" @change="setConcArea(c.key, 'py', ($event.target as HTMLInputElement).value)" />평</span>
                         </template>
