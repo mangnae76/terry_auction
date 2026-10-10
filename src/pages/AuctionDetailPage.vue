@@ -2699,11 +2699,12 @@ const setFieldMoneyText = (id: string, el: HTMLInputElement) => {
   // 쉼표를 다시 찍어 준 경우에는 칸도 맞춰 준다 (값이 그대로면 화면이 안 바뀐다)
   if (el.value !== next) el.value = next;
 };
-const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
+const FIELD_SECTIONS: Array<{ title: string; tip?: string; items: FieldRow[] }> = [
   {
     title: '② 탐문 (윗집, 옆집, 아래집, 동대표 중)',
+    tip: 'probe',
     items: [
-      { id: 'fs.roofLeak', label: '누수', options: ['O', 'X', '확인불가'], note: true },
+      { id: 'fs.roofLeak', label: '누수', options: ['O', 'X'], note: true },
       // 먼저 눈으로 보는 것 — 건물을 한 바퀴 돌며 채운다.
       // O/X 만으로는 무엇을 봤는지 남지 않아 줄마다 비고를 둔다
       { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], note: true },
@@ -2990,6 +2991,11 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
   loc: [
     ['조사', '지역 내 호재 · 공급 · 입지조건 (호갱, 네부)'],
     ['확인', '전세가 · 평당가로 등수 확인'],
+  ],
+  probe: [
+    ['O', '확인했다'],
+    ['X', '확인하지 못했다'],
+    ['비고', '무엇을 보고 들었는지 — 글자·숫자 다 적을 수 있다'],
   ],
   jeonseRatio: [
     ['공식', '전세가 ÷ 매매가 × 100'],
@@ -7898,7 +7904,7 @@ const goBack = () => router.back();
               <div class="adp-sub-head">
                 <h3>{{ t.title }}<span v-if="t.boldPrice" class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('concMean', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('concMean', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'concMean'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">체크를 풀면 평균값에서 제외</span></span></h3>
               </div>
-              <table :class="['adp-table', 'adp-mkt-table', 'fit', 'adp-dm-tbl', 'adp-conc-table', { 'bold-price': t.boldPrice }]">
+              <table :class="['adp-table', 'adp-mkt-table', 'fit', 'adp-dm-tbl', 'adp-conc-table', { 'bold-price': t.boldPrice, 'conc-urgent': t.note }]">
                 <thead>
                   <tr>
                     <th v-for="c in t.cols" :key="c.key" :class="[c.tone, { off: concMeanOff(c.key) }]">
@@ -8066,7 +8072,7 @@ const goBack = () => router.back();
             </div>
             </div>
             <div v-for="sec in FIELD_SECTIONS" :key="sec.title" class="adp-fs-section">
-              <div class="adp-fs-title">{{ sec.title }}</div>
+              <div class="adp-fs-title">{{ sec.title }}<span v-if="sec.tip" class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter(sec.tip, $event)" @mouseleave="noteLeave()" @click.stop="toggleNote(sec.tip!, $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === sec.tip" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows(sec.tip)" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></div>
               <template v-for="item in sec.items" :key="item.id">
               <div class="adp-fs-row">
                 <span class="lbl">{{ item.label }}</span>
@@ -9889,6 +9895,24 @@ const goBack = () => router.back();
 .adp-mkt-table.adp-conc-table td { padding: 6px 3px; }
 .adp-mkt-table.adp-conc-table .adp-conc-unit { justify-content: center; }
 .adp-mkt-table.adp-conc-table .adp-mkt-input { text-align: center; }
+/* 비고만은 왼쪽에서 시작한다 — 위의 '가운데' 규칙에 끌려가 글이 한가운데
+   떠 있었다. 숫자 칸과 달리 글을 적는 자리다 */
+.adp-mkt-table.adp-conc-table .adp-conc-note,
+.adp-mkt-table.adp-conc-table .adp-conc-note > .adp-mkt-input,
+.adp-mkt-table.adp-conc-table .adp-conc-note > span { text-align: left; }
+.adp-mkt-table.adp-conc-table .adp-conc-note { padding-left: 9px; }
+
+/* 급매가 결론만 글자를 한 단 키운다 (약 30%).
+   여기는 칸이 셋뿐이라 자리가 남고, 들여다보며 값을 정하는 표다.
+   위의 시세 결론은 칸이 여섯이라 같이 키우면 숫자가 겹친다. */
+.adp-conc-table.conc-urgent thead th { font-size: 12.5px; }
+.adp-conc-table.conc-urgent th small { font-size: 12.5px; }
+.adp-conc-table.conc-urgent .adp-conc-v { font-size: 13.5px; }
+.adp-conc-table.conc-urgent .adp-conc-v small { font-size: 12.5px; }
+.adp-conc-table.conc-urgent .adp-conc-area { font-size: 12.5px; }
+.adp-conc-table.conc-urgent .adp-conc-unit { font-size: 13px; }
+.adp-conc-table.conc-urgent .adp-mkt-input { font-size: 13.5px; }
+.adp-conc-table.conc-urgent .adp-conc-note > span { font-size: 13.5px; }
 .adp-mkt-table td.calc { background: #fafbfc; color: #6b7280; }
 .adp-mkt-table td strong.hi { color: #2b6df3; font-weight: 800; }
 .adp-mkt-input {
