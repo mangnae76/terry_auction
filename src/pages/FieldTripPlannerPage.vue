@@ -1666,6 +1666,7 @@ watch(() => authStore.uid, (newUid) => {
             :class="['ftp-stop', `kind-${stop.kind ?? 'stop'}`, {
               visited: stop.kind === 'stop' && isVisited(stop.address),
               dragging: dragFromIdx === idx,
+              'bubble-on': addrBubbleIdx === idx,
             }]"
           >
             <span
@@ -2527,6 +2528,9 @@ watch(() => authStore.uid, (newUid) => {
   border-bottom: 5px solid #111827;
 }
 .ftp-addr-bubble.open { display: block; }
+/* 말풍선이 아랫줄에 깔리던 것 — 말풍선의 z-index 는 제 줄 안에서만 센다.
+   줄끼리는 뒤에 오는 줄이 위에 깔리므로, 말풍선을 연 줄을 통째로 올려야 한다 */
+.ftp-stop.bubble-on { z-index: 30; }
 /* 마우스가 있는 환경에서만 hover로 연다 — 터치에서는 탭으로 연다.
    행 전체가 아니라 '주소 글자' 위에서만 뜬다 — 오른쪽 아이콘(물건상세 ~ 목록에서 제거)
    위를 지날 때 말풍선이 떠서 아랫줄 아이콘을 덮어 버리는 것을 막는다. */

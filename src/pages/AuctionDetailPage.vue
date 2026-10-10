@@ -3102,6 +3102,29 @@ const closeTips = () => {
   mktLitKey.value = ''; dmLitKey.value = '';
 };
 onMounted(() => window.addEventListener('scroll', closeTips, true));
+
+// 상단 고정줄(탭·주소) 아래에 또 붙일 것이 있다 — 예상수익분석의 제목·날짜 줄.
+// 그 높이는 주소가 한 줄이냐 두 줄이냐로 달라지므로 재서 CSS 로 흘려보낸다.
+const stickyHead = ref<HTMLElement | null>(null);
+let headObserver: ResizeObserver | null = null;
+onMounted(() => {
+  const el = stickyHead.value;
+  if (!el) return;
+  const apply = () => {
+    const h = Math.round(el.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--adp-head-h', `${h}px`);
+  };
+  apply();
+  if (typeof ResizeObserver !== 'undefined') {
+    headObserver = new ResizeObserver(apply);
+    headObserver.observe(el);
+  }
+});
+onBeforeUnmount(() => {
+  headObserver?.disconnect();
+  headObserver = null;
+  document.documentElement.style.removeProperty('--adp-head-h');
+});
 onBeforeUnmount(() => window.removeEventListener('scroll', closeTips, true));
 /** 말풍선 세로 위치 — 화면 기준(fixed)으로 띄워 가장자리에서 잘리지 않게 한다 */
 const noteTop = ref(0);
@@ -5132,7 +5155,7 @@ const goBack = () => router.back();
 <template>
   <section class="adp-shell">
     <!-- 상단바 + 탭 + 물건요약은 탭과 무관하게 스크롤해도 붙어 있는다 -->
-    <div class="adp-sticky-head">
+    <div ref="stickyHead" class="adp-sticky-head">
       <header class="adp-topbar">
         <button class="adp-back" type="button" aria-label="뒤로" @click="goBack">‹</button>
         <h1 class="adp-page-title"><span class="adp-title-tag">경매</span>{{ caseLabel || '물건상세' }}</h1>
@@ -5775,6 +5798,9 @@ const goBack = () => router.back();
 
       <template v-if="activeTab === 'profit' && auction">
         <section class="adp-card">
+          <!-- 제목과 날짜 줄은 화면에 붙여 둔다 — 표를 한참 내려 보다가도
+               어느 안(A·B)을 보고 있는지, 진행상황이 무엇인지 늘 보여야 한다 -->
+          <div class="adp-profit-sticky">
           <header class="adp-card-head adp-profit-head" @click="toggleSection('profit')">
             <h2>
               <svg class="adp-profit-ico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -5815,6 +5841,7 @@ const goBack = () => router.back();
               <button type="button" aria-label="산정표 추가" :disabled="profitScenarios.length >= PROFIT_MAX" @click.stop="addProfitScenario">＋</button>
             </span>
             </span>
+          </div>
           </div>
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
           <template v-for="(sc, si) in profitScenarios" :key="sc.label">
@@ -7690,7 +7717,7 @@ const goBack = () => router.back();
             </div>
 
             <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title">2. 저렴매물조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
+              <strong class="adp-dm-title">2. 네이버 매물조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
               <button v-if="!editingSurvey.listing" class="adp-edit-btn" type="button" @click.stop="editingSurvey.listing = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('listing')">💾 저장</button>
             </div>
@@ -8902,6 +8929,14 @@ const goBack = () => router.back();
 .adp-profit-dates {
   display: flex; align-items: center; gap: 4px; flex-wrap: nowrap;
   padding: 8px 0 10px; border-bottom: 1px solid #eef1f6; margin-bottom: 10px;
+}
+/* 제목 + 날짜 줄을 통째로 화면에 붙인다. 붙는 자리는 상단 고정줄 바로 아래 —
+   그 높이(--adp-head-h)는 주소가 한 줄이냐 두 줄이냐로 달라져 재서 받는다.
+   카드의 좌우 여백(8px)을 뚫어야 흰 바탕이 끝까지 가서 표가 비쳐 보이지 않는다 */
+.adp-profit-sticky {
+  position: sticky; top: var(--adp-head-h, 162px); z-index: 30;
+  background: #fff;
+  margin: 0 -8px; padding: 0 8px;
 }
 .adp-pd-item {
   border: none; background: transparent; padding: 0; cursor: pointer;
