@@ -2696,9 +2696,24 @@ type FieldRow = {
   note?: boolean;
   /** 누구에게 들었나 — O/X 와는 따로 고른다 (들은 사람과 확인 여부는 다른 값이다) */
   who?: { id: string; options: string[] };
+  /** 비고 자리를 글칸이 아니라 '고르는 칸'으로 — 여러 개 고를 수 있다.
+   *  현장에서 자판을 두드리는 것보다 눌러 고르는 편이 빠른 항목들이다. */
+  noteOptions?: string[];
 };
 /** 비고 값이 앉을 자리 — 항목 id 뒤에 붙인다 */
 const fieldNoteId = (id: string) => `${id}.note`;
+/** 열려 있는 '고르는 비고' — 한 번에 하나만 */
+const fsPickOpen = ref('');
+/** 골라 둔 것들 — 쉼표로 이어 한 칸에 담는다 */
+const fieldPickList = (id: string) => fieldVal(fieldNoteId(id))
+  .split(',').map((v) => v.trim()).filter(Boolean);
+const toggleFieldPick = (id: string, opt: string) => {
+  const picked = fieldPickList(id);
+  const at = picked.indexOf(opt);
+  if (at >= 0) picked.splice(at, 1);
+  else picked.push(opt);
+  setFieldValNow(fieldNoteId(id), picked.join(', '));
+};
 /** 공과금 금액칸 — 숫자만 받던 칸이라 '미납 3개월' 같은 말을 적을 수가 없었다.
  *  글자를 그대로 받되, 숫자만 적은 경우에는 천 단위 쉼표를 붙여 준다. */
 const setFieldMoneyText = (id: string, el: HTMLInputElement) => {
@@ -2717,22 +2732,19 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
     // 향·뷰·외벽, 건물에 들어서며 보는 것, 계량기, 한 바퀴 돌며 보는 것,
     // 그다음 사람에게 묻는 것, 마지막으로 문 앞의 비번.
     items: [
-      { id: 'fs.aspect', label: '향', options: ['O', 'X'], note: true },
-      { id: 'fs.view', label: '뷰', options: ['O', 'X'], note: true },
-      { id: 'fs.exterior', label: '건물외벽, 필로티천장', options: ['O', 'X'], note: true },
-      { id: 'fs.trash', label: '쓰레기', options: ['O', 'X'], note: true },
-      { id: 'fs.mailbox', label: '우편함', options: ['O', 'X'], note: true },
-      // 계량기는 금액과 함께 적는다 (예전 ③ 우편물·공과금에 있던 줄들)
-      { id: 'fs.mailPower', label: '전기 사용', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액 및 기타 입력', money: true } },
-      { id: 'fs.mailGas', label: '가스 사용', options: ['O', 'X'], extra: { id: 'fs.mailGasAmt', placeholder: '금액 및 기타 입력', money: true } },
-      { id: 'fs.mailWater', label: '수도 사용', options: ['O', 'X'], extra: { id: 'fs.mailWaterAmt', placeholder: '금액 및 기타 입력', money: true } },
-      // 건물을 한 바퀴 돌며 보는 것 — O/X 만으로는 무엇을 봤는지 안 남아 비고를 둔다
-      { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], note: true },
-      { id: 'fs.parkList', label: '주차장 관리', options: ['O', 'X'], note: true },
-      { id: 'fs.bikeKeep', label: '자전거 보관', options: ['상', '중', '하'], note: true },
+      // 자판을 두드리는 대신 눌러 고른다 — 현장에서는 그편이 빠르다
+      { id: 'fs.aspect', label: '향 / 뷰', options: ['O', 'X'], noteOptions: ['동', '서', '남', '북', '뻥뷰', '단지내뷰'] },
+      { id: 'fs.exterior', label: '건물 관리', options: ['O', 'X'], noteOptions: ['외벽크랙', '필로티천장누수'] },
+      { id: 'fs.trash', label: '분리수거', options: ['O', 'X'], note: true },
+      { id: 'fs.mailbox', label: '우편함', options: ['O', 'X'], noteOptions: ['전기요금', '가스요금', '수도요금', '공과금'] },
+      { id: 'fs.utility', label: '전기·가스·수도 현황', options: ['O', 'X'], noteOptions: ['단전', '단수', '가스차단'] },
+      // 건물을 한 바퀴 돌며 보는 것
+      { id: 'fs.cctv', label: 'CCTV 보안', options: ['있음', '없음'], note: true },
+      { id: 'fs.parkList', label: '주차장 관리', options: ['있음', '없음'], note: true },
+      { id: 'fs.bikeKeep', label: '자전거 보관', options: ['O', 'X'], noteOptions: ['사용', '방치'] },
       // 사람에게 묻는 것 — 연락처가 따라붙는 줄들
       {
-        id: 'fs.cleanCo', label: '청소업체', options: ['O', 'X'],
+        id: 'fs.cleanCo', label: '계단 청소', options: ['O', 'X'],
         extra: { id: 'fs.cleanPhone', placeholder: '업체명 / 연락처 입력' },
       },
       {
@@ -8174,6 +8186,32 @@ const goBack = () => router.back();
                   />
                 </span>
                 <!-- 비고 — 미납관리비의 연락처 칸과 같은 자리에 둬서 한 줄로 끝낸다 -->
+                <span v-else-if="item.noteOptions" class="ext">
+                  <div class="adp-agency-multi adp-fs-multi">
+                    <button
+                      type="button"
+                      class="adp-fs-input note adp-agency-trigger"
+                      @click.stop="fsPickOpen = fsPickOpen === item.id ? '' : item.id"
+                    >
+                      <span :class="['txt', { ph: fieldPickList(item.id).length === 0 }]">{{ fieldPickList(item.id).join(', ') || '비고' }}</span>
+                      <span class="caret">▾</span>
+                    </button>
+                    <template v-if="fsPickOpen === item.id">
+                      <div class="adp-agency-backdrop" @click="fsPickOpen = ''" />
+                      <ul class="adp-agency-options">
+                        <li
+                          v-for="opt in item.noteOptions"
+                          :key="opt"
+                          :class="['adp-agency-option', { on: fieldPickList(item.id).includes(opt) }]"
+                          @click="toggleFieldPick(item.id, opt)"
+                        >
+                          <span>{{ opt }}</span>
+                          <span v-if="fieldPickList(item.id).includes(opt)" class="ck">✓</span>
+                        </li>
+                      </ul>
+                    </template>
+                  </div>
+                </span>
                 <span v-else-if="item.note" class="ext">
                   <input
                     class="adp-fs-input note"
@@ -10122,6 +10160,17 @@ const goBack = () => router.back();
   min-width: 28px; height: 26px; padding: 0 9px; font-size: 10.5px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* 고르는 비고 — 글칸과 같은 높이·글자로 맞춘다 */
+.adp-fs-row .adp-fs-multi { width: 100%; }
+.adp-fs-row .adp-fs-input.note.adp-agency-trigger {
+  display: flex; align-items: center; justify-content: space-between; gap: 3px;
+  height: 28px; cursor: pointer; text-align: left;
+}
+.adp-fs-row .adp-fs-input.note.adp-agency-trigger .txt {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.adp-fs-row .adp-fs-input.note.adp-agency-trigger .txt.ph { color: #9ca3af; }
+.adp-fs-row .adp-fs-input.note.adp-agency-trigger .caret { flex: 0 0 auto; color: #9ca3af; font-size: 9px; }
 /* 누구에게 들었나 — 한 줄에 단추가 넷이라 조금 작게 */
 .adp-fs-toggles .adp-toggle-btn.who { padding: 0 6px; font-size: 10px; letter-spacing: -0.3px; }
 /* 'O'·'X'처럼 한 글자인 단추는 정원으로 — 가로세로가 다르면 찌그러져 보인다.
