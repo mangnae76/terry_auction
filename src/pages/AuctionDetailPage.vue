@@ -2259,8 +2259,9 @@ const saveProfit = async () => {
 /** 물건정보 탭의 기본 상태 — 정보요약·물건기본정보만 펴 두고 나머지는 접어 둔다.
  *  (처음 들어왔을 때 한 화면에서 핵심만 보이게) */
 const collapsed = ref<Record<string, boolean>>({
-  // 건물등기는 권리분석의 첫 머리다 — 말소기준을 먼저 보는 자리라 펴 둔다
   bld: true, status: true, apt: true, arrears: true, areaInfo: true,
+  // 권리분석의 등기·임차인 표는 길다 — 접어 두고 볼 때만 편다
+  registry: true, tenant: true,
   // 세율표는 가끔 들춰 보는 참고 자료다 — 산정표 아래를 길게 차지하지 않게 접어 둔다
   taxRef: true,
   // 현장에서만 쓰는 목록이라 평소에는 접어 둔다
