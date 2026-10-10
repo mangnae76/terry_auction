@@ -2704,14 +2704,17 @@ type FieldRow = {
 const fieldNoteId = (id: string) => `${id}.note`;
 /** 열려 있는 '고르는 비고' — 한 번에 하나만 */
 const fsPickOpen = ref('');
-/** 골라 둔 것들 — 쉼표로 이어 한 칸에 담는다 */
-const fieldPickList = (id: string) => fieldVal(fieldNoteId(id))
-  .split(',').map((v) => v.trim()).filter(Boolean);
+/** 골라 둔 것들 — 쉼표로 이어 한 칸에 담는다.
+ *  고를 수 있는 것이 바뀌면 옛 값이 남는다('동·서' 가 '동향·서향' 이 된 뒤의 '서')
+ *  — 지금 목록에 없는 값은 보여 주지 않고, 다음에 고를 때 같이 지워진다. */
+const fieldPickList = (id: string, options?: string[]) => fieldVal(fieldNoteId(id))
+  .split(',').map((v) => v.trim())
+  .filter((v) => !!v && (!options || options.includes(v)));
 /** '외벽크랙 O' 에서 'O' 를 뗀 이름 — 같은 항목의 O 와 X 를 가려내는 데 쓴다 */
 const pickBase = (opt: string) => opt.replace(/\s[OX]$/, '');
-const toggleFieldPick = (id: string, opt: string) => {
+const toggleFieldPick = (id: string, opt: string, options?: string[]) => {
   // 한 항목에 O 와 X 가 같이 남으면 말이 안 된다 — 같은 이름의 반대쪽은 지운다
-  const picked = fieldPickList(id).filter((v) => v === opt || pickBase(v) !== pickBase(opt));
+  const picked = fieldPickList(id, options).filter((v) => v === opt || pickBase(v) !== pickBase(opt));
   const at = picked.indexOf(opt);
   if (at >= 0) picked.splice(at, 1);
   else picked.push(opt);
@@ -2745,14 +2748,12 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
       // '\n' 으로 줄을 나눈다 — 한 줄로 두면 '사용현황'이 어중간하게 끊긴다
       { id: 'fs.utility', label: '전기가스수도\n사용현황', options: ['O', 'X'], noteOptions: oxPicks('단전', '단수', '가스차단') },
       // 건물을 한 바퀴 돌며 보는 것
-      { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], note: true },
-      { id: 'fs.parkList', label: '주차장관리', options: ['O', 'X'], note: true },
+      { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], noteOptions: ['CCTV 있음', 'CCTV 없음'] },
+      { id: 'fs.parkList', label: '주차장관리', options: ['O', 'X'], noteOptions: ['있음', '없음'] },
       { id: 'fs.bikeKeep', label: '자전거보관', options: ['O', 'X'], noteOptions: ['사용', '방치'] },
-      // 사람에게 묻는 것 — 연락처가 따라붙는 줄들
-      {
-        id: 'fs.cleanCo', label: '계단청소', options: ['관리O', '관리X'],
-        extra: { id: 'fs.cleanPhone', placeholder: '업체명 / 연락처 입력' },
-      },
+      { id: 'fs.cleanCo', label: '계단청소', options: ['O', 'X'], noteOptions: oxPicks('관리') },
+      // 사람에게 묻는 것 — 금액·연락처가 따라붙는 줄들
+      { id: 'fs.mailMaint', label: '미납관리비', options: ['동대표'], extra: { id: 'fs.mailMaintAmt', placeholder: '금액 및 기타 입력', money: true } },
       {
         id: 'fs.roofLeak', label: '누수', options: ['O', 'X'], note: true,
         who: { id: 'fs.roofLeakWho', options: ['임차인', '입주민', '동대표'] },
@@ -2767,14 +2768,8 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
     ],
   },
   {
-    title: '③ 우편물, 공과금 및 기타',
-    items: [
-      // 미납관리비는 'O/X' 가 아니라 '누구한테 들었나' 가 남아야 한다
-      { id: 'fs.mailMaint', label: '미납관리비', options: ['동대표'], extra: { id: 'fs.mailMaintAmt', placeholder: '금액 및 기타 입력', money: true } },
-    ],
-  },
-  {
-    title: '④ 수리상태',
+    // 미납관리비를 탐문으로 올려 ③ 이 비었다 — 단락을 없애고 번호를 당긴다
+    title: '③ 수리상태',
     items: [
       { id: 'fs.door', label: '도어', options: ['교체', '미교체'], note: true },
       { id: 'fs.doorLock', label: '도어락', options: ['교체', '미교체'], note: true },
@@ -8190,7 +8185,7 @@ const goBack = () => router.back();
                       class="adp-fs-input note adp-agency-trigger"
                       @click.stop="fsPickOpen = fsPickOpen === item.id ? '' : item.id"
                     >
-                      <span :class="['txt', { ph: fieldPickList(item.id).length === 0 }]">{{ fieldPickList(item.id).join(', ') || '비고' }}</span>
+                      <span :class="['txt', { ph: fieldPickList(item.id, item.noteOptions).length === 0 }]">{{ fieldPickList(item.id, item.noteOptions).join(', ') || '비고' }}</span>
                       <span class="caret">▾</span>
                     </button>
                     <template v-if="fsPickOpen === item.id">
@@ -8199,11 +8194,11 @@ const goBack = () => router.back();
                         <li
                           v-for="opt in item.noteOptions"
                           :key="opt"
-                          :class="['adp-agency-option', { on: fieldPickList(item.id).includes(opt) }]"
-                          @click="toggleFieldPick(item.id, opt)"
+                          :class="['adp-agency-option', { on: fieldPickList(item.id, item.noteOptions).includes(opt) }]"
+                          @click="toggleFieldPick(item.id, opt, item.noteOptions)"
                         >
                           <span>{{ opt }}</span>
-                          <span v-if="fieldPickList(item.id).includes(opt)" class="ck">✓</span>
+                          <span v-if="fieldPickList(item.id, item.noteOptions).includes(opt)" class="ck">✓</span>
                         </li>
                       </ul>
                     </template>
