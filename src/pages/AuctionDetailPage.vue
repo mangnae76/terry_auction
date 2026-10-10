@@ -2707,13 +2707,18 @@ const fsPickOpen = ref('');
 /** 골라 둔 것들 — 쉼표로 이어 한 칸에 담는다 */
 const fieldPickList = (id: string) => fieldVal(fieldNoteId(id))
   .split(',').map((v) => v.trim()).filter(Boolean);
+/** '외벽크랙 O' 에서 'O' 를 뗀 이름 — 같은 항목의 O 와 X 를 가려내는 데 쓴다 */
+const pickBase = (opt: string) => opt.replace(/\s[OX]$/, '');
 const toggleFieldPick = (id: string, opt: string) => {
-  const picked = fieldPickList(id);
+  // 한 항목에 O 와 X 가 같이 남으면 말이 안 된다 — 같은 이름의 반대쪽은 지운다
+  const picked = fieldPickList(id).filter((v) => v === opt || pickBase(v) !== pickBase(opt));
   const at = picked.indexOf(opt);
   if (at >= 0) picked.splice(at, 1);
   else picked.push(opt);
   setFieldValNow(fieldNoteId(id), picked.join(', '));
 };
+/** 항목마다 O·X 를 짝지어 목록을 만든다 — '외벽크랙 O', '외벽크랙 X' … */
+const oxPicks = (...names: string[]) => names.flatMap((n) => [`${n} O`, `${n} X`]);
 /** 공과금 금액칸 — 숫자만 받던 칸이라 '미납 3개월' 같은 말을 적을 수가 없었다.
  *  글자를 그대로 받되, 숫자만 적은 경우에는 천 단위 쉼표를 붙여 준다. */
 const setFieldMoneyText = (id: string, el: HTMLInputElement) => {
@@ -2734,27 +2739,27 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
     items: [
       // 자판을 두드리는 대신 눌러 고른다 — 현장에서는 그편이 빠르다
       { id: 'fs.aspect', label: '향 / 뷰', options: ['O', 'X'], noteOptions: ['동', '서', '남', '북', '뻥뷰', '단지내뷰'] },
-      { id: 'fs.exterior', label: '건물 관리', options: ['O', 'X'], noteOptions: ['외벽크랙', '필로티천장누수'] },
-      { id: 'fs.trash', label: '분리수거', options: ['O', 'X'], note: true },
-      { id: 'fs.mailbox', label: '우편함', options: ['O', 'X'], noteOptions: ['전기요금', '가스요금', '수도요금', '공과금'] },
-      { id: 'fs.utility', label: '전기·가스·수도 현황', options: ['O', 'X'], noteOptions: ['단전', '단수', '가스차단'] },
+      { id: 'fs.exterior', label: '건물관리', options: ['O', 'X'], noteOptions: oxPicks('외벽크랙', '필로티천장누수') },
+      { id: 'fs.trash', label: '분리수거', options: ['O', 'X'], noteOptions: oxPicks('분리수거') },
+      { id: 'fs.mailbox', label: '우편함', options: ['O', 'X'], noteOptions: oxPicks('전기요금', '가스요금', '수도요금') },
+      { id: 'fs.utility', label: '전기·가스·수도 현황', options: ['O', 'X'], noteOptions: oxPicks('단전', '단수', '가스차단') },
       // 건물을 한 바퀴 돌며 보는 것
-      { id: 'fs.cctv', label: 'CCTV 보안', options: ['있음', '없음'], note: true },
-      { id: 'fs.parkList', label: '주차장 관리', options: ['있음', '없음'], note: true },
-      { id: 'fs.bikeKeep', label: '자전거 보관', options: ['O', 'X'], noteOptions: ['사용', '방치'] },
+      { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], note: true },
+      { id: 'fs.parkList', label: '주차장관리', options: ['O', 'X'], note: true },
+      { id: 'fs.bikeKeep', label: '자전거보관', options: ['O', 'X'], noteOptions: ['사용', '방치'] },
       // 사람에게 묻는 것 — 연락처가 따라붙는 줄들
       {
-        id: 'fs.cleanCo', label: '계단 청소', options: ['O', 'X'],
+        id: 'fs.cleanCo', label: '계단청소', options: ['관리O', '관리X'],
         extra: { id: 'fs.cleanPhone', placeholder: '업체명 / 연락처 입력' },
       },
       {
-        id: 'fs.tenantContact', label: '임차인 탐문', options: ['동대표', '차확인'],
-        who: { id: 'fs.tenantWho', options: ['이웃주민', '입주민'] },
-        extra: { id: 'fs.tenantPhone', placeholder: '연락처입력' },
+        id: 'fs.roofLeak', label: '누수', options: ['O', 'X'], note: true,
+        who: { id: 'fs.roofLeakWho', options: ['임차인', '입주민', '동대표'] },
       },
       {
-        id: 'fs.roofLeak', label: '누수', options: ['O', 'X'], note: true,
-        who: { id: 'fs.roofLeakWho', options: ['동대표', '입주민'] },
+        id: 'fs.tenantContact', label: '임차인탐문', options: ['동대표', '차확인'],
+        who: { id: 'fs.tenantWho', options: ['임차인', '입주민'] },
+        extra: { id: 'fs.tenantPhone', placeholder: '연락처입력' },
       },
       { id: 'fs.doorCode', label: '출입문비번', text: true, placeholder: '비밀번호입력' },
       { id: 'fs.entryCode', label: '현관비번', text: true, placeholder: '비밀번호입력' },
