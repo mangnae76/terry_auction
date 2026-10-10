@@ -8565,10 +8565,10 @@ const goBack = () => router.back();
   display: grid; grid-template-columns: 84px minmax(0, 1fr);
   align-items: center; gap: 8px;
   /* 글자 크기는 그대로 두고 위아래 여백만 줄인다 — 한 화면에 더 담되
-     줄끼리 붙어 보이지 않을 만큼은 남긴다 (7 → 4px, 최소높이 36 → 30px) */
-  padding: 4px 0;
+     줄끼리 붙어 보이지 않을 만큼은 남긴다 (7 → 5px, 최소높이 36 → 32px) */
+  padding: 5px 0;
   border-bottom: 1px solid #f1f3f7;
-  min-height: 30px;
+  min-height: 32px;
 }
 .adp-base-rows > .adp-base-row:last-child { border-bottom: 0; }
 .adp-base-row dt { margin: 0; font-size: 13.5px; color: #6b7280; font-weight: 600; }
@@ -10033,16 +10033,18 @@ const goBack = () => router.back();
 .adp-conc-table .adp-conc-note > .adp-mkt-input::placeholder { color: #9ca3af; font-weight: 400; }
 .adp-conc-table .adp-conc-note > span.filled { color: #e0574a; font-weight: 400; }
 /* 현장조사 항목 줄 */
-.adp-fs-section { padding-top: 10px; margin-top: 10px; border-top: 1px solid #eef1f6; }
+.adp-fs-section { padding-top: 7px; margin-top: 7px; border-top: 1px solid #eef1f6; }
 .adp-fs-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 6px; }
 /* 매매수요 '1. 수요공급'과 같은 배치 — 단락 제목도, ①②③④ 항목도 왼쪽 2px에서 시작한다 */
 .adp-survey-body .adp-agency-list { padding-left: 2px; padding-right: 2px; }
 /* 항목 제목은 매매수요의 '① 동단위 거래회전율'과 같은 크기·간격 */
-.adp-survey-body .adp-fs-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 5px; }
+.adp-survey-body .adp-fs-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 3px; }
 /* 급매가의 ①②③④ 블록처럼 네모로 묶는다 */
+/* 현장조사는 단락이 많아 여백이 쌓이면 한 화면에 몇 줄 못 담는다.
+   글자는 그대로 두고 테두리 안쪽과 단락 사이만 줄인다 */
 .adp-survey-body .adp-fs-section {
   border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;
-  padding: 8px 10px 10px; margin-top: 0;
+  padding: 6px 10px 6px; margin-top: 0;
 }
 /* 1·2번 줄 — 제목 · 설명 · 오른쪽 값(등수/체크)을 한 줄에 */
 /* 제목·설명·값이 한 줄에 들어가도록 줄바꿈을 막는다 */
@@ -10055,7 +10057,7 @@ const goBack = () => router.back();
 .adp-dm-check { margin-left: auto; flex: 0 0 auto; }
 .adp-fs-row {
   display: grid; grid-template-columns: 88px minmax(0, 1fr) auto;
-  align-items: center; gap: 5px; padding: 7px 0;
+  align-items: center; gap: 5px; padding: 4px 0;
 }
 /* 선택 버튼은 항상 맨 오른쪽 칸에 둬서 '건물/호실 개별성 확인'의 체크와 끝이 맞는다.
    옆칸 입력(연락처·금액)은 그 왼쪽으로 간다 */
@@ -10146,12 +10148,12 @@ const goBack = () => router.back();
 .adp-survey-body .adp-fs-row { padding: 5px 0; }
 .adp-survey-body .adp-survey-block { padding: 8px 10px; }
 .adp-survey-body .adp-agency-item { padding: 6px 10px 8px; }
-.adp-survey-block { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; }
-.adp-survey-block-head { display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: #2b6df3; margin-bottom: 6px; }
+.adp-survey-block { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px; }
+.adp-survey-block-head { display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: #2b6df3; margin-bottom: 4px; }
 .adp-survey-block-head .i { width: 16px; height: 16px; border-radius: 50%; background: #e0eaff; color: #2b6df3; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
 .adp-survey-note { margin: 0; font-size: 12px; color: #6b7280; }
-.adp-survey-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
-.adp-survey-row.sub { padding: 6px 0; border-bottom-color: #f9fafb; }
+.adp-survey-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
+.adp-survey-row.sub { padding: 4px 0; border-bottom-color: #f9fafb; }
 .adp-survey-row .lbl { flex: 0 0 auto; font-size: 12px; color: #374151; font-weight: 600; min-width: 88px; }
 .adp-survey-input {
   flex: 1 1 auto; min-width: 0;
@@ -10165,7 +10167,7 @@ const goBack = () => router.back();
 .adp-survey-input:focus { border-color: #2b6df3; }
 .adp-survey-area {
   width: 100%; border: 1px solid #e5e7eb; border-radius: 8px;
-  padding: 8px 10px; font-size: 12px; background: #fff; color: #111827; outline: none;
+  padding: 6px 9px; font-size: 12px; background: #fff; color: #111827; outline: none;
   font-family: inherit; resize: vertical;
 }
 .adp-survey-pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #f3f4f6; font-size: 12px; font-weight: 700; color: #374151; }

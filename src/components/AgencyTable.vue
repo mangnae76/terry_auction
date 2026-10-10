@@ -258,13 +258,13 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
 <style scoped>
 /* 쓰는 쪽(AuctionDetailPage)의 scoped 스타일은 이 안까지 닿지 않는다 —
    상담표에 필요한 모양만 여기에 따로 적어 둔다 */
-.agency-table { display: flex; flex-direction: column; gap: 8px; padding: 0 2px; }
+.agency-table { display: flex; flex-direction: column; gap: 6px; padding: 0 2px; }
 .adp-agency-item {
-  background: #fafbfc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px 10px 8px;
+  background: #fafbfc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 5px 10px 6px;
 }
 .adp-agency-line { display: flex; align-items: flex-end; gap: 6px; }
 .adp-agency-line + .adp-agency-line {
-  margin-top: 6px; padding-top: 6px; border-top: 1px solid #eef1f6;
+  margin-top: 4px; padding-top: 4px; border-top: 1px solid #eef1f6;
 }
 .adp-agency-fld {
   flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1px; text-align: left;
