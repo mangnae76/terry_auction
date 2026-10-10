@@ -212,13 +212,16 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
               @input="setMoney(row, g.from, $event.target as HTMLInputElement)"
             />
             <em class="sep">~</em>
-            <input
-              class="rng"
-              inputmode="decimal"
-              :value="moneyInput(row[g.to])"
-              @input="setMoney(row, g.to, $event.target as HTMLInputElement)"
-            />
-            <em class="unit">억</em>
+            <!-- 단위는 뒤쪽 칸 안에 둔다 — 밖에 두니 칸 폭만 깎아먹었다 -->
+            <span class="rng-wrap">
+              <input
+                class="rng"
+                inputmode="decimal"
+                :value="moneyInput(row[g.to])"
+                @input="setMoney(row, g.to, $event.target as HTMLInputElement)"
+              />
+              <em class="unit">억</em>
+            </span>
           </template>
           <strong v-else class="val">{{ rangeText(row, g) }}</strong>
         </span>
@@ -315,9 +318,19 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
   flex: 0 0 auto; font-style: normal; font-size: 11px; font-weight: 700;
   color: #6b7280; white-space: nowrap;
 }
-.adp-agency-range .sep,
-.adp-agency-range .unit {
+.adp-agency-range .sep {
   flex: 0 0 auto; font-style: normal; font-size: 10.5px; font-weight: 700; color: #9ca3af;
+}
+/* 뒤쪽 칸 — 단위를 칸 오른쪽 안에 겹쳐 세운다 */
+.adp-agency-range .rng-wrap { position: relative; flex: 1 1 0; min-width: 0; display: block; }
+/* 칸을 감쌌으니 폭을 다시 일러 준다 — 안 그러면 입력칸이 제 기본 폭(약 177px)을
+   고집해 줄 밖으로 밀려난다 */
+.adp-agency-range .rng-wrap input.rng {
+  width: 100%; box-sizing: border-box; padding-right: 17px; text-align: right;
+}
+.adp-agency-range .unit {
+  position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  font-style: normal; font-size: 10.5px; font-weight: 700; color: #9ca3af; pointer-events: none;
 }
 .adp-agency-range input.rng {
   flex: 1 1 0; min-width: 0; box-sizing: border-box; height: 26px;

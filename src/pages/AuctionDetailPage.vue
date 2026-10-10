@@ -8117,15 +8117,15 @@ const goBack = () => router.back();
                     @input="setFieldValNow(item.extra!.id, ($event.target as HTMLInputElement).value)"
                   />
                 </span>
-              </div>
-              <!-- 비고 — 고른 값(O/X·교체)만으로는 안 남는 말을 적는다. 글자·숫자 다 받는다 -->
-              <div v-if="item.note" class="adp-fs-note">
-                <input
-                  class="adp-fs-input note"
-                  placeholder="비고"
-                  :value="fieldVal(fieldNoteId(item.id))"
-                  @input="setFieldValNow(fieldNoteId(item.id), ($event.target as HTMLInputElement).value)"
-                />
+                <!-- 비고 — 미납관리비의 연락처 칸과 같은 자리에 둬서 한 줄로 끝낸다 -->
+                <span v-else-if="item.note" class="ext">
+                  <input
+                    class="adp-fs-input note"
+                    placeholder="비고"
+                    :value="fieldVal(fieldNoteId(item.id))"
+                    @input="setFieldValNow(fieldNoteId(item.id), ($event.target as HTMLInputElement).value)"
+                  />
+                </span>
               </div>
               </template>
             </div>
@@ -9989,10 +9989,9 @@ const goBack = () => router.back();
 .adp-fs-row .ctl, .adp-fs-row .ext { min-width: 0; font-size: 13px; font-weight: 700; color: #111827; text-align: right; }
 /* 옆칸이 없는 항목(기타·수리상태 등)은 남은 폭을 모두 쓴다 */
 .adp-fs-row .ctl.wide { grid-column: 2 / -1; }
-/* 줄 밑에 붙는 비고 — 라벨 자리를 비우지 않고 한 줄을 통으로 쓴다.
-   손품+현장의 다른 비고와 같은 규칙: 적은 글씨만 빨갛고 안내문구는 회색 */
-.adp-fs-note { padding: 0 0 7px; margin-top: -3px; }
-.adp-fs-input.note { height: 26px; font-size: 11.5px; font-weight: 400; color: #e0574a; text-align: left; }
+/* 옆칸에 붙는 비고 — 손품+현장의 다른 비고와 같은 규칙:
+   적은 글씨만 빨갛고 안내문구는 회색 */
+.adp-fs-input.note { font-size: 11.5px; font-weight: 400; color: #e0574a; text-align: left; }
 .adp-fs-input.note::placeholder { color: #9ca3af; font-weight: 400; }
 .adp-fs-input {
   width: 100%; min-width: 0; height: 28px; border: 1px solid #e3e8f0; border-radius: 6px;
