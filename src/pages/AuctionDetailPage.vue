@@ -29,6 +29,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import AgencyTable from '../components/AgencyTable.vue';
+import PhotoCountMark from '../components/PhotoCountMark.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
@@ -2630,7 +2631,9 @@ watch(
   { immediate: true },
 );
 
-const editingSurvey = ref({ field: false, location: false, deal: false, listing: false, individuality: false, realUser: false, demand: false });
+// 카드마다·단락마다 따로 여닫는다. deal = 급매가의 1.실거래가 조사,
+// listing = 2.저렴매물조사 (예전에는 둘이 location 하나를 같이 썼다)
+const editingSurvey = ref({ field: false, deal: false, listing: false, individuality: false, realUser: false, demand: false });
 const persistSurvey = async () => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
@@ -3606,7 +3609,7 @@ const litTap = (id: string) => { mktLitKey.value = mktLitKey.value === id ? '' :
  *  어디서 온 숫자인지 알 수 없어진다. 손으로 적을 일은 유사물건 쪽에서 한다. */
 const mktCaseLocked = computed(() => mktMode('d') === MKT_MODES[0]);
 /** 그 칸을 지금 고칠 수 있나 */
-const mktCaseEditable = computed(() => editingSurvey.value.location && !mktCaseLocked.value);
+const mktCaseEditable = computed(() => editingSurvey.value.deal && !mktCaseLocked.value);
 /** 저가매물은 줄을 늘려 가며 적는다. 첫 줄은 예전 키(mkt.c.area)를 그대로 써 자료가 이어진다. */
 const LOW_ROW_MAX = 10;
 const lowRowCount = computed(() => {
@@ -4323,6 +4326,9 @@ watch(
     const id = auction.value?.id;
     if (!id || photoCollapseSetFor.value === id) return;
     photoCollapseSetFor.value = id;
+    // 다른 물건으로 넘어왔다 — 앞 물건에서 손으로 펴 둔 기억은 버린다.
+    // 안 그러면 사진이 있는데도 펴진 채로 열려 '사진 있으면 접힘' 규칙이 깨진다.
+    photoFold.value = {};
     const next = { ...collapsed.value };
     PHOTO_SECTIONS.forEach((sec) => { next[sec.key] = sec.count() > 0; });
     collapsed.value = next;
@@ -6552,7 +6558,7 @@ const goBack = () => router.back();
         <!-- 매각물건명세서 등 서류 캡처·링크 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsPhotos')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>서류사진<span v-if="rightsDocList.length" class="adp-photo-mark" :title="`사진 ${rightsDocList.length}장`">{{ rightsDocList.length }}</span></h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>서류사진<PhotoCountMark :n="photoAreaCount('rightsPhotos')" /></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsPhotos') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('rightsPhotos')">
@@ -6819,7 +6825,7 @@ const goBack = () => router.back();
         <!-- 본건사진 — 전경 + 평면도 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('photos')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h4l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>본건사진<span v-if="propertyPhotos.length" class="adp-photo-mark" :title="`사진 ${propertyPhotos.length}장`">{{ propertyPhotos.length }}</span> <span class="adp-survey-note-inline">전경 + 평면도</span></h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h4l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>본건사진<PhotoCountMark :n="photoAreaCount('photos')" /> <span class="adp-survey-note-inline">전경 + 평면도</span></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('photos') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('photos')">
@@ -7080,10 +7086,10 @@ const goBack = () => router.back();
 
             <!-- ① 입지조사 -->
             <div class="adp-dm-block boxed">
-            <div class="adp-dm-sub">① 입지조사 사진<span v-if="extraList('areaSurvey').length" class="adp-photo-mark" :title="`사진 ${extraList('areaSurvey').length}장`">{{ extraList('areaSurvey').length }}</span> <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('loc', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('loc', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'loc'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('loc')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><button type="button" class="adp-photo-fold" :aria-label="photoFolded('areaSurvey') ? '펼치기' : '접기'" @click.stop="togglePhotoFold('areaSurvey')"><img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('areaSurvey') }]" alt="" /></button></div>
+            <div class="adp-dm-sub">① 입지조사 사진<PhotoCountMark :n="photoAreaCount('areaSurvey')" /> <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('loc', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('loc', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'loc'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('loc')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><button type="button" class="adp-photo-fold" :aria-label="photoFolded('areaSurvey') ? '펼치기' : '접기'" @click.stop="togglePhotoFold('areaSurvey')"><img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('areaSurvey') }]" alt="" /></button></div>
             <div v-for="item in AREA_SURVEY_ITEMS.filter((i) => isApartment || !i.aptOnly)" v-show="!photoFolded('areaSurvey')" :key="item.key" class="adp-sub-block">
               <div v-if="item.title" class="adp-sub-head">
-                <h3>{{ item.title }}<span v-if="extraList(item.key).length" class="adp-photo-mark" :title="`사진 ${extraList(item.key).length}장`">{{ extraList(item.key).length }}</span> <span v-if="item.note" class="adp-survey-note-inline">{{ item.note }}</span></h3>
+                <h3>{{ item.title }}<PhotoCountMark :n="extraList(item.key).length" /> <span v-if="item.note" class="adp-survey-note-inline">{{ item.note }}</span></h3>
               </div>
               <div class="adp-plan-row">
                 <input
@@ -7467,19 +7473,19 @@ const goBack = () => router.back();
         <section class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('survPrice')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>급매가</h2>
-            <button v-if="!editingSurvey.location" class="adp-edit-btn" type="button" @click.stop="editingSurvey.location = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('location')">💾 저장</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survPrice') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('survPrice')" class="adp-mkt-body">
             <div class="adp-dm-head">
               <strong class="adp-dm-title">1. 실거래가 조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('deal', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('deal', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'deal'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
+              <button v-if="!editingSurvey.deal" class="adp-edit-btn" type="button" @click.stop="editingSurvey.deal = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('deal')">💾 저장</button>
             </div>
 
             <!-- ① 평단가 비교 사진 -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">① 평단가 비교 사진<span v-if="tradePhotoList.length" class="adp-photo-mark" :title="`사진 ${tradePhotoList.length}장`">{{ tradePhotoList.length }}</span></span>
+                <span class="t">① 평단가 비교 사진<PhotoCountMark :n="photoAreaCount('tradePhoto')" /></span>
                 <button type="button" class="adp-photo-fold" :aria-label="photoFolded('tradePhoto') ? '펼치기' : '접기'" @click.stop="togglePhotoFold('tradePhoto')"><img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('tradePhoto') }]" alt="" /></button>
               </div>
               <div v-if="!photoFolded('tradePhoto')" class="adp-plan-row">
@@ -7583,7 +7589,7 @@ const goBack = () => router.back();
                 <div :class="['cell calc', { lit: mktLit('jeonse') }]" @mouseenter="litEnter('jeonse')" @mouseleave="litLeave()" @click="litTap('jeonse')">
                   <small class="adp-mkt-rate">
                     전세가
-                    <template v-if="editingSurvey.location">
+                    <template v-if="editingSurvey.deal">
                       <input class="adp-mkt-rate-input" inputmode="numeric" :value="mktVal(mk('d', 'rate'))" placeholder="127" @input="setMktVal(mk('d', 'rate'), ($event.target as HTMLInputElement).value)" />%
                     </template>
                     <template v-else>{{ mktJeonseRate }}%</template>
@@ -7628,13 +7634,15 @@ const goBack = () => router.back();
 
             <div class="adp-dm-head sec2">
               <strong class="adp-dm-title">2. 저렴매물조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
+              <button v-if="!editingSurvey.listing" class="adp-edit-btn" type="button" @click.stop="editingSurvey.listing = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('listing')">💾 저장</button>
             </div>
 
             <!-- ① 해당 빌라 저가 매물 — 줄을 늘려 가며 적는다 -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
                 <span class="t">① <span :class="['mode', { sim: mktMode('c') === '유사물건' }]">{{ mktModeLabel('c', '경매빌라', '유사빌라') }}</span> 매물호가</span>
-                <span v-if="editingSurvey.location" class="adp-mkt-step">
+                <span v-if="editingSurvey.listing" class="adp-mkt-step">
                   <span class="lab">행</span>
                   <button type="button" aria-label="행 삭제" :disabled="lowRowCount <= 1" @click="removeLowRow">−</button>
                   <button type="button" aria-label="행 추가" :disabled="lowRowCount >= LOW_ROW_MAX" @click="addLowRow">＋</button>
@@ -7650,28 +7658,28 @@ const goBack = () => router.back();
                 <div class="adp-mkt-cells c4 adp-dm-table">
                   <div class="cell">
                     <small>전용면적</small>
-                    <span v-if="editingSurvey.location" class="adp-mkt-unit">
+                    <span v-if="editingSurvey.listing" class="adp-mkt-unit">
                       <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(lowKey(i - 1, 'area'))" placeholder="0" @input="setMktVal(lowKey(i - 1, 'area'), ($event.target as HTMLInputElement).value)" />㎡
                     </span>
                     <strong v-else class="adp-mkt-area1">{{ mktAreaText(lowKey(i - 1, 'area')) }}</strong>
                   </div>
                   <div class="cell">
                     <small>주소</small>
-                    <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'addr'))" :placeholder="lowAddrAuto ? (subjectHasDong ? '동 · 층 · 호' : '층 · 호') : '빌라명 · 층 · 호'" @input="setMktVal(lowKey(i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
+                    <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'addr'))" :placeholder="lowAddrAuto ? (subjectHasDong ? '동 · 층 · 호' : '층 · 호') : '빌라명 · 층 · 호'" @input="setMktVal(lowKey(i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
                     <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTyped(i - 1) }]">{{ lowAddrText(i - 1) }}</strong>
                   </div>
                   <div class="cell">
                     <small>평당가</small>
-                    <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(lowKey(i - 1, 'unit'))" mode="string" class="adp-mkt-input" :placeholder="lowUnitAuto(i - 1) > 0 ? lowUnitAuto(i - 1).toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(lowKey(i - 1, 'unit'), $event)" />
+                    <FormattedNumberInput v-if="editingSurvey.listing" :model-value="mktVal(lowKey(i - 1, 'unit'))" mode="string" class="adp-mkt-input" :placeholder="lowUnitAuto(i - 1) > 0 ? lowUnitAuto(i - 1).toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(lowKey(i - 1, 'unit'), $event)" />
                     <strong v-else :class="{ typed: lowUnitTyped(i - 1) }">{{ lowUnitText(i - 1) }}</strong>
                   </div>
                   <div class="cell">
                     <small>매매호가 (저가)</small>
-                    <FormattedNumberInput v-if="editingSurvey.location" :model-value="mktVal(lowKey(i - 1, 'saleAsk'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(lowKey(i - 1, 'saleAsk'), $event)" />
+                    <FormattedNumberInput v-if="editingSurvey.listing" :model-value="mktVal(lowKey(i - 1, 'saleAsk'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(lowKey(i - 1, 'saleAsk'), $event)" />
                     <strong v-else class="hi">{{ mktMoney(lowKey(i - 1, 'saleAsk')) }}</strong>
                   </div>
                   <div class="cell adp-mkt-wide">
-                    <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'note'))" placeholder="비고" @input="setMktVal(lowKey(i - 1, 'note'), ($event.target as HTMLInputElement).value)" />
+                    <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'note'))" placeholder="비고" @input="setMktVal(lowKey(i - 1, 'note'), ($event.target as HTMLInputElement).value)" />
                     <strong v-else :class="{ filled: !!mktVal(lowKey(i - 1, 'note')) }">{{ mktVal(lowKey(i - 1, 'note')) || '비고' }}</strong>
                   </div>
                 </div>
@@ -7680,7 +7688,7 @@ const goBack = () => router.back();
 
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">② 네이버부동산 매물 사진(최저가)<span v-if="listPhotoList.length" class="adp-photo-mark" :title="`사진 ${listPhotoList.length}장`">{{ listPhotoList.length }}</span></span>
+                <span class="t">② 네이버부동산 매물 사진(최저가)<PhotoCountMark :n="photoAreaCount('listPhoto')" /></span>
                 <button type="button" class="adp-photo-fold" :aria-label="photoFolded('listPhoto') ? '펼치기' : '접기'" @click.stop="togglePhotoFold('listPhoto')"><img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('listPhoto') }]" alt="" /></button>
               </div>
               <div v-if="!photoFolded('listPhoto')" class="adp-plan-row">
@@ -7704,7 +7712,7 @@ const goBack = () => router.back();
 
             <!-- 3. 동일지번 매각물건 — 같은 번지에서 전에 팔린 물건. 값을 가늠하는 바로 옆 사례다 -->
             <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title">3. 동일지번 매각물건 <span class="adp-dm-addr">{{ lotWithBuildingAddress }}</span></strong>
+              <strong class="adp-dm-title">3. 동일지번 매각물건<PhotoCountMark :n="photoAreaCount('sameLot')" /> <span class="adp-dm-addr">{{ lotWithBuildingAddress }}</span></strong>
               <button type="button" class="adp-photo-fold" :aria-label="photoFolded('sameLot') ? '펼치기' : '접기'" @click.stop="togglePhotoFold('sameLot')"><img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('sameLot') }]" alt="" /></button>
             </div>
             <div class="adp-sub-block noline">
@@ -8075,7 +8083,7 @@ const goBack = () => router.back();
         <!-- 현장사진 — 현장조사 바로 아래. 사진이 들어오면 접힌 상태가 기본 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="togglePhotoFold('site')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h4l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>현장사진<span v-if="auction?.sitePhotos?.length" class="adp-photo-mark" :title="`사진 ${auction.sitePhotos.length}장`">{{ auction.sitePhotos.length }}</span></h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h4l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>현장사진<PhotoCountMark :n="photoAreaCount('site')" /></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('site') }]" alt="" />
           </header>
           <div v-if="!photoFolded('site')">
