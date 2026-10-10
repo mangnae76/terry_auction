@@ -600,10 +600,37 @@ const chooseNavAndLaunch = (provider: 'naver' | 'tmap' | 'kakao') => {
 
 // 목록의 주소는 말줄임되므로 전체를 말풍선으로 보여준다.
 // 데스크톱은 CSS hover, 모바일은 탭으로 연다 (모바일엔 hover가 없다).
-const addrBubbleIdx = ref<number | null>(null);
-const toggleAddrBubble = (idx: number) => {
-  addrBubbleIdx.value = addrBubbleIdx.value === idx ? null : idx;
+const addrBubbleIdx = ref<string | null>(null);
+/** 말풍선 자리 — 화면(뷰포트) 기준. 줄 안에 두면 뒷줄에 깔리거나 스크롤 칸에
+ *  잘려 안 보였다. 몸통 맨 끝으로 내보내 화면 위에 그대로 띄운다. */
+const addrBubbleBox = ref({ left: 0, top: 0, width: 0 });
+const addrBubbleText = ref('');
+const placeAddrBubble = (evt: Event) => {
+  const el = (evt.currentTarget as HTMLElement | null)?.closest('.ftp-stop') as HTMLElement | null;
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  // 줄 왼쪽의 번호 뱃지(34px)만큼 들이고, 양옆 10px 은 남긴다
+  addrBubbleBox.value = { left: Math.round(r.left + 34), top: Math.round(r.bottom - 3), width: Math.round(r.width - 44) };
 };
+const toggleAddrBubble = (idx: string, address: string, evt: Event) => {
+  if (addrBubbleIdx.value === idx) { addrBubbleIdx.value = null; return; }
+  placeAddrBubble(evt);
+  addrBubbleText.value = address;
+  addrBubbleIdx.value = idx;
+};
+/** 마우스가 있는 환경에서만 얹기만 해도 연다 — 터치에서는 탭으로 연다 */
+const hasHoverPointer = typeof window !== 'undefined' && !!window.matchMedia?.('(hover: hover)').matches;
+const hoverAddrBubble = (idx: string, address: string, evt: Event) => {
+  if (!hasHoverPointer) return;
+  placeAddrBubble(evt);
+  addrBubbleText.value = address;
+  addrBubbleIdx.value = idx;
+};
+const leaveAddrBubble = () => { if (hasHoverPointer) addrBubbleIdx.value = null; };
+// 화면을 움직이면 말풍선만 엉뚱한 자리에 남는다 — 그때는 닫는다
+const closeAddrBubble = () => { addrBubbleIdx.value = null; };
+onMounted(() => window.addEventListener('scroll', closeAddrBubble, true));
+onBeforeUnmount(() => window.removeEventListener('scroll', closeAddrBubble, true));
 
 const copyAddress = async (address: string) => {
   if (Capacitor.isNativePlatform()) {
@@ -1644,7 +1671,13 @@ watch(() => authStore.uid, (newUid) => {
                 viewBox="0 0 24 24" width="11" height="11"
                 fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"
               ><path d="M12 5v14M5 12h14" /></svg></span>
-              <span class="ftp-stop-addr" :title="row.address">{{ row.address }}</span>
+              <span
+                class="ftp-stop-addr"
+                :title="row.address"
+                @click="toggleAddrBubble(`q${row.id}`, row.address, $event)"
+                @mouseenter="hoverAddrBubble(`q${row.id}`, row.address, $event)"
+                @mouseleave="leaveAddrBubble()"
+              >{{ row.address }}</span>
               <span v-if="loading" class="ftp-stage-tag tone-queued calc">계산중</span>
               <span v-else-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못해 순번을 매기지 못했습니다">주소실패</span>
               <span v-else class="ftp-stage-tag is-blank" aria-hidden="true" />
@@ -1666,7 +1699,6 @@ watch(() => authStore.uid, (newUid) => {
             :class="['ftp-stop', `kind-${stop.kind ?? 'stop'}`, {
               visited: stop.kind === 'stop' && isVisited(stop.address),
               dragging: dragFromIdx === idx,
-              'bubble-on': addrBubbleIdx === idx,
             }]"
           >
             <span
@@ -1690,12 +1722,10 @@ watch(() => authStore.uid, (newUid) => {
             </span>
             <span
               class="ftp-stop-addr"
-              @click="toggleAddrBubble(idx)"
+              @click="toggleAddrBubble(`s${idx}`, stop.address, $event)"
+              @mouseenter="hoverAddrBubble(`s${idx}`, stop.address, $event)"
+              @mouseleave="leaveAddrBubble()"
             >{{ stop.address }}</span>
-            <div
-              :class="['ftp-addr-bubble', { open: addrBubbleIdx === idx }]"
-              @click.stop="addrBubbleIdx = null"
-            >{{ stop.address }}</div>
             <button
               v-if="stop.kind === 'stop'"
               type="button"
@@ -1756,7 +1786,13 @@ watch(() => authStore.uid, (newUid) => {
                 viewBox="0 0 24 24" width="11" height="11"
                 fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"
               ><path d="M12 5v14M5 12h14" /></svg></span>
-              <span class="ftp-stop-addr" :title="row.address">{{ row.address }}</span>
+              <span
+                class="ftp-stop-addr"
+                :title="row.address"
+                @click="toggleAddrBubble(`q${row.id}`, row.address, $event)"
+                @mouseenter="hoverAddrBubble(`q${row.id}`, row.address, $event)"
+                @mouseleave="leaveAddrBubble()"
+              >{{ row.address }}</span>
               <span v-if="loading" class="ftp-stage-tag tone-queued calc">계산중</span>
               <span v-else-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못해 순번을 매기지 못했습니다">주소실패</span>
               <span v-else class="ftp-stage-tag is-blank" aria-hidden="true" />
@@ -1782,7 +1818,13 @@ watch(() => authStore.uid, (newUid) => {
                 viewBox="0 0 24 24" width="11" height="11"
                 fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"
               ><path d="M12 5v14M5 12h14" /></svg></span>
-              <span class="ftp-stop-addr" :title="row.address">{{ row.address }}</span>
+              <span
+                class="ftp-stop-addr"
+                :title="row.address"
+                @click="toggleAddrBubble(`q${row.id}`, row.address, $event)"
+                @mouseenter="hoverAddrBubble(`q${row.id}`, row.address, $event)"
+                @mouseleave="leaveAddrBubble()"
+              >{{ row.address }}</span>
               <span v-if="loading" class="ftp-stage-tag tone-queued calc">계산중</span>
               <span v-else-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못해 순번을 매기지 못했습니다">주소실패</span>
               <span v-else class="ftp-stage-tag is-blank" aria-hidden="true" />
@@ -1827,7 +1869,13 @@ watch(() => authStore.uid, (newUid) => {
             :class="['ftp-stop', 'ftp-stop-pending', 'ftp-pending-row', `stage-${row.tone}`]"
           >
             <span class="ftp-stop-badge tone-pending">·</span>
-            <span class="ftp-stop-addr" :title="row.address">{{ row.address }}</span>
+            <span
+              class="ftp-stop-addr"
+              :title="row.address"
+              @click="toggleAddrBubble(`p${row.id}`, row.address, $event)"
+              @mouseenter="hoverAddrBubble(`p${row.id}`, row.address, $event)"
+              @mouseleave="leaveAddrBubble()"
+            >{{ row.address }}</span>
             <span v-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못했습니다">주소실패</span>
             <span v-else :class="['ftp-stage-tag', `tone-${row.tone}`]">{{ row.label }}</span>
             <button
@@ -1915,8 +1963,39 @@ watch(() => authStore.uid, (newUid) => {
         </div>
       </div>
     </div>
+
+    <!-- 주소 말풍선 — 몸통 맨 끝에 붙여 화면 위에 띄운다.
+         줄 안에 두면 뒷줄에 깔리거나 스크롤 칸에 잘렸다 -->
+    <Teleport to="body">
+      <div
+        v-if="addrBubbleIdx !== null"
+        class="ftp-addr-bubble-top"
+        :style="{ left: `${addrBubbleBox.left}px`, top: `${addrBubbleBox.top}px`, width: `${addrBubbleBox.width}px` }"
+        @click="addrBubbleIdx = null"
+      >{{ addrBubbleText }}</div>
+    </Teleport>
   </section>
 </template>
+
+<!-- 말풍선은 Teleport 로 몸통에 붙으므로 scoped 가 닿지 않는다 — 전역에 적는다 -->
+<style>
+.ftp-addr-bubble-top {
+  position: fixed; z-index: 10000;
+  box-sizing: border-box;
+  background: #111827; color: #fff;
+  font-size: 12px; font-weight: 600; line-height: 1.45;
+  padding: 8px 10px; border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.28);
+  word-break: break-all; cursor: pointer;
+}
+.ftp-addr-bubble-top::before {
+  content: '';
+  position: absolute; top: -5px; left: 16px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid #111827;
+}
+</style>
 
 <style scoped>
 .ftp-shell {
@@ -2508,35 +2587,9 @@ watch(() => authStore.uid, (newUid) => {
   border: 1px solid transparent;
 }
 
-/* 잘린 주소 전체를 보여주는 말풍선.
-   .ftp-stop-addr는 overflow:hidden이라 그 안에 두면 잘린다 — 행(.ftp-stop) 기준으로 띄운다. */
-.ftp-addr-bubble {
-  display: none;
-  position: absolute; z-index: 20;
-  left: 34px; right: 10px; top: calc(100% - 3px);
-  background: #111827; color: #fff;
-  font-size: 12px; font-weight: 600; line-height: 1.45;
-  padding: 8px 10px; border-radius: 8px;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.28);
-  word-break: break-all; cursor: pointer;
-}
-.ftp-addr-bubble::before {
-  content: '';
-  position: absolute; top: -5px; left: 16px;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-bottom: 5px solid #111827;
-}
-.ftp-addr-bubble.open { display: block; }
-/* 말풍선이 아랫줄에 깔리던 것 — 말풍선의 z-index 는 제 줄 안에서만 센다.
-   줄끼리는 뒤에 오는 줄이 위에 깔리므로, 말풍선을 연 줄을 통째로 올려야 한다 */
-.ftp-stop.bubble-on { z-index: 30; }
-/* 마우스가 있는 환경에서만 hover로 연다 — 터치에서는 탭으로 연다.
-   행 전체가 아니라 '주소 글자' 위에서만 뜬다 — 오른쪽 아이콘(물건상세 ~ 목록에서 제거)
-   위를 지날 때 말풍선이 떠서 아랫줄 아이콘을 덮어 버리는 것을 막는다. */
-@media (hover: hover) {
-  .ftp-stop-addr:hover + .ftp-addr-bubble { display: block; pointer-events: none; }
-}
+/* 잘린 주소 전체를 보여주는 말풍선 — 몸통 맨 끝에 붙어 화면 기준으로 뜬다.
+   (줄 안에 두었을 때는 뒷줄에 깔리고, 목록의 스크롤 칸에 잘렸다) */
+
 .ftp-stop.kind-start { background: #e6f8ee; }
 .ftp-stop.kind-end { background: #fff3e0; }
 .ftp-stop.visited .ftp-stop-addr { text-decoration: line-through; color: #9ca3af; }

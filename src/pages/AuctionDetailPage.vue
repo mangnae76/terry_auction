@@ -115,8 +115,12 @@ const caseLabel = computed(() => auction.value?.caseNumber || '');
 const saleKind = computed(() => {
   const raw = auction.value?.saleClassification || '토지건물 일괄매각';
   const m = raw.match(/(토지[·.]?\s*건물\s*일괄매각)/);
-  // PDF에는 '토지·건물'로 적혀 오는데 가운뎃점은 빼고 보여 준다
-  return (m?.[1] ?? raw.split(/[·,/]/)[0]).replace(/토지[·.]\s*건물/, '토지건물').trim();
+  // 한 줄에 년식까지 담아야 해서 '토지·건물 일괄매각' 을 '토건일괄매각' 으로 줄인다.
+  // 띄어쓰기도 뺀다 — 좁은 화면에서 '16년차' 가 잘려 나갔다.
+  return (m?.[1] ?? raw.split(/[·,/]/)[0])
+    .replace(/토지[·.]?\s*건물\s*일괄매각/, '토건일괄매각')
+    .replace(/\s+/g, '')
+    .trim();
 });
 // 상단바 단계 드롭다운 — 관심/임장/입찰/낙찰/탈락. 목록으로 돌아가지 않고 여기서 바꾼다.
 // 쓰레기통 아이콘 — 번들 PNG가 흰색 단색이라 보이지 않아 데이터 URI SVG를 직접 쓴다
@@ -230,7 +234,12 @@ const subjectHasDong = computed(() => /(^|\s)제?\d+동(\s|$)/.test(jibunAddress
  *  (저장된 주소 자체는 건드리지 않는다 — 지역·실거래 조회가 그 값을 쓴다) */
 const addrHasBuildingName = computed(() => hasBuildingName(jibunAddress.value));
 /** 상단 고정줄에 보여 줄 주소 — 정보요약에 적어 둔 건물명을 지번 뒤에 끼운다 */
-const headAddress = computed(() => addressWithName(jibunAddress.value, auction.value?.basicSummary?.['sum.buildingName']));
+/** 상단 카드 주소 — '3층302호' 처럼 층과 호가 붙어 오면 층은 뗀다.
+ *  층은 바로 아래 정보요약에 따로 있고, 여기서는 호수 끝이 잘리는 쪽이 더 아깝다. */
+const dropFloorInUnit = (addr: string) => addr.replace(/(^|\s)(지하\s*)?\d+층\s*(\d+호)/g, '$1$3');
+const headAddress = computed(() => dropFloorInUnit(
+  addressWithName(jibunAddress.value, auction.value?.basicSummary?.['sum.buildingName']),
+));
 // 건물명·동호수를 떼고 번지까지만 남긴 주소 (동일지번 검색 안내문구용)
 const lotOnlyAddress = computed(() => {
   const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
@@ -5797,7 +5806,7 @@ const goBack = () => router.back();
       </template>
 
       <template v-if="activeTab === 'profit' && auction">
-        <section class="adp-card">
+        <section class="adp-card adp-profit-card">
           <!-- 제목과 날짜 줄은 화면에 붙여 둔다 — 표를 한참 내려 보다가도
                어느 안(A·B)을 보고 있는지, 진행상황이 무엇인지 늘 보여야 한다 -->
           <div class="adp-profit-sticky">
@@ -8936,7 +8945,17 @@ const goBack = () => router.back();
 .adp-profit-sticky {
   position: sticky; top: var(--adp-head-h, 162px); z-index: 30;
   background: #fff;
+  /* 카드 좌우 안쪽 여백(8px)을 뚫어야 흰 바탕이 끝까지 가서 표가 비쳐 보이지 않는다 */
   margin: 0 -8px; padding: 0 8px;
+}
+/* 카드를 본문 위쪽 여백만큼 끌어올려 고정 자리에서 시작하게 한다.
+   붙을 자리까지 올라갈 거리가 0 이라야 '조금 움직이는' 것이 없어진다 */
+.adp-card.adp-profit-card { margin-top: -6px; }
+/* 붙어 있는 동안에만 그림자 — 어디까지가 고정인지 눈에 보인다 */
+.adp-profit-sticky::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 6px;
+  background: linear-gradient(rgba(17, 24, 39, 0.05), rgba(17, 24, 39, 0));
+  pointer-events: none;
 }
 .adp-pd-item {
   border: none; background: transparent; padding: 0; cursor: pointer;
