@@ -2678,17 +2678,33 @@ type FieldRow = {
   text?: boolean;
   placeholder?: string;
   suffix?: string;
+  /** 줄 밑에 비고 한 칸을 더 낸다 — 고른 값만으로는 모자란 말을 적는 자리 */
+  note?: boolean;
+};
+/** 비고 값이 앉을 자리 — 항목 id 뒤에 붙인다 */
+const fieldNoteId = (id: string) => `${id}.note`;
+/** 공과금 금액칸 — 숫자만 받던 칸이라 '미납 3개월' 같은 말을 적을 수가 없었다.
+ *  글자를 그대로 받되, 숫자만 적은 경우에는 천 단위 쉼표를 붙여 준다. */
+const setFieldMoneyText = (id: string, el: HTMLInputElement) => {
+  const raw = el.value;
+  const next = /^[\d,]*$/.test(raw)
+    ? raw.replace(/,/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    : raw;
+  setFieldValNow(id, next);
+  // 쉼표를 다시 찍어 준 경우에는 칸도 맞춰 준다 (값이 그대로면 화면이 안 바뀐다)
+  if (el.value !== next) el.value = next;
 };
 const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
   {
     title: '② 탐문 (윗집, 옆집, 아래집, 동대표 중)',
     items: [
-      { id: 'fs.roofLeak', label: '옥상누수', options: ['O', 'X', '확인불가'] },
-      // 먼저 눈으로 보는 것 — 건물을 한 바퀴 돌며 채운다
-      { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'] },
-      { id: 'fs.parkList', label: '주차리스트', options: ['O', 'X'] },
-      { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'] },
-      { id: 'fs.bikeKeep', label: '자전거상태', options: ['상', '중', '하'] },
+      { id: 'fs.roofLeak', label: '누수', options: ['O', 'X', '확인불가'], note: true },
+      // 먼저 눈으로 보는 것 — 건물을 한 바퀴 돌며 채운다.
+      // O/X 만으로는 무엇을 봤는지 남지 않아 줄마다 비고를 둔다
+      { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], note: true },
+      { id: 'fs.parkList', label: '주차리스트', options: ['O', 'X'], note: true },
+      { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'], note: true },
+      { id: 'fs.bikeKeep', label: '자전거상태', options: ['상', '중', '하'], note: true },
       // 그다음 사람에게 묻는 것 — 연락처가 따라붙는 줄들
       {
         id: 'fs.maintFee', label: '미납관리비', options: ['동대표', '관리소'],
@@ -2719,9 +2735,9 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
   {
     title: '④ 수리상태',
     items: [
-      { id: 'fs.door', label: '도어', options: ['교체', '미교체'] },
-      { id: 'fs.doorLock', label: '도어락', options: ['교체', '미교체'] },
-      { id: 'fs.window', label: '샷시', options: ['교체', '미교체'] },
+      { id: 'fs.door', label: '도어', options: ['교체', '미교체'], note: true },
+      { id: 'fs.doorLock', label: '도어락', options: ['교체', '미교체'], note: true },
+      { id: 'fs.window', label: '샷시', options: ['교체', '미교체'], note: true },
     ],
   },
 ];
@@ -8079,13 +8095,14 @@ const goBack = () => router.back();
                   </template>
                 </span>
                 <span v-if="item.extra" class="ext">
-                  <FormattedNumberInput
+                  <!-- 금액칸도 글자를 받는다. 숫자만 적으면 쉼표가 붙고,
+                       '미납 3개월' 처럼 적으면 적은 그대로 남는다 -->
+                  <input
                     v-if="item.extra.money"
-                    :model-value="fieldVal(item.extra.id)"
-                    mode="string"
                     class="adp-fs-input"
                     :placeholder="item.extra.placeholder"
-                    @update:model-value="setFieldValNow(item.extra!.id, String($event))"
+                    :value="fieldVal(item.extra.id)"
+                    @input="setFieldMoneyText(item.extra!.id, $event.target as HTMLInputElement)"
                   />
                   <input
                     v-else
@@ -8095,6 +8112,15 @@ const goBack = () => router.back();
                     @input="setFieldValNow(item.extra!.id, ($event.target as HTMLInputElement).value)"
                   />
                 </span>
+              </div>
+              <!-- 비고 — 고른 값(O/X·교체)만으로는 안 남는 말을 적는다. 글자·숫자 다 받는다 -->
+              <div v-if="item.note" class="adp-fs-note">
+                <input
+                  class="adp-fs-input note"
+                  placeholder="비고"
+                  :value="fieldVal(fieldNoteId(item.id))"
+                  @input="setFieldValNow(fieldNoteId(item.id), ($event.target as HTMLInputElement).value)"
+                />
               </div>
               </template>
             </div>
@@ -9958,6 +9984,11 @@ const goBack = () => router.back();
 .adp-fs-row .ctl, .adp-fs-row .ext { min-width: 0; font-size: 13px; font-weight: 700; color: #111827; text-align: right; }
 /* 옆칸이 없는 항목(기타·수리상태 등)은 남은 폭을 모두 쓴다 */
 .adp-fs-row .ctl.wide { grid-column: 2 / -1; }
+/* 줄 밑에 붙는 비고 — 라벨 자리를 비우지 않고 한 줄을 통으로 쓴다.
+   손품+현장의 다른 비고와 같은 규칙: 적은 글씨만 빨갛고 안내문구는 회색 */
+.adp-fs-note { padding: 0 0 7px; margin-top: -3px; }
+.adp-fs-input.note { height: 26px; font-size: 11.5px; font-weight: 400; color: #e0574a; text-align: left; }
+.adp-fs-input.note::placeholder { color: #9ca3af; font-weight: 400; }
 .adp-fs-input {
   width: 100%; min-width: 0; height: 28px; border: 1px solid #e3e8f0; border-radius: 6px;
   padding: 0 6px; font-size: 12.5px; color: #111827; background: #fff;

@@ -203,17 +203,21 @@ const MONEY_FIELDS: Array<{ key: MoneyKey; placeholder: string }> = [
       </div>
       <div class="adp-agency-line">
         <label v-for="f in MONEY_FIELDS" :key="f.key" class="adp-agency-fld">
+          <!-- 셋이 나란히 서면 어느 칸이 무엇인지 헷갈린다 — 이름을 칸 안에 같이 둔다 -->
           <span v-if="props.editing" class="adp-agency-money">
+            <em class="lab">{{ f.placeholder }}</em>
             <input
-              class="adp-mkt-input left money"
+              class="money"
               inputmode="decimal"
-              :placeholder="f.placeholder"
+              placeholder=""
               :value="moneyInput(row[f.key])"
               @input="setMoney(row, f.key, $event.target as HTMLInputElement)"
             />
-            <em>억</em>
+            <em class="unit">억</em>
           </span>
-          <span v-else>{{ moneyText(row[f.key]) }}</span>
+          <span v-else class="money-txt">
+            <em class="lab">{{ f.placeholder }}</em>{{ moneyText(row[f.key]) }}
+          </span>
         </label>
       </div>
       <!-- 셋째 줄 — 금액으로는 안 남는 말. 협의한 내용과 그 밖의 비고를 나눠 적는다 -->
@@ -278,12 +282,35 @@ const MONEY_FIELDS: Array<{ key: MoneyKey; placeholder: string }> = [
 .adp-agency-fld > span.note-txt { font-size: 11.5px; font-weight: 400; color: #9ca3af; }
 .adp-agency-fld > span.note-txt.filled { color: #e0574a; font-weight: 400; }
 .adp-mkt-input::placeholder { color: #9ca3af; }
-/* 금액 — 단위 '억'을 칸 끝에 붙여 둔다. 적는 쪽은 숫자만 치면 된다 */
-.adp-agency-money { position: relative; display: block; }
-.adp-agency-money .adp-mkt-input.money { padding-right: 19px; }
-.adp-agency-money em {
-  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-  font-style: normal; font-size: 11px; font-weight: 700; color: #6b7280; pointer-events: none;
+/* 금액 — 이름과 단위를 칸 안에 같이 세운다.
+   테두리는 칸(이 span)이 가진다. 예전에는 안쪽 input 이 테두리를 가지고
+   있었는데, 줄 높이에 눌려 아래쪽 선이 잘려 칸이 뚫려 보였다. */
+.adp-agency-money {
+  display: flex; align-items: center; gap: 3px;
+  box-sizing: border-box; height: 26px; width: 100%;
+  border: 1px solid #e3e8f0; border-radius: 6px; background: #fff;
+  padding: 0 6px; overflow: hidden;
+}
+.adp-agency-money:focus-within { border-color: #2b6df3; }
+.adp-agency-money .lab {
+  flex: 0 0 auto; font-style: normal; font-size: 10.5px; font-weight: 700;
+  color: #6b7280; white-space: nowrap;
+}
+.adp-agency-money .unit {
+  flex: 0 0 auto; font-style: normal; font-size: 10.5px; font-weight: 700; color: #6b7280;
+}
+.adp-agency-money input.money {
+  flex: 1 1 auto; min-width: 0; width: 100%;
+  border: none; outline: none; background: transparent; padding: 0;
+  font-family: inherit; font-size: 11.5px; font-weight: 700; color: #111827; text-align: right;
+}
+.adp-agency-money input.money::placeholder { color: #cbd5e1; font-weight: 400; }
+/* 보기 모드도 같은 차례로 — 이름, 금액 */
+.adp-agency-fld > span.money-txt {
+  display: flex; align-items: center; justify-content: flex-end; gap: 4px;
+}
+.adp-agency-fld > span.money-txt .lab {
+  font-style: normal; font-size: 10.5px; font-weight: 700; color: #6b7280;
 }
 
 .adp-agency-multi { position: relative; }
