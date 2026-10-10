@@ -2738,11 +2738,12 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
     // 그다음 사람에게 묻는 것, 마지막으로 문 앞의 비번.
     items: [
       // 자판을 두드리는 대신 눌러 고른다 — 현장에서는 그편이 빠르다
-      { id: 'fs.aspect', label: '향 / 뷰', options: ['O', 'X'], noteOptions: ['동', '서', '남', '북', '뻥뷰', '단지내뷰'] },
+      { id: 'fs.aspect', label: '향 / 뷰', options: ['O', 'X'], noteOptions: ['동향', '서향', '남향', '북향', '뻥뷰', '단지내뷰'] },
       { id: 'fs.exterior', label: '건물관리', options: ['O', 'X'], noteOptions: oxPicks('외벽크랙', '필로티천장누수') },
       { id: 'fs.trash', label: '분리수거', options: ['O', 'X'], noteOptions: oxPicks('분리수거') },
       { id: 'fs.mailbox', label: '우편함', options: ['O', 'X'], noteOptions: oxPicks('전기요금', '가스요금', '수도요금') },
-      { id: 'fs.utility', label: '전기·가스·수도 현황', options: ['O', 'X'], noteOptions: oxPicks('단전', '단수', '가스차단') },
+      // '\n' 으로 줄을 나눈다 — 한 줄로 두면 '사용현황'이 어중간하게 끊긴다
+      { id: 'fs.utility', label: '전기가스수도\n사용현황', options: ['O', 'X'], noteOptions: oxPicks('단전', '단수', '가스차단') },
       // 건물을 한 바퀴 돌며 보는 것
       { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], note: true },
       { id: 'fs.parkList', label: '주차장관리', options: ['O', 'X'], note: true },
@@ -10120,8 +10121,9 @@ const goBack = () => router.back();
 .adp-fs-row .ext { grid-column: 2; grid-row: 1; }
 .adp-fs-row .ctl.wide { grid-row: 1; }
 .adp-fs-row .lbl { font-size: 13px; color: #6b7280; font-weight: 600; white-space: nowrap; }
-/* '건물외벽, 필로티천장' 처럼 긴 이름은 두 줄로 내려 쓴다 — 한 줄로 두면 잘린다 */
-.adp-fs-row .lbl.long { white-space: normal; font-size: 12px; line-height: 1.25; word-break: keep-all; }
+/* 긴 이름은 두 줄로 내려 쓴다 — 한 줄로 두면 잘린다.
+   pre-line 이라 이름에 넣어 둔 '\n' 자리에서 끊긴다 */
+.adp-fs-row .lbl.long { white-space: pre-line; font-size: 12px; line-height: 1.25; word-break: keep-all; }
 
 .adp-fs-row .ctl, .adp-fs-row .ext { min-width: 0; font-size: 13px; font-weight: 700; color: #111827; text-align: right; }
 /* 옆칸이 없는 항목(기타·수리상태 등)은 남은 폭을 모두 쓴다 */
