@@ -211,6 +211,19 @@ const subjectBuildingLabel = computed(() => {
   }
   return out.join(' ');
 });
+/** 상단 고정줄에 보여 줄 주소 — 주소에 건물명이 없는 물건은 정보요약에 적어 둔
+ *  건물명을 지번 바로 뒤에 끼워 넣는다. 적어 두지 않았으면 주소 그대로다.
+ *  (저장된 주소 자체는 건드리지 않는다 — 지역·실거래 조회가 그 값을 쓴다) */
+const headAddress = computed(() => {
+  const addr = jibunAddress.value;
+  const name = (auction.value?.basicSummary?.['sum.buildingName'] ?? '').trim();
+  if (!name || addr.includes(name)) return addr;
+  const parts = addr.split(/\s+/).filter(Boolean);
+  let last = -1;
+  parts.forEach((t, i) => { if (/^\d+(-\d+)?$/.test(t)) last = i; });
+  if (last < 0) return `${addr} ${name}`.trim();
+  return [...parts.slice(0, last + 1), name, ...parts.slice(last + 1)].join(' ');
+});
 // 건물명·동호수를 떼고 번지까지만 남긴 주소 (동일지번 검색 안내문구용)
 const lotOnlyAddress = computed(() => {
   const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
@@ -5132,7 +5145,7 @@ const goBack = () => router.back();
             <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
           </svg>주소
         </button>
-        <p class="adp-prop-addr">{{ jibunAddress }}</p>
+        <p class="adp-prop-addr">{{ headAddress }}</p>
         <button
           type="button"
           class="adp-fold-all"
@@ -5202,6 +5215,14 @@ const goBack = () => router.back();
                   <input class="adp-sum-input wide" inputmode="decimal" :value="summaryAreaInput('sum.landArea')" placeholder="0" @change="setSummaryArea('sum.landArea', ($event.target as HTMLInputElement).value)" />㎡
                 </span>
                 <template v-else>{{ areaText(sumVal('sum.landArea')) }}</template>
+              </dd>
+            </div>
+            <!-- 주소에 건물명이 없는 물건이 있다 — 손으로 적어 두면 상단 주소에 같이 선다 -->
+            <div class="adp-base-row">
+              <dt>건물명</dt>
+              <dd>
+                <input v-if="editingSummary" class="adp-sum-input wide" :value="sumVal('sum.buildingName')" placeholder="빌라명 입력" @change="setSumVal('sum.buildingName', ($event.target as HTMLInputElement).value)" />
+                <template v-else>{{ sumVal('sum.buildingName') || '-' }}</template>
               </dd>
             </div>
             <div class="adp-base-row">
