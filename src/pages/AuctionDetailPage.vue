@@ -7618,7 +7618,7 @@ const goBack = () => router.back();
                   <div class="cell">
                     <small>주소</small>
                     <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'addr'))" :placeholder="lowAddrAuto ? '3층 302호' : '빌라명 · 층'" @change="setMktVal(lowKey(i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
-                    <strong v-else :class="['adp-mkt-area1', { typed: lowAddrTyped(i - 1) }]">{{ lowAddrText(i - 1) }}</strong>
+                    <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTyped(i - 1) }]">{{ lowAddrText(i - 1) }}</strong>
                   </div>
                   <div class="cell">
                     <small>평당가</small>
@@ -9675,6 +9675,11 @@ const goBack = () => router.back();
 /* 전용면적을 한 칸에 한 줄로 — 글자를 조금 줄이고 줄바꿈을 막는다 */
 .adp-mkt-cells .cell strong.adp-mkt-area1 {
   font-size: 11.5px; white-space: nowrap; letter-spacing: -0.3px;
+}
+/* 저가매물 주소 — 빌라명이 길면 한 줄에 안 들어간다. 두 줄까지 내려 쓴다 */
+.adp-mkt-cells .cell strong.adp-mkt-addr2 {
+  white-space: normal; word-break: keep-all; overflow-wrap: anywhere;
+  line-height: 1.25; text-align: center;
 }
 /* 매물 소진기간의 '/' — 앞뒤를 한 칸씩 띄운다 */
 /* 매물 소진기간 — '91M / 7Y 7M'.
