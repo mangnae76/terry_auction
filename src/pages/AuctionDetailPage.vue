@@ -2729,11 +2729,11 @@ const FIELD_SECTIONS: Array<{ title: string; tip?: string; items: FieldRow[] }> 
     title: '③ 우편물, 공과금 및 기타',
     items: [
       // 미납관리비는 'O/X' 가 아니라 '누구한테 들었나' 가 남아야 한다
-      { id: 'fs.mailMaint', label: '미납관리비', options: ['동대표'], extra: { id: 'fs.mailMaintAmt', placeholder: '금액 입력', money: true } },
+      { id: 'fs.mailMaint', label: '미납관리비', options: ['동대표'], extra: { id: 'fs.mailMaintAmt', placeholder: '금액 및 기타 입력', money: true } },
       // 셋을 한 줄에 묶어 두니 어느 것이 밀렸는지 적을 수가 없었다 — 줄을 나눈다
-      { id: 'fs.mailPower', label: '전기', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액 입력', money: true } },
-      { id: 'fs.mailWater', label: '수도', options: ['O', 'X'], extra: { id: 'fs.mailWaterAmt', placeholder: '금액 입력', money: true } },
-      { id: 'fs.mailGas', label: '가스', options: ['O', 'X'], extra: { id: 'fs.mailGasAmt', placeholder: '금액 입력', money: true } },
+      { id: 'fs.mailPower', label: '전기', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액 및 기타 입력', money: true } },
+      { id: 'fs.mailWater', label: '수도', options: ['O', 'X'], extra: { id: 'fs.mailWaterAmt', placeholder: '금액 및 기타 입력', money: true } },
+      { id: 'fs.mailGas', label: '가스', options: ['O', 'X'], extra: { id: 'fs.mailGasAmt', placeholder: '금액 및 기타 입력', money: true } },
     ],
   },
   {
@@ -5790,11 +5790,11 @@ const goBack = () => router.back();
           </header>
           <div v-if="!isCollapsed('profit')" class="adp-profit-dates">
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
-              <em>낙찰일</em>
+              <em>낙찰</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ auction.wonDate || '날짜입력' }}</span></span>
             </button>
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'sellDate'">
-              <em>매도일</em>
+              <em>매도</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ auction.sellDate || '날짜입력' }}</span></span>
             </button>
             <!-- 표 스텝퍼와 별은 한 묶음 — 자리가 모자라 줄이 내려가도 둘이 같이 내려간다 -->
@@ -8897,17 +8897,17 @@ const goBack = () => router.back();
 /* 수정 버튼 — 테두리만 있는 알약형 */
 .adp-profit-head .adp-edit-btn { margin-left: auto; }
 /* 낙찰일 · 매도일 */
-/* 날짜 둘 + 비중 초기화 + 별. 자리가 모자라면 줄을 내린다 —
-   억지로 한 줄에 담으면 '낙찰일' 같은 글자가 세로로 쪼개진다 */
+/* 날짜 둘 + 진행상황 + 표 스텝퍼를 한 줄에 — 줄이 내려가면 그만큼 빈 자리가
+   생겨 표가 한참 밀린다. 글자('낙찰'·'매도')와 칸을 줄여 한 줄에 맞춘다 */
 .adp-profit-dates {
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  padding: 8px 0 12px; border-bottom: 1px solid #eef1f6; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 4px; flex-wrap: nowrap;
+  padding: 8px 0 10px; border-bottom: 1px solid #eef1f6; margin-bottom: 10px;
 }
 .adp-pd-item {
   border: none; background: transparent; padding: 0; cursor: pointer;
-  display: inline-flex; align-items: baseline; gap: 6px;
+  /* 글자는 칸 한가운데에 — baseline 으로 두니 '낙찰'이 칸보다 아래로 처졌다 */
+  display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto;
 }
-.adp-pd-item { gap: 4px; }
 .adp-pd-item em { font-style: normal; font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; }
 .adp-pd-box {
   display: inline-flex; align-items: center; justify-content: center; gap: 4px;
@@ -8915,7 +8915,7 @@ const goBack = () => router.back();
   padding: 4px 8px; background: #fff;
   /* 값이 있든 없든 칸 크기가 흔들리지 않게 폭을 고정한다.
      날짜 둘·표 스텝퍼·별이 한 줄에 서야 해서 칸을 좁게 잡았다 */
-  width: 86px; box-sizing: border-box; padding: 4px 4px; gap: 2px;
+  width: 74px; box-sizing: border-box; padding: 4px 3px; gap: 2px;
 }
 .adp-pd-box span { font-size: 11px; font-weight: 400; color: #111827; white-space: nowrap; }
 .adp-pd-cal { color: #9ca3af; flex: 0 0 auto; }
@@ -8929,11 +8929,11 @@ const goBack = () => router.back();
 .adp-pd-reset:active { background: #f3f4f6; }
 .adp-pd-sep { color: #d1d5db; }
 /* 초기화와 별을 한 묶음으로 — 줄이 내려가도 둘이 같이 내려간다 */
-.adp-pd-tail { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-left: auto; }
+.adp-pd-tail { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; margin-left: auto; }
 .adp-profit-dates .adp-star-btn { margin-left: 0; }
 /* 날짜 줄에 같이 서는 진행상황 박스 — 표 스텝퍼 바로 왼쪽에 붙는다
    (바깥 .adp-pd-tail 이 이미 오른쪽으로 밀어 두므로 여기서 또 밀면 안 된다) */
-.adp-profit-dates .adp-bid-status { margin-left: 0; padding: 4px 8px; font-size: 11.5px; }
+.adp-profit-dates .adp-bid-status { margin-left: 0; padding: 4px 4px 4px 6px; font-size: 11px; }
 /* 중요도 별 — 선정물건 목록의 별과 같은 모양 */
 /* 중요도 — 작은 별 3개를 순서대로 채운다 */
 .adp-star-btn {
@@ -10008,6 +10008,7 @@ const goBack = () => router.back();
 .adp-fs-row .ext { grid-column: 2; grid-row: 1; }
 .adp-fs-row .ctl.wide { grid-row: 1; }
 .adp-fs-row .lbl { font-size: 13px; color: #6b7280; font-weight: 600; white-space: nowrap; }
+
 .adp-fs-row .ctl, .adp-fs-row .ext { min-width: 0; font-size: 13px; font-weight: 700; color: #111827; text-align: right; }
 /* 옆칸이 없는 항목(기타·수리상태 등)은 남은 폭을 모두 쓴다 */
 .adp-fs-row .ctl.wide { grid-column: 2 / -1; }
@@ -10028,7 +10029,12 @@ const goBack = () => router.back();
 .adp-fs-unit { display: flex; align-items: center; justify-content: flex-end; gap: 3px; width: 100%; }
 .adp-fs-unit .adp-fs-input { flex: 1 1 auto; min-width: 0; }
 /* 선택 버튼은 줄바꿈 없이 한 줄에 둔다 */
-.adp-fs-toggles { display: flex; flex-wrap: nowrap; gap: 4px; justify-content: flex-end; min-width: 0; }
+/* 고르는 단추가 한 개인 줄(미납관리비)과 두 개인 줄(전기·수도·가스)이 섞여 있어
+   옆 입력칸의 폭이 줄마다 달랐다 — 최소 폭을 맞춰 칸 끝을 나란히 세운다.
+   셋인 줄(자전거상태·누수)은 이보다 넓어지므로 그대로 둔다 */
+.adp-fs-toggles {
+  display: flex; flex-wrap: nowrap; gap: 4px; justify-content: flex-end; min-width: 82px;
+}
 /* 'O'·'X'처럼 한 글자인 버튼이 납작해지지 않게 최소 크기를 준다 */
 .adp-fs-toggles .adp-toggle-btn {
   display: inline-flex; align-items: center; justify-content: center;
