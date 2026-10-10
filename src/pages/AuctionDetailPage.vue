@@ -187,14 +187,19 @@ const hideThisAuction = () => {
 
 const jibunAddress = computed(() => auction.value?.address || '');
 const fullAddress = computed(() => auction.value?.address || auction.value?.roadAddress || '');
-/** 번지 + 건물명까지 — 동·층·호만 뗀다 ('… 493-4 정성드림빌').
- *  같은 번지에 건물이 여러 동이면 이름까지 있어야 어느 건물인지 안다. */
+/** 동 + 번지 + 건물명 — '검암동 493-4 정성드림빌'.
+ *  시·도와 구는 뗀다. 지금 보고 있는 물건의 바로 그 번지이니 거기까지 다시
+ *  적을 까닭이 없고, 줄만 길어져 제목이 두 줄로 내려갔다.
+ *  건물명까지 남기는 것은 같은 번지에 동이 여럿일 때 가려내기 위해서다. */
 const lotWithBuildingAddress = computed(() => {
   const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
   let last = -1;
   parts.forEach((t, i) => { if (/^\d+(-\d+)?$/.test(t)) last = i; });
   if (last < 0) return jibunAddress.value;
-  const out = parts.slice(0, last + 1);
+  // 번지 바로 앞의 '○○동'부터 — 그 앞(시·구)은 버린다
+  let head = last;
+  while (head > 0 && !/[동리가]$/.test(parts[head - 1])) head -= 1;
+  const out = parts.slice(Math.max(0, head - 1), last + 1);
   for (let i = last + 1; i < parts.length; i += 1) {
     if (isUnitToken(parts[i])) break;
     out.push(parts[i]);

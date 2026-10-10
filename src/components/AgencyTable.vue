@@ -223,7 +223,19 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
           <strong v-else class="val">{{ rangeText(row, g) }}</strong>
         </span>
       </div>
-      <!-- 셋째 줄 — 금액으로는 안 남는 말. 길게 적을 일이 많아 줄을 통으로 쓴다 -->
+      <!-- 셋째·넷째 줄 — 금액으로는 안 남는 말. 길게 적을 일이 많아 줄을 통으로 쓴다 -->
+      <div class="adp-agency-line">
+        <label class="adp-agency-fld note-fld wide">
+          <em class="lab">의견</em>
+          <input
+            v-if="props.editing"
+            v-model="row.opinion"
+            class="adp-mkt-input left note"
+            @input="emit('change')"
+          />
+          <span v-else :class="['note-txt', { filled: !!row.opinion }]">{{ row.opinion || '-' }}</span>
+        </label>
+      </div>
       <div class="adp-agency-line">
         <label class="adp-agency-fld note-fld wide">
           <em class="lab">협의</em>

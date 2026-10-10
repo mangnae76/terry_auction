@@ -559,6 +559,8 @@ export interface AgencyRow {
   urgentTo?: string;
   /** @deprecated 급매가 — 칸을 뺐다. 잠깐 적어 둔 자료만 남아 있다 */
   quick?: string;
+  /** 상담하며 받은 느낌·판단 — 협의 내용과는 따로 적는다 */
+  opinion?: string;
   /** 협의한 내용 — 금액으로는 안 남는 것들 */
   note?: string;
   /** @deprecated 비고 — 칸을 뺐다(협의가 줄을 통으로 쓴다). 적어 둔 자료만 남아 있다 */
