@@ -5363,174 +5363,6 @@ const goBack = () => router.back();
           </div>
         </section>
 
-        <section class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('bld')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M9 7h2M9 11h2M9 15h2M3 21h18M16 10h3a2 2 0 0 1 2 2v9"/></svg>건축물정보</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('bld') }]" alt="" />
-          </header>
-          <div v-if="!isCollapsed('bld')">
-            <!-- 표제부 — landAreaTotal/buildingAreaTotal/totalFloorArea 중 하나라도 있으면 표시 -->
-            <template v-if="auction?.buildingHeader?.landAreaTotal || auction?.buildingHeader?.buildingAreaTotal || auction?.buildingHeader?.totalFloorArea">
-              <div class="adp-subtab-row">
-                <button class="adp-subtab dark active" type="button">표제부</button>
-              </div>
-              <table class="adp-table adp-kv-table">
-                <colgroup>
-                  <col style="width: 70px" />
-                  <col />
-                  <col style="width: 70px" />
-                  <col />
-                </colgroup>
-                <tbody>
-                  <tr><th>위치</th><td colspan="3">{{ auction?.buildingHeader?.locationDetail || fullAddress }}</td></tr>
-                  <tr><th>가구</th><td>{{ auction?.buildingHeader?.households || '-' }}</td><th>전용</th><td>{{ auction?.buildingAreaM2 || 0 }}㎡ ({{ auction?.buildingAreaPyeong || 0 }}평)</td></tr>
-                  <tr><th>대지</th><td>{{ auction?.buildingHeader?.landAreaTotal || '-' }}</td><th>건폐율</th><td>{{ auction?.buildingHeader?.buildingCoverage || '-' }}</td></tr>
-                  <tr><th>건축</th><td>{{ auction?.buildingHeader?.buildingAreaTotal || '-' }}</td><th>용적률</th><td>{{ auction?.buildingHeader?.floorAreaRatio || '-' }}</td></tr>
-                  <tr><th>연면적</th><td>{{ auction?.buildingHeader?.totalFloorArea || '-' }}</td><th>주용도</th><td>{{ auction?.buildingHeader?.mainUse || auction?.propertyType || '-' }}</td></tr>
-                  <tr><th>허가일</th><td>{{ auction?.buildingHeader?.permitDate || '-' }}</td><th>착공일</th><td>{{ auction?.buildingHeader?.startDate || '-' }}</td></tr>
-                  <tr><th>층수</th><td>{{ auction?.buildingHeader?.floors || '-' }}</td><th>승강기</th><td>{{ auction?.buildingHeader?.elevator || '-' }}</td></tr>
-                  <tr><th>사용승인</th><td>{{ auction?.buildingHeader?.approvalDate || auction?.approvalDate || '-' }}</td><th>주차</th><td>{{ auction?.buildingHeader?.parking || '-' }}</td></tr>
-                  <tr><th>구조</th><td colspan="3">{{ auction?.structureType || '-' }}</td></tr>
-                </tbody>
-              </table>
-            </template>
-
-            <!-- 전유부 — 호별 정보 (unitExclusiveArea 또는 unitLocation이 있을 때 표시) -->
-            <template v-if="auction?.buildingHeader?.unitExclusiveArea || auction?.buildingHeader?.unitLocation">
-              <div class="adp-subtab-row">
-                <button class="adp-subtab dark active" type="button">전유부</button>
-              </div>
-              <table class="adp-table adp-kv-table">
-                <colgroup>
-                  <col style="width: 86px" />
-                  <col />
-                  <col style="width: 86px" />
-                  <col />
-                </colgroup>
-                <tbody>
-                  <tr><th>소재지</th><td colspan="3">{{ auction?.buildingHeader?.unitLocation || fullAddress }}</td></tr>
-                  <tr v-if="auction?.buildingHeader?.unitHouseholds || auction?.buildingHeader?.households">
-                    <th>총 가구/세대/호</th><td>{{ auction?.buildingHeader?.unitHouseholds || auction?.buildingHeader?.households || '-' }}</td>
-                    <th>주용도</th><td>{{ auction?.buildingHeader?.mainUse || auction?.propertyType || '-' }}</td>
-                  </tr>
-                  <tr>
-                    <th>전용면적</th><td>{{ auction?.buildingHeader?.unitExclusiveArea || (auction?.buildingAreaM2 ? `${auction.buildingAreaM2}㎡ (${auction.buildingAreaPyeong}평)` : '-') }}</td>
-                    <th>공용면적</th><td>{{ auction?.buildingHeader?.unitCommonArea || '-' }}</td>
-                  </tr>
-                  <tr>
-                    <th>층</th><td>{{ auction?.buildingHeader?.unitFloor || '-' }}</td>
-                    <th>층수(지하/지상)</th><td>{{ auction?.buildingHeader?.floors || '-' }}</td>
-                  </tr>
-                  <tr>
-                    <th>사용승인일자</th><td>{{ auction?.buildingHeader?.approvalDate || auction?.approvalDate || '-' }}</td>
-                    <th>승강기(비상/승용)</th><td>{{ auction?.buildingHeader?.elevator || '-' }}</td>
-                  </tr>
-                  <tr>
-                    <th>구조</th><td>{{ auction?.buildingHeader?.unitStructure || auction?.structureType || '-' }}</td>
-                    <th>총 주차수</th><td>{{ auction?.buildingHeader?.unitTotalParking || auction?.buildingHeader?.parking || '-' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </template>
-
-            <!-- 표제부도 전유부도 못 가져온 경우 — 가지고 있는 정보만이라도 표시 -->
-            <table v-if="!(auction?.buildingHeader?.landAreaTotal || auction?.buildingHeader?.buildingAreaTotal || auction?.buildingHeader?.totalFloorArea) && !(auction?.buildingHeader?.unitExclusiveArea || auction?.buildingHeader?.unitLocation)" class="adp-table adp-kv-table">
-              <colgroup>
-                <col style="width: 70px" />
-                <col />
-                <col style="width: 70px" />
-                <col />
-              </colgroup>
-              <tbody>
-                <tr><th>위치</th><td colspan="3">{{ fullAddress }}</td></tr>
-                <tr><th>전용면적</th><td>{{ auction?.buildingAreaM2 || 0 }}㎡ ({{ auction?.buildingAreaPyeong || 0 }}평)</td><th>사용승인</th><td>{{ auction?.approvalDate || '-' }}</td></tr>
-                <tr><th>구조</th><td colspan="3">{{ auction?.structureType || '-' }}</td></tr>
-              </tbody>
-            </table>
-
-            <table v-if="(auction?.buildingHeader?.exclusiveFloorRows ?? []).length > 0" class="adp-table adp-floor-table">
-              <thead><tr><th>층</th><th>면적</th><th>구조</th><th>주용도</th><th>기타용도</th></tr></thead>
-              <tbody>
-                <tr v-for="(r, i) in auction?.buildingHeader?.exclusiveFloorRows ?? []" :key="i">
-                  <td>{{ r.floor }}</td><td>{{ r.area }}</td><td>{{ r.structure }}</td><td>{{ r.mainUse }}</td><td>{{ r.otherUse }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('status')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="18" rx="2"/><path d="M9 2h6v4H9zM9 12h6M9 16h4"/></svg>물건현황</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('status') }]" alt="" />
-          </header>
-          <table v-if="!isCollapsed('status')" class="adp-table adp-kv-table">
-            <colgroup>
-              <col style="width: 70px" />
-              <col />
-            </colgroup>
-            <tbody>
-              <tr><th rowspan="2">공시가격</th><td>{{ fullAddress }}</td></tr>
-              <tr>
-                <td v-if="auction?.officialPriceValue">공동주택공시가 : {{ formatMoney(auction?.officialPriceValue) }}원</td>
-                <td v-else-if="auction?.officialPriceBand">공시가 구간 : {{ auction.officialPriceBand }} <span class="adp-na">(PDF에 공시가격 금액 없음)</span></td>
-                <td v-else class="adp-na">공시가격 정보 없음</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-
-        <section v-if="isApartment && auction?.aptComplexInfo" class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('apt')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M10 21v-5h4v5"/></svg>단지정보</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('apt') }]" alt="" />
-          </header>
-          <table v-if="!isCollapsed('apt')" class="adp-table adp-kv-table">
-            <colgroup>
-              <col style="width: 70px" />
-              <col />
-              <col style="width: 70px" />
-              <col />
-            </colgroup>
-            <tbody>
-              <tr><th>단지명</th><td colspan="3">{{ auction.aptComplexInfo.name || '-' }}</td></tr>
-              <tr><th>세대수</th><td>{{ auction.aptComplexInfo.households || '-' }}</td><th>동 수</th><td>{{ auction.aptComplexInfo.buildings || '-' }}</td></tr>
-              <tr><th>사용승인일</th><td>{{ auction.aptComplexInfo.approvalDate || '-' }}</td><th>시공사</th><td>{{ auction.aptComplexInfo.contractor || '-' }}</td></tr>
-              <tr><th>주차 수</th><td>{{ auction.aptComplexInfo.parkingTotal || '-' }}</td><th>세대당 주차</th><td>{{ auction.aptComplexInfo.parkingPerHouse || '-' }}</td></tr>
-              <tr><th>난방 방식</th><td>{{ auction.aptComplexInfo.heatingType || '-' }}</td><th>난방 연료</th><td>{{ auction.aptComplexInfo.heatingFuel || '-' }}</td></tr>
-              <tr><th>용적률</th><td>{{ auction.aptComplexInfo.floorRatio || '-' }}</td><th>건폐율</th><td>{{ auction.aptComplexInfo.buildingCoverage || '-' }}</td></tr>
-              <tr><th>최고층</th><td>{{ auction.aptComplexInfo.topFloor || '-' }}</td><th>최저층</th><td>{{ auction.aptComplexInfo.bottomFloor || '-' }}</td></tr>
-              <tr><th>관리소</th><td colspan="3"><a v-if="auction.aptComplexInfo.managementPhone" :href="`tel:${auction.aptComplexInfo.managementPhone.replace(/[^\d+]/g, '')}`" class="adp-agency-phone">{{ auction.aptComplexInfo.managementPhone }}</a><span v-else>-</span></td></tr>
-              <tr v-if="auction.aptComplexInfo.facilities"><th>편의시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.facilities }}</td></tr>
-              <tr v-if="auction.aptComplexInfo.schools"><th>교육시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.schools }}</td></tr>
-              <tr v-if="auction.aptComplexInfo.restPark"><th>휴식/공원</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.restPark }}</td></tr>
-              <tr v-if="auction.aptComplexInfo.areaTypes"><th>면적 종류</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.areaTypes }}</td></tr>
-              <tr v-if="auction.aptComplexInfo.evCharger"><th>전기차충전소</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.evCharger }}</td></tr>
-            </tbody>
-          </table>
-        </section>
-
-        <section v-if="isApartment && auction?.arrearsInfo" class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('arrears')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z"/><path d="M12 9v4M12 17h.01"/></svg>체납내역</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('arrears') }]" alt="" />
-          </header>
-          <table v-if="!isCollapsed('arrears')" class="adp-table adp-kv-table">
-            <colgroup>
-              <col style="width: 70px" />
-              <col />
-              <col style="width: 70px" />
-              <col />
-            </colgroup>
-            <tbody>
-              <tr><th>조사일</th><td>{{ auction.arrearsInfo.surveyDate || '-' }}</td><th>체납금액</th><td>{{ auction.arrearsInfo.amount || '-' }}</td></tr>
-              <tr v-if="auction.arrearsInfo.note"><th>비고</th><td colspan="3" class="wrap">{{ auction.arrearsInfo.note }}</td></tr>
-            </tbody>
-          </table>
-        </section>
-
-
-
         <!-- 입지정보 — 인근역세권·교육환경·주변환경을 한 카드로 묶는다 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('areaInfo')">
@@ -5745,6 +5577,172 @@ const goBack = () => router.back();
         </div>
             </template>
           </div>
+        </section>
+
+        <section class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('bld')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M9 7h2M9 11h2M9 15h2M3 21h18M16 10h3a2 2 0 0 1 2 2v9"/></svg>건축물정보</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('bld') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('bld')">
+            <!-- 표제부 — landAreaTotal/buildingAreaTotal/totalFloorArea 중 하나라도 있으면 표시 -->
+            <template v-if="auction?.buildingHeader?.landAreaTotal || auction?.buildingHeader?.buildingAreaTotal || auction?.buildingHeader?.totalFloorArea">
+              <div class="adp-subtab-row">
+                <button class="adp-subtab dark active" type="button">표제부</button>
+              </div>
+              <table class="adp-table adp-kv-table">
+                <colgroup>
+                  <col style="width: 70px" />
+                  <col />
+                  <col style="width: 70px" />
+                  <col />
+                </colgroup>
+                <tbody>
+                  <tr><th>위치</th><td colspan="3">{{ auction?.buildingHeader?.locationDetail || fullAddress }}</td></tr>
+                  <tr><th>가구</th><td>{{ auction?.buildingHeader?.households || '-' }}</td><th>전용</th><td>{{ auction?.buildingAreaM2 || 0 }}㎡ ({{ auction?.buildingAreaPyeong || 0 }}평)</td></tr>
+                  <tr><th>대지</th><td>{{ auction?.buildingHeader?.landAreaTotal || '-' }}</td><th>건폐율</th><td>{{ auction?.buildingHeader?.buildingCoverage || '-' }}</td></tr>
+                  <tr><th>건축</th><td>{{ auction?.buildingHeader?.buildingAreaTotal || '-' }}</td><th>용적률</th><td>{{ auction?.buildingHeader?.floorAreaRatio || '-' }}</td></tr>
+                  <tr><th>연면적</th><td>{{ auction?.buildingHeader?.totalFloorArea || '-' }}</td><th>주용도</th><td>{{ auction?.buildingHeader?.mainUse || auction?.propertyType || '-' }}</td></tr>
+                  <tr><th>허가일</th><td>{{ auction?.buildingHeader?.permitDate || '-' }}</td><th>착공일</th><td>{{ auction?.buildingHeader?.startDate || '-' }}</td></tr>
+                  <tr><th>층수</th><td>{{ auction?.buildingHeader?.floors || '-' }}</td><th>승강기</th><td>{{ auction?.buildingHeader?.elevator || '-' }}</td></tr>
+                  <tr><th>사용승인</th><td>{{ auction?.buildingHeader?.approvalDate || auction?.approvalDate || '-' }}</td><th>주차</th><td>{{ auction?.buildingHeader?.parking || '-' }}</td></tr>
+                  <tr><th>구조</th><td colspan="3">{{ auction?.structureType || '-' }}</td></tr>
+                </tbody>
+              </table>
+            </template>
+
+            <!-- 전유부 — 호별 정보 (unitExclusiveArea 또는 unitLocation이 있을 때 표시) -->
+            <template v-if="auction?.buildingHeader?.unitExclusiveArea || auction?.buildingHeader?.unitLocation">
+              <div class="adp-subtab-row">
+                <button class="adp-subtab dark active" type="button">전유부</button>
+              </div>
+              <table class="adp-table adp-kv-table">
+                <colgroup>
+                  <col style="width: 86px" />
+                  <col />
+                  <col style="width: 86px" />
+                  <col />
+                </colgroup>
+                <tbody>
+                  <tr><th>소재지</th><td colspan="3">{{ auction?.buildingHeader?.unitLocation || fullAddress }}</td></tr>
+                  <tr v-if="auction?.buildingHeader?.unitHouseholds || auction?.buildingHeader?.households">
+                    <th>총 가구/세대/호</th><td>{{ auction?.buildingHeader?.unitHouseholds || auction?.buildingHeader?.households || '-' }}</td>
+                    <th>주용도</th><td>{{ auction?.buildingHeader?.mainUse || auction?.propertyType || '-' }}</td>
+                  </tr>
+                  <tr>
+                    <th>전용면적</th><td>{{ auction?.buildingHeader?.unitExclusiveArea || (auction?.buildingAreaM2 ? `${auction.buildingAreaM2}㎡ (${auction.buildingAreaPyeong}평)` : '-') }}</td>
+                    <th>공용면적</th><td>{{ auction?.buildingHeader?.unitCommonArea || '-' }}</td>
+                  </tr>
+                  <tr>
+                    <th>층</th><td>{{ auction?.buildingHeader?.unitFloor || '-' }}</td>
+                    <th>층수(지하/지상)</th><td>{{ auction?.buildingHeader?.floors || '-' }}</td>
+                  </tr>
+                  <tr>
+                    <th>사용승인일자</th><td>{{ auction?.buildingHeader?.approvalDate || auction?.approvalDate || '-' }}</td>
+                    <th>승강기(비상/승용)</th><td>{{ auction?.buildingHeader?.elevator || '-' }}</td>
+                  </tr>
+                  <tr>
+                    <th>구조</th><td>{{ auction?.buildingHeader?.unitStructure || auction?.structureType || '-' }}</td>
+                    <th>총 주차수</th><td>{{ auction?.buildingHeader?.unitTotalParking || auction?.buildingHeader?.parking || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </template>
+
+            <!-- 표제부도 전유부도 못 가져온 경우 — 가지고 있는 정보만이라도 표시 -->
+            <table v-if="!(auction?.buildingHeader?.landAreaTotal || auction?.buildingHeader?.buildingAreaTotal || auction?.buildingHeader?.totalFloorArea) && !(auction?.buildingHeader?.unitExclusiveArea || auction?.buildingHeader?.unitLocation)" class="adp-table adp-kv-table">
+              <colgroup>
+                <col style="width: 70px" />
+                <col />
+                <col style="width: 70px" />
+                <col />
+              </colgroup>
+              <tbody>
+                <tr><th>위치</th><td colspan="3">{{ fullAddress }}</td></tr>
+                <tr><th>전용면적</th><td>{{ auction?.buildingAreaM2 || 0 }}㎡ ({{ auction?.buildingAreaPyeong || 0 }}평)</td><th>사용승인</th><td>{{ auction?.approvalDate || '-' }}</td></tr>
+                <tr><th>구조</th><td colspan="3">{{ auction?.structureType || '-' }}</td></tr>
+              </tbody>
+            </table>
+
+            <table v-if="(auction?.buildingHeader?.exclusiveFloorRows ?? []).length > 0" class="adp-table adp-floor-table">
+              <thead><tr><th>층</th><th>면적</th><th>구조</th><th>주용도</th><th>기타용도</th></tr></thead>
+              <tbody>
+                <tr v-for="(r, i) in auction?.buildingHeader?.exclusiveFloorRows ?? []" :key="i">
+                  <td>{{ r.floor }}</td><td>{{ r.area }}</td><td>{{ r.structure }}</td><td>{{ r.mainUse }}</td><td>{{ r.otherUse }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('status')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="18" rx="2"/><path d="M9 2h6v4H9zM9 12h6M9 16h4"/></svg>물건현황</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('status') }]" alt="" />
+          </header>
+          <table v-if="!isCollapsed('status')" class="adp-table adp-kv-table">
+            <colgroup>
+              <col style="width: 70px" />
+              <col />
+            </colgroup>
+            <tbody>
+              <tr><th rowspan="2">공시가격</th><td>{{ fullAddress }}</td></tr>
+              <tr>
+                <td v-if="auction?.officialPriceValue">공동주택공시가 : {{ formatMoney(auction?.officialPriceValue) }}원</td>
+                <td v-else-if="auction?.officialPriceBand">공시가 구간 : {{ auction.officialPriceBand }} <span class="adp-na">(PDF에 공시가격 금액 없음)</span></td>
+                <td v-else class="adp-na">공시가격 정보 없음</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section v-if="isApartment && auction?.aptComplexInfo" class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('apt')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M10 21v-5h4v5"/></svg>단지정보</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('apt') }]" alt="" />
+          </header>
+          <table v-if="!isCollapsed('apt')" class="adp-table adp-kv-table">
+            <colgroup>
+              <col style="width: 70px" />
+              <col />
+              <col style="width: 70px" />
+              <col />
+            </colgroup>
+            <tbody>
+              <tr><th>단지명</th><td colspan="3">{{ auction.aptComplexInfo.name || '-' }}</td></tr>
+              <tr><th>세대수</th><td>{{ auction.aptComplexInfo.households || '-' }}</td><th>동 수</th><td>{{ auction.aptComplexInfo.buildings || '-' }}</td></tr>
+              <tr><th>사용승인일</th><td>{{ auction.aptComplexInfo.approvalDate || '-' }}</td><th>시공사</th><td>{{ auction.aptComplexInfo.contractor || '-' }}</td></tr>
+              <tr><th>주차 수</th><td>{{ auction.aptComplexInfo.parkingTotal || '-' }}</td><th>세대당 주차</th><td>{{ auction.aptComplexInfo.parkingPerHouse || '-' }}</td></tr>
+              <tr><th>난방 방식</th><td>{{ auction.aptComplexInfo.heatingType || '-' }}</td><th>난방 연료</th><td>{{ auction.aptComplexInfo.heatingFuel || '-' }}</td></tr>
+              <tr><th>용적률</th><td>{{ auction.aptComplexInfo.floorRatio || '-' }}</td><th>건폐율</th><td>{{ auction.aptComplexInfo.buildingCoverage || '-' }}</td></tr>
+              <tr><th>최고층</th><td>{{ auction.aptComplexInfo.topFloor || '-' }}</td><th>최저층</th><td>{{ auction.aptComplexInfo.bottomFloor || '-' }}</td></tr>
+              <tr><th>관리소</th><td colspan="3"><a v-if="auction.aptComplexInfo.managementPhone" :href="`tel:${auction.aptComplexInfo.managementPhone.replace(/[^\d+]/g, '')}`" class="adp-agency-phone">{{ auction.aptComplexInfo.managementPhone }}</a><span v-else>-</span></td></tr>
+              <tr v-if="auction.aptComplexInfo.facilities"><th>편의시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.facilities }}</td></tr>
+              <tr v-if="auction.aptComplexInfo.schools"><th>교육시설</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.schools }}</td></tr>
+              <tr v-if="auction.aptComplexInfo.restPark"><th>휴식/공원</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.restPark }}</td></tr>
+              <tr v-if="auction.aptComplexInfo.areaTypes"><th>면적 종류</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.areaTypes }}</td></tr>
+              <tr v-if="auction.aptComplexInfo.evCharger"><th>전기차충전소</th><td colspan="3" class="wrap">{{ auction.aptComplexInfo.evCharger }}</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section v-if="isApartment && auction?.arrearsInfo" class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('arrears')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z"/><path d="M12 9v4M12 17h.01"/></svg>체납내역</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('arrears') }]" alt="" />
+          </header>
+          <table v-if="!isCollapsed('arrears')" class="adp-table adp-kv-table">
+            <colgroup>
+              <col style="width: 70px" />
+              <col />
+              <col style="width: 70px" />
+              <col />
+            </colgroup>
+            <tbody>
+              <tr><th>조사일</th><td>{{ auction.arrearsInfo.surveyDate || '-' }}</td><th>체납금액</th><td>{{ auction.arrearsInfo.amount || '-' }}</td></tr>
+              <tr v-if="auction.arrearsInfo.note"><th>비고</th><td colspan="3" class="wrap">{{ auction.arrearsInfo.note }}</td></tr>
+            </tbody>
+          </table>
         </section>
       </template>
 
