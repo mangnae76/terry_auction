@@ -2716,18 +2716,18 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
       // 먼저 눈으로 보는 것 — 건물을 한 바퀴 돌며 채운다.
       // O/X 만으로는 무엇을 봤는지 남지 않아 줄마다 비고를 둔다
       { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], note: true },
-      { id: 'fs.parkList', label: '주차리스트', options: ['O', 'X'], note: true },
+      { id: 'fs.parkList', label: '주차장 관리', options: ['O', 'X'], note: true },
       { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'], note: true },
-      { id: 'fs.bikeKeep', label: '자전거상태', options: ['상', '중', '하'], note: true },
+      { id: 'fs.bikeKeep', label: '자전거 보관', options: ['상', '중', '하'], note: true },
       // 그다음 사람에게 묻는 것 — 연락처가 따라붙는 줄들
       // (미납관리비는 ③ 우편물·공과금으로 옮겼다 — 금액과 같이 봐야 하는 값이다)
       {
-        id: 'fs.tenantContact', label: '임차인연락처', options: ['동대표', '차확인'],
-        extra: { id: 'fs.tenantPhone', placeholder: '연락처입력' },
-      },
-      {
         id: 'fs.cleanCo', label: '청소업체', options: ['O', 'X'],
         extra: { id: 'fs.cleanPhone', placeholder: '업체명 / 연락처 입력' },
+      },
+      {
+        id: 'fs.tenantContact', label: '임차인연락처', options: ['동대표', '차확인'],
+        extra: { id: 'fs.tenantPhone', placeholder: '연락처입력' },
       },
       { id: 'fs.doorCode', label: '출입문비번', text: true, placeholder: '비밀번호입력' },
       { id: 'fs.entryCode', label: '현관비번', text: true, placeholder: '비밀번호입력' },
@@ -9444,16 +9444,17 @@ const goBack = () => router.back();
 .adp-conc-unit { display: flex; align-items: center; justify-content: flex-end; gap: 2px; font-size: 10px; color: #6b7280; }
 .adp-conc-unit + .adp-conc-unit { margin-top: 3px; }
 .adp-conc-unit .adp-mkt-input { width: auto; flex: 1 1 0; min-width: 0; }
-.adp-ind-body { padding: 4px 0 14px; }
+.adp-ind-body { padding: 3px 0 10px; }
 .adp-ind-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .adp-ind-table th, .adp-ind-table td {
-  border: 1px solid #e5e7eb; padding: 7px 6px; font-size: 13px; color: #111827;
+  /* 줄이 많은 표다 — 글자는 그대로 두고 위아래 여백만 줄인다 (7 → 5px) */
+  border: 1px solid #e5e7eb; padding: 5px 6px; font-size: 13px; color: #111827;
   text-align: center; vertical-align: middle; word-break: keep-all;
 }
 /* 그룹 머리줄 (구역내 / 단지내 개별성) */
 .adp-ind-group th {
   background: #eef2f7; font-weight: 800; font-size: 12.5px; text-align: left;
-  letter-spacing: -0.2px; padding: 7px 8px;
+  letter-spacing: -0.2px; padding: 5px 8px;
 }
 .adp-ind-label { background: #fafbfc; font-weight: 700; font-size: 12.5px; line-height: 1.25; }
 .adp-ind-ctl .row { display: flex; align-items: center; justify-content: center; gap: 4px; }
