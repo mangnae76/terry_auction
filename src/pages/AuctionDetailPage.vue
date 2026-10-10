@@ -46,6 +46,7 @@ import { fetchRealTradeAverage, fetchPlaceHistory, fetchDongHouseholds, PLACE_HI
 import { cached, cachedEntry, cacheKey, readCache, writeCache, CACHE_TTL } from '../services/marketCache';
 import { fetchApartHousingPrice, VWORLD_KEY_EXPIRES } from '../services/vworldApi';
 import { updateStamp } from '../services/updateStamp';
+import { addressWithName, hasBuildingName, isUnitToken } from '../utils/addressName';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePhoto, isPhotoId, loadSitePhoto, saveSitePhoto } from '../services/sitePhotoRepository';
 import { fetchNearbyEnvironment, type NearbyEnvironment, type NearbyPlace } from '../services/kakaoNearby';
@@ -178,8 +179,6 @@ const hideThisAuction = () => {
 
 const jibunAddress = computed(() => auction.value?.address || '');
 const fullAddress = computed(() => auction.value?.address || auction.value?.roadAddress || '');
-/** 동·층·호를 가리키는 토막인가 — '101동', '2층203호', '지하1층', 'B01호' */
-const isUnitToken = (t: string) => (/^제?\d/.test(t) && /[동층호]/.test(t)) || /^(지하|B\d)/i.test(t);
 /** 번지 + 건물명까지 — 동·층·호만 뗀다 ('… 493-4 정성드림빌').
  *  같은 번지에 건물이 여러 동이면 이름까지 있어야 어느 건물인지 안다. */
 const lotWithBuildingAddress = computed(() => {
@@ -214,31 +213,9 @@ const subjectBuildingLabel = computed(() => {
 /** 상단 고정줄에 보여 줄 주소 — 주소에 건물명이 없는 물건은 정보요약에 적어 둔
  *  건물명을 지번 바로 뒤에 끼워 넣는다. 적어 두지 않았으면 주소 그대로다.
  *  (저장된 주소 자체는 건드리지 않는다 — 지역·실거래 조회가 그 값을 쓴다) */
-/** 주소에 이미 건물명이 들어 있나 — 번지 뒤, 층·호 앞에 '101동' 말고 다른 말이 있으면 있는 것이다 */
-const addrHasBuildingName = computed(() => {
-  const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
-  let last = -1;
-  parts.forEach((t, i) => { if (/^\d+(-\d+)?$/.test(t)) last = i; });
-  if (last < 0) return false;
-  for (let i = last + 1; i < parts.length; i += 1) {
-    const t = parts[i];
-    if (/^제?\d+동$/.test(t)) continue;
-    if (isUnitToken(t)) break;
-    return true;
-  }
-  return false;
-});
-const headAddress = computed(() => {
-  const addr = jibunAddress.value;
-  if (addrHasBuildingName.value) return addr;
-  const name = (auction.value?.basicSummary?.['sum.buildingName'] ?? '').trim();
-  if (!name || addr.includes(name)) return addr;
-  const parts = addr.split(/\s+/).filter(Boolean);
-  let last = -1;
-  parts.forEach((t, i) => { if (/^\d+(-\d+)?$/.test(t)) last = i; });
-  if (last < 0) return `${addr} ${name}`.trim();
-  return [...parts.slice(0, last + 1), name, ...parts.slice(last + 1)].join(' ');
-});
+const addrHasBuildingName = computed(() => hasBuildingName(jibunAddress.value));
+/** 상단 고정줄에 보여 줄 주소 — 정보요약에 적어 둔 건물명을 지번 뒤에 끼운다 */
+const headAddress = computed(() => addressWithName(jibunAddress.value, auction.value?.basicSummary?.['sum.buildingName']));
 // 건물명·동호수를 떼고 번지까지만 남긴 주소 (동일지번 검색 안내문구용)
 const lotOnlyAddress = computed(() => {
   const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
@@ -2532,7 +2509,7 @@ const indivRateTotal = computed(() => {
   return sum;
 });
 const indivAdjustedPrice = computed(() => {
-  const base = parseDigits(surveyForm.value.indivAvgPrice ?? '');
+  const base = mktSaleAvgValue.value;
   if (base <= 0) return '-';
   return Math.round(base * (1 + indivRateTotal.value / 100)).toLocaleString('ko-KR');
 });
@@ -2621,7 +2598,6 @@ watch(
       const m = a.buildingHeader.unitFloor.match(/(\d+)/);
       if (m) v['ind.floorNum'] = `${m[1]}F`;
     }
-    if (!sf.indivAvgPrice && sf.mktConcAvg) sf.indivAvgPrice = sf.mktConcAvg;
   },
   { immediate: true },
 );
@@ -2631,6 +2607,16 @@ const persistSurvey = async () => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
 };
+/** 글자를 칠 때마다 저장하면 한 글자에 한 번씩 서버로 간다.
+ *  값은 바로 화면에 반영하고(저장은 메모리에 이미 끝나 있다), 손을 멈추면 그때 한 번 적는다.
+ *  — 예전에는 엔터를 치거나 칸 밖을 눌러야(change) 값이 들어가서, 적고 바로 저장을 누르면
+ *    방금 친 글자가 사라졌다. 이제 치는 즉시 들어간다. */
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+const persistSoon = () => {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { saveTimer = null; void persistSurvey(); }, 700);
+};
+onBeforeUnmount(() => { if (saveTimer) { clearTimeout(saveTimer); void persistSurvey(); } });
 const saveSurveyAndClose = async (key: keyof typeof editingSurvey.value) => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
@@ -2804,26 +2790,26 @@ const AREA_SURVEY_ITEMS: Array<{ key: string; title: string; note?: string; aptO
   { key: 'zoneRank', title: '구역내(동네) 입지등수', note: '아실, 디스코 > 평단가 or 전세가 등수 확인', aptOnly: true },
   { key: 'resident', title: '호갱노노 주민이야기', note: '호재, 입지가치, 개별가치', aptOnly: true },
 ];
-const setExtraNote = async (key: string, value: string) => {
+const setExtraNote = (key: string, value: string) => {
   setFieldVal(`fs.${key}.note`, value);
-  await persistSurvey();
+  persistSoon();
 };
 
 // === 매매수요 (빌라) — 동단위 수요·공급 지표 ===
 // 주소는 시 > 구 > 동 순서로 받고, 시/도는 서울·경기·인천만 다룬다.
 // 매매수요는 편집 버튼 없이 바로 고친다 — 적는 즉시 저장한다
-const setDmVal = async (id: string, value: string) => {
+const setDmVal = (id: string, value: string) => {
   setFieldVal(id, value);
-  await persistSurvey();
+  persistSoon();
 };
 /** 총 매물수는 네이버에서 사람이 세어 적는 값이라 받아 오는 시각이 없다.
  *  대신 '적은 시각'을 같이 남겨 말풍선의 갱신 줄에 쓴다. 비우면 시각도 지운다.
  *  (지우는 건 '' 로 해야 한다 — merge 저장이라 delete 로는 서버 값이 안 지워진다) */
 const LISTINGS_AT_ID = 'fs.dm.listingsAt';
-const setListingsVal = async (value: string) => {
+const setListingsVal = (value: string) => {
   setFieldVal('fs.dm.listings', value);
   setFieldVal(LISTINGS_AT_ID, value.replace(/[^\d.]/g, '') ? updateStamp() : '');
-  await persistSurvey();
+  persistSoon();
 };
 const dmNum = (id: string) => {
   const n = Number(fieldVal(id).replace(/[^\d.]/g, ''));
@@ -3228,9 +3214,9 @@ const dmIntText = (value: number) => (value > 0 ? Math.round(value).toLocaleStri
 const dmRateText = (value: number) => (value > 0 ? value.toFixed(2) : '-');
 
 // 본건사진 비고 — 입력하면 바로 저장한다
-const setPhotoNote = async (value: string) => {
+const setPhotoNote = (value: string) => {
   setFieldVal('fs.photoNote', value);
-  await persistSurvey();
+  persistSoon();
 };
 const isChecklistOn = (id: string) => fieldVal(id) === 'Y';
 const toggleChecklist = async (id: string) => {
@@ -3246,9 +3232,9 @@ const setFieldVal = (id: string, value: string) => {
   sf.fieldValues[id] = value;
 };
 // 현장조사는 편집 버튼 없이 바로 고친다 — 적는 즉시 저장한다
-const setFieldValNow = async (id: string, value: string) => {
+const setFieldValNow = (id: string, value: string) => {
   setFieldVal(id, value);
-  await persistSurvey();
+  persistSoon();
 };
 
 // === 현황조사서 멀티셀렉트 ===
@@ -4539,11 +4525,11 @@ const toggleDocNoteOption = async (id: string, opt: string) => {
   else picked.push(opt);
   await setRightsDocNote(id, picked.join(', '));
 };
-const setRightsDocNote = async (id: string, value: string) => {
+const setRightsDocNote = (id: string, value: string) => {
   if (!auction.value) return;
   if (!auction.value.rightsDocNotes) auction.value.rightsDocNotes = {};
   auction.value.rightsDocNotes[id] = value;
-  await store.saveAuction(auction.value);
+  persistSoon();
 };
 
 // 자유 입력이던 칸이 선택칸으로 바뀌면서, 예전에 적어 둔 값이 목록에 없는데도 남아 있다.
@@ -4743,11 +4729,11 @@ const resetRanks = async () => {
   await store.saveAuction(auction.value);
   flashToast('자동 등수로 되돌렸습니다.', 'success');
 };
-const setRank = async (cond: string, value: string) => {
+const setRank = (cond: string, value: string) => {
   if (!auction.value) return;
   if (!auction.value.realUserRanks) auction.value.realUserRanks = {};
   auction.value.realUserRanks[rankKey(cond)] = value;
-  await store.saveAuction(auction.value);
+  persistSoon();
 };
 // 입지조건 등수 평균 — 낮을수록 좋은 등수. 입력한 항목만으로 평균을 낸다
 const realUserRankSummary = computed(() => {
@@ -5188,9 +5174,9 @@ const goBack = () => router.back();
               <dt>관할법원</dt>
               <dd>
                 <template v-if="editingSummary">
-                  <input class="adp-sum-input" :value="sumVal('sum.court')" placeholder="법원명" @change="setSumVal('sum.court', ($event.target as HTMLInputElement).value)" />
-                  <input class="adp-sum-input dept" :value="sumVal('sum.courtDept')" placeholder="경매○계" @change="setSumVal('sum.courtDept', ($event.target as HTMLInputElement).value)" />
-                  <input class="adp-sum-input tel" :value="sumVal('sum.courtPhone')" placeholder="연락처입력" @change="setSumVal('sum.courtPhone', ($event.target as HTMLInputElement).value)" />
+                  <input class="adp-sum-input" :value="sumVal('sum.court')" placeholder="법원명" @input="setSumVal('sum.court', ($event.target as HTMLInputElement).value)" />
+                  <input class="adp-sum-input dept" :value="sumVal('sum.courtDept')" placeholder="경매○계" @input="setSumVal('sum.courtDept', ($event.target as HTMLInputElement).value)" />
+                  <input class="adp-sum-input tel" :value="sumVal('sum.courtPhone')" placeholder="연락처입력" @input="setSumVal('sum.courtPhone', ($event.target as HTMLInputElement).value)" />
                 </template>
                 <template v-else>
                   {{ sumVal('sum.court') || '-' }}<span v-if="sumVal('sum.courtDept')" class="adp-sum-dept">{{ sumVal('sum.courtDept') }}</span><a
@@ -5209,7 +5195,7 @@ const goBack = () => router.back();
             <div class="adp-base-row">
               <dt>사용승인</dt>
               <dd>
-                <input v-if="editingSummary" class="adp-sum-input wide" :value="sumVal('sum.approval')" placeholder="YYYY-MM-DD" @change="setSumVal('sum.approval', ($event.target as HTMLInputElement).value)" />
+                <input v-if="editingSummary" class="adp-sum-input wide" :value="sumVal('sum.approval')" placeholder="YYYY-MM-DD" @input="setSumVal('sum.approval', ($event.target as HTMLInputElement).value)" />
                 <template v-else><span class="adp-sum-hi">{{ summaryApprovalDate }}<template v-if="summaryApprovalAge"> / {{ summaryApprovalAge }}</template></span></template>
               </dd>
             </div>
@@ -5217,8 +5203,8 @@ const goBack = () => router.back();
               <dt>공급/전용면적(㎡/평)</dt>
               <dd>
                 <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="decimal" :value="summaryAreaInput('sum.supplyArea')" placeholder="공급" @change="setSummaryArea('sum.supplyArea', ($event.target as HTMLInputElement).value)" />/
-                  <input class="adp-sum-input" inputmode="decimal" :value="summaryAreaInput('sum.exclusiveArea')" placeholder="전용" @change="setSummaryArea('sum.exclusiveArea', ($event.target as HTMLInputElement).value)" />㎡
+                  <input class="adp-sum-input" inputmode="decimal" :value="summaryAreaInput('sum.supplyArea')" placeholder="공급" @input="setSummaryArea('sum.supplyArea', ($event.target as HTMLInputElement).value)" />/
+                  <input class="adp-sum-input" inputmode="decimal" :value="summaryAreaInput('sum.exclusiveArea')" placeholder="전용" @input="setSummaryArea('sum.exclusiveArea', ($event.target as HTMLInputElement).value)" />㎡
                 </span>
                 <template v-else>{{ summarySupplyArea }} / <span class="adp-sum-hi">{{ summaryExclusiveArea }}</span></template>
               </dd>
@@ -5227,7 +5213,7 @@ const goBack = () => router.back();
               <dt>대지면적(㎡/평)</dt>
               <dd>
                 <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input wide" inputmode="decimal" :value="summaryAreaInput('sum.landArea')" placeholder="0" @change="setSummaryArea('sum.landArea', ($event.target as HTMLInputElement).value)" />㎡
+                  <input class="adp-sum-input wide" inputmode="decimal" :value="summaryAreaInput('sum.landArea')" placeholder="0" @input="setSummaryArea('sum.landArea', ($event.target as HTMLInputElement).value)" />㎡
                 </span>
                 <template v-else>{{ areaText(sumVal('sum.landArea')) }}</template>
               </dd>
@@ -5237,7 +5223,7 @@ const goBack = () => router.back();
             <div v-if="!addrHasBuildingName" class="adp-base-row">
               <dt>건물명</dt>
               <dd>
-                <input v-if="editingSummary" class="adp-sum-input wide" :value="sumVal('sum.buildingName')" placeholder="빌라명 입력" @change="setSumVal('sum.buildingName', ($event.target as HTMLInputElement).value)" />
+                <input v-if="editingSummary" class="adp-sum-input wide" :value="sumVal('sum.buildingName')" placeholder="빌라명 입력" @input="setSumVal('sum.buildingName', ($event.target as HTMLInputElement).value)" />
                 <template v-else>{{ sumVal('sum.buildingName') || '-' }}</template>
               </dd>
             </div>
@@ -5245,8 +5231,8 @@ const goBack = () => router.back();
               <dt>동/호</dt>
               <dd>
                 <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.dong')" placeholder="동" @change="setSumVal('sum.dong', ($event.target as HTMLInputElement).value)" />동 /
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.ho')" placeholder="호" @change="setSumVal('sum.ho', ($event.target as HTMLInputElement).value)" />호
+                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.dong')" placeholder="동" @input="setSumVal('sum.dong', ($event.target as HTMLInputElement).value)" />동 /
+                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.ho')" placeholder="호" @input="setSumVal('sum.ho', ($event.target as HTMLInputElement).value)" />호
                 </span>
                 <template v-else>{{ summaryDongText }} / <span class="adp-sum-hi">{{ summaryHoText }}</span></template>
               </dd>
@@ -5255,8 +5241,8 @@ const goBack = () => router.back();
               <dt>층</dt>
               <dd>
                 <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" @change="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value)" />층 /
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" @change="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value)" />층
+                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value)" />층 /
+                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value)" />층
                 </span>
                 <template v-else>{{ summaryFloorPair }}</template>
               </dd>
@@ -5265,7 +5251,7 @@ const goBack = () => router.back();
               <dt>용적률</dt>
               <dd>
                 <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="decimal" :value="sumVal('sum.far')" placeholder="0" @change="setSumVal('sum.far', ($event.target as HTMLInputElement).value)" />%
+                  <input class="adp-sum-input" inputmode="decimal" :value="sumVal('sum.far')" placeholder="0" @input="setSumVal('sum.far', ($event.target as HTMLInputElement).value)" />%
                 </span>
                 <template v-else>{{ sumVal('sum.far') ? `${sumVal('sum.far')}%` : '-' }}</template>
               </dd>
@@ -5274,7 +5260,7 @@ const goBack = () => router.back();
               <dt>세대수</dt>
               <dd>
                 <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.units')" placeholder="0" @change="setSumVal('sum.units', ($event.target as HTMLInputElement).value)" />세대
+                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.units')" placeholder="0" @input="setSumVal('sum.units', ($event.target as HTMLInputElement).value)" />세대
                 </span>
                 <template v-else>{{ sumVal('sum.units') ? `${Number(sumVal('sum.units')).toLocaleString('ko-KR')}세대` : '-' }}</template>
               </dd>
@@ -5284,7 +5270,7 @@ const goBack = () => router.back();
               <dt>해당면적 세대수</dt>
               <dd>
                 <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.areaUnits')" placeholder="0" @change="setSumVal('sum.areaUnits', ($event.target as HTMLInputElement).value)" />세대
+                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.areaUnits')" placeholder="0" @input="setSumVal('sum.areaUnits', ($event.target as HTMLInputElement).value)" />세대
                 </span>
                 <template v-else>{{ sumVal('sum.areaUnits') ? `${Number(sumVal('sum.areaUnits')).toLocaleString('ko-KR')}세대` : '-' }}</template>
               </dd>
@@ -5816,7 +5802,7 @@ const goBack = () => router.back();
                 <td rowspan="2" class="adp-cat"></td>
                 <td><strong>입찰가</strong></td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scBidPct(sc).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scBidPct(sc)) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scBidPct(sc).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scBidPct(sc)) }}</template>
                 </td>
                 <td class="r emph">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.bid.myBidValue" class="adp-cell-input" live-group /><template v-else><strong>{{ formatMoney(scBid(sc)) }}</strong></template>
@@ -5825,7 +5811,7 @@ const goBack = () => router.back();
               <tr>
                 <td>대출(사업자)</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.loanAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.loanAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.loanAmount" class="adp-cell-input" live-group /><template v-else>{{ formatMoney(sc.cost.loanAmount) }}</template>
@@ -5836,7 +5822,7 @@ const goBack = () => router.back();
                 <td rowspan="10" class="adp-cat">비용</td>
                 <td><span class="adp-cost-no">①</span>취득세</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.acquisitionTaxAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.acquisitionTaxAmount)) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.acquisitionTaxAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.acquisitionTaxAmount)) }}</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.acquisitionTaxAmount" class="adp-cell-input" live-group @update:model-value="scSyncAcqRate(sc)" /><template v-else>{{ formatMoney(sc.cost.acquisitionTaxAmount) }}</template>
@@ -5845,7 +5831,7 @@ const goBack = () => router.back();
               <tr>
                 <td><span class="adp-cost-no">②</span>법무비/채권</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.legalCostAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetAmountByPct(sc, 'legalCostAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.legalCostAmount)) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.legalCostAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetAmountByPct(sc, 'legalCostAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.legalCostAmount)) }}</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.legalCostAmount" class="adp-cell-input" live-group /><template v-else>{{ formatMoney(sc.cost.legalCostAmount) }}</template>
@@ -5854,7 +5840,7 @@ const goBack = () => router.back();
               <tr>
                 <td><span class="adp-cost-no">③</span>중도상환</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[0]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[0])) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[0]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[0])) }}</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.midRepaymentAmount" class="adp-cell-input" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" /><template v-else>{{ formatMoney(sc.cost.midRepaymentAmount) }}</template>
@@ -5863,7 +5849,7 @@ const goBack = () => router.back();
               <tr>
                 <td><span class="adp-cost-no">④</span>이자(3M)</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[1]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[1])) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[1]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[1])) }}</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.interestAmount" class="adp-cell-input" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" /><template v-else>{{ formatMoney(sc.cost.interestAmount) }}</template>
@@ -5872,7 +5858,7 @@ const goBack = () => router.back();
               <tr>
                 <td><span class="adp-cost-no">⑤</span>매도중개료</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[2]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[2])) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[2]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[2])) }}</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.brokerageAmount" class="adp-cell-input" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[2])" /><template v-else>{{ formatMoney(sc.cost.brokerageAmount) }}</template>
@@ -5942,9 +5928,9 @@ const goBack = () => router.back();
                 <td><strong>사업소득세</strong></td>
                 <td class="r adp-formula">
                   <template v-if="editingProfit">
-                    <span class="adp-pct-wrap"><input :value="scTaxRate(sc)" inputmode="decimal" class="adp-cell-input xs" @input="limitPct" @change="scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span>
+                    <span class="adp-pct-wrap"><input :value="scTaxRate(sc)" inputmode="decimal" class="adp-cell-input xs" @input="limitPct($event); scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span>
                     −
-                    <span class="adp-pct-wrap"><input :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" class="adp-cell-input xs" @change="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">만</span></span>
+                    <span class="adp-pct-wrap"><input :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" class="adp-cell-input xs" @input="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">만</span></span>
                   </template>
                   <template v-else>과세표준 <span class="adp-bracket">{{ scBracket(sc) }}</span><span v-if="scDeductionText(sc)" class="adp-bracket"> − {{ scDeductionText(sc) }}</span></template>
                 </td>
@@ -5955,7 +5941,7 @@ const goBack = () => router.back();
               <tr>
                 <td><strong>지방세</strong></td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="String(scLocalTaxRate(sc))" inputmode="decimal" class="adp-cell-input sm" @input="limitPct" @change="scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ scLocalTaxRate(sc) }}%</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="String(scLocalTaxRate(sc))" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ scLocalTaxRate(sc) }}%</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scLocalTax(sc))" class="adp-cell-input" live-group @update:model-value="scSetLocalTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scLocalTax(sc)) }}</strong></template>
@@ -6737,7 +6723,7 @@ const goBack = () => router.back();
                             class="adp-rdoc-input"
                             :placeholder="c.placeholder"
                             :value="rightsDocNote(c.id) || (c.autoOccupancy ? occupancyDefault : '')"
-                            @change="setRightsDocNote(c.id, ($event.target as HTMLInputElement).value)"
+                            @input="setRightsDocNote(c.id, ($event.target as HTMLInputElement).value)"
                           />
                         </template>
                       </div>
@@ -6756,7 +6742,7 @@ const goBack = () => router.back();
                           class="adp-rdoc-input"
                           placeholder="비고"
                           :value="rightsDocNote(item.id)"
-                          @change="setRightsDocNote(item.id, ($event.target as HTMLInputElement).value)"
+                          @input="setRightsDocNote(item.id, ($event.target as HTMLInputElement).value)"
                         />
                       </div>
                     </td>
@@ -6770,7 +6756,7 @@ const goBack = () => router.back();
                         class="adp-rdoc-input"
                         placeholder="비고"
                         :value="rightsDocNote(item.id)"
-                        @change="setRightsDocNote(item.id, ($event.target as HTMLInputElement).value)"
+                        @input="setRightsDocNote(item.id, ($event.target as HTMLInputElement).value)"
                       />
                     </td>
                   </template>
@@ -6820,7 +6806,7 @@ const goBack = () => router.back();
                 class="adp-fs-input"
                 placeholder="비고"
                 :value="fieldVal('fs.photoNote')"
-                @change="setPhotoNote(($event.target as HTMLInputElement).value)"
+                @input="setPhotoNote(($event.target as HTMLInputElement).value)"
               />
             </div>
           </div>
@@ -6867,7 +6853,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell-body">
                     <span v-if="editingSurvey.demand" class="adp-dm-pair">
-                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.deal12m')" :placeholder="deal12mAuto > 0 ? String(deal12mAuto) : '입력'" @change="setDmVal('fs.dm.deal12m', ($event.target as HTMLInputElement).value)" />
+                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.deal12m')" :placeholder="deal12mAuto > 0 ? String(deal12mAuto) : '입력'" @input="setDmVal('fs.dm.deal12m', ($event.target as HTMLInputElement).value)" />
                     </span>
                     <strong v-else class="hi-blue adp-dm-two"><em class="adp-dm-pre">연</em><span class="num">{{ dmIntText(deal12mValue) }}</span><em class="adp-dm-bar">|</em><em class="adp-dm-pre">월</em><span class="num">{{ dmIntText(dmMonthly) }}</span></strong>
                   </div>
@@ -6888,7 +6874,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell-body">
                     <span v-if="editingSurvey.demand" class="adp-dm-pair">
-                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.units')" :placeholder="unitsAuto > 0 ? String(unitsAuto) : '입력'" @change="setDmVal('fs.dm.units', ($event.target as HTMLInputElement).value)" />
+                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.units')" :placeholder="unitsAuto > 0 ? String(unitsAuto) : '입력'" @input="setDmVal('fs.dm.units', ($event.target as HTMLInputElement).value)" />
                     </span>
                     <strong v-else class="hi-blue"><span class="num">{{ dmIntText(dmUnits) }}</span></strong>
                   </div>
@@ -6909,7 +6895,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell-body">
                     <span v-if="editingSurvey.demand" class="adp-dm-pair">
-                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.listings')" placeholder="입력" @change="setListingsVal(($event.target as HTMLInputElement).value)" />
+                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.listings')" placeholder="입력" @input="setListingsVal(($event.target as HTMLInputElement).value)" />
                     </span>
                     <strong v-else class="hi-blue"><span class="num">{{ dmIntText(dmListings) }}</span></strong>
                   </div>
@@ -7082,7 +7068,7 @@ const goBack = () => router.back();
                   class="adp-fs-input"
                   placeholder="비고"
                   :value="fieldVal(`fs.${item.key}.note`)"
-                  @change="setExtraNote(item.key, ($event.target as HTMLInputElement).value)"
+                  @input="setExtraNote(item.key, ($event.target as HTMLInputElement).value)"
                 />
               </div>
             </div>
@@ -7185,7 +7171,7 @@ const goBack = () => router.back();
                     placeholder="입력"
                     :title="autoRankNote(c)"
                     :value="rankValue(c)"
-                    @change="setRank(c, ($event.target as HTMLInputElement).value)"
+                    @input="setRank(c, ($event.target as HTMLInputElement).value)"
                   />
                 </div>
                 </td>
@@ -7231,23 +7217,23 @@ const goBack = () => router.back();
                       </template>
                       <template v-else-if="item.custom === 'units'">
                         <span v-if="editingSurvey.individuality" class="adp-sum-pair units">
-                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.units')" placeholder="세대수" @change="setSumVal('sum.units', ($event.target as HTMLInputElement).value)" />세대 /
-                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.areaUnits')" placeholder="해당면적" @change="setSumVal('sum.areaUnits', ($event.target as HTMLInputElement).value)" />세대
+                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.units')" placeholder="세대수" @input="setSumVal('sum.units', ($event.target as HTMLInputElement).value)" />세대 /
+                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.areaUnits')" placeholder="해당면적" @input="setSumVal('sum.areaUnits', ($event.target as HTMLInputElement).value)" />세대
                         </span>
                         <strong v-else>{{ indivUnitsText }}</strong>
                       </template>
                       <template v-else-if="item.custom === 'dong'">
                         <span v-if="editingSurvey.individuality" class="adp-sum-pair">
-                          총<input class="adp-ind-input" inputmode="numeric" :value="indivValue('ind.dongTotal')" placeholder="0" @change="setIndivValue('ind.dongTotal', ($event.target as HTMLInputElement).value)" />개동 /
-                          입지조건<input class="adp-ind-input" :value="indivValue('ind.dongNote')" placeholder="500m내" @change="setIndivValue('ind.dongNote', ($event.target as HTMLInputElement).value)" />
+                          총<input class="adp-ind-input" inputmode="numeric" :value="indivValue('ind.dongTotal')" placeholder="0" @input="setIndivValue('ind.dongTotal', ($event.target as HTMLInputElement).value)" />개동 /
+                          입지조건<input class="adp-ind-input" :value="indivValue('ind.dongNote')" placeholder="500m내" @input="setIndivValue('ind.dongNote', ($event.target as HTMLInputElement).value)" />
                         </span>
                         <strong v-else>{{ indivDongText }}</strong>
                       </template>
                       <template v-else-if="item.custom === 'floor'">
                         <span v-if="editingSurvey.individuality" class="adp-sum-pair">
-                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" @change="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value)" />층 중
-                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" @change="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value)" />층 /
-                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.ho')" placeholder="호" @change="setSumVal('sum.ho', ($event.target as HTMLInputElement).value)" />호
+                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value)" />층 중
+                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value)" />층 /
+                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.ho')" placeholder="호" @input="setSumVal('sum.ho', ($event.target as HTMLInputElement).value)" />호
                         </span>
                         <strong v-else>{{ indivFloorText }}</strong>
                       </template>
@@ -7301,7 +7287,7 @@ const goBack = () => router.back();
                           :class="['adp-ind-input', { half: item.half }]"
                           :value="indivValue(item.id)"
                           placeholder="입력"
-                          @change="setIndivValue(item.id, ($event.target as HTMLInputElement).value)"
+                          @input="setIndivValue(item.id, ($event.target as HTMLInputElement).value)"
                         />
                         <div v-else-if="item.multi" class="adp-agency-multi adp-ind-multi">
                           <button
@@ -7341,7 +7327,7 @@ const goBack = () => router.back();
                           v-else
                           class="adp-ind-input"
                           :value="indivValue(item.id)"
-                          @change="setIndivValue(item.id, ($event.target as HTMLSelectElement).value)"
+                          @input="setIndivValue(item.id, ($event.target as HTMLSelectElement).value)"
                         >
                           <option value="">선택</option>
                           <option v-for="opt in item.options" :key="opt" :value="opt">{{ opt }}</option>
@@ -7383,7 +7369,7 @@ const goBack = () => router.back();
                             v-else
                             class="adp-ind-input"
                             :value="indivValue(item.sub.id)"
-                            @change="setIndivValue(item.sub!.id, ($event.target as HTMLSelectElement).value)"
+                            @input="setIndivValue(item.sub!.id, ($event.target as HTMLSelectElement).value)"
                           >
                             <option value="">{{ item.sub.label }}</option>
                             <option v-for="opt in item.sub.options" :key="opt" :value="opt">{{ opt }}</option>
@@ -7416,11 +7402,10 @@ const goBack = () => router.back();
               <tfoot>
                 <tr>
                   <th class="adp-ind-label">실거래가 조건분석 평균</th>
+                  <!-- 가격정보 ③ 의 국토부 실거래 평균을 그대로 비춘다 — 손으로 적지 않는다.
+                       조건(기간·면적·연식)을 바꾸면 여기와 손품결론이 같이 움직인다 -->
                   <td class="adp-ind-ctl">
-                    <div class="row">
-                      <FormattedNumberInput v-if="editingSurvey.individuality" v-model="surveyForm.indivAvgPrice" mode="string" class="adp-ind-input sm" placeholder="0" />
-                      <strong v-else>{{ mktNumText(surveyForm.indivAvgPrice) }}</strong>
-                    </div>
+                    <div class="row"><strong>{{ mktSaleAvgText }}</strong></div>
                   </td>
                   <td class="adp-ind-rate">{{ indivRateTotal }}%</td>
                 </tr>
@@ -7492,7 +7477,7 @@ const goBack = () => router.back();
                 <div :class="['cell', { lit: mktLit('area') }]" @mouseenter="litEnter('area')" @mouseleave="litLeave()" @click="litTap('area')">
                   <small>전용면적</small>
                   <span v-if="mktCaseEditable" class="adp-mkt-unit">
-                    <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(mk('d', 'area'))" placeholder="0" @change="setMktVal(mk('d', 'area'), ($event.target as HTMLInputElement).value)" />㎡
+                    <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(mk('d', 'area'))" placeholder="0" @input="setMktVal(mk('d', 'area'), ($event.target as HTMLInputElement).value)" />㎡
                   </span>
                   <strong v-else class="adp-mkt-area1">{{ mktAreaText(mk('d', 'area')) }}</strong>
                 </div>
@@ -7504,7 +7489,7 @@ const goBack = () => router.back();
                       class="adp-mkt-input adp-mkt-ym"
                       @click="mktDealYmKey = mk('d', 'year')"
                     >{{ mktVal(mk('d', 'year')) || '연월일' }}</button>
-                    <input class="adp-mkt-input adp-mkt-floor" :value="mktVal(mk('d', 'floor'))" :placeholder="(mktMode('d') === MKT_MODES[0] ? subjectFloor : '') || '층'" @change="setMktVal(mk('d', 'floor'), ($event.target as HTMLInputElement).value)" />
+                    <input class="adp-mkt-input adp-mkt-floor" :value="mktVal(mk('d', 'floor'))" :placeholder="(mktMode('d') === MKT_MODES[0] ? subjectFloor : '') || '층'" @input="setMktVal(mk('d', 'floor'), ($event.target as HTMLInputElement).value)" />
                   </template>
                   <strong v-else class="adp-mkt-area1">{{ mktDealDateFloorText }}</strong>
                 </div>
@@ -7523,7 +7508,7 @@ const goBack = () => router.back();
                 <div :class="['cell', { lit: mktLit('jArea') }]" @mouseenter="litEnter('jArea')" @mouseleave="litLeave()" @click="litTap('jArea')">
                   <small>전용면적</small>
                   <span v-if="mktCaseEditable" class="adp-mkt-unit">
-                    <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(mk('d', 'jArea'))" placeholder="0" @change="setMktVal(mk('d', 'jArea'), ($event.target as HTMLInputElement).value)" />㎡
+                    <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(mk('d', 'jArea'))" placeholder="0" @input="setMktVal(mk('d', 'jArea'), ($event.target as HTMLInputElement).value)" />㎡
                   </span>
                   <strong v-else class="adp-mkt-area1">{{ mktAreaText(mk('d', 'jArea')) }}</strong>
                 </div>
@@ -7535,7 +7520,7 @@ const goBack = () => router.back();
                       class="adp-mkt-input adp-mkt-ym"
                       @click="mktDealYmKey = mk('d', 'jYear')"
                     >{{ mktVal(mk('d', 'jYear')) || '연월일' }}</button>
-                    <input class="adp-mkt-input adp-mkt-floor" :value="mktVal(mk('d', 'jFloor'))" :placeholder="(mktMode('d') === MKT_MODES[0] ? subjectFloor : '') || '층'" @change="setMktVal(mk('d', 'jFloor'), ($event.target as HTMLInputElement).value)" />
+                    <input class="adp-mkt-input adp-mkt-floor" :value="mktVal(mk('d', 'jFloor'))" :placeholder="(mktMode('d') === MKT_MODES[0] ? subjectFloor : '') || '층'" @input="setMktVal(mk('d', 'jFloor'), ($event.target as HTMLInputElement).value)" />
                   </template>
                   <strong v-else class="adp-mkt-area1">{{ mktJeonseDateFloorText }}</strong>
                 </div>
@@ -7627,13 +7612,13 @@ const goBack = () => router.back();
                   <div class="cell">
                     <small>전용면적</small>
                     <span v-if="editingSurvey.location" class="adp-mkt-unit">
-                      <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(lowKey(i - 1, 'area'))" placeholder="0" @change="setMktVal(lowKey(i - 1, 'area'), ($event.target as HTMLInputElement).value)" />㎡
+                      <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(lowKey(i - 1, 'area'))" placeholder="0" @input="setMktVal(lowKey(i - 1, 'area'), ($event.target as HTMLInputElement).value)" />㎡
                     </span>
                     <strong v-else class="adp-mkt-area1">{{ mktAreaText(lowKey(i - 1, 'area')) }}</strong>
                   </div>
                   <div class="cell">
                     <small>주소</small>
-                    <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'addr'))" :placeholder="lowAddrAuto ? '3층 302호' : '빌라명 · 층'" @change="setMktVal(lowKey(i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
+                    <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'addr'))" :placeholder="lowAddrAuto ? '3층 302호' : '빌라명 · 층'" @input="setMktVal(lowKey(i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
                     <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTyped(i - 1) }]">{{ lowAddrText(i - 1) }}</strong>
                   </div>
                   <div class="cell">
@@ -7647,7 +7632,7 @@ const goBack = () => router.back();
                     <strong v-else class="hi">{{ mktMoney(lowKey(i - 1, 'saleAsk')) }}</strong>
                   </div>
                   <div class="cell adp-mkt-wide">
-                    <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'note'))" placeholder="비고" @change="setMktVal(lowKey(i - 1, 'note'), ($event.target as HTMLInputElement).value)" />
+                    <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'note'))" placeholder="비고" @input="setMktVal(lowKey(i - 1, 'note'), ($event.target as HTMLInputElement).value)" />
                     <strong v-else :class="{ filled: !!mktVal(lowKey(i - 1, 'note')) }">{{ mktVal(lowKey(i - 1, 'note')) || '비고' }}</strong>
                   </div>
                 </div>
@@ -7706,7 +7691,7 @@ const goBack = () => router.back();
                   class="adp-fs-input"
                   placeholder="비고"
                   :value="fieldVal('fs.sameLot.note')"
-                  @change="setExtraNote('sameLot', ($event.target as HTMLInputElement).value)"
+                  @input="setExtraNote('sameLot', ($event.target as HTMLInputElement).value)"
                 />
               </div>
             </div>
@@ -7721,7 +7706,7 @@ const goBack = () => router.back();
               </span>
             </div>
             <div class="adp-sub-block noline">
-              <AgencyTable :rows="agencyRows" :min-rows="AGENCY_ROW_MIN" @change="persistSurvey" @remove="removeAgencyRow" />
+              <AgencyTable :rows="agencyRows" :min-rows="AGENCY_ROW_MIN" @input="persistSoon" @remove="removeAgencyRow" />
             </div>
           </div>
         </section>
@@ -7804,7 +7789,7 @@ const goBack = () => router.back();
               </div>
               <!-- 거래율·매물적체 묶음의 비고 — 구분선 위, 같은 블록 안에 둔다 -->
               <div class="adp-photo-note">
-                <input v-model="surveyForm.saleDemandNote" class="adp-fs-input" placeholder="비고" @change="persistSurvey" />
+                <input v-model="surveyForm.saleDemandNote" class="adp-fs-input" placeholder="비고" @input="persistSoon" />
               </div>
             </div>
 
@@ -7831,8 +7816,8 @@ const goBack = () => router.back();
                       <!-- 면적 — ㎡ 와 평을 같이 적는다. 한쪽만 적어도 나머지가 따라온다 -->
                       <template v-if="r.key === 'area'">
                         <template v-if="concEditable(c.key, 'area')">
-                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'areaM2')" placeholder="0" @change="setConcArea(c.key, 'm2', ($event.target as HTMLInputElement).value)" />㎡</span>
-                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'area')" placeholder="0" @change="setConcArea(c.key, 'py', ($event.target as HTMLInputElement).value)" />평</span>
+                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'areaM2')" placeholder="0" @input="setConcArea(c.key, 'm2', ($event.target as HTMLInputElement).value)" />㎡</span>
+                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'area')" placeholder="0" @input="setConcArea(c.key, 'py', ($event.target as HTMLInputElement).value)" />평</span>
                         </template>
                         <span v-else :class="['adp-conc-v', 'adp-conc-area', { typed: concTyped(c.key, 'areaM2') || concTyped(c.key, 'area') }]">{{ concAreaText(c.key) }}</span>
                       </template>
@@ -7872,7 +7857,7 @@ const goBack = () => router.back();
                         class="adp-mkt-input"
                         placeholder="비고"
                         :value="fieldVal('fs.urgentSale.note')"
-                        @change="setExtraNote('urgentSale', ($event.target as HTMLInputElement).value)"
+                        @input="setExtraNote('urgentSale', ($event.target as HTMLInputElement).value)"
                       />
                       <span v-else :class="{ filled: !!fieldVal('fs.urgentSale.note') }">{{ fieldVal('fs.urgentSale.note') || '비고' }}</span>
                     </td>
@@ -7906,7 +7891,7 @@ const goBack = () => router.back();
                 type="checkbox"
                 class="adp-rcheck-box adp-dm-check"
                 :checked="fieldVal('fs.indivChecked') === 'Y'"
-                @change="setFieldValNow('fs.indivChecked', ($event.target as HTMLInputElement).checked ? 'Y' : ''); persistSurvey()"
+                @input="setFieldValNow('fs.indivChecked', ($event.target as HTMLInputElement).checked ? 'Y' : ''); persistSurvey()"
               />
             </div>
 
@@ -7918,7 +7903,7 @@ const goBack = () => router.back();
             <div class="adp-fs-title">① 입찰자 현황조사</div>
             <div class="adp-survey-block">
               <div class="adp-survey-block-head"><span class="i">ⓘ</span><strong>현장 특이사항</strong></div>
-              <textarea v-model="surveyForm.fieldNote" @change="persistSurvey()" class="adp-survey-area" rows="2" placeholder="현장 특이사항 입력" />
+              <textarea v-model="surveyForm.fieldNote" @input="persistSurvey()" class="adp-survey-area" rows="2" placeholder="현장 특이사항 입력" />
             </div>
             <div class="adp-survey-row">
               <span class="lbl">입찰자 현황조사</span>
@@ -7973,7 +7958,7 @@ const goBack = () => router.back();
                 
                 :class="['adp-fs-input', { ph: !fieldVal('fs.occupancy') }]"
                 :value="fieldVal('fs.occupancy')"
-                @change="setFieldValNow('fs.occupancy', ($event.target as HTMLSelectElement).value)"
+                @input="setFieldValNow('fs.occupancy', ($event.target as HTMLSelectElement).value)"
               >
                 <option value="">선택</option>
                 <option v-for="opt in FIELD_OCCUPANCY_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
@@ -7989,7 +7974,7 @@ const goBack = () => router.back();
                 <span :class="['ctl', { wide: item.text }]">
                   <template v-if="item.text">
                     <span class="adp-fs-unit">
-                      <input class="adp-fs-input" :placeholder="item.placeholder" :value="fieldVal(item.id)" @change="setFieldValNow(item.id, ($event.target as HTMLInputElement).value)" />{{ item.suffix }}
+                      <input class="adp-fs-input" :placeholder="item.placeholder" :value="fieldVal(item.id)" @input="setFieldValNow(item.id, ($event.target as HTMLInputElement).value)" />{{ item.suffix }}
                     </span>
                   </template>
                   <template v-else>
@@ -8007,7 +7992,7 @@ const goBack = () => router.back();
                       v-else
                       class="adp-fs-input"
                       :value="fieldVal(item.id)"
-                      @change="setFieldValNow(item.id, ($event.target as HTMLSelectElement).value)"
+                      @input="setFieldValNow(item.id, ($event.target as HTMLSelectElement).value)"
                     >
                       <option value="">선택</option>
                       <option v-for="opt in item.options" :key="opt" :value="opt">{{ opt }}</option>
@@ -8028,7 +8013,7 @@ const goBack = () => router.back();
                     class="adp-fs-input"
                     :placeholder="item.extra.placeholder"
                     :value="fieldVal(item.extra.id)"
-                    @change="setFieldValNow(item.extra!.id, ($event.target as HTMLInputElement).value)"
+                    @input="setFieldValNow(item.extra!.id, ($event.target as HTMLInputElement).value)"
                   />
                 </span>
               </div>
@@ -8044,7 +8029,7 @@ const goBack = () => router.back();
                 <button type="button" aria-label="행 추가" @click="addSiteAgencyRow">＋</button>
               </span>
             </div>
-            <AgencyTable :rows="siteAgencyRows" @change="persistSurvey" @remove="removeSiteAgencyRow" />
+            <AgencyTable :rows="siteAgencyRows" @input="persistSoon" @remove="removeSiteAgencyRow" />
           </div>
         </section>
 
