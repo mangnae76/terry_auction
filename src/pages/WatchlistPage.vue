@@ -1587,11 +1587,6 @@ watch(
   font-weight: 800;
 }
 
-/* ===== Wider screens ===== */
-@media (min-width: 768px) {
-  .wlp-shell { max-width: 480px; margin: 0 auto; box-shadow: 0 0 0 1px #e5e7eb; }
-}
-
 @media (max-width: 640px) {
   .wlp-collapse { padding: 2px; }
   .wlp-chev { font-size: 13px; }

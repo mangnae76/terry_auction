@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
+import { Capacitor } from '@capacitor/core';
 import App from './App.vue';
 import router from './router';
 import 'leaflet/dist/leaflet.css';
@@ -8,6 +9,11 @@ import './style.css';
 // import { installFetchDebug } from './services/debugOverlay';
 
 // installFetchDebug();
+
+// 앱(네이티브)인지 웹 브라우저인지를 <html> 에 한 번만 적어 둔다.
+// 화면 폭에 따라 달라지는 웹 전용 모양은 전부 .is-web 아래에만 적는다 —
+// 앱에는 이 클래스가 붙지 않으니 웹 규칙이 앱에 닿을 길이 없다.
+document.documentElement.classList.add(Capacitor.isNativePlatform() ? 'is-app' : 'is-web');
 
 const app = createApp(App);
 

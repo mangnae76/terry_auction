@@ -2620,7 +2620,4 @@ watch(() => authStore.uid, (newUid) => {
 .ftp-nav-icon { font-size: 18px; line-height: 1; }
 .ftp-nav-item.active { color: #2b6df3; font-weight: 800; }
 
-@media (min-width: 768px) {
-  .ftp-shell { max-width: 480px; margin: 0 auto; box-shadow: 0 0 0 1px #e5e7eb; }
-}
 </style>

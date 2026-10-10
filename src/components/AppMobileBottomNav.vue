@@ -63,9 +63,6 @@ const router = useRouter();
   padding: 6px 0 max(6px, env(safe-area-inset-bottom));
   z-index: 200;
 }
-@media (min-width: 768px) {
-  .amb { max-width: 480px; left: 50%; right: auto; transform: translateX(-50%); }
-}
 .amb-item {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px; border: none; background: transparent;

@@ -2153,3 +2153,50 @@ button:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================================
+   웹 전용 — 앱(네이티브)에는 한 줄도 닿지 않는다.
+   main.ts 가 시작할 때 <html> 에 is-app / is-web 중 하나를 붙인다.
+
+   이 앱의 화면은 손전화 폭(약 390px)에 맞춰 짰다. 모니터에서 그대로 펴면
+   '관할법원'과 '인천지방법원'이 양끝으로 갈라져 읽을 수가 없다. 그래서
+   가운데에 칸을 하나 두고 그 안에만 그린다.
+
+   폭을 바꾸고 싶으면 --shell-w 한 숫자만 고치면 모든 페이지가 같이 움직인다.
+   예전에는 이 규칙이 선정물건·임장경로·하단탭 세 곳에 따로 베껴져 있어서,
+   나머지 페이지는 모니터 폭만큼 늘어나 있었다.
+   ========================================================================= */
+html.is-web {
+  /* 표 4열(구분·상세·비중·금액)이 눌리지 않는 최소 폭에서 잡았다 */
+  --shell-w: 820px;
+  /* 칸 바깥에 남는 한쪽 여백 — 화면에 고정되는 줄을 같은 칸에 맞출 때 쓴다 */
+  --shell-gutter: max(0px, calc((100% - var(--shell-w)) / 2));
+}
+
+@media (min-width: 768px) {
+  /* 페이지 본체. 페이지마다 제 이름의 껍데기(.adp-shell, .wlp-shell …)를
+     쓰므로 이름을 하나씩 적지 않고 '본문의 맨 바깥'을 통째로 잡는다 —
+     새 페이지가 생겨도 따로 손댈 일이 없다.
+
+     가두면 되레 나빠지는 화면은 빼 둔다 — 로그인·회원가입(.lp-shell/.sp-shell)은
+     배경을 꽉 채우는 화면이고, 물건등록·수정 폼(.dv2)은 처음부터 모니터 폭에
+     맞춰 짠 화면이라 제 폭(1440px)을 그대로 쓰게 둔다. */
+  html.is-web .page-content > *:not(.lp-shell):not(.sp-shell):not(.dv2) {
+    max-width: var(--shell-w);
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 0 0 1px #e5e7eb;
+  }
+  /* 화면(뷰포트) 기준으로 붙는 줄들 — 본문만 모으면 이것들만 양끝으로 벌어진다.
+     같은 여백만큼 안으로 들여서 칸에 맞춘다. */
+  html.is-web .amb,
+  html.is-web .ftp-bottom-nav {
+    left: var(--shell-gutter);
+    right: var(--shell-gutter);
+  }
+  /* 설명 말풍선도 칸 안에서만 — 원래 화면 양끝에서 10px 들어와 있었다 */
+  html.is-web .adp-note-bubble {
+    left: calc(var(--shell-gutter) + 10px);
+    right: calc(var(--shell-gutter) + 10px);
+  }
+}
