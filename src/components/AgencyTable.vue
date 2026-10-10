@@ -222,15 +222,16 @@ const MONEY_FIELDS: Array<{ key: MoneyKey; placeholder: string }> = [
       </div>
       <!-- 셋째 줄 — 금액으로는 안 남는 말. 협의한 내용과 그 밖의 비고를 나눠 적는다 -->
       <div class="adp-agency-line">
-        <label v-for="f in NOTE_FIELDS" :key="f.key" class="adp-agency-fld">
+        <!-- 이름은 칸 바깥에 둔다 — 적고 나면 무슨 칸이었는지 안 보이면 안 된다 -->
+        <label v-for="f in NOTE_FIELDS" :key="f.key" class="adp-agency-fld note-fld">
+          <em class="lab">{{ f.placeholder }}</em>
           <input
             v-if="props.editing"
             v-model="row[f.key]"
             class="adp-mkt-input left note"
-            :placeholder="f.placeholder"
             @input="emit('change')"
           />
-          <span v-else :class="['note-txt', { filled: !!row[f.key] }]">{{ row[f.key] || f.placeholder }}</span>
+          <span v-else :class="['note-txt', { filled: !!row[f.key] }]">{{ row[f.key] || '-' }}</span>
         </label>
       </div>
     </div>
@@ -264,6 +265,14 @@ const MONEY_FIELDS: Array<{ key: MoneyKey; placeholder: string }> = [
 .adp-mkt-input.left { text-align: left; }
 /* 비고 — 손품+현장의 다른 비고와 같은 규칙: 적은 글씨만 빨갛고 안내문구는 회색 */
 .adp-agency-fld.wide { flex: 1 1 100%; }
+/* 협의·비고 — 이름을 칸 왼쪽에 세우고 칸은 남은 폭을 다 쓴다 */
+.adp-agency-fld.note-fld { flex-direction: row; align-items: center; gap: 4px; }
+.adp-agency-fld.note-fld > .lab {
+  flex: 0 0 auto; font-style: normal; font-size: 11px; font-weight: 700;
+  color: #6b7280; white-space: nowrap;
+}
+.adp-agency-fld.note-fld > .adp-mkt-input,
+.adp-agency-fld.note-fld > span { flex: 1 1 auto; min-width: 0; }
 /* 전화번호 — 번호가 있으면 끝에 거는 단추가 선다 */
 .adp-agency-tel { position: relative; display: block; }
 .adp-agency-tel .adp-mkt-input.dial { padding-right: 24px; }
