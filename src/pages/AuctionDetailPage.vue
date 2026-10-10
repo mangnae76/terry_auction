@@ -266,10 +266,19 @@ const formatRegistryDesc = (desc: string) => {
     .replace(/\s+(\d{4}타경\d+)/g, ' / $1')
     .trim();
 };
-const registryRows = computed(() => (auction.value?.registryRows ?? []).map((r) => ({
-  ...r,
-  desc: formatRegistryDesc(r.desc),
-})));
+/** 설명글을 '말소기준등기' 앞뒤로 쪼갠다 — 그 네 글자만 빨갛게 칠하려는 것이다.
+ *  글 전체를 한 덩어리로 뿌리면 글자 하나만 골라 칠할 방법이 없다. */
+const REGISTRY_BASE_NOTE = '말소기준등기';
+const splitRegistryDesc = (desc: string) => desc
+  .split(REGISTRY_BASE_NOTE)
+  .flatMap((part, i) => (i === 0
+    ? [{ text: part, base: false }]
+    : [{ text: REGISTRY_BASE_NOTE, base: true }, { text: part, base: false }]))
+  .filter((pt) => pt.text !== '');
+const registryRows = computed(() => (auction.value?.registryRows ?? []).map((r) => {
+  const desc = formatRegistryDesc(r.desc);
+  return { ...r, desc, descParts: splitRegistryDesc(desc) };
+}));
 const stripWarnMarkers = (text: string) =>
   text.replace(/^[\s*▶⚠!！·•]+/gm, '').trim();
 const registryWarning = computed(() => stripWarnMarkers(auction.value?.registryWarnings || ''));
@@ -2250,7 +2259,8 @@ const saveProfit = async () => {
 /** 물건정보 탭의 기본 상태 — 정보요약·물건기본정보만 펴 두고 나머지는 접어 둔다.
  *  (처음 들어왔을 때 한 화면에서 핵심만 보이게) */
 const collapsed = ref<Record<string, boolean>>({
-  bld: true, status: true, registry: true, apt: true, arrears: true, areaInfo: true,
+  // 건물등기는 권리분석의 첫 머리다 — 말소기준을 먼저 보는 자리라 펴 둔다
+  bld: true, status: true, apt: true, arrears: true, areaInfo: true,
   // 세율표는 가끔 들춰 보는 참고 자료다 — 산정표 아래를 길게 차지하지 않게 접어 둔다
   taxRef: true,
   // 현장에서만 쓰는 목록이라 평소에는 접어 둔다
@@ -6572,7 +6582,7 @@ const goBack = () => router.back();
                   <td>
                     <strong>{{ r.kind }}</strong>
                     <span v-if="r.amount" class="b">{{ r.amount }}</span>
-                    <span v-if="r.desc" class="adp-desc pre-line">{{ r.desc }}</span>
+                    <span v-if="r.desc" class="adp-desc pre-line"><span v-for="(pt, pi) in r.descParts" :key="pi" :class="{ 'adp-reg-base': pt.base }">{{ pt.text }}</span></span>
                   </td>
                   <td>{{ r.holder }}</td>
                   <td>{{ r.extinct }}</td>
@@ -8674,6 +8684,8 @@ const goBack = () => router.back();
 .adp-warn-banner { margin: 10px 0 0; padding: 10px 12px; background: #fef2f2; border-radius: 8px; font-size: 12px; color: #991b1b; line-height: 1.55; white-space: pre-line; }
 
 .adp-table .tone-red td { background: #fef2f2; }
+/* 말소기준등기 — 이 줄을 기준으로 인수와 소멸이 갈린다. 한눈에 찾게 새빨갛게 */
+.adp-registry-table .adp-reg-base { color: #ff0000; font-weight: 800; }
 .adp-table .tone-blue td { background: #eff6ff; }
 .adp-table .b { display: block; font-size: 13px; font-weight: 800; color: #111827; }
 .adp-table .pre-line { white-space: pre-line; }
