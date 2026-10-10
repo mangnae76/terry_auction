@@ -23,8 +23,24 @@ const emit = defineEmits<{
 }>();
 
 const INFO_OPTIONS = ['친절', '불친절', '적극', '비적극'];
-/** 열려 있는 '정보' 드롭다운 — 표마다 따로 센다 */
+/** 늘 돌아다니는 중개업소 — 유선·현장 상담표가 같은 목록을 쓴다 */
+const NAME_OPTIONS = ['애플', '아이빌', '에이스', '명가'];
+/** 열려 있는 드롭다운 — 표마다 따로 센다 */
 const infoOpen = ref(-1);
+const nameOpen = ref(-1);
+
+/** 고를 수 있는 업체 — 목록에 없는 이름이 이미 적혀 있으면 그것도 같이 보여 준다.
+ *  (예전에 손으로 적어 둔 업체가 목록에서 사라지면 안 된다) */
+const nameOptions = (row: AgencyRow) => {
+  const cur = (row.name ?? '').trim();
+  return cur && !NAME_OPTIONS.includes(cur) ? [...NAME_OPTIONS, cur] : NAME_OPTIONS;
+};
+const pickName = (row: AgencyRow, opt: string) => {
+  // 고른 것을 다시 누르면 지운다 — 잘못 고른 줄을 비울 길이 있어야 한다
+  row.name = row.name === opt ? '' : opt;
+  nameOpen.value = -1;
+  emit('change');
+};
 
 const infoList = (row: AgencyRow) =>
   (row.info ?? '').split(',').map((v) => v.trim()).filter(Boolean);
@@ -56,16 +72,33 @@ const MONEY_FIELDS: Array<{ key: 'jeonse' | 'real' | 'urgent'; placeholder: stri
   <div class="agency-table adp-agency-list consult">
     <div v-for="(row, i) in props.rows" :key="i" class="adp-agency-item">
       <div class="adp-agency-line">
-        <label class="adp-agency-fld">
-          <input
-            v-if="props.editing"
-            v-model="row.name"
-            class="adp-mkt-input left"
-            placeholder="상호입력"
-            @change="emit('change')"
-          />
+        <div class="adp-agency-fld">
+          <div v-if="props.editing" class="adp-agency-multi">
+            <button
+              type="button"
+              class="adp-mkt-input left adp-agency-trigger"
+              @click="nameOpen = nameOpen === i ? -1 : i"
+            >
+              <span :class="['txt', { ph: !row.name }]">{{ row.name || '상호선택' }}</span>
+              <span class="caret">▾</span>
+            </button>
+            <template v-if="nameOpen === i">
+              <div class="adp-agency-backdrop" @click="nameOpen = -1" />
+              <ul class="adp-agency-options">
+                <li
+                  v-for="opt in nameOptions(row)"
+                  :key="opt"
+                  :class="['adp-agency-option', { on: row.name === opt }]"
+                  @click="pickName(row, opt)"
+                >
+                  <span>{{ opt }}</span>
+                  <span v-if="row.name === opt" class="ck">✓</span>
+                </li>
+              </ul>
+            </template>
+          </div>
           <span v-else>{{ row.name || '-' }}</span>
-        </label>
+        </div>
         <label class="adp-agency-fld">
           <input
             v-if="props.editing"
