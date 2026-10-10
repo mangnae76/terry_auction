@@ -5470,40 +5470,6 @@ const goBack = () => router.back();
           </table>
         </section>
 
-        <section class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('registry')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M4 17h16"/></svg>건물등기</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('registry') }]" alt="" />
-          </header>
-          <div v-if="!isCollapsed('registry')">
-            <p v-if="registryClaimAmount > 0" class="adp-sub-note">(채권합계금액:{{ formatMoney(registryClaimAmount) }}원)</p>
-            <table v-if="registryRows.length > 0" class="adp-table adp-registry-table">
-              <colgroup>
-                <col style="width: 22%" />
-                <col />
-                <col style="width: 24%" />
-                <col style="width: 12%" />
-              </colgroup>
-              <thead><tr><th>접수/순서</th><th>종류</th><th>권리자</th><th>소멸</th></tr></thead>
-              <tbody>
-                <tr v-for="(r, i) in registryRows" :key="i" :class="r.extinct === '소멸' ? 'tone-red' : ''">
-                  <td class="pre-line">{{ r.date.replace(/-/g, '.') }}<br>{{ r.order }}</td>
-                  <td>
-                    <strong>{{ r.kind }}</strong>
-                    <span v-if="r.amount" class="b">{{ r.amount }}</span>
-                    <span v-if="r.desc" class="adp-desc pre-line">{{ r.desc }}</span>
-                  </td>
-                  <td>{{ r.holder }}</td>
-                  <td>{{ r.extinct }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <p v-else class="adp-empty">건물등기 정보 없음</p>
-            <p v-if="registryWarning" class="adp-warn-banner">{{ registryWarning }}</p>
-
-          </div>
-        </section>
-
         <section v-if="isApartment && auction?.aptComplexInfo" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('apt')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M10 21v-5h4v5"/></svg>단지정보</h2>
@@ -6585,6 +6551,40 @@ const goBack = () => router.back();
         </section>
 
         <!-- 임차인현황 -->
+        <section class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('registry')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M4 17h16"/></svg>건물등기</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('registry') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('registry')">
+            <p v-if="registryClaimAmount > 0" class="adp-sub-note">(채권합계금액:{{ formatMoney(registryClaimAmount) }}원)</p>
+            <table v-if="registryRows.length > 0" class="adp-table adp-registry-table">
+              <colgroup>
+                <col style="width: 22%" />
+                <col />
+                <col style="width: 24%" />
+                <col style="width: 12%" />
+              </colgroup>
+              <thead><tr><th>접수/순서</th><th>종류</th><th>권리자</th><th>소멸</th></tr></thead>
+              <tbody>
+                <tr v-for="(r, i) in registryRows" :key="i" :class="r.extinct === '소멸' ? 'tone-red' : ''">
+                  <td class="pre-line">{{ r.date.replace(/-/g, '.') }}<br>{{ r.order }}</td>
+                  <td>
+                    <strong>{{ r.kind }}</strong>
+                    <span v-if="r.amount" class="b">{{ r.amount }}</span>
+                    <span v-if="r.desc" class="adp-desc pre-line">{{ r.desc }}</span>
+                  </td>
+                  <td>{{ r.holder }}</td>
+                  <td>{{ r.extinct }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p v-else class="adp-empty">건물등기 정보 없음</p>
+            <p v-if="registryWarning" class="adp-warn-banner">{{ registryWarning }}</p>
+
+          </div>
+        </section>
+
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('tenant')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>임차인현황</h2>
