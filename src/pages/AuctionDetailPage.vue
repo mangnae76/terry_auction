@@ -214,8 +214,23 @@ const subjectBuildingLabel = computed(() => {
 /** 상단 고정줄에 보여 줄 주소 — 주소에 건물명이 없는 물건은 정보요약에 적어 둔
  *  건물명을 지번 바로 뒤에 끼워 넣는다. 적어 두지 않았으면 주소 그대로다.
  *  (저장된 주소 자체는 건드리지 않는다 — 지역·실거래 조회가 그 값을 쓴다) */
+/** 주소에 이미 건물명이 들어 있나 — 번지 뒤, 층·호 앞에 '101동' 말고 다른 말이 있으면 있는 것이다 */
+const addrHasBuildingName = computed(() => {
+  const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
+  let last = -1;
+  parts.forEach((t, i) => { if (/^\d+(-\d+)?$/.test(t)) last = i; });
+  if (last < 0) return false;
+  for (let i = last + 1; i < parts.length; i += 1) {
+    const t = parts[i];
+    if (/^제?\d+동$/.test(t)) continue;
+    if (isUnitToken(t)) break;
+    return true;
+  }
+  return false;
+});
 const headAddress = computed(() => {
   const addr = jibunAddress.value;
+  if (addrHasBuildingName.value) return addr;
   const name = (auction.value?.basicSummary?.['sum.buildingName'] ?? '').trim();
   if (!name || addr.includes(name)) return addr;
   const parts = addr.split(/\s+/).filter(Boolean);
@@ -5217,8 +5232,9 @@ const goBack = () => router.back();
                 <template v-else>{{ areaText(sumVal('sum.landArea')) }}</template>
               </dd>
             </div>
-            <!-- 주소에 건물명이 없는 물건이 있다 — 손으로 적어 두면 상단 주소에 같이 선다 -->
-            <div class="adp-base-row">
+            <!-- 주소에 건물명이 없는 물건만 — 손으로 적어 두면 상단 주소에 같이 선다.
+                 주소에 이미 이름이 있으면 적을 일이 없어 줄을 내지 않는다 -->
+            <div v-if="!addrHasBuildingName" class="adp-base-row">
               <dt>건물명</dt>
               <dd>
                 <input v-if="editingSummary" class="adp-sum-input wide" :value="sumVal('sum.buildingName')" placeholder="빌라명 입력" @change="setSumVal('sum.buildingName', ($event.target as HTMLInputElement).value)" />
