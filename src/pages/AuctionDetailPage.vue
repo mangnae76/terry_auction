@@ -4915,7 +4915,8 @@ const tenantDatesText = (t: { moveIn?: string; fixed?: string; distribution?: st
     t.distribution ? `배당: ${t.distribution}` : '',
   ].filter(Boolean).join(', ') || '-';
 
-const summaryDongText = computed(() => (sumVal('sum.dong') ? `${sumVal('sum.dong')}동` : '-동'));
+// 동이 없는 빌라가 많다 — 그럴 때는 '-동'을 적지 않고 호수만 남긴다
+const summaryDongText = computed(() => (sumVal('sum.dong') ? `${sumVal('sum.dong')}동` : ''));
 const summaryHoText = computed(() => (sumVal('sum.ho') ? `${sumVal('sum.ho')}호` : '-호'));
 // 편집 중에도 전환한 단위로 보여 주고, 저장은 항상 ㎡로 되돌린다
 const summaryAreaInput = (id: string) => {
@@ -5234,7 +5235,7 @@ const goBack = () => router.back();
                   <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.dong')" placeholder="동" @input="setSumVal('sum.dong', ($event.target as HTMLInputElement).value)" />동 /
                   <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.ho')" placeholder="호" @input="setSumVal('sum.ho', ($event.target as HTMLInputElement).value)" />호
                 </span>
-                <template v-else>{{ summaryDongText }} / <span class="adp-sum-hi">{{ summaryHoText }}</span></template>
+                <template v-else><template v-if="summaryDongText">{{ summaryDongText }} / </template><span class="adp-sum-hi">{{ summaryHoText }}</span></template>
               </dd>
             </div>
             <div class="adp-base-row">
