@@ -2694,6 +2694,8 @@ type FieldRow = {
   suffix?: string;
   /** 줄 밑에 비고 한 칸을 더 낸다 — 고른 값만으로는 모자란 말을 적는 자리 */
   note?: boolean;
+  /** 누구에게 들었나 — O/X 와는 따로 고른다 (들은 사람과 확인 여부는 다른 값이다) */
+  who?: { id: string; options: string[] };
 };
 /** 비고 값이 앉을 자리 — 항목 id 뒤에 붙인다 */
 const fieldNoteId = (id: string) => `${id}.note`;
@@ -2712,7 +2714,10 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
   {
     title: '② 탐문 (윗집, 옆집, 아래집, 동대표 중)',
     items: [
-      { id: 'fs.roofLeak', label: '누수', options: ['O', 'X'], note: true },
+      {
+        id: 'fs.roofLeak', label: '누수', options: ['O', 'X'], note: true,
+        who: { id: 'fs.roofLeakWho', options: ['동대표', '입주민'] },
+      },
       // 먼저 눈으로 보는 것 — 건물을 한 바퀴 돌며 채운다.
       // O/X 만으로는 무엇을 봤는지 남지 않아 줄마다 비고를 둔다
       { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], note: true },
@@ -2726,7 +2731,7 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
         extra: { id: 'fs.cleanPhone', placeholder: '업체명 / 연락처 입력' },
       },
       {
-        id: 'fs.tenantContact', label: '임차인연락처', options: ['동대표', '차확인'],
+        id: 'fs.tenantContact', label: '임차인 탐문', options: ['동대표', '차확인'],
         extra: { id: 'fs.tenantPhone', placeholder: '연락처입력' },
       },
       { id: 'fs.doorCode', label: '출입문비번', text: true, placeholder: '비밀번호입력' },
@@ -2739,9 +2744,9 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
       // 미납관리비는 'O/X' 가 아니라 '누구한테 들었나' 가 남아야 한다
       { id: 'fs.mailMaint', label: '미납관리비', options: ['동대표'], extra: { id: 'fs.mailMaintAmt', placeholder: '금액 및 기타 입력', money: true } },
       // 셋을 한 줄에 묶어 두니 어느 것이 밀렸는지 적을 수가 없었다 — 줄을 나눈다
-      { id: 'fs.mailPower', label: '전기', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액 및 기타 입력', money: true } },
-      { id: 'fs.mailWater', label: '수도', options: ['O', 'X'], extra: { id: 'fs.mailWaterAmt', placeholder: '금액 및 기타 입력', money: true } },
-      { id: 'fs.mailGas', label: '가스', options: ['O', 'X'], extra: { id: 'fs.mailGasAmt', placeholder: '금액 및 기타 입력', money: true } },
+      { id: 'fs.mailPower', label: '전기 사용', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액 및 기타 입력', money: true } },
+      { id: 'fs.mailWater', label: '수도 사용', options: ['O', 'X'], extra: { id: 'fs.mailWaterAmt', placeholder: '금액 및 기타 입력', money: true } },
+      { id: 'fs.mailGas', label: '가스 사용', options: ['O', 'X'], extra: { id: 'fs.mailGasAmt', placeholder: '금액 및 기타 입력', money: true } },
     ],
   },
   {
@@ -8118,6 +8123,14 @@ const goBack = () => router.back();
                   <template v-else>
                     <!-- 선택지가 셋 이하면 버튼으로 바로 고른다 (다시 누르면 해제) -->
                     <span v-if="(item.options?.length ?? 0) <= 3" class="adp-fs-toggles">
+                      <!-- 누구에게 들었나 — 확인 여부(O/X)와는 따로 고른다 -->
+                      <button
+                        v-for="w in (item.who?.options ?? [])"
+                        :key="w"
+                        type="button"
+                        :class="['adp-toggle-btn', 'who', { active: fieldVal(item.who!.id) === w }]"
+                        @click="setFieldValNow(item.who!.id, fieldVal(item.who!.id) === w ? '' : w)"
+                      >{{ w }}</button>
                       <button
                         v-for="opt in item.options"
                         :key="opt"
@@ -10102,6 +10115,8 @@ const goBack = () => router.back();
   min-width: 28px; height: 26px; padding: 0 9px; font-size: 10.5px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* 누구에게 들었나 — 한 줄에 단추가 넷이라 조금 작게 */
+.adp-fs-toggles .adp-toggle-btn.who { padding: 0 6px; font-size: 10px; letter-spacing: -0.3px; }
 /* 'O'·'X'처럼 한 글자인 단추는 정원으로 — 가로세로가 다르면 찌그러져 보인다.
    '교체'·'동대표'처럼 글자가 긴 단추는 알약 모양 그대로 둔다 */
 .adp-fs-toggles .adp-toggle-btn.one {
