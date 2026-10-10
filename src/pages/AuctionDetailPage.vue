@@ -8122,7 +8122,7 @@ const goBack = () => router.back();
                         v-for="opt in item.options"
                         :key="opt"
                         type="button"
-                        :class="['adp-toggle-btn', { active: fieldVal(item.id) === opt }]"
+                        :class="['adp-toggle-btn', { active: fieldVal(item.id) === opt, one: opt.length === 1 }]"
                         @click="setFieldValNow(item.id, fieldVal(item.id) === opt ? '' : opt)"
                       >{{ opt }}</button>
                     </span>
@@ -9583,7 +9583,7 @@ const goBack = () => router.back();
 .adp-dm-link:active { color: #2b6df3; }
 .adp-dm-block + .adp-dm-block { margin-top: 10px; }
 .adp-dm-block.boxed + .adp-dm-block.boxed { margin-top: 10px; }
-.adp-dm-head.sec2 { margin-top: 9px; padding-top: 8px; border-top: 1px solid #eef1f6; }
+.adp-dm-head.sec2 { margin-top: 7px; padding-top: 6px; border-top: 1px solid #eef1f6; }
 /* 단락 제목 줄의 버튼은 오른쪽 끝에 붙인다 */
 .adp-dm-head .adp-mkt-addrow,
 .adp-dm-head .adp-edit-btn { margin-left: auto; }
@@ -10033,18 +10033,18 @@ const goBack = () => router.back();
 .adp-conc-table .adp-conc-note > .adp-mkt-input::placeholder { color: #9ca3af; font-weight: 400; }
 .adp-conc-table .adp-conc-note > span.filled { color: #e0574a; font-weight: 400; }
 /* 현장조사 항목 줄 */
-.adp-fs-section { padding-top: 7px; margin-top: 7px; border-top: 1px solid #eef1f6; }
+.adp-fs-section { padding-top: 5px; margin-top: 5px; border-top: 1px solid #eef1f6; }
 .adp-fs-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 6px; }
 /* 매매수요 '1. 수요공급'과 같은 배치 — 단락 제목도, ①②③④ 항목도 왼쪽 2px에서 시작한다 */
 .adp-survey-body .adp-agency-list { padding-left: 2px; padding-right: 2px; }
 /* 항목 제목은 매매수요의 '① 동단위 거래회전율'과 같은 크기·간격 */
-.adp-survey-body .adp-fs-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 3px; }
+.adp-survey-body .adp-fs-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 2px; }
 /* 급매가의 ①②③④ 블록처럼 네모로 묶는다 */
 /* 현장조사는 단락이 많아 여백이 쌓이면 한 화면에 몇 줄 못 담는다.
    글자는 그대로 두고 테두리 안쪽과 단락 사이만 줄인다 */
 .adp-survey-body .adp-fs-section {
   border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;
-  padding: 6px 10px 6px; margin-top: 0;
+  padding: 5px 9px 5px; margin-top: 0;
 }
 /* 1·2번 줄 — 제목 · 설명 · 오른쪽 값(등수/체크)을 한 줄에 */
 /* 제목·설명·값이 한 줄에 들어가도록 줄바꿈을 막는다 */
@@ -10057,7 +10057,7 @@ const goBack = () => router.back();
 .adp-dm-check { margin-left: auto; flex: 0 0 auto; }
 .adp-fs-row {
   display: grid; grid-template-columns: 88px minmax(0, 1fr) auto;
-  align-items: center; gap: 5px; padding: 4px 0;
+  align-items: center; gap: 5px; padding: 2px 0;
 }
 /* 선택 버튼은 항상 맨 오른쪽 칸에 둬서 '건물/호실 개별성 확인'의 체크와 끝이 맞는다.
    옆칸 입력(연락처·금액)은 그 왼쪽으로 간다 */
@@ -10100,6 +10100,12 @@ const goBack = () => router.back();
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 28px; height: 26px; padding: 0 9px; font-size: 10.5px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* 'O'·'X'처럼 한 글자인 단추는 정원으로 — 가로세로가 다르면 찌그러져 보인다.
+   '교체'·'동대표'처럼 글자가 긴 단추는 알약 모양 그대로 둔다 */
+.adp-fs-toggles .adp-toggle-btn.one {
+  flex: 0 0 26px; width: 26px; min-width: 26px; height: 26px;
+  padding: 0; border-radius: 50%;
 }
 .adp-fs-multi { flex: 1 1 auto; min-width: 0; }
 .adp-fs-multi .adp-agency-trigger { height: 28px; }
@@ -10145,14 +10151,15 @@ const goBack = () => router.back();
 .adp-survey-body .adp-dm-head.tight { padding: 2px 2px 2px; }
 .adp-survey-body .adp-dm-head.sec2 { margin-top: 2px; padding-top: 8px; padding-bottom: 4px; }
 .adp-survey-body .adp-survey-row { padding: 5px 0; }
-.adp-survey-body .adp-fs-row { padding: 5px 0; }
+/* 현장조사 항목 줄 — 여기가 위의 .adp-fs-row 보다 세서 실제로 쓰이는 값이다 */
+.adp-survey-body .adp-fs-row { padding: 2px 0; }
 .adp-survey-body .adp-survey-block { padding: 8px 10px; }
 .adp-survey-body .adp-agency-item { padding: 6px 10px 8px; }
-.adp-survey-block { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px; }
+.adp-survey-block { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px 9px; }
 .adp-survey-block-head { display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: #2b6df3; margin-bottom: 4px; }
 .adp-survey-block-head .i { width: 16px; height: 16px; border-radius: 50%; background: #e0eaff; color: #2b6df3; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; }
 .adp-survey-note { margin: 0; font-size: 12px; color: #6b7280; }
-.adp-survey-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
+.adp-survey-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid #f1f5f9; }
 .adp-survey-row.sub { padding: 4px 0; border-bottom-color: #f9fafb; }
 .adp-survey-row .lbl { flex: 0 0 auto; font-size: 12px; color: #374151; font-weight: 600; min-width: 88px; }
 .adp-survey-input {
