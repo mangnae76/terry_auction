@@ -2727,7 +2727,7 @@ const setFieldMoneyText = (id: string, el: HTMLInputElement) => {
 };
 const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
   {
-    title: '② 탐문 (윗집, 옆집, 아래집, 동대표 중)',
+    title: '② 탐문',
     // 빌라에 가서 움직이는 차례 그대로 세운다 — 멀리서 집을 올려다보며 확인하는
     // 향·뷰·외벽, 건물에 들어서며 보는 것, 계량기, 한 바퀴 돌며 보는 것,
     // 그다음 사람에게 묻는 것, 마지막으로 문 앞의 비번.
@@ -2749,6 +2749,7 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
       },
       {
         id: 'fs.tenantContact', label: '임차인 탐문', options: ['동대표', '차확인'],
+        who: { id: 'fs.tenantWho', options: ['이웃주민', '입주민'] },
         extra: { id: 'fs.tenantPhone', placeholder: '연락처입력' },
       },
       {
@@ -3344,7 +3345,6 @@ const toggleChecklist = async (id: string) => {
   await persistSurvey();
 };
 
-const FIELD_OCCUPANCY_OPTIONS = ['공실', '점유자미상', '불법점유', '가장임차인점유', '진성임차인점유', '전출'];
 const fieldVal = (id: string) => surveyForm.value.fieldValues?.[id] ?? '';
 const setFieldVal = (id: string, value: string) => {
   const sf = surveyForm.value;
@@ -3358,7 +3358,14 @@ const setFieldValNow = (id: string, value: string) => {
 };
 
 // === 현황조사서 멀티셀렉트 ===
-const SURVEY_REPORT_OPTIONS = ['임차인점유추정', '점유자관계미상', '폐문부재', '깔세 세입자'];
+/** 입찰자 현황조사 — 예전 '점유관계' 목록을 여기 합쳤다.
+ *  둘 다 '누가 살고 있나'를 적는 자리라 칸을 둘로 둘 까닭이 없었다.
+ *  겹치던 '점유자관계미상'은 '점유자미상' 하나만 남긴다. */
+const SURVEY_REPORT_OPTIONS = [
+  '폐문부재', '공실', '점유자미상',
+  '임차인점유추정', '가장임차인점유', '진성임차인점유', '불법점유',
+  '깔세 세입자', '전출',
+];
 const surveyReportOpen = ref(false);
 const surveyReportCustom = ref('');
 const toggleSurveyReportOption = (opt: string) => {
@@ -8061,10 +8068,6 @@ const goBack = () => router.back();
             </div>
             <div class="adp-fs-section">
             <div class="adp-fs-title">① 입찰자 현황조사</div>
-            <div class="adp-survey-block">
-              <div class="adp-survey-block-head"><span class="i">ⓘ</span><strong>현장 특이사항</strong></div>
-              <textarea v-model="surveyForm.fieldNote" @input="persistSurvey()" class="adp-survey-area" rows="2" placeholder="현장 특이사항 입력" />
-            </div>
             <div class="adp-survey-row">
               <span class="lbl">입찰자 현황조사</span>
               <div class="adp-multi-wrap">
@@ -8111,18 +8114,6 @@ const goBack = () => router.back();
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="adp-survey-row">
-              <span class="lbl">점유관계</span>
-              <select
-                
-                :class="['adp-fs-input', { ph: !fieldVal('fs.occupancy') }]"
-                :value="fieldVal('fs.occupancy')"
-                @input="setFieldValNow('fs.occupancy', ($event.target as HTMLSelectElement).value)"
-              >
-                <option value="">선택</option>
-                <option v-for="opt in FIELD_OCCUPANCY_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
-              </select>
             </div>
             </div>
             <div v-for="sec in FIELD_SECTIONS" :key="sec.title" class="adp-fs-section">
