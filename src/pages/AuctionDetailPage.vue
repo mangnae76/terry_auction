@@ -4538,6 +4538,9 @@ const pickDocNoteOption = async (id: string, opt: string) => {
   docMultiOpen.value = '';
   await setRightsDocNote(id, opt);
 };
+/** 권리분석 결론의 비고가 앉을 자리. 다른 비고와 같은 칸(rightsDocNotes)에 담는다 —
+ *  표 항목 id 와 겹치지 않도록 점을 찍은 이름을 쓴다. */
+const RIGHTS_CONC_ID = 'rights.conclusion';
 const rightsDocNote = (id: string) => auction.value?.rightsDocNotes?.[id] ?? '';
 // 세대열람의 동거인 칸처럼 여러 개를 고르는 항목 — 쉼표로 이어 붙인 한 문자열로 저장
 const docMultiOpen = ref('');
@@ -6816,6 +6819,25 @@ const goBack = () => router.back();
                 </tr>
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <!-- 권리분석 결론 — 위의 표들을 보고 내린 판단을 한곳에 적어 둔다.
+             표에 칸을 늘리는 대신 따로 둔 까닭은, 어느 한 항목이 아니라
+             전부를 보고 쓰는 글이기 때문이다. -->
+        <section class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('rightsConc')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 7-7" /><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" /></svg>권리분석 결론</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsConc') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('rightsConc')" class="adp-rconc-body">
+            <textarea
+              class="adp-rconc-note"
+              rows="4"
+              placeholder="비고"
+              :value="rightsDocNote(RIGHTS_CONC_ID)"
+              @input="setRightsDocNote(RIGHTS_CONC_ID, ($event.target as HTMLTextAreaElement).value)"
+            />
           </div>
         </section>
 
@@ -9129,6 +9151,15 @@ const goBack = () => router.back();
 .adp-rcase-select.picked { color: #e0574a; border-color: #f0d4d0; }
 .adp-rcase-caret { color: #6b7280; font-size: 15px; line-height: 1; }
 /* 목록 밖을 눌러 닫기 위한 투명 레이어 */
+/* 권리분석 결론 — 한 줄짜리 비고와 달리 여러 줄을 적는 자리다 */
+.adp-rconc-body { padding: 8px 10px 10px; }
+.adp-rconc-note {
+  display: block; width: 100%; box-sizing: border-box; resize: vertical; min-height: 72px;
+  border: 1px solid #e3e8f0; border-radius: 8px; background: #fff;
+  padding: 7px 9px; font-family: inherit; font-size: 12px; line-height: 1.6; color: #111827;
+}
+.adp-rconc-note:focus { outline: none; border-color: #2b6df3; }
+.adp-rconc-note::placeholder { color: #9ca3af; }
 .adp-rcase-backdrop { position: fixed; inset: 0; z-index: 40; }
 .adp-rcase-list {
   position: absolute; z-index: 41; left: 0; right: 0; top: calc(100% + 4px);
