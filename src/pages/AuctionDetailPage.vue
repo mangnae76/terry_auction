@@ -2767,6 +2767,10 @@ const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow
         who: { id: 'fs.tenantWho', options: ['임차인', '입주민'] },
         extra: { id: 'fs.tenantPhone', placeholder: '연락처입력' },
       },
+      {
+        id: 'fs.tenantCar', label: '임차인차량', options: ['O', 'X'],
+        extra: { id: 'fs.tenantCarInfo', placeholder: '임차인 연락처 및 차량번호' },
+      },
       { id: 'fs.doorCode', label: '출입문비번', text: true, placeholder: '비밀번호입력' },
       { id: 'fs.entryCode', label: '현관비번', text: true, placeholder: '비밀번호입력' },
     ],
