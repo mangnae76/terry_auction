@@ -7785,7 +7785,7 @@ const goBack = () => router.back();
               </span>
             </div>
             <div class="adp-sub-block noline">
-              <AgencyTable :rows="agencyRows" :min-rows="AGENCY_ROW_MIN" @input="persistSoon" @remove="removeAgencyRow" />
+              <AgencyTable :rows="agencyRows" :min-rows="AGENCY_ROW_MIN" @change="persistSoon" @remove="removeAgencyRow" />
             </div>
           </div>
         </section>
@@ -8108,7 +8108,7 @@ const goBack = () => router.back();
                 <button type="button" aria-label="행 추가" @click="addSiteAgencyRow">＋</button>
               </span>
             </div>
-            <AgencyTable :rows="siteAgencyRows" @input="persistSoon" @remove="removeSiteAgencyRow" />
+            <AgencyTable :rows="siteAgencyRows" @change="persistSoon" @remove="removeSiteAgencyRow" />
           </div>
         </section>
 

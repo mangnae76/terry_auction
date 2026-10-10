@@ -554,8 +554,10 @@ export interface AgencyRow {
   urgent: string;
   /** 급매가 (억) */
   quick?: string;
-  /** 상담하면서 들은 말 — 금액으로는 안 남는 것들 */
+  /** 협의한 내용 — 금액으로는 안 남는 것들 */
   note?: string;
+  /** 비고 — 협의 말고 따로 남길 말 */
+  memo?: string;
 }
 
 export interface SurveyForm {

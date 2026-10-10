@@ -4,6 +4,8 @@ import { firestore, firestoreDisabledReason } from './firebase';
 // 사용자별 앱 설정·캐시 — 디바이스를 옮겨도 따라오는 개인 데이터.
 // (디바이스 단위 캐시인 테마/지오코드 캐시 등은 그대로 localStorage 사용)
 export interface UserPrefs {
+  // 늘 도는 중개업소 — 상담표의 상호 드롭다운과 '중개업소 관리' 화면이 같이 쓴다
+  agencies?: Array<{ id: string; name: string; phone: string; rating?: string }>;
   // 임장경로 — 한 사용자당 가장 최근 작업 (작업 진행 중 다른 메뉴 갔다와도 복원)
   fieldTripDraft?: Record<string, unknown> | null;
   // 임장경로 즐겨찾기 출발/도착 주소

@@ -3,7 +3,9 @@
 //
 // 예전에는 두 곳에 같은 마크업이 복사돼 있어, 한쪽만 고치면 서로 어긋났다.
 // 칸 구성·안내글·삭제 버튼을 여기 한곳에서만 고치면 두 화면이 같이 바뀐다.
-import { ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
+import { useAuthStore } from '../stores/authStore';
+import { telDigits, useAgencyBook } from '../services/agencyBook';
 import type { AgencyRow } from '../types/auction';
 
 const props = withDefaults(defineProps<{
@@ -22,23 +24,40 @@ const emit = defineEmits<{
 }>();
 
 const INFO_OPTIONS = ['친절', '불친절', '적극', '비적극'];
-/** 늘 돌아다니는 중개업소 — 유선·현장 상담표가 같은 목록을 쓴다 */
-const NAME_OPTIONS = ['애플', '아이빌', '에이스', '명가'];
 /** 열려 있는 드롭다운 — 표마다 따로 센다 */
 const infoOpen = ref(-1);
 const nameOpen = ref(-1);
 
-/** 고를 수 있는 업체 — 목록에 없는 이름이 이미 적혀 있으면 그것도 같이 보여 준다.
- *  (예전에 손으로 적어 둔 업체가 목록에서 사라지면 안 된다) */
+// 고를 수 있는 업체는 '중개업소 관리'에서 사용자가 손보는 목록이다 (services/agencyBook)
+const auth = useAuthStore();
+const book = useAgencyBook();
+onMounted(() => { void book.load(auth.uid); });
+watch(() => auth.uid, (uid) => { void book.load(uid); });
+
+/** 목록에 없는 이름이 이미 적혀 있으면 그것도 같이 보여 준다 —
+ *  예전에 손으로 적어 둔 업체가 목록에서 사라지면 안 된다 */
 const nameOptions = (row: AgencyRow) => {
+  const names = book.names.value;
   const cur = (row.name ?? '').trim();
-  return cur && !NAME_OPTIONS.includes(cur) ? [...NAME_OPTIONS, cur] : NAME_OPTIONS;
+  return cur && !names.includes(cur) ? [...names, cur] : names;
 };
 const pickName = (row: AgencyRow, opt: string) => {
   // 고른 것을 다시 누르면 지운다 — 잘못 고른 줄을 비울 길이 있어야 한다
-  row.name = row.name === opt ? '' : opt;
+  const off = row.name === opt;
+  row.name = off ? '' : opt;
+  // 전화번호는 적어 둔 목록에서 따라온다. 손으로 고쳐 둔 번호는 덮지 않는다 —
+  // 그 업소의 다른 직통번호를 적어 두는 일이 있다.
+  const known = book.findByName(opt);
+  const typed = (row.phone ?? '').trim();
+  const fromBook = book.agencies.value.some((a) => a.phone === typed);
+  if (!off && known && (!typed || fromBook)) row.phone = known.phone;
   nameOpen.value = -1;
   emit('change');
+};
+/** 걸 수 있는 번호인가 — 숫자가 있어야 전화 단추를 띄운다 */
+const telHref = (phone: string | undefined) => {
+  const d = telDigits(phone ?? '');
+  return d.length >= 8 ? `tel:${d}` : '';
 };
 
 const infoList = (row: AgencyRow) =>
@@ -85,6 +104,12 @@ const setMoney = (row: AgencyRow, key: MoneyKey, el: HTMLInputElement) => {
 /** 칸 하나하나를 여기 적어 둔다 — 차례나 이름을 바꾸려면 이 표만 고치면 된다.
  *  'urgent' 는 예전에 급매가였다가 입금가가 된 칸이다. 적어 둔 값을 잃지 않으려고
  *  키 이름은 그대로 두고, 급매가는 'quick' 으로 따로 받는다. */
+/** 셋째 줄의 글칸. 'note' 는 예전 비고란이다 — 적어 둔 말을 잃지 않으려고
+ *  키는 그대로 두고 이름만 협의로 바꾸고, 비고는 'memo' 로 새로 받는다. */
+const NOTE_FIELDS: Array<{ key: 'note' | 'memo'; placeholder: string }> = [
+  { key: 'note', placeholder: '협의' },
+  { key: 'memo', placeholder: '비고' },
+];
 type MoneyKey = 'real' | 'urgent' | 'quick';
 const MONEY_FIELDS: Array<{ key: MoneyKey; placeholder: string }> = [
   { key: 'urgent', placeholder: '입금가' },
@@ -125,14 +150,21 @@ const MONEY_FIELDS: Array<{ key: MoneyKey; placeholder: string }> = [
           <span v-else>{{ row.name || '-' }}</span>
         </div>
         <label class="adp-agency-fld">
-          <input
-            v-if="props.editing"
-            v-model="row.phone"
-            class="adp-mkt-input left"
-            placeholder="연락처 입력"
-            @change="emit('change')"
-          />
-          <span v-else>{{ row.phone || '-' }}</span>
+          <span v-if="props.editing" class="adp-agency-tel">
+            <input
+              v-model="row.phone"
+              class="adp-mkt-input left"
+              :class="{ dial: telHref(row.phone) }"
+              inputmode="tel"
+              placeholder="연락처 입력"
+              @input="emit('change')"
+            />
+            <a v-if="telHref(row.phone)" class="adp-agency-call" :href="telHref(row.phone)" aria-label="전화 걸기" @click.stop>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z" /></svg>
+            </a>
+          </span>
+          <a v-else-if="telHref(row.phone)" class="adp-agency-tel-view" :href="telHref(row.phone)">{{ row.phone }}</a>
+          <span v-else>-</span>
         </label>
         <div class="adp-agency-fld">
           <div v-if="props.editing" class="adp-agency-multi">
@@ -184,17 +216,17 @@ const MONEY_FIELDS: Array<{ key: MoneyKey; placeholder: string }> = [
           <span v-else>{{ moneyText(row[f.key]) }}</span>
         </label>
       </div>
-      <!-- 셋째 줄 — 금액으로는 안 남는 말을 적는 자리. 한 줄을 통으로 쓴다 -->
+      <!-- 셋째 줄 — 금액으로는 안 남는 말. 협의한 내용과 그 밖의 비고를 나눠 적는다 -->
       <div class="adp-agency-line">
-        <label class="adp-agency-fld wide">
+        <label v-for="f in NOTE_FIELDS" :key="f.key" class="adp-agency-fld">
           <input
             v-if="props.editing"
-            v-model="row.note"
+            v-model="row[f.key]"
             class="adp-mkt-input left note"
-            placeholder="비고"
-            @change="emit('change')"
+            :placeholder="f.placeholder"
+            @input="emit('change')"
           />
-          <span v-else :class="['note-txt', { filled: !!row.note }]">{{ row.note || '비고' }}</span>
+          <span v-else :class="['note-txt', { filled: !!row[f.key] }]">{{ row[f.key] || f.placeholder }}</span>
         </label>
       </div>
     </div>
@@ -228,6 +260,19 @@ const MONEY_FIELDS: Array<{ key: MoneyKey; placeholder: string }> = [
 .adp-mkt-input.left { text-align: left; }
 /* 비고 — 손품+현장의 다른 비고와 같은 규칙: 적은 글씨만 빨갛고 안내문구는 회색 */
 .adp-agency-fld.wide { flex: 1 1 100%; }
+/* 전화번호 — 번호가 있으면 끝에 거는 단추가 선다 */
+.adp-agency-tel { position: relative; display: block; }
+.adp-agency-tel .adp-mkt-input.dial { padding-right: 24px; }
+.adp-agency-call {
+  position: absolute; right: 3px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 19px; height: 19px; border-radius: 5px;
+  background: #eaf1ff; color: #2b6df3;
+}
+.adp-agency-fld > a.adp-agency-tel-view {
+  font-size: 13.5px; font-weight: 700; color: #2b6df3; line-height: 26px; height: 26px;
+  text-decoration: underline; text-underline-offset: 2px;
+}
 .adp-mkt-input.note { color: #e0574a; font-weight: 400; }
 .adp-mkt-input.note::placeholder { color: #9ca3af; font-weight: 400; }
 .adp-agency-fld > span.note-txt { font-size: 11.5px; font-weight: 400; color: #9ca3af; }

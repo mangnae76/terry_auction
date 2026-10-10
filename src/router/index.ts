@@ -112,6 +112,11 @@ const router = createRouter({
       name: 'bid-calendar',
       component: () => import('../pages/BidCalendarPage.vue'),
     },
+    {
+      path: '/agencies',
+      name: 'agencies',
+      component: () => import('../pages/AgencyBookPage.vue'),
+    },
   ],
 });
 
