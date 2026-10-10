@@ -104,8 +104,8 @@ type MoneyKey = 'real' | 'realTo' | 'urgent' | 'urgentTo' | 'quick';
  *  'urgent' 는 예전에 급매가였다가 입금가가 된 칸이다. 적어 둔 값을 잃지
  *  않으려고 키 이름은 그대로 두고, 위쪽 값만 'To' 를 붙여 새로 받는다. */
 const MONEY_GROUPS: Array<{ label: string; from: MoneyKey; to: MoneyKey }> = [
-  { label: '입금가', from: 'urgent', to: 'urgentTo' },
-  { label: '매매가', from: 'real', to: 'realTo' },
+  { label: '입금', from: 'urgent', to: 'urgentTo' },
+  { label: '매도', from: 'real', to: 'realTo' },
 ];
 /** 보기 모드의 범위 — 아래위가 다 있으면 '1.4~1.45억', 하나뿐이면 '1.45억' */
 const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
@@ -284,10 +284,7 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
 .adp-agency-fld.wide { flex: 1 1 100%; }
 /* 협의·비고 — 이름을 칸 왼쪽에 세우고 칸은 남은 폭을 다 쓴다 */
 .adp-agency-fld.note-fld { flex-direction: row; align-items: center; gap: 4px; }
-.adp-agency-fld.note-fld > .lab {
-  flex: 0 0 auto; font-style: normal; font-size: 11px; font-weight: 700;
-  color: #6b7280; white-space: nowrap;
-}
+
 .adp-agency-fld.note-fld > .adp-mkt-input,
 .adp-agency-fld.note-fld > span { flex: 1 1 auto; min-width: 0; }
 /* 전화번호 — 번호가 있으면 끝에 거는 단추가 선다 */
@@ -314,8 +311,11 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
   flex: 1 1 0; min-width: 0;
   display: flex; align-items: center; gap: 3px;
 }
-.adp-agency-range .lab {
-  flex: 0 0 auto; font-style: normal; font-size: 11px; font-weight: 700;
+/* 이름 칸의 폭을 못 박아 둔다 — 아래 '의견'·'협의'와 입력칸이 같은 자리에서
+   시작해야 줄이 가지런히 보인다 */
+.adp-agency-range .lab,
+.adp-agency-fld.note-fld > .lab {
+  flex: 0 0 26px; font-style: normal; font-size: 11px; font-weight: 700;
   color: #6b7280; white-space: nowrap;
 }
 .adp-agency-range .sep {

@@ -2421,7 +2421,7 @@ type IndivItem = {
 type IndivGroup = { title: string; items: IndivItem[] };
 const INDIV_GROUPS: IndivGroup[] = [
   {
-    title: '경매 빌라 개별성',
+    title: '경매빌라 개별성',
     items: [
       { id: 'ind.age', label: '년식', yearMonth: true, rate: '-15%' },
       { id: 'ind.parking', label: '주차수', text: true, half: true, rate: '5%' },
@@ -2708,10 +2708,9 @@ const setFieldMoneyText = (id: string, el: HTMLInputElement) => {
   // 쉼표를 다시 찍어 준 경우에는 칸도 맞춰 준다 (값이 그대로면 화면이 안 바뀐다)
   if (el.value !== next) el.value = next;
 };
-const FIELD_SECTIONS: Array<{ title: string; tip?: string; items: FieldRow[] }> = [
+const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
   {
     title: '② 탐문 (윗집, 옆집, 아래집, 동대표 중)',
-    tip: 'probe',
     items: [
       { id: 'fs.roofLeak', label: '누수', options: ['O', 'X'], note: true },
       // 먼저 눈으로 보는 것 — 건물을 한 바퀴 돌며 채운다.
@@ -3000,9 +2999,8 @@ const noteTipRows = computed<Record<string, Array<[string, string]>>>(() => ({
     ['확인', '전세가 · 평당가로 등수 확인'],
   ],
   probe: [
-    ['O', '확인했다'],
-    ['X', '확인하지 못했다'],
-    ['비고', '무엇을 보고 들었는지 — 글자·숫자 다 적을 수 있다'],
+    ['O', '확인'],
+    ['X', '미확인'],
   ],
   jeonseRatio: [
     ['공식', '전세가 ÷ 매매가 × 100'],
@@ -5806,7 +5804,7 @@ const goBack = () => router.back();
       </template>
 
       <template v-if="activeTab === 'profit' && auction">
-        <section class="adp-card adp-profit-card">
+        <section class="adp-card">
           <!-- 제목과 날짜 줄은 화면에 붙여 둔다 — 표를 한참 내려 보다가도
                어느 안(A·B)을 보고 있는지, 진행상황이 무엇인지 늘 보여야 한다 -->
           <div class="adp-profit-sticky">
@@ -8010,7 +8008,7 @@ const goBack = () => router.back();
 
         <section class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('survField')">
-            <h2 class="adp-head-blue"><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.8V20a1 1 0 0 0 1 1h5"/><circle cx="16.5" cy="16.5" r="3.5"/><path d="m21 21-2-2"/></svg>현장조사</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.8V20a1 1 0 0 0 1 1h5"/><circle cx="16.5" cy="16.5" r="3.5"/><path d="m21 21-2-2"/></svg><span class="adp-head-red">현장조사</span></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survField') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('survField')" class="adp-survey-body">
@@ -8037,7 +8035,7 @@ const goBack = () => router.back();
 
             <!-- 3. 탐문 -->
             <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title">3. 탐문</strong>
+              <strong class="adp-dm-title">3. 탐문 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('probe', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('probe', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'probe'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('probe')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></strong>
             </div>
             <div class="adp-fs-section">
             <div class="adp-fs-title">① 입찰자 현황조사</div>
@@ -8106,7 +8104,7 @@ const goBack = () => router.back();
             </div>
             </div>
             <div v-for="sec in FIELD_SECTIONS" :key="sec.title" class="adp-fs-section">
-              <div class="adp-fs-title">{{ sec.title }}<span v-if="sec.tip" class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter(sec.tip, $event)" @mouseleave="noteLeave()" @click.stop="toggleNote(sec.tip!, $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === sec.tip" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows(sec.tip)" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></div>
+              <div class="adp-fs-title">{{ sec.title }}</div>
               <template v-for="item in sec.items" :key="item.id">
               <div class="adp-fs-row">
                 <span class="lbl">{{ item.label }}</span>
@@ -8388,6 +8386,9 @@ const goBack = () => router.back();
   position: sticky; top: 0; z-index: 60;
   background: #fff;
   box-shadow: 0 2px 6px rgba(17, 24, 39, 0.06);
+  /* 아래 본문과의 회색 틈을 고정줄이 직접 들고 있는다. 본문 쪽 여백으로 두면
+     그 틈으로 표가 흘러 지나가 보인다 — 예상수익분석처럼 붙는 칸이 있을 때 */
+  border-bottom: 6px solid #dcdee3;
 }
 
 .adp-topbar {
@@ -8549,7 +8550,7 @@ const goBack = () => router.back();
 .adp-fold-all .adp-chev { width: 16px; height: 16px; }
 .adp-prop-road { display: block; font-size: 11.5px; color: #6b7280; margin-top: 2px; }
 
-.adp-body { flex: 1 1 auto; padding: 6px 5px 12px; display: flex; flex-direction: column; gap: 8px; }
+.adp-body { flex: 1 1 auto; padding: 0 5px 12px; display: flex; flex-direction: column; gap: 8px; }
 
 /* 내용이 카드 좌우 끝에 붙지 않게 여백을 준다 */
 /* 모서리를 둥글게 — overflow:hidden 은 쓰지 않는다(카드 밖으로 펼쳐지는
@@ -8563,9 +8564,11 @@ const goBack = () => router.back();
   /* minmax(0,1fr) — 값이 길어도 칸 안에서 줄바꿈되게(1fr 단독이면 min-content 아래로 안 줄어듦) */
   display: grid; grid-template-columns: 84px minmax(0, 1fr);
   align-items: center; gap: 8px;
-  padding: 7px 0;
+  /* 글자 크기는 그대로 두고 위아래 여백만 줄인다 — 한 화면에 더 담되
+     줄끼리 붙어 보이지 않을 만큼은 남긴다 (7 → 4px, 최소높이 36 → 30px) */
+  padding: 4px 0;
   border-bottom: 1px solid #f1f3f7;
-  min-height: 36px;
+  min-height: 30px;
 }
 .adp-base-rows > .adp-base-row:last-child { border-bottom: 0; }
 .adp-base-row dt { margin: 0; font-size: 13.5px; color: #6b7280; font-weight: 600; }
@@ -8948,9 +8951,9 @@ const goBack = () => router.back();
   /* 카드 좌우 안쪽 여백(8px)을 뚫어야 흰 바탕이 끝까지 가서 표가 비쳐 보이지 않는다 */
   margin: 0 -8px; padding: 0 8px;
 }
-/* 카드를 본문 위쪽 여백만큼 끌어올려 고정 자리에서 시작하게 한다.
-   붙을 자리까지 올라갈 거리가 0 이라야 '조금 움직이는' 것이 없어진다 */
-.adp-card.adp-profit-card { margin-top: -6px; }
+/* 위쪽 회색 틈은 남겨 둔다 — 그래야 요약 카드와 경계가 보인다.
+   그 6px 은 상단 고정줄이 제 아래 테두리로 들고 있으므로(.adp-sticky-head),
+   카드는 제자리에서 시작하면서도 붙을 자리까지 올라갈 거리가 0 이 된다 */
 /* 붙어 있는 동안에만 그림자 — 어디까지가 고정인지 눈에 보인다 */
 .adp-profit-sticky::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 6px;
@@ -10068,7 +10071,8 @@ const goBack = () => router.back();
 .adp-fs-row .ctl.wide { grid-column: 2 / -1; }
 /* 옆칸에 붙는 비고 — 손품+현장의 다른 비고와 같은 규칙:
    적은 글씨만 빨갛고 안내문구는 회색 */
-.adp-fs-input.note { font-size: 11.5px; font-weight: 400; color: #e0574a; text-align: left; }
+/* 글자 크기는 다른 칸(금액·연락처)과 같게 둔다 — 줄마다 들쭉날쭉해 보였다 */
+.adp-fs-input.note { font-weight: 400; color: #e0574a; text-align: left; }
 .adp-fs-input.note::placeholder { color: #9ca3af; font-weight: 400; }
 .adp-fs-input {
   width: 100%; min-width: 0; height: 28px; border: 1px solid #e3e8f0; border-radius: 6px;
