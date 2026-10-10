@@ -127,13 +127,20 @@ const stageOptions = computed(() => [
   ...AUCTION_STATUS_ORDER.map((st) => ({ key: st as string, label: AUCTION_STATUS_LABELS[st] })),
   { key: STAGE_BID_RUNNING, label: '입찰진행' },
 ]);
+/** 단계 이름이 '입찰진행'으로 바뀌는 조건 — 단계가 '입찰'이고 입찰상태도 '진행'일 때만.
+ *  예상수익분석의 진행상황 박스는 단계를 건드리지 않으므로, 임장 중인 물건을
+ *  '입찰'로 표시해 둬도 상단바의 단계 이름은 그대로 '임장'이다. */
+const stageBidRunning = computed(() => (
+  auction.value?.status === '입찰'
+  && (auction.value?.bidStatus ?? '').replace(/^입찰/, '') === '진행'
+));
 const stageLabel = computed(() => {
-  if ((auction.value?.bidStatus ?? '').replace(/^입찰/, '') === '진행') return '입찰진행';
+  if (stageBidRunning.value) return '입찰진행';
   const st = auction.value?.status;
   return st ? AUCTION_STATUS_LABELS[st] ?? String(st) : '단계';
 });
 const stageIsOn = (key: string) => {
-  const running = (auction.value?.bidStatus ?? '').replace(/^입찰/, '') === '진행';
+  const running = stageBidRunning.value;
   if (key === STAGE_BID_RUNNING) return running;
   return !running && auction.value?.status === key;
 };
@@ -1500,6 +1507,25 @@ const flashToast = (text: string, tone: 'info' | 'success' | 'error' = 'success'
   copiedMsg.value = text;
   window.setTimeout(() => { copiedMsg.value = ''; }, 1600);
 };
+/** 입찰 진행상황 — 단계(관심·임장·입찰·낙찰)와는 별개다.
+ *  산정까지 끝낸 물건이 아직 대기인지, 입찰에 들어갔는지만 적어 둔다.
+ *  저장은 예전부터 있던 bidStatus 한 칸을 그대로 쓴다 ('진행'이 곧 입찰). */
+const BID_PROGRESS_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '대기', label: '대기' },
+  { value: '진행', label: '입찰' },
+];
+/** 적어 둔 값이 없으면 '대기' — 아직 입찰에 안 들어갔다는 뜻이라 그게 기본이다 */
+const bidProgress = computed(() => (
+  (auction.value?.bidStatus ?? '').replace(/^입찰/, '') === '진행' ? '진행' : '대기'
+));
+const setBidProgress = async (value: string) => {
+  if (!auction.value) return;
+  const next = value === '진행' ? '진행' : '대기';
+  auction.value.bidStatus = next;
+  await store.saveAuction(auction.value);
+  flashToast(`진행상황을 '${next === '진행' ? '입찰' : '대기'}'로 바꿨습니다.`, 'success');
+};
+
 /** 주소 복사 — 표에서는 주소가 잘려 보이므로 복사한 전체 주소를 토스트 윗줄에 같이 보여 준다 */
 const copyAddressText = async (address: string) => {
   const value = String(address ?? '').trim();
@@ -5761,6 +5787,16 @@ const goBack = () => router.back();
             </button>
             <!-- 표 스텝퍼와 별은 한 묶음 — 자리가 모자라 줄이 내려가도 둘이 같이 내려간다 -->
             <span class="adp-pd-tail">
+            <!-- 진행상황 — 단계와 상관없이 '대기/입찰'만 표시한다 -->
+            <select
+              :class="['adp-bid-status', bidProgress === '진행' ? 'hot' : 'calm']"
+              :value="bidProgress"
+              aria-label="입찰 진행상황"
+              @click.stop
+              @change="setBidProgress(($event.target as HTMLSelectElement).value)"
+            >
+              <option v-for="opt in BID_PROGRESS_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
             <span class="adp-mkt-step">
               <span class="lab">표</span>
               <button type="button" aria-label="산정표 삭제" :disabled="profitScenarios.length <= 1" @click.stop="removeProfitScenario">−</button>
@@ -8816,7 +8852,9 @@ const goBack = () => router.back();
 /* 초기화와 별을 한 묶음으로 — 줄이 내려가도 둘이 같이 내려간다 */
 .adp-pd-tail { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-left: auto; }
 .adp-profit-dates .adp-star-btn { margin-left: 0; }
-.adp-profit-dates .adp-bid-status { padding: 5px 10px; font-size: 11.5px; }
+/* 날짜 줄에 같이 서는 진행상황 박스 — 표 스텝퍼 바로 왼쪽에 붙는다
+   (바깥 .adp-pd-tail 이 이미 오른쪽으로 밀어 두므로 여기서 또 밀면 안 된다) */
+.adp-profit-dates .adp-bid-status { margin-left: 0; padding: 4px 8px; font-size: 11.5px; }
 /* 중요도 별 — 선정물건 목록의 별과 같은 모양 */
 /* 중요도 — 작은 별 3개를 순서대로 채운다 */
 .adp-star-btn {
@@ -8830,7 +8868,7 @@ const goBack = () => router.back();
 .adp-bid-status {
   margin-left: auto;
   border: none; border-radius: 999px;
-  padding: 6px 12px; font-size: 12px; font-weight: 800;
+  padding: 6px 12px; font-family: inherit; font-size: 12px; font-weight: 800;
   cursor: pointer; outline: none;
   text-align: center; text-align-last: center;
   background: #f3f4f6; color: #111827;
