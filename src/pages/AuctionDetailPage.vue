@@ -10244,7 +10244,9 @@ const goBack = () => router.back();
 /* 좌우 여백은 매매수요·급매가 카드와 같게 0으로 두고, 안쪽 요소에서 2px만 준다 */
 .adp-survey-body { padding: 4px 0 12px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #f1f5f9; }
 /* 줄 사이 여백은 여기 한곳에서만 정한다 — 머리줄 margin 과 flex gap 이 겹쳐 쌓이지 않게 */
-.adp-survey-body .adp-dm-head.tight { padding: 2px 2px 2px; }
+/* 1·2번 줄은 네모 상자 밖에 있어, 그 안에 선 탐문 줄보다 오른쪽으로 10px 더
+   나가 있었다(상자 테두리 1px + 안쪽 여백 9px). 그만큼 들여 끝을 맞춘다 */
+.adp-survey-body .adp-dm-head.tight { padding: 2px 12px 2px 2px; }
 .adp-survey-body .adp-dm-head.sec2 { margin-top: 2px; padding-top: 8px; padding-bottom: 4px; }
 .adp-survey-body .adp-survey-row { padding: 5px 0; }
 /* 현장조사 항목 줄(②탐문·③공과금·④수리상태) — 여기가 위의 .adp-fs-row 보다
