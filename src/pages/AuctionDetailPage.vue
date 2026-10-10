@@ -2720,6 +2720,10 @@ const toggleFieldPick = (id: string, opt: string, options?: string[]) => {
   else picked.push(opt);
   setFieldValNow(fieldNoteId(id), picked.join(', '));
 };
+/** O/X 두 짝짜리 줄인가 — 그런 줄은 단추 둘 대신 체크 하나로 받는다.
+ *  확인했으면 체크, 아니면 빈 칸. 'X' 를 따로 누를 까닭이 없다. */
+const isOxRow = (item: FieldRow) => (item.options?.length === 2
+  && item.options[0] === 'O' && item.options[1] === 'X');
 /** 항목마다 O·X 를 짝지어 목록을 만든다 — '외벽크랙 O', '외벽크랙 X' … */
 const oxPicks = (...names: string[]) => names.flatMap((n) => [`${n} O`, `${n} X`]);
 /** 공과금 금액칸 — 숫자만 받던 칸이라 '미납 3개월' 같은 말을 적을 수가 없었다.
@@ -8154,8 +8158,17 @@ const goBack = () => router.back();
                         :class="['adp-toggle-btn', 'who', { active: fieldVal(item.who!.id) === w }]"
                         @click="setFieldValNow(item.who!.id, fieldVal(item.who!.id) === w ? '' : w)"
                       >{{ w }}</button>
+                      <!-- 확인했으면 체크 하나. 'X' 를 따로 누를 까닭이 없다 -->
+                      <input
+                        v-if="isOxRow(item)"
+                        type="checkbox"
+                        class="adp-fs-check"
+                        :aria-label="`${item.label} 확인`"
+                        :checked="fieldVal(item.id) === 'O'"
+                        @change="setFieldValNow(item.id, ($event.target as HTMLInputElement).checked ? 'O' : '')"
+                      />
                       <button
-                        v-for="opt in item.options"
+                        v-for="opt in (isOxRow(item) ? [] : (item.options ?? []))"
                         :key="opt"
                         type="button"
                         :class="['adp-toggle-btn', { active: fieldVal(item.id) === opt, one: opt.length === 1 }]"
@@ -10178,6 +10191,11 @@ const goBack = () => router.back();
 }
 .adp-fs-row .adp-fs-input.note.adp-agency-trigger .txt.ph { color: #9ca3af; }
 .adp-fs-row .adp-fs-input.note.adp-agency-trigger .caret { flex: 0 0 auto; color: #9ca3af; font-size: 9px; }
+/* 확인 체크 — 단추 자리에 들어가므로 높이를 맞춘다 */
+.adp-fs-toggles .adp-fs-check {
+  flex: 0 0 22px; width: 22px; height: 22px; margin: 2px 3px 2px 0;
+  accent-color: #2b6df3; cursor: pointer;
+}
 /* 누구에게 들었나 — 한 줄에 단추가 넷이라 조금 작게 */
 .adp-fs-toggles .adp-toggle-btn.who { padding: 0 6px; font-size: 10px; letter-spacing: -0.3px; }
 /* 'O'·'X'처럼 한 글자인 단추는 정원으로 — 가로세로가 다르면 찌그러져 보인다.
