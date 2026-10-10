@@ -2767,8 +2767,8 @@ const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow
         who: { id: 'fs.roofLeakWho', options: ['임차인', '입주민', '동대표'] },
       },
       {
-        id: 'fs.tenantContact', label: '임차인탐문', options: ['동대표', '차확인'],
-        who: { id: 'fs.tenantWho', options: ['임차인', '입주민'] },
+        id: 'fs.tenantContact', label: '임차인탐문', options: ['O', 'X'],
+        who: { id: 'fs.tenantWho', options: ['임차인', '입주민', '동대표'] },
         extra: { id: 'fs.tenantPhone', placeholder: '연락처입력' },
       },
       {
@@ -8162,7 +8162,7 @@ const goBack = () => router.back();
                       <input
                         v-if="isOxRow(item)"
                         type="checkbox"
-                        class="adp-fs-check"
+                        class="adp-rcheck-box adp-fs-check"
                         :aria-label="`${item.label} 확인`"
                         :checked="fieldVal(item.id) === 'O'"
                         @change="setFieldValNow(item.id, ($event.target as HTMLInputElement).checked ? 'O' : '')"
@@ -10191,11 +10191,10 @@ const goBack = () => router.back();
 }
 .adp-fs-row .adp-fs-input.note.adp-agency-trigger .txt.ph { color: #9ca3af; }
 .adp-fs-row .adp-fs-input.note.adp-agency-trigger .caret { flex: 0 0 auto; color: #9ca3af; font-size: 9px; }
-/* 확인 체크 — 단추 자리에 들어가므로 높이를 맞춘다 */
-.adp-fs-toggles .adp-fs-check {
-  flex: 0 0 22px; width: 22px; height: 22px; margin: 2px 3px 2px 0;
-  accent-color: #2b6df3; cursor: pointer;
-}
+/* 확인 체크 — 모양은 권리분석의 체크(.adp-rcheck-box)를 그대로 쓴다.
+   빈 네모였다가 누르면 빨갛게 차고 흰 ✓ 가 뜬다. 앱에 체크 모양은 하나뿐이어야
+   한다 — 여기서는 단추 자리에 들어가므로 자리만 잡아 준다 */
+.adp-fs-toggles .adp-fs-check { flex: 0 0 22px; margin: 2px 3px 2px 0; }
 /* 누구에게 들었나 — 한 줄에 단추가 넷이라 조금 작게 */
 .adp-fs-toggles .adp-toggle-btn.who { padding: 0 6px; font-size: 10px; letter-spacing: -0.3px; }
 /* 'O'·'X'처럼 한 글자인 단추는 정원으로 — 가로세로가 다르면 찌그러져 보인다.
