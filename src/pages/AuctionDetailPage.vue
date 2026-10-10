@@ -2733,9 +2733,9 @@ const setFieldMoneyText = (id: string, el: HTMLInputElement) => {
   // 쉼표를 다시 찍어 준 경우에는 칸도 맞춰 준다 (값이 그대로면 화면이 안 바뀐다)
   if (el.value !== next) el.value = next;
 };
-const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
+const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow[] }> = [
   {
-    title: '② 탐문',
+    title: '① 탐문',
     // 빌라에 가서 움직이는 차례 그대로 세운다 — 멀리서 집을 올려다보며 확인하는
     // 향·뷰·외벽, 건물에 들어서며 보는 것, 계량기, 한 바퀴 돌며 보는 것,
     // 그다음 사람에게 묻는 것, 마지막으로 문 앞의 비번.
@@ -2749,11 +2749,15 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
       { id: 'fs.utility', label: '전기가스수도\n사용현황', options: ['O', 'X'], noteOptions: oxPicks('단전', '단수', '가스차단') },
       // 건물을 한 바퀴 돌며 보는 것
       { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], noteOptions: ['CCTV 있음', 'CCTV 없음'] },
-      { id: 'fs.parkList', label: '주차장관리', options: ['O', 'X'], noteOptions: ['있음', '없음'] },
+      { id: 'fs.parkList', label: '주차장관리', options: ['O', 'X'], noteOptions: ['리스트 있음', '리스트 없음'] },
       { id: 'fs.bikeKeep', label: '자전거보관', options: ['O', 'X'], noteOptions: ['사용', '방치'] },
       { id: 'fs.cleanCo', label: '계단청소', options: ['O', 'X'], noteOptions: oxPicks('관리') },
       // 사람에게 묻는 것 — 금액·연락처가 따라붙는 줄들
-      { id: 'fs.mailMaint', label: '미납관리비', options: ['동대표'], extra: { id: 'fs.mailMaintAmt', placeholder: '금액 및 기타 입력', money: true } },
+      {
+        id: 'fs.mailMaint', label: '미납관리비', options: ['O', 'X'],
+        who: { id: 'fs.mailMaintWho', options: ['동대표'] },
+        extra: { id: 'fs.mailMaintAmt', placeholder: '금액 및 기타 입력', money: true },
+      },
       {
         id: 'fs.roofLeak', label: '누수', options: ['O', 'X'], note: true,
         who: { id: 'fs.roofLeakWho', options: ['임차인', '입주민', '동대표'] },
@@ -2768,12 +2772,18 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
     ],
   },
   {
-    // 미납관리비를 탐문으로 올려 ③ 이 비었다 — 단락을 없애고 번호를 당긴다
+    // 현장에서는 집을 다 보고 난 뒤에 '누가 살고 있나'를 적게 된다 — 탐문 뒤로 둔다.
+    // 내용은 템플릿에 따로 있어 여기서는 자리만 잡는다
+    title: '② 입찰자 현황조사',
+    special: 'report',
+    items: [],
+  },
+  {
     title: '③ 수리상태',
     items: [
-      { id: 'fs.door', label: '도어', options: ['교체', '미교체'], note: true },
-      { id: 'fs.doorLock', label: '도어락', options: ['교체', '미교체'], note: true },
-      { id: 'fs.window', label: '샷시', options: ['교체', '미교체'], note: true },
+      { id: 'fs.door', label: '도어', options: ['O', 'X'], noteOptions: ['분양상태', '교체'] },
+      { id: 'fs.doorLock', label: '도어락', options: ['O', 'X'], noteOptions: ['분양상태', '교체'] },
+      { id: 'fs.window', label: '샷시', options: ['O', 'X'], noteOptions: ['분양상태', '교체'] },
     ],
   },
 ];
@@ -8067,8 +8077,10 @@ const goBack = () => router.back();
             <div class="adp-dm-head sec2">
               <strong class="adp-dm-title">3. 탐문 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('probe', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('probe', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'probe'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('probe')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></strong>
             </div>
-            <div class="adp-fs-section">
-            <div class="adp-fs-title">① 입찰자 현황조사</div>
+            <div v-for="sec in FIELD_SECTIONS" :key="sec.title" class="adp-fs-section">
+              <div class="adp-fs-title">{{ sec.title }}</div>
+              <!-- 입찰자 현황조사 — 고르는 칸 하나뿐이라 줄 틀을 쓰지 않는다 -->
+              <template v-if="sec.special === 'report'">
             <div class="adp-survey-row">
               <span class="lbl">입찰자 현황조사</span>
               <div class="adp-multi-wrap">
@@ -8116,9 +8128,7 @@ const goBack = () => router.back();
                 </div>
               </div>
             </div>
-            </div>
-            <div v-for="sec in FIELD_SECTIONS" :key="sec.title" class="adp-fs-section">
-              <div class="adp-fs-title">{{ sec.title }}</div>
+              </template>
               <template v-for="item in sec.items" :key="item.id">
               <div class="adp-fs-row">
                 <span :class="['lbl', { long: item.label.length > 7 }]">{{ item.label }}</span>
