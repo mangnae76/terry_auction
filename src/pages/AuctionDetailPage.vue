@@ -4548,7 +4548,7 @@ const pickDocNoteOption = async (id: string, opt: string) => {
   docMultiOpen.value = '';
   await setRightsDocNote(id, opt);
 };
-/** 권리분석 결론의 비고가 앉을 자리. 다른 비고와 같은 칸(rightsDocNotes)에 담는다 —
+/** 권리분석 정리의 비고가 앉을 자리. 다른 비고와 같은 칸(rightsDocNotes)에 담는다 —
  *  표 항목 id 와 겹치지 않도록 점을 찍은 이름을 쓴다. */
 const RIGHTS_CONC_ID = 'rights.conclusion';
 const rightsDocNote = (id: string) => auction.value?.rightsDocNotes?.[id] ?? '';
@@ -6832,12 +6832,12 @@ const goBack = () => router.back();
           </div>
         </section>
 
-        <!-- 권리분석 결론 — 위의 표들을 보고 내린 판단을 한곳에 적어 둔다.
+        <!-- 권리분석 정리 — 위의 표들을 보고 내린 판단을 한곳에 적어 둔다.
              표에 칸을 늘리는 대신 따로 둔 까닭은, 어느 한 항목이 아니라
              전부를 보고 쓰는 글이기 때문이다. -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsConc')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 7-7" /><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" /></svg>권리분석 결론</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 7-7" /><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" /></svg>권리분석 정리</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsConc') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('rightsConc')" class="adp-rconc-body">
@@ -9163,7 +9163,7 @@ const goBack = () => router.back();
 .adp-rcase-select.picked { color: #e0574a; border-color: #f0d4d0; }
 .adp-rcase-caret { color: #6b7280; font-size: 15px; line-height: 1; }
 /* 목록 밖을 눌러 닫기 위한 투명 레이어 */
-/* 권리분석 결론 — 한 줄짜리 비고와 달리 여러 줄을 적는 자리다 */
+/* 권리분석 정리 — 한 줄짜리 비고와 달리 여러 줄을 적는 자리다 */
 .adp-rconc-body { padding: 8px 10px 10px; }
 .adp-rconc-note {
   display: block; width: 100%; box-sizing: border-box; resize: vertical; min-height: 72px;
