@@ -8565,10 +8565,10 @@ const goBack = () => router.back();
   display: grid; grid-template-columns: 84px minmax(0, 1fr);
   align-items: center; gap: 8px;
   /* 글자 크기는 그대로 두고 위아래 여백만 줄인다 — 한 화면에 더 담되
-     줄끼리 붙어 보이지 않을 만큼은 남긴다 (7 → 5px, 최소높이 36 → 32px) */
-  padding: 5px 0;
+     줄끼리 붙어 보이지 않을 만큼은 남긴다 (7 → 6px, 최소높이 36 → 34px) */
+  padding: 6px 0;
   border-bottom: 1px solid #f1f3f7;
-  min-height: 32px;
+  min-height: 34px;
 }
 .adp-base-rows > .adp-base-row:last-child { border-bottom: 0; }
 .adp-base-row dt { margin: 0; font-size: 13.5px; color: #6b7280; font-weight: 600; }
@@ -10151,8 +10151,9 @@ const goBack = () => router.back();
 .adp-survey-body .adp-dm-head.tight { padding: 2px 2px 2px; }
 .adp-survey-body .adp-dm-head.sec2 { margin-top: 2px; padding-top: 8px; padding-bottom: 4px; }
 .adp-survey-body .adp-survey-row { padding: 5px 0; }
-/* 현장조사 항목 줄 — 여기가 위의 .adp-fs-row 보다 세서 실제로 쓰이는 값이다 */
-.adp-survey-body .adp-fs-row { padding: 2px 0; }
+/* 현장조사 항목 줄(②탐문·③공과금·④수리상태) — 여기가 위의 .adp-fs-row 보다
+   세서 실제로 쓰이는 값이다. 칸 높이 28 + 위아래 4 = 한 줄 36px */
+.adp-survey-body .adp-fs-row { padding: 4px 0; }
 .adp-survey-body .adp-survey-block { padding: 8px 10px; }
 .adp-survey-body .adp-agency-item { padding: 6px 10px 8px; }
 .adp-survey-block { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px 9px; }
