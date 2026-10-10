@@ -4,7 +4,6 @@
 // 예전에는 두 곳에 같은 마크업이 복사돼 있어, 한쪽만 고치면 서로 어긋났다.
 // 칸 구성·안내글·삭제 버튼을 여기 한곳에서만 고치면 두 화면이 같이 바뀐다.
 import { ref } from 'vue';
-import FormattedNumberInput from './FormattedNumberInput.vue';
 import type { AgencyRow } from '../types/auction';
 
 const props = withDefaults(defineProps<{
@@ -54,17 +53,43 @@ const toggleInfo = (row: AgencyRow, opt: string) => {
   emit('change');
 };
 
-/** 보기 모드의 금액 — 천 단위 쉼표, 없으면 '-' */
+// 금액은 '억'으로 적는다. 2.5억이면 2.5, 1억이면 1 — 숫자만 치면 되니
+// 폰에서 한글로 바꿔 '억'을 칠 일이 없다. 단위는 칸 끝에 붙여 보여 준다.
+const WON_PER_EOK = 100000000;
+/** 칸에 띄울 값. 적은 그대로 돌려주되, 예전에 원 단위로 적어 둔 값은 억으로 환산한다.
+ *  (쉼표가 있거나 1000 이 넘으면 원 단위다 — 상담표에 1000억을 적을 일은 없다)
+ *  적은 그대로 돌려주는 게 중요하다. '2.' 까지 쳤을 때 숫자로 바꿔 버리면 점이 지워진다. */
+const moneyInput = (raw: string | undefined) => {
+  const text = String(raw ?? '').trim();
+  if (!text) return '';
+  const n = Number(text.replace(/[^\d.]/g, ''));
+  if (!Number.isFinite(n) || n <= 0) return '';
+  if (!text.includes(',') && n < 1000) return text;
+  return String(Math.round((n / WON_PER_EOK) * 100) / 100);
+};
+/** 보기 모드의 금액 — '2.5억', 없으면 '-' */
 const moneyText = (raw: string | undefined) => {
-  const n = Number(String(raw ?? '').replace(/[^\d.-]/g, ''));
-  return Number.isFinite(n) && n > 0 ? Math.round(n).toLocaleString('ko-KR') : '-';
+  const v = moneyInput(raw).replace(/\.$/, '');
+  return v ? `${v}억` : '-';
+};
+/** 숫자와 소수점만 받는다. 점은 하나까지 */
+const setMoney = (row: AgencyRow, key: MoneyKey, el: HTMLInputElement) => {
+  const cleaned = el.value.replace(/[^\d.]/g, '').replace(/^(\d*\.?\d*).*$/, '$1');
+  row[key] = cleaned;
+  // 걸러 낸 글자는 칸에서도 지운다. 값만 고치면 화면은 그대로라('2.5.9') 적은 것과
+  // 담긴 것이 달라 보인다 — 바뀐 값이 아니라서 화면이 다시 그려지지 않는 탓이다.
+  if (el.value !== cleaned) el.value = cleaned;
+  emit('change');
 };
 
-/** 칸 하나하나를 여기 적어 둔다 — 안내글을 바꾸려면 이 표만 고치면 된다 */
-const MONEY_FIELDS: Array<{ key: 'jeonse' | 'real' | 'urgent'; placeholder: string }> = [
-  { key: 'jeonse', placeholder: '전세가 입력' },
-  { key: 'real', placeholder: '매매가 입력' },
-  { key: 'urgent', placeholder: '입금가 입력' },
+/** 칸 하나하나를 여기 적어 둔다 — 차례나 이름을 바꾸려면 이 표만 고치면 된다.
+ *  'urgent' 는 예전에 급매가였다가 입금가가 된 칸이다. 적어 둔 값을 잃지 않으려고
+ *  키 이름은 그대로 두고, 급매가는 'quick' 으로 따로 받는다. */
+type MoneyKey = 'real' | 'urgent' | 'quick';
+const MONEY_FIELDS: Array<{ key: MoneyKey; placeholder: string }> = [
+  { key: 'urgent', placeholder: '입금가' },
+  { key: 'real', placeholder: '매매가' },
+  { key: 'quick', placeholder: '급매가' },
 ];
 </script>
 
@@ -146,14 +171,16 @@ const MONEY_FIELDS: Array<{ key: 'jeonse' | 'real' | 'urgent'; placeholder: stri
       </div>
       <div class="adp-agency-line">
         <label v-for="f in MONEY_FIELDS" :key="f.key" class="adp-agency-fld">
-          <FormattedNumberInput
-            v-if="props.editing"
-            v-model="row[f.key]"
-            mode="string"
-            class="adp-mkt-input left"
-            :placeholder="f.placeholder"
-            @update:model-value="emit('change')"
-          />
+          <span v-if="props.editing" class="adp-agency-money">
+            <input
+              class="adp-mkt-input left money"
+              inputmode="decimal"
+              :placeholder="f.placeholder"
+              :value="moneyInput(row[f.key])"
+              @input="setMoney(row, f.key, $event.target as HTMLInputElement)"
+            />
+            <em>억</em>
+          </span>
           <span v-else>{{ moneyText(row[f.key]) }}</span>
         </label>
       </div>
@@ -206,6 +233,13 @@ const MONEY_FIELDS: Array<{ key: 'jeonse' | 'real' | 'urgent'; placeholder: stri
 .adp-agency-fld > span.note-txt { font-size: 11.5px; font-weight: 400; color: #9ca3af; }
 .adp-agency-fld > span.note-txt.filled { color: #e0574a; font-weight: 400; }
 .adp-mkt-input::placeholder { color: #9ca3af; }
+/* 금액 — 단위 '억'을 칸 끝에 붙여 둔다. 적는 쪽은 숫자만 치면 된다 */
+.adp-agency-money { position: relative; display: block; }
+.adp-agency-money .adp-mkt-input.money { padding-right: 19px; }
+.adp-agency-money em {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  font-style: normal; font-size: 11px; font-weight: 700; color: #6b7280; pointer-events: none;
+}
 
 .adp-agency-multi { position: relative; }
 .adp-agency-trigger {

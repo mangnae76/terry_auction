@@ -546,9 +546,14 @@ export interface AgencyRow {
   info: string;
   /** 보증금/월세 */
   monthly: string;
+  /** @deprecated 전세가 — 상담표에서 뺐다. 예전 자료만 남아 있다 */
   jeonse: string;
+  /** 매매가 (억) */
   real: string;
+  /** 입금가 (억) — 예전에는 급매가였다. 적어 둔 값을 잃지 않으려고 키 이름은 그대로 둔다 */
   urgent: string;
+  /** 급매가 (억) */
+  quick?: string;
   /** 상담하면서 들은 말 — 금액으로는 안 남는 것들 */
   note?: string;
 }
