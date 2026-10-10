@@ -2713,14 +2713,19 @@ const setFieldMoneyText = (id: string, el: HTMLInputElement) => {
 const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
   {
     title: '② 탐문 (윗집, 옆집, 아래집, 동대표 중)',
-    // 현장에서 보고 묻는 차례 그대로 세운다 — 집에 들어가기 전 밖에서 확인하는
-    // 실외기·계량기가 먼저, 건물을 돌며 보는 것, 그다음 사람에게 묻는 것.
+    // 빌라에 가서 움직이는 차례 그대로 세운다 — 멀리서 집을 올려다보며 확인하는
+    // 향·뷰·외벽, 건물에 들어서며 보는 것, 계량기, 한 바퀴 돌며 보는 것,
+    // 그다음 사람에게 묻는 것, 마지막으로 문 앞의 비번.
     items: [
-      { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'], note: true },
+      { id: 'fs.aspect', label: '향', options: ['O', 'X'], note: true },
+      { id: 'fs.view', label: '뷰', options: ['O', 'X'], note: true },
+      { id: 'fs.exterior', label: '건물외벽, 필로티천장', options: ['O', 'X'], note: true },
+      { id: 'fs.trash', label: '쓰레기', options: ['O', 'X'], note: true },
+      { id: 'fs.mailbox', label: '우편함', options: ['O', 'X'], note: true },
       // 계량기는 금액과 함께 적는다 (예전 ③ 우편물·공과금에 있던 줄들)
       { id: 'fs.mailPower', label: '전기 사용', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액 및 기타 입력', money: true } },
-      { id: 'fs.mailWater', label: '수도 사용', options: ['O', 'X'], extra: { id: 'fs.mailWaterAmt', placeholder: '금액 및 기타 입력', money: true } },
       { id: 'fs.mailGas', label: '가스 사용', options: ['O', 'X'], extra: { id: 'fs.mailGasAmt', placeholder: '금액 및 기타 입력', money: true } },
+      { id: 'fs.mailWater', label: '수도 사용', options: ['O', 'X'], extra: { id: 'fs.mailWaterAmt', placeholder: '금액 및 기타 입력', money: true } },
       // 건물을 한 바퀴 돌며 보는 것 — O/X 만으로는 무엇을 봤는지 안 남아 비고를 둔다
       { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], note: true },
       { id: 'fs.parkList', label: '주차장 관리', options: ['O', 'X'], note: true },
@@ -8112,7 +8117,7 @@ const goBack = () => router.back();
               <div class="adp-fs-title">{{ sec.title }}</div>
               <template v-for="item in sec.items" :key="item.id">
               <div class="adp-fs-row">
-                <span class="lbl">{{ item.label }}</span>
+                <span :class="['lbl', { long: item.label.length > 7 }]">{{ item.label }}</span>
                 <!-- 글로 적는 칸만 폭을 다 쓴다. 선택 버튼은 아래 CSS로 오른쪽 끝에 모은다 -->
                 <span :class="['ctl', { wide: item.text }]">
                   <template v-if="item.text">
@@ -10081,6 +10086,8 @@ const goBack = () => router.back();
 .adp-fs-row .ext { grid-column: 2; grid-row: 1; }
 .adp-fs-row .ctl.wide { grid-row: 1; }
 .adp-fs-row .lbl { font-size: 13px; color: #6b7280; font-weight: 600; white-space: nowrap; }
+/* '건물외벽, 필로티천장' 처럼 긴 이름은 두 줄로 내려 쓴다 — 한 줄로 두면 잘린다 */
+.adp-fs-row .lbl.long { white-space: normal; font-size: 12px; line-height: 1.25; word-break: keep-all; }
 
 .adp-fs-row .ctl, .adp-fs-row .ext { min-width: 0; font-size: 13px; font-weight: 700; color: #111827; text-align: right; }
 /* 옆칸이 없는 항목(기타·수리상태 등)은 남은 폭을 모두 쓴다 */
