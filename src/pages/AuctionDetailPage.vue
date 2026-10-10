@@ -200,23 +200,25 @@ const lotWithBuildingAddress = computed(() => {
   }
   return out.join(' ');
 });
-/** 건물 이름 + 동 — '정성드림빌 101동'. 번지 뒤부터 층·호가 나오기 직전까지다.
- *  저가매물은 모두 이 건물 안의 매물이라, 줄마다 다시 적을 까닭이 없다. */
+/** 저가매물 주소에 자동으로 붙일 건물 이름 — '뉴월드빌4차'.
+ *  매물호가는 네이버에서 찾는 '같은 빌라의 다른 집'이라, 이름만 같고
+ *  동·층·호는 줄마다 다르다. 그래서 이름까지만 붙이고 동부터는 손으로 적는다.
+ *  주소에 이름이 없는 빌라는 정보요약에 적어 둔 건물명을 쓴다. */
 const subjectBuildingLabel = computed(() => {
   const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
   let last = -1;
   parts.forEach((t, i) => { if (/^\d+(-\d+)?$/.test(t)) last = i; });
-  if (last < 0) return '';
   const out: string[] = [];
-  for (let i = last + 1; i < parts.length; i += 1) {
+  for (let i = last + 1; last >= 0 && i < parts.length; i += 1) {
     const t = parts[i];
-    // '101동'은 건물을 가리키니 남기고, '2층201호'처럼 호실까지 붙은 토막에서 멈춘다
-    if (/^제?\d+동$/.test(t)) { out.push(t.replace(/^제/, '')); continue; }
-    if (isUnitToken(t)) break;
+    // '101동'은 건물이 아니라 그 안의 한 동이다 — 매물마다 다르니 붙이지 않는다
+    if (/^제?\d+동$/.test(t) || isUnitToken(t)) break;
     out.push(t);
   }
-  return out.join(' ');
+  return out.join(' ') || String(auction.value?.basicSummary?.['sum.buildingName'] ?? '').trim();
 });
+/** 이 빌라에 '동'이 있는가 — 손으로 적을 안내문구에 '동'을 넣을지 가른다 */
+const subjectHasDong = computed(() => /(^|\s)제?\d+동(\s|$)/.test(jibunAddress.value));
 /** 상단 고정줄에 보여 줄 주소 — 주소에 건물명이 없는 물건은 정보요약에 적어 둔
  *  건물명을 지번 바로 뒤에 끼워 넣는다. 적어 두지 않았으면 주소 그대로다.
  *  (저장된 주소 자체는 건드리지 않는다 — 지역·실거래 조회가 그 값을 쓴다) */
@@ -7655,7 +7657,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell">
                     <small>주소</small>
-                    <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'addr'))" :placeholder="lowAddrAuto ? '3층 302호' : '빌라명 · 층'" @input="setMktVal(lowKey(i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
+                    <input v-if="editingSurvey.location" class="adp-mkt-input" :value="mktVal(lowKey(i - 1, 'addr'))" :placeholder="lowAddrAuto ? (subjectHasDong ? '동 · 층 · 호' : '층 · 호') : '빌라명 · 층 · 호'" @input="setMktVal(lowKey(i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
                     <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTyped(i - 1) }]">{{ lowAddrText(i - 1) }}</strong>
                   </div>
                   <div class="cell">
