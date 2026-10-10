@@ -548,15 +548,20 @@ export interface AgencyRow {
   monthly: string;
   /** @deprecated 전세가 — 상담표에서 뺐다. 예전 자료만 남아 있다 */
   jeonse: string;
-  /** 매매가 (억) */
+  /** 매매가 — 범위의 아래쪽 (억) */
   real: string;
-  /** 입금가 (억) — 예전에는 급매가였다. 적어 둔 값을 잃지 않으려고 키 이름은 그대로 둔다 */
+  /** 매매가 — 범위의 위쪽 (억) */
+  realTo?: string;
+  /** 입금가 — 범위의 아래쪽 (억). 예전에는 급매가였다.
+   *  적어 둔 값을 잃지 않으려고 키 이름은 그대로 둔다 */
   urgent: string;
-  /** 급매가 (억) */
+  /** 입금가 — 범위의 위쪽 (억) */
+  urgentTo?: string;
+  /** @deprecated 급매가 — 칸을 뺐다. 잠깐 적어 둔 자료만 남아 있다 */
   quick?: string;
   /** 협의한 내용 — 금액으로는 안 남는 것들 */
   note?: string;
-  /** 비고 — 협의 말고 따로 남길 말 */
+  /** @deprecated 비고 — 칸을 뺐다(협의가 줄을 통으로 쓴다). 적어 둔 자료만 남아 있다 */
   memo?: string;
 }
 

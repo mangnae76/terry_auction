@@ -86,11 +86,6 @@ const moneyInput = (raw: string | undefined) => {
   if (!text.includes(',') && n < 1000) return text;
   return String(Math.round((n / WON_PER_EOK) * 100) / 100);
 };
-/** 보기 모드의 금액 — '2.5억', 없으면 '-' */
-const moneyText = (raw: string | undefined) => {
-  const v = moneyInput(raw).replace(/\.$/, '');
-  return v ? `${v}억` : '-';
-};
 /** 숫자와 소수점만 받는다. 점은 하나까지 */
 const setMoney = (row: AgencyRow, key: MoneyKey, el: HTMLInputElement) => {
   const cleaned = el.value.replace(/[^\d.]/g, '').replace(/^(\d*\.?\d*).*$/, '$1');
@@ -104,18 +99,22 @@ const setMoney = (row: AgencyRow, key: MoneyKey, el: HTMLInputElement) => {
 /** 칸 하나하나를 여기 적어 둔다 — 차례나 이름을 바꾸려면 이 표만 고치면 된다.
  *  'urgent' 는 예전에 급매가였다가 입금가가 된 칸이다. 적어 둔 값을 잃지 않으려고
  *  키 이름은 그대로 두고, 급매가는 'quick' 으로 따로 받는다. */
-/** 셋째 줄의 글칸. 'note' 는 예전 비고란이다 — 적어 둔 말을 잃지 않으려고
- *  키는 그대로 두고 이름만 협의로 바꾸고, 비고는 'memo' 로 새로 받는다. */
-const NOTE_FIELDS: Array<{ key: 'note' | 'memo'; placeholder: string }> = [
-  { key: 'note', placeholder: '협의' },
-  { key: 'memo', placeholder: '비고' },
+type MoneyKey = 'real' | 'realTo' | 'urgent' | 'urgentTo' | 'quick';
+/** 금액은 '얼마에서 얼마' 범위로 듣는다 — 중개업소는 한 값으로 말하지 않는다.
+ *  'urgent' 는 예전에 급매가였다가 입금가가 된 칸이다. 적어 둔 값을 잃지
+ *  않으려고 키 이름은 그대로 두고, 위쪽 값만 'To' 를 붙여 새로 받는다. */
+const MONEY_GROUPS: Array<{ label: string; from: MoneyKey; to: MoneyKey }> = [
+  { label: '입금가', from: 'urgent', to: 'urgentTo' },
+  { label: '매매가', from: 'real', to: 'realTo' },
 ];
-type MoneyKey = 'real' | 'urgent' | 'quick';
-const MONEY_FIELDS: Array<{ key: MoneyKey; placeholder: string }> = [
-  { key: 'urgent', placeholder: '입금가' },
-  { key: 'real', placeholder: '매매가' },
-  { key: 'quick', placeholder: '급매가' },
-];
+/** 보기 모드의 범위 — 아래위가 다 있으면 '1.4~1.45억', 하나뿐이면 '1.45억' */
+const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
+  const lo = moneyInput(row[g.from]).replace(/\.$/, '');
+  const hi = moneyInput(row[g.to]).replace(/\.$/, '');
+  if (lo && hi) return `${lo}~${hi}억`;
+  const one = lo || hi;
+  return one ? `${one}억` : '-';
+};
 </script>
 
 <template>
@@ -201,37 +200,40 @@ const MONEY_FIELDS: Array<{ key: MoneyKey; placeholder: string }> = [
           @click="emit('remove', i)"
         >×</button>
       </div>
-      <div class="adp-agency-line">
-        <label v-for="f in MONEY_FIELDS" :key="f.key" class="adp-agency-fld">
-          <!-- 셋이 나란히 서면 어느 칸이 무엇인지 헷갈린다 — 이름을 칸 안에 같이 둔다 -->
-          <span v-if="props.editing" class="adp-agency-money">
-            <em class="lab">{{ f.placeholder }}</em>
+      <!-- 둘째 줄 — 금액은 범위로 적는다. 이름과 단위는 칸 바깥에 둔다 -->
+      <div class="adp-agency-line money">
+        <span v-for="g in MONEY_GROUPS" :key="g.from" class="adp-agency-range">
+          <em class="lab">{{ g.label }}</em>
+          <template v-if="props.editing">
             <input
-              class="money"
+              class="rng"
               inputmode="decimal"
-              placeholder=""
-              :value="moneyInput(row[f.key])"
-              @input="setMoney(row, f.key, $event.target as HTMLInputElement)"
+              :value="moneyInput(row[g.from])"
+              @input="setMoney(row, g.from, $event.target as HTMLInputElement)"
+            />
+            <em class="sep">~</em>
+            <input
+              class="rng"
+              inputmode="decimal"
+              :value="moneyInput(row[g.to])"
+              @input="setMoney(row, g.to, $event.target as HTMLInputElement)"
             />
             <em class="unit">억</em>
-          </span>
-          <span v-else class="money-txt">
-            <em class="lab">{{ f.placeholder }}</em>{{ moneyText(row[f.key]) }}
-          </span>
-        </label>
+          </template>
+          <strong v-else class="val">{{ rangeText(row, g) }}</strong>
+        </span>
       </div>
-      <!-- 셋째 줄 — 금액으로는 안 남는 말. 협의한 내용과 그 밖의 비고를 나눠 적는다 -->
+      <!-- 셋째 줄 — 금액으로는 안 남는 말. 길게 적을 일이 많아 줄을 통으로 쓴다 -->
       <div class="adp-agency-line">
-        <!-- 이름은 칸 바깥에 둔다 — 적고 나면 무슨 칸이었는지 안 보이면 안 된다 -->
-        <label v-for="f in NOTE_FIELDS" :key="f.key" class="adp-agency-fld note-fld">
-          <em class="lab">{{ f.placeholder }}</em>
+        <label class="adp-agency-fld note-fld wide">
+          <em class="lab">협의</em>
           <input
             v-if="props.editing"
-            v-model="row[f.key]"
+            v-model="row.note"
             class="adp-mkt-input left note"
             @input="emit('change')"
           />
-          <span v-else :class="['note-txt', { filled: !!row[f.key] }]">{{ row[f.key] || '-' }}</span>
+          <span v-else :class="['note-txt', { filled: !!row.note }]">{{ row.note || '-' }}</span>
         </label>
       </div>
     </div>
@@ -291,36 +293,32 @@ const MONEY_FIELDS: Array<{ key: MoneyKey; placeholder: string }> = [
 .adp-agency-fld > span.note-txt { font-size: 11.5px; font-weight: 400; color: #9ca3af; }
 .adp-agency-fld > span.note-txt.filled { color: #e0574a; font-weight: 400; }
 .adp-mkt-input::placeholder { color: #9ca3af; }
-/* 금액 — 이름과 단위를 칸 안에 같이 세운다.
-   테두리는 칸(이 span)이 가진다. 예전에는 안쪽 input 이 테두리를 가지고
-   있었는데, 줄 높이에 눌려 아래쪽 선이 잘려 칸이 뚫려 보였다. */
-.adp-agency-money {
+/* 금액 — '입금가 [ ] ~ [ ] 억'. 이름·물결·단위는 칸 바깥의 글자다 */
+.adp-agency-line.money { gap: 8px; }
+.adp-agency-range {
+  flex: 1 1 0; min-width: 0;
   display: flex; align-items: center; gap: 3px;
-  box-sizing: border-box; height: 26px; width: 100%;
-  border: 1px solid #e3e8f0; border-radius: 6px; background: #fff;
-  padding: 0 6px; overflow: hidden;
 }
-.adp-agency-money:focus-within { border-color: #2b6df3; }
-.adp-agency-money .lab {
-  flex: 0 0 auto; font-style: normal; font-size: 10.5px; font-weight: 700;
+.adp-agency-range .lab {
+  flex: 0 0 auto; font-style: normal; font-size: 11px; font-weight: 700;
   color: #6b7280; white-space: nowrap;
 }
-.adp-agency-money .unit {
-  flex: 0 0 auto; font-style: normal; font-size: 10.5px; font-weight: 700; color: #6b7280;
+.adp-agency-range .sep,
+.adp-agency-range .unit {
+  flex: 0 0 auto; font-style: normal; font-size: 10.5px; font-weight: 700; color: #9ca3af;
 }
-.adp-agency-money input.money {
-  flex: 1 1 auto; min-width: 0; width: 100%;
-  border: none; outline: none; background: transparent; padding: 0;
-  font-family: inherit; font-size: 11.5px; font-weight: 700; color: #111827; text-align: right;
+.adp-agency-range input.rng {
+  flex: 1 1 0; min-width: 0; box-sizing: border-box; height: 26px;
+  border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; padding: 2px 4px;
+  font-family: inherit; font-size: 11.5px; font-weight: 700; color: #111827; text-align: center;
 }
-.adp-agency-money input.money::placeholder { color: #cbd5e1; font-weight: 400; }
-/* 보기 모드도 같은 차례로 — 이름, 금액 */
-.adp-agency-fld > span.money-txt {
-  display: flex; align-items: center; justify-content: flex-end; gap: 4px;
+.adp-agency-range input.rng:focus { outline: none; border-color: #2b6df3; }
+.adp-agency-range .val {
+  flex: 1 1 auto; min-width: 0; text-align: right;
+  font-size: 13px; font-weight: 800; color: #111827;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.adp-agency-fld > span.money-txt .lab {
-  font-style: normal; font-size: 10.5px; font-weight: 700; color: #6b7280;
-}
+
 
 .adp-agency-multi { position: relative; }
 .adp-agency-trigger {
