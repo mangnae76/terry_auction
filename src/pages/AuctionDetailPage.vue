@@ -2713,19 +2713,19 @@ const setFieldMoneyText = (id: string, el: HTMLInputElement) => {
 const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
   {
     title: '② 탐문 (윗집, 옆집, 아래집, 동대표 중)',
+    // 현장에서 보고 묻는 차례 그대로 세운다 — 집에 들어가기 전 밖에서 확인하는
+    // 실외기·계량기가 먼저, 건물을 돌며 보는 것, 그다음 사람에게 묻는 것.
     items: [
-      {
-        id: 'fs.roofLeak', label: '누수', options: ['O', 'X'], note: true,
-        who: { id: 'fs.roofLeakWho', options: ['동대표', '입주민'] },
-      },
-      // 먼저 눈으로 보는 것 — 건물을 한 바퀴 돌며 채운다.
-      // O/X 만으로는 무엇을 봤는지 남지 않아 줄마다 비고를 둔다
+      { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'], note: true },
+      // 계량기는 금액과 함께 적는다 (예전 ③ 우편물·공과금에 있던 줄들)
+      { id: 'fs.mailPower', label: '전기 사용', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액 및 기타 입력', money: true } },
+      { id: 'fs.mailWater', label: '수도 사용', options: ['O', 'X'], extra: { id: 'fs.mailWaterAmt', placeholder: '금액 및 기타 입력', money: true } },
+      { id: 'fs.mailGas', label: '가스 사용', options: ['O', 'X'], extra: { id: 'fs.mailGasAmt', placeholder: '금액 및 기타 입력', money: true } },
+      // 건물을 한 바퀴 돌며 보는 것 — O/X 만으로는 무엇을 봤는지 안 남아 비고를 둔다
       { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], note: true },
       { id: 'fs.parkList', label: '주차장 관리', options: ['O', 'X'], note: true },
-      { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'], note: true },
       { id: 'fs.bikeKeep', label: '자전거 보관', options: ['상', '중', '하'], note: true },
-      // 그다음 사람에게 묻는 것 — 연락처가 따라붙는 줄들
-      // (미납관리비는 ③ 우편물·공과금으로 옮겼다 — 금액과 같이 봐야 하는 값이다)
+      // 사람에게 묻는 것 — 연락처가 따라붙는 줄들
       {
         id: 'fs.cleanCo', label: '청소업체', options: ['O', 'X'],
         extra: { id: 'fs.cleanPhone', placeholder: '업체명 / 연락처 입력' },
@@ -2733,6 +2733,10 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
       {
         id: 'fs.tenantContact', label: '임차인 탐문', options: ['동대표', '차확인'],
         extra: { id: 'fs.tenantPhone', placeholder: '연락처입력' },
+      },
+      {
+        id: 'fs.roofLeak', label: '누수', options: ['O', 'X'], note: true,
+        who: { id: 'fs.roofLeakWho', options: ['동대표', '입주민'] },
       },
       { id: 'fs.doorCode', label: '출입문비번', text: true, placeholder: '비밀번호입력' },
       { id: 'fs.entryCode', label: '현관비번', text: true, placeholder: '비밀번호입력' },
@@ -2743,10 +2747,6 @@ const FIELD_SECTIONS: Array<{ title: string; items: FieldRow[] }> = [
     items: [
       // 미납관리비는 'O/X' 가 아니라 '누구한테 들었나' 가 남아야 한다
       { id: 'fs.mailMaint', label: '미납관리비', options: ['동대표'], extra: { id: 'fs.mailMaintAmt', placeholder: '금액 및 기타 입력', money: true } },
-      // 셋을 한 줄에 묶어 두니 어느 것이 밀렸는지 적을 수가 없었다 — 줄을 나눈다
-      { id: 'fs.mailPower', label: '전기 사용', options: ['O', 'X'], extra: { id: 'fs.mailPowerAmt', placeholder: '금액 및 기타 입력', money: true } },
-      { id: 'fs.mailWater', label: '수도 사용', options: ['O', 'X'], extra: { id: 'fs.mailWaterAmt', placeholder: '금액 및 기타 입력', money: true } },
-      { id: 'fs.mailGas', label: '가스 사용', options: ['O', 'X'], extra: { id: 'fs.mailGasAmt', placeholder: '금액 및 기타 입력', money: true } },
     ],
   },
   {
