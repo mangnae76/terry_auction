@@ -2163,6 +2163,18 @@ watch(
   },
 );
 
+/** 고정 줄에 세울 입찰가 — '1.05억'. 칸이 좁아 원 단위로는 셋이 못 선다 */
+const eokText = (n: number) => (n > 0 ? `${(Math.round(n / 1000000) / 100).toFixed(2)}억` : '-');
+/** 그 표로 건너뛴다. 고정 줄 아래에 표 머리가 서도록 그만큼 덜 내린다 */
+const goProfitTable = (si: number) => {
+  const el = document.getElementById(`profit-tbl-${si}`);
+  if (!el) return;
+  const head = document.querySelector('.adp-profit-sticky');
+  const offset = head ? head.getBoundingClientRect().bottom : 0;
+  const y = el.getBoundingClientRect().top + window.scrollY - offset - 6;
+  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+};
+
 const scSetAmountByPct = (sc: ProfitScenario, key: BidCostAmountKey, raw: string | number) => {
   const pct = typeof raw === 'number' ? raw : parseFloat(raw);
   if (!Number.isFinite(pct)) return;
@@ -5948,6 +5960,20 @@ const goBack = () => router.back();
             </span>
             </span>
           </div>
+          <!-- A·B·C 입찰가 — 표를 한참 내려 보다가도 다른 안이 얼마였는지 보여야 한다.
+               눌러서 그 표로 건너뛴다. 표가 늘면 옆으로 밀어 본다 -->
+          <div v-if="!isCollapsed('profit')" class="adp-profit-nav">
+            <button
+              v-for="(sc, si) in profitScenarios"
+              :key="`nav-${sc.label}`"
+              type="button"
+              class="adp-profit-chip"
+              @click="goProfitTable(si)"
+            >
+              <small><em>{{ sc.label.replace('안', '') }}</em>{{ formatPct(scBidPct(sc)) }}</small>
+              <strong>{{ eokText(scBid(sc)) }}</strong>
+            </button>
+          </div>
           </div>
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
           <template v-for="(sc, si) in profitScenarios" :key="sc.label">
@@ -5966,7 +5992,7 @@ const goBack = () => router.back();
               </svg>초기화
             </button>
           </div>
-          <table v-if="!isCollapsed('profit')" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0 }]">
+          <table v-if="!isCollapsed('profit')" :id="`profit-tbl-${si}`" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0 }]">
             <thead>
               <tr><th>구분</th><th>상세</th><th class="r">비중 (%)</th><th class="r">금액</th></tr>
             </thead>
@@ -9221,6 +9247,29 @@ const goBack = () => router.back();
   margin: 12px 0 4px; min-height: 24px;
 }
 .adp-profit-head-row .adp-pd-reset { margin-left: auto; }
+/* A·B·C 입찰가 줄 — 한 줄에 셋까지 서고, 더 늘면 옆으로 민다 */
+.adp-profit-nav {
+  display: flex; gap: 5px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  padding: 0 0 8px; margin-top: -4px;
+}
+.adp-profit-nav::-webkit-scrollbar { display: none; }
+.adp-profit-chip {
+  flex: 1 1 0; min-width: 0;
+  /* 낙찰 비중은 위에 작게, 입찰가는 아래에 크게 — 둘을 같이 봐야 견준다 */
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  box-sizing: border-box; padding: 3px 7px;
+  border: 1px solid #d7dce6; border-radius: 8px; background: #fff;
+  font-family: inherit; color: #111827; white-space: nowrap; cursor: pointer;
+}
+.adp-profit-chip small {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9.5px; font-weight: 700; color: #6b7280; line-height: 1.2;
+}
+.adp-profit-chip strong { font-size: 12px; font-weight: 800; line-height: 1.3; }
+.adp-profit-chip em {
+  font-style: normal; font-size: 10px; font-weight: 800; color: #2b6df3;
+}
+.adp-profit-chip:active { background: #eef4ff; }
 /* 표 이름 옆의 비고 — 어떤 셈인지 한 줄로 적어 둔다 */
 .adp-profit-note {
   flex: 1 1 auto; min-width: 0; box-sizing: border-box; height: 24px;
