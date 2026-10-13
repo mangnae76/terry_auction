@@ -100,12 +100,15 @@ const rows = computed<Row[]>(() => stats.value
   const units = m.units ?? 0;
   const listings = m.listings ?? 0;
   const monthly = s.count / Math.max(1, months.value);
+  // 회전율·소화율은 1년치로 환산한다 — 24개월을 받아도 뜻이 같아야
+  // 손품+현장의 등급 기준(연 거래량 ÷ 세대수)과 그대로 견줄 수 있다
+  const yearly = s.count / Math.max(1, months.value / 12);
   return {
     ...s,
     units,
     listings,
-    turnover: units > 0 ? (s.count / units) * 100 : 0,
-    absorb: listings > 0 ? (s.count / listings) * 100 : 0,
+    turnover: units > 0 ? (yearly / units) * 100 : 0,
+    absorb: listings > 0 ? (yearly / listings) * 100 : 0,
     burden: units > 0 ? (listings / units) * 100 : 0,
     clearMonths: monthly > 0 && listings > 0 ? listings / monthly : 0,
   };
@@ -275,7 +278,7 @@ const downloadCsv = () => {
         <label class="adm-f">
           <small>시 · 도</small>
           <select v-model="sido" class="adm-input narrow">
-            <option value="">선택</option>
+            <option value="">전국</option>
             <option v-for="g in REGION_GROUPS" :key="g.sido" :value="g.sido">{{ g.sido }}</option>
           </select>
         </label>
@@ -394,8 +397,8 @@ const downloadCsv = () => {
               <td class="n strong price"><span class="v">{{ won(r.avgPrice) }}</span></td>
               <td class="n area"><span class="v">{{ areaText(r.avgAreaM2) }}</span></td>
               <td class="n age"><span class="v">{{ ageText(r.avgBuildYear) }}</span></td>
-              <td class="n rate"><span class="v">{{ pct(r.turnover) }}</span></td>
-              <td class="n rate"><span class="v">{{ pct(r.absorb) }}</span></td>
+              <td class="n rate"><em class="pre">연</em><span class="v">{{ pct(r.turnover) }}</span></td>
+              <td class="n rate"><em class="pre">연</em><span class="v">{{ pct(r.absorb) }}</span></td>
               <td class="n rate"><span class="v">{{ pct(r.burden) }}</span></td>
               <td class="n clear">
                 <template v-if="r.clearMonths > 0">
@@ -410,7 +413,7 @@ const downloadCsv = () => {
       </div>
 
       <p v-if="rows.length > 0" class="adm-foot">
-        회전율 = 거래량 ÷ 세대수 &nbsp;·&nbsp; 소화율 = 거래량 ÷ 매물수 &nbsp;·&nbsp;
+        회전율 = 1년 거래량 ÷ 세대수 &nbsp;·&nbsp; 소화율 = 1년 거래량 ÷ 매물수 &nbsp;·&nbsp;
         부담율 = 매물수 ÷ 세대수 &nbsp;·&nbsp; 소진기간 = 매물수 ÷ 월평균 거래량.
         파란 칸(세대수·매물수)은 손으로 적습니다 — 적어 두면 다음에도 남습니다.
       </p>
@@ -516,7 +519,7 @@ const downloadCsv = () => {
 .adm-table td.in { background: #f7faff; padding: 6px 8px; }
 /* 총 거래량 — 연 | 월 두 값을 가운데 막대로 가른다 (손품+현장과 같은 꼴) */
 .adm-table td.deal { white-space: nowrap; letter-spacing: -0.3px; font-size: 11.5px; }
-.adm-table td.deal em.pre { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-right: 3px; }
+.adm-table td em.pre { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-right: 3px; }
 .adm-table td.deal em.bar { font-style: normal; font-weight: 400; color: #c3cbd8; margin: 0 4px; }
 /* 줄끼리 일의 자리를 맞춘다 — 정수부를 같은 폭으로 잡아 오른쪽에 붙이고,
    소수점 아래는 그 뒤로 흘린다 */
