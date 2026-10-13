@@ -489,7 +489,7 @@ const downloadCsv = () => {
                     @click="copyAddress(`${r.contractDate}-${r.name}-${i}`, addressOf(r))"
                   >
                     <svg v-if="copiedKey === `${r.contractDate}-${r.name}-${i}`" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-                    <svg v-else viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
+                    <svg v-else viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
                   </button>
                 </td>
               </tr>
@@ -607,8 +607,8 @@ const downloadCsv = () => {
 .adm-copy {
   vertical-align: middle; margin-left: 6px; padding: 0;
   width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
-  border: 1px solid #e3e8f0; border-radius: 6px; background: #fff;
-  color: #9ca3af; cursor: pointer; opacity: 0.55; transition: opacity 0.12s, color 0.12s;
+  border: 1px solid #d8dfea; border-radius: 6px; background: #fff;
+  color: #5b6474; cursor: pointer; opacity: 0.92; transition: opacity 0.12s, color 0.12s;
 }
 .adm-table tbody tr:hover .adm-copy { opacity: 1; }
 .adm-copy:hover { border-color: #b9cdf7; color: #2b6df3; }
