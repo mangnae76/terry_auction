@@ -2112,11 +2112,15 @@ type BidCostAmountKey =
   | 'evictionCost'
   | 'advertisingCost';
 
-/** 법무비/채권은 '입찰가의 0.5%' 가 기본이다. 그런데 담아 두는 값은 비중이 아니라
- *  금액이라, 입찰가를 고치면 금액은 그대로인 채 비중만 0.47%·0.53% 로 흘렀다.
- *  입찰가가 바뀌면 그때의 비중을 그대로 지키도록 금액을 다시 센다.
- *  (손으로 비중을 고쳐 둔 표는 그 비중을 지킨다 — 0.5 로 되돌리지 않는다) */
-const LEGAL_COST_DEFAULT_PCT = 0.5;
+/** 입찰가를 따라가는 비중 — 취득세 1.10%, 법무비 0.50%.
+ *  담아 두는 값은 비중이 아니라 금액이라, 입찰가를 고치면 금액은 그대로인 채
+ *  비중만 흘렀다(0.47%·0.53%). 비중이 기준이고 금액이 따라가야 맞다.
+ *  손으로 비중을 고쳐 둔 표는 그 비중을 지킨다 — 기본값으로 되돌리지 않는다.
+ *  대출은 뺐다 — 금액을 직접 적는 일이 많은 칸이다. */
+const BID_PCT_PINNED: Array<[BidCostAmountKey, number]> = [
+  ['acquisitionTaxAmount', 1.1],
+  ['legalCostAmount', 0.5],
+];
 watch(
   () => profitScenarios.value.map((sc) => scBid(sc)),
   (next, prev) => {
@@ -2124,20 +2128,22 @@ watch(
       const after = next[i] ?? 0;
       const before = prev?.[i] ?? 0;
       if (!(after > 0) || after === before || !sc.cost) return;
-      const amount = sc.cost.legalCostAmount ?? 0;
-      if (!(before > 0)) {
-        // 물건을 막 열었을 때다 — 앞 값이 없어 비중을 셀 수 없다.
-        // 적어 둔 금액이 있으면 그대로 두고, 비어 있을 때만 기본 비중으로 채운다.
-        if (amount > 0) return;
-        sc.cost.legalCostAmount = Math.round((after * LEGAL_COST_DEFAULT_PCT) / 100);
-        return;
-      }
-      const raw = amount > 0 ? (amount / before) * 100 : LEGAL_COST_DEFAULT_PCT;
-      // 화면에 보이는 자릿수(소수 둘째)로 끊어 쓴다 — 안 그러면 0.50039% 같은
-      // 어중간한 비중이 그대로 따라다닌다
-      const pct = Math.round(raw * 100) / 100;
-      const nextAmount = Math.round((after * pct) / 100);
-      if (sc.cost.legalCostAmount !== nextAmount) sc.cost.legalCostAmount = nextAmount;
+      BID_PCT_PINNED.forEach(([key, defaultPct]) => {
+        const amount = sc.cost[key] ?? 0;
+        if (!(before > 0)) {
+          // 물건을 막 열었을 때다 — 앞 값이 없어 비중을 셀 수 없다.
+          // 적어 둔 금액이 있으면 그대로 두고, 비어 있을 때만 기본 비중으로 채운다.
+          if (amount > 0) return;
+          sc.cost[key] = Math.round((after * defaultPct) / 100);
+          return;
+        }
+        // 화면에 보이는 자릿수(소수 둘째)로 끊어 쓴다 — 안 그러면 1.10039% 같은
+        // 어중간한 비중이 그대로 따라다닌다
+        const raw = amount > 0 ? (amount / before) * 100 : defaultPct;
+        const pct = Math.round(raw * 100) / 100;
+        const nextAmount = Math.round((after * pct) / 100);
+        if (sc.cost[key] !== nextAmount) sc.cost[key] = nextAmount;
+      });
     });
   },
 );
