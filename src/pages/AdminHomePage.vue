@@ -268,7 +268,12 @@ const openTool = (tool: Tool) => {
 .adm-card-txt strong em {
   font-style: normal; font-size: 11.5px; font-weight: 700; color: #9ca3af;
 }
-.adm-card-txt small { font-size: 12.5px; line-height: 1.55; color: #6b7280; word-break: keep-all; }
+/* 설명 줄 수가 달라 카드 키가 들쑥날쑥했다 — 두 줄 자리를 늘 잡아 두면
+   세 묶음의 둘째 카드가 같은 높이에서 시작한다 */
+.adm-card-txt small {
+  font-size: 12.5px; line-height: 1.55; color: #6b7280; word-break: keep-all;
+  min-height: calc(12.5px * 1.55 * 2);
+}
 .adm-card-go {
   flex: 0 0 auto; align-self: center;
   display: inline-flex; align-items: center; color: #c3c9d4;
