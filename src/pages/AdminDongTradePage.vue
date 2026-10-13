@@ -326,7 +326,7 @@ const listRows = computed(() => rowsExcept(''));
 
 // 값 목록 창
 const openCol = ref<ColKey | ''>('');
-const panelPos = ref({ left: 0, top: 0 });
+const panelPos = ref({ left: 0, top: 0, listMax: 420 });
 const panelDraft = ref<string[]>([]);
 const panelQuery = ref('');
 const panelOptions = computed(() => {
@@ -352,9 +352,13 @@ const openColPanel = (key: ColKey, ev: MouseEvent) => {
   const r = th?.getBoundingClientRect();
   if (r) {
     // 오른쪽 끝 칸은 창이 화면 밖으로 나가므로 안쪽으로 당긴다
+    // 값은 열다섯 줄쯤 보이게 — 창이 화면 밖으로 넘치면 그만큼 줄인다
+    const room = window.innerHeight - r.bottom - 150;
+    // 글 속에 붙여 둔다 — 화면을 굴리면 머리 칸과 함께 따라 움직인다
     panelPos.value = {
-      left: Math.round(Math.min(r.left, window.innerWidth - 248)),
-      top: Math.round(r.bottom + 4),
+      left: Math.round(Math.min(r.left, window.innerWidth - 248) + window.scrollX),
+      top: Math.round(r.bottom + 4 + window.scrollY),
+      listMax: Math.max(140, Math.min(420, room)),
     };
   }
   openCol.value = key;
@@ -638,7 +642,7 @@ const downloadCsv = () => {
           <button type="button" @click="panelAll">전체 선택</button>
           <button type="button" @click="panelNone">전체 해제</button>
         </div>
-        <div class="adm-flt-list">
+        <div class="adm-flt-list" :style="{ maxHeight: `${panelPos.listMax}px` }">
           <label v-for="t in panelShown" :key="t" class="adm-flt-item">
             <input type="checkbox" :checked="panelDraft.includes(t)" @change="togglePanelValue(t)" />
             <span>{{ t }}</span>
@@ -805,7 +809,7 @@ const downloadCsv = () => {
 /* 칸별 걸러내기 창 — body 로 옮겨 가므로 scoped 밖에 적는다 */
 .adm-flt-veil { position: fixed; inset: 0; z-index: 9998; background: transparent; }
 .adm-flt-panel {
-  position: fixed; z-index: 9999; width: 240px;
+  position: absolute; z-index: 9999; width: 240px;
   background: #fff; border: 1px solid #dfe5ef; border-radius: 12px;
   box-shadow: 0 14px 34px rgba(17, 24, 39, 0.16);
   padding: 10px; display: flex; flex-direction: column; gap: 8px;
@@ -827,7 +831,7 @@ const downloadCsv = () => {
   color: #4b5563; cursor: pointer;
 }
 .adm-flt-acts button:hover { border-color: #c7d7f8; color: #2b6df3; background: #fff; }
-.adm-flt-list { max-height: 240px; overflow: auto; display: flex; flex-direction: column; }
+.adm-flt-list { max-height: 420px; overflow: auto; display: flex; flex-direction: column; }
 .adm-flt-item {
   display: flex; align-items: center; gap: 7px; padding: 4px 4px;
   font-size: 12px; cursor: pointer; border-radius: 6px;
