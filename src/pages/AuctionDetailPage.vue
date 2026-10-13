@@ -2283,6 +2283,8 @@ const addProfitScenario = async () => {
     bidCost: JSON.parse(JSON.stringify(a.bidCost)) as BidCostAnalysis,
   });
   await store.saveAuction(a);
+  // 표가 길어 새 표가 화면 밖에 생기는 일이 많다 — 무엇이 늘었는지 알려 준다
+  flashToast(`${PROFIT_LABELS[a.bidScenarios.length] ?? `${a.bidScenarios.length + 1}안`}이 추가되었습니다.`, 'success');
 };
 /** 마지막 표를 지운다. A안은 지울 수 없다 */
 const removeProfitScenario = () => {
@@ -2294,8 +2296,10 @@ const removeProfitScenario = () => {
     okLabel: '지우기',
     skipKey: 'adp.skip.removeProfitTable',
     run: async () => {
+      const gone = PROFIT_LABELS[a.bidScenarios?.length ?? 0] ?? '마지막 표';
       a.bidScenarios?.pop();
       await store.saveAuction(a);
+      flashToast(`${gone}이 삭제되었습니다.`, 'success');
     },
   });
 };
