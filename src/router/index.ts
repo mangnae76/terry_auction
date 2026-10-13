@@ -133,6 +133,11 @@ const router = createRouter({
       name: 'admin-dong-trades',
       component: () => import('../pages/AdminDongTradePage.vue'),
     },
+    {
+      path: '/admin/case-trades',
+      name: 'admin-case-trades',
+      component: () => import('../pages/AdminCaseTradePage.vue'),
+    },
   ],
 });
 
