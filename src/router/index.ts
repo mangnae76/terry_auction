@@ -117,6 +117,12 @@ const router = createRouter({
       name: 'agencies',
       component: () => import('../pages/AgencyBookPage.vue'),
     },
+    {
+      // 관리자 도구 — 웹에서만 쓰는 화면이라 앱 메뉴에는 올리지 않는다
+      path: '/admin',
+      name: 'admin',
+      component: () => import('../pages/AdminHomePage.vue'),
+    },
   ],
 });
 

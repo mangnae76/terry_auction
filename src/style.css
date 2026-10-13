@@ -2178,8 +2178,9 @@ html.is-web {
 
      가두면 되레 나빠지는 화면은 빼 둔다 — 로그인·회원가입(.lp-shell/.sp-shell)은
      배경을 꽉 채우는 화면이고, 물건등록·수정 폼(.dv2)은 처음부터 모니터 폭에
-     맞춰 짠 화면이라 제 폭(1440px)을 그대로 쓰게 둔다. */
-  html.is-web .page-content > *:not(.lp-shell):not(.sp-shell):not(.dv2) {
+     맞춰 짠 화면이라 제 폭(1440px)을 그대로 쓰게 둔다.
+     관리자 도구(.adm-shell)는 웹에서만 쓰는 화면이라 가로를 꽉 쓴다. */
+  html.is-web .page-content > *:not(.lp-shell):not(.sp-shell):not(.dv2):not(.adm-shell) {
     max-width: var(--shell-w);
     margin-left: auto;
     margin-right: auto;
