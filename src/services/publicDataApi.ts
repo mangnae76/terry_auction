@@ -1399,3 +1399,108 @@ export const fetchDongTradeStats = async (params: {
     error: errSet.size > 0 ? Array.from(errSet).join(' / ') : undefined,
   };
 };
+
+// ===== 관리자 도구 · 실거래가 조건검색 분석 (해당 읍면동) =====
+
+export interface DongTradeDetailRow {
+  /** 'YYYY.MM.DD' */
+  contractDate: string;
+  /** 거를 때 쓰는 날짜 — 시간대 없는 그 날 0시 */
+  dealTime: number;
+  priceWon: number;
+  areaM2: number;
+  pyeong: number;
+  floor: string;
+  floorNum: number;
+  buildYear: number;
+  umdNm: string;
+  name: string;
+  jibun: string;
+  /** 정상거래 / 직거래 / 계약해제 — 세는 자리가 셋이라 한 칸에 담는다 */
+  kind: '정상거래' | '직거래' | '계약해제';
+}
+
+export interface DongTradeDetailResult {
+  rows: DongTradeDetailRow[];
+  /** 그 시군구에 거래가 있던 읍면동 이름 (가나다순) */
+  dongNames: string[];
+  periodFrom: string;
+  periodTo: string;
+  error?: string;
+}
+
+/** 시군구 하나의 거래를 줄 단위로 다 받아 온다.
+ *  거르기(기간·면적·연식)는 화면 쪽에서 한다 — 조건을 바꿀 때마다 다시
+ *  부르면 하루 한도만 깎아먹는다. 한 번 받아 두고 그 안에서 추린다. */
+export const fetchDongTradeDetails = async (params: {
+  lawdCd5: string;
+  propertyType: 'apt' | 'villa' | 'officetel';
+  months?: number;
+}): Promise<DongTradeDetailResult> => {
+  const months = Math.max(1, params.months ?? 12);
+  const dealYmds = recentDealYmds(months);
+  const since = windowStart(months);
+  const periodTo = dealYmds[0] ?? '';
+  const periodFrom = dealYmds[dealYmds.length - 1] ?? '';
+  const empty: DongTradeDetailResult = { rows: [], dongNames: [], periodFrom, periodTo };
+  if (!ENABLE_LIVE_API || !API_KEY) {
+    return { ...empty, error: 'API 키가 없어 실거래를 불러올 수 없습니다.' };
+  }
+  if (!/^\d{5}$/.test(params.lawdCd5)) {
+    return { ...empty, error: '시군구 코드(5자리)를 찾지 못했습니다.' };
+  }
+
+  const [path] = pathsForPropertyType(params.propertyType);
+  const settled = await inBatches(
+    dealYmds.map((dealYmd) => () => fetchMonthWithRetry(path, params.lawdCd5, dealYmd)),
+    5,
+  );
+  const errSet = new Set(settled.map((r) => r.error).filter((v): v is string => !!v));
+  const raw = settled.flatMap((r) => r.rows) as Record<string, unknown>[];
+
+  const num = (v: unknown) => Number(String(v ?? '').replace(/[^\d.]/g, ''));
+  const PYEONG = 3.305785;
+  const rows: DongTradeDetailRow[] = [];
+  const dongSet = new Set<string>();
+
+  raw.forEach((row) => {
+    const d = rowDealDate(row);
+    if (d && d < since) return;
+    const y = String(row.dealYear ?? row['년'] ?? '').padStart(4, '0');
+    const m = String(row.dealMonth ?? row['월'] ?? '').padStart(2, '0');
+    const dd = String(row.dealDay ?? row['일'] ?? '').padStart(2, '0');
+    const manWon = num(row.dealAmount ?? row['거래금액']);
+    const areaM2 = num(row.excluUseAr ?? row['전용면적']);
+    const floor = String(row.floor ?? row['층'] ?? '').trim();
+    const umdNm = normalizeDongName(String(row.umdNm ?? row['법정동'] ?? ''));
+    if (umdNm) dongSet.add(umdNm);
+    const isDirect = /직거래/.test(String(row.dealingGbn ?? row['거래유형'] ?? ''));
+    const isCancelled = String(row.cdealType ?? '').trim().toUpperCase() === 'O'
+      || String(row.cdealDay ?? row['해제사유발생일'] ?? '').replace(/[^\d]/g, '').length >= 6;
+    const buildYear = num(row.buildYear ?? row['건축년도']);
+    rows.push({
+      contractDate: y && m && dd ? `${y}.${m}.${dd}` : '',
+      dealTime: d ? d.getTime() : 0,
+      priceWon: Number.isFinite(manWon) && manWon > 0 ? manWon * 10_000 : 0,
+      areaM2: Number.isFinite(areaM2) ? areaM2 : 0,
+      pyeong: Number.isFinite(areaM2) && areaM2 > 0 ? areaM2 / PYEONG : 0,
+      floor,
+      floorNum: Number(floor.replace(/[^\d-]/g, '')) || 0,
+      buildYear: Number.isFinite(buildYear) && buildYear > 1800 ? buildYear : 0,
+      umdNm,
+      name: String(row.aptNm ?? row.offiNm ?? row.mhouseNm ?? row['아파트'] ?? '').trim(),
+      jibun: String(row.jibun ?? row['지번'] ?? '').trim(),
+      // 해제가 직거래보다 세다 — 해제된 계약은 거래유형과 상관없이 없던 거래다
+      kind: isCancelled ? '계약해제' : (isDirect ? '직거래' : '정상거래'),
+    });
+  });
+
+  rows.sort((a, b) => b.dealTime - a.dealTime);
+  return {
+    rows,
+    dongNames: Array.from(dongSet).sort((a, b) => a.localeCompare(b, 'ko')),
+    periodFrom,
+    periodTo,
+    error: errSet.size > 0 ? Array.from(errSet).join(' / ') : undefined,
+  };
+};

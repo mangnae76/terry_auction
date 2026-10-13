@@ -8,6 +8,11 @@ export interface UserPrefs {
   agencies?: Array<{ id: string; name: string; phone: string; rating?: string }>;
   // 관리자 도구 · 수요공급 분석에서 손으로 적는 세대수·매물수 (지역|종류|읍면동 열쇠)
   adminRegionManual?: Record<string, { units?: number; listings?: number }>;
+  // 관리자 도구 · 실거래 조건검색에서 저장해 둔 검색조건
+  adminDongFilter?: {
+    regionText?: string; kind?: string; dong?: string; periodMonths?: number;
+    areaMin?: string; areaMax?: string; yearMin?: string; yearMax?: string;
+  };
   // 임장경로 — 한 사용자당 가장 최근 작업 (작업 진행 중 다른 메뉴 갔다와도 복원)
   fieldTripDraft?: Record<string, unknown> | null;
   // 임장경로 즐겨찾기 출발/도착 주소

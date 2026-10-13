@@ -128,6 +128,11 @@ const router = createRouter({
       name: 'admin-region-demand',
       component: () => import('../pages/AdminRegionDemandPage.vue'),
     },
+    {
+      path: '/admin/dong-trades',
+      name: 'admin-dong-trades',
+      component: () => import('../pages/AdminDongTradePage.vue'),
+    },
   ],
 });
 
