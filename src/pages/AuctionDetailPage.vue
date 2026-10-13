@@ -2163,6 +2163,9 @@ watch(
   },
 );
 
+/** 고정 줄에 늘 세워 두는 칸 — A·B·C 셋. 아직 만들지 않은 안은 빈 칸으로 둔다.
+ *  D안은 만들 수는 있지만 여기 세우지 않는다 — 넷이 서면 한 줄을 넘는다. */
+const PROFIT_NAV_LABELS = ['A', 'B', 'C'];
 /** 고정 줄에 세울 입찰가 — '1.05억'. 칸이 좁아 원 단위로는 셋이 못 선다 */
 const eokText = (n: number) => (n > 0 ? `${(Math.round(n / 1000000) / 100).toFixed(2)}억` : '-');
 /** 그 표로 건너뛴다. 고정 줄 아래에 표 머리가 서도록 그만큼 덜 내린다 */
@@ -5964,14 +5967,15 @@ const goBack = () => router.back();
                눌러서 그 표로 건너뛴다. 표가 늘면 옆으로 밀어 본다 -->
           <div v-if="!isCollapsed('profit')" class="adp-profit-nav">
             <button
-              v-for="(sc, si) in profitScenarios"
-              :key="`nav-${sc.label}`"
+              v-for="(label, si) in PROFIT_NAV_LABELS"
+              :key="`nav-${label}`"
               type="button"
-              class="adp-profit-chip"
+              :class="['adp-profit-chip', { empty: !profitScenarios[si] }]"
+              :disabled="!profitScenarios[si]"
               @click="goProfitTable(si)"
             >
-              <small><em>{{ sc.label.replace('안', '') }}</em>{{ formatPct(scBidPct(sc)) }}</small>
-              <strong>{{ eokText(scBid(sc)) }}</strong>
+              <small><em>{{ label }}</em>{{ profitScenarios[si] ? formatPct(scBidPct(profitScenarios[si])) : '' }}</small>
+              <strong>{{ profitScenarios[si] ? eokText(scBid(profitScenarios[si])) : '-' }}</strong>
             </button>
           </div>
           </div>
@@ -9248,11 +9252,7 @@ const goBack = () => router.back();
 }
 .adp-profit-head-row .adp-pd-reset { margin-left: auto; }
 /* A·B·C 입찰가 줄 — 한 줄에 셋까지 서고, 더 늘면 옆으로 민다 */
-.adp-profit-nav {
-  display: flex; gap: 5px; overflow-x: auto; -webkit-overflow-scrolling: touch;
-  padding: 0 0 8px; margin-top: -4px;
-}
-.adp-profit-nav::-webkit-scrollbar { display: none; }
+.adp-profit-nav { display: flex; gap: 5px; padding: 0 0 8px; margin-top: -4px; }
 .adp-profit-chip {
   flex: 1 1 0; min-width: 0;
   /* 낙찰 비중은 위에 작게, 입찰가는 아래에 크게 — 둘을 같이 봐야 견준다 */
@@ -9270,6 +9270,11 @@ const goBack = () => router.back();
   font-style: normal; font-size: 10px; font-weight: 800; color: #2b6df3;
 }
 .adp-profit-chip:active { background: #eef4ff; }
+/* 아직 만들지 않은 안 — 자리는 지키되 흐리게 */
+.adp-profit-chip.empty {
+  border-style: dashed; color: #c3c9d4; background: #fcfcfd; cursor: default;
+}
+.adp-profit-chip.empty em { color: #c3c9d4; }
 /* 표 이름 옆의 비고 — 어떤 셈인지 한 줄로 적어 둔다 */
 .adp-profit-note {
   flex: 1 1 auto; min-width: 0; box-sizing: border-box; height: 24px;
