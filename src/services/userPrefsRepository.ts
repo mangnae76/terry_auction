@@ -6,6 +6,8 @@ import { firestore, firestoreDisabledReason } from './firebase';
 export interface UserPrefs {
   // 늘 도는 중개업소 — 상담표의 상호 드롭다운과 '중개업소 관리' 화면이 같이 쓴다
   agencies?: Array<{ id: string; name: string; phone: string; rating?: string }>;
+  // 관리자 도구 · 수요공급 분석에서 손으로 적는 세대수·매물수 (지역|종류|읍면동 열쇠)
+  adminRegionManual?: Record<string, { units?: number; listings?: number }>;
   // 임장경로 — 한 사용자당 가장 최근 작업 (작업 진행 중 다른 메뉴 갔다와도 복원)
   fieldTripDraft?: Record<string, unknown> | null;
   // 임장경로 즐겨찾기 출발/도착 주소

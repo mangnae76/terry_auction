@@ -1282,3 +1282,120 @@ export const fetchRawAptTrades = async (
   }
   return { trades, errors: Array.from(errSet) };
 };
+
+// ===== 관리자 도구 · 수요공급 분석(시군구) =====
+//
+// 국토부 실거래는 '시군구 + 달' 로 부르면 그 안의 읍면동이 한꺼번에 온다.
+// 그래서 12개월치 열두 번이면 시군구 전체의 읍면동별 거래량·평균가가 다 나온다.
+// 동마다 따로 부를 까닭이 없다.
+
+export interface DongTradeStat {
+  /** 법정동 이름 — 응답의 umdNm */
+  umdNm: string;
+  /** 센 거래 건수 (직거래·해제분 제외) */
+  count: number;
+  /** 거래금액 평균 (원) — 건수가 0이면 0 */
+  avgPrice: number;
+  /** 전용면적 평균 (㎡) */
+  avgAreaM2: number;
+  /** 평당가 평균 (원) */
+  avgUnitPrice: number;
+}
+
+export interface DongTradeStatsResult {
+  rows: DongTradeStat[];
+  /** 창의 끝 달 · 시작 달 (YYYYMM) */
+  periodFrom: string;
+  periodTo: string;
+  /** 센 거래 건수 합 */
+  totalCount: number;
+  /** 뺀 건수 — 직거래와 계약해제 */
+  excludedCount: number;
+  error?: string;
+}
+
+/** 시군구 하나의 읍면동별 거래량·평균가. months 는 기본 12개월 */
+export const fetchDongTradeStats = async (params: {
+  lawdCd5: string;
+  propertyType: 'apt' | 'villa' | 'officetel';
+  months?: number;
+}): Promise<DongTradeStatsResult> => {
+  const months = Math.max(1, params.months ?? 12);
+  const dealYmds = recentDealYmds(months);
+  const since = windowStart(months);
+  const periodTo = dealYmds[0] ?? '';
+  const periodFrom = dealYmds[dealYmds.length - 1] ?? '';
+  const empty: DongTradeStatsResult = {
+    rows: [], periodFrom, periodTo, totalCount: 0, excludedCount: 0,
+  };
+  if (!ENABLE_LIVE_API || !API_KEY) {
+    return { ...empty, error: 'API 키가 없어 실거래를 불러올 수 없습니다.' };
+  }
+  if (!/^\d{5}$/.test(params.lawdCd5)) {
+    return { ...empty, error: '시군구 코드(5자리)를 찾지 못했습니다.' };
+  }
+
+  const [path] = pathsForPropertyType(params.propertyType);
+  const settled = await inBatches(
+    dealYmds.map((dealYmd) => () => fetchMonthWithRetry(path, params.lawdCd5, dealYmd)),
+    5,
+  );
+  const errSet = new Set(settled.map((r) => r.error).filter((v): v is string => !!v));
+  const allRows = settled.flatMap((r) => r.rows).filter((row) => {
+    const d = rowDealDate(row as Record<string, unknown>);
+    return !d || d >= since;
+  });
+  if (allRows.length === 0) {
+    return { ...empty, error: errSet.size > 0 ? Array.from(errSet).join(' / ') : '그 기간에 거래가 없습니다.' };
+  }
+
+  // 손품+현장의 실거래 평균과 같은 규칙으로 걸러 낸다 —
+  // 직거래는 시세와 동떨어지고, 해제된 계약은 없던 거래다.
+  const isDirect = (row: Record<string, unknown>) =>
+    /직거래/.test(String(row.dealingGbn ?? row['거래유형'] ?? ''));
+  const isCancelled = (row: Record<string, unknown>) =>
+    String(row.cdealType ?? '').trim().toUpperCase() === 'O'
+    || String(row.cdealDay ?? row['해제사유발생일'] ?? '').replace(/[^\d]/g, '').length >= 6;
+
+  const num = (v: unknown) => Number(String(v ?? '').replace(/[^\d.]/g, ''));
+  type Acc = { count: number; sumPrice: number; sumArea: number; areaCount: number };
+  const byDong = new Map<string, Acc>();
+  let excluded = 0;
+
+  (allRows as Record<string, unknown>[]).forEach((row) => {
+    if (isDirect(row) || isCancelled(row)) { excluded += 1; return; }
+    const umdNm = normalizeDongName(String(row.umdNm ?? row['법정동'] ?? ''));
+    if (!umdNm) return;
+    const manWon = num(row.dealAmount ?? row['거래금액']);
+    const priceWon = Number.isFinite(manWon) && manWon > 0 ? manWon * 10_000 : 0;
+    const areaM2 = num(row.excluUseAr ?? row['전용면적']);
+    const acc = byDong.get(umdNm) ?? { count: 0, sumPrice: 0, sumArea: 0, areaCount: 0 };
+    acc.count += 1;
+    acc.sumPrice += priceWon;
+    if (Number.isFinite(areaM2) && areaM2 > 0) { acc.sumArea += areaM2; acc.areaCount += 1; }
+    byDong.set(umdNm, acc);
+  });
+
+  const PYEONG = 3.305785;
+  const rows: DongTradeStat[] = Array.from(byDong.entries()).map(([umdNm, a]) => {
+    const avgPrice = a.count > 0 ? Math.round(a.sumPrice / a.count) : 0;
+    const avgAreaM2 = a.areaCount > 0 ? a.sumArea / a.areaCount : 0;
+    const avgPyeong = avgAreaM2 / PYEONG;
+    return {
+      umdNm,
+      count: a.count,
+      avgPrice,
+      avgAreaM2: Math.round(avgAreaM2 * 100) / 100,
+      avgUnitPrice: avgPyeong > 0 ? Math.round(avgPrice / avgPyeong) : 0,
+    };
+  }).sort((x, y) => y.count - x.count);
+
+  return {
+    rows,
+    periodFrom,
+    periodTo,
+    totalCount: rows.reduce((s, r) => s + r.count, 0),
+    excludedCount: excluded,
+    error: errSet.size > 0 ? Array.from(errSet).join(' / ') : undefined,
+  };
+};

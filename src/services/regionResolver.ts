@@ -140,3 +140,49 @@ export const resolveRegionFromAddress = async (
   }
   return null;
 };
+
+/** 시군구 후보 — 이름만으로는 하나로 못 좁히는 때가 있다.
+ *  '인천광역시 서구' 는 서해구·검단구로 갈라져 더는 없고, 카카오는 둘 다 준다.
+ *  그때 첫 번째를 말없이 고르면 엉뚱한 구를 분석하게 되므로 골라 쓰게 한다. */
+export interface SigunguCandidate {
+  label: string;     // '인천 검단구'
+  sido: string;
+  sigungu: string;
+  lawdCd5: string;
+  bCode10: string;
+}
+
+export const searchSigungu = async (query: string): Promise<SigunguCandidate[]> => {
+  const key = normalizeQuery(query);
+  if (!key) return [];
+  const url = new URL(`${KAKAO_GEOCODE_BASE_URL}/v2/local/search/address.json`, window.location.origin);
+  url.searchParams.set('query', key);
+  url.searchParams.set('size', '20');
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), {
+      headers: KAKAO_REST_API_KEY && !import.meta.env.DEV
+        ? { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` }
+        : undefined,
+    });
+  } catch {
+    return [];
+  }
+  if (!response.ok) return [];
+  const json = (await response.json()) as { documents?: KakaoDoc[] };
+  const seen = new Set<string>();
+  const out: SigunguCandidate[] = [];
+  (json.documents ?? []).forEach((doc) => {
+    const addr = doc.address;
+    if (!addr) return;
+    const bCode10 = String(addr.b_code ?? '').replace(/[^\d]/g, '');
+    const lawdCd5 = bCode10.slice(0, 5);
+    if (lawdCd5.length < 5 || seen.has(lawdCd5)) return;
+    const sido = String(addr.region_1depth_name ?? '').trim();
+    const sigungu = String(addr.region_2depth_name ?? '').trim();
+    if (!sigungu) return;
+    seen.add(lawdCd5);
+    out.push({ label: `${sido} ${sigungu}`.trim(), sido, sigungu, lawdCd5, bCode10 });
+  });
+  return out;
+};

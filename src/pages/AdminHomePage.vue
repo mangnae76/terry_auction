@@ -27,8 +27,8 @@ const GROUPS: Group[] = [
       {
         title: '실거래 분석',
         sub: '시 · 군 · 구',
-        desc: '넓게 훑어 지역의 흐름을 본다. 기간과 면적을 바꿔 가며 평균을 낸다.',
-        path: '',
+        desc: '시군구 안의 읍면동을 한 줄씩 — 거래량·평균가와 수요공급 지표.',
+        path: '/admin/region-demand',
         icon: 'trade',
       },
       {

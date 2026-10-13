@@ -123,6 +123,11 @@ const router = createRouter({
       name: 'admin',
       component: () => import('../pages/AdminHomePage.vue'),
     },
+    {
+      path: '/admin/region-demand',
+      name: 'admin-region-demand',
+      component: () => import('../pages/AdminRegionDemandPage.vue'),
+    },
   ],
 });
 
