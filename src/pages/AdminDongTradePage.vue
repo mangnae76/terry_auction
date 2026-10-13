@@ -157,8 +157,9 @@ const load = async () => {
     dongNames.value = res.dongNames;
     period.value = { from: res.periodFrom, to: res.periodTo };
     loadedLabel.value = `${sido.value} ${d.label}`;
+    // 고르지 않았으면 고르지 않은 채로 둔다 — 첫 동을 멋대로 집으면
+    // 시군구 전체를 보려던 뜻이 꺾인다
     if (dong.value && !res.dongNames.includes(dong.value)) dong.value = '';
-    if (!dong.value) dong.value = res.dongNames[0] ?? '';
     if (res.error) notice.value = res.error;
     if (res.rows.length === 0 && !res.error) notice.value = '그 기간에 거래가 없습니다.';
   } catch (err) {
@@ -272,7 +273,7 @@ const listRows = computed(() => {
   const needle = q.replace(/\s+/g, '').toLowerCase();
   return filtered.value.filter((r) => [
     r.contractDate, String(r.priceWon), r.areaM2.toFixed(2), r.pyeong.toFixed(2),
-    String(r.buildYear), r.floor, r.umdNm, r.name, r.jibun,
+    String(r.buildYear), r.floor, r.umdNm, r.name, r.jibun, r.houseType,
   ].join('').replace(/\s+/g, '').toLowerCase().includes(needle));
 });
 
@@ -281,11 +282,33 @@ const ymd = (v: string) => (v.length === 6 ? `${v.slice(0, 4)}.${v.slice(4)}` : 
 const addressOf = (r: DongTradeDetailRow) =>
   [loadedLabel.value, r.umdNm, r.jibun, r.name].filter(Boolean).join(' ');
 
+/** 주소 복사 — 누른 줄만 잠깐 표시를 바꾼다 */
+const copiedKey = ref('');
+let copyTimer = 0;
+const copyAddress = async (key: string, text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // 권한이 없으면 옛 방식으로 — 보이지 않는 칸에 담아 복사한다
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.position = 'fixed';
+    el.style.opacity = '0';
+    document.body.appendChild(el);
+    el.select();
+    try { document.execCommand('copy'); } catch { /* 그래도 안 되면 그만 */ }
+    document.body.removeChild(el);
+  }
+  copiedKey.value = key;
+  window.clearTimeout(copyTimer);
+  copyTimer = window.setTimeout(() => { copiedKey.value = ''; }, 1400);
+};
+
 const downloadCsv = () => {
   if (listRows.value.length === 0) return;
-  const head = ['계약년월일', '거래금액', '전용㎡', '전용평', '건축연도', '건축년차', '층', '구분', '주소'];
+  const head = ['계약년월일', '거래금액', '유형', '전용㎡', '전용평', '건축연도', '건축년차', '층', '구분', '주소'];
   const body = listRows.value.map((r) => [
-    r.contractDate, r.priceWon, r.areaM2.toFixed(2), r.pyeong.toFixed(2),
+    r.contractDate, r.priceWon, r.houseType, r.areaM2.toFixed(2), r.pyeong.toFixed(2),
     r.buildYear || '', r.buildYear ? thisYear - r.buildYear + 1 : '', r.floor, r.kind, addressOf(r),
   ]);
   const esc = (v: unknown) => {
@@ -429,7 +452,10 @@ const downloadCsv = () => {
           <span class="tag ok">정상거래 {{ counts.정상거래 }}</span>
           <span class="tag">직거래 {{ counts.직거래 }}</span>
           <span class="tag">계약해제 {{ counts.계약해제 }}</span>
-          <input v-model="listQuery" class="adm-input search" placeholder="주소 · 금액 · 층 등으로 검색" />
+          <span class="adm-search">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
+            <input v-model="listQuery" class="adm-input search" placeholder="주소 · 금액 · 층 등으로 검색" />
+          </span>
         </div>
 
         <div class="adm-table-wrap">
@@ -443,14 +469,29 @@ const downloadCsv = () => {
             <tbody>
               <tr v-for="(r, i) in listRows.slice(0, 300)" :key="`${r.contractDate}-${r.name}-${i}`" :class="r.kind !== '정상거래' ? 'off' : ''">
                 <td>{{ r.contractDate }}</td>
-                <td class="n strong">{{ won(r.priceWon) }}</td>
+                <td class="n strong price">
+                  <span class="v">{{ won(r.priceWon) }}</span>
+                  <small v-if="r.houseType">{{ r.houseType }}</small>
+                </td>
                 <td class="n">{{ r.areaM2.toFixed(2) }} / {{ r.pyeong.toFixed(2) }}</td>
                 <td class="n">{{ r.buildYear || '-' }}</td>
                 <td class="n">{{ r.buildYear ? `${thisYear - r.buildYear + 1}년` : '-' }}</td>
-                <td class="n">{{ r.pyeong > 0 ? won(Math.round(r.priceWon / r.pyeong)) : '-' }}</td>
+                <td class="n unit"><span class="v">{{ r.pyeong > 0 ? won(Math.round(r.priceWon / r.pyeong)) : '-' }}</span></td>
                 <td class="n">{{ r.floor || '-' }}</td>
                 <td><span :class="['kind', r.kind === '정상거래' ? 'ok' : 'no']">{{ r.kind }}</span></td>
-                <td class="addr">{{ addressOf(r) }}</td>
+                <td class="addr">
+                  <span class="t">{{ addressOf(r) }}</span>
+                  <button
+                    type="button"
+                    class="adm-copy"
+                    :class="{ done: copiedKey === `${r.contractDate}-${r.name}-${i}` }"
+                    :aria-label="`주소 복사: ${addressOf(r)}`"
+                    @click="copyAddress(`${r.contractDate}-${r.name}-${i}`, addressOf(r))"
+                  >
+                    <svg v-if="copiedKey === `${r.contractDate}-${r.name}-${i}`" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                    <svg v-else viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -488,7 +529,9 @@ const downloadCsv = () => {
 .adm-input { width: 240px; box-sizing: border-box; height: 36px; border: 1px solid #dde3ee; border-radius: 9px; background: #fff; padding: 0 11px; font-family: inherit; font-size: 13.5px; color: #111827; }
 .adm-input.narrow { width: 160px; }
 .adm-input.tiny { width: 92px; }
-.adm-input.search { width: 280px; margin-left: auto; }
+.adm-search { position: relative; display: block; margin-left: auto; }
+.adm-search > svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none; }
+.adm-input.search { width: 280px; padding-left: 30px; }
 .adm-input:focus { outline: none; border-color: #2b6df3; }
 .adm-pair { display: inline-flex; align-items: center; gap: 6px; }
 .adm-pair em { font-style: normal; color: #9ca3af; }
@@ -559,6 +602,23 @@ const downloadCsv = () => {
 .adm-table td.n { font-variant-numeric: tabular-nums; }
 .adm-table td.n.strong { font-weight: 800; }
 .adm-table td.addr { text-align: left; color: #6b7280; }
+/* 주소 끝의 복사 단추 — 줄에 손을 얹었을 때만 또렷해진다 */
+.adm-table td.addr .t { vertical-align: middle; }
+.adm-copy {
+  vertical-align: middle; margin-left: 6px; padding: 0;
+  width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid #e3e8f0; border-radius: 6px; background: #fff;
+  color: #9ca3af; cursor: pointer; opacity: 0.55; transition: opacity 0.12s, color 0.12s;
+}
+.adm-table tbody tr:hover .adm-copy { opacity: 1; }
+.adm-copy:hover { border-color: #b9cdf7; color: #2b6df3; }
+.adm-copy.done { opacity: 1; border-color: #9ee0c6; color: #0f9d7a; }
+/* 거래금액 아래의 연립·다세대 */
+.adm-table td.price small { display: block; font-size: 10.5px; font-weight: 600; color: #6b7280; }
+/* 줄끼리 끝자리를 맞춘다 — 값을 같은 폭 상자에 담아 오른쪽에 붙인다 */
+.adm-table td .v { display: inline-block; text-align: right; }
+.adm-table td.price .v { min-width: 96px; }
+.adm-table td.unit .v { min-width: 74px; }
 .kind { font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
 .kind.ok { background: #e8f7f1; color: #0f9d7a; }
 .kind.no { background: #f3f4f6; color: #9ca3af; }

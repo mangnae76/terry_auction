@@ -1444,6 +1444,8 @@ export interface DongTradeDetailRow {
   jibun: string;
   /** 정상거래 / 직거래 / 계약해제 — 세는 자리가 셋이라 한 칸에 담는다 */
   kind: '정상거래' | '직거래' | '계약해제';
+  /** 연립 / 다세대 — 연립다세대 거래에만 온다 */
+  houseType: string;
 }
 
 export interface DongTradeDetailResult {
@@ -1518,6 +1520,7 @@ export const fetchDongTradeDetails = async (params: {
       jibun: String(row.jibun ?? row['지번'] ?? '').trim(),
       // 해제가 직거래보다 세다 — 해제된 계약은 거래유형과 상관없이 없던 거래다
       kind: isCancelled ? '계약해제' : (isDirect ? '직거래' : '정상거래'),
+      houseType: String(row.houseType ?? row['주택유형'] ?? '').trim(),
     });
   });
 
