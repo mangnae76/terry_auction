@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 수요공급 분석 (시군구) — 관리자 도구.
+// 실거래 분석 (시군구) — 관리자 도구. 첫 화면의 '실거래 분석' 카드가 여기로 온다.
 //
 // 시군구 하나를 고르면 그 안의 읍면동을 한 줄씩 늘어놓고, 읍면동마다
 // 거래량·평균가와 네 가지 지표를 본다.
@@ -192,7 +192,7 @@ const downloadCsv = () => {
       <div class="adm-top-in">
         <button type="button" class="adm-back" @click="router.push('/admin')">‹</button>
         <div class="adm-title">
-          <h1>수요공급 분석 <em>시 · 군 · 구</em></h1>
+          <h1>실거래 분석 <em>시 · 군 · 구</em></h1>
           <p>시군구를 고르면 그 안의 읍면동을 한 줄씩 늘어놓습니다.</p>
         </div>
         <button
