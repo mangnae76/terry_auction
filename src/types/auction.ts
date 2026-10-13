@@ -166,6 +166,8 @@ export interface BidCostAnalysis {
    *  (위의 incomeTaxRate 는 옛 화면이 쓰는 값이라 건드리지 않는다) */
   incomeTaxRateManual?: number;
   incomeTaxDeduct?: number;
+  /** 산정표에 붙이는 한 줄 메모 — 'A안: 보수적으로' 처럼 어떤 셈인지 적어 둔다 */
+  note?: string;
   loanAmount: number;
   acquisitionTaxAmount: number;
   legalCostAmount: number;

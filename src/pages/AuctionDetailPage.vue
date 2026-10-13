@@ -2112,6 +2112,36 @@ type BidCostAmountKey =
   | 'evictionCost'
   | 'advertisingCost';
 
+/** 법무비/채권은 '입찰가의 0.5%' 가 기본이다. 그런데 담아 두는 값은 비중이 아니라
+ *  금액이라, 입찰가를 고치면 금액은 그대로인 채 비중만 0.47%·0.53% 로 흘렀다.
+ *  입찰가가 바뀌면 그때의 비중을 그대로 지키도록 금액을 다시 센다.
+ *  (손으로 비중을 고쳐 둔 표는 그 비중을 지킨다 — 0.5 로 되돌리지 않는다) */
+const LEGAL_COST_DEFAULT_PCT = 0.5;
+watch(
+  () => profitScenarios.value.map((sc) => scBid(sc)),
+  (next, prev) => {
+    profitScenarios.value.forEach((sc, i) => {
+      const after = next[i] ?? 0;
+      const before = prev?.[i] ?? 0;
+      if (!(after > 0) || after === before || !sc.cost) return;
+      const amount = sc.cost.legalCostAmount ?? 0;
+      if (!(before > 0)) {
+        // 물건을 막 열었을 때다 — 앞 값이 없어 비중을 셀 수 없다.
+        // 적어 둔 금액이 있으면 그대로 두고, 비어 있을 때만 기본 비중으로 채운다.
+        if (amount > 0) return;
+        sc.cost.legalCostAmount = Math.round((after * LEGAL_COST_DEFAULT_PCT) / 100);
+        return;
+      }
+      const raw = amount > 0 ? (amount / before) * 100 : LEGAL_COST_DEFAULT_PCT;
+      // 화면에 보이는 자릿수(소수 둘째)로 끊어 쓴다 — 안 그러면 0.50039% 같은
+      // 어중간한 비중이 그대로 따라다닌다
+      const pct = Math.round(raw * 100) / 100;
+      const nextAmount = Math.round((after * pct) / 100);
+      if (sc.cost.legalCostAmount !== nextAmount) sc.cost.legalCostAmount = nextAmount;
+    });
+  },
+);
+
 const scSetAmountByPct = (sc: ProfitScenario, key: BidCostAmountKey, raw: string | number) => {
   const pct = typeof raw === 'number' ? raw : parseFloat(raw);
   if (!Number.isFinite(pct)) return;
@@ -5901,7 +5931,14 @@ const goBack = () => router.back();
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
           <template v-for="(sc, si) in profitScenarios" :key="sc.label">
           <div v-if="!isCollapsed('profit')" class="adp-profit-head-row">
-            <span v-if="profitScenarios.length > 1" class="adp-profit-label">{{ sc.label }}</span>
+            <!-- 표가 하나뿐이어도 'A안' 을 낸다 — 둘이 될 때 이름이 생기면 어느 쪽이
+                 먼저 적은 표인지 헷갈린다 -->
+            <span class="adp-profit-label">{{ sc.label }}</span>
+            <input
+              v-model="sc.cost.note"
+              class="adp-profit-note"
+              placeholder="비고"
+            />
             <button type="button" class="adp-pd-reset" title="이 표의 대출·취득세·법무비 비중을 기본값으로" @click.stop="resetScenarioRates(sc)">
               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" />
@@ -9163,6 +9200,14 @@ const goBack = () => router.back();
   margin: 12px 0 4px; min-height: 24px;
 }
 .adp-profit-head-row .adp-pd-reset { margin-left: auto; }
+/* 표 이름 옆의 비고 — 어떤 셈인지 한 줄로 적어 둔다 */
+.adp-profit-note {
+  flex: 1 1 auto; min-width: 0; box-sizing: border-box; height: 24px;
+  border: 1px solid #e3e8f0; border-radius: 6px; background: #fff;
+  padding: 2px 7px; font-family: inherit; font-size: 11.5px; color: #e0574a; font-weight: 400;
+}
+.adp-profit-note:focus { outline: none; border-color: #2b6df3; }
+.adp-profit-note::placeholder { color: #9ca3af; }
 /* 산정표가 둘 이상일 때만 붙는 이름(A안·B안) */
 .adp-profit-label { font-size: 12.5px; font-weight: 800; color: #1f3a72; }
 .adp-profit-table.alt { border-color: #d7def0; }
