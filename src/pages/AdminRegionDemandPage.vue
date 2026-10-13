@@ -11,7 +11,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
-import { searchSigungu, type SigunguCandidate } from '../services/regionResolver';
+import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
 import { fetchDongTradeStats, type DongTradeStat } from '../services/publicDataApi';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 
@@ -25,14 +25,31 @@ const KINDS: Array<{ key: Kind; label: string }> = [
 const router = useRouter();
 const auth = useAuthStore();
 
-const regionText = ref('인천광역시 서구');
+// 시도 → 시군구 → 읍면동 차례로 좁힌다.
+// 이름을 쳐서 찾던 방식은 '인천광역시 서구' 처럼 갈라진 구에서 엉뚱한 데를
+// 집었다. 표에서 고르면 그럴 일이 없다.
+const SIDO_PICK = '';
+const sido = ref<string>(SIDO_PICK);
+const districtCode = ref<string>('');   // 빈 값이면 '전체'
+const dongFilter = ref('');
 const kind = ref<Kind>('villa');
 const months = ref(12);
+
+const districts = computed<DistrictOption[]>(() => districtsOf(sido.value));
+/** 전체를 고르면 그 시도의 시군구를 다 돈다 — 몇 번 부르는지 미리 알려 준다 */
+const targets = computed<DistrictOption[]>(() => (
+  districtCode.value
+    ? districts.value.filter((d) => d.lawdCode === districtCode.value)
+    : districts.value
+));
+const callCount = computed(() => targets.value.length * months.value);
+watch(sido, () => { districtCode.value = ''; dongFilter.value = ''; });
 
 const loading = ref(false);
 const errorMsg = ref('');
 const notice = ref('');
-const stats = ref<DongTradeStat[]>([]);
+type StatRow = DongTradeStat & { sigungu: string };
+const stats = ref<StatRow[]>([]);
 const period = ref({ from: '', to: '' });
 const loadedLabel = ref('');
 const excluded = ref(0);
@@ -40,7 +57,8 @@ const excluded = ref(0);
 /** 손으로 적는 두 칸 — 읍면동 이름을 열쇠로 들고 있는다 */
 type Manual = { units?: number; listings?: number };
 const manual = ref<Record<string, Manual>>({});
-const manualKey = computed(() => `${loadedLabel.value}|${kind.value}`);
+// 열쇠에 시군구를 넣는다 — '중구'·'남구'처럼 동 이름이 시군구마다 겹치고,
+// 전체로 받든 한 곳만 받든 같은 자리를 가리켜야 한다
 
 // 적어 둔 세대수·매물수는 사용자별로 남긴다 — 매번 다시 적을 값이 아니다
 const prefsLoaded = ref(false);
@@ -62,22 +80,24 @@ const saveManualSoon = () => {
 onMounted(() => { void loadManual(); });
 watch(() => auth.uid, () => { void loadManual(); });
 
-const rowKey = (umdNm: string) => `${manualKey.value}|${umdNm}`;
-const manualOf = (umdNm: string): Manual => manual.value[rowKey(umdNm)] ?? {};
-const setManual = (umdNm: string, field: keyof Manual, raw: string) => {
+const rowKey = (sigungu: string, umdNm: string) => `${kind.value}|${sigungu}|${umdNm}`;
+const manualOf = (sigungu: string, umdNm: string): Manual => manual.value[rowKey(sigungu, umdNm)] ?? {};
+const setManual = (sigungu: string, umdNm: string, field: keyof Manual, raw: string) => {
   const n = Number(raw.replace(/[^\d]/g, ''));
-  const next = { ...manualOf(umdNm), [field]: Number.isFinite(n) && n > 0 ? n : undefined };
-  manual.value = { ...manual.value, [rowKey(umdNm)]: next };
+  const next = { ...manualOf(sigungu, umdNm), [field]: Number.isFinite(n) && n > 0 ? n : undefined };
+  manual.value = { ...manual.value, [rowKey(sigungu, umdNm)]: next };
   saveManualSoon();
 };
 
 /** 네 지표 — 손품+현장의 매매수요와 같은 식이다 */
-type Row = DongTradeStat & {
+type Row = StatRow & {
   units: number; listings: number;
   turnover: number; absorb: number; burden: number; clearMonths: number;
 };
-const rows = computed<Row[]>(() => stats.value.map((s) => {
-  const m = manualOf(s.umdNm);
+const rows = computed<Row[]>(() => stats.value
+  .filter((r) => !dongFilter.value || r.umdNm === dongFilter.value)
+  .map((s) => {
+  const m = manualOf(s.sigungu, s.umdNm);
   const units = m.units ?? 0;
   const listings = m.listings ?? 0;
   const monthly = s.count / Math.max(1, months.value);
@@ -92,7 +112,9 @@ const rows = computed<Row[]>(() => stats.value.map((s) => {
   };
 }));
 
-const totalCount = computed(() => stats.value.reduce((s, r) => s + r.count, 0));
+const dongOptions = computed(() => Array.from(new Set(stats.value.map((r) => r.umdNm)))
+  .sort((a, b) => a.localeCompare(b, 'ko')));
+const totalCount = computed(() => rows.value.reduce((s, r) => s + r.count, 0));
 
 const won = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
 const pct = (n: number) => (n > 0 ? `${n.toFixed(1)}%` : '-');
@@ -103,59 +125,48 @@ const months2 = (n: number) => {
 };
 const ymd = (v: string) => (v.length === 6 ? `${v.slice(0, 4)}.${v.slice(4)}` : v);
 
-/** 이름이 여럿에 걸리면 고르게 한다 — '인천광역시 서구' 는 서해구·검단구 둘이다 */
-const candidates = ref<SigunguCandidate[]>([]);
-const picked = ref<SigunguCandidate | null>(null);
-
-const runFor = async (region: SigunguCandidate) => {
-  loading.value = true;
-  try {
-    const res = await fetchDongTradeStats({
-      lawdCd5: region.lawdCd5,
-      propertyType: kind.value,
-      months: months.value,
-    });
-    stats.value = res.rows;
-    period.value = { from: res.periodFrom, to: res.periodTo };
-    excluded.value = res.excludedCount;
-    picked.value = region;
-    loadedLabel.value = region.label;
-    if (res.error) notice.value = res.error;
-    if (res.rows.length === 0 && !res.error) notice.value = '그 기간에 거래가 없습니다.';
-  } catch (err) {
-    errorMsg.value = err instanceof Error ? err.message : String(err);
-  } finally {
-    loading.value = false;
-  }
-};
+const progress = ref({ done: 0, total: 0 });
 
 const load = async () => {
-  if (loading.value) return;
+  if (loading.value || targets.value.length === 0) return;
   errorMsg.value = '';
   notice.value = '';
-  candidates.value = [];
   loading.value = true;
-  let found: SigunguCandidate[] = [];
+  progress.value = { done: 0, total: targets.value.length };
   try {
-    found = await searchSigungu(regionText.value);
+    const merged = new Map<string, DongTradeStat & { sigungu: string }>();
+    let excludedSum = 0;
+    const errs = new Set<string>();
+    let from = ''; let to = '';
+    // 시군구를 하나씩 — 한꺼번에 던지면 국토부가 막는다
+    for (const d of targets.value) {
+      const res = await fetchDongTradeStats({
+        lawdCd5: d.lawdCode,
+        propertyType: kind.value,
+        months: months.value,
+      });
+      from = res.periodFrom; to = res.periodTo;
+      excludedSum += res.excludedCount;
+      if (res.error) errs.add(res.error);
+      res.rows.forEach((r) => {
+        // 시군구가 달라도 동 이름은 겹친다 — 시군구를 붙여 열쇠로 쓴다
+        merged.set(`${d.label}|${r.umdNm}`, { ...r, sigungu: d.label });
+      });
+      progress.value = { done: progress.value.done + 1, total: targets.value.length };
+    }
+    stats.value = Array.from(merged.values()).sort((a, b) => b.count - a.count);
+    period.value = { from, to };
+    excluded.value = excludedSum;
+    loadedLabel.value = districtCode.value
+      ? `${sido.value} ${targets.value[0]?.label ?? ''}`.trim()
+      : `${sido.value} 전체`;
+    if (errs.size > 0) notice.value = Array.from(errs).join(' / ');
+    if (stats.value.length === 0 && errs.size === 0) notice.value = '그 기간에 거래가 없습니다.';
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : String(err);
   } finally {
     loading.value = false;
   }
-  if (found.length === 0) {
-    errorMsg.value = '그 지역을 찾지 못했습니다. “인천광역시 서구” 처럼 시·도와 시군구를 같이 적어 주세요.';
-    stats.value = [];
-    return;
-  }
-  if (found.length > 1) {
-    // 하나로 못 좁혔다 — 말없이 첫 번째를 고르면 엉뚱한 구를 분석하게 된다
-    candidates.value = found;
-    notice.value = '이름이 여럿에 걸립니다. 아래에서 고르세요.';
-    stats.value = [];
-    return;
-  }
-  await runFor(found[0]);
 };
 
 /** 엑셀에서 열 수 있게 — 쉼표가 든 값은 따옴표로 감싼다 */
@@ -163,7 +174,7 @@ const downloadCsv = () => {
   if (rows.value.length === 0) return;
   const head = ['시군구', '읍면동', '주소', '총세대수', '총매물수', '회전율(%)', '매물소화율(%)', '매물부담율(%)', '매물소진기간(개월)', `총거래량(${months.value}개월)`, '평균가', '평균전용(㎡)', '평균평당가'];
   const body = rows.value.map((r) => [
-    loadedLabel.value, r.umdNm, `${loadedLabel.value} ${r.umdNm}`,
+    r.sigungu, r.umdNm, `${r.sigungu} ${r.umdNm}`,
     r.units || '', r.listings || '',
     r.turnover ? r.turnover.toFixed(1) : '',
     r.absorb ? r.absorb.toFixed(1) : '',
@@ -207,13 +218,25 @@ const downloadCsv = () => {
     <div class="adm-body">
       <div class="adm-bar">
         <label class="adm-f">
-          <small>지역</small>
-          <input
-            v-model="regionText"
-            class="adm-input"
-            placeholder="인천광역시 서구"
-            @keydown.enter.prevent="load"
-          />
+          <small>시 · 도</small>
+          <select v-model="sido" class="adm-input narrow">
+            <option value="">선택</option>
+            <option v-for="g in REGION_GROUPS" :key="g.sido" :value="g.sido">{{ g.sido }}</option>
+          </select>
+        </label>
+        <label class="adm-f">
+          <small>시 · 군 · 구</small>
+          <select v-model="districtCode" class="adm-input narrow" :disabled="!sido">
+            <option value="">전체</option>
+            <option v-for="d in districts" :key="d.lawdCode" :value="d.lawdCode">{{ d.label }}</option>
+          </select>
+        </label>
+        <label v-if="stats.length > 0" class="adm-f">
+          <small>읍 · 면 · 동</small>
+          <select v-model="dongFilter" class="adm-input narrow">
+            <option value="">전체</option>
+            <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
+          </select>
         </label>
         <label class="adm-f">
           <small>종류</small>
@@ -239,27 +262,24 @@ const downloadCsv = () => {
             >{{ m }}개월</button>
           </div>
         </label>
-        <button type="button" class="adm-load" :disabled="loading" @click="load">
-          {{ loading ? '불러오는 중…' : '데이터 로드' }}
+        <button type="button" class="adm-load" :disabled="loading || !sido" @click="load">
+          <template v-if="loading && progress.total > 1">{{ progress.done }}/{{ progress.total }} 불러오는 중…</template>
+          <template v-else-if="loading">불러오는 중…</template>
+          <template v-else>데이터 로드</template>
         </button>
       </div>
+
+      <!-- 전체를 고르면 시군구마다 열두 번씩 부른다 — 하루 한도가 있으니 미리 알린다 -->
+      <p v-if="sido && !districtCode" class="adm-msg warn">
+        <b>{{ sido }} 전체</b> — 시군구 {{ districts.length }}곳을 차례로 받습니다
+        (국토부 호출 {{ callCount.toLocaleString('ko-KR') }}번). 한 곳만 보려면 시·군·구를 고르세요.
+      </p>
 
       <p v-if="errorMsg" class="adm-msg err">{{ errorMsg }}</p>
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
 
-      <div v-if="candidates.length > 1" class="adm-picks">
-        <button
-          v-for="c in candidates"
-          :key="c.lawdCd5"
-          type="button"
-          :class="['adm-pick', { on: picked?.lawdCd5 === c.lawdCd5 }]"
-          @click="candidates = []; notice = ''; runFor(c)"
-        >{{ c.label }}<small>{{ c.lawdCd5 }}</small></button>
-      </div>
-
       <div v-if="rows.length > 0" class="adm-sum">
         <strong>{{ loadedLabel }}</strong>
-        <span v-if="picked" class="code">{{ picked.lawdCd5 }}</span>
         <span>{{ ymd(period.from) }} ~ {{ ymd(period.to) }} 거래분</span>
         <span>읍면동 {{ rows.length }}곳</span>
         <span>거래 {{ totalCount.toLocaleString('ko-KR') }}건</span>
@@ -289,15 +309,15 @@ const downloadCsv = () => {
           </thead>
           <tbody>
             <tr v-for="r in rows" :key="r.umdNm">
-              <td class="nm">{{ r.umdNm }}</td>
-              <td class="addr">{{ loadedLabel }} {{ r.umdNm }}</td>
+              <td class="nm">{{ r.umdNm }}<em v-if="!districtCode">{{ r.sigungu }}</em></td>
+              <td class="addr">{{ r.sigungu }} {{ r.umdNm }}</td>
               <td class="in">
                 <input
                   class="adm-cell"
                   inputmode="numeric"
                   placeholder="입력"
                   :value="r.units || ''"
-                  @input="setManual(r.umdNm, 'units', ($event.target as HTMLInputElement).value)"
+                  @input="setManual(r.sigungu, r.umdNm, 'units', ($event.target as HTMLInputElement).value)"
                 />
               </td>
               <td class="in">
@@ -306,7 +326,7 @@ const downloadCsv = () => {
                   inputmode="numeric"
                   placeholder="입력"
                   :value="r.listings || ''"
-                  @input="setManual(r.umdNm, 'listings', ($event.target as HTMLInputElement).value)"
+                  @input="setManual(r.sigungu, r.umdNm, 'listings', ($event.target as HTMLInputElement).value)"
                 />
               </td>
               <td class="n">{{ pct(r.turnover) }}</td>
@@ -401,16 +421,6 @@ const downloadCsv = () => {
   font-size: 11px; font-weight: 700; color: #6b7280;
   background: #eef1f6; border-radius: 999px; padding: 2px 8px;
 }
-/* 이름이 여럿에 걸릴 때 고르는 줄 */
-.adm-picks { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 2px 0; }
-.adm-pick {
-  display: inline-flex; align-items: center; gap: 7px;
-  border: 1px solid #c7d7f8; background: #fff; border-radius: 10px;
-  padding: 9px 14px; font-family: inherit; font-size: 13px; font-weight: 700;
-  color: #1f3a72; cursor: pointer;
-}
-.adm-pick:hover { background: #eef4ff; }
-.adm-pick small { font-size: 10.5px; font-weight: 600; color: #9ca3af; }
 
 /* 표 */
 .adm-table-wrap { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; overflow: hidden; }

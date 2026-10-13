@@ -10,7 +10,7 @@ export interface UserPrefs {
   adminRegionManual?: Record<string, { units?: number; listings?: number }>;
   // 관리자 도구 · 실거래 조건검색에서 저장해 둔 검색조건
   adminDongFilter?: {
-    regionText?: string; kind?: string; dong?: string; periodMonths?: number;
+    sido?: string; districtCode?: string; kind?: string; dong?: string; periodMonths?: number;
     areaMin?: string; areaMax?: string; yearMin?: string; yearMax?: string;
   };
   // 임장경로 — 한 사용자당 가장 최근 작업 (작업 진행 중 다른 메뉴 갔다와도 복원)

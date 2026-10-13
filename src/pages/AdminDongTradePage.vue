@@ -6,7 +6,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
-import { searchSigungu, type SigunguCandidate } from '../services/regionResolver';
+import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
 import { fetchDongTradeDetails, type DongTradeDetailRow } from '../services/publicDataApi';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 
@@ -20,9 +20,18 @@ const KINDS: Array<{ key: Kind; label: string }> = [
 const router = useRouter();
 const auth = useAuthStore();
 
-const regionText = ref('인천광역시 서해구');
+// 시도 → 시군구 → 읍면동 차례로 좁힌다. 여기는 한 시군구씩만 받는다 —
+// 줄 단위로 다 들고 있어야 해서 시도 전체는 너무 무겁다.
+const sido = ref('');
+const districtCode = ref('');
 const kind = ref<Kind>('villa');
 const dong = ref('');
+
+const districts = computed<DistrictOption[]>(() => districtsOf(sido.value));
+const district = computed<DistrictOption | null>(
+  () => districts.value.find((d) => d.lawdCode === districtCode.value) ?? null,
+);
+watch(sido, () => { districtCode.value = ''; });
 
 const loading = ref(false);
 const errorMsg = ref('');
@@ -31,8 +40,6 @@ const all = ref<DongTradeDetailRow[]>([]);
 const dongNames = ref<string[]>([]);
 const period = ref({ from: '', to: '' });
 const loadedLabel = ref('');
-const candidates = ref<SigunguCandidate[]>([]);
-const picked = ref<SigunguCandidate | null>(null);
 
 // ===== 검색조건 =====
 const PERIODS = [1, 3, 6, 12];
@@ -73,7 +80,8 @@ const saveFilters = async () => {
   if (!auth.uid) { savedMsg.value = '로그인한 뒤에 저장됩니다.'; return; }
   await saveUserPrefs(auth.uid, {
     adminDongFilter: {
-      regionText: regionText.value,
+      sido: sido.value,
+      districtCode: districtCode.value,
       kind: kind.value,
       dong: dong.value,
       periodMonths: periodMonths.value,
@@ -91,7 +99,8 @@ onMounted(async () => {
   const prefs = await loadUserPrefs(auth.uid);
   const f = prefs?.adminDongFilter;
   if (f) {
-    regionText.value = f.regionText || regionText.value;
+    sido.value = f.sido || '';
+    districtCode.value = f.districtCode || '';
     kind.value = (f.kind as Kind) || kind.value;
     dong.value = f.dong || '';
     applyPeriod(f.periodMonths || 12);
@@ -102,19 +111,21 @@ onMounted(async () => {
 });
 
 // ===== 불러오기 =====
-const runFor = async (region: SigunguCandidate) => {
+const load = async () => {
+  const d = district.value;
+  if (loading.value || !d) return;
+  errorMsg.value = ''; notice.value = '';
   loading.value = true;
   try {
     const res = await fetchDongTradeDetails({
-      lawdCd5: region.lawdCd5,
+      lawdCd5: d.lawdCode,
       propertyType: kind.value,
       months: 12,
     });
     all.value = res.rows;
     dongNames.value = res.dongNames;
     period.value = { from: res.periodFrom, to: res.periodTo };
-    picked.value = region;
-    loadedLabel.value = region.label;
+    loadedLabel.value = `${sido.value} ${d.label}`;
     if (dong.value && !res.dongNames.includes(dong.value)) dong.value = '';
     if (!dong.value) dong.value = res.dongNames[0] ?? '';
     if (res.error) notice.value = res.error;
@@ -125,34 +136,8 @@ const runFor = async (region: SigunguCandidate) => {
     loading.value = false;
   }
 };
-
-const load = async () => {
-  if (loading.value) return;
-  errorMsg.value = ''; notice.value = ''; candidates.value = [];
-  loading.value = true;
-  let found: SigunguCandidate[] = [];
-  try {
-    found = await searchSigungu(regionText.value);
-  } catch (err) {
-    errorMsg.value = err instanceof Error ? err.message : String(err);
-  } finally {
-    loading.value = false;
-  }
-  if (found.length === 0) {
-    errorMsg.value = '그 지역을 찾지 못했습니다. “인천광역시 서해구” 처럼 시·도와 시군구를 같이 적어 주세요.';
-    all.value = [];
-    return;
-  }
-  if (found.length > 1) {
-    candidates.value = found;
-    notice.value = '이름이 여럿에 걸립니다. 아래에서 고르세요.';
-    all.value = [];
-    return;
-  }
-  await runFor(found[0]);
-};
 // 종류를 바꾸면 받아 둔 줄이 더는 맞지 않는다
-watch(kind, () => { if (picked.value) void runFor(picked.value); });
+watch(kind, () => { if (district.value) void load(); });
 
 // ===== 거르기 =====
 const toNum = (v: string) => {
@@ -303,8 +288,18 @@ const downloadCsv = () => {
       <!-- 지역 -->
       <div class="adm-bar">
         <label class="adm-f">
-          <small>시군구</small>
-          <input v-model="regionText" class="adm-input" placeholder="인천광역시 서해구" @keydown.enter.prevent="load" />
+          <small>시 · 도</small>
+          <select v-model="sido" class="adm-input narrow">
+            <option value="">선택</option>
+            <option v-for="g in REGION_GROUPS" :key="g.sido" :value="g.sido">{{ g.sido }}</option>
+          </select>
+        </label>
+        <label class="adm-f">
+          <small>시 · 군 · 구</small>
+          <select v-model="districtCode" class="adm-input narrow" :disabled="!sido">
+            <option value="">선택</option>
+            <option v-for="d in districts" :key="d.lawdCode" :value="d.lawdCode">{{ d.label }}</option>
+          </select>
         </label>
         <label class="adm-f">
           <small>종류</small>
@@ -319,7 +314,7 @@ const downloadCsv = () => {
             <option v-for="d in dongNames" :key="d" :value="d">{{ d }}</option>
           </select>
         </label>
-        <button type="button" class="adm-load" :disabled="loading" @click="load">
+        <button type="button" class="adm-load" :disabled="loading || !district" @click="load">
           {{ loading ? '불러오는 중…' : '데이터 로드' }}
         </button>
       </div>
@@ -327,16 +322,10 @@ const downloadCsv = () => {
       <p v-if="errorMsg" class="adm-msg err">{{ errorMsg }}</p>
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
 
-      <div v-if="candidates.length > 1" class="adm-picks">
-        <button v-for="c in candidates" :key="c.lawdCd5" type="button" class="adm-pick" @click="candidates = []; notice = ''; runFor(c)">
-          {{ c.label }}<small>{{ c.lawdCd5 }}</small>
-        </button>
-      </div>
-
       <template v-if="all.length > 0">
         <div class="adm-sum">
           <strong>{{ loadedLabel }} {{ dong || '전체' }}</strong>
-          <span v-if="picked" class="code">{{ picked.lawdCd5 }}</span>
+          <span v-if="district" class="code">{{ district.lawdCode }}</span>
           <span>{{ ymd(period.from) }} ~ {{ ymd(period.to) }} 받아 둠</span>
         </div>
 
@@ -479,10 +468,6 @@ const downloadCsv = () => {
 .adm-msg { margin: 14px 0 0; padding: 11px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600; }
 .adm-msg.err { background: #fef2f2; color: #b91c1c; }
 .adm-msg.warn { background: #fffbeb; color: #92400e; }
-.adm-picks { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 2px 0; }
-.adm-pick { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #c7d7f8; background: #fff; border-radius: 10px; padding: 9px 14px; font-family: inherit; font-size: 13px; font-weight: 700; color: #1f3a72; cursor: pointer; }
-.adm-pick:hover { background: #eef4ff; }
-.adm-pick small { font-size: 10.5px; font-weight: 600; color: #9ca3af; }
 
 .adm-sum { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 2px 12px; font-size: 12.5px; color: #6b7280; font-weight: 600; }
 .adm-sum strong { font-size: 14.5px; font-weight: 800; color: #111827; }
