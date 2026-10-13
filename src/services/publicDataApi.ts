@@ -1300,6 +1300,8 @@ export interface DongTradeStat {
   avgAreaM2: number;
   /** 평당가 평균 (원) */
   avgUnitPrice: number;
+  /** 그 동에서 뺀 건수 — 직거래와 계약해제 */
+  excludedCount: number;
 }
 
 export interface DongTradeStatsResult {
@@ -1358,26 +1360,40 @@ export const fetchDongTradeStats = async (params: {
     || String(row.cdealDay ?? row['해제사유발생일'] ?? '').replace(/[^\d]/g, '').length >= 6;
 
   const num = (v: unknown) => Number(String(v ?? '').replace(/[^\d.]/g, ''));
-  type Acc = { count: number; sumPrice: number; sumArea: number; areaCount: number };
+  type Acc = { count: number; sumPrice: number; sumArea: number; areaCount: number; excluded: number };
   const byDong = new Map<string, Acc>();
   let excluded = 0;
 
+  const accOf = (umdNm: string): Acc => {
+    const acc = byDong.get(umdNm) ?? {
+      count: 0, sumPrice: 0, sumArea: 0, areaCount: 0, excluded: 0,
+    };
+    byDong.set(umdNm, acc);
+    return acc;
+  };
+
   (allRows as Record<string, unknown>[]).forEach((row) => {
-    if (isDirect(row) || isCancelled(row)) { excluded += 1; return; }
     const umdNm = normalizeDongName(String(row.umdNm ?? row['법정동'] ?? ''));
+    // 뺀 건수도 동별로 센다 — 동을 좁혀 보면 그 동의 수가 나와야 한다
+    if (isDirect(row) || isCancelled(row)) {
+      excluded += 1;
+      if (umdNm) accOf(umdNm).excluded += 1;
+      return;
+    }
     if (!umdNm) return;
     const manWon = num(row.dealAmount ?? row['거래금액']);
     const priceWon = Number.isFinite(manWon) && manWon > 0 ? manWon * 10_000 : 0;
     const areaM2 = num(row.excluUseAr ?? row['전용면적']);
-    const acc = byDong.get(umdNm) ?? { count: 0, sumPrice: 0, sumArea: 0, areaCount: 0 };
+    const acc = accOf(umdNm);
     acc.count += 1;
     acc.sumPrice += priceWon;
     if (Number.isFinite(areaM2) && areaM2 > 0) { acc.sumArea += areaM2; acc.areaCount += 1; }
-    byDong.set(umdNm, acc);
   });
 
   const PYEONG = 3.305785;
-  const rows: DongTradeStat[] = Array.from(byDong.entries()).map(([umdNm, a]) => {
+  const rows: DongTradeStat[] = Array.from(byDong.entries())
+    .filter(([, a]) => a.count > 0)
+    .map(([umdNm, a]) => {
     const avgPrice = a.count > 0 ? Math.round(a.sumPrice / a.count) : 0;
     const avgAreaM2 = a.areaCount > 0 ? a.sumArea / a.areaCount : 0;
     const avgPyeong = avgAreaM2 / PYEONG;
@@ -1387,8 +1403,9 @@ export const fetchDongTradeStats = async (params: {
       avgPrice,
       avgAreaM2: Math.round(avgAreaM2 * 100) / 100,
       avgUnitPrice: avgPyeong > 0 ? Math.round(avgPrice / avgPyeong) : 0,
+      excludedCount: a.excluded,
     };
-  }).sort((x, y) => y.count - x.count);
+    }).sort((x, y) => y.count - x.count);
 
   return {
     rows,

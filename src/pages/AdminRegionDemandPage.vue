@@ -52,7 +52,6 @@ type StatRow = DongTradeStat & { sigungu: string };
 const stats = ref<StatRow[]>([]);
 const period = ref({ from: '', to: '' });
 const loadedLabel = ref('');
-const excluded = ref(0);
 
 /** 손으로 적는 두 칸 — 읍면동 이름을 열쇠로 들고 있는다 */
 type Manual = { units?: number; listings?: number };
@@ -115,6 +114,11 @@ const rows = computed<Row[]>(() => stats.value
 const dongOptions = computed(() => Array.from(new Set(stats.value.map((r) => r.umdNm)))
   .sort((a, b) => a.localeCompare(b, 'ko')));
 const totalCount = computed(() => rows.value.reduce((s, r) => s + r.count, 0));
+// 직거래·해제도 보고 있는 줄만큼만 센다 — 동을 좁히면 그 동의 수가 나온다
+const excludedShown = computed(() => rows.value.reduce((s, r) => s + (r.excludedCount ?? 0), 0));
+const sumLabel = computed(() => (
+  dongFilter.value ? `${loadedLabel.value} · ${dongFilter.value}` : loadedLabel.value
+));
 
 const won = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
 const pct = (n: number) => (n > 0 ? `${n.toFixed(1)}%` : '-');
@@ -135,7 +139,6 @@ const load = async () => {
   progress.value = { done: 0, total: targets.value.length };
   try {
     const merged = new Map<string, DongTradeStat & { sigungu: string }>();
-    let excludedSum = 0;
     const errs = new Set<string>();
     let from = ''; let to = '';
     // 시군구를 하나씩 — 한꺼번에 던지면 국토부가 막는다
@@ -146,7 +149,6 @@ const load = async () => {
         months: months.value,
       });
       from = res.periodFrom; to = res.periodTo;
-      excludedSum += res.excludedCount;
       if (res.error) errs.add(res.error);
       res.rows.forEach((r) => {
         // 시군구가 달라도 동 이름은 겹친다 — 시군구를 붙여 열쇠로 쓴다
@@ -154,9 +156,9 @@ const load = async () => {
       });
       progress.value = { done: progress.value.done + 1, total: targets.value.length };
     }
+    // 거래량 랭킹 — 시군구 전체를 받아도 거래 많은 동이 위로 온다
     stats.value = Array.from(merged.values()).sort((a, b) => b.count - a.count);
     period.value = { from, to };
-    excluded.value = excludedSum;
     loadedLabel.value = districtCode.value
       ? `${sido.value} ${targets.value[0]?.label ?? ''}`.trim()
       : `${sido.value} 전체`;
@@ -172,15 +174,16 @@ const load = async () => {
 /** 엑셀에서 열 수 있게 — 쉼표가 든 값은 따옴표로 감싼다 */
 const downloadCsv = () => {
   if (rows.value.length === 0) return;
-  const head = ['소속 구', '읍면동', '주소', '총세대수', '총매물수', '회전율(%)', '매물소화율(%)', '매물부담율(%)', '매물소진기간(개월)', `총거래량(${months.value}개월)`, '평균가', '평균전용(㎡)', '평균평당가'];
+  const head = ['소속 구', '읍면동', '총세대수', '총매물수', `총거래량(최근 ${months.value}개월)`, '평균가', '회전율(%)', '매물소화율(%)', '매물부담율(%)', '매물소진기간(개월)', '평균전용(㎡)', '평균평당가', '직거래·해제'];
   const body = rows.value.map((r) => [
-    r.sigungu, r.umdNm, `${sido.value} ${r.sigungu} (${r.umdNm})`,
+    r.sigungu, r.umdNm,
     r.units || '', r.listings || '',
+    r.count, r.avgPrice || '',
     r.turnover ? r.turnover.toFixed(1) : '',
     r.absorb ? r.absorb.toFixed(1) : '',
     r.burden ? r.burden.toFixed(1) : '',
     r.clearMonths ? Math.round(r.clearMonths) : '',
-    r.count, r.avgPrice || '', r.avgAreaM2 || '', r.avgUnitPrice || '',
+    r.avgAreaM2 || '', r.avgUnitPrice || '', r.excludedCount || '',
   ]);
   const esc = (v: unknown) => {
     const s = String(v ?? '');
@@ -279,40 +282,38 @@ const downloadCsv = () => {
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
 
       <div v-if="rows.length > 0" class="adm-sum">
-        <strong>{{ loadedLabel }}</strong>
+        <strong>{{ sumLabel }}</strong>
         <span>{{ ymd(period.from) }} ~ {{ ymd(period.to) }} 거래분</span>
         <span>읍면동 {{ rows.length }}곳</span>
         <span>거래 {{ totalCount.toLocaleString('ko-KR') }}건</span>
-        <span v-if="excluded > 0" class="dim">직거래·해제 {{ excluded.toLocaleString('ko-KR') }}건 제외</span>
+        <span v-if="excludedShown > 0" class="dim">직거래·해제 {{ excludedShown.toLocaleString('ko-KR') }}건 제외</span>
       </div>
 
       <div v-if="rows.length > 0" class="adm-table-wrap">
         <table class="adm-table">
           <thead>
             <tr class="grp">
-              <th colspan="3">주소지 정보</th>
+              <th colspan="2">주소지 정보</th>
               <th colspan="2" class="in">수치입력</th>
               <th colspan="6">지표결과</th>
             </tr>
             <tr>
               <th>소속 구</th>
               <th>읍면동</th>
-              <th>주소</th>
               <th class="in">총 세대수</th>
               <th class="in">총 매물수</th>
+              <th>총 거래량<small>(최근 {{ months }}개월)</small></th>
+              <th>평균가<small>(최근 {{ months }}개월)</small></th>
               <th>회전율<small>(%)</small></th>
               <th>매물 소화율<small>(%)</small></th>
               <th>매물 부담율<small>(%)</small></th>
               <th>매물 소진기간</th>
-              <th>총 거래량<small>({{ months }}개월)</small></th>
-              <th>평균가<small>(최근 {{ months }}개월)</small></th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="r in rows" :key="`${r.sigungu}|${r.umdNm}`">
               <td class="gu">{{ r.sigungu }}</td>
               <td class="nm">{{ r.umdNm }}</td>
-              <td class="addr">{{ sido }} {{ r.sigungu }} ({{ r.umdNm }})</td>
               <td class="in">
                 <input
                   class="adm-cell"
@@ -331,12 +332,12 @@ const downloadCsv = () => {
                   @input="setManual(r.sigungu, r.umdNm, 'listings', ($event.target as HTMLInputElement).value)"
                 />
               </td>
+              <td class="n strong">{{ r.count.toLocaleString('ko-KR') }}</td>
+              <td class="n strong">{{ won(r.avgPrice) }}</td>
               <td class="n">{{ pct(r.turnover) }}</td>
               <td class="n">{{ pct(r.absorb) }}</td>
               <td class="n">{{ pct(r.burden) }}</td>
               <td class="n">{{ months2(r.clearMonths) }}</td>
-              <td class="n strong">{{ r.count.toLocaleString('ko-KR') }}</td>
-              <td class="n strong">{{ won(r.avgPrice) }}</td>
             </tr>
           </tbody>
         </table>
@@ -442,7 +443,6 @@ const downloadCsv = () => {
 .adm-table tbody tr:hover td { background: #fafbfe; }
 .adm-table td.gu { font-weight: 700; color: #374151; white-space: nowrap; }
 .adm-table td.nm { font-weight: 800; white-space: nowrap; }
-.adm-table td.addr { text-align: left; color: #6b7280; }
 .adm-table td.n { font-variant-numeric: tabular-nums; }
 .adm-table td.n.strong { font-weight: 800; }
 .adm-table td.in { background: #f7faff; padding: 6px 8px; }
