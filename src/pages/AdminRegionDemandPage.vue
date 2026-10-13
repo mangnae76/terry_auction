@@ -111,8 +111,34 @@ const rows = computed<Row[]>(() => stats.value
   };
 }));
 
-const dongOptions = computed(() => Array.from(new Set(stats.value.map((r) => r.umdNm)))
-  .sort((a, b) => a.localeCompare(b, 'ko')));
+// 읍면동 목록 — 표를 받기 전에도 고를 수 있어야 한다.
+// 시군구를 고르면 최근 석 달치를 먼저 받아 동 이름을 채운다 (국토부 호출 3번).
+// 한 번 받은 시군구는 들고 있다가 다시 고르면 그대로 쓴다.
+const dongPeek = ref<Record<string, string[]>>({});
+const dongPeeking = ref(false);
+const peekKey = computed(() => (districtCode.value ? `${districtCode.value}|${kind.value}` : ''));
+const peekDongs = async () => {
+  const key = peekKey.value;
+  if (!key || dongPeek.value[key]) return;
+  dongPeeking.value = true;
+  try {
+    const res = await fetchDongTradeStats({
+      lawdCd5: districtCode.value, propertyType: kind.value, months: 3,
+    });
+    dongPeek.value = { ...dongPeek.value, [key]: res.rows.map((r) => r.umdNm) };
+  } catch {
+    // 못 받아도 그만 — 표를 받고 나면 그때 목록이 찬다
+  } finally {
+    dongPeeking.value = false;
+  }
+};
+watch([districtCode, kind], () => { dongFilter.value = ''; peekDongs(); });
+
+const dongOptions = computed(() => {
+  const loaded = stats.value.map((r) => r.umdNm);
+  const peeked = dongPeek.value[peekKey.value] ?? [];
+  return Array.from(new Set([...loaded, ...peeked])).sort((a, b) => a.localeCompare(b, 'ko'));
+});
 const totalCount = computed(() => rows.value.reduce((s, r) => s + r.count, 0));
 // 직거래·해제도 보고 있는 줄만큼만 센다 — 동을 좁히면 그 동의 수가 나온다
 const excludedShown = computed(() => rows.value.reduce((s, r) => s + (r.excludedCount ?? 0), 0));
@@ -138,7 +164,7 @@ const cntText = (n: number) => {
   const t = Math.round(n * 10) / 10;
   return Number.isInteger(t) ? String(t) : t.toFixed(1);
 };
-/** 소진기간 — 위에 달 수, 아래에 해로 환산한 값 (손품+현장과 같은 규칙) */
+/** 소진기간 — 위에 달 수, 아래에 해로 환산한 값 ('102' / '8년 6개월') */
 const clearHead = (n: number) => (n > 0 ? String(Math.round(n)) : '');
 const clearSub = (n: number) => {
   if (!(n > 0)) return '';
@@ -146,7 +172,7 @@ const clearSub = (n: number) => {
   let rest = Math.round(n) - years * 12;
   if (rest === 12) { years += 1; rest = 0; }
   if (years < 1) return '';
-  return rest > 0 ? `${years}Y ${rest}M` : `${years}Y`;
+  return rest > 0 ? `${years}년 ${rest}개월` : `${years}년`;
 };
 const ymd = (v: string) => (v.length === 6 ? `${v.slice(0, 4)}.${v.slice(4)}` : v);
 
@@ -255,10 +281,10 @@ const downloadCsv = () => {
             <option v-for="d in districts" :key="d.lawdCode" :value="d.lawdCode">{{ d.label }}</option>
           </select>
         </label>
-        <label v-if="stats.length > 0" class="adm-f">
+        <label class="adm-f">
           <small>읍 · 면 · 동</small>
-          <select v-model="dongFilter" class="adm-input narrow">
-            <option value="">전체</option>
+          <select v-model="dongFilter" class="adm-input narrow" :disabled="dongOptions.length === 0">
+            <option value="">{{ dongPeeking ? '불러오는 중…' : '전체' }}</option>
             <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
           </select>
         </label>
@@ -330,7 +356,7 @@ const downloadCsv = () => {
               <th>회전율<small>(%)</small></th>
               <th>매물 소화율<small>(%)</small></th>
               <th>매물 부담율<small>(%)</small></th>
-              <th>매물 소진기간</th>
+              <th>매물 소진기간<small>(개월)</small></th>
             </tr>
           </thead>
           <tbody>
@@ -368,7 +394,7 @@ const downloadCsv = () => {
               <td class="n">{{ pct(r.burden) }}</td>
               <td class="n clear">
                 <template v-if="r.clearMonths > 0">
-                  <span class="v">{{ clearHead(r.clearMonths) }}<em>M</em></span>
+                  <span class="v">{{ clearHead(r.clearMonths) }}</span>
                   <small v-if="clearSub(r.clearMonths)">{{ clearSub(r.clearMonths) }}</small>
                 </template>
                 <template v-else>-</template>
