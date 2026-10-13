@@ -263,7 +263,9 @@ const downloadCsv = () => {
   <section class="adm-shell">
     <header class="adm-top">
       <div class="adm-top-in">
-        <button type="button" class="adm-back" @click="router.push('/admin')">‹</button>
+        <button type="button" class="adm-back" aria-label="뒤로" @click="router.push('/admin')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg>
+        </button>
         <div class="adm-title">
           <h1>실거래 분석 <em>지역 단위</em></h1>
           <p>지역 세부 단위(읍면동)의 거래량·평균가와 수요공급 지표.</p>
@@ -425,9 +427,9 @@ const downloadCsv = () => {
 .adm-top-in { max-width: 1680px; margin: 0 auto; padding: 12px 28px; display: flex; align-items: center; gap: 14px; }
 .adm-back {
   border: 1px solid #dde3ee; background: #fff; border-radius: 9px;
-  width: 32px; height: 32px; padding: 0 2px 2px 0;
+  width: 32px; height: 32px; padding: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 19px; line-height: 1; color: #374151; cursor: pointer;
+  line-height: 0; color: #374151; cursor: pointer;
 }
 .adm-back:hover { border-color: #b9cdf7; color: #2b6df3; }
 .adm-title h1 {

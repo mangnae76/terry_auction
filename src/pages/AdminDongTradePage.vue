@@ -329,7 +329,9 @@ const downloadCsv = () => {
   <section class="adm-shell">
     <header class="adm-top">
       <div class="adm-top-in">
-        <button type="button" class="adm-back" @click="router.push('/admin')">‹</button>
+        <button type="button" class="adm-back" aria-label="뒤로" @click="router.push('/admin')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg>
+        </button>
         <div class="adm-title">
           <h1>실거래가 조건 분석 <em>해당 읍 · 면 · 동</em></h1>
           <p>동까지 좁히고 연식·층·면적으로 걸러 비교할 만한 거래만 남깁니다.</p>
@@ -469,11 +471,11 @@ const downloadCsv = () => {
             <tbody>
               <tr v-for="(r, i) in listRows.slice(0, 300)" :key="`${r.contractDate}-${r.name}-${i}`" :class="r.kind !== '정상거래' ? 'off' : ''">
                 <td>{{ r.contractDate }}</td>
-                <td class="n strong price">
-                  <span class="v">{{ won(r.priceWon) }}</span>
+                <td class="n strong price"><span class="v">{{ won(r.priceWon) }}</span></td>
+                <td class="n area">
+                  <span class="v">{{ r.areaM2.toFixed(2) }} / {{ r.pyeong.toFixed(2) }}</span>
                   <small v-if="r.houseType">{{ r.houseType }}</small>
                 </td>
-                <td class="n">{{ r.areaM2.toFixed(2) }} / {{ r.pyeong.toFixed(2) }}</td>
                 <td class="n">{{ r.buildYear || '-' }}</td>
                 <td class="n age"><span class="v">{{ r.buildYear ? `${thisYear - r.buildYear + 1}년` : '-' }}</span></td>
                 <td class="n unit"><span class="v">{{ r.pyeong > 0 ? won(Math.round(r.priceWon / r.pyeong)) : '-' }}</span></td>
@@ -509,9 +511,9 @@ const downloadCsv = () => {
 .adm-top-in { max-width: 1680px; margin: 0 auto; padding: 12px 28px; display: flex; align-items: center; gap: 14px; }
 .adm-back {
   border: 1px solid #dde3ee; background: #fff; border-radius: 9px;
-  width: 32px; height: 32px; padding: 0 2px 2px 0;
+  width: 32px; height: 32px; padding: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 19px; line-height: 1; color: #374151; cursor: pointer;
+  line-height: 0; color: #374151; cursor: pointer;
 }
 .adm-back:hover { border-color: #b9cdf7; color: #2b6df3; }
 .adm-title h1 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.3px; display: flex; align-items: baseline; gap: 7px; }
@@ -613,8 +615,8 @@ const downloadCsv = () => {
 .adm-table tbody tr:hover .adm-copy { opacity: 1; }
 .adm-copy:hover { border-color: #b9cdf7; color: #2b6df3; }
 .adm-copy.done { opacity: 1; border-color: #9ee0c6; color: #0f9d7a; }
-/* 거래금액 아래의 연립·다세대 */
-.adm-table td.price small { display: block; font-size: 10.5px; font-weight: 600; color: #6b7280; }
+/* 전용면적 아래의 연립·다세대 */
+.adm-table td.area small { display: block; font-size: 10.5px; font-weight: 600; color: #6b7280; }
 /* 줄끼리 끝자리를 맞춘다 — 값을 같은 폭 상자에 담아 오른쪽에 붙인다 */
 .adm-table td .v { display: inline-block; text-align: right; }
 .adm-table td.price .v { min-width: 96px; }
