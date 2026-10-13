@@ -1302,6 +1302,8 @@ export interface DongTradeStat {
   avgUnitPrice: number;
   /** 그 동에서 뺀 건수 — 직거래와 계약해제 */
   excludedCount: number;
+  /** 건축연도 평균 — 연식을 가늠한다. 연도가 안 온 건은 뺀다 */
+  avgBuildYear: number;
 }
 
 export interface DongTradeStatsResult {
@@ -1360,13 +1362,17 @@ export const fetchDongTradeStats = async (params: {
     || String(row.cdealDay ?? row['해제사유발생일'] ?? '').replace(/[^\d]/g, '').length >= 6;
 
   const num = (v: unknown) => Number(String(v ?? '').replace(/[^\d.]/g, ''));
-  type Acc = { count: number; sumPrice: number; sumArea: number; areaCount: number; excluded: number };
+  type Acc = {
+    count: number; sumPrice: number; sumArea: number; areaCount: number;
+    excluded: number; sumYear: number; yearCount: number;
+  };
   const byDong = new Map<string, Acc>();
   let excluded = 0;
 
   const accOf = (umdNm: string): Acc => {
     const acc = byDong.get(umdNm) ?? {
-      count: 0, sumPrice: 0, sumArea: 0, areaCount: 0, excluded: 0,
+      count: 0, sumPrice: 0, sumArea: 0, areaCount: 0,
+      excluded: 0, sumYear: 0, yearCount: 0,
     };
     byDong.set(umdNm, acc);
     return acc;
@@ -1388,6 +1394,8 @@ export const fetchDongTradeStats = async (params: {
     acc.count += 1;
     acc.sumPrice += priceWon;
     if (Number.isFinite(areaM2) && areaM2 > 0) { acc.sumArea += areaM2; acc.areaCount += 1; }
+    const buildYear = num(row.buildYear ?? row['건축년도']);
+    if (Number.isFinite(buildYear) && buildYear > 1800) { acc.sumYear += buildYear; acc.yearCount += 1; }
   });
 
   const PYEONG = 3.305785;
@@ -1404,6 +1412,7 @@ export const fetchDongTradeStats = async (params: {
       avgAreaM2: Math.round(avgAreaM2 * 100) / 100,
       avgUnitPrice: avgPyeong > 0 ? Math.round(avgPrice / avgPyeong) : 0,
       excludedCount: a.excluded,
+      avgBuildYear: a.yearCount > 0 ? Math.round(a.sumYear / a.yearCount) : 0,
     };
     }).sort((x, y) => y.count - x.count);
 

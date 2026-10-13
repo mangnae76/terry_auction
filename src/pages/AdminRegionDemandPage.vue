@@ -121,11 +121,32 @@ const sumLabel = computed(() => (
 ));
 
 const won = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
+const areaText = (n: number) => (n > 0 ? n.toFixed(1) : '-');
+/** 건축연수 — 올해에서 평균 건축연도를 뺀다 */
+const THIS_YEAR = new Date().getFullYear();
+const ageText = (buildYear: number) => (
+  buildYear > 1800 ? String(Math.max(0, THIS_YEAR - buildYear)) : '-'
+);
 const pct = (n: number) => (n > 0 ? `${n.toFixed(1)}%` : '-');
-const months2 = (n: number) => {
+/** 거래량을 연·월로 가른다 — 24개월을 받아도 1년치로 환산해 견준다 */
+const yearlyOf = (count: number) => count / Math.max(1, months.value / 12);
+const monthlyOf = (count: number) => count / Math.max(1, months.value);
+/** 작은 동은 월 0건으로 뭉개진다 — 10건 아래는 소수 한 자리까지 */
+const cntText = (n: number) => {
   if (!(n > 0)) return '-';
-  const m = Math.round(n);
-  return m >= 12 ? `${m}M (${Math.floor(m / 12)}Y ${m % 12}M)` : `${m}M`;
+  if (n >= 10) return Math.round(n).toLocaleString('ko-KR');
+  const t = Math.round(n * 10) / 10;
+  return Number.isInteger(t) ? String(t) : t.toFixed(1);
+};
+/** 소진기간 — 위에 달 수, 아래에 해로 환산한 값 (손품+현장과 같은 규칙) */
+const clearHead = (n: number) => (n > 0 ? String(Math.round(n)) : '');
+const clearSub = (n: number) => {
+  if (!(n > 0)) return '';
+  let years = Math.floor(Math.round(n) / 12);
+  let rest = Math.round(n) - years * 12;
+  if (rest === 12) { years += 1; rest = 0; }
+  if (years < 1) return '';
+  return rest > 0 ? `${years}Y ${rest}M` : `${years}Y`;
 };
 const ymd = (v: string) => (v.length === 6 ? `${v.slice(0, 4)}.${v.slice(4)}` : v);
 
@@ -174,7 +195,7 @@ const load = async () => {
 /** 엑셀에서 열 수 있게 — 쉼표가 든 값은 따옴표로 감싼다 */
 const downloadCsv = () => {
   if (rows.value.length === 0) return;
-  const head = ['소속 구', '읍면동', '총세대수', '총매물수', `총거래량(최근 ${months.value}개월)`, '평균가', '회전율(%)', '매물소화율(%)', '매물부담율(%)', '매물소진기간(개월)', '평균전용(㎡)', '평균평당가', '직거래·해제'];
+  const head = ['소속 구', '읍면동', '총세대수', '총매물수', `총거래량(최근 ${months.value}개월)`, '평균가', '회전율(%)', '매물소화율(%)', '매물부담율(%)', '매물소진기간(개월)', '평균전용(㎡)', '평균건축연수', '평균평당가', '직거래·해제'];
   const body = rows.value.map((r) => [
     r.sigungu, r.umdNm,
     r.units || '', r.listings || '',
@@ -183,7 +204,7 @@ const downloadCsv = () => {
     r.absorb ? r.absorb.toFixed(1) : '',
     r.burden ? r.burden.toFixed(1) : '',
     r.clearMonths ? Math.round(r.clearMonths) : '',
-    r.avgAreaM2 || '', r.avgUnitPrice || '', r.excludedCount || '',
+    r.avgAreaM2 || '', ageText(r.avgBuildYear), r.avgUnitPrice || '', r.excludedCount || '',
   ]);
   const esc = (v: unknown) => {
     const s = String(v ?? '');
@@ -295,7 +316,7 @@ const downloadCsv = () => {
             <tr class="grp">
               <th colspan="2">주소지 정보</th>
               <th colspan="2" class="in">수치입력</th>
-              <th colspan="6">지표결과</th>
+              <th colspan="8">지표결과</th>
             </tr>
             <tr>
               <th>소속 구</th>
@@ -304,6 +325,8 @@ const downloadCsv = () => {
               <th class="in">총 매물수</th>
               <th>총 거래량<small>(최근 {{ months }}개월)</small></th>
               <th>평균가<small>(최근 {{ months }}개월)</small></th>
+              <th>평균 전용면적<small>(㎡)</small></th>
+              <th>평균 건축연수<small>(년)</small></th>
               <th>회전율<small>(%)</small></th>
               <th>매물 소화율<small>(%)</small></th>
               <th>매물 부담율<small>(%)</small></th>
@@ -332,12 +355,24 @@ const downloadCsv = () => {
                   @input="setManual(r.sigungu, r.umdNm, 'listings', ($event.target as HTMLInputElement).value)"
                 />
               </td>
-              <td class="n strong">{{ r.count.toLocaleString('ko-KR') }}</td>
+              <td class="n strong deal">
+                <em class="pre">연</em><span class="v">{{ cntText(yearlyOf(r.count)) }}</span>
+                <em class="bar">|</em>
+                <em class="pre">월</em><span class="v">{{ cntText(monthlyOf(r.count)) }}</span>
+              </td>
               <td class="n strong">{{ won(r.avgPrice) }}</td>
+              <td class="n">{{ areaText(r.avgAreaM2) }}</td>
+              <td class="n">{{ ageText(r.avgBuildYear) }}</td>
               <td class="n">{{ pct(r.turnover) }}</td>
               <td class="n">{{ pct(r.absorb) }}</td>
               <td class="n">{{ pct(r.burden) }}</td>
-              <td class="n">{{ months2(r.clearMonths) }}</td>
+              <td class="n clear">
+                <template v-if="r.clearMonths > 0">
+                  <span class="v">{{ clearHead(r.clearMonths) }}<em>M</em></span>
+                  <small v-if="clearSub(r.clearMonths)">{{ clearSub(r.clearMonths) }}</small>
+                </template>
+                <template v-else>-</template>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -427,7 +462,7 @@ const downloadCsv = () => {
 
 /* 표 */
 .adm-table-wrap { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; overflow: hidden; }
-.adm-table { width: 100%; border-collapse: collapse; }
+.adm-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .adm-table th, .adm-table td {
   border-bottom: 1px solid #eef1f6; border-right: 1px solid #eef1f6;
   padding: 10px 12px; font-size: 12.5px; text-align: center; white-space: nowrap;
@@ -446,6 +481,14 @@ const downloadCsv = () => {
 .adm-table td.n { font-variant-numeric: tabular-nums; }
 .adm-table td.n.strong { font-weight: 800; }
 .adm-table td.in { background: #f7faff; padding: 6px 8px; }
+/* 총 거래량 — 연 | 월 두 값을 가운데 막대로 가른다 (손품+현장과 같은 꼴) */
+.adm-table td.deal { white-space: nowrap; letter-spacing: -0.3px; }
+.adm-table td.deal em.pre { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-right: 2px; }
+.adm-table td.deal em.bar { font-style: normal; font-weight: 400; color: #c3cbd8; margin: 0 5px; }
+/* 매물 소진기간 — 달 수를 위에, 해로 환산한 값을 아래에 */
+.adm-table td.clear { line-height: 1.25; }
+.adm-table td.clear em { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-left: 1px; }
+.adm-table td.clear small { display: block; font-size: 10.5px; font-weight: 600; color: #6b7280; }
 .adm-cell {
   width: 100%; box-sizing: border-box; height: 30px;
   border: 1px solid #cfdcf6; border-radius: 7px; background: #fff;
