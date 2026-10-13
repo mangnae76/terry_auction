@@ -157,12 +157,17 @@ const pct = (n: number) => (n > 0 ? `${n.toFixed(1)}%` : '-');
 /** 거래량을 연·월로 가른다 — 24개월을 받아도 1년치로 환산해 견준다 */
 const yearlyOf = (count: number) => count / Math.max(1, months.value / 12);
 const monthlyOf = (count: number) => count / Math.max(1, months.value);
-/** 작은 동은 월 0건으로 뭉개진다 — 10건 아래는 소수 한 자리까지 */
-const cntText = (n: number) => {
+/** 작은 동은 월 0건으로 뭉개진다 — 10건 아래는 소수 한 자리까지.
+    일의 자리를 세로로 맞추려고 정수부와 소수부를 갈라 둔다 */
+const cntRound = (n: number) => (n >= 10 ? Math.round(n) : Math.round(n * 10) / 10);
+const cntInt = (n: number) => {
   if (!(n > 0)) return '-';
-  if (n >= 10) return Math.round(n).toLocaleString('ko-KR');
-  const t = Math.round(n * 10) / 10;
-  return Number.isInteger(t) ? String(t) : t.toFixed(1);
+  return Math.floor(cntRound(n)).toLocaleString('ko-KR');
+};
+const cntFrac = (n: number) => {
+  if (!(n > 0)) return '';
+  const t = cntRound(n);
+  return Number.isInteger(t) ? '' : `.${Math.round((t - Math.floor(t)) * 10)}`;
 };
 /** 소진기간 — 위에 달 수, 아래에 해로 환산한 값 ('102' / '8년 6개월') */
 const clearHead = (n: number) => (n > 0 ? String(Math.round(n)) : '');
@@ -382,16 +387,16 @@ const downloadCsv = () => {
                 />
               </td>
               <td class="n strong deal">
-                <em class="pre">연</em><span class="v">{{ cntText(yearlyOf(r.count)) }}</span>
+                <em class="pre">연</em><span class="v y"><i>{{ cntInt(yearlyOf(r.count)) }}</i>{{ cntFrac(yearlyOf(r.count)) }}</span>
                 <em class="bar">|</em>
-                <em class="pre">월</em><span class="v">{{ cntText(monthlyOf(r.count)) }}</span>
+                <em class="pre">월</em><span class="v m"><i>{{ cntInt(monthlyOf(r.count)) }}</i>{{ cntFrac(monthlyOf(r.count)) }}</span>
               </td>
-              <td class="n strong">{{ won(r.avgPrice) }}</td>
-              <td class="n">{{ areaText(r.avgAreaM2) }}</td>
-              <td class="n">{{ ageText(r.avgBuildYear) }}</td>
-              <td class="n">{{ pct(r.turnover) }}</td>
-              <td class="n">{{ pct(r.absorb) }}</td>
-              <td class="n">{{ pct(r.burden) }}</td>
+              <td class="n strong price"><span class="v">{{ won(r.avgPrice) }}</span></td>
+              <td class="n area"><span class="v">{{ areaText(r.avgAreaM2) }}</span></td>
+              <td class="n age"><span class="v">{{ ageText(r.avgBuildYear) }}</span></td>
+              <td class="n rate"><span class="v">{{ pct(r.turnover) }}</span></td>
+              <td class="n rate"><span class="v">{{ pct(r.absorb) }}</span></td>
+              <td class="n rate"><span class="v">{{ pct(r.burden) }}</span></td>
               <td class="n clear">
                 <template v-if="r.clearMonths > 0">
                   <span class="v">{{ clearHead(r.clearMonths) }}</span>
@@ -425,7 +430,9 @@ const downloadCsv = () => {
 .adm-top-in { max-width: 1680px; margin: 0 auto; padding: 12px 28px; display: flex; align-items: center; gap: 14px; }
 .adm-back {
   border: 1px solid #dde3ee; background: #fff; border-radius: 9px;
-  width: 32px; height: 32px; font-size: 19px; line-height: 1; color: #374151; cursor: pointer;
+  width: 32px; height: 32px; padding: 0 2px 2px 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px; line-height: 1; color: #374151; cursor: pointer;
 }
 .adm-back:hover { border-color: #b9cdf7; color: #2b6df3; }
 .adm-title h1 {
@@ -508,13 +515,27 @@ const downloadCsv = () => {
 .adm-table td.n.strong { font-weight: 800; }
 .adm-table td.in { background: #f7faff; padding: 6px 8px; }
 /* 총 거래량 — 연 | 월 두 값을 가운데 막대로 가른다 (손품+현장과 같은 꼴) */
-.adm-table td.deal { white-space: nowrap; letter-spacing: -0.3px; }
-.adm-table td.deal em.pre { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-right: 2px; }
-.adm-table td.deal em.bar { font-style: normal; font-weight: 400; color: #c3cbd8; margin: 0 5px; }
+.adm-table td.deal { white-space: nowrap; letter-spacing: -0.3px; font-size: 11.5px; }
+.adm-table td.deal em.pre { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-right: 3px; }
+.adm-table td.deal em.bar { font-style: normal; font-weight: 400; color: #c3cbd8; margin: 0 4px; }
+/* 줄끼리 일의 자리를 맞춘다 — 정수부를 같은 폭으로 잡아 오른쪽에 붙이고,
+   소수점 아래는 그 뒤로 흘린다 */
+.adm-table td.deal .v i { font-style: normal; display: inline-block; text-align: right; }
+.adm-table td.deal .v.y i { min-width: 27px; }
+.adm-table td.deal .v.m i { min-width: 16px; }
 /* 매물 소진기간 — 달 수를 위에, 해로 환산한 값을 아래에 */
 .adm-table td.clear { line-height: 1.25; }
 .adm-table td.clear em { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-left: 1px; }
 .adm-table td.clear small { display: block; font-size: 10.5px; font-weight: 600; color: #6b7280; }
+/* 줄끼리 끝자리를 맞춘다 — 값을 같은 폭 상자에 담아 오른쪽으로 붙인다.
+   상자째로는 칸 가운데에 서므로 머리글과도 어긋나 보이지 않는다 */
+.adm-table td .v { display: inline-block; text-align: right; }
+.adm-table td.price .v { min-width: 84px; }
+.adm-table td.area .v { min-width: 36px; }
+.adm-table td.age .v { min-width: 22px; }
+.adm-table td.rate .v { min-width: 44px; }
+.adm-table td.clear .v { min-width: 26px; }
+.adm-table td.clear small { width: 54px; margin: 0 auto; text-align: right; }
 .adm-cell {
   width: 100%; box-sizing: border-box; height: 30px;
   border: 1px solid #cfdcf6; border-radius: 7px; background: #fff;

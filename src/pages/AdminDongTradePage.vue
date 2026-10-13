@@ -435,7 +435,12 @@ const downloadCsv = () => {
 .adm-shell { min-height: 100vh; background: #f5f7fb; color: #111827; display: flex; flex-direction: column; }
 .adm-top { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,0.9); backdrop-filter: saturate(160%) blur(10px); border-bottom: 1px solid #e8ecf3; }
 .adm-top-in { max-width: 1680px; margin: 0 auto; padding: 12px 28px; display: flex; align-items: center; gap: 14px; }
-.adm-back { border: 1px solid #dde3ee; background: #fff; border-radius: 9px; width: 32px; height: 32px; font-size: 19px; line-height: 1; color: #374151; cursor: pointer; }
+.adm-back {
+  border: 1px solid #dde3ee; background: #fff; border-radius: 9px;
+  width: 32px; height: 32px; padding: 0 2px 2px 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px; line-height: 1; color: #374151; cursor: pointer;
+}
 .adm-back:hover { border-color: #b9cdf7; color: #2b6df3; }
 .adm-title h1 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.3px; display: flex; align-items: baseline; gap: 7px; }
 .adm-title h1 em { font-style: normal; font-size: 11.5px; font-weight: 700; color: #9ca3af; }
