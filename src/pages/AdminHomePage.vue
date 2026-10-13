@@ -115,8 +115,7 @@ const openTool = (tool: Tool) => {
 
     <div class="adm-body">
       <div class="adm-head">
-        <h1>분석 도구</h1>
-        <p>물건 하나를 들여다보기 전에, 지역과 시세를 먼저 훑는 자리입니다.</p>
+        <h1>물건 상세 분석 전에 지역과 시세를 알아봅니다.</h1>
       </div>
 
       <div class="adm-groups">
@@ -215,8 +214,8 @@ const openTool = (tool: Tool) => {
 /* ===== 본문 ===== */
 .adm-body { flex: 1 1 auto; width: 100%; max-width: 1480px; margin: 0 auto; padding: 34px 28px 60px; }
 .adm-head { margin-bottom: 26px; }
-.adm-head h1 { margin: 0 0 6px; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
-.adm-head p { margin: 0; font-size: 13.5px; color: #6b7280; }
+/* 제목이 한 문장이라 22px로 — 26px 로 두면 줄이 길어 둔해 보인다 */
+.adm-head h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
 
 /* 세 묶음을 가로로 — 좁아지면 둘, 하나로 접힌다 */
 .adm-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
