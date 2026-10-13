@@ -46,7 +46,7 @@ const GROUPS: Group[] = [
     tone: 'violet',
     tools: [
       {
-        title: '인근매각물건분석',
+        title: '인근 매각 물건 분석',
         desc: '인근 매각 물건의 낙찰가율 분석.',
         path: '',
         icon: 'near',
