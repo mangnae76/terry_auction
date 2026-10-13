@@ -21,7 +21,7 @@ type Group = { title: string; hint: string; tone: 'blue' | 'violet' | 'green'; t
 const GROUPS: Group[] = [
   {
     title: '실거래가 분석',
-    hint: '국토부 실거래로 값의 바닥을 잡는다',
+    hint: '실거래 통계로 수요공급을 분석한다',
     tone: 'blue',
     tools: [
       {
