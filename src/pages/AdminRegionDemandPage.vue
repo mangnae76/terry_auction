@@ -172,9 +172,9 @@ const load = async () => {
 /** 엑셀에서 열 수 있게 — 쉼표가 든 값은 따옴표로 감싼다 */
 const downloadCsv = () => {
   if (rows.value.length === 0) return;
-  const head = ['시군구', '읍면동', '주소', '총세대수', '총매물수', '회전율(%)', '매물소화율(%)', '매물부담율(%)', '매물소진기간(개월)', `총거래량(${months.value}개월)`, '평균가', '평균전용(㎡)', '평균평당가'];
+  const head = ['소속 구', '읍면동', '주소', '총세대수', '총매물수', '회전율(%)', '매물소화율(%)', '매물부담율(%)', '매물소진기간(개월)', `총거래량(${months.value}개월)`, '평균가', '평균전용(㎡)', '평균평당가'];
   const body = rows.value.map((r) => [
-    r.sigungu, r.umdNm, `${r.sigungu} ${r.umdNm}`,
+    r.sigungu, r.umdNm, `${sido.value} ${r.sigungu} (${r.umdNm})`,
     r.units || '', r.listings || '',
     r.turnover ? r.turnover.toFixed(1) : '',
     r.absorb ? r.absorb.toFixed(1) : '',
@@ -290,11 +290,12 @@ const downloadCsv = () => {
         <table class="adm-table">
           <thead>
             <tr class="grp">
-              <th colspan="2">주소지 정보</th>
+              <th colspan="3">주소지 정보</th>
               <th colspan="2" class="in">수치입력</th>
               <th colspan="6">지표결과</th>
             </tr>
             <tr>
+              <th>소속 구</th>
               <th>읍면동</th>
               <th>주소</th>
               <th class="in">총 세대수</th>
@@ -308,9 +309,10 @@ const downloadCsv = () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="r in rows" :key="r.umdNm">
-              <td class="nm">{{ r.umdNm }}<em v-if="!districtCode">{{ r.sigungu }}</em></td>
-              <td class="addr">{{ r.sigungu }} {{ r.umdNm }}</td>
+            <tr v-for="r in rows" :key="`${r.sigungu}|${r.umdNm}`">
+              <td class="gu">{{ r.sigungu }}</td>
+              <td class="nm">{{ r.umdNm }}</td>
+              <td class="addr">{{ sido }} {{ r.sigungu }} ({{ r.umdNm }})</td>
               <td class="in">
                 <input
                   class="adm-cell"
@@ -438,7 +440,8 @@ const downloadCsv = () => {
 .adm-table thead th.in small { color: #4b6cb7; }
 .adm-table tbody tr:last-child td { border-bottom: none; }
 .adm-table tbody tr:hover td { background: #fafbfe; }
-.adm-table td.nm { font-weight: 800; }
+.adm-table td.gu { font-weight: 700; color: #374151; white-space: nowrap; }
+.adm-table td.nm { font-weight: 800; white-space: nowrap; }
 .adm-table td.addr { text-align: left; color: #6b7280; }
 .adm-table td.n { font-variant-numeric: tabular-nums; }
 .adm-table td.n.strong { font-weight: 800; }
