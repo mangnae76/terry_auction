@@ -2092,6 +2092,21 @@ const scSetLocalTaxRate = (sc: ProfitScenario, raw: string) => {
   sc.cost.localTaxAmount = undefined;
 };
 // %는 소수점 둘째 자리까지만 받는다
+/** 비중 칸은 늘 '70.00' 꼴로 다시 그려진다. 그래서 '70' 을 치는 순간 '.00' 이
+ *  붙고 커서가 그 뒤로 밀려, 이어서 치면 '70.007' 이 된다.
+ *  치고 있는 칸만 적은 그대로 두고, 손을 떼면(blur) 그때 자리수를 맞춘다. */
+const pctEditKey = ref('');
+const pctEditText = ref('');
+const pctShow = (key: string, value: number) => (
+  pctEditKey.value === key ? pctEditText.value : value.toFixed(2)
+);
+const pctType = (key: string, e: Event) => {
+  limitPct(e);
+  pctEditKey.value = key;
+  pctEditText.value = (e.target as HTMLInputElement).value;
+};
+const pctDone = () => { pctEditKey.value = ''; pctEditText.value = ''; };
+
 const limitPct = (e: Event) => {
   const el = e.target as HTMLInputElement;
   const cleaned = el.value.replace(/[^\d.-]/g, '').replace(/(\..*)\./g, '$1');
@@ -5976,7 +5991,7 @@ const goBack = () => router.back();
                 <td rowspan="2" class="adp-cat"></td>
                 <td><strong>입찰가</strong></td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scBidPct(sc).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scBidPct(sc)) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctShow(`scBidPctsc-${si}`, scBidPct(sc))" inputmode="decimal" class="adp-cell-input sm" @blur="pctDone()" @input="pctType(`scBidPctsc-${si}`, $event); scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scBidPct(sc)) }}</template>
                 </td>
                 <td class="r emph">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.bid.myBidValue" class="adp-cell-input" live-group /><template v-else><strong>{{ formatMoney(scBid(sc)) }}</strong></template>
@@ -5985,7 +6000,7 @@ const goBack = () => router.back();
               <tr>
                 <td>대출(사업자)</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.loanAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctShow(`scPctOfBidscsccostloanAm-${si}`, scPctOfBid(sc, sc.cost.loanAmount))" inputmode="decimal" class="adp-cell-input sm" @blur="pctDone()" @input="pctType(`scPctOfBidscsccostloanAm-${si}`, $event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.loanAmount" class="adp-cell-input" live-group /><template v-else>{{ formatMoney(sc.cost.loanAmount) }}</template>
@@ -5996,7 +6011,7 @@ const goBack = () => router.back();
                 <td rowspan="10" class="adp-cat">비용</td>
                 <td><span class="adp-cost-no">①</span>취득세</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.acquisitionTaxAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.acquisitionTaxAmount)) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctShow(`scPctOfBidscsccostacquis-${si}`, scPctOfBid(sc, sc.cost.acquisitionTaxAmount))" inputmode="decimal" class="adp-cell-input sm" @blur="pctDone()" @input="pctType(`scPctOfBidscsccostacquis-${si}`, $event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.acquisitionTaxAmount)) }}</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.acquisitionTaxAmount" class="adp-cell-input" live-group @update:model-value="scSyncAcqRate(sc)" /><template v-else>{{ formatMoney(sc.cost.acquisitionTaxAmount) }}</template>
@@ -6005,7 +6020,7 @@ const goBack = () => router.back();
               <tr>
                 <td><span class="adp-cost-no">②</span>법무비/채권</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scPctOfBid(sc, sc.cost.legalCostAmount).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetAmountByPct(sc, 'legalCostAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.legalCostAmount)) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctShow(`scPctOfBidscsccostlegalC-${si}`, scPctOfBid(sc, sc.cost.legalCostAmount))" inputmode="decimal" class="adp-cell-input sm" @blur="pctDone()" @input="pctType(`scPctOfBidscsccostlegalC-${si}`, $event); scSetAmountByPct(sc, 'legalCostAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.legalCostAmount)) }}</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.legalCostAmount" class="adp-cell-input" live-group /><template v-else>{{ formatMoney(sc.cost.legalCostAmount) }}</template>
@@ -6014,7 +6029,7 @@ const goBack = () => router.back();
               <tr>
                 <td><span class="adp-cost-no">③</span>중도상환</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[0]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[0])) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctShow(`scRowPctscRATEROWS0-${si}`, scRowPct(sc, RATE_ROWS[0]))" inputmode="decimal" class="adp-cell-input sm" @blur="pctDone()" @input="pctType(`scRowPctscRATEROWS0-${si}`, $event); scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[0])) }}</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.midRepaymentAmount" class="adp-cell-input" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" /><template v-else>{{ formatMoney(sc.cost.midRepaymentAmount) }}</template>
@@ -6023,7 +6038,7 @@ const goBack = () => router.back();
               <tr>
                 <td><span class="adp-cost-no">④</span>이자(3M)</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[1]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[1])) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctShow(`scRowPctscRATEROWS1-${si}`, scRowPct(sc, RATE_ROWS[1]))" inputmode="decimal" class="adp-cell-input sm" @blur="pctDone()" @input="pctType(`scRowPctscRATEROWS1-${si}`, $event); scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[1])) }}</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.interestAmount" class="adp-cell-input" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" /><template v-else>{{ formatMoney(sc.cost.interestAmount) }}</template>
@@ -6032,7 +6047,7 @@ const goBack = () => router.back();
               <tr>
                 <td><span class="adp-cost-no">⑤</span>매도중개료</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="scRowPct(sc, RATE_ROWS[2]).toFixed(2)" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[2])) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctShow(`scRowPctscRATEROWS2-${si}`, scRowPct(sc, RATE_ROWS[2]))" inputmode="decimal" class="adp-cell-input sm" @blur="pctDone()" @input="pctType(`scRowPctscRATEROWS2-${si}`, $event); scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[2])) }}</template>
                 </td>
                 <td class="r">
                   <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.brokerageAmount" class="adp-cell-input" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[2])" /><template v-else>{{ formatMoney(sc.cost.brokerageAmount) }}</template>
