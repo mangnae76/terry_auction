@@ -33,6 +33,7 @@ const sido = ref<string>(SIDO_PICK);
 const districtCode = ref<string>('');   // 빈 값이면 '전체'
 const dongFilter = ref('');
 const kind = ref<Kind>('villa');
+// 1년치로 못 박는다 — 지표가 모두 연 기준이라 고를 까닭이 없다
 const months = ref(12);
 
 const districts = computed<DistrictOption[]>(() => districtsOf(sido.value));
@@ -182,7 +183,10 @@ const clearSub = (n: number) => {
   if (years < 1) return '';
   return rest > 0 ? `${years}년 ${rest}개월` : `${years}년`;
 };
-const ymd = (v: string) => (v.length === 6 ? `${v.slice(0, 4)}.${v.slice(4)}` : v);
+/** 202510 → 2025년 10월 */
+const ym = (v: string) => (
+  v.length === 6 ? `${v.slice(0, 4)}년 ${Number(v.slice(4))}월` : v
+);
 
 const progress = ref({ done: 0, total: 0 });
 
@@ -261,8 +265,8 @@ const downloadCsv = () => {
       <div class="adm-top-in">
         <button type="button" class="adm-back" @click="router.push('/admin')">‹</button>
         <div class="adm-title">
-          <h1>실거래 분석 <em>시 · 군 · 구</em></h1>
-          <p>시군구를 고르면 그 안의 읍면동을 한 줄씩 늘어놓습니다.</p>
+          <h1>실거래 분석 <em>지역 단위</em></h1>
+          <p>지역 세부 단위(읍면동)의 거래량·평균가와 수요공급 지표.</p>
         </div>
         <button
           type="button"
@@ -308,18 +312,6 @@ const downloadCsv = () => {
             >{{ k.label }}</button>
           </div>
         </label>
-        <label class="adm-f narrow">
-          <small>기간</small>
-          <div class="adm-seg">
-            <button
-              v-for="m in [12, 24]"
-              :key="m"
-              type="button"
-              :class="['adm-seg-btn', { on: months === m }]"
-              @click="months = m"
-            >{{ m }}개월</button>
-          </div>
-        </label>
         <button type="button" class="adm-load" :disabled="loading || !sido" @click="load">
           <template v-if="loading && progress.total > 1">{{ progress.done }}/{{ progress.total }} 불러오는 중…</template>
           <template v-else-if="loading">불러오는 중…</template>
@@ -338,7 +330,7 @@ const downloadCsv = () => {
 
       <div v-if="rows.length > 0" class="adm-sum">
         <strong>{{ sumLabel }}</strong>
-        <span>{{ ymd(period.from) }} ~ {{ ymd(period.to) }} 거래분</span>
+        <span>기간 {{ ym(period.from) }} ~ {{ ym(period.to) }}</span>
         <span>읍면동 {{ rows.length }}곳</span>
         <span>거래 {{ totalCount.toLocaleString('ko-KR') }}건</span>
         <span v-if="excludedShown > 0" class="dim">직거래·해제 {{ excludedShown.toLocaleString('ko-KR') }}건 제외</span>
@@ -390,15 +382,15 @@ const downloadCsv = () => {
                 />
               </td>
               <td class="n strong deal">
-                <em class="pre">연</em><span class="v y"><i>{{ cntInt(yearlyOf(r.count)) }}</i>{{ cntFrac(yearlyOf(r.count)) }}</span>
+                <span class="grp y"><em class="pre">연</em><i>{{ cntInt(yearlyOf(r.count)) }}</i></span><b>{{ cntFrac(yearlyOf(r.count)) }}</b>
                 <em class="bar">|</em>
-                <em class="pre">월</em><span class="v m"><i>{{ cntInt(monthlyOf(r.count)) }}</i>{{ cntFrac(monthlyOf(r.count)) }}</span>
+                <span class="grp m"><em class="pre">월</em><i>{{ cntInt(monthlyOf(r.count)) }}</i></span><b>{{ cntFrac(monthlyOf(r.count)) }}</b>
               </td>
               <td class="n strong price"><span class="v">{{ won(r.avgPrice) }}</span></td>
               <td class="n area"><span class="v">{{ areaText(r.avgAreaM2) }}</span></td>
               <td class="n age"><span class="v">{{ ageText(r.avgBuildYear) }}</span></td>
-              <td class="n rate"><em class="pre">연</em><span class="v">{{ pct(r.turnover) }}</span></td>
-              <td class="n rate"><em class="pre">연</em><span class="v">{{ pct(r.absorb) }}</span></td>
+              <td class="n rate"><em v-if="r.turnover > 0" class="pre">연</em><span class="v">{{ pct(r.turnover) }}</span></td>
+              <td class="n rate"><em v-if="r.absorb > 0" class="pre">연</em><span class="v">{{ pct(r.absorb) }}</span></td>
               <td class="n rate"><span class="v">{{ pct(r.burden) }}</span></td>
               <td class="n clear">
                 <template v-if="r.clearMonths > 0">
@@ -520,12 +512,18 @@ const downloadCsv = () => {
 /* 총 거래량 — 연 | 월 두 값을 가운데 막대로 가른다 (손품+현장과 같은 꼴) */
 .adm-table td.deal { white-space: nowrap; letter-spacing: -0.3px; font-size: 11.5px; }
 .adm-table td em.pre { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-right: 3px; }
-.adm-table td.deal em.bar { font-style: normal; font-weight: 400; color: #c3cbd8; margin: 0 4px; }
-/* 줄끼리 일의 자리를 맞춘다 — 정수부를 같은 폭으로 잡아 오른쪽에 붙이고,
-   소수점 아래는 그 뒤로 흘린다 */
-.adm-table td.deal .v i { font-style: normal; display: inline-block; text-align: right; }
-.adm-table td.deal .v.y i { min-width: 27px; }
-.adm-table td.deal .v.m i { min-width: 16px; }
+.adm-table td.deal em.bar { font-style: normal; font-weight: 400; color: #c3cbd8; margin: 0 3px; }
+/* 줄끼리 일의 자리를 맞춘다 — '연 281' 을 통째로 같은 폭 상자에 담아
+   오른쪽에 붙이고, 소수점 아래는 그 뒤로 흘린다.
+   그래야 앞붙임과 숫자 사이가 두 자리·세 자리에서 똑같이 벌어진다 */
+.adm-table td.deal { padding-left: 6px; padding-right: 6px; }
+.adm-table td.deal .grp { display: inline-block; text-align: right; }
+.adm-table td.deal .grp.y { min-width: 40px; }
+.adm-table td.deal .grp.m { min-width: 28px; }
+.adm-table td.deal .grp i { font-style: normal; }
+/* 소수점 아래 자리도 폭을 잡아 둔다 — 없는 줄과 있는 줄의 전체 너비가
+   달라지면 가운데 정렬 때문에 끝선이 어긋난다 */
+.adm-table td.deal b { display: inline-block; width: 11px; text-align: left; font-weight: inherit; }
 /* 매물 소진기간 — 달 수를 위에, 해로 환산한 값을 아래에 */
 .adm-table td.clear { line-height: 1.25; }
 .adm-table td.clear em { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-left: 1px; }
