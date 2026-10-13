@@ -32,7 +32,7 @@ const GROUPS: Group[] = [
         icon: 'trade',
       },
       {
-        title: '실거래 조건검색 분석',
+        title: '실거래가 조건 분석',
         sub: '해당 읍 · 면 · 동',
         desc: '동까지 좁히고 연식·층·면적으로 걸러 비교할 만한 거래만 남긴다.',
         path: '/admin/dong-trades',

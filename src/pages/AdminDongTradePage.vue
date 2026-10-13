@@ -1,13 +1,13 @@
 <script setup lang="ts">
-// 실거래가 조건검색 분석 (해당 읍면동) — 관리자 도구.
+// 실거래가 조건 분석 (해당 읍면동) — 관리자 도구.
 //
 // 시군구 12개월치를 한 번 받아 두고, 읍면동·기간·면적·연식은 받아 둔 줄
 // 안에서 추린다. 조건을 바꿀 때마다 다시 부르면 하루 한도만 깎아먹는다.
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
-import { fetchDongTradeDetails, type DongTradeDetailRow } from '../services/publicDataApi';
+import { fetchDongTradeDetails, fetchDongTradeStats, type DongTradeDetailRow } from '../services/publicDataApi';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 
 type Kind = 'villa' | 'apt' | 'officetel';
@@ -31,7 +31,35 @@ const districts = computed<DistrictOption[]>(() => districtsOf(sido.value));
 const district = computed<DistrictOption | null>(
   () => districts.value.find((d) => d.lawdCode === districtCode.value) ?? null,
 );
-watch(sido, () => { districtCode.value = ''; });
+let restoring = false;
+watch(sido, () => { if (!restoring) districtCode.value = ''; });
+
+// 읍면동 목록 — 표를 받기 전에도 고를 수 있어야 한다.
+// 시군구를 고르면 최근 석 달치를 먼저 받아 동 이름을 채운다 (국토부 호출 3번).
+// 한 번 받은 시군구는 들고 있다가 다시 고르면 그대로 쓴다.
+const dongPeek = ref<Record<string, string[]>>({});
+const dongPeeking = ref(false);
+const peekKey = computed(() => (districtCode.value ? `${districtCode.value}|${kind.value}` : ''));
+const peekDongs = async () => {
+  const key = peekKey.value;
+  if (!key || dongPeek.value[key]) return;
+  dongPeeking.value = true;
+  try {
+    const res = await fetchDongTradeStats({
+      lawdCd5: districtCode.value, propertyType: kind.value, months: 3,
+    });
+    dongPeek.value = { ...dongPeek.value, [key]: res.rows.map((r) => r.umdNm) };
+  } catch {
+    // 못 받아도 그만 — 표를 받고 나면 그때 목록이 찬다
+  } finally {
+    dongPeeking.value = false;
+  }
+};
+watch([districtCode, kind], () => { if (!restoring) dong.value = ''; peekDongs(); });
+const dongOptions = computed(() => {
+  const peeked = dongPeek.value[peekKey.value] ?? [];
+  return Array.from(new Set([...dongNames.value, ...peeked])).sort((a, b) => a.localeCompare(b, 'ko'));
+});
 
 const loading = ref(false);
 const errorMsg = ref('');
@@ -99,6 +127,7 @@ onMounted(async () => {
   const prefs = await loadUserPrefs(auth.uid);
   const f = prefs?.adminDongFilter;
   if (f) {
+    restoring = true;
     sido.value = f.sido || '';
     districtCode.value = f.districtCode || '';
     kind.value = (f.kind as Kind) || kind.value;
@@ -106,6 +135,8 @@ onMounted(async () => {
     applyPeriod(f.periodMonths || 12);
     areaMin.value = f.areaMin ?? ''; areaMax.value = f.areaMax ?? '';
     yearMin.value = f.yearMin ?? ''; yearMax.value = f.yearMax ?? '';
+    await nextTick();
+    restoring = false;
   }
   prefsLoaded.value = true;
 });
@@ -277,8 +308,8 @@ const downloadCsv = () => {
       <div class="adm-top-in">
         <button type="button" class="adm-back" @click="router.push('/admin')">‹</button>
         <div class="adm-title">
-          <h1>실거래가 조건검색 분석 <em>해당 읍 · 면 · 동</em></h1>
-          <p>동을 좁히고 기간·면적·연식으로 걸러 견줄 만한 거래만 남깁니다.</p>
+          <h1>실거래가 조건 분석 <em>해당 읍 · 면 · 동</em></h1>
+          <p>동까지 좁히고 연식·층·면적으로 걸러 비교할 만한 거래만 남깁니다.</p>
         </div>
         <button type="button" class="adm-csv" :disabled="listRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
       </div>
@@ -302,17 +333,17 @@ const downloadCsv = () => {
           </select>
         </label>
         <label class="adm-f">
+          <small>읍 · 면 · 동</small>
+          <select v-model="dong" class="adm-input narrow" :disabled="dongOptions.length === 0">
+            <option value="">{{ dongPeeking ? '불러오는 중…' : '전체' }}</option>
+            <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
+          </select>
+        </label>
+        <label class="adm-f">
           <small>종류</small>
           <div class="adm-seg">
             <button v-for="k in KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: kind === k.key }]" @click="kind = k.key">{{ k.label }}</button>
           </div>
-        </label>
-        <label v-if="dongNames.length > 0" class="adm-f">
-          <small>읍면동</small>
-          <select v-model="dong" class="adm-input narrow">
-            <option value="">전체</option>
-            <option v-for="d in dongNames" :key="d" :value="d">{{ d }}</option>
-          </select>
         </label>
         <button type="button" class="adm-load" :disabled="loading || !district" @click="load">
           {{ loading ? '불러오는 중…' : '데이터 로드' }}
