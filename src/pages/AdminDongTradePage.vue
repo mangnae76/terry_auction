@@ -475,7 +475,7 @@ const downloadCsv = () => {
                 </td>
                 <td class="n">{{ r.areaM2.toFixed(2) }} / {{ r.pyeong.toFixed(2) }}</td>
                 <td class="n">{{ r.buildYear || '-' }}</td>
-                <td class="n">{{ r.buildYear ? `${thisYear - r.buildYear + 1}년` : '-' }}</td>
+                <td class="n age"><span class="v">{{ r.buildYear ? `${thisYear - r.buildYear + 1}년` : '-' }}</span></td>
                 <td class="n unit"><span class="v">{{ r.pyeong > 0 ? won(Math.round(r.priceWon / r.pyeong)) : '-' }}</span></td>
                 <td class="n">{{ r.floor || '-' }}</td>
                 <td><span :class="['kind', r.kind === '정상거래' ? 'ok' : 'no']">{{ r.kind }}</span></td>
@@ -619,6 +619,7 @@ const downloadCsv = () => {
 .adm-table td .v { display: inline-block; text-align: right; }
 .adm-table td.price .v { min-width: 96px; }
 .adm-table td.unit .v { min-width: 74px; }
+.adm-table td.age .v { min-width: 34px; }
 .kind { font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
 .kind.ok { background: #e8f7f1; color: #0f9d7a; }
 .kind.no { background: #f3f4f6; color: #9ca3af; }
