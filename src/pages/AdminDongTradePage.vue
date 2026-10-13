@@ -96,6 +96,7 @@ applyPeriod(12);
 
 const resetFilters = () => {
   applyPeriod(12);
+  clearColFilters();
   areaMin.value = ''; areaMax.value = '';
   yearMin.value = ''; yearMax.value = '';
   listQuery.value = '';
@@ -267,15 +268,118 @@ const DISTS = computed(() => [
 ]);
 
 // ===== 검색리스트 =====
-const listRows = computed(() => {
+// 칸마다 값 목록을 띄워 하나씩 걸러낸다 (엑셀 자동 필터와 같은 꼴).
+// 고른 값이 없으면 그 칸은 거르지 않는다.
+type ColKey = 'date' | 'price' | 'area' | 'year' | 'age' | 'unit' | 'floor' | 'kind';
+const COL_LABELS: Record<ColKey, string> = {
+  date: '계약년월일', price: '거래금액', area: '전용 ㎡ / 평',
+  year: '건축연도', age: '건축년차', unit: '평당가', floor: '층', kind: '구분',
+};
+const colText = (r: DongTradeDetailRow, key: ColKey): string => {
+  switch (key) {
+    case 'date': return r.contractDate || '-';
+    case 'price': return won(r.priceWon);
+    case 'area': return `${r.areaM2.toFixed(2)} / ${r.pyeong.toFixed(2)}`;
+    case 'year': return r.buildYear ? String(r.buildYear) : '-';
+    case 'age': return r.buildYear ? `${thisYear - r.buildYear + 1}년` : '-';
+    case 'unit': return r.pyeong > 0 ? won(Math.round(r.priceWon / r.pyeong)) : '-';
+    case 'floor': return r.floor || '-';
+    default: return r.kind;
+  }
+};
+/** 값 목록을 늘어놓는 차례 — 숫자는 큰 값부터, 날짜는 최근부터 */
+const colOrder = (r: DongTradeDetailRow, key: ColKey): number => {
+  switch (key) {
+    case 'date': return r.dealTime;
+    case 'price': return r.priceWon;
+    case 'area': return r.areaM2;
+    case 'year': return r.buildYear;
+    case 'age': return -(r.buildYear || 0);
+    case 'unit': return r.pyeong > 0 ? r.priceWon / r.pyeong : 0;
+    case 'floor': return r.floorNum;
+    default: return r.kind === '정상거래' ? 2 : (r.kind === '직거래' ? 1 : 0);
+  }
+};
+const COL_KEYS: ColKey[] = ['date', 'price', 'area', 'year', 'age', 'unit', 'floor', 'kind'];
+const emptyColFilters = (): Record<ColKey, string[]> => ({
+  date: [], price: [], area: [], year: [], age: [], unit: [], floor: [], kind: [],
+});
+const colFilters = ref<Record<ColKey, string[]>>(emptyColFilters());
+const colFilterCount = computed(() => COL_KEYS.filter((k) => colFilters.value[k].length > 0).length);
+
+const byText = (rows: DongTradeDetailRow[]) => {
   const q = listQuery.value.trim();
-  if (!q) return filtered.value;
+  if (!q) return rows;
   const needle = q.replace(/\s+/g, '').toLowerCase();
-  return filtered.value.filter((r) => [
+  return rows.filter((r) => [
     r.contractDate, String(r.priceWon), r.areaM2.toFixed(2), r.pyeong.toFixed(2),
     String(r.buildYear), r.floor, r.umdNm, r.name, r.jibun, r.houseType,
   ].join('').replace(/\s+/g, '').toLowerCase().includes(needle));
+};
+/** 한 칸을 뺀 나머지 조건만 건 줄 — 그 칸의 값 목록은 여기서 뽑는다 */
+const rowsExcept = (skip: ColKey | '') => byText(filtered.value).filter((r) => COL_KEYS.every((k) => {
+  if (k === skip) return true;
+  const picked = colFilters.value[k];
+  return picked.length === 0 || picked.includes(colText(r, k));
+}));
+const listRows = computed(() => rowsExcept(''));
+
+// 값 목록 창
+const openCol = ref<ColKey | ''>('');
+const panelPos = ref({ left: 0, top: 0 });
+const panelDraft = ref<string[]>([]);
+const panelQuery = ref('');
+const panelOptions = computed(() => {
+  const key = openCol.value;
+  if (!key) return [] as string[];
+  const seen = new Map<string, number>();
+  rowsExcept(key).forEach((r) => {
+    const t = colText(r, key);
+    const o = colOrder(r, key);
+    if (!seen.has(t) || o > (seen.get(t) ?? 0)) seen.set(t, o);
+  });
+  return Array.from(seen.entries()).sort((a, b) => b[1] - a[1]).map(([t]) => t);
 });
+const panelShown = computed(() => {
+  const q = panelQuery.value.trim().toLowerCase();
+  if (!q) return panelOptions.value;
+  return panelOptions.value.filter((t) => t.toLowerCase().includes(q));
+});
+const closeColPanel = () => { openCol.value = ''; panelQuery.value = ''; };
+const openColPanel = (key: ColKey, ev: MouseEvent) => {
+  if (openCol.value === key) { closeColPanel(); return; }
+  const th = (ev.currentTarget as HTMLElement).closest('th');
+  const r = th?.getBoundingClientRect();
+  if (r) {
+    // 오른쪽 끝 칸은 창이 화면 밖으로 나가므로 안쪽으로 당긴다
+    panelPos.value = {
+      left: Math.round(Math.min(r.left, window.innerWidth - 248)),
+      top: Math.round(r.bottom + 4),
+    };
+  }
+  openCol.value = key;
+  panelQuery.value = '';
+  const picked = colFilters.value[key];
+  panelDraft.value = picked.length > 0 ? [...picked] : [...panelOptions.value];
+};
+const togglePanelValue = (t: string) => {
+  const i = panelDraft.value.indexOf(t);
+  if (i >= 0) panelDraft.value.splice(i, 1);
+  else panelDraft.value.push(t);
+};
+const panelAll = () => { panelDraft.value = [...panelOptions.value]; };
+const panelNone = () => { panelDraft.value = []; };
+const panelApply = () => {
+  const key = openCol.value;
+  if (!key) return;
+  const all = panelOptions.value;
+  // 다 고른 것은 거르지 않는 것과 같다 — 빈 값으로 둬서 표시도 끈다
+  const next = panelDraft.value.length === all.length
+    && all.every((t) => panelDraft.value.includes(t)) ? [] : [...panelDraft.value];
+  colFilters.value = { ...colFilters.value, [key]: next };
+  closeColPanel();
+};
+const clearColFilters = () => { colFilters.value = emptyColFilters(); };
 
 const won = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
 const ymd = (v: string) => (v.length === 6 ? `${v.slice(0, 4)}.${v.slice(4)}` : v);
@@ -454,6 +558,9 @@ const downloadCsv = () => {
           <span class="tag ok">정상거래 {{ counts.정상거래 }}</span>
           <span class="tag">직거래 {{ counts.직거래 }}</span>
           <span class="tag">계약해제 {{ counts.계약해제 }}</span>
+          <button v-if="colFilterCount > 0" type="button" class="adm-flt-clear" @click="clearColFilters">
+            걸러내기 {{ colFilterCount }}칸 해제
+          </button>
           <span class="adm-search">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
             <input v-model="listQuery" class="adm-input search" placeholder="주소 · 금액 · 층 등으로 검색" />
@@ -464,8 +571,19 @@ const downloadCsv = () => {
           <table class="adm-table">
             <thead>
               <tr>
-                <th>계약년월일</th><th>거래금액</th><th>전용 ㎡ / 평</th>
-                <th>건축연도</th><th>건축년차</th><th>평당가</th><th>층</th><th>구분</th><th>주소</th>
+                <th v-for="k in COL_KEYS" :key="k">
+                  <span class="th-in">
+                    {{ COL_LABELS[k] }}
+                    <button
+                      type="button"
+                      class="adm-flt"
+                      :class="{ on: colFilters[k].length > 0, open: openCol === k }"
+                      :aria-label="`${COL_LABELS[k]} 걸러내기`"
+                      @click.stop="openColPanel(k, $event)"
+                    ><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z" /></svg></button>
+                  </span>
+                </th>
+                <th>주소</th>
               </tr>
             </thead>
             <tbody>
@@ -502,6 +620,37 @@ const downloadCsv = () => {
         <p v-else-if="listRows.length === 0" class="adm-foot">조건에 맞는 거래가 없습니다.</p>
       </template>
     </div>
+
+    <Teleport to="body">
+      <div v-if="openCol" class="adm-flt-veil" @click="closeColPanel"></div>
+      <div
+        v-if="openCol"
+        class="adm-flt-panel"
+        :style="{ left: `${panelPos.left}px`, top: `${panelPos.top}px` }"
+        @click.stop
+      >
+        <div class="adm-flt-top">
+          <strong>{{ COL_LABELS[openCol] }}</strong>
+          <span>{{ panelDraft.length }}/{{ panelOptions.length }}</span>
+        </div>
+        <input v-model="panelQuery" class="adm-flt-search" placeholder="값 찾기" />
+        <div class="adm-flt-acts">
+          <button type="button" @click="panelAll">전체 선택</button>
+          <button type="button" @click="panelNone">전체 해제</button>
+        </div>
+        <div class="adm-flt-list">
+          <label v-for="t in panelShown" :key="t" class="adm-flt-item">
+            <input type="checkbox" :checked="panelDraft.includes(t)" @change="togglePanelValue(t)" />
+            <span>{{ t }}</span>
+          </label>
+          <p v-if="panelShown.length === 0" class="adm-flt-empty">값이 없습니다.</p>
+        </div>
+        <div class="adm-flt-foot">
+          <button type="button" class="ghost" @click="closeColPanel">닫기</button>
+          <button type="button" class="go" @click="panelApply">적용</button>
+        </div>
+      </div>
+    </Teleport>
   </section>
 </template>
 
@@ -615,6 +764,21 @@ const downloadCsv = () => {
 .adm-table tbody tr:hover .adm-copy { opacity: 1; }
 .adm-copy:hover { border-color: #b9cdf7; color: #2b6df3; }
 .adm-copy.done { opacity: 1; border-color: #9ee0c6; color: #0f9d7a; }
+/* 칸 머리의 걸러내기 단추 */
+.adm-table th .th-in { display: inline-flex; align-items: center; gap: 4px; }
+.adm-flt {
+  width: 18px; height: 18px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid transparent; border-radius: 5px; background: transparent;
+  color: #b4bcca; cursor: pointer;
+}
+.adm-flt:hover { border-color: #c7d7f8; color: #2b6df3; background: #fff; }
+.adm-flt.on { color: #2b6df3; background: #e8f0ff; border-color: #c7d7f8; }
+.adm-flt.open { border-color: #2b6df3; color: #2b6df3; }
+.adm-flt-clear {
+  border: 1px solid #c7d7f8; border-radius: 999px; background: #fff;
+  padding: 4px 10px; font-family: inherit; font-size: 11.5px; font-weight: 700;
+  color: #2b6df3; cursor: pointer;
+}
 /* 전용면적 아래의 연립·다세대 */
 .adm-table td.area small { display: block; font-size: 10.5px; font-weight: 600; color: #6b7280; }
 /* 줄끼리 끝자리를 맞춘다 — 값을 같은 폭 상자에 담아 오른쪽에 붙인다 */
@@ -635,4 +799,48 @@ const downloadCsv = () => {
   .adm-f { flex: 1 1 100%; }
   .adm-load, .adm-cond-btns { margin-left: 0; }
 }
+</style>
+
+<style>
+/* 칸별 걸러내기 창 — body 로 옮겨 가므로 scoped 밖에 적는다 */
+.adm-flt-veil { position: fixed; inset: 0; z-index: 9998; background: transparent; }
+.adm-flt-panel {
+  position: fixed; z-index: 9999; width: 240px;
+  background: #fff; border: 1px solid #dfe5ef; border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(17, 24, 39, 0.16);
+  padding: 10px; display: flex; flex-direction: column; gap: 8px;
+  font-family: inherit; color: #111827;
+}
+.adm-flt-top { display: flex; align-items: baseline; gap: 6px; }
+.adm-flt-top strong { font-size: 12.5px; font-weight: 800; }
+.adm-flt-top span { margin-left: auto; font-size: 11px; font-weight: 700; color: #9ca3af; }
+.adm-flt-search {
+  width: 100%; box-sizing: border-box; height: 28px;
+  border: 1px solid #e3e8f0; border-radius: 7px; padding: 0 8px;
+  font-family: inherit; font-size: 12px; color: #111827;
+}
+.adm-flt-search:focus { outline: none; border-color: #2b6df3; }
+.adm-flt-acts { display: flex; gap: 6px; }
+.adm-flt-acts button {
+  flex: 1 1 0; border: 1px solid #e3e8f0; border-radius: 7px; background: #f8fafc;
+  padding: 5px 0; font-family: inherit; font-size: 11.5px; font-weight: 700;
+  color: #4b5563; cursor: pointer;
+}
+.adm-flt-acts button:hover { border-color: #c7d7f8; color: #2b6df3; background: #fff; }
+.adm-flt-list { max-height: 240px; overflow: auto; display: flex; flex-direction: column; }
+.adm-flt-item {
+  display: flex; align-items: center; gap: 7px; padding: 4px 4px;
+  font-size: 12px; cursor: pointer; border-radius: 6px;
+}
+.adm-flt-item:hover { background: #f5f8ff; }
+.adm-flt-item input { width: 14px; height: 14px; accent-color: #2b6df3; cursor: pointer; }
+.adm-flt-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-flt-empty { margin: 8px 0; text-align: center; font-size: 11.5px; color: #9ca3af; }
+.adm-flt-foot { display: flex; gap: 6px; }
+.adm-flt-foot button {
+  flex: 1 1 0; border-radius: 8px; padding: 7px 0;
+  font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.adm-flt-foot .ghost { border: 1px solid #e3e8f0; background: #fff; color: #6b7280; }
+.adm-flt-foot .go { border: 1px solid #2b6df3; background: #2b6df3; color: #fff; }
 </style>
