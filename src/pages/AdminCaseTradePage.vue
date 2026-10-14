@@ -514,7 +514,7 @@ const downloadCsv = () => {
             <span v-if="priceUnit" class="adm-kpi-sub">{{ priceUnit }}</span>
           </div>
           <div class="adm-kpi">
-            <small>전세가 <em><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" />%</em></small>
+            <small>보증보험 전세가 <em><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" />%</em></small>
             <strong>{{ won(jeonsePrice) }}</strong>
             <span class="adm-kpi-sub">공동주택가 × {{ jeonseRate }}%</span>
           </div>
