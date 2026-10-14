@@ -183,10 +183,12 @@ const clearSub = (n: number) => {
   if (years < 1) return '';
   return rest > 0 ? `${years}년 ${rest}개월` : `${years}년`;
 };
-/** 202510 → 2025년 10월 */
-const ym = (v: string) => (
-  v.length === 6 ? `${v.slice(0, 4)}년 ${Number(v.slice(4))}월` : v
-);
+/** 20251015 → 2025년 10월 15일, 202510 → 2025년 10월 */
+const ym = (v: string) => {
+  if (v.length === 8) return `${v.slice(0, 4)}년 ${Number(v.slice(4, 6))}월 ${Number(v.slice(6))}일`;
+  if (v.length === 6) return `${v.slice(0, 4)}년 ${Number(v.slice(4))}월`;
+  return v;
+};
 
 const progress = ref({ done: 0, total: 0 });
 
@@ -207,7 +209,7 @@ const load = async () => {
         propertyType: kind.value,
         months: months.value,
       });
-      from = res.periodFrom; to = res.periodTo;
+      from = res.periodFromDate || res.periodFrom; to = res.periodToDate || res.periodTo;
       if (res.error) errs.add(res.error);
       res.rows.forEach((r) => {
         // 시군구가 달라도 동 이름은 겹친다 — 시군구를 붙여 열쇠로 쓴다

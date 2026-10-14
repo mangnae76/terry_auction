@@ -1315,6 +1315,10 @@ export interface DongTradeStatsResult {
   /** 창의 끝 달 · 시작 달 (YYYYMM) */
   periodFrom: string;
   periodTo: string;
+  /** 실제로 센 날짜 (YYYYMMDD) — 달이 아니라 '오늘로부터 N개월' 이라
+   *  시작·끝이 달 가운데에 걸린다. 화면에 날짜까지 적을 때 쓴다 */
+  periodFromDate: string;
+  periodToDate: string;
   /** 센 거래 건수 합 */
   totalCount: number;
   /** 뺀 건수 — 직거래와 계약해제 */
@@ -1333,8 +1337,11 @@ export const fetchDongTradeStats = async (params: {
   const since = windowStart(months);
   const periodTo = dealYmds[0] ?? '';
   const periodFrom = dealYmds[dealYmds.length - 1] ?? '';
+  const ymd8 = (d: Date) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  const periodFromDate = ymd8(since);
+  const periodToDate = ymd8(new Date());
   const empty: DongTradeStatsResult = {
-    rows: [], periodFrom, periodTo, totalCount: 0, excludedCount: 0,
+    rows: [], periodFrom, periodTo, periodFromDate, periodToDate, totalCount: 0, excludedCount: 0,
   };
   if (!ENABLE_LIVE_API || !API_KEY) {
     return { ...empty, error: 'API 키가 없어 실거래를 불러올 수 없습니다.' };
@@ -1424,6 +1431,8 @@ export const fetchDongTradeStats = async (params: {
     rows,
     periodFrom,
     periodTo,
+    periodFromDate,
+    periodToDate,
     totalCount: rows.reduce((s, r) => s + r.count, 0),
     excludedCount: excluded,
     error: errSet.size > 0 ? Array.from(errSet).join(' / ') : undefined,

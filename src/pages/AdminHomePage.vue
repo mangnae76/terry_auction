@@ -108,8 +108,11 @@ const openTool = (tool: Tool) => {
     <header class="adm-top">
       <div class="adm-top-in">
         <div class="adm-brand">
-          <img :src="logoImg" alt="MYTURN" class="adm-logo" />
-          <small>관리자 도구</small>
+          <span class="adm-logo-wrap">
+            <img :src="logoImg" alt="MYTURN" class="adm-logo" />
+            <small class="adm-logo-sub">옥션</small>
+          </span>
+          <small class="adm-brand-tag">관리자 도구</small>
         </div>
         <nav class="adm-top-nav">
           <button type="button" class="adm-top-link" @click="router.push('/auctions/watchlist')">선정물건</button>
@@ -198,12 +201,18 @@ const openTool = (tool: Tool) => {
   max-width: 1480px; margin: 0 auto; padding: 12px 28px;
   display: flex; align-items: center; gap: 16px;
 }
-/* 앱과 같은 로고를 쓴다 — 같은 서비스라는 게 한눈에 보이게 */
-.adm-brand { display: flex; align-items: center; gap: 10px; }
-.adm-logo { height: 28px; object-fit: contain; display: block; }
-.adm-brand small {
+/* 앱과 같은 로고를 쓴다 — 같은 서비스라는 게 한눈에 보이게.
+   '옥션' 은 로고 아래, MYTURN 의 N 끝에 맞춰 오른쪽으로 붙인다 */
+.adm-brand { display: flex; align-items: center; gap: 12px; }
+.adm-logo-wrap { display: flex; flex-direction: column; align-items: flex-end; line-height: 1; }
+.adm-logo { height: 26px; object-fit: contain; display: block; }
+.adm-logo-sub {
+  margin-top: 1px; font-size: 11px; font-weight: 800; letter-spacing: 0.12em;
+  color: #111827;
+}
+.adm-brand-tag {
   font-size: 11.5px; font-weight: 700; color: #6b7280;
-  padding-left: 10px; border-left: 1px solid #e3e8f0; line-height: 1.2;
+  padding-left: 12px; border-left: 1px solid #e3e8f0; line-height: 1.2;
 }
 .adm-top-nav { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .adm-top-link {
