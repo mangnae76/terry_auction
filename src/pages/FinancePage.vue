@@ -339,8 +339,8 @@ const exportExcel = () => {
         <table class="fin-table cash">
           <!-- 칸 너비를 못 박는다 — 글자가 왼쪽에 몰리지 않게 -->
           <colgroup>
-            <col style="width: 22%" /><col style="width: 20%" /><col style="width: 16%" />
-            <col style="width: 24%" /><col />
+            <col style="width: 20%" /><col style="width: 19%" /><col style="width: 14%" />
+            <col style="width: 21%" /><col />
           </colgroup>
           <thead>
             <tr><th>일자</th><th>명세</th><th>입출금</th><th class="r">개인 자금</th><th>비고</th></tr>
