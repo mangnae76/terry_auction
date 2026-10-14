@@ -41,7 +41,7 @@ const GROUPS: Group[] = [
       {
         title: '경매지번 공동주택가격 및 실거래가',
         sub: '지번 · 단지',
-        desc: '지번이나 단지명을 입력하여 매매·전세·월세 데이터 수집.',
+        desc: '지번이나 단지명을 입력하여 공동주택가격과 매매·전세·월세 데이터 수집.',
         path: '/admin/case-trades',
         icon: 'lot',
       },

@@ -323,7 +323,7 @@ const downloadCsv = () => {
         </button>
         <div class="adm-title">
           <h1>경매지번 공동주택가격 및 실거래가 <em>지번 · 단지</em></h1>
-          <p>지번이나 단지명을 입력하여 매매·전세·월세 데이터 수집.</p>
+          <p>지번이나 단지명을 입력하여 공동주택가격과 매매·전세·월세 데이터 수집.</p>
         </div>
         <button type="button" class="adm-csv" :disabled="shown.length === 0" @click="downloadCsv">엑셀 내려받기</button>
       </div>
