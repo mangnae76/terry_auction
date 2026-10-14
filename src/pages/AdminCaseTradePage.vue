@@ -238,7 +238,7 @@ const recentJeonse = computed(() => (
   ?? null
 ));
 /** 고른 줄인지 저절로 잡힌 줄인지 — 요약 칸에 적어 둔다 */
-const saleFrom = computed(() => (pickedSale.value && recentSale.value ? '선택 거래' : '최근 거래'));
+const saleFrom = computed(() => (pickedSale.value && recentSale.value ? '선택거래' : '최근거래'));
 
 // 손품+현장 가격정보의 셋째 표와 같은 셈이다.
 //   전세가 = 공동주택가 × 비율(기본 126%)
@@ -481,7 +481,7 @@ const downloadCsv = () => {
 
         <!-- 요약 -->
         <div class="adm-kpis three">
-          <div class="adm-kpi"><small><em>{{ recentYm }}</em> 실거래가 <span class="adm-kpi-from">{{ saleFrom }}</span></small><strong>{{ won(recentPrice) }}</strong></div>
+          <div class="adm-kpi"><small><em>{{ recentYm }}</em> 매매 실거래가 <span class="adm-kpi-from">{{ saleFrom }}</span></small><strong>{{ won(recentPrice) }}</strong></div>
           <div class="adm-kpi"><small>평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
           <div class="adm-kpi blue"><small>{{ countLabel }}</small><strong>{{ countValue }}건</strong></div>
         </div>
@@ -496,7 +496,7 @@ const downloadCsv = () => {
           <button v-if="colFilter.activeCount.value > 0" type="button" class="adm-flt-clear" @click="colFilter.clearAll()">
             걸러내기 {{ colFilter.activeCount.value }}칸 해제
           </button>
-          <button v-if="pickedSale || pickedJeonse" type="button" class="adm-ghost pick" @click="clearPicks">선택 거래 풀기</button>
+          <button v-if="pickedSale || pickedJeonse" type="button" class="adm-ghost pick" @click="clearPicks">선택거래 풀기</button>
           <select v-model="areaFilter" class="adm-input narrow">
             <option value="">전체면적(㎡/평)</option>
             <option v-for="o in areaOptions" :key="o" :value="o">{{ areaOptText(o) }}</option>
