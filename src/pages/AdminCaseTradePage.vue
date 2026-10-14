@@ -256,6 +256,33 @@ const recentPyeong = computed(() => {
   return Math.round(r.price / (r.areaM2 / PYEONG));
 });
 
+// 손품+현장 가격정보의 셋째 표와 같은 셈이다.
+//   전세가 = 공동주택가 × 비율(기본 127%)
+//   전세가율 = 전세가 ÷ 매매 실거래가,  갭 = 매매 실거래가 − 전세가
+//   공시대비율 = 매매 실거래가 ÷ 공동주택가
+const JEONSE_RATE = 127;
+const pubAuto = computed(() => price.value?.price ?? 0);
+const pubTyped = ref('');
+const pubValue = computed(() => {
+  const typed = Number(pubTyped.value.replace(/[^\d]/g, ''));
+  return typed > 0 ? typed : pubAuto.value;
+});
+const rateText = ref(String(JEONSE_RATE));
+const jeonseRate = computed(() => {
+  const r = Number(rateText.value.replace(/[^\d.]/g, ''));
+  return Number.isFinite(r) && r > 0 ? r : JEONSE_RATE;
+});
+const jeonsePrice = computed(() => (pubValue.value > 0
+  ? Math.round((pubValue.value * jeonseRate.value) / 100) : 0));
+/** 견줄 매매가 — 지금 걸러 보고 있는 줄 가운데 가장 최근 매매 */
+const saleReal = computed(() => recentPrice.value);
+const jeonseRatioText = computed(() => (jeonsePrice.value > 0 && saleReal.value > 0
+  ? `${((jeonsePrice.value / saleReal.value) * 100).toFixed(0)}%` : '-'));
+const gapText = computed(() => (jeonsePrice.value > 0 && saleReal.value > 0
+  ? Math.round(saleReal.value - jeonsePrice.value).toLocaleString('ko-KR') : ''));
+const pubRatioText = computed(() => (pubValue.value > 0 && saleReal.value > 0
+  ? `${((saleReal.value / pubValue.value) * 100).toFixed(0)}%` : '-'));
+
 const areaText = (m2: number) => (m2 > 0 ? `${m2.toFixed(2)} / ${(m2 / PYEONG).toFixed(2)}` : '-');
 const areaOptText = (opt: string) => {
   const m2 = Number(opt);
@@ -320,11 +347,31 @@ const downloadCsv = () => {
       </div>
       <p v-if="resolveNote" class="adm-msg warn">{{ resolveNote }}</p>
 
-      <div v-if="price" class="adm-kpis one">
+      <div v-if="pubAuto > 0 || pubTyped || all.length > 0" class="adm-kpis four">
         <div class="adm-kpi green">
-          <small>공동주택가격 <em>{{ price.year }}년 기준</em></small>
-          <strong>{{ won(price.price) }}</strong>
+          <small>공동주택가 <em v-if="price">{{ price.year }}년 기준</em></small>
+          <input
+            v-model="pubTyped"
+            class="adm-kpi-input"
+            inputmode="numeric"
+            :placeholder="pubAuto > 0 ? pubAuto.toLocaleString('ko-KR') : '직접 입력'"
+          />
           <span v-if="priceUnit" class="adm-kpi-sub">{{ priceUnit }}</span>
+        </div>
+        <div class="adm-kpi">
+          <small>전세가 <em><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="127" />%</em></small>
+          <strong>{{ won(jeonsePrice) }}</strong>
+          <span class="adm-kpi-sub">공동주택가 × {{ jeonseRate }}%</span>
+        </div>
+        <div class="adm-kpi">
+          <small>전세가율 / 갭</small>
+          <strong>{{ jeonseRatioText }}<em v-if="gapText" class="adm-gap"> / {{ gapText }}</em></strong>
+          <span class="adm-kpi-sub">전세가 ÷ 매매 실거래가</span>
+        </div>
+        <div class="adm-kpi">
+          <small>공시대비율</small>
+          <strong>{{ pubRatioText }}</strong>
+          <span class="adm-kpi-sub">매매 실거래가 ÷ 공동주택가</span>
         </div>
       </div>
 
@@ -494,7 +541,20 @@ const downloadCsv = () => {
 .adm-kpi.blue { background: #f4f8ff; border-color: #dbe6ff; }
 .adm-kpi.green { background: #f1fbf7; border-color: #cdeee1; }
 .adm-kpi-sub { font-size: 11.5px; font-weight: 700; color: #6b7280; }
-.adm-kpis.one { grid-template-columns: minmax(0, 320px); margin-top: 14px; }
+.adm-kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; }
+.adm-kpi-input {
+  width: 100%; box-sizing: border-box; height: 30px;
+  border: 1px solid #dde3ee; border-radius: 8px; background: #fff; padding: 0 9px;
+  font-family: inherit; font-size: 19px; font-weight: 800; letter-spacing: -0.4px; color: #111827;
+}
+.adm-kpi-input:focus { outline: none; border-color: #2b6df3; }
+.adm-rate-input {
+  width: 34px; border: 1px solid #dde3ee; border-radius: 5px; background: #fff;
+  padding: 1px 3px; font-family: inherit; font-size: 11px; font-weight: 700; color: #2b6df3; text-align: right;
+}
+.adm-rate-input:focus { outline: none; border-color: #2b6df3; }
+.adm-gap { font-style: normal; font-size: 13px; font-weight: 700; color: #6b7280; }
+@media (max-width: 1100px) { .adm-kpis.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .adm-tabs { margin: 16px 0 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .adm-tab { border: 1px solid #e3e8f0; background: #fff; border-radius: 999px; padding: 7px 14px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #6b7280; cursor: pointer; }
