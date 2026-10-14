@@ -685,6 +685,8 @@ export interface RealTradeMatchRow {
   dealType?: string;
   /** 주택유형 — 국토부 houseType ('다세대' / '연립' / '연립다세대') */
   houseType?: string;
+  /** 계약해제 — 없던 거래다. 시세로 쓰면 안 된다 */
+  cancelled?: boolean;
 }
 
 export interface RealTradeAverageResult {
@@ -1032,6 +1034,8 @@ export const fetchPlaceHistory = async (params: {
       jibun: String(row.jibun ?? '').trim() || undefined,
       dealType: String(row.dealingGbn ?? '').trim() || undefined,
       houseType: String(row.houseType ?? '').trim() || undefined,
+      cancelled: String(row.cdealType ?? '').trim().toUpperCase() === 'O'
+        || String(row.cdealDay ?? '').replace(/[^\d]/g, '').length >= 6,
     });
   }));
   const rents: RealRentRow[] = [];

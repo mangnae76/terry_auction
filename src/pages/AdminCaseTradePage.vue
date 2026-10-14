@@ -12,6 +12,8 @@ import { useRouter } from 'vue-router';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
 import { analyzeAddress, type CasePropertyType, type CaseTradeRow } from '../services/caseTradeAnalysis';
 import { priceUnitText, shortPlaceName } from '../services/addressLookup';
+import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
+import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 import type { ApartPrice } from '../services/vworldApi';
 import type { ResolvedRegion } from '../services/regionResolver';
 
@@ -28,7 +30,7 @@ const router = useRouter();
 // ===== 주소 한 줄 =====
 const address = ref('');
 const kind = ref<CasePropertyType>('villa');
-const years = ref(2);
+const years = ref(10);
 
 const loading = ref(false);
 const errorMsg = ref('');
@@ -137,7 +139,11 @@ const areaFilter = ref('');
 const areaNote = ref('');
 const yearFilter = ref('');
 const tab = ref<'all' | '매매' | '전세' | '월세'>('매매');
-const resetFilters = () => { areaFilter.value = ''; yearFilter.value = ''; tab.value = '매매'; };
+const resetFilters = () => {
+  areaFilter.value = ''; yearFilter.value = ''; tab.value = '매매';
+  clearPicks();
+  colFilter.clearAll();
+};
 /** 지금 보고 있는 평형이 공부상 면적과 같은가 — 칩에 적어 둔다 */
 const areaChip = computed(() => {
   if (!(baseArea.value > 0)) return '';
@@ -163,9 +169,23 @@ const byAreaYear = computed(() => rows.value.filter((r) => {
   if (yearFilter.value && r.contractDate.slice(0, 4) !== yearFilter.value) return false;
   return true;
 }));
+// 표의 칸마다 값 목록으로 한 번 더 추린다 (실거래가 조건 분석과 같은 방식).
+// 위 지표는 걸러낸 결과를 따르지 않는다 — 지표의 기준은 줄을 눌러 고른다.
+const COLS: Array<ColumnDef<CaseTradeRow>> = [
+  { key: 'kind', label: '구분', text: (r) => r.kind },
+  { key: 'date', label: '계약일', text: (r) => r.contractDate || '-', order: (r) => Number(r.contractDate.replace(/\D/g, '')) || 0 },
+  { key: 'amount', label: '거래금액', text: (r) => r.amount, order: (r) => r.price },
+  { key: 'area', label: '전용(㎡/평)', text: (r) => areaText(r.areaM2), order: (r) => r.areaM2 },
+  { key: 'floor', label: '층', text: (r) => r.floor || '-', order: (r) => Number(String(r.floor).replace(/[^\d-]/g, '')) || 0 },
+  { key: 'place', label: '단지', text: (r) => [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') },
+];
+
 const shown = computed(() => byAreaYear.value.filter((r) => (
   tab.value === 'all' || r.kind === tab.value || (tab.value === '매매' && r.kind === '직거래')
 )));
+const colFilter = useColumnFilters<CaseTradeRow>(shown, COLS);
+const tableRows = computed(() => colFilter.rows.value);
+
 const counts = computed(() => {
   const list = byAreaYear.value;
   const by = (t: string) => list.filter((r) => r.kind === t || (t === '매매' && r.kind === '직거래')).length;
@@ -175,6 +195,7 @@ const countLabel = computed(() => (tab.value === 'all' ? '전체' : tab.value));
 const countValue = computed(() => (tab.value === 'all' ? counts.value.all : counts.value[tab.value]));
 
 const won = (n: number) => (n > 0 ? Math.round(n).toLocaleString('ko-KR') : '-');
+
 const matchedNames = computed(() => Array.from(new Set(rows.value.map((r) => r.name).filter(Boolean))));
 /** 요약 줄에 쓸 짧은 이름 — 공시가격 자료의 단지명이 먼저,
  *  없으면 국토부 신고 이름을 쓴다. 표의 '단지' 칸은 원문 그대로 둔다 */
@@ -182,8 +203,27 @@ const shortName = computed(() => (
   shortPlaceName(price.value?.name) || shortPlaceName(matchedNames.value[0]) || ''
 ));
 
-/** 요약 — 가장 최근 매매 한 건 */
-const recentSale = computed(() => byAreaYear.value.find((r) => r.kind === '매매' || r.kind === '직거래') ?? null);
+// 기준 거래 고르기 — 비워 두면 '가장 최근 정상 거래'.
+// 줄을 누르면 그 거래가 기준이 되고, 위 지표가 그 값으로 다시 선다.
+const rowKey = (r: CaseTradeRow) => `${r.kind}|${r.contractDate}|${r.price}|${r.areaM2}|${r.floor}`;
+const pickedSale = ref('');
+const pickedJeonse = ref('');
+const isSaleKind = (k: string) => k === '매매' || k === '직거래' || k === '계약해제';
+const pickRow = (r: CaseTradeRow) => {
+  const key = rowKey(r);
+  if (isSaleKind(r.kind)) pickedSale.value = pickedSale.value === key ? '' : key;
+  else if (r.kind === '전세') pickedJeonse.value = pickedJeonse.value === key ? '' : key;
+};
+const clearPicks = () => { pickedSale.value = ''; pickedJeonse.value = ''; };
+const isPicked = (r: CaseTradeRow) => rowKey(r) === pickedSale.value || rowKey(r) === pickedJeonse.value;
+
+/** 기준 매매 — 고른 줄이 있으면 그것, 없으면 가장 최근 정상 매매.
+ *  직거래·계약해제는 시세가 아니라서 저절로 잡히지 않는다 (골라야 쓴다) */
+const recentSale = computed(() => (
+  byAreaYear.value.find((r) => rowKey(r) === pickedSale.value)
+  ?? byAreaYear.value.find((r) => r.kind === '매매')
+  ?? null
+));
 const recentYm = computed(() => (recentSale.value ? recentSale.value.contractDate.slice(0, 7) : '최근'));
 const recentPrice = computed(() => recentSale.value?.price ?? 0);
 const recentPyeong = computed(() => {
@@ -191,8 +231,14 @@ const recentPyeong = computed(() => {
   if (!r || !(r.areaM2 > 0) || !(r.price > 0)) return 0;
   return Math.round(r.price / (r.areaM2 / PYEONG));
 });
-/** 가장 최근 전세 한 건 — 추정 전세가와 견준다 */
-const recentJeonse = computed(() => byAreaYear.value.find((r) => r.kind === '전세') ?? null);
+/** 기준 전세 — 고른 줄이 있으면 그것, 없으면 가장 최근 전세 */
+const recentJeonse = computed(() => (
+  byAreaYear.value.find((r) => rowKey(r) === pickedJeonse.value)
+  ?? byAreaYear.value.find((r) => r.kind === '전세')
+  ?? null
+));
+/** 고른 줄인지 저절로 잡힌 줄인지 — 요약 칸에 적어 둔다 */
+const saleFrom = computed(() => (pickedSale.value && recentSale.value ? '고른 거래' : '최근 거래'));
 
 // 손품+현장 가격정보의 셋째 표와 같은 셈이다.
 //   전세가 = 공동주택가 × 비율(기본 126%)
@@ -235,12 +281,17 @@ const areaOptText = (opt: string) => {
   const m2 = Number(opt);
   return m2 > 0 ? `${m2.toFixed(2)}㎡ / ${(m2 / PYEONG).toFixed(2)}평` : opt;
 };
-const kindClass = (k: string) => (k === '전세' ? 'tt-jeon' : k === '월세' ? 'tt-wol' : 'tt-buy');
+const kindClass = (k: string) => {
+  if (k === '직거래' || k === '계약해제') return 'tt-off';
+  return k === '전세' ? 'tt-jeon' : k === '월세' ? 'tt-wol' : 'tt-buy';
+};
+/** 시세로 쓰면 안 되는 줄 — 흐리게 적는다 */
+const isOff = (k: string) => k === '직거래' || k === '계약해제';
 
 const downloadCsv = () => {
-  if (shown.value.length === 0) return;
+  if (tableRows.value.length === 0) return;
   const head = ['구분', '계약일', '거래금액', '전용㎡', '전용평', '층', '읍면동', '지번', '단지명'];
-  const body = shown.value.map((r) => [
+  const body = tableRows.value.map((r) => [
     r.kind, r.contractDate, r.amount,
     r.areaM2.toFixed(2), (r.areaM2 / PYEONG).toFixed(2), r.floor, r.umdNm, r.jibun, r.name,
   ]);
@@ -269,7 +320,7 @@ const downloadCsv = () => {
           <h1>경매지번 공동주택가 및 실거래가 <em>지번 · 단지</em></h1>
           <p>주소를 입력하여 공동주택가와 실거래가 데이터 분석.</p>
         </div>
-        <button type="button" class="adm-csv" :disabled="shown.length === 0" @click="downloadCsv">엑셀 내려받기</button>
+        <button type="button" class="adm-csv" :disabled="tableRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
       </div>
     </header>
 
@@ -386,7 +437,7 @@ const downloadCsv = () => {
 
         <!-- 요약 -->
         <div class="adm-kpis three">
-          <div class="adm-kpi"><small><em>{{ recentYm }}</em> 실거래가</small><strong>{{ won(recentPrice) }}</strong></div>
+          <div class="adm-kpi"><small><em>{{ recentYm }}</em> 실거래가 <span class="adm-kpi-from">{{ saleFrom }}</span></small><strong>{{ won(recentPrice) }}</strong></div>
           <div class="adm-kpi"><small>평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
           <div class="adm-kpi blue"><small>{{ countLabel }}</small><strong>{{ countValue }}건</strong></div>
         </div>
@@ -398,6 +449,10 @@ const downloadCsv = () => {
           <button :class="['adm-tab', 't-jeon', { on: tab === '전세' }]" @click="tab = '전세'">전세 ({{ counts.전세 }})</button>
           <button :class="['adm-tab', 't-wol', { on: tab === '월세' }]" @click="tab = '월세'">월세 ({{ counts.월세 }})</button>
           <span class="adm-tab-fill" />
+          <button v-if="colFilter.activeCount.value > 0" type="button" class="adm-flt-clear" @click="colFilter.clearAll()">
+            걸러내기 {{ colFilter.activeCount.value }}칸 해제
+          </button>
+          <button v-if="pickedSale || pickedJeonse" type="button" class="adm-ghost pick" @click="clearPicks">고른 거래 풀기</button>
           <select v-model="areaFilter" class="adm-input narrow">
             <option value="">전체면적(㎡/평)</option>
             <option v-for="o in areaOptions" :key="o" :value="o">{{ areaOptText(o) }}</option>
@@ -412,10 +467,30 @@ const downloadCsv = () => {
         <div class="adm-table-wrap">
           <table class="adm-table">
             <thead>
-              <tr><th>구분</th><th>계약일</th><th>거래금액</th><th>전용(㎡/평)</th><th>층</th><th>단지</th></tr>
+              <tr>
+                <th v-for="c in COLS" :key="c.key">
+                  <span class="th-in">
+                    {{ c.label }}
+                    <button
+                      type="button"
+                      class="adm-flt"
+                      :class="{ on: colFilter.isActive(c.key), open: colFilter.openKey.value === c.key }"
+                      :aria-label="`${c.label} 걸러내기`"
+                      @click.stop="colFilter.open(c.key, $event)"
+                    >
+                      <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z" /></svg>
+                    </button>
+                  </span>
+                </th>
+              </tr>
             </thead>
             <tbody>
-              <tr v-for="(r, i) in shown.slice(0, 300)" :key="`${r.contractDate}-${r.floor}-${i}`">
+              <tr
+                v-for="(r, i) in tableRows.slice(0, 300)"
+                :key="`${r.contractDate}-${r.floor}-${i}`"
+                :class="{ off: isOff(r.kind), picked: isPicked(r) }"
+                @click="pickRow(r)"
+              >
                 <td><span :class="['kind', kindClass(r.kind)]">{{ r.kind }}</span></td>
                 <td>{{ r.contractDate }}</td>
                 <td class="n strong price"><span class="v">{{ r.amount }}</span></td>
@@ -426,10 +501,12 @@ const downloadCsv = () => {
             </tbody>
           </table>
         </div>
-        <p v-if="shown.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ shown.length.toLocaleString('ko-KR') }}줄은 엑셀로 내려받으세요.</p>
-        <p v-else-if="shown.length === 0" class="adm-foot">{{ countLabel }} 데이터 없음</p>
+        <p v-if="tableRows.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ tableRows.length.toLocaleString('ko-KR') }}줄은 엑셀로 내려받으세요.</p>
+        <p v-else-if="tableRows.length === 0" class="adm-foot">{{ countLabel }} 데이터 없음</p>
       </template>
     </div>
+
+    <ColumnFilterPanel :ctl="colFilter" />
   </section>
 </template>
 
@@ -539,6 +616,15 @@ const downloadCsv = () => {
 .kind.tt-buy { background: #eaf1ff; color: #2b6df3; }
 .kind.tt-jeon { background: #e8f7f1; color: #0f9d7a; }
 .kind.tt-wol { background: #fff3e2; color: #b4740f; }
+.kind.tt-off { background: #eef1f6; color: #8b93a1; }
+/* 직거래·계약해제는 시세가 아니다 — 줄째로 흐리게 */
+.adm-table tbody tr.off td { color: #aab2c0; }
+/* 지금 기준으로 쓰고 있는 줄 — 연한 붉은색으로 칠한다 */
+.adm-table tbody tr.picked td { background: #fff0f3; }
+.adm-table tbody tr.picked:hover td { background: #ffe6ec; }
+.adm-table tbody tr { cursor: pointer; }
+.adm-kpi-from { font-size: 10.5px; font-weight: 700; color: #9ca3af; }
+.adm-ghost.pick { border-color: #f3c6d1; color: #c2185b; }
 .adm-foot { margin: 10px 2px 0; font-size: 11.5px; color: #9ca3af; }
 
 @media (max-width: 1280px) { .adm-kpis.five { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
