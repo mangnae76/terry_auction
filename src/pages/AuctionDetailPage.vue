@@ -45,7 +45,8 @@ import fileTextIcon from '../assets/icones/file-text.png';
 import { resolveRegionFromAddress } from '../services/regionResolver';
 import { fetchRealTradeAverage, fetchPlaceHistory, fetchDongHouseholds, PLACE_HISTORY_YEARS, type RealTradeMatchRow } from '../services/publicDataApi';
 import { cached, cachedEntry, cacheKey, readCache, writeCache, CACHE_TTL } from '../services/marketCache';
-import { fetchApartHousingPrice, VWORLD_KEY_EXPIRES } from '../services/vworldApi';
+import { VWORLD_KEY_EXPIRES } from '../services/vworldApi';
+import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
 import { addressWithName, hasBuildingName, isUnitToken } from '../utils/addressName';
 import { useAuthStore } from '../stores/authStore';
@@ -3073,22 +3074,12 @@ const fetchOfficialPrice = async () => {
   const target = auction.value;
   if (!target?.address) return;
   try {
-    const region = await resolveRegionFromAddress(target.address);
-    if (!region?.bCode10) return;
-    // '인천광역시 서구 검암동 670-4' 에서 지번만, 주소 끝의 '203호' 에서 호수만
-    const lot = lotOnlyAddress.value.split(/\s+/).pop() ?? '';
-    const ho = (target.address.match(/(\d+)\s*호/) ?? [])[1] ?? '';
-    const hit = await fetchApartHousingPrice({
-      bCode10: region.bCode10,
-      lotText: lot,
-      ho,
-      areaM2: subjectAreaM2.value,
-    });
-    if (!hit) return;
-    officialPriceAuto.value = hit.price;
-    officialPriceYear.value = hit.year;
-    officialPriceUnit.value = [hit.ho ? `${hit.ho}호` : '', hit.areaM2 > 0 ? `전용 ${hit.areaM2}㎡` : '']
-      .filter(Boolean).join(' ');
+    // 주소에서 지역·지번·호수를 뽑아 공시가격까지 한 번에 — 관리자 도구와 같은 모듈이다
+    const hit = await lookupAddress(target.address, { areaM2: subjectAreaM2.value });
+    if (!hit.price) return;
+    officialPriceAuto.value = hit.price.price;
+    officialPriceYear.value = hit.price.year;
+    officialPriceUnit.value = priceUnitText(hit.price);
   } catch {
     officialPriceAuto.value = 0;
   }

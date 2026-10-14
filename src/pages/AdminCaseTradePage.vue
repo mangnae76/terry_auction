@@ -5,13 +5,15 @@
 //
 // 자료는 물건 상세와 같은 fetchPlaceHistory 를 쓰고 저장소도 같이 쓴다 —
 // 앱에서 이미 받아 둔 시군구면 국토부를 다시 부르지 않는다.
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
 import {
   fetchDongTradeStats, fetchPlaceHistory, PLACE_HISTORY_YEARS,
 } from '../services/publicDataApi';
 import { cacheKey, readCache, writeCache, CACHE_TTL } from '../services/marketCache';
+import { lookupAddress, priceUnitText } from '../services/addressLookup';
+import type { ApartPrice } from '../services/vworldApi';
 
 type Kind = 'villa' | 'apt' | 'officetel';
 const KINDS: Array<{ key: Kind; label: string }> = [
@@ -31,11 +33,20 @@ const kind = ref<Kind>('villa');
 const spot = ref('');
 const years = ref(PLACE_HISTORY_YEARS);
 
+/** 주소 한 줄 — 치면 지역 세 칸과 지번·호수가 저절로 찬다 */
+const address = ref('');
+const ho = ref('');
+const resolving = ref(false);
+const resolveNote = ref('');
+const price = ref<ApartPrice | null>(null);
+const priceUnit = computed(() => priceUnitText(price.value));
+
 const districts = computed<DistrictOption[]>(() => districtsOf(sido.value));
 const district = computed<DistrictOption | null>(
   () => districts.value.find((d) => d.lawdCode === districtCode.value) ?? null,
 );
-watch(sido, () => { districtCode.value = ''; });
+let filling = false;
+watch(sido, () => { if (!filling) districtCode.value = ''; });
 
 // 읍면동 목록 — 표를 받기 전에도 고를 수 있어야 한다.
 // 시군구를 고르면 최근 석 달치를 먼저 받아 동 이름을 채운다 (국토부 호출 3번).
@@ -57,11 +68,54 @@ const peekDongs = async () => {
     dongPeeking.value = false;
   }
 };
-watch([districtCode, kind], () => { dong.value = ''; peekDongs(); });
+watch([districtCode, kind], () => { if (!filling) dong.value = ''; peekDongs(); });
 const dongOptions = computed(() => {
   const peeked = dongPeek.value[peekKey.value] ?? [];
   return Array.from(new Set([...loadedDongs.value, ...peeked])).sort((a, b) => a.localeCompare(b, 'ko'));
 });
+
+/** 주소를 풀어 지역·지번·호수를 채우고 공시가격을 집어 온다.
+ *  카카오가 엉뚱한 구를 집는 일이 있어(인천 서구 → 서해구·검단구) 푼 값은
+ *  드롭다운에 '채워 줄' 뿐이다 — 틀리면 손으로 고치면 된다. */
+const applyAddress = async () => {
+  const text = address.value.trim();
+  if (!text || resolving.value) return;
+  resolving.value = true;
+  resolveNote.value = '';
+  price.value = null;
+  filling = true;
+  try {
+    const hit = await lookupAddress(text);
+    if (!hit.region) { resolveNote.value = '주소에서 지역을 찾지 못했습니다 — 아래 칸을 손으로 고르세요.'; return; }
+    const r = hit.region;
+    // 시도·시군구는 우리 표에 있는 이름으로 맞춘다. 법정동코드가 먼저,
+    // 못 찾으면 이름으로 — 구가 갈린 지역은 코드가 옛것일 수 있다.
+    const group = REGION_GROUPS.find((g) => g.sido === r.sido)
+      ?? REGION_GROUPS.find((g) => g.districts.some((d) => d.lawdCode === r.lawdCd5));
+    if (group) {
+      sido.value = group.sido;
+      const d = group.districts.find((x) => x.lawdCode === r.lawdCd5)
+        ?? group.districts.find((x) => x.label === r.sigungu);
+      districtCode.value = d?.lawdCode ?? '';
+      if (!d) resolveNote.value = `'${r.sigungu}' 를 목록에서 찾지 못했습니다 — 시·군·구를 골라 주세요.`;
+    }
+    await nextTick();
+    await peekDongs();
+    dong.value = r.dong || '';
+    spot.value = hit.parts.lot;
+    ho.value = hit.parts.ho;
+    price.value = hit.price;
+    if (!hit.price && hit.parts.lot) {
+      resolveNote.value = resolveNote.value || '공동주택 공시가격 자료가 없습니다 (단독·다가구이거나 아직 고시 전).';
+    }
+  } catch (err) {
+    resolveNote.value = err instanceof Error ? err.message : String(err);
+  } finally {
+    await nextTick();
+    filling = false;
+    resolving.value = false;
+  }
+};
 
 // ===== 받아 둔 자료 =====
 type Row = {
@@ -249,6 +303,31 @@ const downloadCsv = () => {
     </header>
 
     <div class="adm-body">
+      <!-- 주소 한 줄 -->
+      <div class="adm-bar">
+        <label class="adm-f grow">
+          <small>주소 <em>시·도부터 지번·호수까지</em></small>
+          <input
+            v-model="address"
+            class="adm-input wide"
+            placeholder="예) 인천광역시 서구 검암동 670-4 203호"
+            @keyup.enter="applyAddress"
+          />
+        </label>
+        <button type="button" class="adm-load" :disabled="resolving || !address.trim()" @click="applyAddress">
+          {{ resolving ? '찾는 중…' : '주소로 채우기' }}
+        </button>
+      </div>
+      <p v-if="resolveNote" class="adm-msg warn">{{ resolveNote }}</p>
+
+      <div v-if="price" class="adm-kpis one">
+        <div class="adm-kpi green">
+          <small>공동주택가격 <em>{{ price.year }}년 기준</em></small>
+          <strong>{{ won(price.price) }}</strong>
+          <span v-if="priceUnit" class="adm-kpi-sub">{{ priceUnit }}</span>
+        </div>
+      </div>
+
       <!-- 지역 -->
       <div class="adm-bar">
         <label class="adm-f">
@@ -273,7 +352,7 @@ const downloadCsv = () => {
           </select>
         </label>
         <label class="adm-f">
-          <small>주소 <em>지번 또는 단지명</em></small>
+          <small>지번 <em>또는 단지명</em></small>
           <input v-model="spot" class="adm-input" placeholder="예) 513-1 또는 성일연립" />
         </label>
         <label class="adm-f">
@@ -308,7 +387,7 @@ const downloadCsv = () => {
           <span v-if="missed > 0" class="dim">{{ missed }}개월치 못 받음</span>
         </div>
 
-        <p v-if="!spot" class="adm-msg warn">주소 칸에 지번이나 단지명을 적으면 그 자리의 거래만 모읍니다.</p>
+        <p v-if="!spot" class="adm-msg warn">지번이나 단지명을 적으면 그 자리의 거래만 모읍니다.</p>
         <p v-else-if="matched.length === 0" class="adm-msg warn">그 자리의 실거래가 없습니다.</p>
 
         <template v-if="matched.length > 0">
@@ -386,6 +465,8 @@ const downloadCsv = () => {
 .adm-f small em { font-style: normal; color: #aeb8ca; font-weight: 600; }
 .adm-input { width: 240px; box-sizing: border-box; height: 36px; border: 1px solid #dde3ee; border-radius: 9px; background: #fff; padding: 0 11px; font-family: inherit; font-size: 13.5px; color: #111827; }
 .adm-input.narrow { width: 160px; }
+.adm-input.wide { width: 420px; }
+.adm-f.grow { flex: 1 1 auto; }
 .adm-input:focus { outline: none; border-color: #2b6df3; }
 .adm-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 9px; padding: 3px; }
 .adm-seg-btn { border: none; background: transparent; border-radius: 7px; padding: 7px 13px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #6b7280; cursor: pointer; white-space: nowrap; }
@@ -411,6 +492,9 @@ const downloadCsv = () => {
 .adm-kpi small em { font-style: normal; color: #2b6df3; }
 .adm-kpi strong { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; }
 .adm-kpi.blue { background: #f4f8ff; border-color: #dbe6ff; }
+.adm-kpi.green { background: #f1fbf7; border-color: #cdeee1; }
+.adm-kpi-sub { font-size: 11.5px; font-weight: 700; color: #6b7280; }
+.adm-kpis.one { grid-template-columns: minmax(0, 320px); margin-top: 14px; }
 
 .adm-tabs { margin: 16px 0 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .adm-tab { border: 1px solid #e3e8f0; background: #fff; border-radius: 999px; padding: 7px 14px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #6b7280; cursor: pointer; }
