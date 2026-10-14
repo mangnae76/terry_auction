@@ -47,7 +47,8 @@ const router = useRouter();
   position: fixed;
   left: 0; right: 0; bottom: 0;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  /* 메뉴 수에 맞춰 고르게 나눈다 — 세금관리가 빠져 다섯 칸이다 */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   background: #fff;
   border-top: 1px solid #eef0f5;
   padding: 6px 0 max(6px, env(safe-area-inset-bottom));
