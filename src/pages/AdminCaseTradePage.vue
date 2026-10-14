@@ -1,198 +1,106 @@
 <script setup lang="ts">
-// 경매지번 실거래가 (관리자 도구) — 물건 상세의 '가격정보 → 경매지번 실거래가'와
-// 같은 구성이다. 다른 점은 하나, 경매 물건에 매여 있지 않다는 것.
-// 지역을 고르고 지번이나 단지명을 손으로 적으면 그 자리의 매매·전월세를 모은다.
+// 경매지번 공동주택가 및 실거래가 (관리자 도구).
 //
-// 자료는 물건 상세와 같은 fetchPlaceHistory 를 쓰고 저장소도 같이 쓴다 —
-// 앱에서 이미 받아 둔 시군구면 국토부를 다시 부르지 않는다.
-import { computed, nextTick, ref, watch } from 'vue';
+// 주소 한 줄이면 끝난다 — 주소에 국토부 열쇠(법정동코드 앞 5자리)와
+// 브이월드 열쇠(10자리+지번)가 같이 들어 있어, 공동주택가와 그 지번의
+// 매매·전세·월세를 한 번에 모은다. 호수는 공동주택가에만 쓰이고
+// 실거래 맞추기에서는 빠진다 (국토부 거래 자료에 동·호가 없다).
+//
+// 셈과 조회는 services/caseTradeAnalysis.ts 에 있다 — 이 화면은 보여 주기만 한다.
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
-import {
-  fetchDongTradeStats, fetchPlaceHistory, PLACE_HISTORY_YEARS,
-} from '../services/publicDataApi';
-import { cacheKey, readCache, writeCache, CACHE_TTL } from '../services/marketCache';
-import { lookupAddress, priceUnitText } from '../services/addressLookup';
+import { analyzeAddress, type CasePropertyType, type CaseTradeRow } from '../services/caseTradeAnalysis';
+import { priceUnitText } from '../services/addressLookup';
 import type { ApartPrice } from '../services/vworldApi';
+import type { ResolvedRegion } from '../services/regionResolver';
 
-type Kind = 'villa' | 'apt' | 'officetel';
-const KINDS: Array<{ key: Kind; label: string }> = [
+const KINDS: Array<{ key: CasePropertyType; label: string }> = [
   { key: 'villa', label: '연립다세대' },
   { key: 'apt', label: '아파트' },
   { key: 'officetel', label: '오피스텔' },
 ];
+const YEARS = [2, 4, 8, 10];
+const PYEONG = 3.305785;
 
 const router = useRouter();
 
-// ===== 지역 =====
-const sido = ref('');
-const districtCode = ref('');
-const dong = ref('');
-const kind = ref<Kind>('villa');
-/** 지번 또는 단지명 — '513-1' 처럼 적거나 '성일연립' 처럼 적는다 */
-const spot = ref('');
-const years = ref(PLACE_HISTORY_YEARS);
-
-/** 주소 한 줄 — 치면 지역 세 칸과 지번·호수가 저절로 찬다 */
+// ===== 주소 한 줄 =====
 const address = ref('');
-const ho = ref('');
-const resolving = ref(false);
-const resolveNote = ref('');
-const price = ref<ApartPrice | null>(null);
-const priceUnit = computed(() => priceUnitText(price.value));
+const kind = ref<CasePropertyType>('villa');
+const years = ref(2);
 
-const districts = computed<DistrictOption[]>(() => districtsOf(sido.value));
-const district = computed<DistrictOption | null>(
-  () => districts.value.find((d) => d.lawdCode === districtCode.value) ?? null,
-);
-let filling = false;
-watch(sido, () => { if (!filling) districtCode.value = ''; });
-
-// 읍면동 목록 — 표를 받기 전에도 고를 수 있어야 한다.
-// 시군구를 고르면 최근 석 달치를 먼저 받아 동 이름을 채운다 (국토부 호출 3번).
-const dongPeek = ref<Record<string, string[]>>({});
-const dongPeeking = ref(false);
-const peekKey = computed(() => (districtCode.value ? `${districtCode.value}|${kind.value}` : ''));
-const peekDongs = async () => {
-  const key = peekKey.value;
-  if (!key || dongPeek.value[key]) return;
-  dongPeeking.value = true;
-  try {
-    const res = await fetchDongTradeStats({
-      lawdCd5: districtCode.value, propertyType: kind.value, months: 3,
-    });
-    dongPeek.value = { ...dongPeek.value, [key]: res.rows.map((r) => r.umdNm) };
-  } catch {
-    // 못 받아도 그만 — 자료를 받고 나면 그때 목록이 찬다
-  } finally {
-    dongPeeking.value = false;
-  }
-};
-watch([districtCode, kind], () => { if (!filling) dong.value = ''; peekDongs(); });
-const dongOptions = computed(() => {
-  const peeked = dongPeek.value[peekKey.value] ?? [];
-  return Array.from(new Set([...loadedDongs.value, ...peeked])).sort((a, b) => a.localeCompare(b, 'ko'));
-});
-
-/** 주소를 풀어 지역·지번·호수를 채우고 공시가격을 집어 온다.
- *  카카오가 엉뚱한 구를 집는 일이 있어(인천 서구 → 서해구·검단구) 푼 값은
- *  드롭다운에 '채워 줄' 뿐이다 — 틀리면 손으로 고치면 된다. */
-const applyAddress = async () => {
-  const text = address.value.trim();
-  if (!text || resolving.value) return;
-  resolving.value = true;
-  resolveNote.value = '';
-  price.value = null;
-  filling = true;
-  try {
-    const hit = await lookupAddress(text);
-    if (!hit.region) { resolveNote.value = '주소에서 지역을 찾지 못했습니다 — 아래 칸을 손으로 고르세요.'; return; }
-    const r = hit.region;
-    // 시도·시군구는 우리 표에 있는 이름으로 맞춘다. 법정동코드가 먼저,
-    // 못 찾으면 이름으로 — 구가 갈린 지역은 코드가 옛것일 수 있다.
-    const group = REGION_GROUPS.find((g) => g.sido === r.sido)
-      ?? REGION_GROUPS.find((g) => g.districts.some((d) => d.lawdCode === r.lawdCd5));
-    if (group) {
-      sido.value = group.sido;
-      const d = group.districts.find((x) => x.lawdCode === r.lawdCd5)
-        ?? group.districts.find((x) => x.label === r.sigungu);
-      districtCode.value = d?.lawdCode ?? '';
-      if (!d) resolveNote.value = `'${r.sigungu}' 를 목록에서 찾지 못했습니다 — 시·군·구를 골라 주세요.`;
-    }
-    await nextTick();
-    await peekDongs();
-    dong.value = r.dong || '';
-    spot.value = hit.parts.lot;
-    ho.value = hit.parts.ho;
-    price.value = hit.price;
-    if (!hit.price && hit.parts.lot) {
-      resolveNote.value = resolveNote.value || '공동주택 공시가격 자료가 없습니다 (단독·다가구이거나 아직 고시 전).';
-    }
-  } catch (err) {
-    resolveNote.value = err instanceof Error ? err.message : String(err);
-  } finally {
-    await nextTick();
-    filling = false;
-    resolving.value = false;
-  }
-};
-
-// ===== 받아 둔 자료 =====
-type Row = {
-  kind: '매매' | '직거래' | '전세' | '월세';
-  contractDate: string;
-  amount: string;
-  price: number;
-  areaM2: number;
-  floor: string;
-  umdNm: string;
-  name: string;
-  jibun: string;
-};
 const loading = ref(false);
 const errorMsg = ref('');
 const notice = ref('');
-/** 시군구 전체를 들고 있다가 지번·단지명으로 추린다 — 적는 말을 바꿔도 다시 안 부른다 */
-const all = ref<Row[]>([]);
-const loadedLabel = ref('');
-const loadedDongs = ref<string[]>([]);
-const missed = ref(0);
 
-const won = (n: number) => (n > 0 ? `${Math.round(n).toLocaleString('ko-KR')}` : '-');
-const squash = (v: string) => v.replace(/\s+/g, '').toLowerCase();
-const PYEONG = 3.305785;
+const region = ref<ResolvedRegion | null>(null);
+const lot = ref('');
+const ho = ref('');
+const price = ref<ApartPrice | null>(null);
+const rows = ref<CaseTradeRow[]>([]);
+const scanned = ref(0);
+const missed = ref(0);
+const priceUnit = computed(() => priceUnitText(price.value));
+
+// 직접 고르기 — 카카오가 엉뚱한 구를 집었을 때만 편다
+// (인천 서구 → 서해구·검단구처럼 갈린 지역이 있다)
+const manualOpen = ref(false);
+const ovSido = ref('');
+const ovDistrictCode = ref('');
+const ovDong = ref('');
+const ovLot = ref('');
+const ovDistricts = computed<DistrictOption[]>(() => districtsOf(ovSido.value));
+
+/** 해석 결과 한 줄 — 어디를 보고 있는지 */
+const spotChip = computed(() => {
+  const r = region.value;
+  if (!r && !ovDistrictCode.value) return '';
+  const d = ovDistrictCode.value
+    ? ovDistricts.value.find((x) => x.lawdCode === ovDistrictCode.value)?.label
+    : r?.sigungu;
+  // 카카오는 시도를 '인천'처럼 줄여 준다 — 우리 표의 이름으로 펴서 적는다
+  const code = ovDistrictCode.value || r?.lawdCd5 || '';
+  const full = REGION_GROUPS.find((g) => g.districts.some((x) => x.lawdCode === code))?.sido;
+  return [ovSido.value || full || r?.sido, d, ovDong.value || r?.dong, ovLot.value || lot.value, ho.value ? `${ho.value}호` : '']
+    .filter(Boolean).join(' · ');
+});
 
 const callCount = computed(() => years.value * 12 * 2);
 
-const load = async () => {
-  const d = district.value;
-  if (loading.value || !d) return;
-  errorMsg.value = ''; notice.value = '';
+const run = async () => {
+  const text = address.value.trim();
+  if (!text || loading.value) return;
   loading.value = true;
+  errorMsg.value = '';
+  notice.value = '';
   try {
-    const key = cacheKey(d.lawdCode, kind.value, `y${years.value}`);
-    type Payload = Awaited<ReturnType<typeof fetchPlaceHistory>>;
-    let data = await readCache<Payload>('cachePlaceHistory', key, CACHE_TTL.place);
-    if (!data) {
-      data = await fetchPlaceHistory({
-        lawdCd5: d.lawdCode, propertyType: kind.value, years: years.value,
-      });
-      void writeCache('cachePlaceHistory', key, data);
+    const res = await analyzeAddress(
+      { address: text, propertyType: kind.value, years: years.value },
+      {
+        lawdCd5: ovDistrictCode.value || undefined,
+        umdNm: ovDong.value || undefined,
+        lot: ovLot.value || undefined,
+      },
+    );
+    region.value = res.region;
+    lot.value = res.parts.lot;
+    ho.value = res.parts.ho;
+    price.value = res.price;
+    rows.value = res.rows;
+    scanned.value = res.scanned;
+    missed.value = res.missedMonths;
+    // 지역이 안 풀렸으면 직접 고르기를 펴 준다 — 손쓸 자리를 바로 보여 준다
+    if (res.error) {
+      errorMsg.value = res.error;
+      if (!res.region) manualOpen.value = true;
+      return;
     }
-    const rows: Row[] = [
-      ...data.trades.map((r) => ({
-        kind: (r.dealType === '직거래' ? '직거래' : '매매') as Row['kind'],
-        contractDate: r.contractDate,
-        amount: won(r.price),
-        price: r.price,
-        areaM2: r.areaM2,
-        floor: r.floor,
-        umdNm: r.umdNm,
-        name: r.apartmentName ?? '',
-        jibun: r.jibun ?? '',
-      })),
-      // 전월세는 국토부가 '만원'으로 준다 — 매매(원)와 한 칸에 서니 원으로 맞춰 적는다
-      ...data.rents.map((r) => ({
-        kind: r.kind as Row['kind'],
-        contractDate: r.contractDate,
-        amount: r.monthlyRent > 0
-          ? `보 ${won(r.deposit * 10000)} / 월 ${won(r.monthlyRent * 10000)}`
-          : `보 ${won(r.deposit * 10000)}`,
-        price: r.deposit * 10000,
-        areaM2: r.areaM2,
-        floor: r.floor,
-        umdNm: r.umdNm,
-        name: r.apartmentName ?? '',
-        jibun: r.jibun ?? '',
-      })),
-    ].sort((a, b) => b.contractDate.localeCompare(a.contractDate));
-    all.value = rows;
-    loadedDongs.value = Array.from(new Set(rows.map((r) => r.umdNm).filter(Boolean)))
-      .sort((a, b) => a.localeCompare(b, 'ko'));
-    loadedLabel.value = `${sido.value} ${d.label}`;
-    missed.value = data.missedMonths;
-    if (rows.length === 0) notice.value = '그 기간에 거래가 없습니다.';
-    else if (data.missedMonths > 0) notice.value = `${data.missedMonths}개월치를 받지 못했습니다 — 다시 받으면 채워집니다.`;
+    if (res.rows.length === 0) notice.value = '그 지번의 실거래가 없습니다 — 기간을 늘리거나 직접 고르기로 지번을 고쳐 보세요.';
+    else if (res.missedMonths > 0) notice.value = `${res.missedMonths}개월치를 받지 못했습니다 — 다시 누르면 채워집니다.`;
+    if (!res.price) {
+      notice.value = notice.value || '공동주택가 자료가 없습니다 (단독·다가구이거나 아직 고시 전) — 직접 적을 수 있습니다.';
+    }
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -200,37 +108,24 @@ const load = async () => {
   }
 };
 
-// ===== 그 자리만 추리기 =====
-// 물건 상세와 같은 규칙 — 단지명이 들어 있거나, 동+지번이 맞으면 이 자리의 거래다.
-const matched = computed(() => {
-  const want = squash(spot.value);
-  return all.value.filter((r) => {
-    if (dong.value && r.umdNm !== dong.value) return false;
-    if (!want) return false;
-    const name = squash(r.name);
-    if (name.length > 1 && name.includes(want)) return true;
-    return !!r.jibun && squash(r.jibun) === want;
-  });
-});
-/** 적어 넣은 자리에 걸린 단지 이름들 — 어디를 보고 있는지 알려 준다 */
-const matchedNames = computed(() => Array.from(new Set(matched.value.map((r) => r.name).filter(Boolean))));
+// ===== 거르기 =====
+const areaFilter = ref('');
+const yearFilter = ref('');
+const tab = ref<'all' | '매매' | '전세' | '월세'>('매매');
+const resetFilters = () => { areaFilter.value = ''; yearFilter.value = ''; tab.value = '매매'; };
 
 const areaOptions = computed(() => {
   const set = new Set<string>();
-  matched.value.forEach((r) => { if (r.areaM2 > 0) set.add(String(r.areaM2)); });
+  rows.value.forEach((r) => { if (r.areaM2 > 0) set.add(String(r.areaM2)); });
   return [...set].sort((a, b) => Number(a) - Number(b));
 });
 const yearOptions = computed(() => {
   const set = new Set<string>();
-  matched.value.forEach((r) => { const y = r.contractDate.slice(0, 4); if (y) set.add(y); });
+  rows.value.forEach((r) => { const y = r.contractDate.slice(0, 4); if (y) set.add(y); });
   return [...set].sort().reverse();
 });
-const areaFilter = ref('');
-const yearFilter = ref('');
-const tab = ref<'all' | '매매' | '전세' | '월세'>('매매');
-
-/** 면적·연도만 거른 줄 — 탭과 상관없이 요약과 탭 건수가 이걸 본다 */
-const byAreaYear = computed(() => matched.value.filter((r) => {
+/** 면적·연도만 거른 줄 — 요약과 탭 건수가 이걸 본다 */
+const byAreaYear = computed(() => rows.value.filter((r) => {
   if (areaFilter.value && String(r.areaM2) !== areaFilter.value) return false;
   if (yearFilter.value && r.contractDate.slice(0, 4) !== yearFilter.value) return false;
   return true;
@@ -239,12 +134,15 @@ const shown = computed(() => byAreaYear.value.filter((r) => (
   tab.value === 'all' || r.kind === tab.value || (tab.value === '매매' && r.kind === '직거래')
 )));
 const counts = computed(() => {
-  const rows = byAreaYear.value;
-  const by = (t: string) => rows.filter((r) => r.kind === t || (t === '매매' && r.kind === '직거래')).length;
-  return { all: rows.length, 매매: by('매매'), 전세: by('전세'), 월세: by('월세') };
+  const list = byAreaYear.value;
+  const by = (t: string) => list.filter((r) => r.kind === t || (t === '매매' && r.kind === '직거래')).length;
+  return { all: list.length, 매매: by('매매'), 전세: by('전세'), 월세: by('월세') };
 });
 const countLabel = computed(() => (tab.value === 'all' ? '전체' : tab.value));
 const countValue = computed(() => (tab.value === 'all' ? counts.value.all : counts.value[tab.value]));
+
+const won = (n: number) => (n > 0 ? Math.round(n).toLocaleString('ko-KR') : '-');
+const matchedNames = computed(() => Array.from(new Set(rows.value.map((r) => r.name).filter(Boolean))));
 
 /** 요약 — 가장 최근 매매 한 건 */
 const recentSale = computed(() => byAreaYear.value.find((r) => r.kind === '매매' || r.kind === '직거래') ?? null);
@@ -255,6 +153,8 @@ const recentPyeong = computed(() => {
   if (!r || !(r.areaM2 > 0) || !(r.price > 0)) return 0;
   return Math.round(r.price / (r.areaM2 / PYEONG));
 });
+/** 가장 최근 전세 한 건 — 추정 전세가와 견준다 */
+const recentJeonse = computed(() => byAreaYear.value.find((r) => r.kind === '전세') ?? null);
 
 // 손품+현장 가격정보의 셋째 표와 같은 셈이다.
 //   전세가 = 공동주택가 × 비율(기본 126%)
@@ -274,7 +174,6 @@ const jeonseRate = computed(() => {
 });
 const jeonsePrice = computed(() => (pubValue.value > 0
   ? Math.round((pubValue.value * jeonseRate.value) / 100) : 0));
-/** 견줄 매매가 — 지금 걸러 보고 있는 줄 가운데 가장 최근 매매 */
 const saleReal = computed(() => recentPrice.value);
 const jeonseRatioText = computed(() => (jeonsePrice.value > 0 && saleReal.value > 0
   ? `${((jeonsePrice.value / saleReal.value) * 100).toFixed(0)}%` : '-'));
@@ -282,6 +181,16 @@ const gapText = computed(() => (jeonsePrice.value > 0 && saleReal.value > 0
   ? Math.round(saleReal.value - jeonsePrice.value).toLocaleString('ko-KR') : ''));
 const pubRatioText = computed(() => (pubValue.value > 0 && saleReal.value > 0
   ? `${((saleReal.value / pubValue.value) * 100).toFixed(0)}%` : '-'));
+/** 실거래 기준 전세가율 — 추정(공동주택가 × 비율)이 현실과 얼마나 벌어지는지 */
+const realJeonseRatioText = computed(() => {
+  const j = recentJeonse.value?.price ?? 0;
+  return j > 0 && saleReal.value > 0 ? `${((j / saleReal.value) * 100).toFixed(0)}%` : '-';
+});
+const realJeonseSub = computed(() => {
+  const r = recentJeonse.value;
+  if (!r) return '전세 거래 없음';
+  return `${r.contractDate.slice(0, 7)} 전세 ${won(r.price)}`;
+});
 
 const areaText = (m2: number) => (m2 > 0 ? `${m2.toFixed(2)} / ${(m2 / PYEONG).toFixed(2)}` : '-');
 const areaOptText = (opt: string) => {
@@ -289,9 +198,6 @@ const areaOptText = (opt: string) => {
   return m2 > 0 ? `${m2.toFixed(2)}㎡ / ${(m2 / PYEONG).toFixed(2)}평` : opt;
 };
 const kindClass = (k: string) => (k === '전세' ? 'tt-jeon' : k === '월세' ? 'tt-wol' : 'tt-buy');
-
-const resetFilters = () => { areaFilter.value = ''; yearFilter.value = ''; tab.value = '매매'; };
-watch(spot, () => { resetFilters(); });
 
 const downloadCsv = () => {
   if (shown.value.length === 0) return;
@@ -308,7 +214,7 @@ const downloadCsv = () => {
   const blob = new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8;' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `경매지번실거래_${loadedLabel.value}_${spot.value || '전체'}.csv`;
+  a.download = `경매지번_${spotChip.value.replace(/\s·\s/g, '_') || '실거래'}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 };
@@ -338,69 +244,8 @@ const downloadCsv = () => {
             v-model="address"
             class="adm-input wide"
             placeholder="예) 인천광역시 서구 검암동 670-4 203호"
-            @keyup.enter="applyAddress"
+            @keyup.enter="run"
           />
-        </label>
-        <button type="button" class="adm-load" :disabled="resolving || !address.trim()" @click="applyAddress">
-          {{ resolving ? '찾는 중…' : '주소로 채우기' }}
-        </button>
-      </div>
-      <p v-if="resolveNote" class="adm-msg warn">{{ resolveNote }}</p>
-
-      <div v-if="pubAuto > 0 || pubTyped || all.length > 0" class="adm-kpis four">
-        <div class="adm-kpi green">
-          <small>공동주택가 <em v-if="price">{{ price.year }}년 기준</em></small>
-          <input
-            v-model="pubTyped"
-            class="adm-kpi-input"
-            inputmode="numeric"
-            :placeholder="pubAuto > 0 ? pubAuto.toLocaleString('ko-KR') : '직접 입력'"
-          />
-          <span v-if="priceUnit" class="adm-kpi-sub">{{ priceUnit }}</span>
-        </div>
-        <div class="adm-kpi">
-          <small>전세가 <em><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" />%</em></small>
-          <strong>{{ won(jeonsePrice) }}</strong>
-          <span class="adm-kpi-sub">공동주택가 × {{ jeonseRate }}%</span>
-        </div>
-        <div class="adm-kpi">
-          <small>전세가율 / 갭</small>
-          <strong>{{ jeonseRatioText }}<em v-if="gapText" class="adm-gap"> / {{ gapText }}</em></strong>
-          <span class="adm-kpi-sub">전세가 ÷ 매매 실거래가</span>
-        </div>
-        <div class="adm-kpi">
-          <small>공시대비율</small>
-          <strong>{{ pubRatioText }}</strong>
-          <span class="adm-kpi-sub">매매 실거래가 ÷ 공동주택가</span>
-        </div>
-      </div>
-
-      <!-- 지역 -->
-      <div class="adm-bar">
-        <label class="adm-f">
-          <small>시 · 도</small>
-          <select v-model="sido" class="adm-input narrow">
-            <option value="">전국</option>
-            <option v-for="g in REGION_GROUPS" :key="g.sido" :value="g.sido">{{ g.sido }}</option>
-          </select>
-        </label>
-        <label class="adm-f">
-          <small>시 · 군 · 구</small>
-          <select v-model="districtCode" class="adm-input narrow" :disabled="!sido">
-            <option value="">선택</option>
-            <option v-for="d in districts" :key="d.lawdCode" :value="d.lawdCode">{{ d.label }}</option>
-          </select>
-        </label>
-        <label class="adm-f">
-          <small>읍 · 면 · 동</small>
-          <select v-model="dong" class="adm-input narrow" :disabled="dongOptions.length === 0">
-            <option value="">{{ dongPeeking ? '불러오는 중…' : '전체' }}</option>
-            <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
-          </select>
-        </label>
-        <label class="adm-f">
-          <small>지번 <em>또는 단지명</em></small>
-          <input v-model="spot" class="adm-input" placeholder="예) 513-1 또는 성일연립" />
         </label>
         <label class="adm-f">
           <small>종류</small>
@@ -409,80 +254,140 @@ const downloadCsv = () => {
           </div>
         </label>
         <label class="adm-f">
-          <small>기간</small>
+          <small>실거래 기간</small>
           <div class="adm-seg">
-            <button v-for="y in [3, 5, 10]" :key="y" type="button" :class="['adm-seg-btn', { on: years === y }]" @click="years = y">{{ y }}년</button>
+            <button v-for="y in YEARS" :key="y" type="button" :class="['adm-seg-btn', { on: years === y }]" @click="years = y">{{ y }}년</button>
           </div>
         </label>
-        <button type="button" class="adm-load" :disabled="loading || !district" @click="load">
-          {{ loading ? '불러오는 중…' : '데이터 로드' }}
+        <button type="button" class="adm-load" :disabled="loading || !address.trim()" @click="run">
+          {{ loading ? '분석 중…' : '분석' }}
         </button>
       </div>
 
-      <p v-if="district && all.length === 0 && !loading" class="adm-warn">
-        {{ sido }} {{ district.label }} {{ years }}년치를 받습니다 (국토부 호출 {{ callCount }}번 — 매매·전월세).
-        앱에서 이미 받아 둔 시군구면 저장해 둔 것을 씁니다.
-      </p>
+      <div class="adm-chip-row">
+        <span v-if="spotChip" class="adm-chip">{{ spotChip }}</span>
+        <span v-else class="adm-chip dim">주소를 적고 분석을 누르세요 — 국토부 호출 {{ callCount }}번 ({{ years }}년치 매매·전월세)</span>
+        <button type="button" class="adm-chip-btn" @click="manualOpen = !manualOpen">
+          {{ manualOpen ? '직접 고르기 닫기' : '직접 고르기' }}
+        </button>
+      </div>
+
+      <!-- 카카오가 틀렸을 때만 — 지역·지번을 손으로 고친다 -->
+      <div v-if="manualOpen" class="adm-bar manual">
+        <label class="adm-f">
+          <small>시 · 도</small>
+          <select v-model="ovSido" class="adm-input narrow">
+            <option value="">주소대로</option>
+            <option v-for="g in REGION_GROUPS" :key="g.sido" :value="g.sido">{{ g.sido }}</option>
+          </select>
+        </label>
+        <label class="adm-f">
+          <small>시 · 군 · 구</small>
+          <select v-model="ovDistrictCode" class="adm-input narrow" :disabled="!ovSido">
+            <option value="">주소대로</option>
+            <option v-for="d in ovDistricts" :key="d.lawdCode" :value="d.lawdCode">{{ d.label }}</option>
+          </select>
+        </label>
+        <label class="adm-f">
+          <small>읍 · 면 · 동</small>
+          <input v-model="ovDong" class="adm-input narrow" placeholder="주소대로" />
+        </label>
+        <label class="adm-f">
+          <small>지번 <em>또는 비워 두기</em></small>
+          <input v-model="ovLot" class="adm-input narrow" placeholder="주소대로" />
+        </label>
+        <button type="button" class="adm-load" :disabled="loading || !address.trim()" @click="run">다시 분석</button>
+      </div>
+
       <p v-if="errorMsg" class="adm-msg err">{{ errorMsg }}</p>
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
 
-      <template v-if="all.length > 0">
+      <template v-if="rows.length > 0">
         <div class="adm-sum">
-          <strong>{{ loadedLabel }} {{ dong }} {{ spot }}</strong>
-          <span v-if="matchedNames.length > 0" class="dim">{{ matchedNames.join(' · ') }}</span>
-          <span>최근 {{ years }}년 · 받아 둔 거래 {{ all.length.toLocaleString('ko-KR') }}건</span>
+          <strong>{{ matchedNames.join(' · ') || spotChip }}</strong>
+          <span>최근 {{ years }}년 · 이 지번 {{ rows.length.toLocaleString('ko-KR') }}건</span>
+          <span class="dim">시군구 전체 {{ scanned.toLocaleString('ko-KR') }}건에서 추림</span>
           <span v-if="missed > 0" class="dim">{{ missed }}개월치 못 받음</span>
         </div>
 
-        <p v-if="!spot" class="adm-msg warn">지번이나 단지명을 적으면 그 자리의 거래만 모읍니다.</p>
-        <p v-else-if="matched.length === 0" class="adm-msg warn">그 자리의 실거래가 없습니다.</p>
-
-        <template v-if="matched.length > 0">
-          <!-- 요약 -->
-          <div class="adm-kpis">
-            <div class="adm-kpi"><small><em>{{ recentYm }}</em> 실거래가</small><strong>{{ won(recentPrice) }}</strong></div>
-            <div class="adm-kpi"><small>평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
-            <div class="adm-kpi blue"><small>{{ countLabel }}</small><strong>{{ countValue }}건</strong></div>
+        <!-- 공동주택가 · 전세가 · 전세가율 -->
+        <div class="adm-kpis five">
+          <div class="adm-kpi green">
+            <small>공동주택가 <em v-if="price">{{ price.year }}년 기준</em></small>
+            <input
+              v-model="pubTyped"
+              class="adm-kpi-input"
+              inputmode="numeric"
+              :placeholder="pubAuto > 0 ? pubAuto.toLocaleString('ko-KR') : '직접 입력'"
+            />
+            <span v-if="priceUnit" class="adm-kpi-sub">{{ priceUnit }}</span>
           </div>
-
-          <!-- 탭 · 거르기 -->
-          <div class="adm-tabs">
-            <button :class="['adm-tab', 't-all', { on: tab === 'all' }]" @click="tab = 'all'">전체 ({{ counts.all }})</button>
-            <button :class="['adm-tab', 't-buy', { on: tab === '매매' }]" @click="tab = '매매'">매매 ({{ counts.매매 }})</button>
-            <button :class="['adm-tab', 't-jeon', { on: tab === '전세' }]" @click="tab = '전세'">전세 ({{ counts.전세 }})</button>
-            <button :class="['adm-tab', 't-wol', { on: tab === '월세' }]" @click="tab = '월세'">월세 ({{ counts.월세 }})</button>
-            <span class="adm-tab-fill" />
-            <select v-model="areaFilter" class="adm-input narrow">
-              <option value="">전체면적(㎡/평)</option>
-              <option v-for="o in areaOptions" :key="o" :value="o">{{ areaOptText(o) }}</option>
-            </select>
-            <select v-model="yearFilter" class="adm-input narrow">
-              <option value="">거래년도</option>
-              <option v-for="o in yearOptions" :key="o" :value="o">{{ o }}</option>
-            </select>
-            <button type="button" class="adm-ghost" @click="resetFilters">초기화</button>
+          <div class="adm-kpi">
+            <small>전세가 <em><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" />%</em></small>
+            <strong>{{ won(jeonsePrice) }}</strong>
+            <span class="adm-kpi-sub">공동주택가 × {{ jeonseRate }}%</span>
           </div>
-
-          <div class="adm-table-wrap">
-            <table class="adm-table">
-              <thead>
-                <tr><th>구분</th><th>계약일</th><th>거래금액</th><th>전용(㎡/평)</th><th>층</th><th>단지</th></tr>
-              </thead>
-              <tbody>
-                <tr v-for="(r, i) in shown.slice(0, 300)" :key="`${r.contractDate}-${r.floor}-${i}`">
-                  <td><span :class="['kind', kindClass(r.kind)]">{{ r.kind }}</span></td>
-                  <td>{{ r.contractDate }}</td>
-                  <td class="n strong price"><span class="v">{{ r.amount }}</span></td>
-                  <td class="n area"><span class="v">{{ areaText(r.areaM2) }}</span></td>
-                  <td class="n floor"><span class="v">{{ r.floor || '-' }}</span></td>
-                  <td class="addr">{{ [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') }}</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="adm-kpi">
+            <small>전세가율 / 갭</small>
+            <strong>{{ jeonseRatioText }}<em v-if="gapText" class="adm-gap"> / {{ gapText }}</em></strong>
+            <span class="adm-kpi-sub">전세가 ÷ 매매 실거래가</span>
           </div>
-          <p v-if="shown.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ shown.length.toLocaleString('ko-KR') }}줄은 엑셀로 내려받으세요.</p>
-          <p v-else-if="shown.length === 0" class="adm-foot">{{ countLabel }} 데이터 없음</p>
-        </template>
+          <div class="adm-kpi">
+            <small>실거래 전세가율</small>
+            <strong>{{ realJeonseRatioText }}</strong>
+            <span class="adm-kpi-sub">{{ realJeonseSub }}</span>
+          </div>
+          <div class="adm-kpi">
+            <small>공시대비율</small>
+            <strong>{{ pubRatioText }}</strong>
+            <span class="adm-kpi-sub">매매 실거래가 ÷ 공동주택가</span>
+          </div>
+        </div>
+
+        <!-- 요약 -->
+        <div class="adm-kpis three">
+          <div class="adm-kpi"><small><em>{{ recentYm }}</em> 실거래가</small><strong>{{ won(recentPrice) }}</strong></div>
+          <div class="adm-kpi"><small>평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
+          <div class="adm-kpi blue"><small>{{ countLabel }}</small><strong>{{ countValue }}건</strong></div>
+        </div>
+
+        <!-- 탭 · 거르기 -->
+        <div class="adm-tabs">
+          <button :class="['adm-tab', 't-all', { on: tab === 'all' }]" @click="tab = 'all'">전체 ({{ counts.all }})</button>
+          <button :class="['adm-tab', 't-buy', { on: tab === '매매' }]" @click="tab = '매매'">매매 ({{ counts.매매 }})</button>
+          <button :class="['adm-tab', 't-jeon', { on: tab === '전세' }]" @click="tab = '전세'">전세 ({{ counts.전세 }})</button>
+          <button :class="['adm-tab', 't-wol', { on: tab === '월세' }]" @click="tab = '월세'">월세 ({{ counts.월세 }})</button>
+          <span class="adm-tab-fill" />
+          <select v-model="areaFilter" class="adm-input narrow">
+            <option value="">전체면적(㎡/평)</option>
+            <option v-for="o in areaOptions" :key="o" :value="o">{{ areaOptText(o) }}</option>
+          </select>
+          <select v-model="yearFilter" class="adm-input narrow">
+            <option value="">거래년도</option>
+            <option v-for="o in yearOptions" :key="o" :value="o">{{ o }}</option>
+          </select>
+          <button type="button" class="adm-ghost" @click="resetFilters">초기화</button>
+        </div>
+
+        <div class="adm-table-wrap">
+          <table class="adm-table">
+            <thead>
+              <tr><th>구분</th><th>계약일</th><th>거래금액</th><th>전용(㎡/평)</th><th>층</th><th>단지</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="(r, i) in shown.slice(0, 300)" :key="`${r.contractDate}-${r.floor}-${i}`">
+                <td><span :class="['kind', kindClass(r.kind)]">{{ r.kind }}</span></td>
+                <td>{{ r.contractDate }}</td>
+                <td class="n strong price"><span class="v">{{ r.amount }}</span></td>
+                <td class="n area"><span class="v">{{ areaText(r.areaM2) }}</span></td>
+                <td class="n floor"><span class="v">{{ r.floor || '-' }}</span></td>
+                <td class="addr">{{ [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-if="shown.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ shown.length.toLocaleString('ko-KR') }}줄은 엑셀로 내려받으세요.</p>
+        <p v-else-if="shown.length === 0" class="adm-foot">{{ countLabel }} 데이터 없음</p>
       </template>
     </div>
   </section>
@@ -507,24 +412,30 @@ const downloadCsv = () => {
 
 .adm-body { flex: 1 1 auto; width: 100%; max-width: 1680px; margin: 0 auto; padding: 24px 28px 60px; }
 .adm-bar { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 16px 18px; }
+.adm-bar.manual { margin-top: 10px; background: #fbfcff; border-style: dashed; }
 .adm-f { display: flex; flex-direction: column; gap: 6px; }
+.adm-f.grow { flex: 1 1 auto; }
 .adm-f small { font-size: 11px; font-weight: 700; color: #6b7280; display: flex; align-items: baseline; gap: 4px; }
 .adm-f small em { font-style: normal; color: #aeb8ca; font-weight: 600; }
 .adm-input { width: 240px; box-sizing: border-box; height: 36px; border: 1px solid #dde3ee; border-radius: 9px; background: #fff; padding: 0 11px; font-family: inherit; font-size: 13.5px; color: #111827; }
 .adm-input.narrow { width: 160px; }
-.adm-input.wide { width: 420px; }
-.adm-f.grow { flex: 1 1 auto; }
+.adm-input.wide { width: 100%; min-width: 320px; }
 .adm-input:focus { outline: none; border-color: #2b6df3; }
 .adm-seg { display: inline-flex; gap: 4px; background: #f3f5f9; border-radius: 9px; padding: 3px; }
 .adm-seg-btn { border: none; background: transparent; border-radius: 7px; padding: 7px 13px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #6b7280; cursor: pointer; white-space: nowrap; }
 .adm-seg-btn.on { background: #fff; color: #1f3a72; box-shadow: 0 1px 3px rgba(17,24,39,0.1); }
-.adm-load { margin-left: auto; height: 36px; padding: 0 20px; border: none; border-radius: 9px; background: #1f3a72; color: #fff; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.adm-load { height: 36px; padding: 0 20px; border: none; border-radius: 9px; background: #1f3a72; color: #fff; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
 .adm-load:hover { background: #16305f; }
 .adm-load:disabled { background: #aeb8ca; cursor: default; }
 .adm-ghost { border: 1px solid #dde3ee; background: #fff; border-radius: 9px; height: 36px; padding: 0 16px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #374151; cursor: pointer; }
 .adm-ghost:hover { border-color: #b9cdf7; color: #2b6df3; }
 
-.adm-warn { margin: 14px 0 0; padding: 11px 14px; border-radius: 10px; background: #fff8e8; color: #8a6400; font-size: 12.5px; font-weight: 600; }
+.adm-chip-row { margin: 10px 2px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adm-chip { background: #eef3ff; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; color: #1f3a72; }
+.adm-chip.dim { background: #f3f5f9; color: #9ca3af; font-weight: 600; }
+.adm-chip-btn { border: 1px solid #dde3ee; border-radius: 999px; background: #fff; padding: 5px 11px; font-family: inherit; font-size: 11.5px; font-weight: 700; color: #6b7280; cursor: pointer; }
+.adm-chip-btn:hover { border-color: #b9cdf7; color: #2b6df3; }
+
 .adm-msg { margin: 14px 0 0; padding: 11px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600; }
 .adm-msg.err { background: #fdecea; color: #c0392b; }
 .adm-msg.warn { background: #fff8e8; color: #8a6400; }
@@ -533,30 +444,30 @@ const downloadCsv = () => {
 .adm-sum strong { font-size: 15px; font-weight: 800; color: #111827; }
 .adm-sum .dim { color: #9ca3af; }
 
-.adm-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.adm-kpis { display: grid; gap: 12px; }
+.adm-kpis.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.adm-kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 12px; }
 .adm-kpi { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
-.adm-kpi small { font-size: 11.5px; font-weight: 700; color: #6b7280; }
+.adm-kpi small { font-size: 11.5px; font-weight: 700; color: #6b7280; display: flex; align-items: baseline; gap: 4px; }
 .adm-kpi small em { font-style: normal; color: #2b6df3; }
 .adm-kpi strong { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; }
 .adm-kpi.blue { background: #f4f8ff; border-color: #dbe6ff; }
 .adm-kpi.green { background: #f1fbf7; border-color: #cdeee1; }
 .adm-kpi-sub { font-size: 11.5px; font-weight: 700; color: #6b7280; }
-.adm-kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; }
+/* 호수·전용 줄을 입력칸 글자 시작점에 맞춘다 (테두리 1 + 안여백 9) */
+.adm-kpi.green .adm-kpi-sub { padding-left: 10px; }
 .adm-kpi-input {
   width: 100%; box-sizing: border-box; height: 30px;
   border: 1px solid #dde3ee; border-radius: 8px; background: #fff; padding: 0 9px;
   font-family: inherit; font-size: 19px; font-weight: 800; letter-spacing: -0.4px; color: #111827;
 }
 .adm-kpi-input:focus { outline: none; border-color: #2b6df3; }
-/* 호수·전용 줄을 입력칸 글자 시작점에 맞춘다 (테두리 1 + 안여백 9) */
-.adm-kpi.green .adm-kpi-sub { padding-left: 10px; }
 .adm-rate-input {
   width: 34px; border: 1px solid #dde3ee; border-radius: 5px; background: #fff;
   padding: 1px 3px; font-family: inherit; font-size: 11px; font-weight: 700; color: #2b6df3; text-align: right;
 }
 .adm-rate-input:focus { outline: none; border-color: #2b6df3; }
 .adm-gap { font-style: normal; font-size: 13px; font-weight: 700; color: #6b7280; }
-@media (max-width: 1100px) { .adm-kpis.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .adm-tabs { margin: 16px 0 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .adm-tab { border: 1px solid #e3e8f0; background: #fff; border-radius: 999px; padding: 7px 14px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #6b7280; cursor: pointer; }
@@ -587,10 +498,11 @@ const downloadCsv = () => {
 .kind.tt-wol { background: #fff3e2; color: #b4740f; }
 .adm-foot { margin: 10px 2px 0; font-size: 11.5px; color: #9ca3af; }
 
+@media (max-width: 1280px) { .adm-kpis.five { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
   .adm-top-in, .adm-body { padding-left: 14px; padding-right: 14px; }
   .adm-f { flex: 1 1 100%; }
-  .adm-input, .adm-input.narrow { width: 100%; }
-  .adm-kpis { grid-template-columns: minmax(0, 1fr); }
+  .adm-input, .adm-input.narrow, .adm-input.wide { width: 100%; min-width: 0; }
+  .adm-kpis.five, .adm-kpis.three { grid-template-columns: minmax(0, 1fr); }
 }
 </style>
