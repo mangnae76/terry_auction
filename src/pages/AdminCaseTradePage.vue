@@ -499,7 +499,7 @@ const downloadCsv = () => {
             />
             <span v-if="priceUnit" class="adm-kpi-sub">{{ priceUnit }}</span>
           </div>
-          <div class="adm-kpi"><small>매매 실거래가 <span v-if="recentSale" class="adm-kpi-from pick">선택</span></small><strong>{{ won(recentPrice) }}</strong><span class="adm-kpi-sub">{{ recentSale ? rowFace(recentSale) : '표에서 매매 줄을 고르세요' }}</span></div>
+          <div class="adm-kpi"><small>매매 실거래가 <span v-if="recentSale" class="adm-kpi-from pick">선택</span></small><strong>{{ won(recentPrice) }}</strong><span :class="['adm-kpi-sub', { ask: !recentSale }]">{{ recentSale ? rowFace(recentSale) : '리스트에서 실거래를 선택하세요' }}</span></div>
           <div class="adm-kpi"><small>매매 평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
           <div class="adm-kpi">
             <small>공시대비율</small>
@@ -543,7 +543,7 @@ const downloadCsv = () => {
         </div>
 
         <div class="adm-kpis grid4 nextrow">
-          <div class="adm-kpi"><small>전세 실거래가 <span v-if="recentJeonse" class="adm-kpi-from pick">선택</span></small><strong>{{ won(jeonsePriceReal) }}</strong><span class="adm-kpi-sub">{{ recentJeonse ? rowFace(recentJeonse) : '표에서 전세 줄을 고르세요' }}</span><span v-if="jeonseVsPubText" class="adm-kpi-sub">{{ jeonseVsPubText }}</span></div>
+          <div class="adm-kpi"><small>전세 실거래가 <span v-if="recentJeonse" class="adm-kpi-from pick">선택</span></small><strong>{{ won(jeonsePriceReal) }}</strong><span :class="['adm-kpi-sub', { ask: !recentJeonse }]">{{ recentJeonse ? rowFace(recentJeonse) : '리스트에서 실거래를 선택하세요' }}</span><span v-if="jeonseVsPubText" class="adm-kpi-sub">{{ jeonseVsPubText }}</span></div>
           <div class="adm-kpi tipbox">
             <small>
               실거래 전세가율 / 갭
@@ -720,6 +720,8 @@ const downloadCsv = () => {
 .adm-kpi.green { background: #f1fbf7; border-color: #cdeee1; }
 .adm-kpi.green2 { background: #f1fbf7; border-color: #cdeee1; }
 .adm-kpi-sub { font-size: 11.5px; font-weight: 700; color: #6b7280; }
+/* 아직 고르지 않았을 때 — 무엇을 해야 하는지 파랗게 적는다 */
+.adm-kpi-sub.ask { color: #2b6df3; }
 /* 호수·전용 줄을 입력칸 글자 시작점에 맞춘다 (테두리 1 + 안여백 9) */
 .adm-kpi.green .adm-kpi-sub { padding-left: 10px; color: #2b6df3; }
 .adm-kpi-input {
