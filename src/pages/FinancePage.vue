@@ -237,6 +237,9 @@ const downloadCsv = (filename: string, rows: Array<Array<string | number>>) => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
+/** 표에 적는 날짜 — '2026-10-14' → '26-10-14'. 엑셀에는 원래대로 넣는다 */
+const shortDate = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2) : (d ?? ''));
+
 const exportExcel = () => {
   if (activeTab.value === 'cashFlow') {
     downloadCsv('자금입출금.csv', [
@@ -341,7 +344,7 @@ const exportExcel = () => {
           </thead>
           <tbody>
             <tr v-for="r in filteredCashFlows" :key="r.id" @click="openEdit('cashFlow', r)">
-              <td>{{ r.date }}</td>
+              <td>{{ shortDate(r.date) }}</td>
               <td :title="r.ownerName">{{ r.ownerName }}</td>
               <td><span :class="['pill', r.flowType === '입금' ? 'in' : 'out']">{{ r.flowType }}</span></td>
               <td :class="['r', 'amt', r.flowType === '입금' ? 'red' : 'blue']">{{ fmtMoneySigned(r.amount, r.flowType === '입금' ? '+' : '-') }}</td>
@@ -367,7 +370,7 @@ const exportExcel = () => {
           </thead>
           <tbody>
             <tr v-for="r in filteredBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
-              <td class="c">{{ r.date }}</td>
+              <td class="c">{{ shortDate(r.date) }}</td>
               <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
               <td class="c" :title="r.memo"><span class="pill memo">{{ r.memo || '-' }}</span></td>
               <td :title="r.detail">{{ r.detail }}</td>
@@ -394,7 +397,7 @@ const exportExcel = () => {
           </thead>
           <tbody>
             <tr v-for="r in filteredFuelMeal" :key="r.id" @click="openEdit('fuelMeal', r)">
-              <td class="c">{{ r.date }}</td>
+              <td class="c">{{ shortDate(r.date) }}</td>
               <td class="c" :title="r.region">{{ r.region }}</td>
               <td :title="r.store">{{ r.store }}</td>
               <td class="c" :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
@@ -427,7 +430,7 @@ const exportExcel = () => {
           </thead>
           <tbody>
             <tr v-for="r in filteredItemPurchases" :key="r.id" @click="openEdit('itemPurchase', r)">
-              <td class="c">{{ r.date }}</td>
+              <td class="c">{{ shortDate(r.date) }}</td>
               <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
               <td class="c" :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
               <td :title="r.description">{{ r.description }}</td>
