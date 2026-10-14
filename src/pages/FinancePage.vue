@@ -747,8 +747,8 @@ const exportExcel = () => {
 .fin-table.cash th.r, .fin-table.cash td.r { text-align: right; }
 .fin-table.cash th.l, .fin-table.cash td.l { text-align: left; }
 .fin-table.cash td:not(.r):not(.empty) { max-width: none; }
-.fin-table td.amt.blue { color: #2563eb; font-weight: 700; }
-.fin-table td.amt.red  { color: #dc2626; font-weight: 700; }
+.fin-table td.amt.blue { color: #2563eb; }
+.fin-table td.amt.red  { color: #dc2626; }
 .fin-table .empty { text-align: center; color: #9ca3af; padding: 20px; white-space: normal; font-size: 11px; }
 /* 텍스트 셀은 너무 길면 말줄임 — 한 줄 유지. 마우스 오버 시 title 속성으로 전체 표시 */
 .fin-table td:not(.r):not(.empty) {
@@ -757,7 +757,7 @@ const exportExcel = () => {
 
 .pill {
   display: inline-block; padding: 1px 7px; border-radius: 999px;
-  font-size: 10px; font-weight: 700; white-space: nowrap;
+  font-size: 10px; font-weight: 500; white-space: nowrap;
 }
 .pill.in  { background: #fee2e2; color: #dc2626; }
 .pill.out { background: #dbeafe; color: #2563eb; }
