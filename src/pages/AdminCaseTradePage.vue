@@ -696,7 +696,8 @@ const downloadCsv = () => {
 .adm-ghost { border: 1px solid #dde3ee; background: #fff; border-radius: 9px; height: 36px; padding: 0 16px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #374151; cursor: pointer; }
 .adm-ghost:hover { border-color: #b9cdf7; color: #2b6df3; }
 
-.adm-chip-row { margin: 10px 2px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* 아래 칸들과 너무 붙어 있어 한 칸 띄운다 */
+.adm-chip-row { margin: 12px 2px 20px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .adm-chip { background: #eef3ff; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; color: #1f3a72; }
 .adm-chip.dim { background: #f3f5f9; color: #9ca3af; font-weight: 600; }
 .adm-chip.area { background: #f1fbf7; color: #0f7a5e; }
