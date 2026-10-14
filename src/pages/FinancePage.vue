@@ -269,12 +269,12 @@ const exportExcel = () => {
   <section class="fin-shell">
     <div class="fin-fixed-top">
     <header class="fin-header">
-      <h1 class="fin-page-title">자금관리</h1>
+      <h1 class="fin-page-title">사업자금관리</h1>
       <nav class="fin-tabs">
-        <button :class="['fin-tab', { active: activeTab === 'cashFlow' }]" @click="activeTab = 'cashFlow'">사업계좌자금<br>입출금관리</button>
-        <button :class="['fin-tab', { active: activeTab === 'businessExpense' }]" @click="activeTab = 'businessExpense'">사업<br>지출내역</button>
-        <button :class="['fin-tab', { active: activeTab === 'fuelMeal' }]" @click="activeTab = 'fuelMeal'">유류&amp;식대<br>지출내역</button>
-        <button :class="['fin-tab', { active: activeTab === 'itemPurchase' }]" @click="activeTab = 'itemPurchase'">물품구매<br>지출내역</button>
+        <button :class="['fin-tab', { active: activeTab === 'cashFlow' }]" @click="activeTab = 'cashFlow'">자금입출금</button>
+        <button :class="['fin-tab', { active: activeTab === 'businessExpense' }]" @click="activeTab = 'businessExpense'">사업지출</button>
+        <button :class="['fin-tab', { active: activeTab === 'fuelMeal' }]" @click="activeTab = 'fuelMeal'">유류&amp;식대</button>
+        <button :class="['fin-tab', { active: activeTab === 'itemPurchase' }]" @click="activeTab = 'itemPurchase'">물품구매</button>
         <button :class="['fin-tab', { active: activeTab === 'tax' }]" @click="activeTab = 'tax'">부동산<br>세금신고</button>
       </nav>
     </header>
@@ -634,16 +634,17 @@ const exportExcel = () => {
 .fin-tabs {
   /* 네 칸을 정확히 4등분한 알약 카드 */
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
-  margin: 0 14px 12px; padding: 4px;
+  /* 제목줄 아래 구분선에 알약 상자가 닿아 선을 덮었다 — 한 칸 띄운다 */
+  margin: 10px 14px 12px; padding: 4px;
   background: #e2e8f2; border-radius: 12px;
 }
 .fin-tab {
   border: 1px solid transparent; background: transparent;
-  padding: 7px 2px; min-height: 50px; border-radius: 9px;
+  padding: 7px 2px; min-height: 42px; border-radius: 9px;
   /* 선택 여부와 상관없이 같은 크기·굵기 — 글자 폭이 흔들리지 않게 색만 바꾼다 */
-  font-size: 13px; font-weight: 700; line-height: 1.3; letter-spacing: -0.4px; color: #6b7280;
+  font-size: 13.5px; font-weight: 700; line-height: 1.3; letter-spacing: -0.4px; color: #6b7280;
   text-align: center; white-space: normal; cursor: pointer;
-  display: flex; align-items: flex-start; justify-content: center;
+  display: flex; align-items: center; justify-content: center;
 }
 .fin-tab.active {
   background: #fff; color: #111827;
