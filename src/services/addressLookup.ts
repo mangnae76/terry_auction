@@ -51,8 +51,13 @@ export const lookupAddress = async (
   address: string | undefined | null,
   opts: { areaM2?: number; withPrice?: boolean } = {},
 ): Promise<PlaceLookup> => {
-  const parts = parseAddressParts(address);
+  const typed = parseAddressParts(address);
   const region = await resolveRegionFromAddress(address);
+  // 카카오가 준 지번이 있으면 그쪽이 이긴다 — 도로명 주소를 쳐도,
+  // 지번을 잘못 적었어도 바른 지번으로 선다
+  const parts: AddressParts = region?.jibun
+    ? { ...typed, lot: region.jibun }
+    : typed;
   let price: ApartPrice | null = null;
   if ((opts.withPrice ?? true) && region?.bCode10 && parts.lot) {
     try {

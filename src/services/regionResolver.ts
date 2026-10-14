@@ -6,7 +6,8 @@ const KAKAO_REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY ?? '';
 // 예전 코드로는 국토부 실거래가 한 건도 안 잡힌다. 그래서
 //  (1) 키에 버전을 달아 한 번 비우고,
 //  (2) 저장한 지 오래된 값은 다시 물어보게 한다.
-const CACHE_KEY = 'region-resolver-cache-v2';
+// v3 — 지번(jibun)을 같이 들고 있게 되어 한 번 비운다
+const CACHE_KEY = 'region-resolver-cache-v3';
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface ResolvedRegion {
@@ -15,6 +16,10 @@ export interface ResolvedRegion {
   dong: string;
   lawdCd5: string;
   bCode10: string;
+  /** 지번 — '670-4' (산번지는 '산 12-3').
+   *  카카오는 도로명으로 물어도 지번 쪽 정보를 같이 준다. 그래서 이 값을
+   *  들고 있으면 도로명 주소를 쳐도 PNU와 실거래 맞추기가 똑같이 돌아간다. */
+  jibun: string;
   lng: number;
   lat: number;
 }
@@ -34,6 +39,7 @@ const readCache = (): CacheShape => {
 const writeCache = (next: CacheShape) => {
   try {
     localStorage.removeItem('region-resolver-cache-v1');
+    localStorage.removeItem('region-resolver-cache-v2');
     localStorage.setItem(CACHE_KEY, JSON.stringify(next));
   } catch {
     /* ignore quota */
@@ -62,6 +68,11 @@ type KakaoAddress = {
   region_1depth_name?: string;
   region_2depth_name?: string;
   region_3depth_name?: string;
+  /** 산 여부 — 'N' 대지, 'Y' 산 */
+  mountain_yn?: string;
+  main_address_no?: string;
+  sub_address_no?: string;
+  address_name?: string;
 };
 
 type KakaoDoc = {
@@ -71,7 +82,19 @@ type KakaoDoc = {
   road_address?: KakaoAddress;
 };
 
+/** 카카오가 준 지번을 '670-4' 꼴로 맞춘다 (산번지는 '산 12-3') */
+const jibunOf = (addr?: KakaoAddress): string => {
+  if (!addr) return '';
+  const main = String(addr.main_address_no ?? '').replace(/[^\d]/g, '');
+  if (!main) return '';
+  const sub = String(addr.sub_address_no ?? '').replace(/[^\d]/g, '');
+  const lot = Number(sub) > 0 ? `${Number(main)}-${Number(sub)}` : String(Number(main));
+  const mountain = String(addr.mountain_yn ?? '').toUpperCase();
+  return mountain === 'Y' || mountain === '1' ? `산 ${lot}` : lot;
+};
+
 const pickFromDoc = (doc: KakaoDoc): ResolvedRegion | null => {
+  // 지번 쪽을 먼저 본다 — 도로명으로 물어도 카카오가 지번 주소를 같이 준다
   const addr = doc.address ?? doc.road_address;
   const bCode10 = addr?.b_code?.replace(/[^\d]/g, '') ?? '';
   if (bCode10.length < 10) return null;
@@ -81,6 +104,7 @@ const pickFromDoc = (doc: KakaoDoc): ResolvedRegion | null => {
     dong: addr?.region_3depth_name ?? '',
     lawdCd5: bCode10.slice(0, 5),
     bCode10,
+    jibun: jibunOf(doc.address) || jibunOf(addr),
     lng: Number(doc.x ?? 0),
     lat: Number(doc.y ?? 0),
   };
