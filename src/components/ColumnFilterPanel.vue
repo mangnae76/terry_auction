@@ -13,7 +13,7 @@ const c = props.ctl;
     <div
       v-if="c.openKey.value"
       class="adm-flt-panel"
-      :style="{ left: `${c.pos.value.left}px`, top: `${c.pos.value.top}px` }"
+      :style="{ left: `${c.pos.value.left}px`, top: `${c.pos.value.top}px`, height: `${c.pos.value.height}px` }"
       @click.stop
     >
       <div class="adm-flt-top">
@@ -25,7 +25,7 @@ const c = props.ctl;
         <button type="button" @click="c.selectAll()">전체 선택</button>
         <button type="button" @click="c.selectNone()">전체 해제</button>
       </div>
-      <div class="adm-flt-list" :style="{ maxHeight: `${c.pos.value.listMax}px` }">
+      <div class="adm-flt-list">
         <label v-for="t in c.shown.value" :key="t" class="adm-flt-item">
           <input type="checkbox" :checked="c.draft.value.includes(t)" @change="c.toggle(t)" />
           <span>{{ t }}</span>
@@ -45,6 +45,8 @@ const c = props.ctl;
 .adm-flt-veil { position: fixed; inset: 0; z-index: 9998; background: transparent; }
 .adm-flt-panel {
   position: absolute; z-index: 9999; width: 240px;
+  /* 사람이 모서리를 끌어 넓히거나 늘릴 수 있다 — 값이 길거나 많을 때 */
+  resize: both; overflow: hidden; min-width: 200px; min-height: 220px; max-height: 92vh;
   background: #fff; border: 1px solid #dfe5ef; border-radius: 12px;
   box-shadow: 0 14px 34px rgba(17, 24, 39, 0.16);
   padding: 10px; display: flex; flex-direction: column; gap: 8px;
@@ -66,7 +68,7 @@ const c = props.ctl;
   color: #4b5563; cursor: pointer;
 }
 .adm-flt-acts button:hover { border-color: #c7d7f8; color: #2b6df3; background: #fff; }
-.adm-flt-list { max-height: 420px; overflow: auto; display: flex; flex-direction: column; }
+.adm-flt-list { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
 .adm-flt-item {
   display: flex; align-items: center; gap: 7px; padding: 4px 4px;
   font-size: 12px; cursor: pointer; border-radius: 6px;

@@ -19,7 +19,7 @@ export interface ColumnDef<T> {
 /** 창(ColumnFilterPanel)이 쓰는 몫만 추린 꼴 */
 export interface ColumnFilterCtl {
   openKey: Ref<string>;
-  pos: Ref<{ left: number; top: number; listMax: number }>;
+  pos: Ref<{ left: number; top: number; height: number }>;
   draft: Ref<string[]>;
   query: Ref<string>;
   options: ComputedRef<string[]>;
@@ -31,6 +31,11 @@ export interface ColumnFilterCtl {
   selectNone: () => void;
   apply: () => void;
 }
+
+/** 값 한 줄 높이 · 창에서 목록 말고 차지하는 높이(제목·찾기·단추들) · 최소 높이 */
+const ROW_H = 28;
+const CHROME_H = 152;
+const MIN_H = 220;
 
 export const useColumnFilters = <T>(source: Ref<T[]> | ComputedRef<T[]>, cols: ColumnDef<T>[]) => {
   const keys = cols.map((c) => c.key);
@@ -54,7 +59,7 @@ export const useColumnFilters = <T>(source: Ref<T[]> | ComputedRef<T[]>, cols: C
 
   // ===== 값 목록 창 =====
   const openKey = ref('');
-  const pos = ref({ left: 0, top: 0, listMax: 420 });
+  const pos = ref({ left: 0, top: 0, height: 320 });
   const draft = ref<string[]>([]);
   const query = ref('');
 
@@ -82,22 +87,27 @@ export const useColumnFilters = <T>(source: Ref<T[]> | ComputedRef<T[]>, cols: C
   const close = () => { openKey.value = ''; query.value = ''; };
   const open = (key: string, ev: MouseEvent) => {
     if (openKey.value === key) { close(); return; }
-    const th = (ev.currentTarget as HTMLElement | null)?.closest('th');
-    const r = th?.getBoundingClientRect();
-    if (r) {
-      // 값은 열다섯 줄쯤 보이게 — 화면 아래로 넘칠 자리면 그만큼 줄인다.
-      // 글 속에 붙여 둬서 화면을 굴리면 머리 칸과 함께 따라 움직인다
-      const room = window.innerHeight - r.bottom - 150;
-      pos.value = {
-        left: Math.round(Math.min(r.left, window.innerWidth - 248) + window.scrollX),
-        top: Math.round(r.bottom + 4 + window.scrollY),
-        listMax: Math.max(140, Math.min(420, room)),
-      };
-    }
     openKey.value = key;
     query.value = '';
     const sel = picked.value[key] ?? [];
     draft.value = sel.length > 0 ? [...sel] : [...options.value];
+
+    const th = (ev.currentTarget as HTMLElement | null)?.closest('th');
+    const r = th?.getBoundingClientRect();
+    if (r) {
+      // 값은 열 줄까지 보이게, 열 줄이 안 되면 있는 만큼만 — 빈 상자를 띄우지 않는다.
+      // 화면 아래로 넘칠 자리면 그만큼 줄이고, 더 보고 싶으면 사람이 상자를 늘린다.
+      // 글 속에 붙여 둬서 화면을 굴리면 머리 칸과 함께 따라 움직인다
+      const visible = Math.max(1, Math.min(10, options.value.length));
+      const want = Math.max(MIN_H, visible * ROW_H + CHROME_H + 6);
+      pos.value = {
+        left: Math.round(Math.min(r.left, window.innerWidth - 248) + window.scrollX),
+        top: Math.round(r.bottom + 4 + window.scrollY),
+        // 화면보다 커지지만 않게 막는다 — 아래가 좁다고 줄이면 두세 줄짜리
+        // 상자가 되어 되레 쓰기 나쁘다. 더 보려면 사람이 끌어 늘린다
+        height: Math.round(Math.min(want, window.innerHeight * 0.8)),
+      };
+    }
   };
   const toggle = (value: string) => {
     const i = draft.value.indexOf(value);

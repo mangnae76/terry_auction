@@ -358,7 +358,7 @@ const downloadCsv = () => {
         <span v-else class="adm-chip dim">주소를 적고 분석을 누르세요 — 국토부 호출 {{ callCount }}번 ({{ years }}년치 매매·전월세)</span>
         <span v-if="areaChip" class="adm-chip area" :class="{ off: !areaFilter }">{{ areaChip }}</span>
         <button type="button" class="adm-chip-btn" @click="manualOpen = !manualOpen">
-          {{ manualOpen ? '직접 고르기 닫기' : '직접 고르기' }}
+          {{ manualOpen ? '직접 입력 닫기' : '직접 입력' }}
         </button>
       </div>
 
@@ -395,7 +395,6 @@ const downloadCsv = () => {
 
       <template v-if="rows.length > 0">
         <div class="adm-sum">
-          <strong>{{ shortName || matchedNames.join(' · ') || spotChip }}</strong>
           <span>최근 {{ years }}년 · 이 지번 {{ rows.length.toLocaleString('ko-KR') }}건</span>
           <span class="dim">시군구 전체 {{ scanned.toLocaleString('ko-KR') }}건에서 추림</span>
           <span v-if="missed > 0" class="dim">{{ missed }}개월치 못 받음</span>
@@ -560,7 +559,7 @@ const downloadCsv = () => {
 .adm-msg.err { background: #fdecea; color: #c0392b; }
 .adm-msg.warn { background: #fff8e8; color: #8a6400; }
 
-.adm-sum { margin: 18px 0 12px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: #6b7280; }
+.adm-sum { margin: 18px 0 12px; padding-left: 14px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: #6b7280; }
 .adm-sum strong { font-size: 15px; font-weight: 800; color: #111827; }
 .adm-sum .dim { color: #9ca3af; }
 
