@@ -265,6 +265,9 @@ const gapText = computed(() => (jeonsePrice.value > 0 && saleReal.value > 0
   ? Math.round(saleReal.value - jeonsePrice.value).toLocaleString('ko-KR') : ''));
 const pubRatioText = computed(() => (pubValue.value > 0 && saleReal.value > 0
   ? `${((saleReal.value / pubValue.value) * 100).toFixed(0)}%` : '-'));
+/** 보증보험 기준 전세가율 (공동주택가 × 비율 ÷ 매매) */
+const jeonseRatioNum = computed(() => (jeonsePrice.value > 0 && saleReal.value > 0
+  ? (jeonsePrice.value / saleReal.value) * 100 : 0));
 /** 실거래 기준 전세가율 — 추정(공동주택가 × 비율)이 현실과 얼마나 벌어지는지 */
 const realJeonseRatioText = computed(() => {
   const j = recentJeonse.value?.price ?? 0;
@@ -274,6 +277,45 @@ const realJeonseSub = computed(() => {
   const r = recentJeonse.value;
   if (!r) return '전세 거래 없음';
   return `${r.contractDate.slice(0, 7)} 전세 ${won(r.price)}`;
+});
+/** 두 거래의 시점 차 (개월) — 몇 해씩 벌어지면 견주는 뜻이 옅어진다 */
+const pairGapMonths = computed(() => {
+  const j = recentJeonse.value?.contractDate ?? '';
+  const sdate = recentSale.value?.contractDate ?? '';
+  if (!j || !sdate) return 0;
+  const n = (v: string) => Number(v.slice(0, 4)) * 12 + Number(v.slice(5, 7));
+  return Math.abs(n(j) - n(sdate));
+});
+const realRatioNum = computed(() => {
+  const j = recentJeonse.value?.price ?? 0;
+  return j > 0 && saleReal.value > 0 ? (j / saleReal.value) * 100 : 0;
+});
+/** 실거래 전세가율이 뜻하는 바 — 보증금을 돌려받을 수 있는 자리인가 */
+const realRatioSign = computed(() => {
+  const n = realRatioNum.value;
+  if (!(n > 0)) return null;
+  if (n >= 90) return { tone: 'bad', text: '▲ 깡통전세 위험 — 보증금이 매매가에 닿는다' };
+  if (n >= 80) return { tone: 'warn', text: '▲ 높음 — 값이 빠지면 역전세' };
+  if (n >= 60) return { tone: 'ok', text: '보통 — 흔한 범위' };
+  return { tone: 'low', text: '▼ 낮음 — 전세 끼고 들어가도 갭이 크다' };
+});
+/** 전세와 매매가 몇 해씩 벌어져 있으면 그 사실을 먼저 알린다 */
+const pairGapNote = computed(() => {
+  const m = pairGapMonths.value;
+  if (!(m >= 24)) return '';
+  const y = Math.floor(m / 12);
+  return `※ 전세와 매매가 ${y}년 차 — 시세가 아니라 시점 차일 수 있다`;
+});
+/** 보증보험 기준과 실거래가 얼마나 벌어졌나 */
+const jeonseGapSign = computed(() => {
+  const a = jeonseRatioNum.value;
+  const b = realRatioNum.value;
+  if (!(a > 0) || !(b > 0)) return null;
+  const diff = Math.round(a - b);
+  if (Math.abs(diff) < 3) return { tone: 'ok', text: '≈ 실거래와 비슷' };
+  return diff > 0
+    ? { tone: 'warn', text: `▲ 실거래보다 ${diff}%p 높음 — 보증 한도만큼은 못 받는 중` }
+    : { tone: 'low', text: `▼ 실거래보다 ${-diff}%p 낮음 — 시장이 더 세게 간다` };
 });
 
 const areaText = (m2: number) => (m2 > 0 ? `${m2.toFixed(2)} / ${(m2 / PYEONG).toFixed(2)}` : '-');
@@ -328,7 +370,7 @@ const downloadCsv = () => {
       <!-- 주소 한 줄 -->
       <div class="adm-bar">
         <label class="adm-f grow">
-          <small>주소 <em>시·도부터 지번·호수까지</em></small>
+          <small>주소 입력 <em>시·도부터 지번·호수까지</em></small>
           <input
             v-model="address"
             class="adm-input wide"
@@ -418,14 +460,17 @@ const downloadCsv = () => {
             <span class="adm-kpi-sub">공동주택가 × {{ jeonseRate }}%</span>
           </div>
           <div class="adm-kpi">
-            <small>전세가율 / 갭</small>
+            <small>보증보험 전세가율 / 갭</small>
             <strong>{{ jeonseRatioText }}<em v-if="gapText" class="adm-gap"> / {{ gapText }}</em></strong>
-            <span class="adm-kpi-sub">전세가 ÷ 매매 실거래가</span>
+            <span class="adm-kpi-sub">전세가(공동주택가 × {{ jeonseRate }}%) ÷ 매매 실거래가</span>
+            <span v-if="jeonseGapSign" :class="['adm-sign', jeonseGapSign.tone]">{{ jeonseGapSign.text }}</span>
           </div>
           <div class="adm-kpi">
             <small>실거래 전세가율</small>
             <strong>{{ realJeonseRatioText }}</strong>
-            <span class="adm-kpi-sub">{{ realJeonseSub }}</span>
+            <span class="adm-kpi-sub">전세 실거래가 ÷ 매매 실거래가 · {{ realJeonseSub }}</span>
+            <span v-if="realRatioSign" :class="['adm-sign', realRatioSign.tone]">{{ realRatioSign.text }}</span>
+            <span v-if="pairGapNote" class="adm-sign ok">{{ pairGapNote }}</span>
           </div>
           <div class="adm-kpi">
             <small>공시대비율</small>
@@ -574,7 +619,7 @@ const downloadCsv = () => {
 .adm-kpi.green { background: #f1fbf7; border-color: #cdeee1; }
 .adm-kpi-sub { font-size: 11.5px; font-weight: 700; color: #6b7280; }
 /* 호수·전용 줄을 입력칸 글자 시작점에 맞춘다 (테두리 1 + 안여백 9) */
-.adm-kpi.green .adm-kpi-sub { padding-left: 10px; }
+.adm-kpi.green .adm-kpi-sub { padding-left: 10px; color: #2b6df3; }
 .adm-kpi-input {
   width: 100%; box-sizing: border-box; height: 30px;
   border: 1px solid #dde3ee; border-radius: 8px; background: #fff; padding: 0 9px;
@@ -587,6 +632,12 @@ const downloadCsv = () => {
 }
 .adm-rate-input:focus { outline: none; border-color: #2b6df3; }
 .adm-gap { font-style: normal; font-size: 13px; font-weight: 700; color: #6b7280; }
+/* 숫자가 뜻하는 바 — 한 줄로 짚어 준다 */
+.adm-sign { font-size: 11px; font-weight: 800; line-height: 1.35; }
+.adm-sign.bad { color: #d0342c; }
+.adm-sign.warn { color: #b4740f; }
+.adm-sign.ok { color: #6b7280; }
+.adm-sign.low { color: #2b6df3; }
 
 .adm-tabs { margin: 16px 0 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .adm-tab { border: 1px solid #e3e8f0; background: #fff; border-radius: 999px; padding: 7px 14px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #6b7280; cursor: pointer; }
