@@ -272,7 +272,7 @@ const exportExcel = () => {
     ]);
   } else if (activeTab.value === 'itemPurchase') {
     downloadCsv('물품구매.csv', [
-      ['사용일', '물건', '구분', '상세내역', '수량', '단가', '계', '합계(VAT)', '구매업체', '카드', '사용자', '배송비', '비고'],
+      ['사용일', '물건', '사용구분', '상세내역', '수량', '단가', '계', '합계(VAT포함)', '구매처', '카드', '사용자', '배송비', '비고'],
       ...filteredItemPurchases.value.map((r) => [
         r.date, r.auctionLabel, r.category, r.description,
         r.quantity, r.unitPrice, r.subtotal, r.totalWithVat,
@@ -441,25 +441,25 @@ const exportExcel = () => {
     <!-- ========== TAB 4: 물품구매 ========== -->
     <template v-else-if="activeTab === 'itemPurchase'">
       <div class="fin-table-wrap">
-        <table class="fin-table">
+        <table class="fin-table mid">
           <thead>
             <tr>
-              <th class="c">사용일</th><th class="c">사용구분</th><th>상세내역</th>
-              <th class="r">수량</th><th class="r">단가</th><th class="r">합계(VAT)</th>
-              <th>구매업체</th><th class="c">카드</th><th>비고</th>
+              <th>사용일</th><th>사용구분</th><th>상세내역</th>
+              <th>수량</th><th>단가</th><th>합계(VAT포함)</th>
+              <th>구매처</th><th>카드</th><th>비고</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredItemPurchases" :key="r.id" @click="openEdit('itemPurchase', r)">
-              <td class="c">{{ shortDate(r.date) }}</td>
-              <td class="c" :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
+              <td>{{ shortDate(r.date) }}</td>
+              <td :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
               <td :title="r.description">{{ r.description }}</td>
-              <td class="r">{{ r.quantity }}</td>
-              <td class="r">{{ fmtMoney(r.unitPrice) }}원</td>
+              <td>{{ r.quantity }}</td>
+              <td>{{ fmtMoney(r.unitPrice) }}원</td>
               <!-- 합계는 적어 둔 값이 있으면 그 값, 없으면 수량 × 단가 -->
-              <td class="r">{{ fmtMoney(r.totalWithVat || (r.quantity || 0) * (r.unitPrice || 0)) }}원</td>
+              <td>{{ fmtMoney(r.totalWithVat || (r.quantity || 0) * (r.unitPrice || 0)) }}원</td>
               <td :title="r.vendor">{{ r.vendor }}</td>
-              <td class="c" :title="r.card">{{ r.card }}</td>
+              <td :title="r.card">{{ cardShort(r.card) }}</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredItemPurchases.length === 0">
@@ -733,6 +733,8 @@ const exportExcel = () => {
 .fin-table.cash th, .fin-table.cash td,
 .fin-table.mid th, .fin-table.mid td { text-align: center; }
 .fin-table.mid th.r, .fin-table.mid td.r { text-align: right; }
+/* 칸이 많은 표는 글자에 폭을 맡기되 너무 붙지 않게 숨통을 둔다 */
+.fin-table.mid th, .fin-table.mid td { padding-left: 10px; padding-right: 10px; }
 .fin-table.mid td:not(.r):not(.empty) { max-width: none; }
 .fin-table.cash th.r, .fin-table.cash td.r { text-align: right; }
 .fin-table.cash th.l, .fin-table.cash td.l { text-align: left; }
