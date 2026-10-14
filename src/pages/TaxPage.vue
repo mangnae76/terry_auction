@@ -269,14 +269,14 @@ const MAIN_SCHEDULE = [
     </div>
 
     <div class="tax-cards">
-      <div class="tax-card green">
+      <div class="tax-card grey">
         <small>매도 완료</small>
         <strong>{{ soldThisYear.length }}건</strong>
         <em>보유 중 {{ holdingCount }}건</em>
       </div>
       <div class="tax-card red">
         <small>총 사업소득</small>
-        <strong class="green">{{ won(totalIncome, true) }}</strong>
+        <strong class="red">{{ won(totalIncome, true) }}</strong>
         <em>매도가 − 모든 지출</em>
       </div>
       <div class="tax-card blue">
@@ -601,7 +601,9 @@ const MAIN_SCHEDULE = [
 .tax-card strong.blue { color: #2b6df3; }
 .tax-card strong.green { color: #16a34a; }
 .tax-card strong.orange { color: #ea580c; }
-/* 패널 색 — 매도완료 초록 / 사업소득 빨강 / 종합소득세 파랑 */
+.tax-card strong.red { color: #dc2626; }
+/* 패널 색 — 매도완료 회색 / 사업소득 빨강 / 종합소득세 파랑 */
+.tax-card.grey { background: #dfe3ea; }
 .tax-card.green { background: #e8f6ee; }
 .tax-card.red { background: #fdecec; }
 .tax-card.blue { background: #e9f0fd; }
