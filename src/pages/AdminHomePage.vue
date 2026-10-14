@@ -207,9 +207,12 @@ const openTool = (tool: Tool) => {
 /* 크기·비율은 앱 로그인 화면 그대로 — 로고 36px, 아래 글자 12px */
 .adm-logo-wrap { display: flex; flex-direction: column; align-items: flex-end; line-height: 1; }
 .adm-logo { height: 36px; object-fit: contain; display: block; }
+/* 로고 그림 아래에 빈 자리가 11px쯤 들어 있다 (592x194 중 글자는 y133 까지).
+   그만큼 끌어올려 MYTURN 글자 바로 밑에 붙인다. 오른쪽도 그림 여백만큼 당겨
+   N 끝과 맞춘다 */
 .adm-logo-sub {
-  margin-top: 6px; font-size: 12px; font-weight: 600; letter-spacing: 1px;
-  color: #111827; padding-right: 1px;
+  margin-top: -11px; font-size: 8.5px; font-weight: 700; letter-spacing: 0.6px;
+  color: #111827; padding-right: 2px;
 }
 .adm-brand-tag {
   font-size: 11.5px; font-weight: 700; color: #6b7280;
