@@ -368,13 +368,13 @@ const exportExcel = () => {
       <div class="fin-table-wrap">
         <table class="fin-table">
           <thead>
-            <tr><th>결제일</th><th>물건</th><th>구분</th><th>명세</th><th class="r">비용(VAT포함)</th><th>비고</th></tr>
+            <tr><th class="c">결제일</th><th>물건</th><th class="c">구분</th><th>명세</th><th class="r">비용(VAT포함)</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
-              <td>{{ r.date }}</td>
+              <td class="c">{{ r.date }}</td>
               <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
-              <td :title="r.memo"><span class="pill memo">{{ r.memo || '-' }}</span></td>
+              <td class="c" :title="r.memo"><span class="pill memo">{{ r.memo || '-' }}</span></td>
               <td :title="r.detail">{{ r.detail }}</td>
               <td class="r"><strong>{{ fmtMoney(r.amountWithVat) }}</strong></td>
               <td :title="r.note">{{ r.note }}</td>
@@ -395,17 +395,17 @@ const exportExcel = () => {
       <div class="fin-table-wrap">
         <table class="fin-table">
           <thead>
-            <tr><th>사용일</th><th>사용지역</th><th>사용처/구매처</th><th>사용구분</th><th class="r">지출</th><th>구매카드</th><th>사용자</th><th>비고</th></tr>
+            <tr><th class="c">사용일</th><th class="c">사용지역</th><th>사용처/구매처</th><th class="c">사용구분</th><th class="r">지출</th><th class="c">구매카드</th><th class="c">사용자</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredFuelMeal" :key="r.id" @click="openEdit('fuelMeal', r)">
-              <td>{{ r.date }}</td>
-              <td :title="r.region">{{ r.region }}</td>
+              <td class="c">{{ r.date }}</td>
+              <td class="c" :title="r.region">{{ r.region }}</td>
               <td :title="r.store">{{ r.store }}</td>
-              <td :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
+              <td class="c" :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
               <td class="r">{{ fmtMoney(r.amount) }}원</td>
-              <td :title="r.card">{{ r.card }}</td>
-              <td :title="(r.users || []).join(',')">{{ (r.users || []).join(',') }}</td>
+              <td class="c" :title="r.card">{{ r.card }}</td>
+              <td class="c" :title="(r.users || []).join(',')">{{ (r.users || []).join(',') }}</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredFuelMeal.length === 0">
@@ -425,24 +425,24 @@ const exportExcel = () => {
         <table class="fin-table">
           <thead>
             <tr>
-              <th>사용일</th><th>물건</th><th>구분</th><th>상세내역</th>
+              <th class="c">사용일</th><th>물건</th><th class="c">구분</th><th>상세내역</th>
               <th class="r">수량</th><th class="r">단가</th><th class="r">계</th><th class="r">합계(VAT)</th>
-              <th>구매업체</th><th>카드</th><th>사용자</th><th class="r">배송비</th><th>비고</th>
+              <th>구매업체</th><th class="c">카드</th><th class="c">사용자</th><th class="r">배송비</th><th>비고</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredItemPurchases" :key="r.id" @click="openEdit('itemPurchase', r)">
-              <td>{{ r.date }}</td>
+              <td class="c">{{ r.date }}</td>
               <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
-              <td :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
+              <td class="c" :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
               <td :title="r.description">{{ r.description }}</td>
               <td class="r">{{ r.quantity }}</td>
               <td class="r">{{ fmtMoney(r.unitPrice) }}원</td>
               <td class="r">{{ fmtMoney(r.subtotal) }}원</td>
               <td class="r"><strong>{{ fmtMoney(r.totalWithVat) }}원</strong></td>
               <td :title="r.vendor">{{ r.vendor }}</td>
-              <td :title="r.card">{{ r.card }}</td>
-              <td :title="r.user">{{ r.user }}</td>
+              <td class="c" :title="r.card">{{ r.card }}</td>
+              <td class="c" :title="r.user">{{ r.user }}</td>
               <td class="r">{{ r.shippingFee ? fmtMoney(r.shippingFee) + '원' : '-' }}</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
@@ -749,6 +749,8 @@ const exportExcel = () => {
 .fin-table tbody tr { cursor: pointer; }
 .fin-table tbody tr:hover { background: #f9fafb; }
 .fin-table td.r, .fin-table th.r { text-align: right; }
+/* 날짜·구분·카드처럼 짧은 칸은 가운데 — 긴 글 칸만 왼쪽에 둔다 */
+.fin-table td.c, .fin-table th.c { text-align: center; }
 /* 자금입출금 표 — 짧은 칸은 가운데, 금액은 오른쪽, 비고만 왼쪽.
    다 왼쪽으로 몰아 두니 오른쪽이 휑하고 줄이 읽히지 않았다 */
 .fin-table.cash th, .fin-table.cash td { text-align: center; }
