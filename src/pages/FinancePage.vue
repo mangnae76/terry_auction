@@ -275,7 +275,7 @@ const exportExcel = () => {
         <button :class="['fin-tab', { active: activeTab === 'businessExpense' }]" @click="activeTab = 'businessExpense'">사업지출</button>
         <button :class="['fin-tab', { active: activeTab === 'fuelMeal' }]" @click="activeTab = 'fuelMeal'">유류&amp;식대</button>
         <button :class="['fin-tab', { active: activeTab === 'itemPurchase' }]" @click="activeTab = 'itemPurchase'">물품구매</button>
-        <button :class="['fin-tab', { active: activeTab === 'tax' }]" @click="activeTab = 'tax'">부동산<br>세금신고</button>
+        <button :class="['fin-tab', { active: activeTab === 'tax' }]" @click="activeTab = 'tax'">세금신고</button>
       </nav>
     </header>
 
