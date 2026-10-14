@@ -7,7 +7,7 @@
 // userPrefs 가 아니라 따로 컬렉션을 쓰는 까닭: 분석 도구가 앱과 갈라져도
 // 이 자료는 그대로 따라간다. 앱 설정과 엉키지 않는다.
 import {
-  addDoc, collection, deleteDoc, doc, getDocs, limit, orderBy, query, updateDoc, where,
+  addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where,
 } from 'firebase/firestore';
 import { firestore } from './firebase';
 import type { CaseTradeRow, CasePropertyType } from './caseTradeAnalysis';
@@ -41,17 +41,17 @@ export interface CaseSnapshot {
 
 const ready = () => Boolean(firestore);
 
-/** 저장해 둔 목록 — 최근 것이 먼저 */
-export const listSnapshots = async (uid: string, max = 100): Promise<CaseSnapshot[]> => {
+/** 저장해 둔 목록 — 최근 것이 먼저.
+ *  uid 로만 물어보고 차례는 여기서 매긴다. where + orderBy 를 같이 쓰면
+ *  Firestore 가 복합 색인을 요구해, 색인을 깔기 전에는 한 건도 못 읽는다. */
+export const listSnapshots = async (uid: string, max = 200): Promise<CaseSnapshot[]> => {
   if (!uid || !ready()) return [];
-  const q = query(
-    collection(firestore!, COLLECTION),
-    where('uid', '==', uid),
-    orderBy('savedAt', 'desc'),
-    limit(max),
-  );
+  const q = query(collection(firestore!, COLLECTION), where('uid', '==', uid));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ ...(d.data() as CaseSnapshot), id: d.id }));
+  return snap.docs
+    .map((d) => ({ ...(d.data() as CaseSnapshot), id: d.id }))
+    .sort((a, b) => (b.savedAt ?? 0) - (a.savedAt ?? 0))
+    .slice(0, max);
 };
 
 /** 새로 하나 남긴다 — 고친 자취가 남게 덮어쓰기보다 이쪽을 기본으로 쓴다 */

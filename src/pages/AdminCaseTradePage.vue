@@ -431,13 +431,17 @@ const collectSnapshot = (): CaseSnapshot => ({
   jeonse: recentJeonse.value,
 });
 
+const snapErr = ref('');
 const loadSnapList = async () => {
-  if (!auth.uid) { snapList.value = []; return; }
+  snapErr.value = '';
+  if (!auth.uid) { snapList.value = []; snapErr.value = '로그인한 뒤에 보입니다.'; return; }
   snapBusy.value = true;
   try {
     snapList.value = await listSnapshots(auth.uid);
   } catch (err) {
-    flash(err instanceof Error ? err.message : String(err));
+    // 까닭을 창에 남긴다 — 잠깐 떴다 사라지면 무엇이 잘못됐는지 알 수가 없다
+    snapErr.value = err instanceof Error ? err.message : String(err);
+    console.warn('[adminSnapshots] 목록 실패:', err);
   } finally {
     snapBusy.value = false;
   }
@@ -811,7 +815,8 @@ const downloadCsv = () => {
           <span>{{ snapList.length }}건</span>
           <button type="button" @click="snapOpen = false">닫기</button>
         </header>
-        <p v-if="snapBusy" class="adm-snap-empty">불러오는 중…</p>
+        <p v-if="snapErr" class="adm-snap-empty err">{{ snapErr }}</p>
+        <p v-else-if="snapBusy" class="adm-snap-empty">불러오는 중…</p>
         <p v-else-if="snapList.length === 0" class="adm-snap-empty">저장해 둔 분석이 없습니다.</p>
         <ul v-else>
           <li v-for="snap in snapList" :key="snap.id">
@@ -1036,6 +1041,8 @@ const downloadCsv = () => {
   font-size: 16px; line-height: 1;
 }
 .adm-snap-panel .del:hover { color: #d0342c; }
+.adm-snap-empty { margin: 16px; text-align: center; font-size: 12px; color: #9ca3af; }
+.adm-snap-empty.err { color: #c0392b; }
 
 /* 인쇄 — 고르고 적는 자리는 빼고 숫자만 남긴다 */
 @media print {
