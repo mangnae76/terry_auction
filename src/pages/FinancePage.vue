@@ -239,8 +239,8 @@ const downloadCsv = (filename: string, rows: Array<Array<string | number>>) => {
 const exportExcel = () => {
   if (activeTab.value === 'cashFlow') {
     downloadCsv('자금입출금.csv', [
-      ['일자', '입출금', '명세', '금액', '비고'],
-      ...filteredCashFlows.value.map((r) => [r.date, r.flowType, r.ownerName, r.amount, r.note]),
+      ['일자', '명세', '입출금', '금액', '비고'],
+      ...filteredCashFlows.value.map((r) => [r.date, r.ownerName, r.flowType, r.amount, r.note]),
     ]);
   } else if (activeTab.value === 'businessExpense') {
     downloadCsv('사업지출.csv', [
@@ -338,17 +338,17 @@ const exportExcel = () => {
         <table class="fin-table cash">
           <!-- 칸 너비를 못 박는다 — 글자가 왼쪽에 몰리지 않게 -->
           <colgroup>
-            <col style="width: 22%" /><col style="width: 16%" /><col style="width: 20%" />
+            <col style="width: 22%" /><col style="width: 20%" /><col style="width: 16%" />
             <col style="width: 24%" /><col />
           </colgroup>
           <thead>
-            <tr><th>일자</th><th>입출금</th><th>명세</th><th class="r">개인 자금</th><th class="l">비고</th></tr>
+            <tr><th>일자</th><th>명세</th><th>입출금</th><th class="r">개인 자금</th><th class="l">비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredCashFlows" :key="r.id" @click="openEdit('cashFlow', r)">
               <td>{{ r.date }}</td>
-              <td><span :class="['pill', r.flowType === '입금' ? 'in' : 'out']">{{ r.flowType }}</span></td>
               <td :title="r.ownerName">{{ r.ownerName }}</td>
+              <td><span :class="['pill', r.flowType === '입금' ? 'in' : 'out']">{{ r.flowType }}</span></td>
               <td :class="['r', 'amt', r.flowType === '입금' ? 'red' : 'blue']">{{ fmtMoneySigned(r.amount, r.flowType === '입금' ? '+' : '-') }}</td>
               <td class="l" :title="r.note">{{ r.note }}</td>
             </tr>
@@ -471,7 +471,7 @@ const exportExcel = () => {
 
         <!-- 자금입출금 -->
         <template v-if="modalKind === 'cashFlow'">
-          <label>소유자<input type="text" v-model="cfDraft.ownerName" /></label>
+          <label>명세<input type="text" v-model="cfDraft.ownerName" /></label>
           <div class="row2">
             <label>종류
               <select v-model="cfDraft.flowType">
