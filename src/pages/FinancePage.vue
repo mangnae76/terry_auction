@@ -230,14 +230,6 @@ const runDelete = async () => {
   }
 };
 
-// 사용자 입력 (콤마 구분)
-const fmUsersInput = computed({
-  get: () => (fmDraft.value.users || []).join(', '),
-  set: (v: string) => {
-    fmDraft.value.users = v.split(',').map((s) => s.trim()).filter(Boolean);
-  },
-});
-
 // === CSV (엑셀 호환) 내보내기 ===
 const escapeCsv = (s: unknown): string => {
   const str = String(s ?? '');
@@ -533,19 +525,16 @@ const exportExcel = () => {
             <label>사용처<input type="text" v-model="fmDraft.store" /></label>
           </div>
           <div class="row2">
-            <label>카테고리
+            <label>사용구분
               <select v-model="fmDraft.category">
                 <option>유류</option>
                 <option>식음료</option>
-                <option>문구류</option>
-                <option>쓰레기봉투</option>
                 <option>기타</option>
               </select>
             </label>
             <label>금액<FormattedNumberInput v-model="fmDraft.amount" live-group align="left" placeholder="0" /></label>
           </div>
           <label>사용카드<input type="text" v-model="fmDraft.card" /></label>
-          <label>사용자 (콤마구분)<input type="text" v-model="fmUsersInput" /></label>
           <label>비고<input type="text" v-model="fmDraft.note" /></label>
         </template>
 
