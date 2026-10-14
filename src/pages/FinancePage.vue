@@ -520,10 +520,7 @@ const exportExcel = () => {
         <!-- 유류·식대 -->
         <template v-else-if="modalKind === 'fuelMeal'">
           <label>날짜<input type="date" v-model="fmDraft.date" /></label>
-          <div class="row2">
-            <label>지역<input type="text" v-model="fmDraft.region" /></label>
-            <label>사용처<input type="text" v-model="fmDraft.store" /></label>
-          </div>
+          <label>사용처<input type="text" v-model="fmDraft.store" /></label>
           <div class="row2">
             <label>사용구분
               <select v-model="fmDraft.category">
