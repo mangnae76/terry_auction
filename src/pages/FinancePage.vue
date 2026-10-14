@@ -440,15 +440,14 @@ const exportExcel = () => {
         <table class="fin-table">
           <thead>
             <tr>
-              <th class="c">사용일</th><th>물건</th><th class="c">구분</th><th>상세내역</th>
+              <th class="c">사용일</th><th class="c">사용구분</th><th>상세내역</th>
               <th class="r">수량</th><th class="r">단가</th><th class="r">계</th><th class="r">합계(VAT)</th>
-              <th>구매업체</th><th class="c">카드</th><th class="c">사용자</th><th class="r">배송비</th><th>비고</th>
+              <th>구매업체</th><th class="c">카드</th><th>비고</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredItemPurchases" :key="r.id" @click="openEdit('itemPurchase', r)">
               <td class="c">{{ shortDate(r.date) }}</td>
-              <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
               <td class="c" :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
               <td :title="r.description">{{ r.description }}</td>
               <td class="r">{{ r.quantity }}</td>
@@ -457,12 +456,10 @@ const exportExcel = () => {
               <td class="r">{{ fmtMoney(r.totalWithVat) }}원</td>
               <td :title="r.vendor">{{ r.vendor }}</td>
               <td class="c" :title="r.card">{{ r.card }}</td>
-              <td class="c" :title="r.user">{{ r.user }}</td>
-              <td class="r">{{ r.shippingFee ? fmtMoney(r.shippingFee) + '원' : '-' }}</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredItemPurchases.length === 0">
-              <td colspan="13" class="empty">
+              <td colspan="10" class="empty">
                 <template v-if="finance.itemPurchases.length === 0">데이터가 없습니다.</template>
                 <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.itemPurchases.length }}건)</template>
               </td>
