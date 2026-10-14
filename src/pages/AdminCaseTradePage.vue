@@ -411,7 +411,7 @@ const downloadCsv = () => {
         </button>
         <div class="adm-title">
           <h1>경매지번 공동주택가 및 실거래가 <em>지번 · 단지</em></h1>
-          <p>주소를 입력하여 공동주택가와 실거래가 데이터 분석.</p>
+          <p>주소를 입력하여 공동주택가와 실거래가 데이터를 분석한다.</p>
         </div>
         <button type="button" class="adm-csv" :disabled="tableRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
       </div>

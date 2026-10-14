@@ -34,14 +34,14 @@ const GROUPS: Group[] = [
       {
         title: '실거래가 조건 분석',
         sub: '해당 읍 · 면 · 동',
-        desc: '동까지 좁히고 연식·층·면적으로 걸러 비교할 만한 거래만 남긴다.',
+        desc: '해당 읍면동에 세부 개별성을 걸러 비교 데이터를 알아본다.',
         path: '/admin/dong-trades',
         icon: 'filter',
       },
       {
         title: '경매지번 공동주택가 및 실거래가',
         sub: '지번 · 단지',
-        desc: '주소를 입력하여 공동주택가와 실거래가 데이터 분석.',
+        desc: '주소를 입력하여 공동주택가와 실거래가 데이터를 분석한다.',
         path: '/admin/case-trades',
         icon: 'lot',
       },
@@ -54,13 +54,13 @@ const GROUPS: Group[] = [
     tools: [
       {
         title: '인근 매각 물건 분석',
-        desc: '인근 매각 물건의 낙찰가율 분석.',
+        desc: '인근 매각 물건의 낙찰가율을 분석한다.',
         path: '',
         icon: 'near',
       },
       {
         title: '동일지번매각물건 분석',
-        desc: '같은 번지 매각 물건 평균 가격 분석.',
+        desc: '동일 번지 매각 물건 분석을 통해 낙찰가율을 분석한다.',
         path: '',
         icon: 'lot',
       },

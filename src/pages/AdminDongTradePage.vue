@@ -354,7 +354,7 @@ const downloadCsv = () => {
         </button>
         <div class="adm-title">
           <h1>실거래가 조건 분석 <em>해당 읍 · 면 · 동</em></h1>
-          <p>동까지 좁히고 연식·층·면적으로 걸러 비교할 만한 거래만 남깁니다.</p>
+          <p>해당 읍면동에 세부 개별성을 걸러 비교 데이터를 알아본다.</p>
         </div>
         <button type="button" class="adm-csv" :disabled="listRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
       </div>
