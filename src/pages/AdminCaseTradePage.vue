@@ -551,13 +551,11 @@ const downloadCsv = () => {
         </div>
 
         <!-- 요약 — 매매와 전세를 같은 꼴로 -->
-        <div class="adm-kpis six">
+        <div class="adm-kpis four2">
           <div class="adm-kpi"><small><em>{{ recentYm }}</em> 매매 실거래가 <span :class="['adm-kpi-from', { pick: saleFrom === '선택 거래' }]">{{ saleFrom }}</span></small><strong>{{ won(recentPrice) }}</strong></div>
           <div class="adm-kpi"><small>매매 평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
-          <div class="adm-kpi blue"><small>매매 건수</small><strong>{{ counts.매매 }}건</strong></div>
           <div class="adm-kpi"><small><em>{{ jeonseYm }}</em> 전세 실거래가 <span :class="['adm-kpi-from', { pick: jeonseFrom === '선택 거래' }]">{{ jeonseFrom }}</span></small><strong>{{ won(jeonsePriceReal) }}</strong></div>
           <div class="adm-kpi"><small>전세 평당가</small><strong>{{ won(jeonsePyeong) }}</strong></div>
-          <div class="adm-kpi green2"><small>전세 건수</small><strong>{{ counts.전세 }}건</strong></div>
         </div>
 
         <!-- 탭 · 거르기 -->
@@ -692,7 +690,7 @@ const downloadCsv = () => {
 
 .adm-kpis { display: grid; gap: 12px; }
 .adm-kpis.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.adm-kpis.six { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: 12px; }
+.adm-kpis.four2 { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 12px; }
 .adm-kpi { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
 .adm-kpi small { font-size: 11.5px; font-weight: 700; color: #6b7280; display: flex; align-items: baseline; gap: 4px; }
 .adm-kpi small em { font-style: normal; color: #2b6df3; }
@@ -781,12 +779,12 @@ const downloadCsv = () => {
 .adm-ghost.pick { border-color: #f3c6d1; color: #c2185b; }
 .adm-foot { margin: 10px 2px 0; font-size: 11.5px; color: #9ca3af; }
 
-@media (max-width: 1480px) { .adm-kpis.six { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .adm-kpis.four2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 1280px) { .adm-kpis.five { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
   .adm-top-in, .adm-body { padding-left: 14px; padding-right: 14px; }
   .adm-f { flex: 1 1 100%; }
   .adm-input, .adm-input.narrow, .adm-input.wide { width: 100%; min-width: 0; }
-  .adm-kpis.five, .adm-kpis.six { grid-template-columns: minmax(0, 1fr); }
+  .adm-kpis.five, .adm-kpis.four2 { grid-template-columns: minmax(0, 1fr); }
 }
 </style>
