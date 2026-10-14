@@ -488,9 +488,10 @@ const exportExcel = () => {
 
         <!-- 자금입출금 -->
         <template v-if="modalKind === 'cashFlow'">
+          <label>날짜<input type="date" v-model="cfDraft.date" /></label>
           <label>명세<input type="text" v-model="cfDraft.ownerName" /></label>
           <div class="row2">
-            <label>종류
+            <label>입출금 종류
               <select v-model="cfDraft.flowType">
                 <option value="출금">출금</option>
                 <option value="입금">입금</option>
@@ -498,14 +499,12 @@ const exportExcel = () => {
             </label>
             <label>금액<FormattedNumberInput v-model="cfDraft.amount" live-group align="left" placeholder="0" /></label>
           </div>
-          <div class="row2">
-            <label>날짜<input type="date" v-model="cfDraft.date" /></label>
-            <label>비고<input type="text" v-model="cfDraft.note" /></label>
-          </div>
+          <label>비고<input type="text" v-model="cfDraft.note" /></label>
         </template>
 
         <!-- 사업지출 -->
         <template v-else-if="modalKind === 'businessExpense'">
+          <label>날짜<input type="date" v-model="beDraft.date" /></label>
           <label>물건
             <select v-model="beDraft.auctionId">
               <option value="">선택 안함</option>
@@ -513,26 +512,18 @@ const exportExcel = () => {
             </select>
           </label>
           <label>사업지출 항목
-            <span class="fin-chips">
-              <button
-                v-for="c in EXPENSE_CATEGORIES"
-                :key="c"
-                type="button"
-                :class="['fin-chip', { on: beDraft.profitCategory === c }]"
-                @click="beDraft.profitCategory = c"
-              >{{ c }}</button>
-            </span>
+            <select v-model="beDraft.profitCategory">
+              <option v-for="c in EXPENSE_CATEGORIES" :key="c" :value="c">{{ c }}</option>
+            </select>
           </label>
           <label>명세<input type="text" v-model="beDraft.detail" /></label>
-          <div class="row2">
-            <label>비용 (VAT포함)<FormattedNumberInput v-model="beDraft.amountWithVat" live-group align="left" placeholder="0" /></label>
-            <label>날짜<input type="date" v-model="beDraft.date" /></label>
-          </div>
+          <label>비용 (VAT포함)<FormattedNumberInput v-model="beDraft.amountWithVat" live-group align="left" placeholder="0" /></label>
           <label>비고<input type="text" v-model="beDraft.note" /></label>
         </template>
 
         <!-- 유류·식대 -->
         <template v-else-if="modalKind === 'fuelMeal'">
+          <label>날짜<input type="date" v-model="fmDraft.date" /></label>
           <div class="row2">
             <label>지역<input type="text" v-model="fmDraft.region" /></label>
             <label>사용처<input type="text" v-model="fmDraft.store" /></label>
@@ -551,14 +542,12 @@ const exportExcel = () => {
           </div>
           <label>사용카드<input type="text" v-model="fmDraft.card" /></label>
           <label>사용자 (콤마구분)<input type="text" v-model="fmUsersInput" /></label>
-          <div class="row2">
-            <label>날짜<input type="date" v-model="fmDraft.date" /></label>
-            <label>비고<input type="text" v-model="fmDraft.note" /></label>
-          </div>
+          <label>비고<input type="text" v-model="fmDraft.note" /></label>
         </template>
 
         <!-- 물품구매 -->
         <template v-else-if="modalKind === 'itemPurchase'">
+          <label>날짜<input type="date" v-model="ipDraft.date" /></label>
           <label>물건 지정
             <select v-model="ipDraft.auctionId">
               <option value="">선택 안함</option>
@@ -590,10 +579,7 @@ const exportExcel = () => {
             <label>사용카드<input type="text" v-model="ipDraft.card" /></label>
           </div>
           <label>사용자<input type="text" v-model="ipDraft.user" /></label>
-          <div class="row2">
-            <label>배송비<FormattedNumberInput v-model="ipDraft.shippingFee" live-group align="left" placeholder="0" /></label>
-            <label>날짜<input type="date" v-model="ipDraft.date" /></label>
-          </div>
+          <label>배송비<FormattedNumberInput v-model="ipDraft.shippingFee" live-group align="left" placeholder="0" /></label>
           <label>비고<input type="text" v-model="ipDraft.note" /></label>
         </template>
 
@@ -823,15 +809,7 @@ const exportExcel = () => {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
   min-width: 0;
 }
-/* 항목 고르기 — 알약 */
-.fin-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.fin-chip {
-  border: 1px solid #d8dfea; border-radius: 999px; background: #fff;
-  padding: 5px 11px; font-family: inherit; font-size: 12px; font-weight: 600;
-  color: #4b5563; cursor: pointer;
-}
-.fin-chip:hover { border-color: #b9cdf7; color: #2b6df3; }
-.fin-chip.on { background: #e0e7ff; border-color: #c7d2fe; color: #4338ca; font-weight: 700; }
+
 .fin-modal footer {
   display: flex; gap: 8px; align-items: center; margin-top: 8px;
 }
