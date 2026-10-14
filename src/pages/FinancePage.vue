@@ -641,12 +641,12 @@ const exportExcel = () => {
   /* 네 칸을 정확히 4등분한 알약 카드 */
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
   /* 제목줄 아래 구분선에 알약 상자가 닿아 선을 덮었다 — 한 칸 띄운다 */
-  margin: 10px 14px 12px; padding: 4px;
+  margin: 8px 14px 6px; padding: 3px;
   background: #e2e8f2; border-radius: 12px;
 }
 .fin-tab {
   border: 1px solid transparent; background: transparent;
-  padding: 7px 2px; min-height: 42px; border-radius: 9px;
+  padding: 5px 2px; min-height: 36px; border-radius: 9px;
   /* 선택 여부와 상관없이 같은 크기·굵기 — 글자 폭이 흔들리지 않게 색만 바꾼다 */
   font-size: 13.5px; font-weight: 700; line-height: 1.3; letter-spacing: -0.4px; color: #6b7280;
   text-align: center; white-space: normal; cursor: pointer;
@@ -659,8 +659,8 @@ const exportExcel = () => {
 
 /* Toolbar */
 .fin-toolbar {
-  padding: 14px 14px 8px;
-  display: flex; flex-direction: column; gap: 10px;
+  padding: 8px 14px 4px;
+  display: flex; flex-direction: column; gap: 7px;
 }
 .fin-title {
   margin: 0; font-size: 15.3px; font-weight: 800; color: #111827;
@@ -706,11 +706,11 @@ const exportExcel = () => {
 /* Summary cards */
 .fin-summary {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 6px; padding: 8px 14px 12px;
+  gap: 6px; padding: 6px 14px 8px;
 }
 .sum-card {
-  padding: 10px 8px; border-radius: 10px;
-  display: flex; flex-direction: column; gap: 4px;
+  padding: 7px 8px; border-radius: 10px;
+  display: flex; flex-direction: column; gap: 2px;
   align-items: center; text-align: center;
   min-width: 0;
 }
@@ -721,7 +721,7 @@ const exportExcel = () => {
 }
 .sum-card.in { background: #fdecec; border: 1px solid #f7d5d5; }
 .sum-card.out { background: #e9f0fd; border: 1px solid #d3e0fa; }
-.sum-card.bal { background: #f1f5f9; border: 1px solid #e2e8f0; }
+.sum-card.bal { background: #e4e9f0; border: 1px solid #cfd8e3; }
 /* 표의 입금(빨강)·출금(파랑) 색과 맞춘다 */
 .sum-card.in strong { color: #dc2626; }
 .sum-card.out strong { color: #2563eb; }
