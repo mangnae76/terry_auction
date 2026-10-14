@@ -4,6 +4,7 @@
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
+import TaxPage from './TaxPage.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
@@ -266,6 +267,7 @@ const exportExcel = () => {
 
 <template>
   <section class="fin-shell">
+    <div class="fin-fixed-top">
     <header class="fin-header">
       <h1 class="fin-page-title">자금관리</h1>
       <nav class="fin-tabs">
@@ -273,10 +275,11 @@ const exportExcel = () => {
         <button :class="['fin-tab', { active: activeTab === 'businessExpense' }]" @click="activeTab = 'businessExpense'">사업<br>지출내역</button>
         <button :class="['fin-tab', { active: activeTab === 'fuelMeal' }]" @click="activeTab = 'fuelMeal'">유류&amp;식대<br>지출내역</button>
         <button :class="['fin-tab', { active: activeTab === 'itemPurchase' }]" @click="activeTab = 'itemPurchase'">물품구매<br>지출내역</button>
+        <button :class="['fin-tab', { active: activeTab === 'tax' }]" @click="activeTab = 'tax'">세금신고</button>
       </nav>
     </header>
 
-    <div class="fin-toolbar">
+    <div v-if="activeTab !== 'tax'" class="fin-toolbar">
       <h2 class="fin-title">
         <template v-if="activeTab === 'cashFlow'">사업계좌 자금입출금 관리</template>
         <template v-else-if="activeTab === 'businessExpense'">사업지출내역</template>
@@ -311,7 +314,9 @@ const exportExcel = () => {
         <span>{{ customEnd || '날짜입력' }}</span>
       </button>
     </div>
+    </div>
 
+    <div class="fin-body">
     <!-- ========== TAB 1: 자금입출금 ========== -->
     <template v-if="activeTab === 'cashFlow'">
       <div class="fin-summary">
@@ -410,7 +415,7 @@ const exportExcel = () => {
     </template>
 
     <!-- ========== TAB 4: 물품구매 ========== -->
-    <template v-else>
+    <template v-else-if="activeTab === 'itemPurchase'">
       <div class="fin-table-wrap">
         <table class="fin-table">
           <thead>
@@ -446,6 +451,10 @@ const exportExcel = () => {
         </table>
       </div>
     </template>
+
+    <!-- ========== TAB 5: 세금신고 — 세금관리 화면을 그대로 들여온다 ========== -->
+    <TaxPage v-else-if="activeTab === 'tax'" embedded />
+    </div>
 
     <!-- ========== 모달 ========== -->
     <div v-if="modalKind" class="fin-modal-backdrop" @click.self="closeModal">
@@ -598,10 +607,18 @@ const exportExcel = () => {
 </template>
 
 <style scoped>
+/* 위는 붙박이, 아래만 구른다 — 선정물건(.wlp-shell)과 같은 짜임 */
 .fin-shell {
-  min-height: 100vh;
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
   background: #f5f7fb;
-  padding-bottom: 80px;
+  overflow: hidden;
+}
+.fin-fixed-top { flex: 0 0 auto; background: #f5f7fb; }
+.fin-body {
+  flex: 1 1 auto; overflow-y: auto;
+  padding-bottom: 96px;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Header — title + tab nav (TradeStatsPage 스타일과 동일) */
@@ -616,7 +633,7 @@ const exportExcel = () => {
 }
 .fin-tabs {
   /* 네 칸을 정확히 4등분한 알약 카드 */
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
   margin: 0 14px 12px; padding: 4px;
   background: #e2e8f2; border-radius: 12px;
 }
@@ -624,7 +641,7 @@ const exportExcel = () => {
   border: 1px solid transparent; background: transparent;
   padding: 7px 2px; min-height: 50px; border-radius: 9px;
   /* 선택 여부와 상관없이 같은 크기·굵기 — 글자 폭이 흔들리지 않게 색만 바꾼다 */
-  font-size: 14.5px; font-weight: 700; line-height: 1.3; letter-spacing: -0.3px; color: #6b7280;
+  font-size: 13px; font-weight: 700; line-height: 1.3; letter-spacing: -0.4px; color: #6b7280;
   text-align: center; white-space: normal; cursor: pointer;
   display: flex; align-items: flex-start; justify-content: center;
 }

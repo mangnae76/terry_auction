@@ -6,6 +6,10 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import type { AuctionDetail } from '../types/auction';
 
+// 자금관리 안의 '세금신고' 탭에서 불러 쓸 때는 제 머리글과 하단 메뉴를 그리지 않는다.
+// 주소창으로 /tax 를 바로 열면 전처럼 한 장짜리 화면으로 선다.
+const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false });
+
 const store = useAuctionStore();
 
 const thisYear = new Date().getFullYear();
@@ -246,8 +250,8 @@ const MAIN_SCHEDULE = [
 </script>
 
 <template>
-  <section class="tax-shell">
-    <header class="tax-header">
+  <section :class="['tax-shell', { embedded: props.embedded }]">
+    <header v-if="!props.embedded" class="tax-header">
       <h1 class="tax-title">부동산 세금 신고</h1>
       <span class="tax-eyebrow">세금 관리 · TAX MANAGEMENT</span>
     </header>
@@ -535,7 +539,7 @@ const MAIN_SCHEDULE = [
       </section>
     </div>
 
-    <AppMobileBottomNav active="tax" />
+    <AppMobileBottomNav v-if="!props.embedded" active="finance" />
   </section>
 </template>
 
@@ -545,6 +549,8 @@ const MAIN_SCHEDULE = [
   background: #f5f7fb;
   padding-bottom: 86px;
 }
+/* 자금관리 안에서는 바깥 틀이 이미 있다 — 제 높이·여백을 주장하지 않는다 */
+.tax-shell.embedded { min-height: 0; padding-bottom: 0; background: transparent; }
 
 /* Header — 제목은 다른 화면과 같은 자리, 안내는 제목 오른쪽 */
 .tax-header {

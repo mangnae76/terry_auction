@@ -6,7 +6,7 @@ import banknoteIcon from '../assets/icones/memu/banknote_main.png';
 import buildingIcon from '../assets/icones/memu/building_Main.png';
 
 defineProps<{
-  active: 'watchlist' | 'field-trip' | 'finance' | 'tax' | 'culture' | 'more';
+  active: 'watchlist' | 'field-trip' | 'finance' | 'culture' | 'more';
 }>();
 
 const router = useRouter();
@@ -25,16 +25,6 @@ const router = useRouter();
     <button type="button" :class="['amb-item', { active: active === 'finance' }]" @click="router.push('/finance')">
       <span class="amb-icon amb-mask" :style="{ '--i': `url(${banknoteIcon})` }" />
       <span>자금관리</span>
-    </button>
-    <button type="button" :class="['amb-item', { active: active === 'tax' }]" @click="router.push('/tax')">
-      <svg class="amb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 21V4.5a.5.5 0 0 1 .76-.43L8 5.4l2.24-1.33a.5.5 0 0 1 .52 0L13 5.4l2.24-1.33a.5.5 0 0 1 .52 0L18 5.4l2.24-1.33a.5.5 0 0 1 .76.43V21" />
-        <path d="M5 21h16" />
-        <path d="M15 9.5 9.5 15" />
-        <circle cx="9.8" cy="9.8" r="1.2" />
-        <circle cx="14.7" cy="14.7" r="1.2" />
-      </svg>
-      <span>세금관리</span>
     </button>
     <button type="button" :class="['amb-item', { active: active === 'culture' }]" @click="router.push('/trade-stats')">
       <span class="amb-icon amb-mask" :style="{ '--i': `url(${buildingIcon})` }" />
