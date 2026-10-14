@@ -196,7 +196,6 @@ const counts = computed(() => {
   return { all: list.length, 매매: by('매매'), 전세: by('전세'), 월세: by('월세') };
 });
 const countLabel = computed(() => (tab.value === 'all' ? '전체' : tab.value));
-const countValue = computed(() => (tab.value === 'all' ? counts.value.all : counts.value[tab.value]));
 
 const won = (n: number) => (n > 0 ? Math.round(n).toLocaleString('ko-KR') : '-');
 
@@ -249,6 +248,17 @@ const recentPyeong = computed(() => {
   if (!r || !(r.areaM2 > 0) || !(r.price > 0)) return 0;
   return Math.round(r.price / (r.areaM2 / PYEONG));
 });
+/** 전세도 매매와 같은 꼴로 — 보증금·평당 보증금·건수 */
+const jeonseYm = computed(() => (recentJeonse.value ? recentJeonse.value.contractDate.slice(0, 7) : '최근'));
+const jeonsePriceReal = computed(() => recentJeonse.value?.price ?? 0);
+const jeonsePyeong = computed(() => {
+  const r = recentJeonse.value;
+  if (!r || !(r.areaM2 > 0) || !(r.price > 0)) return 0;
+  return Math.round(r.price / (r.areaM2 / PYEONG));
+});
+const jeonseFrom = computed(() => (
+  pickedJeonse.value && pickedJeonse.value !== autoJeonseKey.value ? '선택한 거래' : '최근거래'
+));
 /** 기준 전세 — 고른 줄이 있으면 그것, 없으면 가장 최근 전세 */
 const recentJeonse = computed(() => (
   byAreaYear.value.find((r) => rowKey(r) === pickedJeonse.value)
@@ -535,11 +545,14 @@ const downloadCsv = () => {
           </div>
         </div>
 
-        <!-- 요약 -->
-        <div class="adm-kpis three">
+        <!-- 요약 — 매매와 전세를 같은 꼴로 -->
+        <div class="adm-kpis six">
           <div class="adm-kpi"><small><em>{{ recentYm }}</em> 매매 실거래가 <span :class="['adm-kpi-from', { pick: saleFrom === '선택한 거래' }]">{{ saleFrom }}</span></small><strong>{{ won(recentPrice) }}</strong></div>
-          <div class="adm-kpi"><small>평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
-          <div class="adm-kpi blue"><small>{{ countLabel }}</small><strong>{{ countValue }}건</strong></div>
+          <div class="adm-kpi"><small>매매 평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
+          <div class="adm-kpi blue"><small>매매 건수</small><strong>{{ counts.매매 }}건</strong></div>
+          <div class="adm-kpi"><small><em>{{ jeonseYm }}</em> 전세 실거래가 <span :class="['adm-kpi-from', { pick: jeonseFrom === '선택한 거래' }]">{{ jeonseFrom }}</span></small><strong>{{ won(jeonsePriceReal) }}</strong></div>
+          <div class="adm-kpi"><small>전세 평당가</small><strong>{{ won(jeonsePyeong) }}</strong></div>
+          <div class="adm-kpi green2"><small>전세 건수</small><strong>{{ counts.전세 }}건</strong></div>
         </div>
 
         <!-- 탭 · 거르기 -->
@@ -666,13 +679,14 @@ const downloadCsv = () => {
 
 .adm-kpis { display: grid; gap: 12px; }
 .adm-kpis.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.adm-kpis.three { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 12px; }
+.adm-kpis.six { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: 12px; }
 .adm-kpi { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
 .adm-kpi small { font-size: 11.5px; font-weight: 700; color: #6b7280; display: flex; align-items: baseline; gap: 4px; }
 .adm-kpi small em { font-style: normal; color: #2b6df3; }
 .adm-kpi strong { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; }
 .adm-kpi.blue { background: #f4f8ff; border-color: #dbe6ff; }
 .adm-kpi.green { background: #f1fbf7; border-color: #cdeee1; }
+.adm-kpi.green2 { background: #f1fbf7; border-color: #cdeee1; }
 .adm-kpi-sub { font-size: 11.5px; font-weight: 700; color: #6b7280; }
 /* 호수·전용 줄을 입력칸 글자 시작점에 맞춘다 (테두리 1 + 안여백 9) */
 .adm-kpi.green .adm-kpi-sub { padding-left: 10px; color: #2b6df3; }
@@ -751,11 +765,12 @@ const downloadCsv = () => {
 .adm-ghost.pick { border-color: #f3c6d1; color: #c2185b; }
 .adm-foot { margin: 10px 2px 0; font-size: 11.5px; color: #9ca3af; }
 
+@media (max-width: 1480px) { .adm-kpis.six { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 1280px) { .adm-kpis.five { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
   .adm-top-in, .adm-body { padding-left: 14px; padding-right: 14px; }
   .adm-f { flex: 1 1 100%; }
   .adm-input, .adm-input.narrow, .adm-input.wide { width: 100%; min-width: 0; }
-  .adm-kpis.five, .adm-kpis.three { grid-template-columns: minmax(0, 1fr); }
+  .adm-kpis.five, .adm-kpis.six { grid-template-columns: minmax(0, 1fr); }
 }
 </style>
