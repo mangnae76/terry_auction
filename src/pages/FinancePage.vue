@@ -281,9 +281,9 @@ const exportExcel = () => {
     </header>
 
     <div v-if="activeTab !== 'tax'" class="fin-toolbar">
-      <h2 class="fin-title">
-        <template v-if="activeTab === 'cashFlow'">사업계좌 자금입출금 관리</template>
-        <template v-else-if="activeTab === 'businessExpense'">사업지출내역</template>
+      <!-- 자금입출금은 탭 이름과 겹쳐 제목을 적지 않는다 -->
+      <h2 v-if="activeTab !== 'cashFlow'" class="fin-title">
+        <template v-if="activeTab === 'businessExpense'">사업지출내역</template>
         <template v-else-if="activeTab === 'fuelMeal'">유류&식대 지출내역</template>
         <template v-else>물품구매 지출내역</template>
         <small v-if="activeTab !== 'cashFlow'" class="fin-vat-note">VAT 포함 입력 바랍니다</small>
