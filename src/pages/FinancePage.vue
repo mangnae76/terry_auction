@@ -764,9 +764,8 @@ const exportExcel = () => {
   display: inline-block; padding: 1px 7px; border-radius: 999px;
   font-size: 10px; font-weight: 500; white-space: nowrap;
 }
-.pill.in  { background: #fee2e2; color: #dc2626; }
-.pill.out { background: #dbeafe; color: #2563eb; }
-.pill.memo, .pill.cat { background: #e0e7ff; color: #4338ca; }
+/* 알약 색은 네 표가 한 가지로 — 입금·출금은 금액 칸 색으로 이미 갈린다 */
+.pill.in, .pill.out, .pill.memo, .pill.cat { background: #e0e7ff; color: #4338ca; }
 
 /* Modal */
 .fin-modal-backdrop {
