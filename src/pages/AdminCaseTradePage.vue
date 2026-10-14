@@ -501,8 +501,8 @@ const downloadCsv = () => {
       <p v-if="areaNote" class="adm-msg warn">{{ areaNote }}</p>
 
       <template v-if="rows.length > 0">
-        <!-- 공동주택가 · 전세가 · 전세가율 -->
-        <div class="adm-kpis five">
+        <!-- 네 칸 자리에 세 줄 — 공동주택가·매매 / 보증보험 전세 / 실거래 전세 -->
+        <div class="adm-kpis grid4">
           <div class="adm-kpi green">
             <small>공동주택가 <em v-if="price">{{ price.year }}년 기준</em></small>
             <input
@@ -513,6 +513,16 @@ const downloadCsv = () => {
             />
             <span v-if="priceUnit" class="adm-kpi-sub">{{ priceUnit }}</span>
           </div>
+          <div class="adm-kpi"><small><em>{{ recentYm }}</em> 매매 실거래가 <span :class="['adm-kpi-from', { pick: saleFrom === '선택거래' }]">{{ saleFrom }}</span></small><strong>{{ won(recentPrice) }}</strong></div>
+          <div class="adm-kpi"><small>매매 평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
+          <div class="adm-kpi">
+            <small>공시대비율</small>
+            <strong>{{ pubRatioText }}</strong>
+            <span class="adm-kpi-sub">매매 실거래가 ÷ 공동주택가</span>
+          </div>
+        </div>
+
+        <div class="adm-kpis grid4 nextrow">
           <div class="adm-kpi">
             <small>보증보험 전세가 <em><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" />%</em></small>
             <strong>{{ won(jeonsePrice) }}</strong>
@@ -543,6 +553,11 @@ const downloadCsv = () => {
               <p v-for="(t, i) in gapTipLines" :key="i">{{ t }}</p>
             </div>
           </div>
+        </div>
+
+        <div class="adm-kpis grid4 nextrow">
+          <div class="adm-kpi"><small><em>{{ jeonseYm }}</em> 전세 실거래가 <span :class="['adm-kpi-from', { pick: jeonseFrom === '선택거래' }]">{{ jeonseFrom }}</span></small><strong>{{ won(jeonsePriceReal) }}</strong></div>
+          <div class="adm-kpi"><small>전세 평당가</small><strong>{{ won(jeonsePyeong) }}</strong></div>
           <div class="adm-kpi tipbox">
             <small>
               실거래 전세가율
@@ -570,19 +585,6 @@ const downloadCsv = () => {
               <p v-for="(t, i) in realTipLines" :key="i">{{ t }}</p>
             </div>
           </div>
-          <div class="adm-kpi">
-            <small>공시대비율</small>
-            <strong>{{ pubRatioText }}</strong>
-            <span class="adm-kpi-sub">매매 실거래가 ÷ 공동주택가</span>
-          </div>
-        </div>
-
-        <!-- 요약 — 매매와 전세를 같은 꼴로 -->
-        <div class="adm-kpis four2">
-          <div class="adm-kpi"><small><em>{{ recentYm }}</em> 매매 실거래가 <span :class="['adm-kpi-from', { pick: saleFrom === '선택거래' }]">{{ saleFrom }}</span></small><strong>{{ won(recentPrice) }}</strong></div>
-          <div class="adm-kpi"><small>매매 평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
-          <div class="adm-kpi"><small><em>{{ jeonseYm }}</em> 전세 실거래가 <span :class="['adm-kpi-from', { pick: jeonseFrom === '선택거래' }]">{{ jeonseFrom }}</span></small><strong>{{ won(jeonsePriceReal) }}</strong></div>
-          <div class="adm-kpi"><small>전세 평당가</small><strong>{{ won(jeonsePyeong) }}</strong></div>
         </div>
 
         <!-- 탭 · 거르기 -->
@@ -717,8 +719,9 @@ const downloadCsv = () => {
 .adm-sum.under { margin: 0 0 8px; font-size: 12px; }
 
 .adm-kpis { display: grid; gap: 12px; }
-.adm-kpis.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.adm-kpis.four2 { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 12px; }
+/* 세 줄이 같은 네 칸 틀을 쓴다 — 줄이 달라도 세로로 맞아떨어진다 */
+.adm-kpis.grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.adm-kpis.grid4.nextrow { margin-top: 12px; }
 .adm-kpi { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
 .adm-kpi small { font-size: 11.5px; font-weight: 700; color: #6b7280; display: flex; align-items: baseline; gap: 4px; }
 .adm-kpi small em { font-style: normal; color: #2b6df3; }
@@ -807,12 +810,11 @@ const downloadCsv = () => {
 .adm-ghost.pick { border-color: #f3c6d1; color: #c2185b; }
 .adm-foot { margin: 10px 2px 0; font-size: 11.5px; color: #9ca3af; }
 
-@media (max-width: 1100px) { .adm-kpis.four2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 1280px) { .adm-kpis.five { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .adm-kpis.grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
   .adm-top-in, .adm-body { padding-left: 14px; padding-right: 14px; }
   .adm-f { flex: 1 1 100%; }
   .adm-input, .adm-input.narrow, .adm-input.wide { width: 100%; min-width: 0; }
-  .adm-kpis.five, .adm-kpis.four2 { grid-template-columns: minmax(0, 1fr); }
+  .adm-kpis.grid4 { grid-template-columns: minmax(0, 1fr); }
 }
 </style>
