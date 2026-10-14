@@ -286,7 +286,7 @@ const exportExcel = () => {
         <template v-if="activeTab === 'businessExpense'">사업지출내역</template>
         <template v-else-if="activeTab === 'fuelMeal'">유류&식대 지출내역</template>
         <template v-else>물품구매 지출내역</template>
-        <small v-if="activeTab !== 'cashFlow'" class="fin-vat-note">VAT 포함 입력 바랍니다</small>
+        <small class="fin-vat-note">VAT 포함 입력 바랍니다</small>
       </h2>
       <div class="fin-toolbar-right">
         <div class="fin-period">
