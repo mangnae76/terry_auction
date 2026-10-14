@@ -4,6 +4,7 @@
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
+import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import TaxPage from './TaxPage.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
@@ -342,7 +343,7 @@ const exportExcel = () => {
             <col style="width: 24%" /><col />
           </colgroup>
           <thead>
-            <tr><th>일자</th><th>명세</th><th>입출금</th><th class="r">개인 자금</th><th class="l">비고</th></tr>
+            <tr><th>일자</th><th>명세</th><th>입출금</th><th class="r">개인 자금</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredCashFlows" :key="r.id" @click="openEdit('cashFlow', r)">
@@ -350,7 +351,7 @@ const exportExcel = () => {
               <td :title="r.ownerName">{{ r.ownerName }}</td>
               <td><span :class="['pill', r.flowType === '입금' ? 'in' : 'out']">{{ r.flowType }}</span></td>
               <td :class="['r', 'amt', r.flowType === '입금' ? 'red' : 'blue']">{{ fmtMoneySigned(r.amount, r.flowType === '입금' ? '+' : '-') }}</td>
-              <td class="l" :title="r.note">{{ r.note }}</td>
+              <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredCashFlows.length === 0">
               <td colspan="5" class="empty">
@@ -479,7 +480,7 @@ const exportExcel = () => {
                 <option value="입금">입금</option>
               </select>
             </label>
-            <label>금액<input type="number" v-model.number="cfDraft.amount" /></label>
+            <label>금액<FormattedNumberInput v-model="cfDraft.amount" live-group align="left" placeholder="0" /></label>
           </div>
           <div class="row2">
             <label>날짜<input type="date" v-model="cfDraft.date" /></label>
@@ -511,7 +512,7 @@ const exportExcel = () => {
             <label>명세<input type="text" v-model="beDraft.detail" /></label>
           </div>
           <div class="row2">
-            <label>비용 (VAT포함)<input type="number" v-model.number="beDraft.amountWithVat" /></label>
+            <label>비용 (VAT포함)<FormattedNumberInput v-model="beDraft.amountWithVat" live-group align="left" placeholder="0" /></label>
             <label>날짜<input type="date" v-model="beDraft.date" /></label>
           </div>
           <label>비고<input type="text" v-model="beDraft.note" /></label>
@@ -533,7 +534,7 @@ const exportExcel = () => {
                 <option>기타</option>
               </select>
             </label>
-            <label>금액<input type="number" v-model.number="fmDraft.amount" /></label>
+            <label>금액<FormattedNumberInput v-model="fmDraft.amount" live-group align="left" placeholder="0" /></label>
           </div>
           <label>사용카드<input type="text" v-model="fmDraft.card" /></label>
           <label>사용자 (콤마구분)<input type="text" v-model="fmUsersInput" /></label>
@@ -565,11 +566,11 @@ const exportExcel = () => {
           </div>
           <div class="row2">
             <label>수량<input type="number" v-model.number="ipDraft.quantity" @input="updateItemTotals" /></label>
-            <label>단가<input type="number" v-model.number="ipDraft.unitPrice" @input="updateItemTotals" /></label>
+            <label>단가<FormattedNumberInput v-model="ipDraft.unitPrice" live-group align="left" placeholder="0" @update:model-value="updateItemTotals" /></label>
           </div>
           <div class="row2">
-            <label>합계<input type="number" :value="(ipDraft.quantity || 0) * (ipDraft.unitPrice || 0)" disabled /></label>
-            <label>VAT 포함 합계<input type="number" v-model.number="ipDraft.totalWithVat" /></label>
+            <label>합계<FormattedNumberInput :model-value="(ipDraft.quantity || 0) * (ipDraft.unitPrice || 0)" readonly align="left" /></label>
+            <label>VAT 포함 합계<FormattedNumberInput v-model="ipDraft.totalWithVat" live-group align="left" placeholder="0" /></label>
           </div>
           <div class="row2">
             <label>구매처<input type="text" v-model="ipDraft.vendor" /></label>
@@ -577,7 +578,7 @@ const exportExcel = () => {
           </div>
           <label>사용자<input type="text" v-model="ipDraft.user" /></label>
           <div class="row2">
-            <label>배송비<input type="number" v-model.number="ipDraft.shippingFee" /></label>
+            <label>배송비<FormattedNumberInput v-model="ipDraft.shippingFee" live-group align="left" placeholder="0" /></label>
             <label>날짜<input type="date" v-model="ipDraft.date" /></label>
           </div>
           <label>비고<input type="text" v-model="ipDraft.note" /></label>
