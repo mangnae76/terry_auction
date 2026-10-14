@@ -103,25 +103,10 @@ const run = async () => {
     scanned.value = res.scanned;
     missed.value = res.missedMonths;
     baseArea.value = res.baseAreaM2;
-    // 공부상 면적이 있으면 그 평형으로 먼저 좁혀 둔다 — 다른 평형의 거래와
-    // 견주면 전세가율·공시대비율이 통째로 어긋난다.
-    // 국토부와 공시가격의 소수점이 조금씩 다를 수 있어 0.1㎡ 폭으로 맞춘다
+    // 평형으로 저절로 좁히지 않는다 — 받은 그대로 다 펴 두고 사람이 고른다.
+    // 기준 전용면적은 칩에만 적어 둔다
     areaFilter.value = '';
     areaNote.value = '';
-    if (res.baseAreaM2 > 0) {
-      const near = areaOptions.value
-        .map((o) => ({ o, gap: Math.abs(Number(o) - res.baseAreaM2) }))
-        .filter((x) => x.gap <= 0.1)
-        .sort((a, b) => a.gap - b.gap)[0];
-      if (near) { areaFilter.value = near.o; autoAreaOption.value = near.o; }
-      else if (res.rows.length > 0) areaNote.value = `공부상 전용 ${res.baseAreaM2}㎡ 거래가 없어 전체 평형으로 봅니다.`;
-    }
-    // 지역이 안 풀렸으면 직접 고르기를 펴 준다 — 손쓸 자리를 바로 보여 준다
-    if (res.error) {
-      errorMsg.value = res.error;
-      if (!res.region) manualOpen.value = true;
-      return;
-    }
     // 표는 전체로 펴 두고, 매매·전세 최신 줄을 집어 둔다
     tab.value = 'all';
     await nextTick();
@@ -140,8 +125,6 @@ const run = async () => {
 
 // ===== 거르기 =====
 const areaFilter = ref('');
-/** 받고 나서 저절로 고른 평형 — 사람이 다른 평형을 고르면 '선택' 으로 본다 */
-const autoAreaOption = ref('');
 const areaNote = ref('');
 const yearFilter = ref('');
 const tab = ref<'all' | '매매' | '전세' | '월세'>('매매');
@@ -236,7 +219,7 @@ const pickRow = (r: CaseTradeRow) => {
 const clearPicks = () => { pickLatest(); };
 /** 평형을 바꾸면 그 평형의 최신 거래로 다시 집는다 */
 watch(areaFilter, () => { pickLatest(); });
-const areaChosen = computed(() => areaFilter.value !== autoAreaOption.value);
+
 const isPicked = (r: CaseTradeRow) => rowKey(r) === pickedSale.value || rowKey(r) === pickedJeonse.value;
 
 /** 기준 매매 — 고른 줄이 있으면 그것, 없으면 가장 최근 정상 매매.
@@ -246,7 +229,6 @@ const recentSale = computed(() => (
   ?? byAreaYear.value.find((r) => r.kind === '매매')
   ?? null
 ));
-const recentYm = computed(() => (recentSale.value ? recentSale.value.contractDate.slice(0, 7) : ''));
 const recentPrice = computed(() => recentSale.value?.price ?? 0);
 const recentPyeong = computed(() => {
   const r = recentSale.value;
@@ -254,7 +236,6 @@ const recentPyeong = computed(() => {
   return Math.round(r.price / (r.areaM2 / PYEONG));
 });
 /** 전세도 매매와 같은 꼴로 — 보증금·평당 보증금·건수 */
-const jeonseYm = computed(() => (recentJeonse.value ? recentJeonse.value.contractDate.slice(0, 7) : ''));
 const jeonsePriceReal = computed(() => recentJeonse.value?.price ?? 0);
 /** 전세 실거래가가 공동주택가의 몇 %인가 — 보증보험 기준(126%)과 견준다 */
 /** 전세 실거래 평당가 */
@@ -274,10 +255,14 @@ const jeonseVsPubText = computed(() => {
   const j = jeonsePriceReal.value;
   return pub > 0 && j > 0 ? `공동주택가 × ${((j / pub) * 100).toFixed(0)}%` : '';
 });
-const jeonseFrom = computed(() => (
-  areaChosen.value || (pickedJeonse.value && pickedJeonse.value !== autoJeonseKey.value)
-    ? '선택' : '최근'
-));
+/** 고른 줄을 한 줄로 적는다 — 계약일 · 전용 · 층.
+ *  공동주택가 칸의 '106동 402호 전용 49.74㎡' 와 견주라고 둔다 */
+const rowFace = (r: CaseTradeRow | null) => {
+  if (!r) return '';
+  const area = r.areaM2 > 0 ? `${r.areaM2.toFixed(2)}㎡ / ${(r.areaM2 / PYEONG).toFixed(2)}평` : '';
+  const floor = r.floor ? `${r.floor}층` : '';
+  return [r.contractDate, area, floor].filter(Boolean).join(' · ');
+};
 /** 기준 전세 — 고른 줄이 있으면 그것, 없으면 가장 최근 전세 */
 const recentJeonse = computed(() => (
   byAreaYear.value.find((r) => rowKey(r) === pickedJeonse.value)
@@ -285,10 +270,7 @@ const recentJeonse = computed(() => (
   ?? null
 ));
 /** 고른 줄인지 저절로 잡힌 줄인지 — 요약 칸에 적어 둔다 */
-const saleFrom = computed(() => (
-  areaChosen.value || (pickedSale.value && pickedSale.value !== autoSaleKey.value)
-    ? '선택' : '최근'
-));
+
 
 // 손품+현장 가격정보의 셋째 표와 같은 셈이다.
 //   전세가 = 공동주택가 × 비율(기본 126%)
@@ -533,7 +515,7 @@ const downloadCsv = () => {
             />
             <span v-if="priceUnit" class="adm-kpi-sub">{{ priceUnit }}</span>
           </div>
-          <div class="adm-kpi"><small>매매 실거래가 <template v-if="recentSale"><span :class="['adm-kpi-from', { pick: saleFrom === '선택' }]">{{ saleFrom }}</span> <em>{{ recentYm }}</em></template></small><strong>{{ won(recentPrice) }}</strong></div>
+          <div class="adm-kpi"><small>매매 실거래가 <span v-if="recentSale" class="adm-kpi-from pick">선택</span></small><strong>{{ won(recentPrice) }}</strong><span v-if="recentSale" class="adm-kpi-sub">{{ rowFace(recentSale) }}</span></div>
           <div class="adm-kpi"><small>매매 평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
           <div class="adm-kpi">
             <small>공시대비율</small>
@@ -577,7 +559,7 @@ const downloadCsv = () => {
         </div>
 
         <div class="adm-kpis grid4 nextrow">
-          <div class="adm-kpi"><small>전세 실거래가 <template v-if="recentJeonse"><span :class="['adm-kpi-from', { pick: jeonseFrom === '선택' }]">{{ jeonseFrom }}</span> <em>{{ jeonseYm }}</em></template></small><strong>{{ won(jeonsePriceReal) }}</strong><span v-if="jeonseVsPubText" class="adm-kpi-sub">{{ jeonseVsPubText }}</span></div>
+          <div class="adm-kpi"><small>전세 실거래가 <span v-if="recentJeonse" class="adm-kpi-from pick">선택</span></small><strong>{{ won(jeonsePriceReal) }}</strong><span v-if="recentJeonse" class="adm-kpi-sub">{{ rowFace(recentJeonse) }}</span><span v-if="jeonseVsPubText" class="adm-kpi-sub">{{ jeonseVsPubText }}</span></div>
           <div class="adm-kpi tipbox">
             <small>
               실거래 전세가율 / 갭
