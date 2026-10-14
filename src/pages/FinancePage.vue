@@ -415,23 +415,22 @@ const exportExcel = () => {
     <!-- ========== TAB 3: 유류비 & 식대 ========== -->
     <template v-else-if="activeTab === 'fuelMeal'">
       <div class="fin-table-wrap">
-        <table class="fin-table">
+        <table class="fin-table mid">
+          <colgroup>
+            <col style="width: 24%" /><col style="width: 30%" /><col style="width: 24%" /><col />
+          </colgroup>
           <thead>
-            <tr><th class="c">사용일</th><th class="c">사용지역</th><th>사용처/구매처</th><th class="c">사용구분</th><th class="r">지출</th><th class="c">구매카드</th><th class="c">사용자</th><th>비고</th></tr>
+            <tr><th>사용일</th><th>사용처</th><th class="r">비용</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredFuelMeal" :key="r.id" @click="openEdit('fuelMeal', r)">
-              <td class="c">{{ shortDate(r.date) }}</td>
-              <td class="c" :title="r.region">{{ r.region }}</td>
+              <td>{{ shortDate(r.date) }}</td>
               <td :title="r.store">{{ r.store }}</td>
-              <td class="c" :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
               <td class="r">{{ fmtMoney(r.amount) }}원</td>
-              <td class="c" :title="r.card">{{ r.card }}</td>
-              <td class="c" :title="(r.users || []).join(',')">{{ (r.users || []).join(',') }}</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredFuelMeal.length === 0">
-              <td colspan="8" class="empty">
+              <td colspan="4" class="empty">
                 <template v-if="finance.fuelMeal.length === 0">데이터가 없습니다.</template>
                 <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.fuelMeal.length }}건)</template>
               </td>
