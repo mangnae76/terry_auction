@@ -537,14 +537,8 @@ const exportExcel = () => {
         <!-- 물품구매 -->
         <template v-else-if="modalKind === 'itemPurchase'">
           <label>날짜<input type="date" v-model="ipDraft.date" /></label>
-          <label>물건 지정
-            <select v-model="ipDraft.auctionId">
-              <option value="">선택 안함</option>
-              <option v-for="o in auctionOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
-            </select>
-          </label>
           <div class="row2">
-            <label>카테고리
+            <label>사용구분
               <select v-model="ipDraft.category">
                 <option>인테리어</option>
                 <option>가전</option>
@@ -559,16 +553,11 @@ const exportExcel = () => {
             <label>수량<input type="number" v-model.number="ipDraft.quantity" @input="updateItemTotals" /></label>
             <label>단가<FormattedNumberInput v-model="ipDraft.unitPrice" live-group align="left" placeholder="0" @update:model-value="updateItemTotals" /></label>
           </div>
-          <div class="row2">
-            <label>합계<FormattedNumberInput :model-value="(ipDraft.quantity || 0) * (ipDraft.unitPrice || 0)" readonly align="left" /></label>
-            <label>VAT 포함 합계<FormattedNumberInput v-model="ipDraft.totalWithVat" live-group align="left" placeholder="0" /></label>
-          </div>
+          <label>VAT 포함 합계<FormattedNumberInput v-model="ipDraft.totalWithVat" live-group align="left" placeholder="0" /></label>
           <div class="row2">
             <label>구매처<input type="text" v-model="ipDraft.vendor" /></label>
             <label>사용카드<input type="text" v-model="ipDraft.card" /></label>
           </div>
-          <label>사용자<input type="text" v-model="ipDraft.user" /></label>
-          <label>배송비<FormattedNumberInput v-model="ipDraft.shippingFee" live-group align="left" placeholder="0" /></label>
           <label>비고<input type="text" v-model="ipDraft.note" /></label>
         </template>
 
