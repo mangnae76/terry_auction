@@ -515,14 +515,14 @@ const downloadCsv = () => {
 .adm-table td.deal { white-space: nowrap; letter-spacing: -0.3px; font-size: 11.5px; }
 .adm-table td em.pre { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-right: 3px; }
 .adm-table td.deal em.bar { font-style: normal; font-weight: 400; color: #c3cbd8; margin: 0 3px; }
-/* 줄끼리 일의 자리를 맞춘다 — '연 281' 을 통째로 같은 폭 상자에 담아
-   오른쪽에 붙이고, 소수점 아래는 그 뒤로 흘린다.
-   그래야 앞붙임과 숫자 사이가 두 자리·세 자리에서 똑같이 벌어진다 */
-.adm-table td.deal { padding-left: 6px; padding-right: 6px; }
-.adm-table td.deal .grp { display: inline-block; text-align: right; }
-.adm-table td.deal .grp.y { min-width: 40px; }
-.adm-table td.deal .grp.m { min-width: 28px; }
-.adm-table td.deal .grp i { font-style: normal; }
+/* 숫자 자리를 못 박는다 — 연은 세 자리, 월은 두 자리.
+   앞붙임(연·월)은 제자리에 서고 숫자는 그 안에서 오른쪽에 붙어,
+   줄이 달라도 끝자리가 세로로 맞는다. 소수점 아래는 뒤로 흘린다 */
+.adm-table td.deal { padding-left: 6px; padding-right: 6px; font-variant-numeric: tabular-nums; }
+.adm-table td.deal .grp { display: inline-block; }
+.adm-table td.deal .grp i { display: inline-block; font-style: normal; text-align: right; }
+.adm-table td.deal .grp.y i { min-width: 3ch; }
+.adm-table td.deal .grp.m i { min-width: 2ch; }
 /* 소수점 아래 자리도 폭을 잡아 둔다 — 없는 줄과 있는 줄의 전체 너비가
    달라지면 가운데 정렬 때문에 끝선이 어긋난다 */
 .adm-table td.deal b { display: inline-block; width: 11px; text-align: left; font-weight: inherit; }
