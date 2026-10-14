@@ -409,11 +409,11 @@ const exportExcel = () => {
       <div class="fin-table-wrap">
         <table class="fin-table mid">
           <colgroup>
-            <col style="width: 18%" /><col style="width: 22%" /><col style="width: 17%" />
-            <col style="width: 19%" /><col />
+            <col style="width: 16%" /><col style="width: 20%" /><col style="width: 15%" />
+            <col style="width: 18%" /><col style="width: 15%" /><col />
           </colgroup>
           <thead>
-            <tr><th>사용일</th><th>사용처</th><th>사용구분</th><th>비용</th><th>비고</th></tr>
+            <tr><th>사용일</th><th>사용처</th><th>사용구분</th><th>비용</th><th>사용카드</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredFuelMeal" :key="r.id" @click="openEdit('fuelMeal', r)">
@@ -421,10 +421,11 @@ const exportExcel = () => {
               <td :title="r.store">{{ r.store }}</td>
               <td :title="r.category"><span class="pill cat">{{ r.category || '-' }}</span></td>
               <td>{{ fmtMoney(r.amount) }}원</td>
+              <td :title="r.card">{{ r.card || '-' }}</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredFuelMeal.length === 0">
-              <td colspan="5" class="empty">
+              <td colspan="6" class="empty">
                 <template v-if="finance.fuelMeal.length === 0">데이터가 없습니다.</template>
                 <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.fuelMeal.length }}건)</template>
               </td>
