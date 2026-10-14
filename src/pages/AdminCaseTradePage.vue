@@ -490,16 +490,19 @@ const downloadCsv = () => {
         <!-- 네 칸 자리에 세 줄 — 공동주택가·매매 / 보증보험 전세 / 실거래 전세 -->
         <div class="adm-kpis grid4">
           <div class="adm-kpi green">
-            <small>공동주택가 <em v-if="price">{{ price.year }}년 기준</em></small>
+            <small>
+              공동주택가
+              <em v-if="price">{{ price.year }}.01.01 기준</em>
+              <template v-if="price && priceUnit"><i class="adm-bar2">|</i><em>{{ priceUnit }}</em></template>
+            </small>
             <input
               v-model="pubTyped"
               class="adm-kpi-input"
               inputmode="numeric"
               :placeholder="pubAuto > 0 ? pubAuto.toLocaleString('ko-KR') : '직접 입력'"
             />
-            <span v-if="priceUnit" class="adm-kpi-sub">{{ priceUnit }}</span>
           </div>
-          <div class="adm-kpi"><small>매매 실거래가 <span v-if="recentSale" class="adm-kpi-from pick">선택</span></small><strong>{{ won(recentPrice) }}</strong><span :class="['adm-kpi-sub', { ask: !recentSale }]">{{ recentSale ? rowFace(recentSale) : '리스트에서 실거래를 선택하세요' }}</span></div>
+          <div class="adm-kpi"><small>매매 실거래가 <span v-if="recentSale" class="adm-kpi-from pick">선택</span> <em v-if="recentSale">{{ rowFace(recentSale) }}</em></small><strong>{{ won(recentPrice) }}</strong><span v-if="!recentSale" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span></div>
           <div class="adm-kpi"><small>매매 평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
           <div class="adm-kpi">
             <small>공시대비율</small>
@@ -543,7 +546,7 @@ const downloadCsv = () => {
         </div>
 
         <div class="adm-kpis grid4 nextrow">
-          <div class="adm-kpi"><small>전세 실거래가 <span v-if="recentJeonse" class="adm-kpi-from pick">선택</span></small><strong>{{ won(jeonsePriceReal) }}</strong><span :class="['adm-kpi-sub', { ask: !recentJeonse }]">{{ recentJeonse ? rowFace(recentJeonse) : '리스트에서 실거래를 선택하세요' }}</span><span v-if="jeonseVsPubText" class="adm-kpi-sub">{{ jeonseVsPubText }}</span></div>
+          <div class="adm-kpi"><small>전세 실거래가 <span v-if="recentJeonse" class="adm-kpi-from pick">선택</span> <em v-if="recentJeonse">{{ rowFace(recentJeonse) }}</em></small><strong>{{ won(jeonsePriceReal) }}</strong><span v-if="!recentJeonse" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span><span v-if="jeonseVsPubText" class="adm-kpi-sub">{{ jeonseVsPubText }}</span></div>
           <div class="adm-kpi tipbox">
             <small>
               실거래 전세가율 / 갭
@@ -715,6 +718,10 @@ const downloadCsv = () => {
 .adm-kpi { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
 .adm-kpi small { font-size: 11.5px; font-weight: 700; color: #6b7280; display: flex; align-items: baseline; gap: 4px; }
 .adm-kpi small em { font-style: normal; color: #2b6df3; }
+/* 제목 줄에서 두 가지를 가르는 막대 */
+.adm-kpi small .adm-bar2 { font-style: normal; color: #c3cbd8; margin: 0 2px; }
+/* 제목 줄이 길어져도 칸을 넘지 않게 — 넘치면 줄을 내린다 */
+.adm-kpi small { flex-wrap: wrap; row-gap: 2px; }
 .adm-kpi strong { font-size: 20px; font-weight: 800; letter-spacing: -0.4px; }
 .adm-kpi.blue { background: #f4f8ff; border-color: #dbe6ff; }
 .adm-kpi.green { background: #f1fbf7; border-color: #cdeee1; }
