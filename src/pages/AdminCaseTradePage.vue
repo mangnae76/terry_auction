@@ -242,7 +242,7 @@ const downloadCsv = () => {
         </button>
         <div class="adm-title">
           <h1>경매지번 실거래가 <em>지번 · 단지</em></h1>
-          <p>지번이나 단지명을 적어 그 자리의 매매·전세·월세를 모아 봅니다.</p>
+          <p>지번이나 단지명을 입력하여 매매·전세·월세 데이터 수집.</p>
         </div>
         <button type="button" class="adm-csv" :disabled="shown.length === 0" @click="downloadCsv">엑셀 내려받기</button>
       </div>
