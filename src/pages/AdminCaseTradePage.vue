@@ -572,12 +572,12 @@ const downloadCsv = () => {
 
         <div class="adm-kpis grid4 nextrow">
           <div class="adm-kpi"><small>매매 실거래가 <span v-if="recentSale" class="adm-kpi-from pick">선택</span> <em v-if="recentSale">{{ rowFace(recentSale) }}</em></small><strong>{{ won(recentPrice) }}</strong><span v-if="!recentSale" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span></div>
-          <div class="adm-kpi"><small>매매 평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
           <div class="adm-kpi">
             <small>공시대비율</small>
             <strong>{{ pubRatioText }}</strong>
             <span class="adm-kpi-sub">매매 실거래가 ÷ 공동주택가</span>
           </div>
+          <div class="adm-kpi"><small>매매 평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
         </div>
 
         <!-- 탭 · 거르기 -->

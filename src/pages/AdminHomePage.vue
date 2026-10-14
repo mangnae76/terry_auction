@@ -27,7 +27,7 @@ const GROUPS: Group[] = [
       {
         title: '실거래 분석',
         sub: '지역 단위',
-        desc: '지역 세부 단위(읍면동)의 거래량·평균가와 수요공급 지표.',
+        desc: '지역 세부 단위(읍면동)의 거래량·평균가를 통해 수요공급을 분석한다.',
         path: '/admin/region-demand',
         icon: 'trade',
       },

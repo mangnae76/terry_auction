@@ -268,7 +268,7 @@ const downloadCsv = () => {
         </button>
         <div class="adm-title">
           <h1>실거래 분석 <em>지역 단위</em></h1>
-          <p>지역 세부 단위(읍면동)의 거래량·평균가와 수요공급 지표.</p>
+          <p>지역 세부 단위(읍면동)의 거래량·평균가를 통해 수요공급을 분석한다.</p>
         </div>
         <button
           type="button"
