@@ -371,7 +371,7 @@ const exportExcel = () => {
               <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
               <td class="c" :title="r.memo"><span class="pill memo">{{ r.memo || '-' }}</span></td>
               <td :title="r.detail">{{ r.detail }}</td>
-              <td class="r"><strong>{{ fmtMoney(r.amountWithVat) }}</strong></td>
+              <td class="r">{{ fmtMoney(r.amountWithVat) }}</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredBusiness.length === 0">
@@ -434,7 +434,7 @@ const exportExcel = () => {
               <td class="r">{{ r.quantity }}</td>
               <td class="r">{{ fmtMoney(r.unitPrice) }}원</td>
               <td class="r">{{ fmtMoney(r.subtotal) }}원</td>
-              <td class="r"><strong>{{ fmtMoney(r.totalWithVat) }}원</strong></td>
+              <td class="r">{{ fmtMoney(r.totalWithVat) }}원</td>
               <td :title="r.vendor">{{ r.vendor }}</td>
               <td class="c" :title="r.card">{{ r.card }}</td>
               <td class="c" :title="r.user">{{ r.user }}</td>
