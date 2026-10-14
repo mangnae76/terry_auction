@@ -13,6 +13,7 @@ import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/reg
 import { analyzeAddress, type CasePropertyType, type CaseTradeRow } from '../services/caseTradeAnalysis';
 import { priceUnitText, shortPlaceName } from '../services/addressLookup';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
+import AppToast from '../components/AppToast.vue';
 import { useAuthStore } from '../stores/authStore';
 import {
   addSnapshot, listSnapshots, removeSnapshot, updateSnapshot, type CaseSnapshot,
@@ -410,9 +411,11 @@ const snapMsg = ref('');
 const snapId = ref('');
 
 const canSave = computed(() => !!(price.value || recentSale.value || recentJeonse.value));
-const flash = (text: string) => {
+const snapTone = ref<'info' | 'success' | 'error'>('success');
+const flash = (text: string, tone: 'info' | 'success' | 'error' = 'success') => {
+  snapTone.value = tone;
   snapMsg.value = text;
-  window.setTimeout(() => { if (snapMsg.value === text) snapMsg.value = ''; }, 2000);
+  window.setTimeout(() => { if (snapMsg.value === text) snapMsg.value = ''; }, 1800);
 };
 
 /** 저장해 둔 이름 — 덮어쓸 때 그대로 쓴다 */
@@ -422,7 +425,7 @@ const savePrompt = ref(false);
 const saveName = ref('');
 const defaultName = () => chipText.value || address.value.trim();
 const askSave = () => {
-  if (!canSave.value) { flash('저장할 내용이 없습니다 — 먼저 분석하세요.'); return; }
+  if (!canSave.value) { flash('저장할 내용이 없습니다 — 먼저 분석하세요.', 'error'); return; }
   saveName.value = snapLabel.value || defaultName();
   savePrompt.value = true;
 };
@@ -465,8 +468,8 @@ const openSnapPanel = async () => {
 
 const saveSnap = async (overwrite = false) => {
   savePrompt.value = false;
-  if (!auth.uid) { flash('로그인한 뒤에 저장됩니다.'); return; }
-  if (!canSave.value) { flash('저장할 내용이 없습니다 — 먼저 분석하세요.'); return; }
+  if (!auth.uid) { flash('로그인한 뒤에 저장됩니다.', 'error'); return; }
+  if (!canSave.value) { flash('저장할 내용이 없습니다 — 먼저 분석하세요.', 'error'); return; }
   snapBusy.value = true;
   try {
     const body = collectSnapshot();
@@ -479,7 +482,7 @@ const saveSnap = async (overwrite = false) => {
     }
     if (snapOpen.value) await loadSnapList();
   } catch (err) {
-    flash(err instanceof Error ? err.message : String(err));
+    flash(err instanceof Error ? err.message : String(err), 'error');
   } finally {
     snapBusy.value = false;
   }
@@ -523,7 +526,7 @@ const deleteSnap = async (snap: CaseSnapshot) => {
     await loadSnapList();
     flash('지웠습니다.');
   } catch (err) {
-    flash(err instanceof Error ? err.message : String(err));
+    flash(err instanceof Error ? err.message : String(err), 'error');
   } finally {
     snapBusy.value = false;
   }
@@ -646,7 +649,6 @@ const downloadCsv = () => {
         <button type="button" class="adm-load" :disabled="loading || !address.trim()" @click="run">다시 분석</button>
       </div>
 
-      <p v-if="snapMsg" class="adm-msg warn">{{ snapMsg }}</p>
       <p v-if="errorMsg" class="adm-msg err">{{ errorMsg }}</p>
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
       <p v-if="areaNote" class="adm-msg warn">{{ areaNote }}</p>
@@ -815,6 +817,7 @@ const downloadCsv = () => {
     </div>
 
     <ColumnFilterPanel :ctl="colFilter" />
+    <AppToast :visible="!!snapMsg" :text="snapMsg" :tone="snapTone" />
 
     <Teleport to="body">
       <div v-if="savePrompt" class="adm-snap-veil" @click="savePrompt = false"></div>
