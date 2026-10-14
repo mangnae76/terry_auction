@@ -760,7 +760,9 @@ const exportExcel = () => {
 /* 자금입출금의 알약 색을 네 표가 함께 쓴다 —
    입금은 빨강, 그 밖의 알약(출금·사업지출 항목·사용구분)은 파랑 */
 .pill.in { background: #fee2e2; color: #dc2626; }
-.pill.out, .pill.memo, .pill.cat { background: #dbeafe; color: #2563eb; }
+.pill.out, .pill.cat { background: #dbeafe; color: #2563eb; }
+/* 사업지출의 항목 — 회색 */
+.pill.memo { background: #eceff4; color: #4b5563; }
 
 /* Modal */
 .fin-modal-backdrop {
