@@ -239,8 +239,8 @@ const downloadCsv = (filename: string, rows: Array<Array<string | number>>) => {
 const exportExcel = () => {
   if (activeTab.value === 'cashFlow') {
     downloadCsv('자금입출금.csv', [
-      ['구분(소유자)', '일자', '종류', '금액', '비고'],
-      ...filteredCashFlows.value.map((r) => [r.ownerName, r.date, r.flowType, r.amount, r.note]),
+      ['일자', '구분(소유자)', '종류', '금액', '비고'],
+      ...filteredCashFlows.value.map((r) => [r.date, r.ownerName, r.flowType, r.amount, r.note]),
     ]);
   } else if (activeTab.value === 'businessExpense') {
     downloadCsv('사업지출.csv', [
@@ -337,12 +337,12 @@ const exportExcel = () => {
       <div class="fin-table-wrap">
         <table class="fin-table">
           <thead>
-            <tr><th>구분</th><th>일자</th><th>입출금</th><th class="r">개인 자금</th><th>비고</th></tr>
+            <tr><th>일자</th><th>구분</th><th>입출금</th><th class="r">개인 자금</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredCashFlows" :key="r.id" @click="openEdit('cashFlow', r)">
-              <td :title="r.ownerName">{{ r.ownerName }}</td>
               <td>{{ r.date }}</td>
+              <td :title="r.ownerName">{{ r.ownerName }}</td>
               <td><span :class="['pill', r.flowType === '입금' ? 'in' : 'out']">{{ r.flowType }}</span></td>
               <td :class="['r', 'amt', r.flowType === '입금' ? 'red' : 'blue']">{{ fmtMoneySigned(r.amount, r.flowType === '입금' ? '+' : '-') }}</td>
               <td :title="r.note">{{ r.note }}</td>
