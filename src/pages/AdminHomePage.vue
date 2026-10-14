@@ -110,7 +110,7 @@ const openTool = (tool: Tool) => {
         <div class="adm-brand">
           <span class="adm-logo-wrap">
             <img :src="logoImg" alt="MYTURN" class="adm-logo" />
-            <small class="adm-logo-sub">옥션</small>
+            <small class="adm-logo-sub">AUCTION</small>
           </span>
           <small class="adm-brand-tag">관리자 도구</small>
         </div>
@@ -202,13 +202,13 @@ const openTool = (tool: Tool) => {
   display: flex; align-items: center; gap: 16px;
 }
 /* 앱과 같은 로고를 쓴다 — 같은 서비스라는 게 한눈에 보이게.
-   '옥션' 은 로고 아래, MYTURN 의 N 끝에 맞춰 오른쪽으로 붙인다 */
+   'AUCTION' 은 로고 아래, MYTURN 의 N 끝에 맞춰 오른쪽으로 붙인다 */
 .adm-brand { display: flex; align-items: center; gap: 12px; }
 .adm-logo-wrap { display: flex; flex-direction: column; align-items: flex-end; line-height: 1; }
 .adm-logo { height: 26px; object-fit: contain; display: block; }
 .adm-logo-sub {
-  margin-top: 1px; font-size: 11px; font-weight: 800; letter-spacing: 0.12em;
-  color: #111827;
+  margin-top: 1px; font-size: 10px; font-weight: 800; letter-spacing: 0.22em;
+  color: #111827; padding-right: 1px;
 }
 .adm-brand-tag {
   font-size: 11.5px; font-weight: 700; color: #6b7280;
