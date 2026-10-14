@@ -106,6 +106,8 @@ const run = async () => {
       },
     );
     restoredSpot.value = '';
+    snapLabel.value = '';
+    snapId.value = '';
     region.value = res.region;
     lot.value = res.parts.lot;
     ho.value = res.parts.ho;
@@ -413,10 +415,21 @@ const flash = (text: string) => {
   window.setTimeout(() => { if (snapMsg.value === text) snapMsg.value = ''; }, 2000);
 };
 
+/** 저장해 둔 이름 — 덮어쓸 때 그대로 쓴다 */
+const snapLabel = ref('');
+/** 이름을 묻는 작은 창 */
+const savePrompt = ref(false);
+const saveName = ref('');
+const defaultName = () => chipText.value || address.value.trim();
+const askSave = () => {
+  if (!canSave.value) { flash('저장할 내용이 없습니다 — 먼저 분석하세요.'); return; }
+  saveName.value = snapLabel.value || defaultName();
+  savePrompt.value = true;
+};
+
 const collectSnapshot = (): CaseSnapshot => ({
   uid: auth.uid ?? '',
-  // 이름은 주소(칩)로 둔다 — 따로 적을 일이 아니다
-  label: chipText.value || address.value.trim(),
+  label: (snapLabel.value || defaultName()).trim(),
   memo: '',
   savedAt: Date.now(),
   address: address.value.trim(),
@@ -451,6 +464,7 @@ const openSnapPanel = async () => {
 };
 
 const saveSnap = async (overwrite = false) => {
+  savePrompt.value = false;
   if (!auth.uid) { flash('로그인한 뒤에 저장됩니다.'); return; }
   if (!canSave.value) { flash('저장할 내용이 없습니다 — 먼저 분석하세요.'); return; }
   snapBusy.value = true;
@@ -474,6 +488,7 @@ const saveSnap = async (overwrite = false) => {
 /** 저장해 둔 값을 화면에 되돌린다 — 표는 '분석'을 눌러야 다시 찬다 */
 const openSnap = (snap: CaseSnapshot) => {
   snapId.value = snap.id ?? '';
+  snapLabel.value = snap.label ?? '';
   address.value = snap.address ?? '';
   kind.value = snap.kind ?? 'villa';
   years.value = snap.years ?? 10;
@@ -490,6 +505,13 @@ const openSnap = (snap: CaseSnapshot) => {
   errorMsg.value = '';
   notice.value = '저장해 둔 값입니다 — 최신 자료로 보려면 분석을 누르세요.';
   snapOpen.value = false;
+};
+
+/** 창에서 이름을 적고 저장 */
+const confirmSave = async () => {
+  snapLabel.value = saveName.value.trim() || defaultName();
+  snapId.value = '';           // 새로 하나 남긴다
+  await saveSnap(false);
 };
 
 const deleteSnap = async (snap: CaseSnapshot) => {
@@ -547,10 +569,10 @@ const downloadCsv = () => {
           <p>주소를 입력하여 공동주택가와 실거래가 데이터를 분석한다.</p>
         </div>
         <div class="adm-acts">
-          <button type="button" class="adm-csv" :disabled="tableRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
-          <button type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="saveSnap(false)">저장</button>
+          <button type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="askSave">저장</button>
           <button v-if="snapId" type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="saveSnap(true)">덮어쓰기</button>
           <button type="button" class="adm-csv" @click="openSnapPanel">저장 목록</button>
+          <button type="button" class="adm-csv" :disabled="tableRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
         </div>
       </div>
     </header>
@@ -795,6 +817,21 @@ const downloadCsv = () => {
     <ColumnFilterPanel :ctl="colFilter" />
 
     <Teleport to="body">
+      <div v-if="savePrompt" class="adm-snap-veil" @click="savePrompt = false"></div>
+      <div v-if="savePrompt" class="adm-save-ask" @click.stop>
+        <strong>저장 이름</strong>
+        <input
+          v-model="saveName"
+          class="adm-input"
+          placeholder="이름 (비우면 주소로)"
+          @keyup.enter="confirmSave"
+        />
+        <div class="acts">
+          <button type="button" class="ghost" @click="savePrompt = false">취소</button>
+          <button type="button" class="go" :disabled="snapBusy" @click="confirmSave">저장</button>
+        </div>
+      </div>
+
       <div v-if="snapOpen" class="adm-snap-veil" @click="snapOpen = false"></div>
       <div v-if="snapOpen" class="adm-snap-panel" @click.stop>
         <header>
@@ -1026,6 +1063,22 @@ const downloadCsv = () => {
 .adm-snap-panel .del:hover { color: #d0342c; }
 .adm-snap-empty { margin: 16px; text-align: center; font-size: 12px; color: #9ca3af; }
 .adm-snap-empty.err { color: #c0392b; }
+/* 이름을 묻는 작은 창 */
+.adm-save-ask {
+  position: fixed; z-index: 9999; left: 50%; top: 22vh; transform: translateX(-50%);
+  width: 360px; background: #fff; border: 1px solid #dfe5ef; border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(17, 24, 39, 0.2);
+  padding: 16px; display: flex; flex-direction: column; gap: 10px; font-family: inherit;
+}
+.adm-save-ask strong { font-size: 13.5px; font-weight: 800; color: #111827; }
+.adm-save-ask .adm-input { width: 100%; }
+.adm-save-ask .acts { display: flex; gap: 8px; }
+.adm-save-ask .acts button {
+  flex: 1 1 0; border-radius: 9px; padding: 8px 0;
+  font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.adm-save-ask .ghost { border: 1px solid #e3e8f0; background: #fff; color: #6b7280; }
+.adm-save-ask .go { border: 1px solid #1f3a72; background: #1f3a72; color: #fff; }
 
 /* 인쇄 — 고르고 적는 자리는 빼고 숫자만 남긴다 */
 @media print {
