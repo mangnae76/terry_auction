@@ -281,13 +281,7 @@ const exportExcel = () => {
     </header>
 
     <div v-if="activeTab !== 'tax'" class="fin-toolbar">
-      <!-- 자금입출금은 탭 이름과 겹쳐 제목을 적지 않는다 -->
-      <h2 v-if="activeTab !== 'cashFlow'" class="fin-title">
-        <template v-if="activeTab === 'businessExpense'">사업지출내역</template>
-        <template v-else-if="activeTab === 'fuelMeal'">유류&식대 지출내역</template>
-        <template v-else>물품구매 지출내역</template>
-        <small class="fin-vat-note">VAT 포함 입력 바랍니다</small>
-      </h2>
+      <!-- 제목·안내 줄은 적지 않는다 — 탭 이름과 겹친다 -->
       <div class="fin-toolbar-right">
         <div class="fin-period">
           <button :class="['fin-period-btn', { active: period === 'thisMonth' }]" @click="period = 'thisMonth'">이번달</button>
@@ -662,11 +656,6 @@ const exportExcel = () => {
   padding: 8px 14px 4px;
   display: flex; flex-direction: column; gap: 7px;
 }
-.fin-title {
-  margin: 0; font-size: 15.3px; font-weight: 800; color: #111827;
-  display: flex; align-items: center; gap: 8px;
-}
-.fin-vat-note { font-size: 11px; font-weight: 600; color: #2b6df3; }
 /* 기간 칩 4개 + 엑셀저장 + 항목추가 = 한 줄 6등분 */
 .fin-toolbar-right {
   display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
