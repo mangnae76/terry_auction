@@ -7,6 +7,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
+import logoImg from '../assets/icones/log/LOGO_ENG.png';
 
 type Tool = {
   title: string;
@@ -107,11 +108,8 @@ const openTool = (tool: Tool) => {
     <header class="adm-top">
       <div class="adm-top-in">
         <div class="adm-brand">
-          <span class="adm-mark">MT</span>
-          <div class="adm-brand-txt">
-            <strong>MYTURN</strong>
-            <small>관리자 도구</small>
-          </div>
+          <img :src="logoImg" alt="MYTURN" class="adm-logo" />
+          <small>관리자 도구</small>
         </div>
         <nav class="adm-top-nav">
           <button type="button" class="adm-top-link" @click="router.push('/auctions/watchlist')">선정물건</button>
@@ -200,16 +198,13 @@ const openTool = (tool: Tool) => {
   max-width: 1480px; margin: 0 auto; padding: 12px 28px;
   display: flex; align-items: center; gap: 16px;
 }
+/* 앱과 같은 로고를 쓴다 — 같은 서비스라는 게 한눈에 보이게 */
 .adm-brand { display: flex; align-items: center; gap: 10px; }
-.adm-mark {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px; border-radius: 9px;
-  background: linear-gradient(135deg, #2b6df3, #1b3f8f);
-  color: #fff; font-size: 12px; font-weight: 800; letter-spacing: -0.3px;
+.adm-logo { height: 28px; object-fit: contain; display: block; }
+.adm-brand small {
+  font-size: 11.5px; font-weight: 700; color: #6b7280;
+  padding-left: 10px; border-left: 1px solid #e3e8f0; line-height: 1.2;
 }
-.adm-brand-txt { display: flex; flex-direction: column; line-height: 1.15; }
-.adm-brand-txt strong { font-size: 14px; font-weight: 800; letter-spacing: -0.2px; }
-.adm-brand-txt small { font-size: 11px; color: #6b7280; font-weight: 600; }
 .adm-top-nav { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .adm-top-link {
   border: 1px solid #dde3ee; background: #fff; border-radius: 8px;
