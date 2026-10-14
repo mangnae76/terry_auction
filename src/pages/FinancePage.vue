@@ -248,6 +248,9 @@ const downloadCsv = (filename: string, rows: Array<Array<string | number>>) => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
+/** 카드 이름은 끝의 '카드' 를 뗀다 — '국민신용카드' → '국민신용' */
+const cardShort = (v?: string) => String(v ?? '').replace(/\s*카드$/, '').trim();
+
 /** 표에 적는 날짜 — '2026-10-14' → '26-10-14'. 엑셀에는 원래대로 넣는다 */
 const shortDate = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2) : (d ?? ''));
 
@@ -421,7 +424,7 @@ const exportExcel = () => {
               <td :title="r.store">{{ r.store }}</td>
               <td :title="r.category"><span class="pill cat">{{ r.category || '-' }}</span></td>
               <td>{{ fmtMoney(r.amount) }}원</td>
-              <td :title="r.card">{{ r.card || '-' }}</td>
+              <td :title="r.card">{{ cardShort(r.card) || '-' }}</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredFuelMeal.length === 0">
