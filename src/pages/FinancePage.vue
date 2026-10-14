@@ -445,7 +445,7 @@ const exportExcel = () => {
           <thead>
             <tr>
               <th class="c">사용일</th><th class="c">사용구분</th><th>상세내역</th>
-              <th class="r">수량</th><th class="r">단가</th><th class="r">계</th><th class="r">합계(VAT)</th>
+              <th class="r">수량</th><th class="r">단가</th><th class="r">합계(VAT)</th>
               <th>구매업체</th><th class="c">카드</th><th>비고</th>
             </tr>
           </thead>
@@ -456,14 +456,14 @@ const exportExcel = () => {
               <td :title="r.description">{{ r.description }}</td>
               <td class="r">{{ r.quantity }}</td>
               <td class="r">{{ fmtMoney(r.unitPrice) }}원</td>
-              <td class="r">{{ fmtMoney(r.subtotal) }}원</td>
-              <td class="r">{{ fmtMoney(r.totalWithVat) }}원</td>
+              <!-- 합계는 적어 둔 값이 있으면 그 값, 없으면 수량 × 단가 -->
+              <td class="r">{{ fmtMoney(r.totalWithVat || (r.quantity || 0) * (r.unitPrice || 0)) }}원</td>
               <td :title="r.vendor">{{ r.vendor }}</td>
               <td class="c" :title="r.card">{{ r.card }}</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredItemPurchases.length === 0">
-              <td colspan="10" class="empty">
+              <td colspan="9" class="empty">
                 <template v-if="finance.itemPurchases.length === 0">데이터가 없습니다.</template>
                 <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.itemPurchases.length }}건)</template>
               </td>
