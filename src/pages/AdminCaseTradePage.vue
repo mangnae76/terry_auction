@@ -252,6 +252,18 @@ const recentPyeong = computed(() => {
 const jeonseYm = computed(() => (recentJeonse.value ? recentJeonse.value.contractDate.slice(0, 7) : '최근'));
 const jeonsePriceReal = computed(() => recentJeonse.value?.price ?? 0);
 /** 전세 실거래가가 공동주택가의 몇 %인가 — 보증보험 기준(126%)과 견준다 */
+/** 전세 실거래 평당가 */
+const jeonsePyeong = computed(() => {
+  const r = recentJeonse.value;
+  if (!r || !(r.areaM2 > 0) || !(r.price > 0)) return 0;
+  return Math.round(r.price / (r.areaM2 / PYEONG));
+});
+/** 보증보험 전세가의 평당가 — 공부상 전용면적으로 나눈다 */
+const jeonsePubPyeong = computed(() => {
+  const area = baseArea.value || price.value?.areaM2 || 0;
+  if (!(area > 0) || !(jeonsePrice.value > 0)) return 0;
+  return Math.round(jeonsePrice.value / (area / PYEONG));
+});
 const jeonseVsPubText = computed(() => {
   const pub = pubValue.value;
   const j = jeonsePriceReal.value;
@@ -529,6 +541,7 @@ const downloadCsv = () => {
             <strong>{{ won(jeonsePrice) }}</strong>
             <span class="adm-kpi-sub">공동주택가 × {{ jeonseRate }}%</span>
           </div>
+          <div class="adm-kpi"><small>보증보험 전세 평당가</small><strong>{{ won(jeonsePubPyeong) }}</strong></div>
           <div class="adm-kpi tipbox">
             <small>
               보증보험 전세가율 / 갭
@@ -543,7 +556,7 @@ const downloadCsv = () => {
               >!</button>
             </small>
             <strong>{{ jeonseRatioText }}<em v-if="gapText" class="adm-gap"> / {{ gapText }}</em></strong>
-            <span class="adm-kpi-sub">전세가(공동주택가 × {{ jeonseRate }}%) ÷ 매매 실거래가</span>
+            <span class="adm-kpi-sub">보증보험 전세가 ÷ 매매 실거래가</span>
             <div
               v-if="tip === 'gap'"
               class="adm-tip"
@@ -558,6 +571,7 @@ const downloadCsv = () => {
 
         <div class="adm-kpis grid4 nextrow">
           <div class="adm-kpi"><small>전세 실거래가 <span :class="['adm-kpi-from', { pick: jeonseFrom === '선택거래' }]">{{ jeonseFrom }}</span> <em>{{ jeonseYm }}</em></small><strong>{{ won(jeonsePriceReal) }}</strong><span v-if="jeonseVsPubText" class="adm-kpi-sub">{{ jeonseVsPubText }}</span></div>
+          <div class="adm-kpi"><small>전세 평당가</small><strong>{{ won(jeonsePyeong) }}</strong></div>
           <div class="adm-kpi tipbox">
             <small>
               실거래 전세가율 / 갭
@@ -715,8 +729,9 @@ const downloadCsv = () => {
 .adm-sum { margin: 18px 0 12px; padding-left: 2px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: #6b7280; }
 .adm-sum strong { font-size: 15px; font-weight: 800; color: #111827; }
 .adm-sum .dim { color: #9ca3af; }
-/* 표 바로 위 — 이 표가 어느 자료에서 나왔는지 */
-.adm-sum.under { margin: 0 0 8px; font-size: 12px; }
+/* 표 바로 위 — 이 표가 어느 자료에서 나왔는지.
+   '전체' 알약의 글자 시작선에 맞춘다 (테두리 1 + 안여백 14) */
+.adm-sum.under { margin: 0 0 8px; padding-left: 15px; font-size: 12px; }
 
 .adm-kpis { display: grid; gap: 12px; }
 /* 세 줄이 같은 네 칸 틀을 쓴다 — 줄이 달라도 세로로 맞아떨어진다 */

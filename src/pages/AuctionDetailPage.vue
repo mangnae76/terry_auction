@@ -3937,6 +3937,14 @@ const mktUnitFromReal = computed(() => {
   return price > 0 && py > 0 ? Math.round(price / py) : 0;
 });
 const mktUnitFromRealText = computed(() => (mktUnitFromReal.value > 0 ? mktUnitFromReal.value.toLocaleString('ko-KR') : '-'));
+/** 전세 평당가 — 전세 실거래가 ÷ 전세 전용면적(평).
+ *  매매 평당가와 나란히 둬야 전세가 어느 수준인지 바로 보인다. */
+const mktJeonseUnit = computed(() => {
+  const price = parseDigits(mktVal(mk('d', 'jReal')));
+  const py = (Number(mktAreaNum(mk('d', 'jArea'))) || 0) / PYEONG_TO_M2;
+  return price > 0 && py > 0 ? Math.round(price / py) : 0;
+});
+const mktJeonseUnitText = computed(() => (mktJeonseUnit.value > 0 ? mktJeonseUnit.value.toLocaleString('ko-KR') : '-'));
 // 결론표의 평단가도 같은 값을 쓰도록 저장해 둔다
 watch(mktUnitFromReal, (n) => {
   const v = surveyForm.value?.mktValues;
@@ -7766,7 +7774,7 @@ const goBack = () => router.back();
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'real')) }}</strong>
                 </div>
                 <div :class="['cell calc', { lit: mktLit('unit') }]" @mouseenter="litEnter('unit')" @mouseleave="litLeave()" @click="litTap('unit')">
-                  <small>평단가</small>
+                  <small>매매 평당가</small>
                   <strong class="hi">{{ mktUnitFromRealText }}</strong>
                 </div>
               </div>
@@ -7796,10 +7804,10 @@ const goBack = () => router.back();
                   <FormattedNumberInput v-if="mktCaseEditable" :model-value="mktVal(mk('d', 'jReal'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(mk('d', 'jReal'), $event)" />
                   <strong v-else class="hi">{{ mktMoney(mk('d', 'jReal')) }}</strong>
                 </div>
-                <!-- 전세가율은 세 번째 표로 옮겼다 — 자리는 비워 둔다 -->
+                <!-- 전세가율은 세 번째 표로 옮겼다 — 그 자리에 전세 평당가를 둔다 -->
                 <div class="cell calc">
-                  <small>&nbsp;</small>
-                  <strong class="hi">&nbsp;</strong>
+                  <small>전세 평당가</small>
+                  <strong class="hi">{{ mktJeonseUnitText }}</strong>
                 </div>
               </div>
               <div class="adp-mkt-cells c4 adp-dm-table">
