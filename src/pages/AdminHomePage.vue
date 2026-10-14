@@ -59,7 +59,7 @@ const GROUPS: Group[] = [
         icon: 'near',
       },
       {
-        title: '동일지번매각물건 분석',
+        title: '동일 지번 매각 물건 분석',
         desc: '동일 번지 매각 물건 분석을 통해 낙찰가율을 분석한다.',
         path: '',
         icon: 'lot',
