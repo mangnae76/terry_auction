@@ -251,10 +251,11 @@ const recentPyeong = computed(() => {
 /** 전세도 매매와 같은 꼴로 — 보증금·평당 보증금·건수 */
 const jeonseYm = computed(() => (recentJeonse.value ? recentJeonse.value.contractDate.slice(0, 7) : '최근'));
 const jeonsePriceReal = computed(() => recentJeonse.value?.price ?? 0);
-const jeonsePyeong = computed(() => {
-  const r = recentJeonse.value;
-  if (!r || !(r.areaM2 > 0) || !(r.price > 0)) return 0;
-  return Math.round(r.price / (r.areaM2 / PYEONG));
+/** 전세 실거래가가 공동주택가의 몇 %인가 — 보증보험 기준(126%)과 견준다 */
+const jeonseVsPubText = computed(() => {
+  const pub = pubValue.value;
+  const j = jeonsePriceReal.value;
+  return pub > 0 && j > 0 ? `공동주택가 × ${((j / pub) * 100).toFixed(0)}%` : '';
 });
 const jeonseFrom = computed(() => (
   pickedJeonse.value && pickedJeonse.value !== autoJeonseKey.value ? '선택거래' : '최근거래'
@@ -513,7 +514,7 @@ const downloadCsv = () => {
             />
             <span v-if="priceUnit" class="adm-kpi-sub">{{ priceUnit }}</span>
           </div>
-          <div class="adm-kpi"><small><em>{{ recentYm }}</em> 매매 실거래가 <span :class="['adm-kpi-from', { pick: saleFrom === '선택거래' }]">{{ saleFrom }}</span></small><strong>{{ won(recentPrice) }}</strong></div>
+          <div class="adm-kpi"><small>매매 실거래가 <span :class="['adm-kpi-from', { pick: saleFrom === '선택거래' }]">{{ saleFrom }}</span> <em>{{ recentYm }}</em></small><strong>{{ won(recentPrice) }}</strong></div>
           <div class="adm-kpi"><small>매매 평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
           <div class="adm-kpi">
             <small>공시대비율</small>
@@ -556,11 +557,10 @@ const downloadCsv = () => {
         </div>
 
         <div class="adm-kpis grid4 nextrow">
-          <div class="adm-kpi"><small><em>{{ jeonseYm }}</em> 전세 실거래가 <span :class="['adm-kpi-from', { pick: jeonseFrom === '선택거래' }]">{{ jeonseFrom }}</span></small><strong>{{ won(jeonsePriceReal) }}</strong></div>
-          <div class="adm-kpi"><small>전세 평당가</small><strong>{{ won(jeonsePyeong) }}</strong></div>
+          <div class="adm-kpi"><small>전세 실거래가 <span :class="['adm-kpi-from', { pick: jeonseFrom === '선택거래' }]">{{ jeonseFrom }}</span> <em>{{ jeonseYm }}</em></small><strong>{{ won(jeonsePriceReal) }}</strong><span v-if="jeonseVsPubText" class="adm-kpi-sub">{{ jeonseVsPubText }}</span></div>
           <div class="adm-kpi tipbox">
             <small>
-              실거래 전세가율
+              실거래 전세가율 / 갭
               <button
                 v-if="realRatioSign"
                 type="button"
