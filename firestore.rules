@@ -99,6 +99,15 @@ service cloud.firestore {
       allow read, write: if isAllowedUser();
     }
 
+    // 관리자 도구 · 경매지번 분석 스냅샷 — 본인 uid 일치 시에만.
+    // 그때 본 숫자를 그대로 박제해 두는 자리다 (거래 표는 담지 않는다).
+    match /adminSnapshots/{id} {
+      allow read, update, delete:
+        if isAllowedUser() && resource.data.uid == request.auth.uid;
+      allow create:
+        if isAllowedUser() && request.resource.data.uid == request.auth.uid;
+    }
+
     // 그 외 컬렉션은 명시적 허용 없이는 거부 (기본 deny)
   }
 }

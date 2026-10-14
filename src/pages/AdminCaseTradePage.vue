@@ -13,6 +13,10 @@ import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/reg
 import { analyzeAddress, type CasePropertyType, type CaseTradeRow } from '../services/caseTradeAnalysis';
 import { priceUnitText, shortPlaceName } from '../services/addressLookup';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
+import { useAuthStore } from '../stores/authStore';
+import {
+  addSnapshot, listSnapshots, removeSnapshot, updateSnapshot, type CaseSnapshot,
+} from '../services/adminSnapshots';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 import type { ApartPrice } from '../services/vworldApi';
 import type { ResolvedRegion } from '../services/regionResolver';
@@ -26,6 +30,7 @@ const YEARS = [2, 4, 8, 10];
 const PYEONG = 3.305785;
 
 const router = useRouter();
+const auth = useAuthStore();
 
 // ===== 주소 한 줄 =====
 const address = ref('');
@@ -42,6 +47,10 @@ const ho = ref('');
 const buildingDong = ref('');
 const price = ref<ApartPrice | null>(null);
 const rows = ref<CaseTradeRow[]>([]);
+/** 스냅샷에서 되살린 값 — 표를 다시 받기 전까지 이 값으로 선다 */
+const restoredSale = ref<CaseTradeRow | null>(null);
+const restoredJeonse = ref<CaseTradeRow | null>(null);
+const restoredSpot = ref('');
 const scanned = ref(0);
 /** 공부상 전용면적 — 공시가격 자료의 그 호실 줄에서 온다 */
 const baseArea = ref(0);
@@ -78,6 +87,8 @@ const spotChip = computed(() => {
 });
 
 const callCount = computed(() => years.value * 12 * 2);
+/** 화면 머리의 칩 — 되살린 스냅샷이면 저장해 둔 글을 그대로 쓴다 */
+const chipText = computed(() => restoredSpot.value || spotChip.value);
 
 const run = async () => {
   const text = address.value.trim();
@@ -94,6 +105,7 @@ const run = async () => {
         lot: ovLot.value || undefined,
       },
     );
+    restoredSpot.value = '';
     region.value = res.region;
     lot.value = res.parts.lot;
     ho.value = res.parts.ho;
@@ -114,7 +126,7 @@ const run = async () => {
     if (res.rows.length === 0) notice.value = '그 지번의 실거래가 없습니다 — 기간을 늘리거나 직접 고르기로 지번을 고쳐 보세요.';
     else if (res.missedMonths > 0) notice.value = `${res.missedMonths}개월치를 받지 못했습니다 — 다시 누르면 채워집니다.`;
     if (!res.price) {
-      notice.value = notice.value || '공동주택가 자료가 없습니다 (단독·다가구이거나 아직 고시 전) — 직접 적을 수 있습니다.';
+      notice.value = notice.value || '공동주택가 자료가 없습니다 — 공동주택이 아니거나 아직 고시 전입니다.';
     }
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : String(err);
@@ -200,12 +212,21 @@ const rowKey = (r: CaseTradeRow) => `${r.kind}|${r.contractDate}|${r.price}|${r.
 const pickedSale = ref('');
 const pickedJeonse = ref('');
 /** 아무것도 집지 않은 자리 — 지표는 사람이 고른 줄로만 선다 */
-const pickNone = () => { pickedSale.value = ''; pickedJeonse.value = ''; };
+const pickNone = () => {
+  pickedSale.value = ''; pickedJeonse.value = '';
+  restoredSale.value = null; restoredJeonse.value = null;
+};
 const isSaleKind = (k: string) => k === '매매' || k === '직거래' || k === '계약해제';
 const pickRow = (r: CaseTradeRow) => {
   const key = rowKey(r);
-  if (isSaleKind(r.kind)) pickedSale.value = pickedSale.value === key ? '' : key;
-  else if (r.kind === '전세') pickedJeonse.value = pickedJeonse.value === key ? '' : key;
+  // 표에서 고르면 되살려 둔 값은 물러난다
+  if (isSaleKind(r.kind)) {
+    restoredSale.value = null;
+    pickedSale.value = pickedSale.value === key ? '' : key;
+  } else if (r.kind === '전세') {
+    restoredJeonse.value = null;
+    pickedJeonse.value = pickedJeonse.value === key ? '' : key;
+  }
 };
 const clearPicks = () => { pickNone(); };
 
@@ -213,7 +234,7 @@ const isPicked = (r: CaseTradeRow) => rowKey(r) === pickedSale.value || rowKey(r
 
 /** 기준 매매 — 표에서 고른 줄만. 고르기 전에는 비어 있다 */
 const recentSale = computed(() => (
-  byAreaYear.value.find((r) => rowKey(r) === pickedSale.value) ?? null
+  byAreaYear.value.find((r) => rowKey(r) === pickedSale.value) ?? restoredSale.value
 ));
 const recentPrice = computed(() => recentSale.value?.price ?? 0);
 const recentPyeong = computed(() => {
@@ -251,7 +272,7 @@ const rowFace = (r: CaseTradeRow | null) => {
 };
 /** 기준 전세 — 표에서 고른 줄만 */
 const recentJeonse = computed(() => (
-  byAreaYear.value.find((r) => rowKey(r) === pickedJeonse.value) ?? null
+  byAreaYear.value.find((r) => rowKey(r) === pickedJeonse.value) ?? restoredJeonse.value
 ));
 /** 고른 줄인지 저절로 잡힌 줄인지 — 요약 칸에 적어 둔다 */
 
@@ -261,12 +282,8 @@ const recentJeonse = computed(() => (
 //   전세가율 = 전세가 ÷ 매매 실거래가,  갭 = 매매 실거래가 − 전세가
 //   공시대비율 = 매매 실거래가 ÷ 공동주택가
 const JEONSE_RATE = 126;
-const pubAuto = computed(() => price.value?.price ?? 0);
-const pubTyped = ref('');
-const pubValue = computed(() => {
-  const typed = Number(pubTyped.value.replace(/[^\d]/g, ''));
-  return typed > 0 ? typed : pubAuto.value;
-});
+// 공동주택가는 공시된 값 그대로 쓴다 — 고칠 자리가 아니다
+const pubValue = computed(() => price.value?.price ?? 0);
 const rateText = ref(String(JEONSE_RATE));
 const jeonseRate = computed(() => {
   const r = Number(rateText.value.replace(/[^\d.]/g, ''));
@@ -381,6 +398,124 @@ const kindClass = (k: string) => {
 /** 시세로 쓰면 안 되는 줄 — 흐리게 적는다 */
 const isOff = (k: string) => k === '직거래' || k === '계약해제';
 
+// ===== 스냅샷 =====
+// 그때 본 숫자를 그대로 남긴다. 표는 담지 않는다 — 기준 두 줄만 있으면 지표가 선다.
+const snapOpen = ref(false);
+const snapList = ref<CaseSnapshot[]>([]);
+const snapBusy = ref(false);
+const snapMsg = ref('');
+const snapName = ref('');
+const snapMemo = ref('');
+/** 지금 열어 둔 스냅샷 — 덮어쓰기를 누를 때 쓴다 */
+const snapId = ref('');
+
+const canSave = computed(() => !!(price.value || recentSale.value || recentJeonse.value));
+const flash = (text: string) => {
+  snapMsg.value = text;
+  window.setTimeout(() => { if (snapMsg.value === text) snapMsg.value = ''; }, 2000);
+};
+
+const collectSnapshot = (): CaseSnapshot => ({
+  uid: auth.uid ?? '',
+  label: snapName.value.trim() || chipText.value || address.value.trim(),
+  memo: snapMemo.value.trim(),
+  savedAt: Date.now(),
+  address: address.value.trim(),
+  kind: kind.value,
+  years: years.value,
+  spot: chipText.value,
+  baseAreaM2: baseArea.value,
+  price: price.value,
+  rate: jeonseRate.value,
+  sale: recentSale.value,
+  jeonse: recentJeonse.value,
+});
+
+const loadSnapList = async () => {
+  if (!auth.uid) { snapList.value = []; return; }
+  snapBusy.value = true;
+  try {
+    snapList.value = await listSnapshots(auth.uid);
+  } catch (err) {
+    flash(err instanceof Error ? err.message : String(err));
+  } finally {
+    snapBusy.value = false;
+  }
+};
+const openSnapPanel = async () => {
+  snapOpen.value = true;
+  await loadSnapList();
+};
+
+const saveSnap = async (overwrite = false) => {
+  if (!auth.uid) { flash('로그인한 뒤에 저장됩니다.'); return; }
+  if (!canSave.value) { flash('저장할 내용이 없습니다 — 먼저 분석하세요.'); return; }
+  snapBusy.value = true;
+  try {
+    const body = collectSnapshot();
+    if (overwrite && snapId.value) {
+      await updateSnapshot(snapId.value, body);
+      flash('덮어썼습니다.');
+    } else {
+      snapId.value = await addSnapshot(body);
+      flash('저장했습니다.');
+    }
+    if (snapOpen.value) await loadSnapList();
+  } catch (err) {
+    flash(err instanceof Error ? err.message : String(err));
+  } finally {
+    snapBusy.value = false;
+  }
+};
+
+/** 저장해 둔 값을 화면에 되돌린다 — 표는 '분석'을 눌러야 다시 찬다 */
+const openSnap = (snap: CaseSnapshot) => {
+  snapId.value = snap.id ?? '';
+  snapName.value = snap.label ?? '';
+  snapMemo.value = snap.memo ?? '';
+  address.value = snap.address ?? '';
+  kind.value = snap.kind ?? 'villa';
+  years.value = snap.years ?? 10;
+  baseArea.value = snap.baseAreaM2 ?? 0;
+  price.value = snap.price ?? null;
+  rateText.value = String(snap.rate ?? 126);
+  restoredSale.value = snap.sale ?? null;
+  restoredJeonse.value = snap.jeonse ?? null;
+  restoredSpot.value = snap.spot ?? '';
+  rows.value = [];
+  scanned.value = 0;
+  pickedSale.value = ''; pickedJeonse.value = '';
+  areaFilter.value = ''; yearFilter.value = ''; tab.value = 'all';
+  errorMsg.value = '';
+  notice.value = '저장해 둔 값입니다 — 최신 자료로 보려면 분석을 누르세요.';
+  snapOpen.value = false;
+};
+
+const deleteSnap = async (snap: CaseSnapshot) => {
+  if (!snap.id) return;
+  snapBusy.value = true;
+  try {
+    await removeSnapshot(snap.id);
+    if (snapId.value === snap.id) snapId.value = '';
+    await loadSnapList();
+    flash('지웠습니다.');
+  } catch (err) {
+    flash(err instanceof Error ? err.message : String(err));
+  } finally {
+    snapBusy.value = false;
+  }
+};
+
+/** 인쇄 — 입력 칸과 단추는 빼고 숫자만 종이에 남는다 (PDF 로 저장하면 그대로 보관) */
+const printPage = () => { window.print(); };
+
+const snapWhen = (ms: number) => {
+  if (!(ms > 0)) return '';
+  const d = new Date(ms);
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}.${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+};
+
 const downloadCsv = () => {
   if (tableRows.value.length === 0) return;
   const head = ['구분', '계약일', '거래금액', '전용㎡', '전용평', '층', '읍면동', '지번', '단지명'];
@@ -413,7 +548,13 @@ const downloadCsv = () => {
           <h1>경매지번 공동주택가 및 실거래가 <em>지번 · 단지</em></h1>
           <p>주소를 입력하여 공동주택가와 실거래가 데이터를 분석한다.</p>
         </div>
-        <button type="button" class="adm-csv" :disabled="tableRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
+        <div class="adm-acts">
+          <button type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="saveSnap(false)">저장</button>
+          <button v-if="snapId" type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="saveSnap(true)">덮어쓰기</button>
+          <button type="button" class="adm-csv" @click="openSnapPanel">저장 목록</button>
+          <button type="button" class="adm-csv" :disabled="!canSave" @click="printPage">인쇄</button>
+          <button type="button" class="adm-csv" :disabled="tableRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
+        </div>
       </div>
     </header>
 
@@ -446,8 +587,13 @@ const downloadCsv = () => {
         </button>
       </div>
 
+      <div class="adm-print-only">
+        <h2>경매지번 공동주택가 및 실거래가</h2>
+        <p v-if="snapName || snapMemo"><b>{{ snapName }}</b> {{ snapMemo }}</p>
+      </div>
+
       <div class="adm-chip-row">
-        <span v-if="spotChip" class="adm-chip">{{ spotChip }}</span>
+        <span v-if="chipText" class="adm-chip">{{ chipText }}</span>
         <span v-else class="adm-chip dim">주소를 적고 분석을 누르세요 — 국토부 호출 {{ callCount }}번 ({{ years }}년치 매매·전월세)</span>
         <span v-if="areaChip" class="adm-chip area" :class="{ off: !areaFilter }">{{ areaChip }}</span>
         <button type="button" class="adm-chip-btn" @click="manualOpen = !manualOpen">
@@ -482,11 +628,17 @@ const downloadCsv = () => {
         <button type="button" class="adm-load" :disabled="loading || !address.trim()" @click="run">다시 분석</button>
       </div>
 
+      <p v-if="snapMsg" class="adm-msg warn">{{ snapMsg }}</p>
       <p v-if="errorMsg" class="adm-msg err">{{ errorMsg }}</p>
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
       <p v-if="areaNote" class="adm-msg warn">{{ areaNote }}</p>
 
-      <template v-if="rows.length > 0">
+      <template v-if="canSave">
+        <div class="adm-snapline">
+          <input v-model="snapName" class="adm-input wide2" placeholder="저장 이름 (비우면 주소로)" />
+          <input v-model="snapMemo" class="adm-input grow2" placeholder="메모 — 이 분석에 남길 말" />
+        </div>
+
         <!-- 네 칸 자리에 세 줄 — 공동주택가·매매 / 보증보험 전세 / 실거래 전세 -->
         <div class="adm-kpis grid4">
           <div class="adm-kpi green">
@@ -495,12 +647,7 @@ const downloadCsv = () => {
               <em v-if="price">{{ price.year }}.01.01 기준</em>
               <template v-if="price && priceUnit"><i class="adm-bar2">|</i><em>{{ priceUnit }}</em></template>
             </small>
-            <input
-              v-model="pubTyped"
-              class="adm-kpi-input"
-              inputmode="numeric"
-              :placeholder="pubAuto > 0 ? pubAuto.toLocaleString('ko-KR') : '직접 입력'"
-            />
+            <strong>{{ won(pubValue) }}</strong>
           </div>
         </div>
 
@@ -581,6 +728,7 @@ const downloadCsv = () => {
         </div>
 
         <!-- 탭 · 거르기 -->
+        <template v-if="rows.length > 0">
         <div class="adm-tabs">
           <button :class="['adm-tab', 't-all', { on: tab === 'all' }]" @click="tab = 'all'">전체 ({{ counts.all }})</button>
           <button :class="['adm-tab', 't-buy', { on: tab === '매매' }]" @click="tab = '매매'">매매 ({{ counts.매매 }})</button>
@@ -649,10 +797,34 @@ const downloadCsv = () => {
         </div>
         <p v-if="tableRows.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ tableRows.length.toLocaleString('ko-KR') }}줄은 엑셀로 내려받으세요.</p>
         <p v-else-if="tableRows.length === 0" class="adm-foot">{{ countLabel }} 데이터 없음</p>
+        </template>
       </template>
     </div>
 
     <ColumnFilterPanel :ctl="colFilter" />
+
+    <Teleport to="body">
+      <div v-if="snapOpen" class="adm-snap-veil" @click="snapOpen = false"></div>
+      <div v-if="snapOpen" class="adm-snap-panel" @click.stop>
+        <header>
+          <strong>저장 목록</strong>
+          <span>{{ snapList.length }}건</span>
+          <button type="button" @click="snapOpen = false">닫기</button>
+        </header>
+        <p v-if="snapBusy" class="adm-snap-empty">불러오는 중…</p>
+        <p v-else-if="snapList.length === 0" class="adm-snap-empty">저장해 둔 분석이 없습니다.</p>
+        <ul v-else>
+          <li v-for="snap in snapList" :key="snap.id">
+            <button type="button" class="pick" @click="openSnap(snap)">
+              <b>{{ snap.label || snap.address }}</b>
+              <span>{{ snap.spot }}</span>
+              <em>{{ snapWhen(snap.savedAt) }} · 최근 {{ snap.years }}년<template v-if="snap.memo"> · {{ snap.memo }}</template></em>
+            </button>
+            <button type="button" class="del" aria-label="지우기" @click="deleteSnap(snap)">×</button>
+          </li>
+        </ul>
+      </div>
+    </Teleport>
   </section>
 </template>
 
@@ -672,6 +844,15 @@ const downloadCsv = () => {
 .adm-title p { margin: 2px 0 0; font-size: 12px; color: #9ca3af; }
 .adm-csv { margin-left: auto; border: 1px solid #c7d7f8; background: #fff; border-radius: 9px; padding: 8px 14px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #2b6df3; cursor: pointer; }
 .adm-csv:disabled { border-color: #e5e7eb; color: #c3c9d4; cursor: default; }
+.adm-acts { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adm-acts .adm-csv { margin-left: 0; }
+/* 저장 이름·메모 — 지표 칸 바로 위 */
+.adm-snapline { display: flex; gap: 10px; margin: 0 0 12px; }
+.adm-print-only { display: none; }
+.adm-print-only h2 { margin: 0 0 4px; font-size: 16px; font-weight: 800; }
+.adm-print-only p { margin: 0 0 8px; font-size: 12px; color: #374151; }
+.adm-input.wide2 { width: 260px; }
+.adm-input.grow2 { flex: 1 1 auto; width: auto; }
 
 .adm-body { flex: 1 1 auto; width: 100%; max-width: 1680px; margin: 0 auto; padding: 24px 28px 60px; }
 .adm-bar { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 16px 18px; }
@@ -818,5 +999,51 @@ const downloadCsv = () => {
   .adm-f { flex: 1 1 100%; }
   .adm-input, .adm-input.narrow, .adm-input.wide { width: 100%; min-width: 0; }
   .adm-kpis.grid4 { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+
+<style>
+/* 저장 목록 창 — body 로 옮겨 가므로 scoped 를 쓰지 않는다 */
+.adm-snap-veil { position: fixed; inset: 0; z-index: 9998; background: rgba(17, 24, 39, 0.18); }
+.adm-snap-panel {
+  position: fixed; z-index: 9999; right: 28px; top: 70px; width: 420px; max-height: 76vh;
+  background: #fff; border: 1px solid #dfe5ef; border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(17, 24, 39, 0.2);
+  display: flex; flex-direction: column; overflow: hidden; font-family: inherit; color: #111827;
+}
+.adm-snap-panel header {
+  display: flex; align-items: baseline; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #eef1f6;
+}
+.adm-snap-panel header strong { font-size: 14px; font-weight: 800; }
+.adm-snap-panel header span { font-size: 11.5px; font-weight: 700; color: #9ca3af; }
+.adm-snap-panel header button {
+  margin-left: auto; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff;
+  padding: 4px 10px; font-family: inherit; font-size: 11.5px; font-weight: 700; color: #6b7280; cursor: pointer;
+}
+.adm-snap-panel ul { list-style: none; margin: 0; padding: 6px; overflow: auto; }
+.adm-snap-panel li { display: flex; align-items: stretch; gap: 6px; }
+.adm-snap-panel li + li { border-top: 1px solid #f3f5f9; }
+.adm-snap-panel .pick {
+  flex: 1 1 auto; text-align: left; border: none; background: transparent; cursor: pointer;
+  padding: 9px 10px; border-radius: 9px; display: flex; flex-direction: column; gap: 3px; font-family: inherit;
+}
+.adm-snap-panel .pick:hover { background: #f5f8ff; }
+.adm-snap-panel .pick b { font-size: 12.5px; font-weight: 800; color: #111827; }
+.adm-snap-panel .pick span { font-size: 11.5px; font-weight: 700; color: #2b6df3; }
+.adm-snap-panel .pick em { font-style: normal; font-size: 11px; color: #9ca3af; }
+.adm-snap-panel .del {
+  flex: 0 0 30px; border: none; background: transparent; color: #c3c9d4; cursor: pointer;
+  font-size: 16px; line-height: 1;
+}
+.adm-snap-panel .del:hover { color: #d0342c; }
+
+/* 인쇄 — 고르고 적는 자리는 빼고 숫자만 남긴다 */
+@media print {
+  .adm-top, .adm-bar, .adm-snapline, .adm-tabs, .adm-acts, .adm-chip-btn,
+  .adm-snap-veil, .adm-snap-panel, .adm-flt, .adm-flt-panel, .adm-flt-veil { display: none !important; }
+  .adm-print-only { display: block !important; }
+  .adm-shell { background: #fff; }
+  .adm-body { padding: 0; max-width: none; }
+  .adm-kpi, .adm-table-wrap { break-inside: avoid; box-shadow: none; }
 }
 </style>
