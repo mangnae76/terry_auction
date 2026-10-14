@@ -134,12 +134,15 @@ const resetFilters = () => {
   colFilter.clearAll();
 };
 /** 지금 보고 있는 평형이 공부상 면적과 같은가 — 칩에 적어 둔다 */
+/** '49.74㎡ / 15.05평' — 표와 같은 표기로 */
+const m2py = (m2: number) => (m2 > 0 ? `${m2.toFixed(2)}㎡ / ${(m2 / PYEONG).toFixed(2)}평` : '');
 const areaChip = computed(() => {
   if (!(baseArea.value > 0)) return '';
+  const base = m2py(baseArea.value);
   const same = areaFilter.value && Math.abs(Number(areaFilter.value) - baseArea.value) <= 0.1;
   return same
-    ? `기준 전용 ${baseArea.value}㎡ · 공시가격 자료`
-    : `공부상 전용 ${baseArea.value}㎡ — 지금은 ${areaFilter.value ? `${areaFilter.value}㎡` : '전체 평형'}`;
+    ? `기준 전용 ${base} · 공시가격 자료`
+    : `공부상 전용 ${base} — 지금은 ${areaFilter.value ? m2py(Number(areaFilter.value)) : '전체 평형'}`;
 });
 
 const areaOptions = computed(() => {
