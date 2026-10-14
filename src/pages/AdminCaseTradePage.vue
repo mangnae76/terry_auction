@@ -257,7 +257,7 @@ const jeonsePyeong = computed(() => {
   return Math.round(r.price / (r.areaM2 / PYEONG));
 });
 const jeonseFrom = computed(() => (
-  pickedJeonse.value && pickedJeonse.value !== autoJeonseKey.value ? '선택한 거래' : '최근거래'
+  pickedJeonse.value && pickedJeonse.value !== autoJeonseKey.value ? '선택 거래' : '최근거래'
 ));
 /** 기준 전세 — 고른 줄이 있으면 그것, 없으면 가장 최근 전세 */
 const recentJeonse = computed(() => (
@@ -267,7 +267,7 @@ const recentJeonse = computed(() => (
 ));
 /** 고른 줄인지 저절로 잡힌 줄인지 — 요약 칸에 적어 둔다 */
 const saleFrom = computed(() => (
-  pickedSale.value && pickedSale.value !== autoSaleKey.value ? '선택한 거래' : '최근거래'
+  pickedSale.value && pickedSale.value !== autoSaleKey.value ? '선택 거래' : '최근거래'
 ));
 
 // 손품+현장 가격정보의 셋째 표와 같은 셈이다.
@@ -310,6 +310,15 @@ const pairGapMonths = computed(() => {
   if (!j || !sdate) return 0;
   const n = (v: string) => Number(v.slice(0, 4)) * 12 + Number(v.slice(5, 7));
   return Math.abs(n(j) - n(sdate));
+});
+/** 실거래 기준 갭 = 매매 − 전세. 음수면 전세가 매매를 넘었다는 뜻이다 */
+const realGapValue = computed(() => (
+  jeonsePriceReal.value > 0 && saleReal.value > 0 ? saleReal.value - jeonsePriceReal.value : 0
+));
+const realGapText = computed(() => {
+  const g = realGapValue.value;
+  if (g === 0) return '';
+  return `${g < 0 ? '-' : ''}${Math.abs(Math.round(g)).toLocaleString('ko-KR')}`;
 });
 const realRatioNum = computed(() => {
   const j = recentJeonse.value?.price ?? 0;
@@ -481,12 +490,6 @@ const downloadCsv = () => {
       <p v-if="areaNote" class="adm-msg warn">{{ areaNote }}</p>
 
       <template v-if="rows.length > 0">
-        <div class="adm-sum">
-          <span>최근 {{ years }}년 · 이 지번 {{ rows.length.toLocaleString('ko-KR') }}건</span>
-          <span class="dim">시군구 전체 {{ scanned.toLocaleString('ko-KR') }}건에서 추림</span>
-          <span v-if="missed > 0" class="dim">{{ missed }}개월치 못 받음</span>
-        </div>
-
         <!-- 공동주택가 · 전세가 · 전세가율 -->
         <div class="adm-kpis five">
           <div class="adm-kpi green">
@@ -532,7 +535,9 @@ const downloadCsv = () => {
                 @click.stop="toggleTip('real')"
               >!</button>
             </small>
-            <strong>{{ realJeonseRatioText }}</strong>
+            <strong :class="{ over: realRatioNum > 100 }">
+              {{ realJeonseRatioText }}<em v-if="realGapText" :class="['adm-gap', { neg: realGapValue < 0 }]"> / {{ realGapText }}</em>
+            </strong>
             <span class="adm-kpi-sub">전세 실거래가 ÷ 매매 실거래가</span>
             <div v-if="tip === 'real'" class="adm-tip" @click.stop>
               <p v-for="(t, i) in realTipLines" :key="i">{{ t }}</p>
@@ -547,10 +552,10 @@ const downloadCsv = () => {
 
         <!-- 요약 — 매매와 전세를 같은 꼴로 -->
         <div class="adm-kpis six">
-          <div class="adm-kpi"><small><em>{{ recentYm }}</em> 매매 실거래가 <span :class="['adm-kpi-from', { pick: saleFrom === '선택한 거래' }]">{{ saleFrom }}</span></small><strong>{{ won(recentPrice) }}</strong></div>
+          <div class="adm-kpi"><small><em>{{ recentYm }}</em> 매매 실거래가 <span :class="['adm-kpi-from', { pick: saleFrom === '선택 거래' }]">{{ saleFrom }}</span></small><strong>{{ won(recentPrice) }}</strong></div>
           <div class="adm-kpi"><small>매매 평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
           <div class="adm-kpi blue"><small>매매 건수</small><strong>{{ counts.매매 }}건</strong></div>
-          <div class="adm-kpi"><small><em>{{ jeonseYm }}</em> 전세 실거래가 <span :class="['adm-kpi-from', { pick: jeonseFrom === '선택한 거래' }]">{{ jeonseFrom }}</span></small><strong>{{ won(jeonsePriceReal) }}</strong></div>
+          <div class="adm-kpi"><small><em>{{ jeonseYm }}</em> 전세 실거래가 <span :class="['adm-kpi-from', { pick: jeonseFrom === '선택 거래' }]">{{ jeonseFrom }}</span></small><strong>{{ won(jeonsePriceReal) }}</strong></div>
           <div class="adm-kpi"><small>전세 평당가</small><strong>{{ won(jeonsePyeong) }}</strong></div>
           <div class="adm-kpi green2"><small>전세 건수</small><strong>{{ counts.전세 }}건</strong></div>
         </div>
@@ -565,7 +570,7 @@ const downloadCsv = () => {
           <button v-if="colFilter.activeCount.value > 0" type="button" class="adm-flt-clear" @click="colFilter.clearAll()">
             걸러내기 {{ colFilter.activeCount.value }}칸 해제
           </button>
-          <button v-if="pickedSale || pickedJeonse" type="button" class="adm-ghost pick" @click="clearPicks">선택한 거래 풀기</button>
+          <button v-if="pickedSale || pickedJeonse" type="button" class="adm-ghost pick" @click="clearPicks">선택 거래 풀기</button>
           <select v-model="areaFilter" class="adm-input narrow">
             <option value="">전체면적(㎡/평)</option>
             <option v-for="o in areaOptions" :key="o" :value="o">{{ areaOptText(o) }}</option>
@@ -575,6 +580,12 @@ const downloadCsv = () => {
             <option v-for="o in yearOptions" :key="o" :value="o">{{ o }}</option>
           </select>
           <button type="button" class="adm-ghost" @click="resetFilters">초기화</button>
+        </div>
+
+        <div class="adm-sum under">
+          <span>최근 {{ years }}년 · 이 지번 {{ rows.length.toLocaleString('ko-KR') }}건</span>
+          <span class="dim">시군구 전체 {{ scanned.toLocaleString('ko-KR') }}건에서 추림</span>
+          <span v-if="missed > 0" class="dim">{{ missed }}개월치 못 받음</span>
         </div>
 
         <div class="adm-table-wrap">
@@ -673,9 +684,11 @@ const downloadCsv = () => {
 .adm-msg.err { background: #fdecea; color: #c0392b; }
 .adm-msg.warn { background: #fff8e8; color: #8a6400; }
 
-.adm-sum { margin: 18px 0 12px; padding-left: 14px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: #6b7280; }
+.adm-sum { margin: 18px 0 12px; padding-left: 2px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: #6b7280; }
 .adm-sum strong { font-size: 15px; font-weight: 800; color: #111827; }
 .adm-sum .dim { color: #9ca3af; }
+/* 표 바로 위 — 이 표가 어느 자료에서 나왔는지 */
+.adm-sum.under { margin: 0 0 8px; font-size: 12px; }
 
 .adm-kpis { display: grid; gap: 12px; }
 .adm-kpis.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -702,6 +715,9 @@ const downloadCsv = () => {
 }
 .adm-rate-input:focus { outline: none; border-color: #2b6df3; }
 .adm-gap { font-style: normal; font-size: 13px; font-weight: 700; color: #6b7280; }
+/* 전세가 매매를 넘어선 자리 — 숫자부터 붉게 해 위험을 바로 알린다 */
+.adm-gap.neg { color: #d0342c; }
+.adm-kpi strong.over { color: #d0342c; }
 /* 뜻풀이는 말풍선으로 — 칸에는 값과 공식만 둔다 */
 .adm-kpi.tipbox { position: relative; }
 .adm-tip-btn {
