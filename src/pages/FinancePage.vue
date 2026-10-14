@@ -152,6 +152,11 @@ const villaName = (address?: string) => {
 /** 돈을 쓰는 자리는 낙찰받은 물건이다 — 낙찰일이 적힌 물건만 고르게 한다.
  *  (낙찰일은 물건상세 '입찰가산정 → 예상 수익 분석' 에서 적는다)
  *  아직 낙찰된 물건이 없으면 전부 보여 준다 — 고를 것이 없으면 더 곤란하다 */
+/** 사업지출 항목 — 알약으로 고른다 (드롭다운보다 한눈에 들어온다) */
+const EXPENSE_CATEGORIES = [
+  '기타사업비', '소유권이전', '인테리어', '대출이자', '관리비', '세금', '중개수수료',
+];
+
 const auctionOptions = computed(() => {
   const label = (a: { caseNumber: string; address?: string }) =>
     villaName(a.address) || a.address || a.caseNumber;
@@ -262,8 +267,8 @@ const exportExcel = () => {
     ]);
   } else if (activeTab.value === 'businessExpense') {
     downloadCsv('사업지출.csv', [
-      ['결제일', '물건', '구분', '명세', '비용(VAT포함)', '비고'],
-      ...filteredBusiness.value.map((r) => [r.date, r.auctionLabel, r.memo, r.detail, r.amountWithVat, r.note]),
+      ['결제일', '물건', '항목', '명세', '비용(VAT포함)', '비고'],
+      ...filteredBusiness.value.map((r) => [r.date, r.auctionLabel, r.profitCategory || r.memo, r.detail, r.amountWithVat, r.note]),
     ]);
   } else if (activeTab.value === 'fuelMeal') {
     downloadCsv('유류식대.csv', [
@@ -380,13 +385,13 @@ const exportExcel = () => {
       <div class="fin-table-wrap">
         <table class="fin-table">
           <thead>
-            <tr><th class="c">결제일</th><th>물건</th><th class="c">구분</th><th>명세</th><th class="r">비용(VAT포함)</th><th>비고</th></tr>
+            <tr><th class="c">결제일</th><th>물건</th><th class="c">항목</th><th>명세</th><th class="r">비용(VAT포함)</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
               <td class="c">{{ shortDate(r.date) }}</td>
               <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
-              <td class="c" :title="r.memo"><span class="pill memo">{{ r.memo || '-' }}</span></td>
+              <td class="c" :title="r.profitCategory || r.memo"><span class="pill memo">{{ r.profitCategory || r.memo || '-' }}</span></td>
               <td :title="r.detail">{{ r.detail }}</td>
               <td class="r">{{ fmtMoney(r.amountWithVat) }}</td>
               <td :title="r.note">{{ r.note }}</td>
@@ -507,21 +512,18 @@ const exportExcel = () => {
               <option v-for="o in auctionOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
             </select>
           </label>
-          <label>수익분석 항목
-            <select v-model="beDraft.profitCategory">
-              <option>기타사업비</option>
-              <option>소유권이전</option>
-              <option>인테리어</option>
-              <option>대출이자</option>
-              <option>관리비</option>
-              <option>세금</option>
-              <option>중개수수료</option>
-            </select>
+          <label>사업지출 항목
+            <span class="fin-chips">
+              <button
+                v-for="c in EXPENSE_CATEGORIES"
+                :key="c"
+                type="button"
+                :class="['fin-chip', { on: beDraft.profitCategory === c }]"
+                @click="beDraft.profitCategory = c"
+              >{{ c }}</button>
+            </span>
           </label>
-          <div class="row2">
-            <label>구분 (메모)<input type="text" v-model="beDraft.memo" /></label>
-            <label>명세<input type="text" v-model="beDraft.detail" /></label>
-          </div>
+          <label>명세<input type="text" v-model="beDraft.detail" /></label>
           <div class="row2">
             <label>비용 (VAT포함)<FormattedNumberInput v-model="beDraft.amountWithVat" live-group align="left" placeholder="0" /></label>
             <label>날짜<input type="date" v-model="beDraft.date" /></label>
@@ -821,6 +823,15 @@ const exportExcel = () => {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
   min-width: 0;
 }
+/* 항목 고르기 — 알약 */
+.fin-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fin-chip {
+  border: 1px solid #d8dfea; border-radius: 999px; background: #fff;
+  padding: 5px 11px; font-family: inherit; font-size: 12px; font-weight: 600;
+  color: #4b5563; cursor: pointer;
+}
+.fin-chip:hover { border-color: #b9cdf7; color: #2b6df3; }
+.fin-chip.on { background: #e0e7ff; border-color: #c7d2fe; color: #4338ca; font-weight: 700; }
 .fin-modal footer {
   display: flex; gap: 8px; align-items: center; margin-top: 8px;
 }
