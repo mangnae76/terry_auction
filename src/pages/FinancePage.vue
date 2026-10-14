@@ -409,18 +409,18 @@ const exportExcel = () => {
       <div class="fin-table-wrap">
         <table class="fin-table mid">
           <colgroup>
-            <col style="width: 20%" /><col style="width: 24%" /><col style="width: 19%" />
+            <col style="width: 18%" /><col style="width: 22%" /><col style="width: 17%" />
             <col style="width: 19%" /><col />
           </colgroup>
           <thead>
-            <tr><th>사용일</th><th>사용처</th><th>사용구분</th><th class="r">비용</th><th>비고</th></tr>
+            <tr><th>사용일</th><th>사용처</th><th>사용구분</th><th>비용</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredFuelMeal" :key="r.id" @click="openEdit('fuelMeal', r)">
               <td>{{ shortDate(r.date) }}</td>
               <td :title="r.store">{{ r.store }}</td>
               <td :title="r.category"><span class="pill cat">{{ r.category || '-' }}</span></td>
-              <td class="r">{{ fmtMoney(r.amount) }}원</td>
+              <td>{{ fmtMoney(r.amount) }}원</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredFuelMeal.length === 0">
