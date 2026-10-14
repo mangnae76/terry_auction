@@ -33,6 +33,8 @@ export interface ApartPrice {
   areaM2: number;
   dong: string;
   ho: string;
+  /** 단지 이름 — 브이월드 표기 ('프리스틴(105 106)') */
+  name: string;
 }
 
 /** 행정구역이 개편되면 한동안 옛 코드로만 자료가 들어 있다.
@@ -75,13 +77,15 @@ export const fetchApartHousingPrice = async (params: {
   lotText: string;
   /** '203' 같은 호수 (없으면 면적으로만 맞춘다) */
   ho?: string;
+  /** '106' 같은 동 — 한 지번에 동이 여럿이면 호수만으로는 못 가린다 */
+  dong?: string;
   /** 전용면적 ㎡ */
   areaM2?: number;
 }): Promise<ApartPrice | null> => {
   const pnu = buildPnu(params.bCode10, params.lotText);
   if (!pnu) return null;
 
-  const id = cacheKey(pnu, params.ho ?? '-', Math.round((params.areaM2 ?? 0) * 100));
+  const id = cacheKey(pnu, params.dong ?? '-', params.ho ?? '-', Math.round((params.areaM2 ?? 0) * 100));
   const hit = await readCache<ApartPrice | null>('cacheAptPrice', id, PRICE_TTL);
   if (hit) return hit;
 
@@ -94,11 +98,17 @@ export const fetchApartHousingPrice = async (params: {
 
   const wantHo = String(params.ho ?? '').replace(/\D/g, '');
   const wantArea = params.areaM2 ?? 0;
+  // '106동' · '가동' 둘 다 받는다 — 끝의 '동' 만 떼고 견준다
+  const dongKey = (v: unknown) => String(v ?? '').trim().replace(/동$/, '').trim();
+  const wantDong = dongKey(params.dong);
   const sameArea = (r: PriceRow) => wantArea <= 0 || Math.abs(num(r.prvuseAr) - wantArea) < 0.05;
   const sameHo = (r: PriceRow) => !!wantHo && String(r.hoNm ?? '').replace(/\D/g, '') === wantHo;
+  const sameDong = (r: PriceRow) => !wantDong || dongKey(r.dongNm) === wantDong;
 
-  const pick = rows.filter((r) => sameHo(r) && sameArea(r));
-  const fallback = pick.length > 0 ? pick : rows.filter(sameArea);
+  // 동+호가 맞는 줄 → 호만 맞는 줄 → 면적만 맞는 줄 → 그 지번의 아무 줄
+  const byDongHo = rows.filter((r) => sameDong(r) && sameHo(r) && sameArea(r));
+  const byHo = byDongHo.length > 0 ? byDongHo : rows.filter((r) => sameHo(r) && sameArea(r));
+  const fallback = byHo.length > 0 ? byHo : rows.filter(sameArea);
   const list = fallback.length > 0 ? fallback : rows;
 
   // 기준연도가 가장 늦은 것, 같은 해가 여러 줄이면 갱신일이 가장 늦은 것
@@ -116,6 +126,7 @@ export const fetchApartHousingPrice = async (params: {
     areaM2: num(best.prvuseAr),
     dong: String(best.dongNm ?? ''),
     ho: String(best.hoNm ?? ''),
+    name: String(best.aphusNm ?? ''),
   };
   void writeCache('cacheAptPrice', id, out);
   return out;

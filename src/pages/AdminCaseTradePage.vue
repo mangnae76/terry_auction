@@ -11,7 +11,7 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
 import { analyzeAddress, type CasePropertyType, type CaseTradeRow } from '../services/caseTradeAnalysis';
-import { priceUnitText } from '../services/addressLookup';
+import { priceUnitText, shortPlaceName } from '../services/addressLookup';
 import type { ApartPrice } from '../services/vworldApi';
 import type { ResolvedRegion } from '../services/regionResolver';
 
@@ -37,6 +37,7 @@ const notice = ref('');
 const region = ref<ResolvedRegion | null>(null);
 const lot = ref('');
 const ho = ref('');
+const buildingDong = ref('');
 const price = ref<ApartPrice | null>(null);
 const rows = ref<CaseTradeRow[]>([]);
 const scanned = ref(0);
@@ -64,7 +65,13 @@ const spotChip = computed(() => {
   // 카카오는 시도를 '인천'처럼 줄여 준다 — 우리 표의 이름으로 펴서 적는다
   const code = ovDistrictCode.value || r?.lawdCd5 || '';
   const full = REGION_GROUPS.find((g) => g.districts.some((x) => x.lawdCode === code))?.sido;
-  return [ovSido.value || full || r?.sido, d, ovDong.value || r?.dong, ovLot.value || lot.value, ho.value ? `${ho.value}호` : '']
+  // 끝 칸은 '프리스틴 106동 402호' 처럼 — 단지 이름은 공시가격 자료에서 온다
+  const unit = [
+    shortPlaceName(price.value?.name) || shortName.value,
+    buildingDong.value ? `${buildingDong.value}동` : (price.value?.dong ? `${price.value.dong.replace(/동$/, '')}동` : ''),
+    ho.value ? `${ho.value}호` : '',
+  ].filter(Boolean).join(' ');
+  return [ovSido.value || full || r?.sido, d, ovDong.value || r?.dong, ovLot.value || lot.value, unit]
     .filter(Boolean).join(' · ');
 });
 
@@ -88,6 +95,7 @@ const run = async () => {
     region.value = res.region;
     lot.value = res.parts.lot;
     ho.value = res.parts.ho;
+    buildingDong.value = res.parts.buildingDong;
     price.value = res.price;
     rows.value = res.rows;
     scanned.value = res.scanned;
@@ -168,6 +176,11 @@ const countValue = computed(() => (tab.value === 'all' ? counts.value.all : coun
 
 const won = (n: number) => (n > 0 ? Math.round(n).toLocaleString('ko-KR') : '-');
 const matchedNames = computed(() => Array.from(new Set(rows.value.map((r) => r.name).filter(Boolean))));
+/** 요약 줄에 쓸 짧은 이름 — 공시가격 자료의 단지명이 먼저,
+ *  없으면 국토부 신고 이름을 쓴다. 표의 '단지' 칸은 원문 그대로 둔다 */
+const shortName = computed(() => (
+  shortPlaceName(price.value?.name) || shortPlaceName(matchedNames.value[0]) || ''
+));
 
 /** 요약 — 가장 최근 매매 한 건 */
 const recentSale = computed(() => byAreaYear.value.find((r) => r.kind === '매매' || r.kind === '직거래') ?? null);
@@ -331,7 +344,7 @@ const downloadCsv = () => {
 
       <template v-if="rows.length > 0">
         <div class="adm-sum">
-          <strong>{{ matchedNames.join(' · ') || spotChip }}</strong>
+          <strong>{{ shortName || matchedNames.join(' · ') || spotChip }}</strong>
           <span>최근 {{ years }}년 · 이 지번 {{ rows.length.toLocaleString('ko-KR') }}건</span>
           <span class="dim">시군구 전체 {{ scanned.toLocaleString('ko-KR') }}건에서 추림</span>
           <span v-if="missed > 0" class="dim">{{ missed }}개월치 못 받음</span>
