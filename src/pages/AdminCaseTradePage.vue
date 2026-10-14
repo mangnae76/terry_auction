@@ -14,6 +14,8 @@ import { analyzeAddress, type CasePropertyType, type CaseTradeRow } from '../ser
 import { priceUnitText, shortPlaceName } from '../services/addressLookup';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
 import AppToast from '../components/AppToast.vue';
+import AppConfirm from '../components/AppConfirm.vue';
+import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import { useAuthStore } from '../stores/authStore';
 import {
   addSnapshot, listSnapshots, removeSnapshot, updateSnapshot, type CaseSnapshot,
@@ -517,6 +519,19 @@ const confirmSave = async () => {
   await saveSnap(false);
 };
 
+const confirmBox = ref<ConfirmBox | null>(null);
+const askDeleteSnap = (snap: CaseSnapshot) => {
+  if (!snap.id) return;
+  if (skipsToday('adminSnap.removeSkip')) { void deleteSnap(snap); return; }
+  confirmBox.value = {
+    title: '저장한 분석 지우기',
+    desc: `${snap.label || snap.address}\n지우면 되돌릴 수 없습니다.`,
+    okLabel: '지우기',
+    skipKey: 'adminSnap.removeSkip',
+    run: () => { void deleteSnap(snap); },
+  };
+};
+
 const deleteSnap = async (snap: CaseSnapshot) => {
   if (!snap.id) return;
   snapBusy.value = true;
@@ -818,6 +833,7 @@ const downloadCsv = () => {
 
     <ColumnFilterPanel :ctl="colFilter" />
     <AppToast :visible="!!snapMsg" :text="snapMsg" :tone="snapTone" />
+    <AppConfirm :box="confirmBox" @close="confirmBox = null" />
 
     <Teleport to="body">
       <div v-if="savePrompt" class="adm-snap-veil" @click="savePrompt = false"></div>
@@ -852,7 +868,7 @@ const downloadCsv = () => {
               <span>{{ snap.spot }}</span>
               <em>{{ snapWhen(snap.savedAt) }} · 최근 {{ snap.years }}년<template v-if="snap.memo"> · {{ snap.memo }}</template></em>
             </button>
-            <button type="button" class="del" aria-label="지우기" @click="deleteSnap(snap)">×</button>
+            <button type="button" class="del" aria-label="지우기" @click="askDeleteSnap(snap)">×</button>
           </li>
         </ul>
       </div>

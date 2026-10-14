@@ -10,6 +10,7 @@ import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/reg
 import { fetchDongTradeDetails, fetchDongTradeStats, type DongTradeDetailRow } from '../services/publicDataApi';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
+import AppToast from '../components/AppToast.vue';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
 type Kind = 'villa' | 'apt' | 'officetel';
@@ -107,8 +108,14 @@ const resetFilters = () => {
 // 조건은 사용자별로 남긴다 — 늘 같은 조건으로 보는 일이 많다
 const prefsLoaded = ref(false);
 const savedMsg = ref('');
+const savedTone = ref<'info' | 'success' | 'error'>('success');
+const toast = (text: string, tone: 'info' | 'success' | 'error' = 'success') => {
+  savedTone.value = tone;
+  savedMsg.value = text;
+  window.setTimeout(() => { if (savedMsg.value === text) savedMsg.value = ''; }, 1800);
+};
 const saveFilters = async () => {
-  if (!auth.uid) { savedMsg.value = '로그인한 뒤에 저장됩니다.'; return; }
+  if (!auth.uid) { toast('로그인한 뒤에 저장됩니다.', 'error'); return; }
   await saveUserPrefs(auth.uid, {
     adminDongFilter: {
       sido: sido.value,
@@ -122,8 +129,7 @@ const saveFilters = async () => {
       yearMax: yearMax.value,
     },
   });
-  savedMsg.value = '검색조건을 저장했습니다.';
-  window.setTimeout(() => { savedMsg.value = ''; }, 1600);
+  toast('검색조건을 저장했습니다.');
 };
 onMounted(async () => {
   if (!auth.uid) { prefsLoaded.value = true; return; }
@@ -465,7 +471,6 @@ const downloadCsv = () => {
               <button type="button" class="adm-ghost" @click="resetFilters">초기화</button>
             </div>
           </div>
-          <p v-if="savedMsg" class="adm-saved">{{ savedMsg }}</p>
         </div>
 
         <!-- 검색리스트 -->
@@ -538,6 +543,7 @@ const downloadCsv = () => {
     </div>
 
     <ColumnFilterPanel :ctl="colFilter" />
+    <AppToast :visible="!!savedMsg" :text="savedMsg" :tone="savedTone" />
   </section>
 </template>
 
