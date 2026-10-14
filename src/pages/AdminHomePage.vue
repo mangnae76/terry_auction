@@ -204,10 +204,11 @@ const openTool = (tool: Tool) => {
 /* 앱과 같은 로고를 쓴다 — 같은 서비스라는 게 한눈에 보이게.
    'AUCTION' 은 로고 아래, MYTURN 의 N 끝에 맞춰 오른쪽으로 붙인다 */
 .adm-brand { display: flex; align-items: center; gap: 12px; }
+/* 크기·비율은 앱 로그인 화면 그대로 — 로고 36px, 아래 글자 12px */
 .adm-logo-wrap { display: flex; flex-direction: column; align-items: flex-end; line-height: 1; }
-.adm-logo { height: 26px; object-fit: contain; display: block; }
+.adm-logo { height: 36px; object-fit: contain; display: block; }
 .adm-logo-sub {
-  margin-top: 1px; font-size: 10px; font-weight: 800; letter-spacing: 0.22em;
+  margin-top: 6px; font-size: 12px; font-weight: 600; letter-spacing: 1px;
   color: #111827; padding-right: 1px;
 }
 .adm-brand-tag {
