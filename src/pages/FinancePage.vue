@@ -383,15 +383,20 @@ const exportExcel = () => {
     <!-- ========== TAB 2: 사업지출내역 ========== -->
     <template v-else-if="activeTab === 'businessExpense'">
       <div class="fin-table-wrap">
-        <table class="fin-table">
+        <table class="fin-table mid">
+          <!-- 칸 너비를 못 박는다 — 글자가 왼쪽에 몰리지 않게 -->
+          <colgroup>
+            <col style="width: 17%" /><col style="width: 17%" /><col style="width: 16%" />
+            <col style="width: 18%" /><col style="width: 18%" /><col />
+          </colgroup>
           <thead>
-            <tr><th class="c">결제일</th><th>물건</th><th class="c">항목</th><th>명세</th><th class="r">비용(VAT포함)</th><th>비고</th></tr>
+            <tr><th>결제일</th><th>물건</th><th>항목</th><th>명세</th><th class="r">비용(VAT포함)</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
-              <td class="c">{{ shortDate(r.date) }}</td>
+              <td>{{ shortDate(r.date) }}</td>
               <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
-              <td class="c" :title="r.profitCategory || r.memo"><span class="pill memo">{{ r.profitCategory || r.memo || '-' }}</span></td>
+              <td :title="r.profitCategory || r.memo"><span class="pill memo">{{ r.profitCategory || r.memo || '-' }}</span></td>
               <td :title="r.detail">{{ r.detail }}</td>
               <td class="r">{{ fmtMoney(r.amountWithVat) }}</td>
               <td :title="r.note">{{ r.note }}</td>
@@ -746,9 +751,12 @@ const exportExcel = () => {
 .fin-table td.r, .fin-table th.r { text-align: right; }
 /* 날짜·구분·카드처럼 짧은 칸은 가운데 — 긴 글 칸만 왼쪽에 둔다 */
 .fin-table td.c, .fin-table th.c { text-align: center; }
-/* 자금입출금 표 — 짧은 칸은 가운데, 금액은 오른쪽, 비고만 왼쪽.
-   다 왼쪽으로 몰아 두니 오른쪽이 휑하고 줄이 읽히지 않았다 */
-.fin-table.cash th, .fin-table.cash td { text-align: center; }
+/* 가운데로 세우는 표 — 글자가 왼쪽에 몰려 칸 제목과 어긋나 보였다.
+   금액만 오른쪽에 둔다 */
+.fin-table.cash th, .fin-table.cash td,
+.fin-table.mid th, .fin-table.mid td { text-align: center; }
+.fin-table.mid th.r, .fin-table.mid td.r { text-align: right; }
+.fin-table.mid td:not(.r):not(.empty) { max-width: none; }
 .fin-table.cash th.r, .fin-table.cash td.r { text-align: right; }
 .fin-table.cash th.l, .fin-table.cash td.l { text-align: left; }
 .fin-table.cash td:not(.r):not(.empty) { max-width: none; }
