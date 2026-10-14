@@ -322,7 +322,7 @@ const downloadCsv = () => {
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg>
         </button>
         <div class="adm-title">
-          <h1>경매지번 실거래가 <em>지번 · 단지</em></h1>
+          <h1>경매지번 공동주택가격 및 실거래가 <em>지번 · 단지</em></h1>
           <p>지번이나 단지명을 입력하여 매매·전세·월세 데이터 수집.</p>
         </div>
         <button type="button" class="adm-csv" :disabled="shown.length === 0" @click="downloadCsv">엑셀 내려받기</button>
