@@ -259,7 +259,7 @@ const exportExcel = () => {
     ]);
   } else if (activeTab.value === 'businessExpense') {
     downloadCsv('사업지출.csv', [
-      ['결제일', '물건', '항목', '명세', '비용(VAT포함)', '비고'],
+      ['결제일', '물건', '사용구분', '명세', '비용(VAT포함)', '비고'],
       ...filteredBusiness.value.map((r) => [r.date, r.auctionLabel, r.profitCategory || r.memo, r.detail, r.amountWithVat, r.note]),
     ]);
   } else if (activeTab.value === 'fuelMeal') {
@@ -382,7 +382,7 @@ const exportExcel = () => {
             <col style="width: 18%" /><col style="width: 18%" /><col />
           </colgroup>
           <thead>
-            <tr><th>결제일</th><th>물건</th><th>항목</th><th>명세</th><th class="r">비용(VAT포함)</th><th>비고</th></tr>
+            <tr><th>결제일</th><th>물건</th><th>사용구분</th><th>명세</th><th class="r">비용(VAT포함)</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
@@ -409,20 +409,22 @@ const exportExcel = () => {
       <div class="fin-table-wrap">
         <table class="fin-table mid">
           <colgroup>
-            <col style="width: 24%" /><col style="width: 30%" /><col style="width: 24%" /><col />
+            <col style="width: 20%" /><col style="width: 24%" /><col style="width: 19%" />
+            <col style="width: 19%" /><col />
           </colgroup>
           <thead>
-            <tr><th>사용일</th><th>사용처</th><th class="r">비용</th><th>비고</th></tr>
+            <tr><th>사용일</th><th>사용처</th><th>사용구분</th><th class="r">비용</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredFuelMeal" :key="r.id" @click="openEdit('fuelMeal', r)">
               <td>{{ shortDate(r.date) }}</td>
               <td :title="r.store">{{ r.store }}</td>
+              <td :title="r.category"><span class="pill cat">{{ r.category || '-' }}</span></td>
               <td class="r">{{ fmtMoney(r.amount) }}원</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredFuelMeal.length === 0">
-              <td colspan="4" class="empty">
+              <td colspan="5" class="empty">
                 <template v-if="finance.fuelMeal.length === 0">데이터가 없습니다.</template>
                 <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.fuelMeal.length }}건)</template>
               </td>
@@ -760,9 +762,9 @@ const exportExcel = () => {
 /* 자금입출금의 알약 색을 네 표가 함께 쓴다 —
    입금은 빨강, 그 밖의 알약(출금·사업지출 항목·사용구분)은 파랑 */
 .pill.in { background: #fee2e2; color: #dc2626; }
-.pill.out, .pill.cat { background: #dbeafe; color: #2563eb; }
-/* 사업지출의 항목 — 회색 */
-.pill.memo { background: #eceff4; color: #4b5563; }
+.pill.out { background: #dbeafe; color: #2563eb; }
+/* 사업지출의 사용구분 · 유류&식대의 사용구분 — 회색 */
+.pill.memo, .pill.cat { background: #eceff4; color: #4b5563; }
 
 /* Modal */
 .fin-modal-backdrop {
