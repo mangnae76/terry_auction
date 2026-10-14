@@ -322,8 +322,8 @@ const downloadCsv = () => {
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg>
         </button>
         <div class="adm-title">
-          <h1>경매지번 공동주택가격 및 실거래가 <em>지번 · 단지</em></h1>
-          <p>지번이나 단지명을 입력하여 공동주택가격과 매매·전세·월세 데이터 수집.</p>
+          <h1>경매지번 공동주택가 및 실거래가 <em>지번 · 단지</em></h1>
+          <p>주소를 입력하여 공동주택가와 실거래가 데이터 분석.</p>
         </div>
         <button type="button" class="adm-csv" :disabled="shown.length === 0" @click="downloadCsv">엑셀 내려받기</button>
       </div>
@@ -548,6 +548,8 @@ const downloadCsv = () => {
   font-family: inherit; font-size: 19px; font-weight: 800; letter-spacing: -0.4px; color: #111827;
 }
 .adm-kpi-input:focus { outline: none; border-color: #2b6df3; }
+/* 호수·전용 줄을 입력칸 글자 시작점에 맞춘다 (테두리 1 + 안여백 9) */
+.adm-kpi.green .adm-kpi-sub { padding-left: 10px; }
 .adm-rate-input {
   width: 34px; border: 1px solid #dde3ee; border-radius: 5px; background: #fff;
   padding: 1px 3px; font-family: inherit; font-size: 11px; font-weight: 700; color: #2b6df3; text-align: right;

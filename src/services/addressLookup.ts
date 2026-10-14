@@ -69,9 +69,14 @@ export const lookupAddress = async (
   return { parts, region, price };
 };
 
-/** 공시가격 한 줄 설명 — '203호 전용 29.75㎡' 꼴 */
+const PYEONG = 3.305785;
+
+/** 공시가격 한 줄 설명 — '203호 전용 49.74㎡ / 15.05평' 꼴.
+ *  면적은 실거래가 표와 같이 제곱미터와 평을 같이 적는다. */
 export const priceUnitText = (price: ApartPrice | null): string => {
   if (!price) return '';
-  return [price.ho ? `${price.ho}호` : '', price.areaM2 > 0 ? `전용 ${price.areaM2}㎡` : '']
-    .filter(Boolean).join(' ');
+  const area = price.areaM2 > 0
+    ? `전용 ${price.areaM2}㎡ / ${(price.areaM2 / PYEONG).toFixed(2)}평`
+    : '';
+  return [price.ho ? `${price.ho}호` : '', area].filter(Boolean).join(' ');
 };
