@@ -404,8 +404,6 @@ const snapOpen = ref(false);
 const snapList = ref<CaseSnapshot[]>([]);
 const snapBusy = ref(false);
 const snapMsg = ref('');
-const snapName = ref('');
-const snapMemo = ref('');
 /** 지금 열어 둔 스냅샷 — 덮어쓰기를 누를 때 쓴다 */
 const snapId = ref('');
 
@@ -417,8 +415,9 @@ const flash = (text: string) => {
 
 const collectSnapshot = (): CaseSnapshot => ({
   uid: auth.uid ?? '',
-  label: snapName.value.trim() || chipText.value || address.value.trim(),
-  memo: snapMemo.value.trim(),
+  // 이름은 주소(칩)로 둔다 — 따로 적을 일이 아니다
+  label: chipText.value || address.value.trim(),
+  memo: '',
   savedAt: Date.now(),
   address: address.value.trim(),
   kind: kind.value,
@@ -475,8 +474,6 @@ const saveSnap = async (overwrite = false) => {
 /** 저장해 둔 값을 화면에 되돌린다 — 표는 '분석'을 눌러야 다시 찬다 */
 const openSnap = (snap: CaseSnapshot) => {
   snapId.value = snap.id ?? '';
-  snapName.value = snap.label ?? '';
-  snapMemo.value = snap.memo ?? '';
   address.value = snap.address ?? '';
   kind.value = snap.kind ?? 'villa';
   years.value = snap.years ?? 10;
@@ -509,9 +506,6 @@ const deleteSnap = async (snap: CaseSnapshot) => {
     snapBusy.value = false;
   }
 };
-
-/** 인쇄 — 입력 칸과 단추는 빼고 숫자만 종이에 남는다 (PDF 로 저장하면 그대로 보관) */
-const printPage = () => { window.print(); };
 
 const snapWhen = (ms: number) => {
   if (!(ms > 0)) return '';
@@ -553,11 +547,10 @@ const downloadCsv = () => {
           <p>주소를 입력하여 공동주택가와 실거래가 데이터를 분석한다.</p>
         </div>
         <div class="adm-acts">
+          <button type="button" class="adm-csv" :disabled="tableRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
           <button type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="saveSnap(false)">저장</button>
           <button v-if="snapId" type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="saveSnap(true)">덮어쓰기</button>
           <button type="button" class="adm-csv" @click="openSnapPanel">저장 목록</button>
-          <button type="button" class="adm-csv" :disabled="!canSave" @click="printPage">인쇄</button>
-          <button type="button" class="adm-csv" :disabled="tableRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
         </div>
       </div>
     </header>
@@ -593,7 +586,6 @@ const downloadCsv = () => {
 
       <div class="adm-print-only">
         <h2>경매지번 공동주택가 및 실거래가</h2>
-        <p v-if="snapName || snapMemo"><b>{{ snapName }}</b> {{ snapMemo }}</p>
       </div>
 
       <div class="adm-chip-row">
@@ -638,11 +630,6 @@ const downloadCsv = () => {
       <p v-if="areaNote" class="adm-msg warn">{{ areaNote }}</p>
 
       <template v-if="canSave">
-        <div class="adm-snapline">
-          <input v-model="snapName" class="adm-input wide2" placeholder="저장 이름 (비우면 주소로)" />
-          <input v-model="snapMemo" class="adm-input grow2" placeholder="메모 — 이 분석에 남길 말" />
-        </div>
-
         <!-- 네 칸 자리에 세 줄 — 공동주택가·매매 / 보증보험 전세 / 실거래 전세 -->
         <div class="adm-kpis grid4">
           <div class="adm-kpi green">
@@ -851,13 +838,9 @@ const downloadCsv = () => {
 .adm-csv:disabled { border-color: #e5e7eb; color: #c3c9d4; cursor: default; }
 .adm-acts { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .adm-acts .adm-csv { margin-left: 0; }
-/* 저장 이름·메모 — 지표 칸 바로 위 */
-.adm-snapline { display: flex; gap: 10px; margin: 0 0 12px; }
 .adm-print-only { display: none; }
 .adm-print-only h2 { margin: 0 0 4px; font-size: 16px; font-weight: 800; }
 .adm-print-only p { margin: 0 0 8px; font-size: 12px; color: #374151; }
-.adm-input.wide2 { width: 260px; }
-.adm-input.grow2 { flex: 1 1 auto; width: auto; }
 
 .adm-body { flex: 1 1 auto; width: 100%; max-width: 1680px; margin: 0 auto; padding: 24px 28px 60px; }
 .adm-bar { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 16px 18px; }
@@ -1046,7 +1029,7 @@ const downloadCsv = () => {
 
 /* 인쇄 — 고르고 적는 자리는 빼고 숫자만 남긴다 */
 @media print {
-  .adm-top, .adm-bar, .adm-snapline, .adm-tabs, .adm-acts, .adm-chip-btn,
+  .adm-top, .adm-bar, .adm-tabs, .adm-acts, .adm-chip-btn,
   .adm-snap-veil, .adm-snap-panel, .adm-flt, .adm-flt-panel, .adm-flt-veil { display: none !important; }
   .adm-print-only { display: block !important; }
   .adm-shell { background: #fff; }
