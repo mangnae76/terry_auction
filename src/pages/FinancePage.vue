@@ -139,12 +139,26 @@ const closeModal = () => {
   modalKind.value = '';
 };
 
-const auctionOptions = computed(() =>
-  auctionStore.auctions.map((a) => ({
-    id: a.id,
-    label: `${a.caseNumber} - ${a.address}`,
-  })),
-);
+/** 주소에서 빌라 이름만 — '…검암동 678-8 프리스틴 106동 4층402호' → '프리스틴' */
+const villaName = (address?: string) => {
+  const parts = String(address ?? '').split(/\s+/).filter(Boolean);
+  let lot = -1;
+  parts.forEach((t, i) => { if (/^\d+(-\d+)?$/.test(t)) lot = i; });
+  const tail = (lot >= 0 ? parts.slice(lot + 1) : parts)
+    .filter((t) => !/^\d+동$/.test(t) && !/^\d+층$/.test(t) && !/\d+호$/.test(t) && t !== '산');
+  return tail.join(' ').trim();
+};
+
+/** 돈을 쓰는 자리는 낙찰받은 물건이다 — 낙찰일이 적힌 물건만 고르게 한다.
+ *  (낙찰일은 물건상세 '입찰가산정 → 예상 수익 분석' 에서 적는다)
+ *  아직 낙찰된 물건이 없으면 전부 보여 준다 — 고를 것이 없으면 더 곤란하다 */
+const auctionOptions = computed(() => {
+  const label = (a: { caseNumber: string; address?: string }) =>
+    villaName(a.address) || a.address || a.caseNumber;
+  const won = auctionStore.auctions.filter((a) => !!a.wonDate);
+  const list = won.length > 0 ? won : auctionStore.auctions;
+  return list.map((a) => ({ id: a.id, label: label(a) }));
+});
 
 // ipDraft: quantity/unitPrice 변경 시 합계 자동 계산
 const updateItemTotals = () => {
@@ -163,13 +177,13 @@ const onSave = async () => {
       await finance.saveCashFlow(cfDraft.value);
     } else if (modalKind.value === 'businessExpense') {
       const a = auctionStore.auctions.find((x) => x.id === beDraft.value.auctionId);
-      if (a) beDraft.value.auctionLabel = a.caseNumber;
+      if (a) beDraft.value.auctionLabel = villaName(a.address) || a.caseNumber;
       await finance.saveBusinessExpense(beDraft.value);
     } else if (modalKind.value === 'fuelMeal') {
       await finance.saveFuelMeal(fmDraft.value);
     } else if (modalKind.value === 'itemPurchase') {
       const a = auctionStore.auctions.find((x) => x.id === ipDraft.value.auctionId);
-      if (a) ipDraft.value.auctionLabel = a.caseNumber;
+      if (a) ipDraft.value.auctionLabel = villaName(a.address) || a.caseNumber;
       await finance.saveItemPurchase(ipDraft.value);
     }
     closeModal();

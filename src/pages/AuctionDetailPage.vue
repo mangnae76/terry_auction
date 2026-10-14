@@ -1507,6 +1507,8 @@ const cyclePriority = async () => {
   auction.value.priority = (priority.value + 1) % 4;
   await store.saveAuction(auction.value);
 };
+/** 날짜 칸이 좁다 — 앞의 '20' 을 떼어 '26-10-14' 로 적는다 */
+const shortYmd = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2) : (d ?? ''));
 const setProfitDate = async (key: 'wonDate' | 'sellDate', value: string) => {
   if (!auction.value) return;
   auction.value[key] = value;
@@ -5940,12 +5942,12 @@ const goBack = () => router.back();
           </header>
           <div v-if="!isCollapsed('profit')" class="adp-profit-dates">
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
-              <em>낙찰</em>
-              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ auction.wonDate || '날짜입력' }}</span></span>
+              <em>낙찰일</em>
+              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ shortYmd(auction.wonDate) || '날짜입력' }}</span></span>
             </button>
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'sellDate'">
-              <em>매도</em>
-              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ auction.sellDate || '날짜입력' }}</span></span>
+              <em>매도일</em>
+              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ shortYmd(auction.sellDate) || '날짜입력' }}</span></span>
             </button>
             <!-- 표 스텝퍼와 별은 한 묶음 — 자리가 모자라 줄이 내려가도 둘이 같이 내려간다 -->
             <span class="adp-pd-tail">
@@ -9138,9 +9140,9 @@ const goBack = () => router.back();
   padding: 4px 8px; background: #fff;
   /* 값이 있든 없든 칸 크기가 흔들리지 않게 폭을 고정한다.
      날짜 둘·표 스텝퍼·별이 한 줄에 서야 해서 칸을 좁게 잡았다 */
-  width: 74px; box-sizing: border-box; padding: 4px 3px; gap: 2px;
+  width: 88px; box-sizing: border-box; padding: 5px 4px; gap: 3px;
 }
-.adp-pd-box span { font-size: 11px; font-weight: 400; color: #111827; white-space: nowrap; }
+.adp-pd-box span { font-size: 12px; font-weight: 400; color: #111827; white-space: nowrap; }
 .adp-pd-cal { color: #9ca3af; flex: 0 0 auto; }
 /* 비중을 기본값으로 — 날짜 옆에 작게 */
 .adp-pd-reset {
