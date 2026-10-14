@@ -35,6 +35,9 @@ export interface CaseTradeResult {
   parts: AddressParts;
   /** 그 호실의 공동주택가격 — 공동주택이 아니거나 자료가 없으면 null */
   price: ApartPrice | null;
+  /** 공부상 전용면적 (㎡) — 공시가격 자료의 그 호실 줄에서 온다.
+   *  실거래를 같은 평형으로 좁히는 잣대다. 0이면 모른다는 뜻. */
+  baseAreaM2: number;
   /** 그 지번(또는 단지)의 거래만 */
   rows: CaseTradeRow[];
   /** 시군구 전체로 받아 둔 거래 수 — 얼마나 큰 자료에서 추렸는지 */
@@ -128,6 +131,7 @@ export const analyzeAddress = async (
   const hit = await lookupAddress(input.address, { withPrice: true });
   const empty: CaseTradeResult = {
     region: hit.region, parts: hit.parts, price: hit.price,
+    baseAreaM2: hit.price?.areaM2 ?? 0,
     rows: [], scanned: 0, missedMonths: 0,
   };
   const lawdCd5 = overrides.lawdCd5 || hit.region?.lawdCd5 || '';

@@ -127,6 +127,16 @@ export default defineConfig(({ mode }) => {
             'User-Agent': 'terry-auction/1.0',
           },
         },
+        // 브이월드(공동주택가격)는 인증키가 클라우드플레어 워커 비밀값으로만 있다.
+        // 개발에서도 보려면 그 워커로 넘긴다 — 키는 여기 들어오지 않는다.
+        ...(env.VITE_API_BASE
+          ? {
+            '/api-vworld': {
+              target: env.VITE_API_BASE,
+              changeOrigin: true,
+            },
+          }
+          : {}),
         '/api-kakao': {
           target: 'https://dapi.kakao.com',
           changeOrigin: true,

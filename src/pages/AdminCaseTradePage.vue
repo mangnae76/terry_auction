@@ -40,6 +40,8 @@ const ho = ref('');
 const price = ref<ApartPrice | null>(null);
 const rows = ref<CaseTradeRow[]>([]);
 const scanned = ref(0);
+/** 공부상 전용면적 — 공시가격 자료의 그 호실 줄에서 온다 */
+const baseArea = ref(0);
 const missed = ref(0);
 const priceUnit = computed(() => priceUnitText(price.value));
 
@@ -90,6 +92,20 @@ const run = async () => {
     rows.value = res.rows;
     scanned.value = res.scanned;
     missed.value = res.missedMonths;
+    baseArea.value = res.baseAreaM2;
+    // 공부상 면적이 있으면 그 평형으로 먼저 좁혀 둔다 — 다른 평형의 거래와
+    // 견주면 전세가율·공시대비율이 통째로 어긋난다.
+    // 국토부와 공시가격의 소수점이 조금씩 다를 수 있어 0.1㎡ 폭으로 맞춘다
+    areaFilter.value = '';
+    areaNote.value = '';
+    if (res.baseAreaM2 > 0) {
+      const near = areaOptions.value
+        .map((o) => ({ o, gap: Math.abs(Number(o) - res.baseAreaM2) }))
+        .filter((x) => x.gap <= 0.1)
+        .sort((a, b) => a.gap - b.gap)[0];
+      if (near) areaFilter.value = near.o;
+      else if (res.rows.length > 0) areaNote.value = `공부상 전용 ${res.baseAreaM2}㎡ 거래가 없어 전체 평형으로 봅니다.`;
+    }
     // 지역이 안 풀렸으면 직접 고르기를 펴 준다 — 손쓸 자리를 바로 보여 준다
     if (res.error) {
       errorMsg.value = res.error;
@@ -110,9 +126,18 @@ const run = async () => {
 
 // ===== 거르기 =====
 const areaFilter = ref('');
+const areaNote = ref('');
 const yearFilter = ref('');
 const tab = ref<'all' | '매매' | '전세' | '월세'>('매매');
 const resetFilters = () => { areaFilter.value = ''; yearFilter.value = ''; tab.value = '매매'; };
+/** 지금 보고 있는 평형이 공부상 면적과 같은가 — 칩에 적어 둔다 */
+const areaChip = computed(() => {
+  if (!(baseArea.value > 0)) return '';
+  const same = areaFilter.value && Math.abs(Number(areaFilter.value) - baseArea.value) <= 0.1;
+  return same
+    ? `기준 전용 ${baseArea.value}㎡ · 공시가격 자료`
+    : `공부상 전용 ${baseArea.value}㎡ — 지금은 ${areaFilter.value ? `${areaFilter.value}㎡` : '전체 평형'}`;
+});
 
 const areaOptions = computed(() => {
   const set = new Set<string>();
@@ -267,6 +292,7 @@ const downloadCsv = () => {
       <div class="adm-chip-row">
         <span v-if="spotChip" class="adm-chip">{{ spotChip }}</span>
         <span v-else class="adm-chip dim">주소를 적고 분석을 누르세요 — 국토부 호출 {{ callCount }}번 ({{ years }}년치 매매·전월세)</span>
+        <span v-if="areaChip" class="adm-chip area" :class="{ off: !areaFilter }">{{ areaChip }}</span>
         <button type="button" class="adm-chip-btn" @click="manualOpen = !manualOpen">
           {{ manualOpen ? '직접 고르기 닫기' : '직접 고르기' }}
         </button>
@@ -301,6 +327,7 @@ const downloadCsv = () => {
 
       <p v-if="errorMsg" class="adm-msg err">{{ errorMsg }}</p>
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
+      <p v-if="areaNote" class="adm-msg warn">{{ areaNote }}</p>
 
       <template v-if="rows.length > 0">
         <div class="adm-sum">
@@ -433,6 +460,9 @@ const downloadCsv = () => {
 .adm-chip-row { margin: 10px 2px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .adm-chip { background: #eef3ff; border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; color: #1f3a72; }
 .adm-chip.dim { background: #f3f5f9; color: #9ca3af; font-weight: 600; }
+.adm-chip.area { background: #f1fbf7; color: #0f7a5e; }
+/* 공부상 평형이 아닌 것을 보고 있을 때 — 눈에 띄게 둔다 */
+.adm-chip.area.off { background: #fff4e5; color: #9a5b00; }
 .adm-chip-btn { border: 1px solid #dde3ee; border-radius: 999px; background: #fff; padding: 5px 11px; font-family: inherit; font-size: 11.5px; font-weight: 700; color: #6b7280; cursor: pointer; }
 .adm-chip-btn:hover { border-color: #b9cdf7; color: #2b6df3; }
 
