@@ -257,10 +257,10 @@ const recentPyeong = computed(() => {
 });
 
 // 손품+현장 가격정보의 셋째 표와 같은 셈이다.
-//   전세가 = 공동주택가 × 비율(기본 127%)
+//   전세가 = 공동주택가 × 비율(기본 126%)
 //   전세가율 = 전세가 ÷ 매매 실거래가,  갭 = 매매 실거래가 − 전세가
 //   공시대비율 = 매매 실거래가 ÷ 공동주택가
-const JEONSE_RATE = 127;
+const JEONSE_RATE = 126;
 const pubAuto = computed(() => price.value?.price ?? 0);
 const pubTyped = ref('');
 const pubValue = computed(() => {
@@ -359,7 +359,7 @@ const downloadCsv = () => {
           <span v-if="priceUnit" class="adm-kpi-sub">{{ priceUnit }}</span>
         </div>
         <div class="adm-kpi">
-          <small>전세가 <em><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="127" />%</em></small>
+          <small>전세가 <em><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" />%</em></small>
           <strong>{{ won(jeonsePrice) }}</strong>
           <span class="adm-kpi-sub">공동주택가 × {{ jeonseRate }}%</span>
         </div>

@@ -3998,8 +3998,8 @@ const mktJeonseFloorValue = computed(() => {
 });
 const mktJeonseDateFloorText = computed(() => dateFloorText(mk('d', 'jYear'), mktJeonseFloorValue.value));
 
-// 전세가 = 공동주택가 × 비율(기본 127%)
-const MKT_JEONSE_RATE = 127;
+// 전세가 = 공동주택가 × 비율(기본 126%)
+const MKT_JEONSE_RATE = 126;
 const mktJeonseRate = computed(() => {
   const r = Number(mktVal(mk('d', 'rate')).replace(/[^\d.]/g, ''));
   return Number.isFinite(r) && r > 0 ? r : MKT_JEONSE_RATE;
@@ -7812,7 +7812,7 @@ const goBack = () => router.back();
                   <small class="adp-mkt-rate">
                     전세가
                     <template v-if="editingSurvey.deal">
-                      <input class="adp-mkt-rate-input" inputmode="numeric" :value="mktVal(mk('d', 'rate'))" placeholder="127" @input="setMktVal(mk('d', 'rate'), ($event.target as HTMLInputElement).value)" />%
+                      <input class="adp-mkt-rate-input" inputmode="numeric" :value="mktVal(mk('d', 'rate'))" placeholder="126" @input="setMktVal(mk('d', 'rate'), ($event.target as HTMLInputElement).value)" />%
                     </template>
                     <template v-else>{{ mktJeonseRate }}%</template>
                     <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('jeonseRate', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('jeonseRate', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'jeonseRate'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('jeonseRate')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span>
