@@ -257,7 +257,7 @@ const jeonsePyeong = computed(() => {
   return Math.round(r.price / (r.areaM2 / PYEONG));
 });
 const jeonseFrom = computed(() => (
-  pickedJeonse.value && pickedJeonse.value !== autoJeonseKey.value ? '선택 거래' : '최근거래'
+  pickedJeonse.value && pickedJeonse.value !== autoJeonseKey.value ? '선택거래' : '최근거래'
 ));
 /** 기준 전세 — 고른 줄이 있으면 그것, 없으면 가장 최근 전세 */
 const recentJeonse = computed(() => (
@@ -267,7 +267,7 @@ const recentJeonse = computed(() => (
 ));
 /** 고른 줄인지 저절로 잡힌 줄인지 — 요약 칸에 적어 둔다 */
 const saleFrom = computed(() => (
-  pickedSale.value && pickedSale.value !== autoSaleKey.value ? '선택 거래' : '최근거래'
+  pickedSale.value && pickedSale.value !== autoSaleKey.value ? '선택거래' : '최근거래'
 ));
 
 // 손품+현장 가격정보의 셋째 표와 같은 셈이다.
@@ -355,6 +355,17 @@ const jeonseGapSign = computed(() => {
 /** 숫자가 뜻하는 바는 말풍선으로 — 칸에는 값과 공식만 둔다 */
 const tip = ref<'gap' | 'real' | ''>('');
 const toggleTip = (k: 'gap' | 'real') => { tip.value = tip.value === k ? '' : k; };
+// 마우스를 얹으면 뜨고 떼면 닫힌다. 말풍선 쪽으로 옮겨 가는 동안은
+// 닫지 않으려고 조금 기다린다
+let tipTimer = 0;
+const tipEnter = (k: 'gap' | 'real') => {
+  window.clearTimeout(tipTimer);
+  tip.value = k;
+};
+const tipLeave = () => {
+  window.clearTimeout(tipTimer);
+  tipTimer = window.setTimeout(() => { tip.value = ''; }, 160);
+};
 const realTipLines = computed(() => {
   const lines: string[] = [];
   const r = recentJeonse.value;
@@ -515,12 +526,20 @@ const downloadCsv = () => {
                 type="button"
                 :class="['adm-tip-btn', jeonseGapSign.tone]"
                 aria-label="뜻풀이"
+                @mouseenter="tipEnter('gap')"
+                @mouseleave="tipLeave()"
                 @click.stop="toggleTip('gap')"
               >!</button>
             </small>
             <strong>{{ jeonseRatioText }}<em v-if="gapText" class="adm-gap"> / {{ gapText }}</em></strong>
             <span class="adm-kpi-sub">전세가(공동주택가 × {{ jeonseRate }}%) ÷ 매매 실거래가</span>
-            <div v-if="tip === 'gap'" class="adm-tip" @click.stop>
+            <div
+              v-if="tip === 'gap'"
+              class="adm-tip"
+              @mouseenter="tipEnter('gap')"
+              @mouseleave="tipLeave()"
+              @click.stop
+            >
               <p v-for="(t, i) in gapTipLines" :key="i">{{ t }}</p>
             </div>
           </div>
@@ -532,6 +551,8 @@ const downloadCsv = () => {
                 type="button"
                 :class="['adm-tip-btn', realRatioSign.tone]"
                 aria-label="뜻풀이"
+                @mouseenter="tipEnter('real')"
+                @mouseleave="tipLeave()"
                 @click.stop="toggleTip('real')"
               >!</button>
             </small>
@@ -539,7 +560,13 @@ const downloadCsv = () => {
               {{ realJeonseRatioText }}<em v-if="realGapText" :class="['adm-gap', { neg: realGapValue < 0 }]"> / {{ realGapText }}</em>
             </strong>
             <span class="adm-kpi-sub">전세 실거래가 ÷ 매매 실거래가</span>
-            <div v-if="tip === 'real'" class="adm-tip" @click.stop>
+            <div
+              v-if="tip === 'real'"
+              class="adm-tip"
+              @mouseenter="tipEnter('real')"
+              @mouseleave="tipLeave()"
+              @click.stop
+            >
               <p v-for="(t, i) in realTipLines" :key="i">{{ t }}</p>
             </div>
           </div>
@@ -552,9 +579,9 @@ const downloadCsv = () => {
 
         <!-- 요약 — 매매와 전세를 같은 꼴로 -->
         <div class="adm-kpis four2">
-          <div class="adm-kpi"><small><em>{{ recentYm }}</em> 매매 실거래가 <span :class="['adm-kpi-from', { pick: saleFrom === '선택 거래' }]">{{ saleFrom }}</span></small><strong>{{ won(recentPrice) }}</strong></div>
+          <div class="adm-kpi"><small><em>{{ recentYm }}</em> 매매 실거래가 <span :class="['adm-kpi-from', { pick: saleFrom === '선택거래' }]">{{ saleFrom }}</span></small><strong>{{ won(recentPrice) }}</strong></div>
           <div class="adm-kpi"><small>매매 평당가</small><strong>{{ won(recentPyeong) }}</strong></div>
-          <div class="adm-kpi"><small><em>{{ jeonseYm }}</em> 전세 실거래가 <span :class="['adm-kpi-from', { pick: jeonseFrom === '선택 거래' }]">{{ jeonseFrom }}</span></small><strong>{{ won(jeonsePriceReal) }}</strong></div>
+          <div class="adm-kpi"><small><em>{{ jeonseYm }}</em> 전세 실거래가 <span :class="['adm-kpi-from', { pick: jeonseFrom === '선택거래' }]">{{ jeonseFrom }}</span></small><strong>{{ won(jeonsePriceReal) }}</strong></div>
           <div class="adm-kpi"><small>전세 평당가</small><strong>{{ won(jeonsePyeong) }}</strong></div>
         </div>
 
@@ -568,7 +595,7 @@ const downloadCsv = () => {
           <button v-if="colFilter.activeCount.value > 0" type="button" class="adm-flt-clear" @click="colFilter.clearAll()">
             걸러내기 {{ colFilter.activeCount.value }}칸 해제
           </button>
-          <button v-if="pickedSale || pickedJeonse" type="button" class="adm-ghost pick" @click="clearPicks">선택 거래 풀기</button>
+          <button v-if="pickedSale || pickedJeonse" type="button" class="adm-ghost pick" @click="clearPicks">선택거래 풀기</button>
           <select v-model="areaFilter" class="adm-input narrow">
             <option value="">전체면적(㎡/평)</option>
             <option v-for="o in areaOptions" :key="o" :value="o">{{ areaOptText(o) }}</option>
