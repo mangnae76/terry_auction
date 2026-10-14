@@ -142,7 +142,7 @@ const areaChip = computed(() => {
   const same = areaFilter.value && Math.abs(Number(areaFilter.value) - baseArea.value) <= 0.1;
   return same
     ? `기준 전용 ${base} · 공시가격 자료`
-    : `공부상 전용 ${base} — 지금은 ${areaFilter.value ? m2py(Number(areaFilter.value)) : '전체 면적 선택 상태'}`;
+    : `공부상 전용 ${base} — ${areaFilter.value ? m2py(Number(areaFilter.value)) : '전체 면적 상태'}`;
 });
 
 const areaOptions = computed(() => {
