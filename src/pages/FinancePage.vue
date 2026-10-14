@@ -335,9 +335,14 @@ const exportExcel = () => {
       </div>
 
       <div class="fin-table-wrap">
-        <table class="fin-table">
+        <table class="fin-table cash">
+          <!-- 칸 너비를 못 박는다 — 글자가 왼쪽에 몰리지 않게 -->
+          <colgroup>
+            <col style="width: 22%" /><col style="width: 20%" /><col style="width: 16%" />
+            <col style="width: 24%" /><col />
+          </colgroup>
           <thead>
-            <tr><th>일자</th><th>구분</th><th>입출금</th><th class="r">개인 자금</th><th>비고</th></tr>
+            <tr><th>일자</th><th>구분</th><th>입출금</th><th class="r">개인 자금</th><th class="l">비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredCashFlows" :key="r.id" @click="openEdit('cashFlow', r)">
@@ -345,7 +350,7 @@ const exportExcel = () => {
               <td :title="r.ownerName">{{ r.ownerName }}</td>
               <td><span :class="['pill', r.flowType === '입금' ? 'in' : 'out']">{{ r.flowType }}</span></td>
               <td :class="['r', 'amt', r.flowType === '입금' ? 'red' : 'blue']">{{ fmtMoneySigned(r.amount, r.flowType === '입금' ? '+' : '-') }}</td>
-              <td :title="r.note">{{ r.note }}</td>
+              <td class="l" :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredCashFlows.length === 0">
               <td colspan="5" class="empty">
@@ -744,6 +749,12 @@ const exportExcel = () => {
 .fin-table tbody tr { cursor: pointer; }
 .fin-table tbody tr:hover { background: #f9fafb; }
 .fin-table td.r, .fin-table th.r { text-align: right; }
+/* 자금입출금 표 — 짧은 칸은 가운데, 금액은 오른쪽, 비고만 왼쪽.
+   다 왼쪽으로 몰아 두니 오른쪽이 휑하고 줄이 읽히지 않았다 */
+.fin-table.cash th, .fin-table.cash td { text-align: center; }
+.fin-table.cash th.r, .fin-table.cash td.r { text-align: right; }
+.fin-table.cash th.l, .fin-table.cash td.l { text-align: left; }
+.fin-table.cash td:not(.r):not(.empty) { max-width: none; }
 .fin-table td.amt.blue { color: #2563eb; font-weight: 700; }
 .fin-table td.amt.red  { color: #dc2626; font-weight: 700; }
 .fin-table .empty { text-align: center; color: #9ca3af; padding: 20px; white-space: normal; font-size: 11px; }
