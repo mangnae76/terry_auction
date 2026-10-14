@@ -142,6 +142,28 @@ const router = createRouter({
 });
 
 // 전역 인증 가드: ready 될 때까지 대기 후, 비공개 라우트는 미인증 시 /login으로
+// 새로 배포되면 옛 조각 파일(자금관리·세금관리처럼 늦게 불러오는 화면)이
+// 서버에서 사라진다. 오래 열어 둔 화면에서 그 메뉴를 누르면 조각을 못 받아
+// 아무 일도 일어나지 않는다. 그럴 때는 한 번만 새로 읽어 최신으로 갈아탄다.
+// (정적으로 묶인 선정물건·임장경로는 멀쩡해서 더 헷갈린다)
+const RELOAD_FLAG = 'chunk-reload-at';
+const isStaleChunk = (err: unknown) => {
+  const msg = String((err as Error)?.message ?? err);
+  return /dynamically imported module|Importing a module script failed|Failed to fetch|ChunkLoadError/i.test(msg);
+};
+const reloadOnce = () => {
+  try {
+    const last = Number(sessionStorage.getItem(RELOAD_FLAG) ?? '0');
+    // 조금 전에 이미 새로 읽었다면 또 읽지 않는다 (무한 되풀이 막기)
+    if (Date.now() - last < 20000) return;
+    sessionStorage.setItem(RELOAD_FLAG, String(Date.now()));
+  } catch { /* 저장 못 해도 새로 읽는다 */ }
+  window.location.reload();
+};
+
+router.onError((err) => { if (isStaleChunk(err)) reloadOnce(); });
+window.addEventListener('vite:preloadError', (e) => { e.preventDefault(); reloadOnce(); });
+
 router.beforeEach(async (to) => {
   const authStore = useAuthStore();
   // 초기 부트 시 onAuthStateChanged 첫 콜백을 기다림 (FOUC/잘못된 라우팅 방지)
