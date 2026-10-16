@@ -10,7 +10,6 @@ export interface MyPageItem {
 
 export const MY_PAGE_ITEMS: MyPageItem[] = [
   { name: '입찰 캘린더', desc: '선정물건 입찰일을 달력으로', path: '/bid-calendar' },
-  { name: '나의 관심 물건', desc: '관심 단계로 담아 둔 물건', path: '/auctions/watchlist', query: { status: '임장예정' } },
   { name: '보관함', desc: '잠시 내려놓은 물건 — 꺼내면 단계 그대로 돌아온다', path: '/archive' },
   { name: '휴지통', desc: '치운 물건 — 되살리거나 완전히 지운다', path: '/trash' },
   { name: '중개업소 관리', desc: '상담표 상호 목록 — 업소·연락처·평가 더하고 빼기', path: '/agencies' },
