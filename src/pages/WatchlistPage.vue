@@ -185,6 +185,38 @@ const removeAll = async () => {
 
 // 숨긴 물건 — 목록을 펼쳐 고른 것만 되살린다
 const hiddenOpen = ref(false);
+// 보관함 — 휴지통과 따로 둔다. 버린 것이 아니라 잠시 내려놓은 물건이다
+const archiveOpen = ref(false);
+const archivedPicked = ref<Record<string, boolean>>({});
+const toggleArchiveMenu = () => {
+  archiveOpen.value = !archiveOpen.value;
+  if (archiveOpen.value) archivedPicked.value = {};
+};
+const toggleArchivedPick = (id: string) => {
+  archivedPicked.value = { ...archivedPicked.value, [id]: !archivedPicked.value[id] };
+};
+const pickedArchivedIds = computed(() =>
+  store.archivedAuctions.filter((item) => archivedPicked.value[item.id]).map((item) => item.id));
+const allArchivedPicked = computed(() =>
+  store.archivedAuctions.length > 0 && pickedArchivedIds.value.length === store.archivedAuctions.length);
+const toggleAllArchived = () => {
+  if (allArchivedPicked.value) { archivedPicked.value = {}; return; }
+  const next: Record<string, boolean> = {};
+  store.archivedAuctions.forEach((item) => { next[item.id] = true; });
+  archivedPicked.value = next;
+};
+const unarchivePicked = async () => {
+  const ids = pickedArchivedIds.value;
+  if (ids.length === 0) return;
+  await store.archiveAuctions(ids, false);
+  archivedPicked.value = {};
+  if (store.archivedAuctions.length === 0) archiveOpen.value = false;
+};
+const archiveItem = async (id: string, evt: MouseEvent) => {
+  evt.stopPropagation();
+  await store.archiveAuctions([id], true);
+  flashToast('보관함에 넣었습니다.', 'success');
+};
 const hiddenPicked = ref<Record<string, boolean>>({});
 const toggleHiddenMenu = () => {
   hiddenOpen.value = !hiddenOpen.value;
@@ -540,14 +572,14 @@ watch(
         </div>
         <div class="wlp-filter-cell fixed">
           <span class="wlp-hidden-note">
-            <button type="button" class="wlp-restore-btn" :title="`숨긴 물건 ${store.hiddenCount}건`" @click.stop="toggleHiddenMenu">
-              <img :src="BOX_ICON" alt="" class="wlp-restore-ico" /><em class="wlp-restore-x">×</em>{{ store.hiddenCount }}
+            <button type="button" class="wlp-restore-btn" :title="`휴지통 ${store.hiddenCount}건`" @click.stop="toggleHiddenMenu">
+              <img :src="TRASH_ICON" alt="" class="wlp-restore-ico" /><em class="wlp-restore-x">×</em>{{ store.hiddenCount }}
             </button>
             <template v-if="hiddenOpen">
               <div class="wlp-hidden-backdrop" @click="hiddenOpen = false" />
               <div class="wlp-hidden-panel" @click.stop>
                 <p class="wlp-hidden-title">
-                  보관함 <span class="x">×</span> {{ store.hiddenCount }}건
+                  휴지통 <span class="x">×</span> {{ store.hiddenCount }}건
                   <button type="button" class="close" aria-label="닫기" @click="hiddenOpen = false">×</button>
                 </p>
                 <p class="wlp-hidden-head">
@@ -565,7 +597,7 @@ watch(
                     @click="purgePicked"
                   >완전삭제</button>
                 </p>
-                <p v-if="store.hiddenAuctions.length === 0" class="wlp-hidden-empty">숨긴 물건이 없습니다.</p>
+                <p v-if="store.hiddenAuctions.length === 0" class="wlp-hidden-empty">휴지통이 비어 있습니다.</p>
                 <ul class="wlp-hidden-list">
                   <li
                     v-for="item in store.hiddenAuctions"
@@ -588,6 +620,49 @@ watch(
                   class="wlp-hidden-more"
                   @click="hiddenOpen = false; router.push('/trash')"
                 >카드로 자세히 보기<span class="arr">›</span></button>
+              </div>
+            </template>
+          </span>
+        </div>
+        <div class="wlp-filter-cell fixed">
+          <span class="wlp-hidden-note">
+            <button type="button" class="wlp-restore-btn" :title="`보관함 ${store.archivedCount}건`" @click.stop="toggleArchiveMenu">
+              <img :src="BOX_ICON" alt="" class="wlp-restore-ico" /><em class="wlp-restore-x">×</em>{{ store.archivedCount }}
+            </button>
+            <template v-if="archiveOpen">
+              <div class="wlp-hidden-backdrop" @click="archiveOpen = false" />
+              <div class="wlp-hidden-panel" @click.stop>
+                <p class="wlp-hidden-title">
+                  보관함 <span class="x">×</span> {{ store.archivedCount }}건
+                  <button type="button" class="close" aria-label="닫기" @click="archiveOpen = false">×</button>
+                </p>
+                <p class="wlp-hidden-head">
+                  <button type="button" @click="toggleAllArchived">{{ allArchivedPicked ? '전체해제' : '전체선택' }}</button>
+                  <button
+                    type="button"
+                    class="apply"
+                    :disabled="pickedArchivedIds.length === 0"
+                    @click="unarchivePicked"
+                  >꺼내기 {{ pickedArchivedIds.length > 0 ? `(${pickedArchivedIds.length})` : '' }}</button>
+                </p>
+                <p v-if="store.archivedAuctions.length === 0" class="wlp-hidden-empty">보관함이 비어 있습니다.</p>
+                <ul class="wlp-hidden-list">
+                  <li
+                    v-for="item in store.archivedAuctions"
+                    :key="item.id"
+                    class="wlp-hidden-item"
+                    @click="toggleArchivedPick(item.id)"
+                  >
+                    <input type="checkbox" :checked="archivedPicked[item.id] === true" @click.stop="toggleArchivedPick(item.id)" />
+                    <span class="wlp-hidden-texts">
+                      <span class="case">
+                        {{ item.caseNumber }}
+                        <em :class="['wlp-hidden-tag', `tone-${stageTone(item)}`]">{{ stageLabel(item) }}</em>
+                      </span>
+                      <span class="addr">{{ cardAddress(item) || '주소 없음' }}</span>
+                    </span>
+                  </li>
+                </ul>
               </div>
             </template>
           </span>
@@ -694,7 +769,10 @@ watch(
             <button type="button" class="wlp-card-icon" aria-label="주소복사" title="주소복사" @click="copyItem(item, $event)">
               <img :src="filesIcon" alt="" />
             </button>
-            <button type="button" class="wlp-card-icon wlp-card-close" aria-label="숨기기" title="목록에서 숨기기" @click="removeItem(item.id, $event)">
+            <button type="button" class="wlp-card-icon" aria-label="보관함에 넣기" title="보관함에 넣기" @click="archiveItem(item.id, $event)">
+              <img :src="BOX_ICON" alt="" />
+            </button>
+            <button type="button" class="wlp-card-icon wlp-card-close" aria-label="휴지통으로" title="휴지통으로 보내기" @click="removeItem(item.id, $event)">
               <img :src="TRASH_ICON" alt="" />
             </button>
           </div>

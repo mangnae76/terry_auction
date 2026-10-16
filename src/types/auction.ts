@@ -399,8 +399,10 @@ export interface AuctionDetail {
   auctionRound: string;
   status: AuctionStatus;
   isInterested: boolean;
-  /** 목록에서 감춘 물건 — DB에는 남겨두고 화면에서만 제외한다 */
+  /** 휴지통에 넣은 물건 — DB에는 남겨두고 화면에서만 제외한다 */
   hidden?: boolean;
+  /** 보관함에 넣은 물건 — 버린 것이 아니라 잠시 내려놓은 것 */
+  archived?: boolean;
   /** 별표로 매긴 중요도 — 없으면 빈 별, 1~3을 돌아가며 매긴다 */
   priority?: number;
   /** 입찰 상태 — 입찰대기 / 입찰포기 / 입찰진행. status(관심·임장·입찰·낙찰·탈락)와는 별개 */

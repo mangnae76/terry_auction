@@ -695,9 +695,13 @@ export const useAuctionStore = defineStore('auction', () => {
   // allAuctions = Firestore 원본(숨긴 것 포함). auctions = 화면에 보여줄 목록.
   // 삭제는 DB에서 지우지 않고 hidden 플래그만 세우므로, 모든 화면이 쓰는 이 한 곳에서 걸러낸다.
   const allAuctions = ref<AuctionDetail[]>([...sampleAuctions]);
-  const auctions = computed(() => allAuctions.value.filter((item) => !item.hidden));
+  // 목록에 서는 것 = 휴지통에도 보관함에도 없는 것
+  const auctions = computed(() => allAuctions.value.filter((item) => !item.hidden && !item.archived));
   const hiddenAuctions = computed(() => allAuctions.value.filter((item) => item.hidden));
   const hiddenCount = computed(() => hiddenAuctions.value.length);
+  /** 보관함 — 버린 것이 아니라 잠시 내려놓은 물건 */
+  const archivedAuctions = computed(() => allAuctions.value.filter((item) => item.archived && !item.hidden));
+  const archivedCount = computed(() => archivedAuctions.value.length);
   const activeStatus = ref<AuctionStatus | '전체'>('전체');
   const searchKeyword = ref('');
   const selectedCourt = ref('전체');
@@ -983,6 +987,21 @@ export const useAuctionStore = defineStore('auction', () => {
 
   const deleteAuction = async (id: string) => hideAuctions([id]);
 
+  /** 보관함에 넣는다 — 휴지통과 달리 '버린 것' 이 아니다 */
+  const archiveAuctions = async (ids: string[], on = true) => {
+    if (ids.length === 0) return;
+    const target = new Set(ids);
+    const changed: AuctionDetail[] = [];
+    allAuctions.value = allAuctions.value.map((item) => {
+      if (!target.has(item.id) || !!item.archived === on) return item;
+      const next = { ...item, archived: on };
+      changed.push(next);
+      return next;
+    });
+    if (changed.length === 0 || !isFirestoreAvailable()) return;
+    await upsertAuctionBatch(changed);
+  };
+
   /**
    * 되살릴 수 없게 문서를 지운다.
    * 지우기에 실패한 것은 화면에서도 빼지 않는다 — 전에는 먼저 빼고 지웠더니,
@@ -1157,6 +1176,8 @@ export const useAuctionStore = defineStore('auction', () => {
         // 휴지통에 넣어 둔 물건은 다시 스캔해도 되살리지 않는다 —
         // 사용자가 일부러 치운 것이라, 스캔 한 번에 돌아오면 치운 의미가 없다
         hidden: existing?.hidden ?? false,
+        // 보관함에 둔 물건도 스캔 한 번에 돌아오지 않는다
+        archived: existing?.archived ?? false,
         isFieldTrip: existing?.isFieldTrip ?? false,
         propertyType: parsed.propertyType || base.propertyType,
         address: parsed.address || base.address || parsed.sourceName,
@@ -1374,6 +1395,9 @@ export const useAuctionStore = defineStore('auction', () => {
     auctions,
     hiddenAuctions,
     hiddenCount,
+    archivedAuctions,
+    archivedCount,
+    archiveAuctions,
     loading,
     summary,
     activeStatus,
