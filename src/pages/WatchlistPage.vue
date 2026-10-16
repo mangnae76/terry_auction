@@ -572,6 +572,49 @@ watch(
         </div>
         <div class="wlp-filter-cell fixed">
           <span class="wlp-hidden-note">
+            <button type="button" class="wlp-restore-btn" :title="`보관함 ${store.archivedCount}건`" @click.stop="toggleArchiveMenu">
+              <img :src="BOX_ICON" alt="" class="wlp-restore-ico" /><em class="wlp-restore-x">×</em>{{ store.archivedCount }}
+            </button>
+            <template v-if="archiveOpen">
+              <div class="wlp-hidden-backdrop" @click="archiveOpen = false" />
+              <div class="wlp-hidden-panel" @click.stop>
+                <p class="wlp-hidden-title">
+                  보관함 <span class="x">×</span> {{ store.archivedCount }}건
+                  <button type="button" class="close" aria-label="닫기" @click="archiveOpen = false">×</button>
+                </p>
+                <p class="wlp-hidden-head">
+                  <button type="button" @click="toggleAllArchived">{{ allArchivedPicked ? '전체해제' : '전체선택' }}</button>
+                  <button
+                    type="button"
+                    class="apply"
+                    :disabled="pickedArchivedIds.length === 0"
+                    @click="unarchivePicked"
+                  >꺼내기 {{ pickedArchivedIds.length > 0 ? `(${pickedArchivedIds.length})` : '' }}</button>
+                </p>
+                <p v-if="store.archivedAuctions.length === 0" class="wlp-hidden-empty">보관함이 비어 있습니다.</p>
+                <ul class="wlp-hidden-list">
+                  <li
+                    v-for="item in store.archivedAuctions"
+                    :key="item.id"
+                    class="wlp-hidden-item"
+                    @click="toggleArchivedPick(item.id)"
+                  >
+                    <input type="checkbox" :checked="archivedPicked[item.id] === true" @click.stop="toggleArchivedPick(item.id)" />
+                    <span class="wlp-hidden-texts">
+                      <span class="case">
+                        {{ item.caseNumber }}
+                        <em :class="['wlp-hidden-tag', `tone-${stageTone(item)}`]">{{ stageLabel(item) }}</em>
+                      </span>
+                      <span class="addr">{{ cardAddress(item) || '주소 없음' }}</span>
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </template>
+          </span>
+        </div>
+        <div class="wlp-filter-cell fixed">
+          <span class="wlp-hidden-note">
             <button type="button" class="wlp-restore-btn" :title="`휴지통 ${store.hiddenCount}건`" @click.stop="toggleHiddenMenu">
               <img :src="TRASH_ICON" alt="" class="wlp-restore-ico" /><em class="wlp-restore-x">×</em>{{ store.hiddenCount }}
             </button>
@@ -620,49 +663,6 @@ watch(
                   class="wlp-hidden-more"
                   @click="hiddenOpen = false; router.push('/trash')"
                 >카드로 자세히 보기<span class="arr">›</span></button>
-              </div>
-            </template>
-          </span>
-        </div>
-        <div class="wlp-filter-cell fixed">
-          <span class="wlp-hidden-note">
-            <button type="button" class="wlp-restore-btn" :title="`보관함 ${store.archivedCount}건`" @click.stop="toggleArchiveMenu">
-              <img :src="BOX_ICON" alt="" class="wlp-restore-ico" /><em class="wlp-restore-x">×</em>{{ store.archivedCount }}
-            </button>
-            <template v-if="archiveOpen">
-              <div class="wlp-hidden-backdrop" @click="archiveOpen = false" />
-              <div class="wlp-hidden-panel" @click.stop>
-                <p class="wlp-hidden-title">
-                  보관함 <span class="x">×</span> {{ store.archivedCount }}건
-                  <button type="button" class="close" aria-label="닫기" @click="archiveOpen = false">×</button>
-                </p>
-                <p class="wlp-hidden-head">
-                  <button type="button" @click="toggleAllArchived">{{ allArchivedPicked ? '전체해제' : '전체선택' }}</button>
-                  <button
-                    type="button"
-                    class="apply"
-                    :disabled="pickedArchivedIds.length === 0"
-                    @click="unarchivePicked"
-                  >꺼내기 {{ pickedArchivedIds.length > 0 ? `(${pickedArchivedIds.length})` : '' }}</button>
-                </p>
-                <p v-if="store.archivedAuctions.length === 0" class="wlp-hidden-empty">보관함이 비어 있습니다.</p>
-                <ul class="wlp-hidden-list">
-                  <li
-                    v-for="item in store.archivedAuctions"
-                    :key="item.id"
-                    class="wlp-hidden-item"
-                    @click="toggleArchivedPick(item.id)"
-                  >
-                    <input type="checkbox" :checked="archivedPicked[item.id] === true" @click.stop="toggleArchivedPick(item.id)" />
-                    <span class="wlp-hidden-texts">
-                      <span class="case">
-                        {{ item.caseNumber }}
-                        <em :class="['wlp-hidden-tag', `tone-${stageTone(item)}`]">{{ stageLabel(item) }}</em>
-                      </span>
-                      <span class="addr">{{ cardAddress(item) || '주소 없음' }}</span>
-                    </span>
-                  </li>
-                </ul>
               </div>
             </template>
           </span>
