@@ -39,3 +39,16 @@ export const addressWithName = (address: string, name?: string | null): string =
   if (last < 0) return `${addr} ${nm}`.trim();
   return [...parts.slice(0, last + 1), nm, ...parts.slice(last + 1)].join(' ');
 };
+
+/** 보여 줄 주소를 세 토막으로 가른다 — 손으로 적어 둔 건물명만 따로 칠하려고.
+ *  이름을 안 적었거나 주소에서 못 찾으면 before 에 주소를 통째로 담아 돌려준다. */
+export const addressNameParts = (
+  address: string,
+  name?: string | null,
+): { before: string; name: string; after: string } => {
+  const nm = String(name ?? '').trim();
+  const full = addressWithName(address, nm);
+  const at = nm ? full.indexOf(nm) : -1;
+  if (at < 0) return { before: full, name: '', after: '' };
+  return { before: full.slice(0, at), name: nm, after: full.slice(at + nm.length) };
+};

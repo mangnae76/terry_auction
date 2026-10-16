@@ -48,7 +48,7 @@ import { cached, cachedEntry, cacheKey, readCache, writeCache, CACHE_TTL } from 
 import { VWORLD_KEY_EXPIRES } from '../services/vworldApi';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
-import { addressWithName, hasBuildingName, isUnitToken } from '../utils/addressName';
+import { addressNameParts, hasBuildingName, isUnitToken } from '../utils/addressName';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePhoto, isPhotoId, loadSitePhoto, saveSitePhoto } from '../services/sitePhotoRepository';
 import { fetchNearbyEnvironment, type NearbyEnvironment, type NearbyPlace } from '../services/kakaoNearby';
@@ -238,9 +238,18 @@ const addrHasBuildingName = computed(() => hasBuildingName(jibunAddress.value));
 /** 상단 카드 주소 — '3층302호' 처럼 층과 호가 붙어 오면 층은 뗀다.
  *  층은 바로 아래 정보요약에 따로 있고, 여기서는 호수 끝이 잘리는 쪽이 더 아깝다. */
 const dropFloorInUnit = (addr: string) => addr.replace(/(^|\s)(지하\s*)?\d+층\s*(\d+호)/g, '$1$3');
-const headAddress = computed(() => dropFloorInUnit(
-  addressWithName(jibunAddress.value, auction.value?.basicSummary?.['sum.buildingName']),
-));
+/** 상단 주소를 세 토막으로 — 손으로 적어 둔 건물명만 파랗게 칠하려고 */
+const headAddressParts = computed(() => {
+  const parts = addressNameParts(
+    jibunAddress.value,
+    auction.value?.basicSummary?.['sum.buildingName'],
+  );
+  return {
+    before: dropFloorInUnit(parts.before),
+    name: parts.name,
+    after: dropFloorInUnit(parts.after),
+  };
+});
 // 건물명·동호수를 떼고 번지까지만 남긴 주소 (동일지번 검색 안내문구용)
 const lotOnlyAddress = computed(() => {
   const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
@@ -5370,7 +5379,9 @@ const goBack = () => router.back();
             <path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
           </svg>주소
         </button>
-        <p class="adp-prop-addr">{{ headAddress }}</p>
+        <p class="adp-prop-addr"
+        >{{ headAddressParts.before
+        }}<b v-if="headAddressParts.name" class="adp-addr-name">{{ headAddressParts.name }}</b>{{ headAddressParts.after }}</p>
         <button
           type="button"
           class="adp-fold-all"
@@ -5448,7 +5459,10 @@ const goBack = () => router.back();
               <dt>건물명</dt>
               <dd>
                 <input v-if="editingSummary" class="adp-sum-input wide" :value="sumVal('sum.buildingName')" placeholder="빌라명 입력" @input="setSumVal('sum.buildingName', ($event.target as HTMLInputElement).value)" />
-                <template v-else>{{ sumVal('sum.buildingName') || '-' }}</template>
+                <template v-else>
+                  <b v-if="sumVal('sum.buildingName')" class="adp-addr-name">{{ sumVal('sum.buildingName') }}</b>
+                  <template v-else>-</template>
+                </template>
               </dd>
             </div>
             <div class="adp-base-row">
@@ -8688,10 +8702,18 @@ const goBack = () => router.back();
 }
 .adp-prop-copy:active { background: #eaf1ff; }
 /* 주소는 둘째 줄 — 오른쪽 PDF 버튼과 같은 줄에 놓는다 */
+/* 긴 주소는 자르지 않고 옆으로 밀어 본다 — 잘리면 물건정보까지 내려가야 끝을 읽는다.
+   손가락으로 쓸면 끝까지 따라온다. 줄바꿈은 안 한다 (상단 카드 높이가 흔들리면 안 된다) */
 .adp-prop-addr {
   grid-column: 2; grid-row: 2; min-width: 0; margin: 0; font-size: 13px; font-weight: 400; color: #111827; line-height: 1.25;
-  white-space: nowrap; letter-spacing: -0.4px; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; letter-spacing: -0.4px;
+  overflow-x: auto; overflow-y: hidden; text-overflow: clip;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none; overscroll-behavior-x: contain;
 }
+.adp-prop-addr::-webkit-scrollbar { display: none; }
+
+/* 손으로 적어 둔 건물명 — 주소 안에서도, 정보요약에서도 같은 파랑으로 */
+.adp-addr-name { color: #2563eb; font-weight: 700; }
 
 .adp-pdf-btn {
   display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto;

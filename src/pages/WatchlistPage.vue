@@ -11,7 +11,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
-import { addressWithName } from '../utils/addressName';
+import { addressNameParts } from '../utils/addressName';
 import searchIcon from '../assets/icones/searchs (1).png';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import filesIcon from '../assets/icones/files (1).png';
@@ -22,8 +22,9 @@ const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 /** 카드에 보여 줄 주소 — 주소에 건물명이 없는 물건은 정보요약에 적어 둔 이름을 끼워 준다 */
-const cardAddress = (item: AuctionDetail) =>
-  addressWithName(item.address ?? '', item.basicSummary?.['sum.buildingName']);
+/** 카드 주소를 세 토막으로 — 손으로 적어 둔 건물명만 파랗게 칠한다 (물건상세와 같은 규칙) */
+const cardAddressParts = (item: AuctionDetail) =>
+  addressNameParts(item.address ?? '', item.basicSummary?.['sum.buildingName']);
 
 const listCollapsed = ref(false);
 const statsCollapsed = ref(false); // 기본은 펴 둔다 — 단계별 건수가 먼저 보여야 한다
@@ -613,7 +614,9 @@ watch(
                         {{ item.caseNumber }}
                         <em :class="['wlp-hidden-tag', `tone-${stageTone(item)}`]">{{ stageLabel(item) }}</em>
                       </span>
-                      <span class="addr">{{ cardAddress(item) || '주소 없음' }}</span>
+                      <span class="addr"
+                      >{{ cardAddressParts(item).before || (cardAddressParts(item).name ? '' : '주소 없음')
+                      }}<b v-if="cardAddressParts(item).name" class="wlp-addr-name">{{ cardAddressParts(item).name }}</b>{{ cardAddressParts(item).after }}</span>
                     </span>
                   </li>
                 </ul>
@@ -662,7 +665,9 @@ watch(
                         {{ item.caseNumber }}
                         <em :class="['wlp-hidden-tag', `tone-${stageTone(item)}`]">{{ stageLabel(item) }}</em>
                       </span>
-                      <span class="addr">{{ cardAddress(item) || '주소 없음' }}</span>
+                      <span class="addr"
+                      >{{ cardAddressParts(item).before || (cardAddressParts(item).name ? '' : '주소 없음')
+                      }}<b v-if="cardAddressParts(item).name" class="wlp-addr-name">{{ cardAddressParts(item).name }}</b>{{ cardAddressParts(item).after }}</span>
                     </span>
                   </li>
                 </ul>
@@ -787,7 +792,9 @@ watch(
         </div>
 
         <h3 v-if="!listCollapsed" class="wlp-address">
-          <span v-if="propTypeMark(item.propertyType)" class="wlp-type-mark">{{ propTypeMark(item.propertyType) }}</span><span :class="{ done: item.status === '임장완료' }">{{ cardAddress(item) }}</span>
+          <span v-if="propTypeMark(item.propertyType)" class="wlp-type-mark">{{ propTypeMark(item.propertyType) }}</span><span :class="{ done: item.status === '임장완료' }"
+        >{{ cardAddressParts(item).before
+        }}<b v-if="cardAddressParts(item).name" class="wlp-addr-name">{{ cardAddressParts(item).name }}</b>{{ cardAddressParts(item).after }}</span>
         </h3>
 
         <div v-if="!listCollapsed" class="wlp-price-row">
@@ -1391,7 +1398,10 @@ watch(
 .wlp-phase-go.on { color: #2b6df3; }
 
 /* 임장경로에서 방문 체크한 물건은 여기서도 주소에 줄을 긋는다 */
+/* 손으로 적어 둔 건물명 — 물건상세 상단 주소와 같은 파랑 */
+.wlp-addr-name { color: #2563eb; font-weight: 800; }
 .wlp-address span.done { text-decoration: line-through; color: #9ca3af; }
+.wlp-address span.done .wlp-addr-name { color: #9ca3af; }
 .wlp-address {
   font-size: 13px;
   font-weight: 800;
