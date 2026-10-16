@@ -1405,7 +1405,7 @@ watch(
 
 /* 임장경로에서 방문 체크한 물건은 여기서도 주소에 줄을 긋는다 */
 /* 손으로 적어 둔 건물명 — 물건상세 상단 주소와 같은 파랑 */
-.wlp-addr-name { color: #2563eb; font-weight: 800; }
+.wlp-addr-name { color: #2b6df3; font-weight: 800; }
 .wlp-address span.done { text-decoration: line-through; color: #9ca3af; }
 .wlp-address span.done .wlp-addr-name { color: #9ca3af; }
 .wlp-address {

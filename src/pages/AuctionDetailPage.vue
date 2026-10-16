@@ -5518,7 +5518,7 @@ const goBack = () => router.back();
                   <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.dong')" placeholder="동" @input="setSumVal('sum.dong', ($event.target as HTMLInputElement).value)" />동 /
                   <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.ho')" placeholder="호" @input="setSumVal('sum.ho', ($event.target as HTMLInputElement).value)" />호
                 </span>
-                <template v-else><template v-if="summaryDongText">{{ summaryDongText }} / </template><span class="adp-sum-hi">{{ summaryHoText }}</span></template>
+                <template v-else><template v-if="summaryDongText"><span class="adp-sum-hi">{{ summaryDongText }}</span> / </template><span class="adp-sum-hi">{{ summaryHoText }}</span></template>
               </dd>
             </div>
             <div class="adp-base-row">
@@ -8153,7 +8153,14 @@ const goBack = () => router.back();
                 </thead>
                 <tbody>
                   <tr v-for="l in concLines(t)" :key="l.key">
-                    <th v-if="t.vertical" :class="['adp-conc-side', l.tone, { off: concMeanOff(l.key), mid: l.key === 'mean' }]">
+                    <th
+                      v-if="t.vertical"
+                      :class="['adp-conc-side', l.tone, {
+                        off: concMeanOff(l.key),
+                        mid: l.key === 'mean' || t.note,
+                        big: l.key === 'mean' || l.key === 'urgent',
+                      }]"
+                    >
                       <label v-if="CONC_MEAN_SRC.includes(l.key)" class="adp-conc-pick inline">
                         <input type="checkbox" :checked="!concMeanOff(l.key)" @change="toggleConcMean(l.key)" />
                       </label>{{ concLineLabel(l.label) }}
@@ -8161,7 +8168,7 @@ const goBack = () => router.back();
                     <td
                       v-for="cell in concCells(t, l)"
                       :key="`${cell.col.key}-${cell.row.key}`"
-                      :class="['num', { mean: cell.col.key === 'mean', off: concMeanOff(cell.col.key) }]"
+                      :class="['num', { mean: cell.col.key === 'mean', off: concMeanOff(cell.col.key), area: cell.row.key === 'area' }]"
                     >
                       <!-- 면적 — ㎡ 와 평을 같이 적는다. 한쪽만 적어도 나머지가 따라온다 -->
                       <template v-if="cell.row.key === 'area'">
@@ -8770,7 +8777,7 @@ const goBack = () => router.back();
 .adp-prop-addr::-webkit-scrollbar { display: none; }
 
 /* 손으로 적어 둔 건물명 — 주소 안에서도, 정보요약에서도 같은 파랑으로 */
-.adp-addr-name { color: #2563eb; font-weight: 700; }
+.adp-addr-name { color: #2b6df3; font-weight: 700; }
 
 .adp-pdf-btn {
   display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto;
@@ -9716,10 +9723,15 @@ const goBack = () => router.back();
 .adp-mkt-table.adp-conc-table.conc-vert th.adp-conc-corner {
   font-size: 13.5px; font-weight: 700; color: #374151;
 }
-/* '구분'과 '평균'은 칸 한가운데 — 이름이 아니라 표의 테두리 글이다 */
+/* '구분'·'평균', 그리고 급매가 결론의 줄 이름은 칸 한가운데 —
+   짧아서 왼쪽에 붙여 두면 넓은 칸 안에서 떠 보인다 */
 .adp-conc-table.conc-vert th.adp-conc-corner,
 .adp-conc-table.conc-vert th.adp-conc-side.mid { text-align: center; }
-.adp-mkt-table.adp-conc-table.conc-vert th.adp-conc-side.mid { font-size: 13.5px; }
+/* 두 표의 결론 줄('평균'·'급매가')은 같은 크기로 — 같은 무게의 자리다 */
+.adp-mkt-table.adp-conc-table.conc-vert th.adp-conc-side.big { font-size: 13.5px; }
+/* 면적은 두 줄(범위)로 설 때가 있어 가운데가 보기 좋다.
+   눕히기 전의 '둘째·셋째 줄은 오른쪽' 규칙이 아직 살아 있어 한 겹 더 눌러 둔다 */
+.adp-mkt-table.adp-conc-table.conc-vert tbody tr td.num.area { text-align: center; }
 /* 급매가 줄은 이름까지 빨갛게 — 표에서 결론을 적는 자리다 */
 .adp-mkt-table.adp-conc-table.conc-vert th.adp-conc-side.red { color: #e0574a; font-weight: 800; }
 .adp-mkt-table.adp-conc-table.conc-vert tbody td .adp-conc-v { font-size: 12px; }
