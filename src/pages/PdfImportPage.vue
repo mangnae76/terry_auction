@@ -186,14 +186,10 @@ const changedCount = computed(() => importRows.value.filter((r) => r.rowStatus =
 const errorCount = computed(() => importRows.value.filter((r) => r.rowStatus === 'error').length);
 const totalRegistered = computed(() => store.auctions.length);
 
-const readyRows = computed(() => importRows.value.filter((row) => row.status === 'ready' && row.parsed));
-
-const upsertRows = (rows: ImportPreviewRow[]) => {
-  const merged = new Map(importRows.value.map((row) => [row.key, row]));
-  rows.forEach((row) => {
-    merged.set(row.key, row);
-  });
-  importRows.value = [...merged.values()];
+/** 목록은 이번에 읽은 것으로 갈아치운다.
+ *  예전 줄을 끼워 두면 파일 한 개를 올려도 지난 스캔까지 통째로 다시 등록됐다. */
+const replaceRows = (rows: ImportPreviewRow[]) => {
+  importRows.value = rows;
 };
 
 const openFilePicker = () => {
@@ -202,9 +198,38 @@ const openFilePicker = () => {
 
 /** 이번 스캔에서 보관함에 있어 목록에 안 올라간 건수 — 배너에 알려 준다 */
 const skippedHidden = ref(0);
-const autoSaveReady = async () => {
+
+/** 드라이브에서 사라진 물건 — 스캔한 폴더에서 온 것 가운데 이번에 안 보인 것.
+ *  자동으로 지우지 않는다. 사람이 눌러야 휴지통으로 간다. */
+const missingAuctions = ref<Array<{ id: string; label: string }>>([]);
+const findMissingFromDrive = (targets: string[], rows: ImportPreviewRow[]) => {
+  const scannedFolders = new Set(targets.map((t) => folderIdOf(t)));
+  const liveFileIds = new Set(
+    rows.map((r) => r.parsed?.sourceFileId).filter((v): v is string => !!v),
+  );
+  missingAuctions.value = store.auctions
+    .filter((a) => {
+      const meta = a.importMeta;
+      if (!meta || meta.source !== 'pdf' || !meta.pdfFileId) return false;
+      // 이번에 훑은 폴더에서 온 물건만 본다 — 다른 폴더 것은 건드리지 않는다
+      const folder = meta.pdfFolderUrl ? folderIdOf(meta.pdfFolderUrl) : '';
+      if (!folder || !scannedFolders.has(folder)) return false;
+      return !liveFileIds.has(meta.pdfFileId);
+    })
+    .map((a) => ({ id: a.id, label: `${a.caseNumber || ''} ${a.address || ''}`.trim() }));
+};
+
+const sendMissingToTrash = async () => {
+  const ids = missingAuctions.value.map((m) => m.id);
+  if (ids.length === 0) return;
+  await store.hideAuctions(ids);
+  showToast(`${ids.length}건을 휴지통으로 보냈습니다.`);
+  missingAuctions.value = [];
+};
+const autoSaveReady = async (rows: ImportPreviewRow[]) => {
   skippedHidden.value = 0;
-  const parsedRows = readyRows.value
+  const parsedRows = rows
+    .filter((row) => row.status === 'ready')
     .map((row) => row.parsed)
     .filter((row): row is ParsedPdfAuction => Boolean(row));
   if (parsedRows.length === 0) return;
@@ -248,8 +273,8 @@ const parseFiles = async (files: File[]) => {
         });
       }
     }
-    upsertRows(rows);
-    await autoSaveReady();
+    replaceRows(rows);
+    await autoSaveReady(rows);
     lastUpdate.value = formatTime();
     banner.value = `${formatTime()} PDF ${rows.filter((r) => r.status === 'ready').length}건 등록 완료`
       + (skippedHidden.value > 0 ? ` (보관함 ${skippedHidden.value}건 제외)` : '');
@@ -309,8 +334,9 @@ const scanDriveFolder = async () => {
       }
     }
 
-    upsertRows(rows);
-    await autoSaveReady();
+    replaceRows(rows);
+    await autoSaveReady(rows);
+    findMissingFromDrive(targets, rows);
     lastUpdate.value = formatTime();
     scannedFolderIds.value = [
       ...new Set([...scannedFolderIds.value, ...targets.map((t) => folderIdOf(t))]),
@@ -555,6 +581,17 @@ const fileTitle = (row: ImportPreviewRow) => {
           </button>
         </div>
 
+        <div v-if="missingAuctions.length > 0" class="pip-missing">
+          <div class="pip-missing-head">
+            <strong>드라이브에 없는 물건 {{ missingAuctions.length }}건</strong>
+            <button type="button" @click="sendMissingToTrash">휴지통으로</button>
+          </div>
+          <p>스캔한 폴더에서 PDF가 사라졌습니다. 선정물건은 그대로 남아 있습니다 — 치우려면 누르세요.</p>
+          <ul>
+            <li v-for="m in missingAuctions" :key="m.id">{{ m.label }}</li>
+          </ul>
+        </div>
+
         <div v-if="!resultsCollapsed">
           <div v-if="importRows.length === 0" class="pip-empty">
             <div class="pip-empty-icon">📂</div>
@@ -715,6 +752,22 @@ const fileTitle = (row: ImportPreviewRow) => {
 /* 다른 화면 카드 제목 아이콘과 같은 muted blue */
 .pip-section-ico { flex: 0 0 auto; color: #2a5fbf; }
 .pip-info-ico { width: 14px; height: 14px; object-fit: contain; opacity: 0.55; }
+
+/* 드라이브에서 사라진 물건 알림 */
+.pip-missing {
+  margin: 0 14px 10px; padding: 11px 13px;
+  background: #fff6e8; border: 1px solid #f3dcb5; border-radius: 12px;
+}
+.pip-missing-head { display: flex; align-items: center; gap: 8px; }
+.pip-missing-head strong { font-size: 13px; font-weight: 800; color: #8a5a00; }
+.pip-missing-head button {
+  margin-left: auto; border: 1px solid #e3b472; border-radius: 8px; background: #fff;
+  padding: 5px 11px; font-family: inherit; font-size: 11.5px; font-weight: 700;
+  color: #8a5a00; cursor: pointer;
+}
+.pip-missing p { margin: 6px 0 0; font-size: 11.5px; line-height: 1.5; color: #8a6400; }
+.pip-missing ul { margin: 6px 0 0; padding-left: 16px; }
+.pip-missing li { font-size: 11.5px; color: #6b5a3a; line-height: 1.6; }
 
 /* 폴더 등록 버튼 */
 .pip-fav-open {
