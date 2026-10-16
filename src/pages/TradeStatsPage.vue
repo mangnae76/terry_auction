@@ -474,8 +474,8 @@ onMounted(() => {
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg>
         </button>
         <div class="adm-title">
-          <h1>지역별 거래량 랭킹 <em>시군구 · 읍면동</em></h1>
-          <p>지역별 거래량 통계</p>
+          <h1>지역별 거래량 랭킹</h1>
+          <p>지도와 함께 지역별 거래량 랭킹을 본다.</p>
         </div>
       </div>
     </header>
