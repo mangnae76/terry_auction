@@ -1184,6 +1184,10 @@ watch(
 }
 .wlp-hidden-tag.tone-bidding { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; font-weight: 800; }
 .wlp-hidden-texts .addr { font-size: 11.5px; font-weight: 400; color: #6b7280; line-height: 1.3; }
+/* 휴지통·보관함 목록에서는 건물명·호수를 따로 칠하지 않는다 — 한 줄이 짧아
+   가운데만 파랗게 도드라지면 되레 읽기 어렵다 (카드와 물건상세에서는 그대로 파랗다) */
+.wlp-hidden-item .addr .wlp-addr-name,
+.wlp-hidden-texts .addr .wlp-addr-name { color: inherit; font-weight: inherit; }
 .wlp-hidden-head {
   display: flex; gap: 6px; margin: 0; padding: 8px 12px; flex: 0 0 auto;
   border-bottom: 1px solid #eef1f6; background: #fafafa;
