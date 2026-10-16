@@ -497,7 +497,7 @@ onMounted(() => {
       </section>
     </div>
 
-    <AppMobileBottomNav active="culture" />
+    <AppMobileBottomNav active="more" />
   </section>
 </template>
 

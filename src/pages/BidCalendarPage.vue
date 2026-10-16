@@ -206,7 +206,7 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
       </div>
     </Teleport>
 
-    <AppMobileBottomNav active="more" />
+    <AppMobileBottomNav active="calendar" />
   </section>
 </template>
 

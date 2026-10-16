@@ -3,10 +3,10 @@ import { useRouter } from 'vue-router';
 import starIcon from '../assets/icones/memu/star_Main.png';
 import pinIcon from '../assets/icones/memu/map-pinned_Main.png';
 import banknoteIcon from '../assets/icones/memu/banknote_main.png';
-import buildingIcon from '../assets/icones/memu/building_Main.png';
+import calendarIcon from '../assets/icones/calendar-days (1).png';
 
 defineProps<{
-  active: 'watchlist' | 'field-trip' | 'finance' | 'culture' | 'more';
+  active: 'watchlist' | 'field-trip' | 'finance' | 'calendar' | 'more';
 }>();
 
 const router = useRouter();
@@ -26,9 +26,10 @@ const router = useRouter();
       <span class="amb-icon amb-mask" :style="{ '--i': `url(${banknoteIcon})` }" />
       <span>자금관리</span>
     </button>
-    <button type="button" :class="['amb-item', { active: active === 'culture' }]" @click="router.push('/trade-stats')">
-      <span class="amb-icon amb-mask" :style="{ '--i': `url(${buildingIcon})` }" />
-      <span>시장정보</span>
+    <!-- 시장정보는 분석 도구로 옮겼다 — 그 자리에는 입찰 캘린더를 둔다 -->
+    <button type="button" :class="['amb-item', { active: active === 'calendar' }]" @click="router.push('/bid-calendar')">
+      <span class="amb-icon amb-mask" :style="{ '--i': `url(${calendarIcon})` }" />
+      <span>캘린더</span>
     </button>
     <button type="button" :class="['amb-item', { active: active === 'more' }]" @click="router.push('/more')">
       <svg class="amb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
