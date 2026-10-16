@@ -17,22 +17,29 @@ type Tool = {
   path: string;
   icon: 'trade' | 'filter' | 'near' | 'lot' | 'bid' | 'money';
 };
-type Group = { title: string; hint: string; tone: 'blue' | 'violet' | 'green'; tools: Tool[] };
+type Group = { title: string; hint: string; tone: 'blue' | 'violet' | 'green' | 'amber'; tools: Tool[] };
 
 const GROUPS: Group[] = [
+  {
+    // 앱 하단 메뉴에 있던 '시장정보' — 제 묶음으로 떼어 맨 앞에 둔다
+    title: '부동산 시장정보',
+    hint: '시장에 지금 무슨 일이 벌어지고 있나',
+    tone: 'amber',
+    tools: [
+      {
+        title: '시장정보',
+        sub: '지역 거래량',
+        desc: '시도·시군구를 골라 거래량 통계를 지도와 함께 본다.',
+        path: '/trade-stats',
+        icon: 'trade',
+      },
+    ],
+  },
   {
     title: '실거래가 분석',
     hint: '실거래 통계로 수요공급을 분석한다',
     tone: 'blue',
     tools: [
-      {
-        // 앱 하단 메뉴에 있던 '시장정보' — 성격이 같은 자리라 이쪽으로 옮겨 왔다
-        title: '부동산 시장정보',
-        sub: '지역 거래량',
-        desc: '시도·시군구를 골라 거래량 통계를 지도와 함께 본다.',
-        path: '/trade-stats',
-        icon: 'filter',
-      },
       {
         title: '실거래 분석',
         sub: '지역 단위',
@@ -242,7 +249,8 @@ const openTool = (tool: Tool) => {
 .adm-head p { margin: 0; font-size: 13.5px; color: #6b7280; }
 
 /* 세 묶음을 가로로 — 좁아지면 둘, 하나로 접힌다 */
-.adm-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.adm-groups { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 1480px) { .adm-groups { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 1180px) { .adm-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
   .adm-groups { grid-template-columns: minmax(0, 1fr); }
@@ -260,6 +268,7 @@ const openTool = (tool: Tool) => {
 }
 .adm-group.violet .adm-group-head h2::before { background: #7c5cf0; }
 .adm-group.green .adm-group-head h2::before { background: #0f9d7a; }
+.adm-group.amber .adm-group-head h2::before { background: #d97706; }
 .adm-group-head p { margin: 0; padding-left: 10px; font-size: 12px; color: #9ca3af; font-weight: 600; }
 
 .adm-cards { display: flex; flex-direction: column; gap: 12px; }
@@ -282,6 +291,7 @@ const openTool = (tool: Tool) => {
 }
 .adm-group.violet .adm-card-ico { background: #f2eeff; color: #7c5cf0; }
 .adm-group.green .adm-card-ico { background: #e8f7f1; color: #0f9d7a; }
+.adm-group.amber .adm-card-ico { background: #fdf0dd; color: #d97706; }
 .adm-card-ico svg { width: 19px; height: 19px; }
 .adm-card-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
 .adm-card-txt strong {
