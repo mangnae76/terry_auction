@@ -238,16 +238,21 @@ const addrHasBuildingName = computed(() => hasBuildingName(jibunAddress.value));
 /** 상단 카드 주소 — '3층302호' 처럼 층과 호가 붙어 오면 층은 뗀다.
  *  층은 바로 아래 정보요약에 따로 있고, 여기서는 호수 끝이 잘리는 쪽이 더 아깝다. */
 const dropFloorInUnit = (addr: string) => addr.replace(/(^|\s)(지하\s*)?\d+층\s*(\d+호)/g, '$1$3');
-/** 상단 주소를 세 토막으로 — 손으로 적어 둔 건물명만 파랗게 칠하려고 */
+/** 상단 주소를 토막내 색을 입힌다 — 건물명과 호수가 파랗다.
+ *  둘이 '어느 집인지'를 가리키는 토막이라, 지번과 섞여 있으면 눈이 한 번 더 간다. */
 const headAddressParts = computed(() => {
   const parts = addressNameParts(
     jibunAddress.value,
     auction.value?.basicSummary?.['sum.buildingName'],
   );
+  const tail = dropFloorInUnit(parts.after);
+  // 끝에 붙은 호수('403호' · '제비0101호' · 'B01호')만 떼어 따로 칠한다
+  const hit = tail.match(/(\S*\d+\s*호)\s*$/);
   return {
     before: dropFloorInUnit(parts.before),
     name: parts.name,
-    after: dropFloorInUnit(parts.after),
+    mid: hit ? tail.slice(0, tail.length - hit[0].length) : tail,
+    unit: hit ? hit[0].trim() : '',
   };
 });
 // 건물명·동호수를 떼고 번지까지만 남긴 주소 (동일지번 검색 안내문구용)
@@ -3927,8 +3932,10 @@ const mktSaleAvgValue = computed(() => (Number.isFinite(publicTradeAvg.value) ? 
 const mktSaleAvgText = computed(() => (mktSaleAvgValue.value > 0 ? mktSaleAvgValue.value.toLocaleString('ko-KR') : '-'));
 /** 사진 블록 접기 — 사진이 있으면 접힌 상태가 기본. 손으로 펴면 그 선택을 기억한다 */
 const photoFold = ref<Record<string, boolean>>({});
-/** 접혀 있나? — 손으로 고친 적이 없으면 PHOTO_AREAS 의 공통 규칙(사진 있으면 접힘)을 따른다 */
-const photoFolded = (key: string) => photoFold.value[key] ?? photoAreaCount(key) > 0;
+/** 접혀 있나? — 손으로 고친 적이 없으면 PHOTO_AREAS 의 공통 규칙을 따른다.
+ *  fold 'always' 인 칸은 사진이 없어도 접은 채로 연다 */
+const photoFolded = (key: string) =>
+  photoFold.value[key] ?? (photoAlwaysFold(key) || photoAreaCount(key) > 0);
 const togglePhotoFold = (key: string) => {
   photoFold.value[key] = !photoFolded(key);
 };
@@ -4501,18 +4508,29 @@ const rightsDocList = computed<string[]>(() => auction.value?.rightsDocUrls ?? [
 /** 사진이 들어가는 칸을 전부 여기 모아 둔다 — 새 칸이 생기면 이 표에 한 줄만 더하면 된다.
  *  공통 규칙: 사진이 한 장이라도 붙어 있으면 접은 채로 열고(아래 항목이 밀려 내려가지 않게),
  *  없으면 펴 둔다(바로 붙일 수 있게). 손으로 접거나 편 뒤에는 그 선택을 지킨다.
+ *  fold: 'always' 는 그 예외 — 사진이 없어도 늘 접은 채로 연다 (칸이 길어 화면을 많이 먹는 자리).
  *  scope 'card' 는 카드 통째(전체 접기/펼치기와 같이 움직임), 'block' 은 카드 안의 작은 칸. */
-const PHOTO_AREAS: Array<{ key: string; scope: 'card' | 'block'; count: () => number }> = [
+const PHOTO_AREAS: Array<{
+  key: string;
+  scope: 'card' | 'block';
+  count: () => number;
+  fold?: 'auto' | 'always';
+}> = [
   { key: 'photos', scope: 'card', count: () => propertyPhotos.value.length },              // 손품조사 · 본건사진
   { key: 'rightsPhotos', scope: 'card', count: () => rightsDocList.value.length },         // 권리분석 · 사진/서류
   { key: 'site', scope: 'block', count: () => auction.value?.sitePhotos?.length ?? 0 },    // 손품+현장 · 현장사진
-  { key: 'sameLot', scope: 'block', count: () => extraList('sameLot').length },            // 급매가 · 동일지번 매각물건
+  // 급매가 · 동일지번 매각물건 — 사진 모음이라 늘 접어 둔다
+  { key: 'sameLot', scope: 'block', count: () => extraList('sameLot').length, fold: 'always' },
   { key: 'tradePhoto', scope: 'block', count: () => tradePhotoList.value.length },         // 급매가 · 평단가 비교 사진
-  { key: 'listPhoto', scope: 'block', count: () => listPhotoList.value.length },           // 급매가 · 네이버부동산 매물 사진
-  { key: 'areaSurvey', scope: 'block', count: () => extraList('areaSurvey').length },       // 매매수요 · 입지조사 사진
+  // 급매가 · 네이버부동산 매물 사진 — 늘 접어 둔다
+  { key: 'listPhoto', scope: 'block', count: () => listPhotoList.value.length, fold: 'always' },
+  // 입지/개별성 · 입지조사 사진 — 칸이 길어 늘 접어 둔다 (사진이 없어도)
+  { key: 'areaSurvey', scope: 'block', count: () => extraList('areaSurvey').length, fold: 'always' },
 ];
 /** 그 칸에 붙어 있는 사진 장수 — 표에 없는 키는 0 */
 const photoAreaCount = (key: string) => PHOTO_AREAS.find((a) => a.key === key)?.count() ?? 0;
+/** 사진이 없어도 접어 두는 칸인가 */
+const photoAlwaysFold = (key: string) => PHOTO_AREAS.find((a) => a.key === key)?.fold === 'always';
 const PHOTO_SECTIONS = PHOTO_AREAS.filter((a) => a.scope === 'card');
 const photoCollapseSetFor = ref<string | null>(null);
 watch(
@@ -5381,7 +5399,9 @@ const goBack = () => router.back();
         </button>
         <p class="adp-prop-addr"
         >{{ headAddressParts.before
-        }}<b v-if="headAddressParts.name" class="adp-addr-name">{{ headAddressParts.name }}</b>{{ headAddressParts.after }}</p>
+        }}<b v-if="headAddressParts.name" class="adp-addr-name">{{ headAddressParts.name }}</b
+        >{{ headAddressParts.mid
+        }}<b v-if="headAddressParts.unit" class="adp-addr-name">{{ headAddressParts.unit }}</b></p>
         <button
           type="button"
           class="adp-fold-all"
