@@ -983,13 +983,38 @@ export const useAuctionStore = defineStore('auction', () => {
 
   const deleteAuction = async (id: string) => hideAuctions([id]);
 
-  /** 되살릴 수 없게 문서를 지운다 */
-  const purgeAuctions = async (ids: string[]) => {
-    if (ids.length === 0) return;
-    const target = new Set(ids);
-    allAuctions.value = allAuctions.value.filter((item) => !target.has(item.id));
-    if (!isFirestoreAvailable()) return;
-    await Promise.all(ids.map((id) => deleteAuctionDoc(id)));
+  /**
+   * 되살릴 수 없게 문서를 지운다.
+   * 지우기에 실패한 것은 화면에서도 빼지 않는다 — 전에는 먼저 빼고 지웠더니,
+   * 규칙에 막혀 문서가 남아도 사라진 듯 보이다가 다음에 열면 보관함에 그대로
+   * 돌아와 있었다. 못 지운 건수를 돌려줘 화면이 알리게 한다.
+   */
+  const purgeAuctions = async (ids: string[]): Promise<{ removed: string[]; failed: Array<{ id: string; reason: string }> }> => {
+    if (ids.length === 0) return { removed: [], failed: [] };
+    if (!isFirestoreAvailable()) {
+      // 저장소가 없으면 이 기기에서만 치운다 (예전과 같다)
+      const target = new Set(ids);
+      allAuctions.value = allAuctions.value.filter((item) => !target.has(item.id));
+      return { removed: [...ids], failed: [] };
+    }
+    const removed: string[] = [];
+    const failed: Array<{ id: string; reason: string }> = [];
+    await Promise.all(ids.map(async (id) => {
+      try {
+        await deleteAuctionDoc(id);
+        removed.push(id);
+      } catch (err) {
+        const reason = (err as { code?: string })?.code
+          ?? (err instanceof Error ? err.message : String(err));
+        console.warn('[auctions] 완전삭제 실패:', id, err);
+        failed.push({ id, reason });
+      }
+    }));
+    if (removed.length > 0) {
+      const gone = new Set(removed);
+      allAuctions.value = allAuctions.value.filter((item) => !gone.has(item.id));
+    }
+    return { removed, failed };
   };
 
   /** 숨긴 물건을 전부 다시 보이게 한다 */
