@@ -515,6 +515,8 @@ const loadStats = async () => {
         const existing = merged.get(displayRegion);
         if (existing) {
           existing.count += result.totalCount;
+          existing.priceSum += result.rows.reduce((acc, r) => acc + r.priceSum, 0);
+          existing.priceCount += result.rows.reduce((acc, r) => acc + r.priceCount, 0);
           result.sources.forEach((s) => {
             if (!existing.sources.includes(s)) existing.sources.push(s);
           });
@@ -523,6 +525,8 @@ const loadStats = async () => {
             region: displayRegion,
             count: result.totalCount,
             sources: [...result.sources],
+            priceSum: result.rows.reduce((acc, r) => acc + r.priceSum, 0),
+            priceCount: result.rows.reduce((acc, r) => acc + r.priceCount, 0),
           });
         }
         return;
@@ -540,11 +544,19 @@ const loadStats = async () => {
         const existing = merged.get(displayRegion);
         if (existing) {
           existing.count += row.count;
+          existing.priceSum += row.priceSum;
+          existing.priceCount += row.priceCount;
           row.sources.forEach((s) => {
             if (!existing.sources.includes(s)) existing.sources.push(s);
           });
         } else {
-          merged.set(displayRegion, { region: displayRegion, count: row.count, sources: [...row.sources] });
+          merged.set(displayRegion, {
+            region: displayRegion,
+            count: row.count,
+            sources: [...row.sources],
+            priceSum: row.priceSum,
+            priceCount: row.priceCount,
+          });
         }
       });
     });

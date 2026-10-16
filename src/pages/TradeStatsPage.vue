@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import L from 'leaflet';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
-import chevronDownIcon from '../assets/icones/chevron-down.png';
+import { useRouter } from 'vue-router';
 import {
   fetchTradeVolumeStats,
   type PropertyType,
@@ -11,11 +10,12 @@ import {
 import { geocodeAddress } from '../services/routeOptimizer';
 import { REGION_GROUPS as regionGroups, type DistrictOption } from '../services/regionCodes';
 
-const NATIONWIDE_SIDO = '전국';
 
 type RankedRow = TradeVolumeStat & {
   rank: number;
   share: number;
+  /** 그 동네 매매 평균가 (원) — 금액이 적혀 온 거래만으로 센다 */
+  avgPrice: number;
   lat?: number;
   lng?: number;
 };
@@ -24,15 +24,24 @@ const propertyOptions: Array<{ value: PropertyType; label: string }> = [
   { value: 'all', label: '전체' },
   { value: 'apt', label: '아파트' },
   { value: 'villa', label: '연립다세대' },
-  { value: 'officetel', label: '오피스텔' },
+  { value: 'officetel', label: 'OP' },
 ];
 
 const periodOptions = [1, 3, 6, 12];
-const initialSido = regionGroups.find((g) => g.sido === '서울특별시') ?? regionGroups[0];
-const selectedSido = ref(initialSido.sido);
-const selectedDistrict = ref(initialSido.districts[0].label);
-const selectedPropertyType = ref<PropertyType>('apt');
-const selectedPeriod = ref(1);
+/** 억·만 단위로 짧게 — '3억 2,500만' */
+const shortWon = (won: number): string => {
+  if (!Number.isFinite(won) || won <= 0) return '-';
+  const eok = Math.floor(won / 100000000);
+  const man = Math.round((won % 100000000) / 10000);
+  if (eok > 0) return man > 0 ? `${eok}억 ${man.toLocaleString('ko-KR')}만` : `${eok}억`;
+  return `${man.toLocaleString('ko-KR')}만`;
+};
+const router = useRouter();
+const selectedSido = ref('');
+const selectedDistrict = ref('');
+const selectedPropertyType = ref<PropertyType>('all');
+/** 기간은 고르고 들어가게 둔다 — 빈 값이면 아직 안 골랐다는 뜻이다 */
+const selectedPeriod = ref(0);
 /** 랭킹은 늘 다섯 줄 — 고르는 메뉴를 두지 않는다.
  *  더 아래가 궁금하면 읍·면·동을 골라 그 동이 몇 등인지 바로 본다. */
 const TOP_N = 5;
@@ -47,7 +56,12 @@ const lastLoadedAt = ref('');
 const selectedRegion = ref<string | null>(null);
 /** 읍·면·동 — 시군구를 고른 뒤 받은 결과에서 고른다 (실거래 분석 화면과 같은 차례) */
 const selectedDong = ref('');
-const dongOptions = computed(() => (isAllDistricts.value ? [] : rows.value.map((r) => r.region)));
+/** 어느 지역으로 받아 온 결과인지 — 지역을 바꾸면 옛 동 목록을 내린다 */
+const loadedScope = ref('');
+const currentScope = computed(() => `${selectedSido.value}|${selectedDistrict.value}`);
+const dongOptions = computed(() => (
+  loadedScope.value && loadedScope.value === currentScope.value ? rows.value.map((r) => r.region) : []
+));
 const geocodedCoords = ref<Map<string, { lat: number; lng: number }>>(new Map());
 
 let leafletMap: L.Map | null = null;
@@ -56,13 +70,13 @@ const markerByRegion = new Map<string, L.Marker>();
 
 const ALL_DISTRICTS: DistrictOption = { label: '전체', lawdCode: 'ALL' };
 
-const isNationwide = computed(() => selectedSido.value === NATIONWIDE_SIDO);
-const sidoOptions = computed(() => [NATIONWIDE_SIDO, ...regionGroups.map((g) => g.sido)]);
+// 전국 훑기는 쓰지 않는다 — 시·도를 고르는 것으로 시작한다
+const sidoOptions = computed(() => regionGroups.map((g) => g.sido));
 const baseDistricts = computed(
   () => regionGroups.find((item) => item.sido === selectedSido.value)?.districts ?? [],
 );
 const districtOptions = computed<DistrictOption[]>(() =>
-  isNationwide.value ? [ALL_DISTRICTS] : [ALL_DISTRICTS, ...baseDistricts.value],
+  (selectedSido.value ? [ALL_DISTRICTS, ...baseDistricts.value] : []),
 );
 const isAllDistricts = computed(() => selectedDistrict.value === ALL_DISTRICTS.label);
 const selectedDistrictOption = computed(
@@ -83,6 +97,7 @@ const allRankedRows = computed<RankedRow[]>(() => {
       ...row,
       rank: idx + 1,
       share: sum > 0 ? (row.count / sum) * 100 : 0,
+      avgPrice: row.priceCount > 0 ? row.priceSum / row.priceCount : 0,
       lat: coord?.lat,
       lng: coord?.lng,
     };
@@ -123,21 +138,18 @@ watch(rows, () => {
   if (selectedDong.value && !rows.value.some((r) => r.region === selectedDong.value)) selectedDong.value = '';
 });
 
-/** 등수 색 — 색상환을 1등 빨강(0°)에서 시작해 한 칸씩 돌린다.
- *  빨강 → 주황 → 노랑 → 초록 → 청록 → 파랑 → 남색 → 보라 → 자주 로 이어지고,
- *  열 등을 지나면 다시 빨강으로 돌아온다 (36° 씩 열 칸). */
-const HUE_STEP = 36;
-const hueOf = (rank: number) => (((rank - 1) * HUE_STEP) % 360 + 360) % 360;
-/** 노랑 언저리(40°~80°)는 흰 글씨가 안 읽혀 한 단 어둡게 깐다 */
-const isPaleHue = (h: number) => h > 40 && h < 80;
+/** 등수 색 — 다섯 줄만 세우므로 색상환을 큼직하게 건너뛴다.
+ *  빨강 → 노랑 → 초록 → 파랑 → 보라. 이웃한 등수가 한눈에 갈린다. */
+const RANK_HUES = [0, 45, 135, 215, 285];
+const hueOf = (rank: number) => RANK_HUES[(rank - 1) % RANK_HUES.length];
+/** 노랑 언저리는 어둡게 깔면 흙빛이 된다 — 색은 그대로 두고 글씨를 검게 쓴다 */
+const isPaleHue = (h: number) => h >= 35 && h <= 80;
 const paletteColors = (rank: number): [string, string] => {
   const h = hueOf(rank);
-  const light = isPaleHue(h) ? 48 : 58; // 띠·동그라미 바탕
-  const deep = isPaleHue(h) ? 34 : 44;  // 테두리·진한 쪽
-  return [`hsl(${h.toFixed(1)} 85% ${light}%)`, `hsl(${h.toFixed(1)} 78% ${deep}%)`];
+  return [`hsl(${h} 88% 58%)`, `hsl(${h} 82% ${isPaleHue(h) ? 50 : 45}%)`];
 };
-/** 글씨는 늘 흰색으로 읽힌다 — 밝은 색은 위에서 이미 어둡게 깔았다 */
-const isLightBadge = (_rank: number) => false;
+/** 노랑 바탕에서만 글씨를 검게 — 나머지는 흰 글씨가 읽힌다 */
+const isLightBadge = (rank: number) => isPaleHue(hueOf(rank));
 
 const makeRankIcon = (rank: number) => {
   const [from, to] = paletteColors(rank);
@@ -254,8 +266,12 @@ const runWithConcurrency = async <T, R>(
 };
 
 const loadStats = async () => {
-  if (!isNationwide.value && !selectedDistrict.value) {
-    message.value = '시/군/구를 선택해 주세요.';
+  if (!selectedSido.value || !selectedDistrict.value) {
+    message.value = '시·도와 시·군·구를 고른 뒤 검색해 주세요.';
+    return;
+  }
+  if (!selectedPeriod.value) {
+    message.value = '기간을 골라 주세요.';
     return;
   }
   loading.value = true;
@@ -264,22 +280,21 @@ const loadStats = async () => {
   progress.value = null;
   try {
     const dealYmdList = buildDealYmdList(selectedPeriod.value);
-    const nationwide = isNationwide.value;
 
     type Target = { sido: string; district: DistrictOption };
-    const targets: Target[] = nationwide
-      ? regionGroups.flatMap((g) => g.districts.map((d) => ({ sido: g.sido, district: d })))
-      : (isAllDistricts.value
-          ? baseDistricts.value.map((d) => ({ sido: selectedSido.value, district: d }))
-          : [{ sido: selectedSido.value, district: selectedDistrictOption.value! }]);
+    const targets: Target[] = isAllDistricts.value
+      ? baseDistricts.value.map((d) => ({ sido: selectedSido.value, district: d }))
+      : [{ sido: selectedSido.value, district: selectedDistrictOption.value! }];
 
-    if (nationwide) {
+    // 시군구를 '전체'로 두면 그 시도의 구마다 한 번씩 부른다 — 어디까지 왔는지 알린다
+    const many = targets.length > 1;
+    if (many) {
       progress.value = { done: 0, total: targets.length };
     }
 
     const perDistrict = await runWithConcurrency(
       targets,
-      nationwide ? 4 : 6,
+      many ? 4 : 6,
       async (target) => {
         try {
           const result = await fetchTradeVolumeStats({
@@ -295,7 +310,7 @@ const loadStats = async () => {
         }
       },
       (done, total) => {
-        if (nationwide) progress.value = { done, total };
+        if (many) progress.value = { done, total };
       },
     );
 
@@ -303,7 +318,6 @@ const loadStats = async () => {
     const sourceSet = new Set<string>();
     const warnings: string[] = [];
     let aggregateCount = 0;
-    const sidoShort = (name: string) => name.replace(/(특별자치도|특별자치시|특별시|광역시|도)$/, '');
 
     perDistrict.forEach((entry) => {
       if ('error' in entry && entry.error) {
@@ -321,29 +335,6 @@ const loadStats = async () => {
         warnings.push(`${target.district.label}: ${result.warning}`);
       }
 
-      if (nationwide) {
-        // 시/군/구 level aggregation
-        const displayRegion = `${sidoShort(target.sido)} ${target.district.label}`;
-        regionGeocodeQuery.set(
-          displayRegion,
-          [target.sido, target.district.label].filter(Boolean).join(' '),
-        );
-        const existing = merged.get(displayRegion);
-        if (existing) {
-          existing.count += result.totalCount;
-          result.sources.forEach((s) => {
-            if (!existing.sources.includes(s)) existing.sources.push(s);
-          });
-        } else {
-          merged.set(displayRegion, {
-            region: displayRegion,
-            count: result.totalCount,
-            sources: [...result.sources],
-          });
-        }
-        return;
-      }
-
       // 동 level aggregation (single 시/도)
       result.rows.forEach((row) => {
         const displayRegion = isAllDistricts.value
@@ -356,11 +347,19 @@ const loadStats = async () => {
         const existing = merged.get(displayRegion);
         if (existing) {
           existing.count += row.count;
+          existing.priceSum += row.priceSum;
+          existing.priceCount += row.priceCount;
           row.sources.forEach((s) => {
             if (!existing.sources.includes(s)) existing.sources.push(s);
           });
         } else {
-          merged.set(displayRegion, { region: displayRegion, count: row.count, sources: [...row.sources] });
+          merged.set(displayRegion, {
+            region: displayRegion,
+            count: row.count,
+            sources: [...row.sources],
+            priceSum: row.priceSum,
+            priceCount: row.priceCount,
+          });
         }
       });
     });
@@ -378,7 +377,9 @@ const loadStats = async () => {
     });
     selectedRegion.value = null;
     geocodedCoords.value = new Map();
-    const unit = nationwide ? '시/군/구' : '동(洞)';
+    // 이 결과가 어느 지역 것인지 적어 둔다 — 읍면동 메뉴가 옛 지역 것을 들고 있지 않게
+    loadedScope.value = currentScope.value;
+    const unit = '동(洞)';
     if (rows.value.length === 0) {
       message.value = warnings[0] || '해당 조건의 실거래 건수가 없습니다.';
     } else if (warnings.length > 0) {
@@ -399,38 +400,43 @@ const loadStats = async () => {
   }
 };
 
+// 처음에는 아무것도 부르지 않는다 — 지역과 기간을 고르고 검색을 눌러야 받는다
 onMounted(() => {
-  void ensureMap().then(() => loadStats());
+  void ensureMap();
 });
 </script>
 
 <template>
-  <section class="tsp-shell">
-    <header class="tsp-topbar">
-      <h1 class="tsp-page-title">지역별 거래량 랭킹</h1>
-      <button class="tsp-topbar-btn" type="button" :disabled="loading" @click="loadStats" aria-label="새로고침">
-        <img :src="chevronDownIcon" alt="" />
-      </button>
+  <!-- 틀은 분석 도구의 '실거래 분석'과 같은 것을 쓴다 — 같은 자료를 눈으로 보는 화면이다 -->
+  <section class="adm-shell">
+    <header class="adm-top">
+      <div class="adm-top-in">
+        <button type="button" class="adm-back" aria-label="뒤로" @click="router.push('/admin')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg>
+        </button>
+        <div class="adm-title">
+          <h1>지역별 거래량 랭킹 <em>시군구 · 읍면동</em></h1>
+          <p>거래량 많은 곳부터 다섯 곳을 줄 세워 지도와 함께 본다.</p>
+        </div>
+      </div>
     </header>
 
-    <div class="tsp-body">
-      <section class="tsp-card">
-        <header class="tsp-card-head">
-          <h2>조건 검색</h2>
-        </header>
-        <div class="tsp-filter">
+    <div class="adm-body tsp-body">
+      <div class="tsp-filter">
           <!-- 분석 도구의 '실거래 분석'과 같은 차례로 좁힌다 — 시도 → 시군구 → 읍면동 → 종류.
                다만 여기는 '데이터 로드'가 아니라 전처럼 검색이다 -->
           <div class="tsp-bar">
             <label class="tsp-f">
               <small>시 · 도</small>
               <select class="tsp-select" v-model="selectedSido">
+                <option value="">선택</option>
                 <option v-for="sido in sidoOptions" :key="sido" :value="sido">{{ sido }}</option>
               </select>
             </label>
             <label class="tsp-f">
               <small>시 · 군 · 구</small>
-              <select class="tsp-select" v-model="selectedDistrict" :disabled="isNationwide">
+              <select class="tsp-select" v-model="selectedDistrict" :disabled="!selectedSido">
+                <option value="">선택</option>
                 <option v-for="district in districtOptions" :key="district.lawdCode" :value="district.label">
                   {{ district.label }}
                 </option>
@@ -458,23 +464,27 @@ onMounted(() => {
             <label class="tsp-f">
               <small>기간</small>
               <select class="tsp-select" v-model.number="selectedPeriod">
+                <option :value="0">선택</option>
                 <option v-for="m in periodOptions" :key="m" :value="m">{{ m }}개월</option>
               </select>
             </label>
-            <button type="button" class="tsp-search-btn" :disabled="loading" @click="loadStats">
+            <button
+              type="button"
+              class="tsp-search-btn"
+              :disabled="loading || !selectedSido || !selectedDistrict || !selectedPeriod"
+              @click="loadStats"
+            >
               {{ loading ? '검색 중…' : '검색' }}
             </button>
           </div>
-          <p v-if="isNationwide" class="tsp-note warn">전국 모드는 시/군/구 단위 집계. 1~3개월 권장.</p>
           <p v-if="progress" class="tsp-note">불러오는 중 {{ progress.done }} / {{ progress.total }}</p>
           <!-- 검색이 비거나 실패했을 때 이유를 바로 보여 준다 -->
           <p v-if="message" :class="['tsp-note', { warn: rows.length === 0 }]">{{ message }}</p>
-        </div>
-      </section>
+      </div>
 
       <section class="tsp-card">
         <header class="tsp-card-head">
-          <h2>{{ isNationwide ? '시/군/구 거래 랭킹' : '동별 거래 랭킹' }}</h2>
+          <h2>동별 거래 랭킹</h2>
           <small v-if="allRankedRows.length > 0" class="tsp-card-sub">{{ rankedRows.length }} / {{ allRankedRows.length }}</small>
         </header>
         <div v-if="rankedRows.length === 0" class="tsp-empty">조회 결과가 여기에 표시됩니다.</div>
@@ -492,6 +502,8 @@ onMounted(() => {
             <div class="tsp-rank-main">
               <div class="tsp-rank-top">
                 <strong class="tsp-rank-name">{{ row.region }}</strong>
+                <!-- 실거래 분석 표와 같은 값 — 여기서는 눈으로 견주라고 한 줄에 같이 적는다 -->
+                <small class="tsp-rank-avg">평균 {{ shortWon(row.avgPrice) }}</small>
                 <strong class="tsp-rank-count">{{ row.count.toLocaleString() }}건</strong>
               </div>
               <div class="tsp-rank-bot">
@@ -517,53 +529,66 @@ onMounted(() => {
       </section>
     </div>
 
-    <AppMobileBottomNav active="more" />
   </section>
 </template>
 
 <style scoped>
-.tsp-shell { display: flex; flex-direction: column; min-height: 100vh; background: #f3f4f6; padding-bottom: 76px; }
-
-.tsp-topbar {
-  display: flex; align-items: center; gap: 8px; padding: 8px 14px 6px; background: #fff;
-  /* 제목줄 아래 구분선 — 물건상세와 같게 */
-  border-bottom: 1px solid #e5e7eb;
+/* 분석 도구와 같은 틀 (AdminRegionDemandPage 와 같은 값) */
+.adm-shell { min-height: 100vh; background: #f5f7fb; color: #111827; display: flex; flex-direction: column; }
+.adm-top {
+  position: sticky; top: 0; z-index: 20;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: saturate(160%) blur(10px);
+  border-bottom: 1px solid #e8ecf3;
 }
-.tsp-page-title { flex: 1 1 auto; margin: 0; font-size: 20px; font-weight: 800; color: #111827; letter-spacing: -0.4px; }
-.tsp-topbar-btn {
-  border: none; background: transparent; padding: 4px;
-  width: 32px; height: 32px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+.adm-top-in { max-width: 1680px; margin: 0 auto; padding: 12px 28px; display: flex; align-items: center; gap: 14px; }
+.adm-back {
+  border: 1px solid #dde3ee; background: #fff; border-radius: 9px;
+  width: 32px; height: 32px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 0; color: #374151; cursor: pointer;
 }
-.tsp-topbar-btn:disabled { opacity: 0.4; }
-.tsp-topbar-btn img { width: 20px; height: 20px; opacity: 0.55; }
+.adm-back:hover { border-color: #b9cdf7; color: #2b6df3; }
+.adm-title h1 {
+  margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.3px;
+  display: flex; align-items: baseline; gap: 7px;
+}
+.adm-title h1 em { font-style: normal; font-size: 11.5px; font-weight: 700; color: #9ca3af; }
+.adm-title p { margin: 2px 0 0; font-size: 12px; color: #9ca3af; }
+.adm-body { flex: 1 1 auto; width: 100%; max-width: 1680px; margin: 0 auto; padding: 24px 28px 60px; }
 
-.tsp-body { flex: 1 1 auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 14px; }
+.tsp-body { display: flex; flex-direction: column; gap: 16px; }
 
-.tsp-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
+.tsp-card { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; overflow: hidden; }
 .tsp-card-head { display: flex; align-items: baseline; justify-content: space-between; padding: 16px 16px 12px; }
 .tsp-card-head h2 { margin: 0; font-size: 15.3px; font-weight: 800; color: #111827; }
 .tsp-card-sub { font-size: 12px; color: #9ca3af; font-weight: 500; }
 
-.tsp-filter { display: flex; flex-direction: column; gap: 10px; padding: 0 14px 16px; }
+.tsp-filter {
+  display: flex; flex-direction: column; gap: 10px;
+  background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 16px 18px;
+}
 /* 조건 줄 — 분석 도구(.adm-bar)와 같은 짜임. 칸마다 이름을 머리에 달고,
    남는 폭은 고르게 나눠 갖는다. 좁은 화면에서는 두 칸씩 접힌다 */
-.tsp-bar { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
-.tsp-f { display: flex; flex-direction: column; gap: 5px; flex: 1 1 150px; min-width: 0; }
+.tsp-bar { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+.tsp-f { display: flex; flex-direction: column; gap: 6px; flex: 1 1 160px; min-width: 0; }
 .tsp-f small { font-size: 11px; font-weight: 700; color: #6b7280; }
-.tsp-seg { display: flex; gap: 4px; background: #f3f5f9; border-radius: 10px; padding: 3px; min-height: 44px; align-items: center; }
+.tsp-seg { display: flex; gap: 4px; background: #f3f5f9; border-radius: 9px; padding: 3px; align-items: center; height: 36px; }
 .tsp-seg-btn {
-  flex: 1 1 0; border: none; background: transparent; border-radius: 8px;
-  padding: 8px 6px; font-family: inherit; font-size: 12.5px; font-weight: 700;
+  flex: 1 1 0; border: none; background: transparent; border-radius: 7px;
+  padding: 7px 6px; font-family: inherit; font-size: 12.5px; font-weight: 700;
   color: #6b7280; cursor: pointer; white-space: nowrap;
 }
 .tsp-seg-btn.on { background: #fff; color: #1f3a72; box-shadow: 0 1px 3px rgba(17, 24, 39, 0.1); }
-.tsp-bar .tsp-search-btn { flex: 1 1 120px; width: auto; }
+.tsp-bar .tsp-search-btn { margin-left: auto; flex: 0 0 auto; }
+/* 평균 매매가 — 동네 이름과 건수 사이에 담담하게 */
+.tsp-rank-avg { margin-left: 6px; font-size: 11.5px; font-weight: 700; color: #6b7280; white-space: nowrap; }
 .tsp-filter-row { display: grid; gap: 10px; }
 .tsp-filter-row.two { grid-template-columns: 1fr 1fr; }
 .tsp-filter-row.three { grid-template-columns: 1fr 1fr 1fr; }
 .tsp-select {
-  width: 100%; min-height: 44px; padding: 0 14px; font-size: 14px;
-  border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; color: #111827;
+  width: 100%; height: 36px; padding: 0 11px; font-size: 13.5px;
+  border: 1px solid #dde3ee; border-radius: 9px; background: #fff; color: #111827;
   -webkit-appearance: none; appearance: none;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%239ca3af' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
   background-repeat: no-repeat; background-position: right 14px center;
@@ -571,11 +596,12 @@ onMounted(() => {
 }
 .tsp-select:disabled { background-color: #f9fafb; color: #9ca3af; }
 .tsp-search-btn {
-  width: 100%; min-height: 44px;
-  border: none; border-radius: 10px; background: #111827; color: #fff;
-  font-size: 14px; font-weight: 800; letter-spacing: -0.2px; cursor: pointer;
+  height: 36px; padding: 0 20px;
+  border: none; border-radius: 9px; background: #1f3a72; color: #fff;
+  font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
 }
-.tsp-search-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+.tsp-search-btn:hover { background: #16305f; }
+.tsp-search-btn:disabled { background: #aeb8ca; cursor: default; }
 .tsp-note { margin: 0; font-size: 13px; color: #6b7280; line-height: 1.45; }
 .tsp-note.warn { color: #b45309; }
 

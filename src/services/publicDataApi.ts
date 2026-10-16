@@ -37,6 +37,10 @@ export interface TradeVolumeStat {
   region: string;
   count: number;
   sources: string[];
+  /** 그 동네 매매가 합계 (원) — 평균가를 내는 데 쓴다 */
+  priceSum: number;
+  /** 금액이 적혀 온 거래 수 — 합계를 이 수로 나눠야 평균이 맞다 */
+  priceCount: number;
 }
 
 export interface TradeVolumeStatsResult {
@@ -321,7 +325,12 @@ const fetchTradeVolumeByPath = async (
   params: AuctionSearchParams,
   path: string,
   source: string,
-): Promise<{ source: string; counts: Map<string, number>; itemCount: number }> => {
+): Promise<{
+  source: string;
+  counts: Map<string, number>;
+  prices: Map<string, { sum: number; n: number }>;
+  itemCount: number;
+}> => {
   const lawdCode = params.lawdCode ?? '28237';
   const dealYmd = params.dealYmd ?? new Date().toISOString().slice(0, 7).replace('-', '');
   const url = buildApiUrl(path);
@@ -335,14 +344,24 @@ const fetchTradeVolumeByPath = async (
   const json = await requestJson(url);
   const rows = asArray(json?.response?.body?.items?.item);
   const counts = new Map<string, number>();
+  // 거래금액(만원)도 같이 모은다 — 동네마다 평균 매매가를 내려면 합계와 건수가 필요하다
+  const prices = new Map<string, { sum: number; n: number }>();
   rows.forEach((row) => {
     const region = pickRegionName(row, params.keyword || '기타');
     counts.set(region, (counts.get(region) ?? 0) + 1);
+    const manWon = Number(String(row.dealAmount ?? row['거래금액'] ?? '').replace(/[^\d]/g, ''));
+    if (manWon > 0) {
+      const cur = prices.get(region) ?? { sum: 0, n: 0 };
+      cur.sum += manWon * 10000;
+      cur.n += 1;
+      prices.set(region, cur);
+    }
   });
 
   return {
     source,
     counts,
+    prices,
     itemCount: rows.length,
   };
 };
@@ -564,7 +583,15 @@ export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Pro
     ? params.dealYmdList
     : [params.dealYmd ?? new Date().toISOString().slice(0, 7).replace('-', '')];
 
-  type Task = { source: string; run: () => Promise<{ source: string; counts: Map<string, number>; itemCount: number }> };
+  type Task = {
+    source: string;
+    run: () => Promise<{
+      source: string;
+      counts: Map<string, number>;
+      prices: Map<string, { sum: number; n: number }>;
+      itemCount: number;
+    }>;
+  };
   const tasks: Task[] = [];
 
   // 사용자가 특정 거래유형을 명시적으로 고른 경우 env 토글을 우회.
@@ -622,9 +649,12 @@ export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Pro
         itemCount: result.value.itemCount,
       });
       result.value.counts.forEach((count, region) => {
+        const money = result.value.prices.get(region) ?? { sum: 0, n: 0 };
         const current = merged.get(region);
         if (current) {
           current.count += count;
+          current.priceSum += money.sum;
+          current.priceCount += money.n;
           if (!current.sources.includes(source)) {
             current.sources.push(source);
           }
@@ -634,6 +664,8 @@ export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Pro
           region,
           count,
           sources: [source],
+          priceSum: money.sum,
+          priceCount: money.n,
         });
       });
       return;
