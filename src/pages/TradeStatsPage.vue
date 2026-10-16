@@ -572,7 +572,7 @@ onMounted(() => {
                     </div>
                     <small class="tsp-rank-pct">{{ row.share.toFixed(1) }}%</small>
                   </div>
-                  <small class="tsp-rank-avg">평균 {{ shortWon(row.avgPrice) }}</small>
+                  <small class="tsp-rank-avg">평균 매매가 {{ shortWon(row.avgPrice) }}</small>
                 </div>
               </li>
             </ol>
