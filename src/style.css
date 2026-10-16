@@ -2171,12 +2171,15 @@ html.is-web {
   --shell-w: 1000px;
 }
 
-/* 입찰 캘린더 — 앱에서는 사건번호와 유찰 횟수만 적는다(칸이 좁다).
-   웹은 칸이 넓으니 주소·종류·감정가·최저가·지역을 도로 펴 준다. */
-html.is-web .cal-event .ev-addr,
-html.is-web .cal-event .ev-kind,
-html.is-web .cal-event .ev-price { display: block; }
-html.is-web .cal-event .ev-area { display: flex; }
+/* 입찰 캘린더 — 손전화에서는 사건번호와 유찰 횟수만 적는다(칸이 좁다).
+   넓은 화면(웹)에서만 주소·종류·감정가·최저가·지역을 도로 펴 준다.
+   브라우저라도 창이 좁으면 앱과 똑같이 두 줄만 남는다. */
+@media (min-width: 768px) {
+  html.is-web .cal-event .ev-addr,
+  html.is-web .cal-event .ev-kind,
+  html.is-web .cal-event .ev-price { display: block; }
+  html.is-web .cal-event .ev-area { display: flex; }
+}
 
 @media (min-width: 768px) {
   /* 페이지 본체. 페이지마다 제 이름의 껍데기(.adp-shell, .wlp-shell …)를

@@ -4,6 +4,7 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
+import { isPhotoId, loadSitePhoto } from '../services/sitePhotoRepository';
 import type { AuctionDetail } from '../types/auction';
 
 const store = useAuctionStore();
@@ -120,6 +121,31 @@ const failText = (a: AuctionDetail) => {
   return n > 1 ? `유찰 ${n - 1}회` : '신건';
 };
 
+/** 본건사진의 첫 장 — 전경이 먼저고, 없으면 평면도. 물건상세의 '본건사진'과 같은 차례다 */
+const firstPhotoOf = (a: AuctionDetail): string => (
+  a.exteriorUrls?.[0] ?? a.floorPlanUrls?.[0] ?? a.floorPlanUrl ?? ''
+);
+/** 사진 말풍선 — 달력 칸에는 글자만 적고, 손을 올리면 그 물건의 첫 사진을 띄운다.
+ *  사진은 올릴 때 한 번만 읽어 둔다 (문서로 저장된 사진은 아이디라 따로 불러와야 한다) */
+const photoCache = ref<Record<string, string>>({});
+const tip = ref<{ src: string; left: number; top: number } | null>(null);
+const showPhotoTip = async (a: AuctionDetail, evt: MouseEvent) => {
+  const entry = firstPhotoOf(a);
+  if (!entry) return;
+  let src = photoCache.value[entry];
+  if (src === undefined) {
+    src = isPhotoId(entry) ? await loadSitePhoto(entry).catch(() => '') : entry;
+    photoCache.value[entry] = src;
+  }
+  if (!src) return;
+  const box = (evt.currentTarget as HTMLElement).getBoundingClientRect();
+  // 칸 오른쪽에 붙이되 화면을 넘으면 왼쪽으로 돌린다
+  const w = 190;
+  const left = Math.min(box.right + 8, window.innerWidth - w - 8);
+  tip.value = { src, left: Math.max(8, left), top: Math.max(8, box.top) };
+};
+const hidePhotoTip = () => { tip.value = null; };
+
 const goDetail = (id: string) => router.push(`/auctions/${id}`);
 </script>
 
@@ -154,6 +180,8 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
             :key="a.id"
             class="cal-event"
             @click="goDetail(a.id)"
+            @mouseenter="showPhotoTip(a, $event)"
+            @mouseleave="hidePhotoTip()"
           >
             <p class="ev-case">{{ caseShort(a) }}</p>
             <p :class="['ev-fail', { fresh: failText(a) === '신건' }]">{{ failText(a) }}</p>
@@ -170,6 +198,13 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
         </div>
       </div>
     </div>
+
+    <!-- 사진 말풍선 — 달력 위에 떠 있어야 해서 글(body) 쪽에 그린다 -->
+    <Teleport to="body">
+      <div v-if="tip" class="cal-tip" :style="{ left: `${tip.left}px`, top: `${tip.top}px` }">
+        <img :src="tip.src" alt="본건사진" />
+      </div>
+    </Teleport>
 
     <AppMobileBottomNav active="more" />
   </section>
@@ -264,4 +299,15 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
   display: flex; align-items: center; gap: 2px;
   margin-top: 2px !important; color: #9ca3af !important;
 }
+/* 본건사진 말풍선 — body 로 옮겨 가므로 scoped 밖에서 적는다 (아래 전역 블록) */
+</style>
+
+<style>
+/* 사진 말풍선은 Teleport 로 body 에 그려져 scoped 가 닿지 않는다 */
+.cal-tip {
+  position: fixed; z-index: 9999; width: 190px;
+  background: #fff; border: 1px solid #dfe5ef; border-radius: 10px; padding: 4px;
+  box-shadow: 0 14px 34px rgba(17, 24, 39, 0.18); pointer-events: none;
+}
+.cal-tip img { display: block; width: 100%; height: auto; max-height: 240px; object-fit: contain; border-radius: 7px; }
 </style>
