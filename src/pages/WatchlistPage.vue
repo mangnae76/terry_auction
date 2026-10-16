@@ -113,19 +113,27 @@ const displayedAuctions = computed<AuctionDetail[]>(() => {
         .toLowerCase();
       return haystack.includes(q);
     });
+  // 입찰일이 지난 물건은 어떤 정렬이든 목록 맨 아래로 내린다 — 오늘 볼 것이 위에 있어야 한다
+  const dateKey = (raw: string | undefined) => {
+    const digits = (raw ?? '').replace(/\D/g, '');
+    return digits.length >= 8 ? digits.slice(0, 8) : '99999999';
+  };
+  const byDate = (a: AuctionDetail, b: AuctionDetail) =>
+    dateKey(a.eventDate).localeCompare(dateKey(b.eventDate));
+  const pastRank = (item: AuctionDetail) => (bidPassed(item) ? 1 : 0);
   if (sortMode.value !== 'route' || routeOrder.value.length === 0) {
     // 입찰일정순 — 입찰일이 빠른 물건부터, 날짜가 없으면 뒤로
-    const dateKey = (raw: string | undefined) => {
-      const digits = (raw ?? '').replace(/\D/g, '');
-      return digits.length >= 8 ? digits.slice(0, 8) : '99999999';
-    };
-    return [...found].sort((a, b) => dateKey(a.eventDate).localeCompare(dateKey(b.eventDate)));
+    return [...found].sort((a, b) => pastRank(a) - pastRank(b) || byDate(a, b));
   }
-  // 동선에 없는 물건은 뒤로 보내고, 그 안에서는 원래 순서를 지킨다
+  // 동선에 없는 물건은 뒤로 보내고, 그 안에서는 원래 순서를 지킨다.
+  // 지난 물건은 동선 번호와 무관하게 맨 아래, 그 안에서만 날짜순으로 선다.
   const rank = new Map(routeOrder.value.map((address, i) => [address, i]));
-  return [...found].sort(
-    (a, b) => (rank.get(normAddr(a.address)) ?? Infinity) - (rank.get(normAddr(b.address)) ?? Infinity),
-  );
+  return [...found].sort((a, b) => {
+    const past = pastRank(a) - pastRank(b);
+    if (past !== 0) return past;
+    if (pastRank(a) === 1) return byDate(a, b);
+    return (rank.get(normAddr(a.address)) ?? Infinity) - (rank.get(normAddr(b.address)) ?? Infinity);
+  });
 });
 
 // 별표 중요도 — 누를 때마다 1 → 2 → 3 → 빈 별 로 돌아간다
