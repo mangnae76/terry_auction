@@ -4228,8 +4228,9 @@ const CONC_TABLES: ConcTable[] = [
   { title: '시세 결론', cols: MKT_CONC_COLS, note: false, boldPrice: true, vertical: true },
   { title: '급매가 결론', cols: MKT_URGENT_COLS, note: true, boldPrice: false, vertical: true },
 ];
+// 면적 칸은 표에서 뺐다 — 값은 그대로 남아 평당가 자동계산에 쓰인다.
+// (면적은 바로 위 실거래 조사·매물조사 표에 이미 적혀 있어 두 번 읽을 까닭이 없다)
 const MKT_CONC_ROWS: ConcRow[] = [
-  { key: 'area', label: '면적', money: false },
   { key: 'unit', label: '평당가', money: true },
   { key: 'price', label: '가격', money: true },
 ];
@@ -9734,9 +9735,9 @@ const goBack = () => router.back();
 .adp-mkt-table.adp-conc-table.conc-vert tbody tr td.num.area { text-align: center; }
 /* 급매가 줄은 이름까지 빨갛게 — 표에서 결론을 적는 자리다 */
 .adp-mkt-table.adp-conc-table.conc-vert th.adp-conc-side.red { color: #e0574a; font-weight: 800; }
-.adp-mkt-table.adp-conc-table.conc-vert tbody td .adp-conc-v { font-size: 12px; }
+.adp-mkt-table.adp-conc-table.conc-vert tbody td .adp-conc-v { font-size: 13.2px; }
 .adp-mkt-table.adp-conc-table.conc-vert tbody td .adp-conc-area { font-size: 11px; }
-.adp-conc-table.conc-vert .adp-mkt-input { font-size: 12px; }
+.adp-conc-table.conc-vert .adp-mkt-input { font-size: 13.2px; }
 /* 평균에서 뺀 줄은 이름까지 흐리게 — 표 전체가 같은 신호를 쓴다 */
 .adp-conc-table.conc-vert th.adp-conc-side.off { opacity: 0.45; }
 /* 줄 이름 왼쪽의 체크 — 머리줄과 달리 이름과 한 줄에 선다 */
