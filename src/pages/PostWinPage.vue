@@ -20,7 +20,7 @@ const current = () => TABS.find((t) => t.key === activeTab.value) ?? TABS[0];
   <section class="pw-shell">
     <div class="pw-fixed-top">
       <header class="pw-header">
-        <h1 class="pw-page-title">낙찰 이후</h1>
+        <h1 class="pw-page-title">낙찰이후</h1>
         <nav class="pw-tabs">
           <button
             v-for="t in TABS"

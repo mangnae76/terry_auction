@@ -36,7 +36,7 @@ const router = useRouter();
         <path d="m15.4 15.4 2.1-2.1" />
         <path d="m17.8 17.8 2.1-2.1" />
       </svg>
-      <span>낙찰 이후</span>
+      <span>낙찰이후</span>
     </button>
     <!-- 시장정보는 분석 도구로 옮겼다 — 그 자리에는 입찰 캘린더를 둔다 -->
     <button type="button" :class="['amb-item', { active: active === 'calendar' }]" @click="router.push('/bid-calendar')">
