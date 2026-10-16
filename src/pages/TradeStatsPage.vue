@@ -28,19 +28,14 @@ const propertyOptions: Array<{ value: PropertyType; label: string }> = [
 ];
 
 const periodOptions = [1, 3, 6, 12];
-const topNOptions: Array<{ value: number; label: string }> = [
-  { value: 3, label: 'Top 3' },
-  { value: 5, label: 'Top 5' },
-  { value: 10, label: 'Top 10' },
-  { value: 0, label: '전체' },
-];
-
 const initialSido = regionGroups.find((g) => g.sido === '서울특별시') ?? regionGroups[0];
 const selectedSido = ref(initialSido.sido);
 const selectedDistrict = ref(initialSido.districts[0].label);
 const selectedPropertyType = ref<PropertyType>('apt');
 const selectedPeriod = ref(1);
-const selectedTopN = ref(5);
+/** 랭킹은 늘 다섯 줄 — 고르는 메뉴를 두지 않는다.
+ *  더 아래가 궁금하면 읍·면·동을 골라 그 동이 몇 등인지 바로 본다. */
+const TOP_N = 5;
 const progress = ref<{ done: number; total: number } | null>(null);
 const loading = ref(false);
 const message = ref('');
@@ -97,9 +92,7 @@ const allRankedRows = computed<RankedRow[]>(() => {
 const rankedRows = computed<RankedRow[]>(() => {
   // 읍면동을 고르면 그 줄만 남긴다 — 등수는 전체에서 매긴 것을 그대로 쓴다
   if (selectedDong.value) return allRankedRows.value.filter((r) => r.region === selectedDong.value);
-  return selectedTopN.value === 0
-    ? allRankedRows.value
-    : allRankedRows.value.slice(0, selectedTopN.value);
+  return allRankedRows.value.slice(0, TOP_N);
 });
 
 const topCount = computed(() => rankedRows.value[0]?.count ?? 0);
@@ -414,7 +407,7 @@ onMounted(() => {
 <template>
   <section class="tsp-shell">
     <header class="tsp-topbar">
-      <h1 class="tsp-page-title">부동산 시장정보</h1>
+      <h1 class="tsp-page-title">지역별 거래량 랭킹</h1>
       <button class="tsp-topbar-btn" type="button" :disabled="loading" @click="loadStats" aria-label="새로고침">
         <img :src="chevronDownIcon" alt="" />
       </button>
@@ -466,12 +459,6 @@ onMounted(() => {
               <small>기간</small>
               <select class="tsp-select" v-model.number="selectedPeriod">
                 <option v-for="m in periodOptions" :key="m" :value="m">{{ m }}개월</option>
-              </select>
-            </label>
-            <label class="tsp-f">
-              <small>랭킹</small>
-              <select class="tsp-select" v-model.number="selectedTopN" :disabled="!!selectedDong">
-                <option v-for="opt in topNOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
             </label>
             <button type="button" class="tsp-search-btn" :disabled="loading" @click="loadStats">
