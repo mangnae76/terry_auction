@@ -31,6 +31,8 @@ interface ImportPreviewRow {
   parsed?: ParsedPdfAuction;
   error?: string;
   sourceType: 'drive' | 'file';
+  /** 드라이브에서 온 줄이면 어느 폴더에서 왔는지 — 그 폴더를 다시 스캔할 때 갈아치운다 */
+  folderId?: string;
 }
 
 
@@ -186,10 +188,20 @@ const changedCount = computed(() => importRows.value.filter((r) => r.rowStatus =
 const errorCount = computed(() => importRows.value.filter((r) => r.rowStatus === 'error').length);
 const totalRegistered = computed(() => store.auctions.length);
 
-/** 목록은 이번에 읽은 것으로 갈아치운다.
- *  예전 줄을 끼워 두면 파일 한 개를 올려도 지난 스캔까지 통째로 다시 등록됐다. */
-const replaceRows = (rows: ImportPreviewRow[]) => {
-  importRows.value = rows;
+/**
+ * 목록을 이번에 읽은 것과 맞춘다.
+ * - 폴더를 스캔했으면 그 폴더에서 온 옛 줄은 지운다 (드라이브에 없는 PDF가 남지 않게)
+ * - 다른 폴더나 손으로 올린 줄은 그대로 둔다
+ * - 등록은 이 함수와 따로, 이번에 읽은 줄만 한다
+ */
+const mergeRows = (rows: ImportPreviewRow[], rescannedFolders: string[] = []) => {
+  const dropped = new Set(rescannedFolders);
+  const kept = importRows.value.filter(
+    (row) => !(row.sourceType === 'drive' && row.folderId && dropped.has(row.folderId)),
+  );
+  const merged = new Map(kept.map((row) => [row.key, row]));
+  rows.forEach((row) => merged.set(row.key, row));
+  importRows.value = [...merged.values()];
 };
 
 const openFilePicker = () => {
@@ -273,7 +285,7 @@ const parseFiles = async (files: File[]) => {
         });
       }
     }
-    replaceRows(rows);
+    mergeRows(rows);
     await autoSaveReady(rows);
     lastUpdate.value = formatTime();
     banner.value = `${formatTime()} PDF ${rows.filter((r) => r.status === 'ready').length}건 등록 완료`
@@ -320,6 +332,7 @@ const scanDriveFolder = async () => {
             rowStatus: classifyRow(parsed),
             parsed,
             sourceType: 'drive',
+            folderId: folderIdOf(target),
           });
         } catch (error) {
           rows.push({
@@ -329,12 +342,13 @@ const scanDriveFolder = async () => {
             rowStatus: 'error',
             error: error instanceof Error ? error.message : 'Drive PDF 해석 중 오류가 발생했습니다.',
             sourceType: 'drive',
+            folderId: folderIdOf(target),
           });
         }
       }
     }
 
-    replaceRows(rows);
+    mergeRows(rows, targets.map((t) => folderIdOf(t)));
     await autoSaveReady(rows);
     findMissingFromDrive(targets, rows);
     lastUpdate.value = formatTime();
