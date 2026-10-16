@@ -38,6 +38,10 @@ const router = useRouter();
       </svg>
       <span>낙찰이후</span>
     </button>
+    <button type="button" :class="['amb-item', { active: active === 'finance' }]" @click="router.push('/finance')">
+      <span class="amb-icon amb-mask" :style="{ '--i': `url(${banknoteIcon})` }" />
+      <span>자금관리</span>
+    </button>
     <!-- 시장정보는 분석 도구로 옮겼다 — 그 자리에는 입찰 캘린더를 둔다 -->
     <button type="button" :class="['amb-item', { active: active === 'calendar' }]" @click="router.push('/bid-calendar')">
       <!-- PNG 를 가면(mask)으로 쓰면 이 그림은 네모로 뭉개진다 — 선 그림으로 직접 그린다 -->
@@ -47,10 +51,6 @@ const router = useRouter();
         <path d="M8 14h2M14 14h2M8 17.5h2M14 17.5h2" />
       </svg>
       <span>캘린더</span>
-    </button>
-    <button type="button" :class="['amb-item', { active: active === 'finance' }]" @click="router.push('/finance')">
-      <span class="amb-icon amb-mask" :style="{ '--i': `url(${banknoteIcon})` }" />
-      <span>자금관리</span>
     </button>
     <button type="button" :class="['amb-item', { active: active === 'more' }]" @click="router.push('/more')">
       <svg class="amb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
