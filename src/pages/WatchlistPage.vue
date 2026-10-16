@@ -162,7 +162,7 @@ const removeItem = (id: string, evt: MouseEvent) => {
   evt.stopPropagation();
   askConfirm({
     title: '목록에서 지우겠습니까?',
-    desc: '보관함에서 복원할 수 있습니다. 단, 단계는 손품조사로 돌아갑니다.',
+    desc: '휴지통에서 되살릴 수 있습니다. 단계와 적어 둔 내용은 그대로 돌아옵니다.',
     okLabel: '삭제',
     skipKey: 'wlp.skip.removeOne',
     run: () => store.deleteAuction(id),
@@ -176,7 +176,7 @@ const removeAll = async () => {
   const scope = searchQuery.value.trim() ? '검색된 물건' : '선정물건';
   askConfirm({
     title: `${scope} ${targets.length}건을 모두 지우겠습니까?`,
-    desc: '보관함에서 복원할 수 있지만, 모든 물건의 단계가 손품조사로 돌아갑니다.',
+    desc: '휴지통에서 되살릴 수 있습니다. 단계와 적어 둔 내용은 그대로 돌아옵니다.',
     okLabel: '전체삭제',
     skipKey: 'wlp.skip.removeAll',
     run: () => store.hideAuctions(targets.map((item) => item.id)),
@@ -298,7 +298,7 @@ const copyItem = async (item: AuctionDetail, evt: MouseEvent) => {
 
 type PhaseKey = 'desk' | 'plan' | 'visited' | 'bid';
 
-/** 보관함 목록의 단계 태그 — 더보기 > 보관함 화면과 같은 규칙을 쓴다 */
+/** 휴지통·보관함 목록의 단계 태그 — 더보기 > 휴지통 화면과 같은 규칙을 쓴다 */
 const stageLabel = (item: AuctionDetail) => {
   if (item.status === '입찰') {
     return (item.bidStatus ?? '').replace(/^입찰/, '') === '진행' ? '입찰진행' : '입찰산정';
@@ -431,13 +431,13 @@ const moveLegacyFailedToTrash = async () => {
   const targets = legacyFailed.value;
   if (targets.length === 0) return;
   askConfirm({
-    title: `탈락 ${targets.length}건을 보관함으로 옮기겠습니까?`,
-    desc: '보관함에서 복원할 수 있습니다. 단, 단계는 손품조사로 돌아갑니다.',
+    title: `탈락 ${targets.length}건을 휴지통으로 옮기겠습니까?`,
+    desc: '휴지통에서 되살릴 수 있습니다. 단계와 적어 둔 내용은 그대로 돌아옵니다.',
     okLabel: '옮기기',
     skipKey: 'wlp.skip.legacyFailed',
     run: async () => {
       await store.hideAuctions(targets.map((item) => item.id));
-      flashToast(`${targets.length}건을 보관함으로 옮겼습니다.`, 'success');
+      flashToast(`${targets.length}건을 휴지통으로 옮겼습니다.`, 'success');
     },
   });
 };
@@ -1359,17 +1359,24 @@ watch(
 .wlp-card-past .wlp-price-box strong,
 .wlp-card-past .wlp-price-box small { color: #c9ced9 !important; }
 .wlp-card-past img { filter: grayscale(1) brightness(0) invert(0.84); }
-/* 삭제(×) 버튼만은 원래 모습 그대로 */
-.wlp-card-past .wlp-card-close { color: #6b7280 !important; }
-.wlp-card-past .wlp-card-close img { filter: none; }
+/* 카드 단추(주소복사·보관함·휴지통)는 지난 카드에서도 그대로 산다 — 눌러야 하는 것이니까 */
+.wlp-card-past .wlp-card-icon { color: #6b7280 !important; }
+.wlp-card-past .wlp-card-icon img { filter: none; }
 .wlp-card-past svg { stroke: #dbdfe7 !important; fill: none !important; }
 .wlp-card-past .wlp-type-mark { background: #e4e8ef !important; color: #fff !important; }
 .wlp-card-past .wlp-price-box { background: #fbfcfe !important; }
-/* 입찰일이 지난 카드는 알약도 색을 빼 담담하게 — '지난 카드' 안에서만 적용된다 */
-.wlp-card-past .wlp-phase,
-.wlp-card-past .wlp-phase.phase-active,
-.wlp-card-past .wlp-phase.phase-bidding {
+/* 입찰일이 지난 카드는 '꺼진' 알약만 색을 뺀다 — 켜진 단계는 그대로 보이고, 눌러 바꿀 수도 있다 */
+.wlp-card-past .wlp-phase {
   background: #fff !important; border-color: #ebeef3 !important; color: #9ca3af !important;
+}
+.wlp-card-past .wlp-phase.phase-active {
+  border-color: #6b85f0 !important; background: #dce5ff !important; color: #3850c2 !important;
+}
+.wlp-card-past .wlp-phase.phase-bidding {
+  border-color: #ef6b6b !important; background: #ffdede !important; color: #c22e2e !important;
+}
+.wlp-card-past .wlp-phase.phase-closed {
+  border-color: #cbd5e1 !important; background: #f3f4f6 !important; color: #6b7280 !important;
 }
 /* 이 알약은 다른 화면으로 넘어간다는 신호 — 선택된 칸에서만 파랗게 */
 .wlp-phase-go { margin-left: 4px; font-size: 9px; color: #9ca3af; vertical-align: 1px; }

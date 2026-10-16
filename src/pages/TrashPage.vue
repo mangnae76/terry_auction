@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 보관함 — 선정물건에서 치운 물건을 카드로 펼쳐 본다.
+// 휴지통 — 선정물건에서 치운 물건을 카드로 펼쳐 본다. (보관함은 선정물건 안에 따로 있다)
 // 목록 화면의 드롭다운은 주소 한 줄만 보여 줘서, 무엇을 지웠는지 알아보기 어려웠다.
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -129,7 +129,7 @@ const stageTone = (item: AuctionDetail) => {
   <section class="trs-shell">
     <header class="trs-header">
       <button type="button" class="trs-back" aria-label="뒤로" @click="router.back()">‹</button>
-      <h1 class="trs-title">보관함</h1>
+      <h1 class="trs-title">휴지통</h1>
       <span class="trs-eyebrow">× {{ store.hiddenCount }}건</span>
     </header>
 
@@ -152,11 +152,11 @@ const stageTone = (item: AuctionDetail) => {
     </div>
 
     <p v-if="store.hiddenAuctions.length > 0" class="trs-note">
-      복원하면 <strong>손품조사</strong> 단계로 돌아갑니다. 아래 태그는 치울 때의 단계입니다.
+      복원하면 <strong>치울 때의 단계</strong>로 그대로 돌아옵니다. 아래 태그가 그 단계입니다.
     </p>
 
     <p v-if="store.hiddenAuctions.length === 0" class="trs-empty">
-      보관함이 비어 있습니다.<br />
+      휴지통이 비어 있습니다.<br />
       <small>선정물건에서 치운 물건이 여기에 모입니다.</small>
     </p>
 

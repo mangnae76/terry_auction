@@ -1044,16 +1044,9 @@ export const useAuctionStore = defineStore('auction', () => {
     allAuctions.value = allAuctions.value.map((item) => {
       if (!item.hidden) return item;
       if (target && !target.has(item.id)) return item;
-      // 복원은 '처음부터 다시 본다'는 뜻이다 — 단계를 손품조사로 되돌린다.
-      // 치울 때 단계를 그대로 살리면, 임장예정이던 물건이 꺼내자마자 임장경로에 올라가 버린다.
-      const next: AuctionDetail = {
-        ...item,
-        hidden: false,
-        status: '손품',
-        bidStatus: '',
-        isInterested: false,
-        isFieldTrip: false,
-      };
+      // 되살리기는 '치우기를 되돌린다'는 뜻이다 — 단계도, 적어 둔 것도 건드리지 않는다.
+      // 전에는 손품조사로 되돌렸는데, 임장예정·입찰진행 진척이 소리 없이 사라져 더 성가셨다.
+      const next: AuctionDetail = { ...item, hidden: false };
       changed.push(next);
       return next;
     });
