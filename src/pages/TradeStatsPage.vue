@@ -50,6 +50,9 @@ const sourceSummary = ref('');
 const lastLoadedLabel = ref('');
 const lastLoadedAt = ref('');
 const selectedRegion = ref<string | null>(null);
+/** 읍·면·동 — 시군구를 고른 뒤 받은 결과에서 고른다 (실거래 분석 화면과 같은 차례) */
+const selectedDong = ref('');
+const dongOptions = computed(() => (isAllDistricts.value ? [] : rows.value.map((r) => r.region)));
 const geocodedCoords = ref<Map<string, { lat: number; lng: number }>>(new Map());
 
 let leafletMap: L.Map | null = null;
@@ -91,11 +94,13 @@ const allRankedRows = computed<RankedRow[]>(() => {
   });
 });
 
-const rankedRows = computed<RankedRow[]>(() =>
-  selectedTopN.value === 0
+const rankedRows = computed<RankedRow[]>(() => {
+  // 읍면동을 고르면 그 줄만 남긴다 — 등수는 전체에서 매긴 것을 그대로 쓴다
+  if (selectedDong.value) return allRankedRows.value.filter((r) => r.region === selectedDong.value);
+  return selectedTopN.value === 0
     ? allRankedRows.value
-    : allRankedRows.value.slice(0, selectedTopN.value),
-);
+    : allRankedRows.value.slice(0, selectedTopN.value);
+});
 
 const topCount = computed(() => rankedRows.value[0]?.count ?? 0);
 
@@ -119,6 +124,11 @@ watch(
     selectedDistrict.value = districtOptions.value[0]?.label ?? '';
   },
 );
+// 지역을 바꾸면 읍면동 선택은 푼다 — 전 지역의 동이 남아 있으면 빈 목록이 된다
+watch(() => [selectedSido.value, selectedDistrict.value].join('|'), () => { selectedDong.value = ''; });
+watch(rows, () => {
+  if (selectedDong.value && !rows.value.some((r) => r.region === selectedDong.value)) selectedDong.value = '';
+});
 
 const barPalette: Array<[string, string]> = [
   ['#fbbf24', '#f59e0b'],
@@ -421,26 +431,54 @@ onMounted(() => {
           <h2>조건 검색</h2>
         </header>
         <div class="tsp-filter">
-          <div class="tsp-filter-row three">
-            <select class="tsp-select" v-model="selectedSido">
-              <option v-for="sido in sidoOptions" :key="sido" :value="sido">{{ sido }}</option>
-            </select>
-            <select class="tsp-select" v-model="selectedDistrict" :disabled="isNationwide">
-              <option v-for="district in districtOptions" :key="district.lawdCode" :value="district.label">
-                {{ district.label }}
-              </option>
-            </select>
-            <select class="tsp-select" v-model="selectedPropertyType">
-              <option v-for="opt in propertyOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-            </select>
-          </div>
-          <div class="tsp-filter-row three">
-            <select class="tsp-select" v-model.number="selectedPeriod">
-              <option v-for="m in periodOptions" :key="m" :value="m">{{ m }}개월</option>
-            </select>
-            <select class="tsp-select" v-model.number="selectedTopN">
-              <option v-for="opt in topNOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-            </select>
+          <!-- 분석 도구의 '실거래 분석'과 같은 차례로 좁힌다 — 시도 → 시군구 → 읍면동 → 종류.
+               다만 여기는 '데이터 로드'가 아니라 전처럼 검색이다 -->
+          <div class="tsp-bar">
+            <label class="tsp-f">
+              <small>시 · 도</small>
+              <select class="tsp-select" v-model="selectedSido">
+                <option v-for="sido in sidoOptions" :key="sido" :value="sido">{{ sido }}</option>
+              </select>
+            </label>
+            <label class="tsp-f">
+              <small>시 · 군 · 구</small>
+              <select class="tsp-select" v-model="selectedDistrict" :disabled="isNationwide">
+                <option v-for="district in districtOptions" :key="district.lawdCode" :value="district.label">
+                  {{ district.label }}
+                </option>
+              </select>
+            </label>
+            <label class="tsp-f">
+              <small>읍 · 면 · 동</small>
+              <select class="tsp-select" v-model="selectedDong" :disabled="dongOptions.length === 0">
+                <option value="">{{ dongOptions.length === 0 ? '검색 후 선택' : '전체' }}</option>
+                <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
+              </select>
+            </label>
+            <label class="tsp-f">
+              <small>종류</small>
+              <div class="tsp-seg">
+                <button
+                  v-for="opt in propertyOptions"
+                  :key="opt.value"
+                  type="button"
+                  :class="['tsp-seg-btn', { on: selectedPropertyType === opt.value }]"
+                  @click="selectedPropertyType = opt.value"
+                >{{ opt.label }}</button>
+              </div>
+            </label>
+            <label class="tsp-f">
+              <small>기간</small>
+              <select class="tsp-select" v-model.number="selectedPeriod">
+                <option v-for="m in periodOptions" :key="m" :value="m">{{ m }}개월</option>
+              </select>
+            </label>
+            <label class="tsp-f">
+              <small>랭킹</small>
+              <select class="tsp-select" v-model.number="selectedTopN" :disabled="!!selectedDong">
+                <option v-for="opt in topNOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+            </label>
             <button type="button" class="tsp-search-btn" :disabled="loading" @click="loadStats">
               {{ loading ? '검색 중…' : '검색' }}
             </button>
@@ -525,6 +563,19 @@ onMounted(() => {
 .tsp-card-sub { font-size: 12px; color: #9ca3af; font-weight: 500; }
 
 .tsp-filter { display: flex; flex-direction: column; gap: 10px; padding: 0 14px 16px; }
+/* 조건 줄 — 분석 도구(.adm-bar)와 같은 짜임. 칸마다 이름을 머리에 달고,
+   남는 폭은 고르게 나눠 갖는다. 좁은 화면에서는 두 칸씩 접힌다 */
+.tsp-bar { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.tsp-f { display: flex; flex-direction: column; gap: 5px; flex: 1 1 150px; min-width: 0; }
+.tsp-f small { font-size: 11px; font-weight: 700; color: #6b7280; }
+.tsp-seg { display: flex; gap: 4px; background: #f3f5f9; border-radius: 10px; padding: 3px; min-height: 44px; align-items: center; }
+.tsp-seg-btn {
+  flex: 1 1 0; border: none; background: transparent; border-radius: 8px;
+  padding: 8px 6px; font-family: inherit; font-size: 12.5px; font-weight: 700;
+  color: #6b7280; cursor: pointer; white-space: nowrap;
+}
+.tsp-seg-btn.on { background: #fff; color: #1f3a72; box-shadow: 0 1px 3px rgba(17, 24, 39, 0.1); }
+.tsp-bar .tsp-search-btn { flex: 1 1 120px; width: auto; }
 .tsp-filter-row { display: grid; gap: 10px; }
 .tsp-filter-row.two { grid-template-columns: 1fr 1fr; }
 .tsp-filter-row.three { grid-template-columns: 1fr 1fr 1fr; }
