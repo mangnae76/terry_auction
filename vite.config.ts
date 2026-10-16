@@ -118,6 +118,12 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api-onbid/, ''),
         },
+        // 한국은행 ECOS — 인증키는 주소에 들어가므로 .env 의 키를 그대로 쓴다
+        '/api-ecos': {
+          target: 'https://ecos.bok.or.kr',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api-ecos/, ''),
+        },
         '/api-geo': {
           target: 'https://nominatim.openstreetmap.org',
           changeOrigin: true,

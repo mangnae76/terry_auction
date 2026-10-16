@@ -2,6 +2,7 @@
 import L from 'leaflet';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import HousingIndexPanel from '../components/HousingIndexPanel.vue';
 import {
   fetchTradeVolumeStats,
   type PropertyType,
@@ -36,6 +37,8 @@ const shortWon = (won: number): string => {
   return `${man.toLocaleString('ko-KR')}만`;
 };
 const router = useRouter();
+/** 화면 둘 — 지역 거래량 랭킹과 KB 주택가격지수 */
+const tab = ref<'rank' | 'index'>('rank');
 const selectedSido = ref('');
 const selectedDistrict = ref('');
 const selectedPropertyType = ref<PropertyType>('apt');
@@ -460,7 +463,15 @@ onMounted(() => {
       </div>
     </header>
 
+    <nav class="tsp-tabs">
+      <button type="button" :class="['tsp-tab', { on: tab === 'rank' }]" @click="tab = 'rank'">지역별 거래량 랭킹</button>
+      <button type="button" :class="['tsp-tab', { on: tab === 'index' }]" @click="tab = 'index'">KB 주택가격지수</button>
+    </nav>
+
     <div class="adm-body tsp-body">
+      <HousingIndexPanel v-if="tab === 'index'" />
+
+      <template v-else>
       <div class="tsp-filter">
           <!-- 분석 도구의 '실거래 분석'과 같은 차례로 좁힌다 — 시도 → 시군구 → 읍면동 → 종류.
                다만 여기는 '데이터 로드'가 아니라 전처럼 검색이다 -->
@@ -579,6 +590,7 @@ onMounted(() => {
           </section>
         </aside>
       </section>
+      </template>
     </div>
 
   </section>
@@ -608,6 +620,19 @@ onMounted(() => {
 .adm-title h1 em { font-style: normal; font-size: 11.5px; font-weight: 700; color: #9ca3af; }
 .adm-title p { margin: 2px 0 0; font-size: 12px; color: #9ca3af; }
 .adm-body { flex: 1 1 auto; width: 100%; max-width: 1680px; margin: 0 auto; padding: 24px 28px 60px; }
+
+/* 화면을 가르는 탭 — 머리줄 바로 아래 */
+.tsp-tabs {
+  width: 100%; max-width: 1680px; margin: 0 auto; padding: 0 28px;
+  display: flex; gap: 6px; border-bottom: 1px solid #e8ecf3; background: #fff;
+}
+.tsp-tab {
+  border: none; background: transparent; cursor: pointer; font-family: inherit;
+  padding: 13px 4px; margin-right: 18px;
+  font-size: 13.5px; font-weight: 700; color: #9ca3af;
+  border-bottom: 2.5px solid transparent;
+}
+.tsp-tab.on { color: #111827; font-weight: 800; border-bottom-color: #2b6df3; }
 
 .tsp-body { display: flex; flex-direction: column; gap: 16px; }
 
