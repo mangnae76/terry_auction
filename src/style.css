@@ -2179,6 +2179,21 @@ html.is-web {
   html.is-web .cal-event .ev-kind,
   html.is-web .cal-event .ev-price { display: block; }
   html.is-web .cal-event .ev-area { display: flex; }
+
+  /* 넓은 화면에서는 글자를 두 배로 — 손전화 치수(8px)를 모니터에서 그대로 쓰면
+     읽으려고 몸을 숙이게 된다. 손전화 쪽은 한 줄도 건드리지 않는다. */
+  html.is-web .cal-event p { font-size: 16px; line-height: 1.4; }
+  html.is-web .cal-event .ev-case { font-size: 17px !important; }
+  html.is-web .cal-event .ev-fail { font-size: 16px !important; }
+  html.is-web .cal-event { padding: 7px 8px; border-radius: 8px; }
+  html.is-web .cal-event .ev-area svg { width: 15px; height: 15px; }
+  /* 날짜와 요일도 같이 키운다 — 칸이 커졌는데 숫자만 작으면 따로 논다 */
+  html.is-web .cal-dow { font-size: 17px; padding: 10px 0; }
+  html.is-web .cal-daynum { font-size: 18px; gap: 5px; margin-bottom: 5px; }
+  html.is-web .cal-dnum.today { width: 28px; height: 28px; }
+  html.is-web .cal-holiday { font-size: 13px; }
+  html.is-web .cal-count { font-size: 22px; }
+  html.is-web .cal-cell { min-height: 104px; padding: 7px 6px 9px; }
 }
 
 @media (min-width: 768px) {
