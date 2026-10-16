@@ -216,9 +216,20 @@ const purgePicked = async () => {
     okLabel: '완전삭제',
     skipKey: '',
     run: async () => {
-      await store.purgeAuctions(ids);
+      const { removed, failed } = await store.purgeAuctions(ids);
       hiddenPicked.value = {};
       if (store.hiddenAuctions.length === 0) hiddenOpen.value = false;
+      // 못 지운 것은 목록에 그대로 남는다 — 조용히 넘어가지 않는다
+      if (failed.length > 0) {
+        const why = failed[0].reason.includes('permission')
+          ? '권한이 없습니다 (다른 계정으로 만든 물건일 수 있습니다)'
+          : failed[0].reason;
+        flashToast(
+          `${failed.length}건을 지우지 못했습니다 — ${why}`
+          + (removed.length > 0 ? ` · ${removed.length}건은 삭제됨` : ''),
+          'error',
+        );
+      }
     },
   });
 };
