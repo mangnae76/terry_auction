@@ -27,9 +27,9 @@ const GROUPS: Group[] = [
     tone: 'amber',
     tools: [
       {
-        title: '시장정보',
-        sub: '지역 거래량',
-        desc: '시도·시군구를 골라 거래량 통계를 지도와 함께 본다.',
+        title: '지역별 거래량 랭킹',
+        sub: '시군구 · 읍면동',
+        desc: '시도·시군구를 골라 거래량 많은 곳부터 줄 세워 지도와 함께 본다.',
         path: '/trade-stats',
         icon: 'trade',
       },
