@@ -53,20 +53,6 @@ const sourceSummary = ref('');
 const lastLoadedLabel = ref('');
 const lastLoadedAt = ref('');
 const selectedRegion = ref<string | null>(null);
-/** 읍·면·동 — 시군구를 고른 뒤 받은 결과에서 고른다 (실거래 분석 화면과 같은 차례) */
-const selectedDong = ref('');
-/** 어느 지역으로 받아 온 결과인지 — 지역을 바꾸면 옛 동 목록을 내린다 */
-const loadedScope = ref('');
-const currentScope = computed(() => `${selectedSido.value}|${selectedDistrict.value}`);
-/** 검색 전에도 읍·면·동을 고를 수 있게, 시군구를 고르면 석 달치를 미리 한 번 훑어 이름만 모은다
- *  (실거래 분석 화면과 같은 방식) */
-const peekDongs = ref<string[]>([]);
-const peeking = ref(false);
-const dongOptions = computed(() => (
-  loadedScope.value && loadedScope.value === currentScope.value
-    ? rows.value.map((r) => r.region)
-    : peekDongs.value
-));
 const geocodedCoords = ref<Map<string, { lat: number; lng: number }>>(new Map());
 
 let leafletMap: L.Map | null = null;
@@ -109,11 +95,7 @@ const allRankedRows = computed<RankedRow[]>(() => {
   });
 });
 
-const rankedRows = computed<RankedRow[]>(() => {
-  // 읍면동을 고르면 그 줄만 남긴다 — 등수는 전체에서 매긴 것을 그대로 쓴다
-  if (selectedDong.value) return allRankedRows.value.filter((r) => r.region === selectedDong.value);
-  return allRankedRows.value.slice(0, TOP_N);
-});
+const rankedRows = computed<RankedRow[]>(() => allRankedRows.value.slice(0, TOP_N));
 
 const topCount = computed(() => rankedRows.value[0]?.count ?? 0);
 
@@ -150,33 +132,6 @@ watch(
     selectedDistrict.value = districtOptions.value[0]?.label ?? '';
   },
 );
-// 지역을 바꾸면 읍면동 선택은 푼다 — 전 지역의 동이 남아 있으면 빈 목록이 된다
-watch(currentScope, async () => {
-  selectedDong.value = '';
-  peekDongs.value = [];
-  const district = selectedDistrictOption.value;
-  if (!selectedSido.value || !selectedDistrict.value || isAllDistricts.value || !district) return;
-  peeking.value = true;
-  try {
-    const result = await fetchTradeVolumeStats({
-      keyword: selectedKeyword.value,
-      lawdCode: district.lawdCode,
-      dealYmdList: buildDealYmdList(3),
-      propertyType: selectedPropertyType.value,
-    });
-    // 그 사이 다른 지역을 골랐으면 버린다
-    if (!selectedDistrict.value || district.lawdCode !== selectedDistrictOption.value?.lawdCode) return;
-    peekDongs.value = result.rows.map((r) => r.region);
-  } catch {
-    peekDongs.value = [];
-  } finally {
-    peeking.value = false;
-  }
-});
-watch(rows, () => {
-  if (selectedDong.value && !rows.value.some((r) => r.region === selectedDong.value)) selectedDong.value = '';
-});
-
 /** 등수 색 — 다섯 줄만 세우므로 색상환을 큼직하게 건너뛴다.
  *  빨강 → 노랑 → 초록 → 파랑 → 보라. 이웃한 등수가 한눈에 갈린다. */
 const RANK_HUES = [0, 45, 135, 215, 285];
@@ -436,8 +391,6 @@ const loadStats = async () => {
     });
     selectedRegion.value = null;
     geocodedCoords.value = new Map();
-    // 이 결과가 어느 지역 것인지 적어 둔다 — 읍면동 메뉴가 옛 지역 것을 들고 있지 않게
-    loadedScope.value = currentScope.value;
     const unit = '동(洞)';
     if (rows.value.length === 0) {
       message.value = warnings[0] || '해당 조건의 실거래 건수가 없습니다.';
@@ -499,13 +452,6 @@ onMounted(() => {
                 <option v-for="district in districtOptions" :key="district.lawdCode" :value="district.label">
                   {{ district.label }}
                 </option>
-              </select>
-            </label>
-            <label class="tsp-f">
-              <small>읍 · 면 · 동</small>
-              <select class="tsp-select" v-model="selectedDong" :disabled="dongOptions.length === 0">
-                <option value="">{{ peeking ? '불러오는 중…' : (dongOptions.length === 0 ? '전체' : '전체') }}</option>
-                <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
               </select>
             </label>
             <label class="tsp-f">
