@@ -53,6 +53,12 @@ const sourceSummary = ref('');
 const lastLoadedLabel = ref('');
 const lastLoadedAt = ref('');
 const selectedRegion = ref<string | null>(null);
+/** 읍·면·동 — 고르면 그 동에 눈을 맞춘다. 통계 정보도 그 동 것으로 바뀐다 */
+const selectedDong = ref('');
+/** 검색 전에도 고를 수 있게, 시군구를 고르면 석 달치를 미리 훑어 이름만 모아 둔다 */
+const peekDongs = ref<string[]>([]);
+const peeking = ref(false);
+const dongOptions = computed(() => (rows.value.length > 0 ? rows.value.map((r) => r.region) : peekDongs.value));
 const geocodedCoords = ref<Map<string, { lat: number; lng: number }>>(new Map());
 
 let leafletMap: L.Map | null = null;
@@ -99,13 +105,20 @@ const rankedRows = computed<RankedRow[]>(() => allRankedRows.value.slice(0, TOP_
 
 const topCount = computed(() => rankedRows.value[0]?.count ?? 0);
 
-/** 통계 정보 — 받아 온 동을 통째로 센다 (랭킹 다섯 줄이 아니라 전부) */
-const statTotalCount = computed(() => rows.value.reduce((acc, r) => acc + r.count, 0));
-const statPriceSum = computed(() => rows.value.reduce((acc, r) => acc + r.priceSum, 0));
-const statPriceCount = computed(() => rows.value.reduce((acc, r) => acc + r.priceCount, 0));
+/** 통계 정보 — 동을 고르면 그 동 것만, 아니면 받아 온 동을 통째로 센다 */
+const statRows = computed(() => (
+  selectedRegion.value ? rows.value.filter((r) => r.region === selectedRegion.value) : rows.value
+));
+const statTotalCount = computed(() => statRows.value.reduce((acc, r) => acc + r.count, 0));
+const statPriceSum = computed(() => statRows.value.reduce((acc, r) => acc + r.priceSum, 0));
+const statPriceCount = computed(() => statRows.value.reduce((acc, r) => acc + r.priceCount, 0));
 const statAvgPrice = computed(() => (statPriceCount.value > 0 ? statPriceSum.value / statPriceCount.value : 0));
 /** 지금 보고 있는 범위 — '인천광역시 서해구' */
-const scopeTitle = computed(() => selectedKeyword.value || '지역을 고르세요');
+const scopeTitle = computed(() => (
+  selectedRegion.value
+    ? `${selectedKeyword.value} ${selectedRegion.value}`
+    : (selectedKeyword.value || '지역을 고르세요')
+));
 /** 받아 온 기간 — '최근 1개월' */
 const periodText = computed(() => (selectedPeriod.value ? `최근 ${selectedPeriod.value}개월` : ''));
 const kindLabel = computed(
@@ -132,6 +145,37 @@ watch(
     selectedDistrict.value = districtOptions.value[0]?.label ?? '';
   },
 );
+// 메뉴에서 동을 고르면 지도와 통계가 따라오고, 지도에서 누르면 메뉴가 따라온다
+watch(selectedDong, (dong) => {
+  if (!dong) { selectedRegion.value = null; return; }
+  if (selectedRegion.value !== dong) focusRegion(dong);
+});
+watch(selectedRegion, (region) => { selectedDong.value = region ?? ''; });
+
+// 지역을 바꾸면 고른 동은 푼다. 시군구를 고르면 동 이름을 미리 훑어 둔다
+watch(() => `${selectedSido.value}|${selectedDistrict.value}`, async () => {
+  selectedDong.value = '';
+  selectedRegion.value = null;
+  peekDongs.value = [];
+  const district = selectedDistrictOption.value;
+  if (!selectedSido.value || !selectedDistrict.value || isAllDistricts.value || !district) return;
+  peeking.value = true;
+  try {
+    const result = await fetchTradeVolumeStats({
+      keyword: selectedKeyword.value,
+      lawdCode: district.lawdCode,
+      dealYmdList: buildDealYmdList(3),
+      propertyType: selectedPropertyType.value,
+    });
+    if (district.lawdCode !== selectedDistrictOption.value?.lawdCode) return;
+    peekDongs.value = result.rows.map((r) => r.region);
+  } catch {
+    peekDongs.value = [];
+  } finally {
+    peeking.value = false;
+  }
+});
+
 /** 등수 색 — 다섯 줄만 세우므로 색상환을 큼직하게 건너뛴다.
  *  빨강 → 노랑 → 초록 → 파랑 → 보라. 이웃한 등수가 한눈에 갈린다. */
 const RANK_HUES = [0, 45, 135, 215, 285];
@@ -200,7 +244,10 @@ const drawMap = async () => {
     );
     markerLayer!.addLayer(circle);
 
-    const pin = L.marker([row.lat, row.lng], { icon: makePin(row) }).bindPopup(
+    const pin = L.marker([row.lat, row.lng], { icon: makePin(row) }).on('click', () => {
+      // 누른 동으로 통계 정보를 갈아 끼운다 (다시 누르면 전체로 돌아온다)
+      selectedRegion.value = selectedRegion.value === row.region ? null : row.region;
+    }).bindPopup(
       `<strong>${row.rank}위 · ${row.region}</strong><br/>${row.count}건 · ${row.share.toFixed(1)}%`
       + (row.avgPrice > 0 ? `<br/>평균 ${shortWon(row.avgPrice)}` : ''),
     );
@@ -441,6 +488,13 @@ onMounted(() => {
               </select>
             </label>
             <label class="tsp-f">
+              <small>읍 · 면 · 동</small>
+              <select class="tsp-select" v-model="selectedDong" :disabled="dongOptions.length === 0">
+                <option value="">{{ peeking ? '불러오는 중…' : '전체' }}</option>
+                <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
+              </select>
+            </label>
+            <label class="tsp-f">
               <small>종류</small>
               <div class="tsp-seg">
                 <button
@@ -490,7 +544,7 @@ onMounted(() => {
               <div><dt>거래 건수</dt><dd>{{ statTotalCount.toLocaleString('ko-KR') }}건</dd></div>
               <div><dt>매매 평균가</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
               <div><dt>거래 총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
-              <div><dt>집계 동</dt><dd>{{ rows.length }}곳</dd></div>
+              <div><dt>집계 동</dt><dd>{{ selectedRegion ? '1곳' : `${rows.length}곳` }}</dd></div>
             </div>
           </section>
 
