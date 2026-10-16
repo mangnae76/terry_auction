@@ -5,14 +5,15 @@
 import { ref } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 
-type TabKey = 'balance' | 'evict' | 'repair' | 'sell';
+type TabKey = 'win' | 'balance' | 'evict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
+  { key: 'win', label: '낙찰', desc: '낙찰일·낙찰가, 경쟁 상황, 매각허가결정' },
   { key: 'balance', label: '잔금·등기', desc: '잔금 납부일, 등기 촉탁, 취득세' },
   { key: 'evict', label: '명도', desc: '점유자 확인, 인도명령·강제집행, 이사비 협의' },
   { key: 'repair', label: '수리·정비', desc: '수리 범위와 비용, 업체 일정' },
   { key: 'sell', label: '매도·임대', desc: '내놓은 가격, 중개업소, 계약 일정' },
 ];
-const activeTab = ref<TabKey>('balance');
+const activeTab = ref<TabKey>('win');
 const current = () => TABS.find((t) => t.key === activeTab.value) ?? TABS[0];
 </script>
 
@@ -69,14 +70,14 @@ const current = () => TABS.find((t) => t.key === activeTab.value) ?? TABS[0];
   border-bottom: 1px solid #e5e7eb;
 }
 .pw-tabs {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
   margin: 8px 14px 6px; padding: 3px;
   background: #e2e8f2; border-radius: 12px;
 }
 .pw-tab {
   border: 1px solid transparent; background: transparent;
   padding: 5px 2px; min-height: 36px; border-radius: 9px;
-  font-size: 13.5px; font-weight: 700; line-height: 1.3; letter-spacing: -0.4px; color: #6b7280;
+  font-size: 12.5px; font-weight: 700; line-height: 1.25; letter-spacing: -0.5px; color: #6b7280;
   text-align: center; white-space: normal; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   font-family: inherit;
