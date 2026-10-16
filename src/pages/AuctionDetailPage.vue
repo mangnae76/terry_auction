@@ -4226,7 +4226,7 @@ type ConcTable = {
 const CONC_TABLES: ConcTable[] = [
   // boldPrice — 값을 모아 견주는 표라 '가격' 칸이 한눈에 들어와야 한다
   { title: '시세 결론', cols: MKT_CONC_COLS, note: false, boldPrice: true, vertical: true },
-  { title: '급매가 결론', cols: MKT_URGENT_COLS, note: true, boldPrice: false },
+  { title: '급매가 결론', cols: MKT_URGENT_COLS, note: true, boldPrice: false, vertical: true },
 ];
 const MKT_CONC_ROWS: ConcRow[] = [
   { key: 'area', label: '면적', money: false },
@@ -8153,7 +8153,7 @@ const goBack = () => router.back();
                 </thead>
                 <tbody>
                   <tr v-for="l in concLines(t)" :key="l.key">
-                    <th v-if="t.vertical" :class="['adp-conc-side', l.tone, { off: concMeanOff(l.key) }]">
+                    <th v-if="t.vertical" :class="['adp-conc-side', l.tone, { off: concMeanOff(l.key), mid: l.key === 'mean' }]">
                       <label v-if="CONC_MEAN_SRC.includes(l.key)" class="adp-conc-pick inline">
                         <input type="checkbox" :checked="!concMeanOff(l.key)" @change="toggleConcMean(l.key)" />
                       </label>{{ concLineLabel(l.label) }}
@@ -9707,17 +9707,33 @@ const goBack = () => router.back();
 .adp-conc-table.conc-vert th.adp-conc-side {
   width: 31%; text-align: left; white-space: nowrap; padding: 4px 6px;
 }
-.adp-conc-table.conc-vert th.adp-conc-side {
-  font-size: 10.5px; font-weight: 700; color: #374151; background: #f9fafb;
+/* 글자는 본래보다 15% 키운다 — 눕힌 표는 칸이 넓어 작게 쓸 까닭이 없다 */
+.adp-mkt-table.adp-conc-table.conc-vert th.adp-conc-side {
+  font-size: 12px; font-weight: 700; color: #374151; background: #f9fafb;
 }
-.adp-conc-table.conc-vert th.adp-conc-corner { font-size: 10.5px; color: #9ca3af; font-weight: 700; }
+/* 머리글 넷(구분·면적·평당가·가격)은 한 가지 색으로 — '구분'만 흐리면 따로 논다 */
+.adp-mkt-table.adp-conc-table.conc-vert thead th,
+.adp-mkt-table.adp-conc-table.conc-vert th.adp-conc-corner {
+  font-size: 13.5px; font-weight: 700; color: #374151;
+}
+/* '구분'과 '평균'은 칸 한가운데 — 이름이 아니라 표의 테두리 글이다 */
+.adp-conc-table.conc-vert th.adp-conc-corner,
+.adp-conc-table.conc-vert th.adp-conc-side.mid { text-align: center; }
+.adp-mkt-table.adp-conc-table.conc-vert th.adp-conc-side.mid { font-size: 13.5px; }
+/* 급매가 줄은 이름까지 빨갛게 — 표에서 결론을 적는 자리다 */
+.adp-mkt-table.adp-conc-table.conc-vert th.adp-conc-side.red { color: #e0574a; font-weight: 800; }
+.adp-mkt-table.adp-conc-table.conc-vert tbody td .adp-conc-v { font-size: 12px; }
+.adp-mkt-table.adp-conc-table.conc-vert tbody td .adp-conc-area { font-size: 11px; }
+.adp-conc-table.conc-vert .adp-mkt-input { font-size: 12px; }
 /* 평균에서 뺀 줄은 이름까지 흐리게 — 표 전체가 같은 신호를 쓴다 */
 .adp-conc-table.conc-vert th.adp-conc-side.off { opacity: 0.45; }
 /* 줄 이름 왼쪽의 체크 — 머리줄과 달리 이름과 한 줄에 선다 */
 .adp-conc-table .adp-conc-pick.inline {
   display: inline-block; line-height: 0; margin: 0 4px 0 0; vertical-align: -1px;
 }
-.adp-conc-table.conc-vert .adp-conc-area { white-space: nowrap; }
+/* 면적 — 조건분석 평균은 '25.16 / 7.61평 ~ 84.87 / 25.67평' 처럼 범위다.
+   물결 뒤에서 줄을 바꿔 두 면적을 위아래로 세운다 (한 줄로 두면 칸을 넘는다) */
+.adp-conc-table.conc-vert .adp-conc-area { white-space: pre-line; line-height: 1.35; }
 /* 값은 줄마다 끝자리를 맞춘다 — 첫 줄만 가운데로 서던 것을 바로잡는다 */
 .adp-conc-table.conc-vert tbody td.num { text-align: right; }
 
