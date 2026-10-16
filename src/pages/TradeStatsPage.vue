@@ -21,10 +21,9 @@ type RankedRow = TradeVolumeStat & {
 };
 
 const propertyOptions: Array<{ value: PropertyType; label: string }> = [
-  { value: 'all', label: '전체' },
   { value: 'apt', label: '아파트' },
   { value: 'villa', label: '연립다세대' },
-  { value: 'officetel', label: 'OP' },
+  { value: 'officetel', label: '오피스텔' },
 ];
 
 const periodOptions = [1, 3, 6, 12];
@@ -39,7 +38,7 @@ const shortWon = (won: number): string => {
 const router = useRouter();
 const selectedSido = ref('');
 const selectedDistrict = ref('');
-const selectedPropertyType = ref<PropertyType>('all');
+const selectedPropertyType = ref<PropertyType>('apt');
 /** 기간은 고르고 들어가게 둔다 — 빈 값이면 아직 안 골랐다는 뜻이다 */
 const selectedPeriod = ref(0);
 /** 랭킹은 늘 다섯 줄 — 고르는 메뉴를 두지 않는다.
@@ -59,8 +58,14 @@ const selectedDong = ref('');
 /** 어느 지역으로 받아 온 결과인지 — 지역을 바꾸면 옛 동 목록을 내린다 */
 const loadedScope = ref('');
 const currentScope = computed(() => `${selectedSido.value}|${selectedDistrict.value}`);
+/** 검색 전에도 읍·면·동을 고를 수 있게, 시군구를 고르면 석 달치를 미리 한 번 훑어 이름만 모은다
+ *  (실거래 분석 화면과 같은 방식) */
+const peekDongs = ref<string[]>([]);
+const peeking = ref(false);
 const dongOptions = computed(() => (
-  loadedScope.value && loadedScope.value === currentScope.value ? rows.value.map((r) => r.region) : []
+  loadedScope.value && loadedScope.value === currentScope.value
+    ? rows.value.map((r) => r.region)
+    : peekDongs.value
 ));
 const geocodedCoords = ref<Map<string, { lat: number; lng: number }>>(new Map());
 
@@ -112,6 +117,19 @@ const rankedRows = computed<RankedRow[]>(() => {
 
 const topCount = computed(() => rankedRows.value[0]?.count ?? 0);
 
+/** 통계 정보 — 받아 온 동을 통째로 센다 (랭킹 다섯 줄이 아니라 전부) */
+const statTotalCount = computed(() => rows.value.reduce((acc, r) => acc + r.count, 0));
+const statPriceSum = computed(() => rows.value.reduce((acc, r) => acc + r.priceSum, 0));
+const statPriceCount = computed(() => rows.value.reduce((acc, r) => acc + r.priceCount, 0));
+const statAvgPrice = computed(() => (statPriceCount.value > 0 ? statPriceSum.value / statPriceCount.value : 0));
+/** 지금 보고 있는 범위 — '인천광역시 서해구' */
+const scopeTitle = computed(() => selectedKeyword.value || '지역을 고르세요');
+/** 받아 온 기간 — '최근 1개월' */
+const periodText = computed(() => (selectedPeriod.value ? `최근 ${selectedPeriod.value}개월` : ''));
+const kindLabel = computed(
+  () => propertyOptions.find((o) => o.value === selectedPropertyType.value)?.label ?? '전체',
+);
+
 const buildDealYmdList = (months: number): string[] => {
   const list: string[] = [];
   const base = new Date();
@@ -133,7 +151,28 @@ watch(
   },
 );
 // 지역을 바꾸면 읍면동 선택은 푼다 — 전 지역의 동이 남아 있으면 빈 목록이 된다
-watch(() => [selectedSido.value, selectedDistrict.value].join('|'), () => { selectedDong.value = ''; });
+watch(currentScope, async () => {
+  selectedDong.value = '';
+  peekDongs.value = [];
+  const district = selectedDistrictOption.value;
+  if (!selectedSido.value || !selectedDistrict.value || isAllDistricts.value || !district) return;
+  peeking.value = true;
+  try {
+    const result = await fetchTradeVolumeStats({
+      keyword: selectedKeyword.value,
+      lawdCode: district.lawdCode,
+      dealYmdList: buildDealYmdList(3),
+      propertyType: selectedPropertyType.value,
+    });
+    // 그 사이 다른 지역을 골랐으면 버린다
+    if (!selectedDistrict.value || district.lawdCode !== selectedDistrictOption.value?.lawdCode) return;
+    peekDongs.value = result.rows.map((r) => r.region);
+  } catch {
+    peekDongs.value = [];
+  } finally {
+    peeking.value = false;
+  }
+});
 watch(rows, () => {
   if (selectedDong.value && !rows.value.some((r) => r.region === selectedDong.value)) selectedDong.value = '';
 });
@@ -145,22 +184,37 @@ const hueOf = (rank: number) => RANK_HUES[(rank - 1) % RANK_HUES.length];
 /** 노랑 언저리는 어둡게 깔면 흙빛이 된다 — 색은 그대로 두고 글씨를 검게 쓴다 */
 const isPaleHue = (h: number) => h >= 35 && h <= 80;
 const paletteColors = (rank: number): [string, string] => {
+  // 여섯 등부터는 색을 빼 담담하게 — 지도에 다 찍되 앞 다섯이 먼저 눈에 들어와야 한다
+  if (rank > TOP_N) return ['hsl(215 16% 66%)', 'hsl(215 18% 52%)'];
   const h = hueOf(rank);
   return [`hsl(${h} 88% 58%)`, `hsl(${h} 82% ${isPaleHue(h) ? 50 : 45}%)`];
 };
 /** 노랑 바탕에서만 글씨를 검게 — 나머지는 흰 글씨가 읽힌다 */
-const isLightBadge = (rank: number) => isPaleHue(hueOf(rank));
+const isLightBadge = (rank: number) => rank <= TOP_N && isPaleHue(hueOf(rank));
 
 const makeRankIcon = (rank: number) => {
   const [from, to] = paletteColors(rank);
   const bg = `linear-gradient(135deg, ${from}, ${to})`;
   const color = isLightBadge(rank) ? '#1e293b' : '#fff';
-  const extra = rank <= 5 ? ' emphasize' : '';
+  const extra = rank <= TOP_N ? ' emphasize' : '';
   return L.divIcon({
     className: 'trade-map-marker-wrap',
     html: `<div class="trade-map-marker${extra}" style="background:${bg};color:${color}"><span>${rank}</span></div>`,
     iconSize: [30, 30],
     iconAnchor: [15, 15],
+  });
+};
+
+/** 지도 위 이름표 — 동 이름과 평균가를 한 알약에 담는다 (등수 색을 그대로 쓴다) */
+const makeNameLabel = (row: RankedRow) => {
+  const [, deep] = paletteColors(row.rank);
+  const color = isLightBadge(row.rank) ? '#1e293b' : '#fff';
+  return L.divIcon({
+    className: 'trade-map-marker-wrap',
+    html: `<div class="trade-map-pill" style="background:${deep};color:${color}">`
+      + `<b>${row.region}</b><span>${row.avgPrice > 0 ? shortWon(row.avgPrice) : `${row.count}건`}</span></div>`,
+    iconSize: [86, 34],
+    iconAnchor: [43, -6],
   });
 };
 
@@ -171,7 +225,9 @@ const ensureMap = async () => {
   if (leafletMap) return;
   const container = document.getElementById('trade-map');
   if (!container) return;
-  leafletMap = L.map('trade-map', { zoomControl: true }).setView([37.48, 126.68], 11);
+  // 확대·축소 단추는 오른쪽으로 — 왼쪽은 통계 판이 덮는다
+  leafletMap = L.map('trade-map', { zoomControl: false }).setView([37.48, 126.68], 11);
+  L.control.zoom({ position: 'topright' }).addTo(leafletMap);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap',
   }).addTo(leafletMap);
@@ -185,7 +241,8 @@ const drawMap = async () => {
   markerByRegion.clear();
 
   const plotted: L.LatLngTuple[] = [];
-  rankedRows.value.forEach((row) => {
+  // 지도에는 받아 온 동을 모두 찍는다 — 다섯 줄은 왼쪽 목록에서만 추린다
+  allRankedRows.value.forEach((row) => {
     if (row.lat == null || row.lng == null) return;
     const [cFrom, cTo] = paletteColors(row.rank);
     const circle = L.circleMarker([row.lat, row.lng], {
@@ -205,6 +262,8 @@ const drawMap = async () => {
       `<strong>${row.rank}위 · ${row.region}</strong><br/>${row.count}건 · ${row.share.toFixed(1)}%`,
     );
     markerLayer!.addLayer(badge);
+    // 이름표는 동그라미 아래에 — 지도만 보고도 어느 동인지 읽히게
+    markerLayer!.addLayer(L.marker([row.lat, row.lng], { icon: makeNameLabel(row) }));
     markerByRegion.set(row.region, badge);
     plotted.push([row.lat, row.lng]);
   });
@@ -445,7 +504,7 @@ onMounted(() => {
             <label class="tsp-f">
               <small>읍 · 면 · 동</small>
               <select class="tsp-select" v-model="selectedDong" :disabled="dongOptions.length === 0">
-                <option value="">{{ dongOptions.length === 0 ? '검색 후 선택' : '전체' }}</option>
+                <option value="">{{ peeking ? '불러오는 중…' : (dongOptions.length === 0 ? '전체' : '전체') }}</option>
                 <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
               </select>
             </label>
@@ -482,50 +541,63 @@ onMounted(() => {
           <p v-if="message" :class="['tsp-note', { warn: rows.length === 0 }]">{{ message }}</p>
       </div>
 
-      <section class="tsp-card">
-        <header class="tsp-card-head">
-          <h2>동별 거래 랭킹</h2>
-          <small v-if="allRankedRows.length > 0" class="tsp-card-sub">{{ rankedRows.length }} / {{ allRankedRows.length }}</small>
-        </header>
-        <div v-if="rankedRows.length === 0" class="tsp-empty">조회 결과가 여기에 표시됩니다.</div>
-        <ol v-else class="tsp-rank-list">
-          <li
-            v-for="row in rankedRows"
-            :key="row.region"
-            :class="['tsp-rank-row', { active: selectedRegion === row.region }]"
-            @click="focusRegion(row.region)"
-          >
-            <span
-              class="tsp-rank-badge"
-              :style="{ background: paletteColors(row.rank)[1], color: isLightBadge(row.rank) ? '#1e293b' : '#fff' }"
-            >{{ row.rank }}</span>
-            <div class="tsp-rank-main">
-              <div class="tsp-rank-top">
-                <strong class="tsp-rank-name">{{ row.region }}</strong>
-                <!-- 실거래 분석 표와 같은 값 — 여기서는 눈으로 견주라고 한 줄에 같이 적는다 -->
-                <small class="tsp-rank-avg">평균 {{ shortWon(row.avgPrice) }}</small>
-                <strong class="tsp-rank-count">{{ row.count.toLocaleString() }}건</strong>
-              </div>
-              <div class="tsp-rank-bot">
-                <div class="tsp-rank-bar">
-                  <span
-                    class="tsp-rank-fill"
-                    :style="{ width: `${topCount > 0 ? (row.count / topCount) * 100 : 0}%`, background: paletteColors(row.rank)[1] }"
-                  />
-                </div>
-                <small class="tsp-rank-pct">{{ row.share.toFixed(1) }}%</small>
-              </div>
-            </div>
-          </li>
-        </ol>
-      </section>
-
-      <section class="tsp-card">
-        <header class="tsp-card-head">
-          <h2>지도</h2>
-          <small class="tsp-card-sub">마커 크기 = 거래건수</small>
-        </header>
+      <!-- 지도를 바탕에 깔고, 통계와 랭킹은 그 위 왼쪽 판에 얹는다 -->
+      <section class="tsp-stage">
         <div id="trade-map" class="tsp-map" />
+
+        <aside class="tsp-panel">
+          <header class="tsp-panel-head">
+            <strong>{{ scopeTitle }}</strong>
+            <small v-if="lastLoadedLabel">{{ periodText }} · {{ kindLabel }}</small>
+            <small v-else>지역과 기간을 고르고 검색을 누르세요</small>
+          </header>
+
+          <section class="tsp-stat">
+            <h3>통계 정보</h3>
+            <div class="tsp-stat-grid">
+              <div><dt>거래 건수</dt><dd>{{ statTotalCount.toLocaleString('ko-KR') }}건</dd></div>
+              <div><dt>매매 평균가</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
+              <div><dt>거래 총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
+              <div><dt>집계 동</dt><dd>{{ rows.length }}곳</dd></div>
+            </div>
+          </section>
+
+          <section class="tsp-rank">
+            <h3>동별 거래 랭킹
+              <small v-if="allRankedRows.length > 0">{{ rankedRows.length }} / {{ allRankedRows.length }}</small>
+            </h3>
+            <p v-if="rankedRows.length === 0" class="tsp-empty">조회 결과가 여기에 표시됩니다.</p>
+            <ol v-else class="tsp-rank-list">
+              <li
+                v-for="row in rankedRows"
+                :key="row.region"
+                :class="['tsp-rank-row', { active: selectedRegion === row.region }]"
+                @click="focusRegion(row.region)"
+              >
+                <span
+                  class="tsp-rank-badge"
+                  :style="{ background: paletteColors(row.rank)[1], color: isLightBadge(row.rank) ? '#1e293b' : '#fff' }"
+                >{{ row.rank }}</span>
+                <div class="tsp-rank-main">
+                  <div class="tsp-rank-top">
+                    <strong class="tsp-rank-name">{{ row.region }}</strong>
+                    <strong class="tsp-rank-count">{{ row.count.toLocaleString() }}건</strong>
+                  </div>
+                  <div class="tsp-rank-bot">
+                    <div class="tsp-rank-bar">
+                      <span
+                        class="tsp-rank-fill"
+                        :style="{ width: `${topCount > 0 ? (row.count / topCount) * 100 : 0}%`, background: paletteColors(row.rank)[1] }"
+                      />
+                    </div>
+                    <small class="tsp-rank-pct">{{ row.share.toFixed(1) }}%</small>
+                  </div>
+                  <small class="tsp-rank-avg">평균 {{ shortWon(row.avgPrice) }}</small>
+                </div>
+              </li>
+            </ol>
+          </section>
+        </aside>
       </section>
     </div>
 
@@ -654,6 +726,50 @@ onMounted(() => {
 
 .tsp-empty { margin: 12px 14px 16px; padding: 30px 14px; text-align: center; color: #9ca3af; font-size: 13px; background: #fafafa; border: 1px dashed #e5e7eb; border-radius: 10px; }
 
-.tsp-map { width: 100%; height: 320px; border-radius: 0 0 14px 14px; }
+/* 지도를 바탕에 깔고 그 위 왼쪽에 판을 얹는다 — 지도만 보고도 읽히게 */
+.tsp-stage {
+  position: relative; border-radius: 14px; overflow: hidden;
+  border: 1px solid #e8ecf3; background: #fff;
+  height: calc(100vh - 230px); min-height: 560px;
+}
+.tsp-map { width: 100%; height: 100%; }
+.tsp-panel {
+  position: absolute; z-index: 600; top: 14px; left: 14px; bottom: 14px; width: 328px;
+  display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e3e8f0; border-radius: 14px; padding: 16px 16px 18px;
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.14);
+}
+.tsp-panel-head strong { display: block; font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
+.tsp-panel-head small { display: block; margin-top: 3px; font-size: 11.5px; color: #9ca3af; font-weight: 600; }
+.tsp-panel h3 {
+  margin: 0 0 8px; font-size: 12.5px; font-weight: 800; color: #374151;
+  display: flex; align-items: baseline; gap: 6px;
+}
+.tsp-panel h3 small { margin-left: auto; font-size: 11px; font-weight: 700; color: #9ca3af; }
+/* 통계 정보 — 네 칸짜리 작은 표 */
+.tsp-stat-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  border: 1px solid #e8ecf3; border-radius: 10px; overflow: hidden; background: #e8ecf3; gap: 1px;
+}
+.tsp-stat-grid > div { background: #fff; padding: 9px 10px; min-width: 0; }
+.tsp-stat-grid dt { font-size: 10.5px; font-weight: 700; color: #9ca3af; }
+.tsp-stat-grid dd { margin: 2px 0 0; font-size: 13.5px; font-weight: 800; color: #111827; white-space: nowrap; }
+.tsp-rank .tsp-rank-list { padding: 0; }
+.tsp-rank .tsp-empty { margin: 0; padding: 18px 0; text-align: center; font-size: 12px; color: #9ca3af; }
+/* 지도 위 이름표 — 동그라미 아래에 붙는 알약 */
+:global(.trade-map-pill) {
+  display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15;
+  padding: 3px 8px; border-radius: 8px; border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3); white-space: nowrap;
+}
+:global(.trade-map-pill b) { font-size: 11px; font-weight: 800; }
+:global(.trade-map-pill span) { font-size: 10px; font-weight: 700; opacity: 0.92; }
+
+@media (max-width: 900px) {
+  .tsp-stage { height: auto; min-height: 0; border: none; background: transparent; display: flex; flex-direction: column-reverse; gap: 12px; }
+  .tsp-map { height: 360px; border: 1px solid #e8ecf3; border-radius: 14px; }
+  .tsp-panel { position: static; width: auto; box-shadow: none; }
+}
 
 </style>
