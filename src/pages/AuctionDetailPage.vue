@@ -4545,7 +4545,8 @@ const PHOTO_AREAS: Array<{
   { key: 'site', scope: 'block', count: () => auction.value?.sitePhotos?.length ?? 0 },    // 손품+현장 · 현장사진
   // 급매가 · 동일지번 매각물건 — 사진 모음이라 늘 접어 둔다
   { key: 'sameLot', scope: 'block', count: () => extraList('sameLot').length, fold: 'always' },
-  { key: 'tradePhoto', scope: 'block', count: () => tradePhotoList.value.length },         // 급매가 · 평단가 비교 사진
+  // 급매가 · 평단가 비교 사진 — 늘 접어 둔다
+  { key: 'tradePhoto', scope: 'block', count: () => tradePhotoList.value.length, fold: 'always' },
   // 급매가 · 네이버부동산 매물 사진 — 늘 접어 둔다
   { key: 'listPhoto', scope: 'block', count: () => listPhotoList.value.length, fold: 'always' },
   // 입지/개별성 · 입지조사 사진 — 칸이 길어 늘 접어 둔다 (사진이 없어도)
