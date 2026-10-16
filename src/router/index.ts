@@ -88,6 +88,12 @@ const router = createRouter({
       component: TradeStatsPage,
     },
     {
+      // 낙찰 이후 — 명도·매도 과정을 모을 자리
+      path: '/post-win',
+      name: 'post-win',
+      component: () => import('../pages/PostWinPage.vue'),
+    },
+    {
       path: '/finance',
       name: 'finance',
       component: () => import('../pages/FinancePage.vue'),
