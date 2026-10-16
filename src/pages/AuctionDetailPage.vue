@@ -2866,19 +2866,19 @@ const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow
     ],
   },
   {
-    // 현장에서는 집을 다 보고 난 뒤에 '누가 살고 있나'를 적게 된다 — 탐문 뒤로 둔다.
-    // 내용은 템플릿에 따로 있어 여기서는 자리만 잡는다
-    title: '② 입찰자 현황조사',
-    special: 'report',
-    items: [],
-  },
-  {
-    title: '③ 수리상태',
+    title: '② 수리상태',
     items: [
       { id: 'fs.door', label: '도어', options: ['O', 'X'], noteOptions: ['분양상태', '교체'] },
       { id: 'fs.doorLock', label: '도어락', options: ['O', 'X'], noteOptions: ['분양상태', '교체'] },
       { id: 'fs.window', label: '샷시', options: ['O', 'X'], noteOptions: ['분양상태', '교체'] },
     ],
+  },
+  {
+    // 문 앞에서 눈으로 보는 것(수리상태)을 먼저 적고, '누가 살고 있나'는 맨 뒤에 적는다.
+    // 내용은 템플릿에 따로 있어 여기서는 자리만 잡는다
+    title: '③ 입찰자 현황조사',
+    special: 'report',
+    items: [],
   },
 ];
 // 현장 체크리스트 — 항목명과 확인할 내용
@@ -8309,6 +8309,18 @@ const goBack = () => router.back();
                 </div>
               </div>
             </div>
+            <!-- 고른 말로는 다 담기지 않는 것 — 문 앞에서 본 그대로 적는 칸 -->
+            <div class="adp-survey-row">
+              <span class="lbl">비고</span>
+              <span class="adp-survey-note">
+                <input
+                  class="adp-fs-input"
+                  placeholder="직접 입력"
+                  :value="fieldVal('fs.surveyReportNote')"
+                  @input="setFieldValNow('fs.surveyReportNote', ($event.target as HTMLInputElement).value)"
+                />
+              </span>
+            </div>
               </template>
               <template v-for="item in sec.items" :key="item.id">
               <div class="adp-fs-row">
@@ -10551,6 +10563,10 @@ const goBack = () => router.back();
   font-size: 11.5px; font-weight: 700; color: #374151;
 }
 .adp-multi-chip em { font-style: normal; color: #9ca3af; font-size: 12px; }
+/* 현황조사 비고 — 고른 말 아래에서 남은 폭을 다 쓴다 */
+.adp-survey-note { flex: 1 1 auto; min-width: 0; display: flex; }
+.adp-survey-note .adp-fs-input { width: 100%; }
+
 /* 현장조사의 기본 select를 '입찰자 현황조사서' 상자와 똑같이 맞춘다
    (크기·테두리·시작 위치·▾ 화살표) */
 .adp-survey-body select.adp-fs-input {
