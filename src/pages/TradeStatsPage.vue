@@ -147,29 +147,18 @@ const paletteColors = (rank: number): [string, string] => {
 /** 노랑 바탕에서만 글씨를 검게 — 나머지는 흰 글씨가 읽힌다 */
 const isLightBadge = (rank: number) => rank <= TOP_N && isPaleHue(hueOf(rank));
 
-const makeRankIcon = (rank: number) => {
-  const [from, to] = paletteColors(rank);
-  const bg = `linear-gradient(135deg, ${from}, ${to})`;
-  const color = isLightBadge(rank) ? '#1e293b' : '#fff';
-  const extra = rank <= TOP_N ? ' emphasize' : '';
-  return L.divIcon({
-    className: 'trade-map-marker-wrap',
-    html: `<div class="trade-map-marker${extra}" style="background:${bg};color:${color}"><span>${rank}</span></div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-  });
-};
-
-/** 지도 위 이름표 — 동 이름과 평균가를 한 알약에 담는다 (등수 색을 그대로 쓴다) */
-const makeNameLabel = (row: RankedRow) => {
+/** 지도 표시 — 등수·동 이름·평균가를 한 알약에 담는다 (전에는 동그라미와 이름표가 따로였다) */
+const makePin = (row: RankedRow) => {
   const [, deep] = paletteColors(row.rank);
   const color = isLightBadge(row.rank) ? '#1e293b' : '#fff';
+  const top = row.rank <= TOP_N ? ' top' : '';
+  const value = row.avgPrice > 0 ? shortWon(row.avgPrice) : `${row.count}건`;
   return L.divIcon({
     className: 'trade-map-marker-wrap',
-    html: `<div class="trade-map-pill" style="background:${deep};color:${color}">`
-      + `<b>${row.region}</b><span>${row.avgPrice > 0 ? shortWon(row.avgPrice) : `${row.count}건`}</span></div>`,
-    iconSize: [86, 34],
-    iconAnchor: [43, -6],
+    html: `<div class="trade-map-pin${top}" style="background:${deep};color:${color}">`
+      + `<i>${row.rank}</i><b>${row.region}</b><span>${value}</span></div>`,
+    iconSize: [112, 26],
+    iconAnchor: [56, 13],
   });
 };
 
@@ -211,15 +200,12 @@ const drawMap = async () => {
     );
     markerLayer!.addLayer(circle);
 
-    const badge = L.marker([row.lat, row.lng], {
-      icon: makeRankIcon(row.rank),
-    }).bindPopup(
-      `<strong>${row.rank}위 · ${row.region}</strong><br/>${row.count}건 · ${row.share.toFixed(1)}%`,
+    const pin = L.marker([row.lat, row.lng], { icon: makePin(row) }).bindPopup(
+      `<strong>${row.rank}위 · ${row.region}</strong><br/>${row.count}건 · ${row.share.toFixed(1)}%`
+      + (row.avgPrice > 0 ? `<br/>평균 ${shortWon(row.avgPrice)}` : ''),
     );
-    markerLayer!.addLayer(badge);
-    // 이름표는 동그라미 아래에 — 지도만 보고도 어느 동인지 읽히게
-    markerLayer!.addLayer(L.marker([row.lat, row.lng], { icon: makeNameLabel(row) }));
-    markerByRegion.set(row.region, badge);
+    markerLayer!.addLayer(pin);
+    markerByRegion.set(row.region, pin);
     plotted.push([row.lat, row.lng]);
   });
 
@@ -703,14 +689,25 @@ onMounted(() => {
 .tsp-stat-grid dd { margin: 2px 0 0; font-size: 13.5px; font-weight: 800; color: #111827; white-space: nowrap; }
 .tsp-rank .tsp-rank-list { padding: 0; }
 .tsp-rank .tsp-empty { margin: 0; padding: 18px 0; text-align: center; font-size: 12px; color: #9ca3af; }
-/* 지도 위 이름표 — 동그라미 아래에 붙는 알약 */
-:global(.trade-map-pill) {
-  display: inline-flex; flex-direction: column; align-items: center; line-height: 1.15;
-  padding: 3px 8px; border-radius: 8px; border: 2px solid #fff;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3); white-space: nowrap;
+/* 지도 표시 — 등수·동 이름·평균가를 한 알약에 담는다 */
+:global(.trade-map-pin) {
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  padding: 3px 9px 3px 3px; border-radius: 999px; border: 2px solid #fff;
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.32); line-height: 1;
 }
-:global(.trade-map-pill b) { font-size: 11px; font-weight: 800; }
-:global(.trade-map-pill span) { font-size: 10px; font-weight: 700; opacity: 0.92; }
+:global(.trade-map-pin i) {
+  flex: 0 0 auto; width: 17px; height: 17px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92); color: #111827;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-style: normal; font-size: 10.5px; font-weight: 800;
+}
+:global(.trade-map-pin b) { font-size: 11px; font-weight: 800; }
+:global(.trade-map-pin span) { font-size: 10.5px; font-weight: 700; opacity: 0.92; }
+/* 앞 다섯은 한 치수 크게 — 지도에서 먼저 눈에 들어와야 한다 */
+:global(.trade-map-pin.top) { padding: 4px 11px 4px 4px; }
+:global(.trade-map-pin.top i) { width: 19px; height: 19px; font-size: 11.5px; }
+:global(.trade-map-pin.top b) { font-size: 12.5px; }
+:global(.trade-map-pin.top span) { font-size: 11.5px; }
 
 @media (max-width: 900px) {
   .tsp-stage { height: auto; min-height: 0; border: none; background: transparent; display: flex; flex-direction: column-reverse; gap: 12px; }
