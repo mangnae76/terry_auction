@@ -9713,7 +9713,8 @@ const goBack = () => router.back();
 .adp-conc-table.conc-vert { table-layout: fixed; }
 .adp-conc-table.conc-vert th.adp-conc-corner,
 .adp-conc-table.conc-vert th.adp-conc-side {
-  width: 31%; text-align: left; white-space: nowrap; padding: 4px 6px;
+  /* '실거래가 조건분석 평균'이 꽉 차 보여 한 뼘 늘렸다 */
+  width: 38%; text-align: left; white-space: nowrap; padding: 4px 6px;
 }
 /* 글자는 본래보다 15% 키운다 — 눕힌 표는 칸이 넓어 작게 쓸 까닭이 없다 */
 .adp-mkt-table.adp-conc-table.conc-vert th.adp-conc-side {
