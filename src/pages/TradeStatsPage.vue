@@ -20,9 +20,10 @@ type RankedRow = TradeVolumeStat & {
   lng?: number;
 };
 
+// 차례는 다른 분석 화면(KINDS)과 같게 — 연립다세대 · 아파트 · 오피스텔
 const propertyOptions: Array<{ value: PropertyType; label: string }> = [
-  { value: 'apt', label: '아파트' },
   { value: 'villa', label: '연립다세대' },
+  { value: 'apt', label: '아파트' },
   { value: 'officetel', label: '오피스텔' },
 ];
 
@@ -38,7 +39,7 @@ const shortWon = (won: number): string => {
 const router = useRouter();
 const selectedSido = ref('');
 const selectedDistrict = ref('');
-const selectedPropertyType = ref<PropertyType>('apt');
+const selectedPropertyType = ref<PropertyType>('villa');
 /** 기간은 고르고 들어가게 둔다 — 빈 값이면 아직 안 골랐다는 뜻이다 */
 const selectedPeriod = ref(0);
 /** 랭킹은 늘 다섯 줄 — 고르는 메뉴를 두지 않는다.
