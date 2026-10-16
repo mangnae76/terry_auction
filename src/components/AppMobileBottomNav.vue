@@ -22,14 +22,14 @@ const router = useRouter();
       <span class="amb-icon amb-mask" :style="{ '--i': `url(${pinIcon})` }" />
       <span>임장경로</span>
     </button>
-    <button type="button" :class="['amb-item', { active: active === 'finance' }]" @click="router.push('/finance')">
-      <span class="amb-icon amb-mask" :style="{ '--i': `url(${banknoteIcon})` }" />
-      <span>자금관리</span>
-    </button>
     <!-- 시장정보는 분석 도구로 옮겼다 — 그 자리에는 입찰 캘린더를 둔다 -->
     <button type="button" :class="['amb-item', { active: active === 'calendar' }]" @click="router.push('/bid-calendar')">
       <span class="amb-icon amb-mask" :style="{ '--i': `url(${calendarIcon})` }" />
       <span>캘린더</span>
+    </button>
+    <button type="button" :class="['amb-item', { active: active === 'finance' }]" @click="router.push('/finance')">
+      <span class="amb-icon amb-mask" :style="{ '--i': `url(${banknoteIcon})` }" />
+      <span>자금관리</span>
     </button>
     <button type="button" :class="['amb-item', { active: active === 'more' }]" @click="router.push('/more')">
       <svg class="amb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
