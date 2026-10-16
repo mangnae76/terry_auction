@@ -126,8 +126,13 @@ const addrKey = (address: string) => {
 const listedAuctions = computed(() =>
   store.auctions.filter((item) => !item.id.startsWith('onbid-')),
 );
-/** 휴지통까지 포함한 선정물건 전체 — 손으로 적은 주소와 가르는 데 쓴다 */
-const everyAuction = computed(() => [...store.auctions, ...store.hiddenAuctions]);
+/** 휴지통·보관함까지 포함한 선정물건 전체 — 손으로 적은 주소와 가르는 데 쓴다.
+ *  치운 물건도 '아는 주소'라야 경로에서 내려간다. 빠뜨리면 주인 없는 정차지가 남는다. */
+const everyAuction = computed(() => [
+  ...store.auctions,
+  ...store.hiddenAuctions,
+  ...store.archivedAuctions,
+]);
 const knownKeys = computed(() => new Set(everyAuction.value.map((item) => addrKey(item.address))));
 /** 경로에 있을 수 있는 단계 — 임장예정과 임장완료.
  *  임장완료는 목록에서 내리지 않고 주소에 줄만 긋는다(다녀온 곳도 동선에 남아 있어야 읽힌다). */
@@ -162,8 +167,16 @@ const stageTone = (item: AuctionDetail) => {
   return 'etc';
 };
 
+/** 치운 물건 중 경로에 올라 있던 것 — 휴지통·보관함으로 보낸 임장예정·임장완료.
+ *  경로에서는 내려가지만 목록에서까지 사라지면 '어디 갔지?' 가 된다. 자리는 남겨 둔다. */
+const removedRouteItems = computed(() => [
+  ...store.hiddenAuctions.map((item) => ({ item, place: '휴지통' })),
+  ...store.archivedAuctions.map((item) => ({ item, place: '보관함' })),
+].filter(({ item }) => canRoute(item) && !item.id.startsWith('onbid-')));
+
 /** 경로제외물건 — 선정물건의 모든 단계가 여기로 내려온다.
- *  번호 줄 + 이 줄 = 선정물건 전체 건수(1:1). 한 물건이 두 군데 나오지 않는다. */
+ *  번호 줄 + 이 줄 = 선정물건 전체 건수(1:1). 한 물건이 두 군데 나오지 않는다.
+ *  여기에 치운 물건(휴지통·보관함) 줄이 뒤따라 붙는다. */
 const missingPlanned = computed(() => {
   // 같은 주소에 사건이 둘일 수 있으니 번호 줄은 '먼저 온 임장예정'이 하나씩 차지한다
   const unclaimed = new Set(routedKeys.value);
@@ -173,6 +186,8 @@ const missingPlanned = computed(() => {
     label: string;
     tone: string;
     failed: boolean;
+    place: string;
+    hint: string;
   }> = [];
   for (const item of listedAuctions.value) {
     const key = addrKey(item.address);
@@ -186,15 +201,29 @@ const missingPlanned = computed(() => {
       label: stageLabel(item),
       tone: stageTone(item),
       failed: item.status === '임장예정' && failedKeys.value.has(key),
+      place: '',
+      hint: '',
+    });
+  }
+  // 치운 물건은 맨 뒤에 — 단계 대신 어디에 있는지를 태그로 적는다
+  for (const { item, place } of removedRouteItems.value) {
+    rows.push({
+      id: item.id,
+      address: item.address.trim(),
+      label: place,
+      tone: 'gone',
+      failed: false,
+      place,
+      hint: `${stageLabel(item)} 물건을 ${place}으로 보냈습니다. 꺼내면 경로로 돌아옵니다.`,
     });
   }
   return rows;
 });
 /** 임장예정인데 아직 번호를 못 받은 줄 — 동선최적화 목록 안(도착 줄 앞)에 '대기'로 선다.
  *  단계가 임장예정이면 그 자체가 '가 볼 곳'이라는 뜻이므로 따로 등록 버튼을 두지 않는다. */
-const queuedRows = computed(() => missingPlanned.value.filter((row) => row.tone === 'plan'));
-/** 경로에 있을 수 없는 단계 — 아래 '경로제외물건'으로 내려간다 */
-const missingRows = computed(() => missingPlanned.value.filter((row) => row.tone !== 'plan'));
+const queuedRows = computed(() => missingPlanned.value.filter((row) => row.tone === 'plan' && !row.place));
+/** 경로에 있을 수 없는 줄 — 아래 '경로제외물건'으로 내려간다 (치운 물건도 여기) */
+const missingRows = computed(() => missingPlanned.value.filter((row) => row.tone !== 'plan' || row.place));
 /** 경로에 있어야 할 주소 = 임장예정·임장완료 물건 + 손으로 적어 넣은 주소 */
 const shouldRouteKeys = computed(() => {
   const keys = new Set(listedAuctions.value.filter(canRoute).map((item) => addrKey(item.address)));
@@ -287,9 +316,12 @@ const syncRouteWithStages = () => {
   // 단계에 맞춰 정리한 결과도 저장해 둬야 다시 들어왔을 때 같은 화면이 나온다
   if (changed) cacheCurrentPlanLocally();
 };
-// 선정물건의 단계가 바뀌면(어느 화면에서 바꿨든, 휴지통에서 복원했든) 경로를 바로 맞춘다
+// 선정물건의 단계가 바뀌면(어느 화면에서 바꿨든, 휴지통·보관함을 오갔든) 경로를 바로 맞춘다.
+// 치운 물건은 단계가 그대로라 '어디에 있는지'까지 열쇠에 넣어야 바뀐 줄 안다.
 watch(
-  () => everyAuction.value.map((item) => `${item.id}:${item.status}`).join('|'),
+  () => everyAuction.value
+    .map((item) => `${item.id}:${item.status}:${item.hidden ? 'H' : item.archived ? 'A' : ''}`)
+    .join('|'),
   () => { syncRouteWithStages(); },
 );
 
@@ -1877,7 +1909,7 @@ watch(() => authStore.uid, (newUid) => {
               @mouseleave="leaveAddrBubble()"
             >{{ row.address }}</span>
             <span v-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못했습니다">주소실패</span>
-            <span v-else :class="['ftp-stage-tag', `tone-${row.tone}`]">{{ row.label }}</span>
+            <span v-else :class="['ftp-stage-tag', `tone-${row.tone}`]" :title="row.hint">{{ row.label }}</span>
             <button
               v-if="row.tone === 'visited'"
               style="margin-left: 4px"
@@ -2316,6 +2348,9 @@ watch(() => authStore.uid, (newUid) => {
 .ftp-stage-tag.tone-bid { border-color: #6b85f0; background: #dce5ff; color: #3850c2; }
 .ftp-stage-tag.tone-bidding { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; font-weight: 800; }
 .ftp-stage-tag.is-failed { border-color: #e5e7eb; background: #f9fafb; color: #9ca3af; }
+/* 휴지통·보관함으로 치운 줄 — 단계가 아니라 '있는 곳'이라 회색으로 한 발 물린다 */
+.ftp-stage-tag.tone-gone { border-color: #d7dbe3; background: #eef0f4; color: #7b818d; }
+.ftp-stop-pending.stage-gone .ftp-stop-addr { color: #9ca3af; }
 /* 경로추가로 올라와 계산만 기다리는 줄 — 번호 대신 '+' */
 .ftp-stage-tag.tone-queued { border-color: #c7d7f7; background: #eef3fd; color: #2b6df3; }
 /* 동선최적화가 도는 동안 — 멈춘 것처럼 보이지 않게 옅게 깜빡인다 */
