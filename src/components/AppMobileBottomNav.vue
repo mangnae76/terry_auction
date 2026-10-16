@@ -23,11 +23,18 @@ const router = useRouter();
     </button>
     <!-- 낙찰 이후 — 명도와 매도. 열쇠를 넘겨받는 일이라 열쇠로 그린다 -->
     <button type="button" :class="['amb-item', { active: active === 'post-win' }]" @click="router.push('/post-win')">
-      <svg class="amb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="8.2" cy="8.2" r="3.6" />
-        <path d="M10.8 10.8 20 20" />
-        <path d="m14.6 14.6 2.2-2.2" />
-        <path d="m17 17 2.2-2.2" />
+      <svg class="amb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round">
+        <!-- 손잡이는 속을 채운 고리로, 자루는 굵게 — 가는 선은 손전화에서 묻힌다 -->
+        <path
+          fill="currentColor"
+          stroke="none"
+          fill-rule="evenodd"
+          clip-rule="evenodd"
+          d="M8.4 2.9a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm0 3.6a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8Z"
+        />
+        <path d="M12.3 12.3 20 20" />
+        <path d="m15.4 15.4 2.1-2.1" />
+        <path d="m17.8 17.8 2.1-2.1" />
       </svg>
       <span>낙찰 이후</span>
     </button>
