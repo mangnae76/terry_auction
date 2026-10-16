@@ -475,7 +475,7 @@ onMounted(() => {
         </button>
         <div class="adm-title">
           <h1>지역별 거래량 랭킹 <em>시군구 · 읍면동</em></h1>
-          <p>거래량 많은 곳부터 다섯 곳을 줄 세워 지도와 함께 본다.</p>
+          <p>지역별 거래량 통계</p>
         </div>
       </div>
     </header>
