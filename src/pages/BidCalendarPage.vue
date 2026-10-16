@@ -146,6 +146,34 @@ const showPhotoTip = async (a: AuctionDetail, evt: MouseEvent) => {
 };
 const hidePhotoTip = () => { tip.value = null; };
 
+/** 좁은 화면(앱)에서는 칸에 한 건만 두고 나머지는 접는다 — 칸이 작아 서너 건이면 넘친다 */
+const compact = ref(true);
+const syncCompact = () => {
+  const wide = typeof window !== 'undefined'
+    && document.documentElement.classList.contains('is-web')
+    && window.matchMedia('(min-width: 768px)').matches;
+  compact.value = !wide;
+};
+if (typeof window !== 'undefined') {
+  syncCompact();
+  window.addEventListener('resize', syncCompact);
+}
+/** 펼쳐 둔 날짜 — 그 칸만 길어지며 전부 보여 준다 */
+const opened = ref<Record<string, boolean>>({});
+const toggleDay = (key: string) => { opened.value = { ...opened.value, [key]: !opened.value[key] }; };
+/** 그 칸에 그릴 물건 — 접혀 있으면 첫 건만 */
+const shownOf = (key: string) => {
+  const list = byDate.value[key] ?? [];
+  if (!compact.value || opened.value[key] || list.length <= 1) return list;
+  return list.slice(0, 1);
+};
+/** 접혀서 가려진 건수 */
+const hiddenOf = (key: string) => {
+  const list = byDate.value[key] ?? [];
+  if (!compact.value || opened.value[key]) return 0;
+  return Math.max(0, list.length - 1);
+};
+
 const goDetail = (id: string) => router.push(`/auctions/${id}`);
 </script>
 
@@ -176,7 +204,7 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
             <em v-if="byDate[c.key]" class="cal-count">{{ byDate[c.key].length }}건</em>
           </p>
           <article
-            v-for="a in byDate[c.key] ?? []"
+            v-for="a in shownOf(c.key)"
             :key="a.id"
             class="cal-event"
             @click="goDetail(a.id)"
@@ -195,6 +223,19 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
               </svg>{{ areaTag(a) }}
             </p>
           </article>
+          <!-- 남은 건수 — 누르면 그 칸이 길어지며 모두 보인다 -->
+          <button
+            v-if="hiddenOf(c.key) > 0"
+            type="button"
+            class="cal-more"
+            @click.stop="toggleDay(c.key)"
+          >{{ hiddenOf(c.key) }}건</button>
+          <button
+            v-else-if="compact && opened[c.key] && (byDate[c.key]?.length ?? 0) > 1"
+            type="button"
+            class="cal-more fold"
+            @click.stop="toggleDay(c.key)"
+          >접기</button>
         </div>
       </div>
     </div>
@@ -250,7 +291,7 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
 .cal-dow.sat { color: #2b6df3; }
 
 .cal-cell {
-  min-height: 62px; min-width: 0;
+  min-height: 62px; min-width: 0; height: auto;
   padding: 4px 3px 6px;
   border-right: 1px solid #f1f3f7; border-bottom: 1px solid #f1f3f7;
 }
@@ -277,18 +318,37 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
 /* 입찰 건수 — 눈에 띄게 크고 파랗게 */
 .cal-count { font-style: normal; font-size: 17px; font-weight: 800; color: #2a5fbf; line-height: 1; }
 
+/* 남은 건수 상자 — 물건 줄과 같은 너비로 바로 아래에 붙는다 */
+.cal-more {
+  display: block; width: 100%; box-sizing: border-box;
+  border: 1px dashed #c7d2e4; border-radius: 5px; background: #fff;
+  padding: 4px 0; margin-bottom: 3px;
+  font-family: inherit; font-size: 12px; font-weight: 800; color: #2a5fbf; cursor: pointer;
+}
+.cal-more.fold { border-style: solid; color: #9ca3af; }
+.cal-more:active { background: #f3f4f6; }
+
 .cal-event {
   background: #f7f8fb; border: 1px solid #e8ebf1; border-radius: 5px;
-  padding: 4px 4px; margin-bottom: 3px; cursor: pointer; min-width: 0;
+  padding: 5px 4px; margin-bottom: 3px; cursor: pointer; min-width: 0;
 }
 .cal-event p {
   margin: 0; font-size: 8px; line-height: 1.45; color: #6b7280;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.ev-case { font-size: 8.5px !important; font-weight: 800; color: #111827 !important; }
-/* 유찰 횟수 — 값이 떨어진 만큼 눈에 띄어야 한다. 아직 안 떨어진 신건은 담담하게 */
-.ev-fail { font-size: 8px !important; font-weight: 800; color: #dc2626 !important; }
-.ev-fail.fresh { color: #6b7280 !important; font-weight: 700; }
+/* 손전화에서는 이 둘만 보이므로 크게 쓴다 — 칸이 좁아 줄을 내려 두 줄로 선다
+   ('2025-' / '00001'). 웹은 아래 style.css 에서 제 치수로 되돌린다 */
+.cal-event .ev-case {
+  font-size: 15px !important; font-weight: 800; color: #111827 !important;
+  /* 줄은 붙임표(-)에서만 내린다 — '2025-' / '00003' 두 줄 */
+  white-space: normal; word-break: normal; overflow-wrap: normal; line-height: 1.15; letter-spacing: -0.6px;
+}
+/* 유찰 횟수 — 사건번호와 같은 크기로. 값이 떨어진 만큼 눈에 띄어야 한다 */
+.cal-event .ev-fail {
+  font-size: 15px !important; font-weight: 800; color: #dc2626 !important;
+  white-space: normal; line-height: 1.15; margin-top: 2px !important;
+}
+.cal-event .ev-fail.fresh { color: #6b7280 !important; font-weight: 700; }
 /* 앱(손전화)에서는 사건번호와 유찰 횟수만 — 달력 한 칸이 좁아 나머지는 뭉개진다.
    넓은 화면(웹)에서는 style.css 의 html.is-web 규칙이 도로 펴 준다 */
 .cal-event .ev-addr,

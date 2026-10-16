@@ -33,6 +33,13 @@ const GROUPS: Group[] = [
         path: '/trade-stats',
         icon: 'trade',
       },
+      {
+        title: 'KB 주택가격지수',
+        sub: '전국 · 서울',
+        desc: '한국은행 ECOS의 KB 주택가격지수로 시장 흐름을 본다.',
+        path: '/admin/housing-index',
+        icon: 'trade',
+      },
     ],
   },
   {

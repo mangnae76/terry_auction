@@ -130,6 +130,12 @@ const router = createRouter({
       component: () => import('../pages/AdminHomePage.vue'),
     },
     {
+      // KB 주택가격지수 — 분석 도구의 '부동산 시장정보' 묶음
+      path: '/admin/housing-index',
+      name: 'admin-housing-index',
+      component: () => import('../pages/HousingIndexPage.vue'),
+    },
+    {
       path: '/admin/region-demand',
       name: 'admin-region-demand',
       component: () => import('../pages/AdminRegionDemandPage.vue'),

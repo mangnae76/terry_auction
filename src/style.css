@@ -2183,7 +2183,8 @@ html.is-web {
   /* 넓은 화면에서는 글자를 두 배로 — 손전화 치수(8px)를 모니터에서 그대로 쓰면
      읽으려고 몸을 숙이게 된다. 손전화 쪽은 한 줄도 건드리지 않는다. */
   html.is-web .cal-event p { font-size: 16px; line-height: 1.4; }
-  html.is-web .cal-event .ev-case { font-size: 17px !important; }
+  /* 웹은 칸이 넓다 — 사건번호를 한 줄로 되돌린다 (손전화는 두 줄로 내려 쓴다) */
+  html.is-web .cal-event .ev-case { font-size: 17px !important; white-space: nowrap; letter-spacing: normal; }
   html.is-web .cal-event .ev-fail { font-size: 16px !important; }
   html.is-web .cal-event { padding: 7px 8px; border-radius: 8px; }
   html.is-web .cal-event .ev-area svg { width: 15px; height: 15px; }
