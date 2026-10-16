@@ -4656,7 +4656,7 @@ type RightsDocLine = { cells: RightsDocCell[] };
 // 현황조사일 줄 — 집행관이 문 앞에서 본 것만 고른다
 const DOC_SURVEY_OPTIONS = ['임차인점유', '폐문부재', '점유미상', '세대열람 O', '세대열람 X'];
 // 전입일자 줄 — 전입 기록에 올라 있는지만 고른다. 하나만 고르는 칸이다
-const DOC_MOVEIN_OPTIONS = ['전입 등재 O', '전입 등재 X', '소유자 점유'];
+const DOC_MOVEIN_OPTIONS = ['전입 등재 O', '전입 등재 X', '임차인점유', '소유자 점유'];
 const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
   {
     // 줄마다 '무슨 날짜인지' 를 왼쪽에 세우고, 날짜칸은 가운데, 고르는 칸은 오른쪽.
