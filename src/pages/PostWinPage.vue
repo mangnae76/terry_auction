@@ -7,7 +7,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 
 type TabKey = 'win' | 'balance' | 'evict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
-  { key: 'win', label: '낙찰', desc: '낙찰일·낙찰가, 경쟁 상황, 매각허가결정' },
+  { key: 'win', label: '낙찰당일', desc: '낙찰가·경쟁 상황, 영수증과 서류 챙기기' },
   { key: 'balance', label: '잔금·등기', desc: '잔금 납부일, 등기 촉탁, 취득세' },
   { key: 'evict', label: '명도', desc: '점유자 확인, 인도명령·강제집행, 이사비 협의' },
   { key: 'repair', label: '수리·정비', desc: '수리 범위와 비용, 업체 일정' },
