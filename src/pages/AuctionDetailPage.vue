@@ -4655,8 +4655,8 @@ type RightsDocCell = {
 type RightsDocLine = { cells: RightsDocCell[] };
 // 현황조사일 줄 — 집행관이 문 앞에서 본 것만 고른다
 const DOC_SURVEY_OPTIONS = ['임차인점유', '폐문부재', '점유미상', '세대열람 O', '세대열람 X'];
-// 전입일자 줄 — 전입 기록에서 읽히는 것만 고른다 (폐문부재·점유관계미상은 조사일 쪽 말이다)
-const DOC_MOVEIN_OPTIONS = ['임차인점유', '동거인O', '전출', '전입'];
+// 전입일자 줄 — 전입 기록에 올라 있는지만 고른다. 하나만 고르는 칸이다
+const DOC_MOVEIN_OPTIONS = ['전입 등재 O', '전입 등재 X', '소유자 점유'];
 const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
   {
     // 줄마다 '무슨 날짜인지' 를 왼쪽에 세우고, 날짜칸은 가운데, 고르는 칸은 오른쪽.
@@ -4671,7 +4671,7 @@ const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
       { cells: [
         { kind: 'label', id: 'doc.surveyTenant.dateLabel', placeholder: '전입일' },
         { kind: 'date', id: 'doc.surveyTenant.date', placeholder: '날짜입력' },
-        { kind: 'multi', id: 'doc.surveyTenant.state', placeholder: '점유관계', options: DOC_MOVEIN_OPTIONS },
+        { kind: 'pick', id: 'doc.surveyTenant.state', placeholder: '전입 등재', options: DOC_MOVEIN_OPTIONS },
         { kind: 'text', id: 'doc.surveyTenant.extra', placeholder: '세대주 입력' },
       ] },
     ],
@@ -4686,7 +4686,7 @@ const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
       { cells: [
         { kind: 'label', id: 'doc.residents.dateLabel', placeholder: '전입일' },
         { kind: 'date', id: 'doc.residents.date', placeholder: '날짜입력' },
-        { kind: 'multi', id: 'doc.residents.cohabit', placeholder: '점유관계', options: DOC_MOVEIN_OPTIONS },
+        { kind: 'pick', id: 'doc.residents.cohabit', placeholder: '전입 등재', options: DOC_MOVEIN_OPTIONS },
         { kind: 'text', id: 'doc.residents.head', placeholder: '세대주 입력' },
       ] },
     ],
