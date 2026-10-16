@@ -52,3 +52,28 @@ export const addressNameParts = (
   if (at < 0) return { before: full, name: '', after: '' };
   return { before: full.slice(0, at), name: nm, after: full.slice(at + nm.length) };
 };
+
+/** 보여 줄 주소를 네 토막으로 — 건물명과 호수만 파랗게 칠하려고.
+ *  '어느 집인지'를 가리키는 두 토막이라 지번과 섞이면 눈이 한 번 더 간다.
+ *  tweak 은 토막을 내기 전에 주소를 손보는 자리다 (물건상세는 '4층403호'의 층을 뗀다).
+ *  쓰는 화면이 셋(물건상세 상단·선정물건 카드·휴지통/보관함 목록)이라 여기 둔다. */
+export const addressParts = (
+  address: string,
+  name?: string | null,
+  tweak: (part: string) => string = (part) => part,
+): { before: string; name: string; mid: string; unit: string } => {
+  const split = addressNameParts(address, name);
+  const tail = tweak(split.after);
+  // 끝에 붙은 호수만 떼어 낸다 — '403호' · '제비0101호' · 'B01호'.
+  // '4층403호' 처럼 층이 붙어 와도 층은 두고 호수만 가른다.
+  const last = tail.match(/(\S+)\s*$/);
+  const token = last && /\d+\s*호$/.test(last[1]) ? last[1] : '';
+  const floor = token.match(/^(?:지하)?\s*\d+층\s*/)?.[0] ?? '';
+  const unit = token.slice(floor.length);
+  return {
+    before: tweak(split.before),
+    name: split.name,
+    mid: token ? tail.slice(0, tail.length - token.length) + floor : tail,
+    unit,
+  };
+};

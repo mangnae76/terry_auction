@@ -108,6 +108,12 @@ const router = createRouter({
       component: () => import('../pages/TrashPage.vue'),
     },
     {
+      // 보관함 — 휴지통과 같은 화면을 쓰되 '잠시 내려놓은 물건' 쪽을 펼친다
+      path: '/archive',
+      name: 'archive',
+      component: () => import('../pages/TrashPage.vue'),
+    },
+    {
       path: '/bid-calendar',
       name: 'bid-calendar',
       component: () => import('../pages/BidCalendarPage.vue'),

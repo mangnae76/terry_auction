@@ -1,8 +1,9 @@
 <script setup lang="ts">
-// 휴지통 — 선정물건에서 치운 물건을 카드로 펼쳐 본다. (보관함은 선정물건 안에 따로 있다)
-// 목록 화면의 드롭다운은 주소 한 줄만 보여 줘서, 무엇을 지웠는지 알아보기 어려웠다.
+// 치워 둔 물건을 카드로 펼쳐 본다 — 길에 따라 휴지통(/trash)과 보관함(/archive) 둘로 선다.
+// 생김새가 같아 화면은 한 벌만 두고, 어느 선반을 보는지만 갈아 끼운다.
+// 목록 화면의 드롭다운은 주소 한 줄만 보여 줘서, 무엇을 치웠는지 알아보기 어려웠다.
 import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
@@ -14,11 +15,18 @@ import calendarDaysIcon from '../assets/icones/calendar-days (1).png';
 
 const store = useAuctionStore();
 const router = useRouter();
+const route = useRoute();
+
+/** 어느 선반인가 — 보관함은 '잠시 내려놓은 것', 휴지통은 '버린 것' */
+const isArchive = computed(() => route.path === '/archive');
+const shelfName = computed(() => (isArchive.value ? '보관함' : '휴지통'));
+const items = computed(() => (isArchive.value ? store.archivedAuctions : store.hiddenAuctions));
+const shelfCount = computed(() => (isArchive.value ? store.archivedCount : store.hiddenCount));
 
 const picked = ref<Record<string, boolean>>({});
 const pickedIds = computed(() => Object.keys(picked.value).filter((id) => picked.value[id]));
 const allPicked = computed(
-  () => store.hiddenAuctions.length > 0 && pickedIds.value.length === store.hiddenAuctions.length,
+  () => items.value.length > 0 && pickedIds.value.length === items.value.length,
 );
 const togglePick = (id: string) => {
   picked.value = { ...picked.value, [id]: !picked.value[id] };
@@ -29,7 +37,7 @@ const toggleAll = () => {
     return;
   }
   const next: Record<string, boolean> = {};
-  store.hiddenAuctions.forEach((item) => { next[item.id] = true; });
+  items.value.forEach((item) => { next[item.id] = true; });
   picked.value = next;
 };
 
@@ -45,11 +53,13 @@ const showToast = (text: string, tone: 'info' | 'success' | 'error' = 'info') =>
   toastTimer = setTimeout(() => { toastVisible.value = false; }, 1800);
 };
 
+/** 되돌리기 — 보관함은 꺼내고, 휴지통은 되살린다. 둘 다 단계와 적어 둔 내용은 그대로다 */
 const restore = async (ids: string[]) => {
   if (ids.length === 0) return;
-  await store.restoreHiddenAuctions(ids);
+  if (isArchive.value) await store.archiveAuctions(ids, false);
+  else await store.restoreHiddenAuctions(ids);
   picked.value = {};
-  showToast(`${ids.length}건을 되살렸습니다.`, 'success');
+  showToast(`${ids.length}건을 ${isArchive.value ? '꺼냈습니다' : '되살렸습니다'}.`, 'success');
 };
 // 확인창은 선정물건과 같은 것을 쓴다 (AppConfirm)
 const confirmBox = ref<ConfirmBox | null>(null);
@@ -129,11 +139,11 @@ const stageTone = (item: AuctionDetail) => {
   <section class="trs-shell">
     <header class="trs-header">
       <button type="button" class="trs-back" aria-label="뒤로" @click="router.back()">‹</button>
-      <h1 class="trs-title">휴지통</h1>
-      <span class="trs-eyebrow">× {{ store.hiddenCount }}건</span>
+      <h1 class="trs-title">{{ shelfName }}</h1>
+      <span class="trs-eyebrow">× {{ shelfCount }}건</span>
     </header>
 
-    <div v-if="store.hiddenAuctions.length > 0" class="trs-bar">
+    <div v-if="items.length > 0" class="trs-bar">
       <button type="button" class="trs-bar-btn" @click="toggleAll">
         {{ allPicked ? '전체해제' : '전체선택' }}
       </button>
@@ -142,8 +152,9 @@ const stageTone = (item: AuctionDetail) => {
         class="trs-bar-btn restore"
         :disabled="pickedIds.length === 0"
         @click="restore(pickedIds)"
-      >복원{{ pickedIds.length > 0 ? ` (${pickedIds.length})` : '' }}</button>
+      >{{ isArchive ? '꺼내기' : '복원' }}{{ pickedIds.length > 0 ? ` (${pickedIds.length})` : '' }}</button>
       <button
+        v-if="!isArchive"
         type="button"
         class="trs-bar-btn purge"
         :disabled="pickedIds.length === 0"
@@ -151,18 +162,18 @@ const stageTone = (item: AuctionDetail) => {
       >완전삭제</button>
     </div>
 
-    <p v-if="store.hiddenAuctions.length > 0" class="trs-note">
-      복원하면 <strong>치울 때의 단계</strong>로 그대로 돌아옵니다. 아래 태그가 그 단계입니다.
+    <p v-if="items.length > 0" class="trs-note">
+      {{ isArchive ? '꺼내면' : '복원하면' }} <strong>치울 때의 단계</strong>로 그대로 돌아옵니다. 아래 태그가 그 단계입니다.
     </p>
 
-    <p v-if="store.hiddenAuctions.length === 0" class="trs-empty">
-      휴지통이 비어 있습니다.<br />
-      <small>선정물건에서 치운 물건이 여기에 모입니다.</small>
+    <p v-if="items.length === 0" class="trs-empty">
+      {{ shelfName }}이 비어 있습니다.<br />
+      <small>선정물건에서 {{ isArchive ? '보관함에 넣은' : '치운' }} 물건이 여기에 모입니다.</small>
     </p>
 
     <div class="trs-list">
       <article
-        v-for="item in store.hiddenAuctions"
+        v-for="item in items"
         :key="item.id"
         :class="['trs-card', { on: picked[item.id] === true }]"
         @click="togglePick(item.id)"
@@ -199,8 +210,8 @@ const stageTone = (item: AuctionDetail) => {
         </div>
 
         <div class="trs-card-actions">
-          <button type="button" class="trs-act restore" @click.stop="restore([item.id])">복원</button>
-          <button type="button" class="trs-act purge" @click.stop="purge([item.id])">완전삭제</button>
+          <button type="button" class="trs-act restore" @click.stop="restore([item.id])">{{ isArchive ? '꺼내기' : '복원' }}</button>
+          <button v-if="!isArchive" type="button" class="trs-act purge" @click.stop="purge([item.id])">완전삭제</button>
         </div>
       </article>
     </div>

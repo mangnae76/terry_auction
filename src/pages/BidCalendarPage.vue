@@ -108,6 +108,18 @@ const roundText = (a: AuctionDetail) => {
   return [a.propertyType, round ? `유찰 ${round}` : ''].filter(Boolean).join(' ');
 };
 
+/** 사건번호를 짧게 — '2025타경00001' → '2025-00001'. 달력 칸이 좁아 '타경'은 뺀다 */
+const caseShort = (a: AuctionDetail) => {
+  const raw = (a.caseNumber ?? '').trim();
+  const m = raw.match(/(\d{4})\s*타경\s*(\d+)/);
+  return m ? `${m[1]}-${m[2]}` : raw;
+};
+/** 유찰 횟수 — 차수에서 하나를 뺀다 ('3차'면 두 번 유찰됐다). 신건은 아직 0번이다 */
+const failText = (a: AuctionDetail) => {
+  const n = Number((a.auctionRound ?? '').match(/(\d+)\s*차/)?.[1] ?? 0);
+  return n > 1 ? `유찰 ${n - 1}회` : '신건';
+};
+
 const goDetail = (id: string) => router.push(`/auctions/${id}`);
 </script>
 
@@ -134,7 +146,8 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
           <p class="cal-daynum">
             <span :class="['cal-dnum', { sun: c.dow === 0 || holidayMap[c.key], sat: c.dow === 6 && !holidayMap[c.key], today: c.key === todayKey }]">{{ c.day }}</span>
             <em v-if="holidayMap[c.key]" class="cal-holiday">{{ holidayMap[c.key] }}</em>
-            <em v-else-if="byDate[c.key]" class="cal-count">{{ byDate[c.key].length }}건</em>
+            <!-- 그날 몇 건인지는 공휴일이어도 적는다 — 날짜 옆에서 바로 읽혀야 한다 -->
+            <em v-if="byDate[c.key]" class="cal-count">{{ byDate[c.key].length }}건</em>
           </p>
           <article
             v-for="a in byDate[c.key] ?? []"
@@ -142,7 +155,8 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
             class="cal-event"
             @click="goDetail(a.id)"
           >
-            <p class="ev-case">{{ a.caseNumber }}</p>
+            <p class="ev-case">{{ caseShort(a) }}</p>
+            <p :class="['ev-fail', { fresh: failText(a) === '신건' }]">{{ failText(a) }}</p>
             <p class="ev-addr">{{ a.address }}</p>
             <p class="ev-kind">{{ roundText(a) }}</p>
             <p class="ev-price">감정: {{ money(a.metrics?.appraisalValue ?? 0) }}</p>
@@ -237,6 +251,15 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ev-case { font-size: 8.5px !important; font-weight: 800; color: #111827 !important; }
+/* 유찰 횟수 — 값이 떨어진 만큼 눈에 띄어야 한다. 아직 안 떨어진 신건은 담담하게 */
+.ev-fail { font-size: 8px !important; font-weight: 800; color: #dc2626 !important; }
+.ev-fail.fresh { color: #6b7280 !important; font-weight: 700; }
+/* 앱(손전화)에서는 사건번호와 유찰 횟수만 — 달력 한 칸이 좁아 나머지는 뭉개진다.
+   넓은 화면(웹)에서는 style.css 의 html.is-web 규칙이 도로 펴 준다 */
+.cal-event .ev-addr,
+.cal-event .ev-kind,
+.cal-event .ev-price,
+.cal-event .ev-area { display: none; }
 .ev-area {
   display: flex; align-items: center; gap: 2px;
   margin-top: 2px !important; color: #9ca3af !important;

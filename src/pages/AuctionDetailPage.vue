@@ -48,7 +48,7 @@ import { cached, cachedEntry, cacheKey, readCache, writeCache, CACHE_TTL } from 
 import { VWORLD_KEY_EXPIRES } from '../services/vworldApi';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
-import { addressNameParts, hasBuildingName, isUnitToken } from '../utils/addressName';
+import { addressParts, hasBuildingName, isUnitToken } from '../utils/addressName';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePhoto, isPhotoId, loadSitePhoto, saveSitePhoto } from '../services/sitePhotoRepository';
 import { fetchNearbyEnvironment, type NearbyEnvironment, type NearbyPlace } from '../services/kakaoNearby';
@@ -125,6 +125,8 @@ const saleKind = computed(() => {
 });
 // 상단바 단계 드롭다운 — 관심/임장/입찰/낙찰/탈락. 목록으로 돌아가지 않고 여기서 바꾼다.
 // 쓰레기통 아이콘 — 번들 PNG가 흰색 단색이라 보이지 않아 데이터 URI SVG를 직접 쓴다
+/** 보관함 — 선정물건 카드와 같은 상자 그림을 쓴다 */
+const BOX_ICON = 'data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%236b7280%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Crect%20x%3D%272.5%27%20y%3D%274%27%20width%3D%2719%27%20height%3D%275%27%20rx%3D%271%27%2F%3E%3Cpath%20d%3D%27M4.5%209v9.5a1.5%201.5%200%200%200%201.5%201.5h12a1.5%201.5%200%200%200%201.5-1.5V9%27%2F%3E%3Cpath%20d%3D%27M10%2013h4%27%2F%3E%3C%2Fsvg%3E';
 const TRASH_ICON = 'data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%236b7280%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%206h18%27%2F%3E%3Cpath%20d%3D%27M8%206V4a1%201%200%200%201%201-1h6a1%201%200%200%201%201%201v2%27%2F%3E%3Cpath%20d%3D%27M19%206v14a2%202%200%200%201-2%202H7a2%202%200%200%201-2-2V6%27%2F%3E%3Cpath%20d%3D%27M10%2011v6%27%2F%3E%3Cpath%20d%3D%27M14%2011v6%27%2F%3E%3C%2Fsvg%3E';
 const stageOpen = ref(false);
 /** 단계 목록 — 마지막 '입찰진행'은 단계가 아니라 입찰상태라 따로 넣는다 */
@@ -180,7 +182,7 @@ const hideThisAuction = () => {
   if (!target) return;
   askConfirm({
     title: '목록에서 지우겠습니까?',
-    desc: '보관함에서 복원할 수 있습니다. 단, 단계는 손품조사로 돌아갑니다.',
+    desc: '휴지통에서 되살릴 수 있습니다. 단계와 적어 둔 내용은 그대로 돌아옵니다.',
     okLabel: '삭제',
     skipKey: 'wlp.skip.removeOne',
     run: async () => {
@@ -188,6 +190,14 @@ const hideThisAuction = () => {
       router.replace('/auctions/watchlist');
     },
   });
+};
+/** 보관함에 넣기 — 버리는 것이 아니라 잠시 내려놓는 것이라 묻지 않는다.
+ *  꺼내면 단계도 적어 둔 것도 그대로 돌아온다 (선정물건 카드의 상자 단추와 같다) */
+const archiveThisAuction = async () => {
+  const target = auction.value;
+  if (!target) return;
+  await store.archiveAuctions([target.id], true);
+  router.replace('/auctions/watchlist');
 };
 
 const jibunAddress = computed(() => auction.value?.address || '');
@@ -238,23 +248,12 @@ const addrHasBuildingName = computed(() => hasBuildingName(jibunAddress.value));
 /** 상단 카드 주소 — '3층302호' 처럼 층과 호가 붙어 오면 층은 뗀다.
  *  층은 바로 아래 정보요약에 따로 있고, 여기서는 호수 끝이 잘리는 쪽이 더 아깝다. */
 const dropFloorInUnit = (addr: string) => addr.replace(/(^|\s)(지하\s*)?\d+층\s*(\d+호)/g, '$1$3');
-/** 상단 주소를 토막내 색을 입힌다 — 건물명과 호수가 파랗다.
- *  둘이 '어느 집인지'를 가리키는 토막이라, 지번과 섞여 있으면 눈이 한 번 더 간다. */
-const headAddressParts = computed(() => {
-  const parts = addressNameParts(
-    jibunAddress.value,
-    auction.value?.basicSummary?.['sum.buildingName'],
-  );
-  const tail = dropFloorInUnit(parts.after);
-  // 끝에 붙은 호수('403호' · '제비0101호' · 'B01호')만 떼어 따로 칠한다
-  const hit = tail.match(/(\S*\d+\s*호)\s*$/);
-  return {
-    before: dropFloorInUnit(parts.before),
-    name: parts.name,
-    mid: hit ? tail.slice(0, tail.length - hit[0].length) : tail,
-    unit: hit ? hit[0].trim() : '',
-  };
-});
+/** 상단 주소를 토막내 색을 입힌다 — 건물명과 호수가 파랗다 (규칙은 addressName 에) */
+const headAddressParts = computed(() => addressParts(
+  jibunAddress.value,
+  auction.value?.basicSummary?.['sum.buildingName'],
+  dropFloorInUnit,
+));
 // 건물명·동호수를 떼고 번지까지만 남긴 주소 (동일지번 검색 안내문구용)
 const lotOnlyAddress = computed(() => {
   const parts = jibunAddress.value.split(/\s+/).filter(Boolean);
@@ -4218,10 +4217,15 @@ const MKT_URGENT_COLS: ConcCol[] = [
   { key: 'near', label: '인근 매각 평균' },
   { key: 'urgent', label: '급매가', tone: 'red' },
 ];
-/** 두 표는 생김새가 같다 — 마크업을 한 벌만 두고 제목과 칸만 갈아 끼운다 */
-const CONC_TABLES = [
-  // boldPrice — 값을 모아 견주는 표라 마지막 '가격' 줄이 한눈에 들어와야 한다
-  { title: '시세 결론', cols: MKT_CONC_COLS, note: false, boldPrice: true },
+/** 두 표는 생김새가 같다 — 마크업을 한 벌만 두고 제목과 칸만 갈아 끼운다.
+ *  vertical 이면 표를 눕힌다 — 출처가 줄로 내려오고 면적·평당가·가격이 머리에 선다.
+ *  시세 결론은 출처가 여섯이라 가로로 세우면 한 칸이 너무 좁아 글자가 뭉개졌다. */
+type ConcTable = {
+  title: string; cols: ConcCol[]; note: boolean; boldPrice: boolean; vertical?: boolean;
+};
+const CONC_TABLES: ConcTable[] = [
+  // boldPrice — 값을 모아 견주는 표라 '가격' 칸이 한눈에 들어와야 한다
+  { title: '시세 결론', cols: MKT_CONC_COLS, note: false, boldPrice: true, vertical: true },
   { title: '급매가 결론', cols: MKT_URGENT_COLS, note: true, boldPrice: false },
 ];
 const MKT_CONC_ROWS: ConcRow[] = [
@@ -4230,6 +4234,25 @@ const MKT_CONC_ROWS: ConcRow[] = [
   { key: 'price', label: '가격', money: true },
 ];
 /** 예전부터 쓰던 칸은 그 필드를 그대로 쓴다 — 저장해 둔 값이 날아가지 않게 */
+/** 표의 머리줄에 설 것들 — 눕힌 표에서는 면적·평당가·가격이 머리다 */
+const concHeads = (t: ConcTable): ConcCol[] =>
+  (t.vertical ? MKT_CONC_ROWS.map((r) => ({ key: r.key, label: r.label })) : t.cols);
+/** 표의 줄로 내려올 것들 — 눕힌 표에서는 출처(경매지번 실거래가 …)가 줄이다 */
+const concLines = (t: ConcTable): ConcCol[] =>
+  (t.vertical ? t.cols : MKT_CONC_ROWS.map((r) => ({ key: r.key, label: r.label })));
+/** 한 줄에 들어갈 칸들 — 방향이 달라도 '어느 출처의 어느 값'인지는 같다 */
+const concCells = (t: ConcTable, line: ConcCol) =>
+  concHeads(t).map((head) => {
+    const colKey = t.vertical ? line.key : head.key;
+    const rowKey = t.vertical ? head.key : line.key;
+    return {
+      col: t.cols.find((c) => c.key === colKey) as ConcCol,
+      row: MKT_CONC_ROWS.find((r) => r.key === rowKey) as ConcRow,
+    };
+  });
+/** 눕힌 표의 줄 이름은 한 줄로 — 머리줄처럼 두 줄로 꺾을 자리가 없다 */
+const concLineLabel = (label: string) => label.replace(/\n/g, ' ');
+
 const MKT_CONC_LEGACY: Record<string, string> = {
   'avg.price': 'mktConcAvg',
   'low.price': 'mktConcLow',
@@ -5339,7 +5362,10 @@ const goBack = () => router.back();
               </ul>
             </template>
           </span>
-          <button type="button" class="adp-hide-btn" aria-label="목록에서 숨기기" title="목록에서 숨기기" @click="hideThisAuction">
+          <button type="button" class="adp-hide-btn" aria-label="보관함에 넣기" title="보관함에 넣기" @click="archiveThisAuction">
+            <img :src="BOX_ICON" alt="" class="adp-hide-ico" />
+          </button>
+          <button type="button" class="adp-hide-btn" aria-label="휴지통으로 보내기" title="휴지통으로 보내기" @click="hideThisAuction">
             <img :src="TRASH_ICON" alt="" class="adp-hide-ico" />
           </button>
         </span>
@@ -8111,60 +8137,71 @@ const goBack = () => router.back();
               <div class="adp-sub-head">
                 <h3>{{ t.title }}<span v-if="t.boldPrice" class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('concMean', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('concMean', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'concMean'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">체크를 풀면 평균값에서 제외</span></span></h3>
               </div>
-              <table :class="['adp-table', 'adp-mkt-table', 'fit', 'adp-dm-tbl', 'adp-conc-table', { 'bold-price': t.boldPrice, 'conc-urgent': t.note }]">
+              <table :class="['adp-table', 'adp-mkt-table', 'fit', 'adp-dm-tbl', 'adp-conc-table', { 'bold-price': t.boldPrice, 'conc-urgent': t.note, 'conc-vert': t.vertical }]">
                 <thead>
                   <tr>
-                    <th v-for="c in t.cols" :key="c.key" :class="[c.tone, { off: concMeanOff(c.key) }]">
+                    <!-- 눕힌 표는 왼쪽 첫 칸이 줄 이름 자리다 -->
+                    <th v-if="t.vertical" class="adp-conc-corner">구분</th>
+                    <th v-for="h in concHeads(t)" :key="h.key" :class="[h.tone, { off: concMeanOff(h.key) }]">
                       <!-- 체크를 풀면 그 칸은 평균에서 빠진다. 값은 그대로 남는다 -->
-                      <label v-if="CONC_MEAN_SRC.includes(c.key)" class="adp-conc-pick">
-                        <input type="checkbox" :checked="!concMeanOff(c.key)" @change="toggleConcMean(c.key)" />
+                      <label v-if="CONC_MEAN_SRC.includes(h.key)" class="adp-conc-pick">
+                        <input type="checkbox" :checked="!concMeanOff(h.key)" @change="toggleConcMean(h.key)" />
                       </label>
-                      {{ c.label }}<small v-if="c.note">{{ c.note }}</small>
+                      {{ h.label }}<small v-if="h.note">{{ h.note }}</small>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="r in MKT_CONC_ROWS" :key="r.key">
-                    <td v-for="c in t.cols" :key="c.key" :class="['num', { mean: c.key === 'mean', off: concMeanOff(c.key) }]">
+                  <tr v-for="l in concLines(t)" :key="l.key">
+                    <th v-if="t.vertical" :class="['adp-conc-side', l.tone, { off: concMeanOff(l.key) }]">
+                      <label v-if="CONC_MEAN_SRC.includes(l.key)" class="adp-conc-pick inline">
+                        <input type="checkbox" :checked="!concMeanOff(l.key)" @change="toggleConcMean(l.key)" />
+                      </label>{{ concLineLabel(l.label) }}
+                    </th>
+                    <td
+                      v-for="cell in concCells(t, l)"
+                      :key="`${cell.col.key}-${cell.row.key}`"
+                      :class="['num', { mean: cell.col.key === 'mean', off: concMeanOff(cell.col.key) }]"
+                    >
                       <!-- 면적 — ㎡ 와 평을 같이 적는다. 한쪽만 적어도 나머지가 따라온다 -->
-                      <template v-if="r.key === 'area'">
-                        <template v-if="concEditable(c.key, 'area')">
-                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'areaM2')" placeholder="0" @input="setConcArea(c.key, 'm2', ($event.target as HTMLInputElement).value)" />㎡</span>
-                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(c.key, 'area')" placeholder="0" @input="setConcArea(c.key, 'py', ($event.target as HTMLInputElement).value)" />평</span>
+                      <template v-if="cell.row.key === 'area'">
+                        <template v-if="concEditable(cell.col.key, 'area')">
+                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(cell.col.key, 'areaM2')" placeholder="0" @input="setConcArea(cell.col.key, 'm2', ($event.target as HTMLInputElement).value)" />㎡</span>
+                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(cell.col.key, 'area')" placeholder="0" @input="setConcArea(cell.col.key, 'py', ($event.target as HTMLInputElement).value)" />평</span>
                         </template>
-                        <span v-else :class="['adp-conc-v', 'adp-conc-area', { typed: concTyped(c.key, 'areaM2') || concTyped(c.key, 'area') }]">{{ concAreaText(c.key) }}</span>
+                        <span v-else :class="['adp-conc-v', 'adp-conc-area', { typed: concTyped(cell.col.key, 'areaM2') || concTyped(cell.col.key, 'area') }]">{{ concAreaText(cell.col.key) }}</span>
                       </template>
                       <!-- 가격 — 평당가 × 면적(평). 손으로 적으면 그 값이 이긴다 -->
-                      <template v-else-if="r.key === 'price'">
+                      <template v-else-if="cell.row.key === 'price'">
                         <FormattedNumberInput
-                          v-if="concEditable(c.key)"
-                          :model-value="concVal(c.key, 'price')"
+                          v-if="concEditable(cell.col.key)"
+                          :model-value="concVal(cell.col.key, 'price')"
                           mode="string"
                           class="adp-mkt-input"
-                          :placeholder="concPriceHint(c.key)"
-                          @update:model-value="setConcVal(c.key, 'price', String($event ?? ''))"
+                          :placeholder="concPriceHint(cell.col.key)"
+                          @update:model-value="setConcVal(cell.col.key, 'price', String($event ?? ''))"
                         />
-                        <span v-else :class="['adp-conc-v', 'hi', { red: c.tone === 'red', typed: concTyped(c.key, 'price') }]">{{ concPriceText(c.key) }}</span>
+                        <span v-else :class="['adp-conc-v', 'hi', { red: cell.col.tone === 'red', typed: concTyped(cell.col.key, 'price') }]">{{ concPriceText(cell.col.key) }}</span>
                       </template>
                       <!-- 평단가 -->
                       <template v-else>
                         <FormattedNumberInput
-                          v-if="concEditable(c.key)"
-                          :model-value="concVal(c.key, r.key)"
+                          v-if="concEditable(cell.col.key)"
+                          :model-value="concVal(cell.col.key, cell.row.key)"
                           mode="string"
                           class="adp-mkt-input"
-                          :placeholder="r.label"
-                          @update:model-value="setConcVal(c.key, r.key, String($event ?? ''))"
+                          :placeholder="cell.row.label"
+                          @update:model-value="setConcVal(cell.col.key, cell.row.key, String($event ?? ''))"
                         />
-                        <span v-else :class="['adp-conc-v', { typed: concTyped(c.key, r.key) }]">
-                          {{ concText(c.key, r) }}<small v-if="r.suffix && concVal(c.key, r.key)">{{ r.suffix }}</small>
+                        <span v-else :class="['adp-conc-v', { typed: concTyped(cell.col.key, cell.row.key) }]">
+                          {{ concText(cell.col.key, cell.row) }}<small v-if="cell.row.suffix && concVal(cell.col.key, cell.row.key)">{{ cell.row.suffix }}</small>
                         </span>
                       </template>
                     </td>
                   </tr>
                   <!-- 비고는 급매가 결론 표에만 — 결론을 적는 자리다 -->
                   <tr v-if="t.note">
-                    <td class="adp-conc-note" :colspan="t.cols.length">
+                    <td class="adp-conc-note" :colspan="concHeads(t).length + (t.vertical ? 1 : 0)">
                       <input
                         v-if="editingSurvey.realUser"
                         class="adp-mkt-input"
@@ -9663,6 +9700,26 @@ const goBack = () => router.back();
 /* 개별성 분석 표 — 상세구분 / 현황 / 가격율 세 칸 */
 /* 시세 및 급매가 결론 표 — 머리글 아래 면적 / 평당가 / 가격 세 줄 */
 .adp-conc-table th { white-space: pre-line; }
+/* 눕힌 결론표(시세 결론) — 출처 여섯이 줄로 내려오고, 값 칸 셋이 머리에 선다.
+   가로로 세우면 한 칸이 60px 밖에 안 돼 숫자가 꺾였다. */
+.adp-conc-table.conc-vert { table-layout: fixed; }
+.adp-conc-table.conc-vert th.adp-conc-corner,
+.adp-conc-table.conc-vert th.adp-conc-side {
+  width: 31%; text-align: left; white-space: nowrap; padding: 4px 6px;
+}
+.adp-conc-table.conc-vert th.adp-conc-side {
+  font-size: 10.5px; font-weight: 700; color: #374151; background: #f9fafb;
+}
+.adp-conc-table.conc-vert th.adp-conc-corner { font-size: 10.5px; color: #9ca3af; font-weight: 700; }
+/* 평균에서 뺀 줄은 이름까지 흐리게 — 표 전체가 같은 신호를 쓴다 */
+.adp-conc-table.conc-vert th.adp-conc-side.off { opacity: 0.45; }
+/* 줄 이름 왼쪽의 체크 — 머리줄과 달리 이름과 한 줄에 선다 */
+.adp-conc-table .adp-conc-pick.inline {
+  display: inline-block; line-height: 0; margin: 0 4px 0 0; vertical-align: -1px;
+}
+.adp-conc-table.conc-vert .adp-conc-area { white-space: nowrap; }
+/* 값은 줄마다 끝자리를 맞춘다 — 첫 줄만 가운데로 서던 것을 바로잡는다 */
+.adp-conc-table.conc-vert tbody td.num { text-align: right; }
 
 .adp-conc-table th small { display: block; font-size: 9.5px; font-weight: 600; color: #6b7280; }
 /* 손으로 적은 값은 파랗게 — 계산해 낸 값(검정)과 한눈에 가른다.
