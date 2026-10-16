@@ -196,7 +196,7 @@ const makePin = (row: RankedRow) => {
   const [, deep] = paletteColors(row.rank);
   const color = isLightBadge(row.rank) ? '#1e293b' : '#fff';
   const top = row.rank <= TOP_N ? ' top' : '';
-  const value = row.avgPrice > 0 ? shortWon(row.avgPrice) : `${row.count}건`;
+  const value = `${row.count.toLocaleString('ko-KR')}건`;
   return L.divIcon({
     className: 'trade-map-marker-wrap',
     html: `<div class="trade-map-pin${top}" style="background:${deep};color:${color}">`
@@ -239,18 +239,13 @@ const drawMap = async () => {
       fillColor: cFrom,
       fillOpacity: 0.35,
       weight: 2,
-    }).bindPopup(
-      `<strong>${row.rank}위 · ${row.region}</strong><br/>${row.count}건 · ${row.share.toFixed(1)}%`,
-    );
+    });
     markerLayer!.addLayer(circle);
 
+    // 말풍선은 띄우지 않는다 — 누르면 왼쪽 판이 그 동 것으로 바뀐다
     const pin = L.marker([row.lat, row.lng], { icon: makePin(row) }).on('click', () => {
-      // 누른 동으로 통계 정보를 갈아 끼운다 (다시 누르면 전체로 돌아온다)
       selectedRegion.value = selectedRegion.value === row.region ? null : row.region;
-    }).bindPopup(
-      `<strong>${row.rank}위 · ${row.region}</strong><br/>${row.count}건 · ${row.share.toFixed(1)}%`
-      + (row.avgPrice > 0 ? `<br/>평균 ${shortWon(row.avgPrice)}` : ''),
-    );
+    });
     markerLayer!.addLayer(pin);
     markerByRegion.set(row.region, pin);
     plotted.push([row.lat, row.lng]);
@@ -267,7 +262,6 @@ const focusRegion = (region: string) => {
   if (!marker || !leafletMap) return;
   const latlng = marker.getLatLng();
   leafletMap.setView(latlng, Math.max(leafletMap.getZoom(), 13), { animate: true });
-  marker.openPopup();
 };
 
 const regionGeocodeQuery = new Map<string, string>();
@@ -727,7 +721,8 @@ onMounted(() => {
   box-shadow: 0 10px 30px rgba(17, 24, 39, 0.14);
 }
 .tsp-panel-head strong { display: block; font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
-.tsp-panel-head small { display: block; margin-top: 3px; font-size: 11.5px; color: #9ca3af; font-weight: 600; }
+/* 조건 요약과 통계 이름표는 앱이 쓰는 파랑으로 — 값(검정)과 한눈에 갈린다 */
+.tsp-panel-head small { display: block; margin-top: 3px; font-size: 11.5px; color: #2b6df3; font-weight: 700; }
 .tsp-panel h3 {
   margin: 0 0 8px; font-size: 12.5px; font-weight: 800; color: #374151;
   display: flex; align-items: baseline; gap: 6px;
@@ -739,7 +734,7 @@ onMounted(() => {
   border: 1px solid #e8ecf3; border-radius: 10px; overflow: hidden; background: #e8ecf3; gap: 1px;
 }
 .tsp-stat-grid > div { background: #fff; padding: 9px 10px; min-width: 0; }
-.tsp-stat-grid dt { font-size: 10.5px; font-weight: 700; color: #9ca3af; }
+.tsp-stat-grid dt { font-size: 10.5px; font-weight: 700; color: #2b6df3; }
 .tsp-stat-grid dd { margin: 2px 0 0; font-size: 13.5px; font-weight: 800; color: #111827; white-space: nowrap; }
 .tsp-rank .tsp-rank-list { padding: 0; }
 .tsp-rank .tsp-empty { margin: 0; padding: 18px 0; text-align: center; font-size: 12px; color: #9ca3af; }
