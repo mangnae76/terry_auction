@@ -130,26 +130,21 @@ watch(rows, () => {
   if (selectedDong.value && !rows.value.some((r) => r.region === selectedDong.value)) selectedDong.value = '';
 });
 
-const barPalette: Array<[string, string]> = [
-  ['#fbbf24', '#f59e0b'],
-  ['#cbd5e1', '#94a3b8'],
-  ['#d97706', '#b45309'],
-  ['#3b82f6', '#2563eb'],
-  ['#8b5cf6', '#6d28d9'],
-  ['#14b8a6', '#0f766e'],
-  ['#ef4444', '#b91c1c'],
-  ['#ec4899', '#be185d'],
-  ['#10b981', '#047857'],
-  ['#0ea5e9', '#0369a1'],
-  ['#a855f7', '#7e22ce'],
-  ['#f97316', '#c2410c'],
-  ['#22c55e', '#15803d'],
-  ['#6366f1', '#4338ca'],
-  ['#eab308', '#a16207'],
-];
-
-const paletteColors = (rank: number) => barPalette[(rank - 1) % barPalette.length];
-const isLightBadge = (rank: number) => rank === 2; // 은색만 어두운 텍스트
+/** 등수 색 — 색상환을 1등 빨강(0°)에서 시작해 한 칸씩 돌린다.
+ *  빨강 → 주황 → 노랑 → 초록 → 청록 → 파랑 → 남색 → 보라 → 자주 로 이어지고,
+ *  열 등을 지나면 다시 빨강으로 돌아온다 (36° 씩 열 칸). */
+const HUE_STEP = 36;
+const hueOf = (rank: number) => (((rank - 1) * HUE_STEP) % 360 + 360) % 360;
+/** 노랑 언저리(40°~80°)는 흰 글씨가 안 읽혀 한 단 어둡게 깐다 */
+const isPaleHue = (h: number) => h > 40 && h < 80;
+const paletteColors = (rank: number): [string, string] => {
+  const h = hueOf(rank);
+  const light = isPaleHue(h) ? 48 : 58; // 띠·동그라미 바탕
+  const deep = isPaleHue(h) ? 34 : 44;  // 테두리·진한 쪽
+  return [`hsl(${h.toFixed(1)} 85% ${light}%)`, `hsl(${h.toFixed(1)} 78% ${deep}%)`];
+};
+/** 글씨는 늘 흰색으로 읽힌다 — 밝은 색은 위에서 이미 어둡게 깔았다 */
+const isLightBadge = (_rank: number) => false;
 
 const makeRankIcon = (rank: number) => {
   const [from, to] = paletteColors(rank);
