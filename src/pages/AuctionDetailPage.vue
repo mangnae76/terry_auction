@@ -1601,24 +1601,8 @@ const flashToast = (text: string, tone: 'info' | 'success' | 'error' = 'success'
   copiedMsg.value = text;
   window.setTimeout(() => { copiedMsg.value = ''; }, 1600);
 };
-/** 입찰 진행상황 — 단계(관심·임장·입찰·낙찰)와는 별개다.
- *  산정까지 끝낸 물건이 아직 대기인지, 입찰에 들어갔는지만 적어 둔다.
- *  저장은 예전부터 있던 bidStatus 한 칸을 그대로 쓴다 ('진행'이 곧 입찰). */
-const BID_PROGRESS_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: '대기', label: '대기' },
-  { value: '진행', label: '입찰' },
-];
-/** 적어 둔 값이 없으면 '대기' — 아직 입찰에 안 들어갔다는 뜻이라 그게 기본이다 */
-const bidProgress = computed(() => (
-  (auction.value?.bidStatus ?? '').replace(/^입찰/, '') === '진행' ? '진행' : '대기'
-));
-const setBidProgress = async (value: string) => {
-  if (!auction.value) return;
-  const next = value === '진행' ? '진행' : '대기';
-  auction.value.bidStatus = next;
-  await store.saveAuction(auction.value);
-  flashToast(`진행상황을 '${next === '진행' ? '입찰' : '대기'}'로 바꿨습니다.`, 'success');
-};
+// 입찰 진행상황(대기/입찰) 알약은 예상수익분석 머리줄에서 뺐다.
+// 입찰진행은 상단 단계 메뉴와 선정물건 카드의 알약에서 켜고 끈다 — 한 가지 길만 둔다.
 
 /** 주소 복사 — 표에서는 주소가 잘려 보이므로 복사한 전체 주소를 토스트 윗줄에 같이 보여 준다 */
 const copyAddressText = async (address: string) => {
@@ -6074,16 +6058,6 @@ const goBack = () => router.back();
             </button>
             <!-- 표 스텝퍼와 별은 한 묶음 — 자리가 모자라 줄이 내려가도 둘이 같이 내려간다 -->
             <span class="adp-pd-tail">
-            <!-- 진행상황 — 단계와 상관없이 '대기/입찰'만 표시한다 -->
-            <select
-              :class="['adp-bid-status', bidProgress === '진행' ? 'hot' : 'calm']"
-              :value="bidProgress"
-              aria-label="입찰 진행상황"
-              @click.stop
-              @change="setBidProgress(($event.target as HTMLSelectElement).value)"
-            >
-              <option v-for="opt in BID_PROGRESS_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-            </select>
             <span class="adp-mkt-step">
               <span class="lab">표</span>
               <button type="button" aria-label="산정표 삭제" :disabled="profitScenarios.length <= 1" @click.stop="removeProfitScenario">−</button>
