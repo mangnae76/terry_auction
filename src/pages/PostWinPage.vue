@@ -224,7 +224,7 @@ const dayGroups = POST_WIN_DAY;
 .pw-txt.warn { color: #e0574a; }
 .pw-row.done .pw-txt { color: #9ca3af; text-decoration: line-through; }
 /* 이름 칸이 선 줄은 설명을 굵게 쓰지 않는다 — 이름이 큰 항목 노릇을 한다 */
-.pw-row td.pw-label + td.pw-txt { font-weight: 600; color: #374151; }
+.pw-row td.pw-label + td.pw-txt { font-weight: 400; color: #374151; }
 .pw-row.done td.pw-label + td.pw-txt { color: #9ca3af; }
 
 .pw-empty {
