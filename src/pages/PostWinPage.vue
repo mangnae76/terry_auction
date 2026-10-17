@@ -87,8 +87,9 @@ const dayGroups = POST_WIN_DAY;
         <section v-for="g in dayGroups" :key="g.key" class="pw-card">
           <header class="pw-card-head">
             <h2>{{ g.title }}</h2>
-            <small>{{ g.note }}</small>
+            <!-- 센 개수는 제목 줄 오른쪽에, 안내는 그 아래 줄에 -->
             <em class="pw-count">{{ doneCount(g.rows) }}/{{ g.rows.length }}</em>
+            <small>{{ g.note }}</small>
           </header>
           <table class="pw-tbl">
             <tbody>
@@ -169,10 +170,14 @@ const dayGroups = POST_WIN_DAY;
   background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden;
 }
 .pw-pick { flex: 0 0 auto; }
-.pw-card-head { display: flex; align-items: baseline; gap: 8px; padding: 16px 16px 12px; }
+/* 제목 한 줄, 안내는 그 아래 한 줄 — 표의 글줄과 같은 자리에서 시작한다 */
+.pw-card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; padding: 14px 14px 11px; }
 .pw-card-head h2 { margin: 0; font-size: 15.3px; font-weight: 800; color: #111827; }
-/* 안내 한 줄 — 볼드 없이 까만 글씨로 그냥 적는다 */
-.pw-card-head small { font-size: 11.5px; color: #111827; font-weight: 400; }
+/* 안내 한 줄 — 제목 밑으로 내려 쓰고, 볼드 없이 까만 글씨로 */
+.pw-card-head small {
+  flex: 1 0 100%;
+  font-size: 12.5px; color: #111827; font-weight: 400; line-height: 1.45;
+}
 /* 물건 고르기 */
 .pw-pick { display: flex; align-items: center; gap: 8px; padding: 0 2px; }
 .pw-pick small { font-size: 11px; font-weight: 700; color: #6b7280; flex: 0 0 auto; }
