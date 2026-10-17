@@ -11,6 +11,7 @@ import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useFinanceStore } from '../stores/financeStore';
 import { useAuctionStore } from '../stores/auctionStore';
+import { bidStageOf } from '../utils/stageLabel';
 import type {
   BusinessExpenseRecord,
   CashFlowRecord,
@@ -32,6 +33,14 @@ const rangeValue = computed({
 
 const finance = useFinanceStore();
 const auctionStore = useAuctionStore();
+/** 머리줄에 적는 건수 — 지금 낙찰로 들고 있는 물건과 판 물건.
+ *  단계(bidStatus)를 그대로 센다 — 세금신고가 보는 날짜와 같은 자리에서 온다 */
+const wonCount = computed(
+  () => auctionStore.auctions.filter((a) => bidStageOf(a) === '낙찰').length,
+);
+const soldCount = computed(
+  () => auctionStore.auctions.filter((a) => bidStageOf(a) === '매도').length,
+);
 
 onMounted(() => {
   finance.initialize();
@@ -287,7 +296,14 @@ const exportExcel = () => {
   <section class="fin-shell">
     <div class="fin-fixed-top">
     <header class="fin-header">
-      <h1 class="fin-page-title">사업자금관리</h1>
+      <h1 class="fin-page-title">
+        사업자금관리
+        <!-- 낙찰로 들고 있는 물건과 판 물건 — 돈 이야기의 바탕이라 제목 옆에 적어 둔다 -->
+        <span class="fin-stage-count">
+          <em class="won">낙찰 {{ wonCount }}</em>
+          <em class="sold">매도 {{ soldCount }}</em>
+        </span>
+      </h1>
       <nav class="fin-tabs">
         <button :class="['fin-tab', { active: activeTab === 'cashFlow' }]" @click="activeTab = 'cashFlow'">자금입출금</button>
         <button :class="['fin-tab', { active: activeTab === 'businessExpense' }]" @click="activeTab = 'businessExpense'">사업지출</button>
@@ -614,10 +630,20 @@ const exportExcel = () => {
 }
 .fin-page-title {
   margin: 0; padding: 9px 14px 7px;
+  display: flex; align-items: baseline; gap: 8px;
   font-size: 20px; font-weight: 800; color: #111827;
   /* 제목줄 아래 구분선 — 물건상세와 같게 */
   border-bottom: 1px solid #e5e7eb;
 }
+/* 낙찰·매도 건수 — 제목 오른쪽에 작은 알약 둘 */
+.fin-stage-count { margin-left: auto; display: inline-flex; gap: 5px; }
+.fin-stage-count em {
+  font-style: normal; font-size: 11.5px; font-weight: 800;
+  padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+}
+.fin-stage-count .won { background: #dce5ff; color: #2a3f8f; }
+.fin-stage-count .sold { background: #e8f7f1; color: #0f7a5c; }
+
 .fin-tabs {
   /* 네 칸을 정확히 4등분한 알약 카드 */
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
