@@ -745,10 +745,13 @@ const exportExcel = () => {
 }
 .fin-pop-body { flex: 1 1 auto; overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; }
 .fin-stage-empty { margin: 14px 0; text-align: center; font-size: 12px; color: #9ca3af; }
+/* 카드 테두리는 또렷하게 — 옅으면 여러 장이 한 덩어리로 보인다 */
 .fin-stage-card {
-  border: 1px solid #eef1f6; border-radius: 10px; padding: 8px 10px 9px;
-  margin-bottom: 6px; cursor: pointer; background: #fbfcfe;
+  border: 1px solid #c9d3e3; border-radius: 10px; padding: 8px 10px 9px;
+  margin-bottom: 8px; cursor: pointer; background: #fff;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.05);
 }
+.fin-stage-card:active { background: #f7f9fd; }
 .fin-stage-card:last-child { margin-bottom: 0; }
 .fin-stage-card .top { margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 /* 예상수익분석의 날짜 칸과 같은 치수 — 보기만 하는 칸이라 단추가 아니다 */
