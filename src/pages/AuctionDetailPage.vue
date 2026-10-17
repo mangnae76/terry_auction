@@ -6814,10 +6814,14 @@ const goBack = () => router.back();
               <button type="button" class="adp-icn-btn" @click="addRightsDocUrl">+</button>
             </div>
             <p v-if="rightsDocErrMsg" class="adp-plan-err">{{ rightsDocErrMsg }}</p>
-            <div v-for="(url, i) in rightsDocList" :key="url" class="adp-plan-preview">
-              <img :src="photoSrc(url)" alt="서류사진" class="adp-plan-img" @error="onImageError(url)" @click="openLightbox(photoSrc(url))" />
-              <button type="button" class="adp-plan-del" aria-label="서류사진 삭제" @click="removeRightsDocAt(i)">×</button>
-              <p v-if="brokenImages[url]" class="adp-plan-err">이미지 로드 실패 — URL을 확인해 주세요.</p>
+            <!-- 서류 사진은 네 칸씩 정사각형으로 — 세로로 길게 깔면 카드가 한없이 늘어난다.
+                 누르면 라이트박스에서 크게 본다 -->
+            <div v-if="rightsDocList.length > 0" class="adp-doc-grid">
+              <div v-for="(url, i) in rightsDocList" :key="url" class="adp-doc-cell">
+                <img :src="photoSrc(url)" alt="서류사진" class="adp-doc-img" @error="onImageError(url)" @click="openLightbox(photoSrc(url))" />
+                <button type="button" class="adp-doc-del" aria-label="서류사진 삭제" @click.stop="removeRightsDocAt(i)">×</button>
+                <span v-if="brokenImages[url]" class="adp-doc-bad" title="이미지 로드 실패 — URL을 확인해 주세요.">!</span>
+              </div>
             </div>
           </div>
         </section>
@@ -9059,6 +9063,26 @@ const goBack = () => router.back();
 .adp-plan-preview {
   position: relative; padding: 4px 0 8px;
   border-radius: 8px; background: #f9fafb;
+}
+/* 권리분석 서류 사진 — 한 줄에 넷, 정사각형 */
+.adp-doc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 2px 12px 10px; }
+.adp-doc-cell {
+  position: relative; aspect-ratio: 1 / 1; min-width: 0;
+  border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #f3f4f6;
+}
+.adp-doc-img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+.adp-doc-del {
+  position: absolute; top: 3px; right: 3px;
+  width: 18px; height: 18px; padding: 0; border: none; border-radius: 50%;
+  background: rgba(17, 24, 39, 0.55); color: #fff;
+  font-size: 12px; line-height: 1; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.adp-doc-bad {
+  position: absolute; left: 3px; bottom: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #dc2626; color: #fff; font-size: 11px; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center;
 }
 .adp-plan-img {
   /* 큰 이미지를 붙여넣어도 미리보기가 화면을 점령하지 않게 높이를 제한한다.
