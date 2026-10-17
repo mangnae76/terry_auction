@@ -137,8 +137,9 @@ const STAGE_BID_RUNNING = 'bid:진행';
  *  속으로는 세 켜(層)다: 입찰장에서의 일(진행·대기) → 그날의 결과(낙찰·패찰·유찰·취소) → 끝(매도).
  *  같은 켜끼리 묶어 두면 '어디까지 왔나'가 한눈에 읽힌다. */
 const BID_STAGES: Array<{ value: string; label: string; tier: 1 | 2 | 3 }> = [
-  { value: '진행', label: '입찰진행', tier: 1 },
+  // 대기가 먼저다 — 입찰장에 가기 전이 '대기', 들어가면 '진행'
   { value: '대기', label: '입찰대기', tier: 1 },
+  { value: '진행', label: '입찰진행', tier: 1 },
   { value: '낙찰', label: '낙찰', tier: 2 },
   { value: '패찰', label: '패찰', tier: 2 },
   { value: '유찰', label: '유찰', tier: 2 },

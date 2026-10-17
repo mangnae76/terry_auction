@@ -417,8 +417,9 @@ const bidStageOf = (item: AuctionDetail) => {
 /** 4번째 알약 — 늘 '입찰산정'. 입찰 뒤의 상태가 켜져 있으면 '지금 단계'는 5번째이므로 여기는 꺼 둔다 */
 const bidPhaseTone = (item: AuctionDetail) =>
   item.status === '입찰' && !bidStageOf(item) ? 'phase-active' : '';
-/** 5번째 알약 — 입찰 뒤의 상태를 그대로 적는다 (없으면 '입찰진행') */
-const bidResultLabel = (item: AuctionDetail) => BID_STAGE_LABELS[bidStageOf(item)] ?? '입찰진행';
+/** 5번째 알약 — 입찰 뒤의 상태를 그대로 적는다.
+ *  아직 아무것도 안 적었으면 '입찰대기' — 입찰장에 가기 전이 그 자리다 */
+const bidResultLabel = (item: AuctionDetail) => BID_STAGE_LABELS[bidStageOf(item)] ?? '입찰대기';
 const bidResultTone = (item: AuctionDetail) => {
   const stage = bidStageOf(item);
   if (stage === '진행') return 'phase-bidding';
@@ -844,7 +845,7 @@ watch(
           <button
             type="button"
             :class="['wlp-phase', bidResultTone(item)]"
-            :title="bidResultTone(item) ? '되돌리려면 왼쪽 입찰산정을 누르세요' : '누르면 입찰진행으로 표시합니다'"
+            :title="bidResultTone(item) ? '되돌리려면 왼쪽 입찰산정을 누르세요' : '누르면 입찰진행으로 바뀝니다'"
             @click="toggleBidRunning(item, $event)"
           >{{ bidResultLabel(item) }}</button>
         </div>
