@@ -116,7 +116,7 @@ const dayGroups = POST_WIN_DAY;
                 <td class="pw-date">
                   <input
                     type="date"
-                    class="pw-dateinput"
+                    :class="['pw-dateinput', { empty: !checkDate(r.id) }]"
                     :value="checkDate(r.id)"
                     :disabled="!picked"
                     @click.stop
@@ -214,7 +214,7 @@ const dayGroups = POST_WIN_DAY;
 .pw-row { cursor: pointer; }
 .pw-row:hover { background: #f7f9fd; }
 .pw-row td { border-top: 1px solid #f1f3f7; padding: 9px 6px; vertical-align: top; }
-/* 왼쪽 — 한 날 */
+/* 왼쪽 — 한 날. 비었으면 아무 글자도 보이지 않는다 ('연도. 월. 일.'을 지운다) */
 .pw-date { width: 108px; }
 .pw-dateinput {
   width: 100%; box-sizing: border-box; height: 26px;
@@ -222,6 +222,12 @@ const dayGroups = POST_WIN_DAY;
   padding: 0 4px; font-family: inherit; font-size: 11px; color: #111827;
 }
 .pw-dateinput:disabled { background: #f3f4f6; color: #9ca3af; }
+/* 비어 있을 때는 글자도 달력 그림도 숨긴다 — 누르면 그때 달력이 뜬다 */
+.pw-dateinput.empty::-webkit-datetime-edit { color: transparent; }
+.pw-dateinput.empty:focus::-webkit-datetime-edit { color: #111827; }
+.pw-dateinput::-webkit-calendar-picker-indicator { opacity: 0; }
+.pw-dateinput::-webkit-inner-spin-button,
+.pw-dateinput::-webkit-clear-button { display: none; }
 /* 오른쪽 — 했는지 */
 .pw-chk { width: 34px; text-align: center; }
 .pw-chk input { width: 16px; height: 16px; accent-color: #2b6df3; cursor: pointer; }

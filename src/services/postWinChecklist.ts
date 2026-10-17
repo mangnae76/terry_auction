@@ -22,7 +22,7 @@ export interface CheckGroup {
 export const POST_WIN_DAY: CheckGroup[] = [
   {
     key: 'file',
-    title: '경매사건파일 열람',
+    title: '경매사건 열람',
     note: '점유자 연락처 · 공실 상태(비번) · 추가 인수사항과 세금을 확인한다 (당일 열람 가능 시)',
     rows: [
       { id: 'pw.file.court', depth: 0, text: '법원(종합민원실) — 재판기록 열람 및 USB 복제' },
