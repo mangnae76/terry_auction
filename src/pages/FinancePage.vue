@@ -50,10 +50,14 @@ const toggleStageList = (stage: '낙찰' | '매도') => {
   stageListOpen.value = stageListOpen.value === stage ? '' : stage;
 };
 const stageListRows = computed(() => (stageListOpen.value ? stageRows(stageListOpen.value) : []));
-/** 주소는 시·도를 떼고 짧게 — 카드가 한 줄을 넘기지 않게 */
+/** 주소는 동(洞)부터 — 시·도와 시군구는 뗀다.
+ *  '동 + 지번 + 건물명 + 동호수'면 어느 집인지 알아보는 데 넉넉하다.
+ *  (낙찰·매도 카드에서만 이렇게 줄인다) */
 const shortAddr = (address?: string) => {
   const parts = String(address ?? '').trim().split(/\s+/).filter(Boolean);
-  return parts.length > 3 ? parts.slice(1).join(' ') : parts.join(' ');
+  const dong = parts.findIndex((v) => /[동읍면리]\d*$/.test(v) && !/^\d/.test(v));
+  if (dong >= 0) return parts.slice(dong).join(' ');
+  return parts.length > 2 ? parts.slice(-2).join(' ') : parts.join(' ');
 };
 /** 날짜 — 앞의 '20'을 뗀다 ('26. 10. 10'). 비어 있으면 빈 칸 */
 const shortYmd = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2).replace(/-/g, '. ') : '');
@@ -643,23 +647,11 @@ const exportExcel = () => {
         <div class="fin-pop-body">
           <p v-if="stageListRows.length === 0" class="fin-stage-empty">{{ stageListOpen }}한 물건이 없습니다.</p>
           <article v-for="a in stageListRows" :key="a.id" class="fin-stage-card" @click="openAuction(a.id)">
+            <!-- 날짜는 글자로만 — 칸을 그리지 않는다. 고르지 않은 날은 빈자리로 둔다.
+                 폭을 못 박아 카드가 여럿이어도 날짜가 한 줄로 맞아떨어진다 -->
             <p class="top">
-              <!-- 예상수익분석의 날짜 칸과 같은 모양 — 다만 여기서는 보기만 한다.
-                   고르지 않은 날은 빈 칸으로 둔다 (지어내 적지 않는다) -->
-              <span class="pd">
-                <em>낙찰일</em>
-                <span class="pd-box">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>
-                  <span>{{ shortYmd(a.wonDate) }}</span>
-                </span>
-              </span>
-              <span class="pd">
-                <em>매도일</em>
-                <span class="pd-box">
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>
-                  <span>{{ shortYmd(a.sellDate) }}</span>
-                </span>
-              </span>
+              <span class="pd"><em>낙찰일</em><b>{{ shortYmd(a.wonDate) }}</b></span>
+              <span class="pd"><em>매도일</em><b>{{ shortYmd(a.sellDate) }}</b></span>
               <span class="court">{{ shortCourt(a.courtName) }}</span>
             </p>
             <p class="addr">{{ shortAddr(a.address) }}</p>
@@ -753,20 +745,19 @@ const exportExcel = () => {
 }
 .fin-stage-card:active { background: #f7f9fd; }
 .fin-stage-card:last-child { margin-bottom: 0; }
-.fin-stage-card .top { margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-/* 예상수익분석의 날짜 칸과 같은 치수 — 보기만 하는 칸이라 단추가 아니다 */
-.fin-stage-card .pd { display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; }
-.fin-stage-card .pd em { font-style: normal; font-size: 11px; font-weight: 500; color: #111827; white-space: nowrap; }
-.fin-stage-card .pd-box {
-  display: inline-flex; align-items: center; justify-content: center; gap: 3px;
-  border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;
-  width: 84px; box-sizing: border-box; padding: 4px;
+.fin-stage-card .top { margin: 0; display: flex; align-items: baseline; gap: 10px; }
+/* 날짜 — 이름표(회색)와 값(검정)을 나란히. 폭을 못 박아 줄이 맞는다 */
+.fin-stage-card .pd { display: inline-flex; align-items: baseline; gap: 5px; flex: 0 0 auto; }
+.fin-stage-card .pd em {
+  font-style: normal; font-size: 10.5px; font-weight: 500; color: #9ca3af; white-space: nowrap;
 }
-.fin-stage-card .pd-box span { font-size: 11.5px; font-weight: 400; color: #111827; white-space: nowrap; }
-.fin-stage-card .pd-box svg { color: #9ca3af; flex: 0 0 auto; }
-.fin-stage-card .court { margin-left: auto; font-size: 11px; font-weight: 700; color: #6b7280; }
+/* 굵게 쓰는 것은 금액뿐 — 날짜·주소·법원은 보통 굵기로 담담하게 */
+.fin-stage-card .pd b {
+  min-width: 66px; font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap;
+}
+.fin-stage-card .court { margin-left: auto; font-size: 11px; font-weight: 500; color: #6b7280; }
 .fin-stage-card .addr {
-  margin: 2px 0 0; font-size: 12px; font-weight: 700; color: #374151;
+  margin: 3px 0 0; font-size: 12px; font-weight: 500; color: #374151;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* 줄 하나 긋고 아래에 돈 이야기 */
@@ -775,7 +766,7 @@ const exportExcel = () => {
   margin-top: 7px; padding-top: 7px; border-top: 1px solid #eef1f6;
 }
 .fin-stage-card .nums span { min-width: 0; text-align: center; }
-.fin-stage-card .nums small { display: block; font-size: 9.5px; font-weight: 700; color: #9ca3af; }
+.fin-stage-card .nums small { display: block; font-size: 9.5px; font-weight: 500; color: #9ca3af; }
 .fin-stage-card .nums b {
   display: block; margin-top: 1px; font-size: 12px; font-weight: 800; color: #111827;
   white-space: nowrap;
