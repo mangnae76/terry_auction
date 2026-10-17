@@ -10478,6 +10478,10 @@ const goBack = () => router.back();
 .adp-agency-item .adp-mkt-input { height: 26px; }
 /* 본건사진 비고 */
 .adp-photo-note { padding: 0 0 4px; }
+/* 사진 칸과 비고 사이는 한 뼘 띄운다 — 붙여 두면 비고가 사진에 딸린 글처럼 읽힌다.
+   사진 자리는 모두 .adp-pg 한 벌을 쓰므로 이 한 줄이 전부에 걸린다 */
+.adp-pg + .adp-photo-note { margin-top: 12px; }
+.adp-pg { margin-bottom: 2px; }
 /* 첨부 입력칸 바로 아래 오는 비고는 위 여백을 줄여 한 덩어리로 보이게 한다 */
 .adp-plan-row + .adp-photo-note,
 .adp-plan-preview + .adp-photo-note { margin-top: -6px; }
