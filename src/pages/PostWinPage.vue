@@ -171,7 +171,8 @@ const dayGroups = POST_WIN_DAY;
 .pw-pick { flex: 0 0 auto; }
 .pw-card-head { display: flex; align-items: baseline; gap: 8px; padding: 16px 16px 12px; }
 .pw-card-head h2 { margin: 0; font-size: 15.3px; font-weight: 800; color: #111827; }
-.pw-card-head small { font-size: 11.5px; color: #9ca3af; font-weight: 600; }
+/* 안내 한 줄 — 볼드 없이 까만 글씨로 그냥 적는다 */
+.pw-card-head small { font-size: 11.5px; color: #111827; font-weight: 400; }
 /* 물건 고르기 */
 .pw-pick { display: flex; align-items: center; gap: 8px; padding: 0 2px; }
 .pw-pick small { font-size: 11px; font-weight: 700; color: #6b7280; flex: 0 0 auto; }
