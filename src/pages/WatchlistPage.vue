@@ -435,17 +435,43 @@ const bidResultTone = (item: AuctionDetail) => {
   if (stage === '유찰' || stage === '취소') return 'phase-closed';
   return '';
 };
-/** 마지막 알약 — 앞으로만 간다.
- *  아직 아무것도 아니면 '입찰진행'으로 올리고, 그 뒤(낙찰·매도 …)는 그대로 둔다.
- *  켜져 있는데 또 누르면 해제되던 것이 버그처럼 읽혔다 — 뒤로 가려면 왼쪽 '입찰산정'을 누른다. */
+/** 마지막 알약 — 첫 누름은 '입찰진행'으로 전진, 그다음부터는 메뉴를 연다.
+ *  결과(낙찰·유찰·취소·매도)를 고치러 물건정보까지 들어가지 않아도 되게. */
+const bidMenuId = ref('');
+/** 메뉴에 세우는 차례 — 물건상세 단계 메뉴와 같다 ('' 는 입찰산정으로 되돌리기) */
+const BID_MENU: Array<{ value: string; label: string; sep?: boolean }> = [
+  { value: '진행', label: '입찰진행' },
+  { value: '낙찰', label: '낙찰', sep: true },
+  { value: '유찰', label: '유찰' },
+  { value: '취소', label: '취소' },
+  { value: '매도', label: '매도', sep: true },
+  { value: '', label: '입찰산정으로 되돌리기', sep: true },
+];
 const toggleBidRunning = async (item: AuctionDetail, evt: MouseEvent) => {
   evt.stopPropagation();
-  if (bidStageOf(item)) return;
-  const dates = stageDates(item, '진행');
+  // 아직 아무것도 아니면 한 번 누름으로 입찰진행까지 간다
+  if (!bidStageOf(item)) {
+    const dates = stageDates(item, '진행');
+    await store.saveAuction({
+      ...item, status: '입찰', bidStatus: '진행',
+      wonDate: dates.wonDate, sellDate: dates.sellDate,
+    });
+    return;
+  }
+  bidMenuId.value = bidMenuId.value === item.id ? '' : item.id;
+};
+/** 메뉴에서 고른 자리로 옮긴다 — 날짜 규칙은 물건상세와 같은 것을 쓴다 */
+const pickBidStage = async (item: AuctionDetail, value: string, evt: MouseEvent) => {
+  evt.stopPropagation();
+  bidMenuId.value = '';
+  if (bidStageOf(item) === value) return;
+  const dates = stageDates(item, value);
   await store.saveAuction({
-    ...item, status: '입찰', bidStatus: '진행',
+    ...item, status: '입찰', bidStatus: value,
     wonDate: dates.wonDate, sellDate: dates.sellDate,
   });
+  const label = value ? (BID_STAGE_LABELS[value] ?? value) : '입찰산정';
+  flashToast(`'${label}'으로 바꿨습니다.${dates.note ? ` · ${dates.note}` : ''}`, 'success');
 };
 /** 4번째 알약 — 입찰 뒤의 상태를 내리고 '입찰산정'으로 돌아온다 */
 const onBidPhaseClick = async (item: AuctionDetail, evt: MouseEvent) => {
@@ -864,12 +890,32 @@ watch(
             @click="onBidPhaseClick(item, $event)"
           >입찰산정</button>
           <span class="wlp-phase-arrow">▶</span>
-          <button
-            type="button"
-            :class="['wlp-phase', bidResultTone(item)]"
-            :title="bidResultTone(item) ? '되돌리려면 왼쪽 입찰산정을 누르세요' : '누르면 입찰진행으로 바뀝니다'"
-            @click="toggleBidRunning(item, $event)"
-          >{{ bidResultLabel(item) }}</button>
+          <!-- 마지막 알약 — 첫 누름은 입찰진행, 그다음부터는 결과를 고르는 메뉴 -->
+          <span class="wlp-bid-wrap">
+            <button
+              type="button"
+              :class="['wlp-phase', bidResultTone(item)]"
+              :title="bidStageOf(item) ? '누르면 결과를 고릅니다' : '누르면 입찰진행으로 바뀝니다'"
+              @click="toggleBidRunning(item, $event)"
+            >{{ bidResultLabel(item) }}</button>
+            <template v-if="bidMenuId === item.id">
+              <div class="wlp-bid-backdrop" @click.stop="bidMenuId = ''" />
+              <ul class="wlp-bid-menu" @click.stop>
+                <li
+                  v-for="opt in BID_MENU"
+                  :key="opt.value || 'reset'"
+                  :class="['wlp-bid-opt', {
+                    on: bidStageOf(item) === opt.value,
+                    sep: opt.sep,
+                    hot: opt.value === '진행',
+                    done: opt.value === '낙찰' || opt.value === '매도',
+                    back: opt.value === '',
+                  }]"
+                  @click="pickBidStage(item, opt.value, $event)"
+                >{{ opt.label }}</li>
+              </ul>
+            </template>
+          </span>
         </div>
       </article>
 
@@ -1531,6 +1577,28 @@ watch(
   background: #dce5ff;
   color: #3850c2;
 }
+/* 마지막 알약의 메뉴 — 알약 바로 아래에 뜬다 */
+.wlp-bid-wrap { position: relative; display: inline-flex; flex: 1 1 0; }
+.wlp-bid-wrap .wlp-phase { flex: 1 1 0; }
+.wlp-bid-backdrop { position: fixed; inset: 0; z-index: 40; }
+.wlp-bid-menu {
+  position: absolute; z-index: 41; right: 0; top: calc(100% + 4px);
+  margin: 0; padding: 4px 0; list-style: none; min-width: 148px;
+  background: #fff; border: 1px solid #d1d5db; border-radius: 9px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+}
+.wlp-bid-opt {
+  padding: 8px 12px; font-size: 12.5px; font-weight: 700; color: #374151;
+  cursor: pointer; white-space: nowrap;
+}
+.wlp-bid-opt:hover { background: #f5f8ff; }
+.wlp-bid-opt.on { color: #3850c2; background: #f2f5ff; }
+.wlp-bid-opt.hot { color: #c22e2e; }
+.wlp-bid-opt.done { color: #2a3f8f; }
+.wlp-bid-opt.back { color: #9ca3af; font-weight: 600; }
+/* 켜가 바뀌는 자리에 가는 선 하나 */
+.wlp-bid-opt.sep { border-top: 1px solid #eef1f6; margin-top: 3px; padding-top: 9px; }
+
 /* 입찰진행 — 옆의 파란 알약(#6b85f0 / #dce5ff / #3850c2)과 같은 농도 구조의 빨강 */
 .wlp-phase.phase-bidding {
   border-color: #ef6b6b;
