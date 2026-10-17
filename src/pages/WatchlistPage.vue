@@ -86,6 +86,12 @@ const normAddr = (address: string | undefined) => (address ?? '').replace(/\s+/g
 /** 입찰진행 — 단계는 '입찰'이고 입찰상태가 '진행'인 물건 */
 const isBidRunning = (item: AuctionDetail) =>
   item.status === '입찰' && (item.bidStatus ?? '').replace(/^입찰/, '') === '진행';
+/** 입찰대기 — 입찰산정을 끝내고 입찰장에 가기 전. 아직 아무것도 안 적은 물건도 여기다 */
+const isBidWaiting = (item: AuctionDetail) => {
+  if (item.status !== '입찰') return false;
+  const raw = (item.bidStatus ?? '').replace(/^입찰/, '');
+  return raw === '' || raw === '대기';
+};
 const routeOrder = ref<string[]>([]);
 const loadRouteOrder = async () => {
   const prefs = await loadUserPrefs(authStore.uid);
@@ -101,10 +107,13 @@ watch(() => authStore.uid, () => { void loadRouteOrder(); });
 
 /** 입찰진행은 단계(status)가 아니라 입찰상태라서, 스토어 필터 위에 한 겹 더 건다 */
 const bidRunningOnly = ref(false);
+/** 입찰대기만 보기 */
+const bidWaitingOnly = ref(false);
 const displayedAuctions = computed<AuctionDetail[]>(() => {
   const base = store.filteredAuctions
     .filter((item) => !item.id.startsWith('onbid-'))
-    .filter((item) => !bidRunningOnly.value || isBidRunning(item));
+    .filter((item) => !bidRunningOnly.value || isBidRunning(item))
+    .filter((item) => !bidWaitingOnly.value || isBidWaiting(item));
   const q = searchQuery.value.replace(/\s+/g, '').toLowerCase();
   const found = !q
     ? base
@@ -328,15 +337,17 @@ const PHASE_TO_STATUS: Record<PhaseKey, AuctionStatus> = {
 /** 상단 상태 카드 — 누르면 그 상태만 걸러 보여 준다 (한 번 더 누르면 전체) */
 const filterByPhase = (key: PhaseKey) => {
   const status = PHASE_TO_STATUS[key];
-  const was = store.activeStatus === status && !bidRunningOnly.value;
+  const was = store.activeStatus === status && !bidRunningOnly.value && !bidWaitingOnly.value;
   bidRunningOnly.value = false;
+  bidWaitingOnly.value = false;
   store.setFilter(was ? '전체' : status);
 };
 const isPhaseFiltered = (key: PhaseKey) =>
-  store.activeStatus === PHASE_TO_STATUS[key] && !bidRunningOnly.value;
+  store.activeStatus === PHASE_TO_STATUS[key] && !bidRunningOnly.value && !bidWaitingOnly.value;
 /** 전체 — 필터를 풀고 모두 보여 준다 */
 const showAllPhases = () => {
   bidRunningOnly.value = false;
+  bidWaitingOnly.value = false;
   store.setFilter('전체');
 };
 
@@ -388,14 +399,29 @@ const phaseCounts = computed<Record<PhaseKey, number>>(() => {
 const bidRunningCount = computed(
   () => store.auctions.filter((item) => !item.id.startsWith('onbid-') && isBidRunning(item)).length,
 );
+const bidWaitingCount = computed(
+  () => store.auctions.filter((item) => !item.id.startsWith('onbid-') && isBidWaiting(item)).length,
+);
 /** 입찰진행 카드 — 단계 필터를 '입찰'로 두고 그 위에 진행만 남긴다 */
 const filterByBidRunning = () => {
+  bidWaitingOnly.value = false;
   if (bidRunningOnly.value) {
     bidRunningOnly.value = false;
     store.setFilter('전체');
     return;
   }
   bidRunningOnly.value = true;
+  store.setFilter('입찰');
+};
+/** 입찰대기 카드 — 입찰산정 바로 다음 자리다 */
+const filterByBidWaiting = () => {
+  bidRunningOnly.value = false;
+  if (bidWaitingOnly.value) {
+    bidWaitingOnly.value = false;
+    store.setFilter('전체');
+    return;
+  }
+  bidWaitingOnly.value = true;
   store.setFilter('입찰');
 };
 
@@ -733,6 +759,13 @@ watch(
           >{{ p.label }} <em>({{ phaseCounts[p.key] }})</em></button>
         </template>
         <span class="wlp-step-arrow">▶</span>
+        <!-- 입찰산정 다음은 '입찰대기' — 입찰장에 가기 전 자리다 -->
+        <button
+          type="button"
+          :class="['wlp-step', 'st-waiting', { on: bidWaitingOnly }]"
+          @click="filterByBidWaiting"
+        >입찰대기 <em>({{ bidWaitingCount }})</em></button>
+        <span class="wlp-step-arrow">▶</span>
         <button
           type="button"
           :class="['wlp-step', 'st-running', { on: bidRunningOnly }]"
@@ -1028,6 +1061,9 @@ watch(
 .wlp-step.st-visited.on { background: #15803d; color: #fff; }
 .wlp-step.st-bid { color: #dda40c; }
 .wlp-step.st-bid.on { background: #ca8a04; color: #fff; }
+/* 입찰대기 — 입찰산정(노랑)과 입찰진행(빨강) 사이의 주황 */
+.wlp-step.st-waiting { color: #ea7317; }
+.wlp-step.st-waiting.on { background: #ea7317; color: #fff; }
 .wlp-step.st-running { color: #dc2626; }
 .wlp-step.st-running.on { background: #dc2626; color: #fff; }
 @media (max-width: 374px) {
