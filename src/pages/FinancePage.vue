@@ -87,7 +87,8 @@ const calcRows = (a: AuctionDetail): CalcRow[] => {
     { label: '명도비', amount: c.evictionCost ?? 0 },
     { label: '광고비', amount: c.advertisingCost ?? 0, note: '3.3%' },
     { label: '필요경비 합계', amount: cost, cls: 'hi', strong: true, note: pctText(cost, bid) },
-    { cat: '세후수익', catSpan: 7, label: '매도확정가', amount: sale, cls: 'pink', strong: true },
+    // 줄 수와 rowspan 이 어긋나면 마지막 줄이 한 칸 밀린다 — 여덟 줄이다
+    { cat: '세후수익', catSpan: 8, label: '매도확정가', amount: sale, cls: 'pink', strong: true },
     { label: '총투자금', amount: bid + cost, note: '낙찰가+필요경비' },
     { label: '실투자금', amount: net, note: '낙찰가-대출+필요경비' },
     { label: '사업소득금액', amount: gain, strong: true, note: '매도가-낙찰가-필요경비' },
@@ -808,9 +809,12 @@ const exportExcel = () => {
   font-size: 11px; font-weight: 500; color: #111827; word-break: keep-all;
 }
 .fin-calc-tbl thead th { background: #1f3a72; color: #fff; border-bottom: none; font-weight: 700; }
-.fin-calc-tbl thead th:nth-child(1) { width: 17%; }
-.fin-calc-tbl thead th:nth-child(2) { width: 27%; }
-.fin-calc-tbl thead th:nth-child(4) { width: 26%; }
+.fin-calc-tbl thead th:nth-child(1) { width: 15%; }
+.fin-calc-tbl thead th:nth-child(2) { width: 26%; }
+.fin-calc-tbl thead th:nth-child(3) { width: 30%; }
+/* 금액은 줄을 바꾸지 않는다 — 깨져 보이던 자리다 */
+.fin-calc-tbl td.r { white-space: nowrap; }
+.fin-calc-tbl td.f { white-space: normal; line-height: 1.3; }
 .fin-calc-tbl .r { text-align: right; font-variant-numeric: tabular-nums; }
 .fin-calc-tbl .cat {
   background: #f3f4f6; font-weight: 700; text-align: center; vertical-align: middle;
@@ -825,10 +829,10 @@ const exportExcel = () => {
 
 /* 팝업 — 가짓수가 늘어도 아래 내용이 밀리지 않게 화면 위에 띄운다 */
 .fin-pop-veil { position: fixed; inset: 0; z-index: 70; background: rgba(17, 24, 39, 0.35); }
-/* 제목줄 바로 아래에서 시작한다 — 눌렀던 단추 가까이에 떠야 눈이 따라가기 쉽다 */
+/* 제목줄 바로 아래에서 시작하고, 좌우는 꽉 채운다 — 표가 넉넉히 펴져야 읽힌다 */
 .fin-pop {
-  position: fixed; z-index: 71; left: 50%; top: 52px; transform: translateX(-50%);
-  width: min(92vw, 420px); max-height: calc(100vh - 150px);
+  position: fixed; z-index: 71; left: 8px; right: 8px; top: 52px;
+  width: auto; max-height: calc(100vh - 110px);
   display: flex; flex-direction: column;
   background: #fff; border: 1px solid #e3e8f0; border-radius: 14px;
   box-shadow: 0 18px 44px rgba(17, 24, 39, 0.22);
