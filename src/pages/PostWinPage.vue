@@ -182,10 +182,10 @@ const toggleSection = (key: string) => {
 .pw-shell {
   position: fixed; inset: 0;
   display: flex; flex-direction: column;
-  background: #f5f7fb;
+  background: #dcdee3;
   overflow: hidden;
 }
-.pw-fixed-top { flex: 0 0 auto; position: relative; z-index: 20; background: #f5f7fb; }
+.pw-fixed-top { flex: 0 0 auto; position: relative; z-index: 20; background: #dcdee3; }
 .pw-body {
   flex: 1 1 auto; overflow-y: auto;
   padding: 10px 12px 96px;
@@ -219,7 +219,7 @@ const toggleSection = (key: string) => {
 }
 
 /* 물건 카드 — 자금관리의 낙찰·매도 카드와 같은 꼴. 돈 이야기는 넣지 않는다 */
-.pw-objwrap { position: relative; padding: 8px 12px 9px; background: #f5f7fb; }
+.pw-objwrap { position: relative; padding: 8px 12px 9px; background: #dcdee3; }
 .pw-obj {
   border: 1px solid #c9d3e3; border-radius: 10px; padding: 8px 10px 9px;
   background: #fff; cursor: pointer;
