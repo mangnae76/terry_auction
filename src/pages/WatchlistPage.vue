@@ -404,32 +404,41 @@ const phaseClass = (status: AuctionStatus, target: PhaseKey) =>
 
 // 네 번째 알약은 '입찰예정'에서 시작해, 입찰가산정의 입찰상태를 그대로 비춘다
 const bidStatusOf = (item: AuctionDetail) => (item.bidStatus ?? '').replace(/^입찰/, '');
-/** 4번째 알약 — 늘 '입찰산정'. 누르면 입찰가산정 화면으로 간다.
- *  입찰진행이 켜져 있으면 '지금 단계'는 5번째이므로 여기는 꺼 둔다 (한 번에 하나만 켜진다) */
+/** 입찰 뒤의 상태 — 물건상세 단계 메뉴와 같은 목록 */
+const BID_STAGE_LABELS: Record<string, string> = {
+  진행: '입찰진행', 대기: '입찰대기', 낙찰: '낙찰', 패찰: '패찰', 매도: '매도', 유찰: '유찰', 취소: '취소',
+};
+/** 지금 켜져 있는 입찰 뒤 상태 — 단계가 '입찰'일 때만 뜻이 있다. '대기'는 아직 안 들어간 것이라 센지 않는다 */
+const bidStageOf = (item: AuctionDetail) => {
+  if (item.status !== '입찰') return '';
+  const raw = bidStatusOf(item);
+  return raw && raw !== '대기' && BID_STAGE_LABELS[raw] ? raw : '';
+};
+/** 4번째 알약 — 늘 '입찰산정'. 입찰 뒤의 상태가 켜져 있으면 '지금 단계'는 5번째이므로 여기는 꺼 둔다 */
 const bidPhaseTone = (item: AuctionDetail) =>
-  item.status === '입찰' && bidStatusOf(item) !== '진행' ? 'phase-active' : '';
-/** 5번째 알약 — '입찰진행' 하나. 켜져 있으면 빨간 알약 */
-const bidResultTone = (item: AuctionDetail) =>
-  item.status === '입찰' && bidStatusOf(item) === '진행' ? 'phase-bidding' : '';
-/** 마지막 단계 표시 — 화면을 옮기지 않고 그 자리에서 켜고 끈다 */
+  item.status === '입찰' && !bidStageOf(item) ? 'phase-active' : '';
+/** 5번째 알약 — 입찰 뒤의 상태를 그대로 적는다 (없으면 '입찰진행') */
+const bidResultLabel = (item: AuctionDetail) => BID_STAGE_LABELS[bidStageOf(item)] ?? '입찰진행';
+const bidResultTone = (item: AuctionDetail) => {
+  const stage = bidStageOf(item);
+  if (stage === '진행') return 'phase-bidding';
+  if (stage === '낙찰' || stage === '매도') return 'phase-active';
+  if (stage === '유찰' || stage === '취소' || stage === '패찰') return 'phase-closed';
+  return '';
+};
+/** 마지막 알약 — 꺼져 있을 때만 '입찰진행'으로 켠다.
+ *  켜져 있는데 또 누르면 해제되던 것이 버그처럼 읽혔다 (입찰진행을 누르면 입찰산정으로 내려감).
+ *  뒤로 가려면 왼쪽의 '입찰산정'을 누른다 — 앞뒤가 알약 자리와 맞아떨어진다. */
 const toggleBidRunning = async (item: AuctionDetail, evt: MouseEvent) => {
   evt.stopPropagation();
-  const on = bidStatusOf(item) !== '진행';
-  await store.saveAuction({
-    ...item,
-    bidStatus: on ? '진행' : '',
-    status: on ? '입찰' : item.status,
-  });
+  if (bidStageOf(item)) return;
+  await store.saveAuction({ ...item, status: '입찰', bidStatus: '진행' });
 };
+/** 4번째 알약 — 입찰 뒤의 상태를 내리고 '입찰산정'으로 돌아온다 */
 const onBidPhaseClick = async (item: AuctionDetail, evt: MouseEvent) => {
   evt.stopPropagation();
-  const running = bidStatusOf(item) === '진행';
-  if (item.status === '입찰' && !running) return;
-  await store.saveAuction({
-    ...item,
-    status: '입찰',
-    bidStatus: running ? '대기' : (item.bidStatus ?? ''),
-  });
+  if (item.status === '입찰' && !bidStageOf(item)) return;
+  await store.saveAuction({ ...item, status: '입찰', bidStatus: '' });
 };
 
 // 단계에서 '탈락'을 없앤 뒤 남아 있는 옛 물건들 — 조용히 감추지 않고 알린 뒤 옮긴다
@@ -835,9 +844,9 @@ watch(
           <button
             type="button"
             :class="['wlp-phase', bidResultTone(item)]"
-            :title="bidResultTone(item) ? '누르면 입찰진행을 해제합니다' : '누르면 입찰진행으로 표시합니다'"
+            :title="bidResultTone(item) ? '되돌리려면 왼쪽 입찰산정을 누르세요' : '누르면 입찰진행으로 표시합니다'"
             @click="toggleBidRunning(item, $event)"
-          >입찰진행</button>
+          >{{ bidResultLabel(item) }}</button>
         </div>
       </article>
 

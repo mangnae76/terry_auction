@@ -138,6 +138,7 @@ const BID_STAGES: Array<{ value: string; label: string }> = [
   { value: '진행', label: '입찰진행' },
   { value: '대기', label: '입찰대기' },
   { value: '낙찰', label: '낙찰' },
+  { value: '패찰', label: '패찰' },
   { value: '매도', label: '매도' },
   { value: '유찰', label: '유찰' },
   { value: '취소', label: '취소' },
@@ -5422,7 +5423,7 @@ const goBack = () => router.back();
               :class="['adp-stage-btn', {
                 hot: stageLabel === '입찰진행',
                 done: stageLabel === '낙찰' || stageLabel === '매도',
-                off: stageLabel === '유찰' || stageLabel === '취소',
+                off: stageLabel === '유찰' || stageLabel === '취소' || stageLabel === '패찰',
               }]"
               @click.stop="stageOpen = !stageOpen"
             >
