@@ -86,6 +86,11 @@ const normAddr = (address: string | undefined) => (address ?? '').replace(/\s+/g
 /** 입찰진행 — 단계는 '입찰'이고 입찰상태가 '진행'인 물건 */
 const isBidRunning = (item: AuctionDetail) =>
   item.status === '입찰' && (item.bidStatus ?? '').replace(/^입찰/, '') === '진행';
+/** 결과가 난 물건 — 낙찰·유찰·취소·매도. 흐름 띠는 '아직 할 일'만 세므로 여기서 뺀다
+ *  (목록에는 그대로 남아 카드에 제 상태를 적는다) */
+const BID_RESULTS = ['낙찰', '유찰', '취소', '매도'];
+const hasBidResult = (item: AuctionDetail) =>
+  item.status === '입찰' && BID_RESULTS.includes((item.bidStatus ?? '').replace(/^입찰/, ''));
 const routeOrder = ref<string[]>([]);
 const loadRouteOrder = async () => {
   const prefs = await loadUserPrefs(authStore.uid);
@@ -104,7 +109,13 @@ const bidRunningOnly = ref(false);
 const displayedAuctions = computed<AuctionDetail[]>(() => {
   const base = store.filteredAuctions
     .filter((item) => !item.id.startsWith('onbid-'))
-    .filter((item) => !bidRunningOnly.value || isBidRunning(item));
+    .filter((item) => !bidRunningOnly.value || isBidRunning(item))
+    // '입찰산정'으로 걸러 볼 때는 그 자리에 선 물건만 남긴다 — 띠의 숫자와 목록이 같아야 한다.
+    // (입찰진행과 결과가 난 물건은 제 칸에서 본다)
+    .filter((item) => {
+      if (store.activeStatus !== '입찰' || bidRunningOnly.value) return true;
+      return !isBidRunning(item) && !hasBidResult(item);
+    });
   const q = searchQuery.value.replace(/\s+/g, '').toLowerCase();
   const found = !q
     ? base
@@ -380,6 +391,8 @@ const phaseCounts = computed<Record<PhaseKey, number>>(() => {
     .forEach((item) => {
       // 입찰진행은 아래 전용 카드가 센다 — 여기서 빼야 다섯 칸 합이 전체와 맞는다
       if (isBidRunning(item)) return;
+      // 결과(낙찰·유찰·취소·매도)가 난 물건은 흐름에서 내려간다 — 더 손댈 일이 없다
+      if (hasBidResult(item)) return;
       const hit = PHASE_LABELS.find((p) => PHASE_TO_STATUS[p.key] === item.status);
       if (hit) counts[hit.key] += 1;
     });
@@ -407,7 +420,7 @@ const bidStatusOf = (item: AuctionDetail) => (item.bidStatus ?? '').replace(/^�
 /** 입찰 뒤의 상태 — 물건상세 단계 메뉴와 같은 목록.
  *  '대기'는 없앴다 — 입찰산정에서 더 나아가지 않은 것이 곧 대기다 (옛 자료의 '대기'도 그렇게 읽는다) */
 const BID_STAGE_LABELS: Record<string, string> = {
-  진행: '입찰진행', 낙찰: '낙찰', 패찰: '패찰', 매도: '매도', 유찰: '유찰', 취소: '취소',
+  진행: '입찰진행', 낙찰: '낙찰', 매도: '매도', 유찰: '유찰', 취소: '취소',
 };
 /** 지금 켜져 있는 입찰 뒤 상태 — 단계가 '입찰'일 때만 뜻이 있다 */
 const bidStageOf = (item: AuctionDetail) => {
@@ -424,7 +437,7 @@ const bidResultTone = (item: AuctionDetail) => {
   const stage = bidStageOf(item);
   if (stage === '진행') return 'phase-bidding';
   if (stage === '낙찰' || stage === '매도') return 'phase-active';
-  if (stage === '유찰' || stage === '취소' || stage === '패찰') return 'phase-closed';
+  if (stage === '유찰' || stage === '취소') return 'phase-closed';
   return '';
 };
 /** 마지막 알약 — 앞으로만 간다.

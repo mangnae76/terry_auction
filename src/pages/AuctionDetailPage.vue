@@ -134,13 +134,12 @@ const stageOpen = ref(false);
  *  단계 칸을 늘리지 않고 예전부터 있던 bidStatus 한 칸을 그대로 쓴다. */
 const STAGE_BID_RUNNING = 'bid:진행';
 /** 입찰 뒤의 상태 — 단계 메뉴에서 입찰산정 아래로 이어 붙는다.
- *  속으로는 세 켜(層)다: 입찰장에서의 일(진행·대기) → 그날의 결과(낙찰·패찰·유찰·취소) → 끝(매도).
+ *  속으로는 세 켜(層)다: 입찰장에서의 일(진행) → 그날의 결과(낙찰·유찰·취소) → 끝(매도).
  *  같은 켜끼리 묶어 두면 '어디까지 왔나'가 한눈에 읽힌다. */
 const BID_STAGES: Array<{ value: string; label: string; tier: 1 | 2 | 3 }> = [
   // '입찰대기'는 두지 않는다 — 입찰산정에서 더 나아가지 않은 것이 곧 대기다 (한 줄 흐름)
   { value: '진행', label: '입찰진행', tier: 1 },
   { value: '낙찰', label: '낙찰', tier: 2 },
-  { value: '패찰', label: '패찰', tier: 2 },
   { value: '유찰', label: '유찰', tier: 2 },
   { value: '취소', label: '취소', tier: 2 },
   { value: '매도', label: '매도', tier: 3 },
@@ -5430,7 +5429,7 @@ const goBack = () => router.back();
               :class="['adp-stage-btn', {
                 hot: stageLabel === '입찰진행',
                 done: stageLabel === '낙찰' || stageLabel === '매도',
-                off: stageLabel === '유찰' || stageLabel === '취소' || stageLabel === '패찰',
+                off: stageLabel === '유찰' || stageLabel === '취소',
               }]"
               @click.stop="stageOpen = !stageOpen"
             >
