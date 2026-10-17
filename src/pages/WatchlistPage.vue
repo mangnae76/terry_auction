@@ -86,12 +86,6 @@ const normAddr = (address: string | undefined) => (address ?? '').replace(/\s+/g
 /** 입찰진행 — 단계는 '입찰'이고 입찰상태가 '진행'인 물건 */
 const isBidRunning = (item: AuctionDetail) =>
   item.status === '입찰' && (item.bidStatus ?? '').replace(/^입찰/, '') === '진행';
-/** 입찰대기 — 입찰산정을 끝내고 입찰장에 가기 전. 아직 아무것도 안 적은 물건도 여기다 */
-const isBidWaiting = (item: AuctionDetail) => {
-  if (item.status !== '입찰') return false;
-  const raw = (item.bidStatus ?? '').replace(/^입찰/, '');
-  return raw === '' || raw === '대기';
-};
 const routeOrder = ref<string[]>([]);
 const loadRouteOrder = async () => {
   const prefs = await loadUserPrefs(authStore.uid);
@@ -107,13 +101,10 @@ watch(() => authStore.uid, () => { void loadRouteOrder(); });
 
 /** 입찰진행은 단계(status)가 아니라 입찰상태라서, 스토어 필터 위에 한 겹 더 건다 */
 const bidRunningOnly = ref(false);
-/** 입찰대기만 보기 */
-const bidWaitingOnly = ref(false);
 const displayedAuctions = computed<AuctionDetail[]>(() => {
   const base = store.filteredAuctions
     .filter((item) => !item.id.startsWith('onbid-'))
-    .filter((item) => !bidRunningOnly.value || isBidRunning(item))
-    .filter((item) => !bidWaitingOnly.value || isBidWaiting(item));
+    .filter((item) => !bidRunningOnly.value || isBidRunning(item));
   const q = searchQuery.value.replace(/\s+/g, '').toLowerCase();
   const found = !q
     ? base
@@ -337,17 +328,15 @@ const PHASE_TO_STATUS: Record<PhaseKey, AuctionStatus> = {
 /** 상단 상태 카드 — 누르면 그 상태만 걸러 보여 준다 (한 번 더 누르면 전체) */
 const filterByPhase = (key: PhaseKey) => {
   const status = PHASE_TO_STATUS[key];
-  const was = store.activeStatus === status && !bidRunningOnly.value && !bidWaitingOnly.value;
+  const was = store.activeStatus === status && !bidRunningOnly.value;
   bidRunningOnly.value = false;
-  bidWaitingOnly.value = false;
   store.setFilter(was ? '전체' : status);
 };
 const isPhaseFiltered = (key: PhaseKey) =>
-  store.activeStatus === PHASE_TO_STATUS[key] && !bidRunningOnly.value && !bidWaitingOnly.value;
+  store.activeStatus === PHASE_TO_STATUS[key] && !bidRunningOnly.value;
 /** 전체 — 필터를 풀고 모두 보여 준다 */
 const showAllPhases = () => {
   bidRunningOnly.value = false;
-  bidWaitingOnly.value = false;
   store.setFilter('전체');
 };
 
@@ -399,12 +388,8 @@ const phaseCounts = computed<Record<PhaseKey, number>>(() => {
 const bidRunningCount = computed(
   () => store.auctions.filter((item) => !item.id.startsWith('onbid-') && isBidRunning(item)).length,
 );
-const bidWaitingCount = computed(
-  () => store.auctions.filter((item) => !item.id.startsWith('onbid-') && isBidWaiting(item)).length,
-);
 /** 입찰진행 카드 — 단계 필터를 '입찰'로 두고 그 위에 진행만 남긴다 */
 const filterByBidRunning = () => {
-  bidWaitingOnly.value = false;
   if (bidRunningOnly.value) {
     bidRunningOnly.value = false;
     store.setFilter('전체');
@@ -413,30 +398,18 @@ const filterByBidRunning = () => {
   bidRunningOnly.value = true;
   store.setFilter('입찰');
 };
-/** 입찰대기 카드 — 입찰산정 바로 다음 자리다 */
-const filterByBidWaiting = () => {
-  bidRunningOnly.value = false;
-  if (bidWaitingOnly.value) {
-    bidWaitingOnly.value = false;
-    store.setFilter('전체');
-    return;
-  }
-  bidWaitingOnly.value = true;
-  store.setFilter('입찰');
-};
 
 const phaseClass = (status: AuctionStatus, target: PhaseKey) =>
   status === PHASE_TO_STATUS[target] ? 'phase-active' : '';
 
 // 네 번째 알약은 '입찰예정'에서 시작해, 입찰가산정의 입찰상태를 그대로 비춘다
 const bidStatusOf = (item: AuctionDetail) => (item.bidStatus ?? '').replace(/^입찰/, '');
-/** 입찰 뒤의 상태 — 물건상세 단계 메뉴와 같은 목록 */
+/** 입찰 뒤의 상태 — 물건상세 단계 메뉴와 같은 목록.
+ *  '대기'는 없앴다 — 입찰산정에서 더 나아가지 않은 것이 곧 대기다 (옛 자료의 '대기'도 그렇게 읽는다) */
 const BID_STAGE_LABELS: Record<string, string> = {
-  진행: '입찰진행', 대기: '입찰대기', 낙찰: '낙찰', 패찰: '패찰', 매도: '매도', 유찰: '유찰', 취소: '취소',
+  진행: '입찰진행', 낙찰: '낙찰', 패찰: '패찰', 매도: '매도', 유찰: '유찰', 취소: '취소',
 };
-/** 지금 켜져 있는 입찰 뒤 상태 — 단계가 '입찰'일 때만 뜻이 있다.
- *  '대기'도 하나의 자리다 — 빼 두었더니 물건상세에서 입찰대기를 골라도
- *  카드에서는 입찰산정이 켜져, 단계가 뒤로 간 것처럼 보였다. */
+/** 지금 켜져 있는 입찰 뒤 상태 — 단계가 '입찰'일 때만 뜻이 있다 */
 const bidStageOf = (item: AuctionDetail) => {
   if (item.status !== '입찰') return '';
   const raw = bidStatusOf(item);
@@ -445,23 +418,21 @@ const bidStageOf = (item: AuctionDetail) => {
 /** 4번째 알약 — 늘 '입찰산정'. 입찰 뒤의 상태가 켜져 있으면 '지금 단계'는 5번째이므로 여기는 꺼 둔다 */
 const bidPhaseTone = (item: AuctionDetail) =>
   item.status === '입찰' && !bidStageOf(item) ? 'phase-active' : '';
-/** 5번째 알약 — 입찰 뒤의 상태를 그대로 적는다.
- *  아직 아무것도 안 적었으면 '입찰대기' — 입찰장에 가기 전이 그 자리다 */
-const bidResultLabel = (item: AuctionDetail) => BID_STAGE_LABELS[bidStageOf(item)] ?? '입찰대기';
+/** 5번째 알약 — 입찰 뒤의 상태를 그대로 적는다 (아직이면 '입찰진행'이 다음 자리다) */
+const bidResultLabel = (item: AuctionDetail) => BID_STAGE_LABELS[bidStageOf(item)] ?? '입찰진행';
 const bidResultTone = (item: AuctionDetail) => {
   const stage = bidStageOf(item);
   if (stage === '진행') return 'phase-bidding';
-  if (stage === '대기' || stage === '낙찰' || stage === '매도') return 'phase-active';
+  if (stage === '낙찰' || stage === '매도') return 'phase-active';
   if (stage === '유찰' || stage === '취소' || stage === '패찰') return 'phase-closed';
   return '';
 };
 /** 마지막 알약 — 앞으로만 간다.
- *  아무것도 없거나 '대기'면 '입찰진행'으로 올리고, 그 뒤(낙찰·매도 …)는 그대로 둔다.
+ *  아직 아무것도 아니면 '입찰진행'으로 올리고, 그 뒤(낙찰·매도 …)는 그대로 둔다.
  *  켜져 있는데 또 누르면 해제되던 것이 버그처럼 읽혔다 — 뒤로 가려면 왼쪽 '입찰산정'을 누른다. */
 const toggleBidRunning = async (item: AuctionDetail, evt: MouseEvent) => {
   evt.stopPropagation();
-  const stage = bidStageOf(item);
-  if (stage && stage !== '대기') return;
+  if (bidStageOf(item)) return;
   await store.saveAuction({ ...item, status: '입찰', bidStatus: '진행' });
 };
 /** 4번째 알약 — 입찰 뒤의 상태를 내리고 '입찰산정'으로 돌아온다 */
@@ -759,13 +730,6 @@ watch(
           >{{ p.label }} <em>({{ phaseCounts[p.key] }})</em></button>
         </template>
         <span class="wlp-step-arrow">▶</span>
-        <!-- 입찰산정 다음은 '입찰대기' — 입찰장에 가기 전 자리다 -->
-        <button
-          type="button"
-          :class="['wlp-step', 'st-waiting', { on: bidWaitingOnly }]"
-          @click="filterByBidWaiting"
-        >입찰대기 <em>({{ bidWaitingCount }})</em></button>
-        <span class="wlp-step-arrow">▶</span>
         <button
           type="button"
           :class="['wlp-step', 'st-running', { on: bidRunningOnly }]"
@@ -1061,9 +1025,6 @@ watch(
 .wlp-step.st-visited.on { background: #15803d; color: #fff; }
 .wlp-step.st-bid { color: #dda40c; }
 .wlp-step.st-bid.on { background: #ca8a04; color: #fff; }
-/* 입찰대기 — 입찰산정(노랑)과 입찰진행(빨강) 사이의 주황 */
-.wlp-step.st-waiting { color: #ea7317; }
-.wlp-step.st-waiting.on { background: #ea7317; color: #fff; }
 .wlp-step.st-running { color: #dc2626; }
 .wlp-step.st-running.on { background: #dc2626; color: #fff; }
 @media (max-width: 374px) {
