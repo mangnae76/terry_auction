@@ -752,10 +752,10 @@ const exportExcel = () => {
   display: block; margin-top: 1px; font-size: 12px; font-weight: 800; color: #111827;
   white-space: nowrap;
 }
-/* 숫자마다 뜻이 다르다 — 낙찰가 빨강, 비용 파랑, 수익 초록(매도와 같은 색). 밑지면 빨강 */
-.fin-stage-card .nums b.bid { color: #e0574a; }
+/* 숫자마다 뜻이 다르다 — 낙찰가는 기준값이라 검정, 비용 파랑, 수익 빨강 */
+.fin-stage-card .nums b.bid { color: #111827; }
 .fin-stage-card .nums b.cost { color: #2b6df3; }
-.fin-stage-card .nums b.plus { color: #0f7a5c; }
+.fin-stage-card .nums b.plus,
 .fin-stage-card .nums b.minus { color: #e0574a; }
 
 .fin-tabs {
