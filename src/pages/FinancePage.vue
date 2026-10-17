@@ -634,7 +634,7 @@ const exportExcel = () => {
     <!-- 낙찰·매도 물건 — 팝업으로 띄운다. 가짓수가 늘어도 아래 내용이 밀리지 않는다 -->
     <Teleport to="body">
       <div v-if="stageListOpen" class="fin-pop-veil" @click="stageListOpen = ''" />
-      <section v-if="stageListOpen" class="fin-pop" @click.stop>
+      <section v-if="stageListOpen" :class="['fin-pop', stageListOpen === '매도' ? 'sold' : 'won']" @click.stop>
         <header class="fin-pop-head">
           <strong>{{ stageListOpen }} <em>{{ stageListRows.length }}건</em></strong>
           <button type="button" class="fin-pop-close" aria-label="닫기" @click="stageListOpen = ''">×</button>
@@ -649,8 +649,8 @@ const exportExcel = () => {
             <p class="addr">{{ shortAddr(a.address) }}</p>
             <div class="nums">
               <span><small>감정가</small><b>{{ shortMoney(a.metrics?.appraisalValue ?? 0) }}</b></span>
-              <span><small>낙찰가</small><b>{{ shortMoney(bidPriceOf(a)) }}</b></span>
-              <span><small>비용</small><b>{{ shortMoney(costsOf(a)) }}</b></span>
+              <span><small>낙찰가</small><b class="bid">{{ shortMoney(bidPriceOf(a)) }}</b></span>
+              <span><small>비용</small><b class="cost">{{ shortMoney(costsOf(a)) }}</b></span>
               <span><small>수익</small><b :class="incomeOf(a) >= 0 ? 'plus' : 'minus'">{{ shortMoney(incomeOf(a)) }}</b></span>
             </div>
           </article>
@@ -713,7 +713,15 @@ const exportExcel = () => {
   flex: 0 0 auto; display: flex; align-items: center;
   padding: 12px 14px 10px; border-bottom: 1px solid #eef1f6;
 }
+/* 머리글은 그 단계 알약과 같은 색으로 — 어느 쪽을 열었는지 한눈에 */
 .fin-pop-head strong { font-size: 14px; font-weight: 800; color: #111827; }
+.fin-pop.won .fin-pop-head { background: #dce5ff; }
+.fin-pop.won .fin-pop-head strong { color: #2a3f8f; }
+.fin-pop.won .fin-pop-head em { color: #5b6fae; }
+.fin-pop.sold .fin-pop-head { background: #e8f7f1; }
+.fin-pop.sold .fin-pop-head strong { color: #0f7a5c; }
+.fin-pop.sold .fin-pop-head em { color: #4f9a85; }
+.fin-pop-head { border-radius: 13px 13px 0 0; }
 .fin-pop-head em { font-style: normal; font-size: 12px; font-weight: 700; color: #9ca3af; margin-left: 4px; }
 .fin-pop-close {
   margin-left: auto; border: none; background: transparent; cursor: pointer;
@@ -744,7 +752,10 @@ const exportExcel = () => {
   display: block; margin-top: 1px; font-size: 12px; font-weight: 800; color: #111827;
   white-space: nowrap;
 }
-.fin-stage-card .nums b.plus { color: #2a3f8f; }
+/* 숫자마다 뜻이 다르다 — 낙찰가 빨강, 비용 파랑, 수익 초록(매도와 같은 색). 밑지면 빨강 */
+.fin-stage-card .nums b.bid { color: #e0574a; }
+.fin-stage-card .nums b.cost { color: #2b6df3; }
+.fin-stage-card .nums b.plus { color: #0f7a5c; }
 .fin-stage-card .nums b.minus { color: #e0574a; }
 
 .fin-tabs {
