@@ -5,13 +5,13 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { loadUserPrefs } from '../services/userPrefsRepository';
 import type { AuctionDetail, AuctionStatus } from '../types/auction';
-import { AUCTION_STATUS_LABELS } from '../types/auction';
 import AppMobileHeader from '../components/AppMobileHeader.vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import { addressParts } from '../utils/addressName';
+import { bidStageOf as bidStageShared, hasBidResult as hasBidResultShared, stageLabelOf, stageToneOf, BID_STAGE_LABELS } from '../utils/stageLabel';
 import searchIcon from '../assets/icones/searchs (1).png';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import filesIcon from '../assets/icones/files (1).png';
@@ -88,9 +88,7 @@ const isBidRunning = (item: AuctionDetail) =>
   item.status === '입찰' && (item.bidStatus ?? '').replace(/^입찰/, '') === '진행';
 /** 결과가 난 물건 — 낙찰·유찰·취소·매도. 흐름 띠는 '아직 할 일'만 세므로 여기서 뺀다
  *  (목록에는 그대로 남아 카드에 제 상태를 적는다) */
-const BID_RESULTS = ['낙찰', '유찰', '취소', '매도'];
-const hasBidResult = (item: AuctionDetail) =>
-  item.status === '입찰' && BID_RESULTS.includes((item.bidStatus ?? '').replace(/^입찰/, ''));
+const hasBidResult = hasBidResultShared;
 const routeOrder = ref<string[]>([]);
 const loadRouteOrder = async () => {
   const prefs = await loadUserPrefs(authStore.uid);
@@ -318,15 +316,13 @@ const copyItem = async (item: AuctionDetail, evt: MouseEvent) => {
 
 type PhaseKey = 'desk' | 'plan' | 'visited' | 'bid';
 
-/** 휴지통·보관함 목록의 단계 태그 — 더보기 > 휴지통 화면과 같은 규칙을 쓴다 */
-const stageLabel = (item: AuctionDetail) => {
-  if (item.status === '입찰') {
-    return (item.bidStatus ?? '').replace(/^입찰/, '') === '진행' ? '입찰진행' : '입찰산정';
-  }
-  return AUCTION_STATUS_LABELS[item.status] ?? String(item.status);
+/** 휴지통·보관함 목록의 단계 태그 — 규칙은 utils/stageLabel 한곳에 있다 */
+const stageLabel = stageLabelOf;
+const stageTone = (item: AuctionDetail) => {
+  const tone = stageToneOf(item);
+  // 이 화면의 태그 색은 '진행(빨강) / 그 밖(기본)' 둘뿐이다
+  return tone === 'bidding' ? 'bidding' : 'normal';
 };
-const stageTone = (item: AuctionDetail) =>
-  (item.status === '입찰' && (item.bidStatus ?? '').replace(/^입찰/, '') === '진행' ? 'bidding' : 'normal');
 
 const PHASE_TO_STATUS: Record<PhaseKey, AuctionStatus> = {
   desk: '손품',
@@ -415,19 +411,8 @@ const filterByBidRunning = () => {
 const phaseClass = (status: AuctionStatus, target: PhaseKey) =>
   status === PHASE_TO_STATUS[target] ? 'phase-active' : '';
 
-// 네 번째 알약은 '입찰예정'에서 시작해, 입찰가산정의 입찰상태를 그대로 비춘다
-const bidStatusOf = (item: AuctionDetail) => (item.bidStatus ?? '').replace(/^입찰/, '');
-/** 입찰 뒤의 상태 — 물건상세 단계 메뉴와 같은 목록.
- *  '대기'는 없앴다 — 입찰산정에서 더 나아가지 않은 것이 곧 대기다 (옛 자료의 '대기'도 그렇게 읽는다) */
-const BID_STAGE_LABELS: Record<string, string> = {
-  진행: '입찰진행', 낙찰: '낙찰', 매도: '매도', 유찰: '유찰', 취소: '취소',
-};
-/** 지금 켜져 있는 입찰 뒤 상태 — 단계가 '입찰'일 때만 뜻이 있다 */
-const bidStageOf = (item: AuctionDetail) => {
-  if (item.status !== '입찰') return '';
-  const raw = bidStatusOf(item);
-  return raw && BID_STAGE_LABELS[raw] ? raw : '';
-};
+// 네 번째·다섯 번째 알약은 입찰가산정의 입찰상태를 그대로 비춘다 (규칙은 utils/stageLabel)
+const bidStageOf = bidStageShared;
 /** 4번째 알약 — 늘 '입찰산정'. 입찰 뒤의 상태가 켜져 있으면 '지금 단계'는 5번째이므로 여기는 꺼 둔다 */
 const bidPhaseTone = (item: AuctionDetail) =>
   item.status === '입찰' && !bidStageOf(item) ? 'phase-active' : '';

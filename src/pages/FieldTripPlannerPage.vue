@@ -10,7 +10,8 @@ import { buildOptimizedRoute, parseAddressLines, reverseGeocode, type GeoPoint }
 import { fetchRouteForPath, type RouteLeg, type RouteMode } from '../services/roadRouting';
 import { apiPath } from '../services/apiBase';
 import { useAuctionStore } from '../stores/auctionStore';
-import { AUCTION_STATUS_LABELS, type AuctionDetail } from '../types/auction';
+import { type AuctionDetail } from '../types/auction';
+import { stageLabelOf, stageToneOf } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
@@ -149,22 +150,12 @@ const routedKeys = computed(
     .map((point) => addrKey(point.address)),
 );
 
-/** 카드에 붙는 단계 이름 — 입찰은 입찰상태에 따라 '입찰진행'까지 갈라 준다 */
-const stageLabel = (item: AuctionDetail) => {
-  if (item.status === '입찰') {
-    return (item.bidStatus ?? '').replace(/^입찰/, '') === '진행' ? '입찰진행' : '입찰산정';
-  }
-  return AUCTION_STATUS_LABELS[item.status] ?? String(item.status);
-};
-/** 단계별 태그 색 — 선정물건 알약과 같은 뜻으로 읽히게 */
+/** 카드에 붙는 단계 이름과 색 — 규칙은 utils/stageLabel 한곳에 있다.
+ *  이 화면은 낙찰·매도 같은 결과 색을 따로 두지 않아 '입찰(bid)' 색으로 모은다 */
+const stageLabel = stageLabelOf;
 const stageTone = (item: AuctionDetail) => {
-  if (item.status === '임장예정') return 'plan';
-  if (item.status === '손품') return 'desk';
-  if (item.status === '임장완료') return 'visited';
-  if (item.status === '입찰') {
-    return (item.bidStatus ?? '').replace(/^입찰/, '') === '진행' ? 'bidding' : 'bid';
-  }
-  return 'etc';
+  const tone = stageToneOf(item);
+  return tone === 'done' || tone === 'closed' ? 'bid' : tone;
 };
 
 /** 치운 물건 중 경로에 올라 있던 것 — 휴지통·보관함으로 보낸 임장예정·임장완료.

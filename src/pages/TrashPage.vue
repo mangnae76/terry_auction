@@ -9,8 +9,8 @@ import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import { useAuctionStore } from '../stores/auctionStore';
-import { AUCTION_STATUS_LABELS } from '../types/auction';
 import type { AuctionDetail } from '../types/auction';
+import { stageLabelOf, stageToneOf } from '../utils/stageLabel';
 import calendarDaysIcon from '../assets/icones/calendar-days (1).png';
 
 const store = useAuctionStore();
@@ -122,17 +122,10 @@ const propTypeMark = (raw?: string) => {
   if (!t.trim()) return '';
   return PROP_TYPE_MARKS.find(([re]) => re.test(t))?.[1] ?? t.trim()[0];
 };
-/** 치우기 전의 단계를 그대로 보여 준다 — 되살리면 이 단계로 돌아간다 */
-const stageLabel = (item: AuctionDetail) => {
-  if (item.status === '입찰') {
-    return (item.bidStatus ?? '').replace(/^입찰/, '') === '진행' ? '입찰진행' : '입찰산정';
-  }
-  return AUCTION_STATUS_LABELS[item.status] ?? String(item.status);
-};
-const stageTone = (item: AuctionDetail) => {
-  if (item.status === '입찰' && (item.bidStatus ?? '').replace(/^입찰/, '') === '진행') return 'bidding';
-  return 'normal';
-};
+/** 치우기 전의 단계를 그대로 보여 준다 — 되살리면 이 단계로 돌아간다.
+ *  규칙은 utils/stageLabel 한곳에 있다 (결과가 난 물건은 '낙찰' · '매도' 로 적힌다) */
+const stageLabel = stageLabelOf;
+const stageTone = (item: AuctionDetail) => (stageToneOf(item) === 'bidding' ? 'bidding' : 'normal');
 </script>
 
 <template>
