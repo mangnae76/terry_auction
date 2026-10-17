@@ -724,7 +724,7 @@ const exportExcel = () => {
             <div v-if="openCardId === a.id" class="fin-calc" @click.stop>
               <p class="fin-calc-head">
                 수익현황 <em>A안</em>
-                <button type="button" class="fin-calc-go" @click="openAuction(a.id)">물건 열기 ›</button>
+                <button type="button" class="fin-calc-go" @click="openAuction(a.id)">해당 물건 보기 ›</button>
               </p>
               <table class="fin-calc-tbl">
                 <thead>
