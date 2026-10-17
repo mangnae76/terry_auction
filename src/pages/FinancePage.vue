@@ -55,7 +55,8 @@ const shortAddr = (address?: string) => {
   const parts = String(address ?? '').trim().split(/\s+/).filter(Boolean);
   return parts.length > 3 ? parts.slice(1).join(' ') : parts.join(' ');
 };
-const ymd = (d?: string) => (d ? d.replace(/-/g, '. ') : '–');
+/** 날짜 — 앞의 '20'을 뗀다 ('26. 10. 10'). 비어 있으면 빈 칸 */
+const shortYmd = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2).replace(/-/g, '. ') : '');
 /** 카드 안의 돈 — 칸이 좁아 억·만으로 줄여 쓴다 */
 const shortMoney = (won: number) => {
   if (!Number.isFinite(won) || won === 0) return '–';
@@ -643,10 +644,22 @@ const exportExcel = () => {
           <p v-if="stageListRows.length === 0" class="fin-stage-empty">{{ stageListOpen }}한 물건이 없습니다.</p>
           <article v-for="a in stageListRows" :key="a.id" class="fin-stage-card" @click="openAuction(a.id)">
             <p class="top">
-              <!-- 무슨 날인지 적어 둔다 — 날짜만 있으면 낙찰일인지 매도일인지 알 수 없다 -->
-              <em class="lab">{{ stageListOpen === '매도' ? '매도일' : '낙찰일' }}</em>
-              <span class="date">{{ ymd(stageListOpen === '매도' ? a.sellDate : a.wonDate) }}</span>
-              <span v-if="stageListOpen === '매도' && a.wonDate" class="sub">낙찰 {{ ymd(a.wonDate) }}</span>
+              <!-- 예상수익분석의 날짜 칸과 같은 모양 — 다만 여기서는 보기만 한다.
+                   고르지 않은 날은 빈 칸으로 둔다 (지어내 적지 않는다) -->
+              <span class="pd">
+                <em>낙찰일</em>
+                <span class="pd-box">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>
+                  <span>{{ shortYmd(a.wonDate) }}</span>
+                </span>
+              </span>
+              <span class="pd">
+                <em>매도일</em>
+                <span class="pd-box">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>
+                  <span>{{ shortYmd(a.sellDate) }}</span>
+                </span>
+              </span>
               <span class="court">{{ shortCourt(a.courtName) }}</span>
             </p>
             <p class="addr">{{ shortAddr(a.address) }}</p>
@@ -737,10 +750,17 @@ const exportExcel = () => {
   margin-bottom: 6px; cursor: pointer; background: #fbfcfe;
 }
 .fin-stage-card:last-child { margin-bottom: 0; }
-.fin-stage-card .top { margin: 0; display: flex; align-items: baseline; gap: 7px; }
-.fin-stage-card .lab { font-style: normal; font-size: 10px; font-weight: 800; color: #9ca3af; }
-.fin-stage-card .date { font-size: 12px; font-weight: 800; color: #111827; }
-.fin-stage-card .sub { font-size: 10.5px; font-weight: 700; color: #9ca3af; }
+.fin-stage-card .top { margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* 예상수익분석의 날짜 칸과 같은 치수 — 보기만 하는 칸이라 단추가 아니다 */
+.fin-stage-card .pd { display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; }
+.fin-stage-card .pd em { font-style: normal; font-size: 11px; font-weight: 500; color: #111827; white-space: nowrap; }
+.fin-stage-card .pd-box {
+  display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+  border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;
+  width: 84px; box-sizing: border-box; padding: 4px;
+}
+.fin-stage-card .pd-box span { font-size: 11.5px; font-weight: 400; color: #111827; white-space: nowrap; }
+.fin-stage-card .pd-box svg { color: #9ca3af; flex: 0 0 auto; }
 .fin-stage-card .court { margin-left: auto; font-size: 11px; font-weight: 700; color: #6b7280; }
 .fin-stage-card .addr {
   margin: 2px 0 0; font-size: 12px; font-weight: 700; color: #374151;
