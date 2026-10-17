@@ -27,6 +27,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
+import PhotoGrid from '../components/PhotoGrid.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import AgencyTable from '../components/AgencyTable.vue';
 import PhotoCountMark from '../components/PhotoCountMark.vue';
@@ -413,12 +414,46 @@ const onImageError = (url: string) => { brokenImages.value[url] = true; };
 
 // 이미지 자체를 복사해 붙여넣기(Ctrl+V)하면 Firestore에 저장하고 목록에 넣는다.
 // 클립보드에 이미지가 없으면 막지 않고 기본 동작(URL 텍스트 붙여넣기)에 맡긴다.
-const pasteImageInto = async (e: ClipboardEvent, target: 'floorPlan' | 'exterior' | 'rightsDoc' | 'tradePhoto' | 'listPhoto' | `x:${string}`) => {
+type PhotoTarget = 'floorPlan' | 'exterior' | 'rightsDoc' | 'tradePhoto' | 'listPhoto' | `x:${string}`;
+/** 사진 칸은 넉 장까지 — 더 넣으면 칸이 두 줄로 늘어나 아래가 밀린다 */
+const PHOTO_MAX = 4;
+/** 그 자리에 지금 몇 장 있나 */
+const photoCountOf = (target: PhotoTarget): number => {
+  if (target.startsWith('x:')) return extraList(target.slice(2)).length;
+  if (target === 'rightsDoc') return rightsDocList.value.length;
+  if (target === 'tradePhoto') return tradePhotoList.value.length;
+  if (target === 'listPhoto') return listPhotoList.value.length;
+  return propertyPhotos.value.length; // floorPlan · exterior 는 '본건사진' 한 칸을 같이 쓴다
+};
+const photoFullMsg = `사진은 ${PHOTO_MAX}장까지 넣을 수 있습니다.`;
+
+const pasteImageInto = async (e: ClipboardEvent, target: PhotoTarget) => {
   const item = [...(e.clipboardData?.items ?? [])].find((it) => it.type.startsWith('image/'));
   if (!item) return;
   const file = item.getAsFile();
   if (!file || !auction.value) return;
   e.preventDefault();
+  await addImageFile(file, target);
+};
+
+/** 사진 한 장을 그 자리에 더한다 — 붙여넣기와 '+' 단추가 같이 쓴다 */
+const addImageFile = async (file: File, target: PhotoTarget) => {
+  if (!auction.value) return;
+  const errRefFor = (t: PhotoTarget) => (
+    t === 'floorPlan' ? floorPlanErrMsg
+      : t === 'rightsDoc' ? rightsDocErrMsg
+        : t === 'tradePhoto' ? tradePhotoErrMsg
+          : t === 'listPhoto' ? listPhotoErrMsg
+            : exteriorErrMsg
+  );
+  if (photoCountOf(target) >= PHOTO_MAX) {
+    if (target.startsWith('x:')) {
+      extraErr.value = { ...extraErr.value, [target.slice(2)]: photoFullMsg };
+    } else {
+      errRefFor(target).value = photoFullMsg;
+    }
+    return;
+  }
 
   // 'x:<키>' 형태는 입지조사처럼 항목별로 따로 모으는 사진 목록이다
   if (target.startsWith('x:')) {
@@ -436,12 +471,7 @@ const pasteImageInto = async (e: ClipboardEvent, target: 'floorPlan' | 'exterior
     return;
   }
 
-  const errRef =
-    target === 'floorPlan' ? floorPlanErrMsg
-      : target === 'rightsDoc' ? rightsDocErrMsg
-        : target === 'tradePhoto' ? tradePhotoErrMsg
-          : target === 'listPhoto' ? listPhotoErrMsg
-            : exteriorErrMsg;
+  const errRef = errRefFor(target);
   errRef.value = '';
   try {
     const { photoId, dataUrl } = await saveSitePhoto(auction.value.id, authStore.uid, file);
@@ -471,6 +501,20 @@ const pasteImageInto = async (e: ClipboardEvent, target: 'floorPlan' | 'exterior
 
 const cameraInputRef = ref<HTMLInputElement | null>(null);
 const galleryInputRef = ref<HTMLInputElement | null>(null);
+/** 사진 칸의 '+' — 고를 자리를 적어 두고 숨은 입력칸 하나를 돌려 쓴다 */
+const photoPickRef = ref<HTMLInputElement | null>(null);
+const photoPickTarget = ref<PhotoTarget | null>(null);
+const pickPhotoFor = (target: PhotoTarget) => {
+  photoPickTarget.value = target;
+  photoPickRef.value?.click();
+};
+const onPhotoPicked = async (e: Event) => {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  const target = photoPickTarget.value;
+  input.value = '';
+  if (file && target) await addImageFile(file, target);
+};
 
 const photoUploading = ref(false);
 const photoError = ref('');
@@ -4540,9 +4584,10 @@ const PHOTO_AREAS: Array<{
   count: () => number;
   fold?: 'auto' | 'always';
 }> = [
-  { key: 'photos', scope: 'card', count: () => propertyPhotos.value.length },              // 손품조사 · 본건사진
-  { key: 'rightsPhotos', scope: 'card', count: () => rightsDocList.value.length },         // 권리분석 · 사진/서류
-  { key: 'site', scope: 'block', count: () => auction.value?.sitePhotos?.length ?? 0 },    // 손품+현장 · 현장사진
+  // 사진 칸은 모두 접은 채로 연다 — 펴 두면 아래 내용이 멀리 밀린다
+  { key: 'photos', scope: 'card', count: () => propertyPhotos.value.length, fold: 'always' },        // 손품조사 · 본건사진
+  { key: 'rightsPhotos', scope: 'card', count: () => rightsDocList.value.length, fold: 'always' },   // 권리분석 · 사진/서류
+  { key: 'site', scope: 'block', count: () => auction.value?.sitePhotos?.length ?? 0, fold: 'always' }, // 손품+현장 · 현장사진
   // 급매가 · 동일지번 매각물건 — 사진 모음이라 늘 접어 둔다
   { key: 'sameLot', scope: 'block', count: () => extraList('sameLot').length, fold: 'always' },
   // 급매가 · 평단가 비교 사진 — 늘 접어 둔다
@@ -4568,13 +4613,15 @@ watch(
     // 안 그러면 사진이 있는데도 펴진 채로 열려 '사진 있으면 접힘' 규칙이 깨진다.
     photoFold.value = {};
     const next = { ...collapsed.value };
-    PHOTO_SECTIONS.forEach((sec) => { next[sec.key] = sec.count() > 0; });
+    // fold 'always' 인 카드는 사진이 없어도 접은 채로 연다
+    PHOTO_SECTIONS.forEach((sec) => { next[sec.key] = sec.fold === 'always' || sec.count() > 0; });
     collapsed.value = next;
   },
   { immediate: true },
 );
 const addRightsDocUrl = async () => {
   if (!auction.value) return;
+  if (rightsDocList.value.length >= PHOTO_MAX) { rightsDocErrMsg.value = photoFullMsg; return; }
   const url = rightsDocInput.value.trim();
   if (!url) return;
   rightsDocErrMsg.value = '';
@@ -4600,6 +4647,10 @@ const extraErr = ref<Record<string, string>>({});
 const extraList = (key: string) => auction.value?.extraPhotos?.[key] ?? [];
 const addExtraUrl = async (key: string) => {
   if (!auction.value) return;
+  if (extraList(key).length >= PHOTO_MAX) {
+    extraErr.value = { ...extraErr.value, [key]: photoFullMsg };
+    return;
+  }
   const url = (extraInput.value[key] ?? '').trim();
   if (!url) return;
   extraErr.value = { ...extraErr.value, [key]: '' };
@@ -4626,6 +4677,7 @@ const tradePhotoErrMsg = ref('');
 const tradePhotoList = computed<string[]>(() => auction.value?.tradePhotoUrls ?? []);
 const addTradePhotoUrl = async () => {
   if (!auction.value) return;
+  if (tradePhotoList.value.length >= PHOTO_MAX) { tradePhotoErrMsg.value = photoFullMsg; return; }
   const url = tradePhotoInput.value.trim();
   if (!url) return;
   tradePhotoErrMsg.value = '';
@@ -4651,6 +4703,7 @@ const listPhotoErrMsg = ref('');
 const listPhotoList = computed<string[]>(() => auction.value?.listPhotoUrls ?? []);
 const addListPhotoUrl = async () => {
   if (!auction.value) return;
+  if (listPhotoList.value.length >= PHOTO_MAX) { listPhotoErrMsg.value = photoFullMsg; return; }
   const url = listPhotoInput.value.trim();
   if (!url) return;
   listPhotoErrMsg.value = '';
@@ -6814,15 +6867,18 @@ const goBack = () => router.back();
               <button type="button" class="adp-icn-btn" @click="addRightsDocUrl">+</button>
             </div>
             <p v-if="rightsDocErrMsg" class="adp-plan-err">{{ rightsDocErrMsg }}</p>
-            <!-- 서류 사진은 네 칸씩 정사각형으로 — 세로로 길게 깔면 카드가 한없이 늘어난다.
-                 누르면 라이트박스에서 크게 본다 -->
-            <div v-if="rightsDocList.length > 0" class="adp-doc-grid">
-              <div v-for="(url, i) in rightsDocList" :key="url" class="adp-doc-cell">
-                <img :src="photoSrc(url)" alt="서류사진" class="adp-doc-img" @error="onImageError(url)" @click="openLightbox(photoSrc(url))" />
-                <button type="button" class="adp-doc-del" aria-label="서류사진 삭제" @click.stop="removeRightsDocAt(i)">×</button>
-                <span v-if="brokenImages[url]" class="adp-doc-bad" title="이미지 로드 실패 — URL을 확인해 주세요.">!</span>
-              </div>
-            </div>
+            <!-- 사진 칸은 모두 같은 꼴 — 한 줄에 넷, 빈자리는 '+' (PhotoGrid) -->
+            <PhotoGrid
+              class="adp-pg"
+              :items="rightsDocList"
+              :src="photoSrc"
+              :broken="brokenImages"
+              alt="서류사진"
+              @open="openLightbox"
+              @error="onImageError"
+              @remove="removeRightsDocAt"
+              @add="pickPhotoFor('rightsDoc')"
+            />
           </div>
         </section>
 
@@ -7139,11 +7195,17 @@ const goBack = () => router.back();
             </div>
             <p v-if="floorPlanUploading" class="adp-sub-note">업로드 중…</p>
             <p v-if="exteriorErrMsg || floorPlanErrMsg" class="adp-plan-err">{{ exteriorErrMsg || floorPlanErrMsg }}</p>
-            <div v-for="photo in propertyPhotos" :key="photo.url" class="adp-plan-preview">
-              <img :src="photoSrc(photo.url)" alt="본건사진" class="adp-plan-img" @error="onImageError(photo.url)" @click="openLightbox(photoSrc(photo.url))" />
-              <button type="button" class="adp-plan-del" aria-label="사진 삭제" @click="removePropertyPhoto(photo)">×</button>
-              <p v-if="brokenImages[photo.url]" class="adp-plan-err">이미지 로드 실패 — URL을 확인해 주세요.</p>
-            </div>
+            <PhotoGrid
+              class="adp-pg"
+              :items="propertyPhotos.map((p) => p.url)"
+              :src="photoSrc"
+              :broken="brokenImages"
+              alt="본건사진"
+              @open="openLightbox"
+              @error="onImageError"
+              @remove="(i: number) => removePropertyPhoto(propertyPhotos[i])"
+              @add="pickPhotoFor('exterior')"
+            />
             <div class="adp-photo-note">
               <input
                 class="adp-fs-input"
@@ -7401,11 +7463,17 @@ const goBack = () => router.back();
                 <button type="button" class="adp-icn-btn" @click="addExtraUrl(item.key)">+</button>
               </div>
               <p v-if="extraErr[item.key]" class="adp-plan-err">{{ extraErr[item.key] }}</p>
-              <div v-for="(url, i) in extraList(item.key)" :key="url" class="adp-plan-preview">
-                <img :src="photoSrc(url)" :alt="item.title" class="adp-plan-img" @error="onImageError(url)" @click="openLightbox(photoSrc(url))" />
-                <button type="button" class="adp-plan-del" aria-label="사진 삭제" @click="removeExtraAt(item.key, i)">×</button>
-                <p v-if="brokenImages[url]" class="adp-plan-err">이미지 로드 실패 — URL을 확인해 주세요.</p>
-              </div>
+              <PhotoGrid
+                class="adp-pg"
+                :items="extraList(item.key)"
+                :src="photoSrc"
+                :broken="brokenImages"
+                :alt="item.title || '사진'"
+                @open="openLightbox"
+                @error="onImageError"
+                @remove="(i: number) => removeExtraAt(item.key, i)"
+                @add="pickPhotoFor(`x:${item.key}`)"
+              />
               <div class="adp-photo-note">
                 <input
                   class="adp-fs-input"
@@ -7797,11 +7865,18 @@ const goBack = () => router.back();
                 <button type="button" class="adp-icn-btn" @click="addTradePhotoUrl">+</button>
               </div>
               <p v-if="tradePhotoErrMsg && !photoFolded('tradePhoto')" class="adp-plan-err">{{ tradePhotoErrMsg }}</p>
-              <div v-for="(url, i) in (photoFolded('tradePhoto') ? [] : tradePhotoList)" :key="url" class="adp-plan-preview">
-                <img :src="photoSrc(url)" alt="실거래가 현황 사진" class="adp-plan-img" @error="onImageError(url)" @click="openLightbox(photoSrc(url))" />
-                <button type="button" class="adp-plan-del" aria-label="실거래가 현황 사진 삭제" @click="removeTradePhotoAt(i)">×</button>
-                <p v-if="brokenImages[url]" class="adp-plan-err">이미지 로드 실패 — URL을 확인해 주세요.</p>
-              </div>
+              <PhotoGrid
+                v-if="!photoFolded('tradePhoto')"
+                class="adp-pg"
+                :items="tradePhotoList"
+                :src="photoSrc"
+                :broken="brokenImages"
+                alt="평단가 비교 사진"
+                @open="openLightbox"
+                @error="onImageError"
+                @remove="removeTradePhotoAt"
+                @add="pickPhotoFor('tradePhoto')"
+              />
             </div>
 
 
@@ -8000,11 +8075,18 @@ const goBack = () => router.back();
                 <button type="button" class="adp-icn-btn" @click="addListPhotoUrl">+</button>
               </div>
               <p v-if="listPhotoErrMsg && !photoFolded('listPhoto')" class="adp-plan-err">{{ listPhotoErrMsg }}</p>
-              <div v-for="(url, i) in (photoFolded('listPhoto') ? [] : listPhotoList)" :key="url" class="adp-plan-preview">
-                <img :src="photoSrc(url)" alt="네이버부동산 매물 사진" class="adp-plan-img" @error="onImageError(url)" @click="openLightbox(photoSrc(url))" />
-                <button type="button" class="adp-plan-del" aria-label="네이버부동산 매물 사진 삭제" @click="removeListPhotoAt(i)">×</button>
-                <p v-if="brokenImages[url]" class="adp-plan-err">이미지 로드 실패 — URL을 확인해 주세요.</p>
-              </div>
+              <PhotoGrid
+                v-if="!photoFolded('listPhoto')"
+                class="adp-pg"
+                :items="listPhotoList"
+                :src="photoSrc"
+                :broken="brokenImages"
+                alt="네이버부동산 매물 사진"
+                @open="openLightbox"
+                @error="onImageError"
+                @remove="removeListPhotoAt"
+                @add="pickPhotoFor('listPhoto')"
+              />
             </div>
 
 
@@ -8026,11 +8108,18 @@ const goBack = () => router.back();
                 <button type="button" class="adp-icn-btn" @click="addExtraUrl('sameLot')">+</button>
               </div>
               <p v-if="extraErr.sameLot && !photoFolded('sameLot')" class="adp-plan-err">{{ extraErr.sameLot }}</p>
-              <div v-for="(url, i) in (photoFolded('sameLot') ? [] : extraList('sameLot'))" :key="url" class="adp-plan-preview">
-                <img :src="photoSrc(url)" alt="동일지번 매각물건" class="adp-plan-img" @error="onImageError(url)" @click="openLightbox(photoSrc(url))" />
-                <button type="button" class="adp-plan-del" aria-label="사진 삭제" @click="removeExtraAt('sameLot', i)">×</button>
-                <p v-if="brokenImages[url]" class="adp-plan-err">이미지 로드 실패 — URL을 확인해 주세요.</p>
-              </div>
+              <PhotoGrid
+                v-if="!photoFolded('sameLot')"
+                class="adp-pg"
+                :items="extraList('sameLot')"
+                :src="photoSrc"
+                :broken="brokenImages"
+                alt="동일지번 매각물건"
+                @open="openLightbox"
+                @error="onImageError"
+                @remove="(i: number) => removeExtraAt('sameLot', i)"
+                @add="pickPhotoFor('x:sameLot')"
+              />
               <div v-if="!photoFolded('sameLot')" class="adp-photo-note">
                 <input
                   class="adp-fs-input"
@@ -8457,16 +8546,21 @@ const goBack = () => router.back();
               <button type="button" class="adp-photo-btn blue" @click="galleryInputRef?.click()">🖼 사진추가</button>
             </div>
             <input ref="cameraInputRef" type="file" accept="image/*" capture="environment" class="adp-sr" @change="onCameraChange" />
+            <!-- 사진 칸의 '+' 가 함께 쓰는 입력칸 — 어느 자리에 넣을지는 photoPickTarget 이 들고 있다 -->
+            <input ref="photoPickRef" type="file" accept="image/*" class="adp-sr" @change="onPhotoPicked" />
             <input ref="galleryInputRef" type="file" accept="image/*" multiple class="adp-sr" @change="onGalleryChange" />
             <p v-if="photoUploading" class="adp-sub-note">사진 업로드 중…</p>
             <p v-if="photoError" class="adp-plan-err">{{ photoError }}</p>
-            <div v-if="auction?.sitePhotos?.length" class="adp-photo-grid">
-              <div v-for="(entry, i) in auction.sitePhotos" :key="entry" class="adp-photo-thumb">
-                <img v-if="photoSrc(entry)" :src="photoSrc(entry)" alt="현장사진" @click="openLightbox(photoSrc(entry))" />
-                <button type="button" class="adp-photo-del" aria-label="삭제" @click.stop="removePhoto(i)">×</button>
-              </div>
-            </div>
-            <p v-else class="adp-empty one">현장사진을 등록하세요.</p>
+            <PhotoGrid
+              class="adp-pg"
+              :items="auction?.sitePhotos ?? []"
+              :src="photoSrc"
+              alt="현장사진"
+              @open="openLightbox"
+              @error="onImageError"
+              @remove="removePhoto"
+              @add="galleryInputRef?.click()"
+            />
           </div>
         </section>
 
@@ -9582,13 +9676,14 @@ const goBack = () => router.back();
 /* 목록 밖을 눌러 닫기 위한 투명 레이어 */
 /* 권리분석 정리 — 한 줄짜리 비고와 달리 여러 줄을 적는 자리다 */
 .adp-rconc-body { padding: 8px 10px 10px; }
+/* 권리분석 정리 — 적어 둔 판단은 빨갛게. 표의 숫자 사이에서 '내가 쓴 글'이 바로 집힌다 */
 .adp-rconc-note {
   display: block; width: 100%; box-sizing: border-box; resize: vertical; min-height: 72px;
   border: 1px solid #e3e8f0; border-radius: 8px; background: #fff;
-  padding: 7px 9px; font-family: inherit; font-size: 12px; line-height: 1.6; color: #111827;
+  padding: 7px 9px; font-family: inherit; font-size: 12px; line-height: 1.6; color: #e0574a;
 }
 .adp-rconc-note:focus { outline: none; border-color: #2b6df3; }
-.adp-rconc-note::placeholder { color: #9ca3af; }
+.adp-rconc-note::placeholder { color: #e0574a; opacity: 0.5; }
 .adp-rcase-backdrop { position: fixed; inset: 0; z-index: 40; }
 .adp-rcase-list {
   position: absolute; z-index: 41; left: 0; right: 0; top: calc(100% + 4px);
