@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 중개업소 관리 — 늘 도는 부동산을 사용자가 직접 더하고 빼는 자리.
+// 중개업체 관리 — 늘 도는 부동산을 사용자가 직접 더하고 빼는 자리.
 //
 // 상담표의 상호 드롭다운이 이 목록을 그대로 쓴다. 여기서 한 줄을 더하면
 // 모든 물건의 유선·현장 상담표에 같이 나타나고, 상호를 고르면 여기 적어 둔
@@ -46,7 +46,7 @@ const toast = (text: string, tone: 'info' | 'success' | 'error' = 'success') => 
 
 const touch = () => { dirty.value = true; };
 const addRow = () => {
-  rows.value.push({ id: newAgencyId(), name: '', phone: '', rating: '' });
+  rows.value.push({ id: newAgencyId(), name: '', phone: '', region: '', rating: '' });
   touch();
 };
 
@@ -59,7 +59,7 @@ const removeRow = (idx: number) => {
     return;
   }
   confirmBox.value = {
-    title: '중개업소 빼기',
+    title: '중개업체 빼기',
     desc: `${target?.name || '이 줄'}을 목록에서 뺍니다.\n물건에 이미 적어 둔 상담 내용은 그대로 남습니다.`,
     okLabel: '빼기',
     // 저장을 눌러야 굳으므로 되돌릴 수 있다 — '오늘 하루 보지 않기'를 둔다
@@ -95,15 +95,19 @@ const telHref = (phone: string) => {
   <section class="agb-shell">
     <header class="agb-header">
       <button type="button" class="agb-back" aria-label="뒤로" @click="router.back()">‹</button>
-      <h1 class="agb-title">중개업소 관리</h1>
+      <h1 class="agb-title">중개업체 관리</h1>
       <span class="agb-eyebrow">{{ rows.length }}곳</span>
+      <!-- 더하기는 머리줄에 둔다 — 목록 아래에 두니 줄이 늘수록 찾기 어려웠다 -->
+      <button type="button" class="agb-add top" @click="addRow">＋ 업체 추가</button>
       <button type="button" class="agb-save" :class="{ on: dirty }" @click="save">💾 저장</button>
     </header>
 
     <p class="agb-note">
-      여기 적어 둔 업소가 물건마다의 <b>부동산 유선 상담 · 현장 상담</b> 상호 목록에 그대로 섭니다.
+      여기 적어 둔 업체가 물건마다의 <b>부동산 유선 상담 · 현장 상담</b> 상호 목록에 그대로 섭니다.
       상호를 고르면 전화번호도 따라 들어갑니다.
     </p>
+
+    <p class="agb-list-head">중개업체 리스트</p>
 
     <div class="agb-list">
       <article v-for="(row, i) in rows" :key="row.id" class="agb-card">
@@ -111,6 +115,10 @@ const telHref = (phone: string) => {
           <label class="agb-fld name">
             <small>상호</small>
             <input v-model="row.name" class="agb-input" placeholder="상호 입력" @input="touch" />
+          </label>
+          <label class="agb-fld region">
+            <small>지역</small>
+            <input v-model="row.region" class="agb-input" placeholder="동네" @input="touch" />
           </label>
           <label class="agb-fld">
             <small>연락처</small>
@@ -128,7 +136,7 @@ const telHref = (phone: string) => {
               </a>
             </span>
           </label>
-          <button type="button" class="agb-del" aria-label="업소 빼기" @click="removeRow(i)">×</button>
+          <button type="button" class="agb-del" aria-label="업체 빼기" @click="removeRow(i)">×</button>
         </div>
         <label class="agb-fld wide">
           <small>평가</small>
@@ -136,9 +144,7 @@ const telHref = (phone: string) => {
         </label>
       </article>
 
-      <p v-if="rows.length === 0" class="agb-empty">적어 둔 업소가 없습니다. 아래에서 더하세요.</p>
-
-      <button type="button" class="agb-add" @click="addRow">＋ 업소 추가</button>
+      <p v-if="rows.length === 0" class="agb-empty">적어 둔 업체가 없습니다. 위의 <b>＋ 업체 추가</b>를 누르세요.</p>
     </div>
 
     <AppConfirm :box="confirmBox" @close="confirmBox = null" />
@@ -180,7 +186,9 @@ const telHref = (phone: string) => {
 }
 .agb-line { display: flex; align-items: flex-end; gap: 6px; }
 .agb-fld { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.agb-fld.name { flex: 0 0 34%; }
+.agb-fld.name { flex: 0 0 30%; }
+/* 지역 — 동 이름 한 마디면 되므로 좁게 */
+.agb-fld.region { flex: 0 0 22%; }
 .agb-fld.wide { flex: 1 1 100%; }
 .agb-fld small { font-size: 10px; font-weight: 700; color: #6b7280; }
 .agb-input {
@@ -207,5 +215,14 @@ const telHref = (phone: string) => {
   border: 1px dashed #c7d2e3; border-radius: 10px; background: #fff;
   padding: 10px 0; font-family: inherit; font-size: 12.5px; font-weight: 700;
   color: #2b6df3; cursor: pointer;
+}
+/* 머리줄에 선 더하기 단추 — 저장 왼쪽에 같은 키로 선다 */
+.agb-add.top {
+  flex: 0 0 auto; padding: 6px 10px; border-radius: 8px;
+  border-style: solid; border-color: #c7d7f8; font-size: 12px;
+}
+/* 목록 제목 */
+.agb-list-head {
+  margin: 10px 12px 2px; font-size: 12.5px; font-weight: 800; color: #374151;
 }
 </style>

@@ -11,6 +11,8 @@ export interface AgencyPreset {
   id: string;
   name: string;
   phone: string;
+  /** 어느 동네 업체인지 — 같은 상호가 여럿일 때 가려내는 데 쓴다 */
+  region?: string;
   /** 써 보고 남긴 평가 — 상담표의 '정보'와 달리 업소에 붙는다 */
   rating?: string;
 }
