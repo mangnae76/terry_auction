@@ -5,7 +5,7 @@
 import { computed, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
-import { POST_WIN_DAY } from '../services/postWinChecklist';
+import { POST_WIN_DAY, groupRows, type CheckGroup } from '../services/postWinChecklist';
 import { bidStageOf } from '../utils/stageLabel';
 import type { AuctionDetail } from '../types/auction';
 
@@ -50,7 +50,8 @@ const toggleCheck = async (id: string) => {
   await store.saveAuction(a);
 };
 /** 묶음마다 '몇 개 중 몇 개' */
-const doneCount = (rows: Array<{ id: string }>) => rows.filter((r) => isChecked(r.id)).length;
+const doneCount = (g: CheckGroup) => groupRows(g).filter((r) => isChecked(r.id)).length;
+const rowCount = (g: CheckGroup) => groupRows(g).length;
 const dayGroups = POST_WIN_DAY;
 </script>
 
@@ -88,7 +89,7 @@ const dayGroups = POST_WIN_DAY;
           <header class="pw-card-head">
             <h2>{{ g.title }}</h2>
             <!-- 센 개수는 제목 줄 오른쪽에, 안내는 그 아래 줄에 -->
-            <em class="pw-count">{{ doneCount(g.rows) }}/{{ g.rows.length }}</em>
+            <em class="pw-count">{{ doneCount(g) }}/{{ rowCount(g) }}</em>
             <small>{{ g.note }}</small>
           </header>
           <table class="pw-tbl">
@@ -98,19 +99,23 @@ const dayGroups = POST_WIN_DAY;
               <col class="pw-col-chk" />
             </colgroup>
             <tbody>
-              <tr
-                v-for="r in g.rows"
-                :key="r.id"
-                :class="['pw-row', `d${r.depth}`, { done: isChecked(r.id) }]"
-                @click="toggleCheck(r.id)"
-              >
-                <!-- 이름이 있는 줄은 '이름 | 설명'으로 가른다 -->
-                <td v-if="r.label" class="pw-label"><strong>{{ r.label }}</strong></td>
-                <td :class="['pw-txt', { warn: r.warn }]" :colspan="r.label ? 1 : 2">{{ r.text }}</td>
-                <td class="pw-chk">
-                  <input type="checkbox" :checked="isChecked(r.id)" :disabled="!picked" @click.stop="toggleCheck(r.id)" />
-                </td>
-              </tr>
+              <!-- 왼쪽 이름 칸은 그 묶음의 줄 수만큼 세로로 합친다 -->
+              <template v-for="sec in g.sections" :key="sec.label">
+                <tr
+                  v-for="(r, ri) in sec.rows"
+                  :key="r.id"
+                  :class="['pw-row', `d${r.depth}`, { done: isChecked(r.id), first: ri === 0 }]"
+                  @click="toggleCheck(r.id)"
+                >
+                  <td v-if="ri === 0" class="pw-label" :rowspan="sec.rows.length">
+                    <strong>{{ sec.label }}</strong>
+                  </td>
+                  <td :class="['pw-txt', { warn: r.warn }]">{{ r.text }}</td>
+                  <td class="pw-chk">
+                    <input type="checkbox" :checked="isChecked(r.id)" :disabled="!picked" @click.stop="toggleCheck(r.id)" />
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </section>
@@ -204,10 +209,11 @@ const dayGroups = POST_WIN_DAY;
 .pw-tbl { width: 100%; border-collapse: collapse; table-layout: fixed; }
 /* 이름 칸은 권리분석 표와 같은 꼴 — 분홍 바탕에 가운데 */
 .pw-col-label { width: 0; }
-.pw-tbl:has(.pw-label) .pw-col-label { width: 118px; }
+.pw-tbl .pw-col-label { width: 118px; }
 .pw-col-chk { width: 34px; }
 .pw-label {
-  background: #fde7e7; text-align: center; color: #111827; font-weight: 700;
+  background: #fde7e7; text-align: center; vertical-align: middle;
+  color: #111827; font-weight: 700;
   padding: 9px 6px !important;
 }
 .pw-label strong { font-size: 12px; line-height: 1.35; }
@@ -218,14 +224,13 @@ const dayGroups = POST_WIN_DAY;
 .pw-chk { width: 34px; text-align: center; }
 .pw-chk input { width: 16px; height: 16px; accent-color: #2b6df3; cursor: pointer; }
 .pw-txt { font-size: 12.5px; font-weight: 600; color: #374151; line-height: 1.45; padding: 9px 10px 9px 14px !important; }
-.pw-row.d0 .pw-txt { font-weight: 800; color: #111827; }
-.pw-row.d1 .pw-txt { padding-left: 26px !important; }
-.pw-row.d2 .pw-txt { padding-left: 38px !important; font-weight: 500; color: #4b5563; }
-.pw-txt.warn { color: #e0574a; }
+/* 묶음 안에 딸린 말은 한 단 들여쓴다 */
+.pw-row.d1 .pw-txt { padding-left: 26px !important; color: #4b5563; }
+.pw-row td.pw-txt.warn { color: #e0574a; }
 .pw-row.done .pw-txt { color: #9ca3af; text-decoration: line-through; }
 /* 이름 칸이 선 줄은 설명을 굵게 쓰지 않는다 — 이름이 큰 항목 노릇을 한다 */
-.pw-row td.pw-label + td.pw-txt { font-weight: 400; color: #374151; }
-.pw-row.done td.pw-label + td.pw-txt { color: #9ca3af; }
+.pw-row td.pw-txt { font-weight: 400; color: #374151; }
+
 
 .pw-empty {
   margin: 0; padding: 26px 16px 30px; text-align: center;
