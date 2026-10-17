@@ -23,14 +23,15 @@ const onOk = async () => {
     <div class="acf-backdrop" @click="emit('close')" />
     <div class="acf-box" role="dialog" aria-modal="true">
       <p class="acf-title">{{ box.title }}</p>
-      <p class="acf-desc">{{ box.desc }}</p>
+      <!-- 설명이 없으면 줄을 내지 않는다 — 뻔한 말을 적지 않기 위해 -->
+      <p v-if="box.desc" class="acf-desc">{{ box.desc }}</p>
       <label v-if="box.skipKey" class="acf-skip">
         <input v-model="skipToday" type="checkbox" />
         오늘 하루 보지 않기
       </label>
       <div class="acf-btns">
         <button type="button" class="cancel" @click="emit('close')">취소</button>
-        <button type="button" class="ok" @click="onOk">{{ box.okLabel }}</button>
+        <button type="button" :class="['ok', { calm: box.tone === 'calm' }]" @click="onOk">{{ box.okLabel }}</button>
       </div>
     </div>
   </div>
@@ -58,4 +59,6 @@ const onOk = async () => {
 }
 .acf-btns .cancel { border: 1px solid #d5dbe6; background: #fff; color: #4b5563; }
 .acf-btns .ok { border: none; background: #d14343; color: #fff; }
+/* 되돌릴 수 있는 일은 빨갛게 묻지 않는다 */
+.acf-btns .ok.calm { background: #2b6df3; }
 </style>

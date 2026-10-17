@@ -6,6 +6,8 @@ export type ConfirmBox = {
   okLabel: string;
   /** 저장 열쇠. 비우면 '오늘 하루 보지 않기'를 내지 않는다(되돌릴 수 없는 일) */
   skipKey: string;
+  /** 단추 색 — 기본은 빨강(지우는 일). 'calm' 은 되돌릴 수 있는 일(보관 등) */
+  tone?: 'danger' | 'calm';
   run: () => Promise<void> | void;
 };
 

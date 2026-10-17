@@ -43,6 +43,7 @@ const router = createRouter({
       path: '/auctions/watchlist',
       name: 'auction-watchlist',
       component: WatchlistPage,
+      meta: { public: true },
     },
     {
       // 옛 화면을 가리키던 경로 — 쓰이는 곳이 없어 선정물건으로 돌려보낸다

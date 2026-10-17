@@ -235,9 +235,10 @@ const archiveItem = (id: string, evt: MouseEvent) => {
   // 휴지통과 같이 한 번 묻는다 — 누르자마자 카드가 사라지면 당황스럽다
   askConfirm({
     title: '보관함에 넣겠습니까?',
-    desc: '목록에서 내려가지만 버리는 것은 아닙니다. 꺼내면 단계와 적어 둔 내용이 그대로 돌아옵니다.',
+    desc: '',
     okLabel: '보관',
     skipKey: 'wlp.skip.archiveOne',
+    tone: 'calm',
     run: async () => {
       await store.archiveAuctions([id], true);
       flashToast('보관함에 넣었습니다.', 'success');

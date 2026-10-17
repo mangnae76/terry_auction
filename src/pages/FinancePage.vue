@@ -643,7 +643,10 @@ const exportExcel = () => {
           <p v-if="stageListRows.length === 0" class="fin-stage-empty">{{ stageListOpen }}한 물건이 없습니다.</p>
           <article v-for="a in stageListRows" :key="a.id" class="fin-stage-card" @click="openAuction(a.id)">
             <p class="top">
+              <!-- 무슨 날인지 적어 둔다 — 날짜만 있으면 낙찰일인지 매도일인지 알 수 없다 -->
+              <em class="lab">{{ stageListOpen === '매도' ? '매도일' : '낙찰일' }}</em>
               <span class="date">{{ ymd(stageListOpen === '매도' ? a.sellDate : a.wonDate) }}</span>
+              <span v-if="stageListOpen === '매도' && a.wonDate" class="sub">낙찰 {{ ymd(a.wonDate) }}</span>
               <span class="court">{{ shortCourt(a.courtName) }}</span>
             </p>
             <p class="addr">{{ shortAddr(a.address) }}</p>
@@ -735,8 +738,10 @@ const exportExcel = () => {
 }
 .fin-stage-card:last-child { margin-bottom: 0; }
 .fin-stage-card .top { margin: 0; display: flex; align-items: baseline; gap: 7px; }
+.fin-stage-card .lab { font-style: normal; font-size: 10px; font-weight: 800; color: #9ca3af; }
 .fin-stage-card .date { font-size: 12px; font-weight: 800; color: #111827; }
-.fin-stage-card .court { font-size: 11px; font-weight: 700; color: #6b7280; }
+.fin-stage-card .sub { font-size: 10.5px; font-weight: 700; color: #9ca3af; }
+.fin-stage-card .court { margin-left: auto; font-size: 11px; font-weight: 700; color: #6b7280; }
 .fin-stage-card .addr {
   margin: 2px 0 0; font-size: 12px; font-weight: 700; color: #374151;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;

@@ -246,9 +246,10 @@ const archiveThisAuction = () => {
   // 화면을 떠나는 일이라 한 번 묻는다 (선정물건 카드의 상자 단추와 같은 규칙)
   askConfirm({
     title: '보관함에 넣겠습니까?',
-    desc: '목록에서 내려가지만 버리는 것은 아닙니다. 꺼내면 단계와 적어 둔 내용이 그대로 돌아옵니다.',
+    desc: '',
     okLabel: '보관',
     skipKey: 'wlp.skip.archiveOne',
+    tone: 'calm',
     run: async () => {
       await store.archiveAuctions([target.id], true);
       router.replace('/auctions/watchlist');
