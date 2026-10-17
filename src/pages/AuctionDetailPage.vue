@@ -166,7 +166,15 @@ const pickStage = async (key: string) => {
   }
   const st = key as AuctionStatus;
   if (target.status === st && !target.bidStatus) return;
-  // 입찰진행 해제는 스토어의 setStatus 가 함께 처리한다
+  // 입찰진행 → 입찰산정으로 내려오는 길.
+  // setStatus 는 '입찰' 안에서는 입찰상태를 그대로 두므로 (단계는 그대로인데 진행만 켜져 있을 수 있다)
+  // 여기서 진행 표시를 '대기'로 내려 준다. 안 그러면 입찰산정을 골라도 입찰진행에 머문다.
+  if (st === '입찰' && (target.bidStatus ?? '').replace(/^입찰/, '') === '진행') {
+    await store.saveAuction({ ...target, status: '입찰', bidStatus: '대기' });
+    flashToast("단계를 '입찰산정'으로 바꿨습니다.", 'success');
+    return;
+  }
+  // 입찰 단계를 벗어나는 경우의 진행 해제는 스토어의 setStatus 가 함께 처리한다
   await store.setStatus(target.id, st);
   flashToast(`단계를 '${AUCTION_STATUS_LABELS[st]}'으로 바꿨습니다.`, 'success');
 };
