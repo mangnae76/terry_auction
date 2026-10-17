@@ -329,28 +329,6 @@ const exportExcel = () => {
           <button type="button" :class="['sold', { on: stageListOpen === '매도' }]" @click="toggleStageList('매도')">매도 {{ soldCount }}</button>
         </span>
       </h1>
-      <!-- 낙찰·매도 물건 — 누른 쪽만 카드로 펼친다 -->
-      <section v-if="stageListOpen" class="fin-stage-list">
-        <header class="fin-stage-head">
-          <strong>{{ stageListOpen }} {{ stageListRows.length }}건</strong>
-          <button type="button" class="fin-stage-close" aria-label="닫기" @click="stageListOpen = ''">×</button>
-        </header>
-        <p v-if="stageListRows.length === 0" class="fin-stage-empty">{{ stageListOpen }}한 물건이 없습니다.</p>
-        <article v-for="a in stageListRows" :key="a.id" class="fin-stage-card" @click="openAuction(a.id)">
-          <p class="top">
-            <span class="date">{{ ymd(stageListOpen === '매도' ? a.sellDate : a.wonDate) }}</span>
-            <span class="court">{{ shortCourt(a.courtName) }}</span>
-          </p>
-          <p class="addr">{{ shortAddr(a.address) }}</p>
-          <div class="nums">
-            <span><small>감정가</small><b>{{ shortMoney(a.metrics?.appraisalValue ?? 0) }}</b></span>
-            <span><small>낙찰가</small><b>{{ shortMoney(bidPriceOf(a)) }}</b></span>
-            <span><small>비용</small><b>{{ shortMoney(costsOf(a)) }}</b></span>
-            <span><small>수익</small><b :class="incomeOf(a) >= 0 ? 'plus' : 'minus'">{{ shortMoney(incomeOf(a)) }}</b></span>
-          </div>
-        </article>
-      </section>
-
       <nav class="fin-tabs">
         <button :class="['fin-tab', { active: activeTab === 'cashFlow' }]" @click="activeTab = 'cashFlow'">자금입출금</button>
         <button :class="['fin-tab', { active: activeTab === 'businessExpense' }]" @click="activeTab = 'businessExpense'">사업지출</button>
@@ -652,6 +630,34 @@ const exportExcel = () => {
 
     <AppConfirm :box="confirmBox" @close="confirmBox = null" />
 
+
+    <!-- 낙찰·매도 물건 — 팝업으로 띄운다. 가짓수가 늘어도 아래 내용이 밀리지 않는다 -->
+    <Teleport to="body">
+      <div v-if="stageListOpen" class="fin-pop-veil" @click="stageListOpen = ''" />
+      <section v-if="stageListOpen" class="fin-pop" @click.stop>
+        <header class="fin-pop-head">
+          <strong>{{ stageListOpen }} <em>{{ stageListRows.length }}건</em></strong>
+          <button type="button" class="fin-pop-close" aria-label="닫기" @click="stageListOpen = ''">×</button>
+        </header>
+        <div class="fin-pop-body">
+          <p v-if="stageListRows.length === 0" class="fin-stage-empty">{{ stageListOpen }}한 물건이 없습니다.</p>
+          <article v-for="a in stageListRows" :key="a.id" class="fin-stage-card" @click="openAuction(a.id)">
+            <p class="top">
+              <span class="date">{{ ymd(stageListOpen === '매도' ? a.sellDate : a.wonDate) }}</span>
+              <span class="court">{{ shortCourt(a.courtName) }}</span>
+            </p>
+            <p class="addr">{{ shortAddr(a.address) }}</p>
+            <div class="nums">
+              <span><small>감정가</small><b>{{ shortMoney(a.metrics?.appraisalValue ?? 0) }}</b></span>
+              <span><small>낙찰가</small><b>{{ shortMoney(bidPriceOf(a)) }}</b></span>
+              <span><small>비용</small><b>{{ shortMoney(costsOf(a)) }}</b></span>
+              <span><small>수익</small><b :class="incomeOf(a) >= 0 ? 'plus' : 'minus'">{{ shortMoney(incomeOf(a)) }}</b></span>
+            </div>
+          </article>
+        </div>
+      </section>
+    </Teleport>
+
     <AppMobileBottomNav active="finance" />
   </section>
 </template>
@@ -694,18 +700,26 @@ const exportExcel = () => {
 .fin-stage-count .sold { background: #e8f7f1; color: #0f7a5c; }
 .fin-stage-count .sold.on { border-color: #0f7a5c; }
 
-/* 펼친 목록 — 탭 위에 얹는다 */
-.fin-stage-list {
-  margin: 8px 14px 2px; padding: 8px;
-  background: #fff; border: 1px solid #e3e8f0; border-radius: 12px;
-  max-height: 46vh; overflow-y: auto;
+/* 팝업 — 가짓수가 늘어도 아래 내용이 밀리지 않게 화면 위에 띄운다 */
+.fin-pop-veil { position: fixed; inset: 0; z-index: 70; background: rgba(17, 24, 39, 0.35); }
+.fin-pop {
+  position: fixed; z-index: 71; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(92vw, 420px); max-height: 78vh;
+  display: flex; flex-direction: column;
+  background: #fff; border: 1px solid #e3e8f0; border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(17, 24, 39, 0.22);
 }
-.fin-stage-head { display: flex; align-items: center; margin: 2px 2px 6px; }
-.fin-stage-head strong { font-size: 12.5px; font-weight: 800; color: #374151; }
-.fin-stage-close {
+.fin-pop-head {
+  flex: 0 0 auto; display: flex; align-items: center;
+  padding: 12px 14px 10px; border-bottom: 1px solid #eef1f6;
+}
+.fin-pop-head strong { font-size: 14px; font-weight: 800; color: #111827; }
+.fin-pop-head em { font-style: normal; font-size: 12px; font-weight: 700; color: #9ca3af; margin-left: 4px; }
+.fin-pop-close {
   margin-left: auto; border: none; background: transparent; cursor: pointer;
-  font-size: 17px; line-height: 1; color: #9ca3af; padding: 0 2px;
+  font-size: 19px; line-height: 1; color: #9ca3af; padding: 0 2px;
 }
+.fin-pop-body { flex: 1 1 auto; overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; }
 .fin-stage-empty { margin: 14px 0; text-align: center; font-size: 12px; color: #9ca3af; }
 .fin-stage-card {
   border: 1px solid #eef1f6; border-radius: 10px; padding: 8px 10px 9px;
