@@ -438,6 +438,18 @@ const bidResultTone = (item: AuctionDetail) => {
 /** 마지막 알약 — 첫 누름은 '입찰진행'으로 전진, 그다음부터는 메뉴를 연다.
  *  결과(낙찰·유찰·취소·매도)를 고치러 물건정보까지 들어가지 않아도 되게. */
 const bidMenuId = ref('');
+/** 메뉴는 글(body) 위에 띄운다 — 카드 안에 두면 다음 카드에 덮여 보이지 않았다 */
+const bidMenuPos = ref({ left: 0, top: 0 });
+const bidMenuItem = computed(() => displayedAuctions.value.find((x) => x.id === bidMenuId.value) ?? null);
+const openBidMenu = (id: string, el: HTMLElement) => {
+  const box = el.getBoundingClientRect();
+  const width = 156;
+  bidMenuPos.value = {
+    left: Math.max(8, Math.min(box.right - width, window.innerWidth - width - 8)),
+    top: box.bottom + 4,
+  };
+  bidMenuId.value = id;
+};
 /** 메뉴에 세우는 차례 — 물건상세 단계 메뉴와 같다 ('' 는 입찰산정으로 되돌리기) */
 const BID_MENU: Array<{ value: string; label: string; sep?: boolean }> = [
   { value: '진행', label: '입찰진행' },
@@ -458,7 +470,8 @@ const toggleBidRunning = async (item: AuctionDetail, evt: MouseEvent) => {
     });
     return;
   }
-  bidMenuId.value = bidMenuId.value === item.id ? '' : item.id;
+  if (bidMenuId.value === item.id) { bidMenuId.value = ''; return; }
+  openBidMenu(item.id, evt.currentTarget as HTMLElement);
 };
 /** 메뉴에서 고른 자리로 옮긴다 — 날짜 규칙은 물건상세와 같은 것을 쓴다 */
 const pickBidStage = async (item: AuctionDetail, value: string, evt: MouseEvent) => {
@@ -891,31 +904,12 @@ watch(
           >입찰산정</button>
           <span class="wlp-phase-arrow">▶</span>
           <!-- 마지막 알약 — 첫 누름은 입찰진행, 그다음부터는 결과를 고르는 메뉴 -->
-          <span class="wlp-bid-wrap">
-            <button
-              type="button"
-              :class="['wlp-phase', bidResultTone(item)]"
-              :title="bidStageOf(item) ? '누르면 결과를 고릅니다' : '누르면 입찰진행으로 바뀝니다'"
-              @click="toggleBidRunning(item, $event)"
-            >{{ bidResultLabel(item) }}</button>
-            <template v-if="bidMenuId === item.id">
-              <div class="wlp-bid-backdrop" @click.stop="bidMenuId = ''" />
-              <ul class="wlp-bid-menu" @click.stop>
-                <li
-                  v-for="opt in BID_MENU"
-                  :key="opt.value || 'reset'"
-                  :class="['wlp-bid-opt', {
-                    on: bidStageOf(item) === opt.value,
-                    sep: opt.sep,
-                    hot: opt.value === '진행',
-                    done: opt.value === '낙찰' || opt.value === '매도',
-                    back: opt.value === '',
-                  }]"
-                  @click="pickBidStage(item, opt.value, $event)"
-                >{{ opt.label }}</li>
-              </ul>
-            </template>
-          </span>
+          <button
+            type="button"
+            :class="['wlp-phase', bidResultTone(item)]"
+            :title="bidStageOf(item) ? '누르면 결과를 고릅니다' : '누르면 입찰진행으로 바뀝니다'"
+            @click="toggleBidRunning(item, $event)"
+          >{{ bidResultLabel(item) }}</button>
         </div>
       </article>
 
@@ -923,6 +917,31 @@ watch(
         표시할 물건이 없습니다.
       </p>
     </div>
+
+    <!-- 결과 고르기 메뉴 — 카드 밖(글 위)에 떠서 다음 카드에 덮이지 않는다 -->
+    <Teleport to="body">
+      <template v-if="bidMenuItem">
+        <div class="wlp-bid-backdrop" @click.stop="bidMenuId = ''" />
+        <ul
+          class="wlp-bid-menu"
+          :style="{ left: `${bidMenuPos.left}px`, top: `${bidMenuPos.top}px` }"
+          @click.stop
+        >
+          <li
+            v-for="opt in BID_MENU"
+            :key="opt.value || 'reset'"
+            :class="['wlp-bid-opt', {
+              on: bidStageOf(bidMenuItem) === opt.value,
+              sep: opt.sep,
+              hot: opt.value === '진행',
+              done: opt.value === '낙찰' || opt.value === '매도',
+              back: opt.value === '',
+            }]"
+            @click="pickBidStage(bidMenuItem, opt.value, $event)"
+          >{{ opt.label }}</li>
+        </ul>
+      </template>
+    </Teleport>
 
     <AppConfirm :box="confirmBox" @close="confirmBox = null" />
 
@@ -1577,13 +1596,11 @@ watch(
   background: #dce5ff;
   color: #3850c2;
 }
-/* 마지막 알약의 메뉴 — 알약 바로 아래에 뜬다 */
-.wlp-bid-wrap { position: relative; display: inline-flex; flex: 1 1 0; }
-.wlp-bid-wrap .wlp-phase { flex: 1 1 0; }
-.wlp-bid-backdrop { position: fixed; inset: 0; z-index: 40; }
+/* 마지막 알약의 메뉴 — 알약 바로 아래, 글 위에 뜬다 */
+.wlp-bid-backdrop { position: fixed; inset: 0; z-index: 120; }
 .wlp-bid-menu {
-  position: absolute; z-index: 41; right: 0; top: calc(100% + 4px);
-  margin: 0; padding: 4px 0; list-style: none; min-width: 148px;
+  position: fixed; z-index: 121;
+  margin: 0; padding: 4px 0; list-style: none; width: 156px;
   background: #fff; border: 1px solid #d1d5db; border-radius: 9px;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
 }
