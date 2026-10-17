@@ -50,6 +50,7 @@ import { VWORLD_KEY_EXPIRES } from '../services/vworldApi';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
 import { addressParts, hasBuildingName, isUnitToken } from '../utils/addressName';
+import { stageDates } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePhoto, isPhotoId, loadSitePhoto, saveSitePhoto } from '../services/sitePhotoRepository';
 import { fetchNearbyEnvironment, type NearbyEnvironment, type NearbyPlace } from '../services/kakaoNearby';
@@ -171,13 +172,6 @@ const stageIsOn = (key: string) => {
   if (key.startsWith('bid:')) return bid !== '' && key === `bid:${bid}`;
   return bid === '' && auction.value?.status === key;
 };
-/** 오늘 — 'YYYY-MM-DD' */
-const todayYmd = () => {
-  const d = new Date();
-  const p2 = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
-};
-
 const pickStage = async (key: string) => {
   stageOpen.value = false;
   const target = auction.value;
@@ -185,14 +179,15 @@ const pickStage = async (key: string) => {
   if (key.startsWith('bid:')) {
     const value = key.slice(4);
     const label = BID_STAGES.find((b) => b.value === value)?.label ?? value;
-    const next = { ...target, status: '입찰' as AuctionStatus, bidStatus: value };
-    // 낙찰·매도는 세금신고가 보는 날짜와 이어 둔다 — 비어 있을 때만 오늘로 적는다.
-    // (손으로 적어 둔 날짜가 있으면 그 값이 맞다 — 덮어쓰지 않는다)
-    let dateNote = '';
-    if (value === '낙찰' && !next.wonDate) { next.wonDate = todayYmd(); dateNote = ' · 낙찰일을 오늘로 적었습니다'; }
-    if (value === '매도' && !next.sellDate) { next.sellDate = todayYmd(); dateNote = ' · 매도일을 오늘로 적었습니다'; }
-    await store.saveAuction(next);
-    flashToast(`단계를 '${label}'으로 바꿨습니다.${dateNote}`, 'success');
+    // 낙찰일·매도일은 단계를 따라간다 — 앞으로 가면 적고, 뒤로 물러서면 지운다.
+    // 규칙은 utils/stageLabel 한곳에 있다 (선정물건 카드도 같은 것을 쓴다)
+    const dates = stageDates(target, value);
+    target.status = '입찰';
+    target.bidStatus = value;
+    target.wonDate = dates.wonDate;
+    target.sellDate = dates.sellDate;
+    await store.saveAuction(target);
+    flashToast(`단계를 '${label}'으로 바꿨습니다.${dates.note ? ` · ${dates.note}` : ''}`, 'success');
     return;
   }
   const st = key as AuctionStatus;
@@ -200,11 +195,24 @@ const pickStage = async (key: string) => {
   // 입찰 뒤의 상태(진행·낙찰·매도…)가 켜져 있는데 '입찰산정'을 고르면 그 표시를 내린다.
   // setStatus 는 '입찰' 안에서는 입찰상태를 건드리지 않아 그대로 머물기 때문이다.
   if (st === '입찰' && bidStage.value) {
-    await store.saveAuction({ ...target, status: '입찰', bidStatus: '' });
-    flashToast("단계를 '입찰산정'으로 바꿨습니다.", 'success');
+    const dates = stageDates(target, '');
+    target.status = '입찰';
+    target.bidStatus = '';
+    target.wonDate = dates.wonDate;
+    target.sellDate = dates.sellDate;
+    await store.saveAuction(target);
+    flashToast(`단계를 '입찰산정'으로 바꿨습니다.${dates.note ? ` · ${dates.note}` : ''}`, 'success');
     return;
   }
-  // 입찰 단계를 벗어나는 경우의 진행 해제는 스토어의 setStatus 가 함께 처리한다
+  // 입찰 단계를 벗어나면 낙찰일·매도일도 함께 내린다.
+  // 화면이 들고 있는 그 물건을 고쳐 저장한 뒤 단계를 바꾼다 — 사본을 저장하면
+  // 화면 쪽에 남은 옛 날짜가 뒤늦게 되살아난다
+  target.wonDate = '';
+  target.sellDate = '';
+  target.status = st;
+  target.bidStatus = '';
+  await store.saveAuction(target);
+  // 관심·임장 표시 같은 딸림 규칙은 스토어가 맡는다 (화면 사본과 값이 같아 덮어쓰지 않는다)
   await store.setStatus(target.id, st);
   flashToast(`단계를 '${AUCTION_STATUS_LABELS[st]}'으로 바꿨습니다.`, 'success');
 };

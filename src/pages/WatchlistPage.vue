@@ -11,7 +11,7 @@ import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import { addressParts } from '../utils/addressName';
-import { bidStageOf as bidStageShared, hasBidResult as hasBidResultShared, stageLabelOf, stageToneOf, BID_STAGE_LABELS } from '../utils/stageLabel';
+import { bidStageOf as bidStageShared, hasBidResult as hasBidResultShared, stageDates, stageLabelOf, stageToneOf, BID_STAGE_LABELS } from '../utils/stageLabel';
 import searchIcon from '../assets/icones/searchs (1).png';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import filesIcon from '../assets/icones/files (1).png';
@@ -431,13 +431,22 @@ const bidResultTone = (item: AuctionDetail) => {
 const toggleBidRunning = async (item: AuctionDetail, evt: MouseEvent) => {
   evt.stopPropagation();
   if (bidStageOf(item)) return;
-  await store.saveAuction({ ...item, status: '입찰', bidStatus: '진행' });
+  const dates = stageDates(item, '진행');
+  await store.saveAuction({
+    ...item, status: '입찰', bidStatus: '진행',
+    wonDate: dates.wonDate, sellDate: dates.sellDate,
+  });
 };
 /** 4번째 알약 — 입찰 뒤의 상태를 내리고 '입찰산정'으로 돌아온다 */
 const onBidPhaseClick = async (item: AuctionDetail, evt: MouseEvent) => {
   evt.stopPropagation();
   if (item.status === '입찰' && !bidStageOf(item)) return;
-  await store.saveAuction({ ...item, status: '입찰', bidStatus: '' });
+  // 뒤로 물러서면 낙찰일·매도일도 같이 내린다 — 날짜만 남으면 세금신고가 어긋난다
+  const dates = stageDates(item, '');
+  await store.saveAuction({
+    ...item, status: '입찰', bidStatus: '',
+    wonDate: dates.wonDate, sellDate: dates.sellDate,
+  });
 };
 
 // 단계에서 '탈락'을 없앤 뒤 남아 있는 옛 물건들 — 조용히 감추지 않고 알린 뒤 옮긴다
@@ -463,6 +472,11 @@ const setPhase = async (item: AuctionDetail, target: PhaseKey, evt: MouseEvent) 
   evt.stopPropagation();
   // 입찰진행 해제는 스토어의 setStatus 가 함께 처리한다
   await store.setStatus(item.id, PHASE_TO_STATUS[target]);
+  // 입찰 앞 단계로 돌아가면 낙찰일·매도일을 내린다 (단계를 바꾼 뒤 다시 읽어 지운다)
+  const after = store.getById(item.id);
+  if (after && PHASE_TO_STATUS[target] !== '입찰' && (after.wonDate || after.sellDate)) {
+    await store.saveAuction({ ...after, wonDate: '', sellDate: '' });
+  }
 };
 
 watch(

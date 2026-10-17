@@ -44,3 +44,32 @@ export const stageToneOf = (item: AuctionDetail): string => {
   if (item.status === '입찰') return 'bid';
   return 'etc';
 };
+
+/** 오늘 — 'YYYY-MM-DD' */
+const todayYmd = (): string => {
+  const d = new Date();
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+};
+
+/**
+ * 단계에 날짜를 맞춘다 — 낙찰일·매도일은 단계를 따라간다.
+ *   낙찰일은 '낙찰' 과 '매도' 에만 있고, 매도일은 '매도' 에만 있다.
+ * 앞으로 갈 때는 비어 있으면 오늘로 적고, 뒤로 물러서면 지운다.
+ * (날짜만 남으면 세금신고가 판 적 없는 물건을 매도로 세어 버린다)
+ */
+export const stageDates = (
+  item: Pick<AuctionDetail, 'wonDate' | 'sellDate'>,
+  stage: string,
+): { wonDate: string; sellDate: string; note: string } => {
+  const wantWon = stage === '낙찰' || stage === '매도';
+  const wantSell = stage === '매도';
+  const wonDate = wantWon ? (item.wonDate || todayYmd()) : '';
+  const sellDate = wantSell ? (item.sellDate || todayYmd()) : '';
+  const notes: string[] = [];
+  if (wantWon && !item.wonDate) notes.push('낙찰일을 오늘로 적었습니다');
+  if (!wantWon && item.wonDate) notes.push('낙찰일을 지웠습니다');
+  if (wantSell && !item.sellDate) notes.push('매도일을 오늘로 적었습니다');
+  if (!wantSell && item.sellDate) notes.push('매도일을 지웠습니다');
+  return { wonDate, sellDate, note: notes.join(' · ') };
+};
