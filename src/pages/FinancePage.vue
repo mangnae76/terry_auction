@@ -14,6 +14,7 @@ import { useFinanceStore } from '../stores/financeStore';
 import { useAuctionStore } from '../stores/auctionStore';
 import { bidStageOf } from '../utils/stageLabel';
 import { bidPriceOf, costsOf, incomeOf, shortCourt } from '../utils/auctionSummary';
+import type { AuctionDetail } from '../types/auction';
 import type {
   BusinessExpenseRecord,
   CashFlowRecord,
@@ -44,8 +45,40 @@ const soldCount = computed(() => stageRows('매도').length);
 
 /** 머리줄의 낙찰·매도를 누르면 그 물건들을 카드로 펼친다 */
 const stageListOpen = ref<'' | '낙찰' | '매도'>('');
-/** 카드를 누르면 그 물건으로 간다 */
+/** 카드를 누르면 그 자리에서 입찰가 산정표(A안)를 편다 — 목록을 떠나지 않는다 */
+const openCardId = ref('');
+const toggleCard = (id: string) => { openCardId.value = openCardId.value === id ? '' : id; };
+/** 물건 상세로 가는 길은 따로 둔다 */
 const openAuction = (id: string) => { void router.push(`/auctions/${id}`); };
+
+/** 입찰가 산정표(A안) 한 장 — 물건에 적어 둔 값을 그대로 읽어 적는다 */
+type CalcRow = { label: string; value: number; tone?: 'bid' | 'cost' | 'sum' | 'profit' };
+const calcRows = (a: AuctionDetail): CalcRow[] => {
+  const c = a.bidCost;
+  const bid = bidPriceOf(a);
+  const cost = costsOf(a);
+  const rows: CalcRow[] = [
+    { label: '감정가', value: a.metrics?.appraisalValue ?? 0 },
+    { label: '최저가', value: a.metrics?.minimumBidValue ?? 0 },
+    { label: '입찰가', value: bid, tone: 'bid' },
+    { label: '대출', value: c?.loanAmount ?? 0 },
+    { label: '취득세', value: c?.acquisitionTaxAmount ?? 0, tone: 'cost' },
+    { label: '법무비', value: c?.legalCostAmount ?? 0, tone: 'cost' },
+    { label: '이자', value: c?.interestAmount ?? 0, tone: 'cost' },
+    { label: '중도상환', value: c?.midRepaymentAmount ?? 0, tone: 'cost' },
+    { label: '중개비', value: c?.brokerageAmount ?? 0, tone: 'cost' },
+    { label: '연체관리비', value: c?.arrearsFee ?? 0, tone: 'cost' },
+    { label: '수리비', value: c?.repairCost ?? 0, tone: 'cost' },
+    { label: '명도비', value: c?.evictionCost ?? 0, tone: 'cost' },
+    { label: '광고비', value: c?.advertisingCost ?? 0, tone: 'cost' },
+    { label: '비용 합계', value: cost, tone: 'sum' },
+    { label: '총 투입', value: bid + cost, tone: 'sum' },
+    { label: '예상 매도가', value: a.expectedSaleValue ?? 0 },
+    { label: '예상 수익', value: incomeOf(a), tone: 'profit' },
+  ];
+  // 0원인 비용 줄은 적지 않는다 — 표가 길어지기만 한다
+  return rows.filter((r) => r.value !== 0 || r.tone === 'profit' || r.tone === 'sum');
+};
 const toggleStageList = (stage: '낙찰' | '매도') => {
   stageListOpen.value = stageListOpen.value === stage ? '' : stage;
 };
@@ -646,7 +679,12 @@ const exportExcel = () => {
         </header>
         <div class="fin-pop-body">
           <p v-if="stageListRows.length === 0" class="fin-stage-empty">{{ stageListOpen }}한 물건이 없습니다.</p>
-          <article v-for="a in stageListRows" :key="a.id" class="fin-stage-card" @click="openAuction(a.id)">
+          <article
+            v-for="a in stageListRows"
+            :key="a.id"
+            :class="['fin-stage-card', { open: openCardId === a.id }]"
+            @click="toggleCard(a.id)"
+          >
             <!-- 날짜는 글자로만 — 칸을 그리지 않는다. 고르지 않은 날은 빈자리로 둔다.
                  폭을 못 박아 카드가 여럿이어도 날짜가 한 줄로 맞아떨어진다 -->
             <p class="top">
@@ -660,6 +698,20 @@ const exportExcel = () => {
               <span><small>낙찰가</small><b class="bid">{{ shortMoney(bidPriceOf(a)) }}</b></span>
               <span><small>비용</small><b class="cost">{{ shortMoney(costsOf(a)) }}</b></span>
               <span><small>수익</small><b :class="incomeOf(a) >= 0 ? 'plus' : 'minus'">{{ shortMoney(incomeOf(a)) }}</b></span>
+            </div>
+
+            <!-- 입찰가 산정표 A안 — 누른 카드 밑에 그대로 편다 (보기만 한다) -->
+            <div v-if="openCardId === a.id" class="fin-calc" @click.stop>
+              <p class="fin-calc-head">
+                입찰가 산정표 <em>A안</em>
+                <button type="button" class="fin-calc-go" @click="openAuction(a.id)">물건 열기 ›</button>
+              </p>
+              <table class="fin-calc-tbl">
+                <tr v-for="r in calcRows(a)" :key="r.label" :class="r.tone">
+                  <th>{{ r.label }}</th>
+                  <td>{{ r.value.toLocaleString('ko-KR') }}</td>
+                </tr>
+              </table>
             </div>
           </article>
         </div>
@@ -708,11 +760,42 @@ const exportExcel = () => {
 .fin-stage-count .sold { background: #e8f7f1; color: #0f7a5c; }
 .fin-stage-count .sold.on { border-color: #0f7a5c; }
 
+/* 펼친 산정표 — 카드 안쪽에 들어간다 */
+.fin-stage-card.open { border-color: #9fb3d4; }
+.fin-calc { margin-top: 9px; padding-top: 8px; border-top: 1px solid #e3e8f0; }
+.fin-calc-head {
+  margin: 0 0 6px; display: flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 700; color: #374151;
+}
+.fin-calc-head em { font-style: normal; font-size: 10.5px; font-weight: 800; color: #2b6df3; }
+.fin-calc-go {
+  margin-left: auto; border: none; background: transparent; cursor: pointer;
+  font-family: inherit; font-size: 11px; font-weight: 700; color: #2b6df3; padding: 0;
+}
+.fin-calc-tbl { width: 100%; border-collapse: collapse; }
+.fin-calc-tbl th,
+.fin-calc-tbl td {
+  padding: 4px 2px; font-size: 11.5px; font-weight: 500; color: #374151;
+  border-bottom: 1px solid #f1f4f9;
+}
+.fin-calc-tbl th { text-align: left; color: #6b7280; font-weight: 500; }
+.fin-calc-tbl td { text-align: right; color: #111827; font-variant-numeric: tabular-nums; }
+.fin-calc-tbl tr.bid td { font-weight: 800; }
+.fin-calc-tbl tr.cost th,
+.fin-calc-tbl tr.cost td { color: #2b6df3; }
+.fin-calc-tbl tr.sum th,
+.fin-calc-tbl tr.sum td { background: #f7f9fd; font-weight: 800; color: #111827; }
+.fin-calc-tbl tr.profit th { color: #e0574a; }
+.fin-calc-tbl tr.profit td { color: #e0574a; font-weight: 800; }
+.fin-calc-tbl tr:last-child th,
+.fin-calc-tbl tr:last-child td { border-bottom: none; }
+
 /* 팝업 — 가짓수가 늘어도 아래 내용이 밀리지 않게 화면 위에 띄운다 */
 .fin-pop-veil { position: fixed; inset: 0; z-index: 70; background: rgba(17, 24, 39, 0.35); }
+/* 제목줄 바로 아래에서 시작한다 — 눌렀던 단추 가까이에 떠야 눈이 따라가기 쉽다 */
 .fin-pop {
-  position: fixed; z-index: 71; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  width: min(92vw, 420px); max-height: 78vh;
+  position: fixed; z-index: 71; left: 50%; top: 52px; transform: translateX(-50%);
+  width: min(92vw, 420px); max-height: calc(100vh - 150px);
   display: flex; flex-direction: column;
   background: #fff; border: 1px solid #e3e8f0; border-radius: 14px;
   box-shadow: 0 18px 44px rgba(17, 24, 39, 0.22);
