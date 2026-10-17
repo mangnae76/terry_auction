@@ -156,10 +156,12 @@ const createBidCostDefaults = () => ({
   legalCostRate: 0.5,
   midRepaymentRate: 1.0,
   interestRate3m: 4.5,
-  brokerageRate: 0.4,
+  // 매도중개료는 쓰는 사람이 정한다 — 기본은 0% (자동으로 끼어들지 않게)
+  brokerageRate: 0,
   arrearsFee: 0,
-  repairCost: 0,
-  evictionCost: 0,
+  // 늘 드는 돈이라 기본값을 넣어 둔다 — 화면에서 고칠 수 있다
+  repairCost: 10_000_000,
+  evictionCost: 1_000_000,
   salePrice: 0,
   incomeTaxRate: 15,
   localTaxRate: 10,
@@ -169,7 +171,7 @@ const createBidCostDefaults = () => ({
   interestAmount: 0,
   midRepaymentAmount: 0,
   brokerageAmount: 0,
-  advertisingCost: 0,
+  advertisingCost: 9_000_000,
 });
 
 const createMarketDemandDefaults = () => ({

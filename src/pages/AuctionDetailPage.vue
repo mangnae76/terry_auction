@@ -5304,12 +5304,29 @@ const summaryFloorPair = computed(() => {
   if (!total && !cur) return '-';
   return `${cur || '-'}층 / ${total || '-'}층`;
 });
+/** 입찰가산정의 늘 드는 비용 — 손대지 않은 물건에만 기본값을 넣어 준다.
+ *  (셋 다 0 이면 아직 적지 않은 것으로 본다. 0 으로 고쳐 둔 물건은 건드리지 않는다
+ *   — 그런 물건은 보통 한 칸이라도 값이 들어가 있다) */
+const BID_COST_SEED = { repairCost: 10_000_000, evictionCost: 1_000_000, advertisingCost: 9_000_000 };
+const seedBidCost = (a: AuctionDetail) => {
+  const c = a.bidCost;
+  if (!c) return false;
+  const untouched = !(c.repairCost ?? 0) && !(c.evictionCost ?? 0) && !(c.advertisingCost ?? 0);
+  if (!untouched) return false;
+  c.repairCost = BID_COST_SEED.repairCost;
+  c.evictionCost = BID_COST_SEED.evictionCost;
+  c.advertisingCost = BID_COST_SEED.advertisingCost;
+  return true;
+};
+
 // PDF에서 읽을 수 있는 값은 빈 칸일 때만 채운다
 watch(
   () => auction.value?.id,
   () => {
     const a = auction.value;
     if (!a) return;
+    // 늘 드는 비용(수리·명도·광고)을 아직 안 적었으면 기본값으로 채워 둔다
+    if (seedBidCost(a)) void store.saveAuction(a);
     if (!a.basicSummary) a.basicSummary = {};
     const v = a.basicSummary;
     const fill = (id: string, value: string) => { if (!v[id] && value) v[id] = value; };

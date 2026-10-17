@@ -1596,13 +1596,13 @@ watch(
   background: #dce5ff;
   color: #3850c2;
 }
-/* 마지막 알약의 화살표 — 알약 사이의 ▶ 와 같은 크기로, 오른쪽 끝에 붙인다 */
+/* 마지막 알약의 화살표 — 오른쪽 안쪽에 들여 붙인다.
+   글자는 알약 한가운데 그대로 — 화살표는 자리를 차지하지 않게 띄워 둔다 */
 .wlp-phase-caret {
-  position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
-  font-style: normal; font-size: 13px; line-height: 1; opacity: 0.85;
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  font-style: normal; font-size: 18px; line-height: 1; opacity: 0.85;
 }
-/* 화살표가 글자에 닿지 않게 그 알약만 오른쪽을 조금 더 비운다 */
-.wlp-phase-row .wlp-phase:has(.wlp-phase-caret) { position: relative; padding-right: 16px; }
+.wlp-phase-row .wlp-phase:has(.wlp-phase-caret) { position: relative; }
 
 /* 마지막 알약의 메뉴 — 알약 바로 아래, 글 위에 뜬다 */
 .wlp-bid-backdrop { position: fixed; inset: 0; z-index: 120; }
