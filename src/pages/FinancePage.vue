@@ -3,6 +3,7 @@
 // 탭: 사업계좌 자금입출금 / 사업지출내역 / 유류비 & 식대지출 / 물품구매 지출상세
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import TaxPage from './TaxPage.vue';
@@ -12,6 +13,7 @@ import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useFinanceStore } from '../stores/financeStore';
 import { useAuctionStore } from '../stores/auctionStore';
 import { bidStageOf } from '../utils/stageLabel';
+import { bidPriceOf, costsOf, incomeOf, shortCourt } from '../utils/auctionSummary';
 import type {
   BusinessExpenseRecord,
   CashFlowRecord,
@@ -32,15 +34,38 @@ const rangeValue = computed({
 });
 
 const finance = useFinanceStore();
+const router = useRouter();
 const auctionStore = useAuctionStore();
 /** 머리줄에 적는 건수 — 지금 낙찰로 들고 있는 물건과 판 물건.
  *  단계(bidStatus)를 그대로 센다 — 세금신고가 보는 날짜와 같은 자리에서 온다 */
-const wonCount = computed(
-  () => auctionStore.auctions.filter((a) => bidStageOf(a) === '낙찰').length,
-);
-const soldCount = computed(
-  () => auctionStore.auctions.filter((a) => bidStageOf(a) === '매도').length,
-);
+const stageRows = (stage: string) => auctionStore.auctions.filter((a) => bidStageOf(a) === stage);
+const wonCount = computed(() => stageRows('낙찰').length);
+const soldCount = computed(() => stageRows('매도').length);
+
+/** 머리줄의 낙찰·매도를 누르면 그 물건들을 카드로 펼친다 */
+const stageListOpen = ref<'' | '낙찰' | '매도'>('');
+/** 카드를 누르면 그 물건으로 간다 */
+const openAuction = (id: string) => { void router.push(`/auctions/${id}`); };
+const toggleStageList = (stage: '낙찰' | '매도') => {
+  stageListOpen.value = stageListOpen.value === stage ? '' : stage;
+};
+const stageListRows = computed(() => (stageListOpen.value ? stageRows(stageListOpen.value) : []));
+/** 주소는 시·도를 떼고 짧게 — 카드가 한 줄을 넘기지 않게 */
+const shortAddr = (address?: string) => {
+  const parts = String(address ?? '').trim().split(/\s+/).filter(Boolean);
+  return parts.length > 3 ? parts.slice(1).join(' ') : parts.join(' ');
+};
+const ymd = (d?: string) => (d ? d.replace(/-/g, '. ') : '–');
+/** 카드 안의 돈 — 칸이 좁아 억·만으로 줄여 쓴다 */
+const shortMoney = (won: number) => {
+  if (!Number.isFinite(won) || won === 0) return '–';
+  const sign = won < 0 ? '-' : '';
+  const abs = Math.abs(won);
+  const eok = Math.floor(abs / 100000000);
+  const man = Math.round((abs % 100000000) / 10000);
+  if (eok > 0) return man > 0 ? `${sign}${eok}억 ${man.toLocaleString('ko-KR')}만` : `${sign}${eok}억`;
+  return `${sign}${man.toLocaleString('ko-KR')}만`;
+};
 
 onMounted(() => {
   finance.initialize();
@@ -300,10 +325,32 @@ const exportExcel = () => {
         사업자금관리
         <!-- 낙찰로 들고 있는 물건과 판 물건 — 돈 이야기의 바탕이라 제목 옆에 적어 둔다 -->
         <span class="fin-stage-count">
-          <em class="won">낙찰 {{ wonCount }}</em>
-          <em class="sold">매도 {{ soldCount }}</em>
+          <button type="button" :class="['won', { on: stageListOpen === '낙찰' }]" @click="toggleStageList('낙찰')">낙찰 {{ wonCount }}</button>
+          <button type="button" :class="['sold', { on: stageListOpen === '매도' }]" @click="toggleStageList('매도')">매도 {{ soldCount }}</button>
         </span>
       </h1>
+      <!-- 낙찰·매도 물건 — 누른 쪽만 카드로 펼친다 -->
+      <section v-if="stageListOpen" class="fin-stage-list">
+        <header class="fin-stage-head">
+          <strong>{{ stageListOpen }} {{ stageListRows.length }}건</strong>
+          <button type="button" class="fin-stage-close" aria-label="닫기" @click="stageListOpen = ''">×</button>
+        </header>
+        <p v-if="stageListRows.length === 0" class="fin-stage-empty">{{ stageListOpen }}한 물건이 없습니다.</p>
+        <article v-for="a in stageListRows" :key="a.id" class="fin-stage-card" @click="openAuction(a.id)">
+          <p class="top">
+            <span class="date">{{ ymd(stageListOpen === '매도' ? a.sellDate : a.wonDate) }}</span>
+            <span class="court">{{ shortCourt(a.courtName) }}</span>
+          </p>
+          <p class="addr">{{ shortAddr(a.address) }}</p>
+          <div class="nums">
+            <span><small>감정가</small><b>{{ shortMoney(a.metrics?.appraisalValue ?? 0) }}</b></span>
+            <span><small>낙찰가</small><b>{{ shortMoney(bidPriceOf(a)) }}</b></span>
+            <span><small>비용</small><b>{{ shortMoney(costsOf(a)) }}</b></span>
+            <span><small>수익</small><b :class="incomeOf(a) >= 0 ? 'plus' : 'minus'">{{ shortMoney(incomeOf(a)) }}</b></span>
+          </div>
+        </article>
+      </section>
+
       <nav class="fin-tabs">
         <button :class="['fin-tab', { active: activeTab === 'cashFlow' }]" @click="activeTab = 'cashFlow'">자금입출금</button>
         <button :class="['fin-tab', { active: activeTab === 'businessExpense' }]" @click="activeTab = 'businessExpense'">사업지출</button>
@@ -635,14 +682,56 @@ const exportExcel = () => {
   /* 제목줄 아래 구분선 — 물건상세와 같게 */
   border-bottom: 1px solid #e5e7eb;
 }
-/* 낙찰·매도 건수 — 제목 오른쪽에 작은 알약 둘 */
+/* 낙찰·매도 건수 — 제목 오른쪽의 알약 둘. 누르면 그 물건을 카드로 펼친다 */
 .fin-stage-count { margin-left: auto; display: inline-flex; gap: 5px; }
-.fin-stage-count em {
-  font-style: normal; font-size: 11.5px; font-weight: 800;
+.fin-stage-count button {
+  border: 1px solid transparent; font-family: inherit;
+  font-size: 11.5px; font-weight: 800; cursor: pointer;
   padding: 3px 9px; border-radius: 999px; white-space: nowrap;
 }
 .fin-stage-count .won { background: #dce5ff; color: #2a3f8f; }
+.fin-stage-count .won.on { border-color: #2a3f8f; }
 .fin-stage-count .sold { background: #e8f7f1; color: #0f7a5c; }
+.fin-stage-count .sold.on { border-color: #0f7a5c; }
+
+/* 펼친 목록 — 탭 위에 얹는다 */
+.fin-stage-list {
+  margin: 8px 14px 2px; padding: 8px;
+  background: #fff; border: 1px solid #e3e8f0; border-radius: 12px;
+  max-height: 46vh; overflow-y: auto;
+}
+.fin-stage-head { display: flex; align-items: center; margin: 2px 2px 6px; }
+.fin-stage-head strong { font-size: 12.5px; font-weight: 800; color: #374151; }
+.fin-stage-close {
+  margin-left: auto; border: none; background: transparent; cursor: pointer;
+  font-size: 17px; line-height: 1; color: #9ca3af; padding: 0 2px;
+}
+.fin-stage-empty { margin: 14px 0; text-align: center; font-size: 12px; color: #9ca3af; }
+.fin-stage-card {
+  border: 1px solid #eef1f6; border-radius: 10px; padding: 8px 10px 9px;
+  margin-bottom: 6px; cursor: pointer; background: #fbfcfe;
+}
+.fin-stage-card:last-child { margin-bottom: 0; }
+.fin-stage-card .top { margin: 0; display: flex; align-items: baseline; gap: 7px; }
+.fin-stage-card .date { font-size: 12px; font-weight: 800; color: #111827; }
+.fin-stage-card .court { font-size: 11px; font-weight: 700; color: #6b7280; }
+.fin-stage-card .addr {
+  margin: 2px 0 0; font-size: 12px; font-weight: 700; color: #374151;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* 줄 하나 긋고 아래에 돈 이야기 */
+.fin-stage-card .nums {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px;
+  margin-top: 7px; padding-top: 7px; border-top: 1px solid #eef1f6;
+}
+.fin-stage-card .nums span { min-width: 0; text-align: center; }
+.fin-stage-card .nums small { display: block; font-size: 9.5px; font-weight: 700; color: #9ca3af; }
+.fin-stage-card .nums b {
+  display: block; margin-top: 1px; font-size: 12px; font-weight: 800; color: #111827;
+  white-space: nowrap;
+}
+.fin-stage-card .nums b.plus { color: #2a3f8f; }
+.fin-stage-card .nums b.minus { color: #e0574a; }
 
 .fin-tabs {
   /* 네 칸을 정확히 4등분한 알약 카드 */
