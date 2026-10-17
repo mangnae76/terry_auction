@@ -909,7 +909,7 @@ watch(
             :class="['wlp-phase', bidResultTone(item)]"
             :title="bidStageOf(item) ? '누르면 결과를 고릅니다' : '누르면 입찰진행으로 바뀝니다'"
             @click="toggleBidRunning(item, $event)"
-          >{{ bidResultLabel(item) }}</button>
+          >{{ bidResultLabel(item) }}<i v-if="bidStageOf(item)" class="wlp-phase-caret">▾</i></button>
         </div>
       </article>
 
@@ -1596,6 +1596,9 @@ watch(
   background: #dce5ff;
   color: #3850c2;
 }
+/* 마지막 알약의 작은 화살표 — 누르면 메뉴가 열린다는 신호 */
+.wlp-phase-caret { font-style: normal; font-size: 8px; margin-left: 3px; vertical-align: 1px; opacity: 0.75; }
+
 /* 마지막 알약의 메뉴 — 알약 바로 아래, 글 위에 뜬다 */
 .wlp-bid-backdrop { position: fixed; inset: 0; z-index: 120; }
 .wlp-bid-menu {
