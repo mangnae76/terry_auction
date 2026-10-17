@@ -130,47 +130,70 @@ const saleKind = computed(() => {
 const BOX_ICON = 'data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%236b7280%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Crect%20x%3D%272.5%27%20y%3D%274%27%20width%3D%2719%27%20height%3D%275%27%20rx%3D%271%27%2F%3E%3Cpath%20d%3D%27M4.5%209v9.5a1.5%201.5%200%200%200%201.5%201.5h12a1.5%201.5%200%200%200%201.5-1.5V9%27%2F%3E%3Cpath%20d%3D%27M10%2013h4%27%2F%3E%3C%2Fsvg%3E';
 const TRASH_ICON = 'data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27%236b7280%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Cpath%20d%3D%27M3%206h18%27%2F%3E%3Cpath%20d%3D%27M8%206V4a1%201%200%200%201%201-1h6a1%201%200%200%201%201%201v2%27%2F%3E%3Cpath%20d%3D%27M19%206v14a2%202%200%200%201-2%202H7a2%202%200%200%201-2-2V6%27%2F%3E%3Cpath%20d%3D%27M10%2011v6%27%2F%3E%3Cpath%20d%3D%27M14%2011v6%27%2F%3E%3C%2Fsvg%3E';
 const stageOpen = ref(false);
-/** 단계 목록 — 마지막 '입찰진행'은 단계가 아니라 입찰상태라 따로 넣는다 */
-const STAGE_BID_RUNNING = '__bid_running__';
+/** 단계 목록 — 앞의 넷은 단계(status), 뒤의 여섯은 입찰 뒤의 상태(bidStatus)다.
+ *  단계 칸을 늘리지 않고 예전부터 있던 bidStatus 한 칸을 그대로 쓴다. */
+const STAGE_BID_RUNNING = 'bid:진행';
+/** 입찰 뒤의 상태 — 단계 메뉴에서 입찰진행 아래로 이어 붙는다 */
+const BID_STAGES: Array<{ value: string; label: string }> = [
+  { value: '진행', label: '입찰진행' },
+  { value: '대기', label: '입찰대기' },
+  { value: '낙찰', label: '낙찰' },
+  { value: '매도', label: '매도' },
+  { value: '유찰', label: '유찰' },
+  { value: '취소', label: '취소' },
+];
 const stageOptions = computed(() => [
   ...AUCTION_STATUS_ORDER.map((st) => ({ key: st as string, label: AUCTION_STATUS_LABELS[st] })),
-  { key: STAGE_BID_RUNNING, label: '입찰진행' },
+  ...BID_STAGES.map((b) => ({ key: `bid:${b.value}`, label: b.label })),
 ]);
-/** 단계 이름이 '입찰진행'으로 바뀌는 조건 — 단계가 '입찰'이고 입찰상태도 '진행'일 때만.
- *  예상수익분석의 진행상황 박스는 단계를 건드리지 않으므로, 임장 중인 물건을
- *  '입찰'로 표시해 둬도 상단바의 단계 이름은 그대로 '임장'이다. */
-const stageBidRunning = computed(() => (
-  auction.value?.status === '입찰'
-  && (auction.value?.bidStatus ?? '').replace(/^입찰/, '') === '진행'
-));
+/** 지금 켜져 있는 입찰 뒤 상태 — 단계가 '입찰'일 때만 뜻이 있다 */
+const bidStage = computed(() => {
+  if (auction.value?.status !== '입찰') return '';
+  const raw = (auction.value?.bidStatus ?? '').replace(/^입찰/, '');
+  return BID_STAGES.some((b) => b.value === raw) ? raw : '';
+});
 const stageLabel = computed(() => {
-  if (stageBidRunning.value) return '입찰진행';
+  // 입찰 뒤의 상태가 적혀 있으면 그 이름을 쓴다 ('낙찰' · '매도' · '유찰' …)
+  const bid = bidStage.value;
+  if (bid) return BID_STAGES.find((b) => b.value === bid)?.label ?? bid;
   const st = auction.value?.status;
   return st ? AUCTION_STATUS_LABELS[st] ?? String(st) : '단계';
 });
 const stageIsOn = (key: string) => {
-  const running = stageBidRunning.value;
-  if (key === STAGE_BID_RUNNING) return running;
-  return !running && auction.value?.status === key;
+  const bid = bidStage.value;
+  if (key.startsWith('bid:')) return bid !== '' && key === `bid:${bid}`;
+  return bid === '' && auction.value?.status === key;
 };
+/** 오늘 — 'YYYY-MM-DD' */
+const todayYmd = () => {
+  const d = new Date();
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+};
+
 const pickStage = async (key: string) => {
   stageOpen.value = false;
   const target = auction.value;
   if (!target) return;
-  if (key === STAGE_BID_RUNNING) {
-    target.bidStatus = '진행';
-    if (target.status !== '입찰') target.status = '입찰';
-    await store.saveAuction(target);
-    flashToast("'입찰진행'으로 바꿨습니다.", 'success');
+  if (key.startsWith('bid:')) {
+    const value = key.slice(4);
+    const label = BID_STAGES.find((b) => b.value === value)?.label ?? value;
+    const next = { ...target, status: '입찰' as AuctionStatus, bidStatus: value };
+    // 낙찰·매도는 세금신고가 보는 날짜와 이어 둔다 — 비어 있을 때만 오늘로 적는다.
+    // (손으로 적어 둔 날짜가 있으면 그 값이 맞다 — 덮어쓰지 않는다)
+    let dateNote = '';
+    if (value === '낙찰' && !next.wonDate) { next.wonDate = todayYmd(); dateNote = ' · 낙찰일을 오늘로 적었습니다'; }
+    if (value === '매도' && !next.sellDate) { next.sellDate = todayYmd(); dateNote = ' · 매도일을 오늘로 적었습니다'; }
+    await store.saveAuction(next);
+    flashToast(`단계를 '${label}'으로 바꿨습니다.${dateNote}`, 'success');
     return;
   }
   const st = key as AuctionStatus;
   if (target.status === st && !target.bidStatus) return;
-  // 입찰진행 → 입찰산정으로 내려오는 길.
-  // setStatus 는 '입찰' 안에서는 입찰상태를 그대로 두므로 (단계는 그대로인데 진행만 켜져 있을 수 있다)
-  // 여기서 진행 표시를 '대기'로 내려 준다. 안 그러면 입찰산정을 골라도 입찰진행에 머문다.
-  if (st === '입찰' && (target.bidStatus ?? '').replace(/^입찰/, '') === '진행') {
-    await store.saveAuction({ ...target, status: '입찰', bidStatus: '대기' });
+  // 입찰 뒤의 상태(진행·낙찰·매도…)가 켜져 있는데 '입찰산정'을 고르면 그 표시를 내린다.
+  // setStatus 는 '입찰' 안에서는 입찰상태를 건드리지 않아 그대로 머물기 때문이다.
+  if (st === '입찰' && bidStage.value) {
+    await store.saveAuction({ ...target, status: '입찰', bidStatus: '' });
     flashToast("단계를 '입찰산정'으로 바꿨습니다.", 'success');
     return;
   }
@@ -5394,7 +5417,15 @@ const goBack = () => router.back();
           </button>
           <!-- 물건의 '단계' (관심~탈락). 입찰가산정의 '입찰 상태'와는 다른 값이다 -->
           <span class="adp-stage-wrap">
-            <button type="button" :class="['adp-stage-btn', { hot: stageLabel === '입찰진행' }]" @click.stop="stageOpen = !stageOpen">
+            <button
+              type="button"
+              :class="['adp-stage-btn', {
+                hot: stageLabel === '입찰진행',
+                done: stageLabel === '낙찰' || stageLabel === '매도',
+                off: stageLabel === '유찰' || stageLabel === '취소',
+              }]"
+              @click.stop="stageOpen = !stageOpen"
+            >
               {{ stageLabel }}<img :src="chevronDownIcon" :class="['adp-chev sm', { up: !stageOpen }]" alt="" />
             </button>
             <template v-if="stageOpen">
@@ -5403,7 +5434,11 @@ const goBack = () => router.back();
                 <li
                   v-for="opt in stageOptions"
                   :key="opt.key"
-                  :class="['adp-stage-opt', { on: stageIsOn(opt.key), hot: opt.key === STAGE_BID_RUNNING }]"
+                  :class="['adp-stage-opt', {
+                    on: stageIsOn(opt.key),
+                    hot: opt.key === STAGE_BID_RUNNING,
+                    done: opt.key === 'bid:낙찰' || opt.key === 'bid:매도',
+                  }]"
                   @click="pickStage(opt.key)"
                 >{{ opt.label }}</li>
               </ul>
@@ -8775,8 +8810,12 @@ const goBack = () => router.back();
 .adp-stage-opt.on { color: #3850c2; font-weight: 800; background: #f2f5ff; }
 /* 입찰진행 — 마지막 단계라 빨간 글씨로 눈에 띄게 */
 .adp-stage-opt.hot { color: #c22e2e; font-weight: 800; }
+.adp-stage-opt.done { color: #2a3f8f; font-weight: 800; }
 .adp-stage-opt.hot.on { background: #fdeeee; }
 .adp-stage-btn.hot { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; }
+/* 낙찰·매도는 끝난 일이라 파랑, 유찰·취소는 담담한 회색 */
+.adp-stage-btn.done { border-color: #6b85f0; background: #dce5ff; color: #2a3f8f; }
+.adp-stage-btn.off { border-color: #d5dbe6; background: #eef0f4; color: #6b7280; }
 /* 숨기기 — 아이콘 PNG가 흰색 단색이라 보이지 않아 선 그림(SVG)으로 직접 그린다 */
 .adp-hide-btn {
   display: inline-flex; align-items: center; justify-content: center;
