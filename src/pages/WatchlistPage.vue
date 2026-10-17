@@ -408,11 +408,13 @@ const bidStatusOf = (item: AuctionDetail) => (item.bidStatus ?? '').replace(/^�
 const BID_STAGE_LABELS: Record<string, string> = {
   진행: '입찰진행', 대기: '입찰대기', 낙찰: '낙찰', 패찰: '패찰', 매도: '매도', 유찰: '유찰', 취소: '취소',
 };
-/** 지금 켜져 있는 입찰 뒤 상태 — 단계가 '입찰'일 때만 뜻이 있다. '대기'는 아직 안 들어간 것이라 센지 않는다 */
+/** 지금 켜져 있는 입찰 뒤 상태 — 단계가 '입찰'일 때만 뜻이 있다.
+ *  '대기'도 하나의 자리다 — 빼 두었더니 물건상세에서 입찰대기를 골라도
+ *  카드에서는 입찰산정이 켜져, 단계가 뒤로 간 것처럼 보였다. */
 const bidStageOf = (item: AuctionDetail) => {
   if (item.status !== '입찰') return '';
   const raw = bidStatusOf(item);
-  return raw && raw !== '대기' && BID_STAGE_LABELS[raw] ? raw : '';
+  return raw && BID_STAGE_LABELS[raw] ? raw : '';
 };
 /** 4번째 알약 — 늘 '입찰산정'. 입찰 뒤의 상태가 켜져 있으면 '지금 단계'는 5번째이므로 여기는 꺼 둔다 */
 const bidPhaseTone = (item: AuctionDetail) =>
@@ -423,16 +425,17 @@ const bidResultLabel = (item: AuctionDetail) => BID_STAGE_LABELS[bidStageOf(item
 const bidResultTone = (item: AuctionDetail) => {
   const stage = bidStageOf(item);
   if (stage === '진행') return 'phase-bidding';
-  if (stage === '낙찰' || stage === '매도') return 'phase-active';
+  if (stage === '대기' || stage === '낙찰' || stage === '매도') return 'phase-active';
   if (stage === '유찰' || stage === '취소' || stage === '패찰') return 'phase-closed';
   return '';
 };
-/** 마지막 알약 — 꺼져 있을 때만 '입찰진행'으로 켠다.
- *  켜져 있는데 또 누르면 해제되던 것이 버그처럼 읽혔다 (입찰진행을 누르면 입찰산정으로 내려감).
- *  뒤로 가려면 왼쪽의 '입찰산정'을 누른다 — 앞뒤가 알약 자리와 맞아떨어진다. */
+/** 마지막 알약 — 앞으로만 간다.
+ *  아무것도 없거나 '대기'면 '입찰진행'으로 올리고, 그 뒤(낙찰·매도 …)는 그대로 둔다.
+ *  켜져 있는데 또 누르면 해제되던 것이 버그처럼 읽혔다 — 뒤로 가려면 왼쪽 '입찰산정'을 누른다. */
 const toggleBidRunning = async (item: AuctionDetail, evt: MouseEvent) => {
   evt.stopPropagation();
-  if (bidStageOf(item)) return;
+  const stage = bidStageOf(item);
+  if (stage && stage !== '대기') return;
   await store.saveAuction({ ...item, status: '입찰', bidStatus: '진행' });
 };
 /** 4번째 알약 — 입찰 뒤의 상태를 내리고 '입찰산정'으로 돌아온다 */
