@@ -179,10 +179,13 @@ const dayGroups = POST_WIN_DAY;
 /* 제목 한 줄, 안내는 그 아래 한 줄 — 표의 글줄과 같은 자리에서 시작한다 */
 .pw-card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; padding: 14px 14px 11px; }
 .pw-card-head h2 { margin: 0; font-size: 15.3px; font-weight: 800; color: #111827; }
-/* 안내 한 줄 — 제목 밑으로 내려 쓰고, 볼드 없이 까만 글씨로 */
+/* 안내 한 줄 — 제목 밑에 파란 상자로 둔다. 왜 하는 일인지가 중요해서다
+   (권리분석의 .adp-rcase-banner 와 같은 꼴) */
 .pw-card-head small {
   flex: 1 0 100%;
-  font-size: 12.5px; color: #111827; font-weight: 400; line-height: 1.45;
+  box-sizing: border-box; margin-top: 2px; padding: 9px 11px;
+  background: #eaf1ff; border-radius: 8px;
+  font-size: 12.5px; font-weight: 700; color: #1d4ed8; line-height: 1.5;
 }
 /* 물건 고르기 */
 .pw-pick { display: flex; align-items: center; gap: 8px; padding: 0 2px; }
