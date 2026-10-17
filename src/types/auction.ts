@@ -403,8 +403,6 @@ export interface AuctionDetail {
   hidden?: boolean;
   /** 낙찰이후 체크리스트 — 항목 id 마다 했는지 여부 */
   postWinChecks?: Record<string, boolean>;
-  /** 그 일을 한 날 — 항목 id 마다 'YYYY-MM-DD' */
-  postWinDates?: Record<string, string>;
   /** 보관함에 넣은 물건 — 버린 것이 아니라 잠시 내려놓은 것 */
   archived?: boolean;
   /** 별표로 매긴 중요도 — 없으면 빈 별, 1~3을 돌아가며 매긴다 */

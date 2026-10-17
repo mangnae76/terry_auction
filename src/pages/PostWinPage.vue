@@ -42,20 +42,6 @@ const shortAddr = (address?: string) => {
 };
 
 const isChecked = (id: string) => picked.value?.postWinChecks?.[id] === true;
-/** 그 일을 한 날 — 왼쪽 칸에 적는다 */
-const checkDate = (id: string) => picked.value?.postWinDates?.[id] ?? '';
-const setDate = async (id: string, value: string) => {
-  const a = picked.value;
-  if (!a) return;
-  if (!a.postWinDates) a.postWinDates = {};
-  a.postWinDates[id] = value;
-  // 날짜를 적으면 한 일로 본다 (지우면 그대로 둔다)
-  if (value && !a.postWinChecks?.[id]) {
-    if (!a.postWinChecks) a.postWinChecks = {};
-    a.postWinChecks[id] = true;
-  }
-  await store.saveAuction(a);
-};
 const toggleCheck = async (id: string) => {
   const a = picked.value;
   if (!a) return;
@@ -112,17 +98,7 @@ const dayGroups = POST_WIN_DAY;
                 :class="['pw-row', `d${r.depth}`, { done: isChecked(r.id) }]"
                 @click="toggleCheck(r.id)"
               >
-                <!-- 왼쪽에 한 날, 오른쪽에 체크 -->
-                <td class="pw-date">
-                  <input
-                    type="date"
-                    :class="['pw-dateinput', { empty: !checkDate(r.id) }]"
-                    :value="checkDate(r.id)"
-                    :disabled="!picked"
-                    @click.stop
-                    @change="setDate(r.id, ($event.target as HTMLInputElement).value)"
-                  />
-                </td>
+                <!-- 할 일은 왼쪽, 체크는 오른쪽 -->
                 <td :class="['pw-txt', { warn: r.warn }]">{{ r.text }}</td>
                 <td class="pw-chk">
                   <input type="checkbox" :checked="isChecked(r.id)" :disabled="!picked" @click.stop="toggleCheck(r.id)" />
@@ -214,27 +190,13 @@ const dayGroups = POST_WIN_DAY;
 .pw-row { cursor: pointer; }
 .pw-row:hover { background: #f7f9fd; }
 .pw-row td { border-top: 1px solid #f1f3f7; padding: 9px 6px; vertical-align: top; }
-/* 왼쪽 — 한 날. 비었으면 아무 글자도 보이지 않는다 ('연도. 월. 일.'을 지운다) */
-.pw-date { width: 108px; }
-.pw-dateinput {
-  width: 100%; box-sizing: border-box; height: 26px;
-  border: 1px solid #e3e8f0; border-radius: 6px; background: #fff;
-  padding: 0 4px; font-family: inherit; font-size: 11px; color: #111827;
-}
-.pw-dateinput:disabled { background: #f3f4f6; color: #9ca3af; }
-/* 비어 있을 때는 글자도 달력 그림도 숨긴다 — 누르면 그때 달력이 뜬다 */
-.pw-dateinput.empty::-webkit-datetime-edit { color: transparent; }
-.pw-dateinput.empty:focus::-webkit-datetime-edit { color: #111827; }
-.pw-dateinput::-webkit-calendar-picker-indicator { opacity: 0; }
-.pw-dateinput::-webkit-inner-spin-button,
-.pw-dateinput::-webkit-clear-button { display: none; }
 /* 오른쪽 — 했는지 */
 .pw-chk { width: 34px; text-align: center; }
 .pw-chk input { width: 16px; height: 16px; accent-color: #2b6df3; cursor: pointer; }
-.pw-txt { font-size: 12.5px; font-weight: 600; color: #374151; line-height: 1.45; padding-right: 10px !important; }
+.pw-txt { font-size: 12.5px; font-weight: 600; color: #374151; line-height: 1.45; padding: 9px 10px 9px 14px !important; }
 .pw-row.d0 .pw-txt { font-weight: 800; color: #111827; }
-.pw-row.d1 .pw-txt { padding-left: 12px !important; }
-.pw-row.d2 .pw-txt { padding-left: 24px !important; font-weight: 500; color: #4b5563; }
+.pw-row.d1 .pw-txt { padding-left: 26px !important; }
+.pw-row.d2 .pw-txt { padding-left: 38px !important; font-weight: 500; color: #4b5563; }
 .pw-txt.warn { color: #e0574a; }
 .pw-row.done .pw-txt { color: #9ca3af; text-decoration: line-through; }
 
