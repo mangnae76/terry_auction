@@ -92,6 +92,11 @@ const dayGroups = POST_WIN_DAY;
             <small>{{ g.note }}</small>
           </header>
           <table class="pw-tbl">
+            <colgroup>
+              <col class="pw-col-label" />
+              <col />
+              <col class="pw-col-chk" />
+            </colgroup>
             <tbody>
               <tr
                 v-for="r in g.rows"
@@ -99,8 +104,9 @@ const dayGroups = POST_WIN_DAY;
                 :class="['pw-row', `d${r.depth}`, { done: isChecked(r.id) }]"
                 @click="toggleCheck(r.id)"
               >
-                <!-- 할 일은 왼쪽, 체크는 오른쪽 -->
-                <td :class="['pw-txt', { warn: r.warn }]">{{ r.text }}</td>
+                <!-- 이름이 있는 줄은 '이름 | 설명'으로 가른다 -->
+                <td v-if="r.label" class="pw-label"><strong>{{ r.label }}</strong></td>
+                <td :class="['pw-txt', { warn: r.warn }]" :colspan="r.label ? 1 : 2">{{ r.text }}</td>
                 <td class="pw-chk">
                   <input type="checkbox" :checked="isChecked(r.id)" :disabled="!picked" @click.stop="toggleCheck(r.id)" />
                 </td>
@@ -192,7 +198,16 @@ const dayGroups = POST_WIN_DAY;
 .pw-card-head .pw-count {
   margin-left: auto; font-style: normal; font-size: 11.5px; font-weight: 800; color: #2b6df3;
 }
-.pw-tbl { width: 100%; border-collapse: collapse; }
+.pw-tbl { width: 100%; border-collapse: collapse; table-layout: fixed; }
+/* 이름 칸은 권리분석 표와 같은 꼴 — 분홍 바탕에 가운데 */
+.pw-col-label { width: 0; }
+.pw-tbl:has(.pw-label) .pw-col-label { width: 118px; }
+.pw-col-chk { width: 34px; }
+.pw-label {
+  background: #fde7e7; text-align: center; color: #111827; font-weight: 700;
+  padding: 9px 6px !important;
+}
+.pw-label strong { font-size: 12px; line-height: 1.35; }
 .pw-row { cursor: pointer; }
 .pw-row:hover { background: #f7f9fd; }
 .pw-row td { border-top: 1px solid #f1f3f7; padding: 9px 6px; vertical-align: top; }
@@ -205,6 +220,9 @@ const dayGroups = POST_WIN_DAY;
 .pw-row.d2 .pw-txt { padding-left: 38px !important; font-weight: 500; color: #4b5563; }
 .pw-txt.warn { color: #e0574a; }
 .pw-row.done .pw-txt { color: #9ca3af; text-decoration: line-through; }
+/* 이름 칸이 선 줄은 설명을 굵게 쓰지 않는다 — 이름이 큰 항목 노릇을 한다 */
+.pw-row td.pw-label + td.pw-txt { font-weight: 600; color: #374151; }
+.pw-row.done td.pw-label + td.pw-txt { color: #9ca3af; }
 
 .pw-empty {
   margin: 0; padding: 26px 16px 30px; text-align: center;

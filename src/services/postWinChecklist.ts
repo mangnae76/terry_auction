@@ -6,6 +6,9 @@ export interface CheckRow {
   id: string;
   /** 몇 번째 켜인지 — 0 은 큰 항목, 1·2 는 그 아래 */
   depth: 0 | 1 | 2;
+  /** 왼쪽 칸에 세울 이름 — 적어 두면 그 줄은 '이름 | 설명'으로 갈라진다
+   *  (권리분석 표와 같은 꼴) */
+  label?: string;
   text: string;
   /** 눈에 띄게 적어 둘 말 (빨강) */
   warn?: boolean;
@@ -25,9 +28,9 @@ export const POST_WIN_DAY: CheckGroup[] = [
     title: '경매사건 열람',
     note: '점유자 연락처, 공실상태 비번, 추가 인수사항 및 세금 확인 (당일 열람 가능 시)',
     rows: [
-      { id: 'pw.file.court', depth: 0, text: '법원(종합민원실) — 재판기록 열람 및 USB 복제' },
-      { id: 'pw.file.docs', depth: 1, text: '준비서류 : 재판기록 열람복사신청서, 접수, 도장, 신청서, 수입인지' },
-      { id: 'pw.file.online', depth: 0, text: '대법원 전자소송포털(온라인) — 재판기록 열람 및 복사' },
+      { id: 'pw.file.court', depth: 0, label: '법원(종합민원실)', text: '재판기록 열람 및 USB 복제' },
+      { id: 'pw.file.docs', depth: 0, label: '준비서류', text: '재판기록 열람복사신청서, 접수, 도장, 신청서, 수입인지' },
+      { id: 'pw.file.online', depth: 0, label: '대법원 전자소송포털(온라인)', text: '재판기록 열람 및 복사' },
     ],
   },
   {
