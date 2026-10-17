@@ -383,8 +383,9 @@ const exportExcel = () => {
         사업자금관리
         <!-- 낙찰로 들고 있는 물건과 판 물건 — 돈 이야기의 바탕이라 제목 옆에 적어 둔다 -->
         <span class="fin-stage-count">
-          <button type="button" :class="['won', { on: stageListOpen === '낙찰' }]" @click="toggleStageList('낙찰')">낙찰 {{ wonCount }}</button>
-          <button type="button" :class="['sold', { on: stageListOpen === '매도' }]" @click="toggleStageList('매도')">매도 {{ soldCount }}</button>
+          <!-- 건수 앞에 곱하기 — 선정물건의 휴지통·보관함 단추와 같은 표기 -->
+          <button type="button" :class="['won', { on: stageListOpen === '낙찰' }]" @click="toggleStageList('낙찰')">낙찰 <i>×</i>{{ wonCount }}</button>
+          <button type="button" :class="['sold', { on: stageListOpen === '매도' }]" @click="toggleStageList('매도')">매도 <i>×</i>{{ soldCount }}</button>
         </span>
       </h1>
       <nav class="fin-tabs">
@@ -784,6 +785,7 @@ const exportExcel = () => {
   font-size: 11.5px; font-weight: 800; cursor: pointer;
   padding: 3px 9px; border-radius: 999px; white-space: nowrap;
 }
+.fin-stage-count i { font-style: normal; font-size: 9.5px; font-weight: 700; opacity: 0.6; margin: 0 1px; }
 .fin-stage-count .won { background: #dce5ff; color: #2a3f8f; }
 .fin-stage-count .won.on { border-color: #2a3f8f; }
 .fin-stage-count .sold { background: #e8f7f1; color: #0f7a5c; }
