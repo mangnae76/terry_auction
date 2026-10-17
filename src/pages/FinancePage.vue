@@ -51,34 +51,53 @@ const toggleCard = (id: string) => { openCardId.value = openCardId.value === id 
 /** 물건 상세로 가는 길은 따로 둔다 */
 const openAuction = (id: string) => { void router.push(`/auctions/${id}`); };
 
-/** 입찰가 산정표(A안) 한 장 — 물건에 적어 둔 값을 그대로 읽어 적는다 */
-type CalcRow = { label: string; value: number; tone?: 'bid' | 'cost' | 'sum' | 'profit' };
-const calcRows = (a: AuctionDetail): CalcRow[] => {
-  const c = a.bidCost;
-  const bid = bidPriceOf(a);
-  const cost = costsOf(a);
-  const rows: CalcRow[] = [
-    { label: '감정가', value: a.metrics?.appraisalValue ?? 0 },
-    { label: '최저가', value: a.metrics?.minimumBidValue ?? 0 },
-    { label: '입찰가', value: bid, tone: 'bid' },
-    { label: '대출', value: c?.loanAmount ?? 0 },
-    { label: '취득세', value: c?.acquisitionTaxAmount ?? 0, tone: 'cost' },
-    { label: '법무비', value: c?.legalCostAmount ?? 0, tone: 'cost' },
-    { label: '이자', value: c?.interestAmount ?? 0, tone: 'cost' },
-    { label: '중도상환', value: c?.midRepaymentAmount ?? 0, tone: 'cost' },
-    { label: '중개비', value: c?.brokerageAmount ?? 0, tone: 'cost' },
-    { label: '연체관리비', value: c?.arrearsFee ?? 0, tone: 'cost' },
-    { label: '수리비', value: c?.repairCost ?? 0, tone: 'cost' },
-    { label: '명도비', value: c?.evictionCost ?? 0, tone: 'cost' },
-    { label: '광고비', value: c?.advertisingCost ?? 0, tone: 'cost' },
-    { label: '비용 합계', value: cost, tone: 'sum' },
-    { label: '총 투입', value: bid + cost, tone: 'sum' },
-    { label: '예상 매도가', value: a.expectedSaleValue ?? 0 },
-    { label: '예상 수익', value: incomeOf(a), tone: 'profit' },
-  ];
-  // 0원인 비용 줄은 적지 않는다 — 표가 길어지기만 한다
-  return rows.filter((r) => r.value !== 0 || r.tone === 'profit' || r.tone === 'sum');
+/** 수익현황 표 — 물건상세 산정표(A안)의 값을 그대로 읽어 적는다. 여기서는 보기만 한다.
+ *  칸은 구분 · 항목 · 금액 · 세율/근거 넷이다. */
+type CalcRow = {
+  cat?: string; catSpan?: number;
+  label: string; amount?: number; text?: string; note?: string;
+  cls?: string; strong?: boolean;
 };
+const pctText = (part: number, whole: number) => (whole > 0 ? `${((part / whole) * 100).toFixed(2)}%` : '');
+const calcRows = (a: AuctionDetail): CalcRow[] => {
+  const c = a.bidCost ?? ({} as NonNullable<AuctionDetail['bidCost']>);
+  const appr = a.metrics?.appraisalValue ?? 0;
+  const low = a.metrics?.minimumBidValue ?? 0;
+  const bid = bidPriceOf(a) || low;
+  const cost = costsOf(a);
+  const sale = a.expectedSaleValue ?? 0;
+  const gain = sale - bid - cost;
+  const tax = c.incomeTaxAmount ?? 0;
+  const local = c.localTaxAmount ?? 0;
+  const net = bid - (c.loanAmount ?? 0) + cost;
+  const after = gain - tax - local;
+  const rate = (v?: number) => (v && v > 0 ? `${v}%` : '');
+  return [
+    { cat: '취득원가', catSpan: 4, label: '감정가', amount: appr },
+    { label: a.auctionRound ? `${a.auctionRound}(최저가)` : '최저가', amount: low, note: pctText(low, appr) },
+    { label: '낙찰가', amount: bid, cls: 'hi', strong: true, note: pctText(bid, appr) },
+    { label: '취득세', amount: c.acquisitionTaxAmount ?? 0, note: rate(c.acquisitionTaxRate) },
+    { cat: '필요경비', catSpan: 10, label: '대출(사업자)', amount: c.loanAmount ?? 0, note: pctText(c.loanAmount ?? 0, bid) },
+    { label: '법무비/채권', amount: c.legalCostAmount ?? 0, note: rate(c.legalCostRate) },
+    { label: '이자비용', amount: c.interestAmount ?? 0, note: rate(c.interestRate3m) },
+    { label: '중도상환', amount: c.midRepaymentAmount ?? 0, note: rate(c.midRepaymentRate) },
+    { label: '매도중개료', amount: c.brokerageAmount ?? 0, note: rate(c.brokerageRate) },
+    { label: '미납관리비', amount: c.arrearsFee ?? 0 },
+    { label: '수리비', amount: c.repairCost ?? 0 },
+    { label: '명도비', amount: c.evictionCost ?? 0 },
+    { label: '광고비', amount: c.advertisingCost ?? 0, note: '3.3%' },
+    { label: '필요경비 합계', amount: cost, cls: 'hi', strong: true, note: pctText(cost, bid) },
+    { cat: '세후수익', catSpan: 7, label: '매도확정가', amount: sale, cls: 'pink', strong: true },
+    { label: '총투자금', amount: bid + cost, note: '낙찰가+필요경비' },
+    { label: '실투자금', amount: net, note: '낙찰가-대출+필요경비' },
+    { label: '사업소득금액', amount: gain, strong: true, note: '매도가-낙찰가-필요경비' },
+    { label: '사업소득세', amount: tax, strong: true, note: '과세표준' },
+    { label: '지방소득세', amount: local, strong: true, note: '사업소득세 × 10%' },
+    { label: '세후 순이익', amount: after, cls: 'hi', strong: true, note: '매도가-총투자금-세금' },
+    { label: '세후 수익률', text: net > 0 ? `${((after / net) * 100).toFixed(2)}%` : '-', cls: 'hi', strong: true, note: '세후이익/실투자금' },
+  ];
+};
+
 const toggleStageList = (stage: '낙찰' | '매도') => {
   stageListOpen.value = stageListOpen.value === stage ? '' : stage;
 };
@@ -700,17 +719,26 @@ const exportExcel = () => {
               <span><small>수익</small><b :class="incomeOf(a) >= 0 ? 'plus' : 'minus'">{{ shortMoney(incomeOf(a)) }}</b></span>
             </div>
 
-            <!-- 입찰가 산정표 A안 — 누른 카드 밑에 그대로 편다 (보기만 한다) -->
+            <!-- 수익현황 — 누른 카드 밑에 산정표(A안)를 그대로 편다 (보기만 한다) -->
             <div v-if="openCardId === a.id" class="fin-calc" @click.stop>
               <p class="fin-calc-head">
-                입찰가 산정표 <em>A안</em>
+                수익현황 <em>A안</em>
                 <button type="button" class="fin-calc-go" @click="openAuction(a.id)">물건 열기 ›</button>
               </p>
               <table class="fin-calc-tbl">
-                <tr v-for="r in calcRows(a)" :key="r.label" :class="r.tone">
-                  <th>{{ r.label }}</th>
-                  <td>{{ r.value.toLocaleString('ko-KR') }}</td>
-                </tr>
+                <thead>
+                  <tr><th>구분</th><th>항목</th><th class="r">금액</th><th class="r">세율/근거</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(r, ri) in calcRows(a)" :key="`${r.label}-${ri}`" :class="r.cls">
+                    <td v-if="r.catSpan" :rowspan="r.catSpan" class="cat">{{ r.cat }}</td>
+                    <td :class="{ b: r.strong }">{{ r.label }}</td>
+                    <td class="r" :class="{ b: r.strong, neg: (r.amount ?? 0) < 0 }">
+                      {{ r.text ?? ((r.amount ?? 0) !== 0 ? `${(r.amount ?? 0).toLocaleString('ko-KR')}원` : '–') }}
+                    </td>
+                    <td class="r f">{{ r.note }}</td>
+                  </tr>
+                </tbody>
               </table>
             </div>
           </article>
@@ -772,23 +800,28 @@ const exportExcel = () => {
   margin-left: auto; border: none; background: transparent; cursor: pointer;
   font-family: inherit; font-size: 11px; font-weight: 700; color: #2b6df3; padding: 0;
 }
-.fin-calc-tbl { width: 100%; border-collapse: collapse; }
+/* 물건상세의 산정표와 같은 꼴 — 머리줄은 남색, 구분 칸은 회색, 짚을 줄은 노랑·분홍 */
+.fin-calc-tbl { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .fin-calc-tbl th,
 .fin-calc-tbl td {
-  padding: 4px 2px; font-size: 11.5px; font-weight: 500; color: #374151;
-  border-bottom: 1px solid #f1f4f9;
+  border: 1px solid #e5e7eb; padding: 4px 5px;
+  font-size: 11px; font-weight: 500; color: #111827; word-break: keep-all;
 }
-.fin-calc-tbl th { text-align: left; color: #6b7280; font-weight: 500; }
-.fin-calc-tbl td { text-align: right; color: #111827; font-variant-numeric: tabular-nums; }
-.fin-calc-tbl tr.bid td { font-weight: 800; }
-.fin-calc-tbl tr.cost th,
-.fin-calc-tbl tr.cost td { color: #2b6df3; }
-.fin-calc-tbl tr.sum th,
-.fin-calc-tbl tr.sum td { background: #f7f9fd; font-weight: 800; color: #111827; }
-.fin-calc-tbl tr.profit th { color: #e0574a; }
-.fin-calc-tbl tr.profit td { color: #e0574a; font-weight: 800; }
-.fin-calc-tbl tr:last-child th,
-.fin-calc-tbl tr:last-child td { border-bottom: none; }
+.fin-calc-tbl thead th { background: #1f3a72; color: #fff; border-bottom: none; font-weight: 700; }
+.fin-calc-tbl thead th:nth-child(1) { width: 17%; }
+.fin-calc-tbl thead th:nth-child(2) { width: 27%; }
+.fin-calc-tbl thead th:nth-child(4) { width: 26%; }
+.fin-calc-tbl .r { text-align: right; font-variant-numeric: tabular-nums; }
+.fin-calc-tbl .cat {
+  background: #f3f4f6; font-weight: 700; text-align: center; vertical-align: middle;
+}
+.fin-calc-tbl .f { color: #6b7280; font-size: 10px; }
+.fin-calc-tbl .b { font-weight: 800; }
+.fin-calc-tbl .neg { color: #e0574a; }
+.fin-calc-tbl tr.hi td { background: #fefae0; }
+.fin-calc-tbl tr.hi td.cat { background: #f3f4f6; }
+.fin-calc-tbl tr.pink td { background: #fdeef0; }
+.fin-calc-tbl tr.pink td.cat { background: #f3f4f6; }
 
 /* 팝업 — 가짓수가 늘어도 아래 내용이 밀리지 않게 화면 위에 띄운다 */
 .fin-pop-veil { position: fixed; inset: 0; z-index: 70; background: rgba(17, 24, 39, 0.35); }
