@@ -401,6 +401,8 @@ export interface AuctionDetail {
   isInterested: boolean;
   /** 휴지통에 넣은 물건 — DB에는 남겨두고 화면에서만 제외한다 */
   hidden?: boolean;
+  /** 낙찰이후 체크리스트 — 항목 id 마다 했는지 여부 */
+  postWinChecks?: Record<string, boolean>;
   /** 보관함에 넣은 물건 — 버린 것이 아니라 잠시 내려놓은 것 */
   archived?: boolean;
   /** 별표로 매긴 중요도 — 없으면 빈 별, 1~3을 돌아가며 매긴다 */

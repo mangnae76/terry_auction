@@ -2,8 +2,12 @@
 // 낙찰 이후 — 명도와 매도까지의 일을 모아 둘 자리.
 // 틀은 자금관리(.fin-shell)와 같은 짜임이다: 위는 붙박이(제목 + 탭), 아래만 구른다.
 // 탭마다 무엇을 담을지는 사용자가 정해 준다 — 지금은 자리만 잡아 둔다.
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
+import { useAuctionStore } from '../stores/auctionStore';
+import { POST_WIN_DAY } from '../services/postWinChecklist';
+import { bidStageOf } from '../utils/stageLabel';
+import type { AuctionDetail } from '../types/auction';
 
 type TabKey = 'win' | 'balance' | 'evict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
@@ -15,6 +19,39 @@ const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
 ];
 const activeTab = ref<TabKey>('win');
 const current = () => TABS.find((t) => t.key === activeTab.value) ?? TABS[0];
+
+const store = useAuctionStore();
+/** 낙찰 뒤의 물건만 고른다 — 낙찰·매도 단계 */
+const ownedAuctions = computed(() => store.auctions.filter((a) => {
+  const stage = bidStageOf(a);
+  return stage === '낙찰' || stage === '매도';
+}));
+const pickedId = ref('');
+/** 고른 물건이 사라지거나 아직 안 골랐으면 첫 물건을 든다 */
+watch(ownedAuctions, (list) => {
+  if (!list.some((a) => a.id === pickedId.value)) pickedId.value = list[0]?.id ?? '';
+}, { immediate: true });
+const picked = computed<AuctionDetail | null>(
+  () => ownedAuctions.value.find((a) => a.id === pickedId.value) ?? null,
+);
+/** 주소는 동부터 짧게 — 고르는 칸에 들어가야 한다 */
+const shortAddr = (address?: string) => {
+  const parts = String(address ?? '').trim().split(/\s+/).filter(Boolean);
+  const dong = parts.findIndex((v) => /[동읍면리]\d*$/.test(v) && !/^\d/.test(v));
+  return (dong >= 0 ? parts.slice(dong) : parts.slice(-2)).join(' ');
+};
+
+const isChecked = (id: string) => picked.value?.postWinChecks?.[id] === true;
+const toggleCheck = async (id: string) => {
+  const a = picked.value;
+  if (!a) return;
+  if (!a.postWinChecks) a.postWinChecks = {};
+  a.postWinChecks[id] = !a.postWinChecks[id];
+  await store.saveAuction(a);
+};
+/** 묶음마다 '몇 개 중 몇 개' */
+const doneCount = (rows: Array<{ id: string }>) => rows.filter((r) => isChecked(r.id)).length;
+const dayGroups = POST_WIN_DAY;
 </script>
 
 <template>
@@ -35,7 +72,43 @@ const current = () => TABS.find((t) => t.key === activeTab.value) ?? TABS[0];
     </div>
 
     <div class="pw-body">
-      <section class="pw-card">
+      <!-- 어느 물건의 일인지 먼저 고른다 — 체크는 그 물건에 남는다 -->
+      <div v-if="activeTab === 'win'" class="pw-pick">
+        <small>물건</small>
+        <select v-model="pickedId" class="pw-select" :disabled="ownedAuctions.length === 0">
+          <option v-if="ownedAuctions.length === 0" value="">낙찰한 물건이 없습니다</option>
+          <option v-for="a in ownedAuctions" :key="a.id" :value="a.id">
+            {{ shortAddr(a.address) || a.caseNumber }}
+          </option>
+        </select>
+      </div>
+
+      <template v-if="activeTab === 'win'">
+        <section v-for="g in dayGroups" :key="g.key" class="pw-card">
+          <header class="pw-card-head">
+            <h2>{{ g.title }}</h2>
+            <small>{{ g.note }}</small>
+            <em class="pw-count">{{ doneCount(g.rows) }}/{{ g.rows.length }}</em>
+          </header>
+          <table class="pw-tbl">
+            <tbody>
+              <tr
+                v-for="r in g.rows"
+                :key="r.id"
+                :class="['pw-row', `d${r.depth}`, { done: isChecked(r.id) }]"
+                @click="toggleCheck(r.id)"
+              >
+                <td class="pw-chk">
+                  <input type="checkbox" :checked="isChecked(r.id)" :disabled="!picked" @click.stop="toggleCheck(r.id)" />
+                </td>
+                <td :class="['pw-txt', { warn: r.warn }]">{{ r.text }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </template>
+
+      <section v-else class="pw-card">
         <header class="pw-card-head">
           <h2>{{ current().label }}</h2>
           <small>{{ current().desc }}</small>
@@ -91,6 +164,33 @@ const current = () => TABS.find((t) => t.key === activeTab.value) ?? TABS[0];
 .pw-card-head { display: flex; align-items: baseline; gap: 8px; padding: 16px 16px 12px; }
 .pw-card-head h2 { margin: 0; font-size: 15.3px; font-weight: 800; color: #111827; }
 .pw-card-head small { font-size: 11.5px; color: #9ca3af; font-weight: 600; }
+/* 물건 고르기 */
+.pw-pick { display: flex; align-items: center; gap: 8px; padding: 0 2px; }
+.pw-pick small { font-size: 11px; font-weight: 700; color: #6b7280; flex: 0 0 auto; }
+.pw-select {
+  flex: 1 1 auto; min-width: 0; height: 34px;
+  border: 1px solid #dde3ee; border-radius: 9px; background: #fff;
+  padding: 0 10px; font-family: inherit; font-size: 13px; color: #111827;
+}
+.pw-select:disabled { background: #f3f4f6; color: #9ca3af; }
+
+/* 체크리스트 표 */
+.pw-card-head .pw-count {
+  margin-left: auto; font-style: normal; font-size: 11.5px; font-weight: 800; color: #2b6df3;
+}
+.pw-tbl { width: 100%; border-collapse: collapse; }
+.pw-row { cursor: pointer; }
+.pw-row:hover { background: #f7f9fd; }
+.pw-row td { border-top: 1px solid #f1f3f7; padding: 9px 6px; vertical-align: top; }
+.pw-chk { width: 34px; text-align: center; }
+.pw-chk input { width: 16px; height: 16px; accent-color: #2b6df3; cursor: pointer; }
+.pw-txt { font-size: 12.5px; font-weight: 600; color: #374151; line-height: 1.45; padding-right: 10px !important; }
+.pw-row.d0 .pw-txt { font-weight: 800; color: #111827; }
+.pw-row.d1 .pw-txt { padding-left: 10px !important; }
+.pw-row.d2 .pw-txt { padding-left: 22px !important; font-weight: 500; color: #4b5563; }
+.pw-txt.warn { color: #e0574a; }
+.pw-row.done .pw-txt { color: #9ca3af; text-decoration: line-through; }
+
 .pw-empty {
   margin: 0; padding: 26px 16px 30px; text-align: center;
   font-size: 12.5px; color: #9ca3af; font-weight: 600;
