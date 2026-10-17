@@ -1596,8 +1596,13 @@ watch(
   background: #dce5ff;
   color: #3850c2;
 }
-/* 마지막 알약의 작은 화살표 — 누르면 메뉴가 열린다는 신호 */
-.wlp-phase-caret { font-style: normal; font-size: 8px; margin-left: 3px; vertical-align: 1px; opacity: 0.75; }
+/* 마지막 알약의 화살표 — 알약 사이의 ▶ 와 같은 크기로, 오른쪽 끝에 붙인다 */
+.wlp-phase-caret {
+  position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  font-style: normal; font-size: 10px; line-height: 1; opacity: 0.8;
+}
+/* 화살표가 글자에 닿지 않게 그 알약만 오른쪽을 조금 더 비운다 */
+.wlp-phase-row .wlp-phase:has(.wlp-phase-caret) { position: relative; padding-right: 14px; }
 
 /* 마지막 알약의 메뉴 — 알약 바로 아래, 글 위에 뜬다 */
 .wlp-bid-backdrop { position: fixed; inset: 0; z-index: 120; }
