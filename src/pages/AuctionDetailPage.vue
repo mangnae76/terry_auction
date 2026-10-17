@@ -6111,11 +6111,11 @@ const goBack = () => router.back();
           <div v-if="!isCollapsed('profit')" class="adp-profit-dates">
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
               <em>낙찰일</em>
-              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ shortYmd(auction.wonDate) || '날짜입력' }}</span></span>
+              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) }">{{ shortYmd(auction.wonDate) || '날짜입력' }}</span></span>
             </button>
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'sellDate'">
               <em>매도일</em>
-              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ shortYmd(auction.sellDate) || '날짜입력' }}</span></span>
+              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.sellDate) }">{{ shortYmd(auction.sellDate) || '날짜입력' }}</span></span>
             </button>
             <!-- 표 스텝퍼와 별은 한 묶음 — 자리가 모자라 줄이 내려가도 둘이 같이 내려간다 -->
             <span class="adp-pd-tail">
@@ -9410,6 +9410,8 @@ const goBack = () => router.back();
   width: 88px; box-sizing: border-box; padding: 5px 4px; gap: 3px;
 }
 .adp-pd-box span { font-size: 12px; font-weight: 400; color: #111827; white-space: nowrap; }
+/* 아직 안 고른 칸의 '날짜입력' 은 안내 글이라 회색으로 */
+.adp-pd-box span.ph { color: #9ca3af; }
 .adp-pd-cal { color: #9ca3af; flex: 0 0 auto; }
 /* 비중을 기본값으로 — 날짜 옆에 작게 */
 .adp-pd-reset {
