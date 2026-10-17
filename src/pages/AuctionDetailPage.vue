@@ -133,20 +133,26 @@ const stageOpen = ref(false);
 /** 단계 목록 — 앞의 넷은 단계(status), 뒤의 여섯은 입찰 뒤의 상태(bidStatus)다.
  *  단계 칸을 늘리지 않고 예전부터 있던 bidStatus 한 칸을 그대로 쓴다. */
 const STAGE_BID_RUNNING = 'bid:진행';
-/** 입찰 뒤의 상태 — 단계 메뉴에서 입찰진행 아래로 이어 붙는다 */
-const BID_STAGES: Array<{ value: string; label: string }> = [
-  { value: '진행', label: '입찰진행' },
-  { value: '대기', label: '입찰대기' },
-  { value: '낙찰', label: '낙찰' },
-  { value: '패찰', label: '패찰' },
-  { value: '매도', label: '매도' },
-  { value: '유찰', label: '유찰' },
-  { value: '취소', label: '취소' },
+/** 입찰 뒤의 상태 — 단계 메뉴에서 입찰산정 아래로 이어 붙는다.
+ *  속으로는 세 켜(層)다: 입찰장에서의 일(진행·대기) → 그날의 결과(낙찰·패찰·유찰·취소) → 끝(매도).
+ *  같은 켜끼리 묶어 두면 '어디까지 왔나'가 한눈에 읽힌다. */
+const BID_STAGES: Array<{ value: string; label: string; tier: 1 | 2 | 3 }> = [
+  { value: '진행', label: '입찰진행', tier: 1 },
+  { value: '대기', label: '입찰대기', tier: 1 },
+  { value: '낙찰', label: '낙찰', tier: 2 },
+  { value: '패찰', label: '패찰', tier: 2 },
+  { value: '유찰', label: '유찰', tier: 2 },
+  { value: '취소', label: '취소', tier: 2 },
+  { value: '매도', label: '매도', tier: 3 },
 ];
 const stageOptions = computed(() => [
-  ...AUCTION_STATUS_ORDER.map((st) => ({ key: st as string, label: AUCTION_STATUS_LABELS[st] })),
-  ...BID_STAGES.map((b) => ({ key: `bid:${b.value}`, label: b.label })),
+  ...AUCTION_STATUS_ORDER.map((st) => ({ key: st as string, label: AUCTION_STATUS_LABELS[st], tier: 0 })),
+  ...BID_STAGES.map((b) => ({ key: `bid:${b.value}`, label: b.label, tier: b.tier })),
 ]);
+/** 켜가 바뀌는 자리에 가는 선을 하나 긋는다 */
+const stageBreakBefore = (i: number) => (
+  i > 0 && stageOptions.value[i].tier !== stageOptions.value[i - 1].tier
+);
 /** 지금 켜져 있는 입찰 뒤 상태 — 단계가 '입찰'일 때만 뜻이 있다 */
 const bidStage = computed(() => {
   if (auction.value?.status !== '입찰') return '';
@@ -5433,12 +5439,13 @@ const goBack = () => router.back();
               <div class="adp-stage-backdrop" @click="stageOpen = false" />
               <ul class="adp-stage-list" @click.stop>
                 <li
-                  v-for="opt in stageOptions"
+                  v-for="(opt, oi) in stageOptions"
                   :key="opt.key"
                   :class="['adp-stage-opt', {
                     on: stageIsOn(opt.key),
                     hot: opt.key === STAGE_BID_RUNNING,
                     done: opt.key === 'bid:낙찰' || opt.key === 'bid:매도',
+                    sep: stageBreakBefore(oi),
                   }]"
                   @click="pickStage(opt.key)"
                 >{{ opt.label }}</li>
@@ -8812,6 +8819,8 @@ const goBack = () => router.back();
 /* 입찰진행 — 마지막 단계라 빨간 글씨로 눈에 띄게 */
 .adp-stage-opt.hot { color: #c22e2e; font-weight: 800; }
 .adp-stage-opt.done { color: #2a3f8f; font-weight: 800; }
+/* 켜가 바뀌는 자리 — 가는 선 하나로 묶음을 가른다 */
+.adp-stage-opt.sep { border-top: 1px solid #eef1f6; margin-top: 3px; padding-top: 8px; }
 .adp-stage-opt.hot.on { background: #fdeeee; }
 .adp-stage-btn.hot { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; }
 /* 낙찰·매도는 끝난 일이라 파랑, 유찰·취소는 담담한 회색 */
