@@ -14,6 +14,8 @@ export interface CheckRow {
   qty?: string;
   /** 비고 — 부수 오른쪽에 제 칸으로 선다 */
   memo?: string;
+  /** 갈 곳 — 적어 두면 그 줄의 글이 링크가 된다 (편집에서 적는다) */
+  url?: string;
   /** 눈에 띄게 적어 둘 말 (빨강) */
   warn?: boolean;
 }
