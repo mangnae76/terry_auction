@@ -91,6 +91,7 @@ const router = createRouter({
       // 낙찰 이후 — 명도·매도 과정을 모을 자리
       path: '/post-win',
       name: 'post-win',
+      meta: { public: true },
       component: () => import('../pages/PostWinPage.vue'),
     },
     {

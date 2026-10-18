@@ -51,8 +51,15 @@ const TITLE_ALSO: Record<string, { from: string; to: string }> = {
   'ev.flow': { from: '명도 절차', to: '명도절차' },
 };
 
+/** 기본 글에서 뺀 안내 줄 — 저장본에 그 글이 그대로면 같이 지운다 */
+const NOTE_CLEAR: Record<string, string[]> = {
+  'ev.flow': ['낙찰에서 명도까지 가는 길 — 날짜는 대략이다.'],
+  'ev.step': ['낙찰 받고 당장 무엇을 할지 — 때마다 할 일이 다르다.'],
+};
+
 const migrate = (list: CheckGroup[]): CheckGroup[] => list.map((g) => ({
   ...g,
+  note: NOTE_CLEAR[g.key]?.includes((g.note ?? '').trim()) ? '' : g.note,
   title: TITLE_FIX[g.key]?.from === (g.title ?? '').trim()
     ? TITLE_FIX[g.key].to
     : (TITLE_ALSO[g.key]?.from === (g.title ?? '').trim() ? TITLE_ALSO[g.key].to : g.title),

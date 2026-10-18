@@ -867,9 +867,9 @@ const toggleSection = (key: string) => {
 .pw-br-pill {
   display: flex; align-items: center; justify-content: center; margin: 0;
   align-self: stretch; min-height: 34px;
-  border: 1px solid #b9c7e4; border-radius: 4px; background: #dce5ff;
+  border: 1px solid #c9d3e3; border-radius: 4px; background: #eef2fb;
   padding: 5px 8px; text-align: center;
-  font-size: 12.5px; font-weight: 700; color: #3850c2; word-break: keep-all;
+  font-size: 12.5px; font-weight: 700; color: #1f2937; word-break: keep-all;
 }
 .pw-br-step {
   display: grid; grid-template-columns: 124px 16px 1fr; gap: 6px;
@@ -913,8 +913,8 @@ const toggleSection = (key: string) => {
 .pw-bx-item {
   display: flex; align-items: center; justify-content: center;
   min-height: 34px; padding: 5px 8px;
-  border: 1px solid #b9c7e4; border-radius: 4px; background: #dce5ff;
-  font-size: 12px; font-weight: 700; color: #3850c2; line-height: 1.35;
+  border: 1px solid #c9d3e3; border-radius: 4px; background: #eef2fb;
+  font-size: 12px; font-weight: 700; color: #1f2937; line-height: 1.35;
   text-align: center; word-break: keep-all;
 }
 

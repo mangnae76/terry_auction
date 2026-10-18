@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 12;
+export const POST_WIN_EVICT_VERSION = 13;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
@@ -45,7 +45,7 @@ export const POST_WIN_EVICT: CheckGroup[] = [
         {
           no: '2',
           label: '경매물건 세대 방문',
-          items: ['낙찰자임을 알리는 포스트잇 붙이기', '주변세대(위·아래·옆) 방문 후 점유 상태 확인', '점유자 만나기'],
+          items: ['낙찰자임을 알리는 포스트잇 붙이기', '주변세대(위·아래·옆) 방문 후 점유 상태 확인', '점유자 만나 당일 협상 내용 고지'],
         },
       ],
       notes: [
