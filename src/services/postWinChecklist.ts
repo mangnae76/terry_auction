@@ -45,6 +45,10 @@ export const sectionView = (sec: CheckSection): { label: string; href: string } 
   return { label: rule?.label ?? raw, href: sec.href || rule?.href || '' };
 };
 
+/** 기본 글의 판. 글을 고쳐 내보낼 때 올린다 — 예전 판으로 저장해 둔 표는
+ *  새 글로 갈아 끼운다(손으로 고친 것은 그때 사라진다). */
+export const POST_WIN_VERSION = 2;
+
 export const POST_WIN_DAY: CheckGroup[] = [
   {
     key: 'file',
@@ -68,28 +72,30 @@ export const POST_WIN_DAY: CheckGroup[] = [
   },
   {
     key: 'visit',
-    title: '물건지 방문',
-    note: '빠른 명도를 위해 잔금 납부 전에 협상을 진행한다',
+    title: '유선연락 첫통화 or 물건지 방문',
+    note: '빠른 명도를 위해 잔금납부 전 협상을 진행한다.',
     sections: [
       {
-        label: '방문',
+        // 첫통화든 방문이든 들고 가는 원칙은 같다 — 둘을 한 묶음으로 본다
+        label: '협상 원칙',
         rows: [
-          { id: 'pw.visit.meet', depth: 0, text: '점유자 미팅 — 협상의 우위를 간접적으로 인지' },
-          { id: 'pw.visit.name', depth: 0, text: '점유자 이름과 임대차 계약 정보 — 우편물·전기·수도로 확인' },
+          { id: 'pw.visit.p1', depth: 0, text: '협상의 우위를 인지 시키는 것이 핵심' },
+          { id: 'pw.visit.p2', depth: 0, text: '명도협상 시 잔금납부일 버퍼를 확보' },
+          { id: 'pw.visit.p3', depth: 0, text: '협상마지노선은 잔금납부일까지' },
+          { id: 'pw.visit.p4', depth: 0, text: '이사비는 X', warn: true },
         ],
       },
       {
-        label: '유선연락',
+        label: '명도협상',
         rows: [
-          { id: 'pw.visit.call', depth: 0, text: '점유자 연락처로 유선 연락' },
-          { id: 'pw.visit.deal', depth: 0, text: '잔금 납부 일정 협의로 이사일 협상, 납부 뒤에는 불법 점유 법적 절차를 고지' },
-          { id: 'pw.visit.deal1', depth: 1, text: '잔금 납부일을 최대한 미뤄 이사를 도와주는 틀로 협상' },
-          { id: 'pw.visit.deal2', depth: 1, text: '깔세는 보증금이 거의 없고 월세도 미납 가능성이 크다' },
-          { id: 'pw.visit.deal3', depth: 1, text: '권리 없이 점유 중임을 알린다 (전입·점유·계약·점유기간 확인)' },
-          { id: 'pw.visit.deal4', depth: 1, text: '잔금 납부가 빠르면 부당이득반환을 청구할 수 있다' },
-          { id: 'pw.visit.deal5', depth: 1, text: '협상 마지노선은 잔금 납부일까지 (4~5주)' },
-          { id: 'pw.visit.deal6', depth: 1, text: '잔금 납부는 미루되 퇴거 날짜 협상을 요청 → 계약서 작성' },
-          { id: 'pw.visit.deal7', depth: 1, text: '이사비는 먼저 꺼내지 않는다', warn: true },
+          { id: 'pw.visit.n1', depth: 0, text: '경매낙찰자임을 알림 > 동 호수 확인' },
+          { id: 'pw.visit.n2', depth: 0, text: '잔금납부전 집을 비워야 하는 이유로 사전연락 했음을 알림' },
+          { id: 'pw.visit.n3', depth: 0, text: '잔금납부가 빠르면 부당이득반환 청구를 할 수 있음을 고지' },
+          { id: 'pw.visit.n4', depth: 0, text: '협상 마지노선은 잔금납부일까지 (5주)' },
+          { id: 'pw.visit.n5', depth: 0, text: '5주가 지나가면 법적절차를 진행 할 수 있는 상황임을 알림' },
+          { id: 'pw.visit.n6', depth: 0, text: '권리 없이 점유하고 있음을 알림 (전입, 점유, 계약, 점유기간확인)' },
+          { id: 'pw.visit.n7', depth: 0, text: '도와줄 수 있는 부분은 잔금납부일을 미루어 주는것' },
+          { id: 'pw.visit.n8', depth: 0, text: '이사를 도와주는 프레임으로 협상 > 계약서 작성 (절차대로)' },
         ],
       },
       {

@@ -6,7 +6,7 @@
 // 여기와 섞이지 않는다 — 다만 줄을 지우면 그 줄의 체크는 보이지 않게 된다.
 import { computed, ref } from 'vue';
 import { loadUserPrefs, saveUserPrefs } from './userPrefsRepository';
-import { POST_WIN_DAY, type CheckGroup } from './postWinChecklist';
+import { POST_WIN_DAY, POST_WIN_VERSION, type CheckGroup } from './postWinChecklist';
 
 /** 표를 손으로 고칠 수 있게 할지.
  *  글을 다 다듬고 나면 여기만 false 로 두면 된다 — 편집 단추가 사라지고
@@ -46,11 +46,16 @@ export const usePostWinBook = () => {
     loadedFor.value = uid;
     const prefs = await loadUserPrefs(uid);
     const saved = prefs?.postWinDay;
-    if (Array.isArray(saved) && saved.length > 0) groups.value = migrate(clone(saved) as CheckGroup[]);
+    // 기본 글이 새 판으로 바뀌었으면 저장해 둔 옛 판은 쓰지 않는다 —
+    // 안 그러면 새로 쓴 글이 화면에 영영 나타나지 않는다
+    const fresh = (prefs?.postWinDayVersion ?? 0) >= POST_WIN_VERSION;
+    if (fresh && Array.isArray(saved) && saved.length > 0) {
+      groups.value = migrate(clone(saved) as CheckGroup[]);
+    }
   };
   const save = async (uid: string, list: CheckGroup[]) => {
     groups.value = clone(list);
-    if (uid) await saveUserPrefs(uid, { postWinDay: clone(list) });
+    if (uid) await saveUserPrefs(uid, { postWinDay: clone(list), postWinDayVersion: POST_WIN_VERSION });
   };
   /** 기본 글로 되돌린다 */
   const reset = async (uid: string) => { await save(uid, defaultGroups()); };
