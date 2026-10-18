@@ -435,6 +435,44 @@ const toggleSection = (key: string) => {
           <div v-if="editing || !isCollapsed(g.key)" class="pw-card-body">
             <textarea v-if="editing" v-model="g.note" class="pw-earea note" rows="2" placeholder="안내 한 줄" />
             <p v-else-if="g.note" class="pw-note">{{ g.note }}</p>
+            <!-- 가로 띠 그림 — 날짜를 찍어 가는 길 -->
+            <div v-if="!editing && g.timeline" class="pw-tl">
+              <span v-if="g.timeline.chip" class="pw-chip">{{ g.timeline.chip }}</span>
+              <div class="pw-tl-grid" :style="{ '--n': g.timeline.points.length }">
+                <!-- 길 위에 얹는 쪽지 -->
+                <span
+                  v-if="g.timeline.span"
+                  class="pw-tl-span"
+                  :style="{ gridColumn: `${g.timeline.span.from + 1} / ${g.timeline.span.to + 2}` }"
+                >{{ g.timeline.span.text }}</span>
+                <span
+                  v-for="(pt, pi) in g.timeline.points"
+                  :key="`d-${pi}`"
+                  class="pw-tl-day"
+                  :style="{ gridColumn: pi + 1 }"
+                >{{ pt.day }}</span>
+                <span class="pw-tl-line" :style="{ gridColumn: `1 / ${g.timeline.points.length + 1}` }" />
+                <span
+                  v-for="pi in g.timeline.points.length"
+                  :key="`o-${pi}`"
+                  class="pw-tl-dot"
+                  :style="{ gridColumn: pi }"
+                />
+                <span
+                  v-for="(pt, pi) in g.timeline.points"
+                  :key="`l-${pi}`"
+                  class="pw-tl-label"
+                  :style="{ gridColumn: pi + 1 }"
+                >{{ pt.label }}</span>
+              </div>
+            </div>
+            <!-- 나란히 세우는 네모들 -->
+            <div v-if="!editing && g.boxes" class="pw-bx">
+              <span v-if="g.boxes.chip" class="pw-chip">{{ g.boxes.chip }}</span>
+              <div class="pw-bx-row">
+                <span v-for="(bx, bxi) in g.boxes.items" :key="`bx-${bxi}`" class="pw-bx-item">{{ bx }}</span>
+              </div>
+            </div>
             <!-- 차례 그림 — 네모와 화살표 (ⓘ 의 진행 순서와 같은 꼴) -->
             <div v-if="!editing && g.flow" class="pw-steps">
               <span
@@ -445,7 +483,7 @@ const toggleSection = (key: string) => {
                 <em v-if="st.day">{{ st.day }}</em>{{ st.name }}
               </span>
             </div>
-            <table :class="['pw-tbl', { edit: editing, biz: activeTab !== 'win' }]">
+            <table v-if="editing || g.sections.length" :class="['pw-tbl', { edit: editing, biz: activeTab !== 'win' }]">
               <colgroup>
                 <col v-if="editing || hasLabels(g)" class="pw-col-label" />
                 <col />
@@ -731,6 +769,57 @@ const toggleSection = (key: string) => {
   margin: 0 0 6px; padding: 7px 10px;
   background: #eaf1ff; border-radius: 8px;
   font-size: 12.5px; font-weight: 700; color: #1d4ed8; line-height: 1.5;
+}
+
+/* 가로 띠 그림 — 쪽지 · 날짜 · 길 · 이름 네 켜로 쌓는다 */
+.pw-chip {
+  display: inline-block; margin: 2px 0 8px;
+  border: 1.5px solid #2b6df3; border-radius: 6px; background: #fff;
+  padding: 5px 11px; font-size: 12.5px; font-weight: 800; color: #1d3d75;
+}
+.pw-tl { margin-bottom: 4px; }
+.pw-tl-grid {
+  display: grid; grid-template-columns: repeat(var(--n), 1fr);
+  grid-template-rows: auto auto 14px auto;
+  align-items: center; row-gap: 3px;
+  padding: 0 2px 6px;
+}
+.pw-tl-span {
+  grid-row: 1; justify-self: center;
+  background: #f7e8ec; border-radius: 4px; padding: 3px 8px;
+  font-size: 10.5px; font-weight: 700; color: #6b4a55; white-space: nowrap;
+}
+.pw-tl-day {
+  grid-row: 2; justify-self: center;
+  background: #fff6a8; border-radius: 3px; padding: 1px 5px;
+  font-size: 10px; font-weight: 800; color: #8a6d00; white-space: nowrap;
+}
+/* 길 — 가로줄 하나에 끝에 화살촉 */
+.pw-tl-line {
+  grid-row: 3; align-self: center; height: 2px; background: #c9d3e3; position: relative;
+}
+.pw-tl-line::after {
+  content: ''; position: absolute; right: -1px; top: 50%; transform: translateY(-50%);
+  border-left: 7px solid #c9d3e3; border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+}
+.pw-tl-dot {
+  grid-row: 3; justify-self: center; align-self: center;
+  width: 9px; height: 9px; border-radius: 50%; background: #9aa6bb; z-index: 1;
+}
+.pw-tl-label {
+  grid-row: 4; justify-self: center; text-align: center;
+  font-size: 11px; font-weight: 600; color: #374151; line-height: 1.3;
+  white-space: pre-line; word-break: keep-all; padding: 0 2px;
+}
+
+/* 나란히 세우는 네모들 */
+.pw-bx { margin-bottom: 8px; }
+.pw-bx-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pw-bx-item {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 74px; padding: 6px 4px;
+  border: 1px solid #c9d3e3; border-radius: 4px; background: #eef2fb;
+  font-size: 12px; font-weight: 700; color: #1f2937; text-align: center; word-break: keep-all;
 }
 
 /* 차례 그림 — 한 줄에 셋씩, 네모는 모두 같은 크기 */

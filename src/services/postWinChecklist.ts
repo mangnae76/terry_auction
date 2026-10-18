@@ -43,6 +43,15 @@ export interface CheckGroup {
   super?: string;
   /** 차례 그림 — 적어 두면 표 위에 네모와 화살표로 그린다 */
   flow?: Array<{ day?: string; name: string; tone?: 'go' | 'warn' | 'end' }>;
+  /** 가로 띠 그림 — 날짜를 찍어 가는 길 (명도의 절차처럼) */
+  timeline?: {
+    chip?: string;
+    points: Array<{ day?: string; label: string }>;
+    /** 길 위에 얹는 쪽지 — 몇 번째 칸부터 몇 번째 칸까지 걸칠지 */
+    span?: { from: number; to: number; text: string };
+  };
+  /** 나란히 세우는 네모들 */
+  boxes?: { chip?: string; items: string[] };
   sections: CheckSection[];
 }
 

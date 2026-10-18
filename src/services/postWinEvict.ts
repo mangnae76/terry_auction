@@ -4,34 +4,28 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 2;
+export const POST_WIN_EVICT_VERSION = 3;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
     key: 'ev.flow',
     title: '명도의 절차',
-    note: '낙찰에서 명도까지 가는 길 — 날짜는 대략이다.',
     noCheck: true,
-    // 낙찰에서 명도까지 — 네모와 화살표로 한눈에
-    flow: [
-      { day: 'Day 1', name: '낙찰' },
-      { day: 'Day 15', name: '매각확정' },
-      { day: 'Day 45', name: '잔금 납부\n소유권 이전' },
-      { name: '인도명령\n신청' },
-      { name: '강제 계고', tone: 'warn' },
-      { name: '강제 집행', tone: 'warn' },
-      { name: '명도', tone: 'end' },
-    ],
-    sections: [
-      {
-        label: '명도의 시작은\n어디부터?',
-        rows: [
-          { id: 'ev.f6', depth: 0, text: '낙찰 당일' },
-          { id: 'ev.f7', depth: 0, text: '잔금 납부 전' },
-          { id: 'ev.f8', depth: 0, text: '잔금 납부 후' },
-        ],
-      },
-    ],
+    timeline: {
+      chip: '낙찰 이후 명도프로세스',
+      points: [
+        { day: 'Day 1', label: '낙찰' },
+        { day: 'Day 15', label: '매각확정' },
+        { day: 'Day 45', label: '잔금 납부 → 소유권 이전\n인도명령 신청' },
+        { label: '명도' },
+      ],
+      span: { from: 2, to: 3, text: '강제 계고 → 강제 집행' },
+    },
+    boxes: {
+      chip: '명도 시작은 언제부터?',
+      items: ['낙찰 당일', '잔금 납부 전', '잔금 납부 후'],
+    },
+    sections: [],
   },
   {
     key: 'ev.step',
