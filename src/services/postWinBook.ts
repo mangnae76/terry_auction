@@ -105,10 +105,15 @@ export const usePostWinBook = (key: BookKey = 'day') => {
       // 손으로 고친 글은 그대로 두되, 상자 자체는 기본 글을 따른다 —
       // 새로 쓴 상자는 뒤에 붙이고, 없앤 상자는 저장본에서도 뺀다.
       // (상자는 사용자가 만들 수 없고 기본 글에서만 온다)
-      // 상자의 차례와 있고 없음은 기본 글을 따르고, 칸 안의 글만 고친 것을 쓴다.
-      // (상자는 사용자가 만들 수 없고 기본 글에서만 온다)
+      // 상자의 차례·있고 없음과 '꼴'은 기본 글을 따르고, 글만 고친 것을 쓴다.
+      // 꼴(큰 제목 · 바로가기 · 체크 유무)은 사용자가 고칠 수 없는 값이라
+      // 저장본에 없거나 낡아 있다 — 늘 기본 글에서 가져온다.
       const mine = migrate(clone(saved) as CheckGroup[]);
-      slot.value = book.defaults().map((d) => mine.find((g) => g.key === d.key) ?? d);
+      slot.value = book.defaults().map((d) => {
+        const kept = mine.find((g) => g.key === d.key);
+        if (!kept) return d;
+        return { ...kept, key: d.key, super: d.super, links: d.links, noCheck: d.noCheck };
+      });
     } else {
       slot.value = book.defaults();
     }
