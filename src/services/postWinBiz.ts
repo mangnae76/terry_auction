@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 (postWinChecklist 와 같은 규칙) */
-export const POST_WIN_BIZ_VERSION = 6;
+export const POST_WIN_BIZ_VERSION = 7;
 
 export const POST_WIN_BIZ: CheckGroup[] = [
   {
@@ -127,7 +127,7 @@ export const POST_WIN_BIZ: CheckGroup[] = [
         label: '세무서신청',
         rows: [
           { id: 'bz.i1', depth: 0, text: '국세증명·사업자등록·세금관련 신청/신고 > 즉시발급증명 > 사업자등록증재발급 > 출력' },
-          { id: 'bz.i2', depth: 1, text: '법인사업자는 법인공동인증서로 로그인한 뒤에 된다' },
+          { id: 'bz.i2', depth: 0, text: '법인사업자는 법인공동인증서 로그인 필요' },
           { id: 'bz.i3', depth: 0, text: '또는 국세증명·사업자등록·세금관련 신청/신고 > 세무서 방문민원 관련 > 사업자등록 민원처리상태 조회 (납세자 또는 신청인)' },
         ],
       },
