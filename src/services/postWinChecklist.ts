@@ -17,6 +17,8 @@ export interface CheckRow {
 /** 왼쪽 이름 칸 하나와 거기 달린 줄들 */
 export interface CheckSection {
   label: string;
+  /** 이름이 가리키는 곳 — 적어 두면 이름 칸이 그 자리로 가는 링크가 된다 */
+  href?: string;
   rows: CheckRow[];
 }
 
@@ -42,8 +44,10 @@ export const POST_WIN_DAY: CheckGroup[] = [
         ],
       },
       {
-        label: '대법원 전자소송포털(온라인)',
-        rows: [{ id: 'pw.file.online', depth: 0, text: '재판기록 열람 및 복사' }],
+        // ecfs.scourt.go.kr → /psp/index.on 으로 넘어간다 ('전자소송포털')
+        label: '전자소송포털',
+        href: 'https://ecfs.scourt.go.kr/',
+        rows: [{ id: 'pw.file.online', depth: 0, text: '재판기록 열람 및 복사 (온라인)' }],
       },
     ],
   },

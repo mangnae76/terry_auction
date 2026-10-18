@@ -27,6 +27,23 @@ export const buyCostOf = (a: AuctionDetail): number => bidPriceOf(a) + costsOf(a
 export const incomeOf = (a: AuctionDetail): number =>
   (a.expectedSaleValue ?? 0) - bidPriceOf(a) - costsOf(a);
 
+/** 사건번호를 짧게 — '2025타경00001' → '2025-00001' */
+export const shortCase = (a: Pick<AuctionDetail, 'caseNumber'>): string => {
+  const raw = (a.caseNumber ?? '').trim();
+  const m = raw.match(/(\d{4})\s*타경\s*(\d+)/);
+  return m ? `${m[1]}-${m[2]}` : raw;
+};
+
+/** 관할법원 — 정보요약에 적어 둔 값이 먼저, 없으면 원본에서 가져온다.
+ *  (정보요약에서 고친 법원·경매계·전화를 다른 화면도 같이 본다) */
+export const courtInfoOf = (a: AuctionDetail): { name: string; dept: string; phone: string } => {
+  const sum = a.basicSummary ?? {};
+  const name = (sum['sum.court'] || shortCourt(a.courtName) || '').trim();
+  const dept = (sum['sum.courtDept'] || a.courtDept || '').trim();
+  const phone = (sum['sum.courtPhone'] || a.courtPhone || '').trim();
+  return { name, dept, phone };
+};
+
 /** '인천지방법원 부천지원' → '부천법원' */
 export const shortCourt = (raw?: string): string => {
   const name = (raw ?? '').trim();

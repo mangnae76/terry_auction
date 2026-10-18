@@ -11,7 +11,7 @@ import { useAuthStore } from '../stores/authStore';
 import { groupRows, type CheckGroup } from '../services/postWinChecklist';
 import { POST_WIN_EDITABLE, defaultGroups, newRowId, usePostWinBook } from '../services/postWinBook';
 import { bidStageOf } from '../utils/stageLabel';
-import { shortCourt } from '../utils/auctionSummary';
+import { courtInfoOf, shortCase } from '../utils/auctionSummary';
 import type { AuctionDetail } from '../types/auction';
 
 type TabKey = 'win' | 'balance' | 'evict' | 'repair' | 'sell';
@@ -55,6 +55,11 @@ const shortAddr = (address?: string) => {
   const parts = String(address ?? '').trim().split(/\s+/).filter(Boolean);
   const dong = parts.findIndex((v) => /[동읍면리]\d*$/.test(v) && !/^\d/.test(v));
   return (dong >= 0 ? parts.slice(dong) : parts.slice(-2)).join(' ');
+};
+/** 전화 걸기 — 숫자만 남긴다 */
+const telHref = (phone: string) => {
+  const d = String(phone ?? '').replace(/[^0-9+]/g, '');
+  return d.length >= 8 ? `tel:${d}` : '';
 };
 /** '2025-10-17' → '25. 10. 17' (자금관리 카드와 같은 꼴) */
 const shortYmd = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2).replace(/-/g, '. ') : '');
@@ -183,10 +188,22 @@ const toggleSection = (key: string) => {
         <article v-if="picked" class="pw-obj" @click="pickOpen = !pickOpen">
           <p class="top">
             <span class="pd"><em>낙찰일</em><b>{{ shortYmd(picked.wonDate) || '–' }}</b></span>
-            <span class="court">{{ shortCourt(picked.courtName) }}</span>
+            <span class="case">{{ shortCase(picked) }}</span>
             <img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
           </p>
           <p class="addr">{{ shortAddr(picked.address) || picked.caseNumber }}</p>
+          <!-- 관할법원 — 정보요약에 적어 둔 법원·경매계·전화를 그대로 가져온다 -->
+          <p class="courtline">
+            <em>관할법원</em>
+            <span>{{ courtInfoOf(picked).name || '–' }}</span>
+            <span v-if="courtInfoOf(picked).dept" class="dept">{{ courtInfoOf(picked).dept }}</span>
+            <a
+              v-if="telHref(courtInfoOf(picked).phone)"
+              class="tel"
+              :href="telHref(courtInfoOf(picked).phone)"
+              @click.stop
+            >{{ courtInfoOf(picked).phone }}</a>
+          </p>
         </article>
         <p v-else class="pw-obj empty">낙찰한 물건이 없습니다</p>
 
@@ -201,7 +218,8 @@ const toggleSection = (key: string) => {
             >
               <p class="top">
                 <span class="pd"><em>낙찰일</em><b>{{ shortYmd(a.wonDate) || '–' }}</b></span>
-                <span class="court">{{ shortCourt(a.courtName) }}</span>
+                <span class="case">{{ shortCase(a) }}</span>
+                <span class="court">{{ courtInfoOf(a).name }}</span>
               </p>
               <p class="addr">{{ shortAddr(a.address) || a.caseNumber }}</p>
             </article>
@@ -249,6 +267,15 @@ const toggleSection = (key: string) => {
                           <button type="button" class="pw-mini del" @click.stop="removeSection(gi, si)">묶음 빼기</button>
                         </span>
                       </template>
+                      <!-- 갈 곳이 있는 이름은 링크로 — 누르면 그 자리로 간다 -->
+                      <a
+                        v-else-if="sec.href"
+                        class="pw-labellink"
+                        :href="sec.href"
+                        target="_blank"
+                        rel="noopener"
+                        @click.stop
+                      ><strong>{{ sec.label }}</strong><span class="pw-ext">↗</span></a>
                       <strong v-else>{{ sec.label }}</strong>
                     </td>
                     <td v-if="editing" class="pw-txt edit">
@@ -340,10 +367,11 @@ const toggleSection = (key: string) => {
 }
 
 /* 물건 카드 — 자금관리의 낙찰·매도 카드와 같은 꼴. 돈 이야기는 넣지 않는다 */
-/* 물건 카드가 앉는 띠 — 물건상세의 주소줄(.adp-prop-head)과 같은 블루그레이 */
+/* 물건 카드가 앉는 띠 — 물건상세의 주소줄(.adp-prop-head)과 같은 블루그레이.
+   카드 아래로는 띠를 남기지 않는다 — 거기는 본문과 같은 바탕색이어야 한다 */
 .pw-objwrap {
-  position: relative; padding: 8px 12px 9px;
-  background: #f1f3f7; border-bottom: 6px solid #dcdee3;
+  position: relative; padding: 8px 12px 0;
+  background: #f1f3f7; border-bottom: 10px solid #dcdee3;
 }
 .pw-obj {
   border: 1px solid #c9d3e3; border-radius: 10px; padding: 8px 10px 9px;
@@ -354,11 +382,21 @@ const toggleSection = (key: string) => {
 .pw-obj.empty {
   margin: 0; text-align: center; color: #9ca3af; font-size: 12.5px; font-weight: 600; cursor: default;
 }
-.pw-obj .top { margin: 0; display: flex; align-items: center; gap: 10px; }
+.pw-obj .top { margin: 0; display: flex; align-items: center; gap: 8px; }
+.pw-obj .top .pw-obj-chev { margin-left: auto; }
 .pw-obj .pd { display: inline-flex; align-items: baseline; gap: 5px; flex: 0 0 auto; }
 .pw-obj .pd em { font-style: normal; font-size: 10.5px; font-weight: 500; color: #9ca3af; }
 .pw-obj .pd b { font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; }
+.pw-obj .case { font-size: 12px; font-weight: 700; color: #2b6df3; white-space: nowrap; }
 .pw-obj .court { margin-left: auto; font-size: 11px; font-weight: 500; color: #6b7280; }
+/* 관할법원 한 줄 — 법원 · 경매계 · 전화 */
+.pw-obj .courtline {
+  margin: 4px 0 0; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+  font-size: 11.5px; font-weight: 500; color: #374151;
+}
+.pw-obj .courtline em { font-style: normal; font-size: 10.5px; font-weight: 500; color: #9ca3af; }
+.pw-obj .courtline .dept { color: #6b7280; }
+.pw-obj .courtline .tel { color: #2b6df3; text-decoration: none; font-weight: 600; }
 .pw-obj .addr {
   margin: 3px 0 0; font-size: 12.5px; font-weight: 600; color: #374151;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -423,6 +461,10 @@ const toggleSection = (key: string) => {
   padding: 9px 6px !important;
 }
 .pw-label strong { font-size: 12px; line-height: 1.35; }
+/* 갈 곳이 있는 이름 — 파랗게, 뒤에 작은 화살표 */
+.pw-labellink { color: #2b6df3; text-decoration: none; display: inline-flex; align-items: baseline; gap: 2px; }
+.pw-labellink strong { font-size: 12px; line-height: 1.35; text-decoration: underline; }
+.pw-ext { font-size: 9.5px; }
 .pw-row { cursor: pointer; }
 .pw-row:hover { background: #f7f9fd; }
 .pw-row td { padding: 9px 6px; vertical-align: top; }
