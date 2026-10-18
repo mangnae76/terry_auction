@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 (postWinChecklist 와 같은 규칙) */
-export const POST_WIN_BIZ_VERSION = 3;
+export const POST_WIN_BIZ_VERSION = 4;
 
 export const POST_WIN_BIZ: CheckGroup[] = [
   {
@@ -55,7 +55,7 @@ export const POST_WIN_BIZ: CheckGroup[] = [
     title: '2단계 · 사업자용 계좌 개설 (은행)',
     sections: [
       {
-        label: '개설가능\n은행',
+        label: '개설은행',
         rows: [
           { id: 'bz.s2a', depth: 0, text: '국민은행, 신한은행, 우리은행, 기업은행, 농협 등에서 가능' },
           { id: 'bz.s2b', depth: 0, text: '소상공인·부동산업 특화 서비스 제공 은행도 선택 가능' },
