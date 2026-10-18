@@ -629,8 +629,9 @@ const toggleSection = (key: string) => {
 .pw-row.flat { cursor: default; }
 .pw-row.flat:hover { background: transparent; }
 .pw-row:hover { background: #f7f9fd; }
-/* 줄 높이 — 글자는 그대로 두고 위아래 여백만 줄인다 */
-.pw-row td { padding: 5px 6px; vertical-align: top; }
+/* 줄 높이 — 글자는 그대로 두고 위아래 여백만 줄인다.
+   칸 안의 글은 세로 가운데에 앉는다 */
+.pw-row td { padding: 5px 6px; vertical-align: middle; }
 .pw-chk { width: 34px; text-align: center; }
 .pw-chk input { width: 16px; height: 16px; accent-color: #2b6df3; cursor: pointer; }
 /* 편집에서 넣은 줄 내림이 그대로 보이게 한다 */
