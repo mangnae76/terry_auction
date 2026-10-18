@@ -489,9 +489,10 @@ const toggleSection = (key: string) => {
   width: 100%; table-layout: fixed;
   border-collapse: separate; border-spacing: 0;
   background: #fff;
-  border: 1px solid #e5e7eb; border-radius: 8px;
+  /* 분홍 칸 위에서도 선이 보이게 한 단 진한 회색을 쓴다 */
+  border: 1px solid #d0d5dd; border-radius: 8px;
 }
-.pw-tbl > tbody > tr > td { border-bottom: 1px solid #e5e7eb; }
+.pw-tbl > tbody > tr > td { border-bottom: 1px solid #d0d5dd; }
 .pw-tbl > tbody > tr:last-child > td { border-bottom: 0; }
 /* 네 모서리 — 배경이 모서리를 따라 깎이게 한다 */
 .pw-tbl > tbody:first-of-type > tr:first-child > :first-child { border-top-left-radius: 8px; }
@@ -509,7 +510,7 @@ const toggleSection = (key: string) => {
 .pw-label {
   background: #fde7e7; text-align: center; vertical-align: middle;
   color: #111827; font-weight: 700;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid #d0d5dd;
   padding: 9px 6px !important;
 }
 /* 이름에 넣은 줄 내림은 그대로 보이고, 낱말 가운데서는 끊기지 않는다 */
