@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 (postWinChecklist 와 같은 규칙) */
-export const POST_WIN_BIZ_VERSION = 1;
+export const POST_WIN_BIZ_VERSION = 2;
 
 export const POST_WIN_BIZ: CheckGroup[] = [
   {
@@ -18,7 +18,7 @@ export const POST_WIN_BIZ: CheckGroup[] = [
         rows: [
           { id: 'bz.t2', depth: 0, text: '701101 (부동산매매업 – 일반주택매매)' },
           { id: 'bz.t3', depth: 0, text: '703011 (면세사업자) > 이걸로 사업자등록' },
-          { id: 'bz.t4', depth: 0, text: '703014 (과세사업자) > 84 이상 사용, 오피 등 면적 상관없이 과세사업자 > 부가세 발행 가능' },
+          { id: 'bz.t4', depth: 0, text: '703014 (과세사업자) > 84㎡ 이상 사용, 오피 등 면적 상관없이 과세사업자 > 부가세 발행 가능' },
         ],
       },
       { label: '신청 방법', rows: [{ id: 'bz.t5', depth: 0, text: '① 홈택스 온라인 등록  또는  ② 세무서 방문 신청' }] },
