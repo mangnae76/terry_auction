@@ -3,6 +3,9 @@
 // 물건마다 하는 일이 아니라 한 번 해 두면 되는 일이라서다.
 import type { CheckGroup } from './postWinChecklist';
 
+/** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 (postWinChecklist 와 같은 규칙) */
+export const POST_WIN_BIZ_VERSION = 1;
+
 export const POST_WIN_BIZ: CheckGroup[] = [
   {
     key: 'biz.intro',

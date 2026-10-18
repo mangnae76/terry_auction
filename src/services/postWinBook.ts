@@ -7,6 +7,7 @@
 import { computed, ref } from 'vue';
 import { loadUserPrefs, saveUserPrefs } from './userPrefsRepository';
 import { POST_WIN_DAY, POST_WIN_VERSION, type CheckGroup } from './postWinChecklist';
+import { POST_WIN_BIZ, POST_WIN_BIZ_VERSION } from './postWinBiz';
 
 /** 표를 손으로 고칠 수 있게 할지.
  *  글을 다 다듬고 나면 여기만 false 로 두면 된다 — 편집 단추가 사라지고
@@ -33,35 +34,55 @@ const migrate = (list: CheckGroup[]): CheckGroup[] => list.map((g) => ({
     label: LABEL_FIX[(sec.label ?? '').trim()] ?? sec.label,
   })),
 }));
+/** 표가 담긴 자리 — 탭마다 한 권씩 */
+export type BookKey = 'day' | 'biz';
+const BOOKS: Record<BookKey, {
+  defaults: () => CheckGroup[];
+  version: number;
+  /** userPrefs 의 어느 칸에 담는지 */
+  slot: 'postWinDay' | 'postWinBiz';
+  verSlot: 'postWinDayVersion' | 'postWinBizVersion';
+}> = {
+  day: { defaults: () => clone(POST_WIN_DAY), version: POST_WIN_VERSION, slot: 'postWinDay', verSlot: 'postWinDayVersion' },
+  biz: { defaults: () => clone(POST_WIN_BIZ), version: POST_WIN_BIZ_VERSION, slot: 'postWinBiz', verSlot: 'postWinBizVersion' },
+};
+
 /** 손대지 않은 기본 표 */
-export const defaultGroups = (): CheckGroup[] => clone(POST_WIN_DAY);
+export const defaultGroups = (key: BookKey = 'day'): CheckGroup[] => BOOKS[key].defaults();
 
 /** 새로 더하는 줄·묶음의 표식 — 기본 줄의 id 와 겹치지 않게 둔다 */
 export const newRowId = () => `pw.custom.${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 // 화면 여러 곳이 같은 표를 봐야 하므로 한 벌만 두고 같이 쓴다
-const groups = ref<CheckGroup[]>(defaultGroups());
+const groups: Record<BookKey, ReturnType<typeof ref<CheckGroup[]>>> = {
+  day: ref<CheckGroup[]>(defaultGroups('day')),
+  biz: ref<CheckGroup[]>(defaultGroups('biz')),
+};
 const loadedFor = ref('');
 
-export const usePostWinBook = () => {
+export const usePostWinBook = (key: BookKey = 'day') => {
+  const book = BOOKS[key];
+  const slot = groups[key];
   /** 처음 한 번만 받아 온다. 적어 둔 것이 없으면 기본 표를 그대로 쓴다 */
   const load = async (uid: string) => {
-    if (!uid || loadedFor.value === uid) return;
-    loadedFor.value = uid;
+    if (!uid) return;
     const prefs = await loadUserPrefs(uid);
-    const saved = prefs?.postWinDay;
+    loadedFor.value = uid;
+    const saved = prefs?.[book.slot];
     // 기본 글이 새 판으로 바뀌었으면 저장해 둔 옛 판은 쓰지 않는다 —
     // 안 그러면 새로 쓴 글이 화면에 영영 나타나지 않는다
-    const fresh = (prefs?.postWinDayVersion ?? 0) >= POST_WIN_VERSION;
+    const fresh = (prefs?.[book.verSlot] ?? 0) >= book.version;
     if (fresh && Array.isArray(saved) && saved.length > 0) {
-      groups.value = migrate(clone(saved) as CheckGroup[]);
+      slot.value = migrate(clone(saved) as CheckGroup[]);
+    } else {
+      slot.value = book.defaults();
     }
   };
   const save = async (uid: string, list: CheckGroup[]) => {
-    groups.value = clone(list);
-    if (uid) await saveUserPrefs(uid, { postWinDay: clone(list), postWinDayVersion: POST_WIN_VERSION });
+    slot.value = clone(list);
+    if (uid) await saveUserPrefs(uid, { [book.slot]: clone(list), [book.verSlot]: book.version });
   };
   /** 기본 글로 되돌린다 */
-  const reset = async (uid: string) => { await save(uid, defaultGroups()); };
-  return { groups: computed(() => groups.value), load, save, reset };
+  const reset = async (uid: string) => { await save(uid, book.defaults()); };
+  return { groups: computed(() => slot.value ?? []), load, save, reset };
 };

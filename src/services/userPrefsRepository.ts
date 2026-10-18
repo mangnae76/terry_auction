@@ -17,6 +17,9 @@ export interface UserPrefs {
   postWinDay?: unknown[];
   /** 그 표가 어느 판의 기본 글에서 왔는지 (postWinChecklist.POST_WIN_VERSION) */
   postWinDayVersion?: number;
+  // 낙찰이후 · 사업자등록 표 (postWinBiz.ts)
+  postWinBiz?: unknown[];
+  postWinBizVersion?: number;
   // 임장경로 — 한 사용자당 가장 최근 작업 (작업 진행 중 다른 메뉴 갔다와도 복원)
   fieldTripDraft?: Record<string, unknown> | null;
   // 임장경로 즐겨찾기 출발/도착 주소

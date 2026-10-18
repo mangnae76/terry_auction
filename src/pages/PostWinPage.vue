@@ -10,7 +10,6 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { groupRows, sectionView, type CheckGroup } from '../services/postWinChecklist';
 import { POST_WIN_EDITABLE, defaultGroups, newRowId, usePostWinBook } from '../services/postWinBook';
-import { POST_WIN_BIZ } from '../services/postWinBiz';
 import { bidStageOf } from '../utils/stageLabel';
 import { courtInfoOf } from '../utils/auctionSummary';
 import type { AuctionDetail } from '../types/auction';
@@ -26,12 +25,17 @@ const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
 ];
 const activeTab = ref<TabKey>('win');
 const current = () => TABS.find((t) => t.key === activeTab.value) ?? TABS[0];
+/** 탭을 옮기면 고치던 것은 접어 둔다 — 다른 탭 글에 덮어쓰지 않게 */
+watch(activeTab, () => { editing.value = false; draft.value = []; });
 
 const store = useAuctionStore();
 const auth = useAuthStore();
-const book = usePostWinBook();
-onMounted(() => { void book.load(auth.uid); });
-watch(() => auth.uid, (uid) => { void book.load(uid); });
+const dayBook = usePostWinBook('day');
+const bizBook = usePostWinBook('biz');
+/** 지금 탭이 보는 표 */
+const book = computed(() => (activeTab.value === 'biz' ? bizBook : dayBook));
+onMounted(() => { void dayBook.load(auth.uid); void bizBook.load(auth.uid); });
+watch(() => auth.uid, (uid) => { void dayBook.load(uid); void bizBook.load(uid); });
 /** 낙찰 뒤의 물건만 고른다 — 낙찰·매도 단계 */
 const ownedAuctions = computed(() => store.auctions.filter((a) => {
   const stage = bidStageOf(a);
@@ -80,10 +84,9 @@ const hasLabels = (g: CheckGroup) => g.sections.some((sec) => sectionView(sec).l
 const doneCount = (g: CheckGroup) => groupRows(g).filter((r) => isChecked(r.id)).length;
 const rowCount = (g: CheckGroup) => groupRows(g).length;
 /** 화면에 보이는 표 — 편집 중에는 고치고 있는 사본을 보여 준다 */
-const dayGroups = computed<CheckGroup[]>(() => {
-  if (activeTab.value === 'biz') return POST_WIN_BIZ;
-  return editing.value ? draft.value : book.groups.value;
-});
+const dayGroups = computed<CheckGroup[]>(
+  () => (editing.value ? draft.value : book.value.groups.value),
+);
 /** 표가 있는 탭인가 (낙찰당일·매매사업자) */
 const hasTable = computed(() => activeTab.value === 'win' || activeTab.value === 'biz');
 /** 체크 칸을 두는 탭인가 — 매매사업자는 한 번 해 두면 되는 일이라 체크가 없다 */
@@ -101,7 +104,7 @@ const toast = (text: string) => {
   window.setTimeout(() => { toastText.value = ''; }, 1600);
 };
 const startEdit = () => {
-  draft.value = JSON.parse(JSON.stringify(book.groups.value)) as CheckGroup[];
+  draft.value = JSON.parse(JSON.stringify(book.value.groups.value)) as CheckGroup[];
   editing.value = true;
   collapsed.value = {};
 };
@@ -116,13 +119,13 @@ const saveEdit = async () => {
       .map((sec) => ({ ...sec, label: sec.label.trim(), rows: sec.rows.filter((r) => r.text.trim()) }))
       .filter((sec) => sec.rows.length > 0),
   })).filter((g) => g.sections.length > 0);
-  await book.save(auth.uid, cleaned);
+  await book.value.save(auth.uid, cleaned);
   editing.value = false;
   draft.value = [];
   toast(auth.uid ? '표를 저장했습니다.' : '로그인한 뒤에 저장됩니다.');
 };
 const resetEdit = () => {
-  draft.value = defaultGroups();
+  draft.value = defaultGroups(activeTab.value === 'biz' ? 'biz' : 'day');
   toast('기본 글로 되돌렸습니다. 저장을 눌러야 굳습니다.');
 };
 const addRow = (gi: number, si: number) => {
@@ -199,7 +202,7 @@ const toggleSection = (key: string) => {
           <!-- 낙찰 뒤에 밟는 차례 -->
           <button type="button" class="pw-info" aria-label="낙찰 후 진행 순서" @click="flowOpen = !flowOpen">i</button>
           <!-- 표 고치기 — 다 다듬고 나면 POST_WIN_EDITABLE 로 잠근다 -->
-          <template v-if="canEdit && activeTab === 'win'">
+          <template v-if="canEdit && hasTable">
             <template v-if="editing">
               <button type="button" class="pw-ebtn" @click="resetEdit">기본글</button>
               <button type="button" class="pw-ebtn" @click="cancelEdit">취소</button>
@@ -532,11 +535,12 @@ const toggleSection = (key: string) => {
   padding: 6px 4px 5px; min-height: 34px; box-sizing: border-box; cursor: pointer;
 }
 .pw-card-head h2 {
-  margin: 0; font-size: 15.3px; font-weight: 800; color: #111827;
+  /* 제목이 왼쪽을 밀고, 센 개수와 접기 꺾쇠는 오른쪽 끝에 선다 */
+  margin: 0 auto 0 0; font-size: 15.3px; font-weight: 800; color: #111827;
   display: inline-flex; align-items: center; gap: 5px; min-width: 0;
 }
 .pw-h2-ico { flex: 0 0 auto; color: #2a5fbf; }
-.pw-count { margin-left: auto; font-style: normal; font-size: 11.5px; font-weight: 800; color: #2b6df3; }
+.pw-count { font-style: normal; font-size: 11.5px; font-weight: 800; color: #2b6df3; }
 .pw-chev { width: 22px; height: 22px; object-fit: contain; transition: transform 0.2s; }
 .pw-chev.up { transform: rotate(180deg); }
 /* 안내 한 줄 — 파란 상자로 둔다. 왜 하는 일인지가 중요해서다
