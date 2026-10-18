@@ -6,7 +6,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_LOAN_VERSION = 5;
+export const POST_WIN_LOAN_VERSION = 6;
 
 export const POST_WIN_LOAN: CheckGroup[] = [
   {
@@ -62,20 +62,6 @@ export const POST_WIN_LOAN: CheckGroup[] = [
       {
         label: '전입세대',
         rows: [{ id: 'ln.d17', depth: 0, text: '전입세대열람 (낙찰받은 물건)', memo: '동사무소 발급' }],
-      },
-    ],
-  },
-  {
-    key: 'loan.seal',
-    title: '인감증명서 3부 — 어디에 쓰나',
-    sections: [
-      {
-        label: '쓰는 곳',
-        rows: [
-          { id: 'ln.s1', depth: 0, text: '지방세 완납증명서 → 물건별 1부씩 발급 (신탁등기용 · 낙찰받은 물건지 기재)' },
-          { id: 'ln.s2', depth: 0, text: '신탁등기용 → 물건 주소를 적는다 (편집에서 내 물건 주소로 바꿔 둔다)' },
-          { id: 'ln.s3', depth: 0, text: '신탁등기용 → 물건이 둘이면 한 줄 더 적는다' },
-        ],
       },
     ],
   },
