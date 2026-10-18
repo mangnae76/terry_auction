@@ -35,6 +35,8 @@ export interface CheckGroup {
   url?: string;
   /** 제목 아래 한 줄 — 왜 하는지 */
   note?: string;
+  /** 체크 칸을 두지 않는 상자 — 챙기는 일이 아니라 읽어 두는 글일 때 */
+  noCheck?: boolean;
   sections: CheckSection[];
 }
 

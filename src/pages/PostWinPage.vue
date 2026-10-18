@@ -381,7 +381,7 @@ const toggleSection = (key: string) => {
               >{{ g.title }}<span class="pw-ext">↗</span></a>
               <template v-else>{{ g.title }}</template>
             </h2>
-            <em v-if="!editing && checkable" class="pw-count">{{ doneCount(g) }}/{{ rowCount(g) }}</em>
+            <em v-if="!editing && checkable && !g.noCheck" class="pw-count">{{ doneCount(g) }}/{{ rowCount(g) }}</em>
             <img v-if="!editing" :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(g.key) }]" alt="" />
           </header>
           <div v-if="editing || !isCollapsed(g.key)" class="pw-card-body">
@@ -393,7 +393,7 @@ const toggleSection = (key: string) => {
                 <col />
                 <col v-if="editing || hasQty(g)" class="pw-col-qty" />
                 <col v-if="editing || hasMemo(g)" class="pw-col-memo" />
-                <col v-if="editing || checkable" class="pw-col-chk" />
+                <col v-if="editing || (checkable && !g.noCheck)" class="pw-col-chk" />
               </colgroup>
               <tbody>
                 <!-- 왼쪽 이름 칸은 그 묶음의 줄 수만큼 세로로 합친다 -->
@@ -401,8 +401,8 @@ const toggleSection = (key: string) => {
                   <tr
                     v-for="(r, ri) in sec.rows"
                     :key="r.id"
-                    :class="['pw-row', `d${r.depth}`, { done: !editing && checkable && isChecked(r.id), first: ri === 0, flat: !editing && !checkable }]"
-                    @click="editing || !checkable || toggleCheck(r.id)"
+                    :class="['pw-row', `d${r.depth}`, { done: !editing && checkable && !g.noCheck && isChecked(r.id), first: ri === 0, flat: !editing && (!checkable || g.noCheck) }]"
+                    @click="editing || !checkable || g.noCheck || toggleCheck(r.id)"
                   >
                     <td v-if="ri === 0 && (editing || hasLabels(g))" class="pw-label" :rowspan="sec.rows.length">
                       <template v-if="editing">
@@ -454,7 +454,7 @@ const toggleSection = (key: string) => {
                       <input v-model="r.memo" class="pw-einput qty" placeholder="비고" />
                     </td>
                     <td v-else-if="hasMemo(g)" class="pw-memo">{{ r.memo }}</td>
-                    <td v-if="editing || checkable" class="pw-chk">
+                    <td v-if="editing || (checkable && !g.noCheck)" class="pw-chk">
                       <template v-if="editing">
                         <button type="button" class="pw-mini" title="줄 올리기" @click.stop="moveRow(gi, si, ri, -1)">↑</button>
                         <button type="button" class="pw-mini" title="줄 내리기" @click.stop="moveRow(gi, si, ri, 1)">↓</button>

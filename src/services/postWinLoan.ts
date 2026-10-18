@@ -6,7 +6,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_LOAN_VERSION = 10;
+export const POST_WIN_LOAN_VERSION = 11;
 
 export const POST_WIN_LOAN: CheckGroup[] = [
   {
@@ -101,6 +101,8 @@ export const POST_WIN_LOAN: CheckGroup[] = [
   {
     key: 'loan.legal',
     title: '법무비용',
+    // 읽어 두는 글이라 체크를 두지 않는다 — 글이 넓게 들어간다
+    noCheck: true,
     note: '견적서는 항목이 복잡해 보이지만, 셀프등기 비용과 대행 비용을 견주면 보인다.',
     sections: [
       {
