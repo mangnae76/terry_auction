@@ -12,6 +12,8 @@ export interface CheckRow {
   text: string;
   /** 몇 부인지 — 적어 두면 설명 오른쪽에 제 칸으로 선다 */
   qty?: string;
+  /** 비고 — 부수 오른쪽에 제 칸으로 선다 */
+  memo?: string;
   /** 눈에 띄게 적어 둘 말 (빨강) */
   warn?: boolean;
 }

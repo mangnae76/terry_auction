@@ -6,7 +6,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_LOAN_VERSION = 4;
+export const POST_WIN_LOAN_VERSION = 5;
 
 export const POST_WIN_LOAN: CheckGroup[] = [
   {
@@ -17,38 +17,36 @@ export const POST_WIN_LOAN: CheckGroup[] = [
       {
         label: '본인확인',
         rows: [
-          { id: 'ln.d1', depth: 0, text: '신분증', qty: '지참' },
-          { id: 'ln.d2', depth: 0, text: '인감도장', qty: '지참' },
-          { id: 'ln.d3', depth: 0, text: '인감증명서 (동사무소 발급)', qty: '3부' },
+          { id: 'ln.d1', depth: 0, text: '신분증', memo: '지참' },
+          { id: 'ln.d2', depth: 0, text: '인감도장', memo: '지참' },
+          { id: 'ln.d3', depth: 0, text: '인감증명서', qty: '3부', memo: '동사무소 발급' },
         ],
       },
       {
         label: '가족·주소',
         rows: [
-          { id: 'ln.d4', depth: 0, text: '가족관계증명서(상세) · 주민번호 모두 보이게 발급', qty: '2부' },
-          { id: 'ln.d5', depth: 0, text: '주민등록등본 · 주민번호 모두 보이게 발급', qty: '3부' },
+          { id: 'ln.d4', depth: 0, text: '가족관계증명서(상세)', qty: '2부', memo: '주민번호 모두 보이게' },
+          { id: 'ln.d5', depth: 0, text: '주민등록등본', qty: '3부', memo: '주민번호 모두 보이게' },
           { id: 'ln.d6', depth: 0, text: '주민등록 원초본', qty: '3부' },
         ],
       },
       {
         label: '완납증명',
         rows: [
-          { id: 'ln.d7', depth: 0, text: '국세완납증명서', qty: '2부' },
-          { id: 'ln.d8', depth: 0, text: '지방세완납증명서', qty: '2부' },
-          { id: 'ln.d9', depth: 1, text: '유효기간은 발급일로부터 한 달로 요청' },
+          { id: 'ln.d7', depth: 0, text: '국세완납증명서', qty: '2부', memo: '유효기간 발급일로부터 한 달로 요청' },
+          { id: 'ln.d8', depth: 0, text: '지방세완납증명서', qty: '2부', memo: '유효기간 발급일로부터 한 달로 요청' },
         ],
       },
       {
         label: '지방세',
         rows: [
-          { id: 'ln.d10', depth: 0, text: '지방세 완납증명서 · 물건별 1부씩 발급 (신탁등기용 · 낙찰받은 물건지 기재)', qty: '각 1부' },
-          { id: 'ln.d11', depth: 1, text: '동사무소 발급 · 유효기간 발급일로부터 1달' },
+          { id: 'ln.d10', depth: 0, text: '지방세 완납증명서 — 물건별 1부씩 (신탁등기용 · 낙찰받은 물건지 기재)', qty: '각 1부', memo: '동사무소 발급 · 유효기간 한 달' },
           { id: 'ln.d12', depth: 0, text: '지방세 세목별과세증명서 (최근 2년)', qty: '1부' },
         ],
       },
       {
         label: '사업자',
-        rows: [{ id: 'ln.d13', depth: 0, text: '매매사업자등록증명원', qty: '지참' }],
+        rows: [{ id: 'ln.d13', depth: 0, text: '매매사업자등록증명원', memo: '지참' }],
       },
       {
         label: '경매서류',
@@ -63,7 +61,7 @@ export const POST_WIN_LOAN: CheckGroup[] = [
       },
       {
         label: '전입세대',
-        rows: [{ id: 'ln.d17', depth: 0, text: '전입세대열람 · 낙찰받은 물건 (동사무소 발급)' }],
+        rows: [{ id: 'ln.d17', depth: 0, text: '전입세대열람 (낙찰받은 물건)', memo: '동사무소 발급' }],
       },
     ],
   },
