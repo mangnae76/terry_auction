@@ -9,7 +9,7 @@ import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { groupRows, sectionView, type CheckGroup } from '../services/postWinChecklist';
-import { POST_WIN_EDITABLE, defaultGroups, newRowId, usePostWinBook } from '../services/postWinBook';
+import { POST_WIN_EDITABLE, defaultGroups, newRowId, usePostWinBook, type BookKey } from '../services/postWinBook';
 import { bidStageOf } from '../utils/stageLabel';
 import { courtInfoOf } from '../utils/auctionSummary';
 import type { AuctionDetail } from '../types/auction';
@@ -32,10 +32,19 @@ const store = useAuctionStore();
 const auth = useAuthStore();
 const dayBook = usePostWinBook('day');
 const bizBook = usePostWinBook('biz');
-/** 지금 탭이 보는 표 */
-const book = computed(() => (activeTab.value === 'biz' ? bizBook : dayBook));
-onMounted(() => { void dayBook.load(auth.uid); void bizBook.load(auth.uid); });
-watch(() => auth.uid, (uid) => { void dayBook.load(uid); void bizBook.load(uid); });
+const loanBook = usePostWinBook('loan');
+/** 탭마다 보는 표가 다르다 */
+const BOOK_OF: Partial<Record<TabKey, typeof dayBook>> = {
+  win: dayBook, biz: bizBook, balance: loanBook,
+};
+const book = computed(() => BOOK_OF[activeTab.value] ?? dayBook);
+const bookKeyOf = (tab: TabKey): BookKey => (tab === 'biz' ? 'biz' : tab === 'balance' ? 'loan' : 'day');
+onMounted(() => {
+  void dayBook.load(auth.uid); void bizBook.load(auth.uid); void loanBook.load(auth.uid);
+});
+watch(() => auth.uid, (uid) => {
+  void dayBook.load(uid); void bizBook.load(uid); void loanBook.load(uid);
+});
 /** 낙찰 뒤의 물건만 고른다 — 낙찰·매도 단계 */
 const ownedAuctions = computed(() => store.auctions.filter((a) => {
   const stage = bidStageOf(a);
@@ -87,10 +96,10 @@ const rowCount = (g: CheckGroup) => groupRows(g).length;
 const dayGroups = computed<CheckGroup[]>(
   () => (editing.value ? draft.value : book.value.groups.value),
 );
-/** 표가 있는 탭인가 (낙찰당일·매매사업자) */
-const hasTable = computed(() => activeTab.value === 'win' || activeTab.value === 'biz');
-/** 체크 칸을 두는 탭인가 — 매매사업자는 한 번 해 두면 되는 일이라 체크가 없다 */
-const checkable = computed(() => activeTab.value === 'win');
+/** 표가 있는 탭인가 */
+const hasTable = computed(() => activeTab.value in BOOK_OF);
+/** 체크 칸을 두는 탭인가 — 사업자등록은 한 번 해 두면 되는 일이라 체크가 없다 */
+const checkable = computed(() => activeTab.value === 'win' || activeTab.value === 'balance');
 
 // === 표 고치기 ===
 // 글을 다 다듬고 나면 postWinBook.ts 의 POST_WIN_EDITABLE 만 false 로 두면
@@ -125,7 +134,7 @@ const saveEdit = async () => {
   toast(auth.uid ? '표를 저장했습니다.' : '로그인한 뒤에 저장됩니다.');
 };
 const resetEdit = () => {
-  draft.value = defaultGroups(activeTab.value === 'biz' ? 'biz' : 'day');
+  draft.value = defaultGroups(bookKeyOf(activeTab.value));
   toast('기본 글로 되돌렸습니다. 저장을 눌러야 굳습니다.');
 };
 const addRow = (gi: number, si: number) => {
@@ -352,6 +361,7 @@ const toggleSection = (key: string) => {
               <!-- 제목 앞 아이콘 — 서류 열람은 문서, 첫통화·방문은 전화 -->
               <svg v-if="g.key === 'file'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
               <svg v-else-if="g.key === 'rule'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+<svg v-else-if="g.key.startsWith('loan.')" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M5 10v9M19 10v9M9 10v9M15 10v9M3 21h18"/></svg>
 <svg v-else-if="g.key.startsWith('biz.')" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M2 12h20"/></svg>
               <svg v-else-if="g.key === 'visit'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
               {{ g.title }}
@@ -362,7 +372,7 @@ const toggleSection = (key: string) => {
           <div v-if="editing || !isCollapsed(g.key)" class="pw-card-body">
             <textarea v-if="editing" v-model="g.note" class="pw-earea note" rows="2" placeholder="안내 한 줄" />
             <p v-else-if="g.note" class="pw-note">{{ g.note }}</p>
-            <table :class="['pw-tbl', { edit: editing, biz: activeTab === 'biz' }]">
+            <table :class="['pw-tbl', { edit: editing, biz: activeTab !== 'win' }]">
               <colgroup>
                 <col v-if="editing || hasLabels(g)" class="pw-col-label" />
                 <col />

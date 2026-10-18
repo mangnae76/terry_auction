@@ -23,6 +23,10 @@ export interface UserPrefs {
   postWinBiz?: unknown[];
   postWinBizVersion?: number;
   postWinBizEdited?: boolean;
+  // 낙찰이후 · 잔금·등기 표 (postWinLoan.ts)
+  postWinLoan?: unknown[];
+  postWinLoanVersion?: number;
+  postWinLoanEdited?: boolean;
   // 임장경로 — 한 사용자당 가장 최근 작업 (작업 진행 중 다른 메뉴 갔다와도 복원)
   fieldTripDraft?: Record<string, unknown> | null;
   // 임장경로 즐겨찾기 출발/도착 주소
