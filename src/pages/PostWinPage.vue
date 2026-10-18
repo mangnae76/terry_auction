@@ -382,6 +382,19 @@ const toggleSection = (key: string) => {
               <template v-else>{{ g.title }}</template>
             </h2>
             <em v-if="!editing && checkable && !g.noCheck" class="pw-count">{{ doneCount(g) }}/{{ rowCount(g) }}</em>
+            <!-- 바로가기 — 계산기 같은 자리를 제목줄 오른쪽에 둔다 -->
+            <a
+              v-for="lk in (editing ? [] : (g.links ?? []))"
+              :key="lk.url"
+              class="pw-golink"
+              :href="lk.url"
+              target="_blank"
+              rel="noopener"
+              :title="`${lk.label} 계산기 열기`"
+              @click.stop
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M16 10h0M8 14h2M12 14h2M16 14h0M8 18h8"/></svg>{{ lk.label }}
+            </a>
             <img v-if="!editing" :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(g.key) }]" alt="" />
           </header>
           <div v-if="editing || !isCollapsed(g.key)" class="pw-card-body">
@@ -624,6 +637,14 @@ const toggleSection = (key: string) => {
   display: inline-flex; align-items: center; gap: 5px; min-width: 0;
 }
 .pw-h2-ico { flex: 0 0 auto; color: #2a5fbf; }
+/* 제목줄 바로가기 */
+.pw-golink {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 3px;
+  height: 22px; padding: 0 7px;
+  border: 1px solid #c7d7f8; border-radius: 7px; background: #fff;
+  font-size: 10.5px; font-weight: 700; color: #2b6df3; text-decoration: none; white-space: nowrap;
+}
+.pw-golink:active { background: #eef4ff; }
 .pw-count { font-style: normal; font-size: 11.5px; font-weight: 800; color: #2b6df3; }
 .pw-chev { width: 22px; height: 22px; object-fit: contain; transition: transform 0.2s; }
 .pw-chev.up { transform: rotate(180deg); }

@@ -6,7 +6,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_LOAN_VERSION = 11;
+export const POST_WIN_LOAN_VERSION = 13;
 
 export const POST_WIN_LOAN: CheckGroup[] = [
   {
@@ -103,48 +103,53 @@ export const POST_WIN_LOAN: CheckGroup[] = [
     title: '법무비용',
     // 읽어 두는 글이라 체크를 두지 않는다 — 글이 넓게 들어간다
     noCheck: true,
+    // 견적서를 대조할 때 쓰는 자리들 (열어 보고 주소를 확인했다)
+    links: [
+      { label: '취득세', url: 'https://www.wetax.go.kr/' },
+      { label: '국민주택채권', url: 'https://nhuf.molit.go.kr/' },
+    ],
     note: '견적서는 항목이 복잡해 보이지만, 셀프등기 비용과 대행 비용을 견주면 보인다.',
     sections: [
       {
         label: '취득세',
         rows: [
           { id: 'ln.l1', depth: 0, text: '보통 1.1%~3.5% 수준(표준세율) 납부' },
-          { id: 'ln.l2', depth: 0, text: '전용 85㎡ 초과 또는 3억 원 초과 여부로 세율이 달라진다 — 부동산 계산기로 직접 셈해 견적서 금액과 대조' },
+          { id: 'ln.l2', depth: 0, text: '전용 85㎡ 초과 또는 3억 원 초과 여부로 세율이 달라진다 → 부동산 계산기로 직접 셈해 견적서 금액과 대조' },
         ],
       },
       {
         label: '채권매입',
         rows: [
           { id: 'ln.l3', depth: 0, text: '취득할 때 의무로 매입한 뒤 당일 할인 매각한다 (할인율 약 8~9%)' },
-          { id: 'ln.l4', depth: 0, text: '사업자 대출 — 견적서에 주택채권 매입 항목이 1개만 있어야 한다' },
-          { id: 'ln.l5', depth: 0, text: '가계 대출 — 근저당권 설정 금액(대출금의 약 120%)의 1%에 해당하는 채권을 더 산다' },
-          { id: 'ln.l6', depth: 0, text: '간단 셈 — 가계 대출의 추가 채권 부담은 대출금의 약 0.1% (1억당 약 10만 원)' },
+          { id: 'ln.l4', depth: 0, text: '사업자 대출 → 견적서에 주택채권 매입 항목이 1개만 있어야 한다' },
+          { id: 'ln.l5', depth: 0, text: '가계 대출 → 근저당권 설정 금액(대출금의 약 120%)의 1%에 해당하는 채권을 더 산다' },
+          { id: 'ln.l6', depth: 0, text: '간단 셈 → 가계 대출의 추가 채권 부담은 대출금의 약 0.1% (1억당 약 10만 원)' },
         ],
       },
       {
         label: '기타비용\n(실비)',
         rows: [
-          { id: 'ln.l7', depth: 0, text: '말소비용', memo: '건당 7,200원' },
-          { id: 'ln.l8', depth: 0, text: '등기신청수수료', memo: '18,000원' },
-          { id: 'ln.l9', depth: 0, text: '우편료 2건', memo: '12,000원' },
-          { id: 'ln.l10', depth: 0, text: '인도명령 신청비', memo: '33,000원' },
+          { id: 'ln.l7', depth: 0, text: '말소비용 (건당 7,200원)' },
+          { id: 'ln.l8', depth: 0, text: '등기신청수수료 (18,000원)' },
+          { id: 'ln.l9', depth: 0, text: '우편료 2건 (12,000원)' },
+          { id: 'ln.l10', depth: 0, text: '인도명령 신청비 (33,000원)' },
         ],
       },
       {
         label: '적정\n수수료',
         rows: [
           { id: 'ln.l11', depth: 0, text: '취득세·채권 할인액·실비(약 8~9만 원)를 뺀 순수 법무사 수수료 기준' },
-          { id: 'ln.l12', depth: 0, text: '대출 1억 원', memo: '약 60만 원' },
-          { id: 'ln.l13', depth: 0, text: '대출 2억 원', memo: '약 65만 원' },
-          { id: 'ln.l14', depth: 0, text: '대출 3억 원', memo: '약 70만 원' },
-          { id: 'ln.l15', depth: 0, text: '기준보다 비싸면 할인을 요청한다 — 다만 금리 등 조건이 많이 좋으면 적은 추가는 감수할 만하다' },
+          { id: 'ln.l12', depth: 0, text: '대출 1억 원 → 약 60만 원' },
+          { id: 'ln.l13', depth: 0, text: '대출 2억 원 → 약 65만 원' },
+          { id: 'ln.l14', depth: 0, text: '대출 3억 원 → 약 70만 원' },
+          { id: 'ln.l15', depth: 0, text: '기준보다 비싸면 할인을 요청한다 → 다만 금리 등 조건이 많이 좋으면 적은 추가는 감수할 만하다' },
         ],
       },
       {
         label: '과다청구\n막기',
         rows: [
-          { id: 'ln.l16', depth: 0, text: '견적서는 미리 받는다 — 잔금 일주일 전이나 당일에 받으면 대출을 바꾸기 어려워 그대로 받아들이게 된다', warn: true },
-          { id: 'ln.l17', depth: 0, text: '대출 승인(자서)은 2곳 이상 — 잔금 직전에 과한 비용을 부르면 다른 대출로 갈아타거나 협상 카드로 쓴다' },
+          { id: 'ln.l16', depth: 0, text: '견적서는 미리 받는다 → 잔금 일주일 전이나 당일에 받으면 대출을 바꾸기 어려워 그대로 받아들이게 된다', warn: true },
+          { id: 'ln.l17', depth: 0, text: '대출 승인(자서)은 2곳 이상 → 잔금 직전에 과한 비용을 부르면 다른 대출로 갈아타거나 협상 카드로 쓴다' },
         ],
       },
     ],

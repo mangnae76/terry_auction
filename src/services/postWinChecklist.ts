@@ -37,6 +37,8 @@ export interface CheckGroup {
   note?: string;
   /** 체크 칸을 두지 않는 상자 — 챙기는 일이 아니라 읽어 두는 글일 때 */
   noCheck?: boolean;
+  /** 제목줄 오른쪽에 세울 바로가기들 (계산기 등) */
+  links?: Array<{ label: string; url: string }>;
   sections: CheckSection[];
 }
 
