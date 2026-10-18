@@ -87,12 +87,16 @@ export const usePostWinBook = (key: BookKey = 'day') => {
     const edited = prefs?.[book.editedSlot] === true;
     const fresh = (prefs?.[book.verSlot] ?? 0) >= book.version;
     if (Array.isArray(saved) && saved.length > 0 && (edited || fresh)) {
-      // 손으로 고친 표는 그대로 두되, 그 뒤에 새로 쓴 기본 상자는 뒤에 붙여 준다 —
-      // 고친 글을 지키면서 새 글도 볼 수 있게
+      // 손으로 고친 글은 그대로 두되, 상자 자체는 기본 글을 따른다 —
+      // 새로 쓴 상자는 뒤에 붙이고, 없앤 상자는 저장본에서도 뺀다.
+      // (상자는 사용자가 만들 수 없고 기본 글에서만 온다)
       const mine = migrate(clone(saved) as CheckGroup[]);
-      const had = new Set(mine.map((g) => g.key));
-      const added = book.defaults().filter((g) => !had.has(g.key));
-      slot.value = [...mine, ...added];
+      const defaults = book.defaults();
+      const nowKeys = new Set(defaults.map((g) => g.key));
+      const kept = mine.filter((g) => nowKeys.has(g.key));
+      const had = new Set(kept.map((g) => g.key));
+      const added = defaults.filter((g) => !had.has(g.key));
+      slot.value = [...kept, ...added];
     } else {
       slot.value = book.defaults();
     }
