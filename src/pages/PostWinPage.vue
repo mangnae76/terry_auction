@@ -776,10 +776,12 @@ const toggleSection = (key: string) => {
 }
 
 /* 가로 띠 그림 — 쪽지 · 날짜 · 길 · 이름 네 켜로 쌓는다 */
+/* 쪽지 — 선정물건의 단계 알약과 같은 꼴 (둥근 알약, 연한 파랑) */
 .pw-chip {
   display: inline-block; margin: 2px 0 8px;
-  border: 1.5px solid #2b6df3; border-radius: 6px; background: #fff;
-  padding: 5px 11px; font-size: 12.5px; font-weight: 800; color: #1d3d75;
+  border: 1.5px solid #6b85f0; border-radius: 999px; background: #dce5ff;
+  padding: 3px 12px; font-size: 11.5px; font-weight: 700; color: #3850c2;
+  line-height: 1.4; white-space: nowrap;
 }
 .pw-tl { margin-bottom: 4px; }
 .pw-tl-grid {
