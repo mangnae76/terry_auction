@@ -150,6 +150,16 @@ const removeSection = (gi: number, si: number) => {
   draft.value[gi].sections.splice(si, 1);
 };
 
+/** 한 번에 다 접고 다 편다 — 물건상세의 전체 접기와 같다 */
+const allCollapsed = computed(
+  () => dayGroups.value.length > 0 && dayGroups.value.every((g) => isCollapsed(g.key)),
+);
+const toggleAll = () => {
+  const fold = !allCollapsed.value;
+  const next: Record<string, boolean> = {};
+  dayGroups.value.forEach((g) => { next[g.key] = fold; });
+  collapsed.value = next;
+};
 /** 카드 접기 — 물건상세와 같이 제목줄을 누르면 접힌다 */
 const collapsed = ref<Record<string, boolean>>({});
 const isCollapsed = (key: string) => !!collapsed.value[key];
@@ -165,6 +175,17 @@ const toggleSection = (key: string) => {
         <div class="pw-title-row">
           <h1 class="pw-page-title">낙찰이후</h1>
           <!-- 표 고치기 — 다 다듬고 나면 POST_WIN_EDITABLE 로 잠근다 -->
+          <!-- 전체 접기·펼치기 -->
+          <button
+            v-if="activeTab === 'win' && !editing"
+            type="button"
+            class="pw-foldall"
+            :aria-label="allCollapsed ? '전체 펼치기' : '전체 접기'"
+            :title="allCollapsed ? '전체 펼치기' : '전체 접기'"
+            @click="toggleAll"
+          >
+            <img :src="chevronDownIcon" :class="['pw-chev', { up: allCollapsed }]" alt="" />
+          </button>
           <template v-if="canEdit && activeTab === 'win'">
             <template v-if="editing">
               <button type="button" class="pw-ebtn" @click="resetEdit">기본글</button>
@@ -514,6 +535,11 @@ const toggleSection = (key: string) => {
 /* 표 고치기 */
 .pw-title-row { display: flex; align-items: center; gap: 6px; padding-right: 10px; border-bottom: 1px solid #e5e7eb; }
 .pw-title-row .pw-page-title { flex: 1 1 auto; border-bottom: none; }
+.pw-foldall {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 26px; padding: 0;
+  border: 1px solid #dde3ee; border-radius: 8px; background: #fff; cursor: pointer;
+}
 .pw-ebtn {
   flex: 0 0 auto; height: 26px; padding: 0 10px;
   border: 1px solid #c7d7f8; border-radius: 8px; background: #fff;
