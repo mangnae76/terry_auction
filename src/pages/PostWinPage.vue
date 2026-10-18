@@ -334,7 +334,7 @@ const toggleSection = (key: string) => {
   overflow: hidden;
 }
 .pw-fixed-top {
-  flex: 0 0 auto; position: relative; z-index: 20; background: #f1f3f7;
+  flex: 0 0 auto; position: relative; z-index: 20; background: #dcdee3;
   box-shadow: 0 2px 6px rgba(17, 24, 39, 0.06);
 }
 .pw-body {
@@ -374,17 +374,19 @@ const toggleSection = (key: string) => {
 }
 
 /* 물건 카드 — 자금관리의 낙찰·매도 카드와 같은 꼴. 돈 이야기는 넣지 않는다 */
-/* 물건 카드가 앉는 띠 — 물건상세의 주소줄(.adp-prop-head)과 같은 블루그레이 */
+/* 물건 카드 자리 — 띠를 따로 두지 않는다. 카드만 블루그레이고
+   그 둘레는 본문과 같은 바탕색이라 자투리가 생기지 않는다 */
 .pw-objwrap {
-  position: relative; padding: 8px 12px 9px;
-  background: #f1f3f7; border-bottom: 6px solid #dcdee3;
+  position: relative; padding: 8px 12px 10px;
+  background: #dcdee3;
 }
 .pw-obj {
   border: 1px solid #c9d3e3; border-radius: 10px; padding: 8px 10px 9px;
-  background: #fff; cursor: pointer;
+  /* 물건상세의 주소줄(.adp-prop-head)과 같은 블루그레이 */
+  background: #f1f3f7; cursor: pointer;
   box-shadow: 0 1px 2px rgba(17, 24, 39, 0.05);
 }
-.pw-obj:active { background: #f7f9fd; }
+.pw-obj:active { background: #e7ebf2; }
 .pw-obj.empty {
   margin: 0; text-align: center; color: #9ca3af; font-size: 12.5px; font-weight: 600; cursor: default;
 }
