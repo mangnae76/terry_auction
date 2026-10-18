@@ -9,6 +9,7 @@ import { loadUserPrefs, saveUserPrefs } from './userPrefsRepository';
 import { POST_WIN_DAY, POST_WIN_VERSION, type CheckGroup } from './postWinChecklist';
 import { POST_WIN_BIZ, POST_WIN_BIZ_VERSION } from './postWinBiz';
 import { POST_WIN_LOAN, POST_WIN_LOAN_VERSION } from './postWinLoan';
+import { POST_WIN_EVICT, POST_WIN_EVICT_VERSION } from './postWinEvict';
 
 /** 표를 손으로 고칠 수 있게 할지.
  *  글을 다 다듬고 나면 여기만 false 로 두면 된다 — 편집 단추가 사라지고
@@ -58,19 +59,20 @@ const migrate = (list: CheckGroup[]): CheckGroup[] => list.map((g) => ({
   })),
 }));
 /** 표가 담긴 자리 — 탭마다 한 권씩 */
-export type BookKey = 'day' | 'biz' | 'loan';
+export type BookKey = 'day' | 'biz' | 'loan' | 'evict';
 const BOOKS: Record<BookKey, {
   defaults: () => CheckGroup[];
   version: number;
   /** userPrefs 의 어느 칸에 담는지 */
-  slot: 'postWinDay' | 'postWinBiz' | 'postWinLoan';
-  verSlot: 'postWinDayVersion' | 'postWinBizVersion' | 'postWinLoanVersion';
+  slot: 'postWinDay' | 'postWinBiz' | 'postWinLoan' | 'postWinEvict';
+  verSlot: 'postWinDayVersion' | 'postWinBizVersion' | 'postWinLoanVersion' | 'postWinEvictVersion';
   /** 손으로 고쳐 저장한 표인지 */
-  editedSlot: 'postWinDayEdited' | 'postWinBizEdited' | 'postWinLoanEdited';
+  editedSlot: 'postWinDayEdited' | 'postWinBizEdited' | 'postWinLoanEdited' | 'postWinEvictEdited';
 }> = {
   day: { defaults: () => clone(POST_WIN_DAY), version: POST_WIN_VERSION, slot: 'postWinDay', verSlot: 'postWinDayVersion', editedSlot: 'postWinDayEdited' },
   biz: { defaults: () => clone(POST_WIN_BIZ), version: POST_WIN_BIZ_VERSION, slot: 'postWinBiz', verSlot: 'postWinBizVersion', editedSlot: 'postWinBizEdited' },
   loan: { defaults: () => clone(POST_WIN_LOAN), version: POST_WIN_LOAN_VERSION, slot: 'postWinLoan', verSlot: 'postWinLoanVersion', editedSlot: 'postWinLoanEdited' },
+  evict: { defaults: () => clone(POST_WIN_EVICT), version: POST_WIN_EVICT_VERSION, slot: 'postWinEvict', verSlot: 'postWinEvictVersion', editedSlot: 'postWinEvictEdited' },
 };
 
 /** 손대지 않은 기본 표 */
@@ -84,6 +86,7 @@ const groups: Record<BookKey, ReturnType<typeof ref<CheckGroup[]>>> = {
   day: ref<CheckGroup[]>(defaultGroups('day')),
   biz: ref<CheckGroup[]>(defaultGroups('biz')),
   loan: ref<CheckGroup[]>(defaultGroups('loan')),
+  evict: ref<CheckGroup[]>(defaultGroups('evict')),
 };
 const loadedFor = ref('');
 
