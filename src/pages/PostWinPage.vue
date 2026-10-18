@@ -819,14 +819,15 @@ const toggleSection = (key: string) => {
   white-space: pre-line; word-break: keep-all; padding: 0 2px;
 }
 
-/* 나란히 세우는 네모들 */
+/* 나란히 세우는 알약들 — 선정물건의 단계 알약과 같은 꼴 */
 .pw-bx { margin-bottom: 8px; }
-.pw-bx-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pw-bx-row { display: flex; flex-wrap: wrap; gap: 7px; }
 .pw-bx-item {
-  display: flex; align-items: center; justify-content: center;
-  min-height: 34px; padding: 6px 4px;
-  border: 1px solid #c9d3e3; border-radius: 4px; background: #eef2fb;
-  font-size: 12px; font-weight: 700; color: #1f2937; text-align: center; word-break: keep-all;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 3px 12px;
+  border: 1.5px solid #6b85f0; border-radius: 999px; background: #dce5ff;
+  font-size: 11.5px; font-weight: 700; color: #3850c2; line-height: 1.4;
+  white-space: nowrap;
 }
 
 /* 차례 그림 — 한 줄에 셋씩, 네모는 모두 같은 크기 */

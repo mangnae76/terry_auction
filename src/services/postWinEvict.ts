@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 5;
+export const POST_WIN_EVICT_VERSION = 7;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
@@ -12,19 +12,19 @@ export const POST_WIN_EVICT: CheckGroup[] = [
     title: '명도 절차',
     noCheck: true,
     timeline: {
-      chip: '낙찰 이후 명도프로세스',
-      // 앞쪽을 좁혀 왼쪽으로 몰고, 날짜 뒤 자리를 넓게 둔다
-      cols: '0.72fr 0.86fr 1.5fr 0.92fr',
+      // 앞쪽을 좁혀 왼쪽으로 몰고, Day 45 뒤로 계고·집행을 세운다
+      cols: '0.62fr 0.78fr 1.5fr 0.8fr 0.8fr 0.6fr',
       points: [
         { day: 'Day 1', label: '낙찰' },
         { day: 'Day 15', label: '매각확정' },
         { day: 'Day 45', label: '잔금 납부 → 소유권 이전\n인도명령 신청' },
+        { label: '강제 계고' },
+        { label: '강제 집행' },
         { label: '명도' },
       ],
-      span: { from: 2, to: 3, text: '강제 계고 → 강제 집행' },
     },
+    // 명도의 시작 — 알약 셋
     boxes: {
-      chip: '명도 시작은 언제부터?',
       items: ['낙찰 당일', '잔금 납부 전', '잔금 납부 후'],
     },
     sections: [],
