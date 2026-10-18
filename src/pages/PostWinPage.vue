@@ -91,6 +91,16 @@ const toggleCheck = async (id: string) => {
   a.postWinChecks[id] = !a.postWinChecks[id];
   await store.saveAuction(a);
 };
+/** 띠에서 그 칸의 가운데가 가로로 몇 %인지 — 쪽지를 날짜 옆에 붙일 때 쓴다 */
+const colCenter = (cols: string | undefined, n: number, idx: number): string => {
+  const parts = (cols ?? '').trim()
+    ? (cols as string).trim().split(/\s+/).map((v) => Number.parseFloat(v) || 1)
+    : Array.from({ length: n }, () => 1);
+  const total = parts.reduce((a, b) => a + b, 0) || 1;
+  const before = parts.slice(0, idx).reduce((a, b) => a + b, 0);
+  return `${((before + (parts[idx] ?? 1) / 2) / total) * 100}%`;
+};
+
 /** 큰 제목으로 묶인 덩어리들 — 잇달아 같은 제목을 단 상자끼리 한 울타리가 된다.
  *  제목이 없는 상자는 울타리 없이 홀로 선다. */
 const blocks = computed(() => {
@@ -443,10 +453,11 @@ const toggleSection = (key: string) => {
                 :style="{ '--n': g.timeline.points.length, gridTemplateColumns: g.timeline.cols }"
               >
                 <!-- 길 위에 얹는 쪽지 -->
+                <!-- 쪽지는 그 날짜 바로 오른쪽에 — 글자 하나쯤 띄운다 -->
                 <span
                   v-if="g.timeline.span"
                   class="pw-tl-span"
-                  :style="{ gridColumn: `${g.timeline.span.to + 1} / -1` }"
+                  :style="{ left: colCenter(g.timeline.cols, g.timeline.points.length, g.timeline.span.from) }"
                 >{{ g.timeline.span.text }}</span>
                 <span
                   v-for="(pt, pi) in g.timeline.points"
@@ -788,14 +799,16 @@ const toggleSection = (key: string) => {
 }
 .pw-tl { margin-bottom: 4px; }
 .pw-tl-grid {
+  position: relative;
   display: grid; grid-template-columns: repeat(var(--n), 1fr);
   grid-template-rows: auto 16px auto;
   align-items: center; row-gap: 7px;
   padding: 2px 2px 8px;
 }
-/* 쪽지는 날짜와 같은 줄, 마지막 날짜 오른쪽에 붙는다 */
+/* 쪽지는 날짜와 같은 줄, 그 날짜 오른쪽에 글자 하나쯤 띄워 붙는다
+   (left 는 그 칸의 가운데 — 거기서 날짜 반쪽과 틈만큼 더 민다) */
 .pw-tl-span {
-  grid-row: 1; justify-self: start;
+  position: absolute; top: 2px; transform: translateX(34px);
   background: #f7e8ec; border-radius: 5px; padding: 3px 9px;
   font-size: 11px; font-weight: 700; color: #6b4a55; white-space: nowrap;
 }
