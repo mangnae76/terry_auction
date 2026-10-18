@@ -481,6 +481,18 @@ const toggleSection = (key: string) => {
                 >{{ pt.label }}</span>
               </div>
             </div>
+            <!-- 나란히 선 상자와 그 밑의 점 목록 -->
+            <div v-if="!editing && g.grid" class="pw-gr">
+              <span v-if="g.grid.chip" class="pw-gr-chip">{{ g.grid.chip }}</span>
+              <div class="pw-gr-row">
+                <div v-for="(col, ci) in g.grid.cols" :key="`gc-${ci}`" class="pw-gr-col">
+                  <span class="pw-gr-box">{{ col.title }}</span>
+                  <ul class="pw-gr-list">
+                    <li v-for="(it, ii) in col.items" :key="`gi-${ci}-${ii}`">{{ it }}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
             <!-- 갈래 그림 — 번호 상자에서 할 일이 갈라진다 -->
             <div v-for="(br, bri) in (editing ? [] : (g.branches ?? []))" :key="`br-${bri}`" class="pw-br">
               <!-- 때(알약)와 그 한마디 -->
@@ -853,6 +865,29 @@ const toggleSection = (key: string) => {
   grid-row: 3; justify-self: center; text-align: center;
   font-size: 12.5px; font-weight: 600; color: #1f2937; line-height: 1.35;
   white-space: pre-line; word-break: keep-all; padding: 0 2px;
+}
+
+/* 나란히 선 상자 — 분홍 머리 아래 세 칸 */
+.pw-gr { margin-bottom: 10px; }
+.pw-gr-chip {
+  display: block; width: 62%; max-width: 230px; margin: 2px 0 10px;
+  border: 1px solid #e2c3ca; border-radius: 4px; background: #f7e8ec;
+  padding: 6px 10px; text-align: center;
+  font-size: 12.5px; font-weight: 700; color: #1f2937;
+}
+.pw-gr-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-items: start; }
+.pw-gr-col { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.pw-gr-box {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 62px; padding: 8px 6px;
+  border: 1px solid #c9d3e3; border-radius: 4px; background: #eef2fb;
+  font-size: 12px; font-weight: 700; color: #1f2937; line-height: 1.35;
+  text-align: center; white-space: pre-line; word-break: keep-all;
+}
+.pw-gr-list { margin: 0; padding: 0 0 0 14px; }
+.pw-gr-list li {
+  font-size: 11.5px; font-weight: 600; color: #374151; line-height: 1.5;
+  word-break: keep-all;
 }
 
 /* 갈래 그림 */

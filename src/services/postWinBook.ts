@@ -142,6 +142,7 @@ export const usePostWinBook = (key: BookKey = 'day') => {
           flow: d.flow,
           timeline: d.timeline,
           boxes: d.boxes,
+          grid: d.grid,
           branches: d.branches,
         };
       });

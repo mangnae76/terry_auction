@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 17;
+export const POST_WIN_EVICT_VERSION = 18;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
@@ -133,6 +133,23 @@ export const POST_WIN_EVICT: CheckGroup[] = [
     key: 'ev.deal',
     title: '명도 협상 방법',
     noCheck: true,
+    grid: {
+      chip: '명도 협상의 기본',
+      cols: [
+        {
+          title: '점유자 파악',
+          items: ['채무자', '임차인', '제3의 정체 불명인', '거주형태 (1인/2인)', '의사소통 난이도'],
+        },
+        {
+          title: '점유자 상황 파악\n(원하는 바)',
+          items: ['이사비', '이사기간'],
+        },
+        {
+          title: '점유자 반응 파악',
+          items: ['순응적', '적대적', '회피형'],
+        },
+      ],
+    },
     sections: [],
   },
 ];
