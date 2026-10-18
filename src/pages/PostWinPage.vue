@@ -362,7 +362,7 @@ const toggleSection = (key: string) => {
           <div v-if="editing || !isCollapsed(g.key)" class="pw-card-body">
             <textarea v-if="editing" v-model="g.note" class="pw-earea note" rows="2" placeholder="안내 한 줄" />
             <p v-else-if="g.note" class="pw-note">{{ g.note }}</p>
-            <table :class="['pw-tbl', { edit: editing }]">
+            <table :class="['pw-tbl', { edit: editing, biz: activeTab === 'biz' }]">
               <colgroup>
                 <col v-if="editing || hasLabels(g)" class="pw-col-label" />
                 <col />
@@ -604,6 +604,8 @@ const toggleSection = (key: string) => {
 .pw-tbl > tbody:last-of-type > tr:last-child > :last-child { border-bottom-right-radius: 8px; }
 /* 이름 칸 — 글자 크기는 그대로 두고 폭만 좁게 */
 .pw-col-label { width: 96px; }
+/* 사업자등록 쪽은 이름이 짧아 한 뼘 더 좁게 */
+.pw-tbl.biz .pw-col-label { width: 77px; }
 .pw-col-chk { width: 34px; }
 .pw-tbl.edit .pw-col-chk { width: 44px; }
 .pw-minirow { display: flex; gap: 3px; }
