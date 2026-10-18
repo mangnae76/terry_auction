@@ -277,7 +277,10 @@ const toggleSection = (key: string) => {
   background: #dcdee3;
   overflow: hidden;
 }
-.pw-fixed-top { flex: 0 0 auto; position: relative; z-index: 20; background: #dcdee3; }
+.pw-fixed-top {
+  flex: 0 0 auto; position: relative; z-index: 20; background: #f1f3f7;
+  box-shadow: 0 2px 6px rgba(17, 24, 39, 0.06);
+}
 .pw-body {
   flex: 1 1 auto; overflow-y: auto;
   padding: 10px 12px 96px;
@@ -287,12 +290,8 @@ const toggleSection = (key: string) => {
 }
 
 /* 제목·탭 줄 — 물건상세의 고정줄(.adp-sticky-head)과 같은 꼴:
-   흰 바탕에 그림자, 본문과는 진한 회색 6px 띠로 나뉜다 */
-.pw-header {
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(17, 24, 39, 0.06);
-  border-bottom: 6px solid #dcdee3;
-}
+   흰 바탕(제목·탭) → 블루그레이 띠(물건 카드) → 진한 회색 6px → 본문 */
+.pw-header { background: #fff; }
 .pw-page-title {
   margin: 0; padding: 8px 12px 7px;
   font-size: 20px; font-weight: 800; color: #111827;
@@ -319,7 +318,11 @@ const toggleSection = (key: string) => {
 }
 
 /* 물건 카드 — 자금관리의 낙찰·매도 카드와 같은 꼴. 돈 이야기는 넣지 않는다 */
-.pw-objwrap { position: relative; padding: 8px 12px 9px; background: #dcdee3; }
+/* 물건 카드가 앉는 띠 — 물건상세의 주소줄(.adp-prop-head)과 같은 블루그레이 */
+.pw-objwrap {
+  position: relative; padding: 8px 12px 9px;
+  background: #f1f3f7; border-bottom: 6px solid #dcdee3;
+}
 .pw-obj {
   border: 1px solid #c9d3e3; border-radius: 10px; padding: 8px 10px 9px;
   background: #fff; cursor: pointer;
