@@ -42,9 +42,11 @@ const BOOKS: Record<BookKey, {
   /** userPrefs 의 어느 칸에 담는지 */
   slot: 'postWinDay' | 'postWinBiz';
   verSlot: 'postWinDayVersion' | 'postWinBizVersion';
+  /** 손으로 고쳐 저장한 표인지 */
+  editedSlot: 'postWinDayEdited' | 'postWinBizEdited';
 }> = {
-  day: { defaults: () => clone(POST_WIN_DAY), version: POST_WIN_VERSION, slot: 'postWinDay', verSlot: 'postWinDayVersion' },
-  biz: { defaults: () => clone(POST_WIN_BIZ), version: POST_WIN_BIZ_VERSION, slot: 'postWinBiz', verSlot: 'postWinBizVersion' },
+  day: { defaults: () => clone(POST_WIN_DAY), version: POST_WIN_VERSION, slot: 'postWinDay', verSlot: 'postWinDayVersion', editedSlot: 'postWinDayEdited' },
+  biz: { defaults: () => clone(POST_WIN_BIZ), version: POST_WIN_BIZ_VERSION, slot: 'postWinBiz', verSlot: 'postWinBizVersion', editedSlot: 'postWinBizEdited' },
 };
 
 /** 손대지 않은 기본 표 */
@@ -69,10 +71,12 @@ export const usePostWinBook = (key: BookKey = 'day') => {
     const prefs = await loadUserPrefs(uid);
     loadedFor.value = uid;
     const saved = prefs?.[book.slot];
-    // 기본 글이 새 판으로 바뀌었으면 저장해 둔 옛 판은 쓰지 않는다 —
-    // 안 그러면 새로 쓴 글이 화면에 영영 나타나지 않는다
+    // 손으로 고쳐 저장한 표는 무슨 일이 있어도 그대로 둔다 —
+    // 기본 글이 새 판으로 바뀌어도 사용자가 쓴 글을 지우지 않는다.
+    // (새 기본 글로 갈아타려면 편집에서 '기본글'을 누르고 저장하면 된다)
+    const edited = prefs?.[book.editedSlot] === true;
     const fresh = (prefs?.[book.verSlot] ?? 0) >= book.version;
-    if (fresh && Array.isArray(saved) && saved.length > 0) {
+    if (Array.isArray(saved) && saved.length > 0 && (edited || fresh)) {
       slot.value = migrate(clone(saved) as CheckGroup[]);
     } else {
       slot.value = book.defaults();
@@ -80,7 +84,13 @@ export const usePostWinBook = (key: BookKey = 'day') => {
   };
   const save = async (uid: string, list: CheckGroup[]) => {
     slot.value = clone(list);
-    if (uid) await saveUserPrefs(uid, { [book.slot]: clone(list), [book.verSlot]: book.version });
+    if (uid) {
+      await saveUserPrefs(uid, {
+        [book.slot]: clone(list),
+        [book.verSlot]: book.version,
+        [book.editedSlot]: true,
+      });
+    }
   };
   /** 기본 글로 되돌린다 */
   const reset = async (uid: string) => { await save(uid, book.defaults()); };
