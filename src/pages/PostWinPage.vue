@@ -368,7 +368,10 @@ const toggleSection = (key: string) => {
        <div :class="['pw-wrap', { super: superTitle }]">
         <!-- 큰 제목 — 상자들을 한 울타리로 묶는다 -->
         <header v-if="superTitle" class="pw-super-head" @click="toggleSection('__super')">
-          <h2>{{ superTitle }}</h2>
+          <h2>
+            <svg class="pw-h2-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M5 10v9M19 10v9M9 10v9M15 10v9M3 21h18"/></svg>
+            {{ superTitle }}
+          </h2>
           <img :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed('__super') }]" alt="" />
         </header>
         <template v-if="!superTitle || !isCollapsed('__super')">
@@ -379,12 +382,16 @@ const toggleSection = (key: string) => {
               <input v-model="g.url" class="pw-einput link ttl-link" placeholder="제목 링크 (https://…)" />
             </span>
             <h2 v-else>
+              <!-- 울타리 안에서는 아이콘 대신 번호를 단다 (손품·현장과 같은 규칙) -->
+              <span v-if="superTitle" class="pw-no">{{ gi + 1 }}</span>
+              <template v-else>
               <!-- 제목 앞 아이콘 — 서류 열람은 문서, 첫통화·방문은 전화 -->
               <svg v-if="g.key === 'file'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
               <svg v-else-if="g.key === 'rule'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
 <svg v-else-if="g.key.startsWith('loan.')" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M5 10v9M19 10v9M9 10v9M15 10v9M3 21h18"/></svg>
 <svg v-else-if="g.key.startsWith('biz.')" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M2 12h20"/></svg>
               <svg v-else-if="g.key === 'visit'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+              </template>
               <a
                 v-if="(g.url ?? '').trim()"
                 class="pw-rowlink"
@@ -655,6 +662,7 @@ const toggleSection = (key: string) => {
 }
 .pw-super-head h2 {
   margin: 0 auto 0 0; font-size: 15.5px; font-weight: 800; color: #111827;
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0;
 }
 /* 안쪽 상자 — 손품조사의 .adp-survey-block 과 같은 꼴 */
 .pw-wrap.super .pw-card {
@@ -675,6 +683,13 @@ const toggleSection = (key: string) => {
   display: inline-flex; align-items: center; gap: 5px; min-width: 0;
 }
 .pw-h2-ico { flex: 0 0 auto; color: #2a5fbf; }
+/* 울타리 안 상자의 번호 — 손품조사의 작은 동그라미와 같은 꼴 */
+.pw-no {
+  flex: 0 0 auto; width: 17px; height: 17px; border-radius: 50%;
+  background: #e0eaff; color: #2b6df3;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 800;
+}
 /* 제목줄 바로가기 */
 .pw-golink {
   flex: 0 0 auto; display: inline-flex; align-items: center; gap: 3px;
