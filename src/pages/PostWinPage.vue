@@ -446,7 +446,7 @@ const toggleSection = (key: string) => {
                 <span
                   v-if="g.timeline.span"
                   class="pw-tl-span"
-                  :style="{ gridColumn: `${g.timeline.span.from + 1} / ${g.timeline.span.to + 2}` }"
+                  :style="{ gridColumn: `${g.timeline.span.to + 1} / -1` }"
                 >{{ g.timeline.span.text }}</span>
                 <span
                   v-for="(pt, pi) in g.timeline.points"
@@ -789,36 +789,36 @@ const toggleSection = (key: string) => {
 .pw-tl { margin-bottom: 4px; }
 .pw-tl-grid {
   display: grid; grid-template-columns: repeat(var(--n), 1fr);
-  grid-template-rows: auto auto 14px auto;
-  align-items: center; row-gap: 3px;
-  padding: 0 2px 6px;
+  grid-template-rows: auto 16px auto;
+  align-items: center; row-gap: 7px;
+  padding: 2px 2px 8px;
 }
-/* 쪽지는 그 칸의 왼쪽에 붙인다 — 날짜 바로 옆에 서도록 */
+/* 쪽지는 날짜와 같은 줄, 마지막 날짜 오른쪽에 붙는다 */
 .pw-tl-span {
-  grid-row: 1; justify-self: start; margin-left: 4px;
-  background: #f7e8ec; border-radius: 4px; padding: 3px 8px;
-  font-size: 10.5px; font-weight: 700; color: #6b4a55; white-space: nowrap;
+  grid-row: 1; justify-self: start;
+  background: #f7e8ec; border-radius: 5px; padding: 3px 9px;
+  font-size: 11px; font-weight: 700; color: #6b4a55; white-space: nowrap;
 }
 .pw-tl-day {
-  grid-row: 2; justify-self: center;
-  background: #fff6a8; border-radius: 3px; padding: 1px 5px;
-  font-size: 10px; font-weight: 800; color: #8a6d00; white-space: nowrap;
+  grid-row: 1; justify-self: center;
+  background: #fff6a8; border-radius: 4px; padding: 2px 7px;
+  font-size: 11.5px; font-weight: 800; color: #7a5f00; white-space: nowrap;
 }
 /* 길 — 가로줄 하나에 끝에 화살촉 */
 .pw-tl-line {
-  grid-row: 3; align-self: center; height: 2px; background: #c9d3e3; position: relative;
+  grid-row: 2; align-self: center; height: 2px; background: #c9d3e3; position: relative;
 }
 .pw-tl-line::after {
   content: ''; position: absolute; right: -1px; top: 50%; transform: translateY(-50%);
   border-left: 7px solid #c9d3e3; border-top: 4px solid transparent; border-bottom: 4px solid transparent;
 }
 .pw-tl-dot {
-  grid-row: 3; justify-self: center; align-self: center;
-  width: 9px; height: 9px; border-radius: 50%; background: #9aa6bb; z-index: 1;
+  grid-row: 2; justify-self: center; align-self: center;
+  width: 10px; height: 10px; border-radius: 50%; background: #9aa6bb; z-index: 1;
 }
 .pw-tl-label {
-  grid-row: 4; justify-self: center; text-align: center;
-  font-size: 11px; font-weight: 600; color: #374151; line-height: 1.3;
+  grid-row: 3; justify-self: center; text-align: center;
+  font-size: 12.5px; font-weight: 600; color: #1f2937; line-height: 1.35;
   white-space: pre-line; word-break: keep-all; padding: 0 2px;
 }
 
