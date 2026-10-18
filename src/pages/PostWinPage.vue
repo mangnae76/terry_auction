@@ -175,17 +175,6 @@ const toggleSection = (key: string) => {
         <div class="pw-title-row">
           <h1 class="pw-page-title">낙찰이후</h1>
           <!-- 표 고치기 — 다 다듬고 나면 POST_WIN_EDITABLE 로 잠근다 -->
-          <!-- 전체 접기·펼치기 -->
-          <button
-            v-if="activeTab === 'win' && !editing"
-            type="button"
-            class="pw-foldall"
-            :aria-label="allCollapsed ? '전체 펼치기' : '전체 접기'"
-            :title="allCollapsed ? '전체 펼치기' : '전체 접기'"
-            @click="toggleAll"
-          >
-            <img :src="chevronDownIcon" :class="['pw-chev', { up: allCollapsed }]" alt="" />
-          </button>
           <template v-if="canEdit && activeTab === 'win'">
             <template v-if="editing">
               <button type="button" class="pw-ebtn" @click="resetEdit">기본글</button>
@@ -208,7 +197,7 @@ const toggleSection = (key: string) => {
 
       <!-- 어느 물건의 일인지 — 탭 밑에 카드로 붙박아 둔다. 누르면 목록이 펼쳐진다 -->
       <div class="pw-objwrap">
-        <article v-if="picked" class="pw-obj" @click="pickOpen = !pickOpen">
+        <article v-if="picked" class="pw-obj">
           <!-- 첫 줄: 사건번호 | 관할법원 · 경매계 · 전화 (정보요약에 적어 둔 값) -->
           <p class="top">
             <span class="case lead">{{ picked.caseNumber }}</span>
@@ -221,7 +210,10 @@ const toggleSection = (key: string) => {
               :href="telHref(courtInfoOf(picked).phone)"
               @click.stop
             >{{ courtInfoOf(picked).phone }}</a>
-            <img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
+            <!-- 낙찰 물건 목록은 이 단추로만 펼친다 -->
+            <button type="button" class="pw-objpick" @click.stop="pickOpen = !pickOpen">
+              낙찰목록<img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
+            </button>
           </p>
           <!-- 둘째 줄: 낙찰일 | 주소 -->
           <p class="addrline">
@@ -231,6 +223,17 @@ const toggleSection = (key: string) => {
           </p>
         </article>
         <p v-else class="pw-obj empty">낙찰한 물건이 없습니다</p>
+        <!-- 전체 접기 — 권리분석의 주소줄처럼 고정 카드 오른쪽 끝에 둔다 -->
+        <button
+          v-if="activeTab === 'win' && !editing"
+          type="button"
+          class="pw-foldall"
+          :aria-label="allCollapsed ? '전체 펼치기' : '전체 접기'"
+          :title="allCollapsed ? '전체 펼치기' : '전체 접기'"
+          @click="toggleAll"
+        >
+          <img :src="chevronDownIcon" :class="['pw-chev', { up: allCollapsed }]" alt="" />
+        </button>
 
         <template v-if="pickOpen">
           <div class="pw-objveil" @click="pickOpen = false" />
@@ -404,14 +407,17 @@ const toggleSection = (key: string) => {
 
 /* 물건 카드 — 자금관리의 낙찰·매도 카드와 같은 꼴. 돈 이야기는 넣지 않는다 */
 /* 고정 박스 — 물건상세의 주소줄(.adp-prop-head)처럼 한 가지 블루그레이 띠다.
-   카드와 둘레가 같은 색이라 색이 끊기는 자투리가 없다 */
+   카드와 둘레가 같은 색이라 색이 끊기는 자투리가 없다.
+   오른쪽 끝에는 전체 접기 단추가 선다 */
 .pw-objwrap {
   position: relative; padding: 7px 12px 8px;
   background: #f1f3f7; border-bottom: 6px solid #dcdee3;
+  display: flex; align-items: center; gap: 6px;
 }
+.pw-objwrap > .pw-obj { flex: 1 1 auto; min-width: 0; }
 .pw-obj {
   border: none; border-radius: 10px; padding: 2px 2px 3px;
-  background: transparent; cursor: pointer;
+  background: transparent;
 }
 .pw-obj:active { background: #e7ebf2; border-radius: 8px; }
 .pw-obj.empty {
@@ -421,7 +427,15 @@ const toggleSection = (key: string) => {
 .pw-obj .top,
 .pw-obj .addrline { font-size: 12.5px; }
 .pw-obj .top { margin: 0; display: flex; align-items: center; gap: 7px; }
-.pw-obj .top .pw-obj-chev { margin-left: auto; }
+/* 낙찰목록 단추 — 이것만 목록을 편다 */
+.pw-objpick {
+  margin-left: auto; flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 1px;
+  height: 22px; padding: 0 5px 0 7px;
+  border: 1px solid #c7d0de; border-radius: 7px; background: #fff;
+  font-family: inherit; font-size: 11px; font-weight: 700; color: #475467; cursor: pointer;
+}
+.pw-objpick:active { background: #eef2f8; }
 .pw-obj .pd { display: inline-flex; align-items: baseline; gap: 5px; }
 .pw-obj .pd em { font-style: normal; font-size: 12.5px; font-weight: 500; color: #111827; }
 .pw-obj .pd b { font-size: 12.5px; font-weight: 500; color: #111827; white-space: nowrap; }
@@ -457,7 +471,7 @@ const toggleSection = (key: string) => {
   border: 1px solid #dde3ee; box-shadow: 0 10px 24px rgba(17, 24, 39, 0.16);
 }
 .pw-objlist .pw-obj {
-  border: 1px solid #dde3ee; background: #fff; padding: 7px 9px 8px;
+  border: 1px solid #dde3ee; background: #fff; padding: 7px 9px 8px; cursor: pointer;
 }
 .pw-obj.row.on { border-color: #2b6df3; background: #f5f8ff; }
 
@@ -536,10 +550,11 @@ const toggleSection = (key: string) => {
 /* 표 고치기 */
 .pw-title-row { display: flex; align-items: center; gap: 6px; padding-right: 10px; border-bottom: 1px solid #e5e7eb; }
 .pw-title-row .pw-page-title { flex: 1 1 auto; border-bottom: none; }
+/* 전체 접기 — 띠 오른쪽 끝, 테두리 없이 꺾쇠만 (물건상세와 같은 꼴) */
 .pw-foldall {
   flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 26px; padding: 0;
-  border: 1px solid #dde3ee; border-radius: 8px; background: #fff; cursor: pointer;
+  width: 30px; height: 30px; padding: 0;
+  border: none; background: transparent; cursor: pointer;
 }
 .pw-ebtn {
   flex: 0 0 auto; height: 26px; padding: 0 10px;
