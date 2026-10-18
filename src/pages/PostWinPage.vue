@@ -174,6 +174,29 @@ const FLOW_STEPS: Array<{ name: string; note: string }> = [
   { name: '확정\n신고', note: '이듬해 5월에 한 해 몫을 합쳐 신고' },
 ];
 const flowOpen = ref(false);
+/** 연 방법 — 마우스로 띄웠을 때는 뒤를 덮지 않는다 */
+const flowByHover = ref(false);
+/** 마우스가 있는 기기(PC)에서는 올려놓기만 해도 뜬다. 손가락은 눌러야 뜬다 */
+const canHover = typeof window !== 'undefined'
+  && typeof window.matchMedia === 'function'
+  && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+let flowHideTimer = 0;
+const flowHoverIn = () => {
+  if (!canHover) return;
+  window.clearTimeout(flowHideTimer);
+  flowByHover.value = true;
+  flowOpen.value = true;
+};
+const flowHoverOut = () => {
+  if (!canHover || !flowByHover.value) return;
+  // 단추에서 설명으로 마우스가 건너갈 틈을 준다
+  flowHideTimer = window.setTimeout(() => { flowOpen.value = false; flowByHover.value = false; }, 180);
+};
+const flowClick = () => {
+  window.clearTimeout(flowHideTimer);
+  flowByHover.value = false;
+  flowOpen.value = !flowOpen.value;
+};
 
 /** 한 번에 다 접고 다 편다 — 물건상세의 전체 접기와 같다 */
 const allCollapsed = computed(
@@ -200,7 +223,14 @@ const toggleSection = (key: string) => {
         <div class="pw-title-row">
           <h1 class="pw-page-title">낙찰이후</h1>
           <!-- 낙찰 뒤에 밟는 차례 -->
-          <button type="button" class="pw-info" aria-label="낙찰 후 진행 순서" @click="flowOpen = !flowOpen">i</button>
+          <button
+            type="button"
+            class="pw-info"
+            aria-label="낙찰 후 진행 순서"
+            @click="flowClick"
+            @mouseenter="flowHoverIn"
+            @mouseleave="flowHoverOut"
+          >i</button>
           <!-- 표 고치기 — 다 다듬고 나면 POST_WIN_EDITABLE 로 잠근다 -->
           <template v-if="canEdit && hasTable">
             <template v-if="editing">
@@ -224,8 +254,13 @@ const toggleSection = (key: string) => {
 
       <!-- 낙찰 후 진행 순서 — 제목 옆 ⓘ 로 연다 -->
       <template v-if="flowOpen">
-        <div class="pw-flowveil" @click="flowOpen = false" />
-        <section class="pw-flow" @click.stop>
+        <div v-if="!flowByHover" class="pw-flowveil" @click="flowOpen = false" />
+        <section
+          class="pw-flow"
+          @click.stop
+          @mouseenter="flowHoverIn"
+          @mouseleave="flowHoverOut"
+        >
           <header class="pw-flow-head">
             <strong>낙찰 후 진행 순서</strong>
             <button type="button" class="pw-flow-close" aria-label="닫기" @click="flowOpen = false">×</button>
