@@ -6,9 +6,27 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_LOAN_VERSION = 7;
+export const POST_WIN_LOAN_VERSION = 8;
 
 export const POST_WIN_LOAN: CheckGroup[] = [
+  {
+    key: 'loan.screen',
+    title: '경락신탁대출 심사 서류 준비',
+    note: '먼저 이 서류로 심사를 받는다.',
+    sections: [
+      {
+        label: '심사 서류',
+        rows: [
+          { id: 'ln.c1', depth: 0, text: '사업자등록증' },
+          { id: 'ln.c2', depth: 0, text: '법원 영수증' },
+          { id: 'ln.c3', depth: 0, text: '전년도 신용카드 내역서' },
+          { id: 'ln.c4', depth: 0, text: '전년도 소득금액증명서' },
+          { id: 'ln.c5', depth: 1, text: '올해 근로소득원천징수 서류 추가 필요', warn: true },
+          { id: 'ln.c6', depth: 0, text: '2년간 배우자 소득금액증명서' },
+        ],
+      },
+    ],
+  },
   {
     key: 'loan.docs',
     title: '대출준비서류 (신탁)',
