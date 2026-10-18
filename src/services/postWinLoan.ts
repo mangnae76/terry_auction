@@ -6,7 +6,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_LOAN_VERSION = 15;
+export const POST_WIN_LOAN_VERSION = 16;
 
 /** 네 상자를 '법무사 대행 잔금 납부 및 등기' 울타리로 묶을지.
  *  마음에 들지 않으면 false 로 두면 묶기 전 모습으로 돌아간다. */
@@ -114,8 +114,9 @@ export const POST_WIN_LOAN: CheckGroup[] = [
     noCheck: true,
     // 견적서를 대조할 때 쓰는 자리들 (열어 보고 주소를 확인했다)
     links: [
-      { label: '취득세', url: 'https://www.wetax.go.kr/' },
-      { label: '국민주택채권', url: 'https://nhuf.molit.go.kr/' },
+      // 부동산계산기.com — 사용자가 쓰는 자리 (퓨니코드 주소 그대로 둔다)
+      { label: '취득세', url: 'https://xn--989a00af8jnslv3dba.com/%EC%B7%A8%EB%93%9D%EC%84%B8' },
+      { label: '국민주택채권', url: 'https://xn--989a00af8jnslv3dba.com/%EA%B5%AD%EB%AF%BC%EC%A3%BC%ED%83%9D%EC%B1%84%EA%B6%8C' },
     ],
     note: '견적서는 항목이 복잡해 보이지만, 셀프등기 비용과 대행 비용을 견주면 보인다.',
     sections: [
