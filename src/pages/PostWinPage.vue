@@ -87,6 +87,8 @@ const toggleCheck = async (id: string) => {
   a.postWinChecks[id] = !a.postWinChecks[id];
   await store.saveAuction(a);
 };
+/** '부수' 칸을 세울 묶음인가 — 적어 둔 줄이 하나라도 있으면 세운다 */
+const hasQty = (g: CheckGroup) => g.sections.some((sec) => sec.rows.some((r) => (r.qty ?? '').trim()));
 /** 이름 칸을 세울 묶음인가 — 이름이 하나도 없으면 칸 없이 두 칸짜리 표로 둔다 */
 const hasLabels = (g: CheckGroup) => g.sections.some((sec) => sectionView(sec).label.trim());
 /** 묶음마다 '몇 개 중 몇 개' */
@@ -376,6 +378,7 @@ const toggleSection = (key: string) => {
               <colgroup>
                 <col v-if="editing || hasLabels(g)" class="pw-col-label" />
                 <col />
+                <col v-if="editing || hasQty(g)" class="pw-col-qty" />
                 <col v-if="editing || checkable" class="pw-col-chk" />
               </colgroup>
               <tbody>
@@ -415,6 +418,11 @@ const toggleSection = (key: string) => {
                       <label class="pw-warnchk"><input type="checkbox" v-model="r.warn" /> 빨강</label>
                     </td>
                     <td v-else :class="['pw-txt', { warn: r.warn }]">{{ r.text }}</td>
+                    <!-- 부수 — 체크 왼쪽에 제 칸으로 -->
+                    <td v-if="editing" class="pw-qty">
+                      <input v-model="r.qty" class="pw-einput qty" placeholder="부수" />
+                    </td>
+                    <td v-else-if="hasQty(g)" class="pw-qty">{{ r.qty }}</td>
                     <td v-if="editing || checkable" class="pw-chk">
                       <template v-if="editing">
                         <button type="button" class="pw-mini" title="줄 올리기" @click.stop="moveRow(gi, si, ri, -1)">↑</button>
@@ -616,8 +624,16 @@ const toggleSection = (key: string) => {
 .pw-col-label { width: 96px; }
 /* 사업자등록 쪽은 이름이 짧아 한 뼘 더 좁게 */
 .pw-tbl.biz .pw-col-label { width: 77px; }
+.pw-col-qty { width: 54px; }
 .pw-col-chk { width: 34px; }
+/* 부수 — 가운데로 맞춰 줄마다 눈이 멎는 자리를 같게 한다 */
+.pw-qty {
+  text-align: center; font-size: 11.5px; font-weight: 600; color: #4b5563;
+  white-space: nowrap;
+}
+.pw-einput.qty { height: 24px; padding: 0 4px; font-size: 11px; text-align: center; }
 .pw-tbl.edit .pw-col-chk { width: 44px; }
+.pw-tbl.edit .pw-col-qty { width: 60px; }
 .pw-minirow { display: flex; gap: 3px; }
 .pw-minirow .pw-mini { flex: 1 1 0; }
 /* 이름 칸 — 분홍 바탕, 글은 가로·세로 모두 가운데 (설명 칸만 왼쪽) */

@@ -10,6 +10,8 @@ export interface CheckRow {
   /** 몇 번째 켜인지 — 0 은 그 묶음의 할 일, 1 은 그 아래 딸린 말 */
   depth: 0 | 1;
   text: string;
+  /** 몇 부인지 — 적어 두면 설명 오른쪽에 제 칸으로 선다 */
+  qty?: string;
   /** 눈에 띄게 적어 둘 말 (빨강) */
   warn?: boolean;
 }
