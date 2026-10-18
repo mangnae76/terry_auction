@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 (postWinChecklist 와 같은 규칙) */
-export const POST_WIN_BIZ_VERSION = 4;
+export const POST_WIN_BIZ_VERSION = 5;
 
 export const POST_WIN_BIZ: CheckGroup[] = [
   {
@@ -116,6 +116,41 @@ export const POST_WIN_BIZ: CheckGroup[] = [
       { label: '카드등록', rows: [{ id: 'bz.n2', depth: 0, text: '국세청에 등록된 카드만 부가세 매입세액 공제 대상' }] },
       { label: '증빙수취', rows: [{ id: 'bz.n3', depth: 0, text: '지출 건마다 세금계산서·영수증 확보 필수' }] },
       { label: '장부기장', rows: [{ id: 'bz.n4', depth: 0, text: '간편장부 → 매출 / 비용 / 이익을 명확히 관리' }] },
+    ],
+  },
+  {
+    key: 'biz.issue',
+    title: '사업자등록증 발급',
+    note: '신청이 처리완료되면 세무서 민원봉사실에서 받거나 홈택스에서 바로 출력한다.',
+    sections: [
+      {
+        label: '세무서에서\n신청한 경우',
+        rows: [
+          { id: 'bz.i1', depth: 0, text: '국세증명·사업자등록·세금관련 신청/신고 > 즉시발급증명 > 사업자등록증재발급 > 출력' },
+          { id: 'bz.i2', depth: 1, text: '법인사업자는 법인공동인증서로 로그인한 뒤에 된다' },
+          { id: 'bz.i3', depth: 0, text: '또는 국세증명·사업자등록·세금관련 신청/신고 > 세무서 방문민원 관련 > 사업자등록 민원처리상태 조회 (납세자 또는 신청인)' },
+        ],
+      },
+      {
+        label: '홈택스에서\n신청한 경우',
+        rows: [
+          { id: 'bz.i4', depth: 0, text: "국세증명·사업자등록·세금관련 신청/신고 > 민원증명 조회/관리 > 민원신청 처리결과조회 > 민원처리결과조회 탭 '발급번호' 클릭 > 출력" },
+        ],
+      },
+      {
+        label: '모바일\n(손택스)',
+        rows: [
+          { id: 'bz.i5', depth: 0, text: '민원증명 > 사업자등록증조회 메뉴에서 팩스발송 또는 열람도 가능' },
+        ],
+      },
+      {
+        label: '주의사항',
+        rows: [
+          { id: 'bz.i6', depth: 0, text: '세무서에서 받을 때는 수령인의 신분증과 접수증(접수안내문자 포함)을 지참', warn: true },
+          { id: 'bz.i7', depth: 0, text: '본인·접수자가 아닌 제3자가 받으면 위임장과 위임자의 뜻을 확인할 수 있는 서류[대표자 신분증(사본), 법인인감증명서(사본) 등]를 더 챙긴다' },
+          { id: 'bz.i8', depth: 0, text: '홈택스 발급은 공동인증서(간편인증서·금융인증서 포함)로 로그인한 뒤에 된다' },
+        ],
+      },
     ],
   },
 ];

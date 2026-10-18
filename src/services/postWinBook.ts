@@ -84,7 +84,12 @@ export const usePostWinBook = (key: BookKey = 'day') => {
     const edited = prefs?.[book.editedSlot] === true;
     const fresh = (prefs?.[book.verSlot] ?? 0) >= book.version;
     if (Array.isArray(saved) && saved.length > 0 && (edited || fresh)) {
-      slot.value = migrate(clone(saved) as CheckGroup[]);
+      // 손으로 고친 표는 그대로 두되, 그 뒤에 새로 쓴 기본 상자는 뒤에 붙여 준다 —
+      // 고친 글을 지키면서 새 글도 볼 수 있게
+      const mine = migrate(clone(saved) as CheckGroup[]);
+      const had = new Set(mine.map((g) => g.key));
+      const added = book.defaults().filter((g) => !had.has(g.key));
+      slot.value = [...mine, ...added];
     } else {
       slot.value = book.defaults();
     }
