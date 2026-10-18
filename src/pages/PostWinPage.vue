@@ -474,7 +474,10 @@ const toggleSection = (key: string) => {
             <div v-if="!editing && g.boxes" class="pw-bx">
               <span v-if="g.boxes.chip" class="pw-chip">{{ g.boxes.chip }}</span>
               <div class="pw-bx-row">
-                <span v-for="(bx, bxi) in g.boxes.items" :key="`bx-${bxi}`" class="pw-bx-item">{{ bx }}</span>
+                <template v-for="(bx, bxi) in g.boxes.items" :key="`bx-${bxi}`">
+                  <span v-if="bxi > 0" class="pw-bx-arrow">▶</span>
+                  <span class="pw-bx-item">{{ bx }}</span>
+                </template>
               </div>
             </div>
             <!-- 차례 그림 — 네모와 화살표 (ⓘ 의 진행 순서와 같은 꼴) -->
@@ -776,12 +779,12 @@ const toggleSection = (key: string) => {
 }
 
 /* 가로 띠 그림 — 쪽지 · 날짜 · 길 · 이름 네 켜로 쌓는다 */
-/* 쪽지 — 선정물건의 단계 알약과 같은 꼴 (둥근 알약, 연한 파랑) */
+/* 쪽지 — 가로를 꽉 채우는 연파랑 막대 */
 .pw-chip {
-  display: inline-block; margin: 2px 0 8px;
-  border: 1.5px solid #6b85f0; border-radius: 999px; background: #dce5ff;
-  padding: 3px 12px; font-size: 11.5px; font-weight: 700; color: #3850c2;
-  line-height: 1.4; white-space: nowrap;
+  display: block; margin: 2px 0 10px;
+  border-radius: 8px; background: #eaf0ff;
+  padding: 8px 12px; font-size: 12.5px; font-weight: 700; color: #3850c2;
+  line-height: 1.4;
 }
 .pw-tl { margin-bottom: 4px; }
 .pw-tl-grid {
@@ -821,8 +824,10 @@ const toggleSection = (key: string) => {
 
 /* 나란히 세우는 알약들 — 선정물건의 단계 알약과 같은 꼴 */
 .pw-bx { margin-bottom: 8px; }
-/* 셋으로 고르게 나눠 가로를 채운다 */
-.pw-bx-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+/* 셋으로 고르게 나눠 가로를 채우고, 사이에 화살표를 둔다 */
+.pw-bx-row { display: flex; align-items: center; gap: 5px; }
+.pw-bx-row .pw-bx-item { flex: 1 1 0; min-width: 0; }
+.pw-bx-arrow { flex: 0 0 auto; font-size: 10px; color: #9aa6bb; }
 .pw-bx-item {
   display: flex; align-items: center; justify-content: center;
   padding: 4px 8px;
