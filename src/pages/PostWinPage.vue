@@ -474,7 +474,8 @@ const toggleSection = (key: string) => {
 .pw-tbl > tbody:first-of-type > tr:first-child > :last-child { border-top-right-radius: 8px; }
 .pw-tbl > tbody:last-of-type > tr:last-child > :first-child { border-bottom-left-radius: 8px; }
 .pw-tbl > tbody:last-of-type > tr:last-child > :last-child { border-bottom-right-radius: 8px; }
-.pw-col-label { width: 120px; }
+/* 이름 칸 — 글자 크기는 그대로 두고 폭만 좁게 */
+.pw-col-label { width: 96px; }
 .pw-col-chk { width: 34px; }
 .pw-tbl.edit .pw-col-chk { width: 44px; }
 .pw-minirow { display: flex; gap: 3px; }
