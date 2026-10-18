@@ -136,6 +136,8 @@ export const usePostWinBook = (key: BookKey = 'day') => {
         return {
           ...kept,
           key: d.key,
+          // 기본 글에서 표를 통째로 뺀 상자는 저장본의 표도 쓰지 않는다
+          sections: (d.sections ?? []).length === 0 ? [] : kept.sections,
           super: d.super,
           links: d.links,
           noCheck: d.noCheck,
