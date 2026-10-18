@@ -34,12 +34,27 @@ const spaceArrows = (text: string): string => String(text ?? '')
   .replace(/[ \t]{2,}/g, ' ')
   .trim();
 
+/** 예전 제목을 지금 제목으로 (그 제목 그대로일 때만 바꾼다 — 손으로 쓴 제목은 둔다) */
+const TITLE_FIX: Record<string, { from: string; to: string }> = {
+  'biz.issue': { from: '사업자등록증 발급', to: '사업자등록증 발급 결과' },
+};
+/** 들여쓰기를 바로잡을 줄 — 저장본에 옛 들여쓰기가 남아 있다 */
+const DEPTH_FIX: Record<string, 0 | 1> = {
+  'bz.i2': 0,
+  'ln.c5': 0,
+};
+
 const migrate = (list: CheckGroup[]): CheckGroup[] => list.map((g) => ({
   ...g,
+  title: TITLE_FIX[g.key]?.from === (g.title ?? '').trim() ? TITLE_FIX[g.key].to : g.title,
   sections: (g.sections ?? []).map((sec) => ({
     ...sec,
     label: LABEL_FIX[(sec.label ?? '').trim()] ?? sec.label,
-    rows: (sec.rows ?? []).map((r) => ({ ...r, text: spaceArrows(r.text) })),
+    rows: (sec.rows ?? []).map((r) => ({
+      ...r,
+      text: spaceArrows(r.text),
+      depth: DEPTH_FIX[r.id] ?? r.depth,
+    })),
   })),
 }));
 /** 표가 담긴 자리 — 탭마다 한 권씩 */

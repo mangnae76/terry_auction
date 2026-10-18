@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 (postWinChecklist 와 같은 규칙) */
-export const POST_WIN_BIZ_VERSION = 8;
+export const POST_WIN_BIZ_VERSION = 9;
 
 export const POST_WIN_BIZ: CheckGroup[] = [
   {
@@ -120,7 +120,7 @@ export const POST_WIN_BIZ: CheckGroup[] = [
   },
   {
     key: 'biz.issue',
-    title: '사업자등록증 발급',
+    title: '사업자등록증 발급 결과',
     note: '신청이 처리완료되면 세무서 민원봉사실에서 받거나 홈택스에서 바로 출력한다.',
     sections: [
       {
