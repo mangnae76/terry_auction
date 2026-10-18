@@ -46,6 +46,8 @@ export interface CheckGroup {
   /** 가로 띠 그림 — 날짜를 찍어 가는 길 (명도의 절차처럼) */
   timeline?: {
     chip?: string;
+    /** 칸 너비 — 적어 두면 그대로 쓴다 (없으면 고르게 나눈다) */
+    cols?: string;
     points: Array<{ day?: string; label: string }>;
     /** 길 위에 얹는 쪽지 — 몇 번째 칸부터 몇 번째 칸까지 걸칠지 */
     span?: { from: number; to: number; text: string };

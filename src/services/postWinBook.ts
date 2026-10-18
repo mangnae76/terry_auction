@@ -38,6 +38,7 @@ const spaceArrows = (text: string): string => String(text ?? '')
 /** 예전 제목을 지금 제목으로 (그 제목 그대로일 때만 바꾼다 — 손으로 쓴 제목은 둔다) */
 const TITLE_FIX: Record<string, { from: string; to: string }> = {
   'biz.issue': { from: '사업자등록증 발급', to: '사업자등록증 발급 결과' },
+  'ev.flow': { from: '명도의 절차', to: '명도 절차' },
 };
 /** 들여쓰기를 바로잡을 줄 — 저장본에 옛 들여쓰기가 남아 있다 */
 const DEPTH_FIX: Record<string, 0 | 1> = {

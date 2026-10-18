@@ -438,7 +438,10 @@ const toggleSection = (key: string) => {
             <!-- 가로 띠 그림 — 날짜를 찍어 가는 길 -->
             <div v-if="!editing && g.timeline" class="pw-tl">
               <span v-if="g.timeline.chip" class="pw-chip">{{ g.timeline.chip }}</span>
-              <div class="pw-tl-grid" :style="{ '--n': g.timeline.points.length }">
+              <div
+                class="pw-tl-grid"
+                :style="{ '--n': g.timeline.points.length, gridTemplateColumns: g.timeline.cols }"
+              >
                 <!-- 길 위에 얹는 쪽지 -->
                 <span
                   v-if="g.timeline.span"
@@ -447,6 +450,7 @@ const toggleSection = (key: string) => {
                 >{{ g.timeline.span.text }}</span>
                 <span
                   v-for="(pt, pi) in g.timeline.points"
+                  v-show="pt.day"
                   :key="`d-${pi}`"
                   class="pw-tl-day"
                   :style="{ gridColumn: pi + 1 }"
@@ -784,8 +788,9 @@ const toggleSection = (key: string) => {
   align-items: center; row-gap: 3px;
   padding: 0 2px 6px;
 }
+/* 쪽지는 그 칸의 왼쪽에 붙인다 — 날짜 바로 옆에 서도록 */
 .pw-tl-span {
-  grid-row: 1; justify-self: center;
+  grid-row: 1; justify-self: start; margin-left: 4px;
   background: #f7e8ec; border-radius: 4px; padding: 3px 8px;
   font-size: 10.5px; font-weight: 700; color: #6b4a55; white-space: nowrap;
 }
@@ -817,7 +822,7 @@ const toggleSection = (key: string) => {
 .pw-bx-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .pw-bx-item {
   display: flex; align-items: center; justify-content: center;
-  min-height: 74px; padding: 6px 4px;
+  min-height: 34px; padding: 6px 4px;
   border: 1px solid #c9d3e3; border-radius: 4px; background: #eef2fb;
   font-size: 12px; font-weight: 700; color: #1f2937; text-align: center; word-break: keep-all;
 }

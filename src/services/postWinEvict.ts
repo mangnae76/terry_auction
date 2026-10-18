@@ -4,15 +4,17 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 3;
+export const POST_WIN_EVICT_VERSION = 5;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
     key: 'ev.flow',
-    title: '명도의 절차',
+    title: '명도 절차',
     noCheck: true,
     timeline: {
       chip: '낙찰 이후 명도프로세스',
+      // 앞쪽을 좁혀 왼쪽으로 몰고, 날짜 뒤 자리를 넓게 둔다
+      cols: '0.72fr 0.86fr 1.5fr 0.92fr',
       points: [
         { day: 'Day 1', label: '낙찰' },
         { day: 'Day 15', label: '매각확정' },
