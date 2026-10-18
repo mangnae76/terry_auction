@@ -123,7 +123,18 @@ export const usePostWinBook = (key: BookKey = 'day') => {
       slot.value = book.defaults().map((d) => {
         const kept = mine.find((g) => g.key === d.key);
         if (!kept) return d;
-        return { ...kept, key: d.key, super: d.super, links: d.links, noCheck: d.noCheck };
+        // 꼴에 해당하는 값은 모두 기본 글에서 — 저장본에는 없는 값들이다
+        return {
+          ...kept,
+          key: d.key,
+          super: d.super,
+          links: d.links,
+          noCheck: d.noCheck,
+          flow: d.flow,
+          timeline: d.timeline,
+          boxes: d.boxes,
+          branch: d.branch,
+        };
       });
     } else {
       slot.value = book.defaults();
