@@ -45,7 +45,8 @@ export const POST_WIN_DAY: CheckGroup[] = [
       },
       {
         // ecfs.scourt.go.kr → /psp/index.on 으로 넘어간다 ('전자소송포털')
-        label: '전자소송포털',
+        // '대법원'을 윗줄에 두고 '전자소송포털'을 아랫줄로 내린다
+        label: '대법원\n전자소송포털',
         href: 'https://ecfs.scourt.go.kr/',
         rows: [{ id: 'pw.file.online', depth: 0, text: '재판기록 열람 및 복사 (온라인)' }],
       },

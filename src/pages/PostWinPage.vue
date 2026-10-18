@@ -186,16 +186,11 @@ const toggleSection = (key: string) => {
       <!-- 어느 물건의 일인지 — 탭 밑에 카드로 붙박아 둔다. 누르면 목록이 펼쳐진다 -->
       <div class="pw-objwrap">
         <article v-if="picked" class="pw-obj" @click="pickOpen = !pickOpen">
+          <!-- 첫 줄: 사건번호 | 관할법원 · 경매계 · 전화 (정보요약에 적어 둔 값) -->
           <p class="top">
-            <span class="pd"><em>낙찰일</em><b>{{ shortYmd(picked.wonDate) || '–' }}</b></span>
             <span class="case">{{ shortCase(picked) }}</span>
-            <img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
-          </p>
-          <p class="addr">{{ shortAddr(picked.address) || picked.caseNumber }}</p>
-          <!-- 관할법원 — 정보요약에 적어 둔 법원·경매계·전화를 그대로 가져온다 -->
-          <p class="courtline">
-            <em>관할법원</em>
-            <span>{{ courtInfoOf(picked).name || '–' }}</span>
+            <i class="bar" />
+            <span class="court">{{ courtInfoOf(picked).name || '–' }}</span>
             <span v-if="courtInfoOf(picked).dept" class="dept">{{ courtInfoOf(picked).dept }}</span>
             <a
               v-if="telHref(courtInfoOf(picked).phone)"
@@ -203,6 +198,13 @@ const toggleSection = (key: string) => {
               :href="telHref(courtInfoOf(picked).phone)"
               @click.stop
             >{{ courtInfoOf(picked).phone }}</a>
+            <img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
+          </p>
+          <!-- 둘째 줄: 낙찰일 | 주소 -->
+          <p class="addrline">
+            <span class="pd"><em>낙찰일</em><b>{{ shortYmd(picked.wonDate) || '–' }}</b></span>
+            <i class="bar" />
+            <span class="addr">{{ shortAddr(picked.address) || picked.caseNumber }}</span>
           </p>
         </article>
         <p v-else class="pw-obj empty">낙찰한 물건이 없습니다</p>
@@ -217,11 +219,16 @@ const toggleSection = (key: string) => {
               @click="pickAuction(a.id)"
             >
               <p class="top">
-                <span class="pd"><em>낙찰일</em><b>{{ shortYmd(a.wonDate) || '–' }}</b></span>
                 <span class="case">{{ shortCase(a) }}</span>
+                <i class="bar" />
                 <span class="court">{{ courtInfoOf(a).name }}</span>
+                <span v-if="courtInfoOf(a).dept" class="dept">{{ courtInfoOf(a).dept }}</span>
               </p>
-              <p class="addr">{{ shortAddr(a.address) || a.caseNumber }}</p>
+              <p class="addrline">
+                <span class="pd"><em>낙찰일</em><b>{{ shortYmd(a.wonDate) || '–' }}</b></span>
+                <i class="bar" />
+                <span class="addr">{{ shortAddr(a.address) || a.caseNumber }}</span>
+              </p>
             </article>
           </div>
         </template>
@@ -367,11 +374,10 @@ const toggleSection = (key: string) => {
 }
 
 /* 물건 카드 — 자금관리의 낙찰·매도 카드와 같은 꼴. 돈 이야기는 넣지 않는다 */
-/* 물건 카드가 앉는 띠 — 물건상세의 주소줄(.adp-prop-head)과 같은 블루그레이.
-   카드 아래로는 띠를 남기지 않는다 — 거기는 본문과 같은 바탕색이어야 한다 */
+/* 물건 카드가 앉는 띠 — 물건상세의 주소줄(.adp-prop-head)과 같은 블루그레이 */
 .pw-objwrap {
-  position: relative; padding: 8px 12px 0;
-  background: #f1f3f7; border-bottom: 10px solid #dcdee3;
+  position: relative; padding: 8px 12px 9px;
+  background: #f1f3f7; border-bottom: 6px solid #dcdee3;
 }
 .pw-obj {
   border: 1px solid #c9d3e3; border-radius: 10px; padding: 8px 10px 9px;
@@ -387,18 +393,20 @@ const toggleSection = (key: string) => {
 .pw-obj .pd { display: inline-flex; align-items: baseline; gap: 5px; flex: 0 0 auto; }
 .pw-obj .pd em { font-style: normal; font-size: 10.5px; font-weight: 500; color: #9ca3af; }
 .pw-obj .pd b { font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; }
-.pw-obj .case { font-size: 12px; font-weight: 700; color: #2b6df3; white-space: nowrap; }
-.pw-obj .court { margin-left: auto; font-size: 11px; font-weight: 500; color: #6b7280; }
-/* 관할법원 한 줄 — 법원 · 경매계 · 전화 */
-.pw-obj .courtline {
-  margin: 4px 0 0; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
-  font-size: 11.5px; font-weight: 500; color: #374151;
+.pw-obj .case { font-size: 12.5px; font-weight: 700; color: #2b6df3; white-space: nowrap; }
+.pw-obj .court { font-size: 11.5px; font-weight: 500; color: #374151; white-space: nowrap; }
+.pw-obj .dept { font-size: 11.5px; font-weight: 500; color: #6b7280; white-space: nowrap; }
+.pw-obj .tel { font-size: 11.5px; font-weight: 600; color: #2b6df3; text-decoration: none; white-space: nowrap; }
+/* 칸을 가르는 세로 막대기 */
+.pw-obj .bar {
+  flex: 0 0 auto; width: 1px; height: 11px; background: #d4dae4; margin: 0 1px;
 }
-.pw-obj .courtline em { font-style: normal; font-size: 10.5px; font-weight: 500; color: #9ca3af; }
-.pw-obj .courtline .dept { color: #6b7280; }
-.pw-obj .courtline .tel { color: #2b6df3; text-decoration: none; font-weight: 600; }
+/* 둘째 줄 — 낙찰일 | 주소 */
+.pw-obj .addrline {
+  margin: 4px 0 0; display: flex; align-items: center; gap: 7px; min-width: 0;
+}
 .pw-obj .addr {
-  margin: 3px 0 0; font-size: 12.5px; font-weight: 600; color: #374151;
+  min-width: 0; font-size: 12.5px; font-weight: 600; color: #374151;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .pw-obj-chev { width: 18px; height: 18px; object-fit: contain; transition: transform 0.2s; }
@@ -460,11 +468,13 @@ const toggleSection = (key: string) => {
   border-right: 1px solid #e5e7eb;
   padding: 9px 6px !important;
 }
-.pw-label strong { font-size: 12px; line-height: 1.35; }
+/* 이름에 넣은 줄 내림이 그대로 보이게 */
+.pw-label strong { font-size: 12px; line-height: 1.35; white-space: pre-line; }
 /* 갈 곳이 있는 이름 — 파랗게, 뒤에 작은 화살표 */
-.pw-labellink { color: #2b6df3; text-decoration: none; display: inline-flex; align-items: baseline; gap: 2px; }
-.pw-labellink strong { font-size: 12px; line-height: 1.35; text-decoration: underline; }
-.pw-ext { font-size: 9.5px; }
+/* 줄 내림이 있는 이름이라 inline 으로 둔다 — ↗ 가 마지막 글자 뒤에 붙는다 */
+.pw-labellink { color: #2b6df3; text-decoration: none; display: inline; }
+.pw-labellink strong { font-size: 12px; line-height: 1.35; white-space: pre-line; text-decoration: underline; }
+.pw-ext { font-size: 9.5px; margin-left: 2px; }
 .pw-row { cursor: pointer; }
 .pw-row:hover { background: #f7f9fd; }
 .pw-row td { padding: 9px 6px; vertical-align: top; }

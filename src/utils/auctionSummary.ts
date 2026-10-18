@@ -38,7 +38,7 @@ export const shortCase = (a: Pick<AuctionDetail, 'caseNumber'>): string => {
  *  (정보요약에서 고친 법원·경매계·전화를 다른 화면도 같이 본다) */
 export const courtInfoOf = (a: AuctionDetail): { name: string; dept: string; phone: string } => {
   const sum = a.basicSummary ?? {};
-  const name = (sum['sum.court'] || shortCourt(a.courtName) || '').trim();
+  const name = (sum['sum.court'] || a.courtName || '').trim();
   const dept = (sum['sum.courtDept'] || a.courtDept || '').trim();
   const phone = (sum['sum.courtPhone'] || a.courtPhone || '').trim();
   return { name, dept, phone };
