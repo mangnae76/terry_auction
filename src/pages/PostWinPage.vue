@@ -20,7 +20,7 @@ const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
   { key: 'biz', label: '사업자등록', desc: '매매사업자 등록 · 사업용 계좌 · 사업용 카드' },
   { key: 'balance', label: '잔금·등기', desc: '잔금 납부일, 등기 촉탁, 취득세' },
   { key: 'evict', label: '명도', desc: '점유자 확인, 인도명령·강제집행, 이사비 협의' },
-  { key: 'repair', label: '수리·정비', desc: '수리 범위와 비용, 업체 일정' },
+  { key: 'repair', label: '인테리어', desc: '수리 범위와 비용, 업체 일정' },
   { key: 'sell', label: '매도·임대', desc: '내놓은 가격, 중개업소, 계약 일정' },
 ];
 const activeTab = ref<TabKey>('win');
