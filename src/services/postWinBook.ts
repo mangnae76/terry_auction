@@ -27,11 +27,18 @@ const LABEL_FIX: Record<string, string> = {
   '대법원 전자소송포털': '전자소송포털',
   '대법원\n전자소송포털': '전자소송포털',
 };
+/** 화살표 앞뒤는 한 칸씩 띄운다 — 저장해 둔 표마다 들쭉날쭉하던 자리다 */
+const spaceArrows = (text: string): string => String(text ?? '')
+  .replace(/\s*([>→])\s*/g, ' $1 ')
+  .replace(/[ \t]{2,}/g, ' ')
+  .trim();
+
 const migrate = (list: CheckGroup[]): CheckGroup[] => list.map((g) => ({
   ...g,
   sections: (g.sections ?? []).map((sec) => ({
     ...sec,
     label: LABEL_FIX[(sec.label ?? '').trim()] ?? sec.label,
+    rows: (sec.rows ?? []).map((r) => ({ ...r, text: spaceArrows(r.text) })),
   })),
 }));
 /** 표가 담긴 자리 — 탭마다 한 권씩 */
