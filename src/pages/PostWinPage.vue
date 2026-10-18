@@ -18,7 +18,7 @@ import type { AuctionDetail } from '../types/auction';
 type TabKey = 'win' | 'biz' | 'balance' | 'evict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
   { key: 'win', label: '낙찰당일', desc: '낙찰가·경쟁 상황, 영수증과 서류 챙기기' },
-  { key: 'biz', label: '매매사업자', desc: '사업자등록 · 사업용 계좌 · 사업용 카드' },
+  { key: 'biz', label: '사업자등록', desc: '매매사업자 등록 · 사업용 계좌 · 사업용 카드' },
   { key: 'balance', label: '잔금·등기', desc: '잔금 납부일, 등기 촉탁, 취득세' },
   { key: 'evict', label: '명도', desc: '점유자 확인, 인도명령·강제집행, 이사비 협의' },
   { key: 'repair', label: '수리·정비', desc: '수리 범위와 비용, 업체 일정' },
@@ -575,7 +575,7 @@ const toggleSection = (key: string) => {
   background: #fde7e7; text-align: center; vertical-align: middle;
   color: #111827; font-weight: 700;
   border-right: 1px solid #d0d5dd;
-  padding: 9px 6px !important;
+  padding: 6px 6px !important;
 }
 /* 이름에 넣은 줄 내림은 그대로 보이고, 낱말 가운데서는 끊기지 않는다 */
 .pw-label strong { font-size: 12px; line-height: 1.35; white-space: pre-line; word-break: keep-all; }
@@ -588,11 +588,12 @@ const toggleSection = (key: string) => {
 .pw-row.flat { cursor: default; }
 .pw-row.flat:hover { background: transparent; }
 .pw-row:hover { background: #f7f9fd; }
-.pw-row td { padding: 9px 6px; vertical-align: top; }
+/* 줄 높이 — 글자는 그대로 두고 위아래 여백만 줄인다 */
+.pw-row td { padding: 6px 6px; vertical-align: top; }
 .pw-chk { width: 34px; text-align: center; }
 .pw-chk input { width: 16px; height: 16px; accent-color: #2b6df3; cursor: pointer; }
 /* 편집에서 넣은 줄 내림이 그대로 보이게 한다 */
-.pw-txt { font-size: 12.5px; line-height: 1.45; white-space: pre-line; padding: 9px 10px 9px 12px !important; }
+.pw-txt { font-size: 12.5px; line-height: 1.45; white-space: pre-line; padding: 6px 10px 6px 12px !important; }
 .pw-row td.pw-txt { font-weight: 400; color: #374151; }
 /* 묶음 안에 딸린 말은 한 단 들여쓴다 */
 .pw-row.d1 .pw-txt { padding-left: 24px !important; color: #4b5563; }
