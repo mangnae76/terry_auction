@@ -8,7 +8,7 @@ import AppToast from '../components/AppToast.vue';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
-import { groupRows, sectionHref, type CheckGroup } from '../services/postWinChecklist';
+import { groupRows, sectionView, type CheckGroup } from '../services/postWinChecklist';
 import { POST_WIN_EDITABLE, defaultGroups, newRowId, usePostWinBook } from '../services/postWinBook';
 import { bidStageOf } from '../utils/stageLabel';
 import { courtInfoOf } from '../utils/auctionSummary';
@@ -62,7 +62,7 @@ const telHref = (phone: string) => {
   return d.length >= 8 ? `tel:${d}` : '';
 };
 /** '2025-10-17' → '25. 10. 17' (자금관리 카드와 같은 꼴) */
-const shortYmd = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2).replace(/-/g, '. ') : '');
+const shortYmd = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2).replace(/-/g, '.') : '');
 
 const isChecked = (id: string) => picked.value?.postWinChecks?.[id] === true;
 const toggleCheck = async (id: string) => {
@@ -276,14 +276,14 @@ const toggleSection = (key: string) => {
                       </template>
                       <!-- 갈 곳이 있는 이름은 링크로 — 누르면 그 자리로 간다 -->
                       <a
-                        v-else-if="sectionHref(sec)"
+                        v-else-if="sectionView(sec).href"
                         class="pw-labellink"
-                        :href="sectionHref(sec)"
+                        :href="sectionView(sec).href"
                         target="_blank"
                         rel="noopener"
                         @click.stop
-                      ><strong>{{ sec.label }}</strong><span class="pw-ext">↗</span></a>
-                      <strong v-else>{{ sec.label }}</strong>
+                      ><strong>{{ sectionView(sec).label }}</strong><span class="pw-ext">↗</span></a>
+                      <strong v-else>{{ sectionView(sec).label }}</strong>
                     </td>
                     <td v-if="editing" class="pw-txt edit">
                       <textarea v-model="r.text" class="pw-earea" rows="2" placeholder="할 일" />
@@ -374,19 +374,17 @@ const toggleSection = (key: string) => {
 }
 
 /* 물건 카드 — 자금관리의 낙찰·매도 카드와 같은 꼴. 돈 이야기는 넣지 않는다 */
-/* 물건 카드 자리 — 띠를 따로 두지 않는다. 카드만 블루그레이고
-   그 둘레는 본문과 같은 바탕색이라 자투리가 생기지 않는다 */
+/* 고정 박스 — 물건상세의 주소줄(.adp-prop-head)처럼 한 가지 블루그레이 띠다.
+   카드와 둘레가 같은 색이라 색이 끊기는 자투리가 없다 */
 .pw-objwrap {
-  position: relative; padding: 8px 12px 10px;
-  background: #dcdee3;
+  position: relative; padding: 7px 12px 8px;
+  background: #f1f3f7; border-bottom: 6px solid #dcdee3;
 }
 .pw-obj {
-  border: 1px solid #c9d3e3; border-radius: 10px; padding: 8px 10px 9px;
-  /* 물건상세의 주소줄(.adp-prop-head)과 같은 블루그레이 */
-  background: #f1f3f7; cursor: pointer;
-  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.05);
+  border: none; border-radius: 10px; padding: 2px 2px 3px;
+  background: transparent; cursor: pointer;
 }
-.pw-obj:active { background: #e7ebf2; }
+.pw-obj:active { background: #e7ebf2; border-radius: 8px; }
 .pw-obj.empty {
   margin: 0; text-align: center; color: #9ca3af; font-size: 12.5px; font-weight: 600; cursor: default;
 }
@@ -398,12 +396,14 @@ const toggleSection = (key: string) => {
 .pw-obj .pd { display: inline-flex; align-items: baseline; gap: 5px; }
 .pw-obj .pd em { font-style: normal; font-size: 12.5px; font-weight: 500; color: #111827; }
 .pw-obj .pd b { font-size: 12.5px; font-weight: 500; color: #111827; white-space: nowrap; }
-.pw-obj .case { font-size: 12.5px; font-weight: 700; color: #2b6df3; white-space: nowrap; }
+.pw-obj .case { font-size: 12.5px; font-weight: 600; color: #2b6df3; white-space: nowrap; }
 .pw-obj .court { font-size: 12.5px; font-weight: 500; color: #374151; white-space: nowrap; }
 .pw-obj .dept { font-size: 12.5px; font-weight: 500; color: #6b7280; white-space: nowrap; }
 .pw-obj .tel { font-size: 12.5px; font-weight: 600; color: #2b6df3; text-decoration: none; white-space: nowrap; }
 /* 두 줄의 막대기가 같은 세로선에 서도록 앞 칸의 폭을 못 박는다 */
-.pw-obj .lead { flex: 0 0 122px; min-width: 0; }
+/* 두 줄의 막대기가 같은 세로선에 서도록 앞 칸의 폭을 못 박는다.
+   주소가 길어질 수 있어 될 수 있는 대로 좁게 잡는다 */
+.pw-obj .lead { flex: 0 0 104px; min-width: 0; }
 /* 칸을 가르는 세로 막대기 */
 .pw-obj .bar {
   flex: 0 0 auto; width: 1px; height: 11px; background: #d4dae4; margin: 0 1px;
@@ -426,6 +426,9 @@ const toggleSection = (key: string) => {
   display: flex; flex-direction: column; gap: 6px;
   padding: 6px; border-radius: 12px; background: #fff;
   border: 1px solid #dde3ee; box-shadow: 0 10px 24px rgba(17, 24, 39, 0.16);
+}
+.pw-objlist .pw-obj {
+  border: 1px solid #dde3ee; background: #fff; padding: 7px 9px 8px;
 }
 .pw-obj.row.on { border-color: #2b6df3; background: #f5f8ff; }
 
@@ -462,7 +465,7 @@ const toggleSection = (key: string) => {
 .pw-tbl > tbody:first-of-type > tr:first-child > :last-child { border-top-right-radius: 8px; }
 .pw-tbl > tbody:last-of-type > tr:last-child > :first-child { border-bottom-left-radius: 8px; }
 .pw-tbl > tbody:last-of-type > tr:last-child > :last-child { border-bottom-right-radius: 8px; }
-.pw-col-label { width: 112px; }
+.pw-col-label { width: 120px; }
 .pw-col-chk { width: 34px; }
 .pw-tbl.edit .pw-col-chk { width: 44px; }
 .pw-minirow { display: flex; gap: 3px; }
@@ -475,12 +478,12 @@ const toggleSection = (key: string) => {
   border-right: 1px solid #e5e7eb;
   padding: 9px 6px !important;
 }
-/* 이름에 넣은 줄 내림이 그대로 보이게 */
-.pw-label strong { font-size: 12px; line-height: 1.35; white-space: pre-line; }
+/* 이름에 넣은 줄 내림은 그대로 보이고, 낱말 가운데서는 끊기지 않는다 */
+.pw-label strong { font-size: 12px; line-height: 1.35; white-space: pre-line; word-break: keep-all; }
 /* 갈 곳이 있는 이름 — 파랗게, 뒤에 작은 화살표 */
 /* 줄 내림이 있는 이름이라 inline 으로 둔다 — ↗ 가 마지막 글자 뒤에 붙는다 */
 .pw-labellink { color: #2b6df3; text-decoration: none; display: inline; }
-.pw-labellink strong { font-size: 12px; line-height: 1.35; white-space: pre-line; text-decoration: underline; }
+.pw-labellink strong { font-size: 12px; line-height: 1.35; white-space: pre-line; word-break: keep-all; text-decoration: underline; }
 .pw-ext { font-size: 9.5px; margin-left: 2px; }
 .pw-row { cursor: pointer; }
 .pw-row:hover { background: #f7f9fd; }

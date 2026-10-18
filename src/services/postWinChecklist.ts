@@ -30,15 +30,20 @@ export interface CheckGroup {
   sections: CheckSection[];
 }
 
-/** 이름 칸에서 열 곳 — 묶음 첫 줄의 id 로 찾는다.
- *  저장해 둔(손으로 고친) 표에도 그대로 걸리도록 자료가 아니라 코드에 둔다. */
-export const SECTION_LINKS: Record<string, string> = {
+/** 이름 칸을 어떻게 보일지 — 글자로 알아보고 이름과 갈 곳을 정한다.
+ *  손으로 고쳐 저장해 둔 표에도 그대로 걸리도록 자료가 아니라 코드에 둔다.
+ *  (줄 id 로 찾던 때는 줄을 더하거나 옮기면 걸리지 않았다) */
+const LABEL_RULES: Array<{ test: RegExp; label: string; href?: string }> = [
   // 열어 보면 /psp/index.on 으로 넘어간다 ('전자소송포털')
-  'pw.file.online': 'https://ecfs.scourt.go.kr/',
+  { test: /전자소송/, label: '대법원\n전자소송포털', href: 'https://ecfs.scourt.go.kr/' },
+];
+
+/** 화면에 보일 이름과 갈 곳 */
+export const sectionView = (sec: CheckSection): { label: string; href: string } => {
+  const raw = (sec.label ?? '').trim();
+  const rule = LABEL_RULES.find((r) => r.test.test(raw.replace(/\s+/g, '')));
+  return { label: rule?.label ?? raw, href: sec.href || rule?.href || '' };
 };
-/** 이 묶음이 가리키는 곳 */
-export const sectionHref = (sec: CheckSection): string =>
-  sec.href || SECTION_LINKS[sec.rows[0]?.id ?? ''] || '';
 
 export const POST_WIN_DAY: CheckGroup[] = [
   {
