@@ -247,10 +247,6 @@ const toggleSection = (key: string) => {
               :href="telHref(courtInfoOf(picked).phone)"
               @click.stop
             >{{ courtInfoOf(picked).phone }}</a>
-            <!-- 낙찰 물건 목록은 이 단추로만 펼친다 -->
-            <button type="button" class="pw-objpick" @click.stop="pickOpen = !pickOpen">
-              낙찰목록<img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
-            </button>
           </p>
           <!-- 둘째 줄: 낙찰일 | 주소 -->
           <p class="addrline">
@@ -260,17 +256,22 @@ const toggleSection = (key: string) => {
           </p>
         </article>
         <p v-else class="pw-obj empty">낙찰한 물건이 없습니다</p>
-        <!-- 전체 접기 — 권리분석의 주소줄처럼 고정 카드 오른쪽 끝에 둔다 -->
-        <button
-          v-if="activeTab === 'win' && !editing"
-          type="button"
-          class="pw-foldall"
-          :aria-label="allCollapsed ? '전체 펼치기' : '전체 접기'"
-          :title="allCollapsed ? '전체 펼치기' : '전체 접기'"
-          @click="toggleAll"
-        >
-          <img :src="chevronDownIcon" :class="['pw-chev', { up: allCollapsed }]" alt="" />
-        </button>
+        <!-- 띠 오른쪽 끝 — 낙찰목록과 전체 접기를 나란히 둔다 -->
+        <div class="pw-objctrl">
+          <button type="button" class="pw-objpick" @click.stop="pickOpen = !pickOpen">
+            낙찰목록<img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
+          </button>
+          <button
+            v-if="activeTab === 'win' && !editing"
+            type="button"
+            class="pw-foldall"
+            :aria-label="allCollapsed ? '전체 펼치기' : '전체 접기'"
+            :title="allCollapsed ? '전체 펼치기' : '전체 접기'"
+            @click="toggleAll"
+          >
+            <img :src="chevronDownIcon" :class="['pw-chev', { up: allCollapsed }]" alt="" />
+          </button>
+        </div>
 
         <template v-if="pickOpen">
           <div class="pw-objveil" @click="pickOpen = false" />
@@ -418,8 +419,9 @@ const toggleSection = (key: string) => {
 /* 제목·탭 줄 — 물건상세의 고정줄(.adp-sticky-head)과 같은 꼴:
    흰 바탕(제목·탭) → 블루그레이 띠(물건 카드) → 진한 회색 6px → 본문 */
 .pw-header { background: #fff; }
+/* 제목 — 자금관리·물건상세와 같은 크기·같은 여백 */
 .pw-page-title {
-  margin: 0; padding: 8px 12px 7px;
+  margin: 0; padding: 9px 14px 7px;
   font-size: 20px; font-weight: 800; color: #111827;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -467,10 +469,11 @@ const toggleSection = (key: string) => {
 .pw-obj .addrline { font-size: 12.5px; }
 .pw-obj .top { margin: 0; display: flex; align-items: center; gap: 7px; }
 /* 낙찰목록 단추 — 이것만 목록을 편다 */
+.pw-objctrl { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
 .pw-objpick {
-  margin-left: auto; flex: 0 0 auto;
+  flex: 0 0 auto;
   display: inline-flex; align-items: center; gap: 1px;
-  height: 22px; padding: 0 5px 0 7px;
+  height: 26px; padding: 0 5px 0 8px;
   border: 1px solid #c7d0de; border-radius: 7px; background: #fff;
   font-family: inherit; font-size: 11px; font-weight: 700; color: #475467; cursor: pointer;
 }
@@ -630,7 +633,7 @@ const toggleSection = (key: string) => {
 .pw-flow-list span { color: #374151; }
 
 /* 표 고치기 */
-.pw-title-row { display: flex; align-items: center; gap: 6px; padding-right: 10px; border-bottom: 1px solid #e5e7eb; }
+.pw-title-row { display: flex; align-items: center; gap: 7px; padding-right: 14px; border-bottom: 1px solid #e5e7eb; }
 /* 제목 바로 옆에 ⓘ 가 붙고, 나머지 단추는 오른쪽 끝으로 밀린다 */
 .pw-title-row .pw-page-title { flex: 0 0 auto; padding-right: 0; border-bottom: none; }
 /* 전체 접기 — 물건상세의 전체 접기(.adp-fold-all)와 같은 네모 상자에 꺾쇠 */
