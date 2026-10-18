@@ -620,13 +620,13 @@ const toggleSection = (key: string) => {
 .pw-tbl.edit .pw-col-chk { width: 44px; }
 .pw-minirow { display: flex; gap: 3px; }
 .pw-minirow .pw-mini { flex: 1 1 0; }
-/* 이름 칸 — 분홍 바탕, 글은 왼쪽에서 한 칸 들여쓰고 세로는 가운데 */
+/* 이름 칸 — 분홍 바탕, 글은 가로·세로 모두 가운데 (설명 칸만 왼쪽) */
 .pw-row td.pw-label,
 .pw-label {
-  background: #fde7e7; text-align: left; vertical-align: middle;
+  background: #fde7e7; text-align: center; vertical-align: middle;
   color: #111827; font-weight: 700;
   border-right: 1px solid #d0d5dd;
-  padding: 6px 6px 6px 10px !important;
+  padding: 6px 6px !important;
 }
 /* 이름에 넣은 줄 내림은 그대로 보이고, 낱말 가운데서는 끊기지 않는다 */
 .pw-label strong { font-size: 12px; line-height: 1.35; white-space: pre-line; word-break: keep-all; }
