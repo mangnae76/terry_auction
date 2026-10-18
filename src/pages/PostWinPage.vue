@@ -588,11 +588,14 @@ const toggleSection = (key: string) => {
 
 /* 제목 옆 ⓘ 와 낙찰 후 진행 순서 */
 .pw-info {
-  flex: 0 0 auto; width: 20px; height: 20px; padding: 0;
-  border: 1px solid #c7d7f8; border-radius: 50%; background: #fff;
-  font-family: inherit; font-size: 12px; font-weight: 800; font-style: italic;
-  color: #2b6df3; line-height: 1; cursor: pointer;
+  flex: 0 0 auto; margin-right: auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 19px; height: 19px; padding: 0;
+  border: none; border-radius: 50%; background: #2b6df3;
+  font-family: inherit; font-size: 12.5px; font-weight: 800; font-style: italic;
+  color: #fff; line-height: 1; cursor: pointer;
 }
+.pw-info:active { background: #1d4ed8; }
 .pw-flowveil { position: fixed; inset: 0; z-index: 40; background: rgba(17, 24, 39, 0.3); }
 .pw-flow {
   position: absolute; left: 8px; right: 8px; top: 46px; z-index: 41;
@@ -628,7 +631,8 @@ const toggleSection = (key: string) => {
 
 /* 표 고치기 */
 .pw-title-row { display: flex; align-items: center; gap: 6px; padding-right: 10px; border-bottom: 1px solid #e5e7eb; }
-.pw-title-row .pw-page-title { flex: 1 1 auto; border-bottom: none; }
+/* 제목 바로 옆에 ⓘ 가 붙고, 나머지 단추는 오른쪽 끝으로 밀린다 */
+.pw-title-row .pw-page-title { flex: 0 0 auto; padding-right: 0; border-bottom: none; }
 /* 전체 접기 — 물건상세의 전체 접기(.adp-fold-all)와 같은 네모 상자에 꺾쇠 */
 .pw-foldall {
   flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
