@@ -219,10 +219,7 @@ const toggleSection = (key: string) => {
             <button type="button" class="pw-flow-close" aria-label="닫기" @click="flowOpen = false">×</button>
           </header>
           <div class="pw-flow-map">
-            <template v-for="(st, i) in FLOW_STEPS" :key="st.name">
-              <span class="pw-flow-box">{{ st.name }}</span>
-              <span v-if="i < FLOW_STEPS.length - 1" class="pw-flow-arrow">▶</span>
-            </template>
+            <span v-for="(st, i) in FLOW_STEPS" :key="st.name" :class="['pw-flow-box', { last: i === FLOW_STEPS.length - 1 }]">{{ st.name }}</span>
           </div>
           <ol class="pw-flow-list">
             <li v-for="st in FLOW_STEPS" :key="`n-${st.name}`">
@@ -592,7 +589,7 @@ const toggleSection = (key: string) => {
 
 /* 제목 옆 ⓘ 와 낙찰 후 진행 순서 */
 .pw-info {
-  flex: 0 0 auto; margin-right: auto;
+  flex: 0 0 auto; margin-right: auto; margin-left: 3px;
   display: inline-flex; align-items: center; justify-content: center;
   width: 19px; height: 19px; padding: 0;
   border: none; border-radius: 50%; background: #2b6df3;
@@ -614,27 +611,39 @@ const toggleSection = (key: string) => {
   margin-left: auto; border: none; background: transparent; cursor: pointer;
   font-size: 18px; line-height: 1; color: #9ca3af; padding: 0 2px;
 }
-/* 차례 그림 — 네모와 화살표를 줄줄이 */
+/* 차례 그림 — 한 줄에 넷씩, 네모는 모두 같은 크기 */
 .pw-flow-map {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px;
-  padding: 8px 2px 10px; border-bottom: 1px solid #eef1f6;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 14px;
+  padding: 8px 2px 12px; border-bottom: 1px solid #eef1f6;
 }
 .pw-flow-box {
-  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
-  min-width: 56px; min-height: 42px; padding: 5px 6px;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 46px; padding: 5px 4px;
   border: 1.5px solid #2b6df3; border-radius: 8px; background: #f4f7ff;
   font-size: 11.5px; font-weight: 700; line-height: 1.25; color: #1d3d75;
   text-align: center; white-space: pre-line; word-break: keep-all;
 }
-.pw-flow-arrow { flex: 0 0 auto; font-size: 10px; color: #9aa6bb; }
-/* 한 줄 설명 */
-.pw-flow-list { margin: 9px 0 0; padding: 0 0 0 2px; list-style: none; display: flex; flex-direction: column; gap: 6px; }
-.pw-flow-list li { display: flex; gap: 7px; align-items: baseline; font-size: 12px; line-height: 1.45; }
-.pw-flow-list b { flex: 0 0 74px; color: #1d4ed8; font-weight: 800; }
-.pw-flow-list span { color: #374151; }
+/* 네모 사이 화살표 — 줄 끝과 마지막 네모 뒤에는 두지 않는다 */
+.pw-flow-box:not(:nth-child(4n)):not(.last)::after {
+  content: '▶';
+  position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+  font-size: 9px; color: #9aa6bb;
+}
+/* 한 줄 설명 — 이름 칸은 '매매사업자대출'이 한 줄로 들어갈 만큼 */
+.pw-flow-list { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.pw-flow-list li { display: flex; gap: 8px; align-items: baseline; font-size: 12px; line-height: 1.45; }
+.pw-flow-list b {
+  flex: 0 0 96px; color: #1d4ed8; font-weight: 800;
+  white-space: nowrap; word-break: keep-all;
+}
+.pw-flow-list span { flex: 1 1 auto; min-width: 0; color: #374151; }
 
 /* 표 고치기 */
-.pw-title-row { display: flex; align-items: center; gap: 7px; padding-right: 14px; border-bottom: 1px solid #e5e7eb; }
+/* ⓘ 는 제목에 바짝 붙이고, 나머지 단추는 오른쪽 끝에 */
+.pw-title-row { display: flex; align-items: center; gap: 0; padding-right: 14px; border-bottom: 1px solid #e5e7eb; }
+.pw-title-row .pw-foldall,
+.pw-title-row .pw-ebtn { margin-left: 6px; }
 /* 제목 바로 옆에 ⓘ 가 붙고, 나머지 단추는 오른쪽 끝으로 밀린다 */
 .pw-title-row .pw-page-title { flex: 0 0 auto; padding-right: 0; border-bottom: none; }
 /* 전체 접기 — 물건상세의 전체 접기(.adp-fold-all)와 같은 네모 상자에 꺾쇠 */
