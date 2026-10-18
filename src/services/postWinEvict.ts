@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 14;
+export const POST_WIN_EVICT_VERSION = 15;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
@@ -37,6 +37,7 @@ export const POST_WIN_EVICT: CheckGroup[] = [
     noCheck: true,
     branches: [{
       pill: '낙찰 당일',
+      head: '낙찰 당일 당황하지 말고 1, 2번을 실행합니다.',
       steps: [
         {
           no: '1',
