@@ -59,6 +59,8 @@ export interface CheckGroup {
     chip?: string;
     cols: Array<{ title: string; items: string[] }>;
   };
+  /** 가로로 꽉 찬 상자를 위에서 아래로 쌓는다 (머리말 + 줄들) */
+  stacks?: Array<{ chip?: string; items: string[] }>;
   /** 갈래 그림 — 왼쪽 번호 상자에서 오른쪽 할 일로 갈라진다. 여럿 둘 수 있다 */
   branches?: Array<{
     /** 왼쪽 알약 (때) */

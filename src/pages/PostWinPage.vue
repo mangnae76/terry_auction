@@ -493,6 +493,13 @@ const toggleSection = (key: string) => {
                 </div>
               </div>
             </div>
+            <!-- 위에서 아래로 쌓는 상자들 -->
+            <div v-for="(sk, ski) in (editing ? [] : (g.stacks ?? []))" :key="`sk-${ski}`" class="pw-gr">
+              <span v-if="sk.chip" class="pw-gr-chip">{{ sk.chip }}</span>
+              <div class="pw-sk-col">
+                <span v-for="(it, ii) in sk.items" :key="`si-${ski}-${ii}`" class="pw-sk-item">{{ it }}</span>
+              </div>
+            </div>
             <!-- 갈래 그림 — 번호 상자에서 할 일이 갈라진다 -->
             <div v-for="(br, bri) in (editing ? [] : (g.branches ?? []))" :key="`br-${bri}`" class="pw-br">
               <!-- 때(알약)와 그 한마디 -->
@@ -888,6 +895,16 @@ const toggleSection = (key: string) => {
 .pw-gr-list li {
   font-size: 11.5px; font-weight: 600; color: #374151; line-height: 1.5;
   word-break: keep-all;
+}
+
+/* 위에서 아래로 쌓는 상자들 */
+.pw-sk-col { display: flex; flex-direction: column; gap: 7px; }
+.pw-sk-item {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 34px; padding: 7px 8px;
+  border: 1px solid #c9d3e3; border-radius: 4px; background: #fff;
+  font-size: 12px; font-weight: 600; color: #1f2937; line-height: 1.35;
+  text-align: center; word-break: keep-all;
 }
 
 /* 갈래 그림 */

@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 18;
+export const POST_WIN_EVICT_VERSION = 19;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
@@ -150,6 +150,16 @@ export const POST_WIN_EVICT: CheckGroup[] = [
         },
       ],
     },
+    stacks: [{
+      chip: '명도 협상의 기술',
+      items: [
+        '공동 투자자 불러오기',
+        '3자화법 (너무 유명)',
+        '얼리버드 전략',
+        '제안에 대해 무반응 → 상한선 제시',
+        '협의점이 안 보일 경우, 강제 계고까지 스피드 하게 진행',
+      ],
+    }],
     sections: [],
   },
 ];
