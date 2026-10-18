@@ -47,7 +47,7 @@ export const sectionView = (sec: CheckSection): { label: string; href: string } 
 
 /** 기본 글의 판. 글을 고쳐 내보낼 때 올린다 — 예전 판으로 저장해 둔 표는
  *  새 글로 갈아 끼운다(손으로 고친 것은 그때 사라진다). */
-export const POST_WIN_VERSION = 3;
+export const POST_WIN_VERSION = 5;
 
 export const POST_WIN_DAY: CheckGroup[] = [
   {
@@ -71,13 +71,12 @@ export const POST_WIN_DAY: CheckGroup[] = [
     ],
   },
   {
-    key: 'visit',
-    title: '유선연락 첫통화 or 물건지 방문',
-    note: '빠른 명도를 위해 잔금납부 전 협상을 진행한다.',
+    // 첫통화든 방문이든 들고 가는 원칙은 같다 — 따로 세워 둔다
+    key: 'rule',
+    title: '명도협상 원칙',
     sections: [
       {
-        // 첫통화든 방문이든 들고 가는 원칙은 같다 — 둘을 한 묶음으로 본다
-        label: '협상원칙',
+        label: '',
         rows: [
           { id: 'pw.visit.p1', depth: 0, text: '협상의 우위를 인지 시키는 것이 핵심' },
           { id: 'pw.visit.p2', depth: 0, text: '명도협상 시 잔금납부일 버퍼를 확보' },
@@ -85,8 +84,15 @@ export const POST_WIN_DAY: CheckGroup[] = [
           { id: 'pw.visit.p4', depth: 0, text: '이사비는 X', warn: true },
         ],
       },
+    ],
+  },
+  {
+    key: 'visit',
+    title: '유선연락 첫통화 or 물건지 방문',
+    note: '빠른 명도를 위해 잔금납부 전 협상을 진행한다.',
+    sections: [
       {
-        label: '명도협상',
+        label: '협상내용',
         rows: [
           { id: 'pw.visit.n1', depth: 0, text: '경매낙찰자임을 알림 > 동 호수 확인' },
           { id: 'pw.visit.n2', depth: 0, text: '잔금납부전 집을 비워야 하는 이유로 사전연락 했음을 알림' },

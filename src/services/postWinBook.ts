@@ -19,6 +19,7 @@ const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
  *  (저장해 둔 표가 있으면 기본 글을 덮어쓰므로, 이름이 바뀌면 여기에 적는다) */
 const LABEL_FIX: Record<string, string> = {
   '협상 원칙': '협상원칙',
+  '명도협상': '협상내용',
   '내부 확인': '내부확인',
   '폐문부재': '폐문부재\n연락부재',
   '대법원 전자소송포털(온라인)': '전자소송포털',
