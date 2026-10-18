@@ -403,7 +403,7 @@ const toggleSection = (key: string) => {
 /* 두 줄의 막대기가 같은 세로선에 서도록 앞 칸의 폭을 못 박는다 */
 /* 두 줄의 막대기가 같은 세로선에 서도록 앞 칸의 폭을 못 박는다.
    주소가 길어질 수 있어 될 수 있는 대로 좁게 잡는다 */
-.pw-obj .lead { flex: 0 0 104px; min-width: 0; }
+.pw-obj .lead { flex: 0 0 94px; min-width: 0; }
 /* 칸을 가르는 세로 막대기 */
 .pw-obj .bar {
   flex: 0 0 auto; width: 1px; height: 11px; background: #d4dae4; margin: 0 1px;

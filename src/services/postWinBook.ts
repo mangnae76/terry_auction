@@ -18,9 +18,9 @@ const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 /** 예전에 저장해 둔 이름을 지금 쓰는 이름으로 고친다.
  *  (저장해 둔 표가 있으면 기본 글을 덮어쓰므로, 이름이 바뀌면 여기에 적는다) */
 const LABEL_FIX: Record<string, string> = {
-  '대법원 전자소송포털(온라인)': '대법원\n전자소송포털',
-  '전자소송포털': '대법원\n전자소송포털',
-  '대법원 전자소송포털': '대법원\n전자소송포털',
+  '대법원 전자소송포털(온라인)': '전자소송포털',
+  '대법원 전자소송포털': '전자소송포털',
+  '대법원\n전자소송포털': '전자소송포털',
 };
 const migrate = (list: CheckGroup[]): CheckGroup[] => list.map((g) => ({
   ...g,

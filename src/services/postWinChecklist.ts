@@ -35,7 +35,7 @@ export interface CheckGroup {
  *  (줄 id 로 찾던 때는 줄을 더하거나 옮기면 걸리지 않았다) */
 const LABEL_RULES: Array<{ test: RegExp; label: string; href?: string }> = [
   // 열어 보면 /psp/index.on 으로 넘어간다 ('전자소송포털')
-  { test: /전자소송/, label: '대법원\n전자소송포털', href: 'https://ecfs.scourt.go.kr/' },
+  { test: /전자소송/, label: '전자소송포털', href: 'https://ecfs.scourt.go.kr/' },
 ];
 
 /** 화면에 보일 이름과 갈 곳 */
@@ -60,8 +60,7 @@ export const POST_WIN_DAY: CheckGroup[] = [
       },
       {
         // ecfs.scourt.go.kr → /psp/index.on 으로 넘어간다 ('전자소송포털')
-        // '대법원'을 윗줄에 두고 '전자소송포털'을 아랫줄로 내린다
-        label: '대법원\n전자소송포털',
+        label: '전자소송포털',
         href: 'https://ecfs.scourt.go.kr/',
         rows: [{ id: 'pw.file.online', depth: 0, text: '재판기록 열람 및 복사 (온라인)' }],
       },
