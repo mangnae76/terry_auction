@@ -616,7 +616,7 @@ const toggleSection = (key: string) => {
   background: #fde7e7; text-align: center; vertical-align: middle;
   color: #111827; font-weight: 700;
   border-right: 1px solid #d0d5dd;
-  padding: 5px 6px !important;
+  padding: 6px 6px !important;
 }
 /* 이름에 넣은 줄 내림은 그대로 보이고, 낱말 가운데서는 끊기지 않는다 */
 .pw-label strong { font-size: 12px; line-height: 1.35; white-space: pre-line; word-break: keep-all; }
@@ -631,11 +631,11 @@ const toggleSection = (key: string) => {
 .pw-row:hover { background: #f7f9fd; }
 /* 줄 높이 — 글자는 그대로 두고 위아래 여백만 줄인다.
    칸 안의 글은 세로 가운데에 앉는다 */
-.pw-row td { padding: 5px 6px; vertical-align: middle; }
+.pw-row td { padding: 6px 6px; vertical-align: middle; }
 .pw-chk { width: 34px; text-align: center; }
 .pw-chk input { width: 16px; height: 16px; accent-color: #2b6df3; cursor: pointer; }
 /* 편집에서 넣은 줄 내림이 그대로 보이게 한다 */
-.pw-txt { font-size: 12.5px; line-height: 1.4; white-space: pre-line; padding: 5px 10px 5px 12px !important; }
+.pw-txt { font-size: 12.5px; line-height: 1.4; white-space: pre-line; padding: 6px 10px 6px 12px !important; }
 .pw-row td.pw-txt { font-weight: 400; color: #374151; }
 /* 묶음 안에 딸린 말은 한 단 들여쓴다 */
 .pw-row.d1 .pw-txt { padding-left: 24px !important; color: #4b5563; }
