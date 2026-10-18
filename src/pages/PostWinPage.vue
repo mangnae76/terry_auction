@@ -8,10 +8,10 @@ import AppToast from '../components/AppToast.vue';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
-import { groupRows, type CheckGroup } from '../services/postWinChecklist';
+import { groupRows, sectionHref, type CheckGroup } from '../services/postWinChecklist';
 import { POST_WIN_EDITABLE, defaultGroups, newRowId, usePostWinBook } from '../services/postWinBook';
 import { bidStageOf } from '../utils/stageLabel';
-import { courtInfoOf, shortCase } from '../utils/auctionSummary';
+import { courtInfoOf } from '../utils/auctionSummary';
 import type { AuctionDetail } from '../types/auction';
 
 type TabKey = 'win' | 'balance' | 'evict' | 'repair' | 'sell';
@@ -188,7 +188,7 @@ const toggleSection = (key: string) => {
         <article v-if="picked" class="pw-obj" @click="pickOpen = !pickOpen">
           <!-- 첫 줄: 사건번호 | 관할법원 · 경매계 · 전화 (정보요약에 적어 둔 값) -->
           <p class="top">
-            <span class="case">{{ shortCase(picked) }}</span>
+            <span class="case lead">{{ picked.caseNumber }}</span>
             <i class="bar" />
             <span class="court">{{ courtInfoOf(picked).name || '–' }}</span>
             <span v-if="courtInfoOf(picked).dept" class="dept">{{ courtInfoOf(picked).dept }}</span>
@@ -202,7 +202,7 @@ const toggleSection = (key: string) => {
           </p>
           <!-- 둘째 줄: 낙찰일 | 주소 -->
           <p class="addrline">
-            <span class="pd"><em>낙찰일</em><b>{{ shortYmd(picked.wonDate) || '–' }}</b></span>
+            <span class="pd lead"><em>낙찰일</em><b>{{ shortYmd(picked.wonDate) || '–' }}</b></span>
             <i class="bar" />
             <span class="addr">{{ shortAddr(picked.address) || picked.caseNumber }}</span>
           </p>
@@ -219,13 +219,13 @@ const toggleSection = (key: string) => {
               @click="pickAuction(a.id)"
             >
               <p class="top">
-                <span class="case">{{ shortCase(a) }}</span>
+                <span class="case lead">{{ a.caseNumber }}</span>
                 <i class="bar" />
                 <span class="court">{{ courtInfoOf(a).name }}</span>
                 <span v-if="courtInfoOf(a).dept" class="dept">{{ courtInfoOf(a).dept }}</span>
               </p>
               <p class="addrline">
-                <span class="pd"><em>낙찰일</em><b>{{ shortYmd(a.wonDate) || '–' }}</b></span>
+                <span class="pd lead"><em>낙찰일</em><b>{{ shortYmd(a.wonDate) || '–' }}</b></span>
                 <i class="bar" />
                 <span class="addr">{{ shortAddr(a.address) || a.caseNumber }}</span>
               </p>
@@ -276,9 +276,9 @@ const toggleSection = (key: string) => {
                       </template>
                       <!-- 갈 곳이 있는 이름은 링크로 — 누르면 그 자리로 간다 -->
                       <a
-                        v-else-if="sec.href"
+                        v-else-if="sectionHref(sec)"
                         class="pw-labellink"
-                        :href="sec.href"
+                        :href="sectionHref(sec)"
                         target="_blank"
                         rel="noopener"
                         @click.stop
@@ -390,15 +390,20 @@ const toggleSection = (key: string) => {
 .pw-obj.empty {
   margin: 0; text-align: center; color: #9ca3af; font-size: 12.5px; font-weight: 600; cursor: default;
 }
-.pw-obj .top { margin: 0; display: flex; align-items: center; gap: 8px; }
+/* 카드 안의 글자는 한 크기로 쓴다 */
+.pw-obj .top,
+.pw-obj .addrline { font-size: 12.5px; }
+.pw-obj .top { margin: 0; display: flex; align-items: center; gap: 7px; }
 .pw-obj .top .pw-obj-chev { margin-left: auto; }
-.pw-obj .pd { display: inline-flex; align-items: baseline; gap: 5px; flex: 0 0 auto; }
-.pw-obj .pd em { font-style: normal; font-size: 10.5px; font-weight: 500; color: #9ca3af; }
-.pw-obj .pd b { font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; }
+.pw-obj .pd { display: inline-flex; align-items: baseline; gap: 5px; }
+.pw-obj .pd em { font-style: normal; font-size: 12.5px; font-weight: 500; color: #111827; }
+.pw-obj .pd b { font-size: 12.5px; font-weight: 500; color: #111827; white-space: nowrap; }
 .pw-obj .case { font-size: 12.5px; font-weight: 700; color: #2b6df3; white-space: nowrap; }
-.pw-obj .court { font-size: 11.5px; font-weight: 500; color: #374151; white-space: nowrap; }
-.pw-obj .dept { font-size: 11.5px; font-weight: 500; color: #6b7280; white-space: nowrap; }
-.pw-obj .tel { font-size: 11.5px; font-weight: 600; color: #2b6df3; text-decoration: none; white-space: nowrap; }
+.pw-obj .court { font-size: 12.5px; font-weight: 500; color: #374151; white-space: nowrap; }
+.pw-obj .dept { font-size: 12.5px; font-weight: 500; color: #6b7280; white-space: nowrap; }
+.pw-obj .tel { font-size: 12.5px; font-weight: 600; color: #2b6df3; text-decoration: none; white-space: nowrap; }
+/* 두 줄의 막대기가 같은 세로선에 서도록 앞 칸의 폭을 못 박는다 */
+.pw-obj .lead { flex: 0 0 122px; min-width: 0; }
 /* 칸을 가르는 세로 막대기 */
 .pw-obj .bar {
   flex: 0 0 auto; width: 1px; height: 11px; background: #d4dae4; margin: 0 1px;

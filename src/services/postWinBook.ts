@@ -14,6 +14,21 @@ import { POST_WIN_DAY, type CheckGroup } from './postWinChecklist';
 export const POST_WIN_EDITABLE = true;
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+
+/** 예전에 저장해 둔 이름을 지금 쓰는 이름으로 고친다.
+ *  (저장해 둔 표가 있으면 기본 글을 덮어쓰므로, 이름이 바뀌면 여기에 적는다) */
+const LABEL_FIX: Record<string, string> = {
+  '대법원 전자소송포털(온라인)': '대법원\n전자소송포털',
+  '전자소송포털': '대법원\n전자소송포털',
+  '대법원 전자소송포털': '대법원\n전자소송포털',
+};
+const migrate = (list: CheckGroup[]): CheckGroup[] => list.map((g) => ({
+  ...g,
+  sections: (g.sections ?? []).map((sec) => ({
+    ...sec,
+    label: LABEL_FIX[(sec.label ?? '').trim()] ?? sec.label,
+  })),
+}));
 /** 손대지 않은 기본 표 */
 export const defaultGroups = (): CheckGroup[] => clone(POST_WIN_DAY);
 
@@ -31,7 +46,7 @@ export const usePostWinBook = () => {
     loadedFor.value = uid;
     const prefs = await loadUserPrefs(uid);
     const saved = prefs?.postWinDay;
-    if (Array.isArray(saved) && saved.length > 0) groups.value = clone(saved) as CheckGroup[];
+    if (Array.isArray(saved) && saved.length > 0) groups.value = migrate(clone(saved) as CheckGroup[]);
   };
   const save = async (uid: string, list: CheckGroup[]) => {
     groups.value = clone(list);
