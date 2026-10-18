@@ -47,7 +47,7 @@ export const sectionView = (sec: CheckSection): { label: string; href: string } 
 
 /** 기본 글의 판. 글을 고쳐 내보낼 때 올린다 — 예전 판으로 저장해 둔 표는
  *  새 글로 갈아 끼운다(손으로 고친 것은 그때 사라진다). */
-export const POST_WIN_VERSION = 2;
+export const POST_WIN_VERSION = 3;
 
 export const POST_WIN_DAY: CheckGroup[] = [
   {
@@ -77,7 +77,7 @@ export const POST_WIN_DAY: CheckGroup[] = [
     sections: [
       {
         // 첫통화든 방문이든 들고 가는 원칙은 같다 — 둘을 한 묶음으로 본다
-        label: '협상 원칙',
+        label: '협상원칙',
         rows: [
           { id: 'pw.visit.p1', depth: 0, text: '협상의 우위를 인지 시키는 것이 핵심' },
           { id: 'pw.visit.p2', depth: 0, text: '명도협상 시 잔금납부일 버퍼를 확보' },
@@ -99,7 +99,7 @@ export const POST_WIN_DAY: CheckGroup[] = [
         ],
       },
       {
-        label: '내부 확인',
+        label: '내부확인',
         rows: [
           { id: 'pw.visit.in1', depth: 0, text: '집수리 내용 파악(누수 등) — 점유자·주민' },
           { id: 'pw.visit.in2', depth: 0, text: '미납관리비 확인 — 동 반장' },
@@ -107,7 +107,8 @@ export const POST_WIN_DAY: CheckGroup[] = [
         ],
       },
       {
-        label: '폐문부재',
+        // 문을 못 열었을 때와 연락이 닿지 않을 때 — 한 묶음으로 본다
+        label: '폐문부재\n연락부재',
         rows: [
           { id: 'pw.visit.c1', depth: 0, text: '연락처 메모 남기기' },
           { id: 'pw.visit.c2', depth: 0, text: '탐문 (동 반장·주민) — 관리비·수도·전기·가스 확인' },
