@@ -412,7 +412,8 @@ const toggleSection = (key: string) => {
 .pw-objwrap {
   position: relative; padding: 7px 12px 8px;
   background: #f1f3f7; border-bottom: 6px solid #dcdee3;
-  display: flex; align-items: center; gap: 6px;
+  /* 접기 단추는 둘째 줄(주소 줄) 오른쪽에 선다 — 물건상세와 같은 자리 */
+  display: flex; align-items: flex-end; gap: 6px;
 }
 .pw-objwrap > .pw-obj { flex: 1 1 auto; min-width: 0; }
 .pw-obj {
