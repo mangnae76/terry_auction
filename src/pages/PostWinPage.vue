@@ -481,6 +481,21 @@ const toggleSection = (key: string) => {
                 >{{ pt.label }}</span>
               </div>
             </div>
+            <!-- 갈래 그림 — 번호 상자에서 할 일이 갈라진다 -->
+            <div v-if="!editing && g.branch" class="pw-br">
+              <span v-if="g.branch.pill" class="pw-br-pill">{{ g.branch.pill }}</span>
+              <div v-for="(stp, sti) in g.branch.steps" :key="`br-${sti}`" class="pw-br-step">
+                <span class="pw-br-left">
+                  <em class="pw-br-no">{{ stp.no }}</em>
+                  <b>{{ stp.label }}</b>
+                </span>
+                <span class="pw-br-arrow">→</span>
+                <span class="pw-br-items">
+                  <em v-for="(it, iti) in stp.items" :key="`bi-${iti}`" class="pw-br-item">{{ it }}</em>
+                </span>
+              </div>
+              <p v-for="(nt, nti) in (g.branch.notes ?? [])" :key="`bn-${nti}`" class="pw-br-note">{{ nt }}</p>
+            </div>
             <!-- 나란히 세우는 네모들 -->
             <div v-if="!editing && g.boxes" class="pw-bx">
               <span v-if="g.boxes.chip" class="pw-chip">{{ g.boxes.chip }}</span>
@@ -833,6 +848,47 @@ const toggleSection = (key: string) => {
   grid-row: 3; justify-self: center; text-align: center;
   font-size: 12.5px; font-weight: 600; color: #1f2937; line-height: 1.35;
   white-space: pre-line; word-break: keep-all; padding: 0 2px;
+}
+
+/* 갈래 그림 */
+.pw-br { margin-bottom: 10px; }
+.pw-br-pill {
+  display: block; width: 62%; max-width: 230px; margin: 2px 0 12px;
+  border: 1.5px solid #6b85f0; border-radius: 999px; background: #dce5ff;
+  padding: 5px 10px; text-align: center;
+  font-size: 12.5px; font-weight: 700; color: #3850c2;
+}
+.pw-br-step {
+  display: grid; grid-template-columns: 124px 16px 1fr; gap: 6px;
+  align-items: center; margin-bottom: 10px;
+}
+.pw-br-left {
+  position: relative; align-self: stretch;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border: 1px solid #c9d3e3; border-radius: 4px; background: #f3f4f6;
+  padding: 16px 6px 8px; text-align: center;
+}
+.pw-br-left b {
+  font-size: 11.5px; font-weight: 700; color: #1f2937; line-height: 1.35;
+  white-space: pre-line; word-break: keep-all;
+}
+.pw-br-no {
+  position: absolute; left: 5px; top: 5px;
+  font-style: normal; background: #fff6a8; border-radius: 3px;
+  padding: 0 6px; font-size: 11px; font-weight: 800; color: #7a5f00;
+}
+.pw-br-arrow { justify-self: center; font-size: 13px; color: #9aa6bb; }
+.pw-br-items { display: flex; flex-direction: column; gap: 6px; }
+.pw-br-item {
+  font-style: normal;
+  border: 1px solid #c9d3e3; border-radius: 4px; background: #fff;
+  padding: 7px 8px; text-align: center;
+  font-size: 11.5px; font-weight: 600; color: #1f2937; line-height: 1.35; word-break: keep-all;
+}
+.pw-br-note {
+  margin: 6px 0 0; padding: 8px 10px; text-align: center;
+  border: 1px solid #bfe3c6; border-radius: 4px; background: #e7f6ea;
+  font-size: 12px; font-weight: 700; color: #1f6b32; line-height: 1.4;
 }
 
 /* 나란히 세우는 알약들 — 선정물건의 단계 알약과 같은 꼴 */

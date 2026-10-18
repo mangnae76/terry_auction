@@ -38,7 +38,7 @@ const spaceArrows = (text: string): string => String(text ?? '')
 /** 예전 제목을 지금 제목으로 (그 제목 그대로일 때만 바꾼다 — 손으로 쓴 제목은 둔다) */
 const TITLE_FIX: Record<string, { from: string; to: string }> = {
   'biz.issue': { from: '사업자등록증 발급', to: '사업자등록증 발급 결과' },
-  'ev.flow': { from: '명도의 절차', to: '명도 절차' },
+  'ev.flow': { from: '명도의 절차', to: '명도절차' },
 };
 /** 들여쓰기를 바로잡을 줄 — 저장본에 옛 들여쓰기가 남아 있다 */
 const DEPTH_FIX: Record<string, 0 | 1> = {
@@ -46,9 +46,16 @@ const DEPTH_FIX: Record<string, 0 | 1> = {
   'ln.c5': 0,
 };
 
+/** 제목이 이미 한 번 바뀐 자리 — 어느 쪽이든 지금 제목으로 맞춘다 */
+const TITLE_ALSO: Record<string, { from: string; to: string }> = {
+  'ev.flow': { from: '명도 절차', to: '명도절차' },
+};
+
 const migrate = (list: CheckGroup[]): CheckGroup[] => list.map((g) => ({
   ...g,
-  title: TITLE_FIX[g.key]?.from === (g.title ?? '').trim() ? TITLE_FIX[g.key].to : g.title,
+  title: TITLE_FIX[g.key]?.from === (g.title ?? '').trim()
+    ? TITLE_FIX[g.key].to
+    : (TITLE_ALSO[g.key]?.from === (g.title ?? '').trim() ? TITLE_ALSO[g.key].to : g.title),
   sections: (g.sections ?? []).map((sec) => ({
     ...sec,
     label: LABEL_FIX[(sec.label ?? '').trim()] ?? sec.label,

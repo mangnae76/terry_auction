@@ -4,12 +4,12 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 9;
+export const POST_WIN_EVICT_VERSION = 10;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
     key: 'ev.flow',
-    title: '명도 절차',
+    title: '명도절차',
     noCheck: true,
     timeline: {
       chip: '낙찰 이후 명도프로세스',
@@ -33,25 +33,28 @@ export const POST_WIN_EVICT: CheckGroup[] = [
   {
     key: 'ev.step',
     title: '명도 시기별 진행내용',
-    note: '낙찰 받고 당장 무엇을 할지 — 때마다 할 일이 다르다.',
+    // 낙찰 당일은 그림으로 — 왼쪽 번호 상자에서 할 일이 갈라진다
+    branch: {
+      pill: '낙찰 당일',
+      steps: [
+        {
+          no: '1',
+          label: '관리사무소 방문\nor 동대표 탐문',
+          items: ['내 전화번호 남기고, 점유자에게 전화요청하기', '미납관리비 최신화 (공용부/전용부 구분)'],
+        },
+        {
+          no: '2',
+          label: '경매물건 세대 방문',
+          items: ['낙찰자임을 알리는 포스트잇 붙이기', '주변세대(위·아래·옆) 방문 후 점유 상태 확인', '점유자 만나기'],
+        },
+      ],
+      notes: [
+        '낙찰 받고 당장 내용증명 보내기 등을 하실 필요 없습니다.',
+        "잔금 납부 전까지 낙찰자는 '소유자'가 아닙니다.",
+        '아직은 기다리는 것이 베스트입니다. 일단 잔금 납부까지 기다려보세요',
+      ],
+    },
     sections: [
-      {
-        label: '낙찰 당일\n관리사무소',
-        rows: [
-          { id: 'ev.s1', depth: 0, text: '내 전화번호를 남기고, 점유자에게 전화를 요청해 둔다' },
-          { id: 'ev.s2', depth: 0, text: '미납관리비 최신화 — 공용부 / 전용부를 나눠 확인' },
-        ],
-      },
-      {
-        label: '낙찰 당일\n세대 방문',
-        rows: [
-          { id: 'ev.s3', depth: 0, text: '낙찰자임을 알리는 포스트잇을 붙인다' },
-          { id: 'ev.s4', depth: 0, text: '주변 세대(위·아래·앞)를 돌며 점유 상태를 확인한다' },
-          { id: 'ev.s5', depth: 0, text: '낙찰 받고 당장 내용증명을 보낼 필요는 없다' },
-          { id: 'ev.s6', depth: 0, text: '잔금 납부 전까지 낙찰자는 아직 소유자가 아니다', warn: true },
-          { id: 'ev.s7', depth: 0, text: '잔금 납부까지는 기다리는 편이 낫다' },
-        ],
-      },
       {
         label: '잔금 납부 후\n① 인도명령',
         rows: [
