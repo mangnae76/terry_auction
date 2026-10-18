@@ -39,6 +39,8 @@ export interface CheckGroup {
   noCheck?: boolean;
   /** 제목줄 오른쪽에 세울 바로가기들 (계산기 등) */
   links?: Array<{ label: string; url: string }>;
+  /** 여러 상자를 한 울타리로 묶는 큰 제목 — 같은 글을 적은 상자끼리 묶인다 */
+  super?: string;
   sections: CheckSection[];
 }
 

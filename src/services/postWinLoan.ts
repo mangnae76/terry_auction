@@ -6,11 +6,12 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_LOAN_VERSION = 13;
+export const POST_WIN_LOAN_VERSION = 14;
 
 export const POST_WIN_LOAN: CheckGroup[] = [
   {
     key: 'loan.screen',
+    super: '법무사 대행 잔금 납부 및 등기',
     title: '경락신탁대출 심사 서류 준비',
     note: '먼저 이 서류로 심사를 받는다.',
     sections: [
@@ -29,6 +30,7 @@ export const POST_WIN_LOAN: CheckGroup[] = [
   },
   {
     key: 'loan.docs',
+    super: '법무사 대행 잔금 납부 및 등기',
     title: '대출준비서류 (신탁)',
     note: '모든 서류는 주민등록번호가 보이게 발급받는다.',
     sections: [
@@ -85,6 +87,7 @@ export const POST_WIN_LOAN: CheckGroup[] = [
   },
   {
     key: 'loan.bid',
+    super: '법무사 대행 잔금 납부 및 등기',
     title: '대출업체 비딩',
     note: '여러 곳을 붙여 놓고 고른다 — 금리만 보지 않는다.',
     sections: [
@@ -100,6 +103,7 @@ export const POST_WIN_LOAN: CheckGroup[] = [
   },
   {
     key: 'loan.legal',
+    super: '법무사 대행 잔금 납부 및 등기',
     title: '법무비용',
     // 읽어 두는 글이라 체크를 두지 않는다 — 글이 넓게 들어간다
     noCheck: true,

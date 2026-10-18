@@ -87,6 +87,13 @@ const toggleCheck = async (id: string) => {
   a.postWinChecks[id] = !a.postWinChecks[id];
   await store.saveAuction(a);
 };
+/** 큰 제목 — 이 탭의 상자들이 모두 한 울타리면 그 제목을 쓴다 */
+const superTitle = computed(() => {
+  const list = dayGroups.value;
+  const first = (list[0]?.super ?? '').trim();
+  if (!first) return '';
+  return list.every((g) => (g.super ?? '').trim() === first) ? first : '';
+});
 /** '부수' 칸을 세울 묶음인가 — 적어 둔 줄이 하나라도 있으면 세운다 */
 const hasQty = (g: CheckGroup) => g.sections.some((sec) => sec.rows.some((r) => (r.qty ?? '').trim()));
 /** '비고' 칸도 마찬가지 */
@@ -358,6 +365,13 @@ const toggleSection = (key: string) => {
 
     <div class="pw-body">
       <template v-if="hasTable">
+       <div :class="['pw-wrap', { super: superTitle }]">
+        <!-- 큰 제목 — 상자들을 한 울타리로 묶는다 -->
+        <header v-if="superTitle" class="pw-super-head" @click="toggleSection('__super')">
+          <h2>{{ superTitle }}</h2>
+          <img :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed('__super') }]" alt="" />
+        </header>
+        <template v-if="!superTitle || !isCollapsed('__super')">
         <section v-for="(g, gi) in dayGroups" :key="g.key" class="pw-card">
           <header class="pw-card-head" @click="editing || toggleSection(g.key)">
             <span v-if="editing" class="pw-ttlwrap">
@@ -483,6 +497,8 @@ const toggleSection = (key: string) => {
             <button v-if="editing" type="button" class="pw-addsec" @click="addSection(gi)">＋ 묶음 추가</button>
           </div>
         </section>
+        </template>
+       </div>
       </template>
 
       <section v-else class="pw-card">
@@ -623,6 +639,21 @@ const toggleSection = (key: string) => {
   border: 1px solid #dde3ee; background: #fff; padding: 7px 9px 8px; cursor: pointer;
 }
 .pw-obj.row.on { border-color: #2b6df3; background: #f5f8ff; }
+
+/* 한 울타리 — 큰 제목 아래 상자들을 담는다. 묶을 제목이 없으면
+   울타리는 없는 셈 치고(display: contents) 상자들이 그대로 선다 */
+.pw-wrap { display: contents; }
+.pw-wrap.super {
+  display: flex; flex-direction: column; gap: 8px;
+  background: #e7eaf0; border-radius: 10px; padding: 2px 7px 8px;
+}
+.pw-super-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 4px 4px; cursor: pointer;
+}
+.pw-super-head h2 {
+  margin: 0 auto 0 0; font-size: 15.5px; font-weight: 800; color: #1f2937;
+}
 
 /* 카드 — 물건상세(.adp-card)와 같은 꼴 */
 .pw-card { flex: 0 0 auto; background: #fff; border-radius: 8px; padding: 0 8px 7px; }
