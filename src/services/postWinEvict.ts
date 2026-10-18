@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 10;
+export const POST_WIN_EVICT_VERSION = 11;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
@@ -51,7 +51,7 @@ export const POST_WIN_EVICT: CheckGroup[] = [
       notes: [
         '낙찰 받고 당장 내용증명 보내기 등을 하실 필요 없습니다.',
         "잔금 납부 전까지 낙찰자는 '소유자'가 아닙니다.",
-        '아직은 기다리는 것이 베스트입니다. 일단 잔금 납부까지 기다려보세요',
+        '점유자를 만났다면 당일 협상 내용을 고지합니다.',
       ],
     },
     sections: [
