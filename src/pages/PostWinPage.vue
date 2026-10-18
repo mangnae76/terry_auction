@@ -641,18 +641,25 @@ const toggleSection = (key: string) => {
 .pw-obj.row.on { border-color: #2b6df3; background: #f5f8ff; }
 
 /* 한 울타리 — 큰 제목 아래 상자들을 담는다. 묶을 제목이 없으면
-   울타리는 없는 셈 치고(display: contents) 상자들이 그대로 선다 */
+   울타리는 없는 셈 치고(display: contents) 상자들이 그대로 선다.
+   꼴은 손품·현장과 같다: 바깥은 흰 큰 상자, 안쪽 상자는 테두리로 가른다 */
 .pw-wrap { display: contents; }
 .pw-wrap.super {
   display: flex; flex-direction: column; gap: 8px;
-  background: #e7eaf0; border-radius: 10px; padding: 2px 7px 8px;
+  background: #fff; border-radius: 8px; padding: 0 8px 8px;
 }
 .pw-super-head {
   display: flex; align-items: center; gap: 8px;
-  padding: 8px 4px 4px; cursor: pointer;
+  padding: 9px 4px 6px; cursor: pointer;
+  border-bottom: 1px solid #eef1f6;
 }
 .pw-super-head h2 {
-  margin: 0 auto 0 0; font-size: 15.5px; font-weight: 800; color: #1f2937;
+  margin: 0 auto 0 0; font-size: 15.5px; font-weight: 800; color: #111827;
+}
+/* 안쪽 상자 — 손품조사의 .adp-survey-block 과 같은 꼴 */
+.pw-wrap.super .pw-card {
+  background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;
+  padding: 0 8px 8px;
 }
 
 /* 카드 — 물건상세(.adp-card)와 같은 꼴 */
