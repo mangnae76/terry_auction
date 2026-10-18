@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 15;
+export const POST_WIN_EVICT_VERSION = 16;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
@@ -127,43 +127,5 @@ export const POST_WIN_EVICT: CheckGroup[] = [
       ],
     }],
     sections: [],
-  },
-  {
-    key: 'ev.deal',
-    title: '명도 협상을 하는 방법',
-    note: '무엇을 알고 들어가는지가 값을 가른다.',
-    noCheck: true,
-    sections: [
-      {
-        label: '협상의 기본\n점유자 파악',
-        rows: [
-          { id: 'ev.d1', depth: 0, text: '누구인가 — 채무자 / 임차인 / 제3의 정체 불명인' },
-          { id: 'ev.d2', depth: 0, text: '거주형태(1인·2인) · 의사소통 난이도' },
-        ],
-      },
-      {
-        label: '점유자 상황\n(원하는 바)',
-        rows: [
-          { id: 'ev.d3', depth: 0, text: '이사비' },
-          { id: 'ev.d4', depth: 0, text: '이사기간' },
-        ],
-      },
-      {
-        label: '점유자 반응',
-        rows: [
-          { id: 'ev.d5', depth: 0, text: '순응적 / 적대적 / 회피형' },
-        ],
-      },
-      {
-        label: '협상의 기술',
-        rows: [
-          { id: 'ev.d6', depth: 0, text: '공동 투자자 불러오기' },
-          { id: 'ev.d7', depth: 0, text: '3자 화법' },
-          { id: 'ev.d8', depth: 0, text: '얼리버드 전략 — 빨리 비울수록 좋은 조건' },
-          { id: 'ev.d9', depth: 0, text: '제안에 무반응이면 → 상한선을 제시한다' },
-          { id: 'ev.d10', depth: 0, text: '협의점이 보이지 않으면 강제 계고까지 빠르게 진행한다' },
-        ],
-      },
-    ],
   },
 ];
