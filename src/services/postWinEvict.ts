@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 11;
+export const POST_WIN_EVICT_VERSION = 12;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
@@ -34,7 +34,7 @@ export const POST_WIN_EVICT: CheckGroup[] = [
     key: 'ev.step',
     title: '명도 시기별 진행내용',
     // 낙찰 당일은 그림으로 — 왼쪽 번호 상자에서 할 일이 갈라진다
-    branch: {
+    branches: [{
       pill: '낙찰 당일',
       steps: [
         {
@@ -53,7 +53,26 @@ export const POST_WIN_EVICT: CheckGroup[] = [
         "잔금 납부 전까지 낙찰자는 '소유자'가 아닙니다.",
         '점유자를 만났다면 당일 협상 내용을 고지합니다.',
       ],
-    },
+    }, {
+      pill: '잔금 납부 전',
+      head: "잔금 납부 전까지는 '소통'만 하시면 됩니다.",
+      steps: [
+        {
+          no: '1',
+          label: '연락 기다리기',
+          items: [
+            '관리사무소, 세대앞 남긴 연락처로 연락해주길 기다린다',
+            '정 불안하면, 다시 한번 세대 방문을 해도 좋지만, 굳이!',
+          ],
+        },
+        {
+          no: '2',
+          label: '쪽지 남기기',
+          items: ['쪽지 한번 더 남기고 오는 것도 방법이지만, 큰 의미 없음'],
+        },
+      ],
+      notes: ['아직은 기다리는 것이 베스트입니다. 일단 잔금 납부까지 기다려보세요'],
+    }],
     sections: [
       {
         label: '잔금 납부 후\n① 인도명령',

@@ -54,13 +54,16 @@ export interface CheckGroup {
   };
   /** 나란히 세우는 네모들 */
   boxes?: { chip?: string; items: string[] };
-  /** 갈래 그림 — 왼쪽 번호 상자에서 오른쪽 할 일로 갈라진다 */
-  branch?: {
+  /** 갈래 그림 — 왼쪽 번호 상자에서 오른쪽 할 일로 갈라진다. 여럿 둘 수 있다 */
+  branches?: Array<{
+    /** 왼쪽 알약 (때) */
     pill?: string;
+    /** 알약 오른쪽에 두는 한마디 */
+    head?: string;
     steps: Array<{ no: string; label: string; items: string[] }>;
     /** 아래에 두는 초록 띠 */
     notes?: string[];
-  };
+  }>;
   sections: CheckSection[];
 }
 

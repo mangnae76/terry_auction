@@ -482,9 +482,14 @@ const toggleSection = (key: string) => {
               </div>
             </div>
             <!-- 갈래 그림 — 번호 상자에서 할 일이 갈라진다 -->
-            <div v-if="!editing && g.branch" class="pw-br">
-              <span v-if="g.branch.pill" class="pw-br-pill">{{ g.branch.pill }}</span>
-              <div v-for="(stp, sti) in g.branch.steps" :key="`br-${sti}`" class="pw-br-step">
+            <div v-for="(br, bri) in (editing ? [] : (g.branches ?? []))" :key="`br-${bri}`" class="pw-br">
+              <!-- 때(알약)와 그 한마디 -->
+              <div v-if="br.pill" class="pw-br-head">
+                <span class="pw-br-pill">{{ br.pill }}</span>
+                <span v-if="br.head" class="pw-br-arrow" />
+                <em v-if="br.head" class="pw-br-item">{{ br.head }}</em>
+              </div>
+              <div v-for="(stp, sti) in br.steps" :key="`st-${bri}-${sti}`" class="pw-br-step">
                 <span class="pw-br-left">
                   <em class="pw-br-no">{{ stp.no }}</em>
                   <b>{{ stp.label }}</b>
@@ -494,7 +499,7 @@ const toggleSection = (key: string) => {
                   <em v-for="(it, iti) in stp.items" :key="`bi-${iti}`" class="pw-br-item">{{ it }}</em>
                 </span>
               </div>
-              <p v-for="(nt, nti) in (g.branch.notes ?? [])" :key="`bn-${nti}`" class="pw-br-note">{{ nt }}</p>
+              <p v-for="(nt, nti) in (br.notes ?? [])" :key="`bn-${bri}-${nti}`" class="pw-br-note">{{ nt }}</p>
             </div>
             <!-- 나란히 세우는 네모들 -->
             <div v-if="!editing && g.boxes" class="pw-bx">
@@ -852,11 +857,19 @@ const toggleSection = (key: string) => {
 
 /* 갈래 그림 */
 .pw-br { margin-bottom: 10px; }
+/* 때 줄 — 알약과 한마디를 번호 상자와 같은 칸에 맞춰 세운다 */
+.pw-br-head {
+  display: grid; grid-template-columns: 124px 16px 1fr; gap: 6px;
+  align-items: center; margin-bottom: 12px;
+}
+.pw-br-head .pw-br-item { align-self: stretch; display: flex; align-items: center; justify-content: center; }
+/* 때 표시 — 둥근 알약이 아니라 네모 상자 */
 .pw-br-pill {
-  display: block; width: 62%; max-width: 230px; margin: 2px 0 12px;
-  border: 1.5px solid #6b85f0; border-radius: 999px; background: #dce5ff;
-  padding: 5px 10px; text-align: center;
-  font-size: 12.5px; font-weight: 700; color: #3850c2;
+  display: flex; align-items: center; justify-content: center; margin: 0;
+  align-self: stretch; min-height: 34px;
+  border: 1px solid #b9c7e4; border-radius: 4px; background: #dce5ff;
+  padding: 5px 8px; text-align: center;
+  font-size: 12.5px; font-weight: 700; color: #3850c2; word-break: keep-all;
 }
 .pw-br-step {
   display: grid; grid-template-columns: 124px 16px 1fr; gap: 6px;
@@ -891,7 +904,7 @@ const toggleSection = (key: string) => {
   font-size: 12px; font-weight: 700; color: #1f6b32; line-height: 1.4;
 }
 
-/* 나란히 세우는 알약들 — 선정물건의 단계 알약과 같은 꼴 */
+/* 나란히 세우는 네모 상자들 */
 .pw-bx { margin-bottom: 8px; }
 /* 셋으로 고르게 나눠 가로를 채우고, 사이에 화살표를 둔다 */
 .pw-bx-row { display: flex; align-items: center; gap: 5px; }
@@ -899,10 +912,10 @@ const toggleSection = (key: string) => {
 .pw-bx-arrow { flex: 0 0 auto; font-size: 10px; color: #9aa6bb; }
 .pw-bx-item {
   display: flex; align-items: center; justify-content: center;
-  padding: 4px 8px;
-  border: 1.5px solid #6b85f0; border-radius: 999px; background: #dce5ff;
-  font-size: 11.5px; font-weight: 700; color: #3850c2; line-height: 1.4;
-  white-space: nowrap;
+  min-height: 34px; padding: 5px 8px;
+  border: 1px solid #b9c7e4; border-radius: 4px; background: #dce5ff;
+  font-size: 12px; font-weight: 700; color: #3850c2; line-height: 1.35;
+  text-align: center; word-break: keep-all;
 }
 
 /* 차례 그림 — 한 줄에 셋씩, 네모는 모두 같은 크기 */
