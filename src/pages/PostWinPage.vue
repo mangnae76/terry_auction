@@ -821,10 +821,11 @@ const toggleSection = (key: string) => {
 
 /* 나란히 세우는 알약들 — 선정물건의 단계 알약과 같은 꼴 */
 .pw-bx { margin-bottom: 8px; }
-.pw-bx-row { display: flex; flex-wrap: wrap; gap: 7px; }
+/* 셋으로 고르게 나눠 가로를 채운다 */
+.pw-bx-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
 .pw-bx-item {
-  display: inline-flex; align-items: center; justify-content: center;
-  padding: 3px 12px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 4px 8px;
   border: 1.5px solid #6b85f0; border-radius: 999px; background: #dce5ff;
   font-size: 11.5px; font-weight: 700; color: #3850c2; line-height: 1.4;
   white-space: nowrap;
