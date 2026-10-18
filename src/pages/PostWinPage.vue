@@ -277,20 +277,34 @@ const toggleSection = (key: string) => {
   font-size: 12.5px; font-weight: 700; color: #1d4ed8; line-height: 1.5;
 }
 
-/* 체크리스트 표 */
-.pw-tbl { width: 100%; border-collapse: collapse; table-layout: fixed; }
+/* 체크리스트 표 — 테두리와 모서리는 물건상세의 표(.adp-table)와 같다.
+   radius 가 먹으려면 border-collapse 가 separate 여야 한다 */
+.pw-tbl {
+  width: 100%; table-layout: fixed;
+  border-collapse: separate; border-spacing: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb; border-radius: 8px;
+}
+.pw-tbl > tbody > tr > td { border-bottom: 1px solid #e5e7eb; }
+.pw-tbl > tbody > tr:last-child > td { border-bottom: 0; }
+/* 네 모서리 — 배경이 모서리를 따라 깎이게 한다 */
+.pw-tbl > tbody:first-of-type > tr:first-child > :first-child { border-top-left-radius: 8px; }
+.pw-tbl > tbody:first-of-type > tr:first-child > :last-child { border-top-right-radius: 8px; }
+.pw-tbl > tbody:last-of-type > tr:last-child > :first-child { border-bottom-left-radius: 8px; }
+.pw-tbl > tbody:last-of-type > tr:last-child > :last-child { border-bottom-right-radius: 8px; }
 .pw-col-label { width: 112px; }
 .pw-col-chk { width: 34px; }
-/* 이름 칸은 권리분석 표와 같은 꼴 — 분홍 바탕에 가운데 */
+/* 이름 칸은 권리분석 표와 같은 꼴 — 분홍 바탕에 가운데, 오른쪽에 가름선 */
 .pw-label {
   background: #fde7e7; text-align: center; vertical-align: middle;
   color: #111827; font-weight: 700;
+  border-right: 1px solid #e5e7eb;
   padding: 9px 6px !important;
 }
 .pw-label strong { font-size: 12px; line-height: 1.35; }
 .pw-row { cursor: pointer; }
 .pw-row:hover { background: #f7f9fd; }
-.pw-row td { border-top: 1px solid #f1f3f7; padding: 9px 6px; vertical-align: top; }
+.pw-row td { padding: 9px 6px; vertical-align: top; }
 .pw-chk { width: 34px; text-align: center; }
 .pw-chk input { width: 16px; height: 16px; accent-color: #2b6df3; cursor: pointer; }
 .pw-txt { font-size: 12.5px; line-height: 1.45; padding: 9px 10px 9px 12px !important; }
