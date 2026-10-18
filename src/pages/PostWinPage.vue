@@ -150,6 +150,19 @@ const removeSection = (gi: number, si: number) => {
   draft.value[gi].sections.splice(si, 1);
 };
 
+/** 낙찰 뒤에 밟는 차례 — 제목 옆 ⓘ 를 누르면 펼친다 */
+const FLOW_STEPS: Array<{ name: string; note: string }> = [
+  { name: '낙찰', note: '매각허가결정 뒤 대금지급기한 통지를 받는다' },
+  { name: '사업자\n등록', note: '매매사업자로 할 때 — 잔금 전에 내 둔다' },
+  { name: '매매사업자\n대출', note: '잔금 치르기 전에 한도·금리를 확정한다' },
+  { name: '잔금\n납부', note: '기한 안에 납부 — 이때 소유권이 넘어온다' },
+  { name: '명도', note: '점유자 인도 — 협의가 막히면 인도명령' },
+  { name: '매도', note: '중개 의뢰 · 계약 · 잔금' },
+  { name: '예정\n신고', note: '양도일이 속한 달의 말일부터 2개월 안에' },
+  { name: '확정\n신고', note: '이듬해 5월에 한 해 몫을 합쳐 신고' },
+];
+const flowOpen = ref(false);
+
 /** 한 번에 다 접고 다 편다 — 물건상세의 전체 접기와 같다 */
 const allCollapsed = computed(
   () => dayGroups.value.length > 0 && dayGroups.value.every((g) => isCollapsed(g.key)),
@@ -174,6 +187,8 @@ const toggleSection = (key: string) => {
       <header class="pw-header">
         <div class="pw-title-row">
           <h1 class="pw-page-title">낙찰이후</h1>
+          <!-- 낙찰 뒤에 밟는 차례 -->
+          <button type="button" class="pw-info" aria-label="낙찰 후 진행 순서" @click="flowOpen = !flowOpen">i</button>
           <!-- 표 고치기 — 다 다듬고 나면 POST_WIN_EDITABLE 로 잠근다 -->
           <template v-if="canEdit && activeTab === 'win'">
             <template v-if="editing">
@@ -194,6 +209,28 @@ const toggleSection = (key: string) => {
           >{{ t.label }}</button>
         </nav>
       </header>
+
+      <!-- 낙찰 후 진행 순서 — 제목 옆 ⓘ 로 연다 -->
+      <template v-if="flowOpen">
+        <div class="pw-flowveil" @click="flowOpen = false" />
+        <section class="pw-flow" @click.stop>
+          <header class="pw-flow-head">
+            <strong>낙찰 후 진행 순서</strong>
+            <button type="button" class="pw-flow-close" aria-label="닫기" @click="flowOpen = false">×</button>
+          </header>
+          <div class="pw-flow-map">
+            <template v-for="(st, i) in FLOW_STEPS" :key="st.name">
+              <span class="pw-flow-box">{{ st.name }}</span>
+              <span v-if="i < FLOW_STEPS.length - 1" class="pw-flow-arrow">▶</span>
+            </template>
+          </div>
+          <ol class="pw-flow-list">
+            <li v-for="st in FLOW_STEPS" :key="`n-${st.name}`">
+              <b>{{ st.name.replace('\n', '') }}</b><span>{{ st.note }}</span>
+            </li>
+          </ol>
+        </section>
+      </template>
 
       <!-- 어느 물건의 일인지 — 탭 밑에 카드로 붙박아 둔다. 누르면 목록이 펼쳐진다 -->
       <div class="pw-objwrap">
@@ -548,6 +585,46 @@ const toggleSection = (key: string) => {
 .pw-row.d1 .pw-txt { padding-left: 24px !important; color: #4b5563; }
 .pw-row td.pw-txt.warn { color: #e0574a; }
 .pw-row.done .pw-txt { color: #9ca3af; text-decoration: line-through; }
+
+/* 제목 옆 ⓘ 와 낙찰 후 진행 순서 */
+.pw-info {
+  flex: 0 0 auto; width: 20px; height: 20px; padding: 0;
+  border: 1px solid #c7d7f8; border-radius: 50%; background: #fff;
+  font-family: inherit; font-size: 12px; font-weight: 800; font-style: italic;
+  color: #2b6df3; line-height: 1; cursor: pointer;
+}
+.pw-flowveil { position: fixed; inset: 0; z-index: 40; background: rgba(17, 24, 39, 0.3); }
+.pw-flow {
+  position: absolute; left: 8px; right: 8px; top: 46px; z-index: 41;
+  max-height: 74vh; overflow-y: auto;
+  border: 1px solid #dde3ee; border-radius: 12px; background: #fff;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.18);
+  padding: 10px 12px 12px;
+}
+.pw-flow-head { display: flex; align-items: center; margin-bottom: 9px; }
+.pw-flow-head strong { font-size: 13.5px; font-weight: 800; color: #111827; }
+.pw-flow-close {
+  margin-left: auto; border: none; background: transparent; cursor: pointer;
+  font-size: 18px; line-height: 1; color: #9ca3af; padding: 0 2px;
+}
+/* 차례 그림 — 네모와 화살표를 줄줄이 */
+.pw-flow-map {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px;
+  padding: 8px 2px 10px; border-bottom: 1px solid #eef1f6;
+}
+.pw-flow-box {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 56px; min-height: 42px; padding: 5px 6px;
+  border: 1.5px solid #2b6df3; border-radius: 8px; background: #f4f7ff;
+  font-size: 11.5px; font-weight: 700; line-height: 1.25; color: #1d3d75;
+  text-align: center; white-space: pre-line; word-break: keep-all;
+}
+.pw-flow-arrow { flex: 0 0 auto; font-size: 10px; color: #9aa6bb; }
+/* 한 줄 설명 */
+.pw-flow-list { margin: 9px 0 0; padding: 0 0 0 2px; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.pw-flow-list li { display: flex; gap: 7px; align-items: baseline; font-size: 12px; line-height: 1.45; }
+.pw-flow-list b { flex: 0 0 74px; color: #1d4ed8; font-weight: 800; }
+.pw-flow-list span { color: #374151; }
 
 /* 표 고치기 */
 .pw-title-row { display: flex; align-items: center; gap: 6px; padding-right: 10px; border-bottom: 1px solid #e5e7eb; }
