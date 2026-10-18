@@ -371,7 +371,8 @@ const toggleSection = (key: string) => {
 }
 .pw-body {
   flex: 1 1 auto; overflow-y: auto;
-  padding: 10px 12px 96px;
+  /* 좌우 여백은 물건상세(.adp-body)와 같은 5px — 카드가 화면을 넓게 쓴다 */
+  padding: 10px 5px 96px;
   /* 카드 사이 틈은 권리분석(.adp-body)과 같이 8px */
   display: flex; flex-direction: column; gap: 8px;
   -webkit-overflow-scrolling: touch;
@@ -410,7 +411,7 @@ const toggleSection = (key: string) => {
    카드와 둘레가 같은 색이라 색이 끊기는 자투리가 없다.
    오른쪽 끝에는 전체 접기 단추가 선다 */
 .pw-objwrap {
-  position: relative; padding: 7px 12px 8px;
+  position: relative; padding: 7px 8px 8px;
   background: #f1f3f7; border-bottom: 6px solid #dcdee3;
   /* 접기 단추는 둘째 줄(주소 줄) 오른쪽에 선다 — 물건상세와 같은 자리 */
   display: flex; align-items: flex-end; gap: 6px;
@@ -465,7 +466,7 @@ const toggleSection = (key: string) => {
 /* 고른 물건을 바꿀 때만 펼친다 — 밑의 표를 밀지 않도록 떠 있게 둔다 */
 .pw-objveil { position: fixed; inset: 0; z-index: 30; }
 .pw-objlist {
-  position: absolute; left: 12px; right: 12px; top: calc(100% - 4px); z-index: 31;
+  position: absolute; left: 8px; right: 8px; top: calc(100% - 4px); z-index: 31;
   max-height: 46vh; overflow-y: auto;
   display: flex; flex-direction: column; gap: 6px;
   padding: 6px; border-radius: 12px; background: #fff;
