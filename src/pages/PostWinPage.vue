@@ -10,13 +10,15 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { groupRows, sectionView, type CheckGroup } from '../services/postWinChecklist';
 import { POST_WIN_EDITABLE, defaultGroups, newRowId, usePostWinBook } from '../services/postWinBook';
+import { POST_WIN_BIZ } from '../services/postWinBiz';
 import { bidStageOf } from '../utils/stageLabel';
 import { courtInfoOf } from '../utils/auctionSummary';
 import type { AuctionDetail } from '../types/auction';
 
-type TabKey = 'win' | 'balance' | 'evict' | 'repair' | 'sell';
+type TabKey = 'win' | 'biz' | 'balance' | 'evict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
   { key: 'win', label: '낙찰당일', desc: '낙찰가·경쟁 상황, 영수증과 서류 챙기기' },
+  { key: 'biz', label: '매매사업자', desc: '사업자등록 · 사업용 계좌 · 사업용 카드' },
   { key: 'balance', label: '잔금·등기', desc: '잔금 납부일, 등기 촉탁, 취득세' },
   { key: 'evict', label: '명도', desc: '점유자 확인, 인도명령·강제집행, 이사비 협의' },
   { key: 'repair', label: '수리·정비', desc: '수리 범위와 비용, 업체 일정' },
@@ -78,7 +80,14 @@ const hasLabels = (g: CheckGroup) => g.sections.some((sec) => sectionView(sec).l
 const doneCount = (g: CheckGroup) => groupRows(g).filter((r) => isChecked(r.id)).length;
 const rowCount = (g: CheckGroup) => groupRows(g).length;
 /** 화면에 보이는 표 — 편집 중에는 고치고 있는 사본을 보여 준다 */
-const dayGroups = computed<CheckGroup[]>(() => (editing.value ? draft.value : book.groups.value));
+const dayGroups = computed<CheckGroup[]>(() => {
+  if (activeTab.value === 'biz') return POST_WIN_BIZ;
+  return editing.value ? draft.value : book.groups.value;
+});
+/** 표가 있는 탭인가 (낙찰당일·매매사업자) */
+const hasTable = computed(() => activeTab.value === 'win' || activeTab.value === 'biz');
+/** 체크 칸을 두는 탭인가 — 매매사업자는 한 번 해 두면 되는 일이라 체크가 없다 */
+const checkable = computed(() => activeTab.value === 'win');
 
 // === 표 고치기 ===
 // 글을 다 다듬고 나면 postWinBook.ts 의 POST_WIN_EDITABLE 만 false 로 두면
@@ -259,7 +268,7 @@ const toggleSection = (key: string) => {
             낙찰목록<img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
           </button>
           <button
-            v-if="activeTab === 'win' && !editing"
+            v-if="hasTable && !editing"
             type="button"
             class="pw-foldall"
             :aria-label="allCollapsed ? '전체 펼치기' : '전체 접기'"
@@ -297,7 +306,7 @@ const toggleSection = (key: string) => {
     </div>
 
     <div class="pw-body">
-      <template v-if="activeTab === 'win'">
+      <template v-if="hasTable">
         <section v-for="(g, gi) in dayGroups" :key="g.key" class="pw-card">
           <header class="pw-card-head" @click="editing || toggleSection(g.key)">
             <input v-if="editing" v-model="g.title" class="pw-einput ttl" placeholder="제목" />
@@ -305,10 +314,11 @@ const toggleSection = (key: string) => {
               <!-- 제목 앞 아이콘 — 서류 열람은 문서, 첫통화·방문은 전화 -->
               <svg v-if="g.key === 'file'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
               <svg v-else-if="g.key === 'rule'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+<svg v-else-if="g.key.startsWith('biz.')" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M2 12h20"/></svg>
               <svg v-else-if="g.key === 'visit'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
               {{ g.title }}
             </h2>
-            <em v-if="!editing" class="pw-count">{{ doneCount(g) }}/{{ rowCount(g) }}</em>
+            <em v-if="!editing && checkable" class="pw-count">{{ doneCount(g) }}/{{ rowCount(g) }}</em>
             <img v-if="!editing" :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(g.key) }]" alt="" />
           </header>
           <div v-if="editing || !isCollapsed(g.key)" class="pw-card-body">
@@ -318,7 +328,7 @@ const toggleSection = (key: string) => {
               <colgroup>
                 <col v-if="editing || hasLabels(g)" class="pw-col-label" />
                 <col />
-                <col class="pw-col-chk" />
+                <col v-if="editing || checkable" class="pw-col-chk" />
               </colgroup>
               <tbody>
                 <!-- 왼쪽 이름 칸은 그 묶음의 줄 수만큼 세로로 합친다 -->
@@ -326,8 +336,8 @@ const toggleSection = (key: string) => {
                   <tr
                     v-for="(r, ri) in sec.rows"
                     :key="r.id"
-                    :class="['pw-row', `d${r.depth}`, { done: !editing && isChecked(r.id), first: ri === 0 }]"
-                    @click="editing || toggleCheck(r.id)"
+                    :class="['pw-row', `d${r.depth}`, { done: !editing && checkable && isChecked(r.id), first: ri === 0, flat: !editing && !checkable }]"
+                    @click="editing || !checkable || toggleCheck(r.id)"
                   >
                     <td v-if="ri === 0 && (editing || hasLabels(g))" class="pw-label" :rowspan="sec.rows.length">
                       <template v-if="editing">
@@ -357,7 +367,7 @@ const toggleSection = (key: string) => {
                       <label class="pw-warnchk"><input type="checkbox" v-model="r.warn" /> 빨강</label>
                     </td>
                     <td v-else :class="['pw-txt', { warn: r.warn }]">{{ r.text }}</td>
-                    <td class="pw-chk">
+                    <td v-if="editing || checkable" class="pw-chk">
                       <template v-if="editing">
                         <button type="button" class="pw-mini" title="줄 올리기" @click.stop="moveRow(gi, si, ri, -1)">↑</button>
                         <button type="button" class="pw-mini" title="줄 내리기" @click.stop="moveRow(gi, si, ri, 1)">↓</button>
@@ -423,7 +433,7 @@ const toggleSection = (key: string) => {
   border-bottom: 1px solid #e5e7eb;
 }
 .pw-tabs {
-  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
   background: #fff;
 }
 .pw-tab {
@@ -431,8 +441,8 @@ const toggleSection = (key: string) => {
   overflow: hidden; white-space: nowrap; line-height: 1.25;
   border: none; background: transparent;
   padding: 9px 0 14px; min-width: 0;
-  font-family: inherit; font-size: 15.3px; font-weight: 700; color: #111827;
-  letter-spacing: -0.8px; text-align: center; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 700; color: #111827;
+  letter-spacing: -0.7px; text-align: center; cursor: pointer;
   position: relative;
 }
 /* 선택 — 글자는 검정 그대로, 아래에 곧은 막대 하나 */
@@ -575,6 +585,8 @@ const toggleSection = (key: string) => {
 .pw-labellink strong { font-size: 12px; line-height: 1.35; white-space: pre-line; word-break: keep-all; text-decoration: underline; }
 .pw-ext { font-size: 9.5px; margin-left: 2px; }
 .pw-row { cursor: pointer; }
+.pw-row.flat { cursor: default; }
+.pw-row.flat:hover { background: transparent; }
 .pw-row:hover { background: #f7f9fd; }
 .pw-row td { padding: 9px 6px; vertical-align: top; }
 .pw-chk { width: 34px; text-align: center; }
