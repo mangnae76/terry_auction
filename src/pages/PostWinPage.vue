@@ -875,18 +875,20 @@ const toggleSection = (key: string) => {
   display: grid; grid-template-columns: 124px 16px 1fr; gap: 6px;
   align-items: center; margin-bottom: 10px;
 }
+/* 번호는 글 왼쪽에 한 줄로 */
 .pw-br-left {
-  position: relative; align-self: stretch;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  align-self: stretch;
+  display: flex; align-items: center; gap: 6px;
   border: 1px solid #c9d3e3; border-radius: 4px; background: #f3f4f6;
-  padding: 16px 6px 8px; text-align: center;
+  padding: 8px 8px; text-align: left;
 }
 .pw-br-left b {
+  flex: 1 1 auto; min-width: 0;
   font-size: 11.5px; font-weight: 700; color: #1f2937; line-height: 1.35;
   white-space: pre-line; word-break: keep-all;
 }
 .pw-br-no {
-  position: absolute; left: 5px; top: 5px;
+  flex: 0 0 auto;
   font-style: normal; background: #fff6a8; border-radius: 3px;
   padding: 0 6px; font-size: 11px; font-weight: 800; color: #7a5f00;
 }
