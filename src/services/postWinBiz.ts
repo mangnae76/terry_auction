@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 (postWinChecklist 와 같은 규칙) */
-export const POST_WIN_BIZ_VERSION = 7;
+export const POST_WIN_BIZ_VERSION = 8;
 
 export const POST_WIN_BIZ: CheckGroup[] = [
   {
@@ -84,7 +84,7 @@ export const POST_WIN_BIZ: CheckGroup[] = [
     title: '3단계 · 사업자용 카드 신청 (신용 or 체크)',
     sections: [
       {
-        label: '카드사선택',
+        label: '카드사\n선택',
         rows: [
           { id: 'bz.s3a', depth: 0, text: '국민 · 신한 · 농협 · 삼성 — 주요 카드사 모두 개인사업자 전용 카드 운영' },
           { id: 'bz.s3b', depth: 0, text: 'BC카드 — 다양한 은행과 연동 가능' },
@@ -100,7 +100,7 @@ export const POST_WIN_BIZ: CheckGroup[] = [
         ],
       },
       {
-        label: '카드종류\n고르기',
+        label: '카드종류\n선택',
         rows: [
           { id: 'bz.s3g', depth: 0, text: '체크카드 — 비용 통제 쉬움, 지출 즉시 반영 → 경비처리 간편' },
           { id: 'bz.s3h', depth: 0, text: '신용카드 — 유예기간 有, 대량 비용 발생 시 유리' },
