@@ -13,6 +13,8 @@ export interface UserPrefs {
     sido?: string; districtCode?: string; kind?: string; dong?: string; periodMonths?: number;
     areaMin?: string; areaMax?: string; yearMin?: string; yearMax?: string;
   };
+  // 낙찰이후 · 낙찰당일 체크리스트 — 사용자가 손으로 고친 표 (postWinBook.ts)
+  postWinDay?: unknown[];
   // 임장경로 — 한 사용자당 가장 최근 작업 (작업 진행 중 다른 메뉴 갔다와도 복원)
   fieldTripDraft?: Record<string, unknown> | null;
   // 임장경로 즐겨찾기 출발/도착 주소

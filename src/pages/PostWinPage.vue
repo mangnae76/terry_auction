@@ -2,11 +2,14 @@
 // 낙찰 이후 — 명도와 매도까지의 일을 모아 둘 자리.
 // 틀은 자금관리(.fin-shell)와 같은 짜임이다: 위는 붙박이(제목 + 탭 + 물건 카드),
 // 아래만 구른다. 카드는 물건상세의 권리분석과 같은 꼴 — 제목줄을 누르면 접힌다.
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
+import AppToast from '../components/AppToast.vue';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import { useAuctionStore } from '../stores/auctionStore';
-import { POST_WIN_DAY, groupRows, type CheckGroup } from '../services/postWinChecklist';
+import { useAuthStore } from '../stores/authStore';
+import { groupRows, type CheckGroup } from '../services/postWinChecklist';
+import { POST_WIN_EDITABLE, defaultGroups, newRowId, usePostWinBook } from '../services/postWinBook';
 import { bidStageOf } from '../utils/stageLabel';
 import { shortCourt } from '../utils/auctionSummary';
 import type { AuctionDetail } from '../types/auction';
@@ -23,6 +26,10 @@ const activeTab = ref<TabKey>('win');
 const current = () => TABS.find((t) => t.key === activeTab.value) ?? TABS[0];
 
 const store = useAuctionStore();
+const auth = useAuthStore();
+const book = usePostWinBook();
+onMounted(() => { void book.load(auth.uid); });
+watch(() => auth.uid, (uid) => { void book.load(uid); });
 /** 낙찰 뒤의 물건만 고른다 — 낙찰·매도 단계 */
 const ownedAuctions = computed(() => store.auctions.filter((a) => {
   const stage = bidStageOf(a);
@@ -63,7 +70,62 @@ const toggleCheck = async (id: string) => {
 /** 묶음마다 '몇 개 중 몇 개' */
 const doneCount = (g: CheckGroup) => groupRows(g).filter((r) => isChecked(r.id)).length;
 const rowCount = (g: CheckGroup) => groupRows(g).length;
-const dayGroups = POST_WIN_DAY;
+/** 화면에 보이는 표 — 편집 중에는 고치고 있는 사본을 보여 준다 */
+const dayGroups = computed<CheckGroup[]>(() => (editing.value ? draft.value : book.groups.value));
+
+// === 표 고치기 ===
+// 글을 다 다듬고 나면 postWinBook.ts 의 POST_WIN_EDITABLE 만 false 로 두면
+// 편집 단추가 사라진다. 적어 둔 내용은 그대로 보인다.
+const canEdit = POST_WIN_EDITABLE;
+const editing = ref(false);
+const draft = ref<CheckGroup[]>([]);
+const toastText = ref('');
+const toast = (text: string) => {
+  toastText.value = text;
+  window.setTimeout(() => { toastText.value = ''; }, 1600);
+};
+const startEdit = () => {
+  draft.value = JSON.parse(JSON.stringify(book.groups.value)) as CheckGroup[];
+  editing.value = true;
+  collapsed.value = {};
+};
+const cancelEdit = () => { editing.value = false; draft.value = []; };
+const saveEdit = async () => {
+  // 빈 줄은 버린다 — 지우려고 글자를 지운 줄이 남지 않게
+  const cleaned = draft.value.map((g) => ({
+    ...g,
+    title: g.title.trim() || '제목 없음',
+    note: (g.note ?? '').trim(),
+    sections: g.sections
+      .map((sec) => ({ ...sec, label: sec.label.trim(), rows: sec.rows.filter((r) => r.text.trim()) }))
+      .filter((sec) => sec.rows.length > 0),
+  })).filter((g) => g.sections.length > 0);
+  await book.save(auth.uid, cleaned);
+  editing.value = false;
+  draft.value = [];
+  toast(auth.uid ? '표를 저장했습니다.' : '로그인한 뒤에 저장됩니다.');
+};
+const resetEdit = () => {
+  draft.value = defaultGroups();
+  toast('기본 글로 되돌렸습니다. 저장을 눌러야 굳습니다.');
+};
+const addRow = (gi: number, si: number) => {
+  draft.value[gi].sections[si].rows.push({ id: newRowId(), depth: 0, text: '' });
+};
+const removeRow = (gi: number, si: number, ri: number) => {
+  draft.value[gi].sections[si].rows.splice(ri, 1);
+};
+/** 들여쓰기 한 단 — 묶음 안에 딸린 말로 내리거나 올린다 */
+const bumpDepth = (gi: number, si: number, ri: number) => {
+  const row = draft.value[gi].sections[si].rows[ri];
+  row.depth = row.depth === 0 ? 1 : 0;
+};
+const addSection = (gi: number) => {
+  draft.value[gi].sections.push({ label: '', rows: [{ id: newRowId(), depth: 0, text: '' }] });
+};
+const removeSection = (gi: number, si: number) => {
+  draft.value[gi].sections.splice(si, 1);
+};
 
 /** 카드 접기 — 물건상세와 같이 제목줄을 누르면 접힌다 */
 const collapsed = ref<Record<string, boolean>>({});
@@ -77,7 +139,18 @@ const toggleSection = (key: string) => {
   <section class="pw-shell">
     <div class="pw-fixed-top">
       <header class="pw-header">
-        <h1 class="pw-page-title">낙찰이후</h1>
+        <div class="pw-title-row">
+          <h1 class="pw-page-title">낙찰이후</h1>
+          <!-- 표 고치기 — 다 다듬고 나면 POST_WIN_EDITABLE 로 잠근다 -->
+          <template v-if="canEdit && activeTab === 'win'">
+            <template v-if="editing">
+              <button type="button" class="pw-ebtn" @click="resetEdit">기본글</button>
+              <button type="button" class="pw-ebtn" @click="cancelEdit">취소</button>
+              <button type="button" class="pw-ebtn on" @click="saveEdit">저장</button>
+            </template>
+            <button v-else type="button" class="pw-ebtn" @click="startEdit">✎ 편집</button>
+          </template>
+        </div>
         <nav class="pw-tabs">
           <button
             v-for="t in TABS"
@@ -123,14 +196,16 @@ const toggleSection = (key: string) => {
 
     <div class="pw-body">
       <template v-if="activeTab === 'win'">
-        <section v-for="g in dayGroups" :key="g.key" class="pw-card">
-          <header class="pw-card-head" @click="toggleSection(g.key)">
-            <h2>{{ g.title }}</h2>
-            <em class="pw-count">{{ doneCount(g) }}/{{ rowCount(g) }}</em>
-            <img :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(g.key) }]" alt="" />
+        <section v-for="(g, gi) in dayGroups" :key="g.key" class="pw-card">
+          <header class="pw-card-head" @click="editing || toggleSection(g.key)">
+            <input v-if="editing" v-model="g.title" class="pw-einput ttl" placeholder="제목" />
+            <h2 v-else>{{ g.title }}</h2>
+            <em v-if="!editing" class="pw-count">{{ doneCount(g) }}/{{ rowCount(g) }}</em>
+            <img v-if="!editing" :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(g.key) }]" alt="" />
           </header>
-          <div v-if="!isCollapsed(g.key)" class="pw-card-body">
-            <p v-if="g.note" class="pw-note">{{ g.note }}</p>
+          <div v-if="editing || !isCollapsed(g.key)" class="pw-card-body">
+            <textarea v-if="editing" v-model="g.note" class="pw-earea note" rows="2" placeholder="안내 한 줄" />
+            <p v-else-if="g.note" class="pw-note">{{ g.note }}</p>
             <table class="pw-tbl">
               <colgroup>
                 <col class="pw-col-label" />
@@ -139,24 +214,40 @@ const toggleSection = (key: string) => {
               </colgroup>
               <tbody>
                 <!-- 왼쪽 이름 칸은 그 묶음의 줄 수만큼 세로로 합친다 -->
-                <template v-for="sec in g.sections" :key="sec.label">
+                <template v-for="(sec, si) in g.sections" :key="si">
                   <tr
                     v-for="(r, ri) in sec.rows"
                     :key="r.id"
-                    :class="['pw-row', `d${r.depth}`, { done: isChecked(r.id), first: ri === 0 }]"
-                    @click="toggleCheck(r.id)"
+                    :class="['pw-row', `d${r.depth}`, { done: !editing && isChecked(r.id), first: ri === 0 }]"
+                    @click="editing || toggleCheck(r.id)"
                   >
                     <td v-if="ri === 0" class="pw-label" :rowspan="sec.rows.length">
-                      <strong>{{ sec.label }}</strong>
+                      <template v-if="editing">
+                        <input v-model="sec.label" class="pw-einput lbl" placeholder="이름" />
+                        <span class="pw-secbtns">
+                          <button type="button" class="pw-mini" @click.stop="addRow(gi, si)">＋줄</button>
+                          <button type="button" class="pw-mini del" @click.stop="removeSection(gi, si)">묶음 빼기</button>
+                        </span>
+                      </template>
+                      <strong v-else>{{ sec.label }}</strong>
                     </td>
-                    <td :class="['pw-txt', { warn: r.warn }]">{{ r.text }}</td>
+                    <td v-if="editing" class="pw-txt edit">
+                      <textarea v-model="r.text" class="pw-earea" rows="2" placeholder="할 일" />
+                      <label class="pw-warnchk"><input type="checkbox" v-model="r.warn" /> 빨강</label>
+                    </td>
+                    <td v-else :class="['pw-txt', { warn: r.warn }]">{{ r.text }}</td>
                     <td class="pw-chk">
-                      <input type="checkbox" :checked="isChecked(r.id)" :disabled="!picked" @click.stop="toggleCheck(r.id)" />
+                      <template v-if="editing">
+                        <button type="button" class="pw-mini" :title="r.depth === 0 ? '한 단 들여쓰기' : '내어쓰기'" @click.stop="bumpDepth(gi, si, ri)">{{ r.depth === 0 ? '→' : '←' }}</button>
+                        <button type="button" class="pw-mini del" title="줄 빼기" @click.stop="removeRow(gi, si, ri)">×</button>
+                      </template>
+                      <input v-else type="checkbox" :checked="isChecked(r.id)" :disabled="!picked" @click.stop="toggleCheck(r.id)" />
                     </td>
                   </tr>
                 </template>
               </tbody>
             </table>
+            <button v-if="editing" type="button" class="pw-addsec" @click="addSection(gi)">＋ 묶음 추가</button>
           </div>
         </section>
       </template>
@@ -174,6 +265,7 @@ const toggleSection = (key: string) => {
     </div>
 
     <AppMobileBottomNav active="post-win" />
+    <AppToast :visible="!!toastText" :text="toastText" tone="success" />
   </section>
 </template>
 
@@ -313,6 +405,48 @@ const toggleSection = (key: string) => {
 .pw-row.d1 .pw-txt { padding-left: 24px !important; color: #4b5563; }
 .pw-row td.pw-txt.warn { color: #e0574a; }
 .pw-row.done .pw-txt { color: #9ca3af; text-decoration: line-through; }
+
+/* 표 고치기 */
+.pw-title-row { display: flex; align-items: center; gap: 6px; padding-right: 10px; border-bottom: 1px solid #e5e7eb; }
+.pw-title-row .pw-page-title { flex: 1 1 auto; border-bottom: none; }
+.pw-ebtn {
+  flex: 0 0 auto; height: 26px; padding: 0 10px;
+  border: 1px solid #c7d7f8; border-radius: 8px; background: #fff;
+  font-family: inherit; font-size: 11.5px; font-weight: 700; color: #2b6df3; cursor: pointer;
+}
+.pw-ebtn.on { background: #2b6df3; border-color: #2b6df3; color: #fff; }
+.pw-einput {
+  width: 100%; box-sizing: border-box; height: 28px;
+  border: 1px solid #dde3ee; border-radius: 6px; background: #fff;
+  padding: 2px 7px; font-family: inherit; font-size: 12px; color: #111827;
+}
+.pw-einput.ttl { max-width: 60%; font-size: 15px; font-weight: 800; height: 32px; }
+.pw-einput.lbl { text-align: center; font-weight: 700; }
+.pw-earea {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  border: 1px solid #dde3ee; border-radius: 6px; background: #fff;
+  padding: 5px 7px; font-family: inherit; font-size: 12.5px; line-height: 1.45; color: #374151;
+}
+.pw-earea.note { margin-bottom: 8px; background: #eaf1ff; border-color: #c7d7f8; color: #1d4ed8; font-weight: 700; }
+.pw-txt.edit { padding: 6px 8px !important; }
+.pw-warnchk {
+  display: inline-flex; align-items: center; gap: 3px; margin-top: 3px;
+  font-size: 10.5px; font-weight: 700; color: #e0574a; cursor: pointer;
+}
+.pw-warnchk input { width: 13px; height: 13px; accent-color: #e0574a; }
+.pw-secbtns { display: flex; flex-direction: column; gap: 3px; margin-top: 5px; }
+.pw-mini {
+  border: 1px solid #dde3ee; border-radius: 6px; background: #fff;
+  padding: 2px 5px; font-family: inherit; font-size: 10.5px; font-weight: 700;
+  color: #2b6df3; cursor: pointer; line-height: 1.4;
+}
+.pw-mini.del { border-color: #f0d4d0; background: #fdecea; color: #e0574a; }
+.pw-chk .pw-mini + .pw-mini { margin-top: 3px; }
+.pw-addsec {
+  width: 100%; margin-top: 8px; padding: 8px 0;
+  border: 1px dashed #c7d2e3; border-radius: 8px; background: #fff;
+  font-family: inherit; font-size: 12px; font-weight: 700; color: #2b6df3; cursor: pointer;
+}
 
 .pw-empty {
   margin: 0; padding: 22px 16px 24px; text-align: center;
