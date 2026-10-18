@@ -194,28 +194,36 @@ const toggleSection = (key: string) => {
   -webkit-overflow-scrolling: touch;
 }
 
-.pw-header { background: #fff; border-bottom: 1px solid #eef0f5; }
+/* 제목·탭 줄 — 물건상세의 고정줄(.adp-sticky-head)과 같은 꼴:
+   흰 바탕에 그림자, 본문과는 진한 회색 6px 띠로 나뉜다 */
+.pw-header {
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(17, 24, 39, 0.06);
+  border-bottom: 6px solid #dcdee3;
+}
 .pw-page-title {
-  margin: 0; padding: 9px 14px 7px;
+  margin: 0; padding: 8px 12px 7px;
   font-size: 20px; font-weight: 800; color: #111827;
   border-bottom: 1px solid #e5e7eb;
 }
 .pw-tabs {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
-  margin: 8px 14px 6px; padding: 3px;
-  background: #e2e8f2; border-radius: 12px;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+  background: #fff;
 }
 .pw-tab {
-  border: 1px solid transparent; background: transparent;
-  padding: 5px 2px; min-height: 36px; border-radius: 9px;
-  font-size: 12.5px; font-weight: 700; line-height: 1.25; letter-spacing: -0.5px; color: #6b7280;
-  text-align: center; white-space: normal; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-family: inherit;
+  /* 다섯 탭 모두 한 줄로 — 글자를 줄이지 않고 자간을 좁힌다 */
+  overflow: hidden; white-space: nowrap; line-height: 1.25;
+  border: none; background: transparent;
+  padding: 9px 0 14px; min-width: 0;
+  font-family: inherit; font-size: 15.3px; font-weight: 700; color: #111827;
+  letter-spacing: -0.8px; text-align: center; cursor: pointer;
+  position: relative;
 }
-.pw-tab.active {
-  background: #fff; color: #111827;
-  border-color: #e3e7ef; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+/* 선택 — 글자는 검정 그대로, 아래에 곧은 막대 하나 */
+.pw-tab.active::after {
+  content: '';
+  position: absolute; left: 8%; right: 8%; bottom: 0;
+  height: 3px; background: #2a5fbf; border-radius: 2px;
 }
 
 /* 물건 카드 — 자금관리의 낙찰·매도 카드와 같은 꼴. 돈 이야기는 넣지 않는다 */
