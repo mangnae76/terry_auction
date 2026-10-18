@@ -550,12 +550,14 @@ const toggleSection = (key: string) => {
 /* 표 고치기 */
 .pw-title-row { display: flex; align-items: center; gap: 6px; padding-right: 10px; border-bottom: 1px solid #e5e7eb; }
 .pw-title-row .pw-page-title { flex: 1 1 auto; border-bottom: none; }
-/* 전체 접기 — 띠 오른쪽 끝, 테두리 없이 꺾쇠만 (물건상세와 같은 꼴) */
+/* 전체 접기 — 물건상세의 전체 접기(.adp-fold-all)와 같은 네모 상자에 꺾쇠 */
 .pw-foldall {
   flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; padding: 0;
-  border: none; background: transparent; cursor: pointer;
+  width: 34px; height: 26px; padding: 0;
+  border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; cursor: pointer;
 }
+.pw-foldall:active { background: #f2f6ff; }
+.pw-foldall .pw-chev { width: 16px; height: 16px; }
 .pw-ebtn {
   flex: 0 0 auto; height: 26px; padding: 0 10px;
   border: 1px solid #c7d7f8; border-radius: 8px; background: #fff;
