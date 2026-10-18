@@ -90,13 +90,10 @@ export const usePostWinBook = (key: BookKey = 'day') => {
       // 손으로 고친 글은 그대로 두되, 상자 자체는 기본 글을 따른다 —
       // 새로 쓴 상자는 뒤에 붙이고, 없앤 상자는 저장본에서도 뺀다.
       // (상자는 사용자가 만들 수 없고 기본 글에서만 온다)
+      // 상자의 차례와 있고 없음은 기본 글을 따르고, 칸 안의 글만 고친 것을 쓴다.
+      // (상자는 사용자가 만들 수 없고 기본 글에서만 온다)
       const mine = migrate(clone(saved) as CheckGroup[]);
-      const defaults = book.defaults();
-      const nowKeys = new Set(defaults.map((g) => g.key));
-      const kept = mine.filter((g) => nowKeys.has(g.key));
-      const had = new Set(kept.map((g) => g.key));
-      const added = defaults.filter((g) => !had.has(g.key));
-      slot.value = [...kept, ...added];
+      slot.value = book.defaults().map((d) => mine.find((g) => g.key === d.key) ?? d);
     } else {
       slot.value = book.defaults();
     }
