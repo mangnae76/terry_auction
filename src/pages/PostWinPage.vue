@@ -115,6 +115,22 @@ const addRow = (gi: number, si: number) => {
 const removeRow = (gi: number, si: number, ri: number) => {
   draft.value[gi].sections[si].rows.splice(ri, 1);
 };
+/** 줄 올리고 내리기 — 묶음 안에서 자리를 바꾼다 */
+const moveRow = (gi: number, si: number, ri: number, step: number) => {
+  const rows = draft.value[gi].sections[si].rows;
+  const to = ri + step;
+  if (to < 0 || to >= rows.length) return;
+  const [row] = rows.splice(ri, 1);
+  rows.splice(to, 0, row);
+};
+/** 묶음 자체도 올리고 내린다 */
+const moveSection = (gi: number, si: number, step: number) => {
+  const secs = draft.value[gi].sections;
+  const to = si + step;
+  if (to < 0 || to >= secs.length) return;
+  const [sec] = secs.splice(si, 1);
+  secs.splice(to, 0, sec);
+};
 /** 들여쓰기 한 단 — 묶음 안에 딸린 말로 내리거나 올린다 */
 const bumpDepth = (gi: number, si: number, ri: number) => {
   const row = draft.value[gi].sections[si].rows[ri];
@@ -206,7 +222,7 @@ const toggleSection = (key: string) => {
           <div v-if="editing || !isCollapsed(g.key)" class="pw-card-body">
             <textarea v-if="editing" v-model="g.note" class="pw-earea note" rows="2" placeholder="안내 한 줄" />
             <p v-else-if="g.note" class="pw-note">{{ g.note }}</p>
-            <table class="pw-tbl">
+            <table :class="['pw-tbl', { edit: editing }]">
               <colgroup>
                 <col class="pw-col-label" />
                 <col />
@@ -225,6 +241,10 @@ const toggleSection = (key: string) => {
                       <template v-if="editing">
                         <input v-model="sec.label" class="pw-einput lbl" placeholder="이름" />
                         <span class="pw-secbtns">
+                          <span class="pw-minirow">
+                            <button type="button" class="pw-mini" title="묶음 올리기" @click.stop="moveSection(gi, si, -1)">↑</button>
+                            <button type="button" class="pw-mini" title="묶음 내리기" @click.stop="moveSection(gi, si, 1)">↓</button>
+                          </span>
                           <button type="button" class="pw-mini" @click.stop="addRow(gi, si)">＋줄</button>
                           <button type="button" class="pw-mini del" @click.stop="removeSection(gi, si)">묶음 빼기</button>
                         </span>
@@ -238,6 +258,8 @@ const toggleSection = (key: string) => {
                     <td v-else :class="['pw-txt', { warn: r.warn }]">{{ r.text }}</td>
                     <td class="pw-chk">
                       <template v-if="editing">
+                        <button type="button" class="pw-mini" title="줄 올리기" @click.stop="moveRow(gi, si, ri, -1)">↑</button>
+                        <button type="button" class="pw-mini" title="줄 내리기" @click.stop="moveRow(gi, si, ri, 1)">↓</button>
                         <button type="button" class="pw-mini" :title="r.depth === 0 ? '한 단 들여쓰기' : '내어쓰기'" @click.stop="bumpDepth(gi, si, ri)">{{ r.depth === 0 ? '→' : '←' }}</button>
                         <button type="button" class="pw-mini del" title="줄 빼기" @click.stop="removeRow(gi, si, ri)">×</button>
                       </template>
@@ -389,7 +411,11 @@ const toggleSection = (key: string) => {
 .pw-tbl > tbody:last-of-type > tr:last-child > :last-child { border-bottom-right-radius: 8px; }
 .pw-col-label { width: 112px; }
 .pw-col-chk { width: 34px; }
+.pw-tbl.edit .pw-col-chk { width: 44px; }
+.pw-minirow { display: flex; gap: 3px; }
+.pw-minirow .pw-mini { flex: 1 1 0; }
 /* 이름 칸은 권리분석 표와 같은 꼴 — 분홍 바탕에 가운데, 오른쪽에 가름선 */
+.pw-row td.pw-label,
 .pw-label {
   background: #fde7e7; text-align: center; vertical-align: middle;
   color: #111827; font-weight: 700;
@@ -402,7 +428,8 @@ const toggleSection = (key: string) => {
 .pw-row td { padding: 9px 6px; vertical-align: top; }
 .pw-chk { width: 34px; text-align: center; }
 .pw-chk input { width: 16px; height: 16px; accent-color: #2b6df3; cursor: pointer; }
-.pw-txt { font-size: 12.5px; line-height: 1.45; padding: 9px 10px 9px 12px !important; }
+/* 편집에서 넣은 줄 내림이 그대로 보이게 한다 */
+.pw-txt { font-size: 12.5px; line-height: 1.45; white-space: pre-line; padding: 9px 10px 9px 12px !important; }
 .pw-row td.pw-txt { font-weight: 400; color: #374151; }
 /* 묶음 안에 딸린 말은 한 단 들여쓴다 */
 .pw-row.d1 .pw-txt { padding-left: 24px !important; color: #4b5563; }
