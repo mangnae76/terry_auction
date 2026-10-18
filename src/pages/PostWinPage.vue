@@ -518,10 +518,11 @@ const toggleSection = (key: string) => {
 .pw-obj.row.on { border-color: #2b6df3; background: #f5f8ff; }
 
 /* 카드 — 물건상세(.adp-card)와 같은 꼴 */
-.pw-card { flex: 0 0 auto; background: #fff; border-radius: 8px; padding: 0 8px 8px; }
+.pw-card { flex: 0 0 auto; background: #fff; border-radius: 8px; padding: 0 8px 7px; }
+/* 제목줄 — 표와의 사이를 너무 빡빡하지 않게 한 뼘 줄인다 (글자 크기는 그대로) */
 .pw-card-head {
   display: flex; align-items: center; gap: 8px;
-  padding: 9px 4px 8px; min-height: 44px; box-sizing: border-box; cursor: pointer;
+  padding: 6px 4px 5px; min-height: 34px; box-sizing: border-box; cursor: pointer;
 }
 .pw-card-head h2 {
   margin: 0; font-size: 15.3px; font-weight: 800; color: #111827;
@@ -534,7 +535,7 @@ const toggleSection = (key: string) => {
 /* 안내 한 줄 — 파란 상자로 둔다. 왜 하는 일인지가 중요해서다
    (권리분석의 .adp-rcase-banner 와 같은 꼴) */
 .pw-note {
-  margin: 0 0 8px; padding: 9px 11px;
+  margin: 0 0 6px; padding: 7px 10px;
   background: #eaf1ff; border-radius: 8px;
   font-size: 12.5px; font-weight: 700; color: #1d4ed8; line-height: 1.5;
 }
