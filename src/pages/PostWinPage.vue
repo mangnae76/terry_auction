@@ -590,10 +590,13 @@ const toggleSection = (key: string) => {
 /* 제목 옆 ⓘ 와 낙찰 후 진행 순서 */
 .pw-info {
   flex: 0 0 auto; margin-right: auto; margin-left: 3px;
+  /* 글줄 한가운데에 — 글자의 가운데는 줄상자 가운데보다 1px 아래다 */
+  position: relative; top: 1px;
   display: inline-flex; align-items: center; justify-content: center;
   width: 19px; height: 19px; padding: 0;
   border: none; border-radius: 50%; background: #2b6df3;
-  font-family: inherit; font-size: 12.5px; font-weight: 800; font-style: italic;
+  /* 기울이지 않는다 — 정자 i */
+  font-family: inherit; font-size: 12.5px; font-weight: 800; font-style: normal;
   color: #fff; line-height: 1; cursor: pointer;
 }
 .pw-info:active { background: #1d4ed8; }
