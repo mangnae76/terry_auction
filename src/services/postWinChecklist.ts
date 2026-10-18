@@ -31,6 +31,8 @@ export interface CheckSection {
 export interface CheckGroup {
   key: string;
   title: string;
+  /** 제목이 가리키는 곳 — 적어 두면 제목이 링크가 된다 (편집에서 적는다) */
+  url?: string;
   /** 제목 아래 한 줄 — 왜 하는지 */
   note?: string;
   sections: CheckSection[];

@@ -360,7 +360,10 @@ const toggleSection = (key: string) => {
       <template v-if="hasTable">
         <section v-for="(g, gi) in dayGroups" :key="g.key" class="pw-card">
           <header class="pw-card-head" @click="editing || toggleSection(g.key)">
-            <input v-if="editing" v-model="g.title" class="pw-einput ttl" placeholder="제목" />
+            <span v-if="editing" class="pw-ttlwrap">
+              <input v-model="g.title" class="pw-einput ttl" placeholder="제목" />
+              <input v-model="g.url" class="pw-einput link ttl-link" placeholder="제목 링크 (https://…)" />
+            </span>
             <h2 v-else>
               <!-- 제목 앞 아이콘 — 서류 열람은 문서, 첫통화·방문은 전화 -->
               <svg v-if="g.key === 'file'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
@@ -368,7 +371,15 @@ const toggleSection = (key: string) => {
 <svg v-else-if="g.key.startsWith('loan.')" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M5 10v9M19 10v9M9 10v9M15 10v9M3 21h18"/></svg>
 <svg v-else-if="g.key.startsWith('biz.')" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M2 12h20"/></svg>
               <svg v-else-if="g.key === 'visit'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
-              {{ g.title }}
+              <a
+                v-if="(g.url ?? '').trim()"
+                class="pw-rowlink"
+                :href="g.url"
+                target="_blank"
+                rel="noopener"
+                @click.stop
+              >{{ g.title }}<span class="pw-ext">↗</span></a>
+              <template v-else>{{ g.title }}</template>
             </h2>
             <em v-if="!editing && checkable" class="pw-count">{{ doneCount(g) }}/{{ rowCount(g) }}</em>
             <img v-if="!editing" :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(g.key) }]" alt="" />
@@ -776,7 +787,9 @@ const toggleSection = (key: string) => {
   border: 1px solid #dde3ee; border-radius: 6px; background: #fff;
   padding: 2px 7px; font-family: inherit; font-size: 12px; color: #111827;
 }
-.pw-einput.ttl { max-width: 60%; font-size: 15px; font-weight: 800; height: 32px; }
+.pw-ttlwrap { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; margin-right: auto; }
+.pw-einput.ttl { font-size: 15px; font-weight: 800; height: 32px; }
+.pw-einput.ttl-link { font-weight: 500; }
 .pw-einput.lbl { text-align: center; font-weight: 700; }
 .pw-earea {
   width: 100%; box-sizing: border-box; resize: vertical;
