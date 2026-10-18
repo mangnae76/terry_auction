@@ -87,12 +87,21 @@ const toggleCheck = async (id: string) => {
   a.postWinChecks[id] = !a.postWinChecks[id];
   await store.saveAuction(a);
 };
-/** 큰 제목 — 이 탭의 상자들이 모두 한 울타리면 그 제목을 쓴다 */
-const superTitle = computed(() => {
-  const list = dayGroups.value;
-  const first = (list[0]?.super ?? '').trim();
-  if (!first) return '';
-  return list.every((g) => (g.super ?? '').trim() === first) ? first : '';
+/** 큰 제목으로 묶인 덩어리들 — 잇달아 같은 제목을 단 상자끼리 한 울타리가 된다.
+ *  제목이 없는 상자는 울타리 없이 홀로 선다. */
+const blocks = computed(() => {
+  const out: Array<{ super: string; groups: CheckGroup[]; at: number[] }> = [];
+  dayGroups.value.forEach((g, i) => {
+    const sup = (g.super ?? '').trim();
+    const last = out[out.length - 1];
+    if (last && last.super === sup && sup) {
+      last.groups.push(g);
+      last.at.push(i);
+    } else {
+      out.push({ super: sup, groups: [g], at: [i] });
+    }
+  });
+  return out;
 });
 /** '부수' 칸을 세울 묶음인가 — 적어 둔 줄이 하나라도 있으면 세운다 */
 const hasQty = (g: CheckGroup) => g.sections.some((sec) => sec.rows.some((r) => (r.qty ?? '').trim()));
@@ -365,17 +374,17 @@ const toggleSection = (key: string) => {
 
     <div class="pw-body">
       <template v-if="hasTable">
-       <div :class="['pw-wrap', { super: superTitle }]">
+       <div v-for="(blk, bi) in blocks" :key="`blk-${bi}`" :class="['pw-wrap', { super: blk.super }]">
         <!-- 큰 제목 — 상자들을 한 울타리로 묶는다 -->
-        <header v-if="superTitle" class="pw-super-head" @click="toggleSection('__super')">
+        <header v-if="blk.super" class="pw-super-head" @click="toggleSection(`__super-${bi}`)">
           <h2>
             <svg class="pw-h2-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M5 10v9M19 10v9M9 10v9M15 10v9M3 21h18"/></svg>
-            {{ superTitle }}
+            {{ blk.super }}
           </h2>
-          <img :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed('__super') }]" alt="" />
+          <img :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(`__super-${bi}`) }]" alt="" />
         </header>
-        <template v-if="!superTitle || !isCollapsed('__super')">
-        <section v-for="(g, gi) in dayGroups" :key="g.key" class="pw-card">
+        <template v-if="!blk.super || !isCollapsed(`__super-${bi}`)">
+        <section v-for="(g, ei) in blk.groups" :key="g.key" class="pw-card">
           <header class="pw-card-head" @click="editing || toggleSection(g.key)">
             <span v-if="editing" class="pw-ttlwrap">
               <input v-model="g.title" class="pw-einput ttl" placeholder="제목" />
@@ -383,7 +392,7 @@ const toggleSection = (key: string) => {
             </span>
             <h2 v-else>
               <!-- 울타리 안에서는 아이콘 대신 번호를 단다 (손품·현장과 같은 규칙) -->
-              <span v-if="superTitle" class="pw-no">{{ gi + 1 }}</span>
+              <span v-if="blk.super" class="pw-no">{{ ei + 1 }}</span>
               <template v-else>
               <!-- 제목 앞 아이콘 — 서류 열람은 문서, 첫통화·방문은 전화 -->
               <svg v-if="g.key === 'file'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
@@ -443,11 +452,11 @@ const toggleSection = (key: string) => {
                         <input v-model="sec.label" class="pw-einput lbl" placeholder="이름" />
                         <span class="pw-secbtns">
                           <span class="pw-minirow">
-                            <button type="button" class="pw-mini" title="묶음 올리기" @click.stop="moveSection(gi, si, -1)">↑</button>
-                            <button type="button" class="pw-mini" title="묶음 내리기" @click.stop="moveSection(gi, si, 1)">↓</button>
+                            <button type="button" class="pw-mini" title="묶음 올리기" @click.stop="moveSection(blk.at[ei], si, -1)">↑</button>
+                            <button type="button" class="pw-mini" title="묶음 내리기" @click.stop="moveSection(blk.at[ei], si, 1)">↓</button>
                           </span>
-                          <button type="button" class="pw-mini" @click.stop="addRow(gi, si)">＋줄</button>
-                          <button type="button" class="pw-mini del" @click.stop="removeSection(gi, si)">묶음 빼기</button>
+                          <button type="button" class="pw-mini" @click.stop="addRow(blk.at[ei], si)">＋줄</button>
+                          <button type="button" class="pw-mini del" @click.stop="removeSection(blk.at[ei], si)">묶음 빼기</button>
                         </span>
                       </template>
                       <!-- 갈 곳이 있는 이름은 링크로 — 누르면 그 자리로 간다 -->
@@ -490,10 +499,10 @@ const toggleSection = (key: string) => {
                     <td v-else-if="hasMemo(g)" class="pw-memo">{{ r.memo }}</td>
                     <td v-if="editing || (checkable && !g.noCheck)" class="pw-chk">
                       <template v-if="editing">
-                        <button type="button" class="pw-mini" title="줄 올리기" @click.stop="moveRow(gi, si, ri, -1)">↑</button>
-                        <button type="button" class="pw-mini" title="줄 내리기" @click.stop="moveRow(gi, si, ri, 1)">↓</button>
-                        <button type="button" class="pw-mini" :title="r.depth === 0 ? '한 단 들여쓰기' : '내어쓰기'" @click.stop="bumpDepth(gi, si, ri)">{{ r.depth === 0 ? '→' : '←' }}</button>
-                        <button type="button" class="pw-mini del" title="줄 빼기" @click.stop="removeRow(gi, si, ri)">×</button>
+                        <button type="button" class="pw-mini" title="줄 올리기" @click.stop="moveRow(blk.at[ei], si, ri, -1)">↑</button>
+                        <button type="button" class="pw-mini" title="줄 내리기" @click.stop="moveRow(blk.at[ei], si, ri, 1)">↓</button>
+                        <button type="button" class="pw-mini" :title="r.depth === 0 ? '한 단 들여쓰기' : '내어쓰기'" @click.stop="bumpDepth(blk.at[ei], si, ri)">{{ r.depth === 0 ? '→' : '←' }}</button>
+                        <button type="button" class="pw-mini del" title="줄 빼기" @click.stop="removeRow(blk.at[ei], si, ri)">×</button>
                       </template>
                       <input v-else type="checkbox" :checked="isChecked(r.id)" :disabled="!picked" @click.stop="toggleCheck(r.id)" />
                     </td>
@@ -501,7 +510,7 @@ const toggleSection = (key: string) => {
                 </template>
               </tbody>
             </table>
-            <button v-if="editing" type="button" class="pw-addsec" @click="addSection(gi)">＋ 묶음 추가</button>
+            <button v-if="editing" type="button" class="pw-addsec" @click="addSection(blk.at[ei])">＋ 묶음 추가</button>
           </div>
         </section>
         </template>
