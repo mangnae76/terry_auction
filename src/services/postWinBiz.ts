@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 (postWinChecklist 와 같은 규칙) */
-export const POST_WIN_BIZ_VERSION = 5;
+export const POST_WIN_BIZ_VERSION = 6;
 
 export const POST_WIN_BIZ: CheckGroup[] = [
   {
@@ -124,7 +124,7 @@ export const POST_WIN_BIZ: CheckGroup[] = [
     note: '신청이 처리완료되면 세무서 민원봉사실에서 받거나 홈택스에서 바로 출력한다.',
     sections: [
       {
-        label: '세무서에서\n신청한 경우',
+        label: '세무서신청',
         rows: [
           { id: 'bz.i1', depth: 0, text: '국세증명·사업자등록·세금관련 신청/신고 > 즉시발급증명 > 사업자등록증재발급 > 출력' },
           { id: 'bz.i2', depth: 1, text: '법인사업자는 법인공동인증서로 로그인한 뒤에 된다' },
@@ -132,7 +132,7 @@ export const POST_WIN_BIZ: CheckGroup[] = [
         ],
       },
       {
-        label: '홈택스에서\n신청한 경우',
+        label: '홈택스신청',
         rows: [
           { id: 'bz.i4', depth: 0, text: "국세증명·사업자등록·세금관련 신청/신고 > 민원증명 조회/관리 > 민원신청 처리결과조회 > 민원처리결과조회 탭 '발급번호' 클릭 > 출력" },
         ],
