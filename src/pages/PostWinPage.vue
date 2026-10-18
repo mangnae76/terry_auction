@@ -240,7 +240,12 @@ const toggleSection = (key: string) => {
         <section v-for="(g, gi) in dayGroups" :key="g.key" class="pw-card">
           <header class="pw-card-head" @click="editing || toggleSection(g.key)">
             <input v-if="editing" v-model="g.title" class="pw-einput ttl" placeholder="제목" />
-            <h2 v-else>{{ g.title }}</h2>
+            <h2 v-else>
+              <!-- 제목 앞 아이콘 — 서류 열람은 문서, 첫통화·방문은 전화 -->
+              <svg v-if="g.key === 'file'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
+              <svg v-else-if="g.key === 'visit'" class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+              {{ g.title }}
+            </h2>
             <em v-if="!editing" class="pw-count">{{ doneCount(g) }}/{{ rowCount(g) }}</em>
             <img v-if="!editing" :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(g.key) }]" alt="" />
           </header>
@@ -438,7 +443,11 @@ const toggleSection = (key: string) => {
   display: flex; align-items: center; gap: 8px;
   padding: 9px 4px 8px; min-height: 44px; box-sizing: border-box; cursor: pointer;
 }
-.pw-card-head h2 { margin: 0; font-size: 15.3px; font-weight: 800; color: #111827; }
+.pw-card-head h2 {
+  margin: 0; font-size: 15.3px; font-weight: 800; color: #111827;
+  display: inline-flex; align-items: center; gap: 5px; min-width: 0;
+}
+.pw-h2-ico { flex: 0 0 auto; color: #2a5fbf; }
 .pw-count { margin-left: auto; font-style: normal; font-size: 11.5px; font-weight: 800; color: #2b6df3; }
 .pw-chev { width: 22px; height: 22px; object-fit: contain; transition: transform 0.2s; }
 .pw-chev.up { transform: rotate(180deg); }
