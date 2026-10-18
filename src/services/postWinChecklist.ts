@@ -41,6 +41,8 @@ export interface CheckGroup {
   links?: Array<{ label: string; url: string }>;
   /** 여러 상자를 한 울타리로 묶는 큰 제목 — 같은 글을 적은 상자끼리 묶인다 */
   super?: string;
+  /** 차례 그림 — 적어 두면 표 위에 네모와 화살표로 그린다 */
+  flow?: Array<{ day?: string; name: string; tone?: 'go' | 'warn' | 'end' }>;
   sections: CheckSection[];
 }
 

@@ -435,6 +435,16 @@ const toggleSection = (key: string) => {
           <div v-if="editing || !isCollapsed(g.key)" class="pw-card-body">
             <textarea v-if="editing" v-model="g.note" class="pw-earea note" rows="2" placeholder="안내 한 줄" />
             <p v-else-if="g.note" class="pw-note">{{ g.note }}</p>
+            <!-- 차례 그림 — 네모와 화살표 (ⓘ 의 진행 순서와 같은 꼴) -->
+            <div v-if="!editing && g.flow" class="pw-steps">
+              <span
+                v-for="(st, si2) in g.flow"
+                :key="`st-${si2}`"
+                :class="['pw-step', st.tone, { last: si2 === (g.flow?.length ?? 0) - 1 }]"
+              >
+                <em v-if="st.day">{{ st.day }}</em>{{ st.name }}
+              </span>
+            </div>
             <table :class="['pw-tbl', { edit: editing, biz: activeTab !== 'win' }]">
               <colgroup>
                 <col v-if="editing || hasLabels(g)" class="pw-col-label" />
@@ -721,6 +731,32 @@ const toggleSection = (key: string) => {
   margin: 0 0 6px; padding: 7px 10px;
   background: #eaf1ff; border-radius: 8px;
   font-size: 12.5px; font-weight: 700; color: #1d4ed8; line-height: 1.5;
+}
+
+/* 차례 그림 — 한 줄에 셋씩, 네모는 모두 같은 크기 */
+.pw-steps {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 14px;
+  margin: 2px 0 10px;
+}
+.pw-step {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 48px; padding: 5px 4px;
+  border: 1.5px solid #2b6df3; border-radius: 8px; background: #f4f7ff;
+  font-size: 11.5px; font-weight: 700; line-height: 1.25; color: #1d3d75;
+  text-align: center; white-space: pre-line; word-break: keep-all;
+}
+.pw-step em {
+  font-style: normal; font-size: 9.5px; font-weight: 800; color: #2b6df3; margin-bottom: 2px;
+}
+.pw-step.warn { border-color: #e0574a; background: #fdf1ef; color: #8c2f24; }
+.pw-step.warn em { color: #e0574a; }
+.pw-step.end { border-color: #12a471; background: #effaf5; color: #0f7a5c; }
+/* 네모 사이 화살표 — 줄 끝과 마지막 네모 뒤에는 두지 않는다 */
+.pw-step:not(:nth-child(3n)):not(.last)::after {
+  content: '▶';
+  position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+  font-size: 9px; color: #9aa6bb;
 }
 
 /* 체크리스트 표 — 테두리와 모서리는 물건상세의 표(.adp-table)와 같다.
