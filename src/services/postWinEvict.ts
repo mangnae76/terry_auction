@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 16;
+export const POST_WIN_EVICT_VERSION = 17;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
@@ -126,6 +126,13 @@ export const POST_WIN_EVICT: CheckGroup[] = [
         },
       ],
     }],
+    sections: [],
+  },
+  {
+    // 틀만 둔다 — 내용은 사용자가 그림/글로 채운다
+    key: 'ev.deal',
+    title: '명도 협상 방법',
+    noCheck: true,
     sections: [],
   },
 ];

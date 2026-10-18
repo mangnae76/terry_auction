@@ -39,6 +39,7 @@ const spaceArrows = (text: string): string => String(text ?? '')
 const TITLE_FIX: Record<string, { from: string; to: string }> = {
   'biz.issue': { from: '사업자등록증 발급', to: '사업자등록증 발급 결과' },
   'ev.flow': { from: '명도의 절차', to: '명도절차' },
+  'ev.deal': { from: '명도 협상을 하는 방법', to: '명도 협상 방법' },
 };
 /** 들여쓰기를 바로잡을 줄 — 저장본에 옛 들여쓰기가 남아 있다 */
 const DEPTH_FIX: Record<string, 0 | 1> = {
@@ -55,6 +56,7 @@ const TITLE_ALSO: Record<string, { from: string; to: string }> = {
 const NOTE_CLEAR: Record<string, string[]> = {
   'ev.flow': ['낙찰에서 명도까지 가는 길 — 날짜는 대략이다.'],
   'ev.step': ['낙찰 받고 당장 무엇을 할지 — 때마다 할 일이 다르다.'],
+  'ev.deal': ['무엇을 알고 들어가는지가 값을 가른다.'],
 };
 
 const migrate = (list: CheckGroup[]): CheckGroup[] => list.map((g) => ({
