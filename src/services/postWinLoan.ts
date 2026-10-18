@@ -6,7 +6,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_LOAN_VERSION = 6;
+export const POST_WIN_LOAN_VERSION = 7;
 
 export const POST_WIN_LOAN: CheckGroup[] = [
   {
@@ -55,7 +55,7 @@ export const POST_WIN_LOAN: CheckGroup[] = [
       {
         label: '소득서류',
         rows: [
-          { id: 'ln.d15', depth: 0, text: '재직증명서, 근로소득원천징수영수증 (최근 2년)' },
+          { id: 'ln.d15', depth: 0, text: '재직증명서, 근로소득원천징수영수증 (최근 2년)', qty: '각 1부' },
           { id: 'ln.d16', depth: 0, text: '건강보험자격득실확인서, 보험료납부확인서 (최근 1년)', qty: '각 1부' },
         ],
       },
