@@ -31,15 +31,40 @@ const onAuthPill = async () => {
   router.push('/login');
 };
 
-const QUICK: Array<{ name: string; path: string }> = [
+interface QuickItem { name: string; path: string; items?: Array<{ name: string; path: string }> }
+const QUICK: QuickItem[] = [
   { name: '알림설정', path: '/notifications' },
   { name: '결제하기', path: '/billing' },
-  { name: '포인트', path: '/points' },
+  // 부가서비스는 눌러서 펼친다 — 자리를 더 내지 않고 줄을 늘릴 수 있다
+  {
+    name: '부가서비스',
+    path: '',
+    items: [
+      { name: '포인트', path: '/points' },
+      { name: '이벤트', path: '#event' },
+      { name: '공지사항', path: '#notice' },
+      { name: '업데이트 소식', path: '#update' },
+    ],
+  },
   { name: '고객센터', path: '/support' },
 ];
-const goQuick = (q: { name: string; path: string }) => {
+/** 펼쳐 둔 바로가기 이름 ('' 이면 닫힘) */
+const quickOpen = ref('');
+const goQuick = (q: QuickItem) => {
+  if (q.items?.length) { quickOpen.value = quickOpen.value === q.name ? '' : q.name; return; }
   if (!q.path) { notReady(q.name); return; }
   router.push(q.path);
+};
+const goQuickSub = (it: { name: string; path: string }) => {
+  quickOpen.value = '';
+  if (!it.path) { notReady(it.name); return; }
+  // '#표식' 이면 같은 화면의 그 묶음으로 내려간다
+  if (it.path.startsWith('#')) {
+    const el = document.querySelector(`[data-sec="${it.path.slice(1)}"]`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  router.push(it.path);
 };
 
 // 지금 걸린 알림이 몇 건인지 — 머리글의 종과 같은 셈을 쓴다
@@ -115,16 +140,24 @@ const openPolicy = (p: { name: string; path: string }) => {
         </div>
       </div>
 
+      <div v-if="quickOpen" class="quick-veil" @click="quickOpen = ''" />
       <div class="quick">
-        <button v-for="q in QUICK" :key="q.name" type="button" class="quick-item" @click="goQuick(q)">
-          {{ q.name }}<em v-if="q.path === '/notifications' && alertCount" class="quick-badge">{{ alertCount }}</em>
-        </button>
+        <div v-for="q in QUICK" :key="q.name" class="quick-cell">
+          <button type="button" class="quick-item" @click="goQuick(q)">
+            {{ q.name }}<em v-if="q.path === '/notifications' && alertCount" class="quick-badge">{{ alertCount }}</em><i v-if="q.items" class="quick-caret">{{ quickOpen === q.name ? '▴' : '▾' }}</i>
+          </button>
+          <ul v-if="q.items && quickOpen === q.name" class="quick-menu">
+            <li v-for="it in q.items" :key="it.name">
+              <button type="button" @click="goQuickSub(it)">{{ it.name }}</button>
+            </li>
+          </ul>
+        </div>
       </div>
       </section>
     </div>
 
     <!-- 이벤트 -->
-    <section class="more-card">
+    <section class="more-card" data-sec="event">
       <h2 class="sec-head">이벤트</h2>
       <button v-for="(e, i) in EVENTS" :key="i" type="button" class="list-item" @click="notReady('이벤트')">
         <span class="tag">{{ e.tag }}</span>
@@ -152,7 +185,7 @@ const openPolicy = (p: { name: string; path: string }) => {
     </section>
 
     <!-- 공지사항 -->
-    <section class="more-card">
+    <section class="more-card" data-sec="notice">
       <button type="button" class="sec-head link" @click="notReady('공지사항')">
         공지사항<span class="dot" /><span class="arr">›</span>
       </button>
@@ -164,7 +197,7 @@ const openPolicy = (p: { name: string; path: string }) => {
     </section>
 
     <!-- 업데이트 소식 -->
-    <section class="more-card">
+    <section class="more-card" data-sec="update">
       <button type="button" class="sec-head link" @click="notReady('업데이트 소식')">
         업데이트 소식<span class="arr">›</span>
       </button>
@@ -215,6 +248,8 @@ const openPolicy = (p: { name: string; path: string }) => {
 }
 /* 제목에 바짝 붙어 있어 답답했다 — 한 숨 띄운다 */
 .more-card.first { margin-top: 10px; }
+/* 바로가기로 내려올 때 고정된 제목·계정 상자에 가리지 않게 자리를 둔다 */
+.more-card[data-sec] { scroll-margin-top: 122px; }
 .more-card {
   margin: 0 14px 10px; padding: 14px 13px;
   background: #fff; border: 1px solid #e8ebf1; border-radius: 14px;
@@ -245,14 +280,31 @@ const openPolicy = (p: { name: string; path: string }) => {
   text-align: center; white-space: nowrap; letter-spacing: -0.4px;
 }
 .quick {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  margin-top: 12px; border: 1px solid #eef0f5; border-radius: 10px; overflow: hidden;
+  position: relative; display: grid; grid-template-columns: repeat(4, 1fr);
+  margin-top: 12px; border: 1px solid #eef0f5; border-radius: 10px; background: #fff;
 }
+.quick-cell { position: relative; }
+.quick-cell + .quick-cell { border-left: 1px solid #eef0f5; }
+.quick-cell:first-child .quick-item { border-radius: 10px 0 0 10px; }
+.quick-cell:last-child .quick-item { border-radius: 0 10px 10px 0; }
 .quick-item {
-  border: none; background: #fff; padding: 11px 2px; cursor: pointer;
+  width: 100%; border: none; background: #fff; padding: 11px 2px; cursor: pointer;
   font-size: 12px; font-weight: 700; color: #374151;
 }
-.quick-item + .quick-item { border-left: 1px solid #eef0f5; }
+.quick-caret { font-style: normal; font-size: 9px; color: #9aa6c4; margin-left: 3px; }
+/* 펼친 줄 — 바로가기 칸 바로 아래에 붙는다 */
+.quick-veil { position: fixed; inset: 0; z-index: 14; }
+.quick-menu {
+  position: absolute; top: calc(100% + 4px); left: -1px; right: -1px; z-index: 15;
+  list-style: none; margin: 0; padding: 4px;
+  background: #fff; border: 1px solid #e3e8f0; border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(17, 24, 39, .12);
+}
+.quick-menu button {
+  width: 100%; border: none; background: transparent; border-radius: 6px;
+  padding: 8px 4px; font-family: inherit; font-size: 12px; font-weight: 700; color: #374151; cursor: pointer;
+}
+.quick-menu button:hover { background: #f4f6fb; }
 .quick-badge {
   margin-left: 4px; font-style: normal; font-size: 10px; font-weight: 800; color: #fff;
   background: #e03b3b; min-width: 16px; height: 16px; border-radius: 8px; padding: 0 4px;
