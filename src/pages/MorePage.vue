@@ -33,7 +33,7 @@ const onAuthPill = async () => {
 
 interface QuickItem { name: string; path: string; items?: Array<{ name: string; path: string }> }
 const QUICK: QuickItem[] = [
-  { name: '알림설정', path: '/notifications' },
+  { name: '마이페이지', path: '/mypage' },
   { name: '결제하기', path: '/billing' },
   // 부가서비스는 눌러서 펼친다 — 자리를 더 내지 않고 줄을 늘릴 수 있다
   {
@@ -135,7 +135,9 @@ const openPolicy = (p: { name: string; path: string }) => {
           </button>
           <button type="button" class="pill" @click="onAuthPill">{{ authStore.isLoggedIn ? '로그아웃' : '로그인' }}</button>
           <button type="button" class="pill" @click="router.push('/profile')">내 정보 수정</button>
-          <button type="button" class="pill" @click="goMyPage">마이페이지</button>
+          <button type="button" class="pill" @click="router.push('/notifications')">
+            알림설정<em v-if="alertCount" class="pill-dot" />
+          </button>
           <button type="button" class="pill last" @click="notReady('인증/보안')">인증·보안</button>
         </div>
       </div>
@@ -144,7 +146,7 @@ const openPolicy = (p: { name: string; path: string }) => {
       <div class="quick">
         <div v-for="q in QUICK" :key="q.name" class="quick-cell">
           <button type="button" class="quick-item" @click="goQuick(q)">
-            {{ q.name }}<em v-if="q.path === '/notifications' && alertCount" class="quick-badge">{{ alertCount }}</em><i v-if="q.items" class="quick-caret">{{ quickOpen === q.name ? '▴' : '▾' }}</i>
+            {{ q.name }}<i v-if="q.items" class="quick-caret">{{ quickOpen === q.name ? '▴' : '▾' }}</i>
           </button>
           <ul v-if="q.items && quickOpen === q.name" class="quick-menu">
             <li v-for="it in q.items" :key="it.name">
@@ -307,10 +309,10 @@ const openPolicy = (p: { name: string; path: string }) => {
   font-family: inherit; font-size: 12px; font-weight: 700; color: #374151; cursor: pointer;
 }
 .quick-menu button:hover { background: #f4f6fb; }
-.quick-badge {
-  margin-left: 4px; font-style: normal; font-size: 10px; font-weight: 800; color: #fff;
-  background: #e03b3b; min-width: 16px; height: 16px; border-radius: 8px; padding: 0 4px;
-  display: inline-flex; align-items: center; justify-content: center; vertical-align: 1px;
+/* 알림설정 알약 — 알릴 것이 있으면 점 하나 (머리글 종과 같은 뜻) */
+.pill-dot {
+  display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+  background: #e03b3b; margin-left: 3px; vertical-align: 3px;
 }
 
 /* 공통 */
