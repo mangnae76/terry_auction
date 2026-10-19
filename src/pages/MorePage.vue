@@ -38,7 +38,7 @@ const onAuthPill = async () => {
 const QUICK: Array<{ name: string; path: string }> = [
   { name: '알림설정', path: '/notifications' },
   { name: '결제하기', path: '/billing' },
-  { name: '고객센터', path: '' },
+  { name: '고객센터', path: '/support' },
 ];
 const goQuick = (q: { name: string; path: string }) => {
   if (!q.path) { notReady(q.name); return; }

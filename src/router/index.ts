@@ -132,6 +132,12 @@ const router = createRouter({
       component: () => import('../pages/TermsPage.vue'),
     },
     {
+      // 고객센터 — 도움말·이용안내·문의 창구
+      path: '/support',
+      name: 'support',
+      component: () => import('../pages/SupportPage.vue'),
+    },
+    {
       // 알림 설정 — 무엇을 알려 줄지 고르고 지금 걸린 알림을 본다
       path: '/notifications',
       name: 'notifications',
