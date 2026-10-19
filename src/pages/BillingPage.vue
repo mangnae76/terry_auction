@@ -22,7 +22,7 @@ const planOf = (months: number, off: number): Plan => ({
   price: Math.round((MONTH_PRICE * months * (100 - off)) / 100),
   base: off === 0,
 });
-const PLANS: Plan[] = [planOf(1, 0), planOf(3, 10), planOf(6, 20), planOf(12, 30)];
+const PLANS: Plan[] = [planOf(1, 0), planOf(3, 15), planOf(6, 25), planOf(12, 35)];
 
 /** 안내 글도 표와 같은 값에서 뽑는다 — 할인율만 고치면 글이 저절로 따라온다 */
 const offPlans = PLANS.filter((p) => !p.base);
