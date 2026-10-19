@@ -364,7 +364,7 @@ const exportExcel = () => {
     ]);
   } else if (activeTab.value === 'itemPurchase') {
     downloadCsv('물품구매.csv', [
-      ['사용일', '물건', '사용구분', '상세내역', '수량', '단가', '계', '합계(VAT포함)', '구매처', '카드', '사용자', '배송비', '비고'],
+      ['결제일', '물건', '사용구분', '상세내역', '수량', '단가', '계', '합계(VAT포함)', '구매처', '카드', '사용자', '배송비', '비고'],
       ...filteredItemPurchases.value.map((r) => [
         r.date, r.auctionLabel, r.category, r.description,
         r.quantity, r.unitPrice, r.subtotal, r.totalWithVat,
@@ -544,7 +544,7 @@ const exportExcel = () => {
         <table class="fin-table mid">
           <thead>
             <tr>
-              <th>사용일</th><th>사용구분</th><th>상세내역</th>
+              <th>결제일</th><th>사용구분</th><th>상세내역</th>
               <th>수량</th><th>단가</th><th>합계(VAT포함)</th>
               <th>구매처</th><th>카드</th><th>비고</th>
             </tr>
@@ -640,7 +640,7 @@ const exportExcel = () => {
 
         <!-- 물품구매 -->
         <template v-else-if="modalKind === 'itemPurchase'">
-          <label>날짜<input type="date" v-model="ipDraft.date" /></label>
+          <label>결제일<input type="date" v-model="ipDraft.date" /></label>
           <div class="row2">
             <label>사용구분
               <select v-model="ipDraft.category">
