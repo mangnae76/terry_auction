@@ -351,7 +351,6 @@ const openPolicy = (p: { name: string; path: string }) => {
   position: absolute; top: calc(100% + 4px); left: -1px; z-index: 15;
   min-width: 152px; white-space: nowrap;
   list-style: none; margin: 0; padding: 4px;
-  max-height: 272px; overflow-y: auto; -webkit-overflow-scrolling: touch;
   background: #fff; border: 1px solid #e3e8f0; border-radius: 8px;
   box-shadow: 0 6px 18px rgba(17, 24, 39, .12);
 }
