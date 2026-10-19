@@ -254,9 +254,10 @@ const onLogout = async () => {
 .amh-um-facts {
   margin: 9px 0 0; display: grid; grid-template-columns: auto 1fr; row-gap: 3px; column-gap: 8px;
 }
-.amh-um-facts dt { font-size: 11px; color: #8a93a4; font-weight: 600; white-space: nowrap; }
-.amh-um-facts dd { margin: 0; font-size: 11.5px; color: #374151; font-weight: 700; text-align: right; }
-.amh-um-facts dd b { color: #e8622a; font-weight: 800; }
+/* 네 줄은 굵게 하지 않는다 — 이름과 등급만 도드라지게 둔다 */
+.amh-um-facts dt { font-size: 11px; color: #8a93a4; font-weight: 400; white-space: nowrap; }
+.amh-um-facts dd { margin: 0; font-size: 11.5px; color: #374151; font-weight: 400; text-align: right; }
+.amh-um-facts dd b { color: #e8622a; font-weight: 400; }
 .amh-user-menu-btn {
   width: 100%; text-align: left; padding: 10px 14px; border: none; background: transparent;
   font-size: 13px; color: #dc2626; font-weight: 700; cursor: pointer;
