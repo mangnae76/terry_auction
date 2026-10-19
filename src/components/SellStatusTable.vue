@@ -115,8 +115,12 @@ const RENT_GROUPS: MoneyGroup[] = [
   { label: '전세', from: 'jeonse', to: 'jeonseTo', unit: '억' },
   { label: '월세', from: 'monthly', to: 'monthlyTo', unit: '만' },
 ];
-/** 그 줄에 보여 줄 금액 칸 — 매도면 입금·매도, 임대면 전세·월세 */
-const groupsFor = (row: AgencyRow): MoneyGroup[] => (isRent(row) ? RENT_GROUPS : SALE_GROUPS);
+/** 그 줄에 보여 줄 금액 칸 — 매도면 입금·매도, 임대면 전세·월세.
+ *  직거래에는 입금가를 두지 않는다 (중개가 끼지 않아 입금가를 따로 셀 일이 없다) */
+const groupsFor = (row: AgencyRow): MoneyGroup[] => {
+  const base = isRent(row) ? RENT_GROUPS : SALE_GROUPS;
+  return props.mode === 'direct' ? base.filter((g) => g.label !== '입금') : base;
+};
 /** 보기 모드의 범위 — 아래위가 다 있으면 '1.4~1.45억', 하나뿐이면 '1.45억' */
 const rangeText = (row: AgencyRow, g: MoneyGroup) => {
   const lo = moneyInput(row[g.from]).replace(/\.$/, '');
