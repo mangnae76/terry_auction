@@ -32,7 +32,15 @@ const onLogout = async () => {
   router.push('/login');
 };
 
-const QUICK = ['알림설정', '결제관리', '인증/보안'];
+const QUICK: Array<{ name: string; path: string }> = [
+  { name: '알림설정', path: '' },
+  { name: '결제하기', path: '/billing' },
+  { name: '인증/보안', path: '' },
+];
+const goQuick = (q: { name: string; path: string }) => {
+  if (!q.path) { notReady(q.name); return; }
+  router.push(q.path);
+};
 
 const EVENTS = [
   { tag: '안내', text: '경매 PDF 자동 분석 정확도 개선 안내' },
@@ -109,14 +117,14 @@ const openPolicy = (p: { name: string; path: string }) => {
           <div class="pills">
             <button type="button" class="pill" @click="onLogout">로그아웃</button>
             <button type="button" class="pill" @click="goMyPage">마이페이지</button>
-            <button type="button" class="pill" @click="notReady('결제하기')">결제하기</button>
+            <button type="button" class="pill" @click="router.push('/billing')">결제하기</button>
             <button type="button" class="pill" @click="notReady('고객센터')">고객센터</button>
           </div>
         </div>
       </div>
 
       <div class="quick">
-        <button v-for="q in QUICK" :key="q" type="button" class="quick-item" @click="notReady(q)">{{ q }}</button>
+        <button v-for="q in QUICK" :key="q.name" type="button" class="quick-item" @click="goQuick(q)">{{ q.name }}</button>
       </div>
     </section>
 

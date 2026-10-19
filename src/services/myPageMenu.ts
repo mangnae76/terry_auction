@@ -14,6 +14,6 @@ export const MY_PAGE_ITEMS: MyPageItem[] = [
   { name: '휴지통', desc: '치운 물건 — 되살리거나 완전히 지운다', path: '/trash' },
   { name: '중개업체 관리', desc: '중개업체 리스트 — 상호·지역·연락처·평가 더하고 빼기', path: '/agencies' },
   { name: '알림 설정', desc: '입찰일·가격변동 알림 받기', path: '' },
-  { name: '결제 관리', desc: '이용 기간 고르고 결제하기', path: '/billing' },
+  { name: '결제하기', desc: '이용 기간 고르고 결제 진행', path: '/billing' },
   { name: '회원 탈퇴', desc: '계정과 저장된 자료 삭제', path: '' },
 ];
