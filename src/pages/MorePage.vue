@@ -57,7 +57,7 @@ const QUICK: QuickItem[] = [
       { name: '포인트내역', path: '/point-history' },
       { name: '결제하기', path: '/billing' },
       { name: '정보수정', path: '/profile' },
-      { name: '회원탈퇴', path: '' },
+      { name: '회원탈퇴', path: '/withdraw' },
       { name: '보관함', path: '/archive', mark: true },
       { name: '휴지통', path: '/trash', mark: true },
       { name: '중개업체관리', path: '/agencies', mark: true },

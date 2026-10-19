@@ -132,6 +132,12 @@ const router = createRouter({
       component: () => import('../pages/TermsPage.vue'),
     },
     {
+      // 회원탈퇴 — 지우기 전에 무엇이 사라지는지 알린다
+      path: '/withdraw',
+      name: 'withdraw',
+      component: () => import('../pages/WithdrawPage.vue'),
+    },
+    {
       // 포인트내역 — 등급·가진 포인트와 적립/사용 내역
       path: '/point-history',
       name: 'point-history',
