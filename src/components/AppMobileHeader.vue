@@ -124,9 +124,12 @@ const onLogout = async () => {
 .amh-row-top { justify-content: space-between; }
 .amh-row-bottom { justify-content: flex-end; gap: 6px; padding-right: 4px; margin-top: -16px; margin-right: -5px; }
 
+/* 로고는 띠 한가운데에 선다. 아래 인사줄이 16px 끌어올려져 있어
+   윗줄만 보면 로고가 위로 치우친다 — 아래위 마진을 같은 값으로 주고 받아
+   줄 높이는 그대로 둔 채 로고만 8px 내려 띠 한가운데에 맞춘다 */
 .amh-brand {
-  display: flex; flex-direction: column; align-items: flex-start;
-  gap: 0; flex-shrink: 0; line-height: 1;
+  display: flex; align-items: center; line-height: 0; flex-shrink: 0;
+  margin-top: 8px; margin-bottom: -8px;
 }
 .amh-info {
   display: inline-flex;

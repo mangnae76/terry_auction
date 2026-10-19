@@ -148,7 +148,7 @@ const onSubmit = async () => {
           <path d="M1.5 1.5 12.5 12.5M12.5 1.5 1.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
         </svg>
       </button>
-      <span class="su-brand"><BrandLogo :size="38" /></span>
+      <span class="su-brand"><BrandLogo :size="57" /></span>
       <h1 class="su-title">회원가입</h1>
       <p class="su-note">
         마이턴 옥션은 컨설팅·외부광고 등의 전화를 하지 않으며 개인정보를 타사와 공유하지 않습니다.

@@ -130,7 +130,7 @@ const openTool = (tool: Tool) => {
     <header class="adm-top">
       <div class="adm-top-in">
         <div class="adm-brand">
-          <BrandLogo :size="36" />
+          <BrandLogo :size="36" tone="white" />
           <small class="adm-brand-tag">관리자 도구</small>
         </div>
         <nav class="adm-top-nav">
@@ -210,11 +210,11 @@ const openTool = (tool: Tool) => {
 }
 
 /* ===== 위쪽 띠 ===== */
+/* 앱 머리글과 같은 남색 띠 — 로고는 흰 판을 쓴다 */
 .adm-top {
   position: sticky; top: 0; z-index: 20;
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: saturate(160%) blur(10px);
-  border-bottom: 1px solid #e8ecf3;
+  background: linear-gradient(180deg, #1f3a72 0%, #15295b 100%);
+  border-bottom: 1px solid #16265280;
 }
 .adm-top-in {
   max-width: 1480px; margin: 0 auto; padding: 12px 28px;
@@ -225,17 +225,17 @@ const openTool = (tool: Tool) => {
 .adm-brand { display: flex; align-items: center; gap: 12px; }
 
 .adm-brand-tag {
-  font-size: 11.5px; font-weight: 700; color: #6b7280;
-  padding-left: 12px; border-left: 1px solid #e3e8f0; line-height: 1.2;
+  font-size: 11.5px; font-weight: 700; color: #c7d2ea;
+  padding-left: 12px; border-left: 1px solid #ffffff33; line-height: 1.2;
 }
 .adm-top-nav { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 .adm-top-link {
-  border: 1px solid #dde3ee; background: #fff; border-radius: 8px;
+  border: 1px solid #ffffff4d; background: #ffffff1a; border-radius: 8px;
   padding: 6px 12px; font-family: inherit; font-size: 12.5px; font-weight: 700;
-  color: #374151; cursor: pointer;
+  color: #fff; cursor: pointer;
 }
 .adm-top-link:hover { border-color: #b9cdf7; color: #2b6df3; }
-.adm-who { font-size: 12px; color: #9ca3af; font-weight: 600; }
+.adm-who { font-size: 12px; color: #c7d2ea; font-weight: 600; }
 
 /* ===== 본문 ===== */
 .adm-body { flex: 1 1 auto; width: 100%; max-width: 1480px; margin: 0 auto; padding: 34px 28px 60px; }
