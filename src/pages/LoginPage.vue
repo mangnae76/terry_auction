@@ -75,7 +75,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
     <div class="lp-card">
       <div class="lp-brand">
         <img :src="logoImg" alt="MYTURN" class="lp-brand-logo" />
-        <p class="lp-brand-sub">마이턴 옥션</p>
+        <p class="lp-brand-sub">AUCTION</p>
       </div>
 
       <form class="lp-form" @submit.prevent="onSubmit">
@@ -150,7 +150,8 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
 }
 .lp-brand { text-align: center; margin-bottom: 22px; }
 .lp-brand-logo { height: 36px; object-fit: contain; }
-.lp-brand-sub { margin: 8px 0 0; font-size: 12px; color: #6b7280; font-weight: 600; letter-spacing: 1px; }
+/* 로고가 MYTURN 까지만 그려 AUCTION 을 글자로 받친다 */
+.lp-brand-sub { margin: 5px 0 0; font-size: 12px; color: #6b7280; font-weight: 700; letter-spacing: 4px; }
 
 .lp-form { display: flex; flex-direction: column; gap: 12px; }
 .lp-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #374151; font-weight: 600; }

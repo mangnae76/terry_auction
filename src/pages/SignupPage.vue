@@ -143,7 +143,7 @@ const onSubmit = async () => {
   <section class="su-shell">
     <div class="su-card">
       <img :src="logoImg" alt="MYTURN" class="su-logo" />
-      <p class="su-brand-sub">마이턴 옥션</p>
+      <p class="su-brand-sub">AUCTION</p>
       <h1 class="su-title">회원가입</h1>
       <p class="su-note">
         마이턴 옥션은 컨설팅·외부광고 등의 전화를 하지 않으며 개인정보를 타사와 공유하지 않습니다.
@@ -308,7 +308,7 @@ const onSubmit = async () => {
 /* 로고 아래 한 줄 — 로그인 화면과 같은 꼴 */
 .su-brand-sub {
   margin: 7px 0 12px; text-align: center;
-  font-size: 12px; color: #6b7280; font-weight: 600; letter-spacing: 1px;
+  font-size: 12px; color: #6b7280; font-weight: 700; letter-spacing: 4px;
 }
 .su-title { margin: 0; text-align: center; font-size: 20px; font-weight: 800; color: #111827; }
 .su-note {
