@@ -42,7 +42,6 @@ const onAuthPill = async () => {
 const QUICK: Array<{ name: string; path: string }> = [
   { name: '알림설정', path: '/notifications' },
   { name: '결제하기', path: '/billing' },
-  { name: '인증/보안', path: '' },
 ];
 const goQuick = (q: { name: string; path: string }) => {
   if (!q.path) { notReady(q.name); return; }
@@ -145,9 +144,10 @@ const openPolicy = (p: { name: string; path: string }) => {
             {{ displayName }}<span class="arr">›</span>
           </button>
           <button type="button" class="pill" @click="onAuthPill">{{ authStore.isLoggedIn ? '로그아웃' : '로그인' }}</button>
+          <button type="button" class="pill" @click="router.push('/profile')">내 정보 수정</button>
           <button type="button" class="pill" @click="goMyPage">마이페이지</button>
           <button type="button" class="pill" @click="notReady('고객센터')">고객센터</button>
-          <button type="button" class="pill" @click="router.push('/profile')">내 정보 수정</button>
+          <button type="button" class="pill last" @click="notReady('인증/보안')">인증·보안</button>
         </div>
       </div>
 
@@ -278,7 +278,9 @@ const openPolicy = (p: { name: string; path: string }) => {
 
 .pill {
   border: 1px solid #e3e7ef; background: #f7f8fb; border-radius: 999px;
-  padding: 5px 9px; font-size: 10px; font-weight: 700; color: #4b5563; cursor: pointer;
+  /* 글자 길이가 달라도 칸은 같게 — '내 정보 수정'이 들어가는 폭에 맞춘다 */
+  width: 62px; flex: 0 0 62px; box-sizing: border-box;
+  padding: 5px 0; font-size: 10px; font-weight: 700; color: #4b5563; cursor: pointer;
   text-align: center; white-space: nowrap; letter-spacing: -0.3px;
 }
 .quick {
@@ -308,6 +310,8 @@ const openPolicy = (p: { name: string; path: string }) => {
 .sec-head .dot { width: 5px; height: 5px; border-radius: 50%; background: #ef4444; }
 .arr { margin-left: auto; color: #c4cad6; font-size: 16px; line-height: 1; }
 .pname { margin-right: 3px; }
+/* 인증·보안은 줄 오른쪽 끝에 — 가운데가 비어도 양 끝이 맞는다 */
+.pill.last { margin-left: auto; }
 .pname .arr { margin-left: 2px; font-size: 15px; }
 
 /* ===== 이벤트 배너 ===== */
