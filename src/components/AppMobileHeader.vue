@@ -8,10 +8,18 @@ import dollarIcon from '../assets/icones/circle-dollar-sign.png';
 import { useAuthStore } from '../stores/authStore';
 import { MY_PAGE_ITEMS, type MyPageItem } from '../services/myPageMenu';
 import { useAlertBadge } from '../services/alertBadge';
+import { POINT_GRADES } from '../services/pointPolicy';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const menuOpen = ref(false);
+
+/** 회원 등급·포인트 — 적립과 결제를 붙이기 전이라 첫 등급에서 시작한다 */
+const grade = POINT_GRADES[0];
+const myPoint = 0;
+const payCount = 0;
+const planName = '이용권 없음';
+const planRest = '–';
 
 /** 알림이 몇 건인지 — 더보기의 바로가기와 같은 셈을 쓴다 */
 const { count: alertCount } = useAlertBadge();
@@ -105,9 +113,19 @@ const onLogout = async () => {
       </button>
       <div v-if="menuOpen" class="amh-user-menu-wrap" @click.self="closeMenu">
         <ul class="amh-user-menu" @click.stop>
+          <li class="amh-user-menu-head">마이턴 회원정보</li>
           <li class="amh-user-menu-info">
-            <strong>{{ displayNickname }}</strong>
+            <span class="amh-um-name">
+              <span :class="['amh-um-badge', grade.tone]">{{ grade.name.slice(0, 1) }}</span>
+              <strong>{{ displayNickname }} 님</strong>
+            </span>
             <small>{{ authStore.email }}</small>
+            <dl class="amh-um-facts">
+              <dt>보유 포인트</dt><dd><b>{{ myPoint.toLocaleString('ko-KR') }} P</b></dd>
+              <dt>결제 내역</dt><dd>{{ payCount }}건</dd>
+              <dt>잔여 서비스</dt><dd>{{ planName }}</dd>
+              <dt>잔여 기간</dt><dd>{{ planRest }}</dd>
+            </dl>
           </li>
           <li v-for="item in MY_PAGE_ITEMS" :key="item.name">
             <button type="button" class="amh-user-menu-btn page" @click="openMyPage(item)">{{ item.name }}</button>
@@ -215,9 +233,30 @@ const onLogout = async () => {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
   color: #111827;
 }
-.amh-user-menu-info { padding: 10px 14px 8px; border-bottom: 1px solid #f1f5f9; display: flex; flex-direction: column; }
+/* 머리글 — 이 메뉴가 무엇인지 */
+.amh-user-menu-head {
+  padding: 9px 14px 7px; font-size: 11px; font-weight: 800; color: #1f3a72;
+  background: #f3f6ff; border-bottom: 1px solid #e6ecfb;
+}
+.amh-user-menu-info { padding: 10px 14px 10px; border-bottom: 1px solid #f1f5f9; display: flex; flex-direction: column; }
+.amh-um-name { display: flex; align-items: center; gap: 6px; }
+.amh-um-badge {
+  width: 20px; height: 20px; border-radius: 6px; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;
+}
+.amh-um-badge.welcome { background: #b5d334; }
+.amh-um-badge.silver { background: #b9bec9; }
+.amh-um-badge.gold { background: #e8bb3d; }
+.amh-um-badge.family { background: #7b6ad4; }
 .amh-user-menu-info strong { font-size: 13px; font-weight: 800; color: #111827; }
-.amh-user-menu-info small { font-size: 11px; color: #6b7280; margin-top: 2px; word-break: break-all; }
+.amh-user-menu-info small { font-size: 11px; color: #6b7280; margin-top: 3px; word-break: break-all; }
+/* 포인트·결제·이용권 — 이름표와 값을 두 칸으로 */
+.amh-um-facts {
+  margin: 9px 0 0; display: grid; grid-template-columns: auto 1fr; row-gap: 3px; column-gap: 8px;
+}
+.amh-um-facts dt { font-size: 11px; color: #8a93a4; font-weight: 600; white-space: nowrap; }
+.amh-um-facts dd { margin: 0; font-size: 11.5px; color: #374151; font-weight: 700; text-align: right; }
+.amh-um-facts dd b { color: #e8622a; font-weight: 800; }
 .amh-user-menu-btn {
   width: 100%; text-align: left; padding: 10px 14px; border: none; background: transparent;
   font-size: 13px; color: #dc2626; font-weight: 700; cursor: pointer;
