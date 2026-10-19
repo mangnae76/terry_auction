@@ -103,6 +103,12 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
         <button type="submit" class="lp-submit" :disabled="submitting || authStore.loading">
           {{ submitting || authStore.loading ? '로그인 중…' : '로그인' }}
         </button>
+        <button
+          type="button"
+          class="lp-submit ghost"
+          :disabled="submitting || authStore.loading"
+          @click="router.push('/signup')"
+        >회원가입</button>
       </form>
 
       <div v-if="kakaoEnabled || naverEnabled" class="lp-social">
@@ -158,6 +164,12 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
   font-size: 15px; font-weight: 800; cursor: pointer;
 }
 .lp-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+/* 회원가입 — 로그인 바로 아래, 같은 크기에 속만 비운다 */
+.lp-submit.ghost {
+  margin-top: 8px; background: #fff; color: #1f3a72;
+  border: 1px solid #c7d0e4; font-family: inherit;
+}
+.lp-submit.ghost:disabled { background: #f3f4f6; color: #9ca3af; }
 .lp-footer { text-align: center; font-size: 12px; color: #6b7280; margin: 16px 0 0; }
 .lp-link { color: #2b6df3; font-weight: 700; text-decoration: none; margin-left: 4px; }
 

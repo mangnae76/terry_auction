@@ -33,11 +33,12 @@ const router = createRouter({
       meta: { public: true },
     },
     {
-      // 허용된 계정만 쓰는 앱이라 가입 창구는 닫아 둔다. 북마크로 들어와도 로그인으로 보낸다.
+      // 가입 창구 — 로그인 화면의 '회원가입'에서 들어온다.
+      // (계정을 만들어도 허용 목록에 없으면 들어오지 못한다 — services/accessControl)
       path: '/signup',
       name: 'signup',
       component: SignupPage,
-      meta: { public: true, closed: true },
+      meta: { public: true },
     },
     {
       path: '/auctions/watchlist',

@@ -1,6 +1,7 @@
 import {
   EmailAuthProvider,
   createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
   onAuthStateChanged,
   signInWithCustomToken,
   signInWithEmailAndPassword,
@@ -191,6 +192,40 @@ export const loadAccountDetail = async (uid: string): Promise<AccountDetail> => 
 export const saveAccountDetail = async (uid: string, detail: AccountDetail): Promise<void> => {
   assertReady();
   await setDoc(doc(firestore!, USERS_COLLECTION, uid), { ...detail }, { merge: true });
+};
+
+/** 가입할 때 같이 받는 것들 — users/{uid} 에 함께 담는다 */
+export interface SignupExtra {
+  realName: string;
+  phone: string;
+  region: string;
+  joinPath: string;
+  joinPathDetail: string;
+  smsOptIn: boolean;
+  agreedAt: string;
+}
+
+export const saveSignupExtra = async (uid: string, extra: SignupExtra): Promise<void> => {
+  if (!uid || !firestore) return;
+  try {
+    await setDoc(doc(firestore, USERS_COLLECTION, uid), { ...extra }, { merge: true });
+  } catch (err) {
+    console.warn('[auth] 가입 추가정보 저장 실패:', err);
+  }
+};
+
+/** 이미 쓰고 있는 메일인지 — 프로젝트 설정에 따라 알려 주지 않을 수 있다.
+ *  그때는 'unknown' 을 돌려주고, 진짜 판정은 가입 단추에서 난다. */
+export const checkEmailTaken = async (email: string): Promise<'taken' | 'free' | 'unknown'> => {
+  assertReady();
+  try {
+    const methods = await fetchSignInMethodsForEmail(auth!, email.trim());
+    if (methods.length > 0) return 'taken';
+    // 메일 존재 여부를 숨기는 설정이면 빈 배열이 와서 가려낼 수 없다
+    return 'unknown';
+  } catch {
+    return 'unknown';
+  }
 };
 
 /** 비밀번호로 들어온 계정인지 — 카카오·네이버로 들어오면 비밀번호가 없다 */
