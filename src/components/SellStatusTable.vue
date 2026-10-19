@@ -187,7 +187,8 @@ const rangeText = (row: AgencyRow, g: MoneyGroup) => {
           </div>
           <span v-else>{{ row.name || '-' }}</span>
         </div>
-        <label class="adp-agency-fld">
+        <!-- 직거래에는 윗줄 연락처를 두지 않는다 — 연락은 매수문의에 적는다 -->
+        <label v-if="props.mode !== 'direct'" class="adp-agency-fld">
           <span v-if="props.editing" class="adp-agency-tel">
             <input
               v-model="row.phone"
