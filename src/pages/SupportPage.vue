@@ -59,7 +59,7 @@ const openContact = (c: ContactWay) => {
             <!-- 꼬리표가 곧 단추다 — 누르면 그 자리에서 답이 펼쳐진다 -->
             <button
               type="button"
-              :class="['sup-tag', f.tag === '회원·결제' ? 'pay' : (f.tag === '기타서비스' ? 'etc' : 'info')]"
+              :class="['sup-tag', f.tag === '회원·결제' ? 'pay' : (f.tag === '기타' ? 'etc' : 'info')]"
               :aria-expanded="openQ === f.q"
               @click="toggle(f.q)"
             >{{ f.tag }} 도움말<i>{{ openQ === f.q ? '▴' : '▾' }}</i></button>
@@ -153,10 +153,12 @@ const openContact = (c: ContactWay) => {
   margin: 8px 0 0; padding: 8px 0 0 18px; border-top: 1px solid #e8edf7;
   font-size: 12px; line-height: 1.75; color: #4b5563; word-break: keep-all;
 }
+/* 꼬리표 칸은 글자가 짧든 길든 같은 크기로 — 가장 긴 '회원·결제 도움말'에 맞춘다 */
 .sup-tag {
   position: absolute; top: 8px; right: 8px;
-  border: none; border-radius: 4px; padding: 3px 6px 3px 7px; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 3px;
+  min-width: 92px; box-sizing: border-box;
+  border: none; border-radius: 4px; padding: 3px 7px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 3px;
   font-family: inherit; font-size: 10px; font-weight: 700; color: #fff; background: #2a3f8f;
 }
 .sup-tag i { font-style: normal; font-size: 8px; opacity: .85; }
