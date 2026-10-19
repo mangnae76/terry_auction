@@ -145,7 +145,6 @@ const openPolicy = (p: { name: string; path: string }) => {
           <div class="pills">
             <button type="button" class="pill" @click="onLogout">로그아웃</button>
             <button type="button" class="pill" @click="goMyPage">마이페이지</button>
-            <button type="button" class="pill" @click="router.push('/billing')">결제하기</button>
             <button type="button" class="pill" @click="notReady('고객센터')">고객센터</button>
           </div>
         </div>
