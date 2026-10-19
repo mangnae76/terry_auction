@@ -89,12 +89,18 @@ const tab = ref<'grade' | 'guide'>('grade');
 .pt-crumb { margin-left: auto; font-size: 11px; color: #9ca3af; }
 
 .pt-tabs { display: flex; gap: 14px; padding: 0 14px; border-bottom: 1px solid #e5e7eb; background: #fff; }
+/* 고른 칸의 밑줄은 ::after 막대로 그린다 — 전역 button 규칙의 둥근 모서리(8px)가
+   테두리에 먹혀 밑줄 끝이 U 자로 말리는 것을 막는다 (물건상세 탭과 같은 방식) */
 .pt-tab {
-  border: none; background: transparent; padding: 10px 2px; cursor: pointer;
+  position: relative; border: none; border-radius: 0; background: transparent;
+  padding: 10px 2px 12px; cursor: pointer;
   font-family: inherit; font-size: 12.5px; font-weight: 700; color: #9ca3af;
-  border-bottom: 2px solid transparent; margin-bottom: -1px;
 }
-.pt-tab.on { color: #1f3a72; border-bottom-color: #1f3a72; }
+.pt-tab.on { color: #1f3a72; }
+.pt-tab.on::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px;
+  height: 3px; background: #1f3a72; border-radius: 2px;
+}
 
 .pt-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 .pt-card { background: #fff; border-radius: 10px; padding: 13px 13px 15px; }
