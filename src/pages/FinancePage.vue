@@ -485,7 +485,7 @@ const exportExcel = () => {
             <col style="width: 18%" /><col style="width: 18%" /><col />
           </colgroup>
           <thead>
-            <tr><th>결제일</th><th>물건구분</th><th>사용구분</th><th>명세</th><th class="r">비용(VAT포함)</th><th>비고</th></tr>
+            <tr><th>결제일</th><th>물건구분</th><th>사용구분</th><th>명세</th><th class="r two">비용{{ '\n' }}(VAT포함)</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
