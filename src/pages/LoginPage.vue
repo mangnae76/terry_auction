@@ -183,7 +183,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
                 </tr>
               </tbody>
             </table>
-            <p class="lp-m-note">포인트가 있으면 포인트 결제가 가능합니다.</p>
+            <p class="lp-m-note">포인트 보유 시 포인트 결제가 가능합니다.</p>
           </template>
 
           <template v-else>
