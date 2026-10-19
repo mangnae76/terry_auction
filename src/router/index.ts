@@ -132,6 +132,12 @@ const router = createRouter({
       component: () => import('../pages/TermsPage.vue'),
     },
     {
+      // 결제관리 — 결제 내역·영수증
+      path: '/payments',
+      name: 'payments',
+      component: () => import('../pages/PaymentsPage.vue'),
+    },
+    {
       // 무료체험 안내
       path: '/trial',
       name: 'trial',

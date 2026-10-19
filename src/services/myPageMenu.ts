@@ -14,6 +14,8 @@ export const MY_PAGE_ITEMS: MyPageItem[] = [
   { name: '휴지통', desc: '치운 물건 — 되살리거나 완전히 지운다', path: '/trash' },
   { name: '중개업체 관리', desc: '중개업체 리스트 — 상호·지역·연락처·평가 더하고 빼기', path: '/agencies' },
   { name: '알림설정', desc: '기한·일정 알림 고르기', path: '/notifications' },
+  { name: '3일 무료체험', desc: '무료로 먼저 써 보기 — 가입 즉시 지급', path: '/trial' },
   { name: '결제하기', desc: '이용 기간 고르고 결제 진행', path: '/billing' },
+  { name: '결제관리', desc: '결제 내역·영수증 보기', path: '/payments' },
   { name: '회원탈퇴', desc: '계정과 저장된 자료 삭제', path: '' },
 ];
