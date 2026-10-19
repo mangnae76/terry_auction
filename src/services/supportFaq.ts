@@ -98,7 +98,7 @@ export const SUPPORT_GUIDES: GuideGroup[] = [
     title: '추가서비스 안내',
     items: [
       { icon: 'Ⓟ', label: '포인트제도 안내', path: '/points' },
-      { icon: '👤', label: '내 정보 수정', path: '/profile' },
+      { icon: '👤', label: '회원전용 메뉴 안내', path: '/mypage' },
       { icon: '🔔', label: '알림서비스 안내', path: '/notifications' },
       { icon: '🎁', label: '이벤트 보기', path: '' },
     ],
