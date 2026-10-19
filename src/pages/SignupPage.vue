@@ -14,7 +14,7 @@ import {
   TERMS_CHAPTERS,
   TERMS_EFFECTIVE,
 } from '../services/legalTerms';
-import BrandLogo from '../components/BrandLogo.vue';
+import markImg from '../assets/icones/log/LOGO_MARK.png';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -148,8 +148,7 @@ const onSubmit = async () => {
           <path d="M1.5 1.5 12.5 12.5M12.5 1.5 1.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
         </svg>
       </button>
-      <span class="su-brand"><BrandLogo :size="57" /></span>
-      <h1 class="su-title">회원가입</h1>
+      <h1 class="su-title"><img :src="markImg" alt="" class="su-mark" />회원가입</h1>
       <p class="su-note">
         마이턴 옥션은 컨설팅·외부광고 등의 전화를 하지 않으며 개인정보를 타사와 공유하지 않습니다.
         본사를 사칭한 전화를 받으시면 고객센터로 알려 주세요.
@@ -317,9 +316,12 @@ const onSubmit = async () => {
   display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 0;
 }
 .su-close svg { display: block; }
-/* 로고 묶음 — 가운데에 둔다 (모양은 BrandLogo 가 들고 있다) */
-.su-brand { display: flex; justify-content: center; margin-bottom: 12px; }
-.su-title { margin: 0; text-align: center; font-size: 20px; font-weight: 800; color: #111827; }
+/* 제목 옆에 동그라미 로고 — 큰 로고를 세우는 대신 자리를 아낀다 */
+.su-title {
+  margin: 0; font-size: 20px; font-weight: 800; color: #111827;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.su-mark { display: block; width: 26px; height: 26px; }
 .su-note {
   margin: 7px 0 0; text-align: center;
   font-size: 11px; line-height: 1.6; color: #8a93a4; word-break: keep-all;
