@@ -125,6 +125,18 @@ const router = createRouter({
       component: () => import('../pages/BidCalendarPage.vue'),
     },
     {
+      // 이용약관
+      path: '/terms',
+      name: 'terms',
+      component: () => import('../pages/TermsPage.vue'),
+    },
+    {
+      // 개인정보 처리방침
+      path: '/privacy',
+      name: 'privacy',
+      component: () => import('../pages/PrivacyPage.vue'),
+    },
+    {
       // 결제하기 — 더보기 · 프로필 메뉴의 '결제 관리'
       path: '/billing',
       name: 'billing',

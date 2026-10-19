@@ -78,7 +78,16 @@ const openMyPageItem = (item: { name: string; path: string; query?: Record<strin
 };
 
 
-const POLICIES = ['이용약관', '개인정보처리방침', '위치기반서비스 이용약관'];
+// 약관 — 화면이 있는 것은 그 자리로, 아직 없는 것은 '준비 중' 안내
+const POLICIES: Array<{ name: string; path: string }> = [
+  { name: '이용약관', path: '/terms' },
+  { name: '개인정보처리방침', path: '/privacy' },
+  { name: '위치기반서비스 이용약관', path: '' },
+];
+const openPolicy = (p: { name: string; path: string }) => {
+  if (!p.path) { notReady(p.name); return; }
+  router.push(p.path);
+};
 </script>
 
 <template>
@@ -177,11 +186,11 @@ const POLICIES = ['이용약관', '개인정보처리방침', '위치기반서�
       <h2 class="sec-head plain">약관 및 정책</h2>
       <button
         v-for="p in POLICIES"
-        :key="p"
+        :key="p.name"
         type="button"
         class="policy"
-        @click="notReady(p)"
-      >{{ p }}</button>
+        @click="openPolicy(p)"
+      >{{ p.name }}</button>
     </section>
 
     <p class="more-version">MyTurn Auction · v1.0</p>
