@@ -5,6 +5,15 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { checkEmailTaken, saveSignupExtra } from '../services/authRepository';
+import {
+  PRIVACY_CHILD,
+  PRIVACY_EFFECTIVE,
+  PRIVACY_OFFICER,
+  PRIVACY_SECTIONS,
+  SMS_NOTICE_PARTS,
+  TERMS_CHAPTERS,
+  TERMS_EFFECTIVE,
+} from '../services/legalTerms';
 import logoImg from '../assets/icones/log/LOGO_ENG.png';
 
 const router = useRouter();
@@ -51,6 +60,15 @@ const onPhone = (key: keyof typeof PHONE_BOX, el: HTMLInputElement, max: number)
   const digits = el.value.replace(/\D/g, '').slice(0, max);
   PHONE_BOX[key].value = digits;
   if (el.value !== digits) el.value = digits;
+};
+
+/** 약관 '보기' — 더보기 쪽 글을 그대로 띄운다 */
+type Viewer = '' | 'terms' | 'privacy' | 'sms';
+const viewer = ref<Viewer>('');
+const VIEWER_TITLE: Record<Exclude<Viewer, ''>, string> = {
+  terms: '이용약관',
+  privacy: '개인정보 수집 및 이용',
+  sms: '알림톡/문자수신',
 };
 
 const submitting = ref(false);
@@ -183,14 +201,15 @@ const onSubmit = async () => {
           <label class="su-chk all"><input v-model="agreeAll" type="checkbox" />전체동의</label>
           <label class="su-chk">
             <input v-model="agreeTerms" type="checkbox" /><em class="req">[필수]</em> 이용약관
-            <a class="su-view" href="/terms" target="_blank" rel="noopener" @click.stop>보기</a>
+            <button type="button" class="su-view" @click.prevent.stop="viewer = 'terms'">보기</button>
           </label>
           <label class="su-chk">
             <input v-model="agreePrivacy" type="checkbox" /><em class="req">[필수]</em> 개인정보 수집 및 이용
-            <a class="su-view" href="/privacy" target="_blank" rel="noopener" @click.stop>보기</a>
+            <button type="button" class="su-view" @click.prevent.stop="viewer = 'privacy'">보기</button>
           </label>
           <label class="su-chk">
             <input v-model="agreeSms" type="checkbox" /><em>[선택]</em> 알림톡/문자수신
+            <button type="button" class="su-view" @click.prevent.stop="viewer = 'sms'">보기</button>
           </label>
         </div>
 
@@ -202,6 +221,66 @@ const onSubmit = async () => {
         </button>
         <button type="button" class="su-back" @click="router.push('/login')">이미 계정이 있습니다 — 로그인</button>
       </form>
+    </div>
+
+    <!-- 약관 보기 — 더보기 화면과 같은 글을 그대로 띄운다 -->
+    <div v-if="viewer" class="su-modal" @click.self="viewer = ''">
+      <div class="su-modal-box">
+        <header class="su-modal-head">
+          <strong>{{ VIEWER_TITLE[viewer] }}</strong>
+          <button type="button" class="su-modal-x" aria-label="닫기" @click="viewer = ''">✕</button>
+        </header>
+
+        <div class="su-modal-body">
+          <!-- 알림톡·문자 -->
+          <p v-if="viewer === 'sms'" class="su-sms">
+            <template v-for="(part, i) in SMS_NOTICE_PARTS" :key="i">
+              <b v-if="part.mark">{{ part.text }}</b><template v-else>{{ part.text }}</template>
+            </template>
+          </p>
+
+          <!-- 이용약관 -->
+          <template v-else-if="viewer === 'terms'">
+            <section v-for="ch in TERMS_CHAPTERS" :key="ch.title" class="su-doc">
+              <h3 class="su-doc-h">【 {{ ch.title }} 】</h3>
+              <article v-for="a in ch.articles" :key="a.title" class="su-doc-art">
+                <h4>{{ a.title }}</h4>
+                <p v-if="a.text">{{ a.text }}</p>
+                <ol v-if="a.items.length">
+                  <li v-for="(it, i) in a.items" :key="i">{{ it }}</li>
+                </ol>
+              </article>
+            </section>
+            <p class="su-doc-tail">본 약관은 {{ TERMS_EFFECTIVE }}부터 시행합니다.</p>
+          </template>
+
+          <!-- 개인정보 수집 및 이용 -->
+          <template v-else>
+            <section v-for="sec in PRIVACY_SECTIONS" :key="sec.title" class="su-doc">
+              <h3 class="su-doc-h">{{ sec.title }}</h3>
+              <template v-for="(b, i) in sec.blocks" :key="i">
+                <p v-if="b.kind === 'p'">{{ b.text }}</p>
+                <h4 v-else-if="b.kind === 'label'">{{ b.text }}</h4>
+                <ol v-else-if="b.kind === 'ol'" class="paren">
+                  <li v-for="(it, k) in b.items" :key="k">{{ it }}</li>
+                </ol>
+                <ul v-else>
+                  <li v-for="(it, k) in b.items" :key="k">{{ it }}</li>
+                </ul>
+              </template>
+            </section>
+            <section class="su-doc">
+              <h3 class="su-doc-h">개인정보 관리책임자</h3>
+              <p v-for="row in PRIVACY_OFFICER" :key="row.label">{{ row.label }} : {{ row.value }}</p>
+            </section>
+            <section class="su-doc">
+              <h3 class="su-doc-h">아동의 개인정보보호</h3>
+              <p>{{ PRIVACY_CHILD }}</p>
+            </section>
+            <p class="su-doc-tail">이 개인정보 처리방침은 {{ PRIVACY_EFFECTIVE }}부터 시행합니다.</p>
+          </template>
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -286,7 +365,47 @@ const onSubmit = async () => {
 .su-chk input { width: 14px; height: 14px; accent-color: #2a3f8f; }
 .su-chk em { font-style: normal; color: #8a93a4; }
 .su-chk em.req { color: #2a3f8f; font-weight: 700; }
-.su-view { margin-left: auto; font-size: 10.5px; color: #8a93a4; text-decoration: underline; }
+.su-view {
+  margin-left: auto; border: none; background: transparent; padding: 0; cursor: pointer;
+  font-family: inherit; font-size: 10.5px; color: #8a93a4; text-decoration: underline;
+}
+
+/* 약관 보기 창 */
+.su-modal {
+  position: fixed; inset: 0; z-index: 60; background: rgba(17, 24, 39, .45);
+  display: flex; align-items: center; justify-content: center; padding: 18px 14px;
+}
+.su-modal-box {
+  width: 100%; max-width: 420px; max-height: 76vh; box-sizing: border-box;
+  background: #fff; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden;
+}
+.su-modal-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 12px 10px; border-bottom: 1px solid #eef1f6;
+}
+.su-modal-head strong { font-size: 13.5px; font-weight: 800; color: #111827; }
+.su-modal-x {
+  margin-left: auto; width: 26px; height: 26px; border: 1px solid #e3e8f0; border-radius: 6px;
+  background: #fff; font-size: 13px; color: #4b5563; cursor: pointer; line-height: 1;
+}
+.su-modal-body { overflow-y: auto; padding: 12px 14px 16px; -webkit-overflow-scrolling: touch; }
+
+/* 알림톡 안내 — 가운데 부분만 파랗게 */
+.su-sms { margin: 6px 2px; font-size: 12.5px; line-height: 1.8; color: #c62828; word-break: keep-all; }
+.su-sms b { color: #2a3f8f; font-weight: 700; }
+
+/* 약관 본문 */
+.su-doc + .su-doc { margin-top: 12px; }
+.su-doc-h { margin: 0 0 6px; font-size: 12.5px; font-weight: 800; color: #1f3a72; }
+.su-doc-art + .su-doc-art { margin-top: 9px; }
+.su-doc h4 { margin: 7px 0 3px; font-size: 11.5px; font-weight: 800; color: #111827; }
+.su-doc p { margin: 0 0 4px; font-size: 11.5px; line-height: 1.7; color: #4b5563; word-break: keep-all; }
+.su-doc ol, .su-doc ul { margin: 2px 0 4px; padding-left: 18px; }
+.su-doc li { font-size: 11.5px; line-height: 1.7; color: #4b5563; word-break: keep-all; }
+.su-doc ol.paren { list-style: none; padding-left: 0; counter-reset: pv; }
+.su-doc ol.paren > li { counter-increment: pv; padding-left: 22px; text-indent: -22px; }
+.su-doc ol.paren > li::before { content: '(' counter(pv) ') '; color: #8a93a4; }
+.su-doc-tail { margin: 12px 0 0; font-size: 11px; color: #8a93a4; }
 
 .su-msg { margin: 2px 0 0; font-size: 11.5px; color: #2a3f8f; }
 .su-err { margin: 2px 0 0; font-size: 11.5px; color: #c62828; word-break: keep-all; }
