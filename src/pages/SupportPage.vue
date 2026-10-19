@@ -146,18 +146,20 @@ const openContact = (c: ContactWay) => {
 .sup-qmark { flex: none; font-style: normal; font-size: 12px; font-weight: 800; color: #2a3f8f; line-height: 1.5; }
 /* 오른쪽 위 꼬리표 자리를 비워 둔다 — 질문이 그 아래로 파고들지 않게 */
 .sup-q-txt {
-  flex: 1 1 auto; padding-right: 104px;
+  flex: 1 1 auto; padding-right: 116px;
   font-size: 12.5px; line-height: 1.5; color: #111827; font-weight: 600; word-break: keep-all;
 }
 .sup-a {
   margin: 8px 0 0; padding: 8px 0 0 18px; border-top: 1px solid #e8edf7;
   font-size: 12px; line-height: 1.75; color: #4b5563; word-break: keep-all;
 }
-/* 꼬리표 칸은 글자가 짧든 길든 같은 크기로 — 가장 긴 '회원·결제 도움말'에 맞춘다 */
+/* 꼬리표 칸은 글자가 짧든 길든 같은 크기로 — 가장 긴 '회원·결제 도움말'이
+   어느 글꼴에서도 들어가는 폭으로 못 박는다 (min-width 로 두면 글꼴에 따라
+   긴 쪽만 늘어나 들쭉날쭉해진다) */
 .sup-tag {
   position: absolute; top: 8px; right: 8px;
-  min-width: 92px; box-sizing: border-box;
-  border: none; border-radius: 4px; padding: 3px 7px; cursor: pointer;
+  width: 104px; box-sizing: border-box; overflow: hidden; white-space: nowrap;
+  border: none; border-radius: 4px; padding: 3px 4px; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: 3px;
   font-family: inherit; font-size: 10px; font-weight: 700; color: #fff; background: #2a3f8f;
 }
