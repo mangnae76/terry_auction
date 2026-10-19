@@ -742,15 +742,16 @@ const toggleSection = (key: string) => {
                    남는 자리를 날짜·금액·업체명에서 바짝 당겨 쓴다 -->
               <!-- 날짜를 바짝 줄여 작업내용을 완료 옆으로 당기고(다섯 글자 자리),
                    남는 몫은 협의내용에 더 준다. 넘치면 두 줄로 내려 적는다 -->
+              <!-- 업체명과 연락처는 한 칸에 위아래로 — 둘 다 제 너비를 쓰려면 이 편이 낫다 -->
               <colgroup>
                 <col style="width: 12%" /><col style="width: 12%" />
-                <col style="width: 18.5%" /><col style="width: 21.5%" />
-                <col style="width: 14.5%" /><col style="width: 9%" /><col style="width: 12.5%" />
+                <col style="width: 18.5%" /><col style="width: 24%" />
+                <col style="width: 14.5%" /><col style="width: 19%" />
               </colgroup>
               <thead>
                 <tr>
                   <th>시작</th><th>완료</th><th>작업내용</th><th>{{ card.status }}</th>
-                  <th>{{ card.amount }}{{ '\n' }}(VAT포함)</th><th>업체명</th><th>연락처</th>
+                  <th>{{ card.amount }}{{ '\n' }}(VAT포함)</th><th>업체명{{ '\n' }}연락처</th>
                 </tr>
               </thead>
               <tbody>
@@ -760,11 +761,13 @@ const toggleSection = (key: string) => {
                   <td>{{ r.work }}</td>
                   <td>{{ r.status }}</td>
                   <td>{{ money(r.amountWithVat) }}</td>
-                  <td>{{ r.vendor }}</td>
-                  <td>{{ r.phone }}</td>
+                  <td class="vend">
+                    <b>{{ r.vendor }}</b>
+                    <small v-if="r.phone">{{ r.phone }}</small>
+                  </td>
                 </tr>
                 <tr v-if="rowsOf(card.kind).length === 0">
-                  <td colspan="7" class="empty">
+                  <td colspan="6" class="empty">
                     <template v-if="picked">적어 둔 줄이 없습니다. 위의 ＋ 항목추가를 누르세요.</template>
                     <template v-else>먼저 위에서 물건을 고르세요.</template>
                   </td>
@@ -1329,11 +1332,15 @@ const toggleSection = (key: string) => {
 .pw-int-tbl tbody td:nth-child(1),
 .pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; font-size: 10px; letter-spacing: -0.4px; }
 .pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; font-size: 10px; letter-spacing: -0.4px; }
-/* 업체명은 좁으니 줄이 넘어가도 둔다 */
-.pw-int-tbl tbody td:nth-child(6) { font-size: 11px; letter-spacing: -0.3px; word-break: break-all; }
-/* 연락처는 자리가 모자라면 두 줄로 내려 적는다 — 잘리는 것보다 낫다 */
-.pw-int-tbl tbody td:nth-child(7) {
-  font-size: 10.5px; letter-spacing: -0.3px; word-break: break-all;
+/* 업체 — 이름은 위, 번호는 아래 */
+.pw-int-tbl tbody td.vend { padding: 5px 2px; }
+.pw-int-tbl tbody td.vend b {
+  display: block; font-size: 11px; font-weight: 600; letter-spacing: -0.3px;
+  line-height: 1.25; word-break: keep-all;
+}
+.pw-int-tbl tbody td.vend small {
+  display: block; margin-top: 1px; font-size: 9.5px; letter-spacing: -0.4px;
+  color: #6b7280; white-space: nowrap;
 }
 /* 머리줄은 다른 표와 같은 짙은 남색에 흰 글씨 — 위 두 모서리는 둥글게 */
 .pw-int-tbl thead th {
