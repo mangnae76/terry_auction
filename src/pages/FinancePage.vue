@@ -713,7 +713,11 @@ const exportExcel = () => {
               <span class="pd"><em>매도일</em><b>{{ shortYmd(a.sellDate) }}</b></span>
               <span class="court">{{ shortCourt(a.courtName) }}</span>
             </p>
-            <p class="addr">{{ shortAddr(a.address) }}</p>
+            <!-- 주소 오른쪽 끝에 '펴기/접기' — 카드를 누르면 수익현황이 열리고 닫힌다 -->
+            <p class="addr">
+              <span class="addr-t">{{ shortAddr(a.address) }}</span>
+              <em class="fold">{{ openCardId === a.id ? '접기 ▴' : '펴기 ▾' }}</em>
+            </p>
             <div class="nums">
               <span><small>감정가</small><b>{{ shortMoney(a.metrics?.appraisalValue ?? 0) }}</b></span>
               <span><small>낙찰가</small><b class="bid">{{ shortMoney(bidPriceOf(a)) }}</b></span>
@@ -879,8 +883,16 @@ const exportExcel = () => {
 }
 .fin-stage-card .court { margin-left: auto; font-size: 11px; font-weight: 500; color: #6b7280; }
 .fin-stage-card .addr {
-  margin: 3px 0 0; font-size: 12px; font-weight: 500; color: #374151;
+  margin: 3px 0 0; display: flex; align-items: baseline; gap: 8px;
+  font-size: 12px; font-weight: 500; color: #374151;
+}
+.fin-stage-card .addr .addr-t {
+  flex: 1 1 auto; min-width: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* 펴기·접기 — 누르는 자리는 카드 전체지만, 어디를 누르면 되는지 알려 준다 */
+.fin-stage-card .addr .fold {
+  flex: 0 0 auto; font-style: normal; font-size: 11px; font-weight: 700; color: #2b6df3;
 }
 /* 줄 하나 긋고 아래에 돈 이야기 */
 .fin-stage-card .nums {
