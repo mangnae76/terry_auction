@@ -745,21 +745,23 @@ const toggleSection = (key: string) => {
               <!-- 날짜를 바짝 줄여 작업내용을 완료 옆으로 당기고(다섯 글자 자리),
                    남는 몫은 협의내용에 더 준다. 넘치면 두 줄로 내려 적는다 -->
               <!-- 업체명과 연락처는 한 칸에 위아래로 — 둘 다 제 너비를 쓰려면 이 편이 낫다 -->
+              <!-- 시작·완료는 '예상일정' 한 칸에 위아래로 적는다 (적을 때는 둘로 나눠 받는다) -->
               <colgroup>
-                <col style="width: 12%" /><col style="width: 12%" />
-                <col style="width: 14%" /><col style="width: 25%" />
-                <col style="width: 16%" /><col style="width: 21%" />
+                <col style="width: 15%" /><col style="width: 16%" />
+                <col style="width: 28%" /><col style="width: 18%" /><col style="width: 23%" />
               </colgroup>
               <thead>
                 <tr>
-                  <th>시작</th><th>완료</th><th>작업내용</th><th>{{ card.status }}</th>
+                  <th>예상일정</th><th>작업내용</th><th>{{ card.status }}</th>
                   <th>{{ card.amount }}{{ '\n' }}(VAT포함)</th><th>업체명{{ '\n' }}연락처</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="r in rowsOf(card.kind)" :key="r.id" @click="openIntEdit(r)">
-                  <td>{{ shortDate(r.startDate || r.date || '') }}</td>
-                  <td>{{ shortDate(r.endDate) }}</td>
+                  <td class="span">
+                    <b>{{ shortDate(r.startDate || r.date || '') }}</b>
+                    <small v-if="r.endDate">~ {{ shortDate(r.endDate) }}</small>
+                  </td>
                   <td>{{ r.work }}</td>
                   <td>{{ r.status }}</td>
                   <td>{{ money(r.amountWithVat) }}</td>
@@ -769,7 +771,7 @@ const toggleSection = (key: string) => {
                   </td>
                 </tr>
                 <tr v-if="rowsOf(card.kind).length === 0">
-                  <td colspan="6" class="empty">
+                  <td colspan="5" class="empty">
                     <template v-if="picked">적어 둔 줄이 없습니다. 위의 ＋ 항목추가를 누르세요.</template>
                     <template v-else>먼저 위에서 물건을 고르세요.</template>
                   </td>
@@ -797,7 +799,7 @@ const toggleSection = (key: string) => {
       <div class="pw-modal-veil" @click="intOpen = false" />
       <div class="pw-modal" @click.stop>
         <header class="pw-modal-head">
-          <strong>{{ intDraft.kind === 'bid' ? '업체비딩' : '인테리어비용' }}<em v-if="picked" class="pw-modal-sub">{{ shortAddr(picked.address) || picked.caseNumber }}</em></strong>
+          <strong>항목 편집<em class="pw-modal-sub">{{ intDraft.kind === 'bid' ? '업체비딩' : '인테리어비용' }}</em></strong>
           <button type="button" class="pw-flow-close" aria-label="닫기" @click="intOpen = false">×</button>
         </header>
         <!-- 적는 차례는 표의 칸 차례와 같다 -->
@@ -1344,18 +1346,18 @@ const toggleSection = (key: string) => {
 }
 /* 날짜·금액·연락처는 줄을 바꾸지 않는다 — 잘리거나 내려가던 자리다 */
 /* 작업내용·협의내용 — 넘치면 두 줄로 내려 적는다 */
-.pw-int-tbl tbody td:nth-child(3),
-.pw-int-tbl tbody td:nth-child(4) {
+.pw-int-tbl tbody td:nth-child(2),
+.pw-int-tbl tbody td:nth-child(3) {
   white-space: normal; word-break: keep-all; line-height: 1.3;
 }
 /* 날짜·금액·연락처는 한 줄로, 글자를 바짝 줄여 자리를 적게 먹는다 */
 /* 본문 글자는 모두 12px — 머리줄(구분)만 그대로 둔다 */
 .pw-int-tbl tbody td { font-size: 12px; }
-.pw-int-tbl tbody td:nth-child(1),
-.pw-int-tbl tbody td:nth-child(2) {
-  white-space: nowrap; letter-spacing: -0.6px; padding-left: 1px; padding-right: 1px;
-}
-.pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; letter-spacing: -0.4px; }
+/* 예상일정 — 시작은 위, 완료는 '~'를 달아 아래에 */
+.pw-int-tbl tbody td.span { white-space: nowrap; letter-spacing: -0.5px; padding-left: 1px; padding-right: 1px; }
+.pw-int-tbl tbody td.span b { display: block; font-weight: 600; }
+.pw-int-tbl tbody td.span small { display: block; margin-top: 1px; font-size: 11px; color: #6b7280; }
+.pw-int-tbl tbody td:nth-child(4) { white-space: nowrap; letter-spacing: -0.4px; }
 /* 업체 — 이름은 위, 번호는 아래 */
 .pw-int-tbl tbody td.vend { padding: 5px 2px; }
 .pw-int-tbl tbody td.vend b {
