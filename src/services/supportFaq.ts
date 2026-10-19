@@ -91,14 +91,13 @@ export const SUPPORT_GUIDES: GuideGroup[] = [
     items: [
       { icon: '🔍', label: '앱 이용방법 안내', path: '' },
       { icon: '🅦', label: '이용요금 안내', path: '/billing' },
-      { icon: '3️⃣', label: '3일 무료체험 안내', path: '/billing' },
-      { icon: '🖼️', label: '경매정보 샘플보기', path: '' },
+      { icon: '3️⃣', label: '3일 무료체험 안내', path: '/trial' },
     ],
   },
   {
     title: '추가서비스 안내',
     items: [
-      { icon: 'Ⓟ', label: '포인트제도 안내', path: '/billing' },
+      { icon: 'Ⓟ', label: '포인트제도 안내', path: '/points' },
       { icon: '👤', label: '내 정보 수정', path: '/profile' },
       { icon: '🔔', label: '알림서비스 안내', path: '/notifications' },
       { icon: '🎁', label: '이벤트 보기', path: '' },

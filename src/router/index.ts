@@ -132,9 +132,22 @@ const router = createRouter({
       component: () => import('../pages/TermsPage.vue'),
     },
     {
+      // 무료체험 안내
+      path: '/trial',
+      name: 'trial',
+      component: () => import('../pages/TrialPage.vue'),
+    },
+    {
+      // 포인트 제도 — 등급별 적립률과 쓰는 법
+      path: '/points',
+      name: 'points',
+      component: () => import('../pages/PointsPage.vue'),
+    },
+    {
       // 고객센터 — 도움말·이용안내·문의 창구
       path: '/support',
       name: 'support',
+      meta: { public: true },
       component: () => import('../pages/SupportPage.vue'),
     },
     {
