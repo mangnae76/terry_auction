@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore';
 import { isKakaoLoginConfigured, isNaverLoginConfigured } from '../services/socialAuth';
 import { isAllowedEmail } from '../services/accessControl';
 import BrandLogo from '../components/BrandLogo.vue';
+import { TRIAL_PRIVACY_INTRO, TRIAL_PRIVACY_ROWS } from '../services/legalTerms';
 import {
   MONTH_PRICE,
   PLANS,
@@ -25,6 +26,15 @@ onMounted(() => {
     ? '이 계정은 사용 권한이 없습니다. 등록된 계정으로 로그인해 주세요.'
     : '';
 });
+
+/** 무료체험을 어떻게 받는지 — 숫자 셋으로 나눠 적는다 */
+const TRIAL_STEPS = [
+  '회원가입을 하시면 <b>3일 무료이용권</b>이 바로 지급됩니다',
+  '무료체험 기간에는 <b>결제하지 않습니다</b> — 모든 기능을 그대로 쓰실 수 있습니다',
+  '무료체험은 <b>계정당 1회</b>만 사용 가능합니다',
+];
+const trialAgree = ref(false);
+const trialDetail = ref(false);
 
 /** 가입 전 안내 창 — '' 이면 닫힘 */
 const info = ref<'' | 'pay' | 'trial'>('');
@@ -167,18 +177,18 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
             <p class="lp-m-lead">1개월 기준가 {{ won(MONTH_PRICE) }}원 — 길게 고를수록 깎입니다.</p>
             <table class="lp-m-table">
               <thead>
-                <tr><th>기간</th><th>할인</th><th>결제금액</th><th>월 환산</th></tr>
+                <tr><th>기간</th><th>할인</th><th class="num">결제금액</th><th class="num">월 환산</th></tr>
               </thead>
               <tbody>
                 <tr v-for="p in PLANS" :key="p.key">
                   <td>{{ p.label }}</td>
                   <td>{{ p.base ? '기준가' : `${p.off}%` }}</td>
-                  <td><b>{{ won(p.price) }}</b></td>
-                  <td>{{ won(perMonth(p)) }}</td>
+                  <td class="num"><b>{{ won(p.price) }}</b></td>
+                  <td class="num">{{ won(perMonth(p)) }}</td>
                 </tr>
               </tbody>
             </table>
-            <p class="lp-m-note">표에 적힌 금액이 실제로 받는 값입니다. 포인트가 있으면 결제할 때 뺄 수 있습니다.</p>
+            <p class="lp-m-note">포인트가 있으면 포인트 결제가 가능합니다.</p>
           </template>
 
           <template v-else>
@@ -189,18 +199,47 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
               <span><b>무료</b><small>경매교육 영상</small></span>
             </div>
 
-            <h4 class="lp-m-sub">무료체험 이용안내</h4>
-            <ol class="lp-m-steps">
-              <li>회원가입을 하시면 <b>{{ TRIAL_DAYS }}일 무료이용권</b>이 바로 지급됩니다.</li>
-              <li>무료체험 기간에는 <b>결제하지 않습니다</b> — 모든 기능을 그대로 쓰실 수 있습니다.</li>
-              <li>무료체험은 <b>계정당 1회</b>만 쓸 수 있습니다.</li>
+            <h4 class="lp-m-sub">📌 무료체험 이용안내</h4>
+            <ol class="lp-steps">
+              <li v-for="(st, i) in TRIAL_STEPS" :key="i">
+                <span class="no">{{ i + 1 }}</span>
+                <small v-html="st" />
+              </li>
             </ol>
-            <p class="lp-m-note">
+            <p class="lp-warnbar">
               ※ {{ TRIAL_DAYS }}일(72시간)이 지나면 더보기 › 결제하기에서 이용 기간을 고르시면
               그대로 이어서 쓰실 수 있습니다. 적어 두신 물건과 사진은 사라지지 않습니다.
             </p>
-            <button type="button" class="lp-m-go" @click="info = ''; router.push('/signup')">
-              {{ TRIAL_DAYS }}일 무료체험 하기 ›
+
+            <!-- 개인정보 수집 및 이용 동의 -->
+            <div class="lp-agree">
+              <label class="lp-agree-chk">
+                <input v-model="trialAgree" type="checkbox" />
+                [ 무료체험 ] 개인정보 수집 및 이용 동의
+              </label>
+              <button type="button" class="lp-agree-view" @click="trialDetail = !trialDetail">
+                {{ trialDetail ? '접기' : '내용보기' }}
+              </button>
+            </div>
+
+            <div v-if="trialDetail" class="lp-privacy">
+              <h5>[무료체험] 개인정보 수집 및 이용안내</h5>
+              <p v-for="(t, i) in TRIAL_PRIVACY_INTRO" :key="i">{{ t }}</p>
+              <dl>
+                <template v-for="row in TRIAL_PRIVACY_ROWS" :key="row.head">
+                  <dt>{{ row.head }}</dt>
+                  <dd><span v-for="(b, i) in row.body" :key="i">{{ b }}</span></dd>
+                </template>
+              </dl>
+            </div>
+
+            <button
+              type="button"
+              class="lp-m-go"
+              :disabled="!trialAgree"
+              @click="info = ''; router.push('/signup')"
+            >
+              {{ trialAgree ? `${TRIAL_DAYS}일 무료체험 하기 ›` : '개인정보 수집에 동의해 주세요' }}
             </button>
           </template>
         </div>
@@ -286,6 +325,8 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
 .lp-m-table th { color: #6b7280; font-weight: 700; background: #f7f9fd; }
 .lp-m-table td { color: #374151; }
 .lp-m-table td b { color: #111827; font-weight: 800; }
+/* 돈은 오른쪽 끝을 맞춘다 — 자릿수가 달라도 일의 자리가 한 줄에 선다 */
+.lp-m-table .num { text-align: right; padding-right: 8px; font-variant-numeric: tabular-nums; }
 /* 가입 혜택 — 회원가입 화면의 카드와 같은 내용 */
 .lp-m-perks { display: flex; gap: 6px; }
 .lp-m-perks span {
@@ -295,16 +336,55 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
 }
 .lp-m-perks b { font-size: 14px; font-weight: 800; color: #1f3a72; }
 .lp-m-perks small { font-size: 10px; color: #6b7280; word-break: keep-all; }
-.lp-m-sub { margin: 14px 0 6px; font-size: 12.5px; font-weight: 800; color: #e8622a; }
-.lp-m-steps { margin: 0; padding-left: 18px; }
-.lp-m-steps li { font-size: 12px; line-height: 1.85; color: #374151; word-break: keep-all; }
-.lp-m-steps b { color: #1f3a72; font-weight: 700; }
+.lp-m-sub { margin: 14px 0 8px; font-size: 12.5px; font-weight: 800; color: #111827; }
+
+/* 1 → 2 → 3 */
+.lp-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lp-steps li { position: relative; display: flex; align-items: flex-start; gap: 8px; padding-bottom: 6px; }
+.lp-steps li:not(:last-child)::before {
+  content: ''; position: absolute; left: 9.5px; top: 22px; bottom: 0; width: 1px; background: #dbe3f7;
+}
+.lp-steps .no {
+  flex: none; width: 20px; height: 20px; border-radius: 50%; background: #2a3f8f; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;
+}
+.lp-steps small { flex: 1 1 auto; font-size: 11.5px; line-height: 1.6; color: #374151; word-break: keep-all; }
+.lp-steps small :deep(b) { color: #1f3a72; font-weight: 700; }
+.lp-warnbar {
+  margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid #e8a33d; background: #fff8ec;
+  font-size: 11px; line-height: 1.7; color: #8a6418; word-break: keep-all;
+}
+
+/* 동의 */
+.lp-agree { margin-top: 12px; display: flex; align-items: center; gap: 8px; }
+.lp-agree-chk {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  font-size: 11.5px; font-weight: 700; color: #374151;
+}
+.lp-agree-chk input { width: 14px; height: 14px; accent-color: #2a3f8f; }
+.lp-agree-view {
+  margin-left: auto; border: 1px solid #d7deea; border-radius: 5px; background: #fff;
+  padding: 3px 7px; font-family: inherit; font-size: 10.5px; font-weight: 700; color: #4b5563; cursor: pointer;
+}
+.lp-privacy {
+  margin-top: 8px; border: 1px solid #e8edf7; border-radius: 8px; padding: 10px 11px; background: #f9fbff;
+}
+.lp-privacy h5 { margin: 0 0 6px; font-size: 11.5px; font-weight: 800; color: #111827; }
+.lp-privacy p { margin: 0 0 4px; font-size: 10.5px; line-height: 1.65; color: #4b5563; word-break: keep-all; }
+.lp-privacy dl { margin: 8px 0 0; }
+.lp-privacy dt {
+  font-size: 10.5px; font-weight: 800; color: #1f3a72;
+  padding: 6px 0 2px; border-top: 1px solid #e8edf7;
+}
+.lp-privacy dd { margin: 0 0 2px; }
+.lp-privacy dd span { display: block; font-size: 10.5px; line-height: 1.6; color: #4b5563; word-break: keep-all; }
 .lp-m-note { margin: 10px 0 0; font-size: 11px; line-height: 1.6; color: #9ca3af; word-break: keep-all; }
 .lp-m-go {
   width: 100%; height: 40px; margin-top: 12px;
-  border: none; border-radius: 8px; background: #1f3a72; color: #fff;
+  border: none; border-radius: 999px; background: #1f3a72; color: #fff;
   font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
 }
+.lp-m-go:disabled { background: #c3cbdd; cursor: not-allowed; }
 .lp-footer { text-align: center; font-size: 12px; color: #6b7280; margin: 16px 0 0; }
 .lp-link { color: #2b6df3; font-weight: 700; text-decoration: none; margin-left: 4px; }
 
