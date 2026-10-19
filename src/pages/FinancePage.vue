@@ -562,7 +562,7 @@ const exportExcel = () => {
               <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
               <td :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
               <td class="desc" :title="r.description">{{ r.description }}</td>
-              <td>{{ r.quantity }}</td>
+              <td>{{ fmtMoney(r.quantity) }}</td>
               <td>{{ fmtMoney(r.unitPrice) }}원</td>
               <!-- 합계는 적어 둔 값이 있으면 그 값, 없으면 수량 × 단가 -->
               <td>{{ fmtMoney(r.totalWithVat || (r.quantity || 0) * (r.unitPrice || 0)) }}원</td>
@@ -668,7 +668,15 @@ const exportExcel = () => {
             <label>내용<input type="text" v-model="ipDraft.description" /></label>
           </div>
           <div class="row2">
-            <label>수량<input type="number" v-model.number="ipDraft.quantity" @input="updateItemTotals" /></label>
+            <label>수량
+              <FormattedNumberInput
+                v-model="ipDraft.quantity"
+                live-group
+                align="left"
+                placeholder="0"
+                @update:model-value="updateItemTotals"
+              />
+            </label>
             <label>단가<FormattedNumberInput v-model="ipDraft.unitPrice" live-group align="left" placeholder="0" @update:model-value="updateItemTotals" /></label>
           </div>
           <label>VAT 포함 합계
