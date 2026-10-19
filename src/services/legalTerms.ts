@@ -326,6 +326,6 @@ export const PRIVACY_CHILD =
 /** 가입 화면에서 '보기'를 누르면 띄우는 글. 파란 부분만 따로 표시한다 */
 export const SMS_NOTICE_PARTS: Array<{ text: string; mark?: boolean }> = [
   { text: '당사는 ' },
-  { text: '관심물건 상태변동알림, 관심지역 경매개시결정알림, 특별회원대상 이벤트', mark: true },
+  { text: '회원대상 이벤트', mark: true },
   { text: ' 등의 목적으로만 알림톡/문자메시지를 발송합니다.' },
 ];

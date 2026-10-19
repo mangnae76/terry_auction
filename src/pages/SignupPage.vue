@@ -223,8 +223,8 @@ const onSubmit = async () => {
     </div>
 
     <!-- 약관 보기 — 더보기 화면과 같은 글을 그대로 띄운다 -->
-    <div v-if="viewer" class="su-modal" @click.self="viewer = ''">
-      <div class="su-modal-box">
+    <div v-if="viewer" :class="['su-modal', { sms: viewer === 'sms' }]" @click.self="viewer = ''">
+      <div :class="['su-modal-box', { narrow: viewer === 'sms' }]">
         <header class="su-modal-head">
           <strong>{{ VIEWER_TITLE[viewer] }}</strong>
           <button type="button" class="su-modal-x" aria-label="닫기" @click="viewer = ''">✕</button>
@@ -385,9 +385,15 @@ const onSubmit = async () => {
 .su-modal-head strong { font-size: 13.5px; font-weight: 800; color: #111827; }
 .su-modal-x {
   margin-left: auto; width: 26px; height: 26px; border: 1px solid #e3e8f0; border-radius: 6px;
-  background: #fff; font-size: 13px; color: #4b5563; cursor: pointer; line-height: 1;
+  background: #fff; font-size: 13px; color: #4b5563; cursor: pointer;
+  /* ✕ 를 칸 한가운데에 — 글자 기준선에 맡기면 아래로 처진다 */
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0; line-height: 1;
 }
 .su-modal-body { overflow-y: auto; padding: 12px 14px 16px; -webkit-overflow-scrolling: touch; }
+/* 짧은 안내는 창도 작게 — 화면을 가득 채울 까닭이 없다 */
+.su-modal.sms { padding-left: 32px; padding-right: 32px; }
+.su-modal-box.narrow { max-width: 320px; }
 
 /* 알림톡 안내 — 가운데 부분만 파랗게 */
 .su-sms { margin: 6px 2px; font-size: 12.5px; line-height: 1.8; color: #c62828; word-break: keep-all; }
