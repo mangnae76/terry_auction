@@ -5,8 +5,9 @@
 // 칸 구성·안내글·삭제 버튼을 여기 한곳에서만 고치면 두 화면이 같이 바뀐다.
 import { onMounted, ref, watch } from 'vue';
 import { useAuthStore } from '../stores/authStore';
-import { telDigits, useAgencyBook } from '../services/agencyBook';
+import { newAgencyId, telDigits, useAgencyBook } from '../services/agencyBook';
 import type { AgencyRow } from '../types/auction';
+import { formatPhone } from '../utils/phone';
 
 const props = withDefaults(defineProps<{
   rows: AgencyRow[];
@@ -33,6 +34,32 @@ const auth = useAuthStore();
 const book = useAgencyBook();
 onMounted(() => { void book.load(auth.uid); });
 watch(() => auth.uid, (uid) => { void book.load(uid); });
+
+// 업체 더하기 — 여기서 더한 곳은 '중개업체 관리' 목록에 그대로 들어간다
+const addOpen = ref(-1);
+const newName = ref('');
+const newPhone = ref('');
+const openAdd = (i: number) => {
+  addOpen.value = i;
+  newName.value = '';
+  newPhone.value = '';
+  nameOpen.value = -1;
+};
+const saveAgency = async (row: AgencyRow) => {
+  const name = newName.value.trim();
+  if (!name) return;
+  const phone = newPhone.value.trim();
+  if (!book.names.value.includes(name)) {
+    await book.save(auth.uid, [
+      ...book.agencies.value.map((a) => ({ ...a })),
+      { id: newAgencyId(), name, phone, region: '', rating: '' },
+    ]);
+  }
+  row.name = name;
+  if (phone) row.phone = phone;
+  addOpen.value = -1;
+  emit('change');
+};
 
 /** 목록에 없는 이름이 이미 적혀 있으면 그것도 같이 보여 준다 —
  *  예전에 손으로 적어 둔 업체가 목록에서 사라지면 안 된다 */
@@ -143,10 +170,26 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
                   <span>{{ opt }}</span>
                   <span v-if="row.name === opt" class="ck">✓</span>
                 </li>
+                <li class="adp-agency-option add" @click="openAdd(i)">
+                  <span>＋ 업체 추가</span>
+                </li>
               </ul>
             </template>
           </div>
           <span v-else>{{ row.name || '-' }}</span>
+          <!-- 더하면 중개업체 관리 목록에도 같이 들어간다 -->
+          <div v-if="addOpen === i" class="agency-add">
+            <input v-model="newName" class="adp-mkt-input left" placeholder="상호" />
+            <input
+              :value="newPhone"
+              class="adp-mkt-input left"
+              inputmode="tel"
+              placeholder="연락처"
+              @input="newPhone = formatPhone(($event.target as HTMLInputElement).value)"
+            />
+            <button type="button" class="agency-add-ok" @click="saveAgency(row)">담기</button>
+            <button type="button" class="agency-add-no" @click="addOpen = -1">취소</button>
+          </div>
         </div>
         <label class="adp-agency-fld">
           <span v-if="props.editing" class="adp-agency-tel">
@@ -256,6 +299,16 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
 </template>
 
 <style scoped>
+/* 업체 더하기 — 드롭다운에서 '＋ 업체 추가'를 누르면 이 줄이 뜬다 */
+.adp-agency-option.add { color: #2b6df3; font-weight: 700; }
+.agency-add { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+.agency-add .adp-mkt-input { flex: 1 1 0; min-width: 0; }
+.agency-add-ok, .agency-add-no {
+  flex: 0 0 auto; height: 26px; padding: 0 8px;
+  border-radius: 6px; font-family: inherit; font-size: 11px; font-weight: 700; cursor: pointer;
+}
+.agency-add-ok { border: 1px solid #2b6df3; background: #2b6df3; color: #fff; }
+.agency-add-no { border: 1px solid #dde3ee; background: #fff; color: #6b7280; }
 /* 쓰는 쪽(AuctionDetailPage)의 scoped 스타일은 이 안까지 닿지 않는다 —
    상담표에 필요한 모양만 여기에 따로 적어 둔다 */
 .agency-table { display: flex; flex-direction: column; gap: 6px; padding: 0 2px; }
