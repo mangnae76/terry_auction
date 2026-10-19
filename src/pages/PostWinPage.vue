@@ -736,10 +736,11 @@ const toggleSection = (key: string) => {
             </div>
             <table class="pw-int-tbl">
               <!-- 작업내용 칸을 넓게, 나머지는 조금씩 좁게 -->
+              <!-- 좁은 칸(날짜·업체명)을 줄여 작업내용과 협의내용에 자리를 준다 -->
               <colgroup>
-                <col style="width: 9%" /><col style="width: 9%" /><col style="width: 21%" />
-                <col style="width: 10%" /><col style="width: 16%" /><col style="width: 13%" />
-                <col style="width: 22%" />
+                <col style="width: 8.5%" /><col style="width: 8.5%" /><col style="width: 22%" />
+                <col style="width: 15%" /><col style="width: 14%" /><col style="width: 11%" />
+                <col style="width: 21%" />
               </colgroup>
               <thead>
                 <tr>
@@ -1310,13 +1311,14 @@ const toggleSection = (key: string) => {
 .pw-int-tbl { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed;
   background: #fff; border: 1px solid #d0d5dd; border-radius: 8px; }
 .pw-int-tbl th, .pw-int-tbl td {
-  padding: 6px 3px; font-size: 10.5px; line-height: 1.35; color: #1f2937;
+  padding: 6px 2px; font-size: 10.5px; line-height: 1.35; color: #1f2937;
   border-bottom: 1px solid #e5e7eb; text-align: center; word-break: keep-all;
 }
 /* 날짜·금액·연락처는 줄을 바꾸지 않는다 — 잘리거나 내려가던 자리다 */
 .pw-int-tbl tbody td:nth-child(1),
-.pw-int-tbl tbody td:nth-child(2),
-.pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; }
+.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; }
+/* 금액은 줄을 바꾸지 않되 한 단 작게 적어 칸을 덜 먹는다 */
+.pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; font-size: 10px; letter-spacing: -0.2px; }
 .pw-int-tbl tbody td:nth-child(7) {
   white-space: nowrap; font-size: 9.5px; letter-spacing: -0.2px;
 }
