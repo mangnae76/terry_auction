@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useAlertBadge } from '../services/alertBadge';
+import { MY_PAGE_ITEMS } from '../services/myPageMenu';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -31,9 +32,11 @@ const onAuthPill = async () => {
   router.push('/login');
 };
 
-interface QuickItem { name: string; path: string; items?: Array<{ name: string; path: string }> }
+interface QuickSub { name: string; path: string; query?: Record<string, string> }
+interface QuickItem { name: string; path: string; items?: QuickSub[] }
 const QUICK: QuickItem[] = [
-  { name: '마이페이지', path: '/mypage' },
+  // 마이페이지도 눌러서 펼친다 — 열 줄을 한 칸 안에 담는다
+  { name: '마이페이지', path: '', items: [{ name: '마이페이지 홈', path: '/mypage' }, ...MY_PAGE_ITEMS] },
   { name: '결제하기', path: '/billing' },
   // 부가서비스는 눌러서 펼친다 — 자리를 더 내지 않고 줄을 늘릴 수 있다
   {
@@ -55,7 +58,7 @@ const goQuick = (q: QuickItem) => {
   if (!q.path) { notReady(q.name); return; }
   router.push(q.path);
 };
-const goQuickSub = (it: { name: string; path: string }) => {
+const goQuickSub = (it: QuickSub) => {
   quickOpen.value = '';
   if (!it.path) { notReady(it.name); return; }
   // '#표식' 이면 같은 화면의 그 묶음으로 내려간다
@@ -64,7 +67,7 @@ const goQuickSub = (it: { name: string; path: string }) => {
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     return;
   }
-  router.push(it.path);
+  router.push({ path: it.path, query: it.query });
 };
 
 // 지금 걸린 알림이 몇 건인지 — 머리글의 종과 같은 셈을 쓴다
@@ -297,8 +300,11 @@ const openPolicy = (p: { name: string; path: string }) => {
 /* 펼친 줄 — 바로가기 칸 바로 아래에 붙는다 */
 .quick-veil { position: fixed; inset: 0; z-index: 14; }
 .quick-menu {
-  position: absolute; top: calc(100% + 4px); left: -1px; right: -1px; z-index: 15;
+  /* 칸보다 넓게 — 글자가 접히지 않게 둔다 */
+  position: absolute; top: calc(100% + 4px); left: -1px; z-index: 15;
+  min-width: 152px; white-space: nowrap;
   list-style: none; margin: 0; padding: 4px;
+  max-height: 272px; overflow-y: auto; -webkit-overflow-scrolling: touch;
   background: #fff; border: 1px solid #e3e8f0; border-radius: 8px;
   box-shadow: 0 6px 18px rgba(17, 24, 39, .12);
 }
