@@ -745,9 +745,9 @@ const toggleSection = (key: string) => {
                    남는 몫은 협의내용에 더 준다. 넘치면 두 줄로 내려 적는다 -->
               <!-- 업체명과 연락처는 한 칸에 위아래로 — 둘 다 제 너비를 쓰려면 이 편이 낫다 -->
               <colgroup>
-                <col style="width: 14%" /><col style="width: 14%" />
-                <col style="width: 17%" /><col style="width: 22%" />
-                <col style="width: 16%" /><col style="width: 17%" />
+                <col style="width: 12.5%" /><col style="width: 12.5%" />
+                <col style="width: 18.5%" /><col style="width: 25.5%" />
+                <col style="width: 16%" /><col style="width: 15%" />
               </colgroup>
               <thead>
                 <tr>
@@ -1340,7 +1340,9 @@ const toggleSection = (key: string) => {
 /* 본문 글자는 모두 12px — 머리줄(구분)만 그대로 둔다 */
 .pw-int-tbl tbody td { font-size: 12px; }
 .pw-int-tbl tbody td:nth-child(1),
-.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; letter-spacing: -0.5px; }
+.pw-int-tbl tbody td:nth-child(2) {
+  white-space: nowrap; letter-spacing: -0.6px; padding-left: 1px; padding-right: 1px;
+}
 .pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; letter-spacing: -0.4px; }
 /* 업체 — 이름은 위, 번호는 아래 */
 .pw-int-tbl tbody td.vend { padding: 5px 2px; }
