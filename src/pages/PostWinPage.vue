@@ -830,7 +830,7 @@ const toggleSection = (key: string) => {
         <header class="pw-card-head">
           <h2>
             <svg class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>
-            부동산 물건 현황
+            부동산 중개 의뢰 현황
           </h2>
           <span class="pw-rowstep">
             <span class="lab">행</span>
