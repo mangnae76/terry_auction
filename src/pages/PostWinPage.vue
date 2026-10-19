@@ -769,23 +769,24 @@ const toggleSection = (key: string) => {
           <strong>인테리어 비용</strong>
           <button type="button" class="pw-flow-close" aria-label="닫기" @click="intOpen = false">×</button>
         </header>
+        <!-- 적는 차례는 표의 칸 차례와 같다 -->
         <label class="pw-fld"><small>예상시작</small><input v-model="intDraft.startDate" type="date" class="pw-einput" /></label>
         <label class="pw-fld"><small>예상완료</small><input v-model="intDraft.endDate" type="date" class="pw-einput" /></label>
-        <label class="pw-fld"><small>물건</small>
-          <select v-model="intDraft.auctionId" class="pw-einput">
-            <option value="">선택 안 함</option>
-            <option v-for="a in ownedAuctions" :key="a.id" :value="a.id">{{ shortAddr(a.address) || a.caseNumber }}</option>
-          </select>
-        </label>
         <label class="pw-fld"><small>작업내용</small><input v-model="intDraft.work" class="pw-einput" placeholder="도배 · 바닥 · 싱크대 …" /></label>
         <label class="pw-fld"><small>현황</small>
           <select v-model="intDraft.status" class="pw-einput">
             <option v-for="st in INT_STATUS" :key="st" :value="st">{{ st }}</option>
           </select>
         </label>
+        <label class="pw-fld"><small>비용 (VAT 포함)</small><input v-model.number="intDraft.amountWithVat" type="number" inputmode="numeric" class="pw-einput" /></label>
         <label class="pw-fld"><small>업체명</small><input v-model="intDraft.vendor" class="pw-einput" placeholder="업체 이름" /></label>
         <label class="pw-fld"><small>연락처</small><input v-model="intDraft.phone" class="pw-einput" inputmode="tel" placeholder="010-0000-0000" /></label>
-        <label class="pw-fld"><small>비용 (VAT 포함)</small><input v-model.number="intDraft.amountWithVat" type="number" inputmode="numeric" class="pw-einput" /></label>
+        <label class="pw-fld"><small>물건</small>
+          <select v-model="intDraft.auctionId" class="pw-einput">
+            <option value="">선택 안 함</option>
+            <option v-for="a in ownedAuctions" :key="a.id" :value="a.id">{{ shortAddr(a.address) || a.caseNumber }}</option>
+          </select>
+        </label>
         <label class="pw-fld"><small>비고</small><input v-model="intDraft.note" class="pw-einput" /></label>
         <div class="pw-modal-foot">
           <button v-if="intDraft.id" type="button" class="pw-ebtn del" @click="removeInt">지우기</button>
