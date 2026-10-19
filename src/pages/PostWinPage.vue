@@ -356,7 +356,7 @@ const emptyAgencyRow = (): AgencyRow => ({
 type SellKey = 'sellAgencyRows' | 'directSellRows';
 const SELL_CARDS: Array<{ key: SellKey; title: string; mode: 'agency' | 'direct' }> = [
   { key: 'sellAgencyRows', title: '중개 의뢰 현황', mode: 'agency' },
-  { key: 'directSellRows', title: '직거래', mode: 'direct' },
+  { key: 'directSellRows', title: '직거래 등록', mode: 'direct' },
 ];
 const sellRowsOf = (key: SellKey): AgencyRow[] => {
   const a = picked.value;
