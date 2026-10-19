@@ -562,6 +562,8 @@ export interface AgencyRow {
   jeonseTo?: string;
   /** 월세 위쪽 값 (monthly 가 아래쪽) */
   monthlyTo?: string;
+  /** 매수문의 — 직거래에서 연락 온 사람들 (이름·연락처) */
+  buyers?: Array<{ name: string; phone: string }>;
   /** 매매가 — 범위의 아래쪽 (억) */
   real: string;
   /** 매매가 — 범위의 위쪽 (억) */

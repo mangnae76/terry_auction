@@ -351,12 +351,28 @@ const exportInterior = (kind: 'bid' | 'cost', file: string) => {
 const SELL_ROW_MIN = 1;
 const emptyAgencyRow = (): AgencyRow => ({
   name: '', phone: '', info: '', monthly: '', jeonse: '', real: '', urgent: '', note: '',
+  // 매수문의 자리는 미리 비워 둔다 — 나중에 더할 때 바로 담긴다
+  buyers: [],
 });
 /** 매도·임대의 두 표 — 중개 의뢰 현황과 직거래 (꼴은 같고 자리만 다르다) */
 type SellKey = 'sellAgencyRows' | 'directSellRows';
-const SELL_CARDS: Array<{ key: SellKey; title: string; mode: 'agency' | 'direct' }> = [
+const SELL_CARDS: Array<{
+  key: SellKey; title: string; mode: 'agency' | 'direct';
+  /** 제목줄 오른쪽 바로가기 (직거래 올리는 자리들) */
+  links?: Array<{ label: string; url: string }>;
+}> = [
   { key: 'sellAgencyRows', title: '중개 의뢰 현황', mode: 'agency' },
-  { key: 'directSellRows', title: '직거래 등록', mode: 'direct' },
+  {
+    key: 'directSellRows',
+    title: '직거래 등록',
+    mode: 'direct',
+    // 열어 보고 주소를 확인했다 (33m²는 봇 막음이 있어 실제 브라우저에서 열린다)
+    links: [
+      { label: '당근', url: 'https://realty.daangn.com/' },
+      { label: '피터팬', url: 'https://www.peterpanz.com/' },
+      { label: '33m²', url: 'https://33m2.co.kr/' },
+    ],
+  },
 ];
 const sellRowsOf = (key: SellKey): AgencyRow[] => {
   const a = picked.value;
@@ -840,6 +856,19 @@ const toggleSection = (key: string) => {
               <svg class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>
               {{ card.title }}
             </h2>
+            <!-- 바로가기 -->
+            <a
+              v-for="lk in (card.links ?? [])"
+              :key="lk.url"
+              class="pw-golink"
+              :href="lk.url"
+              target="_blank"
+              rel="noopener"
+              :title="`${lk.label} 열기`"
+              @click.stop
+            >
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14 21 3"/></svg>{{ lk.label }}
+            </a>
             <span class="pw-rowstep">
               <span class="lab">행</span>
               <button type="button" aria-label="행 삭제" :disabled="!picked || sellRowsOf(card.key).length <= SELL_ROW_MIN" @click="removeLastSellRow(card.key)">−</button>
@@ -1411,7 +1440,11 @@ const toggleSection = (key: string) => {
 .pw-flow-list span { flex: 1 1 auto; min-width: 0; color: #374151; }
 
 /* 행 더하기·빼기 — 물건상세의 단계 단추와 같은 꼴 */
-.pw-rowstep { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
+.pw-rowstep { display: inline-flex; align-items: center; gap: 4px; }
+.pw-card-head .pw-golink + .pw-golink { margin-left: 4px; }
+.pw-card-head .pw-golink:first-of-type { margin-left: auto; }
+.pw-card-head .pw-golink + .pw-rowstep { margin-left: 6px; }
+.pw-card-head h2 + .pw-rowstep { margin-left: auto; }
 .pw-rowstep .lab { font-size: 11px; font-weight: 700; color: #6b7280; }
 .pw-rowstep button {
   width: 24px; height: 24px; padding: 0;

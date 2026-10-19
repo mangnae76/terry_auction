@@ -8,6 +8,7 @@ import { onMounted, ref, watch } from 'vue';
 import { useAuthStore } from '../stores/authStore';
 import { telDigits, useAgencyBook } from '../services/agencyBook';
 import type { AgencyRow } from '../types/auction';
+import { formatPhone } from '../utils/phone';
 
 const props = withDefaults(defineProps<{
   rows: AgencyRow[];
@@ -106,7 +107,7 @@ type MoneyKey = 'real' | 'realTo' | 'urgent' | 'urgentTo' | 'jeonse' | 'jeonseTo
 /** 금액은 '얼마에서 얼마' 범위로 듣는다 — 중개업소는 한 값으로 말하지 않는다.
  *  'urgent' 는 예전에 급매가였다가 입금가가 된 칸이다. 적어 둔 값을 잃지
  *  않으려고 키 이름은 그대로 두고, 위쪽 값만 'To' 를 붙여 새로 받는다. */
-type MoneyGroup = { label: string; from: MoneyKey; to: MoneyKey; unit: string };
+type MoneyGroup = { label: string; from: MoneyKey; to: MoneyKey; unit: string; single?: boolean };
 const SALE_GROUPS: MoneyGroup[] = [
   { label: '입금', from: 'urgent', to: 'urgentTo', unit: '억' },
   { label: '매도', from: 'real', to: 'realTo', unit: '억' },
@@ -119,7 +120,31 @@ const RENT_GROUPS: MoneyGroup[] = [
  *  직거래에는 입금가를 두지 않는다 (중개가 끼지 않아 입금가를 따로 셀 일이 없다) */
 const groupsFor = (row: AgencyRow): MoneyGroup[] => {
   const base = isRent(row) ? RENT_GROUPS : SALE_GROUPS;
-  return props.mode === 'direct' ? base.filter((g) => g.label !== '입금') : base;
+  if (props.mode !== 'direct') return base;
+  // 직거래 — 입금가는 두지 않고, 매도가는 한 칸으로 받는다
+  return base
+    .filter((g) => g.label !== '입금')
+    .map((g) => (g.label === '매도' ? { ...g, single: true } : g));
+};
+
+/** 매수문의 — 직거래에서 연락 온 사람을 이름·연락처로 적어 둔다 */
+const buyersOf = (row: AgencyRow) => {
+  if (!row.buyers) row.buyers = [];
+  return row.buyers;
+};
+const addBuyer = (row: AgencyRow) => {
+  buyersOf(row).push({ name: '', phone: '' });
+  emit('change');
+};
+const removeBuyer = (row: AgencyRow, i: number) => {
+  buyersOf(row).splice(i, 1);
+  emit('change');
+};
+const setBuyerPhone = (row: AgencyRow, i: number, el: HTMLInputElement) => {
+  const next = formatPhone(el.value);
+  buyersOf(row)[i].phone = next;
+  if (el.value !== next) el.value = next;
+  emit('change');
 };
 /** 보기 모드의 범위 — 아래위가 다 있으면 '1.4~1.45억', 하나뿐이면 '1.45억' */
 const rangeText = (row: AgencyRow, g: MoneyGroup) => {
@@ -218,7 +243,18 @@ const rangeText = (row: AgencyRow, g: MoneyGroup) => {
       <div class="adp-agency-line money">
         <span v-for="g in groupsFor(row)" :key="g.from" class="adp-agency-range">
           <em class="lab">{{ g.label }}</em>
-          <template v-if="props.editing">
+          <template v-if="props.editing && g.single">
+            <span class="rng-wrap">
+              <input
+                class="rng"
+                inputmode="decimal"
+                :value="moneyInput(row[g.from], g.unit === '만')"
+                @input="setMoney(row, g.from, $event.target as HTMLInputElement)"
+              />
+              <em class="unit">{{ g.unit }}</em>
+            </span>
+          </template>
+          <template v-else-if="props.editing">
             <input
               class="rng"
               inputmode="decimal"
@@ -253,6 +289,33 @@ const rangeText = (row: AgencyRow, g: MoneyGroup) => {
           <span v-else :class="['note-txt', { filled: !!row.opinion }]">{{ row.opinion || '-' }}</span>
         </label>
       </div>
+      <!-- 매수문의 — 직거래에서 연락 온 사람을 줄줄이 적는다 -->
+      <div v-if="props.mode === 'direct'" class="adp-agency-line buyers">
+        <div class="buyers-wrap">
+          <div class="buyers-head">
+            <em class="lab">매수문의</em>
+            <button v-if="props.editing" type="button" class="buyers-add" @click="addBuyer(row)">＋</button>
+          </div>
+          <div v-for="(b, bi) in buyersOf(row)" :key="bi" class="buyers-row">
+            <template v-if="props.editing">
+              <input v-model="b.name" class="adp-mkt-input left" placeholder="이름" @input="emit('change')" />
+              <input
+                :value="b.phone"
+                class="adp-mkt-input left"
+                inputmode="tel"
+                placeholder="연락처"
+                @input="setBuyerPhone(row, bi, $event.target as HTMLInputElement)"
+              />
+              <a v-if="telHref(b.phone)" class="adp-agency-call" :href="telHref(b.phone)" aria-label="전화 걸기" @click.stop>
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z" /></svg>
+              </a>
+              <button type="button" class="adp-agency-del" aria-label="문의 빼기" @click="removeBuyer(row, bi)">×</button>
+            </template>
+            <span v-else class="buyers-view">{{ b.name || '-' }} · {{ b.phone || '-' }}</span>
+          </div>
+          <p v-if="buyersOf(row).length === 0" class="buyers-empty">＋ 를 눌러 연락 온 사람을 적어 두세요.</p>
+        </div>
+      </div>
       <!-- 협의 칸은 중개 쪽에서만 쓴다 — 직거래에는 둘 일이 없다 -->
       <div v-if="props.mode !== 'direct'" class="adp-agency-line">
         <label class="adp-agency-fld note-fld wide">
@@ -271,6 +334,20 @@ const rangeText = (row: AgencyRow, g: MoneyGroup) => {
 </template>
 
 <style scoped>
+/* 매수문의 — 이름·연락처를 줄줄이 */
+.adp-agency-line.buyers { display: block; }
+.buyers-wrap { width: 100%; }
+.buyers-head { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.buyers-head .lab { font-style: normal; font-size: 11px; font-weight: 700; color: #6b7280; }
+.buyers-add {
+  width: 22px; height: 22px; padding: 0;
+  border: 1px solid #dde3ee; border-radius: 6px; background: #fff;
+  font-family: inherit; font-size: 13px; line-height: 1; color: #2b6df3; cursor: pointer;
+}
+.buyers-row { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.buyers-row .adp-mkt-input { flex: 1 1 0; min-width: 0; }
+.buyers-view { font-size: 12px; color: #374151; }
+.buyers-empty { margin: 0; font-size: 11px; color: #9ca3af; }
 /* 쓰는 쪽(AuctionDetailPage)의 scoped 스타일은 이 안까지 닿지 않는다 —
    상담표에 필요한 모양만 여기에 따로 적어 둔다 */
 .agency-table { display: flex; flex-direction: column; gap: 6px; padding: 0 2px; }
