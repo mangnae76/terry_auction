@@ -274,13 +274,13 @@ const onSave = async () => {
       await finance.saveCashFlow(cfDraft.value);
     } else if (modalKind.value === 'businessExpense') {
       const a = auctionStore.auctions.find((x) => x.id === beDraft.value.auctionId);
-      if (a) beDraft.value.auctionLabel = villaName(a.address) || a.caseNumber;
+      beDraft.value.auctionLabel = a ? (villaName(a.address) || a.caseNumber) : '';
       await finance.saveBusinessExpense(beDraft.value);
     } else if (modalKind.value === 'fuelMeal') {
       await finance.saveFuelMeal(fmDraft.value);
     } else if (modalKind.value === 'itemPurchase') {
       const a = auctionStore.auctions.find((x) => x.id === ipDraft.value.auctionId);
-      if (a) ipDraft.value.auctionLabel = villaName(a.address) || a.caseNumber;
+      ipDraft.value.auctionLabel = a ? (villaName(a.address) || a.caseNumber) : '';
       await finance.saveItemPurchase(ipDraft.value);
     }
     closeModal();
@@ -605,7 +605,7 @@ const exportExcel = () => {
         <!-- 사업지출 -->
         <template v-else-if="modalKind === 'businessExpense'">
           <label>날짜<input type="date" v-model="beDraft.date" /></label>
-          <label>물건
+          <label>물건구분
             <select v-model="beDraft.auctionId">
               <option value="">선택 안함</option>
               <option v-for="o in auctionOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
@@ -642,6 +642,12 @@ const exportExcel = () => {
         <!-- 물품구매 -->
         <template v-else-if="modalKind === 'itemPurchase'">
           <label>결제일<input type="date" v-model="ipDraft.date" /></label>
+          <label>물건구분
+            <select v-model="ipDraft.auctionId">
+              <option value="">선택 안함</option>
+              <option v-for="o in auctionOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
+            </select>
+          </label>
           <div class="row2">
             <label>사용구분
               <select v-model="ipDraft.category">
