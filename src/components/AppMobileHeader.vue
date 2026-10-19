@@ -25,7 +25,7 @@ const USER_FACTS = [
   { label: '보유포인트', value: `${myPoint.toLocaleString('ko-KR')} P`, path: '/point-history', point: true },
   { label: '결제내역', value: `${payCount}건`, path: '/payments' },
   { label: '잔여서비스', value: planName, path: '/billing' },
-  { label: '잔여기간', value: planRest, path: '' },
+  { label: '잔여기간', value: planRest, path: '/billing' },
 ];
 const goFact = (path: string) => {
   menuOpen.value = false;
@@ -134,7 +134,7 @@ const onLogout = async () => {
             <dl class="amh-um-facts">
               <template v-for="f in USER_FACTS" :key="f.label">
                 <dt>
-                  <button v-if="f.path" type="button" class="amh-um-link" @click="goFact(f.path)">{{ f.label }}</button>
+                  <button v-if="f.path" type="button" class="amh-um-link" @click="goFact(f.path)">{{ f.label }}<i>›</i></button>
                   <template v-else>{{ f.label }}</template>
                 </dt>
                 <dd :class="{ point: f.point }">{{ f.value }}</dd>
@@ -272,10 +272,13 @@ const onLogout = async () => {
 .amh-um-facts dt { font-size: 11px; color: #8a93a4; font-weight: 400; white-space: nowrap; }
 .amh-um-facts dd { margin: 0; font-size: 11.5px; color: #374151; font-weight: 400; text-align: right; }
 .amh-um-facts dd.point { color: #e8622a; }
+/* 누르면 그 화면으로 간다는 뜻 — 파란 글자에 꺾쇠를 붙인다 */
 .amh-um-link {
   border: none; background: transparent; padding: 0; cursor: pointer;
-  font-family: inherit; font-size: 11px; font-weight: 400; color: #4a6fc0;
+  display: inline-flex; align-items: center; gap: 2px;
+  font-family: inherit; font-size: 11px; font-weight: 400; color: #2b6df3;
 }
+.amh-um-link i { font-style: normal; font-size: 10px; color: #2b6df3; }
 .amh-user-menu-btn {
   width: 100%; text-align: left; padding: 10px 14px; border: none; background: transparent;
   font-size: 13px; color: #dc2626; font-weight: 700; cursor: pointer;
