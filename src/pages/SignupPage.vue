@@ -223,11 +223,16 @@ const onSubmit = async () => {
     </div>
 
     <!-- 약관 보기 — 더보기 화면과 같은 글을 그대로 띄운다 -->
-    <div v-if="viewer" :class="['su-modal', { sms: viewer === 'sms' }]" @click.self="viewer = ''">
-      <div :class="['su-modal-box', { narrow: viewer === 'sms' }]">
+    <div v-if="viewer" class="su-modal" @click.self="viewer = ''">
+      <div class="su-modal-box">
         <header class="su-modal-head">
           <strong>{{ VIEWER_TITLE[viewer] }}</strong>
-          <button type="button" class="su-modal-x" aria-label="닫기" @click="viewer = ''">✕</button>
+          <button type="button" class="su-modal-x" aria-label="닫기" @click="viewer = ''">
+            <!-- 글자 ✕ 는 글꼴마다 기울고 치우쳐 선으로 그린다 — 칸 한가운데에 선다 -->
+            <svg viewBox="0 0 14 14" width="11" height="11" aria-hidden="true">
+              <path d="M1.5 1.5 12.5 12.5M12.5 1.5 1.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
         </header>
 
         <div class="su-modal-body">
@@ -362,8 +367,9 @@ const onSubmit = async () => {
 }
 .su-chk.all { font-size: 12.5px; font-weight: 800; color: #111827; padding-bottom: 8px; border-bottom: 1px solid #f1f3f7; }
 .su-chk input { width: 14px; height: 14px; accent-color: #2a3f8f; }
-.su-chk em { font-style: normal; color: #8a93a4; }
-.su-chk em.req { color: #2a3f8f; font-weight: 700; }
+/* 꼭 받아야 하는 동의는 빨강, 골라 받는 것은 검정 */
+.su-chk em { font-style: normal; color: #111827; font-weight: 700; }
+.su-chk em.req { color: #c62828; }
 .su-view {
   margin-left: auto; border: none; background: transparent; padding: 0; cursor: pointer;
   font-family: inherit; font-size: 10.5px; color: #8a93a4; text-decoration: underline;
@@ -388,12 +394,10 @@ const onSubmit = async () => {
   background: #fff; font-size: 13px; color: #4b5563; cursor: pointer;
   /* ✕ 를 칸 한가운데에 — 글자 기준선에 맡기면 아래로 처진다 */
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 0; line-height: 1;
+  padding: 0; line-height: 0;
 }
+.su-modal-x svg { display: block; }
 .su-modal-body { overflow-y: auto; padding: 12px 14px 16px; -webkit-overflow-scrolling: touch; }
-/* 짧은 안내는 창도 작게 — 화면을 가득 채울 까닭이 없다 */
-.su-modal.sms { padding-left: 32px; padding-right: 32px; }
-.su-modal-box.narrow { max-width: 320px; }
 
 /* 알림톡 안내 — 가운데 부분만 파랗게 */
 .su-sms { margin: 6px 2px; font-size: 12.5px; line-height: 1.8; color: #c62828; word-break: keep-all; }
