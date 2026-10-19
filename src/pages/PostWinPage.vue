@@ -738,10 +738,12 @@ const toggleSection = (key: string) => {
               <!-- 작업내용 칸을 넓게, 나머지는 조금씩 좁게 -->
               <!-- 차례는 시작·완료부터. 날짜·금액·업체 칸을 바짝 줄여
                    작업내용(23%)과 협의내용(14%)에 자리를 몰아준다 -->
+              <!-- 작업내용은 여섯 글자, 협의내용은 열 글자가 한 줄에 들어가게 잡았다.
+                   남는 자리를 날짜·금액·업체명에서 바짝 당겨 쓴다 -->
               <colgroup>
-                <col style="width: 8.5%" /><col style="width: 8.5%" />
-                <col style="width: 25%" /><col style="width: 18%" />
-                <col style="width: 12%" /><col style="width: 9%" /><col style="width: 19%" />
+                <col style="width: 10.6%" /><col style="width: 10.6%" />
+                <col style="width: 16%" /><col style="width: 24%" />
+                <col style="width: 12.8%" /><col style="width: 8%" /><col style="width: 18%" />
               </colgroup>
               <thead>
                 <tr>
@@ -1316,12 +1318,17 @@ const toggleSection = (key: string) => {
   border-bottom: 1px solid #e5e7eb; text-align: center; word-break: keep-all;
 }
 /* 날짜·금액·연락처는 줄을 바꾸지 않는다 — 잘리거나 내려가던 자리다 */
+/* 작업내용·협의내용은 글자를 줄이지 않는다 — 여섯 글자·열 글자가 들어갈 자리다 */
+.pw-int-tbl tbody td:nth-child(3),
+.pw-int-tbl tbody td:nth-child(4) { font-size: 10.5px; }
 /* 날짜·금액·연락처는 한 줄로, 글자를 바짝 줄여 자리를 적게 먹는다 */
 .pw-int-tbl tbody td:nth-child(1),
-.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; font-size: 9.5px; letter-spacing: -0.3px; }
-.pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; font-size: 9.5px; letter-spacing: -0.3px; }
+.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; font-size: 9px; letter-spacing: -0.3px; }
+.pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; font-size: 9px; letter-spacing: -0.3px; }
+/* 업체명은 좁으니 줄이 넘어가도 둔다 */
+.pw-int-tbl tbody td:nth-child(6) { font-size: 9.5px; letter-spacing: -0.3px; }
 .pw-int-tbl tbody td:nth-child(7) {
-  white-space: nowrap; font-size: 9px; letter-spacing: -0.3px;
+  white-space: nowrap; font-size: 8.5px; letter-spacing: -0.3px;
 }
 /* 머리줄은 다른 표와 같은 짙은 남색에 흰 글씨 — 위 두 모서리는 둥글게 */
 .pw-int-tbl thead th {
