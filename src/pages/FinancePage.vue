@@ -371,9 +371,9 @@ const exportExcel = () => {
     ]);
   } else if (activeTab.value === 'itemPurchase') {
     downloadCsv('물품구매.csv', [
-      ['결제일', '물건구분', '사용구분', '상세내역', '수량', '단가', '계', '합계(VAT포함)', '구매처', '사용카드', '사용자', '배송비', '비고'],
+      ['결제일', '사용구분', '상세내역', '수량', '단가', '계', '합계(VAT포함)', '구매처', '사용카드', '사용자', '배송비', '비고'],
       ...filteredItemPurchases.value.map((r) => [
-        r.date, r.auctionLabel, r.category, r.description,
+        r.date, r.category, r.description,
         r.quantity, r.unitPrice, r.subtotal, r.totalWithVat,
         r.vendor, r.card, r.user, r.shippingFee, r.note,
       ]),
@@ -551,7 +551,7 @@ const exportExcel = () => {
         <table class="fin-table mid items">
           <thead>
             <tr>
-              <th>결제일</th><th>물건구분</th><th>사용구분</th><th>상세내역</th>
+              <th>결제일</th><th>사용구분</th><th>상세내역</th>
               <th>수량</th><th>단가</th><th class="two">합계{{ '\n' }}(VAT포함)</th>
               <th>구매처</th><th>사용카드</th><th>비고</th>
             </tr>
@@ -559,7 +559,6 @@ const exportExcel = () => {
           <tbody>
             <tr v-for="r in filteredItemPurchases" :key="r.id" @click="openEdit('itemPurchase', r)">
               <td>{{ shortDate(r.date) }}</td>
-              <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
               <td :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
               <td class="desc" :title="r.description">{{ r.description }}</td>
               <td>{{ fmtMoney(r.quantity) }}</td>
@@ -571,7 +570,7 @@ const exportExcel = () => {
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredItemPurchases.length === 0">
-              <td colspan="10" class="empty">
+              <td colspan="9" class="empty">
                 <template v-if="finance.itemPurchases.length === 0">데이터가 없습니다.</template>
                 <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.itemPurchases.length }}건)</template>
               </td>
@@ -649,12 +648,6 @@ const exportExcel = () => {
         <!-- 물품구매 -->
         <template v-else-if="modalKind === 'itemPurchase'">
           <label>결제일<input type="date" v-model="ipDraft.date" /></label>
-          <label>물건구분
-            <select v-model="ipDraft.auctionId">
-              <option value="">선택 안함</option>
-              <option v-for="o in auctionOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
-            </select>
-          </label>
           <div class="row2">
             <label>사용구분
               <select v-model="ipDraft.category">
