@@ -8,10 +8,14 @@ import dollarIcon from '../assets/icones/circle-dollar-sign.png';
 import refreshIcon from '../assets/icones/refresh-cw.png';
 import { useAuthStore } from '../stores/authStore';
 import { MY_PAGE_ITEMS, type MyPageItem } from '../services/myPageMenu';
+import { useAlertBadge } from '../services/alertBadge';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const menuOpen = ref(false);
+
+/** 알림이 몇 건인지 — 더보기의 바로가기와 같은 셈을 쓴다 */
+const { count: alertCount } = useAlertBadge();
 
 const displayNickname = computed(() => authStore.nickname || (authStore.email ? authStore.email.split('@')[0] : '게스트'));
 
@@ -79,6 +83,14 @@ const onLogout = async () => {
     </div>
     <div class="amh-row amh-row-bottom">
       <span class="amh-greet">반가워요! <strong>{{ displayNickname }}</strong><span class="amh-greet-nim">님</span></span>
+      <button type="button" class="amh-bell" aria-label="알림" @click="router.push('/notifications')">
+        <!-- 종 — 알릴 것이 있으면 꼭지에 빨간 점이 붙는다 -->
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5Z" />
+          <path d="M10.3 19a2 2 0 0 0 3.4 0" />
+        </svg>
+        <i v-if="alertCount" class="amh-bell-dot" />
+      </button>
       <button type="button" class="amh-user-btn" aria-label="사용자 메뉴" @click="toggleMenu">
         <!-- 흉상 — 동그란 머리에 둥근 어깨. 그림 파일은 작게 줄이면 뭉개져서 선으로 그린다 -->
         <svg class="amh-greet-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -167,6 +179,14 @@ const onLogout = async () => {
 .amh-greet-nim { color: #fff; }
 .amh-greet-icon { width: 19px; height: 19px; flex-shrink: 0; fill: #fff; display: block; }
 .amh-user-btn { border: none; background: transparent; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; }
+.amh-bell {
+  position: relative; border: none; background: transparent; padding: 2px; cursor: pointer;
+  display: inline-flex; align-items: center; color: #fff;
+}
+.amh-bell-dot {
+  position: absolute; top: 1px; right: 1px; width: 7px; height: 7px; border-radius: 50%;
+  background: #ff4d4f; border: 1px solid #1f3a72;
+}
 .amh-user-menu-wrap {
   position: fixed; inset: 0; z-index: 250;
   background: rgba(0, 0, 0, 0.35);

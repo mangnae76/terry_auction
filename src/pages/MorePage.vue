@@ -1,14 +1,10 @@
 <script setup lang="ts">
 // 더보기 — 계정·설정·공지 등 다른 탭에 들어가지 않는 것들을 모아 둔다.
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuthStore } from '../stores/authStore';
-import { useAuctionStore } from '../stores/auctionStore';
-import { useInteriorStore } from '../stores/interiorStore';
-import { buildAlerts, defaultAlertPrefs } from '../services/alerts';
-import { PHOTO_BUDGET_BYTES, readUsageBytes } from '../services/sitePhotoRepository';
-import { loadUserPrefs } from '../services/userPrefsRepository';
+import { useAlertBadge } from '../services/alertBadge';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -45,28 +41,8 @@ const goQuick = (q: { name: string; path: string }) => {
   router.push(q.path);
 };
 
-// 지금 걸린 알림이 몇 건인지 — 바로가기에 숫자로 띄운다
-const auctionStore = useAuctionStore();
-const interior = useInteriorStore();
-const alertPrefs = ref<Record<string, boolean>>(defaultAlertPrefs());
-const photoBytes = ref(0);
-const alertCount = computed(() => buildAlerts({
-  auctions: auctionStore.auctions,
-  interior: interior.rows,
-  photoBytes: photoBytes.value,
-  photoBudget: PHOTO_BUDGET_BYTES,
-  prefs: alertPrefs.value,
-}).length);
-const readAlertSource = async (uid: string) => {
-  photoBytes.value = uid ? await readUsageBytes(uid) : 0;
-  const saved = uid ? (await loadUserPrefs(uid))?.alertPrefs : null;
-  alertPrefs.value = { ...defaultAlertPrefs(), ...(saved ?? {}) };
-};
-onMounted(() => {
-  interior.initialize();
-  void readAlertSource(authStore.uid);
-});
-watch(() => authStore.uid, (uid) => { void readAlertSource(uid); });
+// 지금 걸린 알림이 몇 건인지 — 머리글의 종과 같은 셈을 쓴다
+const { count: alertCount } = useAlertBadge();
 
 const EVENTS = [
   { tag: '안내', text: '경매 PDF 자동 분석 정확도 개선 안내' },

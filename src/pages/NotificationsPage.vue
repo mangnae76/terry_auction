@@ -10,6 +10,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useInteriorStore } from '../stores/interiorStore';
 import { PHOTO_BUDGET_BYTES, readUsageBytes } from '../services/sitePhotoRepository';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
+import { refreshAlertBadge } from '../services/alertBadge';
 import {
   ALERT_DEFS,
   ALERT_GROUPS,
@@ -49,6 +50,7 @@ const toggle = async (key: AlertKey) => {
   const def = ALERT_DEFS.find((d) => d.key === key);
   toast(`${def?.name ?? '알림'} ${prefs.value[key] ? '켬' : '끔'}`);
   if (auth.uid) await saveUserPrefs(auth.uid, { alertPrefs: prefs.value });
+  refreshAlertBadge();
 };
 
 /* ───────── 지금 걸린 알림 ───────── */
