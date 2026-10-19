@@ -1345,10 +1345,11 @@ const toggleSection = (key: string) => {
   overflow: hidden;
 }
 /* 날짜·금액·연락처는 줄을 바꾸지 않는다 — 잘리거나 내려가던 자리다 */
-/* 작업내용·협의내용 — 넘치면 두 줄로 내려 적는다 */
+/* 작업내용·협의내용 — 칸을 넘으면 줄을 내려 적는다 (긴 낱말도 끊어서) */
 .pw-int-tbl tbody td:nth-child(2),
 .pw-int-tbl tbody td:nth-child(3) {
-  white-space: normal; word-break: keep-all; line-height: 1.3;
+  white-space: normal; word-break: break-word; overflow-wrap: anywhere;
+  line-height: 1.35; overflow: visible;
 }
 /* 날짜·금액·연락처는 한 줄로, 글자를 바짝 줄여 자리를 적게 먹는다 */
 /* 본문 글자는 모두 12px — 머리줄(구분)만 그대로 둔다 */
