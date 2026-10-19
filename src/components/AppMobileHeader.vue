@@ -129,7 +129,7 @@ const onLogout = async () => {
 .amh {
   background: linear-gradient(180deg, #1f3a72 0%, #15295b 100%);
   color: #fff;
-  padding: 0 12px 9px;
+  padding: 0 12px 4px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -139,7 +139,8 @@ const onLogout = async () => {
 /* 윗줄 높이를 못 박아 둔다 — 로고를 키워도 띠(52px)가 따라 커지지 않는다.
    로고가 줄보다 크면 위아래로 조금 넘치되, 아래 마진 셈으로 띠 한가운데에 선다 */
 .amh-row-top { justify-content: space-between; height: 36px; }
-.amh-row-bottom { justify-content: flex-end; gap: 6px; padding-right: 4px; margin-top: -16px; margin-right: -5px; }
+/* 인사말 줄을 3px 내린다 — 띠 아래 여백에서 그만큼 가져와 띠 높이는 52px 그대로다 */
+.amh-row-bottom { justify-content: flex-end; gap: 6px; padding-right: 4px; margin-top: -13px; margin-right: -5px; }
 
 /* 로고는 띠 한가운데에 선다. 아래 인사줄이 16px 끌어올려져 있어
    윗줄만 보면 로고가 위로 치우친다 — 아래위 마진을 같은 값으로 주고 받아
