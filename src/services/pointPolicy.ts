@@ -96,3 +96,42 @@ export const POINT_CAUTIONS: string[] = [
   '적립 포인트는 현금으로 환불되지 않으며 회원탈퇴 시 소멸됩니다.',
   '유료이용권 만료 후 1년 동안 재 결제가 없는 경우 포인트는 소멸되며 ID도 휴면 처리됩니다.',
 ];
+
+/* ───────── 4. 포인트 혜택 안내 ───────── */
+
+export interface PointBenefit {
+  /** 어떤 때 받는지 */
+  when: string;
+  /** 받는 포인트 */
+  point: string;
+  /** 아래 작은 글 */
+  note: string;
+  tone: 'violet' | 'navy' | 'blue';
+}
+
+export const POINT_BENEFITS: PointBenefit[] = [
+  {
+    when: '신규 회원가입 시',
+    point: 'POINT : 1,000p',
+    note: '＋ 3일 무료 ＋ 첫결제 이벤트 ＋ 무료 영상',
+    tone: 'violet',
+  },
+  {
+    when: '마이턴 옥션 앱 설치 시',
+    point: 'POINT : 5,000p',
+    note: '안드로이드앱 또는 iOS앱을 설치하고 로그인하시면 지급됩니다. (앱 출시 후 지급)',
+    tone: 'navy',
+  },
+  {
+    when: '예상배당표 오류 및 제보',
+    point: 'POINT : ~10,000p',
+    note: '제보 내용에 따라 지급 포인트가 다릅니다.',
+    tone: 'blue',
+  },
+  {
+    when: '경·공매 정보 오류 및 제보',
+    point: 'POINT : ~10,000p',
+    note: '제보 내용에 따라 지급 포인트가 다릅니다.',
+    tone: 'blue',
+  },
+];

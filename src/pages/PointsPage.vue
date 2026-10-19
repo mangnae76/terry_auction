@@ -5,6 +5,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import {
+  POINT_BENEFITS,
   POINT_CAUTIONS,
   POINT_GRADES,
   POINT_INTRO,
@@ -15,6 +16,7 @@ const router = useRouter();
 const TABS = [
   { key: 'intro', label: '포인트 제도 소개' },
   { key: 'grade', label: '회원등급 및 포인트적립률' },
+  { key: 'benefit', label: '포인트 혜택 안내' },
   { key: 'caution', label: '주의사항' },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
@@ -80,7 +82,18 @@ const tab = ref<TabKey>('intro');
         </section>
       </template>
 
-      <!-- 3. 주의사항 -->
+      <!-- 3. 포인트 혜택 안내 -->
+      <template v-else-if="tab === 'benefit'">
+        <h2 class="pt-pill">포인트 혜택 안내</h2>
+        <p class="pt-pt1">마이턴 옥션 회원님께 드리는 포인트 혜택</p>
+        <section v-for="b in POINT_BENEFITS" :key="b.when" :class="['pt-benefit', b.tone]">
+          <small>{{ b.when }}</small>
+          <strong>{{ b.point }}</strong>
+          <em>{{ b.note }}</em>
+        </section>
+      </template>
+
+      <!-- 4. 주의사항 -->
       <template v-else>
         <h2 class="pt-pill">주의사항</h2>
         <section class="pt-blue">
@@ -175,6 +188,15 @@ const tab = ref<TabKey>('intro');
 .pt-h3 { margin: 0 0 6px; font-size: 12px; font-weight: 800; color: #374151; }
 .pt-notes { margin: 0; padding-left: 18px; }
 .pt-notes li { font-size: 11.5px; line-height: 1.75; color: #4b5563; word-break: keep-all; }
+
+/* 혜택 */
+.pt-benefit { border-radius: 12px; padding: 14px 15px 13px; color: #fff; }
+.pt-benefit.violet { background: linear-gradient(135deg, #7b86e8 0%, #6a74dd 100%); }
+.pt-benefit.navy { background: linear-gradient(135deg, #2b3566 0%, #1d2550 100%); }
+.pt-benefit.blue { background: linear-gradient(135deg, #4a7bd8 0%, #3a66bd 100%); }
+.pt-benefit small { display: block; font-size: 12px; font-weight: 700; opacity: .92; }
+.pt-benefit strong { display: block; margin: 4px 0 6px; font-size: 21px; font-weight: 800; letter-spacing: -0.5px; }
+.pt-benefit em { display: block; font-style: normal; font-size: 11.5px; line-height: 1.6; opacity: .85; word-break: keep-all; }
 
 /* 주의사항 */
 .pt-caution { list-style: none; margin: 0; padding: 0; }
