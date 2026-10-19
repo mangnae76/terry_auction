@@ -746,7 +746,7 @@ const toggleSection = (key: string) => {
               <!-- 업체명과 연락처는 한 칸에 위아래로 — 둘 다 제 너비를 쓰려면 이 편이 낫다 -->
               <colgroup>
                 <col style="width: 12.5%" /><col style="width: 12.5%" />
-                <col style="width: 18.5%" /><col style="width: 25.5%" />
+                <col style="width: 15%" /><col style="width: 29%" />
                 <col style="width: 16%" /><col style="width: 15%" />
               </colgroup>
               <thead>
