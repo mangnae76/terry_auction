@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { isKakaoLoginConfigured, isNaverLoginConfigured } from '../services/socialAuth';
 import { isAllowedEmail } from '../services/accessControl';
-import logoImg from '../assets/icones/log/LOGO_ENG.png';
+import BrandLogo from '../components/BrandLogo.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -74,8 +74,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
   <section class="lp-shell">
     <div class="lp-card">
       <div class="lp-brand">
-        <img :src="logoImg" alt="MYTURN" class="lp-brand-logo" />
-        <p class="lp-brand-sub">AUCTION</p>
+        <BrandLogo :size="36" />
       </div>
 
       <form class="lp-form" @submit.prevent="onSubmit">
@@ -149,9 +148,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
 }
 .lp-brand { text-align: center; margin-bottom: 22px; }
-.lp-brand-logo { height: 36px; object-fit: contain; }
-/* 로고가 MYTURN 까지만 그려 AUCTION 을 글자로 받친다 */
-.lp-brand-sub { margin: 5px 0 0; font-size: 12px; color: #6b7280; font-weight: 700; letter-spacing: 4px; }
+
 
 .lp-form { display: flex; flex-direction: column; gap: 12px; }
 .lp-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #374151; font-weight: 600; }

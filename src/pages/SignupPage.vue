@@ -14,7 +14,7 @@ import {
   TERMS_CHAPTERS,
   TERMS_EFFECTIVE,
 } from '../services/legalTerms';
-import logoImg from '../assets/icones/log/LOGO_ENG.png';
+import BrandLogo from '../components/BrandLogo.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -142,8 +142,13 @@ const onSubmit = async () => {
 <template>
   <section class="su-shell">
     <div class="su-card">
-      <img :src="logoImg" alt="MYTURN" class="su-logo" />
-      <p class="su-brand-sub">AUCTION</p>
+      <!-- 가입을 그만둘 때 — 오른쪽 위 귀퉁이에서 로그인으로 돌아간다 -->
+      <button type="button" class="su-close" aria-label="닫기" @click="router.push('/login')">
+        <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true">
+          <path d="M1.5 1.5 12.5 12.5M12.5 1.5 1.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      </button>
+      <span class="su-brand"><BrandLogo :size="34" /></span>
       <h1 class="su-title">회원가입</h1>
       <p class="su-note">
         마이턴 옥션은 컨설팅·외부광고 등의 전화를 하지 않으며 개인정보를 타사와 공유하지 않습니다.
@@ -301,15 +306,19 @@ const onSubmit = async () => {
   display: flex; justify-content: center; align-items: flex-start;
 }
 .su-card {
+  position: relative;
   width: 100%; max-width: 420px; box-sizing: border-box;
   background: #fff; border-radius: 14px; padding: 20px 16px 22px;
 }
-.su-logo { display: block; height: 26px; margin: 0 auto; object-fit: contain; }
-/* 로고 아래 한 줄 — 로그인 화면과 같은 꼴 */
-.su-brand-sub {
-  margin: 7px 0 12px; text-align: center;
-  font-size: 12px; color: #6b7280; font-weight: 700; letter-spacing: 4px;
+.su-close {
+  position: absolute; top: 10px; right: 10px;
+  width: 28px; height: 28px; border: 1px solid #e3e8f0; border-radius: 6px;
+  background: #fff; color: #4b5563; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 0;
 }
+.su-close svg { display: block; }
+/* 로고 묶음 — 가운데에 둔다 (모양은 BrandLogo 가 들고 있다) */
+.su-brand { display: flex; justify-content: center; margin-bottom: 12px; }
 .su-title { margin: 0; text-align: center; font-size: 20px; font-weight: 800; color: #111827; }
 .su-note {
   margin: 7px 0 0; text-align: center;

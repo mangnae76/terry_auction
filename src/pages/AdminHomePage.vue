@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
-import logoImg from '../assets/icones/log/LOGO_ENG.png';
+import BrandLogo from '../components/BrandLogo.vue';
 
 type Tool = {
   title: string;
@@ -130,10 +130,7 @@ const openTool = (tool: Tool) => {
     <header class="adm-top">
       <div class="adm-top-in">
         <div class="adm-brand">
-          <span class="adm-logo-wrap">
-            <img :src="logoImg" alt="MYTURN" class="adm-logo" />
-            <small class="adm-logo-sub">AUCTION</small>
-          </span>
+          <BrandLogo :size="36" />
           <small class="adm-brand-tag">관리자 도구</small>
         </div>
         <nav class="adm-top-nav">
@@ -226,16 +223,7 @@ const openTool = (tool: Tool) => {
 /* 앱과 같은 로고를 쓴다 — 같은 서비스라는 게 한눈에 보이게.
    'AUCTION' 은 로고 아래, MYTURN 의 N 끝에 맞춰 오른쪽으로 붙인다 */
 .adm-brand { display: flex; align-items: center; gap: 12px; }
-/* 크기·비율은 앱 로그인 화면 그대로 — 로고 36px, 아래 글자 12px */
-.adm-logo-wrap { display: flex; flex-direction: column; align-items: flex-end; line-height: 1; }
-.adm-logo { height: 36px; object-fit: contain; display: block; }
-/* 로고 그림 아래에 빈 자리가 11px쯤 들어 있다 (592x194 중 글자는 y133 까지).
-   그만큼 끌어올려 MYTURN 글자 바로 밑에 붙인다. 오른쪽도 그림 여백만큼 당겨
-   N 끝과 맞춘다 */
-.adm-logo-sub {
-  margin-top: -11px; font-size: 8.5px; font-weight: 700; letter-spacing: 0.6px;
-  color: #111827; padding-right: 2px;
-}
+
 .adm-brand-tag {
   font-size: 11.5px; font-weight: 700; color: #6b7280;
   padding-left: 12px; border-left: 1px solid #e3e8f0; line-height: 1.2;
