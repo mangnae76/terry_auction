@@ -541,7 +541,7 @@ const exportExcel = () => {
     <!-- ========== TAB 4: 물품구매 ========== -->
     <template v-else-if="activeTab === 'itemPurchase'">
       <div class="fin-table-wrap">
-        <table class="fin-table mid">
+        <table class="fin-table mid items">
           <thead>
             <tr>
               <th>결제일</th><th>물건구분</th><th>사용구분</th><th>상세내역</th>
@@ -554,7 +554,7 @@ const exportExcel = () => {
               <td>{{ shortDate(r.date) }}</td>
               <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
               <td :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
-              <td :title="r.description">{{ r.description }}</td>
+              <td class="desc" :title="r.description">{{ r.description }}</td>
               <td>{{ r.quantity }}</td>
               <td>{{ fmtMoney(r.unitPrice) }}원</td>
               <!-- 합계는 적어 둔 값이 있으면 그 값, 없으면 수량 × 단가 -->
@@ -1040,6 +1040,11 @@ const exportExcel = () => {
 .fin-table.mid th.r, .fin-table.mid td.r { text-align: right; }
 /* 칸이 많은 표는 글자에 폭을 맡기되 너무 붙지 않게 숨통을 둔다 */
 .fin-table.mid th, .fin-table.mid td { padding-left: 10px; padding-right: 10px; }
+/* 물품구매는 칸이 열이라 숨통을 줄여 오른쪽 칸(구매처·카드·비고)까지 들어오게 한다 */
+.fin-table.items th, .fin-table.items td {
+  padding-left: 4px; padding-right: 4px; font-size: 10px; letter-spacing: -0.2px;
+}
+.fin-table.items .desc { white-space: normal; word-break: keep-all; min-width: 84px; }
 .fin-table.mid td:not(.r):not(.empty) { max-width: none; }
 .fin-table.cash th.r, .fin-table.cash td.r { text-align: right; }
 .fin-table.cash th.l, .fin-table.cash td.l { text-align: left; }
