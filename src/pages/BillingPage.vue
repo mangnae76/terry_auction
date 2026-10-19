@@ -6,33 +6,18 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
+import {
+  MAX_OFF as maxOff,
+  MONTH_PRICE,
+  OFF_LABELS as offLabels,
+  OFF_TEXT as offText,
+  PLANS,
+  perMonth,
+  type Plan,
+} from '../services/billingPlans';
 
 const router = useRouter();
 
-/** 1개월 기준가 — 긴 기간은 여기에 할인율만 걸어 셈한다 (값은 여기 한 줄만 고치면 된다) */
-const MONTH_PRICE = 39_000;
-
-/** 기간별 값 — 받는 값 price 는 기준가 × 개월 × (1 − 할인율) 이다 */
-interface Plan { key: string; label: string; months: number; price: number; off: number; base?: boolean }
-const planOf = (months: number, off: number): Plan => ({
-  key: `m${months}`,
-  label: `${months}개월`,
-  months,
-  off,
-  price: Math.round((MONTH_PRICE * months * (100 - off)) / 100),
-  base: off === 0,
-});
-const PLANS: Plan[] = [planOf(1, 0), planOf(3, 15), planOf(6, 25), planOf(12, 35)];
-
-/** 안내 글도 표와 같은 값에서 뽑는다 — 할인율만 고치면 글이 저절로 따라온다 */
-const offPlans = PLANS.filter((p) => !p.base);
-const offText = offPlans
-  .map((p, i) => (i === offPlans.length - 1 ? `${p.label}은 ${p.off}%` : `${p.label} ${p.off}%`))
-  .join(', ');
-const maxOff = Math.max(...PLANS.map((p) => p.off));
-const offLabels = offPlans.map((p) => p.label).join('·');
-/** 한 달로 치면 얼마인지 — 깎인 값이 눈에 들어오게 같이 적는다 */
-const perMonth = (p: Plan) => Math.round(p.price / p.months);
 const picked = ref<Plan>(PLANS[0]);
 
 /** 내 포인트 — 붙이기 전까지는 0 */

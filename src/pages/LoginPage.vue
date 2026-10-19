@@ -5,6 +5,13 @@ import { useAuthStore } from '../stores/authStore';
 import { isKakaoLoginConfigured, isNaverLoginConfigured } from '../services/socialAuth';
 import { isAllowedEmail } from '../services/accessControl';
 import BrandLogo from '../components/BrandLogo.vue';
+import {
+  MONTH_PRICE,
+  PLANS,
+  TRIAL_DAYS,
+  WELCOME_POINT,
+  perMonth,
+} from '../services/billingPlans';
 
 const router = useRouter();
 const route = useRoute();
@@ -18,6 +25,10 @@ onMounted(() => {
     ? '이 계정은 사용 권한이 없습니다. 등록된 계정으로 로그인해 주세요.'
     : '';
 });
+
+/** 가입 전 안내 창 — '' 이면 닫힘 */
+const info = ref<'' | 'pay' | 'trial'>('');
+const won = (n: number) => n.toLocaleString('ko-KR');
 
 const email = ref('');
 const password = ref('');
@@ -110,6 +121,13 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
           :disabled="submitting || authStore.loading"
           @click="router.push('/signup')"
         >회원가입</button>
+
+        <!-- 가입 전에 궁금한 두 가지 — 로그인하지 않아도 그 자리에서 열린다 -->
+        <p class="lp-links">
+          <button type="button" @click="info = 'pay'">결제안내</button>
+          <i>·</i>
+          <button type="button" @click="info = 'trial'">무료체험</button>
+        </p>
       </form>
 
       <div v-if="kakaoEnabled || naverEnabled" class="lp-social">
@@ -130,6 +148,63 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
         >네이버로 시작하기</button>
       </div>
 
+    </div>
+
+    <!-- 결제안내 · 무료체험 안내 창 -->
+    <div v-if="info" class="lp-modal" @click.self="info = ''">
+      <div class="lp-modal-box">
+        <header class="lp-modal-head">
+          <strong>{{ info === 'pay' ? '결제안내' : `${TRIAL_DAYS}일 무료체험 안내` }}</strong>
+          <button type="button" class="lp-modal-x" aria-label="닫기" @click="info = ''">
+            <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true">
+              <path d="M1.5 1.5 12.5 12.5M12.5 1.5 1.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="lp-modal-body">
+          <template v-if="info === 'pay'">
+            <p class="lp-m-lead">1개월 기준가 {{ won(MONTH_PRICE) }}원 — 길게 고를수록 깎입니다.</p>
+            <table class="lp-m-table">
+              <thead>
+                <tr><th>기간</th><th>할인</th><th>결제금액</th><th>월 환산</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in PLANS" :key="p.key">
+                  <td>{{ p.label }}</td>
+                  <td>{{ p.base ? '기준가' : `${p.off}%` }}</td>
+                  <td><b>{{ won(p.price) }}</b></td>
+                  <td>{{ won(perMonth(p)) }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="lp-m-note">표에 적힌 금액이 실제로 받는 값입니다. 포인트가 있으면 결제할 때 뺄 수 있습니다.</p>
+          </template>
+
+          <template v-else>
+            <!-- 가입하면 바로 받는 것 -->
+            <div class="lp-m-perks">
+              <span><b>{{ TRIAL_DAYS }}일</b><small>무료이용</small></span>
+              <span><b>{{ won(WELCOME_POINT) }}p</b><small>축하포인트</small></span>
+              <span><b>무료</b><small>경매교육 영상</small></span>
+            </div>
+
+            <h4 class="lp-m-sub">무료체험 이용안내</h4>
+            <ol class="lp-m-steps">
+              <li>회원가입을 하시면 <b>{{ TRIAL_DAYS }}일 무료이용권</b>이 바로 지급됩니다.</li>
+              <li>무료체험 기간에는 <b>결제하지 않습니다</b> — 모든 기능을 그대로 쓰실 수 있습니다.</li>
+              <li>무료체험은 <b>계정당 1회</b>만 쓸 수 있습니다.</li>
+            </ol>
+            <p class="lp-m-note">
+              ※ {{ TRIAL_DAYS }}일(72시간)이 지나면 더보기 › 결제하기에서 이용 기간을 고르시면
+              그대로 이어서 쓰실 수 있습니다. 적어 두신 물건과 사진은 사라지지 않습니다.
+            </p>
+            <button type="button" class="lp-m-go" @click="info = ''; router.push('/signup')">
+              {{ TRIAL_DAYS }}일 무료체험 하기 ›
+            </button>
+          </template>
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -170,6 +245,66 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
   border: 1px solid #c7d0e4; font-family: inherit;
 }
 .lp-submit.ghost:disabled { background: #f3f4f6; color: #9ca3af; }
+
+/* 회원가입 아래 작은 두 줄 */
+.lp-links {
+  margin: 10px 0 0; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.lp-links button {
+  border: none; background: transparent; padding: 0; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 600; color: #9ca3af;
+}
+.lp-links button:hover { color: #4b5563; text-decoration: underline; }
+.lp-links i { font-style: normal; font-size: 11px; color: #cbd2de; }
+
+/* 안내 창 */
+.lp-modal {
+  position: fixed; inset: 0; z-index: 60; background: rgba(17, 24, 39, .45);
+  display: flex; align-items: center; justify-content: center; padding: 18px 14px;
+}
+.lp-modal-box {
+  width: 100%; max-width: 360px; max-height: 76vh; box-sizing: border-box;
+  background: #fff; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden;
+}
+.lp-modal-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 12px 10px; border-bottom: 1px solid #eef1f6;
+}
+.lp-modal-head strong { font-size: 13.5px; font-weight: 800; color: #111827; }
+.lp-modal-x {
+  margin-left: auto; width: 26px; height: 26px; border: 1px solid #e3e8f0; border-radius: 6px;
+  background: #fff; color: #4b5563; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 0;
+}
+.lp-modal-x svg { display: block; }
+.lp-modal-body { overflow-y: auto; padding: 12px 14px 16px; }
+.lp-m-lead { margin: 0 0 9px; font-size: 12px; font-weight: 700; color: #1f3a72; }
+.lp-m-table { width: 100%; border-collapse: collapse; }
+.lp-m-table th, .lp-m-table td {
+  padding: 6px 4px; font-size: 11.5px; text-align: center; border-bottom: 1px solid #f1f3f7;
+}
+.lp-m-table th { color: #6b7280; font-weight: 700; background: #f7f9fd; }
+.lp-m-table td { color: #374151; }
+.lp-m-table td b { color: #111827; font-weight: 800; }
+/* 가입 혜택 — 회원가입 화면의 카드와 같은 내용 */
+.lp-m-perks { display: flex; gap: 6px; }
+.lp-m-perks span {
+  flex: 1 1 0; min-width: 0; border: 1px solid #e3e8f4; border-radius: 10px;
+  background: #f7f9ff; padding: 10px 4px 9px; text-align: center;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.lp-m-perks b { font-size: 14px; font-weight: 800; color: #1f3a72; }
+.lp-m-perks small { font-size: 10px; color: #6b7280; word-break: keep-all; }
+.lp-m-sub { margin: 14px 0 6px; font-size: 12.5px; font-weight: 800; color: #e8622a; }
+.lp-m-steps { margin: 0; padding-left: 18px; }
+.lp-m-steps li { font-size: 12px; line-height: 1.85; color: #374151; word-break: keep-all; }
+.lp-m-steps b { color: #1f3a72; font-weight: 700; }
+.lp-m-note { margin: 10px 0 0; font-size: 11px; line-height: 1.6; color: #9ca3af; word-break: keep-all; }
+.lp-m-go {
+  width: 100%; height: 40px; margin-top: 12px;
+  border: none; border-radius: 8px; background: #1f3a72; color: #fff;
+  font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
+}
 .lp-footer { text-align: center; font-size: 12px; color: #6b7280; margin: 16px 0 0; }
 .lp-link { color: #2b6df3; font-weight: 700; text-decoration: none; margin-left: 4px; }
 
