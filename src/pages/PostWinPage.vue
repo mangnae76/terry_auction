@@ -746,9 +746,9 @@ const toggleSection = (key: string) => {
                    남는 몫은 협의내용에 더 준다. 넘치면 두 줄로 내려 적는다 -->
               <!-- 업체명과 연락처는 한 칸에 위아래로 — 둘 다 제 너비를 쓰려면 이 편이 낫다 -->
               <colgroup>
-                <col style="width: 12.5%" /><col style="width: 12.5%" />
-                <col style="width: 15%" /><col style="width: 29%" />
-                <col style="width: 16%" /><col style="width: 15%" />
+                <col style="width: 12%" /><col style="width: 12%" />
+                <col style="width: 14%" /><col style="width: 25%" />
+                <col style="width: 16%" /><col style="width: 21%" />
               </colgroup>
               <thead>
                 <tr>
@@ -1339,6 +1339,8 @@ const toggleSection = (key: string) => {
 .pw-int-tbl th, .pw-int-tbl td {
   padding: 6px 2px; font-size: 10.5px; line-height: 1.35; color: #1f2937;
   border-bottom: 1px solid #e5e7eb; text-align: center; word-break: keep-all;
+  /* 어떤 글도 칸 밖으로 나가지 않는다 */
+  overflow: hidden;
 }
 /* 날짜·금액·연락처는 줄을 바꾸지 않는다 — 잘리거나 내려가던 자리다 */
 /* 작업내용·협의내용 — 넘치면 두 줄로 내려 적는다 */
@@ -1360,9 +1362,10 @@ const toggleSection = (key: string) => {
   display: block; font-size: 12px; font-weight: 600; letter-spacing: -0.3px;
   line-height: 1.25; word-break: keep-all;
 }
+/* 번호는 칸을 넘지 않게 — 자리에 맞춰 한 단 줄여 적는다 */
 .pw-int-tbl tbody td.vend small {
-  display: block; margin-top: 1px; font-size: 12px; letter-spacing: -0.5px;
-  color: #6b7280; white-space: nowrap;
+  display: block; margin-top: 1px; font-size: 10.5px; letter-spacing: -0.5px;
+  color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* 머리줄은 다른 표와 같은 짙은 남색에 흰 글씨 — 위 두 모서리는 둥글게 */
 .pw-int-tbl thead th {
