@@ -327,7 +327,7 @@ const exportInterior = (kind: 'bid' | 'cost', file: string) => {
     return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
   };
   const rows: Array<Array<string | number>> = [
-    ['예상시작', '예상완료', '작업내용', cardOf(kind).status, `${cardOf(kind).amount}(VAT포함)`, '업체명', '연락처', '비고'],
+    ['시작', '완료', '작업내용', cardOf(kind).status, `${cardOf(kind).amount}(VAT포함)`, '업체명', '연락처', '비고'],
     ...rowsOf(kind).map((r) => [
       r.startDate || r.date || '', r.endDate, r.work, r.status,
       r.amountWithVat, r.vendor, r.phone, r.note,
@@ -744,7 +744,7 @@ const toggleSection = (key: string) => {
               </colgroup>
               <thead>
                 <tr>
-                  <th>예상시작</th><th>예상완료</th><th>작업내용</th><th>{{ card.status }}</th>
+                  <th>시작</th><th>완료</th><th>작업내용</th><th>{{ card.status }}</th>
                   <th>{{ card.amount }}{{ '\n' }}(VAT포함)</th><th>업체명</th><th>연락처</th>
                 </tr>
               </thead>
@@ -791,8 +791,8 @@ const toggleSection = (key: string) => {
           <button type="button" class="pw-flow-close" aria-label="닫기" @click="intOpen = false">×</button>
         </header>
         <!-- 적는 차례는 표의 칸 차례와 같다 -->
-        <label class="pw-fld"><small>예상시작</small><input v-model="intDraft.startDate" type="date" class="pw-einput" /></label>
-        <label class="pw-fld"><small>예상완료</small><input v-model="intDraft.endDate" type="date" class="pw-einput" /></label>
+        <label class="pw-fld"><small>시작</small><input v-model="intDraft.startDate" type="date" class="pw-einput" /></label>
+        <label class="pw-fld"><small>완료</small><input v-model="intDraft.endDate" type="date" class="pw-einput" /></label>
         <label class="pw-fld"><small>작업내용</small><input v-model="intDraft.work" class="pw-einput" placeholder="도배 · 바닥 · 싱크대 …" /></label>
         <!-- 비딩에서는 협의한 말을 그대로 적고, 비용에서는 현황을 고른다 -->
         <label v-if="intDraft.kind === 'bid'" class="pw-fld">
