@@ -5,7 +5,6 @@ import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useAlertBadge } from '../services/alertBadge';
-import { MY_PAGE_ITEMS } from '../services/myPageMenu';
 
 const router = useRouter();
 const route = useRoute();
@@ -33,11 +32,38 @@ const onAuthPill = async () => {
   router.push('/login');
 };
 
-interface QuickSub { name: string; path: string; query?: Record<string, string> }
+interface QuickSub {
+  name: string;
+  path: string;
+  query?: Record<string, string>;
+  /** 윗줄과 갈라 놓는 가는 선 */
+  split?: boolean;
+  /** 아직 자리를 정하지 못한 줄 — 빨갛게 표시해 둔다 */
+  mark?: boolean;
+}
 interface QuickItem { name: string; path: string; items?: QuickSub[] }
 const QUICK: QuickItem[] = [
-  // 마이페이지도 눌러서 펼친다 — 열 줄을 한 칸 안에 담는다
-  { name: '마이페이지', path: '', items: [{ name: '마이페이지 홈', path: '/mypage' }, ...MY_PAGE_ITEMS] },
+  // 마이페이지도 눌러서 펼친다 — 가입·안내 묶음과 내 자리 묶음을 선으로 가른다.
+  // (빨간 줄은 아직 자리를 정하지 못한 것들 — 지우지 않고 표시만 해 둔다)
+  {
+    name: '마이페이지',
+    path: '',
+    items: [
+      { name: '회원가입', path: '/signup' },
+      { name: '결제안내', path: '/billing' },
+      { name: '3일무료체험', path: '/trial' },
+      { name: '마이페이지', path: '/mypage', split: true },
+      { name: '결제관리', path: '/payments' },
+      { name: '포인트내역', path: '/point-history' },
+      { name: '결제하기', path: '/billing' },
+      { name: '정보수정', path: '/profile' },
+      { name: '회원탈퇴', path: '' },
+      { name: '보관함', path: '/archive', mark: true },
+      { name: '휴지통', path: '/trash', mark: true },
+      { name: '중개업체관리', path: '/agencies', mark: true },
+      { name: '알림설정', path: '/notifications', mark: true },
+    ],
+  },
   { name: '결제하기', path: '/billing' },
   // 부가서비스는 눌러서 펼친다 — 자리를 더 내지 않고 줄을 늘릴 수 있다
   {
@@ -165,8 +191,8 @@ const openPolicy = (p: { name: string; path: string }) => {
             {{ q.name }}<i v-if="q.items" class="quick-caret">{{ quickOpen === q.name ? '▴' : '▾' }}</i>
           </button>
           <ul v-if="q.items && quickOpen === q.name" class="quick-menu">
-            <li v-for="it in q.items" :key="it.name">
-              <button type="button" @click="goQuickSub(it)">{{ it.name }}</button>
+            <li v-for="it in q.items" :key="it.name" :class="{ split: it.split }">
+              <button type="button" :class="{ mark: it.mark }" @click="goQuickSub(it)">{{ it.name }}</button>
             </li>
           </ul>
         </div>
@@ -336,6 +362,10 @@ const openPolicy = (p: { name: string; path: string }) => {
   font-family: inherit; font-size: 12px; font-weight: 700; color: #374151; cursor: pointer;
 }
 .quick-menu button:hover { background: #f4f6fb; }
+/* 묶음을 가르는 가는 선 */
+.quick-menu li.split { margin-top: 5px; padding-top: 5px; border-top: 1px solid #eef1f6; }
+/* 아직 자리를 정하지 못한 줄 */
+.quick-menu button.mark { color: #d2434f; }
 /* 알림설정 알약 — 알릴 것이 있으면 점 하나 (머리글 종과 같은 뜻) */
 .pill-dot {
   display: inline-block; width: 5px; height: 5px; border-radius: 50%;
