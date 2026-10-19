@@ -545,7 +545,7 @@ const exportExcel = () => {
           <thead>
             <tr>
               <th>결제일</th><th>물건구분</th><th>사용구분</th><th>상세내역</th>
-              <th>수량</th><th>단가</th><th>합계(VAT포함)</th>
+              <th>수량</th><th>단가</th><th class="two">합계{{ '\n' }}(VAT포함)</th>
               <th>구매처</th><th>카드</th><th>비고</th>
             </tr>
           </thead>
@@ -1019,6 +1019,8 @@ const exportExcel = () => {
   white-space: nowrap; vertical-align: middle;
 }
 .fin-table th { font-weight: 700; font-size: 10.5px; white-space: nowrap; }
+/* 두 줄로 쓰는 머리글 — 합계(VAT포함)처럼 긴 이름 */
+.fin-table th.two { white-space: pre-line; line-height: 1.25; }
 .fin-table tbody tr:nth-child(even) { background: #fafbfd; }
 .fin-table tbody tr { cursor: pointer; }
 .fin-table tbody tr:hover { background: #f9fafb; }
