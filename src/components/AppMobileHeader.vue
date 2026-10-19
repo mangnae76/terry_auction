@@ -186,12 +186,12 @@ const onLogout = async () => {
 /* 인사말 오른쪽의 결제하기·선물상자 */
 .amh-pay {
   border: none; background: transparent; padding: 2px 0; cursor: pointer;
-  font-family: inherit; font-size: 11px; font-weight: 700; color: #fff;
-  text-decoration: underline; text-underline-offset: 2px; margin-right: 9px;
+  font-family: inherit; font-size: 11px; font-weight: 400; color: #fff;
+  margin-right: 9px;
 }
 .amh-gift {
   border: none; background: transparent; padding: 3px; cursor: pointer;
-  display: inline-flex; align-items: center; color: #ffd27a; margin-right: 9px;
+  display: inline-flex; align-items: center; color: #fff; margin-right: 9px;
 }
 
 /* 종과 사람은 손가락이 닿을 자리를 넉넉히 두고 서로 떨어뜨린다 */
