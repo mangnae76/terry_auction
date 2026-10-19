@@ -17,7 +17,6 @@ const TABS = [
   { key: 'intro', label: '포인트 제도 소개' },
   { key: 'grade', label: '회원등급 및 포인트적립률' },
   { key: 'benefit', label: '포인트 혜택 안내' },
-  { key: 'caution', label: '주의사항' },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
 const tab = ref<TabKey>('intro');
@@ -53,6 +52,14 @@ const tab = ref<TabKey>('intro');
               <li v-for="(b, i) in sec.bullets" :key="i">{{ b }}</li>
             </ul>
           </div>
+
+          <!-- 주의사항 — 상자를 나누지 않고 같은 자리에 잇는다 -->
+          <div class="pt-blue-sec">
+            <h3>주의사항</h3>
+            <ul>
+              <li v-for="(c, i) in POINT_CAUTIONS" :key="i">{{ c }}</li>
+            </ul>
+          </div>
         </section>
       </template>
 
@@ -83,7 +90,7 @@ const tab = ref<TabKey>('intro');
       </template>
 
       <!-- 3. 포인트 혜택 안내 -->
-      <template v-else-if="tab === 'benefit'">
+      <template v-else>
         <h2 class="pt-pill">포인트 혜택 안내</h2>
         <p class="pt-pt1">마이턴 옥션 회원님께 드리는 포인트 혜택</p>
         <section v-for="b in POINT_BENEFITS" :key="b.when" :class="['pt-benefit', b.tone]">
@@ -93,15 +100,6 @@ const tab = ref<TabKey>('intro');
         </section>
       </template>
 
-      <!-- 4. 주의사항 -->
-      <template v-else>
-        <h2 class="pt-pill">주의사항</h2>
-        <section class="pt-blue">
-          <ul class="pt-caution">
-            <li v-for="(c, i) in POINT_CAUTIONS" :key="i">{{ c }}</li>
-          </ul>
-        </section>
-      </template>
     </div>
 
     <AppMobileBottomNav active="more" />
@@ -198,12 +196,4 @@ const tab = ref<TabKey>('intro');
 .pt-benefit strong { display: block; margin: 4px 0 6px; font-size: 21px; font-weight: 800; letter-spacing: -0.5px; }
 .pt-benefit em { display: block; font-style: normal; font-size: 11.5px; line-height: 1.6; opacity: .85; word-break: keep-all; }
 
-/* 주의사항 */
-.pt-caution { list-style: none; margin: 0; padding: 0; }
-.pt-caution li {
-  position: relative; padding-left: 11px; margin-bottom: 9px;
-  font-size: 12px; line-height: 1.7; white-space: pre-line; word-break: keep-all;
-}
-.pt-caution li::before { content: '·'; position: absolute; left: 2px; }
-.pt-caution li:last-child { margin-bottom: 0; }
 </style>
