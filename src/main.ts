@@ -15,6 +15,16 @@ import './style.css';
 // 앱에는 이 클래스가 붙지 않으니 웹 규칙이 앱에 닿을 길이 없다.
 document.documentElement.classList.add(Capacitor.isNativePlatform() ? 'is-app' : 'is-web');
 
+// 날짜 칸은 어디를 눌러도 달력이 뜬다 — 끝의 작은 아이콘만 누르게 두니 불편했다.
+// 앱 전체에 한 번만 걸어 두면 어느 화면의 날짜 칸이든 같이 동작한다.
+document.addEventListener('click', (ev) => {
+  const el = ev.target as HTMLElement | null;
+  if (!(el instanceof HTMLInputElement)) return;
+  if (el.type !== 'date' || el.disabled || el.readOnly) return;
+  // showPicker 는 사용자가 누른 흐름 안에서만 열린다 (그 밖에서는 조용히 넘긴다)
+  try { el.showPicker?.(); } catch { /* 지원하지 않는 브라우저 — 그냥 둔다 */ }
+});
+
 const app = createApp(App);
 
 app.use(createPinia());
