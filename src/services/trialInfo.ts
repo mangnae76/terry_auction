@@ -13,7 +13,7 @@ export const TRIAL_PERKS: Array<{ big: string; small: string }> = [
 /** 무료체험을 어떻게 받는지 — 숫자 셋으로 나눠 적는다 (b 로 묶은 곳만 굵게) */
 export const TRIAL_STEPS: string[] = [
   `회원가입을 하시면 <b>${TRIAL_DAYS}일 무료이용권</b>이 바로 지급됩니다`,
-  '무료체험 기간에는 <b>결제하지 않습니다</b> — 모든 기능을 그대로 쓰실 수 있습니다',
+  '무료체험 기간에는 <b>결제하지 않습니다</b>',
   '무료체험은 <b>계정당 1회</b>만 사용 가능합니다',
 ];
 
