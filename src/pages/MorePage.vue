@@ -1,13 +1,14 @@
 <script setup lang="ts">
 // 더보기 — 계정·설정·공지 등 다른 탭에 들어가지 않는 것들을 모아 둔다.
-import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useAlertBadge } from '../services/alertBadge';
 import { MY_PAGE_ITEMS } from '../services/myPageMenu';
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 
 const displayName = computed(() => {
@@ -69,6 +70,15 @@ const goQuickSub = (it: QuickSub) => {
   }
   router.push({ path: it.path, query: it.query });
 };
+
+// 머리글의 선물상자처럼 '?sec=event' 로 들어오면 그 묶음으로 내려간다
+onMounted(() => {
+  const sec = String(route.query.sec ?? '');
+  if (!sec) return;
+  window.setTimeout(() => {
+    document.querySelector(`[data-sec="${sec}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
+});
 
 // 지금 걸린 알림이 몇 건인지 — 머리글의 종과 같은 셈을 쓴다
 const { count: alertCount } = useAlertBadge();
