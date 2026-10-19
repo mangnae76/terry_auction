@@ -40,10 +40,10 @@ const QUICK: QuickItem[] = [
     name: '부가서비스',
     path: '',
     items: [
-      { name: '포인트', path: '/points' },
-      { name: '이벤트', path: '#event' },
       { name: '공지사항', path: '#notice' },
-      { name: '업데이트 소식', path: '#update' },
+      { name: '이벤트', path: '#event' },
+      { name: '업데이트', path: '#update' },
+      { name: '포인트', path: '/points' },
     ],
   },
   { name: '고객센터', path: '/support' },
@@ -300,9 +300,11 @@ const openPolicy = (p: { name: string; path: string }) => {
   background: #fff; border: 1px solid #e3e8f0; border-radius: 8px;
   box-shadow: 0 6px 18px rgba(17, 24, 39, .12);
 }
+/* 줄은 왼쪽에서 한 칸 들여 적는다 */
 .quick-menu button {
   width: 100%; border: none; background: transparent; border-radius: 6px;
-  padding: 8px 4px; font-family: inherit; font-size: 12px; font-weight: 700; color: #374151; cursor: pointer;
+  padding: 8px 8px 8px 12px; text-align: left;
+  font-family: inherit; font-size: 12px; font-weight: 700; color: #374151; cursor: pointer;
 }
 .quick-menu button:hover { background: #f4f6fb; }
 .quick-badge {
