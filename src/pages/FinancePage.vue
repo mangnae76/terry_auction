@@ -211,8 +211,10 @@ const openAdd = (kind: ModalKind) => {
   } else if (kind === 'itemPurchase') {
     ipDraft.value = {
       auctionId: '', category: '인테리어', description: '', quantity: 1, unitPrice: 0,
+      subtotal: 0, totalWithVat: 0,
       vendor: '', card: '국민신용카드', user: '', shippingFee: 0, date: todayIso(),
     };
+    ipTotalTouched.value = false;
   }
 };
 
@@ -224,7 +226,12 @@ const openEdit = (kind: ModalKind, record: unknown) => {
     const r = record as FuelMealRecord;
     fmDraft.value = { ...r, users: [...(r.users || [])] };
   }
-  else if (kind === 'itemPurchase') ipDraft.value = { ...(record as ItemPurchaseRecord) };
+  else if (kind === 'itemPurchase') {
+    const r = record as ItemPurchaseRecord;
+    ipDraft.value = { ...r };
+    // 적어 둔 합계가 수량 × 단가와 다르면 손으로 고친 값으로 보고 지킨다
+    ipTotalTouched.value = (r.totalWithVat || 0) !== (r.quantity || 0) * (r.unitPrice || 0);
+  }
 };
 
 const closeModal = () => {
@@ -257,16 +264,16 @@ const auctionOptions = computed(() => {
   return list.map((a) => ({ id: a.id, label: label(a) }));
 });
 
-// ipDraft: quantity/unitPrice 변경 시 합계 자동 계산
+// 수량·단가를 고치면 합계가 따라 바뀐다.
+// 다만 합계를 손으로 고친 뒤에는 그 값을 지키고 더는 덮어쓰지 않는다.
+const ipTotalTouched = ref(false);
 const updateItemTotals = () => {
   const q = Number(ipDraft.value.quantity || 0);
   const u = Number(ipDraft.value.unitPrice || 0);
   ipDraft.value.subtotal = q * u;
-  // VAT 합계는 사용자가 직접 입력하거나 같은 값으로 (이미지에서는 동일)
-  if (!ipDraft.value.totalWithVat) {
-    ipDraft.value.totalWithVat = q * u;
-  }
+  if (!ipTotalTouched.value) ipDraft.value.totalWithVat = q * u;
 };
+const onItemTotalInput = () => { ipTotalTouched.value = true; };
 
 const onSave = async () => {
   try {
@@ -664,7 +671,16 @@ const exportExcel = () => {
             <label>수량<input type="number" v-model.number="ipDraft.quantity" @input="updateItemTotals" /></label>
             <label>단가<FormattedNumberInput v-model="ipDraft.unitPrice" live-group align="left" placeholder="0" @update:model-value="updateItemTotals" /></label>
           </div>
-          <label>VAT 포함 합계<FormattedNumberInput v-model="ipDraft.totalWithVat" live-group align="left" placeholder="0" /></label>
+          <label>VAT 포함 합계
+            <FormattedNumberInput
+              v-model="ipDraft.totalWithVat"
+              live-group
+              align="left"
+              placeholder="0"
+              @update:model-value="onItemTotalInput"
+            />
+            <small class="hint">수량 × 단가로 저절로 셈합니다. 직접 고치면 그 값을 그대로 둡니다.</small>
+          </label>
           <div class="row2">
             <label>구매처<input type="text" v-model="ipDraft.vendor" /></label>
             <label>사용카드<input type="text" v-model="ipDraft.card" /></label>
@@ -1090,6 +1106,8 @@ const exportExcel = () => {
   border: none; background: transparent; font-size: 22px;
   cursor: pointer; color: #6b7280; line-height: 1;
 }
+/* 칸 밑에 붙는 한 마디 */
+.fin-modal .hint { display: block; margin-top: 3px; font-size: 10.5px; font-weight: 500; color: #9ca3af; line-height: 1.4; }
 .fin-modal label {
   display: flex; flex-direction: column; gap: 4px;
   font-size: 12px; font-weight: 600; color: #374151;
