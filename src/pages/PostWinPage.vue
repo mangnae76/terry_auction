@@ -740,10 +740,12 @@ const toggleSection = (key: string) => {
                    작업내용(23%)과 협의내용(14%)에 자리를 몰아준다 -->
               <!-- 작업내용은 여섯 글자, 협의내용은 열 글자가 한 줄에 들어가게 잡았다.
                    남는 자리를 날짜·금액·업체명에서 바짝 당겨 쓴다 -->
+              <!-- 날짜를 바짝 줄여 작업내용을 완료 옆으로 당기고(다섯 글자 자리),
+                   남는 몫은 협의내용에 더 준다. 넘치면 두 줄로 내려 적는다 -->
               <colgroup>
                 <col style="width: 12%" /><col style="width: 12%" />
-                <col style="width: 17%" /><col style="width: 22%" />
-                <col style="width: 14%" /><col style="width: 9%" /><col style="width: 14%" />
+                <col style="width: 18.5%" /><col style="width: 21.5%" />
+                <col style="width: 14.5%" /><col style="width: 9%" /><col style="width: 12.5%" />
               </colgroup>
               <thead>
                 <tr>
@@ -1318,15 +1320,17 @@ const toggleSection = (key: string) => {
   border-bottom: 1px solid #e5e7eb; text-align: center; word-break: keep-all;
 }
 /* 날짜·금액·연락처는 줄을 바꾸지 않는다 — 잘리거나 내려가던 자리다 */
-/* 작업내용·협의내용은 글자를 줄이지 않는다 — 여섯 글자·열 글자가 들어갈 자리다 */
+/* 작업내용은 다섯 글자, 협의내용은 그보다 넓게 — 넘치면 두 줄로 내려 적는다 */
 .pw-int-tbl tbody td:nth-child(3),
-.pw-int-tbl tbody td:nth-child(4) { font-size: 12.5px; }
+.pw-int-tbl tbody td:nth-child(4) {
+  font-size: 12.5px; white-space: normal; word-break: keep-all; line-height: 1.3;
+}
 /* 날짜·금액·연락처는 한 줄로, 글자를 바짝 줄여 자리를 적게 먹는다 */
 .pw-int-tbl tbody td:nth-child(1),
-.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; font-size: 11px; letter-spacing: -0.3px; }
-.pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; font-size: 11px; letter-spacing: -0.3px; }
+.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; font-size: 10px; letter-spacing: -0.4px; }
+.pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; font-size: 10px; letter-spacing: -0.4px; }
 /* 업체명은 좁으니 줄이 넘어가도 둔다 */
-.pw-int-tbl tbody td:nth-child(6) { font-size: 11.5px; letter-spacing: -0.3px; }
+.pw-int-tbl tbody td:nth-child(6) { font-size: 11px; letter-spacing: -0.3px; word-break: break-all; }
 /* 연락처는 자리가 모자라면 두 줄로 내려 적는다 — 잘리는 것보다 낫다 */
 .pw-int-tbl tbody td:nth-child(7) {
   font-size: 10.5px; letter-spacing: -0.3px; word-break: break-all;
