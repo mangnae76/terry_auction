@@ -1004,11 +1004,14 @@ const exportExcel = () => {
   border: 1px solid #e5e7eb;
 }
 .fin-table {
-  width: 100%; border-collapse: collapse; font-size: 11px;
+  width: 100%; border-collapse: separate; border-spacing: 0; font-size: 11px;
 }
 .fin-table thead {
   background: #1f2a4d; color: #fff;
 }
+/* 머리줄 위 두 모서리는 둥글게 */
+.fin-table thead tr:first-child th:first-child { border-top-left-radius: 8px; }
+.fin-table thead tr:first-child th:last-child { border-top-right-radius: 8px; }
 .fin-table th, .fin-table td {
   padding: 8px 6px; text-align: left;
   border-bottom: 1px solid #eef0f5;
