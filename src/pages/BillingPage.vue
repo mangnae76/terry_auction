@@ -10,7 +10,7 @@ import AppToast from '../components/AppToast.vue';
 const router = useRouter();
 
 /** 1개월 기준가 — 긴 기간은 여기에 할인율만 걸어 셈한다 (값은 여기 한 줄만 고치면 된다) */
-const MONTH_PRICE = 50_000;
+const MONTH_PRICE = 39_000;
 
 /** 기간별 값 — 받는 값 price 는 기준가 × 개월 × (1 − 할인율) 이다 */
 interface Plan { key: string; label: string; months: number; price: number; off: number; base?: boolean }
