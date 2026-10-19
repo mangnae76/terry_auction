@@ -14,6 +14,7 @@ import {
 import { firestore, firestoreDisabledReason } from './firebase';
 import type {
   BusinessExpenseRecord,
+  InteriorExpenseRecord,
   CashFlowRecord,
   FuelMealRecord,
   ItemPurchaseRecord,
@@ -22,6 +23,7 @@ import type {
 const COLLECTIONS = {
   cashFlow: 'financeCashFlows',
   businessExpense: 'financeBusinessExpenses',
+  interior: 'interiorExpenses',
   fuelMeal: 'financeFuelMeal',
   itemPurchase: 'financeItemPurchases',
 } as const;
@@ -87,6 +89,11 @@ export const subscribeBusinessExpenses = (uid: string, onData: (r: BusinessExpen
   subscribeGeneric<BusinessExpenseRecord>('businessExpense', uid, onData, onError);
 export const upsertBusinessExpense = (r: BusinessExpenseRecord) => upsertGeneric('businessExpense', r);
 export const removeBusinessExpense = (id: string) => removeGeneric('businessExpense', id);
+
+export const subscribeInteriorExpenses = (uid: string, onData: (r: InteriorExpenseRecord[]) => void, onError: (m: string) => void) =>
+  subscribeGeneric<InteriorExpenseRecord>('interior', uid, onData, onError);
+export const upsertInteriorExpense = (r: InteriorExpenseRecord) => upsertGeneric('interior', r);
+export const removeInteriorExpense = (id: string) => removeGeneric('interior', id);
 
 export const subscribeFuelMeal = (uid: string, onData: (r: FuelMealRecord[]) => void, onError: (m: string) => void) =>
   subscribeGeneric<FuelMealRecord>('fuelMeal', uid, onData, onError);

@@ -79,6 +79,14 @@ service cloud.firestore {
         if isAllowedUser() && request.resource.data.uid == request.auth.uid;
     }
 
+    // 인테리어 비용 — 낙찰이후 인테리어 탭 전용 (자금관리와 자리를 나눈다)
+    match /interiorExpenses/{id} {
+      allow read, update, delete:
+        if isAllowedUser() && resource.data.uid == request.auth.uid;
+      allow create:
+        if isAllowedUser() && request.resource.data.uid == request.auth.uid;
+    }
+
     // 공공데이터 조회 결과 모아 두기 — 지역·단지 단위라 모든 사용자가 같이 쓴다.
     // 개인 자료가 아니고, 누가 먼저 열든 같은 값이라 로그인한 사용자면 읽고 쓸 수 있다.
     match /cacheDongTrades/{id} {

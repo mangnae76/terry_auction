@@ -10,6 +10,8 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { groupRows, sectionView, type CheckGroup } from '../services/postWinChecklist';
 import { POST_WIN_EDITABLE, defaultGroups, newRowId, usePostWinBook, type BookKey } from '../services/postWinBook';
+import { useInteriorStore } from '../stores/interiorStore';
+import type { InteriorExpenseRecord } from '../types/finance';
 import { bidStageOf } from '../utils/stageLabel';
 import { courtInfoOf } from '../utils/auctionSummary';
 import type { AuctionDetail } from '../types/auction';
@@ -251,6 +253,75 @@ const toggleAll = () => {
   dayGroups.value.forEach((g) => { next[g.key] = fold; });
   collapsed.value = next;
 };
+// === 인테리어 비용 ===
+// 자금관리의 사업지출과 같은 꼴이되 자리는 따로다 — 여기 적은 것은 여기에만 남는다
+const interior = useInteriorStore();
+onMounted(() => interior.initialize());
+const interiorRows = computed(() => [...interior.rows]
+  .sort((a, b) => (b.date || '').localeCompare(a.date || '')));
+const interiorTotal = computed(() => interiorRows.value
+  .reduce((sum, r) => sum + (r.amountWithVat || 0), 0));
+const money = (n: number) => (n || 0).toLocaleString('ko-KR');
+const shortDate = (d: string) => (d && d.length >= 10 ? d.slice(2).replace(/-/g, '.') : (d || ''));
+
+type IntDraft = Partial<InteriorExpenseRecord> & { id?: string };
+const intOpen = ref(false);
+const intDraft = ref<IntDraft>({});
+const todayIso = () => new Date().toISOString().slice(0, 10);
+const openIntAdd = () => {
+  intDraft.value = {
+    date: todayIso(),
+    auctionId: picked.value?.id ?? '',
+    auctionLabel: picked.value ? (shortAddr(picked.value.address) || picked.value.caseNumber) : '',
+    category: '',
+    detail: '',
+    amountWithVat: 0,
+    vendor: '',
+    note: '',
+  };
+  intOpen.value = true;
+};
+const openIntEdit = (row: InteriorExpenseRecord) => {
+  intDraft.value = { ...row };
+  intOpen.value = true;
+};
+const saveInt = async () => {
+  const d = intDraft.value;
+  const target = ownedAuctions.value.find((a) => a.id === d.auctionId);
+  await interior.save({
+    ...d,
+    auctionLabel: target ? (shortAddr(target.address) || target.caseNumber) : (d.auctionLabel ?? ''),
+    amountWithVat: Number(d.amountWithVat ?? 0),
+  });
+  intOpen.value = false;
+  toast('저장했습니다.');
+};
+const removeInt = async () => {
+  const id = intDraft.value.id;
+  if (!id) { intOpen.value = false; return; }
+  await interior.remove(id);
+  intOpen.value = false;
+  toast('지웠습니다.');
+};
+/** 엑셀(csv)로 내려받기 — 자금관리와 같은 방식 */
+const exportInterior = () => {
+  const esc = (v: string | number) => {
+    const t = String(v ?? '');
+    return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  const rows: Array<Array<string | number>> = [
+    ['결제일', '물건', '공정', '명세', '업체', '비용(VAT포함)', '비고'],
+    ...interiorRows.value.map((r) => [r.date, r.auctionLabel, r.category, r.detail, r.vendor, r.amountWithVat, r.note]),
+  ];
+  const text = '\ufeff' + rows.map((r) => r.map(esc).join(',')).join('\n');
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '인테리어비용.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 /** 카드 접기 — 물건상세와 같이 제목줄을 누르면 접힌다 */
 const collapsed = ref<Record<string, boolean>>({});
 const isCollapsed = (key: string) => !!collapsed.value[key];
@@ -627,6 +698,44 @@ const toggleSection = (key: string) => {
        </div>
       </template>
 
+      <!-- 인테리어 비용 — 표·항목추가·엑셀저장 -->
+      <section v-else-if="activeTab === 'repair'" class="pw-card">
+        <header class="pw-card-head">
+          <h2>
+            <svg class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7l-1.5-1.5a3.5 3.5 0 0 0-5 5L3 15v6h6l4.5-4.5a3.5 3.5 0 0 0 5-5L17 10"/></svg>
+            인테리어 비용
+          </h2>
+          <em class="pw-count">{{ money(interiorTotal) }}원</em>
+        </header>
+        <div class="pw-card-body">
+          <div class="pw-int-tools">
+            <button type="button" class="pw-ebtn" @click="exportInterior">⬇ 엑셀저장</button>
+            <button type="button" class="pw-ebtn on" @click="openIntAdd">＋ 항목추가</button>
+          </div>
+          <table class="pw-int-tbl">
+            <colgroup>
+              <col style="width: 58px" /><col style="width: 76px" /><col style="width: 64px" />
+              <col /><col style="width: 74px" />
+            </colgroup>
+            <thead>
+              <tr><th>결제일</th><th>물건</th><th>공정</th><th>명세</th><th class="r">비용</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in interiorRows" :key="r.id" @click="openIntEdit(r)">
+                <td>{{ shortDate(r.date) }}</td>
+                <td>{{ r.auctionLabel || '-' }}</td>
+                <td>{{ r.category || '-' }}</td>
+                <td>{{ r.detail }}<small v-if="r.vendor"> · {{ r.vendor }}</small></td>
+                <td class="r">{{ money(r.amountWithVat) }}</td>
+              </tr>
+              <tr v-if="interiorRows.length === 0">
+                <td colspan="5" class="empty">적어 둔 비용이 없습니다. 위의 ＋ 항목추가를 누르세요.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section v-else class="pw-card">
         <header class="pw-card-head" @click="toggleSection(activeTab)">
           <h2>{{ current().label }}</h2>
@@ -638,6 +747,34 @@ const toggleSection = (key: string) => {
         </div>
       </section>
     </div>
+
+    <!-- 인테리어 비용 적기 -->
+    <template v-if="intOpen">
+      <div class="pw-modal-veil" @click="intOpen = false" />
+      <div class="pw-modal" @click.stop>
+        <header class="pw-modal-head">
+          <strong>인테리어 비용</strong>
+          <button type="button" class="pw-flow-close" aria-label="닫기" @click="intOpen = false">×</button>
+        </header>
+        <label class="pw-fld"><small>결제일</small><input v-model="intDraft.date" type="date" class="pw-einput" /></label>
+        <label class="pw-fld"><small>물건</small>
+          <select v-model="intDraft.auctionId" class="pw-einput">
+            <option value="">선택 안 함</option>
+            <option v-for="a in ownedAuctions" :key="a.id" :value="a.id">{{ shortAddr(a.address) || a.caseNumber }}</option>
+          </select>
+        </label>
+        <label class="pw-fld"><small>공정</small><input v-model="intDraft.category" class="pw-einput" placeholder="도배 · 바닥 · 싱크대 …" /></label>
+        <label class="pw-fld"><small>명세</small><input v-model="intDraft.detail" class="pw-einput" placeholder="무엇을 했는지" /></label>
+        <label class="pw-fld"><small>업체</small><input v-model="intDraft.vendor" class="pw-einput" placeholder="업체·연락처" /></label>
+        <label class="pw-fld"><small>비용 (VAT 포함)</small><input v-model.number="intDraft.amountWithVat" type="number" inputmode="numeric" class="pw-einput" /></label>
+        <label class="pw-fld"><small>비고</small><input v-model="intDraft.note" class="pw-einput" /></label>
+        <div class="pw-modal-foot">
+          <button v-if="intDraft.id" type="button" class="pw-ebtn del" @click="removeInt">지우기</button>
+          <button type="button" class="pw-ebtn" @click="intOpen = false">취소</button>
+          <button type="button" class="pw-ebtn on" @click="saveInt">저장</button>
+        </div>
+      </div>
+    </template>
 
     <AppMobileBottomNav active="post-win" />
     <AppToast :visible="!!toastText" :text="toastText" tone="success" />
@@ -1123,6 +1260,38 @@ const toggleSection = (key: string) => {
   white-space: nowrap; word-break: keep-all;
 }
 .pw-flow-list span { flex: 1 1 auto; min-width: 0; color: #374151; }
+
+/* 인테리어 비용 */
+.pw-int-tools { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 8px; }
+.pw-int-tbl { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed;
+  background: #fff; border: 1px solid #d0d5dd; border-radius: 8px; }
+.pw-int-tbl th, .pw-int-tbl td {
+  padding: 7px 6px; font-size: 11.5px; line-height: 1.35; color: #1f2937;
+  border-bottom: 1px solid #e5e7eb; text-align: left; word-break: keep-all;
+}
+.pw-int-tbl thead th { background: #f1f3f7; font-weight: 800; color: #374151; }
+.pw-int-tbl .r { text-align: right; }
+.pw-int-tbl tbody tr { cursor: pointer; }
+.pw-int-tbl tbody tr:hover { background: #f7f9fd; }
+.pw-int-tbl td small { color: #6b7280; }
+.pw-int-tbl .empty { text-align: center; color: #9ca3af; padding: 20px 6px; }
+.pw-int-tbl tbody tr:last-child td { border-bottom: none; }
+
+/* 적는 창 */
+.pw-modal-veil { position: fixed; inset: 0; z-index: 60; background: rgba(17, 24, 39, 0.35); }
+.pw-modal {
+  position: fixed; z-index: 61; left: 10px; right: 10px; top: 54px;
+  max-height: calc(100vh - 110px); overflow-y: auto;
+  background: #fff; border: 1px solid #dde3ee; border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.18); padding: 10px 12px 12px;
+}
+.pw-modal-head { display: flex; align-items: center; margin-bottom: 8px; }
+.pw-modal-head strong { font-size: 13.5px; font-weight: 800; color: #111827; }
+.pw-modal-head .pw-flow-close { margin-left: auto; }
+.pw-fld { display: block; margin-bottom: 7px; }
+.pw-fld small { display: block; font-size: 10.5px; font-weight: 700; color: #6b7280; margin-bottom: 2px; }
+.pw-modal-foot { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+.pw-ebtn.del { border-color: #f0d4d0; background: #fdecea; color: #e0574a; margin-right: auto; }
 
 /* 표 고치기 */
 /* ⓘ 는 제목에 바짝 붙이고, 나머지 단추는 오른쪽 끝에 */

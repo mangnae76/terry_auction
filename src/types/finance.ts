@@ -30,6 +30,19 @@ export interface BusinessExpenseRecord extends FinanceBase {
   note: string;            // 비고
 }
 
+// 2-1) 인테리어 비용 — interiorExpense
+// 꼴은 사업지출과 같되 자리를 따로 둔다 (자금관리와 섞이지 않는다)
+export interface InteriorExpenseRecord extends FinanceBase {
+  auctionId: string;       // 물건 ID — 빈 문자열 가능
+  auctionLabel: string;    // 물건명 (UI용 캐시)
+  category: string;        // 공정·사용구분 (예: 도배, 바닥)
+  detail: string;          // 명세
+  amountWithVat: number;   // 비용 (VAT 포함, 원)
+  vendor: string;          // 업체
+  date: string;            // YYYY-MM-DD
+  note: string;            // 비고
+}
+
 // 3) 유류비 & 식대지출 사용내역서 — fuelMeal
 export interface FuelMealRecord extends FinanceBase {
   region: string;          // 사용지역 (예: 인천서구)
