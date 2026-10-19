@@ -147,7 +147,6 @@ const router = createRouter({
       // 고객센터 — 도움말·이용안내·문의 창구
       path: '/support',
       name: 'support',
-      meta: { public: true },
       component: () => import('../pages/SupportPage.vue'),
     },
     {
