@@ -14,6 +14,9 @@ const authStore = useAuthStore();
 const router = useRouter();
 const menuOpen = ref(false);
 
+/** 머리글의 '결제하기' 글자 — 잠시 내려 둔다. 다시 보이려면 true 로 */
+const SHOW_PAY = false;
+
 /** 회원 등급·포인트 — 적립과 결제를 붙이기 전이라 첫 등급에서 시작한다 */
 const grade = POINT_GRADES[0];
 const myPoint = 0;
@@ -94,7 +97,7 @@ const onLogout = async () => {
     </div>
     <div class="amh-row amh-row-bottom">
       <span class="amh-greet">반가워요! <strong>{{ displayNickname }}</strong><span class="amh-greet-nim">님</span></span>
-      <button type="button" class="amh-pay" @click="router.push('/billing')">결제하기</button>
+      <button v-if="SHOW_PAY" type="button" class="amh-pay" @click="router.push('/billing')">결제하기</button>
       <button type="button" class="amh-gift" aria-label="이벤트" @click="router.push({ path: '/more', query: { sec: 'event' } })">
         <!-- 선물상자 — 이벤트 자리로 간다 -->
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
