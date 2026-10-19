@@ -3,6 +3,7 @@
 // 틀은 자금관리(.fin-shell)와 같은 짜임이다: 위는 붙박이(제목 + 탭 + 물건 카드),
 // 아래만 구른다. 카드는 물건상세의 권리분석과 같은 꼴 — 제목줄을 누르면 접힌다.
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
@@ -28,7 +29,19 @@ const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
   { key: 'repair', label: '인테리어', desc: '수리 범위와 비용, 업체 일정' },
   { key: 'sell', label: '매도·임대', desc: '내놓은 가격, 중개업소, 계약 일정' },
 ];
-const activeTab = ref<TabKey>('win');
+const route = useRoute();
+const router = useRouter();
+const TAB_KEYS: TabKey[] = ['win', 'biz', 'balance', 'evict', 'repair', 'sell'];
+/** 주소에 적힌 탭으로 연다 — '뒤로' 왔을 때 보던 자리를 지킨다 */
+const initialTab = (): TabKey => {
+  const wanted = String(route.query.tab ?? '');
+  return (TAB_KEYS as string[]).includes(wanted) ? (wanted as TabKey) : 'win';
+};
+const activeTab = ref<TabKey>(initialTab());
+watch(activeTab, (tab) => {
+  if (String(route.query.tab ?? '') === tab) return;
+  void router.replace({ query: { ...route.query, tab } });
+});
 const current = () => TABS.find((t) => t.key === activeTab.value) ?? TABS[0];
 /** 탭을 옮기면 고치던 것은 접어 둔다 — 다른 탭 글에 덮어쓰지 않게 */
 watch(activeTab, () => { editing.value = false; draft.value = []; });
@@ -59,7 +72,7 @@ const ownedAuctions = computed(() => store.auctions.filter((a) => {
   const stage = bidStageOf(a);
   return stage === '낙찰' || stage === '매도';
 }));
-const pickedId = ref('');
+const pickedId = ref(String(route.query.item ?? ''));
 /** 고른 물건이 사라지거나 아직 안 골랐으면 첫 물건을 든다 */
 watch(ownedAuctions, (list) => {
   if (!list.some((a) => a.id === pickedId.value)) pickedId.value = list[0]?.id ?? '';
@@ -73,6 +86,11 @@ const pickAuction = (id: string) => {
   pickedId.value = id;
   pickOpen.value = false;
 };
+/** 고른 물건도 주소에 적어 둔다 */
+watch(pickedId, (id) => {
+  if (String(route.query.item ?? '') === id) return;
+  void router.replace({ query: { ...route.query, item: id || undefined } });
+});
 
 /** 주소는 동부터 짧게 — 카드 한 줄에 들어가야 한다 */
 const shortAddr = (address?: string) => {

@@ -74,6 +74,11 @@ const initialTab = (): TabKey => {
   return (TAB_KEYS as string[]).includes(wanted) ? (wanted as TabKey) : 'basic';
 };
 const activeTab = ref<TabKey>(initialTab());
+// 보던 탭을 주소에 적어 둔다 — 다른 화면에 갔다 '뒤로' 와도 그 자리로 돌아온다
+watch(activeTab, (tab) => {
+  if (String(route.query.tab ?? '') === tab) return;
+  void router.replace({ query: { ...route.query, tab } });
+});
 // 입지정보 카드 — 전체 / 500m 이내
 const areaView = ref<'all' | 'near'>('all');
 const TABS: Array<{ key: TabKey; label: string }> = [
