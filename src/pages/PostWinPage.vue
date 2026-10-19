@@ -258,7 +258,7 @@ const toggleAll = () => {
 const interior = useInteriorStore();
 onMounted(() => interior.initialize());
 const interiorRows = computed(() => [...interior.rows]
-  .sort((a, b) => (b.date || '').localeCompare(a.date || '')));
+  .sort((a, b) => ((b.startDate || b.date || '')).localeCompare(a.startDate || a.date || '')));
 const interiorTotal = computed(() => interiorRows.value
   .reduce((sum, r) => sum + (r.amountWithVat || 0), 0));
 const money = (n: number) => (n || 0).toLocaleString('ko-KR');
@@ -268,13 +268,15 @@ type IntDraft = Partial<InteriorExpenseRecord> & { id?: string };
 const intOpen = ref(false);
 const intDraft = ref<IntDraft>({});
 const todayIso = () => new Date().toISOString().slice(0, 10);
+const INT_STATUS = ['예정', '진행', '완료'];
 const openIntAdd = () => {
   intDraft.value = {
-    date: todayIso(),
+    startDate: todayIso(),
+    endDate: '',
     auctionId: picked.value?.id ?? '',
     auctionLabel: picked.value ? (shortAddr(picked.value.address) || picked.value.caseNumber) : '',
-    category: '',
-    detail: '',
+    work: '',
+    status: '예정',
     amountWithVat: 0,
     vendor: '',
     note: '',
@@ -310,8 +312,11 @@ const exportInterior = () => {
     return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
   };
   const rows: Array<Array<string | number>> = [
-    ['결제일', '물건', '공정', '명세', '업체', '비용(VAT포함)', '비고'],
-    ...interiorRows.value.map((r) => [r.date, r.auctionLabel, r.category, r.detail, r.vendor, r.amountWithVat, r.note]),
+    ['예상시작', '예상완료', '작업내용', '현황', '업체', '비용(VAT포함)', '물건', '비고'],
+    ...interiorRows.value.map((r) => [
+      r.startDate || r.date || '', r.endDate, r.work, r.status, r.vendor,
+      r.amountWithVat, r.auctionLabel, r.note,
+    ]),
   ];
   const text = '\ufeff' + rows.map((r) => r.map(esc).join(',')).join('\n');
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
@@ -714,18 +719,18 @@ const toggleSection = (key: string) => {
           </div>
           <table class="pw-int-tbl">
             <colgroup>
-              <col style="width: 58px" /><col style="width: 76px" /><col style="width: 64px" />
-              <col /><col style="width: 74px" />
+              <col style="width: 58px" /><col style="width: 58px" /><col />
+              <col style="width: 48px" /><col style="width: 74px" />
             </colgroup>
             <thead>
-              <tr><th>결제일</th><th>물건</th><th>공정</th><th>명세</th><th class="r">비용</th></tr>
+              <tr><th>예상시작</th><th>예상완료</th><th>작업내용</th><th>현황</th><th class="r">비용</th></tr>
             </thead>
             <tbody>
               <tr v-for="r in interiorRows" :key="r.id" @click="openIntEdit(r)">
-                <td>{{ shortDate(r.date) }}</td>
-                <td>{{ r.auctionLabel || '-' }}</td>
-                <td>{{ r.category || '-' }}</td>
-                <td>{{ r.detail }}<small v-if="r.vendor"> · {{ r.vendor }}</small></td>
+                <td>{{ shortDate(r.startDate || r.date || '') }}</td>
+                <td>{{ shortDate(r.endDate) }}</td>
+                <td>{{ r.work }}<small v-if="r.vendor"> · {{ r.vendor }}</small></td>
+                <td>{{ r.status }}</td>
                 <td class="r">{{ money(r.amountWithVat) }}</td>
               </tr>
               <tr v-if="interiorRows.length === 0">
@@ -756,15 +761,20 @@ const toggleSection = (key: string) => {
           <strong>인테리어 비용</strong>
           <button type="button" class="pw-flow-close" aria-label="닫기" @click="intOpen = false">×</button>
         </header>
-        <label class="pw-fld"><small>결제일</small><input v-model="intDraft.date" type="date" class="pw-einput" /></label>
+        <label class="pw-fld"><small>예상시작</small><input v-model="intDraft.startDate" type="date" class="pw-einput" /></label>
+        <label class="pw-fld"><small>예상완료</small><input v-model="intDraft.endDate" type="date" class="pw-einput" /></label>
         <label class="pw-fld"><small>물건</small>
           <select v-model="intDraft.auctionId" class="pw-einput">
             <option value="">선택 안 함</option>
             <option v-for="a in ownedAuctions" :key="a.id" :value="a.id">{{ shortAddr(a.address) || a.caseNumber }}</option>
           </select>
         </label>
-        <label class="pw-fld"><small>공정</small><input v-model="intDraft.category" class="pw-einput" placeholder="도배 · 바닥 · 싱크대 …" /></label>
-        <label class="pw-fld"><small>명세</small><input v-model="intDraft.detail" class="pw-einput" placeholder="무엇을 했는지" /></label>
+        <label class="pw-fld"><small>작업내용</small><input v-model="intDraft.work" class="pw-einput" placeholder="도배 · 바닥 · 싱크대 …" /></label>
+        <label class="pw-fld"><small>현황</small>
+          <select v-model="intDraft.status" class="pw-einput">
+            <option v-for="st in INT_STATUS" :key="st" :value="st">{{ st }}</option>
+          </select>
+        </label>
         <label class="pw-fld"><small>업체</small><input v-model="intDraft.vendor" class="pw-einput" placeholder="업체·연락처" /></label>
         <label class="pw-fld"><small>비용 (VAT 포함)</small><input v-model.number="intDraft.amountWithVat" type="number" inputmode="numeric" class="pw-einput" /></label>
         <label class="pw-fld"><small>비고</small><input v-model="intDraft.note" class="pw-einput" /></label>

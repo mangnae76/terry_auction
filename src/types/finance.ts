@@ -35,12 +35,15 @@ export interface BusinessExpenseRecord extends FinanceBase {
 export interface InteriorExpenseRecord extends FinanceBase {
   auctionId: string;       // 물건 ID — 빈 문자열 가능
   auctionLabel: string;    // 물건명 (UI용 캐시)
-  category: string;        // 공정·사용구분 (예: 도배, 바닥)
-  detail: string;          // 명세
+  work: string;            // 작업내용 (예: 도배, 바닥)
+  status: string;          // 현황 (예정 · 진행 · 완료)
+  startDate: string;       // 예상시작 YYYY-MM-DD
+  endDate: string;         // 예상완료 YYYY-MM-DD
   amountWithVat: number;   // 비용 (VAT 포함, 원)
   vendor: string;          // 업체
-  date: string;            // YYYY-MM-DD
   note: string;            // 비고
+  /** 예전에 쓰던 결제일 — 새 자료는 startDate 를 쓴다 */
+  date?: string;
 }
 
 // 3) 유류비 & 식대지출 사용내역서 — fuelMeal
