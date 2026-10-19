@@ -37,10 +37,13 @@ const book = useAgencyBook();
 onMounted(() => { void book.load(auth.uid); });
 watch(() => auth.uid, (uid) => { void book.load(uid); });
 
+/** 중개업체 관리에 없어도 여기서는 늘 고를 수 있는 곳 — 직거래 자리 */
+const EXTRA_NAMES = ['피터팬'];
 /** 목록에 없는 이름이 이미 적혀 있으면 그것도 같이 보여 준다 —
  *  예전에 손으로 적어 둔 업체가 목록에서 사라지면 안 된다 */
 const nameOptions = (row: AgencyRow) => {
-  const names = book.names.value;
+  const names = [...book.names.value];
+  EXTRA_NAMES.forEach((n) => { if (!names.includes(n)) names.push(n); });
   const cur = (row.name ?? '').trim();
   return cur && !names.includes(cur) ? [...names, cur] : names;
 };
