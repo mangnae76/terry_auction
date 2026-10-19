@@ -22,7 +22,7 @@ const planOf = (months: number, off: number): Plan => ({
   price: Math.round((MONTH_PRICE * months * (100 - off)) / 100),
   base: off === 0,
 });
-const PLANS: Plan[] = [planOf(1, 0), planOf(3, 10), planOf(6, 15), planOf(12, 20)];
+const PLANS: Plan[] = [planOf(1, 0), planOf(3, 10), planOf(6, 20), planOf(12, 30)];
 const picked = ref<Plan>(PLANS[0]);
 
 /** 내 포인트 — 붙이기 전까지는 0 */
