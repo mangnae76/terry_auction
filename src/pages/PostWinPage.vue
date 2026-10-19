@@ -258,10 +258,15 @@ const toggleAll = () => {
 const interior = useInteriorStore();
 onMounted(() => interior.initialize());
 /** 인테리어 탭의 두 표 — 꼴은 같고 자리만 다르다 */
-const INT_CARDS: Array<{ kind: 'bid' | 'cost'; title: string; file: string }> = [
-  { kind: 'bid', title: '업체 비딩', file: '업체비딩.csv' },
-  { kind: 'cost', title: '인테리어 비용', file: '인테리어비용.csv' },
+const INT_CARDS: Array<{
+  kind: 'bid' | 'cost'; title: string; file: string;
+  /** 칸 이름 — 비딩은 견적·협의내용, 비용은 비용·현황 */
+  amount: string; status: string;
+}> = [
+  { kind: 'bid', title: '업체 비딩', file: '업체비딩.csv', amount: '견적', status: '협의내용' },
+  { kind: 'cost', title: '인테리어 비용', file: '인테리어비용.csv', amount: '비용', status: '현황' },
 ];
+const cardOf = (kind: 'bid' | 'cost') => INT_CARDS.find((c) => c.kind === kind) ?? INT_CARDS[1];
 /** 고른 물건의 것만 본다 — 물건은 위 카드에서 고르므로 적을 때 또 고르지 않는다 */
 const rowsOf = (kind: 'bid' | 'cost') => interior.rows
   .filter((r) => r.auctionId === (picked.value?.id ?? '') && (r.kind ?? 'cost') === kind)
@@ -279,10 +284,10 @@ const INT_STATUS = ['예정', '진행', '완료'];
 const openIntAdd = (kind: 'bid' | 'cost') => {
   intDraft.value = {
     kind,
+    status: kind === 'bid' ? '' : '예정',
     startDate: todayIso(),
     endDate: '',
     work: '',
-    status: '예정',
     amountWithVat: 0,
     vendor: '',
     phone: '',
@@ -321,7 +326,7 @@ const exportInterior = (kind: 'bid' | 'cost', file: string) => {
     return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
   };
   const rows: Array<Array<string | number>> = [
-    ['예상시작', '예상완료', '작업내용', '현황', '비용(VAT포함)', '업체명', '연락처', '비고'],
+    ['예상시작', '예상완료', '작업내용', cardOf(kind).status, `${cardOf(kind).amount}(VAT포함)`, '업체명', '연락처', '비고'],
     ...rowsOf(kind).map((r) => [
       r.startDate || r.date || '', r.endDate, r.work, r.status,
       r.amountWithVat, r.vendor, r.phone, r.note,
@@ -737,8 +742,8 @@ const toggleSection = (key: string) => {
               </colgroup>
               <thead>
                 <tr>
-                  <th>예상시작</th><th>예상완료</th><th>작업내용</th><th>현황</th>
-                  <th>비용{{ '\n' }}(VAT포함)</th><th>업체명</th><th>연락처</th>
+                  <th>예상시작</th><th>예상완료</th><th>작업내용</th><th>{{ card.status }}</th>
+                  <th>{{ card.amount }}{{ '\n' }}(VAT포함)</th><th>업체명</th><th>연락처</th>
                 </tr>
               </thead>
               <tbody>
@@ -787,12 +792,20 @@ const toggleSection = (key: string) => {
         <label class="pw-fld"><small>예상시작</small><input v-model="intDraft.startDate" type="date" class="pw-einput" /></label>
         <label class="pw-fld"><small>예상완료</small><input v-model="intDraft.endDate" type="date" class="pw-einput" /></label>
         <label class="pw-fld"><small>작업내용</small><input v-model="intDraft.work" class="pw-einput" placeholder="도배 · 바닥 · 싱크대 …" /></label>
-        <label class="pw-fld"><small>현황</small>
+        <!-- 비딩에서는 협의한 말을 그대로 적고, 비용에서는 현황을 고른다 -->
+        <label v-if="intDraft.kind === 'bid'" class="pw-fld">
+          <small>협의내용</small>
+          <input v-model="intDraft.status" class="pw-einput" placeholder="협의한 내용" />
+        </label>
+        <label v-else class="pw-fld"><small>현황</small>
           <select v-model="intDraft.status" class="pw-einput">
             <option v-for="st in INT_STATUS" :key="st" :value="st">{{ st }}</option>
           </select>
         </label>
-        <label class="pw-fld"><small>비용 (VAT 포함)</small><input v-model.number="intDraft.amountWithVat" type="number" inputmode="numeric" class="pw-einput" /></label>
+        <label class="pw-fld">
+          <small>{{ intDraft.kind === 'bid' ? '견적' : '비용' }} (VAT 포함)</small>
+          <input v-model.number="intDraft.amountWithVat" type="number" inputmode="numeric" class="pw-einput" />
+        </label>
         <label class="pw-fld"><small>업체명</small><input v-model="intDraft.vendor" class="pw-einput" placeholder="업체 이름" /></label>
         <label class="pw-fld"><small>연락처</small><input v-model="intDraft.phone" class="pw-einput" inputmode="tel" placeholder="010-0000-0000" /></label>
         <label class="pw-fld"><small>비고</small><input v-model="intDraft.note" class="pw-einput" /></label>
