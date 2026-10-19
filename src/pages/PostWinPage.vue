@@ -6,7 +6,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
-import AgencyTable from '../components/AgencyTable.vue';
+import SellStatusTable from '../components/SellStatusTable.vue';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
@@ -830,7 +830,7 @@ const toggleSection = (key: string) => {
         <header class="pw-card-head">
           <h2>
             <svg class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>
-            부동산 상담
+            부동산 물건 현황
           </h2>
           <span class="pw-rowstep">
             <span class="lab">행</span>
@@ -840,7 +840,7 @@ const toggleSection = (key: string) => {
         </header>
         <div class="pw-card-body">
           <p v-if="!picked" class="pw-empty">먼저 위에서 물건을 고르세요.</p>
-          <AgencyTable
+          <SellStatusTable
             v-else
             :rows="sellRows"
             :min-rows="SELL_ROW_MIN"

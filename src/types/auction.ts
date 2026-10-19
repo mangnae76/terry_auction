@@ -554,8 +554,12 @@ export interface AgencyRow {
   info: string;
   /** 보증금/월세 */
   monthly: string;
-  /** @deprecated 전세가 — 상담표에서 뺐다. 예전 자료만 남아 있다 */
+  /** 전세가 — 매도·임대의 물건 현황에서 쓴다 (아래쪽 값) */
   jeonse: string;
+  /** 전세가 위쪽 값 */
+  jeonseTo?: string;
+  /** 월세 위쪽 값 (monthly 가 아래쪽) */
+  monthlyTo?: string;
   /** 매매가 — 범위의 아래쪽 (억) */
   real: string;
   /** 매매가 — 범위의 위쪽 (억) */
