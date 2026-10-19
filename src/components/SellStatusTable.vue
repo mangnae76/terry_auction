@@ -249,7 +249,8 @@ const rangeText = (row: AgencyRow, g: MoneyGroup) => {
           <span v-else :class="['note-txt', { filled: !!row.opinion }]">{{ row.opinion || '-' }}</span>
         </label>
       </div>
-      <div class="adp-agency-line">
+      <!-- 협의 칸은 중개 쪽에서만 쓴다 — 직거래에는 둘 일이 없다 -->
+      <div v-if="props.mode !== 'direct'" class="adp-agency-line">
         <label class="adp-agency-fld note-fld wide">
           <em class="lab">협의</em>
           <input
