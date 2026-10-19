@@ -8,7 +8,6 @@ import BrandLogo from '../components/BrandLogo.vue';
 import { TRIAL_PRIVACY_INTRO, TRIAL_PRIVACY_ROWS } from '../services/legalTerms';
 import { TRIAL_NOTE, TRIAL_STEPS } from '../services/trialInfo';
 import {
-  MONTH_PRICE,
   PLANS,
   TRIAL_DAYS,
   WELCOME_POINT,
@@ -34,6 +33,8 @@ const trialDetail = ref(false);
 /** 가입 전 안내 창 — '' 이면 닫힘 */
 const info = ref<'' | 'pay' | 'trial'>('');
 const won = (n: number) => n.toLocaleString('ko-KR');
+/** 할인이 붙는 기간 — 안내 글이 요금표를 따라간다 */
+const offListText = PLANS.filter((p) => !p.base).map((p) => p.label).join(', ');
 
 const email = ref('');
 const password = ref('');
@@ -169,7 +170,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
 
         <div class="lp-modal-body">
           <template v-if="info === 'pay'">
-            <p class="lp-m-lead">1개월 기준가 {{ won(MONTH_PRICE) }}원 — 길게 고를수록 깎입니다.</p>
+            <p class="lp-m-lead">표에 표시된 {{ offListText }} 금액은 할인 적용 금액입니다.</p>
             <table class="lp-m-table">
               <thead>
                 <tr><th>기간</th><th>할인</th><th class="num">결제금액</th><th class="num">월 환산</th></tr>
