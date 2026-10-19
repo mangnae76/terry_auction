@@ -17,5 +17,6 @@ export const MY_PAGE_ITEMS: MyPageItem[] = [
   { name: '3일 무료체험', desc: '무료로 먼저 써 보기 — 가입 즉시 지급', path: '/trial' },
   { name: '결제하기', desc: '이용 기간 고르고 결제 진행', path: '/billing' },
   { name: '결제관리', desc: '결제 내역·영수증 보기', path: '/payments' },
+  { name: '포인트내역', desc: '등급·가진 포인트와 적립/사용 내역', path: '/point-history' },
   { name: '회원탈퇴', desc: '계정과 저장된 자료 삭제', path: '' },
 ];

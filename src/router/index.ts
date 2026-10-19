@@ -132,6 +132,12 @@ const router = createRouter({
       component: () => import('../pages/TermsPage.vue'),
     },
     {
+      // 포인트내역 — 등급·가진 포인트와 적립/사용 내역
+      path: '/point-history',
+      name: 'point-history',
+      component: () => import('../pages/PointHistoryPage.vue'),
+    },
+    {
       // 결제관리 — 결제 내역·영수증
       path: '/payments',
       name: 'payments',
