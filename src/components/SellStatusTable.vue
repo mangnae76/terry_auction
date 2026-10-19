@@ -24,7 +24,7 @@ const emit = defineEmits<{
   (e: 'remove', index: number): void;
 }>();
 
-const DEAL_OPTIONS = ['매도', '임대', '월세', '전세'];
+const DEAL_OPTIONS = ['매도', '임대'];
 /** 임대 쪽이면 전세·월세 칸을 보여 준다 */
 const isRent = (row: AgencyRow) => ['임대', '월세', '전세'].includes((row.info ?? '').trim());
 /** 열려 있는 드롭다운 — 표마다 따로 센다 */
