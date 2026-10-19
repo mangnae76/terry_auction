@@ -23,7 +23,6 @@ const authStore = useAuthStore();
 const PERKS = [
   { no: '01', big: '3일', small: '무료이용' },
   { no: '02', big: '1,000p', small: '축하포인트' },
-  { no: '03', big: '무료', small: '경매교육\n동영상 강의' },
 ];
 
 const SIDO = [
@@ -146,7 +145,7 @@ const onSubmit = async () => {
         본사를 사칭한 전화를 받으시면 고객센터로 알려 주세요.
       </p>
 
-      <p class="su-perk-line">가입 즉시 <b>3일 무료이용권</b> + <b>무료 교육영상</b> + <b>1,000P</b> 지급</p>
+      <p class="su-perk-line">가입 즉시 <b>3일 무료이용권</b> + <b>1,000P</b> 지급</p>
       <div class="su-perks">
         <div v-for="(p, i) in PERKS" :key="p.no" :class="['su-perk', { on: i === 1 }]">
           <span class="no">{{ p.no }}</span>
