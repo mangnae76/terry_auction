@@ -274,7 +274,8 @@ const rowsOf = (kind: 'bid' | 'cost') => interior.rows
 const totalOf = (kind: 'bid' | 'cost') => rowsOf(kind)
   .reduce((sum, r) => sum + (r.amountWithVat || 0), 0);
 const money = (n: number) => (n || 0).toLocaleString('ko-KR');
-const shortDate = (d: string) => (d && d.length >= 10 ? d.slice(2).replace(/-/g, '.') : (d || ''));
+/** 표 안의 날짜는 '월.일'만 — 칸을 좁게 쓰려고 해는 뺀다 (엑셀에는 전부 적는다) */
+const shortDate = (d: string) => (d && d.length >= 10 ? d.slice(5).replace(/-/g, '.') : (d || ''));
 
 type IntDraft = Partial<InteriorExpenseRecord> & { id?: string };
 const intOpen = ref(false);
@@ -736,9 +737,9 @@ const toggleSection = (key: string) => {
             <table class="pw-int-tbl">
               <!-- 작업내용 칸을 넓게, 나머지는 조금씩 좁게 -->
               <colgroup>
-                <col style="width: 12%" /><col style="width: 12%" /><col style="width: 24%" />
-                <col style="width: 9%" /><col style="width: 16%" /><col style="width: 13%" />
-                <col style="width: 14%" />
+                <col style="width: 9%" /><col style="width: 9%" /><col style="width: 21%" />
+                <col style="width: 10%" /><col style="width: 16%" /><col style="width: 13%" />
+                <col style="width: 22%" />
               </colgroup>
               <thead>
                 <tr>
@@ -1311,6 +1312,13 @@ const toggleSection = (key: string) => {
 .pw-int-tbl th, .pw-int-tbl td {
   padding: 6px 3px; font-size: 10.5px; line-height: 1.35; color: #1f2937;
   border-bottom: 1px solid #e5e7eb; text-align: center; word-break: keep-all;
+}
+/* 날짜·금액·연락처는 줄을 바꾸지 않는다 — 잘리거나 내려가던 자리다 */
+.pw-int-tbl tbody td:nth-child(1),
+.pw-int-tbl tbody td:nth-child(2),
+.pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; }
+.pw-int-tbl tbody td:nth-child(7) {
+  white-space: nowrap; font-size: 9.5px; letter-spacing: -0.2px;
 }
 /* 머리줄은 다른 표와 같은 짙은 남색에 흰 글씨 — 위 두 모서리는 둥글게 */
 .pw-int-tbl thead th {
