@@ -40,7 +40,8 @@ export interface InteriorExpenseRecord extends FinanceBase {
   startDate: string;       // 예상시작 YYYY-MM-DD
   endDate: string;         // 예상완료 YYYY-MM-DD
   amountWithVat: number;   // 비용 (VAT 포함, 원)
-  vendor: string;          // 업체
+  vendor: string;          // 업체명
+  phone: string;           // 연락처
   note: string;            // 비고
   /** 예전에 쓰던 결제일 — 새 자료는 startDate 를 쓴다 */
   date?: string;

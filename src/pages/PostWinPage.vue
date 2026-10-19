@@ -279,6 +279,7 @@ const openIntAdd = () => {
     status: '예정',
     amountWithVat: 0,
     vendor: '',
+    phone: '',
     note: '',
   };
   intOpen.value = true;
@@ -312,10 +313,10 @@ const exportInterior = () => {
     return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
   };
   const rows: Array<Array<string | number>> = [
-    ['예상시작', '예상완료', '작업내용', '현황', '업체', '비용(VAT포함)', '물건', '비고'],
+    ['예상시작', '예상완료', '작업내용', '현황', '비용(VAT포함)', '업체명', '연락처', '물건', '비고'],
     ...interiorRows.value.map((r) => [
-      r.startDate || r.date || '', r.endDate, r.work, r.status, r.vendor,
-      r.amountWithVat, r.auctionLabel, r.note,
+      r.startDate || r.date || '', r.endDate, r.work, r.status,
+      r.amountWithVat, r.vendor, r.phone, r.auctionLabel, r.note,
     ]),
   ];
   const text = '\ufeff' + rows.map((r) => r.map(esc).join(',')).join('\n');
@@ -718,23 +719,25 @@ const toggleSection = (key: string) => {
             <button type="button" class="pw-ebtn on" @click="openIntAdd">＋ 항목추가</button>
           </div>
           <table class="pw-int-tbl">
-            <colgroup>
-              <col style="width: 58px" /><col style="width: 58px" /><col />
-              <col style="width: 48px" /><col style="width: 74px" />
-            </colgroup>
+            <!-- 칸은 고르게 나눈다 (table-layout: fixed) -->
             <thead>
-              <tr><th>예상시작</th><th>예상완료</th><th>작업내용</th><th>현황</th><th class="r">비용</th></tr>
+              <tr>
+                <th>예상시작</th><th>예상완료</th><th>작업내용</th><th>현황</th>
+                <th>비용</th><th>업체명</th><th>연락처</th>
+              </tr>
             </thead>
             <tbody>
               <tr v-for="r in interiorRows" :key="r.id" @click="openIntEdit(r)">
                 <td>{{ shortDate(r.startDate || r.date || '') }}</td>
                 <td>{{ shortDate(r.endDate) }}</td>
-                <td>{{ r.work }}<small v-if="r.vendor"> · {{ r.vendor }}</small></td>
+                <td>{{ r.work }}</td>
                 <td>{{ r.status }}</td>
-                <td class="r">{{ money(r.amountWithVat) }}</td>
+                <td>{{ money(r.amountWithVat) }}</td>
+                <td>{{ r.vendor }}</td>
+                <td>{{ r.phone }}</td>
               </tr>
               <tr v-if="interiorRows.length === 0">
-                <td colspan="5" class="empty">적어 둔 비용이 없습니다. 위의 ＋ 항목추가를 누르세요.</td>
+                <td colspan="7" class="empty">적어 둔 비용이 없습니다. 위의 ＋ 항목추가를 누르세요.</td>
               </tr>
             </tbody>
           </table>
@@ -775,7 +778,8 @@ const toggleSection = (key: string) => {
             <option v-for="st in INT_STATUS" :key="st" :value="st">{{ st }}</option>
           </select>
         </label>
-        <label class="pw-fld"><small>업체</small><input v-model="intDraft.vendor" class="pw-einput" placeholder="업체·연락처" /></label>
+        <label class="pw-fld"><small>업체명</small><input v-model="intDraft.vendor" class="pw-einput" placeholder="업체 이름" /></label>
+        <label class="pw-fld"><small>연락처</small><input v-model="intDraft.phone" class="pw-einput" inputmode="tel" placeholder="010-0000-0000" /></label>
         <label class="pw-fld"><small>비용 (VAT 포함)</small><input v-model.number="intDraft.amountWithVat" type="number" inputmode="numeric" class="pw-einput" /></label>
         <label class="pw-fld"><small>비고</small><input v-model="intDraft.note" class="pw-einput" /></label>
         <div class="pw-modal-foot">
@@ -1276,8 +1280,8 @@ const toggleSection = (key: string) => {
 .pw-int-tbl { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed;
   background: #fff; border: 1px solid #d0d5dd; border-radius: 8px; }
 .pw-int-tbl th, .pw-int-tbl td {
-  padding: 7px 6px; font-size: 11.5px; line-height: 1.35; color: #1f2937;
-  border-bottom: 1px solid #e5e7eb; text-align: left; word-break: keep-all;
+  padding: 6px 3px; font-size: 10.5px; line-height: 1.35; color: #1f2937;
+  border-bottom: 1px solid #e5e7eb; text-align: center; word-break: keep-all;
 }
 .pw-int-tbl thead th { background: #f1f3f7; font-weight: 800; color: #374151; }
 .pw-int-tbl .r { text-align: right; }

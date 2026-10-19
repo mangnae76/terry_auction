@@ -65,6 +65,7 @@ export const useInteriorStore = defineStore('interior', () => {
       endDate: partial.endDate ?? existing?.endDate ?? '',
       amountWithVat: Number(partial.amountWithVat ?? existing?.amountWithVat ?? 0),
       vendor: partial.vendor ?? existing?.vendor ?? '',
+      phone: partial.phone ?? existing?.phone ?? '',
       note: partial.note ?? existing?.note ?? '',
       createdAt: existing?.createdAt ?? nowIso(),
       updatedAt: nowIso(),
