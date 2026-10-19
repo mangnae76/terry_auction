@@ -57,7 +57,7 @@ const onLogout = async () => {
   <header class="amh">
     <div class="amh-row amh-row-top">
       <div class="amh-brand">
-        <BrandLogo :size="36" tone="white" />
+        <BrandLogo :size="40" tone="white" />
       </div>
       <div class="amh-info">
         <button type="button" class="amh-info-cell amh-cal-btn" aria-label="입찰 캘린더 열기" @click="router.push('/bid-calendar')">
