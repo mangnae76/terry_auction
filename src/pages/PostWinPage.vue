@@ -5,6 +5,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
+import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
@@ -814,7 +815,14 @@ const toggleSection = (key: string) => {
         </label>
         <label class="pw-fld">
           <small>{{ intDraft.kind === 'bid' ? '견적' : '비용' }} (VAT 포함)</small>
-          <input v-model.number="intDraft.amountWithVat" type="number" inputmode="numeric" class="pw-einput" />
+          <!-- 적는 동안에도 천 단위 쉼표가 보인다 -->
+          <FormattedNumberInput
+            v-model="intDraft.amountWithVat"
+            live-group
+            align="left"
+            placeholder="0"
+            class="pw-einput"
+          />
         </label>
         <label class="pw-fld"><small>업체명</small><input v-model="intDraft.vendor" class="pw-einput" placeholder="업체 이름" /></label>
         <label class="pw-fld"><small>연락처</small><input v-model="intDraft.phone" class="pw-einput" inputmode="tel" placeholder="010-0000-0000" /></label>
@@ -1396,7 +1404,8 @@ const toggleSection = (key: string) => {
   font-family: inherit; font-size: 11.5px; font-weight: 700; color: #2b6df3; cursor: pointer;
 }
 .pw-ebtn.on { background: #2b6df3; border-color: #2b6df3; color: #fff; }
-.pw-einput {
+.pw-einput,
+.pw-einput :deep(input) {
   width: 100%; box-sizing: border-box; height: 28px;
   border: 1px solid #dde3ee; border-radius: 6px; background: #fff;
   padding: 2px 7px; font-family: inherit; font-size: 12px; color: #111827;
