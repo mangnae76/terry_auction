@@ -125,6 +125,7 @@ watch(() => auth.uid, (uid) => {
             </span>
             <span class="alr-txt">
               <strong>{{ it.title }}</strong>
+              <i v-if="it.where" class="alr-where">{{ it.where }}</i>
               <small>{{ it.body }}</small>
             </span>
             <span v-if="it.to" class="alr-arr">›</span>
@@ -212,6 +213,7 @@ watch(() => auth.uid, (uid) => {
 .alr-dday small { margin-top: 2px; font-size: 10px; color: #9ca3af; }
 .alr-txt { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .alr-txt strong { font-size: 12.5px; font-weight: 800; color: #111827; word-break: keep-all; }
+.alr-where { font-style: normal; font-size: 11.5px; font-weight: 700; color: #2a3f8f; word-break: keep-all; }
 .alr-txt small { font-size: 11.5px; line-height: 1.6; color: #4b5563; word-break: keep-all; }
 .alr-arr { align-self: center; font-size: 18px; color: #c3cbdd; }
 .alr-empty { margin: 10px 0 0; font-size: 12px; color: #6b7280; }

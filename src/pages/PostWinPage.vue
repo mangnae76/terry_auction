@@ -4,6 +4,7 @@
 // 아래만 구른다. 카드는 물건상세의 권리분석과 같은 꼴 — 제목줄을 누르면 접힌다.
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { shortAddr } from '../utils/address';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
@@ -93,12 +94,6 @@ watch(pickedId, (id) => {
   void router.replace({ query: { ...route.query, item: id || undefined } });
 });
 
-/** 주소는 동부터 짧게 — 카드 한 줄에 들어가야 한다 */
-const shortAddr = (address?: string) => {
-  const parts = String(address ?? '').trim().split(/\s+/).filter(Boolean);
-  const dong = parts.findIndex((v) => /[동읍면리]\d*$/.test(v) && !/^\d/.test(v));
-  return (dong >= 0 ? parts.slice(dong) : parts.slice(-2)).join(' ');
-};
 /** 전화 걸기 — 숫자만 남긴다 */
 const telHref = (phone: string) => {
   const d = String(phone ?? '').replace(/[^0-9+]/g, '');

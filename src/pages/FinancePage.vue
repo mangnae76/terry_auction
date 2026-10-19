@@ -4,6 +4,7 @@
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { shortAddr } from '../utils/address';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import TaxPage from './TaxPage.vue';
@@ -106,12 +107,6 @@ const stageListRows = computed(() => (stageListOpen.value ? stageRows(stageListO
 /** 주소는 동(洞)부터 — 시·도와 시군구는 뗀다.
  *  '동 + 지번 + 건물명 + 동호수'면 어느 집인지 알아보는 데 넉넉하다.
  *  (낙찰·매도 카드에서만 이렇게 줄인다) */
-const shortAddr = (address?: string) => {
-  const parts = String(address ?? '').trim().split(/\s+/).filter(Boolean);
-  const dong = parts.findIndex((v) => /[동읍면리]\d*$/.test(v) && !/^\d/.test(v));
-  if (dong >= 0) return parts.slice(dong).join(' ');
-  return parts.length > 2 ? parts.slice(-2).join(' ') : parts.join(' ');
-};
 /** 날짜 — 앞의 '20'을 뗀다 ('26. 10. 10'). 비어 있으면 빈 칸 */
 const shortYmd = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2).replace(/-/g, '. ') : '');
 /** 카드 안의 돈 — 칸이 좁아 억·만으로 줄여 쓴다 */

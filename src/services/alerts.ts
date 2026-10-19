@@ -8,6 +8,7 @@
 // 푸시를 붙일 때도 보낼 내용은 여기서 그대로 가져다 쓰면 된다.
 import type { AuctionDetail } from '../types/auction';
 import type { InteriorExpenseRecord } from '../types/finance';
+import { shortAddr } from '../utils/address';
 import { shortCase } from '../utils/auctionSummary';
 import { bidStageOf, hasBidResult } from '../utils/stageLabel';
 
@@ -36,6 +37,8 @@ export interface AlertItem {
   dday: number | null;
   /** 날짜 칸에 적을 글 */
   when: string;
+  /** 어느 집 이야기인지 — 사건번호만으로는 알아보기 어렵다 */
+  where?: string;
   tone: AlertTone;
   /** 눌렀을 때 갈 곳 */
   to?: { path: string; query?: Record<string, string> };
@@ -153,7 +156,12 @@ const BALANCE_DUE_DAYS = 45;
 /** 취득일(잔금 납부일)부터 취득세 신고기한까지 */
 const ACQ_TAX_DAYS = 60;
 
-const label = (a: AuctionDetail) => shortCase(a) || a.address || '물건';
+const label = (a: AuctionDetail) => shortCase(a) || shortAddr(a.address) || '물건';
+/** 제목 아래에 붙일 주소 — 제목이 이미 주소면 겹쳐 적지 않는다 */
+const where = (a: AuctionDetail) => {
+  const addr = shortAddr(a.address);
+  return addr && addr !== label(a) ? addr : '';
+};
 
 /* ───────── 알림 만들기 ───────── */
 
@@ -200,6 +208,7 @@ export const buildAlerts = (input: AlertInput): AlertItem[] => {
               : `낙찰일로부터 ${BALANCE_DUE_DAYS}일로 어림한 날짜다. 물건상세에 통지서의 기한을 적어 두면 그 날짜로 센다.`,
           dday: d,
           when: fmt(due),
+          where: where(a),
           tone: d <= 3 ? 'red' : 'orange',
           to: { path: '/post-win', query: { item: a.id, tab: 'balance' } },
         });
@@ -217,6 +226,7 @@ export const buildAlerts = (input: AlertInput): AlertItem[] => {
           body: d === 0 ? '오늘이 입찰일이다. 보증금과 신분증·도장을 챙기자.' : '입찰가 산정과 보증금을 미리 맞춰 두자.',
           dday: d,
           when: fmt(event),
+          where: where(a),
           tone: d <= 1 ? 'red' : 'blue',
           to: { path: `/auctions/${a.id}` },
         });
@@ -236,6 +246,7 @@ export const buildAlerts = (input: AlertInput): AlertItem[] => {
             : '소유권 이전 등기 전에 신고·납부해야 한다.',
           dday: d,
           when: fmt(limit),
+          where: where(a),
           tone: d <= 7 ? 'red' : 'orange',
           to: { path: '/tax' },
         });
@@ -252,6 +263,7 @@ export const buildAlerts = (input: AlertInput): AlertItem[] => {
           body: '매각기일이 다가오는데 임장 경로에 담기지 않았다.',
           dday: d,
           when: fmt(event),
+          where: where(a),
           tone: 'blue',
           to: { path: '/field-trip' },
         });
@@ -269,6 +281,7 @@ export const buildAlerts = (input: AlertInput): AlertItem[] => {
           body: '낙찰한 지 며칠 지났는데 당일 할 일을 하나도 체크하지 않았다.',
           dday: null,
           when: `낙찰 ${since}일째`,
+          where: where(a),
           tone: 'gray',
           to: { path: '/post-win', query: { item: a.id, tab: 'win' } },
         });
