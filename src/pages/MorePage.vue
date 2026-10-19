@@ -32,7 +32,9 @@ const notReady = (what: string) => {
   setTimeout(() => { toast.value = ''; }, 1600);
 };
 
-const onLogout = async () => {
+// 들어와 있으면 나가고, 나가 있으면 들어가는 자리 — 알약 하나로 둘 다 받는다
+const onAuthPill = async () => {
+  if (!authStore.isLoggedIn) { router.push('/login'); return; }
   await authStore.logout();
   router.push('/login');
 };
@@ -142,11 +144,10 @@ const openPolicy = (p: { name: string; path: string }) => {
           <button type="button" class="pname" @click="goMyPage">
             {{ displayName }}<span class="arr">›</span>
           </button>
-          <div class="pills">
-            <button type="button" class="pill" @click="onLogout">로그아웃</button>
-            <button type="button" class="pill" @click="goMyPage">마이페이지</button>
-            <button type="button" class="pill" @click="notReady('고객센터')">고객센터</button>
-          </div>
+          <button type="button" class="pill" @click="onAuthPill">{{ authStore.isLoggedIn ? '로그아웃' : '로그인' }}</button>
+          <button type="button" class="pill" @click="goMyPage">마이페이지</button>
+          <button type="button" class="pill" @click="notReady('고객센터')">고객센터</button>
+          <button type="button" class="pill" @click="router.push('/profile')">내 정보 수정</button>
         </div>
       </div>
 
@@ -264,17 +265,20 @@ const openPolicy = (p: { name: string; path: string }) => {
   flex: 0 0 auto; width: 48px; height: 48px; border-radius: 50%;
   background: #eef1f8; display: inline-flex; align-items: center; justify-content: center;
 }
-.profile-main { flex: 1 1 auto; min-width: 0; }
+.profile-main {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
+}
 .pname {
   border: none; background: transparent; padding: 0; cursor: pointer;
   font-size: 16px; font-weight: 800; color: #111827;
   display: inline-flex; align-items: center; gap: 2px;
 }
 /* 네 개를 똑같은 폭으로 — 오른쪽 끝이 아래 '인증/보안' 박스와 맞는다 */
-.pills { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 8px; }
+
 .pill {
   border: 1px solid #e3e7ef; background: #f7f8fb; border-radius: 999px;
-  padding: 5px 2px; font-size: 10px; font-weight: 700; color: #4b5563; cursor: pointer;
+  padding: 5px 9px; font-size: 10px; font-weight: 700; color: #4b5563; cursor: pointer;
   text-align: center; white-space: nowrap; letter-spacing: -0.3px;
 }
 .quick {
@@ -303,6 +307,7 @@ const openPolicy = (p: { name: string; path: string }) => {
 .sec-head.plain { color: #111827; font-weight: 800; }
 .sec-head .dot { width: 5px; height: 5px; border-radius: 50%; background: #ef4444; }
 .arr { margin-left: auto; color: #c4cad6; font-size: 16px; line-height: 1; }
+.pname { margin-right: 3px; }
 .pname .arr { margin-left: 2px; font-size: 15px; }
 
 /* ===== 이벤트 배너 ===== */
