@@ -1299,8 +1299,9 @@ const toggleSection = (key: string) => {
   padding: 6px 3px; font-size: 10.5px; line-height: 1.35; color: #1f2937;
   border-bottom: 1px solid #e5e7eb; text-align: center; word-break: keep-all;
 }
+/* 머리줄은 다른 표와 같은 짙은 남색에 흰 글씨 */
 .pw-int-tbl thead th {
-  background: #f1f3f7; font-weight: 800; color: #374151;
+  background: #1f3a72; font-weight: 700; color: #fff; border-bottom: none;
   white-space: pre-line; line-height: 1.25;
 }
 .pw-int-tbl .r { text-align: right; }
