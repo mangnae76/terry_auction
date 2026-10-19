@@ -5,7 +5,6 @@ import BrandLogo from './BrandLogo.vue';
 import calendarIcon from '../assets/icones/calendar-days.png';
 import sunIcon from '../assets/icones/sun.png';
 import dollarIcon from '../assets/icones/circle-dollar-sign.png';
-import refreshIcon from '../assets/icones/refresh-cw.png';
 import { useAuthStore } from '../stores/authStore';
 import { MY_PAGE_ITEMS, type MyPageItem } from '../services/myPageMenu';
 import { useAlertBadge } from '../services/alertBadge';
@@ -26,10 +25,6 @@ const formattedDate = computed(() => {
   const dd = String(d.getDate()).padStart(2, '0');
   return `${String(d.getFullYear()).slice(-2)}년 ${parseInt(mm, 10)}월 ${parseInt(dd, 10)}일 (${yoil})`;
 });
-
-const onRefresh = () => {
-  if (typeof window !== 'undefined') window.location.reload();
-};
 
 const toggleMenu = () => { menuOpen.value = !menuOpen.value; };
 /** 마이페이지 항목 — 더보기까지 가지 않고 여기서 바로 연다.
@@ -76,9 +71,6 @@ const onLogout = async () => {
           <img :src="dollarIcon" alt="" class="amh-icon" />
           <span>USD 1,385 <em>+3.2</em></span>
         </span>
-        <button type="button" class="amh-refresh" aria-label="새로고침" @click="onRefresh">
-          <img :src="refreshIcon" alt="" class="amh-icon" />
-        </button>
       </div>
     </div>
     <div class="amh-row amh-row-bottom">
@@ -140,7 +132,7 @@ const onLogout = async () => {
    로고가 줄보다 크면 위아래로 조금 넘치되, 아래 마진 셈으로 띠 한가운데에 선다 */
 .amh-row-top { justify-content: space-between; height: 36px; }
 /* 인사말 줄을 3px 내린다 — 띠 아래 여백에서 그만큼 가져와 띠 높이는 52px 그대로다 */
-.amh-row-bottom { justify-content: flex-end; gap: 6px; padding-right: 4px; margin-top: -11px; margin-right: -5px; }
+.amh-row-bottom { justify-content: flex-end; gap: 6px; padding-right: 4px; margin-top: -11px; margin-right: -7px; }
 
 /* 로고는 띠 한가운데에 선다. 아래 인사줄이 16px 끌어올려져 있어
    윗줄만 보면 로고가 위로 치우친다 — 아래위 마진을 같은 값으로 주고 받아
@@ -173,10 +165,6 @@ const onLogout = async () => {
   filter: brightness(0) invert(1);
 }
 
-.amh-refresh {
-  border: none; background: transparent; padding: 2px;
-  cursor: pointer; display: inline-flex; align-items: center;
-}
 
 /* 인사말과 종 사이도 종·사람 사이와 같은 만큼 띄운다 */
 .amh-greet { font-size: 11px; color: #ffb38a; font-weight: 400; white-space: nowrap; flex-shrink: 0; margin-right: 9px; }
