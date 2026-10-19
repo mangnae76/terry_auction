@@ -6,7 +6,6 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useInteriorStore } from '../stores/interiorStore';
-import { MY_PAGE_ITEMS } from '../services/myPageMenu';
 import { buildAlerts, defaultAlertPrefs } from '../services/alerts';
 import { PHOTO_BUDGET_BYTES, readUsageBytes } from '../services/sitePhotoRepository';
 import { loadUserPrefs } from '../services/userPrefsRepository';
@@ -22,11 +21,8 @@ const displayName = computed(() => {
 });
 
 const toast = ref('');
-// 위쪽 '마이페이지' 버튼 → 아래 마이페이지 묶음으로 데려간다
-const myPageRef = ref<HTMLElement | null>(null);
-const goMyPage = () => {
-  myPageRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-};
+// 마이페이지는 제 화면을 따로 둔다 (/mypage)
+const goMyPage = () => { router.push('/mypage'); };
 const notReady = (what: string) => {
   toast.value = `${what} — 준비 중입니다.`;
   setTimeout(() => { toast.value = ''; }, 1600);
@@ -103,17 +99,6 @@ const UPDATES = [
   { tag: '개선', text: '숨긴 물건 선택 복원 기능' },
 ];
 
-// 목록은 상단 프로필 메뉴와 같이 쓴다 (services/myPageMenu.ts)
-const MY_PAGE = MY_PAGE_ITEMS;
-// 아직 화면이 없는 항목은 안내만 띄운다
-const openMyPageItem = (item: { name: string; path: string; query?: Record<string, string> }) => {
-  if (!item.path) {
-    notReady(item.name);
-    return;
-  }
-  router.push({ path: item.path, query: item.query });
-};
-
 
 // 약관 — 화면이 있는 것은 그 자리로, 아직 없는 것은 '준비 중' 안내
 const POLICIES: Array<{ name: string; path: string }> = [
@@ -129,10 +114,12 @@ const openPolicy = (p: { name: string; path: string }) => {
 
 <template>
   <section class="more-shell">
-    <h1 class="more-title">더보기</h1>
+    <!-- 제목과 계정 상자는 자리를 지킨다 — 아래 내용만 흐른다 -->
+    <div class="more-fixed">
+      <h1 class="more-title">더보기</h1>
 
-    <!-- 계정 -->
-    <section class="more-card">
+      <!-- 계정 -->
+      <section class="more-card first">
       <div class="profile">
         <span class="avatar">
           <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#9aa6c4" stroke-width="1.7" stroke-linecap="round">
@@ -156,7 +143,8 @@ const openPolicy = (p: { name: string; path: string }) => {
           {{ q.name }}<em v-if="q.path === '/notifications' && alertCount" class="quick-badge">{{ alertCount }}</em>
         </button>
       </div>
-    </section>
+      </section>
+    </div>
 
     <!-- 이벤트 -->
     <section class="more-card">
@@ -184,16 +172,6 @@ const openPolicy = (p: { name: string; path: string }) => {
           </span>
         </button>
       </div>
-    </section>
-
-    <!-- 마이페이지 -->
-    <section ref="myPageRef" class="more-card">
-      <h2 class="sec-head">마이페이지</h2>
-      <button v-for="m in MY_PAGE" :key="m.name" type="button" class="family" @click="openMyPageItem(m)">
-        <span class="fname">{{ m.name }}</span>
-        <span class="fdesc">{{ m.desc }}</span>
-        <span class="arr">›</span>
-      </button>
     </section>
 
     <!-- 공지사항 -->
@@ -254,6 +232,12 @@ const openPolicy = (p: { name: string; path: string }) => {
   /* 제목줄 아래 구분선 — 물건상세와 같게 */
   border-bottom: 1px solid #e5e7eb;
 }
+.more-fixed {
+  position: sticky; top: 0; z-index: 5;
+  background: #f4f6fb; padding-bottom: 2px;
+}
+/* 제목에 바짝 붙어 있어 답답했다 — 한 숨 띄운다 */
+.more-card.first { margin-top: 10px; }
 .more-card {
   margin: 0 14px 10px; padding: 14px 13px;
   background: #fff; border: 1px solid #e8ebf1; border-radius: 14px;
@@ -278,10 +262,10 @@ const openPolicy = (p: { name: string; path: string }) => {
 
 .pill {
   border: 1px solid #e3e7ef; background: #f7f8fb; border-radius: 999px;
-  /* 글자 길이가 달라도 칸은 같게 — 다섯이 이름과 한 줄에 서는 폭으로 잡는다 */
-  width: 52px; flex: 0 0 52px; box-sizing: border-box;
-  padding: 5px 0; font-size: 10px; font-weight: 700; color: #4b5563; cursor: pointer;
-  text-align: center; white-space: nowrap; letter-spacing: -0.3px;
+  /* 다섯이 남은 자리를 똑같이 나눠 가진다 — 칸도 사이도 일정하다 */
+  flex: 1 1 0; min-width: 0; box-sizing: border-box;
+  padding: 5px 0; font-size: 9.5px; font-weight: 700; color: #4b5563; cursor: pointer;
+  text-align: center; white-space: nowrap; letter-spacing: -0.4px;
 }
 .quick {
   display: grid; grid-template-columns: repeat(3, 1fr);
@@ -310,8 +294,8 @@ const openPolicy = (p: { name: string; path: string }) => {
 .sec-head .dot { width: 5px; height: 5px; border-radius: 50%; background: #ef4444; }
 .arr { margin-left: auto; color: #c4cad6; font-size: 16px; line-height: 1; }
 .pname { margin-right: 3px; }
-/* 인증·보안은 줄 오른쪽 끝에 — 가운데가 비어도 양 끝이 맞는다 */
-.pill.last { margin-left: auto; }
+/* 이름이 길어도 알약 자리를 먹지 않게 — 넘치면 … 로 줄인다 */
+.pname { flex: 0 1 auto; min-width: 0; max-width: 42%; overflow: hidden; }
 .pname .arr { margin-left: 2px; font-size: 15px; }
 
 /* ===== 이벤트 배너 ===== */

@@ -149,6 +149,12 @@ const router = createRouter({
       component: () => import('../pages/BillingPage.vue'),
     },
     {
+      // 마이페이지 — 계정에 딸린 자리 모음
+      path: '/mypage',
+      name: 'mypage',
+      component: () => import('../pages/MyPagePage.vue'),
+    },
+    {
       // 내 정보 — 더보기 · 프로필 메뉴의 '내 정보 수정'
       path: '/profile',
       name: 'profile',
