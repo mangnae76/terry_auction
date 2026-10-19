@@ -1331,25 +1331,25 @@ const toggleSection = (key: string) => {
   border-bottom: 1px solid #e5e7eb; text-align: center; word-break: keep-all;
 }
 /* 날짜·금액·연락처는 줄을 바꾸지 않는다 — 잘리거나 내려가던 자리다 */
-/* 작업내용은 다섯 글자, 협의내용은 그보다 넓게 — 넘치면 두 줄로 내려 적는다 */
+/* 작업내용·협의내용 — 넘치면 두 줄로 내려 적는다 */
 .pw-int-tbl tbody td:nth-child(3),
 .pw-int-tbl tbody td:nth-child(4) {
-  font-size: 12.5px; white-space: normal; word-break: keep-all; line-height: 1.3;
+  white-space: normal; word-break: keep-all; line-height: 1.3;
 }
 /* 날짜·금액·연락처는 한 줄로, 글자를 바짝 줄여 자리를 적게 먹는다 */
-/* 날짜도 읽히는 크기로 — 한 줄은 지킨다 */
+/* 본문 글자는 모두 12px — 머리줄(구분)만 그대로 둔다 */
+.pw-int-tbl tbody td { font-size: 12px; }
 .pw-int-tbl tbody td:nth-child(1),
-.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; font-size: 11.5px; letter-spacing: -0.5px; }
-/* 금액도 글 칸과 비슷한 크기로 */
-.pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; font-size: 11.5px; letter-spacing: -0.4px; }
+.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; letter-spacing: -0.5px; }
+.pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; letter-spacing: -0.4px; }
 /* 업체 — 이름은 위, 번호는 아래 */
 .pw-int-tbl tbody td.vend { padding: 5px 2px; }
 .pw-int-tbl tbody td.vend b {
-  display: block; font-size: 11px; font-weight: 600; letter-spacing: -0.3px;
+  display: block; font-size: 12px; font-weight: 600; letter-spacing: -0.3px;
   line-height: 1.25; word-break: keep-all;
 }
 .pw-int-tbl tbody td.vend small {
-  display: block; margin-top: 1px; font-size: 9.5px; letter-spacing: -0.4px;
+  display: block; margin-top: 1px; font-size: 12px; letter-spacing: -0.5px;
   color: #6b7280; white-space: nowrap;
 }
 /* 머리줄은 다른 표와 같은 짙은 남색에 흰 글씨 — 위 두 모서리는 둥글게 */
