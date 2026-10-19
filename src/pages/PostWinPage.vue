@@ -713,10 +713,11 @@ const toggleSection = (key: string) => {
             <svg class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7l-1.5-1.5a3.5 3.5 0 0 0-5 5L3 15v6h6l4.5-4.5a3.5 3.5 0 0 0 5-5L17 10"/></svg>
             인테리어 비용
           </h2>
-          <em class="pw-count">{{ money(interiorTotal) }}원</em>
         </header>
         <div class="pw-card-body">
           <div class="pw-int-tools">
+            <!-- 합계는 단추와 같은 줄 왼쪽에 -->
+            <span class="pw-int-sum">합계 <b>{{ money(interiorTotal) }}</b>원</span>
             <button type="button" class="pw-ebtn" @click="exportInterior">⬇ 엑셀저장</button>
             <button type="button" class="pw-ebtn on" :disabled="!picked" @click="openIntAdd">＋ 항목추가</button>
           </div>
@@ -1281,7 +1282,9 @@ const toggleSection = (key: string) => {
 .pw-flow-list span { flex: 1 1 auto; min-width: 0; color: #374151; }
 
 /* 인테리어 비용 */
-.pw-int-tools { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 8px; }
+.pw-int-tools { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.pw-int-sum { margin-right: auto; font-size: 12px; font-weight: 600; color: #374151; }
+.pw-int-sum b { font-size: 13px; font-weight: 800; color: #111827; }
 .pw-int-tbl { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed;
   background: #fff; border: 1px solid #d0d5dd; border-radius: 8px; }
 .pw-int-tbl th, .pw-int-tbl td {
