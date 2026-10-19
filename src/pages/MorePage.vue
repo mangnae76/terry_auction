@@ -34,6 +34,7 @@ const onAuthPill = async () => {
 const QUICK: Array<{ name: string; path: string }> = [
   { name: '알림설정', path: '/notifications' },
   { name: '결제하기', path: '/billing' },
+  { name: '포인트', path: '/points' },
   { name: '고객센터', path: '/support' },
 ];
 const goQuick = (q: { name: string; path: string }) => {
@@ -244,7 +245,7 @@ const openPolicy = (p: { name: string; path: string }) => {
   text-align: center; white-space: nowrap; letter-spacing: -0.4px;
 }
 .quick {
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   margin-top: 12px; border: 1px solid #eef0f5; border-radius: 10px; overflow: hidden;
 }
 .quick-item {
