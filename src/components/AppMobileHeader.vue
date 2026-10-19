@@ -178,7 +178,8 @@ const onLogout = async () => {
   cursor: pointer; display: inline-flex; align-items: center;
 }
 
-.amh-greet { font-size: 11px; color: #ffb38a; font-weight: 400; white-space: nowrap; flex-shrink: 0; }
+/* 인사말과 종 사이도 종·사람 사이와 같은 만큼 띄운다 */
+.amh-greet { font-size: 11px; color: #ffb38a; font-weight: 400; white-space: nowrap; flex-shrink: 0; margin-right: 9px; }
 .amh-greet strong { color: #fff; font-weight: 400; margin: 0 2px; }
 .amh-greet-nim { color: #fff; }
 .amh-greet-icon { width: 19px; height: 19px; flex-shrink: 0; display: block; }
