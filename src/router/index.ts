@@ -131,6 +131,12 @@ const router = createRouter({
       component: () => import('../pages/TermsPage.vue'),
     },
     {
+      // 알림 설정 — 무엇을 알려 줄지 고르고 지금 걸린 알림을 본다
+      path: '/notifications',
+      name: 'notifications',
+      component: () => import('../pages/NotificationsPage.vue'),
+    },
+    {
       // 개인정보 처리방침
       path: '/privacy',
       name: 'privacy',

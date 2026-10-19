@@ -1,10 +1,15 @@
 <script setup lang="ts">
 // 더보기 — 계정·설정·공지 등 다른 탭에 들어가지 않는 것들을 모아 둔다.
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuthStore } from '../stores/authStore';
+import { useAuctionStore } from '../stores/auctionStore';
+import { useInteriorStore } from '../stores/interiorStore';
 import { MY_PAGE_ITEMS } from '../services/myPageMenu';
+import { buildAlerts, defaultAlertPrefs } from '../services/alerts';
+import { PHOTO_BUDGET_BYTES, readUsageBytes } from '../services/sitePhotoRepository';
+import { loadUserPrefs } from '../services/userPrefsRepository';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -33,7 +38,7 @@ const onLogout = async () => {
 };
 
 const QUICK: Array<{ name: string; path: string }> = [
-  { name: '알림설정', path: '' },
+  { name: '알림설정', path: '/notifications' },
   { name: '결제하기', path: '/billing' },
   { name: '인증/보안', path: '' },
 ];
@@ -41,6 +46,29 @@ const goQuick = (q: { name: string; path: string }) => {
   if (!q.path) { notReady(q.name); return; }
   router.push(q.path);
 };
+
+// 지금 걸린 알림이 몇 건인지 — 바로가기에 숫자로 띄운다
+const auctionStore = useAuctionStore();
+const interior = useInteriorStore();
+const alertPrefs = ref<Record<string, boolean>>(defaultAlertPrefs());
+const photoBytes = ref(0);
+const alertCount = computed(() => buildAlerts({
+  auctions: auctionStore.auctions,
+  interior: interior.rows,
+  photoBytes: photoBytes.value,
+  photoBudget: PHOTO_BUDGET_BYTES,
+  prefs: alertPrefs.value,
+}).length);
+const readAlertSource = async (uid: string) => {
+  photoBytes.value = uid ? await readUsageBytes(uid) : 0;
+  const saved = uid ? (await loadUserPrefs(uid))?.alertPrefs : null;
+  alertPrefs.value = { ...defaultAlertPrefs(), ...(saved ?? {}) };
+};
+onMounted(() => {
+  interior.initialize();
+  void readAlertSource(authStore.uid);
+});
+watch(() => authStore.uid, (uid) => { void readAlertSource(uid); });
 
 const EVENTS = [
   { tag: '안내', text: '경매 PDF 자동 분석 정확도 개선 안내' },
@@ -124,7 +152,9 @@ const openPolicy = (p: { name: string; path: string }) => {
       </div>
 
       <div class="quick">
-        <button v-for="q in QUICK" :key="q.name" type="button" class="quick-item" @click="goQuick(q)">{{ q.name }}</button>
+        <button v-for="q in QUICK" :key="q.name" type="button" class="quick-item" @click="goQuick(q)">
+          {{ q.name }}<em v-if="q.path === '/notifications' && alertCount" class="quick-badge">{{ alertCount }}</em>
+        </button>
       </div>
     </section>
 
@@ -257,6 +287,11 @@ const openPolicy = (p: { name: string; path: string }) => {
   font-size: 12px; font-weight: 700; color: #374151;
 }
 .quick-item + .quick-item { border-left: 1px solid #eef0f5; }
+.quick-badge {
+  margin-left: 4px; font-style: normal; font-size: 10px; font-weight: 800; color: #fff;
+  background: #e03b3b; min-width: 16px; height: 16px; border-radius: 8px; padding: 0 4px;
+  display: inline-flex; align-items: center; justify-content: center; vertical-align: 1px;
+}
 
 /* 공통 */
 .sec-head {
