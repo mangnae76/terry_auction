@@ -10,11 +10,13 @@ const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 
-// 허용 목록에 없는 계정이라 가드가 내보낸 경우 — 왜 튕겼는지 알려 준다
+// 가입 화면에서 난 안내가 여기까지 따라오지 않게 먼저 지운다 —
+// 두 화면이 같은 자리를 보고 있어 '이름을 적어 주세요'가 로그인 칸 아래 남았다.
+// 허용 목록에 없는 계정이라 가드가 내보낸 경우만 왜 튕겼는지 알려 준다.
 onMounted(() => {
-  if (route.query.denied) {
-    authStore.error = '이 계정은 사용 권한이 없습니다. 등록된 계정으로 로그인해 주세요.';
-  }
+  authStore.error = route.query.denied
+    ? '이 계정은 사용 권한이 없습니다. 등록된 계정으로 로그인해 주세요.'
+    : '';
 });
 
 const email = ref('');

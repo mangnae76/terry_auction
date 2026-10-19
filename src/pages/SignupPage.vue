@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 회원가입 — 로그인 화면의 '회원가입'에서 들어온다.
 // 이름·아이디(이메일)·비밀번호·연락처·지역·가입경로를 받고, 약관에 동의하면 계정을 만든다.
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { checkEmailTaken, saveSignupExtra } from '../services/authRepository';
@@ -18,6 +18,9 @@ import logoImg from '../assets/icones/log/LOGO_ENG.png';
 
 const router = useRouter();
 const authStore = useAuthStore();
+
+// 로그인 화면에서 난 안내를 들고 들어오지 않는다 (두 화면이 같은 자리를 쓴다)
+onMounted(() => { authStore.error = ''; });
 
 /** 가입하면 바로 받는 것 — 카드 세 장 */
 const PERKS = [
@@ -139,6 +142,7 @@ const onSubmit = async () => {
   <section class="su-shell">
     <div class="su-card">
       <img :src="logoImg" alt="MYTURN" class="su-logo" />
+      <p class="su-brand-sub">마이턴 옥션</p>
       <h1 class="su-title">회원가입</h1>
       <p class="su-note">
         마이턴 옥션은 컨설팅·외부광고 등의 전화를 하지 않으며 개인정보를 타사와 공유하지 않습니다.
@@ -299,7 +303,12 @@ const onSubmit = async () => {
   width: 100%; max-width: 420px; box-sizing: border-box;
   background: #fff; border-radius: 14px; padding: 20px 16px 22px;
 }
-.su-logo { display: block; height: 22px; margin: 0 auto 10px; }
+.su-logo { display: block; height: 26px; margin: 0 auto; object-fit: contain; }
+/* 로고 아래 한 줄 — 로그인 화면과 같은 꼴 */
+.su-brand-sub {
+  margin: 7px 0 12px; text-align: center;
+  font-size: 12px; color: #6b7280; font-weight: 600; letter-spacing: 1px;
+}
 .su-title { margin: 0; text-align: center; font-size: 20px; font-weight: 800; color: #111827; }
 .su-note {
   margin: 7px 0 0; text-align: center;
