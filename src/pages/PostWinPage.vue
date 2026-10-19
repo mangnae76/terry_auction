@@ -274,8 +274,8 @@ const rowsOf = (kind: 'bid' | 'cost') => interior.rows
 const totalOf = (kind: 'bid' | 'cost') => rowsOf(kind)
   .reduce((sum, r) => sum + (r.amountWithVat || 0), 0);
 const money = (n: number) => (n || 0).toLocaleString('ko-KR');
-/** 표 안의 날짜는 '월.일'만 — 칸을 좁게 쓰려고 해는 뺀다 (엑셀에는 전부 적는다) */
-const shortDate = (d: string) => (d && d.length >= 10 ? d.slice(5).replace(/-/g, '.') : (d || ''));
+/** 표 안의 날짜 — '26.10.19' (엑셀에는 연-월-일 전부 적는다) */
+const shortDate = (d: string) => (d && d.length >= 10 ? d.slice(2).replace(/-/g, '.') : (d || ''));
 
 type IntDraft = Partial<InteriorExpenseRecord> & { id?: string };
 const intOpen = ref(false);
@@ -736,11 +736,11 @@ const toggleSection = (key: string) => {
             </div>
             <table class="pw-int-tbl">
               <!-- 작업내용 칸을 넓게, 나머지는 조금씩 좁게 -->
-              <!-- 좁은 칸(날짜·업체명)을 줄여 작업내용과 협의내용에 자리를 준다 -->
+              <!-- 날짜는 해까지 적으므로 그만큼 자리를 준다 -->
               <colgroup>
-                <col style="width: 8.5%" /><col style="width: 8.5%" /><col style="width: 22%" />
-                <col style="width: 15%" /><col style="width: 14%" /><col style="width: 11%" />
-                <col style="width: 21%" />
+                <col style="width: 11.5%" /><col style="width: 11.5%" /><col style="width: 20%" />
+                <col style="width: 14%" /><col style="width: 13%" /><col style="width: 10%" />
+                <col style="width: 20%" />
               </colgroup>
               <thead>
                 <tr>
@@ -1315,8 +1315,9 @@ const toggleSection = (key: string) => {
   border-bottom: 1px solid #e5e7eb; text-align: center; word-break: keep-all;
 }
 /* 날짜·금액·연락처는 줄을 바꾸지 않는다 — 잘리거나 내려가던 자리다 */
+/* 날짜는 한 줄로 — 해까지 들어가도록 한 단 작게 */
 .pw-int-tbl tbody td:nth-child(1),
-.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; }
+.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; font-size: 10px; letter-spacing: -0.2px; }
 /* 금액은 줄을 바꾸지 않되 한 단 작게 적어 칸을 덜 먹는다 */
 .pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; font-size: 10px; letter-spacing: -0.2px; }
 .pw-int-tbl tbody td:nth-child(7) {
