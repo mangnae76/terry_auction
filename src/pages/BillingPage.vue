@@ -9,14 +9,20 @@ import AppToast from '../components/AppToast.vue';
 
 const router = useRouter();
 
-/** 기간별 값 — 할인율은 보여 주기용이고, 실제로 받는 값은 price 다 */
+/** 1개월 기준가 — 긴 기간은 여기에 할인율만 걸어 셈한다 (값은 여기 한 줄만 고치면 된다) */
+const MONTH_PRICE = 50_000;
+
+/** 기간별 값 — 받는 값 price 는 기준가 × 개월 × (1 − 할인율) 이다 */
 interface Plan { key: string; label: string; months: number; price: number; off: number; base?: boolean }
-const PLANS: Plan[] = [
-  { key: 'm1', label: '1개월', months: 1, price: 63_000, off: 0, base: true },
-  { key: 'm3', label: '3개월', months: 3, price: 160_000, off: 15 },
-  { key: 'm6', label: '6개월', months: 6, price: 285_000, off: 25 },
-  { key: 'm12', label: '12개월', months: 12, price: 500_000, off: 35 },
-];
+const planOf = (months: number, off: number): Plan => ({
+  key: `m${months}`,
+  label: `${months}개월`,
+  months,
+  off,
+  price: Math.round((MONTH_PRICE * months * (100 - off)) / 100),
+  base: off === 0,
+});
+const PLANS: Plan[] = [planOf(1, 0), planOf(3, 10), planOf(6, 15), planOf(12, 20)];
 const picked = ref<Plan>(PLANS[0]);
 
 /** 내 포인트 — 붙이기 전까지는 0 */
