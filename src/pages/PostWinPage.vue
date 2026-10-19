@@ -6,6 +6,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
+import AgencyTable from '../components/AgencyTable.vue';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
@@ -16,7 +17,7 @@ import type { InteriorExpenseRecord } from '../types/finance';
 import { formatPhone } from '../utils/phone';
 import { bidStageOf } from '../utils/stageLabel';
 import { courtInfoOf } from '../utils/auctionSummary';
-import type { AuctionDetail } from '../types/auction';
+import type { AgencyRow, AuctionDetail } from '../types/auction';
 
 type TabKey = 'win' | 'biz' | 'balance' | 'evict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
@@ -342,6 +343,48 @@ const exportInterior = (kind: 'bid' | 'cost', file: string) => {
   a.download = file;
   a.click();
   URL.revokeObjectURL(url);
+};
+
+// === 매도·임대 · 부동산 상담 ===
+// 손품·현장의 '4. 부동산 현장 상담'과 같은 표를 쓴다 (components/AgencyTable).
+// 적어 둔 줄은 그 물건에 붙어 저장된다.
+const SELL_ROW_MIN = 1;
+const emptyAgencyRow = (): AgencyRow => ({
+  name: '', phone: '', info: '', monthly: '', jeonse: '', real: '', urgent: '', note: '',
+});
+const sellRows = computed<AgencyRow[]>(() => {
+  const a = picked.value;
+  if (!a) return [];
+  if (!a.sellAgencyRows) a.sellAgencyRows = [emptyAgencyRow()];
+  while (a.sellAgencyRows.length < SELL_ROW_MIN) a.sellAgencyRows.push(emptyAgencyRow());
+  return a.sellAgencyRows;
+});
+let sellSaveTimer = 0;
+/** 적는 동안 줄줄이 저장하지 않는다 — 잠깐 멈추면 그때 한 번 담는다 */
+const persistSell = () => {
+  const a = picked.value;
+  if (!a) return;
+  window.clearTimeout(sellSaveTimer);
+  sellSaveTimer = window.setTimeout(() => { void store.saveAuction(a); }, 700);
+};
+const addSellRow = () => {
+  const a = picked.value;
+  if (!a) return;
+  if (!a.sellAgencyRows) a.sellAgencyRows = [];
+  a.sellAgencyRows.push(emptyAgencyRow());
+  persistSell();
+};
+const removeSellRow = (idx: number) => {
+  const a = picked.value;
+  if (!a?.sellAgencyRows) return;
+  a.sellAgencyRows.splice(idx, 1);
+  persistSell();
+};
+const removeLastSellRow = () => {
+  const a = picked.value;
+  if (!a?.sellAgencyRows || a.sellAgencyRows.length <= SELL_ROW_MIN) return;
+  a.sellAgencyRows.splice(a.sellAgencyRows.length - 1, 1);
+  persistSell();
 };
 
 /** 카드 접기 — 물건상세와 같이 제목줄을 누르면 접힌다 */
@@ -781,6 +824,31 @@ const toggleSection = (key: string) => {
           </div>
         </section>
       </template>
+
+      <!-- 매도·임대 — 손품·현장의 부동산 상담표를 그대로 쓴다 -->
+      <section v-else-if="activeTab === 'sell'" class="pw-card">
+        <header class="pw-card-head">
+          <h2>
+            <svg class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>
+            부동산 상담
+          </h2>
+          <span class="pw-rowstep">
+            <span class="lab">행</span>
+            <button type="button" aria-label="행 삭제" :disabled="!picked || sellRows.length <= SELL_ROW_MIN" @click="removeLastSellRow">−</button>
+            <button type="button" aria-label="행 추가" :disabled="!picked" @click="addSellRow">＋</button>
+          </span>
+        </header>
+        <div class="pw-card-body">
+          <p v-if="!picked" class="pw-empty">먼저 위에서 물건을 고르세요.</p>
+          <AgencyTable
+            v-else
+            :rows="sellRows"
+            :min-rows="SELL_ROW_MIN"
+            @change="persistSell"
+            @remove="removeSellRow"
+          />
+        </div>
+      </section>
 
       <section v-else class="pw-card">
         <header class="pw-card-head" @click="toggleSection(activeTab)">
@@ -1331,6 +1399,16 @@ const toggleSection = (key: string) => {
   white-space: nowrap; word-break: keep-all;
 }
 .pw-flow-list span { flex: 1 1 auto; min-width: 0; color: #374151; }
+
+/* 행 더하기·빼기 — 물건상세의 단계 단추와 같은 꼴 */
+.pw-rowstep { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
+.pw-rowstep .lab { font-size: 11px; font-weight: 700; color: #6b7280; }
+.pw-rowstep button {
+  width: 24px; height: 24px; padding: 0;
+  border: 1px solid #dde3ee; border-radius: 6px; background: #fff;
+  font-family: inherit; font-size: 14px; line-height: 1; color: #2b6df3; cursor: pointer;
+}
+.pw-rowstep button:disabled { opacity: 0.45; cursor: default; }
 
 /* 인테리어 비용 */
 .pw-int-tools { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
