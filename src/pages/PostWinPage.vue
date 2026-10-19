@@ -263,8 +263,8 @@ const INT_CARDS: Array<{
   /** 칸 이름 — 비딩은 견적·협의내용, 비용은 비용·현황 */
   amount: string; status: string;
 }> = [
-  { kind: 'bid', title: '업체 비딩', file: '업체비딩.csv', amount: '견적', status: '협의내용' },
-  { kind: 'cost', title: '인테리어 비용', file: '인테리어비용.csv', amount: '비용', status: '현황' },
+  { kind: 'bid', title: '업체비딩', file: '업체비딩.csv', amount: '견적', status: '협의내용' },
+  { kind: 'cost', title: '인테리어비용', file: '인테리어비용.csv', amount: '비용', status: '현황' },
 ];
 const cardOf = (kind: 'bid' | 'cost') => INT_CARDS.find((c) => c.kind === kind) ?? INT_CARDS[1];
 /** 고른 물건의 것만 본다 — 물건은 위 카드에서 고르므로 적을 때 또 고르지 않는다 */
@@ -785,7 +785,7 @@ const toggleSection = (key: string) => {
       <div class="pw-modal-veil" @click="intOpen = false" />
       <div class="pw-modal" @click.stop>
         <header class="pw-modal-head">
-          <strong>{{ intDraft.kind === 'bid' ? '업체 비딩' : '인테리어 비용' }}<em v-if="picked" class="pw-modal-sub">{{ shortAddr(picked.address) || picked.caseNumber }}</em></strong>
+          <strong>{{ intDraft.kind === 'bid' ? '업체비딩' : '인테리어비용' }}<em v-if="picked" class="pw-modal-sub">{{ shortAddr(picked.address) || picked.caseNumber }}</em></strong>
           <button type="button" class="pw-flow-close" aria-label="닫기" @click="intOpen = false">×</button>
         </header>
         <!-- 적는 차례는 표의 칸 차례와 같다 -->
