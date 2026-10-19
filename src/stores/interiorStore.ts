@@ -59,6 +59,7 @@ export const useInteriorStore = defineStore('interior', () => {
       uid,
       auctionId: partial.auctionId ?? existing?.auctionId ?? '',
       auctionLabel: partial.auctionLabel ?? existing?.auctionLabel ?? '',
+      kind: partial.kind ?? existing?.kind ?? 'cost',
       work: partial.work ?? existing?.work ?? '',
       status: partial.status ?? existing?.status ?? '예정',
       startDate: partial.startDate ?? existing?.startDate ?? existing?.date ?? new Date().toISOString().slice(0, 10),

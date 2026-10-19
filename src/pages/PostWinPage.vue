@@ -257,12 +257,17 @@ const toggleAll = () => {
 // 자금관리의 사업지출과 같은 꼴이되 자리는 따로다 — 여기 적은 것은 여기에만 남는다
 const interior = useInteriorStore();
 onMounted(() => interior.initialize());
+/** 인테리어 탭의 두 표 — 꼴은 같고 자리만 다르다 */
+const INT_CARDS: Array<{ kind: 'bid' | 'cost'; title: string; file: string }> = [
+  { kind: 'bid', title: '업체 비딩', file: '업체비딩.csv' },
+  { kind: 'cost', title: '인테리어 비용', file: '인테리어비용.csv' },
+];
 /** 고른 물건의 것만 본다 — 물건은 위 카드에서 고르므로 적을 때 또 고르지 않는다 */
-const interiorRows = computed(() => interior.rows
-  .filter((r) => r.auctionId === (picked.value?.id ?? ''))
-  .sort((a, b) => ((b.startDate || b.date || '')).localeCompare(a.startDate || a.date || '')));
-const interiorTotal = computed(() => interiorRows.value
-  .reduce((sum, r) => sum + (r.amountWithVat || 0), 0));
+const rowsOf = (kind: 'bid' | 'cost') => interior.rows
+  .filter((r) => r.auctionId === (picked.value?.id ?? '') && (r.kind ?? 'cost') === kind)
+  .sort((a, b) => ((b.startDate || b.date || '')).localeCompare(a.startDate || a.date || ''));
+const totalOf = (kind: 'bid' | 'cost') => rowsOf(kind)
+  .reduce((sum, r) => sum + (r.amountWithVat || 0), 0);
 const money = (n: number) => (n || 0).toLocaleString('ko-KR');
 const shortDate = (d: string) => (d && d.length >= 10 ? d.slice(2).replace(/-/g, '.') : (d || ''));
 
@@ -271,8 +276,9 @@ const intOpen = ref(false);
 const intDraft = ref<IntDraft>({});
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const INT_STATUS = ['예정', '진행', '완료'];
-const openIntAdd = () => {
+const openIntAdd = (kind: 'bid' | 'cost') => {
   intDraft.value = {
+    kind,
     startDate: todayIso(),
     endDate: '',
     work: '',
@@ -309,14 +315,14 @@ const removeInt = async () => {
   toast('지웠습니다.');
 };
 /** 엑셀(csv)로 내려받기 — 자금관리와 같은 방식 */
-const exportInterior = () => {
+const exportInterior = (kind: 'bid' | 'cost', file: string) => {
   const esc = (v: string | number) => {
     const t = String(v ?? '');
     return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
   };
   const rows: Array<Array<string | number>> = [
     ['예상시작', '예상완료', '작업내용', '현황', '비용(VAT포함)', '업체명', '연락처', '비고'],
-    ...interiorRows.value.map((r) => [
+    ...rowsOf(kind).map((r) => [
       r.startDate || r.date || '', r.endDate, r.work, r.status,
       r.amountWithVat, r.vendor, r.phone, r.note,
     ]),
@@ -325,7 +331,7 @@ const exportInterior = () => {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
   a.href = url;
-  a.download = '인테리어비용.csv';
+  a.download = file;
   a.click();
   URL.revokeObjectURL(url);
 };
@@ -706,54 +712,56 @@ const toggleSection = (key: string) => {
        </div>
       </template>
 
-      <!-- 인테리어 비용 — 표·항목추가·엑셀저장 -->
-      <section v-else-if="activeTab === 'repair'" class="pw-card">
-        <header class="pw-card-head">
-          <h2>
-            <svg class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7l-1.5-1.5a3.5 3.5 0 0 0-5 5L3 15v6h6l4.5-4.5a3.5 3.5 0 0 0 5-5L17 10"/></svg>
-            인테리어 비용
-          </h2>
-        </header>
-        <div class="pw-card-body">
-          <div class="pw-int-tools">
-            <!-- 합계는 단추와 같은 줄 왼쪽에 -->
-            <span class="pw-int-sum">합계 <b>{{ money(interiorTotal) }}</b>원</span>
-            <button type="button" class="pw-ebtn" @click="exportInterior">⬇ 엑셀저장</button>
-            <button type="button" class="pw-ebtn on" :disabled="!picked" @click="openIntAdd">＋ 항목추가</button>
+      <!-- 인테리어 — 업체 비딩과 인테리어 비용, 같은 꼴의 표 두 장 -->
+      <template v-else-if="activeTab === 'repair'">
+        <section v-for="card in INT_CARDS" :key="card.kind" class="pw-card">
+          <header class="pw-card-head">
+            <h2>
+              <svg class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7l-1.5-1.5a3.5 3.5 0 0 0-5 5L3 15v6h6l4.5-4.5a3.5 3.5 0 0 0 5-5L17 10"/></svg>
+              {{ card.title }}
+            </h2>
+          </header>
+          <div class="pw-card-body">
+            <div class="pw-int-tools">
+              <!-- 합계는 단추와 같은 줄 왼쪽에 -->
+              <span class="pw-int-sum">합계 <b>{{ money(totalOf(card.kind)) }}</b>원</span>
+              <button type="button" class="pw-ebtn" @click="exportInterior(card.kind, card.file)">⬇ 엑셀저장</button>
+              <button type="button" class="pw-ebtn on" :disabled="!picked" @click="openIntAdd(card.kind)">＋ 항목추가</button>
+            </div>
+            <table class="pw-int-tbl">
+              <!-- 작업내용 칸을 넓게, 나머지는 조금씩 좁게 -->
+              <colgroup>
+                <col style="width: 12%" /><col style="width: 12%" /><col style="width: 24%" />
+                <col style="width: 9%" /><col style="width: 16%" /><col style="width: 13%" />
+                <col style="width: 14%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>예상시작</th><th>예상완료</th><th>작업내용</th><th>현황</th>
+                  <th>비용{{ '\n' }}(VAT포함)</th><th>업체명</th><th>연락처</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in rowsOf(card.kind)" :key="r.id" @click="openIntEdit(r)">
+                  <td>{{ shortDate(r.startDate || r.date || '') }}</td>
+                  <td>{{ shortDate(r.endDate) }}</td>
+                  <td>{{ r.work }}</td>
+                  <td>{{ r.status }}</td>
+                  <td>{{ money(r.amountWithVat) }}</td>
+                  <td>{{ r.vendor }}</td>
+                  <td>{{ r.phone }}</td>
+                </tr>
+                <tr v-if="rowsOf(card.kind).length === 0">
+                  <td colspan="7" class="empty">
+                    <template v-if="picked">적어 둔 줄이 없습니다. 위의 ＋ 항목추가를 누르세요.</template>
+                    <template v-else>먼저 위에서 물건을 고르세요.</template>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <table class="pw-int-tbl">
-            <!-- 작업내용 칸을 넓게, 나머지는 조금씩 좁게 -->
-            <colgroup>
-              <col style="width: 12%" /><col style="width: 12%" /><col style="width: 24%" />
-              <col style="width: 9%" /><col style="width: 16%" /><col style="width: 13%" />
-              <col style="width: 14%" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>예상시작</th><th>예상완료</th><th>작업내용</th><th>현황</th>
-                <th>비용{{ '\n' }}(VAT포함)</th><th>업체명</th><th>연락처</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="r in interiorRows" :key="r.id" @click="openIntEdit(r)">
-                <td>{{ shortDate(r.startDate || r.date || '') }}</td>
-                <td>{{ shortDate(r.endDate) }}</td>
-                <td>{{ r.work }}</td>
-                <td>{{ r.status }}</td>
-                <td>{{ money(r.amountWithVat) }}</td>
-                <td>{{ r.vendor }}</td>
-                <td>{{ r.phone }}</td>
-              </tr>
-              <tr v-if="interiorRows.length === 0">
-                <td colspan="7" class="empty">
-                  <template v-if="picked">적어 둔 비용이 없습니다. 위의 ＋ 항목추가를 누르세요.</template>
-                  <template v-else>먼저 위에서 물건을 고르세요.</template>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+        </section>
+      </template>
 
       <section v-else class="pw-card">
         <header class="pw-card-head" @click="toggleSection(activeTab)">
@@ -772,7 +780,7 @@ const toggleSection = (key: string) => {
       <div class="pw-modal-veil" @click="intOpen = false" />
       <div class="pw-modal" @click.stop>
         <header class="pw-modal-head">
-          <strong>인테리어 비용<em v-if="picked" class="pw-modal-sub">{{ shortAddr(picked.address) || picked.caseNumber }}</em></strong>
+          <strong>{{ intDraft.kind === 'bid' ? '업체 비딩' : '인테리어 비용' }}<em v-if="picked" class="pw-modal-sub">{{ shortAddr(picked.address) || picked.caseNumber }}</em></strong>
           <button type="button" class="pw-flow-close" aria-label="닫기" @click="intOpen = false">×</button>
         </header>
         <!-- 적는 차례는 표의 칸 차례와 같다 -->

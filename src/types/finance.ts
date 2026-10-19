@@ -35,6 +35,8 @@ export interface BusinessExpenseRecord extends FinanceBase {
 export interface InteriorExpenseRecord extends FinanceBase {
   auctionId: string;       // 물건 ID — 빈 문자열 가능
   auctionLabel: string;    // 물건명 (UI용 캐시)
+  /** 어느 표의 줄인지 — 'bid' 업체 비딩 · 'cost' 인테리어 비용 */
+  kind: 'bid' | 'cost';
   work: string;            // 작업내용 (예: 도배, 바닥)
   status: string;          // 현황 (예정 · 진행 · 완료)
   startDate: string;       // 예상시작 YYYY-MM-DD
