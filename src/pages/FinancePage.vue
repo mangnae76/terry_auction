@@ -354,7 +354,7 @@ const exportExcel = () => {
     ]);
   } else if (activeTab.value === 'businessExpense') {
     downloadCsv('사업지출.csv', [
-      ['결제일', '물건', '사용구분', '명세', '비용(VAT포함)', '비고'],
+      ['결제일', '물건구분', '사용구분', '명세', '비용(VAT포함)', '비고'],
       ...filteredBusiness.value.map((r) => [r.date, r.auctionLabel, r.profitCategory || r.memo, r.detail, r.amountWithVat, r.note]),
     ]);
   } else if (activeTab.value === 'fuelMeal') {
@@ -364,7 +364,7 @@ const exportExcel = () => {
     ]);
   } else if (activeTab.value === 'itemPurchase') {
     downloadCsv('물품구매.csv', [
-      ['결제일', '물건', '사용구분', '상세내역', '수량', '단가', '계', '합계(VAT포함)', '구매처', '카드', '사용자', '배송비', '비고'],
+      ['결제일', '물건구분', '사용구분', '상세내역', '수량', '단가', '계', '합계(VAT포함)', '구매처', '카드', '사용자', '배송비', '비고'],
       ...filteredItemPurchases.value.map((r) => [
         r.date, r.auctionLabel, r.category, r.description,
         r.quantity, r.unitPrice, r.subtotal, r.totalWithVat,
@@ -485,7 +485,7 @@ const exportExcel = () => {
             <col style="width: 18%" /><col style="width: 18%" /><col />
           </colgroup>
           <thead>
-            <tr><th>결제일</th><th>물건</th><th>사용구분</th><th>명세</th><th class="r">비용(VAT포함)</th><th>비고</th></tr>
+            <tr><th>결제일</th><th>물건구분</th><th>사용구분</th><th>명세</th><th class="r">비용(VAT포함)</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
@@ -544,7 +544,7 @@ const exportExcel = () => {
         <table class="fin-table mid">
           <thead>
             <tr>
-              <th>결제일</th><th>사용구분</th><th>상세내역</th>
+              <th>결제일</th><th>물건구분</th><th>사용구분</th><th>상세내역</th>
               <th>수량</th><th>단가</th><th>합계(VAT포함)</th>
               <th>구매처</th><th>카드</th><th>비고</th>
             </tr>
@@ -552,6 +552,7 @@ const exportExcel = () => {
           <tbody>
             <tr v-for="r in filteredItemPurchases" :key="r.id" @click="openEdit('itemPurchase', r)">
               <td>{{ shortDate(r.date) }}</td>
+              <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
               <td :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
               <td :title="r.description">{{ r.description }}</td>
               <td>{{ r.quantity }}</td>
@@ -563,7 +564,7 @@ const exportExcel = () => {
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredItemPurchases.length === 0">
-              <td colspan="9" class="empty">
+              <td colspan="10" class="empty">
                 <template v-if="finance.itemPurchases.length === 0">데이터가 없습니다.</template>
                 <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.itemPurchases.length }}건)</template>
               </td>
