@@ -352,13 +352,20 @@ const SELL_ROW_MIN = 1;
 const emptyAgencyRow = (): AgencyRow => ({
   name: '', phone: '', info: '', monthly: '', jeonse: '', real: '', urgent: '', note: '',
 });
-const sellRows = computed<AgencyRow[]>(() => {
+/** 매도·임대의 두 표 — 중개 의뢰 현황과 직거래 (꼴은 같고 자리만 다르다) */
+type SellKey = 'sellAgencyRows' | 'directSellRows';
+const SELL_CARDS: Array<{ key: SellKey; title: string }> = [
+  { key: 'sellAgencyRows', title: '중개 의뢰 현황' },
+  { key: 'directSellRows', title: '직거래' },
+];
+const sellRowsOf = (key: SellKey): AgencyRow[] => {
   const a = picked.value;
   if (!a) return [];
-  if (!a.sellAgencyRows) a.sellAgencyRows = [emptyAgencyRow()];
-  while (a.sellAgencyRows.length < SELL_ROW_MIN) a.sellAgencyRows.push(emptyAgencyRow());
-  return a.sellAgencyRows;
-});
+  if (!a[key]) a[key] = [emptyAgencyRow()];
+  const rows = a[key] as AgencyRow[];
+  while (rows.length < SELL_ROW_MIN) rows.push(emptyAgencyRow());
+  return rows;
+};
 let sellSaveTimer = 0;
 /** 적는 동안 줄줄이 저장하지 않는다 — 잠깐 멈추면 그때 한 번 담는다 */
 const persistSell = () => {
@@ -367,23 +374,23 @@ const persistSell = () => {
   window.clearTimeout(sellSaveTimer);
   sellSaveTimer = window.setTimeout(() => { void store.saveAuction(a); }, 700);
 };
-const addSellRow = () => {
+const addSellRow = (key: SellKey) => {
   const a = picked.value;
   if (!a) return;
-  if (!a.sellAgencyRows) a.sellAgencyRows = [];
-  a.sellAgencyRows.push(emptyAgencyRow());
+  if (!a[key]) a[key] = [];
+  (a[key] as AgencyRow[]).push(emptyAgencyRow());
   persistSell();
 };
-const removeSellRow = (idx: number) => {
-  const a = picked.value;
-  if (!a?.sellAgencyRows) return;
-  a.sellAgencyRows.splice(idx, 1);
+const removeSellRow = (key: SellKey, idx: number) => {
+  const rows = picked.value?.[key] as AgencyRow[] | undefined;
+  if (!rows) return;
+  rows.splice(idx, 1);
   persistSell();
 };
-const removeLastSellRow = () => {
-  const a = picked.value;
-  if (!a?.sellAgencyRows || a.sellAgencyRows.length <= SELL_ROW_MIN) return;
-  a.sellAgencyRows.splice(a.sellAgencyRows.length - 1, 1);
+const removeLastSellRow = (key: SellKey) => {
+  const rows = picked.value?.[key] as AgencyRow[] | undefined;
+  if (!rows || rows.length <= SELL_ROW_MIN) return;
+  rows.splice(rows.length - 1, 1);
   persistSell();
 };
 
@@ -825,30 +832,32 @@ const toggleSection = (key: string) => {
         </section>
       </template>
 
-      <!-- 매도·임대 — 손품·현장의 부동산 상담표를 그대로 쓴다 -->
-      <section v-else-if="activeTab === 'sell'" class="pw-card">
-        <header class="pw-card-head">
-          <h2>
-            <svg class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>
-            중개 의뢰 현황
-          </h2>
-          <span class="pw-rowstep">
-            <span class="lab">행</span>
-            <button type="button" aria-label="행 삭제" :disabled="!picked || sellRows.length <= SELL_ROW_MIN" @click="removeLastSellRow">−</button>
-            <button type="button" aria-label="행 추가" :disabled="!picked" @click="addSellRow">＋</button>
-          </span>
-        </header>
-        <div class="pw-card-body">
-          <p v-if="!picked" class="pw-empty">먼저 위에서 물건을 고르세요.</p>
-          <SellStatusTable
-            v-else
-            :rows="sellRows"
-            :min-rows="SELL_ROW_MIN"
-            @change="persistSell"
-            @remove="removeSellRow"
-          />
-        </div>
-      </section>
+      <!-- 매도·임대 — 중개 의뢰 현황과 직거래, 같은 꼴의 표 두 장 -->
+      <template v-else-if="activeTab === 'sell'">
+        <section v-for="card in SELL_CARDS" :key="card.key" class="pw-card">
+          <header class="pw-card-head">
+            <h2>
+              <svg class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>
+              {{ card.title }}
+            </h2>
+            <span class="pw-rowstep">
+              <span class="lab">행</span>
+              <button type="button" aria-label="행 삭제" :disabled="!picked || sellRowsOf(card.key).length <= SELL_ROW_MIN" @click="removeLastSellRow(card.key)">−</button>
+              <button type="button" aria-label="행 추가" :disabled="!picked" @click="addSellRow(card.key)">＋</button>
+            </span>
+          </header>
+          <div class="pw-card-body">
+            <p v-if="!picked" class="pw-empty">먼저 위에서 물건을 고르세요.</p>
+            <SellStatusTable
+              v-else
+              :rows="sellRowsOf(card.key)"
+              :min-rows="SELL_ROW_MIN"
+              @change="persistSell"
+              @remove="(i: number) => removeSellRow(card.key, i)"
+            />
+          </div>
+        </section>
+      </template>
 
       <section v-else class="pw-card">
         <header class="pw-card-head" @click="toggleSection(activeTab)">
