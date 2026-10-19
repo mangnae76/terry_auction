@@ -327,9 +327,9 @@ const exportInterior = (kind: 'bid' | 'cost', file: string) => {
     return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
   };
   const rows: Array<Array<string | number>> = [
-    ['시작', '완료', '작업내용', cardOf(kind).status, `${cardOf(kind).amount}(VAT포함)`, '업체명', '연락처', '비고'],
+    ['작업내용', cardOf(kind).status, '시작', '완료', `${cardOf(kind).amount}(VAT포함)`, '업체명', '연락처', '비고'],
     ...rowsOf(kind).map((r) => [
-      r.startDate || r.date || '', r.endDate, r.work, r.status,
+      r.work, r.status, r.startDate || r.date || '', r.endDate,
       r.amountWithVat, r.vendor, r.phone, r.note,
     ]),
   ];
@@ -736,24 +736,24 @@ const toggleSection = (key: string) => {
             </div>
             <table class="pw-int-tbl">
               <!-- 작업내용 칸을 넓게, 나머지는 조금씩 좁게 -->
-              <!-- 날짜는 해까지 적으므로 그만큼 자리를 준다 -->
+              <!-- 글이 긴 칸(작업내용·협의내용)을 왼쪽에 두고 넓게 쓴다 -->
               <colgroup>
-                <col style="width: 11.5%" /><col style="width: 11.5%" /><col style="width: 20%" />
-                <col style="width: 14%" /><col style="width: 13%" /><col style="width: 10%" />
-                <col style="width: 20%" />
+                <col style="width: 23%" /><col style="width: 14%" />
+                <col style="width: 10.5%" /><col style="width: 10.5%" />
+                <col style="width: 12%" /><col style="width: 10%" /><col style="width: 20%" />
               </colgroup>
               <thead>
                 <tr>
-                  <th>시작</th><th>완료</th><th>작업내용</th><th>{{ card.status }}</th>
+                  <th>작업내용</th><th>{{ card.status }}</th><th>시작</th><th>완료</th>
                   <th>{{ card.amount }}{{ '\n' }}(VAT포함)</th><th>업체명</th><th>연락처</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="r in rowsOf(card.kind)" :key="r.id" @click="openIntEdit(r)">
+                  <td class="l">{{ r.work }}</td>
+                  <td class="l">{{ r.status }}</td>
                   <td>{{ shortDate(r.startDate || r.date || '') }}</td>
                   <td>{{ shortDate(r.endDate) }}</td>
-                  <td>{{ r.work }}</td>
-                  <td>{{ r.status }}</td>
                   <td>{{ money(r.amountWithVat) }}</td>
                   <td>{{ r.vendor }}</td>
                   <td>{{ r.phone }}</td>
@@ -1315,9 +1315,11 @@ const toggleSection = (key: string) => {
   border-bottom: 1px solid #e5e7eb; text-align: center; word-break: keep-all;
 }
 /* 날짜·금액·연락처는 줄을 바꾸지 않는다 — 잘리거나 내려가던 자리다 */
+/* 긴 글 칸은 왼쪽부터 채운다 */
+.pw-int-tbl tbody td.l { text-align: left; padding-left: 5px; }
 /* 날짜는 한 줄로 — 해까지 들어가도록 한 단 작게 */
-.pw-int-tbl tbody td:nth-child(1),
-.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; font-size: 10px; letter-spacing: -0.2px; }
+.pw-int-tbl tbody td:nth-child(3),
+.pw-int-tbl tbody td:nth-child(4) { white-space: nowrap; font-size: 10px; letter-spacing: -0.2px; }
 /* 금액은 줄을 바꾸지 않되 한 단 작게 적어 칸을 덜 먹는다 */
 .pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; font-size: 10px; letter-spacing: -0.2px; }
 .pw-int-tbl tbody td:nth-child(7) {
