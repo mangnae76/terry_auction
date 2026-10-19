@@ -739,9 +739,9 @@ const toggleSection = (key: string) => {
               <!-- 차례는 시작·완료부터. 날짜·금액·업체 칸을 바짝 줄여
                    작업내용(23%)과 협의내용(14%)에 자리를 몰아준다 -->
               <colgroup>
-                <col style="width: 10.5%" /><col style="width: 10.5%" />
-                <col style="width: 23%" /><col style="width: 14%" />
-                <col style="width: 13%" /><col style="width: 10%" /><col style="width: 19%" />
+                <col style="width: 8.5%" /><col style="width: 8.5%" />
+                <col style="width: 25%" /><col style="width: 18%" />
+                <col style="width: 12%" /><col style="width: 9%" /><col style="width: 19%" />
               </colgroup>
               <thead>
                 <tr>
@@ -753,8 +753,8 @@ const toggleSection = (key: string) => {
                 <tr v-for="r in rowsOf(card.kind)" :key="r.id" @click="openIntEdit(r)">
                   <td>{{ shortDate(r.startDate || r.date || '') }}</td>
                   <td>{{ shortDate(r.endDate) }}</td>
-                  <td class="l">{{ r.work }}</td>
-                  <td class="l">{{ r.status }}</td>
+                  <td>{{ r.work }}</td>
+                  <td>{{ r.status }}</td>
                   <td>{{ money(r.amountWithVat) }}</td>
                   <td>{{ r.vendor }}</td>
                   <td>{{ r.phone }}</td>
@@ -1316,8 +1316,6 @@ const toggleSection = (key: string) => {
   border-bottom: 1px solid #e5e7eb; text-align: center; word-break: keep-all;
 }
 /* 날짜·금액·연락처는 줄을 바꾸지 않는다 — 잘리거나 내려가던 자리다 */
-/* 긴 글 칸은 왼쪽부터 채운다 */
-.pw-int-tbl tbody td.l { text-align: left; padding-left: 5px; }
 /* 날짜·금액·연락처는 한 줄로, 글자를 바짝 줄여 자리를 적게 먹는다 */
 .pw-int-tbl tbody td:nth-child(1),
 .pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; font-size: 9.5px; letter-spacing: -0.3px; }
