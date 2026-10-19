@@ -23,6 +23,16 @@ const planOf = (months: number, off: number): Plan => ({
   base: off === 0,
 });
 const PLANS: Plan[] = [planOf(1, 0), planOf(3, 10), planOf(6, 20), planOf(12, 30)];
+
+/** 안내 글도 표와 같은 값에서 뽑는다 — 할인율만 고치면 글이 저절로 따라온다 */
+const offPlans = PLANS.filter((p) => !p.base);
+const offText = offPlans
+  .map((p, i) => (i === offPlans.length - 1 ? `${p.label}은 ${p.off}%` : `${p.label} ${p.off}%`))
+  .join(', ');
+const maxOff = Math.max(...PLANS.map((p) => p.off));
+const offLabels = offPlans.map((p) => p.label).join('·');
+/** 한 달로 치면 얼마인지 — 깎인 값이 눈에 들어오게 같이 적는다 */
+const perMonth = (p: Plan) => Math.round(p.price / p.months);
 const picked = ref<Plan>(PLANS[0]);
 
 /** 내 포인트 — 붙이기 전까지는 0 */
@@ -65,13 +75,13 @@ const submit = () => {
       <section class="bil-card off">
         <div class="bil-off-txt">
           <strong>기간별 할인</strong>
-          <small>3개월 15%, 6개월 25%, 12개월은 35% 할인 적용</small>
+          <small>{{ offText }} 할인 적용</small>
         </div>
-        <span class="bil-off-badge">35%</span>
+        <span class="bil-off-badge">{{ maxOff }}%</span>
       </section>
 
       <p class="bil-note">
-        표에 적힌 3개월·6개월·12개월 금액은 <b>할인이 적용된 결제금액</b>입니다.
+        1개월 기준가는 {{ money(MONTH_PRICE) }}원이고, 표에 적힌 {{ offLabels }} 금액은 <b>할인이 적용된 결제금액</b>입니다.
         표시 금액에서 할인이 더 붙는 방식이 아닙니다. 아이디 공유는 보안상 막습니다.
       </p>
 
@@ -92,6 +102,10 @@ const submit = () => {
           <span class="bil-plan-price">
             <i class="box" :class="{ on: picked.key === p.key }">✓</i>{{ money(p.price) }}
           </span>
+          <small class="bil-plan-sub">
+            <template v-if="p.base">월 {{ money(MONTH_PRICE) }}원</template>
+            <template v-else>월 {{ money(perMonth(p)) }}원 꼴 · {{ money(MONTH_PRICE * p.months - p.price) }}원 절약</template>
+          </small>
         </button>
       </section>
 
@@ -189,6 +203,7 @@ const submit = () => {
 .bil-row .val small { color: #9ca3af; font-weight: 500; }
 .bil-row .pill { font-style: normal; background: #eef2fb; border-radius: 999px; padding: 2px 8px; font-size: 11.5px; font-weight: 700; color: #3850c2; }
 .bil-row.total .lab, .bil-row.total .val { color: #e0574a; font-weight: 800; font-size: 14px; }
+.bil-plan-sub { display: block; margin-top: 3px; font-size: 11px; color: #6b7280; }
 .bil-row .val.point { display: flex; align-items: center; gap: 6px; }
 .bil-input {
   flex: 1 1 auto; min-width: 0; box-sizing: border-box; height: 28px;
