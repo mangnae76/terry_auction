@@ -92,10 +92,13 @@ const onLogout = async () => {
         <i v-if="alertCount" class="amh-bell-dot" />
       </button>
       <button type="button" class="amh-user-btn" aria-label="사용자 메뉴" @click="toggleMenu">
-        <!-- 흉상 — 동그란 머리에 둥근 어깨. 그림 파일은 작게 줄이면 뭉개져서 선으로 그린다 -->
-        <svg class="amh-greet-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <circle cx="12" cy="7.5" r="4.5" />
-          <path d="M3 21.5c0-4.14 4.03-7 9-7s9 2.86 9 7a.5.5 0 0 1-.5.5h-17a.5.5 0 0 1-.5-.5Z" />
+        <!-- 흉상 — 종과 같은 선 그림으로 맞춘다 (그림 파일은 작게 줄이면 뭉개진다) -->
+        <svg
+          class="amh-greet-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"
+          fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"
+        >
+          <circle cx="12" cy="8.2" r="3.7" />
+          <path d="M4.8 20.2c1.3-3.6 3.9-5.4 7.2-5.4s5.9 1.8 7.2 5.4" />
         </svg>
       </button>
       <div v-if="menuOpen" class="amh-user-menu-wrap" @click.self="closeMenu">
@@ -177,14 +180,16 @@ const onLogout = async () => {
 .amh-greet { font-size: 11px; color: #ffb38a; font-weight: 400; white-space: nowrap; flex-shrink: 0; }
 .amh-greet strong { color: #fff; font-weight: 400; margin: 0 2px; }
 .amh-greet-nim { color: #fff; }
-.amh-greet-icon { width: 19px; height: 19px; flex-shrink: 0; fill: #fff; display: block; }
-.amh-user-btn { border: none; background: transparent; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; }
+.amh-greet-icon { width: 19px; height: 19px; flex-shrink: 0; display: block; }
+.amh-user-btn { color: #fff; }
+.amh-user-btn { border: none; background: transparent; padding: 3px; cursor: pointer; display: inline-flex; align-items: center; }
+/* 종과 사람은 손가락이 닿을 자리를 넉넉히 두고 서로 떨어뜨린다 */
 .amh-bell {
-  position: relative; border: none; background: transparent; padding: 2px; cursor: pointer;
-  display: inline-flex; align-items: center; color: #fff;
+  position: relative; border: none; background: transparent; padding: 3px; cursor: pointer;
+  display: inline-flex; align-items: center; color: #fff; margin-right: 9px;
 }
 .amh-bell-dot {
-  position: absolute; top: 1px; right: 1px; width: 7px; height: 7px; border-radius: 50%;
+  position: absolute; top: 2px; right: 2px; width: 7px; height: 7px; border-radius: 50%;
   background: #ff4d4f; border: 1px solid #1f3a72;
 }
 .amh-user-menu-wrap {
