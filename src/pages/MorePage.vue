@@ -132,7 +132,10 @@ const openPolicy = (p: { name: string; path: string }) => {
   <section class="more-shell">
     <!-- 제목과 계정 상자는 자리를 지킨다 — 아래 내용만 흐른다 -->
     <div class="more-fixed">
-      <h1 class="more-title">더보기</h1>
+      <div class="more-titlebar">
+        <button type="button" class="more-back" aria-label="뒤로" @click="router.back()">‹</button>
+        <h1 class="more-title">더보기</h1>
+      </div>
 
       <!-- 계정 -->
       <section class="more-card first">
@@ -250,12 +253,20 @@ const openPolicy = (p: { name: string; path: string }) => {
   background: #f4f6fb;
   padding: 0 0 86px;
 }
-.more-title {
-  margin: 0; padding: 9px 14px 7px;
-  font-size: 20px; font-weight: 800; color: #111827;
-  background: #fff;
+/* 제목줄 — 다른 화면처럼 왼쪽에 뒤로가기를 둔다 */
+.more-titlebar {
+  display: flex; align-items: center; gap: 4px;
+  padding: 9px 14px 7px; background: #fff;
   /* 제목줄 아래 구분선 — 물건상세와 같게 */
   border-bottom: 1px solid #e5e7eb;
+}
+.more-back {
+  border: none; background: transparent; cursor: pointer;
+  padding: 0 2px; font-size: 22px; line-height: 1; color: #334155;
+}
+.more-title {
+  margin: 0; padding: 0;
+  font-size: 20px; font-weight: 800; color: #111827; background: transparent;
 }
 .more-fixed {
   position: sticky; top: 0; z-index: 5;
