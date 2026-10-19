@@ -13,6 +13,7 @@ import { groupRows, sectionView, type CheckGroup } from '../services/postWinChec
 import { POST_WIN_EDITABLE, defaultGroups, newRowId, usePostWinBook, type BookKey } from '../services/postWinBook';
 import { useInteriorStore } from '../stores/interiorStore';
 import type { InteriorExpenseRecord } from '../types/finance';
+import { formatPhone } from '../utils/phone';
 import { bidStageOf } from '../utils/stageLabel';
 import { courtInfoOf } from '../utils/auctionSummary';
 import type { AuctionDetail } from '../types/auction';
@@ -764,7 +765,7 @@ const toggleSection = (key: string) => {
                   <td>{{ money(r.amountWithVat) }}</td>
                   <td class="vend">
                     <b>{{ r.vendor }}</b>
-                    <small v-if="r.phone">{{ r.phone }}</small>
+                    <small v-if="r.phone">{{ formatPhone(r.phone) }}</small>
                   </td>
                 </tr>
                 <tr v-if="rowsOf(card.kind).length === 0">
@@ -825,7 +826,16 @@ const toggleSection = (key: string) => {
           />
         </label>
         <label class="pw-fld"><small>업체명</small><input v-model="intDraft.vendor" class="pw-einput" placeholder="업체 이름" /></label>
-        <label class="pw-fld"><small>연락처</small><input v-model="intDraft.phone" class="pw-einput" inputmode="tel" placeholder="010-0000-0000" /></label>
+        <!-- 하이픈은 적는 대로 저절로 끼워진다 -->
+        <label class="pw-fld"><small>연락처</small>
+          <input
+            :value="intDraft.phone"
+            class="pw-einput"
+            inputmode="tel"
+            placeholder="010-0000-0000"
+            @input="intDraft.phone = formatPhone(($event.target as HTMLInputElement).value)"
+          />
+        </label>
         <label class="pw-fld"><small>비고</small><input v-model="intDraft.note" class="pw-einput" /></label>
         <div class="pw-modal-foot">
           <button v-if="intDraft.id" type="button" class="pw-ebtn del" @click="removeInt">지우기</button>
