@@ -74,7 +74,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
   <section class="lp-shell">
     <div class="lp-card">
       <div class="lp-brand">
-        <BrandLogo :size="36" />
+        <BrandLogo :size="40" />
       </div>
 
       <form class="lp-form" @submit.prevent="onSubmit">

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import logoImg from '../assets/icones/log/LOGO_ENG.png';
+import BrandLogo from './BrandLogo.vue';
 import calendarIcon from '../assets/icones/calendar-days.png';
 import sunIcon from '../assets/icones/sun.png';
 import dollarIcon from '../assets/icones/circle-dollar-sign.png';
@@ -57,8 +57,7 @@ const onLogout = async () => {
   <header class="amh">
     <div class="amh-row amh-row-top">
       <div class="amh-brand">
-        <img class="amh-brand-logo" :src="logoImg" alt="MYTURN" />
-        <span class="amh-brand-sub">AUCTION</span>
+        <BrandLogo :size="36" tone="white" />
       </div>
       <div class="amh-info">
         <button type="button" class="amh-info-cell amh-cal-btn" aria-label="입찰 캘린더 열기" @click="router.push('/bid-calendar')">
@@ -129,34 +128,6 @@ const onLogout = async () => {
   display: flex; flex-direction: column; align-items: flex-start;
   gap: 0; flex-shrink: 0; line-height: 1;
 }
-.amh-brand-logo {
-  height: 34px;
-  width: auto;
-  object-fit: contain;
-  background: transparent;
-  padding: 0;
-  border-radius: 0;
-  display: block;
-  margin-top: 6px;
-}
-/* AUCTION의 마지막 N을 로고(MYTURN)의 마지막 N과 같은 세로선에 맞춘다.
-   .amh-brand는 세로 플렉스라 width:100%가 로고 폭이 되고, 오른쪽 정렬이면 끝이 맞는다.
-   letter-spacing은 마지막 글자 뒤에도 붙어 오른쪽에 빈틈을 남기므로 그만큼 당겨 준다. */
-.amh-brand-sub {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  font-size: 7.2px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  color: #fff;
-  opacity: 0.95;
-  margin-top: -10px;
-  padding-left: 0;
-  text-align: right;
-  margin-right: -0.8px;
-}
-
 .amh-info {
   display: inline-flex;
   align-items: center;
@@ -224,8 +195,6 @@ const onLogout = async () => {
   .amh-info { gap: 6px; font-size: 10px; }
   .amh-info-cell { gap: 3px; }
   .amh-icon { width: 12px; height: 12px; }
-  .amh-brand-logo { height: 30px; }
-  .amh-brand-sub { font-size: 6px; letter-spacing: 0.6px; padding-left: 0; text-align: right; margin-right: -0.6px; }
   .amh-greet { font-size: 11px; }
   .amh-greet-icon { width: 14px; height: 14px; }
 }

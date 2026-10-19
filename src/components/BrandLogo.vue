@@ -1,36 +1,31 @@
 <script setup lang="ts">
-// 마이턴 옥션 로고 묶음 — 로그인·회원가입·관리자 도구가 같이 쓴다.
+// 마이턴 옥션 로고 — 로그인·회원가입·앱 머리글·분석 도구가 같이 쓴다.
 //
-// 로고 그림은 MYTURN 까지만 그려져 있어 'AUCTION' 은 글자로 받친다.
-// 그림 아래에 빈 자리가 조금 들어 있어(592x194 중 글자는 y133 까지) 그만큼
-// 끌어올려 MYTURN 바로 밑에 붙이고, 오른쪽도 여백만큼 당겨 N 끝과 맞춘다.
-import logoImg from '../assets/icones/log/LOGO_ENG.png';
+// 그림 한 장에 MYTURN 과 AUCTION 이 같이 들어 있다.
+// 흰 바탕에는 검정 판, 색이 깔린 바탕에는 흰 판을 쓴다 (AUCTION 글자 색만 다르다).
+// size 는 그림 전체 높이 — 597x197 비율대로 가로를 못 박아 둔다
+// (가로를 적어 두지 않으면 좁은 칸에서 그림이 눌린다).
+import { computed } from 'vue';
+import blackLogo from '../assets/icones/log/LOGO_AUCTION_BLACK.png';
+import whiteLogo from '../assets/icones/log/LOGO_AUCTION_WHITE.png';
 
-withDefaults(defineProps<{ size?: number }>(), { size: 36 });
+const props = withDefaults(defineProps<{ size?: number; tone?: 'black' | 'white' }>(), {
+  size: 38,
+  tone: 'black',
+});
+
+const src = computed(() => (props.tone === 'white' ? whiteLogo : blackLogo));
+const box = computed(() => ({
+  height: `${props.size}px`,
+  width: `${(props.size * (597 / 197)).toFixed(2)}px`,
+}));
 </script>
 
 <template>
-  <span class="brand" :style="{ '--h': `${size}px` }">
-    <img :src="logoImg" alt="MYTURN AUCTION" class="brand-logo" />
-    <small class="brand-sub">AUCTION</small>
-  </span>
+  <img :src="src" alt="MYTURN AUCTION" class="brand" :style="box" />
 </template>
 
 <style scoped>
-.brand { position: relative; display: inline-block; line-height: 0; }
-.brand-logo {
-  /* 너비를 비율대로 못 박는다 — 안 그러면 칸에 눌려 그림이 줄고 글자 자리가 어긋난다
-     (그림은 592x194) */
-  display: block; height: var(--h); width: calc(var(--h) * 3.0515); flex: none;
-}
-.brand-sub {
-  /* 그림 안에서 MYTURN 글자가 끝나는 자리(194 중 133)에 글상자 윗변을 둔다.
-     글상자 안쪽 윗공백(0.13em)만큼 다시 끌어올리면 글자끼리 맞닿는다 —
-     둘 다 그림 높이·글자 크기에 비례해서 어느 크기로 써도 같은 꼴이다 */
-  position: absolute; right: calc(var(--h) * 0.055);
-  top: calc(var(--h) * 0.6856);
-  transform: translateY(-0.13em);
-  font-size: calc(var(--h) * 0.236); line-height: 1;
-  font-weight: 700; letter-spacing: 0.6px; color: #111827; white-space: nowrap;
-}
+/* inline-block 이라 부모의 text-align 으로 가운데에 둘 수 있다 */
+.brand { display: inline-block; vertical-align: top; flex: none; object-fit: contain; }
 </style>
