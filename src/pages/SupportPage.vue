@@ -56,15 +56,18 @@ const openContact = (c: ContactWay) => {
         <h2 class="sup-h2">자주 찾는 도움말</h2>
         <ul class="sup-faq">
           <li v-for="f in faqs" :key="f.q" :class="['sup-q', { on: openQ === f.q }]">
+            <!-- 꼬리표가 곧 단추다 — 누르면 그 자리에서 답이 펼쳐진다 -->
+            <button
+              type="button"
+              :class="['sup-tag', f.tag === '회원·결제' ? 'pay' : (f.tag === '기타서비스' ? 'etc' : 'info')]"
+              :aria-expanded="openQ === f.q"
+              @click="toggle(f.q)"
+            >{{ f.tag }} 도움말<i>{{ openQ === f.q ? '▴' : '▾' }}</i></button>
             <button type="button" class="sup-q-head" @click="toggle(f.q)">
               <em class="sup-qmark">Q</em>
               <span class="sup-q-txt">{{ f.q }}</span>
-              <i class="sup-chev">{{ openQ === f.q ? '▴' : '▾' }}</i>
             </button>
             <p v-if="openQ === f.q" class="sup-a">{{ f.a }}</p>
-            <span :class="['sup-tag', f.tag === '회원·결제' ? 'pay' : (f.tag === '기타서비스' ? 'etc' : 'info')]">
-              {{ f.tag }} 도움말
-            </span>
           </li>
         </ul>
         <button v-if="!showAll && rest" type="button" class="sup-more" @click="showAll = true">
@@ -134,23 +137,29 @@ const openContact = (c: ContactWay) => {
 
 /* 도움말 */
 .sup-faq { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.sup-q { border: 1px solid #e3e8f0; border-radius: 8px; padding: 9px 10px 8px; }
+.sup-q { position: relative; border: 1px solid #e3e8f0; border-radius: 8px; padding: 9px 10px 10px; }
 .sup-q.on { border-color: #c7d2ea; background: #f8faff; }
 .sup-q-head {
   width: 100%; border: none; background: transparent; padding: 0; cursor: pointer;
   display: flex; align-items: flex-start; gap: 6px; text-align: left;
 }
 .sup-qmark { flex: none; font-style: normal; font-size: 12px; font-weight: 800; color: #2a3f8f; line-height: 1.5; }
-.sup-q-txt { flex: 1 1 auto; font-size: 12.5px; line-height: 1.5; color: #111827; font-weight: 600; word-break: keep-all; }
-.sup-chev { flex: none; font-style: normal; font-size: 11px; color: #9aa6c4; line-height: 1.6; }
+/* 오른쪽 위 꼬리표 자리를 비워 둔다 — 질문이 그 아래로 파고들지 않게 */
+.sup-q-txt {
+  flex: 1 1 auto; padding-right: 104px;
+  font-size: 12.5px; line-height: 1.5; color: #111827; font-weight: 600; word-break: keep-all;
+}
 .sup-a {
-  margin: 7px 0 0; padding-left: 18px;
+  margin: 8px 0 0; padding: 8px 0 0 18px; border-top: 1px solid #e8edf7;
   font-size: 12px; line-height: 1.75; color: #4b5563; word-break: keep-all;
 }
 .sup-tag {
-  display: inline-block; margin: 8px 0 0 18px; padding: 2px 7px; border-radius: 4px;
-  font-size: 10px; font-weight: 700; color: #fff; background: #2a3f8f;
+  position: absolute; top: 8px; right: 8px;
+  border: none; border-radius: 4px; padding: 3px 6px 3px 7px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: inherit; font-size: 10px; font-weight: 700; color: #fff; background: #2a3f8f;
 }
+.sup-tag i { font-style: normal; font-size: 8px; opacity: .85; }
 .sup-tag.pay { background: #4f7bd4; }
 .sup-tag.etc { background: #3aa06a; }
 .sup-more {
