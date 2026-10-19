@@ -719,11 +719,16 @@ const toggleSection = (key: string) => {
             <button type="button" class="pw-ebtn on" @click="openIntAdd">＋ 항목추가</button>
           </div>
           <table class="pw-int-tbl">
-            <!-- 칸은 고르게 나눈다 (table-layout: fixed) -->
+            <!-- 작업내용 칸을 넓게, 나머지는 조금씩 좁게 -->
+            <colgroup>
+              <col style="width: 12%" /><col style="width: 12%" /><col style="width: 24%" />
+              <col style="width: 9%" /><col style="width: 16%" /><col style="width: 13%" />
+              <col style="width: 14%" />
+            </colgroup>
             <thead>
               <tr>
                 <th>예상시작</th><th>예상완료</th><th>작업내용</th><th>현황</th>
-                <th>비용</th><th>업체명</th><th>연락처</th>
+                <th>비용{{ '\n' }}(VAT포함)</th><th>업체명</th><th>연락처</th>
               </tr>
             </thead>
             <tbody>
@@ -1283,7 +1288,10 @@ const toggleSection = (key: string) => {
   padding: 6px 3px; font-size: 10.5px; line-height: 1.35; color: #1f2937;
   border-bottom: 1px solid #e5e7eb; text-align: center; word-break: keep-all;
 }
-.pw-int-tbl thead th { background: #f1f3f7; font-weight: 800; color: #374151; }
+.pw-int-tbl thead th {
+  background: #f1f3f7; font-weight: 800; color: #374151;
+  white-space: pre-line; line-height: 1.25;
+}
 .pw-int-tbl .r { text-align: right; }
 .pw-int-tbl tbody tr { cursor: pointer; }
 .pw-int-tbl tbody tr:hover { background: #f7f9fd; }
