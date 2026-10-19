@@ -20,6 +20,17 @@ const myPoint = 0;
 const payCount = 0;
 const planName = '이용권 없음';
 const planRest = '–';
+/** 누르면 그 화면으로 간다 (잔여 기간은 갈 곳이 따로 없다) */
+const USER_FACTS = [
+  { label: '보유포인트', value: `${myPoint.toLocaleString('ko-KR')} P`, path: '/point-history', point: true },
+  { label: '결제내역', value: `${payCount}건`, path: '/payments' },
+  { label: '잔여서비스', value: planName, path: '/billing' },
+  { label: '잔여기간', value: planRest, path: '' },
+];
+const goFact = (path: string) => {
+  menuOpen.value = false;
+  router.push(path);
+};
 
 /** 알림이 몇 건인지 — 더보기의 바로가기와 같은 셈을 쓴다 */
 const { count: alertCount } = useAlertBadge();
@@ -121,10 +132,13 @@ const onLogout = async () => {
             </span>
             <small>{{ authStore.email }}</small>
             <dl class="amh-um-facts">
-              <dt>보유 포인트</dt><dd><b>{{ myPoint.toLocaleString('ko-KR') }} P</b></dd>
-              <dt>결제 내역</dt><dd>{{ payCount }}건</dd>
-              <dt>잔여 서비스</dt><dd>{{ planName }}</dd>
-              <dt>잔여 기간</dt><dd>{{ planRest }}</dd>
+              <template v-for="f in USER_FACTS" :key="f.label">
+                <dt>
+                  <button v-if="f.path" type="button" class="amh-um-link" @click="goFact(f.path)">{{ f.label }}</button>
+                  <template v-else>{{ f.label }}</template>
+                </dt>
+                <dd :class="{ point: f.point }">{{ f.value }}</dd>
+              </template>
             </dl>
           </li>
           <li v-for="item in MY_PAGE_ITEMS" :key="item.name">
@@ -257,7 +271,11 @@ const onLogout = async () => {
 /* 네 줄은 굵게 하지 않는다 — 이름과 등급만 도드라지게 둔다 */
 .amh-um-facts dt { font-size: 11px; color: #8a93a4; font-weight: 400; white-space: nowrap; }
 .amh-um-facts dd { margin: 0; font-size: 11.5px; color: #374151; font-weight: 400; text-align: right; }
-.amh-um-facts dd b { color: #e8622a; font-weight: 400; }
+.amh-um-facts dd.point { color: #e8622a; }
+.amh-um-link {
+  border: none; background: transparent; padding: 0; cursor: pointer;
+  font-family: inherit; font-size: 11px; font-weight: 400; color: #4a6fc0;
+}
 .amh-user-menu-btn {
   width: 100%; text-align: left; padding: 10px 14px; border: none; background: transparent;
   font-size: 13px; color: #dc2626; font-weight: 700; cursor: pointer;
