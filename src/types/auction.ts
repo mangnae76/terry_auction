@@ -417,6 +417,8 @@ export interface AuctionDetail {
   wonDate?: string;
   /** 예상수익분석에서 직접 적는 매도일 */
   sellDate?: string;
+  /** 법원이 통지한 대금지급기한 — 비워 두면 낙찰일 + 45일로 셈한다 (services/alerts) */
+  balanceDueDate?: string;
   isFieldTrip: boolean;
   propertyType: string;
   address: string;

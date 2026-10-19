@@ -182,7 +182,9 @@ export const buildAlerts = (input: AlertInput): AlertItem[] => {
   for (const a of input.auctions) {
     const stage = bidStageOf(a);
     const won = parseYmd(a.wonDate);
-    const due = won ? addDays(won, BALANCE_DUE_DAYS) : null;
+    // 법원 통지서의 기한을 적어 뒀으면 그 날짜가 먼저다 — 비어 있을 때만 낙찰일로 셈한다
+    const told = parseYmd(a.balanceDueDate);
+    const due = told ?? (won ? addDays(won, BALANCE_DUE_DAYS) : null);
 
     // 1) 잔금 납부 기한 — 낙찰했고 아직 팔기 전인 물건
     if (due && stage === '낙찰') {
@@ -193,7 +195,9 @@ export const buildAlerts = (input: AlertInput): AlertItem[] => {
           title: `${label(a)} 잔금 납부 기한`,
           body: d < 0
             ? '기한이 지났다. 납부하지 않으면 보증금을 잃는다 — 법원 통지서의 기한을 바로 확인하자.'
-            : `낙찰일로부터 ${BALANCE_DUE_DAYS}일째다. 대출 실행과 등기 서류를 함께 맞춰 두자.`,
+            : told
+              ? '법원이 알려 준 기한이다. 대출 실행과 등기 서류를 함께 맞춰 두자.'
+              : `낙찰일로부터 ${BALANCE_DUE_DAYS}일로 어림한 날짜다. 물건상세에 통지서의 기한을 적어 두면 그 날짜로 센다.`,
           dday: d,
           when: fmt(due),
           tone: d <= 3 ? 'red' : 'orange',

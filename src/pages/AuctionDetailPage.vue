@@ -1628,12 +1628,12 @@ const cyclePriority = async () => {
 };
 /** 날짜 칸이 좁다 — 앞의 '20' 을 떼어 '26-10-14' 로 적는다 */
 const shortYmd = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2) : (d ?? ''));
-const setProfitDate = async (key: 'wonDate' | 'sellDate', value: string) => {
+const setProfitDate = async (key: 'wonDate' | 'sellDate' | 'balanceDueDate', value: string) => {
   if (!auction.value) return;
   auction.value[key] = value;
   await store.saveAuction(auction.value);
 };
-const profitDateTarget = ref<'' | 'wonDate' | 'sellDate'>('');
+const profitDateTarget = ref<'' | 'wonDate' | 'sellDate' | 'balanceDueDate'>('');
 const profitDateValue = computed<string>({
   get: () => {
     const key = profitDateTarget.value;
@@ -6138,6 +6138,10 @@ const goBack = () => router.back();
               <em>낙찰일</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) }">{{ shortYmd(auction.wonDate) || '날짜입력' }}</span></span>
             </button>
+            <button type="button" class="adp-pd-item" @click="profitDateTarget = 'balanceDueDate'" title="법원이 통지한 대금지급기한 — 비우면 낙찰일+45일로 셈한다">
+              <em>잔금기한</em>
+              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.balanceDueDate) }">{{ shortYmd(auction.balanceDueDate) || '날짜입력' }}</span></span>
+            </button>
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'sellDate'">
               <em>매도일</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.sellDate) }">{{ shortYmd(auction.sellDate) || '날짜입력' }}</span></span>
@@ -9402,7 +9406,9 @@ const goBack = () => router.back();
 /* 날짜 둘 + 진행상황 + 표 스텝퍼를 한 줄에 — 줄이 내려가면 그만큼 빈 자리가
    생겨 표가 한참 밀린다. 글자('낙찰'·'매도')와 칸을 줄여 한 줄에 맞춘다 */
 .adp-profit-dates {
-  display: flex; align-items: center; gap: 4px; flex-wrap: nowrap;
+  /* 날짜가 셋(낙찰일·잔금기한·매도일)으로 늘어 폭이 좁은 화면에서는 줄이 내려간다.
+     표 스텝퍼는 margin-left:auto 로 어느 줄에 서든 오른쪽 끝에 붙는다 */
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap; row-gap: 6px;
   padding: 8px 0 10px; border-bottom: 1px solid #eef1f6; margin-bottom: 10px;
 }
 /* 제목 + 날짜 줄을 통째로 화면에 붙인다. 붙는 자리는 상단 고정줄 바로 아래 —
@@ -9435,7 +9441,7 @@ const goBack = () => router.back();
   padding: 4px 8px; background: #fff;
   /* 값이 있든 없든 칸 크기가 흔들리지 않게 폭을 고정한다.
      날짜 둘·표 스텝퍼·별이 한 줄에 서야 해서 칸을 좁게 잡았다 */
-  width: 88px; box-sizing: border-box; padding: 5px 4px; gap: 3px;
+  width: 80px; box-sizing: border-box; padding: 5px 4px; gap: 3px;
 }
 .adp-pd-box span { font-size: 12px; font-weight: 400; color: #111827; white-space: nowrap; }
 /* 아직 안 고른 칸의 '날짜입력' 은 안내 글이라 회색으로 */
