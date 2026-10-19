@@ -100,7 +100,7 @@ watch(() => auth.uid, (uid) => {
   <section class="alr-shell">
     <header class="alr-header">
       <button type="button" class="alr-back" aria-label="뒤로" @click="router.back()">‹</button>
-      <h1 class="alr-title">알림 설정</h1>
+      <h1 class="alr-title">알림설정</h1>
       <span class="alr-crumb">마이페이지 › 알림</span>
     </header>
 

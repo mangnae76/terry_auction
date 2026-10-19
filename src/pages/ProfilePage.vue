@@ -86,7 +86,7 @@ const save = async () => {
         <div class="prf-row"><span class="lab">가입일</span><span class="val">{{ joinedAt }}</span></div>
       </section>
 
-      <p class="prf-note">비밀번호 변경·알림 설정·결제 관리는 다음에 붙입니다.</p>
+      <p class="prf-note">비밀번호 변경·알림설정·결제하기는 다음에 붙입니다.</p>
     </div>
 
     <AppMobileBottomNav active="more" />

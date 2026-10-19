@@ -144,7 +144,7 @@ const openPolicy = (p: { name: string; path: string }) => {
             {{ displayName }}<span class="arr">›</span>
           </button>
           <button type="button" class="pill" @click="onAuthPill">{{ authStore.isLoggedIn ? '로그아웃' : '로그인' }}</button>
-          <button type="button" class="pill" @click="router.push('/profile')">내 정보 수정</button>
+          <button type="button" class="pill" @click="router.push('/profile')">내 정보</button>
           <button type="button" class="pill" @click="goMyPage">마이페이지</button>
           <button type="button" class="pill" @click="notReady('고객센터')">고객센터</button>
           <button type="button" class="pill last" @click="notReady('인증/보안')">인증·보안</button>
@@ -278,8 +278,8 @@ const openPolicy = (p: { name: string; path: string }) => {
 
 .pill {
   border: 1px solid #e3e7ef; background: #f7f8fb; border-radius: 999px;
-  /* 글자 길이가 달라도 칸은 같게 — '내 정보 수정'이 들어가는 폭에 맞춘다 */
-  width: 62px; flex: 0 0 62px; box-sizing: border-box;
+  /* 글자 길이가 달라도 칸은 같게 — 다섯이 이름과 한 줄에 서는 폭으로 잡는다 */
+  width: 52px; flex: 0 0 52px; box-sizing: border-box;
   padding: 5px 0; font-size: 10px; font-weight: 700; color: #4b5563; cursor: pointer;
   text-align: center; white-space: nowrap; letter-spacing: -0.3px;
 }
