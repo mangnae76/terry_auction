@@ -147,9 +147,9 @@ src/
 grep -c 'public: true' src/router/index.ts   # 항상 2 여야 합니다
 ```
 
-### 주요 컬렉션
+### 데이터 구조
 
-`users`, `userPrefs`(사용자 설정), `auctions`(물건), `auctionPhotos`, `photoUsage`, `fieldTrips`(임장경로), `financeCashFlows` / `financeBusinessExpenses` / `financeFuelMeal` / `financeItemPurchases`(자금관리), `interiorExpenses`(인테리어), `cache*`(공공데이터 캐시, 공용), `adminSnapshots`
+컬렉션과 필드는 **[docs/DB.md](./DB.md)** 에 따로 정리해 두었습니다. 개발 전에 꼭 읽으세요.
 
 ---
 
@@ -202,5 +202,6 @@ npx -y firebase-tools@latest deploy --only firestore:rules   # 규칙 고쳤을 
 | `src/types/auction.ts` | 물건 데이터 모양 — 이 앱의 중심 |
 | `src/services/alerts.ts` | 알림 규칙. "데이터 모듈 + 화면은 그리기만" 구조의 좋은 예 |
 | `src/components/AppMobileHeader.vue` | 모든 화면 위에 올라가는 머리글 |
+| `docs/DB.md` | **데이터 구조 (Firestore) — 개발 전에 꼭** |
 | `docs/HANDOFF.md` | 이전 인수인계 문서 |
 | `README.md` | 환경 변수 전체 설명 |
