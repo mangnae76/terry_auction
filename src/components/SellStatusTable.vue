@@ -11,11 +11,13 @@ import type { AgencyRow } from '../types/auction';
 
 const props = withDefaults(defineProps<{
   rows: AgencyRow[];
+  /** 'agency' 는 중개업체 목록, 'direct' 는 직거래 자리(피터팬·당근) */
+  mode?: 'agency' | 'direct';
   /** 편집 중인가 — 아니면 적어 둔 값만 보여 준다 */
   editing?: boolean;
   /** 이 수보다 많을 때만 줄마다 × 를 보여 준다 */
   minRows?: number;
-}>(), { editing: true, minRows: 1 });
+}>(), { editing: true, minRows: 1, mode: 'agency' });
 
 const emit = defineEmits<{
   /** 값이 바뀌었다 — 저장은 부르는 쪽이 한다 */
@@ -37,13 +39,12 @@ const book = useAgencyBook();
 onMounted(() => { void book.load(auth.uid); });
 watch(() => auth.uid, (uid) => { void book.load(uid); });
 
-/** 중개업체 관리에 없어도 여기서는 늘 고를 수 있는 곳 — 직거래 자리 */
-const EXTRA_NAMES = ['피터팬', '당근'];
-/** 목록에 없는 이름이 이미 적혀 있으면 그것도 같이 보여 준다 —
- *  예전에 손으로 적어 둔 업체가 목록에서 사라지면 안 된다 */
+/** 직거래 자리 — 중개업체 관리와는 다른 목록이다 */
+const DIRECT_NAMES = ['피터팬', '당근'];
+/** 고를 수 있는 이름. 목록에 없는 이름이 이미 적혀 있으면 그것도 같이 보여 준다 —
+ *  예전에 손으로 적어 둔 곳이 사라지면 안 된다 */
 const nameOptions = (row: AgencyRow) => {
-  const names = [...book.names.value];
-  EXTRA_NAMES.forEach((n) => { if (!names.includes(n)) names.push(n); });
+  const names = props.mode === 'direct' ? [...DIRECT_NAMES] : [...book.names.value];
   const cur = (row.name ?? '').trim();
   return cur && !names.includes(cur) ? [...names, cur] : names;
 };

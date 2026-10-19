@@ -354,9 +354,9 @@ const emptyAgencyRow = (): AgencyRow => ({
 });
 /** 매도·임대의 두 표 — 중개 의뢰 현황과 직거래 (꼴은 같고 자리만 다르다) */
 type SellKey = 'sellAgencyRows' | 'directSellRows';
-const SELL_CARDS: Array<{ key: SellKey; title: string }> = [
-  { key: 'sellAgencyRows', title: '중개 의뢰 현황' },
-  { key: 'directSellRows', title: '직거래' },
+const SELL_CARDS: Array<{ key: SellKey; title: string; mode: 'agency' | 'direct' }> = [
+  { key: 'sellAgencyRows', title: '중개 의뢰 현황', mode: 'agency' },
+  { key: 'directSellRows', title: '직거래', mode: 'direct' },
 ];
 const sellRowsOf = (key: SellKey): AgencyRow[] => {
   const a = picked.value;
@@ -851,6 +851,7 @@ const toggleSection = (key: string) => {
             <SellStatusTable
               v-else
               :rows="sellRowsOf(card.key)"
+              :mode="card.mode"
               :min-rows="SELL_ROW_MIN"
               @change="persistSell"
               @remove="(i: number) => removeSellRow(card.key, i)"
