@@ -1,9 +1,12 @@
 import {
+  EmailAuthProvider,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   signInWithCustomToken,
   signInWithEmailAndPassword,
+  reauthenticateWithCredential,
   signOut,
+  updatePassword,
   updateProfile,
   type Unsubscribe,
   type User,
@@ -143,6 +146,68 @@ export const loginWithNaver = async (): Promise<UserProfile> => {
 export const updateNickname = async (uid: string, nickname: string): Promise<void> => {
   assertReady();
   await setDoc(doc(firestore!, USERS_COLLECTION, uid), { nickname }, { merge: true });
+};
+
+/** 내 정보 수정 화면이 다루는 값 — users/{uid} 에 닉네임과 함께 담는다 */
+export interface AccountDetail {
+  nickname: string;
+  /** 이메일은 앞뒤를 나눠 적는다 (아이디 @ 도메인) */
+  emailId: string;
+  emailDomain: string;
+  emailOptIn: boolean;
+  phone1: string;
+  phone2: string;
+  phone3: string;
+  smsOptIn: boolean;
+  address1: string;
+  address2: string;
+}
+
+export const emptyAccountDetail = (): AccountDetail => ({
+  nickname: '', emailId: '', emailDomain: '', emailOptIn: false,
+  phone1: '', phone2: '', phone3: '', smsOptIn: false,
+  address1: '', address2: '',
+});
+
+export const loadAccountDetail = async (uid: string): Promise<AccountDetail> => {
+  const blank = emptyAccountDetail();
+  if (!uid || !firestore) return blank;
+  try {
+    const snap = await getDoc(doc(firestore, USERS_COLLECTION, uid));
+    if (!snap.exists()) return blank;
+    const d = snap.data() as Partial<AccountDetail>;
+    return {
+      ...blank,
+      ...Object.fromEntries(
+        Object.keys(blank).map((k) => [k, (d as Record<string, unknown>)[k] ?? blank[k as keyof AccountDetail]]),
+      ),
+    } as AccountDetail;
+  } catch (err) {
+    console.warn('[auth] 내 정보 읽기 실패:', err);
+    return blank;
+  }
+};
+
+export const saveAccountDetail = async (uid: string, detail: AccountDetail): Promise<void> => {
+  assertReady();
+  await setDoc(doc(firestore!, USERS_COLLECTION, uid), { ...detail }, { merge: true });
+};
+
+/** 비밀번호로 들어온 계정인지 — 카카오·네이버로 들어오면 비밀번호가 없다 */
+export const hasPasswordLogin = (): boolean =>
+  !!auth?.currentUser?.providerData?.some((p) => p.providerId === 'password');
+
+/** 비밀번호 바꾸기 — 본인 확인을 위해 지금 쓰는 비밀번호를 먼저 받는다 */
+export const changePassword = async (currentPw: string, nextPw: string): Promise<void> => {
+  assertReady();
+  const user = auth!.currentUser;
+  if (!user?.email) throw new Error('비밀번호를 바꿀 수 있는 계정이 아닙니다.');
+  try {
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPw));
+  } catch {
+    throw new Error('현재 비밀번호가 맞지 않습니다.');
+  }
+  await updatePassword(user, nextPw);
 };
 
 export const logout = async (): Promise<void> => {
