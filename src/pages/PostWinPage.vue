@@ -257,7 +257,9 @@ const toggleAll = () => {
 // 자금관리의 사업지출과 같은 꼴이되 자리는 따로다 — 여기 적은 것은 여기에만 남는다
 const interior = useInteriorStore();
 onMounted(() => interior.initialize());
-const interiorRows = computed(() => [...interior.rows]
+/** 고른 물건의 것만 본다 — 물건은 위 카드에서 고르므로 적을 때 또 고르지 않는다 */
+const interiorRows = computed(() => interior.rows
+  .filter((r) => r.auctionId === (picked.value?.id ?? ''))
   .sort((a, b) => ((b.startDate || b.date || '')).localeCompare(a.startDate || a.date || '')));
 const interiorTotal = computed(() => interiorRows.value
   .reduce((sum, r) => sum + (r.amountWithVat || 0), 0));
@@ -273,8 +275,6 @@ const openIntAdd = () => {
   intDraft.value = {
     startDate: todayIso(),
     endDate: '',
-    auctionId: picked.value?.id ?? '',
-    auctionLabel: picked.value ? (shortAddr(picked.value.address) || picked.value.caseNumber) : '',
     work: '',
     status: '예정',
     amountWithVat: 0,
@@ -290,10 +290,12 @@ const openIntEdit = (row: InteriorExpenseRecord) => {
 };
 const saveInt = async () => {
   const d = intDraft.value;
-  const target = ownedAuctions.value.find((a) => a.id === d.auctionId);
+  const a = picked.value;
   await interior.save({
     ...d,
-    auctionLabel: target ? (shortAddr(target.address) || target.caseNumber) : (d.auctionLabel ?? ''),
+    // 물건은 늘 위에서 고른 그 물건이다
+    auctionId: a?.id ?? '',
+    auctionLabel: a ? (shortAddr(a.address) || a.caseNumber) : '',
     amountWithVat: Number(d.amountWithVat ?? 0),
   });
   intOpen.value = false;
@@ -313,10 +315,10 @@ const exportInterior = () => {
     return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
   };
   const rows: Array<Array<string | number>> = [
-    ['예상시작', '예상완료', '작업내용', '현황', '비용(VAT포함)', '업체명', '연락처', '물건', '비고'],
+    ['예상시작', '예상완료', '작업내용', '현황', '비용(VAT포함)', '업체명', '연락처', '비고'],
     ...interiorRows.value.map((r) => [
       r.startDate || r.date || '', r.endDate, r.work, r.status,
-      r.amountWithVat, r.vendor, r.phone, r.auctionLabel, r.note,
+      r.amountWithVat, r.vendor, r.phone, r.note,
     ]),
   ];
   const text = '\ufeff' + rows.map((r) => r.map(esc).join(',')).join('\n');
@@ -716,7 +718,7 @@ const toggleSection = (key: string) => {
         <div class="pw-card-body">
           <div class="pw-int-tools">
             <button type="button" class="pw-ebtn" @click="exportInterior">⬇ 엑셀저장</button>
-            <button type="button" class="pw-ebtn on" @click="openIntAdd">＋ 항목추가</button>
+            <button type="button" class="pw-ebtn on" :disabled="!picked" @click="openIntAdd">＋ 항목추가</button>
           </div>
           <table class="pw-int-tbl">
             <!-- 작업내용 칸을 넓게, 나머지는 조금씩 좁게 -->
@@ -742,7 +744,10 @@ const toggleSection = (key: string) => {
                 <td>{{ r.phone }}</td>
               </tr>
               <tr v-if="interiorRows.length === 0">
-                <td colspan="7" class="empty">적어 둔 비용이 없습니다. 위의 ＋ 항목추가를 누르세요.</td>
+                <td colspan="7" class="empty">
+                  <template v-if="picked">적어 둔 비용이 없습니다. 위의 ＋ 항목추가를 누르세요.</template>
+                  <template v-else>먼저 위에서 물건을 고르세요.</template>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -766,7 +771,7 @@ const toggleSection = (key: string) => {
       <div class="pw-modal-veil" @click="intOpen = false" />
       <div class="pw-modal" @click.stop>
         <header class="pw-modal-head">
-          <strong>인테리어 비용</strong>
+          <strong>인테리어 비용<em v-if="picked" class="pw-modal-sub">{{ shortAddr(picked.address) || picked.caseNumber }}</em></strong>
           <button type="button" class="pw-flow-close" aria-label="닫기" @click="intOpen = false">×</button>
         </header>
         <!-- 적는 차례는 표의 칸 차례와 같다 -->
@@ -781,12 +786,6 @@ const toggleSection = (key: string) => {
         <label class="pw-fld"><small>비용 (VAT 포함)</small><input v-model.number="intDraft.amountWithVat" type="number" inputmode="numeric" class="pw-einput" /></label>
         <label class="pw-fld"><small>업체명</small><input v-model="intDraft.vendor" class="pw-einput" placeholder="업체 이름" /></label>
         <label class="pw-fld"><small>연락처</small><input v-model="intDraft.phone" class="pw-einput" inputmode="tel" placeholder="010-0000-0000" /></label>
-        <label class="pw-fld"><small>물건</small>
-          <select v-model="intDraft.auctionId" class="pw-einput">
-            <option value="">선택 안 함</option>
-            <option v-for="a in ownedAuctions" :key="a.id" :value="a.id">{{ shortAddr(a.address) || a.caseNumber }}</option>
-          </select>
-        </label>
         <label class="pw-fld"><small>비고</small><input v-model="intDraft.note" class="pw-einput" /></label>
         <div class="pw-modal-foot">
           <button v-if="intDraft.id" type="button" class="pw-ebtn del" @click="removeInt">지우기</button>
@@ -1310,6 +1309,8 @@ const toggleSection = (key: string) => {
 }
 .pw-modal-head { display: flex; align-items: center; margin-bottom: 8px; }
 .pw-modal-head strong { font-size: 13.5px; font-weight: 800; color: #111827; }
+.pw-modal-sub { font-style: normal; font-size: 11.5px; font-weight: 600; color: #6b7280; margin-left: 6px; }
+.pw-ebtn:disabled { opacity: 0.45; cursor: default; }
 .pw-modal-head .pw-flow-close { margin-left: auto; }
 .pw-fld { display: block; margin-bottom: 7px; }
 .pw-fld small { display: block; font-size: 10.5px; font-weight: 700; color: #6b7280; margin-bottom: 2px; }
