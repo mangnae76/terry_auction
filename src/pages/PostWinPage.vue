@@ -8,6 +8,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import SellStatusTable from '../components/SellStatusTable.vue';
+import AgencyBookModal from '../components/AgencyBookModal.vue';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
@@ -374,6 +375,9 @@ const emptyAgencyRow = (): AgencyRow => ({
 });
 /** 매도·임대의 두 표 — 중개 의뢰 현황과 직거래 (꼴은 같고 자리만 다르다) */
 type SellKey = 'sellAgencyRows' | 'directSellRows';
+/** 중개업체 관리 팝업 — 상담표에서 바로 열어 업체를 더한다 */
+const agencyBookOpen = ref(false);
+
 const SELL_CARDS: Array<{
   key: SellKey; title: string; mode: 'agency' | 'direct';
   /** 제목줄 오른쪽 바로가기 (직거래 올리는 자리들) */
@@ -887,6 +891,16 @@ const toggleSection = (key: string) => {
             >
               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14 21 3"/></svg>{{ lk.label }}
             </a>
+            <!-- 업체 더하기 — 화면을 옮기지 않고 팝업으로 연다 -->
+            <button
+              v-if="card.mode === 'agency'"
+              type="button"
+              class="pw-golink"
+              title="중개업체 관리"
+              @click.stop="agencyBookOpen = true"
+            >
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>업체
+            </button>
             <span class="pw-rowstep">
               <span class="lab">행</span>
               <button type="button" aria-label="행 삭제" :disabled="!picked || sellRowsOf(card.key).length <= SELL_ROW_MIN" @click="removeLastSellRow(card.key)">−</button>
@@ -972,6 +986,7 @@ const toggleSection = (key: string) => {
       </div>
     </template>
 
+    <AgencyBookModal :open="agencyBookOpen" @close="agencyBookOpen = false" />
     <AppMobileBottomNav active="post-win" />
     <AppToast :visible="!!toastText" :text="toastText" tone="success" />
   </section>
@@ -1458,18 +1473,22 @@ const toggleSection = (key: string) => {
 .pw-flow-list span { flex: 1 1 auto; min-width: 0; color: #374151; }
 
 /* 행 더하기·빼기 — 물건상세의 단계 단추와 같은 꼴 */
-.pw-rowstep { display: inline-flex; align-items: center; gap: 4px; }
+/* 행 더하기·빼기 — 물건상세(.adp-mkt-step)와 같은 알약 하나 */
+.pw-rowstep {
+  display: inline-flex; align-items: center; gap: 2px;
+  border: 1px solid #d5dbe6; border-radius: 999px; background: #fff; padding: 1px 4px 1px 7px;
+}
 .pw-card-head .pw-golink + .pw-golink { margin-left: 4px; }
 .pw-card-head .pw-golink:first-of-type { margin-left: auto; }
 .pw-card-head .pw-golink + .pw-rowstep { margin-left: 6px; }
 .pw-card-head h2 + .pw-rowstep { margin-left: auto; }
-.pw-rowstep .lab { font-size: 11px; font-weight: 700; color: #6b7280; }
+.pw-rowstep .lab { font-size: 11px; font-weight: 700; color: #6b7280; margin-right: 1px; }
 .pw-rowstep button {
-  width: 24px; height: 24px; padding: 0;
-  border: 1px solid #dde3ee; border-radius: 6px; background: #fff;
-  font-family: inherit; font-size: 14px; line-height: 1; color: #2b6df3; cursor: pointer;
+  border: none; background: transparent; cursor: pointer;
+  width: 20px; height: 20px; padding: 0; line-height: 1;
+  font-family: inherit; font-size: 14px; font-weight: 800; color: #2b6df3;
 }
-.pw-rowstep button:disabled { opacity: 0.45; cursor: default; }
+.pw-rowstep button:disabled { color: #d1d5db; cursor: default; }
 
 /* 인테리어 비용 */
 .pw-int-tools { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }

@@ -125,6 +125,12 @@ const router = createRouter({
       component: () => import('../pages/BidCalendarPage.vue'),
     },
     {
+      // 내 정보 — 더보기 · 프로필 메뉴의 '내 정보 수정'
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../pages/ProfilePage.vue'),
+    },
+    {
       path: '/agencies',
       name: 'agencies',
       component: () => import('../pages/AgencyBookPage.vue'),

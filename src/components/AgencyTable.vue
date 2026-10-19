@@ -4,7 +4,6 @@
 // 예전에는 두 곳에 같은 마크업이 복사돼 있어, 한쪽만 고치면 서로 어긋났다.
 // 칸 구성·안내글·삭제 버튼을 여기 한곳에서만 고치면 두 화면이 같이 바뀐다.
 import { onMounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { telDigits, useAgencyBook } from '../services/agencyBook';
 import type { AgencyRow } from '../types/auction';
@@ -34,13 +33,6 @@ const auth = useAuthStore();
 const book = useAgencyBook();
 onMounted(() => { void book.load(auth.uid); });
 watch(() => auth.uid, (uid) => { void book.load(uid); });
-
-// 업체 더하기는 '중개업체 관리' 화면에서 한다 — 거기서 뒤로 누르면 이 자리로 돌아온다
-const router = useRouter();
-const goAgencies = () => {
-  nameOpen.value = -1;
-  void router.push('/agencies');
-};
 
 /** 목록에 없는 이름이 이미 적혀 있으면 그것도 같이 보여 준다 —
  *  예전에 손으로 적어 둔 업체가 목록에서 사라지면 안 된다 */
@@ -150,9 +142,6 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
                 >
                   <span>{{ opt }}</span>
                   <span v-if="row.name === opt" class="ck">✓</span>
-                </li>
-                <li class="adp-agency-option add" @click="goAgencies()">
-                  <span>＋ 업체 추가</span>
                 </li>
               </ul>
             </template>
@@ -268,7 +257,6 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
 
 <style scoped>
 /* 업체 더하기 — 드롭다운에서 '＋ 업체 추가'를 누르면 이 줄이 뜬다 */
-.adp-agency-option.add { color: #2b6df3; font-weight: 700; }
 /* 쓰는 쪽(AuctionDetailPage)의 scoped 스타일은 이 안까지 닿지 않는다 —
    상담표에 필요한 모양만 여기에 따로 적어 둔다 */
 .agency-table { display: flex; flex-direction: column; gap: 6px; padding: 0 2px; }

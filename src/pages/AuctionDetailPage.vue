@@ -30,6 +30,7 @@ import AppToast from '../components/AppToast.vue';
 import PhotoGrid from '../components/PhotoGrid.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import AgencyTable from '../components/AgencyTable.vue';
+import AgencyBookModal from '../components/AgencyBookModal.vue';
 import PhotoCountMark from '../components/PhotoCountMark.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
@@ -4537,6 +4538,8 @@ watch(
 const agencyRows = computed<AgencyRow[]>(() => surveyForm.value.agencyRows ?? []);
 // 4. 부동산 현장 상담 — 유선 정보와 별개로 현장에서 들은 내용을 적는다
 const siteAgencyRows = computed<AgencyRow[]>(() => surveyForm.value.siteAgencyRows ?? []);
+/** 중개업체 관리 팝업 — 상담표에서 바로 열어 업체를 더한다 (화면을 옮기지 않는다) */
+const agencyBookOpen = ref(false);
 const addSiteAgencyRow = async () => {
   const sf = surveyForm.value;
   if (!sf.siteAgencyRows) sf.siteAgencyRows = [];
@@ -8198,6 +8201,7 @@ const goBack = () => router.back();
             <!-- 4. 부동산 유선 상담 — 한 업체를 두 줄로 나눠 가로 스크롤 없이 담는다 -->
             <div class="adp-dm-head sec2">
               <strong class="adp-dm-title">4. 부동산 유선 상담</strong>
+              <button type="button" class="adp-mkt-addrow agency-book" title="중개업체 관리" @click="agencyBookOpen = true">＋ 업체</button>
               <span class="adp-mkt-step">
                 <span class="lab">행</span>
                 <button type="button" aria-label="행 삭제" :disabled="agencyRows.length <= AGENCY_ROW_MIN" @click="removeLastAgencyRow">−</button>
@@ -8589,6 +8593,7 @@ const goBack = () => router.back();
             <!-- 4. 부동산 현장 상담 — 현장에서 들은 내용을 업체별로 적는다 -->
             <div class="adp-dm-head sec2">
               <strong class="adp-dm-title">4. 부동산 현장 상담</strong>
+              <button type="button" class="adp-mkt-addrow agency-book" title="중개업체 관리" @click="agencyBookOpen = true">＋ 업체</button>
               <span class="adp-mkt-step">
                 <span class="lab">행</span>
                 <button type="button" aria-label="행 삭제" :disabled="siteAgencyRows.length <= AGENCY_ROW_MIN" @click="removeLastSiteAgencyRow">−</button>
@@ -8728,6 +8733,7 @@ const goBack = () => router.back();
 
     <AppConfirm :box="confirmBox" @close="confirmBox = null" />
 
+    <AgencyBookModal :open="agencyBookOpen" @close="agencyBookOpen = false" />
     <AppMobileBottomNav active="watchlist" />
     <AppToast :visible="!!copiedMsg" :text="copiedMsg" :tone="copiedTone" />
 
@@ -10526,6 +10532,8 @@ const goBack = () => router.back();
 }
 .adp-mkt-step button:disabled { color: #d1d5db; cursor: default; }
 
+.adp-mkt-addrow.agency-book { margin-left: auto; color: #2b6df3; border-color: #c7d7f8; }
+.adp-mkt-addrow.agency-book + .adp-mkt-step { margin-left: 6px; }
 .adp-mkt-addrow {
   flex: 0 0 auto; border: 1px solid #d5dbe6; background: #fff; color: #4b5563;
   border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 700; cursor: pointer;

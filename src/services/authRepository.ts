@@ -139,6 +139,12 @@ export const loginWithNaver = async (): Promise<UserProfile> => {
   return loginWithSocial(result);
 };
 
+/** 닉네임 바꾸기 — users/{uid} 에 담고, 바뀐 프로필을 돌려준다 */
+export const updateNickname = async (uid: string, nickname: string): Promise<void> => {
+  assertReady();
+  await setDoc(doc(firestore!, USERS_COLLECTION, uid), { nickname }, { merge: true });
+};
+
 export const logout = async (): Promise<void> => {
   assertReady();
   await signOut(auth!);

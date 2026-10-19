@@ -78,7 +78,7 @@ const openMyPageItem = (item: { name: string; path: string; query?: Record<strin
 };
 
 
-const POLICIES = ['이용약관', '개인정보처리방침', '위치기반서비스 이용약관', '청소년보호정책'];
+const POLICIES = ['이용약관', '개인정보처리방침', '위치기반서비스 이용약관'];
 </script>
 
 <template>

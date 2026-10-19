@@ -5,7 +5,6 @@
 // 듣는 자리고, 여기는 내 물건을 어떻게 내놓을지 적는 자리라 칸이 다르다 —
 // 매도면 입금·매도가, 임대(월세·전세)면 전세가·월세가를 받는다.
 import { onMounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { telDigits, useAgencyBook } from '../services/agencyBook';
 import type { AgencyRow } from '../types/auction';
@@ -40,13 +39,6 @@ const auth = useAuthStore();
 const book = useAgencyBook();
 onMounted(() => { void book.load(auth.uid); });
 watch(() => auth.uid, (uid) => { void book.load(uid); });
-
-// 업체 더하기는 '중개업체 관리' 화면에서 한다 — 거기서 뒤로 누르면 이 자리로 돌아온다
-const router = useRouter();
-const goAgencies = () => {
-  nameOpen.value = -1;
-  void router.push('/agencies');
-};
 
 /** 직거래 자리 — 중개업체 관리와는 다른 목록이다 */
 const DIRECT_NAMES = ['피터팬', '당근'];
@@ -189,9 +181,6 @@ const rangeText = (row: AgencyRow, g: MoneyGroup) => {
                 >
                   <span>{{ opt }}</span>
                   <span v-if="row.name === opt" class="ck">✓</span>
-                </li>
-                <li v-if="props.mode !== 'direct'" class="adp-agency-option add" @click="goAgencies()">
-                  <span>＋ 업체 추가</span>
                 </li>
               </ul>
             </template>
@@ -347,7 +336,6 @@ const rangeText = (row: AgencyRow, g: MoneyGroup) => {
 
 <style scoped>
 /* 업체 더하기 — 드롭다운에서 '＋ 업체 추가'를 누르면 이 줄이 뜬다 */
-.adp-agency-option.add { color: #2b6df3; font-weight: 700; }
 
 /* 매수문의 — 이름·연락처를 줄줄이 */
 .adp-agency-line.buyers { display: block; }
