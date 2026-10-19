@@ -744,9 +744,9 @@ const toggleSection = (key: string) => {
                    남는 몫은 협의내용에 더 준다. 넘치면 두 줄로 내려 적는다 -->
               <!-- 업체명과 연락처는 한 칸에 위아래로 — 둘 다 제 너비를 쓰려면 이 편이 낫다 -->
               <colgroup>
-                <col style="width: 12%" /><col style="width: 12%" />
-                <col style="width: 18.5%" /><col style="width: 24%" />
-                <col style="width: 14.5%" /><col style="width: 19%" />
+                <col style="width: 11.5%" /><col style="width: 11.5%" />
+                <col style="width: 17.5%" /><col style="width: 23.5%" />
+                <col style="width: 18%" /><col style="width: 18%" />
               </colgroup>
               <thead>
                 <tr>
@@ -1330,8 +1330,9 @@ const toggleSection = (key: string) => {
 }
 /* 날짜·금액·연락처는 한 줄로, 글자를 바짝 줄여 자리를 적게 먹는다 */
 .pw-int-tbl tbody td:nth-child(1),
-.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; font-size: 10px; letter-spacing: -0.4px; }
-.pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; font-size: 10px; letter-spacing: -0.4px; }
+.pw-int-tbl tbody td:nth-child(2) { white-space: nowrap; font-size: 9.5px; letter-spacing: -0.4px; }
+/* 금액도 글 칸과 같은 크기로 */
+.pw-int-tbl tbody td:nth-child(5) { white-space: nowrap; font-size: 12.5px; letter-spacing: -0.3px; }
 /* 업체 — 이름은 위, 번호는 아래 */
 .pw-int-tbl tbody td.vend { padding: 5px 2px; }
 .pw-int-tbl tbody td.vend b {

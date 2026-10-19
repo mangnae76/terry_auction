@@ -492,7 +492,7 @@ const exportExcel = () => {
             <col style="width: 18%" /><col style="width: 18%" /><col />
           </colgroup>
           <thead>
-            <tr><th>결제일</th><th>물건구분</th><th>사용구분</th><th>명세</th><th class="r two">비용{{ '\n' }}(VAT포함)</th><th>비고</th></tr>
+            <tr><th>결제일</th><th>물건구분</th><th>사용구분</th><th>명세</th><th class="two">비용{{ '\n' }}(VAT포함)</th><th>비고</th></tr>
           </thead>
           <tbody>
             <tr v-for="r in filteredBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
@@ -500,7 +500,7 @@ const exportExcel = () => {
               <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
               <td :title="r.profitCategory || r.memo"><span class="pill memo">{{ r.profitCategory || r.memo || '-' }}</span></td>
               <td :title="r.detail">{{ r.detail }}</td>
-              <td class="r">{{ fmtMoney(r.amountWithVat) }}</td>
+              <td>{{ fmtMoney(r.amountWithVat) }}</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredBusiness.length === 0">
