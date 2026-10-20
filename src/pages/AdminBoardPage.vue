@@ -31,6 +31,9 @@ const KINDS: Array<{ key: BoardKind; label: string; hint: string; tags: string[]
   { key: 'update', label: '업데이트', hint: '새로 붙은 기능·고친 것', tags: ['신규', '기능', '개선'] },
 ];
 
+/** 배너를 이벤트 목록에도 넣을 때 쓰는 꼬리표 — 이벤트 상자와 같은 것을 쓴다 */
+const EVENT_TAGS = KINDS.find((k) => k.key === 'event')?.tags ?? [];
+
 const posts = ref<BoardPost[]>([]);
 const err = ref('');
 let unsub: (() => void) | null = null;
@@ -46,11 +49,13 @@ const listOf = (kind: BoardKind) => computed(() => posts.value.filter((p) => p.k
 const emptyPost = (kind: BoardKind): BoardPost => ({
   id: newBoardId(),
   kind,
-  tag: KINDS.find((k) => k.key === kind)?.tags[0] ?? '',
+  // 배너가 이벤트 줄까지 겸할 때를 미리 채워 둔다
+  tag: kind === 'banner' ? '진행' : (KINDS.find((k) => k.key === kind)?.tags[0] ?? ''),
   title: '',
   body: '',
   imageUrl: '',
   published: false,
+  alsoEvent: kind === 'banner',
   star: false,
   banner: kind === 'banner',
   badge: 'EVENT',
@@ -165,8 +170,20 @@ const seedBanners = async () => {
   seeding.value = true;
   const base = Date.now();
   const samples = [
-    { title: '가을맞이 3개월 35% 할인', body: '기간을 길게 고를수록 더 깎입니다. 지금 결제하면 월 25,350원.', badge: 'SALE', period: '2026.10.01 ~ 10.31' },
-    { title: '친구 부르면 2,000P', body: '친구가 가입을 마치면 두 분 모두에게 포인트를 드립니다.', badge: 'POINT', period: '상시' },
+    {
+      title: '가을맞이 3개월 35% 할인',
+      desc: '기간을 길게 고를수록 더 깎입니다',
+      body: '12개월을 고르면 35%, 6개월 25%, 3개월 15% 깎입니다. 포인트가 있으면 깎인 금액에서 또 뺄 수 있습니다.',
+      badge: 'SALE',
+      period: '2026.10.01 ~ 10.31',
+    },
+    {
+      title: '친구 부르면 2,000P',
+      desc: '친구와 나, 둘 다 받습니다',
+      body: '친구가 가입을 마치면 두 분 모두에게 2,000P 를 드립니다. 포인트는 결제할 때 바로 쓸 수 있습니다.',
+      badge: 'POINT',
+      period: '상시',
+    },
   ];
   try {
     for (let i = 0; i < samples.length; i += 1) {
@@ -176,6 +193,7 @@ const seedBanners = async () => {
         id: newBoardId(),
         published: true,
         title: sm.title,
+        desc: sm.desc,
         body: sm.body,
         badge: sm.badge,
         period: sm.period,
@@ -268,6 +286,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
               <b>
                 {{ titleOf(p) || '(제목 없음)' }}
                 <em v-if="p.kind === 'event' && p.banner" class="adb-badge">배너</em>
+                <em v-if="p.kind === 'banner' && p.alsoEvent" class="adb-badge alt">이벤트</em>
                 <em :class="['adb-state', scheduleState(p)]">{{ scheduleState(p) }}</em>
               </b>
               <small v-if="p.body">{{ p.body }}</small>
@@ -320,7 +339,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             <input v-model="draft.title" class="adb-input" placeholder="목록에 적히는 한 줄" />
           </label>
 
-          <label>
+          <label v-if="draft.kind !== 'banner'">
             <small>본문 <em>(없어도 됩니다)</em></small>
             <textarea v-model="draft.body" class="adb-area" rows="4" placeholder="눌러서 펼치면 보이는 글"></textarea>
           </label>
@@ -352,6 +371,10 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           </label>
 
           <template v-if="draft.kind === 'banner'">
+            <label>
+              <small>단축 글 <em>(배너 칸에 한 줄로 들어갑니다)</em></small>
+              <input v-model="draft.desc" class="adb-input" placeholder="기간을 길게 고를수록 더 깎입니다" />
+            </label>
             <label><small>배지</small><input v-model="draft.badge" class="adb-input" placeholder="EVENT" /></label>
             <label>
               <small>
@@ -382,6 +405,35 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             </label>
           </div>
           <p class="adb-note">예약한 때가 되면 앱에서 저절로 올라오고 내려갑니다.</p>
+
+          <!-- 배너 하나로 이벤트 줄까지 쓴다 — 제목·그림·기간은 위에 적은 것을 그대로 나눠 쓴다 -->
+          <template v-if="draft.kind === 'banner'">
+            <div class="adb-sep">
+              <label class="adb-check">
+                <input v-model="draft.alsoEvent" type="checkbox" />
+                이벤트 목록에도 한 줄로 넣는다
+              </label>
+              <p class="adb-note">제목 · 그림 · 기간은 위에 적은 것을 그대로 씁니다. 배너의 <b>자세히 보기</b>를 누르면 이 줄이 펼쳐집니다.</p>
+            </div>
+            <template v-if="draft.alsoEvent">
+              <label>
+                <small>꼬리표</small>
+                <span class="adb-tags">
+                  <button
+                    v-for="t in EVENT_TAGS"
+                    :key="t"
+                    type="button"
+                    :class="['adb-tagbtn', { on: draft!.tag === t }]"
+                    @click="draft!.tag = t"
+                  >{{ t }}</button>
+                </span>
+              </label>
+              <label>
+                <small>이벤트 본문 <em>(줄을 펼치면 보이는 글)</em></small>
+                <textarea v-model="draft.body" class="adb-area" rows="5" placeholder="이벤트 조건·기간·주의할 점을 적습니다"></textarea>
+              </label>
+            </template>
+          </template>
         </div>
 
         <footer class="adb-box-foot">
@@ -544,6 +596,8 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   margin-left: 6px; font-style: normal; font-size: 10px; font-weight: 800;
   background: #2a3f8f; color: #fff; border-radius: 4px; padding: 2px 5px;
 }
+.adb-badge.alt { background: #e8f0ff; color: #2b6df3; }
+.adb-sep { border-top: 1px solid #eef1f6; padding-top: 12px; }
 .adb-txt small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 420px; }
 .adb-check input { width: 15px; height: 15px; accent-color: #2a3f8f; }
 .adb-box-foot { display: flex; gap: 8px; padding: 0 16px 16px; }

@@ -26,10 +26,15 @@ export const useBoardFeed = () => {
   const of = (kind: BoardPost['kind']) => posts.value.filter((p) => p.kind === kind);
   const live = (rows: BoardPost[]) => rows.filter((p) => isLive(p, now.value));
   const rowsOf = (kind: 'event' | 'notice' | 'update', fallback: NewsRow[]) => computed<NewsRow[]>(() => {
-    // 옛 글 중 배너로 띄우던 이벤트는 아래 줄 목록에 또 적지 않는다
-    const pool = kind === 'event' ? of(kind).filter((p) => !p.banner) : of(kind);
+    // 이벤트 줄은 두 군데서 온다 — 이벤트 글과, '이벤트 목록에도' 켜 둔 배너
+    // (옛 글 중 배너로 띄우던 이벤트는 배너로만 나가니 여기서 뺀다)
+    const pool = kind === 'event'
+      ? [...of('event').filter((p) => !p.banner), ...of('banner').filter((p) => p.alsoEvent)]
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      : of(kind);
     if (pool.length === 0) return fallback;
     return live(pool).map((p) => ({
+      id: p.id,
       tag: p.tag,
       text: titleOf(p),
       star: p.star,
@@ -50,7 +55,9 @@ export const useBoardFeed = () => {
         badge: p.badge || 'EVENT',
         title: titleOf(p),
         imageUrl: p.imageUrl,
-        desc: p.body ?? p.desc ?? '',
+        id: p.id,
+        // 배너 칸에는 단축 글만 — 긴 본문은 이벤트 줄을 펼쳐야 보인다
+        desc: p.desc || p.body || '',
         cta: p.cta || '자세히 보기',
         // 예약한 때가 있으면 그것을 그대로 보여 준다 — 손으로 적은 기간 글은 예약이 없을 때만
         period: periodLabel(p.startAt, p.endAt) || p.period || '',

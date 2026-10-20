@@ -2,6 +2,8 @@
 // 운영에서 내려주는 값으로 바꿀 자리이고, 지금은 손으로 적어 둔다.
 
 export interface NewsRow {
+  /** 운영에서 올린 글의 번호 — 배너의 '자세히 보기'가 이 줄을 찾아 연다 */
+  id?: string;
   tag: string;
   text: string;
   /** 맨 위에 붙박이로 둘 줄 */
@@ -18,6 +20,8 @@ export const EVENTS: NewsRow[] = [
 ];
 
 export interface NewsBanner {
+  /** 운영에서 올린 배너의 글 번호 — '자세히 보기'가 이벤트 줄을 찾아 연다 */
+  id?: string;
   badge: string;
   title: string;
   desc: string;

@@ -35,8 +35,10 @@ export interface BoardPost {
   badge?: string;
   cta?: string;
   period?: string;
-  /** 옛 배너 글의 설명 — 읽을 때만 쓴다 (지금은 본문을 쓴다) */
+  /** 배너에 적는 단축 글 — 배너 칸에 한 줄로 들어간다 */
   desc?: string;
+  /** 배너를 이벤트 목록에도 한 줄로 넣을지 — 그때 본문(body)이 펼침 글이 된다 */
+  alsoEvent?: boolean;
   /** 올렸는가 — false 면 작성 중이라 앱에 나가지 않는다 (옛 글에는 없다 = 올린 글) */
   published?: boolean;
   /** 올릴 때 — 비우면 바로. 'YYYY-MM-DDTHH:mm' (현지 시각) */

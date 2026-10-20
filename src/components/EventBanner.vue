@@ -5,7 +5,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import ImageLightbox from './ImageLightbox.vue';
 import { useBoardFeed } from '../services/boardFeed';
 
-const emit = defineEmits<{ (e: 'open'): void }>();
+const emit = defineEmits<{ (e: 'open', id: string): void }>();
 
 const { banners } = useBoardFeed();
 const many = computed(() => banners.value.length > 1);
@@ -70,7 +70,7 @@ const wasDrag = () => Math.abs(dx.value) > 6 || axis === 'x';
 
 const zoom = ref('');
 const openImage = (url?: string) => { if (url && !wasDrag()) zoom.value = url; };
-const openList = () => { if (!wasDrag()) emit('open'); };
+const openList = (id?: string) => { if (!wasDrag()) emit('open', id ?? ''); };
 </script>
 
 <template>
@@ -104,7 +104,7 @@ const openList = () => { if (!wasDrag()) emit('open'); };
           <small v-if="b.desc">{{ b.desc }}</small>
           <span class="foot">
             <em>{{ b.period }}</em>
-            <button type="button" class="cta" @click="openList">{{ b.cta }} ›</button>
+            <button type="button" class="cta" @click="openList(b.id)">{{ b.cta }} ›</button>
           </span>
         </div>
       </div>

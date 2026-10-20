@@ -1,12 +1,15 @@
 <script setup lang="ts">
 // 부가서비스 — 공지사항·이벤트·업데이트·포인트를 차례로 적는다.
 // 글은 services/boardNews·pointPolicy 에 있고 여기서는 그리기만 한다.
-import { ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import ImageLightbox from './ImageLightbox.vue';
 import { useBoardFeed } from '../services/boardFeed';
 
 /** 관리자가 올린 글 — 아직 없으면 코드의 기본 글을 쓴다 */
 const { events: EVENTS, notices: NOTICES, updates: UPDATES } = useBoardFeed();
+
+/** 배너의 '자세히 보기'로 들어왔다면 그 줄을 펼쳐 둔다 */
+const props = defineProps<{ focus?: string }>();
 
 /** 크게 볼 그림 ('' 이면 닫힘) */
 const zoom = ref('');
@@ -17,6 +20,19 @@ const toggleRow = (key: string, row: { body?: string; imageUrl?: string }) => {
   if (!row.body && !row.imageUrl) return;
   openRow.value = openRow.value === key ? '' : key;
 };
+
+const openFocused = () => {
+  const id = props.focus;
+  if (!id) return;
+  const i = EVENTS.value.findIndex((e) => e.id === id);
+  if (i < 0) return;
+  openRow.value = `e${i}`;
+  window.setTimeout(() => {
+    document.querySelector('[data-sec="event"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
+};
+onMounted(openFocused);
+watch(() => props.focus, openFocused);
 </script>
 
 <template>
