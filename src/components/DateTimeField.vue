@@ -30,15 +30,16 @@ const onTime = (ev: Event) => {
 </template>
 
 <style scoped>
-/* 좁은 칸 둘이 한 줄에 들어가야 한다 — 글자를 조금 줄이고 여백을 아낀다 */
-.dtf { display: flex; gap: 5px; min-width: 0; }
+/* 좁은 칸 둘이 한 줄에 — 자리가 모자라면 시각 칸이 아랫줄로 내려간다 (글자가 잘리지 않게) */
+.dtf { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
 .dtf input {
   box-sizing: border-box; height: 38px;
-  min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; padding: 2px 6px;
-  font-family: inherit; font-size: 12px; color: #111827; background: #fff;
+  min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; padding: 2px 5px;
+  font-family: inherit; font-size: 11.5px; color: #111827; background: #fff;
 }
 .dtf input:focus { outline: none; border-color: #2a3f8f; }
 .dtf input:disabled { background: #f7f8fb; color: #9ca3af; }
-.dtf-date { flex: 1 1 auto; min-width: 0; }
-.dtf-time { flex: 0 0 auto; width: 92px; }
+/* 날짜는 '2026. 10. 01.' 만큼만, 남는 자리는 시각 칸이 가져간다 */
+.dtf-date { flex: 1 1 124px; min-width: 110px; }
+.dtf-time { flex: 1 1 104px; min-width: 100px; }
 </style>
