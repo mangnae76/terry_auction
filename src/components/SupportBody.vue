@@ -34,7 +34,7 @@ const notReady = (what: string) => {
 
 const goGuide = (g: GuideItem) => {
   if (!g.path) { notReady(g.label); return; }
-  router.push(g.path);
+  router.push({ path: g.path, query: g.query });
 };
 const openPolicy = (p: { name: string; path: string }) => {
   if (!p.path) { notReady(p.name); return; }

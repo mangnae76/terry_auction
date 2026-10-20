@@ -79,6 +79,8 @@ export interface GuideItem {
   label: string;
   /** 갈 곳. 비어 있으면 '준비 중' 안내만 띄운다 */
   path: string;
+  /** 더보기처럼 탭·묶음을 골라 들어가야 하는 곳 */
+  query?: Record<string, string>;
 }
 export interface GuideGroup {
   title: string;
@@ -98,9 +100,9 @@ export const SUPPORT_GUIDES: GuideGroup[] = [
     title: '추가서비스 안내',
     items: [
       { icon: 'Ⓟ', label: '포인트제도 안내', path: '/points' },
-      { icon: '👤', label: '회원전용 메뉴 안내', path: '/more' },
+      { icon: '👤', label: '회원전용 메뉴 안내', path: '/more', query: { tab: 'mypage' } },
       { icon: '🔔', label: '알림서비스 안내', path: '/notifications' },
-      { icon: '🎁', label: '이벤트 보기', path: '' },
+      { icon: '🎁', label: '이벤트 보기', path: '/more', query: { sec: 'event' } },
     ],
   },
 ];
