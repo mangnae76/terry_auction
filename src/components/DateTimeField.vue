@@ -30,14 +30,15 @@ const onTime = (ev: Event) => {
 </template>
 
 <style scoped>
-.dtf { display: flex; gap: 6px; }
+/* 좁은 칸 둘이 한 줄에 들어가야 한다 — 글자를 조금 줄이고 여백을 아낀다 */
+.dtf { display: flex; gap: 5px; min-width: 0; }
 .dtf input {
   box-sizing: border-box; height: 38px;
-  border: 1px solid #e3e8f0; border-radius: 8px; padding: 2px 9px;
-  font-family: inherit; font-size: 13px; color: #111827; background: #fff;
+  min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; padding: 2px 6px;
+  font-family: inherit; font-size: 12px; color: #111827; background: #fff;
 }
 .dtf input:focus { outline: none; border-color: #2a3f8f; }
 .dtf input:disabled { background: #f7f8fb; color: #9ca3af; }
 .dtf-date { flex: 1 1 auto; min-width: 0; }
-.dtf-time { flex: 0 0 auto; width: 112px; }
+.dtf-time { flex: 0 0 auto; width: 92px; }
 </style>

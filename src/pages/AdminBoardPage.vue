@@ -673,7 +673,9 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 .adb-state.종료 { background: #f1f3f8; color: #9ca3af; }
 .adb-state.작성중 { background: #eef1f6; color: #4b5563; }
 .adb-when { color: #6b7280 !important; }
-.adb-when-row { display: flex; flex-direction: column; gap: 10px; }
+/* 올릴 때·내릴 때를 한 줄에 — 각 칸 안에 날짜와 시각이 함께 선다 */
+.adb-when-row { display: flex; gap: 10px; }
+.adb-when-row > label { flex: 1 1 0; min-width: 0; }
 .adb-note { margin: -4px 0 0; font-size: 11px; color: #9ca3af; }
 
 /* 쓰기 창 */
@@ -681,7 +683,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   position: fixed; inset: 0; z-index: 60; background: rgba(17, 24, 39, .45);
   display: flex; align-items: center; justify-content: center; padding: 20px;
 }
-.adb-box { width: 100%; max-width: 480px; background: #fff; border-radius: 12px; overflow: hidden; }
+.adb-box { width: 100%; max-width: 540px; background: #fff; border-radius: 12px; overflow: hidden; }
 .adb-box-head {
   display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #eef1f6;
 }
