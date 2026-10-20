@@ -100,18 +100,6 @@ const openContact = (c: ContactWay) => {
           </button>
         </section>
   
-        <!-- 약관 및 정책 -->
-        <section class="sup-card">
-          <h2 class="sup-h2">약관 및 정책</h2>
-          <button
-            v-for="p in POLICIES"
-            :key="p.name"
-            type="button"
-            class="sup-policy"
-            @click="openPolicy(p)"
-          >{{ p.name }}<i>›</i></button>
-        </section>
-  
         <!-- 앱 내려받기 -->
         <section class="sup-card">
           <h2 class="sup-h2">앱 내려받기</h2>
@@ -125,6 +113,17 @@ const openContact = (c: ContactWay) => {
           </div>
         </section>
       </div>
+      <!-- 약관 및 정책 -->
+        <section class="sup-card">
+          <h2 class="sup-h2">약관 및 정책</h2>
+          <button
+            v-for="p in POLICIES"
+            :key="p.name"
+            type="button"
+            class="sup-policy"
+            @click="openPolicy(p)"
+          >{{ p.name }}<i>›</i></button>
+        </section>
     <AppToast :visible="!!toastText" :text="toastText" />
   </div>
 </template>
