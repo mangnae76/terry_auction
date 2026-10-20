@@ -106,6 +106,15 @@ const readSize = (dataUrl: string) => {
   };
   img.src = dataUrl;
 };
+const fileEl = ref<HTMLInputElement | null>(null);
+/** 날짜를 고른 때 — 고르개가 닫히며 흘린 손길이 아래 단추를 누르는 일을 막는다 */
+let dateTouchedAt = 0;
+const onDateChange = () => { dateTouchedAt = Date.now(); };
+const openFile = () => {
+  if (Date.now() - dateTouchedAt < 500) return;
+  fileEl.value?.click();
+};
+
 const pickImage = async (ev: Event) => {
   const input = ev.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -344,7 +353,11 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             <textarea v-model="draft.body" class="adb-area" rows="4" placeholder="눌러서 펼치면 보이는 글"></textarea>
           </label>
 
-          <label>
+          <!--
+            그림 칸은 label 로 감싸지 않는다 — label 안에 파일 입력이 있으면 그 칸 아무 데나
+            닿기만 해도(날짜 고르개가 닫히며 지나가는 손길까지) 파일 창이 열려 버린다.
+          -->
+          <div class="adb-field">
             <small>
               그림 <em>(없어도 됩니다)</em>
               <b class="adb-spec">{{ draft.kind === 'banner' ? '배너 — 가로:세로 3:1 권장 (예 1200×400)' : '가로 1000px 안팎 권장' }}</b>
@@ -356,14 +369,14 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
                 <template v-if="draft.kind === 'banner' && imgRatio">· 비율 {{ imgRatio }}:1</template>
               </small>
               <span class="adb-img-acts">
-                <label class="adb-file">
+                <button type="button" class="adb-file" :disabled="picking" @click="openFile">
                   {{ picking ? '줄이는 중…' : (draft.imageUrl ? '다른 그림' : '그림 고르기') }}
-                  <input type="file" accept="image/*" @change="pickImage" />
-                </label>
+                </button>
                 <button v-if="draft.imageUrl" type="button" class="adb-img-del" @click="draft!.imageUrl = ''; imgSize = ''">빼기</button>
               </span>
             </span>
-          </label>
+          </div>
+          <input ref="fileEl" type="file" accept="image/*" class="adb-hidden-file" @change="pickImage" />
 
           <label v-if="draft.kind === 'notice'" class="adb-check">
             <input v-model="draft.star" type="checkbox" />
@@ -397,11 +410,23 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           <div class="adb-when-row">
             <label>
               <small>올릴 때 <em>(비우면 바로)</em></small>
-              <input v-model="draft.startAt" type="datetime-local" class="adb-input" />
+              <input
+                v-model="draft.startAt"
+                type="datetime-local"
+                class="adb-input"
+                @change="onDateChange"
+                @input="onDateChange"
+              />
             </label>
             <label>
               <small>내릴 때 <em>(비우면 계속)</em></small>
-              <input v-model="draft.endAt" type="datetime-local" class="adb-input" />
+              <input
+                v-model="draft.endAt"
+                type="datetime-local"
+                class="adb-input"
+                @change="onDateChange"
+                @input="onDateChange"
+              />
             </label>
           </div>
           <p class="adb-note">예약한 때가 되면 앱에서 저절로 올라오고 내려갑니다.</p>
@@ -584,9 +609,13 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 .adb-img-acts { display: flex; gap: 6px; }
 .adb-file {
   display: inline-block; border: 1px solid #c7d2ea; border-radius: 8px; background: #fff;
-  padding: 7px 12px; font-size: 12px; font-weight: 700; color: #2a3f8f; cursor: pointer;
+  padding: 7px 12px; font-family: inherit; font-size: 12px; font-weight: 700; color: #2a3f8f; cursor: pointer;
 }
-.adb-file input { display: none; }
+.adb-file:disabled { color: #9aa6c4; cursor: default; }
+.adb-hidden-file { display: none; }
+/* label 이 아닌 칸 — 생김새는 다른 칸과 같게 */
+.adb-field { display: flex; flex-direction: column; gap: 5px; }
+.adb-field > small { font-size: 11.5px; font-weight: 700; color: #6b7280; }
 .adb-img-del {
   border: 1px solid #f0d4d4; border-radius: 8px; background: #fff;
   padding: 7px 12px; font-family: inherit; font-size: 12px; font-weight: 700; color: #c62828; cursor: pointer;
