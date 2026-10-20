@@ -2,12 +2,8 @@
 // 부가서비스 — 공지사항·이벤트·업데이트·포인트를 차례로 적는다.
 // 글은 services/boardNews·pointPolicy 에 있고 여기서는 그리기만 한다.
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
 import AppToast from './AppToast.vue';
 import { EVENTS, EVENT_BANNERS, NOTICES, UPDATES } from '../services/boardNews';
-import { POINT_INTRO } from '../services/pointPolicy';
-
-const router = useRouter();
 
 const toastText = ref('');
 const notReady = (what: string) => {
@@ -44,22 +40,6 @@ const notReady = (what: string) => {
       <button v-for="(u, i) in UPDATES" :key="`u${i}`" type="button" class="nws-row" @click="notReady('업데이트')">
         <span class="tag">{{ u.tag }}</span><span class="txt">{{ u.text }}</span>
       </button>
-    </section>
-
-    <section class="nws-card" data-sec="point">
-      <h3 class="nws-h">
-        포인트
-        <button type="button" class="more" @click="router.push('/points')">자세히 보기 ›</button>
-      </h3>
-      <div class="nws-blue">
-        <div v-for="sec in POINT_INTRO" :key="sec.title" class="nws-blue-sec">
-          <h4>{{ sec.title }}</h4>
-          <p v-for="(t, i) in sec.texts" :key="i">{{ t }}</p>
-          <ul v-if="sec.bullets">
-            <li v-for="(b, i) in sec.bullets" :key="i">{{ b }}</li>
-          </ul>
-        </div>
-      </div>
     </section>
 
     <AppToast :visible="!!toastText" :text="toastText" />

@@ -112,7 +112,7 @@ const go = (c: Card) => {
       </button>
       <button type="button" class="mpc-cell" @click="router.push('/payments')">
         <span class="mpc-chip">결제 내역</span>
-        <span class="mpc-val">{{ PLAN_REST_DAYS }}일 <i>›</i></span>
+        <span class="mpc-val">{{ PLAN_REST_DAYS }}일</span>
       </button>
     </div>
 
@@ -192,7 +192,6 @@ const go = (c: Card) => {
 .mpc-badge.family { background: #7b6ad4; }
 .mpc-val { font-size: 16px; font-weight: 800; color: #e8622a; }
 .mpc-val small { font-size: 11px; color: #6b7280; font-weight: 700; }
-.mpc-val i { font-style: normal; font-size: 12px; color: #e8622a; }
 
 .mpc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
 /* 카드 전체가 단추다 — 꺾쇠는 '누를 수 있다'는 표시일 뿐, 어디를 눌러도 같이 간다.

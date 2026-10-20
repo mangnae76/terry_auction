@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import MyPageCards from '../components/MyPageCards.vue';
 import BillingBody from '../components/BillingBody.vue';
+import PointsBody from '../components/PointsBody.vue';
 import NewsBody from '../components/NewsBody.vue';
 import SupportBody from '../components/SupportBody.vue';
 import { useAuthStore } from '../stores/authStore';
@@ -39,6 +40,7 @@ const onAuthPill = async () => {
 const TABS = [
   { key: 'mypage', label: '마이페이지' },
   { key: 'billing', label: '결제하기' },
+  { key: 'points', label: '포인트' },
   { key: 'news', label: '부가서비스' },
   { key: 'support', label: '고객센터' },
 ] as const;
@@ -101,6 +103,7 @@ onMounted(() => {
     <div class="more-body">
       <MyPageCards v-if="tab === 'mypage'" />
       <BillingBody v-else-if="tab === 'billing'" />
+      <PointsBody v-else-if="tab === 'points'" />
       <NewsBody v-else-if="tab === 'news'" />
       <SupportBody v-else />
     </div>
@@ -175,7 +178,7 @@ onMounted(() => {
   text-align: center; white-space: nowrap; letter-spacing: -0.4px;
 }
 .quick {
-  position: relative; display: grid; grid-template-columns: repeat(4, 1fr);
+  position: relative; display: grid; grid-template-columns: repeat(5, 1fr);
   margin-top: 12px; border: 1px solid #eef0f5; border-radius: 10px; background: #fff;
 }
 /* 네 칸짜리 상자 — 고른 칸만 색이 바뀐다 */
