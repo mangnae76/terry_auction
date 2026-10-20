@@ -10,6 +10,7 @@ import {
   dayRangeLabel,
   postedLabel,
   shortDayLabel,
+  tagAt,
   subscribeBoardPosts,
   titleOf,
   type BoardPost,
@@ -50,7 +51,7 @@ export const useBoardFeed = () => {
     if (pool.length === 0) return fallback;
     return live(pool).map((p) => ({
       id: p.id,
-      tag: p.tag,
+      tag: tagAt(p, now.value),
       text: titleOf(p),
       star: p.star,
       body: p.body,

@@ -41,6 +41,11 @@ export interface BoardPost {
   showBanner?: boolean;
   /** 이벤트 목록에도 한 줄로 넣을지 — 그때 본문(body)이 상세 글이 된다 */
   alsoEvent?: boolean;
+  /**
+   * 꼬리말 예약 — 안내 → 진행 → 마감 으로 때맞춰 바뀌게 한다.
+   * 적어 둔 때가 지난 것 중 가장 늦은 것이 지금 꼬리말이 된다.
+   */
+  tagPlan?: Array<{ tag: string; at: string }>;
   /** 이벤트가 열리는 때 — 글을 올리고 내리는 때(startAt·endAt)와 다른 값이다 */
   eventStartAt?: string;
   /** 이벤트가 닫히는 때 */
@@ -77,6 +82,17 @@ export const isLive = (p: BoardPost, now = nowLocal()): boolean => {
   if (p.startAt && p.startAt > now) return false;
   if (p.endAt && p.endAt < now) return false;
   return true;
+};
+
+/**
+ * 지금 보여 줄 꼬리말.
+ * 예약을 적어 두지 않았거나 아직 첫 때가 되지 않았으면 적어 둔 꼬리말 그대로 둔다.
+ */
+export const tagAt = (p: BoardPost, now = nowLocal()): string => {
+  const done = (p.tagPlan ?? [])
+    .filter((x) => x.at && x.at <= now)
+    .sort((a, b) => (a.at < b.at ? -1 : 1));
+  return done.length ? done[done.length - 1].tag : p.tag;
 };
 
 /** 운영 목록에 붙일 상태 — 작성중 / 예약 / 게시중 / 종료 */

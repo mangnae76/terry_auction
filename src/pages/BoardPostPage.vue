@@ -8,7 +8,7 @@ import ImageLightbox from './../components/ImageLightbox.vue';
 import PostBody from '../components/PostBody.vue';
 import { ref } from 'vue';
 import { useBoardPost } from '../services/boardFeed';
-import { eventPeriodLabel, periodLabel, postedLabel, titleOf } from '../services/boardRepository';
+import { eventPeriodLabel, periodLabel, postedLabel, tagAt, titleOf } from '../services/boardRepository';
 
 const route = useRoute();
 const router = useRouter();
@@ -33,6 +33,9 @@ const posted = computed(() => {
   return p ? postedLabel(p.postedAt ?? p.createdAt, p.updatedAt) : '';
 });
 
+/** 꼬리말은 예약한 때에 따라 안내 → 진행 → 마감 으로 바뀐다 */
+const tag = computed(() => (post.value ? tagAt(post.value) : ''));
+
 const zoom = ref('');
 </script>
 
@@ -46,7 +49,7 @@ const zoom = ref('');
 
     <article v-if="post" class="bp-card">
       <div class="bp-top">
-        <span v-if="post.tag" class="bp-tag">{{ post.tag }}</span>
+        <span v-if="tag" class="bp-tag">{{ tag }}</span>
         <h2 class="bp-h">{{ titleOf(post) }}</h2>
       </div>
       <p v-if="posted" class="bp-posted">{{ posted }}</p>

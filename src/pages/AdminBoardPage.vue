@@ -17,6 +17,7 @@ import {
   eventPeriodLabel,
   scheduleState,
   subscribeBoardPosts,
+  tagAt,
   titleOf,
   whenLabel,
   type BoardKind,
@@ -62,6 +63,7 @@ const emptyPost = (kind: BoardKind): BoardPost => ({
   postedAt: '',
   showBanner: kind === 'banner',
   alsoEvent: kind === 'banner',
+  tagPlan: [],
   eventStartAt: '',
   eventEndAt: '',
   star: false,
@@ -254,6 +256,21 @@ const seedBanners = async () => {
   }
 };
 
+/* ───────── 꼬리말 예약 — 안내 → 진행 → 마감 ───────── */
+
+const planAt = (tag: string): string =>
+  (draft.value?.tagPlan ?? []).find((x) => x.tag === tag)?.at ?? '';
+
+const setPlan = (tag: string, at: string) => {
+  const d = draft.value;
+  if (!d) return;
+  const plan = (d.tagPlan ?? []).filter((x) => x.tag !== tag);
+  if (at) plan.push({ tag, at });
+  // 차례대로 흐르도록 때 순서로 담아 둔다
+  d.tagPlan = plan.sort((a, b) => (a.at < b.at ? -1 : 1));
+  onDateChange();
+};
+
 /* ───────── 본문 꾸미기 — 표와 줄 맞춤 ───────── */
 
 const bodyEl = ref<HTMLTextAreaElement | null>(null);
@@ -392,7 +409,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         <ul v-else class="adb-list">
           <li v-for="p in listOf(k.key).value" :key="p.id">
             <span class="adb-tag" :class="{ star: p.star, badge: p.kind === 'banner' }">
-              {{ p.kind === 'banner' ? (p.badge || 'EVENT') : (p.star ? '✦' : (p.tag || '—')) }}
+              {{ p.kind === 'banner' ? (p.badge || 'EVENT') : (p.star ? '✦' : (tagAt(p) || '—')) }}
             </span>
             <img v-if="p.imageUrl" :src="p.imageUrl" class="adb-thumb" alt="" />
             <span class="adb-txt">
@@ -468,6 +485,23 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
               >{{ t }}</button>
             </span>
           </label>
+
+          <template v-if="draft.kind === 'banner'">
+            <div class="adb-sec">
+              <h4>꼬리말 예약 기능</h4>
+              <span class="adb-sec-note">적어 둔 때가 되면 저절로 바뀝니다</span>
+            </div>
+            <div class="adb-when-row">
+              <div v-for="t in EVENT_TAGS" :key="`plan-${t}`" class="adb-field">
+                <small>{{ t }}</small>
+                <DateTimeField
+                  :model-value="planAt(t)"
+                  @update:model-value="(v: string) => setPlan(t, v)"
+                />
+              </div>
+            </div>
+            <p class="adb-note">비워 두면 고른 꼬리말이 그대로 있습니다. 첫 때가 되기 전까지도 그렇습니다.</p>
+          </template>
 
           <!-- 여기서부터가 목록·상세에 나가는 내용이다 -->
           <div v-if="draft.kind === 'banner'" class="adb-sec">
