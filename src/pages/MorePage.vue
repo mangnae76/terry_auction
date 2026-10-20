@@ -41,7 +41,7 @@ const TABS = [
   { key: 'mypage', label: '마이페이지' },
   { key: 'billing', label: '결제하기' },
   { key: 'points', label: '포인트' },
-  { key: 'news', label: '부가서비스' },
+  { key: 'news', label: '공지' },
   { key: 'support', label: '고객센터' },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];

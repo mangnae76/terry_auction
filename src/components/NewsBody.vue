@@ -14,14 +14,6 @@ const notReady = (what: string) => {
 
 <template>
   <div class="nws-wrap">
-    <section class="nws-card" data-sec="notice">
-      <h3 class="nws-h">공지사항<i class="dot" /></h3>
-      <button v-for="(n, i) in NOTICES" :key="`n${i}`" type="button" class="nws-row" @click="notReady('공지사항')">
-        <span v-if="n.star" class="star">✦</span><span v-else class="tag">{{ n.tag }}</span>
-        <span class="txt">{{ n.text }}</span>
-      </button>
-    </section>
-
     <section class="nws-card" data-sec="event">
       <h3 class="nws-h">이벤트</h3>
       <button v-for="(e, i) in EVENTS" :key="`e${i}`" type="button" class="nws-row" @click="notReady('이벤트')">
@@ -32,6 +24,14 @@ const notReady = (what: string) => {
         <strong>{{ b.title }}</strong>
         <small>{{ b.desc }}</small>
         <span class="foot"><em>{{ b.period }}</em><i>{{ b.cta }} ›</i></span>
+      </button>
+    </section>
+
+    <section class="nws-card" data-sec="notice">
+      <h3 class="nws-h">공지사항<i class="dot" /></h3>
+      <button v-for="(n, i) in NOTICES" :key="`n${i}`" type="button" class="nws-row" @click="notReady('공지사항')">
+        <span v-if="n.star" class="star">✦</span><span v-else class="tag">{{ n.tag }}</span>
+        <span class="txt">{{ n.text }}</span>
       </button>
     </section>
 
