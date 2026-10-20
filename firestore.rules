@@ -14,11 +14,15 @@ service cloud.firestore {
         ];
     }
 
-    // 운영자 — 공지·이벤트 글을 올릴 수 있는 계정
+    // 운영자 — 공지·이벤트 글을 올릴 수 있는 계정.
+    // 쓰는 계정이 여기 없으면 올리기가 규칙에서 막힌다.
     function isAdmin() {
       return request.auth != null
         && request.auth.token.email is string
-        && request.auth.token.email.lower() == 'mangnae760723@gmail.com';
+        && request.auth.token.email.lower() in [
+          'dark_0417@nate.com',
+          'mangnae760723@gmail.com'
+        ];
     }
 
     // 공지·이벤트·업데이트 글 — 누구나 읽고, 운영자만 쓴다

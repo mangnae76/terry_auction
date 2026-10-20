@@ -64,6 +64,15 @@ const flash = (text: string) => {
   window.setTimeout(() => { msg.value = ''; }, 2200);
 };
 
+/** 막힌 까닭을 사람 말로 — 규칙에 막히면 어느 계정인지 같이 알려 준다 */
+const reason = (e: unknown, fallback: string) => {
+  const m = e instanceof Error ? e.message : '';
+  if (/permission|insufficient/i.test(m)) {
+    return `이 계정(${auth.email || '로그인 안 됨'})에는 올릴 권한이 없습니다 — 운영자 계정으로 들어와 주세요.`;
+  }
+  return m || fallback;
+};
+
 const save = async () => {
   const d = draft.value;
   if (!d) return;
@@ -74,7 +83,7 @@ const save = async () => {
     flash('올렸습니다. 앱에 바로 나갑니다.');
     close();
   } catch (e) {
-    flash(e instanceof Error ? e.message : '저장하지 못했습니다.');
+    flash(reason(e, '저장하지 못했습니다.'));
   } finally {
     saving.value = false;
   }
@@ -86,7 +95,7 @@ const removeOne = async (p: BoardPost) => {
     await removeBoardPost(p.id);
     flash('지웠습니다.');
   } catch (e) {
-    flash(e instanceof Error ? e.message : '지우지 못했습니다.');
+    flash(reason(e, '지우지 못했습니다.'));
   }
 };
 
@@ -127,7 +136,10 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         <p>여기서 올린 글이 앱의 <b>더보기 › 공지</b> 탭에 그대로 나갑니다. 하나도 없으면 기본 글이 대신 보입니다.</p>
       </div>
 
-      <p v-if="err" class="adb-err">{{ err }}</p>
+      <p v-if="err" class="adb-err">
+        {{ err }}
+        <template v-if="/permission|insufficient/i.test(err)"> — 지금 계정 {{ auth.email || '(로그인 안 됨)' }}</template>
+      </p>
 
       <section v-for="k in KINDS" :key="k.key" class="adb-card">
         <header class="adb-head">
