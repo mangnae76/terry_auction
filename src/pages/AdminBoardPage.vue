@@ -23,7 +23,8 @@ const auth = useAuthStore();
 const who = computed(() => auth.nickname || auth.email || '');
 
 const KINDS: Array<{ key: BoardKind; label: string; hint: string; tags: string[] }> = [
-  { key: 'banner', label: '이벤트 배너', hint: '앱 더보기의 모든 탭 맨 위에 돌아가며 뜬다 (3:1 그림)', tags: ['EVENT', '안내', '진행'] },
+  // 배너에는 줄 목록이 없어 꼬리표를 붙일 자리가 없다 — 그 몫은 배지가 한다
+  { key: 'banner', label: '이벤트 배너', hint: '앱 더보기의 모든 탭 맨 위에 돌아가며 뜬다 (3:1 그림)', tags: [] },
   { key: 'event', label: '이벤트', hint: '공지 탭의 이벤트 목록에 줄로 들어간다', tags: ['안내', '진행', '마감'] },
   { key: 'notice', label: '공지사항', hint: '점검·정책처럼 알려야 하는 것', tags: ['안내', '점검', '중요'] },
   { key: 'update', label: '업데이트', hint: '새로 붙은 기능·고친 것', tags: ['신규', '기능', '개선'] },
@@ -44,7 +45,7 @@ const listOf = (kind: BoardKind) => computed(() => posts.value.filter((p) => p.k
 const emptyPost = (kind: BoardKind): BoardPost => ({
   id: newBoardId(),
   kind,
-  tag: KINDS.find((k) => k.key === kind)?.tags[0] ?? '안내',
+  tag: KINDS.find((k) => k.key === kind)?.tags[0] ?? '',
   title: '',
   body: '',
   imageUrl: '',
@@ -147,8 +148,8 @@ const seedBanners = async () => {
   seeding.value = true;
   const base = Date.now();
   const samples = [
-    { tag: '진행', title: '가을맞이 3개월 35% 할인', body: '기간을 길게 고를수록 더 깎입니다. 지금 결제하면 월 25,350원.', badge: 'SALE', period: '2026.10.01 ~ 10.31' },
-    { tag: '안내', title: '친구 부르면 2,000P', body: '친구가 가입을 마치면 두 분 모두에게 포인트를 드립니다.', badge: 'POINT', period: '상시' },
+    { title: '가을맞이 3개월 35% 할인', body: '기간을 길게 고를수록 더 깎입니다. 지금 결제하면 월 25,350원.', badge: 'SALE', period: '2026.10.01 ~ 10.31' },
+    { title: '친구 부르면 2,000P', body: '친구가 가입을 마치면 두 분 모두에게 포인트를 드립니다.', badge: 'POINT', period: '상시' },
   ];
   try {
     for (let i = 0; i < samples.length; i += 1) {
@@ -156,7 +157,6 @@ const seedBanners = async () => {
       await saveBoardPost({
         ...emptyPost('banner'),
         id: newBoardId(),
-        tag: sm.tag,
         title: sm.title,
         body: sm.body,
         badge: sm.badge,
@@ -241,7 +241,9 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         </p>
         <ul v-else class="adb-list">
           <li v-for="p in listOf(k.key).value" :key="p.id">
-            <span class="adb-tag" :class="{ star: p.star }">{{ p.star ? '✦' : (p.tag || '—') }}</span>
+            <span class="adb-tag" :class="{ star: p.star, badge: p.kind === 'banner' }">
+              {{ p.kind === 'banner' ? (p.badge || 'EVENT') : (p.star ? '✦' : (p.tag || '—')) }}
+            </span>
             <img v-if="p.imageUrl" :src="p.imageUrl" class="adb-thumb" alt="" />
             <span class="adb-txt">
               <b>
@@ -279,7 +281,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         </header>
 
         <div class="adb-form">
-          <label>
+          <label v-if="draft.kind !== 'banner'">
             <small>꼬리표</small>
             <span class="adb-tags">
               <button
@@ -421,6 +423,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   background: #f1f3f8; font-size: 11px; font-weight: 700; color: #6b7280;
 }
 .adb-tag.star { background: #e8f0ff; color: #2b6df3; }
+.adb-tag.badge { background: #2a3f8f; color: #fff; }
 .adb-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .adb-txt b { font-size: 13px; font-weight: 600; color: #111827; }
 .adb-txt small { font-size: 11px; color: #9ca3af; }
