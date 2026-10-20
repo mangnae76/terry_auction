@@ -445,14 +445,14 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             <h4>{{ draft.kind === 'banner' ? '이벤트' : KINDS.find((k) => k.key === draft!.kind)?.label }} 예약 기능</h4>
           </div>
           <div class="adb-when-row">
-            <label>
+            <div class="adb-field">
               <small>올릴 때 <em>(비우면 바로)</em></small>
               <DateTimeField v-model="draft.startAt" @update:model-value="onDateChange" />
-            </label>
-            <label>
+            </div>
+            <div class="adb-field">
               <small>내릴 때 <em>(비우면 계속)</em></small>
               <DateTimeField v-model="draft.endAt" @update:model-value="onDateChange" />
-            </label>
+            </div>
           </div>
           <p class="adb-note">예약한 때가 되면 앱에서 저절로 올라오고 내려갑니다.</p>
 
@@ -569,14 +569,14 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             </p>
 
             <div class="adb-when-row">
-              <label>
+              <div class="adb-field">
                 <small>이벤트 시작</small>
                 <DateTimeField v-model="draft.eventStartAt" @update:model-value="onDateChange" />
-              </label>
-              <label>
+              </div>
+              <div class="adb-field">
                 <small>이벤트 끝</small>
                 <DateTimeField v-model="draft.eventEndAt" @update:model-value="onDateChange" />
-              </label>
+              </div>
             </div>
             <p v-if="eventPeriodLabel(draft.eventStartAt, draft.eventEndAt)" class="adb-note">
               상세에 나갈 글 — 기간 : {{ eventPeriodLabel(draft.eventStartAt, draft.eventEndAt) }}
@@ -707,7 +707,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 .adb-when { color: #6b7280 !important; }
 /* 올릴 때·내릴 때를 한 줄에 — 각 칸 안에 날짜와 시각이 함께 선다 */
 .adb-when-row { display: flex; gap: 10px; }
-.adb-when-row > label { flex: 1 1 0; min-width: 0; }
+.adb-when-row > .adb-field { flex: 1 1 0; min-width: 0; }
 .adb-note { margin: -4px 0 0; font-size: 11px; color: #9ca3af; }
 
 /* 쓰기 창 */
