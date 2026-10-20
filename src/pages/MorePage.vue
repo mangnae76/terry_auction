@@ -49,8 +49,7 @@ const QUICK: QuickItem[] = [
     name: '마이페이지',
     path: '',
     items: [
-      { name: '3일무료체험', path: '/trial' },
-      { name: 'MYPAGE', path: '/mypage', split: true },
+      { name: 'MYPAGE', path: '/mypage' },
       { name: '결제관리', path: '/payments' },
       { name: '포인트내역', path: '/point-history' },
       { name: '결제하기', path: '/billing' },

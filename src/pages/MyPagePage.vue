@@ -126,16 +126,14 @@ const go = (c: Card) => {
             <span class="myp-chip">{{ grade.name }} 회원</span>
             <span :class="['myp-badge', grade.tone]">{{ grade.name.slice(0, 1) }}</span>
           </button>
-          <div class="myp-cell">
+          <button type="button" class="myp-cell tap" @click="router.push('/point-history')">
             <span class="myp-chip">누적 포인트</span>
-            <button type="button" class="myp-point" @click="router.push('/point-history')">
-              {{ myPoint.toLocaleString('ko-KR') }} <small>P</small>
-            </button>
-          </div>
-          <div class="myp-cell">
+            <span class="myp-point">{{ myPoint.toLocaleString('ko-KR') }} <small>P</small></span>
+          </button>
+          <button type="button" class="myp-cell tap" @click="router.push('/payments')">
             <span class="myp-chip">결제 내역</span>
-            <button type="button" class="myp-plan" @click="router.push('/payments')">{{ PLAN_REST_DAYS }}일 ›</button>
-          </div>
+            <span class="myp-plan">{{ PLAN_REST_DAYS }}일 ›</span>
+          </button>
         </div>
       </section>
 
@@ -211,8 +209,15 @@ const go = (c: Card) => {
 }
 .myp-who em { font-style: normal; font-weight: 600; color: #8a93a4; margin-left: 3px; }
 .myp-cells { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px 0 2px; }
-.myp-cell { display: flex; flex-direction: column; align-items: center; gap: 7px; }
-.myp-cell.tap { border: none; background: transparent; padding: 0; cursor: pointer; }
+/* 세 칸 모두 칸 전체가 단추다 — 글자든 숫자든 어디를 눌러도 같이 간다 */
+.myp-cell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+}
+.myp-cell.tap {
+  border: none; background: transparent; cursor: pointer;
+  padding: 6px 4px; border-radius: 8px; font-family: inherit;
+}
+.myp-cell.tap:hover { background: #f1f4fb; }
 .myp-chip {
   padding: 3px 9px; border-radius: 5px; background: #4a5bb5; color: #fff;
   font-size: 10.5px; font-weight: 700; white-space: nowrap;
@@ -225,16 +230,10 @@ const go = (c: Card) => {
 .myp-badge.silver { background: #b9bec9; }
 .myp-badge.gold { background: #e8bb3d; }
 .myp-badge.family { background: #7b6ad4; }
-.myp-point {
-  border: none; background: transparent; padding: 0; cursor: pointer;
-  font-family: inherit; font-size: 17px; font-weight: 800; color: #e8622a;
-}
+.myp-point { font-size: 17px; font-weight: 800; color: #e8622a; }
 .myp-point small { font-size: 11px; color: #6b7280; font-weight: 700; }
 /* 남은 날도 포인트와 같은 주황 */
-.myp-plan {
-  border: none; background: transparent; padding: 0; cursor: pointer;
-  font-family: inherit; font-size: 15px; font-weight: 800; color: #e8622a;
-}
+.myp-plan { font-size: 15px; font-weight: 800; color: #e8622a; }
 
 /* 묶음 제목 */
 .myp-h2 { margin: 0 2px 8px; font-size: 14px; font-weight: 800; color: #111827; }
