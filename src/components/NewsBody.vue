@@ -4,6 +4,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import ImageLightbox from './ImageLightbox.vue';
+import PostBody from './PostBody.vue';
 import { useBoardFeed } from '../services/boardFeed';
 
 /** 관리자가 올린 글 — 아직 없으면 코드의 기본 글을 쓴다 */
@@ -41,7 +42,7 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
         </button>
         <div v-if="openRow === `e${i}`" class="nws-open">
           <img v-if="e.imageUrl" :src="e.imageUrl" alt="" @click="zoom = e.imageUrl" />
-          <p v-if="e.body">{{ e.body }}</p>
+          <PostBody v-if="e.body" :body="e.body" />
           <p v-if="e.postedFull" class="posted">{{ e.postedFull }}</p>
         </div>
       </template>
@@ -58,7 +59,7 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
         </button>
         <div v-if="openRow === `n${i}`" class="nws-open">
           <img v-if="n.imageUrl" :src="n.imageUrl" alt="" @click="zoom = n.imageUrl" />
-          <p v-if="n.body">{{ n.body }}</p>
+          <PostBody v-if="n.body" :body="n.body" />
           <p v-if="n.postedFull" class="posted">{{ n.postedFull }}</p>
         </div>
       </template>
@@ -74,7 +75,7 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
         </button>
         <div v-if="openRow === `u${i}`" class="nws-open">
           <img v-if="u.imageUrl" :src="u.imageUrl" alt="" @click="zoom = u.imageUrl" />
-          <p v-if="u.body">{{ u.body }}</p>
+          <PostBody v-if="u.body" :body="u.body" />
           <p v-if="u.postedFull" class="posted">{{ u.postedFull }}</p>
         </div>
       </template>
