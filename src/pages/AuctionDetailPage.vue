@@ -56,6 +56,7 @@ import { useAuthStore } from '../stores/authStore';
 import { deleteSitePhoto, isPhotoId, loadSitePhoto, saveSitePhoto } from '../services/sitePhotoRepository';
 import { fetchNearbyEnvironment, type NearbyEnvironment, type NearbyPlace } from '../services/kakaoNearby';
 import { geocodeAddress } from '../services/routeOptimizer';
+import { buildCashOutPlan } from '../services/cashOutPlan';
 
 const props = defineProps<{
   mode?: 'create' | 'view' | 'edit';
@@ -2035,6 +2036,30 @@ const profitScenarios = computed<ProfitScenario[]>(() => {
     list.push({ label: PROFIT_LABELS[i + 1] ?? `${i + 2}안`, bid: s, sale: s, cost: s.bidCost, extra: true });
   });
   return list;
+});
+
+/** 돈이 나가는 순서 칸의 금액 — 0 도 '0원' 으로 적는다 (빈 줄처럼 보이면 안 된다) */
+const cashMoney = (n: number) => `${Math.round(n || 0).toLocaleString('ko-KR')}원`;
+
+/** 돈이 나가는 순서 — 표의 값을 '언제 얼마' 로 다시 묶는다 (새로 적는 값은 없다) */
+const scCashOut = (sc: ProfitScenario) => buildCashOutPlan({
+  bid: scBid(sc),
+  minPrice: auction.value?.metrics.minimumBidValue ?? 0,
+  deposit: auction.value?.metrics.depositValue,
+  loan: sc.cost?.loanAmount ?? 0,
+  acquisitionTax: sc.cost?.acquisitionTaxAmount ?? 0,
+  legalCost: sc.cost?.legalCostAmount ?? 0,
+  eviction: sc.cost?.evictionCost ?? 0,
+  repair: sc.cost?.repairCost ?? 0,
+  arrears: sc.cost?.arrearsFee ?? 0,
+  advertising: scAdvertising(sc),
+  interest3m: sc.cost?.interestAmount ?? 0,
+  midRepayment: sc.cost?.midRepaymentAmount ?? 0,
+  brokerage: sc.cost?.brokerageAmount ?? 0,
+  salePrice: scSale(sc),
+  incomeTax: Math.round(scTransferTax(sc)),
+  localTax: Math.round(scLocalTax(sc)),
+  balanceDue: shortYmd(auction.value?.balanceDueDate),
 });
 
 const scBid = (sc: ProfitScenario) => sc.bid.myBidValue || auction.value?.metrics.minimumBidValue || 0;
@@ -6373,6 +6398,33 @@ const goBack = () => router.back();
               </tr>
             </tbody>
           </table>
+
+          <!-- 돈이 나가는 순서 — 위 표의 값을 '언제 얼마가 필요한가' 로 다시 묶은 것 -->
+          <section v-if="!isCollapsed('profit')" class="adp-cash">
+            <h3>돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
+            <div v-for="step in scCashOut(sc).steps" :key="step.no" class="adp-cash-step">
+              <div class="adp-cash-head">
+                <i>{{ step.no }}</i>
+                <span class="adp-cash-when">{{ step.when }} · {{ step.what }}</span>
+                <b>{{ cashMoney(step.amount) }}</b>
+              </div>
+              <p v-if="step.note" class="adp-cash-note">{{ step.note }}</p>
+              <div v-for="row in step.rows" :key="row.label" class="adp-cash-row">
+                <span>{{ row.label }}</span><b>{{ cashMoney(row.amount) }}</b>
+              </div>
+            </div>
+
+            <div class="adp-cash-total">
+              <span>필요한 내 돈 합계</span><b>{{ cashMoney(scCashOut(sc).total) }}</b>
+            </div>
+
+            <template v-if="scCashOut(sc).later.length">
+              <p class="adp-cash-later">그 다음에 나가는 돈</p>
+              <div v-for="row in scCashOut(sc).later" :key="row.label" class="adp-cash-row big">
+                <span>{{ row.label }}</span><b>{{ cashMoney(row.amount) }}</b>
+              </div>
+            </template>
+          </section>
           </template>
         </section>
 
@@ -11492,4 +11544,47 @@ select.adp-pub-input option { text-align: center; }
 .adp-pub-dd-item:hover { background: #f3f6fc; }
 .adp-pub-dd-item input[type="checkbox"] { flex: 0 0 auto; }
 .adp-pub-empty-row { text-align: center; color: #9ca3af; font-size: 12px; padding: 24px 8px; }
+/* 돈이 나가는 순서 — 표의 값을 '언제 얼마' 로 다시 묶어 보여 주는 칸 */
+.adp-cash {
+  margin-top: 14px; padding: 16px 14px 18px;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-card) 94%, var(--bg-soft));
+}
+.adp-cash h3 {
+  margin: 0 0 14px; display: flex; flex-direction: column; gap: 4px;
+  font-size: 14px; font-weight: 800; color: var(--text-primary);
+}
+.adp-cash h3 small { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+.adp-cash-step + .adp-cash-step { margin-top: 16px; }
+.adp-cash-head { display: flex; align-items: flex-start; gap: 8px; }
+.adp-cash-head i {
+  flex: none; width: 16px; height: 16px; margin-top: 1px; border-radius: 4px;
+  background: var(--text-primary); color: var(--bg-card);
+  font-style: normal; font-size: 10px; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.adp-cash-when {
+  flex: 1 1 auto; min-width: 0; font-size: 12.5px; font-weight: 700;
+  color: var(--text-primary); word-break: keep-all;
+}
+.adp-cash-head b { flex: none; font-size: 13px; font-weight: 800; color: var(--text-primary); }
+.adp-cash-note { margin: 4px 0 0 24px; font-size: 11px; color: var(--text-muted); }
+.adp-cash-row {
+  display: flex; align-items: baseline; gap: 10px; margin: 7px 0 0 24px;
+  font-size: 11.5px; color: var(--text-secondary);
+}
+.adp-cash-row span { flex: 1 1 auto; min-width: 0; word-break: keep-all; }
+.adp-cash-row b { flex: none; font-weight: 600; color: var(--text-primary); }
+.adp-cash-row.big { margin-left: 0; font-size: 12.5px; font-weight: 700; }
+.adp-cash-row.big b { font-weight: 800; }
+.adp-cash-total {
+  display: flex; align-items: baseline; gap: 10px;
+  margin-top: 16px; padding-top: 14px; border-top: 1.5px solid var(--text-primary);
+  font-size: 13px; font-weight: 800; color: var(--text-primary);
+}
+.adp-cash-total span { flex: 1 1 auto; }
+.adp-cash-total b { color: #e8650f; font-size: 14px; }
+.adp-cash-later {
+  margin: 18px 0 10px; font-size: 11px; color: var(--text-muted);
+}
 </style>
