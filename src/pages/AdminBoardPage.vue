@@ -26,29 +26,56 @@ const router = useRouter();
 const auth = useAuthStore();
 const who = computed(() => auth.nickname || auth.email || '');
 
+/** 이벤트 꼬리표 — 배너로 띄우든 목록에 줄로 넣든 같은 것을 쓴다 */
+const EVENT_TAGS = ['안내', '진행', '마감'];
+
 const KINDS: Array<{ key: BoardKind; label: string; hint: string; tags: string[] }> = [
-  // 배너에는 줄 목록이 없어 꼬리표를 붙일 자리가 없다 — 그 몫은 배지가 한다
-  { key: 'banner', label: '이벤트 배너', hint: '앱 더보기의 모든 탭 맨 위에 돌아가며 뜬다 (3:1 그림)', tags: [] },
-  { key: 'event', label: '이벤트', hint: '공지 탭의 이벤트 목록에 줄로 들어간다', tags: ['안내', '진행', '마감'] },
+  // 이벤트 글 하나로 배너와 목록을 함께 쓴다 (어디에 낼지는 글마다 고른다)
+  { key: 'banner', label: '이벤트', hint: '배너로 띄우거나 공지 탭의 이벤트 목록에 줄로 넣는다', tags: EVENT_TAGS },
   { key: 'notice', label: '공지사항', hint: '점검·정책처럼 알려야 하는 것', tags: ['안내', '점검', '중요'] },
   { key: 'update', label: '업데이트', hint: '새로 붙은 기능·고친 것', tags: ['신규', '기능', '개선'] },
 ];
-
-/** 배너를 이벤트 목록에도 넣을 때 쓰는 꼬리표 — 이벤트 상자와 같은 것을 쓴다 */
-const EVENT_TAGS = KINDS.find((k) => k.key === 'event')?.tags ?? [];
 
 const posts = ref<BoardPost[]>([]);
 const err = ref('');
 let unsub: (() => void) | null = null;
 onMounted(() => {
-  unsub = subscribeBoardPosts((rows) => { posts.value = rows; }, (m) => { err.value = m; });
+  unsub = subscribeBoardPosts(
+    (rows) => { posts.value = rows; void moveOldEvents(rows); },
+    (m) => { err.value = m; },
+  );
 });
+
+/**
+ * 따로 쓰던 '이벤트' 글을 이벤트 배너 상자로 옮긴다.
+ * 상자를 합치면서 종류를 하나로 모은 자리 — 배너로 띄우던 글은 배너 켬,
+ * 줄로만 보이던 글은 목록만 켬으로 옮긴다. 한 번 옮기면 다시 할 일이 없다.
+ */
+let moving = false;
+const moveOldEvents = async (rows: BoardPost[]) => {
+  if (moving) return;
+  const old = rows.filter((p) => p.kind === 'event');
+  if (old.length === 0) return;
+  moving = true;
+  try {
+    for (const p of old) {
+      await saveBoardPost(
+        { ...p, kind: 'banner', showBanner: !!p.banner, alsoEvent: true, banner: false },
+        { touch: false },
+      );
+    }
+  } catch (e) {
+    console.warn('[board] 옛 이벤트 글을 옮기지 못했습니다', e);
+  } finally {
+    moving = false;
+  }
+};
 onUnmounted(() => { if (unsub) unsub(); });
 
 /* ───────── 왼쪽 메뉴 ───────── */
 
 const menu = ref('banner');
-const KIND_KEYS: BoardKind[] = ['banner', 'event', 'notice', 'update'];
+const KIND_KEYS: BoardKind[] = ['banner', 'notice', 'update'];
 /** 고른 메뉴가 글 상자면 그 종류, 아니면 아직 만들지 않은 칸 */
 const menuKind = computed(() =>
   (KIND_KEYS as string[]).includes(menu.value) ? (menu.value as BoardKind) : null);
@@ -98,7 +125,7 @@ const kindLabel = computed(() => KINDS.find((k) => k.key === draft.value?.kind)?
 const tagList = computed(() =>
   draft.value?.kind === 'banner' ? EVENT_TAGS : (KINDS.find((k) => k.key === draft.value?.kind)?.tags ?? []));
 /** 내릴 때 — 공지사항·업데이트는 한번 올리면 기록으로 남는다 */
-const hasEnd = computed(() => draft.value?.kind === 'banner' || draft.value?.kind === 'event');
+const hasEnd = computed(() => draft.value?.kind === 'banner');
 /** 꼬리말 예약·이벤트 기간 — 이벤트에만 */
 const hasTagPlan = computed(() => hasEnd.value);
 const hasPeriod = computed(() => hasEnd.value);

@@ -23,8 +23,12 @@ export const OPS_MENU: OpsGroup[] = [
   {
     title: '글 관리',
     items: [
-      { key: 'banner', label: '배너 관리', desc: '이벤트 배너 올리고 내리기·예약', ready: true },
-      { key: 'event', label: '이벤트 관리', desc: '이벤트 글과 꼬리말 예약', ready: true },
+      {
+        key: 'banner',
+        label: '이벤트 배너 관리',
+        desc: '이벤트 글 하나를 배너로 띄우거나 목록에 줄로 넣는다',
+        ready: true,
+      },
       { key: 'notice', label: '공지 관리', desc: '점검·정책처럼 알려야 하는 것', ready: true },
       { key: 'update', label: '업데이트 관리', desc: '새로 붙은 기능·고친 것', ready: true },
       { key: 'popup', label: '앱 시작 팝업', desc: '앱을 열 때 한 번 뜨는 안내', need: '배너 구조를 그대로 쓰면 됩니다' },
