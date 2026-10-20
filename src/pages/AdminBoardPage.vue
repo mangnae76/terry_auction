@@ -56,8 +56,11 @@ const emptyPost = (kind: BoardKind): BoardPost => ({
 });
 
 const draft = ref<BoardPost | null>(null);
-const openNew = (kind: BoardKind) => { draft.value = emptyPost(kind); };
-const openEdit = (p: BoardPost) => { draft.value = { ...p, title: titleOf(p) }; };
+const openNew = (kind: BoardKind) => { draft.value = emptyPost(kind); imgSize.value = ''; imgRatio.value = ''; };
+const openEdit = (p: BoardPost) => {
+  draft.value = { ...p, title: titleOf(p) };
+  readSize(p.imageUrl ?? '');
+};
 const close = () => { draft.value = null; };
 
 const saving = ref(false);
@@ -78,6 +81,18 @@ const reason = (e: unknown, fallback: string) => {
 
 /** 그림 고르기 — 올리기 전에 작게 줄인다 */
 const picking = ref(false);
+/** 고른 그림의 실제 크기 — 운영자가 비율을 눈으로 맞출 수 있게 */
+const imgSize = ref('');
+const imgRatio = ref('');
+const readSize = (dataUrl: string) => {
+  if (!dataUrl) { imgSize.value = ''; imgRatio.value = ''; return; }
+  const img = new Image();
+  img.onload = () => {
+    imgSize.value = `${img.width}×${img.height}`;
+    imgRatio.value = (img.width / img.height).toFixed(2);
+  };
+  img.src = dataUrl;
+};
 const pickImage = async (ev: Event) => {
   const input = ev.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -86,6 +101,7 @@ const pickImage = async (ev: Event) => {
   picking.value = true;
   try {
     draft.value.imageUrl = await compressBoardImage(file);
+    readSize(draft.value.imageUrl);
   } catch (e) {
     flash(e instanceof Error ? e.message : '그림을 올리지 못했습니다.');
   } finally {
@@ -231,15 +247,22 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           </label>
 
           <label>
-            <small>그림 <em>(없어도 됩니다)</em></small>
+            <small>
+              그림 <em>(없어도 됩니다)</em>
+              <b class="adb-spec">{{ draft.banner ? '배너 — 가로:세로 3:1 권장 (예 1200×400)' : '가로 1000px 안팎 권장' }}</b>
+            </small>
             <span class="adb-img">
-              <img v-if="draft.imageUrl" :src="draft.imageUrl" alt="" />
+              <img v-if="draft.imageUrl" :src="draft.imageUrl" :class="{ banner: draft.banner }" alt="" />
+              <small v-if="imgSize" class="adb-imgsize">
+                올린 그림 {{ imgSize }}
+                <template v-if="draft.banner && imgRatio">· 비율 {{ imgRatio }}:1</template>
+              </small>
               <span class="adb-img-acts">
                 <label class="adb-file">
                   {{ picking ? '줄이는 중…' : (draft.imageUrl ? '다른 그림' : '그림 고르기') }}
                   <input type="file" accept="image/*" @change="pickImage" />
                 </label>
-                <button v-if="draft.imageUrl" type="button" class="adb-img-del" @click="draft!.imageUrl = ''">빼기</button>
+                <button v-if="draft.imageUrl" type="button" class="adb-img-del" @click="draft!.imageUrl = ''; imgSize = ''">빼기</button>
               </span>
             </span>
           </label>
@@ -379,6 +402,10 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 .adb-area:focus { outline: none; border-color: #2a3f8f; }
 .adb-img { display: flex; flex-direction: column; gap: 8px; }
 .adb-img img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid #eef1f6; }
+/* 배너는 앱에서 3:1 로 잘린다 — 여기서도 같은 비율로 보여 준다 */
+.adb-img img.banner { max-height: none; aspect-ratio: 3 / 1; }
+.adb-spec { display: block; margin-top: 2px; font-size: 11px; font-weight: 600; color: #2a3f8f; }
+.adb-imgsize { font-size: 11px; color: #6b7280; }
 .adb-img-acts { display: flex; gap: 6px; }
 .adb-file {
   display: inline-block; border: 1px solid #c7d2ea; border-radius: 8px; background: #fff;

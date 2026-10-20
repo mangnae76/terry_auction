@@ -3,6 +3,7 @@
 // 글은 services/boardNews·pointPolicy 에 있고 여기서는 그리기만 한다.
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import AppToast from './AppToast.vue';
+import ImageLightbox from './ImageLightbox.vue';
 import { useBoardFeed } from '../services/boardFeed';
 
 /** 관리자가 올린 글 — 아직 없으면 코드의 기본 글을 쓴다 */
@@ -30,6 +31,9 @@ const onTouchEnd = (e: TouchEvent) => {
 onMounted(startRoll);
 watch(() => EVENT_BANNERS.value.length, () => { bannerAt.value = 0; startRoll(); });
 onUnmounted(() => window.clearInterval(timer));
+
+/** 크게 볼 그림 ('' 이면 닫힘) */
+const zoom = ref('');
 
 /** 펼쳐 둔 줄 — 본문이나 그림이 있을 때만 열린다 */
 const openRow = ref('');
@@ -64,7 +68,7 @@ const notReady = (what: string) => {
             class="nws-banner"
             @click="notReady('이벤트')"
           >
-            <img v-if="b.imageUrl" :src="b.imageUrl" class="nws-bimg" alt="" />
+            <img v-if="b.imageUrl" :src="b.imageUrl" class="nws-bimg" alt="" @click.stop="zoom = b.imageUrl" />
             <span class="badge">{{ b.badge }}</span>
             <strong>{{ b.title }}</strong>
             <small v-if="b.desc">{{ b.desc }}</small>
@@ -88,7 +92,7 @@ const notReady = (what: string) => {
           <i v-if="e.body || e.imageUrl" class="chev">{{ openRow === `e${i}` ? '▴' : '▾' }}</i>
         </button>
         <div v-if="openRow === `e${i}`" class="nws-open">
-          <img v-if="e.imageUrl" :src="e.imageUrl" alt="" />
+          <img v-if="e.imageUrl" :src="e.imageUrl" alt="" @click="zoom = e.imageUrl" />
           <p v-if="e.body">{{ e.body }}</p>
         </div>
       </template>
@@ -103,7 +107,7 @@ const notReady = (what: string) => {
           <i v-if="n.body || n.imageUrl" class="chev">{{ openRow === `n${i}` ? '▴' : '▾' }}</i>
         </button>
         <div v-if="openRow === `n${i}`" class="nws-open">
-          <img v-if="n.imageUrl" :src="n.imageUrl" alt="" />
+          <img v-if="n.imageUrl" :src="n.imageUrl" alt="" @click="zoom = n.imageUrl" />
           <p v-if="n.body">{{ n.body }}</p>
         </div>
       </template>
@@ -117,12 +121,13 @@ const notReady = (what: string) => {
           <i v-if="u.body || u.imageUrl" class="chev">{{ openRow === `u${i}` ? '▴' : '▾' }}</i>
         </button>
         <div v-if="openRow === `u${i}`" class="nws-open">
-          <img v-if="u.imageUrl" :src="u.imageUrl" alt="" />
+          <img v-if="u.imageUrl" :src="u.imageUrl" alt="" @click="zoom = u.imageUrl" />
           <p v-if="u.body">{{ u.body }}</p>
         </div>
       </template>
     </section>
 
+    <ImageLightbox v-if="zoom" :src="zoom" @close="zoom = ''" />
     <AppToast :visible="!!toastText" :text="toastText" />
   </div>
 </template>
@@ -156,7 +161,7 @@ const notReady = (what: string) => {
 .nws-row .chev { flex: none; font-style: normal; font-size: 10px; color: #9aa6c4; }
 /* 펼친 글 */
 .nws-open { padding: 4px 0 10px 37px; }
-.nws-open img { width: 100%; border-radius: 8px; margin-bottom: 7px; }
+.nws-open img { width: 100%; border-radius: 8px; margin-bottom: 7px; cursor: zoom-in; }
 .nws-open p {
   margin: 0; font-size: 11.5px; line-height: 1.75; color: #4b5563;
   white-space: pre-line; word-break: keep-all;
@@ -170,7 +175,11 @@ const notReady = (what: string) => {
   background: #d7dced; cursor: pointer;
 }
 .nws-dot.on { background: #2a3f8f; width: 18px; border-radius: 4px; }
-.nws-bimg { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
+/* 배너 그림 — 가로:세로 3:1 (운영에 권장 크기로 적어 둔 값과 같다) */
+.nws-bimg {
+  width: 100%; aspect-ratio: 3 / 1; object-fit: cover;
+  border-radius: 8px; margin-bottom: 8px; cursor: zoom-in;
+}
 .nws-banner {
   width: 100%; text-align: left; cursor: pointer;
   border: none; border-radius: 10px; padding: 13px 14px;
