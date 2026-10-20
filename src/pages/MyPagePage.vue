@@ -118,10 +118,14 @@ const go = (c: Card) => {
       <section class="myp-sum">
         <span class="myp-who">{{ auth.nickname || '게스트' }} 님<em>( {{ loginId }} )</em></span>
         <div class="myp-cells">
-          <div class="myp-cell">
+          <button
+            type="button"
+            class="myp-cell tap"
+            @click="router.push({ path: '/points', query: { tab: 'grade' } })"
+          >
             <span class="myp-chip">{{ grade.name }} 회원</span>
             <span :class="['myp-badge', grade.tone]">{{ grade.name.slice(0, 1) }}</span>
-          </div>
+          </button>
           <div class="myp-cell">
             <span class="myp-chip">누적 포인트</span>
             <button type="button" class="myp-point" @click="router.push('/point-history')">
@@ -208,6 +212,7 @@ const go = (c: Card) => {
 .myp-who em { font-style: normal; font-weight: 600; color: #8a93a4; margin-left: 3px; }
 .myp-cells { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 6px 0 2px; }
 .myp-cell { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.myp-cell.tap { border: none; background: transparent; padding: 0; cursor: pointer; }
 .myp-chip {
   padding: 3px 9px; border-radius: 5px; background: #4a5bb5; color: #fff;
   font-size: 10.5px; font-weight: 700; white-space: nowrap;

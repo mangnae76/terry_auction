@@ -2,7 +2,7 @@
 // 포인트 제도 — 고객센터·더보기 바로가기의 '포인트'에서 들어온다.
 // 글은 services/pointPolicy 에 있고 여기서는 그리기만 한다.
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import {
   POINT_BENEFITS,
@@ -14,19 +14,22 @@ import {
 
 const router = useRouter();
 const TABS = [
-  { key: 'intro', label: '포인트 제도 소개' },
+  { key: 'intro', label: '포인트 안내' },
   { key: 'grade', label: '회원등급 및 포인트적립률' },
   { key: 'benefit', label: '포인트 혜택 안내' },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
-const tab = ref<TabKey>('intro');
+const route = useRoute();
+const KEYS = TABS.map((t) => t.key) as readonly string[];
+const asked = String(route.query.tab ?? '');
+const tab = ref<TabKey>((KEYS.includes(asked) ? asked : 'intro') as TabKey);
 </script>
 
 <template>
   <section class="pt-shell">
     <header class="pt-header">
       <button type="button" class="pt-back" aria-label="뒤로" @click="router.back()">‹</button>
-      <h1 class="pt-title">포인트 제도</h1>
+      <h1 class="pt-title">포인트 안내</h1>
       <span class="pt-crumb">더보기 › 포인트</span>
     </header>
 
@@ -43,7 +46,7 @@ const tab = ref<TabKey>('intro');
     <div class="pt-body">
       <!-- 1. 포인트 제도 소개 -->
       <template v-if="tab === 'intro'">
-        <h2 class="pt-pill">포인트 제도 소개</h2>
+        <h2 class="pt-pill">포인트 안내</h2>
         <section class="pt-blue">
           <div v-for="sec in POINT_INTRO" :key="sec.title" class="pt-blue-sec">
             <h3>{{ sec.title }}</h3>
