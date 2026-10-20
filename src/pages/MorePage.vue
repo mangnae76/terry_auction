@@ -48,10 +48,9 @@ const TABS = [
 type TabKey = (typeof TABS)[number]['key'];
 const tab = ref<TabKey>('mypage');
 
-/** 배너의 '자세히 보기' — 공지 탭을 열고 그 이벤트 줄을 펼친다 (탭이 어디든) */
-const focusEvent = ref('');
+/** 배너의 '자세히 보기' — 그 이벤트 상세로 간다. 번호가 없으면 공지 탭의 이벤트 묶음으로 */
 const goEvents = (id: string) => {
-  focusEvent.value = id;
+  if (id) { router.push(`/post/${id}`); return; }
   tab.value = 'news';
   window.setTimeout(() => {
     document.querySelector('[data-sec="event"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -118,7 +117,7 @@ onMounted(() => {
       <MyPageCards v-if="tab === 'mypage'" />
       <BillingBody v-else-if="tab === 'billing'" />
       <PointsBody v-else-if="tab === 'points'" />
-      <NewsBody v-else-if="tab === 'news'" :focus="focusEvent" />
+      <NewsBody v-else-if="tab === 'news'" />
       <SupportBody v-else />
     </div>
 

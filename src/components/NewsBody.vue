@@ -1,15 +1,15 @@
 <script setup lang="ts">
 // 부가서비스 — 공지사항·이벤트·업데이트·포인트를 차례로 적는다.
 // 글은 services/boardNews·pointPolicy 에 있고 여기서는 그리기만 한다.
-import { onMounted, ref, watch } from 'vue';
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import ImageLightbox from './ImageLightbox.vue';
 import { useBoardFeed } from '../services/boardFeed';
 
 /** 관리자가 올린 글 — 아직 없으면 코드의 기본 글을 쓴다 */
 const { events: EVENTS, notices: NOTICES, updates: UPDATES } = useBoardFeed();
 
-/** 배너의 '자세히 보기'로 들어왔다면 그 줄을 펼쳐 둔다 */
-const props = defineProps<{ focus?: string }>();
+const router = useRouter();
 
 /** 크게 볼 그림 ('' 이면 닫힘) */
 const zoom = ref('');
@@ -21,18 +21,11 @@ const toggleRow = (key: string, row: { body?: string; imageUrl?: string }) => {
   openRow.value = openRow.value === key ? '' : key;
 };
 
-const openFocused = () => {
-  const id = props.focus;
-  if (!id) return;
-  const i = EVENTS.value.findIndex((e) => e.id === id);
-  if (i < 0) return;
-  openRow.value = `e${i}`;
-  window.setTimeout(() => {
-    document.querySelector('[data-sec="event"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 60);
+/** 이벤트는 제목 줄을 누르면 상세 보기로 들어간다 (기본 글은 번호가 없어 그 자리에서 펼친다) */
+const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: string }) => {
+  if (row.id) { router.push(`/post/${row.id}`); return; }
+  toggleRow(key, row);
 };
-onMounted(openFocused);
-watch(() => props.focus, openFocused);
 </script>
 
 <template>
@@ -40,10 +33,11 @@ watch(() => props.focus, openFocused);
     <section class="nws-card" data-sec="event">
       <h3 class="nws-h">이벤트</h3>
       <template v-for="(e, i) in EVENTS" :key="`e${i}`">
-        <button type="button" class="nws-row" @click="toggleRow(`e${i}`, e)">
+        <button type="button" class="nws-row" @click="openEvent(`e${i}`, e)">
           <span class="tag">{{ e.tag }}</span><span class="txt">{{ e.text }}</span>
           <span v-if="e.postedShort" class="when">{{ e.postedShort }}</span>
-          <i v-if="e.body || e.imageUrl" class="chev">{{ openRow === `e${i}` ? '▴' : '▾' }}</i>
+          <i v-if="e.id" class="chev">›</i>
+          <i v-else-if="e.body || e.imageUrl" class="chev">{{ openRow === `e${i}` ? '▴' : '▾' }}</i>
         </button>
         <div v-if="openRow === `e${i}`" class="nws-open">
           <img v-if="e.imageUrl" :src="e.imageUrl" alt="" @click="zoom = e.imageUrl" />

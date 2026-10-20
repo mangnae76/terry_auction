@@ -104,7 +104,6 @@ const openList = (id?: string) => { if (!wasDrag()) emit('open', id ?? ''); };
           <small v-if="b.desc">{{ b.desc }}</small>
           <span class="foot">
             <em>{{ b.period }}</em>
-            <em v-if="b.postedFull" class="posted">{{ b.postedFull }}</em>
             <button type="button" class="cta" @click="openList(b.id)">{{ b.cta }} ›</button>
           </span>
         </div>
@@ -153,8 +152,6 @@ const openList = (id?: string) => { if (!wasDrag()) emit('open', id ?? ''); };
 .evb-card small { font-size: 11px; opacity: .85; word-break: keep-all; }
 .evb-card .foot { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .evb-card .foot em { font-style: normal; font-size: 10.5px; opacity: .75; }
-/* 기간 다음에 언제 올린 글인지 — 좁은 화면에서는 아래로 접힌다 */
-.evb-card .foot .posted { opacity: .6; }
 .evb-card .foot { flex-wrap: wrap; row-gap: 2px; }
 .evb-card .cta {
   margin-left: auto; border: none; font-family: inherit;

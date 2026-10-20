@@ -21,6 +21,12 @@ let started = false;
 // 예약한 때가 지나면 저절로 올라오고 내려가도록 1분마다 지금 시각을 다시 본다
 const now = ref(nowLocal());
 
+/** 글 하나 — 상세 보기 화면이 번호로 찾아 쓴다 */
+export const useBoardPost = (id: () => string) => {
+  useBoardFeed();
+  return computed(() => posts.value.find((p) => p.id === id()) ?? null);
+};
+
 /** 처음 쓰는 화면에서 한 번만 구독한다 */
 export const useBoardFeed = () => {
   if (!started) {
@@ -70,7 +76,6 @@ export const useBoardFeed = () => {
         // 배너 칸에는 단축 글만 — 긴 본문은 이벤트 줄을 펼쳐야 보인다
         desc: p.desc || p.body || '',
         cta: p.cta || '자세히 보기',
-        postedFull: postedLabel(p.postedAt ?? p.createdAt, p.updatedAt),
         // 예약한 때가 있으면 그것을 그대로 보여 준다 — 손으로 적은 기간 글은 예약이 없을 때만
         period: periodLabel(p.startAt, p.endAt) || p.period || '',
       }));

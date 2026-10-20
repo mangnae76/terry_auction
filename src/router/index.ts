@@ -209,6 +209,12 @@ const router = createRouter({
       component: () => import('../pages/HousingIndexPage.vue'),
     },
     {
+      // 이벤트 상세 — 목록에서 제목 줄을 누르면 들어온다
+      path: '/post/:id',
+      name: 'board-post',
+      component: () => import('../pages/BoardPostPage.vue'),
+    },
+    {
       // 운영 — 공지·이벤트·업데이트 올리기
       path: '/admin/board',
       name: 'admin-board',

@@ -33,8 +33,6 @@ export interface NewsBanner {
   period: string;
   /** 운영에서 올린 배너만 그림을 들고 있다 */
   imageUrl?: string;
-  /** '등록 2026.10.20 · 수정 10.21' */
-  postedFull?: string;
 }
 
 /** 이벤트 배너 — 여러 장이면 옆으로 넘겨 본다 */
