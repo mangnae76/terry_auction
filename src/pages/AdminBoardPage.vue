@@ -75,6 +75,10 @@ const emptyPost = (kind: BoardKind): BoardPost => ({
   updatedAt: new Date().toISOString(),
 });
 
+/** 날짜를 고른 때 — 고르개가 닫히며 흘린 손길이 다른 것을 누르는 일을 막는다 */
+let dateTouchedAt = 0;
+const onDateChange = () => { dateTouchedAt = Date.now(); };
+
 const draft = ref<BoardPost | null>(null);
 /** 기간 글을 비워 두면 배너에 대신 나갈 글 */
 const autoPeriod = computed(() => {
@@ -89,6 +93,18 @@ const openEdit = (p: BoardPost) => {
   readSize(p.imageUrl ?? '');
 };
 const close = () => { draft.value = null; };
+
+/**
+ * 바깥을 눌러 닫기 — 누르기와 떼기가 모두 바깥일 때만 닫는다.
+ * 달력은 쓰기 상자 밖까지 펼쳐지는데, 그 위에서 날짜를 고르면 떼는 손길이
+ * 바깥에 떨어져 창이 닫혀 버렸다. 그래서 누른 자리까지 본다.
+ */
+const downOnBack = ref(false);
+const onBackUp = (ev: MouseEvent) => {
+  const onBack = ev.target === ev.currentTarget;
+  if (downOnBack.value && onBack && Date.now() - dateTouchedAt > 400) close();
+  downOnBack.value = false;
+};
 
 const saving = ref(false);
 const msg = ref('');
@@ -119,9 +135,6 @@ const readSize = (dataUrl: string) => {
   img.src = dataUrl;
 };
 const fileEl = ref<HTMLInputElement | null>(null);
-/** 날짜를 고른 때 — 고르개가 닫히며 흘린 손길이 아래 단추를 누르는 일을 막는다 */
-let dateTouchedAt = 0;
-const onDateChange = () => { dateTouchedAt = Date.now(); };
 const openFile = () => {
   if (Date.now() - dateTouchedAt < 500) return;
   fileEl.value?.click();
@@ -383,7 +396,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
     </div>
 
     <!-- 쓰기 창 -->
-    <div v-if="draft" class="adb-modal" @click.self="close">
+    <div v-if="draft" class="adb-modal" @mousedown.self="downOnBack = true" @mouseup="onBackUp">
       <div class="adb-box">
         <header class="adb-box-head">
           <strong>{{ KINDS.find((k) => k.key === draft!.kind)?.label }}</strong>
