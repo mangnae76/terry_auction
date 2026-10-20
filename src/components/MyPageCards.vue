@@ -99,6 +99,23 @@ const go = (c: Card) => {
 
 <template>
   <div class="mpc">
+    <!-- 내 자리 한눈에 — 누르면 그 화면으로 간다 -->
+    <div class="mpc-sum">
+      <span class="mpc-who">{{ auth.nickname || '게스트' }} 님<em>( {{ loginId }} )</em></span>
+      <button type="button" class="mpc-cell" @click="router.push({ path: '/points', query: { tab: 'grade' } })">
+        <span class="mpc-chip">{{ grade.name }} 회원</span>
+        <span :class="['mpc-badge', grade.tone]">{{ grade.name.slice(0, 1) }}</span>
+      </button>
+      <button type="button" class="mpc-cell" @click="router.push('/point-history')">
+        <span class="mpc-chip">누적 포인트</span>
+        <span class="mpc-val">{{ myPoint.toLocaleString('ko-KR') }} <small>P</small></span>
+      </button>
+      <button type="button" class="mpc-cell" @click="router.push('/payments')">
+        <span class="mpc-chip">결제 내역</span>
+        <span class="mpc-val">{{ PLAN_REST_DAYS }}일 <i>›</i></span>
+      </button>
+    </div>
+
     <h2 class="mpc-h2">선정물건</h2>
     <div class="mpc-grid">
       <button
@@ -122,23 +139,6 @@ const go = (c: Card) => {
     </div>
 
     <h2 class="mpc-h2">계정관리</h2>
-
-    <!-- 내 자리 한눈에 — 누르면 그 화면으로 간다 -->
-    <div class="mpc-sum">
-      <span class="mpc-who">{{ auth.nickname || '게스트' }} 님<em>( {{ loginId }} )</em></span>
-      <button type="button" class="mpc-cell" @click="router.push({ path: '/points', query: { tab: 'grade' } })">
-        <span class="mpc-chip">{{ grade.name }} 회원</span>
-        <span :class="['mpc-badge', grade.tone]">{{ grade.name.slice(0, 1) }}</span>
-      </button>
-      <button type="button" class="mpc-cell" @click="router.push('/point-history')">
-        <span class="mpc-chip">누적 포인트</span>
-        <span class="mpc-val">{{ myPoint.toLocaleString('ko-KR') }} <small>P</small></span>
-      </button>
-      <button type="button" class="mpc-cell" @click="router.push('/payments')">
-        <span class="mpc-chip">결제 내역</span>
-        <span class="mpc-val">{{ PLAN_REST_DAYS }}일 <i>›</i></span>
-      </button>
-    </div>
 
     <div class="mpc-grid">
       <button v-for="c in ACCOUNT_CARDS" :key="c.title" type="button" class="mpc-card" @click="go(c)">

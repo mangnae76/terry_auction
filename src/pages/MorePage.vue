@@ -179,17 +179,16 @@ onMounted(() => {
   position: relative; display: grid; grid-template-columns: repeat(4, 1fr);
   margin-top: 12px; border: 1px solid #eef0f5; border-radius: 10px; background: #fff;
 }
+/* 네 칸짜리 상자 — 고른 칸만 색이 바뀐다 */
 .quick-item {
-  position: relative; width: 100%; border: none; border-radius: 0; background: #fff;
-  padding: 11px 2px 12px; cursor: pointer;
-  font-family: inherit; font-size: 12px; font-weight: 700; color: #9aa6c4;
+  width: 100%; border: none; border-radius: 0; background: #fff;
+  padding: 11px 2px; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 700; color: #6b7280;
 }
-.quick-item.on { color: #1f3a72; }
-/* 고른 칸의 밑줄은 ::after 막대로 — 전역 button 둥근 모서리에 말리지 않는다 */
-.quick-item.on::after {
-  content: ''; position: absolute; left: 10%; right: 10%; bottom: 0;
-  height: 3px; background: #1f3a72; border-radius: 2px;
-}
+.quick-item + .quick-item { border-left: 1px solid #eef0f5; }
+.quick-item:first-child { border-radius: 10px 0 0 10px; }
+.quick-item:last-child { border-radius: 0 10px 10px 0; }
+.quick-item.on { background: #2a3f8f; color: #fff; }
 /* 알림설정 알약 — 알릴 것이 있으면 점 하나 (머리글 종과 같은 뜻) */
 .pill-dot {
   display: inline-block; width: 5px; height: 5px; border-radius: 50%;
