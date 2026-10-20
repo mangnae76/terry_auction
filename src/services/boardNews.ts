@@ -12,6 +12,8 @@ export interface NewsRow {
   body?: string;
   /** 글에 딸린 그림 */
   imageUrl?: string;
+  /** 올린 때 그대로 — 새 글인지 가린다 */
+  postedAt?: string;
   /** 줄 오른쪽에 좁게 적는 날짜 — '26.10.20' */
   postedShort?: string;
   /** 펼쳤을 때 적는 날짜 — '등록 2026.10.20 · 수정 10.21' */

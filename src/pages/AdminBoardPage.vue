@@ -7,7 +7,6 @@ import BrandLogo from '../components/BrandLogo.vue';
 import DateTimeField from '../components/DateTimeField.vue';
 import { useAuthStore } from '../stores/authStore';
 import {
-  compressBoardImage,
   newBoardId,
   removeBoardPost,
   saveBoardPost,
@@ -82,6 +81,17 @@ let dateTouchedAt = 0;
 const onDateChange = () => { dateTouchedAt = Date.now(); };
 
 const draft = ref<BoardPost | null>(null);
+
+/* 글 종류마다 쓰는 칸이 다르다 — 한 틀에서 갈라 쓴다 */
+const kindLabel = computed(() => KINDS.find((k) => k.key === draft.value?.kind)?.label ?? '');
+/** 이벤트 꼬리표는 배너도 함께 쓴다 */
+const tagList = computed(() =>
+  draft.value?.kind === 'banner' ? EVENT_TAGS : (KINDS.find((k) => k.key === draft.value?.kind)?.tags ?? []));
+/** 내릴 때 — 공지사항·업데이트는 한번 올리면 기록으로 남는다 */
+const hasEnd = computed(() => draft.value?.kind === 'banner' || draft.value?.kind === 'event');
+/** 꼬리말 예약·이벤트 기간 — 이벤트에만 */
+const hasTagPlan = computed(() => hasEnd.value);
+const hasPeriod = computed(() => hasEnd.value);
 /** 기간 글을 비워 두면 배너에 대신 나갈 글 */
 const autoPeriod = computed(() => {
   const d = draft.value;
@@ -89,11 +99,8 @@ const autoPeriod = computed(() => {
   // 배너는 날짜까지만 — 시각은 상세 보기의 '기간 :' 줄에서 본다
   return dayRangeLabel(d.eventStartAt, d.eventEndAt) || dayRangeLabel(d.startAt, d.endAt);
 });
-const openNew = (kind: BoardKind) => { draft.value = emptyPost(kind); imgSize.value = ''; };
-const openEdit = (p: BoardPost) => {
-  draft.value = { ...p, title: titleOf(p) };
-  readSize(p.imageUrl ?? '');
-};
+const openNew = (kind: BoardKind) => { draft.value = emptyPost(kind); };
+const openEdit = (p: BoardPost) => { draft.value = { ...p, title: titleOf(p) }; };
 const close = () => { draft.value = null; };
 
 /**
@@ -122,40 +129,6 @@ const reason = (e: unknown, fallback: string) => {
     return `이 계정(${auth.email || '로그인 안 됨'})에는 올릴 권한이 없습니다 — 운영자 계정으로 들어와 주세요.`;
   }
   return m || fallback;
-};
-
-/** 그림 고르기 — 올리기 전에 작게 줄인다 */
-const picking = ref(false);
-/** 고른 그림의 실제 크기 — 운영자가 비율을 눈으로 맞출 수 있게 */
-const imgSize = ref('');
-const readSize = (dataUrl: string) => {
-  if (!dataUrl) { imgSize.value = ''; return; }
-  const img = new Image();
-  img.onload = () => {
-    imgSize.value = `${img.width}×${img.height}`;
-  };
-  img.src = dataUrl;
-};
-const fileEl = ref<HTMLInputElement | null>(null);
-const openFile = () => {
-  if (Date.now() - dateTouchedAt < 500) return;
-  fileEl.value?.click();
-};
-
-const pickImage = async (ev: Event) => {
-  const input = ev.target as HTMLInputElement;
-  const file = input.files?.[0];
-  input.value = '';
-  if (!file || !draft.value) return;
-  picking.value = true;
-  try {
-    draft.value.imageUrl = await compressBoardImage(file);
-    readSize(draft.value.imageUrl);
-  } catch (e) {
-    flash(e instanceof Error ? e.message : '그림을 올리지 못했습니다.');
-  } finally {
-    picking.value = false;
-  }
 };
 
 /**
@@ -390,40 +363,30 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         <div class="adb-form">
           <!-- 언제 올리고 내릴지 -->
           <div class="adb-sec first">
-            <h4>{{ draft.kind === 'banner' ? '이벤트' : KINDS.find((k) => k.key === draft!.kind)?.label }} 예약 기능</h4>
+            <h4>{{ kindLabel }} 예약 기능</h4>
           </div>
           <div class="adb-when-row">
             <div class="adb-field">
               <small>올릴 때 <em>(비우면 바로)</em></small>
               <DateTimeField v-model="draft.startAt" @update:model-value="onDateChange" />
             </div>
-            <div class="adb-field">
+            <div v-if="hasEnd" class="adb-field">
               <small>내릴 때 <em>(비우면 계속)</em></small>
               <DateTimeField v-model="draft.endAt" @update:model-value="onDateChange" />
             </div>
           </div>
-          <p class="adb-note">예약한 때가 되면 앱에서 저절로 올라오고 내려갑니다.</p>
+          <p class="adb-note">
+            {{ hasEnd ? '예약한 때가 되면 앱에서 저절로 올라오고 내려갑니다.' : '예약한 때가 되면 앱에 저절로 올라갑니다.' }}
+          </p>
 
-          <label v-if="draft.kind !== 'banner'">
-            <small>꼬리표</small>
-            <span class="adb-tags">
-              <button
-                v-for="t in KINDS.find((k) => k.key === draft!.kind)?.tags ?? []"
-                :key="t"
-                type="button"
-                :class="['adb-tagbtn', { on: draft!.tag === t }]"
-                @click="draft!.tag = t"
-              >{{ t }}</button>
-            </span>
-          </label>
-
-          <template v-if="draft.kind === 'banner'">
+          <!-- 꼬리말 예약 — 이벤트에만 (때맞춰 안내 → 진행 → 마감) -->
+          <template v-if="hasTagPlan">
             <div class="adb-sec">
               <h4>꼬리말 예약 기능</h4>
               <label class="adb-chip"><input v-model="draft.tagManual" type="checkbox" /> 수동</label>
               <span class="adb-tags sec">
                 <button
-                  v-for="t in EVENT_TAGS"
+                  v-for="t in tagList"
                   :key="t"
                   type="button"
                   :class="['adb-tagbtn', { on: draft!.tag === t, off: !draft!.tagManual }]"
@@ -433,7 +396,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
               </span>
             </div>
             <div class="adb-when-row">
-              <div v-for="t in EVENT_TAGS" :key="`plan-${t}`" class="adb-field" :class="{ off: draft.tagManual }">
+              <div v-for="t in tagList" :key="`plan-${t}`" class="adb-field" :class="{ off: draft.tagManual }">
                 <small>{{ t }}</small>
                 <DateTimeField
                   :model-value="planAt(t)"
@@ -451,9 +414,17 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           </template>
 
           <!-- 여기서부터가 목록·상세에 나가는 내용이다 -->
-          <div v-if="draft.kind === 'banner'" class="adb-sec">
-            <h4>이벤트 상세 내용</h4>
-            <span class="adb-sec-note">{{ draft.alsoEvent ? '목록과 상세 보기에 나갑니다' : "'목록' 을 켜야 나갑니다" }}</span>
+          <div class="adb-sec">
+            <h4>{{ kindLabel }} 상세 내용</h4>
+            <span v-if="!hasTagPlan" class="adb-tags sec">
+              <button
+                v-for="t in tagList"
+                :key="t"
+                type="button"
+                :class="['adb-tagbtn', { on: draft!.tag === t }]"
+                @click="draft!.tag = t"
+              >{{ t }}</button>
+            </span>
           </div>
 
           <label>
@@ -461,62 +432,17 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             <input v-model="draft.title" class="adb-input" placeholder="목록에 적히는 한 줄" />
           </label>
 
-          <label v-if="draft.kind === 'banner'" :class="{ off: !draft.showBanner }">
-            <small>단축 글 <em>(배너 칸에 한 줄로 들어갑니다)</em></small>
-            <input
-              v-model="draft.desc"
-              class="adb-input"
-              :disabled="!draft.showBanner"
-              placeholder="기간을 길게 고를수록 더 깎입니다"
-            />
-          </label>
-
-          <label v-if="draft.kind !== 'banner'">
-            <small>본문 <em>(없어도 됩니다)</em></small>
-            <textarea v-model="draft.body" class="adb-area" rows="4" placeholder="눌러서 펼치면 보이는 글"></textarea>
-          </label>
-
-          <!--
-            그림 칸은 label 로 감싸지 않는다 — label 안에 파일 입력이 있으면 그 칸 아무 데나
-            닿기만 해도(날짜 고르개가 닫히며 지나가는 손길까지) 파일 창이 열려 버린다.
-          -->
-          <div v-if="draft.kind !== 'banner'" class="adb-field">
-            <small>
-              그림 <em>(없어도 됩니다)</em>
-              <b class="adb-spec">가로 1000px 안팎 권장</b>
-            </small>
-            <span class="adb-img">
-              <img v-if="draft.imageUrl" :src="draft.imageUrl" alt="" />
-              <small v-if="imgSize" class="adb-imgsize">올린 그림 {{ imgSize }}</small>
-              <span class="adb-img-acts">
-                <button type="button" class="adb-file" :disabled="picking" @click="openFile">
-                  {{ picking ? '줄이는 중…' : (draft.imageUrl ? '다른 그림' : '그림 고르기') }}
-                </button>
-                <button v-if="draft.imageUrl" type="button" class="adb-img-del" @click="draft!.imageUrl = ''; imgSize = ''">빼기</button>
-              </span>
-            </span>
-          </div>
-          <input
-            v-if="draft.kind !== 'banner'"
-            ref="fileEl"
-            type="file"
-            accept="image/*"
-            class="adb-hidden-file"
-            @change="pickImage"
-          />
-
-          <label v-if="draft.kind === 'notice'" class="adb-check">
-            <input v-model="draft.star" type="checkbox" />
-            맨 위에 붙박이로 둔다 (✦)
-          </label>
-
           <!-- 배너 칸에만 나가는 것들 -->
           <template v-if="draft.kind === 'banner'">
-            <p v-if="draft.imageUrl" class="adb-oldimg">
-              전에 올린 그림이 남아 있습니다
-              <button type="button" @click="draft!.imageUrl = ''">빼기</button>
-            </p>
-            <!-- 배지·기간 글·단추 글은 짧은 값이라 한 줄에 셋 -->
+            <label :class="{ off: !draft.showBanner }">
+              <small>단축 글 <em>(배너 칸에 한 줄로 들어갑니다)</em></small>
+              <input
+                v-model="draft.desc"
+                class="adb-input"
+                :disabled="!draft.showBanner"
+                placeholder="기간을 길게 고를수록 더 깎입니다"
+              />
+            </label>
             <div class="adb-row">
               <label class="narrow" :class="{ off: !draft.showBanner }">
                 <small>배지</small>
@@ -540,7 +466,10 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             <p v-if="draft.showBanner && !draft.period && autoPeriod" class="adb-note">
               비워 두어 배너에는 <b>{{ autoPeriod }}</b> 이(가) 나갑니다.
             </p>
+          </template>
 
+          <!-- 이벤트가 열리는 때 — 상세 보기의 '기간 :' 줄이 된다 -->
+          <template v-if="hasPeriod">
             <div class="adb-when-row">
               <div class="adb-field">
                 <small>이벤트 시작</small>
@@ -554,18 +483,31 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             <p v-if="eventPeriodLabel(draft.eventStartAt, draft.eventEndAt)" class="adb-note">
               상세에 나갈 글 — 기간 : {{ eventPeriodLabel(draft.eventStartAt, draft.eventEndAt) }}
             </p>
-            <label>
-              <small>이벤트 본문 <em>(상세 보기에 펼쳐지는 글)</em></small>
-              <textarea
-                v-model="draft.body"
-                class="adb-area"
-                rows="18"
-                placeholder="이벤트 조건·기간·주의할 점을 적습니다"
-              ></textarea>
-            </label>
-            <p class="adb-note">등록·수정 시각은 올리고 고칠 때 저절로 찍혀 상세 보기에 함께 나갑니다.</p>
           </template>
+
+          <label>
+            <small>본문 <em>(상세 보기에 펼쳐지는 글)</em></small>
+            <textarea
+              v-model="draft.body"
+              class="adb-area"
+              rows="18"
+              :placeholder="draft.kind === 'notice' ? '알릴 내용을 적습니다' : '조건·기간·주의할 점을 적습니다'"
+            ></textarea>
+          </label>
+
+          <label v-if="draft.kind === 'notice'" class="adb-check">
+            <input v-model="draft.star" type="checkbox" />
+            맨 위에 붙박이로 둔다 (✦)
+          </label>
+
+          <p v-if="draft.imageUrl" class="adb-oldimg">
+            전에 올린 그림이 남아 있습니다
+            <button type="button" @click="draft!.imageUrl = ''">빼기</button>
+          </p>
+
+          <p class="adb-note">등록 시각은 올릴 때 저절로 찍혀 상세 보기에 함께 나갑니다.</p>
         </div>
+
 
         <footer class="adb-box-foot">
           <button type="button" class="adb-cancel" @click="close">그만두기</button>
