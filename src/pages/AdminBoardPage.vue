@@ -408,13 +408,16 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         </header>
 
         <div class="adb-form">
-          <!-- 언제 올리고 내릴지 — 맨 위에서 정한다 -->
+          <!-- 어디에 낼지 — 글 전체에 걸리는 값이라 맨 위에서 정한다 -->
+          <div v-if="draft.kind === 'banner'" class="adb-where">
+            <small>어디에 낼까요</small>
+            <label class="adb-chip"><input v-model="draft.showBanner" type="checkbox" /> 배너</label>
+            <label class="adb-chip"><input v-model="draft.alsoEvent" type="checkbox" /> 목록</label>
+          </div>
+
+          <!-- 언제 올리고 내릴지 -->
           <div class="adb-sec first">
             <h4>{{ draft.kind === 'banner' ? '이벤트' : KINDS.find((k) => k.key === draft!.kind)?.label }} 예약 기능</h4>
-            <span v-if="draft.kind === 'banner'" class="adb-sec-opts">
-              <label class="adb-chip"><input v-model="draft.showBanner" type="checkbox" /> 배너</label>
-              <label class="adb-chip"><input v-model="draft.alsoEvent" type="checkbox" /> 목록</label>
-            </span>
           </div>
           <div class="adb-when-row">
             <label>
@@ -444,6 +447,16 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           <label>
             <small>제목 <em v-if="draft.kind === 'banner'">(배너·목록이 함께 씁니다)</em></small>
             <input v-model="draft.title" class="adb-input" placeholder="목록에 적히는 한 줄" />
+          </label>
+
+          <label v-if="draft.kind === 'banner'" :class="{ off: !draft.showBanner }">
+            <small>단축 글 <em>(배너 칸에 한 줄로 들어갑니다)</em></small>
+            <input
+              v-model="draft.desc"
+              class="adb-input"
+              :disabled="!draft.showBanner"
+              placeholder="기간을 길게 고를수록 더 깎입니다"
+            />
           </label>
 
           <label v-if="draft.kind !== 'banner'">
@@ -491,23 +504,12 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
               전에 올린 그림이 남아 있습니다
               <button type="button" @click="draft!.imageUrl = ''">빼기</button>
             </p>
-            <!-- 배지와 단축 글은 한 줄에 — 쓰기 창이 길어지지 않게 -->
+            <!-- 배지·기간 글·단추 글은 짧은 값이라 한 줄에 셋 -->
             <div class="adb-row">
               <label class="narrow" :class="{ off: !draft.showBanner }">
                 <small>배지</small>
                 <input v-model="draft.badge" class="adb-input" :disabled="!draft.showBanner" placeholder="EVENT" />
               </label>
-              <label :class="{ off: !draft.showBanner }">
-                <small>단축 글 <em>(배너 한 줄)</em></small>
-                <input
-                  v-model="draft.desc"
-                  class="adb-input"
-                  :disabled="!draft.showBanner"
-                  placeholder="기간을 길게 고를수록 더 깎입니다"
-                />
-              </label>
-            </div>
-            <div class="adb-row">
               <label :class="{ off: !draft.showBanner }">
                 <small>기간 글 <em>(비우면 이벤트 기간)</em></small>
                 <input
@@ -752,7 +754,12 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 .adb-sec.first { border-top: none; margin-top: 0; padding-top: 0; }
 .adb-sec h4 { margin: 0; font-size: 13.5px; font-weight: 800; color: #111827; }
 .adb-sec-note { margin-left: auto; font-size: 11px; color: #9ca3af; }
-.adb-sec-opts { margin-left: auto; display: flex; gap: 10px; }
+/* 어디에 낼지 — 쓰기 창 맨 위 */
+.adb-where {
+  display: flex; align-items: center; gap: 12px;
+  background: #f7f8fb; border: 1px solid #eef1f6; border-radius: 8px; padding: 9px 12px;
+}
+.adb-where > small { font-size: 11.5px; font-weight: 700; color: #6b7280; }
 .adb-chip {
   flex-direction: row !important; align-items: center; gap: 6px;
   font-size: 12.5px; font-weight: 700; color: #374151; cursor: pointer;
@@ -761,7 +768,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 /* 두 칸을 한 줄에 */
 .adb-row { display: flex; gap: 10px; }
 .adb-row > label { flex: 1 1 0; min-width: 0; }
-.adb-row > label.narrow { flex: 0 0 116px; }
+.adb-row > label.narrow { flex: 0 0 104px; }
 
 /* 본문 꾸미기 단추 — 글칸 오른쪽 위 */
 .adb-bodyhead { display: flex; align-items: center; gap: 6px; }
