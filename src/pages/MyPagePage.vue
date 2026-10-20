@@ -57,7 +57,8 @@ const typeTally = computed(() => {
 interface Card {
   icon: string;
   title: string;
-  desc: string;
+  /** 없으면 제목만 적는다 */
+  desc?: string;
   path: string;
   /** 카드 아래 작은 숫자 줄 */
   tally?: string;
@@ -80,7 +81,6 @@ const PICK_CARDS = computed<Card[]>(() => [
   { icon: '🏢', title: '중개업체 관리', desc: '상호·연락처 관리', path: '/agencies' },
   {
     icon: '📅', title: '입찰달력',
-    desc: '입찰 일정 달력',
     path: '/bid-calendar',
     tally: `오늘 ${bidToday.value}건 · 이달 ${bidMonth.value}건`,
   },
@@ -148,7 +148,7 @@ const go = (c: Card) => {
           <span class="myp-card-ico">{{ c.icon }}</span>
           <span class="myp-card-txt">
             <strong>{{ c.title }}</strong>
-            <small>{{ c.desc }}</small>
+            <small v-if="c.desc">{{ c.desc }}</small>
             <span v-if="c.tally || c.tallies?.length" class="myp-tallyline">
               <em v-if="c.tally" class="myp-tally">{{ c.tally }}</em>
               <i v-for="t in c.tallies" :key="t" class="myp-type">{{ t }}</i>
@@ -165,7 +165,7 @@ const go = (c: Card) => {
           <span class="myp-card-ico">{{ c.icon }}</span>
           <span class="myp-card-txt">
             <strong>{{ c.title }}</strong>
-            <small>{{ c.desc }}</small>
+            <small v-if="c.desc">{{ c.desc }}</small>
           </span>
           <i class="myp-go">›</i>
         </button>
