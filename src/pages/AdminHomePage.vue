@@ -135,6 +135,7 @@ const openTool = (tool: Tool) => {
         </div>
         <nav class="adm-top-nav">
           <button type="button" class="adm-top-link" @click="router.push('/auctions/watchlist')">선정물건</button>
+          <button type="button" class="adm-top-link ops" @click="router.push('/admin/board')">운영</button>
           <span class="adm-who">{{ who }}</span>
         </nav>
       </div>
@@ -235,6 +236,8 @@ const openTool = (tool: Tool) => {
   color: #fff; cursor: pointer;
 }
 .adm-top-link:hover { border-color: #b9cdf7; color: #2b6df3; }
+/* 운영 — 글을 올리는 자리라 눈에 띄게 */
+.adm-top-link.ops { background: #ffffff; border-color: #ffffff; color: #1f3a72; }
 .adm-who { font-size: 12px; color: #c7d2ea; font-weight: 600; }
 
 /* ===== 본문 ===== */

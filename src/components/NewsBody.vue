@@ -3,7 +3,10 @@
 // 글은 services/boardNews·pointPolicy 에 있고 여기서는 그리기만 한다.
 import { ref } from 'vue';
 import AppToast from './AppToast.vue';
-import { EVENTS, EVENT_BANNERS, NOTICES, UPDATES } from '../services/boardNews';
+import { useBoardFeed } from '../services/boardFeed';
+
+/** 관리자가 올린 글 — 아직 없으면 코드의 기본 글을 쓴다 */
+const { events: EVENTS, notices: NOTICES, updates: UPDATES, banners: EVENT_BANNERS } = useBoardFeed();
 
 const toastText = ref('');
 const notReady = (what: string) => {

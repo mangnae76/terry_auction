@@ -14,6 +14,19 @@ service cloud.firestore {
         ];
     }
 
+    // 운영자 — 공지·이벤트 글을 올릴 수 있는 계정
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email is string
+        && request.auth.token.email.lower() == 'mangnae760723@gmail.com';
+    }
+
+    // 공지·이벤트·업데이트 글 — 누구나 읽고, 운영자만 쓴다
+    match /boardPosts/{id} {
+      allow read: if isAllowedUser();
+      allow write: if isAdmin();
+    }
+
     // 사용자 프로필 — 본인 것만 읽고 쓸 수 있음
     match /users/{uid} {
       allow read, write: if isAllowedUser() && request.auth.uid == uid;

@@ -209,6 +209,12 @@ const router = createRouter({
       component: () => import('../pages/HousingIndexPage.vue'),
     },
     {
+      // 운영 — 공지·이벤트·업데이트 올리기
+      path: '/admin/board',
+      name: 'admin-board',
+      component: () => import('../pages/AdminBoardPage.vue'),
+    },
+    {
       path: '/admin/region-demand',
       name: 'admin-region-demand',
       component: () => import('../pages/AdminRegionDemandPage.vue'),
