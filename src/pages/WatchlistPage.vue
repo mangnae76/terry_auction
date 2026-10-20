@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { propTypeMark } from '../utils/propertyType';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { loadUserPrefs } from '../services/userPrefsRepository';
@@ -34,23 +35,6 @@ const toggleStats = () => {
   if (statsCollapsed.value) filterOpen.value = '';
 };
 const searchQuery = ref('');
-
-// 주소 앞 동그란 종류 배지 — PDF 표기가 '다세대(빌라)', '도시형생활주택'처럼 제각각이라 패턴으로 한 글자만 뽑는다.
-// 도시형생활주택이 '주택'·'(다세대)'를 달고 오므로 먼저 검사한다.
-const PROP_TYPE_MARKS: Array<[RegExp, string]> = [
-  [/아파트/, 'A'],
-  [/도시형|도생/, '도'],
-  [/다세대|빌라/, '다'],
-  [/근린|상가|점포/, '상'],
-  [/연립/, '연'],
-  [/오피스텔/, '오'],
-  [/단독|주택/, '단'],
-];
-const propTypeMark = (raw?: string) => {
-  const t = raw ?? '';
-  if (!t.trim()) return '';
-  return PROP_TYPE_MARKS.find(([re]) => re.test(t))?.[1] ?? t.trim()[0];
-};
 
 // 목록에서는 '인천지방법원'처럼 긴 이름 대신 '인천법원'으로 짧게 보여 준다.
 // 지원이 붙은 곳('인천지방법원 부천지원')은 지원 이름을 쓴다.

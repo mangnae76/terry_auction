@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useAuctionStore } from '../stores/auctionStore';
 import { POINT_GRADES } from '../services/pointPolicy';
 import { TRIAL_DAYS } from '../services/trialInfo';
+import { propTypeName } from '../utils/propertyType';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -38,6 +39,18 @@ const dateKeyOf = (raw?: string) => {
 const bidToday = computed(() => store.auctions.filter((a) => dateKeyOf(a.eventDate) === todayKey).length);
 const bidMonth = computed(() => store.auctions.filter((a) => dateKeyOf(a.eventDate).startsWith(monthKey)).length);
 
+/** 종류별 건수 — 많은 것부터. 선정물건 목록의 배지와 같은 기준으로 묶는다 */
+const typeTally = computed(() => {
+  const by = new Map<string, number>();
+  for (const a of store.auctions) {
+    const name = propTypeName(a.propertyType);
+    by.set(name, (by.get(name) ?? 0) + 1);
+  }
+  return [...by.entries()]
+    .sort((x, y) => y[1] - x[1])
+    .map(([name, n]) => `${name} ${n}`);
+});
+
 /* ───────── 카드 ───────── */
 
 interface Card {
@@ -47,6 +60,8 @@ interface Card {
   path: string;
   /** 카드 아래 작은 숫자 줄 */
   tally?: string;
+  /** 두 번째 줄 — 종류별 건수처럼 여러 토막 */
+  tallies?: string[];
   lead?: boolean;
 }
 
@@ -56,6 +71,7 @@ const PICK_CARDS = computed<Card[]>(() => [
     desc: '내가 등록한 물건을 한자리에서 관리합니다.',
     path: '/auctions/watchlist',
     tally: `경매 ${auctionCount.value}건 · 공매 ${publicSaleCount.value}건`,
+    tallies: typeTally.value,
   },
   { icon: '📦', title: '보관함', desc: '잠시 내려놓은 물건 — 꺼내면 단계 그대로 돌아옵니다.', path: '/archive' },
   { icon: '🗑️', title: '휴지통', desc: '치운 물건 — 되살리거나 완전히 지웁니다.', path: '/trash' },
@@ -128,10 +144,14 @@ const go = (c: Card) => {
         >
           <span class="myp-card-ico">{{ c.icon }}</span>
           <span class="myp-card-txt">
-            <strong>{{ c.title }}<i>›</i></strong>
+            <strong>{{ c.title }}</strong>
             <small>{{ c.desc }}</small>
             <em v-if="c.tally" class="myp-tally">{{ c.tally }}</em>
+            <span v-if="c.tallies?.length" class="myp-types">
+              <i v-for="t in c.tallies" :key="t">{{ t }}</i>
+            </span>
           </span>
+          <i class="myp-go">›</i>
         </button>
       </div>
 
@@ -141,9 +161,10 @@ const go = (c: Card) => {
         <button v-for="c in ACCOUNT_CARDS" :key="c.title" type="button" class="myp-card" @click="go(c)">
           <span class="myp-card-ico">{{ c.icon }}</span>
           <span class="myp-card-txt">
-            <strong>{{ c.title }}<i>›</i></strong>
+            <strong>{{ c.title }}</strong>
             <small>{{ c.desc }}</small>
           </span>
+          <i class="myp-go">›</i>
         </button>
       </div>
 
@@ -213,9 +234,15 @@ const go = (c: Card) => {
 
 /* 카드 */
 .myp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+/* 카드 전체가 단추다 — 꺾쇠는 '누를 수 있다'는 표시일 뿐, 어디를 눌러도 같이 간다 */
 .myp-card {
-  display: flex; align-items: flex-start; gap: 9px; text-align: left; cursor: pointer;
-  background: #fff; border: 1px solid #e8ebf1; border-radius: 12px; padding: 12px 11px;
+  position: relative; display: flex; align-items: flex-start; gap: 9px;
+  text-align: left; cursor: pointer;
+  background: #fff; border: 1px solid #e8ebf1; border-radius: 12px; padding: 12px 20px 12px 11px;
+}
+.myp-go {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  font-style: normal; font-size: 16px; color: #c3cbdd; pointer-events: none;
 }
 .myp-card.lead { grid-column: 1 / -1; border-color: #c2cdf0; background: #f7f9ff; }
 .myp-card-ico {
@@ -223,15 +250,17 @@ const go = (c: Card) => {
   display: inline-flex; align-items: center; justify-content: center; font-size: 17px;
 }
 .myp-card-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.myp-card-txt strong {
-  display: flex; align-items: center; gap: 3px;
-  font-size: 12.5px; font-weight: 800; color: #111827;
-}
-.myp-card-txt strong i { font-style: normal; font-size: 13px; color: #c3cbdd; }
+.myp-card-txt strong { font-size: 12.5px; font-weight: 800; color: #111827; }
 .myp-card-txt small { font-size: 10.5px; line-height: 1.55; color: #8a93a4; word-break: keep-all; }
 .myp-tally {
   align-self: flex-start; margin-top: 4px; padding: 3px 8px; border-radius: 5px;
   background: #eef2fc; font-style: normal; font-size: 11px; font-weight: 800; color: #2a3f8f;
+}
+/* 종류별 건수 — 자리가 모자라면 다음 줄로 */
+.myp-types { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.myp-types i {
+  font-style: normal; font-size: 10.5px; font-weight: 700; color: #4b5563;
+  background: #f3f5fa; border-radius: 4px; padding: 2px 6px;
 }
 
 /* 무료체험 */
