@@ -753,11 +753,12 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 /* 어디에 낼지 — 쓰기 창 제목 옆 */
 .adb-where { display: flex; align-items: center; gap: 12px; margin-left: 14px; }
 .adb-tags.sec { margin-left: auto; }
+/* 네모칸과 글자가 한 줄에 가운데로 — 머리글에서는 .adb-form label 규칙이 닿지 않는다 */
 .adb-chip {
-  flex-direction: row !important; align-items: center; gap: 6px;
+  display: inline-flex !important; flex-direction: row !important; align-items: center; gap: 6px; line-height: 1;
   font-size: 12.5px; font-weight: 700; color: #374151; cursor: pointer;
 }
-.adb-chip input { width: 15px; height: 15px; accent-color: #2a3f8f; }
+.adb-chip input { width: 15px; height: 15px; margin: 0; accent-color: #2a3f8f; display: block; }
 /* 두 칸을 한 줄에 */
 .adb-row { display: flex; gap: 10px; }
 .adb-row > label { flex: 1 1 0; min-width: 0; }
