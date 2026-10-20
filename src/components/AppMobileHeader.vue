@@ -36,6 +36,8 @@ const goFact = (path: string) => {
 const { count: alertCount } = useAlertBadge();
 
 const displayNickname = computed(() => authStore.nickname || (authStore.email ? authStore.email.split('@')[0] : '게스트'));
+/** 아이디 — 메일 주소는 통째로 보이지 않게 앞쪽만 적는다 */
+const loginId = computed(() => (authStore.email ?? '').split('@')[0] || '-');
 
 const formattedDate = computed(() => {
   const d = new Date();
@@ -129,8 +131,8 @@ const onLogout = async () => {
             <span class="amh-um-name">
               <span :class="['amh-um-badge', grade.tone]">{{ grade.name.slice(0, 1) }}</span>
               <strong>{{ displayNickname }} 님</strong>
+              <em class="amh-um-id">({{ loginId }})</em>
             </span>
-            <small>{{ authStore.email }}</small>
             <dl class="amh-um-facts">
               <template v-for="f in USER_FACTS" :key="f.label">
                 <dt>
@@ -263,7 +265,7 @@ const onLogout = async () => {
 .amh-um-badge.gold { background: #e8bb3d; }
 .amh-um-badge.family { background: #7b6ad4; }
 .amh-user-menu-info strong { font-size: 13px; font-weight: 800; color: #111827; }
-.amh-user-menu-info small { font-size: 11px; color: #6b7280; margin-top: 3px; word-break: break-all; }
+.amh-um-id { font-style: normal; font-size: 11px; color: #8a93a4; }
 /* 포인트·결제·이용권 — 이름표와 값을 두 칸으로 */
 .amh-um-facts {
   margin: 9px 0 0; display: grid; grid-template-columns: auto 1fr; row-gap: 3px; column-gap: 8px;
