@@ -558,9 +558,10 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
                   placeholder="비우면 이벤트 기간 (예: 상시)"
                 />
               </label>
-              <label class="narrow" :class="{ off: !draft.showBanner }">
-                <small>단추 글</small>
-                <input v-model="draft.cta" class="adb-input" :disabled="!draft.showBanner" placeholder="자세히 보기" />
+              <!-- 단추 글은 '자세히 보기' 로 고정이다 — 고를 일이 없으니 잠가 둔다 -->
+              <label class="narrow off">
+                <small>단추 글 <em>(고정)</em></small>
+                <input class="adb-input" value="자세히 보기" disabled />
               </label>
             </div>
             <p v-if="draft.showBanner && !draft.period && autoPeriod" class="adb-note">
