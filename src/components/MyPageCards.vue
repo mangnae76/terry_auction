@@ -5,6 +5,7 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppToast from './AppToast.vue';
 import { useAuctionStore } from '../stores/auctionStore';
+import { useAuthStore } from '../stores/authStore';
 import { propTypeName } from '../utils/propertyType';
 import { POINT_GRADES } from '../services/pointPolicy';
 import { PLAN_REST_DAYS } from '../services/billingPlans';
@@ -41,6 +42,9 @@ const typeTally = computed(() => {
 /** 등급·포인트 — 쌓는 길을 아직 붙이지 않아 첫 등급과 0 으로 보인다 */
 const grade = POINT_GRADES[0];
 const myPoint = 0;
+/** 아이디 — 메일 주소는 통째로 보이지 않게 앞쪽만 적는다 */
+const auth = useAuthStore();
+const loginId = computed(() => (auth.email ?? '').split('@')[0] || '-');
 
 interface Card {
   icon: string;
@@ -121,6 +125,7 @@ const go = (c: Card) => {
 
     <!-- 내 자리 한눈에 — 누르면 그 화면으로 간다 -->
     <div class="mpc-sum">
+      <span class="mpc-who">{{ auth.nickname || '게스트' }} 님<em>( {{ loginId }} )</em></span>
       <button type="button" class="mpc-cell" @click="router.push({ path: '/points', query: { tab: 'grade' } })">
         <span class="mpc-chip">{{ grade.name }} 회원</span>
         <span :class="['mpc-badge', grade.tone]">{{ grade.name.slice(0, 1) }}</span>
@@ -131,7 +136,7 @@ const go = (c: Card) => {
       </button>
       <button type="button" class="mpc-cell" @click="router.push('/payments')">
         <span class="mpc-chip">결제 내역</span>
-        <span class="mpc-val">{{ PLAN_REST_DAYS }}일</span>
+        <span class="mpc-val">{{ PLAN_REST_DAYS }}일 <i>›</i></span>
       </button>
     </div>
 
@@ -155,11 +160,18 @@ const go = (c: Card) => {
 .mpc-h2 em { font-style: normal; color: #4a5bb5; margin-right: 4px; }
 .mpc-h2 + .mpc-grid { margin-bottom: 18px; }
 
-/* 내 자리 세 칸 — 칸 전체가 단추다 */
+/* 내 자리 세 칸 — 칸 전체가 단추다. 이름표는 테두리에 걸쳐 앉는다 */
 .mpc-sum {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px;
-  background: #fafbfe; border: 1px solid #e8ebf1; border-radius: 12px; padding: 10px 8px;
+  position: relative;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0 8px;
+  background: #fafbfe; border: 1px solid #e8ebf1; border-radius: 12px; padding: 16px 8px 10px;
 }
+.mpc-who {
+  position: absolute; top: -10px; left: 12px;
+  background: #fff; border: 1px solid #e8ebf1; border-radius: 6px; padding: 3px 9px;
+  font-size: 11.5px; font-weight: 800; color: #1f3a72;
+}
+.mpc-who em { font-style: normal; font-weight: 600; color: #8a93a4; margin-left: 3px; }
 .mpc-cell {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
   border: none; background: transparent; cursor: pointer;
@@ -180,6 +192,7 @@ const go = (c: Card) => {
 .mpc-badge.family { background: #7b6ad4; }
 .mpc-val { font-size: 16px; font-weight: 800; color: #e8622a; }
 .mpc-val small { font-size: 11px; color: #6b7280; font-weight: 700; }
+.mpc-val i { font-style: normal; font-size: 12px; color: #e8622a; }
 
 .mpc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
 /* 카드 전체가 단추다 — 꺾쇠는 '누를 수 있다'는 표시일 뿐, 어디를 눌러도 같이 간다.
