@@ -7,6 +7,7 @@ import { EVENTS, EVENT_BANNERS, NOTICES, UPDATES, type NewsRow } from './boardNe
 import {
   isLive,
   nowLocal,
+  eventPeriodLabel,
   periodLabel,
   postedLabel,
   shortDayLabel,
@@ -66,7 +67,11 @@ export const useBoardFeed = () => {
     updates: rowsOf('update', UPDATES),
     banners: computed(() => {
       // 배너는 따로 쓰지만, 옛 글(이벤트에 배너 표시)도 그대로 읽는다
-      const pool = [...of('banner'), ...of('event').filter((p) => p.banner)];
+      // '배너' 를 끈 글은 이벤트 목록에만 선다
+      const pool = [
+        ...of('banner').filter((p) => p.showBanner !== false),
+        ...of('event').filter((p) => p.banner),
+      ];
       if (pool.length === 0) return EVENT_BANNERS;
       return live(pool).map((p) => ({
         badge: p.badge || 'EVENT',
@@ -77,7 +82,8 @@ export const useBoardFeed = () => {
         desc: p.desc || p.body || '',
         cta: p.cta || '자세히 보기',
         // 예약한 때가 있으면 그것을 그대로 보여 준다 — 손으로 적은 기간 글은 예약이 없을 때만
-        period: periodLabel(p.startAt, p.endAt) || p.period || '',
+        // 손으로 적은 기간 글이 먼저, 없으면 이벤트가 열리는 때, 그것도 없으면 올리고 내리는 때
+        period: p.period || eventPeriodLabel(p.eventStartAt, p.eventEndAt) || periodLabel(p.startAt, p.endAt) || '',
       }));
     }),
   };

@@ -37,8 +37,14 @@ export interface BoardPost {
   period?: string;
   /** 배너에 적는 단축 글 — 배너 칸에 한 줄로 들어간다 */
   desc?: string;
-  /** 배너를 이벤트 목록에도 한 줄로 넣을지 — 그때 본문(body)이 펼침 글이 된다 */
+  /** 배너 칸에 띄울지 — 끄면 이벤트 목록에만 선다 */
+  showBanner?: boolean;
+  /** 이벤트 목록에도 한 줄로 넣을지 — 그때 본문(body)이 상세 글이 된다 */
   alsoEvent?: boolean;
+  /** 이벤트가 열리는 때 — 글을 올리고 내리는 때(startAt·endAt)와 다른 값이다 */
+  eventStartAt?: string;
+  /** 이벤트가 닫히는 때 */
+  eventEndAt?: string;
   /** 올렸는가 — false 면 작성 중이라 앱에 나가지 않는다 (옛 글에는 없다 = 올린 글) */
   published?: boolean;
   /** 처음 올린 때 — 사용자에게 보이는 '등록'은 이 시각이다 (창을 연 때가 아니다) */
@@ -137,6 +143,33 @@ export const postedLabel = (postedAt?: string, updatedAt?: string): string => {
 
 /** 줄 오른쪽에 좁게 적을 날짜 — '등록 26.10.20' */
 export const shortDayLabel = (iso?: string): string => (iso ? `등록 ${dayLabel(iso).slice(2)}` : '');
+
+/** 'YYYY-MM-DDTHH:mm' → '오전12시' / '오후3시30분' */
+const clockText = (v: string): string => {
+  const h = Number(v.slice(11, 13));
+  const m = Number(v.slice(14, 16));
+  if (Number.isNaN(h)) return '';
+  const half = h < 12 ? '오전' : '오후';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${half}${h12}시${m ? `${m}분` : ''}`;
+};
+
+/**
+ * 이벤트가 열리는 때 — '26.10.20 오전12시~오후3시까지'.
+ * 같은 날이면 날짜를 한 번만 적는다.
+ */
+export const eventPeriodLabel = (startAt?: string, endAt?: string): string => {
+  const day = (v: string) => v.slice(2, 10).replace(/-/g, '.');
+  if (startAt && endAt) {
+    const sameDay = startAt.slice(0, 10) === endAt.slice(0, 10);
+    return sameDay
+      ? `${day(startAt)} ${clockText(startAt)}~${clockText(endAt)}까지`
+      : `${day(startAt)} ${clockText(startAt)} ~ ${day(endAt)} ${clockText(endAt)}까지`;
+  }
+  if (startAt) return `${day(startAt)} ${clockText(startAt)}부터`;
+  if (endAt) return `${day(endAt)} ${clockText(endAt)}까지`;
+  return '';
+};
 
 /** 'YYYY-MM-DDTHH:mm' → '10.20 09:00' */
 export const whenLabel = (v?: string): string =>

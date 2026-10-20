@@ -10,6 +10,7 @@ import {
   newBoardId,
   removeBoardPost,
   saveBoardPost,
+  eventPeriodLabel,
   periodLabel,
   scheduleState,
   subscribeBoardPosts,
@@ -56,7 +57,10 @@ const emptyPost = (kind: BoardKind): BoardPost => ({
   imageUrl: '',
   published: false,
   postedAt: '',
+  showBanner: kind === 'banner',
   alsoEvent: kind === 'banner',
+  eventStartAt: '',
+  eventEndAt: '',
   star: false,
   banner: kind === 'banner',
   badge: 'EVENT',
@@ -70,6 +74,12 @@ const emptyPost = (kind: BoardKind): BoardPost => ({
 });
 
 const draft = ref<BoardPost | null>(null);
+/** 기간 글을 비워 두면 배너에 대신 나갈 글 */
+const autoPeriod = computed(() => {
+  const d = draft.value;
+  if (!d) return '';
+  return eventPeriodLabel(d.eventStartAt, d.eventEndAt) || periodLabel(d.startAt, d.endAt);
+});
 const openNew = (kind: BoardKind) => { draft.value = emptyPost(kind); imgSize.value = ''; imgRatio.value = ''; };
 const openEdit = (p: BoardPost) => {
   draft.value = { ...p, title: titleOf(p) };
@@ -306,7 +316,8 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
               <b>
                 {{ titleOf(p) || '(제목 없음)' }}
                 <em v-if="p.kind === 'event' && p.banner" class="adb-badge">배너</em>
-                <em v-if="p.kind === 'banner' && p.alsoEvent" class="adb-badge alt">이벤트</em>
+                <em v-if="p.kind === 'banner' && p.showBanner !== false" class="adb-badge">배너</em>
+                <em v-if="p.kind === 'banner' && p.alsoEvent" class="adb-badge alt">목록</em>
                 <em :class="['adb-state', scheduleState(p)]">{{ scheduleState(p) }}</em>
               </b>
               <small v-if="p.body">{{ p.body }}</small>
@@ -341,6 +352,38 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         </header>
 
         <div class="adb-form">
+          <!-- 언제 올리고 내릴지 — 맨 위에서 정한다 -->
+          <div class="adb-sec first">
+            <h4>{{ KINDS.find((k) => k.key === draft!.kind)?.label }} 예약 기능</h4>
+            <span v-if="draft.kind === 'banner'" class="adb-sec-opts">
+              <label class="adb-chip"><input v-model="draft.showBanner" type="checkbox" /> 배너</label>
+              <label class="adb-chip"><input v-model="draft.alsoEvent" type="checkbox" /> 목록</label>
+            </span>
+          </div>
+          <div class="adb-when-row">
+            <label>
+              <small>올릴 때 <em>(비우면 바로)</em></small>
+              <input
+                v-model="draft.startAt"
+                type="datetime-local"
+                class="adb-input"
+                @change="onDateChange"
+                @input="onDateChange"
+              />
+            </label>
+            <label>
+              <small>내릴 때 <em>(비우면 계속)</em></small>
+              <input
+                v-model="draft.endAt"
+                type="datetime-local"
+                class="adb-input"
+                @change="onDateChange"
+                @input="onDateChange"
+              />
+            </label>
+          </div>
+          <p class="adb-note">예약한 때가 되면 앱에서 저절로 올라오고 내려갑니다.</p>
+
           <label v-if="draft.kind !== 'banner'">
             <small>꼬리표</small>
             <span class="adb-tags">
@@ -355,7 +398,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           </label>
 
           <label>
-            <small>제목</small>
+            <small>제목 <em v-if="draft.kind === 'banner'">(배너와 목록이 함께 씁니다)</em></small>
             <input v-model="draft.title" class="adb-input" placeholder="목록에 적히는 한 줄" />
           </label>
 
@@ -394,7 +437,9 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             맨 위에 붙박이로 둔다 (✦)
           </label>
 
+          <!-- 배너 칸에만 나가는 것들 -->
           <template v-if="draft.kind === 'banner'">
+            <p class="adb-only">배너만 적용</p>
             <label>
               <small>단축 글 <em>(배너 칸에 한 줄로 들어갑니다)</em></small>
               <input v-model="draft.desc" class="adb-input" placeholder="기간을 길게 고를수록 더 깎입니다" />
@@ -402,73 +447,59 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             <label><small>배지</small><input v-model="draft.badge" class="adb-input" placeholder="EVENT" /></label>
             <label>
               <small>
-                기간 글 <em>(비우면 아래 예약한 때를 그대로 씁니다)</em>
-                <b v-if="periodLabel(draft.startAt, draft.endAt)" class="adb-spec">
-                  배너에 나갈 글 — {{ periodLabel(draft.startAt, draft.endAt) }}
-                </b>
+                기간 글 <em>(비우면 아래 이벤트 기간을 그대로 씁니다)</em>
+                <b v-if="!draft.period && autoPeriod" class="adb-spec">배너에 나갈 글 — {{ autoPeriod }}</b>
               </small>
-              <input
-                v-model="draft.period"
-                class="adb-input"
-                :disabled="!!periodLabel(draft.startAt, draft.endAt)"
-                placeholder="2026.10.01 ~ 10.31"
-              />
+              <input v-model="draft.period" class="adb-input" placeholder="2026.10.01 ~ 10.31" />
             </label>
             <label><small>단추 글</small><input v-model="draft.cta" class="adb-input" placeholder="자세히 보기" /></label>
-          </template>
 
-          <!-- 올리고 내리는 때 — 지금은 앱이 때를 보고 걸러 보여 주고, 나중에 서버가 같은 값을 본다 -->
-          <div class="adb-when-row">
-            <label>
-              <small>올릴 때 <em>(비우면 바로)</em></small>
-              <input
-                v-model="draft.startAt"
-                type="datetime-local"
-                class="adb-input"
-                @change="onDateChange"
-                @input="onDateChange"
-              />
-            </label>
-            <label>
-              <small>내릴 때 <em>(비우면 계속)</em></small>
-              <input
-                v-model="draft.endAt"
-                type="datetime-local"
-                class="adb-input"
-                @change="onDateChange"
-                @input="onDateChange"
-              />
-            </label>
-          </div>
-          <p class="adb-note">예약한 때가 되면 앱에서 저절로 올라오고 내려갑니다.</p>
-
-          <!-- 배너 하나로 이벤트 줄까지 쓴다 — 제목·그림·기간은 위에 적은 것을 그대로 나눠 쓴다 -->
-          <template v-if="draft.kind === 'banner'">
-            <div class="adb-sep">
-              <label class="adb-check">
-                <input v-model="draft.alsoEvent" type="checkbox" />
-                이벤트 목록에도 한 줄로 넣는다
-              </label>
-              <p class="adb-note">제목 · 그림 · 기간은 위에 적은 것을 그대로 씁니다. 배너의 <b>자세히 보기</b>를 누르면 이 줄이 펼쳐집니다.</p>
+            <!-- 목록·상세에 나가는 것들 -->
+            <div class="adb-sec">
+              <h4>이벤트 상세 내용</h4>
+              <span class="adb-sec-note">{{ draft.alsoEvent ? '목록과 상세 보기에 나갑니다' : "'목록' 을 켜야 나갑니다" }}</span>
             </div>
-            <template v-if="draft.alsoEvent">
+            <div class="adb-when-row">
               <label>
-                <small>꼬리표</small>
-                <span class="adb-tags">
-                  <button
-                    v-for="t in EVENT_TAGS"
-                    :key="t"
-                    type="button"
-                    :class="['adb-tagbtn', { on: draft!.tag === t }]"
-                    @click="draft!.tag = t"
-                  >{{ t }}</button>
-                </span>
+                <small>이벤트 시작</small>
+                <input
+                  v-model="draft.eventStartAt"
+                  type="datetime-local"
+                  class="adb-input"
+                  @change="onDateChange"
+                  @input="onDateChange"
+                />
               </label>
               <label>
-                <small>이벤트 본문 <em>(줄을 펼치면 보이는 글)</em></small>
-                <textarea v-model="draft.body" class="adb-area" rows="5" placeholder="이벤트 조건·기간·주의할 점을 적습니다"></textarea>
+                <small>이벤트 끝</small>
+                <input
+                  v-model="draft.eventEndAt"
+                  type="datetime-local"
+                  class="adb-input"
+                  @change="onDateChange"
+                  @input="onDateChange"
+                />
               </label>
-            </template>
+            </div>
+            <p v-if="eventPeriodLabel(draft.eventStartAt, draft.eventEndAt)" class="adb-note">
+              상세에 나갈 글 — 기간 : {{ eventPeriodLabel(draft.eventStartAt, draft.eventEndAt) }}
+            </p>
+            <label>
+              <small>꼬리표</small>
+              <span class="adb-tags">
+                <button
+                  v-for="t in EVENT_TAGS"
+                  :key="t"
+                  type="button"
+                  :class="['adb-tagbtn', { on: draft!.tag === t }]"
+                  @click="draft!.tag = t"
+                >{{ t }}</button>
+              </span>
+            </label>
+            <label>
+              <small>이벤트 본문 <em>(상세 보기에 펼쳐지는 글)</em></small>
+              <textarea v-model="draft.body" class="adb-area" rows="5" placeholder="이벤트 조건·기간·주의할 점을 적습니다"></textarea>
+            </label>
           </template>
         </div>
 
@@ -637,7 +668,21 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   background: #2a3f8f; color: #fff; border-radius: 4px; padding: 2px 5px;
 }
 .adb-badge.alt { background: #e8f0ff; color: #2b6df3; }
-.adb-sep { border-top: 1px solid #eef1f6; padding-top: 12px; }
+/* 묶음 머리 — 예약 / 이벤트 상세 내용 */
+.adb-sec {
+  display: flex; align-items: center; gap: 10px;
+  border-top: 1px solid #eef1f6; margin-top: 4px; padding-top: 14px;
+}
+.adb-sec.first { border-top: none; margin-top: 0; padding-top: 0; }
+.adb-sec h4 { margin: 0; font-size: 13.5px; font-weight: 800; color: #111827; }
+.adb-sec-note { margin-left: auto; font-size: 11px; color: #9ca3af; }
+.adb-sec-opts { margin-left: auto; display: flex; gap: 10px; }
+.adb-chip {
+  flex-direction: row !important; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 700; color: #374151; cursor: pointer;
+}
+.adb-chip input { width: 15px; height: 15px; accent-color: #2a3f8f; }
+.adb-only { margin: 2px 0 -4px; font-size: 11px; font-weight: 700; color: #9ca3af; }
 .adb-txt small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 420px; }
 .adb-check input { width: 15px; height: 15px; accent-color: #2a3f8f; }
 .adb-box-foot { display: flex; gap: 8px; padding: 0 16px 16px; }

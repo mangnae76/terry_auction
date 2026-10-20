@@ -7,7 +7,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import ImageLightbox from './../components/ImageLightbox.vue';
 import { ref } from 'vue';
 import { useBoardPost } from '../services/boardFeed';
-import { periodLabel, postedLabel, titleOf } from '../services/boardRepository';
+import { eventPeriodLabel, periodLabel, postedLabel, titleOf } from '../services/boardRepository';
 
 const route = useRoute();
 const router = useRouter();
@@ -21,10 +21,11 @@ const KIND_NAME: Record<string, string> = {
   update: '업데이트',
 };
 const kindName = computed(() => KIND_NAME[post.value?.kind ?? ''] ?? '소식');
+/** 이벤트가 열리는 때 — 적어 두지 않았으면 기간 글이나 예약한 때로 대신한다 */
 const period = computed(() => {
   const p = post.value;
   if (!p) return '';
-  return periodLabel(p.startAt, p.endAt) || p.period || '';
+  return eventPeriodLabel(p.eventStartAt, p.eventEndAt) || p.period || periodLabel(p.startAt, p.endAt);
 });
 const posted = computed(() => {
   const p = post.value;
@@ -45,10 +46,10 @@ const zoom = ref('');
     <article v-if="post" class="bp-card">
       <div class="bp-top">
         <span v-if="post.tag" class="bp-tag">{{ post.tag }}</span>
-        <span v-if="period" class="bp-period">{{ period }}</span>
+        <h2 class="bp-h">{{ titleOf(post) }}</h2>
       </div>
-      <h2 class="bp-h">{{ titleOf(post) }}</h2>
       <p v-if="posted" class="bp-posted">{{ posted }}</p>
+      <p v-if="period" class="bp-period">기간 : {{ period }}</p>
 
       <img
         v-if="post.imageUrl"
@@ -82,14 +83,14 @@ const zoom = ref('');
   margin: 12px 14px; padding: 16px 14px 18px;
   background: #fff; border: 1px solid #e8ebf1; border-radius: 14px;
 }
-.bp-top { display: flex; align-items: center; gap: 8px; }
+.bp-top { display: flex; align-items: center; gap: 9px; }
 .bp-tag {
   padding: 3px 8px; border-radius: 5px; background: #eef1f8;
   font-size: 10.5px; font-weight: 800; color: #2a3f8f;
 }
-.bp-period { font-size: 10.5px; color: #6b7280; }
-.bp-h { margin: 9px 0 4px; font-size: 16px; font-weight: 800; color: #111827; word-break: keep-all; }
-.bp-posted { margin: 0 0 12px; font-size: 10.5px; color: #9ca3af; }
+.bp-h { margin: 0; font-size: 16px; font-weight: 800; color: #111827; word-break: keep-all; }
+.bp-posted { margin: 8px 0 0; font-size: 10.5px; color: #9ca3af; }
+.bp-period { margin: 6px 0 14px; font-size: 12px; font-weight: 700; color: #374151; }
 .bp-img { width: 100%; border-radius: 10px; margin-bottom: 12px; cursor: zoom-in; }
 .bp-body { margin: 0; font-size: 12.5px; line-height: 1.8; color: #374151; white-space: pre-wrap; word-break: keep-all; }
 .bp-gone { margin: 24px 14px; font-size: 12.5px; color: #9ca3af; }
