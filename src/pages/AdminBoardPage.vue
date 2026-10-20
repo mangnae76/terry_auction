@@ -5,8 +5,9 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import BrandLogo from '../components/BrandLogo.vue';
 import DateTimeField from '../components/DateTimeField.vue';
+import TableEditor from '../components/TableEditor.vue';
 import { useAuthStore } from '../stores/authStore';
-import { markLine, TABLE_SNIPPET, type Align } from '../services/boardBody';
+import { buildTable, markLine, tableAt, type Align } from '../services/boardBody';
 import {
   compressBoardImage,
   newBoardId,
@@ -269,17 +270,43 @@ const putBody = (text: string, from: number, to: number) => {
   }, 0);
 };
 
-/** 커서 자리에 표 뼈대를 끼워 넣는다 */
-const insertTable = () => {
+/**
+ * 표 만들기 창.
+ * 커서가 이미 표 안에 있으면 그 표를 불러와 고치고, 아니면 빈 표를 새로 짠다.
+ */
+const tableOpen = ref(false);
+const tableSeed = ref<{ head: string[]; rows: string[][] }>({ head: [], rows: [] });
+let tableSpan: { start: number; end: number } | null = null;
+
+const openTable = () => {
   const el = bodyEl.value;
   const body = draft.value?.body ?? '';
   const at = el ? el.selectionStart : body.length;
+  const found = tableAt(body, at);
+  if (found) {
+    tableSpan = { start: found.start, end: found.end };
+    tableSeed.value = { head: found.head, rows: found.rows };
+  } else {
+    tableSpan = null;
+    tableSeed.value = { head: ['항목', '내용'], rows: [['', ''], ['', '']] };
+  }
+  tableOpen.value = true;
+};
+
+/** 짠 표를 본문에 넣는다 — 고치던 표가 있으면 그 자리를 갈아 끼운다 */
+const applyTable = (grid: { head: string[]; rows: string[][] }) => {
+  const el = bodyEl.value;
+  const body = draft.value?.body ?? '';
+  const text = buildTable(grid.head, grid.rows);
+  const at = tableSpan ? tableSpan.start : (el ? el.selectionStart : body.length);
+  const to = tableSpan ? tableSpan.end : at;
   const before = body.slice(0, at);
-  const after = body.slice(at);
-  const head = before && !before.endsWith('\n') ? '\n' : '';
+  const after = body.slice(to);
+  const lead = before && !before.endsWith('\n') ? '\n' : '';
   const tail = after && !after.startsWith('\n') ? '\n' : '';
-  const piece = `${head}${TABLE_SNIPPET}${tail}`;
-  putBody(before + piece + after, at + head.length, at + head.length + TABLE_SNIPPET.length);
+  tableOpen.value = false;
+  tableSpan = null;
+  putBody(before + lead + text + tail + after, at + lead.length, at + lead.length + text.length);
 };
 
 /** 고른 줄들의 맞춤을 바꾼다 (고른 것이 없으면 커서가 놓인 줄) */
@@ -557,12 +584,19 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
               <small class="adb-bodyhead">
                 이벤트 본문 <em>(상세 보기에 펼쳐지는 글)</em>
                 <span class="adb-tools">
-                  <button type="button" title="표 집어넣기" @click="insertTable">표</button>
+                  <button type="button" title="표 넣기·고치기" @click="openTable">표</button>
                   <button type="button" title="왼쪽" @click="setAlign('left')">⇤</button>
                   <button type="button" title="가운데" @click="setAlign('center')">중</button>
                   <button type="button" title="오른쪽" @click="setAlign('right')">⇥</button>
                 </span>
               </small>
+              <TableEditor
+                v-if="tableOpen"
+                :head="tableSeed.head"
+                :rows="tableSeed.rows"
+                @apply="applyTable"
+                @close="tableOpen = false"
+              />
               <textarea
                 ref="bodyEl"
                 v-model="draft.body"

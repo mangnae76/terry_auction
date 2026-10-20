@@ -51,6 +51,56 @@ export const markLine = (line: string, align: Align): string => {
   return bare ? `${ALIGN_MARK[align]} ${bare}` : ALIGN_MARK[align];
 };
 
+/** 표를 본문 글자로 만든다 (머리글이 비어 있으면 머리글 없는 표) */
+export const buildTable = (head: string[], rows: string[][]): string => {
+  const line = (cells: string[]) => `| ${cells.map((c) => c.trim()).join(' | ')} |`;
+  const width = Math.max(head.length, ...rows.map((r) => r.length), 1);
+  const pad = (cells: string[]) => Array.from({ length: width }, (_, i) => cells[i] ?? '');
+  const out: string[] = [];
+  if (head.some((c) => c.trim())) {
+    out.push(line(pad(head)));
+    out.push(`| ${Array.from({ length: width }, () => '---').join(' | ')} |`);
+  }
+  rows.forEach((r) => out.push(line(pad(r))));
+  return out.join('\n');
+};
+
+/** 커서가 놓인 자리의 표를 찾는다 — 고치려고 불러올 때 쓴다 */
+export const tableAt = (
+  body: string,
+  caret: number,
+): { start: number; end: number; head: string[]; rows: string[][] } | null => {
+  const lines = body.split('\n');
+  let at = 0;
+  let hit = -1;
+  const span: number[] = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const end = at + lines[i].length;
+    if (caret >= at && caret <= end) hit = i;
+    span.push(at);
+    at = end + 1;
+  }
+  if (hit < 0 || !isTableLine(lines[hit])) return null;
+
+  let from = hit;
+  while (from > 0 && isTableLine(lines[from - 1])) from -= 1;
+  let to = hit;
+  while (to + 1 < lines.length && isTableLine(lines[to + 1])) to += 1;
+
+  const grid: string[][] = [];
+  let head: string[] = [];
+  for (let i = from; i <= to; i += 1) {
+    if (isRuleLine(lines[i])) head = grid.pop() ?? [];
+    else grid.push(cellsOf(lines[i]));
+  }
+  return {
+    start: span[from],
+    end: span[to] + lines[to].length,
+    head,
+    rows: grid,
+  };
+};
+
 /** 본문 글자를 보여 줄 토막으로 나눈다 */
 export const parseBody = (body?: string): BodyBlock[] => {
   const src = (body ?? '').replace(/\r\n/g, '\n');
