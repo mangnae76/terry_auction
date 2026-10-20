@@ -86,7 +86,9 @@ const PICK_CARDS = computed<Card[]>(() => [
 ]);
 
 const ACCOUNT_CARDS: Card[] = [
+  { icon: '🧾', title: '결제하기', desc: '이용 기간을 고르고 결제를 진행합니다.', path: '/billing' },
   { icon: '💳', title: '결제관리', desc: '나의 결제금액과 결제기간을 한눈에 볼 수 있습니다.', path: '/payments' },
+  { icon: '🅿️', title: '포인트내역', desc: '등급과 가진 포인트, 적립·사용 내역을 봅니다.', path: '/point-history' },
   { icon: '🙍', title: '내 정보 수정', desc: '가입된 나의 개인정보를 다시 수정할 수 있습니다.', path: '/profile' },
   { icon: '🚪', title: '회원탈퇴', desc: '탈퇴 시 회원님의 모든 정보는 삭제됩니다.', path: '/withdraw' },
 ];
