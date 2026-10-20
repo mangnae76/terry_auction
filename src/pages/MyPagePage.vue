@@ -74,8 +74,8 @@ const PICK_CARDS = computed<Card[]>(() => [
     tally: `경매 ${auctionCount.value}건 · 공매 ${publicSaleCount.value}건`,
     tallies: typeTally.value,
   },
-  { icon: '📦', title: '보관함', desc: '잠시 내려놓은 물건', path: '/archive' },
-  { icon: '🗑️', title: '휴지통', desc: '치운 물건 되살리기', path: '/trash' },
+  { icon: '📦', title: '보관함', desc: '선정물건 중 보관 물건', path: '/archive' },
+  { icon: '🗑️', title: '휴지통', desc: '물건 지우기 및 되살리기', path: '/trash' },
   { icon: '🔔', title: '알림설정', desc: '기한·일정 알림', path: '/notifications' },
   { icon: '🏢', title: '중개업체 관리', desc: '상호·연락처 관리', path: '/agencies' },
   {
