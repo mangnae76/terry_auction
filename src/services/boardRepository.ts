@@ -37,6 +37,8 @@ export interface BoardPost {
   period?: string;
   /** 옛 배너 글의 설명 — 읽을 때만 쓴다 (지금은 본문을 쓴다) */
   desc?: string;
+  /** 올렸는가 — false 면 작성 중이라 앱에 나가지 않는다 (옛 글에는 없다 = 올린 글) */
+  published?: boolean;
   /** 올릴 때 — 비우면 바로. 'YYYY-MM-DDTHH:mm' (현지 시각) */
   startAt?: string;
   /** 내릴 때 — 비우면 계속 둔다 */
@@ -61,13 +63,15 @@ export const nowLocal = (): string => {
  * 당분간은 앱에서 걸러 보여 준다 — 나중에 서버가 때맞춰 올리고 내리면 이 함수만 그쪽을 보면 된다.
  */
 export const isLive = (p: BoardPost, now = nowLocal()): boolean => {
+  if (p.published === false) return false;
   if (p.startAt && p.startAt > now) return false;
   if (p.endAt && p.endAt < now) return false;
   return true;
 };
 
-/** 운영 목록에 붙일 상태 — 예약 / 게시중 / 종료 */
-export const scheduleState = (p: BoardPost, now = nowLocal()): '예약' | '게시중' | '종료' => {
+/** 운영 목록에 붙일 상태 — 작성중 / 예약 / 게시중 / 종료 */
+export const scheduleState = (p: BoardPost, now = nowLocal()): '작성중' | '예약' | '게시중' | '종료' => {
+  if (p.published === false) return '작성중';
   if (p.startAt && p.startAt > now) return '예약';
   if (p.endAt && p.endAt < now) return '종료';
   return '게시중';

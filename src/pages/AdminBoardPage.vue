@@ -49,6 +49,7 @@ const emptyPost = (kind: BoardKind): BoardPost => ({
   title: '',
   body: '',
   imageUrl: '',
+  published: false,
   star: false,
   banner: kind === 'banner',
   badge: 'EVENT',
@@ -115,20 +116,35 @@ const pickImage = async (ev: Event) => {
   }
 };
 
-const save = async () => {
+/**
+ * 글 담기.
+ * publish=false 면 작성 중으로만 둔다 — 앱에는 나가지 않고 운영 목록에만 보인다.
+ */
+const save = async (publish: boolean) => {
   const d = draft.value;
   if (!d) return;
-  if (!d.title.trim()) { flash('제목을 적어 주세요.'); return; }
+  if (publish && !d.title.trim()) { flash('제목을 적어 주세요.'); return; }
   if (d.startAt && d.endAt && d.endAt <= d.startAt) { flash('내리는 때가 올리는 때보다 빠릅니다.'); return; }
   saving.value = true;
   try {
-    await saveBoardPost({ ...d, title: d.title.trim(), body: (d.body ?? '').trim() });
-    flash('올렸습니다. 앱에 바로 나갑니다.');
+    await saveBoardPost({ ...d, published: publish, title: d.title.trim(), body: (d.body ?? '').trim() });
+    flash(publish ? '올렸습니다. 앱에 바로 나갑니다.' : '작성 중으로 담아 두었습니다. 앱에는 아직 나가지 않습니다.');
     close();
   } catch (e) {
     flash(reason(e, '저장하지 못했습니다.'));
   } finally {
     saving.value = false;
+  }
+};
+
+/** 목록에서 바로 올리고 내리기 */
+const setPublished = async (p: BoardPost, publish: boolean) => {
+  if (publish && !titleOf(p)) { flash('제목이 없어 올릴 수 없습니다 — 고치기에서 적어 주세요.'); return; }
+  try {
+    await saveBoardPost({ ...p, published: publish });
+    flash(publish ? '올렸습니다.' : '내렸습니다 — 작성 중으로 둡니다.');
+  } catch (e) {
+    flash(reason(e, '바꾸지 못했습니다.'));
   }
 };
 
@@ -157,6 +173,7 @@ const seedBanners = async () => {
       await saveBoardPost({
         ...emptyPost('banner'),
         id: newBoardId(),
+        published: true,
         title: sm.title,
         body: sm.body,
         badge: sm.badge,
@@ -213,7 +230,8 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         <h1>배너 · 이벤트 · 공지 · 업데이트</h1>
         <p>
           <b>이벤트 배너</b>는 앱 더보기의 <b>모든 탭 맨 위</b>에 돌아가며 뜨고,
-          나머지는 <b>더보기 › 공지</b> 탭에 줄로 들어갑니다. 하나도 없으면 기본 글이 대신 보입니다.
+          나머지는 <b>더보기 › 공지</b> 탭에 줄로 들어갑니다.
+          <b>작성 중 저장</b>해 둔 글은 앱에 나가지 않습니다.
         </p>
       </div>
 
@@ -247,7 +265,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             <img v-if="p.imageUrl" :src="p.imageUrl" class="adb-thumb" alt="" />
             <span class="adb-txt">
               <b>
-                {{ titleOf(p) }}
+                {{ titleOf(p) || '(제목 없음)' }}
                 <em v-if="p.kind === 'event' && p.banner" class="adb-badge">배너</em>
                 <em :class="['adb-state', scheduleState(p)]">{{ scheduleState(p) }}</em>
               </b>
@@ -260,6 +278,8 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             <span class="adb-acts">
               <button type="button" @click="move(p, -1)" title="위로">▲</button>
               <button type="button" @click="move(p, 1)" title="아래로">▼</button>
+              <button v-if="scheduleState(p) === '작성중'" type="button" class="up" @click="setPublished(p, true)">올리기</button>
+              <button v-else type="button" @click="setPublished(p, false)">내리기</button>
               <button type="button" @click="openEdit(p)">고치기</button>
               <button type="button" class="del" @click="removeOne(p)">지우기</button>
             </span>
@@ -352,7 +372,8 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 
         <footer class="adb-box-foot">
           <button type="button" class="adb-cancel" @click="close">그만두기</button>
-          <button type="button" class="adb-save" :disabled="saving" @click="save">{{ saving ? '올리는 중…' : '올리기' }}</button>
+          <button type="button" class="adb-keep" :disabled="saving" @click="save(false)">작성 중 저장</button>
+          <button type="button" class="adb-save" :disabled="saving" @click="save(true)">{{ saving ? '올리는 중…' : '올리기' }}</button>
         </footer>
       </div>
     </div>
@@ -433,6 +454,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   padding: 4px 8px; font-family: inherit; font-size: 11px; color: #4b5563; cursor: pointer;
 }
 .adb-acts .del { color: #c62828; border-color: #f0d4d4; }
+.adb-acts .up { color: #1b7f3b; border-color: #cfe8d6; font-weight: 700; }
 
 .adb-state {
   margin-left: 6px; font-style: normal; font-size: 10px; font-weight: 800;
@@ -441,6 +463,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 .adb-state.게시중 { background: #e6f4ea; color: #1b7f3b; }
 .adb-state.예약 { background: #fff3e0; color: #b26a00; }
 .adb-state.종료 { background: #f1f3f8; color: #9ca3af; }
+.adb-state.작성중 { background: #eef1f6; color: #4b5563; }
 .adb-when { color: #6b7280 !important; }
 .adb-when-row { display: flex; gap: 10px; }
 .adb-when-row label { flex: 1 1 0; min-width: 0; }
@@ -509,10 +532,13 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 .adb-txt small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 420px; }
 .adb-check input { width: 15px; height: 15px; accent-color: #2a3f8f; }
 .adb-box-foot { display: flex; gap: 8px; padding: 0 16px 16px; }
-.adb-cancel, .adb-save {
+.adb-cancel, .adb-keep, .adb-save {
   flex: 1 1 0; height: 40px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
 }
 .adb-cancel { border: 1px solid #e3e8f0; background: #fff; color: #4b5563; }
+/* 올리지 않고 담아만 두는 자리 — 올리기와 헷갈리지 않게 테두리만 */
+.adb-keep { border: 1px solid #c7d2ea; background: #fff; color: #2a3f8f; }
+.adb-keep:disabled { color: #9aa6c4; cursor: default; }
 .adb-save { border: none; background: #2a3f8f; color: #fff; }
 .adb-save:disabled { background: #9aa6c4; cursor: default; }
 

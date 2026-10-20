@@ -46,6 +46,7 @@ allow read, write: if isAllowedUser() && request.auth.uid == uid;
 | `financeItemPurchases` | 자동 | 자금관리 — 물품구매 | (가) |
 | `interiorExpenses` | 자동 | 낙찰이후 — 인테리어 | (가) |
 | `adminSnapshots` | 자동 | 분석 도구 — 지번 분석 박제 | (가) |
+| `boardPosts` | 자동 | 배너·이벤트·공지·업데이트 글 | **읽기 모두 / 쓰기 운영자만** |
 | `cacheDongTrades` 외 4개 | 자동 | 공공데이터 캐시 | **공용** (로그인만 하면 모두 읽고 씀) |
 
 ---
@@ -134,6 +135,26 @@ allow read, write: if isAllowedUser() && request.auth.uid == uid;
 
 `uid` `label` `memo` `savedAt` `address` `kind` `years` `spot` `baseAreaM2` `price` `rate` `sale` `jeonse`
 (그때 본 숫자를 그대로 박제합니다. 거래 표 전체는 담지 않습니다.)
+
+### `boardPosts/{id}` — 배너·이벤트·공지·업데이트
+
+운영 화면(`/admin/board`)에서 올리고, 앱의 **더보기 › 공지** 탭과 **탭 위 이벤트 배너**가 읽습니다.
+읽기는 로그인한 사용자 모두, **쓰기는 운영자만** (`firestore.rules` 의 `isAdmin()`).
+
+| 필드 | 담는 것 |
+|---|---|
+| `kind` | `banner` / `event` / `notice` / `update` |
+| `tag` | 목록 왼쪽 딱지 (배너는 쓰지 않는다 — 대신 `badge`) |
+| `title` `body` `imageUrl` | 제목 · 본문 · 그림 한 장 (base64, 220KB 이하로 줄여 담는다) |
+| `published` | `false` 면 **작성 중** — 앱에 나가지 않는다. 없으면 올린 글로 본다 |
+| `startAt` `endAt` | 올릴 때 · 내릴 때 (`YYYY-MM-DDTHH:mm`, 현지 시각). 비우면 바로 / 계속 |
+| `star` | 공지 맨 위 붙박이 |
+| `badge` `period` `cta` | 배너에만 — 배지 · 기간 글 · 단추 글 |
+| `banner` | 옛 글 — 이벤트에 붙이던 배너 표시 (읽기만) |
+| `order` `createdAt` `updatedAt` | 차례(작은 것이 위) · 시각 |
+
+> 때가 되면 올라가고 내려가는 판단은 `services/boardRepository.ts` 의 **`isLive()` 한 곳**에서 합니다.
+> 지금은 앱이 1분마다 시각을 보고 거릅니다 — 나중에 서버가 맡으면 이 함수만 그쪽을 보면 됩니다.
 
 ### 캐시 5종 — **공용**
 
