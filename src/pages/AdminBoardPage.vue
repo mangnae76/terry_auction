@@ -141,6 +141,38 @@ const removeOne = async (p: BoardPost) => {
   }
 };
 
+/** 굴러가는 모양을 보려면 여러 장이 있어야 한다 — 눌러서 보기용 배너 두 장을 넣는다 (쓰고 나면 지우면 된다) */
+const seeding = ref(false);
+const seedBanners = async () => {
+  seeding.value = true;
+  const base = Date.now();
+  const samples = [
+    { tag: '진행', title: '가을맞이 3개월 35% 할인', body: '기간을 길게 고를수록 더 깎입니다. 지금 결제하면 월 25,350원.', badge: 'SALE', period: '2026.10.01 ~ 10.31' },
+    { tag: '안내', title: '친구 부르면 2,000P', body: '친구가 가입을 마치면 두 분 모두에게 포인트를 드립니다.', badge: 'POINT', period: '상시' },
+  ];
+  try {
+    for (let i = 0; i < samples.length; i += 1) {
+      const sm = samples[i];
+      await saveBoardPost({
+        ...emptyPost('banner'),
+        id: newBoardId(),
+        tag: sm.tag,
+        title: sm.title,
+        body: sm.body,
+        badge: sm.badge,
+        period: sm.period,
+        cta: '자세히 보기',
+        order: base + i,
+      });
+    }
+    flash('보기용 배너 두 장을 넣었습니다.');
+  } catch (e) {
+    flash(reason(e, '넣지 못했습니다.'));
+  } finally {
+    seeding.value = false;
+  }
+};
+
 /** 차례 바꾸기 — 작은 것이 위 */
 const move = async (p: BoardPost, dir: -1 | 1) => {
   const list = posts.value.filter((x) => x.kind === p.kind);
@@ -193,6 +225,14 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
       <section v-for="k in KINDS" :key="k.key" class="adb-card">
         <header class="adb-head">
           <h2>{{ k.label }}<small>{{ k.hint }}</small></h2>
+          <button
+            v-if="k.key === 'banner'"
+            type="button"
+            class="adb-seed"
+            :disabled="seeding"
+            title="굴러가는 모양을 보려고 넣는 보기용 배너입니다. 확인한 뒤 지우세요."
+            @click="seedBanners"
+          >{{ seeding ? '넣는 중…' : '보기용 2장' }}</button>
           <button type="button" class="adb-add" @click="openNew(k.key)">＋ 새 글</button>
         </header>
 
@@ -362,6 +402,13 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   margin-left: auto; border: 1px solid #c7d2ea; border-radius: 8px; background: #fff;
   padding: 6px 12px; font-family: inherit; font-size: 12px; font-weight: 700; color: #2a3f8f; cursor: pointer;
 }
+.adb-seed {
+  margin-left: auto; border: 1px dashed #c7d2ea; border-radius: 8px; background: #fff;
+  padding: 6px 10px; font-family: inherit; font-size: 11.5px; font-weight: 700; color: #6b7280; cursor: pointer;
+}
+.adb-seed:disabled { color: #b6bdcc; cursor: default; }
+/* 보기용 단추가 먼저 자리를 밀어 두었으면 '새 글'은 바로 옆에 붙는다 */
+.adb-seed + .adb-add { margin-left: 0; }
 .adb-empty { margin: 8px 0 0; font-size: 12.5px; color: #9ca3af; }
 .adb-list { list-style: none; margin: 0; padding: 0; }
 .adb-list li {
