@@ -400,6 +400,11 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
       <div class="adb-box">
         <header class="adb-box-head">
           <strong>{{ KINDS.find((k) => k.key === draft!.kind)?.label }}</strong>
+          <!-- 어디에 낼지 — 글 전체에 걸리는 값이라 제목 옆에 둔다 -->
+          <span v-if="draft.kind === 'banner'" class="adb-where">
+            <label class="adb-chip"><input v-model="draft.showBanner" type="checkbox" /> 배너</label>
+            <label class="adb-chip"><input v-model="draft.alsoEvent" type="checkbox" /> 목록</label>
+          </span>
           <button type="button" class="adb-x" aria-label="닫기" @click="close">
             <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true">
               <path d="M1.5 1.5 12.5 12.5M12.5 1.5 1.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -408,13 +413,6 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         </header>
 
         <div class="adb-form">
-          <!-- 어디에 낼지 — 글 전체에 걸리는 값이라 맨 위에서 정한다 -->
-          <div v-if="draft.kind === 'banner'" class="adb-where">
-            <small>어디에 낼까요</small>
-            <label class="adb-chip"><input v-model="draft.showBanner" type="checkbox" /> 배너</label>
-            <label class="adb-chip"><input v-model="draft.alsoEvent" type="checkbox" /> 목록</label>
-          </div>
-
           <!-- 언제 올리고 내릴지 -->
           <div class="adb-sec first">
             <h4>{{ draft.kind === 'banner' ? '이벤트' : KINDS.find((k) => k.key === draft!.kind)?.label }} 예약 기능</h4>
@@ -447,7 +445,15 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           <!-- 여기서부터가 목록·상세에 나가는 내용이다 -->
           <div v-if="draft.kind === 'banner'" class="adb-sec">
             <h4>이벤트 상세 내용</h4>
-            <span class="adb-sec-note">{{ draft.alsoEvent ? '목록과 상세 보기에 나갑니다' : "'목록' 을 켜야 나갑니다" }}</span>
+            <span class="adb-tags sec">
+              <button
+                v-for="t in EVENT_TAGS"
+                :key="t"
+                type="button"
+                :class="['adb-tagbtn', { on: draft!.tag === t }]"
+                @click="draft!.tag = t"
+              >{{ t }}</button>
+            </span>
           </div>
 
           <label>
@@ -561,22 +567,10 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
                 ref="bodyEl"
                 v-model="draft.body"
                 class="adb-area"
-                rows="6"
+                rows="18"
                 placeholder="이벤트 조건·기간·주의할 점을 적습니다"
               ></textarea>
             </div>
-            <label>
-              <small>꼬리표</small>
-              <span class="adb-tags">
-                <button
-                  v-for="t in EVENT_TAGS"
-                  :key="t"
-                  type="button"
-                  :class="['adb-tagbtn', { on: draft!.tag === t }]"
-                  @click="draft!.tag = t"
-                >{{ t }}</button>
-              </span>
-            </label>
             <p class="adb-note">등록·수정 시각은 올리고 고칠 때 저절로 찍혀 상세 보기에 함께 나갑니다.</p>
           </template>
         </div>
@@ -686,7 +680,11 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   position: fixed; inset: 0; z-index: 60; background: rgba(17, 24, 39, .45);
   display: flex; align-items: center; justify-content: center; padding: 20px;
 }
-.adb-box { width: 100%; max-width: 540px; background: #fff; border-radius: 12px; overflow: hidden; }
+.adb-box {
+  width: 100%; max-width: 620px; max-height: 92vh;
+  display: flex; flex-direction: column;
+  background: #fff; border-radius: 12px; overflow: hidden;
+}
 .adb-box-head {
   display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #eef1f6;
 }
@@ -698,7 +696,10 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 0;
 }
 .adb-x svg { display: block; }
-.adb-form { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.adb-form {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
+}
 .adb-form label { display: flex; flex-direction: column; gap: 5px; }
 .adb-form small { font-size: 11.5px; font-weight: 700; color: #6b7280; }
 .adb-input {
@@ -717,7 +718,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 .adb-check { flex-direction: row !important; align-items: center; gap: 7px; font-size: 12.5px; color: #374151; }
 .adb-form em { font-style: normal; font-weight: 400; color: #9ca3af; }
 .adb-area {
-  width: 100%; box-sizing: border-box; border: 1px solid #e3e8f0; border-radius: 8px;
+  width: 100%; box-sizing: border-box; min-height: 280px; border: 1px solid #e3e8f0; border-radius: 8px;
   padding: 9px 11px; font-family: inherit; font-size: 13px; line-height: 1.6; color: #111827; resize: vertical;
 }
 .adb-area:focus { outline: none; border-color: #2a3f8f; }
@@ -755,12 +756,9 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 .adb-sec.first { border-top: none; margin-top: 0; padding-top: 0; }
 .adb-sec h4 { margin: 0; font-size: 13.5px; font-weight: 800; color: #111827; }
 .adb-sec-note { margin-left: auto; font-size: 11px; color: #9ca3af; }
-/* 어디에 낼지 — 쓰기 창 맨 위 */
-.adb-where {
-  display: flex; align-items: center; gap: 12px;
-  background: #f7f8fb; border: 1px solid #eef1f6; border-radius: 8px; padding: 9px 12px;
-}
-.adb-where > small { font-size: 11.5px; font-weight: 700; color: #6b7280; }
+/* 어디에 낼지 — 쓰기 창 제목 옆 */
+.adb-where { display: flex; align-items: center; gap: 12px; margin-left: 14px; }
+.adb-tags.sec { margin-left: auto; }
 .adb-chip {
   flex-direction: row !important; align-items: center; gap: 6px;
   font-size: 12.5px; font-weight: 700; color: #374151; cursor: pointer;
