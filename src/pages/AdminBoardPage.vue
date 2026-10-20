@@ -766,9 +766,10 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   padding: 7px 12px; font-family: inherit; font-size: 12px; font-weight: 700; color: #c62828; cursor: pointer;
 }
 .adb-thumb { flex: none; width: 44px; height: 32px; object-fit: cover; border-radius: 5px; border: 1px solid #eef1f6; }
+/* 배너로 나간다는 표 — 눈에 먼저 들어와야 한다 */
 .adb-badge {
   margin-left: 6px; font-style: normal; font-size: 10px; font-weight: 800;
-  background: #2a3f8f; color: #fff; border-radius: 4px; padding: 2px 5px;
+  background: #ef4444; color: #fff; border-radius: 4px; padding: 2px 5px;
 }
 .adb-badge.alt { background: #e8f0ff; color: #2b6df3; }
 /* 묶음 머리 — 예약 / 이벤트 상세 내용 */
