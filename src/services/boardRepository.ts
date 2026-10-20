@@ -144,6 +144,22 @@ export const postedLabel = (postedAt?: string, updatedAt?: string): string => {
 /** 줄 오른쪽에 좁게 적을 날짜 — '등록 26.10.20' */
 export const shortDayLabel = (iso?: string): string => (iso ? `등록 ${dayLabel(iso).slice(2)}` : '');
 
+/**
+ * 배너에 적을 기간 — 날짜까지만 적는다. '2026.10.01 ~ 10.31'
+ * (배너는 좁고 훑어보는 자리라 시각은 상세 보기에서만 보여 준다)
+ */
+export const dayRangeLabel = (startAt?: string, endAt?: string): string => {
+  const ymd = (v: string) => v.slice(0, 10).replace(/-/g, '.');
+  const md = (v: string) => `${v.slice(5, 7)}.${v.slice(8, 10)}`;
+  if (startAt && endAt) {
+    const sameYear = startAt.slice(0, 4) === endAt.slice(0, 4);
+    return `${ymd(startAt)} ~ ${sameYear ? md(endAt) : ymd(endAt)}`;
+  }
+  if (startAt) return `${ymd(startAt)} 부터`;
+  if (endAt) return `${ymd(endAt)} 까지`;
+  return '';
+};
+
 /** 'YYYY-MM-DDTHH:mm' → '오전12시' / '오후3시30분' */
 const clockText = (v: string): string => {
   const h = Number(v.slice(11, 13));

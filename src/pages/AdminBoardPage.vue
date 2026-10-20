@@ -12,8 +12,8 @@ import {
   newBoardId,
   removeBoardPost,
   saveBoardPost,
+  dayRangeLabel,
   eventPeriodLabel,
-  periodLabel,
   scheduleState,
   subscribeBoardPosts,
   titleOf,
@@ -80,7 +80,8 @@ const draft = ref<BoardPost | null>(null);
 const autoPeriod = computed(() => {
   const d = draft.value;
   if (!d) return '';
-  return eventPeriodLabel(d.eventStartAt, d.eventEndAt) || periodLabel(d.startAt, d.endAt);
+  // 배너는 날짜까지만 — 시각은 상세 보기의 '기간 :' 줄에서 본다
+  return dayRangeLabel(d.eventStartAt, d.eventEndAt) || dayRangeLabel(d.startAt, d.endAt);
 });
 const openNew = (kind: BoardKind) => { draft.value = emptyPost(kind); imgSize.value = ''; };
 const openEdit = (p: BoardPost) => {

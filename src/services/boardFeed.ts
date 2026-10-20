@@ -7,8 +7,7 @@ import { EVENTS, EVENT_BANNERS, NOTICES, UPDATES, type NewsRow } from './boardNe
 import {
   isLive,
   nowLocal,
-  eventPeriodLabel,
-  periodLabel,
+  dayRangeLabel,
   postedLabel,
   shortDayLabel,
   subscribeBoardPosts,
@@ -82,8 +81,9 @@ export const useBoardFeed = () => {
         desc: p.desc || p.body || '',
         cta: p.cta || '자세히 보기',
         // 예약한 때가 있으면 그것을 그대로 보여 준다 — 손으로 적은 기간 글은 예약이 없을 때만
-        // 손으로 적은 기간 글이 먼저, 없으면 이벤트가 열리는 때, 그것도 없으면 올리고 내리는 때
-        period: p.period || eventPeriodLabel(p.eventStartAt, p.eventEndAt) || periodLabel(p.startAt, p.endAt) || '',
+        // 손으로 적은 기간 글이 먼저, 없으면 이벤트가 열리는 때, 그것도 없으면 올리고 내리는 때.
+        // 배너에는 날짜까지만 적는다 — 몇 시 몇 분은 상세 보기에서 본다
+        period: p.period || dayRangeLabel(p.eventStartAt, p.eventEndAt) || dayRangeLabel(p.startAt, p.endAt),
       }));
     }),
   };
