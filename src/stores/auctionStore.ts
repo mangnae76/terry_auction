@@ -927,10 +927,13 @@ export const useAuctionStore = defineStore('auction', () => {
       uid,
       (rows) => {
         allAuctions.value = rows.map((row) => normalizeFlags(row));
-        const dbRows = rows.filter((r) => !r.id.startsWith('onbid-'));
-        console.log(
-          `[auctionStore] Firestore 동기화 (uid=${uid}): 전체 ${rows.length}건 / DB 등록 ${dbRows.length}건`,
-        );
+        if (import.meta.env.DEV) {
+          // 세는 일도 개발 중에만 — 자료가 많으면 동기화마다 도는 자리였다
+          const dbRows = rows.filter((r) => !r.id.startsWith('onbid-'));
+          console.log(
+            `[auctionStore] Firestore 동기화 (uid=${uid}): 전체 ${rows.length}건 / DB 등록 ${dbRows.length}건`,
+          );
+        }
       },
       (message) => {
         storageWarning.value = message;

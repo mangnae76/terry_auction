@@ -2,12 +2,13 @@
 // 자금관리 — 4개 탭. 모든 데이터는 Firestore에 사용자별로 저장됨.
 // 탭: 사업계좌 자금입출금 / 사업지출내역 / 유류비 & 식대지출 / 물품구매 지출상세
 
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { shortAddr } from '../utils/address';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
-import TaxPage from './TaxPage.vue';
+// 세금신고는 그 탭을 눌러야 받아 온다 — 자금관리를 열 때 같이 끌고 오지 않는다
+const TaxPage = defineAsyncComponent(() => import('./TaxPage.vue'));
 import AppConfirm from '../components/AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
@@ -49,6 +50,8 @@ const stageListOpen = ref<'' | '낙찰' | '매도'>('');
 /** 카드를 누르면 그 자리에서 입찰가 산정표(A안)를 편다 — 목록을 떠나지 않는다 */
 const openCardId = ref('');
 const toggleCard = (id: string) => { openCardId.value = openCardId.value === id ? '' : id; };
+// 물건이 바뀌면 셈해 둔 것을 버린다
+watch(() => auctionStore.auctions, () => calcCache.clear(), { deep: false });
 /** 물건 상세로 가는 길은 따로 둔다 */
 const openAuction = (id: string) => { void router.push(`/auctions/${id}`); };
 
@@ -60,7 +63,16 @@ type CalcRow = {
   cls?: string; strong?: boolean;
 };
 const pctText = (part: number, whole: number) => (whole > 0 ? `${((part / whole) * 100).toFixed(2)}%` : '');
+/** 펼친 카드의 산정표 — 같은 물건이면 다시 셈하지 않는다 (목록을 다시 그릴 때마다 돌던 자리) */
+const calcCache = new Map<string, CalcRow[]>();
 const calcRows = (a: AuctionDetail): CalcRow[] => {
+  const hit = calcCache.get(a.id);
+  if (hit) return hit;
+  const rows = buildCalcRows(a);
+  calcCache.set(a.id, rows);
+  return rows;
+};
+const buildCalcRows = (a: AuctionDetail): CalcRow[] => {
   const c = a.bidCost ?? ({} as NonNullable<AuctionDetail['bidCost']>);
   const appr = a.metrics?.appraisalValue ?? 0;
   const low = a.metrics?.minimumBidValue ?? 0;
@@ -162,6 +174,27 @@ const filteredCashFlows = computed(() => byDateDesc(finance.cashFlows.filter((r)
 const filteredBusiness = computed(() => byDateDesc(finance.businessExpenses.filter((r) => isWithinPeriod(r.date))));
 const filteredFuelMeal = computed(() => byDateDesc(finance.fuelMeal.filter((r) => isWithinPeriod(r.date))));
 const filteredItemPurchases = computed(() => byDateDesc(finance.itemPurchases.filter((r) => isWithinPeriod(r.date))));
+
+/** 줄이 아주 많으면 화면이 무거워진다 — 처음에는 이만큼만 그리고 '더 보기'로 늘린다.
+ *  합계·엑셀 저장은 자른 것이 아니라 거른 전체를 본다. */
+const PAGE = 150;
+const shownCount = ref(PAGE);
+const cut = <T,>(rows: T[]) => (rows.length > shownCount.value ? rows.slice(0, shownCount.value) : rows);
+const shownCashFlows = computed(() => cut(filteredCashFlows.value));
+const shownBusiness = computed(() => cut(filteredBusiness.value));
+const shownFuelMeal = computed(() => cut(filteredFuelMeal.value));
+const shownItemPurchases = computed(() => cut(filteredItemPurchases.value));
+/** 지금 탭에서 아직 안 그린 줄 수 */
+const restCount = computed(() => {
+  const all = activeTab.value === 'cashFlow' ? filteredCashFlows.value
+    : activeTab.value === 'businessExpense' ? filteredBusiness.value
+    : activeTab.value === 'fuelMeal' ? filteredFuelMeal.value
+    : activeTab.value === 'itemPurchase' ? filteredItemPurchases.value
+    : [];
+  return Math.max(0, all.length - shownCount.value);
+});
+// 탭이나 기간을 바꾸면 처음부터 다시
+watch([activeTab, period, customStart, customEnd], () => { shownCount.value = PAGE; });
 
 // === 자금입출금 요약 ===
 const totalIn = computed(() =>
@@ -459,7 +492,7 @@ const exportExcel = () => {
             <tr><th>일자</th><th>명세</th><th>입출금</th><th class="r">개인 자금</th><th>비고</th></tr>
           </thead>
           <tbody>
-            <tr v-for="r in filteredCashFlows" :key="r.id" @click="openEdit('cashFlow', r)">
+            <tr v-for="r in shownCashFlows" :key="r.id" @click="openEdit('cashFlow', r)">
               <td>{{ shortDate(r.date) }}</td>
               <td :title="r.ownerName">{{ r.ownerName }}</td>
               <td><span :class="['pill', r.flowType === '입금' ? 'in' : 'out']">{{ r.flowType }}</span></td>
@@ -490,7 +523,7 @@ const exportExcel = () => {
             <tr><th>결제일</th><th>물건구분</th><th>사용구분</th><th>명세</th><th class="two">비용{{ '\n' }}(VAT포함)</th><th>비고</th></tr>
           </thead>
           <tbody>
-            <tr v-for="r in filteredBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
+            <tr v-for="r in shownBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
               <td>{{ shortDate(r.date) }}</td>
               <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
               <td :title="r.profitCategory || r.memo"><span class="pill memo">{{ r.profitCategory || r.memo || '-' }}</span></td>
@@ -521,7 +554,7 @@ const exportExcel = () => {
             <tr><th>사용일</th><th>사용처</th><th>사용구분</th><th>비용</th><th>사용카드</th><th>비고</th></tr>
           </thead>
           <tbody>
-            <tr v-for="r in filteredFuelMeal" :key="r.id" @click="openEdit('fuelMeal', r)">
+            <tr v-for="r in shownFuelMeal" :key="r.id" @click="openEdit('fuelMeal', r)">
               <td>{{ shortDate(r.date) }}</td>
               <td :title="r.store">{{ r.store }}</td>
               <td :title="r.category"><span class="pill cat">{{ r.category || '-' }}</span></td>
@@ -552,7 +585,7 @@ const exportExcel = () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="r in filteredItemPurchases" :key="r.id" @click="openEdit('itemPurchase', r)">
+            <tr v-for="r in shownItemPurchases" :key="r.id" @click="openEdit('itemPurchase', r)">
               <td>{{ shortDate(r.date) }}</td>
               <td :title="r.category"><span class="pill cat">{{ r.category }}</span></td>
               <td class="desc" :title="r.description">{{ r.description }}</td>
@@ -577,6 +610,11 @@ const exportExcel = () => {
 
     <!-- ========== TAB 5: 세금신고 — 세금관리 화면을 그대로 들여온다 ========== -->
     <TaxPage v-else-if="activeTab === 'tax'" embedded />
+
+    <!-- 줄이 많아 잘라 그린 경우에만 — v-if/v-else 사슬 밖에 둔다 -->
+    <button v-if="restCount > 0" type="button" class="fin-more" @click="shownCount += PAGE">
+      ＋ {{ restCount.toLocaleString('ko-KR') }}줄 더 보기
+    </button>
     </div>
 
     <!-- ========== 모달 ========== -->
@@ -776,6 +814,11 @@ const exportExcel = () => {
 </template>
 
 <style scoped>
+.fin-more {
+  display: block; width: calc(100% - 24px); margin: 8px 12px 0; height: 38px;
+  border: 1px solid #dbe3f7; border-radius: 10px; background: #fff;
+  font-family: inherit; font-size: 12.5px; font-weight: 700; color: #2a3f8f; cursor: pointer;
+}
 /* 위는 붙박이, 아래만 구른다 — 선정물건(.wlp-shell)과 같은 짜임 */
 .fin-shell {
   position: fixed; inset: 0;

@@ -11,7 +11,5 @@ export interface MyPageItem {
 
 export const MY_PAGE_ITEMS: MyPageItem[] = [
   { name: '마이페이지', desc: '선정물건·계정 자리 모음', path: '/more', query: { tab: 'mypage' } },
-  { name: '정보수정', desc: '닉네임·계정 정보 보기', path: '/profile' },
   { name: '결제하기', desc: '이용 기간 고르고 결제 진행', path: '/billing' },
-  { name: '결제관리', desc: '결제 내역·영수증 보기', path: '/payments' },
 ];
