@@ -5,7 +5,6 @@ import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import ImageLightbox from './../components/ImageLightbox.vue';
-import PostBody from '../components/PostBody.vue';
 import { ref } from 'vue';
 import { boardNow, useBoardPost } from '../services/boardFeed';
 import { eventPeriodLabel, periodLabel, postedLabel, tagAt, titleOf } from '../services/boardRepository';
@@ -62,7 +61,7 @@ const zoom = ref('');
         alt=""
         @click="zoom = post.imageUrl ?? ''"
       />
-      <PostBody v-if="post.body" :body="post.body" />
+      <p v-if="post.body" class="bp-body">{{ post.body }}</p>
       <p v-else-if="post.desc" class="bp-body">{{ post.desc }}</p>
     </article>
 

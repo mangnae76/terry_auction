@@ -5,9 +5,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import BrandLogo from '../components/BrandLogo.vue';
 import DateTimeField from '../components/DateTimeField.vue';
-import TableEditor from '../components/TableEditor.vue';
 import { useAuthStore } from '../stores/authStore';
-import { buildTable, markLine, tableAt, type Align } from '../services/boardBody';
 import {
   compressBoardImage,
   newBoardId,
@@ -270,74 +268,6 @@ const setPlan = (tag: string, at: string) => {
   // 차례대로 흐르도록 때 순서로 담아 둔다
   d.tagPlan = plan.sort((a, b) => (a.at < b.at ? -1 : 1));
   onDateChange();
-};
-
-/* ───────── 본문 꾸미기 — 표와 줄 맞춤 ───────── */
-
-const bodyEl = ref<HTMLTextAreaElement | null>(null);
-
-/** 고친 글을 되돌려 놓고 커서 자리까지 맞춘다 */
-const putBody = (text: string, from: number, to: number) => {
-  if (!draft.value) return;
-  draft.value.body = text;
-  window.setTimeout(() => {
-    const el = bodyEl.value;
-    if (!el) return;
-    el.focus();
-    el.setSelectionRange(from, to);
-  }, 0);
-};
-
-/**
- * 표 만들기 창.
- * 커서가 이미 표 안에 있으면 그 표를 불러와 고치고, 아니면 빈 표를 새로 짠다.
- */
-const tableOpen = ref(false);
-const tableSeed = ref<{ head: string[]; rows: string[][] }>({ head: [], rows: [] });
-let tableSpan: { start: number; end: number } | null = null;
-
-const openTable = () => {
-  const el = bodyEl.value;
-  const body = draft.value?.body ?? '';
-  const at = el ? el.selectionStart : body.length;
-  const found = tableAt(body, at);
-  if (found) {
-    tableSpan = { start: found.start, end: found.end };
-    tableSeed.value = { head: found.head, rows: found.rows };
-  } else {
-    tableSpan = null;
-    tableSeed.value = { head: ['항목', '내용'], rows: [['', ''], ['', '']] };
-  }
-  tableOpen.value = true;
-};
-
-/** 짠 표를 본문에 넣는다 — 고치던 표가 있으면 그 자리를 갈아 끼운다 */
-const applyTable = (grid: { head: string[]; rows: string[][] }) => {
-  const el = bodyEl.value;
-  const body = draft.value?.body ?? '';
-  const text = buildTable(grid.head, grid.rows);
-  const at = tableSpan ? tableSpan.start : (el ? el.selectionStart : body.length);
-  const to = tableSpan ? tableSpan.end : at;
-  const before = body.slice(0, at);
-  const after = body.slice(to);
-  const lead = before && !before.endsWith('\n') ? '\n' : '';
-  const tail = after && !after.startsWith('\n') ? '\n' : '';
-  tableOpen.value = false;
-  tableSpan = null;
-  putBody(before + lead + text + tail + after, at + lead.length, at + lead.length + text.length);
-};
-
-/** 고른 줄들의 맞춤을 바꾼다 (고른 것이 없으면 커서가 놓인 줄) */
-const setAlign = (align: Align) => {
-  const el = bodyEl.value;
-  const body = draft.value?.body ?? '';
-  const from = el ? el.selectionStart : 0;
-  const to = el ? el.selectionEnd : 0;
-  const head = body.lastIndexOf('\n', from - 1) + 1;
-  const tailAt = body.indexOf('\n', to);
-  const tail = tailAt === -1 ? body.length : tailAt;
-  const fixed = body.slice(head, tail).split('\n').map((l) => markLine(l, align)).join('\n');
-  putBody(body.slice(0, head) + fixed + body.slice(tail), head, head + fixed.length);
 };
 
 /** 차례 바꾸기 — 작은 것이 위 */
@@ -624,31 +554,15 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             <p v-if="eventPeriodLabel(draft.eventStartAt, draft.eventEndAt)" class="adb-note">
               상세에 나갈 글 — 기간 : {{ eventPeriodLabel(draft.eventStartAt, draft.eventEndAt) }}
             </p>
-            <div class="adb-field">
-              <small class="adb-bodyhead">
-                이벤트 본문 <em>(상세 보기에 펼쳐지는 글)</em>
-                <span class="adb-tools">
-                  <button type="button" title="표 넣기·고치기" @click="openTable">표</button>
-                  <button type="button" title="왼쪽" @click="setAlign('left')">⇤</button>
-                  <button type="button" title="가운데" @click="setAlign('center')">중</button>
-                  <button type="button" title="오른쪽" @click="setAlign('right')">⇥</button>
-                </span>
-              </small>
-              <TableEditor
-                v-if="tableOpen"
-                :head="tableSeed.head"
-                :rows="tableSeed.rows"
-                @apply="applyTable"
-                @close="tableOpen = false"
-              />
+            <label>
+              <small>이벤트 본문 <em>(상세 보기에 펼쳐지는 글)</em></small>
               <textarea
-                ref="bodyEl"
                 v-model="draft.body"
                 class="adb-area"
                 rows="18"
                 placeholder="이벤트 조건·기간·주의할 점을 적습니다"
               ></textarea>
-            </div>
+            </label>
             <p class="adb-note">등록·수정 시각은 올리고 고칠 때 저절로 찍혀 상세 보기에 함께 나갑니다.</p>
           </template>
         </div>
@@ -849,15 +763,6 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 .adb-row > label { flex: 1 1 0; min-width: 0; }
 .adb-row > label.narrow { flex: 0 0 104px; }
 
-/* 본문 꾸미기 단추 — 글칸 오른쪽 위 */
-.adb-bodyhead { display: flex; align-items: center; gap: 6px; }
-.adb-tools { margin-left: auto; display: flex; gap: 4px; }
-.adb-tools button {
-  min-width: 26px; height: 24px; padding: 0 7px;
-  border: 1px solid #e3e8f0; border-radius: 6px; background: #fff;
-  font-family: inherit; font-size: 11.5px; font-weight: 700; color: #4b5563; cursor: pointer;
-}
-.adb-tools button:hover { border-color: #c7d2ea; color: #2a3f8f; }
 .adb-oldimg {
   display: flex; align-items: center; gap: 8px; margin: 0;
   font-size: 11.5px; color: #6b7280;
