@@ -55,7 +55,7 @@ const emptyPost = (kind: BoardKind): BoardPost => ({
   id: newBoardId(),
   kind,
   // 배너가 이벤트 줄까지 겸할 때를 미리 채워 둔다
-  tag: kind === 'banner' ? '진행' : (KINDS.find((k) => k.key === kind)?.tags[0] ?? ''),
+  tag: kind === 'banner' ? '안내' : (KINDS.find((k) => k.key === kind)?.tags[0] ?? ''),
   title: '',
   body: '',
   imageUrl: '',
@@ -64,6 +64,7 @@ const emptyPost = (kind: BoardKind): BoardPost => ({
   showBanner: kind === 'banner',
   alsoEvent: kind === 'banner',
   tagPlan: [],
+  tagManual: false,
   eventStartAt: '',
   eventEndAt: '',
   star: false,
@@ -489,29 +490,33 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           <template v-if="draft.kind === 'banner'">
             <div class="adb-sec">
               <h4>꼬리말 예약 기능</h4>
+              <label class="adb-chip"><input v-model="draft.tagManual" type="checkbox" /> 수동</label>
               <span class="adb-tags sec">
                 <button
                   v-for="t in EVENT_TAGS"
                   :key="t"
                   type="button"
-                  :class="['adb-tagbtn', { on: draft!.tag === t }]"
+                  :class="['adb-tagbtn', { on: draft!.tag === t, off: !draft!.tagManual }]"
+                  :disabled="!draft.tagManual"
                   @click="draft!.tag = t"
                 >{{ t }}</button>
               </span>
             </div>
-            <p class="adb-note">고른 꼬리말로 시작해, 아래에 적어 둔 때가 되면 저절로 바뀝니다.</p>
             <div class="adb-when-row">
-              <div v-for="t in EVENT_TAGS" :key="`plan-${t}`" class="adb-field">
+              <div v-for="t in EVENT_TAGS" :key="`plan-${t}`" class="adb-field" :class="{ off: draft.tagManual }">
                 <small>{{ t }}</small>
                 <DateTimeField
                   :model-value="planAt(t)"
+                  :disabled="draft.tagManual"
                   @update:model-value="(v: string) => setPlan(t, v)"
                 />
               </div>
             </div>
             <p class="adb-note">
               지금 나가는 꼬리말 — <b>{{ tagAt(draft) }}</b>
-              <template v-if="!(draft.tagPlan ?? []).length"> (예약 없음 — 고른 그대로 둡니다)</template>
+              <template v-if="!draft.tagManual && !(draft.tagPlan ?? []).length">
+                (적어 둔 때가 없습니다)
+              </template>
             </p>
           </template>
 
@@ -788,6 +793,8 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   padding: 5px 12px; font-family: inherit; font-size: 12px; font-weight: 700; color: #6b7280; cursor: pointer;
 }
 .adb-tagbtn.on { background: #2a3f8f; border-color: #2a3f8f; color: #fff; }
+.adb-tagbtn.off { opacity: .45; cursor: default; }
+.adb-field.off > small { color: #b6bdcc; }
 .adb-check { flex-direction: row !important; align-items: center; gap: 7px; font-size: 12.5px; color: #374151; }
 .adb-form em { font-style: normal; font-weight: 400; color: #9ca3af; }
 .adb-area {

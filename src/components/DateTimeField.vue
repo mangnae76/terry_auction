@@ -5,7 +5,7 @@
 // 그래서 둘로 나누고, 날짜를 고르면 시각은 00:00(밤 12시)로 맞춰 둔다.
 import { computed } from 'vue';
 
-const props = defineProps<{ modelValue?: string }>();
+const props = defineProps<{ modelValue?: string; disabled?: boolean }>();
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void }>();
 
 const date = computed(() => (props.modelValue ?? '').slice(0, 10));
@@ -24,8 +24,15 @@ const onTime = (ev: Event) => {
 
 <template>
   <span class="dtf">
-    <input type="date" class="dtf-date" :value="date" @change="onDate" @input="onDate" />
-    <input type="time" class="dtf-time" :value="time" :disabled="!date" @change="onTime" @input="onTime" />
+    <input type="date" class="dtf-date" :value="date" :disabled="disabled" @change="onDate" @input="onDate" />
+    <input
+      type="time"
+      class="dtf-time"
+      :value="time"
+      :disabled="disabled || !date"
+      @change="onTime"
+      @input="onTime"
+    />
   </span>
 </template>
 
