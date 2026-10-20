@@ -14,8 +14,8 @@ const authStore = useAuthStore();
 const router = useRouter();
 const menuOpen = ref(false);
 
-/** 머리글의 '결제하기' 글자 — 잠시 내려 둔다. 다시 보이려면 true 로 */
-const SHOW_PAY = false;
+/** 머리글의 '결제하기' 글자 — 내리려면 false 로 */
+const SHOW_PAY = true;
 
 /** 회원 등급·포인트 — 적립과 결제를 붙이기 전이라 첫 등급에서 시작한다 */
 const grade = POINT_GRADES[0];
