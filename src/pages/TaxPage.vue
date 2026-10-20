@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // 세금관리 — 연도별로 낙찰·매도 건을 모아 사업소득과 세금을 가늠한다.
 // 값은 물건상세 '입찰가산정'에 적어 둔 금액과 낙찰일·매도일에서 끌어온다.
+import { useRouter } from 'vue-router';
 import { computed, ref } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
@@ -247,11 +248,15 @@ const MAIN_SCHEDULE = [
   { icon: '🏢', title: '재산세', lines: ['7월 16일~31일 (건물분) / 9월 16일~30일 (토지분)', '＊ 매년 6월 1일 기준 소유자에게 부과 — 그 날짜에 보유 중인 물건만 해당'] },
   { icon: '💰', title: '종합부동산세', lines: ['12월 1일 ~ 12월 15일', '＊ 6월 1일 기준 보유 + 주택 공시가 합산 9억원(1세대 1주택 12억원) 초과 시에만 해당'] },
 ];
+
+/** 뒤로가기 — 혼자 열렸을 때만 쓴다 (자금관리 안에서는 머리글이 없다) */
+const router = useRouter();
 </script>
 
 <template>
   <section :class="['tax-shell', { embedded: props.embedded }]">
     <header v-if="!props.embedded" class="tax-header">
+      <button type="button" class="pg-back" aria-label="뒤로" @click="router.back()">‹</button>
       <h1 class="tax-title">부동산 세금 신고</h1>
       <span class="tax-eyebrow">세금 관리 · TAX MANAGEMENT</span>
     </header>
@@ -544,6 +549,10 @@ const MAIN_SCHEDULE = [
 </template>
 
 <style scoped>
+.pg-back {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 22px; line-height: 1; color: #334155; padding: 0 4px 0 0; align-self: center;
+}
 .tax-shell {
   min-height: 100vh;
   background: #f5f7fb;

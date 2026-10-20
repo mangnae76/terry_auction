@@ -82,6 +82,7 @@ onMounted(async () => {
   <section class="schedule-page">
     <header class="schedule-header">
       <div class="week-nav">
+        <button type="button" class="pg-back" aria-label="뒤로" @click="router.back()">‹</button>
         <button type="button" class="ghost" @click="store.prevWeek()">◀ 이전주</button>
         <div class="week-label">{{ weekLabel }}</div>
         <button type="button" class="ghost" @click="store.nextWeek()">다음주 ▶</button>
@@ -186,6 +187,10 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.pg-back {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 22px; line-height: 1; color: #334155; padding: 0 4px 0 0; align-self: center;
+}
 .schedule-page {
   display: flex;
   flex-direction: column;

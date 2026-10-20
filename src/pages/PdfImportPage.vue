@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router';
 import { computed, onMounted, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import {
@@ -455,12 +456,16 @@ const fileTitle = (row: ImportPreviewRow) => {
   if (row.parsed?.sourceName) return row.parsed.sourceName;
   return row.sourceName;
 };
+
+/** 뒤로가기 — 물건 목록에서 들어온 화면이다 */
+const router = useRouter();
 </script>
 
 <template>
   <section class="pip-shell">
     <div class="pip-fixed-top">
       <div class="pip-title-row">
+        <button type="button" class="pg-back" aria-label="뒤로" @click="router.back()">‹</button>
         <h1 class="pip-title">물건등록</h1>
         <button
           type="button"
@@ -701,6 +706,10 @@ const fileTitle = (row: ImportPreviewRow) => {
 </template>
 
 <style scoped>
+.pg-back {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 22px; line-height: 1; color: #334155; padding: 0 4px 0 0; align-self: center;
+}
 .pip-shell {
   display: flex;
   flex-direction: column;

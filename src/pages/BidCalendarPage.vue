@@ -180,6 +180,7 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
 <template>
   <section class="cal-shell">
     <header class="cal-header">
+      <button type="button" class="pg-back" aria-label="뒤로" @click="router.back()">‹</button>
       <h1 class="cal-title">입찰 캘린더</h1>
       <span class="cal-eyebrow">AUCTION CALENDAR</span>
     </header>
@@ -252,6 +253,10 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
 </template>
 
 <style scoped>
+.pg-back {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 22px; line-height: 1; color: #334155; padding: 0 4px 0 0; align-self: center;
+}
 .cal-shell {
   min-height: 100vh;
   background: #f4f6fb;
