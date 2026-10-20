@@ -59,7 +59,7 @@ export const useBoardFeed = () => {
       body: p.body,
       imageUrl: p.imageUrl,
       postedShort: shortDayLabel(p.postedAt ?? p.createdAt),
-      postedFull: postedLabel(p.postedAt ?? p.createdAt, p.updatedAt),
+      postedFull: postedLabel(p.postedAt ?? p.createdAt),
     }));
   });
 

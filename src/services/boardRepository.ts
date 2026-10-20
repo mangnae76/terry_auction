@@ -147,17 +147,10 @@ export const dayLabel = (iso?: string): string => {
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
 };
 
-const stamp = (iso?: string) => (iso ? `${dayLabel(iso)} ${timeLabel(iso)}`.trim() : '');
-
-/**
- * 사용자에게 보일 등록·수정 때 — '등록 2026.10.20 오후 3:24'.
- * 고친 적이 없으면 등록만 적는다 — 쓸데없이 두 시각을 늘어놓지 않는다.
- */
-export const postedLabel = (postedAt?: string, updatedAt?: string): string => {
-  const made = stamp(postedAt);
-  const fixed = stamp(updatedAt);
-  if (!made) return fixed ? `수정 ${fixed}` : '';
-  return fixed && fixed !== made ? `등록 ${made} · 수정 ${fixed}` : `등록 ${made}`;
+/** 사용자에게 보일 등록 때 — '등록 2026.10.20 오후 3:24'. 수정 때는 보여 주지 않는다 */
+export const postedLabel = (postedAt?: string): string => {
+  if (!postedAt) return '';
+  return `등록 ${dayLabel(postedAt)} ${timeLabel(postedAt)}`.trim();
 };
 
 /** 줄 오른쪽에 좁게 적을 날짜 — '등록 26.10.20' */

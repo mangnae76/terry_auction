@@ -29,7 +29,7 @@ const period = computed(() => {
 });
 const posted = computed(() => {
   const p = post.value;
-  return p ? postedLabel(p.postedAt ?? p.createdAt, p.updatedAt) : '';
+  return p ? postedLabel(p.postedAt ?? p.createdAt) : '';
 });
 
 /** 꼬리말은 예약한 때에 따라 안내 → 진행 → 마감 으로 바뀐다 */
