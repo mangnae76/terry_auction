@@ -771,7 +771,8 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   margin-left: 6px; font-style: normal; font-size: 10px; font-weight: 800;
   background: #ef4444; color: #fff; border-radius: 4px; padding: 2px 5px;
 }
-.adb-badge.alt { background: #e8f0ff; color: #2b6df3; }
+/* 목록 표 — 빛깔만 다르고 크기·굵기는 배너와 똑같이 */
+.adb-badge.alt { background: #2a3f8f; color: #fff; }
 /* 묶음 머리 — 예약 / 이벤트 상세 내용 */
 .adb-sec {
   display: flex; align-items: center; gap: 10px;
