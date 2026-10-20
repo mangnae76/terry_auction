@@ -550,12 +550,12 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
                 <input v-model="draft.badge" class="adb-input" :disabled="!draft.showBanner" placeholder="EVENT" />
               </label>
               <label :class="{ off: !draft.showBanner }">
-                <small>기간 글 <em>(비우면 이벤트 기간)</em></small>
+                <small>기간 글 <em>(비워 두세요)</em></small>
                 <input
                   v-model="draft.period"
                   class="adb-input"
                   :disabled="!draft.showBanner"
-                  placeholder="2026.10.01 ~ 10.31"
+                  placeholder="비우면 이벤트 기간 (예: 상시)"
                 />
               </label>
               <label class="narrow" :class="{ off: !draft.showBanner }">
@@ -564,7 +564,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
               </label>
             </div>
             <p v-if="draft.showBanner && !draft.period && autoPeriod" class="adb-note">
-              배너에 나갈 기간 — {{ autoPeriod }}
+              비워 두어 배너에는 <b>{{ autoPeriod }}</b> 이(가) 나갑니다.
             </p>
 
             <div class="adb-when-row">
