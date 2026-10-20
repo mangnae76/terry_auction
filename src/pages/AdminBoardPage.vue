@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import BrandLogo from '../components/BrandLogo.vue';
 import DateTimeField from '../components/DateTimeField.vue';
 import { useAuthStore } from '../stores/authStore';
+import { OPS_MENU, opsItem } from '../services/adminMenu';
 import {
   newBoardId,
   removeBoardPost,
@@ -43,6 +44,15 @@ onMounted(() => {
   unsub = subscribeBoardPosts((rows) => { posts.value = rows; }, (m) => { err.value = m; });
 });
 onUnmounted(() => { if (unsub) unsub(); });
+
+/* ───────── 왼쪽 메뉴 ───────── */
+
+const menu = ref('banner');
+const KIND_KEYS: BoardKind[] = ['banner', 'event', 'notice', 'update'];
+/** 고른 메뉴가 글 상자면 그 종류, 아니면 아직 만들지 않은 칸 */
+const menuKind = computed(() =>
+  (KIND_KEYS as string[]).includes(menu.value) ? (menu.value as BoardKind) : null);
+const menuItem = computed(() => opsItem(menu.value));
 
 const listOf = (kind: BoardKind) => computed(() => posts.value.filter((p) => p.kind === kind));
 
@@ -279,21 +289,42 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
     </header>
 
     <div class="adm-body">
+      <!-- 왼쪽 메뉴 — 아직 만들지 않은 칸도 자리를 잡아 둔다 -->
+      <nav class="ops-menu">
+        <div v-for="g in OPS_MENU" :key="g.title" class="ops-group">
+          <h3>{{ g.title }}</h3>
+          <button
+            v-for="it in g.items"
+            :key="it.key"
+            type="button"
+            :class="['ops-item', { on: menu === it.key, soon: !it.ready }]"
+            @click="menu = it.key"
+          >
+            {{ it.label }}
+            <em v-if="!it.ready">준비 중</em>
+          </button>
+        </div>
+      </nav>
+
+      <div class="ops-main">
       <div class="adm-head">
-        <h1>배너 · 이벤트 · 공지 · 업데이트</h1>
-        <p>
-          <b>이벤트 배너</b>는 앱 더보기의 <b>모든 탭 맨 위</b>에 돌아가며 뜨고,
-          나머지는 <b>더보기 › 공지</b> 탭에 줄로 들어갑니다.
-          <b>작성 중 저장</b>해 둔 글은 앱에 나가지 않습니다.
-        </p>
+        <h1>{{ menuItem?.label ?? '운영' }}</h1>
+        <p>{{ menuItem?.desc }}</p>
       </div>
 
-      <p v-if="err" class="adb-err">
+      <p v-if="err && menuKind" class="adb-err">
         {{ err }}
         <template v-if="/permission|insufficient/i.test(err)"> — 지금 계정 {{ auth.email || '(로그인 안 됨)' }}</template>
       </p>
 
-      <section v-for="k in KINDS" :key="k.key" class="adb-card">
+      <!-- 아직 만들지 않은 칸 -->
+      <section v-if="!menuKind" class="adb-card ops-soon">
+        <h2>준비 중입니다</h2>
+        <p>{{ menuItem?.desc }}</p>
+        <p v-if="menuItem?.need" class="ops-need">먼저 있어야 하는 것 — {{ menuItem.need }}</p>
+      </section>
+
+      <section v-for="k in KINDS.filter((x) => x.key === menuKind)" :key="k.key" class="adb-card">
         <header class="adb-head">
           <h2>{{ k.label }}<small>{{ k.hint }}</small></h2>
           <button
@@ -341,6 +372,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           </li>
         </ul>
       </section>
+      </div>
     </div>
 
     <!-- 쓰기 창 -->
@@ -549,7 +581,35 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 }
 .adm-who { font-size: 12px; color: #c7d2ea; font-weight: 600; }
 
-.adm-body { max-width: 1000px; margin: 0 auto; padding: 28px 24px 60px; }
+.adm-body {
+  max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px;
+  display: flex; align-items: flex-start; gap: 24px;
+}
+/* 왼쪽 메뉴 */
+.ops-menu { flex: 0 0 206px; position: sticky; top: 76px; }
+.ops-group + .ops-group { margin-top: 16px; }
+.ops-group h3 {
+  margin: 0 0 6px; padding-left: 10px;
+  font-size: 11px; font-weight: 800; color: #9ca3af; letter-spacing: .3px;
+}
+.ops-item {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  border: none; border-radius: 8px; background: transparent;
+  padding: 8px 10px; margin-bottom: 1px; text-align: left;
+  font-family: inherit; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer;
+}
+.ops-item:hover { background: #eef1f8; }
+.ops-item.on { background: #2a3f8f; color: #fff; }
+.ops-item.soon { color: #9ca3af; font-weight: 500; }
+.ops-item em {
+  margin-left: auto; font-style: normal; font-size: 9.5px; font-weight: 700;
+  color: #b6bdcc; border: 1px solid #e3e8f0; border-radius: 4px; padding: 1px 4px;
+}
+.ops-item.on em { color: #ffffffcc; border-color: #ffffff4d; }
+.ops-main { flex: 1 1 auto; min-width: 0; }
+.ops-soon h2 { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #111827; }
+.ops-soon p { margin: 0; font-size: 13px; color: #6b7280; }
+.ops-need { margin-top: 8px !important; color: #2a3f8f !important; font-weight: 700; }
 .adm-head { margin-bottom: 20px; }
 .adm-head h1 { margin: 0 0 6px; font-size: 24px; font-weight: 800; color: #111827; }
 .adm-head p { margin: 0; font-size: 13px; color: #6b7280; }
