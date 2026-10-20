@@ -32,14 +32,35 @@ const onAuthPill = async () => {
   router.push('/login');
 };
 
-const QUICK: Array<{ name: string; path: string }> = [
+interface QuickSub { name: string; path: string; query?: Record<string, string> }
+interface QuickItem { name: string; path: string; items?: QuickSub[] }
+const QUICK: QuickItem[] = [
   { name: '마이페이지', path: '/mypage' },
   { name: '결제하기', path: '/billing' },
+  // 부가서비스만 눌러서 펼친다 — 소식 묶음은 마이페이지 안으로 데려간다
+  {
+    name: '부가서비스',
+    path: '',
+    items: [
+      { name: '공지사항', path: '/mypage', query: { sec: 'notice' } },
+      { name: '이벤트', path: '/mypage', query: { sec: 'event' } },
+      { name: '업데이트', path: '/mypage', query: { sec: 'update' } },
+      { name: '포인트', path: '/points' },
+    ],
+  },
   { name: '고객센터', path: '/support' },
 ];
-const goQuick = (q: { name: string; path: string }) => {
+/** 펼쳐 둔 바로가기 이름 ('' 이면 닫힘) */
+const quickOpen = ref('');
+const goQuick = (q: QuickItem) => {
+  if (q.items?.length) { quickOpen.value = quickOpen.value === q.name ? '' : q.name; return; }
   if (!q.path) { notReady(q.name); return; }
   router.push(q.path);
+};
+const goQuickSub = (it: QuickSub) => {
+  quickOpen.value = '';
+  if (!it.path) { notReady(it.name); return; }
+  router.push({ path: it.path, query: it.query });
 };
 
 // 머리글의 선물상자처럼 '?sec=event' 로 들어오면 그 묶음으로 내려간다
@@ -80,10 +101,18 @@ onMounted(() => {
         </div>
       </div>
 
+      <div v-if="quickOpen" class="quick-veil" @click="quickOpen = ''" />
       <div class="quick">
-        <button v-for="q in QUICK" :key="q.name" type="button" class="quick-item" @click="goQuick(q)">
-          {{ q.name }}
-        </button>
+        <div v-for="q in QUICK" :key="q.name" class="quick-cell">
+          <button type="button" class="quick-item" @click="goQuick(q)">
+            {{ q.name }}<i v-if="q.items" class="quick-caret">{{ quickOpen === q.name ? '▴' : '▾' }}</i>
+          </button>
+          <ul v-if="q.items && quickOpen === q.name" class="quick-menu">
+            <li v-for="it in q.items" :key="it.name">
+              <button type="button" @click="goQuickSub(it)">{{ it.name }}</button>
+            </li>
+          </ul>
+        </div>
       </div>
       </section>
     </div>

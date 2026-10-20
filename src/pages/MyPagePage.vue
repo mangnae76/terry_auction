@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // MYPAGE — 더보기의 바로가기에서 들어온다.
 // 선정물건·계정 자리를 카드로 모아 둔다. 건수는 실제 물건 자료에서 센다.
-import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import { useAuthStore } from '../stores/authStore';
@@ -13,6 +13,7 @@ import MyPageCards from '../components/MyPageCards.vue';
 import { EVENTS, EVENT_BANNERS, NOTICES, UPDATES } from '../services/boardNews';
 
 const router = useRouter();
+const route = useRoute();
 const auth = useAuthStore();
 
 /** 아이디 — 로그인에 쓰는 메일의 앞쪽 */
@@ -20,6 +21,15 @@ const loginId = computed(() => (auth.email ?? '').split('@')[0] || '-');
 /** 등급 — 결제 누계를 아직 들고 있지 않아 모두 첫 등급에서 시작한다 */
 const grade = POINT_GRADES[0];
 const myPoint = 0;
+
+// 바로가기에서 '?sec=notice' 처럼 들어오면 그 묶음으로 내려간다
+onMounted(() => {
+  const sec = String(route.query.sec ?? '');
+  if (!sec) return;
+  window.setTimeout(() => {
+    document.querySelector(`[data-sec="${sec}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
+});
 
 const toastText = ref('');
 /** 아직 화면이 없는 자리 — 안내만 띄운다 */
@@ -65,7 +75,7 @@ const notReady = (what: string) => {
 
       <!-- 소식 -->
       <h2 class="myp-h2">소식</h2>
-      <section class="myp-news">
+      <section class="myp-news" data-sec="notice">
         <h3 class="myp-news-h">공지사항<i class="dot" /></h3>
         <button v-for="(n, i) in NOTICES" :key="`n${i}`" type="button" class="myp-row" @click="notReady('공지사항')">
           <span v-if="n.star" class="star">✦</span><span v-else class="tag">{{ n.tag }}</span>
@@ -73,7 +83,7 @@ const notReady = (what: string) => {
         </button>
       </section>
 
-      <section class="myp-news">
+      <section class="myp-news" data-sec="event">
         <h3 class="myp-news-h">이벤트</h3>
         <button v-for="(e, i) in EVENTS" :key="`e${i}`" type="button" class="myp-row" @click="notReady('이벤트')">
           <span class="tag">{{ e.tag }}</span><span class="txt">{{ e.text }}</span>
@@ -92,7 +102,7 @@ const notReady = (what: string) => {
         </button>
       </section>
 
-      <section class="myp-news">
+      <section class="myp-news" data-sec="update">
         <h3 class="myp-news-h">업데이트</h3>
         <button v-for="(u, i) in UPDATES" :key="`u${i}`" type="button" class="myp-row" @click="notReady('업데이트')">
           <span class="tag">{{ u.tag }}</span><span class="txt">{{ u.text }}</span>
@@ -165,7 +175,8 @@ const notReady = (what: string) => {
 .myp-h2 { margin: 0 2px 8px; font-size: 14px; font-weight: 800; color: #111827; }
 
 /* 소식 */
-.myp-news { background: #fff; border: 1px solid #e8ebf1; border-radius: 12px; padding: 12px 13px; margin-bottom: 8px; }
+/* 바로가기로 내려올 때 머리글에 가리지 않게 */
+.myp-news { scroll-margin-top: 64px; background: #fff; border: 1px solid #e8ebf1; border-radius: 12px; padding: 12px 13px; margin-bottom: 8px; }
 .myp-news-h {
   margin: 0 0 6px; display: flex; align-items: center; gap: 4px;
   font-size: 13px; font-weight: 800; color: #111827;
