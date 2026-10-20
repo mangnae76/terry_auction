@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import MyPageCards from '../components/MyPageCards.vue';
+import EventBanner from '../components/EventBanner.vue';
 import BillingBody from '../components/BillingBody.vue';
 import PointsBody from '../components/PointsBody.vue';
 import NewsBody from '../components/NewsBody.vue';
@@ -98,6 +99,9 @@ onMounted(() => {
       </nav>
       </section>
     </div>
+
+    <!-- 이벤트 배너 — 어느 탭을 보든 탭 바로 아래에 늘 있다 -->
+    <EventBanner />
 
     <!-- 고른 탭의 내용이 여기에 그대로 펼쳐진다 (다른 화면으로 가지 않는다) -->
     <div class="more-body">

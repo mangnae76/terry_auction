@@ -10,8 +10,10 @@ import {
   newBoardId,
   removeBoardPost,
   saveBoardPost,
+  scheduleState,
   subscribeBoardPosts,
   titleOf,
+  whenLabel,
   type BoardKind,
   type BoardPost,
 } from '../services/boardRepository';
@@ -21,7 +23,8 @@ const auth = useAuthStore();
 const who = computed(() => auth.nickname || auth.email || '');
 
 const KINDS: Array<{ key: BoardKind; label: string; hint: string; tags: string[] }> = [
-  { key: 'event', label: '이벤트', hint: '진행 중인 이벤트 — 배너로 크게 띄울 수도 있다', tags: ['안내', '진행', '마감'] },
+  { key: 'banner', label: '이벤트 배너', hint: '앱 더보기의 모든 탭 맨 위에 돌아가며 뜬다 (3:1 그림)', tags: ['EVENT', '안내', '진행'] },
+  { key: 'event', label: '이벤트', hint: '공지 탭의 이벤트 목록에 줄로 들어간다', tags: ['안내', '진행', '마감'] },
   { key: 'notice', label: '공지사항', hint: '점검·정책처럼 알려야 하는 것', tags: ['안내', '점검', '중요'] },
   { key: 'update', label: '업데이트', hint: '새로 붙은 기능·고친 것', tags: ['신규', '기능', '개선'] },
 ];
@@ -46,10 +49,12 @@ const emptyPost = (kind: BoardKind): BoardPost => ({
   body: '',
   imageUrl: '',
   star: false,
-  banner: false,
+  banner: kind === 'banner',
   badge: 'EVENT',
   cta: '자세히 보기',
   period: '',
+  startAt: '',
+  endAt: '',
   order: Date.now(),
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -113,6 +118,7 @@ const save = async () => {
   const d = draft.value;
   if (!d) return;
   if (!d.title.trim()) { flash('제목을 적어 주세요.'); return; }
+  if (d.startAt && d.endAt && d.endAt <= d.startAt) { flash('내리는 때가 올리는 때보다 빠릅니다.'); return; }
   saving.value = true;
   try {
     await saveBoardPost({ ...d, title: d.title.trim(), body: (d.body ?? '').trim() });
@@ -172,8 +178,11 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 
     <div class="adm-body">
       <div class="adm-head">
-        <h1>공지 · 이벤트 · 업데이트</h1>
-        <p>여기서 올린 글이 앱의 <b>더보기 › 공지</b> 탭에 그대로 나갑니다. 하나도 없으면 기본 글이 대신 보입니다.</p>
+        <h1>배너 · 이벤트 · 공지 · 업데이트</h1>
+        <p>
+          <b>이벤트 배너</b>는 앱 더보기의 <b>모든 탭 맨 위</b>에 돌아가며 뜨고,
+          나머지는 <b>더보기 › 공지</b> 탭에 줄로 들어갑니다. 하나도 없으면 기본 글이 대신 보입니다.
+        </p>
       </div>
 
       <p v-if="err" class="adb-err">
@@ -195,9 +204,16 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             <span class="adb-tag" :class="{ star: p.star }">{{ p.star ? '✦' : (p.tag || '—') }}</span>
             <img v-if="p.imageUrl" :src="p.imageUrl" class="adb-thumb" alt="" />
             <span class="adb-txt">
-              <b>{{ titleOf(p) }}<em v-if="p.banner" class="adb-badge">배너</em></b>
+              <b>
+                {{ titleOf(p) }}
+                <em v-if="p.kind === 'event' && p.banner" class="adb-badge">배너</em>
+                <em :class="['adb-state', scheduleState(p)]">{{ scheduleState(p) }}</em>
+              </b>
               <small v-if="p.body">{{ p.body }}</small>
-              <small v-if="p.banner && p.period">{{ p.period }}</small>
+              <small v-if="p.startAt || p.endAt" class="adb-when">
+                {{ p.startAt ? whenLabel(p.startAt) : '바로' }} ~ {{ p.endAt ? whenLabel(p.endAt) : '계속' }}
+              </small>
+              <small v-else-if="p.period">{{ p.period }}</small>
             </span>
             <span class="adb-acts">
               <button type="button" @click="move(p, -1)" title="위로">▲</button>
@@ -249,13 +265,13 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           <label>
             <small>
               그림 <em>(없어도 됩니다)</em>
-              <b class="adb-spec">{{ draft.banner ? '배너 — 가로:세로 3:1 권장 (예 1200×400)' : '가로 1000px 안팎 권장' }}</b>
+              <b class="adb-spec">{{ draft.kind === 'banner' ? '배너 — 가로:세로 3:1 권장 (예 1200×400)' : '가로 1000px 안팎 권장' }}</b>
             </small>
             <span class="adb-img">
-              <img v-if="draft.imageUrl" :src="draft.imageUrl" :class="{ banner: draft.banner }" alt="" />
+              <img v-if="draft.imageUrl" :src="draft.imageUrl" :class="{ banner: draft.kind === 'banner' }" alt="" />
               <small v-if="imgSize" class="adb-imgsize">
                 올린 그림 {{ imgSize }}
-                <template v-if="draft.banner && imgRatio">· 비율 {{ imgRatio }}:1</template>
+                <template v-if="draft.kind === 'banner' && imgRatio">· 비율 {{ imgRatio }}:1</template>
               </small>
               <span class="adb-img-acts">
                 <label class="adb-file">
@@ -272,17 +288,24 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             맨 위에 붙박이로 둔다 (✦)
           </label>
 
-          <template v-if="draft.kind === 'event'">
-            <label class="adb-check">
-              <input v-model="draft.banner" type="checkbox" />
-              큰 배너로 띄운다 (이벤트 맨 위)
-            </label>
-            <template v-if="draft.banner">
-              <label><small>배지</small><input v-model="draft.badge" class="adb-input" placeholder="EVENT" /></label>
-              <label><small>기간</small><input v-model="draft.period" class="adb-input" placeholder="2026.10.01 ~ 10.31" /></label>
-              <label><small>단추 글</small><input v-model="draft.cta" class="adb-input" placeholder="자세히 보기" /></label>
-            </template>
+          <template v-if="draft.kind === 'banner'">
+            <label><small>배지</small><input v-model="draft.badge" class="adb-input" placeholder="EVENT" /></label>
+            <label><small>기간 글</small><input v-model="draft.period" class="adb-input" placeholder="2026.10.01 ~ 10.31" /></label>
+            <label><small>단추 글</small><input v-model="draft.cta" class="adb-input" placeholder="자세히 보기" /></label>
           </template>
+
+          <!-- 올리고 내리는 때 — 지금은 앱이 때를 보고 걸러 보여 주고, 나중에 서버가 같은 값을 본다 -->
+          <div class="adb-when-row">
+            <label>
+              <small>올릴 때 <em>(비우면 바로)</em></small>
+              <input v-model="draft.startAt" type="datetime-local" class="adb-input" />
+            </label>
+            <label>
+              <small>내릴 때 <em>(비우면 계속)</em></small>
+              <input v-model="draft.endAt" type="datetime-local" class="adb-input" />
+            </label>
+          </div>
+          <p class="adb-note">예약한 때가 되면 앱에서 저절로 올라오고 내려갑니다.</p>
         </div>
 
         <footer class="adb-box-foot">
@@ -360,6 +383,18 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   padding: 4px 8px; font-family: inherit; font-size: 11px; color: #4b5563; cursor: pointer;
 }
 .adb-acts .del { color: #c62828; border-color: #f0d4d4; }
+
+.adb-state {
+  margin-left: 6px; font-style: normal; font-size: 10px; font-weight: 800;
+  border-radius: 4px; padding: 2px 5px; background: #eef1f6; color: #6b7280;
+}
+.adb-state.게시중 { background: #e6f4ea; color: #1b7f3b; }
+.adb-state.예약 { background: #fff3e0; color: #b26a00; }
+.adb-state.종료 { background: #f1f3f8; color: #9ca3af; }
+.adb-when { color: #6b7280 !important; }
+.adb-when-row { display: flex; gap: 10px; }
+.adb-when-row label { flex: 1 1 0; min-width: 0; }
+.adb-note { margin: -4px 0 0; font-size: 11px; color: #9ca3af; }
 
 /* 쓰기 창 */
 .adb-modal {

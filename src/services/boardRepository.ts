@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 import { firestore, firestoreDisabledReason } from './firebase';
 
-export type BoardKind = 'event' | 'notice' | 'update';
+export type BoardKind = 'event' | 'notice' | 'update' | 'banner';
 
 export interface BoardPost {
   id: string;
@@ -30,13 +30,17 @@ export interface BoardPost {
   text?: string;
   /** 공지 맨 위에 붙박이로 둘 줄 */
   star?: boolean;
-  /** 이벤트에만 — 큰 배너로 띄울지 */
+  /** 옛 글 — 이벤트 안에서 배너로 띄우던 표시 (지금은 kind='banner' 로 따로 쓴다) */
   banner?: boolean;
   badge?: string;
   cta?: string;
   period?: string;
   /** 옛 배너 글의 설명 — 읽을 때만 쓴다 (지금은 본문을 쓴다) */
   desc?: string;
+  /** 올릴 때 — 비우면 바로. 'YYYY-MM-DDTHH:mm' (현지 시각) */
+  startAt?: string;
+  /** 내릴 때 — 비우면 계속 둔다 */
+  endAt?: string;
   /** 작은 것이 위로 */
   order: number;
   createdAt: string;
@@ -44,6 +48,34 @@ export interface BoardPost {
 }
 
 const COLLECTION = 'boardPosts';
+
+/** 지금 시각을 입력칸(datetime-local)과 같은 꼴로 — 이 꼴끼리는 글자 비교로도 앞뒤가 맞는다 */
+export const nowLocal = (): string => {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+};
+
+/**
+ * 지금 내보낼 글인가.
+ * 당분간은 앱에서 걸러 보여 준다 — 나중에 서버가 때맞춰 올리고 내리면 이 함수만 그쪽을 보면 된다.
+ */
+export const isLive = (p: BoardPost, now = nowLocal()): boolean => {
+  if (p.startAt && p.startAt > now) return false;
+  if (p.endAt && p.endAt < now) return false;
+  return true;
+};
+
+/** 운영 목록에 붙일 상태 — 예약 / 게시중 / 종료 */
+export const scheduleState = (p: BoardPost, now = nowLocal()): '예약' | '게시중' | '종료' => {
+  if (p.startAt && p.startAt > now) return '예약';
+  if (p.endAt && p.endAt < now) return '종료';
+  return '게시중';
+};
+
+/** 'YYYY-MM-DDTHH:mm' → '10.20 09:00' */
+export const whenLabel = (v?: string): string =>
+  v ? `${v.slice(5, 7)}.${v.slice(8, 10)} ${v.slice(11, 16)}` : '';
 
 /** 제목 — 옛 글(text)도 함께 읽는다 */
 export const titleOf = (p: BoardPost) => (p.title ?? '').trim() || (p.text ?? '').trim();
