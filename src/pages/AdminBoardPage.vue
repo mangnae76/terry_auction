@@ -10,6 +10,7 @@ import {
   newBoardId,
   removeBoardPost,
   saveBoardPost,
+  periodLabel,
   scheduleState,
   subscribeBoardPosts,
   titleOf,
@@ -352,7 +353,20 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 
           <template v-if="draft.kind === 'banner'">
             <label><small>배지</small><input v-model="draft.badge" class="adb-input" placeholder="EVENT" /></label>
-            <label><small>기간 글</small><input v-model="draft.period" class="adb-input" placeholder="2026.10.01 ~ 10.31" /></label>
+            <label>
+              <small>
+                기간 글 <em>(비우면 아래 예약한 때를 그대로 씁니다)</em>
+                <b v-if="periodLabel(draft.startAt, draft.endAt)" class="adb-spec">
+                  배너에 나갈 글 — {{ periodLabel(draft.startAt, draft.endAt) }}
+                </b>
+              </small>
+              <input
+                v-model="draft.period"
+                class="adb-input"
+                :disabled="!!periodLabel(draft.startAt, draft.endAt)"
+                placeholder="2026.10.01 ~ 10.31"
+              />
+            </label>
             <label><small>단추 글</small><input v-model="draft.cta" class="adb-input" placeholder="자세히 보기" /></label>
           </template>
 
@@ -495,6 +509,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   font-family: inherit; font-size: 13px; color: #111827;
 }
 .adb-input:focus { outline: none; border-color: #2a3f8f; }
+.adb-input:disabled { background: #f7f8fb; color: #9ca3af; }
 .adb-tags { display: flex; gap: 5px; }
 .adb-tagbtn {
   border: 1px solid #e3e8f0; border-radius: 999px; background: #fff;

@@ -4,7 +4,7 @@
 // 기본 글(boardNews)을 보여 준다 — 화면이 비어 보이지 않게.
 import { computed, ref } from 'vue';
 import { EVENTS, EVENT_BANNERS, NOTICES, UPDATES, type NewsRow } from './boardNews';
-import { isLive, nowLocal, subscribeBoardPosts, titleOf, type BoardPost } from './boardRepository';
+import { isLive, nowLocal, periodLabel, subscribeBoardPosts, titleOf, type BoardPost } from './boardRepository';
 
 const posts = ref<BoardPost[]>([]);
 let started = false;
@@ -52,7 +52,8 @@ export const useBoardFeed = () => {
         imageUrl: p.imageUrl,
         desc: p.body ?? p.desc ?? '',
         cta: p.cta || '자세히 보기',
-        period: p.period ?? '',
+        // 예약한 때가 있으면 그것을 그대로 보여 준다 — 손으로 적은 기간 글은 예약이 없을 때만
+        period: periodLabel(p.startAt, p.endAt) || p.period || '',
       }));
     }),
   };

@@ -77,6 +77,27 @@ export const scheduleState = (p: BoardPost, now = nowLocal()): '작성중' | '�
   return '게시중';
 };
 
+/**
+ * 예약한 때를 사람이 읽는 기간 글로 — '2026.10.01 ~ 10.31'.
+ * 같은 해면 뒤쪽 해는 적지 않고, 0시·23시59분처럼 뻔한 시각은 적지 않는다.
+ */
+export const periodLabel = (startAt?: string, endAt?: string): string => {
+  const ymd = (v: string) => v.slice(0, 10).replace(/-/g, '.');
+  const md = (v: string) => `${v.slice(5, 7)}.${v.slice(8, 10)}`;
+  const hm = (v: string, end: boolean) => {
+    const t = v.slice(11, 16);
+    if (!t || t === '00:00' || (end && t === '23:59')) return '';
+    return ` ${t}`;
+  };
+  if (startAt && endAt) {
+    const sameYear = startAt.slice(0, 4) === endAt.slice(0, 4);
+    return `${ymd(startAt)}${hm(startAt, false)} ~ ${sameYear ? md(endAt) : ymd(endAt)}${hm(endAt, true)}`;
+  }
+  if (startAt) return `${ymd(startAt)}${hm(startAt, false)} 부터`;
+  if (endAt) return `${ymd(endAt)}${hm(endAt, true)} 까지`;
+  return '';
+};
+
 /** 'YYYY-MM-DDTHH:mm' → '10.20 09:00' */
 export const whenLabel = (v?: string): string =>
   v ? `${v.slice(5, 7)}.${v.slice(8, 10)} ${v.slice(11, 16)}` : '';
