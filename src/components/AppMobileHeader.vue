@@ -20,13 +20,11 @@ const SHOW_PAY = true;
 /** 회원 등급·포인트 — 적립과 결제를 붙이기 전이라 첫 등급에서 시작한다 */
 const grade = POINT_GRADES[0];
 const myPoint = 0;
-const payCount = 0;
 /** 남은 이용 기간 — 결제 연동 전까지 임시로 적어 둔 값이다 */
 const planRest = '999일';
 /** 누르면 그 화면으로 간다 */
 const USER_FACTS = [
   { label: '보유포인트', value: `${myPoint.toLocaleString('ko-KR')} P`, path: '/point-history', point: true },
-  { label: '결제내역', value: `${payCount}건`, path: '/payments' },
   { label: '잔여기간', value: planRest, path: '/billing' },
 ];
 const goFact = (path: string) => {
