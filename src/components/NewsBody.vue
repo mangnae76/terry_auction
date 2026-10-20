@@ -1,36 +1,19 @@
 <script setup lang="ts">
 // 부가서비스 — 공지사항·이벤트·업데이트·포인트를 차례로 적는다.
 // 글은 services/boardNews·pointPolicy 에 있고 여기서는 그리기만 한다.
-import { computed, onUnmounted, ref } from 'vue';
+import { onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import ImageLightbox from './ImageLightbox.vue';
-import { useBoardFeed } from '../services/boardFeed';
-import { loadSeen, markSeen } from '../services/boardSeen';
-import type { NewsRow } from '../services/boardNews';
+import { useBoardFeed, useBoardNew } from '../services/boardFeed';
 
 /** 관리자가 올린 글 — 아직 없으면 코드의 기본 글을 쓴다 */
 const { events: EVENTS, notices: NOTICES, updates: UPDATES } = useBoardFeed();
 
 const router = useRouter();
 
-/* 새 글 알림 — 마지막으로 보고 간 때보다 늦은 글이 있으면 제목 옆에 빨간 점 */
-const seen = ref(loadSeen());
-const newestOf = (rows: NewsRow[]) =>
-  rows.reduce((m, r) => (r.postedAt && r.postedAt > m ? r.postedAt : m), '');
-const isNew = (kind: string, rows: NewsRow[]) => {
-  const newest = newestOf(rows);
-  return !!newest && newest > (seen.value[kind] ?? '');
-};
-// 보고 나갈 때 적어 둔다 — 보는 동안에는 무엇이 새 글인지 보여야 한다
-onUnmounted(() => {
-  markSeen('event', newestOf(EVENTS.value));
-  markSeen('notice', newestOf(NOTICES.value));
-  markSeen('update', newestOf(UPDATES.value));
-});
-
-const eventNew = computed(() => isNew('event', EVENTS.value));
-const noticeNew = computed(() => isNew('notice', NOTICES.value));
-const updateNew = computed(() => isNew('update', UPDATES.value));
+/* 새 글 알림 — 보는 동안에는 켜 두고, 탭을 떠날 때 본 것으로 적는다 */
+const { event: eventNew, notice: noticeNew, update: updateNew, markAllSeen } = useBoardNew();
+onUnmounted(markAllSeen);
 
 /** 크게 볼 그림 ('' 이면 닫힘) */
 const zoom = ref('');

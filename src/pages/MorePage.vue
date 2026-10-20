@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import MyPageCards from '../components/MyPageCards.vue';
 import EventBanner from '../components/EventBanner.vue';
+import { useBoardNew } from '../services/boardFeed';
 import BillingBody from '../components/BillingBody.vue';
 import PointsBody from '../components/PointsBody.vue';
 import NewsBody from '../components/NewsBody.vue';
@@ -47,6 +48,10 @@ const TABS = [
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
 const tab = ref<TabKey>('mypage');
+
+/** 탭 칸에 붙는 빨간 점 — 지금은 공지에 새 글이 있을 때 (다른 탭은 알릴 거리가 생기면 붙인다) */
+const { any: newsNew } = useBoardNew();
+const tabDot = (key: TabKey) => key === 'news' && newsNew.value;
 
 /** 배너의 '자세히 보기' — 그 이벤트 상세로 간다. 번호가 없으면 공지 탭의 이벤트 묶음으로 */
 const goEvents = (id: string) => {
@@ -104,7 +109,7 @@ onMounted(() => {
           type="button"
           :class="['quick-item', { on: tab === t.key }]"
           @click="tab = t.key"
-        >{{ t.label }}</button>
+        >{{ t.label }}<i v-if="tabDot(t.key)" class="quick-dot" /></button>
       </nav>
       </section>
     </div>
@@ -204,6 +209,11 @@ onMounted(() => {
 .quick-item:first-child { border-radius: 10px 0 0 10px; }
 .quick-item:last-child { border-radius: 0 10px 10px 0; }
 .quick-item.on { background: #2a3f8f; color: #fff; }
+/* 새 글 알림 — 글자 옆에 작은 빨간 점 */
+.quick-dot {
+  display: inline-block; width: 5px; height: 5px; margin-left: 3px;
+  vertical-align: top; border-radius: 50%; background: #ef4444;
+}
 /* 알림설정 알약 — 알릴 것이 있으면 점 하나 (머리글 종과 같은 뜻) */
 .pill-dot {
   display: inline-block; width: 5px; height: 5px; border-radius: 50%;

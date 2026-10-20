@@ -4,6 +4,7 @@
 // 기본 글(boardNews)을 보여 준다 — 화면이 비어 보이지 않게.
 import { computed, ref } from 'vue';
 import { EVENTS, EVENT_BANNERS, NOTICES, UPDATES, type NewsRow } from './boardNews';
+import { markSeen, useSeen } from './boardSeen';
 import {
   isLive,
   nowLocal,
@@ -23,6 +24,36 @@ let started = false;
 const now = ref(nowLocal());
 /** 열어 둔 화면도 같은 시계를 본다 (꼬리말이 때맞춰 바뀌도록) */
 export const boardNow = now;
+
+/**
+ * 새 글이 있는지 — 마지막으로 보고 간 때보다 늦은 글이 있으면 빨간 점을 띄운다.
+ * 공지 탭의 묶음마다, 그리고 더보기 탭 한 칸에 하나로 묶어서 쓴다.
+ */
+export const useBoardNew = () => {
+  const { events, notices, updates } = useBoardFeed();
+  const seen = useSeen();
+  const newestOf = (rows: NewsRow[]) =>
+    rows.reduce((m, r) => (r.postedAt && r.postedAt > m ? r.postedAt : m), '');
+  const isNew = (kind: string, rows: NewsRow[]) => {
+    const newest = newestOf(rows);
+    return !!newest && newest > (seen.value[kind] ?? '');
+  };
+  const event = computed(() => isNew('event', events.value));
+  const notice = computed(() => isNew('notice', notices.value));
+  const update = computed(() => isNew('update', updates.value));
+  return {
+    event,
+    notice,
+    update,
+    any: computed(() => event.value || notice.value || update.value),
+    /** 보고 나갈 때 — 세 묶음을 한꺼번에 본 것으로 적는다 */
+    markAllSeen: () => {
+      markSeen('event', newestOf(events.value));
+      markSeen('notice', newestOf(notices.value));
+      markSeen('update', newestOf(updates.value));
+    },
+  };
+};
 
 /** 글 하나 — 상세 보기 화면이 번호로 찾아 쓴다 */
 export const useBoardPost = (id: () => string) => {
