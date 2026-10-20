@@ -107,6 +107,8 @@ export interface PointBenefit {
   /** 아래 작은 글 */
   note: string;
   tone: 'violet' | 'navy' | 'blue';
+  /** 누르면 갈 곳. 비어 있으면 '준비 중' 안내만 띄운다 */
+  path: string;
 }
 
 export const POINT_BENEFITS: PointBenefit[] = [
@@ -115,23 +117,20 @@ export const POINT_BENEFITS: PointBenefit[] = [
     point: 'POINT : 1,000p',
     note: '＋ 3일 무료 ＋ 첫결제 이벤트 ＋ 무료 영상',
     tone: 'violet',
+    path: '/signup',
   },
   {
     when: '마이턴 옥션 앱 설치 시',
     point: 'POINT : 5,000p',
     note: '안드로이드앱 또는 iOS앱을 설치하고 로그인하시면 지급됩니다. (앱 출시 후 지급)',
     tone: 'navy',
+    path: '',
   },
   {
-    when: '예상배당표 오류 및 제보',
+    when: '정보 오류 및 제보',
     point: 'POINT : ~10,000p',
     note: '제보 내용에 따라 지급 포인트가 다릅니다.',
     tone: 'blue',
-  },
-  {
-    when: '경·공매 정보 오류 및 제보',
-    point: 'POINT : ~10,000p',
-    note: '제보 내용에 따라 지급 포인트가 다릅니다.',
-    tone: 'blue',
+    path: '',
   },
 ];

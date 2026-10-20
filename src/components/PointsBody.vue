@@ -1,20 +1,33 @@
 <script setup lang="ts">
 // 포인트 안내 — 소개·주의사항, 등급별 적립률, 혜택을 차례로 적는다.
 // 포인트 화면과 더보기의 포인트 탭이 같은 것을 쓴다.
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import AppToast from './AppToast.vue';
 import {
+  type PointBenefit,
   POINT_BENEFITS,
   POINT_CAUTIONS,
   POINT_GRADES,
   POINT_INTRO,
   POINT_NOTES,
 } from '../services/pointPolicy';
+
+const router = useRouter();
+const toastText = ref('');
+/** 혜택 칸 — 갈 곳이 있으면 그 화면으로, 없으면 준비 중이라고 말한다 */
+const goBenefit = (b: PointBenefit) => {
+  if (b.path) { router.push(b.path); return; }
+  toastText.value = `${b.when} — 준비 중입니다.`;
+  window.setTimeout(() => { toastText.value = ''; }, 1800);
+};
 </script>
 
 <template>
   <div class="pt-body">
       <!-- 1. 포인트 안내 -->
       <section data-sec="intro">
-        <h2 class="pt-pill">포인트 안내</h2>
+        <h2 class="pt-head">포인트 안내</h2>
         <section class="pt-blue">
           <div v-for="sec in POINT_INTRO" :key="sec.title" class="pt-blue-sec">
             <h3>{{ sec.title }}</h3>
@@ -37,7 +50,7 @@ import {
 
       <!-- 2. 회원등급 및 포인트적립률 -->
       <section data-sec="grade">
-        <h2 class="pt-pill">포인트 적립율 안내</h2>
+        <h2 class="pt-head">포인트 적립율 안내</h2>
         <p class="pt-pt1">※ 1pt당 1원 적용</p>
 
         <section v-for="g in POINT_GRADES" :key="g.key" class="pt-grade">
@@ -64,15 +77,23 @@ import {
 
       <!-- 3. 포인트 혜택 안내 -->
       <section data-sec="benefit">
-        <h2 class="pt-pill">포인트 혜택 안내</h2>
+        <h2 class="pt-head">포인트 혜택 안내</h2>
         <p class="pt-pt1">마이턴 옥션 회원님께 드리는 포인트 혜택</p>
-        <section v-for="b in POINT_BENEFITS" :key="b.when" :class="['pt-benefit', b.tone]">
+        <button
+          v-for="b in POINT_BENEFITS"
+          :key="b.when"
+          type="button"
+          :class="['pt-benefit', b.tone]"
+          @click="goBenefit(b)"
+        >
           <small>{{ b.when }}</small>
           <strong>{{ b.point }}</strong>
           <em>{{ b.note }}</em>
-        </section>
+          <i class="pt-benefit-go">›</i>
+        </button>
 
           </section>
+      <AppToast :visible="!!toastText" :text="toastText" />
     </div>
 </template>
 
@@ -105,12 +126,16 @@ import {
 }
 
 .pt-body { padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; }
+.pt-body > section { display: flex; flex-direction: column; gap: 10px; }
 
 /* 파란 알약 제목 */
-.pt-pill {
-  align-self: center; margin: 0 0 4px; padding: 9px 22px; border-radius: 12px;
-  background: #4a7bd8; color: #fff; font-size: 15px; font-weight: 800; letter-spacing: -0.3px;
+/* 묶음 머리글 — 파란 알약 대신 왼쪽에 굵은 막대를 세운다 */
+.pt-head {
+  margin: 4px 0 2px; padding-left: 10px;
+  border-left: 4px solid #2a3f8f; border-radius: 1px;
+  font-size: 15px; font-weight: 800; color: #1f3a72; letter-spacing: -0.3px;
 }
+section + section .pt-head { margin-top: 18px; }
 .pt-pt1 { margin: 0 2px 2px; font-size: 11px; color: #6b7280; }
 
 /* 파란 글상자 */
@@ -157,8 +182,17 @@ import {
 .pt-notes { margin: 0; padding-left: 18px; }
 .pt-notes li { font-size: 11.5px; line-height: 1.75; color: #4b5563; word-break: keep-all; }
 
-/* 혜택 */
-.pt-benefit { border-radius: 12px; padding: 14px 15px 13px; color: #fff; }
+/* 혜택 — 칸마다 사이를 띄우고, 누르면 그 자리로 간다 */
+.pt-benefit {
+  position: relative; display: block; width: 100%; text-align: left; cursor: pointer;
+  border: none; border-radius: 12px; padding: 14px 30px 13px 15px; color: #fff;
+  margin-bottom: 8px; font-family: inherit;
+}
+.pt-benefit:last-of-type { margin-bottom: 0; }
+.pt-benefit-go {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  font-style: normal; font-size: 18px; opacity: .6;
+}
 .pt-benefit.violet { background: linear-gradient(135deg, #7b86e8 0%, #6a74dd 100%); }
 .pt-benefit.navy { background: linear-gradient(135deg, #2b3566 0%, #1d2550 100%); }
 .pt-benefit.blue { background: linear-gradient(135deg, #4a7bd8 0%, #3a66bd 100%); }
