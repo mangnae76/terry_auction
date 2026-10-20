@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/authStore';
 import { MY_PAGE_ITEMS, type MyPageItem } from '../services/myPageMenu';
 import { useAlertBadge } from '../services/alertBadge';
 import { POINT_GRADES } from '../services/pointPolicy';
+import { PLAN_REST_DAYS } from '../services/billingPlans';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -20,12 +21,10 @@ const SHOW_PAY = true;
 /** 회원 등급·포인트 — 적립과 결제를 붙이기 전이라 첫 등급에서 시작한다 */
 const grade = POINT_GRADES[0];
 const myPoint = 0;
-/** 남은 이용 기간 — 결제 연동 전까지 임시로 적어 둔 값이다 */
-const planRest = '999일';
 /** 누르면 그 화면으로 간다 */
 const USER_FACTS = [
-  { label: '보유포인트', value: `${myPoint.toLocaleString('ko-KR')} P`, path: '/point-history', point: true },
-  { label: '잔여기간', value: planRest, path: '/billing' },
+  { label: '보유포인트', value: `${myPoint.toLocaleString('ko-KR')} P`, path: '/point-history', tone: 'blue' },
+  { label: '결제내역', value: `${PLAN_REST_DAYS}일`, path: '/payments', tone: 'orange' },
 ];
 const goFact = (path: string) => {
   menuOpen.value = false;
@@ -139,7 +138,7 @@ const onLogout = async () => {
                   <button v-if="f.path" type="button" class="amh-um-link" @click="goFact(f.path)">{{ f.label }}<i>›</i></button>
                   <template v-else>{{ f.label }}</template>
                 </dt>
-                <dd :class="{ point: f.point }">{{ f.value }}</dd>
+                <dd :class="f.tone">{{ f.value }}</dd>
               </template>
             </dl>
           </li>
@@ -274,7 +273,9 @@ const onLogout = async () => {
 /* 네 줄은 굵게 하지 않는다 — 이름과 등급만 도드라지게 둔다 */
 .amh-um-facts dt { font-size: 11px; color: #8a93a4; font-weight: 400; white-space: nowrap; }
 .amh-um-facts dd { margin: 0; font-size: 11.5px; color: #374151; font-weight: 400; text-align: right; }
-.amh-um-facts dd.point { color: #e8622a; }
+/* 포인트는 파랑, 남은 날은 주황 */
+.amh-um-facts dd.blue { color: #2b6df3; }
+.amh-um-facts dd.orange { color: #e8622a; }
 /* 누르면 그 화면으로 간다는 뜻 — 파란 글자에 꺾쇠를 붙인다 */
 .amh-um-link {
   border: none; background: transparent; padding: 0; cursor: pointer;

@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useAuctionStore } from '../stores/auctionStore';
 import { POINT_GRADES } from '../services/pointPolicy';
 import { TRIAL_DAYS } from '../services/trialInfo';
+import { PLAN_REST_DAYS } from '../services/billingPlans';
 import { propTypeName } from '../utils/propertyType';
 
 const router = useRouter();
@@ -129,7 +130,7 @@ const go = (c: Card) => {
           </div>
           <div class="myp-cell">
             <span class="myp-chip">결제 내역</span>
-            <button type="button" class="myp-plan" @click="router.push('/billing')">이용권 없음 ›</button>
+            <button type="button" class="myp-plan" @click="router.push('/payments')">{{ PLAN_REST_DAYS }}일 ›</button>
           </div>
         </div>
       </section>
@@ -224,9 +225,10 @@ const go = (c: Card) => {
   font-family: inherit; font-size: 17px; font-weight: 800; color: #e8622a;
 }
 .myp-point small { font-size: 11px; color: #6b7280; font-weight: 700; }
+/* 남은 날도 포인트와 같은 주황 */
 .myp-plan {
   border: none; background: transparent; padding: 0; cursor: pointer;
-  font-family: inherit; font-size: 13px; font-weight: 800; color: #111827;
+  font-family: inherit; font-size: 15px; font-weight: 800; color: #e8622a;
 }
 
 /* 묶음 제목 */

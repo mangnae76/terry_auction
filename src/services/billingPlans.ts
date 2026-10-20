@@ -36,6 +36,10 @@ export const OFF_LABELS = offPlans.map((p) => p.label).join('·');
 /** 한 달로 치면 얼마인지 — 깎인 값이 눈에 들어오게 같이 적는다 */
 export const perMonth = (p: Plan) => Math.round(p.price / p.months);
 
+/** 남은 이용 기간(일) — 결제 연동 전까지 쓰는 임시값.
+ *  만료일을 저장하기 시작하면 그 날짜로 셈해 이 값을 버린다. */
+export const PLAN_REST_DAYS = 999;
+
 /** 가입하면 바로 받는 것 — 회원가입 화면의 혜택 카드와 같은 내용 */
 export const TRIAL_DAYS = 3;
 export const WELCOME_POINT = 1_000;
