@@ -6,6 +6,8 @@ import { useRouter } from 'vue-router';
 import AppToast from './AppToast.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { propTypeName } from '../utils/propertyType';
+import { POINT_GRADES } from '../services/pointPolicy';
+import { PLAN_REST_DAYS } from '../services/billingPlans';
 
 const router = useRouter();
 const store = useAuctionStore();
@@ -35,6 +37,10 @@ const typeTally = computed(() => {
   }
   return [...by.entries()].sort((x, y) => y[1] - x[1]).map(([name, n]) => `${name} ${n}`);
 });
+
+/** 등급·포인트 — 쌓는 길을 아직 붙이지 않아 첫 등급과 0 으로 보인다 */
+const grade = POINT_GRADES[0];
+const myPoint = 0;
 
 interface Card {
   icon: string;
@@ -68,6 +74,7 @@ const PICK_CARDS = computed<Card[]>(() => [
 ]);
 
 const ACCOUNT_CARDS: Card[] = [
+  { icon: '🎁', title: '3일무료체험', desc: '무료로 먼저 써 보기', path: '/trial' },
   { icon: '🧾', title: '결제하기', desc: '이용 기간 고르기', path: '/billing' },
   { icon: '💳', title: '결제관리', desc: '내역·영수증 보기', path: '/payments' },
   { icon: '🅿️', title: '포인트내역', desc: '적립·사용 내역', path: '/point-history' },
@@ -88,7 +95,7 @@ const go = (c: Card) => {
 
 <template>
   <div class="mpc">
-    <h2 class="mpc-h2"><em>MY</em> 선정물건</h2>
+    <h2 class="mpc-h2">선정물건</h2>
     <div class="mpc-grid">
       <button
         v-for="c in PICK_CARDS"
@@ -110,7 +117,24 @@ const go = (c: Card) => {
       </button>
     </div>
 
-    <h2 class="mpc-h2">계정 관리</h2>
+    <h2 class="mpc-h2">계정관리</h2>
+
+    <!-- 내 자리 한눈에 — 누르면 그 화면으로 간다 -->
+    <div class="mpc-sum">
+      <button type="button" class="mpc-cell" @click="router.push({ path: '/points', query: { tab: 'grade' } })">
+        <span class="mpc-chip">{{ grade.name }} 회원</span>
+        <span :class="['mpc-badge', grade.tone]">{{ grade.name.slice(0, 1) }}</span>
+      </button>
+      <button type="button" class="mpc-cell" @click="router.push('/point-history')">
+        <span class="mpc-chip">누적 포인트</span>
+        <span class="mpc-val">{{ myPoint.toLocaleString('ko-KR') }} <small>P</small></span>
+      </button>
+      <button type="button" class="mpc-cell" @click="router.push('/payments')">
+        <span class="mpc-chip">결제 내역</span>
+        <span class="mpc-val">{{ PLAN_REST_DAYS }}일</span>
+      </button>
+    </div>
+
     <div class="mpc-grid">
       <button v-for="c in ACCOUNT_CARDS" :key="c.title" type="button" class="mpc-card" @click="go(c)">
         <span class="mpc-ico">{{ c.icon }}</span>
@@ -130,6 +154,32 @@ const go = (c: Card) => {
 .mpc-h2 { margin: 0 2px 8px; font-size: 14px; font-weight: 800; color: #111827; }
 .mpc-h2 em { font-style: normal; color: #4a5bb5; margin-right: 4px; }
 .mpc-h2 + .mpc-grid { margin-bottom: 18px; }
+
+/* 내 자리 세 칸 — 칸 전체가 단추다 */
+.mpc-sum {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px;
+  background: #fafbfe; border: 1px solid #e8ebf1; border-radius: 12px; padding: 10px 8px;
+}
+.mpc-cell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+  border: none; background: transparent; cursor: pointer;
+  padding: 6px 4px; border-radius: 8px; font-family: inherit;
+}
+.mpc-cell:hover { background: #f1f4fb; }
+.mpc-chip {
+  padding: 3px 9px; border-radius: 5px; background: #4a5bb5; color: #fff;
+  font-size: 10.5px; font-weight: 700; white-space: nowrap;
+}
+.mpc-badge {
+  width: 30px; height: 30px; border-radius: 8px; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800;
+}
+.mpc-badge.welcome { background: #b5d334; }
+.mpc-badge.silver { background: #b9bec9; }
+.mpc-badge.gold { background: #e8bb3d; }
+.mpc-badge.family { background: #7b6ad4; }
+.mpc-val { font-size: 16px; font-weight: 800; color: #e8622a; }
+.mpc-val small { font-size: 11px; color: #6b7280; font-weight: 700; }
 
 .mpc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
 /* 카드 전체가 단추다 — 꺾쇠는 '누를 수 있다'는 표시일 뿐, 어디를 눌러도 같이 간다.

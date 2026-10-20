@@ -4,6 +4,9 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import MyPageCards from '../components/MyPageCards.vue';
+import BillingBody from '../components/BillingBody.vue';
+import NewsBody from '../components/NewsBody.vue';
+import SupportBody from '../components/SupportBody.vue';
 import { useAuthStore } from '../stores/authStore';
 
 const router = useRouter();
@@ -18,8 +21,8 @@ const displayName = computed(() => {
 });
 
 const toast = ref('');
-// 마이페이지는 제 화면을 따로 둔다 (/mypage)
-const goMyPage = () => { router.push('/mypage'); };
+// 이름을 누르면 마이페이지 탭으로 — 더보기 안에 그대로 있다
+const goMyPage = () => { tab.value = 'mypage'; };
 const notReady = (what: string) => {
   toast.value = `${what} — 준비 중입니다.`;
   setTimeout(() => { toast.value = ''; }, 1600);
@@ -32,44 +35,26 @@ const onAuthPill = async () => {
   router.push('/login');
 };
 
-interface QuickSub { name: string; path: string; query?: Record<string, string> }
-interface QuickItem { name: string; path: string; items?: QuickSub[] }
-const QUICK: QuickItem[] = [
-  { name: '마이페이지', path: '/mypage' },
-  { name: '결제하기', path: '/billing' },
-  // 부가서비스만 눌러서 펼친다 — 소식 묶음은 마이페이지 안으로 데려간다
-  {
-    name: '부가서비스',
-    path: '',
-    items: [
-      { name: '공지사항', path: '/mypage', query: { sec: 'notice' } },
-      { name: '이벤트', path: '/mypage', query: { sec: 'event' } },
-      { name: '업데이트', path: '/mypage', query: { sec: 'update' } },
-      { name: '포인트', path: '/points' },
-    ],
-  },
-  { name: '고객센터', path: '/support' },
-];
-/** 펼쳐 둔 바로가기 이름 ('' 이면 닫힘) */
-const quickOpen = ref('');
-const goQuick = (q: QuickItem) => {
-  if (q.items?.length) { quickOpen.value = quickOpen.value === q.name ? '' : q.name; return; }
-  if (!q.path) { notReady(q.name); return; }
-  router.push(q.path);
-};
-const goQuickSub = (it: QuickSub) => {
-  quickOpen.value = '';
-  if (!it.path) { notReady(it.name); return; }
-  router.push({ path: it.path, query: it.query });
-};
+/** 더보기는 한 화면이다 — 탭을 누르면 그 내용이 아래에 펼쳐진다 */
+const TABS = [
+  { key: 'mypage', label: '마이페이지' },
+  { key: 'billing', label: '결제하기' },
+  { key: 'news', label: '부가서비스' },
+  { key: 'support', label: '고객센터' },
+] as const;
+type TabKey = (typeof TABS)[number]['key'];
+const tab = ref<TabKey>('mypage');
 
-// 머리글의 선물상자처럼 '?sec=event' 로 들어오면 그 묶음으로 내려간다
+// 다른 화면에서 '?tab=news&sec=event' 로 들어오면 그 탭을 열고 그 묶음으로 내려간다
 onMounted(() => {
+  const asked = String(route.query.tab ?? '');
+  if (TABS.some((t) => t.key === asked)) tab.value = asked as TabKey;
   const sec = String(route.query.sec ?? '');
   if (!sec) return;
+  tab.value = 'news';
   window.setTimeout(() => {
     document.querySelector(`[data-sec="${sec}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 60);
+  }, 80);
 });
 
 </script>
@@ -101,25 +86,24 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-if="quickOpen" class="quick-veil" @click="quickOpen = ''" />
-      <div class="quick">
-        <div v-for="q in QUICK" :key="q.name" class="quick-cell">
-          <button type="button" class="quick-item" @click="goQuick(q)">
-            {{ q.name }}<i v-if="q.items" class="quick-caret">{{ quickOpen === q.name ? '▴' : '▾' }}</i>
-          </button>
-          <ul v-if="q.items && quickOpen === q.name" class="quick-menu">
-            <li v-for="it in q.items" :key="it.name">
-              <button type="button" @click="goQuickSub(it)">{{ it.name }}</button>
-            </li>
-          </ul>
-        </div>
-      </div>
+      <nav class="quick">
+        <button
+          v-for="t in TABS"
+          :key="t.key"
+          type="button"
+          :class="['quick-item', { on: tab === t.key }]"
+          @click="tab = t.key"
+        >{{ t.label }}</button>
+      </nav>
       </section>
     </div>
 
-    <!-- 마이페이지 메뉴를 그대로 뿌린다 (MYPAGE 화면과 같은 카드) -->
+    <!-- 고른 탭의 내용이 여기에 그대로 펼쳐진다 (다른 화면으로 가지 않는다) -->
     <div class="more-body">
-      <MyPageCards />
+      <MyPageCards v-if="tab === 'mypage'" />
+      <BillingBody v-else-if="tab === 'billing'" />
+      <NewsBody v-else-if="tab === 'news'" />
+      <SupportBody v-else />
     </div>
 
     <p class="more-version">MyTurn Auction · v1.0</p>
@@ -195,36 +179,17 @@ onMounted(() => {
   position: relative; display: grid; grid-template-columns: repeat(4, 1fr);
   margin-top: 12px; border: 1px solid #eef0f5; border-radius: 10px; background: #fff;
 }
-.quick-cell { position: relative; }
-.quick-cell + .quick-cell { border-left: 1px solid #eef0f5; }
-.quick-cell:first-child .quick-item { border-radius: 10px 0 0 10px; }
-.quick-cell:last-child .quick-item { border-radius: 0 10px 10px 0; }
 .quick-item {
-  width: 100%; border: none; background: #fff; padding: 11px 2px; cursor: pointer;
-  font-size: 12px; font-weight: 700; color: #374151;
+  position: relative; width: 100%; border: none; border-radius: 0; background: #fff;
+  padding: 11px 2px 12px; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 700; color: #9aa6c4;
 }
-.quick-caret { font-style: normal; font-size: 9px; color: #9aa6c4; margin-left: 3px; }
-/* 펼친 줄 — 바로가기 칸 바로 아래에 붙는다 */
-.quick-veil { position: fixed; inset: 0; z-index: 14; }
-.quick-menu {
-  /* 칸보다 넓게 — 글자가 접히지 않게 둔다 */
-  position: absolute; top: calc(100% + 4px); left: -1px; z-index: 15;
-  min-width: 152px; white-space: nowrap;
-  list-style: none; margin: 0; padding: 4px;
-  background: #fff; border: 1px solid #e3e8f0; border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(17, 24, 39, .12);
+.quick-item.on { color: #1f3a72; }
+/* 고른 칸의 밑줄은 ::after 막대로 — 전역 button 둥근 모서리에 말리지 않는다 */
+.quick-item.on::after {
+  content: ''; position: absolute; left: 10%; right: 10%; bottom: 0;
+  height: 3px; background: #1f3a72; border-radius: 2px;
 }
-/* 줄은 왼쪽에서 한 칸 들여 적는다 */
-.quick-menu button {
-  width: 100%; border: none; background: transparent; border-radius: 6px;
-  padding: 8px 8px 8px 12px; text-align: left;
-  font-family: inherit; font-size: 12px; font-weight: 700; color: #374151; cursor: pointer;
-}
-.quick-menu button:hover { background: #f4f6fb; }
-/* 묶음을 가르는 가는 선 */
-.quick-menu li.split { margin-top: 5px; padding-top: 5px; border-top: 1px solid #eef1f6; }
-/* 아직 자리를 정하지 못한 줄 */
-.quick-menu button.mark { color: #d2434f; }
 /* 알림설정 알약 — 알릴 것이 있으면 점 하나 (머리글 종과 같은 뜻) */
 .pill-dot {
   display: inline-block; width: 5px; height: 5px; border-radius: 50%;
