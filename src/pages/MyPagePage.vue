@@ -68,29 +68,29 @@ interface Card {
 const PICK_CARDS = computed<Card[]>(() => [
   {
     icon: '⭐', title: '나의 선정물건', lead: true,
-    desc: '내가 등록한 물건을 한자리에서 관리합니다.',
+    desc: '내가 등록한 물건을 한자리에서',
     path: '/auctions/watchlist',
     tally: `경매 ${auctionCount.value}건 · 공매 ${publicSaleCount.value}건`,
     tallies: typeTally.value,
   },
-  { icon: '📦', title: '보관함', desc: '잠시 내려놓은 물건 — 꺼내면 단계 그대로 돌아옵니다.', path: '/archive' },
-  { icon: '🗑️', title: '휴지통', desc: '치운 물건 — 되살리거나 완전히 지웁니다.', path: '/trash' },
-  { icon: '🔔', title: '알림설정', desc: '기한·일정 알림을 하나씩 켜고 끕니다.', path: '/notifications' },
-  { icon: '🏢', title: '중개업체 관리', desc: '상호·지역·연락처·평가를 더하고 뺍니다.', path: '/agencies' },
+  { icon: '📦', title: '보관함', desc: '잠시 내려놓은 물건', path: '/archive' },
+  { icon: '🗑️', title: '휴지통', desc: '치운 물건 되살리기', path: '/trash' },
+  { icon: '🔔', title: '알림설정', desc: '기한·일정 알림', path: '/notifications' },
+  { icon: '🏢', title: '중개업체 관리', desc: '상호·연락처 관리', path: '/agencies' },
   {
     icon: '📅', title: '입찰달력',
-    desc: '선정물건의 입찰 일정을 달력에 표시해 드립니다.',
+    desc: '입찰 일정 달력',
     path: '/bid-calendar',
     tally: `오늘 ${bidToday.value}건 · 이달 ${bidMonth.value}건`,
   },
 ]);
 
 const ACCOUNT_CARDS: Card[] = [
-  { icon: '🧾', title: '결제하기', desc: '이용 기간을 고르고 결제를 진행합니다.', path: '/billing' },
-  { icon: '💳', title: '결제관리', desc: '나의 결제금액과 결제기간을 한눈에 볼 수 있습니다.', path: '/payments' },
-  { icon: '🅿️', title: '포인트내역', desc: '등급과 가진 포인트, 적립·사용 내역을 봅니다.', path: '/point-history' },
-  { icon: '🙍', title: '정보수정', desc: '가입된 나의 개인정보를 다시 수정할 수 있습니다.', path: '/profile' },
-  { icon: '🚪', title: '회원탈퇴', desc: '탈퇴 시 회원님의 모든 정보는 삭제됩니다.', path: '/withdraw' },
+  { icon: '🧾', title: '결제하기', desc: '이용 기간 고르기', path: '/billing' },
+  { icon: '💳', title: '결제관리', desc: '내역·영수증 보기', path: '/payments' },
+  { icon: '🅿️', title: '포인트내역', desc: '적립·사용 내역', path: '/point-history' },
+  { icon: '🙍', title: '정보수정', desc: '닉네임·개인정보', path: '/profile' },
+  { icon: '🚪', title: '회원탈퇴', desc: '계정·자료 삭제', path: '/withdraw' },
 ];
 
 const toastText = ref('');
@@ -236,12 +236,14 @@ const go = (c: Card) => {
 
 /* 카드 */
 .myp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
-/* 카드 전체가 단추다 — 꺾쇠는 '누를 수 있다'는 표시일 뿐, 어디를 눌러도 같이 간다 */
+/* 카드 전체가 단추다 — 꺾쇠는 '누를 수 있다'는 표시일 뿐, 어디를 눌러도 같이 간다.
+   글이 한 줄이라 그림과 글의 세로 가운데를 맞춘다 */
 .myp-card {
-  position: relative; display: flex; align-items: flex-start; gap: 9px;
+  position: relative; display: flex; align-items: center; gap: 9px;
   text-align: left; cursor: pointer;
-  background: #fff; border: 1px solid #e8ebf1; border-radius: 12px; padding: 12px 20px 12px 11px;
+  background: #fff; border: 1px solid #e8ebf1; border-radius: 12px; padding: 11px 20px 11px 11px;
 }
+.myp-card.lead { align-items: flex-start; }
 .myp-go {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
   font-style: normal; font-size: 16px; color: #c3cbdd; pointer-events: none;
@@ -253,7 +255,12 @@ const go = (c: Card) => {
 }
 .myp-card-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .myp-card-txt strong { font-size: 12.5px; font-weight: 800; color: #111827; }
-.myp-card-txt small { font-size: 10.5px; line-height: 1.55; color: #8a93a4; word-break: keep-all; }
+/* 설명은 한 줄로 — 칸을 넘치면 … 로 줄인다 */
+.myp-card-txt small {
+  font-size: 10.5px; line-height: 1.5; color: #8a93a4;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.myp-card.lead .myp-card-txt small { white-space: normal; word-break: keep-all; }
 .myp-tally {
   align-self: flex-start; margin-top: 4px; padding: 3px 8px; border-radius: 5px;
   background: #eef2fc; font-style: normal; font-size: 11px; font-weight: 800; color: #2a3f8f;
