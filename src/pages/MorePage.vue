@@ -172,10 +172,10 @@ onMounted(() => {
 
 .pill {
   border: 1px solid #e3e7ef; background: #f7f8fb; border-radius: 999px;
-  /* 다섯이 남은 자리를 똑같이 나눠 가진다 — 칸도 사이도 일정하다 */
-  flex: 1 1 0; min-width: 0; box-sizing: border-box;
-  padding: 5px 0; font-size: 9.5px; font-weight: 700; color: #4b5563; cursor: pointer;
-  text-align: center; white-space: nowrap; letter-spacing: -0.4px;
+  /* 글자만큼만 — 둘만 남아 자리를 나눠 가지니 지나치게 넓어졌다 */
+  flex: 0 0 auto; box-sizing: border-box;
+  padding: 5px 11px; font-size: 10px; font-weight: 700; color: #4b5563; cursor: pointer;
+  text-align: center; white-space: nowrap; letter-spacing: -0.3px;
 }
 .quick {
   position: relative; display: grid; grid-template-columns: repeat(5, 1fr);
