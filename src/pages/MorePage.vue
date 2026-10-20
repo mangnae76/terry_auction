@@ -81,7 +81,6 @@ onMounted(() => {
             {{ displayName }}<span class="arr">›</span>
           </button>
           <button type="button" class="pill" @click="onAuthPill">{{ authStore.isLoggedIn ? '로그아웃' : '로그인' }}</button>
-          <button type="button" class="pill" @click="router.push('/profile')">내 정보 수정</button>
           <button type="button" class="pill last" @click="notReady('인증/보안')">인증·보안</button>
         </div>
       </div>
