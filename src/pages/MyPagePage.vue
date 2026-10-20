@@ -149,9 +149,9 @@ const go = (c: Card) => {
           <span class="myp-card-txt">
             <strong>{{ c.title }}</strong>
             <small>{{ c.desc }}</small>
-            <em v-if="c.tally" class="myp-tally">{{ c.tally }}</em>
-            <span v-if="c.tallies?.length" class="myp-types">
-              <i v-for="t in c.tallies" :key="t">{{ t }}</i>
+            <span v-if="c.tally || c.tallies?.length" class="myp-tallyline">
+              <em v-if="c.tally" class="myp-tally">{{ c.tally }}</em>
+              <i v-for="t in c.tallies" :key="t" class="myp-type">{{ t }}</i>
             </span>
           </span>
           <i class="myp-go">›</i>
@@ -263,15 +263,15 @@ const go = (c: Card) => {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .myp-card.lead .myp-card-txt small { white-space: normal; word-break: keep-all; }
+/* 건수 줄 — 경매·공매 수와 종류별 수가 한 줄에 선다 (모자라면 다음 줄로) */
+.myp-tallyline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 5px; }
 .myp-tally {
-  align-self: flex-start; margin-top: 4px; padding: 3px 8px; border-radius: 5px;
+  padding: 3px 8px; border-radius: 5px;
   background: #eef2fc; font-style: normal; font-size: 11px; font-weight: 800; color: #2a3f8f;
 }
-/* 종류별 건수 — 자리가 모자라면 다음 줄로 */
-.myp-types { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.myp-types i {
+.myp-type {
   font-style: normal; font-size: 10.5px; font-weight: 700; color: #4b5563;
-  background: #f3f5fa; border-radius: 4px; padding: 2px 6px;
+  background: #f3f5fa; border-radius: 4px; padding: 3px 6px;
 }
 
 /* 무료체험 */
