@@ -97,7 +97,7 @@ const submit = () => {
       <!-- 셈하기 -->
       <section class="bil-card sum">
         <div class="bil-row"><span class="lab">선택항목</span><span class="val"><em class="pill">{{ picked.label }} 1개</em></span></div>
-        <div class="bil-row"><span class="lab">내 포인트</span><span class="val">{{ money(myPoint) }} point <small>(사용 후 : {{ money(restPoint) }} point)</small></span></div>
+        <div class="bil-row"><span class="lab">내 포인트</span><span class="val point-val">{{ money(myPoint) }} point <small>(사용 후 : {{ money(restPoint) }} point)</small></span></div>
         <div class="bil-row">
           <span class="lab">포인트 사용</span>
           <span class="val point">
@@ -189,6 +189,9 @@ const submit = () => {
 .bil-row .pill { font-style: normal; background: #eef2fb; border-radius: 999px; padding: 2px 8px; font-size: 11.5px; font-weight: 700; color: #3850c2; }
 .bil-row.total .lab, .bil-row.total .val { color: #e0574a; font-weight: 800; font-size: 14px; }
 .bil-plan-sub { display: block; margin-top: 3px; font-size: 11px; color: #6b7280; }
+/* 포인트는 주황 — 다른 화면의 포인트 숫자와 같은 색 */
+.bil-row .val.point-val { color: #e8622a; }
+.bil-row .val.point-val small { color: #e8622a; opacity: .8; }
 .bil-row .val.point { display: flex; align-items: center; gap: 6px; }
 .bil-input {
   flex: 1 1 auto; min-width: 0; box-sizing: border-box; height: 28px;
