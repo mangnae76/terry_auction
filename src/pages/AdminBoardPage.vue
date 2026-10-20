@@ -444,6 +444,12 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
             </span>
           </label>
 
+          <!-- 여기서부터가 목록·상세에 나가는 내용이다 -->
+          <div v-if="draft.kind === 'banner'" class="adb-sec">
+            <h4>이벤트 상세 내용</h4>
+            <span class="adb-sec-note">{{ draft.alsoEvent ? '목록과 상세 보기에 나갑니다' : "'목록' 을 켜야 나갑니다" }}</span>
+          </div>
+
           <label>
             <small>제목 <em v-if="draft.kind === 'banner'">(배너·목록이 함께 씁니다)</em></small>
             <input v-model="draft.title" class="adb-input" placeholder="목록에 적히는 한 줄" />
@@ -528,11 +534,6 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
               배너에 나갈 기간 — {{ autoPeriod }}
             </p>
 
-            <!-- 목록·상세에 나가는 것들 -->
-            <div class="adb-sec">
-              <h4>이벤트 상세 내용</h4>
-              <span class="adb-sec-note">{{ draft.alsoEvent ? '목록과 상세 보기에 나갑니다' : "'목록' 을 켜야 나갑니다" }}</span>
-            </div>
             <div class="adb-when-row">
               <label>
                 <small>이벤트 시작</small>
@@ -749,7 +750,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 /* 묶음 머리 — 예약 / 이벤트 상세 내용 */
 .adb-sec {
   display: flex; align-items: center; gap: 10px;
-  border-top: 1px solid #eef1f6; margin-top: 4px; padding-top: 14px;
+  border-top: 1px solid #dde3ee; margin-top: 6px; padding-top: 16px;
 }
 .adb-sec.first { border-top: none; margin-top: 0; padding-top: 0; }
 .adb-sec h4 { margin: 0; font-size: 13.5px; font-weight: 800; color: #111827; }
