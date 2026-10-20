@@ -1,12 +1,42 @@
 <script setup lang="ts">
 // 부가서비스 — 공지사항·이벤트·업데이트·포인트를 차례로 적는다.
 // 글은 services/boardNews·pointPolicy 에 있고 여기서는 그리기만 한다.
-import { ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import AppToast from './AppToast.vue';
 import { useBoardFeed } from '../services/boardFeed';
 
 /** 관리자가 올린 글 — 아직 없으면 코드의 기본 글을 쓴다 */
 const { events: EVENTS, notices: NOTICES, updates: UPDATES, banners: EVENT_BANNERS } = useBoardFeed();
+
+/* 배너 넘기기 — 여러 장이면 스스로 돌고, 손으로도 넘긴다 */
+const bannerAt = ref(0);
+let timer = 0;
+const startRoll = () => {
+  window.clearInterval(timer);
+  if (EVENT_BANNERS.value.length < 2) return;
+  timer = window.setInterval(() => {
+    bannerAt.value = (bannerAt.value + 1) % EVENT_BANNERS.value.length;
+  }, 5000);
+};
+const goBanner = (i: number) => { bannerAt.value = i; startRoll(); };
+let touchX = 0;
+const onTouchStart = (e: TouchEvent) => { touchX = e.changedTouches[0]?.clientX ?? 0; };
+const onTouchEnd = (e: TouchEvent) => {
+  const dx = (e.changedTouches[0]?.clientX ?? 0) - touchX;
+  const n = EVENT_BANNERS.value.length;
+  if (n < 2 || Math.abs(dx) < 40) return;
+  goBanner((bannerAt.value + (dx < 0 ? 1 : n - 1)) % n);
+};
+onMounted(startRoll);
+watch(() => EVENT_BANNERS.value.length, () => { bannerAt.value = 0; startRoll(); });
+onUnmounted(() => window.clearInterval(timer));
+
+/** 펼쳐 둔 줄 — 본문이나 그림이 있을 때만 열린다 */
+const openRow = ref('');
+const toggleRow = (key: string, row: { body?: string; imageUrl?: string }) => {
+  if (!row.body && !row.imageUrl) return;
+  openRow.value = openRow.value === key ? '' : key;
+};
 
 const toastText = ref('');
 const notReady = (what: string) => {
@@ -19,30 +49,78 @@ const notReady = (what: string) => {
   <div class="nws-wrap">
     <section class="nws-card" data-sec="event">
       <h3 class="nws-h">이벤트</h3>
-      <button v-for="(e, i) in EVENTS" :key="`e${i}`" type="button" class="nws-row" @click="notReady('이벤트')">
-        <span class="tag">{{ e.tag }}</span><span class="txt">{{ e.text }}</span>
-      </button>
-      <button v-for="(b, i) in EVENT_BANNERS" :key="`b${i}`" type="button" class="nws-banner" @click="notReady('이벤트')">
-        <span class="badge">{{ b.badge }}</span>
-        <strong>{{ b.title }}</strong>
-        <small>{{ b.desc }}</small>
-        <span class="foot"><em>{{ b.period }}</em><i>{{ b.cta }} ›</i></span>
-      </button>
+      <!-- 배너 — 여러 장이면 옆으로 넘겨 보고, 점으로 몇 장인지 알린다 -->
+      <div v-if="EVENT_BANNERS.length" class="nws-bwrap">
+        <div
+          class="nws-btrack"
+          @touchstart.passive="onTouchStart"
+          @touchend.passive="onTouchEnd"
+        >
+          <button
+            v-for="(b, i) in EVENT_BANNERS"
+            v-show="i === bannerAt"
+            :key="`b${i}`"
+            type="button"
+            class="nws-banner"
+            @click="notReady('이벤트')"
+          >
+            <img v-if="b.imageUrl" :src="b.imageUrl" class="nws-bimg" alt="" />
+            <span class="badge">{{ b.badge }}</span>
+            <strong>{{ b.title }}</strong>
+            <small v-if="b.desc">{{ b.desc }}</small>
+            <span class="foot"><em>{{ b.period }}</em><i>{{ b.cta }} ›</i></span>
+          </button>
+        </div>
+        <div v-if="EVENT_BANNERS.length > 1" class="nws-dots">
+          <button
+            v-for="(_b, i) in EVENT_BANNERS"
+            :key="`d${i}`"
+            type="button"
+            :class="['nws-dot', { on: i === bannerAt }]"
+            :aria-label="`${i + 1}번째 이벤트`"
+            @click="goBanner(i)"
+          />
+        </div>
+      </div>
+      <template v-for="(e, i) in EVENTS" :key="`e${i}`">
+        <button type="button" class="nws-row" @click="toggleRow(`e${i}`, e)">
+          <span class="tag">{{ e.tag }}</span><span class="txt">{{ e.text }}</span>
+          <i v-if="e.body || e.imageUrl" class="chev">{{ openRow === `e${i}` ? '▴' : '▾' }}</i>
+        </button>
+        <div v-if="openRow === `e${i}`" class="nws-open">
+          <img v-if="e.imageUrl" :src="e.imageUrl" alt="" />
+          <p v-if="e.body">{{ e.body }}</p>
+        </div>
+      </template>
     </section>
 
     <section class="nws-card" data-sec="notice">
       <h3 class="nws-h">공지사항<i class="dot" /></h3>
-      <button v-for="(n, i) in NOTICES" :key="`n${i}`" type="button" class="nws-row" @click="notReady('공지사항')">
+      <template v-for="(n, i) in NOTICES" :key="`n${i}`">
+        <button type="button" class="nws-row" @click="toggleRow(`n${i}`, n)">
         <span v-if="n.star" class="star">✦</span><span v-else class="tag">{{ n.tag }}</span>
-        <span class="txt">{{ n.text }}</span>
-      </button>
+          <span class="txt">{{ n.text }}</span>
+          <i v-if="n.body || n.imageUrl" class="chev">{{ openRow === `n${i}` ? '▴' : '▾' }}</i>
+        </button>
+        <div v-if="openRow === `n${i}`" class="nws-open">
+          <img v-if="n.imageUrl" :src="n.imageUrl" alt="" />
+          <p v-if="n.body">{{ n.body }}</p>
+        </div>
+      </template>
     </section>
 
     <section class="nws-card" data-sec="update">
       <h3 class="nws-h">업데이트</h3>
-      <button v-for="(u, i) in UPDATES" :key="`u${i}`" type="button" class="nws-row" @click="notReady('업데이트')">
-        <span class="tag">{{ u.tag }}</span><span class="txt">{{ u.text }}</span>
-      </button>
+      <template v-for="(u, i) in UPDATES" :key="`u${i}`">
+        <button type="button" class="nws-row" @click="toggleRow(`u${i}`, u)">
+          <span class="tag">{{ u.tag }}</span><span class="txt">{{ u.text }}</span>
+          <i v-if="u.body || u.imageUrl" class="chev">{{ openRow === `u${i}` ? '▴' : '▾' }}</i>
+        </button>
+        <div v-if="openRow === `u${i}`" class="nws-open">
+          <img v-if="u.imageUrl" :src="u.imageUrl" alt="" />
+          <p v-if="u.body">{{ u.body }}</p>
+        </div>
+      </template>
     </section>
 
     <AppToast :visible="!!toastText" :text="toastText" />
@@ -75,8 +153,26 @@ const notReady = (what: string) => {
 }
 .nws-row .star { flex: none; color: #2b6df3; font-size: 12px; }
 .nws-row .txt { flex: 1 1 auto; min-width: 0; font-size: 11.5px; color: #374151; word-break: keep-all; }
+.nws-row .chev { flex: none; font-style: normal; font-size: 10px; color: #9aa6c4; }
+/* 펼친 글 */
+.nws-open { padding: 4px 0 10px 37px; }
+.nws-open img { width: 100%; border-radius: 8px; margin-bottom: 7px; }
+.nws-open p {
+  margin: 0; font-size: 11.5px; line-height: 1.75; color: #4b5563;
+  white-space: pre-line; word-break: keep-all;
+}
+/* 배너 묶음 */
+.nws-bwrap { margin-top: 8px; }
+.nws-btrack { position: relative; }
+.nws-dots { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
+.nws-dot {
+  width: 7px; height: 7px; padding: 0; border: none; border-radius: 50%;
+  background: #d7dced; cursor: pointer;
+}
+.nws-dot.on { background: #2a3f8f; width: 18px; border-radius: 4px; }
+.nws-bimg { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
 .nws-banner {
-  width: 100%; margin-top: 8px; text-align: left; cursor: pointer;
+  width: 100%; text-align: left; cursor: pointer;
   border: none; border-radius: 10px; padding: 13px 14px;
   background: linear-gradient(135deg, #2f4fa8 0%, #27408f 100%); color: #fff;
   display: flex; flex-direction: column; gap: 4px;

@@ -4,7 +4,7 @@
 // 기본 글(boardNews)을 보여 준다 — 화면이 비어 보이지 않게.
 import { computed, ref } from 'vue';
 import { EVENTS, EVENT_BANNERS, NOTICES, UPDATES, type NewsRow } from './boardNews';
-import { subscribeBoardPosts, type BoardPost } from './boardRepository';
+import { subscribeBoardPosts, titleOf, type BoardPost } from './boardRepository';
 
 const posts = ref<BoardPost[]>([]);
 let started = false;
@@ -21,23 +21,32 @@ export const useBoardFeed = () => {
 
   const of = (kind: BoardPost['kind']) => posts.value.filter((p) => p.kind === kind);
   const rowsOf = (kind: 'event' | 'notice' | 'update', fallback: NewsRow[]) => computed<NewsRow[]>(() => {
-    const mine = of(kind);
-    if (mine.length === 0) return fallback;
-    return mine.map((p) => ({ tag: p.tag, text: p.text, star: p.star }));
+    // 배너로 띄우는 이벤트는 아래 줄 목록에 또 적지 않는다
+    const mine = kind === 'event' ? of(kind).filter((p) => !p.banner) : of(kind);
+    if (mine.length === 0) return of(kind).length > 0 ? [] : fallback;
+    return mine.map((p) => ({
+      tag: p.tag,
+      text: titleOf(p),
+      star: p.star,
+      body: p.body,
+      imageUrl: p.imageUrl,
+    }));
   });
 
   return {
     events: rowsOf('event', EVENTS),
     notices: rowsOf('notice', NOTICES),
     updates: rowsOf('update', UPDATES),
+    // 배너로 띄우기로 한 이벤트만 큰 칸으로
     banners: computed(() => {
-      const mine = of('banner');
-      if (mine.length === 0) return EVENT_BANNERS;
+      const mine = of('event').filter((p) => p.banner);
+      if (mine.length === 0 && of('event').length === 0) return EVENT_BANNERS;
       return mine.map((p) => ({
-        badge: p.badge ?? 'EVENT',
-        title: p.text,
-        desc: p.desc ?? '',
-        cta: p.cta ?? '자세히 보기',
+        badge: p.badge || 'EVENT',
+        title: titleOf(p),
+        imageUrl: p.imageUrl,
+        desc: p.body ?? p.desc ?? '',
+        cta: p.cta || '자세히 보기',
         period: p.period ?? '',
       }));
     }),

@@ -6,6 +6,10 @@ export interface NewsRow {
   text: string;
   /** 맨 위에 붙박이로 둘 줄 */
   star?: boolean;
+  /** 눌러서 펼치면 보이는 글 (운영에서 올린 글만 들고 있다) */
+  body?: string;
+  /** 글에 딸린 그림 */
+  imageUrl?: string;
 }
 
 export const EVENTS: NewsRow[] = [
@@ -13,8 +17,18 @@ export const EVENTS: NewsRow[] = [
   { tag: '안내', text: '국토부 실거래가 조회 기간 확대 (최대 12개월)' },
 ];
 
+export interface NewsBanner {
+  badge: string;
+  title: string;
+  desc: string;
+  cta: string;
+  period: string;
+  /** 운영에서 올린 배너만 그림을 들고 있다 */
+  imageUrl?: string;
+}
+
 /** 이벤트 배너 — 여러 장이면 옆으로 넘겨 본다 */
-export const EVENT_BANNERS = [
+export const EVENT_BANNERS: NewsBanner[] = [
   {
     badge: 'EVENT',
     title: '첫 낙찰 축하 리워드',

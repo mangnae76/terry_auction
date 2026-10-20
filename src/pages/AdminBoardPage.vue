@@ -1,15 +1,17 @@
 <script setup lang="ts">
-// 운영 — 공지·이벤트·업데이트 올리기.
+// 운영 — 이벤트·공지사항·업데이트 올리기.
 // 여기서 저장하면 앱의 더보기 › 공지 탭에 바로 나간다.
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import BrandLogo from '../components/BrandLogo.vue';
 import { useAuthStore } from '../stores/authStore';
 import {
+  compressBoardImage,
   newBoardId,
   removeBoardPost,
   saveBoardPost,
   subscribeBoardPosts,
+  titleOf,
   type BoardKind,
   type BoardPost,
 } from '../services/boardRepository';
@@ -19,10 +21,9 @@ const auth = useAuthStore();
 const who = computed(() => auth.nickname || auth.email || '');
 
 const KINDS: Array<{ key: BoardKind; label: string; hint: string; tags: string[] }> = [
-  { key: 'event', label: '이벤트', hint: '진행 중인 이벤트 한 줄', tags: ['안내', '진행', '마감'] },
+  { key: 'event', label: '이벤트', hint: '진행 중인 이벤트 — 배너로 크게 띄울 수도 있다', tags: ['안내', '진행', '마감'] },
   { key: 'notice', label: '공지사항', hint: '점검·정책처럼 알려야 하는 것', tags: ['안내', '점검', '중요'] },
   { key: 'update', label: '업데이트', hint: '새로 붙은 기능·고친 것', tags: ['신규', '기능', '개선'] },
-  { key: 'banner', label: '이벤트 배너', hint: '이벤트 탭 맨 위 큰 칸', tags: ['EVENT'] },
 ];
 
 const posts = ref<BoardPost[]>([]);
@@ -41,10 +42,12 @@ const emptyPost = (kind: BoardKind): BoardPost => ({
   id: newBoardId(),
   kind,
   tag: KINDS.find((k) => k.key === kind)?.tags[0] ?? '안내',
-  text: '',
+  title: '',
+  body: '',
+  imageUrl: '',
   star: false,
-  badge: kind === 'banner' ? 'EVENT' : '',
-  desc: '',
+  banner: false,
+  badge: 'EVENT',
   cta: '자세히 보기',
   period: '',
   order: Date.now(),
@@ -54,14 +57,14 @@ const emptyPost = (kind: BoardKind): BoardPost => ({
 
 const draft = ref<BoardPost | null>(null);
 const openNew = (kind: BoardKind) => { draft.value = emptyPost(kind); };
-const openEdit = (p: BoardPost) => { draft.value = { ...p }; };
+const openEdit = (p: BoardPost) => { draft.value = { ...p, title: titleOf(p) }; };
 const close = () => { draft.value = null; };
 
 const saving = ref(false);
 const msg = ref('');
 const flash = (text: string) => {
   msg.value = text;
-  window.setTimeout(() => { msg.value = ''; }, 2200);
+  window.setTimeout(() => { msg.value = ''; }, 2600);
 };
 
 /** 막힌 까닭을 사람 말로 — 규칙에 막히면 어느 계정인지 같이 알려 준다 */
@@ -73,13 +76,30 @@ const reason = (e: unknown, fallback: string) => {
   return m || fallback;
 };
 
+/** 그림 고르기 — 올리기 전에 작게 줄인다 */
+const picking = ref(false);
+const pickImage = async (ev: Event) => {
+  const input = ev.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file || !draft.value) return;
+  picking.value = true;
+  try {
+    draft.value.imageUrl = await compressBoardImage(file);
+  } catch (e) {
+    flash(e instanceof Error ? e.message : '그림을 올리지 못했습니다.');
+  } finally {
+    picking.value = false;
+  }
+};
+
 const save = async () => {
   const d = draft.value;
   if (!d) return;
-  if (!d.text.trim()) { flash('글을 적어 주세요.'); return; }
+  if (!d.title.trim()) { flash('제목을 적어 주세요.'); return; }
   saving.value = true;
   try {
-    await saveBoardPost({ ...d, text: d.text.trim() });
+    await saveBoardPost({ ...d, title: d.title.trim(), body: (d.body ?? '').trim() });
     flash('올렸습니다. 앱에 바로 나갑니다.');
     close();
   } catch (e) {
@@ -90,7 +110,7 @@ const save = async () => {
 };
 
 const removeOne = async (p: BoardPost) => {
-  if (!window.confirm(`'${p.text}' 를 지울까요?`)) return;
+  if (!window.confirm(`'${titleOf(p)}' 를 지울까요?`)) return;
   try {
     await removeBoardPost(p.id);
     flash('지웠습니다.');
@@ -107,8 +127,12 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   if (i < 0 || j < 0 || j >= list.length) return;
   const a = list[i];
   const b = list[j];
-  await saveBoardPost({ ...a, order: b.order });
-  await saveBoardPost({ ...b, order: a.order });
+  try {
+    await saveBoardPost({ ...a, order: b.order });
+    await saveBoardPost({ ...b, order: a.order });
+  } catch (e) {
+    flash(reason(e, '차례를 바꾸지 못했습니다.'));
+  }
 };
 </script>
 
@@ -153,9 +177,11 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         <ul v-else class="adb-list">
           <li v-for="p in listOf(k.key).value" :key="p.id">
             <span class="adb-tag" :class="{ star: p.star }">{{ p.star ? '✦' : (p.tag || '—') }}</span>
+            <img v-if="p.imageUrl" :src="p.imageUrl" class="adb-thumb" alt="" />
             <span class="adb-txt">
-              <b>{{ p.text }}</b>
-              <small v-if="k.key === 'banner'">{{ p.desc }} · {{ p.period }}</small>
+              <b>{{ titleOf(p) }}<em v-if="p.banner" class="adb-badge">배너</em></b>
+              <small v-if="p.body">{{ p.body }}</small>
+              <small v-if="p.banner && p.period">{{ p.period }}</small>
             </span>
             <span class="adb-acts">
               <button type="button" @click="move(p, -1)" title="위로">▲</button>
@@ -173,11 +199,15 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
       <div class="adb-box">
         <header class="adb-box-head">
           <strong>{{ KINDS.find((k) => k.key === draft!.kind)?.label }}</strong>
-          <button type="button" class="adb-x" aria-label="닫기" @click="close">✕</button>
+          <button type="button" class="adb-x" aria-label="닫기" @click="close">
+            <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true">
+              <path d="M1.5 1.5 12.5 12.5M12.5 1.5 1.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
         </header>
 
         <div class="adb-form">
-          <label v-if="draft.kind !== 'banner'">
+          <label>
             <small>꼬리표</small>
             <span class="adb-tags">
               <button
@@ -191,21 +221,45 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           </label>
 
           <label>
-            <small>{{ draft.kind === 'banner' ? '제목' : '글' }}</small>
-            <input v-model="draft.text" class="adb-input" :placeholder="draft.kind === 'banner' ? '첫 낙찰 축하 리워드' : '한 줄로 적습니다'" />
+            <small>제목</small>
+            <input v-model="draft.title" class="adb-input" placeholder="목록에 적히는 한 줄" />
           </label>
 
-          <template v-if="draft.kind === 'banner'">
-            <label><small>배지</small><input v-model="draft.badge" class="adb-input" placeholder="EVENT" /></label>
-            <label><small>설명</small><input v-model="draft.desc" class="adb-input" placeholder="무엇을 주는지 한 줄" /></label>
-            <label><small>기간</small><input v-model="draft.period" class="adb-input" placeholder="2026.10.01 ~ 10.31" /></label>
-            <label><small>단추 글</small><input v-model="draft.cta" class="adb-input" placeholder="자세히 보기" /></label>
-          </template>
+          <label>
+            <small>본문 <em>(없어도 됩니다)</em></small>
+            <textarea v-model="draft.body" class="adb-area" rows="4" placeholder="눌러서 펼치면 보이는 글"></textarea>
+          </label>
+
+          <label>
+            <small>그림 <em>(없어도 됩니다)</em></small>
+            <span class="adb-img">
+              <img v-if="draft.imageUrl" :src="draft.imageUrl" alt="" />
+              <span class="adb-img-acts">
+                <label class="adb-file">
+                  {{ picking ? '줄이는 중…' : (draft.imageUrl ? '다른 그림' : '그림 고르기') }}
+                  <input type="file" accept="image/*" @change="pickImage" />
+                </label>
+                <button v-if="draft.imageUrl" type="button" class="adb-img-del" @click="draft!.imageUrl = ''">빼기</button>
+              </span>
+            </span>
+          </label>
 
           <label v-if="draft.kind === 'notice'" class="adb-check">
             <input v-model="draft.star" type="checkbox" />
             맨 위에 붙박이로 둔다 (✦)
           </label>
+
+          <template v-if="draft.kind === 'event'">
+            <label class="adb-check">
+              <input v-model="draft.banner" type="checkbox" />
+              큰 배너로 띄운다 (이벤트 맨 위)
+            </label>
+            <template v-if="draft.banner">
+              <label><small>배지</small><input v-model="draft.badge" class="adb-input" placeholder="EVENT" /></label>
+              <label><small>기간</small><input v-model="draft.period" class="adb-input" placeholder="2026.10.01 ~ 10.31" /></label>
+              <label><small>단추 글</small><input v-model="draft.cta" class="adb-input" placeholder="자세히 보기" /></label>
+            </template>
+          </template>
         </div>
 
         <footer class="adb-box-foot">
@@ -294,10 +348,13 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid #eef1f6;
 }
 .adb-box-head strong { font-size: 14px; font-weight: 800; color: #111827; }
+/* 글자 ✕ 는 글꼴마다 치우쳐 선으로 그린다 — 칸 한가운데에 선다 */
 .adb-x {
   margin-left: auto; width: 26px; height: 26px; border: 1px solid #e3e8f0; border-radius: 6px;
-  background: #fff; font-size: 12px; color: #4b5563; cursor: pointer; line-height: 1;
+  background: #fff; color: #4b5563; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 0;
 }
+.adb-x svg { display: block; }
 .adb-form { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 .adb-form label { display: flex; flex-direction: column; gap: 5px; }
 .adb-form small { font-size: 11.5px; font-weight: 700; color: #6b7280; }
@@ -314,6 +371,30 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 }
 .adb-tagbtn.on { background: #2a3f8f; border-color: #2a3f8f; color: #fff; }
 .adb-check { flex-direction: row !important; align-items: center; gap: 7px; font-size: 12.5px; color: #374151; }
+.adb-form em { font-style: normal; font-weight: 400; color: #9ca3af; }
+.adb-area {
+  width: 100%; box-sizing: border-box; border: 1px solid #e3e8f0; border-radius: 8px;
+  padding: 9px 11px; font-family: inherit; font-size: 13px; line-height: 1.6; color: #111827; resize: vertical;
+}
+.adb-area:focus { outline: none; border-color: #2a3f8f; }
+.adb-img { display: flex; flex-direction: column; gap: 8px; }
+.adb-img img { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; border: 1px solid #eef1f6; }
+.adb-img-acts { display: flex; gap: 6px; }
+.adb-file {
+  display: inline-block; border: 1px solid #c7d2ea; border-radius: 8px; background: #fff;
+  padding: 7px 12px; font-size: 12px; font-weight: 700; color: #2a3f8f; cursor: pointer;
+}
+.adb-file input { display: none; }
+.adb-img-del {
+  border: 1px solid #f0d4d4; border-radius: 8px; background: #fff;
+  padding: 7px 12px; font-family: inherit; font-size: 12px; font-weight: 700; color: #c62828; cursor: pointer;
+}
+.adb-thumb { flex: none; width: 44px; height: 32px; object-fit: cover; border-radius: 5px; border: 1px solid #eef1f6; }
+.adb-badge {
+  margin-left: 6px; font-style: normal; font-size: 10px; font-weight: 800;
+  background: #2a3f8f; color: #fff; border-radius: 4px; padding: 2px 5px;
+}
+.adb-txt small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 420px; }
 .adb-check input { width: 15px; height: 15px; accent-color: #2a3f8f; }
 .adb-box-foot { display: flex; gap: 8px; padding: 0 16px 16px; }
 .adb-cancel, .adb-save {
