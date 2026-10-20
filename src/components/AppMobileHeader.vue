@@ -267,8 +267,9 @@ const onLogout = async () => {
 .amh-user-menu-info strong { font-size: 13px; font-weight: 800; color: #111827; }
 .amh-um-id { font-style: normal; font-size: 11px; color: #8a93a4; }
 /* 포인트·결제·이용권 — 이름표와 값을 두 칸으로 */
+/* 이름 칸 너비를 못 박아 꺾쇠가 줄마다 같은 자리에 선다 */
 .amh-um-facts {
-  margin: 9px 0 0; display: grid; grid-template-columns: auto 1fr; row-gap: 3px; column-gap: 8px;
+  margin: 9px 0 0; display: grid; grid-template-columns: 78px 1fr; row-gap: 3px; column-gap: 8px;
 }
 /* 네 줄은 굵게 하지 않는다 — 이름과 등급만 도드라지게 둔다 */
 .amh-um-facts dt { font-size: 11px; color: #8a93a4; font-weight: 400; white-space: nowrap; }
@@ -277,7 +278,7 @@ const onLogout = async () => {
 /* 누르면 그 화면으로 간다는 뜻 — 파란 글자에 꺾쇠를 붙인다 */
 .amh-um-link {
   border: none; background: transparent; padding: 0; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 2px;
+  display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 2px;
   font-family: inherit; font-size: 11px; font-weight: 400; color: #2b6df3;
 }
 .amh-um-link i { font-style: normal; font-size: 10px; color: #2b6df3; }
