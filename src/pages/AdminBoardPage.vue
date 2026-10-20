@@ -55,6 +55,7 @@ const emptyPost = (kind: BoardKind): BoardPost => ({
   body: '',
   imageUrl: '',
   published: false,
+  postedAt: '',
   alsoEvent: kind === 'banner',
   star: false,
   banner: kind === 'banner',
@@ -142,7 +143,14 @@ const save = async (publish: boolean) => {
   if (d.startAt && d.endAt && d.endAt <= d.startAt) { flash('내리는 때가 올리는 때보다 빠릅니다.'); return; }
   saving.value = true;
   try {
-    await saveBoardPost({ ...d, published: publish, title: d.title.trim(), body: (d.body ?? '').trim() });
+    await saveBoardPost({
+      ...d,
+      published: publish,
+      // 등록 시각은 처음 올린 때 — 창을 연 때가 아니다
+      postedAt: publish ? (d.postedAt || new Date().toISOString()) : d.postedAt,
+      title: d.title.trim(),
+      body: (d.body ?? '').trim(),
+    });
     flash(publish ? '올렸습니다. 앱에 바로 나갑니다.' : '작성 중으로 담아 두었습니다. 앱에는 아직 나가지 않습니다.');
     close();
   } catch (e) {
@@ -156,7 +164,10 @@ const save = async (publish: boolean) => {
 const setPublished = async (p: BoardPost, publish: boolean) => {
   if (publish && !titleOf(p)) { flash('제목이 없어 올릴 수 없습니다 — 고치기에서 적어 주세요.'); return; }
   try {
-    await saveBoardPost({ ...p, published: publish }, { touch: false });
+    await saveBoardPost(
+      { ...p, published: publish, postedAt: publish ? (p.postedAt || new Date().toISOString()) : p.postedAt },
+      { touch: false },
+    );
     flash(publish ? '올렸습니다.' : '내렸습니다 — 작성 중으로 둡니다.');
   } catch (e) {
     flash(reason(e, '바꾸지 못했습니다.'));

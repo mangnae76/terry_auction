@@ -41,6 +41,8 @@ export interface BoardPost {
   alsoEvent?: boolean;
   /** 올렸는가 — false 면 작성 중이라 앱에 나가지 않는다 (옛 글에는 없다 = 올린 글) */
   published?: boolean;
+  /** 처음 올린 때 — 사용자에게 보이는 '등록'은 이 시각이다 (창을 연 때가 아니다) */
+  postedAt?: string;
   /** 올릴 때 — 비우면 바로. 'YYYY-MM-DDTHH:mm' (현지 시각) */
   startAt?: string;
   /** 내릴 때 — 비우면 계속 둔다 */
@@ -100,6 +102,17 @@ export const periodLabel = (startAt?: string, endAt?: string): string => {
   return '';
 };
 
+/** 올린 때(ISO) → '오후 3:24' — 보는 사람 시각으로 적는다 */
+export const timeLabel = (iso?: string): string => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const h = d.getHours();
+  const half = h < 12 ? '오전' : '오후';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${half} ${h12}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
 /** 올린 때(ISO) → '2026.10.20' — 보는 사람 시각으로 적는다 */
 export const dayLabel = (iso?: string): string => {
   if (!iso) return '';
@@ -109,19 +122,21 @@ export const dayLabel = (iso?: string): string => {
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
 };
 
+const stamp = (iso?: string) => (iso ? `${dayLabel(iso)} ${timeLabel(iso)}`.trim() : '');
+
 /**
- * 사용자에게 보일 등록·수정 날짜.
- * 고친 적이 없으면(같은 날이면) 등록일만 적는다 — 쓸데없이 두 날짜를 늘어놓지 않는다.
+ * 사용자에게 보일 등록·수정 때 — '등록 2026.10.20 오후 3:24'.
+ * 고친 적이 없으면 등록만 적는다 — 쓸데없이 두 시각을 늘어놓지 않는다.
  */
-export const postedLabel = (createdAt?: string, updatedAt?: string): string => {
-  const made = dayLabel(createdAt);
-  const fixed = dayLabel(updatedAt);
+export const postedLabel = (postedAt?: string, updatedAt?: string): string => {
+  const made = stamp(postedAt);
+  const fixed = stamp(updatedAt);
   if (!made) return fixed ? `수정 ${fixed}` : '';
   return fixed && fixed !== made ? `등록 ${made} · 수정 ${fixed}` : `등록 ${made}`;
 };
 
-/** 줄 오른쪽에 좁게 적을 날짜 — '26.10.20' */
-export const shortDayLabel = (iso?: string): string => dayLabel(iso).slice(2);
+/** 줄 오른쪽에 좁게 적을 날짜 — '등록 26.10.20' */
+export const shortDayLabel = (iso?: string): string => (iso ? `등록 ${dayLabel(iso).slice(2)}` : '');
 
 /** 'YYYY-MM-DDTHH:mm' → '10.20 09:00' */
 export const whenLabel = (v?: string): string =>

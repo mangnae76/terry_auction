@@ -49,8 +49,8 @@ export const useBoardFeed = () => {
       star: p.star,
       body: p.body,
       imageUrl: p.imageUrl,
-      postedShort: shortDayLabel(p.createdAt),
-      postedFull: postedLabel(p.createdAt, p.updatedAt),
+      postedShort: shortDayLabel(p.postedAt ?? p.createdAt),
+      postedFull: postedLabel(p.postedAt ?? p.createdAt, p.updatedAt),
     }));
   });
 
@@ -70,7 +70,7 @@ export const useBoardFeed = () => {
         // 배너 칸에는 단축 글만 — 긴 본문은 이벤트 줄을 펼쳐야 보인다
         desc: p.desc || p.body || '',
         cta: p.cta || '자세히 보기',
-        postedFull: postedLabel(p.createdAt, p.updatedAt),
+        postedFull: postedLabel(p.postedAt ?? p.createdAt, p.updatedAt),
         // 예약한 때가 있으면 그것을 그대로 보여 준다 — 손으로 적은 기간 글은 예약이 없을 때만
         period: periodLabel(p.startAt, p.endAt) || p.period || '',
       }));
