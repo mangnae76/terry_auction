@@ -489,8 +489,17 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
           <template v-if="draft.kind === 'banner'">
             <div class="adb-sec">
               <h4>꼬리말 예약 기능</h4>
-              <span class="adb-sec-note">적어 둔 때가 되면 저절로 바뀝니다</span>
+              <span class="adb-tags sec">
+                <button
+                  v-for="t in EVENT_TAGS"
+                  :key="t"
+                  type="button"
+                  :class="['adb-tagbtn', { on: draft!.tag === t }]"
+                  @click="draft!.tag = t"
+                >{{ t }}</button>
+              </span>
             </div>
+            <p class="adb-note">고른 꼬리말로 시작해, 아래에 적어 둔 때가 되면 저절로 바뀝니다.</p>
             <div class="adb-when-row">
               <div v-for="t in EVENT_TAGS" :key="`plan-${t}`" class="adb-field">
                 <small>{{ t }}</small>
@@ -500,21 +509,16 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
                 />
               </div>
             </div>
-            <p class="adb-note">비워 두면 고른 꼬리말이 그대로 있습니다. 첫 때가 되기 전까지도 그렇습니다.</p>
+            <p class="adb-note">
+              지금 나가는 꼬리말 — <b>{{ tagAt(draft) }}</b>
+              <template v-if="!(draft.tagPlan ?? []).length"> (예약 없음 — 고른 그대로 둡니다)</template>
+            </p>
           </template>
 
           <!-- 여기서부터가 목록·상세에 나가는 내용이다 -->
           <div v-if="draft.kind === 'banner'" class="adb-sec">
             <h4>이벤트 상세 내용</h4>
-            <span class="adb-tags sec">
-              <button
-                v-for="t in EVENT_TAGS"
-                :key="t"
-                type="button"
-                :class="['adb-tagbtn', { on: draft!.tag === t }]"
-                @click="draft!.tag = t"
-              >{{ t }}</button>
-            </span>
+            <span class="adb-sec-note">{{ draft.alsoEvent ? '목록과 상세 보기에 나갑니다' : "'목록' 을 켜야 나갑니다" }}</span>
           </div>
 
           <label>
