@@ -4,7 +4,16 @@
 // 기본 글(boardNews)을 보여 준다 — 화면이 비어 보이지 않게.
 import { computed, ref } from 'vue';
 import { EVENTS, EVENT_BANNERS, NOTICES, UPDATES, type NewsRow } from './boardNews';
-import { isLive, nowLocal, periodLabel, subscribeBoardPosts, titleOf, type BoardPost } from './boardRepository';
+import {
+  isLive,
+  nowLocal,
+  periodLabel,
+  postedLabel,
+  shortDayLabel,
+  subscribeBoardPosts,
+  titleOf,
+  type BoardPost,
+} from './boardRepository';
 
 const posts = ref<BoardPost[]>([]);
 let started = false;
@@ -40,6 +49,8 @@ export const useBoardFeed = () => {
       star: p.star,
       body: p.body,
       imageUrl: p.imageUrl,
+      postedShort: shortDayLabel(p.createdAt),
+      postedFull: postedLabel(p.createdAt, p.updatedAt),
     }));
   });
 
@@ -59,6 +70,7 @@ export const useBoardFeed = () => {
         // 배너 칸에는 단축 글만 — 긴 본문은 이벤트 줄을 펼쳐야 보인다
         desc: p.desc || p.body || '',
         cta: p.cta || '자세히 보기',
+        postedFull: postedLabel(p.createdAt, p.updatedAt),
         // 예약한 때가 있으면 그것을 그대로 보여 준다 — 손으로 적은 기간 글은 예약이 없을 때만
         period: periodLabel(p.startAt, p.endAt) || p.period || '',
       }));

@@ -147,7 +147,7 @@ const save = async (publish: boolean) => {
 const setPublished = async (p: BoardPost, publish: boolean) => {
   if (publish && !titleOf(p)) { flash('제목이 없어 올릴 수 없습니다 — 고치기에서 적어 주세요.'); return; }
   try {
-    await saveBoardPost({ ...p, published: publish });
+    await saveBoardPost({ ...p, published: publish }, { touch: false });
     flash(publish ? '올렸습니다.' : '내렸습니다 — 작성 중으로 둡니다.');
   } catch (e) {
     flash(reason(e, '바꾸지 못했습니다.'));
@@ -218,8 +218,8 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   const a = list[i];
   const b = list[j];
   try {
-    await saveBoardPost({ ...a, order: b.order });
-    await saveBoardPost({ ...b, order: a.order });
+    await saveBoardPost({ ...a, order: b.order }, { touch: false });
+    await saveBoardPost({ ...b, order: a.order }, { touch: false });
   } catch (e) {
     flash(reason(e, '차례를 바꾸지 못했습니다.'));
   }

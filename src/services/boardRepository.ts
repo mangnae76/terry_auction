@@ -100,6 +100,29 @@ export const periodLabel = (startAt?: string, endAt?: string): string => {
   return '';
 };
 
+/** 올린 때(ISO) → '2026.10.20' — 보는 사람 시각으로 적는다 */
+export const dayLabel = (iso?: string): string => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
+};
+
+/**
+ * 사용자에게 보일 등록·수정 날짜.
+ * 고친 적이 없으면(같은 날이면) 등록일만 적는다 — 쓸데없이 두 날짜를 늘어놓지 않는다.
+ */
+export const postedLabel = (createdAt?: string, updatedAt?: string): string => {
+  const made = dayLabel(createdAt);
+  const fixed = dayLabel(updatedAt);
+  if (!made) return fixed ? `수정 ${fixed}` : '';
+  return fixed && fixed !== made ? `등록 ${made} · 수정 ${fixed}` : `등록 ${made}`;
+};
+
+/** 줄 오른쪽에 좁게 적을 날짜 — '26.10.20' */
+export const shortDayLabel = (iso?: string): string => dayLabel(iso).slice(2);
+
 /** 'YYYY-MM-DDTHH:mm' → '10.20 09:00' */
 export const whenLabel = (v?: string): string =>
   v ? `${v.slice(5, 7)}.${v.slice(8, 10)} ${v.slice(11, 16)}` : '';
@@ -168,9 +191,15 @@ export const subscribeBoardPosts = (
   );
 };
 
-export const saveBoardPost = async (post: BoardPost): Promise<void> => {
+/**
+ * 글 담기.
+ * touch=false 면 수정 시각을 건드리지 않는다 — 차례 바꾸기·올리고 내리기처럼
+ * 글이 달라지지 않은 일에 '수정 날짜'가 바뀌면 보는 사람이 헷갈린다.
+ */
+export const saveBoardPost = async (post: BoardPost, opts: { touch?: boolean } = {}): Promise<void> => {
   if (!firestore) throw new Error(firestoreDisabledReason ?? 'Firestore 미연결');
-  await setDoc(doc(firestore, COLLECTION, post.id), { ...post, updatedAt: new Date().toISOString() }, { merge: true });
+  const updatedAt = opts.touch === false ? (post.updatedAt ?? post.createdAt) : new Date().toISOString();
+  await setDoc(doc(firestore, COLLECTION, post.id), { ...post, updatedAt }, { merge: true });
 };
 
 export const removeBoardPost = async (id: string): Promise<void> => {

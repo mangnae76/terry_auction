@@ -42,11 +42,13 @@ watch(() => props.focus, openFocused);
       <template v-for="(e, i) in EVENTS" :key="`e${i}`">
         <button type="button" class="nws-row" @click="toggleRow(`e${i}`, e)">
           <span class="tag">{{ e.tag }}</span><span class="txt">{{ e.text }}</span>
+          <span v-if="e.postedShort" class="when">{{ e.postedShort }}</span>
           <i v-if="e.body || e.imageUrl" class="chev">{{ openRow === `e${i}` ? '▴' : '▾' }}</i>
         </button>
         <div v-if="openRow === `e${i}`" class="nws-open">
           <img v-if="e.imageUrl" :src="e.imageUrl" alt="" @click="zoom = e.imageUrl" />
           <p v-if="e.body">{{ e.body }}</p>
+          <p v-if="e.postedFull" class="posted">{{ e.postedFull }}</p>
         </div>
       </template>
     </section>
@@ -57,11 +59,13 @@ watch(() => props.focus, openFocused);
         <button type="button" class="nws-row" @click="toggleRow(`n${i}`, n)">
         <span v-if="n.star" class="star">✦</span><span v-else class="tag">{{ n.tag }}</span>
           <span class="txt">{{ n.text }}</span>
+          <span v-if="n.postedShort" class="when">{{ n.postedShort }}</span>
           <i v-if="n.body || n.imageUrl" class="chev">{{ openRow === `n${i}` ? '▴' : '▾' }}</i>
         </button>
         <div v-if="openRow === `n${i}`" class="nws-open">
           <img v-if="n.imageUrl" :src="n.imageUrl" alt="" @click="zoom = n.imageUrl" />
           <p v-if="n.body">{{ n.body }}</p>
+          <p v-if="n.postedFull" class="posted">{{ n.postedFull }}</p>
         </div>
       </template>
     </section>
@@ -71,11 +75,13 @@ watch(() => props.focus, openFocused);
       <template v-for="(u, i) in UPDATES" :key="`u${i}`">
         <button type="button" class="nws-row" @click="toggleRow(`u${i}`, u)">
           <span class="tag">{{ u.tag }}</span><span class="txt">{{ u.text }}</span>
+          <span v-if="u.postedShort" class="when">{{ u.postedShort }}</span>
           <i v-if="u.body || u.imageUrl" class="chev">{{ openRow === `u${i}` ? '▴' : '▾' }}</i>
         </button>
         <div v-if="openRow === `u${i}`" class="nws-open">
           <img v-if="u.imageUrl" :src="u.imageUrl" alt="" @click="zoom = u.imageUrl" />
           <p v-if="u.body">{{ u.body }}</p>
+          <p v-if="u.postedFull" class="posted">{{ u.postedFull }}</p>
         </div>
       </template>
     </section>
@@ -111,9 +117,12 @@ watch(() => props.focus, openFocused);
 .nws-row .star { flex: none; color: #2b6df3; font-size: 12px; }
 .nws-row .txt { flex: 1 1 auto; min-width: 0; font-size: 11.5px; color: #374151; word-break: keep-all; }
 .nws-row .chev { flex: none; font-style: normal; font-size: 10px; color: #9aa6c4; }
+/* 언제 올린 글인지 — 줄 오른쪽에 좁게 */
+.nws-row .when { flex: none; font-size: 10px; color: #9aa6c4; letter-spacing: -0.2px; }
 /* 펼친 글 */
 .nws-open { padding: 4px 0 10px 37px; }
 .nws-open img { width: 100%; border-radius: 8px; margin-bottom: 7px; cursor: zoom-in; }
+.nws-open .posted { margin: 6px 0 0; font-size: 10.5px; color: #9aa6c4; }
 .nws-open p {
   margin: 0; font-size: 11.5px; line-height: 1.75; color: #4b5563;
   white-space: pre-line; word-break: keep-all;
