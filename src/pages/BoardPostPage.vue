@@ -7,7 +7,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import ImageLightbox from './../components/ImageLightbox.vue';
 import PostBody from '../components/PostBody.vue';
 import { ref } from 'vue';
-import { useBoardPost } from '../services/boardFeed';
+import { boardNow, useBoardPost } from '../services/boardFeed';
 import { eventPeriodLabel, periodLabel, postedLabel, tagAt, titleOf } from '../services/boardRepository';
 
 const route = useRoute();
@@ -34,7 +34,7 @@ const posted = computed(() => {
 });
 
 /** 꼬리말은 예약한 때에 따라 안내 → 진행 → 마감 으로 바뀐다 */
-const tag = computed(() => (post.value ? tagAt(post.value) : ''));
+const tag = computed(() => (post.value ? tagAt(post.value, boardNow.value) : ''));
 
 const zoom = ref('');
 </script>

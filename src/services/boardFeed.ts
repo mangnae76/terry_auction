@@ -21,6 +21,8 @@ let started = false;
 
 // 예약한 때가 지나면 저절로 올라오고 내려가도록 1분마다 지금 시각을 다시 본다
 const now = ref(nowLocal());
+/** 열어 둔 화면도 같은 시계를 본다 (꼬리말이 때맞춰 바뀌도록) */
+export const boardNow = now;
 
 /** 글 하나 — 상세 보기 화면이 번호로 찾아 쓴다 */
 export const useBoardPost = (id: () => string) => {
