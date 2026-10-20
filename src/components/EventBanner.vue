@@ -1,65 +1,116 @@
 <script setup lang="ts">
 // 이벤트 배너 — 더보기의 어느 탭을 보든 탭 바로 아래에 늘 있다.
-// 여러 장이면 스스로 넘어가고, 손으로도 넘기고, 점을 눌러 바로 간다.
-import { onMounted, onUnmounted, ref, watch } from 'vue';
-import AppToast from './AppToast.vue';
+// 배너를 눌러도 어디로 가지 않는다. 손으로 밀어 넘기고, 갈 곳은 '자세히 보기'가 맡는다.
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import ImageLightbox from './ImageLightbox.vue';
 import { useBoardFeed } from '../services/boardFeed';
 
+const emit = defineEmits<{ (e: 'open'): void }>();
+
 const { banners } = useBoardFeed();
+const many = computed(() => banners.value.length > 1);
 
 const at = ref(0);
 let timer = 0;
 const startRoll = () => {
   window.clearInterval(timer);
-  if (banners.value.length < 2) return;
+  if (!many.value) return;
   timer = window.setInterval(() => {
     at.value = (at.value + 1) % banners.value.length;
   }, 5000);
 };
-const go = (i: number) => { at.value = i; startRoll(); };
-
-let touchX = 0;
-const onTouchStart = (e: TouchEvent) => { touchX = e.changedTouches[0]?.clientX ?? 0; };
-const onTouchEnd = (e: TouchEvent) => {
-  const dx = (e.changedTouches[0]?.clientX ?? 0) - touchX;
+const go = (i: number) => {
   const n = banners.value.length;
-  if (n < 2 || Math.abs(dx) < 40) return;
-  go((at.value + (dx < 0 ? 1 : n - 1)) % n);
+  at.value = ((i % n) + n) % n;
+  startRoll();
+};
+
+/* 손으로 밀기 — 미는 만큼 배너가 따라 움직이고, 충분히 밀었으면 다음 장으로 넘어간다 */
+const dx = ref(0);
+const dragging = ref(false);
+let startX = 0;
+let startY = 0;
+/** 세로로 긋기 시작했다면 화면 스크롤이다 — 배너는 가만히 둔다 */
+let axis: '' | 'x' | 'y' = '';
+
+const onDown = (e: PointerEvent) => {
+  if (!many.value) return;
+  startX = e.clientX;
+  startY = e.clientY;
+  axis = '';
+  dragging.value = true;
+  window.clearInterval(timer);
+};
+const onMove = (e: PointerEvent) => {
+  if (!dragging.value) return;
+  const mx = e.clientX - startX;
+  const my = e.clientY - startY;
+  if (!axis) {
+    if (Math.abs(mx) < 6 && Math.abs(my) < 6) return;
+    axis = Math.abs(mx) > Math.abs(my) ? 'x' : 'y';
+    if (axis === 'y') { dragging.value = false; dx.value = 0; startRoll(); return; }
+  }
+  dx.value = mx;
+};
+const onUp = () => {
+  if (!dragging.value) { startRoll(); return; }
+  const moved = dx.value;
+  dragging.value = false;
+  dx.value = 0;
+  if (Math.abs(moved) > 40) go(at.value + (moved < 0 ? 1 : -1));
+  else startRoll();
 };
 
 onMounted(startRoll);
 watch(() => banners.value.length, () => { at.value = 0; startRoll(); });
 onUnmounted(() => window.clearInterval(timer));
 
+/** 밀던 끝에 손을 뗀 것은 누름이 아니다 — 그림 확대·자세히 보기가 잘못 열리지 않게 */
+const wasDrag = () => Math.abs(dx.value) > 6 || axis === 'x';
+
 const zoom = ref('');
-const toastText = ref('');
-const notReady = () => {
-  toastText.value = '이벤트 — 준비 중입니다.';
-  window.setTimeout(() => { toastText.value = ''; }, 1600);
-};
+const openImage = (url?: string) => { if (url && !wasDrag()) zoom.value = url; };
+const openList = () => { if (!wasDrag()) emit('open'); };
 </script>
 
 <template>
   <div v-if="banners.length" class="evb">
-    <div class="evb-track" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd">
-      <button
-        v-for="(b, i) in banners"
-        v-show="i === at"
-        :key="`b${i}`"
-        type="button"
-        class="evb-card"
-        @click="notReady"
+    <div
+      class="evb-view"
+      @pointerdown="onDown"
+      @pointermove="onMove"
+      @pointerup="onUp"
+      @pointercancel="onUp"
+      @pointerleave="onUp"
+    >
+      <div
+        class="evb-track"
+        :style="{
+          transform: `translateX(calc(${-at * 100}% + ${dx}px))`,
+          transition: dragging ? 'none' : 'transform .32s ease',
+        }"
       >
-        <img v-if="b.imageUrl" :src="b.imageUrl" class="evb-img" alt="" @click.stop="zoom = b.imageUrl ?? ''" />
-        <span class="badge">{{ b.badge }}</span>
-        <strong>{{ b.title }}</strong>
-        <small v-if="b.desc">{{ b.desc }}</small>
-        <span class="foot"><em>{{ b.period }}</em><i>{{ b.cta }} ›</i></span>
-      </button>
+        <div v-for="(b, i) in banners" :key="`b${i}`" class="evb-card">
+          <img
+            v-if="b.imageUrl"
+            :src="b.imageUrl"
+            class="evb-img"
+            alt=""
+            draggable="false"
+            @click="openImage(b.imageUrl)"
+          />
+          <span class="badge">{{ b.badge }}</span>
+          <strong>{{ b.title }}</strong>
+          <small v-if="b.desc">{{ b.desc }}</small>
+          <span class="foot">
+            <em>{{ b.period }}</em>
+            <button type="button" class="cta" @click="openList">{{ b.cta }} ›</button>
+          </span>
+        </div>
+      </div>
     </div>
 
-    <div v-if="banners.length > 1" class="evb-dots">
+    <div v-if="many" class="evb-dots">
       <button
         v-for="(_b, i) in banners"
         :key="`d${i}`"
@@ -71,23 +122,27 @@ const notReady = () => {
     </div>
 
     <ImageLightbox v-if="zoom" :src="zoom" @close="zoom = ''" />
-    <AppToast :visible="!!toastText" :text="toastText" />
   </div>
 </template>
 
 <style scoped>
 .evb { padding: 2px 14px 10px; }
-.evb-track { position: relative; }
+/* 밀어 넘기는 창 — 세로 스크롤은 그대로 두고 가로로 미는 것만 가로챈다 */
+.evb-view { overflow: hidden; border-radius: 12px; touch-action: pan-y; cursor: grab; }
+.evb-view:active { cursor: grabbing; }
+.evb-track { display: flex; will-change: transform; }
 .evb-card {
-  width: 100%; text-align: left; cursor: pointer;
-  border: none; border-radius: 12px; padding: 13px 14px;
+  flex: 0 0 100%; box-sizing: border-box;
+  border-radius: 12px; padding: 13px 14px;
   background: linear-gradient(135deg, #2f4fa8 0%, #27408f 100%); color: #fff;
   display: flex; flex-direction: column; gap: 4px;
+  user-select: none;
 }
 /* 배너 그림 — 가로:세로 3:1 (운영에 권장 크기로 적어 둔 값과 같다) */
 .evb-img {
   width: 100%; aspect-ratio: 3 / 1; object-fit: cover;
   border-radius: 8px; margin-bottom: 8px; cursor: zoom-in;
+  -webkit-user-drag: none;
 }
 .evb-card .badge {
   align-self: flex-start; padding: 2px 7px; border-radius: 4px;
@@ -97,9 +152,10 @@ const notReady = () => {
 .evb-card small { font-size: 11px; opacity: .85; word-break: keep-all; }
 .evb-card .foot { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .evb-card .foot em { font-style: normal; font-size: 10.5px; opacity: .75; }
-.evb-card .foot i {
-  margin-left: auto; font-style: normal; font-size: 11px; font-weight: 700;
-  background: rgba(255, 255, 255, .16); border-radius: 999px; padding: 4px 10px;
+.evb-card .cta {
+  margin-left: auto; border: none; font-family: inherit;
+  font-size: 11px; font-weight: 700; color: #fff; cursor: pointer;
+  background: rgba(255, 255, 255, .16); border-radius: 999px; padding: 5px 11px;
 }
 .evb-dots { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
 .evb-dot {

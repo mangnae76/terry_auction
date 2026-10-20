@@ -48,6 +48,14 @@ const TABS = [
 type TabKey = (typeof TABS)[number]['key'];
 const tab = ref<TabKey>('mypage');
 
+/** 배너의 '자세히 보기' — 공지 탭을 열고 이벤트 묶음으로 내려간다 (탭이 어디든) */
+const goEvents = () => {
+  tab.value = 'news';
+  window.setTimeout(() => {
+    document.querySelector('[data-sec="event"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
+};
+
 // 다른 화면에서 '?tab=news&sec=event' 로 들어오면 그 탭을 열고 그 묶음으로 내려간다
 onMounted(() => {
   const asked = String(route.query.tab ?? '');
@@ -101,7 +109,7 @@ onMounted(() => {
     </div>
 
     <!-- 이벤트 배너 — 어느 탭을 보든 탭 바로 아래에 늘 있다 -->
-    <EventBanner />
+    <EventBanner @open="goEvents" />
 
     <!-- 고른 탭의 내용이 여기에 그대로 펼쳐진다 (다른 화면으로 가지 않는다) -->
     <div class="more-body">
