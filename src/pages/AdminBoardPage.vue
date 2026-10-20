@@ -491,37 +491,40 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
               전에 올린 그림이 남아 있습니다
               <button type="button" @click="draft!.imageUrl = ''">빼기</button>
             </p>
-            <label :class="{ off: !draft.showBanner }">
-              <small>단축 글 <em>(배너 칸에 한 줄로 들어갑니다)</em></small>
-              <input
-                v-model="draft.desc"
-                class="adb-input"
-                :disabled="!draft.showBanner"
-                placeholder="기간을 길게 고를수록 더 깎입니다"
-              />
-            </label>
-            <label :class="{ off: !draft.showBanner }">
-              <small>배지</small>
-              <input v-model="draft.badge" class="adb-input" :disabled="!draft.showBanner" placeholder="EVENT" />
-            </label>
-            <label :class="{ off: !draft.showBanner }">
-              <small>
-                기간 글 <em>(비우면 아래 이벤트 기간을 그대로 씁니다)</em>
-                <b v-if="draft.showBanner && !draft.period && autoPeriod" class="adb-spec">
-                  배너에 나갈 글 — {{ autoPeriod }}
-                </b>
-              </small>
-              <input
-                v-model="draft.period"
-                class="adb-input"
-                :disabled="!draft.showBanner"
-                placeholder="2026.10.01 ~ 10.31"
-              />
-            </label>
-            <label :class="{ off: !draft.showBanner }">
-              <small>단추 글</small>
-              <input v-model="draft.cta" class="adb-input" :disabled="!draft.showBanner" placeholder="자세히 보기" />
-            </label>
+            <!-- 배지와 단축 글은 한 줄에 — 쓰기 창이 길어지지 않게 -->
+            <div class="adb-row">
+              <label class="narrow" :class="{ off: !draft.showBanner }">
+                <small>배지</small>
+                <input v-model="draft.badge" class="adb-input" :disabled="!draft.showBanner" placeholder="EVENT" />
+              </label>
+              <label :class="{ off: !draft.showBanner }">
+                <small>단축 글 <em>(배너 한 줄)</em></small>
+                <input
+                  v-model="draft.desc"
+                  class="adb-input"
+                  :disabled="!draft.showBanner"
+                  placeholder="기간을 길게 고를수록 더 깎입니다"
+                />
+              </label>
+            </div>
+            <div class="adb-row">
+              <label :class="{ off: !draft.showBanner }">
+                <small>기간 글 <em>(비우면 이벤트 기간)</em></small>
+                <input
+                  v-model="draft.period"
+                  class="adb-input"
+                  :disabled="!draft.showBanner"
+                  placeholder="2026.10.01 ~ 10.31"
+                />
+              </label>
+              <label class="narrow" :class="{ off: !draft.showBanner }">
+                <small>단추 글</small>
+                <input v-model="draft.cta" class="adb-input" :disabled="!draft.showBanner" placeholder="자세히 보기" />
+              </label>
+            </div>
+            <p v-if="draft.showBanner && !draft.period && autoPeriod" class="adb-note">
+              배너에 나갈 기간 — {{ autoPeriod }}
+            </p>
 
             <!-- 목록·상세에 나가는 것들 -->
             <div class="adb-sec">
@@ -753,6 +756,11 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   font-size: 12.5px; font-weight: 700; color: #374151; cursor: pointer;
 }
 .adb-chip input { width: 15px; height: 15px; accent-color: #2a3f8f; }
+/* 두 칸을 한 줄에 */
+.adb-row { display: flex; gap: 10px; }
+.adb-row > label { flex: 1 1 0; min-width: 0; }
+.adb-row > label.narrow { flex: 0 0 116px; }
+
 /* 본문 꾸미기 단추 — 글칸 오른쪽 위 */
 .adb-bodyhead { display: flex; align-items: center; gap: 6px; }
 .adb-tools { margin-left: auto; display: flex; gap: 4px; }
