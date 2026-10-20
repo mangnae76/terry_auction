@@ -5,7 +5,7 @@ import pinIcon from '../assets/icones/memu/map-pinned_Main.png';
 import banknoteIcon from '../assets/icones/memu/banknote_main.png';
 
 defineProps<{
-  active: 'watchlist' | 'field-trip' | 'post-win' | 'finance' | 'calendar' | 'more';
+  active: 'watchlist' | 'field-trip' | 'post-win' | 'finance' | 'more';
 }>();
 
 const router = useRouter();
@@ -42,16 +42,6 @@ const router = useRouter();
       <span class="amb-icon amb-mask" :style="{ '--i': `url(${banknoteIcon})` }" />
       <span>자금관리</span>
     </button>
-    <!-- 시장정보는 분석 도구로 옮겼다 — 그 자리에는 입찰 캘린더를 둔다 -->
-    <button type="button" :class="['amb-item', { active: active === 'calendar' }]" @click="router.push('/bid-calendar')">
-      <!-- PNG 를 가면(mask)으로 쓰면 이 그림은 네모로 뭉개진다 — 선 그림으로 직접 그린다 -->
-      <svg class="amb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="5" width="18" height="16" rx="2.5" />
-        <path d="M3 10h18M8 3v4M16 3v4" />
-        <path d="M8 14h2M14 14h2M8 17.5h2M14 17.5h2" />
-      </svg>
-      <span>캘린더</span>
-    </button>
     <button type="button" :class="['amb-item', { active: active === 'more' }]" @click="router.push('/more')">
       <svg class="amb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
         <rect x="2.5" y="8.5" width="7" height="7" rx="1.6" />
@@ -70,7 +60,7 @@ const router = useRouter();
   left: 0; right: 0; bottom: 0;
   display: grid;
   /* 메뉴 수에 맞춰 고르게 나눈다 — 세금관리가 빠져 다섯 칸이다 */
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   background: #fff;
   border-top: 1px solid #eef0f5;
   padding: 6px 0 max(6px, env(safe-area-inset-bottom));

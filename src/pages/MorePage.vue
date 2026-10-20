@@ -3,8 +3,8 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
+import MyPageCards from '../components/MyPageCards.vue';
 import { useAuthStore } from '../stores/authStore';
-import { useAlertBadge } from '../services/alertBadge';
 
 const router = useRouter();
 const route = useRoute();
@@ -32,66 +32,14 @@ const onAuthPill = async () => {
   router.push('/login');
 };
 
-interface QuickSub {
-  name: string;
-  path: string;
-  query?: Record<string, string>;
-  /** 윗줄과 갈라 놓는 가는 선 */
-  split?: boolean;
-  /** 아직 자리를 정하지 못한 줄 — 빨갛게 표시해 둔다 */
-  mark?: boolean;
-}
-interface QuickItem { name: string; path: string; items?: QuickSub[] }
-const QUICK: QuickItem[] = [
-  // 마이페이지도 눌러서 펼친다 — 가입·안내 묶음과 내 자리 묶음을 선으로 가른다.
-  // (빨간 줄은 아직 자리를 정하지 못한 것들 — 지우지 않고 표시만 해 둔다)
-  {
-    name: '마이페이지',
-    path: '',
-    items: [
-      { name: 'MYPAGE', path: '/mypage' },
-      { name: '결제관리', path: '/payments' },
-      { name: '포인트내역', path: '/point-history' },
-      { name: '결제하기', path: '/billing' },
-      { name: '정보수정', path: '/profile' },
-      { name: '회원탈퇴', path: '/withdraw' },
-      { name: '보관함', path: '/archive', mark: true },
-      { name: '휴지통', path: '/trash', mark: true },
-      { name: '중개업체관리', path: '/agencies', mark: true },
-      { name: '알림설정', path: '/notifications', mark: true },
-    ],
-  },
+const QUICK: Array<{ name: string; path: string }> = [
+  { name: '마이페이지', path: '/mypage' },
   { name: '결제하기', path: '/billing' },
-  // 부가서비스는 눌러서 펼친다 — 자리를 더 내지 않고 줄을 늘릴 수 있다
-  {
-    name: '부가서비스',
-    path: '',
-    items: [
-      { name: '공지사항', path: '#notice' },
-      { name: '이벤트', path: '#event' },
-      { name: '업데이트', path: '#update' },
-      { name: '포인트', path: '/points' },
-    ],
-  },
   { name: '고객센터', path: '/support' },
 ];
-/** 펼쳐 둔 바로가기 이름 ('' 이면 닫힘) */
-const quickOpen = ref('');
-const goQuick = (q: QuickItem) => {
-  if (q.items?.length) { quickOpen.value = quickOpen.value === q.name ? '' : q.name; return; }
+const goQuick = (q: { name: string; path: string }) => {
   if (!q.path) { notReady(q.name); return; }
   router.push(q.path);
-};
-const goQuickSub = (it: QuickSub) => {
-  quickOpen.value = '';
-  if (!it.path) { notReady(it.name); return; }
-  // '#표식' 이면 같은 화면의 그 묶음으로 내려간다
-  if (it.path.startsWith('#')) {
-    const el = document.querySelector(`[data-sec="${it.path.slice(1)}"]`);
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    return;
-  }
-  router.push({ path: it.path, query: it.query });
 };
 
 // 머리글의 선물상자처럼 '?sec=event' 로 들어오면 그 묶음으로 내려간다
@@ -103,52 +51,6 @@ onMounted(() => {
   }, 60);
 });
 
-// 지금 걸린 알림이 몇 건인지 — 머리글의 종과 같은 셈을 쓴다
-const { count: alertCount } = useAlertBadge();
-
-const EVENTS = [
-  { tag: '안내', text: '경매 PDF 자동 분석 정확도 개선 안내' },
-  { tag: '안내', text: '국토부 실거래가 조회 기간 확대 (최대 12개월)' },
-];
-
-// 이벤트 배너 — 운영에서 내려주는 값으로 바꾸면 되는 자리. 지금은 더미 한 장.
-const EVENT_BANNERS = [
-  {
-    badge: 'EVENT',
-    title: '첫 낙찰 축하 리워드',
-    desc: '마이턴에서 분석한 물건으로 낙찰받으면 분석 리포트 3개월 무료',
-    cta: '자세히 보기',
-    period: '2026.10.01 ~ 10.31',
-  },
-];
-
-const NOTICES = [
-  { tag: '', star: true, text: '서비스 이용약관 개정 안내 (시행 예정)' },
-  { tag: '점검', star: false, text: '정기 서버 점검 안내 — 매월 첫째 주 새벽' },
-  { tag: '안내', star: false, text: '국토부 실거래가 조회 일시 지연 안내' },
-  { tag: '안내', star: false, text: '경매 PDF 자료 보관 기간 안내' },
-];
-
-const UPDATES = [
-  { tag: '신규', text: '세금관리 탭 추가 — 연도별 사업소득·종합소득세 집계' },
-  { tag: '신규', text: '입찰 캘린더 추가 — 선정물건 입찰일을 달력으로' },
-  { tag: '기능', text: '입찰가산정에 낙찰일·매도일 입력 추가' },
-  { tag: '기능', text: '임장경로 동선최적화 목록 드래그 순서 변경' },
-  { tag: '개선', text: '선정물건 목록 중요도 별표(1·2·3) 표시' },
-  { tag: '개선', text: '숨긴 물건 선택 복원 기능' },
-];
-
-
-// 약관 — 화면이 있는 것은 그 자리로, 아직 없는 것은 '준비 중' 안내
-const POLICIES: Array<{ name: string; path: string }> = [
-  { name: '이용약관', path: '/terms' },
-  { name: '개인정보처리방침', path: '/privacy' },
-  { name: '위치기반서비스 이용약관', path: '' },
-];
-const openPolicy = (p: { name: string; path: string }) => {
-  if (!p.path) { notReady(p.name); return; }
-  router.push(p.path);
-};
 </script>
 
 <template>
@@ -174,91 +76,22 @@ const openPolicy = (p: { name: string; path: string }) => {
           </button>
           <button type="button" class="pill" @click="onAuthPill">{{ authStore.isLoggedIn ? '로그아웃' : '로그인' }}</button>
           <button type="button" class="pill" @click="router.push('/profile')">내 정보 수정</button>
-          <button type="button" class="pill" @click="router.push('/notifications')">
-            알림설정<em v-if="alertCount" class="pill-dot" />
-          </button>
           <button type="button" class="pill last" @click="notReady('인증/보안')">인증·보안</button>
         </div>
       </div>
 
-      <div v-if="quickOpen" class="quick-veil" @click="quickOpen = ''" />
       <div class="quick">
-        <div v-for="q in QUICK" :key="q.name" class="quick-cell">
-          <button type="button" class="quick-item" @click="goQuick(q)">
-            {{ q.name }}<i v-if="q.items" class="quick-caret">{{ quickOpen === q.name ? '▴' : '▾' }}</i>
-          </button>
-          <ul v-if="q.items && quickOpen === q.name" class="quick-menu">
-            <li v-for="it in q.items" :key="it.name" :class="{ split: it.split }">
-              <button type="button" :class="{ mark: it.mark }" @click="goQuickSub(it)">{{ it.name }}</button>
-            </li>
-          </ul>
-        </div>
+        <button v-for="q in QUICK" :key="q.name" type="button" class="quick-item" @click="goQuick(q)">
+          {{ q.name }}
+        </button>
       </div>
       </section>
     </div>
 
-    <!-- 이벤트 -->
-    <section class="more-card" data-sec="event">
-      <h2 class="sec-head">이벤트</h2>
-      <button v-for="(e, i) in EVENTS" :key="i" type="button" class="list-item" @click="notReady('이벤트')">
-        <span class="tag">{{ e.tag }}</span>
-        <span class="txt">{{ e.text }}</span>
-      </button>
-
-      <!-- 이벤트 배너 자리 — 여러 장이면 옆으로 넘겨 본다 -->
-      <div class="ev-banners">
-        <button
-          v-for="(b, i) in EVENT_BANNERS"
-          :key="i"
-          type="button"
-          class="ev-banner"
-          @click="notReady('이벤트')"
-        >
-          <span class="ev-badge">{{ b.badge }}</span>
-          <strong class="ev-title">{{ b.title }}</strong>
-          <span class="ev-desc">{{ b.desc }}</span>
-          <span class="ev-foot">
-            <span class="ev-period">{{ b.period }}</span>
-            <span class="ev-cta">{{ b.cta }} ›</span>
-          </span>
-        </button>
-      </div>
-    </section>
-
-    <!-- 공지사항 -->
-    <section class="more-card" data-sec="notice">
-      <button type="button" class="sec-head link" @click="notReady('공지사항')">
-        공지사항<span class="dot" /><span class="arr">›</span>
-      </button>
-      <button v-for="(n, i) in NOTICES" :key="i" :class="['list-item', { pinned: n.star }]" type="button" @click="notReady('공지사항')">
-        <span v-if="n.star" class="star">✦</span>
-        <span v-else class="tag">{{ n.tag }}</span>
-        <span class="txt">{{ n.text }}</span>
-      </button>
-    </section>
-
-    <!-- 업데이트 소식 -->
-    <section class="more-card" data-sec="update">
-      <button type="button" class="sec-head link" @click="notReady('업데이트 소식')">
-        업데이트 소식<span class="arr">›</span>
-      </button>
-      <button v-for="(u, i) in UPDATES" :key="i" class="list-item" type="button" @click="notReady('업데이트 소식')">
-        <span class="tag">{{ u.tag }}</span>
-        <span class="txt">{{ u.text }}</span>
-      </button>
-    </section>
-
-    <!-- 약관 및 정책 -->
-    <section class="more-card">
-      <h2 class="sec-head plain">약관 및 정책</h2>
-      <button
-        v-for="p in POLICIES"
-        :key="p.name"
-        type="button"
-        class="policy"
-        @click="openPolicy(p)"
-      >{{ p.name }}</button>
-    </section>
+    <!-- 마이페이지 메뉴를 그대로 뿌린다 (MYPAGE 화면과 같은 카드) -->
+    <div class="more-body">
+      <MyPageCards />
+    </div>
 
     <p class="more-version">MyTurn Auction · v1.0</p>
 
@@ -299,6 +132,7 @@ const openPolicy = (p: { name: string; path: string }) => {
 .more-card.first { margin-top: 10px; }
 /* 바로가기로 내려올 때 고정된 제목·계정 상자에 가리지 않게 자리를 둔다 */
 .more-card[data-sec] { scroll-margin-top: 122px; }
+.more-body { padding: 0 14px; }
 .more-card {
   margin: 0 14px 10px; padding: 14px 13px;
   background: #fff; border: 1px solid #e8ebf1; border-radius: 14px;

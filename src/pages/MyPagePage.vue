@@ -6,15 +6,14 @@ import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import { useAuthStore } from '../stores/authStore';
-import { useAuctionStore } from '../stores/auctionStore';
 import { POINT_GRADES } from '../services/pointPolicy';
 import { TRIAL_DAYS } from '../services/trialInfo';
 import { PLAN_REST_DAYS } from '../services/billingPlans';
-import { propTypeName } from '../utils/propertyType';
+import MyPageCards from '../components/MyPageCards.vue';
+import { EVENTS, EVENT_BANNERS, NOTICES, UPDATES } from '../services/boardNews';
 
 const router = useRouter();
 const auth = useAuthStore();
-const store = useAuctionStore();
 
 /** 아이디 — 로그인에 쓰는 메일의 앞쪽 */
 const loginId = computed(() => (auth.email ?? '').split('@')[0] || '-');
@@ -22,86 +21,11 @@ const loginId = computed(() => (auth.email ?? '').split('@')[0] || '-');
 const grade = POINT_GRADES[0];
 const myPoint = 0;
 
-/* ───────── 건수 — 실제 물건에서 센다 ───────── */
-
-/** 온비드에서 온 것은 공매, 나머지는 경매 */
-const isPublicSale = (id: string) => id.startsWith('onbid-');
-const auctionCount = computed(() => store.auctions.filter((a) => !isPublicSale(a.id)).length);
-const publicSaleCount = computed(() => store.auctions.filter((a) => isPublicSale(a.id)).length);
-
-const p2 = (n: number) => String(n).padStart(2, '0');
-const now = new Date();
-const todayKey = `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())}`;
-const monthKey = `${now.getFullYear()}-${p2(now.getMonth() + 1)}`;
-const dateKeyOf = (raw?: string) => {
-  const d = String(raw ?? '').replace(/\D/g, '');
-  return d.length >= 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}` : '';
-};
-const bidToday = computed(() => store.auctions.filter((a) => dateKeyOf(a.eventDate) === todayKey).length);
-const bidMonth = computed(() => store.auctions.filter((a) => dateKeyOf(a.eventDate).startsWith(monthKey)).length);
-
-/** 종류별 건수 — 많은 것부터. 선정물건 목록의 배지와 같은 기준으로 묶는다 */
-const typeTally = computed(() => {
-  const by = new Map<string, number>();
-  for (const a of store.auctions) {
-    const name = propTypeName(a.propertyType);
-    by.set(name, (by.get(name) ?? 0) + 1);
-  }
-  return [...by.entries()]
-    .sort((x, y) => y[1] - x[1])
-    .map(([name, n]) => `${name} ${n}`);
-});
-
-/* ───────── 카드 ───────── */
-
-interface Card {
-  icon: string;
-  title: string;
-  /** 없으면 제목만 적는다 */
-  desc?: string;
-  path: string;
-  /** 카드 아래 작은 숫자 줄 */
-  tally?: string;
-  /** 두 번째 줄 — 종류별 건수처럼 여러 토막 */
-  tallies?: string[];
-  lead?: boolean;
-}
-
-const PICK_CARDS = computed<Card[]>(() => [
-  {
-    icon: '⭐', title: '나의 선정물건', lead: true,
-    desc: '내가 등록한 물건을 한자리에서',
-    path: '/auctions/watchlist',
-    tally: `경매 ${auctionCount.value}건 · 공매 ${publicSaleCount.value}건`,
-    tallies: typeTally.value,
-  },
-  { icon: '📦', title: '보관함', desc: '선정물건 중 보관 물건', path: '/archive' },
-  { icon: '🗑️', title: '휴지통', desc: '물건 지우기 및 되살리기', path: '/trash' },
-  { icon: '🔔', title: '알림설정', desc: '기한·일정 알림', path: '/notifications' },
-  { icon: '🏢', title: '중개업체 관리', desc: '상호·연락처 관리', path: '/agencies' },
-  {
-    icon: '📅', title: '입찰달력',
-    path: '/bid-calendar',
-    tally: `오늘 ${bidToday.value}건 · 이달 ${bidMonth.value}건`,
-  },
-]);
-
-const ACCOUNT_CARDS: Card[] = [
-  { icon: '🧾', title: '결제하기', desc: '이용 기간 고르기', path: '/billing' },
-  { icon: '💳', title: '결제관리', desc: '내역·영수증 보기', path: '/payments' },
-  { icon: '🅿️', title: '포인트내역', desc: '적립·사용 내역', path: '/point-history' },
-  { icon: '🙍', title: '정보수정', desc: '닉네임·개인정보', path: '/profile' },
-  { icon: '🚪', title: '회원탈퇴', desc: '계정·자료 삭제', path: '/withdraw' },
-];
-
 const toastText = ref('');
-const go = (c: Card) => {
-  if (!c.path) {
-    toastText.value = `${c.title} — 준비 중입니다.`;
-    window.setTimeout(() => { toastText.value = ''; }, 1600);
-    return;
-  }
-  router.push(c.path);
+/** 아직 화면이 없는 자리 — 안내만 띄운다 */
+const notReady = (what: string) => {
+  toastText.value = `${what} — 준비 중입니다.`;
+  window.setTimeout(() => { toastText.value = ''; }, 1600);
 };
 </script>
 
@@ -137,41 +61,43 @@ const go = (c: Card) => {
         </div>
       </section>
 
-      <!-- MY 선정물건 -->
-      <h2 class="myp-h2"><em>MY</em> 선정물건</h2>
-      <div class="myp-grid">
-        <button
-          v-for="c in PICK_CARDS"
-          :key="c.title"
-          type="button"
-          :class="['myp-card', { lead: c.lead }]"
-          @click="go(c)"
-        >
-          <span class="myp-card-ico">{{ c.icon }}</span>
-          <span class="myp-card-txt">
-            <strong>{{ c.title }}</strong>
-            <small v-if="c.desc">{{ c.desc }}</small>
-            <span v-if="c.tally || c.tallies?.length" class="myp-tallyline">
-              <em v-if="c.tally" class="myp-tally">{{ c.tally }}</em>
-              <i v-for="t in c.tallies" :key="t" class="myp-type">{{ t }}</i>
-            </span>
-          </span>
-          <i class="myp-go">›</i>
-        </button>
-      </div>
+      <MyPageCards />
 
-      <!-- 계정 관리 -->
-      <h2 class="myp-h2">계정 관리</h2>
-      <div class="myp-grid">
-        <button v-for="c in ACCOUNT_CARDS" :key="c.title" type="button" class="myp-card" @click="go(c)">
-          <span class="myp-card-ico">{{ c.icon }}</span>
-          <span class="myp-card-txt">
-            <strong>{{ c.title }}</strong>
-            <small v-if="c.desc">{{ c.desc }}</small>
-          </span>
-          <i class="myp-go">›</i>
+      <!-- 소식 -->
+      <h2 class="myp-h2">소식</h2>
+      <section class="myp-news">
+        <h3 class="myp-news-h">공지사항<i class="dot" /></h3>
+        <button v-for="(n, i) in NOTICES" :key="`n${i}`" type="button" class="myp-row" @click="notReady('공지사항')">
+          <span v-if="n.star" class="star">✦</span><span v-else class="tag">{{ n.tag }}</span>
+          <span class="txt">{{ n.text }}</span>
         </button>
-      </div>
+      </section>
+
+      <section class="myp-news">
+        <h3 class="myp-news-h">이벤트</h3>
+        <button v-for="(e, i) in EVENTS" :key="`e${i}`" type="button" class="myp-row" @click="notReady('이벤트')">
+          <span class="tag">{{ e.tag }}</span><span class="txt">{{ e.text }}</span>
+        </button>
+        <button
+          v-for="(b, i) in EVENT_BANNERS"
+          :key="`b${i}`"
+          type="button"
+          class="myp-banner"
+          @click="notReady('이벤트')"
+        >
+          <span class="badge">{{ b.badge }}</span>
+          <strong>{{ b.title }}</strong>
+          <small>{{ b.desc }}</small>
+          <span class="foot"><em>{{ b.period }}</em><i>{{ b.cta }} ›</i></span>
+        </button>
+      </section>
+
+      <section class="myp-news">
+        <h3 class="myp-news-h">업데이트</h3>
+        <button v-for="(u, i) in UPDATES" :key="`u${i}`" type="button" class="myp-row" @click="notReady('업데이트')">
+          <span class="tag">{{ u.tag }}</span><span class="txt">{{ u.text }}</span>
+        </button>
+      </section>
 
       <!-- 무료체험 -->
       <button type="button" class="myp-trial" @click="router.push('/trial')">
@@ -237,45 +163,42 @@ const go = (c: Card) => {
 
 /* 묶음 제목 */
 .myp-h2 { margin: 0 2px 8px; font-size: 14px; font-weight: 800; color: #111827; }
-.myp-h2 em { font-style: normal; color: #4a5bb5; margin-right: 4px; }
-.myp-h2 + .myp-grid { margin-bottom: 18px; }
 
-/* 카드 */
-.myp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
-/* 카드 전체가 단추다 — 꺾쇠는 '누를 수 있다'는 표시일 뿐, 어디를 눌러도 같이 간다.
-   글이 한 줄이라 그림과 글의 세로 가운데를 맞춘다 */
-.myp-card {
-  position: relative; display: flex; align-items: center; gap: 9px;
-  text-align: left; cursor: pointer;
-  background: #fff; border: 1px solid #e8ebf1; border-radius: 12px; padding: 11px 20px 11px 11px;
+/* 소식 */
+.myp-news { background: #fff; border: 1px solid #e8ebf1; border-radius: 12px; padding: 12px 13px; margin-bottom: 8px; }
+.myp-news-h {
+  margin: 0 0 6px; display: flex; align-items: center; gap: 4px;
+  font-size: 13px; font-weight: 800; color: #111827;
 }
-.myp-card.lead { align-items: flex-start; }
-.myp-go {
-  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-  font-style: normal; font-size: 16px; color: #c3cbdd; pointer-events: none;
+.myp-news-h .dot { width: 5px; height: 5px; border-radius: 50%; background: #ef4444; }
+.myp-row {
+  width: 100%; display: flex; align-items: center; gap: 7px; text-align: left; cursor: pointer;
+  border: none; background: transparent; padding: 7px 0; border-bottom: 1px solid #f4f6fa;
 }
-.myp-card.lead { grid-column: 1 / -1; border-color: #c2cdf0; background: #f7f9ff; }
-.myp-card-ico {
-  flex: none; width: 34px; height: 34px; border-radius: 9px; background: #eef2fc;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 17px;
+.myp-row:last-child { border-bottom: none; }
+.myp-row .tag {
+  flex: none; min-width: 30px; text-align: center; padding: 2px 5px; border-radius: 4px;
+  background: #f1f3f8; font-size: 10px; font-weight: 700; color: #6b7280;
 }
-.myp-card-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.myp-card-txt strong { font-size: 12.5px; font-weight: 800; color: #111827; }
-/* 설명은 한 줄로 — 칸을 넘치면 … 로 줄인다 */
-.myp-card-txt small {
-  font-size: 10.5px; line-height: 1.5; color: #8a93a4;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.myp-row .star { flex: none; color: #2b6df3; font-size: 12px; }
+.myp-row .txt { flex: 1 1 auto; min-width: 0; font-size: 11.5px; color: #374151; word-break: keep-all; }
+.myp-banner {
+  width: 100%; margin-top: 8px; text-align: left; cursor: pointer;
+  border: none; border-radius: 10px; padding: 13px 14px;
+  background: linear-gradient(135deg, #2f4fa8 0%, #27408f 100%); color: #fff;
+  display: flex; flex-direction: column; gap: 4px;
 }
-.myp-card.lead .myp-card-txt small { white-space: normal; word-break: keep-all; }
-/* 건수 줄 — 경매·공매 수와 종류별 수가 한 줄에 선다 (모자라면 다음 줄로) */
-.myp-tallyline { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 5px; }
-.myp-tally {
-  padding: 3px 8px; border-radius: 5px;
-  background: #eef2fc; font-style: normal; font-size: 11px; font-weight: 800; color: #2a3f8f;
+.myp-banner .badge {
+  align-self: flex-start; padding: 2px 7px; border-radius: 4px;
+  background: rgba(255,255,255,.18); font-size: 9.5px; font-weight: 800; letter-spacing: .5px;
 }
-.myp-type {
-  font-style: normal; font-size: 10.5px; font-weight: 700; color: #4b5563;
-  background: #f3f5fa; border-radius: 4px; padding: 3px 6px;
+.myp-banner strong { font-size: 14px; font-weight: 800; }
+.myp-banner small { font-size: 11px; opacity: .85; word-break: keep-all; }
+.myp-banner .foot { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.myp-banner .foot em { font-style: normal; font-size: 10.5px; opacity: .75; }
+.myp-banner .foot i {
+  margin-left: auto; font-style: normal; font-size: 11px; font-weight: 700;
+  background: rgba(255,255,255,.16); border-radius: 999px; padding: 4px 10px;
 }
 
 /* 무료체험 */

@@ -13,6 +13,7 @@ import {
   type FaqItem,
   type GuideItem,
 } from '../services/supportFaq';
+import { POLICIES } from '../services/boardNews';
 
 const router = useRouter();
 
@@ -35,6 +36,10 @@ const notReady = (what: string) => {
 const goGuide = (g: GuideItem) => {
   if (!g.path) { notReady(g.label); return; }
   router.push(g.path);
+};
+const openPolicy = (p: { name: string; path: string }) => {
+  if (!p.path) { notReady(p.name); return; }
+  router.push(p.path);
 };
 const openContact = (c: ContactWay) => {
   if (!c.href) { notReady(c.title); return; }
@@ -100,6 +105,18 @@ const openContact = (c: ContactWay) => {
           </span>
           <i class="sup-arr">›</i>
         </button>
+      </section>
+
+      <!-- 약관 및 정책 -->
+      <section class="sup-card">
+        <h2 class="sup-h2">약관 및 정책</h2>
+        <button
+          v-for="p in POLICIES"
+          :key="p.name"
+          type="button"
+          class="sup-policy"
+          @click="openPolicy(p)"
+        >{{ p.name }}<i>›</i></button>
       </section>
 
       <!-- 앱 내려받기 -->
@@ -199,6 +216,15 @@ const openContact = (c: ContactWay) => {
 .sup-c-txt strong { font-size: 13px; font-weight: 800; color: #111827; }
 .sup-c-txt small { font-size: 11px; line-height: 1.5; color: #6b7280; word-break: keep-all; }
 .sup-arr { flex: none; font-style: normal; font-size: 18px; color: #c3cbdd; }
+
+/* 약관 */
+.sup-policy {
+  width: 100%; display: flex; align-items: center; cursor: pointer;
+  border: none; background: transparent; padding: 11px 0; border-bottom: 1px solid #f1f3f7;
+  font-family: inherit; font-size: 12.5px; font-weight: 700; color: #374151; text-align: left;
+}
+.sup-policy:last-child { border-bottom: none; }
+.sup-policy i { margin-left: auto; font-style: normal; font-size: 16px; color: #c3cbdd; }
 
 /* 앱 */
 .sup-app-txt { margin: 0 0 10px; font-size: 11.5px; line-height: 1.7; color: #6b7280; word-break: keep-all; }
