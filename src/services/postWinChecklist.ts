@@ -97,7 +97,7 @@ export const POST_WIN_DAY: CheckGroup[] = [
   {
     key: 'file',
     title: '경매사건 열람',
-    note: '점유자 연락처, 공실상태 비번, 추가 인수사항 및 세금 확인 (당일 열람 가능 시)',
+    note: '점유자 연락처, 공실상태 비번, 추가 인수사항 및 세금 확인',
     sections: [
       {
         label: '법원(종합민원실)',
