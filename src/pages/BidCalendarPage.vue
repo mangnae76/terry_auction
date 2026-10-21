@@ -344,16 +344,16 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
 /* 손전화에서는 이 둘만 보이므로 크게 쓴다 — 칸이 좁아 줄을 내려 두 줄로 선다
    ('2025-' / '00001'). 웹은 아래 style.css 에서 제 치수로 되돌린다 */
 .cal-event .ev-case {
-  font-size: 15px !important; font-weight: 800; color: #111827 !important;
+  font-size: 10.5px !important; font-weight: 500; color: #111827 !important;
   /* 줄은 붙임표(-)에서만 내린다 — '2025-' / '00003' 두 줄 */
   white-space: normal; word-break: normal; overflow-wrap: normal; line-height: 1.15; letter-spacing: -0.6px;
 }
 /* 유찰 횟수 — 사건번호와 같은 크기로. 값이 떨어진 만큼 눈에 띄어야 한다 */
 .cal-event .ev-fail {
-  font-size: 15px !important; font-weight: 800; color: #dc2626 !important;
+  font-size: 10.5px !important; font-weight: 500; color: #dc2626 !important;
   white-space: normal; line-height: 1.15; margin-top: 2px !important;
 }
-.cal-event .ev-fail.fresh { color: #6b7280 !important; font-weight: 700; }
+.cal-event .ev-fail.fresh { color: #6b7280 !important; font-weight: 500; }
 /* 앱(손전화)에서는 사건번호와 유찰 횟수만 — 달력 한 칸이 좁아 나머지는 뭉개진다.
    넓은 화면(웹)에서는 style.css 의 html.is-web 규칙이 도로 펴 준다 */
 .cal-event .ev-addr,

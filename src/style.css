@@ -2184,8 +2184,8 @@ html.is-web {
      읽으려고 몸을 숙이게 된다. 손전화 쪽은 한 줄도 건드리지 않는다. */
   html.is-web .cal-event p { font-size: 16px; line-height: 1.4; }
   /* 웹은 칸이 넓다 — 사건번호를 한 줄로 되돌린다 (손전화는 두 줄로 내려 쓴다) */
-  html.is-web .cal-event .ev-case { font-size: 17px !important; white-space: nowrap; letter-spacing: normal; }
-  html.is-web .cal-event .ev-fail { font-size: 16px !important; }
+  html.is-web .cal-event .ev-case { font-size: 12px !important; font-weight: 500; white-space: nowrap; letter-spacing: normal; }
+  html.is-web .cal-event .ev-fail { font-size: 11px !important; font-weight: 500; }
   html.is-web .cal-event { padding: 7px 8px; border-radius: 8px; }
   html.is-web .cal-event .ev-area svg { width: 15px; height: 15px; }
   /* 날짜와 요일도 같이 키운다 — 칸이 커졌는데 숫자만 작으면 따로 논다 */

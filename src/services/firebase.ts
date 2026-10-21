@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { connectAuthEmulator, getAuth } from 'firebase/auth';
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -25,5 +25,10 @@ const firebaseApp = fireStoreEnabled ? initializeApp(firebaseConfig) : null;
 export const firestore = firebaseApp ? getFirestore(firebaseApp) : null;
 export const storage = firebaseApp ? getStorage(firebaseApp) : null;
 export const auth = firebaseApp ? getAuth(firebaseApp) : null;
+if (import.meta.env.VITE_USE_EMULATOR === 'true' && auth && firestore) {
+  connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+  connectFirestoreEmulator(firestore, 'localhost', 8080);
+}
+
 export const firestoreReady = Boolean(firestore);
 export const firestoreDisabledReason = disabledReason;
