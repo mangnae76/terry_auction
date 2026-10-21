@@ -1653,8 +1653,6 @@ watch(() => authStore.uid, (newUid) => {
           <img :src="infoIcon" alt="" class="ftp-action-icon-img" />동선최적화
         </button>
       </div>
-      <!-- 언제 계산한 경로인지 — 버튼 바로 아래 -->
-      <p class="ftp-update-under">UPDATE : {{ formatLastUpdate }}</p>
       <p v-if="routeSkipNote" class="ftp-skip-note">{{ routeSkipNote }}</p>
 
     </div>
@@ -1684,6 +1682,8 @@ watch(() => authStore.uid, (newUid) => {
       <span class="ftp-title-stats">
         <img :src="mapPinIcon" alt="" />방문 <b>{{ stopCount || 0 }}</b>건
         <img :src="mapPinPlusIcon" alt="" />완료 <b>{{ visitedCount }}</b>건
+        <!-- 언제 계산한 경로인지 — 같은 줄 오른쪽 끝에 붙인다 -->
+        <em class="ftp-update-when">UPDATE : {{ formatLastUpdate }}</em>
       </span>
     </div>
 
@@ -1718,7 +1718,7 @@ watch(() => authStore.uid, (newUid) => {
                 aria-label="목록에서 제거"
                 title="목록에서 제거"
                 @click="removeStop(row.address)"
-              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M8 12h8" /></svg></button>
+              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.5" y="2.5" width="19" height="19" rx="4" /><path d="M8 12h8" /></svg></button>
             </article>
           </template>
           <article
@@ -1785,7 +1785,7 @@ watch(() => authStore.uid, (newUid) => {
               :class="{ checked: isVisited(stop.address) }"
               :disabled="loading"
               aria-label="방문완료"
-              title="방문 토글"
+              title="방문 완료"
               @click="toggleVisited(stop.address)"
             >
               <img :src="squareCheckIcon" alt="" class="ftp-stop-glyph-img" />
@@ -1798,7 +1798,7 @@ watch(() => authStore.uid, (newUid) => {
               aria-label="목록에서 제거"
               title="목록에서 제거"
               @click="removeStop(stop.address)"
-            ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M8 12h8" /></svg></button>
+            ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.5" y="2.5" width="19" height="19" rx="4" /><path d="M8 12h8" /></svg></button>
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
           </article>
@@ -1829,7 +1829,7 @@ watch(() => authStore.uid, (newUid) => {
                 aria-label="목록에서 제거"
                 title="목록에서 제거"
                 @click="removeStop(row.address)"
-              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M8 12h8" /></svg></button>
+              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.5" y="2.5" width="19" height="19" rx="4" /><path d="M8 12h8" /></svg></button>
             </article>
           </template>
 
@@ -1859,7 +1859,7 @@ watch(() => authStore.uid, (newUid) => {
                 aria-label="목록에서 제거"
                 title="목록에서 제거"
                 @click="removeStop(row.address)"
-              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M8 12h8" /></svg></button>
+              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.5" y="2.5" width="19" height="19" rx="4" /><path d="M8 12h8" /></svg></button>
             </article>
         </template>
         <p v-else-if="missingRows.length === 0" class="ftp-empty guide">선정물건에서 임장예정으로 옮기면 여기에 담깁니다.</p>
@@ -1910,7 +1910,7 @@ watch(() => authStore.uid, (newUid) => {
               aria-label="목록에 추가"
               title="목록에 추가"
               @click="restoreStop(row.id)"
-            ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M12 8v8M8 12h8" /></svg></button>
+            ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.5" y="2.5" width="19" height="19" rx="4" /><path d="M12 8v8M8 12h8" /></svg></button>
           </article>
         </template>
       </div>
@@ -2311,11 +2311,11 @@ watch(() => authStore.uid, (newUid) => {
 .ftp-stop-plus,
 .ftp-stop-minus {
   display: inline-flex; align-items: center; justify-content: center;
-  line-height: 0; color: #6b7280;
+  line-height: 0; color: #8a93a5;
 }
 .ftp-stop-glyph-svg { display: block; }
 .ftp-stop-minus:active { color: #dc2626; }
-.ftp-stop-plus { color: #2b6df3; }
+.ftp-stop-plus { color: #7aa2e8; }
 .ftp-stop-plus:active { color: #1d4ed8; }
 
 /* 경로제외물건 줄 — 상태 태그를 상자 오른쪽 끝에 맞춘다. 빈 칸을 없애 주소가 더 나온다 */
@@ -2401,9 +2401,10 @@ watch(() => authStore.uid, (newUid) => {
 .ftp-action:disabled { opacity: 0.55; cursor: not-allowed; }
 .ftp-action-optimize { background: #ef6b6b; }
 /* 동선최적화 버튼 바로 아래 — 언제 계산한 경로인지 */
-.ftp-update-under {
-  margin: 4px 0 0; text-align: right;
-  font-size: 10px; font-weight: 400; color: #2b6df3;
+/* 마지막 계산 시각 — '방문·완료' 줄 오른쪽 끝에 (동선최적화 단추 끝과 같은 선) */
+.ftp-update-when {
+  margin-left: auto; margin-right: -2px; padding-left: 10px; font-style: normal;
+  font-size: 10px; font-weight: 400; color: #2b6df3; white-space: nowrap;
 }
 /* 아직 순번을 못 받은 물건이 있을 때 — 눌러야 한다는 신호 */
 .ftp-action-optimize.needs {
