@@ -183,6 +183,8 @@ const onLogout = async () => {
 .amh-brand {
   display: flex; align-items: center; line-height: 0; flex-shrink: 0;
   margin-top: 8px; margin-bottom: -8px;
+  /* 왼쪽 끝을 아래 검색줄의 돋보기와 같은 자리에 둔다 */
+  margin-left: -2px;
 }
 .amh-info {
   display: inline-flex;

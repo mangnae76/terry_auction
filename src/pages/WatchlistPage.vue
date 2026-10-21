@@ -38,6 +38,12 @@ const searchQuery = ref('');
 
 // 목록에서는 '인천지방법원'처럼 긴 이름 대신 '인천법원'으로 짧게 보여 준다.
 // 지원이 붙은 곳('인천지방법원 부천지원')은 지원 이름을 쓴다.
+/** '2026-11-12' → '26-11-12' — 카드 줄이 좁아 앞 두 자리를 뗀다 */
+const shortYmd = (raw?: string) => {
+  const t = (raw ?? '').trim();
+  return /^\d{4}[-./]/.test(t) ? t.slice(2) : t;
+};
+
 const shortCourt = (raw?: string) => {
   const name = (raw ?? '').trim();
   if (!name) return '';
@@ -809,7 +815,7 @@ watch(
           <div class="wlp-card-meta">
             <span class="wlp-meta-date">
               <img :src="calendarDaysIcon" alt="" class="wlp-meta-date-icon" />
-              {{ item.eventDate }}
+              {{ shortYmd(item.eventDate) }}
             </span>
             <span class="wlp-meta-sep">·</span>
             <span class="wlp-meta-court">{{ shortCourt(item.courtName) }}</span>
