@@ -251,6 +251,24 @@ const monthTally = computed(() => {
 });
 const monthTotal = computed(() => monthTally.value.reduce((n, r) => n + r.count, 0));
 
+/** 달력으로 볼지 목록으로 볼지 — 달력은 한눈에, 목록은 날짜 차례로 훑기 좋다 */
+const view = ref<'cal' | 'list'>('cal');
+
+/** 이 달의 날짜별 묶음 — 날짜 차례로, 그날 줄도 차례로 */
+const monthDays = computed(() => {
+  const head = `${year.value}-${String(month.value).padStart(2, '0')}`;
+  return Object.keys(byDate.value)
+    .filter((key) => key.startsWith(head))
+    .sort()
+    .map((key) => ({ key, list: byDate.value[key] }));
+});
+
+/** '11월 12일 (목)' */
+const dayTitle = (key: string) => {
+  const [y, m, d] = key.split('-').map(Number);
+  return `${m}월 ${d}일 (${WEEKDAYS[new Date(y, m - 1, d).getDay()]})`;
+};
+
 const goDetail = (id: string) => router.push(`/auctions/${id}`);
 </script>
 
@@ -264,12 +282,16 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
 
     <div class="cal-card">
       <div class="cal-nav">
+        <span class="cal-view">
+          <button type="button" :class="['cal-view-btn', { on: view === 'cal' }]" @click="view = 'cal'">달력</button>
+          <button type="button" :class="['cal-view-btn', { on: view === 'list' }]" @click="view = 'list'">목록</button>
+        </span>
         <button type="button" class="cal-nav-btn" aria-label="이전 달" @click="moveMonth(-1)">‹</button>
         <strong>{{ year }}년 {{ month }}월</strong>
         <button type="button" class="cal-nav-btn" aria-label="다음 달" @click="moveMonth(1)">›</button>
         <!-- 한 칸씩 누르지 않고 한 번에 — 두 건 이상인 날을 모두 편다 -->
         <button
-          v-if="compact && (anyFolded || anyOpened)"
+          v-if="view === 'cal' && compact && (anyFolded || anyOpened)"
           type="button"
           class="cal-openall"
           @click="toggleAllDays"
@@ -284,11 +306,11 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
         </span>
       </div>
 
-      <div class="cal-grid cal-head">
+      <div v-if="view === 'cal'" class="cal-grid cal-head">
         <span v-for="(w, i) in WEEKDAYS" :key="w" :class="['cal-dow', { sun: i === 0, sat: i === 6 }]">{{ w }}</span>
       </div>
 
-      <div class="cal-grid cal-body">
+      <div v-if="view === 'cal'" class="cal-grid cal-body">
         <div v-for="c in cells" :key="c.key" :class="['cal-cell', { out: !c.inMonth }]">
           <p class="cal-daynum">
             <span :class="['cal-dnum', { sun: c.dow === 0 || holidayMap[c.key], sat: c.dow === 6 && !holidayMap[c.key], today: c.key === todayKey }]">{{ c.day }}</span>
@@ -331,6 +353,33 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
             @click.stop="toggleDay(c.key)"
           >접기</button>
         </div>
+      </div>
+
+      <!-- 목록 보기 — 날짜 차례로 쭉 훑는다 -->
+      <div v-if="view === 'list'" class="cal-list">
+        <p v-if="monthDays.length === 0" class="cal-list-none">이 달에 잡힌 날짜가 없습니다.</p>
+        <section v-for="d in monthDays" :key="d.key" class="cal-list-day">
+          <header class="cal-list-head">
+            <strong :class="{ today: d.key === todayKey }">{{ dayTitle(d.key) }}</strong>
+            <em v-if="holidayMap[d.key]" class="cal-list-holiday">{{ holidayMap[d.key] }}</em>
+            <span class="cal-list-count">{{ d.list.length }}건</span>
+          </header>
+          <button
+            v-for="it in d.list"
+            :key="`${it.a.id}-${it.kind}`"
+            type="button"
+            class="cal-list-row"
+            @click="goDetail(it.a.id)"
+          >
+            <span :class="['cal-list-tag', tagOf(it).tone]">{{ tagOf(it).label }}</span>
+            <span class="cal-list-main">
+              <b>{{ it.a.caseNumber || '사건번호 없음' }}<em class="fail">{{ failText(it.a) }}</em></b>
+              <small>{{ it.a.address || '주소 없음' }}</small>
+              <small class="won">감정 {{ money(it.a.metrics?.appraisalValue ?? 0) }} · 최저 {{ money(it.a.metrics?.minimumBidValue ?? 0) }}</small>
+            </span>
+            <span class="cal-list-arrow">›</span>
+          </button>
+        </section>
       </div>
     </div>
 
@@ -435,6 +484,53 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
   margin: 0; font-size: 8px; line-height: 1.45; color: #6b7280;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* 보기 전환 — 달 이름 왼쪽에 둔다 */
+.cal-view {
+  position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; border: 1px solid #dde3ee; border-radius: 999px; overflow: hidden; background: #fff;
+}
+.cal-view-btn {
+  border: none; border-radius: 0; background: #fff;
+  padding: 5px 11px; font-family: inherit; font-size: 11.5px; font-weight: 700; color: #6b7280; cursor: pointer;
+}
+.cal-view-btn.on { background: #2a3f8f; color: #fff; }
+
+/* 목록 보기 */
+.cal-list { padding: 4px 0 8px; }
+.cal-list-none { margin: 24px 0; text-align: center; font-size: 12.5px; color: #9ca3af; }
+.cal-list-day + .cal-list-day { margin-top: 14px; }
+.cal-list-head { display: flex; align-items: baseline; gap: 8px; padding: 6px 2px; border-bottom: 1px solid #eef1f6; }
+.cal-list-head strong { font-size: 13.5px; font-weight: 800; color: #111827; }
+.cal-list-head strong.today { color: #2a5fbf; }
+.cal-list-holiday { font-style: normal; font-size: 11px; color: #dc2626; }
+.cal-list-count { margin-left: auto; font-size: 11.5px; font-weight: 800; color: #2a5fbf; }
+.cal-list-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
+  border: none; border-bottom: 1px solid #f4f6fb; border-radius: 0; background: #fff;
+  padding: 10px 2px; text-align: left; cursor: pointer;
+}
+.cal-list-tag {
+  flex: none; min-width: 54px; text-align: center; padding: 4px 6px; border-radius: 5px;
+  font-size: 10.5px; font-weight: 800; background: #f1f3f8; color: #6b7280;
+}
+.cal-list-tag.desk { background: #eef1f8; color: #4b5563; }
+.cal-list-tag.plan { background: #e8f0ff; color: #2b6df3; }
+.cal-list-tag.visited { background: #e6f4ea; color: #1b7f3b; }
+.cal-list-tag.bid { background: #fff3e0; color: #b26a00; }
+.cal-list-tag.bidding { background: #fde7d5; color: #c2410c; }
+.cal-list-tag.done, .cal-list-tag.won { background: #2a3f8f; color: #fff; }
+.cal-list-tag.due { background: #dc2626; color: #fff; }
+.cal-list-tag.sold { background: #1b7f3b; color: #fff; }
+.cal-list-tag.closed { background: #f1f3f8; color: #9ca3af; }
+.cal-list-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cal-list-main b { font-size: 12.5px; font-weight: 700; color: #111827; }
+.cal-list-main .fail { margin-left: 6px; font-style: normal; font-size: 11px; font-weight: 700; color: #dc2626; }
+.cal-list-main small {
+  font-size: 11px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cal-list-main small.won { color: #9ca3af; }
+.cal-list-arrow { flex: none; font-size: 15px; color: #c7d2ea; }
+
 /* 다 보기 — 달 이름 오른쪽에 둔다 */
 .cal-openall {
   position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
