@@ -1343,7 +1343,7 @@ const toggleSection = (key: string) => {
   display: grid; grid-template-columns: 114px 12px 1fr; gap: 6px;
   align-items: center; margin-bottom: 12px;
 }
-.pw-br-head .pw-br-item { align-self: stretch; display: flex; align-items: center; justify-content: center; }
+.pw-br-head .pw-br-item { align-self: stretch; display: flex; align-items: center; }
 /* 때 표시 — 둥근 알약이 아니라 네모 상자 */
 .pw-br-pill {
   display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0;
@@ -1385,8 +1385,8 @@ const toggleSection = (key: string) => {
   font-size: 11.5px; font-weight: 600; color: #1f2937; line-height: 1.35; word-break: keep-all;
 }
 .pw-br-item .pw-br-txt { flex: 1 1 auto; min-width: 0; }
-/* 때 줄의 한마디는 체크하지 않는 글 — 가운데로 둔다 */
-.pw-br-item.flat { justify-content: center; text-align: center; padding: 7px 8px; cursor: default; }
+/* 때 줄의 한마디는 체크하지 않는 글 — 아래 할 일 줄과 같이 왼쪽에서 시작한다 */
+.pw-br-item.flat { justify-content: flex-start; text-align: left; padding: 7px 6px 7px 10px; cursor: default; }
 /* 체크 칸 — 표의 체크와 같은 크기 */
 .pw-br-box {
   flex: 0 0 auto; width: 13px; height: 13px; margin: 0;
