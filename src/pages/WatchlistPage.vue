@@ -817,9 +817,7 @@ watch(
               <img :src="calendarDaysIcon" alt="" class="wlp-meta-date-icon" />
               {{ shortYmd(item.eventDate) }}
             </span>
-            <span class="wlp-meta-sep">·</span>
             <span class="wlp-meta-court">{{ shortCourt(item.courtName) }}</span>
-            <span class="wlp-meta-sep">·</span>
             <span class="wlp-meta-case">{{ item.caseNumber }}</span>
           </div>
           <div class="wlp-card-actions">
@@ -1392,7 +1390,8 @@ watch(
 .wlp-card-meta {
   display: flex;
   align-items: center;
-  gap: 5px;
+  /* 날짜·법원·사건번호 사이는 글자 한 자쯤 띄운다 (가운뎃점 대신 여백으로 가른다) */
+  gap: 8px;
   font-size: 12px;
   color: #4b5563;
   flex-wrap: nowrap;
@@ -1408,7 +1407,7 @@ watch(
 .wlp-meta-sep { color: #cbd5e1; flex: 0 0 auto; }
 .wlp-card-actions {
   display: inline-flex;
-  gap: 4px;
+  gap: 3px;
   align-items: center;
   flex-shrink: 0;
   margin-left: auto;
