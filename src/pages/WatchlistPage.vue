@@ -180,6 +180,52 @@ const removeItem = (id: string, evt: MouseEvent) => {
   });
 };
 
+// 여러 건을 골라 한 번에 치운다 — 하나씩 ✕ 를 누르지 않아도 되게
+const pickMode = ref(false);
+const listPicked = ref<Record<string, boolean>>({});
+const pickedListIds = computed(() => displayedAuctions.value
+  .filter((item) => listPicked.value[item.id] === true)
+  .map((item) => item.id));
+const allListPicked = computed(() => displayedAuctions.value.length > 0
+  && displayedAuctions.value.every((item) => listPicked.value[item.id] === true));
+const togglePickMode = () => {
+  pickMode.value = !pickMode.value;
+  listPicked.value = {};
+};
+const toggleListPick = (id: string) => {
+  listPicked.value = { ...listPicked.value, [id]: !listPicked.value[id] };
+};
+const toggleAllListPicked = () => {
+  if (allListPicked.value) { listPicked.value = {}; return; }
+  const next: Record<string, boolean> = {};
+  displayedAuctions.value.forEach((item) => { next[item.id] = true; });
+  listPicked.value = next;
+};
+/** 고른 물건을 휴지통으로 — 전체삭제와 같은 자리로 간다 */
+const removePicked = () => {
+  const ids = pickedListIds.value;
+  if (ids.length === 0) return;
+  askConfirm({
+    title: `고른 ${ids.length}건을 지우겠습니까?`,
+    desc: '휴지통에서 되살릴 수 있습니다. 단계와 적어 둔 내용은 그대로 돌아옵니다.',
+    okLabel: '삭제',
+    skipKey: 'wlp.skip.removePicked',
+    run: async () => {
+      await store.hideAuctions(ids);
+      listPicked.value = {};
+      pickMode.value = false;
+    },
+  });
+};
+/** 고른 물건을 보관함으로 — 버리는 것이 아니라 잠시 내려놓는다 */
+const archivePicked = async () => {
+  const ids = pickedListIds.value;
+  if (ids.length === 0) return;
+  await store.archiveAuctions(ids, true);
+  listPicked.value = {};
+  pickMode.value = false;
+};
+
 // 화면에서만 감춘다 — Firestore 문서는 지우지 않는다
 const removeAll = async () => {
   const targets = displayedAuctions.value;
@@ -767,6 +813,22 @@ watch(
           </span>
         </div>
         <div class="wlp-filter-cell fixed">
+          <!-- 고르기 — 켜면 카드에 체크가 붙고 여러 건을 한 번에 치운다 -->
+          <button
+            type="button"
+            :class="['wlp-pick-btn', { on: pickMode }]"
+            :disabled="displayedAuctions.length === 0"
+            title="골라서 지우기"
+            aria-label="골라서 지우기"
+            @click="togglePickMode"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="3" />
+              <path d="m8 12 3 3 5-6" />
+            </svg>
+          </button>
+        </div>
+        <div class="wlp-filter-cell fixed">
           <button
             type="button"
             class="wlp-clear-all"
@@ -815,6 +877,18 @@ watch(
         >입찰진행 <em>({{ bidRunningCount }})</em></button>
       </div>
 
+      <!-- 고르기 띠 — 켜져 있을 때만 선다 -->
+      <div v-if="pickMode" class="wlp-pickbar">
+        <button type="button" @click="toggleAllListPicked">{{ allListPicked ? '전체해제' : '전체선택' }}</button>
+        <button type="button" class="box" :disabled="pickedListIds.length === 0" @click="archivePicked">
+          보관함{{ pickedListIds.length > 0 ? ` (${pickedListIds.length})` : '' }}
+        </button>
+        <button type="button" class="purge" :disabled="pickedListIds.length === 0" @click="removePicked">
+          삭제{{ pickedListIds.length > 0 ? ` (${pickedListIds.length})` : '' }}
+        </button>
+        <button type="button" @click="togglePickMode">닫기</button>
+      </div>
+
       <p v-if="legacyFailed.length > 0" class="wlp-legacy-note">
         단계에서 <strong>탈락</strong>을 없앴습니다 — 남아 있는 {{ legacyFailed.length }}건
         <button type="button" @click="moveLegacyFailedToTrash">휴지통으로 옮기기</button>
@@ -830,8 +904,12 @@ watch(
       <article
         v-for="item in displayedAuctions"
         :key="item.id"
-        :class="['wlp-card', { 'wlp-card-compact': listCollapsed, 'wlp-card-past': bidPassed(item) }]"
-        @click="goDetail(item.id)"
+        :class="['wlp-card', {
+          'wlp-card-compact': listCollapsed,
+          'wlp-card-past': bidPassed(item),
+          'wlp-card-picked': pickMode && listPicked[item.id] === true,
+        }]"
+        @click="pickMode ? toggleListPick(item.id) : goDetail(item.id)"
       >
         <span v-if="bidPassed(item)" class="wlp-ribbon" aria-label="갱신 필요" title="갱신 필요">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -839,6 +917,13 @@ watch(
           </svg>
         </span>
         <div class="wlp-card-top">
+          <input
+            v-if="pickMode"
+            type="checkbox"
+            class="wlp-card-check"
+            :checked="listPicked[item.id] === true"
+            @click.stop="toggleListPick(item.id)"
+          />
           <div class="wlp-card-meta">
             <span class="wlp-meta-date">
               <img :src="calendarDaysIcon" alt="" class="wlp-meta-date-icon" />
@@ -847,7 +932,7 @@ watch(
             <span class="wlp-meta-court">{{ shortCourt(item.courtName) }}</span>
             <span class="wlp-meta-case">{{ item.caseNumber }}</span>
           </div>
-          <div class="wlp-card-actions">
+          <div v-if="!pickMode" class="wlp-card-actions">
             <button
               type="button"
               class="wlp-card-icon wlp-card-star"
@@ -1247,6 +1332,35 @@ watch(
 .wlp-filter-cell .wlp-sort-btn.on {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='10' viewBox='0 0 12 10'%3E%3Cpath d='M1 3h9M7.6 0.6 10.4 3 7.6 5.4' fill='none' stroke='%232b6df3' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M11 7H2M4.4 4.6 1.6 7 4.4 9.4' fill='none' stroke='%232b6df3' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
+/* 고르기 — 전체삭제와 같은 크기의 네모 단추 */
+.wlp-pick-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  box-sizing: border-box; height: 30px; width: 32px;
+  border: 1px solid #d5dbe6; background: #fff; border-radius: 8px;
+  padding: 0; line-height: 1; color: #4b5563; cursor: pointer;
+}
+.wlp-pick-btn svg { width: 18px; height: 18px; }
+.wlp-pick-btn.on { background: #2b6df3; border-color: #2b6df3; color: #fff; }
+.wlp-pick-btn:disabled { opacity: 0.35; cursor: default; }
+/* 고르기 띠 — 보관함·휴지통 목록의 머리줄과 같은 꼴 */
+.wlp-pickbar {
+  display: flex; gap: 6px; margin: 0 5px 8px;
+  padding: 7px 8px; border: 1px solid #e3e8f0; border-radius: 8px; background: #f7f9fc;
+}
+.wlp-pickbar button {
+  flex: 1 1 0; min-width: 0; white-space: nowrap;
+  border: 1px solid #d5dbe6; background: #fff; border-radius: 6px;
+  padding: 0 6px; height: 30px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit; font-size: 11px; font-weight: 700; color: #374151; cursor: pointer;
+}
+.wlp-pickbar button.box { background: #fff; border-color: #d5dbe6; color: #374151; }
+.wlp-pickbar button.purge { background: #fff; border-color: #f0d2d2; color: #d14343; }
+.wlp-pickbar button:disabled { opacity: 0.45; cursor: default; }
+/* 고른 카드 — 파란 테두리로 바로 보이게 */
+.wlp-card-picked { border-color: #2b6df3 !important; background: #f3f7ff; }
+.wlp-card-check { flex: 0 0 auto; width: 16px; height: 16px; margin: 1px 2px 0 0; accent-color: #2b6df3; }
+
 /* 전체삭제 — 글자도 상자도 떼고 빨간 휴지통만 (카드의 삭제와 같은 그림, 색으로 무게를 준다) */
 .wlp-clear-all {
   display: inline-flex; align-items: center; justify-content: center;
