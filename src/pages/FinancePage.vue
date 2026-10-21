@@ -415,6 +415,7 @@ const exportExcel = () => {
     <div class="fin-fixed-top">
     <header class="fin-header">
       <h1 class="fin-page-title">
+        <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()">‹</button>
         사업자금관리
         <!-- 낙찰로 들고 있는 물건과 판 물건 — 돈 이야기의 바탕이라 제목 옆에 적어 둔다 -->
         <span class="fin-stage-count">

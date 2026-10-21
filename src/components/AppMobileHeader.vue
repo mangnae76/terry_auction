@@ -43,7 +43,7 @@ const formattedDate = computed(() => {
   const yoil = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
-  return `${String(d.getFullYear()).slice(-2)}년 ${parseInt(mm, 10)}월 ${parseInt(dd, 10)}일 (${yoil})`;
+  return `${String(d.getFullYear()).slice(-2)}.${mm}.${dd} (${yoil})`;
 });
 
 const toggleMenu = () => { menuOpen.value = !menuOpen.value; };
@@ -195,7 +195,10 @@ const onLogout = async () => {
   font-weight: 400;
   flex-shrink: 1;
   overflow: hidden;
-  margin-top: 3px;
+  /* 오른쪽 끝을 아래 프로필 아이콘 왼쪽에 맞춘다 — 끝자리가 잘리지 않게 */
+  margin-left: auto;
+  margin-right: 17px;
+  margin-top: 5px;
   align-self: flex-start;
 }
 .amh-info-cell { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
@@ -298,9 +301,10 @@ const onLogout = async () => {
 .amh-user-menu-btn:hover { background: #f9fafb; }
 
 @media (max-width: 400px) {
-  .amh-info { gap: 6px; font-size: 10px; }
-  .amh-info-cell { gap: 3px; }
-  .amh-icon { width: 12px; height: 12px; }
+  /* 좁은 손전화 — 날짜·날씨·환율 셋이 한 줄에 다 들어가야 한다 */
+  .amh-info { gap: 4px; font-size: 9.5px; }
+  .amh-info-cell { gap: 2px; }
+  .amh-icon { width: 11px; height: 11px; }
   .amh-greet { font-size: 11px; }
   .amh-greet-icon { width: 14px; height: 14px; }
 }

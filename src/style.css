@@ -2266,3 +2266,12 @@ html.is-web {
     margin-bottom: 0;
   }
 }
+
+/* 화면 제목 왼쪽의 뒤로가기 — 더보기(.more-back)와 같은 치수·간격.
+   페이지마다 제 이름으로 적던 것을 한곳에 모았다. */
+.pg-back-shared {
+  flex: 0 0 auto; align-self: center;
+  border: none; background: transparent; cursor: pointer;
+  padding: 0 2px; margin-right: 2px;
+  font-size: 22px; line-height: 1; color: #334155;
+}

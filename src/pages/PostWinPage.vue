@@ -448,7 +448,10 @@ const toggleSection = (key: string) => {
     <div class="pw-fixed-top">
       <header class="pw-header">
         <div class="pw-title-row">
-          <h1 class="pw-page-title">낙찰이후</h1>
+          <h1 class="pw-page-title">
+            <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()">‹</button>
+            낙찰이후
+          </h1>
           <!-- 낙찰 뒤에 밟는 차례 -->
           <button
             type="button"
@@ -1031,6 +1034,7 @@ const toggleSection = (key: string) => {
 /* 제목 — 자금관리·물건상세와 같은 크기·같은 여백 */
 .pw-page-title {
   margin: 0; padding: 9px 14px 7px;
+  display: flex; align-items: center; gap: 4px;
   font-size: 20px; font-weight: 800; color: #111827;
   border-bottom: 1px solid #e5e7eb;
 }

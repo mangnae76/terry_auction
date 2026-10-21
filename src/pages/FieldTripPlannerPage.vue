@@ -1522,6 +1522,7 @@ watch(() => authStore.uid, (newUid) => {
     <div class="ftp-scroll" @scroll.passive="mapActive && lockMap()">
     <div class="ftp-fixed-top">
     <div class="ftp-section-title is-page">
+      <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()">‹</button>
       <span>임장경로</span>
     </div>
 

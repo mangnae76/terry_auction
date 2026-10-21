@@ -4,13 +4,13 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 (postWinChecklist 와 같은 규칙) */
-export const POST_WIN_BIZ_VERSION = 9;
+export const POST_WIN_BIZ_VERSION = 10;
 
 export const POST_WIN_BIZ: CheckGroup[] = [
   {
     key: 'biz.intro',
     title: '매매사업자 등록 및 운영',
-    note: '주택을 사서 되파는 일을 되풀이할 생각이면 사업자로 내는 편이 낫다.',
+    note: '주택매매사업을 지속할 생각이면 매매사업자를 내는 편이 낫다.',
     sections: [
       { label: '신청대상', rows: [{ id: 'bz.t1', depth: 0, text: '주택을 사서 되파는 사업의 반복성·계획성이 있는 경우' }] },
       {
