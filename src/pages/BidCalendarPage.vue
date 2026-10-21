@@ -175,6 +175,28 @@ const hiddenOf = (key: string) => {
   return Math.max(0, list.length - 1);
 };
 
+/**
+ * 이 달의 단계별 현황 — 달력 위에 '임장완료 3건' 처럼 적는다.
+ * 달력에 뿌리는 것과 같은 물건을 세므로 칸을 일일이 세어 볼 일이 없다.
+ */
+const monthTally = computed(() => {
+  const head = `${year.value}-${String(month.value).padStart(2, '0')}`;
+  const seen = new Map<string, { label: string; tone: string; count: number }>();
+  Object.entries(byDate.value).forEach(([key, list]) => {
+    if (!key.startsWith(head)) return;
+    list.forEach((a) => {
+      const label = stageLabelOf(a);
+      const row = seen.get(label) ?? { label, tone: stageToneOf(a), count: 0 };
+      row.count += 1;
+      seen.set(label, row);
+    });
+  });
+  // 늘 같은 차례로 — 손품에서 매도까지 흐르는 순서
+  const ORDER = ['손품조사', '임장예정', '임장완료', '입찰산정', '입찰진행', '낙찰', '유찰', '취소', '매도'];
+  return [...seen.values()].sort((a, b) => ORDER.indexOf(a.label) - ORDER.indexOf(b.label));
+});
+const monthTotal = computed(() => monthTally.value.reduce((n, r) => n + r.count, 0));
+
 const goDetail = (id: string) => router.push(`/auctions/${id}`);
 </script>
 
@@ -191,6 +213,14 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
         <button type="button" class="cal-nav-btn" aria-label="이전 달" @click="moveMonth(-1)">‹</button>
         <strong>{{ year }}년 {{ month }}월</strong>
         <button type="button" class="cal-nav-btn" aria-label="다음 달" @click="moveMonth(1)">›</button>
+      </div>
+
+      <!-- 이 달의 현황 — 단계별로 몇 건인지 달력 위에 적어 둔다 -->
+      <div v-if="monthTotal" class="cal-tally">
+        <span class="cal-tally-all">이달 {{ monthTotal }}건</span>
+        <span v-for="r in monthTally" :key="r.label" :class="['cal-tally-chip', r.tone]">
+          {{ r.label }} <b>{{ r.count }}</b>
+        </span>
       </div>
 
       <div class="cal-grid cal-head">
@@ -343,6 +373,28 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
   margin: 0; font-size: 8px; line-height: 1.45; color: #6b7280;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* 이 달의 현황 띠 */
+.cal-tally {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
+  padding: 8px 2px 10px; border-bottom: 1px solid #eef1f6; margin-bottom: 8px;
+}
+.cal-tally-all {
+  font-size: 11px; font-weight: 800; color: #111827;
+  background: #eef1f8; border-radius: 999px; padding: 4px 10px;
+}
+.cal-tally-chip {
+  font-size: 11px; font-weight: 600; border-radius: 999px; padding: 4px 9px;
+  background: #f4f6fb; color: #4b5563;
+}
+.cal-tally-chip b { font-weight: 800; }
+.cal-tally-chip.desk { background: #eef1f8; color: #4b5563; }
+.cal-tally-chip.plan { background: #e8f0ff; color: #2b6df3; }
+.cal-tally-chip.visited { background: #e6f4ea; color: #1b7f3b; }
+.cal-tally-chip.bid { background: #fff3e0; color: #b26a00; }
+.cal-tally-chip.bidding { background: #fde7d5; color: #c2410c; }
+.cal-tally-chip.done { background: #2a3f8f; color: #fff; }
+.cal-tally-chip.closed { background: #f1f3f8; color: #9ca3af; }
+
 /* 단계 태그 — 사건번호 위에 붙어 '어디까지 했는지'를 한눈에 알린다 */
 .cal-event .ev-stage {
   display: block; margin-bottom: 2px !important; padding: 1px 4px;
