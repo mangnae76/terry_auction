@@ -1547,13 +1547,14 @@ watch(() => authStore.uid, (newUid) => {
 
 <template>
   <section class="ftp-shell">
-    <div class="ftp-scroll" @scroll.passive="mapActive && lockMap()">
-    <div class="ftp-fixed-top">
+    <!-- 제목 줄은 틀고정 — 아래 내용만 지나간다 -->
     <div class="ftp-section-title is-page">
       <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
       <span>임장경로</span>
     </div>
 
+    <div class="ftp-scroll" @scroll.passive="mapActive && lockMap()">
+    <div class="ftp-fixed-top">
     <div class="ftp-section-title">
       <span class="ftp-section-title-main">
         <svg class="ftp-sec-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>경로설정
@@ -1680,9 +1681,6 @@ watch(() => authStore.uid, (newUid) => {
 
     </div>
 
-    </div>
-
-    <!-- 목록이 길어도 어느 목록인지 보이게 — 스크롤해도 맨 위에 붙어 머문다 -->
     <div class="ftp-update-bar">
       <strong class="ftp-update-title">
         <svg class="ftp-sec-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1711,6 +1709,8 @@ watch(() => authStore.uid, (newUid) => {
         <!-- 언제 계산한 경로인지 — 같은 줄 오른쪽 끝에 붙인다 -->
         <em class="ftp-update-when">UPDATE : {{ formatLastUpdate }}</em>
       </span>
+    </div>
+
     </div>
 
       <div v-if="!routeListCollapsed" class="ftp-list">
@@ -1915,6 +1915,7 @@ watch(() => authStore.uid, (newUid) => {
             <span class="ftp-stop-badge is-head" />
             <span class="ftp-stop-addr">주소</span>
             <span class="ftp-col-state">상태</span>
+            <span class="ftp-stop-icon ftp-stop-spacer ftp-stop-tail" aria-hidden="true" />
           </div>
           <article
             v-for="row in missingRows"
@@ -1935,7 +1936,6 @@ watch(() => authStore.uid, (newUid) => {
                  (휴지통·보관함으로 치운 줄은 그쪽에서 되살린다) -->
             <button
               v-if="!row.place"
-              style="margin-left: 4px"
               type="button"
               class="ftp-stop-icon ftp-stop-plus"
               :disabled="loading"
@@ -1943,6 +1943,7 @@ watch(() => authStore.uid, (newUid) => {
               title="목록에 추가"
               @click="restoreStop(row.id)"
             ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.3" y="2.3" width="19.4" height="19.4" rx="2.6" /><path d="M12 8v8M8 12h8" /></svg></button>
+            <span v-else class="ftp-stop-icon ftp-stop-spacer ftp-stop-tail" aria-hidden="true" />
           </article>
         </template>
       </div>
@@ -2062,11 +2063,8 @@ watch(() => authStore.uid, (newUid) => {
 }
 
 .ftp-fixed-top { background: #fff; }
-/* 목록이 길어도 어느 목록인지 보이게 '동선최적화 UPDATE' 줄만 위에 붙여 둔다 */
-.ftp-update-bar {
-  position: sticky; top: 0; z-index: 20;
-  box-shadow: 0 1px 0 rgba(17, 24, 39, 0.07);
-}
+/* 제목 줄은 스크롤 밖에 서서 늘 보인다 */
+.ftp-shell > .ftp-section-title.is-page { flex: 0 0 auto; z-index: 20; }
 .ftp-scroll {
   flex: 1 1 auto; min-height: 0;
   overflow-y: auto;
@@ -2356,7 +2354,9 @@ watch(() => authStore.uid, (newUid) => {
 
 /* 경로추가로 올라온 줄의 태그 — 경로제외물건 줄의 태그와 같은 자리에 선다.
    (빈 칸을 지우고 빼기 단추에 4px 를 주어 담기 단추와 셈이 같아진다) */
-.ftp-stop-queued .ftp-stop-minus { margin-left: 4px; }
+.ftp-stop-queued .ftp-stop-minus,
+.ftp-pending-row .ftp-stop-plus,
+.ftp-pending-row .ftp-stop-tail { margin-left: 4px; }
 
 /* 경로제외물건 줄 — 상태 태그를 상자 오른쪽 끝에 맞춘다. 빈 칸을 없애 주소가 더 나온다 */
 .ftp-pending-row .ftp-stop-addr { flex: 1 1 auto; min-width: 0; }
