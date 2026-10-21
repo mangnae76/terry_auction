@@ -94,14 +94,17 @@ watch(() => authStore.uid, () => { void loadRouteOrder(); });
 
 /** 입찰진행은 단계(status)가 아니라 입찰상태라서, 스토어 필터 위에 한 겹 더 건다 */
 const bidRunningOnly = ref(false);
+/** 결과가 난 물건(낙찰·유찰·경매취소·매도)만 보기 — 띠의 '그외' */
+const bidResultOnly = ref(false);
 const displayedAuctions = computed<AuctionDetail[]>(() => {
   const base = store.filteredAuctions
     .filter((item) => !item.id.startsWith('onbid-'))
     .filter((item) => !bidRunningOnly.value || isBidRunning(item))
     // '입찰산정'으로 걸러 볼 때는 그 자리에 선 물건만 남긴다 — 띠의 숫자와 목록이 같아야 한다.
     // (입찰진행과 결과가 난 물건은 제 칸에서 본다)
+    .filter((item) => !bidResultOnly.value || hasBidResult(item))
     .filter((item) => {
-      if (store.activeStatus !== '입찰' || bidRunningOnly.value) return true;
+      if (store.activeStatus !== '입찰' || bidRunningOnly.value || bidResultOnly.value) return true;
       return !isBidRunning(item) && !hasBidResult(item);
     });
   const q = searchQuery.value.replace(/\s+/g, '').toLowerCase();
@@ -335,15 +338,17 @@ const PHASE_TO_STATUS: Record<PhaseKey, AuctionStatus> = {
 /** 상단 상태 카드 — 누르면 그 상태만 걸러 보여 준다 (한 번 더 누르면 전체) */
 const filterByPhase = (key: PhaseKey) => {
   const status = PHASE_TO_STATUS[key];
-  const was = store.activeStatus === status && !bidRunningOnly.value;
+  const was = store.activeStatus === status && !bidRunningOnly.value && !bidResultOnly.value;
   bidRunningOnly.value = false;
+  bidResultOnly.value = false;
   store.setFilter(was ? '전체' : status);
 };
 const isPhaseFiltered = (key: PhaseKey) =>
-  store.activeStatus === PHASE_TO_STATUS[key] && !bidRunningOnly.value;
+  store.activeStatus === PHASE_TO_STATUS[key] && !bidRunningOnly.value && !bidResultOnly.value;
 /** 전체 — 필터를 풀고 모두 보여 준다 */
 const showAllPhases = () => {
   bidRunningOnly.value = false;
+  bidResultOnly.value = false;
   store.setFilter('전체');
 };
 
@@ -397,14 +402,30 @@ const phaseCounts = computed<Record<PhaseKey, number>>(() => {
 const bidRunningCount = computed(
   () => store.auctions.filter((item) => !item.id.startsWith('onbid-') && isBidRunning(item)).length,
 );
+/** 결과가 난 물건 수 — 네 단계와 입찰진행에서 빠진 물건이 모두 여기 모인다 */
+const bidResultCount = computed(
+  () => store.auctions.filter((item) => !item.id.startsWith('onbid-') && hasBidResult(item)).length,
+);
 /** 입찰진행 카드 — 단계 필터를 '입찰'로 두고 그 위에 진행만 남긴다 */
 const filterByBidRunning = () => {
+  bidResultOnly.value = false;
   if (bidRunningOnly.value) {
     bidRunningOnly.value = false;
     store.setFilter('전체');
     return;
   }
   bidRunningOnly.value = true;
+  store.setFilter('입찰');
+};
+/** 그외 — 결과가 난 물건만. 전체 = 네 단계 + 입찰진행 + 그외 가 되어 셈이 맞는다 */
+const filterByBidResult = () => {
+  bidRunningOnly.value = false;
+  if (bidResultOnly.value) {
+    bidResultOnly.value = false;
+    store.setFilter('전체');
+    return;
+  }
+  bidResultOnly.value = true;
   store.setFilter('입찰');
 };
 
@@ -772,6 +793,12 @@ watch(
           :class="['wlp-step', 'st-all', { on: store.activeStatus === '전체' }]"
           @click="showAllPhases"
         >전체 <em>({{ totalPhaseCount }})</em></button>
+        <!-- 결과가 난 물건 — 단계 흐름에서 내려간 것들. 전체와 나란히 두어 셈이 보인다 -->
+        <button
+          type="button"
+          :class="['wlp-step', 'st-other', { on: bidResultOnly }]"
+          @click="filterByBidResult"
+        >그외 <em>({{ bidResultCount }})</em></button>
         <template v-for="p in PHASE_LABELS" :key="p.key">
           <span class="wlp-step-arrow">▶</span>
           <button
@@ -1092,6 +1119,9 @@ watch(
 
 .wlp-step.st-all { color: #64748b; }
 .wlp-step.st-all.on { background: #64748b; color: #fff; }
+/* 그외 — 흐름에서 내려간 물건. 전체와 한 쌍으로 보이게 같은 회색 계열 */
+.wlp-step.st-other { color: #7c8695; }
+.wlp-step.st-other.on { background: #7c8695; color: #fff; }
 .wlp-step.st-desk { color: #2563eb; }
 .wlp-step.st-desk.on { background: #2563eb; color: #fff; }
 .wlp-step.st-plan { color: #16a34a; }
