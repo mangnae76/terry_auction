@@ -1745,7 +1745,7 @@ watch(() => authStore.uid, (newUid) => {
                 aria-label="목록에서 제거"
                 title="목록에서 제거"
                 @click="removeStop(row.address)"
-              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M8 12h8" /></svg></button>
+              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.3" y="2.3" width="19.4" height="19.4" rx="2.6" /><path d="M8 12h8" /></svg></button>
             </article>
           </template>
           <article
@@ -1780,10 +1780,6 @@ watch(() => authStore.uid, (newUid) => {
               @mouseenter="hoverAddrBubble(`s${idx}`, stop.address, $event)"
               @mouseleave="leaveAddrBubble()"
             >{{ stop.address }}</span>
-            <span
-              v-if="stop.kind === 'stop' && stageTagOf(stop.address)"
-              :class="['ftp-stage-tag', `tone-${stageTagOf(stop.address)?.tone}`]"
-            >{{ stageTagOf(stop.address)?.label }}</span>
             <button
               v-if="stop.kind === 'stop'"
               type="button"
@@ -1829,7 +1825,7 @@ watch(() => authStore.uid, (newUid) => {
               aria-label="목록에서 제거"
               title="목록에서 제거"
               @click="removeStop(stop.address)"
-            ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M8 12h8" /></svg></button>
+            ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.3" y="2.3" width="19.4" height="19.4" rx="2.6" /><path d="M8 12h8" /></svg></button>
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
           </article>
@@ -1864,7 +1860,7 @@ watch(() => authStore.uid, (newUid) => {
                 aria-label="목록에서 제거"
                 title="목록에서 제거"
                 @click="removeStop(row.address)"
-              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M8 12h8" /></svg></button>
+              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.3" y="2.3" width="19.4" height="19.4" rx="2.6" /><path d="M8 12h8" /></svg></button>
             </article>
           </template>
 
@@ -1898,7 +1894,7 @@ watch(() => authStore.uid, (newUid) => {
                 aria-label="목록에서 제거"
                 title="목록에서 제거"
                 @click="removeStop(row.address)"
-              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M8 12h8" /></svg></button>
+              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.3" y="2.3" width="19.4" height="19.4" rx="2.6" /><path d="M8 12h8" /></svg></button>
             </article>
         </template>
         <p v-else-if="missingRows.length === 0" class="ftp-empty guide">선정물건에서 임장예정으로 옮기면 여기에 담깁니다.</p>
@@ -1916,7 +1912,6 @@ watch(() => authStore.uid, (newUid) => {
               </svg>경로제외물건 <em>{{ missingRows.length }}건</em>
             </strong>
           </div>
-          <p class="ftp-pending-guide">선정물건에서 임장예정으로 바꾸면 경로에 올라갑니다</p>
           <!-- 표 머리 — 어느 칸이 무슨 뜻인지 한 번 적어 둔다 -->
           <div class="ftp-stop ftp-col-head ftp-pending-row" aria-hidden="true">
             <span class="ftp-stop-badge is-head" />
@@ -1949,7 +1944,7 @@ watch(() => authStore.uid, (newUid) => {
               aria-label="목록에 추가"
               title="목록에 추가"
               @click="restoreStop(row.id)"
-            ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M12 8v8M8 12h8" /></svg></button>
+            ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.3" y="2.3" width="19.4" height="19.4" rx="2.6" /><path d="M12 8v8M8 12h8" /></svg></button>
           </article>
         </template>
       </div>
@@ -2385,6 +2380,8 @@ watch(() => authStore.uid, (newUid) => {
   padding: 2px 7px; font-size: 9.5px; font-weight: 700; color: #6b7280;
   white-space: nowrap;
 }
+/* 임장예정도 다른 단계와 같은 꼴로 — 규칙이 없어 흰 상자로 나왔다 */
+.ftp-stage-tag.tone-plan,
 .ftp-stage-tag.tone-desk,
 .ftp-stage-tag.tone-visited,
 .ftp-stage-tag.tone-bid { border-color: #6b85f0; background: #dce5ff; color: #3850c2; }
@@ -2443,7 +2440,7 @@ watch(() => authStore.uid, (newUid) => {
 /* 동선최적화 버튼 바로 아래 — 언제 계산한 경로인지 */
 /* 마지막 계산 시각 — '방문·완료' 줄 오른쪽 끝에 (동선최적화 단추 끝과 같은 선) */
 .ftp-update-when {
-  margin-left: auto; margin-right: -2px; padding-left: 10px; font-style: normal;
+  margin-left: auto; padding: 0 3px 0 10px; font-style: normal;
   font-size: 10px; font-weight: 400; color: #2b6df3; white-space: nowrap;
 }
 /* 아직 순번을 못 받은 물건이 있을 때 — 눌러야 한다는 신호 */

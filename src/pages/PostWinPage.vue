@@ -471,6 +471,10 @@ const toggleSection = (key: string) => {
             <button v-else type="button" class="pw-ebtn" @click="startEdit">✎ 편집</button>
           </template>
         </div>
+        <!-- 체크는 '그 물건의 기록'이라 물건을 골라야 눌린다 — 까닭을 적어 둔다 -->
+        <p v-if="checkable && !picked" class="pw-nopick">
+          낙찰한 물건을 고르면 체크할 수 있습니다 — 선정물건에서 단계를 <b>낙찰</b>로 바꿔 주세요.
+        </p>
         <nav class="pw-tabs">
           <button
             v-for="t in TABS"
@@ -1038,6 +1042,12 @@ const toggleSection = (key: string) => {
   font-size: 20px; font-weight: 800; color: #111827;
   border-bottom: 1px solid #e5e7eb;
 }
+.pw-nopick {
+  margin: 0; padding: 7px 14px;
+  background: #fff7ed; border-top: 1px solid #fde4c8; border-bottom: 1px solid #fde4c8;
+  font-size: 11.5px; font-weight: 600; color: #b45309;
+}
+.pw-nopick b { font-weight: 800; }
 .pw-tabs {
   display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
   background: #fff;
@@ -1389,9 +1399,10 @@ const toggleSection = (key: string) => {
 .pw-col-label { width: 78px; }
 /* 사업자등록 쪽은 이름이 짧아 한 뼘 더 좁게 */
 .pw-tbl.biz .pw-col-label { width: 77px; }
-/* 부수·비고는 짧은 값이라 좁혀 둔다 — 그만큼 이름 칸이 넓어져 한 줄에 선다 */
-.pw-col-qty { width: 42px; }
-.pw-col-memo { width: 78px; }
+/* 부수는 '각 1부' 까지라 좁혀도 되고, 비고는 '유효기간 한 달'(한글 일곱 자)이
+   한 줄에 들어가야 해서 그만큼 넓힌다 */
+.pw-col-qty { width: 34px; }
+.pw-col-memo { width: 92px; }
 .pw-col-chk { width: 34px; }
 /* 부수 — 가운데로 맞춰 줄마다 눈이 멎는 자리를 같게 한다 */
 .pw-qty {
@@ -1435,6 +1446,7 @@ const toggleSection = (key: string) => {
 .pw-row td { padding: 6px 6px; vertical-align: middle; }
 .pw-chk { width: 34px; text-align: center; }
 .pw-chk input { width: 16px; height: 16px; accent-color: #2b6df3; cursor: pointer; }
+.pw-chk input:disabled { cursor: not-allowed; opacity: 0.45; }
 /* 편집에서 넣은 줄 내림이 그대로 보이게 한다 */
 .pw-txt { font-size: 12.5px; line-height: 1.4; white-space: pre-line; padding: 6px 10px 6px 12px !important; }
 .pw-row td.pw-txt { font-weight: 400; color: #374151; }
