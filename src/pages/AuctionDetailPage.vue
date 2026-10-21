@@ -2216,6 +2216,31 @@ const scSetAfterTaxProfit = (sc: ProfitScenario, value: number | string) => {
   sc.cost.incomeTaxAmount = undefined;
   sc.cost.localTaxAmount = undefined;
 };
+/** 손으로 적어 둔 세액인가 — 표시를 달고, 눌러서 자동으로 되돌릴 수 있게 한다 */
+const scTaxManual = (sc: ProfitScenario) => sc.cost?.incomeTaxAmount !== undefined;
+const scLocalTaxManual = (sc: ProfitScenario) => sc.cost?.localTaxAmount !== undefined;
+const scClearManualTax = (sc: ProfitScenario) => {
+  if (!sc.cost) return;
+  sc.cost.incomeTaxAmount = undefined;
+  sc.cost.localTaxAmount = undefined;
+};
+/** 과세표준(매도가·입찰가·비용)이 바뀌면 손으로 적어 둔 세액은 어긋난다 —
+ *  세율을 고칠 때와 같이 풀어서 다시 자동 계산으로 돌린다. 바뀐 표만 푼다. */
+const scTaxBaseSigns = computed(() => ({
+  // 어느 물건의 표인지 같이 들고 본다 — 다른 물건으로 넘어간 것을 '값이 바뀐 것' 으로 보면 안 된다
+  id: auction.value?.id ?? '',
+  signs: profitScenarios.value.map((sc) => `${scBid(sc)}/${scSale(sc)}/${scTotalCosts(sc)}`),
+}));
+watch(scTaxBaseSigns, (now, before) => {
+  if (!before || before.id !== now.id) return;
+  const list = profitScenarios.value;
+  now.signs.forEach((sign, i) => {
+    if (before.signs[i] === undefined || before.signs[i] === sign) return;
+    const sc = list[i];
+    if (sc) scClearManualTax(sc);
+  });
+});
+
 const scPctOfBid = (sc: ProfitScenario, n: number | undefined | null) => (
   scBid(sc) > 0 && n ? (n / scBid(sc)) * 100 : 0
 );
@@ -6401,7 +6426,13 @@ const goBack = () => router.back();
                   <template v-else>과세표준 <span class="adp-bracket">{{ scBracket(sc) }}</span><span v-if="scDeductionText(sc)" class="adp-bracket"> − {{ scDeductionText(sc) }}</span></template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scTransferTax(sc))" class="adp-cell-input" live-group @update:model-value="scSetIncomeTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scTransferTax(sc)) }}</strong></template>
+                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scTransferTax(sc))" class="adp-cell-input" live-group @update:model-value="scSetIncomeTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scTransferTax(sc)) }}</strong></template><button
+                    v-if="scTaxManual(sc)"
+                    type="button"
+                    class="adp-manual-mark"
+                    title="직접 적은 값입니다 — 누르면 자동 계산으로 되돌립니다"
+                    @click.stop="scClearManualTax(sc)"
+                  >직접</button>
                 </td>
               </tr>
               <tr>
@@ -6410,7 +6441,13 @@ const goBack = () => router.back();
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="String(scLocalTaxRate(sc))" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ scLocalTaxRate(sc) }}%</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scLocalTax(sc))" class="adp-cell-input" live-group @update:model-value="scSetLocalTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scLocalTax(sc)) }}</strong></template>
+                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scLocalTax(sc))" class="adp-cell-input" live-group @update:model-value="scSetLocalTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scLocalTax(sc)) }}</strong></template><button
+                    v-if="scLocalTaxManual(sc)"
+                    type="button"
+                    class="adp-manual-mark"
+                    title="직접 적은 값입니다 — 누르면 자동 계산으로 되돌립니다"
+                    @click.stop="scClearManualTax(sc)"
+                  >직접</button>
                 </td>
               </tr>
               <tr class="hi">
@@ -9289,6 +9326,12 @@ const goBack = () => router.back();
 .adp-warn-banner { margin: 10px 0 0; padding: 10px 12px; background: #fef2f2; border-radius: 8px; font-size: 12px; color: #991b1b; line-height: 1.55; white-space: pre-line; }
 
 .adp-table .tone-red td { background: #fef2f2; }
+/* 손으로 적어 둔 세액 표시 — 누르면 자동 계산으로 돌아간다 */
+.adp-manual-mark {
+  display: inline-block; margin-left: 4px; padding: 0 4px; height: 15px; line-height: 15px;
+  border: 1px solid #f0c98a; border-radius: 4px; background: #fff8ec;
+  font-size: 9px; font-weight: 800; color: #b26a00; cursor: pointer; vertical-align: middle;
+}
 /* 인수되는 권리 — 낙찰자가 떠안는 줄. 소멸(회색)과 반대로 붉게 세운다 */
 .adp-reg-take { color: #c62828; font-weight: 800; }
 tr.tone-take { background: #fff5f5; }
