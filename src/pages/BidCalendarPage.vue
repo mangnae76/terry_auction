@@ -162,6 +162,20 @@ if (typeof window !== 'undefined') {
 /** 펼쳐 둔 날짜 — 그 칸만 길어지며 전부 보여 준다 */
 const opened = ref<Record<string, boolean>>({});
 const toggleDay = (key: string) => { opened.value = { ...opened.value, [key]: !opened.value[key] }; };
+
+/** 접힌 날이 남아 있는가 — 한 칸씩 누르지 않고 한 번에 펴려고 본다 */
+const anyFolded = computed(() => Object.entries(byDate.value)
+  .some(([key, list]) => list.length > 1 && !opened.value[key]));
+/** 다 보기 / 접기 — 물건이 둘 이상인 날을 한꺼번에 펴고 접는다 */
+const toggleAllDays = () => {
+  if (anyFolded.value) {
+    const next: Record<string, boolean> = {};
+    Object.keys(byDate.value).forEach((key) => { next[key] = true; });
+    opened.value = next;
+    return;
+  }
+  opened.value = {};
+};
 /** 그 칸에 그릴 물건 — 접혀 있으면 첫 건만 */
 const shownOf = (key: string) => {
   const list = byDate.value[key] ?? [];
@@ -213,6 +227,10 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
         <button type="button" class="cal-nav-btn" aria-label="이전 달" @click="moveMonth(-1)">‹</button>
         <strong>{{ year }}년 {{ month }}월</strong>
         <button type="button" class="cal-nav-btn" aria-label="다음 달" @click="moveMonth(1)">›</button>
+        <!-- 한 칸씩 누르지 않고 한 번에 — 두 건 이상인 날을 모두 편다 -->
+        <button v-if="compact" type="button" class="cal-openall" @click="toggleAllDays">
+          {{ anyFolded ? '다 보기' : '접기' }}
+        </button>
       </div>
 
       <!-- 이 달의 현황 — 단계별로 몇 건인지 달력 위에 적어 둔다 -->
@@ -309,6 +327,7 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
   border: 1px solid #e8ebf1; border-radius: 14px; overflow: hidden;
 }
 .cal-nav {
+  position: relative;
   display: flex; align-items: center; justify-content: center; gap: 20px;
   padding: 12px 0; border-bottom: 1px solid #eef0f5;
 }
@@ -373,6 +392,13 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
   margin: 0; font-size: 8px; line-height: 1.45; color: #6b7280;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* 다 보기 — 달 이름 오른쪽에 둔다 */
+.cal-openall {
+  position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+  border: 1px solid #c7d2ea; border-radius: 999px; background: #fff;
+  padding: 5px 12px; font-family: inherit; font-size: 11.5px; font-weight: 700; color: #2a5fbf; cursor: pointer;
+}
+
 /* 이 달의 현황 띠 */
 .cal-tally {
   display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
