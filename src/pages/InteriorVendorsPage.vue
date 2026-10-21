@@ -134,10 +134,7 @@ const exportCsv = () => {
               <b>{{ shortDate(r.startDate || r.date || '') }}</b>
               <small v-if="r.endDate">~ {{ shortDate(r.endDate) }}</small>
             </td>
-            <td>
-              {{ r.work }}
-              <small v-if="r.auctionLabel" class="tag">{{ r.auctionLabel }}</small>
-            </td>
+            <td>{{ r.work }}</td>
             <td>{{ r.status }}</td>
             <td>{{ money(r.amountWithVat) }}</td>
             <td class="vend">
@@ -238,7 +235,6 @@ const exportCsv = () => {
 .ivp-tbl td.span, .ivp-tbl td.vend { display: table-cell; }
 .ivp-tbl td.span b, .ivp-tbl td.vend b { display: block; font-weight: 700; color: #111827; }
 .ivp-tbl td.span small, .ivp-tbl td.vend small { display: block; font-size: 10.5px; color: #6b7280; }
-.ivp-tbl td small.tag { display: block; font-size: 10px; color: #2b6df3; }
 .ivp-tbl td.empty { text-align: center; color: #9ca3af; padding: 18px 6px; cursor: default; }
 
 /* 적기 창 */
