@@ -367,10 +367,25 @@ const splitRegistryDesc = (desc: string) => desc
     ? [{ text: part, base: false }]
     : [{ text: REGISTRY_BASE_NOTE, base: true }, { text: part, base: false }]))
   .filter((pt) => pt.text !== '');
-const registryRows = computed(() => (auction.value?.registryRows ?? []).map((r) => {
-  const desc = formatRegistryDesc(r.desc);
-  return { ...r, desc, descParts: splitRegistryDesc(desc) };
-}));
+/** 소유권 줄은 인수·소멸을 따지는 자리가 아니다 — 비워 둔다 */
+const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
+const OWNERSHIP_KIND = /^소유권(이전|보존)(등기)?$/;
+const registryRows = computed(() => {
+  // 말소기준보다 앞선 권리는 낙찰자가 떠안는다. PDF 가 '소멸'로 적어 주지 않은
+  // 줄은 빈 칸으로 남아 — 가장 위험한 '인수'가 보이지 않았다. 여기서 적어 준다.
+  const base = tenantBaseDate.value;
+  const hasBase = YMD_RE.test(base);
+  return (auction.value?.registryRows ?? []).map((r) => {
+    const desc = formatRegistryDesc(r.desc);
+    const date = (r.date ?? '').trim();
+    const taken = hasBase
+      && r.extinct !== '소멸'
+      && !OWNERSHIP_KIND.test((r.kind ?? '').trim())
+      && YMD_RE.test(date)
+      && date < base;
+    return { ...r, desc, descParts: splitRegistryDesc(desc), taken };
+  });
+});
 const stripWarnMarkers = (text: string) =>
   text.replace(/^[\s*▶⚠!！·•]+/gm, '').trim();
 const registryWarning = computed(() => stripWarnMarkers(auction.value?.registryWarnings || ''));
@@ -7049,12 +7064,12 @@ const goBack = () => router.back();
               <colgroup>
                 <col style="width: 22%" />
                 <col />
-                <col style="width: 24%" />
-                <col style="width: 12%" />
+                <col style="width: 22%" />
+                <col style="width: 16%" />
               </colgroup>
-              <thead><tr><th>접수/순서</th><th>종류</th><th>권리자</th><th>소멸</th></tr></thead>
+              <thead><tr><th>접수/순서</th><th>종류</th><th>권리자</th><th>인수/소멸</th></tr></thead>
               <tbody>
-                <tr v-for="(r, i) in registryRows" :key="i" :class="r.extinct === '소멸' ? 'tone-red' : ''">
+                <tr v-for="(r, i) in registryRows" :key="i" :class="[r.extinct === '소멸' ? 'tone-red' : '', { 'tone-take': r.taken }]">
                   <td class="pre-line">{{ r.date.replace(/-/g, '.') }}<br>{{ r.order }}</td>
                   <td>
                     <strong>{{ r.kind }}</strong>
@@ -7062,11 +7077,14 @@ const goBack = () => router.back();
                     <span v-if="r.desc" class="adp-desc pre-line"><span v-for="(pt, pi) in r.descParts" :key="pi" :class="{ 'adp-reg-base': pt.base }">{{ pt.text }}</span></span>
                   </td>
                   <td>{{ r.holder }}</td>
-                  <td>{{ r.extinct }}</td>
+                  <td><b v-if="r.taken" class="adp-reg-take">인수</b><template v-else>{{ r.extinct }}</template></td>
                 </tr>
               </tbody>
             </table>
-            <p v-else class="adp-empty">건물등기 정보 없음</p>
+            <p v-if="registryRows.some((r) => r.taken)" class="adp-base-note adp-reg-take-note">
+              <b>인수</b> = 말소기준({{ tenantBaseDate }})보다 앞서 낙찰자가 떠안는 권리 — 앱이 날짜로 셈한 값입니다. 등기부로 꼭 확인하세요.
+            </p>
+            <p v-else-if="registryRows.length === 0" class="adp-empty">건물등기 정보 없음</p>
             <p v-if="registryWarning" class="adp-warn-banner">{{ registryWarning }}</p>
 
           </div>
@@ -9287,6 +9305,11 @@ const goBack = () => router.back();
 .adp-warn-banner { margin: 10px 0 0; padding: 10px 12px; background: #fef2f2; border-radius: 8px; font-size: 12px; color: #991b1b; line-height: 1.55; white-space: pre-line; }
 
 .adp-table .tone-red td { background: #fef2f2; }
+/* 인수되는 권리 — 낙찰자가 떠안는 줄. 소멸(회색)과 반대로 붉게 세운다 */
+.adp-reg-take { color: #c62828; font-weight: 800; }
+tr.tone-take { background: #fff5f5; }
+.adp-reg-take-note { color: #6b7280; }
+.adp-reg-take-note b { color: #c62828; }
 /* 말소기준등기 — 이 줄을 기준으로 인수와 소멸이 갈린다. 한눈에 찾게 새빨갛게 */
 .adp-registry-table .adp-reg-base { color: #ff0000; font-weight: 800; }
 .adp-table .tone-blue td { background: #eff6ff; }
@@ -9484,6 +9507,8 @@ const goBack = () => router.back();
 }
 /* 수정 버튼 — 테두리만 있는 알약형 */
 .adp-profit-head .adp-edit-btn { margin-left: auto; }
+/* 취소·저장은 한 쌍이라 붙여 둔다 — 앞엣것만 오른쪽으로 밀고 뒤엣것은 그 옆에 */
+.adp-profit-head .adp-edit-btn + .adp-edit-btn { margin-left: 0; }
 /* 낙찰일 · 매도일 */
 /* 날짜 둘 + 진행상황 + 표 스텝퍼를 한 줄에 — 줄이 내려가면 그만큼 빈 자리가
    생겨 표가 한참 밀린다. 글자('낙찰'·'매도')와 칸을 줄여 한 줄에 맞춘다 */
@@ -9579,7 +9604,7 @@ const goBack = () => router.back();
 .adp-edit-ico { flex: 0 0 auto; }
 .adp-edit-btn.save { background: #fff; color: #16a34a; border-color: #86efac; }
 /* 취소 — 적던 것을 버리고 편집 전으로 돌아간다 */
-.adp-edit-btn.cancel { background: #fff; color: #6b7280; border-color: #d5dbe6; margin-left: 0; }
+.adp-edit-btn.cancel { background: #fff; color: #6b7280; border-color: #d5dbe6; }
 .adp-cell-input {
   width: 100%; max-width: 110px;
   border: 1px solid #cbd5e1; border-radius: 4px;
