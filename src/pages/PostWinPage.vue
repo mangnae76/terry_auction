@@ -1123,7 +1123,7 @@ const toggleSection = (key: string) => {
   border-bottom: 1px solid #eef1f6;
 }
 .pw-super-head h2 {
-  margin: 0 auto 0 0; font-size: 15.5px; font-weight: 800; color: #111827;
+  margin: 0 auto 0 0; font-size: 15.3px; font-weight: 800; color: #111827;
   display: inline-flex; align-items: center; gap: 6px; min-width: 0;
 }
 /* 안쪽 상자 — 손품조사의 .adp-survey-block 과 같은 꼴 */
