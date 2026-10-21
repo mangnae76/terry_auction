@@ -75,6 +75,15 @@ const TEXT_FIX: Record<string, { from: string; to: string }> = {
   },
 };
 
+/** 비고 칸도 같은 규칙으로 — 옛 기본 글 그대로일 때만 바꾼다 */
+const MEMO_FIX: Record<string, { from: string; to: string }> = {
+  'ln.d10': { from: '동사무소 발급 · 유효기간 한 달', to: '동사무소 발급\n유효기간 한 달' },
+};
+const fixMemo = (id: string, memo?: string): string | undefined => {
+  const fix = MEMO_FIX[id];
+  return fix && (memo ?? '').trim() === fix.from ? fix.to : memo;
+};
+
 const fixText = (id: string, text: string): string => {
   const fix = TEXT_FIX[id];
   return fix && (text ?? '').trim() === fix.from ? fix.to : text;
@@ -92,6 +101,7 @@ const migrate = (list: CheckGroup[]): CheckGroup[] => list.map((g) => ({
     rows: (sec.rows ?? []).map((r) => ({
       ...r,
       text: fixText(r.id, spaceArrows(r.text)),
+      memo: fixMemo(r.id, r.memo),
       depth: DEPTH_FIX[r.id] ?? r.depth,
     })),
   })),

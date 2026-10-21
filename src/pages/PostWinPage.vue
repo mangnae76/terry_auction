@@ -1395,14 +1395,16 @@ const toggleSection = (key: string) => {
 .pw-col-chk { width: 34px; }
 /* 부수 — 가운데로 맞춰 줄마다 눈이 멎는 자리를 같게 한다 */
 .pw-qty {
-  text-align: center; font-size: 11.5px; font-weight: 600; color: #4b5563;
+  /* 칸 한가운데보다 한 글자쯤 왼쪽에 — 오른쪽 비고와 너무 붙어 보였다 */
+  text-align: center; padding-right: 13px !important;
+  font-size: 11.5px; font-weight: 600; color: #4b5563;
   white-space: nowrap;
 }
 /* 링크가 걸린 줄 */
 .pw-rowlink { color: #2b6df3; text-decoration: underline; }
 .pw-einput.link { height: 24px; margin-top: 3px; font-size: 11px; color: #2b6df3; }
 /* 비고 — 부수 오른쪽, 작은 글씨로 */
-.pw-memo { font-size: 11px; line-height: 1.35; color: #6b7280; }
+.pw-memo { font-size: 11px; line-height: 1.35; color: #6b7280; white-space: pre-line; }
 .pw-einput.qty { height: 24px; padding: 0 4px; font-size: 11px; text-align: center; }
 .pw-tbl.edit .pw-col-chk { width: 44px; }
 .pw-tbl.edit .pw-col-qty { width: 60px; }
