@@ -2435,8 +2435,19 @@ const removeProfitScenario = () => {
   });
 };
 
+/** 편집을 시작할 때 산정표를 떠 둔다 — 취소하면 그대로 되돌린다.
+ *  (칸이 서로 물려 있어 사본에 적기보다 되돌리는 쪽이 안전하다) */
+const profitBackup = ref('');
 const startEditProfit = () => {
+  profitBackup.value = JSON.stringify(auction.value?.bidScenarios ?? []);
   editingProfit.value = true;
+};
+const cancelEditProfit = () => {
+  if (auction.value && profitBackup.value) {
+    auction.value.bidScenarios = JSON.parse(profitBackup.value) as AuctionDetail['bidScenarios'];
+  }
+  profitBackup.value = '';
+  editingProfit.value = false;
 };
 /** 비중 기본값 — services/auctionMapper 의 createBidCostDefaults 와 같은 값이다.
  *  (두 곳이 갈라지면 '기본값' 이 두 가지가 되므로 고칠 때 같이 고친다) */
@@ -2468,6 +2479,7 @@ const resetScenarioRates = (sc: ProfitScenario) => {
 const saveProfit = async () => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
+  profitBackup.value = '';
   editingProfit.value = false;
 };
 
@@ -5264,15 +5276,29 @@ const tenantCards = computed(() => {
 // saleClassification = "토지·건물 일괄매각 임차권등기/공시가 1~2억/HUG 임차권 인수조건변경"
 // === 정보요약 카드 ===
 const editingSummary = ref(false);
-const sumVal = (id: string) => auction.value?.basicSummary?.[id] ?? '';
+/** 편집하는 동안 적는 사본 — 저장을 눌러야 본값으로 옮긴다.
+ *  (본값을 바로 고치면 저장하지 않고 나가도 화면에 남고, 되돌릴 길이 없었다) */
+const summaryDraft = ref<Record<string, string> | null>(null);
+const sumVal = (id: string) => (summaryDraft.value ?? auction.value?.basicSummary)?.[id] ?? '';
 const setSumVal = (id: string, value: string) => {
+  if (summaryDraft.value) { summaryDraft.value[id] = value; return; }
   if (!auction.value) return;
   if (!auction.value.basicSummary) auction.value.basicSummary = {};
   auction.value.basicSummary[id] = value;
 };
+const startEditSummary = () => {
+  summaryDraft.value = { ...(auction.value?.basicSummary ?? {}) };
+  editingSummary.value = true;
+};
+const cancelEditSummary = () => {
+  summaryDraft.value = null;
+  editingSummary.value = false;
+};
 const saveSummary = async () => {
   if (!auction.value) return;
+  if (summaryDraft.value) auction.value.basicSummary = { ...summaryDraft.value };
   await store.saveAuction(auction.value);
+  summaryDraft.value = null;
   editingSummary.value = false;
 };
 
@@ -5604,8 +5630,11 @@ const goBack = () => router.back();
         <section class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('summary')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>정보요약</h2>
-            <button v-if="!editingSummary" class="adp-edit-btn" type="button" @click.stop="editingSummary = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSummary">💾 저장</button>
+            <button v-if="!editingSummary" class="adp-edit-btn" type="button" @click.stop="startEditSummary"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+            <template v-else>
+              <button class="adp-edit-btn cancel" type="button" @click.stop="cancelEditSummary">취소</button>
+              <button class="adp-edit-btn save" type="button" @click.stop="saveSummary">💾 저장</button>
+            </template>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('summary') }]" alt="" />
           </header>
           <dl v-if="!isCollapsed('summary')" class="adp-base-rows adp-sum-rows">
@@ -6154,7 +6183,10 @@ const goBack = () => router.back();
             </h2>
             <span class="adp-auto-chip">✦ 자동계산</span>
             <button v-if="!editingProfit" class="adp-edit-btn" type="button" @click.stop="startEditProfit"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveProfit">💾 저장</button>
+            <template v-else>
+              <button class="adp-edit-btn cancel" type="button" @click.stop="cancelEditProfit">취소</button>
+              <button class="adp-edit-btn save" type="button" @click.stop="saveProfit">💾 저장</button>
+            </template>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('profit') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('profit')" class="adp-profit-dates">
@@ -9426,7 +9458,7 @@ const goBack = () => router.back();
 .adp-refresh-btn:active { color: #4b5563; }
 .adp-refresh-btn:disabled { opacity: 0.5; }
 
-.nearby-kakao-tab { display: inline-flex; align-items: center; gap: 4px; }
+.nearby-kakao-tab { justify-content: center; }
 .adp-kakao-mini {
   display: inline-flex; align-items: center; justify-content: center;
   width: 18px; height: 18px; border-radius: 4px;
@@ -9546,6 +9578,8 @@ const goBack = () => router.back();
 }
 .adp-edit-ico { flex: 0 0 auto; }
 .adp-edit-btn.save { background: #fff; color: #16a34a; border-color: #86efac; }
+/* 취소 — 적던 것을 버리고 편집 전으로 돌아간다 */
+.adp-edit-btn.cancel { background: #fff; color: #6b7280; border-color: #d5dbe6; margin-left: 0; }
 .adp-cell-input {
   width: 100%; max-width: 110px;
   border: 1px solid #cbd5e1; border-radius: 4px;
@@ -11427,13 +11461,21 @@ const goBack = () => router.back();
   border-bottom: 1px solid #e5e7eb;
 }
 .adp-trade-view-tab {
+  position: relative;
   flex: 1 1 auto; min-width: 0;
-  border: none; background: transparent; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  border: none; border-radius: 0; background: transparent; cursor: pointer;
   padding: 8px 6px; font-size: 12px; font-weight: 700; color: #9ca3af;
-  border-bottom: 2.5px solid transparent;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden;
 }
-.adp-trade-view-tab.active { color: #111827; border-bottom-color: #111827; }
+/* 고른 탭의 밑줄 — border-bottom 을 쓰면 전역 button 둥근모서리를 타고 U 자가 된다.
+   막대를 따로 깔아 양 끝이 반듯하게 선다 */
+.adp-trade-view-tab::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -1px;
+  height: 2.5px; background: transparent;
+}
+.adp-trade-view-tab.active { color: #111827; }
+.adp-trade-view-tab.active::after { background: #111827; }
 .adp-trade-view-tab .adp-tab-dot {
   display: inline-block; width: 6px; height: 6px; border-radius: 50%;
   background: #22c55e; margin-right: 4px; vertical-align: middle;
