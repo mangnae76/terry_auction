@@ -197,11 +197,13 @@ const restCount = computed(() => {
 watch([activeTab, period, customStart, customEnd], () => { shownCount.value = PAGE; });
 
 // === 자금입출금 요약 ===
+// 총입금·총출금·잔액은 늘 전체 기간으로 센다 — '잔액'은 통장에 남은 돈이지
+// 고른 기간의 차액이 아니다. 기간 고르기는 아래 목록에만 건다.
 const totalIn = computed(() =>
-  filteredCashFlows.value.filter((r) => r.flowType === '입금').reduce((s, r) => s + r.amount, 0),
+  finance.cashFlows.filter((r) => r.flowType === '입금').reduce((s, r) => s + r.amount, 0),
 );
 const totalOut = computed(() =>
-  filteredCashFlows.value.filter((r) => r.flowType === '출금').reduce((s, r) => s + r.amount, 0),
+  finance.cashFlows.filter((r) => r.flowType === '출금').reduce((s, r) => s + r.amount, 0),
 );
 const balance = computed(() => totalIn.value - totalOut.value);
 

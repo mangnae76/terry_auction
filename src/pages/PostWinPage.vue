@@ -165,9 +165,15 @@ const hasQty = (g: CheckGroup) => g.sections.some((sec) => sec.rows.some((r) => 
 const hasMemo = (g: CheckGroup) => g.sections.some((sec) => sec.rows.some((r) => (r.memo ?? '').trim()));
 /** 이름 칸을 세울 묶음인가 — 이름이 하나도 없으면 칸 없이 두 칸짜리 표로 둔다 */
 const hasLabels = (g: CheckGroup) => g.sections.some((sec) => sectionView(sec).label.trim());
-/** 묶음마다 '몇 개 중 몇 개' */
-const doneCount = (g: CheckGroup) => groupRows(g).filter((r) => isChecked(r.id)).length;
-const rowCount = (g: CheckGroup) => groupRows(g).length;
+/** 갈래 그림에서 체크가 붙는 줄의 이름표 — 오른쪽 할 일 상자만 센다 */
+const branchIds = (g: CheckGroup) => (g.branches ?? []).flatMap((br, bri) =>
+  (br.steps ?? []).flatMap((stp) => (stp.items ?? []).map(
+    (_it, iti) => brId(g, bri, `s${stp.no}i${iti}`),
+  )));
+/** 묶음마다 '몇 개 중 몇 개' — 표의 줄과 갈래 그림의 할 일을 함께 본다 */
+const countIds = (g: CheckGroup) => [...new Set([...groupRows(g).map((r) => r.id), ...branchIds(g)])];
+const doneCount = (g: CheckGroup) => countIds(g).filter((id) => isChecked(id)).length;
+const rowCount = (g: CheckGroup) => countIds(g).length;
 /** 화면에 보이는 표 — 편집 중에는 고치고 있는 사본을 보여 준다 */
 const dayGroups = computed<CheckGroup[]>(
   () => (editing.value ? draft.value : book.value.groups.value),
@@ -643,7 +649,7 @@ const toggleSection = (key: string) => {
               >{{ g.title }}<span class="pw-ext">↗</span></a>
               <template v-else>{{ g.title }}</template>
             </h2>
-            <em v-if="!editing && checkable && !g.noCheck" class="pw-count">{{ doneCount(g) }}/{{ rowCount(g) }}</em>
+            <em v-if="!editing && checkable && (!g.noCheck || (g.branches?.length ?? 0) > 0)" class="pw-count">{{ doneCount(g) }}/{{ rowCount(g) }}</em>
             <!-- 바로가기 — 계산기 같은 자리를 제목줄 오른쪽에 둔다 -->
             <a
               v-for="lk in (editing ? [] : (g.links ?? []))"
@@ -721,38 +727,14 @@ const toggleSection = (key: string) => {
             <div v-for="(br, bri) in (editing ? [] : (g.branches ?? []))" :key="`br-${bri}`" class="pw-br">
               <!-- 때(알약)와 그 한마디 — 때도 챙길 일이라 체크를 둔다 -->
               <div v-if="br.pill" class="pw-br-head">
-                <span
-                  :class="['pw-br-pill', { done: isChecked(brId(g, bri, 'p')) }]"
-                  @click="checkable && picked && toggleCheck(brId(g, bri, 'p'))"
-                >
-                  <span class="pw-br-txt">{{ br.pill }}</span>
-                  <input
-                    v-if="checkable"
-                    type="checkbox"
-                    class="pw-br-box"
-                    :checked="isChecked(brId(g, bri, 'p'))"
-                    :disabled="!picked"
-                    @click.stop="toggleCheck(brId(g, bri, 'p'))"
-                  />
-                </span>
+                <span class="pw-br-pill"><span class="pw-br-txt">{{ br.pill }}</span></span>
                 <span v-if="br.head" class="pw-br-arrow" />
                 <em v-if="br.head" class="pw-br-item flat">{{ br.head }}</em>
               </div>
               <div v-for="(stp, sti) in br.steps" :key="`st-${bri}-${sti}`" class="pw-br-step">
-                <span
-                  :class="['pw-br-left', { done: isChecked(brId(g, bri, `s${stp.no}`)) }]"
-                  @click="checkable && picked && toggleCheck(brId(g, bri, `s${stp.no}`))"
-                >
+                <span class="pw-br-left">
                   <em class="pw-br-no">{{ stp.no }}</em>
                   <b>{{ stp.label }}</b>
-                  <input
-                    v-if="checkable"
-                    type="checkbox"
-                    class="pw-br-box"
-                    :checked="isChecked(brId(g, bri, `s${stp.no}`))"
-                    :disabled="!picked"
-                    @click.stop="toggleCheck(brId(g, bri, `s${stp.no}`))"
-                  />
                 </span>
                 <span class="pw-br-arrow">→</span>
                 <span class="pw-br-items">
@@ -1358,21 +1340,21 @@ const toggleSection = (key: string) => {
 .pw-br { margin-bottom: 10px; }
 /* 때 줄 — 알약과 한마디를 번호 상자와 같은 칸에 맞춰 세운다 */
 .pw-br-head {
-  display: grid; grid-template-columns: 138px 16px 1fr; gap: 6px;
+  display: grid; grid-template-columns: 114px 12px 1fr; gap: 6px;
   align-items: center; margin-bottom: 12px;
 }
 .pw-br-head .pw-br-item { align-self: stretch; display: flex; align-items: center; justify-content: center; }
 /* 때 표시 — 둥근 알약이 아니라 네모 상자 */
 .pw-br-pill {
-  display: flex; align-items: center; justify-content: space-between; gap: 7px; margin: 0;
+  display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0;
   align-self: stretch; min-height: 34px;
   border: 1px solid #c9d3e3; border-radius: 4px; background: #eef2fb;
-  padding: 5px 7px 5px 11px; text-align: left; cursor: pointer;
+  padding: 5px 7px; text-align: center;
   font-size: 12.5px; font-weight: 700; color: #1f2937; word-break: keep-all;
 }
 .pw-br-pill .pw-br-txt { flex: 1 1 auto; min-width: 0; }
 .pw-br-step {
-  display: grid; grid-template-columns: 138px 16px 1fr; gap: 6px;
+  display: grid; grid-template-columns: 114px 12px 1fr; gap: 6px;
   align-items: center; margin-bottom: 10px;
 }
 /* 번호는 글 왼쪽에 한 줄로 */
@@ -1380,7 +1362,7 @@ const toggleSection = (key: string) => {
   align-self: stretch;
   display: flex; align-items: center; gap: 6px;
   border: 1px solid #c9d3e3; border-radius: 4px; background: #f3f4f6;
-  padding: 8px 7px 8px 9px; text-align: left; cursor: pointer;
+  padding: 8px 6px; text-align: left;
 }
 .pw-br-left b {
   flex: 1 1 auto; min-width: 0;
@@ -1399,7 +1381,7 @@ const toggleSection = (key: string) => {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   font-style: normal;
   border: 1px solid #c9d3e3; border-radius: 4px; background: #fff;
-  padding: 7px 7px 7px 14px; text-align: left; cursor: pointer;
+  padding: 7px 6px 7px 10px; text-align: left; cursor: pointer;
   font-size: 11.5px; font-weight: 600; color: #1f2937; line-height: 1.35; word-break: keep-all;
 }
 .pw-br-item .pw-br-txt { flex: 1 1 auto; min-width: 0; }
@@ -1411,9 +1393,7 @@ const toggleSection = (key: string) => {
   accent-color: #2f6df6; cursor: pointer;
 }
 .pw-br-box:disabled { cursor: default; opacity: .45; }
-.pw-br-item.done .pw-br-txt,
-.pw-br-pill.done .pw-br-txt,
-.pw-br-left.done b { color: #9aa6bb; text-decoration: line-through; }
+.pw-br-item.done .pw-br-txt { color: #9aa6bb; text-decoration: line-through; }
 /* 당부하는 글은 한 상자에 모아 왼쪽으로 들여 쓴다 */
 .pw-br-note {
   margin: 6px 0 0; padding: 9px 10px 9px 14px; text-align: left;

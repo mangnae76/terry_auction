@@ -41,7 +41,7 @@ export const POST_WIN_EVICT: CheckGroup[] = [
       steps: [
         {
           no: '1',
-          label: '관리사무소 방문\nor 동대표 탐문',
+          label: '관리소 방문\nor 동대표 탐문',
           items: ['내 전화번호 남기고, 점유자에게 전화요청하기', '미납관리비 최신화 (공용부/전용부 구분)'],
         },
         {
