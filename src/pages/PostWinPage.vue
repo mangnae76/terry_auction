@@ -1188,7 +1188,7 @@ const toggleSection = (key: string) => {
 .pw-note {
   margin: 0 0 6px; padding: 7px 10px;
   background: #eaf1ff; border-radius: 8px;
-  font-size: 12.5px; font-weight: 700; color: #1d4ed8; line-height: 1.5;
+  font-size: 12.5px; font-weight: 500; color: #1d4ed8; line-height: 1.5;
 }
 
 /* 가로 띠 그림 — 쪽지 · 날짜 · 길 · 이름 네 켜로 쌓는다 */
@@ -1196,7 +1196,7 @@ const toggleSection = (key: string) => {
 .pw-chip {
   display: block; margin: 2px 0 10px;
   border-radius: 8px; background: #eaf0ff;
-  padding: 8px 12px; font-size: 12.5px; font-weight: 700; color: #3850c2;
+  padding: 8px 12px; font-size: 12.5px; font-weight: 500; color: #3850c2;
   line-height: 1.4;
 }
 .pw-tl { margin-bottom: 4px; }
