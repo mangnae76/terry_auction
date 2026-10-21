@@ -1915,7 +1915,6 @@ watch(() => authStore.uid, (newUid) => {
             <span class="ftp-stop-badge is-head" />
             <span class="ftp-stop-addr">주소</span>
             <span class="ftp-col-state">상태</span>
-            <span class="ftp-stop-icon ftp-stop-spacer ftp-stop-tail" aria-hidden="true" />
           </div>
           <article
             v-for="row in missingRows"
@@ -1943,7 +1942,6 @@ watch(() => authStore.uid, (newUid) => {
               title="목록에 추가"
               @click="restoreStop(row.id)"
             ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.3" y="2.3" width="19.4" height="19.4" rx="2.6" /><path d="M12 8v8M8 12h8" /></svg></button>
-            <span v-else class="ftp-stop-icon ftp-stop-spacer ftp-stop-tail" aria-hidden="true" />
           </article>
         </template>
       </div>
@@ -2352,16 +2350,22 @@ watch(() => authStore.uid, (newUid) => {
 .ftp-stop-plus { color: #5a656e; }
 .ftp-stop-plus:active { color: #2b6df3; }
 
-/* 경로추가로 올라온 줄의 태그 — 경로제외물건 줄의 태그와 같은 자리에 선다.
-   (빈 칸을 지우고 빼기 단추에 4px 를 주어 담기 단추와 셈이 같아진다) */
-.ftp-stop-queued .ftp-stop-minus,
-.ftp-pending-row .ftp-stop-plus,
-.ftp-pending-row .ftp-stop-tail { margin-left: 4px; }
-
-/* 경로제외물건 줄 — 상태 태그를 상자 오른쪽 끝에 맞춘다. 빈 칸을 없애 주소가 더 나온다 */
-.ftp-pending-row .ftp-stop-addr { flex: 1 1 auto; min-width: 0; }
+/* 태그가 붙는 줄(경로추가·경로제외·표 머리)은 칸을 못 박아 둔다.
+   배지 | 주소 | 태그 | 단추 — 단추가 없는 줄은 그 칸이 비어 있을 뿐이라,
+   어느 줄에 단추를 넣고 빼도 태그는 늘 같은 세로줄에 선다. */
+.ftp-stop.ftp-stop-queued,
+.ftp-stop.ftp-pending-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 58px 28px;
+  gap: 8px;
+  align-items: center;
+}
+.ftp-stop-queued .ftp-stage-tag,
 .ftp-pending-row .ftp-stage-tag,
-.ftp-pending-row .ftp-col-state { margin-left: auto; }
+.ftp-pending-row .ftp-col-state {
+  margin-left: 0; width: 100%; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis;
+}
 .ftp-stop.ftp-stop-pending {
   background: #f6f7f9;
   padding-top: 4px; padding-bottom: 4px; margin-bottom: 4px;
