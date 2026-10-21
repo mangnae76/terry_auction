@@ -288,10 +288,10 @@ const INT_CARDS: Array<{
   /** 칸 이름 — 비딩은 견적·협의내용, 비용은 비용·현황 */
   amount: string; status: string;
 }> = [
-  { kind: 'bid', title: '업체비딩', file: '업체비딩.csv', amount: '견적', status: '협의내용' },
+  // 업체비딩은 더보기 › 인테리어 업체 관리로 옮겼다 (물건과 묶지 않고 적는다)
   { kind: 'cost', title: '인테리어확정', file: '인테리어확정.csv', amount: '비용', status: '현황' },
 ];
-const cardOf = (kind: 'bid' | 'cost') => INT_CARDS.find((c) => c.kind === kind) ?? INT_CARDS[1];
+const cardOf = (kind: 'bid' | 'cost') => INT_CARDS.find((c) => c.kind === kind) ?? INT_CARDS[0];
 /** 고른 물건의 것만 본다 — 물건은 위 카드에서 고르므로 적을 때 또 고르지 않는다 */
 const rowsOf = (kind: 'bid' | 'cost') => interior.rows
   .filter((r) => r.auctionId === (picked.value?.id ?? '') && (r.kind ?? 'cost') === kind)

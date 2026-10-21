@@ -70,6 +70,7 @@ const PICK_CARDS = computed<Card[]>(() => [
   { icon: '🗑️', title: '휴지통', desc: '물건 지우기 및 되살리기', path: '/trash' },
   { icon: '🔔', title: '알림설정', desc: '기한·일정 알림', path: '/notifications' },
   { icon: '🏢', title: '중개업체 관리', desc: '상호·연락처 관리', path: '/agencies' },
+  { icon: '🛠️', title: '인테리어 업체', desc: '견적·업체 비딩 관리', path: '/interior-vendors' },
   {
     icon: '📅', title: '입찰달력',
     path: '/bid-calendar',

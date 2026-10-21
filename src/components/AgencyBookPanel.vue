@@ -31,6 +31,18 @@ watch(() => auth.uid, async (uid) => {
 });
 
 const touch = () => { dirty.value = true; };
+
+/** 차례 바꾸기 — 상호(가나다) 또는 지역으로. 바꾼 차례는 저장하면 그대로 남는다 */
+const sortKey = ref<'' | 'name' | 'region'>('');
+const sortBy = (key: 'name' | 'region') => {
+  sortKey.value = key;
+  rows.value = [...rows.value].sort((a, b) => {
+    const first = (a[key] ?? '').localeCompare(b[key] ?? '', 'ko');
+    // 지역이 같으면 상호로 한 번 더 가른다
+    return first !== 0 ? first : (a.name ?? '').localeCompare(b.name ?? '', 'ko');
+  });
+  touch();
+};
 const addRow = () => {
   rows.value.push({ id: newAgencyId(), name: '', phone: '', region: '', rating: '' });
   touch();
@@ -82,19 +94,22 @@ defineExpose({ save, dirty });
     <div class="agb-tools">
       <span class="agb-eyebrow">{{ rows.length }}곳</span>
       <button type="button" class="agb-add" @click="addRow">＋ 업체 추가</button>
+      <!-- 많아지면 찾기 어렵다 — 상호나 지역으로 줄을 세운다 -->
+      <button type="button" :class="['agb-sort', { on: sortKey === 'name' }]" @click="sortBy('name')">가나다순</button>
+      <button type="button" :class="['agb-sort', { on: sortKey === 'region' }]" @click="sortBy('region')">지역순</button>
       <button type="button" class="agb-save" :class="{ on: dirty }" @click="save">💾 저장</button>
     </div>
 
     <div class="agb-list">
       <article v-for="(row, i) in rows" :key="row.id" class="agb-card">
         <div class="agb-line">
-          <label class="agb-fld name">
-            <small>상호</small>
-            <input v-model="row.name" class="agb-input" placeholder="상호 입력" @input="touch" />
-          </label>
           <label class="agb-fld region">
             <small>지역</small>
             <input v-model="row.region" class="agb-input" placeholder="동네" @input="touch" />
+          </label>
+          <label class="agb-fld name">
+            <small>상호</small>
+            <input v-model="row.name" class="agb-input" placeholder="상호 입력" @input="touch" />
           </label>
           <label class="agb-fld">
             <small>연락처</small>
@@ -143,6 +158,12 @@ defineExpose({ save, dirty });
   padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 7px;
 }
 .agb-line { display: flex; align-items: flex-end; gap: 6px; }
+/* 차례 바꾸기 단추 — 업체 추가 옆에 */
+.agb-sort {
+  border: 1px solid #dde3ee; border-radius: 999px; background: #fff;
+  padding: 4px 10px; font-family: inherit; font-size: 11px; font-weight: 700; color: #4b5563; cursor: pointer;
+}
+.agb-sort.on { background: #2a3f8f; border-color: #2a3f8f; color: #fff; }
 .agb-fld { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .agb-fld.name { flex: 0 0 30%; }
 .agb-fld.region { flex: 0 0 22%; }

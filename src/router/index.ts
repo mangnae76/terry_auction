@@ -209,6 +209,12 @@ const router = createRouter({
       component: () => import('../pages/HousingIndexPage.vue'),
     },
     {
+      // 인테리어 업체 관리 — 견적 받아 둔 업체를 모아 둔다 (물건과 묶이지 않는다)
+      path: '/interior-vendors',
+      name: 'interior-vendors',
+      component: () => import('../pages/InteriorVendorsPage.vue'),
+    },
+    {
       // 이벤트 상세 — 목록에서 제목 줄을 누르면 들어온다
       path: '/post/:id',
       name: 'board-post',
