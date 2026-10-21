@@ -210,7 +210,7 @@ const openContact = (c: ContactWay) => {
 /* 약관 */
 .sup-policy {
   width: 100%; display: flex; align-items: center; cursor: pointer;
-  border: none; background: transparent; padding: 11px 0; border-bottom: 1px solid #f1f3f7;
+  border: none; border-radius: 0; background: transparent; padding: 11px 0; border-bottom: 1px solid #f1f3f7;
   font-family: inherit; font-size: 12.5px; font-weight: 700; color: #374151; text-align: left;
 }
 .sup-policy:last-child { border-bottom: none; }

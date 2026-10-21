@@ -295,7 +295,7 @@ onMounted(() => {
 /* 마이페이지 목록 */
 .family {
   display: flex; align-items: center; gap: 8px;
-  width: 100%; border: none; background: transparent; cursor: pointer;
+  width: 100%; border: none; border-radius: 0; background: transparent; cursor: pointer;
   padding: 11px 0; border-bottom: 1px solid #f1f3f7; text-align: left;
 }
 .family:last-child { border-bottom: none; }

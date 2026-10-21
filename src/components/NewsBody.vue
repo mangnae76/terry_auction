@@ -105,7 +105,7 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
 }
 .nws-row {
   width: 100%; display: flex; align-items: center; gap: 7px; text-align: left; cursor: pointer;
-  border: none; background: transparent; padding: 7px 0; border-bottom: 1px solid #f4f6fa;
+  border: none; border-radius: 0; background: transparent; padding: 7px 0; border-bottom: 1px solid #f4f6fa;
 }
 .nws-row:last-child { border-bottom: none; }
 .nws-row .tag {
