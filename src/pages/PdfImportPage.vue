@@ -589,6 +589,7 @@ const router = useRouter();
       <section class="pip-results">
         <div class="pip-results-head">
           <h2>파싱결과</h2>
+          <span v-if="importRows.length > 0" class="pip-count">{{ importRows.length }}건</span>
           <button
             type="button"
             class="pip-chev-btn"
@@ -633,7 +634,6 @@ const router = useRouter();
 
           <div v-if="importRows.length > 0" class="pip-result-foot">
             <span class="pip-update">UPDATE : {{ lastUpdate || '—' }}</span>
-            <span class="pip-count">{{ importRows.length }}건</span>
           </div>
         </div>
       </section>
@@ -1023,8 +1023,10 @@ const router = useRouter();
   padding: 10px 12px;
 }
 .pip-results-head {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; gap: 8px;
 }
+/* 건수는 제목 바로 옆, 접기 단추는 오른쪽 끝 */
+.pip-results-head .pip-chev-btn { margin-left: auto; }
 .pip-results-head h2 { margin: 0; font-size: 14px; font-weight: 800; color: #111827; }
 
 .pip-empty {

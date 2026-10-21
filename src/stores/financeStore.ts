@@ -165,6 +165,7 @@ export const useFinanceStore = defineStore('finance', () => {
       subtotal,
       totalWithVat: Number(partial.totalWithVat ?? existing?.totalWithVat ?? subtotal),
       vendor: partial.vendor ?? existing?.vendor ?? '',
+      vendorUrl: partial.vendorUrl ?? existing?.vendorUrl ?? '',
       card: partial.card ?? existing?.card ?? '',
       user: partial.user ?? existing?.user ?? '',
       shippingFee: Number(partial.shippingFee ?? existing?.shippingFee ?? 0),

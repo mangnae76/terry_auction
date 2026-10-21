@@ -119,6 +119,13 @@ const memoText = (memo?: string) => (memo ?? '')
   ));
 
 const isChecked = (id: string) => picked.value?.postWinChecks?.[id] === true;
+/** 갈래 그림의 체크 이름표 — 같은 때(알약)가 여러 번 나와도 한 칸으로 본다 */
+const brId = (g: CheckGroup, bri: number, tail: string) => {
+  const brs = g.branches ?? [];
+  const pill = brs[bri]?.pill ?? '';
+  const head = brs.findIndex((b) => b.pill === pill);
+  return `${g.key}.b${head < 0 ? bri : head}.${tail}`;
+};
 const toggleCheck = async (id: string) => {
   const a = picked.value;
   if (!a) return;
@@ -701,23 +708,65 @@ const toggleSection = (key: string) => {
             </div>
             <!-- 갈래 그림 — 번호 상자에서 할 일이 갈라진다 -->
             <div v-for="(br, bri) in (editing ? [] : (g.branches ?? []))" :key="`br-${bri}`" class="pw-br">
-              <!-- 때(알약)와 그 한마디 -->
+              <!-- 때(알약)와 그 한마디 — 때도 챙길 일이라 체크를 둔다 -->
               <div v-if="br.pill" class="pw-br-head">
-                <span class="pw-br-pill">{{ br.pill }}</span>
+                <span
+                  :class="['pw-br-pill', { done: isChecked(brId(g, bri, 'p')) }]"
+                  @click="checkable && picked && toggleCheck(brId(g, bri, 'p'))"
+                >
+                  <span class="pw-br-txt">{{ br.pill }}</span>
+                  <input
+                    v-if="checkable"
+                    type="checkbox"
+                    class="pw-br-box"
+                    :checked="isChecked(brId(g, bri, 'p'))"
+                    :disabled="!picked"
+                    @click.stop="toggleCheck(brId(g, bri, 'p'))"
+                  />
+                </span>
                 <span v-if="br.head" class="pw-br-arrow" />
-                <em v-if="br.head" class="pw-br-item">{{ br.head }}</em>
+                <em v-if="br.head" class="pw-br-item flat">{{ br.head }}</em>
               </div>
               <div v-for="(stp, sti) in br.steps" :key="`st-${bri}-${sti}`" class="pw-br-step">
-                <span class="pw-br-left">
+                <span
+                  :class="['pw-br-left', { done: isChecked(brId(g, bri, `s${stp.no}`)) }]"
+                  @click="checkable && picked && toggleCheck(brId(g, bri, `s${stp.no}`))"
+                >
                   <em class="pw-br-no">{{ stp.no }}</em>
                   <b>{{ stp.label }}</b>
+                  <input
+                    v-if="checkable"
+                    type="checkbox"
+                    class="pw-br-box"
+                    :checked="isChecked(brId(g, bri, `s${stp.no}`))"
+                    :disabled="!picked"
+                    @click.stop="toggleCheck(brId(g, bri, `s${stp.no}`))"
+                  />
                 </span>
                 <span class="pw-br-arrow">→</span>
                 <span class="pw-br-items">
-                  <em v-for="(it, iti) in stp.items" :key="`bi-${iti}`" class="pw-br-item">{{ it }}</em>
+                  <span
+                    v-for="(it, iti) in stp.items"
+                    :key="`bi-${iti}`"
+                    :class="['pw-br-item', { done: isChecked(brId(g, bri, `s${stp.no}i${iti}`)) }]"
+                    @click="checkable && picked && toggleCheck(brId(g, bri, `s${stp.no}i${iti}`))"
+                  >
+                    <span class="pw-br-txt">{{ it }}</span>
+                    <input
+                      v-if="checkable"
+                      type="checkbox"
+                      class="pw-br-box"
+                      :checked="isChecked(brId(g, bri, `s${stp.no}i${iti}`))"
+                      :disabled="!picked"
+                      @click.stop="toggleCheck(brId(g, bri, `s${stp.no}i${iti}`))"
+                    />
+                  </span>
                 </span>
               </div>
-              <p v-for="(nt, nti) in (br.notes ?? [])" :key="`bn-${bri}-${nti}`" class="pw-br-note">{{ nt }}</p>
+              <!-- 당부하는 글은 한 상자에 모아 적는다 -->
+              <div v-if="(br.notes ?? []).length" class="pw-br-note">
+                <p v-for="(nt, nti) in (br.notes ?? [])" :key="`bn-${bri}-${nti}`">{{ nt }}</p>
+              </div>
             </div>
             <!-- 나란히 세우는 네모들 -->
             <div v-if="!editing && g.boxes" class="pw-bx">
@@ -1296,20 +1345,21 @@ const toggleSection = (key: string) => {
 .pw-br { margin-bottom: 10px; }
 /* 때 줄 — 알약과 한마디를 번호 상자와 같은 칸에 맞춰 세운다 */
 .pw-br-head {
-  display: grid; grid-template-columns: 124px 16px 1fr; gap: 6px;
+  display: grid; grid-template-columns: 138px 16px 1fr; gap: 6px;
   align-items: center; margin-bottom: 12px;
 }
 .pw-br-head .pw-br-item { align-self: stretch; display: flex; align-items: center; justify-content: center; }
 /* 때 표시 — 둥근 알약이 아니라 네모 상자 */
 .pw-br-pill {
-  display: flex; align-items: center; justify-content: center; margin: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 7px; margin: 0;
   align-self: stretch; min-height: 34px;
   border: 1px solid #c9d3e3; border-radius: 4px; background: #eef2fb;
-  padding: 5px 8px; text-align: center;
+  padding: 5px 7px 5px 11px; text-align: left; cursor: pointer;
   font-size: 12.5px; font-weight: 700; color: #1f2937; word-break: keep-all;
 }
+.pw-br-pill .pw-br-txt { flex: 1 1 auto; min-width: 0; }
 .pw-br-step {
-  display: grid; grid-template-columns: 124px 16px 1fr; gap: 6px;
+  display: grid; grid-template-columns: 138px 16px 1fr; gap: 6px;
   align-items: center; margin-bottom: 10px;
 }
 /* 번호는 글 왼쪽에 한 줄로 */
@@ -1317,7 +1367,7 @@ const toggleSection = (key: string) => {
   align-self: stretch;
   display: flex; align-items: center; gap: 6px;
   border: 1px solid #c9d3e3; border-radius: 4px; background: #f3f4f6;
-  padding: 8px 8px; text-align: left;
+  padding: 8px 7px 8px 9px; text-align: left; cursor: pointer;
 }
 .pw-br-left b {
   flex: 1 1 auto; min-width: 0;
@@ -1331,17 +1381,34 @@ const toggleSection = (key: string) => {
 }
 .pw-br-arrow { justify-self: center; font-size: 13px; color: #9aa6bb; }
 .pw-br-items { display: flex; flex-direction: column; gap: 6px; }
+/* 오른쪽 할 일 줄 — 글은 왼쪽으로 들여 쓰고 체크는 오른쪽 끝에 둔다 */
 .pw-br-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
   font-style: normal;
   border: 1px solid #c9d3e3; border-radius: 4px; background: #fff;
-  padding: 7px 8px; text-align: center;
+  padding: 7px 7px 7px 14px; text-align: left; cursor: pointer;
   font-size: 11.5px; font-weight: 600; color: #1f2937; line-height: 1.35; word-break: keep-all;
 }
+.pw-br-item .pw-br-txt { flex: 1 1 auto; min-width: 0; }
+/* 때 줄의 한마디는 체크하지 않는 글 — 가운데로 둔다 */
+.pw-br-item.flat { justify-content: center; text-align: center; padding: 7px 8px; cursor: default; }
+/* 체크 칸 — 표의 체크와 같은 크기 */
+.pw-br-box {
+  flex: 0 0 auto; width: 13px; height: 13px; margin: 0;
+  accent-color: #2f6df6; cursor: pointer;
+}
+.pw-br-box:disabled { cursor: default; opacity: .45; }
+.pw-br-item.done .pw-br-txt,
+.pw-br-pill.done .pw-br-txt,
+.pw-br-left.done b { color: #9aa6bb; text-decoration: line-through; }
+/* 당부하는 글은 한 상자에 모아 왼쪽으로 들여 쓴다 */
 .pw-br-note {
-  margin: 6px 0 0; padding: 8px 10px; text-align: center;
+  margin: 6px 0 0; padding: 9px 10px 9px 14px; text-align: left;
   border: 1px solid #bfe3c6; border-radius: 4px; background: #e7f6ea;
   font-size: 12px; font-weight: 700; color: #1f6b32; line-height: 1.4;
 }
+.pw-br-note p { margin: 0; }
+.pw-br-note p + p { margin-top: 4px; }
 
 /* 나란히 세우는 네모 상자들 */
 .pw-bx { margin-bottom: 8px; }

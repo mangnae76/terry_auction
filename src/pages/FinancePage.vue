@@ -208,8 +208,16 @@ const balance = computed(() => totalIn.value - totalOut.value);
 // === 포맷터 ===
 const fmtMoney = (n: number) => n.toLocaleString('ko-KR');
 const fmtMoneyWon = (n: number) => `${n.toLocaleString('ko-KR')}원`;
+// 0원에는 ＋/− 를 붙이지 않는다 — 들어온 것도 나간 것도 아니다
 const fmtMoneySigned = (n: number, sign: '+' | '-') =>
-  `${sign}${n.toLocaleString('ko-KR')}원`;
+  `${n ? sign : ''}${n.toLocaleString('ko-KR')}원`;
+
+/** 적어 둔 주소를 열 수 있는 꼴로 — http 가 없으면 붙여 준다 */
+const webUrl = (raw?: string) => {
+  const t = (raw ?? '').trim();
+  if (!t) return '';
+  return /^https?:\/\//i.test(t) ? t : `https://${t}`;
+};
 
 // === 모달 상태 ===
 type ModalKind = '' | 'cashFlow' | 'businessExpense' | 'fuelMeal' | 'itemPurchase';
@@ -240,7 +248,7 @@ const openAdd = (kind: ModalKind) => {
     ipDraft.value = {
       auctionId: '', category: '인테리어', description: '', quantity: 1, unitPrice: 0,
       subtotal: 0, totalWithVat: 0,
-      vendor: '', card: '국민신용카드', user: '', shippingFee: 0, date: todayIso(),
+      vendor: '', vendorUrl: '', card: '국민신용카드', user: '', shippingFee: 0, date: todayIso(),
     };
     ipTotalTouched.value = false;
   }
@@ -497,7 +505,7 @@ const exportExcel = () => {
               <td>{{ shortDate(r.date) }}</td>
               <td :title="r.ownerName">{{ r.ownerName }}</td>
               <td><span :class="['pill', r.flowType === '입금' ? 'in' : 'out']">{{ r.flowType }}</span></td>
-              <td :class="['r', 'amt', r.flowType === '입금' ? 'red' : 'blue']">{{ fmtMoneySigned(r.amount, r.flowType === '입금' ? '+' : '-') }}</td>
+              <td :class="['r', 'amt', r.amount ? (r.flowType === '입금' ? 'red' : 'blue') : '']">{{ fmtMoneySigned(r.amount, r.flowType === '입금' ? '+' : '-') }}</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredCashFlows.length === 0">
@@ -594,7 +602,18 @@ const exportExcel = () => {
               <td>{{ fmtMoney(r.unitPrice) }}원</td>
               <!-- 합계는 적어 둔 값이 있으면 그 값, 없으면 수량 × 단가 -->
               <td>{{ fmtMoney(r.totalWithVat || (r.quantity || 0) * (r.unitPrice || 0)) }}원</td>
-              <td :title="r.vendor">{{ r.vendor }}</td>
+              <td :title="r.vendor">
+                <a
+                  v-if="webUrl(r.vendorUrl)"
+                  class="fin-vendor-link"
+                  :href="webUrl(r.vendorUrl)"
+                  target="_blank"
+                  rel="noopener"
+                  :title="r.vendorUrl"
+                  @click.stop
+                >{{ r.vendor || r.vendorUrl }}</a>
+                <template v-else>{{ r.vendor }}</template>
+              </td>
               <td :title="r.card">{{ cardShort(r.card) }}</td>
               <td :title="r.note">{{ r.note }}</td>
             </tr>
@@ -720,6 +739,10 @@ const exportExcel = () => {
             <label>구매처<input type="text" v-model="ipDraft.vendor" /></label>
             <label>사용카드<input type="text" v-model="ipDraft.card" /></label>
           </div>
+          <label>구매처 링크
+            <input type="url" v-model="ipDraft.vendorUrl" placeholder="https://" inputmode="url" />
+            <small class="hint">적어 두면 표에서 구매처를 눌러 그 쪽으로 바로 갑니다.</small>
+          </label>
           <label>비고<input type="text" v-model="ipDraft.note" /></label>
         </template>
 
@@ -780,7 +803,7 @@ const exportExcel = () => {
               <span><small>감정가</small><b>{{ shortMoney(a.metrics?.appraisalValue ?? 0) }}</b></span>
               <span><small>낙찰가</small><b class="bid">{{ shortMoney(bidPriceOf(a)) }}</b></span>
               <span><small>비용</small><b class="cost">{{ shortMoney(costsOf(a)) }}</b></span>
-              <span><small>수익</small><b :class="incomeOf(a) >= 0 ? 'plus' : 'minus'">{{ shortMoney(incomeOf(a)) }}</b></span>
+              <span><small>수익</small><b :class="incomeOf(a) === 0 ? 'zero' : (incomeOf(a) > 0 ? 'plus' : 'minus')">{{ shortMoney(incomeOf(a)) }}</b></span>
             </div>
 
             <!-- 수익현황 — 누른 카드 밑에 산정표(A안)를 그대로 편다 (보기만 한다) -->
@@ -973,6 +996,7 @@ const exportExcel = () => {
 .fin-stage-card .nums b.cost { color: #2b6df3; }
 .fin-stage-card .nums b.plus,
 .fin-stage-card .nums b.minus { color: #e0574a; }
+.fin-stage-card .nums b.zero { color: #111827; }
 
 .fin-tabs {
   /* 네 칸을 정확히 4등분한 알약 카드 */
@@ -1106,6 +1130,8 @@ const exportExcel = () => {
 .fin-table.cash th.l, .fin-table.cash td.l { text-align: left; }
 .fin-table.cash td:not(.r):not(.empty) { max-width: none; }
 .fin-table td.amt.blue { color: #2563eb; }
+/* 구매처에 주소를 적어 두면 눌러서 바로 간다 */
+.fin-vendor-link { color: #2563eb; text-decoration: underline; text-underline-offset: 2px; }
 .fin-table td.amt.red  { color: #dc2626; }
 .fin-table .empty { text-align: center; color: #9ca3af; padding: 20px; white-space: normal; font-size: 11px; }
 /* 텍스트 셀은 너무 길면 말줄임 — 한 줄 유지. 마우스 오버 시 title 속성으로 전체 표시 */

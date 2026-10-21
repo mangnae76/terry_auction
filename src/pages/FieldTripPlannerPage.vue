@@ -1680,6 +1680,9 @@ watch(() => authStore.uid, (newUid) => {
 
     </div>
 
+    </div>
+
+    <!-- 목록이 길어도 어느 목록인지 보이게 — 스크롤해도 맨 위에 붙어 머문다 -->
     <div class="ftp-update-bar">
       <strong class="ftp-update-title">
         <svg class="ftp-sec-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1710,8 +1713,6 @@ watch(() => authStore.uid, (newUid) => {
       </span>
     </div>
 
-    </div>
-
       <div v-if="!routeListCollapsed" class="ftp-list">
         <template v-if="fullPath.length > 0">
           <template v-for="(stop, idx) in fullPath" :key="`${stop.kind ?? 'stop'}-${stop.address}`">
@@ -1737,7 +1738,6 @@ watch(() => authStore.uid, (newUid) => {
                 :class="['ftp-stage-tag', `tone-${stageTagOf(row.address)?.tone}`]"
               >{{ stageTagOf(row.address)?.label }}</span>
               <span v-else class="ftp-stage-tag is-blank" aria-hidden="true" />
-              <span class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
               <button
                 type="button"
                 class="ftp-stop-icon ftp-stop-minus"
@@ -1852,7 +1852,6 @@ watch(() => authStore.uid, (newUid) => {
                 :class="['ftp-stage-tag', `tone-${stageTagOf(row.address)?.tone}`]"
               >{{ stageTagOf(row.address)?.label }}</span>
               <span v-else class="ftp-stage-tag is-blank" aria-hidden="true" />
-              <span class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
               <button
                 type="button"
                 class="ftp-stop-icon ftp-stop-minus"
@@ -1886,7 +1885,6 @@ watch(() => authStore.uid, (newUid) => {
                 :class="['ftp-stage-tag', `tone-${stageTagOf(row.address)?.tone}`]"
               >{{ stageTagOf(row.address)?.label }}</span>
               <span v-else class="ftp-stage-tag is-blank" aria-hidden="true" />
-              <span class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
               <button
                 type="button"
                 class="ftp-stop-icon ftp-stop-minus"
@@ -2065,7 +2063,10 @@ watch(() => authStore.uid, (newUid) => {
 
 .ftp-fixed-top { background: #fff; }
 /* 목록이 길어도 어느 목록인지 보이게 '동선최적화 UPDATE' 줄만 위에 붙여 둔다 */
-.ftp-update-bar { position: sticky; top: 0; z-index: 20; }
+.ftp-update-bar {
+  position: sticky; top: 0; z-index: 20;
+  box-shadow: 0 1px 0 rgba(17, 24, 39, 0.07);
+}
 .ftp-scroll {
   flex: 1 1 auto; min-height: 0;
   overflow-y: auto;
@@ -2352,6 +2353,10 @@ watch(() => authStore.uid, (newUid) => {
 .ftp-stop-minus:active { color: #dc2626; }
 .ftp-stop-plus { color: #5a656e; }
 .ftp-stop-plus:active { color: #2b6df3; }
+
+/* 경로추가로 올라온 줄의 태그 — 경로제외물건 줄의 태그와 같은 자리에 선다.
+   (빈 칸을 지우고 빼기 단추에 4px 를 주어 담기 단추와 셈이 같아진다) */
+.ftp-stop-queued .ftp-stop-minus { margin-left: 4px; }
 
 /* 경로제외물건 줄 — 상태 태그를 상자 오른쪽 끝에 맞춘다. 빈 칸을 없애 주소가 더 나온다 */
 .ftp-pending-row .ftp-stop-addr { flex: 1 1 auto; min-width: 0; }

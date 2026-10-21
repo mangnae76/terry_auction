@@ -43,10 +43,12 @@ const router = useRouter();
       <span>자금관리</span>
     </button>
     <button type="button" :class="['amb-item', { active: active === 'more' }]" @click="router.push('/more')">
-      <svg class="amb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
-        <rect x="2.5" y="8.5" width="7" height="7" rx="1.6" />
-        <rect x="14.5" y="8.5" width="7" height="7" rx="1.6" />
-        <rect x="8.5" y="2.5" width="7" height="7" rx="1.6" />
+      <!-- 네모 셋을 ㄱ 뒤집은 꼴로 두고, 빈 칸에 ＋ 를 넣는다 — '더 있다'는 뜻 -->
+      <svg class="amb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2.6" y="2.6" width="8.3" height="8.3" rx="1.9" />
+        <rect x="13.1" y="2.6" width="8.3" height="8.3" rx="1.9" />
+        <rect x="2.6" y="13.1" width="8.3" height="8.3" rx="1.9" />
+        <path d="M17.25 13.8v7M13.75 17.3h7" stroke-width="2.2" />
       </svg>
       <span>더보기</span>
     </button>

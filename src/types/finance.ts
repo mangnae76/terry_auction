@@ -72,6 +72,7 @@ export interface ItemPurchaseRecord extends FinanceBase {
   subtotal: number;        // 계 = quantity * unitPrice
   totalWithVat: number;    // 합계(VAT 포함)
   vendor: string;          // 구매업체/구매처
+  vendorUrl?: string;      // 구매처 웹주소 — 적어 두면 구매처를 눌러 바로 간다
   card: string;            // 사용카드
   user: string;            // 사용자 (단일)
   shippingFee: number;     // 배송비
