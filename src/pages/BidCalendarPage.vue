@@ -6,7 +6,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { isPhotoId, loadSitePhoto } from '../services/sitePhotoRepository';
 import type { AuctionDetail } from '../types/auction';
-import { stageLabelOf, stageToneOf } from '../utils/stageLabel';
+import { tripStageOf } from '../utils/stageLabel';
 
 const store = useAuctionStore();
 const router = useRouter();
@@ -199,14 +199,14 @@ const monthTally = computed(() => {
   Object.entries(byDate.value).forEach(([key, list]) => {
     if (!key.startsWith(head)) return;
     list.forEach((a) => {
-      const label = stageLabelOf(a);
-      const row = seen.get(label) ?? { label, tone: stageToneOf(a), count: 0 };
+      const { label, tone } = tripStageOf(a);
+      const row = seen.get(label) ?? { label, tone, count: 0 };
       row.count += 1;
       seen.set(label, row);
     });
   });
-  // 늘 같은 차례로 — 손품에서 매도까지 흐르는 순서
-  const ORDER = ['손품조사', '임장예정', '임장완료', '입찰산정', '입찰진행', '낙찰', '유찰', '취소', '매도'];
+  // 늘 같은 차례로 — 갈 곳 먼저, 다녀온 곳 나중
+  const ORDER = ['임장예정', '임장완료'];
   return [...seen.values()].sort((a, b) => ORDER.indexOf(a.label) - ORDER.indexOf(b.label));
 });
 const monthTotal = computed(() => monthTally.value.reduce((n, r) => n + r.count, 0));
@@ -261,7 +261,7 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
             @mouseenter="showPhotoTip(a, $event)"
             @mouseleave="hidePhotoTip()"
           >
-            <p :class="['ev-stage', stageToneOf(a)]">{{ stageLabelOf(a) }}</p>
+            <p :class="['ev-stage', tripStageOf(a).tone]">{{ tripStageOf(a).label }}</p>
             <p class="ev-case">{{ caseShort(a) }}</p>
             <p :class="['ev-fail', { fresh: failText(a) === '신건' }]">{{ failText(a) }}</p>
             <p class="ev-addr">{{ a.address }}</p>

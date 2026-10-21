@@ -45,6 +45,16 @@ export const stageToneOf = (item: AuctionDetail): string => {
   return 'etc';
 };
 
+/**
+ * 달력에 적을 임장 상태 — 두 가지뿐이다.
+ * 임장을 다녀왔으면(그 뒤 단계가 무엇이든) '임장완료', 아직이면 '임장예정'.
+ * 달력은 훑어보는 자리라 단계를 다 적으면 오히려 읽히지 않는다.
+ */
+export const tripStageOf = (item: AuctionDetail): { label: string; tone: string } => {
+  const done = item.status === '임장완료' || item.status === '입찰';
+  return done ? { label: '임장완료', tone: 'visited' } : { label: '임장예정', tone: 'plan' };
+};
+
 /** 오늘 — 'YYYY-MM-DD' */
 const todayYmd = (): string => {
   const d = new Date();
