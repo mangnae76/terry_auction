@@ -481,7 +481,7 @@ const toggleSection = (key: string) => {
         </div>
         <!-- 체크는 '그 물건의 기록'이라 물건을 골라야 눌린다 — 까닭을 적어 둔다 -->
         <p v-if="checkable && !picked" class="pw-nopick">
-          낙찰한 물건을 고르면 체크할 수 있습니다 — 선정물건에서 단계를 <b>낙찰</b>로 바꿔 주세요.
+          낙찰 물건이 없으면 체크할 수 없습니다 — 선정물건에서 단계를 <b>낙찰</b>로 바꿔 주세요.
         </p>
         <nav class="pw-tabs">
           <button
