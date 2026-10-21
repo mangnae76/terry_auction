@@ -2450,20 +2450,15 @@ const removeProfitScenario = () => {
   });
 };
 
-/** 편집을 시작할 때 산정표를 떠 둔다 — 취소하면 그대로 되돌린다.
- *  (칸이 서로 물려 있어 사본에 적기보다 되돌리는 쪽이 안전하다) */
-const profitBackup = ref('');
 const startEditProfit = () => {
-  profitBackup.value = JSON.stringify(auction.value?.bidScenarios ?? []);
   editingProfit.value = true;
 };
-const cancelEditProfit = () => {
-  if (auction.value && profitBackup.value) {
-    auction.value.bidScenarios = JSON.parse(profitBackup.value) as AuctionDetail['bidScenarios'];
-  }
-  profitBackup.value = '';
-  editingProfit.value = false;
-};
+// 산정표는 칸이 서로 물려 자동으로 다시 셈한다 — 어느 칸이 바뀌든 손을 멈추면 적는다
+watch(
+  () => auction.value?.bidScenarios,
+  () => { if (editingProfit.value) persistSoon(); },
+  { deep: true },
+);
 /** 비중 기본값 — services/auctionMapper 의 createBidCostDefaults 와 같은 값이다.
  *  (두 곳이 갈라지면 '기본값' 이 두 가지가 되므로 고칠 때 같이 고친다) */
 const BID_COST_DEFAULT_RATES: Array<[BidCostAmountKey, number]> = [
@@ -2494,7 +2489,6 @@ const resetScenarioRates = (sc: ProfitScenario) => {
 const saveProfit = async () => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
-  profitBackup.value = '';
   editingProfit.value = false;
 };
 
@@ -2901,6 +2895,13 @@ const persistSoon = () => {
   saveTimer = setTimeout(() => { saveTimer = null; void persistSurvey(); }, 700);
 };
 onBeforeUnmount(() => { if (saveTimer) { clearTimeout(saveTimer); void persistSurvey(); } });
+// 편집 구역의 칸은 저장을 눌러야 들어갔다 — 안 누르고 나가면 사라졌다.
+// 이제 어느 칸이 바뀌든 손을 멈추면 적고, '완료'는 닫으면서 한 번 더 적는다.
+watch(
+  () => auction.value?.surveyForm,
+  () => { if (Object.values(editingSurvey.value).some(Boolean)) persistSoon(); },
+  { deep: true },
+);
 const saveSurveyAndClose = async (key: keyof typeof editingSurvey.value) => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
@@ -5291,29 +5292,18 @@ const tenantCards = computed(() => {
 // saleClassification = "토지·건물 일괄매각 임차권등기/공시가 1~2억/HUG 임차권 인수조건변경"
 // === 정보요약 카드 ===
 const editingSummary = ref(false);
-/** 편집하는 동안 적는 사본 — 저장을 눌러야 본값으로 옮긴다.
- *  (본값을 바로 고치면 저장하지 않고 나가도 화면에 남고, 되돌릴 길이 없었다) */
-const summaryDraft = ref<Record<string, string> | null>(null);
-const sumVal = (id: string) => (summaryDraft.value ?? auction.value?.basicSummary)?.[id] ?? '';
+const sumVal = (id: string) => auction.value?.basicSummary?.[id] ?? '';
+/** 적는 즉시 들어가고, 손을 멈추면 그때 서버에 적는다 — 저장을 놓쳐 사라지는 일이 없게 */
 const setSumVal = (id: string, value: string) => {
-  if (summaryDraft.value) { summaryDraft.value[id] = value; return; }
   if (!auction.value) return;
   if (!auction.value.basicSummary) auction.value.basicSummary = {};
   auction.value.basicSummary[id] = value;
+  persistSoon();
 };
-const startEditSummary = () => {
-  summaryDraft.value = { ...(auction.value?.basicSummary ?? {}) };
-  editingSummary.value = true;
-};
-const cancelEditSummary = () => {
-  summaryDraft.value = null;
-  editingSummary.value = false;
-};
-const saveSummary = async () => {
+/** 완료 — 입력칸을 닫으면서 마지막으로 한 번 적는다 */
+const doneSummary = async () => {
   if (!auction.value) return;
-  if (summaryDraft.value) auction.value.basicSummary = { ...summaryDraft.value };
   await store.saveAuction(auction.value);
-  summaryDraft.value = null;
   editingSummary.value = false;
 };
 
@@ -5645,11 +5635,8 @@ const goBack = () => router.back();
         <section class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('summary')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>정보요약</h2>
-            <button v-if="!editingSummary" class="adp-edit-btn" type="button" @click.stop="startEditSummary"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-            <template v-else>
-              <button class="adp-edit-btn cancel" type="button" @click.stop="cancelEditSummary">취소</button>
-              <button class="adp-edit-btn save" type="button" @click.stop="saveSummary">💾 저장</button>
-            </template>
+            <button v-if="!editingSummary" class="adp-edit-btn" type="button" @click.stop="editingSummary = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+            <button v-else class="adp-edit-btn save" type="button" @click.stop="doneSummary">완료</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('summary') }]" alt="" />
           </header>
           <dl v-if="!isCollapsed('summary')" class="adp-base-rows adp-sum-rows">
@@ -6198,10 +6185,7 @@ const goBack = () => router.back();
             </h2>
             <span class="adp-auto-chip">✦ 자동계산</span>
             <button v-if="!editingProfit" class="adp-edit-btn" type="button" @click.stop="startEditProfit"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-            <template v-else>
-              <button class="adp-edit-btn cancel" type="button" @click.stop="cancelEditProfit">취소</button>
-              <button class="adp-edit-btn save" type="button" @click.stop="saveProfit">💾 저장</button>
-            </template>
+            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveProfit">완료</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('profit') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('profit')" class="adp-profit-dates">
@@ -7403,7 +7387,7 @@ const goBack = () => router.back();
             <div class="adp-dm-head">
               <strong class="adp-dm-title">1. <span class="adp-dm-area">{{ surveyAreaLabel }}</span> 수요공급 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="동 이름이 어디서 왔는지" @mouseenter="noteEnter('dong', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('dong', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'dong'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('dong')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></strong>
               <button v-if="!editingSurvey.demand" class="adp-edit-btn" type="button" @click.stop="editingSurvey.demand = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('demand')">💾 저장</button>
+              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('demand')">완료</button>
             </div>
 
             <!-- ① 기준수치 — 이름 칸에 대면 설명이 뜬다(칸이 작아 아이콘만으로는 누르기 어렵다) -->
@@ -7776,7 +7760,7 @@ const goBack = () => router.back();
             <div class="adp-dm-sub">
               ③ 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
               <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">💾 저장</button>
+              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
             </div>
           <div class="adp-ind-body">
             <table class="adp-table adp-ind-table">
@@ -8017,7 +8001,7 @@ const goBack = () => router.back();
             <div class="adp-dm-head">
               <strong class="adp-dm-title">1. 실거래가 조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('deal', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('deal', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'deal'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
               <button v-if="!editingSurvey.deal" class="adp-edit-btn" type="button" @click.stop="editingSurvey.deal = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('deal')">💾 저장</button>
+              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('deal')">완료</button>
             </div>
 
             <!-- ① 평단가 비교 사진 -->
@@ -8180,7 +8164,7 @@ const goBack = () => router.back();
             <div class="adp-dm-head sec2">
               <strong class="adp-dm-title">2. 네이버 매물조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
               <button v-if="!editingSurvey.listing" class="adp-edit-btn" type="button" @click.stop="editingSurvey.listing = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('listing')">💾 저장</button>
+              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('listing')">완료</button>
             </div>
 
             <!-- ① 해당 빌라 저가 매물 — 줄을 늘려 가며 적는다 -->
@@ -8323,7 +8307,7 @@ const goBack = () => router.back();
           <header class="adp-card-head adp-survey-head" @click="toggleSection('realUser')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg><span class="adp-head-red">손품결론</span></h2>
             <button v-if="!editingSurvey.realUser" class="adp-edit-btn" type="button" @click.stop="editingSurvey.realUser = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('realUser')">💾 저장</button>
+            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('realUser')">완료</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('realUser') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('realUser')">
@@ -9507,8 +9491,6 @@ tr.tone-take { background: #fff5f5; }
 }
 /* 수정 버튼 — 테두리만 있는 알약형 */
 .adp-profit-head .adp-edit-btn { margin-left: auto; }
-/* 취소·저장은 한 쌍이라 붙여 둔다 — 앞엣것만 오른쪽으로 밀고 뒤엣것은 그 옆에 */
-.adp-profit-head .adp-edit-btn + .adp-edit-btn { margin-left: 0; }
 /* 낙찰일 · 매도일 */
 /* 날짜 둘 + 진행상황 + 표 스텝퍼를 한 줄에 — 줄이 내려가면 그만큼 빈 자리가
    생겨 표가 한참 밀린다. 글자('낙찰'·'매도')와 칸을 줄여 한 줄에 맞춘다 */
@@ -9603,8 +9585,6 @@ tr.tone-take { background: #fff5f5; }
 }
 .adp-edit-ico { flex: 0 0 auto; }
 .adp-edit-btn.save { background: #fff; color: #16a34a; border-color: #86efac; }
-/* 취소 — 적던 것을 버리고 편집 전으로 돌아간다 */
-.adp-edit-btn.cancel { background: #fff; color: #6b7280; border-color: #d5dbe6; }
 .adp-cell-input {
   width: 100%; max-width: 110px;
   border: 1px solid #cbd5e1; border-radius: 4px;
