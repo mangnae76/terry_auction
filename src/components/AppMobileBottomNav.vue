@@ -21,13 +21,12 @@ const router = useRouter();
       <span class="amb-icon amb-mask" :style="{ '--i': `url(${pinIcon})` }" />
       <span>임장경로</span>
     </button>
-    <!-- 낙찰 이후 — 명도와 매도. 열쇠를 넘겨받는 일이라 열쇠로 그린다.
-         선정물건(별)·임장경로(핀)·자금관리(지폐)와 같은 선 아이콘 한 벌로 맞춘다 -->
+    <!-- 낙찰 이후 — 내 것이 된 집. 별·핀·지폐와 같은 선 아이콘 한 벌로 맞춘다 -->
     <button type="button" :class="['amb-item', { active: active === 'post-win' }]" @click="router.push('/post-win')">
       <svg class="amb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" />
-        <path d="m21 2-9.6 9.6" />
-        <circle cx="7.5" cy="15.5" r="5.5" />
+        <path d="M3 10.4 12 3.2l9 7.2" />
+        <path d="M5.1 9.4V20a1 1 0 0 0 1 1h11.8a1 1 0 0 0 1-1V9.4" />
+        <path d="m8.8 14.6 2.3 2.3 4.4-4.6" />
       </svg>
       <span>낙찰이후</span>
     </button>
