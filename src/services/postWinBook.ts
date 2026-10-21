@@ -59,6 +59,27 @@ const NOTE_CLEAR: Record<string, string[]> = {
   'ev.deal': ['무엇을 알고 들어가는지가 값을 가른다.'],
 };
 
+/**
+ * 줄 글 갈아 끼우기 — 저장본이 '옛 기본 글 그대로'일 때만 새 글로 바꾼다.
+ * 한 번 저장한 사람에게는 기본 글을 고쳐도 닿지 않아, 손대지 않은 줄만 따라오게 한다.
+ * (손으로 고쳐 쓴 줄은 옛 글과 다르니 그대로 남는다)
+ */
+const TEXT_FIX: Record<string, { from: string; to: string }> = {
+  'bz.i6': {
+    from: '세무서에서 받을 때는 수령인의 신분증과 접수증(접수안내문자 포함)을 지참',
+    to: '세무서에서 받을 때는 수령인의 신분증과 접수증을 지참\n(접수 안내 문자 포함)',
+  },
+  'bz.i7': {
+    from: '본인·접수자가 아닌 제3자가 받으면 위임장과 위임자의 뜻을 확인할 수 있는 서류[대표자 신분증(사본), 법인인감증명서(사본) 등]를 더 챙긴다',
+    to: '본인·접수자가 아닌 제3자가 받으면 위임장과 위임자의 뜻을 확인할 수 있는 서류를 더 챙긴다\n대표자 신분증 사본, 법인인감증명서 사본 등',
+  },
+};
+
+const fixText = (id: string, text: string): string => {
+  const fix = TEXT_FIX[id];
+  return fix && (text ?? '').trim() === fix.from ? fix.to : text;
+};
+
 const migrate = (list: CheckGroup[]): CheckGroup[] => list.map((g) => ({
   ...g,
   note: NOTE_CLEAR[g.key]?.includes((g.note ?? '').trim()) ? '' : g.note,
@@ -70,7 +91,7 @@ const migrate = (list: CheckGroup[]): CheckGroup[] => list.map((g) => ({
     label: LABEL_FIX[(sec.label ?? '').trim()] ?? sec.label,
     rows: (sec.rows ?? []).map((r) => ({
       ...r,
-      text: spaceArrows(r.text),
+      text: fixText(r.id, spaceArrows(r.text)),
       depth: DEPTH_FIX[r.id] ?? r.depth,
     })),
   })),
