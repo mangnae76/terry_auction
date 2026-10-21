@@ -110,6 +110,9 @@ const telHref = (phone: string) => {
 /** '2025-10-17' → '25. 10. 17' (자금관리 카드와 같은 꼴) */
 const shortYmd = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2).replace(/-/g, '.') : '');
 
+/** 비고 — 가운뎃점으로 이어 붙인 두 가지는 줄을 내려 적는다 (칸이 좁아 한 줄로는 꺾인다) */
+const memoText = (memo?: string) => (memo ?? '').replace(/\s*·\s*/g, '\n');
+
 const isChecked = (id: string) => picked.value?.postWinChecks?.[id] === true;
 const toggleCheck = async (id: string) => {
   const a = picked.value;
@@ -797,7 +800,7 @@ const toggleSection = (key: string) => {
                     <td v-if="editing" class="pw-memo">
                       <input v-model="r.memo" class="pw-einput qty" placeholder="비고" />
                     </td>
-                    <td v-else-if="hasMemo(g)" class="pw-memo">{{ r.memo }}</td>
+                    <td v-else-if="hasMemo(g)" class="pw-memo">{{ memoText(r.memo) }}</td>
                     <td v-if="editing || (checkable && !g.noCheck)" class="pw-chk">
                       <template v-if="editing">
                         <button type="button" class="pw-mini" title="줄 올리기" @click.stop="moveRow(blk.at[ei], si, ri, -1)">↑</button>
