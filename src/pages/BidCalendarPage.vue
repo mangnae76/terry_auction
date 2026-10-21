@@ -6,6 +6,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { isPhotoId, loadSitePhoto } from '../services/sitePhotoRepository';
 import type { AuctionDetail } from '../types/auction';
+import { stageLabelOf, stageToneOf } from '../utils/stageLabel';
 
 const store = useAuctionStore();
 const router = useRouter();
@@ -212,6 +213,7 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
             @mouseenter="showPhotoTip(a, $event)"
             @mouseleave="hidePhotoTip()"
           >
+            <p :class="['ev-stage', stageToneOf(a)]">{{ stageLabelOf(a) }}</p>
             <p class="ev-case">{{ caseShort(a) }}</p>
             <p :class="['ev-fail', { fresh: failText(a) === '신건' }]">{{ failText(a) }}</p>
             <p class="ev-addr">{{ a.address }}</p>
@@ -341,6 +343,21 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
   margin: 0; font-size: 8px; line-height: 1.45; color: #6b7280;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* 단계 태그 — 사건번호 위에 붙어 '어디까지 했는지'를 한눈에 알린다 */
+.cal-event .ev-stage {
+  display: block; margin-bottom: 2px !important; padding: 1px 4px;
+  border-radius: 4px; font-size: 8.5px !important; font-weight: 700; line-height: 1.5;
+  text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cal-event .ev-stage.desk { background: #eef1f8; color: #4b5563; }
+.cal-event .ev-stage.plan { background: #e8f0ff; color: #2b6df3; }
+.cal-event .ev-stage.visited { background: #e6f4ea; color: #1b7f3b; }
+.cal-event .ev-stage.bid { background: #fff3e0; color: #b26a00; }
+.cal-event .ev-stage.bidding { background: #fde7d5; color: #c2410c; }
+.cal-event .ev-stage.done { background: #2a3f8f; color: #fff; }
+.cal-event .ev-stage.closed { background: #f1f3f8; color: #9ca3af; }
+.cal-event .ev-stage.etc { background: #f1f3f8; color: #6b7280; }
+
 /* 손전화에서는 이 둘만 보이므로 크게 쓴다 — 칸이 좁아 줄을 내려 두 줄로 선다
    ('2025-' / '00001'). 웹은 아래 style.css 에서 제 치수로 되돌린다 */
 .cal-event .ev-case {

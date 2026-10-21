@@ -2186,6 +2186,8 @@ html.is-web {
   /* 웹은 칸이 넓다 — 사건번호를 한 줄로 되돌린다 (손전화는 두 줄로 내려 쓴다) */
   html.is-web .cal-event .ev-case { font-size: 12px !important; font-weight: 500; white-space: nowrap; letter-spacing: normal; }
   html.is-web .cal-event .ev-fail { font-size: 11px !important; font-weight: 500; }
+  /* 단계 태그도 제 치수로 — 위 16px 규칙에 휩쓸리면 사건번호보다 커진다 */
+  html.is-web .cal-event .ev-stage { font-size: 10.5px !important; padding: 2px 6px; }
   html.is-web .cal-event { padding: 7px 8px; border-radius: 8px; }
   html.is-web .cal-event .ev-area svg { width: 15px; height: 15px; }
   /* 날짜와 요일도 같이 키운다 — 칸이 커졌는데 숫자만 작으면 따로 논다 */
