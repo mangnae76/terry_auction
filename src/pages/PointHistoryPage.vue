@@ -34,7 +34,7 @@ const money = (n: number) => n.toLocaleString('ko-KR');
 <template>
   <section class="ph-shell">
     <header class="ph-header">
-      <button type="button" class="ph-back" aria-label="뒤로" @click="router.back()">‹</button>
+      <button type="button" class="ph-back" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
       <h1 class="ph-title">포인트내역</h1>
       <span class="ph-crumb">마이페이지 › 포인트내역</span>
     </header>

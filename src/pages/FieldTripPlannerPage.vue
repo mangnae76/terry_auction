@@ -1522,7 +1522,7 @@ watch(() => authStore.uid, (newUid) => {
     <div class="ftp-scroll" @scroll.passive="mapActive && lockMap()">
     <div class="ftp-fixed-top">
     <div class="ftp-section-title is-page">
-      <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()">‹</button>
+      <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
       <span>임장경로</span>
     </div>
 
@@ -2078,8 +2078,10 @@ watch(() => authStore.uid, (newUid) => {
   font-size: 15.3px; font-weight: 800; color: #111827;
   background: #fff;
 }
-/* 화면 제목 — 물건상세·자금관리와 같은 크기 */
+/* 화면 제목 — 물건상세·자금관리와 같은 크기.
+   이 줄만은 왼쪽으로 모은다 (화살표 바로 옆에 제목이 서야 한다) */
 .ftp-section-title.is-page {
+  justify-content: flex-start; gap: 4px;
   font-size: 20px; padding-top: 9px; padding-bottom: 7px;
   /* 제목줄 아래 구분선 — 물건상세와 같게 */
   border-bottom: 1px solid #e5e7eb;

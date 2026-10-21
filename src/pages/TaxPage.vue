@@ -256,7 +256,7 @@ const router = useRouter();
 <template>
   <section :class="['tax-shell', { embedded: props.embedded }]">
     <header v-if="!props.embedded" class="tax-header">
-      <button type="button" class="pg-back" aria-label="뒤로" @click="router.back()">‹</button>
+      <button type="button" class="pg-back" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
       <h1 class="tax-title">부동산 세금 신고</h1>
       <span class="tax-eyebrow">세금 관리 · TAX MANAGEMENT</span>
     </header>

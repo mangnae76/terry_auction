@@ -101,7 +101,7 @@ watch(() => auth.uid, (uid) => {
 <template>
   <section class="alr-shell">
     <header class="alr-header">
-      <button type="button" class="alr-back" aria-label="뒤로" @click="router.back()">‹</button>
+      <button type="button" class="alr-back" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
       <h1 class="alr-title">알림설정</h1>
       <span class="alr-crumb">마이페이지 › 알림</span>
     </header>
@@ -118,7 +118,7 @@ watch(() => auth.uid, (uid) => {
           <li
             v-for="it in alerts"
             :key="it.id"
-            :class="['alr-item', it.tone, { tap: !!it.to, over: it.dday !== null && it.dday < 0 }]"
+            :class="['alr-item', it.tone, { tap: !!it.to, over: (it.dday !== null && it.dday < 0) || /경과|지남|지났/.test(it.when || '') }]"
             @click="go(it)"
           >
             <span class="alr-dday">
@@ -211,8 +211,11 @@ watch(() => auth.uid, (uid) => {
 .alr-dday { display: flex; flex-direction: column; align-items: center; min-width: 56px; }
 .alr-dday b { font-size: 12.5px; font-weight: 800; color: #111827; }
 .alr-item.red .alr-dday b { color: #c62828; }
-/* 기한이 지난 줄 — 무슨 알림이든 빨갛게. 지나간 것이 가장 급하다 */
-.alr-item.over .alr-dday b { color: #c62828; }
+/* 기한이 지난 줄 — 무슨 알림이든 빨갛게. 지나간 것이 가장 급하다.
+   '3일 지남'(큰 글씨)과 '3일 경과'(작은 글씨) 둘 다 */
+.alr-item.over .alr-dday b,
+.alr-item.over .alr-dday small { color: #c62828; }
+.alr-item.over .alr-dday small { font-weight: 700; }
 .alr-item.orange .alr-dday b { color: #b45309; }
 .alr-dday small { margin-top: 2px; font-size: 10px; color: #9ca3af; }
 .alr-txt { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }

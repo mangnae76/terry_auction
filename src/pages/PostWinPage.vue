@@ -449,7 +449,7 @@ const toggleSection = (key: string) => {
       <header class="pw-header">
         <div class="pw-title-row">
           <h1 class="pw-page-title">
-            <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()">‹</button>
+            <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
             낙찰이후
           </h1>
           <!-- 낙찰 뒤에 밟는 차례 -->

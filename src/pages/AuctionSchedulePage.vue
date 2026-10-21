@@ -82,7 +82,7 @@ onMounted(async () => {
   <section class="schedule-page">
     <header class="schedule-header">
       <div class="week-nav">
-        <button type="button" class="pg-back" aria-label="뒤로" @click="router.back()">‹</button>
+        <button type="button" class="pg-back" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
         <button type="button" class="ghost" @click="store.prevWeek()">◀ 이전주</button>
         <div class="week-label">{{ weekLabel }}</div>
         <button type="button" class="ghost" @click="store.nextWeek()">다음주 ▶</button>

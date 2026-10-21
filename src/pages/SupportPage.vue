@@ -10,7 +10,7 @@ const router = useRouter();
 <template>
   <section class="sup-shell">
     <header class="sup-header">
-      <button type="button" class="sup-back" aria-label="뒤로" @click="router.back()">‹</button>
+      <button type="button" class="sup-back" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
       <h1 class="sup-title">고객센터</h1>
       <span class="sup-crumb">더보기 › 고객센터</span>
     </header>

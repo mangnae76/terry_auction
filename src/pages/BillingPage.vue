@@ -10,7 +10,7 @@ const router = useRouter();
 <template>
   <section class="bil-shell">
     <header class="bil-header">
-      <button type="button" class="bil-back" aria-label="뒤로" @click="router.back()">‹</button>
+      <button type="button" class="bil-back" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
       <h1 class="bil-title">결제하기</h1>
       <span class="bil-crumb">마이페이지 › 결제하기</span>
     </header>

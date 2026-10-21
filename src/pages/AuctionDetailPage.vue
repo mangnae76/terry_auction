@@ -5478,7 +5478,7 @@ const goBack = () => router.back();
     <!-- 상단바 + 탭 + 물건요약은 탭과 무관하게 스크롤해도 붙어 있는다 -->
     <div ref="stickyHead" class="adp-sticky-head">
       <header class="adp-topbar">
-        <button class="adp-back" type="button" aria-label="뒤로" @click="goBack">‹</button>
+        <button class="adp-back" type="button" aria-label="뒤로" @click="goBack"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
         <h1 class="adp-page-title"><span class="adp-title-tag">경매</span>{{ caseLabel || '물건상세' }}</h1>
         <span class="adp-top-right">
           <button
@@ -6153,7 +6153,6 @@ const goBack = () => router.back();
               예상수익분석
             </h2>
             <span class="adp-auto-chip">✦ 자동계산</span>
-            <span class="adp-head-note">개인 매매 사업자 기준</span>
             <button v-if="!editingProfit" class="adp-edit-btn" type="button" @click.stop="startEditProfit"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
             <button v-else class="adp-edit-btn save" type="button" @click.stop="saveProfit">💾 저장</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('profit') }]" alt="" />
