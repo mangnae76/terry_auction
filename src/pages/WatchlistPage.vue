@@ -575,6 +575,9 @@ watch(
   () => [route.name, route.query.status] as const,
   ([name, status]) => {
     if (name !== 'auction-watchlist') return;
+    // 띠에서 켜 둔 '입찰진행'·'그외'도 같이 푼다 — 안 그러면 단계와 목록이 어긋난다
+    bidRunningOnly.value = false;
+    bidResultOnly.value = false;
     store.resetListFilters();
     // 더보기 > 마이페이지에서 ?status=… 로 들어오면 그 단계만 걸러 준다
     if (typeof status === 'string' && status) {
