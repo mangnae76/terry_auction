@@ -1718,7 +1718,7 @@ watch(() => authStore.uid, (newUid) => {
                 aria-label="목록에서 제거"
                 title="목록에서 제거"
                 @click="removeStop(row.address)"
-              >−</button>
+              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M8 12h8" /></svg></button>
             </article>
           </template>
           <article
@@ -1798,7 +1798,7 @@ watch(() => authStore.uid, (newUid) => {
               aria-label="목록에서 제거"
               title="목록에서 제거"
               @click="removeStop(stop.address)"
-            >−</button>
+            ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M8 12h8" /></svg></button>
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
           </article>
@@ -1829,7 +1829,7 @@ watch(() => authStore.uid, (newUid) => {
                 aria-label="목록에서 제거"
                 title="목록에서 제거"
                 @click="removeStop(row.address)"
-              >−</button>
+              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M8 12h8" /></svg></button>
             </article>
           </template>
 
@@ -1859,7 +1859,7 @@ watch(() => authStore.uid, (newUid) => {
                 aria-label="목록에서 제거"
                 title="목록에서 제거"
                 @click="removeStop(row.address)"
-              >−</button>
+              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M8 12h8" /></svg></button>
             </article>
         </template>
         <p v-else-if="missingRows.length === 0" class="ftp-empty guide">선정물건에서 임장예정으로 옮기면 여기에 담깁니다.</p>
@@ -1910,7 +1910,7 @@ watch(() => authStore.uid, (newUid) => {
               aria-label="목록에 추가"
               title="목록에 추가"
               @click="restoreStop(row.id)"
-            >＋</button>
+            ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M12 8v8M8 12h8" /></svg></button>
           </article>
         </template>
       </div>
@@ -2307,14 +2307,15 @@ watch(() => authStore.uid, (newUid) => {
   box-sizing: border-box; min-width: 58px; text-align: center;
   font-size: 10.5px; font-weight: 800; color: #6b7280;
 }
-/* 빼기·담기 단추 — 글자 한 자라 가운데 맞춤을 손으로 잡아 준다 */
+/* 빼기·담기 단추 — 네모 상자 안의 − 와 ＋ (체크·엑스 아이콘과 같은 꼴) */
 .ftp-stop-plus,
 .ftp-stop-minus {
   display: inline-flex; align-items: center; justify-content: center;
-  font-family: inherit; font-size: 17px; font-weight: 800; line-height: 1; color: #6b7280;
+  line-height: 0; color: #6b7280;
 }
+.ftp-stop-glyph-svg { display: block; }
 .ftp-stop-minus:active { color: #dc2626; }
-.ftp-stop-plus { font-size: 14px; color: #2b6df3; }
+.ftp-stop-plus { color: #2b6df3; }
 .ftp-stop-plus:active { color: #1d4ed8; }
 
 /* 경로제외물건 줄 — 상태 태그를 상자 오른쪽 끝에 맞춘다. 빈 칸을 없애 주소가 더 나온다 */
