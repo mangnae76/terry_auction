@@ -226,20 +226,6 @@ const archivePicked = async () => {
   pickMode.value = false;
 };
 
-// 화면에서만 감춘다 — Firestore 문서는 지우지 않는다
-const removeAll = async () => {
-  const targets = displayedAuctions.value;
-  if (targets.length === 0) return;
-  const scope = searchQuery.value.trim() ? '검색된 물건' : '선정물건';
-  askConfirm({
-    title: `${scope} ${targets.length}건을 모두 지우겠습니까?`,
-    desc: '휴지통에서 되살릴 수 있습니다. 단계와 적어 둔 내용은 그대로 돌아옵니다.',
-    okLabel: '전체삭제',
-    skipKey: 'wlp.skip.removeAll',
-    run: () => store.hideAuctions(targets.map((item) => item.id)),
-  });
-};
-
 // 숨긴 물건 — 목록을 펼쳐 고른 것만 되살린다
 const hiddenOpen = ref(false);
 // 보관함 — 휴지통과 따로 둔다. 버린 것이 아니라 잠시 내려놓은 물건이다
@@ -828,24 +814,6 @@ watch(
             </svg>
           </button>
         </div>
-        <div class="wlp-filter-cell fixed">
-          <button
-            type="button"
-            class="wlp-clear-all"
-            :disabled="displayedAuctions.length === 0"
-            :title="displayedAuctions.length > 0 ? `전체삭제 (${displayedAuctions.length}건)` : '지울 물건이 없습니다'"
-            :aria-label="`보이는 물건 ${displayedAuctions.length}건 모두 삭제`"
-            @click="removeAll"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M3 6h18" />
-              <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-              <path d="M10 11v6" />
-              <path d="M14 11v6" />
-            </svg>
-          </button>
-        </div>
       </div>
 
       <!-- 단계 — 카드 대신 한 줄 글자 띠로. 흐름(▶)이 그대로 보인다 -->
@@ -1342,6 +1310,7 @@ watch(
 .wlp-pick-btn svg { width: 18px; height: 18px; }
 .wlp-pick-btn.on { background: #2b6df3; border-color: #2b6df3; color: #fff; }
 .wlp-pick-btn:disabled { opacity: 0.35; cursor: default; }
+.wlp-pick-btn:active { opacity: 0.55; }
 /* 고르기 띠 — 보관함·휴지통 목록의 머리줄과 같은 꼴 */
 .wlp-pickbar {
   display: flex; gap: 6px; margin: 0 5px 8px;
@@ -1361,18 +1330,6 @@ watch(
 .wlp-card-picked { border-color: #2b6df3 !important; background: #f3f7ff; }
 .wlp-card-check { flex: 0 0 auto; width: 16px; height: 16px; margin: 1px 2px 0 0; accent-color: #2b6df3; }
 
-/* 전체삭제 — 글자도 상자도 떼고 빨간 휴지통만 (카드의 삭제와 같은 그림, 색으로 무게를 준다) */
-.wlp-clear-all {
-  display: inline-flex; align-items: center; justify-content: center;
-  box-sizing: border-box; height: 30px; width: 32px;
-  border: 1px solid #f0d2d2; background: #fff; border-radius: 8px;
-  padding: 0; line-height: 1; color: #d14343;
-  cursor: pointer;
-}
-.wlp-clear-all svg { width: 18px; height: 18px; }
-.wlp-clear-all:active { opacity: 0.55; }
-/* 지울 것이 없어도 칸은 비우지 않는다 — 사라지면 옆 상자들이 들썩인다 */
-.wlp-clear-all:disabled { opacity: 0.35; cursor: default; }
 /* 숨긴 물건 드롭다운 */
 .wlp-hidden-note { position: relative; display: flex; min-width: 0; }
 /* 보관함 × 7 — 숨긴 물건 수 */
