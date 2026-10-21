@@ -2183,6 +2183,8 @@ html.is-web {
   /* 넓은 화면에서는 글자를 두 배로 — 손전화 치수(8px)를 모니터에서 그대로 쓰면
      읽으려고 몸을 숙이게 된다. 손전화 쪽은 한 줄도 건드리지 않는다. */
   html.is-web .cal-event p { font-size: 11.5px; line-height: 1.45; }
+  /* 칸이 넓어졌으니 주소는 자르지 말고 줄을 내려 다 보여 준다 */
+  html.is-web .cal-event .ev-addr { white-space: normal; word-break: keep-all; overflow: visible; }
   /* 웹은 칸이 넓다 — 사건번호를 한 줄로 되돌린다 (손전화는 두 줄로 내려 쓴다) */
   html.is-web .cal-event .ev-case { font-size: 12px !important; font-weight: 500; white-space: nowrap; letter-spacing: normal; }
   html.is-web .cal-event .ev-fail { font-size: 11px !important; font-weight: 500; }
@@ -2208,10 +2210,17 @@ html.is-web {
      배경을 꽉 채우는 화면이고, 물건등록·수정 폼(.dv2)은 처음부터 모니터 폭에
      맞춰 짠 화면이라 제 폭(1440px)을 그대로 쓰게 둔다.
      관리자 도구(.adm-shell)는 웹에서만 쓰는 화면이라 가로를 꽉 쓴다. */
-  html.is-web .page-content > *:not(.lp-shell):not(.sp-shell):not(.dv2):not(.adm-shell) {
+  html.is-web .page-content > *:not(.lp-shell):not(.sp-shell):not(.dv2):not(.adm-shell):not(.cal-shell) {
     max-width: var(--shell-w);
     margin-left: auto;
     margin-right: auto;
+    box-shadow: 0 0 0 1px #e5e7eb;
+  }
+  /* 입찰 캘린더만 가로를 더 쓴다 — 칸이 좁으면 주소가 잘려 달력의 쓸모가 준다.
+     (위 규칙 뒤에 두어 덮어쓴다. 아래 바는 가운데 폭을 그대로 쓰게 둔다) */
+  html.is-web .page-content > .cal-shell {
+    max-width: min(1800px, 100%);
+    margin-left: auto; margin-right: auto;
     box-shadow: 0 0 0 1px #e5e7eb;
   }
   /* 화면(뷰포트) 기준으로 붙는 줄들 — 본문만 모으면 이것들만 양끝으로 벌어진다.

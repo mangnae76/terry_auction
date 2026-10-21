@@ -259,7 +259,6 @@ const SHOW_KEY = 'myturn.calendar.show';
 type ShowKeys = 'addr' | 'money' | 'cat' | 'star';
 const SHOW_LABELS: Array<{ key: ShowKeys; label: string }> = [
   { key: 'addr', label: '소재지' },
-  { key: 'money', label: '감정·최저' },
   { key: 'cat', label: '분류' },
   { key: 'star', label: '중요도' },
 ];
@@ -267,7 +266,8 @@ const loadShow = (): Record<ShowKeys, boolean> => {
   const base = { addr: true, money: true, cat: true, star: true };
   try {
     const raw = localStorage.getItem(SHOW_KEY);
-    return raw ? { ...base, ...(JSON.parse(raw) as Record<ShowKeys, boolean>) } : base;
+    // 감정·최저는 고르는 항목이 아니다 — 늘 켜 둔다 (좁아지면 CSS 가 감춘다)
+    return raw ? { ...base, ...(JSON.parse(raw) as Record<ShowKeys, boolean>), money: true } : base;
   } catch {
     return base;
   }
