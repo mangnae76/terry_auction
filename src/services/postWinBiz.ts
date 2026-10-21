@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 (postWinChecklist 와 같은 규칙) */
-export const POST_WIN_BIZ_VERSION = 10;
+export const POST_WIN_BIZ_VERSION = 11;
 
 export const POST_WIN_BIZ: CheckGroup[] = [
   {
@@ -146,8 +146,8 @@ export const POST_WIN_BIZ: CheckGroup[] = [
       {
         label: '주의사항',
         rows: [
-          { id: 'bz.i6', depth: 0, text: '세무서에서 받을 때는 수령인의 신분증과 접수증(접수안내문자 포함)을 지참', warn: true },
-          { id: 'bz.i7', depth: 0, text: '본인·접수자가 아닌 제3자가 받으면 위임장과 위임자의 뜻을 확인할 수 있는 서류[대표자 신분증(사본), 법인인감증명서(사본) 등]를 더 챙긴다' },
+          { id: 'bz.i6', depth: 0, text: '세무서에서 받을 때는 수령인의 신분증과 접수증을 지참\n(접수 안내 문자 포함)', warn: true },
+          { id: 'bz.i7', depth: 0, text: '본인·접수자가 아닌 제3자가 받으면 위임장과 위임자의 뜻을 확인할 수 있는 서류를 더 챙긴다\n대표자 신분증 사본, 법인인감증명서 사본 등' },
           { id: 'bz.i8', depth: 0, text: '홈택스 발급은 공동인증서(간편인증서·금융인증서 포함)로 로그인한 뒤에 된다' },
         ],
       },

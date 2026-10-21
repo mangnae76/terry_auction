@@ -1373,6 +1373,9 @@ const toggleSection = (key: string) => {
   background: #fff;
   /* 분홍 칸 위에서도 선이 보이게 한 단 진한 회색을 쓴다 */
   border: 1px solid #d0d5dd; border-radius: 8px;
+  /* 이름 칸이 여러 줄에 걸치면(rowspan) 마지막 줄의 첫 칸이 아니라서
+     아래 모서리 규칙이 닿지 않는다 — 표 자체로 잘라내 네 모서리를 지킨다 */
+  overflow: hidden;
 }
 .pw-tbl > tbody > tr > td { border-bottom: 1px solid #d0d5dd; }
 .pw-tbl > tbody > tr:last-child > td { border-bottom: 0; }
@@ -1381,12 +1384,14 @@ const toggleSection = (key: string) => {
 .pw-tbl > tbody:first-of-type > tr:first-child > :last-child { border-top-right-radius: 8px; }
 .pw-tbl > tbody:last-of-type > tr:last-child > :first-child { border-bottom-left-radius: 8px; }
 .pw-tbl > tbody:last-of-type > tr:last-child > :last-child { border-bottom-right-radius: 8px; }
-/* 이름 칸 — 글자 크기는 그대로 두고 폭만 좁게 */
-.pw-col-label { width: 96px; }
+/* 이름 칸 — 글자 크기는 그대로 두고 폭만 좁게.
+   좁혀야 오른쪽 글('매매사업자등록증명원' 같은 긴 이름)이 한 줄에 선다 */
+.pw-col-label { width: 78px; }
 /* 사업자등록 쪽은 이름이 짧아 한 뼘 더 좁게 */
 .pw-tbl.biz .pw-col-label { width: 77px; }
-.pw-col-qty { width: 48px; }
-.pw-col-memo { width: 92px; }
+/* 부수·비고는 짧은 값이라 좁혀 둔다 — 그만큼 이름 칸이 넓어져 한 줄에 선다 */
+.pw-col-qty { width: 42px; }
+.pw-col-memo { width: 78px; }
 .pw-col-chk { width: 34px; }
 /* 부수 — 가운데로 맞춰 줄마다 눈이 멎는 자리를 같게 한다 */
 .pw-qty {
