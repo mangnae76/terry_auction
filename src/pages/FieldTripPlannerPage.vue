@@ -23,7 +23,6 @@ import flagIcon from '../assets/icones/flag (1).png';
 import mapPinPlusIcon from '../assets/icones/map-pin-plus (1).png';
 import mapPinnedIcon from '../assets/icones/map-pinned (1).png';
 import squareCheckIcon from '../assets/icones/square-check (1).png';
-import squareXIcon from '../assets/icones/square-x (1).png';
 import infoIcon from '../assets/icones/info (1).png';
 import arrowUpDownIcon from '../assets/icones/arrow-UPDOWN.png';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
@@ -317,12 +316,6 @@ watch(
 );
 
 /** 아래 줄의 ✓ — 임장완료를 임장예정으로 되돌린다 */
-const undoVisited = async (id: string) => {
-  if (loading.value) return;
-  await store.setStatus(id, '임장예정');
-  showToast('임장예정으로 되돌렸습니다. 동선최적화를 눌러 주세요.', 'success');
-};
-
 const currentInputSignature = computed(
   () =>
     JSON.stringify({
@@ -1455,10 +1448,14 @@ const formatLastUpdate = computed(() => {
   return lastCalculatedAt.value;
 });
 
+/**
+ * 목록에서 빼기 — 지우는 것이 아니라 단계를 손품조사로 되돌린다.
+ * 경로는 단계를 따라가므로(임장예정만 경로에 선다) 그 줄은 아래 경로제외물건으로 내려간다.
+ * 적어 둔 값은 하나도 건드리지 않는다.
+ */
 const removeStop = async (address: string) => {
   if (loading.value) return;
   const target = address.trim();
-  // '탈락' 단계를 없앴으므로, 더 안 볼 물건은 휴지통으로 보낸다(복원 가능).
   const key = addrKey(target);
   const lines = rawAddresses.value.split('\n').filter((line) => {
     const normalized = parseAddressLines(line)[0] ?? '';
@@ -1477,11 +1474,19 @@ const removeStop = async (address: string) => {
   autoSavePlan();
   const matched = auctionByAddress(target);
   if (matched) {
-    await store.deleteAuction(matched.id);
-    showToast('휴지통으로 옮겼습니다.', 'success');
+    await store.setStatus(matched.id, '손품');
+    showToast('경로제외물건으로 내렸습니다 (손품조사).', 'success');
   } else {
-    showToast('동선최적화를 다시 누르세요.', 'info');
+    // 손으로 적은 주소는 단계가 없다 — 그 줄만 뺀다
+    showToast('목록에서 뺐습니다.', 'success');
   }
+};
+
+/** 경로제외물건에서 빼기 — 임장예정으로 올려 동선최적화 목록으로 보낸다 */
+const restoreStop = async (id: string) => {
+  if (loading.value) return;
+  await store.setStatus(id, '임장예정');
+  showToast('동선최적화 목록으로 올렸습니다. 동선최적화를 눌러 주세요.', 'success');
 };
 
 type ToastTone = 'info' | 'success' | 'error';
@@ -1708,14 +1713,12 @@ watch(() => authStore.uid, (newUid) => {
               <span class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
               <button
                 type="button"
-                class="ftp-stop-icon ftp-stop-delete"
+                class="ftp-stop-icon ftp-stop-minus"
                 :disabled="loading"
-                aria-label="휴지통으로"
-                title="휴지통으로 보내기"
+                aria-label="목록에서 제거"
+                title="목록에서 제거"
                 @click="removeStop(row.address)"
-              >
-                <img :src="squareXIcon" alt="" class="ftp-stop-glyph-img" />
-              </button>
+              >−</button>
             </article>
           </template>
           <article
@@ -1790,14 +1793,12 @@ watch(() => authStore.uid, (newUid) => {
             <button
               v-if="stop.kind === 'stop'"
               type="button"
-              class="ftp-stop-icon ftp-stop-delete"
+              class="ftp-stop-icon ftp-stop-minus"
               :disabled="loading"
-              aria-label="삭제"
+              aria-label="목록에서 제거"
               title="목록에서 제거"
               @click="removeStop(stop.address)"
-            >
-              <img :src="squareXIcon" alt="" class="ftp-stop-glyph-img" />
-            </button>
+            >−</button>
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
           </article>
@@ -1823,14 +1824,12 @@ watch(() => authStore.uid, (newUid) => {
               <span class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
               <button
                 type="button"
-                class="ftp-stop-icon ftp-stop-delete"
+                class="ftp-stop-icon ftp-stop-minus"
                 :disabled="loading"
-                aria-label="휴지통으로"
-                title="휴지통으로 보내기"
+                aria-label="목록에서 제거"
+                title="목록에서 제거"
                 @click="removeStop(row.address)"
-              >
-                <img :src="squareXIcon" alt="" class="ftp-stop-glyph-img" />
-              </button>
+              >−</button>
             </article>
           </template>
 
@@ -1855,14 +1854,12 @@ watch(() => authStore.uid, (newUid) => {
               <span class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
               <button
                 type="button"
-                class="ftp-stop-icon ftp-stop-delete"
+                class="ftp-stop-icon ftp-stop-minus"
                 :disabled="loading"
-                aria-label="휴지통으로"
-                title="휴지통으로 보내기"
+                aria-label="목록에서 제거"
+                title="목록에서 제거"
                 @click="removeStop(row.address)"
-              >
-                <img :src="squareXIcon" alt="" class="ftp-stop-glyph-img" />
-              </button>
+              >−</button>
             </article>
         </template>
         <p v-else-if="missingRows.length === 0" class="ftp-empty guide">선정물건에서 임장예정으로 옮기면 여기에 담깁니다.</p>
@@ -1902,18 +1899,18 @@ watch(() => authStore.uid, (newUid) => {
             >{{ row.address }}</span>
             <span v-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못했습니다">주소실패</span>
             <span v-else :class="['ftp-stage-tag', `tone-${row.tone}`]" :title="row.hint">{{ row.label }}</span>
+            <!-- 경로에 담기 — 단계가 무엇이든 다시 올릴 수 있다.
+                 (휴지통·보관함으로 치운 줄은 그쪽에서 되살린다) -->
             <button
-              v-if="row.tone === 'visited'"
+              v-if="!row.place"
               style="margin-left: 4px"
               type="button"
-              class="ftp-stop-icon"
+              class="ftp-stop-icon ftp-stop-plus"
               :disabled="loading"
-              aria-label="임장예정으로 되돌리기"
-              title="임장예정으로 되돌리기"
-              @click="undoVisited(row.id)"
-            >
-              <img :src="squareCheckIcon" alt="" class="ftp-stop-glyph-img" />
-            </button>
+              aria-label="목록에 추가"
+              title="목록에 추가"
+              @click="restoreStop(row.id)"
+            >＋</button>
           </article>
         </template>
       </div>
@@ -2310,6 +2307,16 @@ watch(() => authStore.uid, (newUid) => {
   box-sizing: border-box; min-width: 58px; text-align: center;
   font-size: 10.5px; font-weight: 800; color: #6b7280;
 }
+/* 빼기·담기 단추 — 글자 한 자라 가운데 맞춤을 손으로 잡아 준다 */
+.ftp-stop-plus,
+.ftp-stop-minus {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: inherit; font-size: 17px; font-weight: 800; line-height: 1; color: #6b7280;
+}
+.ftp-stop-minus:active { color: #dc2626; }
+.ftp-stop-plus { font-size: 14px; color: #2b6df3; }
+.ftp-stop-plus:active { color: #1d4ed8; }
+
 /* 경로제외물건 줄 — 상태 태그를 상자 오른쪽 끝에 맞춘다. 빈 칸을 없애 주소가 더 나온다 */
 .ftp-pending-row .ftp-stop-addr { flex: 1 1 auto; min-width: 0; }
 .ftp-pending-row .ftp-stage-tag,
