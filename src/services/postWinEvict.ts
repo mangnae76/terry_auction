@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 19;
+export const POST_WIN_EVICT_VERSION = 20;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
@@ -63,14 +63,14 @@ export const POST_WIN_EVICT: CheckGroup[] = [
           no: '1',
           label: '연락 기다리기',
           items: [
-            '관리사무소, 세대앞 남긴 연락처로 연락해주길 기다린다',
-            '정 불안하면, 다시 한번 세대 방문을 해도 좋지만, 굳이!',
+            '세대 앞에 남긴 연락처로 연락 주기를 기다린다',
+            '다시 한번 세대 방문을 해도 좋다',
           ],
         },
         {
           no: '2',
           label: '쪽지 남기기',
-          items: ['쪽지 한번 더 남기고 오는 것도 방법이지만, 큰 의미 없음'],
+          items: ['쪽지 한 번 더 남기기'],
         },
       ],
       notes: ['아직은 기다리는 것이 베스트입니다. 일단 잔금 납부까지 기다려보세요'],
@@ -81,12 +81,12 @@ export const POST_WIN_EVICT: CheckGroup[] = [
         {
           no: '1',
           label: '인도명령 신청하기',
-          items: ['잔금 납부와 동시에 인도명령 반드시 신청', '인도명령은 법원 앞 법무사에게 대리로 맡겨도 됨'],
+          items: ['잔금 납부와 동시에 인도명령 반드시 신청', '인도명령은 법무사 선택 후 서비스로 부탁'],
         },
         {
           no: '2',
           label: '내용증명 발송',
-          items: ['이제부터는 점유자에게 법적 절차가 진행된다는 내용 공지'],
+          items: ['점유자에게 법적 절차가 공식적으로 진행된다는 내용 공지'],
         },
       ],
       notes: [
@@ -122,7 +122,7 @@ export const POST_WIN_EVICT: CheckGroup[] = [
         {
           no: '5',
           label: '강제집행 실시',
-          items: ['여기까지 진행되는 경우는 5% 내외', '강제집행은 집행관님 + 노무인원이 출동하여 진행'],
+          items: ['여기까지 진행되는 경우는 5% 내외', '강제집행은 집행관 + 노무 인원이 진행'],
         },
       ],
     }],
