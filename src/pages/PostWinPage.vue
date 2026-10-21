@@ -184,9 +184,20 @@ const canEdit = POST_WIN_EDITABLE;
 const editing = ref(false);
 const draft = ref<CheckGroup[]>([]);
 const toastText = ref('');
-const toast = (text: string) => {
+const toastTone = ref<'info' | 'success' | 'error'>('success');
+const toast = (text: string, tone: 'info' | 'success' | 'error' = 'success') => {
   toastText.value = text;
+  toastTone.value = tone;
   window.setTimeout(() => { toastText.value = ''; }, 1600);
+};
+/** 낙찰목록 — 펼칠 물건이 없으면 빈 상자를 열지 않고 까닭을 알린다 */
+const togglePickList = () => {
+  if (ownedAuctions.value.length === 0) {
+    pickOpen.value = false;
+    toast('낙찰 물건이 없습니다', 'info');
+    return;
+  }
+  pickOpen.value = !pickOpen.value;
 };
 const startEdit = () => {
   draft.value = JSON.parse(JSON.stringify(book.value.groups.value)) as CheckGroup[];
@@ -551,7 +562,7 @@ const toggleSection = (key: string) => {
         <p v-else class="pw-obj empty">낙찰한 물건이 없습니다</p>
         <!-- 띠 오른쪽 끝 — 낙찰목록과 전체 접기를 나란히 둔다 -->
         <div class="pw-objctrl">
-          <button type="button" class="pw-objpick" @click.stop="pickOpen = !pickOpen">
+          <button type="button" :class="['pw-objpick', { off: !ownedAuctions.length }]" @click.stop="togglePickList">
             낙찰목록<img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
           </button>
           <button
@@ -566,7 +577,7 @@ const toggleSection = (key: string) => {
           </button>
         </div>
 
-        <template v-if="pickOpen">
+        <template v-if="pickOpen && ownedAuctions.length">
           <div class="pw-objveil" @click="pickOpen = false" />
           <div class="pw-objlist">
             <article
@@ -1055,7 +1066,7 @@ const toggleSection = (key: string) => {
 
     <AgencyBookModal :open="agencyBookOpen" @close="agencyBookOpen = false" />
     <AppMobileBottomNav active="post-win" />
-    <AppToast :visible="!!toastText" :text="toastText" tone="success" />
+    <AppToast :visible="!!toastText" :text="toastText" :tone="toastTone" />
   </section>
 </template>
 
@@ -1148,6 +1159,8 @@ const toggleSection = (key: string) => {
 .pw-obj .top,
 .pw-obj .addrline { font-size: 12.5px; }
 .pw-obj .top { margin: 0; display: flex; align-items: center; gap: 7px; }
+/* 펼칠 물건이 없을 때 — 누를 수는 있되 한 발 물러나 보인다 */
+.pw-objpick.off { opacity: 0.5; }
 /* 낙찰목록 단추 — 이것만 목록을 편다 */
 .pw-objctrl { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
 .pw-objpick {
