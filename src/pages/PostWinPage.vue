@@ -111,7 +111,12 @@ const telHref = (phone: string) => {
 const shortYmd = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2).replace(/-/g, '.') : '');
 
 /** 비고 — 가운뎃점으로 이어 붙인 두 가지는 줄을 내려 적는다 (칸이 좁아 한 줄로는 꺾인다) */
-const memoText = (memo?: string) => (memo ?? '').replace(/\s*·\s*/g, '\n');
+const memoText = (memo?: string) => (memo ?? '')
+  .replace(/\s*·\s*/g, '\n')
+  // '동사무소 발급 유효기간 한 달' 처럼 두 가지가 한 줄에 붙어 있으면 뒤엣것을 내린다
+  .replace(/(.+?)\s*(유효기간)/g, (_m, head: string, tail: string) => (
+    head.trim() ? `${head.trim()}\n${tail}` : tail
+  ));
 
 const isChecked = (id: string) => picked.value?.postWinChecks?.[id] === true;
 const toggleCheck = async (id: string) => {

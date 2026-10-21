@@ -6,7 +6,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_LOAN_VERSION = 17;
+export const POST_WIN_LOAN_VERSION = 18;
 
 /** 네 상자를 '법무사 대행 잔금 납부 및 등기' 울타리로 묶을지.
  *  마음에 들지 않으면 false 로 두면 묶기 전 모습으로 돌아간다. */
@@ -66,7 +66,7 @@ export const POST_WIN_LOAN: CheckGroup[] = [
         label: '지방세',
         rows: [
           { id: 'ln.d10', depth: 0, text: '지방세 완납증명서 — 물건별 1부씩 (신탁등기용 · 낙찰받은 물건지 기재)', qty: '각 1부', memo: '동사무소 발급\n유효기간 한 달' },
-          { id: 'ln.d12', depth: 0, text: '지방세 세목별과세증명서 (최근 2년)', qty: '1부' },
+          { id: 'ln.d12', depth: 0, text: '지방세 세목별과세증명서 (최근 2년)', qty: '1부', memo: '동사무소 발급\n유효기간 한 달' },
         ],
       },
       {
