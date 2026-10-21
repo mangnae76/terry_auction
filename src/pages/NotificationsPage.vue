@@ -118,7 +118,7 @@ watch(() => auth.uid, (uid) => {
           <li
             v-for="it in alerts"
             :key="it.id"
-            :class="['alr-item', it.tone, { tap: !!it.to }]"
+            :class="['alr-item', it.tone, { tap: !!it.to, over: it.dday !== null && it.dday < 0 }]"
             @click="go(it)"
           >
             <span class="alr-dday">
@@ -211,6 +211,8 @@ watch(() => auth.uid, (uid) => {
 .alr-dday { display: flex; flex-direction: column; align-items: center; min-width: 56px; }
 .alr-dday b { font-size: 12.5px; font-weight: 800; color: #111827; }
 .alr-item.red .alr-dday b { color: #c62828; }
+/* 기한이 지난 줄 — 무슨 알림이든 빨갛게. 지나간 것이 가장 급하다 */
+.alr-item.over .alr-dday b { color: #c62828; }
 .alr-item.orange .alr-dday b { color: #b45309; }
 .alr-dday small { margin-top: 2px; font-size: 10px; color: #9ca3af; }
 .alr-txt { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
