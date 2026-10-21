@@ -273,7 +273,6 @@ const loadShow = (): Record<ShowKeys, boolean> => {
   }
 };
 const show = ref(loadShow());
-const showOpen = ref(false);
 const toggleShow = (key: ShowKeys) => {
   show.value = { ...show.value, [key]: !show.value[key] };
   try { localStorage.setItem(SHOW_KEY, JSON.stringify(show.value)); } catch { /* 못 적어도 그만 */ }
@@ -332,16 +331,13 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
         <span v-for="r in monthTally" :key="r.label" :class="['cal-tally-chip', r.tone]">
           {{ r.label }} <b>{{ r.count }}</b>
         </span>
-        <!-- 칸에 무엇까지 적을지 — 좁은 칸이라 끄고 켤 수 있어야 한다 -->
-        <button type="button" class="cal-show-btn" @click="showOpen = !showOpen">
-          표시 항목 {{ showOpen ? '▴' : '▾' }}
-        </button>
-      </div>
-      <div v-if="showOpen" class="cal-show">
-        <label v-for="o in SHOW_LABELS" :key="o.key" class="cal-show-item">
-          <input type="checkbox" :checked="show[o.key]" @change="toggleShow(o.key)" />
-          {{ o.label }}
-        </label>
+        <!-- 칸에 무엇까지 적을지 — 셋뿐이라 숨기지 않고 오른쪽에 늘어놓는다 -->
+        <span class="cal-show">
+          <label v-for="o in SHOW_LABELS" :key="o.key" class="cal-show-item">
+            <input type="checkbox" :checked="show[o.key]" @change="toggleShow(o.key)" />
+            {{ o.label }}
+          </label>
+        </span>
       </div>
 
       <div v-if="view === 'cal'" class="cal-grid cal-head">
@@ -534,15 +530,8 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
   margin: 0; font-size: 8px; line-height: 1.45; color: #6b7280;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* 표시 항목 — 현황 띠 오른쪽 */
-.cal-show-btn {
-  margin-left: auto; border: 1px solid #dde3ee; border-radius: 999px; background: #fff;
-  padding: 4px 10px; font-family: inherit; font-size: 11px; font-weight: 700; color: #4b5563; cursor: pointer;
-}
-.cal-show {
-  display: flex; flex-wrap: wrap; gap: 12px;
-  padding: 8px 4px 10px; border-bottom: 1px solid #eef1f6; margin-bottom: 8px;
-}
+/* 표시 항목 — 현황 띠 오른쪽 끝에 나란히 */
+.cal-show { margin-left: auto; display: flex; flex-wrap: wrap; gap: 12px; }
 .cal-show-item {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 11.5px; font-weight: 700; color: #4b5563; cursor: pointer;
