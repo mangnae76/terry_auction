@@ -4,7 +4,7 @@
 import type { CheckGroup } from './postWinChecklist';
 
 /** 기본 글의 판 — 글을 고쳐 내보낼 때 올린다 */
-export const POST_WIN_EVICT_VERSION = 21;
+export const POST_WIN_EVICT_VERSION = 22;
 
 export const POST_WIN_EVICT: CheckGroup[] = [
   {
@@ -106,7 +106,7 @@ export const POST_WIN_EVICT: CheckGroup[] = [
           no: '4',
           label: '강제집행 신청',
           items: [
-            '인도명령 결정문이 양측에 모두 송달되어야 강제집행 신청 가능',
+            '인도명령 결정문이 양측에 송달되어야 강제집행 신청 가능',
             '일단 계고 진행',
           ],
         },
