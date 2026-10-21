@@ -40,6 +40,14 @@ const initialTab = (): TabKey => {
   return (TAB_KEYS as string[]).includes(wanted) ? (wanted as TabKey) : 'win';
 };
 const activeTab = ref<TabKey>(initialTab());
+/** 탭 옮기기 — 아래쪽을 보고 있었다면 탭 줄이 보이는 자리까지 부드럽게 올라간다 */
+const goTab = (key: TabKey) => {
+  activeTab.value = key;
+  if (typeof window === 'undefined') return;
+  const bar = document.querySelector('.pw-tabs');
+  const top = bar ? bar.getBoundingClientRect().top + window.scrollY - 8 : 0;
+  if (window.scrollY > top) window.scrollTo({ top, behavior: 'smooth' });
+};
 watch(activeTab, (tab) => {
   if (String(route.query.tab ?? '') === tab) return;
   void router.replace({ query: { ...route.query, tab } });
@@ -466,7 +474,7 @@ const toggleSection = (key: string) => {
             :key="t.key"
             type="button"
             :class="['pw-tab', { active: activeTab === t.key }]"
-            @click="activeTab = t.key"
+            @click="goTab(t.key)"
           >{{ t.label }}</button>
         </nav>
       </header>
@@ -562,7 +570,7 @@ const toggleSection = (key: string) => {
       </div>
     </div>
 
-    <div class="pw-body">
+    <div :key="activeTab" class="pw-body">
       <template v-if="hasTable">
        <div v-for="(blk, bi) in blocks" :key="`blk-${bi}`" :class="['pw-wrap', { super: blk.super }]">
         <!-- 큰 제목 — 상자들을 한 울타리로 묶는다 -->
@@ -999,6 +1007,15 @@ const toggleSection = (key: string) => {
   flex: 0 0 auto; position: relative; z-index: 20; background: #dcdee3;
   box-shadow: 0 2px 6px rgba(17, 24, 39, 0.06);
 }
+/* 탭을 옮길 때 내용이 짧게 떠오르며 바뀐다 — 톡 끊기는 느낌을 없앤다 */
+@keyframes pw-rise {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.pw-body { animation: pw-rise .16s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .pw-body { animation: none; }
+}
 .pw-body {
   flex: 1 1 auto; overflow-y: auto;
   /* 좌우 여백은 물건상세(.adp-body)와 같은 5px — 카드가 화면을 넓게 쓴다 */
@@ -1119,13 +1136,16 @@ const toggleSection = (key: string) => {
 }
 .pw-super-head {
   display: flex; align-items: center; gap: 8px;
-  padding: 9px 4px 6px; cursor: pointer;
-  border-bottom: 1px solid #eef1f6;
+  padding: 9px 4px 8px; cursor: pointer;
 }
 .pw-super-head h2 {
   margin: 0 auto 0 0; font-size: 15.3px; font-weight: 800; color: #111827;
   display: inline-flex; align-items: center; gap: 6px; min-width: 0;
 }
+/* 울타리 안 상자 제목 — 손품조사의 안쪽 상자와 같은 치수로 한 단 작게 */
+.pw-wrap.super .pw-card-head h2 { font-size: 12.5px; font-weight: 700; }
+.pw-wrap.super .pw-card-head { min-height: 28px; padding: 4px 4px 3px; }
+
 /* 안쪽 상자 — 손품조사의 .adp-survey-block 과 같은 꼴 */
 .pw-wrap.super .pw-card {
   background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;
