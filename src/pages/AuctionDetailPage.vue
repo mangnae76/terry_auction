@@ -2666,12 +2666,12 @@ const indivAgeValue = computed({
   get: () => indivValue('ind.age'),
   set: (value: string) => setIndivValue('ind.age', value),
 });
-// 주차수 ÷ 세대수 → '1가구당 1.3대'
+// 주차수 ÷ 세대수 → '1.3대' (가구당 몇 대인지만 적는다)
 const indivParkingPerHome = computed(() => {
   const parking = Number(indivValue('ind.parking').replace(/[^\d.]/g, ''));
   const units = Number(sumVal('sum.units').replace(/[^\d.]/g, ''));
   if (!Number.isFinite(parking) || !Number.isFinite(units) || parking <= 0 || units <= 0) return '';
-  return `1가구당 ${(parking / units).toFixed(1)}대`;
+  return `${(parking / units).toFixed(1)}대`;
 });
 const indivAgeYears = computed(() => {
   const m = indivValue('ind.age').match(/^(\d{4})/);
@@ -2691,10 +2691,9 @@ const indivUnitsText = computed(() => {
 const indivFloorText = computed(() => {
   const total = sumVal('sum.floorTotal');
   const cur = sumVal('sum.floorCurrent');
-  const ho = sumVal('sum.ho');
-  if (!total && !cur && !ho) return '-';
-  const base = `${total || '-'}층 중 ${cur || '-'}층`;
-  return ho ? `${base} / ${ho}호` : base;
+  // 호수는 주소에 이미 적혀 있어 여기서는 층까지만 적는다
+  if (!total && !cur) return '-';
+  return `${total || '-'}층 중 ${cur || '-'}층`;
 });
 const indivDongText = computed(() => {
   const total = indivValue('ind.dongTotal');
@@ -2703,11 +2702,12 @@ const indivDongText = computed(() => {
   return parts.length > 0 ? parts.join(' / ') : '-';
 });
 const indivParkingText = computed(() => {
+  // 가구당 몇 대인지가 판단에 쓰이는 값이라 그것만 적는다
+  if (indivParkingPerHome.value) return indivParkingPerHome.value;
   const raw = indivValue('ind.parking');
   if (!raw) return '-';
   const count = Number(raw.replace(/[^\d.]/g, ''));
-  const label = count > 0 ? count.toLocaleString('ko-KR') : raw;
-  return indivParkingPerHome.value ? `${label} / ${indivParkingPerHome.value}` : label;
+  return count > 0 ? `${count.toLocaleString('ko-KR')}대` : raw;
 });
 
 // 층 가격율 — 아파트/빌라와 층수에 따라 기본값이 달라진다
@@ -7766,8 +7766,7 @@ const goBack = () => router.back();
                       <template v-else-if="item.custom === 'floor'">
                         <span v-if="editingSurvey.individuality" class="adp-sum-pair">
                           <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value)" />층 중
-                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value)" />층 /
-                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.ho')" placeholder="호" @input="setSumVal('sum.ho', ($event.target as HTMLInputElement).value)" />호
+                          <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value)" />층
                         </span>
                         <strong v-else>{{ indivFloorText }}</strong>
                       </template>
