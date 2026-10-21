@@ -525,8 +525,8 @@ const exportExcel = () => {
         <table class="fin-table mid">
           <!-- 칸 너비를 못 박는다 — 글자가 왼쪽에 몰리지 않게 -->
           <colgroup>
-            <col style="width: 17%" /><col style="width: 17%" /><col style="width: 16%" />
-            <col style="width: 18%" /><col style="width: 18%" /><col />
+            <col style="width: 15%" /><col style="width: 16%" /><col style="width: 15%" />
+            <col style="width: 17%" /><col style="width: 21%" /><col />
           </colgroup>
           <thead>
             <tr><th>결제일</th><th>물건구분</th><th>사용구분</th><th>명세</th><th class="two">비용{{ '\n' }}(VAT포함)</th><th>비고</th></tr>
@@ -1105,8 +1105,9 @@ const exportExcel = () => {
   white-space: nowrap; vertical-align: middle;
 }
 .fin-table th { font-weight: 700; font-size: 10.5px; white-space: nowrap; }
-/* 두 줄로 쓰는 머리글 — 합계(VAT포함)처럼 긴 이름 */
-.fin-table th.two { white-space: pre-line; line-height: 1.25; }
+/* 두 줄로 쓰는 머리글 — 합계(VAT포함)처럼 긴 이름.
+   pre-line 은 '(VAT포함)' 까지 접어 세 줄이 됐다. pre 로 적은 줄만 지킨다. */
+.fin-table th.two { white-space: pre; line-height: 1.25; padding-left: 4px; padding-right: 4px; }
 .fin-table tbody tr:nth-child(even) { background: #fafbfd; }
 .fin-table tbody tr { cursor: pointer; }
 .fin-table tbody tr:hover { background: #f9fafb; }
