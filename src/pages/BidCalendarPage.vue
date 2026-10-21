@@ -251,6 +251,34 @@ const monthTally = computed(() => {
 });
 const monthTotal = computed(() => monthTally.value.reduce((n, r) => n + r.count, 0));
 
+/**
+ * 표시 항목 — 칸에 무엇까지 적을지 고른다.
+ * 달력 칸은 좁아 사람마다 보고 싶은 것이 다르다. 고른 값은 이 기기에 적어 둔다.
+ */
+const SHOW_KEY = 'myturn.calendar.show';
+type ShowKeys = 'addr' | 'money' | 'cat' | 'star';
+const SHOW_LABELS: Array<{ key: ShowKeys; label: string }> = [
+  { key: 'addr', label: '소재지' },
+  { key: 'money', label: '감정·최저' },
+  { key: 'cat', label: '분류' },
+  { key: 'star', label: '중요도' },
+];
+const loadShow = (): Record<ShowKeys, boolean> => {
+  const base = { addr: true, money: true, cat: true, star: true };
+  try {
+    const raw = localStorage.getItem(SHOW_KEY);
+    return raw ? { ...base, ...(JSON.parse(raw) as Record<ShowKeys, boolean>) } : base;
+  } catch {
+    return base;
+  }
+};
+const show = ref(loadShow());
+const showOpen = ref(false);
+const toggleShow = (key: ShowKeys) => {
+  show.value = { ...show.value, [key]: !show.value[key] };
+  try { localStorage.setItem(SHOW_KEY, JSON.stringify(show.value)); } catch { /* 못 적어도 그만 */ }
+};
+
 /** 달력으로 볼지 목록으로 볼지 — 달력은 한눈에, 목록은 날짜 차례로 훑기 좋다 */
 const view = ref<'cal' | 'list'>('cal');
 
@@ -304,6 +332,16 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
         <span v-for="r in monthTally" :key="r.label" :class="['cal-tally-chip', r.tone]">
           {{ r.label }} <b>{{ r.count }}</b>
         </span>
+        <!-- 칸에 무엇까지 적을지 — 좁은 칸이라 끄고 켤 수 있어야 한다 -->
+        <button type="button" class="cal-show-btn" @click="showOpen = !showOpen">
+          표시 항목 {{ showOpen ? '▴' : '▾' }}
+        </button>
+      </div>
+      <div v-if="showOpen" class="cal-show">
+        <label v-for="o in SHOW_LABELS" :key="o.key" class="cal-show-item">
+          <input type="checkbox" :checked="show[o.key]" @change="toggleShow(o.key)" />
+          {{ o.label }}
+        </label>
       </div>
 
       <div v-if="view === 'cal'" class="cal-grid cal-head">
@@ -315,7 +353,7 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
           <p class="cal-daynum">
             <span :class="['cal-dnum', { sun: c.dow === 0 || holidayMap[c.key], sat: c.dow === 6 && !holidayMap[c.key], today: c.key === todayKey }]">{{ c.day }}</span>
             <em v-if="holidayMap[c.key]" class="cal-holiday">{{ holidayMap[c.key] }}</em>
-            <!-- 그날 몇 건인지는 공휴일이어도 적는다 — 날짜 옆에서 바로 읽혀야 한다 -->
+            <!-- 그날 몇 건인지 — 날짜에 붙으면 같이 읽히니 칸 가운데에 띄워 둔다 -->
             <em v-if="byDate[c.key]" class="cal-count">{{ byDate[c.key].length }}건</em>
           </p>
           <article
@@ -327,13 +365,14 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
             @mouseleave="hidePhotoTip()"
           >
             <p :class="['ev-stage', tagOf(it).tone]">{{ tagOf(it).label }}</p>
+            <p v-if="show.star && (it.a.priority ?? 0) > 0" class="ev-star">{{ '★'.repeat(it.a.priority ?? 0) }}</p>
             <p class="ev-case">{{ caseShort(it.a) }}</p>
             <p :class="['ev-fail', { fresh: failText(it.a) === '신건' }]">{{ failText(it.a) }}</p>
-            <p class="ev-addr">{{ it.a.address }}</p>
+            <p v-if="show.addr" class="ev-addr">{{ it.a.address }}</p>
             <p class="ev-kind">{{ roundText(it.a) }}</p>
-            <p class="ev-price">감정: {{ money(it.a.metrics?.appraisalValue ?? 0) }}</p>
-            <p class="ev-price">최저: {{ money(it.a.metrics?.minimumBidValue ?? 0) }}</p>
-            <p class="ev-area">
+            <p v-if="show.money" class="ev-price">감정: {{ money(it.a.metrics?.appraisalValue ?? 0) }}</p>
+            <p v-if="show.money" class="ev-price">최저: {{ money(it.a.metrics?.minimumBidValue ?? 0) }}</p>
+            <p v-if="show.cat" class="ev-area">
               <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               </svg>{{ areaTag(it.a) }}
@@ -373,9 +412,13 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
           >
             <span :class="['cal-list-tag', tagOf(it).tone]">{{ tagOf(it).label }}</span>
             <span class="cal-list-main">
-              <b>{{ it.a.caseNumber || '사건번호 없음' }}<em class="fail">{{ failText(it.a) }}</em></b>
-              <small>{{ it.a.address || '주소 없음' }}</small>
-              <small class="won">감정 {{ money(it.a.metrics?.appraisalValue ?? 0) }} · 최저 {{ money(it.a.metrics?.minimumBidValue ?? 0) }}</small>
+              <b>
+                <em v-if="show.star && (it.a.priority ?? 0) > 0" class="star">{{ '★'.repeat(it.a.priority ?? 0) }}</em>
+                {{ it.a.caseNumber || '사건번호 없음' }}<em class="fail">{{ failText(it.a) }}</em>
+              </b>
+              <small v-if="show.addr">{{ it.a.address || '주소 없음' }}</small>
+              <small v-if="show.cat" class="cat">{{ areaTag(it.a) }}</small>
+              <small v-if="show.money" class="won">감정 {{ money(it.a.metrics?.appraisalValue ?? 0) }} · 최저 {{ money(it.a.metrics?.minimumBidValue ?? 0) }}</small>
             </span>
             <span class="cal-list-arrow">›</span>
           </button>
@@ -463,8 +506,15 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
   font-style: normal; font-size: 8px; font-weight: 600; color: #dc2626;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* 입찰 건수 — 눈에 띄게 크고 파랗게 */
-.cal-count { font-style: normal; font-size: 17px; font-weight: 800; color: #2a5fbf; line-height: 1; }
+/* 입찰 건수 — 날짜에 붙지 않게 칸 가운데로 띄운다 */
+.cal-count {
+  flex: 1 1 auto; text-align: center;
+  font-style: normal; font-size: 11px; font-weight: 800; color: #dc2626; line-height: 1;
+}
+/* 중요도 별 — 사건번호 위에 작게 */
+.cal-event .ev-star {
+  font-size: 9px !important; line-height: 1.2; color: #eab308; letter-spacing: -1px;
+}
 
 /* 남은 건수 상자 — 물건 줄과 같은 너비로 바로 아래에 붙는다 */
 .cal-more {
@@ -484,6 +534,23 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
   margin: 0; font-size: 8px; line-height: 1.45; color: #6b7280;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* 표시 항목 — 현황 띠 오른쪽 */
+.cal-show-btn {
+  margin-left: auto; border: 1px solid #dde3ee; border-radius: 999px; background: #fff;
+  padding: 4px 10px; font-family: inherit; font-size: 11px; font-weight: 700; color: #4b5563; cursor: pointer;
+}
+.cal-show {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  padding: 8px 4px 10px; border-bottom: 1px solid #eef1f6; margin-bottom: 8px;
+}
+.cal-show-item {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 700; color: #4b5563; cursor: pointer;
+}
+.cal-show-item input { width: 14px; height: 14px; margin: 0; accent-color: #2a3f8f; }
+.cal-list-main .star { font-style: normal; margin-right: 4px; color: #eab308; letter-spacing: -1px; }
+.cal-list-main small.cat { color: #2a5fbf; }
+
 /* 보기 전환 — 달 이름 왼쪽에 둔다 */
 .cal-view {
   position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
@@ -503,7 +570,7 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
 .cal-list-head strong { font-size: 13.5px; font-weight: 800; color: #111827; }
 .cal-list-head strong.today { color: #2a5fbf; }
 .cal-list-holiday { font-style: normal; font-size: 11px; color: #dc2626; }
-.cal-list-count { margin-left: auto; font-size: 11.5px; font-weight: 800; color: #2a5fbf; }
+.cal-list-count { font-size: 11.5px; font-weight: 800; color: #dc2626; }
 .cal-list-row {
   display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
   border: none; border-bottom: 1px solid #f4f6fb; border-radius: 0; background: #fff;

@@ -2182,7 +2182,7 @@ html.is-web {
 
   /* 넓은 화면에서는 글자를 두 배로 — 손전화 치수(8px)를 모니터에서 그대로 쓰면
      읽으려고 몸을 숙이게 된다. 손전화 쪽은 한 줄도 건드리지 않는다. */
-  html.is-web .cal-event p { font-size: 16px; line-height: 1.4; }
+  html.is-web .cal-event p { font-size: 11.5px; line-height: 1.45; }
   /* 웹은 칸이 넓다 — 사건번호를 한 줄로 되돌린다 (손전화는 두 줄로 내려 쓴다) */
   html.is-web .cal-event .ev-case { font-size: 12px !important; font-weight: 500; white-space: nowrap; letter-spacing: normal; }
   html.is-web .cal-event .ev-fail { font-size: 11px !important; font-weight: 500; }
@@ -2195,7 +2195,7 @@ html.is-web {
   html.is-web .cal-daynum { font-size: 18px; gap: 5px; margin-bottom: 5px; }
   html.is-web .cal-dnum.today { width: 28px; height: 28px; }
   html.is-web .cal-holiday { font-size: 13px; }
-  html.is-web .cal-count { font-size: 22px; }
+  html.is-web .cal-count { font-size: 13px; }
   html.is-web .cal-cell { min-height: 104px; padding: 7px 6px 9px; }
 }
 
