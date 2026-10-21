@@ -246,7 +246,7 @@ const monthTally = computed(() => {
   });
   // 늘 같은 차례로 — 손품에서 매도까지 흐르는 순서, 그 뒤에 날짜 딱지
   const ORDER = ['손품조사', '임장예정', '임장완료', '입찰산정', '입찰진행',
-    '낙찰', '유찰', '취소', '매도', '낙찰일', '잔금기한', '매도일'];
+    '낙찰', '유찰', '경매취소', '매도', '낙찰일', '잔금기한', '매도일'];
   return [...seen.values()].sort((a, b) => ORDER.indexOf(a.label) - ORDER.indexOf(b.label));
 });
 const monthTotal = computed(() => monthTally.value.reduce((n, r) => n + r.count, 0));

@@ -149,7 +149,7 @@ const BID_STAGES: Array<{ value: string; label: string; tier: 1 | 2 | 3 }> = [
   { value: '진행', label: '입찰진행', tier: 1 },
   { value: '낙찰', label: '낙찰', tier: 2 },
   { value: '유찰', label: '유찰', tier: 2 },
-  { value: '취소', label: '취소', tier: 2 },
+  { value: '취소', label: '경매취소', tier: 2 },
   { value: '매도', label: '매도', tier: 3 },
 ];
 const stageOptions = computed(() => [
@@ -5497,7 +5497,7 @@ const goBack = () => router.back();
               :class="['adp-stage-btn', {
                 hot: stageLabel === '입찰진행',
                 done: stageLabel === '낙찰' || stageLabel === '매도',
-                off: stageLabel === '유찰' || stageLabel === '취소',
+                off: stageLabel === '유찰' || stageLabel === '경매취소',
               }]"
               @click.stop="stageOpen = !stageOpen"
             >

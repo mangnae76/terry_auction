@@ -445,7 +445,7 @@ const BID_MENU: Array<{ value: string; label: string; sep?: boolean }> = [
   { value: '진행', label: '입찰진행' },
   { value: '낙찰', label: '낙찰', sep: true },
   { value: '유찰', label: '유찰' },
-  { value: '취소', label: '취소' },
+  { value: '취소', label: '경매취소' },
   { value: '매도', label: '매도', sep: true },
   { value: '', label: '입찰산정으로 되돌리기', sep: true },
 ];

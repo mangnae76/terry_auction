@@ -10,7 +10,7 @@ export const BID_STAGE_LABELS: Record<string, string> = {
   낙찰: '낙찰',
   매도: '매도',
   유찰: '유찰',
-  취소: '취소',
+  취소: '경매취소',
 };
 /** 결과가 난 자리 — 더 손댈 일이 없다 */
 export const BID_RESULTS = ['낙찰', '유찰', '취소', '매도'];
