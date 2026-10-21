@@ -198,9 +198,13 @@ if (typeof window !== 'undefined') {
 const opened = ref<Record<string, boolean>>({});
 const toggleDay = (key: string) => { opened.value = { ...opened.value, [key]: !opened.value[key] }; };
 
-/** 접힌 날이 남아 있는가 — 한 칸씩 누르지 않고 한 번에 펴려고 본다 */
-const anyFolded = computed(() => Object.entries(byDate.value)
-  .some(([key, list]) => list.length > 1 && !opened.value[key]));
+/** 지금 접혀서 가려진 건수 — 단추에 숫자로 적는다 */
+const foldedCount = computed(() => Object.entries(byDate.value)
+  .reduce((n, [key, list]) => (list.length > 1 && !opened.value[key] ? n + list.length - 1 : n), 0));
+const anyFolded = computed(() => foldedCount.value > 0);
+/** 펴 둔 날이 있는가 — 접기 단추를 보일지 가린다 */
+const anyOpened = computed(() => Object.entries(byDate.value)
+  .some(([key, list]) => list.length > 1 && opened.value[key]));
 /** 다 보기 / 접기 — 물건이 둘 이상인 날을 한꺼번에 펴고 접는다 */
 const toggleAllDays = () => {
   if (anyFolded.value) {
@@ -264,9 +268,12 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
         <strong>{{ year }}년 {{ month }}월</strong>
         <button type="button" class="cal-nav-btn" aria-label="다음 달" @click="moveMonth(1)">›</button>
         <!-- 한 칸씩 누르지 않고 한 번에 — 두 건 이상인 날을 모두 편다 -->
-        <button v-if="compact" type="button" class="cal-openall" @click="toggleAllDays">
-          {{ anyFolded ? '다 보기' : '접기' }}
-        </button>
+        <button
+          v-if="compact && (anyFolded || anyOpened)"
+          type="button"
+          class="cal-openall"
+          @click="toggleAllDays"
+        >{{ anyFolded ? `다 보기 ${foldedCount}` : '접기' }}</button>
       </div>
 
       <!-- 이 달의 현황 — 단계별로 몇 건인지 달력 위에 적어 둔다 -->
@@ -316,7 +323,7 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
             type="button"
             class="cal-more"
             @click.stop="toggleDay(c.key)"
-          >{{ hiddenOf(c.key) }}건</button>
+          >＋{{ hiddenOf(c.key) }}건</button>
           <button
             v-else-if="compact && opened[c.key] && (byDate[c.key]?.length ?? 0) > 1"
             type="button"
@@ -462,9 +469,9 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
 
 /* 단계 태그 — 사건번호 위에 붙어 '어디까지 했는지'를 한눈에 알린다 */
 .cal-event .ev-stage {
-  display: block; margin-bottom: 2px !important; padding: 1px 4px;
-  border-radius: 4px; font-size: 8.5px !important; font-weight: 700; line-height: 1.5;
-  text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: block; margin-bottom: 2px !important; padding: 1px 2px;
+  border-radius: 4px; font-size: 7.5px !important; font-weight: 700; line-height: 1.5;
+  text-align: center; letter-spacing: -0.5px; white-space: nowrap;
 }
 .cal-event .ev-stage.desk { background: #eef1f8; color: #4b5563; }
 .cal-event .ev-stage.plan { background: #e8f0ff; color: #2b6df3; }
