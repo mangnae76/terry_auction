@@ -289,7 +289,7 @@ const INT_CARDS: Array<{
   amount: string; status: string;
 }> = [
   // 업체비딩은 더보기 › 인테리어 업체 관리로 옮겼다 (물건과 묶지 않고 적는다)
-  { kind: 'cost', title: '인테리어확정', file: '인테리어확정.csv', amount: '비용', status: '현황' },
+  { kind: 'cost', title: '인테리어 현황', file: '인테리어현황.csv', amount: '비용', status: '현황' },
 ];
 const cardOf = (kind: 'bid' | 'cost') => INT_CARDS.find((c) => c.kind === kind) ?? INT_CARDS[0];
 /** 고른 물건의 것만 본다 — 물건은 위 카드에서 고르므로 적을 때 또 고르지 않는다 */
@@ -944,7 +944,7 @@ const toggleSection = (key: string) => {
       <div class="pw-modal-veil" @click="intOpen = false" />
       <div class="pw-modal" @click.stop>
         <header class="pw-modal-head">
-          <strong>항목 편집<em class="pw-modal-sub">{{ intDraft.kind === 'bid' ? '업체비딩' : '인테리어확정' }}</em></strong>
+          <strong>항목 편집<em class="pw-modal-sub">{{ intDraft.kind === 'bid' ? '업체비딩' : '인테리어 현황' }}</em></strong>
           <button type="button" class="pw-flow-close" aria-label="닫기" @click="intOpen = false">×</button>
         </header>
         <!-- 적는 차례는 표의 칸 차례와 같다 -->
