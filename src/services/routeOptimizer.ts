@@ -251,21 +251,23 @@ const getBlockedUntil = () => {
   if (nominatimBlockedUntil > Date.now()) {
     return nominatimBlockedUntil;
   }
-  const raw = localStorage.getItem(GEOCODE_BLOCK_UNTIL_KEY);
-  if (!raw) {
-    return 0;
-  }
-  const value = Number(raw);
-  if (Number.isFinite(value) && value > Date.now()) {
-    nominatimBlockedUntil = value;
-    return value;
-  }
+  try {
+    const raw = localStorage.getItem(GEOCODE_BLOCK_UNTIL_KEY);
+    if (!raw) {
+      return 0;
+    }
+    const value = Number(raw);
+    if (Number.isFinite(value) && value > Date.now()) {
+      nominatimBlockedUntil = value;
+      return value;
+    }
+  } catch { /* 저장소가 막힌 기기 — 이번 실행 동안만 기억한다 */ }
   return 0;
 };
 
 const setBlockedUntil = (until: number) => {
   nominatimBlockedUntil = until;
-  localStorage.setItem(GEOCODE_BLOCK_UNTIL_KEY, String(until));
+  try { localStorage.setItem(GEOCODE_BLOCK_UNTIL_KEY, String(until)); } catch { /* 못 적어도 그만 */ }
 };
 
 export const parseAddressLines = (input: string) =>

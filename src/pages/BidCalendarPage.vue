@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 입찰 캘린더 — 선정해 둔 물건의 입찰일을 달력에 펼쳐 본다.
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
@@ -190,10 +190,10 @@ const syncCompact = () => {
     && window.matchMedia('(min-width: 768px)').matches;
   compact.value = !wide;
 };
-if (typeof window !== 'undefined') {
-  syncCompact();
-  window.addEventListener('resize', syncCompact);
-}
+// 화면이 넓어졌는지 듣는다 — 떠날 때 반드시 뗀다(안 떼면 드나들 때마다 쌓인다)
+if (typeof window !== 'undefined') syncCompact();
+onMounted(() => window.addEventListener('resize', syncCompact));
+onBeforeUnmount(() => window.removeEventListener('resize', syncCompact));
 /** 펼쳐 둔 날짜 — 그 칸만 길어지며 전부 보여 준다 */
 const opened = ref<Record<string, boolean>>({});
 const toggleDay = (key: string) => { opened.value = { ...opened.value, [key]: !opened.value[key] }; };
