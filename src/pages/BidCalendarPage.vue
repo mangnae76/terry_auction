@@ -486,7 +486,8 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
 .cal-cell.out { background: #fcfcfd; }
 .cal-cell.out .cal-daynum { visibility: hidden; }
 .cal-daynum {
-  margin: 0 0 3px; display: flex; align-items: center; gap: 3px;
+  position: relative;
+  margin: 0 0 3px; display: flex; align-items: center; gap: 3px; min-height: 18px;
   font-size: 11px; font-weight: 700; color: #111827;
 }
 /* 오늘 — 숫자를 정확히 가운데 둔 파란 동그라미 */
@@ -502,9 +503,9 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
   font-style: normal; font-size: 8px; font-weight: 600; color: #dc2626;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* 입찰 건수 — 날짜에 붙지 않게 칸 가운데로 띄운다 */
+/* 입찰 건수 — 날짜에 붙으면 같이 읽히니 칸의 한가운데에 띄워 둔다 (가로·세로 모두) */
 .cal-count {
-  flex: 1 1 auto; text-align: center;
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   font-style: normal; font-size: 11px; font-weight: 800; color: #dc2626; line-height: 1;
 }
 /* 중요도 별 — 사건번호 위에 작게 */
