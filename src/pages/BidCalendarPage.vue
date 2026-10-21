@@ -6,7 +6,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { isPhotoId, loadSitePhoto } from '../services/sitePhotoRepository';
 import type { AuctionDetail } from '../types/auction';
-import { tripStageOf } from '../utils/stageLabel';
+import { stageLabelOf, stageToneOf } from '../utils/stageLabel';
 
 const store = useAuctionStore();
 const router = useRouter();
@@ -64,15 +64,50 @@ const dateKeyOf = (raw?: string) => {
   return digits.length >= 8 ? `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}` : '';
 };
 
+/**
+ * 달력 한 칸에 서는 줄.
+ * 물건 하나가 여러 날에 걸린다 — 매각기일에 한 번, 낙찰일·잔금기한·매도일에 또 한 번.
+ * 어떤 날인지(kind)를 같이 들고 다녀야 칸마다 알맞은 딱지를 붙일 수 있다.
+ */
+type CalKind = 'bid' | 'won' | 'balance' | 'sell';
+type CalItem = { a: AuctionDetail; kind: CalKind };
+
+/** 잔금 기한을 적어 두지 않았으면 낙찰일 + 45일로 본다 (알림과 같은 셈) */
+const BALANCE_DUE_DAYS = 45;
+const addDays = (key: string, days: number) => {
+  const [y, m, d] = key.split('-').map(Number);
+  if (!y) return '';
+  const t = new Date(y, m - 1, d + days);
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  return `${t.getFullYear()}-${p2(t.getMonth() + 1)}-${p2(t.getDate())}`;
+};
+
 const byDate = computed(() => {
-  const map: Record<string, AuctionDetail[]> = {};
-  store.auctions.forEach((a) => {
-    const key = dateKeyOf(a.eventDate);
+  const map: Record<string, CalItem[]> = {};
+  const put = (key: string, a: AuctionDetail, kind: CalKind) => {
     if (!key) return;
-    (map[key] ??= []).push(a);
+    (map[key] ??= []).push({ a, kind });
+  };
+  store.auctions.forEach((a) => {
+    put(dateKeyOf(a.eventDate), a, 'bid');
+    const won = dateKeyOf(a.wonDate);
+    put(won, a, 'won');
+    // 잔금 기한은 적어 둔 값이 먼저, 없으면 낙찰일에서 셈한다
+    put(dateKeyOf(a.balanceDueDate) || (won ? addDays(won, BALANCE_DUE_DAYS) : ''), a, 'balance');
+    put(dateKeyOf(a.sellDate), a, 'sell');
   });
   return map;
 });
+
+/** 칸에 붙일 딱지 — 매각기일에는 단계를, 나머지 날에는 그 날이 무엇인지 적는다 */
+const KIND_TAG: Record<Exclude<CalKind, 'bid'>, { label: string; tone: string }> = {
+  won: { label: '낙찰일', tone: 'won' },
+  balance: { label: '잔금기한', tone: 'due' },
+  sell: { label: '매도일', tone: 'sold' },
+};
+const tagOf = (it: CalItem) => (it.kind === 'bid'
+  ? { label: stageLabelOf(it.a), tone: stageToneOf(it.a) }
+  : KIND_TAG[it.kind]);
 
 type Cell = { key: string; day: number; inMonth: boolean; dow: number };
 const cells = computed<Cell[]>(() => {
@@ -198,15 +233,16 @@ const monthTally = computed(() => {
   const seen = new Map<string, { label: string; tone: string; count: number }>();
   Object.entries(byDate.value).forEach(([key, list]) => {
     if (!key.startsWith(head)) return;
-    list.forEach((a) => {
-      const { label, tone } = tripStageOf(a);
+    list.forEach((it) => {
+      const { label, tone } = tagOf(it);
       const row = seen.get(label) ?? { label, tone, count: 0 };
       row.count += 1;
       seen.set(label, row);
     });
   });
-  // 늘 같은 차례로 — 갈 곳 먼저, 다녀온 곳 나중
-  const ORDER = ['임장예정', '임장완료'];
+  // 늘 같은 차례로 — 손품에서 매도까지 흐르는 순서, 그 뒤에 날짜 딱지
+  const ORDER = ['손품조사', '임장예정', '임장완료', '입찰산정', '입찰진행',
+    '낙찰', '유찰', '취소', '매도', '낙찰일', '잔금기한', '매도일'];
   return [...seen.values()].sort((a, b) => ORDER.indexOf(a.label) - ORDER.indexOf(b.label));
 });
 const monthTotal = computed(() => monthTally.value.reduce((n, r) => n + r.count, 0));
@@ -254,24 +290,24 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
             <em v-if="byDate[c.key]" class="cal-count">{{ byDate[c.key].length }}건</em>
           </p>
           <article
-            v-for="a in shownOf(c.key)"
-            :key="a.id"
+            v-for="it in shownOf(c.key)"
+            :key="`${it.a.id}-${it.kind}`"
             class="cal-event"
-            @click="goDetail(a.id)"
-            @mouseenter="showPhotoTip(a, $event)"
+            @click="goDetail(it.a.id)"
+            @mouseenter="showPhotoTip(it.a, $event)"
             @mouseleave="hidePhotoTip()"
           >
-            <p :class="['ev-stage', tripStageOf(a).tone]">{{ tripStageOf(a).label }}</p>
-            <p class="ev-case">{{ caseShort(a) }}</p>
-            <p :class="['ev-fail', { fresh: failText(a) === '신건' }]">{{ failText(a) }}</p>
-            <p class="ev-addr">{{ a.address }}</p>
-            <p class="ev-kind">{{ roundText(a) }}</p>
-            <p class="ev-price">감정: {{ money(a.metrics?.appraisalValue ?? 0) }}</p>
-            <p class="ev-price">최저: {{ money(a.metrics?.minimumBidValue ?? 0) }}</p>
+            <p :class="['ev-stage', tagOf(it).tone]">{{ tagOf(it).label }}</p>
+            <p class="ev-case">{{ caseShort(it.a) }}</p>
+            <p :class="['ev-fail', { fresh: failText(it.a) === '신건' }]">{{ failText(it.a) }}</p>
+            <p class="ev-addr">{{ it.a.address }}</p>
+            <p class="ev-kind">{{ roundText(it.a) }}</p>
+            <p class="ev-price">감정: {{ money(it.a.metrics?.appraisalValue ?? 0) }}</p>
+            <p class="ev-price">최저: {{ money(it.a.metrics?.minimumBidValue ?? 0) }}</p>
             <p class="ev-area">
               <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              </svg>{{ areaTag(a) }}
+              </svg>{{ areaTag(it.a) }}
             </p>
           </article>
           <!-- 남은 건수 — 누르면 그 칸이 길어지며 모두 보인다 -->
@@ -420,6 +456,9 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
 .cal-tally-chip.bidding { background: #fde7d5; color: #c2410c; }
 .cal-tally-chip.done { background: #2a3f8f; color: #fff; }
 .cal-tally-chip.closed { background: #f1f3f8; color: #9ca3af; }
+.cal-tally-chip.won { background: #2a3f8f; color: #fff; }
+.cal-tally-chip.due { background: #dc2626; color: #fff; }
+.cal-tally-chip.sold { background: #1b7f3b; color: #fff; }
 
 /* 단계 태그 — 사건번호 위에 붙어 '어디까지 했는지'를 한눈에 알린다 */
 .cal-event .ev-stage {
@@ -435,6 +474,10 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
 .cal-event .ev-stage.done { background: #2a3f8f; color: #fff; }
 .cal-event .ev-stage.closed { background: #f1f3f8; color: #9ca3af; }
 .cal-event .ev-stage.etc { background: #f1f3f8; color: #6b7280; }
+/* 날짜 딱지 — 잔금기한은 놓치면 보증금이 걸리니 가장 세게 */
+.cal-event .ev-stage.won { background: #2a3f8f; color: #fff; }
+.cal-event .ev-stage.due { background: #dc2626; color: #fff; }
+.cal-event .ev-stage.sold { background: #1b7f3b; color: #fff; }
 
 /* 손전화에서는 이 둘만 보이므로 크게 쓴다 — 칸이 좁아 줄을 내려 두 줄로 선다
    ('2025-' / '00001'). 웹은 아래 style.css 에서 제 치수로 되돌린다 */
