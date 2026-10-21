@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 더보기 — 계정·설정·공지 등 다른 탭에 들어가지 않는 것들을 모아 둔다.
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import MyPageCards from '../components/MyPageCards.vue';
@@ -48,6 +48,13 @@ const TABS = [
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
 const tab = ref<TabKey>('mypage');
+
+/** 고른 탭을 주소에 적어 둔다 — 다른 화면에 갔다 돌아와도 보던 탭이 그대로 열린다.
+ *  (손으로 탭을 바꿨으면 '어느 묶음으로 내려가라'는 sec 은 지운다) */
+watch(tab, (key) => {
+  if (String(route.query.tab ?? '') === key) return;
+  void router.replace({ query: { ...route.query, tab: key, sec: undefined } });
+});
 
 /** 탭 칸에 붙는 빨간 점 — 지금은 공지에 새 글이 있을 때 (다른 탭은 알릴 거리가 생기면 붙인다) */
 const { any: newsNew } = useBoardNew();
