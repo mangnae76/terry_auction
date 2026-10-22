@@ -2274,6 +2274,14 @@ const scSetAmountByPct = (sc: ProfitScenario, key: BidCostAmountKey, raw: string
   if (!Number.isFinite(pct)) return;
   sc.cost[key] = Math.round((scBid(sc) * pct) / 100);
 };
+/** 법무비 % — 금액과 비중을 같이 적는다.
+ *  0% 로 비운 표는 비중이 0 으로 남아, 기본값 0.5% 가 다시 끼어들지 않는다. */
+const scSetLegalPct = (sc: ProfitScenario, raw: string | number) => {
+  const pct = typeof raw === 'number' ? raw : parseFloat(raw);
+  if (!Number.isFinite(pct)) return;
+  sc.cost.legalCostRate = pct;
+  sc.cost.legalCostAmount = Math.round((scBid(sc) * pct) / 100);
+};
 const scSetBidByApprPct = (sc: ProfitScenario, raw: string | number) => {
   const pct = typeof raw === 'number' ? raw : parseFloat(raw);
   if (!Number.isFinite(pct)) return;
@@ -2302,6 +2310,8 @@ type RateRow = {
   /** 연이율의 3개월분처럼 나눠 쓰는 경우 */
   divisor?: number;
 };
+/** 법무비(채권 포함) 기본 비중 — 입찰가의 0.5% */
+const LEGAL_COST_DEFAULT_RATE = 0.5;
 const RATE_ROWS: RateRow[] = [
   { amountKey: 'midRepaymentAmount', rateKey: 'midRepaymentRate', base: (sc) => sc.cost?.loanAmount ?? 0 },
   { amountKey: 'interestAmount', rateKey: 'interestRate3m', base: (sc) => sc.cost?.loanAmount ?? 0, divisor: 4 },
@@ -2350,6 +2360,14 @@ watch(
       if (!c.acquisitionTaxRate || c.acquisitionTaxRate <= 0) c.acquisitionTaxRate = ACQ_TAX_DEFAULT_RATE;
       const expected = Math.round((scBid(sc) * c.acquisitionTaxRate) / 100);
       if (c.acquisitionTaxAmount !== expected) c.acquisitionTaxAmount = expected;
+      // 법무비(채권 포함)는 늘 드는 돈이다 — 아직 안 적은 표에만 0.5% 를 깔아 둔다.
+      // 한 번 적은 표는 그 금액을 지킨다(입찰가가 바뀌어도 건드리지 않는다).
+      // 비중이 0 이면 쓰는 사람이 일부러 비운 것이다 — 그 표에는 끼어들지 않는다
+      if (!(c.legalCostAmount ?? 0) && (c.legalCostRate ?? LEGAL_COST_DEFAULT_RATE) > 0) {
+        const legalRate = c.legalCostRate && c.legalCostRate > 0 ? c.legalCostRate : LEGAL_COST_DEFAULT_RATE;
+        c.legalCostRate = legalRate;
+        c.legalCostAmount = Math.round((scBid(sc) * legalRate) / 100);
+      }
       RATE_ROWS.forEach((row) => {
         const rate = c[row.rateKey] ?? 0;
         if (rate <= 0) return;
@@ -6257,10 +6275,11 @@ const goBack = () => router.back();
               <tr>
                 <td><span class="adp-cost-no">②</span>법무비/채권</td>
                 <td class="r">
-                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctShow(`scPctOfBidscsccostlegalC-${si}`, scPctOfBid(sc, sc.cost.legalCostAmount))" inputmode="decimal" class="adp-cell-input sm" @blur="pctDone()" @input="pctType(`scPctOfBidscsccostlegalC-${si}`, $event); scSetAmountByPct(sc, 'legalCostAmount', ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.legalCostAmount)) }}</template>
+                  <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctShow(`scPctOfBidscsccostlegalC-${si}`, scPctOfBid(sc, sc.cost.legalCostAmount))" inputmode="decimal" class="adp-cell-input sm" @blur="pctDone()" @input="pctType(`scPctOfBidscsccostlegalC-${si}`, $event); scSetLegalPct(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scPctOfBid(sc, sc.cost.legalCostAmount)) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.legalCostAmount" class="adp-cell-input" live-group /><template v-else>{{ formatMoney(sc.cost.legalCostAmount) }}</template>
+                  <!-- 금액은 입찰가 × % 로 따라온다 — 고치는 것은 왼쪽 % 뿐이다 -->
+                  {{ formatMoney(sc.cost.legalCostAmount) }}
                 </td>
               </tr>
               <tr>
@@ -6287,7 +6306,8 @@ const goBack = () => router.back();
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctShow(`scRowPctscRATEROWS2-${si}`, scRowPct(sc, RATE_ROWS[2]))" inputmode="decimal" class="adp-cell-input sm" @blur="pctDone()" @input="pctType(`scRowPctscRATEROWS2-${si}`, $event); scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scRowPct(sc, RATE_ROWS[2])) }}</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.cost.brokerageAmount" class="adp-cell-input" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[2])" /><template v-else>{{ formatMoney(sc.cost.brokerageAmount) }}</template>
+                  <!-- 금액은 매도가 × % 로 따라온다 — 고치는 것은 왼쪽 % 뿐이다 -->
+                  {{ formatMoney(sc.cost.brokerageAmount) }}
                 </td>
               </tr>
               <tr>
