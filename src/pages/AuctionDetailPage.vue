@@ -2113,26 +2113,22 @@ const scDeductionText = (sc: ProfitScenario) => {
   const d = scTaxDeduct(sc);
   return d > 0 ? `${Math.round(d / 10_000).toLocaleString('ko-KR')}만` : '';
 };
-/** 세율이나 공제를 고치면 직접 적어 둔 세액은 풀고 다시 자동 계산으로 돌린다 */
+/** 고칠 수 있는 것은 세율과 누진공제뿐이다 — 세액은 여기서 따라 셈한다 */
 const scSetTaxRate = (sc: ProfitScenario, raw: string) => {
   const pct = parseFloat(raw);
   if (!Number.isFinite(pct)) return;
   sc.cost.incomeTaxRateManual = pct;
-  sc.cost.incomeTaxAmount = undefined;
-  sc.cost.localTaxAmount = undefined;
 };
 const scSetTaxDeduct = (sc: ProfitScenario, raw: string) => {
   const man = parseFloat(String(raw).replace(/[^\d.-]/g, ''));
   if (!Number.isFinite(man)) return;
   // 0 은 비운 것으로 둔다 — 구간의 기본 공제로 돌아간다
   sc.cost.incomeTaxDeduct = man > 0 ? Math.round(man * 10_000) : undefined;
-  sc.cost.incomeTaxAmount = undefined;
-  sc.cost.localTaxAmount = undefined;
 };
-// 직접 넣은 금액이 있으면 그것을, 없으면 자동 계산값을 쓴다
-const scTransferTax = (sc: ProfitScenario) => sc.cost?.incomeTaxAmount ?? scTransferTaxAuto(sc);
-const scLocalTaxAuto = (sc: ProfitScenario) => localTaxOf(scTransferTax(sc), scLocalTaxRate(sc));
-const scLocalTax = (sc: ProfitScenario) => sc.cost?.localTaxAmount ?? scLocalTaxAuto(sc);
+/** 세액은 늘 과세표준에서 셈한다 — 손으로 덮어쓸 수 없는 값이다.
+ *  (고칠 수 있는 것은 세율·누진공제·지방세율이고, 금액은 거기서 따라온다) */
+const scTransferTax = (sc: ProfitScenario) => scTransferTaxAuto(sc);
+const scLocalTax = (sc: ProfitScenario) => localTaxOf(scTransferTax(sc), scLocalTaxRate(sc));
 const scAfterTaxProfit = (sc: ProfitScenario) => afterTaxProfitOf(scGain(sc), scTransferTax(sc), scLocalTax(sc));
 const scNetInvestment = (sc: ProfitScenario) => scBid(sc) - (sc.cost?.loanAmount ?? 0) + scTotalCosts(sc);
 const scTotalInvest = (sc: ProfitScenario) => scBid(sc) + scTotalCosts(sc);
@@ -2176,55 +2172,15 @@ const scSetAfterTaxProfit = (sc: ProfitScenario, value: number | string) => {
     if (scProfitAtBid(sc, mid) >= target) lo = mid; else hi = mid;
   }
   sc.bid.myBidValue = Math.round(lo);
-  // 직접 적어 둔 세액이 있으면 새 입찰가와 어긋난다 — 풀어서 다시 자동 계산으로
-  sc.cost.incomeTaxAmount = undefined;
-  sc.cost.localTaxAmount = undefined;
 };
-/** 손으로 적어 둔 세액인가 — 표시를 달고, 눌러서 자동으로 되돌릴 수 있게 한다 */
-const scTaxManual = (sc: ProfitScenario) => sc.cost?.incomeTaxAmount !== undefined;
-const scLocalTaxManual = (sc: ProfitScenario) => sc.cost?.localTaxAmount !== undefined;
-const scClearManualTax = (sc: ProfitScenario) => {
-  if (!sc.cost) return;
-  sc.cost.incomeTaxAmount = undefined;
-  sc.cost.localTaxAmount = undefined;
-};
-/** 과세표준(매도가·입찰가·비용)이 바뀌면 손으로 적어 둔 세액은 어긋난다 —
- *  세율을 고칠 때와 같이 풀어서 다시 자동 계산으로 돌린다. 바뀐 표만 푼다. */
-const scTaxBaseSigns = computed(() => ({
-  // 어느 물건의 표인지 같이 들고 본다 — 다른 물건으로 넘어간 것을 '값이 바뀐 것' 으로 보면 안 된다
-  id: auction.value?.id ?? '',
-  signs: profitScenarios.value.map((sc) => `${scBid(sc)}/${scSale(sc)}/${scTotalCosts(sc)}`),
-}));
-watch(scTaxBaseSigns, (now, before) => {
-  if (!before || before.id !== now.id) return;
-  const list = profitScenarios.value;
-  now.signs.forEach((sign, i) => {
-    if (before.signs[i] === undefined || before.signs[i] === sign) return;
-    const sc = list[i];
-    if (sc) scClearManualTax(sc);
-  });
-});
-
 const scPctOfBid = (sc: ProfitScenario, n: number | undefined | null) => (
   scBid(sc) > 0 && n ? (n / scBid(sc)) * 100 : 0
 );
 
-// 자동 계산값과 같은 값이 들어오면 '직접 입력'으로 보지 않는다.
-// (입력칸이 포맷을 맞추며 같은 값을 다시 써 넣어도 자동 계산이 멈추지 않도록)
-const scSetIncomeTax = (sc: ProfitScenario, value: number | string) => {
-  const n = Number(value) || 0;
-  sc.cost.incomeTaxAmount = Math.abs(n - Math.round(scTransferTaxAuto(sc))) < 1 ? undefined : n;
-};
-const scSetLocalTax = (sc: ProfitScenario, value: number | string) => {
-  const n = Number(value) || 0;
-  sc.cost.localTaxAmount = Math.abs(n - Math.round(scLocalTaxAuto(sc))) < 1 ? undefined : n;
-};
-// 지방세율을 고치면 직접 입력해 둔 금액은 풀고 다시 자동 계산으로 돌린다
 const scSetLocalTaxRate = (sc: ProfitScenario, raw: string) => {
   const pct = parseFloat(raw);
   if (!Number.isFinite(pct)) return;
   sc.cost.localTaxRate = pct;
-  sc.cost.localTaxAmount = undefined;
 };
 // %는 소수점 둘째 자리까지만 받는다
 /** 비중 칸은 늘 '70.00' 꼴로 다시 그려진다. 그래서 '70' 을 치는 순간 '.00' 이
@@ -6405,13 +6361,7 @@ const goBack = () => router.back();
                   <template v-else>과세표준 <span class="adp-bracket">{{ scBracket(sc) }}</span><span v-if="scDeductionText(sc)" class="adp-bracket"> − {{ scDeductionText(sc) }}</span></template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scTransferTax(sc))" class="adp-cell-input" live-group @update:model-value="scSetIncomeTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scTransferTax(sc)) }}</strong></template><button
-                    v-if="scTaxManual(sc)"
-                    type="button"
-                    class="adp-manual-mark"
-                    title="직접 적은 값입니다 — 누르면 자동 계산으로 되돌립니다"
-                    @click.stop="scClearManualTax(sc)"
-                  >직접</button>
+                  <strong>{{ formatMoney(scTransferTax(sc)) }}</strong>
                 </td>
               </tr>
               <tr>
@@ -6420,13 +6370,7 @@ const goBack = () => router.back();
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="String(scLocalTaxRate(sc))" inputmode="decimal" class="adp-cell-input sm" @input="limitPct($event); scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ scLocalTaxRate(sc) }}%</template>
                 </td>
                 <td class="r">
-                  <FormattedNumberInput v-if="editingProfit" :model-value="Math.round(scLocalTax(sc))" class="adp-cell-input" live-group @update:model-value="scSetLocalTax(sc, $event)" /><template v-else><strong>{{ formatMoney(scLocalTax(sc)) }}</strong></template><button
-                    v-if="scLocalTaxManual(sc)"
-                    type="button"
-                    class="adp-manual-mark"
-                    title="직접 적은 값입니다 — 누르면 자동 계산으로 되돌립니다"
-                    @click.stop="scClearManualTax(sc)"
-                  >직접</button>
+                  <strong>{{ formatMoney(scLocalTax(sc)) }}</strong>
                 </td>
               </tr>
               <tr class="hi">
@@ -9341,12 +9285,6 @@ const goBack = () => router.back();
 .adp-fetch-warn.stale { border-color: #f0c98a; background: #fff8ec; color: #b26a00; }
 .adp-fetch-warn:active { opacity: 0.55; }
 
-/* 손으로 적어 둔 세액 표시 — 누르면 자동 계산으로 돌아간다 */
-.adp-manual-mark {
-  display: inline-block; margin-left: 4px; padding: 0 4px; height: 15px; line-height: 15px;
-  border: 1px solid #f0c98a; border-radius: 4px; background: #fff8ec;
-  font-size: 9px; font-weight: 800; color: #b26a00; cursor: pointer; vertical-align: middle;
-}
 /* 인수되는 권리 — 낙찰자가 떠안는 줄. 소멸(회색)과 반대로 붉게 세운다 */
 .adp-reg-take { color: #c62828; font-weight: 800; }
 tr.tone-take { background: #fff5f5; }
