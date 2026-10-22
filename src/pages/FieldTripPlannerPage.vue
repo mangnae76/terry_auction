@@ -1830,41 +1830,10 @@ watch(() => authStore.uid, (newUid) => {
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
           </article>
           </template>
-          <!-- 도착 지점이 없는 경로면 목록 끝에 붙인다 -->
-          <template v-if="queuedInsertIdx < 0">
-            <article v-for="row in queuedRows" :key="`q-${row.id}`" class="ftp-stop ftp-stop-queued">
-              <span class="ftp-stop-badge tone-queued"><svg
-                :class="['ftp-badge-plus', { spin: loading }]"
-                viewBox="0 0 24 24" width="11" height="11"
-                fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"
-              ><path d="M12 5v14M5 12h14" /></svg></span>
-              <span
-                class="ftp-stop-addr"
-                :title="row.address"
-                @click="toggleAddrBubble(`q${row.id}`, row.address, $event)"
-                @mouseenter="hoverAddrBubble(`q${row.id}`, row.address, $event)"
-                @mouseleave="leaveAddrBubble()"
-              >{{ row.address }}</span>
-              <span v-if="loading" class="ftp-stage-tag tone-queued calc">계산중</span>
-              <span v-else-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못해 순번을 매기지 못했습니다">주소실패</span>
-              <span
-                v-else-if="stageTagOf(row.address)"
-                :class="['ftp-stage-tag', `tone-${stageTagOf(row.address)?.tone}`]"
-              >{{ stageTagOf(row.address)?.label }}</span>
-              <span v-else class="ftp-stage-tag is-blank" aria-hidden="true" />
-              <button
-                type="button"
-                class="ftp-stop-icon ftp-stop-minus"
-                :disabled="loading"
-                aria-label="목록에서 제거"
-                title="목록에서 제거"
-                @click="removeStop(row.address)"
-              ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.3" y="2.3" width="19.4" height="19.4" rx="2.6" /><path d="M8 12h8" /></svg></button>
-            </article>
-          </template>
 
         </template>
-        <template v-else-if="queuedRows.length > 0">
+        <!-- 도착 지점이 없거나 아직 경로가 없으면 목록 끝에 붙인다 (두 자리가 같은 줄을 그린다) -->
+        <template v-if="queuedInsertIdx < 0 && queuedRows.length > 0">
             <article v-for="row in queuedRows" :key="`q-${row.id}`" class="ftp-stop ftp-stop-queued">
               <span class="ftp-stop-badge tone-queued"><svg
                 :class="['ftp-badge-plus', { spin: loading }]"
@@ -1895,7 +1864,7 @@ watch(() => authStore.uid, (newUid) => {
               ><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="ftp-stop-glyph-svg"><rect x="2.3" y="2.3" width="19.4" height="19.4" rx="2.6" /><path d="M8 12h8" /></svg></button>
             </article>
         </template>
-        <p v-else-if="missingRows.length === 0" class="ftp-empty guide">선정물건에서 임장예정으로 옮기면 여기에 담깁니다.</p>
+        <p v-if="fullPath.length === 0 && queuedRows.length === 0 && missingRows.length === 0" class="ftp-empty guide">선정물건에서 임장예정으로 옮기면 여기에 담깁니다.</p>
 
         <!-- 경로제외물건 — 선정물건의 모든 단계가 여기로 내려온다.
              번호 줄 + 이 줄 = 선정물건 전체 건수(1:1). 한 물건이 두 군데 나오지 않는다. -->
