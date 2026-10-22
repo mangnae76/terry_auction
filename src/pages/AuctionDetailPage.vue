@@ -47,6 +47,9 @@ import fileTextIcon from '../assets/icones/file-text.png';
 import { resolveRegionFromAddress } from '../services/regionResolver';
 import { fetchRealTradeAverage, fetchPlaceHistory, fetchDongHouseholds, PLACE_HISTORY_YEARS, type RealTradeMatchRow } from '../services/publicDataApi';
 import { cached, cachedEntryOrStale, loadOrFail, cacheKey, readCache, writeCache, CACHE_TTL, type FetchState } from '../services/marketCache';
+// 셈은 화면 밖에 따로 둔다 — 표로 매번 확인할 수 있게 (profitMath.test.ts · registryAnalysis.test.ts)
+import { taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf } from '../services/profitMath';
+import { baseDateOf, isTakenOver, normalizeYmd } from '../services/registryAnalysis';
 import { VWORLD_KEY_EXPIRES } from '../services/vworldApi';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
@@ -367,23 +370,14 @@ const splitRegistryDesc = (desc: string) => desc
     ? [{ text: part, base: false }]
     : [{ text: REGISTRY_BASE_NOTE, base: true }, { text: part, base: false }]))
   .filter((pt) => pt.text !== '');
-/** 소유권 줄은 인수·소멸을 따지는 자리가 아니다 — 비워 둔다 */
-const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
-const OWNERSHIP_KIND = /^소유권(이전|보존)(등기)?$/;
 const registryRows = computed(() => {
   // 말소기준보다 앞선 권리는 낙찰자가 떠안는다. PDF 가 '소멸'로 적어 주지 않은
   // 줄은 빈 칸으로 남아 — 가장 위험한 '인수'가 보이지 않았다. 여기서 적어 준다.
+  // 판단 규칙은 services/registryAnalysis 에 있다.
   const base = tenantBaseDate.value;
-  const hasBase = YMD_RE.test(base);
   return (auction.value?.registryRows ?? []).map((r) => {
     const desc = formatRegistryDesc(r.desc);
-    const date = (r.date ?? '').trim();
-    const taken = hasBase
-      && r.extinct !== '소멸'
-      && !OWNERSHIP_KIND.test((r.kind ?? '').trim())
-      && YMD_RE.test(date)
-      && date < base;
-    return { ...r, desc, descParts: splitRegistryDesc(desc), taken };
+    return { ...r, desc, descParts: splitRegistryDesc(desc), taken: isTakenOver(r, base) };
   });
 });
 const stripWarnMarkers = (text: string) =>
@@ -394,21 +388,11 @@ const tenantNotesOpen = ref(false);
 const registryClaimAmount = computed(() => auction.value?.rights?.totalClaimAmount ?? 0);
 
 
-// 말소기준이 PDF에서 안 읽혔으면 등기 목록에서 직접 구한다.
-// 말소기준권리는 근저당·가압류·압류·담보가등기·경매개시결정 중 가장 빠른 것이다.
-const BASE_RIGHT_KINDS = /근저당|저당권|가압류|압류|담보가등기|경매개시|강제경매|임의경매/;
-const baseDateFromRegistry = computed(() => {
-  const rows = auction.value?.registryRows ?? [];
-  const dates = rows
-    .filter((r) => BASE_RIGHT_KINDS.test(r.kind ?? ''))
-    .map((r) => (r.date ?? '').replace(/[./]/g, '-').trim())
-    .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
-    .sort();
-  return dates[0] ?? '';
-});
+// 말소기준이 PDF에서 안 읽혔으면 등기 목록에서 직접 구한다 (규칙은 registryAnalysis)
+const baseDateFromRegistry = computed(() => baseDateOf(auction.value?.registryRows ?? []));
 // PDF에 날짜가 없으면 '-' 대신 '미상' — 임차인 칸의 다른 빈값과 같은 말을 쓴다
 const tenantBaseDate = computed(
-  () => auction.value?.cancellationBaseDate || baseDateFromRegistry.value || '미상',
+  () => normalizeYmd(auction.value?.cancellationBaseDate) || baseDateFromRegistry.value || '미상',
 );
 const tenantDistDate = computed(() => auction.value?.distributionRequestDate || '미상');
 const tenantSmallDate = computed(() => auction.value?.smallAmountBaseDate || '미상');
@@ -2117,40 +2101,13 @@ const scSetSaleAlt = (sc: ProfitScenario, value: string) => { sc.sale.expectedSa
 const scGain = (sc: ProfitScenario) => scSale(sc) - scBid(sc) - scTotalCosts(sc);
 const scLocalTaxRate = (sc: ProfitScenario) => sc.cost?.localTaxRate ?? 10;
 
-// 사업소득 금액이 걸리는 누진세율 구간 — 표의 '과세표준' 옆에 같이 보여 준다
-const taxRateOf = (L: number) => {
-  if (L <= 0) return 0;
-  if (L <= 14_000_000) return 6;
-  if (L <= 50_000_000) return 15;
-  if (L <= 88_000_000) return 24;
-  if (L <= 150_000_000) return 35;
-  if (L <= 300_000_000) return 38;
-  if (L <= 500_000_000) return 40;
-  if (L <= 1_000_000_000) return 42;
-  return 45;
-};
-// 그 구간에서 빼 주는 누진공제 — 세액이 어떻게 나왔는지 눈으로 보려고 같이 띄운다
-const taxDeductOf = (L: number) => {
-  if (L <= 14_000_000) return 0;
-  if (L <= 50_000_000) return 1_260_000;
-  if (L <= 88_000_000) return 5_760_000;
-  if (L <= 150_000_000) return 15_440_000;
-  if (L <= 300_000_000) return 19_940_000;
-  if (L <= 500_000_000) return 25_940_000;
-  if (L <= 1_000_000_000) return 35_940_000;
-  return 65_940_000;
-};
 /** 세율·누진공제는 사업소득금액이 걸리는 구간에서 저절로 서지만,
  *  구간을 달리 보거나 다른 소득과 합산할 때가 있어 손으로도 고칠 수 있게 둔다. */
 // 0 은 '안 적었다' 로 본다 — 구간이 바뀌어도 0 이 남아 공제를 먹어 버리면
 // 세금이 조용히 많아진다. 6% 구간의 공제는 어차피 0 이라 잃는 것도 없다.
 const scTaxRate = (sc: ProfitScenario) => sc.cost?.incomeTaxRateManual || taxRateOf(scGain(sc));
 const scTaxDeduct = (sc: ProfitScenario) => sc.cost?.incomeTaxDeduct || taxDeductOf(scGain(sc));
-const scTransferTaxAuto = (sc: ProfitScenario) => {
-  const L = scGain(sc);
-  if (L <= 0) return 0;
-  return Math.max(0, (L * scTaxRate(sc)) / 100 - scTaxDeduct(sc));
-};
+const scTransferTaxAuto = (sc: ProfitScenario) => incomeTaxOf(scGain(sc), scTaxRate(sc), scTaxDeduct(sc));
 const scBracket = (sc: ProfitScenario) => (scGain(sc) <= 0 ? '-' : `${scTaxRate(sc)}%`);
 const scDeductionText = (sc: ProfitScenario) => {
   const d = scTaxDeduct(sc);
@@ -2174,9 +2131,9 @@ const scSetTaxDeduct = (sc: ProfitScenario, raw: string) => {
 };
 // 직접 넣은 금액이 있으면 그것을, 없으면 자동 계산값을 쓴다
 const scTransferTax = (sc: ProfitScenario) => sc.cost?.incomeTaxAmount ?? scTransferTaxAuto(sc);
-const scLocalTaxAuto = (sc: ProfitScenario) => scTransferTax(sc) * (scLocalTaxRate(sc) / 100);
+const scLocalTaxAuto = (sc: ProfitScenario) => localTaxOf(scTransferTax(sc), scLocalTaxRate(sc));
 const scLocalTax = (sc: ProfitScenario) => sc.cost?.localTaxAmount ?? scLocalTaxAuto(sc);
-const scAfterTaxProfit = (sc: ProfitScenario) => scGain(sc) - scTransferTax(sc) - scLocalTax(sc);
+const scAfterTaxProfit = (sc: ProfitScenario) => afterTaxProfitOf(scGain(sc), scTransferTax(sc), scLocalTax(sc));
 const scNetInvestment = (sc: ProfitScenario) => scBid(sc) - (sc.cost?.loanAmount ?? 0) + scTotalCosts(sc);
 const scTotalInvest = (sc: ProfitScenario) => scBid(sc) + scTotalCosts(sc);
 const scAfterTaxRate = (sc: ProfitScenario) => (
@@ -2200,11 +2157,9 @@ const scProfitAtBid = (sc: ProfitScenario, bid: number) => {
     + (c.advertisingCost ?? 0);
   const gain = scSale(sc) - bid - costs;
   if (gain <= 0) return gain;
-  const rate = c.incomeTaxRateManual || taxRateOf(gain);
-  const deduct = c.incomeTaxDeduct || taxDeductOf(gain);
-  const tax = Math.max(0, (gain * rate) / 100 - deduct);
-  const local = tax * ((c.localTaxRate ?? 10) / 100);
-  return gain - tax - local;
+  // 세금 셈은 표와 같은 길을 쓴다 (services/profitMath)
+  const tax = incomeTaxOf(gain, c.incomeTaxRateManual || taxRateOf(gain), c.incomeTaxDeduct || taxDeductOf(gain));
+  return afterTaxProfitOf(gain, tax, localTaxOf(tax, c.localTaxRate ?? 10));
 };
 /** 세후 순이익을 적으면 그만큼 남기려면 입찰가를 얼마로 써야 하는지 거꾸로 푼다.
  *  입찰가가 오르면 순이익은 줄기만 해서(단조) 반씩 좁혀 가며 찾는다. */
