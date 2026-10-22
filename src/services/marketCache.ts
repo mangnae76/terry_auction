@@ -100,3 +100,61 @@ export const cached = async <T>(
   load: () => Promise<T>,
   worthSaving: (value: T) => boolean = () => true,
 ): Promise<T> => (await cachedEntry(collection, id, maxAgeMs, load, worthSaving)).value;
+
+/** 받아 온 값이 어떤 상태인가 —
+ *  fresh  : 방금 받았거나 아직 쓸 만한 값
+ *  stale  : 못 받아서 기한 지난 옛 값을 꺼내 썼다
+ *  failed : 못 받았고 꺼내 쓸 옛 값도 없다 (0 이 아니라 '모름' 이다) */
+export type FetchState = 'fresh' | 'stale' | 'failed';
+export type FetchResult<T> = { value: T | null; savedAt: number; state: FetchState };
+
+const wait = (ms: number) => new Promise((done) => { setTimeout(done, ms); });
+
+/**
+ * 읽어 보고, 없으면 받아 온다. 받다가 실패하면 한 번 더 해 보고,
+ * 그래도 안 되면 기한이 지난 옛 값이라도 꺼내 쓴다.
+ *
+ * 왜 이렇게 하나 — 예전에는 실패하면 조용히 0 으로 떨어뜨렸다.
+ * 화면에서는 '값이 0' 인 것과 '못 받아온 것' 이 똑같이 보여서,
+ * 사용자가 모르는 숫자를 사실로 믿고 값을 매기게 된다.
+ */
+export const cachedEntryOrStale = async <T>(
+  collection: string,
+  id: string,
+  maxAgeMs: number,
+  load: () => Promise<T>,
+  worthSaving: (value: T) => boolean = () => true,
+  retryDelayMs = 1200,
+): Promise<FetchResult<T>> => {
+  const hit = await readCacheEntry<T>(collection, id, maxAgeMs);
+  if (hit) return { value: hit.value, savedAt: hit.savedAt, state: 'fresh' };
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const fresh = await load();
+      const savedAt = Date.now();
+      if (worthSaving(fresh)) void writeCache(collection, id, fresh, savedAt);
+      return { value: fresh, savedAt, state: 'fresh' };
+    } catch {
+      if (attempt === 0) await wait(retryDelayMs);
+    }
+  }
+  // 두 번 다 안 됐다 — 기한이 지났어도 전에 받아 둔 값이 있으면 그것을 쓴다
+  const stale = await readCacheEntry<T>(collection, id, Number.POSITIVE_INFINITY);
+  if (stale) return { value: stale.value, savedAt: stale.savedAt, state: 'stale' };
+  return { value: null, savedAt: 0, state: 'failed' };
+};
+
+/** 캐시 없이 받아 오는 자리용 — 실패하면 한 번 더 해 보고, 그래도 안 되면 알린다 */
+export const loadOrFail = async <T>(
+  load: () => Promise<T>,
+  retryDelayMs = 1200,
+): Promise<FetchResult<T>> => {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return { value: await load(), savedAt: Date.now(), state: 'fresh' };
+    } catch {
+      if (attempt === 0) await wait(retryDelayMs);
+    }
+  }
+  return { value: null, savedAt: 0, state: 'failed' };
+};

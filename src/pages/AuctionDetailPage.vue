@@ -46,7 +46,7 @@ import alertIcon from '../assets/icones/triangle-alert.png';
 import fileTextIcon from '../assets/icones/file-text.png';
 import { resolveRegionFromAddress } from '../services/regionResolver';
 import { fetchRealTradeAverage, fetchPlaceHistory, fetchDongHouseholds, PLACE_HISTORY_YEARS, type RealTradeMatchRow } from '../services/publicDataApi';
-import { cached, cachedEntry, cacheKey, readCache, writeCache, CACHE_TTL } from '../services/marketCache';
+import { cached, cachedEntryOrStale, loadOrFail, cacheKey, readCache, writeCache, CACHE_TTL, type FetchState } from '../services/marketCache';
 import { VWORLD_KEY_EXPIRES } from '../services/vworldApi';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
@@ -1580,10 +1580,18 @@ const fetchPublicTradeRows = async (opts?: { months?: number; keepFilters?: bool
 const fetchDeal12mCount = async () => {
   const target = auction.value;
   if (!target?.address) return;
+  deal12mState.value = 'fresh';
+  const fail = () => {
+    deal12mState.value = 'failed';
+    deal12mAuto.value = 0;
+    deal12mDirect.value = 0;
+    deal12mCancelled.value = 0;
+    deal12mUpdatedAt.value = '';
+  };
   try {
     const region = await resolveRegionFromAddress(target.address);
-    if (!region) return;
-    const entry = await cachedEntry(
+    if (!region) { fail(); return; }
+    const got = await cachedEntryOrStale(
       'cacheDongTrades',
       cacheKey(region.lawdCd5, region.dong, publicTradeType.value, 12, DONG_TRADE_CACHE_VER),
       CACHE_TTL.trades,
@@ -1595,19 +1603,18 @@ const fetchDeal12mCount = async () => {
       }),
       (r) => Number.isFinite(r.average) && (r.matchedRows?.length ?? 0) > 0,
     );
-    const result = entry.value;
+    if (!got.value) { fail(); return; }
+    deal12mState.value = got.state;
+    const result = got.value;
     // 이 숫자가 언제 받아 온 것인지 말풍선에 적는다 — 캐시를 읽었으면 '그때 받은 시각'이다
-    deal12mUpdatedAt.value = updateStamp(entry.savedAt);
+    deal12mUpdatedAt.value = updateStamp(got.savedAt);
     // 동으로 못 좁히고 시군구 전체로 넓어졌으면 그 동의 수가 아니다 — 자동 입력하지 않는다
     deal12mAuto.value = result.fallbackUsed ? 0 : (result.matchedRows?.length ?? 0);
     // 뺀 건수도 적어 둔다 — 가격정보 탭의 숫자와 맞춰 보면 검증이 된다
     deal12mDirect.value = result.fallbackUsed ? 0 : (result.directCount ?? 0);
     deal12mCancelled.value = result.fallbackUsed ? 0 : (result.cancelledCount ?? 0);
   } catch {
-    deal12mAuto.value = 0;
-    deal12mDirect.value = 0;
-    deal12mCancelled.value = 0;
-    deal12mUpdatedAt.value = '';
+    fail();
   }
 };
 
@@ -3247,6 +3254,10 @@ const deal12mUpdatedAt = ref('');
 // 그 동의 다세대·연립 세대수 — 건축물대장에서 합산한다 (직접 입력이 있으면 그 값이 우선)
 const unitsAuto = ref(0);
 const unitsUpdatedAt = ref('');
+/** 받아 오기가 어떻게 끝났나 — 못 받았으면 숫자 대신 '모름' 으로 적는다 */
+const deal12mState = ref<FetchState>('fresh');
+const unitsState = ref<FetchState>('fresh');
+const officialPriceState = ref<FetchState>('fresh');
 /** 공동주택 공시가격 — 브이월드에서 그 호실의 최신 기준연도 값을 받아 온다.
  *  PDF 파싱값은 단위가 깨져 들어오는 일이 있어(1,228 처럼) 이쪽을 우선한다. */
 const officialPriceAuto = ref(0);
@@ -3256,16 +3267,22 @@ const officialPriceUnit = ref('');
 const fetchOfficialPrice = async () => {
   const target = auction.value;
   if (!target?.address) return;
-  try {
-    // 주소에서 지역·지번·호수를 뽑아 공시가격까지 한 번에 — 관리자 도구와 같은 모듈이다
-    const hit = await lookupAddress(target.address, { areaM2: subjectAreaM2.value });
-    if (!hit.price) return;
-    officialPriceAuto.value = hit.price.price;
-    officialPriceYear.value = hit.price.year;
-    officialPriceUnit.value = priceUnitText(hit.price);
-  } catch {
+  officialPriceState.value = 'fresh';
+  // 주소에서 지역·지번·호수를 뽑아 공시가격까지 한 번에 — 관리자 도구와 같은 모듈이다
+  const got = await loadOrFail(() => lookupAddress(target.address, { areaM2: subjectAreaM2.value }));
+  if (got.state === 'failed') {
+    // 못 받아온 것을 0 으로 두지 않는다 — 화면에는 '모름' 으로 적는다
+    officialPriceState.value = 'failed';
     officialPriceAuto.value = 0;
+    officialPriceYear.value = '';
+    officialPriceUnit.value = '';
+    return;
   }
+  const hit = got.value;
+  if (!hit?.price) return;
+  officialPriceAuto.value = hit.price.price;
+  officialPriceYear.value = hit.price.year;
+  officialPriceUnit.value = priceUnitText(hit.price);
 };
 /** ⓘ 말풍선에 적을 내용 — 지표결과(dmTipData)와 같은 '라벨 + 사실' 꼴로 한곳에 모은다.
  *  여기 없는 키는 예전처럼 한 줄 글로 나간다. */
@@ -3354,21 +3371,24 @@ const mktPubText = computed(() => (mktPubValue.value > 0 ? mktPubValue.value.toL
 const fetchDongUnits = async () => {
   const address = auction.value?.address;
   if (!address) return;
+  unitsState.value = 'fresh';
+  const fail = () => { unitsState.value = 'failed'; unitsAuto.value = 0; unitsUpdatedAt.value = ''; };
   try {
     const region = await resolveRegionFromAddress(address);
-    if (!region?.bCode10) return;
-    const entry = await cachedEntry(
+    if (!region?.bCode10) { fail(); return; }
+    const got = await cachedEntryOrStale(
       'cacheDongUnits',
       cacheKey(region.bCode10),
       CACHE_TTL.units,
       () => fetchDongHouseholds(region.bCode10),
       (n) => n > 0,
     );
-    unitsAuto.value = entry.value;
-    unitsUpdatedAt.value = updateStamp(entry.savedAt);
+    if (got.value === null) { fail(); return; }
+    unitsState.value = got.state;
+    unitsAuto.value = got.value;
+    unitsUpdatedAt.value = updateStamp(got.savedAt);
   } catch {
-    unitsAuto.value = 0;
-    unitsUpdatedAt.value = '';
+    fail();
   }
 };
 // 기준수치 칸의 도움말 — 갖다 대면 까만 말풍선으로 띄운다.
@@ -7438,6 +7458,14 @@ const goBack = () => router.back();
                   <div class="cell-head">
                     <button type="button" class="adp-dm-link" @click.stop="openMolitRtSite">최근 12개월 거래량</button>
                     <button
+                      v-if="deal12mState !== 'fresh'"
+                      type="button"
+                      :class="['adp-fetch-warn', { stale: deal12mState === 'stale' }]"
+                      :title="deal12mState === 'stale' ? '받아오지 못해 예전에 받아 둔 값을 보여 줍니다 — 눌러서 다시 받기' : '받아오지 못했습니다 — 눌러서 다시 받기'"
+                      :aria-label="deal12mState === 'stale' ? '예전 값 — 다시 받기' : '받아오지 못함 — 다시 받기'"
+                      @click.stop="fetchDeal12mCount()"
+                    >!</button>
+                    <button
                       type="button"
                       class="adp-dm-info"
                       aria-label="설명"
@@ -7460,6 +7488,14 @@ const goBack = () => router.back();
                 <div :class="['cell split', { lit: dmLit('units') }]" @mouseenter="dmLitEnter('units')" @mouseleave="dmLitLeave()" @click="dmLitTap('units')">
                   <div class="cell-head">
                     <button type="button" class="adp-dm-link" @click.stop="openHouseholdLookup">총 세대수</button>
+                    <button
+                      v-if="unitsState !== 'fresh'"
+                      type="button"
+                      :class="['adp-fetch-warn', { stale: unitsState === 'stale' }]"
+                      :title="unitsState === 'stale' ? '받아오지 못해 예전에 받아 둔 값을 보여 줍니다 — 눌러서 다시 받기' : '받아오지 못했습니다 — 눌러서 다시 받기'"
+                      :aria-label="unitsState === 'stale' ? '예전 값 — 다시 받기' : '받아오지 못함 — 다시 받기'"
+                      @click.stop="fetchDongUnits()"
+                    >!</button>
                     <button
                       type="button"
                       class="adp-dm-info"
@@ -8148,7 +8184,14 @@ const goBack = () => router.back();
               </div>
               <div class="adp-mkt-cells c4 adp-dm-table">
                 <div :class="['cell', { lit: mktLit('pub') }]" @mouseenter="litEnter('pub')" @mouseleave="litLeave()" @click="litTap('pub')">
-                  <small><button type="button" class="adp-dm-link" @click.stop="openOfficialPriceSite">공동주택가</button><span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubPrice', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubPrice', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubPrice'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubPrice')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
+                  <small><button type="button" class="adp-dm-link" @click.stop="openOfficialPriceSite">공동주택가</button><span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubPrice', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubPrice', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubPrice'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubPrice')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><button
+                    v-if="officialPriceState !== 'fresh'"
+                    type="button"
+                    class="adp-fetch-warn"
+                    title="받아오지 못했습니다 — 눌러서 다시 받기"
+                    aria-label="받아오지 못함 — 다시 받기"
+                    @click.stop="fetchOfficialPrice()"
+                  >!</button></small>
                   <FormattedNumberInput v-if="mktCaseEditable" :model-value="mktVal(mk('d', 'pub'))" mode="string" class="adp-mkt-input" :placeholder="officialPriceUsable > 0 ? officialPriceUsable.toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(mk('d', 'pub'), $event)" />
                   <strong v-else class="hi">{{ mktPubText }}</strong>
                 </div>
@@ -9326,6 +9369,19 @@ const goBack = () => router.back();
 .adp-warn-banner { margin: 10px 0 0; padding: 10px 12px; background: #fef2f2; border-radius: 8px; font-size: 12px; color: #991b1b; line-height: 1.55; white-space: pre-line; }
 
 .adp-table .tone-red td { background: #fef2f2; }
+/* 받아오지 못한 값 표시 — 숫자가 없는 까닭을 알리고, 누르면 다시 받는다.
+   (예전에는 못 받아온 것과 '값이 0' 인 것이 똑같이 '-' 로 보였다) */
+.adp-fetch-warn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 15px; height: 15px; margin-left: 3px; padding: 0;
+  border: 1px solid #f0b7b7; border-radius: 50%; background: #fff2f2;
+  font-size: 10px; font-weight: 900; line-height: 1; color: #c62828; cursor: pointer;
+  vertical-align: middle;
+}
+/* 예전에 받아 둔 값으로 버티는 중 — 빨강보다 한 발 물린다 */
+.adp-fetch-warn.stale { border-color: #f0c98a; background: #fff8ec; color: #b26a00; }
+.adp-fetch-warn:active { opacity: 0.55; }
+
 /* 손으로 적어 둔 세액 표시 — 누르면 자동 계산으로 돌아간다 */
 .adp-manual-mark {
   display: inline-block; margin-left: 4px; padding: 0 4px; height: 15px; line-height: 15px;
