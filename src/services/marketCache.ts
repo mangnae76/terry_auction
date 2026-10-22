@@ -124,6 +124,9 @@ export const cachedEntryOrStale = async <T>(
   maxAgeMs: number,
   load: () => Promise<T>,
   worthSaving: (value: T) => boolean = () => true,
+  /** 꺼내 쓸 옛 값의 나이 한도 — 이보다 오래된 값은 쓰지 않고 '모름' 으로 둔다.
+   *  너무 묵은 값을 지금 값인 양 보여 주면 틀린 판단을 부른다. */
+  maxStaleMs = maxAgeMs * 30,
   retryDelayMs = 1200,
 ): Promise<FetchResult<T>> => {
   const hit = await readCacheEntry<T>(collection, id, maxAgeMs);
@@ -138,8 +141,10 @@ export const cachedEntryOrStale = async <T>(
       if (attempt === 0) await wait(retryDelayMs);
     }
   }
-  // 두 번 다 안 됐다 — 기한이 지났어도 전에 받아 둔 값이 있으면 그것을 쓴다
-  const stale = await readCacheEntry<T>(collection, id, Number.POSITIVE_INFINITY);
+  // 두 번 다 안 됐다 — '같은 조회' 의 바로 직전 값을 꺼내 쓴다.
+  // id 가 조회 조건(지역·물건종류·기간·판)을 그대로 담고 있어, 다른 조건의
+  // 값이 섞일 수 없다. 나이 한도를 넘긴 값은 쓰지 않는다.
+  const stale = await readCacheEntry<T>(collection, id, maxStaleMs);
   if (stale) return { value: stale.value, savedAt: stale.savedAt, state: 'stale' };
   return { value: null, savedAt: 0, state: 'failed' };
 };

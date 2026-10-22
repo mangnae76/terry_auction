@@ -1602,6 +1602,8 @@ const fetchDeal12mCount = async () => {
         months: 12,
       }),
       (r) => Number.isFinite(r.average) && (r.matchedRows?.length ?? 0) > 0,
+      // 거래량은 날마다 쌓인다 — 한 달 넘은 값은 지금 값이라 할 수 없다
+      30 * 24 * 60 * 60 * 1000,
     );
     if (!got.value) { fail(); return; }
     deal12mState.value = got.state;
@@ -3382,6 +3384,8 @@ const fetchDongUnits = async () => {
       CACHE_TTL.units,
       () => fetchDongHouseholds(region.bCode10),
       (n) => n > 0,
+      // 세대수는 건물이 들어서야 바뀐다 — 한 해까지는 옛 값이어도 쓸 만하다
+      365 * 24 * 60 * 60 * 1000,
     );
     if (got.value === null) { fail(); return; }
     unitsState.value = got.state;
