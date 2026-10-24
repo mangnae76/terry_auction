@@ -696,13 +696,21 @@ const router = useRouter();
         </ul>
       </div>
 
-      <!-- AI 로 읽기 — 규칙으로 못 읽은 칸만 Gemini 가 채운다 (각자 자기 키로) -->
+      <!-- AI 자동 파싱 — 규칙으로 못 읽은 칸만 Gemini 가 채운다 (각자 자기 키로).
+           제목은 '구글드라이브 연동'과 같은 꼴로 상자 위에 둔다 -->
+      <div class="pip-section-head">
+        <span class="pip-section-title">
+          <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" /><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z" />
+          </svg>AI 자동 파싱
+        </span>
+      </div>
       <div class="pip-ai">
-        <button type="button" :class="['pip-ai-switch', { on: aiOn && !!aiKey }]" role="switch" :aria-checked="aiOn && !!aiKey" @click="toggleAi">
+        <button type="button" :class="['pip-ai-switch', { on: aiOn && !!aiKey }]" role="switch" :aria-checked="aiOn && !!aiKey" aria-label="AI 자동 파싱" @click="toggleAi">
           <i />
         </button>
         <span class="pip-ai-text">
-          <b>AI로 빈칸 채우기</b>
+          <b>{{ aiOn && aiKey ? '켜짐 — 못 읽은 칸을 AI가 채웁니다' : '꺼짐' }}</b>
           <small>{{ aiKey ? `Gemini · ${aiKeyMasked}` : 'Gemini 키를 넣으면 켤 수 있습니다' }}</small>
         </span>
         <button type="button" class="pip-ai-key" @click="openAiModal">{{ aiKey ? '키 바꾸기' : '키 넣기' }}</button>
@@ -791,7 +799,7 @@ const router = useRouter();
     <div v-if="aiModalOpen" class="pip-fav-back" @click.self="aiModalOpen = false">
       <div class="pip-fav-modal pip-ai-modal">
         <header class="pip-fav-modal-head">
-          <h2>AI로 읽기 · Gemini 키</h2>
+          <h2>AI 자동 파싱 · Gemini 키</h2>
           <button type="button" class="pip-fav-modal-close" aria-label="닫기" @click="aiModalOpen = false">×</button>
         </header>
         <div class="pip-ai-body">
