@@ -1266,6 +1266,8 @@ export const useAuctionStore = defineStore('auction', () => {
           pdfFileName: parsed.sourceName || base.importMeta?.pdfFileName,
           pdfFileId: parsed.sourceFileId || base.importMeta?.pdfFileId,
           pdfFolderUrl: parsed.sourceFolderUrl || base.importMeta?.pdfFolderUrl,
+          // 다시 읽으면 그때 AI 가 채운 칸으로 갈아 끼운다 (AI 를 안 썼으면 빈 목록)
+          aiFilledFields: parsed.aiFilledFields ?? [],
         },
         saleClassification: parsed.saleClassification || base.saleClassification,
         progressNote: parsed.progressNote || base.progressNote,

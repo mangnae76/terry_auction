@@ -263,6 +263,8 @@ export interface ImportMeta {
   pdfFileId?: string;
   /** 임포트에 쓴 드라이브 폴더 링크 */
   pdfFolderUrl?: string;
+  /** 규칙이 못 읽어 AI(Gemini)가 채운 칸 — 화면에서 '확인 필요' 로 짚을 때 쓴다 */
+  aiFilledFields?: string[];
 }
 
 export interface RegistryRow {

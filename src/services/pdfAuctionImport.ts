@@ -17,6 +17,8 @@ export interface ParsedPdfAuction {
   sourceFolderUrl?: string;
   /** 구글 드라이브 파일 id — 원본 PDF를 다시 열 때 쓴다 */
   sourceFileId?: string;
+  /** AI(Gemini)가 채운 칸 — 규칙이 못 읽어 AI 가 채운 것만 (geminiPdf) */
+  aiFilledFields?: string[];
   rawText: string;
   caseNumber: string;
   courtName: string;
@@ -242,7 +244,9 @@ const pickPrimaryAddress = (lines: string[]) => {
 };
 
 const buildLineText = async (bytes: Uint8Array) => {
-  const pdf = await getDocument({ data: bytes }).promise;
+  // pdf.js 는 넘겨받은 바이트를 작업자(worker)로 옮기며 원본을 비워 버린다.
+  // 사본을 넘겨 원본을 지킨다 — 같은 PDF 를 AI 읽기에 다시 보내야 한다.
+  const pdf = await getDocument({ data: bytes.slice() }).promise;
   const pages: string[] = [];
 
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
@@ -1584,6 +1588,15 @@ export const listDrivePdfFiles = async (folderUrl: string): Promise<DrivePdfDesc
     throw new Error('폴더 안에서 PDF 파일을 찾지 못했습니다.');
   }
   return data.files;
+};
+
+/** 드라이브 PDF 의 바이트 — AI 읽기처럼 원본이 다시 필요할 때 */
+export const downloadDrivePdfBytes = async (file: DrivePdfDescriptor): Promise<Uint8Array> => {
+  const response = await fetch(apiPath(`/api-drive-download?id=${encodeURIComponent(file.id)}`));
+  if (!response.ok) {
+    throw new Error(`${file.name} 다운로드에 실패했습니다. (${response.status})`);
+  }
+  return new Uint8Array(await response.arrayBuffer());
 };
 
 export const parseDrivePdfFile = async (file: DrivePdfDescriptor, folderUrl?: string) => {

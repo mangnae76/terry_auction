@@ -3,11 +3,21 @@ import { useRouter } from 'vue-router';
 import { computed, onMounted, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import {
+  downloadDrivePdfBytes,
   listDrivePdfFiles,
-  parseDrivePdfFile,
-  parsePdfFile,
+  parsePdfBytes,
   type ParsedPdfAuction,
 } from '../services/pdfAuctionImport';
+import {
+  AI_FIELD_LABELS,
+  clearGeminiKey,
+  fillWithGemini,
+  getGeminiKey,
+  isGeminiOn,
+  setGeminiKey,
+  setGeminiOn,
+  testGeminiKey,
+} from '../services/geminiPdf';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
@@ -34,7 +44,75 @@ interface ImportPreviewRow {
   sourceType: 'drive' | 'file';
   /** 드라이브에서 온 줄이면 어느 폴더에서 왔는지 — 그 폴더를 다시 스캔할 때 갈아치운다 */
   folderId?: string;
+  /** AI 가 채운 칸 · 근거가 없어 버린 칸 · AI 가 실패한 까닭 */
+  aiFilled?: string[];
+  aiRejected?: string[];
+  aiError?: string;
 }
+
+// === AI(Gemini)로 읽기 ===
+// 키는 사용자 각자의 것 — 이 기기에만 적어 두고 Google 로 바로 보낸다(우리 서버를 거치지 않는다).
+const aiKey = ref(getGeminiKey());
+const aiOn = ref(isGeminiOn());
+const toggleAi = () => {
+  if (!aiKey.value) { openAiModal(); return; }
+  aiOn.value = !aiOn.value;
+  setGeminiOn(aiOn.value);
+};
+const aiModalOpen = ref(false);
+const aiKeyDraft = ref('');
+const aiKeyMsg = ref('');
+const aiKeyOk = ref(false);
+const aiChecking = ref(false);
+const openAiModal = () => {
+  aiKeyDraft.value = aiKey.value;
+  aiKeyMsg.value = '';
+  aiKeyOk.value = false;
+  aiModalOpen.value = true;
+};
+const saveAiKey = async () => {
+  const key = aiKeyDraft.value.trim();
+  if (!key) { aiKeyMsg.value = '키를 넣어 주세요'; return; }
+  aiChecking.value = true;
+  const r = await testGeminiKey(key);
+  aiChecking.value = false;
+  aiKeyOk.value = r.ok;
+  aiKeyMsg.value = r.message;
+  if (!r.ok) return;
+  setGeminiKey(key);
+  setGeminiOn(true);
+  aiKey.value = key;
+  aiOn.value = true;
+  aiModalOpen.value = false;
+};
+const removeAiKey = () => {
+  clearGeminiKey();
+  aiKey.value = '';
+  aiOn.value = false;
+  aiKeyDraft.value = '';
+  aiModalOpen.value = false;
+};
+/** 키 앞뒤만 보여 준다 — 화면 너머로 통째로 보이지 않게 */
+const aiKeyMasked = computed(() => (aiKey.value ? `${aiKey.value.slice(0, 4)}…${aiKey.value.slice(-4)}` : ''));
+const aiLabels = (keys?: string[]) => (keys ?? []).map((k) => AI_FIELD_LABELS[k] ?? k).join(', ');
+
+/** 규칙으로 읽은 뒤, 켜져 있으면 AI 로 빈칸을 채운다. AI 가 실패해도 규칙 결과는 그대로 쓴다 */
+const readPdf = async (
+  bytes: Uint8Array,
+  name: string,
+  sourceUrl?: string,
+  folderUrl?: string,
+  fileId?: string,
+): Promise<{ parsed: ParsedPdfAuction; aiFilled?: string[]; aiRejected?: string[]; aiError?: string }> => {
+  const parsed = await parsePdfBytes(bytes, name, sourceUrl, folderUrl, fileId);
+  if (!aiOn.value || !aiKey.value) return { parsed };
+  try {
+    const r = await fillWithGemini(bytes, parsed, aiKey.value);
+    return { parsed: r.parsed, aiFilled: r.filled, aiRejected: r.rejected };
+  } catch (e) {
+    return { parsed, aiError: e instanceof Error ? e.message : 'AI 읽기 실패' };
+  }
+};
 
 
 const store = useAuctionStore();
@@ -264,9 +342,11 @@ const parseFiles = async (files: File[]) => {
 
   try {
     const rows: ImportPreviewRow[] = [];
-    for (const file of files) {
+    for (const [idx, file] of files.entries()) {
       try {
-        const parsed = await parsePdfFile(file);
+        if (aiOn.value && aiKey.value) loadingLabel.value = `AI로 읽는 중 ${idx + 1}/${files.length}`;
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const { parsed, aiFilled, aiRejected, aiError } = await readPdf(bytes, file.name);
         rows.push({
           key: `file-${file.name}`,
           sourceName: file.name,
@@ -274,6 +354,9 @@ const parseFiles = async (files: File[]) => {
           rowStatus: classifyRow(parsed),
           parsed,
           sourceType: 'file',
+          aiFilled,
+          aiRejected,
+          aiError,
         });
       } catch (error) {
         rows.push({
@@ -325,7 +408,9 @@ const scanDriveFolder = async () => {
       const files = await listDrivePdfFiles(target);
       for (const file of files) {
         try {
-          const parsed = await parseDrivePdfFile(file, target);
+          if (aiOn.value && aiKey.value) loadingLabel.value = `AI로 읽는 중 · ${file.name}`;
+          const bytes = await downloadDrivePdfBytes(file);
+          const { parsed, aiFilled, aiRejected, aiError } = await readPdf(bytes, file.name, file.downloadUrl, target, file.id);
           rows.push({
             key: `drive-${file.id}`,
             sourceName: file.name,
@@ -334,6 +419,9 @@ const scanDriveFolder = async () => {
             parsed,
             sourceType: 'drive',
             folderId: folderIdOf(target),
+            aiFilled,
+            aiRejected,
+            aiError,
           });
         } catch (error) {
           rows.push({
@@ -568,6 +656,18 @@ const router = useRouter();
         </ul>
       </div>
 
+      <!-- AI 로 읽기 — 규칙으로 못 읽은 칸만 Gemini 가 채운다 (각자 자기 키로) -->
+      <div class="pip-ai">
+        <button type="button" :class="['pip-ai-switch', { on: aiOn && !!aiKey }]" role="switch" :aria-checked="aiOn && !!aiKey" @click="toggleAi">
+          <i />
+        </button>
+        <span class="pip-ai-text">
+          <b>AI로 빈칸 채우기</b>
+          <small>{{ aiKey ? `Gemini · ${aiKeyMasked}` : 'Gemini 키를 넣으면 켤 수 있습니다' }}</small>
+        </span>
+        <button type="button" class="pip-ai-key" @click="openAiModal">{{ aiKey ? '키 바꾸기' : '키 넣기' }}</button>
+      </div>
+
       <div class="pip-actions">
         <button class="pip-btn pip-btn-scan" :disabled="loading" type="button" @click="scanDriveFolder">
           <img :src="searchIcon" alt="" class="pip-btn-icn" />
@@ -625,6 +725,9 @@ const router = useRouter();
                 <strong>{{ fileTitle(row) }}</strong>
                 <p v-if="row.status === 'ready' && row.parsed">{{ summaryShort(row.parsed) }}</p>
                 <p v-else class="err">{{ row.error }}</p>
+                <p v-if="row.aiFilled?.length" class="pip-ai-note">AI가 채움 · {{ aiLabels(row.aiFilled) }} <em>— 확인해 주세요</em></p>
+                <p v-if="row.aiRejected?.length" class="pip-ai-note gray">PDF에서 근거를 못 찾아 버림 · {{ aiLabels(row.aiRejected) }}</p>
+                <p v-if="row.aiError" class="pip-ai-note err">{{ row.aiError }}</p>
               </div>
               <span :class="['pip-badge', `s-${row.rowStatus === 'error' ? 'error' : row.rowStatus}`]">
                 {{ row.rowStatus === 'error' ? '오류' : row.rowStatus }}
@@ -640,6 +743,37 @@ const router = useRouter();
     </div>
 
     <AppMobileBottomNav active="watchlist" />
+
+    <!-- Gemini 키 -->
+    <div v-if="aiModalOpen" class="pip-fav-back" @click.self="aiModalOpen = false">
+      <div class="pip-fav-modal pip-ai-modal">
+        <header class="pip-fav-modal-head">
+          <h2>AI로 읽기 · Gemini 키</h2>
+          <button type="button" class="pip-fav-modal-close" aria-label="닫기" @click="aiModalOpen = false">×</button>
+        </header>
+        <div class="pip-ai-body">
+          <input
+            v-model="aiKeyDraft"
+            class="pip-fav-field"
+            type="password"
+            autocomplete="off"
+            placeholder="Google AI Studio 에서 받은 API 키"
+            @keydown.enter.prevent="saveAiKey"
+          />
+          <p v-if="aiKeyMsg" :class="['pip-ai-msg', { ok: aiKeyOk }]">{{ aiKeyMsg }}</p>
+          <ul class="pip-ai-help">
+            <li>키는 <b>이 기기에만</b> 저장됩니다. 우리 서버로 보내지 않습니다.</li>
+            <li>PDF는 이 기기에서 <b>Google(Gemini)로 바로</b> 보내고, 요금은 키 주인의 Google 계정으로 나갑니다.</li>
+            <li>규칙으로 못 읽은 칸만 채우고, PDF에서 근거 글을 못 찾은 값은 버립니다.</li>
+            <li>키 받는 곳: aistudio.google.com → Get API key</li>
+          </ul>
+          <div class="pip-ai-btns">
+            <button v-if="aiKey" type="button" class="pip-ai-del" @click="removeAiKey">키 지우기</button>
+            <button type="button" class="pip-fav-add pip-ai-save" :disabled="aiChecking" @click="saveAiKey">{{ aiChecking ? '확인 중…' : '확인 후 저장' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- 등록주소 즐겨찾기 -->
     <div v-if="favModalOpen" class="pip-fav-back" @click.self="favModalOpen = false">
@@ -987,6 +1121,46 @@ const router = useRouter();
 
 .pip-actions {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+/* AI 로 읽기 줄 */
+.pip-ai {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; padding: 10px 12px;
+}
+.pip-ai-switch {
+  flex: 0 0 auto; position: relative; width: 38px; height: 22px; padding: 0;
+  border: none; border-radius: 999px; background: #d1d5db; cursor: pointer; transition: background 0.15s;
+}
+.pip-ai-switch i {
+  position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: left 0.15s;
+}
+.pip-ai-switch.on { background: #2b6df3; }
+.pip-ai-switch.on i { left: 19px; }
+.pip-ai-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.pip-ai-text b { font-size: 13px; font-weight: 800; color: #111827; }
+.pip-ai-text small { font-size: 11px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pip-ai-key {
+  flex: 0 0 auto; height: 30px; padding: 0 10px;
+  border: 1px solid #d5dbe6; border-radius: 8px; background: #fff;
+  font-size: 11.5px; font-weight: 700; color: #374151; cursor: pointer;
+}
+/* 결과 줄의 글자 규칙(.pip-result-text p)보다 앞서야 빛깔이 선다 */
+.pip-result-text .pip-ai-note { margin: 3px 0 0; font-size: 11px; font-weight: 700; color: #2b6df3; }
+.pip-result-text .pip-ai-note em { font-style: normal; font-weight: 400; color: #6b7280; }
+.pip-result-text .pip-ai-note.gray { color: #9ca3af; font-weight: 400; }
+.pip-result-text .pip-ai-note.err { color: #dc2626; font-weight: 400; }
+.pip-ai-modal { max-width: 460px; }
+.pip-ai-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+.pip-ai-msg { margin: 0; font-size: 11.5px; color: #dc2626; }
+.pip-ai-msg.ok { color: #16a34a; }
+.pip-ai-help { margin: 0; padding-left: 16px; font-size: 11.5px; line-height: 1.6; color: #4b5563; }
+.pip-ai-btns { display: flex; justify-content: flex-end; gap: 8px; }
+.pip-ai-save { width: auto; padding: 0 14px; height: 36px; font-size: 13px; }
+.pip-ai-save:disabled { opacity: 0.6; cursor: default; }
+.pip-ai-del {
+  height: 36px; padding: 0 12px; border: 1px solid #f0d2d2; border-radius: 8px;
+  background: #fff; color: #d14343; font-size: 12.5px; font-weight: 700; cursor: pointer;
 }
 .pip-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
