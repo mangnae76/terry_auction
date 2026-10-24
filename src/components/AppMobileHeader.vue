@@ -10,10 +10,25 @@ import { MY_PAGE_ITEMS, type MyPageItem } from '../services/myPageMenu';
 import { useAlertBadge } from '../services/alertBadge';
 import { POINT_GRADES } from '../services/pointPolicy';
 import { PLAN_REST_DAYS } from '../services/billingPlans';
+import { DEFAULT_PLACE, useNowWeather } from '../services/weatherApi';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const menuOpen = ref(false);
+
+/** 지금 기온 — 기상청 초단기실황. 못 받았으면 지어내지 않고 '–' 로 둔다 */
+const weather = useNowWeather();
+const weatherText = computed(() => {
+  const w = weather.value;
+  return `${DEFAULT_PLACE.name} ${w ? `${Math.round(w.temp)}℃` : '–℃'}`;
+});
+const weatherTitle = computed(() => {
+  const w = weather.value;
+  if (!w) return '기온을 받아오지 못했습니다';
+  const t = new Date(w.savedAt);
+  const hm = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+  return w.stale ? `기상청 · 받아오지 못해 ${hm}에 받은 값` : `기상청 · ${hm} 기준`;
+});
 
 /** 머리글의 '결제하기' 글자 — 내리려면 false 로 */
 const SHOW_PAY = true;
@@ -83,9 +98,9 @@ const onLogout = async () => {
           <img :src="calendarIcon" alt="" class="amh-icon" />
           <span>{{ formattedDate }}</span>
         </button>
-        <span class="amh-info-cell">
+        <span class="amh-info-cell" :title="weatherTitle">
           <img :src="sunIcon" alt="" class="amh-icon" />
-          <span>인천 23℃</span>
+          <span>{{ weatherText }}</span>
         </span>
         <span class="amh-info-cell">
           <img :src="dollarIcon" alt="" class="amh-icon" />
