@@ -4,6 +4,8 @@ export interface Env {
   KAKAO_REST_API_KEY?: string;
   /** 브이월드 오픈API 인증키 — 공동주택/개별주택 공시가격 조회 (query 의 key 로 붙는다) */
   VWORLD_API_KEY?: string;
+  /** 한국수출입은행 현재환율 인증키 — query 의 authkey 로 붙는다 */
+  EXIM_API_KEY?: string;
   ALLOWED_ORIGINS?: string;
   FIREBASE_SERVICE_ACCOUNT_JSON?: string;
 }
@@ -12,8 +14,8 @@ interface Route {
   prefix: string;
   target: string;
   headers?: Record<string, string>;
-  /** kakao = Authorization 헤더, vworld = query 의 key */
-  authKind?: 'kakao' | 'vworld';
+  /** kakao = Authorization 헤더, vworld = query 의 key, exim = query 의 authkey */
+  authKind?: 'kakao' | 'vworld' | 'exim';
 }
 
 const ROUTES: Route[] = [
@@ -40,6 +42,8 @@ const ROUTES: Route[] = [
   { prefix: '/api-kakao-navi', target: 'https://apis-navi.kakaomobility.com', authKind: 'kakao' },
   { prefix: '/api-osrm', target: 'https://router.project-osrm.org' },
   { prefix: '/api-vworld', target: 'https://api.vworld.kr', authKind: 'vworld' },
+  // 머리글의 원/달러 — 하루 한 번 고시되는 매매기준율
+  { prefix: '/api-exim', target: 'https://oapi.koreaexim.go.kr', authKind: 'exim' },
   {
     prefix: '/api-court',
     target: 'https://www.courtauction.go.kr',
@@ -136,6 +140,11 @@ const handleProxy = async (request: Request, env: Env, route: Route): Promise<Re
   if (route.authKind === 'vworld' && env.VWORLD_API_KEY) {
     const params = new URLSearchParams(url.search);
     params.set('key', env.VWORLD_API_KEY);
+    search = `?${params.toString()}`;
+  }
+  if (route.authKind === 'exim' && env.EXIM_API_KEY) {
+    const params = new URLSearchParams(url.search);
+    params.set('authkey', env.EXIM_API_KEY);
     search = `?${params.toString()}`;
   }
   const rest = url.pathname.slice(route.prefix.length) + search;

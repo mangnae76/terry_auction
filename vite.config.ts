@@ -155,6 +155,15 @@ export default defineConfig(({ mode }) => {
             });
           },
         },
+        '/api-exim': {
+          target: 'https://oapi.koreaexim.go.kr',
+          changeOrigin: true,
+          rewrite: (path) => {
+            const p = path.replace(/^\/api-exim/, '');
+            const key = env.EXIM_API_KEY ?? '';
+            return key ? `${p}${p.includes('?') ? '&' : '?'}authkey=${encodeURIComponent(key)}` : p;
+          },
+        },
         '/api-kakao-navi': {
           target: 'https://apis-navi.kakaomobility.com',
           changeOrigin: true,

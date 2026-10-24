@@ -1,16 +1,14 @@
 // 머리글의 지금 기온 — 기상청 초단기실황(공공데이터포털).
 //
 // 키는 실거래가와 같은 공공데이터포털 서비스키를 쓴다(계정에 기상청 단기예보를 활용신청해 두었다).
+// 자리(위경도)는 placeApi 가 정한다 — 기기 위치를 못 받으면 인천시청.
 // 머리글은 모든 화면에 서므로, 부를 때마다 조회하면 하루 한도를 금방 쓴다 —
 // 받은 값을 30분 동안 이 기기에 적어 두고 그 안에서는 다시 부르지 않는다.
-import { ref } from 'vue';
 import { apiPath } from './apiBase';
+import { DEFAULT_PLACE } from './placeApi';
 
 const API_KEY = import.meta.env.VITE_PUBLIC_DATA_API_KEY ?? '';
 const NOW_PATH = '/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst';
-
-/** 머리글이 보는 곳 — 지금은 인천시청 한 곳이다 */
-export const DEFAULT_PLACE = { name: '인천', lat: 37.4563, lng: 126.7052 };
 
 /** 30분 안에 받은 값은 그대로 쓴다 */
 const FRESH_MS = 30 * 60 * 1000;
@@ -140,22 +138,4 @@ export const getNowWeather = async (
   } catch {
     return stored && Date.now() - stored.savedAt < STALE_MAX_MS ? { ...stored, stale: true } : null;
   }
-};
-
-// === 머리글이 같이 쓰는 값 ===
-// 머리글은 화면마다 새로 그려진다 — 기온은 앱 전체에 하나만 들고, 30분에 한 번만 다시 받는다.
-
-const shared = ref<NowWeather | null>(null);
-let inFlight: Promise<void> | null = null;
-let lastTry = 0;
-
-export const useNowWeather = () => {
-  const due = Date.now() - lastTry > FRESH_MS || !shared.value;
-  if (due && !inFlight) {
-    lastTry = Date.now();
-    inFlight = getNowWeather()
-      .then((w) => { shared.value = w; })
-      .finally(() => { inFlight = null; });
-  }
-  return shared;
 };

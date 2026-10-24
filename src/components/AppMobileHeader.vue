@@ -10,24 +10,43 @@ import { MY_PAGE_ITEMS, type MyPageItem } from '../services/myPageMenu';
 import { useAlertBadge } from '../services/alertBadge';
 import { POINT_GRADES } from '../services/pointPolicy';
 import { PLAN_REST_DAYS } from '../services/billingPlans';
-import { DEFAULT_PLACE, useNowWeather } from '../services/weatherApi';
+import { useHeaderInfo } from '../services/headerInfo';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const menuOpen = ref(false);
 
-/** 지금 기온 — 기상청 초단기실황. 못 받았으면 지어내지 않고 '–' 로 둔다 */
-const weather = useNowWeather();
+/** 동네·기온·원/달러 — 못 받은 칸은 지어내지 않고 '–' 로 둔다 */
+const { place, weather, usd } = useHeaderInfo();
+const hhmm = (ms: number) => {
+  const t = new Date(ms);
+  return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+};
 const weatherText = computed(() => {
   const w = weather.value;
-  return `${DEFAULT_PLACE.name} ${w ? `${Math.round(w.temp)}℃` : '–℃'}`;
+  return `${place.value.name} ${w ? `${Math.round(w.temp)}℃` : '–℃'}`;
 });
 const weatherTitle = computed(() => {
   const w = weather.value;
-  if (!w) return '기온을 받아오지 못했습니다';
-  const t = new Date(w.savedAt);
-  const hm = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
-  return w.stale ? `기상청 · 받아오지 못해 ${hm}에 받은 값` : `기상청 · ${hm} 기준`;
+  const where = place.value.fromDevice ? '내 위치' : '기본 위치(인천시청)';
+  if (!w) return `${where} · 기온을 받아오지 못했습니다`;
+  return w.stale ? `${where} · 기상청 · 받아오지 못해 ${hhmm(w.savedAt)}에 받은 값` : `${where} · 기상청 · ${hhmm(w.savedAt)} 기준`;
+});
+const usdText = computed(() => {
+  const u = usd.value;
+  return u ? Math.round(u.rate).toLocaleString('ko-KR') : '–';
+});
+/** 등락 — 0 이면 기호를 붙이지 않는다 */
+const usdChange = computed(() => {
+  const u = usd.value;
+  if (!u || !u.change) return '';
+  return `${u.change > 0 ? '+' : ''}${u.change.toFixed(1)}`;
+});
+const usdTitle = computed(() => {
+  const u = usd.value;
+  if (!u) return '환율을 받아오지 못했습니다';
+  const day = `${u.date.slice(4, 6)}.${u.date.slice(6, 8)}`;
+  return `한국수출입은행 매매기준율 · ${day} 고시${u.stale ? ' · 받아오지 못해 예전 값' : ''}`;
 });
 
 /** 머리글의 '결제하기' 글자 — 내리려면 false 로 */
@@ -102,9 +121,9 @@ const onLogout = async () => {
           <img :src="sunIcon" alt="" class="amh-icon" />
           <span>{{ weatherText }}</span>
         </span>
-        <span class="amh-info-cell">
+        <span class="amh-info-cell" :title="usdTitle">
           <img :src="dollarIcon" alt="" class="amh-icon" />
-          <span>USD 1,385 <em>+3.2</em></span>
+          <span>USD {{ usdText }} <em v-if="usdChange" :class="{ down: usdChange.startsWith('-') }">{{ usdChange }}</em></span>
         </span>
       </div>
     </div>
@@ -220,6 +239,8 @@ const onLogout = async () => {
 }
 .amh-info-cell { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; }
 .amh-info-cell em { color: #4ade80; font-style: normal; font-weight: 400; margin-left: 1px; }
+/* 원/달러가 내렸을 때 — 오른 날의 초록과 구분한다 */
+.amh-info-cell em.down { color: #93c5fd; }
 
 .amh-icon {
   width: 13px; height: 13px;
