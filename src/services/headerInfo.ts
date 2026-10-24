@@ -1,19 +1,22 @@
 // 머리글 오른쪽의 세 칸 — 동네·기온·원/달러.
 //
 // 머리글은 화면마다 새로 그려진다. 값은 앱 전체에 한 벌만 들고, 30분에 한 번만 다시 받는다.
-// 못 받은 칸은 지어내지 않고 비워 둔다('–').
+// 받은 값은 이 기기에 적어 둔다 — 새로고침해도 적어 둔 값을 곧바로 그리고, 기한(자리·기온 30분,
+// 환율 3시간)이 지난 칸만 다시 받는다. 못 받은 칸은 지어내지 않고 비워 둔다('–').
 import { ref } from 'vue';
-import { DEFAULT_PLACE, getHerePlace, type HerePlace } from './placeApi';
-import { getNowWeather, type NowWeather } from './weatherApi';
-import { getUsdRate, type UsdRate } from './fxApi';
+import { getHerePlace, peekHerePlace, type HerePlace } from './placeApi';
+import { getNowWeather, peekNowWeather, type NowWeather } from './weatherApi';
+import { getUsdRate, peekUsdRate, type UsdRate } from './fxApi';
 
 const REFRESH_MS = 30 * 60 * 1000;
 /** 못 받았으면 화면을 옮길 때마다 다시 부르지 않게 조금 쉰다 */
 const RETRY_MS = 5 * 60 * 1000;
 
-const place = ref<HerePlace>(DEFAULT_PLACE);
-const weather = ref<NowWeather | null>(null);
-const usd = ref<UsdRate | null>(null);
+// 처음 그릴 때부터 적어 둔 값으로 — 받아 오는 동안 '–' 가 깜빡이지 않는다
+const startPlace = peekHerePlace();
+const place = ref<HerePlace>(startPlace);
+const weather = ref<NowWeather | null>(peekNowWeather(startPlace.lat, startPlace.lng));
+const usd = ref<UsdRate | null>(peekUsdRate());
 
 let inFlight: Promise<void> | null = null;
 let lastTry = 0;

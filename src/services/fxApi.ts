@@ -92,6 +92,14 @@ const fetchUsd = async (): Promise<Stored> => {
   return { rate: latest.rate, change, date: latest.ymd, savedAt: Date.now() };
 };
 
+/** 적어 둔 환율을 바로 꺼낸다 (부르지 않는다) — 화면을 열자마자 그릴 때 쓴다 */
+export const peekUsdRate = (): UsdRate | null => {
+  const stored = readJson<Stored>(CACHE_KEY);
+  if (!stored) return null;
+  const age = Date.now() - stored.savedAt;
+  return age < STALE_MAX_MS ? { ...stored, stale: age >= FRESH_MS } : null;
+};
+
 /**
  * 지금 원/달러. 세 시간 안에 받은 값이 있으면 그것을 쓰고, 없으면 받아 온다.
  * 못 받으면 사흘 안의 옛 값을 쓰고, 그것도 없으면 null — 환율을 지어내지 않는다.

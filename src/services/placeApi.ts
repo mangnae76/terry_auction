@@ -79,6 +79,12 @@ export const regionNameAt = async (lat: number, lng: number): Promise<string | n
   return pick('H') || pick('B') || docs[0]?.region_2depth_name?.trim() || null;
 };
 
+/** 적어 둔 자리를 바로 꺼낸다 (부르지 않는다) — 화면을 열자마자 그릴 때 쓴다 */
+export const peekHerePlace = (): HerePlace => {
+  const stored = readStored();
+  return stored && Date.now() - stored.savedAt < STALE_MAX_MS ? stored : DEFAULT_PLACE;
+};
+
 /**
  * 지금 자리. 30분 안에 받은 자리가 있으면 그것을 쓰고, 없으면 기기 위치를 묻는다.
  * 거절하면 기본 자리로 두고 다시 묻지 않는다. 위치를 잠깐 못 받으면 하루 안의 옛 자리를 쓴다.

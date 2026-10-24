@@ -117,6 +117,15 @@ const fetchNowcast = async (nx: number, ny: number): Promise<Stored> => {
   return { temp, rain: Number.isFinite(rain) ? rain : 0, savedAt: Date.now() };
 };
 
+/** 적어 둔 기온을 바로 꺼낸다 (부르지 않는다) — 화면을 열자마자 그릴 때 쓴다 */
+export const peekNowWeather = (lat = DEFAULT_PLACE.lat, lng = DEFAULT_PLACE.lng): NowWeather | null => {
+  const { nx, ny } = latLngToGrid(lat, lng);
+  const stored = readStored(cacheKeyOf(nx, ny));
+  if (!stored) return null;
+  const age = Date.now() - stored.savedAt;
+  return age < STALE_MAX_MS ? { ...stored, stale: age >= FRESH_MS } : null;
+};
+
 /**
  * 지금 기온. 30분 안에 받은 값이 있으면 그것을 쓰고, 없으면 받아 온다.
  * 받다가 실패하면 세 시간 안의 옛 값을 꺼내 쓰고(stale), 그것도 없으면 null —
