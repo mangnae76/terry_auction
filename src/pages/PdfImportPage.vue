@@ -21,6 +21,8 @@ import {
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
+import AppConfirm from '../components/AppConfirm.vue';
+import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import buildingIcon from '../assets/icones/building (1).png';
 import housePlusIcon from '../assets/icones/house-plus (1).png';
 import houseMinusIcon from '../assets/icones/house-m.png';
@@ -138,9 +140,13 @@ const favNewUrl = ref('');
 const favEditIdx = ref(-1);
 const favEditName = ref('');
 const favEditUrl = ref('');
-// 창 안에서 고친 것은 '저장'을 눌러야 반영된다 — 그 전까지는 사본(draft)만 바꾼다
-const favDraft = ref<DriveFavorite[]>([]);
-const favSelDraft = ref<string[]>([]);
+// 창 안의 일은 그 자리에서 끝난다 — 추가·체크는 바로, 수정은 그 줄의 '저장'으로,
+// 삭제는 한 번 묻고 바로. 창 아래 '저장'은 두지 않는다(저장이 두 층이면 헷갈린다).
+const confirmBox = ref<ConfirmBox | null>(null);
+const askConfirm = (box: ConfirmBox) => {
+  if (skipsToday(box.skipKey)) { void box.run(); return; }
+  confirmBox.value = box;
+};
 // 여러 폴더를 한 번에 스캔할 때 고른 주소들
 const selectedFavUrls = ref<string[]>([]);
 // 스캔을 마친 폴더 — 주소를 파랗게 보여 준다
@@ -461,20 +467,14 @@ const scanDriveFolder = async () => {
   }
 };
 
-/** 창을 열 때 지금 목록을 사본으로 떠 둔다 */
-const startFavDraft = () => {
-  favDraft.value = favorites.value.map((f) => ({ ...f }));
-  favSelDraft.value = [...selectedFavUrls.value];
-};
 const openFavModal = () => {
-  startFavDraft();
   favEditIdx.value = -1;
   favNewName.value = '';
   favNewUrl.value = '';
   favListOpen.value = false;
   favModalOpen.value = true;
 };
-/** 저장하지 않고 닫으면 창에서 한 일(추가·수정·삭제·체크)은 모두 없던 일이 된다 */
+/** 닫기 — 한 일은 이미 반영돼 있다. 고치던 줄만 접는다 */
 const closeFavModal = () => {
   favModalOpen.value = false;
   favEditIdx.value = -1;
@@ -488,20 +488,20 @@ const submitFavorite = () => {
     showToast('등록 주소를 입력해 주세요.');
     return;
   }
-  if (favDraft.value.some((f) => folderIdOf(f.url) === folderIdOf(url))) {
+  if (favorites.value.some((f) => folderIdOf(f.url) === folderIdOf(url))) {
     showToast('이미 저장된 폴더입니다.');
     return;
   }
-  favDraft.value = [...favDraft.value, { name, url }];
-  if (favSelDraft.value.length === 0) favSelDraft.value = [url];
+  favorites.value = [...favorites.value, { name, url }];
+  if (selectedFavUrls.value.length === 0) selectedFavUrls.value = [url];
   favNewName.value = '';
   favNewUrl.value = '';
+  showToast('등록되었습니다.');
 };
 
-/** 수정은 그 줄에서 바로 — 드롭다운에서 눌렀으면 창을 사본과 함께 연다 */
+/** 수정은 그 줄에서 — 드롭다운에서 눌렀으면 창을 열고 그 줄을 편다 */
 const openRenameFavorite = (idx: number) => {
-  if (!favModalOpen.value) startFavDraft();
-  const fav = favDraft.value[idx];
+  const fav = favorites.value[idx];
   if (!fav) return;
   favEditIdx.value = idx;
   favEditName.value = fav.name;
@@ -517,41 +517,23 @@ const applyEditFavorite = () => {
     return false;
   }
   const idx = favEditIdx.value;
-  const old = favDraft.value[idx];
+  const old = favorites.value[idx];
   if (!old) { favEditIdx.value = -1; return true; }
-  if (favDraft.value.some((f, i) => i !== idx && folderIdOf(f.url) === folderIdOf(url))) {
+  if (favorites.value.some((f, i) => i !== idx && folderIdOf(f.url) === folderIdOf(url))) {
     showToast('이미 저장된 폴더입니다.');
     return false;
   }
-  const next = [...favDraft.value];
+  const next = [...favorites.value];
   next[idx] = { name: favEditName.value.trim() || '이름 없는 폴더', url };
-  favDraft.value = next;
+  favorites.value = next;
   // 주소를 바꿨으면 체크해 둔 것도 새 주소로 옮긴다
-  favSelDraft.value = favSelDraft.value.map((u) => (u === old.url ? url : u));
+  selectedFavUrls.value = selectedFavUrls.value.map((u) => (u === old.url ? url : u));
   favEditIdx.value = -1;
   return true;
 };
-const saveEditFavorite = () => { applyEditFavorite(); };
-/** 창 안의 삭제 — 사본에서만 빠진다 */
-const removeDraftFavorite = (url: string) => {
-  if (favEditIdx.value >= 0) favEditIdx.value = -1;
-  favDraft.value = favDraft.value.filter((f) => f.url !== url);
-  favSelDraft.value = favSelDraft.value.filter((u) => u !== url);
-};
-const toggleDraftSelect = (url: string) => {
-  favSelDraft.value = favSelDraft.value.includes(url)
-    ? favSelDraft.value.filter((u) => u !== url)
-    : [...favSelDraft.value, url];
-};
-/** 저장 — 사본을 진짜 목록으로 옮긴다 (고치던 줄이 있으면 그것도 함께) */
-const saveFavModal = () => {
-  if (favEditIdx.value >= 0 && !applyEditFavorite()) return;
-  const urls = new Set(favDraft.value.map((f) => f.url));
-  favorites.value = favDraft.value.map((f) => ({ ...f }));
-  selectedFavUrls.value = favSelDraft.value.filter((u) => urls.has(u));
-  if (favorites.value.length === 0) favListOpen.value = false;
-  closeFavModal();
-  showToast('저장되었습니다.');
+/** 그 줄의 '저장' — 바로 반영된다 */
+const saveEditFavorite = () => {
+  if (applyEditFavorite()) showToast('수정되었습니다.');
 };
 
 /** 스캔할 폴더를 켜고 끈다 */
@@ -576,11 +558,23 @@ watch(favorites, (list) => {
   }
 }, { immediate: true });
 
+/** 삭제 — 되돌릴 수 없는 일은 이것 하나라 한 번 묻는다 (드롭다운·창 같은 규칙).
+ *  목록에서만 빠진다: 드라이브의 PDF 와 이미 등록한 물건은 그대로다 */
 const removeFavorite = (url: string) => {
-  favorites.value = favorites.value.filter((f) => f.url !== url);
-  selectedFavUrls.value = selectedFavUrls.value.filter((u) => u !== url);
-  if (favorites.value.length === 0) favListOpen.value = false;
-  showToast('즐겨찾기에서 삭제되었습니다.');
+  const fav = favorites.value.find((f) => f.url === url);
+  askConfirm({
+    title: `'${fav?.name || '이름 없는 폴더'}'를 목록에서 뺄까요?`,
+    desc: '폴더 주소만 지웁니다. 구글 드라이브의 PDF와 이미 등록한 물건은 그대로 남습니다.',
+    okLabel: '삭제',
+    skipKey: '',
+    run: () => {
+      if (favEditIdx.value >= 0) favEditIdx.value = -1;
+      favorites.value = favorites.value.filter((f) => f.url !== url);
+      selectedFavUrls.value = selectedFavUrls.value.filter((u) => u !== url);
+      if (favorites.value.length === 0) favListOpen.value = false;
+      showToast('삭제되었습니다.');
+    },
+  });
 };
 
 const summaryShort = (parsed: ParsedPdfAuction) =>
@@ -790,6 +784,9 @@ const router = useRouter();
 
     <AppMobileBottomNav active="watchlist" />
 
+    <!-- 확인창은 폴더 창(z 400) 위에 떠야 한다 — 한 겹 높여 둔다 -->
+    <div class="pip-confirm-layer"><AppConfirm :box="confirmBox" @close="confirmBox = null" /></div>
+
     <!-- Gemini 키 -->
     <div v-if="aiModalOpen" class="pip-fav-back" @click.self="aiModalOpen = false">
       <div class="pip-fav-modal pip-ai-modal">
@@ -841,14 +838,14 @@ const router = useRouter();
         <p class="pip-fav-sub list">구글 드라이브 폴더 + 주소 리스트</p>
 
         <ul class="pip-fav-modal-list">
-          <li v-if="favDraft.length === 0" class="pip-fav-modal-empty">등록된 폴더가 없습니다.</li>
-          <li v-for="(fav, i) in favDraft" :key="fav.url" :class="['pip-fav-modal-item', { editing: favEditIdx === i }]">
+          <li v-if="favorites.length === 0" class="pip-fav-modal-empty">등록된 폴더가 없습니다.</li>
+          <li v-for="(fav, i) in favorites" :key="fav.url" :class="['pip-fav-modal-item', { editing: favEditIdx === i }]">
             <input
               type="checkbox"
               class="pip-fav-check"
-              :checked="favSelDraft.includes(fav.url)"
+              :checked="selectedFavUrls.includes(fav.url)"
               aria-label="사용 중인 폴더"
-              @click.stop="toggleDraftSelect(fav.url)"
+              @click.stop="toggleFavSelect(fav.url)"
             />
             <template v-if="favEditIdx === i">
               <!-- 고치는 중에도 같은 모양 — 1행: 폴더명 칸 · 저장/취소, 2행: 주소 칸 -->
@@ -867,16 +864,13 @@ const router = useRouter();
               </span>
               <span class="pip-fav-modal-acts">
                 <button type="button" class="pip-fav-item-btn edit" @click="openRenameFavorite(i)">수정</button>
-                <button type="button" class="pip-fav-item-btn del" @click="removeDraftFavorite(fav.url)">삭제</button>
+                <button type="button" class="pip-fav-item-btn del" @click="removeFavorite(fav.url)">삭제</button>
               </span>
               <span class="pip-fav-modal-url">{{ fav.url }}</span>
             </template>
           </li>
         </ul>
 
-        <div class="pip-fav-modal-foot">
-          <button type="button" class="save" @click="saveFavModal">저장</button>
-        </div>
       </div>
     </div>
 
@@ -1146,15 +1140,8 @@ const router = useRouter();
 .pip-fav-item-btn.del:active { background: #fef2f2; }
 .pip-fav-modal-list { padding-top: 0; }
 .pip-fav-modal-item:last-child { border-bottom: none; }
-.pip-fav-modal-foot {
-  display: grid; grid-template-columns: 1fr; gap: 8px;
-  padding: 10px 14px 14px; border-top: 1px solid #eef0f5;
-}
-.pip-fav-modal-foot button {
-  border-radius: 10px; padding: 11px 0; font-size: 13px; font-weight: 800; cursor: pointer;
-}
-.pip-fav-modal-foot .cancel { border: 1px solid #d5dbe6; background: #fff; color: #4b5563; }
-.pip-fav-modal-foot .save { border: none; background: #2a5fbf; color: #fff; }
+/* 확인창을 폴더 창 위로 */
+.pip-confirm-layer { position: relative; z-index: 500; }
 .pip-fav-dropdown-del {
   flex: 0 0 auto;
   border: none; background: transparent; cursor: pointer;
