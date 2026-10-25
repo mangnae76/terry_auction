@@ -70,3 +70,20 @@ export const mountAppLogin = (el, onDone) => {
   app.mount(el);
   return () => app.unmount();
 };
+
+// === 앱 물건상세 그대로 — 권리분석 · 손품+현장 · 가격정보 · 입찰가산정 탭을 앱 화면(AuctionDetailPage.vue)으로 띄운다 ===
+// 앱 화면이 ?tab= 으로 연 탭을 그리므로, 웹 하위 탭을 바꾸면 그 탭으로 다시 연다. 저장도 앱 화면이 하던 그대로(앱 저장소).
+import AuctionDetailPage from '../../src/pages/AuctionDetailPage.vue';
+export const mountAppDetail = (el, id, tab) => {
+  const Empty = { render: () => null };
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/auctions/:id', component: AuctionDetailPage, props: (route) => ({ mode: 'view', id: String(route.params.id) }) }, { path: '/:rest(.*)*', component: Empty }], // 앱 라우터와 같게 id 를 props 로
+  });
+  const app = createApp({ render: () => h(RouterView) });
+  app.use(getActivePinia());
+  app.use(router);
+  void router.push({ path: `/auctions/${id}`, query: { tab } });
+  app.mount(el);
+  return () => app.unmount();
+};

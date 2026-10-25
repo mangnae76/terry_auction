@@ -380,6 +380,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* ===== 물건상세 — 탭 카드 ===== */
 .it-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
 @media (max-width: 1100px) { .it-grid { grid-template-columns: minmax(0, 1fr); } }
+/* 앱 물건상세를 띄운 자리 — 앱 머리(제목·탭·물건요약)와 아래 메뉴는 웹 것이 있어 감춘다 */
+.app-detail .adp-sticky-head, .app-detail .amb { display: none !important; }
+.app-detail .adp-shell { min-height: 0 !important; padding-bottom: 0 !important; background: transparent !important; }
 .it-col { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .it-card { background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); padding: 14px 24px 16px; min-width: 0; }
 .it-card.wide { grid-column: 1 / -1; }
@@ -2315,6 +2318,7 @@ html, body { overflow-x: clip; }
     { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
     document.title = reg ? '마이턴옥션 선정물건등록' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
+    if (!item) closeAppDetail();
     if (reg) renderRegister(); else if (item) renderItem(); else { renderToolbar(); renderContent(); }
     renderFloat();
   }
@@ -2586,10 +2590,30 @@ html, body { overflow-x: clip; }
     const br = [['1,400만원 이하', '6%', '-'], ['1,400만~5,000만원', '15%', '126만원'], ['5,000만~8,800만원', '24%', '576만원'], ['8,800만~1.5억원', '35%', '1,544만원'], ['1.5억~3억원', '38%', '1,994만원'], ['3억~5억원', '40%', '2,594만원'], ['5억~10억원', '42%', '3,594만원'], ['10억원 초과', '45%', '6,594만원']];
     return itCard('pct', '개인소득세율 <span class="it-sub">종합소득세</span>', `<table class="it-table"><thead><tr><th>과세표준</th><th>세율</th><th>누진공제</th></tr></thead><tbody>${br.map((b) => `<tr><td>${b[0]}</td><td class="num">${b[1]}</td><td class="num">${b[2]}</td></tr>`).join('')}</tbody></table>`, true);
   }
+  /* 권리분석 · 손품+현장 · 가격정보 · 입찰가산정 — 앱 물건상세 화면을 그대로 띄운다(기능·저장 모두 앱 그대로).
+     앱 화면의 머리(제목·탭·물건요약)는 웹 고정 카드·하위 탭과 겹쳐 감춘다 */
+  let detailUnmount = null; let detailKey = '';
+  const closeAppDetail = () => { if (detailUnmount) { try { detailUnmount(); } catch (e) { /* 그만 */ } detailUnmount = null; detailKey = ''; } };
+  function renderAppDetailTab(it, tab) {
+    const box = $('itemContent');
+    if (!CLOUD.on || !CLOUD.raw.has(it.id)) {
+      closeAppDetail();
+      box.innerHTML = itCard('info', '앱 물건상세', itEmpty('로그인하면 앱과 같은 화면이 열립니다 — 예시 물건은 이 탭을 보여 줄 수 없습니다.'), true);
+      return;
+    }
+    const key = `${it.id}:${tab}`;
+    if (detailKey === key && box.querySelector('.app-detail')) return;
+    closeAppDetail();
+    box.innerHTML = '<div class="app-detail" id="appDetailMount"></div>';
+    detailKey = key;
+    detailUnmount = CLOUD.T.mountAppDetail($('appDetailMount'), it.id, tab);
+  }
   function renderItem() {
     const it = byId(S.itemId);
     if (!it) { $('itemHead').innerHTML = '<div class="ih-top"><button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button><h1 class="ih-title">물건을 찾을 수 없습니다</h1></div>'; $('itemContent').innerHTML = ''; return; }
     $('itemHead').innerHTML = itemHeadHtml(it);
+    if (['rights', 'survey', 'verify', 'profit'].includes(S.itemTab)) { renderAppDetailTab(it, S.itemTab); return; }
+    closeAppDetail();
     $('itemContent').innerHTML = `<div class="it-grid">${itemTabHtml(it, S.itemTab)}</div>`;
   }
   /* 화면 바꾸기 — #/ 선정물건, #/register 선정물건등록 (뒤로가기로 돌아온다) */

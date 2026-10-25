@@ -49,6 +49,11 @@ node web/build.mjs
 - 물건상세 셈은 앱 물건상세에서 글자 그대로 옮겨 온 공통 파일을 앱과 웹이 같이 쓴다 — 정보요약·기본정보 `src/services/detailSummary.ts`, 입지정보 `src/services/locationInfo.ts`. 카카오 주변환경·좌표는 앱의 `kakaoNearby` · `routeOptimizer` 그대로.
 - 빌드는 루트 `.env` 에서 `VITE_FIREBASE_*` 여섯 줄과 `VITE_KAKAO_REST_API_KEY`(앱 번들이 이미 싣는 키)만 읽는다. 다른 키는 읽지 않는다.
 
+- **물건상세 권리분석 · 손품+현장 · 가격정보 · 입찰가산정**은 앱 물건상세 화면(`AuctionDetailPage.vue`)을 그대로 띄운다(`mountAppDetail`).
+  앱 화면의 머리(제목·탭·물건요약)와 아래 메뉴는 웹 고정 카드·하위 탭이 대신하므로 감춘다. 기능·저장은 앱과 똑같다. 로그인한 앱 물건에서만 열린다.
+  물건정보 탭만 웹 2열 배치(앱과 같은 셈을 `detailSummary` · `locationInfo` 로 같이 씀).
+- 로그인 창도 앱 `LoginPage.vue` 그대로(`mountAppLogin`). 웹 묶음은 .vue 를 묶고 그 모양을 `pdfparse.css` 로 함께 낸다.
+
 ## 알아 둘 것
 
 - 화면 설정(즐겨찾기 폴더·테마·정렬 등)은 브라우저 localStorage 에 둔다. 물건 자료는 위 '앱 자료 연결'대로 Firebase 를 쓴다.
