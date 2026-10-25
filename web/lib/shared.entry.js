@@ -8,7 +8,11 @@ globalThis.pdfjsWorker = pdfjsWorker;
 // PDF 읽기 — 앱 선정물건등록(PdfImportPage)과 같은 규칙
 export { parsePdfBytes, parseAuctionPdfText } from '../../src/services/pdfAuctionImport';
 // 구글드라이브 폴더 읽기 — claude.ai 바깥(우리 주소)에서 열렸을 때 앱과 같은 워커로 읽는다
-export { listDrivePdfFiles, parseDrivePdfFile } from '../../src/services/pdfAuctionImport';
+export { listDrivePdfFiles, parseDrivePdfFile, downloadDrivePdfBytes } from '../../src/services/pdfAuctionImport';
+// AI 자동 파싱 — 앱과 같은 Gemini 키 보관 · 키 확인 · 빈칸 채우기 (키는 이 기기 localStorage 'myturn.gemini.key')
+export {
+  getGeminiKey, setGeminiKey, clearGeminiKey, isGeminiOn, setGeminiOn, testGeminiKey, fillWithGemini, AI_FIELD_LABELS,
+} from '../../src/services/geminiPdf';
 // 기일내역에서 이번 회차 고르기
 export { pickCurrentRound } from '../../src/utils/auctionSchedule';
 // 주소 → 지번 · 건물명 · 동층호 토막

@@ -48,6 +48,8 @@ node web/build.mjs
     (`TAPdf.listDrivePdfFiles` · `parseDrivePdfFile`). 워커 주소는 `build.mjs` 의 `API_BASE`.
     **'링크가 있는 모든 사용자' 공유 폴더만** 읽히고, 하위 폴더는 내려가지 않는다 — PDF 가 바로 들어 있는 폴더를 등록한다.
   - claude.ai 아티팩트 안: 바깥 주소로 못 나가므로 보는 사람의 claude.ai Google Drive 연결로 읽는다.
+- **AI 자동 파싱**: 앱과 같은 `geminiPdf` (키 확인 · 이 기기 저장 `myturn.gemini.key` · 빈칸만 채우기)를 쓴다. 앱과 같은 브라우저면 키도 같이 쓴다.
+- **원칙: 웹은 앱을 따라간다.** 웹을 고칠 땐 앱의 같은 화면을 먼저 보고 같은 로직을 `shared.entry.js` 로 가져다 쓴다.
 - 수익률 분석 카드의 셈은 페이지 안에 간이로 들어 있다. 앱과 똑같이 맞추려면 `TAPdf.taxChainOf` 로 바꾼다.
 - 주소 등록 창: 추가·체크는 바로 반영, 삭제는 한 번 묻고 지운다, 수정은 줄의 저장을 눌러야 들어간다
   (claude.ai 에 마지막으로 올라간 판 기준).

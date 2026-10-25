@@ -390,6 +390,7 @@ button { cursor: pointer; }
 .rg-text p.ai { font-size: 12px; font-weight: 700; color: #2b6df3; }
 .rg-text p.ai em { font-style: normal; font-weight: 400; color: var(--muted); }
 .rg-text p.ai.gray { color: var(--faint); font-weight: 400; }
+.rg-text p.ai.err { color: #dc2626; font-weight: 400; }
 .rg-meta { min-width: 0; font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rg-meta i { font-style: normal; color: var(--faint); margin: 0 6px; }
 .badge { justify-self: end; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; white-space: nowrap; }
@@ -1582,14 +1583,16 @@ html, body { overflow-x: clip; }
   const R = {
     favs: store.get('wlp.web.favs', DEMO_FOLDERS), sel: store.get('wlp.web.favSel', null),
     rows: [], loading: false, loadingLabel: '', banner: '', last: '', collapsed: false, missing: [], scanned: [],
-    aiOn: false, aiKey: '',
+    /* AI 자동 파싱 — 앱(geminiPdf)과 같은 자리에서 읽는다. 쓰기·확인은 TAPdf 로 한다 */
+    aiKey: (() => { try { return localStorage.getItem('myturn.gemini.key') || ''; } catch (e) { return ''; } })(),
+    aiOn: (() => { try { return localStorage.getItem('myturn.gemini.on') !== '0' && !!localStorage.getItem('myturn.gemini.key'); } catch (e) { return false; } })(),
   };
   if (!Array.isArray(R.favs)) R.favs = DEMO_FOLDERS.slice();
   if (!Array.isArray(R.sel)) R.sel = R.favs.length ? [R.favs[0].url] : [];
   const saveFavs = () => { store.set('wlp.web.favs', R.favs); store.set('wlp.web.favSel', R.sel); };
   const existingOf = (caseNo) => items.find((x) => x.caseNo === caseNo && !x.trashed);
   const classify = (p) => (existingOf(p.caseNo) ? '변경' : '신규');
-  const AI_TEXT = (ai) => (ai ? `${ai.filled && ai.filled.length ? `<p class="ai">AI가 채움 · ${ai.filled.join(', ')} <em>— 확인해 주세요</em></p>` : ''}${ai.rejected && ai.rejected.length ? `<p class="ai gray">PDF에서 근거를 못 찾아 버림 · ${ai.rejected.join(', ')}</p>` : ''}` : '');
+  const AI_TEXT = (ai) => (ai ? `${ai.filled && ai.filled.length ? `<p class="ai">AI가 채움 · ${esc(ai.filled.join(', '))} <em>— 확인해 주세요</em></p>` : ''}${ai.rejected && ai.rejected.length ? `<p class="ai gray">PDF에서 근거를 못 찾아 버림 · ${esc(ai.rejected.join(', '))}</p>` : ''}${ai.error ? `<p class="ai err">${esc(ai.error)}</p>` : ''}` : '');
   const mergeRows = (rows, rescanned = []) => {
     const drop = new Set(rescanned);
     const kept = R.rows.filter((r) => !(r.src === 'drive' && drop.has(r.folderId)));
@@ -1632,14 +1635,26 @@ html, body { overflow-x: clip; }
     let u = parts.length; for (let i = lot + 1; i < parts.length; i += 1) if (isUnitTok(parts[i])) { u = i; break; }
     return { addr: parts.slice(0, lot + 1).join(' '), bld: parts.slice(lot + 1, u).join(' '), unit: parts.slice(u).join(' ') };
   };
-  const fromParsed = (T, x, file, src, folderId, key) => {
+  /* 규칙으로 읽은 뒤, 켜져 있으면 AI 로 빈칸을 채운다 (앱 PdfImportPage 의 readPdf 와 같다). AI 가 실패해도 규칙 결과는 그대로 쓴다 */
+  const readWithAi = async (T, bytes, name, sourceUrl, folderUrl, fileId) => {
+    const parsed = await T.parsePdfBytes(bytes, name, sourceUrl, folderUrl, fileId);
+    if (!R.aiOn || !R.aiKey) return { parsed, ai: null };
+    const labels = (keys) => (keys || []).map((k) => T.AI_FIELD_LABELS[k] || k);
+    try {
+      const r = await T.fillWithGemini(bytes, parsed, R.aiKey);
+      return { parsed: r.parsed, ai: { filled: labels(r.filled), rejected: labels(r.rejected) } };
+    } catch (e) {
+      return { parsed, ai: { error: (e && e.message) || 'AI 읽기 실패' } };
+    }
+  };
+  const fromParsed = (T, x, file, src, folderId, key, ai = null) => {
     if (!x.caseNumber) return { key, file, src, folderId, status: 'error', rowStatus: '오류', err: 'PDF에서 사건번호를 찾지 못했습니다 — 글자가 없는 스캔본일 수 있습니다.' };
     const cur = T.pickCurrentRound(x.auctionHistory || [], x.eventDate);
     const sp = splitAddr(x.address);
     const p = { caseNo: x.caseNumber, court: x.courtName || '법원 미확인', type: x.propertyType || '', addr: sp.addr, bld: sp.bld, unit: sp.unit,
       apr: x.appraisalValue || 0, round: (cur && cur.round) || x.auctionRound || '신건', min: x.minimumBidValue || 0, date: x.eventDate || TODAY_YMD,
       land: x.landAreaM2 || 0, bldg: x.buildingAreaM2 || 0 };
-    return { key, file, src, folderId, status: 'ready', rowStatus: classify(p), p, ai: null };
+    return { key, file, src, folderId, status: 'ready', rowStatus: classify(p), p, ai };
   };
 
   /* --- Google Drive 연결 (claude.ai 커넥터) --- */
@@ -1784,8 +1799,11 @@ html, body { overflow-x: clip; }
           R.loadingLabel = `‘${nm}’ 폴더 목록 읽는 중`; renderRegister();
           let files; try { files = await T.listDrivePdfFiles(url); } catch (e) { throw workerErr(e); }
           for (const [i, f] of files.entries()) {
-            R.loadingLabel = `‘${nm}’ PDF 읽는 중 ${i + 1}/${files.length} · ${f.name}`; renderRegister();
-            try { rows.push(fromParsed(T, await T.parseDrivePdfFile(f, url), f.name, 'drive', fid, `drive-${f.id}`)); } catch (e) {
+            R.loadingLabel = `‘${nm}’ ${R.aiOn && R.aiKey ? 'AI로 읽는 중' : 'PDF 읽는 중'} ${i + 1}/${files.length} · ${f.name}`; renderRegister();
+            try {
+              const r = await readWithAi(T, await T.downloadDrivePdfBytes(f), f.name, f.downloadUrl, url, f.id);
+              rows.push(fromParsed(T, r.parsed, f.name, 'drive', fid, `drive-${f.id}`, r.ai));
+            } catch (e) {
               rows.push({ key: `drive-${f.id}`, file: f.name, src: 'drive', folderId: fid, status: 'error', rowStatus: '오류', err: 'PDF를 읽지 못했습니다 — 암호가 걸렸거나 손상된 파일일 수 있습니다.' });
             }
           }
@@ -1844,8 +1862,8 @@ html, body { overflow-x: clip; }
       const key = `file-${file.name}-${file.size}`;
       if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') { rows.push({ key, file: file.name, src: 'file', status: 'error', rowStatus: '오류', err: 'PDF 파일이 아닙니다.' }); continue; }
       if (!T) { rows.push({ key, file: file.name, src: 'file', status: 'error', rowStatus: '오류', err: 'PDF 읽기 도구를 불러오지 못했습니다 — 새로고침 뒤 다시 해 주세요.' }); continue; }
-      R.loadingLabel = `PDF 읽는 중 ${i + 1}/${files.length} · ${file.name}`; renderRegister();
-      try { rows.push(fromParsed(T, await T.parsePdfBytes(new Uint8Array(await file.arrayBuffer()), file.name), file.name, 'file', '', key)); } catch (e) {
+      R.loadingLabel = `${R.aiOn && R.aiKey ? 'AI로 읽는 중' : 'PDF 읽는 중'} ${i + 1}/${files.length} · ${file.name}`; renderRegister();
+      try { const r = await readWithAi(T, new Uint8Array(await file.arrayBuffer()), file.name); rows.push(fromParsed(T, r.parsed, file.name, 'file', '', key, r.ai)); } catch (e) {
         rows.push({ key, file: file.name, src: 'file', status: 'error', rowStatus: '오류', err: 'PDF를 읽지 못했습니다 — 암호가 걸렸거나 손상된 파일일 수 있습니다.' });
       }
     }
@@ -1940,16 +1958,15 @@ html, body { overflow-x: clip; }
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog fav-dlg" role="dialog" aria-modal="true" aria-labelledby="aiT" style="width:min(460px,100%)">
         <div class="reg-head"><h2 id="aiT">AI 자동 파싱 · Gemini 키</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
         <div class="ai-body">
-          <input id="aiKeyIn" type="password" autocomplete="off" placeholder="Google AI Studio 에서 받은 API 키" aria-label="Gemini API 키">
+          <input id="aiKeyIn" type="password" autocomplete="off" placeholder="Google AI Studio 에서 받은 API 키" aria-label="Gemini API 키" value="${esc(m.draft ?? R.aiKey)}">
           ${m.msg ? `<p class="ai-msg ${m.ok ? 'ok' : ''}">${esc(m.msg)}</p>` : ''}
           <ul class="ai-help">
-            <li>실제로 붙이면 키는 <b>이 기기에만</b> 저장되고, 우리 서버로 보내지 않습니다.</li>
+            <li>키는 <b>이 기기에만</b> 저장됩니다. 우리 서버로 보내지 않습니다.</li>
             <li>PDF는 이 기기에서 <b>Google(Gemini)로 바로</b> 보내고, 요금은 키 주인의 Google 계정으로 나갑니다.</li>
             <li>규칙으로 못 읽은 칸만 채우고, PDF에서 근거 글을 못 찾은 값은 버립니다.</li>
             <li>키 받는 곳: aistudio.google.com → Get API key</li>
-            <li style="color:var(--muted)">웹 시안: 키 모양만 확인하고 실제로 Gemini를 부르지 않습니다. 키는 어디에도 저장하지 않고, 페이지를 새로 열면 사라집니다.</li>
           </ul>
-          <div class="ai-btns">${R.aiKey ? '<button type="button" class="btn" data-act="ai-del" style="color:#d14343;border-color:#f0d2d2">키 지우기</button>' : ''}<button type="button" class="btn primary" data-act="ai-save">확인 후 저장</button></div>
+          <div class="ai-btns">${R.aiKey ? '<button type="button" class="btn" data-act="ai-del" style="color:#d14343;border-color:#f0d2d2">키 지우기</button>' : ''}<button type="button" class="btn primary" data-act="ai-save" ${m.checking ? 'disabled' : ''}>${m.checking ? '확인 중…' : '확인 후 저장'}</button></div>
         </div></div></div>`;
       setTimeout(() => { const el = $('aiKeyIn'); if (el) el.focus(); }, 20);
       return;
@@ -2167,15 +2184,27 @@ html, body { overflow-x: clip; }
       case 'drive-perms': openDrivePerms(); break;
       case 'scan': S.pop = ''; doScan(); break;
       case 'pdf-pick': $('pdfInput').click(); break;
-      case 'ai-toggle': if (!R.aiKey) { S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; renderRegister(); toast(R.aiOn ? 'AI 자동 파싱을 켰습니다.' : 'AI 자동 파싱을 껐습니다.', 'info'); break;
+      case 'ai-toggle': if (!R.aiKey) { S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; try { localStorage.setItem('myturn.gemini.on', R.aiOn ? '1' : '0'); } catch (e) { /* 그만 */ } renderRegister(); toast(R.aiOn ? 'AI 자동 파싱을 켰습니다.' : 'AI 자동 파싱을 껐습니다.', 'info'); break;
       case 'ai-key': S.modal = { kind: 'ai' }; renderModal(); break;
       case 'ai-save': {
         const key = ($('aiKeyIn').value || '').trim();
         if (!key) { S.modal.msg = '키를 넣어 주세요'; S.modal.ok = false; renderModal(); break; }
-        if (!/^AIza[0-9A-Za-z_-]{30,}$/.test(key)) { S.modal.msg = '키 모양이 맞지 않습니다 — AIza 로 시작하는 39자 키를 넣어 주세요'; S.modal.ok = false; renderModal(); break; }
-        R.aiKey = key; R.aiOn = true; S.modal = null; renderModal(); renderRegister(); toast('키를 확인했습니다. AI 자동 파싱을 켰습니다.'); break;
+        /* 앱과 같다 — 모델 목록을 한 번 불러 키가 살아 있는지 본다(요금 없음). 되면 이 기기에 적고 켠다 */
+        const m = S.modal; if (m.checking) break;
+        m.draft = key; m.checking = true; m.msg = ''; renderModal();
+        (async () => {
+          let T = null; try { T = await loadParser(); } catch (e) { T = null; }
+          const r = T ? await T.testGeminiKey(key) : { ok: false, message: 'AI 도구를 불러오지 못했습니다 — 새로고침 뒤 다시 해 주세요' };
+          if (S.modal !== m) return; /* 확인하는 사이 창을 닫았다 */
+          m.checking = false; m.ok = r.ok; m.msg = r.message;
+          if (!r.ok) { renderModal(); return; }
+          T.setGeminiKey(key); T.setGeminiOn(true); R.aiKey = key; R.aiOn = true;
+          S.modal = null; renderModal(); renderRegister(); toast('키를 확인했습니다. AI 자동 파싱을 켰습니다.');
+        })();
+        break;
       }
-      case 'ai-del': R.aiKey = ''; R.aiOn = false; S.modal = null; renderModal(); renderRegister(); toast('키를 지웠습니다.', 'info'); break;
+      case 'ai-del': try { localStorage.removeItem('myturn.gemini.key'); localStorage.removeItem('myturn.gemini.on'); } catch (e) { /* 그만 */ }
+        R.aiKey = ''; R.aiOn = false; S.modal = null; renderModal(); renderRegister(); toast('키를 지웠습니다.', 'info'); break;
       case 'rg-collapse': R.collapsed = !R.collapsed; renderRegister(); break;
       case 'rg-clear': R.rows = []; R.banner = ''; R.missing = []; renderRegister(); break;
       case 'rg-open': S.q = v; $('q').value = v; S.stage = 'all'; S.type = ''; S.court = ''; S.date = ''; go('list'); break;
