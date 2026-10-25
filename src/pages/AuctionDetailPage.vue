@@ -61,7 +61,7 @@ import { stageDates } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePdf, deleteSitePhoto, isPdfEntry, isPdfFile, isPhotoId, loadSitePdf, loadSitePhoto, pdfNameOf, saveSitePdf, saveSitePhoto } from '../services/sitePhotoRepository';
 import { getGeminiKey, isGeminiOn, GeminiError } from '../services/geminiPdf';
-import { askRightsAnalysis, DOC_LABELS, type RightsDocPart } from '../services/geminiRights';
+import { askRightsAnalysis, DOC_LABELS, type RightsAi, type RightsDocPart } from '../services/geminiRights';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { geocodeAddress } from '../services/routeOptimizer';
 import {
@@ -4560,8 +4560,28 @@ const removeRightsDocAt = async (idx: number) => {
   await discardPastedImage(removed);
 };
 
-/** AI 가 적어 준 분석 — 없으면 빈 값 */
-const rightsAi = computed(() => auction.value?.rightsAi ?? null);
+/** AI 가 적어 준 분석 — 없으면 빈 값.
+ *  판을 올리기 전에 받아 둔 분석에는 새로 넣은 칸(표 rows 등)이 없다.
+ *  그대로 그리면 화면이 통째로 멎으므로, 빠진 칸을 빈 값으로 메워서 넘긴다. */
+const rightsAi = computed<RightsAi | null>(() => {
+  const raw = auction.value?.rightsAi;
+  if (!raw) return null;
+  /** 빠진 칸을 기본값으로 메운다 */
+  const fill = <T extends object>(v: T | undefined, def: T): T => ({ ...def, ...(v ?? {}) });
+  return {
+    ...raw,
+    baseRight: fill(raw.baseRight, { kind: '', date: '', holder: '', rank: '', evidence: '' }),
+    rows: raw.rows ?? [],
+    takeover: fill(raw.takeover, { count: 0, items: [], summary: '' }),
+    extinguish: fill(raw.extinguish, { count: 0, items: [], summary: '' }),
+    risk: fill(raw.risk, { summary: '', items: [] }),
+    evict: fill(raw.evict, { level: '', reason: '', strategy: '', advice: '' }),
+    conclusion: fill(raw.conclusion, { verdict: '', text: '' }),
+    missingDocs: raw.missingDocs ?? [],
+    usedDocs: raw.usedDocs ?? [],
+    askedAt: raw.askedAt ?? '',
+  };
+});
 /** 권리 한 줄을 화면 글로 — '근저당권 2015-03-02 · 국민은행' */
 const rightLine = (r: { kind: string; date: string; holder: string; reason?: string }) => [
   [r.kind, r.date].filter(Boolean).join(' '),
@@ -6948,10 +6968,10 @@ const goBack = () => router.back();
             <p v-else-if="rightsAiBusy" class="adp-doc-old">서류를 읽고 있습니다 — 10초쯤 걸립니다.</p>
             <template v-else-if="auction?.rightsAi">
               <p class="adp-doc-old">
-                {{ auction.rightsAi.usedDocs.length }}장으로 분석 · {{ aiAskedAtText }}
+                {{ rightsAi?.usedDocs.length ?? 0 }}장으로 분석 · {{ aiAskedAtText }}
               </p>
-              <p v-if="auction.rightsAi.missingDocs.length" class="adp-ai-missing">
-                이 서류까지 올리면 더 정확해집니다 — {{ auction.rightsAi.missingDocs.join(' · ') }}
+              <p v-if="rightsAi?.missingDocs.length" class="adp-ai-missing">
+                이 서류까지 올리면 더 정확해집니다 — {{ rightsAi.missingDocs.join(' · ') }}
               </p>
             </template>
             <!-- 전에 '서류사진'으로 올려 둔 사진 — 있을 때만 그대로 보인다 -->
@@ -7000,7 +7020,7 @@ const goBack = () => router.back();
               </div>
             </div>
             <!-- 상세 권리 분석 — 등기부 한 줄씩. 인수는 붉게 세운다 -->
-            <template v-if="rightsAi?.rows.length">
+            <template v-if="rightsAi?.rows?.length">
               <p class="adp-sub-note adp-rows-cap">상세 권리 분석</p>
               <table class="adp-table adp-rights-table">
                 <colgroup>
