@@ -11,6 +11,17 @@ const here = path.dirname(fileURLToPath(import.meta.url)); // web/
 const root = path.resolve(here, '..');                     // 저장소 맨 위
 const out = path.join(here, 'site');
 const API_BASE = 'https://terry-auction-proxy.goldenboy-auction.workers.dev';
+
+// 앱과 같은 Firebase 프로젝트에 붙는다 — 루트 .env 에서 VITE_FIREBASE_* 여섯 줄만 읽는다(공개 설정값, 비밀 키 아님).
+// 다른 키(카카오·공공데이터 등)는 읽지 않는다.
+const rootEnv = await readFile(path.join(root, '.env'), 'utf8').catch(() => '');
+const firebaseDefine = Object.fromEntries(
+  rootEnv.split('\n')
+    .map((line) => line.match(/^\s*(VITE_FIREBASE_[A-Z_]+)\s*=\s*(.*?)\s*$/))
+    .filter(Boolean)
+    .map(([, k, v]) => [`import.meta.env.${k}`, JSON.stringify(v.replace(/^['"]|['"]$/g, ''))]),
+);
+if (Object.keys(firebaseDefine).length < 6) console.warn('경고: 루트 .env 에 VITE_FIREBASE_* 값이 다 없습니다 — 웹이 앱 자료에 붙지 못합니다');
 await mkdir(out, { recursive: true });
 
 // 앱 파서가 워커 주소를 '?url' 로 가져오는데, 웹은 메인 스레드에서 돌리므로 빈 값으로 바꿔 끼운다
@@ -29,7 +40,7 @@ await build({
   logLevel: 'warn',
   plugins: [urlStub],
   // 드라이브 폴더 읽기는 앱과 같은 워커로 간다 (공개 주소 — 비밀값 아님)
-  define: { 'import.meta.env.VITE_API_BASE': JSON.stringify(API_BASE) },
+  define: { 'import.meta.env.VITE_API_BASE': JSON.stringify(API_BASE), 'import.meta.env.VITE_USE_EMULATOR': '"false"', 'process.env.NODE_ENV': '"production"', ...firebaseDefine },
   build: {
     outDir: out,
     emptyOutDir: false,

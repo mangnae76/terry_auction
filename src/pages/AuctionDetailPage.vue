@@ -36,7 +36,10 @@ import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useAuctionStore } from '../stores/auctionStore';
-import { pickCurrentRound } from '../utils/auctionSchedule';
+import {
+  bidBaseValueOf, bidRoundsOf, currentRoundLabelOf, depositAmountOf, headMetaLineOf,
+  roundToneOf, saleKindOf, summaryApprovalAgeOf, summaryAreaText, summaryFloorPairOf, summarySeedOf, trunc2,
+} from '../services/detailSummary';
 import { AUCTION_STATUS_LABELS, AUCTION_STATUS_ORDER, type AgencyRow, type AuctionDetail, type AuctionStatus, type BidCostAnalysis, type MarketSurveyRow } from '../types/auction';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
@@ -125,16 +128,7 @@ const propTypeLabel = computed(() => {
 });
 const isApartment = computed(() => /아파트/.test(auction.value?.propertyType ?? ''));
 const caseLabel = computed(() => auction.value?.caseNumber || '');
-const saleKind = computed(() => {
-  const raw = auction.value?.saleClassification || '토지건물 일괄매각';
-  const m = raw.match(/(토지[·.]?\s*건물\s*일괄매각)/);
-  // 한 줄에 년식까지 담아야 해서 '토지·건물 일괄매각' 을 '토건일괄매각' 으로 줄인다.
-  // 띄어쓰기도 뺀다 — 좁은 화면에서 '16년차' 가 잘려 나갔다.
-  return (m?.[1] ?? raw.split(/[·,/]/)[0])
-    .replace(/토지[·.]?\s*건물\s*일괄매각/, '토건일괄매각')
-    .replace(/\s+/g, '')
-    .trim();
-});
+const saleKind = computed(() => saleKindOf(auction.value));
 // 상단바 단계 드롭다운 — 관심/임장/입찰/낙찰/탈락. 목록으로 돌아가지 않고 여기서 바꾼다.
 // 쓰레기통 아이콘 — 번들 PNG가 흰색 단색이라 보이지 않아 데이터 URI SVG를 직접 쓴다
 /** 보관함 — 선정물건 카드와 같은 상자 그림을 쓴다 */
@@ -331,23 +325,10 @@ const lotOnlyAddress = computed(() => {
 
 // 회차 비율의 기준값 = 감정가. 1차 최저매각가격은 감정가와 같으므로,
 // 감정가가 비어 있는 예전 임포트 데이터도 기일내역 1차 금액으로 비율을 낼 수 있다.
-const bidBaseValue = computed(() => {
-  const a = auction.value;
-  if (!a) return 0;
-  return a.metrics.appraisalValue || a.auctionHistory?.[0]?.minPrice || 0;
-});
+const bidBaseValue = computed(() => bidBaseValueOf(auction.value));
 
-// 이번 회차 최저매각가격 — 저장된 값이 비면 기일내역에서 찾는다 (구 파서 임포트 데이터 대비)
-const currentMinBid = computed(() => {
-  const a = auction.value;
-  if (!a) return 0;
-  if (a.metrics.minimumBidValue) return a.metrics.minimumBidValue;
-  return pickCurrentRound(a.auctionHistory ?? [], a.eventDate)?.minPrice || bidBaseValue.value;
-});
 // PDF에 적힌 보증금이 있으면 그대로, 없으면 이번 회차 최저가의 10%
-const depositAmount = computed(
-  () => auction.value?.metrics.depositValue || Math.round(currentMinBid.value * 0.1),
-);
+const depositAmount = computed(() => depositAmountOf(auction.value));
 
 const formatRegistryDesc = (desc: string) => {
   if (!desc) return '';
@@ -1430,11 +1411,6 @@ const populatePublicRangeDefaults = (months = 12) => {
 };
 // 건수 박스 앞 — 기간선택 버튼을 눌렀으면 개월수를, 날짜를 직접 고쳤으면 그 기간을 보여준다
 /** 소수점 두 자리에서 '자른다'(반올림하지 않는다). 자릿수는 항상 두 자리로 채워 줄을 맞춘다 */
-const trunc2 = (v: number) => {
-  // v * 100 은 부동소수 오차가 나서(66.1 → 6609.99…) 자릿수를 문자열에서 자른다
-  const [whole, frac = ''] = v.toFixed(4).split('.');
-  return `${whole}.${(frac + '00').slice(0, 2)}`;
-};
 /** 표 칸용 — '66.11 / 20.0' (단위는 머리글 '전용면적(㎡/평)'에 적어 폭을 아낀다) */
 const areaWithPyeong = (v: number) => {
   if (!Number.isFinite(v) || v <= 0) return '-';
@@ -1483,17 +1459,7 @@ const publicTradePyeongAvg = computed(() => {
 // 가격정보 탭에서 늘 보이는 기준값 — 조건식 분석의 숫자를 견주어 읽을 때 쓴다.
 // 사용승인은 날짜 전체 대신 '08년(18년차)'로 줄여 한 줄에 담는다.
 /** 사건번호 줄에 붙는 한 줄 기준값 — '66.11㎡ · 2008년' */
-const headMetaLine = computed(() => {
-  const m2 = Number(auction.value?.buildingAreaM2) || 0;
-  const area = m2 > 0 ? `${trunc2(m2)}㎡/${(m2 / 3.305785).toFixed(1)}평` : '';
-  const raw = String(auction.value?.buildingHeader?.approvalDate || auction.value?.approvalDate || '').trim();
-  const ym = raw.match(/(\d{4})\D?(\d{2})?/);
-  const y = Number(ym?.[1] ?? 0);
-  // 연도만 쓰면 같은 해 물건끼리 구분이 안 된다 — 월까지 적는다 ('2015-08')
-  const head = ym?.[2] ? `${y}-${ym[2]}` : String(y);
-  const year = y && y >= 1800 ? `${head}(${Math.max(0, THIS_YEAR - y)}년차)` : '';
-  return [area, year].filter(Boolean).join(' · ');
-});
+const headMetaLine = computed(() => headMetaLineOf(auction.value, THIS_YEAR));
 
 const formatWonSimple = (n: number) =>
   Number.isFinite(n) && n > 0 ? n.toLocaleString('ko-KR') : '-';
@@ -5179,38 +5145,12 @@ const setRightsCase = async (id: string) => {
 
 // 지난 회차는 결과값으로, 이번 회차는 in_progress, 남은 회차는 pending
 // 배지 색만 결정한다 — 문구는 PDF '결과' 칸 표기를 그대로 쓴다
-const ROUND_STATUS_TONE: Record<string, string> = {
-  진행: 'now', 유찰: 'failed', 매각: 'sold', 낙찰: 'sold',
-};
-const bidRounds = computed(() => {
-  const a = auction.value;
-  if (!a) return [] as Array<{ label: string; date: string; price: number; rate: string; status: string; current: boolean }>;
-  const rows = (a.auctionHistory ?? []).length > 0
-    ? a.auctionHistory
-    : [{ round: a.auctionRound || '1차', date: a.eventDate, minPrice: currentMinBid.value, result: '' }];
-  const current = pickCurrentRound(rows, a.eventDate);
-  const currentIdx = current ? rows.indexOf(current) : -1;
-  const base = bidBaseValue.value;
-  return rows.map((row, i) => ({
-    label: `${row.round || `${i + 1}차`} 최저가`,
-    date: row.date,
-    price: row.minPrice,
-    rate: base > 0 && row.minPrice > 0 ? `${Math.round((row.minPrice / base) * 100)}%` : '',
-    // PDF 결과 칸이 비어 있으면 진행 중인 회차는 '진행', 그 뒤는 '예정'
-    status: row.result || (i === currentIdx ? '진행' : i > currentIdx ? '예정' : ''),
-    current: i === currentIdx,
-  }));
-});
+const bidRounds = computed(() => bidRoundsOf(auction.value));
 
-const roundTone = (status: string) => `st-${ROUND_STATUS_TONE[status] ?? 'plain'}`;
+const roundTone = roundToneOf;
 
 // 차수 배지 — '신건'(비율로 추정한 값) 대신 기일내역상 진행 중인 회차를 쓴다
-const currentRoundLabel = computed(() => {
-  const a = auction.value;
-  if (!a) return '';
-  const rows = a.auctionHistory ?? [];
-  return pickCurrentRound(rows, a.eventDate)?.round || a.auctionRound || '1차';
-});
+const currentRoundLabel = computed(() => currentRoundLabelOf(auction.value));
 
 // PDF는 승계인(HUG)과 원 임차인을 각각 한 줄씩 적는다 — 실제 점유자 이름으로 합쳐 한 명으로 보여준다.
 const realTenantName = (row: { name: string; subName: string }) =>
@@ -5286,11 +5226,7 @@ const doneSummary = async () => {
 };
 
 /** '66.11 / 20.00' — 단위는 항목 이름에 적고 값에는 숫자만 둔다 */
-const areaText = (raw: string) => {
-  const n = Number(String(raw).replace(/[^\d.]/g, ''));
-  if (!Number.isFinite(n) || n <= 0) return '-';
-  return `${trunc2(n)}㎡ / ${(n / 3.305785).toFixed(2)}평`;
-};
+const areaText = summaryAreaText;
 // 눈여겨볼 값(전용면적·호실·연차)은 파랗게 따로 뽑아 쓴다
 const summaryApprovalDate = computed(() => sumVal('sum.approval') || '-');
 
@@ -5301,12 +5237,7 @@ const callCourt = () => {
   if (!canCallCourt.value) return;
   window.location.href = `tel:${courtTelDigits.value}`;
 };
-const summaryApprovalAge = computed(() => {
-  const m = sumVal('sum.approval').match(/^(\d{4})/);
-  if (!m) return '';
-  const years = new Date().getFullYear() - Number(m[1]) + 1;
-  return years > 0 ? `${years}년차` : '';
-});
+const summaryApprovalAge = computed(() => summaryApprovalAgeOf(sumVal('sum.approval')));
 const summarySupplyArea = computed(() => areaText(sumVal('sum.supplyArea')));
 const summaryExclusiveArea = computed(() => areaText(sumVal('sum.exclusiveArea')));
 /** '주거용 전부 / 2021.05.25. ~ 2023.05.24.' — 옛 자료(슬래시 없음)도 같은 모양으로 맞춘다 */
@@ -5340,12 +5271,7 @@ const setSummaryArea = (id: string, raw: string) => {
   setSumVal(id, String(n));
 };
 // 앞이 해당 물건의 층, 뒤가 그 동의 전체 층수
-const summaryFloorPair = computed(() => {
-  const total = sumVal('sum.floorTotal');
-  const cur = sumVal('sum.floorCurrent');
-  if (!total && !cur) return '-';
-  return `${cur || '-'}층 / ${total || '-'}층`;
-});
+const summaryFloorPair = computed(() => summaryFloorPairOf(sumVal('sum.floorCurrent'), sumVal('sum.floorTotal')));
 /** 입찰가산정의 늘 드는 비용 — 손대지 않은 물건에만 기본값을 넣어 준다.
  *  (셋 다 0 이면 아직 적지 않은 것으로 본다. 0 으로 고쳐 둔 물건은 건드리지 않는다
  *   — 그런 물건은 보통 한 칸이라도 값이 들어가 있다) */
@@ -5371,54 +5297,8 @@ watch(
     if (seedBidCost(a)) void store.saveAuction(a);
     if (!a.basicSummary) a.basicSummary = {};
     const v = a.basicSummary;
-    const fill = (id: string, value: string) => { if (!v[id] && value) v[id] = value; };
-    const num = (raw: string | undefined) => (raw ?? '').replace(/[^\d.]/g, '');
-
-    const courtRaw = (a.courtName || '').trim();
-    const courtParts = /^(.*?법원)\s*(.*)$/.exec(courtRaw);
-    fill('sum.court', courtParts ? courtParts[1] : courtRaw);
-    fill('sum.courtDept', a.courtDept || courtParts?.[2] || '');
-    fill('sum.courtPhone', a.courtPhone || '');
-    fill('sum.far', (a.buildingHeader?.floorAreaRatio ?? '').match(/[\d.]+/)?.[0] ?? '');
-    fill('sum.landArea', a.landAreaM2 ? String(a.landAreaM2) : '');
-    fill('sum.approval', a.buildingHeader?.approvalDate || a.approvalDate || '');
-    // 세대수 — 단지정보 세대수가 우선, 없으면 표제부 '가구/세대/호'의 세대 칸
-    const headerHouseholds = (raw: string | undefined) => {
-      const parts = (raw ?? '').split('/').map((part) => Number(part.replace(/[^\d]/g, '')) || 0);
-      if (parts.length >= 2 && parts[1] > 0) return String(parts[1]);
-      const found = parts.find((n) => n > 0);
-      return found ? String(found) : '';
-    };
-    const firstNumOf = (raw: string | undefined) => (raw ?? '').replace(/,/g, '').match(/\d+/)?.[0] ?? '';
-    fill(
-      'sum.units',
-      firstNumOf(a.aptComplexInfo?.households)
-        || headerHouseholds(a.buildingHeader?.unitHouseholds)
-        || headerHouseholds(a.buildingHeader?.households),
-    );
-    fill('sum.exclusiveArea', a.buildingAreaM2 ? String(a.buildingAreaM2) : num(a.buildingHeader?.unitExclusiveArea));
-    // 공급면적 = 전용 + 공용 (둘 다 읽혔을 때만)
-    const ex = Number(num(a.buildingHeader?.unitExclusiveArea)) || Number(a.buildingAreaM2) || 0;
-    const common = Number(num(a.buildingHeader?.unitCommonArea)) || 0;
-    if (ex > 0 && common > 0) fill('sum.supplyArea', (ex + common).toFixed(2));
-    // 전체 층수 — '0층 / 4층'처럼 지하/지상으로 오면 지상 층수를 쓴다
-    fill('sum.floorTotal', num((a.buildingHeader?.floors ?? '').split('/').pop() ?? ''));
-    // 해당 물건 층 — 전유부 층, 없으면 소재지의 'N층'
-    const raw = a.buildingHeader?.unitLocation || a.address || '';
-    const floorFromAddr = raw.match(/(\d+)\s*층/);
-    fill('sum.floorCurrent', num(a.buildingHeader?.unitFloor) || (floorFromAddr ? floorFromAddr[1] : ''));
-    // '101동'·'A동'·'가동'은 잡고 '검암동'·'역삼동' 같은 행정동은 거른다
-    // (행정동은 동 앞 글자가 한글이라, 숫자이거나 '앞이 띄어쓰기인 한 글자'일 때만 본다)
-    const pickDong = (text: string) =>
-      text.match(/제?\s*(\d{1,4}[A-Za-z]?)\s*동(?![가-힣])/)?.[1]
-      ?? text.match(/(?:^|[\s,·])([A-Za-z가-힣])\s*동(?![가-힣])/)?.[1]
-      ?? '';
-    const pickHo = (text: string) => text.match(/제?\s*(\d{1,5})\s*호(?![가-힣])/)?.[1] ?? '';
-    // 전유부에 없으면 주소에서 찾는다 (한쪽만 보면 비는 경우가 생긴다)
-    const dong = pickDong(a.buildingHeader?.unitLocation ?? '') || pickDong(a.address ?? '');
-    const ho = pickHo(a.buildingHeader?.unitLocation ?? '') || pickHo(a.address ?? '');
-    if (dong) fill('sum.dong', dong);
-    if (ho) fill('sum.ho', ho);
+    // 정보요약 빈 칸 채우기 규칙은 services/detailSummary 에 있다 (웹과 같이 쓴다)
+    Object.entries(summarySeedOf(a)).forEach(([id, value]) => { if (!v[id] && value) v[id] = value; });
   },
   { immediate: true },
 );

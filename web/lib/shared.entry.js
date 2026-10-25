@@ -21,3 +21,19 @@ export { addressParts, addressWithName, hasBuildingName } from '../../src/utils/
 export { propTypeName, propTypeMark } from '../../src/utils/propertyType';
 // 수익 셈(세율 구간 · 누진공제 · 세후 순이익) — 입찰가산정과 같은 셈
 export { taxChainOf, taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf } from '../../src/services/profitMath';
+
+// === 앱 자료 연결 — 앱이 쓰는 로그인·물건 저장소(Pinia)를 그대로 쓴다 ===
+// 웹(/web)은 앱과 같은 주소라, 같은 브라우저에서 앱에 로그인해 두었으면 그 로그인이 그대로 이어진다.
+import { createPinia, setActivePinia } from 'pinia';
+export { watch } from 'vue';
+export { useAuthStore } from '../../src/stores/authStore';
+export { useAuctionStore } from '../../src/stores/auctionStore';
+export { isAllowedEmail } from '../../src/services/accessControl';
+export { stageDates, bidStageOf, stageLabelOf } from '../../src/utils/stageLabel';
+// 물건상세 정보요약·기본정보 — 앱 물건상세와 같은 셈
+export {
+  saleKindOf, headMetaLineOf, summarySeedOf, summaryAreaText, summaryApprovalAgeOf, summaryFloorPairOf,
+  bidBaseValueOf, currentMinBidOf, depositAmountOf, bidRoundsOf, roundToneOf, currentRoundLabelOf, trunc2,
+} from '../../src/services/detailSummary';
+/** 앱 저장소를 쓸 수 있게 Pinia 를 한 번 켠다 */
+export const startStores = () => { setActivePinia(createPinia()); };

@@ -40,9 +40,18 @@ node web/build.mjs
   (`pdfparse.js` 는 같은 폴더에 있어야 PDF등록이 동작한다).
 - 루트 `.gitignore` 가 `dist` 를 막고 있어서 결과 폴더 이름을 `site/` 로 했다.
 
+## 앱 자료 연결
+
+- 웹은 앱과 **같은 Firebase 프로젝트·같은 로그인**을 쓴다. 앱의 `authStore` · `auctionStore`(Pinia)를 `shared.entry.js` 로 그대로 가져와 쓴다.
+  `/web` 은 앱과 같은 주소라, 같은 브라우저에서 앱에 로그인해 두었으면 웹도 저절로 로그인된다.
+- 로그인 전에는 예시 물건을 보여 준다. 로그인하면 앱 Firestore 물건(`auctions`)으로 바뀐다.
+- 웹에서 바꾼 중요도·단계·보관·휴지통·완전삭제·PDF 등록은 앱 저장소 함수(`saveAuction` · `setStatus` · `archiveAuctions` · `hideAuctions` · `restoreHiddenAuctions` · `purgeAuctions` · `importParsedPdfAuctions`)로 적는다.
+- 물건상세 정보요약·기본정보의 셈은 `src/services/detailSummary.ts` — 앱 물건상세에서 그대로 옮겨 온 코드를 앱과 웹이 같이 쓴다.
+- 빌드는 루트 `.env` 에서 `VITE_FIREBASE_*` 여섯 줄만 읽는다(공개 설정값). 다른 키는 읽지 않는다.
+
 ## 알아 둘 것
 
-- 페이지 상태(즐겨찾기 폴더·테마·정렬 등)는 브라우저 localStorage 에만 둔다. 아직 Firebase 와 이어져 있지 않다.
+- 화면 설정(즐겨찾기 폴더·테마·정렬 등)은 브라우저 localStorage 에 둔다. 물건 자료는 위 '앱 자료 연결'대로 Firebase 를 쓴다.
 - **구글드라이브 폴더스캔**은 어디서 열렸는지에 따라 길이 갈린다.
   - 우리 주소(`https://terryauction-6b374.web.app/web`)·내 컴퓨터: 앱과 같은 워커(`/api-drive-folder`, `/api-drive-download`)로 읽는다
     (`TAPdf.listDrivePdfFiles` · `parseDrivePdfFile`). 워커 주소는 `build.mjs` 의 `API_BASE`.

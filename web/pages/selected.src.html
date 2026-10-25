@@ -16,6 +16,7 @@
   --bg: #ebebeb;
   --band: #f2f3f7;
   --subtab-line: #d8e0ee;
+  --row-line: #f1f3f7;
   --surface: #ffffff;
   --surface-2: #f8fafc;
   --surface-3: #f1f5f9;
@@ -80,7 +81,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f141f; --band: #131a28; --subtab-line: #2a3650; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
+    --bg: #0f141f; --band: #131a28; --row-line: #232d42; --subtab-line: #2a3650; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
     --line: #2a3449; --line-2: #34405a; --tb-line: #34405a; --card-line: #253046;
     --text: #e6eaf2; --text-2: #b4bccb; --muted: #8b95a8; --faint: #6e788c;
     --nav: #172449; --nav-name: #50c3fc;
@@ -333,6 +334,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .reg-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
 @media (max-width: 1100px) { .reg-duo { grid-template-columns: minmax(0, 1fr); } }
 /* 상자가 탭 — 고른 상자는 파란 테두리, 안 고른 상자는 눌러서 바꾼다 */
+/* 로그인 전 안내 */
+.demo-note { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 9px 14px; border-radius: 8px; background: #fff7e6; border: 1px solid #f5d79e; color: #8a5a00; font-size: 13px; }
+:root[data-theme="dark"] .demo-note { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #fbbf24; }
 /* ===== 물건상세 — 고정 카드(앱 adp-sticky-head) ===== */
 .item-head { row-gap: 8px; padding-top: 10px; padding-bottom: 10px; }
 .ih-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -344,17 +348,23 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 :root[data-theme="dark"] .ih-tag { color: #9db8ff; }
 .ih-court { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ih-court em { font-style: normal; font-weight: 700; color: var(--blue); }
-.ih-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.ih-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.ih-right .ibtn { width: 30px; height: 30px; }
+.ih-pdf { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--text-2) !important; text-decoration: none; }
+.ih-pdf svg { width: 14px; height: 14px; }
 .ih-stage { height: 26px; padding: 0 12px; border-radius: 999px; border: 1.5px solid #6b85f0; background: #dce5ff; color: #3850c2; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; }
 .ih-stage.hot { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; }
 .ih-stage.off { border-color: #c4c9d4; background: #eef0f4; color: #6b7280; }
 .ih-stage.done { border-color: #34b37a; background: #dcf5e8; color: #157a4b; }
-.ih-prop { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 4px 10px; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
+/* 1줄: 종류 칩 · 중요도·매각구분·면적 / 2줄: 주소 복사(종류 칩 아래) · 주소 */
+.ih-prop { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 10px; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
+.ih-line { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ih-kind, .ih-copy { justify-self: start; }
 .ih-kind { padding: 2px 10px; border-radius: 999px; background: #e0eaff; color: #2b6df3; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .ih-sale { min-width: 0; font-size: 13px; color: #2b6df3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ih-copy { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border: 1px solid #c7d7f7; border-radius: 999px; background: var(--surface); font-size: 11.5px; font-weight: 700; color: #2a5fbf; }
 .ih-copy svg { width: 13px; height: 13px; }
-.ih-addr { grid-column: 1 / -1; margin: 0; font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ih-addr { margin: 0; font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ih-addr b { color: #2b6df3; font-weight: 700; }
 /* ===== 물건상세 — 탭 카드 ===== */
 .it-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
@@ -364,9 +374,31 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .it-card h2 { margin: 0 0 10px; display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 800; color: var(--text); }
 .it-card h2 svg { width: 18px; height: 18px; color: #2a5fbf; }
 .it-card h3 { margin: 0 0 8px; font-size: 13px; font-weight: 800; color: var(--text-2); }
-.it-rows { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px 12px; margin: 0; font-size: 13.5px; }
-.it-rows dt { color: var(--muted); }
-.it-rows dd { margin: 0; color: var(--text); min-width: 0; }
+.it-rows { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 0; margin: 0; }
+/* 앱 adp-base-row 그대로 — 줄마다 흐린 선(이름~값 끊김 없이), 이름은 왼쪽 회색, 값은 오른쪽 */
+.it-rows > dt, .it-rows > dd { box-sizing: border-box; min-height: 36px; padding: 7px 0; line-height: 21px; border-bottom: 1px solid var(--row-line); margin: 0; }
+.it-rows > dt { padding-right: 16px; font-size: 13.5px; font-weight: 600; color: #6b7280; }
+.it-rows > dd { text-align: right; font-size: 14px; font-weight: 600; color: var(--text); min-width: 0; word-break: break-word; }
+.it-rows > dt.it-round-dt { display: flex; align-items: center; }
+.it-rows > dt:nth-last-child(2), .it-rows > dd:last-child { border-bottom: 0; }
+.it-rows + .it-rows { margin-top: 4px; border-top: 1px solid var(--row-line); }
+.it-rows dd.amt { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.it-rows dd.amt.now { color: #2563eb; }
+.it-rows dd.amt.deposit { color: #dc2626; }
+.it-hi { color: #2b6df3; font-weight: 800; }
+.it-dept { margin-left: 5px; color: #4b5563; }
+.it-tel { margin-left: 6px; color: #2563eb; font-weight: 700; text-decoration: none; }
+.it-name { color: #2b6df3; font-weight: 700; }
+.it-round { padding: 5px 14px; border-radius: 999px; background: #2563eb; color: #fff; font-size: 12.5px; font-weight: 800; }
+.it-round-dt { gap: 4px; flex-wrap: wrap; }
+.it-round-dt > span:first-child { min-width: 72px; }
+.it-chip { padding: 3px 9px; border-radius: 999px; background: #f3f4f6; color: #6b7280; font-size: 11px; font-weight: 700; letter-spacing: -0.2px; text-align: center; min-width: 38px; }
+.it-chip.pct { min-width: 46px; padding-left: 5px; padding-right: 5px; }
+.it-chip.st-now { background: #e0eaff; color: #2563eb; }
+.it-chip.st-failed { background: #fee2e2; color: #b91c1c; }
+.it-chip.st-sold { background: #dcfce7; color: #15803d; }
+.it-date { font-size: 11.5px; color: #9ca3af; font-weight: 600; }
+.it-date.now { color: #2563eb; }
 .it-rows b { font-weight: 800; }
 .it-sub { font-size: 12px; font-weight: 400; color: var(--muted); }
 .it-none { color: var(--faint); }
@@ -1362,7 +1394,7 @@ html, body { overflow-x: clip; }
     layout: store.get('wlp.web.layout', 'card'), sort: store.get('wlp.web.sort', 'reg'),
     stage: 'all', type: '', court: '', date: '', q: '',
     pop: '', calMonth: null, pick: false, picked: new Set(), binPicked: new Set(), menu: null, modal: null,
-    loggedIn: store.get('wlp.web.login', true),
+    loggedIn: false, userName: '', denied: false, /* 로그인 상태는 앱 authStore 가 알려 준다 */
     route: /^#\/register/.test(location.hash) ? 'register' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
     itemId: (location.hash.match(/^#\/item\/([\w-]+)/) || [])[1] || '', itemTab: 'basic',
   };
@@ -1435,7 +1467,7 @@ html, body { overflow-x: clip; }
   /* ---------- 머리띠 — 로그인 전: 로그인 ▼ 회원가입 / 로그인 뒤: 강정인님 ▼ 로그아웃 ---------- */
   function renderHeader() {
     const nav = $('navWatch'); nav.classList.toggle('on', S.route === 'list'); if (S.route === 'list') nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
-    $('gLoginTxt').textContent = S.loggedIn ? '강정인님' : '로그인';
+    $('gLoginTxt').textContent = S.loggedIn ? `${S.userName || '회원'}님` : '로그인';
     $('gLogin').classList.toggle('named', S.loggedIn);
     $('gOut').hidden = !S.loggedIn;
     $('gJoin').hidden = S.loggedIn;
@@ -1448,7 +1480,7 @@ html, body { overflow-x: clip; }
     $('userPop').innerHTML = S.pop !== 'user' ? '' : S.loggedIn ? `<div class="um" role="menu" aria-label="마이턴 회원정보">
       <div class="um-head">마이턴 회원정보</div>
       <div class="um-info">
-        <span class="um-name"><span class="um-badge" title="WELCOME 등급">W</span><strong>강정인님</strong><em class="um-id">(myturn01)</em></span>
+        <span class="um-name"><span class="um-badge" title="WELCOME 등급">W</span><strong>${esc(S.userName || '회원')}님</strong><em class="um-id">${CLOUD.auth && CLOUD.auth.email ? `(${esc(CLOUD.auth.email)})` : ''}</em></span>
         <dl class="um-facts">
           <dt><button type="button" class="um-link" data-act="soon" data-name="보유포인트">보유포인트<i>›</i></button></dt><dd class="blue num">0 P</dd>
           <dt><button type="button" class="um-link" data-act="soon" data-name="결제내역">결제내역<i>›</i></button></dt><dd class="orange num">999일</dd>
@@ -1458,7 +1490,7 @@ html, body { overflow-x: clip; }
       <button type="button" class="um-btn" role="menuitem" data-act="soon" data-name="결제하기">결제하기</button>
       <div class="um-sep"><button type="button" class="um-btn out" role="menuitem" data-act="logout">로그아웃</button></div>
     </div>`
-      : `<div class="pop" style="position:static;min-width:210px" role="menu"><div class="pop-title">로그인 방법</div>${['이메일로 로그인', '카카오로 로그인', '네이버로 로그인'].map((t) => `<button type="button" class="opt" data-act="do-login">${t}</button>`).join('')}</div>`;
+      : `<div class="pop" style="position:static;min-width:210px" role="menu"><div class="pop-title">로그인 방법</div>${[['email', '이메일로 로그인'], ['kakao', '카카오로 로그인'], ['naver', '네이버로 로그인']].map(([k, t]) => `<button type="button" class="opt" data-act="do-login" data-v="${k}">${t}</button>`).join('')}</div>`;
     const open = S.pop === 'all';
     const box = document.querySelector('.g-box');
     box.dataset.tip = open ? '메뉴접기' : '메뉴 펼치기';
@@ -1638,6 +1670,10 @@ html, body { overflow-x: clip; }
   function renderContent() {
     const list = visible();
     const root = $('content');
+    const note = CLOUD.on ? '' : S.denied
+      ? '<div class="demo-note">이 계정은 마이턴옥션 사용 허가가 없습니다 — 허가된 계정으로 로그인해 주세요.</div>'
+      : '<div class="demo-note">예시 물건입니다 — 로그인하면 앱과 같은 내 선정물건이 보입니다. <button type="button" class="mini edit" data-act="login-btn">로그인</button></div>';
+    queueMicrotask(() => { const r = $('content'); if (note && r && !r.querySelector('.demo-note')) r.insertAdjacentHTML('afterbegin', note); });
     if (!list.length) {
       const filtered = S.type || S.court || S.date || S.q || S.stage !== 'all';
       root.innerHTML = `<div class="empty"><b>${filtered ? '조건에 맞는 물건이 없습니다' : '표시할 물건이 없습니다'}</b><span>${filtered ? (['won', 'fail', 'cancel', 'sold'].includes(S.stage) ? '카드의 낙찰·유찰·취소·매도 알약을 누르면 여기에 모입니다.' : '걸어 둔 조건을 바꾸거나 지워 보세요.') : '선정물건등록으로 첫 물건을 넣어 보세요.'}</span><button type="button" data-act="${filtered ? 'reset-all' : 'register'}">${filtered ? '조건 모두 지우기' : '선정물건등록'}</button></div>`;
@@ -1745,6 +1781,12 @@ html, body { overflow-x: clip; }
   };
   /* 읽힌 줄은 바로 선정물건에 올린다 — 신규는 손품조사로 새로, 있던 사건은 회차·최저가·매각기일만 갈아 끼운다 */
   const autoSave = (rows) => {
+    if (CLOUD.on) {
+      /* 앱 물건등록과 같은 함수 — 같은 사건번호면 PDF 값만 고치고, 없으면 새로 만든다 */
+      const parsed = rows.filter((r) => r.status === 'ready' && r.x).map((r) => r.x);
+      if (parsed.length) CLOUD.store.importParsedPdfAuctions(parsed).catch((err) => toast(`앱 자료에 적지 못했습니다 — ${(err && err.message) || ''}`, 'info'));
+      return;
+    }
     rows.filter((r) => r.status === 'ready').forEach((r) => {
       const ex = existingOf(r.p.caseNo);
       if (ex) update(ex.id, { round: r.p.round, min: r.p.min, date: r.p.date, apr: r.p.apr || ex.apr });
@@ -1798,7 +1840,7 @@ html, body { overflow-x: clip; }
     const p = { caseNo: x.caseNumber, court: x.courtName || '법원 미확인', type: x.propertyType || '', addr: sp.addr, bld: sp.bld, unit: sp.unit,
       apr: x.appraisalValue || 0, round: (cur && cur.round) || x.auctionRound || '신건', min: x.minimumBidValue || 0, date: x.eventDate || TODAY_YMD,
       land: x.landAreaM2 || 0, bldg: x.buildingAreaM2 || 0 };
-    return { key, file, src, folderId, status: 'ready', rowStatus: classify(p), p, ai };
+    return { key, file, src, folderId, status: 'ready', rowStatus: classify(p), p, ai, x };
   };
 
   /* --- Google Drive 연결 (claude.ai 커넥터) --- */
@@ -2141,6 +2183,19 @@ html, body { overflow-x: clip; }
       setTimeout(() => { const el = $('aiKeyIn'); if (el) el.focus(); }, 20);
       return;
     }
+    if (m.kind === 'login') {
+      root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog fav-dlg" role="dialog" aria-modal="true" aria-labelledby="lgT" style="width:min(420px,100%)">
+        <div class="reg-head"><h2 id="lgT">로그인</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
+        <div class="ai-body">
+          <input id="loginEmail" type="email" autocomplete="username" placeholder="이메일" value="${esc(m.email || '')}">
+          <input id="loginPw" type="password" autocomplete="current-password" placeholder="비밀번호">
+          ${m.msg ? `<p class="ai-msg">${esc(m.msg)}</p>` : ''}
+          <ul class="ai-help"><li>앱과 같은 계정으로 로그인합니다.</li><li>같은 브라우저에서 앱에 로그인해 두었으면 저절로 들어옵니다.</li></ul>
+          <div class="ai-btns"><button type="button" class="btn primary" data-act="login-submit" ${m.busy ? 'disabled' : ''}>${m.busy ? '로그인 중…' : '로그인'}</button></div>
+        </div></div></div>`;
+      setTimeout(() => { const el = $(m.email ? 'loginPw' : 'loginEmail'); if (el) el.focus(); }, 20);
+      return;
+    }
     if (m.kind === 'confirm') {
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgT">
         <h2 id="dlgT">${esc(m.title)}</h2>${m.desc ? `<p>${esc(m.desc)}</p>` : ''}
@@ -2225,16 +2280,22 @@ html, body { overflow-x: clip; }
   const itEmpty = (t) => `<div class="it-empty">${t || '웹에는 아직 연결되지 않은 자료입니다 — 앱 물건상세에서 확인해 주세요.'}</div>`;
   const wonCell = (n) => (n > 0 ? `<b class="num">${won(n)}</b>원` : '');
   function itemHeadHtml(it) {
+    const a = detailOf(it); const T = CLOUD.T;
     const kind = TYPE_NAME(it.type) || '다세대';
-    const meta = [it.bldg > 0 ? `${it.bldg}㎡/${py(it.bldg)}평` : '', it.land > 0 ? `대지권 ${it.land}㎡` : ''].filter(Boolean).join(' · ');
-    const stage = it.status || '단계';
-    const hot = stage === '입찰진행'; const done = stage === '낙찰' || stage === '매도'; const off = stage === '유찰' || stage === '취소';
+    /* 매각구분 · 건물 면적 · 사용승인 — 앱 saleKindOf · headMetaLineOf. 웹은 '토건일괄매각'을 풀어 쓴다 */
+    const sale = (T ? T.saleKindOf(a) : '토건일괄매각').replace('토건일괄매각', '토지건물 일괄매각');
+    const meta = T ? T.headMetaLineOf(a, new Date().getFullYear()) : '';
+    const metaText = meta ? (/㎡/.test(meta) ? `건물 ${meta}` : meta) : '';
+    const stage = T && CLOUD.raw.has(it.id) ? T.stageLabelOf(a) : stageLabel(it);
+    const hot = stage === '입찰진행'; const done = stage === '낙찰' || stage === '매도'; const off = stage === '유찰' || /취소/.test(stage);
+    const pdfId = a.importMeta && a.importMeta.pdfFileId;
     return `
       <div class="ih-top">
         <button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"${tip('선정물건으로')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button>
         <h1 class="ih-title"><span class="ih-tag">경매</span><span class="num">${esc(it.caseNo)}</span></h1>
         <span class="ih-court">${esc(it.court)} · 매각기일 <span class="num">${dotDate(it.date)}</span> <em>${ddayText(it.date)}</em></span>
         <span class="ih-right">
+          ${pdfId ? `<a class="ih-pdf" href="https://drive.google.com/file/d/${esc(pdfId)}/view" target="_blank" rel="noopener">${I.pdf}PDF</a>` : ''}
           <span class="ih-stage ${hot ? 'hot' : ''} ${done ? 'done' : ''} ${off ? 'off' : ''}">${esc(stage)}</span>
           <button type="button" class="ibtn" data-act="archive" data-id="${it.id}" aria-label="보관함에 넣기"${tip('보관함에 넣기')}>${I.box}</button>
           <button type="button" class="ibtn del" data-act="delete" data-id="${it.id}" aria-label="휴지통으로 보내기"${tip('휴지통으로 보내기', 'right')}>${I.trash}</button>
@@ -2242,32 +2303,48 @@ html, body { overflow-x: clip; }
       </div>
       <div class="ih-prop">
         <span class="ih-kind">${esc(kind)}</span>
-        ${starsHtml(it)}
-        <span class="ih-sale">토지건물 일괄매각${meta ? ` · ${meta}` : ''}</span>
+        <span class="ih-line">${starsHtml(it)}<span class="ih-sale">${esc(sale)}${metaText ? ` · ${esc(metaText)}` : ''}</span></span>
         <button type="button" class="ih-copy" data-act="item-copy" data-id="${it.id}" aria-label="주소 복사"${tip('지번주소 복사')}>${I.copy}주소</button>
         <p class="ih-addr">${esc(it.addr)}${it.bld ? ` <b>${esc(it.bld)}</b>` : ''}${it.unit ? ` <b>${esc(it.unit)}</b>` : ''}</p>
       </div>`;
   }
   function itemTabHtml(it, tab) {
     if (tab === 'basic') {
-      const dep = it.min > 0 ? Math.round(it.min * 0.1) : 0;
+      const a = detailOf(it); const T = CLOUD.T;
+      if (!T) return itCard('doc', '정보요약', itEmpty('앱 연결을 불러오는 중입니다…'));
+      /* 정보요약 — 앱 물건상세와 같은 칸·같은 셈(services/detailSummary). 적어 둔 값이 먼저, 비면 PDF·표제부 값 */
+      const sum = { ...T.summarySeedOf(a), ...Object.fromEntries(Object.entries(a.basicSummary || {}).filter(([, v]) => v)) };
+      const sv = (k) => sum[k] || '';
+      const hi = (t) => `<span class="it-hi">${t}</span>`;
+      const age = T.summaryApprovalAgeOf(sv('sum.approval'));
+      const isApt = /아파트/.test(a.propertyType || '');
+      const summaryRows = [
+        ['관할법원', `${esc(sv('sum.court') || '-')}${sv('sum.courtDept') ? `<span class="it-dept">${esc(sv('sum.courtDept'))}</span>` : ''}${sv('sum.courtPhone') ? ` <a class="it-tel" href="tel:${esc(sv('sum.courtPhone').replace(/[^0-9+]/g, ''))}">${esc(sv('sum.courtPhone'))}</a>` : ''}`],
+        ['사용승인', hi(`${esc(sv('sum.approval') || '-')}${age ? ` / ${age}` : ''}`)],
+        ['공급/전용면적(㎡/평)', `${T.summaryAreaText(sv('sum.supplyArea'))} / ${hi(T.summaryAreaText(sv('sum.exclusiveArea')))}`],
+        ['대지면적(㎡/평)', T.summaryAreaText(sv('sum.landArea'))],
+        ...(T.hasBuildingName(a.address || '') ? [] : [['건물명', sv('sum.buildingName') ? `<b class="it-name">${esc(sv('sum.buildingName'))}</b>` : '-']]),
+        ['동/호', `${sv('sum.dong') ? `${hi(`${esc(sv('sum.dong'))}동`)} / ` : ''}${hi(sv('sum.ho') ? `${esc(sv('sum.ho'))}호` : '-호')}`],
+        ['층', T.summaryFloorPairOf(sv('sum.floorCurrent'), sv('sum.floorTotal'))],
+        ['용적률', sv('sum.far') ? `${esc(sv('sum.far'))}%` : '-'],
+        ['세대수', sv('sum.units') ? `${Number(sv('sum.units')).toLocaleString('ko-KR')}세대` : '-'],
+        ...(isApt ? [['해당면적 세대수', sv('sum.areaUnits') ? `${Number(sv('sum.areaUnits')).toLocaleString('ko-KR')}세대` : '-']] : []),
+      ];
+      /* 기본정보 — 소유자·채무자·채권자·차수 / 감정가 · 회차별 최저가(비율·결과·날짜) · 보증금 */
+      const fm = (n) => (n > 0 ? Number(n).toLocaleString('ko-KR') : '0');
+      const rounds = T.bidRoundsOf(a);
+      const baseRows = `<dl class="it-rows">
+          ${[['소유자', a.ownerName], ['채무자', a.debtorName], ['채권자', a.creditorName]].map(([k, v]) => `<dt>${k}</dt><dd>${esc(v || '-')}</dd>`).join('')}
+          <dt>차수</dt><dd><span class="it-round">${esc(T.currentRoundLabelOf(a))}</span></dd>
+        </dl>
+        <dl class="it-rows it-rounds">
+          <dt>감정가</dt><dd class="amt">${fm(T.bidBaseValueOf(a))}원</dd>
+          ${rounds.map((r) => `<dt class="it-round-dt"><span>${esc(r.label)}</span>${r.rate ? `<span class="it-chip pct">${esc(r.rate)}</span>` : ''}${r.status ? `<span class="it-chip ${T.roundToneOf(r.status)}">${esc(r.status)}</span>` : ''}${r.date ? `<span class="it-date ${T.roundToneOf(r.status) === 'st-now' ? 'now' : ''}">${esc(r.date)}</span>` : ''}</dt><dd class="amt ${r.current ? 'now' : ''}">${fm(r.price)}원</dd>`).join('')}
+          <dt>보증금 (10%)</dt><dd class="amt deposit">${fm(T.depositAmountOf(a))}원</dd>
+        </dl>`;
       return [
-        itCard('doc', '정보요약', itRows([
-          ['관할법원', esc(it.court)],
-          ['매각기일', `<span class="num">${dotDate(it.date)}</span> <span class="it-sub">${ddayText(it.date)}</span>`],
-          ['물건종류', esc(TYPE_NAME(it.type) || it.type || '')],
-          ['전용면적', it.bldg > 0 ? `<span class="num">${it.bldg}㎡</span> <span class="it-sub">${py(it.bldg)}평</span>` : ''],
-          ['대지권', it.land > 0 ? `<span class="num">${it.land}㎡</span> <span class="it-sub">${py(it.land)}평</span>` : ''],
-          ['건물명', esc(it.bld || '')],
-          ['동·호', esc(it.unit || '')],
-        ])),
-        itCard('info', '기본정보', itRows([
-          ['사건번호', `<span class="num">${esc(it.caseNo)}</span>`],
-          ['감정가', wonCell(it.apr)],
-          [`최저가${it.round ? ` (${esc(it.round)})` : ''}`, it.min > 0 ? `${wonCell(it.min)} <span class="it-sub">감정가의 ${pct(it.min, it.apr)}%</span>` : ''],
-          ['입찰보증금', dep ? `${wonCell(dep)} <span class="it-sub">최저가의 10%</span>` : ''],
-          ['입찰가', it.mine > 0 ? `${wonCell(it.mine)} <span class="it-sub">최저가 +${((it.mine / it.min - 1) * 100).toFixed(1)}%</span>` : '<span class="it-none">산정 전</span>'],
-        ])),
+        itCard('doc', '정보요약', `<dl class="it-rows">${summaryRows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`),
+        itCard('info', '기본정보', baseRows),
         itCard('pin', '입지정보', itEmpty()),
         itCard('bld', '건축물정보', itEmpty()),
         itCard('info', '물건현황', itEmpty()),
@@ -2330,7 +2407,76 @@ html, body { overflow-x: clip; }
   });
 
   const byId = (id) => items.find((x) => x.id === id);
-  const update = (id, patch) => { items = items.map((x) => (x.id === id ? { ...x, ...patch } : x)); };
+  /* ===== 앱 자료 연결 — 앱의 로그인·물건 저장소(authStore · auctionStore)를 그대로 쓴다 =====
+     로그인 전에는 예시 물건을 보여 주고, 로그인하면 앱과 같은 Firestore 물건으로 바꾼다.
+     웹에서 바꾼 중요도·단계·보관·휴지통은 앱 저장소의 함수(saveAuction · archiveAuctions …)로 그대로 적는다 */
+  const DEMO_ITEMS = items.slice();
+  const CLOUD = { on: false, T: null, auth: null, store: null, raw: new Map() };
+  /* 앱 물건(AuctionDetail) → 웹 카드 한 장. 값은 앱 셈 함수로 낸다 */
+  const toWebItem = (a) => {
+    const T = CLOUD.T;
+    const sum = { ...T.summarySeedOf(a), ...Object.fromEntries(Object.entries(a.basicSummary || {}).filter(([, v]) => v)) };
+    const parts = T.addressParts(a.address || '', sum['sum.buildingName']);
+    return {
+      id: a.id, date: a.eventDate || '', court: a.courtName || '', caseNo: a.caseNumber || '',
+      land: Number(a.landAreaM2) || 0, bldg: Number(a.buildingAreaM2) || 0, type: a.propertyType || '',
+      addr: parts.before.trim(), bld: parts.name, unit: `${parts.mid}${parts.unit}`.trim(),
+      apr: T.bidBaseValueOf(a), round: T.currentRoundLabelOf(a), min: T.currentMinBidOf(a), mine: (a.metrics && a.metrics.myBidValue) || 0,
+      status: a.status, bid: T.bidStageOf(a), priority: a.priority || 0,
+      archived: !!a.archived && !a.hidden, trashed: !!a.hidden,
+      fromFolder: ((a.importMeta && a.importMeta.pdfFolderUrl) || '').match(/folders\/([\w-]+)/)?.[1] || '',
+    };
+  };
+  /* 예시 물건을 앱 물건 모양으로 — 물건상세가 앱 셈 함수 하나로 그려지게 */
+  const demoDetail = (it) => ({
+    id: it.id, eventDate: it.date, courtName: it.court, caseNumber: it.caseNo, address: addrText(it), propertyType: it.type,
+    buildingAreaM2: it.bldg, landAreaM2: it.land, auctionRound: it.round, auctionHistory: [], status: it.status, priority: it.priority,
+    metrics: { appraisalValue: it.apr, minimumBidValue: it.min, myBidValue: it.mine || 0, bidRate: 0 },
+    basicSummary: {}, ownerName: '', debtorName: '', creditorName: '', approvalDate: '',
+  });
+  const detailOf = (it) => CLOUD.raw.get(it.id) || demoDetail(it);
+  /* 웹에서 바꾼 값을 앱 저장소로 — 앱 화면과 같은 함수를 부른다 */
+  function cloudSave(id, patch) {
+    const st = CLOUD.store; const a = CLOUD.raw.get(id); const T = CLOUD.T;
+    if (!st || !a) return;
+    const run = (pr) => Promise.resolve(pr).catch((err) => toast(`앱 자료에 적지 못했습니다 — ${(err && err.message) || '다시 해 주세요'}`, 'info'));
+    if ('trashed' in patch) return run(patch.trashed ? st.hideAuctions([id]) : st.restoreHiddenAuctions([id]));
+    if ('archived' in patch) return run(st.archiveAuctions([id], !!patch.archived));
+    if ('status' in patch || 'bid' in patch) {
+      if ((patch.status || a.status) === '입찰') {
+        const b = patch.bid || ''; const d = T.stageDates(a, b);
+        return run(st.saveAuction({ ...a, status: '입찰', bidStatus: b, wonDate: d.wonDate, sellDate: d.sellDate }));
+      }
+      return run(st.setStatus(id, patch.status));
+    }
+    if ('priority' in patch) return run(st.saveAuction({ ...a, priority: patch.priority }));
+  }
+  async function startCloud() {
+    let T = null; try { T = await loadParser(); } catch (e) { return; }
+    if (!T || !T.useAuthStore) return;
+    T.startStores();
+    const auth = T.useAuthStore(); const st = T.useAuctionStore();
+    Object.assign(CLOUD, { T, auth, store: st });
+    auth.initialize();
+    const fromStore = () => {
+      if (!CLOUD.on) return;
+      const all = [...st.auctions, ...st.archivedAuctions, ...st.hiddenAuctions];
+      CLOUD.raw = new Map(all.map((a) => [a.id, a]));
+      items = all.map((a) => { try { return toWebItem(a); } catch (e) { return null; } }).filter(Boolean);
+      render();
+    };
+    T.watch(() => [auth.ready, auth.uid, auth.email], () => {
+      if (!auth.ready) return;
+      const ok = auth.isLoggedIn && T.isAllowedEmail(auth.email);
+      S.loggedIn = auth.isLoggedIn; S.userName = auth.nickname || String(auth.email || '').split('@')[0];
+      S.denied = auth.isLoggedIn && !ok;
+      if (ok && !CLOUD.on) { CLOUD.on = true; st.initializeStorage(); fromStore(); }
+      if (!ok && CLOUD.on) { CLOUD.on = false; CLOUD.raw = new Map(); items = DEMO_ITEMS.slice(); }
+      render();
+    }, { immediate: true });
+    T.watch(() => [st.auctions, st.archivedAuctions, st.hiddenAuctions], fromStore);
+  }
+  const update = (id, patch) => { items = items.map((x) => (x.id === id ? { ...x, ...patch } : x)); if (CLOUD.on) cloudSave(id, patch); };
   function copyText(text) {
     const done = () => toast('주소가 복사되었습니다.');
     const fail = () => {
@@ -2357,8 +2503,23 @@ html, body { overflow-x: clip; }
         root.dataset.theme = isDark() ? 'light' : 'dark'; store.set('wlp.web.theme', root.dataset.theme); renderHeader(); break;
       }
       case 'login-btn': S.menu = null; S.pop = S.pop === 'user' ? '' : 'user'; render(); break;
-      case 'do-login': S.loggedIn = true; store.set('wlp.web.login', true); S.pop = ''; render(); toast('강정인님, 로그인되었습니다.'); break;
-      case 'logout': S.loggedIn = false; store.set('wlp.web.login', false); S.pop = ''; render(); toast('로그아웃되었습니다.', 'info'); break;
+      /* 로그인 — 앱과 같은 계정(앱 authStore 그대로). 같은 브라우저에서 앱에 로그인해 두었으면 저절로 들어온다 */
+      case 'do-login': {
+        S.pop = ''; render();
+        if (!CLOUD.auth) { toast('앱 연결을 불러오는 중입니다 — 잠시 뒤 다시 눌러 주세요.', 'info'); break; }
+        if (v === 'kakao' || v === 'naver') { (v === 'kakao' ? CLOUD.auth.loginWithKakao() : CLOUD.auth.loginWithNaver()).catch(() => toast(CLOUD.auth.error || '로그인하지 못했습니다.', 'info')); break; }
+        S.modal = { kind: 'login' }; renderModal(); break;
+      }
+      case 'login-submit': {
+        const m = S.modal; if (!m || m.busy) break;
+        const em = ($('loginEmail').value || '').trim(); const pw = $('loginPw').value || '';
+        if (!em || !pw) { m.msg = '이메일과 비밀번호를 넣어 주세요.'; m.email = em; renderModal(); break; }
+        m.busy = true; m.email = em; m.msg = ''; renderModal();
+        CLOUD.auth.login(em, pw).then(() => { if (S.modal === m) { S.modal = null; renderModal(); } toast('로그인되었습니다.'); })
+          .catch(() => { m.busy = false; m.msg = CLOUD.auth.error || '로그인하지 못했습니다.'; if (S.modal === m) renderModal(); });
+        break;
+      }
+      case 'logout': S.pop = ''; if (CLOUD.auth) CLOUD.auth.logout().then(() => toast('로그아웃되었습니다.', 'info')); else { S.loggedIn = false; render(); } break;
       case 'pop': S.menu = null; S.binPicked = new Set(); S.calMonth = null; S.pop = S.pop === t.dataset.id ? '' : t.dataset.id; render(); break;
       case 'close-pop': closeLayers(); render(); break;
       case 'set-type': S.type = v; S.pop = ''; render(); break;
@@ -2448,7 +2609,7 @@ html, body { overflow-x: clip; }
       case 'bin-purge': {
         const ids = [...S.binPicked]; S.pop = ''; render();
         askConfirm({ title: `${ids.length}건을 완전히 삭제할까요?`, desc: '삭제하면 되살릴 수 없습니다. 이 확인은 건너뛸 수 없습니다.', okLabel: '완전삭제', skipKey: '',
-          run: () => { items = items.filter((x) => !ids.includes(x.id)); S.binPicked = new Set(); render(); toast(`${ids.length}건을 완전히 삭제했습니다.`); } });
+          run: () => { if (CLOUD.on) CLOUD.store.purgeAuctions(ids).catch(() => toast('앱 자료에서 지우지 못했습니다.', 'info')); items = items.filter((x) => !ids.includes(x.id)); S.binPicked = new Set(); render(); toast(`${ids.length}건을 완전히 삭제했습니다.`); } });
         break;
       }
       case 'register': case 'go-register': go('register'); break;
@@ -2588,6 +2749,7 @@ html, body { overflow-x: clip; }
     if (e.key === 'Enter' && e.target.id === 'regNo') submitRegister();
     if ((e.key === 'Enter' || e.key === ' ') && e.target.dataset && e.target.dataset.regtab) { e.preventDefault(); if (switchRegTab(e.target.dataset.regtab)) renderRegister(); return; }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('rg-empty')) { e.preventDefault(); $('pdfInput').click(); }
+    if (e.key === 'Enter' && (e.target.id === 'loginPw' || e.target.id === 'loginEmail')) { e.preventDefault(); document.querySelector('[data-act="login-submit"]').click(); }
     if (e.key === 'Enter' && e.target.id === 'favUrl') { e.preventDefault(); document.querySelector('[data-act="fav-add"]').click(); }
     if (e.key === 'Enter' && e.target.id === 'favEditUrl') { e.preventDefault(); document.querySelector('[data-act="fav-save"]').click(); }
     if (e.key === 'Enter' && e.target.id === 'aiKeyIn') { e.preventDefault(); document.querySelector('[data-act="ai-save"]').click(); }
@@ -2696,6 +2858,7 @@ html, body { overflow-x: clip; }
   });
   window.addEventListener('resize', () => { const sv = store.get(FAB_KEY, null); if (fab.style.top && sv) placeFab(fabBounds().minX + sv.dx, sv.y); });
 
+  startCloud();
   const savedTheme = store.get('wlp.web.theme', '');
   if (savedTheme === 'dark' || savedTheme === 'light') document.documentElement.dataset.theme = savedTheme;
   render();
