@@ -325,6 +325,10 @@ body.has-subtabs .toolbar-shell { top: calc(env(safe-area-inset-top, 0px) + 45px
 /* 상자 둘 나란히 — 구글드라이브 연동 | AI 자동 분석. 좁으면 위아래로 */
 .reg-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
 @media (max-width: 1100px) { .reg-duo { grid-template-columns: minmax(0, 1fr); } }
+/* 상자가 탭 — 고른 상자는 파란 테두리, 안 고른 상자는 눌러서 바꾼다 */
+.reg-duo > .reg-box { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.reg-duo > .reg-box:hover:not(.on) { border-color: #b8c7e6; }
+.reg-duo > .reg-box.on { cursor: default; border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-soft); }
 .rg-row1, .rg-row2 { display: flex; align-items: center; gap: 8px; min-height: 32px; min-width: 0; }
 .rg-title { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-right: 4px; font-size: 14px; font-weight: 800; color: var(--text); white-space: nowrap; cursor: help; }
 .rg-title svg { width: 18px; height: 18px; color: #2a5fbf; }
@@ -1131,7 +1135,7 @@ html, body { overflow-x: clip; }
   <!-- 선정물건등록 — 앱 PdfImportPage 와 같은 짜임: 구글드라이브 연동 · AI 자동 분석 · 폴더스캔 · PDF등록 → 파싱결과 -->
   <div id="regView" hidden>
     <div class="toolbar-shell reg-shell">
-      <div class="wrap"><div class="reg-duo" id="regBox"></div></div>
+      <div class="wrap"><div class="reg-duo" id="regBox" role="tablist" aria-label="물건등록 방법"></div></div>
     </div>
     <div class="wrap crumb-slot" id="crumbSlotReg"></div>
     <div class="wrap content reg-content" id="regContent"></div>
@@ -1646,6 +1650,20 @@ html, body { overflow-x: clip; }
     aiKey: (() => { try { return localStorage.getItem('myturn.gemini.key') || ''; } catch (e) { return ''; } })(),
     aiOn: (() => { try { return localStorage.getItem('myturn.gemini.on') !== '0' && !!localStorage.getItem('myturn.gemini.key'); } catch (e) { return false; } })(),
   };
+  /* 상자 둘이 탭 노릇 — 결과 목록(줄·알림·마지막 시각·드라이브에 없는 물건·접힘)은 상자마다 따로 둔다.
+     지금 고른 상자의 것은 R.rows 등에 펼쳐 두고, 바꿀 때 넣었다 꺼낸다 */
+  const LIST_KEYS = ['rows', 'banner', 'last', 'missing', 'collapsed'];
+  const lists = { drive: null, ai: null };
+  const switchRegTab = (tab) => {
+    if (tab === R.tab) return true;
+    if (R.loading) { toast('읽는 중에는 바꿀 수 없습니다 — 끝난 뒤 눌러 주세요.', 'info'); return false; }
+    lists[R.tab] = Object.fromEntries(LIST_KEYS.map((k) => [k, R[k]]));
+    const next = lists[tab] || { rows: [], banner: '', last: '', missing: [], collapsed: false };
+    LIST_KEYS.forEach((k) => { R[k] = next[k]; });
+    R.tab = tab; S.pop = '';
+    try { localStorage.setItem('wlp.web.regTab', tab); } catch (e) { /* 그만 */ }
+    return true;
+  };
   if (!Array.isArray(R.favs)) R.favs = DEMO_FOLDERS.slice();
   if (!Array.isArray(R.sel)) R.sel = R.favs.length ? [R.favs[0].url] : [];
   const saveFavs = () => { store.set('wlp.web.favs', R.favs); store.set('wlp.web.favSel', R.sel); };
@@ -1668,7 +1686,7 @@ html, body { overflow-x: clip; }
   };
   const toRow = (f, src, folderId) => (f.err
     ? { key: `${src}-${f.file}`, file: f.file, src, folderId, status: 'error', rowStatus: '오류', err: f.err }
-    : { key: `${src}-${f.file}`, file: f.file, src, folderId, status: 'ready', rowStatus: classify(f.p), p: f.p, ai: R.aiOn && R.aiKey ? f.ai : null });
+    : { key: `${src}-${f.file}`, file: f.file, src, folderId, status: 'ready', rowStatus: classify(f.p), p: f.p, ai: R.tab === 'ai' && R.aiOn && R.aiKey ? f.ai : null });
   /* ---------- 진짜 읽기 ----------
      PDF 읽기: 앱(PdfImportPage)이 쓰는 규칙 파서 그대로 — pdfparse.js (pdf.js 포함) 를 처음 쓸 때 불러온다.
      드라이브 읽기: claude.ai 아티팩트 안에서는 바깥 주소로 직접 나갈 수 없어서 보는 사람의 claude.ai
@@ -1697,7 +1715,7 @@ html, body { overflow-x: clip; }
   /* 규칙으로 읽은 뒤, 켜져 있으면 AI 로 빈칸을 채운다 (앱 PdfImportPage 의 readPdf 와 같다). AI 가 실패해도 규칙 결과는 그대로 쓴다 */
   const readWithAi = async (T, bytes, name, sourceUrl, folderUrl, fileId) => {
     const parsed = await T.parsePdfBytes(bytes, name, sourceUrl, folderUrl, fileId);
-    if (!R.aiOn || !R.aiKey) return { parsed, ai: null };
+    if (R.tab !== 'ai' || !R.aiOn || !R.aiKey) return { parsed, ai: null }; /* 구글드라이브 연동 상자는 규칙으로만 읽는다 */
     const labels = (keys) => (keys || []).map((k) => T.AI_FIELD_LABELS[k] || k);
     try {
       const r = await T.fillWithGemini(bytes, parsed, R.aiKey);
@@ -1916,6 +1934,9 @@ html, body { overflow-x: clip; }
   }
   async function parseFiles(files) {
     if (!files.length || R.loading) return;
+    /* AI 자동 분석 상자에 올리면 AI 로 읽는다 — 키와 켜기가 먼저다 */
+    if (R.tab === 'ai' && !R.aiKey) { toast('Gemini API 키를 먼저 등록해 주세요.', 'info'); S.modal = { kind: 'ai' }; renderModal(); return; }
+    if (R.tab === 'ai' && !R.aiOn) { toast('AI 자동 파싱을 켜면 올릴 수 있습니다.', 'info'); return; }
     R.loading = true; R.banner = ''; R.loadingLabel = 'PDF 읽기 준비 중'; renderRegister();
     let T = null; try { T = await loadParser(); } catch (e) { T = null; }
     const rows = [];
@@ -1954,7 +1975,7 @@ html, body { overflow-x: clip; }
     const masked = R.aiKey ? `${R.aiKey.slice(0, 4)}…${R.aiKey.slice(-4)}` : '';
     /* 선정물건등록 — 상자 둘을 나란히: 왼쪽 구글드라이브 연동(1줄 제목·폴더등록·폴더스캔·PDF등록 / 2줄 폴더 주소 칸 전체) · 오른쪽 AI 자동 분석 */
     $('regBox').innerHTML = `
-      <div class="toolbar reg-box">
+      <div class="toolbar reg-box ${R.tab === 'drive' ? 'on' : ''}" data-regtab="drive" role="tab" aria-selected="${R.tab === 'drive'}" tabindex="0">
       <div class="rg-row1">
         <span class="rg-title tip-below" data-tip="등록한 구글 드라이브 폴더의 PDF를 읽어 선정물건으로 올립니다" data-tip-pos="left">${I.cloud}구글드라이브 연동</span>
         <button type="button" class="rg-fav" style="margin-left:auto" data-act="fav-open">${I.star}폴더등록</button>
@@ -1970,7 +1991,7 @@ html, body { overflow-x: clip; }
         </div>
       </div>
       </div>
-      <div class="toolbar reg-box">
+      <div class="toolbar reg-box ${R.tab === 'ai' ? 'on' : ''}" data-regtab="ai" role="tab" aria-selected="${R.tab === 'ai'}" tabindex="0">
       <div class="rg-row2">
         <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
         <!-- 제목 옆 — AI 자동 파싱 켜기/끄기(켜짐·꺼짐은 툴팁) · 그 오른쪽에 키 등록/키바꾸기. 키가 없으면 스위치를 눌러도 키 등록 창이 뜬다 -->
@@ -1989,8 +2010,8 @@ html, body { overflow-x: clip; }
         <span class="rg-meta num">${r.status === 'ready' ? `${esc(r.p.caseNo)}<i>·</i>${esc(r.p.court)}<i>·</i>매각기일 ${dotDate(r.p.date)}` : '—'}</span>
         <span class="badge s-${r.rowStatus}">${r.rowStatus}</span>
       </li>`;
-    /* 결과 상자 — AI 자동 파싱이 켜져 있으면 'AI 자동 파싱', 꺼져 있으면 'PDF 자동 파싱' (글자만 다르다) */
-    const PC = R.aiOn && R.aiKey
+    /* 결과 상자 — 고른 상자의 목록. AI 자동 분석이면 'AI 자동 파싱', 구글드라이브 연동이면 'PDF 자동 파싱' */
+    const PC = R.tab === 'ai'
       ? { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서(PDF)를 올리면 AI가 분석하여 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
       : { title: 'PDF 자동 파싱', ic: I.pdf, tip: '경매 문서(PDF)를 올리면 자동으로 읽어 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
     $('regContent').innerHTML = `
@@ -2130,6 +2151,8 @@ html, body { overflow-x: clip; }
     const t = e.target.closest('[data-act]');
     if (S.pop && !e.target.closest(`[data-pop="${S.pop}"], .g-pop`)) { S.pop = ''; S.binPicked = new Set(); S.calMonth = null; render(); }
     if (S.menu && !e.target.closest('.float-menu') && !(t && ['bid-result', 'stage-menu', 'result-menu'].includes(t.dataset.act))) { S.menu = null; render(); }
+    { const box = e.target.closest('[data-regtab]');
+      if (box && box.dataset.regtab !== R.tab && !e.target.closest('.pop')) { if (!switchRegTab(box.dataset.regtab)) return; renderRegister(); } }
     if (!t) return;
     const act = t.dataset.act; const id = t.dataset.id; const v = t.dataset.v; const it = id ? byId(id) : null;
     if (t.tagName === 'A') e.preventDefault();
@@ -2367,6 +2390,7 @@ html, body { overflow-x: clip; }
     }
     if (e.key === '/' && !e.target.closest('input, textarea, select')) { e.preventDefault(); $('q').focus(); }
     if (e.key === 'Enter' && e.target.id === 'regNo') submitRegister();
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.dataset && e.target.dataset.regtab) { e.preventDefault(); if (switchRegTab(e.target.dataset.regtab)) renderRegister(); return; }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('rg-empty')) { e.preventDefault(); $('pdfInput').click(); }
     if (e.key === 'Enter' && e.target.id === 'favUrl') { e.preventDefault(); document.querySelector('[data-act="fav-add"]').click(); }
     if (e.key === 'Enter' && e.target.id === 'favEditUrl') { e.preventDefault(); document.querySelector('[data-act="fav-save"]').click(); }
