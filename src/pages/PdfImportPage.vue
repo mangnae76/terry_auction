@@ -631,7 +631,7 @@ watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /*
 /** 결과 상자 — 두 탭이 같은 상자를 쓰고 글자만 다르다 (웹 /web 과 같은 글) */
 const PARSE_COPY: Record<ImportTab, { title: string; drop: [string, string] }> = {
   drive: { title: 'PDF 자동 파싱', drop: ['파일을 드래그·등록하거나 폴더를 스캔하면', '여기에 미리보기가 표시됩니다.'] },
-  ai: { title: 'AI 자동 파싱', drop: ['파일을 선택하거나 드래그하여 업로드하면', '여기에 미리보기가 표시됩니다.'] },
+  ai: { title: 'AI 자동 파싱', drop: ['파일을 드래그하거나 클릭하여 업로드하면', '여기에 미리보기가 표시됩니다.'] },
 };
 const parseCopy = computed(() => PARSE_COPY[importTab.value]);
 /** 끌어다 놓기 — 목록이 생겨도 상자는 남아 계속 놓을 수 있다. 눌러도 파일을 고른다 */

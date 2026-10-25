@@ -1982,7 +1982,7 @@ html, body { overflow-x: clip; }
       </li>`;
     /* 결과 상자 — 두 탭이 같은 상자를 쓰고 글자만 다르다 (앱 PdfImportPage 의 PARSE_COPY 와 같다) */
     const PC = R.tab === 'ai'
-      ? { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서(PDF)를 올리면 AI가 분석하여 정리합니다', drop: '파일을 선택하거나 드래그하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
+      ? { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서(PDF)를 올리면 AI가 분석하여 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
       : { title: 'PDF 자동 파싱', ic: I.pdf, tip: '경매 문서(PDF)를 올리면 자동으로 읽어 정리합니다', drop: '파일을 드래그·등록하거나 폴더를 스캔하면 <br>여기에 미리보기가 표시됩니다.' };
     $('regContent').innerHTML = `
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
