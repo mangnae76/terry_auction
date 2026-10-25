@@ -1999,9 +1999,9 @@ html, body { overflow-x: clip; }
       <div class="toolbar reg-box ${R.tab === 'ai' ? 'on' : ''}" data-regtab="ai" role="tab" aria-selected="${R.tab === 'ai'}" tabindex="0">
       <div class="rg-row2">
         <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
-        <!-- 제목 옆 — AI 파싱 켜기/끄기(켜짐·꺼짐은 툴팁) · 그 오른쪽에 키 등록/키바꾸기. 키가 없으면 스위치를 눌러도 키 등록 창이 뜬다 -->
+        <!-- 상자 오른쪽 끝 — 키 등록/키바꾸기 · 그 오른쪽에 AI 파싱 켜기/끄기(켜짐·꺼짐은 툴팁). 키가 없으면 스위치를 눌러도 키 등록 창이 뜬다 -->
+        <button type="button" class="ai-key" style="margin-left:auto" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
         <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
-        <button type="button" class="ai-key" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
       </div>
       <!-- 필수설정 — Gemini API 키. 키가 있어야 아래 AI 파싱을 켤 수 있다 (앱 PdfImportPage 와 같은 짜임) -->
       <div class="ai-setup">

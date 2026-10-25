@@ -782,7 +782,7 @@ const onDropFiles = async (e: DragEvent) => {
            켜 두면 구글드라이브 연동 탭의 폴더스캔 · PDF등록이 읽을 때 같이 쓴다 -->
       <template v-else>
       <!-- AI 자동 분석 — 상자 하나 (웹 /web 과 같은 짜임)
-           1줄: 제목 · 켜기 스위치(켜짐·꺼짐은 안내로) · 키 등록/키바꾸기   2줄: 필수설정 · 키 상태 문장 -->
+           1줄: 제목 · (오른쪽 끝) 키 등록/키바꾸기 · 켜기 스위치(켜짐·꺼짐은 안내로)   2줄: 필수설정 · 키 상태 문장 -->
       <div class="pip-aibox">
         <div class="pip-aibox-row">
           <span class="pip-section-title">
@@ -790,6 +790,9 @@ const onDropFiles = async (e: DragEvent) => {
               <circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" />
             </svg>AI 자동 분석
           </span>
+          <button type="button" class="pip-ai-key pip-aibox-key" @click="openAiModal">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" /></svg>{{ aiKey ? '키바꾸기' : '키 등록' }}
+          </button>
           <button
             type="button"
             :class="['pip-ai-switch', { on: aiOn && !!aiKey }]"
@@ -800,9 +803,6 @@ const onDropFiles = async (e: DragEvent) => {
             @click="toggleAi"
           >
             <i />
-          </button>
-          <button type="button" class="pip-ai-key pip-aibox-key" @click="openAiModal">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" /></svg>{{ aiKey ? '키바꾸기' : '키 등록' }}
           </button>
         </div>
         <div class="pip-aibox-row">
@@ -1311,7 +1311,7 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-drivebox .pip-section-head { margin-top: 0; }
 .pip-aibox-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .pip-aibox-row .pip-section-title { margin-right: 2px; }
-.pip-aibox-key { display: inline-flex; align-items: center; gap: 4px; }
+.pip-aibox-key { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
 .pip-req {
   flex: 0 0 auto; padding: 2px 6px; border-radius: 5px; background: #fdecec; color: #dc2626;
   font-size: 10.5px; font-weight: 800; letter-spacing: -0.2px;
