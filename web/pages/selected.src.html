@@ -378,6 +378,9 @@ body.has-subtabs .toolbar-shell { top: calc(env(safe-area-inset-top, 0px) + 45px
 .key-field .kf-btn[data-act="ai-eye"] { right: 38px; }
 .key-field .kf-btn[data-act="ai-paste"] { right: 5px; }
 .ai-setup, .ai-run { display: flex; align-items: center; gap: 8px; min-width: 0; padding-left: 24px; }
+.ai-setup-text { font-size: 13px; font-weight: 400; color: var(--text); white-space: nowrap; }
+.ai-key { display: inline-flex; align-items: center; gap: 5px; }
+.ai-key svg { width: 14px; height: 14px; }
 .ai-setup b { font-size: 13px; font-weight: 800; color: var(--text); white-space: nowrap; }
 .ai-req { flex: 0 0 auto; padding: 2px 7px; border-radius: 5px; background: #fdecec; color: #dc2626; font-size: 11.5px; font-weight: 800; }
 .key-state { font-size: 12.5px; font-weight: 700; color: var(--faint); white-space: nowrap; }
@@ -1961,16 +1964,14 @@ html, body { overflow-x: clip; }
       </div>` : `
       <div class="rg-row2">
         <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
-        <!-- 제목 옆 — AI 자동 파싱 켜기/끄기 (키가 없으면 누를 때 키 등록 창이 뜬다) -->
-        <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 켜기" data-act="ai-toggle"><i></i></button>
-        <span class="ai-text"><b>AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}</b></span>
+        <!-- 제목 옆 — AI 자동 파싱 켜기/끄기(켜짐·꺼짐은 툴팁) · 그 오른쪽에 키 등록/키바꾸기. 키가 없으면 스위치를 눌러도 키 등록 창이 뜬다 -->
+        <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
+        <button type="button" class="ai-key" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
       </div>
       <!-- 필수설정 — Gemini API 키. 키가 있어야 아래 AI 자동 파싱을 켤 수 있다 (앱 PdfImportPage 와 같은 짜임) -->
       <div class="ai-setup">
-        <span class="ai-req">필수설정</span><b>Gemini API 키</b>
-        <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span>
-        <button type="button" class="ai-key" data-act="ai-key">${R.aiKey ? '키바꾸기' : '키 등록'}</button>
-        ${R.aiKey ? '' : '<small class="ai-setup-help">Gemini API 키를 등록하세요.</small>'}
+        <span class="ai-req">필수설정</span>
+        <span class="ai-setup-text">Gemini API 키를 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span>하였습니다.</span>
       </div>
 `;
     const rowHtmlR = (r) => `<li class="rg-item ${r.status}" ${r.status === 'ready' ? `data-act="rg-open" data-v="${esc(r.p.caseNo)}" tabindex="0"` : ''}>
