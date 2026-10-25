@@ -400,8 +400,16 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .it-vtabs button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12); }
 .it-area + .it-area { margin-top: 12px; }
 .it-area h3 { margin: 0 0 6px; font-size: 13.5px; font-weight: 800; color: var(--text); }
-.it-kv { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
-.it-kv th, .it-kv td { padding: 7px 10px; border: 1px solid var(--line); text-align: left; vertical-align: middle; word-break: break-word; }
+/* 표 공통 — 앱 물건상세 표(.adp-table)처럼 네 모서리를 8px 로 깎는다. 모든 표가 같은 값을 쓴다.
+   radius 가 먹으려면 border-collapse 가 separate 여야 한다. 바깥 테두리는 표에, 칸 사이 선은
+   위·오른쪽에만 그어서 겹치지 않게 한다(rowspan 칸이 있어도 선이 두 겹이 되지 않는다) */
+.it-kv, .it-table { border-collapse: separate; border-spacing: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.it-kv th, .it-kv td, .it-table th, .it-table td { border: 0; border-top: 1px solid var(--line); }
+.it-kv th, .it-kv td { border-right: 1px solid var(--line); }
+.it-kv tr > :last-child { border-right: 0; }
+.it-kv > :first-child > tr:first-child > *, .it-table > :first-child > tr:first-child > * { border-top: 0; }
+.it-kv { width: 100%; font-size: 13px; table-layout: fixed; }
+.it-kv th, .it-kv td { padding: 7px 10px; text-align: left; vertical-align: middle; word-break: break-word; }
 .it-kv th { width: 120px; background: var(--surface-2); color: var(--muted); font-weight: 700; }
 .it-kv.cols4 th { width: 104px; }
 .it-kv td.grid, .it-kv td.grid2 { line-height: 1.9; }
@@ -452,8 +460,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 @media (max-width: 1100px) { .it-cols { grid-template-columns: minmax(0, 1fr); } }
 .it-note { margin: 10px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
 .it-rows .neg { color: #ef4444; } .it-rows .pos { color: #2b6df3; }
-.it-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.it-table th, .it-table td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+.it-table { width: 100%; font-size: 13px; }
+.it-table th, .it-table td { padding: 7px 10px; text-align: left; }
 .it-table th { color: var(--muted); font-weight: 700; background: var(--surface-2); }
 /* 아래 줄 단추 셋 — 위 폴더 칸의 시작~끝에 맞춰 같은 폭으로 나눈다 (제목 칸 132 + 여백 4 + 사이 8 만큼 들여서 시작) */
 .reg-duo .rg-acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-left: 144px; }

@@ -9121,6 +9121,10 @@ const goBack = () => router.back();
 .adp-table:not(:has(> thead)) > tbody:first-of-type > tr:first-child > :last-child { border-top-right-radius: 8px; }
 .adp-table > tbody:last-of-type > tr:last-child > :first-child { border-bottom-left-radius: 8px; }
 .adp-table > tbody:last-of-type > tr:last-child > :last-child { border-bottom-right-radius: 8px; }
+/* 왼쪽 칸이 여러 줄을 묶으면(rowspan, 예: 물건현황 '공시가격') 아래 모서리는 그 칸이 맡는다 */
+.adp-table > tbody:last-of-type > tr:nth-last-child(2) > [rowspan="2"]:first-child,
+.adp-table > tbody:last-of-type > tr:nth-last-child(3) > [rowspan="3"]:first-child,
+.adp-table > tbody:last-of-type > tr:nth-last-child(4) > [rowspan="4"]:first-child { border-bottom-left-radius: 8px; border-bottom: 0; }
 /* 마지막 줄 밑선은 표 테두리와 겹치니 지운다 */
 .adp-table > tbody:last-of-type > tr:last-child > td,
 .adp-table > tbody:last-of-type > tr:last-child > th { border-bottom: 0; }
