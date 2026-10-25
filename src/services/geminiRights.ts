@@ -23,13 +23,30 @@ export type RightsAiRight = {
   reason?: string;
 };
 
+/** 상세 권리 분석 표의 한 줄 — 등기부의 권리 하나 */
+export type RightsAiRow = {
+  /** 등기부 순위 — '갑구 6번' · '을구 9번' */
+  rank: string;
+  kind: string;
+  date: string;
+  holder: string;
+  /** 채권액 또는 내용 — '보증금 149,700,000원 (전입 2022.06.07 / 확정 2022.05.20)' */
+  amount: string;
+  /** '인수' 또는 '말소' */
+  status: string;
+  /** 비고 — 왜 인수인지, 왜 말소인지 한 줄 */
+  note: string;
+};
+
 export type RightsAi = {
   /** 말소기준권리 — 어떤 권리가, 언제, 누구 것으로 기준이 되었나 */
   baseRight: { kind: string; date: string; holder: string; rank: string; evidence: string };
-  /** 낙찰자가 떠안는 권리 */
+  /** 등기부 권리 한 줄씩 — 화면의 '상세 권리 분석' 표 */
+  rows: RightsAiRow[];
+  /** 낙찰자가 떠안는 권리 — rows 에서 세어 낸다 */
   takeover: { count: number; items: RightsAiRight[]; summary: string };
-  /** 낙찰되면 없어지는 권리 */
-  extinguish: { count: number; items: RightsAiRight[] };
+  /** 낙찰되면 없어지는 권리 — rows 에서 세어 낸다 */
+  extinguish: { count: number; items: RightsAiRight[]; summary: string };
   /** 서류·현황에서 걸리는 것들 */
   risk: { summary: string; items: string[] };
   /** 명도 난이도 */
@@ -55,12 +72,13 @@ export const DOC_LABELS: Record<string, string> = {
 };
 
 const str = { type: 'STRING' };
-const rightItem = {
+const rowItem = {
   type: 'OBJECT',
   properties: {
-    kind: str, date: str, holder: str, reason: str,
+    rank: str, kind: str, date: str, holder: str, amount: str,
+    status: { type: 'STRING', enum: ['인수', '말소'] }, note: str,
   },
-  required: ['kind', 'date', 'holder'],
+  required: ['rank', 'kind', 'holder', 'status', 'note'],
 };
 
 const RESPONSE_SCHEMA = {
@@ -73,16 +91,9 @@ const RESPONSE_SCHEMA = {
       },
       required: ['kind', 'date', 'holder', 'rank', 'evidence'],
     },
-    takeover: {
-      type: 'OBJECT',
-      properties: { count: { type: 'INTEGER' }, items: { type: 'ARRAY', items: rightItem }, summary: str },
-      required: ['count', 'items', 'summary'],
-    },
-    extinguish: {
-      type: 'OBJECT',
-      properties: { count: { type: 'INTEGER' }, items: { type: 'ARRAY', items: rightItem } },
-      required: ['count', 'items'],
-    },
+    rows: { type: 'ARRAY', items: rowItem },
+    takeoverSummary: str,
+    extinguishSummary: str,
     risk: {
       type: 'OBJECT',
       properties: { summary: str, items: { type: 'ARRAY', items: str } },
@@ -102,7 +113,7 @@ const RESPONSE_SCHEMA = {
     },
     missingDocs: { type: 'ARRAY', items: str },
   },
-  required: ['baseRight', 'takeover', 'extinguish', 'risk', 'evict', 'conclusion', 'missingDocs'],
+  required: ['baseRight', 'rows', 'takeoverSummary', 'extinguishSummary', 'risk', 'evict', 'conclusion', 'missingDocs'],
 };
 
 /**
@@ -138,12 +149,26 @@ export const RIGHTS_PROMPT = [
   '- 소유권이전·소유권보존은 말소기준권리가 되지 않는다.',
   '- rank 에는 등기부의 순위번호(예: 갑구 3번, 을구 2번)를 적는다.',
   '',
+  '상세 권리 분석 표 (rows) — 가장 중요한 칸이다',
+  '- 등기부에 적힌 권리를 한 줄에 하나씩, 순위가 빠른 것부터 적는다. 임차인은 주택임차권으로 한 줄 넣는다.',
+  '- rank: 등기부의 구와 순위번호를 그대로 — "갑구 6번", "을구 9번". 순위번호를 못 읽으면 빈 글자로 둔다.',
+  '- kind: 권리 종류 — 강제경매개시결정 · 근저당권 · 압류 · 가압류 · 주택임차권 · 가처분 · 가등기 등.',
+  '- holder: 권리자 이름 그대로 (예: 서울보증보험 주식회사 · 국민건강보험공단 · 한국토지주택공사).',
+  '- amount: 채권액이나 내용. 임차권이면 "보증금 149,700,000원 (전입 2022.06.07 / 확정 2022.05.20)" 처럼',
+  '  보증금과 전입·확정일자를 괄호에 같이 적는다. 경매개시결정이면 "2026타경501558 (2026.02.23 접수)".',
+  '- status: 인수 또는 말소 둘 중 하나.',
+  '- note: 왜 그런지 한 줄 — "말소기준권리", "말소기준권리보다 앞선 선순위 임차권", "말소기준권리 이후 등기로 매각 시 소멸".',
+  '',
   '인수·말소 가르는 규칙',
-  '- 말소기준권리보다 앞선(먼저 접수된) 권리는 낙찰자가 떠안는다 → takeover.',
-  '- 말소기준권리와 그 뒤의 권리는 낙찰되면 없어진다 → extinguish.',
+  '- 말소기준권리보다 앞선(먼저 접수된) 권리는 낙찰자가 떠안는다 → status 를 인수로.',
+  '- 말소기준권리와 그 뒤의 권리는 낙찰되면 없어진다 → status 를 말소로.',
   '- 다만 뒤에 있어도 없어지지 않는 것이 있다: 예고등기, 건물철거·토지인도 가처분, 유치권, 법정지상권,',
-  '  그리고 대항력 있는 임차인이 배당에서 다 못 받은 보증금. 이런 것은 takeover 에 넣고 reason 에 까닭을 적는다.',
-  '- count 는 items 의 개수와 반드시 같게 맞춘다.',
+  '  그리고 대항력 있는 임차인이 배당에서 다 못 받은 보증금. 이런 것은 인수로 하고 note 에 까닭을 적는다.',
+  '',
+  '카드에 한 줄로 적을 글',
+  '- takeoverSummary: 떠안는 권리를 한 줄로 — "선순위 주택임차권 (인수 주의)" 처럼 25자 안팎. 없으면 "인수할 권리 없음".',
+  '- extinguishSummary: 없어지는 권리를 한 줄로 — "낙찰 시 자동 소멸 (경매등기, 압류)" 처럼 25자 안팎. 없으면 "말소될 권리 없음".',
+  '- 두 줄 모두 한 줄을 넘기지 않는다. 자세한 것은 rows 가 들고 있다.',
   '',
   '명도 난이도',
   '- level 은 쉬움 / 보통 / 약간 높음 / 높음 가운데 하나만 고른다.',
@@ -228,14 +253,21 @@ export const askRightsAnalysis = async (
 /** 받아 온 답을 화면이 믿고 쓸 수 있는 꼴로 — 빠진 칸을 메우고 개수를 목록에 맞춘다 */
 export const normalizeRightsAi = (raw: Partial<RightsAi>, usedDocs: string[] = []): RightsAi => {
   const text = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
-  const list = (v: unknown): RightsAiRight[] => (Array.isArray(v) ? v : []).map((r) => ({
-    kind: text((r as RightsAiRight)?.kind),
-    date: text((r as RightsAiRight)?.date),
-    holder: text((r as RightsAiRight)?.holder),
-    reason: text((r as RightsAiRight)?.reason),
-  })).filter((r) => r.kind || r.date || r.holder);
-  const takeoverItems = list(raw.takeover?.items);
-  const extinguishItems = list(raw.extinguish?.items);
+  // 표 한 줄씩 — 여기가 사실이고, 인수·말소 개수는 여기서 세어 낸다
+  const rows: RightsAiRow[] = (Array.isArray(raw.rows) ? raw.rows : []).map((r) => ({
+    rank: text((r as RightsAiRow)?.rank),
+    kind: text((r as RightsAiRow)?.kind),
+    date: text((r as RightsAiRow)?.date),
+    holder: text((r as RightsAiRow)?.holder),
+    amount: text((r as RightsAiRow)?.amount),
+    status: text((r as RightsAiRow)?.status) === '인수' ? '인수' : '말소',
+    note: text((r as RightsAiRow)?.note),
+  })).filter((r) => r.kind || r.holder);
+  const asRight = (r: RightsAiRow): RightsAiRight => ({
+    kind: r.kind, date: r.date, holder: r.holder, reason: r.note,
+  });
+  const takeoverItems = rows.filter((r) => r.status === '인수').map(asRight);
+  const extinguishItems = rows.filter((r) => r.status === '말소').map(asRight);
   const level = EVICT_LEVELS.includes(text(raw.evict?.level) as typeof EVICT_LEVELS[number])
     ? text(raw.evict?.level) : '';
   const verdict = RIGHTS_VERDICTS.includes(text(raw.conclusion?.verdict) as typeof RIGHTS_VERDICTS[number])
@@ -248,9 +280,18 @@ export const normalizeRightsAi = (raw: Partial<RightsAi>, usedDocs: string[] = [
       rank: text(raw.baseRight?.rank),
       evidence: text(raw.baseRight?.evidence),
     },
-    // 개수는 AI 가 적은 숫자가 아니라 목록 길이를 쓴다 — 둘이 어긋나면 목록이 사실이다
-    takeover: { count: takeoverItems.length, items: takeoverItems, summary: text(raw.takeover?.summary) },
-    extinguish: { count: extinguishItems.length, items: extinguishItems },
+    rows,
+    // 개수는 AI 가 적은 숫자가 아니라 표에서 세어 낸다 — 둘이 어긋나면 표가 사실이다
+    takeover: {
+      count: takeoverItems.length,
+      items: takeoverItems,
+      summary: text((raw as { takeoverSummary?: string }).takeoverSummary) || (takeoverItems.length ? '' : '인수할 권리 없음'),
+    },
+    extinguish: {
+      count: extinguishItems.length,
+      items: extinguishItems,
+      summary: text((raw as { extinguishSummary?: string }).extinguishSummary) || (extinguishItems.length ? '' : '말소될 권리 없음'),
+    },
     risk: {
       summary: text(raw.risk?.summary),
       items: (Array.isArray(raw.risk?.items) ? raw.risk.items : []).map(text).filter(Boolean),

@@ -4575,7 +4575,7 @@ const rightsDiag = computed(() => {
   if (!ai) return { baseRight: '', takeover: [] as string[], extinguish: [] as string[] };
   const b = ai.baseRight;
   return {
-    baseRight: [b.kind, b.date].filter(Boolean).join(' '),
+    baseRight: [b.rank, b.kind].filter(Boolean).join(' ') || [b.kind, b.date].filter(Boolean).join(' '),
     takeover: ai.takeover.items.map(rightLine),
     extinguish: ai.extinguish.items.map(rightLine),
   };
@@ -6990,19 +6990,37 @@ const goBack = () => router.back();
               </div>
               <div class="adp-diag-box">
                 <span class="adp-diag-k">인수권리수</span>
-                <b :class="['adp-diag-v', { on: rightsDiag.baseRight }]">{{ rightsDiag.baseRight ? `${rightsDiag.takeover.length}개` : '-' }}</b>
-                <ul v-if="rightsDiag.takeover.length" class="adp-diag-list take">
-                  <li v-for="(r, i) in rightsDiag.takeover" :key="i">{{ r }}</li>
-                </ul>
+                <b :class="['adp-diag-v', { on: rightsAi }]">{{ rightsAi ? `${rightsAi.takeover.count}개` : '-' }}</b>
+                <p v-if="rightsAi?.takeover.summary" class="adp-diag-sum take">{{ rightsAi.takeover.summary }}</p>
               </div>
               <div class="adp-diag-box">
                 <span class="adp-diag-k">말소권리수</span>
-                <b :class="['adp-diag-v', { on: rightsDiag.baseRight }]">{{ rightsDiag.baseRight ? `${rightsDiag.extinguish.length}개` : '-' }}</b>
-                <ul v-if="rightsDiag.extinguish.length" class="adp-diag-list">
-                  <li v-for="(r, i) in rightsDiag.extinguish" :key="i">{{ r }}</li>
-                </ul>
+                <b :class="['adp-diag-v', { on: rightsAi }]">{{ rightsAi ? `${rightsAi.extinguish.count}개` : '-' }}</b>
+                <p v-if="rightsAi?.extinguish.summary" class="adp-diag-sum">{{ rightsAi.extinguish.summary }}</p>
               </div>
             </div>
+            <!-- 상세 권리 분석 — 등기부 한 줄씩. 인수는 붉게 세운다 -->
+            <template v-if="rightsAi?.rows.length">
+              <p class="adp-sub-note adp-rows-cap">상세 권리 분석</p>
+              <table class="adp-table adp-rights-table">
+                <colgroup>
+                  <col style="width: 20%" /><col /><col style="width: 22%" /><col style="width: 15%" />
+                </colgroup>
+                <thead><tr><th>순위</th><th>권리 종류 · 내용</th><th>권리자</th><th>인수/말소</th></tr></thead>
+                <tbody>
+                  <tr v-for="(r, i) in rightsAi.rows" :key="i" :class="r.status === '인수' ? 'tone-take' : ''">
+                    <td class="pre-line">{{ r.rank || '-' }}<br><small>{{ r.date }}</small></td>
+                    <td>
+                      <strong>{{ r.kind }}</strong>
+                      <span v-if="r.amount" class="adp-desc">{{ r.amount }}</span>
+                      <span v-if="r.note" class="adp-desc adp-rows-note">{{ r.note }}</span>
+                    </td>
+                    <td>{{ r.holder }}</td>
+                    <td><b v-if="r.status === '인수'" class="adp-reg-take">인수</b><template v-else>말소</template></td>
+                  </tr>
+                </tbody>
+              </table>
+            </template>
           </div>
         </section>
 
@@ -9414,6 +9432,17 @@ const goBack = () => router.back();
 /* 예전에 받아 둔 값으로 버티는 중 — 빨강보다 한 발 물린다 */
 .adp-fetch-warn.stale { border-color: #f0c98a; background: #fff8ec; color: #b26a00; }
 .adp-fetch-warn:active { opacity: 0.55; }
+
+/* 진단 상자 아래 한 줄 요약 — 자세한 것은 아래 표가 들고 있다 */
+.adp-diag-sum {
+  margin: 4px 0 0; font-size: 11.5px; font-weight: 700; color: #6b7280;
+  line-height: 1.4; word-break: keep-all;
+}
+.adp-diag-sum.take { color: #c62828; }
+/* 상세 권리 분석 표 */
+.adp-rows-cap { margin: 12px 0 5px; font-weight: 800; color: #374151; }
+.adp-rights-table td small { font-size: 10px; color: #9ca3af; font-weight: 600; }
+.adp-rights-table .adp-rows-note { color: #6b7280; }
 
 /* 인수되는 권리 — 낙찰자가 떠안는 줄. 소멸(회색)과 반대로 붉게 세운다 */
 .adp-reg-take { color: #c62828; font-weight: 800; }
