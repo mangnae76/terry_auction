@@ -706,6 +706,8 @@ const onDropFiles = async (e: DragEvent) => {
 
     <div class="pip-body">
       <template v-if="importTab === 'drive'">
+      <!-- 구글드라이브 연동 — AI 자동 분석과 같은 흰 상자 하나: 제목·폴더등록 / 폴더 고르기 / 폴더스캔·PDF등록 -->
+      <div class="pip-aibox pip-drivebox">
       <div class="pip-section-head">
         <span class="pip-section-title">
           <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -772,6 +774,7 @@ const onDropFiles = async (e: DragEvent) => {
           <img :src="filesIcon" alt="" class="pip-btn-icn" />
           PDF등록
         </button>
+      </div>
       </div>
       </template>
 
@@ -1293,11 +1296,12 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-actions {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
 }
-/* AI 자동 분석 — 상자 하나: 제목 · 스위치 · 키 버튼 / 필수설정 · 키 상태 */
+/* AI 자동 분석 — 상자 하나: 제목 · 스위치 · 키 버튼 / 필수설정 · 키 상태 — 구글드라이브 연동(.pip-drivebox)도 같은 상자 */
 .pip-aibox {
   display: flex; flex-direction: column; gap: 8px;
   background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; padding: 11px 12px;
 }
+.pip-drivebox .pip-section-head { margin-top: 0; }
 .pip-aibox-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .pip-aibox-row .pip-section-title { margin-right: 2px; }
 .pip-aibox-key { display: inline-flex; align-items: center; gap: 4px; }
