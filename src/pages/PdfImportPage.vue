@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
+import { Clipboard } from '@capacitor/clipboard';
 import { computed, onMounted, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import {
@@ -63,13 +64,34 @@ const toggleAi = () => {
   if (!aiKey.value) { openAiModal(); return; }
   aiOn.value = !aiOn.value;
   setGeminiOn(aiOn.value);
+  // 폰에는 마우스 안내가 없어 켜짐·꺼짐을 잠깐 알린다
+  showToast(aiOn.value ? 'AI 자동 파싱을 켰습니다.' : 'AI 자동 파싱을 껐습니다.');
 };
 const aiModalOpen = ref(false);
 const aiKeyDraft = ref('');
 const aiKeyMsg = ref('');
 const aiKeyOk = ref(false);
 const aiChecking = ref(false);
+const aiKeyShow = ref(false);
+const aiKeyInputRef = ref<HTMLInputElement | null>(null);
+/** 붙여넣기 — 복사해 둔 글을 키 칸에 넣는다. 앱은 Capacitor 클립보드, 웹은 브라우저 클립보드. 막히면 길게 눌러 붙이도록 알린다 */
+const pasteAiKey = async () => {
+  let txt = '';
+  try {
+    if (Capacitor.isNativePlatform()) txt = (await Clipboard.read()).value ?? '';
+    else if (navigator.clipboard?.readText) txt = await navigator.clipboard.readText();
+  } catch { txt = ''; }
+  txt = txt.trim();
+  if (!txt) {
+    showToast('붙여 넣을 내용을 읽지 못했습니다 — 칸을 길게 눌러 붙여 넣어 주세요.');
+    aiKeyInputRef.value?.focus();
+    return;
+  }
+  aiKeyDraft.value = txt;
+  aiKeyMsg.value = '';
+};
 const openAiModal = () => {
+  aiKeyShow.value = false;
   aiKeyDraft.value = aiKey.value;
   aiKeyMsg.value = '';
   aiKeyOk.value = false;
@@ -103,7 +125,6 @@ const openGeminiKeySite = () => {
   if (Capacitor.isNativePlatform()) { void Browser.open({ url: GEMINI_KEY_URL }); return; }
   window.open(GEMINI_KEY_URL, '_blank', 'noopener');
 };
-const aiKeyMasked = computed(() => (aiKey.value ? `${aiKey.value.slice(0, 4)}…${aiKey.value.slice(-4)}` : ''));
 const aiLabels = (keys?: string[]) => (keys ?? []).map((k) => AI_FIELD_LABELS[k] ?? k).join(', ');
 
 /** 규칙으로 읽은 뒤, 켜져 있으면 AI 로 빈칸을 채운다. AI 가 실패해도 규칙 결과는 그대로 쓴다 */
@@ -757,37 +778,34 @@ const onDropFiles = async (e: DragEvent) => {
       <!-- AI 자동 분석 — 규칙으로 못 읽은 칸만 Gemini 가 채운다 (각자 자기 키로).
            켜 두면 구글드라이브 연동 탭의 폴더스캔 · PDF등록이 읽을 때 같이 쓴다 -->
       <template v-else>
-      <div class="pip-section-head">
-        <span class="pip-section-title">
-          <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" />
-          </svg>AI 자동 분석
-        </span>
-      </div>
-      <!-- 필수 설정 — Gemini API 키. 키가 있어야 아래 AI 자동 파싱을 켤 수 있다 (웹 /web 과 같은 짜임) -->
-      <div class="pip-setup">
-        <div class="pip-setup-head">
-          <span class="pip-req">필수 설정</span>
-          <b>Gemini API 키</b>
-          <span :class="['pip-key-state', { ok: !!aiKey }]">{{ aiKey ? `등록됨 · ${aiKeyMasked}` : '등록 안 됨' }}</span>
-        </div>
-        <div class="pip-setup-row">
-          <button type="button" class="pip-key-link" @click="openGeminiKeySite">
-            Google AI Studio에서 키 받기
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6" /><path d="M20 4 10 14" /><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" /></svg>
+      <!-- AI 자동 분석 — 상자 하나 (웹 /web 과 같은 짜임)
+           1줄: 제목 · 켜기 스위치(켜짐·꺼짐은 안내로) · 키 등록/키바꾸기   2줄: 필수설정 · 키 상태 문장 -->
+      <div class="pip-aibox">
+        <div class="pip-aibox-row">
+          <span class="pip-section-title">
+            <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" />
+            </svg>AI 자동 분석
+          </span>
+          <button
+            type="button"
+            :class="['pip-ai-switch', { on: aiOn && !!aiKey }]"
+            role="switch"
+            :aria-checked="aiOn && !!aiKey"
+            :aria-label="`AI 자동 파싱 ${aiOn && aiKey ? '켜짐' : '꺼짐'}`"
+            :title="`AI 자동 파싱 ${aiOn && aiKey ? '켜짐' : '꺼짐'}`"
+            @click="toggleAi"
+          >
+            <i />
           </button>
-          <button type="button" class="pip-ai-key" @click="openAiModal">{{ aiKey ? '키 바꾸기' : '키 넣기' }}</button>
+          <button type="button" class="pip-ai-key pip-aibox-key" @click="openAiModal">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" /></svg>{{ aiKey ? '키바꾸기' : '키 등록' }}
+          </button>
         </div>
-        <p class="pip-setup-help">Google 계정으로 로그인 → Get API key → Create API key 로 받은 키를 넣어 주세요. 키는 이 기기에만 저장됩니다.</p>
-      </div>
-      <div class="pip-ai">
-        <button type="button" :class="['pip-ai-switch', { on: aiOn && !!aiKey }]" role="switch" :aria-checked="aiOn && !!aiKey" aria-label="AI 자동 파싱 켜기" @click="toggleAi">
-          <i />
-        </button>
-        <span class="pip-ai-text">
-          <b>AI 자동 파싱 {{ aiOn && aiKey ? '켜짐' : '꺼짐' }}</b>
-          <small>{{ aiKey ? '규칙으로 못 읽은 칸만 AI가 채웁니다' : '필수 설정(Gemini API 키)을 마치면 켤 수 있습니다' }}</small>
-        </span>
+        <div class="pip-aibox-row">
+          <span class="pip-req">필수설정</span>
+          <span class="pip-aibox-text">Gemini API 키가 <span :class="['pip-key-state', aiKey ? 'ok' : 'no']">{{ aiKey ? '등록' : '미등록' }}</span> 상태입니다.</span>
+        </div>
       </div>
       </template>
 
@@ -877,27 +895,39 @@ const onDropFiles = async (e: DragEvent) => {
     <div v-if="aiModalOpen" class="pip-fav-back" @click.self="aiModalOpen = false">
       <div class="pip-fav-modal pip-ai-modal">
         <header class="pip-fav-modal-head">
-          <h2>AI 자동 분석 · Gemini 키</h2>
+          <h2>Gemini 키 등록 설정</h2>
           <button type="button" class="pip-fav-modal-close" aria-label="닫기" @click="aiModalOpen = false">×</button>
         </header>
         <div class="pip-ai-body">
-          <input
-            v-model="aiKeyDraft"
-            class="pip-fav-field"
-            type="password"
-            autocomplete="off"
-            placeholder="Google AI Studio 에서 받은 API 키"
-            @keydown.enter.prevent="saveAiKey"
-          />
+          <!-- 키 칸 — 오른쪽 끝에 눈(보기/가리기) · 붙여넣기 (웹 /web 과 같다) -->
+          <div class="pip-key-field">
+            <input
+              ref="aiKeyInputRef"
+              v-model="aiKeyDraft"
+              class="pip-fav-field"
+              :type="aiKeyShow ? 'text' : 'password'"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Google AI Studio 에서 받은 API 키"
+              @keydown.enter.prevent="saveAiKey"
+            />
+            <button type="button" class="pip-kf-btn eye" :aria-label="aiKeyShow ? '키 가리기' : '키 보기'" @click="aiKeyShow = !aiKeyShow">
+              <svg v-if="aiKeyShow" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.4 3.3" /><path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /><path d="m2 2 20 20" /></svg>
+              <svg v-else viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
+            </button>
+            <button type="button" class="pip-kf-btn paste" aria-label="붙여넣기" @click="pasteAiKey">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M9 13h6" /><path d="M9 17h4" /></svg>
+            </button>
+          </div>
           <p v-if="aiKeyMsg" :class="['pip-ai-msg', { ok: aiKeyOk }]">{{ aiKeyMsg }}</p>
           <ul class="pip-ai-help">
-            <li>키는 <b>이 기기에만</b> 저장됩니다. 우리 서버로 보내지 않습니다.</li>
-            <li>PDF는 이 기기에서 <b>Google(Gemini)로 바로</b> 보내고, 요금은 키 주인의 Google 계정으로 나갑니다.</li>
+            <li>키는 <b>이 기기에만</b> 저장됩니다.</li>
             <li>규칙으로 못 읽은 칸만 채우고, PDF에서 근거 글을 못 찾은 값은 버립니다.</li>
             <li>키 받는 곳: <button type="button" class="pip-key-link inline" @click="openGeminiKeySite">Google AI Studio</button> → Get API key</li>
+            <li>Google 계정으로 로그인 → Get API key → Create API key</li>
           </ul>
           <div class="pip-ai-btns">
-            <button v-if="aiKey" type="button" class="pip-ai-del" @click="removeAiKey">키 지우기</button>
+            <button v-if="aiKey" type="button" class="pip-ai-del" @click="removeAiKey">키지우기</button>
             <button type="button" class="pip-fav-add pip-ai-save" :disabled="aiChecking" @click="saveAiKey">{{ aiChecking ? '확인 중…' : '확인 후 저장' }}</button>
           </div>
         </div>
@@ -1263,31 +1293,28 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-actions {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
 }
-/* 필수 설정 — Gemini API 키 */
-.pip-setup {
-  margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px;
-  background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; padding: 10px 12px;
+/* AI 자동 분석 — 상자 하나: 제목 · 스위치 · 키 버튼 / 필수설정 · 키 상태 */
+.pip-aibox {
+  display: flex; flex-direction: column; gap: 8px;
+  background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; padding: 11px 12px;
 }
-.pip-setup-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.pip-setup-head b { font-size: 13px; font-weight: 800; color: #111827; white-space: nowrap; }
+.pip-aibox-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pip-aibox-row .pip-section-title { margin-right: 2px; }
+.pip-aibox-key { display: inline-flex; align-items: center; gap: 4px; }
 .pip-req {
   flex: 0 0 auto; padding: 2px 6px; border-radius: 5px; background: #fdecec; color: #dc2626;
   font-size: 10.5px; font-weight: 800; letter-spacing: -0.2px;
 }
-.pip-key-state { margin-left: auto; font-size: 11px; font-weight: 700; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pip-aibox-text { min-width: 0; font-size: 12.5px; font-weight: 400; color: #111827; }
+.pip-key-state { font-weight: 700; }
 .pip-key-state.ok { color: #16a34a; }
-.pip-setup-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pip-key-state.no { color: #dc2626; }
+/* 키 창 안의 'Google AI Studio' 글자 단추 */
 .pip-key-link {
   display: inline-flex; align-items: center; gap: 4px; padding: 0; border: none; background: transparent;
   font-size: 12.5px; font-weight: 700; color: #2a5fbf; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
 }
 .pip-key-link.inline { font-size: inherit; font-weight: 600; }
-.pip-setup-help { margin: 0; font-size: 11px; line-height: 1.5; color: #6b7280; }
-/* AI 자동 파싱 켜기 줄 */
-.pip-ai {
-  display: flex; align-items: center; gap: 10px;
-  background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; padding: 10px 12px;
-}
 .pip-ai-switch {
   flex: 0 0 auto; position: relative; width: 38px; height: 22px; padding: 0;
   border: none; border-radius: 999px; background: #d1d5db; cursor: pointer; transition: background 0.15s;
@@ -1298,9 +1325,6 @@ const onDropFiles = async (e: DragEvent) => {
 }
 .pip-ai-switch.on { background: #2b6df3; }
 .pip-ai-switch.on i { left: 19px; }
-.pip-ai-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.pip-ai-text b { font-size: 13px; font-weight: 800; color: #111827; }
-.pip-ai-text small { font-size: 11px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pip-ai-key {
   flex: 0 0 auto; height: 30px; padding: 0 10px;
   border: 1px solid #d5dbe6; border-radius: 8px; background: #fff;
@@ -1311,7 +1335,18 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-result-text .pip-ai-note em { font-style: normal; font-weight: 400; color: #6b7280; }
 .pip-result-text .pip-ai-note.gray { color: #9ca3af; font-weight: 400; }
 .pip-result-text .pip-ai-note.err { color: #dc2626; font-weight: 400; }
-.pip-ai-modal { max-width: 460px; }
+.pip-ai-modal { max-width: 640px; }
+/* 키 칸 — 오른쪽 끝 눈 · 붙여넣기 */
+.pip-key-field { position: relative; }
+.pip-key-field .pip-fav-field { width: 100%; box-sizing: border-box; padding-right: 74px; }
+.pip-kf-btn {
+  position: absolute; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; padding: 0;
+  border: none; border-radius: 6px; background: transparent; color: #6b7280; cursor: pointer;
+  display: grid; place-items: center;
+}
+.pip-kf-btn:active { background: #f3f4f6; }
+.pip-kf-btn.eye { right: 38px; }
+.pip-kf-btn.paste { right: 5px; }
 .pip-ai-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; }
 .pip-ai-msg { margin: 0; font-size: 11.5px; color: #dc2626; }
 .pip-ai-msg.ok { color: #16a34a; }
