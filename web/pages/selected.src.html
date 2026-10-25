@@ -541,7 +541,7 @@ body.trip-full .foot { display: none; }
 .it-table th, .it-table td { padding: 7px 10px; text-align: left; }
 .it-table th { color: var(--muted); font-weight: 700; background: var(--surface-2); }
 /* 아래 줄 단추 셋 — 위 폴더 칸의 시작~끝에 맞춰 같은 폭으로 나눈다 (제목 칸 132 + 여백 4 + 사이 8 만큼 들여서 시작) */
-.reg-duo .rg-acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-left: 144px; }
+.reg-duo .rg-acts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .reg-duo .rg-acts > .rg-fav, .reg-duo .rg-acts > .rg-btn { width: auto; }
 .reg-duo > .reg-box { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .reg-duo > .reg-box:hover:not(.on) { border-color: #b8c7e6; }
@@ -551,10 +551,10 @@ body.trip-full .foot { display: none; }
 .rg-title svg { width: 18px; height: 18px; color: #2a5fbf; }
 .rg-row1 > .rg-title, .rg-row2 > .rg-title { min-width: 132px; }
 .rg-info { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--faint); color: var(--muted); display: grid; place-items: center; font-size: 11px; font-weight: 800; font-style: normal; margin-right: 4px; cursor: help; }
-.rg-folder { position: relative; flex: 1 1 auto; min-width: 0; }
-.rg-folder-box { width: 100%; height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); text-align: left; transition: border-color .15s; }
+.rg-folder { position: relative; min-width: 0; }
+.rg-folder-box { width: 100%; height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); text-align: left; transition: border-color .15s; }
 .rg-folder-box:hover, .rg-folder-box[aria-expanded="true"] { border-color: var(--blue); }
-.rg-chosen { flex: 1 1 auto; min-width: 0; display: flex; gap: 4px; overflow: hidden; }
+.rg-chosen { flex: 1 1 auto; min-width: 0; font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rg-ph { font-size: 13px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rg-folder-box .tri { flex: 0 0 auto; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid var(--muted); transition: transform .15s; }
 .rg-folder-box[aria-expanded="true"] .tri { transform: rotate(180deg); }
@@ -563,10 +563,13 @@ body.trip-full .foot { display: none; }
 .fchip.scanned { background: #2a5fbf; border-color: #2a5fbf; color: #fff; }
 :root[data-theme="dark"] .fchip:not(.scanned) { background: rgba(91, 140, 255, 0.14); border-color: rgba(91, 140, 255, 0.3); color: #9db8ff; }
 .rg-pop { left: 0; right: 0; min-width: 0; padding: 4px; max-height: 280px; overflow: auto; }
-.rg-fitem { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; cursor: pointer; transition: background .12s; }
+/* 폴더 한 줄 — 이름만. 고른 줄은 파랗게 (체크상자 없이도 고른 것이 보이게) */
+.rg-fitem { display: flex; align-items: center; gap: 7px; padding: 8px 9px; border-radius: 7px; cursor: pointer; transition: background .12s, color .12s; font-size: 13px; font-weight: 600; color: var(--text); }
+.rg-fitem svg { width: 14px; height: 14px; flex: 0 0 auto; color: var(--muted); }
+.rg-fitem .nm { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rg-fitem:hover { background: var(--surface-3); }
-.rg-fitem .fchip { flex: 0 0 auto; max-width: none; } /* 폴더 이름은 다 보이게 — 줄어드는 건 주소 쪽 */
-.rg-fitem .url { flex: 1 1 auto; min-width: 0; font-size: 12px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rg-fitem.on { background: var(--blue-soft); color: var(--blue); font-weight: 800; }
+.rg-fitem.on svg { color: var(--blue); }
 .mini { flex: 0 0 auto; height: 24px; padding: 0 8px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 12px; font-weight: 600; color: var(--text-2); }
 .mini:hover { border-color: #b8c1d1; color: var(--text); }
 .mini.on { background: var(--blue); border-color: var(--blue); color: #fff; }
@@ -2272,14 +2275,15 @@ html, body { overflow-x: clip; }
       <div class="toolbar reg-box ${R.tab === 'drive' ? 'on' : ''}" data-regtab="drive" role="tab" aria-selected="${R.tab === 'drive'}" tabindex="0">
       <div class="rg-row1">
         <span class="rg-title tip-below" data-tip="등록한 구글 드라이브 폴더의 PDF를 읽어 선정목록으로 올립니다" data-tip-pos="left">${I.cloud}구글드라이브 연동</span>
-        <div class="rg-folder pop-root" data-pop="folders">
-          <button type="button" class="rg-folder-box" data-act="pop" data-id="folders" aria-expanded="${S.pop === 'folders'}" aria-label="스캔할 폴더 고르기">
-            <span class="rg-chosen">${chips || `<span class="rg-ph">${R.favs.length ? '스캔할 폴더를 선택하세요' : '등록된 폴더가 없습니다 — 폴더등록을 눌러 추가하세요'}</span>`}</span><i class="tri"></i>
-          </button>
-          ${S.pop === 'folders' ? `<div class="pop rg-pop" role="listbox" aria-label="등록한 폴더">${R.favs.length ? R.favs.map((f, i) => `<div class="rg-fitem" data-act="fav-sel" data-v="${esc(f.url)}"><input type="checkbox" class="ck" tabindex="-1" ${R.sel.includes(f.url) ? 'checked' : ''} aria-label="${esc(f.name)} 고르기"><span class="fchip">${I.folder}${esc(f.name || '이름 없는 폴더')}</span><span class="url">${esc(f.url)}</span><button type="button" class="mini edit" data-act="fav-edit-open" data-v="${i}">수정</button><button type="button" class="mini del" data-act="fav-del" data-v="${i}">삭제</button></div>`).join('') : '<div class="bin-empty" style="border:0">등록된 폴더가 없습니다.</div>'}</div>` : ''}
-        </div>
       </div>
       <div class="rg-row1 rg-acts">
+        <!-- ① 폴더 고르기 — 등록해 둔 폴더를 펼쳐 고른다. 고치고 지우는 일은 ② 폴더등록 창이 맡는다 -->
+        <div class="rg-folder pop-root" data-pop="folders">
+          <button type="button" class="rg-folder-box" data-act="pop" data-id="folders" aria-expanded="${S.pop === 'folders'}" aria-label="스캔할 폴더 고르기">
+            <span class="rg-chosen">${R.sel.length ? esc(R.sel.length === 1 ? favName(R.sel[0]) : `${favName(R.sel[0])} 외 ${R.sel.length - 1}`) : `<span class="rg-ph">${R.favs.length ? '폴더 고르기' : '등록된 폴더 없음'}</span>`}</span><i class="tri"></i>
+          </button>
+          ${S.pop === 'folders' ? `<div class="pop rg-pop" role="listbox" aria-label="등록한 폴더">${R.favs.length ? R.favs.map((f) => `<div class="rg-fitem ${R.sel.includes(f.url) ? 'on' : ''}" role="option" aria-selected="${R.sel.includes(f.url)}" data-act="fav-sel" data-v="${esc(f.url)}">${I.folder}<span class="nm">${esc(f.name || '이름 없는 폴더')}</span></div>`).join('') : '<div class="bin-empty" style="border:0">등록된 폴더가 없습니다 — 폴더등록을 눌러 추가하세요.</div>'}</div>` : ''}
+        </div>
         <button type="button" class="rg-fav" data-act="fav-open">${I.star}폴더등록</button>
         <button type="button" class="rg-btn scan" data-act="scan" ${R.loading ? 'disabled' : ''}>${I.search}폴더스캔${R.sel.length ? ` (${R.sel.length})` : ''}</button>
         <button type="button" class="rg-btn pdf" data-act="pdf-pick" ${R.loading ? 'disabled' : ''}>${I.files}PDF등록</button>
