@@ -3475,11 +3475,6 @@ const dmClearParts = computed<Array<[string, string]>>(() => {
 const dmIntText = (value: number) => (value > 0 ? Math.round(value).toLocaleString('ko-KR') : '-');
 const dmRateText = (value: number) => (value > 0 ? value.toFixed(2) : '-');
 
-// 본건사진 비고 — 입력하면 바로 저장한다
-const setPhotoNote = (value: string) => {
-  setFieldVal('fs.photoNote', value);
-  persistSoon();
-};
 const isChecklistOn = (id: string) => fieldVal(id) === 'Y';
 const toggleChecklist = async (id: string) => {
   setFieldVal(id, isChecklistOn(id) ? '' : 'Y');
@@ -7241,11 +7236,11 @@ const goBack = () => router.back();
               <input
                 v-model="exteriorInput"
                 placeholder="링크 또는 이미지 붙여넣기"
+                title="링크는 엔터, 이미지는 붙여넣기"
                 class="adp-input"
                 @keydown.enter.prevent="addExteriorUrl"
                 @paste="pasteImageInto($event, 'exterior')"
               />
-              <button type="button" class="adp-icn-btn" @click="addExteriorUrl">+</button>
             </div>
             <p v-if="floorPlanUploading" class="adp-sub-note">업로드 중…</p>
             <p v-if="exteriorErrMsg || floorPlanErrMsg" class="adp-plan-err">{{ exteriorErrMsg || floorPlanErrMsg }}</p>
@@ -7260,14 +7255,6 @@ const goBack = () => router.back();
               @remove="(i: number) => removePropertyPhoto(propertyPhotos[i])"
               @add="pickPhotoFor('exterior')"
             />
-            <div class="adp-photo-note">
-              <input
-                class="adp-fs-input"
-                placeholder="비고"
-                :value="fieldVal('fs.photoNote')"
-                @input="setPhotoNote(($event.target as HTMLInputElement).value)"
-              />
-            </div>
           </div>
         </section>
 
