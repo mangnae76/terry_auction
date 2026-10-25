@@ -2628,7 +2628,7 @@ html, body { overflow-x: clip; }
   /* 탭별 웹 배치 — 앱 카드 순서는 건드리지 않고 카드 제목으로 자리를 정한다.
      span: 두 열을 가로질러 맨 위 / left · right: 각 열에 위에서부터. 목록에 없는 카드는 왼쪽 끝에 */
   const WEB_LAYOUT = {
-    rights: { span: ['AI 분석 요청'], left: ['AI 권리분석 진단', '권리분석 정리'], right: ['건물등기', '임차인현황', '권리분석'] },
+    rights: { span: ['AI 분석 요청'], left: ['AI 권리분석 진단', 'AI 명도 난이도 분석', 'AI 권리분석 결론'], right: ['건물등기', '임차인현황', '권리분석', '권리분석 정리'] },
   };
   /* 두 열 쌓기 — 줄 높이 1px 격자에 카드 높이만큼 칸을 잡아 열마다 빈틈 없이 쌓는다 */
   function layoutAppCols(el, tab) {

@@ -4570,6 +4570,17 @@ const rightsDiag = computed(() => ({
   extinguish: [] as string[],
 }));
 
+/** AI 명도 난이도 분석 — 지금은 자리만 있다. AI 분석이 붙으면 채운다
+ *  level: 예측 난이도 (예: '상' · '중' · '하') · reason: 난이도 근거 · strategy: 대응 전략 · advice: 투자 조언 */
+const evictDiag = computed(() => ({ level: '', reason: '', strategy: '', advice: '' }));
+/** AI 권리분석 결론 — 권리·명도 분석을 묶은 한 줄 결론 자리 (AI 분석 뒤 채움) */
+const rightsConclusion = computed(() => '');
+const EVICT_NOTES = [
+  { key: 'reason', label: '난이도 근거' },
+  { key: 'strategy', label: '대응 전략' },
+  { key: 'advice', label: '투자 조언' },
+] as const;
+
 // === 항목별 사진·링크 모음 (입지조사 등) ===
 const extraInput = ref<Record<string, string>>({});
 const extraErr = ref<Record<string, string>>({});
@@ -6888,6 +6899,40 @@ const goBack = () => router.back();
           </div>
         </section>
 
+        <!-- AI 명도 난이도 분석 — 왼쪽은 예측 난이도 하나, 오른쪽은 근거 · 대응 전략 · 투자 조언 (값은 AI 분석 뒤 채움) -->
+        <section class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('evictDiag')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18" /><path d="M5 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17" /><path d="M12 12h.01" /><path d="m19 9 2 2-2 2" /><path d="M16 11h5" /></svg>AI 명도 난이도 분석</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('evictDiag') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('evictDiag')" class="adp-evict">
+            <div class="adp-diag-box adp-evict-level">
+              <span class="adp-diag-k">예측 난이도</span>
+              <b :class="['adp-diag-v', { on: evictDiag.level }]">{{ evictDiag.level || '-' }}</b>
+            </div>
+            <div class="adp-evict-notes">
+              <div v-for="n in EVICT_NOTES" :key="n.key" class="adp-diag-box adp-evict-note">
+                <span class="adp-diag-k">{{ n.label }}</span>
+                <p :class="['adp-evict-text', { on: evictDiag[n.key] }]">{{ evictDiag[n.key] || '-' }}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- AI 권리분석 결론 — 상자 하나 (값은 AI 분석 뒤 채움) -->
+        <section class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('rightsConclusion')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>AI 권리분석 결론</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsConclusion') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('rightsConclusion')" class="adp-conclude">
+            <div class="adp-diag-box adp-evict-note">
+              <span class="adp-diag-k">결론</span>
+              <p :class="['adp-evict-text', { on: rightsConclusion }]">{{ rightsConclusion || '-' }}</p>
+            </div>
+          </div>
+        </section>
+
         <!-- 임차인현황 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('registry')">
@@ -8999,6 +9044,14 @@ const goBack = () => router.back();
 .adp-diag-k { font-size: 12.5px; font-weight: 400; color: #6b7280; white-space: nowrap; }
 .adp-diag-v { font-size: 20px; font-weight: 800; color: #9ca3af; line-height: 1.1; }
 .adp-diag-v.on { color: #111827; }
+/* AI 명도 난이도 분석 — 왼쪽 예측 난이도 한 칸(높이를 오른쪽에 맞춤) · 오른쪽 세 칸은 위아래로 */
+.adp-evict { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; padding: 2px 0 6px; }
+.adp-conclude { padding: 2px 0 6px; }
+.adp-conclude .adp-evict-note { min-height: 78px; }
+.adp-evict-notes { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.adp-evict-note { min-height: 0; align-items: flex-start; justify-content: flex-start; gap: 4px; text-align: left; padding: 10px 12px; }
+.adp-evict-text { margin: 0; font-size: 12.5px; line-height: 1.5; color: #9ca3af; white-space: pre-line; word-break: keep-all; }
+.adp-evict-text.on { color: #111827; }
 /* 말소기준권리는 권리 이름이라 숫자보다 작게, 길면 줄을 바꾼다 */
 .adp-diag-name { font-size: 16px; line-height: 1.3; word-break: keep-all; }
 /* 개수 아래 권리 이름 — 글씨는 상자 이름(인수권리수 · 말소권리수)과 같은 크기 */
