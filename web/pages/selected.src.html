@@ -414,7 +414,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .it-kv th, .it-kv td, .it-table th, .it-table td { border: 0; border-top: 1px solid var(--line); }
 .it-kv th, .it-kv td { border-right: 1px solid var(--line); }
 .it-kv tr > :last-child { border-right: 0; }
-.it-kv > :first-child > tr:first-child > *, .it-table > :first-child > tr:first-child > * { border-top: 0; }
+/* 표가 <colgroup> 으로 시작하면 그다음(머리줄·본문)의 첫 줄이 맨 윗줄이다 — 빠뜨리면 바깥 테두리와 겹쳐 두 줄로 보인다 */
+.it-kv > :first-child > tr:first-child > *, .it-table > :first-child > tr:first-child > *,
+.it-kv > colgroup + * > tr:first-child > *, .it-table > colgroup + * > tr:first-child > * { border-top: 0; }
 .it-kv { width: 100%; font-size: 13px; table-layout: fixed; }
 .it-kv th, .it-kv td { padding: 7px 10px; text-align: left; vertical-align: middle; word-break: break-word; }
 .it-kv th { width: 120px; background: var(--surface-2); color: var(--muted); font-weight: 700; }
