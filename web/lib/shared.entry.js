@@ -91,6 +91,9 @@ export const mountAppDetail = (el, id, tab) => {
 // === 앱 임장경로 그대로 — 웹 '임장경로' 탭에서 앱 화면(FieldTripPlannerPage.vue)을 띄운다 ===
 // 앱 화면이 제 머리(제목·뒤로가기)와 아래 메뉴를 함께 그리므로, 웹에서는 그 둘을 CSS 로 감춘다.
 // 저장·계산은 앱이 하던 그대로다(같은 Firestore · 같은 경로 저장소).
+// 지도 모양 — 앱은 main.ts 에서 싣는다. 웹 묶음에는 main.ts 가 없어 여기서 함께 싣는다
+// (안 실으면 타일이 겹쳐 쌓이고 확대 단추가 풀려 지도가 깨져 보인다)
+import 'leaflet/dist/leaflet.css';
 import FieldTripPlannerPage from '../../src/pages/FieldTripPlannerPage.vue';
 export const mountAppFieldTrip = (el) => {
   const Empty = { render: () => null };
