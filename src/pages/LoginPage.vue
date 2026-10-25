@@ -195,12 +195,6 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
           @click="router.push('/signup')"
         >회원가입</button>
 
-        <!-- 가입 전에 궁금한 두 가지 — 로그인하지 않아도 그 자리에서 열린다 -->
-        <p class="lp-links">
-          <button type="button" @click="info = 'pay'">결제안내</button>
-          <i>·</i>
-          <button type="button" @click="info = 'trial'">무료체험</button>
-        </p>
       </form>
 
       <div v-if="kakaoEnabled || naverEnabled" class="lp-social">
@@ -226,10 +220,15 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
         <label class="lp-opt"><input v-model="saveId" type="checkbox" />아이디 저장</label>
         <label class="lp-opt"><input v-model="keepLogin" type="checkbox" />로그인 유지</label>
       </div>
+      <!-- 한 줄 — 아이디 찾기 · 비밀번호 찾기 · 결제안내 · 무료체험 (로그인하지 않아도 그 자리에서 열린다) -->
       <p class="lp-links lp-find">
         <button type="button" @click="openFind('findId')">아이디 찾기</button>
         <i>·</i>
         <button type="button" @click="openFind('findPw')">비밀번호 찾기</button>
+        <i>·</i>
+        <button type="button" @click="info = 'pay'">결제안내</button>
+        <i>·</i>
+        <button type="button" @click="info = 'trial'">무료체험</button>
       </p>
 
     </div>
@@ -383,7 +382,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
 .lp-opts { margin-top: 14px; display: flex; justify-content: center; gap: 18px; }
 .lp-opt { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #4b5563; cursor: pointer; }
 .lp-opt input { width: 15px; height: 15px; margin: 0; accent-color: #1f3a72; }
-.lp-find { margin-top: 8px; }
+.lp-find { margin-top: 10px; flex-wrap: nowrap; white-space: nowrap; }
 .lp-find-in {
   width: 100%; box-sizing: border-box; padding: 10px 12px; margin-top: 10px;
   border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111827; outline: none;
