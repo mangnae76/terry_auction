@@ -263,6 +263,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .subtab.on { color: var(--blue); font-weight: 800; }
 .subtab.on::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; background: var(--blue); }
 .crumb-slot { padding-top: 2px; }
+/* 고정 상자 안에 든 경로줄 — 위아래 숨통을 줄여 상자에 딱 붙인다 */
+.crumb-slot.in-shell { padding-top: 0; margin: -2px 0 6px; }
+.crumb-slot.in-shell .crumbs { height: 24px; }
 .crumb-slot + .content { padding-top: 6px; }
 .u-link { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; font-size: 13px; color: var(--text-2); white-space: nowrap; transition: background .15s, color .15s; }
 .u-link svg { width: 16px; height: 16px; color: var(--muted); transition: color .15s; }
@@ -1358,10 +1361,11 @@ html, body { overflow-x: clip; }
   <div id="regView" hidden>
     <div class="toolbar-shell reg-shell">
       <div class="wrap">
+        <!-- 경로줄은 고정 상자 안 왼쪽 위 — 로고 바로 아래에 선다 -->
+        <div class="crumb-slot in-shell" id="crumbSlotReg"></div>
         <div class="reg-duo" id="regBox" role="tablist" aria-label="물건등록 방법"></div>
       </div>
     </div>
-    <div class="wrap crumb-slot" id="crumbSlotReg"></div>
     <div class="wrap content reg-content" id="regContent"></div>
     <input type="file" id="pdfInput" accept="application/pdf" multiple hidden>
   </div>
