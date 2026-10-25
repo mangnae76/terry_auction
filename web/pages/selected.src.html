@@ -1480,7 +1480,7 @@ html, body { overflow-x: clip; }
   const m2txt = (m2) => (Number.isInteger(m2) ? String(m2) : m2.toFixed(1));
   /* 토지 19.6㎡ / 5.9평 · 건물 45.2㎡ / 13.7평 */
   const areaPart = (label, m2) => `${label} ${m2txt(m2)}㎡<s>/</s>${pyeong(m2)}평`;
-  const areaHtml = (it) => (it.land || it.bldg ? `<span class="a-area num">${[it.land ? areaPart('토지', it.land) : '', it.bldg ? areaPart('건물', it.bldg) : ''].filter(Boolean).join('<i>·</i>')}</span>` : '');
+  const areaHtml = (it) => (it.land || it.bldg ? `<span class="a-area num">${[it.land ? areaPart('대지', it.land) : '', it.bldg ? areaPart('건물', it.bldg) : ''].filter(Boolean).join('<i>·</i>')}</span>` : '');
   const addrText = (it) => [it.addr, it.bld, it.unit].filter(Boolean).join(' ');
   /* 받침에 맞춰 '로'/'으로' */
   const ro = (w) => { const c = String(w).trim().slice(-1).charCodeAt(0) - 0xac00; if (c < 0 || c > 11171) return '로'; const j = c % 28; return j === 0 || j === 8 ? '로' : '으로'; };
@@ -2365,7 +2365,8 @@ html, body { overflow-x: clip; }
       const summaryRows = ed ? [
         ['관할법원', `${inp('sum.court', '법원명')}${inp('sum.courtDept', '경매○계', 'sm')}${inp('sum.courtPhone', '연락처입력')}`],
         ['사용승인', inp('sum.approval', 'YYYY-MM-DD', 'wide')],
-        ['공급/전용면적(㎡/평)', `${areaIn('sum.supplyArea', '공급')} / ${areaIn('sum.exclusiveArea', '전용')}㎡`],
+        /* 공급면적은 아파트만 — 다세대 등은 전용면적만 (앱과 같다) */
+        isApt ? ['공급/전용면적(㎡/평)', `${areaIn('sum.supplyArea', '공급')} / ${areaIn('sum.exclusiveArea', '전용')}㎡`] : ['전용면적(㎡/평)', `${areaIn('sum.exclusiveArea', '전용')}㎡`],
         ['대지면적(㎡/평)', `${areaIn('sum.landArea', '0')}㎡`],
         ...(T.hasBuildingName(a.address || '') ? [] : [['건물명', inp('sum.buildingName', '빌라명 입력', 'wide')]]),
         ['동/호', `${inp('sum.dong', '동', 'sm')}동 / ${inp('sum.ho', '호', 'sm')}호`],
@@ -2376,7 +2377,7 @@ html, body { overflow-x: clip; }
       ] : [
         ['관할법원', `${esc(sv('sum.court') || '-')}${sv('sum.courtDept') ? `<span class="it-dept">${esc(sv('sum.courtDept'))}</span>` : ''}${sv('sum.courtPhone') ? ` <a class="it-tel" href="tel:${esc(sv('sum.courtPhone').replace(/[^0-9+]/g, ''))}">${esc(sv('sum.courtPhone'))}</a>` : ''}`],
         ['사용승인', hi(`${esc(sv('sum.approval') || '-')}${age ? ` / ${age}` : ''}`)],
-        ['공급/전용면적(㎡/평)', `${T.summaryAreaText(sv('sum.supplyArea'))} / ${hi(T.summaryAreaText(sv('sum.exclusiveArea')))}`],
+        isApt ? ['공급/전용면적(㎡/평)', `${T.summaryAreaText(sv('sum.supplyArea'))} / ${hi(T.summaryAreaText(sv('sum.exclusiveArea')))}`] : ['전용면적(㎡/평)', hi(T.summaryAreaText(sv('sum.exclusiveArea')))],
         ['대지면적(㎡/평)', T.summaryAreaText(sv('sum.landArea'))],
         ...(T.hasBuildingName(a.address || '') ? [] : [['건물명', sv('sum.buildingName') ? `<b class="it-name">${esc(sv('sum.buildingName'))}</b>` : '-']]),
         ['동/호', `${sv('sum.dong') ? `${hi(`${esc(sv('sum.dong'))}동`)} / ` : ''}${hi(sv('sum.ho') ? `${esc(sv('sum.ho'))}호` : '-호')}`],

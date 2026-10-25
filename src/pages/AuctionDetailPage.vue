@@ -5406,13 +5406,14 @@ const goBack = () => router.back();
               </dd>
             </div>
             <div class="adp-base-row">
-              <dt>공급/전용면적(㎡/평)</dt>
+              <!-- 공급면적은 아파트만 — 다세대 등은 전용면적만 -->
+              <dt>{{ isApartment ? '공급/전용면적(㎡/평)' : '전용면적(㎡/평)' }}</dt>
               <dd>
                 <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="decimal" :value="summaryAreaInput('sum.supplyArea')" placeholder="공급" @input="setSummaryArea('sum.supplyArea', ($event.target as HTMLInputElement).value)" />/
+                  <template v-if="isApartment"><input class="adp-sum-input" inputmode="decimal" :value="summaryAreaInput('sum.supplyArea')" placeholder="공급" @input="setSummaryArea('sum.supplyArea', ($event.target as HTMLInputElement).value)" />/</template>
                   <input class="adp-sum-input" inputmode="decimal" :value="summaryAreaInput('sum.exclusiveArea')" placeholder="전용" @input="setSummaryArea('sum.exclusiveArea', ($event.target as HTMLInputElement).value)" />㎡
                 </span>
-                <template v-else>{{ summarySupplyArea }} / <span class="adp-sum-hi">{{ summaryExclusiveArea }}</span></template>
+                <template v-else><template v-if="isApartment">{{ summarySupplyArea }} / </template><span class="adp-sum-hi">{{ summaryExclusiveArea }}</span></template>
               </dd>
             </div>
             <div class="adp-base-row">
