@@ -231,9 +231,11 @@ button { cursor: pointer; }
 
 /* ================= 도구 상자 — 시안처럼 연회색 띠 위의 흰 상자 ================= */
 .toolbar-shell { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--band); padding: 8px 0 12px; transition: box-shadow .2s; }
-/* 경로 — 필터 상자 왼쪽 위, 같은 줄 오른쪽에 공지·결제하기·알림·밤낮 */
+/* 오른쪽 위 띠 — 공지·결제하기·알림·밤낮. 경로는 필터 상자 아래(.crumb-slot)로 내렸다 */
 .crumb-band { background: var(--band); padding-top: 10px; }
-.crumb-in { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 30px; }
+.crumb-in { display: flex; align-items: center; justify-content: flex-end; gap: 12px; min-height: 30px; }
+.crumb-slot { padding-top: 2px; }
+.crumb-slot + .content { padding-top: 6px; }
 .util { display: flex; align-items: center; gap: 12px; margin-right: -4px; }
 .u-link { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; font-size: 13px; color: var(--text-2); white-space: nowrap; transition: background .15s, color .15s; }
 .u-link svg { width: 16px; height: 16px; color: var(--muted); transition: color .15s; }
@@ -1032,12 +1034,7 @@ html, body { overflow-x: clip; }
   <div class="crumb-band">
     <div class="wrap">
       <div class="crumb-in">
-        <nav class="crumbs" aria-label="현재 위치">
-          <a href="#/" data-act="go-list" class="crumb-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1Z"/></svg>홈</a>
-          <span class="crumb-sep" aria-hidden="true">›</span>
-          <strong aria-current="page" id="crumbCur">선정물건</strong>
-        </nav>
-        <!-- 경로 줄 오른쪽 — 공지 · 결제하기 | 알림 · 밤낮 -->
+        <!-- 오른쪽 위 — 공지 · 결제하기 | 알림 · 밤낮. 경로(홈 › …)는 필터 상자 아래로 내렸다 -->
         <div class="util">
           <button type="button" class="u-link" data-act="soon" data-name="공지사항"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>공지</button>
           <button type="button" class="u-link pay" data-act="soon" data-name="결제하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>결제하기</button>
@@ -1074,6 +1071,14 @@ html, body { overflow-x: clip; }
       <div class="pickbar" id="pickbar" hidden></div>
     </div>
   </div>
+  <!-- 경로 — 필터 상자 아래, 상자 밖. 화면을 바꾸면 render() 가 이 줄을 해당 화면의 자리로 옮긴다 -->
+  <div class="wrap crumb-slot" id="crumbSlotList">
+    <nav class="crumbs" aria-label="현재 위치">
+      <a href="#/" data-act="go-list" class="crumb-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1Z"/></svg>홈</a>
+      <span class="crumb-sep" aria-hidden="true">›</span>
+      <strong aria-current="page" id="crumbCur">선정물건</strong>
+    </nav>
+  </div>
   <div class="wrap content" id="content"></div>
   </div>
   <!-- 선정물건등록 — 앱 PdfImportPage 와 같은 짜임: 구글드라이브 연동 · AI 자동 분석 · 폴더스캔 · PDF등록 → 파싱결과 -->
@@ -1081,6 +1086,7 @@ html, body { overflow-x: clip; }
     <div class="toolbar-shell reg-shell">
       <div class="wrap"><div class="toolbar reg-box" id="regBox"></div></div>
     </div>
+    <div class="wrap crumb-slot" id="crumbSlotReg"></div>
     <div class="wrap content reg-content" id="regContent"></div>
     <input type="file" id="pdfInput" accept="application/pdf" multiple hidden>
   </div>
@@ -2011,6 +2017,7 @@ html, body { overflow-x: clip; }
     const reg = S.route === 'register';
     $('listView').hidden = reg; $('regView').hidden = !reg; $('fab').hidden = reg;
     $('crumbCur').textContent = reg ? '선정물건등록' : '선정물건';
+    { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     document.title = reg ? '마이턴옥션 선정물건등록' : '마이턴옥션 선정물건';
     if (reg) renderRegister(); else { renderToolbar(); renderContent(); }
     renderFloat();
