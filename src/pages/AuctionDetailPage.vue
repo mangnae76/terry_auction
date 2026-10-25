@@ -5246,7 +5246,7 @@ const goBack = () => router.back();
     <div ref="stickyHead" class="adp-sticky-head">
       <header class="adp-topbar">
         <button class="adp-back" type="button" aria-label="뒤로" @click="goBack"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
-        <h1 class="adp-page-title"><span class="adp-title-tag">경매</span>{{ caseLabel || '물건상세' }}</h1>
+        <h1 class="adp-page-title">{{ caseLabel || '물건상세' }}</h1>
         <span class="adp-top-right">
           <button
             v-if="pdfViewUrl"
@@ -8688,7 +8688,6 @@ const goBack = () => router.back();
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* 사건번호 앞 '경매' — 짙은 남색 계열 */
-.adp-title-tag { color: #324f87; margin-right: 4px; }
 /* 단계 변경·숨기기는 '이 물건 전체'에 대한 동작이라 상단바 오른쪽에 둔다 */
 .adp-top-right { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; }
 .adp-stage-wrap { position: relative; }
