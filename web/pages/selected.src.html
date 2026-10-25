@@ -1956,7 +1956,7 @@ html, body { overflow-x: clip; }
         <span class="ai-req">필수 설정</span><b>Gemini API 키</b>
         <span class="key-state ${R.aiKey ? 'ok' : ''}">${R.aiKey ? '등록' : '미등록'}</span>
         <button type="button" class="ai-key" data-act="ai-key">${R.aiKey ? '키 바꾸기' : '키 넣기'}</button>
-        <small class="ai-setup-help">${R.aiKey ? '' : 'Gemini API 키를 등록하세요. '}키는 이 기기에만 저장됩니다.</small>
+        ${R.aiKey ? '' : '<small class="ai-setup-help">Gemini API 키를 등록하세요.</small>'}
       </div>
       <div class="ai-run">
         <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 켜기" data-act="ai-toggle"><i></i></button>
