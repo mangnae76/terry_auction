@@ -5532,7 +5532,7 @@ const goBack = () => router.back();
           </header>
           <div v-if="!isCollapsed('areaInfo')">
             <!-- 전체 / 500m 이내 전환 -->
-            <div class="adp-trade-view-tabs">
+            <div class="adp-trade-view-tabs equal">
               <button type="button" :class="['adp-trade-view-tab', { active: areaView === 'all' }]" @click="areaView = 'all'">
                 전체
               </button>
@@ -5649,12 +5649,12 @@ const goBack = () => router.back();
             <h3>주변환경</h3>
           </div>
           <div>
-            <div class="adp-trade-view-tabs">
+            <div class="adp-trade-view-tabs equal">
               <button :class="['adp-trade-view-tab', { active: nearbyView === 'pdf' }]" @click.stop="nearbyView = 'pdf'">
-                PDF 주변환경
+                주변환경
               </button>
               <button :class="['adp-trade-view-tab nearby-kakao-tab', { active: nearbyView === 'kakao' }]" @click.stop="openKakaoNearby()">
-                <span class="adp-tab-dot" /> 카카오 지도 검색
+                <span class="adp-tab-dot" /> 지도검색
                 <span
                   class="adp-kakao-mini"
                   :class="{ active: nearbyView === 'kakao' && nearbyEnv }"
@@ -11255,6 +11255,7 @@ tr.tone-take { background: #fff5f5; }
 }
 .adp-trade-view-tab.active { color: #111827; }
 .adp-trade-view-tab.active::after { background: #111827; }
+.adp-trade-view-tabs.equal .adp-trade-view-tab { flex: 1 1 0; } /* 입지정보 탭 — 칸 폭을 똑같이 */
 .adp-trade-view-tab .adp-tab-dot {
   display: inline-block; width: 6px; height: 6px; border-radius: 50%;
   background: #22c55e; margin-right: 4px; vertical-align: middle;

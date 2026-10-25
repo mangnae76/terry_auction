@@ -380,7 +380,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .it-in.sm { width: 64px; } .it-in.wide { width: 180px; }
 .it-in:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 .it-rows.editing > dd { white-space: nowrap; }
-.it-vtabs { display: inline-flex; gap: 4px; padding: 3px; margin: 2px 0 10px; border-radius: 8px; background: var(--surface-2); }
+.it-vtabs { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; /* 칸 폭을 가장 넓은 칸(500M 미만)에 맞춰 똑같이 */ padding: 3px; margin: 2px 0 10px; border-radius: 8px; background: var(--surface-2); }
 .it-vtabs button { height: 28px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; font-size: 12.5px; font-weight: 700; color: var(--muted); }
 .it-vtabs button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12); }
 .it-area + .it-area { margin-top: 12px; }
@@ -2459,7 +2459,7 @@ html, body { overflow-x: clip; }
     } else {
       const edu = T.eduInfoOf(a); const pdf = T.pdfNearbyDisplayOf(a); const ag = a.adminAgencyItems || [];
       const kakao = T.nearbyDisplayOf(env);
-      const ntabs = `<div class="it-vtabs"><button type="button" class="${nv === 'pdf' ? 'on' : ''}" data-act="nearby-view" data-v="pdf">PDF 주변환경</button><button type="button" class="${nv === 'kakao' ? 'on' : ''}" data-act="nearby-view" data-v="kakao" data-id="${it.id}">카카오 지도 검색</button></div>`;
+      const ntabs = `<div class="it-vtabs"><button type="button" class="${nv === 'pdf' ? 'on' : ''}" data-act="nearby-view" data-v="pdf">주변환경</button><button type="button" class="${nv === 'kakao' ? 'on' : ''}" data-act="nearby-view" data-v="kakao" data-id="${it.id}">지도검색</button></div>`;
       let near;
       if (nv === 'pdf') {
         near = (pdf.length ? kvTable(pdf.map((g) => `<tr><th>${g.label}(${g.total})</th><td class="grid2">${list(g.items, (p) => placeLink(p.name, `${p.name}(${p.distance})`))}</td></tr>`)) : '')
