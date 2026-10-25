@@ -10082,6 +10082,9 @@ tr.tone-take { background: #fff5f5; }
   .adp-ind-pair .adp-ind-toggles .adp-toggle-btn { padding-left: 6px; padding-right: 6px; }
 }
 .adp-ind-foot { margin-top: 8px; }
+/* 평균 · 적용가 표는 선 없이 — 바탕색만으로 묶는다 */
+.adp-table.adp-ind-foot { border: 0; border-radius: 8px; overflow: hidden; }
+.adp-ind-foot th, .adp-ind-foot td { border: 0 !important; }
 .adp-ind-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .adp-ind-table th, .adp-ind-table td {
   /* 줄이 많은 표다 — 글자는 그대로 두고 위아래 여백만 줄인다 (7 → 5px) */
