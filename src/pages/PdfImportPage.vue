@@ -827,6 +827,13 @@ const onDropFiles = async (e: DragEvent) => {
             {{ parseCopy.title }}
           </h2>
           <span v-if="importRows.length > 0" class="pip-count">{{ importRows.length }}건</span>
+          <!-- 웹(/web)과 같은 줄 — 총 등록물건 · 신규 · 변경 · 오류 -->
+          <span class="pip-head-stats">
+            <span>총 등록물건<b>{{ totalRegistered }}</b>개</span>
+            <span class="n-new">신규<b>{{ newCount }}</b></span>
+            <span class="n-chg">변경<b>{{ changedCount }}</b></span>
+            <span class="n-err">오류<b>{{ errorCount }}</b></span>
+          </span>
           <button
             type="button"
             class="pip-chev-btn"
@@ -1399,8 +1406,15 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-results-head {
   display: flex; align-items: center; gap: 8px;
 }
-/* 건수는 제목 바로 옆, 접기 단추는 오른쪽 끝 */
+/* 1줄: 제목 · 건수 · 접기 단추(오른쪽 끝) / 2줄: 통계 — 폰 폭에선 한 줄에 다 들지 않는다 */
+.pip-results-head { flex-wrap: wrap; row-gap: 4px; }
+.pip-results-head h2, .pip-count { white-space: nowrap; }
 .pip-results-head .pip-chev-btn { margin-left: auto; }
+.pip-head-stats { order: 3; flex-basis: 100%; display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #6b7280; white-space: nowrap; }
+.pip-head-stats b { margin: 0 1px 0 2px; font-weight: 800; color: #111827; }
+.pip-head-stats .n-new b { color: #2b6df3; }
+.pip-head-stats .n-chg b { color: #7c3aed; }
+.pip-head-stats .n-err b { color: #ef4444; }
 .pip-results-head h2 { display: inline-flex; align-items: center; gap: 5px; margin: 0; font-size: 14px; font-weight: 800; color: #111827; }
 
 .pip-empty {
