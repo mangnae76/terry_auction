@@ -331,6 +331,7 @@ body.has-subtabs .toolbar-shell { top: calc(env(safe-area-inset-top, 0px) + 45px
 .reg-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
 @media (max-width: 1100px) { .reg-duo { grid-template-columns: minmax(0, 1fr); } }
 /* 상자가 탭 — 고른 상자는 파란 테두리, 안 고른 상자는 눌러서 바꾼다 */
+.rg-acts { justify-content: flex-end; }
 .reg-duo > .reg-box { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .reg-duo > .reg-box:hover:not(.on) { border-color: #b8c7e6; }
 .reg-duo > .reg-box.on { cursor: default; border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-soft); }
@@ -1982,22 +1983,22 @@ html, body { overflow-x: clip; }
     const n = { all: items.filter((x) => !x.trashed && !x.archived).length, nw: R.rows.filter((r) => r.rowStatus === '신규').length, ch: R.rows.filter((r) => r.rowStatus === '변경').length, er: R.rows.filter((r) => r.rowStatus === '오류').length };
     const chips = R.sel.map((u) => `<span class="fchip ${R.scanned.includes(folderIdOf(u)) ? 'scanned' : ''}">${I.folder}${esc(favName(u))}</span>`).join('');
     const masked = R.aiKey ? `${R.aiKey.slice(0, 4)}…${R.aiKey.slice(-4)}` : '';
-    /* 선정물건등록 — 상자 둘을 나란히: 왼쪽 구글드라이브 연동(1줄 제목·폴더등록·폴더스캔·PDF등록 / 2줄 폴더 주소 칸 전체) · 오른쪽 AI 자동 분석 */
+    /* 선정물건등록 — 상자 둘을 나란히: 왼쪽 구글드라이브 연동(1줄 제목·스캔할 폴더 칸 / 2줄 폴더등록·폴더스캔·PDF등록) · 오른쪽 AI 자동 분석 */
     $('regBox').innerHTML = `
       <div class="toolbar reg-box ${R.tab === 'drive' ? 'on' : ''}" data-regtab="drive" role="tab" aria-selected="${R.tab === 'drive'}" tabindex="0">
       <div class="rg-row1">
         <span class="rg-title tip-below" data-tip="등록한 구글 드라이브 폴더의 PDF를 읽어 선정물건으로 올립니다" data-tip-pos="left">${I.cloud}구글드라이브 연동</span>
-        <button type="button" class="rg-fav" style="margin-left:auto" data-act="fav-open">${I.star}폴더등록</button>
-        <button type="button" class="rg-btn scan" data-act="scan" ${R.loading ? 'disabled' : ''}>${I.search}폴더스캔${R.sel.length ? ` (${R.sel.length})` : ''}</button>
-        <button type="button" class="rg-btn pdf" data-act="pdf-pick" ${R.loading ? 'disabled' : ''}>${I.files}PDF등록</button>
-      </div>
-      <div class="rg-row1">
         <div class="rg-folder pop-root" data-pop="folders">
           <button type="button" class="rg-folder-box" data-act="pop" data-id="folders" aria-expanded="${S.pop === 'folders'}" aria-label="스캔할 폴더 고르기">
             <span class="rg-chosen">${chips || `<span class="rg-ph">${R.favs.length ? '스캔할 폴더를 선택하세요' : '등록된 폴더가 없습니다 — 폴더등록을 눌러 추가하세요'}</span>`}</span><i class="tri"></i>
           </button>
           ${S.pop === 'folders' ? `<div class="pop rg-pop" role="listbox" aria-label="등록한 폴더">${R.favs.length ? R.favs.map((f, i) => `<div class="rg-fitem" data-act="fav-sel" data-v="${esc(f.url)}"><input type="checkbox" class="ck" tabindex="-1" ${R.sel.includes(f.url) ? 'checked' : ''} aria-label="${esc(f.name)} 고르기"><span class="fchip">${I.folder}${esc(f.name || '이름 없는 폴더')}</span><span class="url">${esc(f.url)}</span><button type="button" class="mini edit" data-act="fav-edit-open" data-v="${i}">수정</button><button type="button" class="mini del" data-act="fav-del" data-v="${i}">삭제</button></div>`).join('') : '<div class="bin-empty" style="border:0">등록된 폴더가 없습니다.</div>'}</div>` : ''}
         </div>
+      </div>
+      <div class="rg-row1 rg-acts">
+        <button type="button" class="rg-fav" data-act="fav-open">${I.star}폴더등록</button>
+        <button type="button" class="rg-btn scan" data-act="scan" ${R.loading ? 'disabled' : ''}>${I.search}폴더스캔${R.sel.length ? ` (${R.sel.length})` : ''}</button>
+        <button type="button" class="rg-btn pdf" data-act="pdf-pick" ${R.loading ? 'disabled' : ''}>${I.files}PDF등록</button>
       </div>
       </div>
       <div class="toolbar reg-box ${R.tab === 'ai' ? 'on' : ''}" data-regtab="ai" role="tab" aria-selected="${R.tab === 'ai'}" tabindex="0">
