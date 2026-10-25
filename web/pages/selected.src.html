@@ -388,6 +388,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
   .app-detail.tab-rights .adp-body { display: block !important; column-count: 2; column-gap: 12px; }
   .app-detail.tab-rights .adp-body > * { break-inside: avoid; margin-bottom: 8px; }
   .app-detail.tab-rights .adp-body > [data-web-break] { break-before: column; }
+  .app-detail.tab-rights .adp-body > [data-web-span] { column-span: all; margin-bottom: 12px; }
 }
 .it-col { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .it-card { background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); padding: 14px 24px 16px; min-width: 0; }
@@ -2602,6 +2603,8 @@ html, body { overflow-x: clip; }
   let detailUnmount = null; let detailKey = '';
   /* 탭별 오른쪽 열 첫 카드 — 권리분석: 왼쪽 서류사진·건물등기·임차인현황 / 오른쪽 권리분석·권리분석 정리 */
   const WEB_RIGHT_FROM = { rights: '권리분석' };
+  /* 탭별 두 열을 가로질러 한 줄로 길게 둘 카드 — 권리분석: AI 분석 요청(맨 위) */
+  const WEB_SPAN = { rights: 'AI 분석 요청' };
   const closeAppDetail = () => { if (detailUnmount) { try { detailUnmount(); } catch (e) { /* 그만 */ } detailUnmount = null; detailKey = ''; } };
   function renderAppDetailTab(it, tab) {
     const box = $('itemContent');
@@ -2623,6 +2626,7 @@ html, body { overflow-x: clip; }
       el.querySelectorAll('.adp-body > .adp-card').forEach((card) => {
         const title = (card.querySelector('.adp-card-head h2')?.textContent || '').trim();
         if (first && title === first) card.dataset.webBreak = '1'; else delete card.dataset.webBreak;
+        if (WEB_SPAN[tab] && title.startsWith(WEB_SPAN[tab])) card.dataset.webSpan = '1'; else delete card.dataset.webSpan;
       });
     };
     markCols();
