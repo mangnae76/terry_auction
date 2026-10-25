@@ -1951,11 +1951,11 @@ html, body { overflow-x: clip; }
       <div class="rg-row2">
         <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
       </div>
-      <!-- 필수 설정 — Gemini API 키. 키가 있어야 아래 AI 자동 파싱을 켤 수 있다 (앱 PdfImportPage 와 같은 짜임) -->
+      <!-- 필수설정 — Gemini API 키. 키가 있어야 아래 AI 자동 파싱을 켤 수 있다 (앱 PdfImportPage 와 같은 짜임) -->
       <div class="ai-setup">
-        <span class="ai-req">필수 설정</span><b>Gemini API 키</b>
+        <span class="ai-req">필수설정</span><b>Gemini API 키</b>
         <span class="key-state ${R.aiKey ? 'ok' : ''}">${R.aiKey ? '등록' : '미등록'}</span>
-        <button type="button" class="ai-key" data-act="ai-key">${R.aiKey ? '키 바꾸기' : '키 넣기'}</button>
+        <button type="button" class="ai-key" data-act="ai-key">${R.aiKey ? '키바꾸기' : '키 넣기'}</button>
         ${R.aiKey ? '' : '<small class="ai-setup-help">Gemini API 키를 등록하세요.</small>'}
       </div>
       <div class="ai-run">
@@ -1973,7 +1973,7 @@ html, body { overflow-x: clip; }
       ? { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서(PDF)를 올리면 AI가 분석하여 정리합니다', drop: '파일을 선택하거나 드래그하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
       : { title: 'PDF 자동 파싱', ic: I.pdf, tip: '경매 문서(PDF)를 올리면 자동으로 읽어 정리합니다', drop: '파일을 드래그·등록하거나 폴더를 스캔하면 <br>여기에 미리보기가 표시됩니다.' };
     $('regContent').innerHTML = `
-      ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한 열기</button>' : ''}</div>` : ''}
+      ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
       <section class="rg-results" id="rgDrop" aria-label="${PC.title}">
         <div class="rg-head"><h2 class="tip-below" data-tip="${PC.tip}" data-tip-pos="left" style="cursor:help">${PC.ic}${PC.title}</h2>
           <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span></span>${R.rows.length ? `<span class="cnt num">${R.rows.length}건</span>` : ''}
@@ -2022,7 +2022,7 @@ html, body { overflow-x: clip; }
             <li>키 받는 곳: <a class="key-link" href="${GEMINI_KEY_URL}" target="_blank" rel="noopener">Google AI Studio</a> → Get API key</li>
             <li>Google 계정으로 로그인 → Get API key → Create API key</li>
           </ul>
-          <div class="ai-btns">${R.aiKey ? '<button type="button" class="btn" data-act="ai-del" style="color:#d14343;border-color:#f0d2d2">키 지우기</button>' : ''}<button type="button" class="btn primary" data-act="ai-save" ${m.checking ? 'disabled' : ''}>${m.checking ? '확인 중…' : '확인 후 저장'}</button></div>
+          <div class="ai-btns">${R.aiKey ? '<button type="button" class="btn" data-act="ai-del" style="color:#d14343;border-color:#f0d2d2">키지우기</button>' : ''}<button type="button" class="btn primary" data-act="ai-save" ${m.checking ? 'disabled' : ''}>${m.checking ? '확인 중…' : '확인 후 저장'}</button></div>
         </div></div></div>`;
       setTimeout(() => { const el = $('aiKeyIn'); if (el) el.focus(); }, 20);
       return;
