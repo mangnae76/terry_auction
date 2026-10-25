@@ -43,10 +43,11 @@ node web/build.mjs
 ## 알아 둘 것
 
 - 페이지 상태(즐겨찾기 폴더·테마·정렬 등)는 브라우저 localStorage 에만 둔다. 아직 Firebase 와 이어져 있지 않다.
-- **구글드라이브 폴더스캔**: 지금 페이지는 claude.ai 아티팩트 안에서 돌 때를 기준으로,
-  보는 사람의 claude.ai Google Drive 연결로 폴더를 읽는다(아티팩트는 바깥 주소로 직접 못 나간다).
-  우리 도메인에 올려 쓸 때는 앱처럼 워커(`/api-drive-folder`, `/api-drive-download`)로 바꿔야 한다 —
-  `src/services/pdfAuctionImport.ts` 의 `listDrivePdfFiles` · `parseDrivePdfFile` 을 export 해서 쓰면 된다.
+- **구글드라이브 폴더스캔**은 어디서 열렸는지에 따라 길이 갈린다.
+  - 우리 주소(`https://terryauction-6b374.web.app/web`)·내 컴퓨터: 앱과 같은 워커(`/api-drive-folder`, `/api-drive-download`)로 읽는다
+    (`TAPdf.listDrivePdfFiles` · `parseDrivePdfFile`). 워커 주소는 `build.mjs` 의 `API_BASE`.
+    **'링크가 있는 모든 사용자' 공유 폴더만** 읽히고, 하위 폴더는 내려가지 않는다 — PDF 가 바로 들어 있는 폴더를 등록한다.
+  - claude.ai 아티팩트 안: 바깥 주소로 못 나가므로 보는 사람의 claude.ai Google Drive 연결로 읽는다.
 - 수익률 분석 카드의 셈은 페이지 안에 간이로 들어 있다. 앱과 똑같이 맞추려면 `TAPdf.taxChainOf` 로 바꾼다.
 - 주소 등록 창: 추가·체크는 바로 반영, 삭제는 한 번 묻고 지운다, 수정은 줄의 저장을 눌러야 들어간다
   (claude.ai 에 마지막으로 올라간 판 기준).

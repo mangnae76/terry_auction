@@ -7,6 +7,8 @@ globalThis.pdfjsWorker = pdfjsWorker;
 
 // PDF 읽기 — 앱 선정물건등록(PdfImportPage)과 같은 규칙
 export { parsePdfBytes, parseAuctionPdfText } from '../../src/services/pdfAuctionImport';
+// 구글드라이브 폴더 읽기 — claude.ai 바깥(우리 주소)에서 열렸을 때 앱과 같은 워커로 읽는다
+export { listDrivePdfFiles, parseDrivePdfFile } from '../../src/services/pdfAuctionImport';
 // 기일내역에서 이번 회차 고르기
 export { pickCurrentRound } from '../../src/utils/auctionSchedule';
 // 주소 → 지번 · 건물명 · 동층호 토막

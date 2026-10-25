@@ -10,6 +10,7 @@ import path from 'node:path';
 const here = path.dirname(fileURLToPath(import.meta.url)); // web/
 const root = path.resolve(here, '..');                     // 저장소 맨 위
 const out = path.join(here, 'site');
+const API_BASE = 'https://terry-auction-proxy.goldenboy-auction.workers.dev';
 await mkdir(out, { recursive: true });
 
 // 앱 파서가 워커 주소를 '?url' 로 가져오는데, 웹은 메인 스레드에서 돌리므로 빈 값으로 바꿔 끼운다
@@ -27,7 +28,8 @@ await build({
   publicDir: false,
   logLevel: 'warn',
   plugins: [urlStub],
-  define: { 'import.meta.env.VITE_API_BASE': '""' },
+  // 드라이브 폴더 읽기는 앱과 같은 워커로 간다 (공개 주소 — 비밀값 아님)
+  define: { 'import.meta.env.VITE_API_BASE': JSON.stringify(API_BASE) },
   build: {
     outDir: out,
     emptyOutDir: false,
