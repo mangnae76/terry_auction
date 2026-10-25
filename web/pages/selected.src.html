@@ -15,6 +15,7 @@
 :root {
   --bg: #ebebeb;
   --band: #f2f3f7;
+  --subtab-line: #d8e0ee;
   --surface: #ffffff;
   --surface-2: #f8fafc;
   --surface-3: #f1f5f9;
@@ -79,7 +80,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f141f; --band: #131a28; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
+    --bg: #0f141f; --band: #131a28; --subtab-line: #2a3650; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
     --line: #2a3449; --line-2: #34405a; --tb-line: #34405a; --card-line: #253046;
     --text: #e6eaf2; --text-2: #b4bccb; --muted: #8b95a8; --faint: #6e788c;
     --nav: #172449; --nav-name: #50c3fc;
@@ -231,12 +232,27 @@ button { cursor: pointer; }
 
 /* ================= 도구 상자 — 시안처럼 연회색 띠 위의 흰 상자 ================= */
 .toolbar-shell { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--band); padding: 8px 0 12px; transition: box-shadow .2s; }
-/* 오른쪽 위 띠 — 공지·결제하기·알림·밤낮. 경로는 필터 상자 아래(.crumb-slot)로 내렸다 */
-.crumb-band { background: var(--band); padding-top: 10px; }
-.crumb-in { display: flex; align-items: center; justify-content: flex-end; gap: 12px; min-height: 30px; }
+/* 머리띠 오른쪽 위(로그아웃 위) — 공지·결제하기 | 알림·밤낮. 메뉴 글자(top 32) 위 빈 자리에 작게 */
+.g-util { position: absolute; right: -4px; top: 2px; display: flex; align-items: center; gap: 2px; }
+.g-util .u-link { height: 26px; font-size: 12.5px; color: rgba(255, 255, 255, 0.78) !important; }
+.g-util .u-link svg, .g-util .u-ico { color: rgba(255, 255, 255, 0.78) !important; }
+.g-util .u-link.pay, .g-util .u-link.pay svg { color: #9fc0ff !important; }
+.g-util .u-link:hover, .g-util .u-ico:hover { background: rgba(255, 255, 255, 0.12); color: #fff !important; }
+.g-util .u-link:hover svg { color: #fff !important; }
+.g-util .u-ico { width: 26px; height: 26px; }
+.g-util .u-ico svg { width: 16px; height: 16px; }
+.g-util .u-sep { background: rgba(255, 255, 255, 0.28); height: 12px; }
+.g-util .u-ico .dot { top: 4px; right: 4px; box-shadow: 0 0 0 1.5px var(--nav); }
+/* 하위 탭 줄 — 참고 시안처럼 흰 띠, 아래 #D8E0EE 선으로 단을 나눈다. 밑줄은 ::after 막대(테두리는 둥근 모서리로 U자가 된다) */
+.subtabs { background: var(--surface); border-bottom: 1px solid var(--subtab-line); }
+.subtabs-in { display: flex; align-items: stretch; gap: 4px; height: 44px; }
+.subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
+.subtab svg { width: 16px; height: 16px; }
+.subtab:hover { color: var(--text); }
+.subtab.on { color: var(--blue); font-weight: 800; }
+.subtab.on::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; background: var(--blue); }
 .crumb-slot { padding-top: 2px; }
 .crumb-slot + .content { padding-top: 6px; }
-.util { display: flex; align-items: center; gap: 12px; margin-right: -4px; }
 .u-link { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; font-size: 13px; color: var(--text-2); white-space: nowrap; transition: background .15s, color .15s; }
 .u-link svg { width: 16px; height: 16px; color: var(--muted); transition: color .15s; }
 .u-link:hover { background: var(--surface-3); color: var(--text); }
@@ -355,7 +371,10 @@ button { cursor: pointer; }
 .ai-text small { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
 .ai-key { flex: 0 0 auto; height: 28px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 12.5px; font-weight: 700; color: var(--text-2); }
 .ai-key:hover { border-color: #b8c1d1; color: var(--text); }
-.rg-stats { margin-left: auto; display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.rg-head .rg-stats + .hint { margin-left: 0; }
+.rg-head h2 { white-space: nowrap; }
+@media (max-width: 1100px) { .rg-head .hint { display: none; } }
+.rg-stats { margin-left: auto; margin-right: 8px; display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--muted); white-space: nowrap; }
 .rg-stats b { color: var(--text); font-weight: 800; margin: 0 1px 0 3px; }
 .rg-stats .n-new b { color: #2b6df3; } .rg-stats .n-chg b { color: #7c3aed; } .rg-stats .n-err b { color: #ef4444; }
 .reg-content { padding-top: 11px; }
@@ -450,7 +469,7 @@ button { cursor: pointer; }
 }
 @media (max-width: 640px) {
   .crumbs { white-space: nowrap; gap: 8px; }
-  .util { gap: 2px; }
+  .g-util { gap: 0; }
   .u-link { font-size: 0; gap: 0; padding: 0 7px; }
   .u-link svg { width: 17px; height: 17px; }
   .rg-head h2 { white-space: nowrap; }
@@ -1016,6 +1035,16 @@ html, body { overflow-x: clip; }
           <svg viewBox="0 0 10 8"><path d="M5 7.5 0 0h10z" fill="currentColor"/></svg>
         </button>
       </div>
+      <!-- 머리띠 오른쪽 위(로그아웃 위) — 공지 · 결제하기 | 알림 · 밤낮 -->
+      <div class="g-util" aria-label="바로가기">
+      <button type="button" class="u-link" data-act="soon" data-name="공지사항"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>공지</button>
+      <button type="button" class="u-link pay" data-act="soon" data-name="결제하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>결제하기</button>
+      <span class="u-sep" aria-hidden="true"></span>
+      <button type="button" class="u-ico" data-act="soon" data-name="알림" data-tip="알림 2건" data-tip-pos="below" aria-label="알림 2건">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5Z"/><path d="M10.3 19a2 2 0 0 0 3.4 0"/></svg><span class="dot"></span>
+      </button>
+      <button type="button" class="u-ico" data-act="theme" id="themeBtn" data-tip="밤 화면으로" data-tip-pos="below" aria-label="밤낮 화면 바꾸기"></button>
+</div>
       <div class="g-user pop-root" data-pop="user">
         <button type="button" class="g-login" id="gLogin" data-act="login-btn" aria-haspopup="menu">
           <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.2" r="3.7"/><path d="M4.8 20.2c1.3-3.6 3.9-5.4 7.2-5.4s5.9 1.8 7.2 5.4"/></svg></span><span class="txt" id="gLoginTxt">로그인</span>
@@ -1031,22 +1060,8 @@ html, body { overflow-x: clip; }
 </header>
 
 <main>
-  <div class="crumb-band">
-    <div class="wrap">
-      <div class="crumb-in">
-        <!-- 오른쪽 위 — 공지 · 결제하기 | 알림 · 밤낮. 경로(홈 › …)는 필터 상자 아래로 내렸다 -->
-        <div class="util">
-          <button type="button" class="u-link" data-act="soon" data-name="공지사항"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>공지</button>
-          <button type="button" class="u-link pay" data-act="soon" data-name="결제하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>결제하기</button>
-          <span class="u-sep" aria-hidden="true"></span>
-          <button type="button" class="u-ico" data-act="soon" data-name="알림" data-tip="알림 2건" data-tip-pos="below" aria-label="알림 2건">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5Z"/><path d="M10.3 19a2 2 0 0 0 3.4 0"/></svg><span class="dot"></span>
-          </button>
-          <button type="button" class="u-ico" data-act="theme" id="themeBtn" data-tip="밤 화면으로" data-tip-pos="below" aria-label="밤낮 화면 바꾸기"></button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- 하위 탭 — 하위 탭이 있는 화면에서만 머리띠 아래 한 단 더 선다(없으면 숨기고 필터 상자가 머리띠에 바로 붙는다) -->
+  <nav class="subtabs" id="subTabs" hidden aria-label="하위 메뉴"><div class="wrap"><div class="subtabs-in" id="subTabsIn" role="tablist"></div></div></nav>
   <div id="listView">
   <div class="toolbar-shell" id="toolbarShell">
     <div class="wrap">
@@ -1589,6 +1604,7 @@ html, body { overflow-x: clip; }
   };
   const R = {
     favs: store.get('wlp.web.favs', DEMO_FOLDERS), sel: store.get('wlp.web.favSel', null),
+    tab: (() => { try { return localStorage.getItem('wlp.web.regTab') === 'ai' ? 'ai' : 'drive'; } catch (e) { return 'drive'; } })(),
     rows: [], loading: false, loadingLabel: '', banner: '', last: '', collapsed: false, missing: [], scanned: [],
     /* AI 자동 파싱 — 앱(geminiPdf)과 같은 자리에서 읽는다. 쓰기·확인은 TAPdf 로 한다 */
     aiKey: (() => { try { return localStorage.getItem('myturn.gemini.key') || ''; } catch (e) { return ''; } })(),
@@ -1898,7 +1914,7 @@ html, body { overflow-x: clip; }
     const n = { all: items.filter((x) => !x.trashed && !x.archived).length, nw: R.rows.filter((r) => r.rowStatus === '신규').length, ch: R.rows.filter((r) => r.rowStatus === '변경').length, er: R.rows.filter((r) => r.rowStatus === '오류').length };
     const chips = R.sel.map((u) => `<span class="fchip ${R.scanned.includes(folderIdOf(u)) ? 'scanned' : ''}">${I.folder}${esc(favName(u))}</span>`).join('');
     const masked = R.aiKey ? `${R.aiKey.slice(0, 4)}…${R.aiKey.slice(-4)}` : '';
-    $('regBox').innerHTML = `
+    $('regBox').innerHTML = R.tab === 'drive' ? `
       <div class="rg-row1">
         <span class="rg-title tip-below" data-tip="등록한 구글 드라이브 폴더의 PDF를 읽어 선정물건으로 올립니다" data-tip-pos="left">${I.cloud}구글드라이브 연동</span>
         <div class="rg-folder pop-root" data-pop="folders">
@@ -1910,13 +1926,12 @@ html, body { overflow-x: clip; }
         <button type="button" class="rg-fav" data-act="fav-open">${I.star}폴더등록</button>
         <button type="button" class="rg-btn scan" data-act="scan" ${R.loading ? 'disabled' : ''}>${I.search}폴더스캔${R.sel.length ? ` (${R.sel.length})` : ''}</button>
         <button type="button" class="rg-btn pdf" data-act="pdf-pick" ${R.loading ? 'disabled' : ''}>${I.files}PDF등록</button>
-      </div>
+      </div>` : `
       <div class="rg-row2">
         <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
         <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 분석" data-act="ai-toggle"><i></i></button>
         <span class="ai-text"><b>${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}</b><small>${R.aiKey ? `Gemini · ${esc(masked)} · 규칙으로 못 읽은 칸만 채웁니다` : 'Gemini 키를 넣으면 켤 수 있습니다'}</small></span>
         <button type="button" class="ai-key" data-act="ai-key">${R.aiKey ? '키 바꾸기' : '키 넣기'}</button>
-        <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span></span>
       </div>`;
     const rowHtmlR = (r) => `<li class="rg-item ${r.status}" ${r.status === 'ready' ? `data-act="rg-open" data-v="${esc(r.p.caseNo)}" tabindex="0"` : ''}>
         <span class="rg-ic ${r.src === 'drive' ? 'drive' : ''}" aria-hidden="true"${tip(r.src === 'drive' ? '구글드라이브에서 읽음' : '직접 올린 PDF')}>${r.src === 'drive' ? I.cloud : I.pdf}</span>
@@ -1927,7 +1942,8 @@ html, body { overflow-x: clip; }
     $('regContent').innerHTML = `
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한 열기</button>' : ''}</div>` : ''}
       <section class="rg-results" id="rgDrop" aria-label="AI 자동 파싱">
-        <div class="rg-head"><h2 class="tip-below" data-tip="경매 문서(PDF)를 올리면 AI가 분석하여 정리합니다" data-tip-pos="left" style="cursor:help">${I.spark}AI 자동 파싱</h2>${R.rows.length ? `<span class="cnt num">${R.rows.length}건</span>` : ''}<span class="hint">PDF를 여기로 끌어다 놓아도 됩니다</span>
+        <div class="rg-head"><h2 class="tip-below" data-tip="경매 문서(PDF)를 올리면 AI가 분석하여 정리합니다" data-tip-pos="left" style="cursor:help">${I.spark}AI 자동 파싱</h2>
+          <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span></span>${R.rows.length ? `<span class="cnt num">${R.rows.length}건</span>` : ''}<span class="hint">PDF를 여기로 끌어다 놓아도 됩니다</span>
           <button type="button" class="rg-chev ${R.collapsed ? 'up' : ''}" data-act="rg-collapse" aria-expanded="${!R.collapsed}" aria-label="결과 접기">${I.chevDown}</button></div>
         ${R.missing.length ? `<div class="rg-missing"><div class="h">드라이브에 없는 물건 ${R.missing.length}건<button type="button" data-act="missing-trash">휴지통으로</button></div><p>스캔한 폴더에서 PDF가 사라졌습니다. 선정물건은 그대로 남아 있습니다 — 치우려면 누르세요.</p><ul>${R.missing.map((m) => `<li>${esc(m.label)}</li>`).join('')}</ul></div>` : ''}
         ${R.collapsed ? '' : R.rows.length ? `<ul class="rg-list">${R.rows.map(rowHtmlR).join('')}</ul>
@@ -2012,12 +2028,20 @@ html, body { overflow-x: clip; }
     setTimeout(() => { el.style.transition = 'opacity .25s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 260); }, 1800);
   }
 
+  /* 하위 탭 — 화면마다 있으면 머리띠 아래 한 단. 지금은 선정물건등록만 (구글드라이브 연동 · AI 자동 분석) */
+  const SUBTABS = { register: [['drive', 'cloud', '구글드라이브 연동'], ['ai', 'key', 'AI 자동 분석']] };
+  function renderSubTabs() {
+    const tabs = SUBTABS[S.route]; const bar = $('subTabs');
+    bar.hidden = !tabs;
+    $('subTabsIn').innerHTML = tabs ? tabs.map(([k, ic, t]) => `<button type="button" class="subtab ${R.tab === k ? 'on' : ''}" role="tab" aria-selected="${R.tab === k}" data-act="subtab" data-v="${k}">${I[ic]}${t}</button>`).join('') : '';
+  }
   function render() {
     renderHeader();
     const reg = S.route === 'register';
     $('listView').hidden = reg; $('regView').hidden = !reg; $('fab').hidden = reg;
     $('crumbCur').textContent = reg ? '선정물건등록' : '선정물건';
     { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
+    renderSubTabs();
     document.title = reg ? '마이턴옥션 선정물건등록' : '마이턴옥션 선정물건';
     if (reg) renderRegister(); else { renderToolbar(); renderContent(); }
     renderFloat();
@@ -2213,6 +2237,7 @@ html, body { overflow-x: clip; }
       }
       case 'ai-del': try { localStorage.removeItem('myturn.gemini.key'); localStorage.removeItem('myturn.gemini.on'); } catch (e) { /* 그만 */ }
         R.aiKey = ''; R.aiOn = false; S.modal = null; renderModal(); renderRegister(); toast('키를 지웠습니다.', 'info'); break;
+      case 'subtab': R.tab = v === 'ai' ? 'ai' : 'drive'; try { localStorage.setItem('wlp.web.regTab', R.tab); } catch (e) { /* 그만 */ } S.pop = ''; renderSubTabs(); renderRegister(); break;
       case 'rg-collapse': R.collapsed = !R.collapsed; renderRegister(); break;
       case 'rg-clear': R.rows = []; R.banner = ''; R.missing = []; renderRegister(); break;
       case 'rg-open': S.q = v; $('q').value = v; S.stage = 'all'; S.type = ''; S.court = ''; S.date = ''; go('list'); break;
