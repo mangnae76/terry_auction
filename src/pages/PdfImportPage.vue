@@ -1327,15 +1327,16 @@ const onDropFiles = async (e: DragEvent) => {
 }
 .pip-key-link.inline { font-size: inherit; font-weight: 600; }
 .pip-ai-switch {
-  flex: 0 0 auto; position: relative; width: 38px; height: 22px; padding: 0;
+  /* 키 등록 버튼(30)과 같은 높이 */
+  flex: 0 0 auto; position: relative; width: 52px; height: 30px; padding: 0;
   border: none; border-radius: 999px; background: #d1d5db; cursor: pointer; transition: background 0.15s;
 }
 .pip-ai-switch i {
-  position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%;
+  position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%;
   background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: left 0.15s;
 }
 .pip-ai-switch.on { background: #2b6df3; }
-.pip-ai-switch.on i { left: 19px; }
+.pip-ai-switch.on i { left: 25px; }
 .pip-ai-key {
   flex: 0 0 auto; height: 30px; padding: 0 10px;
   border: 1px solid #d5dbe6; border-radius: 8px; background: #fff;
