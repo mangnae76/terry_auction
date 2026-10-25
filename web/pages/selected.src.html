@@ -403,9 +403,31 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 앱의 제목줄(뒤로가기 포함)과 아래 메뉴는 웹 머리띠가 대신한다 */
 .app-trip .ftp-shell > .ftp-section-title.is-page,
 .app-trip .amb { display: none !important; }
-/* 손전화 폭에 맞춰 둔 칸들을 웹 폭에서도 읽히게 — 가운데로 모으고 지도는 낮춘다 */
-.app-trip .ftp-fixed-top, .app-trip .ftp-update-bar, .app-trip .ftp-list { max-width: 980px; margin-left: auto; margin-right: auto; }
-.app-trip .ftp-map-wrap { max-width: 980px; margin-left: auto; margin-right: auto; height: 560px; max-height: none; }
+/* 지도는 머리띠 아래를 가득 채우고, 그 위 왼쪽에 조작 칸을 띄운다 (지도 앱과 같은 짜임).
+   둘 다 화면 기준으로 붙이므로 감싼 칸의 스크롤에 잘리지 않는다 */
+#tripView .crumb-slot { display: none; }
+#tripView .content { padding: 0; min-height: 0; }
+.app-trip .ftp-map-wrap {
+  position: fixed; left: 0; right: 0; top: calc(var(--stick-top) + var(--gnb-h)); bottom: 0;
+  margin: 0; height: auto; max-height: none; border-radius: 0; z-index: 0;
+}
+.app-trip .ftp-map { border-radius: 0; }
+/* 왼쪽 조작 칸 — 경로설정 · 동선최적화 · 목록이 한 통으로 흐른다 */
+.app-trip .ftp-scroll {
+  position: fixed; left: 18px; top: calc(var(--stick-top) + var(--gnb-h) + 18px); bottom: 18px;
+  width: 430px; max-width: calc(100vw - 36px);
+  overflow-y: auto; overscroll-behavior: contain; z-index: 5;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e2e8f3; border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+  padding: 0 0 10px;
+}
+:root[data-theme="dark"] .app-trip .ftp-scroll { background: rgba(17, 24, 39, 0.94); border-color: #2a3650; }
+/* 패널 안에서는 앱 그대로의 폭을 쓴다 */
+.app-trip .ftp-fixed-top, .app-trip .ftp-update-bar, .app-trip .ftp-list { max-width: none; margin-left: 0; margin-right: 0; }
+.app-trip .ftp-fixed-top { background: transparent; }
+/* 지도가 화면을 채우므로 바닥글은 임장경로에서 비운다 */
+body.trip-full .foot { display: none; }
 .app-detail .adp-shell { min-height: 0 !important; padding-bottom: 0 !important; background: transparent !important; }
 
 .it-col { display: grid; gap: 12px; align-content: start; min-width: 0; }
@@ -2393,6 +2415,7 @@ html, body { overflow-x: clip; }
     document.title = reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
     if (!item) closeAppDetail();
     if (!trip) closeAppTrip();
+    document.body.classList.toggle('trip-full', trip);
     if (reg) renderRegister(); else if (trip) renderTrip(); else if (item) renderItem(); else { renderToolbar(); renderContent(); }
     renderFloat();
   }
