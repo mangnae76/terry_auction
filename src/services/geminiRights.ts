@@ -9,7 +9,7 @@
 //  2) 못 찾은 칸은 비워 두게 하며(빈칸을 메우라고 시키지 않는다)
 //  3) 어떤 서류가 없어서 판단이 모자랐는지(missingDocs)를 따로 적게 한다.
 import { GEMINI_API, GEMINI_MODEL, GeminiError } from './geminiPdf';
-import { BASE_RIGHT_KINDS, isTakenOver, normalizeYmd } from './registryAnalysis';
+import { BASE_RIGHT_KINDS, normalizeYmd } from './registryAnalysis';
 
 /** 명도 난이도 — 이 넷 가운데 하나 */
 export const EVICT_LEVELS = ['쉬움', '보통', '약간 높음', '높음'] as const;
@@ -160,7 +160,7 @@ export const RIGHTS_PROMPT = [
   '상세 권리 분석 표 (rows) — 가장 중요한 칸이다',
   '- 등기부에 적힌 권리를 한 줄에 하나씩, 순위가 빠른 것부터 적는다. 임차인은 주택임차권으로 한 줄 넣는다.',
   '- rank: 등기부의 구와 순위번호를 그대로 — "갑구 6번", "을구 9번". 순위번호를 못 읽으면 빈 글자로 둔다.',
-  '- date: 접수일 YYYY-MM-DD. 임차인 줄이면 전입신고일을 적는다. 이 날짜로 인수·말소를 가르므로 가장 중요하다.',
+  '- date: 접수일 YYYY-MM-DD. 임차인 줄이면 전입신고일을 적는다.',
   '- kind: 권리 종류 — 강제경매개시결정 · 근저당권 · 압류 · 가압류 · 주택임차권 · 가처분 · 가등기 등.',
   '- holder: 권리자 이름 그대로 (예: 서울보증보험 주식회사 · 국민건강보험공단 · 한국토지주택공사).',
   '- amount: 채권액이나 내용. 임차권이면 "보증금 149,700,000원 (전입 2022.06.07 / 확정 2022.05.20)" 처럼',
@@ -169,7 +169,7 @@ export const RIGHTS_PROMPT = [
   '- note: 왜 그런지 한 줄 — "말소기준권리", "말소기준권리보다 앞선 선순위 임차권", "말소기준권리 이후 등기로 매각 시 소멸".',
   '',
   '인수·말소 가르는 규칙',
-  '- 날짜만 제대로 읽어 적으면 인수·말소는 앱이 다시 셈한다. 그러니 date 를 가장 정확하게 적는 데 힘쓴다.',
+  '- 인수냐 말소냐는 네가 가른다. 날짜뿐 아니라 배당·확약서·임차권 양도 같은 사정까지 함께 본다.',
   '- 말소기준권리보다 앞선(먼저 접수된) 권리는 낙찰자가 떠안는다 → status 를 인수로.',
   '- 말소기준권리와 그 뒤의 권리는 낙찰되면 없어진다 → status 를 말소로.',
   '- 다만 뒤에 있어도 없어지지 않는 것이 있다: 예고등기, 건물철거·토지인도 가처분, 유치권, 법정지상권,',
@@ -179,6 +179,7 @@ export const RIGHTS_PROMPT = [
   '- takeoverSummary: 떠안는 권리를 한 줄로 — "선순위 주택임차권 (인수 주의)" 처럼 25자 안팎. 없으면 "인수할 권리 없음".',
   '- extinguishSummary: 없어지는 권리를 한 줄로 — "낙찰 시 자동 소멸 (경매등기, 압류)" 처럼 25자 안팎. 없으면 "말소될 권리 없음".',
   '- 두 줄 모두 한 줄을 넘기지 않는다. 자세한 것은 rows 가 들고 있다.',
+  '- 이 두 줄은 rows 의 인수·말소 개수와 반드시 맞아야 한다. 인수가 한 건이라도 있으면 없다고 적지 않는다.',
   '',
   '명도 난이도',
   '- level 은 쉬움 / 보통 / 약간 높음 / 높음 가운데 하나만 고른다.',
@@ -283,27 +284,30 @@ export const normalizeRightsAi = (raw: Partial<RightsAi>, usedDocs: string[] = [
     status: text((r as RightsAiRow)?.status) === '인수' ? '인수' : '말소',
     note: text((r as RightsAiRow)?.note),
   })).filter((r) => r.kind || r.holder);
-  // 인수·말소는 AI 말을 그대로 믿지 않고 앱이 다시 셈한다.
-  // AI 는 볼 때마다 조금씩 달리 판단해 개수가 0·1·2 로 흔들렸다. 날짜만 제대로 읽혔으면
-  // 규칙은 하나다 — 말소기준보다 앞서면 인수. (규칙·표는 services/registryAnalysis)
-  const baseFromRows = rows
-    .filter((r) => BASE_RIGHT_KINDS.test(r.kind))
-    .map((r) => normalizeYmd(r.date))
-    .filter(Boolean)
-    .sort()[0] ?? '';
-  const judged: RightsAiRow[] = rows.map((r) => {
-    if (!baseFromRows || !normalizeYmd(r.date)) return r; // 날짜를 못 읽으면 AI 판단을 그대로 둔다
-    return { ...r, status: isTakenOver({ kind: r.kind, date: r.date }, baseFromRows) ? '인수' : '말소' };
-  });
+  // 인수·말소는 AI 가 가른다 — 배당·확약서·임차권 양도처럼 날짜만으로는 알 수 없는
+  // 사정까지 보기 때문이다. 앱은 판단을 뒤집지 않고 세기만 한다.
+  const judged: RightsAiRow[] = rows;
+  /** 카드에 적을 한 줄 — AI 가 쓴 글을 쓰되, 개수와 어긋나면 표에서 만든 글로 바꾼다.
+   *  ('1개' 인데 '인수할 권리 없음' 이라고 적히던 일을 막는다) */
+  const pickSummary = (fromAi: string, count: number, made: string): string => {
+    if (!fromAi) return made;
+    const saysNone = /없(음|다|습니다)/.test(fromAi);
+    return (count > 0) === saysNone ? made : fromAi;
+  };
+  const kindsOf = (list: RightsAiRow[], max: number) => [...new Set(list.map((r) => r.kind).filter(Boolean))].slice(0, max);
   const asRight = (r: RightsAiRow): RightsAiRight => ({
     kind: r.kind, date: r.date, holder: r.holder, reason: r.note,
   });
   const takeoverItems = judged.filter((r) => r.status === '인수').map(asRight);
   const extinguishItems = judged.filter((r) => r.status === '말소').map(asRight);
-  // 말소기준권리도 표에서 고른다 — 상자와 표가 어긋나지 않게
-  const baseRow = baseFromRows
-    ? judged.find((r) => BASE_RIGHT_KINDS.test(r.kind) && normalizeYmd(r.date) === baseFromRows)
-    : undefined;
+  // 말소기준권리 — AI 가 적어 준 것을 쓰고, 비어 있을 때만 표에서 가장 빠른 후보를 고른다
+  const baseFromRows = judged
+    .filter((r) => BASE_RIGHT_KINDS.test(r.kind))
+    .map((r) => normalizeYmd(r.date))
+    .filter(Boolean)
+    .sort()[0] ?? '';
+  const baseRow = text(raw.baseRight?.kind) ? undefined
+    : judged.find((r) => BASE_RIGHT_KINDS.test(r.kind) && normalizeYmd(r.date) === baseFromRows);
   const level = EVICT_LEVELS.includes(text(raw.evict?.level) as typeof EVICT_LEVELS[number])
     ? text(raw.evict?.level) : '';
   const verdict = RIGHTS_VERDICTS.includes(text(raw.conclusion?.verdict) as typeof RIGHTS_VERDICTS[number])
@@ -321,12 +325,20 @@ export const normalizeRightsAi = (raw: Partial<RightsAi>, usedDocs: string[] = [
     takeover: {
       count: takeoverItems.length,
       items: takeoverItems,
-      summary: text((raw as { takeoverSummary?: string }).takeoverSummary) || (takeoverItems.length ? '' : '인수할 권리 없음'),
+      summary: pickSummary(
+        text((raw as { takeoverSummary?: string }).takeoverSummary),
+        takeoverItems.length,
+        takeoverItems.length ? `${kindsOf(judged.filter((r) => r.status === '인수'), 2).join(' · ')} (인수 주의)` : '인수할 권리 없음',
+      ),
     },
     extinguish: {
       count: extinguishItems.length,
       items: extinguishItems,
-      summary: text((raw as { extinguishSummary?: string }).extinguishSummary) || (extinguishItems.length ? '' : '말소될 권리 없음'),
+      summary: pickSummary(
+        text((raw as { extinguishSummary?: string }).extinguishSummary),
+        extinguishItems.length,
+        extinguishItems.length ? `낙찰 시 자동 소멸 (${kindsOf(judged.filter((r) => r.status === '말소'), 3).join(', ')})` : '말소될 권리 없음',
+      ),
     },
     risk: {
       summary: text(raw.risk?.summary),

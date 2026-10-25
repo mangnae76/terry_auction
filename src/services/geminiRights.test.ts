@@ -16,38 +16,27 @@ const RAW = {
   ],
 } as unknown as Partial<RightsAi>;
 
-describe('인수·말소는 앱이 다시 셈한다', () => {
-  it('AI 가 뒤집어 적어 와도 말소기준 앞뒤로 다시 가른다', () => {
+describe('인수·말소는 AI 가 가르고, 앱은 세기만 한다', () => {
+  it('AI 가 적어 준 그대로 센다 — 판단을 뒤집지 않는다', () => {
     const ai = normalizeRightsAi(RAW);
-    expect(ai.takeover.count).toBe(1);
-    expect(ai.takeover.items[0].kind).toBe('주택임차권');
-    expect(ai.extinguish.count).toBe(3);
+    expect(ai.takeover.count).toBe(3);
+    expect(ai.extinguish.count).toBe(1);
+    expect(ai.rows.find((r) => r.kind === '주택임차권')?.status).toBe('말소');
   });
 
-  it('말소기준권리는 후보 가운데 가장 빠른 것 — 표에서 고른다', () => {
+  it('말소기준권리는 AI 가 적어 준 것을 쓴다', () => {
+    const ai = normalizeRightsAi({
+      ...RAW,
+      baseRight: { rank: '갑구 6번', kind: '강제경매개시결정', date: '2026-02-23', holder: '서울보증보험', evidence: '' },
+    } as unknown as Partial<RightsAi>);
+    expect(ai.baseRight.kind).toBe('강제경매개시결정');
+    expect(ai.baseRight.rank).toBe('갑구 6번');
+  });
+
+  it('말소기준권리를 안 적어 왔으면 표에서 가장 빠른 후보를 고른다', () => {
     const ai = normalizeRightsAi(RAW);
     expect(ai.baseRight.kind).toBe('근저당권');
-    expect(ai.baseRight.rank).toBe('을구 1번');
     expect(ai.baseRight.date).toBe('2023-04-11');
-  });
-
-  it('같은 답을 여러 번 다듬어도 개수가 흔들리지 않는다', () => {
-    const counts = [1, 2, 3].map(() => normalizeRightsAi(RAW).takeover.count);
-    expect(new Set(counts).size).toBe(1);
-  });
-
-  it('날짜를 못 읽은 줄은 AI 판단을 그대로 둔다 — 멋대로 말소로 밀지 않는다', () => {
-    const ai = normalizeRightsAi({
-      rows: [...(RAW.rows ?? []), row('을구 3번', '전세권', '', '인수')],
-    } as unknown as Partial<RightsAi>);
-    expect(ai.takeover.count).toBe(2);
-  });
-
-  it('말소기준 후보가 하나도 없으면 AI 판단을 그대로 둔다', () => {
-    const ai = normalizeRightsAi({
-      rows: [row('을구 2번', '주택임차권', '2020-01-01', '인수')],
-    } as unknown as Partial<RightsAi>);
-    expect(ai.takeover.count).toBe(1);
   });
 
   it('난이도·결론이 정해진 값이 아니면 버린다', () => {
@@ -57,6 +46,23 @@ describe('인수·말소는 앱이 다시 셈한다', () => {
     } as unknown as Partial<RightsAi>);
     expect(ai.evict.level).toBe('');
     expect(ai.conclusion.verdict).toBe('');
+  });
+
+  it('개수와 아래 한 줄이 어긋나면 표에서 만든 글로 바꾼다', () => {
+    const ai = normalizeRightsAi({
+      rows: RAW.rows,
+      takeoverSummary: '인수할 권리 없음',   // 인수가 3건인데 없다고 적어 왔다
+    } as unknown as Partial<RightsAi>);
+    expect(ai.takeover.count).toBe(3);
+    expect(ai.takeover.summary).not.toContain('없음');
+  });
+
+  it('개수와 맞는 한 줄이면 AI 가 쓴 글을 그대로 쓴다', () => {
+    const ai = normalizeRightsAi({
+      rows: RAW.rows,
+      takeoverSummary: '선순위 주택임차권 (인수 주의)',
+    } as unknown as Partial<RightsAi>);
+    expect(ai.takeover.summary).toBe('선순위 주택임차권 (인수 주의)');
   });
 
   it('권리가 없으면 요약을 비워 두지 않는다', () => {
