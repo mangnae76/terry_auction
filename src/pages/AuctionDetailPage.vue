@@ -10087,6 +10087,8 @@ tr.tone-take { background: #fff5f5; }
   letter-spacing: -0.2px; padding: 5px 8px;
 }
 .adp-ind-label { background: #fafbfc; font-weight: 700; font-size: 12.5px; line-height: 1.25; }
+/* 항목 이름(연식~건물내부 · 층~수리유무)은 회색 — 값이 먼저 눈에 들어오게 */
+.adp-ind-pair .adp-ind-label { color: #6b7280; }
 .adp-ind-ctl .row { display: flex; align-items: center; justify-content: center; gap: 4px; }
 /* '현황' 칸 글자는 한 가지 크기로 못 박는다 — 값도 꼬리말도 같은 13px (년식·주차수 기준) */
 .adp-ind-ctl .row strong,
@@ -10115,7 +10117,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-ind-ctl .adp-ind-year { justify-content: center; }
 .adp-ind-ctl .adp-agency-trigger .txt { flex: 1 1 auto; min-width: 0; text-align: center; }
 .adp-ind-ctl .adp-agency-trigger .caret { margin-left: 0; }
-.adp-ind-rate { font-size: 12.5px; font-weight: 700; color: #4b5563; background: #fafbfc; padding: 4px 3px; }
+.adp-ind-rate { font-size: 12.5px; font-weight: 400; color: #4b5563; background: #fafbfc; padding: 4px 3px; }
 .adp-ind-multi { flex: 1 1 auto; min-width: 0; }
 /* 선택지 셋 이하 — 콤보 대신 알약 버튼으로 고른다 */
 .adp-ind-toggles { display: flex; flex: 1 1 auto; flex-wrap: nowrap; gap: 4px; justify-content: center; min-width: 0; }
@@ -10137,8 +10139,8 @@ tr.tone-take { background: #fff5f5; }
   background: no-repeat center / 12px 12px
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
-.adp-ind-rate-row { display: flex; align-items: center; justify-content: center; gap: 1px; font-size: 10px; font-weight: 700; }
-.adp-ind-input.rate { flex: 1 1 auto; min-width: 0; height: 24px; padding: 2px 2px; font-size: 10px; font-weight: 700; }
+.adp-ind-rate-row { display: flex; align-items: center; justify-content: center; gap: 1px; font-size: 10px; font-weight: 400; }
+.adp-ind-input.rate { flex: 1 1 auto; min-width: 0; height: 24px; padding: 2px 2px; font-size: 10px; font-weight: 400; }
 .adp-ind-table tfoot th, .adp-ind-table tfoot td { background: #f7f9fc; }
 /* 예상 매매가와 글자 크기를 맞춘다 */
 .adp-ind-table tfoot .adp-ind-ctl strong.hi { color: #2b6df3; font-size: 13px; }
