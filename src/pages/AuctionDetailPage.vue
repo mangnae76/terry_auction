@@ -8730,7 +8730,7 @@ const goBack = () => router.back();
   color: #6b7280; cursor: pointer;
 }
 .adp-hide-btn:active { background: #f3f4f6; }
-.adp-hide-ico { width: 15px; height: 15px; display: block; object-fit: contain; }
+.adp-hide-ico { width: 17px; height: 17px; display: block; object-fit: contain; } /* 보관함·휴지통 — 15에서 15% 키움 */
 
 
 .adp-tabs {
