@@ -62,6 +62,7 @@ import { useAuthStore } from '../stores/authStore';
 import { deleteSitePdf, deleteSitePhoto, isPdfEntry, isPdfFile, isPhotoId, loadSitePdf, loadSitePhoto, pdfNameOf, saveSitePdf, saveSitePhoto } from '../services/sitePhotoRepository';
 import { getGeminiKey, isGeminiOn, loadGeminiPrefs, GeminiError } from '../services/geminiPdf';
 import { askRightsAnalysis, DOC_LABELS, type RightsAi, type RightsDocPart } from '../services/geminiRights';
+import { buildRightsFacts } from '../services/rightsFacts';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { geocodeAddress } from '../services/routeOptimizer';
 import {
@@ -4673,31 +4674,6 @@ const collectDocParts = async (): Promise<RightsDocPart[]> => {
   }
   return out;
 };
-/** 앱이 PDF 에서 이미 읽어 둔 권리 자료를 글로 — AI 가 사진만 보고 다시 읽느라
- *  말소기준권리가 볼 때마다 바뀌던 것을 줄인다 */
-const knownRightsFacts = (): string => {
-  const a = auction.value;
-  if (!a) return '';
-  const lines: string[] = [];
-  if (a.cancellationBaseDate) lines.push(`- 말소기준일(서류에 적힌 값): ${a.cancellationBaseDate}`);
-  if (a.distributionRequestDate) lines.push(`- 배당요구종기: ${a.distributionRequestDate}`);
-  const regs = a.registryRows ?? [];
-  if (regs.length) {
-    lines.push('- 건물등기 (앱이 PDF 에서 읽은 것):');
-    regs.forEach((r) => {
-      lines.push(`  · ${[r.order, r.date, r.kind, r.holder, r.amount, r.extinct].filter(Boolean).join(' / ')}`);
-    });
-  }
-  const tenants = a.tenantInfoRows ?? [];
-  if (tenants.length) {
-    lines.push('- 임차인 현황 (앱이 PDF 에서 읽은 것):');
-    tenants.forEach((t) => {
-      lines.push(`  · ${[t.name, t.moveIn, t.fixed, t.distribution, t.deposit, t.opposition].filter(Boolean).join(' / ')}`);
-    });
-  }
-  return lines.join('\n');
-};
-
 /** 'AI 분석 요청' — 올려 둔 서류로 권리분석을 받아 와 물건에 적어 둔다 */
 const requestRightsAi = async () => {
   if (rightsAiBusy.value) return;
@@ -4720,7 +4696,7 @@ const requestRightsAi = async () => {
       rightsAiErr.value = '분석할 서류가 없습니다 — 위 칸에 서류를 올려 주세요.';
       return;
     }
-    const result = await askRightsAnalysis(getGeminiKey(), parts, knownRightsFacts());
+    const result = await askRightsAnalysis(getGeminiKey(), parts, buildRightsFacts(target));
     target.rightsAi = result;
     await store.saveAuction(target);
     flashToast(`서류 ${parts.length}장으로 권리분석을 받았습니다.`, 'success');
