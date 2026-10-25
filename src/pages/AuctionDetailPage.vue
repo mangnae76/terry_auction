@@ -60,7 +60,7 @@ import { addressParts, hasBuildingName, isUnitToken } from '../utils/addressName
 import { stageDates } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePdf, deleteSitePhoto, isPdfEntry, isPdfFile, isPhotoId, loadSitePdf, loadSitePhoto, pdfNameOf, saveSitePdf, saveSitePhoto } from '../services/sitePhotoRepository';
-import { getGeminiKey, isGeminiOn, GeminiError } from '../services/geminiPdf';
+import { getGeminiKey, isGeminiOn, loadGeminiPrefs, GeminiError } from '../services/geminiPdf';
 import { askRightsAnalysis, DOC_LABELS, type RightsAi, type RightsDocPart } from '../services/geminiRights';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { geocodeAddress } from '../services/routeOptimizer';
@@ -4679,12 +4679,17 @@ const requestRightsAi = async () => {
   const target = auction.value;
   if (!target) return;
   rightsAiErr.value = '';
-  if (!isGeminiOn()) {
-    rightsAiErr.value = 'AI 키가 없습니다 — 더보기 > AI 자동 분석에서 등록해 주세요.';
-    return;
-  }
   rightsAiBusy.value = true;
   try {
+    // 키는 로그인 계정마다 서버(userPrefs)에 있다. 이 화면은 그것을 불러온 적이 없을 수 있어
+    // 먼저 한 번 불러와 본다 — 안 그러면 등록해 둔 키가 있어도 '없다'고 나온다.
+    if (!isGeminiOn()) await loadGeminiPrefs(authStore.uid);
+    if (!isGeminiOn()) {
+      rightsAiErr.value = getGeminiKey()
+        ? 'AI 자동 분석이 꺼져 있습니다 — 더보기 > AI 자동 분석에서 켜 주세요.'
+        : 'AI 키가 없습니다 — 더보기 > AI 자동 분석에서 등록해 주세요.';
+      return;
+    }
     const parts = await collectDocParts();
     if (parts.length === 0) {
       rightsAiErr.value = '분석할 서류가 없습니다 — 위 칸에 서류를 올려 주세요.';
