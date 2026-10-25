@@ -1,7 +1,8 @@
 // AI(Gemini)로 경매 PDF 읽기 — 규칙으로 못 읽은 칸만 채운다.
 //
-// 키는 사용자 각자의 것이다(BYOK). 이 기기에만 적어 두고, 앱이 Google 로 바로 보낸다 —
-// 우리 서버를 거치지 않으므로 우리가 키를 들고 있지 않고, 요금은 그 사용자의 Google 계정으로 나간다.
+// 키는 사용자 각자의 것이다(BYOK). 로그인 계정마다 userPrefs/{uid} 에 적어 둔다(본인만 읽고 쓰는 문서 —
+// firestore.rules). 그래서 같은 기기에서 계정을 바꾸면 그 계정의 키가 보이고, 다른 기기에서도 따라온다.
+// 분석할 때는 앱이 Google 로 바로 보낸다(우리 중계 서버를 거치지 않는다). 요금은 그 사용자의 Google 계정으로 나간다.
 //
 // AI 는 못 찾은 값을 그럴듯하게 지어낼 수 있다. 그래서
 //  1) 값마다 'PDF 의 어느 글에서 찾았는지'(evidence)를 같이 내게 하고
@@ -9,6 +10,7 @@
 //  3) 규칙이 이미 읽은 칸은 건드리지 않는다 (빈칸만 채운다)
 //  4) 채운 칸은 이름을 남겨 화면에 'AI' 로 표시할 수 있게 한다
 import type { ParsedPdfAuction } from './pdfAuctionImport';
+import { loadUserPrefs, saveUserPrefs } from './userPrefsRepository';
 
 /** 늘 그때의 Flash-Lite — 버전이 바뀌어도 이름이 그대로 남는 별칭이다.
  *  같은 PDF 로 견줘 보니 Flash 는 한 건에 2분이 넘고 Flash-Lite 는 3초 안팎이었다 (답은 같았다). */
@@ -16,25 +18,52 @@ export const GEMINI_MODEL = 'gemini-flash-lite-latest';
 /** 키 받는 곳 — Google AI Studio 의 API 키 화면 (앱·웹의 'AI 자동 분석 · 필수 설정'에서 연다) */
 export const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
 const API = 'https://generativelanguage.googleapis.com/v1beta';
-const KEY_STORE = 'myturn.gemini.key';
-const ON_STORE = 'myturn.gemini.on';
+/** 예전에 기기 하나에 통째로 적던 자리 — 계정별로 옮긴 뒤 지운다 */
+const LEGACY_KEY_STORE = 'myturn.gemini.key';
+const LEGACY_ON_STORE = 'myturn.gemini.on';
 
-// === 키 ===
-export const getGeminiKey = (): string => {
-  try { return localStorage.getItem(KEY_STORE) ?? ''; } catch { return ''; }
+// === 키 (계정별 · userPrefs) ===
+// 화면은 키를 바로바로 읽어야 해서, 로그인한 계정의 값을 한 번 불러와 여기 들고 있는다.
+const cur = { uid: '', key: '', on: true };
+
+/** 그 계정의 키·스위치를 불러온다. 로그인이 바뀔 때마다 부른다 (로그아웃이면 uid '' → 비운다) */
+export const loadGeminiPrefs = async (uid: string): Promise<{ key: string; on: boolean }> => {
+  cur.uid = uid; cur.key = ''; cur.on = true;
+  if (!uid) return { key: '', on: false };
+  const prefs = await loadUserPrefs(uid);
+  if (cur.uid !== uid) return { key: '', on: false }; // 기다리는 사이 계정이 바뀌었다
+  let key = typeof prefs?.geminiKey === 'string' ? prefs.geminiKey : '';
+  let on = prefs?.geminiOn !== false;
+  // 예전 기기 저장값 — 이 계정에 키가 없을 때만 한 번 옮기고, 기기에서는 지운다
+  try {
+    const legacy = localStorage.getItem(LEGACY_KEY_STORE) ?? '';
+    if (legacy && !key) {
+      key = legacy.trim();
+      on = localStorage.getItem(LEGACY_ON_STORE) !== '0';
+      await saveUserPrefs(uid, { geminiKey: key, geminiOn: on });
+    }
+    localStorage.removeItem(LEGACY_KEY_STORE);
+    localStorage.removeItem(LEGACY_ON_STORE);
+  } catch { /* 기기 저장소를 못 쓰면 옮길 것도 없다 */ }
+  if (cur.uid !== uid) return { key: '', on: false };
+  cur.key = key; cur.on = on;
+  return { key, on: on && Boolean(key) };
 };
-export const setGeminiKey = (key: string) => {
-  try { localStorage.setItem(KEY_STORE, key.trim()); } catch { /* 못 적으면 이번만 쓴다 */ }
+export const getGeminiKey = (): string => cur.key;
+export const setGeminiKey = async (uid: string, key: string) => {
+  if (!uid) throw new Error('로그인한 뒤 등록할 수 있습니다.');
+  cur.uid = uid; cur.key = key.trim(); cur.on = true;
+  await saveUserPrefs(uid, { geminiKey: cur.key, geminiOn: true });
 };
-export const clearGeminiKey = () => {
-  try { localStorage.removeItem(KEY_STORE); localStorage.removeItem(ON_STORE); } catch { /* 그만 */ }
+export const clearGeminiKey = async (uid: string) => {
+  cur.key = ''; cur.on = false;
+  if (uid) await saveUserPrefs(uid, { geminiKey: '', geminiOn: false });
 };
 /** 'AI로 읽기' 스위치 — 키가 있어도 끌 수 있다 */
-export const isGeminiOn = (): boolean => {
-  try { return localStorage.getItem(ON_STORE) !== '0' && Boolean(getGeminiKey()); } catch { return false; }
-};
-export const setGeminiOn = (on: boolean) => {
-  try { localStorage.setItem(ON_STORE, on ? '1' : '0'); } catch { /* 그만 */ }
+export const isGeminiOn = (): boolean => cur.on && Boolean(cur.key);
+export const setGeminiOn = async (uid: string, on: boolean) => {
+  cur.on = on;
+  if (uid) await saveUserPrefs(uid, { geminiOn: on });
 };
 
 /** 키가 살아 있는지 — 모델 목록을 한 번 불러 본다 (요금이 들지 않는 호출) */

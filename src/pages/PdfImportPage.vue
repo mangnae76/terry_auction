@@ -18,6 +18,7 @@ import {
   GEMINI_KEY_URL,
   getGeminiKey,
   isGeminiOn,
+  loadGeminiPrefs,
   setGeminiKey,
   setGeminiOn,
   testGeminiKey,
@@ -57,13 +58,13 @@ interface ImportPreviewRow {
 }
 
 // === AI(Gemini)로 읽기 ===
-// 키는 사용자 각자의 것 — 이 기기에만 적어 두고 Google 로 바로 보낸다(우리 서버를 거치지 않는다).
+// 키는 사용자 각자의 것 — 로그인 계정마다 userPrefs 에 둔다(geminiPdf.loadGeminiPrefs). Google 로 바로 보낸다.
 const aiKey = ref(getGeminiKey());
 const aiOn = ref(isGeminiOn());
 const toggleAi = () => {
   if (!aiKey.value) { openAiModal(); return; }
   aiOn.value = !aiOn.value;
-  setGeminiOn(aiOn.value);
+  void setGeminiOn(authStore.uid, aiOn.value);
   // 폰에는 마우스 안내가 없어 켜짐·꺼짐을 잠깐 알린다
   showToast(aiOn.value ? 'AI 파싱을 켰습니다.' : 'AI 파싱을 껐습니다.');
 };
@@ -106,14 +107,19 @@ const saveAiKey = async () => {
   aiKeyOk.value = r.ok;
   aiKeyMsg.value = r.message;
   if (!r.ok) return;
-  setGeminiKey(key);
-  setGeminiOn(true);
+  try {
+    await setGeminiKey(authStore.uid, key);
+  } catch (err) {
+    aiKeyOk.value = false;
+    aiKeyMsg.value = err instanceof Error ? err.message : '키를 저장하지 못했습니다';
+    return;
+  }
   aiKey.value = key;
   aiOn.value = true;
   aiModalOpen.value = false;
 };
 const removeAiKey = () => {
-  clearGeminiKey();
+  void clearGeminiKey(authStore.uid);
   aiKey.value = '';
   aiOn.value = false;
   aiKeyDraft.value = '';
@@ -239,12 +245,22 @@ const hydrateFromCloud = async (uid: string) => {
   }
 };
 
+/** 이 계정의 Gemini 키 — 계정이 바뀌면 그 계정 것으로 갈아 끼운다 */
+const loadAiPrefs = async (uid: string) => {
+  aiKey.value = ''; aiOn.value = false;
+  const r = await loadGeminiPrefs(uid);
+  if (authStore.uid !== uid) return;
+  aiKey.value = r.key; aiOn.value = r.on;
+};
+
 onMounted(() => {
   void hydrateFromCloud(authStore.uid);
+  void loadAiPrefs(authStore.uid);
 });
 
 watch(() => authStore.uid, (newUid) => {
   void hydrateFromCloud(newUid);
+  void loadAiPrefs(newUid);
 });
 
 watch(importRows, (val) => {
@@ -952,7 +968,7 @@ const onDropFiles = async (e: DragEvent) => {
           </div>
           <p v-if="aiKeyMsg" :class="['pip-ai-msg', { ok: aiKeyOk }]">{{ aiKeyMsg }}</p>
           <ul class="pip-ai-help">
-            <li>키는 <b>이 기기에만</b> 저장됩니다.</li>
+            <li>키는 <b>내 계정에만</b> 저장됩니다.</li>
             <li>규칙으로 못 읽은 칸만 채우고, PDF에서 근거 글을 못 찾은 값은 버립니다.</li>
             <li>키 받는 곳 <button type="button" class="pip-key-link inline" @click="openGeminiKeySite">Google AI Studio</button> → Get API key</li>
             <li>Google 계정으로 로그인 → Get API key → Create API key</li>

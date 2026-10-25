@@ -1838,8 +1838,8 @@ html, body { overflow-x: clip; }
     tab: (() => { try { return localStorage.getItem('wlp.web.regTab') === 'ai' ? 'ai' : 'drive'; } catch (e) { return 'drive'; } })(),
     rows: [], loading: false, loadingLabel: '', banner: '', last: '', collapsed: false, missing: [], scanned: [],
     /* AI 파싱 — 앱(geminiPdf)과 같은 자리에서 읽는다. 쓰기·확인은 TAPdf 로 한다 */
-    aiKey: (() => { try { return localStorage.getItem('myturn.gemini.key') || ''; } catch (e) { return ''; } })(),
-    aiOn: (() => { try { return localStorage.getItem('myturn.gemini.on') !== '0' && !!localStorage.getItem('myturn.gemini.key'); } catch (e) { return false; } })(),
+    /* Gemini 키는 로그인 계정마다(userPrefs) — 앱 연결 뒤 로그인이 정해지면 loadGeminiPrefs 로 채운다 */
+    aiKey: '', aiOn: false,
   };
   /* 상자 둘이 탭 노릇 — 결과 목록(줄·알림·마지막 시각·드라이브에 없는 물건·접힘)은 상자마다 따로 둔다.
      지금 고른 상자의 것은 R.rows 등에 펼쳐 두고, 바꿀 때 넣었다 꺼낸다 */
@@ -2284,7 +2284,7 @@ html, body { overflow-x: clip; }
           </div>
           ${m.msg ? `<p class="ai-msg ${m.ok ? 'ok' : ''}">${esc(m.msg)}</p>` : ''}
           <ul class="ai-help">
-            <li>키는 <b>이 기기에만</b> 저장됩니다.</li>
+            <li>키는 <b>내 계정에만</b> 저장됩니다.</li>
             <li>규칙으로 못 읽은 칸만 채우고, PDF에서 근거 글을 못 찾은 값은 버립니다.</li>
             <li>키 받는 곳 <a class="key-link" href="${GEMINI_KEY_URL}" target="_blank" rel="noopener">Google AI Studio</a> → Get API key</li>
             <li>Google 계정으로 로그인 → Get API key → Create API key</li>
@@ -2775,7 +2775,7 @@ html, body { overflow-x: clip; }
      로그인 전에는 예시 물건을 보여 주고, 로그인하면 앱과 같은 Firestore 물건으로 바꾼다.
      웹에서 바꾼 중요도·단계·보관·휴지통은 앱 저장소의 함수(saveAuction · archiveAuctions …)로 그대로 적는다 */
   const DEMO_ITEMS = items.slice();
-  const CLOUD = { on: false, T: null, auth: null, store: null, raw: new Map(), nearby: new Map(), nearbyBusy: '' };
+  const CLOUD = { on: false, T: null, auth: null, store: null, raw: new Map(), nearby: new Map(), nearbyBusy: '', geminiUid: null };
   /* 앱 물건(AuctionDetail) → 웹 카드 한 장. 값은 앱 셈 함수로 낸다 */
   const toWebItem = (a) => {
     const T = CLOUD.T;
@@ -2852,6 +2852,12 @@ html, body { overflow-x: clip; }
       S.loggedIn = auth.isLoggedIn; S.userName = auth.nickname || String(auth.email || '').split('@')[0];
       S.denied = auth.isLoggedIn && !ok;
       if (ok && !CLOUD.on) { CLOUD.on = true; st.initializeStorage(); fromStore(); }
+      /* Gemini 키 — 이 계정 것으로 갈아 끼운다(로그아웃이면 비운다) */
+      const gUid = auth.isLoggedIn ? auth.uid : '';
+      if (gUid !== CLOUD.geminiUid) {
+        CLOUD.geminiUid = gUid; R.aiKey = ''; R.aiOn = false;
+        T.loadGeminiPrefs(gUid).then((g) => { if (CLOUD.geminiUid !== gUid) return; R.aiKey = g.key; R.aiOn = g.on; if (S.route === 'register') renderRegister(); }).catch(() => {});
+      }
       if (!ok && CLOUD.on) { CLOUD.on = false; CLOUD.raw = new Map(); items = DEMO_ITEMS.slice(); }
       render();
     }, { immediate: true });
@@ -3060,7 +3066,7 @@ html, body { overflow-x: clip; }
       case 'drive-perms': openDrivePerms(); break;
       case 'scan': S.pop = ''; doScan(); break;
       case 'pdf-pick': $('pdfInput').click(); break;
-      case 'ai-toggle': if (!R.aiKey) { S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; try { localStorage.setItem('myturn.gemini.on', R.aiOn ? '1' : '0'); } catch (e) { /* 그만 */ } renderRegister(); toast(R.aiOn ? 'AI 자동 분석을 켰습니다.' : 'AI 자동 분석을 껐습니다.', 'info'); break;
+      case 'ai-toggle': if (!R.aiKey) { S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; if (CLOUD.T) CLOUD.T.setGeminiOn((CLOUD.auth && CLOUD.auth.uid) || '', R.aiOn).catch(() => {}); renderRegister(); toast(R.aiOn ? 'AI 자동 분석을 켰습니다.' : 'AI 자동 분석을 껐습니다.', 'info'); break;
       case 'ai-key': S.modal = { kind: 'ai' }; renderModal(); break;
       /* 키 칸의 눈 — 적던 글자를 잡아 두고 보기/가리기만 바꾼다 */
       case 'ai-eye': { const m = S.modal; const el = $('aiKeyIn'); if (!m || !el) break; m.draft = el.value; m.show = !m.show; renderModal(); setTimeout(() => { const x = $('aiKeyIn'); if (x) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 30); break; }
@@ -3080,7 +3086,7 @@ html, body { overflow-x: clip; }
       case 'ai-save': {
         const key = ($('aiKeyIn').value || '').trim();
         if (!key) { S.modal.msg = '키를 넣어 주세요'; S.modal.ok = false; renderModal(); break; }
-        /* 앱과 같다 — 모델 목록을 한 번 불러 키가 살아 있는지 본다(요금 없음). 되면 이 기기에 적고 켠다 */
+        /* 앱과 같다 — 모델 목록을 한 번 불러 키가 살아 있는지 본다(요금 없음). 되면 내 계정에 적고 켠다 */
         const m = S.modal; if (m.checking) break;
         m.draft = key; m.checking = true; m.msg = ''; renderModal();
         (async () => {
@@ -3089,12 +3095,13 @@ html, body { overflow-x: clip; }
           if (S.modal !== m) return; /* 확인하는 사이 창을 닫았다 */
           m.checking = false; m.ok = r.ok; m.msg = r.message;
           if (!r.ok) { renderModal(); return; }
-          T.setGeminiKey(key); T.setGeminiOn(true); R.aiKey = key; R.aiOn = true;
+          try { await T.setGeminiKey((CLOUD.auth && CLOUD.auth.isLoggedIn && CLOUD.auth.uid) || '', key); } catch (err) { m.ok = false; m.msg = (err && err.message) || '키를 저장하지 못했습니다'; renderModal(); return; }
+          R.aiKey = key; R.aiOn = true;
           S.modal = null; renderModal(); renderRegister(); toast('키를 확인했습니다. AI 자동 분석을 켰습니다.');
         })();
         break;
       }
-      case 'ai-del': try { localStorage.removeItem('myturn.gemini.key'); localStorage.removeItem('myturn.gemini.on'); } catch (e) { /* 그만 */ }
+      case 'ai-del': if (CLOUD.T) CLOUD.T.clearGeminiKey((CLOUD.auth && CLOUD.auth.uid) || '').catch(() => {});
         R.aiKey = ''; R.aiOn = false; S.modal = null; renderModal(); renderRegister(); toast('키를 지웠습니다.', 'info'); break;
       case 'subtab': if (S.route === 'item') { S.itemTab = v; renderSubTabs(); renderItem(); window.scrollTo(0, 0); break; } R.tab = v === 'ai' ? 'ai' : 'drive'; try { localStorage.setItem('wlp.web.regTab', R.tab); } catch (e) { /* 그만 */ } S.pop = ''; renderSubTabs(); renderRegister(); break;
       case 'rg-collapse': R.collapsed = !R.collapsed; renderRegister(); break;

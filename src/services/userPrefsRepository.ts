@@ -45,6 +45,9 @@ export interface UserPrefs {
   pdfImportBanner?: string;              // 상단 안내 배너 텍스트
   pdfImportLastUpdate?: string;          // 마지막 import 시각
   pdfImportLastRows?: unknown[];         // 마지막 import 결과 미리보기
+  /** AI 자동 분석 — 사용자 본인의 Gemini API 키(BYOK)와 켜짐 여부. 본인만 읽는 문서라 계정별로 둔다 */
+  geminiKey?: string;
+  geminiOn?: boolean;
 }
 
 const COLLECTION = 'userPrefs';
