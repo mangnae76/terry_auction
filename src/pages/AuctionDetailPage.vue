@@ -23,7 +23,7 @@ const rememberPlaceRows = (id: string, rows: PlaceRow[]) => {
 </script>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
@@ -59,7 +59,7 @@ import { updateStamp } from '../services/updateStamp';
 import { addressParts, hasBuildingName, isUnitToken } from '../utils/addressName';
 import { stageDates } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
-import { deleteSitePhoto, isPhotoId, loadSitePhoto, saveSitePhoto } from '../services/sitePhotoRepository';
+import { deleteSitePdf, deleteSitePhoto, isPdfEntry, isPdfFile, isPhotoId, loadSitePdf, loadSitePhoto, pdfNameOf, saveSitePdf, saveSitePhoto } from '../services/sitePhotoRepository';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { geocodeAddress } from '../services/routeOptimizer';
 import {
@@ -452,6 +452,7 @@ const removeExteriorAt = async (idx: number) => {
 
 // 붙여넣어 저장된 이미지는 목록에서 빼면 Firestore에서도 지운다 (용량이 남지 않게)
 const discardPastedImage = async (entry: string | undefined) => {
+  if (entry && isPdfEntry(entry)) { await deleteSitePdf(entry, authStore.uid).catch(() => undefined); return; }
   if (!entry || !isPhotoId(entry)) return;
   delete photoData.value[entry];
   await deleteSitePhoto(entry, authStore.uid).catch(() => undefined);
@@ -507,6 +508,14 @@ const addImageFile = async (file: File, target: PhotoTarget) => {
     const key = target.slice(2);
     extraErr.value = { ...extraErr.value, [key]: '' };
     try {
+      // AI 분석 요청 칸은 PDF 도 받는다 — 줄이지 않고 원본 그대로 둔다
+      if (key.startsWith('doc.') && file instanceof File && isPdfFile(file)) {
+        const entry = await saveSitePdf(auction.value.id, authStore.uid, file);
+        if (!auction.value.extraPhotos) auction.value.extraPhotos = {};
+        auction.value.extraPhotos[key] = [entry, ...(auction.value.extraPhotos[key] ?? [])];
+        await store.saveAuction(auction.value);
+        return;
+      }
       const { photoId, dataUrl } = await saveSitePhoto(auction.value.id, authStore.uid, file);
       photoData.value[photoId] = dataUrl;
       if (!auction.value.extraPhotos) auction.value.extraPhotos = {};
@@ -551,9 +560,13 @@ const galleryInputRef = ref<HTMLInputElement | null>(null);
 /** 사진 칸의 '+' — 고를 자리를 적어 두고 숨은 입력칸 하나를 돌려 쓴다 */
 const photoPickRef = ref<HTMLInputElement | null>(null);
 const photoPickTarget = ref<PhotoTarget | null>(null);
+/** 고르기 창에 보일 파일 — AI 분석 요청 칸만 PDF 까지 */
+const photoPickAccept = ref('image/*');
 const pickPhotoFor = (target: PhotoTarget) => {
   photoPickTarget.value = target;
-  photoPickRef.value?.click();
+  photoPickAccept.value = target.startsWith('x:doc.') ? 'image/*,application/pdf,.pdf' : 'image/*';
+  // accept 를 바꾼 뒤 열어야 고르기 창에 반영된다
+  void nextTick(() => photoPickRef.value?.click());
 };
 const onPhotoPicked = async (e: Event) => {
   const input = e.target as HTMLInputElement;
@@ -4571,15 +4584,33 @@ const DOC_BOXES: Array<{ key: string; label: string; icon: string }> = [
   { key: 'doc.delivery', label: '송달내역', icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>' },
 ];
 const docDropKey = ref('');
-/** 칸에 끌어다 놓기 — 사진 한 장을 그 칸에 넣는다 (칸 하나에 한 장) */
+/** 칸에 끌어다 놓기 — 사진(PNG·JPG 등) 또는 PDF 한 개를 그 칸에 넣는다 (칸 하나에 하나) */
 const onDocDrop = async (e: DragEvent, key: string) => {
   docDropKey.value = '';
-  const file = [...(e.dataTransfer?.files ?? [])].find((f) => f.type.startsWith('image/'));
-  if (!file) { extraErr.value = { ...extraErr.value, [key]: '사진(이미지) 파일만 올릴 수 있습니다.' }; return; }
+  const file = [...(e.dataTransfer?.files ?? [])].find((f) => f.type.startsWith('image/') || isPdfFile(f));
+  if (!file) { extraErr.value = { ...extraErr.value, [key]: 'PDF 또는 사진(PNG·JPG) 파일만 올릴 수 있습니다.' }; return; }
   if (extraList(key).length > 0) await removeExtraAt(key, 0);
   await addImageFile(file, `x:${key}`);
 };
 const extraList = (key: string) => auction.value?.extraPhotos?.[key] ?? [];
+/** 칸에 넣은 PDF 열기 — 조각을 모아 새 창으로 */
+const docPdfBusy = ref('');
+const openDocPdf = async (entry: string) => {
+  docPdfBusy.value = entry;
+  // 팝업 차단을 피하려고 누른 순간 창부터 연다
+  const win = window.open('', '_blank');
+  try {
+    const blob = await loadSitePdf(entry);
+    if (!blob) throw new Error('PDF를 찾지 못했습니다.');
+    const url = URL.createObjectURL(blob);
+    if (win) win.location.href = url; else window.open(url, '_blank');
+  } catch (err) {
+    win?.close();
+    flashToast(err instanceof Error ? err.message : 'PDF를 열지 못했습니다.', 'error');
+  } finally {
+    docPdfBusy.value = '';
+  }
+};
 const addExtraUrl = async (key: string) => {
   if (!auction.value) return;
   if (extraList(key).length >= PHOTO_MAX) {
@@ -5256,7 +5287,7 @@ const goBack = () => router.back();
   <section class="adp-shell">
     <!-- 사진 칸의 '+'·AI 분석 요청 칸이 함께 쓰는 파일 고르기 — 어느 탭에서든 열리게 화면 맨 위에 둔다.
          (손품+현장 탭 안에만 있어서 권리분석 탭에서는 눌러도 열리지 않았다) 어느 자리에 넣을지는 photoPickTarget 이 들고 있다 -->
-    <input ref="photoPickRef" type="file" accept="image/*" class="adp-sr" @change="onPhotoPicked" />
+    <input ref="photoPickRef" type="file" :accept="photoPickAccept" class="adp-sr" @change="onPhotoPicked" />
     <!-- 상단바 + 탭 + 물건요약은 탭과 무관하게 스크롤해도 붙어 있는다 -->
     <div ref="stickyHead" class="adp-sticky-head">
       <header class="adp-topbar">
@@ -6780,7 +6811,12 @@ const goBack = () => router.back();
                     @paste="pasteImageInto($event, `x:${b.key}`)"
                   />
                 </div>
-                <div v-if="extraList(b.key).length > 0" class="adp-doc-box has">
+                <div v-if="extraList(b.key).length > 0 && isPdfEntry(extraList(b.key)[0])" class="adp-doc-box has pdf" role="button" tabindex="0" :title="pdfNameOf(extraList(b.key)[0])" @click="openDocPdf(extraList(b.key)[0])" @keydown.enter.prevent="openDocPdf(extraList(b.key)[0])">
+                  <b class="adp-doc-pdf-tag">PDF</b>
+                  <span class="adp-doc-pdf-name">{{ docPdfBusy === extraList(b.key)[0] ? '여는 중…' : pdfNameOf(extraList(b.key)[0]) }}</span>
+                  <button type="button" class="adp-doc-x" :aria-label="`${b.label} 지우기`" @click.stop="removeExtraAt(b.key, 0)">×</button>
+                </div>
+                <div v-else-if="extraList(b.key).length > 0" class="adp-doc-box has">
                   <a v-if="brokenImages[extraList(b.key)[0]]" class="adp-doc-link" :href="photoSrc(extraList(b.key)[0])" target="_blank" rel="noopener">🔗 링크 열기</a>
                   <img v-else :src="photoSrc(extraList(b.key)[0])" :alt="b.label" @click="openLightbox(photoSrc(extraList(b.key)[0]))" @error="onImageError(extraList(b.key)[0])" />
                   <button type="button" class="adp-doc-x" :aria-label="`${b.label} 지우기`" @click.stop="removeExtraAt(b.key, 0)">×</button>
@@ -8919,12 +8955,18 @@ const goBack = () => router.back();
 .adp-prop-road { display: block; font-size: 11.5px; color: #6b7280; margin-top: 2px; }
 
 .adp-docs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
-@media (max-width: 560px) { .adp-docs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .adp-docs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* 폰은 칸이 낮아 폴더 그림은 빼고 글씨 두 줄만 둔다 */
+  .adp-doc-box:not(.has) .adp-doc-ic { display: none; }
+  .adp-doc-box { line-height: 1.25; font-size: 11px; }
+}
 .adp-doc { min-width: 0; }
 .adp-doc-label { margin: 0 0 5px; display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 800; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .adp-doc-label svg { flex: 0 0 auto; color: #2a5fbf; }
 .adp-doc-box {
-  position: relative; box-sizing: border-box; aspect-ratio: 3 / 4; width: 100%;
+  /* 높이는 예전(3:4)의 3분의 1 — 넓이 9 : 높이 4 */
+  position: relative; box-sizing: border-box; aspect-ratio: 9 / 4; width: 100%;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   border: 1.5px dashed #d1d5db; border-radius: 10px; background: #fafbfc;
   font-size: 12px; line-height: 1.4; color: #9ca3af; text-align: center; cursor: pointer;
@@ -8933,8 +8975,12 @@ const goBack = () => router.back();
 .adp-doc-box:hover, .adp-doc-box.over { border-color: #2b6df3; background: #eef4ff; color: #2b6df3; }
 .adp-doc-box.has { border-style: solid; border-color: #e5e7eb; background: #fff; padding: 0; overflow: hidden; cursor: zoom-in; }
 .adp-doc-box.has img { width: 100%; height: 100%; object-fit: cover; }
+/* PDF 를 넣은 칸 — PDF 표 · 파일 이름 (누르면 연다) */
+.adp-doc-box.has.pdf { gap: 3px; padding: 6px 28px 6px 8px; cursor: pointer; }
+.adp-doc-pdf-tag { padding: 1px 6px; border-radius: 4px; background: #fee2e2; color: #dc2626; font-size: 11px; font-weight: 800; }
+.adp-doc-pdf-name { max-width: 100%; font-size: 12px; color: #374151; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-all; }
 /* 폴더 그림 — 평소엔 회색, 마우스를 올리면 원래 색 (물건등록 파싱 상자와 같다) */
-.adp-doc-ic { font-size: 26px; filter: grayscale(1); opacity: .55; transition: filter .15s, opacity .15s; }
+.adp-doc-ic { font-size: 20px; line-height: 1; filter: grayscale(1); opacity: .55; transition: filter .15s, opacity .15s; }
 .adp-doc-box:hover .adp-doc-ic, .adp-doc-box.over .adp-doc-ic { filter: none; opacity: 1; }
 .adp-doc-x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%; background: rgba(17, 24, 39, .65); color: #fff; font-size: 14px; line-height: 22px; cursor: pointer; }
 .adp-doc-in { position: relative; margin-bottom: 5px; padding: 0; }

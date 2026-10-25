@@ -105,7 +105,80 @@ export const compressImage = async (file: File | Blob): Promise<string> => {
 };
 
 export const isPhotoId = (entry: string): boolean =>
-  !entry.startsWith('http') && !entry.startsWith('data:');
+  !entry.startsWith('http') && !entry.startsWith('data:') && !isPdfEntry(entry);
+
+// === PDF 서류 (AI 분석 요청 칸) ===
+// 사진과 같은 auctionPhotos 컬렉션에 둔다(보안 규칙이 같다). PDF는 줄이지 않으므로
+// 900KB 조각으로 나눠 '<id>'(첫 조각) · '<id>-p1' · '<id>-p2' … 문서에 나눠 담는다.
+// 경매 문서에는 'pdf:<id>:<파일 이름>' 한 줄만 남긴다 — 이름을 보이려고 조각을 읽지 않게.
+const PDF_PREFIX = 'pdf:';
+/** 한 파일 상한 — 조각 열한 개 남짓 */
+export const PDF_MAX_BYTES = 10 * 1024 * 1024;
+export const isPdfEntry = (entry: string): boolean => entry.startsWith(PDF_PREFIX);
+const pdfIdOf = (entry: string) => entry.slice(PDF_PREFIX.length).split(':')[0];
+export const pdfNameOf = (entry: string): string => {
+  const raw = entry.slice(PDF_PREFIX.length).split(':').slice(1).join(':');
+  try { return decodeURIComponent(raw) || 'PDF'; } catch { return raw || 'PDF'; }
+};
+export const isPdfFile = (file: File) =>
+  file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+
+const fileToBase64 = (file: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const s = String(reader.result ?? '');
+      resolve(s.slice(s.indexOf(',') + 1));
+    };
+    reader.onerror = () => reject(new Error('파일을 읽지 못했습니다.'));
+    reader.readAsDataURL(file);
+  });
+
+export const saveSitePdf = async (auctionId: string, uid: string, file: File): Promise<string> => {
+  if (!firestore) throw new Error('Firestore에 연결되지 않았습니다.');
+  if (!uid) throw new Error('로그인이 필요합니다.');
+  if (file.size > PDF_MAX_BYTES) throw new Error('PDF는 10MB까지 올릴 수 있습니다.');
+  const b64 = await fileToBase64(file);
+  const CHUNK = MAX_DATA_URL_BYTES; // base64 글자 수 = 문서 안 바이트 수
+  const parts: string[] = [];
+  for (let i = 0; i < b64.length; i += CHUNK) parts.push(b64.slice(i, i + CHUNK));
+  const total = parts.reduce((sum, p) => sum + p.length, 0);
+  // 사진과 같은 예산을 쓴다 — 넘으면 오래된 것부터 비운다
+  await evictOldestPhotos(uid, total, await readUsageBytes(uid));
+  const id = createPhotoId();
+  const now = Date.now();
+  await Promise.all(parts.map((part, i) => setDoc(doc(firestore!, COLLECTION_NAME, i === 0 ? id : `${id}-p${i}`), {
+    uid, auctionId, kind: 'pdf', name: file.name, parts: parts.length, part: i,
+    dataUrl: part, bytes: part.length, createdAt: now,
+  })));
+  await addUsageBytes(uid, total);
+  return `${PDF_PREFIX}${id}:${encodeURIComponent(file.name)}`;
+};
+
+/** 조각을 모아 PDF Blob 으로 — 열어 보기·AI 분석에 쓴다 */
+export const loadSitePdf = async (entry: string): Promise<Blob | null> => {
+  if (!firestore) return null;
+  const id = pdfIdOf(entry);
+  const first = await getDoc(doc(firestore, COLLECTION_NAME, id));
+  if (!first.exists()) return null;
+  const n = Number(first.data().parts) || 1;
+  const rest = await Promise.all(
+    Array.from({ length: n - 1 }, (_, i) => getDoc(doc(firestore!, COLLECTION_NAME, `${id}-p${i + 1}`))),
+  );
+  const b64 = [first, ...rest].map((s) => (s.exists() ? String(s.data().dataUrl ?? '') : '')).join('');
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: 'application/pdf' });
+};
+
+export const deleteSitePdf = async (entry: string, uid: string): Promise<void> => {
+  if (!firestore) return;
+  const id = pdfIdOf(entry);
+  const first = await getDoc(doc(firestore, COLLECTION_NAME, id));
+  const n = first.exists() ? Number(first.data().parts) || 1 : 1;
+  for (let i = 0; i < n; i += 1) await deleteSitePhoto(i === 0 ? id : `${id}-p${i}`, uid);
+};
 
 const usageRef = (uid: string) => doc(firestore!, USAGE_COLLECTION, uid);
 
