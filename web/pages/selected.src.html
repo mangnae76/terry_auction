@@ -2598,14 +2598,14 @@ html, body { overflow-x: clip; }
   /* 탭별 웹 배치 — 앱 카드 순서는 건드리지 않고 카드 제목으로 자리를 정한다.
      span: 두 열을 가로질러 맨 위 / left · right: 각 열에 위에서부터. 목록에 없는 카드는 왼쪽 끝에 */
   const WEB_LAYOUT = {
-    rights: { span: ['AI 분석 요청'], left: ['권리분석 진단', '권리분석', '권리분석 정리'], right: ['건물등기', '임차인현황'] },
+    rights: { span: ['AI 분석 요청'], left: ['AI 권리분석 진단', '권리분석', '권리분석 정리'], right: ['건물등기', '임차인현황'] },
   };
   /* 두 열 쌓기 — 줄 높이 1px 격자에 카드 높이만큼 칸을 잡아 열마다 빈틈 없이 쌓는다 */
   function layoutAppCols(el, tab) {
     const L = WEB_LAYOUT[tab]; const body = el.querySelector('.adp-body'); if (!body) return;
     const cards = [...body.children].filter((c) => c.classList.contains('adp-card'));
     const reset = () => { body.style.cssText = ''; cards.forEach((c) => { c.style.gridColumn = ''; c.style.gridRow = ''; }); };
-    if (!L || window.innerWidth < 1100) { reset(); return; }
+    if (!L || window.innerWidth < 900) { reset(); return; } /* 900 이상이면 두 열 (반쯤 줄인 창에서도) */
     const GAP = 12;
     Object.assign(body.style, { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', columnGap: `${GAP}px`, rowGap: '0', gridAutoRows: '1px', alignItems: 'start' });
     const titleOf = (c) => (c.querySelector('.adp-card-head h2')?.textContent || '').trim();
