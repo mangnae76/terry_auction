@@ -1884,7 +1884,7 @@ html, body { overflow-x: clip; }
         <button type="button" class="rg-btn pdf" data-act="pdf-pick" ${R.loading ? 'disabled' : ''}>${I.files}PDF등록</button>
       </div>
       <div class="rg-row2">
-        <span class="rg-title tip-below" data-tip="규칙으로 못 읽은 칸을 Gemini 가 PDF 를 보고 채웁니다" data-tip-pos="left">${I.spark}AI 자동 파싱</span>
+        <span class="rg-title tip-below" data-tip="경매 문서(PDF)를 올리면 AI가 분석하여 정리합니다" data-tip-pos="left">${I.spark}AI 자동 파싱</span>
         <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱" data-act="ai-toggle"><i></i></button>
         <span class="ai-text"><b>${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}</b><small>${R.aiKey ? `Gemini · ${esc(masked)} · 규칙으로 못 읽은 칸만 채웁니다` : 'Gemini 키를 넣으면 켤 수 있습니다'}</small></span>
         <button type="button" class="ai-key" data-act="ai-key">${R.aiKey ? '키 바꾸기' : '키 넣기'}</button>
