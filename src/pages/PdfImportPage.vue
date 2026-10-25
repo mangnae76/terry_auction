@@ -587,6 +587,17 @@ const fileTitle = (row: ImportPreviewRow) => {
 
 /** 뒤로가기 — 물건 목록에서 들어온 화면이다 */
 const router = useRouter();
+
+// === 탭 — 물건정보 화면처럼 둘로 나눈다. 구글드라이브 연동(폴더·폴더스캔·PDF등록) / AI 자동 파싱(Gemini) ===
+type ImportTab = 'drive' | 'ai';
+const IMPORT_TABS: Array<{ key: ImportTab; label: string }> = [
+  { key: 'drive', label: '구글드라이브 연동' },
+  { key: 'ai', label: 'AI 자동 파싱' },
+];
+const TAB_STORE = 'myturn.import.tab';
+const readTab = (): ImportTab => { try { return localStorage.getItem(TAB_STORE) === 'ai' ? 'ai' : 'drive'; } catch { return 'drive'; } };
+const importTab = ref<ImportTab>(readTab());
+watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /* 그만 */ } });
 </script>
 
 <template>
@@ -636,9 +647,22 @@ const router = useRouter();
           </div>
         </article>
       </div>
+
+      <nav class="pip-tabs" role="tablist" aria-label="물건등록 방법">
+        <button
+          v-for="tab in IMPORT_TABS"
+          :key="tab.key"
+          type="button"
+          role="tab"
+          :aria-selected="importTab === tab.key"
+          :class="['pip-tab', { active: importTab === tab.key }]"
+          @click="importTab = tab.key"
+        >{{ tab.label }}</button>
+      </nav>
     </div>
 
     <div class="pip-body">
+      <template v-if="importTab === 'drive'">
       <div class="pip-section-head">
         <span class="pip-section-title">
           <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -696,8 +720,21 @@ const router = useRouter();
         </ul>
       </div>
 
+      <div class="pip-actions">
+        <button class="pip-btn pip-btn-scan" :disabled="loading" type="button" @click="scanDriveFolder">
+          <img :src="searchIcon" alt="" class="pip-btn-icn" />
+          폴더스캔<span v-if="selectedFavUrls.length > 0"> ({{ selectedFavUrls.length }})</span>
+        </button>
+        <button class="pip-btn pip-btn-pdf" :disabled="loading" type="button" @click="openFilePicker">
+          <img :src="filesIcon" alt="" class="pip-btn-icn" />
+          PDF등록
+        </button>
+      </div>
+      </template>
+
       <!-- AI 자동 파싱 — 규칙으로 못 읽은 칸만 Gemini 가 채운다 (각자 자기 키로).
-           제목은 '구글드라이브 연동'과 같은 꼴로 상자 위에 둔다 -->
+           켜 두면 구글드라이브 연동 탭의 폴더스캔 · PDF등록이 읽을 때 같이 쓴다 -->
+      <template v-else>
       <div class="pip-section-head">
         <span class="pip-section-title">
           <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -715,17 +752,7 @@ const router = useRouter();
         </span>
         <button type="button" class="pip-ai-key" @click="openAiModal">{{ aiKey ? '키 바꾸기' : '키 넣기' }}</button>
       </div>
-
-      <div class="pip-actions">
-        <button class="pip-btn pip-btn-scan" :disabled="loading" type="button" @click="scanDriveFolder">
-          <img :src="searchIcon" alt="" class="pip-btn-icn" />
-          폴더스캔<span v-if="selectedFavUrls.length > 0"> ({{ selectedFavUrls.length }})</span>
-        </button>
-        <button class="pip-btn pip-btn-pdf" :disabled="loading" type="button" @click="openFilePicker">
-          <img :src="filesIcon" alt="" class="pip-btn-icn" />
-          PDF등록
-        </button>
-      </div>
+      </template>
 
       <div v-if="banner || loading" class="pip-banner">
         <span v-if="loading" class="pip-banner-dot" /><span v-if="loading" class="pip-banner-dot" /><span v-if="loading" class="pip-banner-dot" />
@@ -915,6 +942,18 @@ const router = useRouter();
   display: inline-flex; align-items: center; justify-content: center;
 }
 .pip-chev { width: 20px; height: 20px; object-fit: contain; transition: transform 0.2s; }
+
+/* 탭 — 물건정보 화면(.adp-tabs)과 같은 꼴: 흰 띠, 고른 칸 아래 곧은 파란 막대(::after) */
+.pip-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: #fff; }
+.pip-tab {
+  position: relative; min-width: 0; overflow: hidden; white-space: nowrap; line-height: 1.25;
+  border: none; background: transparent; padding: 9px 0 14px; cursor: pointer; text-align: center;
+  font-size: 15.3px; font-weight: 700; letter-spacing: -0.8px; color: #111827;
+}
+.pip-tab.active::after {
+  content: ''; position: absolute; left: 8%; right: 8%; bottom: 0;
+  height: 3px; background: #2a5fbf; border-radius: 2px;
+}
 .pip-chev.up { transform: rotate(180deg); }
 
 .pip-stats {
