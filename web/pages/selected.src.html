@@ -376,6 +376,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 물건정보 탭 — 전체 접기면 카드 제목만 남긴다 */
 .it-grid.folded .it-card > :not(.it-head) { display: none; }
 .ih-stars { margin-left: auto; flex: 0 0 auto; }
+/* 별 끝선을 아래 '전체 접기' 단추 오른쪽 끝에 맞춘다 — 목록용 오른쪽 여백(8px)을 빼고, 별 그림이 단추 안에서 들어간 1.5px 만큼 더 민다 */
+.ih-stars .stars { margin-right: -1.5px; }
 /* 종류 칩과 주소 칩은 같은 크기 — 위아래로 줄이 맞는다 */
 .ih-kind, .ih-copy { justify-self: start; box-sizing: border-box; display: inline-flex !important; align-items: center; justify-content: center; min-width: 64px; height: 24px !important; padding: 0 10px !important; font-size: 12px !important; border: 1px solid transparent; }
 .ih-copy { border-color: #c7d7f7 !important; }
