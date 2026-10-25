@@ -1516,6 +1516,7 @@ html, body { overflow-x: clip; }
     $('gOut').hidden = !S.loggedIn;
     $('gJoin').hidden = S.loggedIn;
     document.querySelector('.g-arrow').setAttribute('aria-expanded', String(S.pop === 'user'));
+    document.querySelector('.g-arrow').hidden = !S.loggedIn; /* 주황 ▼(회원정보 메뉴)는 로그인했을 때만 */
     document.querySelector('.g-box').setAttribute('aria-expanded', String(S.pop === 'all'));
     const tb = $('themeBtn');
     tb.innerHTML = isDark() ? I.sun : I.moon;
