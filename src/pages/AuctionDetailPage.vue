@@ -8881,7 +8881,7 @@ const goBack = () => router.back();
 .adp-docs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
 @media (max-width: 560px) { .adp-docs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .adp-doc { min-width: 0; }
-.adp-doc-label { margin: 0 0 5px; display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adp-doc-label { margin: 0 0 5px; display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 800; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .adp-doc-label svg { flex: 0 0 auto; color: #2a5fbf; }
 .adp-doc-box {
   position: relative; box-sizing: border-box; aspect-ratio: 3 / 4; width: 100%;
@@ -9035,7 +9035,8 @@ const goBack = () => router.back();
   min-height: 44px; box-sizing: border-box;
 }
 .adp-card-head h2 {
-  margin: 0; font-size: 15.3px; font-weight: 800; color: #111827;
+  /* 물건상세 카드 제목은 모든 탭 16 (웹 물건정보 카드와 같다) */
+  margin: 0; font-size: 16px; font-weight: 800; color: #111827;
   display: inline-flex; align-items: center; gap: 5px; min-width: 0;
 }
 /* 카드 제목 앞 아이콘 */
