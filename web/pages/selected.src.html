@@ -247,14 +247,13 @@ button { cursor: pointer; }
 .subtabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 31; background: var(--band); border-bottom: 1px solid var(--subtab-line); }
 /* ===== 틀 고정 (모든 화면 공통 모듈) =====
    남색 머리띠 → [하위 탭 줄] → 필터 상자(.toolbar-shell) 를 한 덩어리로 위에 붙인다. 어느 화면이든
-   필터 상자는 .toolbar-shell 로 감싸기만 하면 된다. 높이는 변수로 — 머리띠 --gnb-h, 하위 탭 줄 --subtab-h */
+   필터 상자는 .toolbar-shell 로 감싸기만 하면 된다. 높이는 변수로 — 머리띠 --gnb-h, 하위 탭 줄 --subtab-h.
+   화면 폭과 상관없이 늘 고정한다. 좁은 화면에선 머리띠가 두 줄이 되므로 --gnb-h 는 syncStickTop() 이 실제 높이로 맞춘다 */
 :root { --gnb-h: 66px; --subtab-h: 45px; --stick-top: env(safe-area-inset-top, 0px); }
-@media (min-width: 981px) {
-  .gnb { position: sticky; top: var(--stick-top); }
-  .subtabs { top: calc(var(--stick-top) + var(--gnb-h)); }
-  .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h)); }
-  body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)); }
-}
+.gnb { position: sticky; top: var(--stick-top); }
+.subtabs { top: calc(var(--stick-top) + var(--gnb-h)); }
+.toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h)); }
+body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)); }
 .subtabs-in { display: flex; align-items: stretch; gap: 4px; height: 44px; }
 .subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
 .subtab svg { width: 16px; height: 16px; }
@@ -334,7 +333,9 @@ button { cursor: pointer; }
 .reg-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
 @media (max-width: 1100px) { .reg-duo { grid-template-columns: minmax(0, 1fr); } }
 /* 상자가 탭 — 고른 상자는 파란 테두리, 안 고른 상자는 눌러서 바꾼다 */
-.rg-acts { justify-content: flex-end; }
+/* 아래 줄 단추 셋 — 위 폴더 칸의 시작~끝에 맞춰 같은 폭으로 나눈다 (제목 칸 132 + 여백 4 + 사이 8 만큼 들여서 시작) */
+.reg-duo .rg-acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-left: 144px; }
+.reg-duo .rg-acts > .rg-fav, .reg-duo .rg-acts > .rg-btn { width: auto; }
 .reg-duo > .reg-box { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
 .reg-duo > .reg-box:hover:not(.on) { border-color: #b8c7e6; }
 .reg-duo > .reg-box.on { cursor: default; border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-soft); }
@@ -1023,8 +1024,7 @@ html, body { overflow-x: clip; }
 }
 @media (max-width: 640px) {
   .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  .toolbar-shell { position: static; padding: 6px 0 12px; }
-  .subtabs { position: static; }
+  .toolbar-shell { padding: 6px 0 12px; }
   .gnb-in { gap: 6px 14px; }
   .g-logo img { height: 32px; }
   .g-menu { font-size: 14px; }
@@ -2444,6 +2444,14 @@ html, body { overflow-x: clip; }
     const top = parseFloat(getComputedStyle(shell).top);
     shell.classList.toggle('stuck', getComputedStyle(shell).position === 'sticky' && window.scrollY > 0 && Math.abs(shell.getBoundingClientRect().top - top) < 1);
   });
+  /* 틀 고정 높이 — 머리띠·하위 탭 줄의 실제 높이를 변수에 적는다 (좁은 화면에서 머리띠가 두 줄이 돼도 맞게) */
+  const syncStickTop = () => {
+    const g = document.querySelector('.gnb'); const sub = $('subTabs');
+    if (g) document.documentElement.style.setProperty('--gnb-h', `${g.offsetHeight}px`);
+    if (sub && !sub.hidden) document.documentElement.style.setProperty('--subtab-h', `${sub.offsetHeight}px`);
+  };
+  syncStickTop();
+  try { new ResizeObserver(syncStickTop).observe(document.querySelector('.gnb')); } catch (e) { window.addEventListener('resize', syncStickTop); }
   window.addEventListener('scroll', markStuck, { passive: true });
   window.addEventListener('resize', markStuck);
   window.addEventListener('scroll', () => { if (S.menu) { S.menu = null; render(); } }, { passive: true });
