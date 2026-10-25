@@ -9,6 +9,11 @@
 //  2) 못 찾은 칸은 비워 두게 하며(빈칸을 메우라고 시키지 않는다)
 //  3) 어떤 서류가 없어서 판단이 모자랐는지(missingDocs)를 따로 적게 한다.
 import { GEMINI_API, GEMINI_MODEL, GeminiError } from './geminiPdf';
+
+/** 권리분석은 PDF 칸 채우기보다 어려운 판단이다 — 더 큰 모델을 쓴다.
+ *  (작은 모델은 선순위 임차권 + 확약서 같은 경계에서 볼 때마다 답이 뒤집혔다)
+ *  이 이름을 못 알아들으면(404) 아래에서 한 번 PDF 와 같은 모델로 다시 해 본다. */
+export const RIGHTS_MODEL = 'gemini-flash-latest';
 import { BASE_RIGHT_KINDS, normalizeYmd } from './registryAnalysis';
 
 /** 명도 난이도 — 이 넷 가운데 하나 */
@@ -150,6 +155,7 @@ export const RIGHTS_PROMPT = [
   '- 어떤 서류가 없어서 판단이 모자랐으면 missingDocs 에 그 서류 이름을 적는다.',
   '- 날짜는 YYYY-MM-DD. 금액은 원 단위 숫자에 쉼표를 넣어 적는다.',
   '- 글은 한국어 존댓말로, 한 줄에 한 가지씩 짧게 쓴다.',
+  '- 같은 서류를 다시 보면 같은 답을 내야 한다. 네 느낌이 아니라 아래 규칙으로 가른다.',
   '',
   '말소기준권리 고르는 규칙',
   '- 후보는 (근)저당권, 담보가등기, 압류, 가압류, 경매개시결정등기 다섯이다. 그 가운데 접수일이 가장 빠른 것이 말소기준권리다.',
@@ -191,7 +197,15 @@ export const RIGHTS_PROMPT = [
   '- 전입신고일이 말소기준권리보다 빠르면 대항력이 있다. 확정일자가 있으면 우선변제권도 함께 본다.',
   '- 배당요구종기 안에 배당요구를 했는지 본다. 안 했으면 배당을 못 받고 보증금이 낙찰자에게 넘어온다.',
   '- 대항력이 있는데 배당에서 다 못 받으면 그 남은 보증금은 낙찰자가 떠안는다 — 표에 인수로 적는다.',
-  '- 임차권을 넘긴 일(양도)이나 보증금 포기 확약서가 있으면 risk 와 evict.advice 에 그대로 적는다.',
+  '',
+  '애매할 때 어느 쪽으로 적을지 (이 규칙을 반드시 따른다 — 볼 때마다 답이 달라지면 안 된다)',
+  '- 선순위 임차권(말소기준보다 앞선 임차권)은 원칙이 인수다. 아래 하나에 들어맞을 때만 말소로 적는다.',
+  '  ① 배당으로 보증금 전액을 받는 것이 매각물건명세서나 배당표로 확인될 때',
+  '  ② 임차인이 임차권등기 말소에 이미 동의해 말소가 끝났다고 서류에 적혀 있을 때',
+  '- "전액을 못 받으면 잔존채권을 포기하고 말소에 동의하겠다" 는 확약서·각서만 있는 경우는 아직 배당 결과가',
+  '  나오지 않은 약속이다. 이때는 status 를 인수로 적고, note 에 그 확약서가 있다는 것과 배당 결과를 확인하라고 쓴다.',
+  '- 그 밖에도 둘 중에 망설여지면 늘 위험한 쪽(인수)으로 적는다. 떠안을 것을 놓치는 쪽이 더 큰 손해다.',
+  '- 임차권을 넘긴 일(양도)이나 보증금 포기 확약서가 있으면 risk 와 evict.advice 에도 그대로 적는다.',
   '',
   '리스크',
   '- risk.items 에는 매각물건명세서의 특별매각조건, 농지취득자격증명, 법정지상권·유치권 신고,',
@@ -242,13 +256,16 @@ export const askRightsAnalysis = async (
   let res: Response | null = null;
   let body: Body = {};
   // 혼잡(503)·잠깐 한도(429)는 잠시 뒤 다시 — 두 번까지 (geminiPdf 와 같은 규칙)
+  let model = RIGHTS_MODEL;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    res = await fetch(`${GEMINI_API}/models/${GEMINI_MODEL}:generateContent`, {
+    res = await fetch(`${GEMINI_API}/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
       body: payload,
     });
     body = await res.json().catch(() => ({})) as Body;
+    // 그 이름의 모델이 없으면 PDF 읽기와 같은 모델로 한 번 더 — 기능이 멎지 않게
+    if (res.status === 404 && model !== GEMINI_MODEL) { model = GEMINI_MODEL; continue; }
     if (res.status !== 503 && res.status !== 429) break;
     if (attempt < 2) await wait(attempt === 0 ? 3000 : 8000);
   }
