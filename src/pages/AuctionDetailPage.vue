@@ -8922,7 +8922,7 @@ const goBack = () => router.back();
   min-height: 78px; padding: 10px 6px; box-sizing: border-box;
   border: 1px solid #e3e8f0; border-radius: 10px; background: #f8fafc; text-align: center;
 }
-.adp-diag-k { font-size: 12.5px; font-weight: 700; color: #6b7280; white-space: nowrap; }
+.adp-diag-k { font-size: 12.5px; font-weight: 400; color: #6b7280; white-space: nowrap; }
 .adp-diag-v { font-size: 20px; font-weight: 800; color: #9ca3af; line-height: 1.1; }
 .adp-doc-old { margin: 10px 0 4px; font-size: 12px; font-weight: 700; color: #9ca3af; }
 .adp-body { flex: 1 1 auto; padding: 0 5px 12px; display: flex; flex-direction: column; gap: 8px; }
