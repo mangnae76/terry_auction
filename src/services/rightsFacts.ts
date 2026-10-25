@@ -6,12 +6,24 @@
 //
 // 화면 카드와 같은 차례로 적는다 — 경매 기본정보 · 임차인 내역 · 등기부 정보.
 import type { AuctionDetail } from '../types/auction';
+import { weekdayLabel } from '../stores/scheduleStore';
 
 const won = (n: number | undefined): string => (n && Number.isFinite(n) ? `${Math.round(n).toLocaleString('ko-KR')}원` : '');
 const m2 = (n: number | undefined): string => {
   if (!n || !Number.isFinite(n)) return '';
   return `${n}㎡(${(n / 3.305785).toFixed(2)}평)`;
 };
+/** 평당 얼마인가 — 자료에 적어 두면 AI 가 값을 가늠할 때 쓴다 */
+const perPyeong = (value: number | undefined, areaM2: number | undefined): string => {
+  if (!value || !areaM2) return '';
+  const py = areaM2 / 3.305785;
+  if (py <= 0) return '';
+  return `평당 ${Math.round(value / py / 10000).toLocaleString('ko-KR')}만원`;
+};
+/** 감정가 대비 몇 %인가 — 최저가·보증금에 붙인다 */
+const pctOf = (value: number | undefined, base: number | undefined): string =>
+  (value && base ? `(${Math.round((value / base) * 100)}%)` : '');
+
 /** 값이 있는 줄만 남긴다 — 빈 칸을 보내면 AI 가 그 자리를 지어낸다 */
 const lines = (rows: Array<[string, string | undefined]>): string[] =>
   rows.filter(([, v]) => (v ?? '').trim()).map(([k, v]) => `- ${k}: ${String(v).trim()}`);
@@ -19,6 +31,12 @@ const lines = (rows: Array<[string, string | undefined]>): string[] =>
 /** 한 줄로 이어 붙이되 빈 토막은 버린다 */
 const join = (parts: Array<string | undefined>, sep = ' / '): string =>
   parts.map((p) => (p ?? '').trim()).filter(Boolean).join(sep);
+
+/** 개시결정이 강제경매인지 임의경매인지 — 등기 줄에서 집어낸다 */
+const startKindOf = (a: AuctionDetail): string => {
+  const hit = (a.registryRows ?? []).find((r) => /강제경매|임의경매|경매개시/.test(r.kind ?? ''));
+  return hit ? `(${hit.kind.trim()})` : '';
+};
 
 export const buildRightsFacts = (a: AuctionDetail | null | undefined): string => {
   if (!a) return '';
@@ -31,7 +49,7 @@ export const buildRightsFacts = (a: AuctionDetail | null | undefined): string =>
     ['담당계', a.courtDept],
     ['물건종별', a.propertyType],
     ['매각구분·특별매각조건', a.saleClassification],
-    ['매각기일', join([a.eventDate, a.auctionRound], ' · ')],
+    ['매각기일', join([a.eventDate && `${a.eventDate}${weekdayLabel(a.eventDate) ? ` (${weekdayLabel(a.eventDate)})` : ''}`, a.auctionRound], ' · ')],
     ['소재지', a.address],
     ['도로명주소', a.roadAddress],
     ['전용면적', m2(a.buildingAreaM2)],
@@ -40,10 +58,10 @@ export const buildRightsFacts = (a: AuctionDetail | null | undefined): string =>
     ['소유자', a.ownerName],
     ['채무자', a.debtorName],
     ['채권자', a.creditorName],
-    ['감정가', won(a.metrics?.appraisalValue)],
-    ['최저매각가격', won(a.metrics?.minimumBidValue)],
-    ['입찰보증금', won(a.metrics?.depositValue)],
-    ['개시결정일', a.caseStartDate],
+    ['감정가', join([won(a.metrics?.appraisalValue), perPyeong(a.metrics?.appraisalValue, a.buildingAreaM2)], ' · ')],
+    ['최저매각가격', join([pctOf(a.metrics?.minimumBidValue, a.metrics?.appraisalValue), won(a.metrics?.minimumBidValue), perPyeong(a.metrics?.minimumBidValue, a.buildingAreaM2)], ' ').trim()],
+    ['입찰보증금', join([pctOf(a.metrics?.depositValue, a.metrics?.minimumBidValue), won(a.metrics?.depositValue)], ' ').trim()],
+    ['개시결정', join([a.caseStartDate, startKindOf(a)], ' ')],
   ]));
 
   const baseDates = lines([
@@ -68,6 +86,12 @@ export const buildRightsFacts = (a: AuctionDetail | null | undefined): string =>
         t.other,
       ])}`);
     });
+    // 보증금 합계 — 승계된 임차인이 겹쳐 적히는 일이 있어 같은 금액은 한 번만 센다
+    const deposits = [...new Set(tenants.map((t) => (t.deposit ?? '').replace(/[^\d]/g, '')).filter(Boolean))]
+      .map(Number).filter((n) => n > 0);
+    if (deposits.length) {
+      out.push(`- 계: 임차인 ${tenants.length}건 · 임차보증금합계 ${won(deposits.reduce((x, y) => x + y, 0))} (승계된 임차인이 겹쳐 적힐 수 있다)`);
+    }
     const note = (a.tenantOtherNotes ?? '').trim();
     if (note) out.push(`- 기타사항: ${note.replace(/\s*\n\s*/g, ' / ')}`);
   }
@@ -75,6 +99,8 @@ export const buildRightsFacts = (a: AuctionDetail | null | undefined): string =>
   const regs = a.registryRows ?? [];
   if (regs.length || (a.registryWarnings ?? '').trim()) {
     out.push('', '## 등기부 정보 (건물등기)');
+    const claim = a.rights?.totalClaimAmount ?? 0;
+    if (claim > 0) out.push(`- 채권합계금액: ${won(claim)}`);
     regs.forEach((r) => {
       out.push(`- ${join([
         r.order && `순위: ${r.order}`,
