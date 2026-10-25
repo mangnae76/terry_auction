@@ -13,11 +13,11 @@ const out = path.join(here, 'site');
 const API_BASE = 'https://terry-auction-proxy.goldenboy-auction.workers.dev';
 
 // 앱과 같은 Firebase 프로젝트에 붙는다 — 루트 .env 에서 VITE_FIREBASE_* 여섯 줄만 읽는다(공개 설정값, 비밀 키 아님).
-// 다른 키(카카오·공공데이터 등)는 읽지 않는다.
+// 카카오 REST 키도 읽는다 — 앱 번들이 이미 같은 키를 실어 보내는 것과 같다(주변환경·좌표 조회용). 공공데이터 등 다른 키는 읽지 않는다.
 const rootEnv = await readFile(path.join(root, '.env'), 'utf8').catch(() => '');
 const firebaseDefine = Object.fromEntries(
   rootEnv.split('\n')
-    .map((line) => line.match(/^\s*(VITE_FIREBASE_[A-Z_]+)\s*=\s*(.*?)\s*$/))
+    .map((line) => line.match(/^\s*(VITE_FIREBASE_[A-Z_]+|VITE_KAKAO_REST_API_KEY)\s*=\s*(.*?)\s*$/))
     .filter(Boolean)
     .map(([, k, v]) => [`import.meta.env.${k}`, JSON.stringify(v.replace(/^['"]|['"]$/g, ''))]),
 );

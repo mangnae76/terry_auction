@@ -60,8 +60,12 @@ import { addressParts, hasBuildingName, isUnitToken } from '../utils/addressName
 import { stageDates } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePhoto, isPhotoId, loadSitePhoto, saveSitePhoto } from '../services/sitePhotoRepository';
-import { fetchNearbyEnvironment, type NearbyEnvironment, type NearbyPlace } from '../services/kakaoNearby';
+import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { geocodeAddress } from '../services/routeOptimizer';
+import {
+  eduInfoFiltered500mOf, eduInfoOf, nearbyDisplayOf, naverMapUrl as naverMapUrlOf, pdfNearbyDisplayOf,
+  pdfNearbyFiltered500mOf, stationItems500mOf, stripDistanceFromName as stripDistanceFromNameOf,
+} from '../services/locationInfo';
 import { buildCashOutPlan } from '../services/cashOutPlan';
 
 const props = defineProps<{
@@ -748,19 +752,7 @@ const removePhoto = async (idx: number) => {
 
 const nearStation = computed(() => auction.value?.nearbyStation || '');
 
-const parseSchools = (raw: string | undefined) => {
-  if (!raw) return [] as string[];
-  const stripped = raw.replace(/^[가-힣]+\s*:\s*/, '');
-  return stripped
-    .split(/,\s*|\s{2,}/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-};
-const eduInfo = computed(() => ({
-  elementary: parseSchools(auction.value?.marketDemand?.schoolInfoA),
-  middle: parseSchools(auction.value?.marketDemand?.schoolInfoB),
-  high: parseSchools(auction.value?.marketDemand?.schoolInfoC),
-}));
+const eduInfo = computed(() => eduInfoOf(auction.value));
 
 // 매각사례 / 실거래가 — from PDF
 // 매각사례는 최근1개월 → 12개월 순으로 표시 (PDF 원본은 12개월부터 시작)
@@ -1789,54 +1781,12 @@ watch(
 const nearbyEnv = ref<NearbyEnvironment | null>(null);
 const fetchingNearby = ref(false);
 
-const nearbyDisplay = computed(() => {
-  const env = nearbyEnv.value;
-  if (!env) return [] as Array<{ label: string; total: number; items: NearbyPlace[] }>;
-  return [
-    { label: '버스정류장', total: env.busStop.length, items: env.busStop.slice(0, 4) },
-    { label: '지하철', total: env.subway.length, items: env.subway.slice(0, 4) },
-    { label: '종합병원', total: env.hospital.length, items: env.hospital.slice(0, 4) },
-    { label: '의원', total: env.clinic.length, items: env.clinic.slice(0, 4) },
-    { label: '약국', total: env.pharmacy.length, items: env.pharmacy.slice(0, 4) },
-    { label: '대형마트', total: env.mart.length, items: env.mart.slice(0, 4) },
-    { label: '편의점', total: env.convStore.length, items: env.convStore.slice(0, 4) },
-    { label: '행정복지센터', total: env.publicCenter.length, items: env.publicCenter.slice(0, 4) },
-    { label: '공원', total: env.park.length, items: env.park.slice(0, 4) },
-    { label: '공인중개사', total: env.realtor.length, items: env.realtor.slice(0, 4) },
-    { label: '학원', total: env.academy.length, items: env.academy.slice(0, 4) },
-    { label: '어린이집', total: env.daycare.length, items: env.daycare.slice(0, 4) },
-    { label: '초등학교', total: env.school.length, items: env.school.slice(0, 4) },
-  ];
-});
+const nearbyDisplay = computed(() => nearbyDisplayOf(nearbyEnv.value));
 
 const nearbyView = ref<'pdf' | 'kakao'>('pdf');
 
-const PDF_NEARBY_LABELS: Array<{ key: keyof NonNullable<AuctionDetail['pdfNearbyEnv']>; label: string }> = [
-  { key: 'busStop', label: '버스정류장' },
-  { key: 'subway', label: '지하철' },
-  { key: 'hospital', label: '종합병원' },
-  { key: 'clinic', label: '의원' },
-  { key: 'pharmacy', label: '약국' },
-  { key: 'mart', label: '대형마트' },
-  { key: 'convStore', label: '편의점' },
-  { key: 'publicCenter', label: '행정복지센터' },
-  { key: 'park', label: '공원' },
-  { key: 'realtor', label: '공인중개사' },
-  { key: 'academy', label: '학원' },
-  { key: 'daycare', label: '어린이집' },
-];
 
-const pdfNearbyDisplay = computed(() => {
-  const env = auction.value?.pdfNearbyEnv;
-  if (!env) return [] as Array<{ label: string; total: number; items: Array<{ name: string; distance: string }> }>;
-  return PDF_NEARBY_LABELS
-    .filter((g) => env[g.key])
-    .map((g) => ({
-      label: g.label,
-      total: env[g.key]!.total,
-      items: env[g.key]!.items.slice(0, 4),
-    }));
-});
+const pdfNearbyDisplay = computed(() => pdfNearbyDisplayOf(auction.value));
 
 // 탭을 누르면 바로 카카오 지도에서 조회한다 (이미 받아둔 결과가 있으면 재조회하지 않음)
 const openKakaoNearby = (force = false) => {
@@ -1848,13 +1798,9 @@ const onKakaoSearchClick = () => openKakaoNearby(true);
 // PDF '주변환경' 섹션 = 등기소·세무서·행정복지센터 목록
 const agencyItems = computed(() => auction.value?.adminAgencyItems ?? []);
 
-const naverMapUrl = (name: string) => `https://map.naver.com/p/search/${encodeURIComponent(name)}`;
+const naverMapUrl = naverMapUrlOf;
 // "이름(거리)" / "이름 (336m)" 같은 텍스트에서 거리 부분과 prefix를 제거해 검색용 이름만 추출
-const stripDistanceFromName = (raw: string) =>
-  raw
-    .replace(/\s*\([^()]*?(?:km|m)\)\s*$/i, '')
-    .replace(/^[가-힣]+\s*:\s*/, '')
-    .trim();
+const stripDistanceFromName = stripDistanceFromNameOf;
 
 // Kakao 키워드 검색으로 장소명 → 좌표 변환 (Naver Map 길찾기 dlat/dlng 채우기 위함)
 const KAKAO_REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY ?? '';
@@ -3621,81 +3567,13 @@ const listingBacklogComputed = computed(() => {
 });
 
 // === 입지조사 4개 항목 — 물건정보 탭의 입지 데이터에서 500m 이내 자동 집계 ===
-const NEARBY_RADIUS_M = 500;
-const parseDistanceMeters = (raw: string | undefined): number | null => {
-  if (!raw) return null;
-  const m = raw.match(/([\d.]+)\s*(km|m)/i);
-  if (!m) return null;
-  const v = Number(m[1]);
-  if (!Number.isFinite(v)) return null;
-  return m[2].toLowerCase() === 'km' ? v * 1000 : v;
-};
-// "이름(123m), 다른이름(1.2km)" 형식의 문자열에서 거리가 NEARBY_RADIUS_M 이하인 항목만 추출
-const filterDistancedString = (str: string | undefined): string[] => {
-  if (!str) return [];
-  return str
-    .replace(/^[가-힣]+\s*:\s*/, '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => {
-      const d = parseDistanceMeters(s);
-      return d !== null && d <= NEARBY_RADIUS_M;
-    });
-};
+const eduInfoFiltered500m = computed(() => eduInfoFiltered500mOf(auction.value));
 
-// === 입지조사 카드 — 500m 이내 데이터 (구조화된 리스트, 물건정보 탭 포맷 그대로 출력) ===
-const eduInfoFiltered500m = computed(() => ({
-  elementary: filterDistancedString(auction.value?.marketDemand?.schoolInfoA),
-  middle: filterDistancedString(auction.value?.marketDemand?.schoolInfoB),
-  high: filterDistancedString(auction.value?.marketDemand?.schoolInfoC),
-}));
-// "수도권 인천2호선 검바위 (58m), 수도권 공항철도 검암 (946m)" → [{name, distance}]
-const parseStationList = (raw: string | undefined): Array<{ name: string; distance: string }> => {
-  if (!raw) return [];
-  return raw
-    .replace(/^[가-힣]+\s*:\s*/, '')
-    .split(',')
-    .map((chunk) => chunk.trim().match(/^(.*?)\s*\(\s*([\d.]+\s*(?:km|m))\s*\)$/i))
-    .filter((m): m is RegExpMatchArray => Boolean(m))
-    .map((m) => ({ name: m[1].trim(), distance: m[2].replace(/\s+/g, '') }));
-};
 
-const withinRadius = (items: Array<{ name: string; distance: string }>) =>
-  items.filter((it) => {
-    const d = parseDistanceMeters(it.distance);
-    return d !== null && d <= NEARBY_RADIUS_M;
-  });
-
-const stationItems500m = computed<Array<{ name: string; distance: string }>>(() => {
-  // 최신 PDF에는 카테고리별 주변환경 표(pdfNearbyEnv)가 없고 '도시철도' 한 줄만 있다.
-  // 물건정보 탭의 인근역세권이 쓰는 nearbyStation 문자열을 같은 소스로 사용한다.
-  const fromTable = auction.value?.pdfNearbyEnv?.subway?.items ?? [];
-  const items = fromTable.length > 0 ? fromTable : parseStationList(auction.value?.nearbyStation);
-  // 버스정류장은 정류장 명칭이 인근 학교·단지명이라 "역세권" 카드와 어울리지 않아 지하철만 본다.
-  return withinRadius(items);
-});
+const stationItems500m = computed(() => stationItems500mOf(auction.value));
 
 // 주변환경 500m — PDF 카테고리 표가 있으면 그것, 없으면 카카오 지도 검색 결과로 채운다
-const pdfNearbyFiltered500m = computed(() => {
-  const env = auction.value?.pdfNearbyEnv;
-  const fromPdf = env
-    ? PDF_NEARBY_LABELS
-        .filter((g) => env[g.key])
-        .map((g) => {
-          const items = withinRadius(env[g.key]!.items ?? []);
-          return { label: g.label, total: items.length, items };
-        })
-        .filter((g) => g.items.length > 0)
-    : [];
-  if (fromPdf.length > 0) return fromPdf;
-
-  return nearbyDisplay.value
-    .map((g) => {
-      const items = withinRadius(g.items);
-      return { label: g.label, total: items.length, items };
-    })
-    .filter((g) => g.items.length > 0);
-});
+const pdfNearbyFiltered500m = computed(() => pdfNearbyFiltered500mOf(auction.value, nearbyEnv.value));
 
 // === 시세조사 및 급매가 조사 표 ===
 const AGENCY_ROW_MIN = 1;

@@ -46,8 +46,8 @@ node web/build.mjs
   `/web` 은 앱과 같은 주소라, 같은 브라우저에서 앱에 로그인해 두었으면 웹도 저절로 로그인된다.
 - 로그인 전에는 예시 물건을 보여 준다. 로그인하면 앱 Firestore 물건(`auctions`)으로 바뀐다.
 - 웹에서 바꾼 중요도·단계·보관·휴지통·완전삭제·PDF 등록은 앱 저장소 함수(`saveAuction` · `setStatus` · `archiveAuctions` · `hideAuctions` · `restoreHiddenAuctions` · `purgeAuctions` · `importParsedPdfAuctions`)로 적는다.
-- 물건상세 정보요약·기본정보의 셈은 `src/services/detailSummary.ts` — 앱 물건상세에서 그대로 옮겨 온 코드를 앱과 웹이 같이 쓴다.
-- 빌드는 루트 `.env` 에서 `VITE_FIREBASE_*` 여섯 줄만 읽는다(공개 설정값). 다른 키는 읽지 않는다.
+- 물건상세 셈은 앱 물건상세에서 글자 그대로 옮겨 온 공통 파일을 앱과 웹이 같이 쓴다 — 정보요약·기본정보 `src/services/detailSummary.ts`, 입지정보 `src/services/locationInfo.ts`. 카카오 주변환경·좌표는 앱의 `kakaoNearby` · `routeOptimizer` 그대로.
+- 빌드는 루트 `.env` 에서 `VITE_FIREBASE_*` 여섯 줄과 `VITE_KAKAO_REST_API_KEY`(앱 번들이 이미 싣는 키)만 읽는다. 다른 키는 읽지 않는다.
 
 ## 알아 둘 것
 

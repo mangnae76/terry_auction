@@ -37,3 +37,10 @@ export {
 } from '../../src/services/detailSummary';
 /** 앱 저장소를 쓸 수 있게 Pinia 를 한 번 켠다 */
 export const startStores = () => { setActivePinia(createPinia()); };
+// 물건상세 입지정보 — 앱 물건상세와 같은 셈 · 카카오 주변환경 조회(앱과 같은 함수)
+export {
+  eduInfoOf, eduInfoFiltered500mOf, nearbyDisplayOf, pdfNearbyDisplayOf, pdfNearbyFiltered500mOf,
+  stationItems500mOf, naverMapUrl, stripDistanceFromName,
+} from '../../src/services/locationInfo';
+export { fetchNearbyEnvironment } from '../../src/services/kakaoNearby';
+export { geocodeAddress } from '../../src/services/routeOptimizer';

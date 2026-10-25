@@ -359,6 +359,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 1줄: 종류 칩 · 중요도·매각구분·면적 / 2줄: 주소 복사(종류 칩 아래) · 주소 */
 .ih-prop { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 10px; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
 .ih-line { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ih-stars { margin-left: auto; flex: 0 0 auto; }
 .ih-kind, .ih-copy { justify-self: start; }
 .ih-kind { padding: 2px 10px; border-radius: 999px; background: #e0eaff; color: #2b6df3; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .ih-sale { min-width: 0; font-size: 13px; color: #2b6df3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -371,6 +372,35 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 @media (max-width: 1100px) { .it-grid { grid-template-columns: minmax(0, 1fr); } }
 .it-card { background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); padding: 14px 24px 16px; min-width: 0; }
 .it-card.wide { grid-column: 1 / -1; }
+.it-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px; }
+.it-head h2 { margin: 0 !important; }
+.it-edit { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 12px; font-weight: 700; color: var(--text-2); }
+.it-edit.save { border-color: #2a5fbf; color: #2a5fbf; }
+.it-in { height: 28px; padding: 0 8px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 13px; color: var(--text); width: 110px; margin-left: 4px; text-align: right; }
+.it-in.sm { width: 64px; } .it-in.wide { width: 180px; }
+.it-in:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.it-rows.editing > dd { white-space: nowrap; }
+.it-vtabs { display: inline-flex; gap: 4px; padding: 3px; margin: 2px 0 10px; border-radius: 8px; background: var(--surface-2); }
+.it-vtabs button { height: 28px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.it-vtabs button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12); }
+.it-area + .it-area { margin-top: 12px; }
+.it-area h3 { margin: 0 0 6px; font-size: 13.5px; font-weight: 800; color: var(--text); }
+.it-kv { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+.it-kv th, .it-kv td { padding: 7px 10px; border: 1px solid var(--line); text-align: left; vertical-align: middle; word-break: break-word; }
+.it-kv th { width: 120px; background: var(--surface-2); color: var(--muted); font-weight: 700; }
+.it-kv.cols4 th { width: 104px; }
+.it-kv td.grid, .it-kv td.grid2 { line-height: 1.9; }
+.it-kv td.grid .it-place, .it-kv td.grid2 .it-place { display: inline-block; margin-right: 12px; }
+.it-floor th { width: auto; }
+.it-place { color: #2563eb; text-decoration: none; }
+.it-place:hover { text-decoration: underline; }
+.it-na { color: var(--faint); }
+.it-subtab { display: inline-block; margin: 2px 0 6px; padding: 3px 12px; border-radius: 6px; background: #374151; color: #fff; font-size: 12px; font-weight: 700; }
+.it-subtab ~ .it-subtab { margin-top: 12px; }
+.it-emptyline { margin: 0; padding: 10px 0; font-size: 13px; color: var(--faint); }
+.it-fetch { margin-left: 8px; height: 26px; padding: 0 10px; border: 1px solid #c7d7f7; border-radius: 6px; background: var(--surface); font-size: 12px; font-weight: 700; color: #2a5fbf; }
+.it-agency { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
+.it-agency li p { margin: 2px 0; font-size: 13px; }
 .it-card h2 { margin: 0 0 10px; display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 800; color: var(--text); }
 .it-card h2 svg { width: 18px; height: 18px; color: #2a5fbf; }
 .it-card h3 { margin: 0 0 8px; font-size: 13px; font-weight: 800; color: var(--text-2); }
@@ -849,7 +879,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .c-date svg { width: 14px; height: 14px; color: var(--muted); flex: 0 0 auto; }
 .card.past .c-date svg { color: var(--past-text); }
 .c-court { font-size: 13px; font-weight: 500; color: var(--text-2); flex: 0 3 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.c-case { font-size: 13px; font-weight: 400; color: var(--text); flex: 0 0 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; }
+.c-case, .c-court { display: inline-flex; align-items: center; gap: 5px; }
+.c-case svg, .c-court svg { width: 14px; height: 14px; color: var(--muted); flex: 0 0 auto; }
+.c-court .full, .c-court .short { overflow: hidden; text-overflow: ellipsis; }
+.c-case { font-size: 13px; color: var(--text); flex: 0 0 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.2px; }
 .c-court .short { display: none; }
 /* 법원 이름이 칸에 다 안 들어가면 앱처럼 줄여 쓴다 ('서울남부지방법원' → '서울남부법원') */
 .c-court.use-short .full { display: none; } .c-court.use-short .short { display: inline; }
@@ -1293,6 +1326,7 @@ html, body { overflow-x: clip; }
     villa: P('<path d="M3 21V9l6-4 6 4v12"/><path d="M15 21v-9h5v9"/><path d="M3 21h18"/><path d="M6.5 12h2M11 12h1M6.5 16h2M11 16h1"/>'),
     house: P('<path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/>'),
     shop: P('<path d="M3 9h18l-2-5H5L3 9z"/><path d="M5 9v12h14V9"/><path d="M9 21v-6h6v6"/>'),
+    hash: P('<path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16"/>'),
     court: P('<path d="M3 21h18M12 3 3 8h18L12 3ZM6 8v10M10 8v10M14 8v10M18 8v10"/>'),
     gt: P('<path d="m9 6 6 6-6 6"/>', 'class="gt" stroke-width="2.4"'),
     cal: P('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
@@ -1632,7 +1666,7 @@ html, body { overflow-x: clip; }
       ${past ? `<span class="ribbon" aria-hidden="true">${I.refresh}</span><span class="ribbon-hit" data-tip="입찰일이 지났습니다 · 갱신필요" data-tip-pos="left"></span>` : ''}
       <div class="c-top">
         ${S.pick ? `<input type="checkbox" class="ck pick-ck" data-act="pick-one" data-id="${it.id}" ${picked ? 'checked' : ''} aria-label="${esc(it.caseNo)} 고르기">` : ''}
-        <div class="c-meta"><span class="c-date num"${tip(`매각기일 ${ddayText(it.date)}${past ? ' · 지났습니다' : ''}`, 'left')}>${I.cal}${it.date}</span><span class="c-court" title="${esc(it.court)}"><span class="full">${hl(it.court)}</span><span class="short">${hl(shortCourt(it.court))}</span></span><span class="c-case num">${hl(it.caseNo)}</span></div>
+        <div class="c-meta"><span class="c-case num">${I.hash}${hl(it.caseNo)}</span><span class="c-court" title="${esc(it.court)}">${I.court}<span class="full">${hl(it.court)}</span><span class="short">${hl(shortCourt(it.court))}</span></span><span class="c-date num"${tip(`매각기일 ${ddayText(it.date)}${past ? ' · 지났습니다' : ''}`, 'left')}>${I.cal}${it.date}</span></div>
         <div class="c-acts">
           ${starsHtml(it)}
           <button type="button" class="ibtn" data-act="copy" data-id="${it.id}" aria-label="주소복사"${tip('주소복사')}>${I.copy}</button>
@@ -2267,7 +2301,10 @@ html, body { overflow-x: clip; }
     doc: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>',
     pin: '<path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
-    bld: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/>',
+    bld: '<path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M9 7h2M9 11h2M9 15h2M3 21h18M16 10h3a2 2 0 0 1 2 2v9"/>',
+    status: '<rect x="4" y="4" width="16" height="18" rx="2"/><path d="M9 2h6v4H9zM9 12h6M9 16h4"/>',
+    apt: '<path d="M3 21h18M5 21V7l7-4 7 4v14M10 21v-5h4v5"/>',
+    warn: '<path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z"/><path d="M12 9v4M12 17h.01"/>',
     cam: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>',
     scale: '<path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0L7 7zM17 7l-3 7a3 3 0 0 0 6 0l-3-7z"/>',
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
@@ -2278,7 +2315,8 @@ html, body { overflow-x: clip; }
     pct: '<path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
   };
   const secIc = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${SEC_IC[k] || ''}</svg>`;
-  const itCard = (ic, title, body, wide) => `<section class="it-card ${wide ? 'wide' : ''}"><h2>${secIc(ic)}${title}</h2>${body}</section>`;
+  const itCard = (ic, title, body, wide, extra = '') => `<section class="it-card ${wide ? 'wide' : ''}"><div class="it-head"><h2>${secIc(ic)}${title}</h2>${extra}</div>${body}</section>`;
+  const kvTable = (rows, cols = 2) => `<table class="it-kv cols${cols}"><tbody>${rows.join('')}</tbody></table>`;
   const itRows = (rows) => `<dl class="it-rows">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v || '<span class="it-none">-</span>'}</dd>`).join('')}</dl>`;
   const itEmpty = (t) => `<div class="it-empty">${t || '웹에는 아직 연결되지 않은 자료입니다 — 앱 물건상세에서 확인해 주세요.'}</div>`;
   const wonCell = (n) => (n > 0 ? `<b class="num">${won(n)}</b>원` : '');
@@ -2306,7 +2344,7 @@ html, body { overflow-x: clip; }
       </div>
       <div class="ih-prop">
         <span class="ih-kind">${esc(kind)}</span>
-        <span class="ih-line">${starsHtml(it)}<span class="ih-sale">${esc(sale)}${metaText ? ` · ${esc(metaText)}` : ''}</span></span>
+        <span class="ih-line"><span class="ih-sale">${esc(sale)}${metaText ? ` · ${esc(metaText)}` : ''}</span><span class="ih-stars">${starsHtml(it)}</span></span>
         <button type="button" class="ih-copy" data-act="item-copy" data-id="${it.id}" aria-label="주소 복사"${tip('지번주소 복사')}>${I.copy}주소</button>
         <p class="ih-addr">${esc(it.addr)}${it.bld ? ` <b>${esc(it.bld)}</b>` : ''}${it.unit ? ` <b>${esc(it.unit)}</b>` : ''}</p>
       </div>`;
@@ -2321,7 +2359,21 @@ html, body { overflow-x: clip; }
       const hi = (t) => `<span class="it-hi">${t}</span>`;
       const age = T.summaryApprovalAgeOf(sv('sum.approval'));
       const isApt = /아파트/.test(a.propertyType || '');
-      const summaryRows = [
+      const ed = S.sumEdit === it.id;
+      const inp = (k, ph, cls = '') => `<input class="it-in ${cls}" data-sum="${k}" value="${esc(sv(k))}" placeholder="${ph}">`;
+      const areaIn = (k, ph) => `<input class="it-in" inputmode="decimal" data-sum="${k}" data-area="1" value="${esc(String(Number(String(sv(k)).replace(/[^\d.]/g, '')) || ''))}" placeholder="${ph}">`;
+      const summaryRows = ed ? [
+        ['관할법원', `${inp('sum.court', '법원명')}${inp('sum.courtDept', '경매○계', 'sm')}${inp('sum.courtPhone', '연락처입력')}`],
+        ['사용승인', inp('sum.approval', 'YYYY-MM-DD', 'wide')],
+        ['공급/전용면적(㎡/평)', `${areaIn('sum.supplyArea', '공급')} / ${areaIn('sum.exclusiveArea', '전용')}㎡`],
+        ['대지면적(㎡/평)', `${areaIn('sum.landArea', '0')}㎡`],
+        ...(T.hasBuildingName(a.address || '') ? [] : [['건물명', inp('sum.buildingName', '빌라명 입력', 'wide')]]),
+        ['동/호', `${inp('sum.dong', '동', 'sm')}동 / ${inp('sum.ho', '호', 'sm')}호`],
+        ['층', `${inp('sum.floorCurrent', '해당', 'sm')}층 / ${inp('sum.floorTotal', '전체', 'sm')}층`],
+        ['용적률', `${inp('sum.far', '0', 'sm')}%`],
+        ['세대수', `${inp('sum.units', '0', 'sm')}세대`],
+        ...(isApt ? [['해당면적 세대수', `${inp('sum.areaUnits', '0', 'sm')}세대`]] : []),
+      ] : [
         ['관할법원', `${esc(sv('sum.court') || '-')}${sv('sum.courtDept') ? `<span class="it-dept">${esc(sv('sum.courtDept'))}</span>` : ''}${sv('sum.courtPhone') ? ` <a class="it-tel" href="tel:${esc(sv('sum.courtPhone').replace(/[^0-9+]/g, ''))}">${esc(sv('sum.courtPhone'))}</a>` : ''}`],
         ['사용승인', hi(`${esc(sv('sum.approval') || '-')}${age ? ` / ${age}` : ''}`)],
         ['공급/전용면적(㎡/평)', `${T.summaryAreaText(sv('sum.supplyArea'))} / ${hi(T.summaryAreaText(sv('sum.exclusiveArea')))}`],
@@ -2346,11 +2398,14 @@ html, body { overflow-x: clip; }
           <dt>보증금 (10%)</dt><dd class="amt deposit">${fm(T.depositAmountOf(a))}원</dd>
         </dl>`;
       return [
-        itCard('doc', '정보요약', `<dl class="it-rows">${summaryRows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`),
+        itCard('doc', '정보요약', `<dl class="it-rows ${ed ? 'editing' : ''}">${summaryRows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`, false,
+          ed ? `<button type="button" class="it-edit save" data-act="sum-done" data-id="${it.id}">완료</button>` : `<button type="button" class="it-edit" data-act="sum-edit" data-id="${it.id}">${I.pen || ''}편집</button>`),
         itCard('info', '기본정보', baseRows),
-        itCard('pin', '입지정보', itEmpty()),
-        itCard('bld', '건축물정보', itEmpty()),
-        itCard('info', '물건현황', itEmpty()),
+        locationCardHtml(it, a),
+        buildingCardHtml(a),
+        statusCardHtml(a),
+        ...(isApt && a.aptComplexInfo ? [aptCardHtml(a)] : []),
+        ...(isApt && a.arrearsInfo ? [arrearsCardHtml(a)] : []),
       ].join('');
     }
     if (tab === 'rights') return [
@@ -2385,6 +2440,118 @@ html, body { overflow-x: clip; }
         <div><h3>수익</h3>${itRows([['매도가', wonCell(r.sale)], ['총투자금', wonCell(bid + r.cost)], ['실투자금', money(r.net)], ['매매차익', money(gain)], ['사업소득세', money(tax)], ['지방소득세', money(local)], ['세후 순이익', money(r.after)], ['세후 수익률', `<b class="num ${r.rate < 0 ? 'neg' : 'pos'}">${r.rate.toFixed(1)}</b>%`]])}</div>
       </div>`, true) + taxTableHtml();
   }
+  /* 장소 이름 → 네이버 지도 (앱 locationInfo.naverMapUrl · stripDistanceFromName) */
+  const placeLink = (raw, label) => `<a class="it-place" href="${CLOUD.T.naverMapUrl(CLOUD.T.stripDistanceFromName(raw))}" target="_blank" rel="noopener">${esc(label || raw)}</a>`;
+  const NA = '<span class="it-na">-</span>';
+  function locationCardHtml(it, a) {
+    const T = CLOUD.T; const env = CLOUD.nearby.get(it.id) || null; const busy = CLOUD.nearbyBusy === it.id;
+    const view = S.areaView || 'all'; const nv = S.nearbyView || 'pdf';
+    const tabs = `<div class="it-vtabs"><button type="button" class="${view === 'all' ? 'on' : ''}" data-act="area-view" data-v="all">전체</button><button type="button" class="${view === 'near' ? 'on' : ''}" data-act="area-view" data-v="near">500M 미만</button></div>`;
+    const list = (arr, fmt) => (arr.length ? arr.map(fmt).join('') : NA);
+    const block = (h, body) => `<div class="it-area"><h3>${h}</h3>${body}</div>`;
+    let body;
+    if (view === 'near') {
+      const st = T.stationItems500mOf(a); const edu = T.eduInfoFiltered500mOf(a); const near = T.pdfNearbyFiltered500mOf(a, env);
+      body = block('인근역세권', kvTable([`<tr><th>지하철(${st.length})</th><td class="grid2">${list(st, (p) => placeLink(p.name, `${p.name}(${p.distance})`))}</td></tr>`]))
+        + block('교육환경', kvTable([['초등학교', edu.elementary], ['중학교', edu.middle], ['고등학교', edu.high]].map(([k, arr]) => `<tr><th>${k}(${arr.length})</th><td class="grid">${list(arr, (x) => placeLink(x))}</td></tr>`)))
+        + block('주변환경', near.length ? kvTable(near.map((g) => `<tr><th>${g.label}(${g.total})</th><td class="grid2">${g.items.map((p) => placeLink(p.name, `${p.name}(${p.distance})`)).join('')}</td></tr>`))
+          : busy ? '<p class="it-emptyline">카카오 지도에서 조회 중…</p>' : `<p class="it-emptyline">500m 이내 주변환경 정보 없음 <button type="button" class="it-fetch" data-act="kakao-near" data-id="${it.id}">카카오 지도에서 불러오기</button></p>`);
+    } else {
+      const edu = T.eduInfoOf(a); const pdf = T.pdfNearbyDisplayOf(a); const ag = a.adminAgencyItems || [];
+      const kakao = T.nearbyDisplayOf(env);
+      const ntabs = `<div class="it-vtabs"><button type="button" class="${nv === 'pdf' ? 'on' : ''}" data-act="nearby-view" data-v="pdf">PDF 주변환경</button><button type="button" class="${nv === 'kakao' ? 'on' : ''}" data-act="nearby-view" data-v="kakao" data-id="${it.id}">카카오 지도 검색</button></div>`;
+      let near;
+      if (nv === 'pdf') {
+        near = (pdf.length ? kvTable(pdf.map((g) => `<tr><th>${g.label}(${g.total})</th><td class="grid2">${list(g.items, (p) => placeLink(p.name, `${p.name}(${p.distance})`))}</td></tr>`)) : '')
+          + (ag.length ? `<ul class="it-agency">${ag.map((x) => `<li><p>${placeLink(x.name, x.name)}${x.type ? ` <span class="it-sub">(${esc(x.type)})</span>` : ''}</p>${x.address ? `<p class="it-sub">${x.zip ? `[${esc(x.zip)}] ` : ''}${esc(x.address)}</p>` : ''}${x.phone || x.fax ? `<p class="it-sub">${x.phone ? `전화 ${esc(x.phone)}` : ''}${x.phone && x.fax ? ' / ' : ''}${x.fax ? `팩스 ${esc(x.fax)}` : ''}</p>` : ''}${x.area ? `<p class="it-sub">관할구역 ${esc(x.area)}</p>` : ''}</li>`).join('')}</ul>` : '')
+          || '<p class="it-emptyline">PDF 주변환경 정보 없음</p>';
+      } else {
+        near = busy ? '<p class="it-emptyline">카카오 지도에서 조회 중…</p>'
+          : !env ? `<p class="it-emptyline">카카오 지도 검색 결과를 불러오지 못했습니다. <button type="button" class="it-fetch" data-act="kakao-near" data-id="${it.id}">다시 시도</button></p>`
+          : kakao.length ? kvTable(kakao.map((g) => `<tr><th>${g.label}(${g.total})</th><td class="grid2">${list(g.items, (p) => placeLink(p.name, `${p.name}(${p.distance})`))}</td></tr>`)) : '<p class="it-emptyline">카카오 검색 결과 없음</p>';
+      }
+      body = block('인근역세권', kvTable([`<tr><th>인근역</th><td>${a.nearbyStation ? placeLink(a.nearbyStation) : NA}</td></tr>`]))
+        + block('교육환경', kvTable([['초등학교', edu.elementary], ['중학교', edu.middle], ['고등학교', edu.high]].map(([k, arr]) => `<tr><th>${k}(${arr.length})</th><td class="grid">${list(arr, (x) => placeLink(x))}</td></tr>`)))
+        + block('주변환경', ntabs + near);
+    }
+    return itCard('pin', '입지정보', tabs + body);
+  }
+  function buildingCardHtml(a) {
+    const h = a.buildingHeader || {}; const v = (x) => esc(x || '-'); const full = a.address || a.roadAddress || '';
+    const ex = a.buildingAreaM2 ? `${a.buildingAreaM2}㎡ (${a.buildingAreaPyeong || 0}평)` : '';
+    let out = '';
+    if (h.landAreaTotal || h.buildingAreaTotal || h.totalFloorArea) {
+      out += `<div class="it-subtab">표제부</div>` + kvTable([
+        `<tr><th>위치</th><td colspan="3">${v(h.locationDetail || full)}</td></tr>`,
+        `<tr><th>가구</th><td>${v(h.households)}</td><th>전용</th><td>${esc(`${a.buildingAreaM2 || 0}㎡ (${a.buildingAreaPyeong || 0}평)`)}</td></tr>`,
+        `<tr><th>대지</th><td>${v(h.landAreaTotal)}</td><th>건폐율</th><td>${v(h.buildingCoverage)}</td></tr>`,
+        `<tr><th>건축</th><td>${v(h.buildingAreaTotal)}</td><th>용적률</th><td>${v(h.floorAreaRatio)}</td></tr>`,
+        `<tr><th>연면적</th><td>${v(h.totalFloorArea)}</td><th>주용도</th><td>${v(h.mainUse || a.propertyType)}</td></tr>`,
+        `<tr><th>허가일</th><td>${v(h.permitDate)}</td><th>착공일</th><td>${v(h.startDate)}</td></tr>`,
+        `<tr><th>층수</th><td>${v(h.floors)}</td><th>승강기</th><td>${v(h.elevator)}</td></tr>`,
+        `<tr><th>사용승인</th><td>${v(h.approvalDate || a.approvalDate)}</td><th>주차</th><td>${v(h.parking)}</td></tr>`,
+        `<tr><th>구조</th><td colspan="3">${v(a.structureType)}</td></tr>`,
+      ], 4);
+    }
+    if (h.unitExclusiveArea || h.unitLocation) {
+      out += `<div class="it-subtab">전유부</div>` + kvTable([
+        `<tr><th>소재지</th><td colspan="3">${v(h.unitLocation || full)}</td></tr>`,
+        ...(h.unitHouseholds || h.households ? [`<tr><th>총 가구/세대/호</th><td>${v(h.unitHouseholds || h.households)}</td><th>주용도</th><td>${v(h.mainUse || a.propertyType)}</td></tr>`] : []),
+        `<tr><th>전용면적</th><td>${v(h.unitExclusiveArea || ex)}</td><th>공용면적</th><td>${v(h.unitCommonArea)}</td></tr>`,
+        `<tr><th>층</th><td>${v(h.unitFloor)}</td><th>층수(지하/지상)</th><td>${v(h.floors)}</td></tr>`,
+        `<tr><th>사용승인일자</th><td>${v(h.approvalDate || a.approvalDate)}</td><th>승강기(비상/승용)</th><td>${v(h.elevator)}</td></tr>`,
+        `<tr><th>구조</th><td>${v(h.unitStructure || a.structureType)}</td><th>총 주차수</th><td>${v(h.unitTotalParking || h.parking)}</td></tr>`,
+      ], 4);
+    }
+    if (!out) {
+      out = kvTable([
+        `<tr><th>위치</th><td colspan="3">${v(full)}</td></tr>`,
+        `<tr><th>전용면적</th><td>${esc(`${a.buildingAreaM2 || 0}㎡ (${a.buildingAreaPyeong || 0}평)`)}</td><th>사용승인</th><td>${v(a.approvalDate)}</td></tr>`,
+        `<tr><th>구조</th><td colspan="3">${v(a.structureType)}</td></tr>`,
+      ], 4);
+    }
+    const fr = h.exclusiveFloorRows || [];
+    if (fr.length) out += `<table class="it-kv it-floor"><thead><tr><th>층</th><th>면적</th><th>구조</th><th>주용도</th><th>기타용도</th></tr></thead><tbody>${fr.map((r) => `<tr><td>${esc(r.floor)}</td><td>${esc(r.area)}</td><td>${esc(r.structure)}</td><td>${esc(r.mainUse)}</td><td>${esc(r.otherUse)}</td></tr>`).join('')}</tbody></table>`;
+    return itCard('bld', '건축물정보', out);
+  }
+  function statusCardHtml(a) {
+    const full = a.address || a.roadAddress || '';
+    const price = a.officialPriceValue ? `공동주택공시가 ${Number(a.officialPriceValue).toLocaleString('ko-KR')}원`
+      : a.officialPriceBand ? `공시가 구간 ${esc(a.officialPriceBand)} <span class="it-na">(PDF에 공시가격 금액 없음)</span>` : '<span class="it-na">공시가격 정보 없음</span>';
+    return itCard('status', '물건현황', `<table class="it-kv cols2"><tbody><tr><th rowspan="2">공시가격</th><td>${esc(full)}</td></tr><tr><td>${price}</td></tr></tbody></table>`);
+  }
+  function aptCardHtml(a) {
+    const c = a.aptComplexInfo; const v = (x) => esc(x || '-');
+    return itCard('apt', '단지정보', kvTable([
+      `<tr><th>단지명</th><td colspan="3">${v(c.name)}</td></tr>`,
+      `<tr><th>세대수</th><td>${v(c.households)}</td><th>동 수</th><td>${v(c.buildings)}</td></tr>`,
+      `<tr><th>사용승인일</th><td>${v(c.approvalDate)}</td><th>시공사</th><td>${v(c.contractor)}</td></tr>`,
+      `<tr><th>주차 수</th><td>${v(c.parkingTotal)}</td><th>세대당 주차</th><td>${v(c.parkingPerHouse)}</td></tr>`,
+      `<tr><th>난방 방식</th><td>${v(c.heatingType)}</td><th>난방 연료</th><td>${v(c.heatingFuel)}</td></tr>`,
+      `<tr><th>용적률</th><td>${v(c.floorRatio)}</td><th>건폐율</th><td>${v(c.buildingCoverage)}</td></tr>`,
+      `<tr><th>최고층</th><td>${v(c.topFloor)}</td><th>최저층</th><td>${v(c.bottomFloor)}</td></tr>`,
+      `<tr><th>관리소</th><td colspan="3">${c.managementPhone ? `<a class="it-tel" href="tel:${esc(c.managementPhone.replace(/[^\d+]/g, ''))}">${esc(c.managementPhone)}</a>` : '-'}</td></tr>`,
+      ...[['편의시설', c.facilities], ['교육시설', c.schools], ['휴식/공원', c.restPark], ['면적 종류', c.areaTypes], ['전기차충전소', c.evCharger]].filter(([, x]) => x).map(([k, x]) => `<tr><th>${k}</th><td colspan="3">${esc(x)}</td></tr>`),
+    ], 4));
+  }
+  function arrearsCardHtml(a) {
+    const r = a.arrearsInfo; const v = (x) => esc(x || '-');
+    return itCard('warn', '체납내역', kvTable([
+      `<tr><th>조사일</th><td>${v(r.surveyDate)}</td><th>체납금액</th><td>${v(r.amount)}</td></tr>`,
+      ...(r.note ? [`<tr><th>비고</th><td colspan="3">${esc(r.note)}</td></tr>`] : []),
+    ], 4));
+  }
+  /* 카카오 주변환경 — 앱 fetchNearbyForAuction 과 같은 순서(주소 → 좌표 → 1km 안 장소) */
+  async function fetchNearbyFor(id) {
+    const it = byId(id); if (!it || CLOUD.nearbyBusy) return;
+    const a = detailOf(it); const addr = a.roadAddress || a.address; if (!addr || !CLOUD.T) return;
+    CLOUD.nearbyBusy = id; renderItem();
+    try {
+      const point = await CLOUD.T.geocodeAddress(addr);
+      if (point) CLOUD.nearby.set(id, await CLOUD.T.fetchNearbyEnvironment(point.lat, point.lng, 1000));
+    } catch (e) { console.error('[Nearby]', e); }
+    finally { CLOUD.nearbyBusy = ''; if (S.route === 'item' && S.itemId === id) renderItem(); }
+  }
   function taxTableHtml() {
     const br = [['1,400만원 이하', '6%', '-'], ['1,400만~5,000만원', '15%', '126만원'], ['5,000만~8,800만원', '24%', '576만원'], ['8,800만~1.5억원', '35%', '1,544만원'], ['1.5억~3억원', '38%', '1,994만원'], ['3억~5억원', '40%', '2,594만원'], ['5억~10억원', '42%', '3,594만원'], ['10억원 초과', '45%', '6,594만원']];
     return itCard('pct', '개인소득세율 <span class="it-sub">종합소득세</span>', `<table class="it-table"><thead><tr><th>과세표준</th><th>세율</th><th>누진공제</th></tr></thead><tbody>${br.map((b) => `<tr><td>${b[0]}</td><td class="num">${b[1]}</td><td class="num">${b[2]}</td></tr>`).join('')}</tbody></table>`, true);
@@ -2414,7 +2581,7 @@ html, body { overflow-x: clip; }
      로그인 전에는 예시 물건을 보여 주고, 로그인하면 앱과 같은 Firestore 물건으로 바꾼다.
      웹에서 바꾼 중요도·단계·보관·휴지통은 앱 저장소의 함수(saveAuction · archiveAuctions …)로 그대로 적는다 */
   const DEMO_ITEMS = items.slice();
-  const CLOUD = { on: false, T: null, auth: null, store: null, raw: new Map() };
+  const CLOUD = { on: false, T: null, auth: null, store: null, raw: new Map(), nearby: new Map(), nearbyBusy: '' };
   /* 앱 물건(AuctionDetail) → 웹 카드 한 장. 값은 앱 셈 함수로 낸다 */
   const toWebItem = (a) => {
     const T = CLOUD.T;
@@ -2436,7 +2603,7 @@ html, body { overflow-x: clip; }
     id: it.id, eventDate: it.date, courtName: it.court, caseNumber: it.caseNo, address: addrText(it), propertyType: it.type,
     buildingAreaM2: it.bldg, landAreaM2: it.land, auctionRound: it.round, auctionHistory: [], status: it.status, priority: it.priority,
     metrics: { appraisalValue: it.apr, minimumBidValue: it.min, myBidValue: it.mine || 0, bidRate: 0 },
-    basicSummary: {}, ownerName: '', debtorName: '', creditorName: '', approvalDate: '',
+    basicSummary: (S.demoSum && S.demoSum[it.id]) || {}, ownerName: '', debtorName: '', creditorName: '', approvalDate: '',
   });
   const detailOf = (it) => CLOUD.raw.get(it.id) || demoDetail(it);
   /* 웹에서 바꾼 값을 앱 저장소로 — 앱 화면과 같은 함수를 부른다 */
@@ -2618,6 +2785,27 @@ html, body { overflow-x: clip; }
       }
       case 'register': case 'go-register': go('register'); break;
       case 'go-list': go('list'); break;
+      case 'area-view': S.areaView = v; renderItem(); break;
+      case 'nearby-view': S.nearbyView = v; if (v === 'kakao' && !CLOUD.nearby.has(S.itemId)) fetchNearbyFor(S.itemId); else renderItem(); break;
+      case 'kakao-near': fetchNearbyFor(id || S.itemId); break;
+      case 'sum-edit': S.sumEdit = id; renderItem(); break;
+      case 'sum-done': {
+        /* 완료 — 적은 값을 정보요약(basicSummary)에 넣는다. 앱 물건이면 앱 saveAuction 으로 적는다 */
+        const it2 = byId(id); if (!it2) { S.sumEdit = ''; renderItem(); break; }
+        const a = detailOf(it2); const next = { ...(a.basicSummary || {}) };
+        document.querySelectorAll('#itemContent [data-sum]').forEach((el) => {
+          let val = el.value.trim();
+          if (el.dataset.area) { const n = Number(val.replace(/[^\d.]/g, '')); val = Number.isFinite(n) && n > 0 ? String(n) : ''; }
+          next[el.dataset.sum] = val;
+        });
+        S.sumEdit = '';
+        if (CLOUD.on && CLOUD.raw.has(id)) {
+          const saved = { ...CLOUD.raw.get(id), basicSummary: next };
+          CLOUD.raw.set(id, saved);
+          CLOUD.store.saveAuction(saved).then(() => toast('정보요약을 저장했습니다.')).catch(() => toast('앱 자료에 적지 못했습니다.', 'info'));
+        } else { S.demoSum = S.demoSum || {}; S.demoSum[id] = next; toast('정보요약을 적었습니다 (예시 물건이라 이 화면에만 남습니다).', 'info'); }
+        renderItem(); break;
+      }
       case 'go-profit': S.itemTabNext = 'profit'; go('item', id); break;
       case 'item-copy': copyText(addrText(it)); break;
       case 'fav-open': S.pop = ''; render(); S.modal = favModal(-1); renderModal(); break;
