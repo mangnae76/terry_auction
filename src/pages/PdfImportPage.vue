@@ -950,7 +950,7 @@ const onDropFiles = async (e: DragEvent) => {
           <ul class="pip-ai-help">
             <li>키는 <b>이 기기에만</b> 저장됩니다.</li>
             <li>규칙으로 못 읽은 칸만 채우고, PDF에서 근거 글을 못 찾은 값은 버립니다.</li>
-            <li>키 받는 곳: <button type="button" class="pip-key-link inline" @click="openGeminiKeySite">Google AI Studio</button> → Get API key</li>
+            <li>키 받는 곳 <button type="button" class="pip-key-link inline" @click="openGeminiKeySite">Google AI Studio</button> → Get API key</li>
             <li>Google 계정으로 로그인 → Get API key → Create API key</li>
           </ul>
           <div class="pip-ai-btns">
