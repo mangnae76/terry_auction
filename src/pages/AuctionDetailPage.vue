@@ -2533,7 +2533,7 @@ type IndivItem = {
 type IndivGroup = { title: string; items: IndivItem[] };
 const INDIV_GROUPS: IndivGroup[] = [
   {
-    title: '경매빌라 개별성',
+    title: '빌라 개별성',
     items: [
       { id: 'ind.age', label: '년식', yearMonth: true, rate: '-15%' },
       { id: 'ind.parking', label: '주차수', text: true, half: true, rate: '5%' },
@@ -2552,7 +2552,7 @@ const INDIV_GROUPS: IndivGroup[] = [
     ],
   },
   {
-    title: '경매호실 개별성',
+    title: '호실 개별성',
     items: [
       { id: 'ind.floorNum', label: '층', custom: 'floor', rate: '3%' },
       { id: 'ind.direction', label: '향', multi: true, options: ['동', '서', '남', '북'], rate: '5%' },
@@ -7665,7 +7665,7 @@ const goBack = () => router.back();
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
             </div>
           <div class="adp-ind-body">
-            <!-- 경매빌라 개별성 · 경매호실 개별성 — 넓으면 나란히, 좁으면 위아래 -->
+            <!-- 빌라 개별성 · 호실 개별성 — 넓으면 나란히, 좁으면 위아래 -->
             <div class="adp-ind-pair">
             <table v-for="g in INDIV_GROUPS" :key="g.title" class="adp-table adp-ind-table">
               <colgroup>
