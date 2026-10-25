@@ -4548,6 +4548,15 @@ const removeRightsDocAt = async (idx: number) => {
   await discardPastedImage(removed);
 };
 
+/** AI 권리분석 진단 — 지금은 자리만 있다. AI 분석이 붙으면 이 값을 채운다
+ *  baseRight: 말소기준권리가 어떤 권리인지 (예: '근저당권 2015.03.02')
+ *  takeover: 낙찰자가 떠안는 권리 · extinguish: 낙찰되면 저절로 없어지는 권리 */
+const rightsDiag = computed(() => ({
+  baseRight: '',
+  takeover: [] as string[],
+  extinguish: [] as string[],
+}));
+
 // === 항목별 사진·링크 모음 (입지조사 등) ===
 const extraInput = ref<Record<string, string>>({});
 const extraErr = ref<Record<string, string>>({});
@@ -6819,11 +6828,26 @@ const goBack = () => router.back();
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsDiag') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('rightsDiag')">
-            <!-- 상자 셋 — AI 가 분석하면 값(기준권리 이름 · 개수)이 큰 글씨로 들어간다 -->
+            <!-- 상자 셋 — 말소기준권리는 어떤 권리인지, 인수·말소는 개수와 그 아래 권리 이름 -->
             <div class="adp-diag-boxes">
-              <div class="adp-diag-box"><span class="adp-diag-k">말소기준권리</span><b class="adp-diag-v">-</b></div>
-              <div class="adp-diag-box"><span class="adp-diag-k">인수권리수</span><b class="adp-diag-v">-</b></div>
-              <div class="adp-diag-box"><span class="adp-diag-k">말소권리수</span><b class="adp-diag-v">-</b></div>
+              <div class="adp-diag-box">
+                <span class="adp-diag-k">말소기준권리</span>
+                <b :class="['adp-diag-v', 'adp-diag-name', { on: rightsDiag.baseRight }]">{{ rightsDiag.baseRight || '-' }}</b>
+              </div>
+              <div class="adp-diag-box">
+                <span class="adp-diag-k">인수권리수</span>
+                <b :class="['adp-diag-v', { on: rightsDiag.baseRight }]">{{ rightsDiag.baseRight ? `${rightsDiag.takeover.length}개` : '-' }}</b>
+                <ul v-if="rightsDiag.takeover.length" class="adp-diag-list take">
+                  <li v-for="(r, i) in rightsDiag.takeover" :key="i">{{ r }}</li>
+                </ul>
+              </div>
+              <div class="adp-diag-box">
+                <span class="adp-diag-k">말소권리수</span>
+                <b :class="['adp-diag-v', { on: rightsDiag.baseRight }]">{{ rightsDiag.baseRight ? `${rightsDiag.extinguish.length}개` : '-' }}</b>
+                <ul v-if="rightsDiag.extinguish.length" class="adp-diag-list">
+                  <li v-for="(r, i) in rightsDiag.extinguish" :key="i">{{ r }}</li>
+                </ul>
+              </div>
             </div>
           </div>
         </section>
@@ -8926,6 +8950,12 @@ const goBack = () => router.back();
 }
 .adp-diag-k { font-size: 12.5px; font-weight: 400; color: #6b7280; white-space: nowrap; }
 .adp-diag-v { font-size: 20px; font-weight: 800; color: #9ca3af; line-height: 1.1; }
+.adp-diag-v.on { color: #111827; }
+/* 말소기준권리는 권리 이름이라 숫자보다 작게, 길면 줄을 바꾼다 */
+.adp-diag-name { font-size: 16px; line-height: 1.3; word-break: keep-all; }
+/* 개수 아래 권리 이름 — 글씨는 상자 이름(인수권리수 · 말소권리수)과 같은 크기 */
+.adp-diag-list { margin: 0; padding: 0; list-style: none; font-size: 12.5px; line-height: 1.45; color: #6b7280; word-break: keep-all; }
+.adp-diag-list.take { color: #dc2626; }
 .adp-doc-old { margin: 10px 0 4px; font-size: 12px; font-weight: 700; color: #9ca3af; }
 .adp-body { flex: 1 1 auto; padding: 0 5px 12px; display: flex; flex-direction: column; gap: 8px; }
 
