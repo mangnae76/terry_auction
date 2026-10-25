@@ -2397,6 +2397,8 @@ const ALL_SECTION_KEYS = [
   'summary', 'base', 'tenant', 'bld', 'status', 'registry', 'cases', 'apt', 'arrears',
   'areaInfo', 'photos', 'rightsPhotos', 'rightsCheck', 'sameLot', 'casePrice',
   'realUser', 'demand', 'survPrice', 'survField', 'trades', 'checklist', 'profit', 'taxRef',
+  // 권리분석 탭의 AI 카드 · 정리 — 새 카드를 만들면 여기에도 넣어야 '전체 접기'가 같이 접는다
+  'rightsDiag', 'evictDiag', 'rightsConclusion', 'rightsConc',
 ];
 const allCollapsed = computed(() => ALL_SECTION_KEYS.every((key) => collapsed.value[key]));
 const toggleAllSections = () => {

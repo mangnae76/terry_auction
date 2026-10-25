@@ -365,8 +365,15 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .ih-stage.off { border-color: #c4c9d4; background: #eef0f4; color: #6b7280; }
 .ih-stage.done { border-color: #34b37a; background: #dcf5e8; color: #157a4b; }
 /* 1줄: 종류 칩 · 중요도·매각구분·면적 / 2줄: 주소 복사(종류 칩 아래) · 주소 */
-.ih-prop { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 10px; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
-.ih-line { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ih-prop { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px 10px; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
+.ih-line { display: flex; align-items: center; gap: 10px; min-width: 0; grid-column: 2 / 4; }
+/* 전체 접기 — 별 아래, 앱 .adp-fold-all 과 같은 모양(34×26 · 16px 화살표) */
+.ih-fold { grid-column: 3; justify-self: end; width: 34px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.ih-fold:hover { background: #f2f6ff; }
+.ih-fold img { width: 16px; height: 16px; object-fit: contain; transition: transform .2s; }
+.ih-fold.up img { transform: rotate(180deg); }
+/* 물건정보 탭 — 전체 접기면 카드 제목만 남긴다 */
+.it-grid.folded .it-card > :not(.it-head) { display: none; }
 .ih-stars { margin-left: auto; flex: 0 0 auto; }
 /* 종류 칩과 주소 칩은 같은 크기 — 위아래로 줄이 맞는다 */
 .ih-kind, .ih-copy { justify-self: start; box-sizing: border-box; display: inline-flex !important; align-items: center; justify-content: center; min-width: 64px; height: 24px !important; padding: 0 10px !important; font-size: 12px !important; border: 1px solid transparent; }
@@ -2388,6 +2395,23 @@ html, body { overflow-x: clip; }
   const itRows = (rows) => `<dl class="it-rows">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v || '<span class="it-none">-</span>'}</dd>`).join('')}</dl>`;
   const itEmpty = (t) => `<div class="it-empty">${t || '웹에는 아직 연결되지 않은 자료입니다 — 앱 물건상세에서 확인해 주세요.'}</div>`;
   const wonCell = (n) => (n > 0 ? `<b class="num">${won(n)}</b>원` : '');
+  /* 전체 접기 — 앱 물건상세 머리의 접기 단추와 같은 그림(assets/icones/chevron-down (1).png) */
+  const CHEV_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAB4ElEQVR4AeyZQU7DMBRE7Z4EbgIXgbCNWBX2iD2wQt0STgI3oSchZKIGRZaSxo7/d2tPJbe1av358zxOU3VjCn8QQOEBMEwAE1A4AR6BwgPAiyCPAI9A4QR4BAoPAL8FijsCbuIJwCVS2pwJKG3HXb9MgEuktHlwAqr7x6vb+qHtxs9NvX3SBjfWr+ptFaofDKD9bT8OohfW2EoTAsx3+l+Dfmts8AYEAziIDy9qEBzz//rDG9/XYADWtM+OmDiECfPGbuy108viaTCAZvfWdBDuHCUxCHPmm/eXb6ePxdNgAFDQgiBlHh5WAUABaQiS5tH/agAoIgVB2jx6jwIAhWJD0DCPvqMBQLFYEGKaR19zIyoACK2FoGke/UYHgKKhELTNo1cRACjsCyGFefQpBgDFl0JIZR49igKAwDEIKc2jP3EAEJmDMPpVh6X9wL39mtvbvsjCJxUA6GUKAj4bD03z0FUDALEJCPioH9rmIaoKAIJTEFKYRz/qACA6grDv5vtU5jvtdP8NAsLn7vUSQ+uCB8PuSJIAt4mUcwJISf8UtJmAU9iFmD341mICfInltp4JyG1Hff0wAb7EclvPBOS2o75+mABfYrmtZwJy21FfP0yAL7Hc1jMB576ja/v/AwAA//+SlSsAAAAABklEQVQDAEGh9oGVKZbsAAAAAElFTkSuQmCC';
+  /* 탭마다 — 물건정보는 웹 카드를 접고, 나머지(앱 화면을 띄운 탭)는 앱의 '전체 접기'를 그대로 누른다 */
+  const syncFoldBtn = () => {
+    const btn = $('ihFold'); if (!btn) return;
+    const app = document.querySelector('#appDetailMount .adp-fold-all');
+    const up = app ? !!app.querySelector('.adp-chev.up') : !!S.itFold;
+    btn.classList.toggle('up', up);
+    btn.setAttribute('aria-label', up ? '전체 펼치기' : '전체 접기');
+  };
+  const toggleFoldAll = () => {
+    const app = document.querySelector('#appDetailMount .adp-fold-all');
+    if (app) { app.click(); requestAnimationFrame(syncFoldBtn); return; }
+    S.itFold = !S.itFold;
+    const grid = document.querySelector('#itemContent .it-grid'); if (grid) grid.classList.toggle('folded', S.itFold);
+    syncFoldBtn();
+  };
   function itemHeadHtml(it) {
     const a = detailOf(it); const T = CLOUD.T;
     const kind = TYPE_NAME(it.type) || '다세대';
@@ -2415,6 +2439,7 @@ html, body { overflow-x: clip; }
         <span class="ih-line"><span class="ih-sale">${esc(sale)}${metaText ? ` · ${esc(metaText)}` : ''}</span><span class="ih-stars">${starsHtml(it)}</span></span>
         <button type="button" class="ih-copy" data-act="item-copy" data-id="${it.id}" aria-label="주소 복사"${tip('지번주소 복사')}>${I.copy}주소</button>
         <p class="ih-addr">${esc(it.addr)}${it.bld ? ` <b>${esc(it.bld)}</b>` : ''}${it.unit ? ` <b>${esc(it.unit)}</b>` : ''}</p>
+        <button type="button" class="ih-fold" id="ihFold" data-act="fold-all" aria-label="전체 접기"${tip('전체 접기 · 펼치기', 'left')}><img src="${CHEV_PNG}" alt=""></button>
       </div>`;
   }
   function itemTabHtml(it, tab) {
@@ -2690,9 +2715,10 @@ html, body { overflow-x: clip; }
     const it = byId(S.itemId);
     if (!it) { $('itemHead').innerHTML = '<div class="ih-top"><button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button><h1 class="ih-title">물건을 찾을 수 없습니다</h1></div>'; $('itemContent').innerHTML = ''; return; }
     $('itemHead').innerHTML = itemHeadHtml(it);
-    if (['rights', 'survey', 'verify', 'profit'].includes(S.itemTab)) { renderAppDetailTab(it, S.itemTab); return; }
+    if (['rights', 'survey', 'verify', 'profit'].includes(S.itemTab)) { renderAppDetailTab(it, S.itemTab); setTimeout(syncFoldBtn, 300); return; }
     closeAppDetail();
-    $('itemContent').innerHTML = `<div class="it-grid">${itemTabHtml(it, S.itemTab)}</div>`;
+    $('itemContent').innerHTML = `<div class="it-grid ${S.itFold ? 'folded' : ''}">${itemTabHtml(it, S.itemTab)}</div>`;
+    syncFoldBtn();
   }
   /* 화면 바꾸기 — #/ 선정물건, #/register 선정물건등록 (뒤로가기로 돌아온다) */
   function go(route, id) {
@@ -2957,6 +2983,7 @@ html, body { overflow-x: clip; }
       }
       case 'go-profit': S.itemTabNext = 'profit'; go('item', id); break;
       case 'item-copy': copyText(addrText(it)); break;
+      case 'fold-all': toggleFoldAll(); break;
       case 'fav-open': S.pop = ''; render(); S.modal = favModal(-1); renderModal(); break;
       case 'fav-edit-open': e.stopPropagation(); S.pop = ''; render(); S.modal = favModal(Number(v)); renderModal(); break;
       case 'fav-add': {
