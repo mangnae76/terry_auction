@@ -7876,22 +7876,13 @@ const goBack = () => router.back();
                 <col style="width: 96px" /><col /><col style="width: 68px" />
               </colgroup>
               <tfoot>
-                <tr>
-                  <th class="adp-ind-label">실거래가 조건분석 평균</th>
-                  <!-- 가격정보 ③ 의 국토부 실거래 평균을 그대로 비춘다 — 손으로 적지 않는다.
-                       조건(기간·면적·연식)을 바꾸면 여기와 손품결론이 같이 움직인다 -->
-                  <td class="adp-ind-ctl">
-                    <div class="row"><strong>{{ mktSaleAvgText }}</strong></div>
-                  </td>
-                  <td class="adp-ind-rate">{{ indivRateTotal }}%</td>
-                </tr>
+                <!-- '실거래가 조건분석 평균' 줄은 뺐다 — 가격율 합계는 적용가 줄 오른쪽 칸으로 옮겨 둔다 -->
                 <tr>
                   <th class="adp-ind-label">개별성 적용가</th>
-                  <!-- 조건분석 평균과 같은 칸에 두어야 숫자 앞자리가 세로로 맞는다 -->
                   <td class="adp-ind-ctl">
                     <div class="row"><strong class="hi">{{ indivAdjustedPrice }}</strong></div>
                   </td>
-                  <td class="adp-ind-rate" />
+                  <td class="adp-ind-rate">{{ indivRateTotal }}%</td>
                 </tr>
               </tfoot>
             </table>
@@ -10082,9 +10073,6 @@ tr.tone-take { background: #fff5f5; }
   .adp-ind-pair .adp-ind-toggles .adp-toggle-btn { padding-left: 6px; padding-right: 6px; }
 }
 .adp-ind-foot { margin-top: 8px; }
-/* 평균 · 적용가 표는 선 없이 — 바탕색만으로 묶는다 */
-.adp-table.adp-ind-foot { border: 0; border-radius: 8px; overflow: hidden; }
-.adp-ind-foot th, .adp-ind-foot td { border: 0 !important; }
 .adp-ind-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .adp-ind-table th, .adp-ind-table td {
   /* 줄이 많은 표다 — 글자는 그대로 두고 위아래 여백만 줄인다 (7 → 5px) */
