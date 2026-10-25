@@ -383,6 +383,12 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 앱 물건상세를 띄운 자리 — 앱 머리(제목·탭·물건요약)와 아래 메뉴는 웹 것이 있어 감춘다 */
 .app-detail .adp-sticky-head, .app-detail .amb { display: none !important; }
 .app-detail .adp-shell { min-height: 0 !important; padding-bottom: 0 !important; background: transparent !important; }
+/* 웹 2열 — 표시(data-web-break)가 달린 카드부터 오른쪽 열 */
+@media (min-width: 1100px) {
+  .app-detail.tab-rights .adp-body { display: block !important; column-count: 2; column-gap: 12px; }
+  .app-detail.tab-rights .adp-body > * { break-inside: avoid; margin-bottom: 8px; }
+  .app-detail.tab-rights .adp-body > [data-web-break] { break-before: column; }
+}
 .it-col { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .it-card { background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); padding: 14px 24px 16px; min-width: 0; }
 .it-card.wide { grid-column: 1 / -1; }
@@ -2593,6 +2599,8 @@ html, body { overflow-x: clip; }
   /* 권리분석 · 손품+현장 · 가격정보 · 입찰가산정 — 앱 물건상세 화면을 그대로 띄운다(기능·저장 모두 앱 그대로).
      앱 화면의 머리(제목·탭·물건요약)는 웹 고정 카드·하위 탭과 겹쳐 감춘다 */
   let detailUnmount = null; let detailKey = '';
+  /* 탭별 오른쪽 열 첫 카드 — 권리분석: 왼쪽 서류사진·건물등기·임차인현황 / 오른쪽 권리분석·권리분석 정리 */
+  const WEB_RIGHT_FROM = { rights: '권리분석' };
   const closeAppDetail = () => { if (detailUnmount) { try { detailUnmount(); } catch (e) { /* 그만 */ } detailUnmount = null; detailKey = ''; } };
   function renderAppDetailTab(it, tab) {
     const box = $('itemContent');
@@ -2604,9 +2612,21 @@ html, body { overflow-x: clip; }
     const key = `${it.id}:${tab}`;
     if (detailKey === key && box.querySelector('.app-detail')) return;
     closeAppDetail();
-    box.innerHTML = '<div class="app-detail" id="appDetailMount"></div>';
+    box.innerHTML = `<div class="app-detail tab-${tab}" id="appDetailMount"></div>`;
     detailKey = key;
-    detailUnmount = CLOUD.T.mountAppDetail($('appDetailMount'), it.id, tab);
+    const el = $('appDetailMount');
+    const stop = CLOUD.T.mountAppDetail(el, it.id, tab);
+    /* 웹 2열 — 앱 카드 순서는 그대로 두고, 오른쪽 열이 시작될 카드에 표시만 단다 (탭마다 WEB_RIGHT_FROM) */
+    const markCols = () => {
+      const first = WEB_RIGHT_FROM[tab];
+      el.querySelectorAll('.adp-body > .adp-card').forEach((card) => {
+        const title = (card.querySelector('.adp-card-head h2')?.textContent || '').trim();
+        if (first && title === first) card.dataset.webBreak = '1'; else delete card.dataset.webBreak;
+      });
+    };
+    markCols();
+    const mo = new MutationObserver(markCols); mo.observe(el, { childList: true, subtree: true });
+    detailUnmount = () => { mo.disconnect(); stop(); };
   }
   function renderItem() {
     const it = byId(S.itemId);
