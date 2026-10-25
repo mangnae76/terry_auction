@@ -244,7 +244,9 @@ button { cursor: pointer; }
 .g-util .u-sep { background: rgba(255, 255, 255, 0.28); height: 12px; }
 .g-util .u-ico .dot { top: 4px; right: 4px; box-shadow: 0 0 0 1.5px var(--nav); }
 /* 하위 탭 줄 — 참고 시안처럼 흰 띠, 아래 #D8E0EE 선으로 단을 나눈다. 밑줄은 ::after 막대(테두리는 둥근 모서리로 U자가 된다) */
-.subtabs { background: var(--surface); border-bottom: 1px solid var(--subtab-line); }
+.subtabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 31; background: var(--surface); border-bottom: 1px solid var(--subtab-line); }
+/* 하위 탭이 있으면 필터 상자는 탭 줄(44 + 선 1) 바로 아래에 붙어 같이 고정된다 */
+body.has-subtabs .toolbar-shell { top: calc(env(safe-area-inset-top, 0px) + 45px); }
 .subtabs-in { display: flex; align-items: stretch; gap: 4px; height: 44px; }
 .subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
 .subtab svg { width: 16px; height: 16px; }
@@ -976,6 +978,7 @@ html, body { overflow-x: clip; }
 @media (max-width: 640px) {
   .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .toolbar-shell { position: static; padding: 6px 0 12px; }
+  .subtabs { position: static; }
   .gnb-in { gap: 6px 14px; }
   .g-logo img { height: 32px; }
   .g-menu { font-size: 14px; }
@@ -2032,7 +2035,7 @@ html, body { overflow-x: clip; }
   const SUBTABS = { register: [['drive', 'cloud', '구글드라이브 연동'], ['ai', 'key', 'AI 자동 분석']] };
   function renderSubTabs() {
     const tabs = SUBTABS[S.route]; const bar = $('subTabs');
-    bar.hidden = !tabs;
+    bar.hidden = !tabs; document.body.classList.toggle('has-subtabs', !!tabs);
     $('subTabsIn').innerHTML = tabs ? tabs.map(([k, ic, t]) => `<button type="button" class="subtab ${R.tab === k ? 'on' : ''}" role="tab" aria-selected="${R.tab === k}" data-act="subtab" data-v="${k}">${I[ic]}${t}</button>`).join('') : '';
   }
   function render() {
@@ -2322,10 +2325,12 @@ html, body { overflow-x: clip; }
   document.addEventListener('dragleave', (e) => { const d = e.target.closest('#drop'); if (d) d.classList.remove('over'); });
   document.addEventListener('drop', (e) => { const d = e.target.closest('#drop'); if (!d) return; e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) { S.modal.file = f.name; renderModal(); } });
 
-  const shell = $('toolbarShell');
-  const sentinel = document.createElement('div');
-  shell.parentNode.insertBefore(sentinel, shell);
-  try { new IntersectionObserver(([en]) => shell.classList.toggle('stuck', !en.isIntersecting)).observe(sentinel); } catch { /* 그림자만 빠진다 */ }
+  /* 붙었을 때 그림자 — 선정물건 · 선정물건등록 두 상자 모두. 하위 탭이 있으면 탭 줄 높이만큼 아래에서 붙는다 */
+  document.querySelectorAll('.toolbar-shell').forEach((shell) => {
+    const sentinel = document.createElement('div');
+    shell.parentNode.insertBefore(sentinel, shell);
+    try { new IntersectionObserver(([en]) => shell.classList.toggle('stuck', !en.isIntersecting && en.boundingClientRect.top < 100), { rootMargin: '-46px 0px 0px 0px' }).observe(sentinel); } catch { /* 그림자만 빠진다 */ }
+  });
   window.addEventListener('scroll', () => { if (S.menu) { S.menu = null; render(); } }, { passive: true });
   window.addEventListener('resize', () => { fitCourts(); if (S.menu) { S.menu = null; render(); } });
   try { document.fonts && document.fonts.ready.then(fitCourts); } catch { /* 글꼴 대기 없이도 된다 */ }
