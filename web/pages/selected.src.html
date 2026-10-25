@@ -383,13 +383,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 앱 물건상세를 띄운 자리 — 앱 머리(제목·탭·물건요약)와 아래 메뉴는 웹 것이 있어 감춘다 */
 .app-detail .adp-sticky-head, .app-detail .amb { display: none !important; }
 .app-detail .adp-shell { min-height: 0 !important; padding-bottom: 0 !important; background: transparent !important; }
-/* 웹 2열 — 표시(data-web-break)가 달린 카드부터 오른쪽 열 */
-@media (min-width: 1100px) {
-  .app-detail.tab-rights .adp-body { display: block !important; column-count: 2; column-gap: 12px; }
-  .app-detail.tab-rights .adp-body > * { break-inside: avoid; margin-bottom: 8px; }
-  .app-detail.tab-rights .adp-body > [data-web-break] { break-before: column; }
-  .app-detail.tab-rights .adp-body > [data-web-span] { column-span: all; margin-bottom: 12px; }
-}
+
 .it-col { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .it-card { background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); padding: 14px 24px 16px; min-width: 0; }
 .it-card.wide { grid-column: 1 / -1; }
@@ -2601,10 +2595,31 @@ html, body { overflow-x: clip; }
   /* 권리분석 · 손품+현장 · 가격정보 · 입찰가산정 — 앱 물건상세 화면을 그대로 띄운다(기능·저장 모두 앱 그대로).
      앱 화면의 머리(제목·탭·물건요약)는 웹 고정 카드·하위 탭과 겹쳐 감춘다 */
   let detailUnmount = null; let detailKey = '';
-  /* 탭별 오른쪽 열 첫 카드 — 권리분석: 왼쪽 서류사진·건물등기·임차인현황 / 오른쪽 권리분석·권리분석 정리 */
-  const WEB_RIGHT_FROM = { rights: '권리분석' };
-  /* 탭별 두 열을 가로질러 한 줄로 길게 둘 카드 — 권리분석: AI 분석 요청(맨 위) */
-  const WEB_SPAN = { rights: 'AI 분석 요청' };
+  /* 탭별 웹 배치 — 앱 카드 순서는 건드리지 않고 카드 제목으로 자리를 정한다.
+     span: 두 열을 가로질러 맨 위 / left · right: 각 열에 위에서부터. 목록에 없는 카드는 왼쪽 끝에 */
+  const WEB_LAYOUT = {
+    rights: { span: ['AI 분석 요청'], left: ['권리분석 진단', '권리분석', '권리분석 정리'], right: ['건물등기', '임차인현황'] },
+  };
+  /* 두 열 쌓기 — 줄 높이 1px 격자에 카드 높이만큼 칸을 잡아 열마다 빈틈 없이 쌓는다 */
+  function layoutAppCols(el, tab) {
+    const L = WEB_LAYOUT[tab]; const body = el.querySelector('.adp-body'); if (!body) return;
+    const cards = [...body.children].filter((c) => c.classList.contains('adp-card'));
+    const reset = () => { body.style.cssText = ''; cards.forEach((c) => { c.style.gridColumn = ''; c.style.gridRow = ''; }); };
+    if (!L || window.innerWidth < 1100) { reset(); return; }
+    const GAP = 12;
+    Object.assign(body.style, { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', columnGap: `${GAP}px`, rowGap: '0', gridAutoRows: '1px', alignItems: 'start' });
+    const titleOf = (c) => (c.querySelector('.adp-card-head h2')?.textContent || '').trim();
+    const pick = (names) => names.map((n) => cards.find((c) => titleOf(c) === n || titleOf(c).startsWith(`${n}`) && !names.some((m) => m !== n && m.startsWith(n) && titleOf(c).startsWith(m)))).filter(Boolean);
+    const span = pick(L.span || []); const left = pick(L.left || []); const right = pick(L.right || []);
+    const placed = new Set([...span, ...left, ...right]);
+    cards.forEach((c) => { if (!placed.has(c)) left.push(c); });
+    let top = 1;
+    span.forEach((c) => { const h = Math.ceil(c.offsetHeight) + GAP; c.style.gridColumn = '1 / -1'; c.style.gridRow = `${top} / span ${h}`; top += h; });
+    [[left, 1], [right, 2]].forEach(([list, col]) => {
+      let r = top;
+      list.forEach((c) => { const h = Math.ceil(c.offsetHeight) + GAP; c.style.gridColumn = String(col); c.style.gridRow = `${r} / span ${h}`; r += h; });
+    });
+  }
   const closeAppDetail = () => { if (detailUnmount) { try { detailUnmount(); } catch (e) { /* 그만 */ } detailUnmount = null; detailKey = ''; } };
   function renderAppDetailTab(it, tab) {
     const box = $('itemContent');
@@ -2620,18 +2635,14 @@ html, body { overflow-x: clip; }
     detailKey = key;
     const el = $('appDetailMount');
     const stop = CLOUD.T.mountAppDetail(el, it.id, tab);
-    /* 웹 2열 — 앱 카드 순서는 그대로 두고, 오른쪽 열이 시작될 카드에 표시만 단다 (탭마다 WEB_RIGHT_FROM) */
-    const markCols = () => {
-      const first = WEB_RIGHT_FROM[tab];
-      el.querySelectorAll('.adp-body > .adp-card').forEach((card) => {
-        const title = (card.querySelector('.adp-card-head h2')?.textContent || '').trim();
-        if (first && title === first) card.dataset.webBreak = '1'; else delete card.dataset.webBreak;
-        if (WEB_SPAN[tab] && title.startsWith(WEB_SPAN[tab])) card.dataset.webSpan = '1'; else delete card.dataset.webSpan;
-      });
-    };
-    markCols();
-    const mo = new MutationObserver(markCols); mo.observe(el, { childList: true, subtree: true });
-    detailUnmount = () => { mo.disconnect(); stop(); };
+    /* 웹 2열 — 카드가 그려지거나 접고 펼 때마다 다시 쌓는다 */
+    let raf = 0;
+    const relayout = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => layoutAppCols(el, tab)); };
+    relayout();
+    const mo = new MutationObserver(relayout); mo.observe(el, { childList: true, subtree: true, characterData: true });
+    const ro = new ResizeObserver(relayout); ro.observe(el);
+    const onWin = () => relayout(); window.addEventListener('resize', onWin);
+    detailUnmount = () => { mo.disconnect(); ro.disconnect(); window.removeEventListener('resize', onWin); cancelAnimationFrame(raf); stop(); };
   }
   function renderItem() {
     const it = byId(S.itemId);

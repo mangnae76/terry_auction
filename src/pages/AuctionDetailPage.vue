@@ -6812,6 +6812,22 @@ const goBack = () => router.back();
           </div>
         </section>
 
+        <!-- 권리분석 진단 — 권리분석 결과 및 안전성 진단. 말소기준권리·인수/말소 권리 수를 찾아 넣을 자리(값은 다음 단계에서 채운다) -->
+        <section class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('rightsDiag')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>권리분석 진단</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsDiag') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('rightsDiag')">
+            <p class="adp-diag-sub">권리분석 결과 및 안전성 진단</p>
+            <dl class="adp-base-rows">
+              <div class="adp-base-row"><dt>말소기준권리</dt><dd>-</dd></div>
+              <div class="adp-base-row"><dt>인수권리수</dt><dd>-</dd></div>
+              <div class="adp-base-row"><dt>말소권리수</dt><dd>-</dd></div>
+            </dl>
+          </div>
+        </section>
+
         <!-- 임차인현황 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('registry')">
@@ -8900,6 +8916,7 @@ const goBack = () => router.back();
 .adp-doc-in { position: relative; margin-bottom: 5px; padding: 0; }
 .adp-doc-in .adp-input { width: 100%; min-width: 0; box-sizing: border-box; height: 30px; padding: 0 8px; font-size: 11px; text-overflow: ellipsis; }
 .adp-doc-link { font-size: 12px; font-weight: 700; color: #2563eb; text-decoration: none; }
+.adp-diag-sub { margin: 0 0 4px; font-size: 12.5px; font-weight: 600; color: #6b7280; }
 .adp-doc-old { margin: 10px 0 4px; font-size: 12px; font-weight: 700; color: #9ca3af; }
 .adp-body { flex: 1 1 auto; padding: 0 5px 12px; display: flex; flex-direction: column; gap: 8px; }
 
