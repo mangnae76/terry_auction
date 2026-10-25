@@ -902,10 +902,12 @@ const router = useRouter();
 .pip-fixed-top { background: #f3f4f6; }
 
 .pip-title-row {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; gap: 4px;
   padding: 12px 16px 6px;
 }
+/* 제목은 뒤로 화살표 바로 옆 — 남는 자리를 차지해 접기 버튼을 오른쪽 끝으로 민다 */
 .pip-title {
+  flex: 1 1 auto; min-width: 0;
   margin: 0; font-size: 20px; font-weight: 800; color: #111827; letter-spacing: -0.3px;
 }
 .pip-chev-btn {
