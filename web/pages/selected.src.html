@@ -561,7 +561,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rg-chev svg { width: 18px; height: 18px; transition: transform .2s; }
 .rg-chev.up svg { transform: rotate(180deg); }
 .rg-empty { margin-top: 10px; padding: 46px 16px; border: 1.5px dashed var(--line-2); border-radius: 10px; text-align: center; color: var(--faint); font-size: 13.5px; line-height: 1.7; }
-.rg-empty .ic { font-size: 32px; opacity: .6; display: block; margin-bottom: 4px; }
+.rg-empty .ic { font-size: 32px; display: block; margin-bottom: 4px; filter: grayscale(1); opacity: .55; transition: filter .15s, opacity .15s; } /* 평소엔 회색, 올리면 원래 색 */
+.rg-empty:hover .ic, .rg-results.over .rg-empty .ic { filter: none; opacity: 1; }
 /* 끌어다 놓는 상자 — 목록이 생겨도 목록 위에 남는다(더 끌어다 놓을 수 있게). 눌러도 파일을 고른다 */
 .rg-empty { cursor: pointer; transition: border-color .15s, background .15s, color .15s; }
 .rg-empty:hover, .rg-results.over .rg-empty { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }

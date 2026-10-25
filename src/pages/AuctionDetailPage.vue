@@ -5243,6 +5243,9 @@ const goBack = () => router.back();
 
 <template>
   <section class="adp-shell">
+    <!-- 사진 칸의 '+'·AI 분석 요청 칸이 함께 쓰는 파일 고르기 — 어느 탭에서든 열리게 화면 맨 위에 둔다.
+         (손품+현장 탭 안에만 있어서 권리분석 탭에서는 눌러도 열리지 않았다) 어느 자리에 넣을지는 photoPickTarget 이 들고 있다 -->
+    <input ref="photoPickRef" type="file" accept="image/*" class="adp-sr" @change="onPhotoPicked" />
     <!-- 상단바 + 탭 + 물건요약은 탭과 무관하게 스크롤해도 붙어 있는다 -->
     <div ref="stickyHead" class="adp-sticky-head">
       <header class="adp-topbar">
@@ -6759,13 +6762,12 @@ const goBack = () => router.back();
                 <div class="adp-plan-row adp-doc-in">
                   <input
                     v-model="extraInput[b.key]"
-                    placeholder="링크 또는 이미지"
-                    title="링크 또는 이미지 붙여넣기"
+                    placeholder="링크 또는 이미지 붙여넣기"
+                    title="링크는 엔터, 이미지는 붙여넣기"
                     class="adp-input"
                     @keydown.enter.prevent="addExtraUrl(b.key)"
                     @paste="pasteImageInto($event, `x:${b.key}`)"
                   />
-                  <button type="button" class="adp-icn-btn" :aria-label="`${b.label} 링크 넣기`" @click="addExtraUrl(b.key)">+</button>
                 </div>
                 <div v-if="extraList(b.key).length > 0" class="adp-doc-box has">
                   <a v-if="brokenImages[extraList(b.key)[0]]" class="adp-doc-link" :href="photoSrc(extraList(b.key)[0])" target="_blank" rel="noopener">🔗 링크 열기</a>
@@ -8499,8 +8501,6 @@ const goBack = () => router.back();
               <button type="button" class="adp-photo-btn blue" @click="galleryInputRef?.click()">🖼 사진추가</button>
             </div>
             <input ref="cameraInputRef" type="file" accept="image/*" capture="environment" class="adp-sr" @change="onCameraChange" />
-            <!-- 사진 칸의 '+' 가 함께 쓰는 입력칸 — 어느 자리에 넣을지는 photoPickTarget 이 들고 있다 -->
-            <input ref="photoPickRef" type="file" accept="image/*" class="adp-sr" @change="onPhotoPicked" />
             <input ref="galleryInputRef" type="file" accept="image/*" multiple class="adp-sr" @change="onGalleryChange" />
             <p v-if="photoUploading" class="adp-sub-note">사진 업로드 중…</p>
             <p v-if="photoError" class="adp-plan-err">{{ photoError }}</p>
@@ -8891,11 +8891,12 @@ const goBack = () => router.back();
 .adp-doc-box:hover, .adp-doc-box.over { border-color: #2b6df3; background: #eef4ff; color: #2b6df3; }
 .adp-doc-box.has { border-style: solid; border-color: #e5e7eb; background: #fff; padding: 0; overflow: hidden; cursor: zoom-in; }
 .adp-doc-box.has img { width: 100%; height: 100%; object-fit: cover; }
-.adp-doc-ic { font-size: 26px; opacity: .7; }
+/* 폴더 그림 — 평소엔 회색, 마우스를 올리면 원래 색 (물건등록 파싱 상자와 같다) */
+.adp-doc-ic { font-size: 26px; filter: grayscale(1); opacity: .55; transition: filter .15s, opacity .15s; }
+.adp-doc-box:hover .adp-doc-ic, .adp-doc-box.over .adp-doc-ic { filter: none; opacity: 1; }
 .adp-doc-x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%; background: rgba(17, 24, 39, .65); color: #fff; font-size: 14px; line-height: 22px; cursor: pointer; }
 .adp-doc-in { position: relative; margin-bottom: 5px; padding: 0; }
-.adp-doc-in .adp-input { width: 100%; min-width: 0; box-sizing: border-box; height: 30px; padding: 0 26px 0 8px; font-size: 11px; }
-.adp-doc-in .adp-icn-btn { position: absolute; top: 50%; right: 3px; transform: translateY(-50%); width: 22px; height: 22px; min-width: 0; padding: 0; font-size: 14px; line-height: 1; border-radius: 6px; }
+.adp-doc-in .adp-input { width: 100%; min-width: 0; box-sizing: border-box; height: 30px; padding: 0 8px; font-size: 11px; text-overflow: ellipsis; }
 .adp-doc-link { font-size: 12px; font-weight: 700; color: #2563eb; text-decoration: none; }
 .adp-doc-old { margin: 10px 0 4px; font-size: 12px; font-weight: 700; color: #9ca3af; }
 .adp-body { flex: 1 1 auto; padding: 0 5px 12px; display: flex; flex-direction: column; gap: 8px; }

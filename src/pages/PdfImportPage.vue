@@ -1441,7 +1441,9 @@ const onDropFiles = async (e: DragEvent) => {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   margin-top: 8px;
 }
-.pip-empty-icon { font-size: 32px; opacity: 0.6; }
+/* 폴더 그림 — 평소엔 회색, 마우스를 올리면(끌어 올리면) 원래 색 */
+.pip-empty-icon { font-size: 32px; filter: grayscale(1); opacity: 0.55; transition: filter 0.15s, opacity 0.15s; }
+.pip-empty:hover .pip-empty-icon, .pip-empty.over .pip-empty-icon { filter: none; opacity: 1; }
 .pip-empty p { margin: 0; font-size: 12px; }
 /* 목록이 생겨도 위에 남는 얇은 상자 — 더 끌어다 놓거나 눌러서 고른다 */
 .pip-empty { cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; }
