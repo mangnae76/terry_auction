@@ -382,6 +382,7 @@ body.has-subtabs .toolbar-shell { top: calc(env(safe-area-inset-top, 0px) + 45px
 .ai-req { flex: 0 0 auto; padding: 2px 7px; border-radius: 5px; background: #fdecec; color: #dc2626; font-size: 11.5px; font-weight: 800; }
 .key-state { font-size: 12.5px; font-weight: 700; color: var(--faint); white-space: nowrap; }
 .key-state.ok { color: #16a34a; }
+.key-state.no { color: #dc2626; }
 .key-link { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 700; color: var(--blue) !important; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
 .key-link svg { width: 13px; height: 13px; }
 .ai-setup-help { min-width: 0; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1964,8 +1965,8 @@ html, body { overflow-x: clip; }
       <!-- 필수설정 — Gemini API 키. 키가 있어야 아래 AI 자동 파싱을 켤 수 있다 (앱 PdfImportPage 와 같은 짜임) -->
       <div class="ai-setup">
         <span class="ai-req">필수설정</span><b>Gemini API 키</b>
-        <span class="key-state ${R.aiKey ? 'ok' : ''}">${R.aiKey ? '등록' : '미등록'}</span>
-        <button type="button" class="ai-key" data-act="ai-key">${R.aiKey ? '키바꾸기' : '키 넣기'}</button>
+        <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span>
+        <button type="button" class="ai-key" data-act="ai-key">${R.aiKey ? '키바꾸기' : '키 등록'}</button>
         ${R.aiKey ? '' : '<small class="ai-setup-help">Gemini API 키를 등록하세요.</small>'}
       </div>
       <div class="ai-run">
