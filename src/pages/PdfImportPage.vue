@@ -607,6 +607,19 @@ const TAB_STORE = 'myturn.import.tab';
 const readTab = (): ImportTab => { try { return localStorage.getItem(TAB_STORE) === 'ai' ? 'ai' : 'drive'; } catch { return 'drive'; } };
 const importTab = ref<ImportTab>(readTab());
 watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /* 그만 */ } });
+/** 결과 상자 — 두 탭이 같은 상자를 쓰고 글자만 다르다 (웹 /web 과 같은 글) */
+const PARSE_COPY: Record<ImportTab, { title: string; drop: [string, string] }> = {
+  drive: { title: 'PDF 자동 파싱', drop: ['파일을 드래그·등록하거나 폴더를 스캔하면', '여기에 미리보기가 표시됩니다.'] },
+  ai: { title: 'AI 자동 파싱', drop: ['파일을 선택하거나 드래그하여 업로드하면', '여기에 미리보기가 표시됩니다.'] },
+};
+const parseCopy = computed(() => PARSE_COPY[importTab.value]);
+/** 끌어다 놓기 — 목록이 생겨도 상자는 남아 계속 놓을 수 있다. 눌러도 파일을 고른다 */
+const dropOver = ref(false);
+const onDropFiles = async (e: DragEvent) => {
+  dropOver.value = false;
+  const files = [...(e.dataTransfer?.files ?? [])].filter((f) => /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
+  if (files.length) await parseFiles(files);
+};
 </script>
 
 <template>
@@ -787,7 +800,11 @@ watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /*
 
       <section class="pip-results">
         <div class="pip-results-head">
-          <h2><svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" /><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z" /></svg>AI 자동 파싱</h2>
+          <h2>
+            <svg v-if="importTab === 'ai'" class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" /><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z" /></svg>
+            <svg v-else class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6" /><path d="M9 17h4" /></svg>
+            {{ parseCopy.title }}
+          </h2>
           <span v-if="importRows.length > 0" class="pip-count">{{ importRows.length }}건</span>
           <button
             type="button"
@@ -812,13 +829,23 @@ watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /*
         </div>
 
         <div v-if="!resultsCollapsed">
-          <div v-if="importRows.length === 0" class="pip-empty">
+          <div
+            :class="['pip-empty', { slim: importRows.length > 0, over: dropOver }]"
+            role="button"
+            tabindex="0"
+            aria-label="PDF 파일 고르기"
+            @click="openFilePicker"
+            @keydown.enter.prevent="openFilePicker"
+            @dragover.prevent="dropOver = true"
+            @dragleave="dropOver = false"
+            @drop.prevent="onDropFiles"
+          >
             <div class="pip-empty-icon">📂</div>
-            <p>PDF를 선택하거나 Google Drive 폴더를 스캔하면</p>
-            <p>여기에 미리보기가 표시됩니다.</p>
+            <p>{{ parseCopy.drop[0] }}</p>
+            <p>{{ parseCopy.drop[1] }}</p>
           </div>
 
-          <ul v-else class="pip-result-list">
+          <ul v-if="importRows.length > 0" class="pip-result-list">
             <li v-for="row in importRows" :key="row.key" class="pip-result-item">
               <div class="pip-result-text">
                 <strong>{{ fileTitle(row) }}</strong>
@@ -1345,6 +1372,11 @@ watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /*
 }
 .pip-empty-icon { font-size: 32px; opacity: 0.6; }
 .pip-empty p { margin: 0; font-size: 12px; }
+/* 목록이 생겨도 위에 남는 얇은 상자 — 더 끌어다 놓거나 눌러서 고른다 */
+.pip-empty { cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s; }
+.pip-empty.over { border-color: #2b6df3; background: #eef4ff; color: #2b6df3; }
+.pip-empty.slim { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 0 4px; padding: 12px; }
+.pip-empty.slim .pip-empty-icon { font-size: 18px; margin-right: 4px; }
 
 .pip-result-list {
   list-style: none; margin: 8px 0 0; padding: 0;

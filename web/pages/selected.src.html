@@ -407,6 +407,12 @@ body.has-subtabs .toolbar-shell { top: calc(env(safe-area-inset-top, 0px) + 45px
 .rg-chev.up svg { transform: rotate(180deg); }
 .rg-empty { margin-top: 10px; padding: 46px 16px; border: 1.5px dashed var(--line-2); border-radius: 10px; text-align: center; color: var(--faint); font-size: 13.5px; line-height: 1.7; }
 .rg-empty .ic { font-size: 32px; opacity: .6; display: block; margin-bottom: 4px; }
+/* 끌어다 놓는 상자 — 목록이 생겨도 목록 위에 남는다(더 끌어다 놓을 수 있게). 눌러도 파일을 고른다 */
+.rg-empty { cursor: pointer; transition: border-color .15s, background .15s, color .15s; }
+.rg-empty:hover, .rg-results.over .rg-empty { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+.rg-empty.slim { padding: 14px 16px; display: flex; align-items: center; justify-content: center; gap: 10px; line-height: 1.5; font-size: 12.5px; }
+.rg-empty.slim .ic { font-size: 22px; margin: 0; }
+.rg-empty.slim br { display: none; }
 .rg-list { list-style: none; margin: 8px 0 0; padding: 0; }
 .rg-item { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto 64px; align-items: center; gap: 12px; padding: 11px 10px; border-radius: 8px; border-bottom: 1px solid var(--surface-3); transition: background .12s; }
 .rg-item:last-child { border-bottom: 0; }
@@ -1963,16 +1969,20 @@ html, body { overflow-x: clip; }
         <span class="rg-meta num">${r.status === 'ready' ? `${esc(r.p.caseNo)}<i>·</i>${esc(r.p.court)}<i>·</i>매각기일 ${dotDate(r.p.date)}` : '—'}</span>
         <span class="badge s-${r.rowStatus}">${r.rowStatus}</span>
       </li>`;
+    /* 결과 상자 — 두 탭이 같은 상자를 쓰고 글자만 다르다 (앱 PdfImportPage 의 PARSE_COPY 와 같다) */
+    const PC = R.tab === 'ai'
+      ? { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서(PDF)를 올리면 AI가 분석하여 정리합니다', drop: '파일을 선택하거나 드래그하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
+      : { title: 'PDF 자동 파싱', ic: I.pdf, tip: '경매 문서(PDF)를 올리면 자동으로 읽어 정리합니다', drop: '파일을 드래그·등록하거나 폴더를 스캔하면 <br>여기에 미리보기가 표시됩니다.' };
     $('regContent').innerHTML = `
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한 열기</button>' : ''}</div>` : ''}
-      <section class="rg-results" id="rgDrop" aria-label="AI 자동 파싱">
-        <div class="rg-head"><h2 class="tip-below" data-tip="경매 문서(PDF)를 올리면 AI가 분석하여 정리합니다" data-tip-pos="left" style="cursor:help">${I.spark}AI 자동 파싱</h2>
+      <section class="rg-results" id="rgDrop" aria-label="${PC.title}">
+        <div class="rg-head"><h2 class="tip-below" data-tip="${PC.tip}" data-tip-pos="left" style="cursor:help">${PC.ic}${PC.title}</h2>
           <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span></span>${R.rows.length ? `<span class="cnt num">${R.rows.length}건</span>` : ''}<span class="hint">PDF를 여기로 끌어다 놓아도 됩니다</span>
           <button type="button" class="rg-chev ${R.collapsed ? 'up' : ''}" data-act="rg-collapse" aria-expanded="${!R.collapsed}" aria-label="결과 접기">${I.chevDown}</button></div>
         ${R.missing.length ? `<div class="rg-missing"><div class="h">드라이브에 없는 물건 ${R.missing.length}건<button type="button" data-act="missing-trash">휴지통으로</button></div><p>스캔한 폴더에서 PDF가 사라졌습니다. 선정물건은 그대로 남아 있습니다 — 치우려면 누르세요.</p><ul>${R.missing.map((m) => `<li>${esc(m.label)}</li>`).join('')}</ul></div>` : ''}
-        ${R.collapsed ? '' : R.rows.length ? `<ul class="rg-list">${R.rows.map(rowHtmlR).join('')}</ul>
-          <div class="rg-foot"><span class="num">UPDATE : ${esc(R.last || '—')}</span><button type="button" data-act="rg-clear">목록 비우기</button></div>`
-          : '<div class="rg-empty"><span class="ic">📂</span>PDF를 선택하거나 Google Drive 폴더를 스캔하면<br>여기에 미리보기가 표시됩니다.</div>'}
+        ${R.collapsed ? '' : `<div class="rg-empty ${R.rows.length ? 'slim' : ''}" role="button" tabindex="0" data-act="pdf-pick" aria-label="PDF 파일 고르기"><span class="ic">📂</span><span>${PC.drop}</span></div>
+          ${R.rows.length ? `<ul class="rg-list">${R.rows.map(rowHtmlR).join('')}</ul>
+          <div class="rg-foot"><span class="num">UPDATE : ${esc(R.last || '—')}</span><button type="button" data-act="rg-clear">목록 비우기</button></div>` : ''}`}
       </section>`;
   }
 
@@ -2315,6 +2325,7 @@ html, body { overflow-x: clip; }
     }
     if (e.key === '/' && !e.target.closest('input, textarea, select')) { e.preventDefault(); $('q').focus(); }
     if (e.key === 'Enter' && e.target.id === 'regNo') submitRegister();
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('rg-empty')) { e.preventDefault(); $('pdfInput').click(); }
     if (e.key === 'Enter' && e.target.id === 'favUrl') { e.preventDefault(); document.querySelector('[data-act="fav-add"]').click(); }
     if (e.key === 'Enter' && e.target.id === 'favEditUrl') { e.preventDefault(); document.querySelector('[data-act="fav-save"]').click(); }
     if (e.key === 'Enter' && e.target.id === 'aiKeyIn') { e.preventDefault(); document.querySelector('[data-act="ai-save"]').click(); }
