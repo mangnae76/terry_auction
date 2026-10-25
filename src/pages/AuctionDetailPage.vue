@@ -5670,7 +5670,7 @@ const goBack = () => router.back();
                 주변환경
               </button>
               <button :class="['adp-trade-view-tab nearby-kakao-tab', { active: nearbyView === 'kakao' }]" @click.stop="openKakaoNearby()">
-                <span class="adp-tab-dot" /> 지도검색
+                <span class="adp-tab-dot" /> 목록검색
                 <span
                   class="adp-kakao-mini"
                   :class="{ active: nearbyView === 'kakao' && nearbyEnv }"

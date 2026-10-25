@@ -596,9 +596,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .badge.s-신규 { background: #eff6ff; color: #2b6df3; } .badge.s-변경 { background: #f3e8ff; color: #7c3aed; } .badge.s-오류 { background: #fee2e2; color: #ef4444; }
 .rg-foot { display: flex; align-items: center; justify-content: space-between; padding: 10px 2px 0; font-size: 12.5px; font-weight: 400; color: var(--muted); }
 /* 목록 비우기 — 오류 옆 휴지통 */
-.rg-clear-btn { width: 26px; height: 26px; padding: 0; margin-left: -4px; border: 0; border-radius: 6px; background: transparent; display: grid; place-items: center; color: var(--muted); cursor: pointer; transition: background .15s, color .15s; }
+.rg-clear-btn { width: 30px; height: 30px; padding: 0; margin-left: -4px; border: 0; border-radius: 6px; background: transparent; display: grid; place-items: center; color: var(--muted); cursor: pointer; transition: background .15s, color .15s; }
 .rg-clear-btn:hover { background: #fdecec; color: #dc2626; }
-.rg-clear-btn svg { width: 15px; height: 15px; }
+.rg-clear-btn svg { width: 18px; height: 18px; }
 .rg-foot button { border: 0; background: none; color: var(--muted); font-size: 12.5px; padding: 3px 6px; border-radius: 5px; }
 .rg-foot button:hover { background: var(--surface-3); color: var(--text); }
 .rg-missing { margin-top: 10px; padding: 11px 13px; background: #fff6e8; border: 1px solid #f3dcb5; border-radius: 10px; }
@@ -1834,6 +1834,25 @@ html, body { overflow-x: clip; }
     try { localStorage.setItem('wlp.web.regTab', tab); } catch (e) { /* 그만 */ }
     return true;
   };
+  /* 결과 목록은 새로고침해도 남는다 — 앱이 마지막 목록을 계정에 적어 두고 다시 여는 것과 같게.
+     이 브라우저에 사람(로그인 계정)마다 따로 적는다. 화면에 쓰는 값만 두고 등록용 원본(x)은 뺀다 */
+  const regKey = () => { let uid = ''; try { uid = (CLOUD.auth && CLOUD.auth.isLoggedIn && CLOUD.auth.uid) || ''; } catch (e) { /* 앱 연결 전 */ } return `wlp.web.regLists.${uid || 'guest'}`; };
+  let regLoadedKey = '';
+  const saveRegLists = () => {
+    if (!regLoadedKey || regLoadedKey !== regKey()) return;
+    lists[R.tab] = Object.fromEntries(LIST_KEYS.map((k) => [k, R[k]]));
+    const slim = (l) => (l ? { ...l, rows: (l.rows || []).map(({ x, ...r }) => r) } : null);
+    store.set(regLoadedKey, { drive: slim(lists.drive), ai: slim(lists.ai) });
+  };
+  const loadRegLists = () => {
+    const key = regKey();
+    if (key === regLoadedKey) return;
+    const saved = store.get(key, null) || {};
+    lists.drive = saved.drive || null; lists.ai = saved.ai || null;
+    const cur = lists[R.tab] || { rows: [], banner: '', last: '', missing: [], collapsed: false };
+    LIST_KEYS.forEach((k) => { R[k] = cur[k] ?? (k === 'rows' || k === 'missing' ? [] : k === 'collapsed' ? false : ''); });
+    regLoadedKey = key;
+  };
   if (!Array.isArray(R.favs)) R.favs = DEMO_FOLDERS.slice();
   if (!Array.isArray(R.sel)) R.sel = R.favs.length ? [R.favs[0].url] : [];
   const saveFavs = () => { store.set('wlp.web.favs', R.favs); store.set('wlp.web.favSel', R.sel); };
@@ -2148,6 +2167,7 @@ html, body { overflow-x: clip; }
     R.sel = R.sel.map((u) => (u === old ? url : u)); saveFavs(); m.edit = -1; m.editName = undefined; m.editUrl = undefined; return true;
   };
   function renderRegister() {
+    loadRegLists(); saveRegLists();
     const favName = (url) => (R.favs.find((f) => f.url === url) || {}).name || '이름 없는 폴더';
     const n = { all: items.filter((x) => !x.trashed && !x.archived).length, nw: R.rows.filter((r) => r.rowStatus === '신규').length, ch: R.rows.filter((r) => r.rowStatus === '변경').length, er: R.rows.filter((r) => r.rowStatus === '오류').length };
     const chips = R.sel.map((u) => `<span class="fchip ${R.scanned.includes(folderIdOf(u)) ? 'scanned' : ''}">${I.folder}${esc(favName(u))}</span>`).join('');
@@ -2505,7 +2525,7 @@ html, body { overflow-x: clip; }
     } else {
       const edu = T.eduInfoOf(a); const pdf = T.pdfNearbyDisplayOf(a); const ag = a.adminAgencyItems || [];
       const kakao = T.nearbyDisplayOf(env);
-      const ntabs = `<div class="it-vtabs"><button type="button" class="${nv === 'pdf' ? 'on' : ''}" data-act="nearby-view" data-v="pdf">주변환경</button><button type="button" class="${nv === 'kakao' ? 'on' : ''}" data-act="nearby-view" data-v="kakao" data-id="${it.id}">지도검색</button></div>`;
+      const ntabs = `<div class="it-vtabs"><button type="button" class="${nv === 'pdf' ? 'on' : ''}" data-act="nearby-view" data-v="pdf">주변환경</button><button type="button" class="${nv === 'kakao' ? 'on' : ''}" data-act="nearby-view" data-v="kakao" data-id="${it.id}">목록검색</button></div>`;
       let near;
       if (nv === 'pdf') {
         near = (pdf.length ? kvTable(pdf.map((g) => `<tr><th>${g.label}(${g.total})</th><td class="grid2">${list(g.items, (p) => placeLink(p.name, `${p.name}(${p.distance})`))}</td></tr>`)) : '')

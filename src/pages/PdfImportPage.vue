@@ -251,7 +251,10 @@ watch(importRows, (val) => {
   if (suppressWriteback) return;
   const uid = authStore.uid;
   if (!uid) return;
-  void saveUserPrefs(uid, { pdfImportLastRows: val });
+  // 화면에 쓰는 값만 남긴다 — PDF 원문(rawText)까지 적으면 계정 문서 한도(1MB)를 넘겨
+  // 저장이 조용히 실패하고, 다시 열면 목록이 예전 것으로 돌아간다
+  const slim = val.map((row) => (row.parsed ? { ...row, parsed: { ...row.parsed, rawText: '' } } : row));
+  void saveUserPrefs(uid, { pdfImportLastRows: slim });
 }, { deep: true });
 
 watch(selectedFavUrls, (val) => {
@@ -847,10 +850,11 @@ const onDropFiles = async (e: DragEvent) => {
             <span class="n-new">신규<b>{{ newCount }}</b></span>
             <span class="n-chg">변경<b>{{ changedCount }}</b></span>
             <span class="n-err">오류<b>{{ errorCount }}</b></span>
-            <button v-if="importRows.length > 0" type="button" class="pip-clear-btn" aria-label="목록 비우기" title="목록 비우기" @click="clearImportRows">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18" /><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
-            </button>
           </span>
+          <!-- 목록 비우기 — 접기 버튼 바로 옆 -->
+          <button v-if="importRows.length > 0" type="button" class="pip-clear-btn" aria-label="목록 비우기" title="목록 비우기" @click="clearImportRows">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18" /><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
+          </button>
           <button
             type="button"
             class="pip-chev-btn"
@@ -1428,6 +1432,7 @@ const onDropFiles = async (e: DragEvent) => {
 /* 한 줄: 제목 · 통계(제목 바로 옆) · 접기 단추(오른쪽 끝) */
 .pip-results-head h2 { white-space: nowrap; }
 .pip-results-head .pip-chev-btn { margin-left: auto; }
+.pip-results-head .pip-clear-btn + .pip-chev-btn { margin-left: 0; }
 .pip-head-stats { min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #6b7280; white-space: nowrap; }
 .pip-head-stats b { margin: 0 1px 0 2px; font-weight: 800; color: #111827; }
 .pip-head-stats .n-new b { color: #2b6df3; }
@@ -1487,9 +1492,9 @@ const onDropFiles = async (e: DragEvent) => {
   padding-top: 10px;
 }
 .pip-update { font-size: 11.5px; color: #6b7280; font-weight: 400; }
-/* 목록 비우기 — 오류 옆 휴지통 */
+/* 목록 비우기 — 접기 버튼 옆 휴지통 (접기 버튼과 함께 오른쪽 끝) */
 .pip-clear-btn {
-  width: 24px; height: 24px; padding: 0; margin-left: -2px; border: none; border-radius: 6px;
+  width: 30px; height: 30px; padding: 0; margin-left: auto; flex: 0 0 auto; border: none; border-radius: 6px;
   background: transparent; color: #6b7280; display: grid; place-items: center; cursor: pointer;
 }
 .pip-clear-btn:active { background: #fdecec; color: #dc2626; }
