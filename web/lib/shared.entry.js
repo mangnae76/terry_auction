@@ -87,3 +87,21 @@ export const mountAppDetail = (el, id, tab) => {
   app.mount(el);
   return () => app.unmount();
 };
+
+// === 앱 임장경로 그대로 — 웹 '임장경로' 탭에서 앱 화면(FieldTripPlannerPage.vue)을 띄운다 ===
+// 앱 화면이 제 머리(제목·뒤로가기)와 아래 메뉴를 함께 그리므로, 웹에서는 그 둘을 CSS 로 감춘다.
+// 저장·계산은 앱이 하던 그대로다(같은 Firestore · 같은 경로 저장소).
+import FieldTripPlannerPage from '../../src/pages/FieldTripPlannerPage.vue';
+export const mountAppFieldTrip = (el) => {
+  const Empty = { render: () => null };
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/field-trip', component: FieldTripPlannerPage }, { path: '/:rest(.*)*', component: Empty }],
+  });
+  const app = createApp({ render: () => h(RouterView) });
+  app.use(getActivePinia());
+  app.use(router);
+  void router.push('/field-trip');
+  app.mount(el);
+  return () => app.unmount();
+};

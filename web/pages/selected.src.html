@@ -392,6 +392,20 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 @media (max-width: 1100px) { .it-grid { grid-template-columns: minmax(0, 1fr); } }
 /* 앱 물건상세를 띄운 자리 — 앱 머리(제목·탭·물건요약)와 아래 메뉴는 웹 것이 있어 감춘다 */
 .app-detail .adp-sticky-head, .app-detail .amb { display: none !important; }
+/* ===== 임장경로 — 앱 FieldTripPlannerPage 를 웹 흐름에 맞게 푼다 =====
+   앱 화면은 손전화 한 장을 통째로 덮는 고정 틀이다. 웹에서는 머리띠·경로줄 아래에
+   보통 글처럼 흘러야 하므로 그 고정만 풀고, 안쪽 짜임은 앱 그대로 둔다 */
+.app-trip .ftp-shell {
+  position: static !important; inset: auto !important; z-index: auto !important;
+  overflow: visible !important; background: transparent !important;
+}
+.app-trip .ftp-scroll { overflow: visible !important; }
+/* 앱의 제목줄(뒤로가기 포함)과 아래 메뉴는 웹 머리띠가 대신한다 */
+.app-trip .ftp-shell > .ftp-section-title.is-page,
+.app-trip .amb { display: none !important; }
+/* 손전화 폭에 맞춰 둔 칸들을 웹 폭에서도 읽히게 — 가운데로 모으고 지도는 낮춘다 */
+.app-trip .ftp-fixed-top, .app-trip .ftp-update-bar, .app-trip .ftp-list { max-width: 980px; margin-left: auto; margin-right: auto; }
+.app-trip .ftp-map-wrap { max-width: 980px; margin-left: auto; margin-right: auto; height: 560px; max-height: none; }
 .app-detail .adp-shell { min-height: 0 !important; padding-bottom: 0 !important; background: transparent !important; }
 
 .it-col { display: grid; gap: 12px; align-content: start; min-width: 0; }
@@ -1230,7 +1244,7 @@ html, body { overflow-x: clip; }
       <a class="g-logo" href="#" data-act="noop" aria-label="마이턴옥션 홈"><img src="{{LOGO_WHITE}}" alt="MYTURN AUCTION"></a>
       <a class="g-menu m0" href="#/register" data-act="go-register" id="navReg">+물건등록</a>
       <a class="g-menu m1" href="#/" data-act="go-list" id="navWatch">선정물건</a>
-      <a class="g-menu m2" href="#" data-act="soon" data-name="임장경로">임장경로</a>
+      <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
       <a class="g-menu m3" href="#" data-act="soon" data-name="시장정보">시장정보</a>
       <a class="g-menu m4" href="#" data-act="soon" data-name="커뮤니티">커뮤니티</a>
       <a class="g-menu m5" href="#" data-act="soon" data-name="고객센터">고객센터</a>
@@ -1317,6 +1331,11 @@ html, body { overflow-x: clip; }
     </div>
     <div class="wrap crumb-slot" id="crumbSlotItem"></div>
     <div class="wrap content item-content" id="itemContent"></div>
+  </div>
+  <!-- 임장경로 — 앱 FieldTripPlannerPage 를 그대로 띄운다 -->
+  <div id="tripView" hidden>
+    <div class="wrap crumb-slot" id="crumbSlotTrip"></div>
+    <div class="wrap content trip-content" id="tripContent"></div>
   </div>
   <button type="button" class="fab" id="fab" data-act="register" data-tip="끌어서 옮길 수 있어요 · 오른쪽 클릭하면 제자리" data-tip-pos="left"><span class="plus">+</span>선정물건등록</button>
 </main>
@@ -1477,7 +1496,7 @@ html, body { overflow-x: clip; }
     stage: 'all', type: '', court: '', date: '', q: '',
     pop: '', calMonth: null, pick: false, picked: new Set(), binPicked: new Set(), menu: null, modal: null,
     loggedIn: false, userName: '', denied: false, /* 로그인 상태는 앱 authStore 가 알려 준다 */
-    route: /^#\/register/.test(location.hash) ? 'register' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
+    route: /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
     itemId: (location.hash.match(/^#\/item\/([\w-]+)/) || [])[1] || '', itemTab: 'basic',
   };
 
@@ -1549,6 +1568,7 @@ html, body { overflow-x: clip; }
   /* ---------- 머리띠 — 로그인 전: 로그인 ▼ 회원가입 / 로그인 뒤: 강정인님 ▼ 로그아웃 ---------- */
   function renderHeader() {
     $('navReg').classList.toggle('on', S.route === 'register');
+    { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     const nav = $('navWatch'); nav.classList.toggle('on', S.route === 'list'); if (S.route === 'list') nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
     $('gLoginTxt').textContent = S.loggedIn ? `${S.userName || '회원'}님` : '로그인';
     $('gLogin').classList.toggle('named', S.loggedIn);
@@ -2364,15 +2384,16 @@ html, body { overflow-x: clip; }
   }
   function render() {
     renderHeader();
-    const reg = S.route === 'register'; const item = S.route === 'item';
-    $('listView').hidden = reg || item; $('regView').hidden = !reg; $('itemView').hidden = !item; $('fab').hidden = reg || item;
+    const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip';
+    $('listView').hidden = reg || item || trip; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('fab').hidden = reg || item || trip;
     const cur = item ? byId(S.itemId) : null;
-    $('crumbCur').textContent = reg ? '선정물건등록' : item ? `선정물건 › ${cur ? cur.caseNo : '물건상세'}` : '선정물건';
-    { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
+    $('crumbCur').textContent = reg ? '선정물건등록' : trip ? '임장경로' : item ? `선정물건 › ${cur ? cur.caseNo : '물건상세'}` : '선정물건';
+    { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
-    document.title = reg ? '마이턴옥션 선정물건등록' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
+    document.title = reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
     if (!item) closeAppDetail();
-    if (reg) renderRegister(); else if (item) renderItem(); else { renderToolbar(); renderContent(); }
+    if (!trip) closeAppTrip();
+    if (reg) renderRegister(); else if (trip) renderTrip(); else if (item) renderItem(); else { renderToolbar(); renderContent(); }
     renderFloat();
   }
   /* ===== 물건상세 — 앱 AuctionDetailPage 를 따른다 =====
@@ -2723,6 +2744,23 @@ html, body { overflow-x: clip; }
     });
   }
   const closeAppDetail = () => { if (detailUnmount) { try { detailUnmount(); } catch (e) { /* 그만 */ } detailUnmount = null; detailKey = ''; } };
+  /* ---------- 임장경로 — 앱 FieldTripPlannerPage 를 그대로 띄운다 ----------
+     앱 화면이 제 머리(제목·뒤로가기)와 아래 메뉴를 같이 그리므로 CSS 로 감추고,
+     고정 틀(position: fixed)만 웹 흐름에 맞게 푼다. 계산·저장은 앱과 똑같다 */
+  let tripUnmount = null;
+  const closeAppTrip = () => { if (tripUnmount) { try { tripUnmount(); } catch (e) { /* 그만 */ } tripUnmount = null; } };
+  function renderTrip() {
+    const box = $('tripContent');
+    if (!CLOUD.on) {
+      closeAppTrip();
+      box.innerHTML = '<div class="empty"><b>로그인하면 임장경로가 열립니다</b><span>앱에서 쓰던 경로와 선정물건을 그대로 씁니다.</span><button type="button" data-act="login-btn">로그인</button></div>';
+      return;
+    }
+    if (tripUnmount && box.querySelector('.app-trip')) return;
+    closeAppTrip();
+    box.innerHTML = '<div class="app-trip" id="appTripMount"></div>';
+    tripUnmount = CLOUD.T.mountAppFieldTrip($('appTripMount'));
+  }
   function renderAppDetailTab(it, tab) {
     const box = $('itemContent');
     if (!CLOUD.on || !CLOUD.raw.has(it.id)) {
@@ -2762,11 +2800,11 @@ html, body { overflow-x: clip; }
     S.route = route; S.pop = ''; S.menu = null;
     if (route === 'item') { S.itemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
     render(); window.scrollTo(0, 0);
-    try { const h = route === 'register' ? '#/register' : route === 'item' ? `#/item/${id}` : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
+    try { const h = route === 'register' ? '#/register' : route === 'trip' ? '#/trip' : route === 'item' ? `#/item/${id}` : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
   }
   window.addEventListener('popstate', () => {
     const m = location.hash.match(/^#\/item\/([\w-]+)/);
-    const r = /^#\/register/.test(location.hash) ? 'register' : m ? 'item' : 'list';
+    const r = /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : m ? 'item' : 'list';
     if (r !== S.route || (m && m[1] !== S.itemId)) { S.route = r; if (m) S.itemId = m[1]; S.pop = ''; S.menu = null; render(); }
   });
 
@@ -3002,6 +3040,7 @@ html, body { overflow-x: clip; }
       }
       case 'register': case 'go-register': go('register'); break;
       case 'go-list': go('list'); break;
+      case 'go-trip': go('trip'); break;
       case 'area-view': S.areaView = v; renderItem(); break;
       case 'nearby-view': S.nearbyView = v; if (v === 'kakao' && !CLOUD.nearby.has(S.itemId)) fetchNearbyFor(S.itemId); else renderItem(); break;
       case 'kakao-near': fetchNearbyFor(id || S.itemId); break;
