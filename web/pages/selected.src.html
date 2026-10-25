@@ -333,6 +333,51 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .reg-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
 @media (max-width: 1100px) { .reg-duo { grid-template-columns: minmax(0, 1fr); } }
 /* 상자가 탭 — 고른 상자는 파란 테두리, 안 고른 상자는 눌러서 바꾼다 */
+/* ===== 물건상세 — 고정 카드(앱 adp-sticky-head) ===== */
+.item-head { row-gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+.ih-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ih-back { flex: 0 0 auto; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--text-2); display: grid; place-items: center; }
+.ih-back:hover { background: var(--surface-3); color: var(--text); }
+.ih-back svg { width: 18px; height: 18px; }
+.ih-title { margin: 0; font-size: 20px; font-weight: 800; color: var(--text); white-space: nowrap; }
+.ih-tag { margin-right: 6px; color: #324f87; }
+:root[data-theme="dark"] .ih-tag { color: #9db8ff; }
+.ih-court { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ih-court em { font-style: normal; font-weight: 700; color: var(--blue); }
+.ih-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.ih-stage { height: 26px; padding: 0 12px; border-radius: 999px; border: 1.5px solid #6b85f0; background: #dce5ff; color: #3850c2; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; }
+.ih-stage.hot { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; }
+.ih-stage.off { border-color: #c4c9d4; background: #eef0f4; color: #6b7280; }
+.ih-stage.done { border-color: #34b37a; background: #dcf5e8; color: #157a4b; }
+.ih-prop { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 4px 10px; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
+.ih-kind { padding: 2px 10px; border-radius: 999px; background: #e0eaff; color: #2b6df3; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.ih-sale { min-width: 0; font-size: 13px; color: #2b6df3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ih-copy { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border: 1px solid #c7d7f7; border-radius: 999px; background: var(--surface); font-size: 11.5px; font-weight: 700; color: #2a5fbf; }
+.ih-copy svg { width: 13px; height: 13px; }
+.ih-addr { grid-column: 1 / -1; margin: 0; font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ih-addr b { color: #2b6df3; font-weight: 700; }
+/* ===== 물건상세 — 탭 카드 ===== */
+.it-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+@media (max-width: 1100px) { .it-grid { grid-template-columns: minmax(0, 1fr); } }
+.it-card { background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); padding: 14px 24px 16px; min-width: 0; }
+.it-card.wide { grid-column: 1 / -1; }
+.it-card h2 { margin: 0 0 10px; display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 800; color: var(--text); }
+.it-card h2 svg { width: 18px; height: 18px; color: #2a5fbf; }
+.it-card h3 { margin: 0 0 8px; font-size: 13px; font-weight: 800; color: var(--text-2); }
+.it-rows { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px 12px; margin: 0; font-size: 13.5px; }
+.it-rows dt { color: var(--muted); }
+.it-rows dd { margin: 0; color: var(--text); min-width: 0; }
+.it-rows b { font-weight: 800; }
+.it-sub { font-size: 12px; font-weight: 400; color: var(--muted); }
+.it-none { color: var(--faint); }
+.it-empty { padding: 18px 16px; border: 1.5px dashed var(--line-2); border-radius: 10px; text-align: center; font-size: 13px; color: var(--faint); }
+.it-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 1100px) { .it-cols { grid-template-columns: minmax(0, 1fr); } }
+.it-note { margin: 10px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+.it-rows .neg { color: #ef4444; } .it-rows .pos { color: #2b6df3; }
+.it-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.it-table th, .it-table td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+.it-table th { color: var(--muted); font-weight: 700; background: var(--surface-2); }
 /* 아래 줄 단추 셋 — 위 폴더 칸의 시작~끝에 맞춰 같은 폭으로 나눈다 (제목 칸 132 + 여백 4 + 사이 8 만큼 들여서 시작) */
 .reg-duo .rg-acts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-left: 144px; }
 .reg-duo .rg-acts > .rg-fav, .reg-duo .rg-acts > .rg-btn { width: auto; }
@@ -1154,6 +1199,14 @@ html, body { overflow-x: clip; }
     <div class="wrap content reg-content" id="regContent"></div>
     <input type="file" id="pdfInput" accept="application/pdf" multiple hidden>
   </div>
+  <!-- 물건상세 — 앱 AuctionDetailPage 와 같은 짜임: 하위 탭(물건정보~입찰가산정) · 고정 카드 · 탭별 카드 -->
+  <div id="itemView" hidden>
+    <div class="toolbar-shell item-shell">
+      <div class="wrap"><div class="toolbar item-head" id="itemHead"></div></div>
+    </div>
+    <div class="wrap crumb-slot" id="crumbSlotItem"></div>
+    <div class="wrap content item-content" id="itemContent"></div>
+  </div>
   <button type="button" class="fab" id="fab" data-act="register" data-tip="끌어서 옮길 수 있어요 · 오른쪽 클릭하면 제자리" data-tip-pos="left"><span class="plus">+</span>선정물건등록</button>
 </main>
 
@@ -1310,7 +1363,8 @@ html, body { overflow-x: clip; }
     stage: 'all', type: '', court: '', date: '', q: '',
     pop: '', calMonth: null, pick: false, picked: new Set(), binPicked: new Set(), menu: null, modal: null,
     loggedIn: store.get('wlp.web.login', true),
-    route: /^#\/register/.test(location.hash) ? 'register' : 'list',
+    route: /^#\/register/.test(location.hash) ? 'register' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
+    itemId: (location.hash.match(/^#\/item\/([\w-]+)/) || [])[1] || '', itemTab: 'basic',
   };
 
   const live = () => items.filter((it) => !it.archived && !it.trashed);
@@ -1523,7 +1577,7 @@ html, body { overflow-x: clip; }
     const r = profitOf(it);
     const m = (cls, label, val, tipText) => `<div class="metric ${cls}"${tip(tipText, 'left')}><small>${label}</small>${val}</div>`;
     const money = (n) => `<strong class="num ${n < 0 ? 'neg' : ''}">${won(Math.abs(n)) ? `${n < 0 ? '−' : ''}${won(Math.abs(n))}` : '0'}<em>원</em></strong>`;
-    return `<aside class="res ${past ? 'past' : ''}" data-act="soon" data-name="수익계산" aria-label="${esc(it.caseNo)} 수익률 분석">
+    return `<aside class="res ${past ? 'past' : ''}" data-act="go-profit" data-id="${it.id}" aria-label="${esc(it.caseNo)} 수익률 분석">
       <div class="res-head"><b class="res-title">${I.trend}수익률 분석</b><span>${r ? `매도 예상 ${eok(r.sale)}` : '입찰가 산정 전'}</span></div>
       ${r ? [
         m('rate', '최종 수익률', `<strong class="num ${r.rate < 0 ? 'neg' : ''}">${r.rate.toFixed(1)}<em>%</em></strong>`, '세후 순이익 ÷ 필요준비금'),
@@ -2124,30 +2178,156 @@ html, body { overflow-x: clip; }
   /* 하위 탭 — 화면마다 있으면 머리띠 아래 한 단. 지금은 선정물건등록만 (구글드라이브 연동 · AI 자동 분석) */
   /* 화면 이름 → [키, 아이콘, 글자] 목록. 지금은 쓰는 화면이 없다 — 다른 화면에 하위 탭이 필요하면 여기에 적는다.
      예) register: [['drive', 'cloud', '구글드라이브 연동'], ['ai', 'key', 'AI 자동 분석']]  (선정물건등록에서 쓰다가 상자 둘 배치로 바꿨다) */
-  const SUBTABS = {};
+  const SUBTABS = {
+    /* 물건상세 — 앱 AuctionDetailPage 의 TABS 와 같은 다섯 칸 */
+    item: [['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품+현장'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
+  };
   function renderSubTabs() {
     const tabs = SUBTABS[S.route]; const bar = $('subTabs');
     bar.hidden = !tabs; document.body.classList.toggle('has-subtabs', !!tabs);
-    $('subTabsIn').innerHTML = tabs ? tabs.map(([k, ic, t]) => `<button type="button" class="subtab ${R.tab === k ? 'on' : ''}" role="tab" aria-selected="${R.tab === k}" data-act="subtab" data-v="${k}">${I[ic]}${t}</button>`).join('') : '';
+    const cur = S.route === 'item' ? S.itemTab : R.tab;
+    $('subTabsIn').innerHTML = tabs ? tabs.map(([k, ic, t]) => `<button type="button" class="subtab ${cur === k ? 'on' : ''}" role="tab" aria-selected="${cur === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
+    if (tabs) syncStickTop();
   }
   function render() {
     renderHeader();
-    const reg = S.route === 'register';
-    $('listView').hidden = reg; $('regView').hidden = !reg; $('fab').hidden = reg;
-    $('crumbCur').textContent = reg ? '선정물건등록' : '선정물건';
-    { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
+    const reg = S.route === 'register'; const item = S.route === 'item';
+    $('listView').hidden = reg || item; $('regView').hidden = !reg; $('itemView').hidden = !item; $('fab').hidden = reg || item;
+    const cur = item ? byId(S.itemId) : null;
+    $('crumbCur').textContent = reg ? '선정물건등록' : item ? `선정물건 › ${cur ? cur.caseNo : '물건상세'}` : '선정물건';
+    { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
-    document.title = reg ? '마이턴옥션 선정물건등록' : '마이턴옥션 선정물건';
-    if (reg) renderRegister(); else { renderToolbar(); renderContent(); }
+    document.title = reg ? '마이턴옥션 선정물건등록' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
+    if (reg) renderRegister(); else if (item) renderItem(); else { renderToolbar(); renderContent(); }
     renderFloat();
   }
-  /* 화면 바꾸기 — #/ 선정물건, #/register 선정물건등록 (뒤로가기로 돌아온다) */
-  function go(route) {
-    if (S.route === route) { window.scrollTo(0, 0); return; }
-    S.route = route; S.pop = ''; S.menu = null; render(); window.scrollTo(0, 0);
-    try { const h = route === 'register' ? '#/register' : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
+  /* ===== 물건상세 — 앱 AuctionDetailPage 를 따른다 =====
+     고정 카드: 경매 · 사건번호 · 단계 · 보관함/휴지통 / 종류 · 중요도 · 매각구분·면적 / 주소(건물명·호수 굵게) · 주소 복사
+     탭 카드는 앱과 같은 순서. 웹 물건에 없는 자료(등기·임차인·현장조사·실거래 등)는 지어내지 않고 빈 칸으로 둔다 */
+  const py = (m2) => (m2 > 0 ? (m2 / 3.305785).toFixed(1) : '');
+  const SEC_IC = {
+    doc: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>',
+    pin: '<path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+    bld: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/>',
+    cam: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>',
+    scale: '<path d="M12 3v18M5 7h14M7 7l-3 7a3 3 0 0 0 6 0L7 7zM17 7l-3 7a3 3 0 0 0 6 0l-3-7z"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+    check: '<path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/>',
+    chart: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+    won: '<path d="M4 7l3 10 3-10 2 7 2-7 3 10 3-10M3 11h18"/>',
+    calc: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h2M12 18h2M16 15v3"/>',
+    pct: '<path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+  };
+  const secIc = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${SEC_IC[k] || ''}</svg>`;
+  const itCard = (ic, title, body, wide) => `<section class="it-card ${wide ? 'wide' : ''}"><h2>${secIc(ic)}${title}</h2>${body}</section>`;
+  const itRows = (rows) => `<dl class="it-rows">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v || '<span class="it-none">-</span>'}</dd>`).join('')}</dl>`;
+  const itEmpty = (t) => `<div class="it-empty">${t || '웹에는 아직 연결되지 않은 자료입니다 — 앱 물건상세에서 확인해 주세요.'}</div>`;
+  const wonCell = (n) => (n > 0 ? `<b class="num">${won(n)}</b>원` : '');
+  function itemHeadHtml(it) {
+    const kind = TYPE_NAME(it.type) || '다세대';
+    const meta = [it.bldg > 0 ? `${it.bldg}㎡/${py(it.bldg)}평` : '', it.land > 0 ? `대지권 ${it.land}㎡` : ''].filter(Boolean).join(' · ');
+    const stage = it.status || '단계';
+    const hot = stage === '입찰진행'; const done = stage === '낙찰' || stage === '매도'; const off = stage === '유찰' || stage === '취소';
+    return `
+      <div class="ih-top">
+        <button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"${tip('선정물건으로')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button>
+        <h1 class="ih-title"><span class="ih-tag">경매</span><span class="num">${esc(it.caseNo)}</span></h1>
+        <span class="ih-court">${esc(it.court)} · 매각기일 <span class="num">${dotDate(it.date)}</span> <em>${ddayText(it.date)}</em></span>
+        <span class="ih-right">
+          <span class="ih-stage ${hot ? 'hot' : ''} ${done ? 'done' : ''} ${off ? 'off' : ''}">${esc(stage)}</span>
+          <button type="button" class="ibtn" data-act="archive" data-id="${it.id}" aria-label="보관함에 넣기"${tip('보관함에 넣기')}>${I.box}</button>
+          <button type="button" class="ibtn del" data-act="delete" data-id="${it.id}" aria-label="휴지통으로 보내기"${tip('휴지통으로 보내기', 'right')}>${I.trash}</button>
+        </span>
+      </div>
+      <div class="ih-prop">
+        <span class="ih-kind">${esc(kind)}</span>
+        ${starsHtml(it)}
+        <span class="ih-sale">토건일괄매각${meta ? ` · ${meta}` : ''}</span>
+        <button type="button" class="ih-copy" data-act="item-copy" data-id="${it.id}" aria-label="주소 복사"${tip('지번주소 복사')}>${I.copy}주소</button>
+        <p class="ih-addr">${esc(it.addr)}${it.bld ? ` <b>${esc(it.bld)}</b>` : ''}${it.unit ? ` <b>${esc(it.unit)}</b>` : ''}</p>
+      </div>`;
   }
-  window.addEventListener('popstate', () => { const r = /^#\/register/.test(location.hash) ? 'register' : 'list'; if (r !== S.route) { S.route = r; S.pop = ''; S.menu = null; render(); } });
+  function itemTabHtml(it, tab) {
+    if (tab === 'basic') {
+      const dep = it.min > 0 ? Math.round(it.min * 0.1) : 0;
+      return [
+        itCard('doc', '정보요약', itRows([
+          ['관할법원', esc(it.court)],
+          ['매각기일', `<span class="num">${dotDate(it.date)}</span> <span class="it-sub">${ddayText(it.date)}</span>`],
+          ['물건종류', esc(TYPE_NAME(it.type) || it.type || '')],
+          ['전용면적', it.bldg > 0 ? `<span class="num">${it.bldg}㎡</span> <span class="it-sub">${py(it.bldg)}평</span>` : ''],
+          ['대지권', it.land > 0 ? `<span class="num">${it.land}㎡</span> <span class="it-sub">${py(it.land)}평</span>` : ''],
+          ['건물명', esc(it.bld || '')],
+          ['동·호', esc(it.unit || '')],
+        ])),
+        itCard('info', '기본정보', itRows([
+          ['사건번호', `<span class="num">${esc(it.caseNo)}</span>`],
+          ['감정가', wonCell(it.apr)],
+          [`최저가${it.round ? ` (${esc(it.round)})` : ''}`, it.min > 0 ? `${wonCell(it.min)} <span class="it-sub">감정가의 ${pct(it.min, it.apr)}%</span>` : ''],
+          ['입찰보증금', dep ? `${wonCell(dep)} <span class="it-sub">최저가의 10%</span>` : ''],
+          ['입찰가', it.mine > 0 ? `${wonCell(it.mine)} <span class="it-sub">최저가 +${((it.mine / it.min - 1) * 100).toFixed(1)}%</span>` : '<span class="it-none">산정 전</span>'],
+        ])),
+        itCard('pin', '입지정보', itEmpty()),
+        itCard('bld', '건축물정보', itEmpty()),
+        itCard('info', '물건현황', itEmpty()),
+      ].join('');
+    }
+    if (tab === 'rights') return [
+      itCard('cam', '서류사진', itEmpty()),
+      itCard('doc', '건물등기', itEmpty()),
+      itCard('user', '임차인현황', itEmpty()),
+      itCard('scale', '권리분석', itEmpty()),
+      itCard('check', '권리분석 정리', itEmpty()),
+    ].join('');
+    if (tab === 'survey') return [
+      itCard('cam', '본건사진', itEmpty()),
+      itCard('chart', '매매수요', itEmpty()),
+      itCard('won', '급매가', itEmpty()),
+      itCard('check', '손품결론', itEmpty()),
+      itCard('pin', '현장조사', itEmpty()),
+      itCard('cam', '현장사진', itEmpty()),
+      itCard('check', '체크리스트', itEmpty()),
+    ].join('');
+    if (tab === 'verify') return [
+      itCard('scale', '경매사례', itEmpty()),
+      itCard('won', '경매지번 실거래가', itEmpty()),
+      itCard('chart', '실거래가 조건분석', itEmpty()),
+    ].join('');
+    /* 입찰가산정 — 목록의 수익률 분석과 같은 간이 셈(대출 70% · 비용 4.5%+300만 · 예상 매도가) */
+    const r = profitOf(it);
+    if (!r) return itCard('calc', '입찰가산정', itEmpty('입찰가를 정하면 수익을 셈합니다.'), true) + taxTableHtml();
+    const bid = it.mine; const gain = r.sale - bid - r.cost; const tax = Math.max(0, Math.round(incomeTax(gain))); const local = Math.round(tax * 0.1);
+    const money = (n) => (n < 0 ? `<b class="num neg">−${won(-n)}</b>원` : wonCell(n) || '<b class="num">0</b>원');
+    return itCard('calc', '입찰가산정', `<div class="it-cols">
+        <div><h3>입찰정보</h3>${itRows([['감정가', wonCell(it.apr)], [`최저가${it.round ? ` (${esc(it.round)})` : ''}`, wonCell(it.min)], ['입찰보증금', wonCell(Math.round(it.min * 0.1))], ['입찰가', wonCell(bid)], ['대출', wonCell(r.loan)]])}</div>
+        <div><h3>비용</h3>${itRows([['총비용', wonCell(r.cost)]])}<p class="it-note">취득세·법무·이자·중개·명도 등을 합친 간이 값(입찰가의 4.5% + 300만원)입니다.</p></div>
+        <div><h3>수익</h3>${itRows([['매도가', wonCell(r.sale)], ['총투자금', wonCell(bid + r.cost)], ['실투자금', money(r.net)], ['매매차익', money(gain)], ['사업소득세', money(tax)], ['지방소득세', money(local)], ['세후 순이익', money(r.after)], ['세후 수익률', `<b class="num ${r.rate < 0 ? 'neg' : 'pos'}">${r.rate.toFixed(1)}</b>%`]])}</div>
+      </div>`, true) + taxTableHtml();
+  }
+  function taxTableHtml() {
+    const br = [['1,400만원 이하', '6%', '-'], ['1,400만~5,000만원', '15%', '126만원'], ['5,000만~8,800만원', '24%', '576만원'], ['8,800만~1.5억원', '35%', '1,544만원'], ['1.5억~3억원', '38%', '1,994만원'], ['3억~5억원', '40%', '2,594만원'], ['5억~10억원', '42%', '3,594만원'], ['10억원 초과', '45%', '6,594만원']];
+    return itCard('pct', '개인소득세율 <span class="it-sub">종합소득세</span>', `<table class="it-table"><thead><tr><th>과세표준</th><th>세율</th><th>누진공제</th></tr></thead><tbody>${br.map((b) => `<tr><td>${b[0]}</td><td class="num">${b[1]}</td><td class="num">${b[2]}</td></tr>`).join('')}</tbody></table>`, true);
+  }
+  function renderItem() {
+    const it = byId(S.itemId);
+    if (!it) { $('itemHead').innerHTML = '<div class="ih-top"><button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button><h1 class="ih-title">물건을 찾을 수 없습니다</h1></div>'; $('itemContent').innerHTML = ''; return; }
+    $('itemHead').innerHTML = itemHeadHtml(it);
+    $('itemContent').innerHTML = `<div class="it-grid">${itemTabHtml(it, S.itemTab)}</div>`;
+  }
+  /* 화면 바꾸기 — #/ 선정물건, #/register 선정물건등록 (뒤로가기로 돌아온다) */
+  function go(route, id) {
+    if (S.route === route && (route !== 'item' || S.itemId === id)) { window.scrollTo(0, 0); return; }
+    S.route = route; S.pop = ''; S.menu = null;
+    if (route === 'item') { S.itemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
+    render(); window.scrollTo(0, 0);
+    try { const h = route === 'register' ? '#/register' : route === 'item' ? `#/item/${id}` : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
+  }
+  window.addEventListener('popstate', () => {
+    const m = location.hash.match(/^#\/item\/([\w-]+)/);
+    const r = /^#\/register/.test(location.hash) ? 'register' : m ? 'item' : 'list';
+    if (r !== S.route || (m && m[1] !== S.itemId)) { S.route = r; if (m) S.itemId = m[1]; S.pop = ''; S.menu = null; render(); }
+  });
 
   const byId = (id) => items.find((x) => x.id === id);
   const update = (id, patch) => { items = items.map((x) => (x.id === id ? { ...x, ...patch } : x)); };
@@ -2208,16 +2388,16 @@ html, body { overflow-x: clip; }
       case 'card':
         if (e.target.closest('button, input')) break;
         if (S.pick) { if (S.picked.has(id)) S.picked.delete(id); else S.picked.add(id); render(); break; }
-        toast(`${it.caseNo} 물건상세 화면으로 이동합니다 (다음 단계에서 연결).`, 'info'); break;
+        go('item', id); break;
       case 'star': { e.stopPropagation(); const n = Number(t.dataset.n); update(id, { priority: it.priority === n ? n - 1 : n }); render(); break; }
       case 'copy': e.stopPropagation(); copyText(addrText(it)); break;
       case 'archive':
         e.stopPropagation();
-        askConfirm({ title: '보관함에 넣겠습니까?', desc: '', okLabel: '보관', tone: 'calm', skipKey: 'archiveOne', run: () => { update(id, { archived: true }); render(); toast('보관함에 넣었습니다.'); } });
+        askConfirm({ title: '보관함에 넣겠습니까?', desc: '', okLabel: '보관', tone: 'calm', skipKey: 'archiveOne', run: () => { update(id, { archived: true }); if (S.route === 'item') { go('list'); } else render(); toast('보관함에 넣었습니다.'); } });
         break;
       case 'delete':
         e.stopPropagation();
-        askConfirm({ title: '목록에서 지우겠습니까?', desc: '휴지통에서 되살릴 수 있습니다. 단계와 적어 둔 내용은 그대로 돌아옵니다.', okLabel: '삭제', skipKey: 'removeOne', run: () => { update(id, { trashed: true }); render(); toast('휴지통으로 옮겼습니다.'); } });
+        askConfirm({ title: '목록에서 지우겠습니까?', desc: '휴지통에서 되살릴 수 있습니다. 단계와 적어 둔 내용은 그대로 돌아옵니다.', okLabel: '삭제', skipKey: 'removeOne', run: () => { if (S.route === 'item') go('list'); update(id, { trashed: true }); render(); toast('휴지통으로 옮겼습니다.'); } });
         break;
       case 'phase': {
         e.stopPropagation();
@@ -2273,6 +2453,8 @@ html, body { overflow-x: clip; }
       }
       case 'register': case 'go-register': go('register'); break;
       case 'go-list': go('list'); break;
+      case 'go-profit': S.itemTabNext = 'profit'; go('item', id); break;
+      case 'item-copy': copyText(addrText(it)); break;
       case 'fav-open': S.pop = ''; render(); S.modal = favModal(-1); renderModal(); break;
       case 'fav-edit-open': e.stopPropagation(); S.pop = ''; render(); S.modal = favModal(Number(v)); renderModal(); break;
       case 'fav-add': {
@@ -2349,7 +2531,7 @@ html, body { overflow-x: clip; }
       }
       case 'ai-del': try { localStorage.removeItem('myturn.gemini.key'); localStorage.removeItem('myturn.gemini.on'); } catch (e) { /* 그만 */ }
         R.aiKey = ''; R.aiOn = false; S.modal = null; renderModal(); renderRegister(); toast('키를 지웠습니다.', 'info'); break;
-      case 'subtab': R.tab = v === 'ai' ? 'ai' : 'drive'; try { localStorage.setItem('wlp.web.regTab', R.tab); } catch (e) { /* 그만 */ } S.pop = ''; renderSubTabs(); renderRegister(); break;
+      case 'subtab': if (S.route === 'item') { S.itemTab = v; renderSubTabs(); renderItem(); window.scrollTo(0, 0); break; } R.tab = v === 'ai' ? 'ai' : 'drive'; try { localStorage.setItem('wlp.web.regTab', R.tab); } catch (e) { /* 그만 */ } S.pop = ''; renderSubTabs(); renderRegister(); break;
       case 'rg-collapse': R.collapsed = !R.collapsed; renderRegister(); break;
       /* 목록 비우기 — 한 번 묻는다. 읽어 온 줄만 지우고 등록한 선정물건은 그대로다 */
       case 'rg-clear': askConfirm({ title: '목록을 비울까요?', desc: '읽어 온 목록만 지웁니다. 이미 등록한 선정물건은 그대로 남습니다.', okLabel: '비우기', skipKey: '', run: () => { R.rows = []; R.banner = ''; R.missing = []; renderRegister(); toast('목록을 비웠습니다.'); } }); break;
