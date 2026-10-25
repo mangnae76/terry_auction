@@ -162,7 +162,8 @@ button { cursor: pointer; }
 .g-menu:hover { color: #cfe0ff; }
 .g-menu:hover::after { transform: scaleX(1); opacity: .55; }
 .g-menu.on::after { transform: scaleX(1); opacity: 1; }
-.m1 { left: 13.75%; } .m2 { left: 23.2%; } .m3 { left: 32.6%; }
+/* +물건등록이 선정물건 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
+.m0 { left: 13.75%; } .m1 { left: 23.2%; } .m2 { left: 32.6%; } .m3 { left: 42.05%; }
 .m4 { left: 51.1%; } .m5 { left: 60.1%; } .m6 { left: 69.45%; }
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: #fff !important; border-radius: 6px; transition: color .15s, background .15s; }
@@ -1225,6 +1226,7 @@ html, body { overflow-x: clip; }
   <div class="wrap">
     <div class="gnb-in">
       <a class="g-logo" href="#" data-act="noop" aria-label="마이턴옥션 홈"><img src="{{LOGO_WHITE}}" alt="MYTURN AUCTION"></a>
+      <a class="g-menu m0" href="#/register" data-act="go-register" id="navReg">+물건등록</a>
       <a class="g-menu m1" href="#/" data-act="go-list" id="navWatch">선정물건</a>
       <a class="g-menu m2" href="#" data-act="soon" data-name="임장경로">임장경로</a>
       <a class="g-menu m3" href="#" data-act="soon" data-name="시장정보">시장정보</a>
@@ -1314,7 +1316,7 @@ html, body { overflow-x: clip; }
     <div class="wrap crumb-slot" id="crumbSlotItem"></div>
     <div class="wrap content item-content" id="itemContent"></div>
   </div>
-  <button type="button" class="fab" id="fab" data-act="register" data-tip="끌어서 옮길 수 있어요 · 오른쪽 클릭하면 제자리" data-tip-pos="left"><span class="plus">+</span>물건등록</button>
+  <button type="button" class="fab" id="fab" data-act="register" data-tip="끌어서 옮길 수 있어요 · 오른쪽 클릭하면 제자리" data-tip-pos="left"><span class="plus">+</span>선정물건등록</button>
 </main>
 
 <footer class="foot">
@@ -1544,6 +1546,7 @@ html, body { overflow-x: clip; }
 
   /* ---------- 머리띠 — 로그인 전: 로그인 ▼ 회원가입 / 로그인 뒤: 강정인님 ▼ 로그아웃 ---------- */
   function renderHeader() {
+    $('navReg').classList.toggle('on', S.route === 'register');
     const nav = $('navWatch'); nav.classList.toggle('on', S.route === 'list'); if (S.route === 'list') nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
     $('gLoginTxt').textContent = S.loggedIn ? `${S.userName || '회원'}님` : '로그인';
     $('gLogin').classList.toggle('named', S.loggedIn);
