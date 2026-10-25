@@ -587,6 +587,21 @@ watch(favorites, (list) => {
   }
 }, { immediate: true });
 
+/** 목록 비우기 — 한 번 묻는다. 읽어 온 줄만 지우고 등록한 선정물건은 그대로다 (웹 /web 과 같다) */
+const clearImportRows = () => {
+  askConfirm({
+    title: '목록을 비울까요?',
+    desc: '읽어 온 목록만 지웁니다. 이미 등록한 선정물건은 그대로 남습니다.',
+    okLabel: '비우기',
+    skipKey: '',
+    run: () => {
+      importRows.value = [];
+      banner.value = '';
+      missingAuctions.value = [];
+      showToast('목록을 비웠습니다.');
+    },
+  });
+};
 /** 삭제 — 되돌릴 수 없는 일은 이것 하나라 한 번 묻는다 (드롭다운·창 같은 규칙).
  *  목록에서만 빠진다: 드라이브의 PDF 와 이미 등록한 물건은 그대로다 */
 const removeFavorite = (url: string) => {
@@ -832,6 +847,9 @@ const onDropFiles = async (e: DragEvent) => {
             <span class="n-new">신규<b>{{ newCount }}</b></span>
             <span class="n-chg">변경<b>{{ changedCount }}</b></span>
             <span class="n-err">오류<b>{{ errorCount }}</b></span>
+            <button v-if="importRows.length > 0" type="button" class="pip-clear-btn" aria-label="목록 비우기" title="목록 비우기" @click="clearImportRows">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18" /><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></svg>
+            </button>
           </span>
           <button
             type="button"
@@ -1466,7 +1484,13 @@ const onDropFiles = async (e: DragEvent) => {
   display: flex; align-items: center; justify-content: space-between;
   padding-top: 10px;
 }
-.pip-update { font-size: 11.5px; color: #6b7280; font-weight: 600; }
+.pip-update { font-size: 11.5px; color: #6b7280; font-weight: 400; }
+/* 목록 비우기 — 오류 옆 휴지통 */
+.pip-clear-btn {
+  width: 24px; height: 24px; padding: 0; margin-left: -2px; border: none; border-radius: 6px;
+  background: transparent; color: #6b7280; display: grid; place-items: center; cursor: pointer;
+}
+.pip-clear-btn:active { background: #fdecec; color: #dc2626; }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;

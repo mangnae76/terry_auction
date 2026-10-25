@@ -456,7 +456,11 @@ body.has-subtabs .toolbar-shell { top: calc(env(safe-area-inset-top, 0px) + 45px
 .rg-meta i { font-style: normal; color: var(--faint); margin: 0 6px; }
 .badge { justify-self: end; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; white-space: nowrap; }
 .badge.s-신규 { background: #eff6ff; color: #2b6df3; } .badge.s-변경 { background: #f3e8ff; color: #7c3aed; } .badge.s-오류 { background: #fee2e2; color: #ef4444; }
-.rg-foot { display: flex; align-items: center; justify-content: space-between; padding: 10px 2px 0; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.rg-foot { display: flex; align-items: center; justify-content: space-between; padding: 10px 2px 0; font-size: 12.5px; font-weight: 400; color: var(--muted); }
+/* 목록 비우기 — 오류 옆 휴지통 */
+.rg-clear-btn { width: 26px; height: 26px; padding: 0; margin-left: -4px; border: 0; border-radius: 6px; background: transparent; display: grid; place-items: center; color: var(--muted); cursor: pointer; transition: background .15s, color .15s; }
+.rg-clear-btn:hover { background: #fdecec; color: #dc2626; }
+.rg-clear-btn svg { width: 15px; height: 15px; }
 .rg-foot button { border: 0; background: none; color: var(--muted); font-size: 12.5px; padding: 3px 6px; border-radius: 5px; }
 .rg-foot button:hover { background: var(--surface-3); color: var(--text); }
 .rg-missing { margin-top: 10px; padding: 11px 13px; background: #fff6e8; border: 1px solid #f3dcb5; border-radius: 10px; }
@@ -2023,12 +2027,12 @@ html, body { overflow-x: clip; }
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
       <section class="rg-results" id="rgDrop" aria-label="${PC.title}">
         <div class="rg-head"><h2 class="tip-below" data-tip="${PC.tip}" data-tip-pos="left" style="cursor:help">${PC.ic}${PC.title}</h2>
-          <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span></span>
+          <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span>${R.rows.length ? `<button type="button" class="rg-clear-btn" data-act="rg-clear" aria-label="목록 비우기" data-tip="목록 비우기" data-tip-pos="below">${I.trash}</button>` : ''}</span>
           <button type="button" class="rg-chev ${R.collapsed ? 'up' : ''}" data-act="rg-collapse" aria-expanded="${!R.collapsed}" aria-label="결과 접기">${I.chevDown}</button></div>
         ${R.missing.length ? `<div class="rg-missing"><div class="h">드라이브에 없는 물건 ${R.missing.length}건<button type="button" data-act="missing-trash">휴지통으로</button></div><p>스캔한 폴더에서 PDF가 사라졌습니다. 선정물건은 그대로 남아 있습니다 — 치우려면 누르세요.</p><ul>${R.missing.map((m) => `<li>${esc(m.label)}</li>`).join('')}</ul></div>` : ''}
         ${R.collapsed ? '' : `<div class="rg-empty ${R.rows.length ? 'slim' : ''}" role="button" tabindex="0" data-act="pdf-pick" aria-label="PDF 파일 고르기"><span class="ic">📂</span><span>${PC.drop}</span></div>
           ${R.rows.length ? `<ul class="rg-list">${R.rows.map(rowHtmlR).join('')}</ul>
-          <div class="rg-foot"><span class="num">UPDATE : ${esc(R.last || '—')}</span><button type="button" data-act="rg-clear">목록 비우기</button></div>` : ''}`}
+          <div class="rg-foot"><span class="num">UPDATE : ${esc(R.last || '—')}</span></div>` : ''}`}
       </section>`;
   }
 
@@ -2344,7 +2348,8 @@ html, body { overflow-x: clip; }
         R.aiKey = ''; R.aiOn = false; S.modal = null; renderModal(); renderRegister(); toast('키를 지웠습니다.', 'info'); break;
       case 'subtab': R.tab = v === 'ai' ? 'ai' : 'drive'; try { localStorage.setItem('wlp.web.regTab', R.tab); } catch (e) { /* 그만 */ } S.pop = ''; renderSubTabs(); renderRegister(); break;
       case 'rg-collapse': R.collapsed = !R.collapsed; renderRegister(); break;
-      case 'rg-clear': R.rows = []; R.banner = ''; R.missing = []; renderRegister(); break;
+      /* 목록 비우기 — 한 번 묻는다. 읽어 온 줄만 지우고 등록한 선정물건은 그대로다 */
+      case 'rg-clear': askConfirm({ title: '목록을 비울까요?', desc: '읽어 온 목록만 지웁니다. 이미 등록한 선정물건은 그대로 남습니다.', okLabel: '비우기', skipKey: '', run: () => { R.rows = []; R.banner = ''; R.missing = []; renderRegister(); toast('목록을 비웠습니다.'); } }); break;
       case 'rg-open': S.q = v; $('q').value = v; S.stage = 'all'; S.type = ''; S.court = ''; S.date = ''; go('list'); break;
       case 'missing-trash': { const ids = R.missing.map((m) => m.id); ids.forEach((x) => update(x, { trashed: true })); R.missing = []; render(); toast(`${ids.length}건을 휴지통으로 보냈습니다.`); break; }
       case 'reg-tab': readReg(); S.modal.tab = v; S.modal.err = ''; renderModal(); break;
