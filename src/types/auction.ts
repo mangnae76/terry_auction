@@ -497,6 +497,8 @@ export interface AuctionDetail {
   rankPhotoUrls?: string[];
   /** 입지조사 등 항목별 사진·링크 모음 (key → URL 목록) */
   extraPhotos?: Record<string, string[]>;
+  /** 권리분석 탭의 AI 분석 결과 — services/geminiRights 의 RightsAi */
+  rightsAi?: import('../services/geminiRights').RightsAi;
   /** 실거래가 현황 사진 (아실·디스코) */
   tradePhotoUrls?: string[];
   /** 네이버부동산 매물 사진 (최저가) */

@@ -60,6 +60,8 @@ import { addressParts, hasBuildingName, isUnitToken } from '../utils/addressName
 import { stageDates } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePdf, deleteSitePhoto, isPdfEntry, isPdfFile, isPhotoId, loadSitePdf, loadSitePhoto, pdfNameOf, saveSitePdf, saveSitePhoto } from '../services/sitePhotoRepository';
+import { getGeminiKey, isGeminiOn, GeminiError } from '../services/geminiPdf';
+import { askRightsAnalysis, DOC_LABELS, type RightsDocPart } from '../services/geminiRights';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
 import { geocodeAddress } from '../services/routeOptimizer';
 import {
@@ -4558,20 +4560,45 @@ const removeRightsDocAt = async (idx: number) => {
   await discardPastedImage(removed);
 };
 
-/** AI 권리분석 진단 — 지금은 자리만 있다. AI 분석이 붙으면 이 값을 채운다
- *  baseRight: 말소기준권리가 어떤 권리인지 (예: '근저당권 2015.03.02')
- *  takeover: 낙찰자가 떠안는 권리 · extinguish: 낙찰되면 저절로 없어지는 권리 */
-const rightsDiag = computed(() => ({
-  baseRight: '',
-  takeover: [] as string[],
-  extinguish: [] as string[],
-}));
+/** AI 가 적어 준 분석 — 없으면 빈 값 */
+const rightsAi = computed(() => auction.value?.rightsAi ?? null);
+/** 권리 한 줄을 화면 글로 — '근저당권 2015-03-02 · 국민은행' */
+const rightLine = (r: { kind: string; date: string; holder: string; reason?: string }) => [
+  [r.kind, r.date].filter(Boolean).join(' '),
+  r.holder,
+  r.reason,
+].filter(Boolean).join(' · ');
 
-/** AI 명도 난이도 분석 — 지금은 자리만 있다. AI 분석이 붙으면 채운다
- *  level: 예측 난이도 (예: '상' · '중' · '하') · reason: 난이도 근거 · strategy: 대응 전략 · advice: 투자 조언 */
-const evictDiag = computed(() => ({ level: '', reason: '', strategy: '', advice: '' }));
-/** AI 권리분석 결론 — 권리·명도 분석을 묶은 한 줄 결론 자리 (AI 분석 뒤 채움) */
-const rightsConclusion = computed(() => '');
+/** AI 권리분석 진단 — 말소기준권리가 어떤 권리인지, 떠안는 권리와 없어지는 권리 */
+const rightsDiag = computed(() => {
+  const ai = rightsAi.value;
+  if (!ai) return { baseRight: '', takeover: [] as string[], extinguish: [] as string[] };
+  const b = ai.baseRight;
+  return {
+    baseRight: [b.kind, b.date].filter(Boolean).join(' '),
+    takeover: ai.takeover.items.map(rightLine),
+    extinguish: ai.extinguish.items.map(rightLine),
+  };
+});
+
+/** 언제 받은 분석인지 — '26.10.25 14:30' */
+const aiAskedAtText = computed(() => {
+  const iso = rightsAi.value?.askedAt ?? '';
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  return `${String(d.getFullYear()).slice(2)}.${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+});
+
+/** AI 명도 난이도 분석 */
+const evictDiag = computed(() => rightsAi.value?.evict ?? { level: '', reason: '', strategy: '', advice: '' });
+/** AI 권리분석 결론 — 판단과 까닭을 한 글로 */
+const rightsConclusion = computed(() => {
+  const c = rightsAi.value?.conclusion;
+  if (!c) return '';
+  return [c.verdict, c.text].filter(Boolean).join(' — ');
+});
 const EVICT_NOTES = [
   { key: 'reason', label: '난이도 근거' },
   { key: 'strategy', label: '대응 전략' },
@@ -4592,6 +4619,68 @@ const DOC_BOXES: Array<{ key: string; label: string; icon: string }> = [
   { key: 'doc.delivery', label: '송달내역', icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>' },
 ];
 const docDropKey = ref('');
+
+// === AI 권리분석 ===
+const rightsAiBusy = ref(false);
+const rightsAiErr = ref('');
+/** data URL 을 Gemini 가 받는 꼴로 쪼갠다 */
+const splitDataUrl = (url: string): { mimeType: string; base64: string } | null => {
+  const m = /^data:([^;,]+)[^,]*,(.*)$/s.exec(url);
+  return m ? { mimeType: m[1], base64: m[2] } : null;
+};
+const blobToBase64 = (blob: Blob) => new Promise<string>((done, fail) => {
+  const r = new FileReader();
+  r.onload = () => done(String(r.result).split(',')[1] ?? '');
+  r.onerror = () => fail(new Error('read'));
+  r.readAsDataURL(blob);
+});
+/** 일곱 칸에 올려 둔 서류를 Gemini 가 읽을 수 있는 꼴로 모은다 */
+const collectDocParts = async (): Promise<RightsDocPart[]> => {
+  const out: RightsDocPart[] = [];
+  for (const box of DOC_BOXES) {
+    const entry = extraList(box.key)[0];
+    if (!entry) continue;
+    const label = DOC_LABELS[box.key] ?? box.label;
+    if (isPdfEntry(entry)) {
+      const blob = await loadSitePdf(entry).catch(() => null);
+      if (blob) out.push({ label, mimeType: 'application/pdf', base64: await blobToBase64(blob) });
+      continue;
+    }
+    // 올려 둔 그림 — 저장소에 담긴 것이면 꺼내 오고, data URL 이면 그대로 쓴다
+    const url = isPhotoId(entry) ? await loadSitePhoto(entry).catch(() => '') : entry;
+    const part = splitDataUrl(url);
+    if (part) out.push({ label, ...part });
+  }
+  return out;
+};
+/** 'AI 분석 요청' — 올려 둔 서류로 권리분석을 받아 와 물건에 적어 둔다 */
+const requestRightsAi = async () => {
+  if (rightsAiBusy.value) return;
+  const target = auction.value;
+  if (!target) return;
+  rightsAiErr.value = '';
+  if (!isGeminiOn()) {
+    rightsAiErr.value = 'AI 키가 없습니다 — 더보기 > AI 자동 분석에서 등록해 주세요.';
+    return;
+  }
+  rightsAiBusy.value = true;
+  try {
+    const parts = await collectDocParts();
+    if (parts.length === 0) {
+      rightsAiErr.value = '분석할 서류가 없습니다 — 위 칸에 서류를 올려 주세요.';
+      return;
+    }
+    const result = await askRightsAnalysis(getGeminiKey(), parts);
+    target.rightsAi = result;
+    await store.saveAuction(target);
+    flashToast(`서류 ${parts.length}장으로 권리분석을 받았습니다.`, 'success');
+  } catch (err) {
+    rightsAiErr.value = err instanceof GeminiError ? err.message
+      : `AI 분석 실패 — ${err instanceof Error ? err.message : '알 수 없는 오류'}`;
+  } finally {
+    rightsAiBusy.value = false;
+  }
+};
 /** 칸에 끌어다 놓기 — 사진(PNG·JPG 등) 또는 PDF 한 개를 그 칸에 넣는다 (칸 하나에 하나) */
 const onDocDrop = async (e: DragEvent, key: string) => {
   docDropKey.value = '';
@@ -6801,6 +6890,13 @@ const goBack = () => router.back();
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsPhotos')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>AI 분석 요청<PhotoCountMark :n="photoAreaCount('rightsPhotos')" /></h2>
+            <button
+              type="button"
+              class="adp-ai-go"
+              :disabled="rightsAiBusy"
+              :title="rightsAiBusy ? '분석하고 있습니다' : '올려 둔 서류로 권리분석을 받습니다'"
+              @click.stop="requestRightsAi"
+            >{{ rightsAiBusy ? '분석 중…' : (auction?.rightsAi ? '다시 분석' : '분석 요청') }}</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsPhotos') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('rightsPhotos')">
@@ -6847,6 +6943,17 @@ const goBack = () => router.back();
                 <p v-if="extraErr[b.key]" class="adp-plan-err">{{ extraErr[b.key] }}</p>
               </div>
             </div>
+            <!-- 분석 상태 — 못 했으면 까닭, 했으면 무엇을 보고 언제 했는지 -->
+            <p v-if="rightsAiErr" class="adp-plan-err">{{ rightsAiErr }}</p>
+            <p v-else-if="rightsAiBusy" class="adp-doc-old">서류를 읽고 있습니다 — 10초쯤 걸립니다.</p>
+            <template v-else-if="auction?.rightsAi">
+              <p class="adp-doc-old">
+                {{ auction.rightsAi.usedDocs.length }}장으로 분석 · {{ aiAskedAtText }}
+              </p>
+              <p v-if="auction.rightsAi.missingDocs.length" class="adp-ai-missing">
+                이 서류까지 올리면 더 정확해집니다 — {{ auction.rightsAi.missingDocs.join(' · ') }}
+              </p>
+            </template>
             <!-- 전에 '서류사진'으로 올려 둔 사진 — 있을 때만 그대로 보인다 -->
             <template v-if="rightsDocList.length > 0">
               <p class="adp-doc-old">이전 서류사진</p>
@@ -6876,7 +6983,10 @@ const goBack = () => router.back();
             <div class="adp-diag-boxes">
               <div class="adp-diag-box">
                 <span class="adp-diag-k">말소기준권리</span>
-                <b :class="['adp-diag-v', 'adp-diag-name', { on: rightsDiag.baseRight }]">{{ rightsDiag.baseRight || '-' }}</b>
+                <b
+                  :class="['adp-diag-v', 'adp-diag-name', { on: rightsDiag.baseRight }]"
+                  :title="rightsAi ? [rightsAi.baseRight.holder, rightsAi.baseRight.rank, rightsAi.baseRight.evidence].filter(Boolean).join(' · ') : ''"
+                >{{ rightsDiag.baseRight || '-' }}</b>
               </div>
               <div class="adp-diag-box">
                 <span class="adp-diag-k">인수권리수</span>
@@ -6892,6 +7002,23 @@ const goBack = () => router.back();
                   <li v-for="(r, i) in rightsDiag.extinguish" :key="i">{{ r }}</li>
                 </ul>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- AI 리스크 분석 요약 — 걸리는 것을 한 줄씩. 없으면 카드도 서지 않는다 -->
+        <section v-if="rightsAi && (rightsAi.risk.summary || rightsAi.risk.items.length)" class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('rightsRisk')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>AI 리스크 분석 요약</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsRisk') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('rightsRisk')" class="adp-conclude">
+            <div class="adp-diag-box adp-evict-note">
+              <span class="adp-diag-k">서류 및 현황 리스크</span>
+              <p v-if="rightsAi.risk.summary" class="adp-evict-text on">{{ rightsAi.risk.summary }}</p>
+              <ul v-if="rightsAi.risk.items.length" class="adp-diag-list take">
+                <li v-for="(r, i) in rightsAi.risk.items" :key="i">{{ r }}</li>
+              </ul>
             </div>
           </div>
         </section>
@@ -9047,6 +9174,21 @@ const goBack = () => router.back();
 .adp-diag-list { margin: 0; padding: 0; list-style: none; font-size: 12.5px; line-height: 1.45; color: #6b7280; word-break: keep-all; }
 .adp-diag-list.take { color: #dc2626; }
 .adp-doc-old { margin: 10px 0 4px; font-size: 12px; font-weight: 700; color: #9ca3af; }
+/* AI 분석 요청 단추 — 카드 머리의 펼침 화살표 왼쪽에 선다 */
+.adp-ai-go {
+  flex: 0 0 auto; margin-left: auto;
+  border: 1px solid #c7d7f7; border-radius: 6px; background: #eef3fd;
+  padding: 0 10px; height: 26px; line-height: 1;
+  font-family: inherit; font-size: 11.5px; font-weight: 800; color: #2b6df3; cursor: pointer;
+}
+.adp-ai-go:disabled { opacity: 0.55; cursor: default; }
+.adp-ai-go:active { opacity: 0.6; }
+/* 모자란 서류 알림 — 다그치지 않게 한 발 물린 빛깔로 */
+.adp-ai-missing {
+  margin: 2px 0 4px; padding: 7px 9px;
+  border: 1px solid #f0c98a; border-radius: 6px; background: #fff8ec;
+  font-size: 11.5px; font-weight: 600; color: #8a5a00; line-height: 1.45;
+}
 .adp-body { flex: 1 1 auto; padding: 0 5px 12px; display: flex; flex-direction: column; gap: 8px; }
 
 /* 내용이 카드 좌우 끝에 붙지 않게 여백을 준다 */

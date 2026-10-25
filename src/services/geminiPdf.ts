@@ -17,7 +17,8 @@ import { loadUserPrefs, saveUserPrefs } from './userPrefsRepository';
 export const GEMINI_MODEL = 'gemini-flash-lite-latest';
 /** 키 받는 곳 — Google AI Studio 의 API 키 화면 (앱·웹의 'AI 자동 분석 · 필수 설정'에서 연다) */
 export const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
-const API = 'https://generativelanguage.googleapis.com/v1beta';
+export const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta';
+const API = GEMINI_API;
 /** 예전에 기기 하나에 통째로 적던 자리 — 계정별로 옮긴 뒤 지운다 */
 const LEGACY_KEY_STORE = 'myturn.gemini.key';
 const LEGACY_ON_STORE = 'myturn.gemini.on';
