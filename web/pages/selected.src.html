@@ -1899,7 +1899,7 @@ html, body { overflow-x: clip; }
     $('regContent').innerHTML = `
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한 열기</button>' : ''}</div>` : ''}
       <section class="rg-results" id="rgDrop" aria-label="AI 자동 파싱">
-        <div class="rg-head"><h2>${I.list}AI 자동 파싱</h2>${R.rows.length ? `<span class="cnt num">${R.rows.length}건</span>` : ''}<span class="hint">PDF를 여기로 끌어다 놓아도 됩니다</span>
+        <div class="rg-head"><h2>${I.spark}AI 자동 파싱</h2>${R.rows.length ? `<span class="cnt num">${R.rows.length}건</span>` : ''}<span class="hint">PDF를 여기로 끌어다 놓아도 됩니다</span>
           <button type="button" class="rg-chev ${R.collapsed ? 'up' : ''}" data-act="rg-collapse" aria-expanded="${!R.collapsed}" aria-label="결과 접기">${I.chevDown}</button></div>
         ${R.missing.length ? `<div class="rg-missing"><div class="h">드라이브에 없는 물건 ${R.missing.length}건<button type="button" data-act="missing-trash">휴지통으로</button></div><p>스캔한 폴더에서 PDF가 사라졌습니다. 선정물건은 그대로 남아 있습니다 — 치우려면 누르세요.</p><ul>${R.missing.map((m) => `<li>${esc(m.label)}</li>`).join('')}</ul></div>` : ''}
         ${R.collapsed ? '' : R.rows.length ? `<ul class="rg-list">${R.rows.map(rowHtmlR).join('')}</ul>
