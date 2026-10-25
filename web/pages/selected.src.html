@@ -367,7 +367,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .ih-prop { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 10px; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
 .ih-line { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .ih-stars { margin-left: auto; flex: 0 0 auto; }
-.ih-kind, .ih-copy { justify-self: start; }
+/* 종류 칩과 주소 칩은 같은 크기 — 위아래로 줄이 맞는다 */
+.ih-kind, .ih-copy { justify-self: start; box-sizing: border-box; display: inline-flex !important; align-items: center; justify-content: center; min-width: 64px; height: 24px !important; padding: 0 10px !important; font-size: 12px !important; border: 1px solid transparent; }
+.ih-copy { border-color: #c7d7f7 !important; }
 .ih-kind { padding: 2px 10px; border-radius: 999px; background: #e0eaff; color: #2b6df3; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .ih-sale { min-width: 0; font-size: 13px; color: #2b6df3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ih-copy { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border: 1px solid #c7d7f7; border-radius: 999px; background: var(--surface); font-size: 11.5px; font-weight: 700; color: #2a5fbf; }
@@ -2356,7 +2358,7 @@ html, body { overflow-x: clip; }
       <div class="ih-top">
         <button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"${tip('선정물건으로')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button>
         <h1 class="ih-title"><span class="ih-tag">경매</span><span class="num">${esc(it.caseNo)}</span></h1>
-        <span class="ih-court">${esc(it.court)} · 매각기일 <span class="num">${dotDate(it.date)}</span> <em>${ddayText(it.date)}</em></span>
+        <span class="ih-court">${esc(it.court)} · 매각기일 <span class="num">${dotDate(it.date)}${dowText(it.date)}</span> <em>${ddayText(it.date)}</em></span>
         <span class="ih-right">
           ${pdfId ? `<a class="ih-pdf" href="https://drive.google.com/file/d/${esc(pdfId)}/view" target="_blank" rel="noopener">${I.pdf}PDF</a>` : ''}
           <span class="ih-stage ${hot ? 'hot' : ''} ${done ? 'done' : ''} ${off ? 'off' : ''}">${esc(stage)}</span>
