@@ -6819,11 +6819,12 @@ const goBack = () => router.back();
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsDiag') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('rightsDiag')">
-            <dl class="adp-base-rows">
-              <div class="adp-base-row"><dt>말소기준권리</dt><dd>-</dd></div>
-              <div class="adp-base-row"><dt>인수권리수</dt><dd>-</dd></div>
-              <div class="adp-base-row"><dt>말소권리수</dt><dd>-</dd></div>
-            </dl>
+            <!-- 상자 셋 — AI 가 분석하면 값(기준권리 이름 · 개수)이 큰 글씨로 들어간다 -->
+            <div class="adp-diag-boxes">
+              <div class="adp-diag-box"><span class="adp-diag-k">말소기준권리</span><b class="adp-diag-v">-</b></div>
+              <div class="adp-diag-box"><span class="adp-diag-k">인수권리수</span><b class="adp-diag-v">-</b></div>
+              <div class="adp-diag-box"><span class="adp-diag-k">말소권리수</span><b class="adp-diag-v">-</b></div>
+            </div>
           </div>
         </section>
 
@@ -8915,6 +8916,14 @@ const goBack = () => router.back();
 .adp-doc-in { position: relative; margin-bottom: 5px; padding: 0; }
 .adp-doc-in .adp-input { width: 100%; min-width: 0; box-sizing: border-box; height: 30px; padding: 0 8px; font-size: 11px; text-overflow: ellipsis; }
 .adp-doc-link { font-size: 12px; font-weight: 700; color: #2563eb; text-decoration: none; }
+.adp-diag-boxes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
+.adp-diag-box {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  min-height: 78px; padding: 10px 6px; box-sizing: border-box;
+  border: 1px solid #e3e8f0; border-radius: 10px; background: #f8fafc; text-align: center;
+}
+.adp-diag-k { font-size: 12.5px; font-weight: 700; color: #6b7280; white-space: nowrap; }
+.adp-diag-v { font-size: 20px; font-weight: 800; color: #9ca3af; line-height: 1.1; }
 .adp-doc-old { margin: 10px 0 4px; font-size: 12px; font-weight: 700; color: #9ca3af; }
 .adp-body { flex: 1 1 auto; padding: 0 5px 12px; display: flex; flex-direction: column; gap: 8px; }
 
