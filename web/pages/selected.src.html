@@ -412,6 +412,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .it-kv th, .it-kv td { padding: 7px 10px; text-align: left; vertical-align: middle; word-break: break-word; }
 .it-kv th { width: 120px; background: var(--surface-2); color: var(--muted); font-weight: 700; }
 .it-kv.cols4 th { width: 104px; }
+/* 전유부 — 이름 칸은 '총 가구/세대/호' · '승강기(비상/승용)' 가 한 줄에 들어가는 폭 */
+.it-kv.it-unit th { width: 136px; white-space: nowrap; }
 .it-kv td.grid, .it-kv td.grid2 { line-height: 1.9; }
 .it-kv td.grid .it-place, .it-kv td.grid2 .it-place { display: inline-block; margin-right: 12px; }
 .it-floor th { width: auto; }
@@ -450,7 +452,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .it-chip.st-now { background: #e0eaff; color: #2563eb; }
 .it-chip.st-failed { background: #fee2e2; color: #b91c1c; }
 .it-chip.st-sold { background: #dcfce7; color: #15803d; }
-.it-date { font-size: 11.5px; color: #9ca3af; font-weight: 600; }
+.it-date { font-size: 12px; color: #9ca3af; font-weight: 600; }
 .it-date.now { color: #2563eb; }
 .it-rows b { font-weight: 800; }
 .it-sub { font-size: 12px; font-weight: 400; color: var(--muted); }
@@ -2355,7 +2357,7 @@ html, body { overflow-x: clip; }
   };
   const secIc = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${SEC_IC[k] || ''}</svg>`;
   const itCard = (ic, title, body, wide, extra = '') => `<section class="it-card ${wide ? 'wide' : ''}"><div class="it-head"><h2>${secIc(ic)}${title}</h2>${extra}</div>${body}</section>`;
-  const kvTable = (rows, cols = 2) => `<table class="it-kv cols${cols}"><tbody>${rows.join('')}</tbody></table>`;
+  const kvTable = (rows, cols = 2, cls = '') => `<table class="it-kv cols${cols} ${cls}"><tbody>${rows.join('')}</tbody></table>`;
   const itRows = (rows) => `<dl class="it-rows">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v || '<span class="it-none">-</span>'}</dd>`).join('')}</dl>`;
   const itEmpty = (t) => `<div class="it-empty">${t || '웹에는 아직 연결되지 않은 자료입니다 — 앱 물건상세에서 확인해 주세요.'}</div>`;
   const wonCell = (n) => (n > 0 ? `<b class="num">${won(n)}</b>원` : '');
@@ -2545,7 +2547,7 @@ html, body { overflow-x: clip; }
         `<tr><th>층</th><td>${v(h.unitFloor)}</td><th>층수(지하/지상)</th><td>${v(h.floors)}</td></tr>`,
         `<tr><th>사용승인일자</th><td>${v(h.approvalDate || a.approvalDate)}</td><th>승강기(비상/승용)</th><td>${v(h.elevator)}</td></tr>`,
         `<tr><th>구조</th><td>${v(h.unitStructure || a.structureType)}</td><th>총 주차수</th><td>${v(h.unitTotalParking || h.parking)}</td></tr>`,
-      ], 4);
+      ], 4, 'it-unit');
     }
     if (!out) {
       out = kvTable([
