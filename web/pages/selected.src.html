@@ -1646,7 +1646,7 @@ html, body { overflow-x: clip; }
     favs: store.get('wlp.web.favs', DEMO_FOLDERS), sel: store.get('wlp.web.favSel', null),
     tab: (() => { try { return localStorage.getItem('wlp.web.regTab') === 'ai' ? 'ai' : 'drive'; } catch (e) { return 'drive'; } })(),
     rows: [], loading: false, loadingLabel: '', banner: '', last: '', collapsed: false, missing: [], scanned: [],
-    /* AI 자동 파싱 — 앱(geminiPdf)과 같은 자리에서 읽는다. 쓰기·확인은 TAPdf 로 한다 */
+    /* AI 파싱 — 앱(geminiPdf)과 같은 자리에서 읽는다. 쓰기·확인은 TAPdf 로 한다 */
     aiKey: (() => { try { return localStorage.getItem('myturn.gemini.key') || ''; } catch (e) { return ''; } })(),
     aiOn: (() => { try { return localStorage.getItem('myturn.gemini.on') !== '0' && !!localStorage.getItem('myturn.gemini.key'); } catch (e) { return false; } })(),
   };
@@ -1936,7 +1936,7 @@ html, body { overflow-x: clip; }
     if (!files.length || R.loading) return;
     /* AI 자동 분석 상자에 올리면 AI 로 읽는다 — 키와 켜기가 먼저다 */
     if (R.tab === 'ai' && !R.aiKey) { toast('Gemini API 키를 먼저 등록해 주세요.', 'info'); S.modal = { kind: 'ai' }; renderModal(); return; }
-    if (R.tab === 'ai' && !R.aiOn) { toast('AI 자동 파싱을 켜면 올릴 수 있습니다.', 'info'); return; }
+    if (R.tab === 'ai' && !R.aiOn) { toast('AI 파싱을 켜면 올릴 수 있습니다.', 'info'); return; }
     R.loading = true; R.banner = ''; R.loadingLabel = 'PDF 읽기 준비 중'; renderRegister();
     let T = null; try { T = await loadParser(); } catch (e) { T = null; }
     const rows = [];
@@ -1994,11 +1994,11 @@ html, body { overflow-x: clip; }
       <div class="toolbar reg-box ${R.tab === 'ai' ? 'on' : ''}" data-regtab="ai" role="tab" aria-selected="${R.tab === 'ai'}" tabindex="0">
       <div class="rg-row2">
         <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
-        <!-- 제목 옆 — AI 자동 파싱 켜기/끄기(켜짐·꺼짐은 툴팁) · 그 오른쪽에 키 등록/키바꾸기. 키가 없으면 스위치를 눌러도 키 등록 창이 뜬다 -->
-        <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
+        <!-- 제목 옆 — AI 파싱 켜기/끄기(켜짐·꺼짐은 툴팁) · 그 오른쪽에 키 등록/키바꾸기. 키가 없으면 스위치를 눌러도 키 등록 창이 뜬다 -->
+        <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
         <button type="button" class="ai-key" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
       </div>
-      <!-- 필수설정 — Gemini API 키. 키가 있어야 아래 AI 자동 파싱을 켤 수 있다 (앱 PdfImportPage 와 같은 짜임) -->
+      <!-- 필수설정 — Gemini API 키. 키가 있어야 아래 AI 파싱을 켤 수 있다 (앱 PdfImportPage 와 같은 짜임) -->
       <div class="ai-setup">
         <span class="ai-req">필수설정</span>
         <span class="ai-setup-text">Gemini API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.</span>
@@ -2010,15 +2010,15 @@ html, body { overflow-x: clip; }
         <span class="rg-meta num">${r.status === 'ready' ? `${esc(r.p.caseNo)}<i>·</i>${esc(r.p.court)}<i>·</i>매각기일 ${dotDate(r.p.date)}` : '—'}</span>
         <span class="badge s-${r.rowStatus}">${r.rowStatus}</span>
       </li>`;
-    /* 결과 상자 — 고른 상자의 목록. AI 자동 분석이면 'AI 자동 파싱', 구글드라이브 연동이면 'PDF 자동 파싱' */
+    /* 결과 상자 — 고른 상자의 목록. AI 자동 분석이면 'AI 파싱', 구글드라이브 연동이면 'PDF 파싱' */
     const PC = R.tab === 'ai'
-      ? { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서(PDF)를 올리면 AI가 분석하여 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
-      : { title: 'PDF 자동 파싱', ic: I.pdf, tip: '경매 문서(PDF)를 올리면 자동으로 읽어 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
+      ? { title: 'AI 파싱', ic: I.spark, tip: '경매 문서(PDF)를 올리면 AI가 분석하여 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
+      : { title: 'PDF 파싱', ic: I.pdf, tip: '경매 문서(PDF)를 올리면 자동으로 읽어 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
     $('regContent').innerHTML = `
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
       <section class="rg-results" id="rgDrop" aria-label="${PC.title}">
         <div class="rg-head"><h2 class="tip-below" data-tip="${PC.tip}" data-tip-pos="left" style="cursor:help">${PC.ic}${PC.title}</h2>
-          <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span></span>${R.rows.length ? `<span class="cnt num">${R.rows.length}건</span>` : ''}
+          <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span></span>
           <button type="button" class="rg-chev ${R.collapsed ? 'up' : ''}" data-act="rg-collapse" aria-expanded="${!R.collapsed}" aria-label="결과 접기">${I.chevDown}</button></div>
         ${R.missing.length ? `<div class="rg-missing"><div class="h">드라이브에 없는 물건 ${R.missing.length}건<button type="button" data-act="missing-trash">휴지통으로</button></div><p>스캔한 폴더에서 PDF가 사라졌습니다. 선정물건은 그대로 남아 있습니다 — 치우려면 누르세요.</p><ul>${R.missing.map((m) => `<li>${esc(m.label)}</li>`).join('')}</ul></div>` : ''}
         ${R.collapsed ? '' : `<div class="rg-empty ${R.rows.length ? 'slim' : ''}" role="button" tabindex="0" data-act="pdf-pick" aria-label="PDF 파일 고르기"><span class="ic">📂</span><span>${PC.drop}</span></div>

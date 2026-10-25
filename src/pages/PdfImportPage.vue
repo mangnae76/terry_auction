@@ -65,7 +65,7 @@ const toggleAi = () => {
   aiOn.value = !aiOn.value;
   setGeminiOn(aiOn.value);
   // 폰에는 마우스 안내가 없어 켜짐·꺼짐을 잠깐 알린다
-  showToast(aiOn.value ? 'AI 자동 파싱을 켰습니다.' : 'AI 자동 파싱을 껐습니다.');
+  showToast(aiOn.value ? 'AI 파싱을 켰습니다.' : 'AI 파싱을 껐습니다.');
 };
 const aiModalOpen = ref(false);
 const aiKeyDraft = ref('');
@@ -618,7 +618,7 @@ const fileTitle = (row: ImportPreviewRow) => {
 const router = useRouter();
 
 // === 탭 — 물건정보 화면처럼 둘로 나눈다. 구글드라이브 연동(폴더·폴더스캔·PDF등록) / AI 자동 분석(Gemini 키·켜기) ===
-// 이름은 웹(/web)과 같다 — 키 넣는 쪽은 'AI 자동 분석', 읽은 결과 상자는 'AI 자동 파싱'
+// 이름은 웹(/web)과 같다 — 키 넣는 쪽은 'AI 자동 분석', 읽은 결과 상자는 'AI 파싱'
 type ImportTab = 'drive' | 'ai';
 const IMPORT_TABS: Array<{ key: ImportTab; label: string }> = [
   { key: 'drive', label: '구글드라이브 연동' },
@@ -630,8 +630,8 @@ const importTab = ref<ImportTab>(readTab());
 watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /* 그만 */ } });
 /** 결과 상자 — 두 탭이 같은 상자를 쓰고 글자만 다르다 (웹 /web 과 같은 글) */
 const PARSE_COPY: Record<ImportTab, { title: string; drop: [string, string] }> = {
-  drive: { title: 'PDF 자동 파싱', drop: ['파일을 드래그하거나 클릭하여 업로드하면', '여기에 미리보기가 표시됩니다.'] },
-  ai: { title: 'AI 자동 파싱', drop: ['파일을 드래그하거나 클릭하여 업로드하면', '여기에 미리보기가 표시됩니다.'] },
+  drive: { title: 'PDF 파싱', drop: ['파일을 드래그하거나 클릭하여 업로드하면', '여기에 미리보기가 표시됩니다.'] },
+  ai: { title: 'AI 파싱', drop: ['파일을 드래그하거나 클릭하여 업로드하면', '여기에 미리보기가 표시됩니다.'] },
 };
 const parseCopy = computed(() => PARSE_COPY[importTab.value]);
 /** 끌어다 놓기 — 목록이 생겨도 상자는 남아 계속 놓을 수 있다. 눌러도 파일을 고른다 */
@@ -795,8 +795,8 @@ const onDropFiles = async (e: DragEvent) => {
             :class="['pip-ai-switch', { on: aiOn && !!aiKey }]"
             role="switch"
             :aria-checked="aiOn && !!aiKey"
-            :aria-label="`AI 자동 파싱 ${aiOn && aiKey ? '켜짐' : '꺼짐'}`"
-            :title="`AI 자동 파싱 ${aiOn && aiKey ? '켜짐' : '꺼짐'}`"
+            :aria-label="`AI 파싱 ${aiOn && aiKey ? '켜짐' : '꺼짐'}`"
+            :title="`AI 파싱 ${aiOn && aiKey ? '켜짐' : '꺼짐'}`"
             @click="toggleAi"
           >
             <i />
@@ -826,7 +826,6 @@ const onDropFiles = async (e: DragEvent) => {
             <svg v-else class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6" /><path d="M9 17h4" /></svg>
             {{ parseCopy.title }}
           </h2>
-          <span v-if="importRows.length > 0" class="pip-count">{{ importRows.length }}건</span>
           <!-- 웹(/web)과 같은 줄 — 총 등록물건 · 신규 · 변경 · 오류 -->
           <span class="pip-head-stats">
             <span>총 등록물건<b>{{ totalRegistered }}</b>개</span>
@@ -1407,11 +1406,10 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-results-head {
   display: flex; align-items: center; gap: 8px;
 }
-/* 1줄: 제목 · 건수 · 접기 단추(오른쪽 끝) / 2줄: 통계 — 폰 폭에선 한 줄에 다 들지 않는다 */
-.pip-results-head { flex-wrap: wrap; row-gap: 4px; }
-.pip-results-head h2, .pip-count { white-space: nowrap; }
+/* 한 줄: 제목 · 통계(제목 바로 옆) · 접기 단추(오른쪽 끝) */
+.pip-results-head h2 { white-space: nowrap; }
 .pip-results-head .pip-chev-btn { margin-left: auto; }
-.pip-head-stats { order: 3; flex-basis: 100%; display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #6b7280; white-space: nowrap; }
+.pip-head-stats { min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #6b7280; white-space: nowrap; }
 .pip-head-stats b { margin: 0 1px 0 2px; font-weight: 800; color: #111827; }
 .pip-head-stats .n-new b { color: #2b6df3; }
 .pip-head-stats .n-chg b { color: #7c3aed; }
@@ -1468,10 +1466,6 @@ const onDropFiles = async (e: DragEvent) => {
   padding-top: 10px;
 }
 .pip-update { font-size: 11.5px; color: #6b7280; font-weight: 600; }
-.pip-count {
-  font-size: 12px; font-weight: 800; color: #2b6df3;
-  background: #eff6ff; padding: 4px 12px; border-radius: 6px;
-}
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
