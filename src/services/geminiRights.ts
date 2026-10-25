@@ -221,6 +221,25 @@ export const RIGHTS_PROMPT = [
 
 export type RightsDocPart = { mimeType: string; base64: string; label: string };
 
+/** 보내는 내용을 브라우저 콘솔에 접어서 찍는다 — 무엇이 넘어갔는지 그대로 보려고 */
+const logRequest = (parts: RightsDocPart[], promptText: string, payloadBytes: number) => {
+  const kb = (n: number) => `${Math.round(n / 1024).toLocaleString('ko-KR')} KB`;
+  /* eslint-disable no-console */
+  console.groupCollapsed(
+    `%c[AI 권리분석] ${RIGHTS_MODEL} 로 보냄 — 서류 ${parts.length}장 · 글 ${promptText.length.toLocaleString('ko-KR')}자 · 전체 ${kb(payloadBytes)}`,
+    'color:#2b6df3;font-weight:700',
+  );
+  parts.forEach((p, i) => {
+    console.log(`parts[${i * 2}]  text : [${p.label}]`);
+    console.log(`parts[${i * 2 + 1}]  file : ${p.mimeType} · ${kb((p.base64.length * 3) / 4)}`);
+  });
+  console.log(`parts[${parts.length * 2}]  text : ↓↓↓ 아래 글 전체 ↓↓↓\n\n${promptText}`);
+  console.log('generationConfig : temperature 0 · topK 1 · responseMimeType application/json · responseSchema 아래');
+  console.log(RESPONSE_SCHEMA);
+  console.groupEnd();
+  /* eslint-enable no-console */
+};
+
 const wait = (ms: number) => new Promise((done) => { setTimeout(done, ms); });
 
 /** 서류를 Gemini 에 보내 권리분석을 받아 온다 */
@@ -233,6 +252,13 @@ export const askRightsAnalysis = async (
   if (!key) throw new GeminiError('AI 키가 없습니다 — 더보기 > AI 자동 분석에서 등록해 주세요');
   if (parts.length === 0) throw new GeminiError('분석할 서류가 없습니다 — 서류를 한 장이라도 올려 주세요');
 
+  const promptText = facts
+    ? `${RIGHTS_PROMPT}\n\n이미 읽어 둔 값 (서류와 어긋나면 서류가 맞다. 다만 아래에 있는 권리를 빠뜨리지 마라)\n${facts}`
+    : RIGHTS_PROMPT;
+  const generationConfig = {
+    // topK 1 — 늘 가장 그럴듯한 쪽만 고르게 해서 볼 때마다 답이 달라지는 것을 줄인다
+    temperature: 0, topK: 1, responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA,
+  };
   const payload = JSON.stringify({
     contents: [{
       role: 'user',
@@ -242,12 +268,14 @@ export const askRightsAnalysis = async (
           { text: `[${p.label}]` },
           { inlineData: { mimeType: p.mimeType, data: p.base64 } },
         ])),
-        { text: facts ? `${RIGHTS_PROMPT}\n\n이미 읽어 둔 값 (서류와 어긋나면 서류가 맞다. 다만 아래에 있는 권리를 빠뜨리지 마라)\n${facts}` : RIGHTS_PROMPT },
+        { text: promptText },
       ],
     }],
-    // topK 1 — 늘 가장 그럴듯한 쪽만 고르게 해서 볼 때마다 답이 달라지는 것을 줄인다
-    generationConfig: { temperature: 0, topK: 1, responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA },
+    generationConfig,
   });
+
+  // 무엇이 넘어가는지 눈으로 볼 수 있게 콘솔에 찍어 둔다 (파일은 크기만 — base64 는 수 MB 다)
+  logRequest(parts, promptText, payload.length);
 
   type Body = {
     error?: { message?: string };
@@ -282,6 +310,8 @@ export const askRightsAnalysis = async (
   let raw: Partial<RightsAi>;
   try {
     raw = JSON.parse(text) as Partial<RightsAi>;
+    // eslint-disable-next-line no-console
+    console.log('%c[AI 권리분석] 받은 답', 'color:#16a34a;font-weight:700', raw);
   } catch {
     throw new GeminiError('AI 분석 실패 — 답을 읽지 못했습니다');
   }
