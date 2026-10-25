@@ -407,24 +407,29 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
    둘 다 화면 기준으로 붙이므로 감싼 칸의 스크롤에 잘리지 않는다 */
 #tripView .crumb-slot { display: none; }
 #tripView .content { padding: 0; min-height: 0; }
+/* 앱 화면의 모양(pdfparse.css)이 이 글보다 늦게 실려 같은 힘이면 그쪽이 이긴다 —
+   자리를 바꾸는 값에는 !important 를 붙인다 (물건상세 칸과 같은 규칙) */
 .app-trip .ftp-map-wrap {
-  position: fixed; left: 0; right: 0; top: calc(var(--stick-top) + var(--gnb-h)); bottom: 0;
-  margin: 0; height: auto; max-height: none; border-radius: 0; z-index: 0;
+  position: fixed !important; left: 0 !important; right: 0 !important;
+  top: calc(var(--stick-top) + var(--gnb-h)) !important; bottom: 0 !important;
+  margin: 0 !important; height: auto !important; max-height: none !important;
+  border-radius: 0 !important; z-index: 0 !important;
 }
-.app-trip .ftp-map { border-radius: 0; }
+.app-trip .ftp-map { border-radius: 0 !important; }
 /* 왼쪽 조작 칸 — 경로설정 · 동선최적화 · 목록이 한 통으로 흐른다 */
 .app-trip .ftp-scroll {
-  position: fixed; left: 18px; top: calc(var(--stick-top) + var(--gnb-h) + 18px); bottom: 18px;
-  width: 430px; max-width: calc(100vw - 36px);
-  overflow-y: auto; overscroll-behavior: contain; z-index: 5;
-  background: rgba(255, 255, 255, 0.96);
+  position: fixed !important; left: 18px !important;
+  top: calc(var(--stick-top) + var(--gnb-h) + 18px) !important; bottom: 18px !important;
+  width: 430px !important; max-width: calc(100vw - 36px) !important;
+  overflow-y: auto !important; overscroll-behavior: contain; z-index: 5 !important;
+  background: rgba(255, 255, 255, 0.96) !important;
   border: 1px solid #e2e8f3; border-radius: 14px;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
-  padding: 0 0 10px;
+  padding: 0 0 10px !important;
 }
 :root[data-theme="dark"] .app-trip .ftp-scroll { background: rgba(17, 24, 39, 0.94); border-color: #2a3650; }
 /* 패널 안에서는 앱 그대로의 폭을 쓴다 */
-.app-trip .ftp-fixed-top, .app-trip .ftp-update-bar, .app-trip .ftp-list { max-width: none; margin-left: 0; margin-right: 0; }
+.app-trip .ftp-fixed-top, .app-trip .ftp-update-bar, .app-trip .ftp-list { max-width: none !important; margin-left: 0 !important; margin-right: 0 !important; }
 .app-trip .ftp-fixed-top { background: transparent; }
 /* 지도가 화면을 채우므로 바닥글은 임장경로에서 비운다 */
 body.trip-full .foot { display: none; }
