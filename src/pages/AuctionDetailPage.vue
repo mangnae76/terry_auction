@@ -8957,8 +8957,9 @@ const goBack = () => router.back();
 .adp-docs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
 @media (max-width: 560px) {
   .adp-docs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  /* 폰은 칸이 낮아 폴더 그림은 빼고 글씨 두 줄만 둔다 */
-  .adp-doc-box:not(.has) .adp-doc-ic { display: none; }
+  /* 폰은 칸이 좁고 낮다 — 폴더 그림을 줄이고 글씨 두 줄을 촘촘히 */
+  .adp-doc-box:not(.has) { gap: 2px; padding: 0 2px; font-size: 10px; white-space: nowrap; letter-spacing: -0.3px; overflow: hidden; }
+  .adp-doc-box:not(.has) .adp-doc-ic { font-size: 13px; }
   .adp-doc-box { line-height: 1.25; font-size: 11px; }
 }
 .adp-doc { min-width: 0; }
@@ -8980,6 +8981,7 @@ const goBack = () => router.back();
 .adp-doc-pdf-tag { padding: 1px 6px; border-radius: 4px; background: #fee2e2; color: #dc2626; font-size: 11px; font-weight: 800; }
 .adp-doc-pdf-name { max-width: 100%; font-size: 12px; color: #374151; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-all; }
 /* 폴더 그림 — 평소엔 회색, 마우스를 올리면 원래 색 (물건등록 파싱 상자와 같다) */
+.adp-doc-box:not(.has) { flex-direction: row; gap: 6px; text-align: left; } /* 폴더 그림은 글씨 왼쪽 */
 .adp-doc-ic { font-size: 20px; line-height: 1; filter: grayscale(1); opacity: .55; transition: filter .15s, opacity .15s; }
 .adp-doc-box:hover .adp-doc-ic, .adp-doc-box.over .adp-doc-ic { filter: none; opacity: 1; }
 .adp-doc-x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%; background: rgba(17, 24, 39, .65); color: #fff; font-size: 14px; line-height: 22px; cursor: pointer; }
