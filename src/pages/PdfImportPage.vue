@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { computed, onMounted, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import {
@@ -12,6 +14,7 @@ import {
   AI_FIELD_LABELS,
   clearGeminiKey,
   fillWithGemini,
+  GEMINI_KEY_URL,
   getGeminiKey,
   isGeminiOn,
   setGeminiKey,
@@ -95,6 +98,11 @@ const removeAiKey = () => {
   aiModalOpen.value = false;
 };
 /** 키 앞뒤만 보여 준다 — 화면 너머로 통째로 보이지 않게 */
+/** Google AI Studio 키 화면 — 앱에선 바깥 브라우저로, 웹에선 새 탭으로 연다 */
+const openGeminiKeySite = () => {
+  if (Capacitor.isNativePlatform()) { void Browser.open({ url: GEMINI_KEY_URL }); return; }
+  window.open(GEMINI_KEY_URL, '_blank', 'noopener');
+};
 const aiKeyMasked = computed(() => (aiKey.value ? `${aiKey.value.slice(0, 4)}…${aiKey.value.slice(-4)}` : ''));
 const aiLabels = (keys?: string[]) => (keys ?? []).map((k) => AI_FIELD_LABELS[k] ?? k).join(', ');
 
@@ -743,15 +751,30 @@ watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /*
           </svg>AI 자동 분석
         </span>
       </div>
+      <!-- 필수 설정 — Gemini API 키. 키가 있어야 아래 AI 자동 파싱을 켤 수 있다 (웹 /web 과 같은 짜임) -->
+      <div class="pip-setup">
+        <div class="pip-setup-head">
+          <span class="pip-req">필수 설정</span>
+          <b>Gemini API 키</b>
+          <span :class="['pip-key-state', { ok: !!aiKey }]">{{ aiKey ? `등록됨 · ${aiKeyMasked}` : '등록 안 됨' }}</span>
+        </div>
+        <div class="pip-setup-row">
+          <button type="button" class="pip-key-link" @click="openGeminiKeySite">
+            Google AI Studio에서 키 받기
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6" /><path d="M20 4 10 14" /><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" /></svg>
+          </button>
+          <button type="button" class="pip-ai-key" @click="openAiModal">{{ aiKey ? '키 바꾸기' : '키 넣기' }}</button>
+        </div>
+        <p class="pip-setup-help">Google 계정으로 로그인 → Get API key → Create API key 로 받은 키를 넣어 주세요. 키는 이 기기에만 저장됩니다.</p>
+      </div>
       <div class="pip-ai">
-        <button type="button" :class="['pip-ai-switch', { on: aiOn && !!aiKey }]" role="switch" :aria-checked="aiOn && !!aiKey" aria-label="AI 자동 분석" @click="toggleAi">
+        <button type="button" :class="['pip-ai-switch', { on: aiOn && !!aiKey }]" role="switch" :aria-checked="aiOn && !!aiKey" aria-label="AI 자동 파싱 켜기" @click="toggleAi">
           <i />
         </button>
         <span class="pip-ai-text">
-          <b>{{ aiOn && aiKey ? '켜짐 — 못 읽은 칸을 AI가 채웁니다' : '꺼짐' }}</b>
-          <small>{{ aiKey ? `Gemini · ${aiKeyMasked}` : 'Gemini 키를 넣으면 켤 수 있습니다' }}</small>
+          <b>AI 자동 파싱 {{ aiOn && aiKey ? '켜짐' : '꺼짐' }}</b>
+          <small>{{ aiKey ? '규칙으로 못 읽은 칸만 AI가 채웁니다' : '필수 설정(Gemini API 키)을 마치면 켤 수 있습니다' }}</small>
         </span>
-        <button type="button" class="pip-ai-key" @click="openAiModal">{{ aiKey ? '키 바꾸기' : '키 넣기' }}</button>
       </div>
       </template>
 
@@ -844,7 +867,7 @@ watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /*
             <li>키는 <b>이 기기에만</b> 저장됩니다. 우리 서버로 보내지 않습니다.</li>
             <li>PDF는 이 기기에서 <b>Google(Gemini)로 바로</b> 보내고, 요금은 키 주인의 Google 계정으로 나갑니다.</li>
             <li>규칙으로 못 읽은 칸만 채우고, PDF에서 근거 글을 못 찾은 값은 버립니다.</li>
-            <li>키 받는 곳: aistudio.google.com → Get API key</li>
+            <li>키 받는 곳: <button type="button" class="pip-key-link inline" @click="openGeminiKeySite">Google AI Studio</button> → Get API key</li>
           </ul>
           <div class="pip-ai-btns">
             <button v-if="aiKey" type="button" class="pip-ai-del" @click="removeAiKey">키 지우기</button>
@@ -1213,7 +1236,27 @@ watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /*
 .pip-actions {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
 }
-/* AI 로 읽기 줄 */
+/* 필수 설정 — Gemini API 키 */
+.pip-setup {
+  margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px;
+  background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; padding: 10px 12px;
+}
+.pip-setup-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.pip-setup-head b { font-size: 13px; font-weight: 800; color: #111827; white-space: nowrap; }
+.pip-req {
+  flex: 0 0 auto; padding: 2px 6px; border-radius: 5px; background: #fdecec; color: #dc2626;
+  font-size: 10.5px; font-weight: 800; letter-spacing: -0.2px;
+}
+.pip-key-state { margin-left: auto; font-size: 11px; font-weight: 700; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pip-key-state.ok { color: #16a34a; }
+.pip-setup-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pip-key-link {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0; border: none; background: transparent;
+  font-size: 12.5px; font-weight: 700; color: #2a5fbf; text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.pip-key-link.inline { font-size: inherit; font-weight: 600; }
+.pip-setup-help { margin: 0; font-size: 11px; line-height: 1.5; color: #6b7280; }
+/* AI 자동 파싱 켜기 줄 */
 .pip-ai {
   display: flex; align-items: center; gap: 10px;
   background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; padding: 10px 12px;

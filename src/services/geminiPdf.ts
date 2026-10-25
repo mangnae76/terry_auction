@@ -13,6 +13,8 @@ import type { ParsedPdfAuction } from './pdfAuctionImport';
 /** 늘 그때의 Flash-Lite — 버전이 바뀌어도 이름이 그대로 남는 별칭이다.
  *  같은 PDF 로 견줘 보니 Flash 는 한 건에 2분이 넘고 Flash-Lite 는 3초 안팎이었다 (답은 같았다). */
 export const GEMINI_MODEL = 'gemini-flash-lite-latest';
+/** 키 받는 곳 — Google AI Studio 의 API 키 화면 (앱·웹의 'AI 자동 분석 · 필수 설정'에서 연다) */
+export const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
 const API = 'https://generativelanguage.googleapis.com/v1beta';
 const KEY_STORE = 'myturn.gemini.key';
 const ON_STORE = 'myturn.gemini.on';
