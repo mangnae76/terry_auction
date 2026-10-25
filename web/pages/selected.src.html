@@ -1366,6 +1366,8 @@ html, body { overflow-x: clip; }
   const diffDays = (s) => Math.round((parseYmd(s) - TODAY) / 86400000);
   const ddayText = (s) => { const n = diffDays(s); return n === 0 ? 'D-DAY' : n > 0 ? `D-${n}` : `D+${-n}`; };
   const dotDate = (s) => s.replace(/-/g, '.');
+  /* 매각기일 요일 ' (월)' — 앱 scheduleStore.weekdayLabel 과 같은 셈. 앱 연결 전에도 그려야 해서 같은 표를 쓴다 */
+  const dowText = (s) => { const w = (window.TAPdf && window.TAPdf.weekdayLabel) ? window.TAPdf.weekdayLabel(s || '') : (['일', '월', '화', '수', '목', '금', '토'][new Date(`${s}T00:00:00`).getDay()] || ''); return w ? ` (${w})` : ''; };
   const shortDate = (s) => { const d = parseYmd(s); return `${d.getMonth() + 1}월 ${d.getDate()}일 (${WD[d.getDay()]})`; };
 
   /* 예시 물건 — 화면 확인용. 실제로는 앱과 같은 auctionStore(Firestore)의 물건이 들어온다 */
@@ -1667,7 +1669,7 @@ html, body { overflow-x: clip; }
       ${past ? `<span class="ribbon" aria-hidden="true">${I.refresh}</span><span class="ribbon-hit" data-tip="입찰일이 지났습니다 · 갱신필요" data-tip-pos="left"></span>` : ''}
       <div class="c-top">
         ${S.pick ? `<input type="checkbox" class="ck pick-ck" data-act="pick-one" data-id="${it.id}" ${picked ? 'checked' : ''} aria-label="${esc(it.caseNo)} 고르기">` : ''}
-        <div class="c-meta"><span class="c-case num">${I.hash}${hl(it.caseNo)}</span><span class="c-court" title="${esc(it.court)}">${I.court}<span class="full">${hl(it.court)}</span><span class="short">${hl(shortCourt(it.court))}</span></span><span class="c-date num"${tip(`매각기일 ${ddayText(it.date)}${past ? ' · 지났습니다' : ''}`, 'left')}>${I.cal}${it.date}</span></div>
+        <div class="c-meta"><span class="c-case num">${I.hash}${hl(it.caseNo)}</span><span class="c-court" title="${esc(it.court)}">${I.court}<span class="full">${hl(it.court)}</span><span class="short">${hl(shortCourt(it.court))}</span></span><span class="c-date num"${tip(`매각기일 ${ddayText(it.date)}${past ? ' · 지났습니다' : ''}`, 'left')}>${I.cal}${it.date}${dowText(it.date)}</span></div>
         <div class="c-acts">
           ${starsHtml(it)}
           <button type="button" class="ibtn" data-act="copy" data-id="${it.id}" aria-label="주소복사"${tip('주소복사')}>${I.copy}</button>

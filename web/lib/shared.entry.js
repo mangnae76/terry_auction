@@ -44,3 +44,5 @@ export {
 } from '../../src/services/locationInfo';
 export { fetchNearbyEnvironment } from '../../src/services/kakaoNearby';
 export { geocodeAddress } from '../../src/services/routeOptimizer';
+// 매각기일 요일 — 앱 일정 저장소의 weekdayLabel 그대로
+export { weekdayLabel } from '../../src/stores/scheduleStore';

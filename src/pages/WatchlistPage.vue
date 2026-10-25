@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { weekdayLabel } from '../stores/scheduleStore';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { propTypeMark } from '../utils/propertyType';
@@ -898,7 +899,7 @@ watch(
           <div class="wlp-card-meta">
             <span class="wlp-meta-date">
               <img :src="calendarDaysIcon" alt="" class="wlp-meta-date-icon" />
-              {{ shortYmd(item.eventDate) }}
+              {{ shortYmd(item.eventDate) }}<template v-if="weekdayLabel(item.eventDate)"> ({{ weekdayLabel(item.eventDate) }})</template>
             </span>
             <span class="wlp-meta-court">{{ shortCourt(item.courtName) }}</span>
             <span class="wlp-meta-case">{{ item.caseNumber }}</span>

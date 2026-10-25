@@ -38,7 +38,8 @@ const addDaysIso = (iso: string, days: number): string => {
   return toIso(d);
 };
 
-const weekdayLabel = (iso: string): string => WEEKDAY_LABELS[parseIso(iso).getDay()] ?? '';
+/** 'YYYY-MM-DD' → '월' — 선정물건 카드(앱·웹)의 매각기일 요일도 이것을 쓴다 */
+export const weekdayLabel = (iso: string): string => WEEKDAY_LABELS[parseIso(iso).getDay()] ?? '';
 
 const cacheKeyFor = (weekStart: string, courtCode: string): string => `${weekStart}_${courtCode || 'ALL'}`;
 
