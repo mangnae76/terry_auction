@@ -1594,13 +1594,14 @@ html, body { overflow-x: clip; }
   }
   /* 수익률 분석 — 앱 수익 분석과 같은 셈(간이): 실투자금 = 입찰가 − 대출 + 비용, 세후 순이익 = 매도가 − 총투자금 − 세금, 세후 수익률 = 순이익 ÷ 실투자금.
      예시 화면이라 대출(입찰가 70%)·비용(입찰가 4.5% + 300만)·예상 매도가는 자리 잡기 값이다. 실제로는 물건상세 수익계산의 값을 그대로 읽는다 */
-  const incomeTax = (g) => { if (g <= 0) return 0; const br = [[14e6, 0.06, 0], [50e6, 0.15, 1.26e6], [88e6, 0.24, 5.76e6], [150e6, 0.35, 15.44e6], [3e8, 0.38, 19.94e6], [5e8, 0.4, 25.94e6], [1e9, 0.42, 35.94e6], [Infinity, 0.45, 65.94e6]]; const [, r, d] = br.find(([lim]) => g <= lim); return Math.max(0, g * r - d); };
+  const incomeTax = (g) => { if (!(g > 0)) return 0; const br = [[14e6, 0.06, 0], [50e6, 0.15, 1.26e6], [88e6, 0.24, 5.76e6], [150e6, 0.35, 15.44e6], [3e8, 0.38, 19.94e6], [5e8, 0.4, 25.94e6], [1e9, 0.42, 35.94e6], [Infinity, 0.45, 65.94e6]]; const [, r, d] = br.find(([lim]) => g <= lim); return Math.max(0, g * r - d); };
   const profitOf = (it) => {
     if (!(it.mine > 0)) return null;
     const bid = it.mine;
-    const loan = it.loan ?? Math.round((bid * 0.7) / 1e5) * 1e5;
+    const loan = it.loan || Math.round((bid * 0.7) / 1e5) * 1e5;
     const cost = it.cost ?? Math.round((bid * 0.045 + 3e6) / 1e4) * 1e4;
-    const sale = it.sale ?? Math.round((bid * (1.12 + (parseInt(it.id.slice(1), 10) % 5) * 0.04)) / 1e6) * 1e6;
+    const seed = [...String(it.id)].reduce((n, ch) => n + ch.charCodeAt(0), 0); /* 예시 매도가 자리 — 앱 물건은 매도가가 있으면 그 값 */
+    const sale = it.sale || Math.round((bid * (1.12 + (seed % 5) * 0.04)) / 1e6) * 1e6;
     const gain = sale - bid - cost; const tax = incomeTax(gain); const after = gain - tax - tax * 0.1;
     const net = bid - loan + cost;
     return { sale, loan, cost, after: Math.round(after / 1000) * 1000, net, rate: net > 0 ? (after / net) * 100 : 0 };
@@ -1618,6 +1619,8 @@ html, body { overflow-x: clip; }
       ].join('') : ['최종 수익률', '순수익금', '필요준비금'].map((l) => `<div class="metric blank"><small>${l}</small><strong class="none">산정 전</strong></div>`).join('')}
     </aside>`;
   }
+  /* 카드 하나를 그리다 틀려도 목록 전체가 사라지지 않게 — 그 카드만 짧게 보이고 콘솔에 남긴다 */
+  const safeCard = (it) => { try { return cardHtml(it); } catch (err) { console.error('카드 그리기 실패', it && it.id, err); return `<article class="card" data-act="card" data-id="${esc(it.id)}" tabindex="0"><div class="c-top"><b>${esc(it.caseNo || '사건번호 없음')}</b></div><p>${esc(addrText(it))}</p></article>`; } };
   function cardHtml(it) {
     return `<div class="card-row">${mainCardHtml(it)}${resultHtml(it, isPast(it) && !hasResult(it))}</div>`;
   }
@@ -1683,11 +1686,11 @@ html, body { overflow-x: clip; }
       root.innerHTML = `<div class="table-wrap"><table class="list"><thead><tr>${S.pick ? '<th style="width:40px"></th>' : ''}<th style="width:80px">중요도</th><th>입찰일</th><th>사건번호 · 법원</th><th>주소</th><th class="r">감정가</th><th class="r">최저가</th><th class="r">입찰가</th><th>단계</th><th style="width:110px"></th></tr></thead><tbody>${list.map(rowHtml).join('')}</tbody></table></div>`;
       return;
     }
-    if (['won', 'fail', 'cancel', 'sold'].includes(S.stage)) { root.innerHTML = `<div class="grid">${list.map(cardHtml).join('')}</div>`; fitCourtsSoon(); return; }
+    if (['won', 'fail', 'cancel', 'sold'].includes(S.stage)) { root.innerHTML = `<div class="grid">${list.map(safeCard).join('')}</div>`; fitCourtsSoon(); return; }
     const upcoming = list.filter((it) => !isPast(it));
     const pastList = list.filter((it) => isPast(it));
     fitCourtsSoon();
-    root.innerHTML = `<div class="grid">${upcoming.map(cardHtml).join('')}${pastList.length ? `<div class="divider"><b>지난 입찰일</b><span class="num">${pastList.length}건 · 새 기일로 갱신하거나 결과를 적어 두세요</span><i></i></div>${pastList.map(cardHtml).join('')}` : ''}</div>`;
+    root.innerHTML = `<div class="grid">${upcoming.map(safeCard).join('')}${pastList.length ? `<div class="divider"><b>지난 입찰일</b><span class="num">${pastList.length}건 · 새 기일로 갱신하거나 결과를 적어 두세요</span><i></i></div>${pastList.map(safeCard).join('')}` : ''}</div>`;
   }
 
   /* 법원 칸 — 전체 이름이 들어가면 그대로, 넘치면 줄인 이름 */
@@ -2425,6 +2428,7 @@ html, body { overflow-x: clip; }
       status: a.status, bid: T.bidStageOf(a), priority: a.priority || 0,
       archived: !!a.archived && !a.hidden, trashed: !!a.hidden,
       fromFolder: ((a.importMeta && a.importMeta.pdfFolderUrl) || '').match(/folders\/([\w-]+)/)?.[1] || '',
+      sale: (a.bidCost && a.bidCost.salePrice) || a.expectedSaleValue || 0, loan: (a.bidCost && a.bidCost.loanAmount) || 0,
     };
   };
   /* 예시 물건을 앱 물건 모양으로 — 물건상세가 앱 셈 함수 하나로 그려지게 */
