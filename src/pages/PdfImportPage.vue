@@ -588,11 +588,12 @@ const fileTitle = (row: ImportPreviewRow) => {
 /** 뒤로가기 — 물건 목록에서 들어온 화면이다 */
 const router = useRouter();
 
-// === 탭 — 물건정보 화면처럼 둘로 나눈다. 구글드라이브 연동(폴더·폴더스캔·PDF등록) / AI 자동 파싱(Gemini) ===
+// === 탭 — 물건정보 화면처럼 둘로 나눈다. 구글드라이브 연동(폴더·폴더스캔·PDF등록) / AI 자동 분석(Gemini 키·켜기) ===
+// 이름은 웹(/web)과 같다 — 키 넣는 쪽은 'AI 자동 분석', 읽은 결과 상자는 'AI 자동 파싱'
 type ImportTab = 'drive' | 'ai';
 const IMPORT_TABS: Array<{ key: ImportTab; label: string }> = [
   { key: 'drive', label: '구글드라이브 연동' },
-  { key: 'ai', label: 'AI 자동 파싱' },
+  { key: 'ai', label: 'AI 자동 분석' },
 ];
 const TAB_STORE = 'myturn.import.tab';
 const readTab = (): ImportTab => { try { return localStorage.getItem(TAB_STORE) === 'ai' ? 'ai' : 'drive'; } catch { return 'drive'; } };
@@ -732,18 +733,18 @@ watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /*
       </div>
       </template>
 
-      <!-- AI 자동 파싱 — 규칙으로 못 읽은 칸만 Gemini 가 채운다 (각자 자기 키로).
+      <!-- AI 자동 분석 — 규칙으로 못 읽은 칸만 Gemini 가 채운다 (각자 자기 키로).
            켜 두면 구글드라이브 연동 탭의 폴더스캔 · PDF등록이 읽을 때 같이 쓴다 -->
       <template v-else>
       <div class="pip-section-head">
         <span class="pip-section-title">
           <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" /><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z" />
-          </svg>AI 자동 파싱
+            <circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" />
+          </svg>AI 자동 분석
         </span>
       </div>
       <div class="pip-ai">
-        <button type="button" :class="['pip-ai-switch', { on: aiOn && !!aiKey }]" role="switch" :aria-checked="aiOn && !!aiKey" aria-label="AI 자동 파싱" @click="toggleAi">
+        <button type="button" :class="['pip-ai-switch', { on: aiOn && !!aiKey }]" role="switch" :aria-checked="aiOn && !!aiKey" aria-label="AI 자동 분석" @click="toggleAi">
           <i />
         </button>
         <span class="pip-ai-text">
@@ -763,7 +764,7 @@ watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /*
 
       <section class="pip-results">
         <div class="pip-results-head">
-          <h2>파싱결과</h2>
+          <h2><svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" /><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z" /></svg>AI 자동 파싱</h2>
           <span v-if="importRows.length > 0" class="pip-count">{{ importRows.length }}건</span>
           <button
             type="button"
@@ -826,7 +827,7 @@ watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /*
     <div v-if="aiModalOpen" class="pip-fav-back" @click.self="aiModalOpen = false">
       <div class="pip-fav-modal pip-ai-modal">
         <header class="pip-fav-modal-head">
-          <h2>AI 자동 파싱 · Gemini 키</h2>
+          <h2>AI 자동 분석 · Gemini 키</h2>
           <button type="button" class="pip-fav-modal-close" aria-label="닫기" @click="aiModalOpen = false">×</button>
         </header>
         <div class="pip-ai-body">
@@ -1291,7 +1292,7 @@ watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /*
 }
 /* 건수는 제목 바로 옆, 접기 단추는 오른쪽 끝 */
 .pip-results-head .pip-chev-btn { margin-left: auto; }
-.pip-results-head h2 { margin: 0; font-size: 14px; font-weight: 800; color: #111827; }
+.pip-results-head h2 { display: inline-flex; align-items: center; gap: 5px; margin: 0; font-size: 14px; font-weight: 800; color: #111827; }
 
 .pip-empty {
   border: 1.5px dashed #e5e7eb; border-radius: 10px;
