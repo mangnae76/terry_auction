@@ -362,7 +362,7 @@ button { cursor: pointer; }
 .rg-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: rgDot 1.2s infinite ease-in-out; }
 .rg-dot:nth-child(2) { animation-delay: .2s; } .rg-dot:nth-child(3) { animation-delay: .4s; }
 @keyframes rgDot { 0%, 60%, 100% { opacity: .25; transform: none; } 30% { opacity: 1; transform: translateY(-2px); } }
-.rg-results { background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); padding: 14px 16px 12px; transition: border-color .15s, box-shadow .15s; }
+.rg-results { background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); padding: 14px 24px 12px; transition: border-color .15s, box-shadow .15s; } /* 좌우 24 — 위 연동 상자(.toolbar)와 제목 세로선을 맞춘다 */
 .rg-results.over { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 .rg-head { display: flex; align-items: center; gap: 8px; }
 .rg-head h2 { margin: 0; display: inline-flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 800; }
@@ -944,6 +944,7 @@ html, body { overflow-x: clip; }
   .g-menu.m4 { margin-left: 0; }
   .g-menu::after { bottom: -6px; }
   .toolbar { padding: 10px 14px; row-gap: 8px; }
+  .rg-results { padding-left: 14px; padding-right: 14px; }
   .search { width: 100%; margin-left: 0; }
   .search:focus-within { width: 100%; }
   .tb-row2 { flex-wrap: wrap; }
