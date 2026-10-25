@@ -2668,7 +2668,26 @@ html, body { overflow-x: clip; }
     survey: { right: ['급매가'] },
   };
   /* 두 열 쌓기 — 줄 높이 1px 격자에 카드 높이만큼 칸을 잡아 열마다 빈틈 없이 쌓는다 */
+  /* 입찰가산정 — 예상수익분석 카드 안의 산정표(A·B·C·D)를 2열로 놓는다. 위의 A~D 칩은 그대로 탭 노릇.
+     앱은 표 머리줄(안 이름 · 비고)과 표가 형제로 이어져 있어 칸 자리를 하나씩 정해 준다 */
+  function layoutProfit(el) {
+    const card = el.querySelector('.adp-profit-table')?.closest('.adp-card'); if (!card) return;
+    const kids = [...card.children];
+    const heads = kids.filter((c) => c.classList.contains('adp-profit-head-row'));
+    const tables = kids.filter((c) => c.classList.contains('adp-profit-table'));
+    if (window.innerWidth < 900 || tables.length < 2) { card.style.cssText = ''; kids.forEach((c) => { c.style.gridColumn = ''; c.style.gridRow = ''; }); return; }
+    Object.assign(card.style, { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', columnGap: '16px', alignItems: 'start' });
+    let row = 1; let after = false;
+    kids.forEach((c) => {
+      const hi = heads.indexOf(c); const ti = tables.indexOf(c);
+      if (hi >= 0) { c.style.gridColumn = String((hi % 2) + 1); c.style.gridRow = String(2 + Math.floor(hi / 2) * 2); after = true; return; }
+      if (ti >= 0) { c.style.gridColumn = String((ti % 2) + 1); c.style.gridRow = String(3 + Math.floor(ti / 2) * 2); return; }
+      c.style.gridColumn = '1 / -1';
+      c.style.gridRow = after ? String(2 + Math.ceil(tables.length / 2) * 2 + row++) : '';
+    });
+  }
   function layoutAppCols(el, tab) {
+    if (tab === 'profit') layoutProfit(el);
     const L = WEB_LAYOUT[tab]; const body = el.querySelector('.adp-body'); if (!body) return;
     const cards = [...body.children].filter((c) => c.classList.contains('adp-card'));
     const reset = () => { body.style.cssText = ''; cards.forEach((c) => { c.style.gridColumn = ''; c.style.gridRow = ''; }); };
