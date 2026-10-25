@@ -349,10 +349,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .ih-court { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ih-court em { font-style: normal; font-weight: 700; color: var(--blue); }
 .ih-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-.ih-right .ibtn { width: 30px; height: 30px; }
-.ih-pdf { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border: 1px solid var(--line-2); border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--text-2) !important; text-decoration: none; }
+.ih-right .ibtn { width: 28px; height: 28px; }
+.ih-pdf { box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid #c7d7f7; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text-2) !important; text-decoration: none; }
 .ih-pdf svg { width: 14px; height: 14px; }
-.ih-stage { height: 26px; padding: 0 12px; border-radius: 999px; border: 1.5px solid #6b85f0; background: #dce5ff; color: #3850c2; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; }
+.ih-stage { box-sizing: border-box; height: 28px; padding: 0 12px; border-radius: 8px; /* 알약 대신 PDF 단추와 같은 둥근 네모 · 같은 높이 */ border: 1.5px solid #6b85f0; background: #dce5ff; color: #3850c2; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; }
 .ih-stage.hot { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; }
 .ih-stage.off { border-color: #c4c9d4; background: #eef0f4; color: #6b7280; }
 .ih-stage.done { border-color: #34b37a; background: #dcf5e8; color: #157a4b; }

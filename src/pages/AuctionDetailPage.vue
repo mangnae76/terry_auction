@@ -8696,7 +8696,8 @@ const goBack = () => router.back();
 .adp-stage-btn {
   display: inline-flex; align-items: center; gap: 2px;
   box-sizing: border-box; height: 26px; padding: 0 6px 0 14px;
-  border: 1.5px solid #6b85f0; border-radius: 999px; background: #dce5ff;
+  /* 알약 대신 PDF·보관·휴지통 단추와 같은 둥근 네모(8) · 같은 높이(26) */
+  border: 1.5px solid #6b85f0; border-radius: 8px; background: #dce5ff;
   font-size: 11px; font-weight: 700; color: #3850c2; line-height: 1.4;
   white-space: nowrap; cursor: pointer;
 }
