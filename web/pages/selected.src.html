@@ -1,10 +1,10 @@
 <!--
-  마이턴옥션 웹 — 선정물건 · 선정물건등록 (한 파일짜리 페이지 원본)
+  마이턴옥션 웹 — 선정목록 · 선정목록등록 (한 파일짜리 페이지 원본)
   - 로고는 {{LOGO_WHITE}} 자리에 앱의 src/assets/icones/log/LOGO_AUCTION_WHITE.png 를 빌드 때 끼워 넣는다
   - PDF 읽기 등 앱 로직은 web/lib/shared.entry.js 가 앱 src/ 를 그대로 가져다 묶은 pdfparse.js 로 쓴다
   - 빌드: 저장소 맨 위에서 node web/build.mjs  →  web/site/selected.html, web/site/pdfparse.js
 -->
-<title>마이턴옥션 선정물건</title>
+<title>마이턴옥션 선정목록</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -162,7 +162,7 @@ button { cursor: pointer; }
 .g-menu:hover { color: #cfe0ff; }
 .g-menu:hover::after { transform: scaleX(1); opacity: .55; }
 .g-menu.on::after { transform: scaleX(1); opacity: 1; }
-/* +물건등록이 선정물건 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
+/* +물건등록이 선정목록 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
 .m0 { left: 13.75%; } .m1 { left: 23.2%; } .m2 { left: 32.6%; } .m3 { left: 42.05%; }
 .m4 { left: 51.1%; } .m5 { left: 60.1%; } .m6 { left: 69.45%; }
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
@@ -329,7 +329,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .search .clear { width: 18px; height: 18px; border-radius: 50%; border: 0; background: var(--surface-3); color: var(--muted); display: grid; place-items: center; padding: 0; }
 .search .clear:hover { color: var(--text); }
 .search .clear svg { width: 10px; height: 10px; }
-/* ===== 선정물건등록 ===== */
+/* ===== 선정목록등록 ===== */
 .reg-box { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 8px; align-content: start; }
 /* 상자 둘 나란히 — 구글드라이브 연동 | AI 자동 분석. 좁으면 위아래로 */
 .reg-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
@@ -719,7 +719,7 @@ body.trip-full .foot { display: none; }
   .rg-head .rg-chev { margin-left: auto; }
   .rg-meta { grid-column: 2 / -1; grid-row: 2; }
 }
-/* 떠 있는 선정물건등록 — 앱 .wlp-fab 그대로(파랑 #2b6df3, 왼쪽 14 · 아래 116), 글자만 웹 크기 */
+/* 떠 있는 선정목록등록 — 앱 .wlp-fab 그대로(파랑 #2b6df3, 왼쪽 14 · 아래 116), 글자만 웹 크기 */
 .fab {
   position: fixed; z-index: 35; left: calc(max(32px, (100vw - 1280px) / 2) + 14px); bottom: calc(116px + env(safe-area-inset-bottom, 0px));
   display: inline-flex; align-items: center; gap: 5px; height: 46px; padding: 0 22px; border: 0; border-radius: 999px;
@@ -1270,7 +1270,7 @@ html, body { overflow-x: clip; }
     <div class="gnb-in">
       <a class="g-logo" href="#" data-act="noop" aria-label="마이턴옥션 홈"><img src="{{LOGO_WHITE}}" alt="MYTURN AUCTION"></a>
       <a class="g-menu m0" href="#/register" data-act="go-register" id="navReg">+물건등록</a>
-      <a class="g-menu m1" href="#/" data-act="go-list" id="navWatch">선정물건</a>
+      <a class="g-menu m1" href="#/" data-act="go-list" id="navWatch">선정목록</a>
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
       <a class="g-menu m3" href="#" data-act="soon" data-name="시장정보">시장정보</a>
       <a class="g-menu m4" href="#" data-act="soon" data-name="커뮤니티">커뮤니티</a>
@@ -1337,12 +1337,12 @@ html, body { overflow-x: clip; }
     <nav class="crumbs" aria-label="현재 위치">
       <a href="#/" data-act="go-list" class="crumb-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1Z"/></svg>홈</a>
       <span class="crumb-sep" aria-hidden="true">›</span>
-      <strong aria-current="page" id="crumbCur">선정물건</strong>
+      <strong aria-current="page" id="crumbCur">선정목록</strong>
     </nav>
   </div>
   <div class="wrap content" id="content"></div>
   </div>
-  <!-- 선정물건등록 — 앱 PdfImportPage 와 같은 짜임: 구글드라이브 연동 · AI 자동 분석 · 폴더스캔 · PDF등록 → 파싱결과 -->
+  <!-- 선정목록등록 — 앱 PdfImportPage 와 같은 짜임: 구글드라이브 연동 · AI 자동 분석 · 폴더스캔 · PDF등록 → 파싱결과 -->
   <div id="regView" hidden>
     <div class="toolbar-shell reg-shell">
       <div class="wrap"><div class="reg-duo" id="regBox" role="tablist" aria-label="물건등록 방법"></div></div>
@@ -1364,7 +1364,7 @@ html, body { overflow-x: clip; }
     <div class="wrap crumb-slot" id="crumbSlotTrip"></div>
     <div class="wrap content trip-content" id="tripContent"></div>
   </div>
-  <button type="button" class="fab" id="fab" data-act="register" data-tip="끌어서 옮길 수 있어요 · 오른쪽 클릭하면 제자리" data-tip-pos="left"><span class="plus">+</span>선정물건등록</button>
+  <button type="button" class="fab" id="fab" data-act="register" data-tip="끌어서 옮길 수 있어요 · 오른쪽 클릭하면 제자리" data-tip-pos="left"><span class="plus">+</span>선정목록등록</button>
 </main>
 
 <footer class="foot">
@@ -1584,7 +1584,7 @@ html, body { overflow-x: clip; }
 
   /* 위 메뉴마다의 아래 메뉴 — 자리 잡기용 이름. 실제 메뉴가 정해지면 여기만 바꾼다 */
   const MEGA = [
-    ['m1', ['선정물건', '물건등록', '입찰달력', '수익계산', '보관함', '휴지통']],
+    ['m1', ['선정목록', '물건등록', '입찰달력', '수익계산', '보관함', '휴지통']],
     ['m2', ['임장동선', '방문기록', '임장 체크리스트']],
     ['m3', ['실거래 분석', '가격정보', '매매수요']],
     ['m4', ['공지사항', '자유게시판', '낙찰후기']],
@@ -1807,11 +1807,11 @@ html, body { overflow-x: clip; }
     const root = $('content');
     const note = CLOUD.on ? '' : S.denied
       ? '<div class="demo-note">이 계정은 마이턴옥션 사용 허가가 없습니다 — 허가된 계정으로 로그인해 주세요.</div>'
-      : '<div class="demo-note">예시 물건입니다 — 로그인하면 앱과 같은 내 선정물건이 보입니다. <button type="button" class="mini edit" data-act="login-btn">로그인</button></div>';
+      : '<div class="demo-note">예시 물건입니다 — 로그인하면 앱과 같은 내 선정목록이 보입니다. <button type="button" class="mini edit" data-act="login-btn">로그인</button></div>';
     queueMicrotask(() => { const r = $('content'); if (note && r && !r.querySelector('.demo-note')) r.insertAdjacentHTML('afterbegin', note); });
     if (!list.length) {
       const filtered = S.type || S.court || S.date || S.q || S.stage !== 'all';
-      root.innerHTML = `<div class="empty"><b>${filtered ? '조건에 맞는 물건이 없습니다' : '표시할 물건이 없습니다'}</b><span>${filtered ? (['won', 'fail', 'cancel', 'sold'].includes(S.stage) ? '카드의 낙찰·유찰·취소·매도 알약을 누르면 여기에 모입니다.' : '걸어 둔 조건을 바꾸거나 지워 보세요.') : '선정물건등록으로 첫 물건을 넣어 보세요.'}</span><button type="button" data-act="${filtered ? 'reset-all' : 'register'}">${filtered ? '조건 모두 지우기' : '선정물건등록'}</button></div>`;
+      root.innerHTML = `<div class="empty"><b>${filtered ? '조건에 맞는 물건이 없습니다' : '표시할 물건이 없습니다'}</b><span>${filtered ? (['won', 'fail', 'cancel', 'sold'].includes(S.stage) ? '카드의 낙찰·유찰·취소·매도 알약을 누르면 여기에 모입니다.' : '걸어 둔 조건을 바꾸거나 지워 보세요.') : '선정목록등록으로 첫 물건을 넣어 보세요.'}</span><button type="button" data-act="${filtered ? 'reset-all' : 'register'}">${filtered ? '조건 모두 지우기' : '선정목록등록'}</button></div>`;
       return;
     }
     if (S.layout === 'list') {
@@ -1856,9 +1856,9 @@ html, body { overflow-x: clip; }
     if (S.menu.y + 4 + el.offsetHeight > window.innerHeight - 8) el.style.top = `${Math.max(8, S.menu.top - el.offsetHeight - 4)}px`;
   }
 
-  /* ---------- 선정물건등록 — 앱 PdfImportPage 와 같은 흐름 ----------
+  /* ---------- 선정목록등록 — 앱 PdfImportPage 와 같은 흐름 ----------
      구글드라이브 폴더(즐겨찾기)를 골라 스캔하거나 PDF를 올리면, 읽은 결과가 '파싱결과'에 줄로 쌓이고
-     읽힌 물건은 바로 선정물건에 올라간다(신규는 손품조사로, 이미 있는 사건은 값만 갱신). 예시 폴더 두 곳은 미리 넣어 둔 값을 쓴다 */
+     읽힌 물건은 바로 선정목록에 올라간다(신규는 손품조사로, 이미 있는 사건은 값만 갱신). 예시 폴더 두 곳은 미리 넣어 둔 값을 쓴다 */
   const p2 = (n) => String(n).padStart(2, '0');
   const stamp = (d = new Date()) => { const h = d.getHours(); return `${p2(d.getFullYear() % 100)}${p2(d.getMonth() + 1)}${p2(d.getDate())} ${h < 12 ? 'AM' : 'PM'} ${p2(h % 12 || 12)}:${p2(d.getMinutes())}`; };
   const folderIdOf = (raw) => { const url = String(raw || '').trim(); if (!url) return ''; const m = /\/folders\/([^/?#]+)/.exec(url); return m ? m[1] : url.replace(/[/?#].*$/, ''); };
@@ -1942,7 +1942,7 @@ html, body { overflow-x: clip; }
     return true;
   };
 
-  /* 읽힌 줄은 바로 선정물건에 올린다 — 신규는 손품조사로 새로, 있던 사건은 회차·최저가·매각기일만 갈아 끼운다 */
+  /* 읽힌 줄은 바로 선정목록에 올린다 — 신규는 손품조사로 새로, 있던 사건은 회차·최저가·매각기일만 갈아 끼운다 */
   const autoSave = (rows) => {
     if (CLOUD.on) {
       /* 앱 물건등록과 같은 함수 — 같은 사건번호면 PDF 값만 고치고, 없으면 새로 만든다 */
@@ -2249,11 +2249,11 @@ html, body { overflow-x: clip; }
     const n = { all: items.filter((x) => !x.trashed && !x.archived).length, nw: R.rows.filter((r) => r.rowStatus === '신규').length, ch: R.rows.filter((r) => r.rowStatus === '변경').length, er: R.rows.filter((r) => r.rowStatus === '오류').length };
     const chips = R.sel.map((u) => `<span class="fchip ${R.scanned.includes(folderIdOf(u)) ? 'scanned' : ''}">${I.folder}${esc(favName(u))}</span>`).join('');
     const masked = R.aiKey ? `${R.aiKey.slice(0, 4)}…${R.aiKey.slice(-4)}` : '';
-    /* 선정물건등록 — 상자 둘을 나란히: 왼쪽 구글드라이브 연동(1줄 제목·스캔할 폴더 칸 / 2줄 폴더등록·폴더스캔·PDF등록) · 오른쪽 AI 자동 분석 */
+    /* 선정목록등록 — 상자 둘을 나란히: 왼쪽 구글드라이브 연동(1줄 제목·스캔할 폴더 칸 / 2줄 폴더등록·폴더스캔·PDF등록) · 오른쪽 AI 자동 분석 */
     $('regBox').innerHTML = `
       <div class="toolbar reg-box ${R.tab === 'drive' ? 'on' : ''}" data-regtab="drive" role="tab" aria-selected="${R.tab === 'drive'}" tabindex="0">
       <div class="rg-row1">
-        <span class="rg-title tip-below" data-tip="등록한 구글 드라이브 폴더의 PDF를 읽어 선정물건으로 올립니다" data-tip-pos="left">${I.cloud}구글드라이브 연동</span>
+        <span class="rg-title tip-below" data-tip="등록한 구글 드라이브 폴더의 PDF를 읽어 선정목록으로 올립니다" data-tip-pos="left">${I.cloud}구글드라이브 연동</span>
         <div class="rg-folder pop-root" data-pop="folders">
           <button type="button" class="rg-folder-box" data-act="pop" data-id="folders" aria-expanded="${S.pop === 'folders'}" aria-label="스캔할 폴더 고르기">
             <span class="rg-chosen">${chips || `<span class="rg-ph">${R.favs.length ? '스캔할 폴더를 선택하세요' : '등록된 폴더가 없습니다 — 폴더등록을 눌러 추가하세요'}</span>`}</span><i class="tri"></i>
@@ -2296,7 +2296,7 @@ html, body { overflow-x: clip; }
         <div class="rg-head"><h2 class="tip-below" data-tip="${PC.tip}" data-tip-pos="left" style="cursor:help">${PC.ic}${PC.title}</h2>
           <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span>${R.rows.length ? `<button type="button" class="rg-clear-btn" data-act="rg-clear" aria-label="목록 비우기" data-tip="목록 비우기" data-tip-pos="below">${I.trash}</button>` : ''}</span>
           <button type="button" class="rg-chev ${R.collapsed ? 'up' : ''}" data-act="rg-collapse" aria-expanded="${!R.collapsed}" aria-label="결과 접기">${I.chevDown}</button></div>
-        ${R.missing.length ? `<div class="rg-missing"><div class="h">드라이브에 없는 물건 ${R.missing.length}건<button type="button" data-act="missing-trash">휴지통으로</button></div><p>스캔한 폴더에서 PDF가 사라졌습니다. 선정물건은 그대로 남아 있습니다 — 치우려면 누르세요.</p><ul>${R.missing.map((m) => `<li>${esc(m.label)}</li>`).join('')}</ul></div>` : ''}
+        ${R.missing.length ? `<div class="rg-missing"><div class="h">드라이브에 없는 물건 ${R.missing.length}건<button type="button" data-act="missing-trash">휴지통으로</button></div><p>스캔한 폴더에서 PDF가 사라졌습니다. 선정목록은 그대로 남아 있습니다 — 치우려면 누르세요.</p><ul>${R.missing.map((m) => `<li>${esc(m.label)}</li>`).join('')}</ul></div>` : ''}
         ${R.collapsed ? '' : `<div class="rg-empty ${R.rows.length ? 'slim' : ''}" role="button" tabindex="0" data-act="pdf-pick" aria-label="PDF 파일 고르기"><span class="ic">📂</span><span>${PC.drop}</span></div>
           ${R.rows.length ? `<ul class="rg-list">${R.rows.map(rowHtmlR).join('')}</ul>
           <div class="rg-foot"><span class="num">UPDATE : ${esc(R.last || '—')}</span></div>` : ''}`}
@@ -2380,7 +2380,7 @@ html, body { overflow-x: clip; }
     }
     const cts = courts();
     root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog reg" role="dialog" aria-modal="true" aria-labelledby="regT">
-      <div class="reg-head"><h2 id="regT">선정물건등록</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
+      <div class="reg-head"><h2 id="regT">선정목록등록</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
       <div class="reg-tabs" role="tablist"><button type="button" class="${m.tab === 'case' ? 'on' : ''}" data-act="reg-tab" data-v="case">사건번호로 등록</button><button type="button" class="${m.tab === 'pdf' ? 'on' : ''}" data-act="reg-tab" data-v="pdf">PDF로 등록</button></div>
       ${m.tab === 'case' ? `<div class="reg-body">
         <div class="field"><label for="regCourt">법원</label><select id="regCourt">${cts.map((c) => `<option ${c === m.court ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
@@ -2404,9 +2404,9 @@ html, body { overflow-x: clip; }
     setTimeout(() => { el.style.transition = 'opacity .25s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 260); }, 1800);
   }
 
-  /* 하위 탭 — 화면마다 있으면 머리띠 아래 한 단. 지금은 선정물건등록만 (구글드라이브 연동 · AI 자동 분석) */
+  /* 하위 탭 — 화면마다 있으면 머리띠 아래 한 단. 지금은 선정목록등록만 (구글드라이브 연동 · AI 자동 분석) */
   /* 화면 이름 → [키, 아이콘, 글자] 목록. 지금은 쓰는 화면이 없다 — 다른 화면에 하위 탭이 필요하면 여기에 적는다.
-     예) register: [['drive', 'cloud', '구글드라이브 연동'], ['ai', 'key', 'AI 자동 분석']]  (선정물건등록에서 쓰다가 상자 둘 배치로 바꿨다) */
+     예) register: [['drive', 'cloud', '구글드라이브 연동'], ['ai', 'key', 'AI 자동 분석']]  (선정목록등록에서 쓰다가 상자 둘 배치로 바꿨다) */
   const SUBTABS = {
     /* 물건상세 — 앱 AuctionDetailPage 의 TABS 다섯 칸에서 앱 '손품+현장'을 손품조사 · 임장조사 둘로 나눴다(웹만) */
     item: [['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
@@ -2423,10 +2423,10 @@ html, body { overflow-x: clip; }
     const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip';
     $('listView').hidden = reg || item || trip; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('fab').hidden = reg || item || trip;
     const cur = item ? byId(S.itemId) : null;
-    $('crumbCur').textContent = reg ? '선정물건등록' : trip ? '임장경로' : item ? `선정물건 › ${cur ? cur.caseNo : '물건상세'}` : '선정물건';
+    $('crumbCur').textContent = reg ? '선정목록등록' : trip ? '임장경로' : item ? `선정목록 › ${cur ? cur.caseNo : '물건상세'}` : '선정목록';
     { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
-    document.title = reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
+    document.title = reg ? '마이턴옥션 선정목록등록' : trip ? '마이턴옥션 임장경로' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정목록';
     if (!item) closeAppDetail();
     if (!trip) closeAppTrip();
     document.body.classList.toggle('trip-full', trip);
@@ -2489,7 +2489,7 @@ html, body { overflow-x: clip; }
     const pdfId = a.importMeta && a.importMeta.pdfFileId;
     return `
       <div class="ih-top">
-        <button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"${tip('선정물건으로')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button>
+        <button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"${tip('선정목록으로')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button>
         <h1 class="ih-title"><span class="ih-tag">경매</span><span class="num">${esc(it.caseNo)}</span></h1>
         <span class="ih-court">${esc(it.court)} · 매각기일 <span class="num">${dotDate(it.date)}${dowText(it.date)}</span> <em>${ddayText(it.date)}</em></span>
         <span class="ih-right">
@@ -2790,7 +2790,7 @@ html, body { overflow-x: clip; }
     const box = $('tripContent');
     if (!CLOUD.on) {
       closeAppTrip();
-      box.innerHTML = '<div class="empty"><b>로그인하면 임장경로가 열립니다</b><span>앱에서 쓰던 경로와 선정물건을 그대로 씁니다.</span><button type="button" data-act="login-btn">로그인</button></div>';
+      box.innerHTML = '<div class="empty"><b>로그인하면 임장경로가 열립니다</b><span>앱에서 쓰던 경로와 선정목록을 그대로 씁니다.</span><button type="button" data-act="login-btn">로그인</button></div>';
       return;
     }
     if (tripUnmount && box.querySelector('.app-trip')) return;
@@ -2835,7 +2835,7 @@ html, body { overflow-x: clip; }
     $('itemContent').innerHTML = `<div class="it-grid ${S.itFold ? 'folded' : ''}">${itemTabHtml(it, S.itemTab)}</div>`;
     syncFoldBtn();
   }
-  /* 화면 바꾸기 — #/ 선정물건, #/register 선정물건등록 (뒤로가기로 돌아온다) */
+  /* 화면 바꾸기 — #/ 선정목록, #/register 선정목록등록 (뒤로가기로 돌아온다) */
   function go(route, id) {
     if (S.route === route && (route !== 'item' || S.itemId === id)) { window.scrollTo(0, 0); return; }
     S.route = route; S.pop = ''; S.menu = null;
@@ -3185,8 +3185,8 @@ html, body { overflow-x: clip; }
         R.aiKey = ''; R.aiOn = false; S.modal = null; renderModal(); renderRegister(); toast('키를 지웠습니다.', 'info'); break;
       case 'subtab': if (S.route === 'item') { S.itemTab = v; renderSubTabs(); renderItem(); window.scrollTo(0, 0); break; } R.tab = v === 'ai' ? 'ai' : 'drive'; try { localStorage.setItem('wlp.web.regTab', R.tab); } catch (e) { /* 그만 */ } S.pop = ''; renderSubTabs(); renderRegister(); break;
       case 'rg-collapse': R.collapsed = !R.collapsed; renderRegister(); break;
-      /* 목록 비우기 — 한 번 묻는다. 읽어 온 줄만 지우고 등록한 선정물건은 그대로다 */
-      case 'rg-clear': askConfirm({ title: '목록을 비울까요?', desc: '읽어 온 목록만 지웁니다. 이미 등록한 선정물건은 그대로 남습니다.', okLabel: '비우기', skipKey: '', run: () => { R.rows = []; R.banner = ''; R.missing = []; renderRegister(); toast('목록을 비웠습니다.'); } }); break;
+      /* 목록 비우기 — 한 번 묻는다. 읽어 온 줄만 지우고 등록한 선정목록은 그대로다 */
+      case 'rg-clear': askConfirm({ title: '목록을 비울까요?', desc: '읽어 온 목록만 지웁니다. 이미 등록한 선정목록은 그대로 남습니다.', okLabel: '비우기', skipKey: '', run: () => { R.rows = []; R.banner = ''; R.missing = []; renderRegister(); toast('목록을 비웠습니다.'); } }); break;
       case 'rg-open': S.q = v; $('q').value = v; S.stage = 'all'; S.type = ''; S.court = ''; S.date = ''; go('list'); break;
       case 'missing-trash': { const ids = R.missing.map((m) => m.id); ids.forEach((x) => update(x, { trashed: true })); R.missing = []; render(); toast(`${ids.length}건을 휴지통으로 보냈습니다.`); break; }
       case 'reg-tab': readReg(); S.modal.tab = v; S.modal.err = ''; renderModal(); break;
@@ -3278,7 +3278,7 @@ html, body { overflow-x: clip; }
   document.addEventListener('dragleave', (e) => { const d = e.target.closest('#drop'); if (d) d.classList.remove('over'); });
   document.addEventListener('drop', (e) => { const d = e.target.closest('#drop'); if (!d) return; e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) { S.modal.file = f.name; renderModal(); } });
 
-  /* 붙었을 때 그림자 — 선정물건 · 선정물건등록 두 상자 모두. 하위 탭이 있으면 탭 줄 높이만큼 아래에서 붙는다 */
+  /* 붙었을 때 그림자 — 선정목록 · 선정목록등록 두 상자 모두. 하위 탭이 있으면 탭 줄 높이만큼 아래에서 붙는다 */
   /* 붙었을 때 그림자 — 틀 고정 모듈과 짝. 상자가 제 고정 자리(top)에 닿았으면 붙은 것이다 (화면·머리 높이와 상관없이) */
   const markStuck = () => document.querySelectorAll('.toolbar-shell').forEach((shell) => {
     if (!shell.offsetParent) return;
