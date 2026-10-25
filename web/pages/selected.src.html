@@ -2948,13 +2948,19 @@ html, body { overflow-x: clip; }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.rg-item.ready')) { e.preventDefault(); e.target.click(); }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card, tr[data-act="card"]')) { e.preventDefault(); e.target.click(); }
   });
-  /* 말풍선 자리 — 위쪽에 붙어 있는 도구 상자(또는 화면 위 끝)에 가리면 아래로 띄운다 */
+  /* 말풍선 자리 — 어느 화면·어느 자리든, 위쪽에 붙어 있는 틀(머리띠 · 하위 탭 줄 · 필터/고정 카드)에 가리면 아래로 띄운다.
+     천장 = 이 단추보다 위에 있는 붙은 틀들의 아랫선 (단추를 품은 틀은 빼고) */
   document.addEventListener('mouseover', (e) => {
-    const el = e.target.closest('#content [data-tip], #regContent [data-tip]');
-    if (!el) return;
-    const shell = document.querySelector(S.route === 'register' ? '.reg-shell' : '#toolbarShell').getBoundingClientRect();
-    const ceiling = Math.max(0, shell.bottom);
-    el.classList.toggle('tip-below', el.getBoundingClientRect().top - 40 < ceiling);
+    const el = e.target.closest('[data-tip]');
+    if (!el || el.dataset.tipPos === 'below') return;
+    const top = el.getBoundingClientRect().top;
+    let ceiling = 0;
+    document.querySelectorAll('.gnb, .subtabs, .toolbar-shell').forEach((bar) => {
+      if (bar.hidden || !bar.offsetParent || bar.contains(el)) return;
+      const r = bar.getBoundingClientRect();
+      if (r.bottom <= top + 1) ceiling = Math.max(ceiling, r.bottom);
+    });
+    el.classList.toggle('tip-below', top - 40 < ceiling);
   });
   /* 별 미리보기 — 마우스를 올린 별까지 미리 칠해 보인다 */
   document.addEventListener('mouseover', (e) => {
