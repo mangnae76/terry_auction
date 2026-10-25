@@ -1954,14 +1954,13 @@ html, body { overflow-x: clip; }
       <!-- 필수 설정 — Gemini API 키. 키가 있어야 아래 AI 자동 파싱을 켤 수 있다 (앱 PdfImportPage 와 같은 짜임) -->
       <div class="ai-setup">
         <span class="ai-req">필수 설정</span><b>Gemini API 키</b>
-        <span class="key-state ${R.aiKey ? 'ok' : ''}">${R.aiKey ? `등록됨 · ${esc(masked)}` : '등록 안 됨'}</span>
+        <span class="key-state ${R.aiKey ? 'ok' : ''}">${R.aiKey ? '등록' : '미등록'}</span>
         <button type="button" class="ai-key" data-act="ai-key">${R.aiKey ? '키 바꾸기' : '키 넣기'}</button>
-        <a class="key-link" href="${GEMINI_KEY_URL}" target="_blank" rel="noopener">Google AI Studio에서 키 받기${I.ext}</a>
-        <small class="ai-setup-help">Google 계정으로 로그인 → Get API key → Create API key · 키는 이 기기에만 저장됩니다</small>
+        <small class="ai-setup-help">${R.aiKey ? '' : 'Gemini API 키를 등록하세요. '}키는 이 기기에만 저장됩니다.</small>
       </div>
       <div class="ai-run">
         <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 켜기" data-act="ai-toggle"><i></i></button>
-        <span class="ai-text"><b>AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}</b><small>${R.aiKey ? '규칙으로 못 읽은 칸만 AI가 채웁니다' : '필수 설정(Gemini API 키)을 마치면 켤 수 있습니다'}</small></span>
+        <span class="ai-text"><b>AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}</b>${R.aiKey ? '<small>Gemini API 키가 등록되었습니다.</small>' : ''}</span>
       </div>`;
     const rowHtmlR = (r) => `<li class="rg-item ${r.status}" ${r.status === 'ready' ? `data-act="rg-open" data-v="${esc(r.p.caseNo)}" tabindex="0"` : ''}>
         <span class="rg-ic ${r.src === 'drive' ? 'drive' : ''}" aria-hidden="true"${tip(r.src === 'drive' ? '구글드라이브에서 읽음' : '직접 올린 PDF')}>${r.src === 'drive' ? I.cloud : I.pdf}</span>
@@ -2018,10 +2017,10 @@ html, body { overflow-x: clip; }
           <input id="aiKeyIn" type="password" autocomplete="off" placeholder="Google AI Studio 에서 받은 API 키" aria-label="Gemini API 키" value="${esc(m.draft ?? R.aiKey)}">
           ${m.msg ? `<p class="ai-msg ${m.ok ? 'ok' : ''}">${esc(m.msg)}</p>` : ''}
           <ul class="ai-help">
-            <li>키는 <b>이 기기에만</b> 저장됩니다. 우리 서버로 보내지 않습니다.</li>
-            <li>PDF는 이 기기에서 <b>Google(Gemini)로 바로</b> 보내고, 요금은 키 주인의 Google 계정으로 나갑니다.</li>
+            <li>키는 <b>이 기기에만</b> 저장됩니다.</li>
             <li>규칙으로 못 읽은 칸만 채우고, PDF에서 근거 글을 못 찾은 값은 버립니다.</li>
             <li>키 받는 곳: <a class="key-link" href="${GEMINI_KEY_URL}" target="_blank" rel="noopener">Google AI Studio</a> → Get API key</li>
+            <li>Google 계정으로 로그인 → Get API key → Create API key</li>
           </ul>
           <div class="ai-btns">${R.aiKey ? '<button type="button" class="btn" data-act="ai-del" style="color:#d14343;border-color:#f0d2d2">키 지우기</button>' : ''}<button type="button" class="btn primary" data-act="ai-save" ${m.checking ? 'disabled' : ''}>${m.checking ? '확인 중…' : '확인 후 저장'}</button></div>
         </div></div></div>`;
