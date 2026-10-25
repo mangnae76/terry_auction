@@ -2243,7 +2243,7 @@ html, body { overflow-x: clip; }
       <div class="ih-prop">
         <span class="ih-kind">${esc(kind)}</span>
         ${starsHtml(it)}
-        <span class="ih-sale">토건일괄매각${meta ? ` · ${meta}` : ''}</span>
+        <span class="ih-sale">토지건물 일괄매각${meta ? ` · ${meta}` : ''}</span>
         <button type="button" class="ih-copy" data-act="item-copy" data-id="${it.id}" aria-label="주소 복사"${tip('지번주소 복사')}>${I.copy}주소</button>
         <p class="ih-addr">${esc(it.addr)}${it.bld ? ` <b>${esc(it.bld)}</b>` : ''}${it.unit ? ` <b>${esc(it.unit)}</b>` : ''}</p>
       </div>`;
