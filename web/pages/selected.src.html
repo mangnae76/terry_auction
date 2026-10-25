@@ -334,6 +334,13 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .reg-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
 @media (max-width: 1100px) { .reg-duo { grid-template-columns: minmax(0, 1fr); } }
 /* 상자가 탭 — 고른 상자는 파란 테두리, 안 고른 상자는 눌러서 바꾼다 */
+/* 앱 로그인 창 — 앱 화면의 남색 바탕은 빼고 흰 카드만 띄운다 (카드 모양은 앱 그대로) */
+.app-login { position: relative; width: min(360px, 100%); max-height: calc(100vh - 40px); overflow: auto; padding: 0 !important; background: transparent !important; box-shadow: none !important; border: 0 !important; }
+.app-login .lp-shell { min-height: 0 !important; background: none !important; padding: 0 !important; }
+.app-login .lp-card { max-width: none !important; }
+.app-login-x { position: absolute !important; top: 10px; right: 10px; z-index: 2; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #6b7280; display: grid; place-items: center; cursor: pointer; }
+.app-login-x:hover { background: #f3f4f6; color: #111827; }
+.app-login-x svg { width: 18px; height: 18px; }
 /* 로그인 전 안내 */
 .demo-note { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 9px 14px; border-radius: 8px; background: #fff7e6; border: 1px solid #f5d79e; color: #8a5a00; font-size: 13px; }
 :root[data-theme="dark"] .demo-note { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #fbbf24; }
@@ -1527,7 +1534,7 @@ html, body { overflow-x: clip; }
       <button type="button" class="um-btn" role="menuitem" data-act="soon" data-name="결제하기">결제하기</button>
       <div class="um-sep"><button type="button" class="um-btn out" role="menuitem" data-act="logout">로그아웃</button></div>
     </div>`
-      : `<div class="pop" style="position:static;min-width:210px" role="menu"><div class="pop-title">로그인 방법</div>${[['email', '이메일로 로그인'], ['kakao', '카카오로 로그인'], ['naver', '네이버로 로그인']].map(([k, t]) => `<button type="button" class="opt" data-act="do-login" data-v="${k}">${t}</button>`).join('')}</div>`;
+      : '';
     const open = S.pop === 'all';
     const box = document.querySelector('.g-box');
     box.dataset.tip = open ? '메뉴접기' : '메뉴 펼치기';
@@ -1845,7 +1852,10 @@ html, body { overflow-x: clip; }
   const loadParser = () => {
     if (window.TAPdf) return Promise.resolve(window.TAPdf);
     if (!parserP) parserP = new Promise((ok, no) => {
-      const s = document.createElement('script'); s.src = /\/web$/.test(location.pathname) ? '/web/pdfparse.js' : 'pdfparse.js'; s.async = true; /* 우리 주소 '/web'(끝 / 없음)에서는 상대 경로가 맨 위를 가리킨다 */
+      const base = /\/web$/.test(location.pathname) ? '/web/' : '';
+      /* 앱 화면(로그인 창 등)의 모양 — 묶음과 같이 만든 pdfparse.css */
+      if (!document.querySelector('link[data-tapdf]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = `${base}pdfparse.css`; l.dataset.tapdf = '1'; document.head.appendChild(l); }
+      const s = document.createElement('script'); s.src = `${base}pdfparse.js`; s.async = true; /* 우리 주소 '/web'(끝 / 없음)에서는 상대 경로가 맨 위를 가리킨다 */
       s.onload = () => (window.TAPdf ? ok(window.TAPdf) : no(new Error('parser')));
       s.onerror = () => { parserP = null; no(new Error('parser')); };
       document.head.appendChild(s);
@@ -2221,6 +2231,13 @@ html, body { overflow-x: clip; }
           <div class="ai-btns">${R.aiKey ? '<button type="button" class="btn" data-act="ai-del" style="color:#d14343;border-color:#f0d2d2">키지우기</button>' : ''}<button type="button" class="btn primary" data-act="ai-save" ${m.checking ? 'disabled' : ''}>${m.checking ? '확인 중…' : '확인 후 저장'}</button></div>
         </div></div></div>`;
       setTimeout(() => { const el = $('aiKeyIn'); if (el) el.focus(); }, 20);
+      return;
+    }
+    if (m.kind === 'applogin') {
+      root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog app-login" role="dialog" aria-modal="true" aria-label="로그인">
+        <button type="button" class="app-login-x" data-act="modal-close" aria-label="창 닫기" data-tip="창 닫기" data-tip-pos="below">${I.x}</button>
+        <div id="appLoginMount"><p class="it-emptyline" style="text-align:center;padding:40px 0">로그인 화면을 불러오는 중…</p></div>
+      </div></div>`;
       return;
     }
     if (m.kind === 'login') {
@@ -2630,6 +2647,22 @@ html, body { overflow-x: clip; }
     }
     if ('priority' in patch) return run(st.saveAuction({ ...a, priority: patch.priority }));
   }
+  /* 앱 로그인 창 — 앱 LoginPage.vue 를 그대로 띄운다 (앱 authStore 로 로그인) */
+  let loginUnmount = null;
+  const closeAppLogin = () => { if (loginUnmount) { try { loginUnmount(); } catch (e) { /* 그만 */ } loginUnmount = null; } };
+  async function openAppLogin() {
+    S.modal = { kind: 'applogin' }; renderModal();
+    let T = null; try { T = await loadParser(); } catch (e) { T = null; }
+    const el = $('appLoginMount');
+    if (!T || !T.mountAppLogin || !el || !S.modal || S.modal.kind !== 'applogin') { if (el) el.innerHTML = '<p class="it-emptyline" style="text-align:center;padding:40px 0">로그인 화면을 불러오지 못했습니다 — 새로고침 뒤 다시 눌러 주세요.</p>'; return; }
+    if (!CLOUD.auth) await new Promise((ok) => { const w = setInterval(() => { if (CLOUD.auth) { clearInterval(w); ok(); } }, 50); setTimeout(() => { clearInterval(w); ok(); }, 5000); });
+    el.innerHTML = '';
+    loginUnmount = T.mountAppLogin(el, (what) => {
+      closeAppLogin(); S.modal = null; renderModal();
+      if (what === 'signup') { location.href = '/signup'; return; }
+      toast('로그인되었습니다.');
+    });
+  }
   async function startCloud() {
     let T = null; try { T = await loadParser(); } catch (e) { return; }
     if (!T || !T.useAuthStore) return;
@@ -2681,7 +2714,8 @@ html, body { overflow-x: clip; }
         const root = document.documentElement;
         root.dataset.theme = isDark() ? 'light' : 'dark'; store.set('wlp.web.theme', root.dataset.theme); renderHeader(); break;
       }
-      case 'login-btn': S.menu = null; S.pop = S.pop === 'user' ? '' : 'user'; render(); break;
+      /* 로그인 전 — 앱 로그인 창을 그대로 띄운다(아래 펼침 없음). 로그인 뒤 — 회원정보 메뉴 */
+      case 'login-btn': S.menu = null; if (!S.loggedIn) { S.pop = ''; render(); openAppLogin(); break; } S.pop = S.pop === 'user' ? '' : 'user'; render(); break;
       /* 로그인 — 앱과 같은 계정(앱 authStore 그대로). 같은 브라우저에서 앱에 로그인해 두었으면 저절로 들어온다 */
       case 'do-login': {
         S.pop = ''; render();
@@ -2905,8 +2939,8 @@ html, body { overflow-x: clip; }
         if (skip && skip.checked && m.skipKey) { const all = store.get(SKIP_KEY, {}); all[m.skipKey] = TODAY_YMD; store.set(SKIP_KEY, all); }
         S.modal = null; renderModal(); m.run(); break;
       }
-      case 'modal-close': S.modal = S.modal && S.modal.back ? S.modal.back : null; renderModal(); break;
-      case 'modal-scrim': if (e.target === t) { S.modal = S.modal && S.modal.back ? S.modal.back : null; renderModal(); } break;
+      case 'modal-close': closeAppLogin(); S.modal = S.modal && S.modal.back ? S.modal.back : null; renderModal(); break;
+      case 'modal-scrim': if (e.target === t) { closeAppLogin(); S.modal = S.modal && S.modal.back ? S.modal.back : null; renderModal(); } break;
       default: break;
     }
   });

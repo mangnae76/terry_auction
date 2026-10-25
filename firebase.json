@@ -72,7 +72,7 @@
     ],
     "predeploy": [
       "node web/build.mjs",
-      "mkdir -p dist/web && cp web/site/selected.html web/site/pdfparse.js dist/web/"
+      "mkdir -p dist/web && cp web/site/selected.html web/site/pdfparse.js web/site/pdfparse.css dist/web/"
     ]
   }
 }

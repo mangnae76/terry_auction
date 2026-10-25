@@ -3,6 +3,10 @@ import {
   createUserWithEmailAndPassword,
   fetchSignInMethodsForEmail,
   onAuthStateChanged,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  sendPasswordResetEmail,
+  setPersistence,
   signInWithCustomToken,
   signInWithEmailAndPassword,
   reauthenticateWithCredential,
@@ -212,6 +216,23 @@ export const saveSignupExtra = async (uid: string, extra: SignupExtra): Promise<
   } catch (err) {
     console.warn('[auth] 가입 추가정보 저장 실패:', err);
   }
+};
+
+/** 로그인 유지 — 켜면 브라우저(앱)를 닫아도 로그인이 남고, 끄면 창을 닫을 때 로그아웃된다.
+ *  로그인하기 바로 전에 부른다(이메일·카카오·네이버 모두) */
+export const setLoginPersistence = async (keep: boolean): Promise<void> => {
+  assertReady();
+  try {
+    await setPersistence(auth!, keep ? browserLocalPersistence : browserSessionPersistence);
+  } catch {
+    /* 저장 방식을 못 바꾸는 환경이면 기본(유지)대로 간다 */
+  }
+};
+
+/** 비밀번호 찾기 — 가입한 이메일로 재설정 메일을 보낸다 (카카오·네이버 계정은 비밀번호가 없다) */
+export const sendPasswordReset = async (email: string): Promise<void> => {
+  assertReady();
+  await sendPasswordResetEmail(auth!, email.trim());
 };
 
 /** 이미 쓰고 있는 메일인지 — 프로젝트 설정에 따라 알려 주지 않을 수 있다.

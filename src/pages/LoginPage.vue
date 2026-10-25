@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
+import { checkEmailTaken, friendlyAuthError, sendPasswordReset, setLoginPersistence } from '../services/authRepository';
 import { isKakaoLoginConfigured, isNaverLoginConfigured } from '../services/socialAuth';
 import { isAllowedEmail } from '../services/accessControl';
 import BrandLogo from '../components/BrandLogo.vue';
@@ -22,6 +23,8 @@ const authStore = useAuthStore();
 // 두 화면이 같은 자리를 보고 있어 '이름을 적어 주세요'가 로그인 칸 아래 남았다.
 // 허용 목록에 없는 계정이라 가드가 내보낸 경우만 왜 튕겼는지 알려 준다.
 onMounted(() => {
+  const saved = readLocal(SAVED_ID_KEY);
+  if (saved) email.value = saved;
   authStore.error = route.query.denied
     ? '이 계정은 사용 권한이 없습니다. 등록된 계정으로 로그인해 주세요.'
     : '';
@@ -31,7 +34,7 @@ const trialAgree = ref(false);
 const trialDetail = ref(false);
 
 /** 가입 전 안내 창 — '' 이면 닫힘 */
-const info = ref<'' | 'pay' | 'trial'>('');
+const info = ref<'' | 'pay' | 'trial' | 'findId' | 'findPw'>('');
 const won = (n: number) => n.toLocaleString('ko-KR');
 /** 할인이 붙는 기간 — 안내 글이 요금표를 따라간다 */
 const offListText = PLANS.filter((p) => !p.base).map((p) => p.label).join(', ');
@@ -39,6 +42,67 @@ const offListText = PLANS.filter((p) => !p.base).map((p) => p.label).join(', ');
 const email = ref('');
 const password = ref('');
 const submitting = ref(false);
+
+// === 아이디 저장 · 로그인 유지 — 이 기기에만 적어 둔다 ===
+const SAVED_ID_KEY = 'myturn.login.savedId';
+const KEEP_KEY = 'myturn.login.keep';
+function readLocal(key: string) { try { return localStorage.getItem(key) ?? ''; } catch { return ''; } }
+function writeLocal(key: string, value: string) { try { if (value) localStorage.setItem(key, value); else localStorage.removeItem(key); } catch { /* 못 적어도 로그인은 된다 */ } }
+/** 아이디 저장 — 켜 두면 다음에 열 때 아이디 칸이 채워져 있다 */
+const saveId = ref(!!readLocal(SAVED_ID_KEY));
+/** 로그인 유지 — 기본은 켜짐(지금까지와 같다). 끄면 창을 닫을 때 로그아웃된다 */
+const keepLogin = ref(readLocal(KEEP_KEY) !== '0');
+/** 로그인 직전 — 유지 방식을 정하고 고른 값을 적어 둔다 */
+const beforeLogin = async () => {
+  writeLocal(KEEP_KEY, keepLogin.value ? '' : '0');
+  await setLoginPersistence(keepLogin.value);
+};
+/** 로그인 뒤 — 아이디 저장을 켰으면 아이디를 적고, 껐으면 지운다 */
+const afterLogin = (id: string) => writeLocal(SAVED_ID_KEY, saveId.value ? id.trim() : '');
+
+// === 아이디 찾기 · 비밀번호 찾기 ===
+const findId = ref('');
+const findMsg = ref('');
+const findOk = ref(false);
+const findBusy = ref(false);
+const openFind = (kind: 'findId' | 'findPw') => {
+  findId.value = email.value.trim();
+  findMsg.value = '';
+  findOk.value = false;
+  info.value = kind;
+};
+/** 아이디 찾기 — 회원 아이디는 가입한 이메일이다. 적은 이메일이 가입돼 있는지 확인한다 */
+const checkFindId = async () => {
+  const id = findId.value.trim();
+  if (!id) { findMsg.value = '가입할 때 적은 이메일을 넣어 주세요.'; findOk.value = false; return; }
+  findBusy.value = true;
+  const r = await checkEmailTaken(id).catch(() => 'unknown' as const);
+  findBusy.value = false;
+  if (r === 'taken') {
+    findOk.value = true;
+    findMsg.value = '가입된 아이디입니다. 이 아이디로 로그인해 주세요.';
+    email.value = id;
+  } else {
+    findOk.value = false;
+    findMsg.value = "이 이메일로 가입된 기록을 확인할 수 없습니다. 카카오로 가입했다면 '카카오로 시작하기'로 들어와 주세요.";
+  }
+};
+/** 비밀번호 찾기 — 적은 아이디(이메일)로 재설정 메일을 보낸다 */
+const sendFindPw = async () => {
+  const id = findId.value.trim();
+  if (!id) { findMsg.value = '가입한 이메일(회원 아이디)을 넣어 주세요.'; findOk.value = false; return; }
+  findBusy.value = true;
+  try {
+    await sendPasswordReset(id);
+    findOk.value = true;
+    findMsg.value = '비밀번호 재설정 메일을 보냈습니다. 메일함(스팸함 포함)을 확인해 주세요.';
+  } catch (e) {
+    findOk.value = false;
+    findMsg.value = friendlyAuthError(e);
+  } finally {
+    findBusy.value = false;
+  }
+};
 
 const kakaoEnabled = isKakaoLoginConfigured();
 const naverEnabled = isNaverLoginConfigured();
@@ -51,12 +115,14 @@ const onSubmit = async () => {
   }
   submitting.value = true;
   try {
+    await beforeLogin();
     const profile = await authStore.login(email.value, password.value);
     if (!isAllowedEmail(profile.email)) {
       await authStore.logout();
       authStore.error = '이 계정은 사용 권한이 없습니다.';
       return;
     }
+    afterLogin(email.value);
     router.replace('/auctions/watchlist');
   } catch {
     /* error 메시지는 store.error에 반영됨 */
@@ -70,6 +136,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
   submitting.value = true;
   authStore.error = '';
   try {
+    await beforeLogin();
     const profile = provider === 'kakao'
       ? await authStore.loginWithKakao()
       : await authStore.loginWithNaver();
@@ -96,7 +163,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
 
       <form class="lp-form" @submit.prevent="onSubmit">
         <label class="lp-field">
-          <span>이메일</span>
+          <span>회원 아이디</span>
           <input
             v-model="email"
             type="email"
@@ -154,13 +221,24 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
         >네이버로 시작하기</button>
       </div>
 
+      <!-- 아이디 저장 · 로그인 유지 / 아이디 찾기 · 비밀번호 찾기 -->
+      <div class="lp-opts">
+        <label class="lp-opt"><input v-model="saveId" type="checkbox" />아이디 저장</label>
+        <label class="lp-opt"><input v-model="keepLogin" type="checkbox" />로그인 유지</label>
+      </div>
+      <p class="lp-links lp-find">
+        <button type="button" @click="openFind('findId')">아이디 찾기</button>
+        <i>·</i>
+        <button type="button" @click="openFind('findPw')">비밀번호 찾기</button>
+      </p>
+
     </div>
 
     <!-- 결제안내 · 무료체험 안내 창 -->
     <div v-if="info" class="lp-modal" @click.self="info = ''">
       <div class="lp-modal-box">
         <header class="lp-modal-head">
-          <strong>{{ info === 'pay' ? '결제안내' : `${TRIAL_DAYS}일 무료체험 안내` }}</strong>
+          <strong>{{ info === 'pay' ? '결제안내' : info === 'findId' ? '아이디 찾기' : info === 'findPw' ? '비밀번호 찾기' : `${TRIAL_DAYS}일 무료체험 안내` }}</strong>
           <button type="button" class="lp-modal-x" aria-label="닫기" @click="info = ''">
             <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true">
               <path d="M1.5 1.5 12.5 12.5M12.5 1.5 1.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -185,6 +263,19 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
               </tbody>
             </table>
             <p class="lp-m-note">포인트 보유 시 포인트 결제가 가능합니다.</p>
+          </template>
+
+          <template v-else-if="info === 'findId' || info === 'findPw'">
+            <p class="lp-m-lead">
+              {{ info === 'findId'
+                ? '회원 아이디는 가입할 때 적은 이메일입니다. 이메일을 넣으면 가입 여부를 확인합니다.'
+                : '가입한 이메일(회원 아이디)로 비밀번호 재설정 메일을 보냅니다. 카카오로 가입한 계정은 비밀번호가 없습니다.' }}
+            </p>
+            <input v-model="findId" class="lp-find-in" type="email" autocomplete="email" placeholder="example@email.com" @keydown.enter.prevent="info === 'findId' ? checkFindId() : sendFindPw()" />
+            <p v-if="findMsg" :class="['lp-find-msg', { ok: findOk }]">{{ findMsg }}</p>
+            <button type="button" class="lp-m-go" :disabled="findBusy" @click="info === 'findId' ? checkFindId() : sendFindPw()">
+              {{ findBusy ? '확인 중…' : info === 'findId' ? '아이디 확인' : '재설정 메일 보내기' }}
+            </button>
           </template>
 
           <template v-else>
@@ -288,6 +379,18 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
 }
 .lp-links button:hover { color: #4b5563; text-decoration: underline; }
 .lp-links i { font-style: normal; font-size: 11px; color: #cbd2de; }
+/* 아이디 저장 · 로그인 유지 */
+.lp-opts { margin-top: 14px; display: flex; justify-content: center; gap: 18px; }
+.lp-opt { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #4b5563; cursor: pointer; }
+.lp-opt input { width: 15px; height: 15px; margin: 0; accent-color: #1f3a72; }
+.lp-find { margin-top: 8px; }
+.lp-find-in {
+  width: 100%; box-sizing: border-box; padding: 10px 12px; margin-top: 10px;
+  border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111827; outline: none;
+}
+.lp-find-in:focus { border-color: #2b6df3; box-shadow: 0 0 0 3px rgba(43, 109, 243, 0.15); }
+.lp-find-msg { margin: 8px 0 0; font-size: 12px; color: #dc2626; line-height: 1.5; }
+.lp-find-msg.ok { color: #16a34a; }
 
 /* 안내 창 */
 .lp-modal {

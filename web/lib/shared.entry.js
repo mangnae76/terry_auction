@@ -46,3 +46,27 @@ export { fetchNearbyEnvironment } from '../../src/services/kakaoNearby';
 export { geocodeAddress } from '../../src/services/routeOptimizer';
 // 매각기일 요일 — 앱 일정 저장소의 weekdayLabel 그대로
 export { weekdayLabel } from '../../src/stores/scheduleStore';
+
+// === 앱 로그인 창 그대로 — 앱의 LoginPage.vue 를 웹 창 안에 띄운다 ===
+import { createApp, h } from 'vue';
+import { createRouter, createMemoryHistory, RouterView } from 'vue-router';
+import { getActivePinia } from 'pinia';
+import LoginPage from '../../src/pages/LoginPage.vue';
+/** el 안에 앱 로그인 화면을 띄운다. 로그인이 끝나면(앱은 선정물건으로 넘어가는 자리) onDone('ok'), 회원가입은 onDone('signup') */
+export const mountAppLogin = (el, onDone) => {
+  const Empty = { render: () => null };
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/', component: LoginPage }, { path: '/:rest(.*)*', component: Empty }],
+  });
+  router.afterEach((to) => {
+    if (to.path === '/auctions/watchlist') onDone('ok');
+    else if (to.path === '/signup') onDone('signup');
+  });
+  const app = createApp({ render: () => h(RouterView) });
+  app.use(getActivePinia());
+  app.use(router);
+  void router.push('/');
+  app.mount(el);
+  return () => app.unmount();
+};

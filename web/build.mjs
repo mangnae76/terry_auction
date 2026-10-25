@@ -3,6 +3,7 @@
 //  2) web/pages/selected.src.html + 앱 로고   → web/site/selected.html
 // 앱 빌드(npm run build)와는 따로 논다 — 앱의 vite.config.ts · package.json · src/ 는 건드리지 않는다.
 import { build } from 'vite';
+import vue from '@vitejs/plugin-vue';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -38,7 +39,7 @@ await build({
   envDir: here,              // 앱의 .env 를 읽지 않는다 (web/ 에는 .env 가 없다)
   publicDir: false,
   logLevel: 'warn',
-  plugins: [urlStub],
+  plugins: [urlStub, vue()], // 앱 화면(로그인 등)을 그대로 띄우려고 .vue 도 묶는다
   // 드라이브 폴더 읽기는 앱과 같은 워커로 간다 (공개 주소 — 비밀값 아님)
   define: { 'import.meta.env.VITE_API_BASE': JSON.stringify(API_BASE), 'import.meta.env.VITE_USE_EMULATOR': '"false"', 'process.env.NODE_ENV': '"production"', ...firebaseDefine },
   build: {
@@ -56,6 +57,7 @@ await build({
       name: 'TAPdf',
       formats: ['iife'],
       fileName: () => 'pdfparse.js',
+      cssFileName: 'pdfparse',
     },
   },
 });
