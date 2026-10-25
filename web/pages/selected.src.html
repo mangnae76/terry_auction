@@ -1933,6 +1933,15 @@ html, body { overflow-x: clip; }
     const m = new Map(kept.map((r) => [r.key, r])); rows.forEach((r) => m.set(r.key, r));
     R.rows = [...m.values()];
   };
+  /* 읽어 온 물건은 로그인한 계정에 적는다 — 로그인 전에는 적을 곳이 없어
+     예시 목록에만 쌓이고 새로고침하면 사라진다. 그래서 앱 물건등록과 같이 먼저 로그인을 받는다 */
+  const needLogin = (what) => {
+    if (CLOUD.on) return false;
+    toast(`로그인해야 ${what}을 쓸 수 있습니다 — 읽어 온 물건을 적어 둘 곳이 필요합니다.`, 'info');
+    openAppLogin();
+    return true;
+  };
+
   /* 읽힌 줄은 바로 선정물건에 올린다 — 신규는 손품조사로 새로, 있던 사건은 회차·최저가·매각기일만 갈아 끼운다 */
   const autoSave = (rows) => {
     if (CLOUD.on) {
@@ -3135,8 +3144,8 @@ html, body { overflow-x: clip; }
         R.sel = R.sel.includes(v) ? R.sel.filter((u) => u !== v) : [...R.sel, v]; saveFavs(); if (m) renderModal(); renderRegister(); break;
       }
       case 'drive-perms': openDrivePerms(); break;
-      case 'scan': S.pop = ''; doScan(); break;
-      case 'pdf-pick': $('pdfInput').click(); break;
+      case 'scan': S.pop = ''; if (needLogin('폴더스캔')) break; doScan(); break;
+      case 'pdf-pick': if (needLogin('PDF등록')) break; $('pdfInput').click(); break;
       case 'ai-toggle': if (!R.aiKey) { S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; if (CLOUD.T) CLOUD.T.setGeminiOn((CLOUD.auth && CLOUD.auth.uid) || '', R.aiOn).catch(() => {}); renderRegister(); toast(R.aiOn ? 'AI 자동 분석을 켰습니다.' : 'AI 자동 분석을 껐습니다.', 'info'); break;
       case 'ai-key': S.modal = { kind: 'ai' }; renderModal(); break;
       /* 키 칸의 눈 — 적던 글자를 잡아 두고 보기/가리기만 바꾼다 */
