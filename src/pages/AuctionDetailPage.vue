@@ -7676,11 +7676,13 @@ const goBack = () => router.back();
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
             </div>
           <div class="adp-ind-body">
-            <table class="adp-table adp-ind-table">
+            <!-- 경매빌라 개별성 · 경매호실 개별성 — 넓으면 나란히, 좁으면 위아래 -->
+            <div class="adp-ind-pair">
+            <table v-for="g in INDIV_GROUPS" :key="g.title" class="adp-table adp-ind-table">
               <colgroup>
                 <col style="width: 96px" /><col /><col style="width: 68px" />
               </colgroup>
-              <tbody v-for="g in INDIV_GROUPS" :key="g.title">
+              <tbody>
                 <tr class="adp-ind-group"><th colspan="3">{{ g.title }}</th></tr>
                 <tr v-for="item in g.items" :key="item.id">
                   <th :class="['adp-ind-label', { survey: item.survey }]">{{ item.label }}</th>
@@ -7879,6 +7881,13 @@ const goBack = () => router.back();
                   </td>
                 </tr>
               </tbody>
+            </table>
+            </div>
+            <!-- 평균 · 적용가는 두 표 아래 한 줄로 -->
+            <table class="adp-table adp-ind-table adp-ind-foot">
+              <colgroup>
+                <col style="width: 96px" /><col /><col style="width: 68px" />
+              </colgroup>
               <tfoot>
                 <tr>
                   <th class="adp-ind-label">실거래가 조건분석 평균</th>
@@ -10075,7 +10084,17 @@ tr.tone-take { background: #fff5f5; }
 .adp-conc-unit { display: flex; align-items: center; justify-content: flex-end; gap: 2px; font-size: 10px; color: #6b7280; }
 .adp-conc-unit + .adp-conc-unit { margin-top: 3px; }
 .adp-conc-unit .adp-mkt-input { width: auto; flex: 1 1 0; min-width: 0; }
-.adp-ind-body { padding: 3px 0 10px; }
+.adp-ind-body { padding: 3px 0 10px; container-type: inline-size; }
+.adp-ind-pair { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+/* 칸이 넉넉하면(560 이상) 빌라 · 호실 개별성을 나란히 — 웹 넓은 화면 */
+@container (min-width: 560px) {
+  .adp-ind-pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: start; }
+  /* 나란히 서면 칸이 반으로 준다 — 이름 칸을 줄여 가운데(값 · 버튼) 칸에 몰아 준다 */
+  .adp-ind-pair .adp-ind-table col:first-child { width: 74px !important; }
+  .adp-ind-pair .adp-ind-table col:last-child { width: 62px !important; }
+  .adp-ind-pair .adp-ind-toggles .adp-toggle-btn { padding-left: 6px; padding-right: 6px; }
+}
+.adp-ind-foot { margin-top: 8px; }
 .adp-ind-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .adp-ind-table th, .adp-ind-table td {
   /* 줄이 많은 표다 — 글자는 그대로 두고 위아래 여백만 줄인다 (7 → 5px) */
