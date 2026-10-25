@@ -4492,7 +4492,6 @@ const RIGHTS_CHECK_ITEMS = [
 ];
 
 // === 권리분석 서류 첨부 (매각물건명세서 캡처 등) ===
-const rightsDocInput = ref('');
 const rightsDocErrMsg = ref('');
 const rightsDocList = computed<string[]>(() => auction.value?.rightsDocUrls ?? []);
 
@@ -4509,7 +4508,7 @@ const PHOTO_AREAS: Array<{
 }> = [
   // 사진 칸은 모두 접은 채로 연다 — 펴 두면 아래 내용이 멀리 밀린다
   { key: 'photos', scope: 'card', count: () => propertyPhotos.value.length, fold: 'always' },        // 손품조사 · 본건사진
-  { key: 'rightsPhotos', scope: 'card', count: () => rightsDocList.value.length, fold: 'always' },   // 권리분석 · 사진/서류
+  { key: 'rightsPhotos', scope: 'card', count: () => rightsDocList.value.length + DOC_BOXES.reduce((n, b) => n + extraList(b.key).length, 0), fold: 'always' },   // 권리분석 · AI 분석 요청(서류 다섯 칸 + 이전 서류사진)
   { key: 'site', scope: 'block', count: () => auction.value?.sitePhotos?.length ?? 0, fold: 'always' }, // 손품+현장 · 현장사진
   // 급매가 · 동일지번 매각물건 — 사진 모음이라 늘 접어 둔다
   { key: 'sameLot', scope: 'block', count: () => extraList('sameLot').length, fold: 'always' },
@@ -4542,21 +4541,6 @@ watch(
   },
   { immediate: true },
 );
-const addRightsDocUrl = async () => {
-  if (!auction.value) return;
-  if (rightsDocList.value.length >= PHOTO_MAX) { rightsDocErrMsg.value = photoFullMsg; return; }
-  const url = rightsDocInput.value.trim();
-  if (!url) return;
-  rightsDocErrMsg.value = '';
-  if (!auction.value.rightsDocUrls) auction.value.rightsDocUrls = [];
-  if (auction.value.rightsDocUrls.includes(url)) {
-    rightsDocErrMsg.value = '이미 추가된 링크입니다.';
-    return;
-  }
-  auction.value.rightsDocUrls.unshift(url);
-  rightsDocInput.value = '';
-  await store.saveAuction(auction.value);
-};
 const removeRightsDocAt = async (idx: number) => {
   if (!auction.value) return;
   const [removed] = auction.value.rightsDocUrls?.splice(idx, 1) ?? [];
@@ -4567,6 +4551,23 @@ const removeRightsDocAt = async (idx: number) => {
 // === 항목별 사진·링크 모음 (입지조사 등) ===
 const extraInput = ref<Record<string, string>>({});
 const extraErr = ref<Record<string, string>>({});
+/** AI 분석 요청 — 서류 다섯 칸. 칸마다 extraPhotos 의 한 자리(doc.*)를 쓴다 */
+const DOC_BOXES: Array<{ key: string; label: string; icon: string }> = [
+  { key: 'doc.registry', label: '등기부등본', icon: '<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M4 17h16"/>' },
+  { key: 'doc.saleSpec', label: '매각물건명세서', icon: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/>' },
+  { key: 'doc.building', label: '건축물대장', icon: '<path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M9 7h2M9 11h2M9 15h2M3 21h18M16 10h3a2 2 0 0 1 2 2v9"/>' },
+  { key: 'doc.appraisal', label: '감정평가서', icon: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14 7 22l5-3 5 3-1.5-8"/>' },
+  { key: 'doc.delivery', label: '문건송달내역', icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>' },
+];
+const docDropKey = ref('');
+/** 칸에 끌어다 놓기 — 사진 한 장을 그 칸에 넣는다 (칸 하나에 한 장) */
+const onDocDrop = async (e: DragEvent, key: string) => {
+  docDropKey.value = '';
+  const file = [...(e.dataTransfer?.files ?? [])].find((f) => f.type.startsWith('image/'));
+  if (!file) { extraErr.value = { ...extraErr.value, [key]: '사진(이미지) 파일만 올릴 수 있습니다.' }; return; }
+  if (extraList(key).length > 0) await removeExtraAt(key, 0);
+  await addImageFile(file, `x:${key}`);
+};
 const extraList = (key: string) => auction.value?.extraPhotos?.[key] ?? [];
 const addExtraUrl = async (key: string) => {
   if (!auction.value) return;
@@ -6742,36 +6743,68 @@ const goBack = () => router.back();
 
 
       <template v-if="activeTab === 'rights'">
-        <!-- 매각물건명세서 등 서류 캡처·링크 -->
+        <!-- AI 분석 요청 — 서류 다섯 칸(등기부등본·매각물건명세서·건축물대장·감정평가서·문건송달내역).
+             칸을 누르면 파일을 고르고, 끌어다 놓아도 올라간다. 각 칸은 extraPhotos['doc.*'] 에 담는다 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsPhotos')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>서류사진<PhotoCountMark :n="photoAreaCount('rightsPhotos')" /></h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>AI 분석 요청<PhotoCountMark :n="photoAreaCount('rightsPhotos')" /></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsPhotos') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('rightsPhotos')">
-            <div class="adp-plan-row">
-              <input
-                v-model="rightsDocInput"
-                placeholder="링크 또는 이미지 붙여넣기"
-                class="adp-input"
-                @keydown.enter.prevent="addRightsDocUrl"
-                @paste="pasteImageInto($event, 'rightsDoc')"
-              />
-              <button type="button" class="adp-icn-btn" @click="addRightsDocUrl">+</button>
+            <div class="adp-docs">
+              <div v-for="b in DOC_BOXES" :key="b.key" class="adp-doc">
+                <p class="adp-doc-label">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="b.icon" />{{ b.label }}
+                </p>
+                <div class="adp-plan-row adp-doc-in">
+                  <input
+                    v-model="extraInput[b.key]"
+                    placeholder="링크 또는 이미지"
+                    title="링크 또는 이미지 붙여넣기"
+                    class="adp-input"
+                    @keydown.enter.prevent="addExtraUrl(b.key)"
+                    @paste="pasteImageInto($event, `x:${b.key}`)"
+                  />
+                  <button type="button" class="adp-icn-btn" :aria-label="`${b.label} 링크 넣기`" @click="addExtraUrl(b.key)">+</button>
+                </div>
+                <div v-if="extraList(b.key).length > 0" class="adp-doc-box has">
+                  <a v-if="brokenImages[extraList(b.key)[0]]" class="adp-doc-link" :href="photoSrc(extraList(b.key)[0])" target="_blank" rel="noopener">🔗 링크 열기</a>
+                  <img v-else :src="photoSrc(extraList(b.key)[0])" :alt="b.label" @click="openLightbox(photoSrc(extraList(b.key)[0]))" @error="onImageError(extraList(b.key)[0])" />
+                  <button type="button" class="adp-doc-x" :aria-label="`${b.label} 지우기`" @click.stop="removeExtraAt(b.key, 0)">×</button>
+                </div>
+                <div
+                  v-else
+                  :class="['adp-doc-box', { over: docDropKey === b.key }]"
+                  role="button"
+                  tabindex="0"
+                  :aria-label="`${b.label} 파일 고르기`"
+                  @click="pickPhotoFor(`x:${b.key}`)"
+                  @keydown.enter.prevent="pickPhotoFor(`x:${b.key}`)"
+                  @dragover.prevent="docDropKey = b.key"
+                  @dragleave="docDropKey = ''"
+                  @drop.prevent="onDocDrop($event, b.key)"
+                >
+                  <span class="adp-doc-ic">📂</span>
+                  <span>파일 선택 또는<br />드래그 앤 드롭</span>
+                </div>
+                <p v-if="extraErr[b.key]" class="adp-plan-err">{{ extraErr[b.key] }}</p>
+              </div>
             </div>
-            <p v-if="rightsDocErrMsg" class="adp-plan-err">{{ rightsDocErrMsg }}</p>
-            <!-- 사진 칸은 모두 같은 꼴 — 한 줄에 넷, 빈자리는 '+' (PhotoGrid) -->
-            <PhotoGrid
-              class="adp-pg"
-              :items="rightsDocList"
-              :src="photoSrc"
-              :broken="brokenImages"
-              alt="서류사진"
-              @open="openLightbox"
-              @error="onImageError"
-              @remove="removeRightsDocAt"
-              @add="pickPhotoFor('rightsDoc')"
-            />
+            <!-- 전에 '서류사진'으로 올려 둔 사진 — 있을 때만 그대로 보인다 -->
+            <template v-if="rightsDocList.length > 0">
+              <p class="adp-doc-old">이전 서류사진</p>
+              <PhotoGrid
+                class="adp-pg"
+                :items="rightsDocList"
+                :src="photoSrc"
+                :broken="brokenImages"
+                alt="서류사진"
+                @open="openLightbox"
+                @error="onImageError"
+                @remove="removeRightsDocAt"
+                @add="pickPhotoFor('rightsDoc')"
+              />
+            </template>
           </div>
         </section>
 
@@ -8843,6 +8876,28 @@ const goBack = () => router.back();
 .adp-fold-all .adp-chev { width: 16px; height: 16px; }
 .adp-prop-road { display: block; font-size: 11.5px; color: #6b7280; margin-top: 2px; }
 
+.adp-docs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
+@media (max-width: 560px) { .adp-docs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.adp-doc { min-width: 0; }
+.adp-doc-label { margin: 0 0 5px; display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adp-doc-label svg { flex: 0 0 auto; color: #2a5fbf; }
+.adp-doc-box {
+  position: relative; box-sizing: border-box; aspect-ratio: 3 / 4; width: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  border: 1.5px dashed #d1d5db; border-radius: 10px; background: #fafbfc;
+  font-size: 11px; line-height: 1.4; color: #9ca3af; text-align: center; cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.adp-doc-box:hover, .adp-doc-box.over { border-color: #2b6df3; background: #eef4ff; color: #2b6df3; }
+.adp-doc-box.has { border-style: solid; border-color: #e5e7eb; background: #fff; padding: 0; overflow: hidden; cursor: zoom-in; }
+.adp-doc-box.has img { width: 100%; height: 100%; object-fit: cover; }
+.adp-doc-ic { font-size: 26px; opacity: .7; }
+.adp-doc-x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%; background: rgba(17, 24, 39, .65); color: #fff; font-size: 14px; line-height: 22px; cursor: pointer; }
+.adp-doc-in { position: relative; margin-bottom: 5px; padding: 0; }
+.adp-doc-in .adp-input { width: 100%; min-width: 0; box-sizing: border-box; height: 30px; padding: 0 26px 0 8px; font-size: 11px; }
+.adp-doc-in .adp-icn-btn { position: absolute; top: 50%; right: 3px; transform: translateY(-50%); width: 22px; height: 22px; min-width: 0; padding: 0; font-size: 14px; line-height: 1; border-radius: 6px; }
+.adp-doc-link { font-size: 12px; font-weight: 700; color: #2563eb; text-decoration: none; }
+.adp-doc-old { margin: 10px 0 4px; font-size: 12px; font-weight: 700; color: #9ca3af; }
 .adp-body { flex: 1 1 auto; padding: 0 5px 12px; display: flex; flex-direction: column; gap: 8px; }
 
 /* 내용이 카드 좌우 끝에 붙지 않게 여백을 준다 */
