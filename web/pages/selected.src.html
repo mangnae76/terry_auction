@@ -245,12 +245,15 @@ button { cursor: pointer; }
 .g-util .u-ico .dot { top: 4px; right: 4px; box-shadow: 0 0 0 1.5px var(--nav); }
 /* 하위 탭 줄 — 참고 시안처럼 흰 띠, 아래 #D8E0EE 선으로 단을 나눈다. 밑줄은 ::after 막대(테두리는 둥근 모서리로 U자가 된다) */
 .subtabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 31; background: var(--band); border-bottom: 1px solid var(--subtab-line); }
-/* 하위 탭이 있으면 필터 상자는 탭 줄(44 + 선 1) 바로 아래에 붙어 같이 고정된다 */
-body.has-subtabs .toolbar-shell { top: calc(env(safe-area-inset-top, 0px) + 45px); }
-/* 선정물건등록 — 남색 머리띠까지 틀 고정: 머리띠(66) 아래에 상자 둘이 붙는다 */
+/* ===== 틀 고정 (모든 화면 공통 모듈) =====
+   남색 머리띠 → [하위 탭 줄] → 필터 상자(.toolbar-shell) 를 한 덩어리로 위에 붙인다. 어느 화면이든
+   필터 상자는 .toolbar-shell 로 감싸기만 하면 된다. 높이는 변수로 — 머리띠 --gnb-h, 하위 탭 줄 --subtab-h */
+:root { --gnb-h: 66px; --subtab-h: 45px; --stick-top: env(safe-area-inset-top, 0px); }
 @media (min-width: 981px) {
-  body.route-register .gnb { position: sticky; top: env(safe-area-inset-top, 0px); }
-  body.route-register .reg-shell { top: calc(env(safe-area-inset-top, 0px) + 66px); }
+  .gnb { position: sticky; top: var(--stick-top); }
+  .subtabs { top: calc(var(--stick-top) + var(--gnb-h)); }
+  .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h)); }
+  body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)); }
 }
 .subtabs-in { display: flex; align-items: stretch; gap: 4px; height: 44px; }
 .subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
@@ -2134,7 +2137,6 @@ html, body { overflow-x: clip; }
     $('crumbCur').textContent = reg ? '선정물건등록' : '선정물건';
     { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
-    document.body.classList.toggle('route-register', reg);
     document.title = reg ? '마이턴옥션 선정물건등록' : '마이턴옥션 선정물건';
     if (reg) renderRegister(); else { renderToolbar(); renderContent(); }
     renderFloat();
@@ -2436,11 +2438,14 @@ html, body { overflow-x: clip; }
   document.addEventListener('drop', (e) => { const d = e.target.closest('#drop'); if (!d) return; e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) { S.modal.file = f.name; renderModal(); } });
 
   /* 붙었을 때 그림자 — 선정물건 · 선정물건등록 두 상자 모두. 하위 탭이 있으면 탭 줄 높이만큼 아래에서 붙는다 */
-  document.querySelectorAll('.toolbar-shell').forEach((shell) => {
-    const sentinel = document.createElement('div');
-    shell.parentNode.insertBefore(sentinel, shell);
-    try { new IntersectionObserver(([en]) => shell.classList.toggle('stuck', !en.isIntersecting && en.boundingClientRect.top < 100), { rootMargin: '-46px 0px 0px 0px' }).observe(sentinel); } catch { /* 그림자만 빠진다 */ }
+  /* 붙었을 때 그림자 — 틀 고정 모듈과 짝. 상자가 제 고정 자리(top)에 닿았으면 붙은 것이다 (화면·머리 높이와 상관없이) */
+  const markStuck = () => document.querySelectorAll('.toolbar-shell').forEach((shell) => {
+    if (!shell.offsetParent) return;
+    const top = parseFloat(getComputedStyle(shell).top);
+    shell.classList.toggle('stuck', getComputedStyle(shell).position === 'sticky' && window.scrollY > 0 && Math.abs(shell.getBoundingClientRect().top - top) < 1);
   });
+  window.addEventListener('scroll', markStuck, { passive: true });
+  window.addEventListener('resize', markStuck);
   window.addEventListener('scroll', () => { if (S.menu) { S.menu = null; render(); } }, { passive: true });
   window.addEventListener('resize', () => { fitCourts(); if (S.menu) { S.menu = null; render(); } });
   try { document.fonts && document.fonts.ready.then(fitCourts); } catch { /* 글꼴 대기 없이도 된다 */ }
