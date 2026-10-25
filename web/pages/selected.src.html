@@ -1076,7 +1076,7 @@ html, body { overflow-x: clip; }
   </div>
   <div class="wrap content" id="content"></div>
   </div>
-  <!-- 선정물건등록 — 앱 PdfImportPage 와 같은 짜임: 구글드라이브 연동 · AI 자동 파싱 · 폴더스캔 · PDF등록 → 파싱결과 -->
+  <!-- 선정물건등록 — 앱 PdfImportPage 와 같은 짜임: 구글드라이브 연동 · AI 자동 분석 · 폴더스캔 · PDF등록 → 파싱결과 -->
   <div id="regView" hidden>
     <div class="toolbar-shell reg-shell">
       <div class="wrap"><div class="toolbar reg-box" id="regBox"></div></div>
@@ -1117,6 +1117,7 @@ html, body { overflow-x: clip; }
   const I = {
     grid: P('<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>'),
     /* 유형 '전체' — 왼쪽 네모 두 개 + 오른쪽 줄 네 개 */
+    key: P('<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>', 'stroke-width="1.8"'),
     spark: P('<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>', 'stroke-width="1.8"'),
     cloud: P('<path d="M7 20h10a4 4 0 0 0 .6-7.96A5.5 5.5 0 0 0 6.9 10.2 3.9 3.9 0 0 0 7 20z"/><path d="M12 16V9"/><path d="m9 11.5 3-3 3 3"/>', 'stroke-width="2"'),
     folder: P('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', 'stroke-width="2"'),
@@ -1905,8 +1906,8 @@ html, body { overflow-x: clip; }
         <button type="button" class="rg-btn pdf" data-act="pdf-pick" ${R.loading ? 'disabled' : ''}>${I.files}PDF등록</button>
       </div>
       <div class="rg-row2">
-        <span class="rg-title" style="cursor:default">${I.spark}AI 자동 파싱</span>
-        <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱" data-act="ai-toggle"><i></i></button>
+        <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
+        <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 분석" data-act="ai-toggle"><i></i></button>
         <span class="ai-text"><b>${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}</b><small>${R.aiKey ? `Gemini · ${esc(masked)} · 규칙으로 못 읽은 칸만 채웁니다` : 'Gemini 키를 넣으면 켤 수 있습니다'}</small></span>
         <button type="button" class="ai-key" data-act="ai-key">${R.aiKey ? '키 바꾸기' : '키 넣기'}</button>
         <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span></span>
@@ -1956,7 +1957,7 @@ html, body { overflow-x: clip; }
     }
     if (m.kind === 'ai') {
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog fav-dlg" role="dialog" aria-modal="true" aria-labelledby="aiT" style="width:min(460px,100%)">
-        <div class="reg-head"><h2 id="aiT">AI 자동 파싱 · Gemini 키</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
+        <div class="reg-head"><h2 id="aiT">AI 자동 분석 · Gemini 키</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
         <div class="ai-body">
           <input id="aiKeyIn" type="password" autocomplete="off" placeholder="Google AI Studio 에서 받은 API 키" aria-label="Gemini API 키" value="${esc(m.draft ?? R.aiKey)}">
           ${m.msg ? `<p class="ai-msg ${m.ok ? 'ok' : ''}">${esc(m.msg)}</p>` : ''}
@@ -2184,7 +2185,7 @@ html, body { overflow-x: clip; }
       case 'drive-perms': openDrivePerms(); break;
       case 'scan': S.pop = ''; doScan(); break;
       case 'pdf-pick': $('pdfInput').click(); break;
-      case 'ai-toggle': if (!R.aiKey) { S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; try { localStorage.setItem('myturn.gemini.on', R.aiOn ? '1' : '0'); } catch (e) { /* 그만 */ } renderRegister(); toast(R.aiOn ? 'AI 자동 파싱을 켰습니다.' : 'AI 자동 파싱을 껐습니다.', 'info'); break;
+      case 'ai-toggle': if (!R.aiKey) { S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; try { localStorage.setItem('myturn.gemini.on', R.aiOn ? '1' : '0'); } catch (e) { /* 그만 */ } renderRegister(); toast(R.aiOn ? 'AI 자동 분석을 켰습니다.' : 'AI 자동 분석을 껐습니다.', 'info'); break;
       case 'ai-key': S.modal = { kind: 'ai' }; renderModal(); break;
       case 'ai-save': {
         const key = ($('aiKeyIn').value || '').trim();
@@ -2199,7 +2200,7 @@ html, body { overflow-x: clip; }
           m.checking = false; m.ok = r.ok; m.msg = r.message;
           if (!r.ok) { renderModal(); return; }
           T.setGeminiKey(key); T.setGeminiOn(true); R.aiKey = key; R.aiOn = true;
-          S.modal = null; renderModal(); renderRegister(); toast('키를 확인했습니다. AI 자동 파싱을 켰습니다.');
+          S.modal = null; renderModal(); renderRegister(); toast('키를 확인했습니다. AI 자동 분석을 켰습니다.');
         })();
         break;
       }
