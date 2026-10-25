@@ -2302,7 +2302,7 @@ html, body { overflow-x: clip; }
       </li>`;
     /* 결과 상자 — 고른 상자의 목록. AI 자동 분석이면 'AI 파싱', 구글드라이브 연동이면 'PDF 파싱' */
     const PC = R.tab === 'ai'
-      ? { title: 'AI 파싱', ic: I.spark, tip: '경매 문서(PDF)를 올리면 AI가 분석하여 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
+      ? { title: 'AI 파싱', ic: I.spark, tip: '경매 문서를 올리면 AI가 분석하여 선정목록 카드에 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
       : { title: 'PDF 파싱', ic: I.pdf, tip: '경매 문서(PDF)를 올리면 자동으로 읽어 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
     $('regContent').innerHTML = `
       <section class="rg-lead-box">
