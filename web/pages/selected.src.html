@@ -417,6 +417,13 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .it-kv td.grid, .it-kv td.grid2 { line-height: 1.9; }
 .it-kv td.grid .it-place, .it-kv td.grid2 .it-place { display: inline-block; margin-right: 12px; }
 .it-floor th { width: auto; }
+/* 건축물정보 — 표가 둘(표제부 + 층별)이면 사이를 띄우고, 칸 글씨는 한 줄로 */
+.it-floor { margin-top: 14px; }
+.it-floor col.it-floor-k { width: 104px; }
+.it-floor col.it-floor-area { width: 88px; } /* 면적은 짧다 — 남는 폭을 용도 칸에 */
+.it-floor th, .it-floor td { padding-left: 8px; padding-right: 8px; }
+.it-nowrap { font-size: 12.5px; }
+.it-nowrap th, .it-nowrap td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .it-place { color: #2563eb; text-decoration: none; }
 .it-place:hover { text-decoration: underline; }
 .it-na { color: var(--faint); }
@@ -2557,7 +2564,7 @@ html, body { overflow-x: clip; }
         `<tr><th>층수</th><td>${v(h.floors)}</td><th>승강기</th><td>${v(h.elevator)}</td></tr>`,
         `<tr><th>사용승인</th><td>${v(h.approvalDate || a.approvalDate)}</td><th>주차</th><td>${v(h.parking)}</td></tr>`,
         `<tr><th>구조</th><td colspan="3">${v(a.structureType)}</td></tr>`,
-      ], 4);
+      ], 4, 'it-nowrap');
     }
     if (h.unitExclusiveArea || h.unitLocation) {
       out += `<div class="it-subtab">전유부</div>` + kvTable([
@@ -2577,7 +2584,10 @@ html, body { overflow-x: clip; }
       ], 4);
     }
     const fr = h.exclusiveFloorRows || [];
-    if (fr.length) out += `<table class="it-kv it-floor"><thead><tr><th>층</th><th>면적</th><th>구조</th><th>주용도</th><th>기타용도</th></tr></thead><tbody>${fr.map((r) => `<tr><td>${esc(r.floor)}</td><td>${esc(r.area)}</td><td>${esc(r.structure)}</td><td>${esc(r.mainUse)}</td><td>${esc(r.otherUse)}</td></tr>`).join('')}</tbody></table>`;
+    /* 층별 표 — 첫 열(층)은 위 표제부의 이름 칸과 같은 폭, 면적은 좁게, 나머지는 고르게. 글씨는 한 줄(넘치면 … · 마우스를 올리면 전부) */
+    if (fr.length) out += `<table class="it-kv it-floor it-nowrap"><colgroup><col class="it-floor-k"><col class="it-floor-area"><col><col><col></colgroup><thead><tr><th>층</th><th>면적</th><th>구조</th><th>주용도</th><th>기타용도</th></tr></thead><tbody>${fr.map((r) => `<tr><td>${esc(r.floor)}</td><td>${esc(r.area)}</td><td>${esc(r.structure)}</td><td>${esc(r.mainUse)}</td><td>${esc(r.otherUse)}</td></tr>`).join('')}</tbody></table>`;
+    /* 한 줄로 자른 칸은 마우스를 올리면 전부 보이게 */
+    out = out.replace(/<td([^>]*)>([^<]+)<\/td>/g, (m, attr, txt) => `<td${attr} title="${txt}">${txt}</td>`);
     return itCard('bld', '건축물정보', out);
   }
   function statusCardHtml(a) {
