@@ -342,6 +342,8 @@ button { cursor: pointer; }
 .rg-btn:disabled { opacity: .55; cursor: not-allowed; }
 .rg-btn.scan { background: #14b8a6; }
 .rg-btn.pdf { background: #f87171; }
+/* 폴더등록 · 폴더스캔 · PDF등록 — 세 버튼 가로 길이를 같게 */
+.rg-fav, .rg-btn { width: 132px; justify-content: center; padding: 0 8px; box-sizing: border-box; }
 .ai-switch { flex: 0 0 auto; position: relative; width: 38px; height: 22px; padding: 0; border: 0; border-radius: 999px; background: #d1d5db; transition: background .15s; }
 .ai-switch i { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: left .15s; }
 .ai-switch.on { background: #2b6df3; }
