@@ -41,6 +41,7 @@ const offListText = PLANS.filter((p) => !p.base).map((p) => p.label).join(', ');
 
 const email = ref('');
 const password = ref('');
+const showPw = ref(false);
 const submitting = ref(false);
 
 // === 아이디 저장 · 로그인 유지 — 이 기기에만 적어 둔다 ===
@@ -174,13 +175,20 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
         </label>
         <label class="lp-field">
           <span>비밀번호</span>
-          <input
-            v-model="password"
-            type="password"
-            autocomplete="current-password"
-            placeholder="6자 이상"
-            required
-          />
+          <span class="lp-pw">
+            <input
+              v-model="password"
+              :type="showPw ? 'text' : 'password'"
+              autocomplete="current-password"
+              placeholder="6자 이상"
+              required
+            />
+            <!-- 비밀번호 보기/가리기 -->
+            <button type="button" class="lp-eye" :aria-label="showPw ? '비밀번호 가리기' : '비밀번호 보기'" :title="showPw ? '비밀번호 가리기' : '비밀번호 보기'" @click.prevent="showPw = !showPw">
+              <svg v-if="showPw" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.4 3.3" /><path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /><path d="m2 2 20 20" /></svg>
+              <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
+            </button>
+          </span>
         </label>
 
         <p v-if="authStore.error" class="lp-err">{{ authStore.error }}</p>
@@ -353,6 +361,10 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
   width: 100%; padding: 11px 12px; border: 1px solid #d1d5db; border-radius: 8px;
   font-size: 14px; color: #111827; outline: none; background: #fff;
 }
+.lp-pw { position: relative; display: block; }
+.lp-pw input { padding-right: 42px; }
+.lp-eye { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); width: 32px; height: 32px; padding: 0; border: none; border-radius: 6px; background: transparent; color: #9ca3af; display: grid; place-items: center; cursor: pointer; }
+.lp-eye:hover { color: #4b5563; background: #f3f4f6; }
 .lp-field input:focus { border-color: #2b6df3; box-shadow: 0 0 0 3px rgba(43, 109, 243, 0.15); }
 .lp-err { margin: 4px 0 0; font-size: 12px; color: #dc2626; }
 .lp-submit {
