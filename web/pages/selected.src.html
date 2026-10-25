@@ -370,6 +370,13 @@ body.has-subtabs .toolbar-shell { top: calc(env(safe-area-inset-top, 0px) + 45px
 .ai-switch.on i { left: 19px; }
 .ai-text { display: inline-flex; align-items: baseline; gap: 8px; min-width: 0; white-space: nowrap; }
 .ai-text b { font-size: 13px; font-weight: 800; color: var(--text); }
+.key-field { position: relative; }
+.key-field input { width: 100%; box-sizing: border-box; padding-right: 76px !important; }
+.key-field .kf-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; padding: 0; border: 0; border-radius: 6px; background: transparent; display: grid; place-items: center; color: var(--muted); cursor: pointer; transition: background .15s, color .15s; }
+.kf-btn:hover { background: var(--surface-3); color: var(--text); }
+.kf-btn svg { width: 17px; height: 17px; }
+.key-field .kf-btn[data-act="ai-eye"] { right: 38px; }
+.key-field .kf-btn[data-act="ai-paste"] { right: 5px; }
 .ai-setup, .ai-run { display: flex; align-items: center; gap: 8px; min-width: 0; padding-left: 24px; }
 .ai-setup b { font-size: 13px; font-weight: 800; color: var(--text); white-space: nowrap; }
 .ai-req { flex: 0 0 auto; padding: 2px 7px; border-radius: 5px; background: #fdecec; color: #dc2626; font-size: 11.5px; font-weight: 800; }
@@ -1157,6 +1164,9 @@ html, body { overflow-x: clip; }
     grid: P('<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>'),
     /* 유형 '전체' — 왼쪽 네모 두 개 + 오른쪽 줄 네 개 */
     ext: P('<path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/>', 'stroke-width="2.2"'),
+    eye: P('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', 'stroke-width="1.9"'),
+    eyeOff: P('<path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.4 3.3"/><path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m2 2 20 20"/>', 'stroke-width="1.9"'),
+    paste: P('<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 13h6"/><path d="M9 17h4"/>', 'stroke-width="1.9"'),
     key: P('<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>', 'stroke-width="1.8"'),
     spark: P('<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>', 'stroke-width="1.8"'),
     cloud: P('<path d="M7 20h10a4 4 0 0 0 .6-7.96A5.5 5.5 0 0 0 6.9 10.2 3.9 3.9 0 0 0 7 20z"/><path d="M12 16V9"/><path d="m9 11.5 3-3 3 3"/>', 'stroke-width="2"'),
@@ -2014,7 +2024,12 @@ html, body { overflow-x: clip; }
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog fav-dlg" role="dialog" aria-modal="true" aria-labelledby="aiT" style="width:min(460px,100%)">
         <div class="reg-head"><h2 id="aiT">AI 자동 분석 · Gemini 키</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
         <div class="ai-body">
-          <input id="aiKeyIn" type="password" autocomplete="off" placeholder="Google AI Studio 에서 받은 API 키" aria-label="Gemini API 키" value="${esc(m.draft ?? R.aiKey)}">
+          <!-- 키 칸 — 오른쪽 끝에 눈(보기/가리기) · 붙여넣기 -->
+          <div class="key-field">
+            <input id="aiKeyIn" type="${m.show ? 'text' : 'password'}" autocomplete="off" spellcheck="false" placeholder="Google AI Studio 에서 받은 API 키" aria-label="Gemini API 키" value="${esc(m.draft ?? R.aiKey)}">
+            <button type="button" class="kf-btn" data-act="ai-eye" aria-label="${m.show ? '키 가리기' : '키 보기'}" data-tip="${m.show ? '키 가리기' : '키 보기'}" data-tip-pos="below">${m.show ? I.eyeOff : I.eye}</button>
+            <button type="button" class="kf-btn" data-act="ai-paste" aria-label="붙여넣기" data-tip="붙여넣기" data-tip-pos="below">${I.paste}</button>
+          </div>
           ${m.msg ? `<p class="ai-msg ${m.ok ? 'ok' : ''}">${esc(m.msg)}</p>` : ''}
           <ul class="ai-help">
             <li>키는 <b>이 기기에만</b> 저장됩니다.</li>
@@ -2251,6 +2266,21 @@ html, body { overflow-x: clip; }
       case 'pdf-pick': $('pdfInput').click(); break;
       case 'ai-toggle': if (!R.aiKey) { S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; try { localStorage.setItem('myturn.gemini.on', R.aiOn ? '1' : '0'); } catch (e) { /* 그만 */ } renderRegister(); toast(R.aiOn ? 'AI 자동 분석을 켰습니다.' : 'AI 자동 분석을 껐습니다.', 'info'); break;
       case 'ai-key': S.modal = { kind: 'ai' }; renderModal(); break;
+      /* 키 칸의 눈 — 적던 글자를 잡아 두고 보기/가리기만 바꾼다 */
+      case 'ai-eye': { const m = S.modal; const el = $('aiKeyIn'); if (!m || !el) break; m.draft = el.value; m.show = !m.show; renderModal(); setTimeout(() => { const x = $('aiKeyIn'); if (x) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 30); break; }
+      /* 붙여넣기 — 복사해 둔 글을 칸에 넣는다. 브라우저가 막으면 Ctrl+V 로 안내한다 */
+      case 'ai-paste': {
+        const m = S.modal;
+        (async () => {
+          let txt = '';
+          try { txt = navigator.clipboard && navigator.clipboard.readText ? await navigator.clipboard.readText() : ''; } catch (err) { txt = ''; }
+          if (S.modal !== m) return;
+          txt = String(txt || '').trim();
+          if (!txt) { toast('붙여 넣을 내용을 읽지 못했습니다 — 칸을 누르고 Ctrl+V(⌘V)로 붙여 넣어 주세요.', 'info'); const el = $('aiKeyIn'); if (el) el.focus(); return; }
+          m.draft = txt; m.msg = ''; renderModal();
+        })();
+        break;
+      }
       case 'ai-save': {
         const key = ($('aiKeyIn').value || '').trim();
         if (!key) { S.modal.msg = '키를 넣어 주세요'; S.modal.ok = false; renderModal(); break; }
