@@ -1016,7 +1016,8 @@ const onDropFiles = async (e: DragEvent) => {
   padding-bottom: 76px;
 }
 
-.pip-fixed-top { background: #f3f4f6; }
+/* 제목 · 통계 · 탭은 틀 고정 — 아래 목록만 스크롤된다 (물건정보 화면 머리와 같은 방식) */
+.pip-fixed-top { position: sticky; top: 0; z-index: 50; background: #f3f4f6; }
 
 .pip-title-row {
   display: flex; align-items: center; gap: 4px;

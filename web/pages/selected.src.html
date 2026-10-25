@@ -247,6 +247,11 @@ button { cursor: pointer; }
 .subtabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 31; background: var(--band); border-bottom: 1px solid var(--subtab-line); }
 /* 하위 탭이 있으면 필터 상자는 탭 줄(44 + 선 1) 바로 아래에 붙어 같이 고정된다 */
 body.has-subtabs .toolbar-shell { top: calc(env(safe-area-inset-top, 0px) + 45px); }
+/* 선정물건등록 — 남색 머리띠까지 틀 고정: 머리띠(66) 아래에 상자 둘이 붙는다 */
+@media (min-width: 981px) {
+  body.route-register .gnb { position: sticky; top: env(safe-area-inset-top, 0px); }
+  body.route-register .reg-shell { top: calc(env(safe-area-inset-top, 0px) + 66px); }
+}
 .subtabs-in { display: flex; align-items: stretch; gap: 4px; height: 44px; }
 .subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
 .subtab svg { width: 16px; height: 16px; }
@@ -2124,6 +2129,7 @@ html, body { overflow-x: clip; }
     $('crumbCur').textContent = reg ? '선정물건등록' : '선정물건';
     { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
+    document.body.classList.toggle('route-register', reg);
     document.title = reg ? '마이턴옥션 선정물건등록' : '마이턴옥션 선정물건';
     if (reg) renderRegister(); else { renderToolbar(); renderContent(); }
     renderFloat();
