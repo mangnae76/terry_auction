@@ -1952,12 +1952,14 @@ html, body { overflow-x: clip; }
     const n = { all: items.filter((x) => !x.trashed && !x.archived).length, nw: R.rows.filter((r) => r.rowStatus === '신규').length, ch: R.rows.filter((r) => r.rowStatus === '변경').length, er: R.rows.filter((r) => r.rowStatus === '오류').length };
     const chips = R.sel.map((u) => `<span class="fchip ${R.scanned.includes(folderIdOf(u)) ? 'scanned' : ''}">${I.folder}${esc(favName(u))}</span>`).join('');
     const masked = R.aiKey ? `${R.aiKey.slice(0, 4)}…${R.aiKey.slice(-4)}` : '';
-    /* 선정물건등록 — 상자 둘을 나란히: 왼쪽 구글드라이브 연동 · 오른쪽 AI 자동 분석 (각 두 줄) */
+    /* 선정물건등록 — 상자 둘을 나란히: 왼쪽 구글드라이브 연동(1줄 제목·폴더등록·폴더스캔·PDF등록 / 2줄 폴더 주소 칸 전체) · 오른쪽 AI 자동 분석 */
     $('regBox').innerHTML = `
       <div class="toolbar reg-box">
       <div class="rg-row1">
         <span class="rg-title tip-below" data-tip="등록한 구글 드라이브 폴더의 PDF를 읽어 선정물건으로 올립니다" data-tip-pos="left">${I.cloud}구글드라이브 연동</span>
         <button type="button" class="rg-fav" style="margin-left:auto" data-act="fav-open">${I.star}폴더등록</button>
+        <button type="button" class="rg-btn scan" data-act="scan" ${R.loading ? 'disabled' : ''}>${I.search}폴더스캔${R.sel.length ? ` (${R.sel.length})` : ''}</button>
+        <button type="button" class="rg-btn pdf" data-act="pdf-pick" ${R.loading ? 'disabled' : ''}>${I.files}PDF등록</button>
       </div>
       <div class="rg-row1">
         <div class="rg-folder pop-root" data-pop="folders">
@@ -1966,8 +1968,6 @@ html, body { overflow-x: clip; }
           </button>
           ${S.pop === 'folders' ? `<div class="pop rg-pop" role="listbox" aria-label="등록한 폴더">${R.favs.length ? R.favs.map((f, i) => `<div class="rg-fitem" data-act="fav-sel" data-v="${esc(f.url)}"><input type="checkbox" class="ck" tabindex="-1" ${R.sel.includes(f.url) ? 'checked' : ''} aria-label="${esc(f.name)} 고르기"><span class="fchip">${I.folder}${esc(f.name || '이름 없는 폴더')}</span><span class="url">${esc(f.url)}</span><button type="button" class="mini edit" data-act="fav-edit-open" data-v="${i}">수정</button><button type="button" class="mini del" data-act="fav-del" data-v="${i}">삭제</button></div>`).join('') : '<div class="bin-empty" style="border:0">등록된 폴더가 없습니다.</div>'}</div>` : ''}
         </div>
-        <button type="button" class="rg-btn scan" data-act="scan" ${R.loading ? 'disabled' : ''}>${I.search}폴더스캔${R.sel.length ? ` (${R.sel.length})` : ''}</button>
-        <button type="button" class="rg-btn pdf" data-act="pdf-pick" ${R.loading ? 'disabled' : ''}>${I.files}PDF등록</button>
       </div>
       </div>
       <div class="toolbar reg-box">
