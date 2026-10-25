@@ -1960,7 +1960,7 @@ html, body { overflow-x: clip; }
       </div>
       <div class="ai-run">
         <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 켜기" data-act="ai-toggle"><i></i></button>
-        <span class="ai-text"><b>AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}</b>${R.aiKey ? '<small>Gemini API 키가 등록되었습니다.</small>' : ''}</span>
+        <span class="ai-text"><b>AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}</b></span>
       </div>`;
     const rowHtmlR = (r) => `<li class="rg-item ${r.status}" ${r.status === 'ready' ? `data-act="rg-open" data-v="${esc(r.p.caseNo)}" tabindex="0"` : ''}>
         <span class="rg-ic ${r.src === 'drive' ? 'drive' : ''}" aria-hidden="true"${tip(r.src === 'drive' ? '구글드라이브에서 읽음' : '직접 올린 PDF')}>${r.src === 'drive' ? I.cloud : I.pdf}</span>
