@@ -4551,13 +4551,14 @@ const removeRightsDocAt = async (idx: number) => {
 // === 항목별 사진·링크 모음 (입지조사 등) ===
 const extraInput = ref<Record<string, string>>({});
 const extraErr = ref<Record<string, string>>({});
-/** AI 분석 요청 — 서류 다섯 칸. 칸마다 extraPhotos 의 한 자리(doc.*)를 쓴다 */
+/** AI 분석 요청 — 서류 여섯 칸. 칸마다 extraPhotos 의 한 자리(doc.*)를 쓴다 */
 const DOC_BOXES: Array<{ key: string; label: string; icon: string }> = [
-  { key: 'doc.registry', label: '등기부등본', icon: '<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M4 17h16"/>' },
-  { key: 'doc.saleSpec', label: '매각물건명세서', icon: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/>' },
+  { key: 'doc.registry', label: '건물등기', icon: '<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M4 17h16"/>' },
+  { key: 'doc.saleSpec', label: '매물명세', icon: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/>' },
   { key: 'doc.building', label: '건축물대장', icon: '<path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M9 7h2M9 11h2M9 15h2M3 21h18M16 10h3a2 2 0 0 1 2 2v9"/>' },
   { key: 'doc.appraisal', label: '감정평가서', icon: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14 7 22l5-3 5 3-1.5-8"/>' },
   { key: 'doc.delivery', label: '문건송달내역', icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>' },
+  { key: 'doc.household', label: '세대열람', icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.9-3.5 3.4-5.5 6.5-5.5s5.6 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.8 3 2.6 3.5 5.2"/>' },
 ];
 const docDropKey = ref('');
 /** 칸에 끌어다 놓기 — 사진 한 장을 그 칸에 넣는다 (칸 하나에 한 장) */
@@ -6746,7 +6747,7 @@ const goBack = () => router.back();
 
 
       <template v-if="activeTab === 'rights'">
-        <!-- AI 분석 요청 — 서류 다섯 칸(등기부등본·매각물건명세서·건축물대장·감정평가서·문건송달내역).
+        <!-- AI 분석 요청 — 서류 여섯 칸(건물등기·매물명세·건축물대장·감정평가서·문건송달내역·세대열람).
              칸을 누르면 파일을 고르고, 끌어다 놓아도 올라간다. 각 칸은 extraPhotos['doc.*'] 에 담는다 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsPhotos')">
@@ -8876,8 +8877,8 @@ const goBack = () => router.back();
 .adp-fold-all .adp-chev { width: 16px; height: 16px; }
 .adp-prop-road { display: block; font-size: 11.5px; color: #6b7280; margin-top: 2px; }
 
-.adp-docs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
-@media (max-width: 560px) { .adp-docs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.adp-docs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
+@media (max-width: 560px) { .adp-docs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .adp-doc { min-width: 0; }
 .adp-doc-label { margin: 0 0 5px; display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .adp-doc-label svg { flex: 0 0 auto; color: #2a5fbf; }
