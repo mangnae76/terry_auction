@@ -8903,7 +8903,7 @@ const goBack = () => router.back();
   position: relative; box-sizing: border-box; aspect-ratio: 3 / 4; width: 100%;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   border: 1.5px dashed #d1d5db; border-radius: 10px; background: #fafbfc;
-  font-size: 11px; line-height: 1.4; color: #9ca3af; text-align: center; cursor: pointer;
+  font-size: 12px; line-height: 1.4; color: #9ca3af; text-align: center; cursor: pointer;
   transition: border-color .15s, background .15s, color .15s;
 }
 .adp-doc-box:hover, .adp-doc-box.over { border-color: #2b6df3; background: #eef4ff; color: #2b6df3; }
@@ -8914,7 +8914,9 @@ const goBack = () => router.back();
 .adp-doc-box:hover .adp-doc-ic, .adp-doc-box.over .adp-doc-ic { filter: none; opacity: 1; }
 .adp-doc-x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%; background: rgba(17, 24, 39, .65); color: #fff; font-size: 14px; line-height: 22px; cursor: pointer; }
 .adp-doc-in { position: relative; margin-bottom: 5px; padding: 0; }
-.adp-doc-in .adp-input { width: 100%; min-width: 0; box-sizing: border-box; height: 30px; padding: 0 8px; font-size: 11px; text-overflow: ellipsis; }
+.adp-doc-in .adp-input { width: 100%; min-width: 0; box-sizing: border-box; height: 30px; padding: 0 8px; font-size: 12px; text-overflow: ellipsis; }
+/* 안내 글씨는 아래 칸의 '파일 선택 또는 드래그 앤 드롭'과 같은 회색 · 12 */
+.adp-doc-in .adp-input::placeholder { color: #9ca3af; opacity: 1; }
 .adp-doc-link { font-size: 12px; font-weight: 700; color: #2563eb; text-decoration: none; }
 .adp-diag-boxes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
 .adp-diag-box {
