@@ -1613,7 +1613,7 @@ html, body { overflow-x: clip; }
   const loadParser = () => {
     if (window.TAPdf) return Promise.resolve(window.TAPdf);
     if (!parserP) parserP = new Promise((ok, no) => {
-      const s = document.createElement('script'); s.src = 'pdfparse.js'; s.async = true;
+      const s = document.createElement('script'); s.src = /\/web$/.test(location.pathname) ? '/web/pdfparse.js' : 'pdfparse.js'; s.async = true; /* 우리 주소 '/web'(끝 / 없음)에서는 상대 경로가 맨 위를 가리킨다 */
       s.onload = () => (window.TAPdf ? ok(window.TAPdf) : no(new Error('parser')));
       s.onerror = () => { parserP = null; no(new Error('parser')); };
       document.head.appendChild(s);
