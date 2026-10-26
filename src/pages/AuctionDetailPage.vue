@@ -7164,16 +7164,13 @@ const goBack = () => router.back();
           <div v-if="webEmbed || !isCollapsed('rightsPhotos')">
             <div :class="['adp-docs', { 'is-app': !webEmbed }]">
               <div v-for="b in shownDocBoxes" :key="b.key" class="adp-doc">
-                <!-- 웹은 이름 줄을 두지 않는다 — 입력 칸 안내글('건물등기 링크 또는 이미지 Ctrl+V')이 제목 노릇을 한다 -->
-                <p v-if="!webEmbed" class="adp-doc-label">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="b.icon" />{{ b.label }}
-                </p>
-                <div :class="['adp-plan-row', 'adp-doc-in', { 'has-ico': webEmbed }]">
-                  <!-- 웹 — 이름 줄 대신 입력 칸 안 왼쪽에 서류 아이콘 -->
-                  <svg v-if="webEmbed" class="adp-doc-in-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="b.icon" />
+                <!-- 이름 줄은 두지 않는다(앱·웹) — 입력 칸 안 아이콘과 안내글('건물등기 링크 또는 이미지 Ctrl+V')이 제목 노릇을 한다 -->
+                <div class="adp-plan-row adp-doc-in has-ico">
+                  <!-- 이름 줄 대신 입력 칸 안 왼쪽에 서류 아이콘 -->
+                  <svg class="adp-doc-in-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="b.icon" />
                   <input
                     v-model="extraInput[b.key]"
-                    :placeholder="webEmbed ? `${b.label} 링크 또는 이미지 Ctrl+V` : '링크 또는 이미지 붙여넣기'"
+                    :placeholder="`${b.label} 링크 또는 이미지 Ctrl+V`"
                     title="링크는 엔터, 이미지는 붙여넣기"
                     class="adp-input"
                     @keydown.enter.prevent="addExtraUrl(b.key)"
