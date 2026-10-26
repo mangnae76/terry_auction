@@ -433,6 +433,38 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 }
 /* 조작 칸 밖(지도 쪽)은 지도가 받아야 한다 — 칸은 제 폭만큼만 자리를 차지한다 */
 .app-trip .ftp-map { border-radius: 0 !important; }
+/* 지도 위 번호·화살표 — 앱은 이 모양을 전역 스타일(src/style.css)에 둔다.
+   웹 묶음은 화면별 스타일(pdfparse.css)만 싣기 때문에 그대로는 번호가 보이지 않는다.
+   Leaflet 이 divIcon 으로 직접 만드는 칸이라 화면별 스타일이 닿지도 않는다 — 여기 같이 적는다 */
+.trip-marker { background: transparent !important; border: none !important; }
+.trip-marker-badge {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 800; font-size: 13px; line-height: 1;
+  border: 3px solid #fff; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35);
+}
+.trip-marker-badge.tone-start { background: #16a34a; }
+.trip-marker-badge.tone-stop { background: #2563eb; }
+.trip-marker-badge.tone-end { background: #f97316; }
+/* 다녀온 곳 — 번호는 그대로 두고 흐리게, 오른쪽 아래에 체크 */
+.trip-marker-badge.done { background: #94a3b8; position: relative; }
+.trip-marker-badge.done::after {
+  content: '✓';
+  position: absolute; right: -2px; bottom: -2px;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: #2f7d4f; color: #fff; border: 1.5px solid #fff;
+  font-size: 8px; font-weight: 800; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.trip-arrow { background: transparent !important; border: none !important; }
+.trip-arrow-icon { width: 14px; height: 14px; position: relative; }
+.trip-arrow-icon::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 6px solid transparent; border-right: 6px solid transparent;
+  border-bottom: 10px solid #2563eb;
+  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 1px #fff);
+}
 /* 확대·축소 단추 — 왼쪽 위는 조작 칸이 덮는다. 오른쪽 위 끝으로 보낸다 */
 .app-trip .leaflet-top.leaflet-left { left: auto !important; right: 0 !important; }
 .app-trip .leaflet-top.leaflet-left .leaflet-control { margin-right: 10px !important; } /* 왼쪽 여백만 있어 오른끝에 딱 붙었다 */
