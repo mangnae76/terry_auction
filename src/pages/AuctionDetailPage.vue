@@ -9205,7 +9205,7 @@ const goBack = () => router.back();
 }
 .adp-diag-k { font-size: 12.5px; font-weight: 400; color: #6b7280; white-space: nowrap; }
 .adp-diag-v { font-size: 20px; font-weight: 800; color: #9ca3af; line-height: 1.1; }
-.adp-diag-v.on { color: #111827; }
+.adp-diag-v.on { color: #2b6df3; } /* 값이 채워진 진단 칸 — 말소기준권리 · 인수·소멸 권리수 · 예측 난이도 모두 우리 파랑 */
 /* AI 명도 난이도 분석 — 왼쪽 예측 난이도 한 칸(높이를 오른쪽에 맞춤) · 오른쪽 세 칸은 위아래로 */
 .adp-evict { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; padding: 2px 0 6px; }
 .adp-conclude { padding: 2px 0 6px; }
