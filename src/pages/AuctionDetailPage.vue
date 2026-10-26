@@ -6385,14 +6385,20 @@ const goBack = () => router.back();
               @keydown.enter="profitScenarios[si] && goProfitTable(si)"
             >
               <b class="adp-chip-plan">{{ label }}안</b>
-              <small>{{ profitScenarios[si] ? formatPct(scBidPct(profitScenarios[si])) : '' }}</small>
-              <strong>{{ profitScenarios[si] ? eokText(scBid(profitScenarios[si])) : '-' }}</strong>
+              <!-- 웹 — 'A안' 을 왼쪽에 크게, 오른쪽에 비중과 입찰가(원 단위) -->
+              <span v-if="webEmbed" class="adp-chip-vals">
+                <small>{{ profitScenarios[si] ? formatPct(scBidPct(profitScenarios[si])) : '' }}</small>
+                <strong>{{ profitScenarios[si] ? `${formatMoney(scBid(profitScenarios[si]))}원` : '-' }}</strong>
+              </span>
+              <template v-else>
+                <small>{{ profitScenarios[si] ? formatPct(scBidPct(profitScenarios[si])) : '' }}</small>
+                <strong>{{ profitScenarios[si] ? eokText(scBid(profitScenarios[si])) : '-' }}</strong>
+              </template>
             </div>
           </div>
           </div>
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
           <template v-for="(sc, si) in profitScenarios" :key="sc.label">
-          <template v-if="si === selectedPlan">
           <div v-if="!isCollapsed('profit')" class="adp-profit-head-row">
             <!-- 표가 하나뿐이어도 'A안' 을 낸다 — 둘이 될 때 이름이 생기면 어느 쪽이
                  먼저 적은 표인지 헷갈린다 -->
@@ -6608,7 +6614,8 @@ const goBack = () => router.back();
           </table>
 
           <!-- 돈이 나가는 순서 — 위 표의 값을 '언제 얼마가 필요한가' 로 다시 묶은 것 -->
-          <section v-if="!isCollapsed('profit')" class="adp-cash">
+          <!-- 돈이 나가는 순서는 고른 안(위 칩) 하나만 -->
+          <section v-if="!isCollapsed('profit') && si === selectedPlan" class="adp-cash">
             <h3>돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
             <div v-for="step in scCashOut(sc).steps" :key="step.no" class="adp-cash-step">
               <div class="adp-cash-head">
@@ -6633,7 +6640,6 @@ const goBack = () => router.back();
               </div>
             </template>
           </section>
-          </template>
           </template>
         </section>
 
@@ -10351,6 +10357,12 @@ tr.tone-take { background: #fff5f5; }
 .adp-profit-chip { position: relative; cursor: pointer; }
 /* 칩 맨 위 큰 이름 — 'A안' */
 .adp-chip-plan { font-size: 14px; font-weight: 800; color: #111827; line-height: 1.3; }
+/* 웹 칩 — 왼쪽 큰 'A안'(30) · 오른쪽 비중(16) / 입찰가 원 단위(18) */
+.adp-profit-chip:has(.adp-chip-vals) { flex-direction: row; justify-content: center; gap: 14px; padding: 10px 14px; }
+.adp-profit-chip:has(.adp-chip-vals) .adp-chip-plan { font-size: 30px; line-height: 1.1; }
+.adp-chip-vals { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.adp-chip-vals small { font-size: 16px; font-weight: 700; }
+.adp-chip-vals strong { font-size: 18px; font-weight: 800; }
 /* 고른 안 — 파랗게 눌린 칩 */
 .adp-profit-chip.on { border-color: #2b6df3; background: #2b6df3; }
 .adp-profit-chip.on :is(.adp-chip-plan, small, strong) { color: #fff; }
