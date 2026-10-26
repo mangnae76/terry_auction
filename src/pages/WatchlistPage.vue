@@ -40,14 +40,17 @@ const searchQuery = ref('');
 // 목록에서는 '인천지방법원'처럼 긴 이름 대신 '인천법원'으로 짧게 보여 준다.
 // 지원이 붙은 곳('인천지방법원 부천지원')은 지원 이름을 쓴다.
 /** '2026-11-12' → '26-11-12' — 카드 줄이 좁아 앞 두 자리를 뗀다 */
+/** 적지 않은 값은 하이픈으로 — 아이콘만 덩그러니 남으면 무슨 칸인지 알 수 없다 */
+const DASH = '-';
 const shortYmd = (raw?: string) => {
   const t = (raw ?? '').trim();
+  if (!t) return DASH;
   return /^\d{4}[-./]/.test(t) ? t.slice(2) : t;
 };
 
 const shortCourt = (raw?: string) => {
   const name = (raw ?? '').trim();
-  if (!name) return '';
+  if (!name) return DASH;
   const branch = name.match(/([가-힣]+)\s*지원\s*$/);
   if (branch) return `${branch[1]}법원`;
   const m = name.match(/^(.*?)(?:지방|가정|행정|회생)?법원/);
@@ -899,10 +902,10 @@ watch(
           <div class="wlp-card-meta">
             <span class="wlp-meta-date">
               <img :src="calendarDaysIcon" alt="" class="wlp-meta-date-icon" />
-              {{ shortYmd(item.eventDate) }}<template v-if="weekdayLabel(item.eventDate)"> ({{ weekdayLabel(item.eventDate) }})</template>
+              {{ shortYmd(item.eventDate) }}<template v-if="item.eventDate && weekdayLabel(item.eventDate)"> ({{ weekdayLabel(item.eventDate) }})</template>
             </span>
             <span class="wlp-meta-court">{{ shortCourt(item.courtName) }}</span>
-            <span class="wlp-meta-case">{{ item.caseNumber }}</span>
+            <span class="wlp-meta-case">{{ item.caseNumber || DASH }}</span>
           </div>
           <div v-if="!pickMode" class="wlp-card-actions">
             <button
@@ -949,15 +952,18 @@ watch(
         <div v-if="!listCollapsed" class="wlp-price-row">
           <div class="wlp-price-box">
             <small>감정가</small>
-            <strong>{{ formatWon(item.metrics.appraisalValue) }}<em>원</em></strong>
+            <strong v-if="item.metrics.appraisalValue > 0">{{ formatWon(item.metrics.appraisalValue) }}<em>원</em></strong>
+            <strong v-else class="wlp-price-none">{{ DASH }}</strong>
           </div>
           <div class="wlp-price-box">
             <small>{{ item.auctionRound || '최저' }}</small>
-            <strong>{{ formatWon(item.metrics.minimumBidValue) }}<em>원</em></strong>
+            <strong v-if="item.metrics.minimumBidValue > 0">{{ formatWon(item.metrics.minimumBidValue) }}<em>원</em></strong>
+            <strong v-else class="wlp-price-none">{{ DASH }}</strong>
           </div>
           <div class="wlp-price-box wlp-price-mine">
             <small>입찰가</small>
-            <strong>{{ formatWon(item.metrics.myBidValue) }}<em>원</em></strong>
+            <strong v-if="item.metrics.myBidValue > 0">{{ formatWon(item.metrics.myBidValue) }}<em>원</em></strong>
+            <strong v-else class="wlp-price-none">{{ DASH }}</strong>
           </div>
         </div>
 
@@ -1506,6 +1512,7 @@ watch(
 }
 .wlp-meta-date { color: #111827; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; }
 /* 법원이 먼저 양보하고(shrink 3), 사건번호는 되도록 지킨다 */
+.wlp-price-none { color: #9ca3af; }
 .wlp-meta-court { flex: 0 3 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wlp-meta-case { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wlp-meta-date-icon { width: 14px; height: 14px; object-fit: contain; flex-shrink: 0; }
