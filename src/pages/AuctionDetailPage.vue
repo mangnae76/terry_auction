@@ -4494,8 +4494,7 @@ const RIGHTS_CHECK_ITEMS = [
   {
     id: 'distribution',
     label: '배당요구 종기일',
-    desc: '대항력 임차인인 경우, 배당종기일 지난 후 배당요구 경우 있다.\n배당신청, 날짜까지 확인 필요. 이 경우 낙찰자 인수 이다.',
-    webDesc: '대항력 임차인인 경우 배당종기일이 지난 후 배당요구를 하는 경우가 있다.\n배당신청, 날짜까지 확인 필요. 이 경우 낙찰자 인수 이다.',
+    desc: '대항력 임차인인 경우 배당종기일이 지난 후 배당요구를 하는 경우가 있다.\n배당신청, 날짜까지 확인 필요. 이 경우 낙찰자 인수 이다.',
   },
   {
     id: 'landRegistry',
@@ -7553,7 +7552,7 @@ const goBack = () => router.back();
                 </tr>
                 <tr v-for="item in RIGHTS_CHECK_ITEMS" :key="item.id">
                   <td class="adp-rcheck-label"><strong>{{ item.label }}</strong></td>
-                  <td class="adp-rcheck-desc">{{ (webEmbed && 'webDesc' in item && item.webDesc) || item.desc }}</td>
+                  <td class="adp-rcheck-desc">{{ item.desc }}</td>
                   <td class="adp-rcheck-cell">
                     <input
                       type="checkbox"
