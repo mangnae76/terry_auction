@@ -10812,6 +10812,26 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-block + .adp-dm-block { margin-top: 10px; }
 .adp-dm-block.boxed + .adp-dm-block.boxed { margin-top: 10px; }
 .adp-dm-head.sec2 { margin-top: 7px; padding-top: 6px; border-top: 1px solid #eef1f6; }
+/* 매매수요 — 단락(1. 수요공급 · 2. 입지/개별성)마다 제목과 그 아래 블록들을 큰 상자 하나로 묶는다 (앱·웹).
+   블록마다 있던 상자는 없애고, 제목 줄이 위 테두리 · 블록이 옆 테두리 · 마지막 블록이 아래 테두리를 맡는다 */
+.adp-dm-body > .adp-dm-head:first-child,
+.adp-dm-body > .adp-dm-head.sec2 {
+  border: 1px solid #e5e7eb; border-bottom: 0; border-radius: 8px 8px 0 0;
+  padding: 10px 10px 4px; background: #fff;
+}
+.adp-dm-body > .adp-dm-head.sec2 { margin-top: 12px; }
+.adp-dm-body > .adp-dm-block,
+.adp-dm-body > .adp-dm-block.boxed {
+  border: 1px solid #e5e7eb; border-top: 0; border-bottom: 0; border-radius: 0;
+  margin-top: 0; padding: 8px 10px 4px;
+}
+.adp-dm-body > .adp-dm-block + .adp-dm-block,
+.adp-dm-body > .adp-dm-block.boxed + .adp-dm-block.boxed { margin-top: 0; }
+/* 단락의 마지막 블록 — 다음이 새 단락 제목이거나 더 없을 때 */
+.adp-dm-body > .adp-dm-block:has(+ .adp-dm-head),
+.adp-dm-body > .adp-dm-block:last-child {
+  border-bottom: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; padding-bottom: 12px;
+}
 /* 단락 제목 줄의 버튼은 오른쪽 끝에 붙인다 */
 .adp-dm-head .adp-mkt-addrow,
 .adp-dm-head .adp-edit-btn { margin-left: auto; }

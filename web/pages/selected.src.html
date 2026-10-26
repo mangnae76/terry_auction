@@ -600,18 +600,6 @@ body.trip-full .foot { display: none; }
 /* 지표결과 등급(동그라미) · 적합/부적합도 20 — 동그라미는 글자에 맞춰 22 → 34 로 키운다 */
 .app-detail.tab-survey .dm-result .adp-dm-grade { width: 34px !important; height: 34px !important; font-size: 20px !important; }
 .app-detail.tab-survey .dm-result .adp-dm-fit { font-size: 20px !important; }
-/* 웹 손품조사 — '1. ○○동 수요공급' 제목 · ① 수치입력 · ② 지표결과를 상자 하나로 묶는다.
-   (앱 화면 구조는 그대로 — 제목 줄은 위 테두리, 두 블록은 옆 테두리, 마지막 블록이 아래 테두리를 맡아 한 상자처럼 보인다) */
-.app-detail.tab-survey .adp-dm-body > .adp-dm-head:first-child {
-  border: 1px solid #e5e7eb !important; border-bottom: 0 !important; border-radius: 8px 8px 0 0;
-  padding: 10px 10px 4px !important; background: #fff;
-}
-.app-detail.tab-survey .adp-dm-block:has(.dm-input),
-.app-detail.tab-survey .adp-dm-block:has(.dm-result) {
-  border-top: 0 !important; border-radius: 0 !important; margin-top: 0 !important; padding-top: 8px !important;
-}
-.app-detail.tab-survey .adp-dm-block:has(.dm-input) { border-bottom: 0 !important; }
-.app-detail.tab-survey .adp-dm-block:has(.dm-result) { border-radius: 0 0 8px 8px !important; padding-bottom: 12px !important; }
 /* 웹 손품조사 — 매매수요 ① 수치입력 · ② 지표결과 표는 세로로 넉넉히 (줄 높이 약 두 배) */
 .app-detail.tab-survey :is(.dm-input, .dm-result) .cell .cell-head { min-height: 76px !important; padding-top: 16px !important; padding-bottom: 16px !important; }
 .app-detail.tab-survey :is(.dm-input, .dm-result) .cell .cell-body,
