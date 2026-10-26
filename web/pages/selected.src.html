@@ -3059,12 +3059,22 @@ html, body { overflow-x: clip; }
       });
     }
     const cards = [...body.children].filter((c) => c.classList.contains('adp-card') && c.style.display !== 'none');
-    const reset = () => { body.style.cssText = ''; cards.forEach((c) => { c.style.gridColumn = ''; c.style.gridRow = ''; }); };
+    const reset = () => { body.style.cssText = ''; cards.forEach((c) => { c.style.gridColumn = ''; c.style.gridRow = ''; c.style.order = ''; }); };
     if (!L || window.innerWidth < 900) { reset(); return; } /* 900 이상이면 두 열 (반쯤 줄인 창에서도) */
     const GAP = 12;
-    Object.assign(body.style, { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', columnGap: `${GAP}px`, rowGap: '0', gridAutoRows: '1px', alignItems: 'start' });
     const titleOf = (c) => (c.querySelector('.adp-card-head h2')?.textContent || '').trim();
     const pick = (names) => names.map((n) => cards.find((c) => titleOf(c) === n || titleOf(c).startsWith(`${n}`) && !names.some((m) => m !== n && m.startsWith(n) && titleOf(c).startsWith(m)))).filter(Boolean);
+    /* full — 한 줄에 카드 하나뿐이면 높이를 재서 칸을 잡을 까닭이 없다. 앱의 세로 흐름에 순서(order)만 매기고
+       간격은 gap 하나로 — 카드 높이가 나중에 바뀌어도(글 줄바꿈 · 접고 펴기) 사이가 벌어지지 않는다 */
+    if (L.full) {
+      reset();
+      const order = pick(L.span || []);
+      cards.forEach((c) => { const k = order.indexOf(c); c.style.order = String(k < 0 ? order.length : k); });
+      body.style.gap = `${GAP}px`;
+      return;
+    }
+    cards.forEach((c) => { c.style.order = ''; });
+    Object.assign(body.style, { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', columnGap: `${GAP}px`, rowGap: '0', gridAutoRows: '1px', alignItems: 'start' });
     const span = pick(L.span || []); const left = pick(L.left || []); const right = pick(L.right || []);
     const placed = new Set([...span, ...left, ...right]);
     cards.forEach((c) => { if (!placed.has(c)) (L.full ? span : left).push(c); });
