@@ -11353,7 +11353,9 @@ tr.tone-take { background: #fff5f5; }
    pre-line 이라 이름에 넣어 둔 '\n' 자리에서 끊긴다 */
 .adp-fs-row .lbl.long { white-space: pre-line; font-size: 12px; line-height: 1.25; word-break: keep-all; }
 
-.adp-fs-row .ctl, .adp-fs-row .ext { min-width: 0; font-size: 13px; font-weight: 700; color: #111827; text-align: right; }
+/* 현장조사 칸 안의 값은 굵게 쓰지 않는다 (앱·웹) */
+.adp-fs-row .ctl, .adp-fs-row .ext { min-width: 0; font-size: 13px; font-weight: 400; color: #111827; text-align: right; }
+.adp-fs-toggles .adp-toggle-btn { font-weight: 400; }
 /* 옆칸이 없는 항목(기타·수리상태 등)은 남은 폭을 모두 쓴다 */
 .adp-fs-row .ctl.wide { grid-column: 2 / -1; }
 /* 옆칸에 붙는 비고 — 손품+현장의 다른 비고와 같은 규칙:

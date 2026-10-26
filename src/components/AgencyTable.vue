@@ -271,7 +271,7 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
   flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1px; text-align: left;
 }
 .adp-agency-fld > span {
-  font-size: 13.5px; font-weight: 700; color: #111827; line-height: 26px; height: 26px;
+  font-size: 13.5px; font-weight: 400; color: #111827; line-height: 26px; height: 26px;
   text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .adp-mkt-input {
@@ -298,7 +298,7 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
   background: #eaf1ff; color: #2b6df3;
 }
 .adp-agency-fld > a.adp-agency-tel-view {
-  font-size: 13.5px; font-weight: 700; color: #2b6df3; line-height: 26px; height: 26px;
+  font-size: 13.5px; font-weight: 400; color: #2b6df3; line-height: 26px; height: 26px;
   text-decoration: underline; text-underline-offset: 2px;
 }
 .adp-mkt-input.note { color: #e0574a; font-weight: 400; }
@@ -306,7 +306,8 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
 .adp-agency-fld > span.note-txt { font-size: 11.5px; font-weight: 400; color: #9ca3af; }
 .adp-agency-fld > span.note-txt.filled { color: #e0574a; font-weight: 400; }
 .adp-mkt-input::placeholder { color: #9ca3af; }
-/* 금액 — '입금가 [ ] ~ [ ] 억'. 이름·물결·단위는 칸 바깥의 글자다 */
+/* 금액 — '입금가 [ ] ~ [ ] 억'. 이름·물결·단위는 칸 바깥의 글자다.
+   상담 표 안의 글은 모두 보통 굵기(400) — 굵게 쓰지 않는다 (앱·웹) */
 .adp-agency-line.money { gap: 8px; }
 .adp-agency-range {
   flex: 1 1 0; min-width: 0;
@@ -316,11 +317,11 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
    시작해야 줄이 가지런히 보인다 */
 .adp-agency-range .lab,
 .adp-agency-fld.note-fld > .lab {
-  flex: 0 0 26px; font-style: normal; font-size: 11px; font-weight: 700;
+  flex: 0 0 26px; font-style: normal; font-size: 11px; font-weight: 400;
   color: #6b7280; white-space: nowrap;
 }
 .adp-agency-range .sep {
-  flex: 0 0 auto; font-style: normal; font-size: 10.5px; font-weight: 700; color: #9ca3af;
+  flex: 0 0 auto; font-style: normal; font-size: 10.5px; font-weight: 400; color: #9ca3af;
 }
 /* 뒤쪽 칸 — 단위를 칸 오른쪽 안에 겹쳐 세운다 */
 .adp-agency-range .rng-wrap { position: relative; flex: 1 1 0; min-width: 0; display: block; }
@@ -331,17 +332,17 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
 }
 .adp-agency-range .unit {
   position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
-  font-style: normal; font-size: 10.5px; font-weight: 700; color: #9ca3af; pointer-events: none;
+  font-style: normal; font-size: 10.5px; font-weight: 400; color: #9ca3af; pointer-events: none;
 }
 .adp-agency-range input.rng {
   flex: 1 1 0; min-width: 0; box-sizing: border-box; height: 26px;
   border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; padding: 2px 4px;
-  font-family: inherit; font-size: 11.5px; font-weight: 700; color: #111827; text-align: center;
+  font-family: inherit; font-size: 11.5px; font-weight: 400; color: #111827; text-align: center;
 }
 .adp-agency-range input.rng:focus { outline: none; border-color: #2b6df3; }
 .adp-agency-range .val {
   flex: 1 1 auto; min-width: 0; text-align: right;
-  font-size: 13px; font-weight: 800; color: #111827;
+  font-size: 13px; font-weight: 400; color: #111827;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
