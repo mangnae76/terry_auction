@@ -2355,7 +2355,7 @@ html, body { overflow-x: clip; }
       <div class="rg-results auto-box ${PAID ? '' : 'locked'}">
       <!-- ① 어떻게 읽을까 — 규칙으로 못 읽은 칸을 AI 가 채운다 -->
       <div class="rg-row1 rg-ai">
-        <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
+        <span class="rg-title tip-below" data-tip="PDF에서 규칙으로 못 읽은 칸을 AI가 채워 줍니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
         <span class="ai-setup-text">제미나이 API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.${R.aiKey ? '' : ' 제미나이 API 키를 입력해 주세요.'}</span>
         <button type="button" class="ai-key" style="margin-left:auto" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
         <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
