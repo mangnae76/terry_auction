@@ -298,6 +298,9 @@ body:has(.app-market[data-k="ranking"]) .foot { display: none; }
 .app-market[data-k="ranking"] .tsp-filter-slot .tsp-search-btn { margin-left: 0; width: 100%; }
 .app-market[data-k="ranking"] .tsp-filter-slot :is(.tsp-select, .tsp-seg, .tsp-search-btn) { height: var(--ctl-h) !important; border-radius: 6px !important; }
 .app-market[data-k="ranking"] .tsp-filter-slot .tsp-select { font-size: 14px !important; }
+/* 아직 안 고른 칸의 '○○ 선택' 은 흐린 회색 (고르면 검정) */
+.app-market[data-k="ranking"] .tsp-filter-slot .tsp-select.ph { color: #9ca3af !important; }
+.app-market[data-k="ranking"] .tsp-filter-slot .tsp-select.ph option { color: #111827; }
 /* 판 맨 위 제목 · 안내, 검색 아래 고른 결과 — 그리고 칸 사이마다 가름선 */
 .app-market[data-k="ranking"] .tsp-web-head { display: flex; flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; } /* 제목 옆에 설명 한 줄 */
 .app-market[data-k="ranking"] .tsp-web-head strong { font-size: 16px; font-weight: 800; color: #111827; }

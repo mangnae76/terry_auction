@@ -485,14 +485,14 @@ onMounted(() => {
           <div class="tsp-bar">
             <label class="tsp-f">
               <small>시 · 도</small>
-              <select class="tsp-select" v-model="selectedSido">
+              <select :class="['tsp-select', { ph: !selectedSido }]" v-model="selectedSido">
                 <option value="">{{ webEmbed ? '시도 선택' : '선택' }}</option>
                 <option v-for="sido in sidoOptions" :key="sido" :value="sido">{{ sido }}</option>
               </select>
             </label>
             <label class="tsp-f">
               <small>시 · 군 · 구</small>
-              <select class="tsp-select" v-model="selectedDistrict" :disabled="!selectedSido">
+              <select :class="['tsp-select', { ph: !selectedDistrict }]" v-model="selectedDistrict" :disabled="!selectedSido">
                 <option value="">{{ webEmbed ? '시군구 선택' : '선택' }}</option>
                 <option v-for="district in districtOptions" :key="district.lawdCode" :value="district.label">
                   {{ district.label }}
@@ -501,7 +501,7 @@ onMounted(() => {
             </label>
             <label class="tsp-f">
               <small>읍 · 면 · 동</small>
-              <select class="tsp-select" v-model="selectedDong" :disabled="dongOptions.length === 0">
+              <select :class="['tsp-select', { ph: !selectedDong }]" v-model="selectedDong" :disabled="dongOptions.length === 0">
                 <option value="">{{ peeking ? '불러오는 중…' : (webEmbed ? '읍면동 선택' : '전체') }}</option>
                 <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
               </select>
@@ -533,7 +533,7 @@ onMounted(() => {
             </label>
             <label class="tsp-f tsp-f-period">
               <small>기간</small>
-              <select class="tsp-select" v-model.number="selectedPeriod">
+              <select :class="['tsp-select', { ph: !selectedPeriod }]" v-model.number="selectedPeriod">
                 <option :value="0">{{ webEmbed ? '기간 선택' : '선택' }}</option>
                 <option v-for="m in periodOptions" :key="m" :value="m">{{ m }}개월</option>
               </select>
