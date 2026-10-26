@@ -1149,10 +1149,16 @@ const snapshotCurrentPlan = () => ({
   manualOrder: manualOrder.value,
   savedAt: new Date().toISOString(),
 });
+/** 저장해 둔 경로를 아직 읽어 오지 못했는가.
+ *  화면이 뜨자마자 선정물건 단계에 맞추는 일(syncRouteWithStages)이 돌면서 자동 저장을 부른다.
+ *  그때는 아직 빈 상태라, 그대로 적으면 잡아 둔 동선이 통째로 날아간다 —
+ *  새로고침 한 번에 기록이 지워지고 두 번째에 사라진 것이 보이던 까닭이다.
+ *  읽어 오기 전에는 적지 않는다. */
+const planLoaded = ref(false);
 const cacheCurrentPlanLocally = () => {
   // 명명은 그대로 유지 — 이제 Firestore에 저장 (디바이스 전체 공유 localStorage가 아님)
   const uid = authStore.uid;
-  if (!uid) return;
+  if (!uid || !planLoaded.value) return;
   void saveUserPrefs(uid, { fieldTripDraft: snapshotCurrentPlan() });
 };
 
@@ -1223,14 +1229,17 @@ const resetCurrentPlanState = () => {
 
 const restoreUserPlanFromCloud = async (uid: string) => {
   if (!uid) {
+    planLoaded.value = false;
     resetCurrentPlanState();
     return;
   }
+  planLoaded.value = false;
   const prefs = await loadUserPrefs(uid);
   resetCurrentPlanState();
-  if (!prefs) return;
-  if (prefs.fieldTripDraft) applyDraft(prefs.fieldTripDraft);
-  if (Array.isArray(prefs.fieldTripFavorites)) favorites.value = prefs.fieldTripFavorites;
+  if (prefs?.fieldTripDraft) applyDraft(prefs.fieldTripDraft);
+  if (Array.isArray(prefs?.fieldTripFavorites)) favorites.value = prefs.fieldTripFavorites;
+  // 여기서부터는 적어도 된다 — 읽어 온 뒤라 덮어쓸 것이 없다
+  planLoaded.value = true;
   // 저장해 둔 경로가 그동안 바뀐 단계와 어긋날 수 있다 — 불러온 직후 한 번 맞춘다
   syncRouteWithStages();
 };
@@ -1363,7 +1372,8 @@ const showFavModal = ref(false);
 
 const saveFavorites = () => {
   const uid = authStore.uid;
-  if (!uid) return;
+  /* 즐겨찾기도 읽어 오기 전에는 적지 않는다 — 빈 목록으로 덮어쓸 수 있다 */
+  if (!uid || !planLoaded.value) return;
   void saveUserPrefs(uid, { fieldTripFavorites: favorites.value });
 };
 const addFavoriteAddress = (raw: string) => {
