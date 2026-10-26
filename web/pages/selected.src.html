@@ -550,7 +550,7 @@ body.trip-full .foot { display: none; }
 /* 상자 둘은 이제 탭이 아니다 — 왼쪽은 유료(자동 등록), 오른쪽은 무료(직접 입력) */
 .reg-duo > .reg-box { display: flex; flex-direction: column; gap: 8px; }
 /* Plus 딱지 — 유료로 쓸 수 있는 자리에만 단다 */
-.plan-tag { flex: 0 0 auto; border-radius: 999px; font-weight: 800; letter-spacing: -.1px; }
+.plan-tag { display: inline-block; flex: 0 0 auto; border-radius: 999px; font-weight: 800; letter-spacing: -.1px; vertical-align: 1px; }
 .plan-tag.plus { padding: 1px 7px; background: #eda134; color: #fff; font-size: 12px; line-height: 1.5; }
 /* 등록 방법 탭 — 자동 등록(Plus) · 직접 입력. 밑줄은 ::after 막대로(전역 button 둥근모서리를 피한다) */
 .reg-tabbar { display: flex; align-items: stretch; gap: 2px; border-bottom: 1px solid var(--line); }
@@ -2375,7 +2375,7 @@ html, body { overflow-x: clip; }
     $('regContent').innerHTML = `
       <section class="rg-lead-box">
         <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I.info}</svg>+물건등록</h2>
-        <p>선정된 경매 물건을 등록하고 관리하세요. 플러스 회원은 AI가 정보를 분석 정리하여 선정목록 카드 안에서 볼 수 있습니다.</p>
+        <p>선정된 경매 물건을 등록하고 관리하세요. <span class="plan-tag plus">Plus</span> AI가 정보를 분석 정리하여 선정목록 카드 안에서 볼 수 있습니다.</p>
       </section>
       ${!AUTO ? '' : `
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
