@@ -9,6 +9,7 @@ import {
   downloadDrivePdfBytes,
   listDrivePdfFiles,
   parsePdfBytes,
+  parseAuctionPdfText,
   type ParsedPdfAuction,
 } from '../services/pdfAuctionImport';
 import {
@@ -663,23 +664,74 @@ const fileTitle = (row: ImportPreviewRow) => {
 /** 뒤로가기 — 물건 목록에서 들어온 화면이다 */
 const router = useRouter();
 
-// === 탭 — 물건정보 화면처럼 둘로 나눈다. 구글드라이브 연동(폴더·폴더스캔·PDF등록) / AI 자동 분석(Gemini 키·켜기) ===
-// 이름은 웹(/web)과 같다 — 키 넣는 쪽은 'AI 자동 분석', 읽은 결과 상자는 'AI 파싱'
-type ImportTab = 'drive' | 'ai';
-const IMPORT_TABS: Array<{ key: ImportTab; label: string }> = [
-  { key: 'drive', label: '구글드라이브 연동' },
-  { key: 'ai', label: 'AI 자동 분석' },
+// === 탭 — 웹(/web)과 같은 짜임. 자동등록(Plus · 폴더·PDF 를 가져와 AI 가 읽는 한 절차) / 직접입력(손으로 적기) ===
+// 예전 값('drive'·'ai')은 모두 자동등록으로 본다 — 상자 둘을 탭처럼 쓰던 때의 값이다
+type ImportTab = 'auto' | 'manual';
+const IMPORT_TABS: Array<{ key: ImportTab; label: string; plus: boolean }> = [
+  { key: 'auto', label: '자동등록', plus: true },
+  { key: 'manual', label: '직접입력', plus: false },
 ];
 const TAB_STORE = 'myturn.import.tab';
-const readTab = (): ImportTab => { try { return localStorage.getItem(TAB_STORE) === 'ai' ? 'ai' : 'drive'; } catch { return 'drive'; } };
+const readTab = (): ImportTab => { try { return localStorage.getItem(TAB_STORE) === 'manual' ? 'manual' : 'auto'; } catch { return 'auto'; } };
 const importTab = ref<ImportTab>(readTab());
 watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /* 그만 */ } });
-/** 결과 상자 — 두 탭이 같은 상자를 쓰고 글자만 다르다 (웹 /web 과 같은 글) */
-const PARSE_COPY: Record<ImportTab, { title: string; drop: [string, string] }> = {
-  drive: { title: 'PDF 파싱', drop: ['파일을 드래그하거나 클릭하여 업로드하면', '여기에 미리보기가 표시됩니다.'] },
-  ai: { title: 'AI 파싱', drop: ['파일을 드래그하거나 클릭하여 업로드하면', '여기에 미리보기가 표시됩니다.'] },
+/** 결과 상자 — 이름은 하나다 (웹 /web 과 같은 글) */
+const parseCopy = {
+  title: 'AI 자동 파싱',
+  sub: '경매 문서(PDF · 이미지)를 올리면 AI가 선정목록에 분석 정리합니다',
+  drop: ['파일을 드래그하거나 박스를 클릭하여 업로드하면', '여기에 미리보기가 표시됩니다.'],
+} as const;
+
+// === 직접입력 — 읽을 PDF 가 없는 물건은 손으로 적어 올린다 (웹 /web 과 같은 칸) ===
+const PROP_TYPES = ['아파트', '다세대·연립', '오피스텔', '상가', '토지', '단독주택', '기타'];
+const blankManual = () => ({
+  caseNo: '', court: '', type: '', round: '', addr: '',
+  date: '', appr: '', min: '', dep: '',
+  owner: '', debtor: '', bld: '', land: '', year: '', note: '',
+});
+const mn = ref(blankManual());
+/** 보증금은 거의 늘 최저가의 10% — 손으로 고치기 전까지는 따라 적는다 */
+const depAuto = ref(true);
+const numOf = (v: string) => Number(String(v).replace(/[^\d]/g, '')) || 0;
+const decOf = (v: string) => Number(String(v).replace(/[^\d.]/g, '')) || 0;
+watch(() => mn.value.min, (v) => {
+  if (!depAuto.value) return;
+  const n = numOf(v);
+  mn.value.dep = n > 0 ? String(Math.round(n / 10)) : '';
+});
+const onDepInput = () => { depAuto.value = false; };
+const addManual = async () => {
+  const caseNo = mn.value.caseNo.trim();
+  if (!caseNo) { showToast('사건번호를 적어 주세요.'); return; }
+  if (!mn.value.addr.trim()) { showToast('소재지를 적어 주세요.'); return; }
+  const fails = numOf(mn.value.round);
+  const parsed: ParsedPdfAuction = {
+    ...parseAuctionPdfText('', '직접 입력'),
+    sourceName: '직접 입력',
+    caseNumber: caseNo,
+    courtName: mn.value.court.trim(),
+    propertyType: mn.value.type,
+    address: mn.value.addr.trim(),
+    auctionRound: fails > 0 ? `유찰 ${fails}회` : '',
+    eventDate: mn.value.date.trim(),
+    appraisalValue: numOf(mn.value.appr),
+    minimumBidValue: numOf(mn.value.min),
+    depositValue: numOf(mn.value.dep) || Math.round(numOf(mn.value.min) / 10),
+    buildingAreaM2: decOf(mn.value.bld),
+    landAreaM2: decOf(mn.value.land),
+    approvalDate: mn.value.year.trim(),
+    ownerName: mn.value.owner.trim(),
+    debtorName: mn.value.debtor.trim(),
+    notes: mn.value.note.trim(),
+  };
+  try {
+    await store.importParsedPdfAuctions([parsed]);
+    mn.value = blankManual(); depAuto.value = true;
+    showToast(`${caseNo} 을 선정목록에 올렸습니다.`);
+  } catch (e) {
+    showToast(`적지 못했습니다 — ${(e as Error)?.message ?? ''}`);
+  }
 };
-const parseCopy = computed(() => PARSE_COPY[importTab.value]);
 /** 끌어다 놓기 — 목록이 생겨도 상자는 남아 계속 놓을 수 있다. 눌러도 파일을 고른다 */
 const dropOver = ref(false);
 const onDropFiles = async (e: DragEvent) => {
@@ -746,15 +798,40 @@ const onDropFiles = async (e: DragEvent) => {
           :aria-selected="importTab === tab.key"
           :class="['pip-tab', { active: importTab === tab.key }]"
           @click="importTab = tab.key"
-        >{{ tab.label }}</button>
+        >{{ tab.label }}<span v-if="tab.plus" class="pip-plus">Plus</span></button>
       </nav>
     </div>
 
     <div class="pip-body">
-      <template v-if="importTab === 'drive'">
-      <!-- 구글드라이브 연동 — AI 자동 분석과 같은 흰 상자 하나: 제목·폴더등록 / 폴더 고르기 / 폴더스캔·PDF등록 -->
-      <div class="pip-aibox pip-drivebox">
-      <div class="pip-section-head">
+      <template v-if="importTab === 'auto'">
+      <!-- 자동등록 — 가져와서 읽는 한 절차. 위는 AI 자동 분석, 아래는 구글드라이브 연동 -->
+      <div class="pip-aibox pip-autobox">
+      <div class="pip-aibox-row">
+        <span class="pip-section-title">
+          <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" />
+          </svg>AI 자동 분석
+        </span>
+        <button type="button" class="pip-ai-key pip-aibox-key" @click="openAiModal">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" /></svg>{{ aiKey ? '키바꾸기' : '키 등록' }}
+        </button>
+        <button
+          type="button"
+          :class="['pip-ai-switch', { on: aiOn && !!aiKey }]"
+          role="switch"
+          :aria-checked="aiOn && !!aiKey"
+          :aria-label="`AI 자동 파싱 ${aiOn && aiKey ? '켜짐' : '꺼짐'}`"
+          :title="`AI 자동 파싱 ${aiOn && aiKey ? '켜짐' : '꺼짐'}`"
+          @click="toggleAi"
+        >
+          <i />
+        </button>
+      </div>
+      <div class="pip-aibox-row">
+        <span class="pip-aibox-text">제미나이 API 키가 <span :class="['pip-key-state', aiKey ? 'ok' : 'no']">{{ aiKey ? '등록' : '미등록' }}</span> 상태입니다.<template v-if="!aiKey"> 키를 설정하세요.</template></span>
+      </div>
+
+      <div class="pip-section-head pip-sep">
         <span class="pip-section-title">
           <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M7 20h10a4 4 0 0 0 .6-7.96A5.5 5.5 0 0 0 6.9 10.2 3.9 3.9 0 0 0 7 20z" />
@@ -824,37 +901,59 @@ const onDropFiles = async (e: DragEvent) => {
       </div>
       </template>
 
-      <!-- AI 자동 분석 — 규칙으로 못 읽은 칸만 Gemini 가 채운다 (각자 자기 키로).
-           켜 두면 구글드라이브 연동 탭의 폴더스캔 · PDF등록이 읽을 때 같이 쓴다 -->
+      <!-- 직접입력 — 읽을 PDF 가 없는 물건은 여기서 손으로 적어 올린다 (웹 /web 과 같은 칸) -->
       <template v-else>
-      <!-- AI 자동 분석 — 상자 하나 (웹 /web 과 같은 짜임)
-           1줄: 제목 · (오른쪽 끝) 키 등록/키바꾸기 · 켜기 스위치(켜짐·꺼짐은 안내로)   2줄: 필수설정 · 키 상태 문장 -->
-      <div class="pip-aibox">
+      <div class="pip-aibox pip-manual">
         <div class="pip-aibox-row">
           <span class="pip-section-title">
             <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" />
-            </svg>AI 자동 분석
+              <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+            </svg>직접입력
           </span>
-          <button type="button" class="pip-ai-key pip-aibox-key" @click="openAiModal">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.6 9.6" /><path d="m15.5 7.5 3 3L22 7l-3-3" /></svg>{{ aiKey ? '키바꾸기' : '키 등록' }}
-          </button>
-          <button
-            type="button"
-            :class="['pip-ai-switch', { on: aiOn && !!aiKey }]"
-            role="switch"
-            :aria-checked="aiOn && !!aiKey"
-            :aria-label="`AI 파싱 ${aiOn && aiKey ? '켜짐' : '꺼짐'}`"
-            :title="`AI 파싱 ${aiOn && aiKey ? '켜짐' : '꺼짐'}`"
-            @click="toggleAi"
-          >
-            <i />
-          </button>
+          <span class="pip-mn-req"><i>*</i> 필수 입력</span>
         </div>
-        <div class="pip-aibox-row">
-          <span class="pip-req">필수설정</span>
-          <span class="pip-aibox-text">Gemini API 키가 <span :class="['pip-key-state', aiKey ? 'ok' : 'no']">{{ aiKey ? '등록' : '미등록' }}</span> 상태입니다.</span>
+
+        <p class="pip-mn-cap">사건번호<i>*</i></p>
+        <input v-model="mn.caseNo" class="pip-mn-in" placeholder="사건번호 (예: 2026타경501558)" aria-label="사건번호" />
+        <input v-model="mn.court" class="pip-mn-in" placeholder="관할법원 (예: 인천지방법원)" aria-label="관할법원" />
+        <div class="pip-mn-two">
+          <select v-model="mn.type" class="pip-mn-in" aria-label="물건종류">
+            <option value="">물건종류</option>
+            <option v-for="t in PROP_TYPES" :key="t">{{ t }}</option>
+          </select>
+          <input v-model="mn.round" class="pip-mn-in" inputmode="numeric" placeholder="유찰횟수" aria-label="유찰횟수" />
         </div>
+
+        <p class="pip-mn-cap">소재지<i>*</i></p>
+        <input v-model="mn.addr" class="pip-mn-in" placeholder="소재지 (예: 인천광역시 서구 검암동 683-9 403호)" aria-label="소재지" />
+
+        <p class="pip-mn-cap">매각기일 · 금액</p>
+        <input v-model="mn.date" class="pip-mn-in" type="date" aria-label="매각기일" />
+        <div class="pip-mn-two">
+          <input v-model="mn.appr" class="pip-mn-in" inputmode="numeric" placeholder="감정가 (원)" aria-label="감정가" />
+          <input v-model="mn.min" class="pip-mn-in" inputmode="numeric" placeholder="최저가 (원)" aria-label="최저가" />
+        </div>
+        <input v-model="mn.dep" class="pip-mn-in" inputmode="numeric" placeholder="보증금 (최저가의 10%)" aria-label="보증금" @input="onDepInput" />
+
+        <p class="pip-mn-cap">관계인</p>
+        <div class="pip-mn-two">
+          <input v-model="mn.owner" class="pip-mn-in" placeholder="소유자" aria-label="소유자" />
+          <input v-model="mn.debtor" class="pip-mn-in" placeholder="채무자" aria-label="채무자" />
+        </div>
+
+        <p class="pip-mn-cap">물건</p>
+        <div class="pip-mn-two">
+          <input v-model="mn.bld" class="pip-mn-in" inputmode="decimal" placeholder="건물면적 (㎡)" aria-label="건물면적" />
+          <input v-model="mn.land" class="pip-mn-in" inputmode="decimal" placeholder="토지면적 (㎡)" aria-label="토지면적" />
+        </div>
+        <input v-model="mn.year" class="pip-mn-in" inputmode="numeric" placeholder="건축년도 (예: 2010)" aria-label="건축년도" />
+
+        <p class="pip-mn-cap">메모</p>
+        <textarea v-model="mn.note" class="pip-mn-in pip-mn-area" rows="2" placeholder="특이사항 (유치권 신고, 대항력 임차인, 미납 관리비 등)" aria-label="특이사항" />
+
+        <button type="button" class="pip-mn-add" @click="addManual">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>물건등록하기
+        </button>
       </div>
       </template>
 
@@ -868,8 +967,7 @@ const onDropFiles = async (e: DragEvent) => {
       <section class="pip-results">
         <div class="pip-results-head">
           <h2>
-            <svg v-if="importTab === 'ai'" class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" /><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z" /></svg>
-            <svg v-else class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6" /><path d="M9 17h4" /></svg>
+            <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" /><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z" /></svg>
             {{ parseCopy.title }}
           </h2>
           <!-- 웹(/web)과 같은 줄 — 총 등록물건 · 신규 · 변경 · 오류 -->
@@ -893,6 +991,7 @@ const onDropFiles = async (e: DragEvent) => {
             <img :src="chevronDownIcon" alt="" :class="['pip-chev', { up: resultsCollapsed }]" />
           </button>
         </div>
+        <p class="pip-results-sub">{{ parseCopy.sub }}</p>
 
         <div v-if="missingAuctions.length > 0" class="pip-missing">
           <div class="pip-missing-head">
@@ -954,10 +1053,11 @@ const onDropFiles = async (e: DragEvent) => {
     <div v-if="aiModalOpen" class="pip-fav-back" @click.self="aiModalOpen = false">
       <div class="pip-fav-modal pip-ai-modal">
         <header class="pip-fav-modal-head">
-          <h2>Gemini 키 등록 설정</h2>
+          <h2>제미나이 API 키 등록</h2>
           <button type="button" class="pip-fav-modal-close" aria-label="닫기" @click="aiModalOpen = false">×</button>
         </header>
         <div class="pip-ai-body">
+          <p class="pip-ai-lead">키를 입력해 주세요.</p>
           <!-- 키 칸 — 오른쪽 끝에 눈(보기/가리기) · 붙여넣기 (웹 /web 과 같다) -->
           <div class="pip-key-field">
             <input
@@ -971,7 +1071,7 @@ const onDropFiles = async (e: DragEvent) => {
               data-lpignore="true"
               data-form-type="other"
               spellcheck="false"
-              placeholder="Google AI Studio 에서 받은 API 키"
+              placeholder="구글 AI 스튜디오에서 받은 API 키 넣기"
               @keydown.enter.prevent="saveAiKey"
             />
             <button type="button" class="pip-kf-btn eye" :aria-label="aiKeyShow ? '키 가리기' : '키 보기'" @click="aiKeyShow = !aiKeyShow; aiKeyLocked = false">
@@ -983,12 +1083,21 @@ const onDropFiles = async (e: DragEvent) => {
             </button>
           </div>
           <p v-if="aiKeyMsg" :class="['pip-ai-msg', { ok: aiKeyOk }]">{{ aiKeyMsg }}</p>
-          <ul class="pip-ai-help">
-            <li>키는 <b>내 계정에만</b> 저장됩니다.</li>
-            <li>규칙으로 못 읽은 칸만 채우고, PDF에서 근거 글을 못 찾은 값은 버립니다.</li>
-            <li>키 받는 곳 <button type="button" class="pip-key-link inline" @click="openGeminiKeySite">Google AI Studio</button> → Get API key</li>
-            <li>Google 계정으로 로그인 → Get API key → Create API key</li>
-          </ul>
+          <!-- 받는 법 — 처음 하는 사람이 창을 떠나지 않고 따라올 수 있게 (웹 /web 과 같다) -->
+          <div class="pip-ai-steps">
+            <h3>
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4" /><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2h5c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3Z" /></svg>API 키 발급 방법
+            </h3>
+            <ol>
+              <li><button type="button" class="pip-key-link inline" @click="openGeminiKeySite">Google AI Studio</button>에 접속하여 로그인합니다.</li>
+              <li>‘Create API key’ 버튼을 클릭합니다.</li>
+              <li>생성된 키를 복사하여 위 입력란에 붙여넣고 저장합니다.</li>
+              <li>키는 <b>내 계정에만</b> 저장됩니다.</li>
+            </ol>
+            <p class="pip-ai-tip">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01" /><path d="M10.3 3.9 2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /></svg>Gemini 2.5 Flash 모델은 무료 티어로도 충분히 사용 가능합니다.
+            </p>
+          </div>
           <div class="pip-ai-btns">
             <button v-if="aiKey" type="button" class="pip-ai-del" @click="removeAiKey">키지우기</button>
             <button type="button" class="pip-fav-add pip-ai-save" :disabled="aiChecking" @click="saveAiKey">{{ aiChecking ? '확인 중…' : '확인 후 저장' }}</button>
@@ -1357,19 +1466,46 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-actions {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
 }
-/* AI 자동 분석 — 상자 하나: 제목 · 스위치 · 키 버튼 / 필수설정 · 키 상태 — 구글드라이브 연동(.pip-drivebox)도 같은 상자 */
+/* 자동등록(.pip-autobox) · 직접입력(.pip-manual) — 같은 흰 상자를 쓴다 */
 .pip-aibox {
   display: flex; flex-direction: column; gap: 8px;
   background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; padding: 11px 12px;
 }
-.pip-drivebox .pip-section-head { margin-top: 0; }
+.pip-autobox .pip-section-head { margin-top: 0; }
+/* 한 상자 안의 두 단 — AI 자동 분석과 구글드라이브 연동을 선으로 가른다 */
+.pip-autobox .pip-sep { margin-top: 4px; padding-top: 10px; border-top: 1px solid #eef0f5; }
 .pip-aibox-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .pip-aibox-row .pip-section-title { margin-right: 2px; }
 .pip-aibox-key { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
-.pip-req {
-  flex: 0 0 auto; padding: 2px 6px; border-radius: 5px; background: #fdecec; color: #dc2626;
-  font-size: 10.5px; font-weight: 800; letter-spacing: -0.2px;
+/* Plus 딱지 — 탭에만 단다 */
+.pip-plus {
+  display: inline-block; margin-left: 5px; padding: 1px 7px; border-radius: 999px; vertical-align: 1px;
+  background: #eda134; color: #fff; font-size: 11px; font-weight: 800; line-height: 1.5; letter-spacing: -0.1px;
 }
+.pip-tab:not(.active) .pip-plus { background: #f2dcb6; color: #8a6520; }
+/* 직접입력 — 손으로 적는 칸 */
+.pip-manual { gap: 7px; }
+.pip-mn-req { flex: 0 0 auto; margin-left: auto; font-size: 11.5px; font-weight: 600; color: #6b7280; }
+.pip-mn-req i, .pip-mn-cap i { color: #dc2626; font-style: normal; font-weight: 800; }
+.pip-mn-req i { margin-right: 3px; }
+.pip-mn-cap { margin: 6px 0 -1px; font-size: 11.5px; font-weight: 800; color: #6b7280; letter-spacing: -0.2px; }
+.pip-mn-cap i { margin-left: 3px; }
+.pip-mn-two { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.pip-mn-in {
+  width: 100%; box-sizing: border-box; height: 38px; padding: 0 11px;
+  border: 1px solid #d8dee9; border-radius: 8px; background: #fff;
+  font-family: inherit; font-size: 13px; color: #111827; min-width: 0;
+}
+.pip-mn-in::placeholder { color: #9ca3af; }
+.pip-mn-in:focus { outline: 0; border-color: #2a5fbf; }
+.pip-mn-area { height: auto; padding: 9px 11px; line-height: 1.5; resize: vertical; }
+.pip-mn-add {
+  align-self: center; min-width: 200px; margin-top: 8px; height: 40px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid #2a5fbf; border-radius: 8px; background: #2a5fbf; color: #fff;
+  font-size: 13.5px; font-weight: 800; cursor: pointer;
+}
+.pip-mn-add:active { background: #24529f; }
 .pip-aibox-text { min-width: 0; font-size: 12.5px; font-weight: 400; color: #111827; }
 .pip-key-state { font-weight: 700; }
 .pip-key-state.ok { color: #16a34a; }
@@ -1416,7 +1552,15 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-ai-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; }
 .pip-ai-msg { margin: 0; font-size: 11.5px; color: #dc2626; }
 .pip-ai-msg.ok { color: #16a34a; }
-.pip-ai-help { margin: 0; padding-left: 16px; font-size: 11.5px; line-height: 1.6; color: #4b5563; }
+.pip-ai-lead { margin: 0; font-size: 12.5px; font-weight: 700; color: #4b5563; }
+/* 키 받는 법 — 차례대로 따라오는 칸 (웹 /web 과 같다) */
+.pip-ai-steps { padding: 11px 13px; border: 1px solid #eef0f5; border-radius: 8px; background: #f7f8fb; }
+.pip-ai-steps h3 { margin: 0 0 7px; display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; color: #111827; }
+.pip-ai-steps h3 svg { color: #eda134; }
+.pip-ai-steps ol { margin: 0; padding-left: 17px; font-size: 12px; line-height: 2; color: #4b5563; }
+.pip-ai-steps ol b { font-weight: 700; color: #111827; }
+.pip-ai-tip { margin: 8px 0 0; display: flex; align-items: center; gap: 5px; font-size: 12px; color: #8a6520; }
+.pip-ai-tip svg { flex: 0 0 auto; }
 .pip-ai-btns { display: flex; justify-content: flex-end; gap: 8px; }
 .pip-ai-save { width: auto; padding: 0 14px; height: 36px; font-size: 13px; }
 .pip-ai-save:disabled { opacity: 0.6; cursor: default; }
@@ -1463,6 +1607,7 @@ const onDropFiles = async (e: DragEvent) => {
 }
 /* 한 줄: 제목 · 통계(제목 바로 옆) · 접기 단추(오른쪽 끝) */
 .pip-results-head h2 { white-space: nowrap; }
+.pip-results-sub { margin: 2px 0 8px; font-size: 11.5px; font-weight: 500; color: #4b5563; line-height: 1.5; }
 .pip-results-head .pip-chev-btn { margin-left: auto; }
 .pip-results-head .pip-clear-btn + .pip-chev-btn { margin-left: 0; }
 .pip-head-stats { min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #6b7280; white-space: nowrap; }
