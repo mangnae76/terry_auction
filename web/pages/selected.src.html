@@ -551,7 +551,7 @@ body.trip-full .foot { display: none; }
 .reg-duo > .reg-box { display: flex; flex-direction: column; gap: 8px; }
 /* Plus 딱지 — 유료로 쓸 수 있는 자리에만 단다 */
 .plan-tag { flex: 0 0 auto; border-radius: 999px; font-weight: 800; letter-spacing: -.1px; }
-.plan-tag.plus { padding: 3px 13px; background: #eda134; color: #fff; font-size: 12px; }
+.plan-tag.plus { padding: 1px 7px; background: #eda134; color: #fff; font-size: 12px; line-height: 1.5; }
 /* 등록 방법 탭 — 자동 등록(Plus) · 직접 입력. 밑줄은 ::after 막대로(전역 button 둥근모서리를 피한다) */
 .reg-tabbar { display: flex; align-items: stretch; gap: 2px; border-bottom: 1px solid var(--line); }
 .reg-tab { position: relative; display: inline-flex; align-items: center; gap: 7px; height: 42px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
@@ -560,7 +560,7 @@ body.trip-full .foot { display: none; }
 .reg-tab.on { color: var(--blue); font-weight: 800; }
 .reg-tab.on::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: -1px; height: 2px; background: var(--blue); }
 .reg-tab .plan-tag { pointer-events: none; }
-.reg-tab:not(.on) .plan-tag.plus { background: var(--surface-3); color: var(--muted); }
+.reg-tab:not(.on) .plan-tag.plus { background: #f2dcb6; color: #8a6520; } /* 꺼진 탭에서도 알약은 알약으로 보이게 */
 /* 유료가 아닐 때 — 왼쪽 상자는 한 발 물리고 누를 수 없게 한다 */
 .reg-box.locked .rg-acts, .reg-box.locked .rg-ai { opacity: .45; pointer-events: none; }
 .lock-note { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
@@ -2371,7 +2371,7 @@ html, body { overflow-x: clip; }
     $('regContent').innerHTML = `
       <section class="rg-lead-box">
         <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I.info}</svg>+물건등록</h2>
-        <p>선정된 경매 물건을 등록하고 관리하세요. AI가 정보를 분석 정리하여 선정목록 카드 안에서 볼 수 있습니다.</p>
+        <p>선정된 경매 물건을 등록하고 관리하세요. 플러스 회원은 AI가 정보를 분석 정리하여 선정목록 카드 안에서 볼 수 있습니다.</p>
       </section>
       ${!AUTO ? '' : `
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
