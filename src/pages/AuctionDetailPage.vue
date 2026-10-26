@@ -5255,6 +5255,12 @@ const roundTone = roundToneOf;
 const currentRoundLabel = computed(() => currentRoundLabelOf(auction.value));
 
 // PDF는 승계인(HUG)과 원 임차인을 각각 한 줄씩 적는다 — 실제 점유자 이름으로 합쳐 한 명으로 보여준다.
+/** 이름 자리에 끼어든 낱말 — 예전에 읽어 둔 자료에는 '미배당' 같은 말이 이름으로 저장돼 있다.
+ *  PDF 를 다시 읽으면 바로잡히지만, 그 전에도 틀린 이름을 사람 이름인 양 보여 주지 않는다. */
+const NOT_A_TENANT_NAME = new Set([
+  '미배당', '매수인', '배당요구', '신청인', '채권자', '소유자', '점유자', '임대인', '세대주',
+  '해당', '사항', '내역', '비고', '보증금', '배당금', '순위배당', '임차권', '전입신고',
+]);
 const realTenantName = (row: { name: string; subName: string }) =>
   row.subName.match(/임차인\s*[:：]?\s*([가-힣]{2,4})/)?.[1] ??
   row.subName.match(/([가-힣]{2,4})\s*의\s*승계인/)?.[1] ??
@@ -5305,7 +5311,10 @@ const tenantCards = computed(() => {
     prev.analysis = mergeList(prev.analysis, row.analysis);
     prev.other = mergeList(prev.other, row.other);
   });
-  return [...merged.values()];
+  // 이름 자리에 낱말이 들어와 있으면 비워 둔다 — 화면에서는 '-' 로 선다
+  return [...merged.values()].map((card) => (NOT_A_TENANT_NAME.has(card.name.trim())
+    ? { ...card, name: '' }
+    : card));
 });
 
 // 붉은 배너 — PDF 상단 배지를 그대로 인용한다.
@@ -7218,7 +7227,7 @@ const goBack = () => router.back();
               <dl class="adp-base-rows adp-base-tenant">
                 <div class="adp-base-row">
                   <dt>임차인</dt>
-                  <dd><strong>{{ tenant.name }}</strong><span v-if="tenant.agency"> / {{ tenant.agency }}</span></dd>
+                  <dd><strong>{{ tenant.name || '-' }}</strong><span v-if="tenant.agency"> / {{ tenant.agency }}</span></dd>
                 </div>
                 <div class="adp-base-row">
                   <dt>보증금</dt>

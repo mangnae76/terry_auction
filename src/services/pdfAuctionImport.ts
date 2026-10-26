@@ -838,7 +838,7 @@ const TENANT_NAME_STOPWORDS = new Set([
 ]);
 /** 이름인가 — '홍길동' 처럼 한글만이거나 '최○○' 처럼 가려 적은 꼴까지 받는다.
  *  가린 이름을 못 알아보면 그 줄에서 엉뚱한 낱말이 이름 자리로 올라온다. */
-const looksLikeTenantName = (bare: string) => /^[가-힣][가-힣○Ｏ*]{1,5}$/.test(bare);
+const looksLikeTenantName = (bare: string) => /^[가-힣][가-힣○Ｏ◯ㅇOo0*＊×-]{1,5}$/.test(bare);
 
 const parseTenantInfoRows = (text: string) => {
   const startMarker = text.includes('임차인 현황') ? '임차인 현황' : '점유';
