@@ -601,7 +601,7 @@ body.trip-full .foot { display: none; }
 .mn-cap .rq, .mn-req i { margin-left: 3px; color: #dc2626; font-style: normal; font-weight: 800; }
 .mn-req { flex: 0 0 auto; font-size: 12px; font-weight: 600; color: var(--muted); }
 .mn-req i { margin: 0 3px 0 0; }
-.mn-form .rg-btn.add { background: var(--blue); border-color: var(--blue); color: #fff; }
+.mn-form .rg-btn.add { grid-column: 1 / -1; justify-self: center; min-width: 200px; margin-top: 6px; background: var(--blue); border-color: var(--blue); color: #fff; }
 .rg-row1, .rg-row2 { display: flex; align-items: center; gap: 8px; min-height: 32px; min-width: 0; }
 .rg-title { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-right: 4px; font-size: 14px; font-weight: 800; color: var(--text); white-space: nowrap; cursor: help; }
 .rg-title svg { width: 18px; height: 18px; color: #2a5fbf; }
@@ -2459,7 +2459,7 @@ html, body { overflow-x: clip; }
 
           <p class="mn-cap">메모</p>
           <textarea id="mnNote" class="wide4" rows="2" placeholder="특이사항 (유치권 신고, 대항력 임차인, 미납 관리비 등)" aria-label="특이사항"></textarea>
-          <button type="button" class="rg-btn add" data-act="manual-add">${I.plus}등록하기</button>
+          <button type="button" class="rg-btn add" data-act="manual-add">${I.plus}물건등록하기</button>
         </div>
       </section>`}`;
   }
