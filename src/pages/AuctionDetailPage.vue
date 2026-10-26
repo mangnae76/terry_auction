@@ -4552,8 +4552,6 @@ const PHOTO_AREAS: Array<{
   { key: 'site', scope: 'block', count: () => auction.value?.sitePhotos?.length ?? 0, fold: 'always' }, // 손품+현장 · 현장사진
   // 급매가 · 동일지번 매각물건 — 사진 모음이라 늘 접어 둔다
   { key: 'sameLot', scope: 'block', count: () => extraList('sameLot').length, fold: 'always' },
-  // 급매가 · 네이버부동산 매물 사진 — 늘 접어 둔다
-  { key: 'listPhoto', scope: 'block', count: () => listPhotoList.value.length, fold: 'always' },
 ];
 /** 그 칸에 붙어 있는 사진 장수 — 표에 없는 키는 0 */
 const photoAreaCount = (key: string) => PHOTO_AREAS.find((a) => a.key === key)?.count() ?? 0;
@@ -4935,31 +4933,8 @@ const tradePhotoErrMsg = ref('');
 const tradePhotoList = computed<string[]>(() => auction.value?.tradePhotoUrls ?? []);
 
 // === 네이버부동산 매물 사진 (최저가) ===
-const listPhotoInput = ref('');
 const listPhotoErrMsg = ref('');
 const listPhotoList = computed<string[]>(() => auction.value?.listPhotoUrls ?? []);
-const addListPhotoUrl = async () => {
-  if (!auction.value) return;
-  if (listPhotoList.value.length >= PHOTO_MAX) { listPhotoErrMsg.value = photoFullMsg; return; }
-  const url = listPhotoInput.value.trim();
-  if (!url) return;
-  listPhotoErrMsg.value = '';
-  if (!auction.value.listPhotoUrls) auction.value.listPhotoUrls = [];
-  if (auction.value.listPhotoUrls.includes(url)) {
-    listPhotoErrMsg.value = '이미 추가된 링크입니다.';
-    return;
-  }
-  auction.value.listPhotoUrls.unshift(url);
-  listPhotoInput.value = '';
-  await store.saveAuction(auction.value);
-};
-const removeListPhotoAt = async (idx: number) => {
-  if (!auction.value) return;
-  const [removed] = auction.value.listPhotoUrls?.splice(idx, 1) ?? [];
-  await store.saveAuction(auction.value);
-  await discardPastedImage(removed);
-};
-
 // === 서류 확인 체크 — 매각물건명세서 외 확인해야 할 공부들 ===
 type RightsDocField = {
   id: string;
@@ -8525,35 +8500,6 @@ const goBack = () => router.back();
               </template>
             </div>
 
-            <div class="adp-mkt-block">
-              <div class="adp-mkt-block-head">
-                <span class="t">② 네이버부동산 매물 사진(최저가)<PhotoCountMark :n="photoAreaCount('listPhoto')" /></span>
-                <button type="button" class="adp-photo-fold" :aria-label="photoFolded('listPhoto') ? '펼치기' : '접기'" @click.stop="togglePhotoFold('listPhoto')"><img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('listPhoto') }]" alt="" /></button>
-              </div>
-              <div v-if="!photoFolded('listPhoto')" class="adp-plan-row">
-                <input
-                  v-model="listPhotoInput"
-                  placeholder="링크 또는 이미지 붙여넣기"
-                  class="adp-input"
-                  @keydown.enter.prevent="addListPhotoUrl"
-                  @paste="pasteImageInto($event, 'listPhoto')"
-                />
-                <button type="button" class="adp-icn-btn" @click="addListPhotoUrl">+</button>
-              </div>
-              <p v-if="listPhotoErrMsg && !photoFolded('listPhoto')" class="adp-plan-err">{{ listPhotoErrMsg }}</p>
-              <PhotoGrid
-                v-if="!photoFolded('listPhoto')"
-                class="adp-pg"
-                :items="listPhotoList"
-                :src="photoSrc"
-                :broken="brokenImages"
-                alt="네이버부동산 매물 사진"
-                @open="openLightbox"
-                @error="onImageError"
-                @remove="removeListPhotoAt"
-                @add="pickPhotoFor('listPhoto')"
-              />
-            </div>
 
 
             <!-- 3. 동일지번 매각물건 — 같은 번지에서 전에 팔린 물건. 값을 가늠하는 바로 옆 사례다 -->
