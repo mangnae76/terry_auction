@@ -7257,7 +7257,7 @@ const goBack = () => router.back();
               <!-- 웹 — 넓은 칸이라 순위·권리 종류·권리자·채권액/내용·인수/소멸·비고를 제 칸에 하나씩 -->
               <table v-if="webEmbed" class="adp-table adp-rights-wide">
                 <colgroup>
-                  <col style="width: 9%" /><col style="width: 13%" /><col style="width: 20%" /><col style="width: 17%" /><col style="width: 11%" /><col />
+                  <col style="width: 9%" /><col style="width: 12%" /><col style="width: 19%" /><col style="width: 14%" /><col style="width: 8%" /><col />
                 </colgroup>
                 <thead><tr><th>순위</th><th>권리 종류</th><th>권리자</th><th>채권액/내용</th><th>인수/소멸</th><th>비고</th></tr></thead>
                 <tbody>
@@ -9749,7 +9749,8 @@ const goBack = () => router.back();
 /* 상세 권리 분석 표 */
 /* 웹 — 여섯 칸을 한 줄씩. 머리줄은 옅은 바탕, 줄 사이는 가는 선 */
 .adp-rights-wide { table-layout: fixed; }
-.adp-rights-wide th, .adp-rights-wide td { font-size: 13px; padding: 12px 12px; word-break: keep-all; vertical-align: middle; text-align: left; }
+/* 칸마다 글을 가운데에 — 채권액·인수/소멸은 좁히고 남는 폭은 비고에 준다 */
+.adp-rights-wide th, .adp-rights-wide td { font-size: 13px; padding: 12px 8px; word-break: keep-all; vertical-align: middle; text-align: center; }
 .adp-rights-wide th { font-weight: 800; color: #374151; background: #f6f7f9; }
 .adp-rights-wide td { color: #374151; }
 /* 접수일 — 굵기·색은 다른 칸 값과 똑같이 */
