@@ -5495,12 +5495,13 @@ const tenantUsagePeriod = (raw: string) => {
   return m && m[1].trim() ? `${m[1].trim()} / ${m[2].trim()}` : text;
 };
 /** 전입·확정·배당을 한 줄로 — 없는 값은 빼고 쉼표로 잇는다 */
-const tenantDatesText = (t: { moveIn?: string; fixed?: string; distribution?: string }) =>
+/** sep — 앱은 한 줄(', '), 웹은 전입·확정·배당을 세 줄('\n') */
+const tenantDatesText = (t: { moveIn?: string; fixed?: string; distribution?: string }, sep = ', ') =>
   [
     t.moveIn ? `전입: ${t.moveIn}` : '',
     t.fixed ? `확정: ${t.fixed}` : '',
     t.distribution ? `배당: ${t.distribution}` : '',
-  ].filter(Boolean).join(', ') || '-';
+  ].filter(Boolean).join(sep) || '-';
 
 // 동이 없는 빌라가 많다 — 그럴 때는 '-동'을 적지 않고 호수만 남긴다
 const summaryDongText = computed(() => (sumVal('sum.dong') ? `${sumVal('sum.dong')}동` : ''));
@@ -7394,7 +7395,7 @@ const goBack = () => router.back();
           <p class="adp-base-note adp-tn-base">말소기준 : <b class="adp-tn-date">{{ tenantBaseDate }}</b> · 배당종기 : <b class="adp-tn-date">{{ tenantDistDate }}</b> · 소액기준 : <b class="adp-tn-date">{{ tenantSmallDate }}</b></p>
 
           <!-- 임차인이 여럿이면 한 사람씩 제 상자에 담는다 — 한 통에 이어 붙이면 어느 줄이 누구 것인지 헷갈린다 -->
-          <div :class="['adp-tn-box', { 'is-many': tenantCards.length > 1 }]">
+          <div :class="['adp-tn-box', { 'is-many': tenantCards.length > 1, 'is-web': webEmbed }]">
           <template v-if="tenantCards.length > 0">
             <section v-for="(tenant, i) in tenantCards" :key="i" class="adp-tn-one">
               <dl class="adp-base-rows adp-base-tenant">
@@ -7412,7 +7413,7 @@ const goBack = () => router.back();
                 </div>
                 <div class="adp-base-row">
                   <dt>전입 확정 배당</dt>
-                  <dd class="adp-tn-dates">{{ tenantDatesText(tenant) }}</dd>
+                  <dd :class="['adp-tn-dates', { 'pre-line': webEmbed }]">{{ tenantDatesText(tenant, webEmbed ? '\n' : ', ') }}</dd>
                 </div>
               </dl>
             </section>
@@ -9605,6 +9606,16 @@ const goBack = () => router.back();
   border: 1px solid #e5e7eb; border-radius: 8px; padding: 2px 10px 7px; background: #fff;
 }
 .adp-tn-box.is-many > .adp-base-warn, .adp-tn-box.is-many > .adp-base-more { padding: 0 2px; }
+/* 웹 — 임차인 상자 셋을 가로로 나란히. 경고·기타사항·빈 글은 한 줄을 통째로 쓴다 */
+.adp-tn-box.is-web {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: stretch;
+  border: 0; padding: 0; background: transparent;
+}
+.adp-tn-box.is-web > :not(.adp-tn-one) { grid-column: 1 / -1; }
+.adp-tn-box.is-web .adp-tn-dates.pre-line { white-space: pre-line; }
+.adp-tn-box.is-web .adp-tn-one {
+  margin: 0; border: 1px solid #e5e7eb; border-radius: 8px; padding: 2px 10px 7px; background: #fff;
+}
 .adp-case-table { table-layout: fixed; }
 .adp-case-table td { vertical-align: middle; word-break: keep-all; }
 .adp-case-table .adp-pill { display: inline-block; white-space: nowrap; }
