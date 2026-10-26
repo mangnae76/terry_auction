@@ -4549,7 +4549,10 @@ const photoAreaCount = (key: string) => PHOTO_AREAS.find((a) => a.key === key)?.
 const photoAlwaysFold = (key: string) => PHOTO_AREAS.find((a) => a.key === key)?.fold === 'always';
 const PHOTO_SECTIONS = PHOTO_AREAS.filter((a) => a.scope === 'card');
 const photoCollapseSetFor = ref<string | null>(null);
-watch(
+/* 이 감시자는 setup 이 다 끝난 뒤에 건다.
+   세는 함수(count)가 아래에 선언된 값(extraList · DOC_BOXES …)을 읽기 때문에,
+   setup 도중에 걸면 '선언 전에 읽었다'며 한 번 멎고 그대로 깨어나지 않았다. */
+onMounted(() => watch(
   () => [auction.value?.id, ...PHOTO_SECTIONS.map((sec) => sec.count())] as const,
   () => {
     const id = auction.value?.id;
@@ -4564,7 +4567,7 @@ watch(
     collapsed.value = next;
   },
   { immediate: true },
-);
+));
 const removeRightsDocAt = async (idx: number) => {
   if (!auction.value) return;
   const [removed] = auction.value.rightsDocUrls?.splice(idx, 1) ?? [];
