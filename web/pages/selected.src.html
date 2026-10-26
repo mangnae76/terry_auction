@@ -273,6 +273,11 @@ button { cursor: pointer; }
 .app-detail { --bg-card: #ffffff; --bg-soft: #f1f5f9; --text-primary: #1e293b; --text-secondary: #64748b; --text-muted: #94a3b8; --app-line: #e2e8f0; }
 :root[data-theme="dark"] .app-detail { --bg-card: #131a27; --bg-soft: #1c2638; --text-primary: #ecf2ff; --text-secondary: #9fb0ca; --text-muted: #7c8aa3; --app-line: #2a3954; }
 .app-detail .adp-cash-step + .adp-cash-step { border-top-color: var(--app-line) !important; }
+/* 웹 산정표 — 머리줄(구분 · 상세 · 비중 · 금액)은 가운데, 금액 칸 오른쪽은 글자 한두 개만큼 띄운다 */
+.app-detail .adp-profit-table thead th { text-align: center !important; }
+.app-detail .adp-profit-table tr > :last-child { padding-right: 22px !important; }
+/* 돈이 나가는 순서 — '필요한 내 돈 합계' 를 단계 제목(예: 명도·수리 · 집을 넘겨받고 고치는 비용)과 같은 크기로 */
+.app-detail .adp-cash-total, .app-detail .adp-cash-total :is(span, b), .app-detail .adp-cash-head b { font-size: 14px !important; }
 /* 웹 산정표(두 열) — 표 폭을 칸 폭에서 좌우 들임만큼 빼서, 위 A~D 칩 줄의 시작 · 끝과 맞춘다 */
 .app-detail .adp-card > .adp-profit-table { width: calc(100% - 2 * var(--card-inset)) !important; box-sizing: border-box; }
 /* 웹 산정표 이름 줄 — 'A안' 20, 초기화 · 표 삭제는 알약 대신 비고 칸과 같은 둥근 사각형(모서리 6 · 높이 40), 휴지통은 정사각 */
