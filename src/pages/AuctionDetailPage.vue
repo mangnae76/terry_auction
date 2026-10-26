@@ -7451,6 +7451,15 @@ const goBack = () => router.back();
               </dl>
             </section>
           </template>
+          <!-- 웹 — 임차인이 없으면 글 대신 빈 상자 하나 (칸 이름만, 값은 '-') -->
+          <section v-else-if="webEmbed" class="adp-tn-one is-blank">
+            <dl class="adp-base-rows adp-base-tenant">
+              <div class="adp-base-row"><dt>임차인</dt><dd>-</dd></div>
+              <div class="adp-base-row"><dt>보증금</dt><dd>-</dd></div>
+              <div class="adp-base-row"><dt>점유/기간</dt><dd>-</dd></div>
+              <div class="adp-base-row"><dt>전입 확정 배당</dt><dd class="adp-tn-dates pre-line">{{ tenantDatesLines({}) }}</dd></div>
+            </dl>
+          </section>
           <p v-else class="adp-empty">임차인 정보 없음</p>
 
           <p v-if="tenantWarnText" class="adp-base-warn">
