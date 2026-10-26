@@ -7269,12 +7269,12 @@ const goBack = () => router.back();
               </div>
               <div class="adp-diag-box">
                 <span class="adp-diag-k">인수권리수</span>
-                <b :class="['adp-diag-v', { on: rightsAi }]">{{ rightsAi ? `${rightsAi.takeover.count}개` : '-' }}</b>
+                <b :class="['adp-diag-v', { on: rightsAi }]"><template v-if="rightsAi">{{ rightsAi.takeover.count }}<em class="adp-diag-unit">개</em></template><template v-else>-</template></b>
                 <p v-if="rightsAi?.takeover.summary" class="adp-diag-sum">{{ diagSumText(rightsAi.takeover.summary) }}</p>
               </div>
               <div class="adp-diag-box">
                 <span class="adp-diag-k">소멸권리수</span>
-                <b :class="['adp-diag-v', { on: rightsAi }]">{{ rightsAi ? `${rightsAi.extinguish.count}개` : '-' }}</b>
+                <b :class="['adp-diag-v', { on: rightsAi }]"><template v-if="rightsAi">{{ rightsAi.extinguish.count }}<em class="adp-diag-unit">개</em></template><template v-else>-</template></b>
                 <p v-if="rightsAi?.extinguish.summary" class="adp-diag-sum">{{ diagSumText(rightsAi.extinguish.summary) }}</p>
               </div>
               <div class="adp-diag-box">
@@ -9564,6 +9564,9 @@ const goBack = () => router.back();
 .adp-diag-name { font-size: 16px; line-height: 1.3; word-break: keep-all; }
 /* 웹 — 넓은 칸이라 말소기준권리 이름도 다른 세 칸 값과 같은 20 (줄간격은 그대로 1.3) */
 .adp-tab-rights .adp-diag-name { font-size: 20px; }
+/* 진단 값 뒤 단위('개') — 앱은 값과 같은 글자, 웹은 손품조사 수요공급의 단위(연·%)처럼 작은 회색 */
+.adp-diag-unit { font-style: normal; }
+.adp-tab-rights .adp-diag-unit { margin-left: 2px; font-size: 14px; font-weight: 700; color: #6b7280; }
 /* 개수 아래 권리 이름 — 글씨는 상자 이름(인수권리수 · 말소권리수)과 같은 크기 */
 .adp-diag-list { margin: 0; padding: 0; list-style: none; font-size: 12.5px; line-height: 1.45; color: #6b7280; word-break: keep-all; }
 .adp-diag-list.take { color: #dc2626; }
