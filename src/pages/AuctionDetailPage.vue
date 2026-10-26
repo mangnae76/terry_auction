@@ -9752,7 +9752,8 @@ const goBack = () => router.back();
 .adp-rights-wide th, .adp-rights-wide td { font-size: 13px; padding: 12px 12px; word-break: keep-all; vertical-align: middle; text-align: left; }
 .adp-rights-wide th { font-weight: 800; color: #374151; background: #f6f7f9; }
 .adp-rights-wide td { color: #374151; }
-.adp-rights-wide .adp-rights-date { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 600; color: #9ca3af; }
+/* 접수일 — 굵기·색은 다른 칸 값과 똑같이 */
+.adp-rights-wide .adp-rights-date { display: block; margin-top: 2px; font-size: 13px; font-weight: 400; color: #374151; }
 .adp-rows-cap { margin: 12px 0 5px; font-weight: 800; color: #374151; }
 /* 카드 안 작은 제목(상세 권리 분석 · AI 명도 난이도 분석) — 서류 칸 이름과 같은 14 */
 .adp-tab-rights .adp-rows-cap { font-size: 14px; }
