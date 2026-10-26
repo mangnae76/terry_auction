@@ -4624,9 +4624,11 @@ const RIGHTS_BASE_WORD = /(말소기준권리|말소기준등기)/;
 /** 내용 칸 — 가운뎃점 토막을 한 줄씩 내린다.
  *  markBase 는 '이 줄이 바로 말소기준권리일 때'만 켠다. 다른 줄의 "말소기준권리보다 앞선…",
  *  "말소기준권리 이후…" 는 기준을 가리키는 설명이지 기준 그 자체가 아니다 — 칠하지 않는다. */
+const CASE_NO = /\(?\s*\d{4}\s*타경\s*\d+\s*\)?/g;
 const rightsNoteParts = (note: string, markBase: boolean) => (note || '')
   .split(/\s*·\s*/)
-  .map((t) => dotYmd(t.trim()))
+  /* 사건번호는 화면 위쪽에 이미 있다 — 내용 줄에서는 뺀다 (예전에 받아 둔 분석도 같게) */
+  .map((t) => dotYmd(t.replace(CASE_NO, '').trim()).replace(/^[-·,/\s]+|[-·,/\s]+$/g, ''))
   .filter(Boolean)
   .map((line) => (markBase
     ? line.split(RIGHTS_BASE_WORD).filter((piece) => piece !== '')
