@@ -153,6 +153,52 @@ const sumLabel = computed(() => (
 ));
 
 const won = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
+
+/** 웹 요약 줄 — 지금 보는 범위(예: 옹진군 전체 / 한 읍면동) 전체를 한 줄로 셈한다.
+ *  지표는 표의 동별 식과 같다: 회전율 = 연 거래 ÷ 세대수, 소화율 = 연 거래 ÷ 매물수,
+ *  부담률 = 매물수 ÷ 세대수, 소진기간 = 매물수 ÷ 월 거래 */
+const navStats = computed(() => {
+  const list = rows.value;
+  const count = list.reduce((sum, r) => sum + r.count, 0);
+  const priced = list.filter((r) => r.avgPrice > 0);
+  const priceN = priced.reduce((sum, r) => sum + r.count, 0);
+  const avgPrice = priceN > 0 ? priced.reduce((sum, r) => sum + r.avgPrice * r.count, 0) / priceN : 0;
+  const aged = list.filter((r) => r.avgBuildYear > 0);
+  const ageN = aged.reduce((sum, r) => sum + r.count, 0);
+  const avgYear = ageN > 0 ? aged.reduce((sum, r) => sum + r.avgBuildYear * r.count, 0) / ageN : 0;
+  const units = list.reduce((sum, r) => sum + r.units, 0);
+  const listings = list.reduce((sum, r) => sum + r.listings, 0);
+  const monthly = count / Math.max(1, months.value);
+  const yearly = count / Math.max(1, months.value / 12);
+  return {
+    count, avgPrice, monthly,
+    age: avgYear > 0 ? new Date().getFullYear() - Math.round(avgYear) + 1 : 0,
+    turnover: units > 0 ? (yearly / units) * 100 : 0,
+    absorb: listings > 0 ? (yearly / listings) * 100 : 0,
+    burden: units > 0 ? (listings / units) * 100 : 0,
+    clearMonths: monthly > 0 && listings > 0 ? listings / monthly : 0,
+  };
+});
+/** '1.28억' · '9,800만' — 상자 안은 짧게 */
+const eokShort = (n: number) => {
+  if (!(n > 0)) return '-';
+  if (n >= 100000000) return `${(Math.round(n / 1000000) / 100).toLocaleString('ko-KR')}억`;
+  return `${Math.round(n / 10000).toLocaleString('ko-KR')}만`;
+};
+const navCells = computed(() => {
+  const v = navStats.value;
+  const pct = (x: number) => (x > 0 ? `${x.toFixed(1)}%` : '-');
+  return [
+    { label: '평균 거래가', value: eokShort(v.avgPrice) },
+    { label: '월 평균 거래량', value: v.monthly > 0 ? `${v.monthly.toFixed(1)}건` : '-' },
+    { label: '총 거래건수', value: v.count > 0 ? `${v.count.toLocaleString('ko-KR')}건` : '-' },
+    { label: '평균 건축연수', value: v.age > 0 ? `${v.age}년차` : '-' },
+    { label: '거래 회전율', value: pct(v.turnover) },
+    { label: '매물 소화율', value: pct(v.absorb) },
+    { label: '매물 부담률', value: pct(v.burden) },
+    { label: '매물 소진기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-' },
+  ];
+});
 const areaText = (n: number) => (n > 0 ? n.toFixed(1) : '-');
 /** 건축연수 — 올해에서 평균 건축연도를 뺀다 */
 const THIS_YEAR = new Date().getFullYear();
@@ -339,6 +385,16 @@ const downloadCsv = () => {
         (국토부 호출 {{ callCount.toLocaleString('ko-KR') }}번). 한 곳만 보려면 시·군·구를 고르세요.
       </p>
 
+      <!-- 웹 — 고른 범위 전체를 한눈에: 요약 상자 줄 (고르는 칸 바로 아래) -->
+      <section v-if="webEmbed && rows.length > 0" class="adm-nav">
+        <p class="adm-nav-scope">{{ sumLabel }}</p>
+        <div class="adm-nav-row">
+          <div v-for="c in navCells" :key="c.label" class="adm-nav-box">
+            <small>{{ c.label }}</small>
+            <b>{{ c.value }}</b>
+          </div>
+        </div>
+      </section>
       <p v-if="errorMsg" class="adm-msg err">{{ errorMsg }}</p>
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
 
@@ -491,6 +547,17 @@ const downloadCsv = () => {
 .adm-msg.err { background: #fef2f2; color: #b91c1c; }
 .adm-msg.warn { background: #fffbeb; color: #92400e; }
 
+/* 웹 요약 줄 — 상자마다 위 작은 이름, 아래 굵은 값 */
+.adm-nav { margin: 14px 0 6px; padding: 14px; border: 1px solid #e3e8f0; border-radius: 10px; background: #f7f8fa; }
+.adm-nav-scope { margin: 0 0 10px 2px; font-size: 16px; font-weight: 800; color: #111827; }
+.adm-nav-row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; }
+.adm-nav-box {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px;
+  background: #fff; border: 1px solid #eef1f6; border-radius: 8px; text-align: center; min-width: 0;
+}
+.adm-nav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
+.adm-nav-box b { font-size: 18px; font-weight: 800; color: #2f6b45; white-space: nowrap; }
+@media (max-width: 1200px) { .adm-nav-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .adm-sum {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   margin: 18px 2px 10px; font-size: 12.5px; color: #6b7280; font-weight: 600;
