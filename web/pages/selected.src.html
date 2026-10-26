@@ -544,9 +544,11 @@ body.trip-full .foot { display: none; }
 .it-table { width: 100%; font-size: 13px; }
 .it-table th, .it-table td { padding: 7px 10px; text-align: left; }
 .it-table th { color: var(--muted); font-weight: 700; background: var(--surface-2); }
-/* 가져오기 줄 — 폴더 칸·폴더등록·폴더스캔·PDF등록 넷을 같은 폭으로 나눈다 */
-.auto-box .rg-acts { display: grid; grid-template-columns: repeat(4, minmax(0, 220px)); justify-content: start; gap: 8px; }
+/* 가져오기 줄 — 제목 옆으로 폴더 칸·폴더등록·폴더스캔·PDF등록 넷을 같은 폭으로 나눈다 */
+.auto-box .rg-acts { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .auto-box .rg-acts > .rg-fav, .auto-box .rg-acts > .rg-btn { width: auto; }
+/* 두 단의 제목 칸을 같은 폭으로 — 아래 네 칸이 위 줄과 나란히 선다 */
+.auto-box .rg-row1 > .rg-title { min-width: 176px; }
 /* Plus 딱지 — 유료로 쓸 수 있는 자리에만 단다 */
 .plan-tag { display: inline-block; flex: 0 0 auto; border-radius: 999px; font-weight: 800; letter-spacing: -.1px; vertical-align: 1px; }
 .plan-tag.plus { padding: 1px 7px; background: #eda134; color: #fff; font-size: 12px; line-height: 1.5; }
@@ -576,7 +578,7 @@ body.trip-full .foot { display: none; }
 .rg-results.manual .rg-head { margin-bottom: 10px; }
 .mn-note { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--muted); }
 .mn-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-@media (max-width: 900px) { .mn-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .auto-box .rg-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .mn-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .auto-box .rg-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .auto-box .rg-drive { flex-wrap: wrap; } }
 .mn-form input { height: 34px; padding: 0 11px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 13px; color: var(--text); min-width: 0; }
 .mn-form input:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 .mn-form .wide { grid-column: span 2; }
@@ -2355,12 +2357,10 @@ html, body { overflow-x: clip; }
         <button type="button" class="ai-key" style="margin-left:auto" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
         <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
       </div>
-      <!-- ② 어디서 가져올까 — 제목 한 줄, 그 아래 고르고 읽는 줄. 위 단과는 선으로 가른다 -->
-      <div class="rg-row1 rg-sep">
+      <!-- ② 어디서 가져올까 — 제목 옆으로 네 칸 한 줄. 위 단과는 선으로 가른다 -->
+      <div class="rg-row1 rg-sep rg-drive">
         <span class="rg-title tip-below" data-tip="구글 드라이브 폴더나 PDF 파일을 읽어 선정목록으로 올립니다" data-tip-pos="left">${I.cloud}구글 드라이브 연동하기</span>
-        ${PAID ? '' : '<span class="lock-note">Plus 이용 중에 쓸 수 있습니다<button type="button" class="mini edit" data-act="soon" data-name="결제하기">결제하기</button></span>'}
-      </div>
-      <div class="rg-row1 rg-acts">
+        ${PAID ? '<div class="rg-acts">' : '<span class="lock-note">Plus 이용 중에 쓸 수 있습니다<button type="button" class="mini edit" data-act="soon" data-name="결제하기">결제하기</button></span><div class="rg-acts">'}
         <!-- 등록해 둔 폴더를 펼쳐 고른다. 고치고 지우는 일은 폴더등록 창이 맡는다 -->
         <div class="rg-folder pop-root" data-pop="folders">
           <button type="button" class="rg-folder-box" data-act="pop" data-id="folders" aria-expanded="${S.pop === 'folders'}" aria-label="스캔할 폴더 선택">
@@ -2371,6 +2371,7 @@ html, body { overflow-x: clip; }
         <button type="button" class="rg-fav" data-act="fav-open">${I.star}폴더등록</button>
         <button type="button" class="rg-btn scan" data-act="scan" ${R.loading ? 'disabled' : ''}>${I.search}폴더스캔${R.sel.length ? ` (${R.sel.length})` : ''}</button>
         <button type="button" class="rg-btn pdf" data-act="pdf-pick" ${R.loading ? 'disabled' : ''}>${I.files}PDF등록</button>
+        </div>
       </div>
       </div>`;
     const rowHtmlR = (r) => `<li class="rg-item ${r.status}" ${r.status === 'ready' ? `data-act="rg-open" data-v="${esc(r.p.caseNo)}" tabindex="0"` : ''}>
