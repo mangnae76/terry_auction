@@ -2386,13 +2386,14 @@ html, body { overflow-x: clip; }
     $('regContent').innerHTML = `
       <section class="rg-lead-box">
         <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I.info}</svg>+물건등록</h2>
-        <p>선정된 경매 물건을 등록하고 관리하세요. <span class="plan-tag plus">Plus</span> AI가 정보를 분석 정리하여 선정목록 카드 안에서 볼 수 있습니다.</p>
+        <p>선정된 경매 물건을 등록하고 관리하세요. AI가 정보를 분석 정리하여 선정목록 카드 안에서 볼 수 있습니다.</p>
       </section>
       ${autoBox}
       ${!AUTO ? '' : `
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
       <section class="rg-results" id="rgDrop" aria-label="${PC.title}">
         <div class="rg-head"><h2 class="tip-below" data-tip="${PC.tip}" data-tip-pos="left" style="cursor:help">${PC.ic}${PC.title}</h2>
+          <span class="plan-tag plus">Plus</span>
           <button type="button" class="ai-req go tip-below" data-act="go-mypage" data-tip="마이페이지에서 Gemini API 키를 설정합니다" data-tip-pos="below">필수설정${I.chevRight || ''}</button>
           <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span>${R.rows.length ? `<button type="button" class="rg-clear-btn" data-act="rg-clear" aria-label="목록 비우기" data-tip="목록 비우기" data-tip-pos="below">${I.trash}</button>` : ''}</span>
           <button type="button" class="rg-chev ${R.collapsed ? 'up' : ''}" data-act="rg-collapse" aria-expanded="${!R.collapsed}" aria-label="결과 접기">${I.chevDown}</button></div>
