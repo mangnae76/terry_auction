@@ -194,3 +194,77 @@ export const mountAppFieldTrip = (el, onDetail) => {
     app.unmount();
   };
 };
+
+// === 낙찰이후 · 자금관리 · 더보기 — 앱 화면(PostWinPage · FinancePage · MorePage)을 그대로 띄운다 ===
+// 웹 하위 탭은 ?tab= 으로 고른다(앱 화면이 주소의 탭을 따른다). 계산·저장은 앱이 하던 그대로다.
+// 더보기 안에서 가는 앱 화면(포인트 · 결제관리 · 알림설정 …)도 같은 칸 안에서 앱 화면 그대로 연다 — '뒤로'로 돌아온다.
+// 웹이 받아야 하는 길(물건상세 · 로그인 · 선정목록 · 임장경로 · 다른 메뉴)은 hooks.onNav(웹 열쇠, 값)로 넘긴다.
+import PostWinPage from '../../src/pages/PostWinPage.vue';
+import FinancePage from '../../src/pages/FinancePage.vue';
+import MorePage from '../../src/pages/MorePage.vue';
+const APP_PAGES = { postwin: '/post-win', finance: '/finance', more: '/more' };
+const APP_PAGE_ROUTES = [
+  { path: '/post-win', component: PostWinPage },
+  { path: '/finance', component: FinancePage },
+  { path: '/tax', redirect: { path: '/finance', query: { tab: 'tax' } } },
+  { path: '/more', component: MorePage },
+  { path: '/trash', component: () => import('../../src/pages/TrashPage.vue') },
+  { path: '/archive', component: () => import('../../src/pages/TrashPage.vue') },
+  { path: '/bid-calendar', component: () => import('../../src/pages/BidCalendarPage.vue') },
+  { path: '/terms', component: () => import('../../src/pages/TermsPage.vue') },
+  { path: '/withdraw', component: () => import('../../src/pages/WithdrawPage.vue') },
+  { path: '/point-history', component: () => import('../../src/pages/PointHistoryPage.vue') },
+  { path: '/payments', component: () => import('../../src/pages/PaymentsPage.vue') },
+  { path: '/trial', component: () => import('../../src/pages/TrialPage.vue') },
+  { path: '/points', component: () => import('../../src/pages/PointsPage.vue') },
+  { path: '/support', component: () => import('../../src/pages/SupportPage.vue') },
+  { path: '/notifications', component: () => import('../../src/pages/NotificationsPage.vue') },
+  { path: '/privacy', component: () => import('../../src/pages/PrivacyPage.vue') },
+  { path: '/billing', component: () => import('../../src/pages/BillingPage.vue') },
+  { path: '/profile', component: () => import('../../src/pages/ProfilePage.vue') },
+  { path: '/agencies', component: () => import('../../src/pages/AgencyBookPage.vue') },
+  { path: '/interior-vendors', component: () => import('../../src/pages/InteriorVendorsPage.vue') },
+  { path: '/post/:id', component: () => import('../../src/pages/BoardPostPage.vue'), props: true },
+];
+const PAGE_OF_PATH = Object.fromEntries(Object.entries(APP_PAGES).map(([k, p]) => [p, k]));
+export const hasAppPage = (key) => !!APP_PAGES[key];
+/** el 안에 앱 화면(key)을 tab 탭으로 띄운다. 돌려주는 함수로 걷고, .setTab(tab) 으로 탭만 바꾼다 */
+export const mountAppPage = (el, key, tab, hooks = {}) => {
+  const home = APP_PAGES[key];
+  const Empty = { render: () => null };
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [...APP_PAGE_ROUTES, { path: '/:rest(.*)*', component: Empty }],
+  });
+  const nav = (...a) => { if (hooks.onNav) setTimeout(() => hooks.onNav(...a), 0); };
+  router.beforeEach((to) => {
+    const p = to.path || '';
+    const hit = /^\/auctions\/([\w-]+)$/.exec(p);
+    if (p === '/auctions/new' || p === '/auctions/import') { nav('register'); return false; }
+    if (hit && !['watchlist', 'schedule', 'profit', 'calendar'].includes(hit[1])) { nav('item', hit[1], (to.query && to.query.tab) || ''); return false; }
+    if (p === '/login' || p === '/signup') { nav('login'); return false; }
+    if (p === '/' || p.startsWith('/auctions')) { nav('list'); return false; }
+    if (p === '/field-trip') { nav('trip'); return false; }
+    if (p === '/trade-stats') { nav('market'); return false; }
+    /* 낙찰이후 · 자금관리 · 더보기 사이를 오가면 웹 메뉴로 옮긴다(띄운 화면이 아니면) */
+    const other = PAGE_OF_PATH[p];
+    if (other && other !== key) { nav(other, String((to.query && to.query.tab) || '')); return false; }
+    return true;
+  });
+  /* 앱 화면이 제 탭을 바꾸면(이름 눌러 마이페이지 등) 웹 하위 탭도 따라온다 */
+  router.afterEach((to) => {
+    if (to.path === home && hooks.onTab) hooks.onTab(String((to.query && to.query.tab) || ''));
+  });
+  const app = createApp({ render: () => h(RouterView) });
+  app.use(getActivePinia());
+  app.use(router);
+  app.provide('webEmbed', true);
+  void router.push({ path: home, query: tab ? { tab } : {} });
+  app.mount(el);
+  const stop = () => app.unmount();
+  stop.setTab = (t) => {
+    if (router.currentRoute.value.path !== home) { void router.push({ path: home, query: { tab: t } }); return; }
+    if (String(router.currentRoute.value.query.tab || '') !== t) void router.replace({ path: home, query: { ...router.currentRoute.value.query, tab: t } });
+  };
+  return stop;
+};

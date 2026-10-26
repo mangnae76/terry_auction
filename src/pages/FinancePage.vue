@@ -3,7 +3,7 @@
 // 탭: 사업계좌 자금입출금 / 사업지출내역 / 유류비 & 식대지출 / 물품구매 지출상세
 
 import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { shortAddr } from '../utils/address';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
@@ -139,7 +139,15 @@ onUnmounted(() => {
   // 다른 사용자의 finance 데이터가 잔존하지 않도록 — store는 watch로 재구독
 });
 
-const activeTab = ref<FinanceTabKey>('cashFlow');
+// 탭은 주소(?tab=)를 따른다 — 웹 하위 탭이 주소로 고른다. 앱은 주소에 탭이 없어 늘 자금입출금부터
+const route = useRoute();
+const FIN_TABS: FinanceTabKey[] = ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'tax'];
+const tabOfQuery = (): FinanceTabKey | '' => {
+  const k = String(route.query.tab ?? '');
+  return (FIN_TABS as string[]).includes(k) ? (k as FinanceTabKey) : '';
+};
+const activeTab = ref<FinanceTabKey>(tabOfQuery() || 'cashFlow');
+watch(() => route.query.tab, () => { const k = tabOfQuery(); if (k && k !== activeTab.value) activeTab.value = k; });
 const period = ref<PeriodKey>('all');
 const customStart = ref('');
 const customEnd = ref('');

@@ -48,6 +48,11 @@ const goTab = (key: TabKey) => {
   const top = bar ? bar.getBoundingClientRect().top + window.scrollY - 8 : 0;
   if (window.scrollY > top) window.scrollTo({ top, behavior: 'smooth' });
 };
+// 주소의 탭이 밖에서 바뀌면(웹 하위 탭) 그 탭으로
+watch(() => route.query.tab, (t) => {
+  const k = String(t ?? '');
+  if ((TAB_KEYS as string[]).includes(k) && k !== activeTab.value) activeTab.value = k as TabKey;
+});
 watch(activeTab, (tab) => {
   if (String(route.query.tab ?? '') === tab) return;
   void router.replace({ query: { ...route.query, tab } });

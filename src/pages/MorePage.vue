@@ -51,6 +51,11 @@ const tab = ref<TabKey>('mypage');
 
 /** 고른 탭을 주소에 적어 둔다 — 다른 화면에 갔다 돌아와도 보던 탭이 그대로 열린다.
  *  (손으로 탭을 바꿨으면 '어느 묶음으로 내려가라'는 sec 은 지운다) */
+// 주소의 탭이 밖에서 바뀌면(웹 하위 탭) 그 탭으로
+watch(() => route.query.tab, (t) => {
+  const k = String(t ?? '');
+  if (TABS.some((x) => x.key === k) && k !== tab.value) tab.value = k as TabKey;
+});
 watch(tab, (key) => {
   if (String(route.query.tab ?? '') === key) return;
   void router.replace({ query: { ...route.query, tab: key, sec: undefined } });
