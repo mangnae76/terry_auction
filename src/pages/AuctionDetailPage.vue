@@ -5260,11 +5260,19 @@ const currentRoundLabel = computed(() => currentRoundLabelOf(auction.value));
 const NOT_A_TENANT_NAME = new Set([
   '미배당', '매수인', '배당요구', '신청인', '채권자', '소유자', '점유자', '임대인', '세대주',
   '해당', '사항', '내역', '비고', '보증금', '배당금', '순위배당', '임차권', '전입신고',
+  // 권리를 넘기고 받는 쪽을 가리키는 말 — 사람 이름이 아니다
+  '양수인', '양도인', '승계인', '전차인', '임차인',
 ]);
-const realTenantName = (row: { name: string; subName: string }) =>
-  row.subName.match(/임차인\s*[:：]?\s*([가-힣]{2,4})/)?.[1] ??
-  row.subName.match(/([가-힣]{2,4})\s*의\s*승계인/)?.[1] ??
-  row.name;
+/** 여럿 가운데 '사람 이름인 것'을 고른다 — 뜻을 가리키는 낱말은 건너뛴다 */
+const pickTenantName = (...candidates: Array<string | undefined>) =>
+  candidates.map((c) => (c ?? '').trim()).find((c) => c && !NOT_A_TENANT_NAME.has(c)) ?? '';
+/** 임차인 이름 — '(한국토지주택공사의 양수인)' 처럼 적혀 있으면 공사 이름을 집는다.
+ *  예전에는 '임차인' 뒤 두세 글자를 그대로 집어 '양수인' 이 이름 자리로 올라왔다. */
+const realTenantName = (row: { name: string; subName: string }) => pickTenantName(
+  row.subName.match(/([가-힣]{2,12})\s*의\s*(?:승계인|양수인|양도인)/)?.[1],
+  row.subName.match(/임차인\s*[:：]?\s*([가-힣]{2,12})/)?.[1],
+  row.name,
+);
 
 type TenantCard = {
   name: string; agency: string; occupationPeriod: string;
