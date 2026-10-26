@@ -9905,7 +9905,9 @@ const goBack = () => router.back();
 .adp-ai-used { margin-left: auto; margin-right: 10px; font-size: 14px; font-weight: 400; color: #9ca3af; white-space: nowrap; }
 .adp-ai-used + .adp-ai-head { margin-left: 0; }
 .adp-doc-in.has-ico { position: relative; }
-.adp-doc-in-ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #6b7280; pointer-events: none; }
+/* 아이콘은 입력 칸의 세로 가운데에 — 줄(.adp-plan-row)이 위 4 · 아래 8 여백을 가져 50% 로 잡으면 2px 내려앉는다.
+   입력 칸이 차지하는 띠(위 4 ~ 아래 8)를 잡고 그 안에서 가운데로 */
+.adp-doc-in-ico { position: absolute; left: 10px; top: 4px; bottom: 8px; margin: auto 0; color: #6b7280; pointer-events: none; }
 .adp-doc-in.has-ico .adp-input { padding-left: 32px; }
 /* 웹 — 노란 알림 글은 굵게 쓰지 않는다 */
 .adp-tab-rights .adp-ai-missing { font-weight: 400; }
