@@ -5092,10 +5092,16 @@ const shownDocLines = (item: RightsDocItem): RightsDocLine[] => {
     ...(li === 0 && ln.cells.length === 2 ? [{ kind: 'label' as const, id: `${item.id}.gap`, placeholder: '' }] : []),
   ]) }];
 };
-/** 한 줄의 칸 폭 — 웹은 칸 종류로 정한다(이름 50 · 날짜 140 · 나머지는 나눠 갖기) */
+/** 한 줄의 칸 폭 — 웹은 칸 종류로 정한다(이름 50 · 날짜 140 · 점유관계 넓게 · 나머지 좁게) */
 const docLineColumns = (ln: RightsDocLine) => {
-  /* 빈 이름 칸(끼워 넣은 자리)은 점유관계 칸과 같은 몫을 가져 아래위 줄의 칸이 맞는다 */
-  if (webEmbed) return ln.cells.map((c) => (c.kind === 'label' && c.placeholder ? '50px' : c.kind === 'date' ? '140px' : 'minmax(0, 1fr)')).join(' ');
+  /* 점유관계(여럿 고르기 · 셋 이상 들어간다)와 그 빈 자리는 넓게, 뒤의 전입 등재·세대주 칸은 좁게. 날짜 칸은 모두 같은 폭 */
+  if (webEmbed) {
+    return ln.cells.map((c) => {
+      if (c.kind === 'label') return c.placeholder ? '50px' : 'minmax(0, 2.4fr)';
+      if (c.kind === 'date') return '140px';
+      return c.kind === 'multi' ? 'minmax(0, 2.4fr)' : 'minmax(0, 1fr)';
+    }).join(' ');
+  }
   return ln.cells[0]?.kind === 'label' ? '30px 84px 1fr 1fr' : `repeat(${ln.cells.length}, minmax(0, 1fr))`;
 };
 // 하나만 고르는 칸 — 고르면 바로 닫는다
