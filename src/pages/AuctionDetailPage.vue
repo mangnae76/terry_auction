@@ -5736,7 +5736,7 @@ const goBack = () => router.back();
       </div>
     </div>
 
-    <div :class="['adp-body', { 'adp-tab-rights': activeTab === 'rights' }]">
+    <div :class="['adp-body', { 'adp-tab-rights': webEmbed && activeTab === 'rights' }]">
       <template v-if="activeTab === 'basic'">
         <!-- 정보요약 — PDF 값으로 채우고 필요한 칸은 직접 고친다 -->
         <section class="adp-card">
@@ -12171,7 +12171,7 @@ select.adp-pub-input option { text-align: center; }
   margin: 18px 0 10px; font-size: 11px; color: var(--text-muted);
 }
 
-/* 권리분석 탭 — 글자는 12 아래로 내려가지 않는다 (앱·웹 공통 규칙).
+/* 웹 권리분석 탭 — 글자는 12 아래로 내려가지 않는다 (웹만, 앱은 그대로).
    카드 제목 16 · 카드 안 작은 제목 14 는 위에서 정한다. ▾ 같은 기호는 글이 아니라 그대로 둔다 */
 .adp-tab-rights :is(
   .adp-doc-box, .adp-doc-pdf-tag, .adp-ai-missing, .adp-base-row .quad-v small, .adp-diag-sum,
