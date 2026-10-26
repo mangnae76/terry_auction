@@ -572,7 +572,8 @@ body.trip-full .foot { display: none; }
 .reg-duo { grid-template-columns: minmax(0, 1fr); row-gap: 10px; }
 .reg-duo .rg-acts { grid-template-columns: repeat(4, minmax(0, 220px)); justify-content: start; }
 /* 직접 입력 — 파싱 상자 아래에 선다. 네 칸으로 두 줄 */
-.reg-box.manual { margin-top: 12px; border-radius: 10px; }
+.rg-results.manual { margin-top: 12px; padding-bottom: 16px; }
+.rg-results.manual .rg-head { margin-bottom: 10px; }
 .mn-note { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--muted); }
 .mn-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 @media (max-width: 900px) { .mn-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .reg-duo .rg-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -2326,7 +2327,7 @@ html, body { overflow-x: clip; }
     const tabbar = `
       <div class="reg-tabbar" role="tablist" aria-label="물건등록 방법">
         <button type="button" role="tab" class="reg-tab ${AUTO ? 'on' : ''}" aria-selected="${AUTO}" data-act="reg-mode" data-v="auto">${I.cloud}자동 등록<span class="plan-tag plus">Plus</span></button>
-        <button type="button" role="tab" class="reg-tab ${AUTO ? '' : 'on'}" aria-selected="${!AUTO}" data-act="reg-mode" data-v="manual">${I.pencil}직접 입력</button>
+        <button type="button" role="tab" class="reg-tab ${AUTO ? '' : 'on'}" aria-selected="${!AUTO}" data-act="reg-mode" data-v="manual">${I.pencil}직접입력</button>
       </div>`;
     $('regBox').innerHTML = `
       ${tabbar}
@@ -2384,10 +2385,10 @@ html, body { overflow-x: clip; }
           <div class="rg-foot"><span class="num">UPDATE : ${esc(R.last || '—')}</span></div>` : ''}`}
       </section>`}
       ${AUTO ? '' : `
-      <!-- 직접 입력 — 무료 회원: 읽을 PDF 없이 손으로 적어 올린다 -->
-      <section class="toolbar reg-box manual">
-        <div class="rg-row1">
-          <span class="rg-title tip-below" data-tip="PDF 없이 손으로 적어 선정목록에 올립니다" data-tip-pos="left">${I.pencil}직접 입력</span>
+      <!-- 직접입력 — 무료 회원: 읽을 PDF 없이 손으로 적어 올린다. 겉모습은 AI 파싱 상자와 같게 -->
+      <section class="rg-results manual">
+        <div class="rg-head">
+          <h2 class="tip-below" data-tip="PDF 없이 손으로 적어 선정목록에 올립니다" data-tip-pos="left" style="cursor:help">${I.pencil}직접입력</h2>
           <span class="mn-note">읽을 PDF 가 없는 물건은 여기서 적어 올립니다</span>
         </div>
         <div class="mn-form">
@@ -2402,18 +2403,18 @@ html, body { overflow-x: clip; }
           <input id="mnRound" inputmode="numeric" placeholder="유찰횟수 (예: 1)" aria-label="유찰횟수">
           <input id="mnAddr" class="wide4" placeholder="소재지 (예: 인천광역시 서구 검암동 683-9 403호)" aria-label="소재지">
 
-          <p class="mn-cap">금액 · 일정</p>
+          <p class="mn-cap">매각기일 · 금액</p>
           <input id="mnDate" type="date" aria-label="매각기일" title="매각기일">
           <input id="mnAppr" inputmode="numeric" placeholder="감정가 (원)" aria-label="감정가">
           <input id="mnMin" inputmode="numeric" placeholder="최저가 (원)" aria-label="최저가">
           <input id="mnDep" inputmode="numeric" placeholder="보증금 (원)" aria-label="보증금">
 
-          <p class="mn-cap">물건 · 관계인</p>
+          <p class="mn-cap">관계인 · 물건</p>
+          <input id="mnOwner" placeholder="소유자" aria-label="소유자">
+          <input id="mnDebtor" placeholder="채무자" aria-label="채무자">
           <input id="mnBld" inputmode="decimal" placeholder="건물면적 (㎡)" aria-label="건물면적">
           <input id="mnLand" inputmode="decimal" placeholder="토지면적 (㎡)" aria-label="토지면적">
           <input id="mnYear" inputmode="numeric" placeholder="건축년도 (예: 2010)" aria-label="건축년도">
-          <input id="mnOwner" placeholder="소유자" aria-label="소유자">
-          <input id="mnDebtor" placeholder="채무자" aria-label="채무자">
 
           <p class="mn-cap">메모</p>
           <textarea id="mnNote" class="wide4" rows="2" placeholder="특이사항 (유치권 신고, 대항력 임차인, 미납 관리비 등)" aria-label="특이사항"></textarea>
