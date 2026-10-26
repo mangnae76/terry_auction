@@ -931,7 +931,10 @@ body.trip-full .foot { display: none; }
 /* 아래 회색 줄은 창 끝까지 — 띠처럼 긋는다 (html·body 가 overflow-x: clip 이라 가로 스크롤은 생기지 않는다) */
 .reg-tabbar { position: relative; display: flex; align-items: stretch; gap: 2px; }
 .reg-tabbar::after { content: ""; position: absolute; left: 50%; bottom: 0; z-index: 0; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); } /* 물건상세 하위 탭 줄과 같은 색 */
-.reg-shell { padding-bottom: 0; } /* 탭 줄이 상자의 아랫변 — 줄 아래 띠를 남기지 않는다 */
+.reg-shell { padding-top: 0; padding-bottom: 0; } /* 탭 줄이 상자 전체 — 위아래 띠를 남기지 않는다 */
+/* 물건등록 탭 띠도 시장분석 · 물건상세 하위 탭 띠와 같은 높이: 탭(--tab-h 44) + 아래 선 1 = 45 */
+.reg-tabbar { height: calc(var(--tab-h) + 1px); }
+.reg-tabbar .reg-tab { align-self: flex-start; }
 .reg-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; height: var(--tab-h); padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
 .reg-tab svg { width: 17px; height: 17px; }
 .reg-tab:hover { color: var(--text); }
