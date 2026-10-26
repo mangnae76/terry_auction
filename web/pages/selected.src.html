@@ -266,6 +266,22 @@ button { cursor: pointer; }
 .app-detail .adp-card > .adp-profit-sticky { margin: 0 calc(-1 * var(--card-pad-x)) !important; padding: 0 var(--card-pad-x) !important; }
 .app-detail .adp-profit-head h2 .adp-profit-ico { width: 15px; height: 15px; }
 .app-detail .adp-profit-sticky > :not(.adp-card-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
+/* 앱 색 이름(tokens.css) — 웹에는 앱 전역 CSS 가 없어 이 이름을 쓰는 선·글자가 비어 보였다
+   (돈이 나가는 순서의 '필요한 내 돈 합계' 위 선 등). 웹에 띄운 앱 화면 안에서만 같은 값을 준다 */
+.app-detail { --bg-card: #ffffff; --bg-soft: #f1f5f9; --text-primary: #1e293b; --text-secondary: #64748b; --text-muted: #94a3b8; --app-line: #e2e8f0; }
+:root[data-theme="dark"] .app-detail { --bg-card: #131a27; --bg-soft: #1c2638; --text-primary: #ecf2ff; --text-secondary: #9fb0ca; --text-muted: #7c8aa3; --app-line: #2a3954; }
+.app-detail .adp-cash-step + .adp-cash-step { border-top-color: var(--app-line) !important; }
+/* 웹 산정표(두 열) — 표 폭을 칸 폭에서 좌우 들임만큼 빼서, 위 A~D 칩 줄의 시작 · 끝과 맞춘다 */
+.app-detail .adp-card > .adp-profit-table { width: calc(100% - 2 * var(--card-inset)) !important; box-sizing: border-box; }
+/* 웹 산정표 이름 줄 — 초기화 · 표 삭제 단추를 같은 높이 32 로, 휴지통은 정사각 */
+.app-detail .adp-profit-head-row .adp-pd-reset { height: 32px !important; }
+.app-detail .adp-profit-head-row .adp-pd-del { width: 32px !important; }
+.app-detail .adp-profit-head-row .adp-pd-del svg { width: 18px; height: 18px; }
+/* 웹은 앱 머리줄이 없다 — 머리띠 · 하위 탭 · 사건 요약 상자 바로 아래에 붙고, 그 상자들보다 아래 층에 선다
+   (앱 값 그대로 두면 엉뚱한 높이에 붙어 위 상자들 사이로 올라가 깨져 보였다) */
+.app-detail .adp-profit-sticky {
+  top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px)) !important; z-index: 20 !important;
+}
 .res > :not(.res-head) { margin-left: calc(var(--card-inset) / 2); margin-right: calc(var(--card-inset) / 2); }
 .subtabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 31; background: var(--band); border-bottom: 1px solid var(--subtab-line); }
 /* ===== 틀 고정 (모든 화면 공통 모듈) =====
@@ -726,7 +742,7 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-field .adp-fs-row { padding-top: 8px !important; padding-bottom: 8px !important; }
 /* 웹 입찰가산정 — 예상수익분석의 낙찰일 · 잔금일 · 매도일: 칸 사이를 띄우고 날짜 칸을 가로로 넉넉히(80 → 132) */
 .app-detail .adp-profit-dates { gap: 18px !important; }
-.app-detail .adp-pd-item { gap: 8px !important; }
+.app-detail .adp-pd-item { gap: 8px !important; margin-right: 0 !important; }
 .app-detail .adp-pd-box { width: 132px !important; height: var(--ctl-h); padding: 0 10px !important; gap: 6px !important; }
 /* 비고 칸은 높이를 키워 적기 편하게 (24 → 40) */
 .app-detail .adp-profit-note { height: 40px !important; padding: 0 12px !important; }
@@ -3979,10 +3995,14 @@ html, body { overflow-x: clip; }
     const g = document.querySelector('.gnb'); const sub = $('subTabs');
     if (g) document.documentElement.style.setProperty('--gnb-h', `${g.offsetHeight}px`);
     if (sub && !sub.hidden) document.documentElement.style.setProperty('--subtab-h', `${sub.offsetHeight}px`);
+    /* 물건상세 위 고정 상자(사건 요약) 높이 — 그 아래에 붙는 것(예상수익분석 제목 · A~D 칩)이 이 값만큼 더 내려 선다 */
+    const shell = document.querySelector('.item-shell');
+    if (shell && shell.offsetParent) document.documentElement.style.setProperty('--item-shell-h', `${shell.offsetHeight}px`);
   };
   syncStickTop();
   try { new ResizeObserver(syncStickTop).observe(document.querySelector('.gnb')); } catch (e) { window.addEventListener('resize', syncStickTop); }
   window.addEventListener('scroll', markStuck, { passive: true });
+  window.addEventListener('scroll', syncStickTop, { passive: true });
   window.addEventListener('resize', markStuck);
   window.addEventListener('scroll', () => { if (S.menu) { S.menu = null; render(); } }, { passive: true });
   window.addEventListener('resize', () => { fitCourts(); if (S.menu) { S.menu = null; render(); } });
