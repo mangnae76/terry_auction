@@ -7369,21 +7369,21 @@ const goBack = () => router.back();
             <!-- 웹 — 건물등기 PDF 표와 같은 꼴: 순서 · 접수일 · 권리종류 · 권리자 · 채권금액 · 비고 · 소멸 -->
             <table v-if="webEmbed && registryRows.length > 0" class="adp-table adp-reg-pdf">
               <colgroup>
-                <col style="width: 7%" /><col style="width: 11%" /><col style="width: 14%" /><col style="width: 15%" /><col style="width: 14%" /><col /><col style="width: 8%" />
+                <col style="width: 7%" /><col style="width: 11%" /><col style="width: 14%" /><col style="width: 15%" /><col style="width: 14%" /><col style="width: 8%" /><col />
               </colgroup>
-              <thead><tr><th>순서</th><th>접수일</th><th>권리종류</th><th>권리자</th><th>채권금액</th><th>비고</th><th>소멸</th></tr></thead>
+              <thead><tr><th>순서</th><th>접수일</th><th>권리종류</th><th>권리자</th><th>채권금액</th><th>인수/소멸</th><th>비고</th></tr></thead>
               <tbody>
                 <tr v-for="(r, i) in registryRows" :key="i" :class="{ 'is-base': r.descParts.some((pt) => pt.base), 'tone-take': r.taken }">
-                  <td class="c-left">{{ r.order || '' }}</td>
+                  <td>{{ r.order || '' }}</td>
                   <td>{{ (r.date || '').replace(/\./g, '-') }}</td>
                   <td>{{ r.kind }}</td>
                   <td>{{ r.holder }}</td>
-                  <td class="c-amt">
+                  <td>
                     <span v-if="regAmountParts(r.amount).label" class="c-amt-label">{{ regAmountParts(r.amount).label }}</span>
                     <span class="c-amt-num">{{ regAmountParts(r.amount).num }}</span>
                   </td>
-                  <td class="c-left pre-line"><span v-for="(pt, pi) in r.descParts" :key="pi" :class="{ 'adp-reg-base': pt.base }">{{ pt.text }}</span></td>
                   <td><b v-if="r.taken" class="adp-reg-take">인수</b><template v-else>{{ r.extinct }}</template></td>
+                  <td class="c-left pre-line"><span v-for="(pt, pi) in r.descParts" :key="pi" :class="{ 'adp-reg-base': pt.base }">{{ pt.text }}</span></td>
                 </tr>
               </tbody>
             </table>
@@ -9867,7 +9867,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-table .b { display: block; font-size: 13px; font-weight: 800; color: #111827; }
 .adp-table .pre-line { white-space: pre-line; }
 .adp-registry-table { table-layout: fixed; }
-/* 웹 건물등기 — 칸 나눔은 PDF 표(순서~소멸), 모양은 다른 표 그대로(둥근 모서리 · 옅은 머리줄) */
+/* 웹 건물등기 — 칸 나눔은 PDF 표, 인수/소멸은 비고 앞. 비고만 왼쪽, 나머지는 가운데 */
 .adp-reg-pdf { table-layout: fixed; }
 .adp-reg-pdf th, .adp-reg-pdf td {
   font-size: 13px; padding: 12px 8px; text-align: center; vertical-align: middle;
@@ -9875,8 +9875,7 @@ tr.tone-take { background: #fff5f5; }
 }
 .adp-reg-pdf th { font-weight: 800; background: #f6f7f9; }
 .adp-reg-pdf td.c-left { text-align: left; }
-.adp-reg-pdf td.c-amt { text-align: right; }
-.adp-reg-pdf .c-amt-label { display: block; text-align: left; }
+.adp-reg-pdf .c-amt-label { display: block; }
 .adp-registry-table th, .adp-registry-table td { font-size: 11px; padding: 8px 6px; word-break: keep-all; vertical-align: top; }
 .adp-major-table { table-layout: fixed; }
 .adp-major-table th, .adp-major-table td { font-size: 11.5px; padding: 8px 6px; vertical-align: top; }
