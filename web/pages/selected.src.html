@@ -257,7 +257,7 @@ button { cursor: pointer; }
 .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h)); }
 body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)); }
 .subtabs-in { display: flex; align-items: stretch; gap: 4px; height: 44px; }
-.subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
+.subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: 16px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
 .subtab svg { width: 16px; height: 16px; }
 .subtab:hover { color: var(--text); }
 .subtab.on { color: var(--blue); font-weight: 800; }
@@ -1369,6 +1369,7 @@ html, body { overflow-x: clip; }
   .gnb-in { display: flex; align-items: center; gap: 22px; }
   .gnb .g-logo, .gnb .g-menu, .gnb .g-icons, .gnb .g-box, .gnb .g-box[data-tip], .gnb .g-user { position: relative; left: auto; top: auto; }
   .g-menu { font-size: 15px; }
+  .subtab { font-size: 15px; }
   .g-menu::after { bottom: -20px; }
   .g-menu.m4 { margin-left: auto; }
   .g-icons { order: 10; } .g-box { order: 11; flex: 0 0 auto; }
@@ -1415,6 +1416,7 @@ html, body { overflow-x: clip; }
   .gnb-in { gap: 6px 14px; }
   .g-logo img { height: 32px; }
   .g-menu { font-size: 14px; }
+  .subtab { font-size: 14px; padding: 0 10px; }
   .g-menu::after { display: none; }
   .step { padding: 0 9px; font-size: 12px; }
   .fab { left: 16px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); height: 42px; padding: 0 18px; font-size: 14px; }
