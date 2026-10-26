@@ -269,6 +269,10 @@ button { cursor: pointer; }
 .app-detail .adp-profit-sticky > :not(.adp-card-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
 /* 시장분석 — 분석 도구 화면의 '뒤로'(분석 도구 첫 화면으로)는 웹에서 감춘다 */
 .app-market .adm-back { display: none !important; }
+/* 지역분석 — 화면 제목('실거래 분석 지역 단위')과 설명 줄은 웹에서 지운다. 엑셀 내려받기 단추만 오른쪽에 남긴다 */
+.app-market[data-k="region"] .adm-title { display: none !important; }
+.app-market[data-k="region"] .adm-top { background: transparent !important; backdrop-filter: none !important; border: 0 !important; box-shadow: none !important; position: static !important; }
+.app-market[data-k="region"] .adm-top-in { justify-content: flex-end; padding-top: 0; padding-bottom: 0; }
 /* 거래량 랭킹 — 임장경로처럼 지도를 하위 탭 바로 아래부터 화면 끝까지 통째로 깔고(1920 전체),
    안내 상자 · 고르는 칸 · 통계 판은 그 위에 얹는다 */
 /* 지도가 화면을 통째로 쓰는 화면 — 페이지 자체는 굴러가지 않는다(판은 제 안에서만 굴러간다) */
