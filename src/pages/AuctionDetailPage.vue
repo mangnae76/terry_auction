@@ -9824,7 +9824,8 @@ const goBack = () => router.back();
 .adp-rights-wide td.c-left { text-align: left; padding-left: 40px; }
 /* 접수일 — 굵기·색은 다른 칸 값과 똑같이 */
 .adp-rights-wide .adp-rights-date { display: block; margin-top: 2px; font-size: 13px; font-weight: 400; color: #374151; }
-.adp-rows-cap { margin: 12px 0 5px; font-weight: 800; color: #374151; }
+/* 시작점은 카드 제목의 글자(아이콘 15 + 틈 5 뒤)와 맞춘다 — 앱·웹 같다 */
+.adp-rows-cap { margin: 12px 0 5px 20px; font-weight: 800; color: #374151; }
 /* 카드 안 작은 제목(상세 권리 분석 · AI 명도 난이도 분석) — 서류 칸 이름과 같은 14 */
 /* 시작점은 카드 제목의 글자(아이콘 15 + 틈 5 뒤)와 맞춘다 */
 .adp-tab-rights .adp-rows-cap { font-size: 14px; margin-left: 20px; }
