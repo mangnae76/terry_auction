@@ -7150,7 +7150,8 @@ const goBack = () => router.back();
         <section class="adp-card">
           <header class="adp-card-head" @click="!webEmbed && toggleSection('rightsPhotos')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>AI 분석 요청<PhotoCountMark :n="photoAreaCount('rightsPhotos')" /></h2>
-            <!-- 웹은 접기 화살표 대신 분석 단추를 머리 오른쪽에 둔다 -->
+            <!-- 웹은 접기 화살표 대신 분석 단추를 머리 오른쪽에 둔다. 몇 장으로 언제 분석했는지는 그 왼쪽에 -->
+            <span v-if="webEmbed && auction?.rightsAi && !rightsAiBusy" class="adp-ai-used">{{ rightsAi?.usedDocs.length ?? 0 }}장으로 분석 · {{ aiAskedAtText }}</span>
             <button
               v-if="webEmbed"
               type="button"
@@ -7226,7 +7227,7 @@ const goBack = () => router.back();
             <p v-if="rightsAiErr" class="adp-plan-err">{{ rightsAiErr }}</p>
             <p v-else-if="rightsAiBusy" class="adp-doc-old">서류를 읽고 있습니다 — 10초쯤 걸립니다.</p>
             <template v-else-if="auction?.rightsAi">
-              <p class="adp-doc-old">
+              <p v-if="!webEmbed" class="adp-doc-old">
                 {{ rightsAi?.usedDocs.length ?? 0 }}장으로 분석 · {{ aiAskedAtText }}
               </p>
               <p v-if="rightsAi?.missingDocs.length" class="adp-ai-missing">
@@ -9901,6 +9902,11 @@ const goBack = () => router.back();
 /* 이미 분석한 뒤 — 눌러도 할 일이 없으니 회색으로 가라앉힌다 */
 .adp-ai-start.done { background: #9ca3af; cursor: default; box-shadow: none; }
 .adp-ai-start.done.adp-ai-head { cursor: pointer; }
+/* 웹 카드 머리 — 분석 단추 왼쪽의 '○장으로 분석 · 날짜' */
+.adp-ai-used { margin-left: auto; margin-right: 10px; font-size: 14px; font-weight: 400; color: #9ca3af; white-space: nowrap; }
+.adp-ai-used + .adp-ai-head { margin-left: 0; }
+/* 웹 — 노란 알림 글은 굵게 쓰지 않는다 */
+.adp-tab-rights .adp-ai-missing { font-weight: 400; }
 .adp-ai-start.done.adp-ai-head:hover { background: #8b93a1; }
 /* 웹 카드 머리 오른쪽 — 머리 높이에 맞춰 작게 */
 .adp-ai-head { margin-left: auto; width: auto; height: 34px; padding: 0 16px; font-size: 13px; box-shadow: none; }
