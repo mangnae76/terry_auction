@@ -465,6 +465,8 @@ onMounted(() => {
 
     <div class="adm-body tsp-body">
       <div class="tsp-filter">
+        <!-- 웹 — 고르는 칸 묶음을 왼쪽 판 맨 위(통계 정보 위)로 옮긴다. 분석 도구에서는 제자리 -->
+        <Teleport defer to="#tsp-filter-slot" :disabled="!webEmbed">
           <!-- 분석 도구의 '실거래 분석'과 같은 차례로 좁힌다 — 시도 → 시군구 → 읍면동 → 종류.
                다만 여기는 '데이터 로드'가 아니라 전처럼 검색이다 -->
           <div class="tsp-bar">
@@ -522,6 +524,7 @@ onMounted(() => {
           <p v-if="progress" class="tsp-note">불러오는 중 {{ progress.done }} / {{ progress.total }}</p>
           <!-- 검색이 비거나 실패했을 때 이유를 바로 보여 준다 -->
           <p v-if="message" :class="['tsp-note', { warn: rows.length === 0 }]">{{ message }}</p>
+        </Teleport>
       </div>
 
       <!-- 지도를 바탕에 깔고, 통계와 랭킹은 그 위 왼쪽 판에 얹는다 -->
@@ -529,7 +532,8 @@ onMounted(() => {
         <div id="trade-map" class="tsp-map" />
 
         <aside class="tsp-panel">
-          <header class="tsp-panel-head">
+          <div v-if="webEmbed" id="tsp-filter-slot" class="tsp-filter-slot" />
+          <header v-if="!webEmbed" class="tsp-panel-head">
             <strong>{{ scopeTitle }}</strong>
             <small v-if="lastLoadedLabel">{{ periodText }} · {{ kindLabel }}</small>
             <small v-else>지역과 기간을 고르고 검색을 누르세요</small>
