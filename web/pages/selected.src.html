@@ -152,7 +152,7 @@ button { cursor: pointer; }
 .g-logo:hover img { transform: rotate(-4deg) scale(1.04); }
 .g-menu {
   position: absolute; top: 32px; height: 26px; display: inline-flex; align-items: center;
-  font-size: 18px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap;
+  font-size: var(--menu-fs); font-weight: 700; letter-spacing: -0.3px; white-space: nowrap;
   transition: color .15s;
 }
 .g-menu::after {
@@ -183,14 +183,14 @@ button { cursor: pointer; }
 .g-mega { position: absolute; left: 0; right: 0; top: 100%; z-index: 39; background: var(--surface); border-bottom: 1px solid var(--line); box-shadow: 0 14px 28px -18px rgba(15, 23, 42, 0.45); animation: pop-in .16s ease-out; }
 .g-mega-in { position: relative; min-height: 232px; }
 .g-col { position: absolute; top: 16px; display: grid; gap: 2px; min-width: 120px; }
-.g-col a { display: block; padding: 6px 0; font-size: 16px; color: var(--text-2); text-decoration: none; white-space: nowrap; transition: color .12s; }
+.g-col a { display: block; padding: 6px 0; font-size: var(--tab-fs); color: var(--text-2); text-decoration: none; white-space: nowrap; transition: color .12s; }
 .g-col a:hover { color: var(--blue); }
 .g-col a.on { color: var(--blue); font-weight: 700; }
 /* 둘째 줄 오른쪽 — [사람] 로그인(=로그인 뒤엔 이름) ▼ 회원가입(=로그인 뒤엔 로그아웃). 시안 좌표: 82.5% / 글자 84.9% / ▼ 90.6% / 93.75% */
 .g-user { position: absolute; left: 82.5%; top: 33px; height: 24px; display: flex; align-items: center; }
 .g-login {
   position: relative; height: 24px; display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent;
-  padding: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap;
+  padding: 0; font-size: var(--menu-fs); font-weight: 700; letter-spacing: -0.3px; white-space: nowrap;
 }
 /* 사람 그림 — 앱 머리글(AppMobileHeader)의 흉상 선 그림 그대로, 상자 없이 */
 .g-login .pic { width: 27px; height: 24px; display: grid; place-items: center; color: #fff; transition: color .15s; }
@@ -204,7 +204,7 @@ button { cursor: pointer; }
 .g-arrow i { width: 0; height: 0; border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; border-top: 8px solid var(--nav-orange); transition: transform .2s; }
 .g-arrow:hover i { transform: translateY(2px); }
 .g-arrow[aria-expanded="true"] i { transform: rotate(180deg); }
-.g-out, .g-join { position: relative; margin-left: 26px; height: 24px; display: inline-flex; align-items: center; border: 0; background: transparent; padding: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; }
+.g-out, .g-join { position: relative; margin-left: 26px; height: 24px; display: inline-flex; align-items: center; border: 0; background: transparent; padding: 0; font-size: var(--menu-fs); font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; }
 .g-out:hover, .g-join:hover { color: #cfe0ff; text-decoration: underline; text-underline-offset: 4px; }
 .g-pop { position: absolute; top: 64px; z-index: 50; }
 .g-pop.user { left: auto; right: 0; top: 34px; }
@@ -246,9 +246,10 @@ button { cursor: pointer; }
 .g-util .u-sep { background: rgba(255, 255, 255, 0.28); height: 12px; }
 .g-util .u-ico .dot { top: 4px; right: 4px; box-shadow: 0 0 0 1.5px var(--nav); }
 /* 하위 탭 줄 — 참고 시안처럼 흰 띠, 아래 #D8E0EE 선으로 단을 나눈다. 밑줄은 ::after 막대(테두리는 둥근 모서리로 U자가 된다) */
-/* 하위 탭 글자 — 물건상세(물건정보~입찰가산정) · 물건등록(자동등록 · 직접입력) 등 모든 탭 줄이 이 값 하나를 쓴다.
+/* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
+   하위 탭 글자 — 물건상세(물건정보~입찰가산정) · 물건등록(자동등록 · 직접입력) 등 모든 탭 줄이 이 값 하나를 쓴다.
    창이 좁아지면 아래 @media 에서 이 값만 바꾼다 */
-:root { --tab-fs: 17px; }
+:root { --menu-fs: 18px; --tab-fs: 16px; }
 .subtabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 31; background: var(--band); border-bottom: 1px solid var(--subtab-line); }
 /* ===== 틀 고정 (모든 화면 공통 모듈) =====
    남색 머리띠 → [하위 탭 줄] → 필터 상자(.toolbar-shell) 를 한 덩어리로 위에 붙인다. 어느 화면이든
@@ -1432,12 +1433,11 @@ html, body { overflow-x: clip; }
 @media (max-width: 1240px) {
   .gnb-in { display: flex; align-items: center; gap: 22px; }
   .gnb .g-logo, .gnb .g-menu, .gnb .g-icons, .gnb .g-box, .gnb .g-box[data-tip], .gnb .g-user { position: relative; left: auto; top: auto; }
-  .g-menu { font-size: 17px; }
-  :root { --tab-fs: 16px; }
+  :root { --menu-fs: 16px; --tab-fs: 15px; }
   .g-menu::after { bottom: -20px; }
   .g-menu.m4 { margin-left: auto; }
   .g-icons { order: 10; } .g-box { order: 11; flex: 0 0 auto; }
-  .g-user { order: 12; } .g-login, .g-out, .g-join { font-size: 14px; }
+  .g-user { order: 12; } .g-login, .g-out, .g-join { font-size: var(--menu-fs); }
   .g-login .txt { min-width: 0; } .g-out, .g-join { margin-left: 14px; }
   .g-pop.user { left: auto; right: 0; }
   .g-mega-in { min-height: 0; display: flex; flex-wrap: wrap; gap: 8px 36px; padding-block: 14px 18px; }
@@ -1479,8 +1479,7 @@ html, body { overflow-x: clip; }
   .toolbar-shell { padding: 6px 0 12px; }
   .gnb-in { gap: 6px 14px; }
   .g-logo img { height: 32px; }
-  .g-menu { font-size: 15px; }
-  :root { --tab-fs: 15px; }
+  :root { --menu-fs: 14px; --tab-fs: 14px; }
   .subtab { padding: 0 10px; }
   .g-menu::after { display: none; }
   .step { padding: 0 9px; font-size: 12px; }
