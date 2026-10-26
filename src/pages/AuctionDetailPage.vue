@@ -23,7 +23,7 @@ const rememberPlaceRows = (id: string, rows: PlaceRow[]) => {
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
@@ -77,6 +77,8 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
+/** 웹 물건상세에 띄웠는가 — 웹(shared.entry.js)이 넣어 준다. 앱에서는 늘 false */
+const webEmbed = inject<boolean>('webEmbed', false);
 const route = useRoute();
 const store = useAuctionStore();
 const authStore = useAuthStore();
@@ -4792,6 +4794,19 @@ const cancelRightsAi = () => { rightsAiAbort?.abort(); };
 const withTimeout = <T,>(job: Promise<T>, ms: number, fallback: T) =>
   Promise.race([job, new Promise<T>((done) => { setTimeout(() => done(fallback), ms); })]);
 
+/** 웹 카드 머리의 단추 — 분석한 뒤에 누르면 다시 할지 묻는다 */
+const onAiHeadClick = () => {
+  if (rightsAiBusy.value) return;
+  if (!auction.value?.rightsAi) { void requestRightsAi(); return; }
+  askConfirm({
+    title: '다시 분석하겠습니까?',
+    desc: '',
+    okLabel: '예',
+    skipKey: '',
+    tone: 'calm',
+    run: () => { void requestRightsAi(); },
+  });
+};
 const requestRightsAi = async () => {
   if (rightsAiBusy.value) return;
   const target = auction.value;
@@ -7082,11 +7097,19 @@ const goBack = () => router.back();
         <!-- AI 분석 요청 — 서류 다섯 칸(건물등기·매물명세·현황조사·세대열람·송달내역).
              칸을 누르면 파일을 고르고, 끌어다 놓아도 올라간다. 각 칸은 extraPhotos['doc.*'] 에 담는다 -->
         <section class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('rightsPhotos')">
+          <header class="adp-card-head" @click="!webEmbed && toggleSection('rightsPhotos')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>AI 분석 요청<PhotoCountMark :n="photoAreaCount('rightsPhotos')" /></h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsPhotos') }]" alt="" />
+            <!-- 웹은 접기 화살표 대신 분석 단추를 머리 오른쪽에 둔다 -->
+            <button
+              v-if="webEmbed"
+              type="button"
+              :class="['adp-ai-start', 'adp-ai-head', { done: !!auction?.rightsAi && !rightsAiBusy }]"
+              :disabled="rightsAiBusy"
+              @click.stop="onAiHeadClick"
+            >{{ rightsAiBusy ? '분석 중…' : (auction?.rightsAi ? 'AI 분석 완료' : 'AI 분석 시작') }}</button>
+            <img v-else :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsPhotos') }]" alt="" />
           </header>
-          <div v-if="!isCollapsed('rightsPhotos')">
+          <div v-if="webEmbed || !isCollapsed('rightsPhotos')">
             <div class="adp-docs">
               <div v-for="b in DOC_BOXES" :key="b.key" class="adp-doc">
                 <p class="adp-doc-label">
@@ -7131,7 +7154,7 @@ const goBack = () => router.back();
               </div>
             </div>
             <!-- 서류를 올린 뒤 누르는 자리 — 칸 가운데에 크게 세운다 -->
-            <div class="adp-ai-start-row">
+            <div v-if="!webEmbed" class="adp-ai-start-row">
               <button
                 type="button"
                 :class="['adp-ai-start', { done: !!auction?.rightsAi && !rightsAiBusy }]"
@@ -9727,6 +9750,10 @@ const goBack = () => router.back();
 .adp-ai-start:disabled { background: #9db9ef; cursor: default; box-shadow: none; }
 /* 이미 분석한 뒤 — 눌러도 할 일이 없으니 회색으로 가라앉힌다 */
 .adp-ai-start.done { background: #9ca3af; cursor: default; box-shadow: none; }
+.adp-ai-start.done.adp-ai-head { cursor: pointer; }
+.adp-ai-start.done.adp-ai-head:hover { background: #8b93a1; }
+/* 웹 카드 머리 오른쪽 — 머리 높이에 맞춰 작게 */
+.adp-ai-head { margin-left: auto; width: auto; height: 34px; padding: 0 16px; font-size: 13px; box-shadow: none; }
 .adp-ai-again {
   border: 1px solid #c7d7f7; background: #eef3fd; color: #2a5fbf; transition: background 0.15s;
 }

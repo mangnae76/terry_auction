@@ -83,6 +83,7 @@ export const mountAppDetail = (el, id, tab) => {
   const app = createApp({ render: () => h(RouterView) });
   app.use(getActivePinia());
   app.use(router);
+  app.provide('webEmbed', true); /* 앱 화면이 웹에 떴음을 안다 — 웹만 다른 모양을 쓸 때 */
   void router.push({ path: `/auctions/${id}`, query: { tab } });
   app.mount(el);
   return () => app.unmount();
