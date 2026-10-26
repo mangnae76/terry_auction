@@ -9656,6 +9656,8 @@ const goBack = () => router.back();
 }
 .adp-tn-box.is-web > :not(.adp-tn-one) { grid-column: 1 / -1; }
 .adp-tn-box.is-web .adp-tn-dates.pre-line { white-space: pre-line; }
+/* 웹 — 임차인 상자의 검은 값(이름·보증금·기간·날짜)은 굵게 쓰지 않는다 */
+.adp-tn-box.is-web .adp-base-row :is(dd, dd strong, dd span) { font-weight: 400; }
 .adp-tn-box.is-web .adp-tn-one {
   margin: 0; border: 1px solid #e5e7eb; border-radius: 8px; padding: 2px 10px 7px; background: #fff;
 }
