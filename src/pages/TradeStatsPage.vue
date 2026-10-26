@@ -33,7 +33,8 @@ const shortWon = (won: number): string => {
   if (!Number.isFinite(won) || won <= 0) return '-';
   const eok = Math.floor(won / 100000000);
   const man = Math.round((won % 100000000) / 10000);
-  if (eok > 0) return man > 0 ? `${eok}억 ${man.toLocaleString('ko-KR')}만` : `${eok}억`;
+  // 억 자리도 천 단위마다 쉼표 — '1,234억 5,678만'
+  if (eok > 0) return man > 0 ? `${eok.toLocaleString('ko-KR')}억 ${man.toLocaleString('ko-KR')}만` : `${eok.toLocaleString('ko-KR')}억`;
   return `${man.toLocaleString('ko-KR')}만`;
 };
 /** 웹 시장분석 › 거래량 랭킹에 띄웠는가 — 웹(shared.entry.js)이 넣어 준다. 분석 도구에서는 false */
