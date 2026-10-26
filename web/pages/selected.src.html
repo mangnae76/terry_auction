@@ -486,10 +486,15 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
   /* 출발지·도착지 검색 목록이 아래 줄에 덮이지 않게 윗줄을 한 겹 더 올린다 */
   background: rgba(255, 255, 255, 0.96) !important;
   border: 1px solid #e2e8f3; border-top: 0; border-bottom: 0;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+  /* 그림자는 주지 않는다 — 윗줄 그림자가 아래로 번져 방문·완료 줄과 S 줄에
+     회색 그늘을 드리우고, 한 상자가 둘로 갈라져 보였다 */
 }
 .app-trip .ftp-scroll > .ftp-fixed-top { z-index: 2; border-top: 1px solid #e2e8f3; border-radius: 14px 14px 0 0; }
 .app-trip .ftp-scroll > .ftp-list { border-bottom: 1px solid #e2e8f3; border-radius: 0 0 14px 14px; }
+/* 두 줄 사이 10px — 앱에서는 한 상자 안의 여백이지만, 웹은 줄마다 바탕을 주므로
+   그 여백이 바깥으로 삐져나와 지도가 비쳤다. 여백을 상자 안으로 들인다 */
+.app-trip .ftp-scroll > .ftp-list { padding-top: 10px; }
+.app-trip .ftp-scroll > .ftp-list > :first-child { margin-top: 0 !important; }
 /* 안쪽 줄이 제 바탕으로 모서리를 덮는다 — 맨 위·맨 아래 줄에도 같은 라운드를 준다 */
 .app-trip .ftp-scroll > .ftp-fixed-top > :first-child { border-radius: 14px 14px 0 0; }
 .app-trip .ftp-scroll > .ftp-list > :last-child { border-radius: 0 0 14px 14px; }
@@ -1447,12 +1452,12 @@ html, body { overflow-x: clip; }
       <button type="button" class="u-ico" data-act="theme" id="themeBtn" data-tip="밤 화면으로" data-tip-pos="below" aria-label="밤낮 화면 바꾸기"></button>
 </div>
       <div class="g-user pop-root" data-pop="user">
-        <button type="button" class="g-login" id="gLogin" data-act="login-btn" aria-haspopup="menu">
+        <button type="button" class="g-login" id="gLogin" data-act="login-btn" aria-haspopup="menu" style="visibility:hidden">
           <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.2" r="3.7"/><path d="M4.8 20.2c1.3-3.6 3.9-5.4 7.2-5.4s5.9 1.8 7.2 5.4"/></svg></span><span class="txt" id="gLoginTxt">로그인</span>
         </button>
         <button type="button" class="g-arrow" data-act="login-btn" aria-expanded="false" aria-label="내 메뉴"><i></i></button>
         <button type="button" class="g-out" id="gOut" data-act="logout">로그아웃</button>
-        <button type="button" class="g-join" id="gJoin" data-act="soon" data-name="회원가입">회원가입</button>
+        <button type="button" class="g-join" id="gJoin" data-act="soon" data-name="회원가입" hidden>회원가입</button>
         <div class="g-pop user" id="userPop"></div>
       </div>
     </div>
@@ -1691,6 +1696,9 @@ html, body { overflow-x: clip; }
     pop: '', calMonth: null, pick: false, picked: new Set(), binPicked: new Set(), menu: null, modal: null,
     aiPane: { draft: undefined, show: false, msg: '', ok: false, checking: false }, /* 마이페이지의 키 칸 — 창과 같은 모양이되 늘 펼쳐져 있다 */
     loggedIn: false, userName: '', denied: false, /* 로그인 상태는 앱 authStore 가 알려 준다 */
+    /* 새로고침 직후에는 로그인 여부를 아직 모른다 — 그 사이에 '로그인하세요' 를 띄우면
+       이미 로그인한 사람에게도 잠깐 깜빡인다. 알게 될 때까지는 기다리는 모양만 보인다 */
+    authReady: false,
     route: /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/mypage/.test(location.hash) ? 'mypage' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
     itemId: (location.hash.match(/^#\/item\/([\w-]+)/) || [])[1] || '', itemTab: 'basic',
   };
@@ -1768,8 +1776,9 @@ html, body { overflow-x: clip; }
     const nav = $('navWatch'); nav.classList.toggle('on', S.route === 'list'); if (S.route === 'list') nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
     $('gLoginTxt').textContent = S.loggedIn ? `${S.userName || '회원'}님` : '로그인';
     $('gLogin').classList.toggle('named', S.loggedIn);
-    $('gOut').hidden = !S.loggedIn;
-    $('gJoin').hidden = S.loggedIn;
+    $('gLogin').style.visibility = S.authReady ? '' : 'hidden';
+    $('gOut').hidden = !S.loggedIn || !S.authReady;
+    $('gJoin').hidden = S.loggedIn || !S.authReady;
     document.querySelector('.g-arrow').setAttribute('aria-expanded', String(S.pop === 'user'));
     /* 주황 ▼(회원정보 메뉴)는 로그인했을 때만 보인다 — 자리는 그대로 두어 옆 글자가 움직이지 않게 */
     { const ar = document.querySelector('.g-arrow'); ar.style.visibility = S.loggedIn ? '' : 'hidden'; ar.disabled = !S.loggedIn; }
@@ -3035,7 +3044,9 @@ html, body { overflow-x: clip; }
     const box = $('tripContent');
     if (!CLOUD.on) {
       closeAppTrip();
-      box.innerHTML = '<div class="empty"><b>로그인하면 임장경로가 열립니다</b><span>앱에서 쓰던 경로와 선정목록을 그대로 씁니다.</span><button type="button" data-act="login-btn">로그인</button></div>';
+      box.innerHTML = S.authReady
+        ? '<div class="empty"><b>로그인하면 임장경로가 열립니다</b><span>앱에서 쓰던 경로와 선정목록을 그대로 씁니다.</span><button type="button" data-act="login-btn">로그인</button></div>'
+        : '<div class="empty"><b>불러오는 중입니다…</b><span>로그인 상태를 확인하고 있습니다.</span></div>';
       return;
     }
     if (tripUnmount && box.querySelector('.app-trip')) return;
@@ -3062,7 +3073,9 @@ html, body { overflow-x: clip; }
     const box = $('itemContent');
     if (!CLOUD.on || !CLOUD.raw.has(it.id)) {
       closeAppDetail();
-      box.innerHTML = itCard('info', '앱 물건상세', itEmpty('로그인하면 앱과 같은 화면이 열립니다 — 예시 물건은 이 탭을 보여 줄 수 없습니다.'), true);
+      box.innerHTML = itCard('info', '앱 물건상세', itEmpty(S.authReady
+        ? '로그인하면 앱과 같은 화면이 열립니다 — 예시 물건은 이 탭을 보여 줄 수 없습니다.'
+        : '불러오는 중입니다…'), true);
       return;
     }
     const key = `${it.id}:${tab}`;
@@ -3191,8 +3204,10 @@ html, body { overflow-x: clip; }
     });
   }
   async function startCloud() {
-    let T = null; try { T = await loadParser(); } catch (e) { return; }
-    if (!T || !T.useAuthStore) return;
+    /* 앱 자료에 끝내 붙지 못하면 영원히 기다리는 모양만 남는다 — 그때는 7초 뒤에 보여 준다 */
+    const giveUp = setTimeout(() => { if (!S.authReady) { S.authReady = true; render(); } }, 7000);
+    let T = null; try { T = await loadParser(); } catch (e) { clearTimeout(giveUp); S.authReady = true; render(); return; }
+    if (!T || !T.useAuthStore) { clearTimeout(giveUp); S.authReady = true; render(); return; }
     T.startStores();
     const auth = T.useAuthStore(); const st = T.useAuctionStore();
     Object.assign(CLOUD, { T, auth, store: st });
@@ -3206,6 +3221,7 @@ html, body { overflow-x: clip; }
     };
     T.watch(() => [auth.ready, auth.uid, auth.email], () => {
       if (!auth.ready) return;
+      S.authReady = true;
       const ok = auth.isLoggedIn && T.isAllowedEmail(auth.email);
       S.loggedIn = auth.isLoggedIn; S.userName = auth.nickname || String(auth.email || '').split('@')[0];
       S.denied = auth.isLoggedIn && !ok;
@@ -3220,6 +3236,7 @@ html, body { overflow-x: clip; }
       render();
     }, { immediate: true });
     T.watch(() => [st.auctions, st.archivedAuctions, st.hiddenAuctions], fromStore);
+    /* giveUp 은 일부러 남겨 둔다 — 로그인 여부를 끝내 알지 못해도 7초 뒤에는 화면을 보여 준다 */
   }
   const update = (id, patch) => { items = items.map((x) => (x.id === id ? { ...x, ...patch } : x)); if (CLOUD.on) cloudSave(id, patch); };
   function copyText(text) {
