@@ -10554,6 +10554,8 @@ tr.tone-take { background: #fff5f5; }
 /* 웹 권리분석 — 폭이 넓으니 항목 이름은 한 줄, 설명은 줄을 이어 붙여 짧게.
    현황조사·세대열람 줄은 칸 사이를 띄우고 날짜가 다 보이게 */
 .adp-tab-rights .adp-rcheck-label strong { white-space: pre-line; }
+/* 항목 이름은 카드 제목 글자(아이콘 뒤 'A'·'권')와 같은 세로줄에서 시작한다 */
+.adp-tab-rights .adp-rcheck-table td.adp-rcheck-label { text-align: left; padding-left: 19px; }
 .adp-tab-rights .adp-rcheck-desc { white-space: normal; }
 .adp-tab-rights .adp-rdoc-survey { gap: 8px; }
 .adp-tab-rights .adp-rdoc-survey + .adp-rdoc-survey { margin-top: 8px; }
