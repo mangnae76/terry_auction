@@ -197,6 +197,13 @@ const askConfirm = (box: ConfirmBox) => {
 };
 // 여러 폴더를 한 번에 스캔할 때 고른 주소들
 const selectedFavUrls = ref<string[]>([]);
+/** 고른 폴더 — 한 곳이면 이름, 여러 곳이면 '검암동 외 2' (웹 /web 과 같다) */
+const chosenFolderText = computed(() => {
+  const urls = selectedFavUrls.value;
+  if (urls.length === 0) return '';
+  const first = favorites.value.find((f) => f.url === urls[0])?.name || '이름 없는 폴더';
+  return urls.length === 1 ? first : `${first} 외 ${urls.length - 1}`;
+});
 // 스캔을 마친 폴더 — 주소를 파랗게 보여 준다
 const scannedFolderIds = ref<string[]>([]);
 const toast = ref('');
@@ -836,59 +843,43 @@ const onDropFiles = async (e: DragEvent) => {
           <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M7 20h10a4 4 0 0 0 .6-7.96A5.5 5.5 0 0 0 6.9 10.2 3.9 3.9 0 0 0 7 20z" />
             <path d="M12 16V9" /><path d="m9 11.5 3-3 3 3" />
-          </svg>구글드라이브 연동
+          </svg>구글 드라이브 연동
         </span>
         <img :src="infoIcon" alt="" class="pip-info-ico" />
-        <button type="button" class="pip-fav-open" :style="{ '--star': `url(${userStarIcon})` }" @click="openFavModal">
-          <img :src="userStarIcon" alt="" />폴더등록
-        </button>
       </div>
 
-      <div class="pip-folder-wrap">
-        <button type="button" class="pip-folder-box" @click="favListOpen = !favListOpen">
-          <span class="pip-folder-chosen">
-            <span
-              v-for="url in selectedFavUrls"
-              :key="url"
-              class="pip-folder-chip"
-            >
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              </svg>{{ favorites.find((f) => f.url === url)?.name || '이름 없는 폴더' }}
-            </span>
-            <span v-if="selectedFavUrls.length === 0" class="pip-folder-ph">
-              {{ favorites.length === 0 ? '등록된 폴더가 없습니다 — 폴더 등록을 눌러 추가하세요' : '스캔할 폴더를 선택하세요' }}
-            </span>
-          </span>
-          <img :src="chevronDownIcon" alt="" :class="['pip-chev-sm', { up: favListOpen }]" />
-        </button>
-
-        <div v-if="favListOpen && favorites.length > 0" class="pip-fav-backdrop" @click="favListOpen = false" />
-        <ul v-if="favListOpen && favorites.length > 0" class="pip-folder-list">
-          <li
-            v-for="(fav, i) in favorites"
-            :key="fav.url"
-            class="pip-folder-item"
-            @click="toggleFavSelect(fav.url)"
-          >
-            <input
-              type="checkbox"
-              class="pip-fav-check"
-              :checked="selectedFavUrls.includes(fav.url)"
-              @click.stop="toggleFavSelect(fav.url)"
-            />
-            <span class="pip-folder-chip pip-folder-item-name">
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              </svg>{{ fav.name || '이름 없는 폴더' }}
-            </span>
-            <button type="button" class="pip-fav-item-btn edit" @click.stop="openRenameFavorite(i)">수정</button>
-            <button type="button" class="pip-fav-item-btn del" @click.stop="removeFavorite(fav.url)">삭제</button>
-          </li>
-        </ul>
-      </div>
-
+      <!-- 네 칸 두 줄 — 폴더 고르기 · 폴더등록 / 폴더스캔 · PDF등록 (웹 /web 과 같은 차례) -->
       <div class="pip-actions">
+        <div class="pip-folder-wrap">
+          <button type="button" class="pip-folder-box" @click="favListOpen = !favListOpen">
+            <span class="pip-folder-chosen">
+              <template v-if="selectedFavUrls.length > 0">{{ chosenFolderText }}</template>
+              <span v-else class="pip-folder-ph">{{ favorites.length === 0 ? '폴더를 연동하세요' : '폴더를 선택하세요' }}</span>
+            </span>
+            <img :src="chevronDownIcon" alt="" :class="['pip-chev-sm', { up: favListOpen }]" />
+          </button>
+
+          <div v-if="favListOpen && favorites.length > 0" class="pip-fav-backdrop" @click="favListOpen = false" />
+          <ul v-if="favListOpen && favorites.length > 0" class="pip-folder-list">
+            <li
+              v-for="fav in favorites"
+              :key="fav.url"
+              :class="['pip-folder-item', { on: selectedFavUrls.includes(fav.url) }]"
+              @click="toggleFavSelect(fav.url)"
+            >
+              <i class="pip-folder-mark">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7" /></svg>
+              </i>
+              <svg class="pip-folder-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              </svg>
+              <span class="pip-folder-item-name">{{ fav.name || '이름 없는 폴더' }}</span>
+            </li>
+          </ul>
+        </div>
+        <button type="button" class="pip-btn pip-btn-fav" :style="{ '--star': `url(${userStarIcon})` }" @click="openFavModal">
+          <img :src="userStarIcon" alt="" class="pip-btn-icn star" />폴더등록
+        </button>
         <button class="pip-btn pip-btn-scan" :disabled="loading" type="button" @click="scanDriveFolder">
           <img :src="searchIcon" alt="" class="pip-btn-icn" />
           폴더스캔<span v-if="selectedFavUrls.length > 0"> ({{ selectedFavUrls.length }})</span>
@@ -957,14 +948,14 @@ const onDropFiles = async (e: DragEvent) => {
       </div>
       </template>
 
-      <div v-if="banner || loading" class="pip-banner">
+      <div v-if="(banner || loading) && importTab === 'auto'" class="pip-banner">
         <span v-if="loading" class="pip-banner-dot" /><span v-if="loading" class="pip-banner-dot" /><span v-if="loading" class="pip-banner-dot" />
         <span class="pip-banner-text">{{ loading ? (loadingLabel || '처리 중') + '…' : banner }}</span>
       </div>
 
       <input ref="fileInputRef" accept="application/pdf" class="sr-only" multiple type="file" @change="onFileChange" />
 
-      <section class="pip-results">
+      <section v-if="importTab === 'auto'" class="pip-results">
         <div class="pip-results-head">
           <h2>
             <svg class="pip-section-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z" /><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z" /></svg>
@@ -1466,6 +1457,24 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-actions {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
 }
+/* 폴더 고르기 칸 — 단추들과 같은 높이·같은 폭으로 네 칸 두 줄을 이룬다 */
+.pip-actions .pip-folder-wrap { min-width: 0; }
+/* 네 칸은 모두 같은 크기 — 단추를 줄여 폴더 칸에 맞춘다 */
+.pip-actions .pip-btn { height: 44px; padding: 0 10px; border-radius: 10px; font-size: 14px; gap: 6px; }
+.pip-actions .pip-folder-box { height: 44px; min-height: 0; padding: 0 10px; border-radius: 10px; }
+.pip-actions .pip-folder-chosen {
+  display: block; min-width: 0; font-size: 13px; font-weight: 700; color: #111827;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pip-actions .pip-folder-ph { font-size: 13px; font-weight: 400; color: #9ca3af; }
+
+/* 고른 폴더 목록 — 체크 자국 · 폴더 그림 · 이름만 (고치고 지우는 일은 폴더등록 창이 맡는다) */
+.pip-folder-mark { flex: 0 0 auto; display: grid; place-items: center; width: 14px; height: 14px; color: #2a5fbf; opacity: 0; }
+.pip-folder-item.on .pip-folder-mark { opacity: 1; }
+.pip-folder-item.on .pip-folder-item-name { font-weight: 800; color: #111827; }
+.pip-folder-ico { flex: 0 0 auto; color: #6b7280; }
+/* 파싱 상자 설명 — 상자 가운데 */
+.pip-results-sub.mid { text-align: center; }
 /* 자동등록(.pip-autobox) · 직접입력(.pip-manual) — 같은 흰 상자를 쓴다 */
 .pip-aibox {
   display: flex; flex-direction: column; gap: 8px;
@@ -1579,6 +1588,13 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-btn-scan { background: #14b8a6; }
 .pip-btn-pdf { background: #f87171; }
 .pip-btn-icn { width: 18px; height: 18px; object-fit: contain; filter: brightness(0) invert(1); }
+/* 폴더등록 — 옅은 파란 칸. 글자색이 흰색이 되지 않게 .pip-btn 뒤에 둔다 */
+.pip-btn-fav { border: 1px solid #d3e0fa; background: #eef3fd; color: #2a5fbf; }
+.pip-btn-fav:active { background: #dfe9fb; }
+.pip-btn-icn.star {
+  width: 17px; height: 17px; filter: none; background-color: currentColor;
+  -webkit-mask: var(--star) center / contain no-repeat; mask: var(--star) center / contain no-repeat;
+}
 
 .pip-banner {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -1607,7 +1623,7 @@ const onDropFiles = async (e: DragEvent) => {
 }
 /* 한 줄: 제목 · 통계(제목 바로 옆) · 접기 단추(오른쪽 끝) */
 .pip-results-head h2 { white-space: nowrap; }
-.pip-results-sub { margin: 2px 0 8px; font-size: 11.5px; font-weight: 500; color: #4b5563; line-height: 1.5; }
+.pip-results-sub { margin: 2px 0 8px; font-size: 11.5px; font-weight: 500; color: #4b5563; line-height: 1.5; text-align: center; }
 .pip-results-head .pip-chev-btn { margin-left: auto; }
 .pip-results-head .pip-clear-btn + .pip-chev-btn { margin-left: 0; }
 .pip-head-stats { min-width: 0; overflow: hidden; display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #6b7280; white-space: nowrap; }
