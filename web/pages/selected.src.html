@@ -275,7 +275,7 @@ button { cursor: pointer; }
 /* 시장분석 탭 공통 고르는 줄 — 거래량 랭킹 판과 같은 규칙: 칸·단추 높이 40 · 모서리 6, 칸 글자 16, 종류 단추 15, 단추 글자 16 */
 .app-market .adm-bar :is(select.adm-input, input.adm-input, .adm-load, .adm-csv) { height: 40px !important; border-radius: 6px !important; }
 .app-market .adm-bar :is(select.adm-input, input.adm-input) { font-size: 16px !important; }
-.app-market .adm-bar :is(.adm-load, .adm-csv) { font-size: 16px !important; padding: 0 18px !important; }
+.app-market .adm-bar :is(.adm-load, .adm-csv) { font-size: 16px !important; padding: 0 18px !important; min-width: 136px; } /* 조회 · 엑셀 내려받기 같은 폭 */
 .app-market .adm-bar .adm-seg { height: 40px; box-sizing: border-box; border-radius: 6px !important; align-items: center; }
 .app-market .adm-bar .adm-seg-btn { font-size: 15px !important; }
 .app-market .adm-bar .adm-f > small { font-size: 14px !important; }
