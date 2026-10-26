@@ -2398,7 +2398,8 @@ const toggleSection = (key: string) => { collapsed.value[key] = !collapsed.value
 // 상세 화면의 모든 카드 키 — 전체 접기/펼치기에 쓴다
 const ALL_SECTION_KEYS = [
   'summary', 'base', 'tenant', 'bld', 'status', 'registry', 'cases', 'apt', 'arrears',
-  'areaInfo', 'photos', 'rightsPhotos', 'rightsCheck', 'sameLot', 'casePrice',
+  // AI 분석 요청(rightsPhotos)은 늘 펴 둔다 — 전체 접기에서도 뺀다
+  'areaInfo', 'photos', 'rightsCheck', 'sameLot', 'casePrice',
   'realUser', 'demand', 'survPrice', 'survField', 'trades', 'checklist', 'profit', 'taxRef',
   // 권리분석 탭의 AI 카드 · 정리 — 새 카드를 만들면 여기에도 넣어야 '전체 접기'가 같이 접는다
   'rightsDiag', 'evictDiag', 'rightsConclusion', 'rightsConc',
@@ -4522,16 +4523,17 @@ const DOC_BOXES: Array<{ key: string; label: string; icon: string }> = [
  *  공통 규칙: 사진이 한 장이라도 붙어 있으면 접은 채로 열고(아래 항목이 밀려 내려가지 않게),
  *  없으면 펴 둔다(바로 붙일 수 있게). 손으로 접거나 편 뒤에는 그 선택을 지킨다.
  *  fold: 'always' 는 그 예외 — 사진이 없어도 늘 접은 채로 연다 (칸이 길어 화면을 많이 먹는 자리).
+ *  fold: 'open' 은 반대 예외 — 서류가 있어도 늘 편 채로 연다.
  *  scope 'card' 는 카드 통째(전체 접기/펼치기와 같이 움직임), 'block' 은 카드 안의 작은 칸. */
 const PHOTO_AREAS: Array<{
   key: string;
   scope: 'card' | 'block';
   count: () => number;
-  fold?: 'auto' | 'always';
+  fold?: 'auto' | 'always' | 'open';
 }> = [
   // 사진 칸은 모두 접은 채로 연다 — 펴 두면 아래 내용이 멀리 밀린다
   { key: 'photos', scope: 'card', count: () => propertyPhotos.value.length, fold: 'always' },        // 손품조사 · 본건사진
-  { key: 'rightsPhotos', scope: 'card', count: () => rightsDocList.value.length + DOC_BOXES.reduce((n, b) => n + extraList(b.key).length, 0), fold: 'always' },   // 권리분석 · AI 분석 요청(서류 다섯 칸 + 이전 서류사진)
+  { key: 'rightsPhotos', scope: 'card', count: () => rightsDocList.value.length + DOC_BOXES.reduce((n, b) => n + extraList(b.key).length, 0), fold: 'open' },   // 권리분석 · AI 분석 요청 — 늘 펴 둔다(서류 다섯 칸 + 이전 서류사진)
   { key: 'site', scope: 'block', count: () => auction.value?.sitePhotos?.length ?? 0, fold: 'always' }, // 손품+현장 · 현장사진
   // 급매가 · 동일지번 매각물건 — 사진 모음이라 늘 접어 둔다
   { key: 'sameLot', scope: 'block', count: () => extraList('sameLot').length, fold: 'always' },
@@ -4562,7 +4564,7 @@ onMounted(() => watch(
     photoFold.value = {};
     const next = { ...collapsed.value };
     // fold 'always' 인 카드는 사진이 없어도 접은 채로 연다
-    PHOTO_SECTIONS.forEach((sec) => { next[sec.key] = sec.fold === 'always' || sec.count() > 0; });
+    PHOTO_SECTIONS.forEach((sec) => { next[sec.key] = sec.fold !== 'open' && (sec.fold === 'always' || sec.count() > 0); });
     collapsed.value = next;
   },
   { immediate: true },
