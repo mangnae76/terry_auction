@@ -1051,7 +1051,6 @@ const onDropFiles = async (e: DragEvent) => {
           <button type="button" class="pip-fav-modal-close" aria-label="닫기" @click="aiModalOpen = false">×</button>
         </header>
         <div class="pip-ai-body">
-          <p class="pip-ai-lead">키를 입력해 주세요.</p>
           <!-- 키 칸 — 오른쪽 끝에 눈(보기/가리기) · 붙여넣기 (웹 /web 과 같다) -->
           <div class="pip-key-field">
             <input
@@ -1576,7 +1575,6 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-ai-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; }
 .pip-ai-msg { margin: 0; font-size: 11.5px; color: #dc2626; }
 .pip-ai-msg.ok { color: #16a34a; }
-.pip-ai-lead { margin: 0; font-size: 12.5px; font-weight: 700; color: #4b5563; }
 /* 키 받는 법 — 차례대로 따라오는 칸 (웹 /web 과 같다) */
 .pip-ai-steps { padding: 11px 13px; border: 1px solid #eef0f5; border-radius: 8px; background: #f7f8fb; }
 .pip-ai-steps h3 { margin: 0 0 7px; display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; color: #111827; }
