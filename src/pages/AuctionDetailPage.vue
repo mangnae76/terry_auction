@@ -3334,6 +3334,40 @@ const hasHover = typeof window !== 'undefined'
   && typeof window.matchMedia === 'function'
   && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 const tipEnter = (key: DmTipKey) => { if (hasHover) dmTip.value = key; };
+/* 웹 — 꼬리 자리를 미리 적어 둔 % 대신, 말풍선을 연 ⓘ 의 실제 자리에서 잰다.
+   (적어 둔 % 는 네 칸 표 기준이라 세 칸 표에서는 '총 매물수' 설명이 '총 세대수' 아래에 떴다) */
+let lastTipBtn: HTMLElement | null = null;
+const rememberTipBtn = (e: Event) => {
+  const b = (e.target as HTMLElement | null)?.closest?.('.adp-dm-info') as HTMLElement | null;
+  if (b) lastTipBtn = b;
+};
+onMounted(() => {
+  document.addEventListener('mouseover', rememberTipBtn, true);
+  document.addEventListener('pointerdown', rememberTipBtn, true);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener('mouseover', rememberTipBtn, true);
+  document.removeEventListener('pointerdown', rememberTipBtn, true);
+});
+const dmArrowPx = ref(0);
+const dmFlip = ref(false);
+watch(dmTip, (v) => {
+  if (!webEmbed || !v) return;
+  void nextTick(() => {
+    const bubble = document.querySelector('.adp-dm-bubble.is-web') as HTMLElement | null;
+    const wrap = bubble?.parentElement;
+    if (!bubble || !wrap || !lastTipBtn) return;
+    const w = wrap.getBoundingClientRect();
+    const b = lastTipBtn.getBoundingClientRect();
+    dmArrowPx.value = Math.round(b.left + b.width / 2 - w.left);
+    dmFlip.value = dmArrowPx.value > w.width / 2;
+  });
+});
+/** 말풍선 꼬리 자리 — 웹은 잰 값, 앱은 적어 둔 % */
+const dmArrowStyle = (key: string) => (webEmbed && dmArrowPx.value
+  ? { '--arrow': `${dmArrowPx.value}px` }
+  : { '--arrow': dmTipData.value[key]?.arrow ?? '12%' });
+const dmIsFlip = (key: string) => (webEmbed && dmArrowPx.value ? dmFlip.value : parseFloat(dmTipData.value[key]?.arrow ?? '0') > 50);
 const tipLeave = () => { if (hasHover) dmTip.value = ''; };
 const DM_ROW1: DmTipKey[] = ['deal', 'units', 'listings', 'monthly'];
 // ③ 블록을 ②로 합치면서 'total' 말풍선도 ② 줄에서 띄운다
@@ -7812,7 +7846,7 @@ const goBack = () => router.back();
                   </div>
                 </div>
               </div>
-              <p v-if="dmTip && DM_ROW1.includes(dmTip)" :class="['adp-dm-bubble', { 'is-web': webEmbed, flip: parseFloat(dmTipData[dmTip].arrow) > 50 }]" :style="{ '--arrow': dmTipData[dmTip].arrow }" @click="dmTip = ''">
+              <p v-if="dmTip && DM_ROW1.includes(dmTip)" :class="['adp-dm-bubble', { 'is-web': webEmbed, flip: dmIsFlip(dmTip) }]" :style="dmArrowStyle(dmTip)" @click="dmTip = ''">
                 <span v-for="(row, ri) in dmTipData[dmTip].rows" :key="ri" :class="{ good: row[0] === '적정' }"><b :class="{ act: tipAct(row[0]) }">{{ tipLabel(row[0]) }}</b>{{ row[1] }}</span>
               </p>
               </div>
@@ -7940,7 +7974,7 @@ const goBack = () => router.back();
                   </div>
                 </div>
               </div>
-              <p v-if="dmTip && !DM_ROW1.includes(dmTip) && !DM_ROW3.includes(dmTip)" :class="['adp-dm-bubble', { 'is-web': webEmbed, flip: parseFloat(dmTipData[dmTip].arrow) > 50 }]" :style="{ '--arrow': dmTipData[dmTip].arrow }" @click="dmTip = ''">
+              <p v-if="dmTip && !DM_ROW1.includes(dmTip) && !DM_ROW3.includes(dmTip)" :class="['adp-dm-bubble', { 'is-web': webEmbed, flip: dmIsFlip(dmTip) }]" :style="dmArrowStyle(dmTip)" @click="dmTip = ''">
                 <span v-for="(row, ri) in dmTipData[dmTip].rows" :key="ri" :class="{ good: row[0] === '적정' }"><b :class="{ act: tipAct(row[0]) }">{{ tipLabel(row[0]) }}</b>{{ row[1] }}</span>
               </p>
               </div>

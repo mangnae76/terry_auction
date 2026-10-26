@@ -250,6 +250,17 @@ button { cursor: pointer; }
    하위 탭 글자 — 물건상세(물건정보~입찰가산정) · 물건등록(자동등록 · 직접입력) 등 모든 탭 줄이 이 값 하나를 쓴다.
    창이 좁아지면 아래 @media 에서 이 값만 바꾼다 */
 :root { --menu-fs: 18px; --tab-fs: 16px; }
+/* 카드 안쪽 여백 — 모든 웹 카드가 이 값을 쓴다.
+   --card-pad-x: 카드 테두리에서 제목까지(제목 자리는 이 값으로 고정)
+   --card-inset: 제목 아래 내용을 제목보다 한 단 더 안으로 (하위로 갈수록 안쪽)
+   --list-pad-l/r: 선정목록 물건 카드 · 수익률 분석 카드의 좌우 안쪽 여백 */
+:root { --card-pad-x: 24px; --card-inset: 12px; --list-pad-l: 20px; --list-pad-r: 18px; }
+.it-card { padding-left: var(--card-pad-x); padding-right: var(--card-pad-x); }
+.it-card > :not(.it-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
+.rg-results > :not(.rg-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
+.app-detail .adp-card { padding: 4px var(--card-pad-x) 16px !important; }
+.app-detail .adp-card > :not(.adp-card-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
+.res > :not(.res-head) { margin-left: calc(var(--card-inset) / 2); margin-right: calc(var(--card-inset) / 2); }
 .subtabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 31; background: var(--band); border-bottom: 1px solid var(--subtab-line); }
 /* ===== 틀 고정 (모든 화면 공통 모듈) =====
    남색 머리띠 → [하위 탭 줄] → 필터 상자(.toolbar-shell) 를 한 덩어리로 위에 붙인다. 어느 화면이든
@@ -1087,8 +1098,8 @@ body.trip-full .foot { display: none; }
 .step-dot { flex: 0 0 auto; width: 4px; height: 4px; border-radius: 50%; background: #c8cdd5; margin: 0 2px; }
 .step-sep { flex: 0 0 auto; width: 1.5px; height: 14px; border-radius: 1px; background: var(--line-2); margin: 0 4px; }
 /* 수익률 분석 카드가 옆에 설 때 — 단계 띠 오른쪽 끝을 물건 카드의 알약 끝(카드 오른쪽 안쪽)에 맞춘다.
-   300(수익률 분석) + 12(틈) + 10(카드 안쪽 여백) − 24(상자 안쪽 여백) − 1(테두리) = 297 */
-@media (min-width: 1340px) { .tb-row2 { padding-right: 297px; } }
+   300(수익률 분석) + 12(틈) + 카드 오른쪽 안쪽 여백 − 24(상자 안쪽 여백) − 1(테두리) */
+@media (min-width: 1340px) { .tb-row2 { padding-right: calc(287px + var(--list-pad-r)); } }
 
 .chips-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 10px 2px 0; }
 .chips-row:empty { display: none; }
@@ -1190,7 +1201,7 @@ body.trip-full .foot { display: none; }
 .card-row { display: flex; gap: 12px; align-items: stretch; min-width: 0; }
 .card-row > .card { flex: 1 1 auto; }
 .res {
-  position: relative; flex: 0 0 300px; display: flex; flex-direction: column; gap: 8px; padding: 14px 12px 13px; min-width: 0;
+  position: relative; flex: 0 0 300px; display: flex; flex-direction: column; gap: 8px; padding: 16px var(--list-pad-r) 15px; min-width: 0;
   background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); cursor: pointer;
   transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
@@ -1215,7 +1226,7 @@ body.trip-full .foot { display: none; }
 :root[data-theme="dark"] .res.past .metric { background: var(--surface-2); }
 .card {
   position: relative; display: flex; flex-direction: column; gap: 10px; background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px;
-  padding: 14px 10px 13px 12px; box-shadow: var(--shadow-card); cursor: pointer; min-width: 0;
+  padding: 16px var(--list-pad-r) 15px var(--list-pad-l); box-shadow: var(--shadow-card); cursor: pointer; min-width: 0;
   transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
 .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); border-color: #c9d4f5; }
