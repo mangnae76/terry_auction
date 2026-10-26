@@ -4647,11 +4647,26 @@ const rightsRows = computed(() => {
   const regRows = registryRows.value;
   /* 경매개시결정 줄은 등기부에 따로 금액이 안 적히는 일이 잦다 — 그때는 채권합계금액을 쓴다 */
   const claim = registryClaimAmount.value;
+  /* 순위번호는 적는 꼴이 제각각이다 — AI 는 "갑구 6번", 등기 PDF 는 "갑(6)". 구와 번호만 뽑아 맞춘다 */
+  const rankKey = (text: string) => {
+    const hit = (text || '').match(/([갑을])\D*(\d+)/);
+    return hit ? `${hit[1]}${hit[2]}` : '';
+  };
+  /* 돈은 금액 칸에 '청구금액' 이라는 말만 적히고 숫자는 비고로 밀리는 일이 있다 — 둘 다 뒤진다 */
+  const MONEY = /\d{1,3}(?:,\d{3})+/;
+  const moneyIn = (...texts: string[]) => {
+    const hit = texts.map((t) => (t || '').match(MONEY)?.[0]).find(Boolean);
+    return hit ? `${hit}원` : '';
+  };
   const amountFromRegistry = (rank: string, kind: string, date: string) => {
-    const key = (t: string) => (t || '').replace(/\s/g, '');
-    const hit = regRows.find((x) => key(x.order) === key(rank))
-      ?? regRows.find((x) => key(x.kind) === key(kind) && normalizeYmd(x.date) === normalizeYmd(date));
-    return rightsAmountText(hit?.amount ?? '');
+    const bare = (t: string) => (t || '').replace(/\s/g, '');
+    const rk = rankKey(rank);
+    const hit = (rk && regRows.find((x) => rankKey(x.order) === rk))
+      ?? regRows.find((x) => bare(x.kind) === bare(kind) && normalizeYmd(x.date) === normalizeYmd(date))
+      /* 이름이 조금 달라도(강제경매 ↔ 강제경매개시결정) 접수일이 같으면 같은 줄로 본다 */
+      ?? regRows.find((x) => normalizeYmd(x.date) === normalizeYmd(date)
+        && (bare(x.kind).includes(bare(kind)) || bare(kind).includes(bare(x.kind))));
+    return hit ? moneyIn(hit.amount, hit.desc) : '';
   };
   return (rightsAi.value?.rows ?? []).map((r) => {
     // 어느 줄이 말소기준권리인가 — 순위번호(갑구 6번)로 맞춘다. 순위를 못 읽었으면 종류와 접수일로.
@@ -4664,7 +4679,7 @@ const rightsRows = computed(() => {
       dateText: dotYmd(r.date),
       amountText: money.amount
         || amountFromRegistry(r.rank, r.kind, r.date)
-        || (claim > 0 && /경매개시/.test(r.kind) ? `${formatMoney(claim)}원` : ''),
+        || (claim > 0 && /경매개시|강제경매|임의경매/.test(r.kind) ? `${formatMoney(claim)}원` : ''),
       // 괄호에 끌려 들어온 전입·확정을 내용 줄 맨 앞에 세운다 — 건물등기와 같은 차례
       noteLines: rightsNoteParts([...money.extra, r.note].filter(Boolean).join(' · '), isBase, dotYmd(r.date)),
     };
