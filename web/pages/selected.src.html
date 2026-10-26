@@ -563,14 +563,22 @@ body.trip-full .foot { display: none; }
 .fchip.scanned { background: #2a5fbf; border-color: #2a5fbf; color: #fff; }
 :root[data-theme="dark"] .fchip:not(.scanned) { background: rgba(91, 140, 255, 0.14); border-color: rgba(91, 140, 255, 0.3); color: #9db8ff; }
 .rg-pop { left: 0; right: 0; min-width: 0; padding: 4px; max-height: 280px; overflow: auto; }
-/* 폴더 한 줄 — 이름만. 고른 줄은 파랗게 (체크상자 없이도 고른 것이 보이게) */
-.rg-fitem { display: flex; align-items: center; gap: 7px; padding: 8px 9px; border-radius: 7px; cursor: pointer; transition: background .12s, color .12s; font-size: 13px; font-weight: 600; color: var(--text); }
+/* 폴더 한 줄 — 왼쪽 네모에 고름 표시, 그다음 폴더 그림과 이름 */
+.rg-fitem { display: flex; align-items: center; gap: 7px; padding: 8px 9px; border-radius: 7px; cursor: pointer; transition: background .12s, color .12s; font-size: 13px; font-weight: 500; color: var(--text); }
 .rg-fitem svg { width: 14px; height: 14px; flex: 0 0 auto; color: var(--muted); }
 .rg-fitem .nm { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rg-fitem:hover { background: var(--surface-3); }
-/* 고른 줄 — 바탕을 칠하지 않고 글자만 파랗게 (목록이 알약처럼 보이지 않게) */
+/* 왼쪽 네모 — 안 고른 줄은 빈 네모, 고른 줄은 파란 네모에 체크 */
+.rg-fitem .mk {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 15px; height: 15px; border: 1px solid var(--line-2); border-radius: 4px; background: var(--surface);
+}
+.rg-fitem .mk svg { width: 11px; height: 11px; color: transparent; }
+/* 고른 줄 — 네모를 채우고 글자를 굵게 (안 고른 줄은 보통 굵기로 둬 눈에 바로 갈린다) */
 .rg-fitem.on { color: var(--blue); font-weight: 800; }
 .rg-fitem.on svg { color: var(--blue); }
+.rg-fitem.on .mk { border-color: var(--blue); background: var(--blue); }
+.rg-fitem.on .mk svg { color: #fff; }
 .mini { flex: 0 0 auto; height: 24px; padding: 0 8px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 12px; font-weight: 600; color: var(--text-2); }
 .mini:hover { border-color: #b8c1d1; color: var(--text); }
 .mini.on { background: var(--blue); border-color: var(--blue); color: #fff; }
@@ -2280,10 +2288,10 @@ html, body { overflow-x: clip; }
       <div class="rg-row1 rg-acts">
         <!-- ① 폴더 고르기 — 등록해 둔 폴더를 펼쳐 고른다. 고치고 지우는 일은 ② 폴더등록 창이 맡는다 -->
         <div class="rg-folder pop-root" data-pop="folders">
-          <button type="button" class="rg-folder-box" data-act="pop" data-id="folders" aria-expanded="${S.pop === 'folders'}" aria-label="스캔할 폴더 고르기">
-            <span class="rg-chosen">${R.sel.length ? esc(R.sel.length === 1 ? favName(R.sel[0]) : `${favName(R.sel[0])} 외 ${R.sel.length - 1}`) : `<span class="rg-ph">${R.favs.length ? '폴더 고르기' : '등록된 폴더 없음'}</span>`}</span><i class="tri"></i>
+          <button type="button" class="rg-folder-box" data-act="pop" data-id="folders" aria-expanded="${S.pop === 'folders'}" aria-label="스캔할 폴더 선택">
+            <span class="rg-chosen">${R.sel.length ? esc(R.sel.length === 1 ? favName(R.sel[0]) : `${favName(R.sel[0])} 외 ${R.sel.length - 1}`) : `<span class="rg-ph">${R.favs.length ? '폴더 선택' : '등록된 폴더 없음'}</span>`}</span><i class="tri"></i>
           </button>
-          ${S.pop === 'folders' ? `<div class="pop rg-pop" role="listbox" aria-label="등록한 폴더">${R.favs.length ? R.favs.map((f) => `<div class="rg-fitem ${R.sel.includes(f.url) ? 'on' : ''}" role="option" aria-selected="${R.sel.includes(f.url)}" data-act="fav-sel" data-v="${esc(f.url)}">${I.folder}<span class="nm">${esc(f.name || '이름 없는 폴더')}</span></div>`).join('') : '<div class="bin-empty" style="border:0">등록된 폴더가 없습니다 — 폴더등록을 눌러 추가하세요.</div>'}</div>` : ''}
+          ${S.pop === 'folders' ? `<div class="pop rg-pop" role="listbox" aria-label="등록한 폴더">${R.favs.length ? R.favs.map((f) => `<div class="rg-fitem ${R.sel.includes(f.url) ? 'on' : ''}" role="option" aria-selected="${R.sel.includes(f.url)}" data-act="fav-sel" data-v="${esc(f.url)}"><i class="mk">${I.check}</i>${I.folder}<span class="nm">${esc(f.name || '이름 없는 폴더')}</span></div>`).join('') : '<div class="bin-empty" style="border:0">등록된 폴더가 없습니다 — 폴더등록을 눌러 추가하세요.</div>'}</div>` : ''}
         </div>
         <button type="button" class="rg-fav" data-act="fav-open">${I.star}폴더등록</button>
         <button type="button" class="rg-btn scan" data-act="scan" ${R.loading ? 'disabled' : ''}>${I.search}폴더스캔${R.sel.length ? ` (${R.sel.length})` : ''}</button>
@@ -2349,7 +2357,7 @@ html, body { overflow-x: clip; }
         <div class="fav-body">
           <p class="fav-sub">신규 폴더 + 주소 등록</p>
           <div class="fav-form"><input id="favName" placeholder="신규 폴더명 입력" aria-label="신규 폴더명"><input id="favUrl" placeholder="구글 드라이브 폴더 주소 입력" aria-label="폴더 주소"><button type="button" class="btn primary" data-act="fav-add">추가</button></div>
-          <p class="fav-sub">구글 드라이브 폴더 + 주소 리스트 <span style="font-weight:400">(체크한 폴더를 스캔합니다)</span></p>
+          <p class="fav-sub">구글 드라이브 폴더 + 주소 리스트 <span style="font-weight:400">(체크한 폴더를 연결 및 스캔합니다)</span></p>
           <ul class="fav-list">${li}</ul>
         </div></div></div>`;
       if (m.edit >= 0) setTimeout(() => { const el = $('favEditName'); if (el) el.focus(); }, 20); else setTimeout(() => { const el = $('favName'); if (el) el.focus(); }, 20);
