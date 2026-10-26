@@ -12227,11 +12227,27 @@ select.adp-pub-input option { text-align: center; }
    카드 제목 16 · 카드 안 작은 제목 14 는 위에서 정한다. ▾ 같은 기호는 글이 아니라 그대로 둔다 */
 .adp-tab-rights :is(
   .adp-doc-box, .adp-doc-pdf-tag, .adp-ai-missing, .adp-base-row .quad-v small, .adp-diag-sum,
-  .adp-rights-date, .adp-rights-table th, .adp-rights-table td, .adp-rights-table td small,
+  .adp-rights-table th, .adp-rights-table td, .adp-rights-table td small,
   .adp-registry-table th, .adp-registry-table td, .adp-table .adp-desc, .adp-plan-err,
   .adp-empty.sm, .adp-empty.one, .adp-rdoc-task, .adp-rdoc-input, .adp-rdoc-label,
   .adp-rdoc-survey .adp-rdoc-input, .adp-rdoc-survey .adp-date-btn, .adp-rdoc-survey .adp-agency-trigger .txt,
   .adp-rdoc-multi .adp-agency-trigger, .adp-rcase-item small, .adp-rcheck-table td,
   .adp-agency-trigger, .adp-agency-option, .adp-toggle .on
+) { font-size: 12px; }
+/* 웹 권리분석 탭 글자 단계 — 카드 제목 16 · 카드 안 작은 제목 14 · 칸 이름과 값 13 · 덧붙인 설명 12.
+   건물등기 · 임차인현황 · 권리분석 카드가 같은 단계를 쓴다 (12 아래는 없다) */
+.adp-tab-rights :is(
+  .adp-table, .adp-table .b, .adp-registry-table th, .adp-registry-table td,
+  .adp-base-row dt, .adp-base-row dd, .adp-base-row.quad dt, .adp-base-row .quad-v, .adp-base-row .quad-v strong,
+  .adp-base-row dd.stack span, .adp-base-tenant .adp-base-row dt, .adp-base-tenant .adp-base-row dd span,
+  .adp-base-row dd.adp-tn-dates, .adp-base-warn, .adp-note-toggle, .adp-empty,
+  .adp-rcheck-table td, .adp-rcheck-label strong, .adp-cl-table .adp-rcheck-label strong, .adp-cl-table .adp-rcheck-desc,
+  .adp-rcase-banner, .adp-rcase-select, .adp-rcase-item strong,
+  .adp-rdoc-input, .adp-rdoc-survey .adp-rdoc-input, .adp-rdoc-survey .adp-date-btn,
+  .adp-rdoc-survey .adp-agency-trigger .txt, .adp-rdoc-multi .adp-agency-trigger, .adp-agency-trigger, .adp-agency-option
+) { font-size: 13px; }
+.adp-tab-rights :is(
+  .adp-base-note, .adp-sub-note:not(.adp-rows-cap), .adp-warn-banner, .adp-table .adp-desc,
+  .adp-base-row .quad-v small, .adp-rcase-item small, .adp-rdoc-label, .adp-rdoc-task, .adp-empty.sm, .adp-empty.one
 ) { font-size: 12px; }
 </style>
