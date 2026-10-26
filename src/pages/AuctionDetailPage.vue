@@ -7775,7 +7775,7 @@ const goBack = () => router.back();
                 <span class="t">① 수치입력</span>
               </div>
               <div class="adp-dm-rowwrap">
-              <div class="adp-mkt-cells c3 adp-dm-table">
+              <div class="adp-mkt-cells c3 adp-dm-table dm-input">
                 <div :class="['cell split', { lit: dmLit('deal') }]" @mouseenter="dmLitEnter('deal')" @mouseleave="dmLitLeave()" @click="dmLitTap('deal')">
                   <div class="cell-head">
                     <button type="button" class="adp-dm-link" @click.stop="openMolitRtSite">최근 12개월 거래량</button>
@@ -7888,7 +7888,7 @@ const goBack = () => router.back();
                 </div>
               </div>
               <div class="adp-dm-rowwrap">
-              <div class="adp-mkt-cells c4 adp-dm-table">
+              <div class="adp-mkt-cells c4 adp-dm-table dm-result">
                 <div :class="['cell split calc', { lit: dmLit('turn') }]" @mouseenter="dmLitEnter('turn')" @mouseleave="dmLitLeave()" @click="dmLitTap('turn')">
                   <div class="cell-head">
                     <small>거래 회전율</small>

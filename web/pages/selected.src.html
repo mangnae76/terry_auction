@@ -590,6 +590,10 @@ body.trip-full .foot { display: none; }
   th.adp-ind-label.survey,
   tr > th
 ) { font-size: 14px !important; }
+/* 웹 손품조사 — 매매수요 ① 수치입력 · ② 지표결과 표는 세로로 넉넉히 (줄 높이 약 두 배) */
+.app-detail.tab-survey :is(.dm-input, .dm-result) .cell .cell-head { min-height: 76px !important; padding-top: 16px !important; padding-bottom: 16px !important; }
+.app-detail.tab-survey :is(.dm-input, .dm-result) .cell .cell-body,
+.app-detail.tab-survey :is(.dm-input, .dm-result) .cell .cell-grade { padding-top: 24px !important; padding-bottom: 24px !important; }
 
 .it-col { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .it-card { background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); padding: 14px 24px 16px; min-width: 0; }
