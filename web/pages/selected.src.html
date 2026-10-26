@@ -163,9 +163,8 @@ button { cursor: pointer; }
 .g-menu:hover::after { transform: scaleX(1); opacity: .55; }
 .g-menu.on::after { transform: scaleX(1); opacity: 1; }
 /* +물건등록이 선정목록 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
-/* 메뉴 여덟 — '낙찰가율분석' 이 시장분석 옆에 들어오며 간격을 고르게 다시 잡았다 (글자 폭 + 약 35px) */
-.m0 { left: 13.75%; } .m1 { left: 22.34%; } .m2 { left: 30.16%; } .m3 { left: 37.97%; } .m3b { left: 45.78%; }
-.m4 { left: 56.17%; } .m5 { left: 63.98%; } .m6 { left: 71.8%; }
+.m0 { left: 13.75%; } .m1 { left: 23.2%; } .m2 { left: 32.6%; } .m3 { left: 42.05%; }
+.m4 { left: 51.1%; } .m5 { left: 60.1%; } .m6 { left: 69.45%; }
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: #fff !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
@@ -1841,7 +1840,6 @@ html, body { overflow-x: clip; }
       <a class="g-menu m1" href="#/" data-act="go-list" id="navWatch">선정목록</a>
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
       <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
-      <a class="g-menu m3b" href="#/bidrate" data-act="go-bidrate" id="navBidrate">낙찰가율분석</a>
       <a class="g-menu m4" href="#" data-act="soon" data-name="커뮤니티">커뮤니티</a>
       <a class="g-menu m5" href="#" data-act="soon" data-name="고객센터">고객센터</a>
       <a class="g-menu m6" href="#/mypage" data-act="go-mypage" id="navMy">마이페이지</a>
@@ -2109,13 +2107,14 @@ html, body { overflow-x: clip; }
   const itemHash = (id, tab) => `#/item/${id}${tab && tab !== 'basic' ? `/${tab}` : ''}`;
   /* ===== 주소 한 곳 — 어느 화면 · 어느 하위 탭을 보는지 주소(#/…)에 적고, 새로고침 · 뒤로가기 때 거기서 되살린다.
      화면마다 따로 적지 않는다: 새 화면 · 새 하위 탭이 생기면 아래 두 표(SUB_TAB_KEYS · readHash/hashOf)에만 더한다 ===== */
-  const SUB_TAB_KEYS = { market: ['ranking', 'region', 'dong', 'case', 'kb'], bidrate: ['near', 'same'] };
+  const SUB_TAB_KEYS = { market: ['ranking', 'region', 'dong', 'case', 'near', 'same'] };
   const PLAIN_ROUTES = ['register', 'trip', 'mypage'];
   /** 주소 → { route, itemId, itemTab, sub } */
   const readHash = (h = location.hash) => {
     const m = h.match(/^#\/([\w-]+)(?:\/([\w-]+))?(?:\/([\w-]+))?/) || [];
     const head = m[1] || '';
     if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
+    if (head === 'bidrate') return { route: 'market', sub: SUB_TAB_KEYS.market.includes(m[2]) ? m[2] : 'near' }; /* 예전 '낙찰가율분석' 주소 */
     if (SUB_TAB_KEYS[head]) return { route: head, sub: SUB_TAB_KEYS[head].includes(m[2]) ? m[2] : SUB_TAB_KEYS[head][0] };
     if (PLAIN_ROUTES.includes(head)) return { route: head };
     return { route: 'list' };
@@ -2205,8 +2204,7 @@ html, body { overflow-x: clip; }
     ['m0', [['자동등록', 'mega-auto'], ['직접입력', 'mega-manual']]],
     ['m1', [['선정목록', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
-    ['m3', [['거래량 랭킹지도', 'go-market'], ['지역 수요공급', 'go-market'], ['지역분석', 'go-market'], ['경매지번 공동주택가 및 실거래가', 'go-market'], ['KB주택가격지수', 'go-market']]],
-    ['m3b', [['인근 매각물건 분석', 'go-bidrate'], ['동일지번 매각물건 분석', 'go-bidrate']]],
+    ['m3', [['거래량 랭킹지도', 'go-market'], ['지역 수요공급', 'go-market'], ['지역분석', 'go-market'], ['경매지번 공동주택가 및 실거래가', 'go-market'], ['인근 매각물건 분석', 'go-market'], ['동일지번 매각물건 분석', 'go-market']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
     ['m5', [['자주 묻는 질문', ''], ['1:1 문의', ''], ['이용안내', '']]],
     ['m6', [['내 정보', 'go-mypage'], ['포인트', ''], ['결제관리', ''], ['알림설정', '']]],
@@ -3120,8 +3118,7 @@ html, body { overflow-x: clip; }
   const SUBTABS = {
     /* 물건상세 — 앱 AuctionDetailPage 의 TABS 다섯 칸에서 앱 '손품+현장'을 손품조사 · 임장조사 둘로 나눴다(웹만) */
     /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
-    market: [['ranking', '', '거래량 랭킹지도'], ['region', '', '지역 수요공급'], ['dong', '', '지역분석'], ['case', '', '경매지번 공동주택가 및 실거래가'], ['kb', '', 'KB주택가격지수']],
-    bidrate: [['near', '', '인근 매각물건 분석'], ['same', '', '동일지번 매각물건 분석']],
+    market: [['ranking', '', '거래량 랭킹지도'], ['region', '', '지역 수요공급'], ['dong', '', '지역분석'], ['case', '', '경매지번 공동주택가 및 실거래가'], ['near', '', '인근 매각물건 분석'], ['same', '', '동일지번 매각물건 분석']],
     item: [['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
   };
   function renderSubTabs() {
