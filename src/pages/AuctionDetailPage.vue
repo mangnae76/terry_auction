@@ -7373,7 +7373,7 @@ const goBack = () => router.back();
             <!-- 웹 — 건물등기 PDF 표와 같은 꼴: 순서 · 접수일 · 권리종류 · 권리자 · 채권금액 · 비고 · 소멸 -->
             <table v-if="webEmbed && registryRows.length > 0" class="adp-table adp-reg-pdf">
               <colgroup>
-                <col style="width: 7%" /><col style="width: 11%" /><col style="width: 14%" /><col style="width: 15%" /><col style="width: 14%" /><col style="width: 8%" /><col />
+                <col style="width: 8%" /><col style="width: 11%" /><col style="width: 13%" /><col style="width: 15%" /><col style="width: 13%" /><col style="width: 10%" /><col />
               </colgroup>
               <thead><tr><th>순서</th><th>접수일</th><th>권리종류</th><th>권리자</th><th>채권금액</th><th>인수/소멸</th><th>비고</th></tr></thead>
               <tbody>
@@ -7481,7 +7481,7 @@ const goBack = () => router.back();
         </section>
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsCheck')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 11 2 2 4-4"/></svg>권리분석<template v-if="webEmbed"> (직접 입력)</template></h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 11 2 2 4-4"/></svg>권리분석<template v-if="webEmbed"> (직접확인)</template></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsCheck') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('rightsCheck')">
