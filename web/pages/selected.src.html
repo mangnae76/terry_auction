@@ -746,6 +746,12 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-survey .adp-ind-table :is(th, td) { padding-top: 10px !important; padding-bottom: 10px !important; }
 /* 웹 손품조사 — 급매가(실거래가 조사 · 조건분석 · 네이버 매물조사) 표의 값(면적 · 날짜·층 · 가격 · 범위)은 16. 단위·비고는 그대로 */
 .app-detail.tab-survey .adp-mkt-body .adp-dm-table .cell:not(.adp-mkt-wide) :is(strong, .adp-mkt-range2) { font-size: 16px !important; }
+/* 웹 손품결론(시세 결론 · 급매가 결론) — 값 16, 칸 끝에 붙지 않게 좌우를 두 칸쯤 띄운다 */
+.app-detail.tab-survey .adp-conc-table td :is(strong, span:not(.adp-bracket)), .app-detail.tab-survey .adp-conc-table td.num { font-size: 16px !important; }
+.app-detail.tab-survey .adp-conc-table :is(th, td) { padding-left: 20px !important; padding-right: 20px !important; }
+/* 웹 — 편집할 때 입력칸 글자 16, 칸 높이는 --ctl-h 이상 (글자가 작아 칸도 작아 보였다) */
+.app-detail :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) { font-size: 16px !important; }
+.app-detail :is(.adp-dm-table, .adp-conc-table, .adp-ind-table, .adp-ruser-table) :is(input:not([type="checkbox"]), select) { min-height: var(--ctl-h) !important; }
 /* 웹 손품조사 — 급매가 표도 세로로 넉넉히 (칸 위아래 7 → 14, 블록 사이 8 → 16) */
 .app-detail.tab-survey .adp-mkt-body .adp-dm-table .cell > :is(small, strong, span, .adp-mkt-unit) { padding-top: var(--tbl-py) !important; padding-bottom: var(--tbl-py) !important; }
 .app-detail.tab-survey .adp-mkt-body .adp-mkt-block + .adp-mkt-block { margin-top: 16px !important; }
