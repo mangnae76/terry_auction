@@ -7856,7 +7856,7 @@ const goBack = () => router.back();
             <div class="adp-dm-block">
               <div class="adp-dm-block-head">
                 <span class="t">② 지표결과</span>
-                <div class="adp-dm-total">
+                <div v-if="!webEmbed" class="adp-dm-total">
                   <span class="lab">종합</span>
                   <button
                     type="button"
@@ -7876,7 +7876,7 @@ const goBack = () => router.back();
                 </div>
               </div>
               <div class="adp-dm-rowwrap">
-              <div class="adp-mkt-cells c4 adp-dm-table dm-result">
+              <div :class="['adp-mkt-cells', 'c4', 'adp-dm-table', 'dm-result', { 'has-total': webEmbed }]">
                 <div :class="['cell split calc', { lit: dmLit('turn') }]" @mouseenter="dmLitEnter('turn')" @mouseleave="dmLitLeave()" @click="dmLitTap('turn')">
                   <div class="cell-head">
                     <small>거래 회전율</small>
@@ -7971,6 +7971,28 @@ const goBack = () => router.back();
                   <div class="cell-grade">
                     <strong :class="['adp-dm-grade', `g-${levelTone(dmClearGrade)}`]">{{ dmClearGrade }}</strong>
                     <span v-if="dmClearGrade !== '-'" :class="['adp-dm-fit', { bad: dmClearGrade === 'C' }]">/ {{ dmFitText(dmClearGrade) }}</span>
+                  </div>
+                </div>
+                <!-- 웹 — '종합' 을 표 오른쪽 한 칸으로. 값 줄과 등급 줄을 한 칸으로 합쳐 등급·적합여부를 크게 -->
+                <div v-if="webEmbed" class="cell split calc dm-total-cell">
+                  <div class="cell-head">
+                    <small>종합</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="tipEnter('total')"
+                      @mouseleave="tipLeave()"
+                      @click.stop="dmTip = dmTip === 'total' ? '' : 'total'"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-total">
+                    <strong :class="['adp-dm-grade', `g-${levelTone(dmTotalGrade)}`]">{{ dmTotalGrade }}</strong>
+                    <span v-if="dmTotalGrade !== '-'" :class="['adp-dm-fit', { bad: dmTotalGrade === 'C' }]">{{ dmFitText(dmTotalGrade) }}</span>
                   </div>
                 </div>
               </div>
@@ -10912,6 +10934,9 @@ tr.tone-take { background: #fff5f5; }
 .adp-mkt-cells.c2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .adp-mkt-cells.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .adp-mkt-cells.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+/* 웹 지표결과 — 오른쪽에 '종합' 칸을 하나 더 */
+.adp-mkt-cells.c4.has-total { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.dm-total-cell .cell-total { flex: 1 1 auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .adp-mkt-cells.c4 .cell small { letter-spacing: -0.4px; }
 /* 이름 칸과 값 칸을 선으로 가른다 — 이름 칸 전체가 설명을 띄우는 영역 */
 .adp-mkt-cells .cell.split { padding: 0; gap: 0; overflow: hidden; }
