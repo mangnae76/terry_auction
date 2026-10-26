@@ -2906,23 +2906,43 @@ const setFieldMoneyText = (id: string, el: HTMLInputElement) => {
 };
 const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow[] }> = [
   {
-    title: '① 탐문',
+    title: '① 현장조사',
     // 빌라에 가서 움직이는 차례 그대로 세운다 — 멀리서 집을 올려다보며 확인하는
-    // 향·뷰·외벽, 건물에 들어서며 보는 것, 계량기, 한 바퀴 돌며 보는 것,
-    // 그다음 사람에게 묻는 것, 마지막으로 문 앞의 비번.
+    // 향·뷰·실외기·외벽, 한 바퀴 돌며 보는 것, 마지막으로 문 앞의 엘리베이터 · 비번.
+    // 사람에게 묻는 것(우편함 · 공과금 · 관리비 · 누수 · 임차인)은 ③ 입찰자 현황조사로 모았다 (앱 · 웹 같게)
     items: [
       // 자판을 두드리는 대신 눌러 고른다 — 현장에서는 그편이 빠르다
       { id: 'fs.aspect', label: '향 / 뷰', options: ['O', 'X'], noteOptions: ['동향', '서향', '남향', '북향', '뻥뷰', '단지내뷰'] },
+      { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'], noteOptions: ['실외기 있음', '실외기 없음'] },
       { id: 'fs.exterior', label: '건물관리', options: ['O', 'X'], noteOptions: oxPicks('외벽크랙', '필로티천장누수') },
       { id: 'fs.trash', label: '분리수거', options: ['O', 'X'], noteOptions: oxPicks('분리수거') },
-      { id: 'fs.mailbox', label: '우편함', options: ['O', 'X'], noteOptions: oxPicks('전기요금', '가스요금', '수도요금') },
-      // '\n' 으로 줄을 나눈다 — 한 줄로 두면 '사용현황'이 어중간하게 끊긴다
-      { id: 'fs.utility', label: '전기가스수도\n사용현황', options: ['O', 'X'], noteOptions: oxPicks('단전', '단수', '가스차단') },
       // 건물을 한 바퀴 돌며 보는 것
       { id: 'fs.cctv', label: 'CCTV 보안', options: ['O', 'X'], noteOptions: ['CCTV 있음', 'CCTV 없음'] },
       { id: 'fs.parkList', label: '주차장관리', options: ['O', 'X'], noteOptions: ['리스트 있음', '리스트 없음'] },
       { id: 'fs.bikeKeep', label: '자전거보관', options: ['O', 'X'], noteOptions: ['사용', '방치'] },
       { id: 'fs.cleanCo', label: '계단청소', options: ['O', 'X'], noteOptions: oxPicks('관리') },
+      { id: 'fs.elevator', label: '엘리베이터', options: ['O', 'X'], noteOptions: ['엘리베이터 있음', '엘리베이터 없음'] },
+      { id: 'fs.doorCode', label: '출입문비번', text: true, placeholder: '비밀번호입력' },
+      { id: 'fs.entryCode', label: '현관비번', text: true, placeholder: '비밀번호입력' },
+    ],
+  },
+  {
+    title: '② 수리상태',
+    items: [
+      { id: 'fs.door', label: '도어', options: ['O', 'X'], noteOptions: ['분양상태', '교체'] },
+      { id: 'fs.doorLock', label: '도어락', options: ['O', 'X'], noteOptions: ['분양상태', '교체'] },
+      { id: 'fs.window', label: '샷시', options: ['O', 'X'], noteOptions: ['분양상태', '교체'] },
+    ],
+  },
+  {
+    // 문 앞에서 눈으로 보는 것(수리상태)을 먼저 적고, '누가 살고 있나'는 맨 뒤에 적는다.
+    // 맨 위 '입찰자 현황조사' 고르는 줄은 템플릿에 따로 있고, 아래 줄들이 그 밑에 붙는다
+    title: '③ 입찰자 현황조사',
+    special: 'report',
+    items: [
+      { id: 'fs.mailbox', label: '우편함', options: ['O', 'X'], noteOptions: oxPicks('전기요금', '가스요금', '수도요금') },
+      // '\n' 으로 줄을 나눈다 — 한 줄로 두면 '사용현황'이 어중간하게 끊긴다
+      { id: 'fs.utility', label: '전기가스수도\n사용현황', options: ['O', 'X'], noteOptions: oxPicks('단전', '단수', '가스차단') },
       // 사람에게 묻는 것 — 금액·연락처가 따라붙는 줄들
       {
         id: 'fs.mailMaint', label: '미납관리비', options: ['O', 'X'],
@@ -2942,43 +2962,9 @@ const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow
         id: 'fs.tenantCar', label: '임차인차량', options: ['O', 'X'],
         extra: { id: 'fs.tenantCarInfo', placeholder: '임차인 연락처 및 차량번호' },
       },
-      { id: 'fs.doorCode', label: '출입문비번', text: true, placeholder: '비밀번호입력' },
-      { id: 'fs.entryCode', label: '현관비번', text: true, placeholder: '비밀번호입력' },
     ],
   },
-  {
-    title: '② 수리상태',
-    items: [
-      { id: 'fs.door', label: '도어', options: ['O', 'X'], noteOptions: ['분양상태', '교체'] },
-      { id: 'fs.doorLock', label: '도어락', options: ['O', 'X'], noteOptions: ['분양상태', '교체'] },
-      { id: 'fs.window', label: '샷시', options: ['O', 'X'], noteOptions: ['분양상태', '교체'] },
-    ],
-  },
-  {
-    // 문 앞에서 눈으로 보는 것(수리상태)을 먼저 적고, '누가 살고 있나'는 맨 뒤에 적는다.
-    // 내용은 템플릿에 따로 있어 여기서는 자리만 잡는다
-    title: '③ 입찰자 현황조사',
-    special: 'report',
-    items: [],
-  },
 ];
-// 웹 — 우편함 · 전기가스수도 사용현황 · 미납관리비 · 누수 · 임차인탐문 · 임차인차량은 '③ 입찰자 현황조사' 안에 (사람에 관한 것끼리), '① 탐문' 이름은 '① 현장조사'. 앱은 그대로
-const WEB_TO_REPORT = ['fs.mailbox', 'fs.utility', 'fs.mailMaint', 'fs.roofLeak', 'fs.tenantContact', 'fs.tenantCar']; // 순서는 ① 에 있던 차례 그대로
-// 웹 ① 현장조사에만 더하는 줄 — 실외기는 향/뷰 밑, 엘리베이터는 출입문비번 위
-const WEB_EXTRA_ROWS: Array<{ after?: string; before?: string; row: FieldRow }> = [
-  { after: 'fs.aspect', row: { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'], noteOptions: ['실외기 있음', '실외기 없음'] } },
-  { before: 'fs.doorCode', row: { id: 'fs.elevator', label: '엘리베이터', options: ['O', 'X'], noteOptions: ['엘리베이터 있음', '엘리베이터 없음'] } },
-];
-const withWebExtras = (items: FieldRow[]) => items.flatMap((it) => [
-  ...WEB_EXTRA_ROWS.filter((x) => x.before === it.id).map((x) => x.row),
-  it,
-  ...WEB_EXTRA_ROWS.filter((x) => x.after === it.id).map((x) => x.row),
-]);
-const fieldSections = computed(() => (webEmbed
-  ? FIELD_SECTIONS.map((sec) => (sec.special === 'report'
-    ? { ...sec, items: FIELD_SECTIONS.flatMap((x) => x.items).filter((it) => WEB_TO_REPORT.includes(it.id)) }
-    : { ...sec, title: sec.title === '① 탐문' ? '① 현장조사' : sec.title, items: withWebExtras(sec.items.filter((it) => !WEB_TO_REPORT.includes(it.id))) }))
-  : FIELD_SECTIONS));
 // 현장 체크리스트 — 항목명과 확인할 내용
 const FIELD_CHECKLIST: Array<{ id: string; label: string; desc: string }> = [
   { id: 'cl.location', label: '입지', desc: '일자리, 교통, 유치원, 초교, 학원가, 인프라, 공원 등' },
@@ -8963,12 +8949,12 @@ const goBack = () => router.back();
             </div>
             <!-- ①②③ 묶음 — 앱은 틀 없이(display: contents) 그대로, 웹은 가로로 나란히 -->
             <div class="adp-fs-sections">
-            <div v-for="sec in fieldSections" :key="sec.title" class="adp-fs-section">
+            <div v-for="sec in FIELD_SECTIONS" :key="sec.title" class="adp-fs-section">
               <div class="adp-fs-title">{{ sec.title }}</div>
               <!-- 입찰자 현황조사 — 고르는 칸 하나뿐이라 줄 틀을 쓰지 않는다 -->
               <template v-if="sec.special === 'report'">
             <div class="adp-survey-row">
-              <span class="lbl">입찰자 현황조사</span>
+              <span class="lbl">{{ '입찰자\n현황조사' }}</span>
               <div class="adp-multi-wrap">
                 <button
                   type="button"
@@ -9013,27 +8999,14 @@ const goBack = () => router.back();
                   </div>
                 </div>
               </div>
-              <!-- 웹 — 다른 줄처럼 확인 체크 하나 -->
+              <!-- 다른 줄처럼 확인 체크 하나 -->
               <input
-                v-if="webEmbed"
                 type="checkbox"
                 class="adp-rcheck-box adp-fs-check"
                 aria-label="입찰자 현황조사 확인"
                 :checked="fieldVal('fs.surveyReportOk') === 'O'"
                 @change="setFieldValNow('fs.surveyReportOk', ($event.target as HTMLInputElement).checked ? 'O' : '')"
               />
-            </div>
-            <!-- 고른 말로는 다 담기지 않는 것 — 문 앞에서 본 그대로 적는 칸 (웹은 뺀다) -->
-            <div v-if="!webEmbed" class="adp-survey-row">
-              <span class="lbl">비고</span>
-              <span class="adp-survey-note">
-                <input
-                  class="adp-fs-input"
-                  placeholder="직접 입력"
-                  :value="fieldVal('fs.surveyReportNote')"
-                  @input="setFieldValNow('fs.surveyReportNote', ($event.target as HTMLInputElement).value)"
-                />
-              </span>
             </div>
               </template>
               <template v-for="item in sec.items" :key="item.id">
@@ -11567,6 +11540,20 @@ tr.tone-take { background: #fff5f5; }
 .adp-fs-input:focus { outline: none; border-color: #2b6df3; }
 /* ①②③ 묶음 틀 — 앱에서는 없는 것과 같다(웹만 가로 배치) */
 .adp-fs-sections { display: contents; }
+/* ③ 입찰자 현황조사 맨 위 고르는 줄 — 아래 줄들(.adp-fs-row)과 같은 틀 · 같은 글자 · 같은 칸 높이로 (앱 · 웹) */
+.adp-fs-section .adp-survey-row {
+  display: grid; grid-template-columns: 88px minmax(0, 1fr) 82px; gap: 5px;
+  border-bottom: 0; padding: 4px 0;
+}
+/* 이름이 길어 '전기가스수도 사용현황' 처럼 두 줄로 (웹은 칸이 넓어 한 줄) */
+.adp-fs-section .adp-survey-row .lbl { min-width: 0; font-size: 12px; line-height: 1.25; color: #6b7280; font-weight: 600; white-space: pre-line; word-break: keep-all; }
+.adp-fs-section .adp-survey-row .adp-multi-trigger {
+  min-height: 28px; padding: 3px 24px 3px 6px; border: 1px solid #e3e8f0; border-radius: 6px;
+}
+.adp-fs-section .adp-survey-row .adp-multi-placeholder { font-size: 12.5px; }
+.adp-fs-section .adp-survey-row .adp-fs-check { grid-column: 3; justify-self: end; margin: 2px 3px 2px 0; }
+/* 현장조사 칸 글자 — 비고 고르기 · 입력칸 · 금액칸 모두 12.5 로 (줄마다 11.5 · 12.5 가 섞여 있었다) */
+.adp-fs-row .adp-fs-input, .adp-fs-row .adp-fs-input.note.adp-agency-trigger .txt { font-size: 12.5px; }
 /* 탐문·우편물 줄의 입력칸 글자는 모두 왼쪽 정렬로 통일 */
 .adp-fs-row .adp-fs-input { text-align: left; padding-left: 8px; }
 /* 빈칸 안내 글자는 '점유관계'의 '선택'과 같은 회색으로 */
