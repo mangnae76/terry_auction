@@ -10443,6 +10443,8 @@ tr.tone-take { background: #fff5f5; }
 /* 권리 케이스 표는 분홍, 서류 확인 표는 파랑으로 구분 — 둘 사이를 띄워 구분이 더 분명하게 */
 .adp-rdoc-table { margin-top: 10px; }
 .adp-rdoc-table .adp-rcheck-label { background: #e3edfb; }
+/* 웹 AI 명도 난이도 분석 표 — 항목 칸은 리스크 요약 상자와 같은 옅은 회청색 */
+.adp-evict-table .adp-rcheck-label { background: #f8fafc; }
 
 .adp-rcase-dd { position: relative; }
 .adp-rcase-select {
