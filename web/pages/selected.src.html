@@ -483,11 +483,12 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 }
 .app-trip .ftp-scroll > .ftp-fixed-top, .app-trip .ftp-scroll > .ftp-list {
   position: relative; z-index: 1;
+  /* 출발지·도착지 검색 목록이 아래 줄에 덮이지 않게 윗줄을 한 겹 더 올린다 */
   background: rgba(255, 255, 255, 0.96) !important;
   border: 1px solid #e2e8f3; border-top: 0; border-bottom: 0;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
 }
-.app-trip .ftp-scroll > .ftp-fixed-top { border-top: 1px solid #e2e8f3; border-radius: 14px 14px 0 0; }
+.app-trip .ftp-scroll > .ftp-fixed-top { z-index: 2; border-top: 1px solid #e2e8f3; border-radius: 14px 14px 0 0; }
 .app-trip .ftp-scroll > .ftp-list { border-bottom: 1px solid #e2e8f3; border-radius: 0 0 14px 14px; }
 /* 안쪽 줄이 제 바탕으로 모서리를 덮는다 — 맨 위·맨 아래 줄에도 같은 라운드를 준다 */
 .app-trip .ftp-scroll > .ftp-fixed-top > :first-child { border-radius: 14px 14px 0 0; }
