@@ -431,22 +431,36 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
   margin: 0 !important; height: auto !important; max-height: none !important;
   border-radius: 0 !important; z-index: 0 !important;
 }
+/* 조작 칸 밖(지도 쪽)은 지도가 받아야 한다 — 칸은 제 폭만큼만 자리를 차지한다 */
 .app-trip .ftp-map { border-radius: 0 !important; }
 /* 확대·축소 단추 — 왼쪽 위는 조작 칸이 덮는다. 오른쪽 위 끝으로 보낸다 */
 .app-trip .leaflet-top.leaflet-left { left: auto !important; right: 0 !important; }
 .app-trip .leaflet-top.leaflet-left .leaflet-control { margin-right: 10px !important; } /* 왼쪽 여백만 있어 오른끝에 딱 붙었다 */
-/* 왼쪽 조작 칸 — 경로설정 · 동선최적화 · 목록이 한 통으로 흐른다 */
+/* 왼쪽 조작 칸 — 경로설정 · 동선최적화 · 목록이 한 통으로 흐른다.
+   지도는 이 칸 '안' 에 들어 있고 position:fixed 는 제 부모가 만든 층 안에서만 겹침을 가른다.
+   그래서 칸 자체에 바탕을 주면 지도가 그 바탕을 덮어 버린다 —
+   바탕·테두리는 칸이 아니라 칸 안의 줄(.ftp-fixed-top · .ftp-list)에 주고,
+   그 줄들을 지도 위(z 1)로 올린다. 지도는 칸 안에서 바닥(z 0)에 깔린다 */
 .app-trip .ftp-scroll {
   position: fixed !important; left: 18px !important;
   top: calc(var(--stick-top) + var(--gnb-h) + 18px) !important; bottom: 18px !important;
   width: 430px !important; max-width: calc(100vw - 36px) !important;
   overflow-y: auto !important; overscroll-behavior: contain; z-index: 5 !important;
-  background: rgba(255, 255, 255, 0.96) !important;
-  border: 1px solid #e2e8f3; border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+  background: transparent !important; border: 0 !important; box-shadow: none !important;
   padding: 0 0 10px !important;
 }
-:root[data-theme="dark"] .app-trip .ftp-scroll { background: rgba(17, 24, 39, 0.94); border-color: #2a3650; }
+.app-trip .ftp-scroll > .ftp-fixed-top, .app-trip .ftp-scroll > .ftp-list {
+  position: relative; z-index: 1;
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid #e2e8f3; border-top: 0; border-bottom: 0;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+}
+.app-trip .ftp-scroll > .ftp-fixed-top { border-top: 1px solid #e2e8f3; border-radius: 14px 14px 0 0; }
+.app-trip .ftp-scroll > .ftp-list { border-bottom: 1px solid #e2e8f3; border-radius: 0 0 14px 14px; }
+/* 목록을 접으면 윗줄 하나만 남는다 — 그때는 네 모서리를 모두 둥글린다 */
+.app-trip .ftp-scroll:not(:has(> .ftp-list)) > .ftp-fixed-top { border-bottom: 1px solid #e2e8f3; border-radius: 14px; }
+:root[data-theme="dark"] .app-trip .ftp-scroll > .ftp-fixed-top,
+:root[data-theme="dark"] .app-trip .ftp-scroll > .ftp-list { background: rgba(17, 24, 39, 0.94) !important; border-color: #2a3650; }
 /* 패널 안에서는 앱 그대로의 폭을 쓴다 */
 .app-trip .ftp-fixed-top, .app-trip .ftp-update-bar, .app-trip .ftp-list { max-width: none !important; margin-left: 0 !important; margin-right: 0 !important; }
 .app-trip .ftp-fixed-top { background: transparent; }
@@ -2984,19 +2998,17 @@ html, body { overflow-x: clip; }
     if (tripUnmount && box.querySelector('.app-trip')) return;
     closeAppTrip();
     box.innerHTML = '<div class="app-trip" id="appTripMount"></div>';
-    const stop = CLOUD.T.mountAppFieldTrip($('appTripMount'));
-    /* 지도를 패널 밖으로 꺼낸다 — 앱에서는 지도가 스크롤 칸(.ftp-scroll) 안에 들어 있다.
-       웹에서는 그 칸을 떠 있는 상자로 만드는데, position:fixed 는 제 부모가 만든 층
-       안에서만 겹침을 가르므로 그대로 두면 지도가 패널 내용을 통째로 덮는다.
-       한 번만 형제로 옮겨 두면 지도는 바닥(z 0), 패널은 그 위(z 5)로 제자리를 찾는다 */
-    const liftMap = () => {
-      const mount = $('appTripMount'); if (!mount) return;
-      const map = mount.querySelector('.ftp-map-wrap');
-      if (map && map.parentNode !== mount) mount.appendChild(map);
-    };
+    /* 줄의 '물건상세 보기'는 앱 라우터로 가지 못한다 — 웹 물건상세로 받아 넘긴다 */
+    const stop = CLOUD.T.mountAppFieldTrip($('appTripMount'), (id, tab) => {
+      if (!byId(id)) { toast('선정목록에서 그 물건을 찾지 못했습니다.', 'info'); return; }
+      S.itemTabNext = tab === 'survey' ? 'survey' : 'basic';
+      go('item', id);
+    });
     /* 지도는 만들어질 때의 칸 크기를 기억한다 — 웹은 머리띠·경로줄이 뒤늦게 자리를 잡아
-       그때 크기가 어긋난다. 창 크기 바뀜을 몇 번 흘려보내 지도가 다시 재게 한다 */
-    const nudges = [0, 60, 300, 900].map((ms) => setTimeout(() => { liftMap(); window.dispatchEvent(new Event('resize')); }, ms));
+       그때 크기가 어긋난다. 창 크기 바뀜을 몇 번 흘려보내 지도가 다시 재게 한다.
+       (지도 요소를 옮기지는 않는다 — Vue 가 그 자리를 기준으로 목록을 넣고 빼므로,
+        옮기면 패치가 어긋나 지도가 두 개가 되고 'Map container is already initialized' 가 난다) */
+    const nudges = [60, 300, 900].map((ms) => setTimeout(() => window.dispatchEvent(new Event('resize')), ms));
     tripUnmount = () => { nudges.forEach(clearTimeout); stop(); };
   }
   function renderAppDetailTab(it, tab) {

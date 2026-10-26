@@ -95,11 +95,21 @@ export const mountAppDetail = (el, id, tab) => {
 // (안 실으면 타일이 겹쳐 쌓이고 확대 단추가 풀려 지도가 깨져 보인다)
 import 'leaflet/dist/leaflet.css';
 import FieldTripPlannerPage from '../../src/pages/FieldTripPlannerPage.vue';
-export const mountAppFieldTrip = (el) => {
+/** el 안에 앱 임장경로를 띄운다.
+ *  onDetail(id, tab) — 줄의 '물건상세 보기'(🔍)가 앱 라우터로 /auctions/{id} 를 부른다.
+ *  웹에 띄운 앱은 /field-trip 하나만 아는 메모리 라우터라 그대로 두면 빈 화면으로 떨어진다 —
+ *  그 길을 막고 웹에게 넘겨 웹 물건상세를 열게 한다. */
+export const mountAppFieldTrip = (el, onDetail) => {
   const Empty = { render: () => null };
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [{ path: '/field-trip', component: FieldTripPlannerPage }, { path: '/:rest(.*)*', component: Empty }],
+  });
+  router.beforeEach((to) => {
+    const hit = /^\/auctions\/([\w-]+)/.exec(to.path || '');
+    if (!hit) return true;
+    if (onDetail) onDetail(hit[1], (to.query && to.query.tab) || '');
+    return false; /* 임장경로 화면을 그대로 둔다 */
   });
   const app = createApp({ render: () => h(RouterView) });
   app.use(getActivePinia());
