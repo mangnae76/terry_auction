@@ -1373,6 +1373,27 @@ let favSearchSeq = 0;
 const KAKAO_REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY ?? '';
 const KAKAO_BASE = import.meta.env.VITE_KAKAO_GEOCODE_BASE_URL ?? apiPath('/api-kakao');
 
+/** 카카오 장소 검색 — 즐겨찾기 창과 출발지·도착지 칸이 같이 쓴다 */
+const searchPlaces = async (keyword: string): Promise<FavSuggestion[]> => {
+  if (!keyword || keyword.trim().length < 2) return [];
+  const params = new URLSearchParams({ query: keyword.trim(), size: '10' });
+  const res = await fetch(`${KAKAO_BASE}/v2/local/search/keyword.json?${params.toString()}`, {
+    headers: !import.meta.env.DEV && KAKAO_REST_API_KEY
+      ? { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` }
+      : undefined,
+  });
+  if (!res.ok) return [];
+  const json = (await res.json()) as { documents?: Array<{
+    place_name?: string; address_name?: string; road_address_name?: string; category_group_name?: string;
+  }> };
+  return (json.documents ?? []).map((d) => ({
+    placeName: d.place_name ?? '',
+    roadAddress: d.road_address_name ?? '',
+    jibunAddress: d.address_name ?? '',
+    category: d.category_group_name ?? '',
+  }));
+};
+
 const fetchFavSuggestions = async (keyword: string) => {
   const seq = ++favSearchSeq;
   if (!keyword || keyword.trim().length < 2) {
@@ -1382,26 +1403,9 @@ const fetchFavSuggestions = async (keyword: string) => {
   }
   favSearching.value = true;
   try {
-    const params = new URLSearchParams({ query: keyword.trim(), size: '10' });
-    const res = await fetch(`${KAKAO_BASE}/v2/local/search/keyword.json?${params.toString()}`, {
-      headers: !import.meta.env.DEV && KAKAO_REST_API_KEY
-        ? { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` }
-        : undefined,
-    });
+    const rows = await searchPlaces(keyword);
     if (seq !== favSearchSeq) return;
-    if (!res.ok) {
-      favSuggestions.value = [];
-      return;
-    }
-    const json = (await res.json()) as { documents?: Array<{
-      place_name?: string; address_name?: string; road_address_name?: string; category_group_name?: string;
-    }> };
-    favSuggestions.value = (json.documents ?? []).map((d) => ({
-      placeName: d.place_name ?? '',
-      roadAddress: d.road_address_name ?? '',
-      jibunAddress: d.address_name ?? '',
-      category: d.category_group_name ?? '',
-    }));
+    favSuggestions.value = rows;
   } catch {
     if (seq === favSearchSeq) favSuggestions.value = [];
   } finally {
@@ -1438,17 +1442,81 @@ const removeFavorite = (addr: string) => {
   favorites.value = favorites.value.filter((f) => f !== addr);
   saveFavorites();
 };
+/* 출발지·도착지 칸 — 글을 적으면 아래에 검색 결과, ▾ 를 누르면 저장해 둔 곳(즐겨찾기)이 나온다.
+   둘은 같은 목록 자리를 쓰고 무엇을 담는지만 바뀐다 */
+interface OdItem { key: string; label: string; sub: string; value: string }
 const startDropdownOpen = ref(false);
 const endDropdownOpen = ref(false);
-const startFilteredFavorites = computed(() => favorites.value);
-const endFilteredFavorites = computed(() => favorites.value);
+const startOdMode = ref<'fav' | 'search'>('fav');
+const endOdMode = ref<'fav' | 'search'>('fav');
+const startOdHits = ref<FavSuggestion[]>([]);
+const endOdHits = ref<FavSuggestion[]>([]);
+const startOdBusy = ref(false);
+const endOdBusy = ref(false);
+let startOdTimer: ReturnType<typeof setTimeout> | null = null;
+let endOdTimer: ReturnType<typeof setTimeout> | null = null;
+let startOdSeq = 0;
+let endOdSeq = 0;
+
+const toOdItems = (rows: FavSuggestion[]): OdItem[] => rows.map((r, i) => ({
+  key: `${i}-${r.placeName}-${r.jibunAddress}`,
+  label: r.placeName || r.roadAddress || r.jibunAddress,
+  sub: r.roadAddress || r.jibunAddress,
+  value: r.roadAddress || r.jibunAddress || r.placeName,
+}));
+const favToOdItems = (): OdItem[] => favorites.value.map((a) => ({ key: a, label: a, sub: '', value: a }));
+const startOdItems = computed<OdItem[]>(() => (startOdMode.value === 'search' ? toOdItems(startOdHits.value) : favToOdItems()));
+const endOdItems = computed<OdItem[]>(() => (endOdMode.value === 'search' ? toOdItems(endOdHits.value) : favToOdItems()));
+
+const onStartOdInput = () => {
+  startOdMode.value = 'search';
+  startDropdownOpen.value = true;
+  if (startOdTimer) clearTimeout(startOdTimer);
+  const kw = startAddress.value;
+  if (kw.trim().length < 2) { startOdHits.value = []; startOdBusy.value = false; startOdMode.value = 'fav'; return; }
+  startOdBusy.value = true;
+  startOdTimer = setTimeout(async () => {
+    const seq = ++startOdSeq;
+    try { const rows = await searchPlaces(kw); if (seq === startOdSeq) startOdHits.value = rows; } catch { if (seq === startOdSeq) startOdHits.value = []; }
+    finally { if (seq === startOdSeq) startOdBusy.value = false; }
+  }, 250);
+};
+const onEndOdInput = () => {
+  endOdMode.value = 'search';
+  endDropdownOpen.value = true;
+  if (endOdTimer) clearTimeout(endOdTimer);
+  const kw = endAddress.value;
+  if (kw.trim().length < 2) { endOdHits.value = []; endOdBusy.value = false; endOdMode.value = 'fav'; return; }
+  endOdBusy.value = true;
+  endOdTimer = setTimeout(async () => {
+    const seq = ++endOdSeq;
+    try { const rows = await searchPlaces(kw); if (seq === endOdSeq) endOdHits.value = rows; } catch { if (seq === endOdSeq) endOdHits.value = []; }
+    finally { if (seq === endOdSeq) endOdBusy.value = false; }
+  }, 250);
+};
+/** ▾ — 저장해 둔 곳을 보여 준다 (적던 글은 그대로 둔다).
+    검색 결과를 보고 있었다면 닫지 않고 저장해 둔 곳으로 갈아 끼운다 */
+const toggleStartFavList = () => {
+  if (startDropdownOpen.value && startOdMode.value === 'fav') { startDropdownOpen.value = false; return; }
+  startOdMode.value = 'fav';
+  startDropdownOpen.value = true;
+};
+const toggleEndFavList = () => {
+  if (endDropdownOpen.value && endOdMode.value === 'fav') { endDropdownOpen.value = false; return; }
+  endOdMode.value = 'fav';
+  endDropdownOpen.value = true;
+};
 const selectStartFromDropdown = (addr: string) => {
   startAddress.value = addr;
   startDropdownOpen.value = false;
+  startOdMode.value = 'fav';
+  startOdHits.value = [];
 };
 const selectEndFromDropdown = (addr: string) => {
   endAddress.value = addr;
   endDropdownOpen.value = false;
+  endOdMode.value = 'fav';
+  endOdHits.value = [];
 };
 const closeStartDropdown = () => {
   setTimeout(() => { startDropdownOpen.value = false; }, 150);
@@ -1601,8 +1669,9 @@ watch(() => authStore.uid, (newUid) => {
             <img :src="flagIcon" alt="" class="ftp-od-flag-img" />
             <input
               v-model="startAddress"
-              placeholder="출발지입력"
+              placeholder="출발지 입력 · 검색"
               @focus="startDropdownOpen = true"
+              @input="onStartOdInput"
               @blur="closeStartDropdown"
             />
             <button
@@ -1610,15 +1679,16 @@ watch(() => authStore.uid, (newUid) => {
               class="ftp-od-toggle"
               aria-label="저장된 출발지 보기"
               @mousedown.prevent
-              @click="startDropdownOpen = !startDropdownOpen"
+              @click="toggleStartFavList"
             >▾</button>
-            <ul v-if="startDropdownOpen && startFilteredFavorites.length > 0" class="ftp-od-dropdown">
+            <ul v-if="startDropdownOpen && (startOdItems.length > 0 || startOdBusy)" class="ftp-od-dropdown">
+              <li v-if="startOdBusy && startOdItems.length === 0" class="ftp-od-dropdown-item is-note">찾는 중…</li>
               <li
-                v-for="addr in startFilteredFavorites"
-                :key="'s-' + addr"
+                v-for="it in startOdItems"
+                :key="'s-' + it.key"
                 class="ftp-od-dropdown-item"
-                @mousedown.prevent="selectStartFromDropdown(addr)"
-              >{{ addr }}</li>
+                @mousedown.prevent="selectStartFromDropdown(it.value)"
+              ><span class="ftp-od-hit-name">{{ it.label }}</span><span v-if="it.sub && it.sub !== it.label" class="ftp-od-hit-sub">{{ it.sub }}</span></li>
             </ul>
           </div>
           <button type="button" class="ftp-od-swap" aria-label="출발/도착 교환" @click="swapStartEnd">
@@ -1628,8 +1698,9 @@ watch(() => authStore.uid, (newUid) => {
             <img :src="flagIcon" alt="" class="ftp-od-flag-img" />
             <input
               v-model="endAddress"
-              placeholder="도착지입력"
+              placeholder="도착지 입력 · 검색"
               @focus="endDropdownOpen = true"
+              @input="onEndOdInput"
               @blur="closeEndDropdown"
             />
             <button
@@ -1637,15 +1708,16 @@ watch(() => authStore.uid, (newUid) => {
               class="ftp-od-toggle"
               aria-label="저장된 도착지 보기"
               @mousedown.prevent
-              @click="endDropdownOpen = !endDropdownOpen"
+              @click="toggleEndFavList"
             >▾</button>
-            <ul v-if="endDropdownOpen && endFilteredFavorites.length > 0" class="ftp-od-dropdown">
+            <ul v-if="endDropdownOpen && (endOdItems.length > 0 || endOdBusy)" class="ftp-od-dropdown">
+              <li v-if="endOdBusy && endOdItems.length === 0" class="ftp-od-dropdown-item is-note">찾는 중…</li>
               <li
-                v-for="addr in endFilteredFavorites"
-                :key="'e-' + addr"
+                v-for="it in endOdItems"
+                :key="'e-' + it.key"
                 class="ftp-od-dropdown-item"
-                @mousedown.prevent="selectEndFromDropdown(addr)"
-              >{{ addr }}</li>
+                @mousedown.prevent="selectEndFromDropdown(it.value)"
+              ><span class="ftp-od-hit-name">{{ it.label }}</span><span v-if="it.sub && it.sub !== it.label" class="ftp-od-hit-sub">{{ it.sub }}</span></li>
             </ul>
           </div>
         </div>
@@ -2252,6 +2324,12 @@ watch(() => authStore.uid, (newUid) => {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ftp-od-dropdown-item:hover, .ftp-od-dropdown-item:active { background: #f1f5f9; }
+/* 검색 결과 — 이름 한 줄, 주소 한 줄 */
+.ftp-od-hit-name { display: block; overflow: hidden; text-overflow: ellipsis; }
+.ftp-od-hit-sub { display: block; margin-top: 1px; font-size: 11px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; }
+.ftp-od-dropdown-item.is-note { color: #9ca3af; cursor: default; }
+.ftp-od-dropdown-item.is-note:hover { background: transparent; }
+.ftp-od-dropdown { max-height: 260px; }
 .ftp-od-swap {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   width: 26px; height: 26px;
