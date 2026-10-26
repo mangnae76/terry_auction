@@ -1960,6 +1960,18 @@ button:hover {
   display: flex; align-items: center; justify-content: center;
 }
 
+/* 임장경로 지도 — 확대·축소 단추는 오른쪽 위에 둔다 (왼쪽 위는 제목·목록이 지난다) */
+.ftp-map .leaflet-top.leaflet-left { left: auto; right: 0; }
+.ftp-map .leaflet-top.leaflet-left .leaflet-control { margin-right: 10px; }
+
+/* 번호 말풍선 — 주소가 길어도 잘리지 않게 한 줄로 눕힌다 */
+.trip-pop .leaflet-popup-content { margin: 10px 14px; white-space: nowrap; }
+.trip-pop .tp-addr { display: block; font-size: 13px; font-weight: 800; color: #111827; }
+.trip-pop .tp-info { display: block; margin-top: 4px; font-size: 12px; font-weight: 500; color: #4b5563; }
+.trip-pop .tp-info b { font-weight: 800; color: #111827; }
+.trip-pop .tp-info em { font-style: normal; color: #9ca3af; }
+.trip-pop .tp-sep { display: inline-block; margin: 0 8px; font-style: normal; color: #d1d5db; }
+
 .trade-map-marker-wrap {
   background: transparent !important;
   border: none !important;

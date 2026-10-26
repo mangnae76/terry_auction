@@ -799,7 +799,7 @@ const legSummary = (idx: number): string => {
   }
   const note = guessed ? ' <em>(직선 어림)</em>' : '';
   return `앞 지점에서 <b>${km(legKm)}</b> · 약 <b>${min(legMin)}</b>${note}`
-    + `<br/>출발부터 <b>${km(sumKm)}</b> · 약 <b>${min(sumMin)}</b>`;
+    + `<i class="tp-sep">|</i>출발부터 <b>${km(sumKm)}</b> · 약 <b>${min(sumMin)}</b>`;
 };
 
 const drawRouteMap = async () => {
@@ -877,7 +877,9 @@ const drawRouteMap = async () => {
     const marker = L.marker([point.lat, point.lng], {
       icon: makeBadgeIcon(label, kind, kind === 'stop' && isVisited(point.address)),
     }).bindPopup(
-      `<strong>${label}. ${point.address}</strong><br/>${legSummary(idx)}`,
+      `<b class="tp-addr">${label}. ${point.address}</b><span class="tp-info">${legSummary(idx)}</span>`,
+      /* 주소가 길어도 잘리지 않게 — 글에 맞춰 좌우로 눕힌다 (줄바꿈은 CSS 에서 막는다) */
+      { maxWidth: 680, minWidth: 0, className: 'trip-pop' },
     );
     markerLayer?.addLayer(marker);
   });

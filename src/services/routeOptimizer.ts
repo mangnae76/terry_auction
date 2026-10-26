@@ -39,8 +39,9 @@ const haversineKm = (a: GeoPoint, b: GeoPoint) => {
   return earthRadius * 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
 };
 
-/** 두 점 사이 직선거리(km) — 도로 경로가 없을 때 어림잡는 데 쓴다 */
-export const straightDistanceKm = (a: GeoPoint, b: GeoPoint) => haversineKm(a, b);
+/** 두 점 사이 직선거리(km) — 도로 경로가 없을 때 어림잡는 데 쓴다 (주소는 보지 않는다) */
+export const straightDistanceKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) =>
+  haversineKm(a as GeoPoint, b as GeoPoint);
 
 const twoOptSwap = (route: GeoPoint[], i: number, k: number) => [
   ...route.slice(0, i),

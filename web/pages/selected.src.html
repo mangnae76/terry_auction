@@ -31,7 +31,7 @@
   --nav: #213366;
   --nav-text: #ffffff;
   --nav-name: #50c3fc;
-  --nav-orange: #e08030;
+  --nav-orange: #f4700a; /* 고른 메뉴 밑줄 — 탁하지 않게 채도를 올리고 명도를 낮췄다 */
   --blue: #2b6df3;
   --blue-soft: #eef3ff;
   --cta: #4d7bef;
@@ -261,7 +261,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .subtab svg { width: 16px; height: 16px; }
 .subtab:hover { color: var(--text); }
 .subtab.on { color: var(--blue); font-weight: 800; }
-.subtab.on::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; background: var(--blue); }
+.subtab::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px 2px 0 0; background: var(--blue); transform: scaleX(0); transition: transform .2s ease; }
+.subtab:hover::after { transform: scaleX(1); opacity: .45; }
+.subtab.on::after { transform: scaleX(1); opacity: 1; animation: tab-bar-in .22s ease; }
 .crumb-slot { padding-top: 2px; }
 .crumb-slot + .content { padding-top: 6px; }
 .u-link { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; font-size: 13px; color: var(--text-2); white-space: nowrap; transition: background .15s, color .15s; }
@@ -456,6 +458,13 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
   font-size: 8px; font-weight: 800; line-height: 1;
   display: flex; align-items: center; justify-content: center;
 }
+/* 번호 말풍선 — 주소가 길어도 잘리지 않게 한 줄로 눕힌다 */
+.trip-pop .leaflet-popup-content { margin: 10px 14px; white-space: nowrap; }
+.trip-pop .tp-addr { display: block; font-size: 13px; font-weight: 800; color: #111827; }
+.trip-pop .tp-info { display: block; margin-top: 4px; font-size: 12px; font-weight: 500; color: #4b5563; }
+.trip-pop .tp-info b { font-weight: 800; color: #111827; }
+.trip-pop .tp-info em { font-style: normal; color: #9ca3af; }
+.trip-pop .tp-sep { display: inline-block; margin: 0 8px; font-style: normal; color: #d1d5db; }
 .trip-arrow { background: transparent !important; border: none !important; }
 .trip-arrow-icon { width: 14px; height: 14px; position: relative; }
 .trip-arrow-icon::before {
@@ -623,7 +632,10 @@ body.trip-full .foot { display: none; }
 .reg-tab svg { width: 17px; height: 17px; }
 .reg-tab:hover { color: var(--text); }
 .reg-tab.on { color: var(--blue); font-weight: 800; }
-.reg-tab.on::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 0; height: 3px; background: var(--blue); }
+.reg-tab::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 0; height: 3px; border-radius: 2px 2px 0 0; background: var(--blue); transform: scaleX(0); transition: transform .2s ease; }
+.reg-tab:hover::after { transform: scaleX(1); opacity: .45; }
+.reg-tab.on::after { transform: scaleX(1); opacity: 1; animation: tab-bar-in .22s ease; }
+@keyframes tab-bar-in { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .reg-tab .plan-tag { pointer-events: none; }
 .reg-tab:not(.on) .plan-tag.plus { background: #f2dcb6; color: #8a6520; } /* 꺼진 탭에서도 알약은 알약으로 보이게 */
 /* 유료가 아닐 때 — 왼쪽 상자는 한 발 물리고 누를 수 없게 한다 */

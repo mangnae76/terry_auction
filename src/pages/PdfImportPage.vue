@@ -1199,10 +1199,13 @@ const onDropFiles = async (e: DragEvent) => {
   border: none; background: transparent; padding: 9px 0 14px; cursor: pointer; text-align: center;
   font-size: 15.3px; font-weight: 700; letter-spacing: -0.8px; color: #111827;
 }
-.pip-tab.active::after {
+/* 고른 탭 밑줄 — 좌우로 펴지며 들어온다 (웹 머리띠 띠와 같은 움직임) */
+.pip-tab::after {
   content: ''; position: absolute; left: 8%; right: 8%; bottom: 0;
   height: 3px; background: #2a5fbf; border-radius: 2px;
+  transform: scaleX(0); transition: transform 0.2s ease;
 }
+.pip-tab.active::after { transform: scaleX(1); }
 .pip-chev.up { transform: rotate(180deg); }
 
 .pip-stats {
