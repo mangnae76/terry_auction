@@ -9333,9 +9333,11 @@ const goBack = () => router.back();
 .adp-fold-all .adp-chev { width: 16px; height: 16px; }
 .adp-prop-road { display: block; font-size: 11.5px; color: #6b7280; margin-top: 2px; }
 
-.adp-docs { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
-@media (max-width: 560px) {
-  .adp-docs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* 서류 다섯 칸 — 칸 수에 맞춰 다섯으로 나눈다 (일곱이던 때의 칸 폭을 그대로 두면 칸이 좁고 글이 잘린다) */
+.adp-docs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
+@media (max-width: 700px) { .adp-docs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 460px) {
+  .adp-docs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* 폰은 칸이 좁고 낮다 — 폴더 그림을 줄이고 글씨 두 줄을 촘촘히 */
   .adp-doc-box:not(.has) { gap: 2px; padding: 0 2px; font-size: 10px; white-space: nowrap; letter-spacing: -0.3px; overflow: hidden; }
   .adp-doc-box:not(.has) .adp-doc-ic { font-size: 13px; }
@@ -9682,11 +9684,15 @@ const goBack = () => router.back();
 
 /* AI 분석 시작 — 서류 칸 아래 가운데에 선다 */
 .adp-ai-start-row { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 12px 0 4px; }
+.adp-ai-start, .adp-ai-again {
+  /* 둘은 같은 크기로 나란히 선다 */
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; width: 180px; height: 44px; padding: 0;
+  border-radius: 10px; font-size: 14px; font-weight: 800; letter-spacing: -0.3px; cursor: pointer;
+  box-sizing: border-box;
+}
 .adp-ai-start {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  min-width: 220px; height: 44px; padding: 0 22px;
-  border: 0; border-radius: 10px; background: #2b6df3; color: #fff;
-  font-size: 14.5px; font-weight: 800; letter-spacing: -0.3px; cursor: pointer;
+  border: 0; background: #2b6df3; color: #fff;
   box-shadow: 0 4px 12px rgba(43, 109, 243, 0.28); transition: background 0.15s;
 }
 .adp-ai-start:hover:not(:disabled) { background: #1f5fe0; }
@@ -9694,9 +9700,7 @@ const goBack = () => router.back();
 /* 이미 분석한 뒤 — 눌러도 할 일이 없으니 회색으로 가라앉힌다 */
 .adp-ai-start.done { background: #9ca3af; cursor: default; box-shadow: none; }
 .adp-ai-again {
-  height: 44px; padding: 0 18px; border: 1px solid #c7d7f7; border-radius: 10px;
-  background: #eef3fd; color: #2a5fbf; font-size: 13.5px; font-weight: 800; cursor: pointer;
-  transition: background 0.15s;
+  border: 1px solid #c7d7f7; background: #eef3fd; color: #2a5fbf; transition: background 0.15s;
 }
 .adp-ai-again:hover { background: #dfe9fb; }
 
