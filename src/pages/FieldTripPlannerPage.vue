@@ -2561,11 +2561,12 @@ watch(() => authStore.uid, (newUid) => {
   flex: 1 0 100%; margin-top: -1px;
   display: inline-flex; align-items: center; gap: 4px;
   min-width: 0; overflow: hidden; white-space: nowrap;
-  font-size: 15.3px; font-weight: 800; color: #111827;
+  font-size: 15.3px; font-weight: 500; color: #111827;
 }
 .ftp-title-stats img { width: 15px; height: 15px; object-fit: contain; flex: 0 0 auto; }
 .ftp-title-stats img + img { margin-left: 10px; }
-.ftp-title-stats b { font-weight: 800; color: #2b6df3; margin-left: 2px; }
+/* 방문·완료 수는 굵게 하지 않는다 — 숫자는 색으로만 가린다 */
+.ftp-title-stats b { font-weight: 500; color: #2b6df3; margin-left: 2px; }
 .ftp-update-title { display: inline-flex; align-items: center; gap: 5px; font-size: 15.3px; font-weight: 800; color: #111827; flex: 0 0 auto; }
 
 .ftp-update-copy {
