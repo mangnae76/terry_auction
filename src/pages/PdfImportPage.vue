@@ -834,7 +834,7 @@ const onDropFiles = async (e: DragEvent) => {
           <i />
         </button>
       </div>
-      <div class="pip-aibox-row">
+      <div class="pip-aibox-row pip-indent">
         <span class="pip-aibox-text">제미나이 API 키가 <span :class="['pip-key-state', aiKey ? 'ok' : 'no']">{{ aiKey ? '등록' : '미등록' }}</span> 상태입니다.<template v-if="!aiKey"> 키를 설정하세요.</template></span>
       </div>
 
@@ -1468,10 +1468,20 @@ const onDropFiles = async (e: DragEvent) => {
 }
 .pip-actions .pip-folder-ph { font-size: 13px; font-weight: 400; color: #9ca3af; }
 
-/* 고른 폴더 목록 — 체크 자국 · 폴더 그림 · 이름만 (고치고 지우는 일은 폴더등록 창이 맡는다) */
-.pip-folder-mark { flex: 0 0 auto; display: grid; place-items: center; width: 14px; height: 14px; color: #2a5fbf; opacity: 0; }
-.pip-folder-item.on .pip-folder-mark { opacity: 1; }
-.pip-folder-item.on .pip-folder-item-name { font-weight: 800; color: #111827; }
+/* 상태 글은 제목 글자('AI')와 같은 자리에서 시작한다 — 아이콘 15px + 사이 5px */
+.pip-indent { padding-left: 20px; }
+/* 고른 폴더 목록 — 왼쪽 네모 · 폴더 그림 · 이름만 (고치고 지우는 일은 폴더등록 창이 맡는다)
+   안 고른 줄은 빈 네모, 고른 줄은 파란 네모에 체크 (웹 /web 과 같다) */
+.pip-folder-mark {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border: 1px solid #d8dee9; border-radius: 4px; background: #fff;
+}
+.pip-folder-mark svg { color: transparent; }
+.pip-folder-item.on .pip-folder-mark { border-color: #2a5fbf; background: #2a5fbf; }
+.pip-folder-item.on .pip-folder-mark svg { color: #fff; }
+.pip-folder-item.on { color: #2a5fbf; }
+.pip-folder-item.on .pip-folder-ico { color: #2a5fbf; }
+.pip-folder-item.on .pip-folder-item-name { font-weight: 800; }
 .pip-folder-ico { flex: 0 0 auto; color: #6b7280; }
 /* 파싱 상자 설명 — 상자 가운데 */
 .pip-results-sub.mid { text-align: center; }
