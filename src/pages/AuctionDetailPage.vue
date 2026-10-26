@@ -7223,10 +7223,9 @@ const goBack = () => router.back();
           <div :class="['adp-tn-box', { 'is-many': tenantCards.length > 1 }]">
           <template v-if="tenantCards.length > 0">
             <section v-for="(tenant, i) in tenantCards" :key="i" class="adp-tn-one">
-              <p v-if="tenantCards.length > 1" class="adp-tn-no">임차인 {{ i + 1 }}</p>
               <dl class="adp-base-rows adp-base-tenant">
                 <div class="adp-base-row">
-                  <dt>임차인</dt>
+                  <dt>임차인<template v-if="tenantCards.length > 1"> {{ i + 1 }}</template></dt>
                   <dd><strong>{{ tenant.name || '-' }}</strong><span v-if="tenant.agency"> / {{ tenant.agency }}</span></dd>
                 </div>
                 <div class="adp-base-row">
@@ -9398,14 +9397,14 @@ const goBack = () => router.back();
 .adp-tn-box .adp-note-toggle { padding-top: 4px; padding-bottom: 4px; }
 .adp-tn-box > .adp-base-warn:last-child,
 .adp-tn-box > .adp-base-more:last-child { margin-bottom: 0; }
-/* 임차인 한 사람 = 상자 하나. 한 사람뿐이면 바깥 상자가 그 몫을 해 테두리를 겹치지 않는다 */
+/* 임차인 한 사람 = 상자 하나. 한 사람뿐이면 바깥 상자가 그 몫을 해 테두리를 겹치지 않는다
+   (몇 번째 사람인지는 '임차인 1·2·3' 으로 칸 이름에 붙는다) */
 .adp-tn-one + .adp-tn-one { margin-top: 7px; }
 .adp-tn-box.is-many { border: 0; padding: 0; background: transparent; }
 .adp-tn-box.is-many .adp-tn-one {
   border: 1px solid #e5e7eb; border-radius: 8px; padding: 2px 10px 7px; background: #fff;
 }
 .adp-tn-box.is-many > .adp-base-warn, .adp-tn-box.is-many > .adp-base-more { padding: 0 2px; }
-.adp-tn-no { margin: 7px 0 1px; font-size: 11.5px; font-weight: 800; color: #2b6df3; letter-spacing: -0.2px; }
 .adp-case-table { table-layout: fixed; }
 .adp-case-table td { vertical-align: middle; word-break: keep-all; }
 .adp-case-table .adp-pill { display: inline-block; white-space: nowrap; }
