@@ -7062,13 +7062,6 @@ const goBack = () => router.back();
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsPhotos')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>AI 분석 요청<PhotoCountMark :n="photoAreaCount('rightsPhotos')" /></h2>
-            <button
-              type="button"
-              class="adp-ai-go"
-              :disabled="rightsAiBusy"
-              :title="rightsAiBusy ? '분석하고 있습니다' : '올려 둔 서류로 권리분석을 받습니다'"
-              @click.stop="requestRightsAi"
-            >{{ rightsAiBusy ? '분석 중…' : 'AI 분석 시작' }}</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsPhotos') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('rightsPhotos')">
