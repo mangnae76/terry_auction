@@ -4624,14 +4624,12 @@ const RIGHTS_BASE_WORD = /(말소기준권리|말소기준등기)/;
 /** 내용 칸 — 가운뎃점 토막을 한 줄씩 내린다.
  *  markBase 는 '이 줄이 바로 말소기준권리일 때'만 켠다. 다른 줄의 "말소기준권리보다 앞선…",
  *  "말소기준권리 이후…" 는 기준을 가리키는 설명이지 기준 그 자체가 아니다 — 칠하지 않는다. */
-const CASE_NO = /\(?\s*\d{4}\s*타경\s*\d+\s*\)?/g;
-/** "(2026.02.23 접수)" 처럼 접수일을 다시 적은 토막 — 접수일은 왼쪽 순위 칸에 이미 있다 */
+/** "(2026.02.23 접수)" 처럼 접수일을 다시 적은 토막 — 접수일은 같은 줄 순위 칸에 이미 서 있다.
+ *  (사건번호·금액은 건물등기 표도 내용 칸에 적으므로 그대로 둔다) */
 const FILED_ON = /\(?\s*\d{4}[.\-]\d{1,2}[.\-]\d{1,2}\.?\s*접수\s*\)?/g;
 const rightsNoteParts = (note: string, markBase: boolean, rowDate = '') => (note || '')
   .split(/\s*·\s*/)
-  /* 사건번호와 접수일은 이 표의 다른 칸에 이미 있다 — 내용 줄에서는 뺀다
-     (예전에 받아 둔 분석도 화면에서 같게 보이도록 여기서 거른다) */
-  .map((t) => dotYmd(t.replace(CASE_NO, '').replace(FILED_ON, '').trim()).replace(/^[-·,/\s]+|[-·,/\s]+$/g, ''))
+  .map((t) => dotYmd(t.replace(FILED_ON, '').trim()).replace(/^[-·,/\s]+|[-·,/\s]+$/g, ''))
   .filter((t) => Boolean(t) && t !== rowDate)
   .map((line) => (markBase
     ? line.split(RIGHTS_BASE_WORD).filter((piece) => piece !== '')
