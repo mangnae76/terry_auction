@@ -624,7 +624,7 @@ body.trip-full .foot { display: none; }
   strong > em,
   strong.adp-sp-cnt,
   strong.neg,
-  td > strong,
+  td > strong:not(.adp-ruser-sum),
   td.adp-cat,
   td.r,
   td.r.adp-formula,
@@ -731,6 +731,8 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-field .adp-fs-toggles .adp-toggle-btn { height: calc(var(--ctl-h) - 4px) !important; }
 .app-detail.tab-field .adp-survey-row { padding-top: 8px !important; padding-bottom: 8px !important; }
 .app-detail.tab-field .adp-cl-table :is(th, td) { padding-top: var(--tbl-py) !important; padding-bottom: var(--tbl-py) !important; }
+/* 평균등수 — 앱과 같은 30 (14 하한 규칙에 눌리지 않게 못 박는다) */
+.app-detail .adp-ruser-sum { font-size: 30px !important; }
 /* 웹 손품조사 — 개별성 분석 두 표의 줄 높이를 약 30% 넉넉히 */
 .app-detail.tab-survey .adp-ind-table :is(th, td) { padding-top: 10px !important; padding-bottom: 10px !important; }
 /* 웹 손품조사 — 급매가 표도 세로로 넉넉히 (칸 위아래 7 → 14, 블록 사이 8 → 16) */
