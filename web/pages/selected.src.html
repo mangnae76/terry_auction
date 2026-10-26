@@ -287,6 +287,9 @@ button { cursor: pointer; }
 .app-market:is([data-k="region"], [data-k="dong"]) .adm-csv-bar + .adm-load { margin-left: 0 !important; }
 /* 시도 · 시군구 · 읍면동 칸은 조금 좁게(260 → 200) */
 .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar select.adm-input.narrow { width: 200px !important; }
+/* 지역분석 — 고르는 칸 · 종류 · 엑셀 내려받기 · 조회가 한 줄에 서게 */
+.app-market[data-k="dong"] .adm-bar { flex-wrap: nowrap !important; }
+.app-market[data-k="dong"] .adm-bar select.adm-input.narrow { width: 180px !important; }
 /* 거래량 랭킹 — 임장경로처럼 지도를 하위 탭 바로 아래부터 화면 끝까지 통째로 깔고(1920 전체),
    안내 상자 · 고르는 칸 · 통계 판은 그 위에 얹는다 */
 /* 지도가 화면을 통째로 쓰는 화면 — 페이지 자체는 굴러가지 않는다(판은 제 안에서만 굴러간다) */
@@ -2103,9 +2106,23 @@ html, body { overflow-x: clip; }
   /* 물건상세 하위 탭 — 주소 끝에 붙여 두고 새로고침 때 되살린다 */
   const ITEM_TABS = ['basic', 'rights', 'survey', 'field', 'verify', 'profit'];
   const itemHash = (id, tab) => `#/item/${id}${tab && tab !== 'basic' ? `/${tab}` : ''}`;
+  /* ===== 주소 한 곳 — 어느 화면 · 어느 하위 탭을 보는지 주소(#/…)에 적고, 새로고침 · 뒤로가기 때 거기서 되살린다.
+     화면마다 따로 적지 않는다: 새 화면 · 새 하위 탭이 생기면 아래 두 표(SUB_TAB_KEYS · readHash/hashOf)에만 더한다 ===== */
+  const SUB_TAB_KEYS = { market: ['ranking', 'region', 'dong', 'case', 'kb'], bidrate: ['near', 'same'] };
+  const PLAIN_ROUTES = ['register', 'trip', 'mypage'];
+  /** 주소 → { route, itemId, itemTab, sub } */
+  const readHash = (h = location.hash) => {
+    const m = h.match(/^#\/([\w-]+)(?:\/([\w-]+))?(?:\/([\w-]+))?/) || [];
+    const head = m[1] || '';
+    if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
+    if (SUB_TAB_KEYS[head]) return { route: head, sub: SUB_TAB_KEYS[head].includes(m[2]) ? m[2] : SUB_TAB_KEYS[head][0] };
+    if (PLAIN_ROUTES.includes(head)) return { route: head };
+    return { route: 'list' };
+  };
+  const H0 = readHash();
   const S = {
-    marketTab: 'ranking', /* 시장분석 하위 탭 */
-    bidrateTab: 'near', /* 낙찰가율분석 하위 탭 */
+    marketTab: H0.route === 'market' ? H0.sub : 'ranking', /* 시장분석 하위 탭 */
+    bidrateTab: H0.route === 'bidrate' ? H0.sub : 'near', /* 낙찰가율분석 하위 탭 */
     layout: store.get('wlp.web.layout', 'card'), sort: store.get('wlp.web.sort', 'reg'),
     stage: 'all', type: '', court: '', date: '', q: '',
     pop: '', calMonth: null, pick: false, picked: new Set(), binPicked: new Set(), menu: null, modal: null,
@@ -2114,11 +2131,17 @@ html, body { overflow-x: clip; }
     /* 새로고침 직후에는 로그인 여부를 아직 모른다 — 그 사이에 '로그인하세요' 를 띄우면
        이미 로그인한 사람에게도 잠깐 깜빡인다. 알게 될 때까지는 기다리는 모양만 보인다 */
     authReady: false,
-    route: /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/market/.test(location.hash) ? 'market' : /^#\/bidrate/.test(location.hash) ? 'bidrate' : /^#\/mypage/.test(location.hash) ? 'mypage' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
-    itemId: (location.hash.match(/^#\/item\/([\w-]+)/) || [])[1] || '',
+    route: H0.route,
+    itemId: H0.itemId || '',
     /* 보고 있던 하위 탭도 주소에 적어 둔다 — 새로고침해도 그 자리에 그대로 선다 */
-    itemTab: ITEM_TABS.includes((location.hash.match(/^#\/item\/[\w-]+\/([\w-]+)/) || [])[1]) ? location.hash.match(/^#\/item\/[\w-]+\/([\w-]+)/)[1] : 'basic',
+    itemTab: H0.itemTab || 'basic',
   };
+  /** 지금 화면 → 주소 */
+  const hashOf = () => (S.route === 'item' ? itemHash(S.itemId, S.itemTab)
+    : SUB_TAB_KEYS[S.route] ? `#/${S.route}/${S.route === 'market' ? S.marketTab : S.bidrateTab}`
+      : S.route === 'list' ? '#/' : `#/${S.route}`);
+  /** 주소에 적는다 — 화면을 옮길 때는 push(뒤로가기로 돌아온다), 하위 탭만 바꿀 때는 replace */
+  const writeHash = (push) => { try { const h = hashOf(); if (location.hash !== h) history[push ? 'pushState' : 'replaceState'](null, '', h); } catch (e) { /* 주소 표시만 못 바꾼다 */ } };
 
   const live = () => items.filter((it) => !it.archived && !it.trashed);
   const passesCommon = (it) => {
@@ -3608,15 +3631,15 @@ html, body { overflow-x: clip; }
     S.route = route; S.pop = ''; S.menu = null;
     if (route === 'item') { S.itemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
     render(); window.scrollTo(0, 0);
-    try { const h = route === 'register' ? '#/register' : route === 'trip' ? '#/trip' : route === 'market' ? '#/market' : route === 'bidrate' ? '#/bidrate' : route === 'mypage' ? '#/mypage' : route === 'item' ? itemHash(id, S.itemTab) : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
+    writeHash(true);
   }
   window.addEventListener('popstate', () => {
-    const m = location.hash.match(/^#\/item\/([\w-]+)(?:\/([\w-]+))?/);
-    const r = /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/market/.test(location.hash) ? 'market' : /^#\/bidrate/.test(location.hash) ? 'bidrate' : /^#\/mypage/.test(location.hash) ? 'mypage' : m ? 'item' : 'list';
-    const tab = m && ITEM_TABS.includes(m[2]) ? m[2] : 'basic';
-    if (r !== S.route || (m && (m[1] !== S.itemId || tab !== S.itemTab))) {
-      S.route = r; if (m) { S.itemId = m[1]; S.itemTab = tab; } S.pop = ''; S.menu = null; render();
-    }
+    const h = readHash();
+    S.route = h.route;
+    if (h.route === 'item') { S.itemId = h.itemId; S.itemTab = h.itemTab; }
+    if (h.route === 'market') S.marketTab = h.sub;
+    if (h.route === 'bidrate') S.bidrateTab = h.sub;
+    S.pop = ''; S.menu = null; render();
   });
 
   const byId = (id) => items.find((x) => x.id === id);
@@ -3923,7 +3946,7 @@ html, body { overflow-x: clip; }
         const route = act === 'go-market' ? 'market' : 'bidrate';
         const hit = (SUBTABS[route].find((x) => x[2] === t.dataset.name) || [])[0];
         if (hit) { if (route === 'market') S.marketTab = hit; else S.bidrateTab = hit; }
-        if (S.route === route) { S.menu = null; renderSubTabs(); renderMarket(); } else go(route);
+        if (S.route === route) { S.menu = null; writeHash(false); renderSubTabs(); renderMarket(); } else go(route);
         break;
       }
       case 'go-mypage': S.menu = null; go('mypage'); break;
@@ -4037,11 +4060,11 @@ html, body { overflow-x: clip; }
         rerenderAi(); toast('키를 지웠습니다.', 'info'); break;
       }
       case 'subtab': {
-        if (S.route === 'market') { S.marketTab = v; renderSubTabs(); renderMarket(); break; }
-        if (S.route === 'bidrate') { S.bidrateTab = v; renderSubTabs(); renderMarket(); break; }
+        if (S.route === 'market') { S.marketTab = v; writeHash(false); renderSubTabs(); renderMarket(); break; }
+        if (S.route === 'bidrate') { S.bidrateTab = v; writeHash(false); renderSubTabs(); renderMarket(); break; }
         S.itemTab = v;
         /* 주소에도 남긴다 — 새로고침하면 이 탭으로 다시 연다 (뒤로가기 기록은 늘리지 않는다) */
-        try { const h = itemHash(S.itemId, v); if (location.hash !== h) history.replaceState(null, '', h); } catch (e) { /* 주소 표시만 못 바꾼다 */ }
+        writeHash(false);
         renderSubTabs(); renderItem(); window.scrollTo(0, 0); break;
       }
       /* 등록 방법 탭 — 자동 등록(Plus·AI 파싱) · 직접 입력(손으로 적기) */
