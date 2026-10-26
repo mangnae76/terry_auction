@@ -4668,6 +4668,10 @@ const rightsRows = computed(() => {
   });
 });
 
+/** 진단 상자 아래 한 줄 — 괄호가 나오면 그 앞에서 줄을 내린다
+ *  ("선순위 임차권 (확약서 제출 확인 필요)" 처럼 길어지면 한 줄로 뭉개진다) */
+const diagSumText = (text: string) => (text || '').replace(/\s*\(/g, '\n(');
+
 /** AI 권리분석 진단 — 말소기준권리가 어떤 권리인지, 떠안는 권리와 없어지는 권리 */
 const rightsDiag = computed(() => {
   const ai = rightsAi.value;
@@ -7130,12 +7134,12 @@ const goBack = () => router.back();
               <div class="adp-diag-box">
                 <span class="adp-diag-k">인수권리수</span>
                 <b :class="['adp-diag-v', { on: rightsAi }]">{{ rightsAi ? `${rightsAi.takeover.count}개` : '-' }}</b>
-                <p v-if="rightsAi?.takeover.summary" class="adp-diag-sum take">{{ rightsAi.takeover.summary }}</p>
+                <p v-if="rightsAi?.takeover.summary" class="adp-diag-sum">{{ diagSumText(rightsAi.takeover.summary) }}</p>
               </div>
               <div class="adp-diag-box">
                 <span class="adp-diag-k">소멸권리수</span>
                 <b :class="['adp-diag-v', { on: rightsAi }]">{{ rightsAi ? `${rightsAi.extinguish.count}개` : '-' }}</b>
-                <p v-if="rightsAi?.extinguish.summary" class="adp-diag-sum">{{ rightsAi.extinguish.summary }}</p>
+                <p v-if="rightsAi?.extinguish.summary" class="adp-diag-sum">{{ diagSumText(rightsAi.extinguish.summary) }}</p>
               </div>
               <div class="adp-diag-box">
                 <span class="adp-diag-k">명도 난이도 예측</span>
@@ -9586,11 +9590,11 @@ const goBack = () => router.back();
 .adp-fetch-warn:active { opacity: 0.55; }
 
 /* 진단 상자 아래 한 줄 요약 — 자세한 것은 아래 표가 들고 있다 */
+/* 진단 상자 아래 한 줄 — 네 칸 모두 같은 진회색. 괄호 앞에서 줄이 내려간다 */
 .adp-diag-sum {
-  margin: 4px 0 0; font-size: 11.5px; font-weight: 700; color: #6b7280;
-  line-height: 1.4; word-break: keep-all;
+  margin: 4px 0 0; font-size: 11.5px; font-weight: 700; color: #374151;
+  line-height: 1.4; word-break: keep-all; white-space: pre-line;
 }
-.adp-diag-sum.take { color: #c62828; }
 /* 상세 권리 분석 표 */
 .adp-rows-cap { margin: 12px 0 5px; font-weight: 800; color: #374151; }
 /* 건물등기 표와 글자 크기·여백을 똑같이 — 두 표가 나란히 읽혀야 한다 */
