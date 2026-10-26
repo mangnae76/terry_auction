@@ -5296,6 +5296,18 @@ const normalizeTenantRow = (row: unknown) => {
   return out;
 };
 
+/** PDF 에서 이름을 못 읽은 임차인 — AI 상세 권리 분석의 임차권 줄에서 권리자를 빌려 온다.
+ *  보증금이 같거나 전입일이 같은 줄을 짝으로 본다 (한국토지주택공사처럼 보증기관이 양수한 경우가 많다). */
+const tenantNameFromAi = (card: { deposit: string; moveIn: string }) => {
+  const digits = (text: string) => (text || '').replace(/[^\d]/g, '');
+  const dep = digits(card.deposit);
+  const moveIn = dotYmd(card.moveIn || '');
+  const hit = (rightsAi.value?.rows ?? []).find((r) => /임차권|전세권/.test(r.kind)
+    && ((dep.length >= 6 && digits(r.amount).includes(dep)) || (moveIn && dotYmd(r.date) === moveIn)));
+  const name = (hit?.holder ?? '').trim();
+  return name && !NOT_A_TENANT_NAME.has(name) ? name : '';
+};
+
 const tenantCards = computed(() => {
   const merged = new Map<string, TenantCard>();
   (auction.value?.tenantInfoRows ?? []).map(normalizeTenantRow).forEach((row) => {
@@ -5319,10 +5331,16 @@ const tenantCards = computed(() => {
     prev.analysis = mergeList(prev.analysis, row.analysis);
     prev.other = mergeList(prev.other, row.other);
   });
-  // 이름 자리에 낱말이 들어와 있으면 비워 둔다 — 화면에서는 '-' 로 선다
-  return [...merged.values()].map((card) => (NOT_A_TENANT_NAME.has(card.name.trim())
-    ? { ...card, name: '' }
-    : card));
+  /* 이름 자리에 뜻만 적힌 낱말(양수인·미배당…)이 들어와 있으면 그대로 두지 않는다.
+     PDF 에서 이름을 못 읽었어도 AI 상세 권리 분석은 그 줄의 권리자를 알고 있다 — 거기서 빌려 온다. */
+  const clean = (text: string) => {
+    const t = (text || '').trim();
+    return t && !NOT_A_TENANT_NAME.has(t) ? t : '';
+  };
+  return [...merged.values()].map((card) => {
+    const name = clean(card.name) || tenantNameFromAi(card);
+    return { ...card, name, agency: clean(card.agency) === name ? '' : clean(card.agency) };
+  });
 });
 
 // 붉은 배너 — PDF 상단 배지를 그대로 인용한다.
