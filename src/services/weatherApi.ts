@@ -4,10 +4,14 @@
 // 자리(위경도)는 placeApi 가 정한다 — 기기 위치를 못 받으면 인천시청.
 // 머리글은 모든 화면에 서므로, 부를 때마다 조회하면 하루 한도를 금방 쓴다 —
 // 받은 값을 30분 동안 이 기기에 적어 두고 그 안에서는 다시 부르지 않는다.
-import { apiPath } from './apiBase';
+import { apiPath, usesRelay } from './apiBase';
 import { DEFAULT_PLACE } from './placeApi';
 
 const API_KEY = import.meta.env.VITE_PUBLIC_DATA_API_KEY ?? '';
+/** 키가 있는가 — 묶음에 없어도 중계 서버를 거치면 그쪽이 붙인다 (웹) */
+const HAS_DATA_KEY = !!API_KEY || usesRelay();
+/** serviceKey 는 들고 있을 때만 싣는다 — 비우면 중계 서버가 붙인다 */
+const setServiceKey = (url: URL) => { if (API_KEY) url.searchParams.set('serviceKey', API_KEY); };
 const NOW_PATH = '/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst';
 
 /** 30분 안에 받은 값은 그대로 쓴다 */
@@ -91,7 +95,7 @@ const writeStored = (key: string, v: Stored) => {
 const fetchNowcast = async (nx: number, ny: number): Promise<Stored> => {
   const base = nowcastBase();
   const url = new URL(`${apiPath('/api-data')}${NOW_PATH}`, window.location.origin);
-  url.searchParams.set('serviceKey', API_KEY);
+  setServiceKey(url);
   url.searchParams.set('pageNo', '1');
   url.searchParams.set('numOfRows', '10');
   url.searchParams.set('dataType', 'JSON');
@@ -139,7 +143,7 @@ export const getNowWeather = async (
   const key = cacheKeyOf(nx, ny);
   const stored = readStored(key);
   if (stored && Date.now() - stored.savedAt < FRESH_MS) return { ...stored, stale: false };
-  if (!API_KEY) return stored && Date.now() - stored.savedAt < STALE_MAX_MS ? { ...stored, stale: true } : null;
+  if (!HAS_DATA_KEY) return stored && Date.now() - stored.savedAt < STALE_MAX_MS ? { ...stored, stale: true } : null;
   try {
     const fresh = await fetchNowcast(nx, ny);
     writeStored(key, fresh);

@@ -4,7 +4,7 @@ import {
   mapOnbidItemToAuction,
   mapStandardLandPriceToAuction,
 } from './auctionMapper';
-import { apiPath } from './apiBase';
+import { apiPath, usesRelay } from './apiBase';
 import { cacheKey, readCache, writeCache } from './marketCache';
 import type { AuctionDetail, AuctionSearchParams } from '../types/auction';
 
@@ -53,6 +53,10 @@ export interface TradeVolumeStatsResult {
 }
 
 const API_KEY = import.meta.env.VITE_PUBLIC_DATA_API_KEY ?? '';
+/** 키가 있는가 — 묶음에 없어도 중계 서버를 거치면 그쪽이 붙인다 (웹) */
+const HAS_DATA_KEY = !!API_KEY || usesRelay();
+/** serviceKey 는 들고 있을 때만 싣는다 — 비우면 중계 서버가 붙인다 */
+const setServiceKey = (url: URL) => { if (API_KEY) url.searchParams.set('serviceKey', API_KEY); };
 const ENABLE_LIVE_API = import.meta.env.VITE_ENABLE_LIVE_API !== 'false';
 const ENABLE_MOLIT_API = import.meta.env.VITE_ENABLE_MOLIT_API !== 'false';
 const ENABLE_ONBID_API = import.meta.env.VITE_ENABLE_ONBID_API === 'true';
@@ -243,7 +247,7 @@ const parseOnbidXmlItems = (xmlText: string) => {
 
 const fetchOnbidRows = async (keyword: string, path: string, fallback = false) => {
   const url = buildOnbidUrl(path, fallback);
-  url.searchParams.set('serviceKey', API_KEY);
+  setServiceKey(url);
   url.searchParams.set('numOfRows', '20');
   url.searchParams.set('pageNo', '1');
   url.searchParams.set('resultType', 'json');
@@ -306,7 +310,7 @@ const fetchMolitTradeByPath = async (
   const lawdCode = params.lawdCode ?? '28237';
   const dealYmd = params.dealYmd ?? new Date().toISOString().slice(0, 7).replace('-', '');
   const url = buildApiUrl(path);
-  url.searchParams.set('serviceKey', API_KEY);
+  setServiceKey(url);
   url.searchParams.set('LAWD_CD', lawdCode);
   url.searchParams.set('DEAL_YMD', dealYmd);
   url.searchParams.set('numOfRows', '20');
@@ -334,7 +338,7 @@ const fetchTradeVolumeByPath = async (
   const lawdCode = params.lawdCode ?? '28237';
   const dealYmd = params.dealYmd ?? new Date().toISOString().slice(0, 7).replace('-', '');
   const url = buildApiUrl(path);
-  url.searchParams.set('serviceKey', API_KEY);
+  setServiceKey(url);
   url.searchParams.set('LAWD_CD', lawdCode);
   url.searchParams.set('DEAL_YMD', dealYmd);
   url.searchParams.set('numOfRows', '200');
@@ -374,7 +378,7 @@ const fetchMolitRentByPath = async (
   const lawdCode = params.lawdCode ?? '28237';
   const dealYmd = params.dealYmd ?? new Date().toISOString().slice(0, 7).replace('-', '');
   const url = buildApiUrl(path);
-  url.searchParams.set('serviceKey', API_KEY);
+  setServiceKey(url);
   url.searchParams.set('LAWD_CD', lawdCode);
   url.searchParams.set('DEAL_YMD', dealYmd);
   url.searchParams.set('numOfRows', '20');
@@ -398,7 +402,7 @@ const fetchStandardLandPrice = async (params: AuctionSearchParams): Promise<ApiR
   for (const year of candidateYears) {
     try {
       const url = buildApiUrl(LAND_PRICE_API_PATH);
-      url.searchParams.set('serviceKey', API_KEY);
+      setServiceKey(url);
       url.searchParams.set('ldCode', ldCode);
       url.searchParams.set('stdrYear', String(year));
       url.searchParams.set('numOfRows', '20');
@@ -426,7 +430,7 @@ const fetchStandardLandPrice = async (params: AuctionSearchParams): Promise<ApiR
 export const searchAuctionsFromPublicData = async (
   params: AuctionSearchParams,
 ): Promise<PublicDataSearchResult> => {
-  if (!ENABLE_LIVE_API || !API_KEY) {
+  if (!ENABLE_LIVE_API || !HAS_DATA_KEY) {
     return {
       items: [],
       sources: [],
@@ -563,7 +567,7 @@ export interface TradeVolumeStatsParams extends AuctionSearchParams {
 }
 
 export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Promise<TradeVolumeStatsResult> => {
-  if (!ENABLE_LIVE_API || !API_KEY) {
+  if (!ENABLE_LIVE_API || !HAS_DATA_KEY) {
     return {
       rows: [],
       totalCount: 0,
@@ -804,7 +808,7 @@ const fetchRealTradeRowsForMonth = async (
   const MAX_PAGES = 10; // 한 달 1만 건이면 충분하다 — 무한 루프 방지
   const buildPageUrl = (pageNo: number) => {
     const url = buildApiUrl(path);
-    url.searchParams.set('serviceKey', API_KEY);
+    setServiceKey(url);
     url.searchParams.set('LAWD_CD', lawdCd5);
     url.searchParams.set('DEAL_YMD', dealYmd);
     url.searchParams.set('numOfRows', String(PAGE_SIZE));
@@ -986,7 +990,7 @@ export const fetchDongHouseholds = async (bCode10: string): Promise<number> => {
   const PAGE = 100; // 이 API는 한 번에 100건까지만 준다
   const call = async (pageNo: number) => {
     const url = buildApiUrl(BLD_TITLE_API_PATH);
-    url.searchParams.set('serviceKey', API_KEY);
+    setServiceKey(url);
     url.searchParams.set('sigunguCd', sigunguCd);
     url.searchParams.set('bjdongCd', bjdongCd);
     url.searchParams.set('numOfRows', String(PAGE));
@@ -1375,7 +1379,7 @@ export const fetchDongTradeStats = async (params: {
   const empty: DongTradeStatsResult = {
     rows: [], periodFrom, periodTo, periodFromDate, periodToDate, totalCount: 0, excludedCount: 0,
   };
-  if (!ENABLE_LIVE_API || !API_KEY) {
+  if (!ENABLE_LIVE_API || !HAS_DATA_KEY) {
     return { ...empty, error: 'API 키가 없어 실거래를 불러올 수 없습니다.' };
   }
   if (!/^\d{5}$/.test(params.lawdCd5)) {
@@ -1516,7 +1520,7 @@ export const fetchDongTradeDetails = async (params: {
   const periodTo = dealYmds[0] ?? '';
   const periodFrom = dealYmds[dealYmds.length - 1] ?? '';
   const empty: DongTradeDetailResult = { rows: [], dongNames: [], periodFrom, periodTo };
-  if (!ENABLE_LIVE_API || !API_KEY) {
+  if (!ENABLE_LIVE_API || !HAS_DATA_KEY) {
     return { ...empty, error: 'API 키가 없어 실거래를 불러올 수 없습니다.' };
   }
   if (!/^\d{5}$/.test(params.lawdCd5)) {

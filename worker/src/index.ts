@@ -6,6 +6,9 @@ export interface Env {
   VWORLD_API_KEY?: string;
   /** 한국수출입은행 현재환율 인증키 — query 의 authkey 로 붙는다 */
   EXIM_API_KEY?: string;
+  /** 공공데이터포털(국토부 실거래 · 기상청 등) 인증키 — query 의 serviceKey 로 붙는다.
+   *  웹 묶음은 이 키를 싣지 않으므로, 요청에 serviceKey 가 없으면 여기서 붙인다 */
+  PUBLIC_DATA_API_KEY?: string;
   ALLOWED_ORIGINS?: string;
   FIREBASE_SERVICE_ACCOUNT_JSON?: string;
 }
@@ -15,11 +18,11 @@ interface Route {
   target: string;
   headers?: Record<string, string>;
   /** kakao = Authorization 헤더, vworld = query 의 key, exim = query 의 authkey */
-  authKind?: 'kakao' | 'vworld' | 'exim';
+  authKind?: 'kakao' | 'vworld' | 'exim' | 'data';
 }
 
 const ROUTES: Route[] = [
-  { prefix: '/api-data', target: 'https://apis.data.go.kr' },
+  { prefix: '/api-data', target: 'https://apis.data.go.kr', authKind: 'data' },
   { prefix: '/api-onbid', target: 'https://openapi.onbid.co.kr' },
   {
     prefix: '/api-naver-land',
@@ -146,6 +149,14 @@ const handleProxy = async (request: Request, env: Env, route: Route): Promise<Re
     const params = new URLSearchParams(url.search);
     params.set('authkey', env.EXIM_API_KEY);
     search = `?${params.toString()}`;
+  }
+  // 공공데이터 — 앱은 키를 직접 실어 보내고, 웹은 비워 보낸다. 비어 있을 때만 여기서 붙인다
+  if (route.authKind === 'data' && env.PUBLIC_DATA_API_KEY) {
+    const params = new URLSearchParams(search);
+    if (!params.get('serviceKey')) {
+      params.set('serviceKey', env.PUBLIC_DATA_API_KEY);
+      search = `?${params.toString()}`;
+    }
   }
   const rest = url.pathname.slice(route.prefix.length) + search;
   const targetUrl = `${route.target}${rest}`;
