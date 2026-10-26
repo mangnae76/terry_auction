@@ -4006,6 +4006,14 @@ const mktApprovalAuto = computed(() => {
   return `${yy(r.min)}.01~${yy(r.max)}.12`;
 });
 const mktApprovalText = computed(() => mktApprovalAuto.value || '-');
+/** 웹 — 사용승인 범위 뒤에 몇 년차인지 '86.01~20.12 / 7~41년차' (개별성 년식과 같은 셈: 올해 − 건축연도 + 1) */
+const mktApprovalAgeText = computed(() => {
+  const r = pubYearRange.value;
+  if (!r || !mktApprovalAuto.value) return mktApprovalText.value;
+  const age = (y: number) => Math.max(1, THIS_YEAR - y + 1);
+  const span = r.min === r.max ? `${age(r.min)}년차` : `${age(r.max)}~${age(r.min)}년차`;
+  return `${mktApprovalAuto.value} / ${span}`;
+});
 /** 거래기간 — 가격정보 탭에서 조회한 기간. 손으로 적으면 그 값이 이긴다 */
 const pubPeriodText = computed(() => {
   const from = shortDate(publicStartDate.value);
@@ -8536,12 +8544,12 @@ const goBack = () => router.back();
                 </div>
                 <template v-if="webEmbed">
                   <div class="cell calc">
-                    <small>사용승인</small>
-                    <span class="adp-mkt-range2">{{ mktApprovalText }}</span>
-                  </div>
-                  <div class="cell calc">
                     <small>거래기간</small>
                     <span class="adp-mkt-range2">{{ mktPeriodText }}</span>
+                  </div>
+                  <div class="cell calc">
+                    <small>사용승인</small>
+                    <span class="adp-mkt-range2">{{ mktApprovalAgeText }}</span>
                   </div>
                 </template>
                 <div v-else class="cell calc">
