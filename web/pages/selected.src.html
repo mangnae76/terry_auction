@@ -272,10 +272,17 @@ button { cursor: pointer; }
 /* 시장분석 탭 공통 — 분석 도구 화면의 블루그레이 바탕을 지우고, 고르는 줄을 경로(홈 › 시장분석) 바로 아래에 붙인다 */
 .app-market .adm-shell { min-height: 0 !important; background: transparent !important; }
 .app-market .adm-body { padding: 0 0 40px !important; max-width: none !important; }
+/* 시장분석 탭 공통 고르는 줄 — 거래량 랭킹 판과 같은 규칙: 칸·단추 높이 40 · 모서리 6, 칸 글자 16, 종류 단추 15, 단추 글자 16 */
+.app-market .adm-bar :is(select.adm-input, input.adm-input, .adm-load, .adm-csv) { height: 40px !important; border-radius: 6px !important; }
+.app-market .adm-bar :is(select.adm-input, input.adm-input) { font-size: 16px !important; }
+.app-market .adm-bar :is(.adm-load, .adm-csv) { font-size: 16px !important; padding: 0 18px !important; }
+.app-market .adm-bar .adm-seg { height: 40px; box-sizing: border-box; border-radius: 6px !important; align-items: center; }
+.app-market .adm-bar .adm-seg-btn { font-size: 15px !important; }
+.app-market .adm-bar .adm-f > small { font-size: 14px !important; }
 /* 지역분석 — 화면 제목 줄(제목 · 설명 · 엑셀 단추)은 웹에서 통째로 감춘다. 엑셀 내려받기는 '조회' 옆으로 옮겼다 */
 .app-market[data-k="region"] .adm-top { display: none !important; }
 /* 엑셀 내려받기는 조회 바로 왼쪽 — 둘이 오른쪽 끝에 붙어 선다 */
-.app-market[data-k="region"] .adm-csv-bar { margin-left: auto !important; height: auto; align-self: stretch; font-size: 14px; }
+.app-market[data-k="region"] .adm-csv-bar { margin-left: auto !important; }
 .app-market[data-k="region"] .adm-csv-bar + .adm-load { margin-left: 0 !important; }
 /* 시도 · 시군구 · 읍면동 칸은 조금 좁게(260 → 200) */
 .app-market[data-k="region"] .adm-bar select.adm-input.narrow { width: 200px !important; }
