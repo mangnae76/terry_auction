@@ -9030,15 +9030,25 @@ const goBack = () => router.back();
         <section class="adp-card">
           <header class="adp-card-head" @click="togglePhotoFold('site')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h4l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>현장사진<PhotoCountMark :n="photoAreaCount('site')" /></h2>
+            <!-- 웹 — 큰 단추 대신 제목 줄 오른쪽에 작은 아이콘 단추 둘 (카메라 · 사진 추가) -->
+            <span v-if="webEmbed" class="adp-head-icons">
+              <button type="button" class="adp-head-icon-btn" title="카메라로 찍기" aria-label="카메라로 찍기" @click.stop="cameraInputRef?.click()">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h4l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>
+              </button>
+              <button type="button" class="adp-head-icon-btn" title="사진 추가" aria-label="사진 추가" @click.stop="galleryInputRef?.click()">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+              </button>
+            </span>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('site') }]" alt="" />
           </header>
+          <!-- 파일 고르는 칸은 접혀 있어도 둔다 — 머리줄 단추가 접힌 채로도 쓸 수 있게 -->
+          <input ref="cameraInputRef" type="file" accept="image/*" capture="environment" class="adp-sr" @change="onCameraChange" />
+          <input ref="galleryInputRef" type="file" accept="image/*" multiple class="adp-sr" @change="onGalleryChange" />
           <div v-if="!photoFolded('site')">
-            <div class="adp-photo-actions two">
+            <div v-if="!webEmbed" class="adp-photo-actions two">
               <button type="button" class="adp-photo-btn red" @click="cameraInputRef?.click()">📷 카메라</button>
               <button type="button" class="adp-photo-btn blue" @click="galleryInputRef?.click()">🖼 사진추가</button>
             </div>
-            <input ref="cameraInputRef" type="file" accept="image/*" capture="environment" class="adp-sr" @change="onCameraChange" />
-            <input ref="galleryInputRef" type="file" accept="image/*" multiple class="adp-sr" @change="onGalleryChange" />
             <p v-if="photoUploading" class="adp-sub-note">사진 업로드 중…</p>
             <p v-if="photoError" class="adp-plan-err">{{ photoError }}</p>
             <PhotoGrid
@@ -10010,6 +10020,13 @@ tr.tone-take { background: #fff5f5; }
 .adp-photo-del:hover { background: #dc2626; }
 .adp-photo-btn { border: none; border-radius: 8px; padding: 12px 8px; color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; }
 .adp-photo-btn.red { background: #f87171; }
+/* 카드 머리줄 오른쪽 작은 아이콘 단추 (웹 현장사진 — 카메라 · 사진 추가) */
+.adp-head-icons { margin-left: auto; margin-right: 8px; display: inline-flex; gap: 6px; }
+.adp-head-icon-btn {
+  width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; color: #2b6df3; cursor: pointer;
+}
+.adp-head-icon-btn:hover { background: #eef3fd; border-color: #c7d7f7; }
 .adp-photo-btn.blue { background: #2b6df3; }
 .adp-photo-btn.green { background: #14b8a6; }
 
