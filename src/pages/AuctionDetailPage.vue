@@ -2400,8 +2400,7 @@ const toggleSection = (key: string) => { collapsed.value[key] = !collapsed.value
 // 상세 화면의 모든 카드 키 — 전체 접기/펼치기에 쓴다
 const ALL_SECTION_KEYS = [
   'summary', 'base', 'tenant', 'bld', 'status', 'registry', 'cases', 'apt', 'arrears',
-  // AI 분석 요청(rightsPhotos)은 늘 펴 둔다 — 전체 접기에서도 뺀다
-  'areaInfo', 'photos', 'rightsCheck', 'sameLot', 'casePrice',
+  'areaInfo', 'photos', 'rightsPhotos', 'rightsCheck', 'sameLot', 'casePrice',
   'realUser', 'demand', 'survPrice', 'survField', 'trades', 'checklist', 'profit', 'taxRef',
   // 권리분석 탭의 AI 카드 · 정리 — 새 카드를 만들면 여기에도 넣어야 '전체 접기'가 같이 접는다
   'rightsDiag', 'evictDiag', 'rightsConclusion', 'rightsConc',
@@ -4525,7 +4524,7 @@ const DOC_BOXES: Array<{ key: string; label: string; icon: string }> = [
  *  공통 규칙: 사진이 한 장이라도 붙어 있으면 접은 채로 열고(아래 항목이 밀려 내려가지 않게),
  *  없으면 펴 둔다(바로 붙일 수 있게). 손으로 접거나 편 뒤에는 그 선택을 지킨다.
  *  fold: 'always' 는 그 예외 — 사진이 없어도 늘 접은 채로 연다 (칸이 길어 화면을 많이 먹는 자리).
- *  fold: 'open' 은 반대 예외 — 서류가 있어도 늘 편 채로 연다.
+ *  fold: 'open' 은 웹에서만 늘 편 채로 연다 (앱은 'always' 와 같다).
  *  scope 'card' 는 카드 통째(전체 접기/펼치기와 같이 움직임), 'block' 은 카드 안의 작은 칸. */
 const PHOTO_AREAS: Array<{
   key: string;
@@ -4535,7 +4534,7 @@ const PHOTO_AREAS: Array<{
 }> = [
   // 사진 칸은 모두 접은 채로 연다 — 펴 두면 아래 내용이 멀리 밀린다
   { key: 'photos', scope: 'card', count: () => propertyPhotos.value.length, fold: 'always' },        // 손품조사 · 본건사진
-  { key: 'rightsPhotos', scope: 'card', count: () => rightsDocList.value.length + DOC_BOXES.reduce((n, b) => n + extraList(b.key).length, 0), fold: 'open' },   // 권리분석 · AI 분석 요청 — 늘 펴 둔다(서류 다섯 칸 + 이전 서류사진)
+  { key: 'rightsPhotos', scope: 'card', count: () => rightsDocList.value.length + DOC_BOXES.reduce((n, b) => n + extraList(b.key).length, 0), fold: 'open' },   // 권리분석 · AI 분석 요청 — 웹은 늘 펴 둔다, 앱은 접어 연다(서류 다섯 칸 + 이전 서류사진)
   { key: 'site', scope: 'block', count: () => auction.value?.sitePhotos?.length ?? 0, fold: 'always' }, // 손품+현장 · 현장사진
   // 급매가 · 동일지번 매각물건 — 사진 모음이라 늘 접어 둔다
   { key: 'sameLot', scope: 'block', count: () => extraList('sameLot').length, fold: 'always' },
@@ -4566,7 +4565,10 @@ onMounted(() => watch(
     photoFold.value = {};
     const next = { ...collapsed.value };
     // fold 'always' 인 카드는 사진이 없어도 접은 채로 연다
-    PHOTO_SECTIONS.forEach((sec) => { next[sec.key] = sec.fold !== 'open' && (sec.fold === 'always' || sec.count() > 0); });
+    // fold 'open' 은 웹에서만 늘 펴 둔다 — 앱은 'always' 처럼 접어 연다
+    PHOTO_SECTIONS.forEach((sec) => {
+      next[sec.key] = sec.fold === 'open' ? !webEmbed : (sec.fold === 'always' || sec.count() > 0);
+    });
     collapsed.value = next;
   },
   { immediate: true },
@@ -4684,18 +4686,19 @@ const rightsRows = computed(() => {
     if (!isBase) {
       return { ...r, dateText: dotYmd(r.date), amountText: amount, noteLines: rightsNoteParts(source, dotYmd(r.date)) };
     }
-    /* 말소기준권리 줄은 건물등기와 똑같이 한 줄로 — "말소기준권리 160,855,725원 / 2026타경501558".
-       금액도 사건번호와 같은 크기·색이라 굵은 금액 줄은 세우지 않는다. */
+    /* 말소기준권리 줄 — 앱·웹 같은 꼴. 첫 줄에 '말소기준권리'(빨강), 그 아래 줄에
+       "160,855,725원 2026타경501558" (빗금 없이). 금액은 사건번호와 같은 크기·색. */
     const pieces = notePieces(source, dotYmd(r.date));
     const caseNo = pieces.find((t) => CASE_NO_RE.test(t)) ?? '';
     const rest = pieces.filter((t) => t !== caseNo && !RIGHTS_BASE_WORD.test(t));
-    const tail = [amount, caseNo].filter(Boolean).join(' / ');
+    const tail = [amount, caseNo].filter(Boolean).join(' ');
     return {
       ...r,
       dateText: dotYmd(r.date),
       amountText: '',
       noteLines: [
-        [{ text: '말소기준권리', base: true }, ...(tail ? [{ text: ` ${tail}`, base: false }] : [])],
+        [{ text: '말소기준권리', base: true }],
+        ...(tail ? [[{ text: tail, base: false }]] : []),
         ...rest.map((t) => [{ text: t, base: false }]),
       ],
     };
