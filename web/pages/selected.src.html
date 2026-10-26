@@ -733,6 +733,9 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-field .adp-cl-table :is(th, td) { padding-top: var(--tbl-py) !important; padding-bottom: var(--tbl-py) !important; }
 /* 말풍선(ⓘ 설명 · 주소 안내 등)도 글자 14 — 웹에 띄운 앱 화면의 모든 말풍선 */
 .app-detail :is(.adp-note-bubble, .adp-dm-bubble) { font-size: 14px !important; }
+/* 룸수 — 웹은 제 칸에 서므로 위 여백이 필요 없다 */
+.app-detail .adp-ruser-table .adp-ruser-room { margin-top: 0 !important; }
+.app-detail .adp-ruser-table .adp-ruser-select { min-height: var(--ctl-h) !important; height: auto !important; padding-top: 6px !important; padding-bottom: 6px !important; }
 /* 평균등수 — 앱과 같은 30 (14 하한 규칙에 눌리지 않게 못 박는다) */
 .app-detail .adp-ruser-sum { font-size: 30px !important; }
 /* 웹 손품조사 — 개별성 분석(빌라 · 호실) 항목 이름과 내용을 칸 가운데로 (그룹 머리줄은 그대로) */

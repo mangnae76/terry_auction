@@ -8011,12 +8011,16 @@ const goBack = () => router.back();
             <div class="adp-dm-block boxed">
             <div class="adp-dm-sub">① 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동으로</button></div>
             <table class="adp-table adp-ruser-table">
-              <colgroup>
+              <colgroup v-if="webEmbed">
+              <col style="width: 20%" /><col style="width: 15%" /><col style="width: 21%" /><col style="width: 17%" /><col style="width: 12%" /><col style="width: 15%" />
+              </colgroup>
+              <colgroup v-else>
               <col style="width: 33%" /><col style="width: 21%" /><col style="width: 18%" /><col style="width: 13%" /><col style="width: 15%" />
               </colgroup>
               <thead>
               <tr>
                 <th>전용면적</th>
+                <th v-if="webEmbed">룸수</th>
                 <th>세대구성</th>
                 <th>입지조건</th>
                 <th>등수</th>
@@ -8054,6 +8058,37 @@ const goBack = () => router.back();
                     </ul>
                   </template>
                 </div>
+                <div v-if="!webEmbed" class="adp-rcase-dd adp-ruser-room">
+                  <button type="button" class="adp-rcase-select adp-ruser-select room" @click="roomOpen = !roomOpen">
+                    <span class="adp-ruser-pick">
+                      <span class="band">{{ selectedRoomType ? selectedRoomType.label : '룸수 선택' }}</span>
+                    </span>
+                    <span class="adp-rcase-caret">{{ roomOpen ? '▴' : '▾' }}</span>
+                  </button>
+                  <template v-if="roomOpen">
+                    <div class="adp-rcase-backdrop" @click="roomOpen = false" />
+                    <ul class="adp-rcase-list adp-ruser-list">
+                      <li
+                        :class="['adp-rcase-item', { on: !selectedRoomType }]"
+                        @click="pickRoomType('')"
+                      >
+                        <strong>룸수 선택</strong>
+                      </li>
+                      <li
+                        v-for="r in ROOM_TYPES"
+                        :key="r.id"
+                        :class="['adp-rcase-item', { on: r.id === selectedRoomType?.id }]"
+                        @click="pickRoomType(r.id)"
+                      >
+                        <strong>{{ r.label }}</strong>
+                        <small>{{ r.details.map((d) => d.who).join(' · ') }}</small>
+                      </li>
+                    </ul>
+                  </template>
+                </div>
+                </td>
+                <!-- 웹 — 룸수는 제 칸에 (전용면적 바로 옆) -->
+                <td v-if="webEmbed" class="adp-ruser-cell vmid">
                 <div class="adp-rcase-dd adp-ruser-room">
                   <button type="button" class="adp-rcase-select adp-ruser-select room" @click="roomOpen = !roomOpen">
                     <span class="adp-ruser-pick">
