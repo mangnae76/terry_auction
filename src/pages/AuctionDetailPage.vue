@@ -5797,7 +5797,7 @@ const goBack = () => router.back();
       </div>
     </div>
 
-    <div :class="['adp-body', { 'adp-tab-rights': webEmbed && activeTab === 'rights' }]">
+    <div :class="['adp-body', { 'adp-tab-rights': webEmbed && activeTab === 'rights', 'is-app': !webEmbed }]">
       <template v-if="activeTab === 'basic'">
         <!-- 정보요약 — PDF 값으로 채우고 필요한 칸은 직접 고친다 -->
         <section class="adp-card">
@@ -10398,6 +10398,15 @@ tr.tone-take { background: #fff5f5; }
 .adp-profit-note::placeholder { color: #9ca3af; }
 /* 산정표가 둘 이상일 때만 붙는 이름(A안·B안) */
 .adp-profit-label { font-size: 12.5px; font-weight: 800; color: #1f3a72; }
+/* 앱 — 표 이름 'A안' 을 크게(20), 초기화 · 표 삭제는 알약 대신 모서리 둥근 사각형으로 같은 높이 */
+.is-app .adp-profit-label { font-size: 20px; line-height: 1.2; }
+.is-app .adp-profit-head-row .adp-pd-reset { border-radius: 6px; height: 28px; }
+.is-app .adp-profit-head-row .adp-pd-del { width: 28px; }
+/* 앱 — 산정표 칸 좌우 여백을 넉넉히, 구분(회색) 칸도 넓게 */
+.is-app .adp-profit-table th, .is-app .adp-profit-table td { padding-left: 9px; padding-right: 9px; }
+.is-app .adp-profit-table .adp-cat { padding-left: 8px; padding-right: 8px; min-width: 64px; word-break: keep-all; }
+/* 긴 공식(①+②+…)은 줄을 바꿔 표가 화면 밖으로 넘치지 않게 */
+.is-app .adp-profit-table .adp-formula { white-space: normal; word-break: break-all; }
 .adp-profit-table.alt { border-color: #d7def0; }
 /* 예비 매도가 — 본 매도가 옆에 흐리게 선다. 계산에 안 들어가는 값이라 눈을 끌 필요가 없다 */
 .adp-profit-table td.adp-sale-alt { color: #9ca3af; font-weight: 600; }
