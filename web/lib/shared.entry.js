@@ -94,7 +94,33 @@ export const mountAppDetail = (el, id, tab) => {
 // 지도 모양 — 앱은 main.ts 에서 싣는다. 웹 묶음에는 main.ts 가 없어 여기서 함께 싣는다
 // (안 실으면 타일이 겹쳐 쌓이고 확대 단추가 풀려 지도가 깨져 보인다)
 import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import FieldTripPlannerPage from '../../src/pages/FieldTripPlannerPage.vue';
+
+// 앱 화면은 지도를 만들기만 하고 치우지 않는다(map.remove() 가 없다).
+// 손전화에서는 화면이 통째로 사라지니 문제가 없지만, 웹은 같은 칸(id=trip-map)에
+// 지도를 다시 띄우므로 Leaflet 이 '이미 쓰인 칸'이라며 멎는다
+// (동선최적화 때 뜨던 '실도로 경로 실패: Map container is already initialized').
+// 그래서 ① 만든 지도를 칸마다 기억해 두고 ② 같은 칸에 또 만들려 하면 그 지도를 돌려주며
+// ③ 화면을 걷을 때 웹이 대신 치운다. 앱 쪽은 한 줄도 고치지 않는다.
+const mapByEl = new WeakMap();
+const makeMap = L.map.bind(L);
+L.map = (target, options) => {
+  const el = typeof target === 'string' ? document.getElementById(target) : target;
+  if (el && mapByEl.has(el)) return mapByEl.get(el);
+  const made = makeMap(target, options);
+  const box = made.getContainer();
+  if (box) mapByEl.set(box, made);
+  return made;
+};
+/** 칸에 붙어 있는 지도를 치운다 — 표식까지 지워 다음 지도가 그 칸을 쓸 수 있게 한다 */
+const dropMap = (el) => {
+  if (!el) return;
+  const made = mapByEl.get(el);
+  mapByEl.delete(el);
+  try { if (made) made.remove(); } catch (e) { /* 이미 치워졌다 */ }
+  try { delete el._leaflet_id; } catch (e) { /* 그만 */ }
+};
 /** el 안에 앱 임장경로를 띄운다.
  *  onDetail(id, tab) — 줄의 '물건상세 보기'(🔍)가 앱 라우터로 /auctions/{id} 를 부른다.
  *  웹에 띄운 앱은 /field-trip 하나만 아는 메모리 라우터라 그대로 두면 빈 화면으로 떨어진다 —
@@ -116,5 +142,8 @@ export const mountAppFieldTrip = (el, onDetail) => {
   app.use(router);
   void router.push('/field-trip');
   app.mount(el);
-  return () => app.unmount();
+  return () => {
+    dropMap(el.querySelector('#trip-map'));
+    app.unmount();
+  };
 };

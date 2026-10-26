@@ -3039,6 +3039,8 @@ html, body { overflow-x: clip; }
       return;
     }
     if (tripUnmount && box.querySelector('.app-trip')) return;
+    /* 한 번에 하나만 — 앞서 띄운 것이 남아 있으면 반드시 걷어내고 시작한다
+       (둘이 살아 있으면 같은 칸에 지도를 두 번 만들려다 멎는다) */
     closeAppTrip();
     box.innerHTML = '<div class="app-trip" id="appTripMount"></div>';
     /* 줄의 '물건상세 보기'는 앱 라우터로 가지 못한다 — 웹 물건상세로 받아 넘긴다 */
