@@ -4625,11 +4625,14 @@ const RIGHTS_BASE_WORD = /(말소기준권리|말소기준등기)/;
  *  markBase 는 '이 줄이 바로 말소기준권리일 때'만 켠다. 다른 줄의 "말소기준권리보다 앞선…",
  *  "말소기준권리 이후…" 는 기준을 가리키는 설명이지 기준 그 자체가 아니다 — 칠하지 않는다. */
 const CASE_NO = /\(?\s*\d{4}\s*타경\s*\d+\s*\)?/g;
-const rightsNoteParts = (note: string, markBase: boolean) => (note || '')
+/** "(2026.02.23 접수)" 처럼 접수일을 다시 적은 토막 — 접수일은 왼쪽 순위 칸에 이미 있다 */
+const FILED_ON = /\(?\s*\d{4}[.\-]\d{1,2}[.\-]\d{1,2}\.?\s*접수\s*\)?/g;
+const rightsNoteParts = (note: string, markBase: boolean, rowDate = '') => (note || '')
   .split(/\s*·\s*/)
-  /* 사건번호는 화면 위쪽에 이미 있다 — 내용 줄에서는 뺀다 (예전에 받아 둔 분석도 같게) */
-  .map((t) => dotYmd(t.replace(CASE_NO, '').trim()).replace(/^[-·,/\s]+|[-·,/\s]+$/g, ''))
-  .filter(Boolean)
+  /* 사건번호와 접수일은 이 표의 다른 칸에 이미 있다 — 내용 줄에서는 뺀다
+     (예전에 받아 둔 분석도 화면에서 같게 보이도록 여기서 거른다) */
+  .map((t) => dotYmd(t.replace(CASE_NO, '').replace(FILED_ON, '').trim()).replace(/^[-·,/\s]+|[-·,/\s]+$/g, ''))
+  .filter((t) => Boolean(t) && t !== rowDate)
   .map((line) => (markBase
     ? line.split(RIGHTS_BASE_WORD).filter((piece) => piece !== '')
       .map((text) => ({ text, base: text === '말소기준권리' || text === '말소기준등기' }))
@@ -4649,7 +4652,7 @@ const rightsRows = computed(() => {
       dateText: dotYmd(r.date),
       amountText: money.amount,
       // 괄호에 끌려 들어온 전입·확정을 내용 줄 맨 앞에 세운다 — 건물등기와 같은 차례
-      noteLines: rightsNoteParts([...money.extra, r.note].filter(Boolean).join(' · '), isBase),
+      noteLines: rightsNoteParts([...money.extra, r.note].filter(Boolean).join(' · '), isBase, dotYmd(r.date)),
     };
   });
 });
