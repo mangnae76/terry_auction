@@ -3025,14 +3025,6 @@ const FIELD_COMFORT_CHECKS: Array<{ id: string; desc: string }> = [
   { id: 'cf.option', desc: '옵션(살림)' },
   { id: 'cf.roomSize', desc: '가구를 놓을 수 있는 방 크기 (장/침대 등)' },
 ];
-// 입지조사 — 항목마다 사진·링크와 비고를 둔다
-// aptOnly — 아실·호갱노노 단지 기준이라 아파트에서만 쓴다
-const AREA_SURVEY_ITEMS: Array<{ key: string; title: string; note?: string; aptOnly?: boolean }> = [
-  // 제목은 '① 입지조사'가 대신하므로 비워 둔다
-  { key: 'areaSurvey', title: '', note: '' },
-  { key: 'zoneRank', title: '구역내(동네) 입지등수', note: '아실, 디스코 > 평단가 or 전세가 등수 확인', aptOnly: true },
-  { key: 'resident', title: '호갱노노 주민이야기', note: '호재, 입지가치, 개별가치', aptOnly: true },
-];
 const setExtraNote = (key: string, value: string) => {
   setFieldVal(`fs.${key}.note`, value);
   persistSoon();
@@ -4547,12 +4539,8 @@ const PHOTO_AREAS: Array<{
   { key: 'site', scope: 'block', count: () => auction.value?.sitePhotos?.length ?? 0, fold: 'always' }, // 손품+현장 · 현장사진
   // 급매가 · 동일지번 매각물건 — 사진 모음이라 늘 접어 둔다
   { key: 'sameLot', scope: 'block', count: () => extraList('sameLot').length, fold: 'always' },
-  // 급매가 · 평단가 비교 사진 — 늘 접어 둔다
-  { key: 'tradePhoto', scope: 'block', count: () => tradePhotoList.value.length, fold: 'always' },
   // 급매가 · 네이버부동산 매물 사진 — 늘 접어 둔다
   { key: 'listPhoto', scope: 'block', count: () => listPhotoList.value.length, fold: 'always' },
-  // 입지/개별성 · 입지조사 사진 — 칸이 길어 늘 접어 둔다 (사진이 없어도)
-  { key: 'areaSurvey', scope: 'block', count: () => extraList('areaSurvey').length, fold: 'always' },
 ];
 /** 그 칸에 붙어 있는 사진 장수 — 표에 없는 키는 0 */
 const photoAreaCount = (key: string) => PHOTO_AREAS.find((a) => a.key === key)?.count() ?? 0;
@@ -4930,30 +4918,8 @@ const removeExtraAt = async (key: string, idx: number) => {
 };
 
 // === 실거래가 현황 사진 (아실·디스코) ===
-const tradePhotoInput = ref('');
 const tradePhotoErrMsg = ref('');
 const tradePhotoList = computed<string[]>(() => auction.value?.tradePhotoUrls ?? []);
-const addTradePhotoUrl = async () => {
-  if (!auction.value) return;
-  if (tradePhotoList.value.length >= PHOTO_MAX) { tradePhotoErrMsg.value = photoFullMsg; return; }
-  const url = tradePhotoInput.value.trim();
-  if (!url) return;
-  tradePhotoErrMsg.value = '';
-  if (!auction.value.tradePhotoUrls) auction.value.tradePhotoUrls = [];
-  if (auction.value.tradePhotoUrls.includes(url)) {
-    tradePhotoErrMsg.value = '이미 추가된 링크입니다.';
-    return;
-  }
-  auction.value.tradePhotoUrls.unshift(url);
-  tradePhotoInput.value = '';
-  await store.saveAuction(auction.value);
-};
-const removeTradePhotoAt = async (idx: number) => {
-  if (!auction.value) return;
-  const [removed] = auction.value.tradePhotoUrls?.splice(idx, 1) ?? [];
-  await store.saveAuction(auction.value);
-  await discardPastedImage(removed);
-};
 
 // === 네이버부동산 매물 사진 (최저가) ===
 const listPhotoInput = ref('');
@@ -7723,7 +7689,7 @@ const goBack = () => router.back();
         <!-- 본건사진 — 전경 + 평면도 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('photos')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h4l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>본건사진<PhotoCountMark :n="photoAreaCount('photos')" /></h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-3h4l2 3h3a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="3.5"/></svg>본건사진 + 기타사진<PhotoCountMark :n="photoAreaCount('photos')" /></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('photos') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('photos')">
@@ -7996,51 +7962,10 @@ const goBack = () => router.back();
               <strong class="adp-dm-title">2. 입지/개별성<small>(구역내등수)</small></strong>
             </div>
 
-            <!-- ① 입지조사 -->
-            <div class="adp-dm-block boxed">
-            <div class="adp-dm-sub">① 입지조사 사진<PhotoCountMark :n="photoAreaCount('areaSurvey')" /> <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('loc', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('loc', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'loc'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('loc')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><button type="button" class="adp-photo-fold" :aria-label="photoFolded('areaSurvey') ? '펼치기' : '접기'" @click.stop="togglePhotoFold('areaSurvey')"><img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('areaSurvey') }]" alt="" /></button></div>
-            <div v-for="item in AREA_SURVEY_ITEMS.filter((i) => isApartment || !i.aptOnly)" v-show="!photoFolded('areaSurvey')" :key="item.key" class="adp-sub-block">
-              <div v-if="item.title" class="adp-sub-head">
-                <h3>{{ item.title }}<PhotoCountMark :n="extraList(item.key).length" /> <span v-if="item.note" class="adp-survey-note-inline">{{ item.note }}</span></h3>
-              </div>
-              <div class="adp-plan-row">
-                <input
-                  :value="extraInput[item.key] ?? ''"
-                  placeholder="링크 또는 이미지 붙여넣기"
-                  class="adp-input"
-                  @input="extraInput = { ...extraInput, [item.key]: ($event.target as HTMLInputElement).value }"
-                  @keydown.enter.prevent="addExtraUrl(item.key)"
-                  @paste="pasteImageInto($event, `x:${item.key}`)"
-                />
-                <button type="button" class="adp-icn-btn" @click="addExtraUrl(item.key)">+</button>
-              </div>
-              <p v-if="extraErr[item.key]" class="adp-plan-err">{{ extraErr[item.key] }}</p>
-              <PhotoGrid
-                class="adp-pg"
-                :items="extraList(item.key)"
-                :src="photoSrc"
-                :broken="brokenImages"
-                :alt="item.title || '사진'"
-                @open="openLightbox"
-                @error="onImageError"
-                @remove="(i: number) => removeExtraAt(item.key, i)"
-                @add="pickPhotoFor(`x:${item.key}`)"
-              />
-              <div class="adp-photo-note">
-                <input
-                  class="adp-fs-input"
-                  placeholder="비고"
-                  :value="fieldVal(`fs.${item.key}.note`)"
-                  @input="setExtraNote(item.key, ($event.target as HTMLInputElement).value)"
-                />
-              </div>
-            </div>
 
-            </div>
-
-            <!-- ② 실사용자 + 입지등수 -->
+            <!-- ① 실사용자 + 입지등수 -->
             <div class="adp-dm-block boxed">
-            <div class="adp-dm-sub">② 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동으로</button></div>
+            <div class="adp-dm-sub">① 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동으로</button></div>
             <table class="adp-table adp-ruser-table">
               <colgroup>
               <col style="width: 33%" /><col style="width: 21%" /><col style="width: 18%" /><col style="width: 13%" /><col style="width: 15%" />
@@ -8150,10 +8075,10 @@ const goBack = () => router.back();
 
             </div>
 
-            <!-- ③ 개별성 분석 -->
+            <!-- ② 개별성 분석 -->
             <div class="adp-dm-block boxed">
             <div class="adp-dm-sub">
-              ③ 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
+              ② 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
               <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
             </div>
@@ -8399,42 +8324,12 @@ const goBack = () => router.back();
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('deal')">완료</button>
             </div>
 
-            <!-- ① 평단가 비교 사진 -->
-            <div class="adp-mkt-block">
-              <div class="adp-mkt-block-head">
-                <span class="t">① 평단가 비교 사진<PhotoCountMark :n="photoAreaCount('tradePhoto')" /></span>
-                <button type="button" class="adp-photo-fold" :aria-label="photoFolded('tradePhoto') ? '펼치기' : '접기'" @click.stop="togglePhotoFold('tradePhoto')"><img :src="chevronDownIcon" :class="['adp-chev', { up: photoFolded('tradePhoto') }]" alt="" /></button>
-              </div>
-              <div v-if="!photoFolded('tradePhoto')" class="adp-plan-row">
-                <input
-                  v-model="tradePhotoInput"
-                  placeholder="링크 또는 이미지 붙여넣기"
-                  class="adp-input"
-                  @keydown.enter.prevent="addTradePhotoUrl"
-                  @paste="pasteImageInto($event, 'tradePhoto')"
-                />
-                <button type="button" class="adp-icn-btn" @click="addTradePhotoUrl">+</button>
-              </div>
-              <p v-if="tradePhotoErrMsg && !photoFolded('tradePhoto')" class="adp-plan-err">{{ tradePhotoErrMsg }}</p>
-              <PhotoGrid
-                v-if="!photoFolded('tradePhoto')"
-                class="adp-pg"
-                :items="tradePhotoList"
-                :src="photoSrc"
-                :broken="brokenImages"
-                alt="평단가 비교 사진"
-                @open="openLightbox"
-                @error="onImageError"
-                @remove="removeTradePhotoAt"
-                @add="pickPhotoFor('tradePhoto')"
-              />
-            </div>
 
 
-            <!-- ② 실거래가 — 예전 '평단가' 블록을 이 줄에 합쳤다 (실거래가 옆이 평단가) -->
+            <!-- ① 실거래가 — 예전 '평단가' 블록을 이 줄에 합쳤다 (실거래가 옆이 평단가) -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">② <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktModeLabel('d', '경매지번', '유사물건') }}</span> 실거래가<em class="adp-mkt-auto">(매매·전세)</em><span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
+                <span class="t">① <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktModeLabel('d', '경매지번', '유사물건') }}</span> 실거래가<em class="adp-mkt-auto">(매매·전세)</em><span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
                 <button
                   type="button"
                   :class="['adp-mkt-mode', { sim: mktMode('d') === '유사물건' }]"
@@ -8541,7 +8436,7 @@ const goBack = () => router.back();
 
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head wrapy">
-                <span class="t">③ 실거래가 조건분석<em class="adp-mkt-auto">(자동입력)</em></span>
+                <span class="t">② 실거래가 조건분석<em class="adp-mkt-auto">(자동입력)</em></span>
                 <!-- 가격정보 탭에서 조회한 지역·건수와 조회 시각을 같이 보여 준다 -->
                 <small class="adp-mkt-region">
                   <span class="adp-tab-dot" /> {{ publicRealTradeSigungu || '주변' }} {{ publicRealTradeDong || '실거래가' }} ({{ filteredPublicTradeRows.length }}건)
