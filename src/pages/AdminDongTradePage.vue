@@ -303,6 +303,70 @@ const searched = computed(() => {
 });
 const colFilter = useColumnFilters<DongTradeDetailRow>(searched, COLS);
 const listRows = computed(() => colFilter.rows.value);
+
+// ===== 웹 — 시군구까지만 골랐을 때(읍면동 '전체') 검색리스트는 동별 요약 표 =====
+// 정상거래만 센다(검색조건의 기간 · 면적 · 연식 거르기를 거친 것). 거래가 없는 동도 0건으로 남긴다
+type DongSum = { name: string; count: number; avg: number; median: number; min: number; max: number; area: number; perM2: number };
+const dongSums = computed<DongSum[]>(() => {
+  const by = new Map<string, DongTradeDetailRow[]>();
+  normals.value.forEach((r) => { if (r.umdNm) by.set(r.umdNm, [...(by.get(r.umdNm) ?? []), r]); });
+  dongOptions.value.forEach((n) => { if (!by.has(n)) by.set(n, []); });
+  return Array.from(by.entries()).map(([name, list]) => {
+    const prices = list.map((r) => r.priceWon).filter((v) => v > 0).sort((a, b) => a - b);
+    const n = prices.length;
+    const areas = list.map((r) => r.areaM2).filter((v) => v > 0);
+    const perM2s = list.filter((r) => r.priceWon > 0 && r.areaM2 > 0).map((r) => r.priceWon / r.areaM2);
+    const avgOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+    return {
+      name,
+      count: list.length,
+      avg: avgOf(prices),
+      median: n ? (n % 2 ? prices[(n - 1) / 2] : (prices[n / 2 - 1] + prices[n / 2]) / 2) : 0,
+      min: n ? prices[0] : 0,
+      max: n ? prices[n - 1] : 0,
+      area: avgOf(areas),
+      perM2: avgOf(perM2s),
+    };
+  });
+});
+const sumSortKey = ref<keyof DongSum>('count');
+const sumSortDesc = ref(true);
+const toggleSumSort = (k: keyof DongSum) => {
+  if (sumSortKey.value === k) sumSortDesc.value = !sumSortDesc.value;
+  else { sumSortKey.value = k; sumSortDesc.value = k !== 'name'; }
+};
+const dongSumRows = computed(() => [...dongSums.value].sort((a, b) => {
+  const k = sumSortKey.value;
+  const d = k === 'name' ? String(a.name).localeCompare(String(b.name), 'ko') : Number(a[k]) - Number(b[k]);
+  return sumSortDesc.value ? -d : d;
+}));
+const SUM_COLS: Array<{ key: keyof DongSum; label: string }> = [
+  { key: 'name', label: '동/지역' }, { key: 'count', label: '거래건수' }, { key: 'avg', label: '평균가' },
+  { key: 'median', label: '중간가' }, { key: 'min', label: '최저가' }, { key: 'max', label: '최고가' },
+  { key: 'area', label: '평균면적' }, { key: 'perM2', label: '㎡당 평균가' },
+];
+/** '1.61억' · '9,563만' · '—' */
+const eokMan = (v: number) => {
+  if (!(v > 0)) return '—';
+  if (v >= 100000000) return `${(Math.round(v / 1000000) / 100).toFixed(2)}억`;
+  return `${Math.round(v / 10000).toLocaleString('ko-KR')}만`;
+};
+// 웹 — 시군구까지만 골랐을 때 위 요약은 시군구 전체 한 줄(기간 3 · 6 · 12개월은 검색조건 기간과 같은 값)
+const NAV_PERIODS = [{ m: 3, label: '3개월' }, { m: 6, label: '6개월' }, { m: 12, label: '1년' }];
+const guNav = computed(() => {
+  const prices = normals.value.map((r) => r.priceWon).filter((v) => v > 0);
+  const areas = normals.value.map((r) => r.areaM2).filter((v) => v > 0);
+  const perM2s = normals.value.filter((r) => r.priceWon > 0 && r.areaM2 > 0).map((r) => r.priceWon / r.areaM2);
+  const avgOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+  return [
+    { label: '거래건수', value: `${normals.value.length.toLocaleString('ko-KR')}건` },
+    { label: '평균 거래가', value: eokMan(avgOf(prices)) },
+    { label: '최저가', value: eokMan(prices.length ? Math.min(...prices) : 0) },
+    { label: '최고가', value: eokMan(prices.length ? Math.max(...prices) : 0) },
+    { label: '평균 면적', value: areas.length ? `${avgOf(areas).toFixed(1)}㎡` : '—' },
+    { label: '㎡당 평균가', value: perM2s.length ? `${Math.round(avgOf(perM2s) / 10000).toLocaleString('ko-KR')}만/㎡` : '—' },
+  ];
+});
 const clearColFilters = () => { colFilter.clearAll(); };
 
 const won = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
@@ -415,14 +479,25 @@ const downloadCsv = () => {
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
 
       <template v-if="all.length > 0">
-        <div class="adm-sum">
+        <section v-if="webEmbed && !dong" class="adm-gunav">
+          <div class="adm-gunav-head">
+            <strong>{{ loadedLabel }}</strong>
+            <div class="adm-gunav-seg">
+              <button v-for="p in NAV_PERIODS" :key="p.m" type="button" :class="{ on: periodMonths === p.m }" @click="applyPeriod(p.m)">{{ p.label }}</button>
+            </div>
+          </div>
+          <div class="adm-gunav-row">
+            <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small>{{ c.label }}</small><b>{{ c.value }}</b></div>
+          </div>
+        </section>
+        <div v-else class="adm-sum">
           <strong>{{ loadedLabel }} {{ dong || '전체' }}</strong>
           <span v-if="district" class="code">{{ district.lawdCode }}</span>
           <span>{{ ymd(period.from) }} ~ {{ ymd(period.to) }} 받아 둠</span>
         </div>
 
         <!-- 요약 -->
-        <div class="adm-kpis">
+        <div v-if="!(webEmbed && !dong)" class="adm-kpis">
           <div class="adm-kpi"><small>실거래가 평균</small><strong>{{ won(avgPrice) }}</strong></div>
           <div class="adm-kpi"><small>평당가 평균</small><strong>{{ won(avgUnitPrice) }}</strong></div>
           <div class="adm-kpi blue"><small>총 거래건수 <em>정상거래</em></small><strong>{{ normals.length.toLocaleString('ko-KR') }}건</strong></div>
@@ -498,7 +573,33 @@ const downloadCsv = () => {
           </span>
         </div>
 
-        <div class="adm-table-wrap">
+        <!-- 웹 · 읍면동 '전체' — 동별 요약 표. 동 이름을 누르면 그 동의 거래 목록으로 -->
+        <div v-if="webEmbed && !dong" class="adm-table-wrap">
+          <table class="adm-table adm-dongsum">
+            <thead>
+              <tr>
+                <th v-for="c in SUM_COLS" :key="c.key" :class="c.key === 'name' ? 'l' : 'r'">
+                  <button type="button" class="adm-sort" @click="toggleSumSort(c.key)">
+                    {{ c.label }}<i :class="{ on: sumSortKey === c.key }">{{ sumSortKey === c.key ? (sumSortDesc ? '↓' : '↑') : '⇅' }}</i>
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="d in dongSumRows" :key="d.name">
+                <td class="l"><button type="button" class="adm-dong-link" @click="dong = d.name">{{ d.name }}</button></td>
+                <td class="r">{{ d.count.toLocaleString('ko-KR') }}건</td>
+                <td class="r strong">{{ eokMan(d.avg) }}</td>
+                <td class="r">{{ eokMan(d.median) }}</td>
+                <td class="r">{{ eokMan(d.min) }}</td>
+                <td class="r">{{ eokMan(d.max) }}</td>
+                <td class="r">{{ d.area > 0 ? `${d.area.toFixed(1)}㎡` : '—' }}</td>
+                <td class="r">{{ d.perM2 > 0 ? `${Math.round(d.perM2 / 10000).toLocaleString('ko-KR')}만/㎡` : '—/㎡' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-else class="adm-table-wrap">
           <table class="adm-table">
             <thead>
               <tr>
@@ -602,6 +703,16 @@ const downloadCsv = () => {
 .adm-msg.err { background: #fef2f2; color: #b91c1c; }
 .adm-msg.warn { background: #fffbeb; color: #92400e; }
 
+.adm-gunav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }
+.adm-gunav-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.adm-gunav-head strong { font-size: 18px; font-weight: 800; color: #2f6b45; }
+.adm-gunav-seg { display: flex; gap: 6px; }
+.adm-gunav-seg button { min-width: 72px; height: 38px; padding: 0 14px; border: 0; border-radius: 8px; background: #fff; color: #4b5563; font-size: 15px; font-weight: 700; cursor: pointer; }
+.adm-gunav-seg button.on { background: #2b3f9e; color: #fff; }
+.adm-gunav-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+.adm-gunav-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border-radius: 8px; background: #fff; }
+.adm-gunav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
+.adm-gunav-box b { font-size: 18px; font-weight: 800; color: #2f6b45; white-space: nowrap; }
 .adm-sum { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 2px 12px; font-size: 12.5px; color: #6b7280; font-weight: 600; }
 .adm-sum strong { font-size: 14.5px; font-weight: 800; color: #111827; }
 .adm-sum .code { font-size: 11px; font-weight: 700; color: #6b7280; background: #eef1f6; border-radius: 999px; padding: 2px 8px; }
@@ -687,4 +798,16 @@ const downloadCsv = () => {
   .adm-f { flex: 1 1 100%; }
   .adm-load, .adm-cond-btns { margin-left: 0; }
 }
+
+/* 웹 · 동별 요약 표 — 칸 이름을 누르면 그 칸으로 줄 세우기 */
+.adm-dongsum th, .adm-dongsum td { padding: 14px 16px; font-size: 14px; }
+.adm-dongsum th { color: #2f6b45; font-weight: 800; background: #f3f8f4; }
+.adm-dongsum .l { text-align: left; }
+.adm-dongsum .r { text-align: right; }
+.adm-dongsum td.strong { font-weight: 800; color: #111827; }
+.adm-sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.adm-sort i { font-style: normal; font-size: 12px; color: #9ca3af; }
+.adm-sort i.on { color: #2f6b45; }
+.adm-dong-link { border: 0; background: none; padding: 0; font: inherit; font-weight: 700; color: #111827; cursor: pointer; }
+.adm-dong-link:hover { color: #2b6df3; text-decoration: underline; }
 </style>
