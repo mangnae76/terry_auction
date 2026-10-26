@@ -3022,7 +3022,8 @@ html, body { overflow-x: clip; }
   /* 탭별 웹 배치 — 앱 카드 순서는 건드리지 않고 카드 제목으로 자리를 정한다.
      span: 두 열을 가로질러 맨 위 / left · right: 각 열에 위에서부터. 목록에 없는 카드는 왼쪽 끝에 */
   const WEB_LAYOUT = {
-    rights: { span: ['AI 분석 요청', 'AI 권리분석 진단', 'AI 리스크 분석 요약', 'AI 권리분석 결론'], left: ['AI 명도 난이도 분석'], right: ['건물등기', '임차인현황', '권리분석', '권리분석 정리'] },
+    /* 권리분석 — 카드 모두를 두 열 폭 그대로 한 줄씩 (full: 목록에 없는 카드도 가로로 펼친다) */
+    rights: { full: true, span: ['AI 분석 요청', 'AI 권리분석 진단', 'AI 리스크 분석 요약', 'AI 권리분석 결론', 'AI 명도 난이도 분석', '건물등기', '임차인현황', '권리분석', '권리분석 정리'] },
     /* 손품조사 — 매매수요(매매·수요·입지·개별성) 등은 왼쪽 그대로, 급매가만 오른쪽 */
     survey: { right: ['급매가'] },
   };
@@ -3066,7 +3067,7 @@ html, body { overflow-x: clip; }
     const pick = (names) => names.map((n) => cards.find((c) => titleOf(c) === n || titleOf(c).startsWith(`${n}`) && !names.some((m) => m !== n && m.startsWith(n) && titleOf(c).startsWith(m)))).filter(Boolean);
     const span = pick(L.span || []); const left = pick(L.left || []); const right = pick(L.right || []);
     const placed = new Set([...span, ...left, ...right]);
-    cards.forEach((c) => { if (!placed.has(c)) left.push(c); });
+    cards.forEach((c) => { if (!placed.has(c)) (L.full ? span : left).push(c); });
     let top = 1;
     span.forEach((c) => { const h = Math.ceil(c.offsetHeight) + GAP; c.style.gridColumn = '1 / -1'; c.style.gridRow = `${top} / span ${h}`; top += h; });
     [[left, 1], [right, 2]].forEach(([list, col]) => {
