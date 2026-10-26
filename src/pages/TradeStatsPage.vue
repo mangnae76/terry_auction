@@ -38,6 +38,8 @@ const shortWon = (won: number): string => {
 };
 /** 웹 시장분석 › 거래량 랭킹에 띄웠는가 — 웹(shared.entry.js)이 넣어 준다. 분석 도구에서는 false */
 const webEmbed = inject<boolean>('webEmbed', false);
+/** 고르는 칸을 옮겨 넣을 왼쪽 판 자리 — 화면마다 다른 이름을 써서, 같은 화면이 둘 떠도 칸이 한 판에 두 벌 들어가지 않게 */
+const filterSlotId = `tsp-filter-slot-${Math.random().toString(36).slice(2, 8)}`;
 const router = useRouter();
 const selectedSido = ref('');
 const selectedDistrict = ref('');
@@ -466,7 +468,7 @@ onMounted(() => {
     <div class="adm-body tsp-body">
       <div class="tsp-filter">
         <!-- 웹 — 고르는 칸 묶음을 왼쪽 판 맨 위(통계 정보 위)로 옮긴다. 분석 도구에서는 제자리 -->
-        <Teleport defer to="#tsp-filter-slot" :disabled="!webEmbed">
+        <Teleport defer :to="`#${filterSlotId}`" :disabled="!webEmbed">
           <!-- 분석 도구의 '실거래 분석'과 같은 차례로 좁힌다 — 시도 → 시군구 → 읍면동 → 종류.
                다만 여기는 '데이터 로드'가 아니라 전처럼 검색이다 -->
           <div class="tsp-bar">
@@ -532,7 +534,7 @@ onMounted(() => {
         <div id="trade-map" class="tsp-map" />
 
         <aside class="tsp-panel">
-          <div v-if="webEmbed" id="tsp-filter-slot" class="tsp-filter-slot" />
+          <div v-if="webEmbed" :id="filterSlotId" class="tsp-filter-slot" />
           <header v-if="!webEmbed" class="tsp-panel-head">
             <strong>{{ scopeTitle }}</strong>
             <small v-if="lastLoadedLabel">{{ periodText }} · {{ kindLabel }}</small>
