@@ -283,7 +283,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .crumbs a:hover { color: var(--blue); }
 .crumbs svg { width: 15px; height: 15px; }
 .crumb-sep { color: var(--faint); font-size: 14px; line-height: 1; }
-.crumbs strong { color: var(--text); font-weight: 700; }
+/* 지금 자리는 색으로만 알린다 — 경로줄에는 굵은 글씨를 쓰지 않는다 */
+.crumbs strong { color: var(--text); font-weight: 500; }
 .toolbar-shell.stuck { box-shadow: 0 8px 18px -12px rgba(15, 23, 42, 0.35); }
 .toolbar {
   position: relative; background: var(--surface); border: 1px solid var(--tb-line); border-radius: 8px;
@@ -883,6 +884,8 @@ body.trip-full .foot { display: none; }
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 50; min-width: 200px; padding: 6px; background: var(--surface); color: var(--text);
   border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow-pop); animation: pop-in .14s ease-out;
 }
+/* 이미 펼쳐 둔 목록 — 고를 때마다 다시 그려지는데, 그때 열림 애니메이션이 또 돌면 상자가 튄다 */
+.pop.no-anim { animation: none; }
 .pop.right { left: auto; right: 0; }
 @keyframes pop-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 .pop-title { padding: 7px 10px 5px; font-size: 11.5px; font-weight: 700; color: var(--faint); }
@@ -2293,9 +2296,9 @@ html, body { overflow-x: clip; }
         <!-- ① 폴더 고르기 — 등록해 둔 폴더를 펼쳐 고른다. 고치고 지우는 일은 ② 폴더등록 창이 맡는다 -->
         <div class="rg-folder pop-root" data-pop="folders">
           <button type="button" class="rg-folder-box" data-act="pop" data-id="folders" aria-expanded="${S.pop === 'folders'}" aria-label="스캔할 폴더 선택">
-            <span class="rg-chosen">${R.sel.length ? esc(R.sel.length === 1 ? favName(R.sel[0]) : `${favName(R.sel[0])} 외 ${R.sel.length - 1}`) : `<span class="rg-ph">${R.favs.length ? '폴더 선택' : '등록된 폴더 없음'}</span>`}</span><i class="tri"></i>
+            <span class="rg-chosen">${R.sel.length ? esc(R.sel.length === 1 ? favName(R.sel[0]) : `${favName(R.sel[0])} 외 ${R.sel.length - 1}`) : `<span class="rg-ph">${R.favs.length ? '폴더를 선택하세요' : '폴더를 연동하세요'}</span>`}</span><i class="tri"></i>
           </button>
-          ${S.pop === 'folders' ? `<div class="pop rg-pop" role="listbox" aria-label="등록한 폴더">${R.favs.length ? R.favs.map((f) => `<div class="rg-fitem ${R.sel.includes(f.url) ? 'on' : ''}" role="option" aria-selected="${R.sel.includes(f.url)}" data-act="fav-sel" data-v="${esc(f.url)}"><i class="mk">${I.check}</i>${I.folder}<span class="nm">${esc(f.name || '이름 없는 폴더')}</span></div>`).join('') : '<div class="bin-empty" style="border:0">등록된 폴더가 없습니다 — 폴더등록을 눌러 추가하세요.</div>'}</div>` : ''}
+          ${S.pop === 'folders' ? `<div class="pop rg-pop ${R.popShown ? 'no-anim' : ''}" role="listbox" aria-label="등록한 폴더">${R.favs.length ? R.favs.map((f) => `<div class="rg-fitem ${R.sel.includes(f.url) ? 'on' : ''}" role="option" aria-selected="${R.sel.includes(f.url)}" data-act="fav-sel" data-v="${esc(f.url)}"><i class="mk">${I.check}</i>${I.folder}<span class="nm">${esc(f.name || '이름 없는 폴더')}</span></div>`).join('') : '<div class="bin-empty" style="border:0">등록된 폴더가 없습니다 — 폴더등록을 눌러 추가하세요.</div>'}</div>` : ''}
         </div>
         <button type="button" class="rg-fav" data-act="fav-open">${I.star}폴더등록</button>
         <button type="button" class="rg-btn scan" data-act="scan" ${R.loading ? 'disabled' : ''}>${I.search}폴더스캔${R.sel.length ? ` (${R.sel.length})` : ''}</button>
@@ -2325,6 +2328,8 @@ html, body { overflow-x: clip; }
     const PC = R.tab === 'ai'
       ? { title: 'AI 파싱', ic: I.spark, tip: '경매 문서를 올리면 AI가 분석하여 선정목록 카드에 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
       : { title: 'PDF 파싱', ic: I.pdf, tip: '경매 문서를 올리면 자동으로 읽어 선정목록 카드에 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
+    // 다음에 다시 그릴 때 '목록이 이미 펼쳐져 있었는지' 를 알아야 애니메이션을 끌 수 있다
+    R.popShown = S.pop === 'folders';
     $('regContent').innerHTML = `
       <section class="rg-lead-box">
         <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I.info}</svg>+물건등록</h2>
