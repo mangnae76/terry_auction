@@ -2982,9 +2982,18 @@ html, body { overflow-x: clip; }
     closeAppTrip();
     box.innerHTML = '<div class="app-trip" id="appTripMount"></div>';
     const stop = CLOUD.T.mountAppFieldTrip($('appTripMount'));
+    /* 지도를 패널 밖으로 꺼낸다 — 앱에서는 지도가 스크롤 칸(.ftp-scroll) 안에 들어 있다.
+       웹에서는 그 칸을 떠 있는 상자로 만드는데, position:fixed 는 제 부모가 만든 층
+       안에서만 겹침을 가르므로 그대로 두면 지도가 패널 내용을 통째로 덮는다.
+       한 번만 형제로 옮겨 두면 지도는 바닥(z 0), 패널은 그 위(z 5)로 제자리를 찾는다 */
+    const liftMap = () => {
+      const mount = $('appTripMount'); if (!mount) return;
+      const map = mount.querySelector('.ftp-map-wrap');
+      if (map && map.parentNode !== mount) mount.appendChild(map);
+    };
     /* 지도는 만들어질 때의 칸 크기를 기억한다 — 웹은 머리띠·경로줄이 뒤늦게 자리를 잡아
        그때 크기가 어긋난다. 창 크기 바뀜을 몇 번 흘려보내 지도가 다시 재게 한다 */
-    const nudges = [60, 300, 900].map((ms) => setTimeout(() => window.dispatchEvent(new Event('resize')), ms));
+    const nudges = [0, 60, 300, 900].map((ms) => setTimeout(() => { liftMap(); window.dispatchEvent(new Event('resize')); }, ms));
     tripUnmount = () => { nudges.forEach(clearTimeout); stop(); };
   }
   function renderAppDetailTab(it, tab) {
