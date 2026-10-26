@@ -163,8 +163,9 @@ button { cursor: pointer; }
 .g-menu:hover::after { transform: scaleX(1); opacity: .55; }
 .g-menu.on::after { transform: scaleX(1); opacity: 1; }
 /* +물건등록이 선정목록 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
-.m0 { left: 13.75%; } .m1 { left: 23.2%; } .m2 { left: 32.6%; } .m3 { left: 42.05%; }
-.m4 { left: 51.1%; } .m5 { left: 60.1%; } .m6 { left: 69.45%; }
+/* 메뉴 여덟 — '낙찰가율분석' 이 시장분석 옆에 들어오며 간격을 고르게 다시 잡았다 (글자 폭 + 약 35px) */
+.m0 { left: 13.75%; } .m1 { left: 22.34%; } .m2 { left: 30.16%; } .m3 { left: 37.97%; } .m3b { left: 45.78%; }
+.m4 { left: 56.17%; } .m5 { left: 63.98%; } .m6 { left: 71.8%; }
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: #fff !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
@@ -1746,6 +1747,7 @@ html, body { overflow-x: clip; }
       <a class="g-menu m1" href="#/" data-act="go-list" id="navWatch">선정목록</a>
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
       <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
+      <a class="g-menu m3b" href="#/bidrate" data-act="go-bidrate" id="navBidrate">낙찰가율분석</a>
       <a class="g-menu m4" href="#" data-act="soon" data-name="커뮤니티">커뮤니티</a>
       <a class="g-menu m5" href="#" data-act="soon" data-name="고객센터">고객센터</a>
       <a class="g-menu m6" href="#/mypage" data-act="go-mypage" id="navMy">마이페이지</a>
@@ -2012,7 +2014,8 @@ html, body { overflow-x: clip; }
   const ITEM_TABS = ['basic', 'rights', 'survey', 'field', 'verify', 'profit'];
   const itemHash = (id, tab) => `#/item/${id}${tab && tab !== 'basic' ? `/${tab}` : ''}`;
   const S = {
-    marketTab: 'region', /* 시장분석 하위 탭 — 지금은 지역분석 하나 */
+    marketTab: 'ranking', /* 시장분석 하위 탭 */
+    bidrateTab: 'near', /* 낙찰가율분석 하위 탭 */
     layout: store.get('wlp.web.layout', 'card'), sort: store.get('wlp.web.sort', 'reg'),
     stage: 'all', type: '', court: '', date: '', q: '',
     pop: '', calMonth: null, pick: false, picked: new Set(), binPicked: new Set(), menu: null, modal: null,
@@ -2021,7 +2024,7 @@ html, body { overflow-x: clip; }
     /* 새로고침 직후에는 로그인 여부를 아직 모른다 — 그 사이에 '로그인하세요' 를 띄우면
        이미 로그인한 사람에게도 잠깐 깜빡인다. 알게 될 때까지는 기다리는 모양만 보인다 */
     authReady: false,
-    route: /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/market/.test(location.hash) ? 'market' : /^#\/mypage/.test(location.hash) ? 'mypage' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
+    route: /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/market/.test(location.hash) ? 'market' : /^#\/bidrate/.test(location.hash) ? 'bidrate' : /^#\/mypage/.test(location.hash) ? 'mypage' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
     itemId: (location.hash.match(/^#\/item\/([\w-]+)/) || [])[1] || '',
     /* 보고 있던 하위 탭도 주소에 적어 둔다 — 새로고침해도 그 자리에 그대로 선다 */
     itemTab: ITEM_TABS.includes((location.hash.match(/^#\/item\/[\w-]+\/([\w-]+)/) || [])[1]) ? location.hash.match(/^#\/item\/[\w-]+\/([\w-]+)/)[1] : 'basic',
@@ -2088,7 +2091,8 @@ html, body { overflow-x: clip; }
     ['m0', [['자동등록', 'mega-auto'], ['직접입력', 'mega-manual']]],
     ['m1', [['선정목록', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
-    ['m3', [['지역분석', 'go-market'], ['가격정보', ''], ['매매수요', '']]],
+    ['m3', [['지역별 거래량 랭킹', 'go-market'], ['KB주택가격지수', 'go-market'], ['지역분석', 'go-market'], ['실거래가 조건분석', 'go-market'], ['경매지번 공동주택가 및 실거래가', 'go-market']]],
+    ['m3b', [['인근 매각물건 분석', 'go-bidrate'], ['동일지번 매각물건 분석', 'go-bidrate']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
     ['m5', [['자주 묻는 질문', ''], ['1:1 문의', ''], ['이용안내', '']]],
     ['m6', [['내 정보', 'go-mypage'], ['포인트', ''], ['결제관리', ''], ['알림설정', '']]],
@@ -2098,6 +2102,7 @@ html, body { overflow-x: clip; }
     if (S.route === 'register') return R.mode === 'manual' ? 'mega-manual' : 'mega-auto';
     if (S.route === 'trip') return 'go-trip';
     if (S.route === 'market') return 'go-market';
+    if (S.route === 'bidrate') return 'go-bidrate';
     if (S.route === 'mypage') return 'go-mypage';
     if (S.route === 'list') return 'go-list';
     return '';
@@ -2107,6 +2112,7 @@ html, body { overflow-x: clip; }
   function renderHeader() {
     $('navReg').classList.toggle('on', S.route === 'register');
     { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
+    { const t = $('navBidrate'); if (t) { t.classList.toggle('on', S.route === 'bidrate'); if (S.route === 'bidrate') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     { const t = $('navMarket'); if (t) { t.classList.toggle('on', S.route === 'market'); if (S.route === 'market') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     { const t = $('navMy'); if (t) { t.classList.toggle('on', S.route === 'mypage'); if (S.route === 'mypage') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     const nav = $('navWatch'); nav.classList.toggle('on', S.route === 'list'); if (S.route === 'list') nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
@@ -2993,25 +2999,27 @@ html, body { overflow-x: clip; }
      예) register: [['drive', 'cloud', '구글드라이브 연동'], ['ai', 'key', 'AI 자동 분석']]  (선정물건등록에서 쓰다가 상자 둘 배치로 바꿨다) */
   const SUBTABS = {
     /* 물건상세 — 앱 AuctionDetailPage 의 TABS 다섯 칸에서 앱 '손품+현장'을 손품조사 · 임장조사 둘로 나눴다(웹만) */
-    market: [['region', '', '지역분석']],
+    /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
+    market: [['ranking', '', '지역별 거래량 랭킹'], ['kb', '', 'KB주택가격지수'], ['region', '', '지역분석'], ['dong', '', '실거래가 조건분석'], ['case', '', '경매지번 공동주택가 및 실거래가']],
+    bidrate: [['near', '', '인근 매각물건 분석'], ['same', '', '동일지번 매각물건 분석']],
     item: [['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
   };
   function renderSubTabs() {
     const tabs = SUBTABS[S.route]; const bar = $('subTabs');
     bar.hidden = !tabs; document.body.classList.toggle('has-subtabs', !!tabs);
-    const cur = S.route === 'market' ? S.marketTab : S.itemTab;
+    const cur = S.route === 'market' ? S.marketTab : S.route === 'bidrate' ? S.bidrateTab : S.itemTab;
     $('subTabsIn').innerHTML = tabs ? tabs.map(([k, ic, t]) => `<button type="button" class="subtab ${cur === k ? 'on' : ''}" role="tab" aria-selected="${cur === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
     if (tabs) syncStickTop();
   }
   function render() {
     renderHeader();
-    const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip'; const my = S.route === 'mypage'; const market = S.route === 'market';
+    const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip'; const my = S.route === 'mypage'; const market = S.route === 'market' || S.route === 'bidrate';
     $('listView').hidden = reg || item || trip || my || market; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('marketView').hidden = !market; $('fab').hidden = reg || item || trip || my || market;
     const cur = item ? byId(S.itemId) : null;
-    $('crumbCur').textContent = reg ? '+물건등록' : trip ? '임장경로' : market ? '시장분석 › 지역분석' : my ? '마이페이지' : item ? `선정목록 › ${cur ? cur.caseNo : '물건상세'}` : '선정목록';
+    $('crumbCur').textContent = reg ? '+물건등록' : trip ? '임장경로' : market ? (S.route === 'bidrate' ? '낙찰가율분석' : '시장분석') : my ? '마이페이지' : item ? `선정목록 › ${cur ? cur.caseNo : '물건상세'}` : '선정목록';
     { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
-    document.title = reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? '마이턴옥션 시장분석' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정목록';
+    document.title = reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? (S.route === 'bidrate' ? '마이턴옥션 낙찰가율분석' : '마이턴옥션 시장분석') : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정목록';
     if (!item) closeAppDetail();
     if (!trip) closeAppTrip();
     if (!market) closeAppMarket();
@@ -3397,15 +3405,19 @@ html, body { overflow-x: clip; }
   const closeAppMarket = () => { if (marketUnmount) { try { marketUnmount(); } catch (e) { /* 그만 */ } marketUnmount = null; } };
   function renderMarket() {
     const box = $('marketContent');
-    if (!CLOUD.on) {
+    const bid = S.route === 'bidrate';
+    const key = bid ? S.bidrateTab : S.marketTab;
+    const label = (SUBTABS[S.route].find((t) => t[0] === key) || [])[2] || '';
+    const T = CLOUD.T;
+    if (!CLOUD.on || !T || !T.hasAppAdminScreen || !T.hasAppAdminScreen(key)) {
       closeAppMarket();
-      box.innerHTML = itCard('chart', '지역분석', itEmpty(S.authReady ? '로그인하면 실거래 분석을 볼 수 있습니다.' : '불러오는 중입니다…'), true);
+      box.innerHTML = itCard('chart', label, itEmpty(!CLOUD.on ? (S.authReady ? '로그인하면 볼 수 있습니다.' : '불러오는 중입니다…') : '준비 중인 화면입니다.'), true);
       return;
     }
-    if (marketUnmount && box.querySelector('.app-market')) return;
+    if (marketUnmount && box.querySelector(`.app-market[data-k="${key}"]`)) return;
     closeAppMarket();
-    box.innerHTML = '<div class="app-market" id="appMarketMount"></div>';
-    marketUnmount = CLOUD.T.mountAppRegion($('appMarketMount'));
+    box.innerHTML = `<div class="app-market" data-k="${key}" id="appMarketMount"></div>`;
+    marketUnmount = T.mountAppAdmin($('appMarketMount'), key);
   }
   function renderTrip() {
     const box = $('tripContent');
@@ -3500,11 +3512,11 @@ html, body { overflow-x: clip; }
     S.route = route; S.pop = ''; S.menu = null;
     if (route === 'item') { S.itemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
     render(); window.scrollTo(0, 0);
-    try { const h = route === 'register' ? '#/register' : route === 'trip' ? '#/trip' : route === 'market' ? '#/market' : route === 'mypage' ? '#/mypage' : route === 'item' ? itemHash(id, S.itemTab) : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
+    try { const h = route === 'register' ? '#/register' : route === 'trip' ? '#/trip' : route === 'market' ? '#/market' : route === 'bidrate' ? '#/bidrate' : route === 'mypage' ? '#/mypage' : route === 'item' ? itemHash(id, S.itemTab) : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
   }
   window.addEventListener('popstate', () => {
     const m = location.hash.match(/^#\/item\/([\w-]+)(?:\/([\w-]+))?/);
-    const r = /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/market/.test(location.hash) ? 'market' : /^#\/mypage/.test(location.hash) ? 'mypage' : m ? 'item' : 'list';
+    const r = /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/market/.test(location.hash) ? 'market' : /^#\/bidrate/.test(location.hash) ? 'bidrate' : /^#\/mypage/.test(location.hash) ? 'mypage' : m ? 'item' : 'list';
     const tab = m && ITEM_TABS.includes(m[2]) ? m[2] : 'basic';
     if (r !== S.route || (m && (m[1] !== S.itemId || tab !== S.itemTab))) {
       S.route = r; if (m) { S.itemId = m[1]; S.itemTab = tab; } S.pop = ''; S.menu = null; render();
@@ -3810,7 +3822,14 @@ html, body { overflow-x: clip; }
         break;
       } catch (err) { console.error('[직접입력] 등록 실패', err); toast(`적지 못했습니다 — ${(err && err.message) || '까닭을 알 수 없습니다'}`, 'info'); break; }
       case 'go-trip': go('trip'); break;
-      case 'go-market': go('market'); break;
+      /* 펼침 메뉴의 항목(data-name)을 누르면 그 하위 탭으로 바로 연다 */
+      case 'go-market': case 'go-bidrate': {
+        const route = act === 'go-market' ? 'market' : 'bidrate';
+        const hit = (SUBTABS[route].find((x) => x[2] === t.dataset.name) || [])[0];
+        if (hit) { if (route === 'market') S.marketTab = hit; else S.bidrateTab = hit; }
+        if (S.route === route) { S.menu = null; renderSubTabs(); renderMarket(); } else go(route);
+        break;
+      }
       case 'go-mypage': S.menu = null; go('mypage'); break;
       case 'area-view': S.areaView = v; renderItem(); break;
       case 'nearby-view': S.nearbyView = v; if (v === 'kakao' && !CLOUD.nearby.has(S.itemId)) fetchNearbyFor(S.itemId); else renderItem(); break;
@@ -3923,6 +3942,7 @@ html, body { overflow-x: clip; }
       }
       case 'subtab': {
         if (S.route === 'market') { S.marketTab = v; renderSubTabs(); renderMarket(); break; }
+        if (S.route === 'bidrate') { S.bidrateTab = v; renderSubTabs(); renderMarket(); break; }
         S.itemTab = v;
         /* 주소에도 남긴다 — 새로고침하면 이 탭으로 다시 연다 (뒤로가기 기록은 늘리지 않는다) */
         try { const h = itemHash(S.itemId, v); if (location.hash !== h) history.replaceState(null, '', h); } catch (e) { /* 주소 표시만 못 바꾼다 */ }
