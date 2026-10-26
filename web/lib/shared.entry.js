@@ -126,6 +126,24 @@ const dropMap = (el) => {
  *  onDetail(id, tab) — 줄의 '물건상세 보기'(🔍)가 앱 라우터로 /auctions/{id} 를 부른다.
  *  웹에 띄운 앱은 /field-trip 하나만 아는 메모리 라우터라 그대로 두면 빈 화면으로 떨어진다 —
  *  그 길을 막고 웹에게 넘겨 웹 물건상세를 열게 한다. */
+// === 시장분석 › 지역분석 — 분석 도구의 '실거래 분석'(AdminRegionDemandPage)을 그대로 띄운다 ===
+// 계산·저장은 분석 도구와 똑같다. 그 화면의 '뒤로'(분석 도구 첫 화면으로)는 웹에서 CSS 로 감춘다.
+import AdminRegionDemandPage from '../../src/pages/AdminRegionDemandPage.vue';
+export const mountAppRegion = (el) => {
+  const Empty = { render: () => null };
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/admin/region-demand', component: AdminRegionDemandPage }, { path: '/:rest(.*)*', component: Empty }],
+  });
+  const app = createApp({ render: () => h(RouterView) });
+  app.use(getActivePinia());
+  app.use(router);
+  app.provide('webEmbed', true);
+  void router.push('/admin/region-demand');
+  app.mount(el);
+  return () => app.unmount();
+};
+
 export const mountAppFieldTrip = (el, onDetail) => {
   const Empty = { render: () => null };
   const router = createRouter({

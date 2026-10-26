@@ -266,6 +266,8 @@ button { cursor: pointer; }
 .app-detail .adp-card > .adp-profit-sticky { margin: 0 calc(-1 * var(--card-pad-x)) !important; padding: 0 var(--card-pad-x) !important; }
 .app-detail .adp-profit-head h2 .adp-profit-ico { width: 15px; height: 15px; }
 .app-detail .adp-profit-sticky > :not(.adp-card-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
+/* 시장분석 — 분석 도구 화면의 '뒤로'(분석 도구 첫 화면으로)는 웹에서 감춘다 */
+.app-market .adm-back { display: none !important; }
 /* 펼친 고르기 목록(면적 · 룸수 · 케이스 · 상담 상호 …)은 위 고정 줄(머리띠 · 하위 탭 · 사건 요약, z 30)보다 아래 층에 */
 .app-detail :is(.adp-rcase-list, .adp-rcase-backdrop, .adp-agency-options, .adp-agency-backdrop, .adp-multi-panel) { z-index: 25 !important; }
 /* 앱 색 이름(tokens.css) — 웹에는 앱 전역 CSS 가 없어 이 이름을 쓰는 선·글자가 비어 보였다
@@ -1739,7 +1741,7 @@ html, body { overflow-x: clip; }
       <a class="g-menu m0" href="#/register" data-act="go-register" id="navReg">+물건등록</a>
       <a class="g-menu m1" href="#/" data-act="go-list" id="navWatch">선정목록</a>
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
-      <a class="g-menu m3" href="#" data-act="soon" data-name="시장분석">시장분석</a>
+      <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
       <a class="g-menu m4" href="#" data-act="soon" data-name="커뮤니티">커뮤니티</a>
       <a class="g-menu m5" href="#" data-act="soon" data-name="고객센터">고객센터</a>
       <a class="g-menu m6" href="#/mypage" data-act="go-mypage" id="navMy">마이페이지</a>
@@ -1834,6 +1836,11 @@ html, body { overflow-x: clip; }
   <div id="tripView" hidden>
     <div class="wrap crumb-slot" id="crumbSlotTrip"></div>
     <div class="wrap content trip-content" id="tripContent"></div>
+  </div>
+  <!-- 시장분석 — 하위 탭 '지역분석' 안에 분석 도구의 '실거래 분석' 화면을 그대로 띄운다 -->
+  <div id="marketView" hidden>
+    <div class="wrap crumb-slot" id="crumbSlotMarket"></div>
+    <div class="wrap content market-content" id="marketContent"></div>
   </div>
   <!-- 마이페이지 — 지금은 AI 자동 분석 설정만. 설정 방식은 물건등록에 있던 것과 같다 -->
   <div id="myView" hidden>
@@ -2001,6 +2008,7 @@ html, body { overflow-x: clip; }
   const ITEM_TABS = ['basic', 'rights', 'survey', 'field', 'verify', 'profit'];
   const itemHash = (id, tab) => `#/item/${id}${tab && tab !== 'basic' ? `/${tab}` : ''}`;
   const S = {
+    marketTab: 'region', /* 시장분석 하위 탭 — 지금은 지역분석 하나 */
     layout: store.get('wlp.web.layout', 'card'), sort: store.get('wlp.web.sort', 'reg'),
     stage: 'all', type: '', court: '', date: '', q: '',
     pop: '', calMonth: null, pick: false, picked: new Set(), binPicked: new Set(), menu: null, modal: null,
@@ -2009,7 +2017,7 @@ html, body { overflow-x: clip; }
     /* 새로고침 직후에는 로그인 여부를 아직 모른다 — 그 사이에 '로그인하세요' 를 띄우면
        이미 로그인한 사람에게도 잠깐 깜빡인다. 알게 될 때까지는 기다리는 모양만 보인다 */
     authReady: false,
-    route: /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/mypage/.test(location.hash) ? 'mypage' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
+    route: /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/market/.test(location.hash) ? 'market' : /^#\/mypage/.test(location.hash) ? 'mypage' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
     itemId: (location.hash.match(/^#\/item\/([\w-]+)/) || [])[1] || '',
     /* 보고 있던 하위 탭도 주소에 적어 둔다 — 새로고침해도 그 자리에 그대로 선다 */
     itemTab: ITEM_TABS.includes((location.hash.match(/^#\/item\/[\w-]+\/([\w-]+)/) || [])[1]) ? location.hash.match(/^#\/item\/[\w-]+\/([\w-]+)/)[1] : 'basic',
@@ -2076,7 +2084,7 @@ html, body { overflow-x: clip; }
     ['m0', [['자동등록', 'mega-auto'], ['직접입력', 'mega-manual']]],
     ['m1', [['선정목록', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
-    ['m3', [['실거래 분석', ''], ['가격정보', ''], ['매매수요', '']]],
+    ['m3', [['지역분석', 'go-market'], ['가격정보', ''], ['매매수요', '']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
     ['m5', [['자주 묻는 질문', ''], ['1:1 문의', ''], ['이용안내', '']]],
     ['m6', [['내 정보', 'go-mypage'], ['포인트', ''], ['결제관리', ''], ['알림설정', '']]],
@@ -2085,6 +2093,7 @@ html, body { overflow-x: clip; }
   const megaHere = () => {
     if (S.route === 'register') return R.mode === 'manual' ? 'mega-manual' : 'mega-auto';
     if (S.route === 'trip') return 'go-trip';
+    if (S.route === 'market') return 'go-market';
     if (S.route === 'mypage') return 'go-mypage';
     if (S.route === 'list') return 'go-list';
     return '';
@@ -2094,6 +2103,7 @@ html, body { overflow-x: clip; }
   function renderHeader() {
     $('navReg').classList.toggle('on', S.route === 'register');
     { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
+    { const t = $('navMarket'); if (t) { t.classList.toggle('on', S.route === 'market'); if (S.route === 'market') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     { const t = $('navMy'); if (t) { t.classList.toggle('on', S.route === 'mypage'); if (S.route === 'mypage') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     const nav = $('navWatch'); nav.classList.toggle('on', S.route === 'list'); if (S.route === 'list') nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
     $('gLoginTxt').textContent = S.loggedIn ? `${S.userName || '회원'}님` : '로그인';
@@ -2979,28 +2989,30 @@ html, body { overflow-x: clip; }
      예) register: [['drive', 'cloud', '구글드라이브 연동'], ['ai', 'key', 'AI 자동 분석']]  (선정물건등록에서 쓰다가 상자 둘 배치로 바꿨다) */
   const SUBTABS = {
     /* 물건상세 — 앱 AuctionDetailPage 의 TABS 다섯 칸에서 앱 '손품+현장'을 손품조사 · 임장조사 둘로 나눴다(웹만) */
+    market: [['region', '', '지역분석']],
     item: [['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
   };
   function renderSubTabs() {
     const tabs = SUBTABS[S.route]; const bar = $('subTabs');
     bar.hidden = !tabs; document.body.classList.toggle('has-subtabs', !!tabs);
-    const cur = S.itemTab;
+    const cur = S.route === 'market' ? S.marketTab : S.itemTab;
     $('subTabsIn').innerHTML = tabs ? tabs.map(([k, ic, t]) => `<button type="button" class="subtab ${cur === k ? 'on' : ''}" role="tab" aria-selected="${cur === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
     if (tabs) syncStickTop();
   }
   function render() {
     renderHeader();
-    const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip'; const my = S.route === 'mypage';
-    $('listView').hidden = reg || item || trip || my; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('fab').hidden = reg || item || trip || my;
+    const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip'; const my = S.route === 'mypage'; const market = S.route === 'market';
+    $('listView').hidden = reg || item || trip || my || market; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('marketView').hidden = !market; $('fab').hidden = reg || item || trip || my || market;
     const cur = item ? byId(S.itemId) : null;
-    $('crumbCur').textContent = reg ? '+물건등록' : trip ? '임장경로' : my ? '마이페이지' : item ? `선정목록 › ${cur ? cur.caseNo : '물건상세'}` : '선정목록';
-    { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
+    $('crumbCur').textContent = reg ? '+물건등록' : trip ? '임장경로' : market ? '시장분석 › 지역분석' : my ? '마이페이지' : item ? `선정목록 › ${cur ? cur.caseNo : '물건상세'}` : '선정목록';
+    { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
-    document.title = reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정목록';
+    document.title = reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? '마이턴옥션 시장분석' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정목록';
     if (!item) closeAppDetail();
     if (!trip) closeAppTrip();
+    if (!market) closeAppMarket();
     document.body.classList.toggle('trip-full', trip);
-    if (reg) renderRegister(); else if (trip) renderTrip(); else if (my) renderMy(); else if (item) renderItem(); else { renderToolbar(); renderContent(); }
+    if (reg) renderRegister(); else if (trip) renderTrip(); else if (market) renderMarket(); else if (my) renderMy(); else if (item) renderItem(); else { renderToolbar(); renderContent(); }
     renderFloat();
   }
   /* ===== 물건상세 — 앱 AuctionDetailPage 를 따른다 =====
@@ -3376,6 +3388,21 @@ html, body { overflow-x: clip; }
     if (tripUnmount) { try { tripUnmount(); } catch (e) { /* 그만 */ } tripUnmount = null; }
     const box = $('tripContent'); if (box && box.querySelector('#trip-map')) box.innerHTML = '';
   };
+  /* ---------- 시장분석 — 지역분석 탭: 분석 도구의 '실거래 분석' 을 그대로 띄운다 ---------- */
+  let marketUnmount = null;
+  const closeAppMarket = () => { if (marketUnmount) { try { marketUnmount(); } catch (e) { /* 그만 */ } marketUnmount = null; } };
+  function renderMarket() {
+    const box = $('marketContent');
+    if (!CLOUD.on) {
+      closeAppMarket();
+      box.innerHTML = itCard('chart', '지역분석', itEmpty(S.authReady ? '로그인하면 실거래 분석을 볼 수 있습니다.' : '불러오는 중입니다…'), true);
+      return;
+    }
+    if (marketUnmount && box.querySelector('.app-market')) return;
+    closeAppMarket();
+    box.innerHTML = '<div class="app-market" id="appMarketMount"></div>';
+    marketUnmount = CLOUD.T.mountAppRegion($('appMarketMount'));
+  }
   function renderTrip() {
     const box = $('tripContent');
     if (!CLOUD.on) {
@@ -3469,11 +3496,11 @@ html, body { overflow-x: clip; }
     S.route = route; S.pop = ''; S.menu = null;
     if (route === 'item') { S.itemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
     render(); window.scrollTo(0, 0);
-    try { const h = route === 'register' ? '#/register' : route === 'trip' ? '#/trip' : route === 'mypage' ? '#/mypage' : route === 'item' ? itemHash(id, S.itemTab) : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
+    try { const h = route === 'register' ? '#/register' : route === 'trip' ? '#/trip' : route === 'market' ? '#/market' : route === 'mypage' ? '#/mypage' : route === 'item' ? itemHash(id, S.itemTab) : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
   }
   window.addEventListener('popstate', () => {
     const m = location.hash.match(/^#\/item\/([\w-]+)(?:\/([\w-]+))?/);
-    const r = /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/mypage/.test(location.hash) ? 'mypage' : m ? 'item' : 'list';
+    const r = /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/market/.test(location.hash) ? 'market' : /^#\/mypage/.test(location.hash) ? 'mypage' : m ? 'item' : 'list';
     const tab = m && ITEM_TABS.includes(m[2]) ? m[2] : 'basic';
     if (r !== S.route || (m && (m[1] !== S.itemId || tab !== S.itemTab))) {
       S.route = r; if (m) { S.itemId = m[1]; S.itemTab = tab; } S.pop = ''; S.menu = null; render();
@@ -3779,6 +3806,7 @@ html, body { overflow-x: clip; }
         break;
       } catch (err) { console.error('[직접입력] 등록 실패', err); toast(`적지 못했습니다 — ${(err && err.message) || '까닭을 알 수 없습니다'}`, 'info'); break; }
       case 'go-trip': go('trip'); break;
+      case 'go-market': go('market'); break;
       case 'go-mypage': S.menu = null; go('mypage'); break;
       case 'area-view': S.areaView = v; renderItem(); break;
       case 'nearby-view': S.nearbyView = v; if (v === 'kakao' && !CLOUD.nearby.has(S.itemId)) fetchNearbyFor(S.itemId); else renderItem(); break;
@@ -3890,6 +3918,7 @@ html, body { overflow-x: clip; }
         rerenderAi(); toast('키를 지웠습니다.', 'info'); break;
       }
       case 'subtab': {
+        if (S.route === 'market') { S.marketTab = v; renderSubTabs(); renderMarket(); break; }
         S.itemTab = v;
         /* 주소에도 남긴다 — 새로고침하면 이 탭으로 다시 연다 (뒤로가기 기록은 늘리지 않는다) */
         try { const h = itemHash(S.itemId, v); if (location.hash !== h) history.replaceState(null, '', h); } catch (e) { /* 주소 표시만 못 바꾼다 */ }
