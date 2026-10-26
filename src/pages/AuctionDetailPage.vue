@@ -10407,6 +10407,11 @@ tr.tone-take { background: #fff5f5; }
 /* 앱 — 산정표 칸 좌우 여백을 넉넉히, 구분(회색) 칸도 넓게 */
 .is-app .adp-profit-table th, .is-app .adp-profit-table td { padding-left: 9px; padding-right: 9px; }
 .is-app .adp-profit-table .adp-cat { padding-left: 8px; padding-right: 8px; min-width: 64px; word-break: keep-all; }
+/* 앱 — 머리줄(구분 · 상세 · 비중 · 금액)은 가운데, 금액 칸 오른쪽은 글자 한두 개만큼 띄운다 */
+.is-app .adp-profit-table thead th { text-align: center; }
+.is-app .adp-profit-table tr > :last-child { padding-right: 16px; }
+/* 앱 — 비고 칸 높이를 초기화 · 표 삭제 단추(28)와 같게 */
+.is-app .adp-profit-head-row .adp-profit-note { height: 28px; }
 /* 긴 공식(①+②+…)은 줄을 바꿔 표가 화면 밖으로 넘치지 않게 */
 .is-app .adp-profit-table .adp-formula { white-space: normal; word-break: break-all; }
 .adp-profit-table.alt { border-color: #d7def0; }
