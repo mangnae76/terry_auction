@@ -476,11 +476,18 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-trip .ftp-scroll {
   position: fixed !important; left: 18px !important;
   top: calc(var(--stick-top) + var(--gnb-h) + 18px) !important; bottom: 18px !important;
-  width: 520px !important; max-width: calc(100vw - 36px) !important;
+  width: 546px !important; max-width: calc(100vw - 36px) !important;
   overflow-y: auto !important; overscroll-behavior: contain; z-index: 5 !important;
   background: transparent !important; border: 0 !important; box-shadow: none !important;
-  padding: 0 0 10px !important;
+  padding: 0 !important;
+  /* 상자는 화면 밑단(아래 18px)까지 내려온다 — 목록이 짧으면 아래쪽을 빈 흰 칸으로 채우고,
+     길어지면 이 칸 안에서만 굴러간다 */
+  display: flex !important; flex-direction: column !important;
 }
+.app-trip .ftp-scroll > .ftp-fixed-top { flex: 0 0 auto; }
+.app-trip .ftp-scroll > .ftp-list { flex: 1 0 auto; }
+/* 목록을 접어 윗줄만 남으면 윗줄이 아래까지 채운다 */
+.app-trip .ftp-scroll:not(:has(> .ftp-list)) > .ftp-fixed-top { flex: 1 0 auto; }
 .app-trip .ftp-scroll > .ftp-fixed-top, .app-trip .ftp-scroll > .ftp-list {
   position: relative; z-index: 1;
   /* 출발지·도착지 검색 목록이 아래 줄에 덮이지 않게 윗줄을 한 겹 더 올린다 */
