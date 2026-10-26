@@ -497,7 +497,7 @@ const downloadCsv = () => {
         </div>
 
         <!-- 요약 -->
-        <div v-if="!(webEmbed && !dong)" class="adm-kpis">
+        <div v-if="!(webEmbed && !dong)" :class="['adm-kpis', { 'is-web': webEmbed }]">
           <div class="adm-kpi"><small>실거래가 평균</small><strong>{{ won(avgPrice) }}</strong></div>
           <div class="adm-kpi"><small>평당가 평균</small><strong>{{ won(avgUnitPrice) }}</strong></div>
           <div class="adm-kpi blue"><small>총 거래건수 <em>정상거래</em></small><strong>{{ normals.length.toLocaleString('ko-KR') }}건</strong></div>
@@ -719,6 +719,8 @@ const downloadCsv = () => {
 
 /* 요약 셋 */
 .adm-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+/* 웹 — 총 거래건수를 맨 왼쪽으로 (실거래가 평균 · 평당가 평균 순) */
+.adm-kpis.is-web .adm-kpi.blue { order: -1; }
 .adm-kpi { background: #fff; border: 1px solid #e8ecf3; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; }
 .adm-kpi small { font-size: 11.5px; font-weight: 700; color: #6b7280; display: flex; align-items: baseline; gap: 5px; }
 .adm-kpi small em { font-style: normal; font-size: 10px; color: #aeb8ca; }
