@@ -2439,11 +2439,13 @@ html, body { overflow-x: clip; }
           <input id="mnDate" type="date" aria-label="매각기일" title="매각기일">
           <input id="mnAppr" inputmode="numeric" placeholder="감정가 (원)" aria-label="감정가">
           <input id="mnMin" inputmode="numeric" placeholder="최저가 (원)" aria-label="최저가">
-          <input id="mnDep" inputmode="numeric" placeholder="보증금 (원)" aria-label="보증금">
+          <input id="mnDep" inputmode="numeric" placeholder="보증금 (최저가의 10%)" aria-label="보증금">
 
-          <p class="mn-cap">관계인 · 물건</p>
+          <p class="mn-cap">관계인</p>
           <input id="mnOwner" placeholder="소유자" aria-label="소유자">
           <input id="mnDebtor" placeholder="채무자" aria-label="채무자">
+
+          <p class="mn-cap">물건</p>
           <input id="mnBld" inputmode="decimal" placeholder="건물면적 (㎡)" aria-label="건물면적">
           <input id="mnLand" inputmode="decimal" placeholder="토지면적 (㎡)" aria-label="토지면적">
           <input id="mnYear" inputmode="numeric" placeholder="건축년도 (예: 2010)" aria-label="건축년도">
@@ -3135,6 +3137,19 @@ html, body { overflow-x: clip; }
   }
   const closeLayers = () => { S.pop = ''; S.menu = null; S.binPicked = new Set(); S.calMonth = null; };
 
+  /* 직접입력 — 최저가를 적으면 보증금을 그 10% 로 채워 둔다.
+     사람이 보증금 칸을 직접 고치면 그 뒤로는 건드리지 않는다(칸에 표시를 남겨 둔다) */
+  const depositOfMin = (n) => (n > 0 ? String(Math.round(n / 10)) : '');
+  document.addEventListener('input', (e) => {
+    const t = e.target; if (!t || !t.id) return;
+    if (t.id === 'mnDep') { t.dataset.auto = ''; return; }
+    if (t.id !== 'mnMin') return;
+    const dep = $('mnDep'); if (!dep) return;
+    if (dep.value && dep.dataset.auto !== '1') return; /* 손으로 적어 둔 값은 그대로 */
+    dep.value = depositOfMin(Number(String(t.value).replace(/[^\d]/g, '')) || 0);
+    dep.dataset.auto = '1';
+  });
+
   document.addEventListener('click', (e) => {
     const t = e.target.closest('[data-act]');
     if (S.pop && !e.target.closest(`[data-pop="${S.pop}"], .g-pop`)) { S.pop = ''; S.binPicked = new Set(); S.calMonth = null; render(); }
@@ -3284,7 +3299,7 @@ html, body { overflow-x: clip; }
           eventDate: ($('mnDate').value || '').trim(),
           appraisalValue: num('mnAppr'),
           minimumBidValue: num('mnMin'),
-          depositValue: num('mnDep'),
+          depositValue: num('mnDep') || Math.round(num('mnMin') / 10), /* 비워 두면 최저가의 10% */
           buildingAreaM2: dec('mnBld'),
           landAreaM2: dec('mnLand'),
           approvalDate: ($('mnYear').value || '').trim(),
