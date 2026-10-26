@@ -548,7 +548,7 @@ body.trip-full .foot { display: none; }
 .auto-box .rg-acts { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .auto-box .rg-acts > .rg-fav, .auto-box .rg-acts > .rg-btn { width: auto; }
 /* 두 단의 제목 칸을 같은 폭으로 — 아래 네 칸이 위 줄과 나란히 선다 */
-.auto-box .rg-row1 > .rg-title { min-width: 176px; }
+.auto-box .rg-row1 > .rg-title { min-width: 176px; margin-right: 0; }
 /* Plus 딱지 — 유료로 쓸 수 있는 자리에만 단다 */
 .plan-tag { display: inline-block; flex: 0 0 auto; border-radius: 999px; font-weight: 800; letter-spacing: -.1px; vertical-align: 1px; }
 .plan-tag.plus { padding: 1px 7px; background: #eda134; color: #fff; font-size: 12px; line-height: 1.5; }
@@ -571,8 +571,11 @@ body.trip-full .foot { display: none; }
 /* 위 고정 상자에는 이제 등록 방법 탭만 남는다 */
 .reg-duo { grid-template-columns: minmax(0, 1fr); }
 /* 조작 상자·직접입력 상자 — 둘 다 안내 상자 아래에 선다 */
-.rg-results.manual { margin-top: 12px; padding-bottom: 16px; }
-.rg-results.auto-box { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; padding-bottom: 16px; }
+.rg-results.manual { padding-bottom: 16px; }
+.rg-results.auto-box { display: flex; flex-direction: column; gap: 8px; padding-bottom: 16px; }
+/* 상자 사이는 어디서나 12px — 안내 · 알림 · 조작 · 파싱 · 직접입력 어느 차례로 와도 같게 */
+.reg-content > * + * { margin-top: 12px; }
+.reg-content > .rg-lead-box { margin-bottom: 0; }
 /* 단 사이 가름선 — 상자 좌우 여백 끝까지 긋는다 */
 .auto-box .rg-sep { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line); }
 .rg-results.manual .rg-head { margin-bottom: 10px; }
