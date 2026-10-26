@@ -422,6 +422,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .ih-stage.hot { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; }
 .ih-stage.off { border-color: #c4c9d4; background: #eef0f4; color: #6b7280; }
 .ih-stage.done { border-color: #34b37a; background: #dcf5e8; color: #157a4b; }
+/* 단계 칩은 누르면 손품조사~매도 단계 목록이 펼쳐지는 단추 (선정목록 표의 단계 단추와 같은 목록) */
+.ih-stage { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-family: inherit; }
+.ih-stage .caret { font-style: normal; font-size: 11px; opacity: .8; }
 /* 1줄: 종류 칩 · 중요도·매각구분·면적 / 2줄: 주소 복사(종류 칩 아래) · 주소 */
 .ih-prop { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px 10px; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
 .ih-line { display: flex; align-items: center; gap: 10px; min-width: 0; grid-column: 2 / 4; }
@@ -3053,7 +3056,7 @@ html, body { overflow-x: clip; }
         <span class="ih-court">${esc(it.court || DASH)} · 매각기일 <span class="num">${it.date ? `${dotDate(it.date)}${dowText(it.date)}` : DASH}</span> <em>${it.date ? ddayText(it.date) : ''}</em></span>
         <span class="ih-right">
           ${pdfId ? `<a class="ih-pdf" href="https://drive.google.com/file/d/${esc(pdfId)}/view" target="_blank" rel="noopener">${I.pdf}PDF</a>` : ''}
-          <span class="ih-stage ${hot ? 'hot' : ''} ${done ? 'done' : ''} ${off ? 'off' : ''}">${esc(stage)}</span>
+          <button type="button" class="ih-stage ${hot ? 'hot' : ''} ${done ? 'done' : ''} ${off ? 'off' : ''}" data-act="stage-menu" data-id="${it.id}" aria-haspopup="menu"${tip('단계 바꾸기')}>${esc(stage)}<i class="caret">▾</i></button>
           <button type="button" class="ibtn" data-act="archive" data-id="${it.id}" aria-label="보관함에 넣기"${tip('보관함에 넣기')}>${I.box}</button>
           <button type="button" class="ibtn del" data-act="delete" data-id="${it.id}" aria-label="휴지통으로 보내기"${tip('휴지통으로 보내기', 'right')}>${I.trash}</button>
         </span>
