@@ -4605,9 +4605,26 @@ const rightLine = (r: { kind: string; date: string; holder: string; reason?: str
  *  (건물등기 표와 같이 금액 줄에는 숫자만 선다) */
 const rightsAmountText = (amount: string) =>
   (amount || '').replace(/^\s*(보증금|채권최고액|청구금액|채권액|전세금|임차보증금)\s*[:：]?\s*/, '').trim();
-/** 내용 칸 — 가운뎃점으로 이어 온 토막을 한 줄씩 내린다 (건물등기의 '내용'과 같은 모양) */
-const rightsNoteText = (note: string) =>
-  (note || '').split(/\s*·\s*/).map((t) => t.trim()).filter(Boolean).join('\n');
+/** 날짜는 건물등기와 같은 점 표기로 — AI 는 2022-06-07 로 적어 오고 건물등기는 2022.06.07 로 적는다 */
+const dotYmd = (text: string) => (text || '').replace(/(\d{4})-(\d{1,2})-(\d{1,2})/g, '$1.$2.$3');
+/** 말소기준이라는 네 글자만 빨갛게 칠하려고 토막을 낸다 (건물등기의 같은 규칙) */
+const RIGHTS_BASE_WORD = /(말소기준권리|말소기준등기)/;
+/** 내용 칸 — 가운뎃점 토막을 한 줄씩 내리고, 줄마다 빨갛게 칠할 자리를 갈라 둔다 */
+const rightsNoteParts = (note: string) => (note || '')
+  .split(/\s*·\s*/)
+  .map((t) => dotYmd(t.trim()))
+  .filter(Boolean)
+  .map((line) => line
+    .split(RIGHTS_BASE_WORD)
+    .filter((piece) => piece !== '')
+    .map((text) => ({ text, base: text === '말소기준권리' || text === '말소기준등기' })));
+/** 상세 권리 분석 표에 그대로 뿌릴 줄 — 날짜·금액·내용을 건물등기 꼴로 다듬어 둔다 */
+const rightsRows = computed(() => (rightsAi.value?.rows ?? []).map((r) => ({
+  ...r,
+  dateText: dotYmd(r.date),
+  amountText: rightsAmountText(r.amount),
+  noteLines: rightsNoteParts(r.note),
+})));
 
 /** AI 권리분석 진단 — 말소기준권리가 어떤 권리인지, 떠안는 권리와 없어지는 권리 */
 const rightsDiag = computed(() => {
@@ -7040,7 +7057,7 @@ const goBack = () => router.back();
               </div>
             </div>
             <!-- 상세 권리 분석 — 등기부 한 줄씩. 인수는 붉게 세운다 -->
-            <template v-if="rightsAi?.rows?.length">
+            <template v-if="rightsRows.length">
               <p class="adp-sub-note adp-rows-cap">상세 권리 분석</p>
               <table class="adp-table adp-rights-table">
                 <colgroup>
@@ -7048,12 +7065,18 @@ const goBack = () => router.back();
                 </colgroup>
                 <thead><tr><th>순위</th><th>권리종류 · 내용</th><th>권리자</th><th>인수/소멸</th></tr></thead>
                 <tbody>
-                  <tr v-for="(r, i) in rightsAi.rows" :key="i" :class="r.status === '인수' ? 'tone-take' : ''">
-                    <td class="pre-line">{{ r.rank || '-' }}<br><small>{{ r.date }}</small></td>
+                  <tr v-for="(r, i) in rightsRows" :key="i" :class="r.status === '인수' ? 'tone-take' : ''">
+                    <td class="pre-line">{{ r.rank || '-' }}<br><small>{{ r.dateText }}</small></td>
                     <td>
                       <strong>{{ r.kind }}</strong>
-                      <span v-if="r.amount" class="b">{{ rightsAmountText(r.amount) }}</span>
-                      <span v-if="r.note" class="adp-desc adp-rows-note">{{ rightsNoteText(r.note) }}</span>
+                      <span v-if="r.amountText" class="b">{{ r.amountText }}</span>
+                      <span v-if="r.noteLines.length" class="adp-desc adp-rows-note">
+                        <template v-for="(line, li) in r.noteLines" :key="li"><span
+                          v-for="(pt, pi) in line"
+                          :key="pi"
+                          :class="{ 'adp-reg-base': pt.base }"
+                        >{{ pt.text }}</span><br v-if="li < r.noteLines.length - 1" /></template>
+                      </span>
                     </td>
                     <td>{{ r.holder }}</td>
                     <td><b v-if="r.status === '인수'" class="adp-reg-take">인수</b><template v-else>소멸</template></td>
@@ -9500,7 +9523,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-reg-take-note { color: #6b7280; }
 .adp-reg-take-note b { color: #c62828; }
 /* 말소기준등기 — 이 줄을 기준으로 인수와 소멸이 갈린다. 한눈에 찾게 새빨갛게 */
-.adp-registry-table .adp-reg-base { color: #ff0000; font-weight: 800; }
+.adp-registry-table .adp-reg-base, .adp-rights-table .adp-reg-base { color: #ff0000; font-weight: 800; }
 .adp-table .tone-blue td { background: #eff6ff; }
 .adp-table .b { display: block; font-size: 13px; font-weight: 800; color: #111827; }
 .adp-table .pre-line { white-space: pre-line; }
