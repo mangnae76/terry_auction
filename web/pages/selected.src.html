@@ -679,6 +679,8 @@ body.trip-full .foot { display: none; }
 .my-set { max-width: 760px; }
 .my-set .rg-head { margin-bottom: 6px; }
 .my-lead { margin: 0 0 12px; font-size: 13px; font-weight: 500; color: var(--text-2); line-height: 1.6; }
+.ai-body.flat { padding: 0; }
+.my-content > * + * { margin-top: 12px; }
 .my-set .rg-ai { display: flex; align-items: center; gap: 8px; }
 .key-state { font-size: 12.5px; font-weight: 700; color: var(--faint); white-space: nowrap; }
 .key-state.ok { color: #16a34a; }
@@ -1638,6 +1640,7 @@ html, body { overflow-x: clip; }
     layout: store.get('wlp.web.layout', 'card'), sort: store.get('wlp.web.sort', 'reg'),
     stage: 'all', type: '', court: '', date: '', q: '',
     pop: '', calMonth: null, pick: false, picked: new Set(), binPicked: new Set(), menu: null, modal: null,
+    aiPane: { draft: undefined, show: false, msg: '', ok: false, checking: false }, /* 마이페이지의 키 칸 — 창과 같은 모양이되 늘 펼쳐져 있다 */
     loggedIn: false, userName: '', denied: false, /* 로그인 상태는 앱 authStore 가 알려 준다 */
     route: /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/mypage/.test(location.hash) ? 'mypage' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
     itemId: (location.hash.match(/^#\/item\/([\w-]+)/) || [])[1] || '', itemTab: 'basic',
@@ -2469,6 +2472,39 @@ html, body { overflow-x: clip; }
   const SKIP_KEY = 'wlp.web.skip';
   const skipsToday = (k) => k && (store.get(SKIP_KEY, {})[k] === TODAY_YMD);
   function askConfirm(box) { if (skipsToday(box.skipKey)) { box.run(); return; } S.modal = { kind: 'confirm', ...box }; renderModal(); }
+  /* 키 칸 속내용 — 창(팝업)과 마이페이지가 같은 것을 쓴다 */
+  const aiKeyBody = (m) => `
+          <p class="ai-lead">키를 입력해 주세요.</p>
+          <!-- 키 칸 — 오른쪽 끝에 눈(보기/가리기) · 붙여넣기 -->
+          <div class="key-field">
+            <input id="aiKeyIn" type="${m.show ? 'text' : 'password'}" readonly autocomplete="new-password" name="gemini-api-key" data-lpignore="true" data-1p-ignore data-form-type="other" spellcheck="false" placeholder="구글 AI 스튜디오에서 받은 API 키 넣기" aria-label="Gemini API 키" value="${esc(m.draft ?? R.aiKey)}">
+            <button type="button" class="kf-btn" data-act="ai-eye" aria-label="${m.show ? '키 가리기' : '키 보기'}" data-tip="${m.show ? '키 가리기' : '키 보기'}" data-tip-pos="below">${m.show ? I.eyeOff : I.eye}</button>
+            <button type="button" class="kf-btn" data-act="ai-paste" aria-label="붙여넣기" data-tip="붙여넣기" data-tip-pos="below">${I.paste}</button>
+          </div>
+          ${m.msg ? `<p class="ai-msg ${m.ok ? 'ok' : ''}">${esc(m.msg)}</p>` : ''}
+          <!-- 받는 법 — 처음 하는 사람이 자리를 떠나지 않고 따라올 수 있게 차례로 -->
+          <div class="ai-steps">
+            <h3>${I.bulb}API 키 발급 방법</h3>
+            <ol>
+              <li><a class="key-link plain" href="${GEMINI_KEY_URL}" target="_blank" rel="noopener">Google AI Studio</a>에 접속하여 로그인합니다.</li>
+              <li>‘Create API key’ 버튼을 클릭합니다.</li>
+              <li>생성된 키를 복사하여 위 입력란에 붙여넣고 저장합니다.</li>
+              <li>키는 <b>내 계정에만</b> 저장됩니다.</li>
+            </ol>
+            <p class="ai-tip">${I.alert}Gemini 2.5 Flash 모델은 무료 티어로도 충분히 사용 가능합니다.</p>
+          </div>
+          <div class="ai-btns">${R.aiKey ? '<button type="button" class="btn" data-act="ai-del" style="color:#d14343;border-color:#f0d2d2">키지우기</button>' : ''}<button type="button" class="btn primary" data-act="ai-save" ${m.checking ? 'disabled' : ''}>${m.checking ? '확인 중…' : '확인 후 저장'}</button></div>`;
+  /* 브라우저가 저장해 둔 비밀번호를 채워 넣었으면 되돌리고, 그 뒤에 쓸 수 있게 푼다.
+     창으로 띄운 때만 커서를 옮긴다 — 마이페이지에서는 화면이 멋대로 뛰지 않게 둔다 */
+  const aiUnlock = (m, focus) => {
+    const want = String(m.draft ?? R.aiKey);
+    const unlock = () => { const el = $('aiKeyIn'); if (!el) return; if (el.value !== want) el.value = want; el.removeAttribute('readonly'); };
+    setTimeout(() => { unlock(); if (focus) { const el = $('aiKeyIn'); if (el) el.focus(); } }, 20);
+    setTimeout(unlock, 300); setTimeout(unlock, 1200);
+  };
+  /* 키 칸을 어디에 그리고 있나 — 창이 떠 있으면 창, 아니면 마이페이지의 상자 */
+  const aiCtx = () => ((S.modal && S.modal.kind === 'ai') ? S.modal : S.aiPane);
+  const aiRedraw = () => { if (S.modal && S.modal.kind === 'ai') renderModal(); else rerenderAi(); };
   function renderModal() {
     const root = $('modalRoot'); const m = S.modal;
     if (!m) { root.innerHTML = ''; return; }
@@ -2497,33 +2533,8 @@ html, body { overflow-x: clip; }
     if (m.kind === 'ai') {
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog fav-dlg" role="dialog" aria-modal="true" aria-labelledby="aiT" style="width:min(640px,100%)">
         <div class="reg-head"><h2 id="aiT">제미나이 API 키 등록</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
-        <div class="ai-body">
-          <p class="ai-lead">키를 입력해 주세요.</p>
-          <!-- 키 칸 — 오른쪽 끝에 눈(보기/가리기) · 붙여넣기 -->
-          <div class="key-field">
-            <input id="aiKeyIn" type="${m.show ? 'text' : 'password'}" readonly autocomplete="new-password" name="gemini-api-key" data-lpignore="true" data-1p-ignore data-form-type="other" spellcheck="false" placeholder="구글 AI 스튜디오에서 받은 API 키 넣기" aria-label="Gemini API 키" value="${esc(m.draft ?? R.aiKey)}">
-            <button type="button" class="kf-btn" data-act="ai-eye" aria-label="${m.show ? '키 가리기' : '키 보기'}" data-tip="${m.show ? '키 가리기' : '키 보기'}" data-tip-pos="below">${m.show ? I.eyeOff : I.eye}</button>
-            <button type="button" class="kf-btn" data-act="ai-paste" aria-label="붙여넣기" data-tip="붙여넣기" data-tip-pos="below">${I.paste}</button>
-          </div>
-          ${m.msg ? `<p class="ai-msg ${m.ok ? 'ok' : ''}">${esc(m.msg)}</p>` : ''}
-          <!-- 받는 법 — 처음 하는 사람이 창을 떠나지 않고 따라올 수 있게 차례로 -->
-          <div class="ai-steps">
-            <h3>${I.bulb}API 키 발급 방법</h3>
-            <ol>
-              <li><a class="key-link plain" href="${GEMINI_KEY_URL}" target="_blank" rel="noopener">Google AI Studio</a>에 접속하여 로그인합니다.</li>
-              <li>‘Create API key’ 버튼을 클릭합니다.</li>
-              <li>생성된 키를 복사하여 위 입력란에 붙여넣고 저장합니다.</li>
-              <li>키는 <b>내 계정에만</b> 저장됩니다.</li>
-            </ol>
-            <p class="ai-tip">${I.alert}Gemini 2.5 Flash 모델은 무료 티어로도 충분히 사용 가능합니다.</p>
-          </div>
-          <div class="ai-btns">${R.aiKey ? '<button type="button" class="btn" data-act="ai-del" style="color:#d14343;border-color:#f0d2d2">키지우기</button>' : ''}<button type="button" class="btn primary" data-act="ai-save" ${m.checking ? 'disabled' : ''}>${m.checking ? '확인 중…' : '확인 후 저장'}</button></div>
-        </div></div></div>`;
-      /* 자동채움이 끼어들었으면 되돌리고, 그 뒤에 쓸 수 있게 푼다 */
-      const want = String(m.draft ?? R.aiKey);
-      const unlock = () => { const el = $('aiKeyIn'); if (!el) return; if (el.value !== want) el.value = want; el.removeAttribute('readonly'); };
-      setTimeout(() => { unlock(); const el = $('aiKeyIn'); if (el) el.focus(); }, 20);
-      setTimeout(unlock, 300); setTimeout(unlock, 1200);
+        <div class="ai-body">${aiKeyBody(m)}</div></div></div>`;
+      aiUnlock(m, true);
       return;
     }
     if (m.kind === 'applogin') {
@@ -3013,18 +3024,24 @@ html, body { overflow-x: clip; }
   }
   /* 마이페이지 — 지금은 AI 자동 분석 설정 한 칸. 조작부는 자동등록 상자의 것과 같다 */
   function renderMy() {
+    const m = S.aiPane;
     $('myContent').innerHTML = `
       <section class="rg-results my-set">
         <div class="rg-head">
-          <h2>${I.key}AI 자동 분석</h2>
+          <h2>${I.key}AI 자동 분석 설정</h2>
+          <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" style="margin-left:auto" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
         </div>
         <p class="my-lead">자동 등록, 권리 분석, 기타 분석 기능을 사용하려면 제미나이 API 키가 필요합니다.</p>
         <div class="rg-row1 rg-ai">
-          <span class="ai-setup-text">제미나이 API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.${R.aiKey ? '' : ' 키를 입력해 주세요.'}</span>
-          <button type="button" class="ai-key" style="margin-left:auto" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
-          <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
+          <span class="ai-setup-text">제미나이 API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.${R.aiKey ? '' : ' 아래에서 키를 입력해 주세요.'}</span>
         </div>
+      </section>
+      <!-- 키 칸 — 창으로 띄우지 않고 여기 펼쳐 둔다 (창과 같은 내용) -->
+      <section class="rg-results my-set">
+        <div class="rg-head"><h2>${I.key}제미나이 API 키 등록</h2></div>
+        <div class="ai-body flat">${aiKeyBody(m)}</div>
       </section>`;
+    aiUnlock(m, false);
   }
   /* AI 설정은 두 자리(자동등록 · 마이페이지)에서 보인다 — 바뀌면 지금 보는 쪽만 다시 그린다 */
   const rerenderAi = () => { if (S.route === 'mypage') renderMy(); else if (S.route === 'register') renderRegister(); };
@@ -3393,43 +3410,51 @@ html, body { overflow-x: clip; }
       case 'drive-perms': openDrivePerms(); break;
       case 'scan': S.pop = ''; if (needLogin('폴더스캔')) break; doScan(); break;
       case 'pdf-pick': if (needLogin('PDF등록')) break; $('pdfInput').click(); break;
-      case 'ai-toggle': if (!R.aiKey) { S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; if (CLOUD.T) CLOUD.T.setGeminiOn((CLOUD.auth && CLOUD.auth.uid) || '', R.aiOn).catch(() => {}); rerenderAi(); toast(R.aiOn ? 'AI 자동 분석을 켰습니다.' : 'AI 자동 분석을 껐습니다.', 'info'); break;
+      case 'ai-toggle': if (!R.aiKey) { if (S.route === 'mypage') { toast('먼저 아래에서 제미나이 API 키를 입력해 주세요.', 'info'); const el = $('aiKeyIn'); if (el) { el.removeAttribute('readonly'); el.focus(); el.scrollIntoView({ block: 'center' }); } break; } S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; if (CLOUD.T) CLOUD.T.setGeminiOn((CLOUD.auth && CLOUD.auth.uid) || '', R.aiOn).catch(() => {}); rerenderAi(); toast(R.aiOn ? 'AI 자동 분석을 켰습니다.' : 'AI 자동 분석을 껐습니다.', 'info'); break;
       case 'ai-key': S.modal = { kind: 'ai' }; renderModal(); break;
       /* 키 칸의 눈 — 적던 글자를 잡아 두고 보기/가리기만 바꾼다 */
-      case 'ai-eye': { const m = S.modal; const el = $('aiKeyIn'); if (!m || !el) break; m.draft = el.value; m.show = !m.show; renderModal(); setTimeout(() => { const x = $('aiKeyIn'); if (x) { x.removeAttribute('readonly'); x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 30); break; }
+      case 'ai-eye': { const m = aiCtx(); const el = $('aiKeyIn'); if (!m || !el) break; m.draft = el.value; m.show = !m.show; aiRedraw(); setTimeout(() => { const x = $('aiKeyIn'); if (x) { x.removeAttribute('readonly'); x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 30); break; }
       /* 붙여넣기 — 복사해 둔 글을 칸에 넣는다. 브라우저가 막으면 Ctrl+V 로 안내한다 */
       case 'ai-paste': {
-        const m = S.modal;
+        const m = aiCtx();
         (async () => {
           let txt = '';
           try { txt = navigator.clipboard && navigator.clipboard.readText ? await navigator.clipboard.readText() : ''; } catch (err) { txt = ''; }
-          if (S.modal !== m) return;
+          if (aiCtx() !== m) return;
           txt = String(txt || '').trim();
           if (!txt) { toast('붙여 넣을 내용을 읽지 못했습니다 — 칸을 누르고 Ctrl+V(⌘V)로 붙여 넣어 주세요.', 'info'); const el = $('aiKeyIn'); if (el) { el.removeAttribute('readonly'); el.focus(); } return; }
-          m.draft = txt; m.msg = ''; renderModal();
+          m.draft = txt; m.msg = ''; aiRedraw();
         })();
         break;
       }
       case 'ai-save': {
+        const m = aiCtx(); if (!m) break;
         const key = ($('aiKeyIn').value || '').trim();
-        if (!key) { S.modal.msg = '키를 넣어 주세요'; S.modal.ok = false; renderModal(); break; }
+        if (!key) { m.msg = '키를 넣어 주세요'; m.ok = false; aiRedraw(); break; }
         /* 앱과 같다 — 모델 목록을 한 번 불러 키가 살아 있는지 본다(요금 없음). 되면 내 계정에 적고 켠다 */
-        const m = S.modal; if (m.checking) break;
-        m.draft = key; m.checking = true; m.msg = ''; renderModal();
+        if (m.checking) break;
+        m.draft = key; m.checking = true; m.msg = ''; aiRedraw();
         (async () => {
           let T = null; try { T = await loadParser(); } catch (e) { T = null; }
           const r = T ? await T.testGeminiKey(key) : { ok: false, message: 'AI 도구를 불러오지 못했습니다 — 새로고침 뒤 다시 해 주세요' };
-          if (S.modal !== m) return; /* 확인하는 사이 창을 닫았다 */
+          if (aiCtx() !== m) return; /* 확인하는 사이 자리를 옮겼다 */
           m.checking = false; m.ok = r.ok; m.msg = r.message;
-          if (!r.ok) { renderModal(); return; }
-          try { await T.setGeminiKey((CLOUD.auth && CLOUD.auth.isLoggedIn && CLOUD.auth.uid) || '', key); } catch (err) { m.ok = false; m.msg = (err && err.message) || '키를 저장하지 못했습니다'; renderModal(); return; }
+          if (!r.ok) { aiRedraw(); return; }
+          try { await T.setGeminiKey((CLOUD.auth && CLOUD.auth.isLoggedIn && CLOUD.auth.uid) || '', key); } catch (err) { m.ok = false; m.msg = (err && err.message) || '키를 저장하지 못했습니다'; aiRedraw(); return; }
           R.aiKey = key; R.aiOn = true;
-          S.modal = null; renderModal(); rerenderAi(); toast('키를 확인했습니다. AI 자동 분석을 켰습니다.');
+          m.draft = undefined; m.msg = ''; m.ok = false;
+          if (S.modal && S.modal.kind === 'ai') { S.modal = null; renderModal(); }
+          rerenderAi(); toast('키를 확인했습니다. AI 자동 분석을 켰습니다.');
         })();
         break;
       }
-      case 'ai-del': if (CLOUD.T) CLOUD.T.clearGeminiKey((CLOUD.auth && CLOUD.auth.uid) || '').catch(() => {});
-        R.aiKey = ''; R.aiOn = false; S.modal = null; renderModal(); rerenderAi(); toast('키를 지웠습니다.', 'info'); break;
+      case 'ai-del': {
+        if (CLOUD.T) CLOUD.T.clearGeminiKey((CLOUD.auth && CLOUD.auth.uid) || '').catch(() => {});
+        R.aiKey = ''; R.aiOn = false;
+        const m = aiCtx(); if (m) { m.draft = undefined; m.msg = ''; m.ok = false; m.show = false; }
+        if (S.modal && S.modal.kind === 'ai') { S.modal = null; renderModal(); }
+        rerenderAi(); toast('키를 지웠습니다.', 'info'); break;
+      }
       case 'subtab': S.itemTab = v; renderSubTabs(); renderItem(); window.scrollTo(0, 0); break;
       /* 등록 방법 탭 — 자동 등록(Plus·AI 파싱) · 직접 입력(손으로 적기) */
       case 'reg-mode': {
