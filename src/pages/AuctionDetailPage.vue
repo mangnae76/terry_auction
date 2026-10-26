@@ -9913,7 +9913,7 @@ const goBack = () => router.back();
 .adp-ai-missing { font-weight: 400; }
 .adp-ai-start.done.adp-ai-head:hover { background: #8b93a1; }
 /* 웹 카드 머리 오른쪽 — 머리 높이에 맞춰 작게 */
-.adp-ai-head { margin-left: auto; width: auto; height: 34px; padding: 0 16px; font-size: 13px; box-shadow: none; }
+.adp-ai-head { margin-left: auto; width: auto; height: 34px; padding: 0 16px; font-size: 14px; box-shadow: none; }
 .adp-ai-again {
   border: 1px solid #c7d7f7; background: #eef3fd; color: #2a5fbf; transition: background 0.15s;
 }
