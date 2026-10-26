@@ -7,7 +7,7 @@ import L from 'leaflet';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { saveFieldTripPlan } from '../services/auctionRepository';
-import { buildOptimizedRoute, parseAddressLines, reverseGeocode, type GeoPoint } from '../services/routeOptimizer';
+import { buildOptimizedRoute, parseAddressLines, reverseGeocode, straightDistanceKm, type GeoPoint } from '../services/routeOptimizer';
 import { fetchRouteForPath, type RouteLeg, type RouteMode } from '../services/roadRouting';
 import { apiPath } from '../services/apiBase';
 import { useAuctionStore } from '../stores/auctionStore';
@@ -778,6 +778,30 @@ const makeArrowIcon = (angleDeg: number) =>
     iconAnchor: [7, 7],
   });
 
+/** 번호 말풍선에 적을 글 — 좌표 대신 '앞 지점에서 얼마나 · 출발부터 얼마나'.
+    도로 경로를 받아 두었으면 그 값을, 아직 없으면 직선거리와 평균속도로 어림한다 */
+const legSummary = (idx: number): string => {
+  if (idx <= 0) return '출발 지점';
+  const km = (v: number) => (v >= 1 ? `${v.toFixed(1)}km` : `${Math.round(v * 1000)}m`);
+  const min = (v: number) => `${Math.max(1, Math.round(v))}분`;
+  let legKm = 0; let legMin = 0; let sumKm = 0; let sumMin = 0; let guessed = false;
+  for (let i = 1; i <= idx; i += 1) {
+    const leg = roadLegs.value[i - 1];
+    let d = leg?.distanceKm ?? 0;
+    let t = leg?.durationMinutes ?? 0;
+    if (!(d > 0)) {
+      d = straightDistanceKm(fullPath.value[i - 1], fullPath.value[i]);
+      t = (d / Math.max(avgSpeedKmh.value, 1)) * 60;
+      guessed = true;
+    }
+    sumKm += d; sumMin += t;
+    if (i === idx) { legKm = d; legMin = t; }
+  }
+  const note = guessed ? ' <em>(직선 어림)</em>' : '';
+  return `앞 지점에서 <b>${km(legKm)}</b> · 약 <b>${min(legMin)}</b>${note}`
+    + `<br/>출발부터 <b>${km(sumKm)}</b> · 약 <b>${min(sumMin)}</b>`;
+};
+
 const drawRouteMap = async () => {
   await ensureMap();
   if (!map || !markerLayer) {
@@ -853,7 +877,7 @@ const drawRouteMap = async () => {
     const marker = L.marker([point.lat, point.lng], {
       icon: makeBadgeIcon(label, kind, kind === 'stop' && isVisited(point.address)),
     }).bindPopup(
-      `<strong>${label}. ${point.address}</strong><br/>${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}`,
+      `<strong>${label}. ${point.address}</strong><br/>${legSummary(idx)}`,
     );
     markerLayer?.addLayer(marker);
   });
