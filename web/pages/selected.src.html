@@ -327,6 +327,15 @@ body:has(.app-market[data-k="ranking"]) .foot { display: none; }
 .app-market[data-k="ranking"] .tsp-web-picked strong { font-size: 16px; font-weight: 800; color: #111827; }
 .app-market[data-k="ranking"] .tsp-web-picked small { font-size: 14px; font-weight: 600; color: #2b6df3; }
 .app-market[data-k="ranking"] .tsp-panel > * + * { border-top: 1px solid #e5e7eb; padding-top: 14px; }
+/* 지도 알약(등수 · 동 · 건수) — 약 20% 크게 */
+.app-market[data-k="ranking"] .trade-map-pin { padding: 4px 11px 4px 4px !important; gap: 6px !important; }
+.app-market[data-k="ranking"] .trade-map-pin i { width: 20px !important; height: 20px !important; font-size: 12.5px !important; }
+.app-market[data-k="ranking"] .trade-map-pin b { font-size: 13px !important; }
+.app-market[data-k="ranking"] .trade-map-pin span { font-size: 12.5px !important; }
+.app-market[data-k="ranking"] .trade-map-pin.top { padding: 5px 13px 5px 5px !important; }
+.app-market[data-k="ranking"] .trade-map-pin.top i { width: 23px !important; height: 23px !important; font-size: 14px !important; }
+.app-market[data-k="ranking"] .trade-map-pin.top b { font-size: 15px !important; }
+.app-market[data-k="ranking"] .trade-map-pin.top span { font-size: 14px !important; }
 /* 왼쪽 판 글자 · 칸 크기 — 최소 14, 소제목(거래량 랭킹 · 고른 지역 · 통계 정보 · 동별 거래 랭킹) 16.
    고르는 칸은 높이 40 · 글자 16 (입력 칸 규칙), 종류 · 거래 단추 15 */
 .app-market[data-k="ranking"] .tsp-panel :is(.tsp-web-head strong, .tsp-web-picked strong, h3) { font-size: 16px !important; }

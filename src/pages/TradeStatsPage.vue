@@ -202,6 +202,8 @@ const paletteColors = (rank: number): [string, string] => {
   // 여섯 등부터는 색을 빼 담담하게 — 지도에 다 찍되 앞 다섯이 먼저 눈에 들어와야 한다
   if (rank > TOP_N) return ['hsl(215 16% 66%)', 'hsl(215 18% 52%)'];
   const h = hueOf(rank);
+  // 웹은 채도를 낮춰 차분하게 — 빨강·노랑·초록·파랑·보라의 차례는 그대로
+  if (webEmbed) return [`hsl(${h} 52% 62%)`, `hsl(${h} 46% ${isPaleHue(h) ? 52 : 48}%)`];
   return [`hsl(${h} 88% 58%)`, `hsl(${h} 82% ${isPaleHue(h) ? 50 : 45}%)`];
 };
 /** 노랑 바탕에서만 글씨를 검게 — 나머지는 흰 글씨가 읽힌다 */
