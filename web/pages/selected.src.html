@@ -1778,14 +1778,24 @@ html, body { overflow-x: clip; }
   const isDark = () => (document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   /* 위 메뉴마다의 아래 메뉴 — 자리 잡기용 이름. 실제 메뉴가 정해지면 여기만 바꾼다 */
+  /* 전체 메뉴 — 머리띠 메뉴 아래로 한 줄씩 떨어진다. [글, 손잡이] 로 적고 손잡이가 없으면 '준비 중' */
   const MEGA = [
-    ['m1', ['선정목록', '물건등록', '입찰달력', '수익계산', '보관함', '휴지통']],
-    ['m2', ['임장동선', '방문기록', '임장 체크리스트']],
-    ['m3', ['실거래 분석', '가격정보', '매매수요']],
-    ['m4', ['공지사항', '자유게시판', '낙찰후기']],
-    ['m5', ['자주 묻는 질문', '1:1 문의', '이용안내']],
-    ['m6', ['내 정보', '포인트', '결제관리', '알림설정']],
+    ['m0', [['자동등록', 'mega-auto'], ['직접입력', 'mega-manual']]],
+    ['m1', [['선정목록', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
+    ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
+    ['m3', [['실거래 분석', ''], ['가격정보', ''], ['매매수요', '']]],
+    ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
+    ['m5', [['자주 묻는 질문', ''], ['1:1 문의', ''], ['이용안내', '']]],
+    ['m6', [['내 정보', 'go-mypage'], ['포인트', ''], ['결제관리', ''], ['알림설정', '']]],
   ];
+  /* 지금 보고 있는 자리 — 펼칠 때마다 다시 그려 표시가 어긋나지 않게 한다 */
+  const megaHere = () => {
+    if (S.route === 'register') return R.mode === 'manual' ? 'mega-manual' : 'mega-auto';
+    if (S.route === 'trip') return 'go-trip';
+    if (S.route === 'mypage') return 'go-mypage';
+    if (S.route === 'list') return 'go-list';
+    return '';
+  };
 
   /* ---------- 머리띠 — 로그인 전: 로그인 ▼ 회원가입 / 로그인 뒤: 강정인님 ▼ 로그아웃 ---------- */
   function renderHeader() {
@@ -1825,8 +1835,9 @@ html, body { overflow-x: clip; }
     box.dataset.tip = open ? '메뉴접기' : '메뉴 펼치기';
     box.setAttribute('aria-label', box.dataset.tip);
     $('gMega').hidden = !open;
-    if (open && !$('gMegaIn').childElementCount) {
-      $('gMegaIn').innerHTML = MEGA.map(([cls, items]) => `<nav class="g-col ${cls}">${items.map((t, i) => `<a href="#" class="${cls === 'm1' && i === 0 ? 'on' : ''}" data-act="${cls === 'm1' && i === 0 ? 'go-list' : cls === 'm1' && i === 1 ? 'go-register' : 'soon'}" data-name="${t}">${t}</a>`).join('')}</nav>`).join('');
+    if (open) {
+      const here = megaHere();
+      $('gMegaIn').innerHTML = MEGA.map(([cls, items]) => `<nav class="g-col ${cls}">${items.map(([t, act]) => `<a href="#" class="${act && act === here ? 'on' : ''}" data-act="${act || 'soon'}" data-name="${esc(t)}">${esc(t)}</a>`).join('')}</nav>`).join('');
     }
   }
 
@@ -3406,6 +3417,15 @@ html, body { overflow-x: clip; }
         break;
       }
       case 'register': case 'go-register': go('register'); break;
+      /* 전체 메뉴의 자동등록 · 직접입력 — 물건등록으로 가서 그 탭을 편다 */
+      case 'mega-auto': case 'mega-manual': {
+        const want = act === 'mega-manual' ? 'manual' : 'auto';
+        if (R.mode !== want) { R.mode = want; try { localStorage.setItem('wlp.web.regMode', want); } catch (e) { /* 그만 */ } }
+        S.pop = ''; S.menu = null;
+        /* 이미 물건등록에 있으면 go() 가 그냥 돌아가므로, 그때는 직접 다시 그린다(메뉴도 같이 접힌다) */
+        if (S.route === 'register') render(); else go('register');
+        break;
+      }
       case 'go-list': go('list'); break;
       /* 직접 입력 — PDF 로 읽은 줄과 같은 길(importParsedPdfAuctions)로 올린다.
          빈 파싱값을 하나 떠서 적은 칸만 덮어쓰면, 신규·갱신 규칙이 PDF 와 똑같이 돈다 */
