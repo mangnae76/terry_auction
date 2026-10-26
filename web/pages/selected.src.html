@@ -744,6 +744,8 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-survey .adp-ind-table .adp-ind-ctl :is(input, select) { text-align: center !important; text-align-last: center; }
 /* 웹 손품조사 — 개별성 분석 두 표의 줄 높이를 약 30% 넉넉히 */
 .app-detail.tab-survey .adp-ind-table :is(th, td) { padding-top: 10px !important; padding-bottom: 10px !important; }
+/* 웹 손품조사 — 급매가(실거래가 조사 · 조건분석 · 네이버 매물조사) 표의 값(면적 · 날짜·층 · 가격 · 범위)은 16. 단위·비고는 그대로 */
+.app-detail.tab-survey .adp-mkt-body .adp-dm-table .cell:not(.adp-mkt-wide) :is(strong, .adp-mkt-range2) { font-size: 16px !important; }
 /* 웹 손품조사 — 급매가 표도 세로로 넉넉히 (칸 위아래 7 → 14, 블록 사이 8 → 16) */
 .app-detail.tab-survey .adp-mkt-body .adp-dm-table .cell > :is(small, strong, span, .adp-mkt-unit) { padding-top: var(--tbl-py) !important; padding-bottom: var(--tbl-py) !important; }
 .app-detail.tab-survey .adp-mkt-body .adp-mkt-block + .adp-mkt-block { margin-top: 16px !important; }
