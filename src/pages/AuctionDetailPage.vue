@@ -7485,7 +7485,7 @@ const goBack = () => router.back();
           <div v-if="!isCollapsed('rightsCheck')">
             <table class="adp-table adp-rcheck-table">
               <colgroup>
-                <col style="width: 104px" />
+                <col :style="{ width: webEmbed ? '220px' : '104px' }" />
                 <col />
                 <col style="width: 40px" />
               </colgroup>
@@ -7537,7 +7537,7 @@ const goBack = () => router.back();
 
             <table class="adp-table adp-rcheck-table adp-rdoc-table">
               <colgroup>
-                <col style="width: 104px" />
+                <col :style="{ width: webEmbed ? '220px' : '104px' }" />
                 <col style="width: 30%" />
                 <col />
                 <col style="width: 40px" />
@@ -7551,7 +7551,7 @@ const goBack = () => router.back();
                         v-for="(ln, li) in docLines(item)"
                         :key="li"
                         class="adp-rdoc-survey"
-                        :style="{ gridTemplateColumns: ln.cells[0]?.kind === 'label' ? '30px 84px 1fr 1fr' : `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
+                        :style="{ gridTemplateColumns: ln.cells[0]?.kind === 'label' ? (webEmbed ? '52px 150px 1fr 1fr' : '30px 84px 1fr 1fr') : `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
                       >
                         <template v-for="c in ln.cells" :key="c.id">
                           <span v-if="c.kind === 'label'" class="adp-rdoc-label">{{ c.placeholder }}</span>
@@ -10499,6 +10499,15 @@ tr.tone-take { background: #fff5f5; }
 .adp-rcheck-label strong { font-size: 12px; }
 .adp-rcheck-desc { color: #4b5563; white-space: pre-line; }
 .adp-rcheck-cell { text-align: center; }
+/* 웹 권리분석 — 폭이 넓으니 항목 이름은 한 줄, 설명은 줄을 이어 붙여 짧게.
+   현황조사·세대열람 줄은 칸 사이를 띄우고 날짜가 다 보이게 */
+.adp-tab-rights .adp-rcheck-label strong { white-space: nowrap; }
+.adp-tab-rights .adp-rcheck-desc { white-space: normal; }
+.adp-tab-rights .adp-rdoc-survey { gap: 8px; }
+.adp-tab-rights .adp-rdoc-survey + .adp-rdoc-survey { margin-top: 8px; }
+.adp-tab-rights .adp-rdoc-survey .adp-rdoc-input { height: 34px; padding: 0 10px; }
+.adp-tab-rights .adp-rdoc-survey .adp-date-btn { padding: 0 10px; gap: 6px; letter-spacing: 0; }
+.adp-tab-rights .adp-rdoc-label { white-space: nowrap; text-align: left; }
 /* 체크 마킹 — 기본 체크박스를 직접 그려 모서리를 둥글게(4px) 만든다 */
 .adp-rcheck-box {
   appearance: none; -webkit-appearance: none;
@@ -12237,7 +12246,7 @@ select.adp-pub-input option { text-align: center; }
   margin: 18px 0 10px; font-size: 11px; color: var(--text-muted);
 }
 
-/* 웹 권리분석 탭 — 글자는 12 아래로 내려가지 않는다 (웹만, 앱은 그대로).
+/* 웹 권리분석 탭 — 글자는 13 아래로 내려가지 않는다 (웹만, 앱은 그대로).
    카드 제목 16 · 카드 안 작은 제목 14 는 위에서 정한다. ▾ 같은 기호는 글이 아니라 그대로 둔다 */
 .adp-tab-rights :is(
   .adp-doc-box, .adp-doc-pdf-tag, .adp-ai-missing, .adp-base-row .quad-v small, .adp-diag-sum,
@@ -12246,10 +12255,10 @@ select.adp-pub-input option { text-align: center; }
   .adp-empty.sm, .adp-empty.one, .adp-rdoc-task, .adp-rdoc-input, .adp-rdoc-label,
   .adp-rdoc-survey .adp-rdoc-input, .adp-rdoc-survey .adp-date-btn, .adp-rdoc-survey .adp-agency-trigger .txt,
   .adp-rdoc-multi .adp-agency-trigger, .adp-rcase-item small, .adp-rcheck-table td,
-  .adp-agency-trigger, .adp-agency-option, .adp-toggle .on
-) { font-size: 12px; }
-/* 웹 권리분석 탭 글자 단계 — 카드 제목 16 · 카드 안 작은 제목 14 · 칸 이름과 값 13 · 덧붙인 설명 12.
-   건물등기 · 임차인현황 · 권리분석 카드가 같은 단계를 쓴다 (12 아래는 없다) */
+  .adp-agency-trigger, .adp-agency-option, .adp-toggle .on,
+  .adp-doc-in .adp-input, .adp-diag-k, .adp-evict-text, .adp-tn-date, .adp-doc-old, .adp-pill, .adp-desc
+) { font-size: 13px; }
+/* 웹 권리분석 탭 글자 단계 — 카드 제목 16 · 카드 안 작은 제목 14 · 그 밖의 글은 모두 13 (13 아래는 없다) */
 .adp-tab-rights :is(
   .adp-table, .adp-table .b, .adp-registry-table th, .adp-registry-table td,
   .adp-base-row dt, .adp-base-row dd, .adp-base-row.quad dt, .adp-base-row .quad-v, .adp-base-row .quad-v strong,
@@ -12263,5 +12272,5 @@ select.adp-pub-input option { text-align: center; }
 .adp-tab-rights :is(
   .adp-base-note, .adp-sub-note:not(.adp-rows-cap), .adp-warn-banner, .adp-table .adp-desc,
   .adp-base-row .quad-v small, .adp-rcase-item small, .adp-rdoc-label, .adp-rdoc-task, .adp-empty.sm, .adp-empty.one
-) { font-size: 12px; }
+) { font-size: 13px; }
 </style>
