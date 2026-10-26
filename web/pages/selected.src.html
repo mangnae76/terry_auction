@@ -582,6 +582,9 @@ body.trip-full .foot { display: none; }
 .auto-box .rg-sep { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line); }
 .rg-results.manual .rg-head { margin-bottom: 10px; }
 .mn-note { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--muted); }
+/* 상자 제목 옆 한 줄 — 무슨 상자인지 */
+.rg-sub { min-width: 0; font-size: 12.5px; font-weight: 500; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 900px) { .rg-sub { display: none; } }
 .mn-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 @media (max-width: 900px) { .mn-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .auto-box .rg-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .auto-box .rg-drive { flex-wrap: wrap; } }
 .mn-form input { height: 34px; padding: 0 11px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 13px; color: var(--text); min-width: 0; }
@@ -2381,7 +2384,7 @@ html, body { overflow-x: clip; }
         <span class="badge s-${r.rowStatus}">${r.rowStatus}</span>
       </li>`;
     /* 결과 상자 — 읽어 온 목록. 이름은 하나다 */
-    const PC = { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서를 올리면 AI가 분석하여 선정목록 카드에 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
+    const PC = { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서(PDF · 이미지)를 올리면 AI가 선정목록에 분석 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
     // 다음에 다시 그릴 때 '목록이 이미 펼쳐져 있었는지' 를 알아야 애니메이션을 끌 수 있다
     R.popShown = S.pop === 'folders';
     $('regContent').innerHTML = `
@@ -2393,7 +2396,7 @@ html, body { overflow-x: clip; }
       ${!AUTO ? '' : `
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
       <section class="rg-results" id="rgDrop" aria-label="${PC.title}">
-        <div class="rg-head"><h2 class="tip-below" data-tip="${PC.tip}" data-tip-pos="left" style="cursor:help">${PC.ic}${PC.title}</h2>
+        <div class="rg-head"><h2>${PC.ic}${PC.title}</h2><span class="rg-sub">${PC.tip}</span>
           <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span>${R.rows.length ? `<button type="button" class="rg-clear-btn" data-act="rg-clear" aria-label="목록 비우기" data-tip="목록 비우기" data-tip-pos="below">${I.trash}</button>` : ''}</span>
           <button type="button" class="rg-chev ${R.collapsed ? 'up' : ''}" data-act="rg-collapse" aria-expanded="${!R.collapsed}" aria-label="결과 접기">${I.chevDown}</button></div>
         ${R.missing.length ? `<div class="rg-missing"><div class="h">드라이브에 없는 물건 ${R.missing.length}건<button type="button" data-act="missing-trash">휴지통으로</button></div><p>스캔한 폴더에서 PDF가 사라졌습니다. 선정목록은 그대로 남아 있습니다 — 치우려면 누르세요.</p><ul>${R.missing.map((m) => `<li>${esc(m.label)}</li>`).join('')}</ul></div>` : ''}
