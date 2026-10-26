@@ -292,6 +292,14 @@ body:has(.app-market[data-k="ranking"]) .foot { display: none; }
 .app-market[data-k="ranking"] .tsp-filter-slot .tsp-search-btn { margin-left: 0; width: 100%; }
 .app-market[data-k="ranking"] .tsp-filter-slot :is(.tsp-select, .tsp-seg, .tsp-search-btn) { height: var(--ctl-h) !important; border-radius: 6px !important; }
 .app-market[data-k="ranking"] .tsp-filter-slot .tsp-select { font-size: 14px !important; }
+/* 판 맨 위 제목 · 안내, 검색 아래 고른 결과 — 그리고 칸 사이마다 가름선 */
+.app-market[data-k="ranking"] .tsp-web-head { display: flex; flex-direction: column; gap: 4px; }
+.app-market[data-k="ranking"] .tsp-web-head strong { font-size: 16px; font-weight: 800; color: #111827; }
+.app-market[data-k="ranking"] .tsp-web-head small { font-size: 14px; color: #6b7280; }
+.app-market[data-k="ranking"] .tsp-web-picked { display: flex; flex-direction: column; gap: 3px; }
+.app-market[data-k="ranking"] .tsp-web-picked strong { font-size: 16px; font-weight: 800; color: #111827; }
+.app-market[data-k="ranking"] .tsp-web-picked small { font-size: 14px; font-weight: 600; color: #2b6df3; }
+.app-market[data-k="ranking"] .tsp-panel > * + * { border-top: 1px solid #e5e7eb; padding-top: 14px; }
 /* 왼쪽 판 — 임장경로의 왼쪽 칸과 같은 자리 · 같은 폭(546) · 화면 밑단까지 */
 .app-market[data-k="ranking"] .tsp-panel {
   position: fixed !important; left: 18px !important; width: 546px !important; max-width: calc(100vw - 36px) !important;

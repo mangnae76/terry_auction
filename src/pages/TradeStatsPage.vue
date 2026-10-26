@@ -126,6 +126,10 @@ const scopeTitle = computed(() => (
 ));
 /** 받아 온 기간 — '최근 1개월' */
 const periodText = computed(() => (selectedPeriod.value ? `최근 ${selectedPeriod.value}개월` : ''));
+/** 웹 판 — 검색 아래 결과 줄: 고른 시도 · 시군구 · 읍면동, 그 아래 '최근 12개월 · 연립다세대' */
+const pickedPlaceText = computed(() => (
+  [selectedSido.value, selectedDistrict.value, selectedDong.value].filter(Boolean).join(' ') || '지역을 고르세요'
+));
 const kindLabel = computed(
   () => propertyOptions.find((o) => o.value === selectedPropertyType.value)?.label ?? '전체',
 );
@@ -534,7 +538,16 @@ onMounted(() => {
         <div id="trade-map" class="tsp-map" />
 
         <aside class="tsp-panel">
+          <!-- 웹 판 — 제목·안내 → 고르는 칸 → 고른 결과 → 통계 정보 → 동별 랭킹 (사이마다 가름선) -->
+          <header v-if="webEmbed" class="tsp-web-head">
+            <strong>거래량 랭킹</strong>
+            <small>지도와 함께 지역별 거래량 랭킹을 본다.</small>
+          </header>
           <div v-if="webEmbed" :id="filterSlotId" class="tsp-filter-slot" />
+          <div v-if="webEmbed" class="tsp-web-picked">
+            <strong>{{ pickedPlaceText }}</strong>
+            <small v-if="periodText || kindLabel">{{ [periodText, kindLabel].filter(Boolean).join(' · ') }}</small>
+          </div>
           <header v-if="!webEmbed" class="tsp-panel-head">
             <strong>{{ scopeTitle }}</strong>
             <small v-if="lastLoadedLabel">{{ periodText }} · {{ kindLabel }}</small>
