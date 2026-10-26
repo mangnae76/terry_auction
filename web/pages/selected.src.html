@@ -547,9 +547,24 @@ body.trip-full .foot { display: none; }
 /* 아래 줄 단추 셋 — 위 폴더 칸의 시작~끝에 맞춰 같은 폭으로 나눈다 (제목 칸 132 + 여백 4 + 사이 8 만큼 들여서 시작) */
 .reg-duo .rg-acts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .reg-duo .rg-acts > .rg-fav, .reg-duo .rg-acts > .rg-btn { width: auto; }
-.reg-duo > .reg-box { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
-.reg-duo > .reg-box:hover:not(.on) { border-color: #b8c7e6; }
-.reg-duo > .reg-box.on { cursor: default; border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-soft); }
+/* 상자 둘은 이제 탭이 아니다 — 왼쪽은 유료(자동 등록), 오른쪽은 무료(직접 입력) */
+.reg-duo > .reg-box { display: flex; flex-direction: column; gap: 8px; }
+/* 유료 딱지 · 무료 딱지 */
+.plan-tag { flex: 0 0 auto; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: -.2px; }
+.plan-tag.pro { background: #eef3fd; border: 1px solid #d3e0fa; color: #2a5fbf; }
+.plan-tag.free { background: var(--surface-3); border: 1px solid var(--line); color: var(--muted); }
+/* 유료가 아닐 때 — 왼쪽 상자는 한 발 물리고 누를 수 없게 한다 */
+.reg-box.locked .rg-acts, .reg-box.locked .rg-ai { opacity: .45; pointer-events: none; }
+.lock-note { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
+/* AI 줄 — 가져오기 줄 아래에 한 단 */
+.rg-ai { gap: 8px; }
+.rg-ai .ai-setup-text { font-size: 12.5px; color: var(--text-2); }
+/* 직접 입력 칸 — 두 칸씩, 소재지만 한 줄 */
+.mn-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.mn-form input { height: 34px; padding: 0 11px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 13px; color: var(--text); min-width: 0; }
+.mn-form input:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.mn-form .wide { grid-column: 1 / -1; }
+.mn-form .rg-btn.add { grid-column: 1 / -1; background: var(--blue); border-color: var(--blue); color: #fff; }
 .rg-row1, .rg-row2 { display: flex; align-items: center; gap: 8px; min-height: 32px; min-width: 0; }
 .rg-title { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-right: 4px; font-size: 14px; font-weight: 800; color: var(--text); white-space: nowrap; cursor: help; }
 .rg-title svg { width: 18px; height: 18px; color: #2a5fbf; }
@@ -1446,6 +1461,8 @@ html, body { overflow-x: clip; }
     cloud: P('<path d="M7 20h10a4 4 0 0 0 .6-7.96A5.5 5.5 0 0 0 6.9 10.2 3.9 3.9 0 0 0 7 20z"/><path d="M12 16V9"/><path d="m9 11.5 3-3 3 3"/>', 'stroke-width="2"'),
     folder: P('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>', 'stroke-width="2"'),
     star: P('<path d="M12 3.5 14.6 9l6 .7-4.4 4.1 1.2 5.9L12 16.8l-5.4 2.9 1.2-5.9-4.4-4.1 6-.7z"/>', 'stroke-width="2"'),
+    pencil: P('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>', 'stroke-width="2"'),
+    plus: P('<path d="M12 5v14M5 12h14"/>', 'stroke-width="2.4"'),
     search: P('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', 'stroke-width="2.4"'),
     files: P('<path d="M15 2.5H8.5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V7Z"/><path d="M15 2.5V7h4.5"/><path d="M3.5 7.5v12a2 2 0 0 0 2 2h9"/>', 'stroke-width="2"'),
     pdf: P('<path d="M14 2.5H6.5a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8Z"/><path d="M14 2.5V8h5.5"/><path d="M8 13h8M8 17h5"/>', 'stroke-width="2"'),
@@ -1920,6 +1937,11 @@ html, body { overflow-x: clip; }
       { file: '고양_2026타경81234_후곡마을건영.pdf', p: { caseNo: '2026타경81234', court: '의정부지방법원 고양지원', type: '아파트', addr: '경기도 고양시 일산서구 일산동 1092', bld: '후곡마을건영', unit: '1601동 7층 703호', apr: 398000000, round: '2차', min: 278600000, date: plus(20), land: 41.8, bldg: 84.8 }, ai: { filled: ['토지면적'] } },
     ],
   };
+  /* 유료 회원인가 — 결제를 아직 붙이지 않아 임시로 둔다.
+     앱에 이용권 만료일이 생기면 그 날짜로 셈해 이 줄만 바꾸면 된다.
+     지금은 모두 유료로 보고, localStorage 의 myturn.plan 을 'free' 로 두면 무료 회원 화면이 보인다 */
+  const PAID = (() => { try { return localStorage.getItem('myturn.plan') !== 'free'; } catch (e) { return true; } })();
+
   const R = {
     favs: store.get('wlp.web.favs', DEMO_FOLDERS), sel: store.get('wlp.web.favSel', null),
     tab: (() => { try { return localStorage.getItem('wlp.web.regTab') === 'ai' ? 'ai' : 'drive'; } catch (e) { return 'drive'; } })(),
@@ -2291,12 +2313,15 @@ html, body { overflow-x: clip; }
     const masked = R.aiKey ? `${R.aiKey.slice(0, 4)}…${R.aiKey.slice(-4)}` : '';
     /* 선정물건등록 — 상자 둘을 나란히: 왼쪽 구글드라이브 연동(1줄 제목·스캔할 폴더 칸 / 2줄 폴더등록·폴더스캔·PDF등록) · 오른쪽 AI 자동 분석 */
     $('regBox').innerHTML = `
-      <div class="toolbar reg-box ${R.tab === 'drive' ? 'on' : ''}" data-regtab="drive" role="tab" aria-selected="${R.tab === 'drive'}" tabindex="0">
+      <!-- 왼쪽 — 유료 회원: 가져와서 읽는 한 묶음 (폴더·PDF 로 가져오고, AI 로 읽는다) -->
+      <div class="toolbar reg-box pro ${PAID ? '' : 'locked'}">
       <div class="rg-row1">
-        <span class="rg-title tip-below" data-tip="등록한 구글 드라이브 폴더의 PDF를 읽어 선정목록으로 올립니다" data-tip-pos="left">${I.cloud}구글드라이브 연동</span>
+        <span class="rg-title tip-below" data-tip="구글 드라이브 폴더나 PDF 파일을 읽어 선정목록으로 올립니다" data-tip-pos="left">${I.cloud}자동 등록</span>
+        <span class="plan-tag pro">유료</span>
+        ${PAID ? '' : '<span class="lock-note">유료 이용 중에 쓸 수 있습니다<button type="button" class="mini edit" data-act="soon" data-name="결제하기">결제하기</button></span>'}
       </div>
       <div class="rg-row1 rg-acts">
-        <!-- ① 폴더 고르기 — 등록해 둔 폴더를 펼쳐 고른다. 고치고 지우는 일은 ② 폴더등록 창이 맡는다 -->
+        <!-- ① 어디서 가져올까 — 등록해 둔 폴더를 펼쳐 고른다. 고치고 지우는 일은 폴더등록 창이 맡는다 -->
         <div class="rg-folder pop-root" data-pop="folders">
           <button type="button" class="rg-folder-box" data-act="pop" data-id="folders" aria-expanded="${S.pop === 'folders'}" aria-label="스캔할 폴더 선택">
             <span class="rg-chosen">${R.sel.length ? esc(R.sel.length === 1 ? favName(R.sel[0]) : `${favName(R.sel[0])} 외 ${R.sel.length - 1}`) : `<span class="rg-ph">${R.favs.length ? '폴더를 선택하세요' : '폴더를 연동하세요'}</span>`}</span><i class="tri"></i>
@@ -2307,18 +2332,29 @@ html, body { overflow-x: clip; }
         <button type="button" class="rg-btn scan" data-act="scan" ${R.loading ? 'disabled' : ''}>${I.search}폴더스캔${R.sel.length ? ` (${R.sel.length})` : ''}</button>
         <button type="button" class="rg-btn pdf" data-act="pdf-pick" ${R.loading ? 'disabled' : ''}>${I.files}PDF등록</button>
       </div>
-      </div>
-      <div class="toolbar reg-box ${R.tab === 'ai' ? 'on' : ''}" data-regtab="ai" role="tab" aria-selected="${R.tab === 'ai'}" tabindex="0">
-      <div class="rg-row2">
+      <!-- ② 어떻게 읽을까 — 규칙으로 못 읽은 칸을 AI 가 채운다 -->
+      <div class="rg-row1 rg-ai">
         <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
-        <!-- 상자 오른쪽 끝 — 키 등록/키바꾸기 · 그 오른쪽에 AI 파싱 켜기/끄기(켜짐·꺼짐은 툴팁). 키가 없으면 스위치를 눌러도 키 등록 창이 뜬다 -->
+        ${R.aiKey ? '' : '<span class="ai-req">필수설정</span><span class="ai-setup-text">Gemini API 키가 <span class="key-state no">미등록</span> 상태입니다.</span>'}
         <button type="button" class="ai-key" style="margin-left:auto" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
         <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
       </div>
-      <!-- 필수설정 — Gemini API 키. 키가 있어야 아래 AI 파싱을 켤 수 있다 (앱 PdfImportPage 와 같은 짜임) -->
-      <div class="ai-setup">
-        <span class="ai-req">필수설정</span>
-        <span class="ai-setup-text">Gemini API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.</span>
+      </div>
+
+      <!-- 오른쪽 — 무료 회원: 손으로 적어 올린다 -->
+      <div class="toolbar reg-box manual">
+      <div class="rg-row1">
+        <span class="rg-title tip-below" data-tip="PDF 없이 손으로 적어 선정목록에 올립니다" data-tip-pos="left">${I.pencil}직접 입력</span>
+        <span class="plan-tag free">무료</span>
+      </div>
+      <div class="mn-form">
+        <input id="mnCase" placeholder="사건번호 (예: 2026타경501558)" aria-label="사건번호">
+        <input id="mnCourt" placeholder="법원 (예: 인천지방법원)" aria-label="법원">
+        <input id="mnAddr" class="wide" placeholder="소재지 (예: 인천광역시 서구 검암동 683-9 403호)" aria-label="소재지">
+        <input id="mnDate" type="date" aria-label="매각기일">
+        <input id="mnAppr" inputmode="numeric" placeholder="감정가 (원)" aria-label="감정가">
+        <input id="mnMin" inputmode="numeric" placeholder="최저가 (원)" aria-label="최저가">
+        <button type="button" class="rg-btn add" data-act="manual-add">${I.plus}등록하기</button>
       </div>
       </div>`;
     const rowHtmlR = (r) => `<li class="rg-item ${r.status}" ${r.status === 'ready' ? `data-act="rg-open" data-v="${esc(r.p.caseNo)}" tabindex="0"` : ''}>
@@ -2328,7 +2364,7 @@ html, body { overflow-x: clip; }
         <span class="badge s-${r.rowStatus}">${r.rowStatus}</span>
       </li>`;
     /* 결과 상자 — 고른 상자의 목록. AI 자동 분석이면 'AI 파싱', 구글드라이브 연동이면 'PDF 파싱' */
-    const PC = R.tab === 'ai'
+    const PC = (R.aiOn && R.aiKey)
       ? { title: 'AI 파싱', ic: I.spark, tip: '경매 문서를 올리면 AI가 분석하여 선정목록 카드에 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
       : { title: 'PDF 파싱', ic: I.pdf, tip: '경매 문서를 올리면 자동으로 읽어 선정목록 카드에 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
     // 다음에 다시 그릴 때 '목록이 이미 펼쳐져 있었는지' 를 알아야 애니메이션을 끌 수 있다
@@ -3132,6 +3168,33 @@ html, body { overflow-x: clip; }
       }
       case 'register': case 'go-register': go('register'); break;
       case 'go-list': go('list'); break;
+      /* 직접 입력 — PDF 로 읽은 줄과 같은 길(importParsedPdfAuctions)로 올린다.
+         빈 파싱값을 하나 떠서 적은 칸만 덮어쓰면, 신규·갱신 규칙이 PDF 와 똑같이 돈다 */
+      case 'manual-add': {
+        if (needLogin('직접 입력')) break;
+        const num = (id) => Number(($(id).value || '').replace(/[^\d]/g, '')) || 0;
+        const caseNo = ($('mnCase').value || '').trim();
+        if (!caseNo) { toast('사건번호를 적어 주세요.', 'info'); $('mnCase').focus(); break; }
+        const T = CLOUD.T;
+        if (!T) { toast('읽기 도구를 불러오는 중입니다 — 잠시 뒤 다시 눌러 주세요.', 'info'); break; }
+        const parsed = {
+          ...T.parseAuctionPdfText(''),
+          sourceName: '직접 입력',
+          caseNumber: caseNo,
+          courtName: ($('mnCourt').value || '').trim(),
+          address: ($('mnAddr').value || '').trim(),
+          eventDate: ($('mnDate').value || '').trim(),
+          appraisalValue: num('mnAppr'),
+          minimumBidValue: num('mnMin'),
+        };
+        CLOUD.store.importParsedPdfAuctions([parsed])
+          .then(() => {
+            ['mnCase', 'mnCourt', 'mnAddr', 'mnDate', 'mnAppr', 'mnMin'].forEach((id) => { $(id).value = ''; });
+            toast(`${caseNo} 을 선정목록에 올렸습니다.`);
+          })
+          .catch((err) => toast(`적지 못했습니다 — ${(err && err.message) || ''}`, 'info'));
+        break;
+      }
       case 'go-trip': go('trip'); break;
       case 'area-view': S.areaView = v; renderItem(); break;
       case 'nearby-view': S.nearbyView = v; if (v === 'kakao' && !CLOUD.nearby.has(S.itemId)) fetchNearbyFor(S.itemId); else renderItem(); break;
