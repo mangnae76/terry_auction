@@ -4642,6 +4642,8 @@ const rightsRows = computed(() => {
   /* 금액이 비어 온 줄은 건물등기에서 가져다 채운다 — 같은 서류를 읽은 값이라 틀릴 일이 없다.
      (강제경매개시결정의 청구금액, 근저당권의 채권최고액이 자주 빈다) */
   const regRows = registryRows.value;
+  /* 경매개시결정 줄은 등기부에 따로 금액이 안 적히는 일이 잦다 — 그때는 채권합계금액을 쓴다 */
+  const claim = registryClaimAmount.value;
   const amountFromRegistry = (rank: string, kind: string, date: string) => {
     const key = (t: string) => (t || '').replace(/\s/g, '');
     const hit = regRows.find((x) => key(x.order) === key(rank))
@@ -4657,7 +4659,9 @@ const rightsRows = computed(() => {
     return {
       ...r,
       dateText: dotYmd(r.date),
-      amountText: money.amount || amountFromRegistry(r.rank, r.kind, r.date),
+      amountText: money.amount
+        || amountFromRegistry(r.rank, r.kind, r.date)
+        || (claim > 0 && /경매개시/.test(r.kind) ? `${formatMoney(claim)}원` : ''),
       // 괄호에 끌려 들어온 전입·확정을 내용 줄 맨 앞에 세운다 — 건물등기와 같은 차례
       noteLines: rightsNoteParts([...money.extra, r.note].filter(Boolean).join(' · '), isBase, dotYmd(r.date)),
     };
