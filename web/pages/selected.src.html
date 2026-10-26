@@ -269,6 +269,9 @@ button { cursor: pointer; }
 .app-detail .adp-profit-sticky > :not(.adp-card-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
 /* 시장분석 — 분석 도구 화면의 '뒤로'(분석 도구 첫 화면으로)는 웹에서 감춘다 */
 .app-market .adm-back { display: none !important; }
+/* 시장분석 탭 공통 — 분석 도구 화면의 블루그레이 바탕을 지우고, 고르는 줄을 경로(홈 › 시장분석) 바로 아래에 붙인다 */
+.app-market .adm-shell { min-height: 0 !important; background: transparent !important; }
+.app-market .adm-body { padding: 0 0 40px !important; max-width: none !important; }
 /* 지역분석 — 화면 제목 줄(제목 · 설명 · 엑셀 단추)은 웹에서 통째로 감춘다. 엑셀 내려받기는 '조회' 옆으로 옮겼다 */
 .app-market[data-k="region"] .adm-top { display: none !important; }
 /* 엑셀 내려받기는 조회 바로 왼쪽 — 둘이 오른쪽 끝에 붙어 선다 */
