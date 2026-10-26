@@ -6346,7 +6346,7 @@ const goBack = () => router.back();
         <section class="adp-card">
           <!-- 제목과 날짜 줄은 화면에 붙여 둔다 — 표를 한참 내려 보다가도
                어느 안(A·B)을 보고 있는지, 진행상황이 무엇인지 늘 보여야 한다 -->
-          <div class="adp-profit-sticky">
+          <div :class="['adp-profit-sticky', { folded: isCollapsed('profit') }]">
           <header class="adp-card-head adp-profit-head" @click="toggleSection('profit')">
             <h2>
               <svg class="adp-profit-ico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -9804,16 +9804,19 @@ const goBack = () => router.back();
 }
 /* 머리줄이 있으면 thead 첫 줄, 없으면 tbody 첫 줄이 위 모서리다.
    표 대부분이 <colgroup>으로 시작해서 :first-child 로는 tbody 를 못 잡는다 */
-.adp-table > thead > tr:first-child > th:first-child { border-top-left-radius: 8px; }
-.adp-table > thead > tr:first-child > th:last-child { border-top-right-radius: 8px; }
-.adp-table:not(:has(> thead)) > tbody:first-of-type > tr:first-child > :first-child { border-top-left-radius: 8px; }
-.adp-table:not(:has(> thead)) > tbody:first-of-type > tr:first-child > :last-child { border-top-right-radius: 8px; }
-.adp-table > tbody:last-of-type > tr:last-child > :first-child { border-bottom-left-radius: 8px; }
-.adp-table > tbody:last-of-type > tr:last-child > :last-child { border-bottom-right-radius: 8px; }
+/* 칸 모서리는 표 바깥 모서리(8)에서 테두리 두께(1)를 뺀 7 — 같은 8 로 깎으면 모서리에 흰 틈이 생겨 줄이 두 겹처럼 보였다 */
+.adp-table > thead > tr:first-child > th:first-child { border-top-left-radius: 7px; }
+.adp-table > thead > tr:first-child > th:last-child { border-top-right-radius: 7px; }
+.adp-table:not(:has(> thead)) > tbody:first-of-type > tr:first-child > :first-child { border-top-left-radius: 7px; }
+.adp-table:not(:has(> thead)) > tbody:first-of-type > tr:first-child > :last-child { border-top-right-radius: 7px; }
+.adp-table > tbody:last-of-type > tr:last-child > :first-child { border-bottom-left-radius: 7px; }
+.adp-table > tbody:last-of-type > tr:last-child > :last-child { border-bottom-right-radius: 7px; }
 /* 왼쪽 칸이 여러 줄을 묶으면(rowspan, 예: 물건현황 '공시가격') 아래 모서리는 그 칸이 맡는다 */
 .adp-table > tbody:last-of-type > tr:nth-last-child(2) > [rowspan="2"]:first-child,
 .adp-table > tbody:last-of-type > tr:nth-last-child(3) > [rowspan="3"]:first-child,
-.adp-table > tbody:last-of-type > tr:nth-last-child(4) > [rowspan="4"]:first-child { border-bottom-left-radius: 8px; border-bottom: 0; }
+.adp-table > tbody:last-of-type > tr:nth-last-child(4) > [rowspan="4"]:first-child { border-bottom-left-radius: 7px; border-bottom: 0; }
+/* 산정표처럼 왼쪽 묶음 칸(rowspan)이 길게 이어지는 표 — 마지막 묶음 칸이 아래 모서리를 맡는다 */
+.adp-profit-table tbody tr:has(> .adp-cat):not(:has(~ tr > .adp-cat)) > .adp-cat { border-bottom-left-radius: 7px; border-bottom: 0; }
 /* 마지막 줄 밑선은 표 테두리와 겹치니 지운다 */
 .adp-table > tbody:last-of-type > tr:last-child > td,
 .adp-table > tbody:last-of-type > tr:last-child > th { border-bottom: 0; }
@@ -10207,6 +10210,10 @@ tr.tone-take { background: #fff5f5; }
    그 6px 은 상단 고정줄이 제 아래 테두리로 들고 있으므로(.adp-sticky-head),
    카드는 제자리에서 시작하면서도 붙을 자리까지 올라갈 거리가 0 이 된다 */
 /* 붙어 있는 동안에만 그림자 — 어디까지가 고정인지 눈에 보인다 */
+/* 고정 묶음은 카드 위 모서리를 따라 둥글게, 카드를 접었을 때는 아래 그림자 줄 없이 네 모서리 모두 둥글게 */
+.adp-profit-sticky { border-radius: 8px 8px 0 0; }
+.adp-profit-sticky.folded { border-radius: 8px; }
+.adp-profit-sticky.folded::after { display: none; }
 .adp-profit-sticky::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: -6px; height: 6px;
   background: linear-gradient(rgba(17, 24, 39, 0.05), rgba(17, 24, 39, 0));
