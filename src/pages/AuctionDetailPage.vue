@@ -9309,10 +9309,15 @@ const goBack = () => router.back();
 /* 안내 글씨는 아래 칸의 '파일 선택 또는 드래그 앤 드롭'과 같은 회색 · 12 */
 .adp-doc-in .adp-input::placeholder { color: #9ca3af; opacity: 1; }
 .adp-doc-link { font-size: 12px; font-weight: 700; color: #2563eb; text-decoration: none; }
-.adp-diag-boxes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
+/* 진단 상자 넷 — 아래로 가름선을 그어 상세 권리 분석과 갈라 둔다 */
+.adp-diag-boxes {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
+  padding: 2px 0 12px; border-bottom: 1px solid #eef0f5;
+}
 @media (max-width: 720px) { .adp-diag-boxes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .adp-diag-box {
-  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
+  /* 글은 가로·세로 모두 가운데 */
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   min-height: 92px; padding: 10px 6px; box-sizing: border-box;
   border: 1px solid #e3e8f0; border-radius: 10px; background: #f8fafc; text-align: center;
 }
