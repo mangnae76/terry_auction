@@ -1073,9 +1073,13 @@ const activePubCol = ref<PubCol | null>(null);
  *  브라우저 기본 말풍선(title)은 흰색인 데다 폰에서는 아예 뜨지 않는다. */
 const addrTip = ref('');
 const addrTipTop = ref(0);
+const addrTipLeft = ref(0);
 const placeAddrTip = (text: string, evt: Event) => {
   const el = evt.currentTarget as HTMLElement | null;
-  if (el) addrTipTop.value = Math.round(el.getBoundingClientRect().bottom + 6);
+  if (el) {
+    addrTipTop.value = Math.round(el.getBoundingClientRect().bottom + 6);
+    addrTipLeft.value = Math.round(Math.max(10, Math.min(el.getBoundingClientRect().left - 12, window.innerWidth - 370)));
+  }
   addrTip.value = text;
 };
 /** 마우스가 있는 환경(PC)에서는 올려놓기만 해도 뜬다 — 다른 설명들과 같은 규칙 */
@@ -3305,10 +3309,19 @@ onBeforeUnmount(() => {
 onBeforeUnmount(() => window.removeEventListener('scroll', closeTips, true));
 /** 말풍선 세로 위치 — 화면 기준(fixed)으로 띄워 가장자리에서 잘리지 않게 한다 */
 const noteTop = ref(0);
+/** 웹은 화면이 넓어 좌우 끝까지 늘이면 한 줄이 너무 길다 — ⓘ 아래에 작게(최대 360) 띄운다 */
+const NOTE_W = 360;
+const noteLeft = ref(0);
+const tipLeftAt = (el: HTMLElement) =>
+  Math.round(Math.max(10, Math.min(el.getBoundingClientRect().left - 12, window.innerWidth - NOTE_W - 10)));
+const noteStyle = computed(() => (webEmbed
+  ? { top: `${noteTop.value}px`, left: `${noteLeft.value}px`, right: 'auto', width: 'max-content', maxWidth: `${NOTE_W}px`, textAlign: 'left' as const }
+  : { top: `${noteTop.value}px` }));
 const placeNote = (evt: Event) => {
   const el = evt.currentTarget as HTMLElement | null;
   if (!el) return;
   noteTop.value = Math.round(el.getBoundingClientRect().bottom + 6);
+  noteLeft.value = tipLeftAt(el);
 };
 const toggleNote = (key: string, evt: Event) => {
   if (noteTip.value === key) { noteTip.value = ''; return; }
@@ -7730,7 +7743,7 @@ const goBack = () => router.back();
           </header>
           <div v-if="!isCollapsed('demand')" class="adp-dm-body">
             <div class="adp-dm-head">
-              <strong class="adp-dm-title">1. <span class="adp-dm-area">{{ surveyAreaLabel }}</span> 수요공급 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="동 이름이 어디서 왔는지" @mouseenter="noteEnter('dong', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('dong', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'dong'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('dong')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></strong>
+              <strong class="adp-dm-title">1. <span class="adp-dm-area">{{ surveyAreaLabel }}</span> 수요공급 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="동 이름이 어디서 왔는지" @mouseenter="noteEnter('dong', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('dong', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'dong'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('dong')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></strong>
               <button v-if="!editingSurvey.demand" class="adp-edit-btn" type="button" @click.stop="editingSurvey.demand = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('demand')">완료</button>
             </div>
@@ -7824,7 +7837,7 @@ const goBack = () => router.back();
                   </div>
                 </div>
               </div>
-              <p v-if="dmTip && DM_ROW1.includes(dmTip)" class="adp-dm-bubble" :style="{ '--arrow': dmTipData[dmTip].arrow }" @click="dmTip = ''">
+              <p v-if="dmTip && DM_ROW1.includes(dmTip)" :class="['adp-dm-bubble', { 'is-web': webEmbed, flip: parseFloat(dmTipData[dmTip].arrow) > 50 }]" :style="{ '--arrow': dmTipData[dmTip].arrow }" @click="dmTip = ''">
                 <span v-for="(row, ri) in dmTipData[dmTip].rows" :key="ri" :class="{ good: row[0] === '적정' }"><b :class="{ act: tipAct(row[0]) }">{{ tipLabel(row[0]) }}</b>{{ row[1] }}</span>
               </p>
               </div>
@@ -7952,7 +7965,7 @@ const goBack = () => router.back();
                   </div>
                 </div>
               </div>
-              <p v-if="dmTip && !DM_ROW1.includes(dmTip) && !DM_ROW3.includes(dmTip)" class="adp-dm-bubble" :style="{ '--arrow': dmTipData[dmTip].arrow }" @click="dmTip = ''">
+              <p v-if="dmTip && !DM_ROW1.includes(dmTip) && !DM_ROW3.includes(dmTip)" :class="['adp-dm-bubble', { 'is-web': webEmbed, flip: parseFloat(dmTipData[dmTip].arrow) > 50 }]" :style="{ '--arrow': dmTipData[dmTip].arrow }" @click="dmTip = ''">
                 <span v-for="(row, ri) in dmTipData[dmTip].rows" :key="ri" :class="{ good: row[0] === '적정' }"><b :class="{ act: tipAct(row[0]) }">{{ tipLabel(row[0]) }}</b>{{ row[1] }}</span>
               </p>
               </div>
@@ -7965,7 +7978,7 @@ const goBack = () => router.back();
 
             <!-- ① 실사용자 + 입지등수 -->
             <div class="adp-dm-block boxed">
-            <div class="adp-dm-sub">① 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동으로</button></div>
+            <div class="adp-dm-sub">① 실사용자 + 입지등수 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('rank', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('rank', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'rank'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('rank')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><button type="button" :class="['adp-rank-reset', { off: !hasTypedRank }]" :disabled="!hasTypedRank" title="손으로 적은 등수를 지우고 자동값으로" @click.stop="resetRanks"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>자동으로</button></div>
             <table class="adp-table adp-ruser-table">
               <colgroup>
               <col style="width: 33%" /><col style="width: 21%" /><col style="width: 18%" /><col style="width: 13%" /><col style="width: 15%" />
@@ -8078,7 +8091,7 @@ const goBack = () => router.back();
             <!-- ② 개별성 분석 -->
             <div class="adp-dm-block boxed">
             <div class="adp-dm-sub">
-              ② 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
+              ② 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
               <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
             </div>
@@ -8319,7 +8332,7 @@ const goBack = () => router.back();
           </header>
           <div v-if="!isCollapsed('survPrice')" class="adp-mkt-body">
             <div class="adp-dm-head">
-              <strong class="adp-dm-title">1. 실거래가 조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('deal', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('deal', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'deal'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
+              <strong class="adp-dm-title">1. 실거래가 조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('deal', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('deal', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'deal'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
               <button v-if="!editingSurvey.deal" class="adp-edit-btn" type="button" @click.stop="editingSurvey.deal = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('deal')">완료</button>
             </div>
@@ -8329,7 +8342,7 @@ const goBack = () => router.back();
             <!-- ① 실거래가 — 예전 '평단가' 블록을 이 줄에 합쳤다 (실거래가 옆이 평단가) -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
-                <span class="t">① <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktModeLabel('d', '경매지번', '유사물건') }}</span> 실거래가<em class="adp-mkt-auto">(매매·전세)</em><span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
+                <span class="t">① <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktModeLabel('d', '경매지번', '유사물건') }}</span> 실거래가<em class="adp-mkt-auto">(매매·전세)</em><span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
                 <button
                   type="button"
                   :class="['adp-mkt-mode', { sim: mktMode('d') === '유사물건' }]"
@@ -8401,7 +8414,7 @@ const goBack = () => router.back();
               </div>
               <div class="adp-mkt-cells c4 adp-dm-table">
                 <div :class="['cell', { lit: mktLit('pub') }]" @mouseenter="litEnter('pub')" @mouseleave="litLeave()" @click="litTap('pub')">
-                  <small><button type="button" class="adp-dm-link" @click.stop="openOfficialPriceSite">공동주택가</button><span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubPrice', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubPrice', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubPrice'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubPrice')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><button
+                  <small><button type="button" class="adp-dm-link" @click.stop="openOfficialPriceSite">공동주택가</button><span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubPrice', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubPrice', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubPrice'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubPrice')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span><button
                     v-if="officialPriceState !== 'fresh'"
                     type="button"
                     class="adp-fetch-warn"
@@ -8419,16 +8432,16 @@ const goBack = () => router.back();
                       <input class="adp-mkt-rate-input" inputmode="numeric" :value="mktVal(mk('d', 'rate'))" placeholder="126" @input="setMktVal(mk('d', 'rate'), ($event.target as HTMLInputElement).value)" />%
                     </template>
                     <template v-else>{{ mktJeonseRate }}%</template>
-                    <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('jeonseRate', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('jeonseRate', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'jeonseRate'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('jeonseRate')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span>
+                    <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('jeonseRate', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('jeonseRate', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'jeonseRate'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('jeonseRate')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span>
                   </small>
                   <strong>{{ mktJeonseFromPub }}</strong>
                 </div>
                 <div :class="['cell calc', { lit: mktLit('saleRatio') }]" @mouseenter="litEnter('saleRatio')" @mouseleave="litLeave()" @click="litTap('saleRatio')">
-                  <small>전세가율 / 갭<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('jeonseRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('jeonseRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'jeonseRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('jeonseRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
+                  <small>전세가율 / 갭<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('jeonseRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('jeonseRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'jeonseRatio'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('jeonseRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
                   <strong class="adp-mkt-gap-wrap">{{ mktJeonseToSale }}<em v-if="mktGapText" class="adp-mkt-gap"> / {{ mktGapText }}</em></strong>
                 </div>
                 <div :class="['cell calc', { lit: mktLit('pubRatio') }]" @mouseenter="litEnter('pubRatio')" @mouseleave="litLeave()" @click="litTap('pubRatio')">
-                  <small>공시대비율<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubRatio'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
+                  <small>공시대비율<span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('pubRatio', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('pubRatio', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'pubRatio'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('pubRatio')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></small>
                   <strong>{{ mktCaseRatio }}</strong>
                 </div>
               </div>
@@ -8459,7 +8472,7 @@ const goBack = () => router.back();
             </div>
 
             <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title">2. 네이버 매물조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
+              <strong class="adp-dm-title">2. 네이버 매물조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
               <button v-if="!editingSurvey.listing" class="adp-edit-btn" type="button" @click.stop="editingSurvey.listing = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('listing')">완료</button>
             </div>
@@ -8684,7 +8697,7 @@ const goBack = () => router.back();
             <!-- 시세 결론 / 급매가 결론 — 생김새가 같아 한 벌로 그린다 -->
             <div v-for="t in CONC_TABLES" :key="t.title" class="adp-sub-block">
               <div class="adp-sub-head">
-                <h3>{{ t.title }}<span v-if="t.boldPrice" class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('concMean', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('concMean', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'concMean'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">체크를 풀면 평균값에서 제외</span></span></h3>
+                <h3>{{ t.title }}<span v-if="t.boldPrice" class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('concMean', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('concMean', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'concMean'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">체크를 풀면 평균값에서 제외</span></span></h3>
               </div>
               <table :class="['adp-table', 'adp-mkt-table', 'fit', 'adp-dm-tbl', 'adp-conc-table', { 'bold-price': t.boldPrice, 'conc-urgent': t.note, 'conc-vert': t.vertical }]">
                 <thead>
@@ -8783,7 +8796,7 @@ const goBack = () => router.back();
             <!-- 1. 입지확인 -->
             <div class="adp-dm-head tight">
               <strong class="adp-dm-title">1. 입지확인</strong>
-              <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('fld1', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('fld1', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'fld1'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">현장 조사 시 손품조사 업데이트 진행</span></span>
+              <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('fld1', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('fld1', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'fld1'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">현장 조사 시 손품조사 업데이트 진행</span></span>
               <!-- 매매수요 '실사용자 + 입지등수'의 평균등수를 그대로 가져와 보여 준다 -->
               <strong class="adp-fs-rank">{{ fieldRankAvg || '-' }}</strong>
             </div>
@@ -8791,7 +8804,7 @@ const goBack = () => router.back();
             <!-- 2. 건물/호실 개별성 확인 -->
             <div class="adp-dm-head tight sec2">
               <strong class="adp-dm-title">2. 건물/호실 개별성 확인</strong>
-              <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('fld2', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('fld2', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'fld2'" class="adp-note-bubble" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''">현장 조사 시 손품조사 업데이트 진행</span></span>
+              <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('fld2', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('fld2', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'fld2'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">현장 조사 시 손품조사 업데이트 진행</span></span>
               <!-- 권리분석과 같은 빨간 체크 — 확인했는지 표시 -->
               <input
                 type="checkbox"
@@ -8803,7 +8816,7 @@ const goBack = () => router.back();
 
             <!-- 3. 탐문 -->
             <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title">3. 탐문 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('probe', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('probe', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'probe'" class="adp-note-bubble rows" :style="{ top: `${noteTop}px` }" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('probe')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></strong>
+              <strong class="adp-dm-title">3. 탐문 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('probe', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('probe', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'probe'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('probe')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></strong>
             </div>
             <div v-for="sec in FIELD_SECTIONS" :key="sec.title" class="adp-fs-section">
               <div class="adp-fs-title">{{ sec.title }}</div>
@@ -9112,7 +9125,7 @@ const goBack = () => router.back();
       </template>
     </div>
 
-    <span v-if="addrTip" class="adp-note-bubble" :style="{ top: `${addrTipTop}px` }" @click.stop="addrTip = ''">{{ addrTip }}</span>
+    <span v-if="addrTip" class="adp-note-bubble" :style="webEmbed ? { top: `${addrTipTop}px`, left: `${addrTipLeft}px`, right: 'auto', width: 'max-content', maxWidth: '360px', textAlign: 'left' } : { top: `${addrTipTop}px` }" @click.stop="addrTip = ''">{{ addrTip }}</span>
 
     <AppConfirm :box="confirmBox" @close="confirmBox = null" />
 
@@ -10767,6 +10780,12 @@ tr.tone-take { background: #fff5f5; }
   border-left: 6px solid transparent; border-right: 6px solid transparent;
   border-bottom: 6px solid rgba(17, 24, 39, 0.92);
 }
+/* 웹 — 표가 넓어 줄 끝까지 늘이면 한 줄이 너무 길다. ⓘ 칸 아래에 작게(최대 380) 띄우고,
+   오른쪽 칸(flip)은 오른쪽 끝을 맞춰 화면 밖으로 나가지 않게 한다. 꼬리는 ⓘ 칸 자리(--arrow)를 가리킨다 */
+.adp-dm-bubble.is-web { right: auto; width: max-content; max-width: 380px; left: max(2px, calc(var(--arrow, 12%) - 24px)); }
+.adp-dm-bubble.is-web::before { left: 18px; }
+.adp-dm-bubble.is-web.flip { left: auto; right: max(2px, calc(100% - var(--arrow, 88%) - 24px)); }
+.adp-dm-bubble.is-web.flip::before { left: auto; right: 18px; }
 /* 사진 카드 제목 옆 표시 — 접혀 있어도 사진이 몇 장 들어 있는지 보인다 */
 .adp-photo-mark {
   display: inline-flex; align-items: center;
