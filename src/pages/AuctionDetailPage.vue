@@ -9350,8 +9350,8 @@ const goBack = () => router.back();
 }
 @media (max-width: 720px) { .adp-diag-boxes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .adp-diag-box {
-  /* 글은 가로·세로 모두 가운데 */
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  /* 가로는 가운데, 세로는 위로 붙인다 — 네 칸의 제목·값·설명 줄이 서로 맞는다 */
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
   min-height: 92px; padding: 10px 6px; box-sizing: border-box;
   border: 1px solid #e3e8f0; border-radius: 10px; background: #f8fafc; text-align: center;
 }
