@@ -280,15 +280,8 @@ body:has(.app-market[data-k="ranking"]) .foot { display: none; }
   top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)) !important; bottom: 0 !important; height: auto !important; min-height: 0 !important;
   border: 0 !important; border-radius: 0 !important; z-index: 0;
 }
-/* 안내 상자 — 물건등록 · 선정목록의 안내와 같은 꼴: 제목 옆에 설명 한 줄 */
-.app-market[data-k="ranking"] .adm-top {
-  position: relative !important; z-index: 2; margin: 0 0 10px; background: var(--surface) !important; backdrop-filter: none !important;
-  border: 1px solid var(--card-line) !important; border-radius: 10px; box-shadow: var(--shadow-card);
-}
-.app-market[data-k="ranking"] .adm-top-in { max-width: none; padding: 12px 16px; }
-.app-market[data-k="ranking"] .adm-title { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
-.app-market[data-k="ranking"] .adm-title h1 { margin: 0; font-size: 16px; font-weight: 800; color: var(--text); }
-.app-market[data-k="ranking"] .adm-title p { margin: 0; font-size: 14px; color: var(--text); }
+/* 제목·설명 줄(지역별 거래량 랭킹 · 지도와 함께 …)은 웹에서 통째로 감춘다 */
+.app-market[data-k="ranking"] .adm-top { display: none !important; }
 /* 고르는 칸 — 뒤 바탕은 지우고 칸만. 칸 크기는 물건등록 칸과 같게(높이 34 · 모서리 6) */
 .app-market[data-k="ranking"] .tsp-filter { position: relative; z-index: 2; background: transparent !important; border: 0 !important; padding: 0 !important; }
 .app-market[data-k="ranking"] .tsp-f > small { display: none; }
@@ -297,7 +290,7 @@ body:has(.app-market[data-k="ranking"]) .foot { display: none; }
 .app-market[data-k="ranking"] .tsp-seg { background: #fff; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12); }
 .app-market[data-k="ranking"] .tsp-note { position: relative; z-index: 2; display: inline-block; margin-top: 6px; padding: 4px 10px; border-radius: 6px; background: var(--surface); }
 /* 통계 · 랭킹 판('지역을 고르세요') — 왼쪽, 안내 상자 · 고르는 칸 아래에서 시작 */
-.app-market[data-k="ranking"] .tsp-panel { left: max(16px, calc((100vw - 1280px) / 2)) !important; top: 150px !important; }
+.app-market[data-k="ranking"] .tsp-panel { left: max(16px, calc((100vw - 1280px) / 2)) !important; top: 96px !important; }
 /* 지역분석 — 고르는 칸 위 이름(시·도 / 시·군·구 / 읍·면·동 / 종류)은 감추고, 칸 안에 '시도 선택' 같은 회색 안내 */
 .app-market .adm-bar .adm-f > small { display: none !important; }
 .app-market .adm-bar select.ph { color: #9ca3af; }
