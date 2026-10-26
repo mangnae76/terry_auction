@@ -269,6 +269,14 @@ button { cursor: pointer; }
 .app-detail .adp-profit-sticky > :not(.adp-card-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
 /* 시장분석 — 분석 도구 화면의 '뒤로'(분석 도구 첫 화면으로)는 웹에서 감춘다 */
 .app-market .adm-back { display: none !important; }
+/* 거래량 랭킹 — 지도를 임장경로처럼 화면 가로 끝까지(1920 전체) 깐다. 통계·랭킹 판은 본문 왼쪽 줄에 맞춘다 */
+body:has(.app-market[data-k="ranking"]) { overflow-x: hidden; }
+.app-market[data-k="ranking"] .tsp-stage {
+  width: 100vw; position: relative; left: 50%; margin-left: -50vw;
+  border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important;
+  height: calc(100vh - var(--gnb-h) - var(--subtab-h) - 24px) !important; min-height: 560px;
+}
+.app-market[data-k="ranking"] .tsp-panel { left: max(14px, calc((100vw - 1280px) / 2)) !important; }
 /* 지역분석 — 고르는 칸 위 이름(시·도 / 시·군·구 / 읍·면·동 / 종류)은 감추고, 칸 안에 '시도 선택' 같은 회색 안내 */
 .app-market .adm-bar .adm-f > small { display: none !important; }
 .app-market .adm-bar select.ph { color: #9ca3af; }
