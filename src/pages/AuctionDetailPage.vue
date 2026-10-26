@@ -4508,14 +4508,13 @@ const RIGHTS_CHECK_ITEMS = [
 const rightsDocErrMsg = ref('');
 const rightsDocList = computed<string[]>(() => auction.value?.rightsDocUrls ?? []);
 
-/** AI 분석 요청 — 서류 일곱 칸. 칸마다 extraPhotos 의 한 자리(doc.*)를 쓴다 */
+/** AI 분석 요청 — 서류 다섯 칸. 칸마다 extraPhotos 의 한 자리(doc.*)를 쓴다
+ *  (건축물대장·감정평가서는 권리를 가르는 데 쓰이지 않아 뺐다 — 손품조사 쪽에 따로 있다) */
 const DOC_BOXES: Array<{ key: string; label: string; icon: string }> = [
   { key: 'doc.registry', label: '건물등기', icon: '<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M4 17h16"/>' },
   { key: 'doc.saleSpec', label: '매물명세', icon: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/>' },
   { key: 'doc.survey', label: '현황조사', icon: '<rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="11" cy="12" r="3"/><path d="m13.2 14.2 2.3 2.3"/>' },
   { key: 'doc.household', label: '세대열람', icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.9-3.5 3.4-5.5 6.5-5.5s5.6 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.8 3 2.6 3.5 5.2"/>' },
-  { key: 'doc.building', label: '건축물대장', icon: '<path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M9 7h2M9 11h2M9 15h2M3 21h18M16 10h3a2 2 0 0 1 2 2v9"/>' },
-  { key: 'doc.appraisal', label: '감정평가서', icon: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14 7 22l5-3 5 3-1.5-8"/>' },
   { key: 'doc.delivery', label: '송달내역', icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>' },
 ];
 
@@ -4711,8 +4710,9 @@ const rightsDiag = computed(() => {
   return {
     // 상자 셋을 같은 꼴로 — 윗줄은 굵은 값, 아랫줄은 한 줄 설명.
     // 말소기준권리는 '갑구 6번 강제경매개시결정' 과 그 아래 접수일.
-    baseRight: [b.rank, b.kind].filter(Boolean).join(' ') || b.kind,
-    baseDate: (b.date || '').replace(/-/g, '.'),
+    // 굵은 줄에는 권리 종류만, 그 아래 한 줄에 '갑구 6번 2026.02.23'
+    baseRight: b.kind || b.rank,
+    baseDate: [b.kind ? b.rank : '', (b.date || '').replace(/-/g, '.')].filter(Boolean).join(' '),
     takeover: ai.takeover.items.map(rightLine),
     extinguish: ai.extinguish.items.map(rightLine),
   };
@@ -4761,7 +4761,7 @@ const blobToBase64 = (blob: Blob) => new Promise<string>((done, fail) => {
   r.onerror = () => fail(new Error('read'));
   r.readAsDataURL(blob);
 });
-/** 일곱 칸에 올려 둔 서류를 Gemini 가 읽을 수 있는 꼴로 모은다 */
+/** 다섯 칸에 올려 둔 서류를 Gemini 가 읽을 수 있는 꼴로 모은다 */
 const collectDocParts = async (): Promise<RightsDocPart[]> => {
   const out: RightsDocPart[] = [];
   for (const box of DOC_BOXES) {
@@ -7057,7 +7057,7 @@ const goBack = () => router.back();
 
 
       <template v-if="activeTab === 'rights'">
-        <!-- AI 분석 요청 — 서류 일곱 칸(건물등기·매물명세·현황조사·세대열람·건축물대장·감정평가서·송달내역).
+        <!-- AI 분석 요청 — 서류 다섯 칸(건물등기·매물명세·현황조사·세대열람·송달내역).
              칸을 누르면 파일을 고르고, 끌어다 놓아도 올라간다. 각 칸은 extraPhotos['doc.*'] 에 담는다 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsPhotos')">
@@ -7112,11 +7112,18 @@ const goBack = () => router.back();
             <div class="adp-ai-start-row">
               <button
                 type="button"
-                class="adp-ai-start"
-                :disabled="rightsAiBusy"
-                :title="rightsAiBusy ? '분석하고 있습니다' : '올려 둔 서류로 권리분석을 받습니다'"
+                :class="['adp-ai-start', { done: !!auction?.rightsAi && !rightsAiBusy }]"
+                :disabled="rightsAiBusy || !!auction?.rightsAi"
+                :title="rightsAiBusy ? '분석하고 있습니다' : (auction?.rightsAi ? '이미 분석했습니다 — 오른쪽에서 다시 받을 수 있습니다' : '올려 둔 서류로 권리분석을 받습니다')"
                 @click="requestRightsAi"
-              >{{ rightsAiBusy ? '분석 중…' : 'AI 분석 시작' }}</button>
+              >{{ rightsAiBusy ? '분석 중…' : (auction?.rightsAi ? 'AI 분석 완료' : 'AI 분석 시작') }}</button>
+              <button
+                v-if="auction?.rightsAi && !rightsAiBusy"
+                type="button"
+                class="adp-ai-again"
+                title="올려 둔 서류로 권리분석을 다시 받습니다"
+                @click="requestRightsAi"
+              >다시 분석하기</button>
             </div>
             <!-- 분석 상태 — 못 했으면 까닭, 했으면 무엇을 보고 언제 했는지 -->
             <p v-if="rightsAiErr" class="adp-plan-err">{{ rightsAiErr }}</p>
@@ -9674,7 +9681,7 @@ const goBack = () => router.back();
 @keyframes adp-spin-fade { 0% { opacity: 1; } 100% { opacity: 0.12; } }
 
 /* AI 분석 시작 — 서류 칸 아래 가운데에 선다 */
-.adp-ai-start-row { display: flex; justify-content: center; padding: 12px 0 4px; }
+.adp-ai-start-row { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 12px 0 4px; }
 .adp-ai-start {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   min-width: 220px; height: 44px; padding: 0 22px;
@@ -9684,6 +9691,14 @@ const goBack = () => router.back();
 }
 .adp-ai-start:hover:not(:disabled) { background: #1f5fe0; }
 .adp-ai-start:disabled { background: #9db9ef; cursor: default; box-shadow: none; }
+/* 이미 분석한 뒤 — 눌러도 할 일이 없으니 회색으로 가라앉힌다 */
+.adp-ai-start.done { background: #9ca3af; cursor: default; box-shadow: none; }
+.adp-ai-again {
+  height: 44px; padding: 0 18px; border: 1px solid #c7d7f7; border-radius: 10px;
+  background: #eef3fd; color: #2a5fbf; font-size: 13.5px; font-weight: 800; cursor: pointer;
+  transition: background 0.15s;
+}
+.adp-ai-again:hover { background: #dfe9fb; }
 
 /* 인수되는 권리 — 낙찰자가 떠안는 줄. 소멸(회색)과 반대로 붉게 세운다 */
 .adp-reg-take { color: #c62828; font-weight: 800; }

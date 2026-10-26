@@ -66,14 +66,13 @@ export type RightsAi = {
   usedDocs: string[];
 };
 
-/** 서류 칸 이름 — 화면의 일곱 칸과 같은 말을 쓴다 */
+/** 서류 칸 이름 — 화면의 다섯 칸과 같은 말을 쓴다 */
+/* AI 가 읽는 서류 다섯 — 건축물대장·감정평가서는 권리를 가르는 데 쓰이지 않아 넘기지 않는다 */
 export const DOC_LABELS: Record<string, string> = {
   'doc.registry': '등기사항전부(요약)증명서',
   'doc.saleSpec': '매각물건명세서',
   'doc.survey': '현황조사서',
   'doc.household': '전입세대확인서',
-  'doc.building': '건축물대장',
-  'doc.appraisal': '감정평가서',
   'doc.delivery': '송달내역',
 };
 
