@@ -281,12 +281,12 @@ button { cursor: pointer; }
 .app-market .adm-bar .adm-f > small { font-size: 14px !important; }
 .app-market .adm-sum { font-size: 14px !important; } .app-market .adm-sum strong { font-size: 16px !important; }
 /* 지역분석 — 화면 제목 줄(제목 · 설명 · 엑셀 단추)은 웹에서 통째로 감춘다. 엑셀 내려받기는 '조회' 옆으로 옮겼다 */
-.app-market[data-k="region"] .adm-top { display: none !important; }
+.app-market:is([data-k="region"], [data-k="dong"]) .adm-top { display: none !important; }
 /* 엑셀 내려받기는 조회 바로 왼쪽 — 둘이 오른쪽 끝에 붙어 선다 */
-.app-market[data-k="region"] .adm-csv-bar { margin-left: auto !important; }
-.app-market[data-k="region"] .adm-csv-bar + .adm-load { margin-left: 0 !important; }
+.app-market:is([data-k="region"], [data-k="dong"]) .adm-csv-bar { margin-left: auto !important; }
+.app-market:is([data-k="region"], [data-k="dong"]) .adm-csv-bar + .adm-load { margin-left: 0 !important; }
 /* 시도 · 시군구 · 읍면동 칸은 조금 좁게(260 → 200) */
-.app-market[data-k="region"] .adm-bar select.adm-input.narrow { width: 200px !important; }
+.app-market:is([data-k="region"], [data-k="dong"]) .adm-bar select.adm-input.narrow { width: 200px !important; }
 /* 거래량 랭킹 — 임장경로처럼 지도를 하위 탭 바로 아래부터 화면 끝까지 통째로 깔고(1920 전체),
    안내 상자 · 고르는 칸 · 통계 판은 그 위에 얹는다 */
 /* 지도가 화면을 통째로 쓰는 화면 — 페이지 자체는 굴러가지 않는다(판은 제 안에서만 굴러간다) */
@@ -352,8 +352,8 @@ body:has(.app-market[data-k="ranking"]) .foot { display: none; }
   position: fixed !important; left: 18px !important; width: 546px !important; max-width: calc(100vw - 36px) !important;
   top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 18px) !important; bottom: 18px !important;
 }
-/* 지역분석 — 고르는 칸 위 이름(시·도 / 시·군·구 / 읍·면·동 / 종류)은 감추고, 칸 안에 '시도 선택' 같은 회색 안내 */
-.app-market .adm-bar .adm-f > small { display: none !important; }
+/* 지역 수요공급 · 지역분석 — 고르는 칸 위 이름(시·도 / 시·군·구 / 읍·면·동 / 종류)은 감추고, 칸 안에 '시도 선택' 같은 회색 안내 */
+.app-market:is([data-k="region"], [data-k="dong"]) .adm-bar .adm-f > small { display: none !important; }
 .app-market .adm-bar select.ph { color: #9ca3af; }
 .app-market .adm-bar select.ph option { color: #111827; }
 /* 펼친 고르기 목록(면적 · 룸수 · 케이스 · 상담 상호 …)은 위 고정 줄(머리띠 · 하위 탭 · 사건 요약, z 30)보다 아래 층에 */

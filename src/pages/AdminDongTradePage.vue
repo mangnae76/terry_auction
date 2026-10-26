@@ -3,7 +3,7 @@
 //
 // 시군구 12개월치를 한 번 받아 두고, 읍면동·기간·면적·연식은 받아 둔 줄
 // 안에서 추린다. 조건을 바꿀 때마다 다시 부르면 하루 한도만 깎아먹는다.
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
@@ -21,6 +21,8 @@ const KINDS: Array<{ key: Kind; label: string }> = [
 ];
 
 const router = useRouter();
+/** 웹 시장분석 › 지역분석에 띄웠는가 — 웹(shared.entry.js)이 넣어 준다. 분석 도구에서는 false */
+const webEmbed = inject<boolean>('webEmbed', false);
 const auth = useAuthStore();
 
 // 시도 → 시군구 → 읍면동 차례로 좁힌다. 여기는 한 시군구씩만 받는다 —
@@ -371,22 +373,22 @@ const downloadCsv = () => {
       <div class="adm-bar">
         <label class="adm-f">
           <small>시 · 도</small>
-          <select v-model="sido" class="adm-input narrow">
-            <option value="">전국</option>
+          <select v-model="sido" :class="['adm-input', 'narrow', { ph: !sido }]">
+            <option value="">{{ webEmbed ? '시도 선택' : '전국' }}</option>
             <option v-for="g in REGION_GROUPS" :key="g.sido" :value="g.sido">{{ g.sido }}</option>
           </select>
         </label>
         <label class="adm-f">
           <small>시 · 군 · 구</small>
-          <select v-model="districtCode" class="adm-input narrow" :disabled="!sido">
-            <option value="">선택</option>
+          <select v-model="districtCode" :class="['adm-input', 'narrow', { ph: !districtCode }]" :disabled="!sido">
+            <option value="">{{ webEmbed ? '시군구 선택' : '선택' }}</option>
             <option v-for="d in districts" :key="d.lawdCode" :value="d.lawdCode">{{ d.label }}</option>
           </select>
         </label>
         <label class="adm-f">
           <small>읍 · 면 · 동</small>
-          <select v-model="dong" class="adm-input narrow" :disabled="dongOptions.length === 0">
-            <option value="">{{ dongPeeking ? '불러오는 중…' : '전체' }}</option>
+          <select v-model="dong" :class="['adm-input', 'narrow', { ph: !dong }]" :disabled="dongOptions.length === 0">
+            <option value="">{{ dongPeeking ? '불러오는 중…' : (webEmbed ? '읍면동 선택' : '전체') }}</option>
             <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
           </select>
         </label>
@@ -396,8 +398,16 @@ const downloadCsv = () => {
             <button v-for="k in KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: kind === k.key }]" @click="kind = k.key">{{ k.label }}</button>
           </div>
         </label>
+        <!-- 웹 — 엑셀 내려받기를 조회 바로 왼쪽으로 (제목 줄은 웹에서 감춘다) — 지역 수요공급과 같은 틀 -->
+        <button
+          v-if="webEmbed"
+          type="button"
+          class="adm-csv adm-csv-bar"
+          :disabled="listRows.length === 0"
+          @click="downloadCsv"
+        >엑셀 내려받기</button>
         <button type="button" class="adm-load" :disabled="loading || !district" @click="load">
-          {{ loading ? '불러오는 중…' : '데이터 로드' }}
+          {{ loading ? '불러오는 중…' : (webEmbed ? '조회' : '데이터 로드') }}
         </button>
       </div>
 
