@@ -892,7 +892,7 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-field .adp-fs-sections :is(select, .adp-agency-trigger, .adp-agency-trigger .txt, .adp-multi-trigger, .adp-multi-placeholder) { font-size: 14px !important; }
 /* 오른쪽 고르는 칸은 블록마다 폭을 고정해 입력칸 끝이 세로로 맞는다 — ① 은 임차인·입주민·동대표 + 체크, ②③ 은 체크 하나 */
 .app-detail.tab-field .adp-fs-sections .adp-fs-row { grid-template-columns: 112px minmax(0, 1fr) 30px !important; }
-.app-detail.tab-field .adp-fs-sections > .adp-fs-section:first-child .adp-fs-row { grid-template-columns: 112px minmax(0, 1fr) 196px !important; }
+/* ① 에는 이제 체크만 남아 ② 와 같은 30 (임차인·입주민·동대표 줄은 ③ 으로 갔다) */
 .app-detail.tab-field .adp-fs-sections .adp-fs-row :is(.ext, .ext > .adp-fs-multi, .ext .adp-fs-input, .ctl.wide .adp-fs-unit, .ctl.wide .adp-fs-input) { width: 100% !important; max-width: none !important; min-width: 0; }
 .app-detail.tab-field .adp-fs-sections .adp-fs-row .lbl { padding-left: 4px; }
 .app-detail.tab-field .adp-fs-sections .adp-fs-section .adp-survey-row { grid-template-columns: 112px minmax(0, 1fr) 30px; }

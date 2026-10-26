@@ -2962,8 +2962,8 @@ const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow
     items: [],
   },
 ];
-// 웹 — 임차인탐문 · 임차인차량은 '③ 입찰자 현황조사' 안에 (사람에 관한 것끼리), '① 탐문' 이름은 '① 현장조사'. 앱은 그대로
-const WEB_TO_REPORT = ['fs.tenantContact', 'fs.tenantCar'];
+// 웹 — 미납관리비 · 누수 · 임차인탐문 · 임차인차량은 '③ 입찰자 현황조사' 안에 (사람에 관한 것끼리), '① 탐문' 이름은 '① 현장조사'. 앱은 그대로
+const WEB_TO_REPORT = ['fs.mailMaint', 'fs.roofLeak', 'fs.tenantContact', 'fs.tenantCar']; // 순서는 ① 에 있던 차례 그대로
 const fieldSections = computed(() => (webEmbed
   ? FIELD_SECTIONS.map((sec) => (sec.special === 'report'
     ? { ...sec, items: FIELD_SECTIONS.flatMap((x) => x.items).filter((it) => WEB_TO_REPORT.includes(it.id)) }
