@@ -4519,6 +4519,8 @@ const DOC_BOXES: Array<{ key: string; label: string; icon: string }> = [
   { key: 'doc.household', label: '세대열람', icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.9-3.5 3.4-5.5 6.5-5.5s5.6 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.8 3 2.6 3.5 5.2"/>' },
   { key: 'doc.delivery', label: '송달내역', icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>' },
 ];
+/** 화면에 세울 서류 칸 — 앱은 송달내역을 빼고 넷만 (두 칸씩 두 줄). 웹은 다섯 그대로 */
+const shownDocBoxes = computed(() => (webEmbed ? DOC_BOXES : DOC_BOXES.filter((b) => b.key !== 'doc.delivery')));
 
 /** 사진이 들어가는 칸을 전부 여기 모아 둔다 — 새 칸이 생기면 이 표에 한 줄만 더하면 된다.
  *  공통 규칙: 사진이 한 장이라도 붙어 있으면 접은 채로 열고(아래 항목이 밀려 내려가지 않게),
@@ -7113,8 +7115,8 @@ const goBack = () => router.back();
             <img v-else :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsPhotos') }]" alt="" />
           </header>
           <div v-if="webEmbed || !isCollapsed('rightsPhotos')">
-            <div class="adp-docs">
-              <div v-for="b in DOC_BOXES" :key="b.key" class="adp-doc">
+            <div :class="['adp-docs', { 'is-app': !webEmbed }]">
+              <div v-for="b in shownDocBoxes" :key="b.key" class="adp-doc">
                 <p class="adp-doc-label">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="b.icon" />{{ b.label }}
                 </p>
@@ -9385,6 +9387,8 @@ const goBack = () => router.back();
 /* 서류 다섯 칸 — 칸 수에 맞춰 다섯으로 나눈다 (일곱이던 때의 칸 폭을 그대로 두면 칸이 좁고 글이 잘린다) */
 .adp-docs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
 @media (max-width: 700px) { .adp-docs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* 앱 — 송달내역을 뺀 네 칸을 두 칸씩 두 줄로 */
+.adp-docs.is-app { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 460px) {
   .adp-docs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* 폰은 칸이 좁고 낮다 — 폴더 그림을 줄이고 글씨 두 줄을 촘촘히 */
