@@ -561,7 +561,7 @@ onMounted(() => {
           <!-- 웹 판 — 제목·안내 → 고르는 칸 → 고른 결과 → 통계 정보 → 동별 랭킹 (사이마다 가름선) -->
           <header v-if="webEmbed" class="tsp-web-head">
             <strong>거래량 랭킹</strong>
-            <small>지도와 함께 지역별 거래량 랭킹을 본다.</small>
+            <small>지도와 함께 지역별 거래량 랭킹을 봅니다.</small>
           </header>
           <div v-if="webEmbed" :id="filterSlotId" class="tsp-filter-slot" />
           <div v-if="webEmbed" class="tsp-web-picked">
