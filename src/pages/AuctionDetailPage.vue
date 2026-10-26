@@ -5736,7 +5736,7 @@ const goBack = () => router.back();
       </div>
     </div>
 
-    <div class="adp-body">
+    <div :class="['adp-body', { 'adp-tab-rights': activeTab === 'rights' }]">
       <template v-if="activeTab === 'basic'">
         <!-- 정보요약 — PDF 값으로 채우고 필요한 칸은 직접 고친다 -->
         <section class="adp-card">
@@ -9754,6 +9754,8 @@ const goBack = () => router.back();
 .adp-rights-wide td { color: #374151; }
 .adp-rights-wide .adp-rights-date { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 600; color: #9ca3af; }
 .adp-rows-cap { margin: 12px 0 5px; font-weight: 800; color: #374151; }
+/* 카드 안 작은 제목(상세 권리 분석 · AI 명도 난이도 분석) — 서류 칸 이름과 같은 14 */
+.adp-tab-rights .adp-rows-cap { font-size: 14px; }
 /* 건물등기 표와 글자 크기·여백을 똑같이 — 두 표가 나란히 읽혀야 한다 */
 .adp-rights-table { table-layout: fixed; }
 .adp-rights-table th, .adp-rights-table td { font-size: 11px; padding: 8px 6px; word-break: keep-all; vertical-align: top; }
@@ -12168,4 +12170,16 @@ select.adp-pub-input option { text-align: center; }
 .adp-cash-later {
   margin: 18px 0 10px; font-size: 11px; color: var(--text-muted);
 }
+
+/* 권리분석 탭 — 글자는 12 아래로 내려가지 않는다 (앱·웹 공통 규칙).
+   카드 제목 16 · 카드 안 작은 제목 14 는 위에서 정한다. ▾ 같은 기호는 글이 아니라 그대로 둔다 */
+.adp-tab-rights :is(
+  .adp-doc-box, .adp-doc-pdf-tag, .adp-ai-missing, .adp-base-row .quad-v small, .adp-diag-sum,
+  .adp-rights-date, .adp-rights-table th, .adp-rights-table td, .adp-rights-table td small,
+  .adp-registry-table th, .adp-registry-table td, .adp-table .adp-desc, .adp-plan-err,
+  .adp-empty.sm, .adp-empty.one, .adp-rdoc-task, .adp-rdoc-input, .adp-rdoc-label,
+  .adp-rdoc-survey .adp-rdoc-input, .adp-rdoc-survey .adp-date-btn, .adp-rdoc-survey .adp-agency-trigger .txt,
+  .adp-rdoc-multi .adp-agency-trigger, .adp-rcase-item small, .adp-rcheck-table td,
+  .adp-agency-trigger, .adp-agency-option, .adp-toggle .on
+) { font-size: 12px; }
 </style>
