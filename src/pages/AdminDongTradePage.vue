@@ -398,6 +398,17 @@ const downloadCsv = () => {
             <button v-for="k in KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: kind === k.key }]" @click="kind = k.key">{{ k.label }}</button>
           </div>
         </label>
+        <!-- 웹 — 기간도 이 줄에서 고른다 (아래 검색조건의 기간선택과 같은 값) -->
+        <label v-if="webEmbed" class="adm-f">
+          <small>기간</small>
+          <select
+            class="adm-input narrow"
+            :value="periodMonths"
+            @change="applyPeriod(Number(($event.target as HTMLSelectElement).value))"
+          >
+            <option v-for="m in PERIODS" :key="m" :value="m">{{ m }}개월</option>
+          </select>
+        </label>
         <!-- 웹 — 엑셀 내려받기를 조회 바로 왼쪽으로 (제목 줄은 웹에서 감춘다) — 지역 수요공급과 같은 틀 -->
         <button
           v-if="webEmbed"
