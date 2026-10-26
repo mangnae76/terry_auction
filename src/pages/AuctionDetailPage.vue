@@ -9562,6 +9562,8 @@ const goBack = () => router.back();
 .adp-evict-text.on { color: #111827; }
 /* 말소기준권리는 권리 이름이라 숫자보다 작게, 길면 줄을 바꾼다 */
 .adp-diag-name { font-size: 16px; line-height: 1.3; word-break: keep-all; }
+/* 웹 — 넓은 칸이라 말소기준권리 이름도 다른 세 칸 값과 같은 20 (줄간격은 그대로 1.3) */
+.adp-tab-rights .adp-diag-name { font-size: 20px; }
 /* 개수 아래 권리 이름 — 글씨는 상자 이름(인수권리수 · 말소권리수)과 같은 크기 */
 .adp-diag-list { margin: 0; padding: 0; list-style: none; font-size: 12.5px; line-height: 1.45; color: #6b7280; word-break: keep-all; }
 .adp-diag-list.take { color: #dc2626; }
