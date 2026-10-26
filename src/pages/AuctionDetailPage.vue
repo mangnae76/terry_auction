@@ -4644,6 +4644,11 @@ const notePieces = (note: string, rowDate = '') => (note || '')
   .filter((t) => Boolean(t) && t !== rowDate);
 const rightsNoteParts = (note: string, rowDate = '') =>
   notePieces(note, rowDate).map((line) => [{ text: line, base: false }]);
+/** 순위를 짧게 — "갑구 6번" → "갑(6)". 못 읽으면 적힌 그대로 */
+const rankShort = (text: string) => {
+  const hit = (text || '').match(/([갑을])\D*(\d+)/);
+  return hit ? `${hit[1]}(${hit[2]})` : (text || '').trim();
+};
 /** 상세 권리 분석 표에 그대로 뿌릴 줄 — 날짜·금액·내용을 건물등기 꼴로 다듬어 둔다 */
 const rightsRows = computed(() => {
   const base = rightsAi.value?.baseRight;
@@ -4686,7 +4691,8 @@ const rightsRows = computed(() => {
     // 괄호에 끌려 들어온 전입·확정을 내용 줄 맨 앞에 세운다 — 건물등기와 같은 차례
     const source = [...money.extra, r.note].filter(Boolean).join(' · ');
     if (!isBase) {
-      return { ...r, dateText: dotYmd(r.date), amountText: amount, noteLines: rightsNoteParts(source, dotYmd(r.date)) };
+      const noteLines = rightsNoteParts(source, dotYmd(r.date));
+      return { ...r, rankText: rankShort(r.rank), dateText: dotYmd(r.date), amountText: amount, moneyText: amount, noteLines, webNoteLines: noteLines };
     }
     /* 말소기준권리 줄 — 앱·웹 같은 꼴. 첫 줄에 '말소기준권리'(빨강), 그 아래 줄에
        "160,855,725원 2026타경501558" (빗금 없이). 금액은 사건번호와 같은 크기·색. */
@@ -4701,6 +4707,14 @@ const rightsRows = computed(() => {
       noteLines: [
         [{ text: '말소기준권리', base: true }],
         ...(tail ? [[{ text: tail, base: false }]] : []),
+        ...rest.map((t) => [{ text: t, base: false }]),
+      ],
+      /* 웹 표는 금액이 제 칸(채권액/내용)에 선다 — 비고에는 '말소기준권리'와 사건번호만 */
+      rankText: rankShort(r.rank),
+      moneyText: amount,
+      webNoteLines: [
+        [{ text: '말소기준권리', base: true }],
+        ...(caseNo ? [[{ text: caseNo, base: false }]] : []),
         ...rest.map((t) => [{ text: t, base: false }]),
       ],
     };
@@ -7240,7 +7254,33 @@ const goBack = () => router.back();
             <!-- 상세 권리 분석 — 등기부 한 줄씩. 인수는 붉게 세운다 -->
             <template v-if="rightsRows.length">
               <p class="adp-sub-note adp-rows-cap">상세 권리 분석</p>
-              <table class="adp-table adp-rights-table">
+              <!-- 웹 — 넓은 칸이라 순위·권리 종류·권리자·채권액/내용·인수/소멸·비고를 제 칸에 하나씩 -->
+              <table v-if="webEmbed" class="adp-table adp-rights-wide">
+                <colgroup>
+                  <col style="width: 9%" /><col style="width: 13%" /><col style="width: 20%" /><col style="width: 17%" /><col style="width: 11%" /><col />
+                </colgroup>
+                <thead><tr><th>순위</th><th>권리 종류</th><th>권리자</th><th>채권액/내용</th><th>인수/소멸</th><th>비고</th></tr></thead>
+                <tbody>
+                  <tr v-for="(r, i) in rightsRows" :key="i" :class="r.status === '인수' ? 'tone-take' : ''">
+                    <td>{{ r.rankText || '-' }}</td>
+                    <td>{{ r.kind || '-' }}</td>
+                    <td>{{ r.holder || '-' }}</td>
+                    <td>{{ r.moneyText || '-' }}</td>
+                    <td><b v-if="r.status === '인수'" class="adp-reg-take">인수</b><template v-else>소멸</template></td>
+                    <td>
+                      <template v-if="r.webNoteLines.length">
+                        <template v-for="(line, li) in r.webNoteLines" :key="li"><span
+                          v-for="(pt, pi) in line"
+                          :key="pi"
+                          :class="{ 'adp-reg-base': pt.base }"
+                        >{{ pt.text }}</span><br v-if="li < r.webNoteLines.length - 1" /></template>
+                      </template>
+                      <template v-else>-</template>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <table v-else class="adp-table adp-rights-table">
                 <colgroup>
                   <col style="width: 20%" /><col /><col style="width: 22%" /><col style="width: 15%" />
                 </colgroup>
@@ -9707,6 +9747,11 @@ const goBack = () => router.back();
   line-height: 1.4; word-break: keep-all; white-space: pre-line;
 }
 /* 상세 권리 분석 표 */
+/* 웹 — 여섯 칸을 한 줄씩. 머리줄은 옅은 바탕, 줄 사이는 가는 선 */
+.adp-rights-wide { table-layout: fixed; }
+.adp-rights-wide th, .adp-rights-wide td { font-size: 13px; padding: 12px 12px; word-break: keep-all; vertical-align: middle; text-align: left; }
+.adp-rights-wide th { font-weight: 800; color: #374151; background: #f6f7f9; }
+.adp-rights-wide td { color: #374151; }
 .adp-rows-cap { margin: 12px 0 5px; font-weight: 800; color: #374151; }
 /* 건물등기 표와 글자 크기·여백을 똑같이 — 두 표가 나란히 읽혀야 한다 */
 .adp-rights-table { table-layout: fixed; }
