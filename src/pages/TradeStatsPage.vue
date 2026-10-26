@@ -126,6 +126,12 @@ const scopeTitle = computed(() => (
 ));
 /** 받아 온 기간 — '최근 1개월' */
 const periodText = computed(() => (selectedPeriod.value ? `최근 ${selectedPeriod.value}개월` : ''));
+/** 매매 / 전월세 — 웹에서만 고른다(분석 도구는 늘 매매) */
+const selectedDealKind = ref<'sale' | 'rent'>('sale');
+const DEAL_KINDS = [{ value: 'sale', label: '매매' }, { value: 'rent', label: '전월세' }] as const;
+const dealKindLabel = computed(() => (selectedDealKind.value === 'rent' ? '전월세' : '매매'));
+/** 평균 금액 이름 — 전월세는 보증금 평균 */
+const avgLabel = computed(() => (selectedDealKind.value === 'rent' ? '보증금 평균' : '매매 평균가'));
 /** 웹 판 — 검색 아래 결과 줄: 고른 시도 · 시군구 · 읍면동, 그 아래 '최근 12개월 · 연립다세대' */
 const pickedPlaceText = computed(() => (
   [selectedSido.value, selectedDistrict.value, selectedDong.value].filter(Boolean).join(' ') || '지역을 고르세요'
@@ -353,6 +359,7 @@ const loadStats = async () => {
             dealYmd: dealYmdList[0],
             dealYmdList,
             propertyType: selectedPropertyType.value,
+            dealKind: selectedDealKind.value,
           });
           return { target, result };
         } catch (error) {
@@ -511,7 +518,20 @@ onMounted(() => {
                 >{{ opt.label }}</button>
               </div>
             </label>
-            <label class="tsp-f">
+            <!-- 웹 — 기간 옆에서 매매 / 전월세를 고른다 -->
+            <label v-if="webEmbed" class="tsp-f tsp-f-deal">
+              <small>거래</small>
+              <div class="tsp-seg">
+                <button
+                  v-for="opt in DEAL_KINDS"
+                  :key="opt.value"
+                  type="button"
+                  :class="['tsp-seg-btn', { on: selectedDealKind === opt.value }]"
+                  @click="selectedDealKind = opt.value"
+                >{{ opt.label }}</button>
+              </div>
+            </label>
+            <label class="tsp-f tsp-f-period">
               <small>기간</small>
               <select class="tsp-select" v-model.number="selectedPeriod">
                 <option :value="0">{{ webEmbed ? '기간 선택' : '선택' }}</option>
@@ -546,7 +566,7 @@ onMounted(() => {
           <div v-if="webEmbed" :id="filterSlotId" class="tsp-filter-slot" />
           <div v-if="webEmbed" class="tsp-web-picked">
             <strong>{{ pickedPlaceText }}</strong>
-            <small v-if="periodText || kindLabel">{{ [periodText, kindLabel].filter(Boolean).join(' · ') }}</small>
+            <small v-if="periodText || kindLabel">{{ [periodText, kindLabel, dealKindLabel].filter(Boolean).join(' · ') }}</small>
           </div>
           <header v-if="!webEmbed" class="tsp-panel-head">
             <strong>{{ scopeTitle }}</strong>
@@ -558,7 +578,7 @@ onMounted(() => {
             <h3>통계 정보</h3>
             <div class="tsp-stat-grid">
               <div><dt>거래 건수</dt><dd>{{ statTotalCount.toLocaleString('ko-KR') }}건</dd></div>
-              <div><dt>매매 평균가</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
+              <div><dt>{{ avgLabel }}</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
               <div><dt>거래 총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
               <div><dt>집계 동</dt><dd>{{ selectedRegion ? '1곳' : `${rows.length}곳` }}</dd></div>
             </div>
@@ -594,7 +614,7 @@ onMounted(() => {
                     </div>
                     <small class="tsp-rank-pct">{{ row.share.toFixed(1) }}%</small>
                   </div>
-                  <small class="tsp-rank-avg">매매 평균가 {{ shortWon(row.avgPrice) }}</small>
+                  <small class="tsp-rank-avg">{{ avgLabel }} {{ shortWon(row.avgPrice) }}</small>
                 </div>
               </li>
             </ol>

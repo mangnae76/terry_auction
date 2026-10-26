@@ -353,7 +353,8 @@ const fetchTradeVolumeByPath = async (
   rows.forEach((row) => {
     const region = pickRegionName(row, params.keyword || '기타');
     counts.set(region, (counts.get(region) ?? 0) + 1);
-    const manWon = Number(String(row.dealAmount ?? row['거래금액'] ?? '').replace(/[^\d]/g, ''));
+    // 전월세 자료에는 거래금액이 없다 — 보증금(만원)을 그 자리에 쓴다
+    const manWon = Number(String(row.dealAmount ?? row['거래금액'] ?? row.deposit ?? row['보증금액'] ?? '').replace(/[^\d]/g, ''));
     if (manWon > 0) {
       const cur = prices.get(region) ?? { sum: 0, n: 0 };
       cur.sum += manWon * 10000;
@@ -564,6 +565,8 @@ export type PropertyType = 'apt' | 'villa' | 'officetel' | 'all';
 export interface TradeVolumeStatsParams extends AuctionSearchParams {
   propertyType?: PropertyType;
   dealYmdList?: string[];
+  /** 매매(기본) / 전월세 — 전월세면 각 종류의 전월세 자료를 부르고 평균은 보증금으로 낸다 */
+  dealKind?: 'sale' | 'rent';
 }
 
 export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Promise<TradeVolumeStatsResult> => {
@@ -601,25 +604,27 @@ export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Pro
   // 사용자가 특정 거래유형을 명시적으로 고른 경우 env 토글을 우회.
   // 'all' 모드일 때만 활성화 토글을 존중해 기본 아파트만 집계.
   const explicit = propertyType !== 'all';
+  const rent = params.dealKind === 'rent';
+  const word = rent ? '전월세' : '매매';
   months.forEach((dealYmd) => {
     const monthSuffix = months.length > 1 ? ` ${dealYmd}` : '';
     const subParams: AuctionSearchParams = { ...params, dealYmd };
     if (includeApt && (explicit || ENABLE_MOLIT_API)) {
       tasks.push({
-        source: `아파트 매매${monthSuffix}`,
-        run: () => fetchTradeVolumeByPath(subParams, APT_TRADE_API_PATH, `아파트 매매${monthSuffix}`),
+        source: `아파트 ${word}${monthSuffix}`,
+        run: () => fetchTradeVolumeByPath(subParams, rent ? APT_RENT_API_PATH : APT_TRADE_API_PATH, `아파트 ${word}${monthSuffix}`),
       });
     }
     if (includeOfficetel && (explicit || ENABLE_OFFICETEL_TRADE_API)) {
       tasks.push({
-        source: `오피스텔 매매${monthSuffix}`,
-        run: () => fetchTradeVolumeByPath(subParams, OFFICETEL_TRADE_API_PATH, `오피스텔 매매${monthSuffix}`),
+        source: `오피스텔 ${word}${monthSuffix}`,
+        run: () => fetchTradeVolumeByPath(subParams, rent ? OFFICETEL_RENT_API_PATH : OFFICETEL_TRADE_API_PATH, `오피스텔 ${word}${monthSuffix}`),
       });
     }
     if (includeVilla && (explicit || ENABLE_VILLA_TRADE_API)) {
       tasks.push({
-        source: `연립다세대 매매${monthSuffix}`,
-        run: () => fetchTradeVolumeByPath(subParams, VILLA_TRADE_API_PATH, `연립다세대 매매${monthSuffix}`),
+        source: `연립다세대 ${word}${monthSuffix}`,
+        run: () => fetchTradeVolumeByPath(subParams, rent ? VILLA_RENT_API_PATH : VILLA_TRADE_API_PATH, `연립다세대 ${word}${monthSuffix}`),
       });
     }
   });

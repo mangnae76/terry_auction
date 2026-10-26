@@ -286,20 +286,36 @@ body:has(.app-market[data-k="ranking"]) .foot { display: none; }
    칸 크기는 물건등록 칸과 같게(높이 34 · 모서리 6), 칸 위 작은 이름은 감추고 칸 안에 '○○ 선택' */
 .app-market[data-k="ranking"] .tsp-filter { display: none !important; }
 .app-market[data-k="ranking"] .tsp-filter-slot { display: flex; flex-direction: column; gap: 8px; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar > * { grid-column: 1 / -1; }
+/* 기간 · 매매/전월세는 한 줄에 나란히 (기간 왼쪽, 거래 오른쪽) */
+.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar > .tsp-f-period { grid-column: 1; grid-row: 5; }
+.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar > .tsp-f-deal { grid-column: 2; grid-row: 5; }
+.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar > .tsp-search-btn { grid-row: 6; }
 .app-market[data-k="ranking"] .tsp-filter-slot .tsp-f { flex: 0 0 auto; }
 .app-market[data-k="ranking"] .tsp-filter-slot .tsp-f > small { display: none; }
 .app-market[data-k="ranking"] .tsp-filter-slot .tsp-search-btn { margin-left: 0; width: 100%; }
 .app-market[data-k="ranking"] .tsp-filter-slot :is(.tsp-select, .tsp-seg, .tsp-search-btn) { height: var(--ctl-h) !important; border-radius: 6px !important; }
 .app-market[data-k="ranking"] .tsp-filter-slot .tsp-select { font-size: 14px !important; }
 /* 판 맨 위 제목 · 안내, 검색 아래 고른 결과 — 그리고 칸 사이마다 가름선 */
-.app-market[data-k="ranking"] .tsp-web-head { display: flex; flex-direction: column; gap: 4px; }
+.app-market[data-k="ranking"] .tsp-web-head { display: flex; flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; } /* 제목 옆에 설명 한 줄 */
 .app-market[data-k="ranking"] .tsp-web-head strong { font-size: 16px; font-weight: 800; color: #111827; }
 .app-market[data-k="ranking"] .tsp-web-head small { font-size: 14px; color: #6b7280; }
 .app-market[data-k="ranking"] .tsp-web-picked { display: flex; flex-direction: column; gap: 3px; }
 .app-market[data-k="ranking"] .tsp-web-picked strong { font-size: 16px; font-weight: 800; color: #111827; }
 .app-market[data-k="ranking"] .tsp-web-picked small { font-size: 14px; font-weight: 600; color: #2b6df3; }
 .app-market[data-k="ranking"] .tsp-panel > * + * { border-top: 1px solid #e5e7eb; padding-top: 14px; }
+/* 왼쪽 판 글자 · 칸 크기 — 최소 14, 소제목(거래량 랭킹 · 고른 지역 · 통계 정보 · 동별 거래 랭킹) 16.
+   고르는 칸은 높이 40 · 글자 16 (입력 칸 규칙), 종류 · 거래 단추 15 */
+.app-market[data-k="ranking"] .tsp-panel :is(.tsp-web-head strong, .tsp-web-picked strong, h3) { font-size: 16px !important; }
+.app-market[data-k="ranking"] .tsp-panel h3 small { font-size: 14px !important; }
+.app-market[data-k="ranking"] .tsp-filter-slot :is(.tsp-select, .tsp-seg, .tsp-search-btn) { height: 40px !important; }
+.app-market[data-k="ranking"] .tsp-filter-slot :is(.tsp-select, .tsp-search-btn) { font-size: 16px !important; }
+.app-market[data-k="ranking"] .tsp-filter-slot .tsp-seg-btn { font-size: 15px !important; }
+.app-market[data-k="ranking"] .tsp-panel :is(.tsp-stat-grid dt, .tsp-rank-avg, .tsp-rank-pct, .tsp-empty, .tsp-note) { font-size: 14px !important; }
+.app-market[data-k="ranking"] .tsp-panel .tsp-stat-grid dd { font-size: 16px !important; }
+.app-market[data-k="ranking"] .tsp-panel :is(.tsp-rank-name, .tsp-rank-count) { font-size: 16px !important; }
+.app-market[data-k="ranking"] .tsp-panel .tsp-rank-badge { font-size: 14px !important; }
 /* 왼쪽 판 — 임장경로의 왼쪽 칸과 같은 자리 · 같은 폭(546) · 화면 밑단까지 */
 .app-market[data-k="ranking"] .tsp-panel {
   position: fixed !important; left: 18px !important; width: 546px !important; max-width: calc(100vw - 36px) !important;
