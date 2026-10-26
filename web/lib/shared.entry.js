@@ -142,7 +142,20 @@ export const mountAppFieldTrip = (el, onDetail) => {
   app.use(router);
   void router.push('/field-trip');
   app.mount(el);
+  /* 앱 화면은 손전화에서 쪽을 넘기다 지도가 끌려가지 않게, 한 번 눌러야 지도가 움직이도록 잠가 둔다.
+     웹은 지도가 화면을 통째로 쓰고 넘길 쪽도 없어 그 잠금이 거추장스럽다 —
+     띄운 뒤 끌기를 풀고, 다시 잠그려는 길을 막는다(앱 화면은 한 줄도 고치지 않는다). */
+  const freeDrag = () => {
+    const box = el.querySelector('#trip-map');
+    const made = box && mapByEl.get(box);
+    if (!made || !made.dragging) return;
+    made.dragging.enable();
+    made.dragging.disable = () => {};
+    if (made.scrollWheelZoom) { made.scrollWheelZoom.enable(); made.scrollWheelZoom.disable = () => {}; }
+  };
+  const freeTries = [0, 80, 300, 800, 1600].map((ms) => setTimeout(freeDrag, ms));
   return () => {
+    freeTries.forEach(clearTimeout);
     dropMap(el.querySelector('#trip-map'));
     app.unmount();
   };

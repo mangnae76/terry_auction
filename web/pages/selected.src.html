@@ -435,6 +435,11 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 }
 /* 조작 칸 밖(지도 쪽)은 지도가 받아야 한다 — 칸은 제 폭만큼만 자리를 차지한다 */
 .app-trip .ftp-map { border-radius: 0 !important; }
+/* '한 번 눌러 지도 이동' 안내는 손전화용이다 — 웹은 처음부터 끌 수 있으니 숨긴다 */
+.app-trip .ftp-map-hint { display: none !important; }
+/* 티맵은 웹에서 길찾기를 열어 주지 않는다 — 웹에서만 감춘다(앱은 그대로 쓴다) */
+.app-trip .ftp-nav-launch-btn[aria-label="티맵 내비게이션 실행"] { display: none !important; }
+.app-trip .ftp-nav-launch-row { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 /* 지도 위 번호·화살표 — 앱은 이 모양을 전역 스타일(src/style.css)에 둔다.
    웹 묶음은 화면별 스타일(pdfparse.css)만 싣기 때문에 그대로는 번호가 보이지 않는다.
    Leaflet 이 divIcon 으로 직접 만드는 칸이라 화면별 스타일이 닿지도 않는다 — 여기 같이 적는다 */
@@ -1337,17 +1342,17 @@ html, body { overflow-x: clip; }
 
 /* ================= 바닥글 — 시안 그대로 ================= */
 .foot { background: var(--foot); color: var(--foot-text); }
-.foot-in { position: relative; min-height: 184px; padding-block: 34px 52px; }
-.f-brand { display: flex; align-items: center; gap: 8px; margin: 0 0 10px 3px; }
-.f-brand img { height: 20px; width: auto; display: block; }
-.f-brand span { color: #c8cdd8; font-size: 13px; padding-left: 7px; border-left: 1px solid #5d6476; line-height: 1; }
+.foot-in { position: relative; min-height: 206px; padding-block: 56px 52px; } /* 로고 위를 한 줄만큼 띄운다 */
+.f-brand { display: flex; align-items: center; gap: 10px; margin: 0 0 12px 3px; }
+.f-brand img { height: 32px; width: auto; display: block; } /* 머리띠 로고(44px)와 너무 벌어지지 않게 */
+.f-brand span { color: #c8cdd8; font-size: 14px; padding-left: 9px; border-left: 1px solid #5d6476; line-height: 1; }
 .f-info { margin: 0 0 0 3px; font-size: 11.5px; line-height: 1.55; }
 /* 저작권 — 맨 아랫줄 가운데, 바닥에서 조금 띄운다 */
 .f-copy { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); font-size: 12px; color: var(--foot-text); letter-spacing: .2px; white-space: nowrap; }
-.f-links { position: absolute; left: 78.8%; top: 37px; display: flex; gap: 28px; }
+.f-links { position: absolute; left: 78.8%; top: 59px; display: flex; gap: 28px; }
 .f-links a { color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size .2s; }
 .f-links a:hover { background-size: 100% 1px; }
-.f-social { position: absolute; left: 78.8%; top: 78px; display: flex; align-items: center; gap: 22px; height: 34px; }
+.f-social { position: absolute; left: 78.8%; top: 100px; display: flex; align-items: center; gap: 22px; height: 34px; }
 .f-social a { display: inline-flex; align-items: center; gap: 6px; color: #c8cdd8; text-decoration: none; font-size: 12.5px; transition: color .15s; }
 .f-social a:hover { color: #fff; }
 .f-social svg { width: 14px; height: 14px; }
