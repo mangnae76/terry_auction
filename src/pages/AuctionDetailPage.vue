@@ -5502,7 +5502,9 @@ const tenantUsagePeriod = (raw: string) => {
   return m && m[1].trim() ? `${m[1].trim()} / ${m[2].trim()}` : text;
 };
 /** 전입·확정·배당을 한 줄로 — 없는 값은 빼고 쉼표로 잇는다 */
-/** sep — 앱은 한 줄(', '), 웹은 전입·확정·배당을 세 줄('\n') */
+/** 웹 — 전입·확정·배당을 늘 세 줄로. 없는 값은 '-' */
+const tenantDatesLines = (t: { moveIn?: string; fixed?: string; distribution?: string }) =>
+  [`전입: ${t.moveIn || '-'}`, `확정: ${t.fixed || '-'}`, `배당: ${t.distribution || '-'}`].join('\n');
 const tenantDatesText = (t: { moveIn?: string; fixed?: string; distribution?: string }, sep = ', ') =>
   [
     t.moveIn ? `전입: ${t.moveIn}` : '',
@@ -7423,7 +7425,10 @@ const goBack = () => router.back();
           <p class="adp-base-note adp-tn-base">말소기준 : <b class="adp-tn-date">{{ tenantBaseDate }}</b> · 배당종기 : <b class="adp-tn-date">{{ tenantDistDate }}</b> · 소액기준 : <b class="adp-tn-date">{{ tenantSmallDate }}</b></p>
 
           <!-- 임차인이 여럿이면 한 사람씩 제 상자에 담는다 — 한 통에 이어 붙이면 어느 줄이 누구 것인지 헷갈린다 -->
-          <div :class="['adp-tn-box', { 'is-many': tenantCards.length > 1, 'is-web': webEmbed }]">
+          <div
+            :class="['adp-tn-box', { 'is-many': tenantCards.length > 1, 'is-web': webEmbed }]"
+            :style="webEmbed ? { '--tn-cols': Math.min(Math.max(tenantCards.length, 3), 5) } : undefined"
+          >
           <template v-if="tenantCards.length > 0">
             <section v-for="(tenant, i) in tenantCards" :key="i" class="adp-tn-one">
               <dl class="adp-base-rows adp-base-tenant">
@@ -7441,7 +7446,7 @@ const goBack = () => router.back();
                 </div>
                 <div class="adp-base-row">
                   <dt>전입 확정 배당</dt>
-                  <dd :class="['adp-tn-dates', { 'pre-line': webEmbed }]">{{ tenantDatesText(tenant, webEmbed ? '\n' : ', ') }}</dd>
+                  <dd :class="['adp-tn-dates', { 'pre-line': webEmbed }]">{{ webEmbed ? tenantDatesLines(tenant) : tenantDatesText(tenant) }}</dd>
                 </div>
               </dl>
             </section>
@@ -9634,9 +9639,10 @@ const goBack = () => router.back();
   border: 1px solid #e5e7eb; border-radius: 8px; padding: 2px 10px 7px; background: #fff;
 }
 .adp-tn-box.is-many > .adp-base-warn, .adp-tn-box.is-many > .adp-base-more { padding: 0 2px; }
-/* 웹 — 임차인 상자 셋을 가로로 나란히. 경고·기타사항·빈 글은 한 줄을 통째로 쓴다 */
+/* 웹 — 임차인 상자를 가로로 나란히. 경고·기타사항·빈 글은 한 줄을 통째로 쓴다 */
 .adp-tn-box.is-web {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: stretch;
+  /* 기본 세 칸, 임차인이 넷·다섯이면 그만큼, 여섯부터는 다섯 칸씩 아래 줄로. 빈 칸은 비워 둔다 */
+  display: grid; grid-template-columns: repeat(var(--tn-cols, 3), minmax(0, 1fr)); gap: 8px; align-items: stretch;
   border: 0; padding: 0; background: transparent;
 }
 .adp-tn-box.is-web > :not(.adp-tn-one) { grid-column: 1 / -1; }
