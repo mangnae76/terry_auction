@@ -249,7 +249,7 @@ button { cursor: pointer; }
 /* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
    하위 탭 글자 — 물건상세(물건정보~입찰가산정) · 물건등록(자동등록 · 직접입력) 등 모든 탭 줄이 이 값 하나를 쓴다.
    창이 좁아지면 아래 @media 에서 이 값만 바꾼다 */
-:root { --menu-fs: 18px; --tab-fs: 16px; }
+:root { --menu-fs: 18px; --tab-fs: 16px; --tab-px: 22px; }
 /* 카드 안쪽 여백 — 모든 웹 카드가 이 값을 쓴다.
    --card-pad-x: 카드 테두리에서 제목까지(제목 자리는 이 값으로 고정)
    --card-inset: 제목 아래 내용을 제목보다 한 단 더 안으로 (하위로 갈수록 안쪽)
@@ -273,8 +273,8 @@ button { cursor: pointer; }
 .subtabs { top: calc(var(--stick-top) + var(--gnb-h)); }
 .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h)); }
 body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)); }
-.subtabs-in { display: flex; align-items: stretch; gap: 4px; height: 44px; }
-.subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
+.subtabs-in { display: flex; align-items: stretch; gap: 8px; height: 44px; }
+.subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
 .subtab svg { width: 16px; height: 16px; }
 .subtab:hover { color: var(--text); }
 .subtab.on { color: var(--blue); font-weight: 800; }
@@ -720,6 +720,15 @@ body.trip-full .foot { display: none; }
   .adp-agency-range .lab, .adp-agency-fld.note-fld > .lab, .adp-agency-range .sep, .adp-agency-range .unit, .adp-agency-trigger, .adp-agency-trigger .txt) { font-weight: 400 !important; }
 /* 웹 임장조사 — 현장조사 · 현장 상담 · 체크리스트도 손품조사와 같은 세로 여유 */
 .app-detail.tab-field .adp-fs-row { padding-top: 8px !important; padding-bottom: 8px !important; }
+/* 웹 임장조사 — '입찰자 현황조사 · 비고' 줄도 탐문 줄과 같은 칸(이름 112 · 입력 · 오른쪽 240)에 맞춘다 */
+.app-detail.tab-field .adp-fs-section .adp-survey-row { display: grid !important; grid-template-columns: 112px minmax(0, 1fr) 240px; gap: 10px !important; }
+.app-detail.tab-field .adp-fs-section .adp-survey-row > .lbl { padding-left: 14px; min-width: 0 !important; }
+.app-detail.tab-field .adp-fs-section .adp-survey-row > :nth-child(2) { grid-column: 2; width: 100%; min-width: 0; }
+.app-detail.tab-field .adp-fs-section .adp-survey-row .adp-fs-input { width: 100%; }
+/* 웹 — 펼쳐지는 고르기 목록(현장·유선 상담, 입찰자 현황조사, 면적·룸수 등) 글자 14 */
+.app-detail :where(.adp-multi-item, .adp-multi-item span, .adp-multi-chip, .adp-multi-custom-btn, .adp-multi-placeholder,
+  .adp-rcase-item strong, .adp-rcase-item small, .adp-rcase-select, .adp-ruser-pick .band, .adp-ruser-pick .rooms,
+  .adp-agency-option, .adp-agency-option span, .adp-agency-trigger .txt, option) { font-size: 14px !important; }
 /* 웹 임장조사 탐문 — 항목 이름은 블록 제목(① 탐문)보다 한 단 안으로, 오른쪽 선택 칸(임차인·입주민·동대표 · 체크)은 폭을 고정해
    모든 줄의 입력칸 끝과 체크 자리가 세로로 맞는다 */
 .app-detail.tab-field .adp-fs-row { grid-template-columns: 112px minmax(0, 1fr) 240px !important; gap: 10px !important; }
@@ -747,7 +756,7 @@ body.trip-full .foot { display: none; }
 /* 웹 손품조사 — 급매가(실거래가 조사 · 조건분석 · 네이버 매물조사) 표의 값(면적 · 날짜·층 · 가격 · 범위)은 16. 단위·비고는 그대로 */
 .app-detail.tab-survey .adp-mkt-body .adp-dm-table .cell:not(.adp-mkt-wide) :is(strong, .adp-mkt-range2) { font-size: 16px !important; }
 /* 웹 손품결론(시세 결론 · 급매가 결론) — 값 16, 칸 끝에 붙지 않게 좌우를 두 칸쯤 띄운다 */
-.app-detail.tab-survey .adp-conc-table td :is(strong, span:not(.adp-bracket)), .app-detail.tab-survey .adp-conc-table td.num { font-size: 16px !important; }
+.app-detail.tab-survey .adp-conc-table td:not(.adp-conc-note) :is(strong, .adp-conc-v), .app-detail.tab-survey .adp-conc-table td.num { font-size: 16px !important; font-weight: 800 !important; }
 .app-detail.tab-survey .adp-conc-table :is(th, td) { padding-left: 20px !important; padding-right: 20px !important; }
 /* 웹 — 편집할 때 입력칸 글자 16, 칸 높이는 --ctl-h 이상 (글자가 작아 칸도 작아 보였다) */
 .app-detail :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) { font-size: 16px !important; }
@@ -865,7 +874,7 @@ body.trip-full .foot { display: none; }
 .reg-tabbar { position: relative; display: flex; align-items: stretch; gap: 2px; }
 .reg-tabbar::after { content: ""; position: absolute; left: 50%; bottom: 0; z-index: 0; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); } /* 물건상세 하위 탭 줄과 같은 색 */
 .reg-shell { padding-bottom: 0; } /* 탭 줄이 상자의 아랫변 — 줄 아래 띠를 남기지 않는다 */
-.reg-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; height: 42px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
+.reg-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; height: 42px; padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
 .reg-tab svg { width: 17px; height: 17px; }
 .reg-tab:hover { color: var(--text); }
 .reg-tab.on { color: var(--blue); font-weight: 800; }
@@ -1596,7 +1605,7 @@ html, body { overflow-x: clip; }
 @media (max-width: 1240px) {
   .gnb-in { display: flex; align-items: center; gap: 22px; }
   .gnb .g-logo, .gnb .g-menu, .gnb .g-icons, .gnb .g-box, .gnb .g-box[data-tip], .gnb .g-user { position: relative; left: auto; top: auto; }
-  :root { --menu-fs: 16px; --tab-fs: 15px; }
+  :root { --menu-fs: 16px; --tab-fs: 15px; --tab-px: 16px; }
   .g-menu::after { bottom: -20px; }
   .g-menu.m4 { margin-left: auto; }
   .g-icons { order: 10; } .g-box { order: 11; flex: 0 0 auto; }
@@ -1642,8 +1651,7 @@ html, body { overflow-x: clip; }
   .toolbar-shell { padding: 6px 0 12px; }
   .gnb-in { gap: 6px 14px; }
   .g-logo img { height: 32px; }
-  :root { --menu-fs: 14px; --tab-fs: 14px; }
-  .subtab { padding: 0 10px; }
+  :root { --menu-fs: 14px; --tab-fs: 14px; --tab-px: 10px; }
   .g-menu::after { display: none; }
   .step { padding: 0 9px; font-size: 14px; }
   .fab { left: 16px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); height: 42px; padding: 0 18px; font-size: 14px; }
