@@ -255,6 +255,8 @@ button { cursor: pointer; }
    --card-inset: 제목 아래 내용을 제목보다 한 단 더 안으로 (하위로 갈수록 안쪽)
    --list-pad-l/r: 선정목록 물건 카드 · 수익률 분석 카드의 좌우 안쪽 여백 */
 :root { --card-pad-x: 24px; --card-inset: 12px; --list-pad-l: 20px; --list-pad-r: 18px; }
+/* 표 · 입력칸 세로 여유 — 웹 물건상세(손품조사 · 임장조사 …)의 표 칸 위아래 여백과 입력칸 높이를 이 두 값 하나로 */
+:root { --tbl-py: 14px; --ctl-h: 34px; }
 .it-card { padding-left: var(--card-pad-x); padding-right: var(--card-pad-x); }
 .it-card > :not(.it-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
 .rg-results > :not(.rg-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
@@ -705,21 +707,27 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-survey .dm-result .dm-total-cell .adp-dm-grade { width: 44px !important; height: 44px !important; font-size: 24px !important; }
 .app-detail.tab-survey .dm-result .dm-total-cell .adp-dm-fit { font-size: 24px !important; }
 /* 웹 — 손품결론(시세 결론 · 급매가 결론) 표도 세로로 넉넉히 (칸 위아래 14) */
-.app-detail.tab-survey .adp-conc-table :is(th, td) { padding-top: 14px !important; padding-bottom: 14px !important; }
+.app-detail.tab-survey .adp-conc-table :is(th, td) { padding-top: var(--tbl-py) !important; padding-bottom: var(--tbl-py) !important; }
 /* 웹 — 부동산 유선·현장 상담 표: 칸 높이 26 → 34, 줄 사이를 띄우고, 이름(입금·매도·의견·협의) 칸을 넓혀 글자가 여유 있게.
    칸 안 글은 굵게 쓰지 않는다 */
-.app-detail :is(.adp-agency-line .adp-mkt-input, .adp-agency-range input.rng, .adp-agency-line .adp-agency-trigger) { height: 34px !important; }
-.app-detail .adp-agency-fld > span, .app-detail .adp-agency-fld > a.adp-agency-tel-view { height: 34px !important; line-height: 34px !important; }
+.app-detail :is(.adp-agency-line .adp-mkt-input, .adp-agency-range input.rng, .adp-agency-line .adp-agency-trigger) { height: var(--ctl-h) !important; }
+.app-detail .adp-agency-fld > span, .app-detail .adp-agency-fld > a.adp-agency-tel-view { height: var(--ctl-h) !important; line-height: var(--ctl-h) !important; }
 .app-detail .adp-agency-line + .adp-agency-line { margin-top: 8px !important; padding-top: 8px !important; }
 .app-detail .adp-agency-line { gap: 10px !important; }
 .app-detail :is(.adp-agency-range .lab, .adp-agency-fld.note-fld > .lab) { flex: 0 0 42px !important; }
 .app-detail .adp-agency-range { gap: 6px !important; }
 .app-detail :is(.adp-agency-fld > span, .adp-agency-tel-view, .adp-mkt-input, .adp-agency-range input.rng, .adp-agency-range .val,
   .adp-agency-range .lab, .adp-agency-fld.note-fld > .lab, .adp-agency-range .sep, .adp-agency-range .unit, .adp-agency-trigger, .adp-agency-trigger .txt) { font-weight: 400 !important; }
+/* 웹 임장조사 — 현장조사 · 현장 상담 · 체크리스트도 손품조사와 같은 세로 여유 */
+.app-detail.tab-field .adp-fs-row { padding-top: 8px !important; padding-bottom: 8px !important; }
+.app-detail.tab-field :is(.adp-fs-input, .adp-fs-row .adp-agency-trigger, .adp-multi-trigger) { height: var(--ctl-h) !important; }
+.app-detail.tab-field .adp-fs-toggles .adp-toggle-btn { height: calc(var(--ctl-h) - 4px) !important; }
+.app-detail.tab-field .adp-survey-row { padding-top: 8px !important; padding-bottom: 8px !important; }
+.app-detail.tab-field .adp-cl-table :is(th, td) { padding-top: var(--tbl-py) !important; padding-bottom: var(--tbl-py) !important; }
 /* 웹 손품조사 — 개별성 분석 두 표의 줄 높이를 약 30% 넉넉히 */
 .app-detail.tab-survey .adp-ind-table :is(th, td) { padding-top: 10px !important; padding-bottom: 10px !important; }
 /* 웹 손품조사 — 급매가 표도 세로로 넉넉히 (칸 위아래 7 → 14, 블록 사이 8 → 16) */
-.app-detail.tab-survey .adp-mkt-body .adp-dm-table .cell > :is(small, strong, span, .adp-mkt-unit) { padding-top: 14px !important; padding-bottom: 14px !important; }
+.app-detail.tab-survey .adp-mkt-body .adp-dm-table .cell > :is(small, strong, span, .adp-mkt-unit) { padding-top: var(--tbl-py) !important; padding-bottom: var(--tbl-py) !important; }
 .app-detail.tab-survey .adp-mkt-body .adp-mkt-block + .adp-mkt-block { margin-top: 16px !important; }
 /* 웹 손품조사 — 개별성 분석 두 표(건물·호실)와 '개별성 적용가' 줄의 왼쪽 구분 칸을 96 → 125 (30%) */
 .app-detail.tab-survey .adp-ind-table > colgroup > col:first-child { width: 125px !important; }
@@ -3221,6 +3229,8 @@ html, body { overflow-x: clip; }
     rights: { full: true, span: ['AI 분석 요청', 'AI 권리분석 진단', 'AI 리스크 분석 요약', 'AI 권리분석 결론', 'AI 명도 난이도 분석', '건물등기', '임차인현황', '권리분석', '권리분석 정리'] },
     /* 손품조사 — 카드 모두를 가로로 쫙 펴서 한 줄에 하나씩 (앱 카드 순서 그대로) */
     survey: { full: true },
+    /* 임장조사 — 현장사진을 맨 위로, 그다음 현장조사 (나머지는 앱 순서) */
+    field: { full: true, span: ['현장사진', '현장조사'] },
   };
   /* 두 열 쌓기 — 줄 높이 1px 격자에 카드 높이만큼 칸을 잡아 열마다 빈틈 없이 쌓는다 */
   /* 입찰가산정 — 예상수익분석 카드 안의 산정표(A·B·C·D)를 2열로 놓는다. 위의 A~D 칩은 그대로 탭 노릇.
