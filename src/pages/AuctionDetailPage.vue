@@ -6373,7 +6373,7 @@ const goBack = () => router.back();
                눌러서 그 표로 건너뛴다. 표가 늘면 옆으로 밀어 본다 -->
           <div v-if="!isCollapsed('profit')" class="adp-profit-nav">
             <!-- 안 칩 — 크게 'A안', 그 아래 낙찰 비중 · 입찰가. 고른 안은 파랗게, 그 안의 표만 아래에 선다.
-                 B안부터는 오른쪽 위 휴지통으로 그 안을 지운다 -->
+                 안을 지우는 단추는 아래 표 이름 줄(초기화 옆)에 있다 -->
             <div
               v-for="(label, si) in PROFIT_NAV_LABELS"
               :key="`nav-${label}`"
@@ -6387,16 +6387,6 @@ const goBack = () => router.back();
               <b class="adp-chip-plan">{{ label }}안</b>
               <small>{{ profitScenarios[si] ? formatPct(scBidPct(profitScenarios[si])) : '' }}</small>
               <strong>{{ profitScenarios[si] ? eokText(scBid(profitScenarios[si])) : '-' }}</strong>
-              <button
-                v-if="si > 0 && profitScenarios[si]"
-                type="button"
-                class="adp-chip-del"
-                :aria-label="`${label}안 지우기`"
-                title="이 안 지우기"
-                @click.stop="removeProfitScenarioAt(si)"
-              >
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
-              </button>
             </div>
           </div>
           </div>
@@ -6416,6 +6406,17 @@ const goBack = () => router.back();
               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" />
               </svg>초기화
+            </button>
+            <!-- 이 표 지우기 — A안은 기본 표라 지우지 않는다 (앱·웹) -->
+            <button
+              v-if="si > 0"
+              type="button"
+              class="adp-pd-reset adp-pd-del"
+              :aria-label="`${sc.label} 지우기`"
+              :title="`${sc.label} 지우기`"
+              @click.stop="removeProfitScenarioAt(si)"
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </button>
           </div>
           <table v-if="!isCollapsed('profit')" :id="`profit-tbl-${si}`" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0 }]">
@@ -10354,15 +10355,9 @@ tr.tone-take { background: #fff5f5; }
 .adp-profit-chip.on { border-color: #2b6df3; background: #2b6df3; }
 .adp-profit-chip.on :is(.adp-chip-plan, small, strong) { color: #fff; }
 .adp-profit-chip.empty .adp-chip-plan { color: #c3c9d4; }
-/* 안 지우기 — 칩 오른쪽 위 작은 휴지통 */
-.adp-chip-del {
-  position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; padding: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  border: 0; border-radius: 6px; background: transparent; color: #9ca3af; cursor: pointer;
-}
-.adp-chip-del:hover { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
-.adp-profit-chip.on .adp-chip-del { color: rgba(255, 255, 255, 0.8); }
-.adp-profit-chip.on .adp-chip-del:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
+/* 표 지우기 — 초기화 옆 휴지통 아이콘 */
+.adp-profit-head-row .adp-pd-del { margin-left: 4px; padding-left: 7px; padding-right: 7px; }
+.adp-profit-head-row .adp-pd-del:hover { color: #dc2626; border-color: #f3c4c4; }
 /* 아직 만들지 않은 안 — 자리는 지키되 흐리게 */
 .adp-profit-chip.empty {
   border-style: dashed; color: #c3c9d4; background: #fcfcfd; cursor: default;
