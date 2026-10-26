@@ -7137,6 +7137,10 @@ const goBack = () => router.back();
                 <b :class="['adp-diag-v', { on: rightsAi }]">{{ rightsAi ? `${rightsAi.extinguish.count}개` : '-' }}</b>
                 <p v-if="rightsAi?.extinguish.summary" class="adp-diag-sum">{{ rightsAi.extinguish.summary }}</p>
               </div>
+              <div class="adp-diag-box">
+                <span class="adp-diag-k">명도 난이도 예측</span>
+                <b :class="['adp-diag-v', { on: evictDiag.level }]">{{ evictDiag.level || '-' }}</b>
+              </div>
             </div>
             <!-- 상세 권리 분석 — 등기부 한 줄씩. 인수는 붉게 세운다 -->
             <template v-if="rightsRows.length">
@@ -7166,6 +7170,17 @@ const goBack = () => router.back();
                 </tbody>
               </table>
             </template>
+
+            <!-- 명도 난이도 — 상세 권리 분석과 같은 깊이의 작은 제목 아래, 근거·전략·조언 셋 -->
+            <template v-if="rightsAi">
+              <p class="adp-sub-note adp-rows-cap">AI 명도 난이도 분석</p>
+              <div class="adp-evict-notes">
+                <div v-for="n in EVICT_NOTES" :key="n.key" class="adp-diag-box adp-evict-note">
+                  <span class="adp-diag-k">{{ n.label }}</span>
+                  <p :class="['adp-evict-text', { on: evictDiag[n.key] }]">{{ evictDiag[n.key] || '-' }}</p>
+                </div>
+              </div>
+            </template>
           </div>
         </section>
 
@@ -7182,26 +7197,6 @@ const goBack = () => router.back();
               <ul v-if="rightsAi.risk.items.length" class="adp-diag-list take">
                 <li v-for="(r, i) in rightsAi.risk.items" :key="i">{{ r }}</li>
               </ul>
-            </div>
-          </div>
-        </section>
-
-        <!-- AI 명도 난이도 분석 — 왼쪽은 예측 난이도 하나, 오른쪽은 근거 · 대응 전략 · 투자 조언 (값은 AI 분석 뒤 채움) -->
-        <section class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('evictDiag')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18" /><path d="M5 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17" /><path d="M12 12h.01" /><path d="m19 9 2 2-2 2" /><path d="M16 11h5" /></svg>AI 명도 난이도 분석</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('evictDiag') }]" alt="" />
-          </header>
-          <div v-if="!isCollapsed('evictDiag')" class="adp-evict">
-            <div class="adp-diag-box adp-evict-level">
-              <span class="adp-diag-k">예측 난이도</span>
-              <b :class="['adp-diag-v', { on: evictDiag.level }]">{{ evictDiag.level || '-' }}</b>
-            </div>
-            <div class="adp-evict-notes">
-              <div v-for="n in EVICT_NOTES" :key="n.key" class="adp-diag-box adp-evict-note">
-                <span class="adp-diag-k">{{ n.label }}</span>
-                <p :class="['adp-evict-text', { on: evictDiag[n.key] }]">{{ evictDiag[n.key] || '-' }}</p>
-              </div>
             </div>
           </div>
         </section>
@@ -9314,7 +9309,8 @@ const goBack = () => router.back();
 /* 안내 글씨는 아래 칸의 '파일 선택 또는 드래그 앤 드롭'과 같은 회색 · 12 */
 .adp-doc-in .adp-input::placeholder { color: #9ca3af; opacity: 1; }
 .adp-doc-link { font-size: 12px; font-weight: 700; color: #2563eb; text-decoration: none; }
-.adp-diag-boxes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
+.adp-diag-boxes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
+@media (max-width: 720px) { .adp-diag-boxes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .adp-diag-box {
   display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
   min-height: 92px; padding: 10px 6px; box-sizing: border-box;
