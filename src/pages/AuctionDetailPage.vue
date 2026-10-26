@@ -7269,9 +7269,9 @@ const goBack = () => router.back();
               <!-- 웹 — 넓은 칸이라 순위·권리 종류·권리자·채권액/내용·인수/소멸·비고를 제 칸에 하나씩 -->
               <table v-if="webEmbed" class="adp-table adp-rights-wide">
                 <colgroup>
-                  <col style="width: 9%" /><col style="width: 12%" /><col style="width: 19%" /><col style="width: 14%" /><col style="width: 8%" /><col />
+                  <col style="width: 10%" /><col style="width: 14%" /><col style="width: 18%" /><col style="width: 15%" /><col style="width: 10%" /><col />
                 </colgroup>
-                <thead><tr><th>순위</th><th>권리 종류</th><th>권리자</th><th>채권액/내용</th><th>인수/소멸</th><th>비고</th></tr></thead>
+                <thead><tr><th>순위</th><th>권리종류</th><th>권리자</th><th>채권금액</th><th>인수/소멸</th><th>비고</th></tr></thead>
                 <tbody>
                   <tr v-for="(r, i) in rightsRows" :key="i" :class="r.status === '인수' ? 'tone-take' : ''">
                     <td>{{ r.rankText || '-' }}<small v-if="r.dateText" class="adp-rights-date">{{ r.dateText }}</small></td>
@@ -7279,7 +7279,7 @@ const goBack = () => router.back();
                     <td>{{ r.holder || '-' }}</td>
                     <td>{{ r.moneyText || '-' }}</td>
                     <td><b v-if="r.status === '인수'" class="adp-reg-take">인수</b><template v-else>소멸</template></td>
-                    <td>
+                    <td class="c-left">
                       <template v-if="r.webNoteLines.length">
                         <template v-for="(line, li) in r.webNoteLines" :key="li"><span
                           v-for="(pt, pi) in line"
@@ -7373,13 +7373,12 @@ const goBack = () => router.back();
             <!-- 웹 — 건물등기 PDF 표와 같은 꼴: 순서 · 접수일 · 권리종류 · 권리자 · 채권금액 · 비고 · 소멸 -->
             <table v-if="webEmbed && registryRows.length > 0" class="adp-table adp-reg-pdf">
               <colgroup>
-                <col style="width: 8%" /><col style="width: 11%" /><col style="width: 13%" /><col style="width: 15%" /><col style="width: 13%" /><col style="width: 10%" /><col />
+                <col style="width: 10%" /><col style="width: 14%" /><col style="width: 18%" /><col style="width: 15%" /><col style="width: 10%" /><col />
               </colgroup>
-              <thead><tr><th>순서</th><th>접수일</th><th>권리종류</th><th>권리자</th><th>채권금액</th><th>인수/소멸</th><th>비고</th></tr></thead>
+              <thead><tr><th>순서</th><th>권리종류</th><th>권리자</th><th>채권금액</th><th>인수/소멸</th><th>비고</th></tr></thead>
               <tbody>
                 <tr v-for="(r, i) in registryRows" :key="i" :class="{ 'is-base': r.descParts.some((pt) => pt.base), 'tone-take': r.taken }">
-                  <td>{{ r.order || '' }}</td>
-                  <td>{{ (r.date || '').replace(/\./g, '-') }}</td>
+                  <td>{{ r.order || '' }}<small v-if="r.date" class="adp-rights-date">{{ r.date.replace(/-/g, '.') }}</small></td>
                   <td>{{ r.kind }}</td>
                   <td>{{ r.holder }}</td>
                   <td>
@@ -9811,6 +9810,8 @@ const goBack = () => router.back();
 .adp-rights-wide th, .adp-rights-wide td { font-size: 13px; padding: 12px 8px; word-break: keep-all; vertical-align: middle; text-align: center; }
 .adp-rights-wide th { font-weight: 800; color: #374151; background: #f6f7f9; }
 .adp-rights-wide td { color: #374151; }
+/* 비고 — 건물등기 표와 같이 왼쪽 정렬, 두세 글자만큼 들여 쓴다 */
+.adp-rights-wide td.c-left { text-align: left; padding-left: 40px; }
 /* 접수일 — 굵기·색은 다른 칸 값과 똑같이 */
 .adp-rights-wide .adp-rights-date { display: block; margin-top: 2px; font-size: 13px; font-weight: 400; color: #374151; }
 .adp-rows-cap { margin: 12px 0 5px; font-weight: 800; color: #374151; }
@@ -9896,6 +9897,7 @@ tr.tone-take { background: #fff5f5; }
 /* 비고 — 인수/소멸 칸에 붙어 보이지 않게 두세 글자만큼 띄운다 */
 .adp-reg-pdf td.c-left { text-align: left; padding-left: 40px; }
 .adp-reg-pdf .c-amt-label { display: block; }
+.adp-reg-pdf .adp-rights-date { display: block; margin-top: 2px; font-size: 13px; font-weight: 400; color: #374151; }
 .adp-registry-table th, .adp-registry-table td { font-size: 11px; padding: 8px 6px; word-break: keep-all; vertical-align: top; }
 .adp-major-table { table-layout: fixed; }
 .adp-major-table th, .adp-major-table td { font-size: 11.5px; padding: 8px 6px; vertical-align: top; }
