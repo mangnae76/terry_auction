@@ -440,6 +440,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 티맵은 웹에서 길찾기를 열어 주지 않는다 — 웹에서만 감춘다(앱은 그대로 쓴다) */
 .app-trip .ftp-nav-launch-btn[aria-label="티맵 내비게이션 실행"] { display: none !important; }
 .app-trip .ftp-nav-launch-row { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+/* 출발지·도착지 · 네이버·카카오 · 내 위치·즐겨찾기 글자를 키운다 (웹만) */
+.app-trip .ftp-nav-launch-btn { font-size: 14px !important; }
+.app-trip .ftp-od-field input { font-size: 14px !important; }
+.app-trip .ftp-fav-text { font-size: 13px !important; }
 /* 지도 위 번호·화살표 — 앱은 이 모양을 전역 스타일(src/style.css)에 둔다.
    웹 묶음은 화면별 스타일(pdfparse.css)만 싣기 때문에 그대로는 번호가 보이지 않는다.
    Leaflet 이 divIcon 으로 직접 만드는 칸이라 화면별 스타일이 닿지도 않는다 — 여기 같이 적는다 */
