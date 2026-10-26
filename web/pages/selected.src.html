@@ -790,9 +790,15 @@ body.trip-full .foot { display: none; }
 .ai-help { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.7; color: var(--text-2); }
 /* 키 받는 법 — 차례대로 따라오는 칸 */
 .ai-steps { padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
-.ai-steps h3 { margin: 0 0 6px; font-size: 12.5px; font-weight: 800; color: var(--text); }
-.ai-steps ol { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.8; color: var(--text-2); }
+.ai-steps h3 { margin: 0 0 8px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: var(--text); }
+.ai-steps h3 svg { width: 16px; height: 16px; color: #eda134; }
+.ai-steps ol { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 2.1; color: var(--text-2); }
 .ai-steps ol b { font-weight: 700; color: var(--text); }
+.key-link.plain { font-size: inherit; text-decoration: none; }
+.key-link.plain:hover { text-decoration: underline; }
+/* 돈 걱정 더는 한 줄 */
+.ai-tip { margin: 10px 0 0; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 6px; background: #fdf5e4; font-size: 12.5px; color: #8a6520; }
+.ai-tip svg { flex: 0 0 auto; width: 14px; height: 14px; }
 .ai-btns { display: flex; justify-content: flex-end; gap: 6px; }
 @media (max-width: 980px) {
   .rg-row1, .rg-row2 { flex-wrap: wrap; }
@@ -1539,6 +1545,7 @@ html, body { overflow-x: clip; }
     refresh: P('<path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 3.5V9H15"/>', 'stroke-width="2.6"'),
     info: P('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'), ok: P('<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/>'),
     alert: P('<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/>'),
+    bulb: P('<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2h5c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3Z"/>'),
     file: P('<path d="M14 2.5H6.5a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8Z"/><path d="M14 2.5V8h5.5"/><path d="M12 12v6M9 15l3-3 3 3"/>'),
     moon: P('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>', 'stroke-width="2"'),
     sun: P('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', 'stroke-width="2"'),
@@ -2491,13 +2498,13 @@ html, body { overflow-x: clip; }
           ${m.msg ? `<p class="ai-msg ${m.ok ? 'ok' : ''}">${esc(m.msg)}</p>` : ''}
           <!-- 받는 법 — 처음 하는 사람이 창을 떠나지 않고 따라올 수 있게 차례로 -->
           <div class="ai-steps">
-            <h3>API 키 발급 방법</h3>
+            <h3>${I.bulb}API 키 발급 방법</h3>
             <ol>
-              <li>구글 AI 스튜디오에 접속해 구글 계정으로 로그인합니다.</li>
-              <li>오른쪽 위 <b>Get API key</b> 를 누릅니다.</li>
-              <li><b>Create API key</b> 버튼을 누릅니다.</li>
-              <li>만들어진 키를 복사해 위 입력란에 붙여 넣고 저장합니다.</li>
+              <li><a class="key-link plain" href="${GEMINI_KEY_URL}" target="_blank" rel="noopener">Google AI Studio</a>에 접속하여 로그인합니다.</li>
+              <li>‘Create API key’ 버튼을 클릭합니다.</li>
+              <li>생성된 키를 복사하여 위 입력란에 붙여넣고 저장합니다.</li>
             </ol>
+            <p class="ai-tip">${I.alert}Gemini 2.5 Flash 모델은 무료 티어로도 충분히 사용 가능합니다.</p>
           </div>
           <ul class="ai-help">
             <li>키는 <b>내 계정에만</b> 저장됩니다.</li>
