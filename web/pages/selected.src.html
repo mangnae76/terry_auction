@@ -1717,6 +1717,9 @@ html, body { overflow-x: clip; }
   const TYPE_NAME = (t) => [[/아파트/, '아파트'], [/도시형|도생/, '도시형'], [/다세대|빌라/, '다세대'], [/근린|상가|점포/, '상가'], [/연립/, '연립'], [/오피스텔/, '오피스텔'], [/다가구/, '다가구'], [/단독|주택/, '단독주택']].find(([re]) => re.test(t))?.[1] ?? (String(t || '').trim() || '기타');
   const TYPE_MARK = (t) => [[/아파트/, 'A'], [/도시형|도생/, '도'], [/다세대|빌라/, '다'], [/근린|상가|점포/, '상'], [/연립/, '연'], [/오피스텔/, '오'], [/단독|주택|다가구/, '단']].find(([re]) => re.test(t))?.[1] ?? (t || '?')[0];
 
+  /* 물건상세 하위 탭 — 주소 끝에 붙여 두고 새로고침 때 되살린다 */
+  const ITEM_TABS = ['basic', 'rights', 'survey', 'field', 'verify', 'profit'];
+  const itemHash = (id, tab) => `#/item/${id}${tab && tab !== 'basic' ? `/${tab}` : ''}`;
   const S = {
     layout: store.get('wlp.web.layout', 'card'), sort: store.get('wlp.web.sort', 'reg'),
     stage: 'all', type: '', court: '', date: '', q: '',
@@ -1727,7 +1730,9 @@ html, body { overflow-x: clip; }
        이미 로그인한 사람에게도 잠깐 깜빡인다. 알게 될 때까지는 기다리는 모양만 보인다 */
     authReady: false,
     route: /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/mypage/.test(location.hash) ? 'mypage' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
-    itemId: (location.hash.match(/^#\/item\/([\w-]+)/) || [])[1] || '', itemTab: 'basic',
+    itemId: (location.hash.match(/^#\/item\/([\w-]+)/) || [])[1] || '',
+    /* 보고 있던 하위 탭도 주소에 적어 둔다 — 새로고침해도 그 자리에 그대로 선다 */
+    itemTab: ITEM_TABS.includes((location.hash.match(/^#\/item\/[\w-]+\/([\w-]+)/) || [])[1]) ? location.hash.match(/^#\/item\/[\w-]+\/([\w-]+)/)[1] : 'basic',
   };
 
   const live = () => items.filter((it) => !it.archived && !it.trashed);
@@ -3171,12 +3176,15 @@ html, body { overflow-x: clip; }
     S.route = route; S.pop = ''; S.menu = null;
     if (route === 'item') { S.itemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
     render(); window.scrollTo(0, 0);
-    try { const h = route === 'register' ? '#/register' : route === 'trip' ? '#/trip' : route === 'mypage' ? '#/mypage' : route === 'item' ? `#/item/${id}` : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
+    try { const h = route === 'register' ? '#/register' : route === 'trip' ? '#/trip' : route === 'mypage' ? '#/mypage' : route === 'item' ? itemHash(id, S.itemTab) : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
   }
   window.addEventListener('popstate', () => {
-    const m = location.hash.match(/^#\/item\/([\w-]+)/);
+    const m = location.hash.match(/^#\/item\/([\w-]+)(?:\/([\w-]+))?/);
     const r = /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/mypage/.test(location.hash) ? 'mypage' : m ? 'item' : 'list';
-    if (r !== S.route || (m && m[1] !== S.itemId)) { S.route = r; if (m) S.itemId = m[1]; S.pop = ''; S.menu = null; render(); }
+    const tab = m && ITEM_TABS.includes(m[2]) ? m[2] : 'basic';
+    if (r !== S.route || (m && (m[1] !== S.itemId || tab !== S.itemTab))) {
+      S.route = r; if (m) { S.itemId = m[1]; S.itemTab = tab; } S.pop = ''; S.menu = null; render();
+    }
   });
 
   const byId = (id) => items.find((x) => x.id === id);
@@ -3588,7 +3596,12 @@ html, body { overflow-x: clip; }
         if (S.modal && S.modal.kind === 'ai') { S.modal = null; renderModal(); }
         rerenderAi(); toast('키를 지웠습니다.', 'info'); break;
       }
-      case 'subtab': S.itemTab = v; renderSubTabs(); renderItem(); window.scrollTo(0, 0); break;
+      case 'subtab': {
+        S.itemTab = v;
+        /* 주소에도 남긴다 — 새로고침하면 이 탭으로 다시 연다 (뒤로가기 기록은 늘리지 않는다) */
+        try { const h = itemHash(S.itemId, v); if (location.hash !== h) history.replaceState(null, '', h); } catch (e) { /* 주소 표시만 못 바꾼다 */ }
+        renderSubTabs(); renderItem(); window.scrollTo(0, 0); break;
+      }
       /* 등록 방법 탭 — 자동 등록(Plus·AI 파싱) · 직접 입력(손으로 적기) */
       case 'reg-mode': {
         if (v === R.mode) break;
