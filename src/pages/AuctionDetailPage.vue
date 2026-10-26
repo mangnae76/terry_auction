@@ -2964,10 +2964,20 @@ const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow
 ];
 // 웹 — 우편함 · 전기가스수도 사용현황 · 미납관리비 · 누수 · 임차인탐문 · 임차인차량은 '③ 입찰자 현황조사' 안에 (사람에 관한 것끼리), '① 탐문' 이름은 '① 현장조사'. 앱은 그대로
 const WEB_TO_REPORT = ['fs.mailbox', 'fs.utility', 'fs.mailMaint', 'fs.roofLeak', 'fs.tenantContact', 'fs.tenantCar']; // 순서는 ① 에 있던 차례 그대로
+// 웹 ① 현장조사에만 더하는 줄 — 실외기는 향/뷰 밑, 엘리베이터는 출입문비번 위
+const WEB_EXTRA_ROWS: Array<{ after?: string; before?: string; row: FieldRow }> = [
+  { after: 'fs.aspect', row: { id: 'fs.outdoorUnit', label: '실외기', options: ['O', 'X'], noteOptions: ['실외기 있음', '실외기 없음'] } },
+  { before: 'fs.doorCode', row: { id: 'fs.elevator', label: '엘리베이터', options: ['O', 'X'], noteOptions: ['엘리베이터 있음', '엘리베이터 없음'] } },
+];
+const withWebExtras = (items: FieldRow[]) => items.flatMap((it) => [
+  ...WEB_EXTRA_ROWS.filter((x) => x.before === it.id).map((x) => x.row),
+  it,
+  ...WEB_EXTRA_ROWS.filter((x) => x.after === it.id).map((x) => x.row),
+]);
 const fieldSections = computed(() => (webEmbed
   ? FIELD_SECTIONS.map((sec) => (sec.special === 'report'
     ? { ...sec, items: FIELD_SECTIONS.flatMap((x) => x.items).filter((it) => WEB_TO_REPORT.includes(it.id)) }
-    : { ...sec, title: sec.title === '① 탐문' ? '① 현장조사' : sec.title, items: sec.items.filter((it) => !WEB_TO_REPORT.includes(it.id)) }))
+    : { ...sec, title: sec.title === '① 탐문' ? '① 현장조사' : sec.title, items: withWebExtras(sec.items.filter((it) => !WEB_TO_REPORT.includes(it.id))) }))
   : FIELD_SECTIONS));
 // 현장 체크리스트 — 항목명과 확인할 내용
 const FIELD_CHECKLIST: Array<{ id: string; label: string; desc: string }> = [
