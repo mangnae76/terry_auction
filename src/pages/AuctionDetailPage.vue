@@ -3859,8 +3859,9 @@ const removeLowRow = () => {
   });
 };
 const mktMode = (group: 'b' | 'c' | 'd') => mktVal(`mkt.${group}.mode`) || MKT_MODES[0];
-const toggleMktMode = async (group: 'b' | 'c' | 'd') => {
-  const next = mktMode(group) === MKT_MODES[0] ? MKT_MODES[1] : MKT_MODES[0];
+/** 경매물건 / 유사물건 — 두 단추 중 누른 쪽으로 바꾼다 */
+const setMktMode = async (group: 'b' | 'c' | 'd', next: string) => {
+  if (mktMode(group) === next) return;
   setMktVal(`mkt.${group}.mode`, next);
   // ② 블록은 평단가(b)와 실거래가(d)를 한 줄에 쓰므로 모드가 따로 놀면 안 된다
   if (group === 'd') setMktVal('mkt.b.mode', next);
@@ -8363,7 +8364,7 @@ const goBack = () => router.back();
           </header>
           <div v-if="!isCollapsed('survPrice')" class="adp-mkt-body">
             <div class="adp-dm-head">
-              <strong class="adp-dm-title">1. 실거래가 조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('deal', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('deal', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'deal'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
+              <strong class="adp-dm-title">1. 실거래가 조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('deal', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('deal', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'deal'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용</span></span></strong>
               <button v-if="!editingSurvey.deal" class="adp-edit-btn" type="button" @click.stop="editingSurvey.deal = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('deal')">완료</button>
             </div>
@@ -8374,12 +8375,17 @@ const goBack = () => router.back();
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
                 <span class="t">① <span :class="['mode', { sim: mktMode('d') === '유사물건' }]">{{ mktModeLabel('d', '경매지번', '유사물건') }}</span> 실거래가<em class="adp-mkt-auto">(매매·전세)</em><span class="adp-note-wrap"><button type="button" class="adp-note-btn adp-send-mark" aria-label="이 값이 어디서 오는지" @mouseenter="noteEnter('recv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('recv', $event)"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m3 11 18-8-8 18-2-7z" /></svg></button><span v-if="noteTip === 'recv'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('recv')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></span>
-                <button
-                  type="button"
-                  :class="['adp-mkt-mode', { sim: mktMode('d') === '유사물건' }]"
-                  title="누를 때마다 경매물건 ↔ 유사물건"
-                  @click="toggleMktMode('d')"
-                >{{ mktMode('d') }}</button>
+                <!-- 경매물건 / 유사물건 — 둘 다 회색, 고른 쪽만 파랗게 -->
+                <span class="adp-mkt-modes">
+                  <button
+                    v-for="m in MKT_MODES"
+                    :key="m"
+                    type="button"
+                    :class="['adp-mkt-mode', { on: mktMode('d') === m }]"
+                    :aria-pressed="mktMode('d') === m"
+                    @click="setMktMode('d', m)"
+                  >{{ m }}</button>
+                </span>
               </div>
               <div class="adp-mkt-cells c4 adp-dm-table center-y">
                 <div :class="['cell', { lit: mktLit('area') }]" @mouseenter="litEnter('area')" @mouseleave="litLeave()" @click="litTap('area')">
@@ -8486,12 +8492,23 @@ const goBack = () => router.back();
                   <span class="adp-tab-dot" /> {{ publicRealTradeSigungu || '주변' }} {{ publicRealTradeDong || '실거래가' }} ({{ filteredPublicTradeRows.length }}건)
                 </small>
               </div>
-              <div class="adp-mkt-cells c3 adp-dm-table center-y">
+              <!-- 웹은 폭이 넓어 면적범위를 한 줄로, 사용승인·거래기간은 칸을 나눈다 -->
+              <div :class="['adp-mkt-cells', webEmbed ? 'c4' : 'c3', 'adp-dm-table', 'center-y']">
                 <div class="cell calc">
                   <small>전용면적범위</small>
-                  <span class="adp-mkt-range2">{{ mktAreaRangeText }}</span>
+                  <span :class="['adp-mkt-range2', { oneline: webEmbed }]">{{ webEmbed ? mktAreaRangeText.replace(/\s*\n\s*/g, ' ') : mktAreaRangeText }}</span>
                 </div>
-                <div class="cell calc">
+                <template v-if="webEmbed">
+                  <div class="cell calc">
+                    <small>사용승인</small>
+                    <span class="adp-mkt-range2">{{ mktApprovalText }}</span>
+                  </div>
+                  <div class="cell calc">
+                    <small>거래기간</small>
+                    <span class="adp-mkt-range2">{{ mktPeriodText }}</span>
+                  </div>
+                </template>
+                <div v-else class="cell calc">
                   <small>사용승인 / 거래기간</small>
                   <span class="adp-mkt-range2">{{ mktApprovalText }}<br />{{ mktPeriodText }}</span>
                 </div>
@@ -8517,12 +8534,17 @@ const goBack = () => router.back();
                   <button type="button" aria-label="행 삭제" :disabled="lowRowCount <= 1" @click="removeLowRow">−</button>
                   <button type="button" aria-label="행 추가" :disabled="lowRowCount >= LOW_ROW_MAX" @click="addLowRow">＋</button>
                 </span>
-                <button
-                  type="button"
-                  :class="['adp-mkt-mode', { sim: mktMode('c') === '유사물건' }]"
-                  title="누를 때마다 경매물건 ↔ 유사물건"
-                  @click="toggleMktMode('c')"
-                >{{ mktMode('c') }}</button>
+                <!-- 경매물건 / 유사물건 — 둘 다 회색, 고른 쪽만 파랗게 -->
+                <span class="adp-mkt-modes">
+                  <button
+                    v-for="m in MKT_MODES"
+                    :key="m"
+                    type="button"
+                    :class="['adp-mkt-mode', { on: mktMode('c') === m }]"
+                    :aria-pressed="mktMode('c') === m"
+                    @click="setMktMode('c', m)"
+                  >{{ m }}</button>
+                </span>
               </div>
               <template v-for="i in lowRowCount" :key="`low-${i}`">
                 <div class="adp-mkt-cells c4 adp-dm-table">
@@ -10906,19 +10928,19 @@ tr.tone-take { background: #fff5f5; }
 .adp-mkt-block-head small { font-size: 11px; color: #2b6df3; font-weight: 500; }
 .adp-mkt-region { display: inline-flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #16a085 !important; font-weight: 700 !important; }
 .adp-mkt-block-head .adp-update-time { margin-left: auto; font-size: 10.5px; color: #6b7280; white-space: nowrap; }
-/* 경매물건 / 유사물건 전환 */
-/* 기본인 '경매물건'은 파란색, 대체 조사인 '유사물건'은 회색 */
+/* 경매물건 / 유사물건 — 두 단추. 둘 다 회색, 고른 쪽만 파랗게 */
+.adp-mkt-modes { margin-left: auto; flex: 0 0 auto; display: inline-flex; gap: 4px; }
 .adp-mkt-mode {
-  margin-left: auto; flex: 0 0 auto;
-  border: 1px solid #2b6df3; background: #eaf1ff; color: #2b6df3;
+  flex: 0 0 auto;
+  border: 1px solid #d1d5db; background: #f3f4f6; color: #6b7280;
   border-radius: 999px; padding: 2px 10px; font-size: 10.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
 }
-.adp-mkt-mode.sim { border-color: #e0574a; background: #fdecea; color: #e0574a; }
+.adp-mkt-mode.on { border-color: #2b6df3; background: #eaf1ff; color: #2b6df3; }
 /* 행 묶음 바로 뒤에 올 때는 붙여 둔다 (둘 다 auto 면 사이가 벌어진다) */
-.adp-mkt-block-head .adp-mkt-step + .adp-mkt-mode { margin-left: 5px; }
-/* 제목의 '경매물건/유사물건' 글자도 버튼 색과 맞춘다 */
-.adp-mkt-block-head .t .mode { color: #2b6df3; }
-.adp-mkt-block-head .t .mode.sim { color: #e0574a; }
+.adp-mkt-block-head .adp-mkt-step + .adp-mkt-modes { margin-left: 5px; }
+/* 제목의 '경매지번/경매빌라/유사물건' 글자는 고른 단추와 같은 파랑 */
+.adp-mkt-block-head .t .mode,
+.adp-mkt-block-head .t .mode.sim { color: #2b6df3; }
 .adp-mkt-mode:active { opacity: 0.7; }
 .adp-mkt-block .adp-mkt-cells + .adp-mkt-cells { margin-top: 6px; }
 /* 테두리 없이 쓸 때도 블록 안 제목과 같은 들여쓰기를 준다 */
@@ -11130,6 +11152,7 @@ tr.tone-take { background: #fff5f5; }
   font-size: 12.6px; font-weight: 600; line-height: 1.35; color: #111827; text-align: center;
   white-space: pre-line; letter-spacing: -0.4px;
 }
+.adp-mkt-range2.oneline { white-space: nowrap; }
 .adp-mkt-twoym { display: flex; gap: 3px; width: 100%; }
 .adp-mkt-twoym .adp-mkt-ym { flex: 1 1 0; min-width: 0; font-size: 10px; }
 .adp-mkt-cells .cell .adp-mkt-twoym + .adp-mkt-input { width: 100%; margin-top: 3px; font-size: 10.5px; }
