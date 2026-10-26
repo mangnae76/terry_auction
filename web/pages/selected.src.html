@@ -556,11 +556,12 @@ body.trip-full .foot { display: none; }
 /* 아래 회색 줄은 창 끝까지 — 띠처럼 긋는다 (html·body 가 overflow-x: clip 이라 가로 스크롤은 생기지 않는다) */
 .reg-tabbar { position: relative; display: flex; align-items: stretch; gap: 2px; }
 .reg-tabbar::after { content: ""; position: absolute; left: 50%; bottom: 0; z-index: 0; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); } /* 물건상세 하위 탭 줄과 같은 색 */
+.reg-shell { padding-bottom: 0; } /* 탭 줄이 상자의 아랫변 — 줄 아래 띠를 남기지 않는다 */
 .reg-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; height: 42px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
 .reg-tab svg { width: 17px; height: 17px; }
 .reg-tab:hover { color: var(--text); }
 .reg-tab.on { color: var(--blue); font-weight: 800; }
-.reg-tab.on::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: -1px; height: 2px; background: var(--blue); }
+.reg-tab.on::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 0; height: 3px; background: var(--blue); }
 .reg-tab .plan-tag { pointer-events: none; }
 .reg-tab:not(.on) .plan-tag.plus { background: #f2dcb6; color: #8a6520; } /* 꺼진 탭에서도 알약은 알약으로 보이게 */
 /* 유료가 아닐 때 — 왼쪽 상자는 한 발 물리고 누를 수 없게 한다 */
