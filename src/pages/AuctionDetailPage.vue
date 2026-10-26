@@ -9796,7 +9796,8 @@ const goBack = () => router.back();
 .adp-rights-wide .adp-rights-date { display: block; margin-top: 2px; font-size: 13px; font-weight: 400; color: #374151; }
 .adp-rows-cap { margin: 12px 0 5px; font-weight: 800; color: #374151; }
 /* 카드 안 작은 제목(상세 권리 분석 · AI 명도 난이도 분석) — 서류 칸 이름과 같은 14 */
-.adp-tab-rights .adp-rows-cap { font-size: 14px; }
+/* 시작점은 카드 제목의 글자(아이콘 15 + 틈 5 뒤)와 맞춘다 */
+.adp-tab-rights .adp-rows-cap { font-size: 14px; margin-left: 20px; }
 /* 건물등기 표와 글자 크기·여백을 똑같이 — 두 표가 나란히 읽혀야 한다 */
 .adp-rights-table { table-layout: fixed; }
 .adp-rights-table th, .adp-rights-table td { font-size: 11px; padding: 8px 6px; word-break: keep-all; vertical-align: top; }
