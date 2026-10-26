@@ -271,7 +271,8 @@ button { cursor: pointer; }
 .app-market .adm-back { display: none !important; }
 /* 거래량 랭킹 — 임장경로처럼 지도를 하위 탭 바로 아래부터 화면 끝까지 통째로 깔고(1920 전체),
    안내 상자 · 고르는 칸 · 통계 판은 그 위에 얹는다 */
-body:has(.app-market[data-k="ranking"]) { overflow-x: hidden; }
+/* 지도가 화면을 통째로 쓰는 화면 — 페이지 자체는 굴러가지 않는다(판은 제 안에서만 굴러간다) */
+html:has(.app-market[data-k="ranking"]), body:has(.app-market[data-k="ranking"]) { overflow: hidden; overscroll-behavior: none; }
 body:has(.app-market[data-k="ranking"]) .foot { display: none; }
 .app-market[data-k="ranking"] .adm-shell { min-height: 0; background: transparent; }
 .app-market[data-k="ranking"] .adm-body { padding: 0 !important; max-width: none !important; }
