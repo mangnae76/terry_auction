@@ -4605,6 +4605,18 @@ const rightLine = (r: { kind: string; date: string; holder: string; reason?: str
  *  (건물등기 표와 같이 금액 줄에는 숫자만 선다) */
 const rightsAmountText = (amount: string) =>
   (amount || '').replace(/^\s*(보증금|채권최고액|청구금액|채권액|전세금|임차보증금)\s*[:：]?\s*/, '').trim();
+/** 예전에 받아 둔 분석은 금액 칸이 "149,700,000원 (전입 2022.06.07 / 확정 2022.05.20)" 꼴이다.
+ *  금액 줄에는 숫자만 세우고 괄호 안의 날짜들은 아래 내용 줄로 내려보낸다
+ *  (지금 프롬프트는 처음부터 갈라 적어 오지만, 이미 받아 둔 것도 같은 모양으로 보여야 한다). */
+const splitRightsAmount = (raw: string) => {
+  const text = rightsAmountText(raw);
+  const hit = text.match(/^([^(（]*)[(（]\s*([^)）]*)[)）]\s*$/);
+  if (!hit) return { amount: text, extra: [] as string[] };
+  return {
+    amount: hit[1].trim(),
+    extra: hit[2].split(/\s*[/·,]\s*/).map((t) => t.trim()).filter(Boolean),
+  };
+};
 /** 날짜는 건물등기와 같은 점 표기로 — AI 는 2022-06-07 로 적어 오고 건물등기는 2022.06.07 로 적는다 */
 const dotYmd = (text: string) => (text || '').replace(/(\d{4})-(\d{1,2})-(\d{1,2})/g, '$1.$2.$3');
 /** 말소기준이라는 네 글자만 빨갛게 칠하려고 토막을 낸다 (건물등기의 같은 규칙) */
@@ -4629,11 +4641,13 @@ const rightsRows = computed(() => {
     const isBase = baseRank
       ? r.rank.trim() === baseRank
       : Boolean(base && r.kind === base.kind && r.date === base.date);
+    const money = splitRightsAmount(r.amount);
     return {
       ...r,
       dateText: dotYmd(r.date),
-      amountText: rightsAmountText(r.amount),
-      noteLines: rightsNoteParts(r.note, isBase),
+      amountText: money.amount,
+      // 괄호에 끌려 들어온 전입·확정을 내용 줄 맨 앞에 세운다 — 건물등기와 같은 차례
+      noteLines: rightsNoteParts([...money.extra, r.note].filter(Boolean).join(' · '), isBase),
     };
   });
 });
