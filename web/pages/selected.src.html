@@ -2482,7 +2482,7 @@ html, body { overflow-x: clip; }
         <div class="ai-body">
           <!-- 키 칸 — 오른쪽 끝에 눈(보기/가리기) · 붙여넣기 -->
           <div class="key-field">
-            <input id="aiKeyIn" type="${m.show ? 'text' : 'password'}" autocomplete="off" spellcheck="false" placeholder="Google AI Studio 에서 받은 API 키" aria-label="Gemini API 키" value="${esc(m.draft ?? R.aiKey)}">
+            <input id="aiKeyIn" type="${m.show ? 'text' : 'password'}" readonly autocomplete="new-password" name="gemini-api-key" data-lpignore="true" data-1p-ignore data-form-type="other" spellcheck="false" placeholder="Google AI Studio 에서 받은 API 키" aria-label="Gemini API 키" value="${esc(m.draft ?? R.aiKey)}">
             <button type="button" class="kf-btn" data-act="ai-eye" aria-label="${m.show ? '키 가리기' : '키 보기'}" data-tip="${m.show ? '키 가리기' : '키 보기'}" data-tip-pos="below">${m.show ? I.eyeOff : I.eye}</button>
             <button type="button" class="kf-btn" data-act="ai-paste" aria-label="붙여넣기" data-tip="붙여넣기" data-tip-pos="below">${I.paste}</button>
           </div>
@@ -2495,7 +2495,11 @@ html, body { overflow-x: clip; }
           </ul>
           <div class="ai-btns">${R.aiKey ? '<button type="button" class="btn" data-act="ai-del" style="color:#d14343;border-color:#f0d2d2">키지우기</button>' : ''}<button type="button" class="btn primary" data-act="ai-save" ${m.checking ? 'disabled' : ''}>${m.checking ? '확인 중…' : '확인 후 저장'}</button></div>
         </div></div></div>`;
-      setTimeout(() => { const el = $('aiKeyIn'); if (el) el.focus(); }, 20);
+      /* 자동채움이 끼어들었으면 되돌리고, 그 뒤에 쓸 수 있게 푼다 */
+      const want = String(m.draft ?? R.aiKey);
+      const unlock = () => { const el = $('aiKeyIn'); if (!el) return; if (el.value !== want) el.value = want; el.removeAttribute('readonly'); };
+      setTimeout(() => { unlock(); const el = $('aiKeyIn'); if (el) el.focus(); }, 20);
+      setTimeout(unlock, 300); setTimeout(unlock, 1200);
       return;
     }
     if (m.kind === 'applogin') {
@@ -3352,7 +3356,7 @@ html, body { overflow-x: clip; }
       case 'ai-toggle': if (!R.aiKey) { S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; if (CLOUD.T) CLOUD.T.setGeminiOn((CLOUD.auth && CLOUD.auth.uid) || '', R.aiOn).catch(() => {}); rerenderAi(); toast(R.aiOn ? 'AI 자동 분석을 켰습니다.' : 'AI 자동 분석을 껐습니다.', 'info'); break;
       case 'ai-key': S.modal = { kind: 'ai' }; renderModal(); break;
       /* 키 칸의 눈 — 적던 글자를 잡아 두고 보기/가리기만 바꾼다 */
-      case 'ai-eye': { const m = S.modal; const el = $('aiKeyIn'); if (!m || !el) break; m.draft = el.value; m.show = !m.show; renderModal(); setTimeout(() => { const x = $('aiKeyIn'); if (x) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 30); break; }
+      case 'ai-eye': { const m = S.modal; const el = $('aiKeyIn'); if (!m || !el) break; m.draft = el.value; m.show = !m.show; renderModal(); setTimeout(() => { const x = $('aiKeyIn'); if (x) { x.removeAttribute('readonly'); x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 30); break; }
       /* 붙여넣기 — 복사해 둔 글을 칸에 넣는다. 브라우저가 막으면 Ctrl+V 로 안내한다 */
       case 'ai-paste': {
         const m = S.modal;
@@ -3361,7 +3365,7 @@ html, body { overflow-x: clip; }
           try { txt = navigator.clipboard && navigator.clipboard.readText ? await navigator.clipboard.readText() : ''; } catch (err) { txt = ''; }
           if (S.modal !== m) return;
           txt = String(txt || '').trim();
-          if (!txt) { toast('붙여 넣을 내용을 읽지 못했습니다 — 칸을 누르고 Ctrl+V(⌘V)로 붙여 넣어 주세요.', 'info'); const el = $('aiKeyIn'); if (el) el.focus(); return; }
+          if (!txt) { toast('붙여 넣을 내용을 읽지 못했습니다 — 칸을 누르고 Ctrl+V(⌘V)로 붙여 넣어 주세요.', 'info'); const el = $('aiKeyIn'); if (el) { el.removeAttribute('readonly'); el.focus(); } return; }
           m.draft = txt; m.msg = ''; renderModal();
         })();
         break;

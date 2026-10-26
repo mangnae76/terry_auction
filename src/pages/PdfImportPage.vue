@@ -75,6 +75,13 @@ const aiKeyOk = ref(false);
 const aiChecking = ref(false);
 const aiKeyShow = ref(false);
 const aiKeyInputRef = ref<HTMLInputElement | null>(null);
+/** 브라우저가 저장해 둔 비밀번호를 키 칸에 채우지 못하게 — readonly 로 그려 자동채움 차례를 넘기고 창이 뜬 뒤 푼다 */
+const aiKeyLocked = ref(true);
+const unlockAiKey = () => {
+  const el = aiKeyInputRef.value;
+  if (el && el.value !== aiKeyDraft.value) el.value = aiKeyDraft.value;
+  aiKeyLocked.value = false;
+};
 /** 붙여넣기 — 복사해 둔 글을 키 칸에 넣는다. 앱은 Capacitor 클립보드, 웹은 브라우저 클립보드. 막히면 길게 눌러 붙이도록 알린다 */
 const pasteAiKey = async () => {
   let txt = '';
@@ -85,6 +92,7 @@ const pasteAiKey = async () => {
   txt = txt.trim();
   if (!txt) {
     showToast('붙여 넣을 내용을 읽지 못했습니다 — 칸을 길게 눌러 붙여 넣어 주세요.');
+    aiKeyLocked.value = false;
     aiKeyInputRef.value?.focus();
     return;
   }
@@ -93,6 +101,10 @@ const pasteAiKey = async () => {
 };
 const openAiModal = () => {
   aiKeyShow.value = false;
+  aiKeyLocked.value = true;
+  window.setTimeout(unlockAiKey, 20);
+  window.setTimeout(unlockAiKey, 300);
+  window.setTimeout(unlockAiKey, 1200);
   aiKeyDraft.value = aiKey.value;
   aiKeyMsg.value = '';
   aiKeyOk.value = false;
@@ -953,12 +965,16 @@ const onDropFiles = async (e: DragEvent) => {
               v-model="aiKeyDraft"
               class="pip-fav-field"
               :type="aiKeyShow ? 'text' : 'password'"
-              autocomplete="off"
+              :readonly="aiKeyLocked"
+              autocomplete="new-password"
+              name="gemini-api-key"
+              data-lpignore="true"
+              data-form-type="other"
               spellcheck="false"
               placeholder="Google AI Studio 에서 받은 API 키"
               @keydown.enter.prevent="saveAiKey"
             />
-            <button type="button" class="pip-kf-btn eye" :aria-label="aiKeyShow ? '키 가리기' : '키 보기'" @click="aiKeyShow = !aiKeyShow">
+            <button type="button" class="pip-kf-btn eye" :aria-label="aiKeyShow ? '키 가리기' : '키 보기'" @click="aiKeyShow = !aiKeyShow; aiKeyLocked = false">
               <svg v-if="aiKeyShow" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.4 3.3" /><path d="M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /><path d="m2 2 20 20" /></svg>
               <svg v-else viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>
             </button>
