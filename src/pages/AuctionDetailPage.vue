@@ -8941,6 +8941,8 @@ const goBack = () => router.back();
             <div class="adp-dm-head sec2">
               <strong class="adp-dm-title">3. 탐문 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('probe', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('probe', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'probe'" class="adp-note-bubble rows" :style="noteStyle" @click.stop="noteTip = ''"><span v-for="(r, ri) in noteRows('probe')" :key="ri"><b :class="{ act: tipAct(r[0]) }">{{ tipLabel(r[0]) }}</b>{{ r[1] }}</span></span></span></strong>
             </div>
+            <!-- ①②③ 묶음 — 앱은 틀 없이(display: contents) 그대로, 웹은 가로로 나란히 -->
+            <div class="adp-fs-sections">
             <div v-for="sec in FIELD_SECTIONS" :key="sec.title" class="adp-fs-section">
               <div class="adp-fs-title">{{ sec.title }}</div>
               <!-- 입찰자 현황조사 — 고르는 칸 하나뿐이라 줄 틀을 쓰지 않는다 -->
@@ -9109,6 +9111,7 @@ const goBack = () => router.back();
                 </span>
               </div>
               </template>
+            </div>
             </div>
 
             <!-- 4. 부동산 현장 상담 — 현장에서 들은 내용을 업체별로 적는다 -->
@@ -11533,6 +11536,8 @@ tr.tone-take { background: #fff5f5; }
   padding: 0 6px; font-size: 12.5px; color: #111827; background: #fff;
 }
 .adp-fs-input:focus { outline: none; border-color: #2b6df3; }
+/* ①②③ 묶음 틀 — 앱에서는 없는 것과 같다(웹만 가로 배치) */
+.adp-fs-sections { display: contents; }
 /* 탐문·우편물 줄의 입력칸 글자는 모두 왼쪽 정렬로 통일 */
 .adp-fs-row .adp-fs-input { text-align: left; padding-left: 8px; }
 /* 빈칸 안내 글자는 '점유관계'의 '선택'과 같은 회색으로 */
