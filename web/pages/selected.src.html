@@ -2503,13 +2503,10 @@ html, body { overflow-x: clip; }
               <li><a class="key-link plain" href="${GEMINI_KEY_URL}" target="_blank" rel="noopener">Google AI Studio</a>에 접속하여 로그인합니다.</li>
               <li>‘Create API key’ 버튼을 클릭합니다.</li>
               <li>생성된 키를 복사하여 위 입력란에 붙여넣고 저장합니다.</li>
+              <li>키는 <b>내 계정에만</b> 저장됩니다.</li>
             </ol>
             <p class="ai-tip">${I.alert}Gemini 2.5 Flash 모델은 무료 티어로도 충분히 사용 가능합니다.</p>
           </div>
-          <ul class="ai-help">
-            <li>키는 <b>내 계정에만</b> 저장됩니다.</li>
-            <li>키 받는 곳 <a class="key-link" href="${GEMINI_KEY_URL}" target="_blank" rel="noopener">Google AI Studio</a></li>
-          </ul>
           <div class="ai-btns">${R.aiKey ? '<button type="button" class="btn" data-act="ai-del" style="color:#d14343;border-color:#f0d2d2">키지우기</button>' : ''}<button type="button" class="btn primary" data-act="ai-save" ${m.checking ? 'disabled' : ''}>${m.checking ? '확인 중…' : '확인 후 저장'}</button></div>
         </div></div></div>`;
       /* 자동채움이 끼어들었으면 되돌리고, 그 뒤에 쓸 수 있게 푼다 */
