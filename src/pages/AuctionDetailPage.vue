@@ -2962,8 +2962,8 @@ const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow
     items: [],
   },
 ];
-// 웹 — 미납관리비 · 누수 · 임차인탐문 · 임차인차량은 '③ 입찰자 현황조사' 안에 (사람에 관한 것끼리), '① 탐문' 이름은 '① 현장조사'. 앱은 그대로
-const WEB_TO_REPORT = ['fs.mailMaint', 'fs.roofLeak', 'fs.tenantContact', 'fs.tenantCar']; // 순서는 ① 에 있던 차례 그대로
+// 웹 — 우편함 · 전기가스수도 사용현황 · 미납관리비 · 누수 · 임차인탐문 · 임차인차량은 '③ 입찰자 현황조사' 안에 (사람에 관한 것끼리), '① 탐문' 이름은 '① 현장조사'. 앱은 그대로
+const WEB_TO_REPORT = ['fs.mailbox', 'fs.utility', 'fs.mailMaint', 'fs.roofLeak', 'fs.tenantContact', 'fs.tenantCar']; // 순서는 ① 에 있던 차례 그대로
 const fieldSections = computed(() => (webEmbed
   ? FIELD_SECTIONS.map((sec) => (sec.special === 'report'
     ? { ...sec, items: FIELD_SECTIONS.flatMap((x) => x.items).filter((it) => WEB_TO_REPORT.includes(it.id)) }
@@ -9004,8 +9004,8 @@ const goBack = () => router.back();
                 </div>
               </div>
             </div>
-            <!-- 고른 말로는 다 담기지 않는 것 — 문 앞에서 본 그대로 적는 칸 -->
-            <div class="adp-survey-row">
+            <!-- 고른 말로는 다 담기지 않는 것 — 문 앞에서 본 그대로 적는 칸 (웹은 뺀다) -->
+            <div v-if="!webEmbed" class="adp-survey-row">
               <span class="lbl">비고</span>
               <span class="adp-survey-note">
                 <input
