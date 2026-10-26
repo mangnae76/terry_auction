@@ -7055,7 +7055,7 @@ const goBack = () => router.back();
               :disabled="rightsAiBusy"
               :title="rightsAiBusy ? '분석하고 있습니다' : '올려 둔 서류로 권리분석을 받습니다'"
               @click.stop="requestRightsAi"
-            >{{ rightsAiBusy ? '분석 중…' : (auction?.rightsAi ? '다시 분석' : '분석 요청') }}</button>
+            >{{ rightsAiBusy ? '분석 중…' : 'AI 분석 시작' }}</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsPhotos') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('rightsPhotos')">
@@ -7110,9 +7110,7 @@ const goBack = () => router.back();
                 :disabled="rightsAiBusy"
                 :title="rightsAiBusy ? '분석하고 있습니다' : '올려 둔 서류로 권리분석을 받습니다'"
                 @click="requestRightsAi"
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>{{ rightsAiBusy ? '분석 중…' : 'AI 분석 시작' }}
-              </button>
+              >{{ rightsAiBusy ? '분석 중…' : 'AI 분석 시작' }}</button>
             </div>
             <!-- 분석 상태 — 못 했으면 까닭, 했으면 무엇을 보고 언제 했는지 -->
             <p v-if="rightsAiErr" class="adp-plan-err">{{ rightsAiErr }}</p>
@@ -9082,6 +9080,21 @@ const goBack = () => router.back();
       @close="docDatePickerId = ''"
     />
 
+    <!-- AI 분석 중 — 화면을 덮어 다른 손놀림을 막고, 돌아가는 바퀴로 살아 있음을 보인다 -->
+    <div v-if="rightsAiBusy" class="adp-ai-wait" role="status" aria-live="polite">
+      <div class="adp-ai-wait-card">
+        <span class="adp-spin" aria-hidden="true">
+          <i
+            v-for="n in 12"
+            :key="n"
+            :style="{ transform: `rotate(${n * 30}deg) translateY(-12px)`, animationDelay: `${(n - 12) * 0.083}s` }"
+          />
+        </span>
+        <b>AI가 권리분석을 하고 있습니다</b>
+        <span>잠시만 기다려 주세요 — 10초쯤 걸립니다</span>
+      </div>
+    </div>
+
     <div v-if="lightboxUrl" class="adp-lightbox">
       <button type="button" class="adp-lightbox-close" aria-label="닫기" @click="closeLightbox">×</button>
       <div
@@ -9632,6 +9645,27 @@ const goBack = () => router.back();
 .adp-rights-table th, .adp-rights-table td { font-size: 11px; padding: 8px 6px; word-break: keep-all; vertical-align: top; }
 .adp-rights-table td small { font-size: 10px; color: #9ca3af; font-weight: 600; }
 .adp-rights-table .adp-rows-note { color: #6b7280; }
+
+/* AI 분석 중 — 화면 전체를 덮는다. 누를 곳이 없으니 기다리는 동안 손이 멎는다 */
+.adp-ai-wait {
+  position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center;
+  background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px); cursor: wait;
+}
+.adp-ai-wait-card {
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  min-width: 250px; padding: 26px 30px; border-radius: 16px; background: #fff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3); text-align: center;
+}
+.adp-ai-wait-card b { font-size: 14.5px; font-weight: 800; color: #111827; letter-spacing: -0.3px; }
+.adp-ai-wait-card span { font-size: 12.5px; color: #6b7280; }
+/* 해바퀴 — 열두 살이 차례로 옅어지며 돈다 */
+.adp-spin { position: relative; width: 32px; height: 32px; margin-bottom: 2px; }
+.adp-spin i {
+  position: absolute; left: 50%; top: 50%; width: 3px; height: 9px;
+  margin: -4.5px 0 0 -1.5px; border-radius: 2px; background: #2b6df3;
+  animation: adp-spin-fade 1s linear infinite;
+}
+@keyframes adp-spin-fade { 0% { opacity: 1; } 100% { opacity: 0.12; } }
 
 /* AI 분석 시작 — 서류 칸 아래 가운데에 선다 */
 .adp-ai-start-row { display: flex; justify-content: center; padding: 12px 0 4px; }
