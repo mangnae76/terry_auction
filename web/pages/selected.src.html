@@ -560,11 +560,25 @@ body.trip-full .foot { display: none; }
 .rg-ai { gap: 8px; }
 .rg-ai .ai-setup-text { font-size: 12.5px; color: var(--text-2); }
 /* 직접 입력 칸 — 두 칸씩, 소재지만 한 줄 */
-.mn-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+/* 위 고정 상자는 이제 '자동 등록' 하나다 */
+.reg-duo { grid-template-columns: minmax(0, 1fr); }
+.reg-duo .rg-acts { grid-template-columns: repeat(4, minmax(0, 220px)); justify-content: start; }
+/* 직접 입력 — 파싱 상자 아래에 선다. 네 칸으로 두 줄 */
+.reg-box.manual { margin-top: 12px; border-radius: 10px; }
+.mn-note { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--muted); }
+.mn-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 900px) { .mn-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .reg-duo .rg-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .mn-form input { height: 34px; padding: 0 11px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 13px; color: var(--text); min-width: 0; }
 .mn-form input:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
-.mn-form .wide { grid-column: 1 / -1; }
-.mn-form .rg-btn.add { grid-column: 1 / -1; background: var(--blue); border-color: var(--blue); color: #fff; }
+.mn-form .wide { grid-column: span 2; }
+.mn-form .wide4 { grid-column: 1 / -1; }
+.mn-form select, .mn-form textarea { height: 34px; padding: 0 11px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 13px; color: var(--text); min-width: 0; font-family: inherit; }
+.mn-form textarea { height: auto; padding: 8px 11px; line-height: 1.5; resize: vertical; }
+.mn-form select:focus, .mn-form textarea:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+/* 칸 나눔 — 묶음 이름 한 줄씩 */
+.mn-cap { grid-column: 1 / -1; margin: 4px 0 -2px; font-size: 11.5px; font-weight: 800; color: var(--muted); letter-spacing: -.2px; }
+.mn-cap:first-child { margin-top: 0; }
+.mn-form .rg-btn.add { background: var(--blue); border-color: var(--blue); color: #fff; }
 .rg-row1, .rg-row2 { display: flex; align-items: center; gap: 8px; min-height: 32px; min-width: 0; }
 .rg-title { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-right: 4px; font-size: 14px; font-weight: 800; color: var(--text); white-space: nowrap; cursor: help; }
 .rg-title svg { width: 18px; height: 18px; color: #2a5fbf; }
@@ -2317,7 +2331,7 @@ html, body { overflow-x: clip; }
       <div class="toolbar reg-box pro ${PAID ? '' : 'locked'}">
       <div class="rg-row1">
         <span class="rg-title tip-below" data-tip="구글 드라이브 폴더나 PDF 파일을 읽어 선정목록으로 올립니다" data-tip-pos="left">${I.cloud}자동 등록</span>
-        <span class="plan-tag pro">유료</span>
+        <span class="plan-tag pro">유료회원</span>
         ${PAID ? '' : '<span class="lock-note">유료 이용 중에 쓸 수 있습니다<button type="button" class="mini edit" data-act="soon" data-name="결제하기">결제하기</button></span>'}
       </div>
       <div class="rg-row1 rg-acts">
@@ -2335,26 +2349,10 @@ html, body { overflow-x: clip; }
       <!-- ② 어떻게 읽을까 — 규칙으로 못 읽은 칸을 AI 가 채운다 -->
       <div class="rg-row1 rg-ai">
         <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
-        ${R.aiKey ? '' : '<span class="ai-req">필수설정</span><span class="ai-setup-text">Gemini API 키가 <span class="key-state no">미등록</span> 상태입니다.</span>'}
+        <span class="ai-req">필수설정</span>
+        <span class="ai-setup-text">Gemini API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.</span>
         <button type="button" class="ai-key" style="margin-left:auto" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
         <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
-      </div>
-      </div>
-
-      <!-- 오른쪽 — 무료 회원: 손으로 적어 올린다 -->
-      <div class="toolbar reg-box manual">
-      <div class="rg-row1">
-        <span class="rg-title tip-below" data-tip="PDF 없이 손으로 적어 선정목록에 올립니다" data-tip-pos="left">${I.pencil}직접 입력</span>
-        <span class="plan-tag free">무료</span>
-      </div>
-      <div class="mn-form">
-        <input id="mnCase" placeholder="사건번호 (예: 2026타경501558)" aria-label="사건번호">
-        <input id="mnCourt" placeholder="법원 (예: 인천지방법원)" aria-label="법원">
-        <input id="mnAddr" class="wide" placeholder="소재지 (예: 인천광역시 서구 검암동 683-9 403호)" aria-label="소재지">
-        <input id="mnDate" type="date" aria-label="매각기일">
-        <input id="mnAppr" inputmode="numeric" placeholder="감정가 (원)" aria-label="감정가">
-        <input id="mnMin" inputmode="numeric" placeholder="최저가 (원)" aria-label="최저가">
-        <button type="button" class="rg-btn add" data-act="manual-add">${I.plus}등록하기</button>
       </div>
       </div>`;
     const rowHtmlR = (r) => `<li class="rg-item ${r.status}" ${r.status === 'ready' ? `data-act="rg-open" data-v="${esc(r.p.caseNo)}" tabindex="0"` : ''}>
@@ -2383,6 +2381,43 @@ html, body { overflow-x: clip; }
         ${R.collapsed ? '' : `<div class="rg-empty ${R.rows.length ? 'slim' : ''}" role="button" tabindex="0" data-act="pdf-pick" aria-label="PDF 파일 고르기"><span class="ic">📂</span><span>${PC.drop}</span></div>
           ${R.rows.length ? `<ul class="rg-list">${R.rows.map(rowHtmlR).join('')}</ul>
           <div class="rg-foot"><span class="num">UPDATE : ${esc(R.last || '—')}</span></div>` : ''}`}
+      </section>
+      <!-- 직접 입력 — 읽을 PDF 가 없는 물건은 여기서 손으로 적어 올린다 (파싱 상자 아래) -->
+      <section class="toolbar reg-box manual">
+        <div class="rg-row1">
+          <span class="rg-title tip-below" data-tip="PDF 없이 손으로 적어 선정목록에 올립니다" data-tip-pos="left">${I.pencil}직접 입력</span>
+          <span class="plan-tag free">무료회원</span>
+          <span class="mn-note">읽을 PDF 가 없는 물건은 여기서 적어 올립니다</span>
+        </div>
+        <div class="mn-form">
+          <p class="mn-cap">사건</p>
+          <input id="mnCase" placeholder="사건번호 (예: 2026타경501558)" aria-label="사건번호">
+          <input id="mnCourt" placeholder="관할법원 (예: 인천지방법원)" aria-label="관할법원">
+          <select id="mnType" aria-label="물건종류">
+            <option value="">물건종류</option>
+            <option>아파트</option><option>다세대·연립</option><option>오피스텔</option>
+            <option>상가</option><option>토지</option><option>단독주택</option><option>기타</option>
+          </select>
+          <input id="mnRound" inputmode="numeric" placeholder="유찰횟수 (예: 1)" aria-label="유찰횟수">
+          <input id="mnAddr" class="wide4" placeholder="소재지 (예: 인천광역시 서구 검암동 683-9 403호)" aria-label="소재지">
+
+          <p class="mn-cap">금액 · 일정</p>
+          <input id="mnDate" type="date" aria-label="매각기일" title="매각기일">
+          <input id="mnAppr" inputmode="numeric" placeholder="감정가 (원)" aria-label="감정가">
+          <input id="mnMin" inputmode="numeric" placeholder="최저가 (원)" aria-label="최저가">
+          <input id="mnDep" inputmode="numeric" placeholder="보증금 (원)" aria-label="보증금">
+
+          <p class="mn-cap">물건 · 관계인</p>
+          <input id="mnBld" inputmode="decimal" placeholder="건물면적 (㎡)" aria-label="건물면적">
+          <input id="mnLand" inputmode="decimal" placeholder="토지면적 (㎡)" aria-label="토지면적">
+          <input id="mnYear" inputmode="numeric" placeholder="건축년도 (예: 2010)" aria-label="건축년도">
+          <input id="mnOwner" placeholder="소유자" aria-label="소유자">
+          <input id="mnDebtor" placeholder="채무자" aria-label="채무자">
+
+          <p class="mn-cap">메모</p>
+          <textarea id="mnNote" class="wide4" rows="2" placeholder="특이사항 (유치권 신고, 대항력 임차인, 미납 관리비 등)" aria-label="특이사항"></textarea>
+          <button type="button" class="rg-btn add" data-act="manual-add">${I.plus}등록하기</button>
+        </div>
       </section>`;
   }
 
@@ -3177,19 +3212,31 @@ html, body { overflow-x: clip; }
         if (!caseNo) { toast('사건번호를 적어 주세요.', 'info'); $('mnCase').focus(); break; }
         const T = CLOUD.T;
         if (!T) { toast('읽기 도구를 불러오는 중입니다 — 잠시 뒤 다시 눌러 주세요.', 'info'); break; }
+        const dec = (id) => Number(($(id).value || '').replace(/[^\d.]/g, '')) || 0;
+        const fails = num('mnRound');
         const parsed = {
           ...T.parseAuctionPdfText(''),
           sourceName: '직접 입력',
           caseNumber: caseNo,
           courtName: ($('mnCourt').value || '').trim(),
+          propertyType: $('mnType').value || '',
           address: ($('mnAddr').value || '').trim(),
+          auctionRound: fails > 0 ? `유찰 ${fails}회` : '',
           eventDate: ($('mnDate').value || '').trim(),
           appraisalValue: num('mnAppr'),
           minimumBidValue: num('mnMin'),
+          depositValue: num('mnDep'),
+          buildingAreaM2: dec('mnBld'),
+          landAreaM2: dec('mnLand'),
+          approvalDate: ($('mnYear').value || '').trim(),
+          ownerName: ($('mnOwner').value || '').trim(),
+          debtorName: ($('mnDebtor').value || '').trim(),
+          notes: ($('mnNote').value || '').trim(),
         };
         CLOUD.store.importParsedPdfAuctions([parsed])
           .then(() => {
-            ['mnCase', 'mnCourt', 'mnAddr', 'mnDate', 'mnAppr', 'mnMin'].forEach((id) => { $(id).value = ''; });
+            ['mnCase', 'mnCourt', 'mnType', 'mnRound', 'mnAddr', 'mnDate', 'mnAppr', 'mnMin', 'mnDep',
+              'mnBld', 'mnLand', 'mnYear', 'mnOwner', 'mnDebtor', 'mnNote'].forEach((id) => { $(id).value = ''; });
             toast(`${caseNo} 을 선정목록에 올렸습니다.`);
           })
           .catch((err) => toast(`적지 못했습니다 — ${(err && err.message) || ''}`, 'info'));
