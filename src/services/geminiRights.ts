@@ -38,7 +38,7 @@ export type RightsAiRow = {
   holder: string;
   /** 채권액 또는 내용 — '보증금 149,700,000원 (전입 2022.06.07 / 확정 2022.05.20)' */
   amount: string;
-  /** '인수' 또는 '말소' */
+  /** '인수' 또는 '소멸' — 건물등기 표와 같은 말을 쓴다 */
   status: string;
   /** 비고 — 왜 인수인지, 왜 말소인지 한 줄 */
   note: string;
@@ -82,7 +82,7 @@ const rowItem = {
   type: 'OBJECT',
   properties: {
     rank: str, kind: str, date: str, holder: str, amount: str,
-    status: { type: 'STRING', enum: ['인수', '말소'] }, note: str,
+    status: { type: 'STRING', enum: ['인수', '소멸'] }, note: str,
   },
   required: ['rank', 'kind', 'holder', 'status', 'note'],
 };
@@ -164,28 +164,35 @@ export const RIGHTS_PROMPT = [
   '- rank 에는 등기부의 순위번호(예: 갑구 3번, 을구 2번)를 적는다.',
   '',
   '상세 권리 분석 표 (rows) — 가장 중요한 칸이다',
+  '이 표는 앱의 건물등기 표와 나란히 놓인다. 칸 이름과 적는 꼴을 그대로 맞춘다 —',
+  '순위 / 권리종류 · 내용 / 권리자 / 인수·소멸.',
   '- 등기부에 적힌 권리를 한 줄에 하나씩, 순위가 빠른 것부터 적는다. 임차인은 주택임차권으로 한 줄 넣는다.',
   '- rank: 등기부의 구와 순위번호를 그대로 — "갑구 6번", "을구 9번". 순위번호를 못 읽으면 빈 글자로 둔다.',
   '- date: 접수일 YYYY-MM-DD. 임차인 줄이면 전입신고일을 적는다.',
   '- kind: 권리 종류 — 강제경매개시결정 · 근저당권 · 압류 · 가압류 · 주택임차권 · 가처분 · 가등기 등.',
   '- holder: 권리자 이름 그대로 (예: 서울보증보험 주식회사 · 국민건강보험공단 · 한국토지주택공사).',
-  '- amount: 채권액이나 내용. 임차권이면 "보증금 149,700,000원 (전입 2022.06.07 / 확정 2022.05.20)" 처럼',
-  '  보증금과 전입·확정일자를 괄호에 같이 적는다. 경매개시결정이면 "2026타경501558 (2026.02.23 접수)".',
-  '- status: 인수 또는 말소 둘 중 하나.',
-  '- note: 왜 그런지 한 줄 — "말소기준권리", "말소기준권리보다 앞선 선순위 임차권", "말소기준권리 이후 등기로 매각 시 소멸".',
+  '- amount: 금액 한 줄만. 건물등기 표와 같이 "채권최고액 180,000,000원", "보증금 149,700,000원" 처럼 적는다.',
+  '  전입·확정일자나 사건번호는 여기 넣지 말고 note 에 적는다. 금액이 없으면 빈 글자.',
+  '- status: 인수 또는 소멸 둘 중 하나. (건물등기 표와 같은 말을 쓴다 — \'말소\' 라고 적지 않는다)',
+  '- note: 건물등기 표의 \'내용\' 자리다. 금액 아래 한 줄로 붙는다.',
+  '  ① 임차권이면 전입·확정·배당요구 날짜를 먼저 — "전입 2022.06.07 · 확정 2022.05.20 · 배당요구 2026.04.20".',
+  '  ② 경매개시결정이면 사건번호를 먼저 — "2026타경501558".',
+  '  ③ 그다음에 왜 인수인지·왜 소멸인지를 한 마디 붙인다 — "말소기준권리", "말소기준권리보다 앞선 선순위 임차권",',
+  '     "말소기준권리 이후 등기로 매각 시 소멸". 앞 내용이 없으면 이 한 마디만 적는다.',
+  '  토막 사이는 가운뎃점( · )으로 잇는다.',
   '',
   '인수·말소 가르는 규칙',
   '- 인수냐 말소냐는 네가 가른다. 날짜뿐 아니라 배당·확약서·임차권 양도 같은 사정까지 함께 본다.',
   '- 말소기준권리보다 앞선(먼저 접수된) 권리는 낙찰자가 떠안는다 → status 를 인수로.',
-  '- 말소기준권리와 그 뒤의 권리는 낙찰되면 없어진다 → status 를 말소로.',
+  '- 말소기준권리와 그 뒤의 권리는 낙찰되면 없어진다 → status 를 소멸로.',
   '- 다만 뒤에 있어도 없어지지 않는 것이 있다: 예고등기, 건물철거·토지인도 가처분, 유치권, 법정지상권,',
   '  그리고 대항력 있는 임차인이 배당에서 다 못 받은 보증금. 이런 것은 인수로 하고 note 에 까닭을 적는다.',
   '',
   '카드에 한 줄로 적을 글',
   '- takeoverSummary: 떠안는 권리를 한 줄로 — "선순위 주택임차권 (인수 주의)" 처럼 25자 안팎. 없으면 "인수할 권리 없음".',
-  '- extinguishSummary: 없어지는 권리를 한 줄로 — "낙찰 시 자동 소멸 (경매등기, 압류)" 처럼 25자 안팎. 없으면 "말소될 권리 없음".',
+  '- extinguishSummary: 없어지는 권리를 한 줄로 — "낙찰 시 자동 소멸 (경매등기, 압류)" 처럼 25자 안팎. 없으면 "소멸될 권리 없음".',
   '- 두 줄 모두 한 줄을 넘기지 않는다. 자세한 것은 rows 가 들고 있다.',
-  '- 이 두 줄은 rows 의 인수·말소 개수와 반드시 맞아야 한다. 인수가 한 건이라도 있으면 없다고 적지 않는다.',
+  '- 이 두 줄은 rows 의 인수·소멸 개수와 반드시 맞아야 한다. 인수가 한 건이라도 있으면 없다고 적지 않는다.',
   '',
   '명도 난이도',
   '- level 은 쉬움 / 보통 / 약간 높음 / 높음 가운데 하나만 고른다.',
@@ -199,7 +206,7 @@ export const RIGHTS_PROMPT = [
   '- 대항력이 있는데 배당에서 다 못 받으면 그 남은 보증금은 낙찰자가 떠안는다 — 표에 인수로 적는다.',
   '',
   '애매할 때 어느 쪽으로 적을지 (이 규칙을 반드시 따른다 — 볼 때마다 답이 달라지면 안 된다)',
-  '- 선순위 임차권(말소기준보다 앞선 임차권)은 원칙이 인수다. 아래 하나에 들어맞을 때만 말소로 적는다.',
+  '- 선순위 임차권(말소기준보다 앞선 임차권)은 원칙이 인수다. 아래 하나에 들어맞을 때만 소멸로 적는다.',
   '  ① 배당으로 보증금 전액을 받는 것이 매각물건명세서나 배당표로 확인될 때',
   '  ② 임차인이 임차권등기 말소에 이미 동의해 말소가 끝났다고 서류에 적혀 있을 때',
   '- "전액을 못 받으면 잔존채권을 포기하고 말소에 동의하겠다" 는 확약서·각서만 있는 경우는 아직 배당 결과가',
@@ -328,7 +335,7 @@ export const normalizeRightsAi = (raw: Partial<RightsAi>, usedDocs: string[] = [
     date: text((r as RightsAiRow)?.date),
     holder: text((r as RightsAiRow)?.holder),
     amount: text((r as RightsAiRow)?.amount),
-    status: text((r as RightsAiRow)?.status) === '인수' ? '인수' : '말소',
+    status: text((r as RightsAiRow)?.status) === '인수' ? '인수' : '소멸', /* 예전에 '말소'로 적어 둔 것도 여기서 '소멸'이 된다 */
     note: text((r as RightsAiRow)?.note),
   })).filter((r) => r.kind || r.holder);
   // 인수·말소는 AI 가 가른다 — 배당·확약서·임차권 양도처럼 날짜만으로는 알 수 없는
@@ -346,7 +353,7 @@ export const normalizeRightsAi = (raw: Partial<RightsAi>, usedDocs: string[] = [
     kind: r.kind, date: r.date, holder: r.holder, reason: r.note,
   });
   const takeoverItems = judged.filter((r) => r.status === '인수').map(asRight);
-  const extinguishItems = judged.filter((r) => r.status === '말소').map(asRight);
+  const extinguishItems = judged.filter((r) => r.status === '소멸').map(asRight);
   // 말소기준권리 — AI 가 적어 준 것을 쓰고, 비어 있을 때만 표에서 가장 빠른 후보를 고른다
   const baseFromRows = judged
     .filter((r) => BASE_RIGHT_KINDS.test(r.kind))
@@ -384,7 +391,7 @@ export const normalizeRightsAi = (raw: Partial<RightsAi>, usedDocs: string[] = [
       summary: pickSummary(
         text((raw as { extinguishSummary?: string }).extinguishSummary),
         extinguishItems.length,
-        extinguishItems.length ? `낙찰 시 자동 소멸 (${kindsOf(judged.filter((r) => r.status === '말소'), 3).join(', ')})` : '말소될 권리 없음',
+        extinguishItems.length ? `낙찰 시 자동 소멸 (${kindsOf(judged.filter((r) => r.status === '소멸'), 3).join(', ')})` : '소멸될 권리 없음',
       ),
     },
     risk: {

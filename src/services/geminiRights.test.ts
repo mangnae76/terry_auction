@@ -9,19 +9,19 @@ const row = (rank: string, kind: string, date: string, status: string, holder = 
 /** 선순위 임차권 하나 · 말소기준(근저당) · 그 뒤 경매개시·압류 */
 const RAW = {
   rows: [
-    row('을구 9번', '주택임차권', '2022-06-07', '말소', '한국토지주택공사'),
+    row('을구 9번', '주택임차권', '2022-06-07', '소멸', '한국토지주택공사'),
     row('을구 1번', '근저당권', '2023-04-11', '인수', '국민은행'),
     row('갑구 6번', '강제경매개시결정', '2026-02-23', '인수', '서울보증보험 주식회사'),
     row('갑구 7번', '압류', '2026-03-18', '인수', '국민건강보험공단'),
   ],
 } as unknown as Partial<RightsAi>;
 
-describe('인수·말소는 AI 가 가르고, 앱은 세기만 한다', () => {
+describe('인수·소멸은 AI 가 가르고, 앱은 세기만 한다', () => {
   it('AI 가 적어 준 그대로 센다 — 판단을 뒤집지 않는다', () => {
     const ai = normalizeRightsAi(RAW);
     expect(ai.takeover.count).toBe(3);
     expect(ai.extinguish.count).toBe(1);
-    expect(ai.rows.find((r) => r.kind === '주택임차권')?.status).toBe('말소');
+    expect(ai.rows.find((r) => r.kind === '주택임차권')?.status).toBe('소멸');
   });
 
   it('말소기준권리는 AI 가 적어 준 것을 쓴다', () => {
@@ -68,6 +68,6 @@ describe('인수·말소는 AI 가 가르고, 앱은 세기만 한다', () => {
   it('권리가 없으면 요약을 비워 두지 않는다', () => {
     const ai = normalizeRightsAi({ rows: [] } as unknown as Partial<RightsAi>);
     expect(ai.takeover.summary).toBe('인수할 권리 없음');
-    expect(ai.extinguish.summary).toBe('말소될 권리 없음');
+    expect(ai.extinguish.summary).toBe('소멸될 권리 없음');
   });
 });

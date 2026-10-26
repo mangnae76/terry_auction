@@ -4593,10 +4593,13 @@ const rightLine = (r: { kind: string; date: string; holder: string; reason?: str
 /** AI 권리분석 진단 — 말소기준권리가 어떤 권리인지, 떠안는 권리와 없어지는 권리 */
 const rightsDiag = computed(() => {
   const ai = rightsAi.value;
-  if (!ai) return { baseRight: '', takeover: [] as string[], extinguish: [] as string[] };
+  if (!ai) return { baseRight: '', baseDate: '', takeover: [] as string[], extinguish: [] as string[] };
   const b = ai.baseRight;
   return {
-    baseRight: [b.rank, b.kind].filter(Boolean).join(' ') || [b.kind, b.date].filter(Boolean).join(' '),
+    // 상자 셋을 같은 꼴로 — 윗줄은 굵은 값, 아랫줄은 한 줄 설명.
+    // 말소기준권리는 '갑구 6번 강제경매개시결정' 과 그 아래 접수일.
+    baseRight: [b.rank, b.kind].filter(Boolean).join(' ') || b.kind,
+    baseDate: (b.date || '').replace(/-/g, '.'),
     takeover: ai.takeover.items.map(rightLine),
     extinguish: ai.extinguish.items.map(rightLine),
   };
@@ -7005,7 +7008,8 @@ const goBack = () => router.back();
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsDiag') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('rightsDiag')">
-            <!-- 상자 셋 — 말소기준권리는 어떤 권리인지, 인수·말소는 개수와 그 아래 권리 이름 -->
+            <!-- 상자 셋 — 모두 같은 꼴이다. 윗줄은 굵은 값, 아랫줄은 한 줄 설명
+                 (말소기준권리는 접수일, 인수·소멸은 어떤 권리인지) -->
             <div class="adp-diag-boxes">
               <div class="adp-diag-box">
                 <span class="adp-diag-k">말소기준권리</span>
@@ -7013,6 +7017,7 @@ const goBack = () => router.back();
                   :class="['adp-diag-v', 'adp-diag-name', { on: rightsDiag.baseRight }]"
                   :title="rightsAi ? [rightsAi.baseRight.holder, rightsAi.baseRight.rank, rightsAi.baseRight.evidence].filter(Boolean).join(' · ') : ''"
                 >{{ rightsDiag.baseRight || '-' }}</b>
+                <p v-if="rightsDiag.baseDate" class="adp-diag-sum">{{ rightsDiag.baseDate }}</p>
               </div>
               <div class="adp-diag-box">
                 <span class="adp-diag-k">인수권리수</span>
@@ -7020,7 +7025,7 @@ const goBack = () => router.back();
                 <p v-if="rightsAi?.takeover.summary" class="adp-diag-sum take">{{ rightsAi.takeover.summary }}</p>
               </div>
               <div class="adp-diag-box">
-                <span class="adp-diag-k">말소권리수</span>
+                <span class="adp-diag-k">소멸권리수</span>
                 <b :class="['adp-diag-v', { on: rightsAi }]">{{ rightsAi ? `${rightsAi.extinguish.count}개` : '-' }}</b>
                 <p v-if="rightsAi?.extinguish.summary" class="adp-diag-sum">{{ rightsAi.extinguish.summary }}</p>
               </div>
@@ -7032,17 +7037,17 @@ const goBack = () => router.back();
                 <colgroup>
                   <col style="width: 20%" /><col /><col style="width: 22%" /><col style="width: 15%" />
                 </colgroup>
-                <thead><tr><th>순위</th><th>권리 종류 · 내용</th><th>권리자</th><th>인수/말소</th></tr></thead>
+                <thead><tr><th>순위</th><th>권리종류 · 내용</th><th>권리자</th><th>인수/소멸</th></tr></thead>
                 <tbody>
                   <tr v-for="(r, i) in rightsAi.rows" :key="i" :class="r.status === '인수' ? 'tone-take' : ''">
                     <td class="pre-line">{{ r.rank || '-' }}<br><small>{{ r.date }}</small></td>
                     <td>
                       <strong>{{ r.kind }}</strong>
-                      <span v-if="r.amount" class="adp-desc">{{ r.amount }}</span>
+                      <span v-if="r.amount" class="b">{{ r.amount }}</span>
                       <span v-if="r.note" class="adp-desc adp-rows-note">{{ r.note }}</span>
                     </td>
                     <td>{{ r.holder }}</td>
-                    <td><b v-if="r.status === '인수'" class="adp-reg-take">인수</b><template v-else>말소</template></td>
+                    <td><b v-if="r.status === '인수'" class="adp-reg-take">인수</b><template v-else>소멸</template></td>
                   </tr>
                 </tbody>
               </table>
@@ -7111,15 +7116,12 @@ const goBack = () => router.back();
             <p v-if="registryClaimAmount > 0" class="adp-sub-note">(채권합계금액:{{ formatMoney(registryClaimAmount) }}원)</p>
             <table v-if="registryRows.length > 0" class="adp-table adp-registry-table">
               <colgroup>
-                <col style="width: 22%" />
-                <col />
-                <col style="width: 22%" />
-                <col style="width: 16%" />
+                <col style="width: 20%" /><col /><col style="width: 22%" /><col style="width: 15%" />
               </colgroup>
-              <thead><tr><th>접수/순서</th><th>종류</th><th>권리자</th><th>인수/소멸</th></tr></thead>
+              <thead><tr><th>순위</th><th>권리종류 · 내용</th><th>권리자</th><th>인수/소멸</th></tr></thead>
               <tbody>
                 <tr v-for="(r, i) in registryRows" :key="i" :class="[r.extinct === '소멸' ? 'tone-red' : '', { 'tone-take': r.taken }]">
-                  <td class="pre-line">{{ r.date.replace(/-/g, '.') }}<br>{{ r.order }}</td>
+                  <td class="pre-line">{{ r.order || '-' }}<br><small>{{ r.date.replace(/-/g, '.') }}</small></td>
                   <td>
                     <strong>{{ r.kind }}</strong>
                     <span v-if="r.amount" class="b">{{ r.amount }}</span>
@@ -9197,8 +9199,8 @@ const goBack = () => router.back();
 .adp-doc-link { font-size: 12px; font-weight: 700; color: #2563eb; text-decoration: none; }
 .adp-diag-boxes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 2px 0 6px; }
 .adp-diag-box {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  min-height: 78px; padding: 10px 6px; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px;
+  min-height: 92px; padding: 10px 6px; box-sizing: border-box;
   border: 1px solid #e3e8f0; border-radius: 10px; background: #f8fafc; text-align: center;
 }
 .adp-diag-k { font-size: 12.5px; font-weight: 400; color: #6b7280; white-space: nowrap; }
