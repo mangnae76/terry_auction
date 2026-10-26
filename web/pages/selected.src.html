@@ -553,8 +553,10 @@ body.trip-full .foot { display: none; }
 .plan-tag { display: inline-block; flex: 0 0 auto; border-radius: 999px; font-weight: 800; letter-spacing: -.1px; vertical-align: 1px; }
 .plan-tag.plus { padding: 1px 7px; background: #eda134; color: #fff; font-size: 12px; line-height: 1.5; }
 /* 등록 방법 탭 — 자동 등록(Plus) · 직접 입력. 밑줄은 ::after 막대로(전역 button 둥근모서리를 피한다) */
-.reg-tabbar { display: flex; align-items: stretch; gap: 2px; border-bottom: 1px solid var(--line); }
-.reg-tab { position: relative; display: inline-flex; align-items: center; gap: 7px; height: 42px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
+/* 아래 회색 줄은 창 끝까지 — 띠처럼 긋는다 (html·body 가 overflow-x: clip 이라 가로 스크롤은 생기지 않는다) */
+.reg-tabbar { position: relative; display: flex; align-items: stretch; gap: 2px; }
+.reg-tabbar::after { content: ""; position: absolute; left: 50%; bottom: 0; z-index: 0; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); } /* 물건상세 하위 탭 줄과 같은 색 */
+.reg-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; height: 42px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
 .reg-tab svg { width: 17px; height: 17px; }
 .reg-tab:hover { color: var(--text); }
 .reg-tab.on { color: var(--blue); font-weight: 800; }
@@ -2351,7 +2353,7 @@ html, body { overflow-x: clip; }
       <!-- ① 어떻게 읽을까 — 규칙으로 못 읽은 칸을 AI 가 채운다 -->
       <div class="rg-row1 rg-ai">
         <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
-        <span class="ai-setup-text">제미나이 API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.${R.aiKey ? '' : ' 제미나이 API 키를 설정해 주세요.'}</span>
+        <span class="ai-setup-text">제미나이 API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.${R.aiKey ? '' : ' 제미나이 API 키를 입력해 주세요.'}</span>
         <button type="button" class="ai-key" style="margin-left:auto" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
         <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
       </div>
@@ -2392,7 +2394,6 @@ html, body { overflow-x: clip; }
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
       <section class="rg-results" id="rgDrop" aria-label="${PC.title}">
         <div class="rg-head"><h2 class="tip-below" data-tip="${PC.tip}" data-tip-pos="left" style="cursor:help">${PC.ic}${PC.title}</h2>
-          <span class="plan-tag plus">Plus</span>
           <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span>${R.rows.length ? `<button type="button" class="rg-clear-btn" data-act="rg-clear" aria-label="목록 비우기" data-tip="목록 비우기" data-tip-pos="below">${I.trash}</button>` : ''}</span>
           <button type="button" class="rg-chev ${R.collapsed ? 'up' : ''}" data-act="rg-collapse" aria-expanded="${!R.collapsed}" aria-label="결과 접기">${I.chevDown}</button></div>
         ${R.missing.length ? `<div class="rg-missing"><div class="h">드라이브에 없는 물건 ${R.missing.length}건<button type="button" data-act="missing-trash">휴지통으로</button></div><p>스캔한 폴더에서 PDF가 사라졌습니다. 선정목록은 그대로 남아 있습니다 — 치우려면 누르세요.</p><ul>${R.missing.map((m) => `<li>${esc(m.label)}</li>`).join('')}</ul></div>` : ''}
@@ -2989,7 +2990,7 @@ html, body { overflow-x: clip; }
           <span class="mn-note">규칙으로 못 읽은 칸을 AI 가 채웁니다 — 키는 내 계정에만 저장됩니다</span>
         </div>
         <div class="rg-row1 rg-ai">
-          <span class="ai-setup-text">제미나이 API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.${R.aiKey ? '' : ' 제미나이 API 키를 설정해 주세요.'}</span>
+          <span class="ai-setup-text">제미나이 API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.${R.aiKey ? '' : ' 제미나이 API 키를 입력해 주세요.'}</span>
           <button type="button" class="ai-key" style="margin-left:auto" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
           <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
         </div>
