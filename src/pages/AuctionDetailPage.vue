@@ -7321,7 +7321,17 @@ const goBack = () => router.back();
             <!-- 명도 난이도 — 상세 권리 분석과 같은 깊이의 작은 제목 아래, 근거·전략·조언 셋 -->
             <template v-if="rightsAi">
               <p class="adp-sub-note adp-rows-cap">AI 명도 난이도 분석</p>
-              <div class="adp-evict-notes">
+              <!-- 웹 — 근거·전략·조언을 한 표로: 왼쪽 항목 이름, 오른쪽 내용 한 줄 (권리분석 (직접확인) 표와 같은 꼴) -->
+              <table v-if="webEmbed" class="adp-table adp-rcheck-table adp-evict-table">
+                <colgroup><col style="width: 220px" /><col /></colgroup>
+                <tbody>
+                  <tr v-for="n in EVICT_NOTES" :key="n.key">
+                    <td class="adp-rcheck-label"><strong>{{ n.label }}</strong></td>
+                    <td class="adp-rcheck-desc">{{ evictDiag[n.key] || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-else class="adp-evict-notes">
                 <div v-for="n in EVICT_NOTES" :key="n.key" class="adp-diag-box adp-evict-note">
                   <span class="adp-diag-k">{{ n.label }}</span>
                   <p :class="['adp-evict-text', { on: evictDiag[n.key] }]">{{ evictDiag[n.key] || '-' }}</p>
