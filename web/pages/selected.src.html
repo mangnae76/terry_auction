@@ -695,8 +695,12 @@ body.trip-full .foot { display: none; }
 .rg-missing ul { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; color: #6b5a3a; line-height: 1.6; }
 /* 폴더 등록·AI 키 창 */
 .dialog.fav-dlg { width: min(880px, 100%); padding: 0; overflow: hidden; }
-.fav-body { padding: 4px 20px 16px; display: grid; gap: 10px; }
+.fav-body { padding: 10px 20px 18px; display: grid; gap: 12px; }
 .fav-sub { margin: 8px 0 0; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+/* 창 안을 두 묶음으로 — 새로 등록하는 곳과 등록해 둔 목록을 상자로 가른다 */
+.fav-sec { border: 1px solid var(--card-line); border-radius: 10px; padding: 12px 14px 14px; }
+.fav-sec .fav-sub { margin: 0 0 9px; }
+.fav-sec .fav-list { border-top: 1px solid var(--surface-3); max-height: 300px; }
 .fav-form { display: grid; grid-template-columns: 1fr 2.6fr auto; gap: 6px; }
 .fav-form input, .ai-body input { height: 38px; padding: 0 12px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); font-size: 13.5px; min-width: 0; }
 .fav-form input:focus, .ai-body input:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
@@ -2355,10 +2359,14 @@ html, body { overflow-x: clip; }
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog fav-dlg" role="dialog" aria-modal="true" aria-labelledby="favT">
         <div class="reg-head"><h2 id="favT">구글 드라이브 주소 등록</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
         <div class="fav-body">
+          <section class="fav-sec">
           <p class="fav-sub">신규 폴더 + 주소 등록</p>
           <div class="fav-form"><input id="favName" placeholder="신규 폴더명 입력" aria-label="신규 폴더명"><input id="favUrl" placeholder="구글 드라이브 폴더 주소 입력" aria-label="폴더 주소"><button type="button" class="btn primary" data-act="fav-add">추가</button></div>
+          </section>
+          <section class="fav-sec">
           <p class="fav-sub">구글 드라이브 폴더 + 주소 리스트 <span style="font-weight:400">(체크한 폴더를 연결 및 스캔합니다)</span></p>
           <ul class="fav-list">${li}</ul>
+          </section>
         </div></div></div>`;
       if (m.edit >= 0) setTimeout(() => { const el = $('favEditName'); if (el) el.focus(); }, 20); else setTimeout(() => { const el = $('favName'); if (el) el.focus(); }, 20);
       return;
