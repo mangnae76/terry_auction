@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import L from 'leaflet';
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   fetchTradeVolumeStats,
@@ -36,6 +36,8 @@ const shortWon = (won: number): string => {
   if (eok > 0) return man > 0 ? `${eok}억 ${man.toLocaleString('ko-KR')}만` : `${eok}억`;
   return `${man.toLocaleString('ko-KR')}만`;
 };
+/** 웹 시장분석 › 거래량 랭킹에 띄웠는가 — 웹(shared.entry.js)이 넣어 준다. 분석 도구에서는 false */
+const webEmbed = inject<boolean>('webEmbed', false);
 const router = useRouter();
 const selectedSido = ref('');
 const selectedDistrict = ref('');
@@ -469,14 +471,14 @@ onMounted(() => {
             <label class="tsp-f">
               <small>시 · 도</small>
               <select class="tsp-select" v-model="selectedSido">
-                <option value="">선택</option>
+                <option value="">{{ webEmbed ? '시도 선택' : '선택' }}</option>
                 <option v-for="sido in sidoOptions" :key="sido" :value="sido">{{ sido }}</option>
               </select>
             </label>
             <label class="tsp-f">
               <small>시 · 군 · 구</small>
               <select class="tsp-select" v-model="selectedDistrict" :disabled="!selectedSido">
-                <option value="">선택</option>
+                <option value="">{{ webEmbed ? '시군구 선택' : '선택' }}</option>
                 <option v-for="district in districtOptions" :key="district.lawdCode" :value="district.label">
                   {{ district.label }}
                 </option>
@@ -485,7 +487,7 @@ onMounted(() => {
             <label class="tsp-f">
               <small>읍 · 면 · 동</small>
               <select class="tsp-select" v-model="selectedDong" :disabled="dongOptions.length === 0">
-                <option value="">{{ peeking ? '불러오는 중…' : '전체' }}</option>
+                <option value="">{{ peeking ? '불러오는 중…' : (webEmbed ? '읍면동 선택' : '전체') }}</option>
                 <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
               </select>
             </label>
@@ -504,7 +506,7 @@ onMounted(() => {
             <label class="tsp-f">
               <small>기간</small>
               <select class="tsp-select" v-model.number="selectedPeriod">
-                <option :value="0">선택</option>
+                <option :value="0">{{ webEmbed ? '기간 선택' : '선택' }}</option>
                 <option v-for="m in periodOptions" :key="m" :value="m">{{ m }}개월</option>
               </select>
             </label>
