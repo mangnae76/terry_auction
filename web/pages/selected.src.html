@@ -476,7 +476,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-trip .ftp-scroll {
   position: fixed !important; left: 18px !important;
   top: calc(var(--stick-top) + var(--gnb-h) + 18px) !important; bottom: 18px !important;
-  width: 430px !important; max-width: calc(100vw - 36px) !important;
+  width: 520px !important; max-width: calc(100vw - 36px) !important;
   overflow-y: auto !important; overscroll-behavior: contain; z-index: 5 !important;
   background: transparent !important; border: 0 !important; box-shadow: none !important;
   padding: 0 0 10px !important;
@@ -489,6 +489,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 }
 .app-trip .ftp-scroll > .ftp-fixed-top { border-top: 1px solid #e2e8f3; border-radius: 14px 14px 0 0; }
 .app-trip .ftp-scroll > .ftp-list { border-bottom: 1px solid #e2e8f3; border-radius: 0 0 14px 14px; }
+/* 안쪽 줄이 제 바탕으로 모서리를 덮는다 — 맨 위·맨 아래 줄에도 같은 라운드를 준다 */
+.app-trip .ftp-scroll > .ftp-fixed-top > :first-child { border-radius: 14px 14px 0 0; }
+.app-trip .ftp-scroll > .ftp-list > :last-child { border-radius: 0 0 14px 14px; }
 /* 목록을 접으면 윗줄 하나만 남는다 — 그때는 네 모서리를 모두 둥글린다 */
 .app-trip .ftp-scroll:not(:has(> .ftp-list)) > .ftp-fixed-top { border-bottom: 1px solid #e2e8f3; border-radius: 14px; }
 :root[data-theme="dark"] .app-trip .ftp-scroll > .ftp-fixed-top,
