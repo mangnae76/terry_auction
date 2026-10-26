@@ -7102,6 +7102,18 @@ const goBack = () => router.back();
                 <p v-if="extraErr[b.key]" class="adp-plan-err">{{ extraErr[b.key] }}</p>
               </div>
             </div>
+            <!-- 서류를 올린 뒤 누르는 자리 — 칸 가운데에 크게 세운다 -->
+            <div class="adp-ai-start-row">
+              <button
+                type="button"
+                class="adp-ai-start"
+                :disabled="rightsAiBusy"
+                :title="rightsAiBusy ? '분석하고 있습니다' : '올려 둔 서류로 권리분석을 받습니다'"
+                @click="requestRightsAi"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>{{ rightsAiBusy ? '분석 중…' : 'AI 분석 시작' }}
+              </button>
+            </div>
             <!-- 분석 상태 — 못 했으면 까닭, 했으면 무엇을 보고 언제 했는지 -->
             <p v-if="rightsAiErr" class="adp-plan-err">{{ rightsAiErr }}</p>
             <p v-else-if="rightsAiBusy" class="adp-doc-old">서류를 읽고 있습니다 — 10초쯤 걸립니다.</p>
@@ -9620,6 +9632,18 @@ const goBack = () => router.back();
 .adp-rights-table th, .adp-rights-table td { font-size: 11px; padding: 8px 6px; word-break: keep-all; vertical-align: top; }
 .adp-rights-table td small { font-size: 10px; color: #9ca3af; font-weight: 600; }
 .adp-rights-table .adp-rows-note { color: #6b7280; }
+
+/* AI 분석 시작 — 서류 칸 아래 가운데에 선다 */
+.adp-ai-start-row { display: flex; justify-content: center; padding: 12px 0 4px; }
+.adp-ai-start {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-width: 220px; height: 44px; padding: 0 22px;
+  border: 0; border-radius: 10px; background: #2b6df3; color: #fff;
+  font-size: 14.5px; font-weight: 800; letter-spacing: -0.3px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(43, 109, 243, 0.28); transition: background 0.15s;
+}
+.adp-ai-start:hover:not(:disabled) { background: #1f5fe0; }
+.adp-ai-start:disabled { background: #9db9ef; cursor: default; box-shadow: none; }
 
 /* 인수되는 권리 — 낙찰자가 떠안는 줄. 소멸(회색)과 반대로 붉게 세운다 */
 .adp-reg-take { color: #c62828; font-weight: 800; }
