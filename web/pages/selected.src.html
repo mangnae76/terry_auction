@@ -900,7 +900,11 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-field .adp-fs-sections .adp-survey-row { border-bottom: 0 !important; } /* 박스 안 줄 밑줄 빼기 — 다른 줄(①②)처럼 */
 /* ③ 에 들어온 임차인탐문(임차인·입주민·동대표 + 체크) 때문에 ③ 의 오른쪽 칸은 ① 과 같은 196 — ③ 안 입력칸 끝이 맞는다 */
 .app-detail.tab-field .adp-fs-sections > .adp-fs-section:nth-child(3) .adp-fs-row { grid-template-columns: 112px minmax(0, 1fr) 196px !important; }
-.app-detail.tab-field .adp-fs-sections > .adp-fs-section:nth-child(3) .adp-survey-row { grid-template-columns: 112px minmax(0, 1fr) 196px; } /* 끝을 ② 입력칸 끝에 맞춘다 */
+/* ③ 에서도 누구에게(임차인·입주민·동대표) 고르는 단추가 없는 줄(우편함 · 전기가스수도 · 임차인차량)은 ② 처럼 체크 바로 앞까지 길게 */
+.app-detail.tab-field .adp-fs-sections > .adp-fs-section:nth-child(3) .adp-fs-row:not(:has(.adp-toggle-btn.who)) { grid-template-columns: 112px minmax(0, 1fr) 30px !important; }
+/* 입찰자 현황조사 줄은 ② 수리상태처럼 길게 — 고르는 칸이 체크 바로 앞까지, 체크는 다른 줄 체크와 같은 끝 */
+.app-detail.tab-field .adp-fs-sections > .adp-fs-section:nth-child(3) .adp-survey-row { grid-template-columns: 112px minmax(0, 1fr) 30px; }
+.app-detail.tab-field .adp-fs-sections .adp-survey-row > .adp-fs-check { grid-column: 3; justify-self: end; margin: 2px 3px 2px 0; } /* 다른 줄 체크와 같은 끝 */ /* 끝을 ② 입력칸 끝에 맞춘다 */
 .app-detail.tab-field .adp-fs-sections .adp-fs-section .adp-survey-row > .lbl { padding-left: 4px; }
 .app-detail.tab-field .adp-fs-row .ctl:not(.wide) { justify-self: end; }
 .app-detail.tab-field .adp-fs-row .ctl.wide { grid-column: 2 !important; }

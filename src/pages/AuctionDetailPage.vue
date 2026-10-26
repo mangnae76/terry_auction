@@ -9003,6 +9003,15 @@ const goBack = () => router.back();
                   </div>
                 </div>
               </div>
+              <!-- 웹 — 다른 줄처럼 확인 체크 하나 -->
+              <input
+                v-if="webEmbed"
+                type="checkbox"
+                class="adp-rcheck-box adp-fs-check"
+                aria-label="입찰자 현황조사 확인"
+                :checked="fieldVal('fs.surveyReportOk') === 'O'"
+                @change="setFieldValNow('fs.surveyReportOk', ($event.target as HTMLInputElement).checked ? 'O' : '')"
+              />
             </div>
             <!-- 고른 말로는 다 담기지 않는 것 — 문 앞에서 본 그대로 적는 칸 (웹은 뺀다) -->
             <div v-if="!webEmbed" class="adp-survey-row">
