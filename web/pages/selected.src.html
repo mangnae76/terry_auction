@@ -901,7 +901,10 @@ body.trip-full .foot { display: none; }
   .rg-head .rg-chev { margin-left: auto; }
   .rg-meta { grid-column: 2 / -1; grid-row: 2; }
 }
-/* 떠 있는 선정물건등록 — 앱 .wlp-fab 그대로(파랑 #2b6df3, 왼쪽 14 · 아래 116), 글자만 웹 크기 */
+/* 떠 있는 선정물건등록 — 웹에서는 내보이지 않는다.
+   머리띠에 '+물건등록'이 늘 떠 있어 같은 자리로 가는 길이 둘이 되고, 지도·목록 위를 가린다.
+   (끌어 옮기는 손잡이까지 걷어내지 않고 한 줄로 감춘다 — 앱의 .wlp-fab 은 그대로 쓴다) */
+.fab { display: none !important; }
 .fab {
   position: fixed; z-index: 35; left: calc(max(32px, (100vw - 1280px) / 2) + 14px); bottom: calc(116px + env(safe-area-inset-bottom, 0px));
   display: inline-flex; align-items: center; gap: 5px; height: 46px; padding: 0 22px; border: 0; border-radius: 999px;
