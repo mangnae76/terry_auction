@@ -7184,6 +7184,20 @@ const goBack = () => router.back();
           </div>
         </section>
 
+        <!-- AI 권리분석 결론 — 상자 하나 (값은 AI 분석 뒤 채움) -->
+        <section class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('rightsConclusion')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>AI 권리분석 결론</h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsConclusion') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('rightsConclusion')" class="adp-conclude">
+            <div class="adp-diag-box adp-evict-note">
+              <span class="adp-diag-k">결론</span>
+              <p :class="['adp-evict-text', { on: rightsConclusion }]">{{ rightsConclusion || '-' }}</p>
+            </div>
+          </div>
+        </section>
+
         <!-- AI 리스크 분석 요약 — 걸리는 것을 한 줄씩. 없으면 카드도 서지 않는다 -->
         <section v-if="rightsAi && (rightsAi.risk.summary || rightsAi.risk.items.length)" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsRisk')">
@@ -7197,20 +7211,6 @@ const goBack = () => router.back();
               <ul v-if="rightsAi.risk.items.length" class="adp-diag-list take">
                 <li v-for="(r, i) in rightsAi.risk.items" :key="i">{{ r }}</li>
               </ul>
-            </div>
-          </div>
-        </section>
-
-        <!-- AI 권리분석 결론 — 상자 하나 (값은 AI 분석 뒤 채움) -->
-        <section class="adp-card">
-          <header class="adp-card-head" @click="toggleSection('rightsConclusion')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>AI 권리분석 결론</h2>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsConclusion') }]" alt="" />
-          </header>
-          <div v-if="!isCollapsed('rightsConclusion')" class="adp-conclude">
-            <div class="adp-diag-box adp-evict-note">
-              <span class="adp-diag-k">결론</span>
-              <p :class="['adp-evict-text', { on: rightsConclusion }]">{{ rightsConclusion || '-' }}</p>
             </div>
           </div>
         </section>
