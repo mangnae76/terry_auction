@@ -209,10 +209,10 @@ const scannedFolderIds = ref<string[]>([]);
 const toast = ref('');
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
-const showToast = (msg: string) => {
+const showToast = (msg: string, ms = 1800) => {
   toast.value = msg;
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toast.value = ''; }, 1800);
+  toastTimer = setTimeout(() => { toast.value = ''; }, ms);
 };
 
 // 사용자 전환·로그아웃 시 모든 로컬 상태를 비워서 다른 사용자의 데이터가 보이지 않도록 함
@@ -711,6 +711,9 @@ const addManual = async () => {
   const caseNo = mn.value.caseNo.trim();
   if (!caseNo) { showToast('사건번호를 적어 주세요.'); return; }
   if (!mn.value.addr.trim()) { showToast('소재지를 적어 주세요.'); return; }
+  /* 로그인이 풀려 있으면 Firestore 가 받아 주지 않는다 — 까닭을 바로 알려 준다 */
+  if (!authStore.uid) { showToast('로그인이 풀렸습니다 — 다시 로그인한 뒤 올려 주세요.', 3200); return; }
+  try {
   const fails = numOf(mn.value.round);
   const parsed: ParsedPdfAuction = {
     ...parseAuctionPdfText('', '직접 입력'),
@@ -731,12 +734,12 @@ const addManual = async () => {
     debtorName: mn.value.debtor.trim(),
     notes: mn.value.note.trim(),
   };
-  try {
     await store.importParsedPdfAuctions([parsed]);
     mn.value = blankManual(); depAuto.value = true;
     showToast(`${caseNo} 을 선정목록에 올렸습니다.`);
   } catch (e) {
-    showToast(`적지 못했습니다 — ${(e as Error)?.message ?? ''}`);
+    console.error('[직접입력] 등록 실패', e);
+    showToast(`적지 못했습니다 — ${(e as Error)?.message || '까닭을 알 수 없습니다'}`, 3600);
   }
 };
 /** 끌어다 놓기 — 목록이 생겨도 상자는 남아 계속 놓을 수 있다. 눌러도 파일을 고른다 */
@@ -1167,7 +1170,9 @@ const onDropFiles = async (e: DragEvent) => {
   flex-direction: column;
   min-height: 100vh;
   background: #f3f4f6;
-  padding-bottom: 76px;
+  /* 아래 고정 메뉴는 6px + 아이콘·글자 + max(6px, 홈 바) 만큼 높다.
+     76px 로는 홈 바가 있는 기기에서 마지막 단추가 메뉴에 덮여 눌리지 않았다 */
+  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
 }
 
 /* 제목 · 통계 · 탭은 틀 고정 — 아래 목록만 스크롤된다 (물건정보 화면 머리와 같은 방식) */
