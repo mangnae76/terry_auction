@@ -275,9 +275,10 @@ button { cursor: pointer; }
 .app-detail .adp-cash-step + .adp-cash-step { border-top-color: var(--app-line) !important; }
 /* 웹 산정표(두 열) — 표 폭을 칸 폭에서 좌우 들임만큼 빼서, 위 A~D 칩 줄의 시작 · 끝과 맞춘다 */
 .app-detail .adp-card > .adp-profit-table { width: calc(100% - 2 * var(--card-inset)) !important; box-sizing: border-box; }
-/* 웹 산정표 이름 줄 — 초기화 · 표 삭제 단추를 같은 높이 32 로, 휴지통은 정사각 */
-.app-detail .adp-profit-head-row .adp-pd-reset { height: 32px !important; }
-.app-detail .adp-profit-head-row .adp-pd-del { width: 32px !important; }
+/* 웹 산정표 이름 줄 — 'A안' 20, 초기화 · 표 삭제는 알약 대신 비고 칸과 같은 둥근 사각형(모서리 6 · 높이 40), 휴지통은 정사각 */
+.app-detail .adp-profit-label { font-size: 20px !important; line-height: 1.2; }
+.app-detail .adp-profit-head-row .adp-pd-reset { height: 40px !important; border-radius: 6px !important; padding: 0 12px !important; border-color: #e3e8f0 !important; }
+.app-detail .adp-profit-head-row .adp-pd-del { width: 40px !important; padding: 0 !important; }
 .app-detail .adp-profit-head-row .adp-pd-del svg { width: 18px; height: 18px; }
 /* 웹은 앱 머리줄이 없다 — 머리띠 · 하위 탭 · 사건 요약 상자 바로 아래에 붙고, 그 상자들보다 아래 층에 선다
    (앱 값 그대로 두면 엉뚱한 높이에 붙어 위 상자들 사이로 올라가 깨져 보였다) */
