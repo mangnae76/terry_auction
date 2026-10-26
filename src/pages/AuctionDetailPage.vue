@@ -2962,12 +2962,12 @@ const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow
     items: [],
   },
 ];
-// 웹 — 임차인탐문 · 임차인차량은 '③ 입찰자 현황조사' 안에 (사람에 관한 것끼리). 앱은 그대로 ① 탐문에
+// 웹 — 임차인탐문 · 임차인차량은 '③ 입찰자 현황조사' 안에 (사람에 관한 것끼리), '① 탐문' 이름은 '① 현장조사'. 앱은 그대로
 const WEB_TO_REPORT = ['fs.tenantContact', 'fs.tenantCar'];
 const fieldSections = computed(() => (webEmbed
   ? FIELD_SECTIONS.map((sec) => (sec.special === 'report'
     ? { ...sec, items: FIELD_SECTIONS.flatMap((x) => x.items).filter((it) => WEB_TO_REPORT.includes(it.id)) }
-    : { ...sec, items: sec.items.filter((it) => !WEB_TO_REPORT.includes(it.id)) }))
+    : { ...sec, title: sec.title === '① 탐문' ? '① 현장조사' : sec.title, items: sec.items.filter((it) => !WEB_TO_REPORT.includes(it.id)) }))
   : FIELD_SECTIONS));
 // 현장 체크리스트 — 항목명과 확인할 내용
 const FIELD_CHECKLIST: Array<{ id: string; label: string; desc: string }> = [
