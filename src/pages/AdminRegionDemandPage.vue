@@ -8,7 +8,7 @@
 // 12개월치 열두 번이면 표가 다 찬다 (동마다 부르지 않는다).
 // 총 세대수·총 매물수는 아직 손으로 적는다 — 세대수는 건축물대장을 동마다
 // 훑어야 해서 하루 한도에 닿고, 매물수는 공식 API 가 아니다.
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, inject, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
@@ -23,6 +23,8 @@ const KINDS: Array<{ key: Kind; label: string }> = [
 ];
 
 const router = useRouter();
+/** 웹 시장분석 › 지역분석에 띄웠는가 — 웹(shared.entry.js)이 넣어 준다. 분석 도구에서는 false */
+const webEmbed = inject<boolean>('webEmbed', false);
 const auth = useAuthStore();
 
 // 시도 → 시군구 → 읍면동 차례로 좁힌다.
@@ -285,22 +287,22 @@ const downloadCsv = () => {
       <div class="adm-bar">
         <label class="adm-f">
           <small>시 · 도</small>
-          <select v-model="sido" class="adm-input narrow">
-            <option value="">전국</option>
+          <select v-model="sido" :class="['adm-input', 'narrow', { ph: !sido }]">
+            <option value="">{{ webEmbed ? '시도 선택' : '전국' }}</option>
             <option v-for="g in REGION_GROUPS" :key="g.sido" :value="g.sido">{{ g.sido }}</option>
           </select>
         </label>
         <label class="adm-f">
           <small>시 · 군 · 구</small>
-          <select v-model="districtCode" class="adm-input narrow" :disabled="!sido">
-            <option value="">전체</option>
+          <select v-model="districtCode" :class="['adm-input', 'narrow', { ph: !districtCode }]" :disabled="!sido">
+            <option value="">{{ webEmbed ? '시군구 선택' : '전체' }}</option>
             <option v-for="d in districts" :key="d.lawdCode" :value="d.lawdCode">{{ d.label }}</option>
           </select>
         </label>
         <label class="adm-f">
           <small>읍 · 면 · 동</small>
-          <select v-model="dongFilter" class="adm-input narrow" :disabled="dongOptions.length === 0">
-            <option value="">{{ dongPeeking ? '불러오는 중…' : '전체' }}</option>
+          <select v-model="dongFilter" :class="['adm-input', 'narrow', { ph: !dongFilter }]" :disabled="dongOptions.length === 0">
+            <option value="">{{ dongPeeking ? '불러오는 중…' : (webEmbed ? '읍면동 선택' : '전체') }}</option>
             <option v-for="d in dongOptions" :key="d" :value="d">{{ d }}</option>
           </select>
         </label>
