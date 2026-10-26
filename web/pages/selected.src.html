@@ -262,6 +262,10 @@ button { cursor: pointer; }
 .rg-results > :not(.rg-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
 .app-detail .adp-card { padding: 4px var(--card-pad-x) 16px !important; }
 .app-detail .adp-card > :not(.adp-card-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
+/* 예상수익분석 — 제목이 고정 묶음(.adp-profit-sticky) 안에 있다. 묶음은 들이지 않고 제목 아래 것만 들인다 (다른 카드와 제목 자리 같게) */
+.app-detail .adp-card > .adp-profit-sticky { margin: 0 calc(-1 * var(--card-pad-x)) !important; padding: 0 var(--card-pad-x) !important; }
+.app-detail .adp-profit-head h2 .adp-profit-ico { width: 15px; height: 15px; }
+.app-detail .adp-profit-sticky > :not(.adp-card-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
 .res > :not(.res-head) { margin-left: calc(var(--card-inset) / 2); margin-right: calc(var(--card-inset) / 2); }
 .subtabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 31; background: var(--band); border-bottom: 1px solid var(--subtab-line); }
 /* ===== 틀 고정 (모든 화면 공통 모듈) =====

@@ -2201,7 +2201,11 @@ const PROFIT_NAV_LABELS = ['A', 'B', 'C', 'D']; // 산정표가 D안까지 있�
 /** 고정 줄에 세울 입찰가 — '1.05억'. 칸이 좁아 원 단위로는 셋이 못 선다 */
 const eokText = (n: number) => (n > 0 ? `${(Math.round(n / 1000000) / 100).toFixed(2)}억` : '-');
 /** 그 표로 건너뛴다. 고정 줄 아래에 표 머리가 서도록 그만큼 덜 내린다 */
+/** 지금 보고 있는 안 — 위 칩에서 고른다. 표 · 돈이 나가는 순서는 이 안 하나만 그린다 (앱·웹) */
+const selectedPlan = ref(0);
+watch(() => profitScenarios.value.length, (n) => { if (selectedPlan.value > n - 1) selectedPlan.value = Math.max(0, n - 1); });
 const goProfitTable = (si: number) => {
+  selectedPlan.value = si;
   const el = document.getElementById(`profit-tbl-${si}`);
   if (!el) return;
   const head = document.querySelector('.adp-profit-sticky');
@@ -2350,6 +2354,25 @@ const removeProfitScenario = () => {
       a.bidScenarios?.pop();
       await store.saveAuction(a);
       flashToast(`${gone}이 삭제되었습니다.`, 'success');
+    },
+  });
+};
+
+/** 칩의 휴지통 — 그 안 하나를 지운다. A안은 기본 표라 지우지 않는다 */
+const removeProfitScenarioAt = (si: number) => {
+  const a = auction.value;
+  if (!a?.bidScenarios?.length || si < 1) return;
+  const label = PROFIT_LABELS[si] ?? `${si + 1}안`;
+  askConfirm({
+    title: `${label}을 지울까요?`,
+    desc: '그 표에 적어 둔 값이 같이 사라집니다.',
+    okLabel: '지우기',
+    skipKey: '',
+    run: async () => {
+      a.bidScenarios?.splice(si - 1, 1);
+      if (selectedPlan.value >= si) selectedPlan.value = Math.max(0, selectedPlan.value - 1);
+      await store.saveAuction(a);
+      flashToast(`${label}이 삭제되었습니다.`, 'success');
     },
   });
 };
@@ -6349,21 +6372,37 @@ const goBack = () => router.back();
           <!-- A·B·C 입찰가 — 표를 한참 내려 보다가도 다른 안이 얼마였는지 보여야 한다.
                눌러서 그 표로 건너뛴다. 표가 늘면 옆으로 밀어 본다 -->
           <div v-if="!isCollapsed('profit')" class="adp-profit-nav">
-            <button
+            <!-- 안 칩 — 크게 'A안', 그 아래 낙찰 비중 · 입찰가. 고른 안은 파랗게, 그 안의 표만 아래에 선다.
+                 B안부터는 오른쪽 위 휴지통으로 그 안을 지운다 -->
+            <div
               v-for="(label, si) in PROFIT_NAV_LABELS"
               :key="`nav-${label}`"
-              type="button"
-              :class="['adp-profit-chip', { empty: !profitScenarios[si] }]"
-              :disabled="!profitScenarios[si]"
-              @click="goProfitTable(si)"
+              :class="['adp-profit-chip', { empty: !profitScenarios[si], on: si === selectedPlan && !!profitScenarios[si] }]"
+              role="button"
+              :tabindex="profitScenarios[si] ? 0 : -1"
+              :aria-pressed="si === selectedPlan"
+              @click="profitScenarios[si] && goProfitTable(si)"
+              @keydown.enter="profitScenarios[si] && goProfitTable(si)"
             >
-              <small><em>{{ label }}</em>{{ profitScenarios[si] ? formatPct(scBidPct(profitScenarios[si])) : '' }}</small>
+              <b class="adp-chip-plan">{{ label }}안</b>
+              <small>{{ profitScenarios[si] ? formatPct(scBidPct(profitScenarios[si])) : '' }}</small>
               <strong>{{ profitScenarios[si] ? eokText(scBid(profitScenarios[si])) : '-' }}</strong>
-            </button>
+              <button
+                v-if="si > 0 && profitScenarios[si]"
+                type="button"
+                class="adp-chip-del"
+                :aria-label="`${label}안 지우기`"
+                title="이 안 지우기"
+                @click.stop="removeProfitScenarioAt(si)"
+              >
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+              </button>
+            </div>
           </div>
           </div>
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
           <template v-for="(sc, si) in profitScenarios" :key="sc.label">
+          <template v-if="si === selectedPlan">
           <div v-if="!isCollapsed('profit')" class="adp-profit-head-row">
             <!-- 표가 하나뿐이어도 'A안' 을 낸다 — 둘이 될 때 이름이 생기면 어느 쪽이
                  먼저 적은 표인지 헷갈린다 -->
@@ -6593,6 +6632,7 @@ const goBack = () => router.back();
               </div>
             </template>
           </section>
+          </template>
           </template>
         </section>
 
@@ -10307,6 +10347,22 @@ tr.tone-take { background: #fff5f5; }
   font-style: normal; font-size: 10px; font-weight: 800; color: #2b6df3;
 }
 .adp-profit-chip:active { background: #eef4ff; }
+.adp-profit-chip { position: relative; cursor: pointer; }
+/* 칩 맨 위 큰 이름 — 'A안' */
+.adp-chip-plan { font-size: 14px; font-weight: 800; color: #111827; line-height: 1.3; }
+/* 고른 안 — 파랗게 눌린 칩 */
+.adp-profit-chip.on { border-color: #2b6df3; background: #2b6df3; }
+.adp-profit-chip.on :is(.adp-chip-plan, small, strong) { color: #fff; }
+.adp-profit-chip.empty .adp-chip-plan { color: #c3c9d4; }
+/* 안 지우기 — 칩 오른쪽 위 작은 휴지통 */
+.adp-chip-del {
+  position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 6px; background: transparent; color: #9ca3af; cursor: pointer;
+}
+.adp-chip-del:hover { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+.adp-profit-chip.on .adp-chip-del { color: rgba(255, 255, 255, 0.8); }
+.adp-profit-chip.on .adp-chip-del:hover { background: rgba(255, 255, 255, 0.18); color: #fff; }
 /* 아직 만들지 않은 안 — 자리는 지키되 흐리게 */
 .adp-profit-chip.empty {
   border-style: dashed; color: #c3c9d4; background: #fcfcfd; cursor: default;
@@ -12306,7 +12362,7 @@ select.adp-pub-input option { text-align: center; }
   font-size: 14px; font-weight: 800; color: var(--text-primary);
 }
 .adp-cash h3 small { font-size: 11px; font-weight: 500; color: var(--text-muted); }
-.adp-cash-step + .adp-cash-step { margin-top: 16px; }
+.adp-cash-step + .adp-cash-step { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
 .adp-cash-head { display: flex; align-items: flex-start; gap: 8px; }
 .adp-cash-head i {
   flex: none; width: 16px; height: 16px; margin-top: 1px; border-radius: 4px;
