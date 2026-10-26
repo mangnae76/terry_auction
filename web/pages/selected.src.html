@@ -720,6 +720,12 @@ body.trip-full .foot { display: none; }
   .adp-agency-range .lab, .adp-agency-fld.note-fld > .lab, .adp-agency-range .sep, .adp-agency-range .unit, .adp-agency-trigger, .adp-agency-trigger .txt) { font-weight: 400 !important; }
 /* 웹 임장조사 — 현장조사 · 현장 상담 · 체크리스트도 손품조사와 같은 세로 여유 */
 .app-detail.tab-field .adp-fs-row { padding-top: 8px !important; padding-bottom: 8px !important; }
+/* 웹 입찰가산정 — 예상수익분석의 낙찰일 · 잔금일 · 매도일: 칸 사이를 띄우고 날짜 칸을 가로로 넉넉히(80 → 132) */
+.app-detail .adp-profit-dates { gap: 18px !important; }
+.app-detail .adp-pd-item { gap: 8px !important; }
+.app-detail .adp-pd-box { width: 132px !important; height: var(--ctl-h); padding: 0 10px !important; gap: 6px !important; }
+/* 비고 칸은 높이를 키워 적기 편하게 (24 → 40) */
+.app-detail .adp-profit-note { height: 40px !important; padding: 0 12px !important; }
 /* 웹 임장조사 — '입찰자 현황조사 · 비고' 줄도 탐문 줄과 같은 칸(이름 112 · 입력 · 오른쪽 240)에 맞춘다 */
 .app-detail.tab-field .adp-fs-section .adp-survey-row { display: grid !important; grid-template-columns: 112px minmax(0, 1fr) 240px; gap: 10px !important; }
 .app-detail.tab-field .adp-fs-section .adp-survey-row > .lbl { padding-left: 14px; min-width: 0 !important; }
