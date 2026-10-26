@@ -10357,9 +10357,9 @@ tr.tone-take { background: #fff5f5; }
 .adp-profit-chip { position: relative; cursor: pointer; }
 /* 칩 맨 위 큰 이름 — 'A안' */
 .adp-chip-plan { font-size: 14px; font-weight: 800; color: #111827; line-height: 1.3; }
-/* 웹 칩 — 왼쪽 큰 'A안'(30) · 오른쪽 비중(16) / 입찰가 원 단위(18) */
+/* 웹 칩 — 왼쪽 큰 'A안'(18) · 오른쪽 비중(16) / 입찰가 원 단위(18) */
 .adp-profit-chip:has(.adp-chip-vals) { flex-direction: row; justify-content: center; gap: 14px; padding: 10px 14px; }
-.adp-profit-chip:has(.adp-chip-vals) .adp-chip-plan { font-size: 30px; line-height: 1.1; }
+.adp-profit-chip:has(.adp-chip-vals) .adp-chip-plan { font-size: 18px; line-height: 1.1; }
 .adp-chip-vals { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .adp-chip-vals small { font-size: 16px; font-weight: 700; }
 .adp-chip-vals strong { font-size: 18px; font-weight: 800; }
