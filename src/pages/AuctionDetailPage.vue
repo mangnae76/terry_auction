@@ -9849,7 +9849,7 @@ const goBack = () => router.back();
 .adp-rows-cap { margin: 12px 0 5px 20px; font-size: 15px; font-weight: 800; color: #374151; }
 /* 카드 안 작은 제목(상세 권리 분석 · AI 명도 난이도 분석) — 서류 칸 이름과 같은 14 */
 /* 시작점은 카드 제목의 글자(아이콘 15 + 틈 5 뒤)와 맞춘다 */
-.adp-tab-rights .adp-rows-cap { font-size: 14px; margin-left: 20px; }
+.adp-tab-rights .adp-rows-cap { font-size: 15px; margin-left: 20px; }
 /* 건물등기 표와 글자 크기·여백을 똑같이 — 두 표가 나란히 읽혀야 한다 */
 .adp-rights-table { table-layout: fixed; }
 .adp-rights-table th, .adp-rights-table td { font-size: 11px; padding: 8px 6px; word-break: keep-all; vertical-align: top; }
@@ -12293,7 +12293,7 @@ select.adp-pub-input option { text-align: center; }
   margin: 18px 0 10px; font-size: 11px; color: var(--text-muted);
 }
 
-/* 웹 권리분석 탭 — 글자는 13 아래로 내려가지 않는다 (웹만, 앱은 그대로).
+/* 웹 권리분석 탭 — 글자는 14 아래로 내려가지 않는다 (웹만, 앱은 그대로).
    카드 제목 16 · 카드 안 작은 제목 14 는 위에서 정한다. ▾ 같은 기호는 글이 아니라 그대로 둔다 */
 .adp-tab-rights :is(
   .adp-doc-box, .adp-doc-pdf-tag, .adp-ai-missing, .adp-base-row .quad-v small, .adp-diag-sum,
@@ -12304,8 +12304,8 @@ select.adp-pub-input option { text-align: center; }
   .adp-rdoc-multi .adp-agency-trigger, .adp-rcase-item small, .adp-rcheck-table td,
   .adp-agency-trigger, .adp-agency-option, .adp-toggle .on,
   .adp-doc-in .adp-input, .adp-diag-k, .adp-evict-text, .adp-tn-date, .adp-doc-old, .adp-pill, .adp-desc, .adp-diag-list
-) { font-size: 13px; }
-/* 웹 권리분석 탭 글자 단계 — 카드 제목 16 · 카드 안 작은 제목 14 · 그 밖의 글은 모두 13 (13 아래는 없다) */
+) { font-size: 14px; }
+/* 웹 권리분석 탭 글자 단계 — 카드 제목 16 · 카드 안 작은 제목 15 · 그 밖의 글은 모두 14 (14 아래는 없다) */
 .adp-tab-rights :is(
   .adp-table, .adp-table .b, .adp-registry-table th, .adp-registry-table td,
   .adp-base-row dt, .adp-base-row dd, .adp-base-row.quad dt, .adp-base-row .quad-v, .adp-base-row .quad-v strong,
@@ -12314,10 +12314,12 @@ select.adp-pub-input option { text-align: center; }
   .adp-rcheck-table td, .adp-rcheck-label strong, .adp-cl-table .adp-rcheck-label strong, .adp-cl-table .adp-rcheck-desc,
   .adp-rcase-banner, .adp-rcase-select, .adp-rcase-item strong,
   .adp-rdoc-input, .adp-rdoc-survey .adp-rdoc-input, .adp-rdoc-survey .adp-date-btn,
-  .adp-rdoc-survey .adp-agency-trigger .txt, .adp-rdoc-multi .adp-agency-trigger, .adp-agency-trigger, .adp-agency-option
-) { font-size: 13px; }
+  .adp-rdoc-survey .adp-agency-trigger .txt, .adp-rdoc-multi .adp-agency-trigger, .adp-agency-trigger, .adp-agency-option,
+  .adp-rights-wide th, .adp-rights-wide td, .adp-rights-date, .adp-reg-pdf th, .adp-reg-pdf td,
+  .adp-base-row dd strong, .adp-base-tenant .adp-base-row dd strong
+) { font-size: 14px; }
 .adp-tab-rights :is(
   .adp-base-note, .adp-sub-note:not(.adp-rows-cap), .adp-warn-banner, .adp-table .adp-desc,
   .adp-base-row .quad-v small, .adp-rcase-item small, .adp-rdoc-label, .adp-rdoc-task, .adp-empty.sm, .adp-empty.one
-) { font-size: 13px; }
+) { font-size: 14px; }
 </style>
