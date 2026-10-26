@@ -7151,7 +7151,7 @@ const goBack = () => router.back();
           <header class="adp-card-head" @click="!webEmbed && toggleSection('rightsPhotos')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>AI 분석 요청<PhotoCountMark :n="photoAreaCount('rightsPhotos')" /></h2>
             <!-- 웹은 접기 화살표 대신 분석 단추를 머리 오른쪽에 둔다. 몇 장으로 언제 분석했는지는 그 왼쪽에 -->
-            <span v-if="webEmbed && auction?.rightsAi && !rightsAiBusy" class="adp-ai-used">{{ rightsAi?.usedDocs.length ?? 0 }}장으로 분석 · {{ aiAskedAtText }}</span>
+            <span v-if="auction?.rightsAi && !rightsAiBusy" class="adp-ai-used">{{ rightsAi?.usedDocs.length ?? 0 }}장으로 분석 · {{ aiAskedAtText }}</span>
             <button
               v-if="webEmbed"
               type="button"
@@ -7226,9 +7226,7 @@ const goBack = () => router.back();
             <p v-if="rightsAiErr" class="adp-plan-err">{{ rightsAiErr }}</p>
             <p v-else-if="rightsAiBusy" class="adp-doc-old">서류를 읽고 있습니다 — 10초쯤 걸립니다.</p>
             <template v-else-if="auction?.rightsAi">
-              <p v-if="!webEmbed" class="adp-doc-old">
-                {{ rightsAi?.usedDocs.length ?? 0 }}장으로 분석 · {{ aiAskedAtText }}
-              </p>
+              <!-- '○장으로 분석 · 날짜' 는 카드 머리 오른쪽에 선다 (앱·웹) -->
               <p v-if="rightsAi?.missingDocs.length" class="adp-ai-missing">
                 이 서류까지 올리면 더 정확해집니다 — {{ rightsAi.missingDocs.join(' · ') }}
               </p>
@@ -9850,7 +9848,7 @@ const goBack = () => router.back();
 .adp-rows-cap { margin: 12px 0 5px 20px; font-size: 15px; font-weight: 800; color: #374151; }
 /* 카드 안 작은 제목(상세 권리 분석 · AI 명도 난이도 분석) — 서류 칸 이름과 같은 14 */
 /* 시작점은 카드 제목의 글자(아이콘 15 + 틈 5 뒤)와 맞춘다 */
-.adp-tab-rights .adp-rows-cap { font-size: 15px; margin-left: 20px; }
+.adp-tab-rights .adp-rows-cap { font-size: 16px; margin-left: 20px; }
 /* 건물등기 표와 글자 크기·여백을 똑같이 — 두 표가 나란히 읽혀야 한다 */
 .adp-rights-table { table-layout: fixed; }
 .adp-rights-table th, .adp-rights-table td { font-size: 11px; padding: 8px 6px; word-break: keep-all; vertical-align: top; }
@@ -9902,15 +9900,17 @@ const goBack = () => router.back();
 .adp-ai-start.done { background: #9ca3af; cursor: default; box-shadow: none; }
 .adp-ai-start.done.adp-ai-head { cursor: pointer; }
 /* 웹 카드 머리 — 분석 단추 왼쪽의 '○장으로 분석 · 날짜' */
-.adp-ai-used { margin-left: auto; margin-right: 10px; font-size: 14px; font-weight: 400; color: #9ca3af; white-space: nowrap; }
+.adp-ai-used { margin-left: auto; margin-right: 8px; font-size: 12px; font-weight: 400; color: #9ca3af; white-space: nowrap; }
+.adp-ai-used + .adp-chev { margin-left: 0; }
+.adp-tab-rights .adp-ai-used { margin-right: 10px; font-size: 14px; }
 .adp-ai-used + .adp-ai-head { margin-left: 0; }
 .adp-doc-in.has-ico { position: relative; }
 /* 아이콘은 입력 칸의 세로 가운데에 — 줄(.adp-plan-row)이 위 4 · 아래 8 여백을 가져 50% 로 잡으면 2px 내려앉는다.
    입력 칸이 차지하는 띠(위 4 ~ 아래 8)를 잡고 그 안에서 가운데로 */
 .adp-doc-in-ico { position: absolute; left: 10px; top: 4px; bottom: 8px; margin: auto 0; color: #6b7280; pointer-events: none; }
 .adp-doc-in.has-ico .adp-input { padding-left: 32px; }
-/* 웹 — 노란 알림 글은 굵게 쓰지 않는다 */
-.adp-tab-rights .adp-ai-missing { font-weight: 400; }
+/* 노란 알림 글은 굵게 쓰지 않는다 (앱·웹) */
+.adp-ai-missing { font-weight: 400; }
 .adp-ai-start.done.adp-ai-head:hover { background: #8b93a1; }
 /* 웹 카드 머리 오른쪽 — 머리 높이에 맞춰 작게 */
 .adp-ai-head { margin-left: auto; width: auto; height: 34px; padding: 0 16px; font-size: 13px; box-shadow: none; }
@@ -12318,7 +12318,7 @@ select.adp-pub-input option { text-align: center; }
   .adp-agency-trigger, .adp-agency-option, .adp-toggle .on,
   .adp-doc-in .adp-input, .adp-diag-k, .adp-evict-text, .adp-tn-date, .adp-doc-old, .adp-pill, .adp-desc, .adp-diag-list
 ) { font-size: 14px; }
-/* 웹 권리분석 탭 글자 단계 — 카드 제목 16 · 카드 안 작은 제목 15 · 그 밖의 글은 모두 14 (14 아래는 없다) */
+/* 웹 권리분석 탭 글자 단계 — 카드 제목 16 · 카드 안 작은 제목 16 · 그 밖의 글은 모두 14 (14 아래는 없다) */
 .adp-tab-rights :is(
   .adp-table, .adp-table .b, .adp-registry-table th, .adp-registry-table td,
   .adp-base-row dt, .adp-base-row dd, .adp-base-row.quad dt, .adp-base-row .quad-v, .adp-base-row .quad-v strong,
