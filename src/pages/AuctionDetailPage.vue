@@ -8168,8 +8168,10 @@ const goBack = () => router.back();
               <colgroup>
                 <col style="width: 96px" /><col /><col style="width: 68px" />
               </colgroup>
+              <!-- 칸 이름 줄 — '빌라 개별성 · 호실 개별성' 제목 줄은 없애고 구분 · 내용 · 비율로 (앱·웹).
+                   thead 라 표 공통 규칙으로 위 모서리가 둥글다 -->
+              <thead><tr class="adp-ind-head"><th>구분</th><th>내용</th><th>비율</th></tr></thead>
               <tbody>
-                <tr class="adp-ind-group"><th colspan="3">{{ g.title }}</th></tr>
                 <tr v-for="item in g.items" :key="item.id">
                   <th :class="['adp-ind-label', { survey: item.survey }]">{{ item.label }}</th>
                   <td class="adp-ind-ctl">
@@ -10746,6 +10748,9 @@ tr.tone-take { background: #fff5f5; }
   text-align: center; vertical-align: middle; word-break: keep-all;
 }
 /* 그룹 머리줄 (구역내 / 단지내 개별성) */
+.adp-ind-head th {
+  background: #f3f6fb; font-weight: 700; font-size: 12.5px; color: #6b7280; text-align: center;
+}
 .adp-ind-group th {
   background: #eef2f7; font-weight: 800; font-size: 12.5px; text-align: left;
   letter-spacing: -0.2px; padding: 5px 8px;
