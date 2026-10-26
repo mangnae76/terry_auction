@@ -321,8 +321,16 @@ const downloadCsv = () => {
         <button type="button" class="adm-load" :disabled="loading || !sido" @click="load">
           <template v-if="loading && progress.total > 1">{{ progress.done }}/{{ progress.total }} 불러오는 중…</template>
           <template v-else-if="loading">불러오는 중…</template>
-          <template v-else>데이터 로드</template>
+          <template v-else>{{ webEmbed ? '조회' : '데이터 로드' }}</template>
         </button>
+        <!-- 웹 — 엑셀 내려받기를 조회 단추 옆으로 (제목 줄은 웹에서 감춘다) -->
+        <button
+          v-if="webEmbed"
+          type="button"
+          class="adm-csv adm-csv-bar"
+          :disabled="rows.length === 0"
+          @click="downloadCsv"
+        >엑셀 내려받기</button>
       </div>
 
       <!-- 전체를 고르면 시군구마다 열두 번씩 부른다 — 하루 한도가 있으니 미리 알린다 -->
