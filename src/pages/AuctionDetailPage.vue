@@ -4503,8 +4503,7 @@ const RIGHTS_CHECK_ITEMS = [
   },
   {
     id: 'wageClaim',
-    label: '임금채권 및 최선순위 배당',
-    webLabel: '임금채권 및\n최선순위 배당',
+    label: '임금채권 및\n최선순위 배당',
     desc: '선순위 임차인 있을 경우, 임금채권등 최선 순위이기 때문에 선순위 임차인 낙찰자 인수 가능성 있음\n법인의 경우 임금채권 의심/근로복지공단(체당금) 최우선 변제',
   },
   {
@@ -10516,7 +10515,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-base-tenant .adp-base-row dd strong { font-weight: 600; }
 .adp-base-row dd.adp-tn-dates { font-size: 12.5px; }
 .adp-rcheck-label { background: #fde7e7; text-align: center; color: #111827; font-weight: 700; }
-.adp-rcheck-label strong { font-size: 12px; }
+.adp-rcheck-label strong { font-size: 12px; white-space: pre-line; }
 .adp-rcheck-desc { color: #4b5563; white-space: pre-line; }
 .adp-rcheck-cell { text-align: center; }
 /* 웹 권리분석 — 폭이 넓으니 항목 이름은 한 줄, 설명은 줄을 이어 붙여 짧게.
