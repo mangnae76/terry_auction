@@ -1347,6 +1347,9 @@ export interface DongTradeStat {
   avgUnitPrice: number;
   /** 그 동에서 뺀 건수 — 직거래와 계약해제 */
   excludedCount: number;
+  /** 그중 직거래 · 계약해제 건수 (둘 다면 해제로 센다) */
+  directCount?: number;
+  cancelCount?: number;
   /** 건축연도 평균 — 연식을 가늠한다. 연도가 안 온 건은 뺀다 */
   avgBuildYear: number;
 }
@@ -1416,7 +1419,7 @@ export const fetchDongTradeStats = async (params: {
   const num = (v: unknown) => Number(String(v ?? '').replace(/[^\d.]/g, ''));
   type Acc = {
     count: number; sumPrice: number; sumArea: number; areaCount: number;
-    excluded: number; sumYear: number; yearCount: number;
+    excluded: number; direct: number; cancel: number; sumYear: number; yearCount: number;
   };
   const byDong = new Map<string, Acc>();
   let excluded = 0;
@@ -1424,7 +1427,7 @@ export const fetchDongTradeStats = async (params: {
   const accOf = (umdNm: string): Acc => {
     const acc = byDong.get(umdNm) ?? {
       count: 0, sumPrice: 0, sumArea: 0, areaCount: 0,
-      excluded: 0, sumYear: 0, yearCount: 0,
+      excluded: 0, direct: 0, cancel: 0, sumYear: 0, yearCount: 0,
     };
     byDong.set(umdNm, acc);
     return acc;
@@ -1435,7 +1438,11 @@ export const fetchDongTradeStats = async (params: {
     // 뺀 건수도 동별로 센다 — 동을 좁혀 보면 그 동의 수가 나와야 한다
     if (isDirect(row) || isCancelled(row)) {
       excluded += 1;
-      if (umdNm) accOf(umdNm).excluded += 1;
+      if (umdNm) {
+        const acc = accOf(umdNm);
+        acc.excluded += 1;
+        if (isCancelled(row)) acc.cancel += 1; else acc.direct += 1;
+      }
       return;
     }
     if (!umdNm) return;
@@ -1464,6 +1471,8 @@ export const fetchDongTradeStats = async (params: {
       avgAreaM2: Math.round(avgAreaM2 * 100) / 100,
       avgUnitPrice: avgPyeong > 0 ? Math.round(avgPrice / avgPyeong) : 0,
       excludedCount: a.excluded,
+      directCount: a.direct,
+      cancelCount: a.cancel,
       avgBuildYear: a.yearCount > 0 ? Math.round(a.sumYear / a.yearCount) : 0,
     };
     }).sort((x, y) => y.count - x.count);

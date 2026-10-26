@@ -148,6 +148,8 @@ const dongOptions = computed(() => {
 const totalCount = computed(() => rows.value.reduce((s, r) => s + r.count, 0));
 // 직거래·해제도 보고 있는 줄만큼만 센다 — 동을 좁히면 그 동의 수가 나온다
 const excludedShown = computed(() => rows.value.reduce((s, r) => s + (r.excludedCount ?? 0), 0));
+const directShown = computed(() => rows.value.reduce((s, r) => s + (r.directCount ?? 0), 0));
+const cancelShown = computed(() => rows.value.reduce((s, r) => s + (r.cancelCount ?? 0), 0));
 const sumLabel = computed(() => (
   dongFilter.value ? `${loadedLabel.value} · ${dongFilter.value}` : loadedLabel.value
 ));
@@ -402,8 +404,13 @@ const downloadCsv = () => {
         <strong>{{ sumLabel }}</strong>
         <span>기간 {{ ym(period.from) }} ~ {{ ym(period.to) }}</span>
         <span>읍면동 {{ rows.length }}곳</span>
-        <span>거래 {{ totalCount.toLocaleString('ko-KR') }}건</span>
-        <span v-if="excludedShown > 0" class="dim">직거래·해제 {{ excludedShown.toLocaleString('ko-KR') }}건 제외</span>
+        <!-- 거래는 파랑, 뺀 것(직거래 · 해제)은 초록으로 따로 센다 -->
+        <span>거래 <b class="adm-sum-deal">{{ totalCount.toLocaleString('ko-KR') }}건</b></span>
+        <template v-if="excludedShown > 0">
+          <span>직거래 <b class="adm-sum-ex">{{ directShown.toLocaleString('ko-KR') }}건</b></span>
+          <span>해제 <b class="adm-sum-ex">{{ cancelShown.toLocaleString('ko-KR') }}건</b></span>
+          <span class="dim">(직거래 · 해제는 제외하고 셈)</span>
+        </template>
       </div>
 
       <div v-if="rows.length > 0" class="adm-table-wrap">
@@ -564,6 +571,9 @@ const downloadCsv = () => {
 }
 .adm-sum strong { font-size: 14.5px; font-weight: 800; color: #111827; }
 .adm-sum .dim { color: #9ca3af; font-weight: 500; }
+.adm-sum b { font-weight: 800; }
+.adm-sum .adm-sum-deal { color: #2b6df3; }
+.adm-sum .adm-sum-ex { color: #16a34a; }
 .adm-sum .code {
   font-size: 11px; font-weight: 700; color: #6b7280;
   background: #eef1f6; border-radius: 999px; padding: 2px 8px;
