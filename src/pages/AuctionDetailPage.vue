@@ -4624,20 +4624,19 @@ const splitRightsAmount = (raw: string) => {
 const dotYmd = (text: string) => (text || '').replace(/(\d{4})-(\d{1,2})-(\d{1,2})/g, '$1.$2.$3');
 /** 말소기준이라는 네 글자만 빨갛게 칠하려고 토막을 낸다 (건물등기의 같은 규칙) */
 const RIGHTS_BASE_WORD = /(말소기준권리|말소기준등기)/;
+const CASE_NO_RE = /\d{4}\s*타경\s*\d+/;
 /** 내용 칸 — 가운뎃점 토막을 한 줄씩 내린다.
  *  markBase 는 '이 줄이 바로 말소기준권리일 때'만 켠다. 다른 줄의 "말소기준권리보다 앞선…",
  *  "말소기준권리 이후…" 는 기준을 가리키는 설명이지 기준 그 자체가 아니다 — 칠하지 않는다. */
 /** "(2026.02.23 접수)" 처럼 접수일을 다시 적은 토막 — 접수일은 같은 줄 순위 칸에 이미 서 있다.
  *  (사건번호·금액은 건물등기 표도 내용 칸에 적으므로 그대로 둔다) */
 const FILED_ON = /\(?\s*\d{4}[.\-]\d{1,2}[.\-]\d{1,2}\.?\s*접수\s*\)?/g;
-const rightsNoteParts = (note: string, markBase: boolean, rowDate = '') => (note || '')
+const notePieces = (note: string, rowDate = '') => (note || '')
   .split(/\s*·\s*/)
   .map((t) => dotYmd(t.replace(FILED_ON, '').trim()).replace(/^[-·,/\s]+|[-·,/\s]+$/g, ''))
-  .filter((t) => Boolean(t) && t !== rowDate)
-  .map((line) => (markBase
-    ? line.split(RIGHTS_BASE_WORD).filter((piece) => piece !== '')
-      .map((text) => ({ text, base: text === '말소기준권리' || text === '말소기준등기' }))
-    : [{ text: line, base: false }]));
+  .filter((t) => Boolean(t) && t !== rowDate);
+const rightsNoteParts = (note: string, rowDate = '') =>
+  notePieces(note, rowDate).map((line) => [{ text: line, base: false }]);
 /** 상세 권리 분석 표에 그대로 뿌릴 줄 — 날짜·금액·내용을 건물등기 꼴로 다듬어 둔다 */
 const rightsRows = computed(() => {
   const base = rightsAi.value?.baseRight;
@@ -4674,14 +4673,28 @@ const rightsRows = computed(() => {
       ? r.rank.trim() === baseRank
       : Boolean(base && r.kind === base.kind && r.date === base.date);
     const money = splitRightsAmount(r.amount);
+    const amount = money.amount
+      || amountFromRegistry(r.rank, r.kind, r.date)
+      || (claim > 0 && /경매개시|강제경매|임의경매/.test(r.kind) ? `${formatMoney(claim)}원` : '');
+    // 괄호에 끌려 들어온 전입·확정을 내용 줄 맨 앞에 세운다 — 건물등기와 같은 차례
+    const source = [...money.extra, r.note].filter(Boolean).join(' · ');
+    if (!isBase) {
+      return { ...r, dateText: dotYmd(r.date), amountText: amount, noteLines: rightsNoteParts(source, dotYmd(r.date)) };
+    }
+    /* 말소기준권리 줄은 건물등기와 똑같이 한 줄로 — "말소기준권리 160,855,725원 / 2026타경501558".
+       금액도 사건번호와 같은 크기·색이라 굵은 금액 줄은 세우지 않는다. */
+    const pieces = notePieces(source, dotYmd(r.date));
+    const caseNo = pieces.find((t) => CASE_NO_RE.test(t)) ?? '';
+    const rest = pieces.filter((t) => t !== caseNo && !RIGHTS_BASE_WORD.test(t));
+    const tail = [amount, caseNo].filter(Boolean).join(' / ');
     return {
       ...r,
       dateText: dotYmd(r.date),
-      amountText: money.amount
-        || amountFromRegistry(r.rank, r.kind, r.date)
-        || (claim > 0 && /경매개시|강제경매|임의경매/.test(r.kind) ? `${formatMoney(claim)}원` : ''),
-      // 괄호에 끌려 들어온 전입·확정을 내용 줄 맨 앞에 세운다 — 건물등기와 같은 차례
-      noteLines: rightsNoteParts([...money.extra, r.note].filter(Boolean).join(' · '), isBase, dotYmd(r.date)),
+      amountText: '',
+      noteLines: [
+        [{ text: '말소기준권리', base: true }, ...(tail ? [{ text: ` ${tail}`, base: false }] : [])],
+        ...rest.map((t) => [{ text: t, base: false }]),
+      ],
     };
   });
 });
