@@ -544,11 +544,9 @@ body.trip-full .foot { display: none; }
 .it-table { width: 100%; font-size: 13px; }
 .it-table th, .it-table td { padding: 7px 10px; text-align: left; }
 .it-table th { color: var(--muted); font-weight: 700; background: var(--surface-2); }
-/* 아래 줄 단추 셋 — 위 폴더 칸의 시작~끝에 맞춰 같은 폭으로 나눈다 (제목 칸 132 + 여백 4 + 사이 8 만큼 들여서 시작) */
-.reg-duo .rg-acts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.reg-duo .rg-acts > .rg-fav, .reg-duo .rg-acts > .rg-btn { width: auto; }
-/* 상자 둘은 이제 탭이 아니다 — 왼쪽은 유료(자동 등록), 오른쪽은 무료(직접 입력) */
-.reg-duo > .reg-box { display: flex; flex-direction: column; gap: 8px; }
+/* 가져오기 줄 — 폴더 칸·폴더등록·폴더스캔·PDF등록 넷을 같은 폭으로 나눈다 */
+.auto-box .rg-acts { display: grid; grid-template-columns: repeat(4, minmax(0, 220px)); justify-content: start; gap: 8px; }
+.auto-box .rg-acts > .rg-fav, .auto-box .rg-acts > .rg-btn { width: auto; }
 /* Plus 딱지 — 유료로 쓸 수 있는 자리에만 단다 */
 .plan-tag { display: inline-block; flex: 0 0 auto; border-radius: 999px; font-weight: 800; letter-spacing: -.1px; vertical-align: 1px; }
 .plan-tag.plus { padding: 1px 7px; background: #eda134; color: #fff; font-size: 12px; line-height: 1.5; }
@@ -568,15 +566,15 @@ body.trip-full .foot { display: none; }
 .rg-ai { gap: 8px; }
 .rg-ai .ai-setup-text { font-size: 12.5px; color: var(--text-2); }
 /* 직접 입력 칸 — 두 칸씩, 소재지만 한 줄 */
-/* 위 고정 상자는 이제 '자동 등록' 하나다 */
-.reg-duo { grid-template-columns: minmax(0, 1fr); row-gap: 10px; }
-.reg-duo .rg-acts { grid-template-columns: repeat(4, minmax(0, 220px)); justify-content: start; }
-/* 직접 입력 — 파싱 상자 아래에 선다. 네 칸으로 두 줄 */
+/* 위 고정 상자에는 이제 등록 방법 탭만 남는다 */
+.reg-duo { grid-template-columns: minmax(0, 1fr); }
+/* 조작 상자·직접입력 상자 — 둘 다 안내 상자 아래에 선다 */
 .rg-results.manual { margin-top: 12px; padding-bottom: 16px; }
+.reg-box.auto-box { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .rg-results.manual .rg-head { margin-bottom: 10px; }
 .mn-note { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--muted); }
 .mn-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-@media (max-width: 900px) { .mn-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .reg-duo .rg-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .mn-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .auto-box .rg-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .mn-form input { height: 34px; padding: 0 11px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 13px; color: var(--text); min-width: 0; }
 .mn-form input:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 .mn-form .wide { grid-column: span 2; }
@@ -661,6 +659,13 @@ body.trip-full .foot { display: none; }
 .ai-key svg { width: 14px; height: 14px; }
 .ai-setup b { font-size: 13px; font-weight: 800; color: var(--text); white-space: nowrap; }
 .ai-req { flex: 0 0 auto; padding: 2px 7px; border-radius: 5px; background: #fdecec; color: #dc2626; font-size: 11.5px; font-weight: 800; }
+/* 필수설정 — 눌러서 마이페이지 설정으로 바로 간다 */
+.ai-req.go { display: inline-flex; align-items: center; gap: 3px; border: 0; cursor: pointer; }
+.ai-req.go:hover { background: #fbdcdc; }
+.ai-req.go svg { width: 12px; height: 12px; }
+.my-set { max-width: 760px; }
+.my-set .rg-head { margin-bottom: 12px; }
+.my-set .rg-ai { display: flex; align-items: center; gap: 8px; }
 .key-state { font-size: 12.5px; font-weight: 700; color: var(--faint); white-space: nowrap; }
 .key-state.ok { color: #16a34a; }
 .key-state.no { color: #dc2626; }
@@ -1350,7 +1355,7 @@ html, body { overflow-x: clip; }
       <a class="g-menu m3" href="#" data-act="soon" data-name="시장정보">시장정보</a>
       <a class="g-menu m4" href="#" data-act="soon" data-name="커뮤니티">커뮤니티</a>
       <a class="g-menu m5" href="#" data-act="soon" data-name="고객센터">고객센터</a>
-      <a class="g-menu m6" href="#" data-act="soon" data-name="마이페이지">마이페이지</a>
+      <a class="g-menu m6" href="#/mypage" data-act="go-mypage" id="navMy">마이페이지</a>
       <div class="pop-root" data-pop="all" style="display:contents">
         <button type="button" class="g-box" data-act="pop" data-id="all" aria-expanded="false" aria-controls="gMega" aria-label="메뉴 펼치기" data-tip="메뉴 펼치기" data-tip-pos="below">
           <svg viewBox="0 0 10 8"><path d="M5 7.5 0 0h10z" fill="currentColor"/></svg>
@@ -1442,6 +1447,11 @@ html, body { overflow-x: clip; }
     <div class="wrap crumb-slot" id="crumbSlotTrip"></div>
     <div class="wrap content trip-content" id="tripContent"></div>
   </div>
+  <!-- 마이페이지 — 지금은 AI 자동 분석 설정만. 설정 방식은 물건등록에 있던 것과 같다 -->
+  <div id="myView" hidden>
+    <div class="wrap crumb-slot" id="crumbSlotMy"></div>
+    <div class="wrap content my-content" id="myContent"></div>
+  </div>
   <button type="button" class="fab" id="fab" data-act="register" data-tip="끌어서 옮길 수 있어요 · 오른쪽 클릭하면 제자리" data-tip-pos="left"><span class="plus">+</span>선정물건등록</button>
 </main>
 
@@ -1491,6 +1501,7 @@ html, body { overflow-x: clip; }
     pdf: P('<path d="M14 2.5H6.5a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8Z"/><path d="M14 2.5V8h5.5"/><path d="M8 13h8M8 17h5"/>', 'stroke-width="2"'),
     drive: P('<path d="M8 3h8l6 10.5-4 7H6l-4-7z"/><path d="M8 3l6 10.5H2M16 3l-6 10.5 4 7"/>', 'stroke-width="1.8"'),
     chevDown: P('<path d="m6 9 6 6 6-6"/>', 'stroke-width="2.2"'),
+    chevRight: P('<path d="m9 6 6 6-6 6"/>', 'stroke-width="2.4"'),
     /* 수익률 분석 — 오르는 꺾은선 */
     trend: P('<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>', 'stroke-width="2.1"'),
     allTypes: P('<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 4h7M14 9h7M14 15h7M14 20h7"/>'),
@@ -1603,7 +1614,7 @@ html, body { overflow-x: clip; }
     stage: 'all', type: '', court: '', date: '', q: '',
     pop: '', calMonth: null, pick: false, picked: new Set(), binPicked: new Set(), menu: null, modal: null,
     loggedIn: false, userName: '', denied: false, /* 로그인 상태는 앱 authStore 가 알려 준다 */
-    route: /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
+    route: /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/mypage/.test(location.hash) ? 'mypage' : /^#\/item\//.test(location.hash) ? 'item' : 'list',
     itemId: (location.hash.match(/^#\/item\/([\w-]+)/) || [])[1] || '', itemTab: 'basic',
   };
 
@@ -1676,6 +1687,7 @@ html, body { overflow-x: clip; }
   function renderHeader() {
     $('navReg').classList.toggle('on', S.route === 'register');
     { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
+    { const t = $('navMy'); if (t) { t.classList.toggle('on', S.route === 'mypage'); if (S.route === 'mypage') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     const nav = $('navWatch'); nav.classList.toggle('on', S.route === 'list'); if (S.route === 'list') nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
     $('gLoginTxt').textContent = S.loggedIn ? `${S.userName || '회원'}님` : '로그인';
     $('gLogin').classList.toggle('named', S.loggedIn);
@@ -1698,7 +1710,7 @@ html, body { overflow-x: clip; }
           <dt><button type="button" class="um-link" data-act="soon" data-name="결제내역">결제내역<i>›</i></button></dt><dd class="orange num">999일</dd>
         </dl>
       </div>
-      <button type="button" class="um-btn" role="menuitem" data-act="soon" data-name="마이페이지">마이페이지</button>
+      <button type="button" class="um-btn" role="menuitem" data-act="go-mypage">마이페이지</button>
       <button type="button" class="um-btn" role="menuitem" data-act="soon" data-name="결제하기">결제하기</button>
       <div class="um-sep"><button type="button" class="um-btn out" role="menuitem" data-act="logout">로그아웃</button></div>
     </div>`
@@ -2329,12 +2341,19 @@ html, body { overflow-x: clip; }
         <button type="button" role="tab" class="reg-tab ${AUTO ? 'on' : ''}" aria-selected="${AUTO}" data-act="reg-mode" data-v="auto">${I.cloud}자동등록<span class="plan-tag plus">Plus</span></button>
         <button type="button" role="tab" class="reg-tab ${AUTO ? '' : 'on'}" aria-selected="${!AUTO}" data-act="reg-mode" data-v="manual">${I.pencil}직접입력</button>
       </div>`;
-    $('regBox').innerHTML = `
-      ${tabbar}
-      ${!AUTO ? '' : `
+    $('regBox').innerHTML = tabbar;
+    /* 자동등록 조작 상자 — 안내 상자 아래에 놓는다 (고정 상자에는 탭만 남는다) */
+    const autoBox = !AUTO ? '' : `
       <!-- 자동 등록 — 가져와서 읽는 한 절차 (폴더·PDF 로 가져오고, AI 가 읽어 카드로 정리한다) -->
-      <div class="toolbar reg-box pro ${PAID ? '' : 'locked'}">
-      <!-- ① 어디서 가져올까 — 제목 한 줄, 그 아래 고르고 읽는 줄 -->
+      <div class="toolbar reg-box pro auto-box ${PAID ? '' : 'locked'}">
+      <!-- ① 어떻게 읽을까 — 규칙으로 못 읽은 칸을 AI 가 채운다 -->
+      <div class="rg-row1 rg-ai">
+        <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
+        <span class="ai-setup-text">Gemini API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.</span>
+        <button type="button" class="ai-key" style="margin-left:auto" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
+        <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
+      </div>
+      <!-- ② 어디서 가져올까 — 제목 한 줄, 그 아래 고르고 읽는 줄 -->
       <div class="rg-row1">
         <span class="rg-title tip-below" data-tip="구글 드라이브 폴더나 PDF 파일을 읽어 선정목록으로 올립니다" data-tip-pos="left">${I.cloud}구글 드라이브 연동하기</span>
         ${PAID ? '' : '<span class="lock-note">Plus 이용 중에 쓸 수 있습니다<button type="button" class="mini edit" data-act="soon" data-name="결제하기">결제하기</button></span>'}
@@ -2351,15 +2370,7 @@ html, body { overflow-x: clip; }
         <button type="button" class="rg-btn scan" data-act="scan" ${R.loading ? 'disabled' : ''}>${I.search}폴더스캔${R.sel.length ? ` (${R.sel.length})` : ''}</button>
         <button type="button" class="rg-btn pdf" data-act="pdf-pick" ${R.loading ? 'disabled' : ''}>${I.files}PDF등록</button>
       </div>
-      <!-- ② 어떻게 읽을까 — 규칙으로 못 읽은 칸을 AI 가 채운다 -->
-      <div class="rg-row1 rg-ai">
-        <span class="rg-title tip-below" data-tip="AI 분석 기능을 사용하려면 Gemini API 키 등록이 필요합니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
-        <span class="ai-req">필수설정</span>
-        <span class="ai-setup-text">Gemini API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.</span>
-        <button type="button" class="ai-key" style="margin-left:auto" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
-        <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
-      </div>
-      </div>`}`;
+      </div>`;
     const rowHtmlR = (r) => `<li class="rg-item ${r.status}" ${r.status === 'ready' ? `data-act="rg-open" data-v="${esc(r.p.caseNo)}" tabindex="0"` : ''}>
         <span class="rg-ic ${r.src === 'drive' ? 'drive' : ''}" aria-hidden="true"${tip(r.src === 'drive' ? '구글드라이브에서 읽음' : '직접 올린 PDF')}>${r.src === 'drive' ? I.cloud : I.pdf}</span>
         <div class="rg-text"><strong>${esc(r.file)}</strong>${r.status === 'ready' ? `<p>${esc(addrText(r.p) || '주소 미확인')}</p>${AI_TEXT(r.ai)}` : `<p class="err">${esc(r.err)}</p>`}</div>
@@ -2368,7 +2379,7 @@ html, body { overflow-x: clip; }
       </li>`;
     /* 결과 상자 — 고른 상자의 목록. AI 자동 분석이면 'AI 파싱', 구글드라이브 연동이면 'PDF 파싱' */
     const PC = (R.aiOn && R.aiKey)
-      ? { title: 'AI 파싱', ic: I.spark, tip: '경매 문서를 올리면 AI가 분석하여 선정목록 카드에 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
+      ? { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서를 올리면 AI가 분석하여 선정목록 카드에 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' }
       : { title: 'PDF 파싱', ic: I.pdf, tip: '경매 문서를 올리면 자동으로 읽어 선정목록 카드에 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
     // 다음에 다시 그릴 때 '목록이 이미 펼쳐져 있었는지' 를 알아야 애니메이션을 끌 수 있다
     R.popShown = S.pop === 'folders';
@@ -2377,10 +2388,12 @@ html, body { overflow-x: clip; }
         <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I.info}</svg>+물건등록</h2>
         <p>선정된 경매 물건을 등록하고 관리하세요. <span class="plan-tag plus">Plus</span> AI가 정보를 분석 정리하여 선정목록 카드 안에서 볼 수 있습니다.</p>
       </section>
+      ${autoBox}
       ${!AUTO ? '' : `
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
       <section class="rg-results" id="rgDrop" aria-label="${PC.title}">
         <div class="rg-head"><h2 class="tip-below" data-tip="${PC.tip}" data-tip-pos="left" style="cursor:help">${PC.ic}${PC.title}</h2>
+          <button type="button" class="ai-req go tip-below" data-act="go-mypage" data-tip="마이페이지에서 Gemini API 키를 설정합니다" data-tip-pos="below">필수설정${I.chevRight || ''}</button>
           <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span>${R.rows.length ? `<button type="button" class="rg-clear-btn" data-act="rg-clear" aria-label="목록 비우기" data-tip="목록 비우기" data-tip-pos="below">${I.trash}</button>` : ''}</span>
           <button type="button" class="rg-chev ${R.collapsed ? 'up' : ''}" data-act="rg-collapse" aria-expanded="${!R.collapsed}" aria-label="결과 접기">${I.chevDown}</button></div>
         ${R.missing.length ? `<div class="rg-missing"><div class="h">드라이브에 없는 물건 ${R.missing.length}건<button type="button" data-act="missing-trash">휴지통으로</button></div><p>스캔한 폴더에서 PDF가 사라졌습니다. 선정목록은 그대로 남아 있습니다 — 치우려면 누르세요.</p><ul>${R.missing.map((m) => `<li>${esc(m.label)}</li>`).join('')}</ul></div>` : ''}
@@ -2548,17 +2561,17 @@ html, body { overflow-x: clip; }
   }
   function render() {
     renderHeader();
-    const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip';
-    $('listView').hidden = reg || item || trip; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('fab').hidden = reg || item || trip;
+    const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip'; const my = S.route === 'mypage';
+    $('listView').hidden = reg || item || trip || my; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('fab').hidden = reg || item || trip || my;
     const cur = item ? byId(S.itemId) : null;
-    $('crumbCur').textContent = reg ? '+물건등록' : trip ? '임장경로' : item ? `선정목록 › ${cur ? cur.caseNo : '물건상세'}` : '선정목록';
-    { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
+    $('crumbCur').textContent = reg ? '+물건등록' : trip ? '임장경로' : my ? '마이페이지' : item ? `선정목록 › ${cur ? cur.caseNo : '물건상세'}` : '선정목록';
+    { const nav = document.querySelector('.crumbs'); const slot = $(reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
-    document.title = reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정목록';
+    document.title = reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정목록';
     if (!item) closeAppDetail();
     if (!trip) closeAppTrip();
     document.body.classList.toggle('trip-full', trip);
-    if (reg) renderRegister(); else if (trip) renderTrip(); else if (item) renderItem(); else { renderToolbar(); renderContent(); }
+    if (reg) renderRegister(); else if (trip) renderTrip(); else if (my) renderMy(); else if (item) renderItem(); else { renderToolbar(); renderContent(); }
     renderFloat();
   }
   /* ===== 물건상세 — 앱 AuctionDetailPage 를 따른다 =====
@@ -2963,17 +2976,34 @@ html, body { overflow-x: clip; }
     $('itemContent').innerHTML = `<div class="it-grid ${S.itFold ? 'folded' : ''}">${itemTabHtml(it, S.itemTab)}</div>`;
     syncFoldBtn();
   }
+  /* 마이페이지 — 지금은 AI 자동 분석 설정 한 칸. 조작부는 자동등록 상자의 것과 같다 */
+  function renderMy() {
+    $('myContent').innerHTML = `
+      <section class="rg-results my-set">
+        <div class="rg-head">
+          <h2>${I.key}AI 자동 분석</h2>
+          <span class="mn-note">규칙으로 못 읽은 칸을 AI 가 채웁니다 — 키는 내 계정에만 저장됩니다</span>
+        </div>
+        <div class="rg-row1 rg-ai">
+          <span class="ai-setup-text">Gemini API 키가 <span class="key-state ${R.aiKey ? 'ok' : 'no'}">${R.aiKey ? '등록' : '미등록'}</span> 상태입니다.</span>
+          <button type="button" class="ai-key" style="margin-left:auto" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
+          <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 자동 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
+        </div>
+      </section>`;
+  }
+  /* AI 설정은 두 자리(자동등록 · 마이페이지)에서 보인다 — 바뀌면 지금 보는 쪽만 다시 그린다 */
+  const rerenderAi = () => { if (S.route === 'mypage') renderMy(); else if (S.route === 'register') renderRegister(); };
   /* 화면 바꾸기 — #/ 선정목록, #/register 선정물건등록 (뒤로가기로 돌아온다) */
   function go(route, id) {
     if (S.route === route && (route !== 'item' || S.itemId === id)) { window.scrollTo(0, 0); return; }
     S.route = route; S.pop = ''; S.menu = null;
     if (route === 'item') { S.itemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
     render(); window.scrollTo(0, 0);
-    try { const h = route === 'register' ? '#/register' : route === 'trip' ? '#/trip' : route === 'item' ? `#/item/${id}` : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
+    try { const h = route === 'register' ? '#/register' : route === 'trip' ? '#/trip' : route === 'mypage' ? '#/mypage' : route === 'item' ? `#/item/${id}` : '#/'; if (location.hash !== h) history.pushState(null, '', h); } catch { /* 주소 표시만 못 바꾼다 */ }
   }
   window.addEventListener('popstate', () => {
     const m = location.hash.match(/^#\/item\/([\w-]+)/);
-    const r = /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : m ? 'item' : 'list';
+    const r = /^#\/register/.test(location.hash) ? 'register' : /^#\/trip/.test(location.hash) ? 'trip' : /^#\/mypage/.test(location.hash) ? 'mypage' : m ? 'item' : 'list';
     if (r !== S.route || (m && m[1] !== S.itemId)) { S.route = r; if (m) S.itemId = m[1]; S.pop = ''; S.menu = null; render(); }
   });
 
@@ -3063,7 +3093,7 @@ html, body { overflow-x: clip; }
       const gUid = auth.isLoggedIn ? auth.uid : '';
       if (gUid !== CLOUD.geminiUid) {
         CLOUD.geminiUid = gUid; R.aiKey = ''; R.aiOn = false;
-        T.loadGeminiPrefs(gUid).then((g) => { if (CLOUD.geminiUid !== gUid) return; R.aiKey = g.key; R.aiOn = g.on; if (S.route === 'register') renderRegister(); }).catch(() => {});
+        T.loadGeminiPrefs(gUid).then((g) => { if (CLOUD.geminiUid !== gUid) return; R.aiKey = g.key; R.aiOn = g.on; rerenderAi(); }).catch(() => {});
       }
       if (!ok && CLOUD.on) { CLOUD.on = false; CLOUD.raw = new Map(); items = DEMO_ITEMS.slice(); }
       render();
@@ -3247,6 +3277,7 @@ html, body { overflow-x: clip; }
         break;
       }
       case 'go-trip': go('trip'); break;
+      case 'go-mypage': S.menu = null; go('mypage'); break;
       case 'area-view': S.areaView = v; renderItem(); break;
       case 'nearby-view': S.nearbyView = v; if (v === 'kakao' && !CLOUD.nearby.has(S.itemId)) fetchNearbyFor(S.itemId); else renderItem(); break;
       case 'kakao-near': fetchNearbyFor(id || S.itemId); break;
@@ -3311,7 +3342,7 @@ html, body { overflow-x: clip; }
       case 'drive-perms': openDrivePerms(); break;
       case 'scan': S.pop = ''; if (needLogin('폴더스캔')) break; doScan(); break;
       case 'pdf-pick': if (needLogin('PDF등록')) break; $('pdfInput').click(); break;
-      case 'ai-toggle': if (!R.aiKey) { S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; if (CLOUD.T) CLOUD.T.setGeminiOn((CLOUD.auth && CLOUD.auth.uid) || '', R.aiOn).catch(() => {}); renderRegister(); toast(R.aiOn ? 'AI 자동 분석을 켰습니다.' : 'AI 자동 분석을 껐습니다.', 'info'); break;
+      case 'ai-toggle': if (!R.aiKey) { S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; if (CLOUD.T) CLOUD.T.setGeminiOn((CLOUD.auth && CLOUD.auth.uid) || '', R.aiOn).catch(() => {}); rerenderAi(); toast(R.aiOn ? 'AI 자동 분석을 켰습니다.' : 'AI 자동 분석을 껐습니다.', 'info'); break;
       case 'ai-key': S.modal = { kind: 'ai' }; renderModal(); break;
       /* 키 칸의 눈 — 적던 글자를 잡아 두고 보기/가리기만 바꾼다 */
       case 'ai-eye': { const m = S.modal; const el = $('aiKeyIn'); if (!m || !el) break; m.draft = el.value; m.show = !m.show; renderModal(); setTimeout(() => { const x = $('aiKeyIn'); if (x) { x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 30); break; }
@@ -3342,12 +3373,12 @@ html, body { overflow-x: clip; }
           if (!r.ok) { renderModal(); return; }
           try { await T.setGeminiKey((CLOUD.auth && CLOUD.auth.isLoggedIn && CLOUD.auth.uid) || '', key); } catch (err) { m.ok = false; m.msg = (err && err.message) || '키를 저장하지 못했습니다'; renderModal(); return; }
           R.aiKey = key; R.aiOn = true;
-          S.modal = null; renderModal(); renderRegister(); toast('키를 확인했습니다. AI 자동 분석을 켰습니다.');
+          S.modal = null; renderModal(); rerenderAi(); toast('키를 확인했습니다. AI 자동 분석을 켰습니다.');
         })();
         break;
       }
       case 'ai-del': if (CLOUD.T) CLOUD.T.clearGeminiKey((CLOUD.auth && CLOUD.auth.uid) || '').catch(() => {});
-        R.aiKey = ''; R.aiOn = false; S.modal = null; renderModal(); renderRegister(); toast('키를 지웠습니다.', 'info'); break;
+        R.aiKey = ''; R.aiOn = false; S.modal = null; renderModal(); rerenderAi(); toast('키를 지웠습니다.', 'info'); break;
       case 'subtab': S.itemTab = v; renderSubTabs(); renderItem(); window.scrollTo(0, 0); break;
       /* 등록 방법 탭 — 자동 등록(Plus·AI 파싱) · 직접 입력(손으로 적기) */
       case 'reg-mode': {
@@ -3411,7 +3442,6 @@ html, body { overflow-x: clip; }
     }
     if (e.key === '/' && !e.target.closest('input, textarea, select')) { e.preventDefault(); $('q').focus(); }
     if (e.key === 'Enter' && e.target.id === 'regNo') submitRegister();
-    if ((e.key === 'Enter' || e.key === ' ') && e.target.dataset && e.target.dataset.regtab) { e.preventDefault(); if (switchRegTab(e.target.dataset.regtab)) renderRegister(); return; }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('rg-empty')) { e.preventDefault(); $('pdfInput').click(); }
     if (e.key === 'Enter' && (e.target.id === 'loginPw' || e.target.id === 'loginEmail')) { e.preventDefault(); document.querySelector('[data-act="login-submit"]').click(); }
     if (e.key === 'Enter' && e.target.id === 'favUrl') { e.preventDefault(); document.querySelector('[data-act="fav-add"]').click(); }
