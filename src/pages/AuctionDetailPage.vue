@@ -5257,15 +5257,20 @@ const currentRoundLabel = computed(() => currentRoundLabelOf(auction.value));
 // PDF는 승계인(HUG)과 원 임차인을 각각 한 줄씩 적는다 — 실제 점유자 이름으로 합쳐 한 명으로 보여준다.
 /** 이름 자리에 끼어든 낱말 — 예전에 읽어 둔 자료에는 '미배당' 같은 말이 이름으로 저장돼 있다.
  *  PDF 를 다시 읽으면 바로잡히지만, 그 전에도 틀린 이름을 사람 이름인 양 보여 주지 않는다. */
-const NOT_A_TENANT_NAME = new Set([
-  '미배당', '매수인', '배당요구', '신청인', '채권자', '소유자', '점유자', '임대인', '세대주',
-  '해당', '사항', '내역', '비고', '보증금', '배당금', '순위배당', '임차권', '전입신고',
-  // 권리를 넘기고 받는 쪽을 가리키는 말 — 사람 이름이 아니다
-  '양수인', '양도인', '승계인', '전차인', '임차인',
-]);
-/** 여럿 가운데 '사람 이름인 것'을 고른다 — 뜻을 가리키는 낱말은 건너뛴다 */
+/* 이름 자리에 끼어드는 '뜻만 적힌 말' — 글자가 꼭 같을 때만 거르면
+   '(양수인)' · '임차권양도인' 같은 꼴이 그대로 빠져나간다. 품고 있으면 거른다. */
+const NOT_A_NAME_RE = new RegExp([
+  '양수인', '양도인', '승계인', '전차인', '임차인', '임대인',
+  '미배당', '매수인', '배당', '채권자', '소유자', '점유', '세대주', '신청인',
+  '보증금', '순위', '해당사항', '내역', '비고', '전입', '확정', '없음', '있음', '미상',
+].join('|'));
+const isTenantName = (text: string) => {
+  const bare = (text || '').replace(/[()[\]{}<>:：,.\s·/-]/g, '');
+  return Boolean(bare) && !NOT_A_NAME_RE.test(bare);
+};
+/** 여럿 가운데 '사람·기관 이름인 것'을 고른다 — 뜻을 가리키는 말은 건너뛴다 */
 const pickTenantName = (...candidates: Array<string | undefined>) =>
-  candidates.map((c) => (c ?? '').trim()).find((c) => c && !NOT_A_TENANT_NAME.has(c)) ?? '';
+  candidates.map((c) => (c ?? '').trim()).find((c) => isTenantName(c)) ?? '';
 /** 임차인 이름 — '(한국토지주택공사의 양수인)' 처럼 적혀 있으면 공사 이름을 집는다.
  *  예전에는 '임차인' 뒤 두세 글자를 그대로 집어 '양수인' 이 이름 자리로 올라왔다. */
 const realTenantName = (row: { name: string; subName: string }) => pickTenantName(
@@ -5305,7 +5310,7 @@ const tenantNameFromAi = (card: { deposit: string; moveIn: string }) => {
   const hit = (rightsAi.value?.rows ?? []).find((r) => /임차권|전세권/.test(r.kind)
     && ((dep.length >= 6 && digits(r.amount).includes(dep)) || (moveIn && dotYmd(r.date) === moveIn)));
   const name = (hit?.holder ?? '').trim();
-  return name && !NOT_A_TENANT_NAME.has(name) ? name : '';
+  return isTenantName(name) ? name : '';
 };
 
 const tenantCards = computed(() => {
@@ -5313,9 +5318,11 @@ const tenantCards = computed(() => {
   (auction.value?.tenantInfoRows ?? []).map(normalizeTenantRow).forEach((row) => {
     const name = realTenantName(row);
     const agency = row.name === name ? '' : row.name;
-    const prev = merged.get(name);
+    /* 이름을 못 읽은 줄끼리 한 칸으로 뭉치지 않게 — 이름이 없으면 줄 자리로 가른다 */
+    const key = name || `#${merged.size}`;
+    const prev = merged.get(key);
     if (!prev) {
-      merged.set(name, { ...row, name, agency });
+      merged.set(key, { ...row, name, agency });
       return;
     }
     (['occupationPeriod', 'moveIn', 'fixed', 'distribution', 'deposit'] as const).forEach((key) => {
@@ -5333,13 +5340,11 @@ const tenantCards = computed(() => {
   });
   /* 이름 자리에 뜻만 적힌 낱말(양수인·미배당…)이 들어와 있으면 그대로 두지 않는다.
      PDF 에서 이름을 못 읽었어도 AI 상세 권리 분석은 그 줄의 권리자를 알고 있다 — 거기서 빌려 온다. */
-  const clean = (text: string) => {
-    const t = (text || '').trim();
-    return t && !NOT_A_TENANT_NAME.has(t) ? t : '';
-  };
+  const clean = (text: string) => (isTenantName(text) ? (text || '').trim() : '');
   return [...merged.values()].map((card) => {
     const name = clean(card.name) || tenantNameFromAi(card);
-    return { ...card, name, agency: clean(card.agency) === name ? '' : clean(card.agency) };
+    const agency = clean(card.agency);
+    return { ...card, name, agency: agency === name ? '' : agency };
   });
 });
 
