@@ -4504,11 +4504,13 @@ const RIGHTS_CHECK_ITEMS = [
   {
     id: 'wageClaim',
     label: '임금채권 및 최선순위 배당',
+    webLabel: '임금채권 및\n최선순위 배당',
     desc: '선순위 임차인 있을 경우, 임금채권등 최선 순위이기 때문에 선순위 임차인 낙찰자 인수 가능성 있음\n법인의 경우 임금채권 의심/근로복지공단(체당금) 최우선 변제',
   },
   {
     id: 'taxDate',
     label: '당해세 · 법정기일 금액 · 법정기일',
+    webLabel: '당해세 · 법정기일\n법정기일 금액',
     desc: '법정기일 빠른 세금이 있는 경우 확인 필요\n확정일자 보다 법정기일이 빠를 경우 선순위 이다. (당해세)\n이 경우에는 매각 불허가 처리도 가능',
   },
 ];
@@ -7521,7 +7523,7 @@ const goBack = () => router.back();
                   </td>
                 </tr>
                 <tr v-for="item in RIGHTS_CHECK_ITEMS" :key="item.id">
-                  <td class="adp-rcheck-label"><strong>{{ item.label }}</strong></td>
+                  <td class="adp-rcheck-label"><strong>{{ (webEmbed && item.webLabel) || item.label }}</strong></td>
                   <td class="adp-rcheck-desc">{{ item.desc }}</td>
                   <td class="adp-rcheck-cell">
                     <input
@@ -10503,7 +10505,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-rcheck-cell { text-align: center; }
 /* 웹 권리분석 — 폭이 넓으니 항목 이름은 한 줄, 설명은 줄을 이어 붙여 짧게.
    현황조사·세대열람 줄은 칸 사이를 띄우고 날짜가 다 보이게 */
-.adp-tab-rights .adp-rcheck-label strong { white-space: nowrap; }
+.adp-tab-rights .adp-rcheck-label strong { white-space: pre-line; }
 .adp-tab-rights .adp-rcheck-desc { white-space: normal; }
 .adp-tab-rights .adp-rdoc-survey { gap: 8px; }
 .adp-tab-rights .adp-rdoc-survey + .adp-rdoc-survey { margin-top: 8px; }
@@ -12258,7 +12260,7 @@ select.adp-pub-input option { text-align: center; }
   .adp-rdoc-survey .adp-rdoc-input, .adp-rdoc-survey .adp-date-btn, .adp-rdoc-survey .adp-agency-trigger .txt,
   .adp-rdoc-multi .adp-agency-trigger, .adp-rcase-item small, .adp-rcheck-table td,
   .adp-agency-trigger, .adp-agency-option, .adp-toggle .on,
-  .adp-doc-in .adp-input, .adp-diag-k, .adp-evict-text, .adp-tn-date, .adp-doc-old, .adp-pill, .adp-desc
+  .adp-doc-in .adp-input, .adp-diag-k, .adp-evict-text, .adp-tn-date, .adp-doc-old, .adp-pill, .adp-desc, .adp-diag-list
 ) { font-size: 13px; }
 /* 웹 권리분석 탭 글자 단계 — 카드 제목 16 · 카드 안 작은 제목 14 · 그 밖의 글은 모두 13 (13 아래는 없다) */
 .adp-tab-rights :is(
