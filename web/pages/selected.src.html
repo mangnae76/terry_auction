@@ -415,6 +415,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-login-x:hover { background: #f3f4f6; color: #111827; }
 .app-login-x svg { width: 18px; height: 18px; }
 /* 로그인 전 안내 */
+.list-guide { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin-bottom: 10px; padding: 12px 16px; border-radius: 10px; background: var(--surface); border: 1px solid var(--card-line); }
+.list-guide .lg-title { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: var(--text); }
+.list-guide .lg-title svg { width: 17px; height: 17px; color: #2a5fbf; }
+.list-guide .lg-text { font-size: 14px; color: var(--text); }
 .demo-note { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 9px 14px; border-radius: 8px; background: #fff7e6; border: 1px solid #f5d79e; color: #8a5a00; font-size: 13px; }
 :root[data-theme="dark"] .demo-note { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #fbbf24; }
 /* ===== 물건상세 — 고정 카드(앱 adp-sticky-head) ===== */
@@ -2332,7 +2336,13 @@ html, body { overflow-x: clip; }
     const note = CLOUD.on ? '' : S.denied
       ? '<div class="demo-note">이 계정은 마이턴옥션 사용 허가가 없습니다 — 허가된 계정으로 로그인해 주세요.</div>'
       : '<div class="demo-note">예시 물건입니다 — 로그인하면 앱과 같은 내 선정목록이 보입니다. <button type="button" class="mini edit" data-act="login-btn">로그인</button></div>';
-    queueMicrotask(() => { const r = $('content'); if (note && r && !r.querySelector('.demo-note')) r.insertAdjacentHTML('afterbegin', note); });
+    /* 설명 상자 — 물건등록 안내처럼 무엇을 하는 화면인지 한 줄로 (제목 옆에 바로 설명) */
+    const guide = `<div class="list-guide"><span class="lg-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.6"/></svg>선정목록</span><span class="lg-text">카드를 선택하여 물건상세로 들어가세요.</span></div>`;
+    queueMicrotask(() => {
+      const r = $('content'); if (!r) return;
+      if (note && !r.querySelector('.demo-note')) r.insertAdjacentHTML('afterbegin', note);
+      if (!r.querySelector('.list-guide')) r.insertAdjacentHTML('afterbegin', guide);
+    });
     if (!list.length) {
       const filtered = S.type || S.court || S.date || S.q || S.stage !== 'all';
       root.innerHTML = `<div class="empty"><b>${filtered ? '조건에 맞는 물건이 없습니다' : '표시할 물건이 없습니다'}</b><span>${filtered ? (['won', 'fail', 'cancel', 'sold'].includes(S.stage) ? '카드의 낙찰·유찰·취소·매도 알약을 누르면 여기에 모입니다.' : '걸어 둔 조건을 바꾸거나 지워 보세요.') : '선정물건등록으로 첫 물건을 넣어 보세요.'}</span><button type="button" data-act="${filtered ? 'reset-all' : 'register'}">${filtered ? '조건 모두 지우기' : '선정물건등록'}</button></div>`;
