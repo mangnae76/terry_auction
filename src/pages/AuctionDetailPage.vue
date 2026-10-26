@@ -4609,22 +4609,34 @@ const rightsAmountText = (amount: string) =>
 const dotYmd = (text: string) => (text || '').replace(/(\d{4})-(\d{1,2})-(\d{1,2})/g, '$1.$2.$3');
 /** 말소기준이라는 네 글자만 빨갛게 칠하려고 토막을 낸다 (건물등기의 같은 규칙) */
 const RIGHTS_BASE_WORD = /(말소기준권리|말소기준등기)/;
-/** 내용 칸 — 가운뎃점 토막을 한 줄씩 내리고, 줄마다 빨갛게 칠할 자리를 갈라 둔다 */
-const rightsNoteParts = (note: string) => (note || '')
+/** 내용 칸 — 가운뎃점 토막을 한 줄씩 내린다.
+ *  markBase 는 '이 줄이 바로 말소기준권리일 때'만 켠다. 다른 줄의 "말소기준권리보다 앞선…",
+ *  "말소기준권리 이후…" 는 기준을 가리키는 설명이지 기준 그 자체가 아니다 — 칠하지 않는다. */
+const rightsNoteParts = (note: string, markBase: boolean) => (note || '')
   .split(/\s*·\s*/)
   .map((t) => dotYmd(t.trim()))
   .filter(Boolean)
-  .map((line) => line
-    .split(RIGHTS_BASE_WORD)
-    .filter((piece) => piece !== '')
-    .map((text) => ({ text, base: text === '말소기준권리' || text === '말소기준등기' })));
+  .map((line) => (markBase
+    ? line.split(RIGHTS_BASE_WORD).filter((piece) => piece !== '')
+      .map((text) => ({ text, base: text === '말소기준권리' || text === '말소기준등기' }))
+    : [{ text: line, base: false }]));
 /** 상세 권리 분석 표에 그대로 뿌릴 줄 — 날짜·금액·내용을 건물등기 꼴로 다듬어 둔다 */
-const rightsRows = computed(() => (rightsAi.value?.rows ?? []).map((r) => ({
-  ...r,
-  dateText: dotYmd(r.date),
-  amountText: rightsAmountText(r.amount),
-  noteLines: rightsNoteParts(r.note),
-})));
+const rightsRows = computed(() => {
+  const base = rightsAi.value?.baseRight;
+  const baseRank = (base?.rank ?? '').trim();
+  return (rightsAi.value?.rows ?? []).map((r) => {
+    // 어느 줄이 말소기준권리인가 — 순위번호(갑구 6번)로 맞춘다. 순위를 못 읽었으면 종류와 접수일로.
+    const isBase = baseRank
+      ? r.rank.trim() === baseRank
+      : Boolean(base && r.kind === base.kind && r.date === base.date);
+    return {
+      ...r,
+      dateText: dotYmd(r.date),
+      amountText: rightsAmountText(r.amount),
+      noteLines: rightsNoteParts(r.note, isBase),
+    };
+  });
+});
 
 /** AI 권리분석 진단 — 말소기준권리가 어떤 권리인지, 떠안는 권리와 없어지는 권리 */
 const rightsDiag = computed(() => {
