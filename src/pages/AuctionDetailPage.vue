@@ -6407,7 +6407,7 @@ const goBack = () => router.back();
           </div>
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
           <template v-for="(sc, si) in profitScenarios" :key="sc.label">
-          <div v-if="!isCollapsed('profit')" class="adp-profit-head-row">
+          <div v-if="!isCollapsed('profit')" :class="['adp-profit-head-row', { 'is-dim': si !== selectedPlan }]">
             <!-- 표가 하나뿐이어도 'A안' 을 낸다 — 둘이 될 때 이름이 생기면 어느 쪽이
                  먼저 적은 표인지 헷갈린다 -->
             <span class="adp-profit-label">{{ sc.label }}</span>
@@ -6433,7 +6433,7 @@ const goBack = () => router.back();
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </button>
           </div>
-          <table v-if="!isCollapsed('profit')" :id="`profit-tbl-${si}`" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0 }]">
+          <table v-if="!isCollapsed('profit')" :id="`profit-tbl-${si}`" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0, 'is-dim': si !== selectedPlan }]">
             <thead>
               <tr><th>구분</th><th>상세</th><th class="r">비중 (%)</th><th class="r">금액</th></tr>
             </thead>
@@ -10407,6 +10407,8 @@ tr.tone-take { background: #fff5f5; }
 .adp-profit-note::placeholder { color: #9ca3af; }
 /* 산정표가 둘 이상일 때만 붙는 이름(A안·B안) */
 .adp-profit-label { font-size: 12.5px; font-weight: 800; color: #1f3a72; }
+/* 고르지 않은 안의 표 — 글자까지 모두 흑백으로 (고른 안만 색이 산다) (앱·웹) */
+.adp-profit-head-row.is-dim, .adp-profit-table.is-dim { filter: grayscale(1); opacity: 0.75; transition: filter 0.2s, opacity 0.2s; }
 /* 앱 — 표 이름 'A안' 을 크게(20), 초기화 · 표 삭제는 알약 대신 모서리 둥근 사각형으로 같은 높이 */
 .is-app .adp-profit-label { font-size: 20px; line-height: 1.2; }
 .is-app .adp-profit-head-row .adp-pd-reset { border-radius: 6px; height: 28px; }
