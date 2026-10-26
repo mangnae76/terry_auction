@@ -4639,6 +4639,15 @@ const rightsNoteParts = (note: string, markBase: boolean, rowDate = '') => (note
 const rightsRows = computed(() => {
   const base = rightsAi.value?.baseRight;
   const baseRank = (base?.rank ?? '').trim();
+  /* 금액이 비어 온 줄은 건물등기에서 가져다 채운다 — 같은 서류를 읽은 값이라 틀릴 일이 없다.
+     (강제경매개시결정의 청구금액, 근저당권의 채권최고액이 자주 빈다) */
+  const regRows = registryRows.value;
+  const amountFromRegistry = (rank: string, kind: string, date: string) => {
+    const key = (t: string) => (t || '').replace(/\s/g, '');
+    const hit = regRows.find((x) => key(x.order) === key(rank))
+      ?? regRows.find((x) => key(x.kind) === key(kind) && normalizeYmd(x.date) === normalizeYmd(date));
+    return rightsAmountText(hit?.amount ?? '');
+  };
   return (rightsAi.value?.rows ?? []).map((r) => {
     // 어느 줄이 말소기준권리인가 — 순위번호(갑구 6번)로 맞춘다. 순위를 못 읽었으면 종류와 접수일로.
     const isBase = baseRank
@@ -4648,7 +4657,7 @@ const rightsRows = computed(() => {
     return {
       ...r,
       dateText: dotYmd(r.date),
-      amountText: money.amount,
+      amountText: money.amount || amountFromRegistry(r.rank, r.kind, r.date),
       // 괄호에 끌려 들어온 전입·확정을 내용 줄 맨 앞에 세운다 — 건물등기와 같은 차례
       noteLines: rightsNoteParts([...money.extra, r.note].filter(Boolean).join(' · '), isBase, dotYmd(r.date)),
     };
