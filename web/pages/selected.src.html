@@ -2396,7 +2396,7 @@ html, body { overflow-x: clip; }
         <span class="badge s-${r.rowStatus}">${r.rowStatus}</span>
       </li>`;
     /* 결과 상자 — 읽어 온 목록. 이름은 하나다 */
-    const PC = { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서(PDF · 이미지)를 올리면 AI가 선정목록에 분석 정리합니다', drop: '파일을 드래그하거나 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
+    const PC = { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서(PDF · 이미지)를 올리면 AI가 선정목록에 분석 정리합니다', drop: '파일을 드래그하거나 박스를 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
     // 다음에 다시 그릴 때 '목록이 이미 펼쳐져 있었는지' 를 알아야 애니메이션을 끌 수 있다
     R.popShown = S.pop === 'folders';
     $('regContent').innerHTML = `
