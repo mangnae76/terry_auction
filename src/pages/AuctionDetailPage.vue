@@ -7262,7 +7262,7 @@ const goBack = () => router.back();
                 <thead><tr><th>순위</th><th>권리 종류</th><th>권리자</th><th>채권액/내용</th><th>인수/소멸</th><th>비고</th></tr></thead>
                 <tbody>
                   <tr v-for="(r, i) in rightsRows" :key="i" :class="r.status === '인수' ? 'tone-take' : ''">
-                    <td>{{ r.rankText || '-' }}</td>
+                    <td>{{ r.rankText || '-' }}<small v-if="r.dateText" class="adp-rights-date">{{ r.dateText }}</small></td>
                     <td>{{ r.kind || '-' }}</td>
                     <td>{{ r.holder || '-' }}</td>
                     <td>{{ r.moneyText || '-' }}</td>
@@ -9752,6 +9752,7 @@ const goBack = () => router.back();
 .adp-rights-wide th, .adp-rights-wide td { font-size: 13px; padding: 12px 12px; word-break: keep-all; vertical-align: middle; text-align: left; }
 .adp-rights-wide th { font-weight: 800; color: #374151; background: #f6f7f9; }
 .adp-rights-wide td { color: #374151; }
+.adp-rights-wide .adp-rights-date { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 600; color: #9ca3af; }
 .adp-rows-cap { margin: 12px 0 5px; font-weight: 800; color: #374151; }
 /* 건물등기 표와 글자 크기·여백을 똑같이 — 두 표가 나란히 읽혀야 한다 */
 .adp-rights-table { table-layout: fixed; }
