@@ -4769,47 +4769,67 @@ const collectDocParts = async (): Promise<RightsDocPart[]> => {
     if (!entry) continue;
     const label = DOC_LABELS[box.key] ?? box.label;
     if (isPdfEntry(entry)) {
-      const blob = await loadSitePdf(entry).catch(() => null);
+      const blob = await withTimeout(loadSitePdf(entry).catch(() => null), 20_000, null);
       if (blob) out.push({ label, mimeType: 'application/pdf', base64: await blobToBase64(blob) });
       continue;
     }
     // 올려 둔 그림 — 저장소에 담긴 것이면 꺼내 오고, data URL 이면 그대로 쓴다
-    const url = isPhotoId(entry) ? await loadSitePhoto(entry).catch(() => '') : entry;
+    const url = isPhotoId(entry) ? await withTimeout(loadSitePhoto(entry).catch(() => ''), 20_000, '') : entry;
     const part = splitDataUrl(url);
     if (part) out.push({ label, ...part });
   }
   return out;
 };
 /** 'AI 분석 요청' — 올려 둔 서류로 권리분석을 받아 와 물건에 적어 둔다 */
+/** 분석 중 — 몇 초째인지 (대기 화면에 보여 살아 있음을 알린다) · 취소 신호 */
+const rightsAiSec = ref(0);
+let rightsAiTick: ReturnType<typeof setInterval> | null = null;
+let rightsAiAbort: AbortController | null = null;
+const cancelRightsAi = () => { rightsAiAbort?.abort(); };
+/** 서류 하나 꺼내 오는 데 오래 걸리면 그 서류는 건너뛴다 — 끊긴 링크 하나에 전체가 멎지 않게 */
+const withTimeout = <T,>(job: Promise<T>, ms: number, fallback: T) =>
+  Promise.race([job, new Promise<T>((done) => { setTimeout(() => done(fallback), ms); })]);
+
 const requestRightsAi = async () => {
   if (rightsAiBusy.value) return;
   const target = auction.value;
   if (!target) return;
   rightsAiErr.value = '';
   rightsAiBusy.value = true;
+  rightsAiSec.value = 0;
+  rightsAiTick = setInterval(() => { rightsAiSec.value += 1; }, 1000);
+  rightsAiAbort = new AbortController();
   try {
     // 키는 로그인 계정마다 서버(userPrefs)에 있다. 이 화면은 그것을 불러온 적이 없을 수 있어
     // 먼저 한 번 불러와 본다 — 안 그러면 등록해 둔 키가 있어도 '없다'고 나온다.
-    if (!isGeminiOn()) await loadGeminiPrefs(authStore.uid);
+    if (!isGeminiOn()) await withTimeout(loadGeminiPrefs(authStore.uid).catch(() => undefined), 10_000, undefined);
     if (!isGeminiOn()) {
       rightsAiErr.value = getGeminiKey()
         ? 'AI 자동 분석이 꺼져 있습니다 — 더보기 > AI 자동 분석에서 켜 주세요.'
         : 'AI 키가 없습니다 — 더보기 > AI 자동 분석에서 등록해 주세요.';
       return;
     }
-    const parts = await collectDocParts();
+    const parts = await withTimeout(collectDocParts(), 45_000, [] as RightsDocPart[]);
+    if (rightsAiAbort.signal.aborted) { rightsAiErr.value = '분석을 취소했습니다.'; return; }
     if (parts.length === 0) {
       rightsAiErr.value = '분석할 서류가 없습니다 — 위 칸에 서류를 올려 주세요.';
       return;
     }
-    const result = await askRightsAnalysis(getGeminiKey(), parts, buildRightsFacts(target));
+    const result = await askRightsAnalysis(getGeminiKey(), parts, buildRightsFacts(target), rightsAiAbort.signal);
     target.rightsAi = result;
-    await store.saveAuction(target);
     flashToast(`서류 ${parts.length}장으로 권리분석을 받았습니다.`, 'success');
+    /* 저장은 뒤에서 — 망이 느리면 서버가 받았다고 답할 때까지 한참 걸려,
+       그동안 대기 화면이 계속 돌며 멈춘 것처럼 보였다. 결과는 이미 화면에 섰다. */
+    void store.saveAuction(target).catch((err) => {
+      flashToast(`분석 결과를 저장하지 못했습니다 — ${err instanceof Error ? err.message : '다시 해 주세요'}`, 'error');
+    });
   } catch (err) {
     rightsAiErr.value = err instanceof GeminiError ? err.message
       : `AI 분석 실패 — ${err instanceof Error ? err.message : '알 수 없는 오류'}`;
   } finally {
+    if (rightsAiTick) clearInterval(rightsAiTick);
+    rightsAiTick = null;
+    rightsAiAbort = null;
     rightsAiBusy.value = false;
   }
 };
@@ -9104,7 +9124,8 @@ const goBack = () => router.back();
           />
         </span>
         <b>AI가 권리분석을 하고 있습니다</b>
-        <span>잠시만 기다려 주세요 — 10초쯤 걸립니다</span>
+        <span>서류가 많으면 1분쯤 걸립니다 · {{ rightsAiSec }}초</span>
+        <button type="button" class="adp-ai-wait-cancel" @click="cancelRightsAi">취소</button>
       </div>
     </div>
 
@@ -9673,6 +9694,11 @@ const goBack = () => router.back();
 }
 .adp-ai-wait-card b { font-size: 14.5px; font-weight: 800; color: #111827; letter-spacing: -0.3px; }
 .adp-ai-wait-card span { font-size: 12.5px; color: #6b7280; }
+.adp-ai-wait-cancel {
+  margin-top: 4px; height: 34px; padding: 0 22px; border: 1px solid #d8dee9; border-radius: 8px;
+  background: #fff; color: #374151; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.adp-ai-wait-cancel:hover { background: #f3f4f6; }
 /* 해바퀴 — 열두 살이 차례로 옅어지며 돈다 */
 .adp-spin { position: relative; width: 32px; height: 32px; margin-bottom: 2px; }
 .adp-spin i {

@@ -262,11 +262,17 @@ const logRequest = (parts: RightsDocPart[], promptText: string, payloadBytes: nu
 const wait = (ms: number) => new Promise((done) => { setTimeout(done, ms); });
 
 /** 서류를 Gemini 에 보내 권리분석을 받아 온다 */
+/** 한 번 묻는 데 기다리는 최대 시간 — 서류 다섯 장을 읽어도 보통 1분 안이다.
+ *  이보다 길면 끊고 까닭을 알린다 (안 끊으면 대기 화면이 영원히 돈다) */
+const RIGHTS_TIMEOUT_MS = 120_000;
+
 export const askRightsAnalysis = async (
   key: string,
   parts: RightsDocPart[],
   /** 앱이 이미 PDF 에서 읽어 둔 값 — 서류 사진만 보고 다시 읽느라 답이 흔들리는 것을 줄인다 */
   facts = '',
+  /** 사용자가 '취소'를 누르면 여기로 멈춤 신호가 온다 */
+  signal?: AbortSignal,
 ): Promise<RightsAi> => {
   if (!key) throw new GeminiError('AI 키가 없습니다 — 더보기 > AI 자동 분석에서 등록해 주세요');
   if (parts.length === 0) throw new GeminiError('분석할 서류가 없습니다 — 서류를 한 장이라도 올려 주세요');
@@ -305,12 +311,28 @@ export const askRightsAnalysis = async (
   // 혼잡(503)·잠깐 한도(429)는 잠시 뒤 다시 — 두 번까지 (geminiPdf 와 같은 규칙)
   let model = RIGHTS_MODEL;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    res = await fetch(`${GEMINI_API}/models/${model}:generateContent`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
-      body: payload,
-    });
-    body = await res.json().catch(() => ({})) as Body;
+    if (signal?.aborted) throw new GeminiError('분석을 취소했습니다');
+    // 시간 제한 — 정해 둔 시간이 지나거나 사용자가 취소하면 끊는다
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), RIGHTS_TIMEOUT_MS);
+    const onCancel = () => ctrl.abort();
+    signal?.addEventListener('abort', onCancel);
+    try {
+      res = await fetch(`${GEMINI_API}/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+        body: payload,
+        signal: ctrl.signal,
+      });
+      body = await res.json().catch(() => ({})) as Body;
+    } catch (err) {
+      if (signal?.aborted) throw new GeminiError('분석을 취소했습니다');
+      if (ctrl.signal.aborted) throw new GeminiError(`AI 응답이 ${RIGHTS_TIMEOUT_MS / 1000}초 안에 오지 않았습니다 — 잠시 뒤 다시 해 주세요`);
+      throw new GeminiError(`AI 서버에 닿지 못했습니다 — 인터넷 연결을 확인해 주세요 (${err instanceof Error ? err.message : ''})`);
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onCancel);
+    }
     // 그 이름의 모델이 없으면 PDF 읽기와 같은 모델로 한 번 더 — 기능이 멎지 않게
     if (res.status === 404 && model !== GEMINI_MODEL) { model = GEMINI_MODEL; continue; }
     if (res.status !== 503 && res.status !== 429) break;
