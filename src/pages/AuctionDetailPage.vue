@@ -3310,7 +3310,10 @@ const noteLeave = () => { if (hasHover) noteTip.value = ''; };
 watch(dmTip, (v) => { if (v) noteTip.value = ''; });
 watch(noteTip, (v) => { if (v) dmTip.value = ''; });
 // 말풍선은 화면에 붙어 뜨기 때문에, 화면을 움직이면 엉뚱한 자리를 가린다 — 그때는 닫는다
-const closeTips = () => {
+const closeTips = (e?: Event) => {
+  // 펼친 목록 안을 굴리는 것은 화면이 움직이는 게 아니다 — 그때 닫으면 목록을 내려 볼 수가 없다
+  const t = e?.target;
+  if (t instanceof Element && t.closest('.adp-rcase-list, .adp-agency-options, .adp-multi-panel')) return;
   dmTip.value = ''; noteTip.value = ''; addrTip.value = '';
   mktLitKey.value = ''; dmLitKey.value = '';
   // 웹 — 펼친 고르기 목록(면적 · 룸수 · 케이스)도 닫는다. 화면이 움직이면 목록이 위 고정 줄을 뚫고 올라가 보였다
