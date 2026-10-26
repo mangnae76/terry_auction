@@ -549,10 +549,18 @@ body.trip-full .foot { display: none; }
 .reg-duo .rg-acts > .rg-fav, .reg-duo .rg-acts > .rg-btn { width: auto; }
 /* 상자 둘은 이제 탭이 아니다 — 왼쪽은 유료(자동 등록), 오른쪽은 무료(직접 입력) */
 .reg-duo > .reg-box { display: flex; flex-direction: column; gap: 8px; }
-/* 유료 딱지 · 무료 딱지 */
-.plan-tag { flex: 0 0 auto; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: -.2px; }
-.plan-tag.pro { background: #eef3fd; border: 1px solid #d3e0fa; color: #2a5fbf; }
-.plan-tag.free { background: var(--surface-3); border: 1px solid var(--line); color: var(--muted); }
+/* Plus 딱지 — 유료로 쓸 수 있는 자리에만 단다 */
+.plan-tag { flex: 0 0 auto; border-radius: 999px; font-weight: 800; letter-spacing: -.1px; }
+.plan-tag.plus { padding: 3px 13px; background: #eda134; color: #fff; font-size: 12px; }
+/* 등록 방법 탭 — 자동 등록(Plus) · 직접 입력. 밑줄은 ::after 막대로(전역 button 둥근모서리를 피한다) */
+.reg-tabbar { display: flex; align-items: stretch; gap: 2px; border-bottom: 1px solid var(--line); }
+.reg-tab { position: relative; display: inline-flex; align-items: center; gap: 7px; height: 42px; padding: 0 14px; border: 0; border-radius: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
+.reg-tab svg { width: 17px; height: 17px; }
+.reg-tab:hover { color: var(--text); }
+.reg-tab.on { color: var(--blue); font-weight: 800; }
+.reg-tab.on::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: -1px; height: 2px; background: var(--blue); }
+.reg-tab .plan-tag { pointer-events: none; }
+.reg-tab:not(.on) .plan-tag.plus { background: var(--surface-3); color: var(--muted); }
 /* 유료가 아닐 때 — 왼쪽 상자는 한 발 물리고 누를 수 없게 한다 */
 .reg-box.locked .rg-acts, .reg-box.locked .rg-ai { opacity: .45; pointer-events: none; }
 .lock-note { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
@@ -561,7 +569,7 @@ body.trip-full .foot { display: none; }
 .rg-ai .ai-setup-text { font-size: 12.5px; color: var(--text-2); }
 /* 직접 입력 칸 — 두 칸씩, 소재지만 한 줄 */
 /* 위 고정 상자는 이제 '자동 등록' 하나다 */
-.reg-duo { grid-template-columns: minmax(0, 1fr); }
+.reg-duo { grid-template-columns: minmax(0, 1fr); row-gap: 10px; }
 .reg-duo .rg-acts { grid-template-columns: repeat(4, minmax(0, 220px)); justify-content: start; }
 /* 직접 입력 — 파싱 상자 아래에 선다. 네 칸으로 두 줄 */
 .reg-box.manual { margin-top: 12px; border-radius: 10px; }
@@ -1958,42 +1966,30 @@ html, body { overflow-x: clip; }
 
   const R = {
     favs: store.get('wlp.web.favs', DEMO_FOLDERS), sel: store.get('wlp.web.favSel', null),
-    tab: (() => { try { return localStorage.getItem('wlp.web.regTab') === 'ai' ? 'ai' : 'drive'; } catch (e) { return 'drive'; } })(),
+    mode: (() => { try { return localStorage.getItem('wlp.web.regMode') === 'manual' ? 'manual' : 'auto'; } catch (e) { return 'auto'; } })(),
     rows: [], loading: false, loadingLabel: '', banner: '', last: '', collapsed: false, missing: [], scanned: [],
     /* AI 파싱 — 앱(geminiPdf)과 같은 자리에서 읽는다. 쓰기·확인은 TAPdf 로 한다 */
     /* Gemini 키는 로그인 계정마다(userPrefs) — 앱 연결 뒤 로그인이 정해지면 loadGeminiPrefs 로 채운다 */
     aiKey: '', aiOn: false,
   };
-  /* 상자 둘이 탭 노릇 — 결과 목록(줄·알림·마지막 시각·드라이브에 없는 물건·접힘)은 상자마다 따로 둔다.
-     지금 고른 상자의 것은 R.rows 등에 펼쳐 두고, 바꿀 때 넣었다 꺼낸다 */
+  /* 결과 목록(줄·알림·마지막 시각·드라이브에 없는 물건·접힘) — 자동 등록 한 묶음뿐이다.
+     (상자 둘을 쓰던 때는 상자마다 따로 두었다 — 지금은 하나로 합쳤다) */
   const LIST_KEYS = ['rows', 'banner', 'last', 'missing', 'collapsed'];
-  const lists = { drive: null, ai: null };
-  const switchRegTab = (tab) => {
-    if (tab === R.tab) return true;
-    if (R.loading) { toast('읽는 중에는 바꿀 수 없습니다 — 끝난 뒤 눌러 주세요.', 'info'); return false; }
-    lists[R.tab] = Object.fromEntries(LIST_KEYS.map((k) => [k, R[k]]));
-    const next = lists[tab] || { rows: [], banner: '', last: '', missing: [], collapsed: false };
-    LIST_KEYS.forEach((k) => { R[k] = next[k]; });
-    R.tab = tab; S.pop = '';
-    try { localStorage.setItem('wlp.web.regTab', tab); } catch (e) { /* 그만 */ }
-    return true;
-  };
   /* 결과 목록은 새로고침해도 남는다 — 앱이 마지막 목록을 계정에 적어 두고 다시 여는 것과 같게.
      이 브라우저에 사람(로그인 계정)마다 따로 적는다. 화면에 쓰는 값만 두고 등록용 원본(x)은 뺀다 */
   const regKey = () => { let uid = ''; try { uid = (CLOUD.auth && CLOUD.auth.isLoggedIn && CLOUD.auth.uid) || ''; } catch (e) { /* 앱 연결 전 */ } return `wlp.web.regLists.${uid || 'guest'}`; };
   let regLoadedKey = '';
   const saveRegLists = () => {
     if (!regLoadedKey || regLoadedKey !== regKey()) return;
-    lists[R.tab] = Object.fromEntries(LIST_KEYS.map((k) => [k, R[k]]));
-    const slim = (l) => (l ? { ...l, rows: (l.rows || []).map(({ x, ...r }) => r) } : null);
-    store.set(regLoadedKey, { drive: slim(lists.drive), ai: slim(lists.ai) });
+    const cur = Object.fromEntries(LIST_KEYS.map((k) => [k, R[k]]));
+    store.set(regLoadedKey, { list: { ...cur, rows: (cur.rows || []).map(({ x, ...r }) => r) } });
   };
   const loadRegLists = () => {
     const key = regKey();
     if (key === regLoadedKey) return;
     const saved = store.get(key, null) || {};
-    lists.drive = saved.drive || null; lists.ai = saved.ai || null;
-    const cur = lists[R.tab] || { rows: [], banner: '', last: '', missing: [], collapsed: false };
+    /* 예전에 상자마다 따로 적어 두던 것({drive, ai})도 읽어 준다 */
+    const cur = saved.list || saved.ai || saved.drive || { rows: [], banner: '', last: '', missing: [], collapsed: false };
     LIST_KEYS.forEach((k) => { R[k] = cur[k] ?? (k === 'rows' || k === 'missing' ? [] : k === 'collapsed' ? false : ''); });
     regLoadedKey = key;
   };
@@ -2034,7 +2030,7 @@ html, body { overflow-x: clip; }
   };
   const toRow = (f, src, folderId) => (f.err
     ? { key: `${src}-${f.file}`, file: f.file, src, folderId, status: 'error', rowStatus: '오류', err: f.err }
-    : { key: `${src}-${f.file}`, file: f.file, src, folderId, status: 'ready', rowStatus: classify(f.p), p: f.p, ai: R.tab === 'ai' && R.aiOn && R.aiKey ? f.ai : null });
+    : { key: `${src}-${f.file}`, file: f.file, src, folderId, status: 'ready', rowStatus: classify(f.p), p: f.p, ai: R.aiOn && R.aiKey ? f.ai : null });
   /* ---------- 진짜 읽기 ----------
      PDF 읽기: 앱(PdfImportPage)이 쓰는 규칙 파서 그대로 — pdfparse.js (pdf.js 포함) 를 처음 쓸 때 불러온다.
      드라이브 읽기: claude.ai 아티팩트 안에서는 바깥 주소로 직접 나갈 수 없어서 보는 사람의 claude.ai
@@ -2066,7 +2062,7 @@ html, body { overflow-x: clip; }
   /* 규칙으로 읽은 뒤, 켜져 있으면 AI 로 빈칸을 채운다 (앱 PdfImportPage 의 readPdf 와 같다). AI 가 실패해도 규칙 결과는 그대로 쓴다 */
   const readWithAi = async (T, bytes, name, sourceUrl, folderUrl, fileId) => {
     const parsed = await T.parsePdfBytes(bytes, name, sourceUrl, folderUrl, fileId);
-    if (R.tab !== 'ai' || !R.aiOn || !R.aiKey) return { parsed, ai: null }; /* 구글드라이브 연동 상자는 규칙으로만 읽는다 */
+    if (!R.aiOn || !R.aiKey) return { parsed, ai: null }; /* AI 자동 분석이 꺼져 있으면 규칙으로만 읽는다 */
     const labels = (keys) => (keys || []).map((k) => T.AI_FIELD_LABELS[k] || k);
     try {
       const r = await T.fillWithGemini(bytes, parsed, R.aiKey);
@@ -2286,8 +2282,7 @@ html, body { overflow-x: clip; }
   async function parseFiles(files) {
     if (!files.length || R.loading) return;
     /* AI 자동 분석 상자에 올리면 AI 로 읽는다 — 키와 켜기가 먼저다 */
-    if (R.tab === 'ai' && !R.aiKey) { toast('Gemini API 키를 먼저 등록해 주세요.', 'info'); S.modal = { kind: 'ai' }; renderModal(); return; }
-    if (R.tab === 'ai' && !R.aiOn) { toast('AI 파싱을 켜면 올릴 수 있습니다.', 'info'); return; }
+    if (R.aiOn && !R.aiKey) { toast('Gemini API 키를 먼저 등록해 주세요.', 'info'); S.modal = { kind: 'ai' }; renderModal(); return; }
     R.loading = true; R.banner = ''; R.loadingLabel = 'PDF 읽기 준비 중'; renderRegister();
     let T = null; try { T = await loadParser(); } catch (e) { T = null; }
     const rows = [];
@@ -2326,14 +2321,19 @@ html, body { overflow-x: clip; }
     const chips = R.sel.map((u) => `<span class="fchip ${R.scanned.includes(folderIdOf(u)) ? 'scanned' : ''}">${I.folder}${esc(favName(u))}</span>`).join('');
     const masked = R.aiKey ? `${R.aiKey.slice(0, 4)}…${R.aiKey.slice(-4)}` : '';
     /* 선정물건등록 — 상자 둘을 나란히: 왼쪽 구글드라이브 연동(1줄 제목·스캔할 폴더 칸 / 2줄 폴더등록·폴더스캔·PDF등록) · 오른쪽 AI 자동 분석 */
+    const AUTO = R.mode === 'auto';
+    /* 등록 방법 탭 — 자동 등록(폴더·PDF 로 가져와 AI 가 읽는 한 절차, Plus) · 직접 입력(손으로 적기) */
+    const tabbar = `
+      <div class="reg-tabbar" role="tablist" aria-label="물건등록 방법">
+        <button type="button" role="tab" class="reg-tab ${AUTO ? 'on' : ''}" aria-selected="${AUTO}" data-act="reg-mode" data-v="auto">${I.cloud}자동 등록<span class="plan-tag plus">Plus</span></button>
+        <button type="button" role="tab" class="reg-tab ${AUTO ? '' : 'on'}" aria-selected="${!AUTO}" data-act="reg-mode" data-v="manual">${I.pencil}직접 입력</button>
+      </div>`;
     $('regBox').innerHTML = `
-      <!-- 왼쪽 — 유료 회원: 가져와서 읽는 한 묶음 (폴더·PDF 로 가져오고, AI 로 읽는다) -->
+      ${tabbar}
+      ${!AUTO ? '' : `
+      <!-- 자동 등록 — 가져와서 읽는 한 절차 (폴더·PDF 로 가져오고, AI 가 읽어 카드로 정리한다) -->
       <div class="toolbar reg-box pro ${PAID ? '' : 'locked'}">
-      <div class="rg-row1">
-        <span class="rg-title tip-below" data-tip="구글 드라이브 폴더나 PDF 파일을 읽어 선정목록으로 올립니다" data-tip-pos="left">${I.cloud}자동 등록</span>
-        <span class="plan-tag pro">유료회원</span>
-        ${PAID ? '' : '<span class="lock-note">유료 이용 중에 쓸 수 있습니다<button type="button" class="mini edit" data-act="soon" data-name="결제하기">결제하기</button></span>'}
-      </div>
+      ${PAID ? '' : '<div class="rg-row1"><span class="lock-note">Plus 이용 중에 쓸 수 있습니다<button type="button" class="mini edit" data-act="soon" data-name="결제하기">결제하기</button></span></div>'}
       <div class="rg-row1 rg-acts">
         <!-- ① 어디서 가져올까 — 등록해 둔 폴더를 펼쳐 고른다. 고치고 지우는 일은 폴더등록 창이 맡는다 -->
         <div class="rg-folder pop-root" data-pop="folders">
@@ -2354,7 +2354,7 @@ html, body { overflow-x: clip; }
         <button type="button" class="ai-key" style="margin-left:auto" data-act="ai-key">${I.key}${R.aiKey ? '키바꾸기' : '키 등록'}</button>
         <button type="button" class="ai-switch ${R.aiOn && R.aiKey ? 'on' : ''}" role="switch" aria-checked="${R.aiOn && !!R.aiKey}" aria-label="AI 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-act="ai-toggle" data-tip="AI 파싱 ${R.aiOn && R.aiKey ? '켜짐' : '꺼짐'}" data-tip-pos="below"><i></i></button>
       </div>
-      </div>`;
+      </div>`}`;
     const rowHtmlR = (r) => `<li class="rg-item ${r.status}" ${r.status === 'ready' ? `data-act="rg-open" data-v="${esc(r.p.caseNo)}" tabindex="0"` : ''}>
         <span class="rg-ic ${r.src === 'drive' ? 'drive' : ''}" aria-hidden="true"${tip(r.src === 'drive' ? '구글드라이브에서 읽음' : '직접 올린 PDF')}>${r.src === 'drive' ? I.cloud : I.pdf}</span>
         <div class="rg-text"><strong>${esc(r.file)}</strong>${r.status === 'ready' ? `<p>${esc(addrText(r.p) || '주소 미확인')}</p>${AI_TEXT(r.ai)}` : `<p class="err">${esc(r.err)}</p>`}</div>
@@ -2372,6 +2372,7 @@ html, body { overflow-x: clip; }
         <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I.info}</svg>+물건등록</h2>
         <p>선정된 경매 물건을 등록하고 관리하세요. AI가 정보를 분석 정리하여 선정목록 카드 안에서 볼 수 있습니다.</p>
       </section>
+      ${!AUTO ? '' : `
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
       <section class="rg-results" id="rgDrop" aria-label="${PC.title}">
         <div class="rg-head"><h2 class="tip-below" data-tip="${PC.tip}" data-tip-pos="left" style="cursor:help">${PC.ic}${PC.title}</h2>
@@ -2381,12 +2382,12 @@ html, body { overflow-x: clip; }
         ${R.collapsed ? '' : `<div class="rg-empty ${R.rows.length ? 'slim' : ''}" role="button" tabindex="0" data-act="pdf-pick" aria-label="PDF 파일 고르기"><span class="ic">📂</span><span>${PC.drop}</span></div>
           ${R.rows.length ? `<ul class="rg-list">${R.rows.map(rowHtmlR).join('')}</ul>
           <div class="rg-foot"><span class="num">UPDATE : ${esc(R.last || '—')}</span></div>` : ''}`}
-      </section>
-      <!-- 직접 입력 — 읽을 PDF 가 없는 물건은 여기서 손으로 적어 올린다 (파싱 상자 아래) -->
+      </section>`}
+      ${AUTO ? '' : `
+      <!-- 직접 입력 — 무료 회원: 읽을 PDF 없이 손으로 적어 올린다 -->
       <section class="toolbar reg-box manual">
         <div class="rg-row1">
           <span class="rg-title tip-below" data-tip="PDF 없이 손으로 적어 선정목록에 올립니다" data-tip-pos="left">${I.pencil}직접 입력</span>
-          <span class="plan-tag free">무료회원</span>
           <span class="mn-note">읽을 PDF 가 없는 물건은 여기서 적어 올립니다</span>
         </div>
         <div class="mn-form">
@@ -2418,7 +2419,7 @@ html, body { overflow-x: clip; }
           <textarea id="mnNote" class="wide4" rows="2" placeholder="특이사항 (유치권 신고, 대항력 임차인, 미납 관리비 등)" aria-label="특이사항"></textarea>
           <button type="button" class="rg-btn add" data-act="manual-add">${I.plus}등록하기</button>
         </div>
-      </section>`;
+      </section>`}`;
   }
 
   /* ---------- 창 ---------- */
@@ -2536,7 +2537,7 @@ html, body { overflow-x: clip; }
   function renderSubTabs() {
     const tabs = SUBTABS[S.route]; const bar = $('subTabs');
     bar.hidden = !tabs; document.body.classList.toggle('has-subtabs', !!tabs);
-    const cur = S.route === 'item' ? S.itemTab : R.tab;
+    const cur = S.itemTab;
     $('subTabsIn').innerHTML = tabs ? tabs.map(([k, ic, t]) => `<button type="button" class="subtab ${cur === k ? 'on' : ''}" role="tab" aria-selected="${cur === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
     if (tabs) syncStickTop();
   }
@@ -3078,8 +3079,6 @@ html, body { overflow-x: clip; }
     const t = e.target.closest('[data-act]');
     if (S.pop && !e.target.closest(`[data-pop="${S.pop}"], .g-pop`)) { S.pop = ''; S.binPicked = new Set(); S.calMonth = null; render(); }
     if (S.menu && !e.target.closest('.float-menu') && !(t && ['bid-result', 'stage-menu', 'result-menu'].includes(t.dataset.act))) { S.menu = null; render(); }
-    { const box = e.target.closest('[data-regtab]');
-      if (box && box.dataset.regtab !== R.tab && !e.target.closest('.pop')) { if (!switchRegTab(box.dataset.regtab)) return; renderRegister(); } }
     if (!t) return;
     const act = t.dataset.act; const id = t.dataset.id; const v = t.dataset.v; const it = id ? byId(id) : null;
     if (t.tagName === 'A') e.preventDefault();
@@ -3344,7 +3343,15 @@ html, body { overflow-x: clip; }
       }
       case 'ai-del': if (CLOUD.T) CLOUD.T.clearGeminiKey((CLOUD.auth && CLOUD.auth.uid) || '').catch(() => {});
         R.aiKey = ''; R.aiOn = false; S.modal = null; renderModal(); renderRegister(); toast('키를 지웠습니다.', 'info'); break;
-      case 'subtab': if (S.route === 'item') { S.itemTab = v; renderSubTabs(); renderItem(); window.scrollTo(0, 0); break; } R.tab = v === 'ai' ? 'ai' : 'drive'; try { localStorage.setItem('wlp.web.regTab', R.tab); } catch (e) { /* 그만 */ } S.pop = ''; renderSubTabs(); renderRegister(); break;
+      case 'subtab': S.itemTab = v; renderSubTabs(); renderItem(); window.scrollTo(0, 0); break;
+      /* 등록 방법 탭 — 자동 등록(Plus·AI 파싱) · 직접 입력(손으로 적기) */
+      case 'reg-mode': {
+        if (v === R.mode) break;
+        if (R.loading) { toast('읽는 중에는 바꿀 수 없습니다 — 끝난 뒤 눌러 주세요.', 'info'); break; }
+        R.mode = v; S.pop = '';
+        try { localStorage.setItem('wlp.web.regMode', v); } catch (e) { /* 그만 */ }
+        renderRegister(); syncStickTop(); window.scrollTo(0, 0); break;
+      }
       case 'rg-collapse': R.collapsed = !R.collapsed; renderRegister(); break;
       /* 목록 비우기 — 한 번 묻는다. 읽어 온 줄만 지우고 등록한 선정목록은 그대로다 */
       case 'rg-clear': askConfirm({ title: '목록을 비울까요?', desc: '읽어 온 목록만 지웁니다. 이미 등록한 선정목록은 그대로 남습니다.', okLabel: '비우기', skipKey: '', run: () => { R.rows = []; R.banner = ''; R.missing = []; renderRegister(); toast('목록을 비웠습니다.'); } }); break;
