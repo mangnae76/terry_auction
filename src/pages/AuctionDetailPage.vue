@@ -9893,7 +9893,8 @@ tr.tone-take { background: #fff5f5; }
   word-break: keep-all; color: #374151;
 }
 .adp-reg-pdf th { font-weight: 800; background: #f6f7f9; }
-.adp-reg-pdf td.c-left { text-align: left; }
+/* 비고 — 인수/소멸 칸에 붙어 보이지 않게 두세 글자만큼 띄운다 */
+.adp-reg-pdf td.c-left { text-align: left; padding-left: 40px; }
 .adp-reg-pdf .c-amt-label { display: block; }
 .adp-registry-table th, .adp-registry-table td { font-size: 11px; padding: 8px 6px; word-break: keep-all; vertical-align: top; }
 .adp-major-table { table-layout: fixed; }
