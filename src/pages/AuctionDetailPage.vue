@@ -2962,6 +2962,13 @@ const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow
     items: [],
   },
 ];
+// 웹 — 임차인탐문 · 임차인차량은 '③ 입찰자 현황조사' 안에 (사람에 관한 것끼리). 앱은 그대로 ① 탐문에
+const WEB_TO_REPORT = ['fs.tenantContact', 'fs.tenantCar'];
+const fieldSections = computed(() => (webEmbed
+  ? FIELD_SECTIONS.map((sec) => (sec.special === 'report'
+    ? { ...sec, items: FIELD_SECTIONS.flatMap((x) => x.items).filter((it) => WEB_TO_REPORT.includes(it.id)) }
+    : { ...sec, items: sec.items.filter((it) => !WEB_TO_REPORT.includes(it.id)) }))
+  : FIELD_SECTIONS));
 // 현장 체크리스트 — 항목명과 확인할 내용
 const FIELD_CHECKLIST: Array<{ id: string; label: string; desc: string }> = [
   { id: 'cl.location', label: '입지', desc: '일자리, 교통, 유치원, 초교, 학원가, 인프라, 공원 등' },
@@ -8946,7 +8953,7 @@ const goBack = () => router.back();
             </div>
             <!-- ①②③ 묶음 — 앱은 틀 없이(display: contents) 그대로, 웹은 가로로 나란히 -->
             <div class="adp-fs-sections">
-            <div v-for="sec in FIELD_SECTIONS" :key="sec.title" class="adp-fs-section">
+            <div v-for="sec in fieldSections" :key="sec.title" class="adp-fs-section">
               <div class="adp-fs-title">{{ sec.title }}</div>
               <!-- 입찰자 현황조사 — 고르는 칸 하나뿐이라 줄 틀을 쓰지 않는다 -->
               <template v-if="sec.special === 'report'">
