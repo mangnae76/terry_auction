@@ -5082,6 +5082,22 @@ const docLines = (item: RightsDocItem): RightsDocLine[] => {
   if (!item.line2) return [first];
   return [first, { cells: toDocCells(item.line2.dateId, item.line2.datePlaceholder, item.line2.fields) }];
 };
+/** 웹 — 폭이 넓으니 두 줄을 한 줄로 잇는다 (조사일·점유관계·전입일·전입 등재·세대주가 한 줄에) */
+const shownDocLines = (item: RightsDocItem): RightsDocLine[] => {
+  const lines = docLines(item);
+  if (!webEmbed || lines.length < 2) return lines;
+  /* 첫 줄이 이름·날짜 둘뿐이면(세대열람 발급일) 빈 칸 하나를 끼워 — 다음 '전입일' 이 현황조사의 '전입일' 과 같은 자리에 선다 */
+  return [{ cells: lines.flatMap((ln, li) => [
+    ...ln.cells.map((c) => ({ ...c, wide: false })),
+    ...(li === 0 && ln.cells.length === 2 ? [{ kind: 'label' as const, id: `${item.id}.gap`, placeholder: '' }] : []),
+  ]) }];
+};
+/** 한 줄의 칸 폭 — 웹은 칸 종류로 정한다(이름 50 · 날짜 140 · 나머지는 나눠 갖기) */
+const docLineColumns = (ln: RightsDocLine) => {
+  /* 빈 이름 칸(끼워 넣은 자리)은 점유관계 칸과 같은 몫을 가져 아래위 줄의 칸이 맞는다 */
+  if (webEmbed) return ln.cells.map((c) => (c.kind === 'label' && c.placeholder ? '50px' : c.kind === 'date' ? '140px' : 'minmax(0, 1fr)')).join(' ');
+  return ln.cells[0]?.kind === 'label' ? '30px 84px 1fr 1fr' : `repeat(${ln.cells.length}, minmax(0, 1fr))`;
+};
 // 하나만 고르는 칸 — 고르면 바로 닫는다
 const pickDocNoteOption = async (id: string, opt: string) => {
   docMultiOpen.value = '';
@@ -7557,10 +7573,10 @@ const goBack = () => router.back();
                   <template v-if="item.dateId || item.lines">
                     <td class="adp-rdoc-note-cell" colspan="2">
                       <div
-                        v-for="(ln, li) in docLines(item)"
+                        v-for="(ln, li) in shownDocLines(item)"
                         :key="li"
                         class="adp-rdoc-survey"
-                        :style="{ gridTemplateColumns: ln.cells[0]?.kind === 'label' ? (webEmbed ? '52px 150px 1fr 1fr' : '30px 84px 1fr 1fr') : `repeat(${ln.cells.length}, minmax(0, 1fr))` }"
+                        :style="{ gridTemplateColumns: docLineColumns(ln) }"
                       >
                         <template v-for="c in ln.cells" :key="c.id">
                           <span v-if="c.kind === 'label'" class="adp-rdoc-label">{{ c.placeholder }}</span>
@@ -10527,6 +10543,12 @@ tr.tone-take { background: #fff5f5; }
 .adp-tab-rights .adp-rdoc-survey .adp-rdoc-input { height: 34px; padding: 0 10px; }
 .adp-tab-rights .adp-rdoc-survey .adp-date-btn { padding: 0 10px; gap: 6px; letter-spacing: 0; }
 .adp-tab-rights .adp-rdoc-label { white-space: nowrap; text-align: left; }
+/* 한 줄로 이은 줄 — 두 번째 이름(전입일) 앞은 조금 더 띄워 묶음이 갈라져 보이게 */
+.adp-tab-rights .adp-rdoc-survey > .adp-rdoc-label:not(:first-child) { padding-left: 6px; }
+/* 웹 — 리스크 요약·결론 글이 두 줄로 넘어가도 빡빡해 보이지 않게 줄 사이를 띄운다 */
+.adp-tab-rights .adp-conclude .adp-evict-text,
+.adp-tab-rights .adp-conclude .adp-diag-list { line-height: 1.8; }
+.adp-tab-rights .adp-conclude .adp-evict-text + .adp-diag-list { margin-top: 4px; }
 /* 체크 마킹 — 기본 체크박스를 직접 그려 모서리를 둥글게(4px) 만든다 */
 .adp-rcheck-box {
   appearance: none; -webkit-appearance: none;
