@@ -3313,6 +3313,8 @@ watch(noteTip, (v) => { if (v) dmTip.value = ''; });
 const closeTips = () => {
   dmTip.value = ''; noteTip.value = ''; addrTip.value = '';
   mktLitKey.value = ''; dmLitKey.value = '';
+  // 웹 — 펼친 고르기 목록(면적 · 룸수 · 케이스)도 닫는다. 화면이 움직이면 목록이 위 고정 줄을 뚫고 올라가 보였다
+  if (webEmbed) { bandOpen.value = false; roomOpen.value = false; caseOpen.value = false; }
 };
 onMounted(() => window.addEventListener('scroll', closeTips, true));
 

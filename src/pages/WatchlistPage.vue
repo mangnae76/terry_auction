@@ -875,6 +875,13 @@ watch(
     </button>
 
     <div class="wlp-list-scroll">
+      <!-- 설명 상자 — 물건등록 화면의 안내 상자와 같은 꼴. 이 화면에서 무엇을 하는지 한두 줄로 알려 준다 -->
+      <div class="wlp-guide">
+        <span class="wlp-guide-title">
+          <svg class="wlp-guide-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg>선정목록
+        </span>
+        <p class="wlp-guide-text">카드를 선택하여 물건상세로 들어가세요.</p>
+      </div>
       <p v-if="store.storageWarning" class="wlp-warning">{{ store.storageWarning }}</p>
       <article
         v-for="item in displayedAuctions"
@@ -1450,6 +1457,14 @@ watch(
 }
 
 /* ===== Scrollable list ===== */
+/* 설명 상자 — 물건등록(.pip-aibox)과 같은 흰 상자 · 둥근 모서리 · 파란 아이콘 제목 */
+.wlp-guide {
+  display: flex; flex-direction: column; gap: 6px; margin: 0 0 8px;
+  background: #fff; border: 1px solid #e3e8f0; border-radius: 12px; padding: 11px 12px;
+}
+.wlp-guide-title { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 800; color: #111827; }
+.wlp-guide-ico { flex: 0 0 auto; color: #2a5fbf; }
+.wlp-guide-text { margin: 0; padding-left: 20px; font-size: 12.5px; font-weight: 400; color: #111827; line-height: 1.5; word-break: keep-all; }
 .wlp-list-scroll {
   flex: 1 1 auto;
   overflow-y: auto;
