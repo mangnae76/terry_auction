@@ -3287,7 +3287,7 @@ html, body { overflow-x: clip; }
       case 'go-list': go('list'); break;
       /* 직접 입력 — PDF 로 읽은 줄과 같은 길(importParsedPdfAuctions)로 올린다.
          빈 파싱값을 하나 떠서 적은 칸만 덮어쓰면, 신규·갱신 규칙이 PDF 와 똑같이 돈다 */
-      case 'manual-add': {
+      case 'manual-add': try {
         if (needLogin('직접 입력')) break;
         const num = (id) => Number(($(id).value || '').replace(/[^\d]/g, '')) || 0;
         const caseNo = ($('mnCase').value || '').trim();
@@ -3297,8 +3297,10 @@ html, body { overflow-x: clip; }
         if (!T) { toast('읽기 도구를 불러오는 중입니다 — 잠시 뒤 다시 눌러 주세요.', 'info'); break; }
         const dec = (id) => Number(($(id).value || '').replace(/[^\d.]/g, '')) || 0;
         const fails = num('mnRound');
+        /* 빈 자료 틀 — parseAuctionPdfText 는 파일 이름(sourceName)을 꼭 받는다.
+           안 주면 그 안에서 sourceName.match 로 멎어 버려, 누르면 아무 일도 없었다 */
         const parsed = {
-          ...T.parseAuctionPdfText(''),
+          ...T.parseAuctionPdfText('', '직접 입력'),
           sourceName: '직접 입력',
           caseNumber: caseNo,
           courtName: ($('mnCourt').value || '').trim(),
@@ -3322,9 +3324,9 @@ html, body { overflow-x: clip; }
               'mnBld', 'mnLand', 'mnYear', 'mnOwner', 'mnDebtor', 'mnNote'].forEach((id) => { $(id).value = ''; });
             toast(`${caseNo} 을 선정목록에 올렸습니다.`);
           })
-          .catch((err) => toast(`적지 못했습니다 — ${(err && err.message) || ''}`, 'info'));
+          .catch((err) => { console.error('[직접입력] 등록 실패', err); toast(`적지 못했습니다 — ${(err && err.message) || '까닭을 알 수 없습니다'}`, 'info'); });
         break;
-      }
+      } catch (err) { console.error('[직접입력] 등록 실패', err); toast(`적지 못했습니다 — ${(err && err.message) || '까닭을 알 수 없습니다'}`, 'info'); break; }
       case 'go-trip': go('trip'); break;
       case 'go-mypage': S.menu = null; go('mypage'); break;
       case 'area-view': S.areaView = v; renderItem(); break;
