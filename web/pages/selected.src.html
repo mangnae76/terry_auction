@@ -2326,7 +2326,7 @@ html, body { overflow-x: clip; }
     /* 등록 방법 탭 — 자동 등록(폴더·PDF 로 가져와 AI 가 읽는 한 절차, Plus) · 직접 입력(손으로 적기) */
     const tabbar = `
       <div class="reg-tabbar" role="tablist" aria-label="물건등록 방법">
-        <button type="button" role="tab" class="reg-tab ${AUTO ? 'on' : ''}" aria-selected="${AUTO}" data-act="reg-mode" data-v="auto">${I.cloud}자동 등록<span class="plan-tag plus">Plus</span></button>
+        <button type="button" role="tab" class="reg-tab ${AUTO ? 'on' : ''}" aria-selected="${AUTO}" data-act="reg-mode" data-v="auto">${I.cloud}자동등록<span class="plan-tag plus">Plus</span></button>
         <button type="button" role="tab" class="reg-tab ${AUTO ? '' : 'on'}" aria-selected="${!AUTO}" data-act="reg-mode" data-v="manual">${I.pencil}직접입력</button>
       </div>`;
     $('regBox').innerHTML = `
@@ -2334,9 +2334,13 @@ html, body { overflow-x: clip; }
       ${!AUTO ? '' : `
       <!-- 자동 등록 — 가져와서 읽는 한 절차 (폴더·PDF 로 가져오고, AI 가 읽어 카드로 정리한다) -->
       <div class="toolbar reg-box pro ${PAID ? '' : 'locked'}">
-      ${PAID ? '' : '<div class="rg-row1"><span class="lock-note">Plus 이용 중에 쓸 수 있습니다<button type="button" class="mini edit" data-act="soon" data-name="결제하기">결제하기</button></span></div>'}
+      <!-- ① 어디서 가져올까 — 제목 한 줄, 그 아래 고르고 읽는 줄 -->
+      <div class="rg-row1">
+        <span class="rg-title tip-below" data-tip="구글 드라이브 폴더나 PDF 파일을 읽어 선정목록으로 올립니다" data-tip-pos="left">${I.cloud}구글 드라이브 연동하기</span>
+        ${PAID ? '' : '<span class="lock-note">Plus 이용 중에 쓸 수 있습니다<button type="button" class="mini edit" data-act="soon" data-name="결제하기">결제하기</button></span>'}
+      </div>
       <div class="rg-row1 rg-acts">
-        <!-- ① 어디서 가져올까 — 등록해 둔 폴더를 펼쳐 고른다. 고치고 지우는 일은 폴더등록 창이 맡는다 -->
+        <!-- 등록해 둔 폴더를 펼쳐 고른다. 고치고 지우는 일은 폴더등록 창이 맡는다 -->
         <div class="rg-folder pop-root" data-pop="folders">
           <button type="button" class="rg-folder-box" data-act="pop" data-id="folders" aria-expanded="${S.pop === 'folders'}" aria-label="스캔할 폴더 선택">
             <span class="rg-chosen">${R.sel.length ? esc(R.sel.length === 1 ? favName(R.sel[0]) : `${favName(R.sel[0])} 외 ${R.sel.length - 1}`) : `<span class="rg-ph">${R.favs.length ? '폴더를 선택하세요' : '폴더를 연동하세요'}</span>`}</span><i class="tri"></i>
