@@ -568,7 +568,8 @@ body.trip-full .foot { display: none; }
 .rg-fitem svg { width: 14px; height: 14px; flex: 0 0 auto; color: var(--muted); }
 .rg-fitem .nm { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rg-fitem:hover { background: var(--surface-3); }
-.rg-fitem.on { background: var(--blue-soft); color: var(--blue); font-weight: 800; }
+/* 고른 줄 — 바탕을 칠하지 않고 글자만 파랗게 (목록이 알약처럼 보이지 않게) */
+.rg-fitem.on { color: var(--blue); font-weight: 800; }
 .rg-fitem.on svg { color: var(--blue); }
 .mini { flex: 0 0 auto; height: 24px; padding: 0 8px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 12px; font-weight: 600; color: var(--text-2); }
 .mini:hover { border-color: #b8c1d1; color: var(--text); }
