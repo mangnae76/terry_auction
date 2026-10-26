@@ -249,7 +249,7 @@ button { cursor: pointer; }
 /* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
    하위 탭 글자 — 물건상세(물건정보~입찰가산정) · 물건등록(자동등록 · 직접입력) 등 모든 탭 줄이 이 값 하나를 쓴다.
    창이 좁아지면 아래 @media 에서 이 값만 바꾼다 */
-:root { --menu-fs: 18px; --tab-fs: 16px; --tab-px: 22px; }
+:root { --menu-fs: 18px; --tab-fs: 16px; --tab-px: 22px; --tab-h: 44px; } /* 하위 탭 높이도 한 값 — 시장분석 · 물건상세 하위 탭과 물건등록 탭이 같이 쓴다 */
 /* 카드 안쪽 여백 — 모든 웹 카드가 이 값을 쓴다.
    --card-pad-x: 카드 테두리에서 제목까지(제목 자리는 이 값으로 고정)
    --card-inset: 제목 아래 내용을 제목보다 한 단 더 안으로 (하위로 갈수록 안쪽)
@@ -309,7 +309,7 @@ button { cursor: pointer; }
 .subtabs { top: calc(var(--stick-top) + var(--gnb-h)); }
 .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h)); }
 body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)); }
-.subtabs-in { display: flex; align-items: stretch; gap: 8px; height: 44px; }
+.subtabs-in { display: flex; align-items: stretch; gap: 8px; height: var(--tab-h); }
 .subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
 .subtab svg { width: 16px; height: 16px; }
 .subtab:hover { color: var(--text); }
@@ -919,7 +919,7 @@ body.trip-full .foot { display: none; }
 .reg-tabbar { position: relative; display: flex; align-items: stretch; gap: 2px; }
 .reg-tabbar::after { content: ""; position: absolute; left: 50%; bottom: 0; z-index: 0; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); } /* 물건상세 하위 탭 줄과 같은 색 */
 .reg-shell { padding-bottom: 0; } /* 탭 줄이 상자의 아랫변 — 줄 아래 띠를 남기지 않는다 */
-.reg-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; height: 42px; padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
+.reg-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; height: var(--tab-h); padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
 .reg-tab svg { width: 17px; height: 17px; }
 .reg-tab:hover { color: var(--text); }
 .reg-tab.on { color: var(--blue); font-weight: 800; }
