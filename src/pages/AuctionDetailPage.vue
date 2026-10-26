@@ -7168,7 +7168,9 @@ const goBack = () => router.back();
                 <p v-if="!webEmbed" class="adp-doc-label">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="b.icon" />{{ b.label }}
                 </p>
-                <div class="adp-plan-row adp-doc-in">
+                <div :class="['adp-plan-row', 'adp-doc-in', { 'has-ico': webEmbed }]">
+                  <!-- 웹 — 이름 줄 대신 입력 칸 안 왼쪽에 서류 아이콘 -->
+                  <svg v-if="webEmbed" class="adp-doc-in-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" v-html="b.icon" />
                   <input
                     v-model="extraInput[b.key]"
                     :placeholder="webEmbed ? `${b.label} 링크 또는 이미지 Ctrl+V` : '링크 또는 이미지 붙여넣기'"
@@ -9905,6 +9907,9 @@ const goBack = () => router.back();
 /* 웹 카드 머리 — 분석 단추 왼쪽의 '○장으로 분석 · 날짜' */
 .adp-ai-used { margin-left: auto; margin-right: 10px; font-size: 14px; font-weight: 400; color: #9ca3af; white-space: nowrap; }
 .adp-ai-used + .adp-ai-head { margin-left: 0; }
+.adp-doc-in.has-ico { position: relative; }
+.adp-doc-in-ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #6b7280; pointer-events: none; }
+.adp-doc-in.has-ico .adp-input { padding-left: 32px; }
 /* 웹 — 노란 알림 글은 굵게 쓰지 않는다 */
 .adp-tab-rights .adp-ai-missing { font-weight: 400; }
 .adp-ai-start.done.adp-ai-head:hover { background: #8b93a1; }
