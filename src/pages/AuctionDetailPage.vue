@@ -4503,13 +4503,12 @@ const RIGHTS_CHECK_ITEMS = [
   },
   {
     id: 'wageClaim',
-    label: '임금채권 및\n최선순위 배당',
+    label: '임금채권\n최선순위 배당',
     desc: '선순위 임차인 있을 경우, 임금채권등 최선 순위이기 때문에 선순위 임차인 낙찰자 인수 가능성 있음\n법인의 경우 임금채권 의심/근로복지공단(체당금) 최우선 변제',
   },
   {
     id: 'taxDate',
-    label: '당해세 법정기일 금액',
-    webLabel: '당해세 · 법정기일\n법정기일 금액',
+    label: '당해세\n법정기일\n법정기일 금액',
     desc: '법정기일 빠른 세금이 있는 경우 확인 필요\n확정일자 보다 법정기일이 빠를 경우 선순위 이다. (당해세)\n이 경우에는 매각 불허가 처리도 가능',
   },
 ];
@@ -7531,7 +7530,7 @@ const goBack = () => router.back();
                   </td>
                 </tr>
                 <tr v-for="item in RIGHTS_CHECK_ITEMS" :key="item.id">
-                  <td class="adp-rcheck-label"><strong>{{ (webEmbed && item.webLabel) || item.label }}</strong></td>
+                  <td class="adp-rcheck-label"><strong>{{ item.label }}</strong></td>
                   <td class="adp-rcheck-desc">{{ item.desc }}</td>
                   <td class="adp-rcheck-cell">
                     <input
