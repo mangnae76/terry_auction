@@ -432,6 +432,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
   border-radius: 0 !important; z-index: 0 !important;
 }
 .app-trip .ftp-map { border-radius: 0 !important; }
+/* 확대·축소 단추 — 왼쪽 위는 조작 칸이 덮는다. 오른쪽 위 끝으로 보낸다 */
+.app-trip .leaflet-top.leaflet-left { left: auto !important; right: 0 !important; }
+.app-trip .leaflet-top.leaflet-left .leaflet-control { margin-right: 10px !important; } /* 왼쪽 여백만 있어 오른끝에 딱 붙었다 */
 /* 왼쪽 조작 칸 — 경로설정 · 동선최적화 · 목록이 한 통으로 흐른다 */
 .app-trip .ftp-scroll {
   position: fixed !important; left: 18px !important;
