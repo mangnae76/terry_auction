@@ -826,12 +826,19 @@ const parseRealTradeRows = (text: string) => {
   };
 };
 
+// 이름 자리에 끼어드는 말들 — 여기 없는 낱말은 이름으로 오해받는다.
+// 실제로 '미배당 보증금 매수인 인수' 의 '미배당' 이 임차인 이름으로 올라온 적이 있다.
 const TENANT_NAME_STOPWORDS = new Set([
   '주의', '주거용', '전부', '일부', '인수', '조건', '변경', '없음', '있음', '미상', '계',
   '순위배당', '임차권', '양도인', '양수인', '임차인', '경매신청인', '배당금', '임차권등기자',
   '전입', '확정', '배당', '보', '대항력', '분석', '기타', '점유', '점유부분', '기간', '보증금', '차임',
   '목록', '현황', '승계인', '사업자등록', '확정일자',
+  '미배당', '매수인', '배당요구', '신청인', '채권자', '소유자', '점유자', '임대인', '세대주',
+  '해당', '사항', '내역', '비고', '주민등록', '전입신고', '보증', '월세', '환산', '소액',
 ]);
+/** 이름인가 — '홍길동' 처럼 한글만이거나 '최○○' 처럼 가려 적은 꼴까지 받는다.
+ *  가린 이름을 못 알아보면 그 줄에서 엉뚱한 낱말이 이름 자리로 올라온다. */
+const looksLikeTenantName = (bare: string) => /^[가-힣][가-힣○Ｏ*]{1,5}$/.test(bare);
 
 const parseTenantInfoRows = (text: string) => {
   const startMarker = text.includes('임차인 현황') ? '임차인 현황' : '점유';
@@ -904,7 +911,7 @@ const parseTenantInfoRows = (text: string) => {
         .split(' ')
         .find((token) => {
           const bare = token.replace(/[()[\]:：,]/g, '');
-          if (!/^[가-힣]{2,}$/.test(bare)) return false;
+          if (!looksLikeTenantName(bare)) return false;
           return !TENANT_NAME_STOPWORDS.has(bare);
         }) ?? '';
     const subName = compact.match(/(\([^()]*(?:승계인|임차인)[^()]*\))/)?.[1] ?? '';

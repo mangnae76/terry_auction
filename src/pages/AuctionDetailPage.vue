@@ -4508,6 +4508,17 @@ const RIGHTS_CHECK_ITEMS = [
 const rightsDocErrMsg = ref('');
 const rightsDocList = computed<string[]>(() => auction.value?.rightsDocUrls ?? []);
 
+/** AI 분석 요청 — 서류 일곱 칸. 칸마다 extraPhotos 의 한 자리(doc.*)를 쓴다 */
+const DOC_BOXES: Array<{ key: string; label: string; icon: string }> = [
+  { key: 'doc.registry', label: '건물등기', icon: '<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M4 17h16"/>' },
+  { key: 'doc.saleSpec', label: '매물명세', icon: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/>' },
+  { key: 'doc.survey', label: '현황조사', icon: '<rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="11" cy="12" r="3"/><path d="m13.2 14.2 2.3 2.3"/>' },
+  { key: 'doc.household', label: '세대열람', icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.9-3.5 3.4-5.5 6.5-5.5s5.6 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.8 3 2.6 3.5 5.2"/>' },
+  { key: 'doc.building', label: '건축물대장', icon: '<path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M9 7h2M9 11h2M9 15h2M3 21h18M16 10h3a2 2 0 0 1 2 2v9"/>' },
+  { key: 'doc.appraisal', label: '감정평가서', icon: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14 7 22l5-3 5 3-1.5-8"/>' },
+  { key: 'doc.delivery', label: '송달내역', icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>' },
+];
+
 /** 사진이 들어가는 칸을 전부 여기 모아 둔다 — 새 칸이 생기면 이 표에 한 줄만 더하면 된다.
  *  공통 규칙: 사진이 한 장이라도 붙어 있으면 접은 채로 열고(아래 항목이 밀려 내려가지 않게),
  *  없으면 펴 둔다(바로 붙일 수 있게). 손으로 접거나 편 뒤에는 그 선택을 지킨다.
@@ -4590,6 +4601,14 @@ const rightLine = (r: { kind: string; date: string; holder: string; reason?: str
   r.reason,
 ].filter(Boolean).join(' · ');
 
+/** 금액 칸 — 숫자만 남긴다. '보증금 1억…' 처럼 말머리가 붙어 오면 떼어 낸다
+ *  (건물등기 표와 같이 금액 줄에는 숫자만 선다) */
+const rightsAmountText = (amount: string) =>
+  (amount || '').replace(/^\s*(보증금|채권최고액|청구금액|채권액|전세금|임차보증금)\s*[:：]?\s*/, '').trim();
+/** 내용 칸 — 가운뎃점으로 이어 온 토막을 한 줄씩 내린다 (건물등기의 '내용'과 같은 모양) */
+const rightsNoteText = (note: string) =>
+  (note || '').split(/\s*·\s*/).map((t) => t.trim()).filter(Boolean).join('\n');
+
 /** AI 권리분석 진단 — 말소기준권리가 어떤 권리인지, 떠안는 권리와 없어지는 권리 */
 const rightsDiag = computed(() => {
   const ai = rightsAi.value;
@@ -4632,16 +4651,6 @@ const EVICT_NOTES = [
 // === 항목별 사진·링크 모음 (입지조사 등) ===
 const extraInput = ref<Record<string, string>>({});
 const extraErr = ref<Record<string, string>>({});
-/** AI 분석 요청 — 서류 일곱 칸. 칸마다 extraPhotos 의 한 자리(doc.*)를 쓴다 */
-const DOC_BOXES: Array<{ key: string; label: string; icon: string }> = [
-  { key: 'doc.registry', label: '건물등기', icon: '<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M4 17h16"/>' },
-  { key: 'doc.saleSpec', label: '매물명세', icon: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/>' },
-  { key: 'doc.survey', label: '현황조사', icon: '<rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="11" cy="12" r="3"/><path d="m13.2 14.2 2.3 2.3"/>' },
-  { key: 'doc.household', label: '세대열람', icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.9-3.5 3.4-5.5 6.5-5.5s5.6 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.8 3 2.6 3.5 5.2"/>' },
-  { key: 'doc.building', label: '건축물대장', icon: '<path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M9 7h2M9 11h2M9 15h2M3 21h18M16 10h3a2 2 0 0 1 2 2v9"/>' },
-  { key: 'doc.appraisal', label: '감정평가서', icon: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14 7 22l5-3 5 3-1.5-8"/>' },
-  { key: 'doc.delivery', label: '송달내역', icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>' },
-];
 const docDropKey = ref('');
 
 // === AI 권리분석 ===
@@ -7043,8 +7052,8 @@ const goBack = () => router.back();
                     <td class="pre-line">{{ r.rank || '-' }}<br><small>{{ r.date }}</small></td>
                     <td>
                       <strong>{{ r.kind }}</strong>
-                      <span v-if="r.amount" class="b">{{ r.amount }}</span>
-                      <span v-if="r.note" class="adp-desc adp-rows-note">{{ r.note }}</span>
+                      <span v-if="r.amount" class="b">{{ rightsAmountText(r.amount) }}</span>
+                      <span v-if="r.note" class="adp-desc adp-rows-note">{{ rightsNoteText(r.note) }}</span>
                     </td>
                     <td>{{ r.holder }}</td>
                     <td><b v-if="r.status === '인수'" class="adp-reg-take">인수</b><template v-else>소멸</template></td>
@@ -7149,26 +7158,30 @@ const goBack = () => router.back();
           <div v-if="!isCollapsed('tenant')">
           <p class="adp-base-note adp-tn-base">말소기준 : <b class="adp-tn-date">{{ tenantBaseDate }}</b> · 배당종기 : <b class="adp-tn-date">{{ tenantDistDate }}</b> · 소액기준 : <b class="adp-tn-date">{{ tenantSmallDate }}</b></p>
 
-          <div class="adp-tn-box">
+          <!-- 임차인이 여럿이면 한 사람씩 제 상자에 담는다 — 한 통에 이어 붙이면 어느 줄이 누구 것인지 헷갈린다 -->
+          <div :class="['adp-tn-box', { 'is-many': tenantCards.length > 1 }]">
           <template v-if="tenantCards.length > 0">
-            <dl v-for="(tenant, i) in tenantCards" :key="i" class="adp-base-rows adp-base-tenant">
-              <div class="adp-base-row">
-                <dt>임차인</dt>
-                <dd><strong>{{ tenant.name }}</strong><span v-if="tenant.agency"> / {{ tenant.agency }}</span></dd>
-              </div>
-              <div class="adp-base-row">
-                <dt>보증금</dt>
-                <dd class="amt">{{ tenant.deposit || '-' }}</dd>
-              </div>
-              <div class="adp-base-row">
-                <dt>점유/기간</dt>
-                <dd class="adp-tn-dates">{{ tenantUsagePeriod(tenant.occupationPeriod) }}</dd>
-              </div>
-              <div class="adp-base-row">
-                <dt>전입 확정 배당</dt>
-                <dd class="adp-tn-dates">{{ tenantDatesText(tenant) }}</dd>
-              </div>
-            </dl>
+            <section v-for="(tenant, i) in tenantCards" :key="i" class="adp-tn-one">
+              <p v-if="tenantCards.length > 1" class="adp-tn-no">임차인 {{ i + 1 }}</p>
+              <dl class="adp-base-rows adp-base-tenant">
+                <div class="adp-base-row">
+                  <dt>임차인</dt>
+                  <dd><strong>{{ tenant.name }}</strong><span v-if="tenant.agency"> / {{ tenant.agency }}</span></dd>
+                </div>
+                <div class="adp-base-row">
+                  <dt>보증금</dt>
+                  <dd class="amt">{{ tenant.deposit || '-' }}</dd>
+                </div>
+                <div class="adp-base-row">
+                  <dt>점유/기간</dt>
+                  <dd class="adp-tn-dates">{{ tenantUsagePeriod(tenant.occupationPeriod) }}</dd>
+                </div>
+                <div class="adp-base-row">
+                  <dt>전입 확정 배당</dt>
+                  <dd class="adp-tn-dates">{{ tenantDatesText(tenant) }}</dd>
+                </div>
+              </dl>
+            </section>
           </template>
           <p v-else class="adp-empty">임차인 정보 없음</p>
 
@@ -9324,8 +9337,14 @@ const goBack = () => router.back();
 .adp-tn-box .adp-note-toggle { padding-top: 4px; padding-bottom: 4px; }
 .adp-tn-box > .adp-base-warn:last-child,
 .adp-tn-box > .adp-base-more:last-child { margin-bottom: 0; }
-.adp-base-tenant { border-top: 1px solid #f1f3f7; }
-.adp-base-tenant:first-of-type { border-top: 0; }
+/* 임차인 한 사람 = 상자 하나. 한 사람뿐이면 바깥 상자가 그 몫을 해 테두리를 겹치지 않는다 */
+.adp-tn-one + .adp-tn-one { margin-top: 7px; }
+.adp-tn-box.is-many { border: 0; padding: 0; background: transparent; }
+.adp-tn-box.is-many .adp-tn-one {
+  border: 1px solid #e5e7eb; border-radius: 8px; padding: 2px 10px 7px; background: #fff;
+}
+.adp-tn-box.is-many > .adp-base-warn, .adp-tn-box.is-many > .adp-base-more { padding: 0 2px; }
+.adp-tn-no { margin: 7px 0 1px; font-size: 11.5px; font-weight: 800; color: #2b6df3; letter-spacing: -0.2px; }
 .adp-case-table { table-layout: fixed; }
 .adp-case-table td { vertical-align: middle; word-break: keep-all; }
 .adp-case-table .adp-pill { display: inline-block; white-space: nowrap; }
@@ -9469,6 +9488,9 @@ const goBack = () => router.back();
 .adp-diag-sum.take { color: #c62828; }
 /* 상세 권리 분석 표 */
 .adp-rows-cap { margin: 12px 0 5px; font-weight: 800; color: #374151; }
+/* 건물등기 표와 글자 크기·여백을 똑같이 — 두 표가 나란히 읽혀야 한다 */
+.adp-rights-table { table-layout: fixed; }
+.adp-rights-table th, .adp-rights-table td { font-size: 11px; padding: 8px 6px; word-break: keep-all; vertical-align: top; }
 .adp-rights-table td small { font-size: 10px; color: #9ca3af; font-weight: 600; }
 .adp-rights-table .adp-rows-note { color: #6b7280; }
 
