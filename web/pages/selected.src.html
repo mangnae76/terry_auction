@@ -289,6 +289,14 @@ button { cursor: pointer; }
 .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar select.adm-input.narrow { width: 200px !important; }
 /* 지역분석 — 고르는 칸 · 종류 · 엑셀 내려받기 · 조회가 한 줄에 서게 */
 .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar { flex-wrap: nowrap !important; }
+/* 지역분석 — 고르는 줄(흰 카드)을 물건정보 카드처럼 화면 끝까지 이어지는 띠(--band) 위에 얹는다.
+   띠는 카드 그림자를 화면 폭만큼 펼쳐 만들고, 위아래 16px 만 남기고 자른다 */
+.app-market[data-k="dong"] .adm-bar { box-shadow: 0 0 0 100vmax var(--band) !important; clip-path: inset(-16px -100vmax); margin-top: 16px !important; margin-bottom: 16px !important;; position: relative; }
+.app-market[data-k="dong"] .adm-bar::after { content: ""; position: absolute; left: 50%; bottom: -16px; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); pointer-events: none; } /* 띠 아래 끝 선 */
+/* 탭 줄(수요공급 · 지역별 분석 · …) 밑줄을 화면 끝까지 */
+.app-market[data-k="dong"] .adm-tabs-top { position: relative; padding-bottom: 0; margin-top: 18px !important; }
+.app-market[data-k="dong"] .adm-tabs-top::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); }
+.app-market[data-k="dong"] .adm-view-tabs button { position: relative; z-index: 1; }
 .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar select.adm-input.narrow { width: 150px !important; }
 /* 기간(3 · 6 · 12개월)이 종류 옆에 들어오며 한 줄에 다 담기게 — 고르는 칸 180 → 150, 엑셀 · 조회 136 → 120 */
 .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar :is(.adm-load, .adm-csv) { min-width: 120px !important; padding: 0 14px !important; }
