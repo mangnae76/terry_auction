@@ -297,9 +297,9 @@ button { cursor: pointer; }
    띠는 카드 그림자를 화면 폭만큼 펼쳐 만들고, 위아래 16px 만 남기고 자른다 */
 /* 고르는 줄 띠 · 탭 줄은 위(머리띠 · 하위 탭 아래)에 붙어 있고 아래 내용만 흐른다 — 물건상세의 위 카드처럼 */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-bar { box-shadow: 0 0 0 100vmax var(--band) !important; clip-path: inset(-8px -100vmax -8px -100vmax); margin-top: 0 !important; margin-bottom: 8px !important; padding-top: 10px !important; padding-bottom: 10px !important;
-  position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px); z-index: 12; } /* 띠 안 위아래 8px — 사건 카드(낙찰이후)와 같은 간격, 가운데 */
+  position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px); z-index: 12; } /* 띠 안 위아래 8px — 사건 카드(낙찰이후)와 같은 간격, 가운데. 띠 아래 선(::after)은 -9px — 절대위치는 테두리(1px) 안쪽 기준이라 -8 이면 띠 바탕이 선 밑으로 1px 남는다 */
 /* (붙는 자리 = 처음 놓인 자리 — 둘이 다르면 내리는 순간 몇 px 움직였다 멈춰 흔들려 보인다. 띠는 하위 탭 바로 아래부터 덮는다) */
-.app-market:is([data-k="dong"], [data-k="case"]) .adm-bar:not(.manual)::after { content: ""; position: absolute; left: 50%; bottom: -8px; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); pointer-events: none; } /* 띠 아래 끝 선 */
+.app-market:is([data-k="dong"], [data-k="case"]) .adm-bar:not(.manual)::after { content: ""; position: absolute; left: 50%; bottom: -9px; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); pointer-events: none; } /* 띠 아래 끝 선 */
 /* 탭 줄(수요공급 · 지역별 분석 · …) 밑줄을 화면 끝까지 */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top { padding-bottom: 0; margin-top: 10px !important; height: 40px; box-sizing: border-box; align-items: stretch !important;
   position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px + var(--bar-h, 62px) + 10px); z-index: 11;
@@ -335,7 +335,7 @@ button { cursor: pointer; }
 .mk-scaffold .mk-bar { position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px); z-index: 12;
   display: flex; align-items: center; gap: 12px; margin: 0 0 8px; padding: 10px 18px; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px;
   box-shadow: 0 0 0 100vmax var(--band); clip-path: inset(-8px -100vmax -8px -100vmax); }
-.mk-scaffold .mk-bar::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: -8px; width: 100vw; height: 1px; background: var(--subtab-line); pointer-events: none; }
+.mk-scaffold .mk-bar::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: -9px; width: 100vw; height: 1px; background: var(--subtab-line); pointer-events: none; }
 .mk-scaffold .mk-bar input { flex: 1 1 auto; height: 40px; border-radius: 6px; border: 1px solid #e3e8f0; background: #f5f7fb; padding: 0 12px; font: inherit; font-size: 16px; color: #9ca3af; }
 .mk-scaffold .mk-bar button { height: 40px; min-width: 120px; border-radius: 6px; border: 0; background: #b7c0d0; color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: default; }
 .mk-scaffold .mk-row { position: relative; display: flex; align-items: center; gap: 12px; height: 48px; margin: 10px 0 16px; padding-left: 4px; }
@@ -803,7 +803,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-toolbar { order: -2; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px); z-index: 12;
   margin: 0 0 8px; padding: 10px 18px !important; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px;
   box-shadow: 0 0 0 100vmax var(--band); clip-path: inset(-8px -100vmax -8px -100vmax); }
-.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-toolbar::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: -8px; width: 100vw; height: 1px; background: var(--subtab-line); pointer-events: none; }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-toolbar::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: -9px; width: 100vw; height: 1px; background: var(--subtab-line); pointer-events: none; }
 .app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-custom-range { order: -1; padding: 0 0 8px !important; }
 .app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-webrow { order: 0; margin-top: 10px; }
 .app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-toolbar-right { display: flex !important; align-items: center; gap: 8px; }
