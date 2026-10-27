@@ -580,7 +580,7 @@ onMounted(() => {
           <div v-if="webEmbed" :id="filterSlotId" class="tsp-filter-slot" />
           <div v-if="webEmbed" class="tsp-web-picked">
             <strong>{{ pickedPlaceText }}</strong>
-            <small v-if="periodText || kindLabel">{{ [periodText, kindLabel, dealKindLabel].filter(Boolean).join(' · ') }}</small>
+            <small v-if="periodText || kindLabel">{{ [periodText, kindLabel, dealKindLabel, rows.length > 0 ? `집계 동 ${selectedRegion ? 1 : rows.length.toLocaleString('ko-KR')}곳` : ''].filter(Boolean).join(' · ') }}</small>
           </div>
           <header v-if="!webEmbed" class="tsp-panel-head">
             <strong>{{ scopeTitle }}</strong>
@@ -590,13 +590,12 @@ onMounted(() => {
 
           <section class="tsp-stat">
             <h3>통계 정보</h3>
-            <!-- 웹 — 첫 줄 세 칸(거래 건수 · 평균가 · 평당 단가), 둘째 줄 두 칸(거래 총액 · 집계 동) -->
-            <div v-if="webEmbed" class="tsp-stat-grid web">
+            <!-- 웹 — 첫 줄 거래 건수 · 거래 총액, 둘째 줄 평균가 · 평당 단가 (집계 동은 위 결과 줄에) -->
+            <div v-if="webEmbed" class="tsp-stat-grid">
               <div><dt>거래 건수</dt><dd>{{ statTotalCount.toLocaleString('ko-KR') }}건</dd></div>
+              <div><dt>거래 총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
               <div><dt>{{ avgLabel }}</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
               <div><dt>평당 단가</dt><dd>{{ manWon(statUnitPrice) }}<small class="tsp-unit-m2"> / ㎡ {{ manWon(statUnitPrice / 3.305785) }}</small></dd></div>
-              <div class="half"><dt>거래 총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
-              <div class="half"><dt>집계 동</dt><dd>{{ selectedRegion ? '1곳' : `${rows.length.toLocaleString('ko-KR')}곳` }}</dd></div>
             </div>
             <div v-else class="tsp-stat-grid">
               <div><dt>거래 건수</dt><dd>{{ statTotalCount.toLocaleString('ko-KR') }}건</dd></div>
@@ -800,10 +799,6 @@ onMounted(() => {
   border: 1px solid #e8ecf3; border-radius: 10px; overflow: hidden; background: #e8ecf3; gap: 1px;
 }
 .tsp-stat-grid > div { background: #fff; padding: 9px 10px; min-width: 0; }
-/* 웹 — 6칸 격자: 첫 줄 2칸씩 세 칸, 둘째 줄 3칸씩 두 칸 */
-.tsp-stat-grid.web { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-.tsp-stat-grid.web > div { grid-column: span 2; }
-.tsp-stat-grid.web > div.half { grid-column: span 3; }
 .tsp-unit-m2 { font-size: 0.8em; font-weight: 600; color: #6b7280; }
 .tsp-stat-grid dt { font-size: 10.5px; font-weight: 700; color: #2b6df3; }
 .tsp-stat-grid dd { margin: 2px 0 0; font-size: 13.5px; font-weight: 800; color: #111827; white-space: nowrap; }
