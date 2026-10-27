@@ -336,7 +336,7 @@ const resetDefault = () => {
 .pwt-dday.soon { color: #dc2626; }   /* 7일 안쪽만 빨강, 나머지는 검정 */
 .pwt-base { color: #9ca3af; }
 .pwt-note { margin: 5px 0 0; font-size: 14px; color: #4b5563; }
-.pwt-ctrl { flex: 0 0 auto; display: flex; gap: 6px; }
+.pwt-ctrl { flex: 0 0 102px; display: flex; justify-content: flex-end; gap: 6px; }   /* 단추 세 개(행삽입 · 연필 · 지우기) 자리를 늘 잡아 둔다 — 골라도 큰일 글이 밀리지 않게 */
 .pwt-ctrl button { width: 30px; height: 30px; padding: 0; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #4b5563; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
 .pwt-ctrl button:hover { background: #f3f4f6; color: #111827; }
 /* 끌어 옮기기 — 상자를 잡으면 파란 테두리 · 옅은 파랑 바탕, 체크 상자도 파랗게 테를 두른다 */
