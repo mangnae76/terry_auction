@@ -3,7 +3,7 @@
 //
 // 시군구 12개월치를 한 번 받아 두고, 읍면동·기간·면적·연식은 받아 둔 줄
 // 안에서 추린다. 조건을 바꿀 때마다 다시 부르면 하루 한도만 깎아먹는다.
-import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
@@ -97,6 +97,18 @@ const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
 const listView = ref<'supply' | 'table' | 'dist' | 'detail' | 'deals'>('supply');
+// 웹 — 고르는 줄 · 탭 줄을 위에 붙여 둔다(CSS sticky). 탭 줄은 고르는 줄 높이만큼 아래에 붙어야 해서 그 높이를 --bar-h 로 흘려 준다
+const barEl = ref<HTMLElement | null>(null);
+let barObserver: ResizeObserver | null = null;
+onMounted(() => {
+  if (!webEmbed || !barEl.value) return;
+  const host = barEl.value.closest('.app-market') as HTMLElement | null;
+  const apply = () => { if (host && barEl.value) host.style.setProperty('--bar-h', `${Math.round(barEl.value.getBoundingClientRect().height)}px`); };
+  apply();
+  barObserver = new ResizeObserver(apply);
+  barObserver.observe(barEl.value);
+});
+onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
 const TAB_LABEL: Record<string, string> = { supply: '수요공급', table: '지역별 분석', dist: '지역분포', detail: '상세분포', deals: '거래상세' };
 const tellTab = () => {
@@ -726,7 +738,7 @@ const downloadCsv = () => {
 
     <div class="adm-body">
       <!-- 지역 -->
-      <div class="adm-bar">
+      <div ref="barEl" class="adm-bar">
         <label class="adm-f">
           <small>시 · 도</small>
           <select v-model="sido" :class="['adm-input', 'narrow', { ph: !sido }]">

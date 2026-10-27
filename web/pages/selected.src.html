@@ -291,10 +291,14 @@ button { cursor: pointer; }
 .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar { flex-wrap: nowrap !important; }
 /* 지역분석 — 고르는 줄(흰 카드)을 물건정보 카드처럼 화면 끝까지 이어지는 띠(--band) 위에 얹는다.
    띠는 카드 그림자를 화면 폭만큼 펼쳐 만들고, 위아래 16px 만 남기고 자른다 */
-.app-market[data-k="dong"] .adm-bar { box-shadow: 0 0 0 100vmax var(--band) !important; clip-path: inset(-16px -100vmax); margin-top: 16px !important; margin-bottom: 16px !important;; position: relative; }
+/* 고르는 줄 띠 · 탭 줄은 위(머리띠 · 하위 탭 아래)에 붙어 있고 아래 내용만 흐른다 — 물건상세의 위 카드처럼 */
+.app-market[data-k="dong"] .adm-bar { box-shadow: 0 0 0 100vmax var(--band) !important; clip-path: inset(-16px -100vmax); margin-top: 16px !important; margin-bottom: 16px !important;
+  position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 16px); z-index: 12; }
 .app-market[data-k="dong"] .adm-bar::after { content: ""; position: absolute; left: 50%; bottom: -16px; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); pointer-events: none; } /* 띠 아래 끝 선 */
 /* 탭 줄(수요공급 · 지역별 분석 · …) 밑줄을 화면 끝까지 */
-.app-market[data-k="dong"] .adm-tabs-top { position: relative; padding-bottom: 0; margin-top: 18px !important; }
+.app-market[data-k="dong"] .adm-tabs-top { padding-bottom: 0; margin-top: 18px !important;
+  position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--bar-h, 74px) + 32px); z-index: 11;
+  background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(-18px -100vmax 0 -100vmax); }
 .app-market[data-k="dong"] .adm-tabs-top::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); }
 .app-market[data-k="dong"] .adm-view-tabs button { position: relative; z-index: 1; }
 .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar select.adm-input.narrow { width: 150px !important; }
