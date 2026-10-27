@@ -257,7 +257,7 @@ type Snapshot = { sido: string; districtCode: string; dongFilter: string; kind: 
 const snap = useScreenSnapshot<Snapshot>('adm.region.snapshot.v1');
 onMounted(async () => {
   if (!webEmbed) return;
-  const s = snap.restore();
+  const s = await snap.restore();
   if (!s || !Array.isArray(s.stats) || s.stats.length === 0) { snap.state.value = null; return; }
   restoring = true;
   sido.value = s.sido; districtCode.value = s.districtCode; dongFilter.value = s.dongFilter; kind.value = s.kind;
@@ -266,7 +266,7 @@ onMounted(async () => {
   restoring = false;
 });
 // 읍면동을 바꿔 보면 그것도 남긴다
-watch(dongFilter, (v) => { if (webEmbed && !restoring) snap.patch({ dongFilter: v }); });
+watch(dongFilter, (v) => { if (webEmbed && !restoring) void snap.patch({ dongFilter: v }); });
 
 const load = async () => {
   if (loading.value || targets.value.length === 0) return;
@@ -302,7 +302,7 @@ const load = async () => {
     if (errs.size > 0) notice.value = Array.from(errs).join(' / ');
     if (stats.value.length === 0 && errs.size === 0) notice.value = '그 기간에 거래가 없습니다.';
     if (webEmbed && stats.value.length > 0) {
-      snap.save({ sido: sido.value, districtCode: districtCode.value, dongFilter: dongFilter.value, kind: kind.value, stats: stats.value, period: period.value, loadedLabel: loadedLabel.value });
+      void snap.save({ sido: sido.value, districtCode: districtCode.value, dongFilter: dongFilter.value, kind: kind.value, stats: stats.value, period: period.value, loadedLabel: loadedLabel.value });
     }
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : String(err);

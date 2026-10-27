@@ -175,14 +175,14 @@ type Snapshot = {
 const snap = useScreenSnapshot<Snapshot>('adm.dong.snapshot.v1');
 const saveSnapshot = () => {
   if (!webEmbed) return;
-  snap.save({
+  void snap.save({
     sido: sido.value, districtCode: districtCode.value, kind: kind.value, dong: dong.value, dealKind: loadedDeal.value,
     rows: all.value, dongNames: dongNames.value, period: period.value, loadedLabel: loadedLabel.value,
   });
 };
 const restoreSnapshot = async () => {
   if (!webEmbed) return;
-  const s = snap.restore();
+  const s = await snap.restore();
   if (!s || !Array.isArray(s.rows) || s.rows.length === 0) { snap.state.value = null; return; }
   restoring = true;
   sido.value = s.sido; districtCode.value = s.districtCode; kind.value = s.kind; dong.value = s.dong;
@@ -194,7 +194,7 @@ const restoreSnapshot = async () => {
 // 동을 바꿔 보면 그 동도 남긴다 — 새로고침해도 보던 동으로
 watch(dong, (v) => {
   if (!webEmbed || restoring) return;
-  snap.patch({ dong: v }, (x) => x.districtCode === districtCode.value);
+  void snap.patch({ dong: v }, (x) => x.districtCode === districtCode.value);
 });
 const snapChip = snap.chip;
 
