@@ -826,7 +826,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
   box-shadow: 0 0 0 100vmax var(--band); clip-path: inset(-8px -100vmax -8px -100vmax); }
 .app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-toolbar::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: -9px; width: 100vw; height: 1px; background: var(--subtab-line); pointer-events: none; }
 .app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-custom-range { order: -1; padding: 0 0 8px !important; }
-.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-webrow { order: 0; margin-top: 10px; }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-webrow { order: 0; margin-top: 6px; }
 .app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-toolbar-right { display: flex !important; align-items: center; gap: 8px; }
 .app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-period { display: inline-flex !important; gap: 4px; padding: 4px; background: #f1f4f9; border-radius: 8px; }
 .app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-period-btn { height: 32px; padding: 0 16px !important; font-size: 15px !important; border: 0 !important; background: transparent !important; box-shadow: none !important; color: #6b7280; }
@@ -844,11 +844,11 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 표 — 요약 상자와 같은 좌우 끝선 */
 .app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-table-wrap { margin-left: 0 !important; margin-right: 0 !important; }
 /* 요약 상자 — 지역분석 내비게이션처럼 회색 판 위 흰 상자 셋, 이름 14 · 값 18, 아래 구분선 */
-.app-page[data-k="finance"] .fin-summary.fin-nav { position: relative; margin: 18px 0 37px; padding: 16px 18px 18px !important; border-radius: 10px; background: #f5f7fa; gap: 12px !important; }
-.app-page[data-k="finance"] .fin-summary.fin-nav::after { content: ""; position: absolute; left: 0; right: 0; bottom: -19px; height: 1px; background: #cfd6e2; }
+.app-page[data-k="finance"] .fin-summary.fin-nav { position: relative; margin: 8px 0 25px; padding: 12px 14px !important; border-radius: 10px; background: #f5f7fa; gap: 10px !important; } /* 간격 촘촘히 — 경로 줄과 8 · 구분선까지 12 · 표까지 12 */
+.app-page[data-k="finance"] .fin-summary.fin-nav::after { content: ""; position: absolute; left: 0; right: 0; bottom: -13px; height: 1px; background: #cfd6e2; }
 :root[data-theme="dark"] .app-page[data-k="finance"] .fin-summary.fin-nav::after { background: rgba(255, 255, 255, .28); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .app-page[data-k="finance"] .fin-summary.fin-nav::after { background: rgba(255, 255, 255, .28); } }
-.app-page[data-k="finance"] .fin-nav .sum-card { background: #fff !important; border: 0 !important; padding: 16px 4px !important; gap: 8px !important; border-radius: 8px; }
+.app-page[data-k="finance"] .fin-nav .sum-card { padding: 12px 4px !important; gap: 6px !important; border-radius: 8px; } /* 바탕색은 앱 그대로 — 총 입금 흐린 빨강 · 총 출금 흐린 파랑 · 잔액 흐린 회색 */
 .app-page[data-k="finance"] .fin-nav .sum-card small { font-size: 14px !important; color: #6b7280; }
 .app-page[data-k="finance"] .fin-nav .sum-card strong { font-size: 18px !important; font-weight: 800; }
 /* 낙찰목록 · 매도목록 창 — 가로 전체 대신 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에 (창은 body 로 옮겨 그려져 .app-page 밖이다) */
