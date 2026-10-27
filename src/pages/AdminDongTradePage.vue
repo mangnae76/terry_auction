@@ -92,13 +92,13 @@ const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
 const listView = ref<'table' | 'dist'>('table');
-/** 지역분포 그림 — 막대 / 원형. '지역분포' 탭을 한 번 더 누르면 바뀐다 */
+/** 지역분포 그림 — 막대 / 도넛. '지역분포' 탭을 한 번 더 누르면 바뀐다 */
 const distChart = ref<'bar' | 'pie'>('bar');
 const onDistTab = () => {
   if (listView.value === 'dist') distChart.value = distChart.value === 'bar' ? 'pie' : 'bar';
   else listView.value = 'dist';
 };
-// 원형(도넛) — 반지름 · 둘레, 구간 차례대로 옅은 파랑 → 짙은 파랑
+// 도넛 — 반지름 · 둘레, 구간 차례대로 옅은 파랑 → 짙은 파랑
 const DONUT_R = 56;
 const DONUT_C = 2 * Math.PI * DONUT_R;
 const DONUT_RAMP = ['#cfe0ff', '#a3c1fb', '#76a1f7', '#4a82f3', '#2b6df3', '#1b4fbf'];
@@ -676,7 +676,10 @@ const downloadCsv = () => {
           <!-- 웹 — 결과를 두 가지로 본다: 지역별 분석(표) · 지역별 분포(막대그래프) -->
           <nav v-else class="adm-view-tabs" role="tablist">
             <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역별 분석' }}</button>
-            <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">지역분포<small class="adm-view-kind">{{ distChart === 'bar' ? '막대' : '원형' }}</small></button>
+            <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">지역분포<span class="adm-view-kind" :title="distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 막대'" :aria-label="distChart === 'bar' ? '막대' : '도넛'">
+              <svg v-if="distChart === 'bar'" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><rect x="1.5" y="8" width="3" height="6.5" rx="1" /><rect x="6.5" y="3" width="3" height="11.5" rx="1" /><rect x="11.5" y="6" width="3" height="8.5" rx="1" /></svg>
+              <svg v-else viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3"><circle cx="8" cy="8" r="5.5" stroke-opacity=".35" /><path d="M8 2.5a5.5 5.5 0 0 1 5.5 5.5" /></svg>
+            </span></button>
           </nav>
           <span v-if="!webEmbed" class="tag ok">정상거래 {{ counts.정상거래 }}</span>
           <span v-if="!webEmbed" class="tag">직거래 {{ counts.직거래 }}</span>
@@ -708,9 +711,9 @@ const downloadCsv = () => {
                 <em>{{ c.pct.toFixed(0) }}%</em>
               </div>
             </div>
-            <!-- 원형(도넛) — 구간이 차례가 있는 값이라 한 색의 옅음 → 짙음으로. 조각 사이 2px 흰 틈 -->
+            <!-- 도넛 — 구간이 차례가 있는 값이라 한 색의 옅음 → 짙음으로. 조각 사이 2px 흰 틈 -->
             <div v-else class="adm-donut-wrap">
-              <svg class="adm-donut" viewBox="0 0 160 160" role="img" :aria-label="`${d.title} 원형 분포도`">
+              <svg class="adm-donut" viewBox="0 0 160 160" role="img" :aria-label="`${d.title} 도넛 분포도`">
                 <circle cx="80" cy="80" :r="DONUT_R" fill="none" stroke="#f1f4f9" stroke-width="28" />
                 <circle
                   v-for="(seg, si) in donutSegs(d.cells)"
@@ -927,9 +930,10 @@ const downloadCsv = () => {
 .adm-bar-col.top b { color: #2b6df3; }
 .adm-bar-col small { font-size: 14px; font-weight: 600; color: #4b5563; white-space: nowrap; }
 .adm-bar-col em { font-style: normal; font-size: 14px; color: #9ca3af; }
-.adm-view-kind { margin-left: 6px; font-size: 12px; font-weight: 700; color: #9ca3af; border: 1px solid #e5e7eb; border-radius: 999px; padding: 1px 7px; }
-.adm-view-tabs button.on .adm-view-kind { color: #2b6df3; border-color: #c7d7f8; }
-/* 원형 분포도 — 왼쪽 도넛, 오른쪽 범례(구간 · 건수 · %) */
+/* 지역분포 바로 옆 아이콘 — 지금 모양(막대 · 도넛) */
+.adm-view-kind { display: inline-flex; vertical-align: -2px; margin-left: 3px; color: #9ca3af; }
+.adm-view-tabs button.on .adm-view-kind { color: #2b6df3; }
+/* 도넛 분포도 — 왼쪽 도넛, 오른쪽 범례(구간 · 건수 · %) */
 .adm-donut-wrap { display: flex; align-items: center; gap: 24px; height: 190px; padding: 4px 8px 0; }
 .adm-donut { width: 170px; height: 170px; flex: 0 0 auto; }
 .adm-donut-seg { transition: opacity .15s; }
