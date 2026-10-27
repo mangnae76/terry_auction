@@ -798,11 +798,52 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .fin-stage-count { gap: 8px; }
 .app-page[data-k="finance"] .fin-stage-count button { height: 28px; padding: 0 8px 0 10px; border-radius: 8px; font-size: 14px; }
 .app-page[data-k="finance"] .fin-stage-count .fin-chev { width: 12px; height: 12px; margin-left: 4px; }
+/* ===== 자금입출금 — 지역분석과 같은 틀: 띠 위 흰 필터 줄(기간 · 엑셀 · 항목추가, 붙박이) → 경로 줄 → 요약 상자(내비게이션) → 구분선 → 표 ===== */
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-fixed-top { display: flex; flex-direction: column; }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-toolbar { order: -2; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 14px); z-index: 12;
+  margin: 6px 0 10px; padding: 10px 18px !important; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px;
+  box-shadow: 0 0 0 100vmax var(--band); clip-path: inset(-14px -100vmax -10px -100vmax); }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-toolbar::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: -10px; width: 100vw; height: 1px; background: var(--subtab-line); pointer-events: none; }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-custom-range { order: -1; padding: 0 0 8px !important; }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-webrow { order: 0; margin-top: 12px; }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-toolbar-right { display: flex !important; align-items: center; gap: 8px; }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-period { display: inline-flex !important; gap: 4px; padding: 4px; background: #f1f4f9; border-radius: 8px; }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-period-btn { height: 32px; padding: 0 16px !important; font-size: 15px !important; border: 0 !important; background: transparent !important; box-shadow: none !important; color: #6b7280; }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-period-btn.active { background: #fff !important; color: #1f2a44 !important; box-shadow: 0 1px 2px rgba(15, 23, 42, .1) !important; }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow :is(.fin-excel, .fin-add) { height: 40px; min-width: 120px; padding: 0 16px !important; border-radius: 6px !important; font-size: 16px !important; }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-excel { margin-left: auto; }
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow :is(.fin-excel, .fin-add) i { font-size: 13px; }
+.app-page[data-k="finance"] .fin-custom-inline { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
+.app-page[data-k="finance"] .fin-custom-inline .fin-date-box { height: 40px; min-width: 130px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; font-size: 15px; color: #111827; cursor: pointer; }
+.app-page[data-k="finance"] .fin-custom-inline .fin-date-sep { color: #9ca3af; }
+/* 표 — 요약 상자와 같은 좌우 끝선 */
+.app-page[data-k="finance"] .fin-shell.tab-cashFlow .fin-table-wrap { margin-left: 0 !important; margin-right: 0 !important; }
+/* 요약 상자 — 지역분석 내비게이션처럼 회색 판 위 흰 상자 셋, 이름 14 · 값 18, 아래 구분선 */
+.app-page[data-k="finance"] .fin-summary.fin-nav { position: relative; margin: 18px 0 37px; padding: 16px 18px 18px !important; border-radius: 10px; background: #f5f7fa; gap: 12px !important; }
+.app-page[data-k="finance"] .fin-summary.fin-nav::after { content: ""; position: absolute; left: 0; right: 0; bottom: -19px; height: 1px; background: #cfd6e2; }
+:root[data-theme="dark"] .app-page[data-k="finance"] .fin-summary.fin-nav::after { background: rgba(255, 255, 255, .28); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .app-page[data-k="finance"] .fin-summary.fin-nav::after { background: rgba(255, 255, 255, .28); } }
+.app-page[data-k="finance"] .fin-nav-head { grid-column: 1 / -1; margin: 0 0 2px; font-size: 18px; font-weight: 800; color: #2b6df3; }
+.app-page[data-k="finance"] .fin-nav-head em { font-style: normal; margin-left: 10px; font-size: 14px; font-weight: 700; color: #6b7280; }
+.app-page[data-k="finance"] .fin-nav .sum-card { background: #fff !important; border: 0 !important; padding: 16px 4px !important; gap: 8px !important; border-radius: 8px; }
+.app-page[data-k="finance"] .fin-nav .sum-card small { font-size: 14px !important; color: #6b7280; }
+.app-page[data-k="finance"] .fin-nav .sum-card strong { font-size: 18px !important; font-weight: 800; }
 /* 낙찰목록 · 매도목록 창 — 가로 전체 대신 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에 (창은 body 로 옮겨 그려져 .app-page 밖이다) */
-body > .fin-pop { left: 50% !important; right: auto !important; width: min(760px, calc(100vw - 32px)) !important; transform: translateX(-50%);
+body > .fin-pop { left: 50% !important; right: auto !important; width: min(640px, calc(100vw - 32px)) !important; transform: translateX(-50%);
   top: calc(var(--stick-top, 0px) + var(--gnb-h, 66px) + var(--subtab-h, 44px) + 24px) !important; max-height: calc(100vh - var(--gnb-h, 66px) - var(--subtab-h, 44px) - 64px) !important; }
 body > .fin-pop :is(.fin-pop-head strong) { font-size: 16px; }
 body > .fin-pop :is(.fin-pop-head em, .fin-stage-empty) { font-size: 14px; }
+body > .fin-pop .fin-stage-card :is(small, span, b, em, strong, a, p, div) { font-size: 14px; }
+/* 항목추가 · 편집 창(가운데 480px) — 글자 규칙대로 14, 제목 18 */
+.app-page[data-k="finance"] .fin-modal h3 { font-size: 18px; color: #111827; }
+.app-page[data-k="finance"] .fin-modal :is(label, input, select, .hint, footer button) { font-size: 14px !important; }
+.app-page[data-k="finance"] .fin-modal :is(input, select) { height: 40px; }
+/* 자금관리 항목 창(다섯 탭 모두 같은 틀) — 세로로 길쭉하지 않게 두 칸씩 나란히, 폭 640 · 머리띠 · 하위 탭 아래에 */
+.app-page[data-k="finance"] .fin-modal-backdrop { align-items: flex-start !important; padding-top: calc(var(--stick-top, 0px) + var(--gnb-h, 66px) + var(--subtab-h, 44px) + 24px) !important; }
+.app-page[data-k="finance"] .fin-modal { max-width: 640px !important; padding: 18px 22px !important; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 14px; align-content: start;
+  max-height: calc(100vh - var(--gnb-h, 66px) - var(--subtab-h, 44px) - 64px) !important; }
+.app-page[data-k="finance"] .fin-modal > :is(header, footer) { grid-column: 1 / -1; }
+.app-page[data-k="finance"] .fin-modal .row2 { display: contents !important; }
 /* ===== 임장경로 — 앱 FieldTripPlannerPage 를 웹 흐름에 맞게 푼다 =====
    앱 화면은 손전화 한 장을 통째로 덮는 고정 틀이다. 웹에서는 머리띠·경로줄 아래에
    보통 글처럼 흘러야 하므로 그 고정만 풀고, 안쪽 짜임은 앱 그대로 둔다 */

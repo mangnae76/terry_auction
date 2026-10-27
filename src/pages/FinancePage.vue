@@ -40,6 +40,8 @@ const rangeValue = computed({
 const finance = useFinanceStore();
 const router = useRouter();
 /** 웹에 떴는가 — 웹은 제목 줄을 빼고 낙찰목록 · 매도목록을 경로 줄 오른쪽에 둔다 */
+/** 기간 이름 — 웹 요약 상자 머리에 적는다 */
+const PERIOD_NAME: Record<string, string> = { thisMonth: '이번달', thisYear: '올해', all: '총기간', custom: '직접선택' };
 const webEmbed = inject<boolean>('webEmbed', false);
 const auctionStore = useAuctionStore();
 /** 머리줄에 적는 건수 — 지금 낙찰로 들고 있는 물건과 판 물건.
@@ -432,7 +434,7 @@ const exportExcel = () => {
 </script>
 
 <template>
-  <section class="fin-shell">
+  <section :class="['fin-shell', `tab-${activeTab}`]">
     <div class="fin-fixed-top">
     <!-- 웹 — 제목 줄 대신: 왼쪽 경로(웹 경로를 이 자리로 옮겨 온다) · 오른쪽 낙찰목록 · 매도목록 -->
     <div v-if="webEmbed" class="fin-webrow">
@@ -472,12 +474,18 @@ const exportExcel = () => {
           <button :class="['fin-period-btn', { active: period === 'all' }]" @click="period = 'all'">총기간</button>
           <button :class="['fin-period-btn', { active: period === 'custom' }]" @click="period = 'custom'">직접선택</button>
         </div>
+        <!-- 웹 — 직접선택 날짜는 필터 줄 안에(기간 단추 오른쪽) -->
+        <div v-if="webEmbed && period === 'custom'" class="fin-custom-inline">
+          <button type="button" class="fin-date-box" @click="rangeTarget = 'start'"><span>{{ customStart || '시작일' }}</span></button>
+          <span class="fin-date-sep">~</span>
+          <button type="button" class="fin-date-box" @click="rangeTarget = 'end'"><span>{{ customEnd || '종료일' }}</span></button>
+        </div>
         <button type="button" class="fin-excel" @click="exportExcel"><i>⬇</i>엑셀저장</button>
         <button type="button" class="fin-add" @click="openAdd(activeTab as ModalKind)"><i>+</i>항목추가</button>
       </div>
     </div>
 
-    <div v-if="period === 'custom'" class="fin-custom-range">
+    <div v-if="period === 'custom' && !webEmbed" class="fin-custom-range">
       <button type="button" class="fin-date-box" @click="rangeTarget = 'start'">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" />
@@ -497,7 +505,9 @@ const exportExcel = () => {
     <div class="fin-body">
     <!-- ========== TAB 1: 자금입출금 ========== -->
     <template v-if="activeTab === 'cashFlow'">
-      <div class="fin-summary">
+      <!-- 웹 — 지역분석의 요약 상자(내비게이션)와 같은 틀: 이름 줄 + 상자 셋 -->
+      <div :class="['fin-summary', { 'fin-nav': webEmbed }]">
+        <p v-if="webEmbed" class="fin-nav-head">자금입출금<em>{{ PERIOD_NAME[period] }}</em></p>
         <div class="sum-card in">
           <small>총 입금</small>
           <strong>{{ fmtMoneyWon(totalIn) }}</strong>
