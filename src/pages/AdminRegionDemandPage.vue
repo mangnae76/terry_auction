@@ -373,7 +373,7 @@ const downloadCsv = () => {
           class="adm-csv adm-csv-bar"
           :disabled="rows.length === 0"
           @click="downloadCsv"
-        >엑셀 내려받기</button>
+        >엑셀내려받기</button>
         <button type="button" class="adm-load" :disabled="loading || !sido" @click="load">
           <template v-if="loading && progress.total > 1">{{ progress.done }}/{{ progress.total }} 불러오는 중…</template>
           <template v-else-if="loading">불러오는 중…</template>

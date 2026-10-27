@@ -478,7 +478,7 @@ const downloadCsv = () => {
           class="adm-csv adm-csv-bar"
           :disabled="listRows.length === 0"
           @click="downloadCsv"
-        >엑셀 내려받기</button>
+        >엑셀내려받기</button>
         <button type="button" class="adm-load" :disabled="loading || !district" @click="load">
           {{ loading ? '불러오는 중…' : (webEmbed ? '조회' : '데이터 로드') }}
         </button>
