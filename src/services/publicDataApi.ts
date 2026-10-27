@@ -1147,18 +1147,19 @@ export const fetchRealTradeAverage = async (
       })
     : allRows;
 
-  // 직거래는 시세와 동떨어진 경우가 많아 건수·평균에서 모두 뺀다 (국토부 엑셀의 '거래유형' 칸)
+  // 실거래 = 정상거래 + 직거래 (국토부 엑셀의 '거래유형' 칸). 직거래도 실제로 이뤄진 거래라 건수 · 평균에 넣는다
   const isDirect = (row: Record<string, unknown>) =>
     /직거래/.test(String(row.dealingGbn ?? row['거래유형'] ?? ''));
-  // 계약이 해제된 건도 뺀다 (엑셀의 '해제사유발생일' 칸 — cdealType이 'O'면 해제)
+  // 계약이 해제된 건만 뺀다 — 없던 거래다 (엑셀의 '해제사유발생일' 칸 — cdealType이 'O'면 해제)
   const isCancelled = (row: Record<string, unknown>) =>
     String(row.cdealType ?? '').trim().toUpperCase() === 'O' ||
     String(row.cdealDay ?? row['해제사유발생일'] ?? '').replace(/[^\d]/g, '').length >= 6;
-  const usable = (row: Record<string, unknown>) => !isDirect(row) && !isCancelled(row);
+  const usable = (row: Record<string, unknown>) => !isCancelled(row);
   const brokeredOnly = dongFiltered.filter(usable);
   const allBrokered = allRows.filter(usable);
-  const directCount = dongFiltered.filter(isDirect).length;
-  const cancelledCount = dongFiltered.filter((row) => !isDirect(row) && isCancelled(row)).length;
+  // 직거래 건수 · 목록은 '실거래 중 직거래가 몇 건인지' 보려고 따로 둔다 (실거래 목록에도 들어 있다)
+  const directCount = dongFiltered.filter((row) => isDirect(row) && !isCancelled(row)).length;
+  const cancelledCount = dongFiltered.filter(isCancelled).length;
 
   const area = params.areaM2 ?? 0;
   const inArea = (row: Record<string, unknown>) => {
@@ -1223,12 +1224,12 @@ export const fetchRealTradeAverage = async (
       fallbackUsed: fallback,
       directCount,
       directRows: dongFiltered
-        .filter(isDirect)
+        .filter((row) => isDirect(row) && !isCancelled(row))
         .map(toMatchedRow)
         .sort((a, b) => b.contractDate.localeCompare(a.contractDate)),
       cancelledCount,
       cancelledRows: dongFiltered
-        .filter((row) => !isDirect(row) && isCancelled(row))
+        .filter(isCancelled)
         .map(toMatchedRow)
         .sort((a, b) => b.contractDate.localeCompare(a.contractDate)),
       periodFrom,

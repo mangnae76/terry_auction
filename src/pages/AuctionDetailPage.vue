@@ -1702,7 +1702,7 @@ const setPubMonths = (months: number) => {
 
 /** 조회 창을 '오늘 기준 12개월' 로 바로잡았다. 캐시에 남은 옛 숫자(한 달 모자란 값)가
  *  하루 동안 그대로 보이지 않도록 열쇠에 표를 달아 둔다. 창을 또 손보면 이 수를 올린다. */
-const DONG_TRADE_CACHE_VER = 'w2';
+const DONG_TRADE_CACHE_VER = 'w3'; // w3 — 실거래에 직거래를 넣었다(계약해제만 뺌)
 
 // 국토부 실거래가 — 마지막으로 불러오거나 검색 조건을 바꾼 시각
 const publicTradeUpdatedAt = ref('');
@@ -1711,11 +1711,11 @@ const publicTradeWarning = ref('');
 // 검색 결과 표 — 머리줄(구분)만 남기고 접어 둔다. 기본은 접힘.
 // 정상거래는 들어오자마자 보여 준다 — 매번 눌러 펴야 했다
 const pubTableCollapsed = ref(false);
-// 집계에서 뺀 직거래 건수 — 몇 건을 뺐는지 눈에 보이게 한다
+// 실거래 중 직거래 — 실거래 목록 · 집계에 들어 있고, 몇 건인지 따로 펼쳐 본다
 const pubDirectCount = ref(0);
 const pubDirectRows = ref<RealTradeMatchRow[]>([]);
 const filteredDirectRows = computed(() => pubDirectRows.value);
-// 집계에서 뺀 계약해제 건 — 직거래와 같은 방식으로 따로 펼쳐 본다
+// 집계에서 뺀 계약해제 건 — 따로 펼쳐 본다
 const pubCancelledRows = ref<RealTradeMatchRow[]>([]);
 const filteredCancelledRows = computed(() => pubCancelledRows.value);
 const pubCancelledCollapsed = ref(true);
@@ -3421,7 +3421,8 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['출처', '국토부 실거래가 API · 자동 입력'],
     ['갱신', `24시간 후 업데이트${deal12mUpdatedAt.value ? ` (${deal12mUpdatedAt.value})` : ''}`],
     ['범위', `${surveyAreaLabel.value} · ${publicTradeTypeLabel.value} · 최근 12개월`],
-    ['제외', `직거래 ${deal12mDirect.value}건 · 계약해제 ${deal12mCancelled.value}건 · 합계 ${deal12mDirect.value + deal12mCancelled.value}건`],
+    ['셈', `정상 ${(deal12mAuto.value - deal12mDirect.value).toLocaleString('ko-KR')}건 + 직거래 ${deal12mDirect.value.toLocaleString('ko-KR')}건 = ${deal12mAuto.value.toLocaleString('ko-KR')}건`],
+    ['제외', `계약해제 ${deal12mCancelled.value.toLocaleString('ko-KR')}건 (없던 거래)`],
     ['표시', '1년 거래량 | 월평균 거래량'],
     ['수정', '직접 입력하면 그 값이 우선 · 비우면 자동값'],
   ] },
@@ -6995,7 +6996,7 @@ const goBack = () => router.back();
                     </strong>
                   </span>
                   <button type="button" class="adp-pub-toggle" @click="toggleTradeList">
-                    정상거래 <strong>{{ filteredPublicTradeRows.length }}</strong>건
+                    실거래 <strong>{{ filteredPublicTradeRows.length.toLocaleString('ko-KR') }}</strong>건
                     <img :src="chevronDownIcon" :class="['adp-chev sm', { up: pubTableCollapsed }]" alt="" />
                   </button>
                   <button
@@ -7004,7 +7005,7 @@ const goBack = () => router.back();
                     :disabled="filteredDirectRows.length === 0"
                     @click="toggleDirectList"
                   >
-                    직거래 <strong>{{ filteredDirectRows.length }}</strong>건
+                    그중 직거래 <strong>{{ filteredDirectRows.length.toLocaleString('ko-KR') }}</strong>건
                     <img :src="chevronDownIcon" :class="['adp-chev sm', { up: pubDirectCollapsed }]" alt="" />
                   </button>
                   <button
