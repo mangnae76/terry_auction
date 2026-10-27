@@ -44,6 +44,8 @@
   /* 대문 모드(?mode=hero) — 바로 재생 · 계속 되풀이. 썸네일 · 재생 단추 · 진행 막대 · 소리 단추는 감추고(소리는 바깥 대문이 켜고 끈다) */
   .mtp.hero .poster, .mtp.hero .cover, .mtp.hero .bar, .mtp.hero .snd { display: none !important; }
   .mtp.hero { cursor: default; }
+  /* 대문은 화면을 꽉 채운다 — 16:9 가 아닌 창(1920×950 등)에서 양옆 빈 띠 없이 가로로 늘려 맞춘다 */
+  .mtp.hero { width: 100vw; height: 100vh; aspect-ratio: auto; }
 </style>
 </head>
 <body>

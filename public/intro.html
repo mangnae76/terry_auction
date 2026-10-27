@@ -17,7 +17,8 @@
   .stage iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--navy); }
   /* 단추는 영상 안쪽 오른쪽 위에 — 창 비율이 16:9 가 아니면(맥 16:10 등) 영상 위아래 · 좌우에 빈 띠가 생기니
      영상 테두리에서 24px 안으로 잡는다. --fit = 창 안에 들어가는 영상 폭 */
-  :root { --fit: min(100vw, calc(100vh * 16 / 9)); --edge-t: calc((100vh - var(--fit) * 9 / 16) / 2); --edge-r: calc((100vw - var(--fit)) / 2); }
+  /* 영상이 화면을 꽉 채우므로(가로로 늘림) 단추는 화면 테두리 기준 24px 안 */
+  :root { --edge-t: 0px; --edge-r: 0px; }
   .bar { position: fixed; top: calc(var(--edge-t) + 24px); right: calc(var(--edge-r) + 24px); z-index: 20; display: flex; gap: 8px; }
   /* 두 단추 같은 모양 · 같은 높이 — 속이 비친 알약 테두리만(영상을 가리지 않게), 올리면 살짝 채운다 */
   .bar button {
@@ -108,17 +109,33 @@
       if (soundBeforeLogin === true && muted) setMuted(false);
       soundBeforeLogin = null;
     };
+    // 대문이 뜨자마자 로그인 묶음을 미리 받아 둔다 — 누른 뒤에 3MB 를 받으면 한참 반응이 없어 보였다.
+    // 로그인해 있으면 단추를 '들어가기'로 바꾸고, 누르면 바로 웹으로
+    let signedIn = false;
+    const ready = (async () => {
+      if (!T) { T = await loadBundle(); T.startStores(); T.useAuthStore().initialize(); }
+      const auth = T.useAuthStore();
+      if (!auth.ready && auth.waitUntilReady) await auth.waitUntilReady();
+      signedIn = !!auth.isLoggedIn;
+      if (signedIn) document.querySelector('#loginBtn span').textContent = '들어가기';
+      return auth;
+    })();
+    ready.catch(() => { /* 누를 때 다시 해 본다 */ });
     const openLogin = async () => {
+      if (signedIn) { location.href = '/web?login=1'; return; }
       if (!veil.hidden) return;
       veil.hidden = false;
       soundBeforeLogin = !muted && !blocked;
       if (!muted) setMuted(true);
       const el = document.getElementById('loginMount');
       try {
-        if (!T) { T = await loadBundle(); T.startStores(); T.useAuthStore().initialize(); }
+        let auth;
+        try { auth = await ready; } catch (e) {
+          if (!T) { T = await loadBundle(); T.startStores(); T.useAuthStore().initialize(); }
+          auth = T.useAuthStore();
+          if (!auth.ready && auth.waitUntilReady) await auth.waitUntilReady();
+        }
         // 이미 로그인해 있으면 로그인 창 없이 바로 웹으로
-        const auth = T.useAuthStore();
-        if (!auth.ready && auth.waitUntilReady) await auth.waitUntilReady();
         if (auth.isLoggedIn) { location.href = '/web?login=1'; return; }
         if (veil.hidden) return;
         el.innerHTML = '';
