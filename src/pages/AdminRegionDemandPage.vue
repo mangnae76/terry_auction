@@ -556,14 +556,14 @@ const downloadCsv = () => {
 
 /* 웹 요약 줄 — 상자마다 위 작은 이름, 아래 굵은 값 */
 .adm-nav { margin: 14px 0 6px; padding: 14px; border: 1px solid #e3e8f0; border-radius: 10px; background: #f7f8fa; }
-.adm-nav-scope { margin: 0 0 10px 2px; font-size: 16px; font-weight: 800; color: #111827; }
+.adm-nav-scope { margin: 0 0 10px 2px; font-size: 16px; font-weight: 800; color: #2b6df3; }
 .adm-nav-row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; }
 .adm-nav-box {
   display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px;
   background: #fff; border: 1px solid #eef1f6; border-radius: 8px; text-align: center; min-width: 0;
 }
 .adm-nav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
-.adm-nav-box b { font-size: 18px; font-weight: 800; color: #2f6b45; white-space: nowrap; }
+.adm-nav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; }
 @media (max-width: 1200px) { .adm-nav-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .adm-sum {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
