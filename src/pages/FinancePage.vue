@@ -553,7 +553,7 @@ const exportExcel = () => {
     <!-- 웹 세금신고 — 위 필터 줄 자리에 연도 드롭다운(처음엔 올해) -->
     <div v-if="webEmbed && activeTab === 'tax'" class="fin-toolbar">
       <div class="fin-toolbar-right">
-        <label class="fin-taxyear">세금신고 연도
+        <label class="fin-taxyear"><span>당해년도 선택</span>
           <select v-model.number="taxYear">
             <option v-for="y in taxYears" :key="y" :value="y">{{ y }}년</option>
           </select>
