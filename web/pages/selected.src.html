@@ -657,6 +657,11 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-bx-row { justify-content: center; gap: 28px; }
 .app-page[data-k="postwin"] .pw-bx-row .pw-bx-item { flex: 0 0 240px; }
 .app-page[data-k="postwin"] .pw-gr-row { grid-template-columns: repeat(3, 280px); justify-content: center; column-gap: 48px; }
+/* 명도 시기별 진행내용 — 두 칸(낙찰 당일 | 잔금 납부 전, 잔금 납부 후 1·2 | 3·4, 5), 가운데 세로 구분선. 두 칸에서는 왼쪽 상자 폭을 줄인다 */
+.app-page[data-k="postwin"] .pw-br-grid { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 56px; align-items: start; }
+.app-page[data-k="postwin"] .pw-br-grid::before { content: ""; position: absolute; top: 0; bottom: 10px; left: 50%; width: 1px; background: #d5dbe5; }
+.app-page[data-k="postwin"] .pw-br-grid :is(.pw-br-head, .pw-br-step) { grid-template-columns: 210px 14px minmax(0, 1fr); }
+.app-page[data-k="postwin"] .pw-br-grid .pw-br-left b { white-space: normal; }
 /* 명도 협상 방법 — 기본은 왼쪽 · 기술은 오른쪽, 가운데 세로 구분선 */
 .app-page[data-k="postwin"] .pw-gr-split { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 56px; align-items: start; }
 .app-page[data-k="postwin"] .pw-gr-split::before { content: ""; position: absolute; top: 0; bottom: 10px; left: 50%; width: 1px; background: #d5dbe5; }
