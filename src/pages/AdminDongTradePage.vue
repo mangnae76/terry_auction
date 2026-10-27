@@ -571,7 +571,7 @@ const downloadCsv = () => {
 
         <!-- 검색리스트 -->
         <div class="adm-list-head">
-          <strong>검색리스트</strong>
+          <strong>{{ webEmbed && !dong ? '지역별 분석' : '검색리스트' }}</strong>
           <span v-if="!webEmbed" class="tag ok">정상거래 {{ counts.정상거래 }}</span>
           <span v-if="!webEmbed" class="tag">직거래 {{ counts.직거래 }}</span>
           <span v-if="!webEmbed" class="tag">계약해제 {{ counts.계약해제 }}</span>
