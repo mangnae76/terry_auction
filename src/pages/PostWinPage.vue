@@ -689,15 +689,15 @@ const toggleSection = (key: string) => {
     <div :key="activeTab" class="pw-body">
       <!-- 웹 명도 — ⓘ 에 숨어 있던 '낙찰 후 진행 순서'를 명도절차 위 상자로 펼쳐 둔다 -->
       <section v-if="webEmbed && activeTab === 'evict'" class="pw-card pw-flowcard">
-        <header class="pw-card-head" @click="toggleSection('__flow')">
+        <!-- 늘 펼쳐 둔다 — 접기 단추 없음 -->
+        <header class="pw-card-head pw-flowcard-head">
           <h2>
             <svg class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
             낙찰 후 진행 순서
           </h2>
-          <img :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed('__flow') }]" alt="" />
         </header>
         <!-- 단계마다 설명은 말풍선으로 — 마우스를 올리거나 누르면(포커스) 뜬다 -->
-        <div v-if="!isCollapsed('__flow')" class="pw-flow-map">
+        <div class="pw-flow-map">
           <span
             v-for="(st, i) in FLOW_STEPS"
             :key="st.name"
