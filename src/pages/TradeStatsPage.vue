@@ -640,7 +640,7 @@ onMounted(async () => {
               <div><dt>거래 건수</dt><dd>{{ statTotalCount.toLocaleString('ko-KR') }}건</dd></div>
               <div><dt>거래 총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
               <div><dt>{{ avgLabel }}</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
-              <div><dt>평당 단가</dt><dd>{{ manWon(statUnitPrice) }}<small class="tsp-unit-m2"> / ㎡ {{ manWon(statUnitPrice / 3.305785) }}</small></dd></div>
+              <div><dt>평 단가 / ㎡ 단가</dt><dd><em class="tsp-unit-pre">평</em>{{ manWon(statUnitPrice) }}<em class="tsp-unit-bar">/</em><em class="tsp-unit-pre">㎡</em>{{ manWon(statUnitPrice / 3.305785) }}</dd></div>
             </div>
             <div v-else class="tsp-stat-grid">
               <div><dt>거래 건수</dt><dd>{{ statTotalCount.toLocaleString('ko-KR') }}건</dd></div>
@@ -845,7 +845,9 @@ onMounted(async () => {
 }
 .tsp-stat-grid > div { background: #fff; padding: 9px 10px; min-width: 0; }
 .tsp-picked-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.tsp-unit-m2 { font-size: 0.8em; font-weight: 600; color: #6b7280; }
+/* '평 817만 / ㎡ 247만' — 평 · ㎡ 는 작은 회색 머리글자 */
+.tsp-unit-pre { font-style: normal; font-size: 0.8em; font-weight: 600; color: #6b7280; margin-right: 3px; }
+.tsp-unit-bar { font-style: normal; font-weight: 400; color: #c3c9d4; margin: 0 6px; }
 .tsp-stat-grid dt { font-size: 10.5px; font-weight: 700; color: #2b6df3; }
 .tsp-stat-grid dd { margin: 2px 0 0; font-size: 13.5px; font-weight: 800; color: #111827; white-space: nowrap; }
 .tsp-rank .tsp-rank-list { padding: 0; }
