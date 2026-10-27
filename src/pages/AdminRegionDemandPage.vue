@@ -450,7 +450,7 @@ const downloadCsv = () => {
       <p v-if="errorMsg" class="adm-msg err">{{ errorMsg }}</p>
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
 
-      <div v-if="rows.length > 0" class="adm-sum">
+      <div v-if="!webEmbed && rows.length > 0" class="adm-sum"><!-- 웹은 위 요약 상자가 대신한다 -->
         <strong>{{ sumLabel }}</strong>
         <span>기간 {{ ym(period.from) }} ~ {{ ym(period.to) }}</span>
         <span>읍면동 {{ rows.length }}곳</span>
