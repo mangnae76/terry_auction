@@ -651,7 +651,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] :is(.pw-br-head, .pw-br-step) { grid-template-columns: calc(var(--pw-lab-w) + 1px) 16px 1fr; }   /* +1 = 표 바깥 테두리 */
 .app-page[data-k="postwin"] .pw-br-left b { white-space: nowrap; }
 /* 단계 상자도 위 '낙찰 당일' 상자처럼 가운데 정렬(번호 + 이름을 한 덩어리로) */
-.app-page[data-k="postwin"] .pw-br-left { justify-content: center; }
+/* 왼쪽 색 상자(낙찰 당일 · 잔금 납부 · 번호 단계)는 왼쪽 정렬 — 글자 두 자쯤 띄우고 시작 */
+.app-page[data-k="postwin"] .pw-br-left { justify-content: flex-start; padding-left: 24px !important; }
+.app-page[data-k="postwin"] .pw-br-pill { justify-content: flex-start; padding-left: 24px !important; text-align: left; }
+.app-page[data-k="postwin"] .pw-br-pill .pw-br-txt { flex: 0 1 auto; text-align: left; }
 .app-page[data-k="postwin"] .pw-br-left b { flex: 0 0 auto; }
 /* 명도 — '명도시작은 언제부터?' 세 상자 · '명도 협상 방법' 세 상자는 좌우를 안으로 몰아 작게, 가운데 정렬 */
 .app-page[data-k="postwin"] .pw-bx-row { justify-content: center; gap: 28px; }
@@ -664,7 +667,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-br-grid > .pw-br.col-break { break-before: column; }
 /* 왼쪽 색 상자(낙찰 당일 · 단계)는 좁게, 오른쪽 설명 상자는 넓게 — 설명이 두 줄로 꺾이지 않게 */
 .app-page[data-k="postwin"] .pw-br-grid :is(.pw-br-head, .pw-br-step) { grid-template-columns: 150px 12px minmax(0, 1fr); gap: 6px; }
-.app-page[data-k="postwin"] .pw-br-grid .pw-br-left b { white-space: normal !important; flex: 0 1 auto !important; min-width: 0; text-align: center; word-break: keep-all; }
+.app-page[data-k="postwin"] .pw-br-grid .pw-br-left b { white-space: normal !important; flex: 0 1 auto !important; min-width: 0; text-align: left; word-break: keep-all; }
 /* 명도 협상 방법 — 기본은 왼쪽 · 기술은 오른쪽, 가운데 세로 구분선 */
 .app-page[data-k="postwin"] .pw-gr-split { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 56px; align-items: start; }
 .app-page[data-k="postwin"] .pw-gr-split::before { content: ""; position: absolute; top: 0; bottom: 10px; left: 50%; width: 1px; background: #d5dbe5; }
