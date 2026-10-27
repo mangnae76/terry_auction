@@ -668,6 +668,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-gr-split { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 56px; align-items: start; }
 .app-page[data-k="postwin"] .pw-gr-split::before { content: ""; position: absolute; top: 0; bottom: 10px; left: 50%; width: 1px; background: #d5dbe5; }
 .app-page[data-k="postwin"] .pw-gr-split .pw-gr-row { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 12px; }
+/* 명도 협상의 기본 — 점 목록 대신 '기술' 쪽처럼 한 줄씩 네모 상자로 */
+.app-page[data-k="postwin"] .pw-gr-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.app-page[data-k="postwin"] .pw-gr-list li { display: flex; align-items: center; justify-content: center; min-height: 34px; padding: 7px 8px;
+  border: 1px solid #c9d3e3; border-radius: 4px; background: #fff; color: #1f2937; text-align: center; line-height: 1.35; }
 /* '명도 협상의 기본 · 기술' 분홍 칩도 같은 폭 — 칩 · 시기별 왼쪽 상자 · 표 분홍 칸의 오른쪽 끝선이 한 줄 */
 .app-page[data-k="postwin"] .pw-gr-chip { width: calc(var(--pw-lab-w) + 1px); max-width: none; box-sizing: border-box; }
 /* 인테리어 '항목추가' 창 — 화면 가로를 다 덮지 말고 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에 띄운다 */
