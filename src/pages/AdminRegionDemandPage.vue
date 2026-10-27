@@ -29,6 +29,11 @@ const KINDS: Array<{ key: Kind; label: string }> = [
 const router = useRouter();
 /** 웹 시장분석 › 지역분석에 띄웠는가 — 웹(shared.entry.js)이 넣어 준다. 분석 도구에서는 false */
 const webEmbed = inject<boolean>('webEmbed', false);
+/** 웹 지역분석의 '수요공급' 탭으로 들어갔을 때 — 고르는 줄 · 조회는 지역분석 것을 쓴다.
+ *  token 이 바뀌면(조회 · 되살림) 받은 조건으로 다시 받는다. 같은 국토부 요청이라 워커 저장분을 그대로 쓴다 */
+type EmbedFilter = { sido: string; districtCode: string; dong: string; kind: Kind; dealKind: 'sale' | 'jeonse'; months: number; token: number };
+const props = defineProps<{ embed?: EmbedFilter | null; chip?: { tone: string; text: string } | null }>();
+const embedded = computed(() => !!props.embed);
 const auth = useAuthStore();
 
 // 시도 → 시군구 → 읍면동 차례로 좁힌다.
@@ -268,7 +273,7 @@ const progress = ref({ done: 0, total: 0 });
 type Snapshot = { sido: string; districtCode: string; dongFilter: string; kind: Kind; dealKind?: 'sale' | 'jeonse'; months?: number; stats: StatRow[]; period: { from: string; to: string }; loadedLabel: string };
 const snap = useScreenSnapshot<Snapshot>('adm.region.snapshot.v1');
 onMounted(async () => {
-  if (!webEmbed) return;
+  if (!webEmbed || embedded.value) return;   // 탭으로 들어가면 지역분석이 조건을 넘겨준다
   const s = await snap.restore();
   if (!s || !Array.isArray(s.stats) || s.stats.length === 0) { snap.state.value = null; return; }
   restoring = true;
@@ -281,6 +286,19 @@ onMounted(async () => {
 });
 // 읍면동을 바꿔 보면 그것도 남긴다
 watch(dongFilter, (v) => { if (webEmbed && !restoring) void snap.patch({ dongFilter: v }); });
+
+// 탭으로 들어갔을 때 — 지역분석의 조건이 오면(조회 · 동 바꿈) 따라간다
+const applyEmbed = async (e: EmbedFilter, fetch: boolean) => {
+  restoring = true;
+  sido.value = e.sido; districtCode.value = e.districtCode; kind.value = e.kind; dealKind.value = e.dealKind; months.value = e.months;
+  await nextTick();
+  dongFilter.value = e.dong;
+  restoring = false;
+  if (fetch && e.districtCode) await load();
+};
+watch(() => props.embed?.token, () => { if (props.embed) void applyEmbed(props.embed, true); });
+watch(() => props.embed?.dong, (d) => { if (props.embed && d !== undefined) dongFilter.value = d; });
+onMounted(() => { if (props.embed) void applyEmbed(props.embed, true); });
 
 const load = async () => {
   if (loading.value || targets.value.length === 0) return;
@@ -358,7 +376,7 @@ const downloadCsv = () => {
 
 <template>
   <section class="adm-shell">
-    <header class="adm-top">
+    <header v-if="!embedded" class="adm-top">
       <div class="adm-top-in">
         <button type="button" class="adm-back" aria-label="뒤로" @click="router.push('/admin')">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg>
@@ -377,7 +395,7 @@ const downloadCsv = () => {
     </header>
 
     <div class="adm-body">
-      <div class="adm-bar">
+      <div v-if="!embedded" class="adm-bar">
         <label class="adm-f">
           <small>시 · 도</small>
           <select v-model="sido" :class="['adm-input', 'narrow', { ph: !sido }]">
@@ -432,14 +450,14 @@ const downloadCsv = () => {
       </div>
 
       <!-- 전체를 고르면 시군구마다 열두 번씩 부른다 — 하루 한도가 있으니 미리 알린다 -->
-      <p v-if="sido && !districtCode" class="adm-msg warn">
+      <p v-if="!embedded && sido && !districtCode" class="adm-msg warn">
         <b>{{ sido }} 전체</b> — 시군구 {{ districts.length }}곳을 차례로 받습니다
         (국토부 호출 {{ callCount.toLocaleString('ko-KR') }}번). 한 곳만 보려면 시·군·구를 고르세요.
       </p>
 
       <!-- 웹 — 고른 범위 전체를 한눈에: 요약 상자 줄 (고르는 칸 바로 아래) -->
       <section v-if="webEmbed && rows.length > 0" class="adm-nav">
-        <p class="adm-nav-scope">{{ sumLabel }}<SnapChip :chip="snap.chip.value" /></p>
+        <p class="adm-nav-scope">{{ sumLabel }}<SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
         <div class="adm-nav-row">
           <div v-for="c in navCells" :key="c.label" class="adm-nav-box">
             <small><InfoTip v-if="c.tip" :lines="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small>

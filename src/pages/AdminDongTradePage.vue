@@ -14,6 +14,7 @@ import AppToast from '../components/AppToast.vue';
 import SnapChip from '../components/SnapChip.vue';
 import YmCount from '../components/YmCount.vue';
 import InfoTip from '../components/InfoTip.vue';
+import AdminRegionDemandPage from './AdminRegionDemandPage.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
@@ -95,7 +96,13 @@ const yearMin = ref('');
 const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
-const listView = ref<'table' | 'dist' | 'detail' | 'deals'>('table');
+const listView = ref<'supply' | 'table' | 'dist' | 'detail' | 'deals'>('supply');
+/** '수요공급' 탭에 넘길 조건 — token 이 바뀌면 그 탭이 다시 받는다(조회 · 되살림 때) */
+const supplyToken = ref(0);
+const supplyEmbed = computed(() => ({
+  sido: sido.value, districtCode: districtCode.value, dong: dong.value, kind: kind.value,
+  dealKind: loadedDeal.value, months: periodMonths.value, token: supplyToken.value,
+}));
 // ===== 웹 '거래상세' — 월별 평균가 추이 + 개별 거래 목록 (조건검색 · 검색어를 따른다, 계약해제 제외) =====
 const dealBase = computed(() => searched.value.filter((r) => r.kind !== '계약해제'));
 type DealKey = 'umdNm' | 'name' | 'areaM2' | 'floorNum' | 'buildYear' | 'dealTime' | 'priceWon';
@@ -359,6 +366,7 @@ const restoreSnapshot = async () => {
   all.value = s.rows; dongNames.value = s.dongNames; period.value = s.period; loadedLabel.value = s.loadedLabel;
   await nextTick();
   restoring = false;
+  supplyToken.value += 1;
 };
 // 동을 바꿔 보면 그 동도 남긴다 — 새로고침해도 보던 동으로
 watch(dong, (v) => {
@@ -410,7 +418,7 @@ const load = async () => {
     if (dong.value && !res.dongNames.includes(dong.value)) dong.value = '';
     if (res.error) notice.value = res.error;
     if (res.rows.length === 0 && !res.error) notice.value = '그 기간에 거래가 없습니다.';
-    if (res.rows.length > 0) saveSnapshot();
+    if (res.rows.length > 0) { saveSnapshot(); supplyToken.value += 1; }
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -760,7 +768,20 @@ const downloadCsv = () => {
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
 
       <template v-if="all.length > 0">
-        <section v-if="webEmbed && !dong" class="adm-gunav">
+        <!-- 웹 — 탭 줄은 요약 상자 위에(탭을 바꿔도 제자리). 수요공급 · 지역별 분석 · 지역분포 · 상세분포 · 거래상세 -->
+        <div v-if="webEmbed" class="adm-list-head adm-tabs-top">
+            <nav class="adm-view-tabs" role="tablist">
+              <button type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요공급</button>
+              <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역별 분석' }}</button>
+              <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">지역분포<span class="adm-view-kind" :title="distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 막대'" :aria-label="distChart === 'bar' ? '막대' : '도넛'">
+                <svg v-if="distChart === 'bar'" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><rect x="1.5" y="8" width="3" height="6.5" rx="1" /><rect x="6.5" y="3" width="3" height="11.5" rx="1" /><rect x="11.5" y="6" width="3" height="8.5" rx="1" /></svg>
+                <svg v-else viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3"><circle cx="8" cy="8" r="5.5" stroke-opacity=".35" /><path d="M8 2.5a5.5 5.5 0 0 1 5.5 5.5" /></svg>
+              </span></button>
+              <button type="button" role="tab" :aria-selected="listView === 'detail'" :class="{ on: listView === 'detail' }" @click="listView = 'detail'">상세분포</button>
+              <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
+            </nav>
+        </div>
+        <section v-if="webEmbed && !dong && listView !== 'supply'" class="adm-gunav">
           <div class="adm-gunav-head">
             <strong>{{ loadedLabel }}<template v-if="loadedDeal === 'jeonse'"> 전세</template></strong>
             <SnapChip :chip="snapChip" />
@@ -769,7 +790,7 @@ const downloadCsv = () => {
             <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :lines="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template></b></div>
           </div>
         </section>
-        <div v-else class="adm-sum">
+        <div v-else-if="!(webEmbed && listView === 'supply')" class="adm-sum">
           <strong>{{ loadedLabel }} {{ dong || '전체' }}</strong>
           <SnapChip v-if="webEmbed" :chip="snapChip" />
           <span v-if="district" class="code">{{ district.lawdCode }}</span>
@@ -777,7 +798,7 @@ const downloadCsv = () => {
         </div>
 
         <!-- 요약 -->
-        <div v-if="!(webEmbed && !dong)" :class="['adm-kpis', { 'is-web': webEmbed }]">
+        <div v-if="!(webEmbed && (!dong || listView === 'supply'))" :class="['adm-kpis', { 'is-web': webEmbed }]">
           <div class="adm-kpi"><small>실거래가 평균</small><strong>{{ won(avgPrice) }}</strong></div>
           <div class="adm-kpi"><small>평당가 평균</small><strong>{{ won(avgUnitPrice) }}</strong></div>
           <div class="adm-kpi blue"><small>총 거래건수 <em v-if="!webEmbed">정상거래</em></small><strong>{{ (webEmbed ? kindCount('정상거래', filtered) + kindCount('직거래', filtered) : normals.length).toLocaleString('ko-KR') }}건</strong></div>
@@ -839,18 +860,9 @@ const downloadCsv = () => {
         </div>
 
         <!-- 검색리스트 -->
-        <div class="adm-list-head">
+        <div v-if="!webEmbed || colFilter.activeCount.value > 0" class="adm-list-head">
           <strong v-if="!webEmbed">검색리스트</strong>
           <!-- 웹 — 결과를 두 가지로 본다: 지역별 분석(표) · 지역별 분포(막대그래프) -->
-          <nav v-else class="adm-view-tabs" role="tablist">
-            <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역별 분석' }}</button>
-            <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">지역분포<span class="adm-view-kind" :title="distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 막대'" :aria-label="distChart === 'bar' ? '막대' : '도넛'">
-              <svg v-if="distChart === 'bar'" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><rect x="1.5" y="8" width="3" height="6.5" rx="1" /><rect x="6.5" y="3" width="3" height="11.5" rx="1" /><rect x="11.5" y="6" width="3" height="8.5" rx="1" /></svg>
-              <svg v-else viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3"><circle cx="8" cy="8" r="5.5" stroke-opacity=".35" /><path d="M8 2.5a5.5 5.5 0 0 1 5.5 5.5" /></svg>
-            </span></button>
-            <button type="button" role="tab" :aria-selected="listView === 'detail'" :class="{ on: listView === 'detail' }" @click="listView = 'detail'">상세분포</button>
-            <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
-          </nav>
           <span v-if="!webEmbed" class="tag ok">정상거래 {{ counts.정상거래 }}</span>
           <span v-if="!webEmbed" class="tag">직거래 {{ counts.직거래 }}</span>
           <span v-if="!webEmbed" class="tag">계약해제 {{ counts.계약해제 }}</span>
@@ -864,7 +876,9 @@ const downloadCsv = () => {
         </div>
 
         <!-- 웹 '거래상세' 탭 — 월별 평균가 추이(선 그래프) + 개별 거래 목록. 조건검색(기간 · 면적 · 연식 · 검색어)을 그대로 따른다 -->
-        <div v-if="webEmbed && listView === 'deals'" class="adm-deals">
+        <!-- 웹 '수요공급' 탭 — 수요공급 화면(세대수 · 매물수 입력, 회전율 · 소화율 · 부담률 · 소진기간, 요약 상자 7개)을 그대로. 조건은 위 고르는 줄 -->
+        <AdminRegionDemandPage v-if="webEmbed && listView === 'supply'" :embed="supplyEmbed" :chip="snapChip" class="adm-supply" />
+        <div v-else-if="webEmbed && listView === 'deals'" class="adm-deals">
           <section class="adm-trend">
             <p class="adm-trend-title">월별 평균가 추이 <em>(최근 {{ trend.points.length }}개월 · 정상 + 직거래)</em></p>
             <svg v-if="trend.points.length > 1" class="adm-trend-svg" :viewBox="`0 0 ${TREND_W} ${TREND_H}`" role="img" aria-label="월별 평균가 추이 선 그래프">
@@ -1288,6 +1302,7 @@ const downloadCsv = () => {
 .adm-list-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin: 0 2px 10px; }
 .adm-list-head strong { font-size: 14.5px; font-weight: 800; }
 /* 웹 — 결과 보기 탭(밑줄은 ::after 막대) */
+.adm-tabs-top { margin-top: 18px; }
 .adm-view-tabs { display: flex; gap: 22px; padding-left: 28px; } /* 글자 두 개쯤 안으로 */
 .adm-view-tabs button { position: relative; border: 0; background: none; padding: 6px 0 8px; font-size: 16px; font-weight: 700; color: #6b7280; cursor: pointer; border-radius: 0; }
 .adm-view-tabs button.on { color: #2b6df3; font-weight: 800; }
