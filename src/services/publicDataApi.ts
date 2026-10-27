@@ -1392,6 +1392,64 @@ export interface DongTradeStatsResult {
 }
 
 /** 시군구 하나의 읍면동별 거래량·평균가. months 는 기본 12개월 */
+/** 조회 기준 시각(asOf)으로부터 N개월 창 — 시작일 0시 ~ 기준일 끝. 오늘이 1월 1일이면 작년 1월 2일 ~ 1월 1일(365일) */
+export const tradeWindowOf = (asOf: number | Date, months: number) => {
+  const end = new Date(asOf);
+  const start = new Date(end);
+  start.setMonth(start.getMonth() - months);
+  start.setDate(start.getDate() + 1);
+  start.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(end); endOfDay.setHours(23, 59, 59, 999);
+  return { start, end: endOfDay };
+};
+/** 날짜 → YYYYMMDD (한국 시간 그대로 — toISOString 은 UTC 라 오전 9시 전에 하루가 밀린다) */
+export const ymd8Of = (d: Date) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+
+/**
+ * 동별 거래 요약 — 줄 단위 실거래(fetchDongTradeDetails)에서 센다.
+ * 수요분석 · 지역별 분석 · 앱 수요공급이 모두 이 하나로 세어 숫자가 갈라지지 않는다.
+ * count 는 정상거래만(값 지표용), 직거래 · 계약해제는 따로 센다 — 총 거래건수 = 정상 + 직거래.
+ */
+export const dongStatsFromRows = (rows: DongTradeDetailRow[]): DongTradeStat[] => {
+  type Acc = { count: number; sumPrice: number; sumArea: number; areaCount: number; direct: number; cancel: number; sumYear: number; yearCount: number };
+  const byDong = new Map<string, Acc>();
+  const accOf = (umdNm: string): Acc => {
+    const acc = byDong.get(umdNm) ?? { count: 0, sumPrice: 0, sumArea: 0, areaCount: 0, direct: 0, cancel: 0, sumYear: 0, yearCount: 0 };
+    byDong.set(umdNm, acc);
+    return acc;
+  };
+  rows.forEach((r) => {
+    if (!r.umdNm) return;
+    const acc = accOf(r.umdNm);
+    if (r.kind === '계약해제') { acc.cancel += 1; return; }
+    if (r.kind === '직거래') { acc.direct += 1; return; }
+    acc.count += 1;
+    acc.sumPrice += r.priceWon;
+    if (r.areaM2 > 0) { acc.sumArea += r.areaM2; acc.areaCount += 1; }
+    if (r.buildYear > 1800) { acc.sumYear += r.buildYear; acc.yearCount += 1; }
+  });
+  const PYEONG = 3.305785;
+  return Array.from(byDong.entries())
+    .filter(([, a]) => a.count > 0 || a.direct > 0)
+    .map(([umdNm, a]) => {
+      const avgPrice = a.count > 0 ? Math.round(a.sumPrice / a.count) : 0;
+      const avgAreaM2 = a.areaCount > 0 ? a.sumArea / a.areaCount : 0;
+      const avgPyeong = avgAreaM2 / PYEONG;
+      return {
+        umdNm,
+        count: a.count,
+        avgPrice,
+        avgAreaM2: Math.round(avgAreaM2 * 100) / 100,
+        avgUnitPrice: avgPyeong > 0 ? Math.round(avgPrice / avgPyeong) : 0,
+        excludedCount: a.direct + a.cancel,
+        directCount: a.direct,
+        cancelCount: a.cancel,
+        avgBuildYear: a.yearCount > 0 ? Math.round(a.sumYear / a.yearCount) : 0,
+      };
+    })
+    .sort((x, y) => (y.count + (y.directCount ?? 0)) - (x.count + (x.directCount ?? 0)));
+};
+
 export const fetchDongTradeStats = async (params: {
   lawdCd5: string;
   propertyType: 'apt' | 'villa' | 'officetel';
@@ -1399,120 +1457,24 @@ export const fetchDongTradeStats = async (params: {
   /** 매매(기본) / 전세 — 전세면 전월세 자료에서 월세 없는 것만, 값은 보증금 */
   dealKind?: 'sale' | 'jeonse';
 }): Promise<DongTradeStatsResult> => {
+  // 줄 단위로 받아 같은 규칙(dongStatsFromRows)으로 센다 — 화면마다 세는 법이 달라 1건씩 어긋나던 것
   const months = Math.max(1, params.months ?? 12);
-  const dealYmds = recentDealYmds(months);
-  const since = windowStart(months);
-  const periodTo = dealYmds[0] ?? '';
-  const periodFrom = dealYmds[dealYmds.length - 1] ?? '';
-  const ymd8 = (d: Date) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-  const periodFromDate = ymd8(since);
-  const periodToDate = ymd8(new Date());
-  const empty: DongTradeStatsResult = {
-    rows: [], periodFrom, periodTo, periodFromDate, periodToDate, totalCount: 0, excludedCount: 0,
-  };
-  if (!ENABLE_LIVE_API || !HAS_DATA_KEY) {
-    return { ...empty, error: 'API 키가 없어 실거래를 불러올 수 없습니다.' };
-  }
-  if (!/^\d{5}$/.test(params.lawdCd5)) {
-    return { ...empty, error: '시군구 코드(5자리)를 찾지 못했습니다.' };
-  }
-
-  const jeonse = params.dealKind === 'jeonse';
-  const RENT_PATH = { apt: APT_RENT_API_PATH, villa: VILLA_RENT_API_PATH, officetel: OFFICETEL_RENT_API_PATH } as const;
-  const path = jeonse ? RENT_PATH[params.propertyType] : pathsForPropertyType(params.propertyType)[0];
-  const settled = await inBatches(
-    dealYmds.map((dealYmd) => () => fetchMonthWithRetry(path, params.lawdCd5, dealYmd)),
-    5,
-  );
-  const errSet = new Set(settled.map((r) => r.error).filter((v): v is string => !!v));
-  const allRows = settled.flatMap((r) => r.rows).filter((row) => {
-    const d = rowDealDate(row as Record<string, unknown>);
-    if (jeonse && Number(String((row as Record<string, unknown>).monthlyRent ?? '').replace(/[^\d.]/g, '')) > 0) return false; // 월세는 뺀다
-    return !d || d >= since;
-  });
-  if (allRows.length === 0) {
-    return { ...empty, error: errSet.size > 0 ? Array.from(errSet).join(' / ') : '그 기간에 거래가 없습니다.' };
-  }
-
-  // 손품+현장의 실거래 평균과 같은 규칙으로 걸러 낸다 —
-  // 직거래는 시세와 동떨어지고, 해제된 계약은 없던 거래다.
-  const isDirect = (row: Record<string, unknown>) =>
-    /직거래/.test(String(row.dealingGbn ?? row['거래유형'] ?? ''));
-  const isCancelled = (row: Record<string, unknown>) =>
-    String(row.cdealType ?? '').trim().toUpperCase() === 'O'
-    || String(row.cdealDay ?? row['해제사유발생일'] ?? '').replace(/[^\d]/g, '').length >= 6;
-
-  const num = (v: unknown) => Number(String(v ?? '').replace(/[^\d.]/g, ''));
-  type Acc = {
-    count: number; sumPrice: number; sumArea: number; areaCount: number;
-    excluded: number; direct: number; cancel: number; sumYear: number; yearCount: number;
-  };
-  const byDong = new Map<string, Acc>();
-  let excluded = 0;
-
-  const accOf = (umdNm: string): Acc => {
-    const acc = byDong.get(umdNm) ?? {
-      count: 0, sumPrice: 0, sumArea: 0, areaCount: 0,
-      excluded: 0, direct: 0, cancel: 0, sumYear: 0, yearCount: 0,
-    };
-    byDong.set(umdNm, acc);
-    return acc;
-  };
-
-  (allRows as Record<string, unknown>[]).forEach((row) => {
-    const umdNm = normalizeDongName(String(row.umdNm ?? row['법정동'] ?? ''));
-    // 뺀 건수도 동별로 센다 — 동을 좁혀 보면 그 동의 수가 나와야 한다
-    if (isDirect(row) || isCancelled(row)) {
-      excluded += 1;
-      if (umdNm) {
-        const acc = accOf(umdNm);
-        acc.excluded += 1;
-        if (isCancelled(row)) acc.cancel += 1; else acc.direct += 1;
-      }
-      return;
-    }
-    if (!umdNm) return;
-    const manWon = jeonse ? num(row.deposit ?? row['보증금액']) : num(row.dealAmount ?? row['거래금액']);
-    const priceWon = Number.isFinite(manWon) && manWon > 0 ? manWon * 10_000 : 0;
-    const areaM2 = num(row.excluUseAr ?? row['전용면적']);
-    const acc = accOf(umdNm);
-    acc.count += 1;
-    acc.sumPrice += priceWon;
-    if (Number.isFinite(areaM2) && areaM2 > 0) { acc.sumArea += areaM2; acc.areaCount += 1; }
-    const buildYear = num(row.buildYear ?? row['건축년도']);
-    if (Number.isFinite(buildYear) && buildYear > 1800) { acc.sumYear += buildYear; acc.yearCount += 1; }
-  });
-
-  const PYEONG = 3.305785;
-  const rows: DongTradeStat[] = Array.from(byDong.entries())
-    .filter(([, a]) => a.count > 0)
-    .map(([umdNm, a]) => {
-    const avgPrice = a.count > 0 ? Math.round(a.sumPrice / a.count) : 0;
-    const avgAreaM2 = a.areaCount > 0 ? a.sumArea / a.areaCount : 0;
-    const avgPyeong = avgAreaM2 / PYEONG;
-    return {
-      umdNm,
-      count: a.count,
-      avgPrice,
-      avgAreaM2: Math.round(avgAreaM2 * 100) / 100,
-      avgUnitPrice: avgPyeong > 0 ? Math.round(avgPrice / avgPyeong) : 0,
-      excludedCount: a.excluded,
-      directCount: a.direct,
-      cancelCount: a.cancel,
-      avgBuildYear: a.yearCount > 0 ? Math.round(a.sumYear / a.yearCount) : 0,
-    };
-    }).sort((x, y) => y.count - x.count);
-
-  return {
+  const asOf = new Date();
+  const { start } = tradeWindowOf(asOf, months);
+  const res = await fetchDongTradeDetails(params);
+  const rows = dongStatsFromRows(res.rows);
+  const excluded = res.rows.filter((r) => r.kind !== '정상거래').length;
+  const base: DongTradeStatsResult = {
     rows,
-    periodFrom,
-    periodTo,
-    periodFromDate,
-    periodToDate,
+    periodFrom: res.periodFrom,
+    periodTo: res.periodTo,
+    periodFromDate: ymd8Of(start),
+    periodToDate: ymd8Of(asOf),
     totalCount: rows.reduce((s, r) => s + r.count, 0),
     excludedCount: excluded,
-    error: errSet.size > 0 ? Array.from(errSet).join(' / ') : undefined,
   };
+  if (res.rows.length === 0) return { ...base, error: res.error ?? '그 기간에 거래가 없습니다.' };
+  return res.error ? { ...base, error: res.error } : base;
 };
 
 // ===== 관리자 도구 · 실거래가 조건검색 분석 (해당 읍면동) =====

@@ -16,7 +16,7 @@ import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
-import { fetchDongTradeStats, type DongTradeStat } from '../services/publicDataApi';
+import { dongStatsFromRows, fetchDongTradeStats, tradeWindowOf, ymd8Of, type DongTradeDetailRow, type DongTradeStat } from '../services/publicDataApi';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 
 type Kind = 'villa' | 'apt' | 'officetel';
@@ -31,7 +31,11 @@ const router = useRouter();
 const webEmbed = inject<boolean>('webEmbed', false);
 /** 웹 지역분석의 '수요공급' 탭으로 들어갔을 때 — 고르는 줄 · 조회는 지역분석 것을 쓴다.
  *  token 이 바뀌면(조회 · 되살림) 받은 조건으로 다시 받는다. 같은 국토부 요청이라 워커 저장분을 그대로 쓴다 */
-type EmbedFilter = { sido: string; districtCode: string; dong: string; kind: Kind; dealKind: 'sale' | 'jeonse'; months: number; token: number };
+type EmbedFilter = {
+  sido: string; districtCode: string; dong: string; kind: Kind; dealKind: 'sale' | 'jeonse'; months: number; token: number;
+  /** 지역분석이 받아 둔 거래(기간 안) · 조회 기준 시각 · 이름 — 있으면 다시 묻지 않고 이것으로 센다 */
+  rows?: DongTradeDetailRow[]; asOf?: number; label?: string;
+};
 const props = defineProps<{ embed?: EmbedFilter | null; chip?: { tone: string; text: string } | null }>();
 const embedded = computed(() => !!props.embed);
 const auth = useAuthStore();
@@ -293,9 +297,23 @@ const applyEmbed = async (e: EmbedFilter, fetch: boolean) => {
   await nextTick();
   dongFilter.value = e.dong;
   restoring = false;
+  // 지역분석이 받아 둔 거래가 있으면 그것으로 센다 — 같은 거래 · 같은 기준일이라 두 탭 숫자가 하나다
+  if (e.rows && e.asOf) {
+    const w = tradeWindowOf(e.asOf, e.months);
+    const label = e.label || `${e.sido} ${targets.value[0]?.label ?? ''}`.trim();
+    const sigungu = targets.value[0]?.label ?? '';
+    stats.value = dongStatsFromRows(e.rows).map((r) => ({ ...r, sigungu }));
+    period.value = { from: ymd8Of(w.start), to: ymd8Of(w.end) };
+    loadedLabel.value = label;
+    loadedDeal.value = e.dealKind;
+    notice.value = ''; errorMsg.value = '';
+    return;
+  }
   if (fetch && e.districtCode) await load();
 };
 watch(() => props.embed?.token, () => { if (props.embed) void applyEmbed(props.embed, true); });
+// 기간(3 · 6 · 12개월)이나 받아 둔 거래가 바뀌면 다시 센다(묻지 않고)
+watch(() => [props.embed?.rows, props.embed?.months, props.embed?.asOf], () => { if (props.embed?.rows) void applyEmbed(props.embed, false); });
 watch(() => props.embed?.dong, (d) => { if (props.embed && d !== undefined) dongFilter.value = d; });
 onMounted(() => { if (props.embed) void applyEmbed(props.embed, true); });
 

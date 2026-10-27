@@ -7,7 +7,7 @@ import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } fr
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
-import { fetchDongTradeDetails, fetchDongTradeStats, type DongTradeDetailRow } from '../services/publicDataApi';
+import { fetchDongTradeDetails, fetchDongTradeStats, tradeWindowOf, type DongTradeDetailRow } from '../services/publicDataApi';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
 import AppToast from '../components/AppToast.vue';
@@ -126,6 +126,8 @@ watch(listView, (v) => { if (v === 'supply') supplySeen.value = true; }, { immed
 const supplyEmbed = computed(() => ({
   sido: sido.value, districtCode: districtCode.value, dong: dong.value, kind: kind.value,
   dealKind: loadedDeal.value, months: periodMonths.value, token: supplyToken.value,
+  // 수요분석은 따로 국토부에 묻지 않고 이 화면이 받아 둔 같은 거래 · 같은 기준일로 센다(숫자가 하나로)
+  rows: windowRows.value, asOf: asOf.value, label: loadedLabel.value,
 }));
 // ===== 웹 '거래상세' — 월별 평균가 추이 + 개별 거래 목록 (조건검색 · 검색어를 따른다, 계약해제 제외) =====
 const dealBase = computed(() => searched.value.filter((r) => r.kind !== '계약해제'));
@@ -318,19 +320,19 @@ const donutSegs = (cells: Array<{ label: string; count: number; pct: number }>) 
   });
 };
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
-const isoMonthsAgo = (m: number) => {
-  const d = new Date();
-  d.setMonth(d.getMonth() - m);
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().slice(0, 10);
-};
+/** 조회 기준 시각 — 국토부에 물은 때. 모든 셈(요약 · 동별 표 · 수요분석 · 분포 · 거래상세)이 이 날 기준 N개월(12개월 = 365일)로 센다.
+ *  저장된 자료를 다음 날 열어도 기준은 그대로라 숫자가 바뀌지 않는다 — 새 날짜로 보려면 다시 조회한다 */
+const asOf = ref(Date.now());
+/** 한국 시간 그대로 YYYY-MM-DD (toISOString 은 UTC 라 오전 9시 전에 하루가 밀린다) */
+const localIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const applyPeriod = (m: number) => {
   periodMonths.value = m;
-  dateFrom.value = isoMonthsAgo(m);
-  dateTo.value = todayIso();
+  const w = tradeWindowOf(asOf.value, m);
+  dateFrom.value = localIso(w.start);
+  dateTo.value = localIso(w.end);
 };
 applyPeriod(12);
+watch(asOf, () => applyPeriod(periodMonths.value));
 
 const resetFilters = () => {
   applyPeriod(12);
@@ -371,13 +373,15 @@ type Snapshot = {
   sido: string; districtCode: string; kind: Kind; dong: string; dealKind: 'sale' | 'jeonse';
   rows: DongTradeDetailRow[]; dongNames: string[]; period: { from: string; to: string };
   loadedLabel: string;
+  /** 조회 기준 시각 — 예전 저장본에는 없어서 savedAt 으로 갈음한다 */
+  asOf?: number; savedAt?: number;
 };
 const snap = useScreenSnapshot<Snapshot>('adm.dong.snapshot.v1');
 const saveSnapshot = () => {
   if (!webEmbed) return;
   void snap.save({
     sido: sido.value, districtCode: districtCode.value, kind: kind.value, dong: dong.value, dealKind: loadedDeal.value,
-    rows: all.value, dongNames: dongNames.value, period: period.value, loadedLabel: loadedLabel.value,
+    rows: all.value, dongNames: dongNames.value, period: period.value, loadedLabel: loadedLabel.value, asOf: asOf.value,
   });
 };
 const restoreSnapshot = async () => {
@@ -388,6 +392,7 @@ const restoreSnapshot = async () => {
   sido.value = s.sido; districtCode.value = s.districtCode; kind.value = s.kind; dong.value = s.dong;
   dealKind.value = s.dealKind; loadedDeal.value = s.dealKind;
   all.value = s.rows; dongNames.value = s.dongNames; period.value = s.period; loadedLabel.value = s.loadedLabel;
+  asOf.value = s.asOf ?? s.savedAt ?? Date.now();
   await nextTick();
   restoring = false;
   supplyToken.value += 1;
@@ -426,12 +431,14 @@ const load = async () => {
   errorMsg.value = ''; notice.value = '';
   loading.value = true;
   try {
+    const askedAt = Date.now();
     const res = await fetchDongTradeDetails({
       lawdCd5: d.lawdCode,
       propertyType: kind.value,
       months: 12,
       dealKind: webEmbed ? dealKind.value : 'sale',
     });
+    asOf.value = askedAt;
     all.value = res.rows;
     dongNames.value = res.dongNames;
     period.value = { from: res.periodFrom, to: res.periodTo };
@@ -649,14 +656,17 @@ const eokMan = (v: number) => {
 };
 // 웹 — 시군구까지만 골랐을 때 위 요약은 시군구 전체 한 줄(기간은 아래 검색조건에서 고른다)
 // ===== 총 거래건수 = 정상 + 직거래 (계약해제 제외) — 앱 · 웹 모든 '총 거래건수' 가 같은 셈 =====
-const kindCount = (k: DongTradeDetailRow['kind'], rows = all.value) => rows.filter((r) => r.kind === k).length;
+/** 고른 기간(조회일 기준 3 · 6 · 12개월)에 든 거래 — 동 · 면적 · 연식 거르기 전. 요약 상자 · 수요분석이 이것으로 센다 */
+const windowRows = computed(() => all.value.filter(inWindow));
+const kindCount = (k: DongTradeDetailRow['kind'], rows = windowRows.value) => rows.filter((r) => r.kind === k).length;
 const yearTotal = computed(() => kindCount('정상거래') + kindCount('직거래'));
 const totalTip = computed(() => {
   const n = (v: number) => v.toLocaleString('ko-KR');
   return [
     `총 거래건수 = 정상 ${n(kindCount('정상거래'))}건 + 직거래 ${n(kindCount('직거래'))}건 = ${n(yearTotal.value)}건`,
     `계약해제 ${n(kindCount('계약해제'))}건은 제외 (없던 거래)`,
-    '연 = 최근 12개월 합 · 월 = 연 ÷ 12',
+    `${dateFrom.value.replace(/-/g, '.')} ~ ${dateTo.value.replace(/-/g, '.')} (조회일 기준 ${periodMonths.value}개월)`,
+    periodMonths.value === 12 ? '연 = 12개월 합 · 월 = 연 ÷ 12' : `연 = ${periodMonths.value}개월 합을 1년으로 환산 · 월 = 합 ÷ ${periodMonths.value}`,
   ];
 });
 const guNav = computed(() => {
@@ -666,7 +676,7 @@ const guNav = computed(() => {
   const avgOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
   return [
     // 총 거래건수 — 받아 둔 12개월의 정상 + 직거래(계약해제는 없던 거래라 뺀다)를 연 | 월(월평균)로, 밑에 나눠 적는다
-    { label: '총 거래건수', value: '', ym: { year: yearTotal.value, month: yearTotal.value / 12 }, tip: totalTip.value }, // 정상 · 직거래 · 해제는 ⓘ 말풍선에만
+    { label: '총 거래건수', value: '', ym: { year: (yearTotal.value * 12) / periodMonths.value, month: yearTotal.value / periodMonths.value }, tip: totalTip.value }, // 정상 · 직거래 · 해제는 ⓘ 말풍선에만
     { label: loadedDeal.value === 'jeonse' ? '평균 전세가' : '평균 거래가', value: eokMan(avgOf(prices)) },
     { label: '최저가', value: eokMan(prices.length ? Math.min(...prices) : 0) },
     { label: '최고가', value: eokMan(prices.length ? Math.max(...prices) : 0) },
