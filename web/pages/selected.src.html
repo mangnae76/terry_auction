@@ -11,6 +11,7 @@
   (function () {
     try {
       if (/[?&]login=1\b/.test(location.search)) return;
+      if (localStorage.getItem('ta.web.in') === '1') return;   // 로그인해 있다(새로고침 · 다시 들어옴) — 대문 없이
       location.replace('/intro.html');
     } catch (e) { /* 그만 */ }
   })();
@@ -4229,7 +4230,9 @@ html, body { overflow-x: clip; }
     let wasIn = false;   // 로그인해 있다가 로그아웃되면(어느 화면의 로그아웃이든) 대문으로 돌아간다
     T.watch(() => [auth.ready, auth.uid, auth.email], () => {
       if (!auth.ready) return;
-      if (wasIn && !auth.isLoggedIn) { location.replace('/intro.html'); return; }
+      // 로그인 표시 — 새로고침해도 대문으로 보내지 않게(맨 위 대문 스크립트가 본다)
+      try { if (auth.isLoggedIn) localStorage.setItem('ta.web.in', '1'); else localStorage.removeItem('ta.web.in'); } catch (e) { /* 그만 */ }
+      if (!auth.isLoggedIn && (wasIn || !/[?&]login=1\b/.test(location.search))) { location.replace('/intro.html'); return; }
       wasIn = auth.isLoggedIn;
       S.authReady = true;
       const ok = auth.isLoggedIn && T.isAllowedEmail(auth.email);
