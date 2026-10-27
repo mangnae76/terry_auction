@@ -69,10 +69,16 @@ const rows = computed(() => {
 const ddayText = (n: number) => (n === 0 ? 'D-DAY' : n > 0 ? `D+${n}` : `D${n}`);
 
 // ===== 고치기 =====
-const toggleDone = (id: string) => edit((f) => {
-  const s = f.steps.find((x) => x.id === id);
-  if (s) s.doneDate = s.doneDate ? undefined : todayIso();
-});
+/** 체크 — 예정일이 이미 지났으면 그 날짜 그대로(뒤 일정이 괜히 밀리지 않게), 앞당겨 끝냈으면 오늘로(뒤 일정도 당겨진다) */
+const toggleDone = (id: string) => {
+  const planned = rows.value.find((x) => x.id === id)?.date || '';
+  edit((f) => {
+    const s = f.steps.find((x) => x.id === id);
+    if (!s) return;
+    const today = todayIso();
+    s.doneDate = s.doneDate ? undefined : (planned && planned < today ? planned : today);
+  });
+};
 const move = (i: number, d: -1 | 1) => edit((f) => {
   const j = i + d;
   if (j < 0 || j >= f.steps.length) return;
@@ -117,18 +123,16 @@ const resetDefault = () => {
 
     <p v-if="!auction" class="pwt-empty">위에서 낙찰 물건을 고르면 그 물건의 낙찰일부터 절차 일정이 잡힙니다.</p>
     <template v-else>
+      <!-- 설명 없이 쓰게 — 기준일만 한 줄 -->
       <p class="pwt-guide">
-        <template v-if="startDate">{{ startLabel }}({{ startDate }}) 기준으로 계산됩니다.</template>
-        <template v-else>낙찰일 · 입찰일이 비어 있어 날짜를 셀 수 없습니다 — 물건상세에서 낙찰일을 적어 주세요.</template>
-        [완료]를 누르면 날짜는 오늘로 기록되고, 뒤 단계 일정이 자동으로 밀립니다.
+        <template v-if="startDate">{{ startLabel }} {{ startDate }} 기준</template>
+        <template v-else>낙찰일이 비어 있습니다 — 물건상세에서 낙찰일을 적어 주세요.</template>
       </p>
 
       <ol class="pwt-list">
-        <li v-for="(r, i) in rows" :key="r.id" :class="['pwt-row', { next: r.next, done: !!r.doneDate }]">
-          <button type="button" :class="['pwt-done', { on: !!r.doneDate }]" :aria-label="r.doneDate ? '완료 취소' : '완료'" :title="r.doneDate ? '완료 취소' : '완료 — 오늘로 기록'" @click="toggleDone(r.id)">
-            <svg v-if="r.doneDate" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10" /></svg>
-            <span v-else>완료</span>
-          </button>
+        <li v-for="(r, i) in rows" :key="r.id" :class="['pwt-row', { done: !!r.doneDate }]">
+          <!-- 체크하면 그날로 적히고 뒤 일정이 따라 밀린다 -->
+          <input type="checkbox" class="pwt-chk" :checked="!!r.doneDate" :aria-label="`${r.name} 마침`" @change="toggleDone(r.id)" />
           <div class="pwt-main">
             <template v-if="editingId === r.id">
               <div class="pwt-edit">
@@ -141,10 +145,10 @@ const resetDefault = () => {
               </div>
             </template>
             <template v-else>
-              <p class="pwt-name">{{ r.name }}<em v-if="r.next" class="pwt-badge">다음 단계</em><em v-if="r.doneDate" class="pwt-badge done">완료</em></p>
+              <p class="pwt-name">{{ r.name }}</p>
               <p class="pwt-meta">
                 <b>{{ r.date || '—' }}</b>
-                <span v-if="r.date" :class="['pwt-dday', { past: r.dday > 0, soon: r.dday <= 0 && r.dday >= -7 }]">{{ ddayText(r.dday) }}</span>
+                <span v-if="r.date && !r.doneDate" :class="['pwt-dday', { soon: r.dday <= 0 && r.dday >= -7 }]">{{ ddayText(r.dday) }}</span>
                 <span class="pwt-base">{{ r.doneDate ? '완료한 날' : r.baseText }}</span>
               </p>
               <p v-if="r.note" class="pwt-note">{{ r.note }}</p>
@@ -171,33 +175,26 @@ const resetDefault = () => {
 </template>
 
 <style scoped>
-.pwt { background: #fff; border-radius: 10px; padding: 18px 22px 20px; color: #111827; }
+.pwt { color-scheme: light; background: #fff; border-radius: 10px; padding: 18px 22px 20px; color: #111827; }
 .pwt-head { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid #eef1f6; }
 .pwt-head h2 { margin: 0 auto 0 0; display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: #111827; }
 .pwt-btn { height: 34px; padding: 0 14px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; font-weight: 700; color: #374151; cursor: pointer; }
 .pwt-btn:hover { background: #f5f7fb; }
-.pwt-btn.deal { border-color: #b7e0cf; background: #ecf8f2; color: #0f7a5c; }
-.pwt-btn.deal.on { background: #0f7a5c; border-color: #0f7a5c; color: #fff; }
+.pwt-btn.deal.on { background: #374151; border-color: #374151; color: #fff; }
 .pwt-btn.primary { border-color: #2b6df3; background: #2b6df3; color: #fff; }
 .pwt-btn:disabled { opacity: .45; cursor: default; }
 .pwt-guide { margin: 12px 0 10px; font-size: 14px; color: #6b7280; }
 .pwt-empty { margin: 24px 0 8px; text-align: center; font-size: 14px; color: #6b7280; }
 .pwt-list { list-style: none; margin: 0; padding: 0; }
 .pwt-row { display: flex; align-items: flex-start; gap: 14px; padding: 14px 10px; border-bottom: 1px solid #eef1f6; border-radius: 8px; }
-.pwt-row.next { background: #eef6f1; }
-.pwt-row.done .pwt-name { color: #6b7280; }
-.pwt-done { flex: 0 0 auto; width: 48px; height: 30px; border: 1px solid #d5dbe6; border-radius: 8px; background: #f5f7fb; color: #6b7280; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; display: grid; place-items: center; }
-.pwt-done:hover { border-color: #0f7a5c; color: #0f7a5c; }
-.pwt-done.on { background: #0f7a5c; border-color: #0f7a5c; color: #fff; }
+.pwt-row.done :is(.pwt-name, .pwt-meta, .pwt-note) { color: #9ca3af; }
+.pwt-chk { flex: 0 0 auto; width: 20px; height: 20px; margin: 2px 4px 0 0; accent-color: #2b6df3; cursor: pointer; }
 .pwt-main { flex: 1 1 auto; min-width: 0; }
 .pwt-name { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; }
-.pwt-badge { font-style: normal; padding: 2px 8px; border-radius: 999px; background: #1f7a4d; color: #fff; font-size: 12px; font-weight: 700; }
-.pwt-badge.done { background: #e5e7eb; color: #4b5563; }
 .pwt-meta { margin: 6px 0 0; display: flex; align-items: baseline; gap: 8px; font-size: 14px; }
 .pwt-meta b { font-weight: 700; }
-.pwt-dday { font-weight: 800; color: #1f7a4d; }
-.pwt-dday.past { color: #9ca3af; }
-.pwt-dday.soon { color: #dc2626; }
+.pwt-dday { font-weight: 800; color: #111827; }
+.pwt-dday.soon { color: #dc2626; }   /* 7일 안쪽만 빨강, 나머지는 검정 */
 .pwt-base { color: #9ca3af; }
 .pwt-note { margin: 5px 0 0; font-size: 14px; color: #4b5563; }
 .pwt-ctrl { flex: 0 0 auto; display: flex; gap: 6px; }
