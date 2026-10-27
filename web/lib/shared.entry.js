@@ -29,6 +29,9 @@ export { watch } from 'vue';
 export { useAuthStore } from '../../src/stores/authStore';
 export { useAuctionStore } from '../../src/stores/auctionStore';
 export { isAllowedEmail } from '../../src/services/accessControl';
+/* 대문의 가벼운 로그인 창이 '로그인'을 누를 때 쓴다 — 로그인 유지 방식 · 카카오 설정 여부 */
+export { setLoginPersistence } from '../../src/services/authRepository';
+export { isKakaoLoginConfigured } from '../../src/services/socialAuth';
 export { stageDates, bidStageOf, stageLabelOf } from '../../src/utils/stageLabel';
 // 물건상세 정보요약·기본정보 — 앱 물건상세와 같은 셈
 export {

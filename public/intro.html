@@ -46,6 +46,32 @@
   .modal .lp-card { max-width: none !important; box-shadow: 0 24px 60px rgba(0, 0, 0, .35) !important; }
   .modal .x { position: absolute; top: 10px; right: 10px; z-index: 2; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; font-size: 20px; line-height: 1; color: #6b7280; cursor: pointer; }
   .modal .x:hover { background: #f3f4f6; color: #111827; }
+  /* 가벼운 로그인 창 — 앱 LoginPage 의 카드와 같은 값 */
+  .ql-card { background: #fff; border-radius: 16px; padding: 28px 22px; box-shadow: 0 24px 60px rgba(0, 0, 0, .35); display: flex; flex-direction: column; gap: 12px; font-family: inherit; }
+  .ql-brand { text-align: center; margin-bottom: 10px; }
+  .ql-brand img { height: 60px; width: auto; }
+  .ql-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #374151; font-weight: 600; }
+  .ql-field input { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #d1d5db; border-radius: 8px; font: inherit; font-size: 14px; color: #111827; outline: none; background: #fff; }
+  .ql-field input:focus { border-color: #2b6df3; box-shadow: 0 0 0 3px rgba(43, 109, 243, .15); }
+  .ql-pw { position: relative; display: block; }
+  .ql-pw input { padding-right: 42px; }
+  .ql-eye { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; font-size: 14px; opacity: .55; }
+  .ql-eye:hover { opacity: 1; background: #f3f4f6; }
+  .ql-err { margin: 0; font-size: 12px; color: #dc2626; }
+  .ql-submit { width: 100%; height: 44px; border: 0; border-radius: 10px; background: #1f3a72; color: #fff; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
+  .ql-submit:disabled { background: #9ca3af; cursor: wait; }
+  .ql-submit.ghost { margin-top: -4px; background: #fff; color: #1f3a72; border: 1px solid #c7d0e4; }
+  .ql-sep { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #9ca3af; }
+  .ql-sep::before, .ql-sep::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+  .ql-social { width: 100%; height: 44px; border: 0; border-radius: 10px; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+  .ql-social.kakao { background: #fee500; color: #191919; }
+  .ql-opts { display: flex; justify-content: center; gap: 18px; margin-top: 2px; }
+  .ql-opts label { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #4b5563; cursor: pointer; }
+  .ql-opts input { width: 15px; height: 15px; margin: 0; accent-color: #1f3a72; }
+  .ql-links { margin: 0; display: flex; justify-content: center; align-items: center; gap: 8px; white-space: nowrap; }
+  .ql-links button { border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; color: #9ca3af; }
+  .ql-links button:hover { color: #4b5563; text-decoration: underline; }
+  .ql-links i { font-style: normal; font-size: 11px; color: #cbd2de; }
   .modal .wait { margin: 0; padding: 60px 0; border-radius: 16px; background: #fff; text-align: center; color: #6b7280; font-size: 15px; }
 </style>
 </head>
@@ -63,7 +89,25 @@
   <div class="veil" id="veil" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-label="로그인">
       <button type="button" class="x" id="closeLogin" aria-label="닫기">×</button>
-      <div id="loginMount"><p class="wait">로그인 화면을 불러오는 중입니다…</p></div>
+      <!-- 가벼운 로그인 창 — 누르면 바로 뜬다(앱 로그인 화면과 같은 모양). 무거운 로그인 묶음은 '로그인'을 누를 때 쓴다 -->
+      <form class="ql-card" id="quickLogin" autocomplete="on">
+        <div class="ql-brand"><img src="/myturn-promo/media/logo_gray.png" alt="MYTURN AUCTION" /></div>
+        <label class="ql-field"><span>회원 아이디</span><input id="qlId" type="email" autocomplete="email" placeholder="example@email.com" required /></label>
+        <label class="ql-field"><span>비밀번호</span>
+          <span class="ql-pw"><input id="qlPw" type="password" autocomplete="current-password" placeholder="6자 이상" required /><button type="button" class="ql-eye" id="qlEye" aria-label="비밀번호 보기">👁</button></span>
+        </label>
+        <p class="ql-err" id="qlErr" hidden></p>
+        <button type="submit" class="ql-submit" id="qlSubmit">로그인</button>
+        <button type="button" class="ql-submit ghost" id="qlSignup">회원가입</button>
+        <div class="ql-sep"><span>또는</span></div>
+        <button type="button" class="ql-social kakao" id="qlKakao">카카오로 시작하기</button>
+        <div class="ql-opts">
+          <label><input type="checkbox" id="qlSave" />아이디 저장</label>
+          <label><input type="checkbox" id="qlKeep" />로그인 유지</label>
+        </div>
+        <p class="ql-links"><button type="button" data-full>아이디 찾기</button><i>·</i><button type="button" data-full>비밀번호 찾기</button><i>·</i><button type="button" data-full>결제안내</button><i>·</i><button type="button" data-full>무료체험</button></p>
+      </form>
+      <div id="loginMount" hidden><p class="wait">불러오는 중입니다…</p></div>
     </div>
   </div>
   <script>
@@ -121,31 +165,84 @@
       return auth;
     })();
     ready.catch(() => { /* 누를 때 다시 해 본다 */ });
-    const openLogin = async () => {
-      if (signedIn) { location.href = '/web?login=1'; return; }
-      if (!veil.hidden) return;
-      veil.hidden = false;
-      soundBeforeLogin = !muted && !blocked;
-      if (!muted) setMuted(true);
-      const el = document.getElementById('loginMount');
+    // ===== 가벼운 로그인 창 — 누르면 바로 뜬다. 묶음(로그인 처리)은 '로그인'을 누를 때 쓴다(대문이 뜰 때 미리 받아 두므로 대개 이미 와 있다) =====
+    const $q = (id) => document.getElementById(id);
+    const quick = $q('quickLogin');
+    const SAVED_ID_KEY = 'myturn.login.savedId';   // 앱 로그인 화면과 같은 열쇠
+    const KEEP_KEY = 'myturn.login.keep';
+    const readLocal = (k) => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+    const writeLocal = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) { /* 그만 */ } };
+    $q('qlId').value = readLocal(SAVED_ID_KEY);
+    $q('qlSave').checked = !!readLocal(SAVED_ID_KEY);
+    $q('qlKeep').checked = readLocal(KEEP_KEY) !== '0';
+    $q('qlEye').addEventListener('click', () => { const i = $q('qlPw'); i.type = i.type === 'password' ? 'text' : 'password'; });
+    $q('qlSignup').addEventListener('click', () => { location.href = '/signup'; });
+    const showErr = (t) => { const e = $q('qlErr'); e.textContent = t || ''; e.hidden = !t; };
+    const busy = (on) => { ['qlSubmit', 'qlSignup', 'qlKakao'].forEach((id) => { $q(id).disabled = on; }); $q('qlSubmit').textContent = on ? '로그인 중…' : '로그인'; };
+    const authNow = async () => {
+      try { return await ready; } catch (e) {
+        if (!T) { T = await loadBundle(); T.startStores(); T.useAuthStore().initialize(); }
+        const a = T.useAuthStore();
+        if (!a.ready && a.waitUntilReady) await a.waitUntilReady();
+        return a;
+      }
+    };
+    /** 로그인 공통 — 유지 방식 정하고, 들어갈 수 있는 계정인지 보고, 웹으로 */
+    const doLogin = async (how) => {
+      showErr(''); busy(true);
       try {
-        let auth;
-        try { auth = await ready; } catch (e) {
-          if (!T) { T = await loadBundle(); T.startStores(); T.useAuthStore().initialize(); }
-          auth = T.useAuthStore();
-          if (!auth.ready && auth.waitUntilReady) await auth.waitUntilReady();
-        }
-        // 이미 로그인해 있으면 로그인 창 없이 바로 웹으로
-        if (auth.isLoggedIn) { location.href = '/web?login=1'; return; }
-        if (veil.hidden) return;
+        const auth = await authNow();
+        writeLocal(KEEP_KEY, $q('qlKeep').checked ? '' : '0');
+        if (T.setLoginPersistence) await T.setLoginPersistence($q('qlKeep').checked);
+        const profile = await how(auth);
+        if (!profile) return;
+        if (T.isAllowedEmail && !T.isAllowedEmail(profile.email)) { await auth.logout(); showErr('이 계정은 사용 권한이 없습니다.'); return; }
+        location.href = '/web?login=1';   // 로그인 끝 — 선정목록으로
+      } catch (e) {
+        const a = T && T.useAuthStore ? T.useAuthStore() : null;
+        showErr((a && a.error) || '로그인하지 못했습니다 — 다시 시도해 주세요.');
+      } finally { busy(false); }
+    };
+    quick.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const id = $q('qlId').value.trim(); const pw = $q('qlPw').value;
+      if (!id || !pw) { showErr('이메일과 비밀번호를 입력해 주세요.'); return; }
+      void doLogin(async (auth) => {
+        const p = await auth.login(id, pw);
+        writeLocal(SAVED_ID_KEY, $q('qlSave').checked ? id : '');
+        return p;
+      });
+    });
+    $q('qlKakao').addEventListener('click', () => {
+      void doLogin(async (auth) => {
+        if (T.isKakaoLoginConfigured && !T.isKakaoLoginConfigured()) { showErr('카카오 로그인이 아직 준비되지 않았습니다.'); return null; }
+        return auth.loginWithKakao();
+      });
+    });
+    // 아이디 찾기 · 비밀번호 찾기 · 결제안내 · 무료체험 — 앱 로그인 화면(그 창들이 다 들어 있다)으로 바꿔 띄운다
+    quick.querySelectorAll('[data-full]').forEach((b) => b.addEventListener('click', async () => {
+      const el = $q('loginMount');
+      quick.hidden = true; el.hidden = false;
+      try {
+        await authNow();
         el.innerHTML = '';
         unmount = T.mountAppLogin(el, (what) => {
           if (what === 'signup') { location.href = '/signup'; return; }
-          location.href = '/web?login=1';   // 로그인 끝 — 선정목록으로
+          location.href = '/web?login=1';
         });
       } catch (e) {
-        el.innerHTML = '<p class="wait">로그인 화면을 불러오지 못했습니다 — 새로고침 뒤 다시 눌러 주세요.</p>';
+        el.innerHTML = '<p class="wait">불러오지 못했습니다 — 새로고침 뒤 다시 눌러 주세요.</p>';
       }
+    }));
+    const openLogin = () => {
+      if (signedIn) { location.href = '/web?login=1'; return; }
+      if (!veil.hidden) return;
+      veil.hidden = false;
+      quick.hidden = false; $q('loginMount').hidden = true;
+      soundBeforeLogin = !muted && !blocked;
+      if (!muted) setMuted(true);
+      showErr('');
+      setTimeout(() => { ($q('qlId').value ? $q('qlPw') : $q('qlId')).focus(); }, 0);
     };
     document.getElementById('loginBtn').addEventListener('click', openLogin);
     document.getElementById('closeLogin').addEventListener('click', closeLogin);
