@@ -1770,24 +1770,6 @@ const toggleSection = (key: string) => {
   font-size: 12.5px; color: #9ca3af; font-weight: 600;
 }
 
-/* 글자 크기 — 웹과 같은 규칙: 큰 제목 18 · 카드 제목 16 · 중제목(표 왼쪽 이름 · 칩 · 단계 이름) 15 · 나머지 글은 모두 14 이상 */
-.pw-shell .pw-super-head h2 { font-size: 18px; }
-.pw-shell .pw-card-head h2, .pw-shell .pw-wrap.super .pw-card-head h2 { font-size: 16px; }
-/* 앱 윗머리(탭 · 편집 · 낙찰목록 · 고른 물건)도 14 — 탭은 다섯 칸으로 나눠 글자가 잘리지 않게 */
-.pw-shell :is(.pw-tab, .pw-ebtn, .pw-objpick, .pw-obj) { font-size: 14px; }
-.pw-shell .pw-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-/* 명도절차 '강제 계고 → 강제 집행' 꼬리표는 손전화 폭에서 넘치므로 원래 크기(11) 그대로 둔다 */
-.pw-shell :is(.pw-label strong, .pw-labellink strong, .pw-gr-chip, .pw-br-pill .pw-br-txt, .pw-bx-item, .pw-gr-box, .pw-br-left b, .pw-chip) { font-size: 15px; }
-.pw-shell :is(
-  .pw-txt, .pw-note, .pw-count, .pw-nopick, .pw-nopick b, .pw-memo, .pw-qty, .pw-golink,
-  .pw-br-txt, .pw-br-item, .pw-br-note, .pw-gr-list li, .pw-sk-item, .pw-tl-day, .pw-tl-label,
-  .pw-int-tools .pw-ebtn, .pw-int-sum, .pw-int-sum b, .pw-int-tbl th, .pw-int-tbl td, .pw-empty, .pw-rowstep .lab,
-  .pw-flow-box, .pw-flow-tip
-) { font-size: 14px; }
-/* 표 칸 — 손전화 폭에서 가운데 글 칸이 너무 좁아지지 않게 */
-.pw-shell .pw-tbl:not(.edit) .pw-col-label { width: 76px; }
-.pw-shell .pw-tbl:not(.edit) .pw-col-qty { width: 40px; }
-.pw-shell .pw-tbl:not(.edit) .pw-col-memo { width: 88px; }
 /* 낙찰목록 개수 앞 곱하기 — 자금관리 '낙찰목록 ×N' 과 같은 표기 */
 .pw-x { font-style: normal; font-size: 0.75em; font-weight: 700; opacity: 0.6; margin: 0 1px 0 3px; }
 /* 상자 안쪽 여유 — 바깥 폭은 사건 카드에 맞추고, 안의 글이 상자 끝에 바싹 붙지 않게 안쪽을 띄운다. 상자 사이도 조금 더 */
