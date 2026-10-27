@@ -13,6 +13,7 @@ import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
 import AppToast from '../components/AppToast.vue';
 import SnapChip from '../components/SnapChip.vue';
 import YmCount from '../components/YmCount.vue';
+import InfoTip from '../components/InfoTip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
@@ -409,7 +410,8 @@ const dongSums = computed<DongSum[]>(() => {
     const avgOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
     return {
       name,
-      count: list.length,
+      // 거래건수는 총 거래건수 셈과 같게 정상 + 직거래 (값들은 정상거래만으로)
+      count: list.length + filtered.value.filter((r) => r.kind === '직거래' && r.umdNm === name).length,
       avg: avgOf(prices),
       median: n ? (n % 2 ? prices[(n - 1) / 2] : (prices[n / 2 - 1] + prices[n / 2]) / 2) : 0,
       min: n ? prices[0] : 0,
@@ -444,6 +446,17 @@ const eokMan = (v: number) => {
   return `${Math.round(v / 10000).toLocaleString('ko-KR')}만`;
 };
 // 웹 — 시군구까지만 골랐을 때 위 요약은 시군구 전체 한 줄(기간은 아래 검색조건에서 고른다)
+// ===== 총 거래건수 = 정상 + 직거래 (계약해제 제외) — 앱 · 웹 모든 '총 거래건수' 가 같은 셈 =====
+const kindCount = (k: DongTradeDetailRow['kind'], rows = all.value) => rows.filter((r) => r.kind === k).length;
+const yearTotal = computed(() => kindCount('정상거래') + kindCount('직거래'));
+const totalTip = computed(() => {
+  const n = (v: number) => v.toLocaleString('ko-KR');
+  return [
+    `총 거래건수 = 정상 ${n(kindCount('정상거래'))}건 + 직거래 ${n(kindCount('직거래'))}건 = ${n(yearTotal.value)}건`,
+    `계약해제 ${n(kindCount('계약해제'))}건은 제외 (없던 거래)`,
+    '연 = 최근 12개월 합 · 월 = 연 ÷ 12',
+  ];
+});
 const kindBreakdown = computed(() => {
   const n = (v: number) => v.toLocaleString('ko-KR');
   const of = (k: DongTradeDetailRow['kind']) => all.value.filter((r) => r.kind === k).length; // 12개월 전부 기준
@@ -455,8 +468,8 @@ const guNav = computed(() => {
   const perM2s = normals.value.filter((r) => r.priceWon > 0 && r.areaM2 > 0).map((r) => r.priceWon / r.areaM2);
   const avgOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
   return [
-    // 거래건수 — 받아 둔 12개월 전부(직거래 · 해제 포함)를 연 | 월(월평균)로, 밑에 나눠 적는다 (아래 값들은 정상거래만으로 셈)
-    { label: '거래건수', value: '', ym: { year: all.value.length, month: all.value.length / 12 }, sub: kindBreakdown.value },
+    // 총 거래건수 — 받아 둔 12개월의 정상 + 직거래(계약해제는 없던 거래라 뺀다)를 연 | 월(월평균)로, 밑에 나눠 적는다
+    { label: '총 거래건수', value: '', ym: { year: yearTotal.value, month: yearTotal.value / 12 }, sub: kindBreakdown.value, tip: totalTip.value },
     { label: loadedDeal.value === 'jeonse' ? '평균 전세가' : '평균 거래가', value: eokMan(avgOf(prices)) },
     { label: '최저가', value: eokMan(prices.length ? Math.min(...prices) : 0) },
     { label: '최고가', value: eokMan(prices.length ? Math.max(...prices) : 0) },
@@ -588,7 +601,7 @@ const downloadCsv = () => {
             <SnapChip :chip="snapChip" />
           </div>
           <div class="adm-gunav-row">
-            <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small>{{ c.label }}</small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template><em v-if="c.sub" class="adm-gunav-sub">{{ c.sub }}</em></b></div>
+            <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small>{{ c.label }}<InfoTip v-if="c.tip" :lines="c.tip" /></small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template><em v-if="c.sub" class="adm-gunav-sub">{{ c.sub }}</em></b></div>
           </div>
         </section>
         <div v-else class="adm-sum">
@@ -602,7 +615,7 @@ const downloadCsv = () => {
         <div v-if="!(webEmbed && !dong)" :class="['adm-kpis', { 'is-web': webEmbed }]">
           <div class="adm-kpi"><small>실거래가 평균</small><strong>{{ won(avgPrice) }}</strong></div>
           <div class="adm-kpi"><small>평당가 평균</small><strong>{{ won(avgUnitPrice) }}</strong></div>
-          <div class="adm-kpi blue"><small>총 거래건수 <em v-if="!webEmbed">정상거래</em></small><strong>{{ (webEmbed ? filtered.length : normals.length).toLocaleString('ko-KR') }}건<em v-if="webEmbed" class="adm-gunav-sub">{{ kindBreakdown }}</em></strong></div>
+          <div class="adm-kpi blue"><small>총 거래건수 <em v-if="!webEmbed">정상거래</em></small><strong>{{ (webEmbed ? kindCount('정상거래', filtered) + kindCount('직거래', filtered) : normals.length).toLocaleString('ko-KR') }}건<em v-if="webEmbed" class="adm-gunav-sub">{{ kindBreakdown }}</em></strong></div>
         </div>
 
         <!-- 분포 (앱) -->

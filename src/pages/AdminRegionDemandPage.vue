@@ -8,6 +8,7 @@
 // 12개월치 열두 번이면 표가 다 찬다 (동마다 부르지 않는다).
 // 총 세대수·총 매물수는 아직 손으로 적는다 — 세대수는 건축물대장을 동마다
 // 훑어야 해서 하루 한도에 닿고, 매물수는 공식 API 가 아니다.
+import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import YmCount from '../components/YmCount.vue';
@@ -194,14 +195,19 @@ const eokShort = (n: number) => {
 const navCells = computed(() => {
   const v = navStats.value;
   const pct = (x: number) => (x > 0 ? `${x.toFixed(1)}%` : '-');
+  const n = (x: number) => x.toLocaleString('ko-KR');
   return [
-    // 거래건수 한 칸에 연(12개월 합) | 월(월평균) — 손품+현장 매매수요와 같은 표기.
-    // 지역분석처럼 직거래 · 해제까지 다 더한 수, 밑에 나눠 적는다 (다른 지표는 정상거래만으로 셈)
+    // 총 거래건수 — 정상 + 직거래(계약해제는 없던 거래라 뺀다)를 연 | 월(월평균)로, 밑에 나눠 적는다 (다른 지표는 정상거래만으로 셈)
     {
-      label: '거래건수', value: '',
-      ym: { year: v.count + directShown.value + cancelShown.value, month: (v.count + directShown.value + cancelShown.value) / months.value },
+      label: '총 거래건수', value: '',
+      ym: { year: v.count + directShown.value, month: (v.count + directShown.value) / months.value },
       // 이름과 숫자 사이는 붙는 칸(\u00a0) — 좁아 줄이 바뀌어도 '해제 / 80' 처럼 갈라지지 않게
-      sub: `정상\u00a0${v.count.toLocaleString('ko-KR')} · 직거래\u00a0${directShown.value.toLocaleString('ko-KR')} · 해제\u00a0${cancelShown.value.toLocaleString('ko-KR')}`,
+      sub: `정상\u00a0${n(v.count)} · 직거래\u00a0${n(directShown.value)} · 해제\u00a0${n(cancelShown.value)}`,
+      tip: [
+        `총 거래건수 = 정상 ${n(v.count)}건 + 직거래 ${n(directShown.value)}건 = ${n(v.count + directShown.value)}건`,
+        `계약해제 ${n(cancelShown.value)}건은 제외 (없던 거래)`,
+        `연 = 최근 ${months.value}개월 합 · 월 = 연 ÷ ${months.value}`,
+      ],
     },
     { label: '평균 거래가', value: eokShort(v.avgPrice) },
     { label: '평균 건축연수', value: v.age > 0 ? `${v.age}년차` : '-' },
@@ -421,7 +427,7 @@ const downloadCsv = () => {
         <p class="adm-nav-scope">{{ sumLabel }}<SnapChip :chip="snap.chip.value" /></p>
         <div class="adm-nav-row">
           <div v-for="c in navCells" :key="c.label" class="adm-nav-box">
-            <small>{{ c.label }}</small>
+            <small>{{ c.label }}<InfoTip v-if="c.tip" :lines="c.tip" /></small>
             <b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template></b>
             <em v-if="c.sub" class="adm-nav-sub">{{ c.sub }}</em>
           </div>
@@ -475,7 +481,7 @@ const downloadCsv = () => {
                   class="adm-cell"
                   inputmode="numeric"
                   placeholder="입력"
-                  :value="r.units || ''"
+                  :value="r.units ? r.units.toLocaleString('ko-KR') : ''"
                   @input="setManual(r.sigungu, r.umdNm, 'units', ($event.target as HTMLInputElement).value)"
                 />
               </td>
@@ -484,7 +490,7 @@ const downloadCsv = () => {
                   class="adm-cell"
                   inputmode="numeric"
                   placeholder="입력"
-                  :value="r.listings || ''"
+                  :value="r.listings ? r.listings.toLocaleString('ko-KR') : ''"
                   @input="setManual(r.sigungu, r.umdNm, 'listings', ($event.target as HTMLInputElement).value)"
                 />
               </td>
