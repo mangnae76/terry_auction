@@ -696,16 +696,15 @@ const toggleSection = (key: string) => {
           </h2>
           <img :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed('__flow') }]" alt="" />
         </header>
-        <template v-if="!isCollapsed('__flow')">
-          <div class="pw-flow-map">
-            <span v-for="(st, i) in FLOW_STEPS" :key="st.name" :class="['pw-flow-box', { last: i === FLOW_STEPS.length - 1 }]">{{ st.name }}</span>
-          </div>
-          <ol class="pw-flow-list">
-            <li v-for="st in FLOW_STEPS" :key="`n-${st.name}`">
-              <b>{{ st.name.replace('\n', '') }}</b><span>{{ st.note }}</span>
-            </li>
-          </ol>
-        </template>
+        <!-- 단계마다 설명은 말풍선으로 — 마우스를 올리거나 누르면(포커스) 뜬다 -->
+        <div v-if="!isCollapsed('__flow')" class="pw-flow-map">
+          <span
+            v-for="(st, i) in FLOW_STEPS"
+            :key="st.name"
+            :class="['pw-flow-box', { last: i === FLOW_STEPS.length - 1 }]"
+            tabindex="0"
+          >{{ st.name }}<span class="pw-flow-tip" role="tooltip">{{ st.note }}</span></span>
+        </div>
       </section>
       <template v-if="hasTable">
        <div v-for="(blk, bi) in blocks" :key="`blk-${bi}`" :class="['pw-wrap', { super: blk.super }]">

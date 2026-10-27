@@ -635,9 +635,16 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-flowcard .pw-flow-box { font-size: 14px; min-height: 52px; }
 .app-page[data-k="postwin"] .pw-flowcard .pw-flow-box:nth-child(4n):not(.last)::after { content: '▶'; position: absolute; right: -16px; top: 50%; transform: translateY(-50%); font-size: 9px; color: #9aa6bb; }
 .app-page[data-k="postwin"] .pw-flowcard .pw-flow-box:not(.last)::after { right: -16px; }
-.app-page[data-k="postwin"] .pw-flowcard .pw-flow-list { margin: 12px 4px 4px; gap: 8px; }
-.app-page[data-k="postwin"] .pw-flowcard .pw-flow-list li { font-size: 14px; }
-.app-page[data-k="postwin"] .pw-flowcard .pw-flow-list b { flex-basis: 120px; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-map { border-bottom: 0; padding-bottom: 8px; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-box { cursor: help; outline: none; transition: background .15s; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-box:is(:hover, :focus) { background: #e3ebff; }
+/* 말풍선 — 상자 아래 가운데. 오른쪽 끝 두 상자는 오른쪽에 맞춰 화면 밖으로 안 나가게 */
+.app-page[data-k="postwin"] .pw-flow-tip { display: none; position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); z-index: 5;
+  width: max-content; max-width: 340px; padding: 8px 12px; border-radius: 8px; background: #1f2937; color: #fff;
+  font-size: 14px; font-weight: 500; line-height: 1.45; text-align: left; white-space: normal; box-shadow: 0 6px 16px rgba(17, 24, 39, .2); pointer-events: none; }
+.app-page[data-k="postwin"] .pw-flow-box:is(:hover, :focus) .pw-flow-tip { display: block; }
+.app-page[data-k="postwin"] .pw-flow-box:nth-child(n+7) .pw-flow-tip { left: auto; right: 0; transform: none; }
+.app-page[data-k="postwin"] .pw-flow-box:nth-child(-n+1) .pw-flow-tip { left: 0; transform: none; }
 /* 낙찰목록 — 단추 바로 아래 오른쪽 끝을 맞춰 펼친다 */
 .app-page[data-k="postwin"] .pw-pickanchor { position: relative; }
 .app-page[data-k="postwin"] .pw-pickanchor .pw-objlist { left: auto; right: 0; top: calc(100% + 6px); width: 520px; max-width: calc(100vw - 32px); }
