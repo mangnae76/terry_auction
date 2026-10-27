@@ -880,7 +880,7 @@ const downloadCsv = () => {
 .adm-list-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin: 0 2px 10px; }
 .adm-list-head strong { font-size: 14.5px; font-weight: 800; }
 /* 웹 — 결과 보기 탭(밑줄은 ::after 막대) */
-.adm-view-tabs { display: flex; gap: 22px; }
+.adm-view-tabs { display: flex; gap: 22px; padding-left: 28px; } /* 글자 두 개쯤 안으로 */
 .adm-view-tabs button { position: relative; border: 0; background: none; padding: 6px 0 8px; font-size: 16px; font-weight: 700; color: #6b7280; cursor: pointer; border-radius: 0; }
 .adm-view-tabs button.on { color: #2b6df3; font-weight: 800; }
 .adm-view-tabs button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: #2b6df3; }
