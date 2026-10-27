@@ -630,7 +630,7 @@ const toggleSection = (key: string) => {
       </div>
     </div>
 
-    <div :key="activeTab" class="pw-body">
+    <div :key="activeTab" :class="['pw-body', `tab-${activeTab}`, { app: !webEmbed }]">
       <!-- 낙찰당일 — '낙찰 후 진행 순서'를 탭 맨 위 상자로 펼쳐 둔다 (앱 · 웹) -->
       <section v-if="activeTab === 'win'" :class="['pw-card', 'pw-flowcard', { web: webEmbed }]">
         <!-- 늘 펼쳐 둔다 — 접기 단추 없음 -->
@@ -1769,4 +1769,7 @@ const toggleSection = (key: string) => {
 .pw-shell .pw-label { color: #374151; }
 .pw-shell :is(.pw-label strong, .pw-labellink strong) { font-weight: 700; }
 .pw-shell .pw-label strong { color: #374151; }
+/* 앱 사업자등록 표 — 빡빡하다는 말에 줄 위아래 여백 · 줄 간격을 한 단(약 10%) 넓힌다. 글자 크기는 그대로 */
+.pw-body.app.tab-biz .pw-tbl td.pw-txt { padding-top: 8px !important; padding-bottom: 8px !important; line-height: 1.55; }
+.pw-body.app.tab-biz .pw-tbl td.pw-label { padding-top: 8px !important; padding-bottom: 8px !important; }
 </style>

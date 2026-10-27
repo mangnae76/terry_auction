@@ -35,7 +35,7 @@ export const POST_WIN_BIZ: CheckGroup[] = [
         rows: [
           { id: 'bz.s1a', depth: 0, text: '홈택스 접속' },
           { id: 'bz.s1b', depth: 0, text: '민원증명 > 사업자등록 신청' },
-          { id: 'bz.s1c', depth: 0, text: '개인사업자 선택 → 업종 코드 703011 체크 — 주거용 건물 매매업(부동산매매업)' },
+          { id: 'bz.s1c', depth: 0, text: '개인사업자 선택 → 업종코드 703011 체크 — 주거용 건물 매매업(부동산매매업)' },
           { id: 'bz.s1d', depth: 0, text: '종목을 "주거용 건물 매매업"으로 변경' },
         ],
       },
