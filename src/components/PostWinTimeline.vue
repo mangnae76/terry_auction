@@ -130,7 +130,7 @@ const resetDefault = () => {
       </p>
 
       <ol class="pwt-list">
-        <li v-for="(r, i) in rows" :key="r.id" :class="['pwt-row', { done: !!r.doneDate }]">
+        <li v-for="(r, i) in rows" :key="r.id" :class="['pwt-row', { done: !!r.doneDate, now: r.next }]">
           <!-- 체크하면 그날로 적히고 뒤 일정이 따라 밀린다 -->
           <input type="checkbox" class="pwt-chk" :checked="!!r.doneDate" :aria-label="`${r.name} 마침`" @change="toggleDone(r.id)" />
           <div class="pwt-main">
@@ -188,6 +188,8 @@ const resetDefault = () => {
 .pwt-list { list-style: none; margin: 0; padding: 0; }
 .pwt-row { display: flex; align-items: flex-start; gap: 14px; padding: 14px 10px; border-bottom: 1px solid #eef1f6; border-radius: 8px; }
 .pwt-row.done :is(.pwt-name, .pwt-meta, .pwt-note) { color: #9ca3af; }
+/* 지금 시작할 단계(아직 체크 안 한 첫 단계) — 흐린 빨강 칸 */
+.pwt-row.now { background: #fdeeee; border: 1px solid #f6c9c9; border-bottom-color: #f6c9c9; }
 .pwt-chk { flex: 0 0 auto; width: 20px; height: 20px; margin: 2px 4px 0 0; accent-color: #2b6df3; cursor: pointer; }
 .pwt-main { flex: 1 1 auto; min-width: 0; }
 .pwt-name { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; }
