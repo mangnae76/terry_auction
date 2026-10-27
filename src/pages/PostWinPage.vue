@@ -1509,8 +1509,11 @@ const toggleSection = (key: string) => {
      아래 모서리 규칙이 닿지 않는다 — 표 자체로 잘라내 네 모서리를 지킨다 */
   overflow: hidden;
 }
-.pw-tbl > tbody > tr > td { border-bottom: 1px solid #d0d5dd; }
-.pw-tbl > tbody > tr:last-child > td { border-bottom: 0; }
+/* 칸 사이 선은 '위쪽'에 긋는다(첫 줄은 없음) — 웹 공통 표(.it-table)와 같은 방식.
+   아래쪽에 그으면 여러 줄을 묶은 이름 칸(rowspan)이 마지막 묶음일 때 그 칸만
+   '마지막 줄'로 안 잡혀 표 테두리 위에 선이 한 번 더 겹친다(왼쪽 아래 두 줄) */
+.pw-tbl > tbody > tr > td { border-top: 1px solid #d0d5dd; }
+.pw-tbl > tbody > tr:first-child > td { border-top: 0; }
 /* 네 모서리 — 배경이 모서리를 따라 깎이게 한다 */
 .pw-tbl > tbody:first-of-type > tr:first-child > :first-child { border-top-left-radius: 8px; }
 .pw-tbl > tbody:first-of-type > tr:first-child > :last-child { border-top-right-radius: 8px; }
