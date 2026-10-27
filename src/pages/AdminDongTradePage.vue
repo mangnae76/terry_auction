@@ -77,6 +77,11 @@ const loadedLabel = ref('');
 // ===== 검색조건 =====
 const PERIODS = [1, 3, 6, 12];
 const WEB_PERIODS = [3, 6, 12]; // 웹은 위 고르는 줄에서 — 1개월은 뺀다
+/** 웹 — 매매 / 전세 (전세는 전월세 자료에서 월세 없는 것, 값은 보증금). 바꾸면 '조회' 로 다시 받는다 */
+const DEAL_KINDS = [{ key: 'sale', label: '매매' }, { key: 'jeonse', label: '전세' }] as const;
+const dealKind = ref<'sale' | 'jeonse'>('sale');
+/** 지금 화면에 받아 둔 자료가 매매인지 전세인지 — 이름표(평균 거래가 / 평균 전세가)를 맞춘다 */
+const loadedDeal = ref<'sale' | 'jeonse'>('sale');
 const periodMonths = ref(12);
 const dateFrom = ref('');
 const dateTo = ref('');
@@ -85,6 +90,8 @@ const areaMax = ref('');
 const yearMin = ref('');
 const yearMax = ref('');
 const listQuery = ref('');
+/** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
+const listView = ref<'table' | 'dist'>('table');
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const isoMonthsAgo = (m: number) => {
@@ -164,11 +171,13 @@ const load = async () => {
       lawdCd5: d.lawdCode,
       propertyType: kind.value,
       months: 12,
+      dealKind: webEmbed ? dealKind.value : 'sale',
     });
     all.value = res.rows;
     dongNames.value = res.dongNames;
     period.value = { from: res.periodFrom, to: res.periodTo };
     loadedLabel.value = `${sido.value} ${d.label}`;
+    loadedDeal.value = webEmbed ? dealKind.value : 'sale';
     // 고르지 않았으면 고르지 않은 채로 둔다 — 첫 동을 멋대로 집으면
     // 시군구 전체를 보려던 뜻이 꺾인다
     if (dong.value && !res.dongNames.includes(dong.value)) dong.value = '';
@@ -367,7 +376,7 @@ const guNav = computed(() => {
   return [
     // 거래건수는 직거래 · 해제까지 다 더한 수, 밑에 나눠 적는다 (아래 값들은 정상거래만으로 셈)
     { label: '거래건수', value: `${filtered.value.length.toLocaleString('ko-KR')}건`, sub: kindBreakdown.value },
-    { label: '평균 거래가', value: eokMan(avgOf(prices)) },
+    { label: loadedDeal.value === 'jeonse' ? '평균 전세가' : '평균 거래가', value: eokMan(avgOf(prices)) },
     { label: '최저가', value: eokMan(prices.length ? Math.min(...prices) : 0) },
     { label: '최고가', value: eokMan(prices.length ? Math.max(...prices) : 0) },
     { label: '평균 면적', value: areas.length ? areaText(avgOf(areas)) : '—' },
@@ -469,6 +478,12 @@ const downloadCsv = () => {
             <button v-for="k in KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: kind === k.key }]" @click="kind = k.key">{{ k.label }}</button>
           </div>
         </label>
+        <label v-if="webEmbed" class="adm-f">
+          <small>거래</small>
+          <div class="adm-seg">
+            <button v-for="k in DEAL_KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: dealKind === k.key }]" @click="dealKind = k.key">{{ k.label }}</button>
+          </div>
+        </label>
         <!-- 웹 — 기간은 검색조건 대신 여기서 (3 · 6 · 12개월) -->
         <label v-if="webEmbed" class="adm-f">
           <small>기간</small>
@@ -476,14 +491,7 @@ const downloadCsv = () => {
             <button v-for="m in WEB_PERIODS" :key="m" type="button" :class="['adm-seg-btn', { on: periodMonths === m }]" @click="applyPeriod(m)">{{ m }}개월</button>
           </div>
         </label>
-        <!-- 웹 — 엑셀 내려받기를 조회 바로 왼쪽으로 (제목 줄은 웹에서 감춘다) — 지역 수요공급과 같은 틀 -->
-        <button
-          v-if="webEmbed"
-          type="button"
-          class="adm-csv adm-csv-bar"
-          :disabled="listRows.length === 0"
-          @click="downloadCsv"
-        >엑셀내려받기</button>
+        <!-- 웹 — 엑셀 내려받기는 뺐다 (매매 · 전세 · 기간이 들어오며 고르는 줄이 좁아서) -->
         <button type="button" class="adm-load" :disabled="loading || !district" @click="load">
           {{ loading ? '불러오는 중…' : (webEmbed ? '조회' : '데이터 로드') }}
         </button>
@@ -495,7 +503,7 @@ const downloadCsv = () => {
       <template v-if="all.length > 0">
         <section v-if="webEmbed && !dong" class="adm-gunav">
           <div class="adm-gunav-head">
-            <strong>{{ loadedLabel }}</strong>
+            <strong>{{ loadedLabel }}<template v-if="loadedDeal === 'jeonse'"> 전세</template></strong>
           </div>
           <div class="adm-gunav-row">
             <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small>{{ c.label }}</small><b>{{ c.value }}<em v-if="c.sub" class="adm-gunav-sub">{{ c.sub }}</em></b></div>
@@ -514,12 +522,12 @@ const downloadCsv = () => {
           <div class="adm-kpi blue"><small>총 거래건수 <em v-if="!webEmbed">정상거래</em></small><strong>{{ (webEmbed ? filtered.length : normals.length).toLocaleString('ko-KR') }}건<em v-if="webEmbed" class="adm-gunav-sub">{{ kindBreakdown }}</em></strong></div>
         </div>
 
-        <!-- 분포 -->
-        <div :class="['adm-dists', { 'is-web': webEmbed }]">
+        <!-- 웹 — 분포는 막대그래프로 (검색조건으로 거른 거래 기준) -->
+        <div v-if="webEmbed" class="adm-dists is-web">
           <div v-for="d in DISTS" :key="d.title" class="adm-dist">
-            <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em><small>{{ webEmbed ? '건수 · %' : '건 / %' }}</small></div>
+            <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em><small>건수 · %</small></div>
             <!-- 웹 — 막대그래프. 막대 높이는 그 분포에서 가장 많은 칸 대비, 위에 건수 · 밑에 구간 · % -->
-            <div v-if="webEmbed" class="adm-bars" role="img" :aria-label="`${d.title} 막대그래프`">
+            <div class="adm-bars" role="img" :aria-label="`${d.title} 막대그래프`">
               <div
                 v-for="c in d.cells"
                 :key="c.label"
@@ -532,7 +540,14 @@ const downloadCsv = () => {
                 <em>{{ c.pct.toFixed(0) }}%</em>
               </div>
             </div>
-            <div v-else class="adm-dist-cells">
+          </div>
+        </div>
+
+        <!-- 분포 (앱) -->
+        <div v-if="!webEmbed" class="adm-dists">
+          <div v-for="d in DISTS" :key="d.title" class="adm-dist">
+            <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em><small>건 / %</small></div>
+            <div class="adm-dist-cells">
               <div v-for="c in d.cells" :key="c.label" :class="['adm-dist-cell', { top: c.count > 0 && c.count === Math.max(...d.cells.map(x => x.count)) }]">
                 <small>{{ c.label }}</small>
                 <strong>{{ c.count }}<em>건</em></strong>
@@ -585,7 +600,12 @@ const downloadCsv = () => {
 
         <!-- 검색리스트 -->
         <div class="adm-list-head">
-          <strong>{{ webEmbed && !dong ? '지역별 분석' : '검색리스트' }}</strong>
+          <strong v-if="!webEmbed">검색리스트</strong>
+          <!-- 웹 — 결과를 두 가지로 본다: 지역별 분석(표) · 지역별 분포(막대그래프) -->
+          <nav v-else class="adm-view-tabs" role="tablist">
+            <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역별 분석' }}</button>
+            <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="listView = 'dist'">지역별 분포</button>
+          </nav>
           <span v-if="!webEmbed" class="tag ok">정상거래 {{ counts.정상거래 }}</span>
           <span v-if="!webEmbed" class="tag">직거래 {{ counts.직거래 }}</span>
           <span v-if="!webEmbed" class="tag">계약해제 {{ counts.계약해제 }}</span>
@@ -598,8 +618,20 @@ const downloadCsv = () => {
           </span>
         </div>
 
+        <!-- 웹 '지역별 분포' — 동마다 거래건수 막대(지역별 분석 표와 같은 정렬). 동 이름을 누르면 그 동으로 -->
+        <div v-if="webEmbed && listView === 'dist'" class="adm-dongbars">
+          <template v-if="!dong">
+            <div v-for="d in dongSumRows" :key="d.name" class="adm-dongbar" :title="`${d.name} — ${d.count}건 · 평균 ${eokMan(d.avg)}`">
+              <button type="button" class="adm-dong-link" @click="dong = d.name">{{ d.name }}</button>
+              <span class="adm-dongbar-track"><i :style="{ width: `${(d.count / Math.max(1, ...dongSums.map(x => x.count))) * 100}%` }" /></span>
+              <b>{{ d.count.toLocaleString('ko-KR') }}건</b>
+              <small>{{ eokMan(d.avg) }}</small>
+            </div>
+          </template>
+          <p v-else class="adm-dongbars-empty">읍면동을 '전체'로 두면 동마다 거래건수를 막대로 봅니다.</p>
+        </div>
         <!-- 웹 · 읍면동 '전체' — 동별 요약 표. 동 이름을 누르면 그 동의 거래 목록으로 -->
-        <div v-if="webEmbed && !dong" class="adm-table-wrap">
+        <div v-else-if="webEmbed && !dong" class="adm-table-wrap">
           <table class="adm-table adm-dongsum">
             <thead>
               <tr>
@@ -736,7 +768,7 @@ const downloadCsv = () => {
 .adm-gunav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
 .adm-gunav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; text-align: center; }
 /* 거래건수 밑 직거래 · 해제 — 시세가 아니라 따로 센 것, 작게 한 줄 내려 */
-.adm-gunav-sub { display: block; margin-top: 4px; font-style: normal; font-size: 14px; font-weight: 600; color: #6b7280; letter-spacing: 0; }
+.adm-gunav-sub { display: block; margin-top: 4px; font-style: normal; font-size: 12px; font-weight: 600; color: #6b7280; letter-spacing: 0; white-space: normal; word-break: keep-all; } /* 좁은 창에서는 두 줄로 */
 .adm-sum { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 2px 12px; font-size: 12.5px; color: #6b7280; font-weight: 600; }
 .adm-sum strong { font-size: 14.5px; font-weight: 800; color: #111827; }
 .adm-sum .code { font-size: 11px; font-weight: 700; color: #6b7280; background: #eef1f6; border-radius: 999px; padding: 2px 8px; }
@@ -792,6 +824,20 @@ const downloadCsv = () => {
 /* 리스트 */
 .adm-list-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin: 0 2px 10px; }
 .adm-list-head strong { font-size: 14.5px; font-weight: 800; }
+/* 웹 — 결과 보기 탭(밑줄은 ::after 막대) */
+.adm-view-tabs { display: flex; gap: 22px; }
+.adm-view-tabs button { position: relative; border: 0; background: none; padding: 6px 0 8px; font-size: 16px; font-weight: 700; color: #6b7280; cursor: pointer; border-radius: 0; }
+.adm-view-tabs button.on { color: #2b6df3; font-weight: 800; }
+.adm-view-tabs button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: #2b6df3; }
+/* 웹 '지역별 분포' — 동별 거래건수 가로 막대 (한 색, 길이는 가장 많은 동 대비) */
+.adm-dongbars { background: #fff; border: 1px solid #e8ecf3; border-radius: 12px; padding: 14px 20px; display: flex; flex-direction: column; gap: 6px; }
+.adm-dongbar { display: grid; grid-template-columns: 120px minmax(0, 1fr) 80px 80px; align-items: center; gap: 12px; padding: 4px 0; font-size: 14px; }
+.adm-dongbar .adm-dong-link { text-align: left; }
+.adm-dongbar-track { height: 14px; background: #f1f4f9; border-radius: 4px; overflow: hidden; }
+.adm-dongbar-track i { display: block; height: 100%; min-width: 2px; background: #2b6df3; border-radius: 0 4px 4px 0; }
+.adm-dongbar b { text-align: right; font-weight: 800; color: #111827; font-variant-numeric: tabular-nums; }
+.adm-dongbar small { text-align: right; font-size: 14px; color: #6b7280; }
+.adm-dongbars-empty { margin: 8px 0; font-size: 14px; color: #6b7280; }
 .adm-list-head .tag { font-size: 11.5px; font-weight: 700; color: #6b7280; background: #eef1f6; border-radius: 999px; padding: 4px 10px; }
 .adm-list-head .tag.ok { background: #e8f7f1; color: #0f9d7a; }
 

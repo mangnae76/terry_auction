@@ -1527,6 +1527,8 @@ export const fetchDongTradeDetails = async (params: {
   lawdCd5: string;
   propertyType: 'apt' | 'villa' | 'officetel';
   months?: number;
+  /** 매매(기본) / 전세 — 전세면 전월세 자료에서 월세 없는 것만, 값은 보증금 */
+  dealKind?: 'sale' | 'jeonse';
 }): Promise<DongTradeDetailResult> => {
   const months = Math.max(1, params.months ?? 12);
   const dealYmds = recentDealYmds(months);
@@ -1541,7 +1543,9 @@ export const fetchDongTradeDetails = async (params: {
     return { ...empty, error: '시군구 코드(5자리)를 찾지 못했습니다.' };
   }
 
-  const [path] = pathsForPropertyType(params.propertyType);
+  const jeonse = params.dealKind === 'jeonse';
+  const RENT_PATH = { apt: APT_RENT_API_PATH, villa: VILLA_RENT_API_PATH, officetel: OFFICETEL_RENT_API_PATH } as const;
+  const path = jeonse ? RENT_PATH[params.propertyType] : pathsForPropertyType(params.propertyType)[0];
   const settled = await inBatches(
     dealYmds.map((dealYmd) => () => fetchMonthWithRetry(path, params.lawdCd5, dealYmd)),
     5,
@@ -1557,10 +1561,11 @@ export const fetchDongTradeDetails = async (params: {
   raw.forEach((row) => {
     const d = rowDealDate(row);
     if (d && d < since) return;
+    if (jeonse && num(row.monthlyRent ?? row['월세금액']) > 0) return; // 월세는 뺀다
     const y = String(row.dealYear ?? row['년'] ?? '').padStart(4, '0');
     const m = String(row.dealMonth ?? row['월'] ?? '').padStart(2, '0');
     const dd = String(row.dealDay ?? row['일'] ?? '').padStart(2, '0');
-    const manWon = num(row.dealAmount ?? row['거래금액']);
+    const manWon = jeonse ? num(row.deposit ?? row['보증금액']) : num(row.dealAmount ?? row['거래금액']);
     const areaM2 = num(row.excluUseAr ?? row['전용면적']);
     const floor = String(row.floor ?? row['층'] ?? '').trim();
     const umdNm = normalizeDongName(String(row.umdNm ?? row['법정동'] ?? ''));
