@@ -2312,7 +2312,8 @@ html, body { overflow-x: clip; }
     { const t = $('navMarket'); if (t) { t.classList.toggle('on', S.route === 'market'); if (S.route === 'market') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     [['navPostwin', 'postwin'], ['navFinance', 'finance'], ['navMore', 'more']].forEach(([id, r]) => { const t = $(id); if (t) { t.classList.toggle('on', S.route === r); if (S.route === r) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
     { const t = $('navMy'); if (t) { t.classList.toggle('on', S.route === 'mypage'); if (S.route === 'mypage') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
-    const nav = $('navWatch'); nav.classList.toggle('on', S.route === 'list'); if (S.route === 'list') nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
+    /* 물건상세(선정목록 안)에 들어가도 선정목록 메뉴 밑줄은 그대로 */
+    const nav = $('navWatch'); const inList = S.route === 'list' || S.route === 'item'; nav.classList.toggle('on', inList); if (inList) nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
     $('gLoginTxt').textContent = S.loggedIn ? `${S.userName || '회원'}님` : '로그인';
     $('gLogin').classList.toggle('named', S.loggedIn);
     $('gLogin').style.visibility = S.authReady ? '' : 'hidden';
