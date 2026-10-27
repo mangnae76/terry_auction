@@ -218,7 +218,7 @@ const resetDefault = () => {
               <p class="pwt-meta">
                 <b>{{ r.date || '—' }}</b>
                 <span v-if="r.date && !r.doneDate" :class="['pwt-dday', { soon: r.dday <= 0 && r.dday >= -7 }]">{{ ddayText(r.dday) }}</span>
-                <span class="pwt-base">{{ r.doneDate ? '완료한 날' : r.baseText }}</span>
+                <span class="pwt-base">{{ r.doneDate ? '완료일' : r.baseText }}</span>
               </p>
               <p v-if="r.note" class="pwt-note">{{ r.note }}</p>
             </template>
