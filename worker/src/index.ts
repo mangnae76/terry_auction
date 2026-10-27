@@ -11,6 +11,8 @@ export interface Env {
   PUBLIC_DATA_API_KEY?: string;
   ALLOWED_ORIGINS?: string;
   FIREBASE_SERVICE_ACCOUNT_JSON?: string;
+  /** 국토부 실거래(RTMS) 응답 저장소 — 같은 요청은 공공데이터까지 가지 않는다(하루 호출 한도 아끼기) */
+  TRADE_CACHE?: KVNamespace;
 }
 
 interface Route {
@@ -134,6 +136,28 @@ const handleDriveDownload = async (request: Request, env: Env): Promise<Response
   return new Response(upstream.body, { status: upstream.status, headers: outHeaders });
 };
 
+// ===== 실거래(RTMS) 저장 — 시군구 · 달 · 종류가 같은 요청은 앱 · 웹 · 사람 가리지 않고 한 번만 공공데이터에 묻는다 =====
+// 지난 달 자료는 거의 바뀌지 않아 30일, 최근 두 달은 신고가 계속 들어와 6시간만 둔다.
+// 오류 · 한도 초과 응답은 저장하지 않는다.
+const isRtms = (route: Route, url: URL, method: string) =>
+  route.authKind === 'data' && method === 'GET' && url.pathname.includes('/RTMSDataSvc');
+const rtmsKey = (url: URL) => {
+  const params = new URLSearchParams(url.search);
+  params.delete('serviceKey');
+  params.sort();
+  return `rtms:${url.pathname}?${params.toString()}`;
+};
+const rtmsTtl = (url: URL) => {
+  const ymd = (url.searchParams.get('DEAL_YMD') ?? '').trim();
+  if (!/^\d{6}$/.test(ymd)) return 6 * 3600;
+  const now = new Date(Date.now() + 9 * 3600 * 1000); // 한국 시각
+  const cut = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 2, 1));
+  const cutYm = `${cut.getUTCFullYear()}${String(cut.getUTCMonth() + 1).padStart(2, '0')}`;
+  return ymd < cutYm ? 30 * 24 * 3600 : 6 * 3600;
+};
+const rtmsLooksOk = (body: string) =>
+  /resultCode["'\s:>]*"?0+["'<]/.test(body) && !/LIMITED_NUMBER|SERVICE_KEY_IS|SERVICE ERROR|SERVICE_TIMEOUT/i.test(body);
+
 const handleProxy = async (request: Request, env: Env, route: Route): Promise<Response> => {
   const origin = request.headers.get('origin') ?? '*';
   const cors = corsHeaders(origin, env);
@@ -179,6 +203,32 @@ const handleProxy = async (request: Request, env: Env, route: Route): Promise<Re
   };
   if (!['GET', 'HEAD'].includes(request.method)) {
     init.body = request.body;
+  }
+
+  const cacheable = !!env.TRADE_CACHE && isRtms(route, url, request.method);
+  if (cacheable) {
+    const key = rtmsKey(url);
+    const hit = await env.TRADE_CACHE!.getWithMetadata<{ type?: string }>(key);
+    if (hit.value !== null) {
+      return new Response(hit.value, {
+        status: 200,
+        headers: { 'Content-Type': hit.metadata?.type ?? 'application/json; charset=utf-8', 'X-Trade-Cache': 'HIT', ...cors },
+      });
+    }
+    const upstream = await fetch(targetUrl, init);
+    const body = await upstream.text();
+    const type = upstream.headers.get('content-type') ?? 'application/json; charset=utf-8';
+    if (upstream.ok && rtmsLooksOk(body)) {
+      try {
+        await env.TRADE_CACHE!.put(key, body, { expirationTtl: rtmsTtl(url), metadata: { type } });
+      } catch {
+        // 저장 한도에 걸려도 응답은 그대로 준다
+      }
+    }
+    return new Response(body, {
+      status: upstream.status,
+      headers: { 'Content-Type': type, 'X-Trade-Cache': 'MISS', ...cors },
+    });
   }
 
   const upstream = await fetch(targetUrl, init);

@@ -13,3 +13,8 @@ compatibility_date = "2025-01-15"
 # Optional: `[vars]` here is for non-secret defaults. Keep secrets out of this file.
 [vars]
 ALLOWED_ORIGINS = "*"
+
+# 공공데이터 실거래(RTMS) 응답을 저장해 두는 곳 — 하루 호출 한도를 아끼려고 같은 요청은 여기서 돌려준다
+[[kv_namespaces]]
+binding = "TRADE_CACHE"
+id = "78c5a06dfae74e1491a4871479706ea4"
