@@ -1180,8 +1180,8 @@ const toggleSection = (key: string) => {
 }
 .pw-body {
   flex: 1 1 auto; overflow-y: auto;
-  /* 좌우 여백은 물건상세(.adp-body)와 같은 5px — 카드가 화면을 넓게 쓴다 */
-  padding: 10px 5px 96px;
+  /* 좌우 여백 13px — 선정목록 물건상세 카드와 같은 자리(화면 끝에서 13px)에 카드가 선다 */
+  padding: 10px 13px 96px;
   /* 카드 사이 틈은 권리분석(.adp-body)과 같이 8px */
   display: flex; flex-direction: column; gap: 8px;
   -webkit-overflow-scrolling: touch;

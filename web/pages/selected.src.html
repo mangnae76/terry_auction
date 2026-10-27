@@ -605,6 +605,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page :is(.pw-shell, .fin-shell) { position: static !important; inset: auto !important; overflow: visible !important; background: transparent !important; }
 .app-page :is(.pw-fixed-top, .fin-fixed-top) { position: static !important; background: transparent !important; box-shadow: none !important; }
 .app-page :is(.pw-body, .fin-body) { overflow: visible !important; padding-bottom: 40px !important; }
+/* 앱은 카드 좌우를 13px 띄우지만 웹은 넓은 틀 안이라 예전 5px 그대로 */
+.app-page .pw-body { padding-left: 5px !important; padding-right: 5px !important; }
 .app-page .more-shell { min-height: 0 !important; background: transparent !important; padding-bottom: 40px !important; }
 .app-page .more-fixed { position: static !important; background: transparent !important; }
 .app-page :is(.pw-tabs, .fin-tabs, .more-titlebar, .quick, .pg-back-shared, .pg-back, .amb) { display: none !important; }
