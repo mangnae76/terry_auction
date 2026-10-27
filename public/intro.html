@@ -119,12 +119,12 @@
         // 이미 로그인해 있으면 로그인 창 없이 바로 웹으로
         const auth = T.useAuthStore();
         if (!auth.ready && auth.waitUntilReady) await auth.waitUntilReady();
-        if (auth.isLoggedIn) { location.href = '/web'; return; }
+        if (auth.isLoggedIn) { location.href = '/web?login=1'; return; }
         if (veil.hidden) return;
         el.innerHTML = '';
         unmount = T.mountAppLogin(el, (what) => {
           if (what === 'signup') { location.href = '/signup'; return; }
-          location.href = '/web';   // 로그인 끝 — 선정목록으로
+          location.href = '/web?login=1';   // 로그인 끝 — 선정목록으로
         });
       } catch (e) {
         el.innerHTML = '<p class="wait">로그인 화면을 불러오지 못했습니다 — 새로고침 뒤 다시 눌러 주세요.</p>';
