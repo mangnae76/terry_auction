@@ -496,7 +496,7 @@ const downloadCsv = () => {
         <table :class="['adm-table', { even: embedded }]">
           <thead>
             <tr class="grp">
-              <th :colspan="embedded ? 1 : 2">주소지 정보</th>
+              <th :colspan="embedded ? 1 : 2">{{ embedded ? '구분' : '주소지 정보' }}</th>
               <th colspan="2" class="in">수치입력</th>
               <th colspan="8">지표결과</th>
             </tr>
