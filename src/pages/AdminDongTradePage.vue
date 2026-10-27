@@ -253,6 +253,17 @@ const detailRows = computed(() => {
 const detailMax = computed(() => Math.max(1, ...detailRows.value.flatMap((r) => r.cells)));
 const heatStyle = (n: number) => (n > 0 ? { background: `rgba(43, 109, 243, ${(0.08 + 0.42 * (n / detailMax.value)).toFixed(3)})` } : {});
 
+// 탭을 바꿔도 탭 줄은 화면의 같은 자리에 — 아래 내용 높이가 달라 화면이 튀지 않게 바꾸기 전 자리를 기억해 되돌린다.
+let tabTopBefore: number | null = null;
+watch(listView, () => {
+  tabTopBefore = document.querySelector('.adm-view-tabs')?.getBoundingClientRect().top ?? null;
+}, { flush: 'pre' });
+watch(listView, async () => {
+  await nextTick();
+  const now = document.querySelector('.adm-view-tabs')?.getBoundingClientRect().top;
+  if (tabTopBefore !== null && now !== undefined) window.scrollBy(0, now - tabTopBefore);
+  tabTopBefore = null;
+}, { flush: 'post' });
 /** 지역분포 그림 — 막대 / 도넛. '지역분포' 탭을 한 번 더 누르면 바뀐다 */
 const distChart = ref<'bar' | 'pie'>('bar');
 const onDistTab = () => {
