@@ -705,14 +705,14 @@ const downloadCsv = () => {
 
 .adm-gunav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }
 .adm-gunav-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-.adm-gunav-head strong { font-size: 18px; font-weight: 800; color: #2f6b45; }
+.adm-gunav-head strong { font-size: 18px; font-weight: 800; color: #2b6df3; }
 .adm-gunav-seg { display: flex; gap: 6px; }
 .adm-gunav-seg button { min-width: 72px; height: 38px; padding: 0 14px; border: 0; border-radius: 8px; background: #fff; color: #4b5563; font-size: 15px; font-weight: 700; cursor: pointer; }
 .adm-gunav-seg button.on { background: #2b3f9e; color: #fff; }
 .adm-gunav-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
 .adm-gunav-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border-radius: 8px; background: #fff; }
 .adm-gunav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
-.adm-gunav-box b { font-size: 18px; font-weight: 800; color: #2f6b45; white-space: nowrap; }
+.adm-gunav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; }
 .adm-sum { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 2px 12px; font-size: 12.5px; color: #6b7280; font-weight: 600; }
 .adm-sum strong { font-size: 14.5px; font-weight: 800; color: #111827; }
 .adm-sum .code { font-size: 11px; font-weight: 700; color: #6b7280; background: #eef1f6; border-radius: 999px; padding: 2px 8px; }
