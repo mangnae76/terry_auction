@@ -405,6 +405,8 @@ export interface AuctionDetail {
   hidden?: boolean;
   /** 낙찰이후 체크리스트 — 항목 id 마다 했는지 여부 */
   postWinChecks?: Record<string, boolean>;
+  /** 낙찰이후 · 진행절차 — 낙찰일(입찰일)부터 이어지는 단계와 끝낸 날 (웹) */
+  postWinFlow?: PostWinFlow;
   /** 낙찰이후 · 매도·임대 — 중개 의뢰 현황 */
   sellAgencyRows?: AgencyRow[];
   /** 낙찰이후 · 매도·임대 — 직거래 */
@@ -719,4 +721,22 @@ export interface AuctionSearchParams {
   lawdCode?: string;
   dealYmd?: string;
   onbidOnly?: boolean;
+}
+
+/** 진행절차 한 단계 — 앞 단계(또는 시작일)에서 며칠 뒤인지로 날짜를 셈한다. 끝내면 그날이 적히고 뒤 단계가 따라 밀린다 */
+export interface PostWinStep {
+  id: string;
+  name: string;
+  note?: string;
+  /** 기준에서 며칠 뒤 */
+  days: number;
+  /** 'prev' = 바로 앞 단계 뒤, 'start' = 시작일(낙찰일) 뒤 */
+  base: 'prev' | 'start';
+  /** 끝낸 날 YYYY-MM-DD */
+  doneDate?: string;
+}
+export interface PostWinFlow {
+  steps: PostWinStep[];
+  /** 협의 완료로 끝낸 날 */
+  endedAt?: string;
 }

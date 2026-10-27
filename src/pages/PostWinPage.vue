@@ -24,11 +24,13 @@ import { saleKindOf, headMetaLineOf, summarySeedOf } from '../services/detailSum
 import { addressParts } from '../utils/addressName';
 import { propTypeName } from '../utils/propertyType';
 import type { AgencyRow, AuctionDetail } from '../types/auction';
+import PostWinTimeline from '../components/PostWinTimeline.vue';
 
 // 낙찰당일 탭을 다시 맨 왼쪽에 — '낙찰 후 진행 순서' 상자와 낙찰당일 묶음(경매사건 열람 · 명도협상 원칙 · 유선연락 첫통화)
-type TabKey = 'win' | 'biz' | 'balance' | 'evict' | 'repair' | 'sell';
+type TabKey = 'win' | 'flow' | 'biz' | 'balance' | 'evict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
   { key: 'win', label: '낙찰당일', desc: '낙찰가·경쟁 상황, 영수증과 서류 챙기기' },
+  { key: 'flow', label: '진행절차', desc: '낙찰일부터 명도까지 단계별 일정' },   // 웹만(앱 탭 줄에는 안 보인다)
   { key: 'evict', label: '명도', desc: '점유자 확인, 인도명령·강제집행, 이사비 협의' },
   { key: 'biz', label: '사업자등록', desc: '매매사업자 등록 · 사업용 계좌 · 사업용 카드' },
   { key: 'balance', label: '잔금·등기', desc: '잔금 납부일, 등기 촉탁, 취득세' },
@@ -37,7 +39,7 @@ const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
 ];
 const route = useRoute();
 const router = useRouter();
-const TAB_KEYS: TabKey[] = ['win', 'evict', 'biz', 'balance', 'repair', 'sell'];
+const TAB_KEYS: TabKey[] = ['win', 'flow', 'evict', 'biz', 'balance', 'repair', 'sell'];
 /** 주소에 적힌 탭으로 연다 — '뒤로' 왔을 때 보던 자리를 지킨다 */
 const initialTab = (): TabKey => {
   const wanted = String(route.query.tab ?? '');
@@ -529,7 +531,7 @@ const toggleSection = (key: string) => {
         </p>
         <nav class="pw-tabs">
           <button
-            v-for="t in TABS"
+            v-for="t in TABS.filter((x) => webEmbed || x.key !== 'flow')"
             :key="t.key"
             type="button"
             :class="['pw-tab', { active: activeTab === t.key }]"
@@ -1031,6 +1033,8 @@ const toggleSection = (key: string) => {
         </section>
       </template>
 
+      <!-- 웹 진행절차 — 고른 낙찰 물건의 낙찰일부터 단계 일정 -->
+      <PostWinTimeline v-else-if="activeTab === 'flow'" :auction="picked" @save="(a) => store.saveAuction(a)" />
       <section v-else class="pw-card">
         <header class="pw-card-head" @click="toggleSection(activeTab)">
           <h2>{{ current().label }}</h2>
