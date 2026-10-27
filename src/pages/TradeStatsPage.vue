@@ -594,7 +594,7 @@ onMounted(async () => {
               <small>기간</small>
               <select :class="['tsp-select', { ph: !selectedPeriod }]" v-model.number="selectedPeriod">
                 <option :value="0">{{ webEmbed ? '기간선택' : '선택' }}</option>
-                <option v-for="m in periodOptions" :key="m" :value="m">{{ m }}개월</option>
+                <option v-for="m in (webEmbed ? periodOptions.filter((x) => x !== 1) : periodOptions)" :key="m" :value="m">{{ m }}개월</option>
               </select>
             </label>
             <button
