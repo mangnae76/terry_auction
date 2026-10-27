@@ -492,16 +492,17 @@ const downloadCsv = () => {
       </div>
 
       <div v-if="rows.length > 0" class="adm-table-wrap">
-        <table class="adm-table">
+        <!-- 지역분석 안 탭(embedded)은 시군구 하나만 보므로 '소속 구' 칸은 뺀다 — 모든 줄이 같은 값이다 -->
+        <table :class="['adm-table', { even: embedded }]">
           <thead>
             <tr class="grp">
-              <th colspan="2">주소지 정보</th>
+              <th :colspan="embedded ? 1 : 2">주소지 정보</th>
               <th colspan="2" class="in">수치입력</th>
               <th colspan="8">지표결과</th>
             </tr>
             <tr>
-              <th>소속 구</th>
-              <th>읍면동</th>
+              <th v-if="!embedded">소속 구</th>
+              <th>{{ embedded ? '동/지역' : '읍면동' }}</th>
               <th class="in">총 세대수</th>
               <th class="in">총 매물수</th>
               <th>{{ webEmbed ? '총 거래건수' : '총 거래량' }}<small>(최근 {{ months }}개월)</small></th>
@@ -516,7 +517,7 @@ const downloadCsv = () => {
           </thead>
           <tbody>
             <tr v-for="r in rows" :key="`${r.sigungu}|${r.umdNm}`">
-              <td class="gu">{{ r.sigungu }}</td>
+              <td v-if="!embedded" class="gu">{{ r.sigungu }}</td>
               <td class="nm">{{ r.umdNm }}</td>
               <td class="in">
                 <input
