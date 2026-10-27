@@ -243,7 +243,7 @@ const checkable = computed(() => activeTab.value === 'balance' || activeTab.valu
 // === 표 고치기 ===
 // 글을 다 다듬고 나면 postWinBook.ts 의 POST_WIN_EDITABLE 만 false 로 두면
 // 편집 단추가 사라진다. 적어 둔 내용은 그대로 보인다.
-// 웹은 보기만 — 편집 단추를 두지 않는다(앱에서 고친 표는 웹에도 그대로 보인다)
+// 웹은 보기만 — 편집 단추를 두지 않는다. 앱도 지금은 POST_WIN_EDITABLE=false 로 잠가 두었다(저장해 둔 표는 그대로 보인다)
 const canEdit = POST_WIN_EDITABLE && !webEmbed;
 const editing = ref(false);
 const draft = ref<CheckGroup[]>([]);

@@ -14,7 +14,7 @@ import { POST_WIN_EVICT, POST_WIN_EVICT_VERSION } from './postWinEvict';
 /** 표를 손으로 고칠 수 있게 할지.
  *  글을 다 다듬고 나면 여기만 false 로 두면 된다 — 편집 단추가 사라지고
  *  적어 둔 내용은 그대로 보인다. (다시 열 때는 true 로) */
-export const POST_WIN_EDITABLE = true;
+export const POST_WIN_EDITABLE = false;   // 2026-10-27 앱에서도 편집 단추를 뺐다(웹은 이미 없음)
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
