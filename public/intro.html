@@ -116,6 +116,10 @@
       const el = document.getElementById('loginMount');
       try {
         if (!T) { T = await loadBundle(); T.startStores(); T.useAuthStore().initialize(); }
+        // 이미 로그인해 있으면 로그인 창 없이 바로 웹으로
+        const auth = T.useAuthStore();
+        if (!auth.ready && auth.waitUntilReady) await auth.waitUntilReady();
+        if (auth.isLoggedIn) { location.href = '/web'; return; }
         if (veil.hidden) return;
         el.innerHTML = '';
         unmount = T.mountAppLogin(el, (what) => {
