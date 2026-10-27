@@ -628,7 +628,7 @@ const downloadCsv = () => {
 
       <!-- 웹 — 지역분석의 탭 줄 자리: 왼쪽에 화면 이름 · 저장 단추, 오른쪽에 경로(#admCrumbSlot 로 웹 경로를 옮겨 온다) -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top adm-case-row">
-        <strong class="adm-case-title">경매지번 공동주택가 및 실거래가</strong>
+        <strong class="adm-case-title">경매지번 분석</strong>
         <div class="adm-acts">
           <button type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="askSave">저장</button>
           <button v-if="snapId" type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="saveSnap(true)">덮어쓰기</button>
