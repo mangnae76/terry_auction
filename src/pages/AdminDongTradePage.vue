@@ -522,27 +522,6 @@ const downloadCsv = () => {
           <div class="adm-kpi blue"><small>총 거래건수 <em v-if="!webEmbed">정상거래</em></small><strong>{{ (webEmbed ? filtered.length : normals.length).toLocaleString('ko-KR') }}건<em v-if="webEmbed" class="adm-gunav-sub">{{ kindBreakdown }}</em></strong></div>
         </div>
 
-        <!-- 웹 — 분포는 막대그래프로 (검색조건으로 거른 거래 기준) -->
-        <div v-if="webEmbed" class="adm-dists is-web">
-          <div v-for="d in DISTS" :key="d.title" class="adm-dist">
-            <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em><small>건수 · %</small></div>
-            <!-- 웹 — 막대그래프. 막대 높이는 그 분포에서 가장 많은 칸 대비, 위에 건수 · 밑에 구간 · % -->
-            <div class="adm-bars" role="img" :aria-label="`${d.title} 막대그래프`">
-              <div
-                v-for="c in d.cells"
-                :key="c.label"
-                :class="['adm-bar-col', { top: c.count > 0 && c.count === Math.max(...d.cells.map(x => x.count)) }]"
-                :title="`${c.label} — ${c.count}건 (${c.pct.toFixed(1)}%)`"
-              >
-                <b>{{ c.count }}</b>
-                <span class="adm-bar-track"><i :style="{ height: `${(c.count / Math.max(1, ...d.cells.map(x => x.count))) * 100}%` }" /></span>
-                <small>{{ c.label }}</small>
-                <em>{{ c.pct.toFixed(0) }}%</em>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- 분포 (앱) -->
         <div v-if="!webEmbed" class="adm-dists">
           <div v-for="d in DISTS" :key="d.title" class="adm-dist">
@@ -618,18 +597,27 @@ const downloadCsv = () => {
           </span>
         </div>
 
-        <!-- 웹 '지역별 분포' — 동마다 거래건수 막대(지역별 분석 표와 같은 정렬). 동 이름을 누르면 그 동으로 -->
-        <div v-if="webEmbed && listView === 'dist'" class="adm-dongbars">
-          <template v-if="!dong">
-            <div v-for="d in dongSumRows" :key="d.name" class="adm-dongbar" :title="`${d.name} — ${d.count}건 · 평균 ${eokMan(d.avg)}`">
-              <button type="button" class="adm-dong-link" @click="dong = d.name">{{ d.name }}</button>
-              <span class="adm-dongbar-track"><i :style="{ width: `${(d.count / Math.max(1, ...dongSums.map(x => x.count))) * 100}%` }" /></span>
-              <b>{{ d.count.toLocaleString('ko-KR') }}건</b>
-              <small>{{ eokMan(d.avg) }}</small>
+        <!-- 웹 '지역별 분포' 탭 — 지역별 분석 표 자리에 전용면적 · 금액 · 건축연식 · 층 분포 막대그래프 (검색조건으로 거른 거래 기준) -->
+        <div v-if="webEmbed && listView === 'dist'" class="adm-dists is-web">
+          <div v-for="d in DISTS" :key="d.title" class="adm-dist">
+            <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em><small>건수 · %</small></div>
+            <!-- 웹 — 막대그래프. 막대 높이는 그 분포에서 가장 많은 칸 대비, 위에 건수 · 밑에 구간 · % -->
+            <div class="adm-bars" role="img" :aria-label="`${d.title} 막대그래프`">
+              <div
+                v-for="c in d.cells"
+                :key="c.label"
+                :class="['adm-bar-col', { top: c.count > 0 && c.count === Math.max(...d.cells.map(x => x.count)) }]"
+                :title="`${c.label} — ${c.count}건 (${c.pct.toFixed(1)}%)`"
+              >
+                <b>{{ c.count }}</b>
+                <span class="adm-bar-track"><i :style="{ height: `${(c.count / Math.max(1, ...d.cells.map(x => x.count))) * 100}%` }" /></span>
+                <small>{{ c.label }}</small>
+                <em>{{ c.pct.toFixed(0) }}%</em>
+              </div>
             </div>
-          </template>
-          <p v-else class="adm-dongbars-empty">읍면동을 '전체'로 두면 동마다 거래건수를 막대로 봅니다.</p>
+          </div>
         </div>
+
         <!-- 웹 · 읍면동 '전체' — 동별 요약 표. 동 이름을 누르면 그 동의 거래 목록으로 -->
         <div v-else-if="webEmbed && !dong" class="adm-table-wrap">
           <table class="adm-table adm-dongsum">
@@ -705,7 +693,9 @@ const downloadCsv = () => {
             </tbody>
           </table>
         </div>
-        <p v-if="listRows.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ listRows.length.toLocaleString('ko-KR') }}줄은 엑셀로 내려받으세요.</p>
+        <p v-if="!webEmbed && listRows.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ listRows.length.toLocaleString('ko-KR') }}줄은 엑셀로 내려받으세요.</p>
+        <!-- 웹 — 거래 목록(동을 골랐을 때)에만, 엑셀 단추는 웹에서 뺐다 -->
+        <p v-else-if="webEmbed && dong && listView === 'table' && listRows.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ listRows.length.toLocaleString('ko-KR') }}줄 중</p>
         <p v-else-if="listRows.length === 0" class="adm-foot">조건에 맞는 거래가 없습니다.</p>
       </template>
     </div>
@@ -829,15 +819,6 @@ const downloadCsv = () => {
 .adm-view-tabs button { position: relative; border: 0; background: none; padding: 6px 0 8px; font-size: 16px; font-weight: 700; color: #6b7280; cursor: pointer; border-radius: 0; }
 .adm-view-tabs button.on { color: #2b6df3; font-weight: 800; }
 .adm-view-tabs button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: #2b6df3; }
-/* 웹 '지역별 분포' — 동별 거래건수 가로 막대 (한 색, 길이는 가장 많은 동 대비) */
-.adm-dongbars { background: #fff; border: 1px solid #e8ecf3; border-radius: 12px; padding: 14px 20px; display: flex; flex-direction: column; gap: 6px; }
-.adm-dongbar { display: grid; grid-template-columns: 120px minmax(0, 1fr) 80px 80px; align-items: center; gap: 12px; padding: 4px 0; font-size: 14px; }
-.adm-dongbar .adm-dong-link { text-align: left; }
-.adm-dongbar-track { height: 14px; background: #f1f4f9; border-radius: 4px; overflow: hidden; }
-.adm-dongbar-track i { display: block; height: 100%; min-width: 2px; background: #2b6df3; border-radius: 0 4px 4px 0; }
-.adm-dongbar b { text-align: right; font-weight: 800; color: #111827; font-variant-numeric: tabular-nums; }
-.adm-dongbar small { text-align: right; font-size: 14px; color: #6b7280; }
-.adm-dongbars-empty { margin: 8px 0; font-size: 14px; color: #6b7280; }
 .adm-list-head .tag { font-size: 11.5px; font-weight: 700; color: #6b7280; background: #eef1f6; border-radius: 999px; padding: 4px 10px; }
 .adm-list-head .tag.ok { background: #e8f7f1; color: #0f9d7a; }
 
