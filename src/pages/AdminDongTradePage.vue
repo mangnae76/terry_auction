@@ -641,8 +641,9 @@ const dongSumRows = computed(() => [...dongSums.value].sort((a, b) => {
   const d = k === 'name' ? String(a.name).localeCompare(String(b.name), 'ko') : Number(a[k]) - Number(b[k]);
   return sumSortDesc.value ? -d : d;
 }));
-const SUM_COLS: Array<{ key: keyof DongSum; label: string }> = [
-  { key: 'name', label: '동/지역' }, { key: 'count', label: '거래건수' }, { key: 'avg', label: '평균가' },
+/** sub — 칸 이름 밑에 작게 '(최근 N개월)' — 수요분석 표와 같은 꼴 */
+const SUM_COLS: Array<{ key: keyof DongSum; label: string; sub?: boolean }> = [
+  { key: 'name', label: '동/지역' }, { key: 'count', label: '총 거래건수', sub: true }, { key: 'avg', label: '평균가', sub: true },
   { key: 'median', label: '중간가' }, { key: 'min', label: '최저가' }, { key: 'max', label: '최고가' },
   { key: 'area', label: '평균면적' }, { key: 'perM2', label: '㎡당 평균가' },
 ];
@@ -1081,6 +1082,7 @@ const downloadCsv = () => {
                   <button type="button" class="adm-sort" @click="toggleSumSort(c.key)">
                     {{ c.label }}<i :class="{ on: sumSortKey === c.key }">{{ sumSortKey === c.key ? (sumSortDesc ? '↓' : '↑') : '⇅' }}</i>
                   </button>
+                  <small v-if="c.sub" class="adm-th-sub">(최근 {{ periodMonths }}개월)</small>
                 </th>
               </tr>
             </thead>
@@ -1356,6 +1358,7 @@ const downloadCsv = () => {
 .adm-table { width: 100%; border-collapse: collapse; }
 .adm-table th, .adm-table td { border-bottom: 1px solid #eef1f6; border-right: 1px solid #eef1f6; padding: 9px 12px; font-size: 12.5px; text-align: center; white-space: nowrap; }
 .adm-table th:last-child, .adm-table td:last-child { border-right: none; }
+.adm-table th small.adm-th-sub { display: block; font-size: 10px; font-weight: 600; color: #9ca3af; }
 .adm-table thead th { background: #f7f9fc; color: #374151; font-weight: 700; }
 .adm-table tbody tr:last-child td { border-bottom: none; }
 .adm-table tbody tr:hover td { background: #fafbfe; }
