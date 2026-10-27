@@ -102,7 +102,7 @@ const openList = (id?: string) => { if (!wasDrag()) emit('open', id ?? ''); };
           <span class="badge">{{ b.badge }}</span>
           <strong>{{ b.title }}</strong>
           <small v-if="b.desc">{{ b.desc }}</small>
-          <span class="foot">
+          <span class="evb-foot">
             <em>{{ b.period }}</em>
             <button type="button" class="cta" @click="openList(b.id)">{{ b.cta }} ›</button>
           </span>
@@ -150,9 +150,10 @@ const openList = (id?: string) => { if (!wasDrag()) emit('open', id ?? ''); };
 }
 .evb-card strong { font-size: 14px; font-weight: 800; }
 .evb-card small { font-size: 11px; opacity: .85; word-break: keep-all; }
-.evb-card .foot { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-.evb-card .foot em { font-style: normal; font-size: 10.5px; opacity: .75; }
-.evb-card .foot { flex-wrap: wrap; row-gap: 2px; }
+/* 이름이 웹 바닥 띠(.foot)와 겹쳐 그 검은 바탕이 묻어 나왔다 — evb-foot 로 */
+.evb-card .evb-foot { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.evb-card .evb-foot em { font-style: normal; font-size: 10.5px; opacity: .75; }
+.evb-card .evb-foot { flex-wrap: wrap; row-gap: 2px; }
 .evb-card .cta {
   margin-left: auto; border: none; font-family: inherit;
   font-size: 11px; font-weight: 700; color: #fff; cursor: pointer;
