@@ -434,7 +434,7 @@ const exportExcel = () => {
     <header class="fin-header">
       <h1 class="fin-page-title">
         <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
-        사업자금관리
+        자금관리
         <!-- 낙찰로 들고 있는 물건과 판 물건 — 돈 이야기의 바탕이라 제목 옆에 적어 둔다 -->
         <span class="fin-stage-count">
           <!-- 건수 앞에 곱하기 — 선정물건의 휴지통·보관함 단추와 같은 표기 -->
