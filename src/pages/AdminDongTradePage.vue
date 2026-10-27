@@ -725,8 +725,7 @@ const downloadCsv = () => {
                   transform="rotate(-90 80 80)"
                   class="adm-donut-seg"
                 ><title>{{ seg.label }} — {{ seg.count }}건 ({{ seg.pct.toFixed(1) }}%)</title></circle>
-                <text x="80" y="76" text-anchor="middle" class="adm-donut-total">{{ d.cells.reduce((a, c) => a + c.count, 0).toLocaleString('ko-KR') }}</text>
-                <text x="80" y="96" text-anchor="middle" class="adm-donut-unit">건</text>
+                <text x="80" y="80" text-anchor="middle" dominant-baseline="central" class="adm-donut-total">{{ d.cells.reduce((a, c) => a + c.count, 0).toLocaleString('ko-KR') }}<tspan class="adm-donut-unit">건</tspan></text>
               </svg>
               <ul class="adm-donut-legend">
                 <li v-for="(c, ci) in d.cells" :key="c.label">
@@ -939,8 +938,8 @@ const downloadCsv = () => {
 .adm-donut-seg { transition: opacity .15s; }
 .adm-donut:hover .adm-donut-seg { opacity: .55; }
 .adm-donut .adm-donut-seg:hover { opacity: 1; }
-.adm-donut-total { font-size: 20px; font-weight: 800; fill: #111827; }
-.adm-donut-unit { font-size: 13px; fill: #6b7280; }
+.adm-donut-total { font-size: 16px; font-weight: 800; fill: #111827; } /* 가운데 한 줄 '1,232건' */
+.adm-donut-unit { font-size: 13px; font-weight: 600; fill: #6b7280; }
 .adm-donut-legend { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .adm-donut-legend li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto 44px; align-items: center; gap: 8px; font-size: 14px; }
 .adm-donut-legend i { width: 12px; height: 12px; border-radius: 3px; }
