@@ -213,14 +213,17 @@ const hueOf = (rank: number) => RANK_HUES[(rank - 1) % RANK_HUES.length];
 const isPaleHue = (h: number) => h >= 35 && h <= 80;
 const paletteColors = (rank: number): [string, string] => {
   // 여섯 등부터는 색을 빼 담담하게 — 지도에 다 찍되 앞 다섯이 먼저 눈에 들어와야 한다
-  if (rank > TOP_N) return ['hsl(215 16% 66%)', 'hsl(215 18% 52%)'];
+  if (rank > TOP_N) return webEmbed ? ['hsl(215 24% 80%)', 'hsl(215 20% 66%)'] : ['hsl(215 16% 66%)', 'hsl(215 18% 52%)'];
   const h = hueOf(rank);
-  // 웹은 채도를 낮춰 차분하게 — 빨강·노랑·초록·파랑·보라의 차례는 그대로
-  if (webEmbed) return [`hsl(${h} 52% 62%)`, `hsl(${h} 46% ${isPaleHue(h) ? 52 : 48}%)`];
+  // 웹은 채도를 낮춰 차분하게 — 검정 쪽(밝기를 낮춤)이 아니라 흰색 쪽으로 빼야 탁하지 않다. 빨강·노랑·초록·파랑·보라의 차례는 그대로
+  if (webEmbed) return [`hsl(${h} 78% 80%)`, `hsl(${h} 66% ${isPaleHue(h) ? 66 : 64}%)`];
   return [`hsl(${h} 88% 58%)`, `hsl(${h} 82% ${isPaleHue(h) ? 50 : 45}%)`];
 };
 /** 노랑 바탕에서만 글씨를 검게 — 나머지는 흰 글씨가 읽힌다 */
-const isLightBadge = (rank: number) => rank <= TOP_N && isPaleHue(hueOf(rank));
+/** 웹은 색을 흰 쪽으로 밝혀 초록 · 연회색 바탕에서도 흰 글씨가 묻힌다 — 그때도 검은 글씨 */
+const isLightBadge = (rank: number) => (rank > TOP_N
+  ? webEmbed
+  : isPaleHue(hueOf(rank)) || (webEmbed && hueOf(rank) >= 100 && hueOf(rank) <= 170));
 
 /** 지도 표시 — 등수·동 이름·평균가를 한 알약에 담는다 (전에는 동그라미와 이름표가 따로였다) */
 const makePin = (row: RankedRow) => {
