@@ -2,7 +2,7 @@
 // 낙찰 이후 — 명도와 매도까지의 일을 모아 둘 자리.
 // 틀은 자금관리(.fin-shell)와 같은 짜임이다: 위는 붙박이(제목 + 탭 + 물건 카드),
 // 아래만 구른다. 카드는 물건상세의 권리분석과 같은 꼴 — 제목줄을 누르면 접힌다.
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, inject, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { shortAddr } from '../utils/address';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
@@ -20,6 +20,9 @@ import type { InteriorExpenseRecord } from '../types/finance';
 import { formatPhone } from '../utils/phone';
 import { bidStageOf } from '../utils/stageLabel';
 import { courtInfoOf } from '../utils/auctionSummary';
+import { saleKindOf, headMetaLineOf, summarySeedOf } from '../services/detailSummary';
+import { addressParts } from '../utils/addressName';
+import { propTypeName } from '../utils/propertyType';
 import type { AgencyRow, AuctionDetail } from '../types/auction';
 
 // 낙찰당일 탭은 명도 탭으로 합쳤다 — 그 묶음(경매사건 열람 · 명도협상 원칙 · 유선연락 첫통화)은 명도절차 바로 아래에 나온다
@@ -118,6 +121,33 @@ const telHref = (phone: string) => {
   return d.length >= 8 ? `tel:${d}` : '';
 };
 /** '2025-10-17' → '25. 10. 17' (자금관리 카드와 같은 꼴) */
+/** 웹 — 선정목록 물건상세의 고정 카드(경매 사건번호 · 법원 · 날짜 / 종류 · 매각구분 · 면적 / 주소)와 같은 꼴로 낙찰 물건을 보인다 */
+const webEmbed = inject<boolean>('webEmbed', false);
+const webHead = computed(() => {
+  const a = picked.value;
+  if (!a) return null;
+  const sum = { ...summarySeedOf(a), ...Object.fromEntries(Object.entries(a.basicSummary || {}).filter(([, v]) => v)) } as Record<string, string>;
+  const parts = addressParts(a.address || '', sum['sum.buildingName']);
+  const meta = headMetaLineOf(a, new Date().getFullYear());
+  const won = String(a.wonDate || '').trim();
+  const wonText = /^\d{4}[-./]\d{2}[-./]\d{2}/.test(won) ? won.slice(0, 10).replace(/-/g, '.') : won;
+  return {
+    caseNo: a.caseNumber,
+    court: courtInfoOf(a).name || '',
+    won: wonText,
+    kind: propTypeName(a.propertyType),
+    sale: [saleKindOf(a).replace('토건일괄매각', '토지건물 일괄매각'), meta ? (/㎡/.test(meta) ? `건물 ${meta}` : meta) : ''].filter(Boolean).join(' · '),
+    addr: parts.before.trim(),
+    bld: parts.name,
+    unit: `${parts.mid}${parts.unit}`.trim(),
+    full: a.address || '',
+  };
+});
+const copyAddr = async () => {
+  const t = webHead.value?.full;
+  if (!t) return;
+  try { await navigator.clipboard.writeText(t); toast('주소가 복사되었습니다.'); } catch { toast('복사에 실패했습니다.', 'error'); }
+};
 const shortYmd = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2).replace(/-/g, '.') : '');
 
 /** 비고 — 가운뎃점으로 이어 붙인 두 가지는 줄을 내려 적는다 (칸이 좁아 한 줄로는 꺾인다) */
@@ -561,6 +591,29 @@ const toggleSection = (key: string) => {
         </section>
       </template>
 
+      <!-- 웹 — 선정목록 물건상세의 고정 카드와 같은 꼴(웹 공통 .item-head · .ih-* 모양). 낙찰목록은 오른쪽 위 -->
+      <div v-if="webEmbed" class="pw-webhead">
+        <div class="toolbar item-head">
+          <div class="ih-top">
+            <h1 class="ih-title"><template v-if="webHead"><span class="ih-tag">경매</span><span class="num">{{ webHead.caseNo }}</span></template><template v-else>낙찰한 물건이 없습니다</template></h1>
+            <span v-if="webHead" class="ih-court">{{ webHead.court || '–' }} · 낙찰일 <span class="num">{{ webHead.won || '–' }}</span></span>
+            <span class="ih-right">
+              <button type="button" :class="['ih-pdf', 'pw-pickbtn', { off: !ownedAuctions.length }]" @click.stop="togglePickList">
+                낙찰목록 <img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
+              </button>
+            </span>
+          </div>
+          <div v-if="webHead" class="ih-prop">
+            <span class="ih-kind">{{ webHead.kind }}</span>
+            <span class="ih-line"><span class="ih-sale">{{ webHead.sale }}</span></span>
+            <button type="button" class="ih-copy" aria-label="주소 복사" @click="copyAddr">주소</button>
+            <p class="ih-addr">{{ webHead.addr }}<template v-if="webHead.bld"> <b>{{ webHead.bld }}</b></template><template v-if="webHead.unit"> <b>{{ webHead.unit }}</b></template></p>
+            <button v-if="hasTable && !editing" type="button" :class="['ih-fold', { up: allCollapsed }]" :aria-label="allCollapsed ? '전체 펼치기' : '전체 접기'" @click="toggleAll"><img :src="chevronDownIcon" alt="" /></button>
+          </div>
+        </div>
+      </div>
+      <!-- 웹 — 경로(홈 › 낙찰이후 › 탭)는 카드 아래 이 자리로 옮겨 온다 -->
+      <div v-if="webEmbed" class="pw-crumb" data-crumb-slot />
       <!-- 어느 물건의 일인지 — 탭 밑에 카드로 붙박아 둔다. 누르면 목록이 펼쳐진다 -->
       <div class="pw-objwrap">
         <article v-if="picked" class="pw-obj">

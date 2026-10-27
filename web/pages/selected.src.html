@@ -603,7 +603,19 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page .more-fixed { position: static !important; background: transparent !important; }
 .app-page :is(.pw-tabs, .fin-tabs, .more-titlebar, .quick, .pg-back-shared, .pg-back, .amb) { display: none !important; }
 .app-page .more-card.first { margin-top: 0 !important; }
-#appPageView .content { padding-top: 8px; }
+#appPageView .content { padding-top: 0; }
+/* 낙찰이후 — 선정목록 물건상세처럼: 하위 탭 아래 띠(--band) 위 고정 카드(사건 카드) → 경로 → 내용. 카드는 위에 붙어 있다 */
+.app-page[data-k="postwin"] .pw-fixed-top { display: flex; flex-direction: column; }
+.app-page[data-k="postwin"] .pw-webhead { order: -2; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)); z-index: 25;
+  padding: 8px 0 12px; background: var(--band); box-shadow: 0 0 0 100vmax var(--band); clip-path: inset(0 -100vmax); }
+.app-page[data-k="postwin"] .pw-crumb { order: -1; }
+.app-page[data-k="postwin"] .pw-objwrap > .pw-obj, .app-page[data-k="postwin"] .pw-objctrl, .app-page[data-k="postwin"] .pw-page-title { display: none !important; }
+.app-page[data-k="postwin"] .pw-objwrap { position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px); z-index: 26; height: 0; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; }
+.app-page[data-k="postwin"] .pw-objlist { right: 0; left: auto; top: 44px; width: min(520px, 100%); }
+.app-page[data-k="postwin"] .pw-pickbtn { cursor: pointer; background: var(--surface); }
+.app-page[data-k="postwin"] .pw-pickbtn.off { opacity: .5; }
+.app-page[data-k="postwin"] .pw-pickbtn img { width: 12px; height: 12px; margin-left: 2px; transition: transform .2s; }
+.app-page[data-k="postwin"] .pw-pickbtn img.up { transform: rotate(180deg); }
 /* ===== 임장경로 — 앱 FieldTripPlannerPage 를 웹 흐름에 맞게 푼다 =====
    앱 화면은 손전화 한 장을 통째로 덮는 고정 틀이다. 웹에서는 머리띠·경로줄 아래에
    보통 글처럼 흘러야 하므로 그 고정만 풀고, 안쪽 짜임은 앱 그대로 둔다 */
@@ -3246,7 +3258,7 @@ html, body { overflow-x: clip; }
     $('listView').hidden = reg || item || trip || my || market || page; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('marketView').hidden = !market; $('appPageView').hidden = !page; $('fab').hidden = reg || item || trip || my || market || page;
     const cur = item ? byId(S.itemId) : null;
     syncCrumb();
-    { const nav = CRUMBS; const slot = (market && document.getElementById('admCrumbSlot')) || $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
+    { const nav = CRUMBS; const slot = (market && document.getElementById('admCrumbSlot')) || (page && document.querySelector('#appPageContent [data-crumb-slot]')) || $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
     document.title = page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? (S.route === 'bidrate' ? '마이턴옥션 낙찰가율분석' : '마이턴옥션 시장분석') : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정목록';
     if (!item) closeAppDetail();
@@ -3640,6 +3652,11 @@ html, body { overflow-x: clip; }
     const slot = document.getElementById('admCrumbSlot');
     if (S.route === 'market' && slot && CRUMBS && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS);
   }).observe(document.getElementById('marketContent') || document.body, { childList: true, subtree: true });
+  /* 낙찰이후 등 앱 화면 안의 경로 자리([data-crumb-slot])로도 옮긴다 */
+  new MutationObserver(() => {
+    const slot = document.querySelector('#appPageContent [data-crumb-slot]');
+    if (APP_PAGE_NAMES[S.route] && slot && CRUMBS && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS);
+  }).observe(document.getElementById('appPageContent') || document.body, { childList: true, subtree: true });
   /* 지역분석 안 탭 — '홈 › 시장분석 › 지역분석 › 수요공급' */
   let marketInner = null;
   window.addEventListener('adm:tab', (e) => { marketInner = (e.detail && e.detail.trail) || null; if (S.route === 'market') syncCrumb(); });
@@ -3711,7 +3728,7 @@ html, body { overflow-x: clip; }
   }
   /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면을 띄워 두고, 하위 탭만 바꿀 때는 다시 띄우지 않고 탭만 넘긴다 */
   let pageUnmount = null; let pageKey = '';
-  const closeAppPage = () => { if (pageUnmount) { try { pageUnmount(); } catch (e) { /* 그만 */ } pageUnmount = null; pageKey = ''; } };
+  const closeAppPage = () => { { const home = $('crumbSlotAppPage'); const inner = document.querySelector('#appPageContent [data-crumb-slot]'); if (CRUMBS && home && inner && inner.contains(CRUMBS)) home.appendChild(CRUMBS); } if (pageUnmount) { try { pageUnmount(); } catch (e) { /* 그만 */ } pageUnmount = null; pageKey = ''; } };
   function renderAppPage() {
     const box = $('appPageContent');
     const key = S.route; const tab = S.pageTab[key];
