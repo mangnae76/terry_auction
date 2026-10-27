@@ -92,6 +92,28 @@ const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
 const listView = ref<'table' | 'dist'>('table');
+/** 지역 분포 그림 — 막대 / 원형. '지역 분포' 탭을 한 번 더 누르면 바뀐다 */
+const distChart = ref<'bar' | 'pie'>('bar');
+const onDistTab = () => {
+  if (listView.value === 'dist') distChart.value = distChart.value === 'bar' ? 'pie' : 'bar';
+  else listView.value = 'dist';
+};
+// 원형(도넛) — 반지름 · 둘레, 구간 차례대로 옅은 파랑 → 짙은 파랑
+const DONUT_R = 56;
+const DONUT_C = 2 * Math.PI * DONUT_R;
+const DONUT_RAMP = ['#cfe0ff', '#a3c1fb', '#76a1f7', '#4a82f3', '#2b6df3', '#1b4fbf'];
+const DONUT_GAP = 2;
+/** 조각마다 시작 자리 · 길이 (둘레 기준). 조각 사이 2px 틈 */
+const donutSegs = (cells: Array<{ label: string; count: number; pct: number }>) => {
+  const total = cells.reduce((a, c) => a + c.count, 0);
+  let at = 0;
+  return cells.map((c) => {
+    const full = total > 0 ? (c.count / total) * DONUT_C : 0;
+    const seg = { label: c.label, count: c.count, pct: c.pct, start: at, len: Math.max(0, full - (full > DONUT_GAP ? DONUT_GAP : 0)) };
+    at += full;
+    return seg;
+  });
+};
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const isoMonthsAgo = (m: number) => {
@@ -584,7 +606,7 @@ const downloadCsv = () => {
           <!-- 웹 — 결과를 두 가지로 본다: 지역별 분석(표) · 지역별 분포(막대그래프) -->
           <nav v-else class="adm-view-tabs" role="tablist">
             <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역별 분석' }}</button>
-            <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="listView = 'dist'">지역 분포</button>
+            <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">지역 분포<small class="adm-view-kind">{{ distChart === 'bar' ? '막대' : '원형' }}</small></button>
           </nav>
           <span v-if="!webEmbed" class="tag ok">정상거래 {{ counts.정상거래 }}</span>
           <span v-if="!webEmbed" class="tag">직거래 {{ counts.직거래 }}</span>
@@ -603,7 +625,7 @@ const downloadCsv = () => {
           <div v-for="d in DISTS" :key="d.title" class="adm-dist">
             <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em><small>건수 · %</small></div>
             <!-- 웹 — 막대그래프. 막대 높이는 그 분포에서 가장 많은 칸 대비, 위에 건수 · 밑에 구간 · % -->
-            <div class="adm-bars" role="img" :aria-label="`${d.title} 막대그래프`">
+            <div v-if="distChart === 'bar'" class="adm-bars" role="img" :aria-label="`${d.title} 막대그래프`">
               <div
                 v-for="c in d.cells"
                 :key="c.label"
@@ -615,6 +637,32 @@ const downloadCsv = () => {
                 <small>{{ c.label }}</small>
                 <em>{{ c.pct.toFixed(0) }}%</em>
               </div>
+            </div>
+            <!-- 원형(도넛) — 구간이 차례가 있는 값이라 한 색의 옅음 → 짙음으로. 조각 사이 2px 흰 틈 -->
+            <div v-else class="adm-donut-wrap">
+              <svg class="adm-donut" viewBox="0 0 160 160" role="img" :aria-label="`${d.title} 원형 분포도`">
+                <circle cx="80" cy="80" :r="DONUT_R" fill="none" stroke="#f1f4f9" stroke-width="28" />
+                <circle
+                  v-for="(seg, si) in donutSegs(d.cells)"
+                  :key="seg.label"
+                  cx="80" cy="80" :r="DONUT_R" fill="none"
+                  :stroke="DONUT_RAMP[si % DONUT_RAMP.length]" stroke-width="28"
+                  :stroke-dasharray="`${seg.len} ${DONUT_C - seg.len}`"
+                  :stroke-dashoffset="-seg.start"
+                  transform="rotate(-90 80 80)"
+                  class="adm-donut-seg"
+                ><title>{{ seg.label }} — {{ seg.count }}건 ({{ seg.pct.toFixed(1) }}%)</title></circle>
+                <text x="80" y="76" text-anchor="middle" class="adm-donut-total">{{ d.cells.reduce((a, c) => a + c.count, 0).toLocaleString('ko-KR') }}</text>
+                <text x="80" y="96" text-anchor="middle" class="adm-donut-unit">건</text>
+              </svg>
+              <ul class="adm-donut-legend">
+                <li v-for="(c, ci) in d.cells" :key="c.label">
+                  <i :style="{ background: DONUT_RAMP[ci % DONUT_RAMP.length] }" />
+                  <span>{{ c.label }}</span>
+                  <b>{{ c.count }}</b>
+                  <em>{{ c.pct.toFixed(0) }}%</em>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
@@ -803,6 +851,22 @@ const downloadCsv = () => {
 .adm-bar-col.top b { color: #2b6df3; }
 .adm-bar-col small { font-size: 14px; font-weight: 600; color: #4b5563; white-space: nowrap; }
 .adm-bar-col em { font-style: normal; font-size: 14px; color: #9ca3af; }
+.adm-view-kind { margin-left: 6px; font-size: 12px; font-weight: 700; color: #9ca3af; border: 1px solid #e5e7eb; border-radius: 999px; padding: 1px 7px; }
+.adm-view-tabs button.on .adm-view-kind { color: #2b6df3; border-color: #c7d7f8; }
+/* 원형 분포도 — 왼쪽 도넛, 오른쪽 범례(구간 · 건수 · %) */
+.adm-donut-wrap { display: flex; align-items: center; gap: 24px; height: 190px; padding: 4px 8px 0; }
+.adm-donut { width: 170px; height: 170px; flex: 0 0 auto; }
+.adm-donut-seg { transition: opacity .15s; }
+.adm-donut:hover .adm-donut-seg { opacity: .55; }
+.adm-donut .adm-donut-seg:hover { opacity: 1; }
+.adm-donut-total { font-size: 20px; font-weight: 800; fill: #111827; }
+.adm-donut-unit { font-size: 13px; fill: #6b7280; }
+.adm-donut-legend { list-style: none; margin: 0; padding: 0; flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.adm-donut-legend li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto 44px; align-items: center; gap: 8px; font-size: 14px; }
+.adm-donut-legend i { width: 12px; height: 12px; border-radius: 3px; }
+.adm-donut-legend span { color: #374151; white-space: nowrap; }
+.adm-donut-legend b { font-weight: 800; color: #111827; font-variant-numeric: tabular-nums; text-align: right; }
+.adm-donut-legend em { font-style: normal; color: #9ca3af; text-align: right; }
 .adm-dist-cell.top strong { color: #2b6df3; }
 
 /* 검색조건 */
