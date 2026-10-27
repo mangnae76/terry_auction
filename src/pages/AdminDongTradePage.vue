@@ -623,7 +623,7 @@ const downloadCsv = () => {
 
         <!-- 검색조건 -->
         <div class="adm-cond">
-          <div class="adm-cond-head">검색조건</div>
+          <div class="adm-cond-head">{{ webEmbed ? '조건 검색' : '검색조건' }}</div>
           <div class="adm-cond-body">
             <label v-if="!webEmbed" class="adm-f">
               <small>기간선택</small>
@@ -655,6 +655,14 @@ const downloadCsv = () => {
                 <input v-model="yearMax" class="adm-input tiny" inputmode="numeric" placeholder="2026" />
               </span>
             </label>
+            <!-- 웹 — 돋보기 검색은 표 위 대신 여기(건축년도 옆) -->
+            <label v-if="webEmbed" class="adm-f">
+              <small>검색어</small>
+              <span class="adm-search in-cond">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
+                <input v-model="listQuery" class="adm-input search" placeholder="주소 · 금액 · 층 등으로 검색" />
+              </span>
+            </label>
             <div class="adm-cond-btns">
               <button type="button" class="adm-ghost" @click="saveFilters">저장</button>
               <button type="button" class="adm-ghost" @click="resetFilters">초기화</button>
@@ -676,7 +684,7 @@ const downloadCsv = () => {
           <button v-if="colFilter.activeCount.value > 0" type="button" class="adm-flt-clear" @click="clearColFilters">
             걸러내기 {{ colFilter.activeCount.value }}칸 해제
           </button>
-          <span class="adm-search">
+          <span v-if="!webEmbed" class="adm-search">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
             <input v-model="listQuery" class="adm-input search" placeholder="주소 · 금액 · 층 등으로 검색" />
           </span>
@@ -845,6 +853,7 @@ const downloadCsv = () => {
 .adm-search { position: relative; display: block; margin-left: auto; }
 .adm-search > svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none; }
 .adm-input.search { width: 280px; padding-left: 30px; }
+.adm-search.in-cond { margin-left: 0; }
 .adm-input:focus { outline: none; border-color: #2b6df3; }
 .adm-pair { display: inline-flex; align-items: center; gap: 6px; }
 .adm-pair em { font-style: normal; color: #9ca3af; }
