@@ -661,7 +661,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-tbl:not(.edit) :is(.pw-label strong, .pw-labellink strong, .pw-memo) { white-space: nowrap; }
 .app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-qty { width: 60px; }
 .app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-memo { width: 300px; }
-/* 명도 — '낙찰 후 진행 순서' 상자(명도절차 위). 웹은 넓으니 여덟 칸을 한 줄로, 글자는 14 */
+/* 낙찰당일 — '낙찰 후 진행 순서' 상자(탭 맨 위). 웹은 넓으니 여덟 칸을 한 줄로, 글자는 14 */
 .app-page[data-k="postwin"] .pw-flowcard .pw-flow-map { grid-template-columns: repeat(8, 1fr); gap: 10px 22px; padding: 6px 4px 14px; }
 .app-page[data-k="postwin"] .pw-flowcard .pw-flow-box { font-size: 14px; min-height: 52px; }
 .app-page[data-k="postwin"] .pw-flowcard .pw-flow-box:nth-child(4n):not(.last)::after { content: '▶'; position: absolute; right: -16px; top: 50%; transform: translateY(-50%); font-size: 9px; color: #9aa6bb; }
@@ -2281,7 +2281,7 @@ html, body { overflow-x: clip; }
      화면마다 따로 적지 않는다: 새 화면 · 새 하위 탭이 생기면 아래 두 표(SUB_TAB_KEYS · readHash/hashOf)에만 더한다 ===== */
   const SUB_TAB_KEYS = {
     market: ['ranking', 'dong', 'case', 'near', 'same'],
-    postwin: ['evict', 'biz', 'balance', 'repair', 'sell'],
+    postwin: ['win', 'evict', 'biz', 'balance', 'repair', 'sell'],
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'tax'],
     more: ['mypage', 'billing', 'points', 'news', 'support'],
   };
@@ -2293,7 +2293,6 @@ html, body { overflow-x: clip; }
     const m = h.match(/^#\/([\w-]+)(?:\/([\w-]+))?(?:\/([\w-]+))?/) || [];
     const head = m[1] || '';
     if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
-    if (head === 'postwin' && m[2] === 'win') return { route: 'postwin', sub: 'evict' }; /* 예전 '낙찰당일' — 명도 탭으로 합쳤다 */
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
     if (head === 'bidrate') return { route: 'market', sub: SUB_TAB_KEYS.market.includes(m[2]) ? m[2] : 'near' }; /* 예전 '낙찰가율분석' 주소 */
@@ -2391,7 +2390,7 @@ html, body { overflow-x: clip; }
     ['m1', [['선정목록', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
     ['m3', [['거래랭킹', 'go-market'], ['지역분석', 'go-market'], ['경매지번 공동주택가 및 실거래가', 'go-market'], ['인근 매각물건 분석', 'go-market'], ['동일지번 매각물건 분석', 'go-market']]],
-    ['m3c', [['명도', 'go-postwin'], ['사업자등록', 'go-postwin'], ['잔금·등기', 'go-postwin'], ['인테리어', 'go-postwin'], ['매도·임대', 'go-postwin']]],
+    ['m3c', [['낙찰당일', 'go-postwin'], ['명도', 'go-postwin'], ['사업자등록', 'go-postwin'], ['잔금·등기', 'go-postwin'], ['인테리어', 'go-postwin'], ['매도·임대', 'go-postwin']]],
     ['m3d', [['자금입출금', 'go-finance'], ['사업지출', 'go-finance'], ['유류&식대', 'go-finance'], ['물품구매', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
     ['m5', [['내 정보', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['공지', 'go-more'], ['고객센터', 'go-more']]],
@@ -3321,7 +3320,7 @@ html, body { overflow-x: clip; }
     /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
     market: [['ranking', '', '거래랭킹'], ['dong', '', '지역분석'], ['case', '', '경매지번 공동주택가 및 실거래가'], ['near', '', '인근 매각물건 분석'], ['same', '', '동일지번 매각물건 분석']],
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
-    postwin: [['evict', '', '명도'], ['biz', '', '사업자등록'], ['balance', '', '잔금·등기'], ['repair', '', '인테리어'], ['sell', '', '매도·임대']],
+    postwin: [['win', '', '낙찰당일'], ['evict', '', '명도'], ['biz', '', '사업자등록'], ['balance', '', '잔금·등기'], ['repair', '', '인테리어'], ['sell', '', '매도·임대']],
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '사업지출'], ['fuelMeal', '', '유류&식대'], ['itemPurchase', '', '물품구매'], ['tax', '', '세금신고']],
     more: [['mypage', '', '내 정보'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['news', '', '공지'], ['support', '', '고객센터']],
     item: [['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
