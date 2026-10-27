@@ -311,6 +311,9 @@ body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) .foot { displa
 /* 고르는 칸 — 왼쪽 판 맨 위(통계 정보 위)에 한 줄씩: 시도 · 시군구 · 읍면동 · 종류 · 기간 · 검색.
    칸 크기는 물건등록 칸과 같게(높이 34 · 모서리 6), 칸 위 작은 이름은 감추고 칸 안에 '○○ 선택' */
 .app-market[data-k="ranking"] .tsp-filter { display: none !important; }
+/* 통계 정보 — 이름(거래 건수 · 거래 총액 · 평균가 · 평당 단가)은 회색 보통 글자, 값은 파랑 */
+.app-market[data-k="ranking"] .tsp-stat-grid dt { color: #6b7280 !important; font-weight: 400 !important; }
+.app-market[data-k="ranking"] .tsp-stat-grid dd { color: #2b6df3 !important; }
 .app-market[data-k="ranking"] .tsp-filter-slot { display: flex; flex-direction: column; gap: 8px; }
 /* 줄 차례: 시도 · 시군구 · 읍면동 → 종류 · 매매/전월세 → 기간 → 검색 (여섯 칸 격자) */
 .app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
