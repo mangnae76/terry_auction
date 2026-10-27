@@ -579,7 +579,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 @media (max-width: 1100px) { .reg-duo { grid-template-columns: minmax(0, 1fr); } }
 /* 상자가 탭 — 고른 상자는 파란 테두리, 안 고른 상자는 눌러서 바꾼다 */
 /* 앱 로그인 창 — 앱 화면의 남색 바탕은 빼고 흰 카드만 띄운다 (카드 모양은 앱 그대로) */
-.app-login { position: relative; width: min(360px, 100%); max-height: calc(100vh - 40px); overflow: auto; padding: 0 !important; background: transparent !important; box-shadow: none !important; border: 0 !important; }
+.app-login { position: relative; width: min(360px, 100%); max-height: calc(100vh - 40px); overflow-x: hidden; overflow-y: auto; /* 닫기 단추 말풍선이 오른쪽으로 3px 삐져 가로 스크롤바가 생겼다 — 말풍선은 오른쪽 맞춤, 가로는 숨김 */ padding: 0 !important; background: transparent !important; box-shadow: none !important; border: 0 !important; }
 .app-login .lp-shell { min-height: 0 !important; background: none !important; padding: 0 !important; }
 .app-login .lp-card { max-width: none !important; }
 .app-login-x { position: absolute !important; top: 10px; right: 10px; z-index: 2; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #6b7280; display: grid; place-items: center; cursor: pointer; }
@@ -3434,7 +3434,7 @@ html, body { overflow-x: clip; }
     }
     if (m.kind === 'applogin') {
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog app-login" role="dialog" aria-modal="true" aria-label="로그인">
-        <button type="button" class="app-login-x" data-act="modal-close" aria-label="창 닫기" data-tip="창 닫기" data-tip-pos="below">${I.x}</button>
+        <button type="button" class="app-login-x tip-below" data-act="modal-close" aria-label="창 닫기" data-tip="창 닫기" data-tip-pos="right">${I.x}</button>
         <div id="appLoginMount"><p class="it-emptyline" style="text-align:center;padding:40px 0">로그인 화면을 불러오는 중…</p></div>
       </div></div>`;
       return;
