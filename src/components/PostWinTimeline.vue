@@ -38,14 +38,23 @@ const startDate = computed(() => {
 const startLabel = computed(() => (props.auction?.wonDate ? '낙찰일' : '입찰일'));
 
 /** 저장된 흐름(없으면 기본) — 고칠 때는 사본을 만들어 저장한다 */
-const flow = computed<PostWinFlow>(() => props.auction?.postWinFlow ?? defaultFlow());
+const savedFlow = computed<PostWinFlow>(() => props.auction?.postWinFlow ?? defaultFlow());
+/** 끄는 동안의 차례(단계 id) — 놓을 때 한 번만 저장한다 */
+const dragOrder = ref<string[] | null>(null);
+const dragId = ref('');
+const flow = computed<PostWinFlow>(() => {
+  const f = savedFlow.value;
+  if (!dragOrder.value) return f;
+  const by = new Map(f.steps.map((x) => [x.id, x]));
+  return { ...f, steps: dragOrder.value.map((id) => by.get(id)).filter((x): x is PostWinStep => !!x) };
+});
 const commit = (next: PostWinFlow) => {
   const a = props.auction;
   if (!a) return;
   a.postWinFlow = JSON.parse(JSON.stringify(next));
   emit('save', a);
 };
-const edit = (fn: (f: PostWinFlow) => void) => { const f: PostWinFlow = JSON.parse(JSON.stringify(flow.value)); fn(f); commit(f); };
+const edit = (fn: (f: PostWinFlow) => void) => { const f: PostWinFlow = JSON.parse(JSON.stringify(savedFlow.value)); fn(f); commit(f); };
 
 /** 단계마다 날짜 · 기준 글 · D-날 */
 const rows = computed(() => {
@@ -79,11 +88,35 @@ const toggleDone = (id: string) => {
     s.doneDate = s.doneDate ? undefined : (planned && planned < today ? planned : today);
   });
 };
-const move = (i: number, d: -1 | 1) => edit((f) => {
-  const j = i + d;
-  if (j < 0 || j >= f.steps.length) return;
-  [f.steps[i], f.steps[j]] = [f.steps[j], f.steps[i]];
-});
+// ===== 끌어서 차례 바꾸기 — 임장경로처럼 상자를 잡고 위아래로. 체크 상자 · 연필 · 지우기 자리는 잡히지 않는다 =====
+const onDragStart = (id: string, e: PointerEvent) => {
+  if (editingId.value || (e.target as HTMLElement).closest('input, button, select, textarea')) return;
+  dragId.value = id;
+  dragOrder.value = savedFlow.value.steps.map((x) => x.id);
+  (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+};
+const onDragMove = (e: PointerEvent) => {
+  if (!dragId.value || !dragOrder.value) return;
+  e.preventDefault();
+  const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('.pwt-row') as HTMLElement | null;
+  const overId = el?.dataset.id;
+  if (!overId || overId === dragId.value) return;
+  const order = [...dragOrder.value];
+  const from = order.indexOf(dragId.value); const to = order.indexOf(overId);
+  if (from < 0 || to < 0) return;
+  order.splice(from, 1); order.splice(to, 0, dragId.value);
+  dragOrder.value = order;
+};
+const onDragEnd = () => {
+  if (!dragId.value) return;
+  const order = dragOrder.value;
+  dragId.value = '';
+  if (order) {
+    const changed = order.join() !== savedFlow.value.steps.map((x) => x.id).join();
+    if (changed) commit({ ...savedFlow.value, steps: flow.value.steps });
+  }
+  dragOrder.value = null;
+};
 const remove = (id: string) => edit((f) => { f.steps = f.steps.filter((x) => x.id !== id); });
 const editingId = ref('');
 const draft = ref<{ name: string; days: number; note: string; base: 'prev' | 'start' }>({ name: '', days: 7, note: '', base: 'prev' });
@@ -130,7 +163,16 @@ const resetDefault = () => {
       </p>
 
       <ol class="pwt-list">
-        <li v-for="(r, i) in rows" :key="r.id" :class="['pwt-row', { done: !!r.doneDate, now: r.next }]">
+        <li
+          v-for="r in rows"
+          :key="r.id"
+          :data-id="r.id"
+          :class="['pwt-row', { done: !!r.doneDate, now: r.next, dragging: dragId === r.id }]"
+          @pointerdown="onDragStart(r.id, $event)"
+          @pointermove="onDragMove"
+          @pointerup="onDragEnd"
+          @pointercancel="onDragEnd"
+        >
           <!-- 체크하면 그날로 적히고 뒤 일정이 따라 밀린다 -->
           <input type="checkbox" class="pwt-chk" :checked="!!r.doneDate" :aria-label="`${r.name} 마침`" @change="toggleDone(r.id)" />
           <div class="pwt-main">
@@ -155,10 +197,13 @@ const resetDefault = () => {
             </template>
           </div>
           <div v-if="editingId !== r.id" class="pwt-ctrl">
-            <button type="button" aria-label="위로" :disabled="i === 0" @click="move(i, -1)">▲</button>
-            <button type="button" aria-label="아래로" :disabled="i === rows.length - 1" @click="move(i, 1)">▼</button>
-            <button type="button" aria-label="고치기" @click="startEdit(r)">✎</button>
-            <button type="button" aria-label="지우기" @click="remove(r.id)">✕</button>
+            <!-- 연필 · 지우기 — 다른 화면과 같은 둥근 네모 단추, 같은 크기 -->
+            <button type="button" aria-label="고치기" title="고치기" @click="startEdit(r)">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
+            </button>
+            <button type="button" aria-label="지우기" title="지우기" @click="remove(r.id)">
+              <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+            </button>
           </div>
         </li>
       </ol>
@@ -200,9 +245,15 @@ const resetDefault = () => {
 .pwt-base { color: #9ca3af; }
 .pwt-note { margin: 5px 0 0; font-size: 14px; color: #4b5563; }
 .pwt-ctrl { flex: 0 0 auto; display: flex; gap: 6px; }
-.pwt-ctrl button { width: 34px; height: 30px; border: 0; border-radius: 6px; background: #f1f4f9; color: #4b5563; font-size: 13px; cursor: pointer; }
-.pwt-ctrl button:hover { background: #e3e8f2; }
-.pwt-ctrl button:disabled { opacity: .35; cursor: default; }
+.pwt-ctrl button { width: 30px; height: 30px; padding: 0; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #4b5563; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
+.pwt-ctrl button:hover { background: #f3f4f6; color: #111827; }
+/* 끌어 옮기기 — 상자를 잡으면 파란 테두리 · 옅은 파랑 바탕, 체크 상자도 파랗게 테를 두른다 */
+.pwt-row { cursor: grab; touch-action: none; user-select: none; border: 1px solid transparent; border-bottom-color: #eef1f6; }
+.pwt-row:active { cursor: grabbing; }
+.pwt-row.dragging { border-color: #2b6df3; border-width: 2px; padding: 13px 9px; background: #e8f0ff; box-shadow: 0 6px 16px rgba(43, 109, 243, .18); }
+.pwt-row.dragging .pwt-chk { outline: 2px solid #2b6df3; outline-offset: 2px; }
+.pwt-row :is(input, button, select) { cursor: pointer; }
+.pwt-row input:not([type=checkbox]) { cursor: text; user-select: text; }
 .pwt-edit, .pwt-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .pwt-add { margin-top: 16px; padding: 14px; border: 1px dashed #d5dbe6; border-radius: 10px; background: #fafbfd; }
 .pwt-add-lab { font-size: 14px; font-weight: 800; color: #374151; }
