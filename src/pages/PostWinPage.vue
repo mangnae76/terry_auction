@@ -1772,4 +1772,19 @@ const toggleSection = (key: string) => {
 /* 앱 사업자등록 표 — 빡빡하다는 말에 줄 위아래 여백 · 줄 간격을 한 단(약 10%) 넓힌다. 글자 크기는 그대로 */
 .pw-body.app.tab-biz .pw-tbl td.pw-txt { padding-top: 8px !important; padding-bottom: 8px !important; line-height: 1.55; }
 .pw-body.app.tab-biz .pw-tbl td.pw-label { padding-top: 8px !important; padding-bottom: 8px !important; }
+/* 앱 명도 — 세로를 한 단 넓혀 읽기 쉽게(글자 크기는 그대로). 특히 '명도 시기별 진행내용' */
+.pw-body.app.tab-evict .pw-br-step { margin-bottom: 14px; }
+.pw-body.app.tab-evict .pw-br-head { margin-bottom: 14px; }
+.pw-body.app.tab-evict .pw-br-items { gap: 8px; }
+.pw-body.app.tab-evict .pw-br-item { padding-top: 10px; padding-bottom: 10px; line-height: 1.5; }
+.pw-body.app.tab-evict .pw-br-pill { min-height: 40px; }
+.pw-body.app.tab-evict .pw-br-left { padding-top: 10px; padding-bottom: 10px; }
+.pw-body.app.tab-evict .pw-br-left b { line-height: 1.5; }
+.pw-body.app.tab-evict .pw-br-note { margin-top: 8px; padding-top: 11px; padding-bottom: 11px; line-height: 1.6; }
+.pw-body.app.tab-evict .pw-br { margin-bottom: 16px; }
+.pw-body.app.tab-evict .pw-bx-item { min-height: 40px; }
+.pw-body.app.tab-evict .pw-gr-box { min-height: 68px; }
+.pw-body.app.tab-evict .pw-gr-list li { line-height: 1.7; }
+.pw-body.app.tab-evict .pw-sk-col { gap: 9px; }
+.pw-body.app.tab-evict .pw-sk-item { min-height: 40px; padding-top: 9px; padding-bottom: 9px; line-height: 1.5; }
 </style>
