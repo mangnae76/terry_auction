@@ -76,6 +76,7 @@ const loadedLabel = ref('');
 
 // ===== 검색조건 =====
 const PERIODS = [1, 3, 6, 12];
+const WEB_PERIODS = [3, 6, 12]; // 웹은 위 고르는 줄에서 — 1개월은 뺀다
 const periodMonths = ref(12);
 const dateFrom = ref('');
 const dateTo = ref('');
@@ -461,6 +462,13 @@ const downloadCsv = () => {
             <button v-for="k in KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: kind === k.key }]" @click="kind = k.key">{{ k.label }}</button>
           </div>
         </label>
+        <!-- 웹 — 기간은 검색조건 대신 여기서 (3 · 6 · 12개월) -->
+        <label v-if="webEmbed" class="adm-f">
+          <small>기간</small>
+          <div class="adm-seg">
+            <button v-for="m in WEB_PERIODS" :key="m" type="button" :class="['adm-seg-btn', { on: periodMonths === m }]" @click="applyPeriod(m)">{{ m }}개월</button>
+          </div>
+        </label>
         <!-- 웹 — 엑셀 내려받기를 조회 바로 왼쪽으로 (제목 줄은 웹에서 감춘다) — 지역 수요공급과 같은 틀 -->
         <button
           v-if="webEmbed"
@@ -517,7 +525,7 @@ const downloadCsv = () => {
         <div class="adm-cond">
           <div class="adm-cond-head">검색조건</div>
           <div class="adm-cond-body">
-            <label class="adm-f">
+            <label v-if="!webEmbed" class="adm-f">
               <small>기간선택</small>
               <div class="adm-seg">
                 <button v-for="m in PERIODS" :key="m" type="button" :class="['adm-seg-btn', { on: periodMonths === m }]" @click="applyPeriod(m)">{{ m }}개월</button>
