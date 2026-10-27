@@ -351,8 +351,7 @@ const eokMan = (v: number) => {
   if (v >= 100000000) return `${(Math.round(v / 1000000) / 100).toFixed(2)}억`;
   return `${Math.round(v / 10000).toLocaleString('ko-KR')}만`;
 };
-// 웹 — 시군구까지만 골랐을 때 위 요약은 시군구 전체 한 줄(기간 3 · 6 · 12개월은 검색조건 기간과 같은 값)
-const NAV_PERIODS = [{ m: 3, label: '3개월' }, { m: 6, label: '6개월' }, { m: 12, label: '1년' }];
+// 웹 — 시군구까지만 골랐을 때 위 요약은 시군구 전체 한 줄(기간은 아래 검색조건에서 고른다)
 const guNav = computed(() => {
   const prices = normals.value.map((r) => r.priceWon).filter((v) => v > 0);
   const areas = normals.value.map((r) => r.areaM2).filter((v) => v > 0);
@@ -482,9 +481,6 @@ const downloadCsv = () => {
         <section v-if="webEmbed && !dong" class="adm-gunav">
           <div class="adm-gunav-head">
             <strong>{{ loadedLabel }}</strong>
-            <div class="adm-gunav-seg">
-              <button v-for="p in NAV_PERIODS" :key="p.m" type="button" :class="{ on: periodMonths === p.m }" @click="applyPeriod(p.m)">{{ p.label }}</button>
-            </div>
           </div>
           <div class="adm-gunav-row">
             <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small>{{ c.label }}</small><b>{{ c.value }}</b></div>
@@ -706,9 +702,6 @@ const downloadCsv = () => {
 .adm-gunav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }
 .adm-gunav-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .adm-gunav-head strong { font-size: 18px; font-weight: 800; color: #2b6df3; }
-.adm-gunav-seg { display: flex; gap: 6px; }
-.adm-gunav-seg button { min-width: 72px; height: 38px; padding: 0 14px; border: 0; border-radius: 8px; background: #fff; color: #4b5563; font-size: 15px; font-weight: 700; cursor: pointer; }
-.adm-gunav-seg button.on { background: #2b3f9e; color: #fff; }
 .adm-gunav-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
 .adm-gunav-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border-radius: 8px; background: #fff; }
 .adm-gunav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
