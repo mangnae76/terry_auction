@@ -678,8 +678,12 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-modal-head strong { font-size: 16px; }
 .app-page[data-k="postwin"] .pw-modal :is(.pw-modal-sub, .pw-fld small, input, select, textarea, .pw-ebtn) { font-size: 14px; }
 .app-page[data-k="postwin"] .pw-modal .pw-fld { margin-bottom: 10px; }
+/* 인테리어 현황 표 — 줄 위아래를 넉넉히 */
+.app-page[data-k="postwin"] .pw-int-tbl :is(th, td) { padding-top: 13px !important; padding-bottom: 13px !important; }
 /* 매도·임대 — 중개 의뢰 현황 · 직거래 등록 상자: 글자는 규칙대로 14(제목 16), 칸 높이 · 위아래 여유를 넓힌다 */
 .app-page[data-k="postwin"] .agency-table { gap: 12px; }
+/* 업체 · 직거래 상자를 한 줄에 둘씩 */
+.app-page[data-k="postwin"] .agency-table { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 .app-page[data-k="postwin"] .adp-agency-item { padding: 12px 16px 14px !important; }
 .app-page[data-k="postwin"] .adp-agency-line { gap: 10px; }
 .app-page[data-k="postwin"] .adp-agency-line + .adp-agency-line { margin-top: 10px; padding-top: 10px; }
