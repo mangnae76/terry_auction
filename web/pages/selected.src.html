@@ -603,6 +603,19 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page .more-fixed { position: static !important; background: transparent !important; }
 .app-page :is(.pw-tabs, .fin-tabs, .more-titlebar, .quick, .pg-back-shared, .pg-back, .amb) { display: none !important; }
 .app-page .more-card.first { margin-top: 0 !important; }
+/* 웹 마이페이지(앱 더보기 화면) — 글자 최소 14, 제목은 단계별로: 묶음 제목 18 · 작은 제목 16 · 카드 이름 16. 기호(▾ ✓ ✦)는 그대로 */
+.app-page[data-k="more"] :is(.mpc-h2, .pt-head, .sup-h2, .nws-h) { font-size: 18px !important; }
+.app-page[data-k="more"] :is(.pt-blue-sec h3, .pt-h3, .sup-h3) { font-size: 16px !important; }
+.app-page[data-k="more"] :is(.mpc-txt strong, .sup-q-txt, .bil-plan-head, .bil-off-txt strong, .pt-grade-top strong, .sup-c-txt strong, .evb-card strong) { font-size: 16px !important; }
+.app-page[data-k="more"] :is(
+  .profile-main .pill, .evb-card .badge, .evb-card small, .evb-foot em, .evb-foot .cta,
+  .mpc-who, .mpc-who em, .mpc-chip, .mpc-val small, .mpc-txt small, .mpc-tally, .mpc-type, .more-version,
+  .bil-off-txt small, .bil-note, .bil-note b, .bil-plan-head .tag, .bil-plan-sub, .bil-row .lab, .bil-row .val, .bil-row .val .pill, .bil-row .val small, .bil-allbtn, .bil-way, .bil-fine,
+  .pt-blue-sec p, .pt-card li, .more-shell li, .pt-pt1, .pt-band, .pt-band span, .pt-band b, .pt-grade span, .pt-grade b, .pt-notes li, .pt-benefit small, .pt-benefit em,
+  .nws-row .tag, .nws-row .txt,
+  .sup-tag, .sup-qmark, .sup-more, .sup-tile small, .sup-c-txt small, .sup-app-txt, .sup-store, .sup-policy
+) { font-size: 14px !important; }
+
 #appPageView .content { padding-top: 0; }
 /* 낙찰이후 — 선정목록 물건상세처럼: 하위 탭 아래 띠(--band) 위 고정 카드(사건 카드) → 경로 → 내용. 카드는 위에 붙어 있다 */
 .app-page[data-k="postwin"] .pw-fixed-top { display: flex; flex-direction: column; }
