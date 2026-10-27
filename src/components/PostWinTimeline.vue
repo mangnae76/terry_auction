@@ -273,8 +273,8 @@ const resetDefault = () => {
 .pwt-main { flex: 1 1 auto; min-width: 0; }
 .pwt-name { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; }
 .pwt-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 14px; font-weight: 700; line-height: 1; }
-.pwt-chip.done { background: #e6f4ea; color: #2f7d4a; }
-.pwt-chip.next { background: #f9e1e1; color: #b44545; }
+.pwt-chip.done { background: #4f9a68; color: #fff; }
+.pwt-chip.next { background: #c95b5b; color: #fff; }
 .pwt-chip.plan { background: #e5edfb; color: #3f63b0; }
 .pwt-meta { margin: 6px 0 0; display: flex; align-items: baseline; gap: 8px; font-size: 14px; }
 .pwt-meta b { font-weight: 700; }
