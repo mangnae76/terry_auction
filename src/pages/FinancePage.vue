@@ -207,7 +207,30 @@ const filteredItemPurchases = computed(() => byDateDesc(finance.itemPurchases.fi
 const PAGE = 150;
 const shownCount = ref(PAGE);
 const cut = <T,>(rows: T[]) => (rows.length > shownCount.value ? rows.slice(0, shownCount.value) : rows);
-const shownCashFlows = computed(() => cut(filteredCashFlows.value));
+/** 자금입출금 표 정렬 — 머리글을 누르면 그 칸으로(다시 누르면 거꾸로). 기본은 일자 늦은 순 */
+type CashSortKey = 'date' | 'ownerName' | 'flowType' | 'amount' | 'note';
+const cashSortKey = ref<CashSortKey>('date');
+const cashSortDesc = ref(true);
+const toggleCashSort = (k: CashSortKey) => {
+  if (cashSortKey.value === k) cashSortDesc.value = !cashSortDesc.value;
+  else { cashSortKey.value = k; cashSortDesc.value = k === 'date' || k === 'amount'; }
+};
+const sortedCashFlows = computed(() => {
+  const k = cashSortKey.value;
+  // 금액은 입금 +, 출금 − 로 본다 — 큰 입금부터 큰 출금까지 한 줄로 선다
+  const val = (r: (typeof filteredCashFlows.value)[number]) => (k === 'amount'
+    ? (r.flowType === '입금' ? 1 : -1) * Number(r.amount || 0)
+    : String((r as Record<string, unknown>)[k] ?? ''));
+  const list = [...filteredCashFlows.value];
+  list.sort((a, b) => {
+    const x = val(a); const y = val(b);
+    const d = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'ko');
+    return cashSortDesc.value ? -d : d;
+  });
+  return list;
+});
+const cashSortMark = (k: CashSortKey) => (cashSortKey.value === k ? (cashSortDesc.value ? '↓' : '↑') : '⇅');
+const shownCashFlows = computed(() => cut(sortedCashFlows.value));
 const shownBusiness = computed(() => cut(filteredBusiness.value));
 const shownFuelMeal = computed(() => cut(filteredFuelMeal.value));
 const shownItemPurchases = computed(() => cut(filteredItemPurchases.value));
@@ -543,7 +566,12 @@ const exportExcel = () => {
             <col style="width: 21%" /><col />
           </colgroup>
           <thead>
-            <tr><th>일자</th><th>명세</th><th>입출금</th><th class="r">개인 자금</th><th>비고</th></tr>
+            <!-- 머리글을 누르면 그 칸으로 정렬(⇅ · ↑ · ↓) -->
+            <tr>
+              <th v-for="c in ([['date', '일자'], ['ownerName', '명세'], ['flowType', '입출금'], ['amount', '개인 자금'], ['note', '비고']] as const)" :key="c[0]" :class="{ r: c[0] === 'amount' }">
+                <button type="button" class="fin-sort" @click="toggleCashSort(c[0])">{{ c[1] }}<i :class="{ on: cashSortKey === c[0] }">{{ cashSortMark(c[0]) }}</i></button>
+              </th>
+            </tr>
           </thead>
           <tbody>
             <tr v-for="r in shownCashFlows" :key="r.id" @click="openEdit('cashFlow', r)">
@@ -1272,4 +1300,8 @@ const exportExcel = () => {
 /* 창 옮기기 — 머리줄을 잡고 끈다 */
 .fin-pop { transform: translate(var(--dx, 0px), var(--dy, 0px)); }
 .fin-pop-head { cursor: move; touch-action: none; user-select: none; }
+/* 정렬 머리글 — 글자 그대로, 오른쪽에 작은 화살표 */
+.fin-sort { border: 0; background: none; padding: 0; color: inherit; font: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
+.fin-sort i { font-style: normal; font-size: 0.85em; opacity: .55; }
+.fin-sort i.on { opacity: 1; }
 </style>
