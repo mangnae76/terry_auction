@@ -238,8 +238,9 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
         <i>·</i>
         <button type="button" @click="openFind('findPw')">비밀번호 찾기</button>
         <i>·</i>
-        <button type="button" @click="info = 'pay'">결제안내</button>
-        <i>·</i>
+        <!-- 웹은 결제안내를 뺀다(결제는 마이페이지에서) -->
+        <template v-if="!webEmbed"><button type="button" @click="info = 'pay'">결제안내</button>
+        <i>·</i></template>
         <button type="button" @click="info = 'trial'">무료체험</button>
         <template v-if="webEmbed"><i>·</i><button type="button" class="lp-signup-link" @click="router.push('/signup')">회원가입</button></template>
       </p>
