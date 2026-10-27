@@ -346,6 +346,8 @@ const SUM_COLS: Array<{ key: keyof DongSum; label: string }> = [
   { key: 'median', label: '중간가' }, { key: 'min', label: '최저가' }, { key: 'max', label: '최고가' },
   { key: 'area', label: '평균면적' }, { key: 'perM2', label: '㎡당 평균가' },
 ];
+/** '48.1㎡ / 14.6평' */
+const areaText = (m2: number) => `${m2.toFixed(1)}㎡ / ${(m2 / 3.305785).toFixed(1)}평`;
 /** '1.61억' · '9,563만' · '—' */
 const eokMan = (v: number) => {
   if (!(v > 0)) return '—';
@@ -359,11 +361,11 @@ const guNav = computed(() => {
   const perM2s = normals.value.filter((r) => r.priceWon > 0 && r.areaM2 > 0).map((r) => r.priceWon / r.areaM2);
   const avgOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
   return [
-    { label: '거래건수', value: `${normals.value.length.toLocaleString('ko-KR')}건` },
+    { label: '거래건수', value: `${normals.value.length.toLocaleString('ko-KR')}건`, sub: `직거래 ${counts.value.직거래} · 해제 ${counts.value.계약해제}` },
     { label: '평균 거래가', value: eokMan(avgOf(prices)) },
     { label: '최저가', value: eokMan(prices.length ? Math.min(...prices) : 0) },
     { label: '최고가', value: eokMan(prices.length ? Math.max(...prices) : 0) },
-    { label: '평균 면적', value: areas.length ? `${avgOf(areas).toFixed(1)}㎡` : '—' },
+    { label: '평균 면적', value: areas.length ? areaText(avgOf(areas)) : '—' },
     { label: '㎡당 평균가', value: perM2s.length ? `${Math.round(avgOf(perM2s) / 10000).toLocaleString('ko-KR')}만/㎡` : '—' },
   ];
 });
@@ -491,7 +493,7 @@ const downloadCsv = () => {
             <strong>{{ loadedLabel }}</strong>
           </div>
           <div class="adm-gunav-row">
-            <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small>{{ c.label }}</small><b>{{ c.value }}</b></div>
+            <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small>{{ c.label }}</small><b>{{ c.value }}<em v-if="c.sub" class="adm-gunav-sub">{{ c.sub }}</em></b></div>
           </div>
         </section>
         <div v-else class="adm-sum">
@@ -504,7 +506,7 @@ const downloadCsv = () => {
         <div v-if="!(webEmbed && !dong)" :class="['adm-kpis', { 'is-web': webEmbed }]">
           <div class="adm-kpi"><small>실거래가 평균</small><strong>{{ won(avgPrice) }}</strong></div>
           <div class="adm-kpi"><small>평당가 평균</small><strong>{{ won(avgUnitPrice) }}</strong></div>
-          <div class="adm-kpi blue"><small>총 거래건수 <em>정상거래</em></small><strong>{{ normals.length.toLocaleString('ko-KR') }}건</strong></div>
+          <div class="adm-kpi blue"><small>총 거래건수 <em>정상거래</em></small><strong>{{ normals.length.toLocaleString('ko-KR') }}건<em v-if="webEmbed" class="adm-gunav-sub">직거래 {{ counts.직거래 }} · 해제 {{ counts.계약해제 }}</em></strong></div>
         </div>
 
         <!-- 분포 -->
@@ -565,9 +567,9 @@ const downloadCsv = () => {
         <!-- 검색리스트 -->
         <div class="adm-list-head">
           <strong>검색리스트</strong>
-          <span class="tag ok">정상거래 {{ counts.정상거래 }}</span>
-          <span class="tag">직거래 {{ counts.직거래 }}</span>
-          <span class="tag">계약해제 {{ counts.계약해제 }}</span>
+          <span v-if="!webEmbed" class="tag ok">정상거래 {{ counts.정상거래 }}</span>
+          <span v-if="!webEmbed" class="tag">직거래 {{ counts.직거래 }}</span>
+          <span v-if="!webEmbed" class="tag">계약해제 {{ counts.계약해제 }}</span>
           <button v-if="colFilter.activeCount.value > 0" type="button" class="adm-flt-clear" @click="clearColFilters">
             걸러내기 {{ colFilter.activeCount.value }}칸 해제
           </button>
@@ -582,7 +584,7 @@ const downloadCsv = () => {
           <table class="adm-table adm-dongsum">
             <thead>
               <tr>
-                <th v-for="c in SUM_COLS" :key="c.key" :class="c.key === 'name' ? 'l' : 'r'">
+                <th v-for="c in SUM_COLS" :key="c.key" :class="c.key === 'name' ? 'c' : 'r'">
                   <button type="button" class="adm-sort" @click="toggleSumSort(c.key)">
                     {{ c.label }}<i :class="{ on: sumSortKey === c.key }">{{ sumSortKey === c.key ? (sumSortDesc ? '↓' : '↑') : '⇅' }}</i>
                   </button>
@@ -591,13 +593,13 @@ const downloadCsv = () => {
             </thead>
             <tbody>
               <tr v-for="d in dongSumRows" :key="d.name">
-                <td class="l"><button type="button" class="adm-dong-link" @click="dong = d.name">{{ d.name }}</button></td>
+                <td class="c"><button type="button" class="adm-dong-link" @click="dong = d.name">{{ d.name }}</button></td>
                 <td class="r">{{ d.count.toLocaleString('ko-KR') }}건</td>
                 <td class="r strong">{{ eokMan(d.avg) }}</td>
                 <td class="r">{{ eokMan(d.median) }}</td>
                 <td class="r">{{ eokMan(d.min) }}</td>
                 <td class="r">{{ eokMan(d.max) }}</td>
-                <td class="r">{{ d.area > 0 ? `${d.area.toFixed(1)}㎡` : '—' }}</td>
+                <td class="r">{{ d.area > 0 ? areaText(d.area) : '—' }}</td>
                 <td class="r">{{ d.perM2 > 0 ? `${Math.round(d.perM2 / 10000).toLocaleString('ko-KR')}만/㎡` : '—/㎡' }}</td>
               </tr>
             </tbody>
@@ -714,6 +716,8 @@ const downloadCsv = () => {
 .adm-gunav-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border-radius: 8px; background: #fff; }
 .adm-gunav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
 .adm-gunav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; }
+/* 거래건수 옆 직거래 · 해제 — 시세가 아니라 따로 센 것, 작게 */
+.adm-gunav-sub { margin-left: 6px; font-style: normal; font-size: 14px; font-weight: 600; color: #6b7280; letter-spacing: 0; }
 .adm-sum { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 2px 12px; font-size: 12.5px; color: #6b7280; font-weight: 600; }
 .adm-sum strong { font-size: 14.5px; font-weight: 800; color: #111827; }
 .adm-sum .code { font-size: 11px; font-weight: 700; color: #6b7280; background: #eef1f6; border-radius: 999px; padding: 2px 8px; }
@@ -806,6 +810,7 @@ const downloadCsv = () => {
 .adm-dongsum th, .adm-dongsum td { padding: 14px 16px; font-size: 14px; }
 .adm-dongsum th { color: #2f6b45; font-weight: 800; background: #f3f8f4; }
 .adm-dongsum .l { text-align: left; }
+.adm-dongsum .c { text-align: center; }
 .adm-dongsum .r { text-align: right; }
 .adm-dongsum td.strong { font-weight: 800; color: #111827; }
 .adm-sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
