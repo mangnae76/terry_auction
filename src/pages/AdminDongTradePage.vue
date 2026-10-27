@@ -786,8 +786,8 @@ const downloadCsv = () => {
           </div>
         </div>
 
-        <!-- 검색조건 (웹 거래상세 탭에서는 개별 거래 목록 밑 한 줄로 옮겨 그린다) -->
-        <div v-if="!(webEmbed && listView === 'deals')" class="adm-cond">
+        <!-- 검색조건 — 분석 도구에서만. 웹은 거래상세 탭의 개별 거래 목록 밑 한 줄만 쓴다 -->
+        <div v-if="!webEmbed" class="adm-cond">
           <div class="adm-cond-head">{{ webEmbed ? '조건검색' : '검색조건' }}</div>
           <div class="adm-cond-body">
             <label v-if="!webEmbed" class="adm-f">
