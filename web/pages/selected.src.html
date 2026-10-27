@@ -582,6 +582,15 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-login { position: relative; width: min(360px, 100%); max-height: calc(100vh - 40px); overflow-x: hidden; overflow-y: auto; /* 닫기 단추 말풍선이 오른쪽으로 3px 삐져 가로 스크롤바가 생겼다 — 말풍선은 오른쪽 맞춤, 가로는 숨김 */ padding: 0 !important; background: transparent !important; box-shadow: none !important; border: 0 !important; }
 .app-login .lp-shell { min-height: 0 !important; background: none !important; padding: 0 !important; }
 .app-login .lp-card { max-width: none !important; }
+/* 웹 로그인 창 — 회원가입 단추를 뺀 만큼 · 사이 여백을 줄여 세로를 짧게 */
+.app-login .lp-card { padding: 20px 22px 18px !important; }
+.app-login .lp-brand { margin-bottom: 12px !important; }
+.app-login .lp-form { gap: 8px !important; }
+.app-login .lp-social { margin-top: 8px !important; gap: 6px !important; }
+.app-login .lp-sep { margin: 2px 0 !important; }
+.app-login .lp-opts { margin-top: 10px !important; }
+.app-login .lp-find { margin-top: 6px !important; }
+.app-login .lp-signup-link { color: #2b6df3 !important; }
 .app-login-x { position: absolute !important; top: 10px; right: 10px; z-index: 2; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #6b7280; display: grid; place-items: center; cursor: pointer; }
 .app-login-x:hover { background: #f3f4f6; color: #111827; }
 .app-login-x svg { width: 18px; height: 18px; }

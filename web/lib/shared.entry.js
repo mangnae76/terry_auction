@@ -69,6 +69,7 @@ export const mountAppLogin = (el, onDone) => {
   const app = createApp({ render: () => h(RouterView) });
   app.use(getActivePinia());
   app.use(router);
+  app.provide('webEmbed', true);   // 웹 — 회원가입은 작은 줄로, 창은 촘촘히
   void router.push('/');
   app.mount(el);
   return () => app.unmount();

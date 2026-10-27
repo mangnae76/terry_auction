@@ -47,8 +47,8 @@
   .modal .x { position: absolute; top: 10px; right: 10px; z-index: 2; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; font-size: 20px; line-height: 1; color: #6b7280; cursor: pointer; }
   .modal .x:hover { background: #f3f4f6; color: #111827; }
   /* 가벼운 로그인 창 — 앱 LoginPage 의 카드와 같은 값 */
-  .ql-card { background: #fff; border-radius: 16px; padding: 28px 22px; box-shadow: 0 24px 60px rgba(0, 0, 0, .35); display: flex; flex-direction: column; gap: 12px; font-family: inherit; }
-  .ql-brand { text-align: center; margin-bottom: 10px; }
+  .ql-card { background: #fff; border-radius: 16px; padding: 20px 22px 18px; box-shadow: 0 24px 60px rgba(0, 0, 0, .35); display: flex; flex-direction: column; gap: 8px; font-family: inherit; }
+  .ql-brand { text-align: center; margin-bottom: 6px; }
   .ql-brand img { height: 60px; width: auto; }
   .ql-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #374151; font-weight: 600; }
   .ql-field input { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #d1d5db; border-radius: 8px; font: inherit; font-size: 14px; color: #111827; outline: none; background: #fff; }
@@ -71,6 +71,7 @@
   .ql-links { margin: 0; display: flex; justify-content: center; align-items: center; gap: 8px; white-space: nowrap; }
   .ql-links button { border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; color: #9ca3af; }
   .ql-links button:hover { color: #4b5563; text-decoration: underline; }
+  .ql-links .ql-signup { color: #2b6df3; }
   .ql-links i { font-style: normal; font-size: 11px; color: #cbd2de; }
   .modal .wait { margin: 0; padding: 60px 0; border-radius: 16px; background: #fff; text-align: center; color: #6b7280; font-size: 15px; }
 </style>
@@ -98,14 +99,13 @@
         </label>
         <p class="ql-err" id="qlErr" hidden></p>
         <button type="submit" class="ql-submit" id="qlSubmit">로그인</button>
-        <button type="button" class="ql-submit ghost" id="qlSignup">회원가입</button>
         <div class="ql-sep"><span>또는</span></div>
         <button type="button" class="ql-social kakao" id="qlKakao">카카오로 시작하기</button>
         <div class="ql-opts">
           <label><input type="checkbox" id="qlSave" />아이디 저장</label>
           <label><input type="checkbox" id="qlKeep" />로그인 유지</label>
         </div>
-        <p class="ql-links"><button type="button" data-full>아이디 찾기</button><i>·</i><button type="button" data-full>비밀번호 찾기</button><i>·</i><button type="button" data-full>결제안내</button><i>·</i><button type="button" data-full>무료체험</button></p>
+        <p class="ql-links"><button type="button" data-full>아이디 찾기</button><i>·</i><button type="button" data-full>비밀번호 찾기</button><i>·</i><button type="button" data-full>결제안내</button><i>·</i><button type="button" data-full>무료체험</button><i>·</i><button type="button" id="qlSignup" class="ql-signup">회원가입</button></p>
       </form>
       <div id="loginMount" hidden><p class="wait">불러오는 중입니다…</p></div>
     </div>
@@ -178,7 +178,7 @@
     $q('qlEye').addEventListener('click', () => { const i = $q('qlPw'); i.type = i.type === 'password' ? 'text' : 'password'; });
     $q('qlSignup').addEventListener('click', () => { location.href = '/signup'; });
     const showErr = (t) => { const e = $q('qlErr'); e.textContent = t || ''; e.hidden = !t; };
-    const busy = (on) => { ['qlSubmit', 'qlSignup', 'qlKakao'].forEach((id) => { $q(id).disabled = on; }); $q('qlSubmit').textContent = on ? '로그인 중…' : '로그인'; };
+    const busy = (on) => { ['qlSubmit', 'qlKakao'].forEach((id) => { $q(id).disabled = on; }); $q('qlSubmit').textContent = on ? '로그인 중…' : '로그인'; };
     const authNow = async () => {
       try { return await ready; } catch (e) {
         if (!T) { T = await loadBundle(); T.startStores(); T.useAuthStore().initialize(); }

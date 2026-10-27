@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { inject, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { checkEmailTaken, friendlyAuthError, sendPasswordReset, setLoginPersistence } from '../services/authRepository';
@@ -39,6 +39,8 @@ const won = (n: number) => n.toLocaleString('ko-KR');
 /** 할인이 붙는 기간 — 안내 글이 요금표를 따라간다 */
 const offListText = PLANS.filter((p) => !p.base).map((p) => p.label).join(', ');
 
+/** 웹(대문 · 웹 로그인 창)에 떴는가 — 회원가입을 작은 줄로 옮기고 창을 줄인다 */
+const webEmbed = inject<boolean>('webEmbed', false);
 const email = ref('');
 const password = ref('');
 const showPw = ref(false);
@@ -196,7 +198,9 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
         <button type="submit" class="lp-submit" :disabled="submitting || authStore.loading">
           {{ submitting || authStore.loading ? '로그인 중…' : '로그인' }}
         </button>
+        <!-- 웹은 회원가입을 아래 작은 줄(무료체험 오른쪽)로 옮겨 창을 줄인다 -->
         <button
+          v-if="!webEmbed"
           type="button"
           class="lp-submit ghost"
           :disabled="submitting || authStore.loading"
@@ -237,6 +241,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
         <button type="button" @click="info = 'pay'">결제안내</button>
         <i>·</i>
         <button type="button" @click="info = 'trial'">무료체험</button>
+        <template v-if="webEmbed"><i>·</i><button type="button" class="lp-signup-link" @click="router.push('/signup')">회원가입</button></template>
       </p>
 
     </div>
