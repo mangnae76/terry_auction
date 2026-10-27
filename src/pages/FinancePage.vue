@@ -40,8 +40,6 @@ const rangeValue = computed({
 const finance = useFinanceStore();
 const router = useRouter();
 /** 웹에 떴는가 — 웹은 제목 줄을 빼고 낙찰목록 · 매도목록을 경로 줄 오른쪽에 둔다 */
-/** 기간 이름 — 웹 요약 상자 머리에 적는다 */
-const PERIOD_NAME: Record<string, string> = { thisMonth: '이번달', thisYear: '올해', all: '총기간', custom: '직접선택' };
 const webEmbed = inject<boolean>('webEmbed', false);
 const auctionStore = useAuctionStore();
 /** 머리줄에 적는 건수 — 지금 낙찰로 들고 있는 물건과 판 물건.
@@ -521,9 +519,8 @@ const exportExcel = () => {
     <div class="fin-body">
     <!-- ========== TAB 1: 자금입출금 ========== -->
     <template v-if="activeTab === 'cashFlow'">
-      <!-- 웹 — 지역분석의 요약 상자(내비게이션)와 같은 틀: 이름 줄 + 상자 셋 -->
+      <!-- 웹 — 지역분석의 요약 상자(내비게이션)와 같은 틀: 상자 셋(이름 줄은 두지 않는다) -->
       <div :class="['fin-summary', { 'fin-nav': webEmbed }]">
-        <p v-if="webEmbed" class="fin-nav-head">자금입출금<em>{{ PERIOD_NAME[period] }}</em></p>
         <div class="sum-card in">
           <small>총 입금</small>
           <strong>{{ fmtMoneyWon(totalIn) }}</strong>
