@@ -643,6 +643,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
   width: max-content; max-width: 340px; padding: 8px 12px; border-radius: 8px; background: #1f2937; color: #fff;
   font-size: 14px; font-weight: 500; line-height: 1.45; text-align: left; white-space: normal; box-shadow: 0 6px 16px rgba(17, 24, 39, .2); pointer-events: none; }
 .app-page[data-k="postwin"] .pw-flow-box:is(:hover, :focus) .pw-flow-tip { display: block; }
+/* 눌러 둔(포커스) 상자가 있어도 다른 상자에 마우스가 가면 그 말풍선 · 색은 바로 지운다 — 잔상이 겹치지 않게 */
+.app-page[data-k="postwin"] .pw-flow-map:hover .pw-flow-box:focus:not(:hover) { background: #f4f7ff; }
+.app-page[data-k="postwin"] .pw-flow-map:hover .pw-flow-box:focus:not(:hover) .pw-flow-tip { display: none; }
 .app-page[data-k="postwin"] .pw-flow-box:nth-child(n+7) .pw-flow-tip { left: auto; right: 0; transform: none; }
 .app-page[data-k="postwin"] .pw-flow-box:nth-child(-n+1) .pw-flow-tip { left: 0; transform: none; }
 /* 낙찰목록 — 단추 바로 아래 오른쪽 끝을 맞춰 펼친다 */
