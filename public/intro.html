@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마이턴옥션</title>
+<!-- 로그인 창은 웹과 같은 앱 로그인 화면(LoginPage)을 그대로 띄운다 — 웹 묶음(pdfparse)을 누를 때 불러온다 -->
+<link rel="stylesheet" href="/web/pdfparse.css">
+<style>
+  /* 대문 — 들어오자마자 소개 영상이 소리와 함께 첫 화면 전체에서 계속 되풀이된다.
+     오른쪽 위: 사운드 ON/OFF · 로그인. 한 바퀴 돌면(또는 화면을 누르면) 로그인 창 */
+  :root { --navy: #0B1226; --blue: #2b6df3; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--navy); font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; overflow: hidden; }
+  .stage { position: fixed; inset: 0; }
+  .stage iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--navy); }
+  /* 단추는 영상 안쪽 오른쪽 위에 — 창 비율이 16:9 가 아니면(맥 16:10 등) 영상 위아래 · 좌우에 빈 띠가 생기니
+     영상 테두리에서 24px 안으로 잡는다. --fit = 창 안에 들어가는 영상 폭 */
+  :root { --fit: min(100vw, calc(100vh * 16 / 9)); --edge-t: calc((100vh - var(--fit) * 9 / 16) / 2); --edge-r: calc((100vw - var(--fit)) / 2); }
+  .bar { position: fixed; top: calc(var(--edge-t) + 24px); right: calc(var(--edge-r) + 24px); z-index: 20; display: flex; gap: 8px; }
+  /* 두 단추 같은 모양 · 같은 높이 — 속이 비친 알약 테두리만(영상을 가리지 않게), 올리면 살짝 채운다 */
+  .bar button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; width: 120px; padding: 0 10px; white-space: nowrap;
+    border-radius: 999px; border: 1.5px solid #8a94a6; background: transparent; color: #8a94a6;
+    font: inherit; font-size: 13px; font-weight: 700; line-height: 1; cursor: pointer; 
+    transition: background .15s, border-color .15s;
+  }
+  /* 평소엔 회색 테두리 · 회색 글자(영상 바탕이 흰 장면에서도 보이게), 올리면 회색으로 채우고 흰 글자 */
+  .bar button:hover { color: #fff; background: #8a94a6; border-color: #8a94a6; }
+  /* 한글 글꼴은 위쪽 여백이 커 가운데 맞춤이어도 글자가 떠 보인다 — 1px 내려 알약 세로 가운데에 */
+  .bar button span { position: relative; top: 1px; }
+  /* 브라우저가 소리 자동재생을 막았을 때 — 사운드 단추 아래 작은 안내 */
+  .hint { position: fixed; top: calc(var(--edge-t) + 64px); right: calc(var(--edge-r) + 24px); z-index: 5; padding: 6px 12px; border-radius: 8px; background: rgba(11, 18, 38, .7); color: rgba(255, 255, 255, .85); font-size: 13px; font-weight: 600; pointer-events: none; }
+  .hint[hidden] { display: none; }
+  .bar button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .bar svg { width: 15px; height: 15px; }
+  /* 로그인 창 — 웹의 앱 로그인 창과 같은 틀 */
+  /* 뒤 영상은 계속 돌되 뿌옇게 — 로그인 카드에 눈이 가게 */
+  .veil { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(5, 10, 24, .45); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .veil[hidden] { display: none; }
+  /* 로그인 — 웹의 로그인 창과 같게 하얀 카드만(앱 로그인 화면의 파란 바탕 · 스크롤 틀은 걷어낸다) */
+  .modal { position: relative; width: min(360px, calc(100% - 32px)); }
+  .modal .lp-shell { min-height: 0 !important; background: none !important; padding: 0 !important; overflow: visible !important; }
+  .modal .lp-card { max-width: none !important; box-shadow: 0 24px 60px rgba(0, 0, 0, .35) !important; }
+  .modal .x { position: absolute; top: 10px; right: 10px; z-index: 2; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; font-size: 20px; line-height: 1; color: #6b7280; cursor: pointer; }
+  .modal .x:hover { background: #f3f4f6; color: #111827; }
+  .modal .wait { margin: 0; padding: 60px 0; border-radius: 16px; background: #fff; text-align: center; color: #6b7280; font-size: 15px; }
+</style>
+</head>
+<body>
+  <nav class="bar" aria-label="대문 단추">
+    <button type="button" id="snd" aria-pressed="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path id="sndOn" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path id="sndOff" d="m22 9-6 6m0-6 6 6" style="display:none"/></svg><span>사운드 ON</span>
+    </button>
+    <button type="button" class="login" id="loginBtn"><span>로그인</span></button>
+  </nav>
+  <p class="hint" id="hint" hidden>화면을 한 번 누르면 소리가 나요</p>
+  <main class="stage">
+    <iframe id="promo" src="/myturn-promo/index.html?mode=hero" title="마이턴 옥션 소개 영상" allow="autoplay; fullscreen"></iframe>
+  </main>
+  <div class="veil" id="veil" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-label="로그인">
+      <button type="button" class="x" id="closeLogin" aria-label="닫기">×</button>
+      <div id="loginMount"><p class="wait">로그인 화면을 불러오는 중입니다…</p></div>
+    </div>
+  </div>
+  <script>
+    // 이 탭에서 대문을 한 번 봤다 — /web 으로 가면 다시 대문으로 돌려보내지 않는다
+    try { sessionStorage.setItem('ta.intro.seen', '1'); } catch (e) { /* 그만 */ }
+    const frame = document.getElementById('promo');
+    const sndBtn = document.getElementById('snd');
+    const veil = document.getElementById('veil');
+    const promo = () => frame.contentWindow && frame.contentWindow.MYTURN_PROMO;
+
+    // ===== 사운드 — 처음부터 ON. 브라우저가 소리 자동재생을 막았어도 단추는 ON 그대로 두고, 화면 어디든 처음 누를 때 소리를 낸다 =====
+    let muted = false;
+    let blocked = false;   // 자동재생이 막혀 꺼진 상태
+    const paintSnd = () => {
+      sndBtn.setAttribute('aria-pressed', String(!muted));
+      sndBtn.querySelector('span').textContent = muted ? '사운드 OFF' : '사운드 ON';
+      document.getElementById('sndOn').style.display = muted ? 'none' : '';
+      document.getElementById('sndOff').style.display = muted ? '' : 'none';
+    };
+    const hint = document.getElementById('hint');
+    const setMuted = (m) => { muted = m; blocked = false; hint.hidden = true; const p = promo(); if (p && p.setMuted) p.setMuted(m); paintSnd(); };
+    // 막혀 있던 중에 단추를 누르면 그 뜻은 'OFF' — 이미 소리가 안 나니 표시만 OFF 로
+    sndBtn.addEventListener('click', () => setMuted(blocked ? true : !muted));
+    const wakeSound = () => { if (blocked) setMuted(false); };
+    document.addEventListener('pointerdown', (e) => { if (!sndBtn.contains(e.target)) wakeSound(); }, true);
+    document.addEventListener('keydown', wakeSound, true);
+
+    // ===== 로그인 — 웹과 같은 앱 로그인 화면 =====
+    let T = null; let unmount = null;
+    const loadBundle = () => new Promise((ok, no) => {
+      if (window.TAPdf) { ok(window.TAPdf); return; }
+      const s = document.createElement('script'); s.src = '/web/pdfparse.js';
+      s.onload = () => (window.TAPdf ? ok(window.TAPdf) : no(new Error('묶음을 못 읽었습니다')));
+      s.onerror = () => no(new Error('묶음을 못 불러왔습니다'));
+      document.head.appendChild(s);
+    });
+    // 로그인 창이 뜨면 소리를 끈다(영상은 계속) — 닫으면 소리가 켜져 있던 경우에만 다시 켠다
+    let soundBeforeLogin = null;
+    const closeLogin = () => {
+      if (veil.hidden) return;
+      veil.hidden = true;
+      if (unmount) { try { unmount(); } catch (e) { /* 그만 */ } unmount = null; }
+      if (soundBeforeLogin === true && muted) setMuted(false);
+      soundBeforeLogin = null;
+    };
+    const openLogin = async () => {
+      if (!veil.hidden) return;
+      veil.hidden = false;
+      soundBeforeLogin = !muted && !blocked;
+      if (!muted) setMuted(true);
+      const el = document.getElementById('loginMount');
+      try {
+        if (!T) { T = await loadBundle(); T.startStores(); T.useAuthStore().initialize(); }
+        if (veil.hidden) return;
+        el.innerHTML = '';
+        unmount = T.mountAppLogin(el, (what) => {
+          if (what === 'signup') { location.href = '/signup'; return; }
+          location.href = '/web';   // 로그인 끝 — 선정목록으로
+        });
+      } catch (e) {
+        el.innerHTML = '<p class="wait">로그인 화면을 불러오지 못했습니다 — 새로고침 뒤 다시 눌러 주세요.</p>';
+      }
+    };
+    document.getElementById('loginBtn').addEventListener('click', openLogin);
+    document.getElementById('closeLogin').addEventListener('click', closeLogin);
+    veil.addEventListener('click', (e) => { if (e.target === veil) closeLogin(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLogin(); });
+
+    // 영상이 알려 오는 것 — 소리가 막혔음 · 한 바퀴 돌았음 · 화면을 눌렀음
+    let looped = false;
+    window.addEventListener('message', (e) => {
+      if (e.origin !== location.origin || !e.data) return;
+      if (e.data.type === 'myturn-promo:muted') { blocked = true; hint.hidden = false; }   // 단추는 ON 그대로 — 첫 손길에 소리를 낸다
+      if (e.data.type === 'myturn-promo:click') { wakeSound(); }
+      if (e.data.type === 'myturn-promo:loop' && !looped) { looped = true; openLogin(); }
+    });
+  </script>
+</body>
+</html>

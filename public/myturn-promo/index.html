@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마이턴 옥션 소개 영상</title>
+<style>
+  /* the film draws its text with these exact faces; subset to the characters it uses (SIL OFL 1.1) */
+  @font-face { font-family: 'Noto Sans CJK KR'; src: url('fonts/NotoSansCJKkr-Bold-subset.woff2') format('woff2'); font-weight: 700; font-display: block; }
+  @font-face { font-family: 'Noto Sans CJK KR'; src: url('fonts/NotoSansCJKkr-Black-subset.woff2') format('woff2'); font-weight: 900; font-display: block; }
+  @font-face { font-family: 'Noto Sans Mono CJK KR'; src: url('fonts/NotoSansMonoCJKkr-Bold-subset.woff2') format('woff2'); font-weight: 700; font-display: block; }
+
+  html, body { margin: 0; height: 100%; background: #0B1226; overflow: hidden; }
+  body { display: grid; place-items: center; font-family: 'Noto Sans CJK KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
+  /* everything inside scales with the player width (cqw = 1% of it) */
+  .mtp { container-type: inline-size; position: relative; width: min(100vw, calc(100vh * 16 / 9)); aspect-ratio: 16 / 9; background: #0B1226; overflow: hidden; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; outline: none; }
+  .mtp canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .mtp .poster { position: absolute; inset: 0; background: #0B1226 center / cover no-repeat; }
+  .mtp.started .poster { display: none; }
+  .mtp .cover { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(11, 18, 38, .45); transition: opacity .25s; }
+  .mtp .big { display: grid; justify-items: center; gap: max(8px, 1.3cqw); color: #fff; font-weight: 900; font-size: max(12px, 1.7cqw); letter-spacing: -.02em; text-shadow: 0 .15cqw .8cqw rgba(0,0,0,.45); }
+  .mtp .big i { width: max(46px, 7.4cqw); aspect-ratio: 1; border-radius: 50%; background: #F07900; box-shadow: 0 .8cqw 2.4cqw rgba(240,121,0,.45); display: grid; place-items: center; transition: transform .15s; }
+  .mtp .big i svg { width: 42%; margin-left: 8%; fill: #fff; }
+  .mtp:hover .big i, .mtp:focus-visible .big i { transform: scale(1.06); }
+  /* before the first play: a pill button in the poster's empty lower-left corner, under the feature pills */
+  .mtp:not(.started) .cover { background: none; place-items: end start; padding: 0 0 4.1cqw 6.25cqw; }
+  .mtp:not(.started) .big { grid-auto-flow: column; align-items: center; gap: max(6px, .9cqw); padding: max(4px, .5cqw) max(12px, 1.9cqw) max(4px, .5cqw) max(4px, .5cqw); font-size: max(11px, 1.7cqw); border-radius: 99cqw; background: #F07900; box-shadow: 0 .6cqw 2cqw rgba(240,121,0,.35); text-shadow: none; transition: transform .15s, background .15s; }
+  .mtp:not(.started) .big i { width: max(20px, 2.9cqw); background: #fff; box-shadow: none; }
+  .mtp:not(.started) .big i svg { fill: #F07900; }
+  .mtp:not(.started):hover .big, .mtp:not(.started):focus-visible .big { background: #FF8A14; transform: translateY(-.15cqw); }
+  .mtp:not(.started):hover .big i { transform: none; }
+  /* at the end: leave the logo + CTA frame clear, small replay pill in the lower-right corner */
+  .mtp.ended .cover { background: none; place-items: end end; padding: 0 2.4cqw 2.4cqw 0; }
+  .mtp.ended .big { grid-auto-flow: column; align-items: center; gap: max(6px, .8cqw); padding: max(4px, .45cqw) max(12px, 1.6cqw) max(4px, .45cqw) max(4px, .45cqw); border-radius: 99cqw; background: rgba(20, 33, 61, .88); font-size: max(11px, 1.4cqw); text-shadow: none; }
+  .mtp.ended .big i { width: max(20px, 2.5cqw); box-shadow: none; }
+  .mtp.ended:hover .big { background: #14213D; }
+  .mtp .bar { position: absolute; left: 0; right: 0; bottom: 0; height: .3cqw; min-height: 3px; background: rgba(255,255,255,.18); opacity: 0; transition: opacity .25s; }
+  .mtp .bar b { display: block; height: 100%; width: 0; background: #F07900; }
+  .mtp .snd { position: absolute; top: 1.5cqw; right: 1.5cqw; width: 3cqw; min-width: 28px; aspect-ratio: 1; border: 0; border-radius: 50%; background: rgba(11,18,38,.55); color: #fff; display: grid; place-items: center; cursor: pointer; opacity: 0; transition: opacity .25s; padding: 0; }
+  .mtp .snd svg { width: 55%; }
+  .mtp.playing .cover { opacity: 0; pointer-events: none; }
+  .mtp.playing:hover .bar, .mtp.paused .bar, .mtp.playing:hover .snd, .mtp.paused .snd { opacity: 1; }
+  .mtp.loading .big span::after { content: ' · 불러오는 중'; font-weight: 700; opacity: .8; }
+  /* 대문 모드(?mode=hero) — 바로 재생 · 계속 되풀이. 썸네일 · 재생 단추 · 진행 막대 · 소리 단추는 감추고(소리는 바깥 대문이 켜고 끈다) */
+  .mtp.hero .poster, .mtp.hero .cover, .mtp.hero .bar, .mtp.hero .snd { display: none !important; }
+  .mtp.hero { cursor: default; }
+</style>
+</head>
+<body>
+<div class="mtp loading" id="mtp" role="button" tabindex="0" aria-label="마이턴 옥션 소개 영상 재생">
+  <canvas id="cv" width="1920" height="1080"></canvas>
+  <div class="poster" style="background-image:url('media/poster.jpg')"></div>
+  <div class="cover"><div class="big"><i><svg viewBox="0 0 24 24"><path d="M6 3.8v16.4a1 1 0 0 0 1.5.86l13.2-8.2a1 1 0 0 0 0-1.72L7.5 2.94A1 1 0 0 0 6 3.8z"/></svg></i><span>소개 영상 보기 · 42초</span></div></div>
+  <div class="bar"><b></b></div>
+  <button class="snd" type="button" aria-label="소리 끄기/켜기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path class="w" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="x" d="m22 9-6 6m0-6 6 6" style="display:none"/></svg></button>
+</div>
+<script src="promo_data.js"></script>
+<script src="promo.js"></script>
+<script>
+// player: the film is drawn live by render(t) (promo.js); the soundtrack is the clock
+(function () {
+  const box = document.getElementById('mtp'), bar = box.querySelector('.bar b'), snd = box.querySelector('.snd'), label = box.querySelector('.big span');
+  const DUR = window.DURATION || 42, probe = document.createElement('audio');
+  const audio = new Audio(probe.canPlayType('audio/mp4; codecs="mp4a.40.2"') ? 'media/promo_audio.m4a' : 'media/promo_audio.mp3');
+  audio.preload = 'auto';
+  let state = 'idle', t0 = 0, held = 0, raf = 0, ready = false, wantPlay = false, started = false;
+  // 대문 모드 — 소리와 함께 바로 재생, 끝나면 처음부터 되풀이.
+  // 브라우저가 소리 있는 자동재생을 막으면 소리만 끄고 화면은 그대로 돌린다 — 바깥 대문에 알려 첫 손길에 소리를 켠다
+  const HERO = /[?&]mode=hero\b/.test(location.search);
+  let loops = 0;
+  const tell = (msg) => { try { window.parent.postMessage(msg, location.origin); } catch (e) { /* 혼자 열렸다 */ } };
+  if (HERO) wantPlay = true;
+  const cls = c => { box.className = 'mtp ' + c + (started ? ' started' : '') + (HERO ? ' hero' : ''); };
+  if (HERO) cls('loading');
+  const fontsOk = Promise.all(['700 40px "Noto Sans CJK KR"', '900 40px "Noto Sans CJK KR"', '700 40px "Noto Sans Mono CJK KR"']
+    .map(f => document.fonts.load(f, '마이턴 옥션 MYTURN 0123'))).catch(() => {});
+  const assetsOk = new Promise(res => { const w = () => window.READY ? res() : setTimeout(w, 50); w(); });
+  Promise.all([fontsOk, assetsOk]).then(() => { ready = true; box.classList.remove('loading'); render(0); if (wantPlay) start(); });
+
+  const clock = () => (performance.now() - t0) / 1000;
+  function frame() {
+    if (state !== 'playing') return;
+    let t = clock();
+    if (!audio.paused && audio.currentTime > 0 && Math.abs(t - audio.currentTime) > 0.12) { t0 = performance.now() - audio.currentTime * 1000; t = audio.currentTime; }   // stay locked to the sound
+    if (t >= DUR) return finish();
+    render(Math.max(0, t)); bar.style.width = (t / DUR * 100) + '%';
+    raf = requestAnimationFrame(frame);
+  }
+  function start(from) {
+    if (!ready) { wantPlay = true; return; }
+    held = from != null ? from : held; audio.currentTime = held;
+    state = 'playing'; started = true; cls('playing'); box.setAttribute('aria-label', '일시정지');
+    t0 = performance.now() - held * 1000;
+    const p = audio.play();
+    if (p && p.catch) p.catch(() => {   // no sound available: the picture still runs on its own clock
+      if (HERO && !audio.muted) { audio.muted = true; const q = audio.play(); if (q && q.catch) q.catch(() => {}); tell({ type: 'myturn-promo:muted' }); }
+    });
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(frame);
+  }
+  function pause() { held = clock(); state = 'paused'; audio.pause(); cancelAnimationFrame(raf); cls('paused'); label.textContent = '계속 보기'; box.setAttribute('aria-label', '계속 재생'); }
+  function finish() {
+    if (HERO) {
+      loops += 1;
+      tell({ type: 'myturn-promo:loop', loops });
+      start(0); return;
+    }
+    state = 'ended'; audio.pause(); cancelAnimationFrame(raf); held = 0; render(DUR - 0.6); bar.style.width = '100%';
+    cls('ended'); label.textContent = '다시 보기'; box.setAttribute('aria-label', '다시 재생');
+  }
+  function toggle() { if (state === 'playing') pause(); else start(state === 'ended' ? 0 : undefined); }
+  box.addEventListener('click', e => {
+    if (HERO) { tell({ type: 'myturn-promo:click' }); return; }
+    if (!snd.contains(e.target)) toggle();
+  });
+  box.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } });
+  snd.addEventListener('click', () => { audio.muted = !audio.muted; snd.querySelector('.w').style.display = audio.muted ? 'none' : ''; snd.querySelector('.x').style.display = audio.muted ? '' : 'none'; });
+  audio.addEventListener('playing', () => { if (state === 'playing') t0 = performance.now() - audio.currentTime * 1000; });
+  audio.addEventListener('waiting', () => { if (state === 'playing') held = audio.currentTime; });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && state === 'playing') pause();
+    else if (!document.hidden && HERO && state === 'paused') start();   // 대문은 돌아오면 이어서
+  });
+  window.MYTURN_PROMO = {
+    play: () => start(), pause, restart: () => start(0),
+    /** 소리 켜기 / 끄기 — 바깥 대문의 단추가 부른다(누른 손길이 있어야 소리가 난다) */
+    setMuted: (m) => { audio.muted = !!m; if (!m && state === 'playing' && audio.paused) { const p = audio.play(); if (p && p.catch) p.catch(() => {}); } },
+    isMuted: () => audio.muted,
+  };
+})();
+</script>
+</body>
+</html>

@@ -8,9 +8,7 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-      "myturn-promo/**",
-      "promo-test.html",
-      "intro.html"
+      "promo-test.html"
     ],
     "rewrites": [
       {

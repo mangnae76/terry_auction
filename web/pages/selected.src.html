@@ -4207,6 +4207,11 @@ html, body { overflow-x: clip; }
     };
     T.watch(() => [auth.ready, auth.uid, auth.email], () => {
       if (!auth.ready) return;
+      /* 대문 — 로그인 안 한 채 웹에 처음 들어오면 홍보 영상 대문(/intro.html)부터. 이 탭에서 한 번 봤거나 대문의 로그인으로 왔으면(?login=1) 넘어간다 */
+      if (!auth.isLoggedIn && !/[?&]login=1\b/.test(location.search)) {
+        let seen = false; try { seen = sessionStorage.getItem('ta.intro.seen') === '1'; } catch (e) { seen = true; }
+        if (!seen) { location.replace('/intro.html'); return; }
+      }
       S.authReady = true;
       const ok = auth.isLoggedIn && T.isAllowedEmail(auth.email);
       S.loggedIn = auth.isLoggedIn; S.userName = auth.nickname || String(auth.email || '').split('@')[0];
