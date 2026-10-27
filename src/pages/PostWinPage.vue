@@ -215,14 +215,15 @@ const countIds = (g: CheckGroup) => [...new Set([...groupRows(g).map((r) => r.id
 const doneCount = (g: CheckGroup) => countIds(g).filter((id) => isChecked(id)).length;
 const rowCount = (g: CheckGroup) => countIds(g).length;
 /** 화면에 보이는 표 — 편집 중에는 고치고 있는 사본을 보여 준다 */
-/** 웹 명도 — '명도협상 원칙'(rule)을 '경매사건 열람'(file) 바로 위로 올려 보인다 (저장된 순서는 그대로) */
+/** 웹 명도 — '명도협상 원칙'(rule) · '명도 협상 방법'(ev.deal) 을 차례로 '경매사건 열람'(file) 바로 위로 올려 보인다 (저장된 순서는 그대로) */
+const WEB_EVICT_LIFT = ['rule', 'ev.deal'];
 const ruleBeforeFile = (list: CheckGroup[]) => {
-  const fi = list.findIndex((g) => g.key === 'file');
-  const ri = list.findIndex((g) => g.key === 'rule');
-  if (fi < 0 || ri < 0 || ri < fi) return list;
-  const out = list.filter((g) => g.key !== 'rule');
-  out.splice(fi, 0, list[ri]);
-  return out;
+  const lift = WEB_EVICT_LIFT.map((k) => list.find((g) => g.key === k)).filter((g): g is CheckGroup => !!g);
+  const rest = list.filter((g) => !WEB_EVICT_LIFT.includes(g.key));
+  const fi = rest.findIndex((g) => g.key === 'file');
+  if (fi < 0 || !lift.length) return list;
+  rest.splice(fi, 0, ...lift);
+  return rest;
 };
 const dayGroups = computed<CheckGroup[]>(
   () => (editing.value ? draft.value
