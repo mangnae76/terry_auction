@@ -154,14 +154,11 @@
       soundBeforeLogin = null;
     };
     // 대문이 뜨자마자 로그인 묶음을 미리 받아 둔다 — 누른 뒤에 3MB 를 받으면 한참 반응이 없어 보였다.
-    // 로그인해 있으면 단추를 '들어가기'로 바꾸고, 누르면 바로 웹으로
-    let signedIn = false;
+    // 단추는 늘 '로그인' — 누르면 로그인 창이 뜬다(이미 로그인해 있어도 창부터)
     const ready = (async () => {
       if (!T) { T = await loadBundle(); T.startStores(); T.useAuthStore().initialize(); }
       const auth = T.useAuthStore();
       if (!auth.ready && auth.waitUntilReady) await auth.waitUntilReady();
-      signedIn = !!auth.isLoggedIn;
-      if (signedIn) document.querySelector('#loginBtn span').textContent = '들어가기';
       return auth;
     })();
     ready.catch(() => { /* 누를 때 다시 해 본다 */ });
@@ -235,7 +232,6 @@
       }
     }));
     const openLogin = () => {
-      if (signedIn) { location.href = '/web?login=1'; return; }
       if (!veil.hidden) return;
       veil.hidden = false;
       quick.hidden = false; $q('loginMount').hidden = true;
