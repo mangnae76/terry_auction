@@ -125,9 +125,37 @@ const DETAIL_AGE_BUCKETS: Bucket[] = [
   { label: '20~30년', test: (r) => age(r) > 20 && age(r) <= 30 },
   { label: '30년~', test: (r) => age(r) > 30 },
 ];
+// 상세분포의 층 — 지하(지층 · 반지하 포함) · 1 · 2 · 3 · 4 · 5층~
+const hasFloor = (r: DongTradeDetailRow) => r.floor.trim() !== '';
+const DETAIL_FLOOR_BUCKETS: Bucket[] = [
+  { label: '지하', test: (r) => hasFloor(r) && r.floorNum <= 0 },
+  { label: '1층', test: (r) => r.floorNum === 1 },
+  { label: '2층', test: (r) => r.floorNum === 2 },
+  { label: '3층', test: (r) => r.floorNum === 3 },
+  { label: '4층', test: (r) => r.floorNum === 4 },
+  { label: '5층~', test: (r) => r.floorNum >= 5 },
+];
 const detailBuckets = computed<Bucket[]>(() => ({
-  price: WEB_PRICE_BUCKETS, area: DETAIL_AREA_BUCKETS, age: DETAIL_AGE_BUCKETS, floor: FLOOR_BUCKETS,
+  price: WEB_PRICE_BUCKETS, area: DETAIL_AREA_BUCKETS, age: DETAIL_AGE_BUCKETS, floor: DETAIL_FLOOR_BUCKETS,
 }[detailKind.value]));
+/** 층별 평균 평당가 — 전체 평균과 견줘 어느 층을 더 쳐주는지 (정상 + 직거래, 값이 있는 것만) */
+const floorSummary = computed(() => {
+  const unitOf = (r: DongTradeDetailRow) => (r.priceWon > 0 && r.pyeong > 0 ? r.priceWon / r.pyeong : 0);
+  const avgUnit = (list: DongTradeDetailRow[]) => {
+    const us = list.map(unitOf).filter((v) => v > 0);
+    return us.length ? us.reduce((a, b) => a + b, 0) / us.length : 0;
+  };
+  const all = detailBase.value;
+  const total = avgUnit(all);
+  const cols = DETAIL_FLOOR_BUCKETS.map((b) => {
+    const list = all.filter(b.test);
+    const unit = avgUnit(list);
+    return { label: b.label, count: list.length, unit, diff: total > 0 && unit > 0 ? ((unit - total) / total) * 100 : null };
+  });
+  return { cols, total: { count: all.length, unit: total } };
+});
+const manText = (won: number) => (won > 0 ? `${Math.round(won / 10000).toLocaleString('ko-KR')}만` : '—');
+const pctText = (v: number | null) => (v === null ? '—' : `${v > 0 ? '+' : ''}${Math.round(v * 10) / 10}%`);
 /** 표 위 설명 줄 — 면적은 ㎡ 구간이 몇 평쯤인지 함께 */
 const detailCaption = computed(() => {
   if (detailKind.value === 'area') return '동별 면적(㎡) 거래건수 분포 — ~30㎡ ≈ 9평 이하 · 30~50㎡ ≈ 9~15평 · 50~70㎡ ≈ 15~21평 · 70~85㎡ ≈ 21~26평 · 85~100㎡ ≈ 26~30평 · 100㎡~ ≈ 30평 이상';
@@ -769,6 +797,22 @@ const downloadCsv = () => {
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="k.icon" /></svg>{{ k.label }}
             </button>
           </nav>
+          <!-- 층수 — 위에 층별 평균 평당가 표(전체 대비 %), 아래에 동별 표 -->
+          <template v-if="detailKind === 'floor'">
+            <p class="adm-detail-cap">층별 평균 평당가 — 전체 평균과 견줘 어느 층을 더 쳐주는지 봅니다 (지하 = 지층 · 반지하 포함)</p>
+            <div class="adm-table-wrap">
+              <table class="adm-table adm-dongsum adm-floorsum">
+                <thead>
+                  <tr><th class="c">구분</th><th v-for="c in floorSummary.cols" :key="c.label" class="c">{{ c.label }}</th><th class="c">전체</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="c">거래건수</td><td v-for="c in floorSummary.cols" :key="c.label" class="c">{{ c.count.toLocaleString('ko-KR') }}</td><td class="c strong">{{ floorSummary.total.count.toLocaleString('ko-KR') }}</td></tr>
+                  <tr><td class="c">평균 평당가</td><td v-for="c in floorSummary.cols" :key="c.label" class="c">{{ manText(c.unit) }}</td><td class="c strong">{{ manText(floorSummary.total.unit) }}</td></tr>
+                  <tr><td class="c">평균 대비</td><td v-for="c in floorSummary.cols" :key="c.label" :class="['c', 'pct', { up: (c.diff ?? 0) > 0, down: (c.diff ?? 0) < 0 }]">{{ pctText(c.diff) }}</td><td class="c">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
           <p class="adm-detail-cap">{{ detailCaption }}</p>
           <div class="adm-table-wrap">
             <table class="adm-table adm-dongsum adm-heat">
@@ -1027,6 +1071,10 @@ const downloadCsv = () => {
 .adm-detail-kinds button.on { border-color: #2b6df3; color: #2b6df3; background: #eef4ff; }
 .adm-detail-cap { margin: 4px 2px 0; font-size: 14px; color: #6b7280; }
 .adm-heat td.r { font-variant-numeric: tabular-nums; }
+.adm-floorsum td { font-variant-numeric: tabular-nums; }
+.adm-floorsum td.pct { font-weight: 800; }
+.adm-floorsum td.pct.up { color: #2b6df3; }
+.adm-floorsum td.pct.down { color: #d64545; }
 .adm-heat-h { white-space: normal; word-break: keep-all; line-height: 1.3; }
 .adm-view-kind { display: inline-flex; vertical-align: -2px; margin-left: 3px; color: #9ca3af; }
 .adm-view-tabs button.on .adm-view-kind { color: #2b6df3; }
