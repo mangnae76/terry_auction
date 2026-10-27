@@ -1822,12 +1822,12 @@ body.trip-full .foot { display: none; }
 
 .cal { width: 290px; padding: 12px; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px; }
-.cal-head b { font-size: 14px; }
+.cal-head b { font-size: 16px; } /* 달력 글자 — 제목 16 · 요일 15 · 날짜 · 안내 14 */
 .cal-head button { width: 28px; height: 28px; border-radius: 6px; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; }
 .cal-head button:hover { background: var(--surface-3); color: var(--text); }
 .cal-head svg { width: 15px; height: 15px; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-.cal-grid .w { text-align: center; font-size: 14px; color: var(--faint); padding: 3px 0; }
+.cal-grid .w { text-align: center; font-size: 15px; color: var(--faint); padding: 3px 0; }
 .cal-grid .w.sun { color: #dc2626; }
 .cal-day { position: relative; height: 34px; border: 0; border-radius: 7px; background: transparent; font-size: 14px; color: var(--text); transition: background .12s; }
 .cal-day:hover:not(:disabled) { background: var(--surface-3); }
