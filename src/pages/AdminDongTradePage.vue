@@ -716,8 +716,8 @@ const downloadCsv = () => {
 .adm-gunav-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border-radius: 8px; background: #fff; }
 .adm-gunav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
 .adm-gunav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; }
-/* 거래건수 옆 직거래 · 해제 — 시세가 아니라 따로 센 것, 작게 */
-.adm-gunav-sub { margin-left: 6px; font-style: normal; font-size: 14px; font-weight: 600; color: #6b7280; letter-spacing: 0; }
+/* 거래건수 밑 직거래 · 해제 — 시세가 아니라 따로 센 것, 작게 한 줄 내려 */
+.adm-gunav-sub { display: block; margin-top: 4px; font-style: normal; font-size: 14px; font-weight: 600; color: #6b7280; letter-spacing: 0; }
 .adm-sum { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 2px 12px; font-size: 12.5px; color: #6b7280; font-weight: 600; }
 .adm-sum strong { font-size: 14.5px; font-weight: 800; color: #111827; }
 .adm-sum .code { font-size: 11px; font-weight: 700; color: #6b7280; background: #eef1f6; border-radius: 999px; padding: 2px 8px; }
