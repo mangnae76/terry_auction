@@ -489,7 +489,7 @@ onMounted(() => {
             <label class="tsp-f">
               <small>시 · 도</small>
               <select :class="['tsp-select', { ph: !selectedSido }]" v-model="selectedSido">
-                <option value="">{{ webEmbed ? '시도 선택' : '선택' }}</option>
+                <option value="">{{ webEmbed ? '시도선택' : '선택' }}</option>
                 <option v-for="sido in sidoOptions" :key="sido" :value="sido">{{ sido }}</option>
               </select>
             </label>
@@ -537,7 +537,7 @@ onMounted(() => {
             <label class="tsp-f tsp-f-period">
               <small>기간</small>
               <select :class="['tsp-select', { ph: !selectedPeriod }]" v-model.number="selectedPeriod">
-                <option :value="0">{{ webEmbed ? '기간 선택' : '선택' }}</option>
+                <option :value="0">{{ webEmbed ? '기간선택' : '선택' }}</option>
                 <option v-for="m in periodOptions" :key="m" :value="m">{{ m }}개월</option>
               </select>
             </label>

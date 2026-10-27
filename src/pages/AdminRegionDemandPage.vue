@@ -336,7 +336,7 @@ const downloadCsv = () => {
         <label class="adm-f">
           <small>시 · 도</small>
           <select v-model="sido" :class="['adm-input', 'narrow', { ph: !sido }]">
-            <option value="">{{ webEmbed ? '시도 선택' : '전국' }}</option>
+            <option value="">{{ webEmbed ? '시도선택' : '전국' }}</option>
             <option v-for="g in REGION_GROUPS" :key="g.sido" :value="g.sido">{{ g.sido }}</option>
           </select>
         </label>

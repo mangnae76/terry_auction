@@ -92,7 +92,7 @@ const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
 const listView = ref<'table' | 'dist'>('table');
-/** 지역 분포 그림 — 막대 / 원형. '지역 분포' 탭을 한 번 더 누르면 바뀐다 */
+/** 지역분포 그림 — 막대 / 원형. '지역분포' 탭을 한 번 더 누르면 바뀐다 */
 const distChart = ref<'bar' | 'pie'>('bar');
 const onDistTab = () => {
   if (listView.value === 'dist') distChart.value = distChart.value === 'bar' ? 'pie' : 'bar';
@@ -367,7 +367,7 @@ const DISTS = computed(() => [
   { title: webEmbed ? '전용면적별 분포' : '전용면적 분포', unit: '㎡/평', cells: distribute(AREA_BUCKETS) },
   { title: webEmbed ? '금액대별 분포' : '금액분포', unit: '', cells: distribute(PRICE_BUCKETS) },
   { title: webEmbed ? '건축연식별 분포' : '건축연식', unit: '', cells: distribute(AGE_BUCKETS) },
-  { title: webEmbed ? '층별 분포' : '층', unit: '', cells: distribute(FLOOR_BUCKETS) },
+  { title: webEmbed ? '층별분포' : '층', unit: '', cells: distribute(FLOOR_BUCKETS) },
 ]);
 
 // ===== 검색리스트 =====
@@ -462,7 +462,7 @@ const guNav = computed(() => {
     { label: loadedDeal.value === 'jeonse' ? '평균 전세가' : '평균 거래가', value: eokMan(avgOf(prices)) },
     { label: '최저가', value: eokMan(prices.length ? Math.min(...prices) : 0) },
     { label: '최고가', value: eokMan(prices.length ? Math.max(...prices) : 0) },
-    { label: '평균 면적', value: areas.length ? areaText(avgOf(areas)) : '—' },
+    { label: '평균면적', value: areas.length ? areaText(avgOf(areas)) : '—' },
     { label: '㎡당 평균가', value: perM2s.length ? `${Math.round(avgOf(perM2s) / 10000).toLocaleString('ko-KR')}만/㎡` : '—' },
   ];
 });
@@ -537,7 +537,7 @@ const downloadCsv = () => {
         <label class="adm-f">
           <small>시 · 도</small>
           <select v-model="sido" :class="['adm-input', 'narrow', { ph: !sido }]">
-            <option value="">{{ webEmbed ? '시도 선택' : '전국' }}</option>
+            <option value="">{{ webEmbed ? '시도선택' : '전국' }}</option>
             <option v-for="g in REGION_GROUPS" :key="g.sido" :value="g.sido">{{ g.sido }}</option>
           </select>
         </label>
@@ -623,7 +623,7 @@ const downloadCsv = () => {
 
         <!-- 검색조건 -->
         <div class="adm-cond">
-          <div class="adm-cond-head">{{ webEmbed ? '조건 검색' : '검색조건' }}</div>
+          <div class="adm-cond-head">{{ webEmbed ? '조건검색' : '검색조건' }}</div>
           <div class="adm-cond-body">
             <label v-if="!webEmbed" class="adm-f">
               <small>기간선택</small>
@@ -676,7 +676,7 @@ const downloadCsv = () => {
           <!-- 웹 — 결과를 두 가지로 본다: 지역별 분석(표) · 지역별 분포(막대그래프) -->
           <nav v-else class="adm-view-tabs" role="tablist">
             <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역별 분석' }}</button>
-            <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">지역 분포<small class="adm-view-kind">{{ distChart === 'bar' ? '막대' : '원형' }}</small></button>
+            <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">지역분포<small class="adm-view-kind">{{ distChart === 'bar' ? '막대' : '원형' }}</small></button>
           </nav>
           <span v-if="!webEmbed" class="tag ok">정상거래 {{ counts.정상거래 }}</span>
           <span v-if="!webEmbed" class="tag">직거래 {{ counts.직거래 }}</span>
