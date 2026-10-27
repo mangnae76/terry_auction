@@ -217,16 +217,6 @@ const countIds = (g: CheckGroup) => [...new Set([...groupRows(g).map((r) => r.id
 const doneCount = (g: CheckGroup) => countIds(g).filter((id) => isChecked(id)).length;
 const rowCount = (g: CheckGroup) => countIds(g).length;
 /** 화면에 보이는 표 — 편집 중에는 고치고 있는 사본을 보여 준다 */
-/** 낙찰당일(앱 · 웹) — '명도협상 원칙'(rule)을 '경매사건 열람'(file) 바로 위로 올려 보인다 (저장된 순서는 그대로) */
-const WEB_EVICT_LIFT = ['rule'];
-const ruleBeforeFile = (list: CheckGroup[]) => {
-  const lift = WEB_EVICT_LIFT.map((k) => list.find((g) => g.key === k)).filter((g): g is CheckGroup => !!g);
-  const rest = list.filter((g) => !WEB_EVICT_LIFT.includes(g.key));
-  const fi = rest.findIndex((g) => g.key === 'file');
-  if (fi < 0 || !lift.length) return list;
-  rest.splice(fi, 0, ...lift);
-  return rest;
-};
 /** 명도 — '명도 협상 방법'(ev.deal)은 명도절차 바로 아래에 (저장된 순서는 그대로) */
 const dealAfterFirst = (list: CheckGroup[]) => {
   const deal = list.find((g) => g.key === 'ev.deal');
@@ -236,8 +226,7 @@ const dealAfterFirst = (list: CheckGroup[]) => {
 };
 const dayGroups = computed<CheckGroup[]>(
   () => (editing.value ? draft.value
-    : activeTab.value === 'win' ? ruleBeforeFile(dayBook.groups.value)
-      : activeTab.value === 'evict' ? dealAfterFirst(evictBook.groups.value)
+    : activeTab.value === 'evict' ? dealAfterFirst(evictBook.groups.value)
         : book.value.groups.value),
 );
 /** 표가 있는 탭인가 */
