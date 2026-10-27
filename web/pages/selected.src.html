@@ -1914,6 +1914,9 @@ body.trip-full .foot { display: none; }
 .phase.on { border-color: var(--on-line); background: var(--on-bg); color: var(--on-text); }
 .phase.hot { border-color: var(--hot-line); background: var(--hot-bg); color: var(--hot-text); font-weight: 800; }
 .phase.closed { border-color: var(--pill-line); background: var(--closed-bg); color: var(--pill-text); }
+/* 카드의 단계 알약(손품조사 ~ 매도) — 고르지 않은 것은 보통 굵기, 지금 단계(on · hot · closed)만 굵게 */
+.phases .phase { font-weight: 400; }
+.phases .phase:is(.on, .hot, .closed) { font-weight: 700; }
 /* 낙찰·유찰·취소 알약 — ▾ 를 글자 바로 뒤에 붙여 일곱 알약 폭이 똑같게 */
 .phase.has-caret .caret { position: static; transform: none; margin-left: 3px; font-size: 11px; vertical-align: 0; }
 .phase .caret { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: 15px; opacity: .85; }
