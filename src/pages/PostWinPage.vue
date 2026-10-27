@@ -28,20 +28,20 @@ import type { AgencyRow, AuctionDetail } from '../types/auction';
 // 낙찰당일 탭은 명도 탭으로 합쳤다 — 그 묶음(경매사건 열람 · 명도협상 원칙 · 유선연락 첫통화)은 명도절차 바로 아래에 나온다
 type TabKey = 'biz' | 'balance' | 'evict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
+  { key: 'evict', label: '명도', desc: '점유자 확인, 인도명령·강제집행, 이사비 협의' },
   { key: 'biz', label: '사업자등록', desc: '매매사업자 등록 · 사업용 계좌 · 사업용 카드' },
   { key: 'balance', label: '잔금·등기', desc: '잔금 납부일, 등기 촉탁, 취득세' },
-  { key: 'evict', label: '명도', desc: '점유자 확인, 인도명령·강제집행, 이사비 협의' },
   { key: 'repair', label: '인테리어', desc: '수리 범위와 비용, 업체 일정' },
   { key: 'sell', label: '매도·임대', desc: '내놓은 가격, 중개업소, 계약 일정' },
 ];
 const route = useRoute();
 const router = useRouter();
-const TAB_KEYS: TabKey[] = ['biz', 'balance', 'evict', 'repair', 'sell'];
+const TAB_KEYS: TabKey[] = ['evict', 'biz', 'balance', 'repair', 'sell'];
 /** 주소에 적힌 탭으로 연다 — '뒤로' 왔을 때 보던 자리를 지킨다 */
 const initialTab = (): TabKey => {
   const wanted = String(route.query.tab ?? '');
   if (wanted === 'win') return 'evict';   // 예전 '낙찰당일' 주소
-  return (TAB_KEYS as string[]).includes(wanted) ? (wanted as TabKey) : 'biz';
+  return (TAB_KEYS as string[]).includes(wanted) ? (wanted as TabKey) : 'evict';   // 맨 왼쪽(명도)이 처음 탭
 };
 const activeTab = ref<TabKey>(initialTab());
 /** 탭 옮기기 — 아래쪽을 보고 있었다면 탭 줄이 보이는 자리까지 부드럽게 올라간다 */
@@ -90,11 +90,8 @@ watch(() => auth.uid, (uid) => {
   void dayBook.load(uid); void bizBook.load(uid);
   void loanBook.load(uid); void evictBook.load(uid);
 });
-/** 낙찰 뒤의 물건만 고른다 — 낙찰·매도 단계 */
-const ownedAuctions = computed(() => store.auctions.filter((a) => {
-  const stage = bidStageOf(a);
-  return stage === '낙찰' || stage === '매도';
-}));
+/** 낙찰목록 — 낙찰 단계 물건만. 매도한 물건은 자금관리 '매도목록'(세금 · 정산)에서 본다 */
+const ownedAuctions = computed(() => store.auctions.filter((a) => bidStageOf(a) === '낙찰'));
 const pickedId = ref(String(route.query.item ?? ''));
 /** 고른 물건이 사라지거나 아직 안 골랐으면 첫 물건을 든다 */
 watch(ownedAuctions, (list) => {
@@ -614,7 +611,7 @@ const toggleSection = (key: string) => {
             <span v-if="webHead" class="ih-court">{{ webHead.court || '–' }} · 낙찰일 <span class="num">{{ webHead.won || '–' }}</span></span>
             <span class="ih-right pw-pickanchor">
               <button type="button" :class="['ih-pdf', 'pw-pickbtn', { off: !ownedAuctions.length }]" @click.stop="togglePickList">
-                낙찰목록 <img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
+                낙찰목록 <i class="pw-x">×</i>{{ ownedAuctions.length }} <img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
               </button>
             </span>
           </div>
@@ -657,7 +654,7 @@ const toggleSection = (key: string) => {
         <!-- 띠 오른쪽 끝 — 낙찰목록과 전체 접기를 나란히 둔다 -->
         <div class="pw-objctrl">
           <button type="button" :class="['pw-objpick', { off: !ownedAuctions.length }]" @click.stop="togglePickList">
-            낙찰목록<img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
+            낙찰목록 <i class="pw-x">×</i>{{ ownedAuctions.length }}<img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
           </button>
           <button
             v-if="hasTable && !editing"
@@ -1869,4 +1866,6 @@ const toggleSection = (key: string) => {
 .pw-shell .pw-tbl:not(.edit) .pw-col-label { width: 76px; }
 .pw-shell .pw-tbl:not(.edit) .pw-col-qty { width: 40px; }
 .pw-shell .pw-tbl:not(.edit) .pw-col-memo { width: 88px; }
+/* 낙찰목록 개수 앞 곱하기 — 자금관리 '낙찰목록 ×N' 과 같은 표기 */
+.pw-x { font-style: normal; font-size: 0.75em; font-weight: 700; opacity: 0.6; margin: 0 1px 0 3px; }
 </style>

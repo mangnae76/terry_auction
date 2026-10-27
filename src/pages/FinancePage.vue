@@ -438,8 +438,8 @@ const exportExcel = () => {
         <!-- 낙찰로 들고 있는 물건과 판 물건 — 돈 이야기의 바탕이라 제목 옆에 적어 둔다 -->
         <span class="fin-stage-count">
           <!-- 건수 앞에 곱하기 — 선정물건의 휴지통·보관함 단추와 같은 표기 -->
-          <button type="button" :class="['won', { on: stageListOpen === '낙찰' }]" @click="toggleStageList('낙찰')">낙찰 <i>×</i>{{ wonCount }}</button>
-          <button type="button" :class="['sold', { on: stageListOpen === '매도' }]" @click="toggleStageList('매도')">매도 <i>×</i>{{ soldCount }}</button>
+          <button type="button" :class="['won', { on: stageListOpen === '낙찰' }]" @click="toggleStageList('낙찰')">낙찰목록 <i>×</i>{{ wonCount }}</button>
+          <button type="button" :class="['sold', { on: stageListOpen === '매도' }]" @click="toggleStageList('매도')">매도목록 <i>×</i>{{ soldCount }}</button>
         </span>
       </h1>
       <nav class="fin-tabs">
@@ -786,7 +786,7 @@ const exportExcel = () => {
       <div v-if="stageListOpen" class="fin-pop-veil" @click="stageListOpen = ''" />
       <section v-if="stageListOpen" :class="['fin-pop', stageListOpen === '매도' ? 'sold' : 'won']" @click.stop>
         <header class="fin-pop-head">
-          <strong>{{ stageListOpen }} <em>{{ stageListRows.length }}건</em></strong>
+          <strong>{{ stageListOpen }}목록 <em>{{ stageListRows.length }}건</em></strong>
           <button type="button" class="fin-pop-close" aria-label="닫기" @click="stageListOpen = ''">×</button>
         </header>
         <div class="fin-pop-body">
