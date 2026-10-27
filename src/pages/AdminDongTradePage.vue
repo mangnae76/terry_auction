@@ -95,7 +95,64 @@ const yearMin = ref('');
 const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
-const listView = ref<'table' | 'dist' | 'detail'>('table');
+const listView = ref<'table' | 'dist' | 'detail' | 'deals'>('table');
+// ===== 웹 '거래상세' — 월별 평균가 추이 + 개별 거래 목록 (조건검색 · 검색어를 따른다, 계약해제 제외) =====
+const dealBase = computed(() => searched.value.filter((r) => r.kind !== '계약해제'));
+type DealKey = 'umdNm' | 'name' | 'areaM2' | 'floorNum' | 'buildYear' | 'dealTime' | 'priceWon';
+const DEAL_COLS: Array<{ key: DealKey; label: string; align: string }> = [
+  { key: 'umdNm', label: '동', align: 'c' }, { key: 'name', label: '건물명', align: 'l' },
+  { key: 'areaM2', label: '면적 ㎡ / 평', align: 'r' }, { key: 'floorNum', label: '층', align: 'r' },
+  { key: 'buildYear', label: '건축년도', align: 'r' }, { key: 'dealTime', label: '계약일', align: 'c' },
+  { key: 'priceWon', label: '거래금액', align: 'r' },
+];
+const dealSort = ref<DealKey>('dealTime');
+const dealDesc = ref(true);
+const toggleDealSort = (k: DealKey) => {
+  if (dealSort.value === k) dealDesc.value = !dealDesc.value;
+  else { dealSort.value = k; dealDesc.value = k !== 'umdNm' && k !== 'name'; }
+};
+const dealRows = computed(() => {
+  const k = dealSort.value;
+  return [...dealBase.value].sort((a, b) => {
+    const d = typeof a[k] === 'string' ? String(a[k]).localeCompare(String(b[k]), 'ko') : Number(a[k]) - Number(b[k]);
+    return dealDesc.value ? -d : d;
+  });
+});
+// 월별 평균가 선 그래프 — 한 색(파랑) 선 + 옅은 면, 칸마다 마우스를 올리면 평균 · 건수
+const TREND_W = 1200; const TREND_H = 320;
+const TREND_PAD = { l: 64, r: 24, t: 16, b: 34 };
+const trend = computed(() => {
+  const by = new Map<string, number[]>();
+  dealBase.value.forEach((r) => {
+    if (!(r.priceWon > 0) || !r.contractDate) return;
+    const key = r.contractDate.slice(0, 7); // 'YYYY.MM'
+    by.set(key, [...(by.get(key) ?? []), r.priceWon]);
+  });
+  const keys = Array.from(by.keys()).sort();
+  const avgs = keys.map((k) => { const xs = by.get(k)!; return xs.reduce((a, b) => a + b, 0) / xs.length; });
+  const lo0 = avgs.length ? Math.min(...avgs) : 0; const hi0 = avgs.length ? Math.max(...avgs) : 1;
+  // 눈금은 깔끔한 값(1 · 2 · 2.5 · 5 × 10ⁿ 간격)으로 — 7,688만 같은 어중간한 값이 서지 않게
+  const span = Math.max(hi0 - lo0, hi0 * 0.05, 1);
+  const raw = (span * 1.3) / 4;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const nice = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((v) => v >= raw) ?? raw;
+  const lo = Math.max(0, Math.floor((lo0 - span * 0.15) / nice) * nice);
+  const hi = lo + nice * 4 >= hi0 ? lo + nice * 4 : Math.ceil((hi0 + span * 0.15) / nice) * nice;
+  const plotW = TREND_W - TREND_PAD.l - TREND_PAD.r; const plotH = TREND_H - TREND_PAD.t - TREND_PAD.b;
+  const step = keys.length > 1 ? plotW / (keys.length - 1) : plotW;
+  const yOf = (v: number) => TREND_PAD.t + plotH - ((v - lo) / (hi - lo)) * plotH;
+  const points = keys.map((k, i) => ({
+    key: k, label: k, avg: avgs[i], n: by.get(k)!.length,
+    x: TREND_PAD.l + i * step, y: yOf(avgs[i]),
+  }));
+  const line = points.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const base = TREND_PAD.t + plotH;
+  const area = points.length ? `${line} L${points[points.length - 1].x.toFixed(1)},${base} L${points[0].x.toFixed(1)},${base} Z` : '';
+  const nTicks = Math.round((hi - lo) / nice);
+  const ticks = Array.from({ length: nTicks + 1 }, (_, i) => { const v = lo + nice * i; return { v, y: yOf(v), label: eokMan(v) }; });
+  return { points, line, area, ticks, step };
+});
+
 // ===== 웹 '상세분포' — 동 × 구간 거래건수 표 =====
 type DetailKind = 'price' | 'area' | 'age' | 'floor';
 const DETAIL_KINDS: Array<{ key: DetailKind; label: string; icon: string }> = [
@@ -777,6 +834,7 @@ const downloadCsv = () => {
               <svg v-else viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3"><circle cx="8" cy="8" r="5.5" stroke-opacity=".35" /><path d="M8 2.5a5.5 5.5 0 0 1 5.5 5.5" /></svg>
             </span></button>
             <button type="button" role="tab" :aria-selected="listView === 'detail'" :class="{ on: listView === 'detail' }" @click="listView = 'detail'">상세분포</button>
+            <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
           </nav>
           <span v-if="!webEmbed" class="tag ok">정상거래 {{ counts.정상거래 }}</span>
           <span v-if="!webEmbed" class="tag">직거래 {{ counts.직거래 }}</span>
@@ -790,8 +848,58 @@ const downloadCsv = () => {
           </span>
         </div>
 
+        <!-- 웹 '거래상세' 탭 — 월별 평균가 추이(선 그래프) + 개별 거래 목록. 조건검색(기간 · 면적 · 연식 · 검색어)을 그대로 따른다 -->
+        <div v-if="webEmbed && listView === 'deals'" class="adm-deals">
+          <section class="adm-trend">
+            <p class="adm-trend-title">월별 평균가 추이 <em>(최근 {{ trend.points.length }}개월 · 정상 + 직거래)</em></p>
+            <svg v-if="trend.points.length > 1" class="adm-trend-svg" :viewBox="`0 0 ${TREND_W} ${TREND_H}`" role="img" aria-label="월별 평균가 추이 선 그래프">
+              <g v-for="t in trend.ticks" :key="t.v">
+                <line :x1="TREND_PAD.l" :x2="TREND_W - TREND_PAD.r" :y1="t.y" :y2="t.y" class="grid" />
+                <text :x="TREND_PAD.l - 8" :y="t.y" text-anchor="end" dominant-baseline="central" class="ax">{{ t.label }}</text>
+              </g>
+              <path :d="trend.area" class="area" />
+              <path :d="trend.line" class="line" />
+              <g v-for="pt in trend.points" :key="pt.key" class="pt">
+                <line :x1="pt.x" :x2="pt.x" :y1="TREND_PAD.t" :y2="TREND_H - TREND_PAD.b" class="hover-line" />
+                <circle :cx="pt.x" :cy="pt.y" r="4.5" class="dot" />
+                <rect :x="pt.x - trend.step / 2" :y="TREND_PAD.t" :width="trend.step" :height="TREND_H - TREND_PAD.t - TREND_PAD.b" class="hit"><title>{{ pt.key }} — 평균 {{ eokMan(pt.avg) }} · {{ pt.n.toLocaleString('ko-KR') }}건</title></rect>
+                <text :x="pt.x" :y="TREND_H - TREND_PAD.b + 18" text-anchor="middle" class="ax">{{ pt.label }}</text>
+              </g>
+            </svg>
+            <p v-else class="adm-trend-empty">두 달 이상 거래가 있어야 추이를 그립니다.</p>
+          </section>
+          <div class="adm-deals-head">
+            <strong>개별 거래 목록</strong>
+            <span>총 {{ dealRows.length.toLocaleString('ko-KR') }}건</span>
+            <span class="adm-search">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
+              <input v-model="listQuery" class="adm-input search" placeholder="건물명 · 동 · 금액 등으로 검색" />
+            </span>
+          </div>
+          <div class="adm-table-wrap">
+            <table class="adm-table adm-dongsum adm-deals-table">
+              <thead>
+                <tr>
+                  <th v-for="c in DEAL_COLS" :key="c.key" :class="c.align"><button type="button" class="adm-sort" @click="toggleDealSort(c.key)">{{ c.label }}<i :class="{ on: dealSort === c.key }">{{ dealSort === c.key ? (dealDesc ? '↓' : '↑') : '⇅' }}</i></button></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(r, i) in dealRows.slice(0, 300)" :key="i">
+                  <td class="c"><button type="button" class="adm-dong-link" @click="dong = r.umdNm">{{ r.umdNm }}</button></td>
+                  <td class="l">{{ r.name || '—' }}</td>
+                  <td class="r">{{ r.areaM2 > 0 ? `${r.areaM2.toFixed(1)}㎡ / ${r.pyeong.toFixed(1)}평` : '—' }}</td>
+                  <td class="r">{{ r.floor || '—' }}</td>
+                  <td class="r">{{ r.buildYear || '—' }}</td>
+                  <td class="c">{{ r.contractDate || '—' }}</td>
+                  <td class="r strong">{{ eokMan(r.priceWon) }}<small v-if="r.kind === '직거래'" class="adm-direct-tag">직거래</small></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-if="dealRows.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ dealRows.length.toLocaleString('ko-KR') }}줄 중</p>
+        </div>
         <!-- 웹 '상세분포' 탭 — 동마다 구간별 거래건수(정상 + 직거래, 계약해제 제외). 칸이 진할수록 많다. 머리글을 누르면 정렬 -->
-        <div v-if="webEmbed && listView === 'detail'" class="adm-detail">
+        <div v-else-if="webEmbed && listView === 'detail'" class="adm-detail">
           <nav class="adm-detail-kinds" role="tablist">
             <button v-for="k in DETAIL_KINDS" :key="k.key" type="button" role="tab" :aria-selected="detailKind === k.key" :class="{ on: detailKind === k.key }" @click="detailKind = k.key">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="k.icon" /></svg>{{ k.label }}
@@ -1065,6 +1173,26 @@ const downloadCsv = () => {
 .adm-bar-col small.two { white-space: normal; text-align: center; line-height: 1.3; font-size: 13px; word-break: keep-all; } /* '33~50㎡ / 10~15평' 은 두 줄로 */
 .adm-bar-col em { font-style: normal; font-size: 14px; color: #9ca3af; }
 /* 지역분포 바로 옆 아이콘 — 지금 모양(막대 · 도넛) */
+.adm-deals { display: flex; flex-direction: column; gap: 12px; }
+.adm-trend { background: #fff; border: 1px solid #e8ecf3; border-radius: 12px; padding: 16px 20px 10px; }
+.adm-trend-title { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #1f3a72; }
+.adm-trend-title em { font-style: normal; font-size: 14px; font-weight: 600; color: #9ca3af; }
+.adm-trend-svg { width: 100%; height: auto; display: block; }
+.adm-trend-svg .grid { stroke: #eef1f6; stroke-width: 1; }
+.adm-trend-svg .ax { font-size: 13px; fill: #6b7280; }
+.adm-trend-svg .area { fill: rgba(43, 109, 243, 0.08); }
+.adm-trend-svg .line { fill: none; stroke: #2b6df3; stroke-width: 2; stroke-linejoin: round; }
+.adm-trend-svg .dot { fill: #fff; stroke: #2b6df3; stroke-width: 2; }
+.adm-trend-svg .hit { fill: transparent; cursor: default; }
+.adm-trend-svg .hover-line { stroke: #c7d7f8; stroke-width: 1; opacity: 0; }
+.adm-trend-svg .pt:hover .hover-line { opacity: 1; }
+.adm-trend-svg .pt:hover .dot { fill: #2b6df3; }
+.adm-trend-empty { margin: 8px 0; font-size: 14px; color: #6b7280; }
+.adm-deals-head { display: flex; align-items: center; gap: 10px; margin: 4px 2px 0; }
+.adm-deals-head strong { font-size: 16px; font-weight: 800; color: #111827; }
+.adm-deals-head > span:not(.adm-search) { font-size: 14px; color: #6b7280; }
+.adm-deals-table td.l { text-align: left; }
+.adm-direct-tag { margin-left: 6px; font-size: 12px; font-weight: 700; color: #0f9d7a; }
 .adm-detail { display: flex; flex-direction: column; gap: 10px; }
 .adm-detail-kinds { display: flex; gap: 8px; flex-wrap: wrap; }
 .adm-detail-kinds button { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
