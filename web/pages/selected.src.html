@@ -617,6 +617,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] { --pw-lab-w: 250px; }
 .app-page[data-k="postwin"] :is(.pw-br-head, .pw-br-step) { grid-template-columns: calc(var(--pw-lab-w) + 1px) 16px 1fr; }   /* +1 = 표 바깥 테두리 */
 .app-page[data-k="postwin"] .pw-br-left b { white-space: nowrap; }
+/* 단계 상자도 위 '낙찰 당일' 상자처럼 가운데 정렬(번호 + 이름을 한 덩어리로) */
+.app-page[data-k="postwin"] .pw-br-left { justify-content: center; }
+.app-page[data-k="postwin"] .pw-br-left b { flex: 0 0 auto; }
 /* 명도 — '명도시작은 언제부터?' 세 상자 · '명도 협상 방법' 세 상자는 좌우를 안으로 몰아 작게, 가운데 정렬 */
 .app-page[data-k="postwin"] .pw-bx-row { justify-content: center; gap: 28px; }
 .app-page[data-k="postwin"] .pw-bx-row .pw-bx-item { flex: 0 0 240px; }
@@ -3833,7 +3836,11 @@ html, body { overflow-x: clip; }
     closeAppPage();
     box.innerHTML = `<div class="app-page" data-k="${key}" id="appPageMount"></div>`;
     pageKey = key;
-    pageUnmount = T.mountAppPage($('appPageMount'), key, tab, {
+    /* 붙이는 도중에 화면을 다시 그리면(hashchange 등) 이 함수가 한 번 더 돌아 새 칸에 또 붙는다.
+       그때 바깥 호출이 끝나며 pageUnmount 를 '화면에서 떨어진 옛 앱'으로 덮어쓰면, 하위 탭 신호가
+       보이지 않는 앱으로 가서 탭을 눌러도 안 바뀐다 — 붙인 칸이 아직 화면에 있을 때만 잡는다 */
+    const mountEl = $('appPageMount');
+    const stop = T.mountAppPage(mountEl, key, tab, {
       /* 앱 화면이 제 탭을 바꾸면 웹 하위 탭도 따라간다 */
       onTab: (t) => { if (S.route !== key || !SUB_TAB_KEYS[key].includes(t) || S.pageTab[key] === t) return; S.pageTab[key] = t; writeHash(false); renderSubTabs(); },
       /* 앱 화면이 웹 메뉴 쪽 길을 부르면 웹이 받는다 */
@@ -3845,6 +3852,10 @@ html, body { overflow-x: clip; }
         go(to);
       },
     });
+    if (!document.contains(mountEl)) { try { stop(); } catch (e) { /* 그만 */ } return; }
+    pageUnmount = stop;
+    /* 붙는 사이 탭이 바뀌었으면 지금 탭으로 맞춘다 */
+    if (S.pageTab[key] !== tab) stop.setTab(S.pageTab[key]);
   }
   function renderTrip() {
     const box = $('tripContent');
