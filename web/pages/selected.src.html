@@ -418,7 +418,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .subtab.on::after { transform: scaleX(1); opacity: 1; animation: tab-bar-in .22s ease; }
 .crumb-slot { padding-top: 2px; }
 .crumb-slot + .content { padding-top: 6px; }
-.u-link { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; font-size: 13px; color: var(--text-2); white-space: nowrap; transition: background .15s, color .15s; }
+.u-link { text-decoration: none; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; font-size: 13px; color: var(--text-2); white-space: nowrap; transition: background .15s, color .15s; }
 .u-link svg { width: 16px; height: 16px; color: var(--muted); transition: color .15s; }
 .u-link:hover { background: var(--surface-3); color: var(--text); }
 .u-link:hover svg { color: var(--text); }
@@ -1904,6 +1904,8 @@ html, body { overflow-x: clip; }
       </div>
       <!-- 머리띠 오른쪽 위(로그아웃 위) — 공지 · 결제하기 | 알림 · 밤낮 -->
       <div class="g-util" aria-label="바로가기">
+      <!-- 시험 — 소개 영상 대문. 아직 공개 전이라 이 컴퓨터(localhost)에서만 보인다 (확정되면 빼거나 자리를 옮긴다) -->
+      <a class="u-link" href="/promo-test.html" id="promoTestLink" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m10 9.5 5 2.5-5 2.5z"/></svg>대문 시험</a>
       <button type="button" class="u-link" data-act="soon" data-name="공지사항"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>공지</button>
       <button type="button" class="u-link pay" data-act="soon" data-name="결제하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>결제하기</button>
       <span class="u-sep" aria-hidden="true"></span>
@@ -3810,6 +3812,8 @@ html, body { overflow-x: clip; }
       toast('로그인되었습니다.');
     });
   }
+  let loginAsked = false;
+  { const t = document.getElementById('promoTestLink'); if (t && /^(127\.0\.0\.1|localhost)$/.test(location.hostname)) t.hidden = false; }
   async function startCloud() {
     /* 앱 자료에 끝내 붙지 못하면 영원히 기다리는 모양만 남는다 — 그때는 7초 뒤에 보여 준다 */
     const giveUp = setTimeout(() => { if (!S.authReady) { S.authReady = true; render(); } }, 7000);
@@ -3841,6 +3845,12 @@ html, body { overflow-x: clip; }
       }
       if (!ok && CLOUD.on) { CLOUD.on = false; CLOUD.raw = new Map(); items = DEMO_ITEMS.slice(); }
       render();
+      /* 대문의 '로그인' 단추로 왔으면(?login=1) 로그인 창을 바로 연다 — 한 번만, 주소에서는 지운다 */
+      if (!loginAsked && /[?&]login=1\b/.test(location.search)) {
+        loginAsked = true;
+        try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { /* 그만 */ }
+        if (!auth.isLoggedIn) openAppLogin();
+      }
     }, { immediate: true });
     T.watch(() => [st.auctions, st.archivedAuctions, st.hiddenAuctions], fromStore);
     /* giveUp 은 일부러 남겨 둔다 — 로그인 여부를 끝내 알지 못해도 7초 뒤에는 화면을 보여 준다 */
