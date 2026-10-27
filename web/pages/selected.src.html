@@ -636,6 +636,36 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-modal-head strong { font-size: 16px; }
 .app-page[data-k="postwin"] .pw-modal :is(.pw-modal-sub, .pw-fld small, input, select, textarea, .pw-ebtn) { font-size: 14px; }
 .app-page[data-k="postwin"] .pw-modal .pw-fld { margin-bottom: 10px; }
+/* 매도·임대 — 중개 의뢰 현황 · 직거래 등록 상자: 글자는 규칙대로 14(제목 16), 칸 높이 · 위아래 여유를 넓힌다 */
+.app-page[data-k="postwin"] .agency-table { gap: 12px; }
+.app-page[data-k="postwin"] .adp-agency-item { padding: 12px 16px 14px !important; }
+.app-page[data-k="postwin"] .adp-agency-line { gap: 10px; }
+.app-page[data-k="postwin"] .adp-agency-line + .adp-agency-line { margin-top: 10px; padding-top: 10px; }
+.app-page[data-k="postwin"] :is(.adp-mkt-input, .adp-agency-range input.rng, .adp-agency-trigger) { height: 38px !important; font-size: 14px !important; padding-left: 10px; padding-right: 10px; }
+.app-page[data-k="postwin"] .adp-agency-range .rng-wrap input.rng { padding-right: 26px; }
+.app-page[data-k="postwin"] :is(.adp-agency-range .lab, .adp-agency-fld.note-fld > .lab) { flex-basis: 56px !important; font-size: 14px !important; }
+.app-page[data-k="postwin"] :is(.adp-agency-range .unit, .adp-agency-range .sep) { font-size: 14px !important; }
+.app-page[data-k="postwin"] .adp-agency-range .unit { right: 9px; }
+.app-page[data-k="postwin"] :is(.adp-agency-fld > span, .adp-agency-fld > a.adp-agency-tel-view) { font-size: 15px !important; line-height: 38px !important; height: 38px !important; }
+.app-page[data-k="postwin"] :is(.adp-agency-range .val, .adp-agency-fld > span.note-txt, .buyers-head .lab, .buyers-view, .buyers-empty) { font-size: 14px !important; }
+.app-page[data-k="postwin"] .adp-agency-trigger .caret { font-size: 12px; }
+/* 상호 · 매도/임대 펼침 목록 — 글자 14, 줄 높이 넉넉히 */
+.app-page[data-k="postwin"] .adp-agency-options { min-width: 160px; padding: 6px; }
+.app-page[data-k="postwin"] .adp-agency-option { font-size: 14px !important; padding: 9px 12px !important; }
+.app-page[data-k="postwin"] .adp-agency-option .ck { font-size: 13px; }
+.app-page[data-k="postwin"] :is(.adp-agency-del, .buyers-add) { height: 38px !important; flex-basis: 38px !important; width: 38px; font-size: 16px !important; }
+.app-page[data-k="postwin"] .adp-agency-call { width: 26px; height: 26px; right: 6px; }
+.app-page[data-k="postwin"] .adp-agency-tel .adp-mkt-input.dial { padding-right: 38px; }
+/* 중개업체 관리 창 — 가로 전체가 아니라 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에 */
+.app-page[data-k="postwin"] .abm-box {
+  left: 50%; right: auto; width: min(640px, calc(100vw - 32px)); transform: translateX(-50%);
+  top: calc(var(--stick-top, 0px) + var(--gnb-h, 66px) + var(--subtab-h, 44px) + 24px);
+  max-height: calc(100vh - var(--gnb-h, 66px) - var(--subtab-h, 44px) - 64px);
+  padding: 16px 20px 18px;
+}
+.app-page[data-k="postwin"] .abm-head strong { font-size: 16px; }
+.app-page[data-k="postwin"] .abm-box :is(.abm-note, .agb-eyebrow, .agb-add, .agb-sort, .agb-fld small, .agb-input, .agb-empty, .agb-save) { font-size: 14px !important; }
+.app-page[data-k="postwin"] .abm-box .agb-input { height: 36px; }
 /* 표 줄 높이 — 위아래를 넉넉히(6 → 10px) */
 .app-page .pw-shell .pw-tbl:not(.edit) td { padding-top: 10px !important; padding-bottom: 10px !important; }
 .app-page .more-shell { min-height: 0 !important; background: transparent !important; padding-bottom: 40px !important; }
