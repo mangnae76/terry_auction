@@ -4226,8 +4226,11 @@ html, body { overflow-x: clip; }
       items = all.map((a) => { try { return toWebItem(a); } catch (e) { return null; } }).filter(Boolean);
       render();
     };
+    let wasIn = false;   // 로그인해 있다가 로그아웃되면(어느 화면의 로그아웃이든) 대문으로 돌아간다
     T.watch(() => [auth.ready, auth.uid, auth.email], () => {
       if (!auth.ready) return;
+      if (wasIn && !auth.isLoggedIn) { location.replace('/intro.html'); return; }
+      wasIn = auth.isLoggedIn;
       S.authReady = true;
       const ok = auth.isLoggedIn && T.isAllowedEmail(auth.email);
       S.loggedIn = auth.isLoggedIn; S.userName = auth.nickname || String(auth.email || '').split('@')[0];
@@ -4306,7 +4309,7 @@ html, body { overflow-x: clip; }
           .catch(() => { m.busy = false; m.msg = CLOUD.auth.error || '로그인하지 못했습니다.'; if (S.modal === m) renderModal(); });
         break;
       }
-      case 'logout': S.pop = ''; if (CLOUD.auth) CLOUD.auth.logout().then(() => toast('로그아웃되었습니다.', 'info')); else { S.loggedIn = false; render(); } break;
+      case 'logout': S.pop = ''; if (CLOUD.auth) CLOUD.auth.logout().then(() => location.replace('/intro.html')); else { location.replace('/intro.html'); } break;   /* 로그아웃 → 대문 */
       case 'pop': S.menu = null; S.binPicked = new Set(); S.calMonth = null; S.pop = S.pop === t.dataset.id ? '' : t.dataset.id; render(); break;
       case 'close-pop': closeLayers(); render(); break;
       case 'set-type': S.type = v; S.pop = ''; render(); break;
