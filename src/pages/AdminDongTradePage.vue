@@ -101,7 +101,7 @@ const onDistTab = () => {
 // 도넛 — 반지름 · 둘레, 구간 차례대로 옅은 파랑 → 짙은 파랑
 const DONUT_R = 56;
 const DONUT_C = 2 * Math.PI * DONUT_R;
-const DONUT_RAMP = ['#cfe0ff', '#a3c1fb', '#76a1f7', '#4a82f3', '#2b6df3', '#1b4fbf'];
+const DONUT_RAMP = ['#dbe7ff', '#bcd2fd', '#9cbcfa', '#7aa4f7', '#588cf4', '#2b6df3', '#2257cc', '#1a44a3']; // 구간 여덟까지
 const DONUT_GAP = 2;
 /** 조각마다 시작 자리 · 길이 (둘레 기준). 조각 사이 2px 틈 */
 const donutSegs = (cells: Array<{ label: string; count: number; pct: number }>) => {
@@ -355,6 +355,26 @@ const FLOOR_BUCKETS: Bucket[] = [
   { label: '4층', test: (r) => r.floorNum === 4 },
   { label: '5층~', test: (r) => r.floorNum >= 5 },
 ];
+// 웹 — 구간을 더 잘게(앱은 그대로). 면적은 ㎡ / 평 함께, 25~30평 · 30평~ / 3~5억 · 5~10억 · 10억~ / 25~30년 · 30년~
+const WEB_AREA_BUCKETS: Bucket[] = [
+  { label: '~33㎡ / 10평', test: (r) => r.pyeong > 0 && r.pyeong < 10 },
+  { label: '33~50㎡ / 10~15평', test: (r) => r.pyeong >= 10 && r.pyeong < 15 },
+  { label: '50~66㎡ / 15~20평', test: (r) => r.pyeong >= 15 && r.pyeong < 20 },
+  { label: '66~83㎡ / 20~25평', test: (r) => r.pyeong >= 20 && r.pyeong < 25 },
+  { label: '83~99㎡ / 25~30평', test: (r) => r.pyeong >= 25 && r.pyeong < 30 },
+  { label: '99㎡~ / 30평~', test: (r) => r.pyeong >= 30 },
+];
+const WEB_PRICE_BUCKETS: Bucket[] = [
+  ...PRICE_BUCKETS.slice(0, 5),
+  { label: '3~5억', test: (r) => r.priceWon >= 3 * EOK && r.priceWon < 5 * EOK },
+  { label: '5~10억', test: (r) => r.priceWon >= 5 * EOK && r.priceWon < 10 * EOK },
+  { label: '10억~', test: (r) => r.priceWon >= 10 * EOK },
+];
+const WEB_AGE_BUCKETS: Bucket[] = [
+  ...AGE_BUCKETS.slice(0, 5),
+  { label: '25~30년', test: (r) => age(r) > 25 && age(r) <= 30 },
+  { label: '30년~', test: (r) => age(r) > 30 },
+];
 const distribute = (buckets: Bucket[]) => {
   const total = normals.value.length;
   return buckets.map((b) => {
@@ -364,9 +384,9 @@ const distribute = (buckets: Bucket[]) => {
 };
 const DISTS = computed(() => [
   // 웹은 '…별 분포' 로 이름을 맞춘다 (앱은 그대로)
-  { title: webEmbed ? '전용면적별 분포' : '전용면적 분포', unit: '㎡/평', cells: distribute(AREA_BUCKETS) },
-  { title: webEmbed ? '금액대별 분포' : '금액분포', unit: '', cells: distribute(PRICE_BUCKETS) },
-  { title: webEmbed ? '건축연식별 분포' : '건축연식', unit: '', cells: distribute(AGE_BUCKETS) },
+  { title: webEmbed ? '전용면적별 분포' : '전용면적 분포', unit: '㎡/평', cells: distribute(webEmbed ? WEB_AREA_BUCKETS : AREA_BUCKETS) },
+  { title: webEmbed ? '금액대별 분포' : '금액분포', unit: '', cells: distribute(webEmbed ? WEB_PRICE_BUCKETS : PRICE_BUCKETS) },
+  { title: webEmbed ? '건축연식별 분포' : '건축연식', unit: '', cells: distribute(webEmbed ? WEB_AGE_BUCKETS : AGE_BUCKETS) },
   { title: webEmbed ? '층별 분포' : '층', unit: '', cells: distribute(FLOOR_BUCKETS) },
 ]);
 
@@ -707,7 +727,7 @@ const downloadCsv = () => {
               >
                 <b>{{ c.count }}</b>
                 <span class="adm-bar-track"><i :style="{ height: `${(c.count / Math.max(1, ...d.cells.map(x => x.count))) * 100}%` }" /></span>
-                <small>{{ c.label }}</small>
+                <small :class="{ two: c.label.includes(' / ') }">{{ c.label }}</small>
                 <em>{{ c.pct.toFixed(0) }}%</em>
               </div>
             </div>
@@ -928,6 +948,7 @@ const downloadCsv = () => {
 .adm-bar-col.top .adm-bar-track i, .adm-bar-col:hover .adm-bar-track i { background: #2b6df3; }
 .adm-bar-col.top b { color: #2b6df3; }
 .adm-bar-col small { font-size: 14px; font-weight: 600; color: #4b5563; white-space: nowrap; }
+.adm-bar-col small.two { white-space: normal; text-align: center; line-height: 1.3; font-size: 13px; word-break: keep-all; } /* '33~50㎡ / 10~15평' 은 두 줄로 */
 .adm-bar-col em { font-style: normal; font-size: 14px; color: #9ca3af; }
 /* 지역분포 바로 옆 아이콘 — 지금 모양(막대 · 도넛) */
 .adm-view-kind { display: inline-flex; vertical-align: -2px; margin-left: 3px; color: #9ca3af; }
