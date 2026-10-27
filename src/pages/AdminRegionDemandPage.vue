@@ -225,6 +225,8 @@ const ageText = (buildYear: number) => (
 );
 const pct = (n: number) => (n > 0 ? `${n.toFixed(1)}%` : '-');
 /** 거래량을 연·월로 가른다 — 24개월을 받아도 1년치로 환산해 견준다 */
+/** 표의 거래 칸 — 웹은 총 거래건수(정상 + 직거래, 계약해제 제외), 분석 도구는 정상거래만(예전 그대로) */
+const dealOf = (r: Row) => (webEmbed ? r.count + (r.directCount ?? 0) : r.count);
 const yearlyOf = (count: number) => count / Math.max(1, months.value / 12);
 const monthlyOf = (count: number) => count / Math.max(1, months.value);
 /** 작은 동은 월 0건으로 뭉개진다 — 10건 아래는 소수 한 자리까지.
@@ -441,11 +443,21 @@ const downloadCsv = () => {
         <span>기간 {{ ym(period.from) }} ~ {{ ym(period.to) }}</span>
         <span>읍면동 {{ rows.length }}곳</span>
         <!-- 거래는 파랑, 뺀 것(직거래 · 해제)은 초록으로 따로 센다 -->
-        <span>거래 <b class="adm-sum-deal">{{ totalCount.toLocaleString('ko-KR') }}건</b></span>
-        <template v-if="excludedShown > 0">
+        <!-- 웹 — 총 거래건수 = 정상 + 직거래 (계약해제 제외) -->
+        <template v-if="webEmbed">
+          <span>총 거래건수 <b class="adm-sum-deal">{{ (totalCount + directShown).toLocaleString('ko-KR') }}건</b></span>
+          <span>정상 <b class="adm-sum-ex">{{ totalCount.toLocaleString('ko-KR') }}건</b></span>
           <span>직거래 <b class="adm-sum-ex">{{ directShown.toLocaleString('ko-KR') }}건</b></span>
           <span>해제 <b class="adm-sum-ex">{{ cancelShown.toLocaleString('ko-KR') }}건</b></span>
-          <span class="dim">(직거래 · 해제는 제외하고 셈)</span>
+          <span class="dim">(계약해제는 제외하고 셈)</span>
+        </template>
+        <template v-else>
+          <span>거래 <b class="adm-sum-deal">{{ totalCount.toLocaleString('ko-KR') }}건</b></span>
+          <template v-if="excludedShown > 0">
+            <span>직거래 <b class="adm-sum-ex">{{ directShown.toLocaleString('ko-KR') }}건</b></span>
+            <span>해제 <b class="adm-sum-ex">{{ cancelShown.toLocaleString('ko-KR') }}건</b></span>
+            <span class="dim">(직거래 · 해제는 제외하고 셈)</span>
+          </template>
         </template>
       </div>
 
@@ -462,7 +474,7 @@ const downloadCsv = () => {
               <th>읍면동</th>
               <th class="in">총 세대수</th>
               <th class="in">총 매물수</th>
-              <th>총 거래량<small>(최근 {{ months }}개월)</small></th>
+              <th>{{ webEmbed ? '총 거래건수' : '총 거래량' }}<small>(최근 {{ months }}개월)</small></th>
               <th>평균가<small>(최근 {{ months }}개월)</small></th>
               <th>평균 전용면적<small>(㎡)</small></th>
               <th>평균 건축연수<small>(년)</small></th>
@@ -495,9 +507,9 @@ const downloadCsv = () => {
                 />
               </td>
               <td class="n strong deal">
-                <span class="grp y"><em class="pre">연</em><i>{{ cntInt(yearlyOf(r.count)) }}</i></span><b>{{ cntFrac(yearlyOf(r.count)) }}</b>
+                <span class="grp y"><em class="pre">연</em><i>{{ cntInt(yearlyOf(dealOf(r))) }}</i></span><b>{{ cntFrac(yearlyOf(dealOf(r))) }}</b>
                 <em class="bar">|</em>
-                <span class="grp m"><em class="pre">월</em><i>{{ cntInt(monthlyOf(r.count)) }}</i></span><b>{{ cntFrac(monthlyOf(r.count)) }}</b>
+                <span class="grp m"><em class="pre">월</em><i>{{ cntInt(monthlyOf(dealOf(r))) }}</i></span><b>{{ cntFrac(monthlyOf(dealOf(r))) }}</b>
               </td>
               <td class="n strong price"><span class="v">{{ won(r.avgPrice) }}</span></td>
               <td class="n area"><span class="v">{{ areaText(r.avgAreaM2) }}</span></td>
