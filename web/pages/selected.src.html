@@ -288,11 +288,11 @@ button { cursor: pointer; }
 /* 시도 · 시군구 · 읍면동 칸은 조금 좁게(260 → 200) */
 .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar select.adm-input.narrow { width: 200px !important; }
 /* 지역분석 — 고르는 칸 · 종류 · 엑셀 내려받기 · 조회가 한 줄에 서게 */
-.app-market[data-k="dong"] .adm-bar { flex-wrap: nowrap !important; }
-.app-market[data-k="dong"] .adm-bar select.adm-input.narrow { width: 150px !important; }
+.app-market:is([data-k="region"], [data-k="dong"]) .adm-bar { flex-wrap: nowrap !important; }
+.app-market:is([data-k="region"], [data-k="dong"]) .adm-bar select.adm-input.narrow { width: 150px !important; }
 /* 기간(3 · 6 · 12개월)이 종류 옆에 들어오며 한 줄에 다 담기게 — 고르는 칸 180 → 150, 엑셀 · 조회 136 → 120 */
-.app-market[data-k="dong"] .adm-bar :is(.adm-load, .adm-csv) { min-width: 120px !important; padding: 0 14px !important; }
-@media (max-width: 1360px) { .app-market[data-k="dong"] .adm-bar select.adm-input.narrow { width: 128px !important; } .app-market[data-k="dong"] .adm-bar :is(.adm-load, .adm-csv) { min-width: 100px !important; } .app-market[data-k="dong"] .adm-bar { gap: 8px !important; } }
+.app-market:is([data-k="region"], [data-k="dong"]) .adm-bar :is(.adm-load, .adm-csv) { min-width: 120px !important; padding: 0 14px !important; }
+@media (max-width: 1360px) { .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar select.adm-input.narrow { width: 128px !important; } .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar :is(.adm-load, .adm-csv) { min-width: 100px !important; } .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar { gap: 8px !important; } }
 /* 거래량 랭킹 — 임장경로처럼 지도를 하위 탭 바로 아래부터 화면 끝까지 통째로 깔고(1920 전체),
    안내 상자 · 고르는 칸 · 통계 판은 그 위에 얹는다 */
 /* 지도가 화면을 통째로 쓰는 화면 — 페이지 자체는 굴러가지 않는다(판은 제 안에서만 굴러간다) */

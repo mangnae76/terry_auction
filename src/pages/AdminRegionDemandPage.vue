@@ -39,8 +39,14 @@ const sido = ref<string>(SIDO_PICK);
 const districtCode = ref<string>('');   // 빈 값이면 '전체'
 const dongFilter = ref('');
 const kind = ref<Kind>('villa');
-// 1년치로 못 박는다 — 지표가 모두 연 기준이라 고를 까닭이 없다
+// 분석 도구는 1년치로 못 박는다 — 지표가 모두 연 기준이다(웹은 3 · 6 · 12개월을 고르고, 연 · 월 칸이 연 기준으로 환산한다)
 const months = ref(12);
+const WEB_PERIODS = [3, 6, 12];
+/** 웹 — 매매 / 전세 (전세는 전월세 자료에서 월세 없는 것, 값은 보증금). 바꾸면 '조회' 로 다시 받는다 */
+const DEAL_KINDS = [{ key: 'sale', label: '매매' }, { key: 'jeonse', label: '전세' }] as const;
+const dealKind = ref<'sale' | 'jeonse'>('sale');
+/** 지금 받아 둔 자료가 매매인지 전세인지 — '평균 거래가 / 평균 전세가' 이름표를 맞춘다 */
+const loadedDeal = ref<'sale' | 'jeonse'>('sale');
 
 const districts = computed<DistrictOption[]>(() => districtsOf(sido.value));
 /** 전체를 고르면 그 시도의 시군구를 다 돈다 — 몇 번 부르는지 미리 알려 준다 */
@@ -209,7 +215,7 @@ const navCells = computed(() => {
         `연 = 최근 ${months.value}개월 합 · 월 = 연 ÷ ${months.value}`,
       ],
     },
-    { label: '평균 거래가', value: eokShort(v.avgPrice) },
+    { label: loadedDeal.value === 'jeonse' ? '평균 전세가' : '평균 거래가', value: eokShort(v.avgPrice) },
     { label: '평균 건축연수', value: v.age > 0 ? `${v.age}년차` : '-' },
     { label: '거래 회전율', value: pct(v.turnover) },
     { label: '매물 소화율', value: pct(v.absorb) },
@@ -261,7 +267,7 @@ const ym = (v: string) => {
 const progress = ref({ done: 0, total: 0 });
 
 // ===== 웹 — 마지막으로 받은 자료를 이 브라우저에 남겨 새로고침해도 요약 · 표가 그대로 (composables/useScreenSnapshot) =====
-type Snapshot = { sido: string; districtCode: string; dongFilter: string; kind: Kind; stats: StatRow[]; period: { from: string; to: string }; loadedLabel: string };
+type Snapshot = { sido: string; districtCode: string; dongFilter: string; kind: Kind; dealKind?: 'sale' | 'jeonse'; months?: number; stats: StatRow[]; period: { from: string; to: string }; loadedLabel: string };
 const snap = useScreenSnapshot<Snapshot>('adm.region.snapshot.v1');
 onMounted(async () => {
   if (!webEmbed) return;
@@ -270,6 +276,8 @@ onMounted(async () => {
   restoring = true;
   sido.value = s.sido; districtCode.value = s.districtCode; dongFilter.value = s.dongFilter; kind.value = s.kind;
   stats.value = s.stats; period.value = s.period; loadedLabel.value = s.loadedLabel;
+  if (s.dealKind) { dealKind.value = s.dealKind; loadedDeal.value = s.dealKind; }
+  if (s.months) months.value = s.months;
   await nextTick();
   restoring = false;
 });
@@ -292,6 +300,7 @@ const load = async () => {
         lawdCd5: d.lawdCode,
         propertyType: kind.value,
         months: months.value,
+        dealKind: webEmbed ? dealKind.value : 'sale',
       });
       from = res.periodFromDate || res.periodFrom; to = res.periodToDate || res.periodTo;
       if (res.error) errs.add(res.error);
@@ -309,8 +318,9 @@ const load = async () => {
       : `${sido.value} 전체`;
     if (errs.size > 0) notice.value = Array.from(errs).join(' / ');
     if (stats.value.length === 0 && errs.size === 0) notice.value = '그 기간에 거래가 없습니다.';
+    loadedDeal.value = webEmbed ? dealKind.value : 'sale';
     if (webEmbed && stats.value.length > 0) {
-      void snap.save({ sido: sido.value, districtCode: districtCode.value, dongFilter: dongFilter.value, kind: kind.value, stats: stats.value, period: period.value, loadedLabel: loadedLabel.value });
+      void snap.save({ sido: sido.value, districtCode: districtCode.value, dongFilter: dongFilter.value, kind: kind.value, dealKind: dealKind.value, months: months.value, stats: stats.value, period: period.value, loadedLabel: loadedLabel.value });
     }
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : String(err);
@@ -403,14 +413,19 @@ const downloadCsv = () => {
             >{{ k.label }}</button>
           </div>
         </label>
-        <!-- 웹 — 엑셀 내려받기를 조회 단추 왼쪽으로 (제목 줄은 웹에서 감춘다) -->
-        <button
-          v-if="webEmbed"
-          type="button"
-          class="adm-csv adm-csv-bar"
-          :disabled="rows.length === 0"
-          @click="downloadCsv"
-        >엑셀내려받기</button>
+        <!-- 웹 — 지역분석과 같은 고르는 줄: 매매 · 전세, 기간 3 · 6 · 12개월 (엑셀내려받기는 뺐다) -->
+        <label v-if="webEmbed" class="adm-f">
+          <small>거래</small>
+          <div class="adm-seg">
+            <button v-for="k in DEAL_KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: dealKind === k.key }]" @click="dealKind = k.key">{{ k.label }}</button>
+          </div>
+        </label>
+        <label v-if="webEmbed" class="adm-f">
+          <small>기간</small>
+          <div class="adm-seg">
+            <button v-for="m in WEB_PERIODS" :key="m" type="button" :class="['adm-seg-btn', { on: months === m }]" @click="months = m">{{ m }}개월</button>
+          </div>
+        </label>
         <button type="button" class="adm-load" :disabled="loading || !sido" @click="load">
           <template v-if="loading && progress.total > 1">{{ progress.done }}/{{ progress.total }} 불러오는 중…</template>
           <template v-else-if="loading">불러오는 중…</template>
@@ -603,16 +618,17 @@ const downloadCsv = () => {
 .adm-msg.warn { background: #fffbeb; color: #92400e; }
 
 /* 웹 요약 줄 — 상자마다 위 작은 이름, 아래 굵은 값 */
-.adm-nav { margin: 14px 0 6px; padding: 14px; border: 1px solid #e3e8f0; border-radius: 10px; background: #f7f8fa; }
-.adm-nav-scope { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 10px 2px; font-size: 16px; font-weight: 800; color: #2b6df3; }
-.adm-nav-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+/* 요약 상자 줄 — 지역분석(.adm-gunav)과 크기 · 글자를 똑같이 맞춘다 */
+.adm-nav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }
+.adm-nav-scope { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; font-size: 18px; font-weight: 800; color: #2b6df3; }
+.adm-nav-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; }
 .adm-nav-box {
-  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px;
-  background: #fff; border: 1px solid #eef1f6; border-radius: 8px; text-align: center; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 4px;
+  background: #fff; border-radius: 8px; text-align: center; min-width: 0;
 }
 .adm-nav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
-.adm-nav-sub { font-style: normal; font-size: 12px; font-weight: 600; color: #6b7280; text-align: center; word-break: keep-all; } /* 거래건수 밑 정상 · 직거래 · 해제 */
-.adm-nav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; }
+.adm-nav-sub { margin-top: -4px; font-style: normal; font-size: 12px; font-weight: 600; color: #6b7280; text-align: center; word-break: keep-all; } /* 거래건수 밑 정상 · 직거래 · 해제 (지역분석과 같은 간격) */
+.adm-nav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; text-align: center; }
 @media (max-width: 1200px) { .adm-nav-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .adm-sum {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
