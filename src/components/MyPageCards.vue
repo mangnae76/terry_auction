@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 마이페이지 메뉴 카드 — MYPAGE 화면과 더보기가 같은 것을 쓴다.
 // 건수는 실제 물건 자료에서 센다.
-import { computed, ref } from 'vue';
+import { computed, inject, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppToast from './AppToast.vue';
 import { useAuctionStore } from '../stores/auctionStore';
@@ -78,7 +78,13 @@ const PICK_CARDS = computed<Card[]>(() => [
   { icon: '🛠️', title: '인테리어 업체', desc: '견적·업체 비딩 관리', path: '/interior-vendors' },
 ]);
 
-const ACCOUNT_CARDS: Card[] = [
+/** 웹 — 웹 마이페이지에 있는 AI 설정 둘을 계정관리에도 둔다(누르면 웹 마이페이지의 그 자리로). 앱에는 없다 */
+const webEmbed = inject<boolean>('webEmbed', false);
+const WEB_AI_CARDS: Card[] = [
+  { icon: '🤖', title: 'AI 자동 분석 설정', desc: '자동 등록 · 권리 분석 켜고 끄기', path: '/web-mypage' },
+  { icon: '🔑', title: '제미나이 API 키 등록', desc: 'AI 분석에 쓰는 키', path: '/web-mypage' },
+];
+const ACCOUNT_CARDS_BASE: Card[] = [
   { icon: '🎁', title: '3일무료체험', desc: '무료로 먼저 써 보기', path: '/trial' },
   { icon: '🧾', title: '결제하기', desc: '이용 기간 고르기', path: '/billing' },
   { icon: '💳', title: '결제관리', desc: '내역·영수증 보기', path: '/payments' },
@@ -86,6 +92,7 @@ const ACCOUNT_CARDS: Card[] = [
   { icon: '🙍', title: '정보수정', desc: '닉네임·개인정보', path: '/profile' },
   { icon: '🚪', title: '회원탈퇴', desc: '계정·자료 삭제', path: '/withdraw' },
 ];
+const ACCOUNT_CARDS = webEmbed ? [...ACCOUNT_CARDS_BASE, ...WEB_AI_CARDS] : ACCOUNT_CARDS_BASE;
 
 const toastText = ref('');
 const go = (c: Card) => {
