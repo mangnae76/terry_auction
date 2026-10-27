@@ -55,8 +55,10 @@ import { createApp, h } from 'vue';
 import { createRouter, createMemoryHistory, RouterView } from 'vue-router';
 import { getActivePinia } from 'pinia';
 import LoginPage from '../../src/pages/LoginPage.vue';
-/** el 안에 앱 로그인 화면을 띄운다. 로그인이 끝나면(앱은 선정물건으로 넘어가는 자리) onDone('ok'), 회원가입은 onDone('signup') */
-export const mountAppLogin = (el, onDone) => {
+import SignupPage from '../../src/pages/SignupPage.vue';
+/** el 안에 앱 로그인 화면을 띄운다. 로그인이 끝나면(앱은 선정물건으로 넘어가는 자리) onDone('ok'), 회원가입은 onDone('signup').
+ *  open 을 주면('findId' · 'findPw' · 'trial') 그 안내 창만 바로 연다 — 로그인 카드는 부르는 쪽이 감추고, 창을 닫으면 onDone('close') */
+export const mountAppLogin = (el, onDone, open = '') => {
   const Empty = { render: () => null };
   const router = createRouter({
     history: createMemoryHistory(),
@@ -65,11 +67,31 @@ export const mountAppLogin = (el, onDone) => {
   router.afterEach((to) => {
     if (to.path === '/auctions/watchlist') onDone('ok');
     else if (to.path === '/signup') onDone('signup');
+    else if (to.path === '/closed') onDone('close');
   });
   const app = createApp({ render: () => h(RouterView) });
   app.use(getActivePinia());
   app.use(router);
   app.provide('webEmbed', true);   // 웹 — 회원가입은 작은 줄로, 창은 촘촘히
+  void router.push(open ? { path: '/', query: { open } } : '/');
+  app.mount(el);
+  return () => app.unmount();
+};
+/** el 안에 앱 회원가입 화면을 띄운다(카드만). 가입이 끝나면 onDone('ok'), 닫기 · '로그인' 은 onDone('login') */
+export const mountAppSignup = (el, onDone) => {
+  const Empty = { render: () => null };
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/', component: SignupPage }, { path: '/:rest(.*)*', component: Empty }],
+  });
+  router.afterEach((to) => {
+    if (to.path === '/auctions/watchlist') onDone('ok');
+    else if (to.path === '/login') onDone('login');
+  });
+  const app = createApp({ render: () => h(RouterView) });
+  app.use(getActivePinia());
+  app.use(router);
+  app.provide('webEmbed', true);
   void router.push('/');
   app.mount(el);
   return () => app.unmount();

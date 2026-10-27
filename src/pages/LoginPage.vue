@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, onMounted, ref } from 'vue';
+import { inject, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { checkEmailTaken, friendlyAuthError, sendPasswordReset, setLoginPersistence } from '../services/authRepository';
@@ -106,6 +106,14 @@ const sendFindPw = async () => {
     findBusy.value = false;
   }
 };
+
+// 웹 — 안내 창 하나만 바로 열어 달라고 왔으면(?open=findId · findPw · trial) 그 창만 열고, 닫으면 '/closed' 로 알린다
+const soloOpen = String(route.query.open ?? '');
+onMounted(() => {
+  if (soloOpen === 'findId' || soloOpen === 'findPw') openFind(soloOpen);
+  else if (soloOpen === 'trial' || soloOpen === 'pay') info.value = soloOpen;
+});
+watch(info, (v) => { if (soloOpen && !v) void router.replace('/closed'); });
 
 const kakaoEnabled = isKakaoLoginConfigured();
 const naverEnabled = isNaverLoginConfigured();

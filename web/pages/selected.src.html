@@ -583,6 +583,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-login { position: relative; width: min(366px, 100%); max-height: calc(100vh - 40px); overflow-x: hidden; overflow-y: auto; /* 닫기 단추 말풍선이 오른쪽으로 3px 삐져 가로 스크롤바가 생겼다 — 말풍선은 오른쪽 맞춤, 가로는 숨김 */ padding: 0 !important; background: transparent !important; box-shadow: none !important; border: 0 !important; }
 .app-login .lp-shell { min-height: 0 !important; background: none !important; padding: 0 !important; }
 .app-login .lp-card { max-width: none !important; }
+/* 회원가입 창 — 앱 카드만(파란 바탕 · 화면 높이 걷어냄), 길면 창 안에서 굴린다 */
+.dialog.app-signup { width: min(440px, 100%); max-height: calc(100vh - 40px); overflow-x: hidden; overflow-y: auto; padding: 0 !important; background: transparent !important; box-shadow: none !important; border: 0 !important; }
+.app-signup .su-shell { min-height: 0 !important; background: none !important; padding: 0 !important; display: block !important; }
+.app-signup .su-card { max-width: none !important; }
 /* 웹 로그인 창 — 회원가입 단추를 뺀 만큼 · 사이 여백을 줄여 세로를 짧게 */
 .app-login .lp-card { padding: 20px 22px 18px !important; }
 .app-login .lp-brand { margin-bottom: 12px !important; }
@@ -3455,6 +3459,12 @@ html, body { overflow-x: clip; }
       </div></div>`;
       return;
     }
+    if (m.kind === 'appsignup') {
+      root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog app-signup" role="dialog" aria-modal="true" aria-label="회원가입">
+        <div id="appSignupMount"><p class="it-emptyline" style="text-align:center;padding:40px 0">회원가입 화면을 불러오는 중…</p></div>
+      </div></div>`;
+      return;
+    }
     if (m.kind === 'login') {
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog fav-dlg" role="dialog" aria-modal="true" aria-labelledby="lgT" style="width:min(420px,100%)">
         <div class="reg-head"><h2 id="lgT">로그인</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
@@ -4209,8 +4219,23 @@ html, body { overflow-x: clip; }
     el.innerHTML = '';
     loginUnmount = T.mountAppLogin(el, (what) => {
       closeAppLogin(); S.modal = null; renderModal();
-      if (what === 'signup') { location.href = '/signup'; return; }
+      if (what === 'signup') { void openAppSignup(); return; }   // 회원가입은 같은 자리에 창으로
       toast('로그인되었습니다.');
+    });
+  }
+  /* 회원가입 — 앱 회원가입 카드를 창으로(페이지를 옮기지 않는다). 닫기 · '로그인'은 로그인 창으로 돌아간다 */
+  let signupUnmount = null;
+  const closeAppSignup = () => { if (signupUnmount) { try { signupUnmount(); } catch (e) { /* 그만 */ } signupUnmount = null; } };
+  async function openAppSignup() {
+    S.modal = { kind: 'appsignup' }; renderModal();
+    let T = null; try { T = await loadParser(); } catch (e) { T = null; }
+    const el = $('appSignupMount');
+    if (!T || !T.mountAppSignup || !el || !S.modal || S.modal.kind !== 'appsignup') { if (el) el.innerHTML = '<p class="it-emptyline" style="text-align:center;padding:40px 0">회원가입 화면을 불러오지 못했습니다 — 새로고침 뒤 다시 눌러 주세요.</p>'; return; }
+    el.innerHTML = '';
+    signupUnmount = T.mountAppSignup(el, (what) => {
+      closeAppSignup(); S.modal = null; renderModal();
+      if (what === 'ok') { toast('가입되었습니다.'); return; }
+      void openAppLogin();
     });
   }
   let loginAsked = false;
@@ -4621,8 +4646,8 @@ html, body { overflow-x: clip; }
         if (skip && skip.checked && m.skipKey) { const all = store.get(SKIP_KEY, {}); all[m.skipKey] = TODAY_YMD; store.set(SKIP_KEY, all); }
         S.modal = null; renderModal(); m.run(); break;
       }
-      case 'modal-close': closeAppLogin(); S.modal = S.modal && S.modal.back ? S.modal.back : null; renderModal(); break;
-      case 'modal-scrim': if (e.target === t) { closeAppLogin(); S.modal = S.modal && S.modal.back ? S.modal.back : null; renderModal(); } break;
+      case 'modal-close': closeAppLogin(); closeAppSignup(); S.modal = S.modal && S.modal.back ? S.modal.back : null; renderModal(); break;
+      case 'modal-scrim': if (e.target === t) { closeAppLogin(); closeAppSignup(); S.modal = S.modal && S.modal.back ? S.modal.back : null; renderModal(); } break;
       default: break;
     }
   });
