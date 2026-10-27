@@ -8,7 +8,10 @@
 // 12개월치 열두 번이면 표가 다 찬다 (동마다 부르지 않는다).
 // 총 세대수·총 매물수는 아직 손으로 적는다 — 세대수는 건축물대장을 동마다
 // 훑어야 해서 하루 한도에 닿고, 매물수는 공식 API 가 아니다.
-import { computed, inject, onMounted, ref, watch } from 'vue';
+import SnapChip from '../components/SnapChip.vue';
+import { useScreenSnapshot } from '../composables/useScreenSnapshot';
+import YmCount from '../components/YmCount.vue';
+import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
@@ -46,7 +49,8 @@ const targets = computed<DistrictOption[]>(() => (
     : districts.value
 ));
 const callCount = computed(() => targets.value.length * months.value);
-watch(sido, () => { districtCode.value = ''; dongFilter.value = ''; });
+let restoring = false;
+watch(sido, () => { if (restoring) return; districtCode.value = ''; dongFilter.value = ''; });
 
 const loading = ref(false);
 const errorMsg = ref('');
@@ -138,7 +142,7 @@ const peekDongs = async () => {
     dongPeeking.value = false;
   }
 };
-watch([districtCode, kind], () => { dongFilter.value = ''; peekDongs(); });
+watch([districtCode, kind], () => { if (!restoring) dongFilter.value = ''; peekDongs(); });
 
 const dongOptions = computed(() => {
   const loaded = stats.value.map((r) => r.umdNm);
@@ -191,9 +195,9 @@ const navCells = computed(() => {
   const v = navStats.value;
   const pct = (x: number) => (x > 0 ? `${x.toFixed(1)}%` : '-');
   return [
+    // 거래건수 한 칸에 연(12개월 합) | 월(월평균) — 손품+현장 매매수요와 같은 표기
+    { label: '거래건수', value: '', ym: { year: v.count, month: v.monthly } },
     { label: '평균 거래가', value: eokShort(v.avgPrice) },
-    { label: '월 평균 거래량', value: v.monthly > 0 ? `${v.monthly.toFixed(1)}건` : '-' },
-    { label: '총 거래건수', value: v.count > 0 ? `${v.count.toLocaleString('ko-KR')}건` : '-' },
     { label: '평균 건축연수', value: v.age > 0 ? `${v.age}년차` : '-' },
     { label: '거래 회전율', value: pct(v.turnover) },
     { label: '매물 소화율', value: pct(v.absorb) },
@@ -242,6 +246,22 @@ const ym = (v: string) => {
 
 const progress = ref({ done: 0, total: 0 });
 
+// ===== 웹 — 마지막으로 받은 자료를 이 브라우저에 남겨 새로고침해도 요약 · 표가 그대로 (composables/useScreenSnapshot) =====
+type Snapshot = { sido: string; districtCode: string; dongFilter: string; kind: Kind; stats: StatRow[]; period: { from: string; to: string }; loadedLabel: string };
+const snap = useScreenSnapshot<Snapshot>('adm.region.snapshot.v1');
+onMounted(async () => {
+  if (!webEmbed) return;
+  const s = snap.restore();
+  if (!s || !Array.isArray(s.stats) || s.stats.length === 0) { snap.state.value = null; return; }
+  restoring = true;
+  sido.value = s.sido; districtCode.value = s.districtCode; dongFilter.value = s.dongFilter; kind.value = s.kind;
+  stats.value = s.stats; period.value = s.period; loadedLabel.value = s.loadedLabel;
+  await nextTick();
+  restoring = false;
+});
+// 읍면동을 바꿔 보면 그것도 남긴다
+watch(dongFilter, (v) => { if (webEmbed && !restoring) snap.patch({ dongFilter: v }); });
+
 const load = async () => {
   if (loading.value || targets.value.length === 0) return;
   errorMsg.value = '';
@@ -275,6 +295,9 @@ const load = async () => {
       : `${sido.value} 전체`;
     if (errs.size > 0) notice.value = Array.from(errs).join(' / ');
     if (stats.value.length === 0 && errs.size === 0) notice.value = '그 기간에 거래가 없습니다.';
+    if (webEmbed && stats.value.length > 0) {
+      snap.save({ sido: sido.value, districtCode: districtCode.value, dongFilter: dongFilter.value, kind: kind.value, stats: stats.value, period: period.value, loadedLabel: loadedLabel.value });
+    }
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -389,11 +412,11 @@ const downloadCsv = () => {
 
       <!-- 웹 — 고른 범위 전체를 한눈에: 요약 상자 줄 (고르는 칸 바로 아래) -->
       <section v-if="webEmbed && rows.length > 0" class="adm-nav">
-        <p class="adm-nav-scope">{{ sumLabel }}</p>
+        <p class="adm-nav-scope">{{ sumLabel }}<SnapChip :chip="snap.chip.value" /></p>
         <div class="adm-nav-row">
           <div v-for="c in navCells" :key="c.label" class="adm-nav-box">
             <small>{{ c.label }}</small>
-            <b>{{ c.value }}</b>
+            <b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template></b>
           </div>
         </div>
       </section>
@@ -556,8 +579,8 @@ const downloadCsv = () => {
 
 /* 웹 요약 줄 — 상자마다 위 작은 이름, 아래 굵은 값 */
 .adm-nav { margin: 14px 0 6px; padding: 14px; border: 1px solid #e3e8f0; border-radius: 10px; background: #f7f8fa; }
-.adm-nav-scope { margin: 0 0 10px 2px; font-size: 16px; font-weight: 800; color: #2b6df3; }
-.adm-nav-row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; }
+.adm-nav-scope { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 10px 2px; font-size: 16px; font-weight: 800; color: #2b6df3; }
+.adm-nav-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
 .adm-nav-box {
   display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px;
   background: #fff; border: 1px solid #eef1f6; border-radius: 8px; text-align: center; min-width: 0;

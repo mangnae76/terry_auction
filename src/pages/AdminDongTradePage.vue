@@ -11,6 +11,9 @@ import { fetchDongTradeDetails, fetchDongTradeStats, type DongTradeDetailRow } f
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
 import AppToast from '../components/AppToast.vue';
+import SnapChip from '../components/SnapChip.vue';
+import YmCount from '../components/YmCount.vue';
+import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
 type Kind = 'villa' | 'apt' | 'officetel';
@@ -163,63 +166,37 @@ const saveFilters = async () => {
   });
   toast('검색조건을 저장했습니다.');
 };
-// ===== 웹 — 마지막으로 받은 자료를 이 브라우저에 남긴다 =====
-// 새로고침하거나 다른 화면에 갔다 와도 요약 · 지역별 분석 · 지역 분포가 그대로 보이게.
-// (공공데이터 호출 자체는 워커가 저장해 아낀다 — 여기는 화면을 되살리는 몫)
-const SNAP_KEY = 'adm.dong.snapshot.v1';
+// ===== 웹 — 마지막으로 받은 자료를 이 브라우저에 남겨 새로고침해도 요약 · 지역별 분석 · 지역분포가 그대로 (composables/useScreenSnapshot) =====
 type Snapshot = {
   sido: string; districtCode: string; kind: Kind; dong: string; dealKind: 'sale' | 'jeonse';
   rows: DongTradeDetailRow[]; dongNames: string[]; period: { from: string; to: string };
-  loadedLabel: string; savedAt: number;
+  loadedLabel: string;
 };
-/** 칩 — 방금 받아 저장했나(updated) · 저장해 둔 걸 되살렸나(restored) · 저장을 못 했나(fail) */
-const snapState = ref<{ kind: 'updated' | 'restored' | 'fail'; at: number } | null>(null);
+const snap = useScreenSnapshot<Snapshot>('adm.dong.snapshot.v1');
 const saveSnapshot = () => {
   if (!webEmbed) return;
-  const snap: Snapshot = {
+  snap.save({
     sido: sido.value, districtCode: districtCode.value, kind: kind.value, dong: dong.value, dealKind: loadedDeal.value,
-    rows: all.value, dongNames: dongNames.value, period: period.value, loadedLabel: loadedLabel.value, savedAt: Date.now(),
-  };
-  try {
-    localStorage.setItem(SNAP_KEY, JSON.stringify(snap));
-    snapState.value = { kind: 'updated', at: snap.savedAt };
-  } catch {
-    snapState.value = { kind: 'fail', at: Date.now() };
-  }
+    rows: all.value, dongNames: dongNames.value, period: period.value, loadedLabel: loadedLabel.value,
+  });
 };
 const restoreSnapshot = async () => {
   if (!webEmbed) return;
-  let snap: Snapshot | null = null;
-  try { snap = JSON.parse(localStorage.getItem(SNAP_KEY) || 'null'); } catch { snap = null; }
-  if (!snap || !Array.isArray(snap.rows) || snap.rows.length === 0) return;
+  const s = snap.restore();
+  if (!s || !Array.isArray(s.rows) || s.rows.length === 0) { snap.state.value = null; return; }
   restoring = true;
-  sido.value = snap.sido; districtCode.value = snap.districtCode; kind.value = snap.kind; dong.value = snap.dong;
-  dealKind.value = snap.dealKind; loadedDeal.value = snap.dealKind;
-  all.value = snap.rows; dongNames.value = snap.dongNames; period.value = snap.period; loadedLabel.value = snap.loadedLabel;
-  snapState.value = { kind: 'restored', at: snap.savedAt };
+  sido.value = s.sido; districtCode.value = s.districtCode; kind.value = s.kind; dong.value = s.dong;
+  dealKind.value = s.dealKind; loadedDeal.value = s.dealKind;
+  all.value = s.rows; dongNames.value = s.dongNames; period.value = s.period; loadedLabel.value = s.loadedLabel;
   await nextTick();
   restoring = false;
 };
 // 동을 바꿔 보면 그 동도 남긴다 — 새로고침해도 보던 동으로
 watch(dong, (v) => {
   if (!webEmbed || restoring) return;
-  try {
-    const snap = JSON.parse(localStorage.getItem(SNAP_KEY) || 'null') as Snapshot | null;
-    if (snap && snap.districtCode === districtCode.value) localStorage.setItem(SNAP_KEY, JSON.stringify({ ...snap, dong: v }));
-  } catch { /* 못 남겨도 그만 */ }
+  snap.patch({ dong: v }, (x) => x.districtCode === districtCode.value);
 });
-const snapAt = (t: number) => {
-  const d = new Date(t);
-  const p2 = (n: number) => String(n).padStart(2, '0');
-  return `${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
-};
-const snapChip = computed(() => {
-  const st = snapState.value;
-  if (!st) return null;
-  if (st.kind === 'fail') return { cls: 'fail', text: '저장 못 함 — 새로고침하면 다시 조회해야 합니다' };
-  if (st.kind === 'updated') return { cls: 'ok', text: `업데이트 완료 · 저장됨 ${snapAt(st.at)}` };
-  return { cls: 'saved', text: `저장된 자료 · ${snapAt(st.at)} 조회` };
-});
+const snapChip = snap.chip;
 
 onMounted(async () => {
   if (!auth.uid) { prefsLoaded.value = true; await restoreSnapshot(); return; }
@@ -469,7 +446,8 @@ const eokMan = (v: number) => {
 // 웹 — 시군구까지만 골랐을 때 위 요약은 시군구 전체 한 줄(기간은 아래 검색조건에서 고른다)
 const kindBreakdown = computed(() => {
   const n = (v: number) => v.toLocaleString('ko-KR');
-  return `정상 ${n(counts.value.정상거래)} · 직거래 ${n(counts.value.직거래)} · 해제 ${n(counts.value.계약해제)}`;
+  const of = (k: DongTradeDetailRow['kind']) => all.value.filter((r) => r.kind === k).length; // 12개월 전부 기준
+  return `정상 ${n(of('정상거래'))} · 직거래 ${n(of('직거래'))} · 해제 ${n(of('계약해제'))}`;
 });
 const guNav = computed(() => {
   const prices = normals.value.map((r) => r.priceWon).filter((v) => v > 0);
@@ -477,8 +455,8 @@ const guNav = computed(() => {
   const perM2s = normals.value.filter((r) => r.priceWon > 0 && r.areaM2 > 0).map((r) => r.priceWon / r.areaM2);
   const avgOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
   return [
-    // 거래건수는 직거래 · 해제까지 다 더한 수, 밑에 나눠 적는다 (아래 값들은 정상거래만으로 셈)
-    { label: '거래건수', value: `${filtered.value.length.toLocaleString('ko-KR')}건`, sub: kindBreakdown.value },
+    // 거래건수 — 받아 둔 12개월 전부(직거래 · 해제 포함)를 연 | 월(월평균)로, 밑에 나눠 적는다 (아래 값들은 정상거래만으로 셈)
+    { label: '거래건수', value: '', ym: { year: all.value.length, month: all.value.length / 12 }, sub: kindBreakdown.value },
     { label: loadedDeal.value === 'jeonse' ? '평균 전세가' : '평균 거래가', value: eokMan(avgOf(prices)) },
     { label: '최저가', value: eokMan(prices.length ? Math.min(...prices) : 0) },
     { label: '최고가', value: eokMan(prices.length ? Math.max(...prices) : 0) },
@@ -607,15 +585,15 @@ const downloadCsv = () => {
         <section v-if="webEmbed && !dong" class="adm-gunav">
           <div class="adm-gunav-head">
             <strong>{{ loadedLabel }}<template v-if="loadedDeal === 'jeonse'"> 전세</template></strong>
-            <span v-if="snapChip" :class="['adm-snap', snapChip.cls]">{{ snapChip.text }}</span>
+            <SnapChip :chip="snapChip" />
           </div>
           <div class="adm-gunav-row">
-            <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small>{{ c.label }}</small><b>{{ c.value }}<em v-if="c.sub" class="adm-gunav-sub">{{ c.sub }}</em></b></div>
+            <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small>{{ c.label }}</small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template><em v-if="c.sub" class="adm-gunav-sub">{{ c.sub }}</em></b></div>
           </div>
         </section>
         <div v-else class="adm-sum">
           <strong>{{ loadedLabel }} {{ dong || '전체' }}</strong>
-          <span v-if="webEmbed && snapChip" :class="['adm-snap', snapChip.cls]">{{ snapChip.text }}</span>
+          <SnapChip v-if="webEmbed" :chip="snapChip" />
           <span v-if="district" class="code">{{ district.lawdCode }}</span>
           <span>{{ ymd(period.from) }} ~ {{ ymd(period.to) }} 받아 둠</span>
         </div>
@@ -904,11 +882,6 @@ const downloadCsv = () => {
 .adm-gunav-sub { display: block; margin-top: 4px; font-style: normal; font-size: 12px; font-weight: 600; color: #6b7280; letter-spacing: 0; white-space: normal; word-break: keep-all; } /* 좁은 창에서는 두 줄로 */
 .adm-sum { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 2px 12px; font-size: 12.5px; color: #6b7280; font-weight: 600; }
 .adm-sum strong { font-size: 14.5px; font-weight: 800; color: #111827; }
-/* 저장 칩 — 방금 받아 저장(초록) · 저장해 둔 자료(파랑) · 저장 못 함(빨강) */
-.adm-snap { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 13px; font-weight: 700; white-space: nowrap; }
-.adm-snap.ok { background: #e8f7f1; color: #0f9d7a; }
-.adm-snap.saved { background: #eaf1ff; color: #2b6df3; }
-.adm-snap.fail { background: #fdecec; color: #d64545; }
 .adm-sum .code { font-size: 11px; font-weight: 700; color: #6b7280; background: #eef1f6; border-radius: 999px; padding: 2px 8px; }
 
 /* 요약 셋 */
