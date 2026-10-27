@@ -163,9 +163,9 @@ button { cursor: pointer; }
 .g-menu:hover::after { transform: scaleX(1); opacity: .55; }
 .g-menu.on::after { transform: scaleX(1); opacity: 1; }
 /* +물건등록이 선정목록 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
-/* 메뉴 여덟 — 마이페이지를 빼며(더보기 › 마이페이지로) 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
-.m0 { left: 13.75%; } .m1 { left: 22.58%; } .m2 { left: 30.60%; } .m3 { left: 38.62%; }
-.m3c { left: 46.63%; } .m3d { left: 54.65%; } .m4 { left: 62.67%; } .m5 { left: 70.69%; }
+/* 메뉴 여덟 — 예전 마이페이지를 빼고 더보기를 '마이페이지'로 이름을 바꾸며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
+.m0 { left: 13.75%; } .m1 { left: 22.40%; } .m2 { left: 30.24%; } .m3 { left: 38.08%; }
+.m3c { left: 45.93%; } .m3d { left: 53.77%; } .m4 { left: 61.61%; } .m5 { left: 69.45%; }
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: #fff !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
@@ -1936,7 +1936,7 @@ html, body { overflow-x: clip; }
       <a class="g-menu m3c" href="#/postwin" data-act="go-postwin" id="navPostwin">낙찰이후</a>
       <a class="g-menu m3d" href="#/finance" data-act="go-finance" id="navFinance">자금관리</a>
       <a class="g-menu m4" href="#" data-act="soon" data-name="커뮤니티">커뮤니티</a>
-      <a class="g-menu m5" href="#/more" data-act="go-more" id="navMore">더보기</a>
+      <a class="g-menu m5" href="#/more" data-act="go-more" id="navMore">마이페이지</a>
       <div class="pop-root" data-pop="all" style="display:contents">
         <button type="button" class="g-box" data-act="pop" data-id="all" aria-expanded="false" aria-controls="gMega" aria-label="메뉴 펼치기" data-tip="메뉴 펼치기" data-tip-pos="below">
           <svg viewBox="0 0 10 8"><path d="M5 7.5 0 0h10z" fill="currentColor"/></svg>
@@ -2215,7 +2215,7 @@ html, body { overflow-x: clip; }
     more: ['mypage', 'billing', 'points', 'news', 'support'],
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
-  const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '더보기' };
+  const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지 */
   const PLAIN_ROUTES = ['register', 'trip'];
   /** 주소 → { route, itemId, itemTab, sub } */
   const readHash = (h = location.hash) => {
