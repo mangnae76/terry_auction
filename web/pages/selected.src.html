@@ -659,11 +659,12 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-gr-row { grid-template-columns: repeat(3, 280px); justify-content: center; column-gap: 48px; }
 /* 명도 시기별 진행내용 — 두 칸(낙찰 당일 | 잔금 납부 전, 잔금 납부 후 1·2 | 3·4, 5), 가운데 세로 구분선. 두 칸에서는 왼쪽 상자 폭을 줄인다 */
 /* 왼쪽 칸 = 낙찰 당일 · 잔금 납부 전, 오른쪽 칸 = 잔금 납부 후 전부 — 첫 '잔금 납부 후'(.col-break)에서 칸을 넘긴다. 가운데 선은 칸 사이 줄(column-rule) */
-.app-page[data-k="postwin"] .pw-br-grid { display: block; column-count: 2; column-gap: 56px; column-rule: 1px solid #d5dbe5; }
+.app-page[data-k="postwin"] .pw-br-grid { display: block; column-count: 2; column-gap: 40px; column-rule: 1px solid #d5dbe5; }
 .app-page[data-k="postwin"] .pw-br-grid > .pw-br { break-inside: avoid; }
 .app-page[data-k="postwin"] .pw-br-grid > .pw-br.col-break { break-before: column; }
-.app-page[data-k="postwin"] .pw-br-grid :is(.pw-br-head, .pw-br-step) { grid-template-columns: 210px 14px minmax(0, 1fr); }
-.app-page[data-k="postwin"] .pw-br-grid .pw-br-left b { white-space: normal; }
+/* 왼쪽 색 상자(낙찰 당일 · 단계)는 좁게, 오른쪽 설명 상자는 넓게 — 설명이 두 줄로 꺾이지 않게 */
+.app-page[data-k="postwin"] .pw-br-grid :is(.pw-br-head, .pw-br-step) { grid-template-columns: 150px 12px minmax(0, 1fr); gap: 6px; }
+.app-page[data-k="postwin"] .pw-br-grid .pw-br-left b { white-space: normal !important; flex: 0 1 auto !important; min-width: 0; text-align: center; word-break: keep-all; }
 /* 명도 협상 방법 — 기본은 왼쪽 · 기술은 오른쪽, 가운데 세로 구분선 */
 .app-page[data-k="postwin"] .pw-gr-split { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 56px; align-items: start; }
 .app-page[data-k="postwin"] .pw-gr-split::before { content: ""; position: absolute; top: 0; bottom: 10px; left: 50%; width: 1px; background: #d5dbe5; }
