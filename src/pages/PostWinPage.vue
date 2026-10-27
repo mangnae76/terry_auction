@@ -744,6 +744,8 @@ const toggleSection = (key: string) => {
                 >{{ pt.label }}</span>
               </div>
             </div>
+            <!-- 웹 — 명도 협상 방법: 기본(왼쪽) | 기술(오른쪽), 가운데 세로 구분선 -->
+            <div :class="{ 'pw-gr-split': webEmbed && !editing && g.grid && (g.stacks ?? []).length > 0 }">
             <!-- 나란히 선 상자와 그 밑의 점 목록 -->
             <div v-if="!editing && g.grid" class="pw-gr">
               <span v-if="g.grid.chip" class="pw-gr-chip">{{ g.grid.chip }}</span>
@@ -762,6 +764,7 @@ const toggleSection = (key: string) => {
               <div class="pw-sk-col">
                 <span v-for="(it, ii) in sk.items" :key="`si-${ski}-${ii}`" class="pw-sk-item">{{ it }}</span>
               </div>
+            </div>
             </div>
             <!-- 갈래 그림 — 번호 상자에서 할 일이 갈라진다 -->
             <div v-for="(br, bri) in (editing ? [] : (g.branches ?? []))" :key="`br-${bri}`" class="pw-br">
