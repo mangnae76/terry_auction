@@ -215,7 +215,7 @@ const countIds = (g: CheckGroup) => [...new Set([...groupRows(g).map((r) => r.id
 const doneCount = (g: CheckGroup) => countIds(g).filter((id) => isChecked(id)).length;
 const rowCount = (g: CheckGroup) => countIds(g).length;
 /** 화면에 보이는 표 — 편집 중에는 고치고 있는 사본을 보여 준다 */
-/** 웹 명도 — '명도협상 원칙'(rule) · '명도 협상 방법'(ev.deal) 을 차례로 '경매사건 열람'(file) 바로 위로 올려 보인다 (저장된 순서는 그대로) */
+/** 명도(앱 · 웹) — '명도협상 원칙'(rule) · '명도 협상 방법'(ev.deal) 을 차례로 '경매사건 열람'(file) 바로 위로 올려 보인다 (저장된 순서는 그대로) */
 const WEB_EVICT_LIFT = ['rule', 'ev.deal'];
 const ruleBeforeFile = (list: CheckGroup[]) => {
   const lift = WEB_EVICT_LIFT.map((k) => list.find((g) => g.key === k)).filter((g): g is CheckGroup => !!g);
@@ -228,7 +228,7 @@ const ruleBeforeFile = (list: CheckGroup[]) => {
 const dayGroups = computed<CheckGroup[]>(
   () => (editing.value ? draft.value
     : activeTab.value === 'evict'
-      ? (webEmbed ? ruleBeforeFile : (l: CheckGroup[]) => l)(mergeEvict(evictBook.groups.value, dayBook.groups.value))
+      ? ruleBeforeFile(mergeEvict(evictBook.groups.value, dayBook.groups.value))
       : book.value.groups.value),
 );
 /** 표가 있는 탭인가 */
@@ -1850,4 +1850,23 @@ const toggleSection = (key: string) => {
   margin: 0; padding: 22px 16px 24px; text-align: center;
   font-size: 12.5px; color: #9ca3af; font-weight: 600;
 }
+
+/* 글자 크기 — 웹과 같은 규칙: 큰 제목 18 · 카드 제목 16 · 중제목(표 왼쪽 이름 · 칩 · 단계 이름) 15 · 나머지 글은 모두 14 이상 */
+.pw-shell .pw-super-head h2 { font-size: 18px; }
+.pw-shell .pw-card-head h2, .pw-shell .pw-wrap.super .pw-card-head h2 { font-size: 16px; }
+/* 앱 윗머리(탭 · 편집 · 낙찰목록 · 고른 물건)도 14 — 탭은 다섯 칸으로 나눠 글자가 잘리지 않게 */
+.pw-shell :is(.pw-tab, .pw-ebtn, .pw-objpick, .pw-obj) { font-size: 14px; }
+.pw-shell .pw-tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* 명도절차 '강제 계고 → 강제 집행' 꼬리표는 손전화 폭에서 넘치므로 원래 크기(11) 그대로 둔다 */
+.pw-shell :is(.pw-label strong, .pw-labellink strong, .pw-gr-chip, .pw-br-pill .pw-br-txt, .pw-bx-item, .pw-gr-box, .pw-br-left b, .pw-chip) { font-size: 15px; }
+.pw-shell :is(
+  .pw-txt, .pw-note, .pw-count, .pw-nopick, .pw-nopick b, .pw-memo, .pw-qty, .pw-golink,
+  .pw-br-txt, .pw-br-item, .pw-br-note, .pw-gr-list li, .pw-sk-item, .pw-tl-day, .pw-tl-label,
+  .pw-int-tools .pw-ebtn, .pw-int-sum, .pw-int-sum b, .pw-int-tbl th, .pw-int-tbl td, .pw-empty, .pw-rowstep .lab,
+  .pw-flow-box, .pw-flow-tip
+) { font-size: 14px; }
+/* 표 칸 — 손전화 폭에서 가운데 글 칸이 너무 좁아지지 않게 */
+.pw-shell .pw-tbl:not(.edit) .pw-col-label { width: 76px; }
+.pw-shell .pw-tbl:not(.edit) .pw-col-qty { width: 40px; }
+.pw-shell .pw-tbl:not(.edit) .pw-col-memo { width: 88px; }
 </style>
