@@ -297,12 +297,13 @@ button { cursor: pointer; }
 /* (붙는 자리 = 처음 놓인 자리 — 둘이 다르면 내리는 순간 몇 px 움직였다 멈춰 흔들려 보인다. 띠는 하위 탭 바로 아래부터 덮는다) */
 .app-market[data-k="dong"] .adm-bar::after { content: ""; position: absolute; left: 50%; bottom: -10px; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); pointer-events: none; } /* 띠 아래 끝 선 */
 /* 탭 줄(수요공급 · 지역별 분석 · …) 밑줄을 화면 끝까지 */
-.app-market[data-k="dong"] .adm-tabs-top { padding-bottom: 0; margin-top: 12px !important;
+.app-market[data-k="dong"] .adm-tabs-top { padding-bottom: 0; margin-top: 12px !important; height: 40px; box-sizing: border-box; align-items: stretch !important;
   position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 14px + var(--bar-h, 62px) + 12px); z-index: 11;
   background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(-12px -100vmax 0 -100vmax); }
 /* 아래 바닥 띠(.foot)가 표 바로 밑에 붙어 올라와 보였다 — 표 한 줄쯤 띄운다 */
 #marketView:has(.app-market[data-k="dong"]) .market-content { padding-bottom: 56px; }
-.app-market[data-k="dong"] .adm-tabs-top::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); }
+/* 화면 끝까지 긋는 선 — transform 으로 옮기면 반 픽셀에 걸려 선이 흐려지고 파란 밑줄과 1px 어긋났다. left 로 옮긴다 */
+.app-market[data-k="dong"] .adm-tabs-top::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--subtab-line); }
 .app-market[data-k="dong"] .adm-view-tabs button { position: relative; z-index: 1; }
 .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar select.adm-input.narrow { width: 150px !important; }
 /* 기간(3 · 6 · 12개월)이 종류 옆에 들어오며 한 줄에 다 담기게 — 고르는 칸 180 → 150, 엑셀 · 조회 136 → 120 */
@@ -1120,6 +1121,10 @@ body.trip-full .foot { display: none; }
 .mn-form .wide4 { grid-column: 1 / -1; }
 .mn-form select, .mn-form textarea { height: 34px; padding: 0 11px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 13px; color: var(--text); min-width: 0; font-family: inherit; }
 .mn-form textarea { height: auto; padding: 8px 11px; line-height: 1.5; resize: vertical; }
+.mn-form ::placeholder { color: #9ca3af; }
+/* 고르지 않은 칸(물건종류 · 매각기일 '연도-월-일')도 안내 글자처럼 회색 — 고르면 검정 */
+.mn-form select:has(option[value=""]:checked), .mn-form input[type="date"]:invalid { color: #9ca3af; }
+.mn-form select option { color: var(--text); }
 .mn-form select:focus, .mn-form textarea:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 /* 칸 나눔 — 묶음 이름 한 줄씩 */
 .mn-cap { grid-column: 1 / -1; margin: 4px 0 -2px; font-size: 14px; font-weight: 800; color: var(--muted); letter-spacing: -.2px; }
@@ -1792,17 +1797,17 @@ html, body { overflow-x: clip; }
 
 /* ================= 바닥글 — 시안 그대로 ================= */
 .foot { background: var(--foot); color: var(--foot-text); }
-.foot-in { position: relative; min-height: 206px; padding-block: 56px 52px; } /* 로고 위를 한 줄만큼 띄운다 */
+.foot-in { position: relative; min-height: 164px; padding-block: 26px 48px; } /* 바닥 띠를 얇게 — 로고 위 여백을 줄였다(56 → 26) */
 .f-brand { display: flex; align-items: center; gap: 10px; margin: 0 0 12px 3px; }
 .f-brand img { height: 32px; width: auto; display: block; } /* 머리띠 로고(44px)와 너무 벌어지지 않게 */
 .f-brand span { color: #c8cdd8; font-size: 14px; padding-left: 9px; border-left: 1px solid #5d6476; line-height: 1; }
 .f-info { margin: 0 0 0 3px; font-size: 14px; line-height: 1.55; }
 /* 저작권 — 맨 아랫줄 가운데, 바닥에서 조금 띄운다 */
 .f-copy { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); font-size: 14px; color: var(--foot-text); letter-spacing: .2px; white-space: nowrap; }
-.f-links { position: absolute; left: 78.8%; top: 59px; display: flex; gap: 28px; }
+.f-links { position: absolute; left: 78.8%; top: 29px; display: flex; gap: 28px; }
 .f-links a { color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size .2s; }
 .f-links a:hover { background-size: 100% 1px; }
-.f-social { position: absolute; left: 78.8%; top: 100px; display: flex; align-items: center; gap: 22px; height: 34px; }
+.f-social { position: absolute; left: 78.8%; top: 70px; display: flex; align-items: center; gap: 22px; height: 34px; }
 .f-social a { display: inline-flex; align-items: center; gap: 6px; color: #c8cdd8; text-decoration: none; font-size: 14px; transition: color .15s; }
 .f-social a:hover { color: #fff; }
 .f-social svg { width: 14px; height: 14px; }
@@ -3062,7 +3067,7 @@ html, body { overflow-x: clip; }
           <input id="mnAddr" class="wide4" placeholder="소재지 (예: 인천광역시 서구 검암동 683-9 403호)" aria-label="소재지">
 
           <p class="mn-cap">매각기일 · 금액</p>
-          <input id="mnDate" type="date" aria-label="매각기일" title="매각기일">
+          <input id="mnDate" type="date" required aria-label="매각기일" title="매각기일">
           <input id="mnAppr" inputmode="numeric" placeholder="감정가 (원)" aria-label="감정가">
           <input id="mnMin" inputmode="numeric" placeholder="최저가 (원)" aria-label="최저가">
           <input id="mnDep" inputmode="numeric" placeholder="보증금 (최저가의 10%)" aria-label="보증금">
@@ -3219,6 +3224,7 @@ html, body { overflow-x: clip; }
     item: [['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
   };
   function renderSubTabs() {
+    syncCrumb();
     const tabs = SUBTABS[S.route]; const bar = $('subTabs');
     bar.hidden = !tabs; document.body.classList.toggle('has-subtabs', !!tabs);
     const cur = S.route === 'market' ? S.marketTab : S.route === 'bidrate' ? S.bidrateTab : APP_PAGE_NAMES[S.route] ? S.pageTab[S.route] : S.itemTab;
@@ -3230,7 +3236,7 @@ html, body { overflow-x: clip; }
     const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip'; const my = S.route === 'mypage'; const market = S.route === 'market' || S.route === 'bidrate'; const page = !!APP_PAGE_NAMES[S.route];
     $('listView').hidden = reg || item || trip || my || market || page; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('marketView').hidden = !market; $('appPageView').hidden = !page; $('fab').hidden = reg || item || trip || my || market || page;
     const cur = item ? byId(S.itemId) : null;
-    $('crumbCur').textContent = page ? APP_PAGE_NAMES[S.route] : reg ? '+물건등록' : trip ? '임장경로' : market ? marketTrail() : my ? '마이페이지' : item ? `선정목록 › ${cur ? cur.caseNo : '물건상세'}` : '선정목록';
+    syncCrumb();
     { const nav = CRUMBS; const slot = (market && document.getElementById('admCrumbSlot')) || $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
     document.title = page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? (S.route === 'bidrate' ? '마이턴옥션 낙찰가율분석' : '마이턴옥션 시장분석') : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정목록';
@@ -3627,7 +3633,22 @@ html, body { overflow-x: clip; }
   }).observe(document.getElementById('marketContent') || document.body, { childList: true, subtree: true });
   /* 지역분석 안 탭 — '홈 › 시장분석 › 지역분석 › 수요공급' */
   let marketInner = null;
-  window.addEventListener('adm:tab', (e) => { marketInner = (e.detail && e.detail.trail) || null; if (S.route === 'market') $('crumbCur').textContent = marketTrail(); });
+  window.addEventListener('adm:tab', (e) => { marketInner = (e.detail && e.detail.trail) || null; if (S.route === 'market') syncCrumb(); });
+  /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
+  const subLabel = (route, key) => ((SUBTABS[route] || []).find((t) => t[0] === key) || [])[2] || '';
+  function crumbTrail() {
+    const r = S.route;
+    if (APP_PAGE_NAMES[r]) return [APP_PAGE_NAMES[r], subLabel(r, S.pageTab[r])].filter(Boolean).join(' › ');
+    if (r === 'register') return regTrail();
+    if (r === 'trip') return '임장경로';
+    if (r === 'market' || r === 'bidrate') return marketTrail();
+    if (r === 'mypage') return '마이페이지';
+    if (r === 'item') { const cur = byId(S.itemId); return ['선정목록', cur ? cur.caseNo : '물건상세', subLabel('item', S.itemTab)].filter(Boolean).join(' › '); }
+    return '선정목록';
+  }
+  function syncCrumb() { const el = $('crumbCur'); if (el) el.textContent = crumbTrail(); }
+  /* 물건등록 경로 — '홈 › +물건등록 › 자동등록 / 직접입력' (등록 방법 탭을 바꾸면 따라 바뀐다) */
+  function regTrail() { return `+물건등록 › ${R.mode === 'manual' ? '직접입력' : '자동등록'}`; }
   function marketTrail() {
     if (S.route === 'bidrate') return '낙찰가율분석';
     if (S.marketTab === 'dong' && marketInner) return ['시장분석', ...marketInner].join(' › ');
@@ -3635,7 +3656,7 @@ html, body { overflow-x: clip; }
     return label ? `시장분석 › ${label}` : '시장분석';
   }
   function renderMarket() {
-    if (S.route === 'market') $('crumbCur').textContent = marketTrail();
+    if (S.route === 'market') syncCrumb();
     const box = $('marketContent');
     const bid = S.route === 'bidrate';
     const key = bid ? S.bidrateTab : S.marketTab;
@@ -4044,6 +4065,7 @@ html, body { overflow-x: clip; }
       case 'mega-auto': case 'mega-manual': {
         const want = act === 'mega-manual' ? 'manual' : 'auto';
         if (R.mode !== want) { R.mode = want; try { localStorage.setItem('wlp.web.regMode', want); } catch (e) { /* 그만 */ } }
+        syncCrumb();
         S.pop = ''; S.menu = null;
         /* 이미 물건등록에 있으면 go() 가 그냥 돌아가므로, 그때는 직접 다시 그린다(메뉴도 같이 접힌다) */
         if (S.route === 'register') render(); else go('register');
@@ -4232,7 +4254,7 @@ html, body { overflow-x: clip; }
       case 'reg-mode': {
         if (v === R.mode) break;
         if (R.loading) { toast('읽는 중에는 바꿀 수 없습니다 — 끝난 뒤 눌러 주세요.', 'info'); break; }
-        R.mode = v; S.pop = '';
+        R.mode = v; S.pop = ''; syncCrumb();
         try { localStorage.setItem('wlp.web.regMode', v); } catch (e) { /* 그만 */ }
         renderRegister(); syncStickTop(); window.scrollTo(0, 0); break;
       }

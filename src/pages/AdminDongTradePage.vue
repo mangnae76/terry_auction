@@ -120,6 +120,9 @@ watch([listView, dong], tellTab);
 onMounted(tellTab);
 /** '수요공급' 탭에 넘길 조건 — token 이 바뀌면 그 탭이 다시 받는다(조회 · 되살림 때) */
 const supplyToken = ref(0);
+/** 수요공급 탭을 한 번이라도 열었나 — 열고 나면 계속 띄워 둔다 */
+const supplySeen = ref(false);
+watch(listView, (v) => { if (v === 'supply') supplySeen.value = true; }, { immediate: true });
 const supplyEmbed = computed(() => ({
   sido: sido.value, districtCode: districtCode.value, dong: dong.value, kind: kind.value,
   dealKind: loadedDeal.value, months: periodMonths.value, token: supplyToken.value,
@@ -900,7 +903,9 @@ const downloadCsv = () => {
 
         <!-- 웹 '거래상세' 탭 — 월별 평균가 추이(선 그래프) + 개별 거래 목록. 조건검색(기간 · 면적 · 연식 · 검색어)을 그대로 따른다 -->
         <!-- 웹 '수요공급' 탭 — 수요공급 화면(세대수 · 매물수 입력, 회전율 · 소화율 · 부담률 · 소진기간, 요약 상자 7개)을 그대로. 조건은 위 고르는 줄 -->
-        <AdminRegionDemandPage v-if="webEmbed && listView === 'supply'" :embed="supplyEmbed" :chip="snapChip" class="adm-supply" />
+        <!-- 수요공급은 한 번 띄우면 계속 들고 있다(v-show) — 탭을 오갈 때마다 새로 띄우면 비었다가 차며 깜빡였다 -->
+        <AdminRegionDemandPage v-if="webEmbed && supplySeen" v-show="listView === 'supply'" :embed="supplyEmbed" :chip="snapChip" class="adm-supply" />
+        <template v-if="webEmbed && listView === 'supply'" />
         <div v-else-if="webEmbed && listView === 'deals'" class="adm-deals">
           <section class="adm-trend">
             <p class="adm-trend-title">월별 평균가 추이 <em>(최근 {{ trend.points.length }}개월 · 정상 + 직거래)</em></p>
@@ -1330,7 +1335,10 @@ const downloadCsv = () => {
 .adm-view-tabs { display: flex; gap: 22px; padding-left: 28px; } /* 글자 두 개쯤 안으로 */
 .adm-view-tabs button { position: relative; border: 0; background: none; padding: 6px 0 8px; font-size: 16px; font-weight: 700; color: #6b7280; cursor: pointer; border-radius: 0; }
 .adm-view-tabs button.on { color: #2b6df3; font-weight: 800; }
-.adm-view-tabs button.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: #2b6df3; }
+/* 밑줄은 늘 깔아 두고 고른 탭만 펼친다 — 하위 탭과 같은 '쭉 펴지는' 움직임 (밑줄은 탭 줄 아래 선 바로 위에 2px) */
+.adm-view-tabs button::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: #2b6df3; transform: scaleX(0); transition: transform .2s ease; }
+.adm-view-tabs button.on::after { transform: scaleX(1); }
+.adm-view-tabs button { display: inline-flex; align-items: center; }
 .adm-list-head .tag { font-size: 11.5px; font-weight: 700; color: #6b7280; background: #eef1f6; border-radius: 999px; padding: 4px 10px; }
 .adm-list-head .tag.ok { background: #e8f7f1; color: #0f9d7a; }
 
