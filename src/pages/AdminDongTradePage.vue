@@ -745,7 +745,8 @@ const downloadCsv = () => {
                   transform="rotate(-90 80 80)"
                   class="adm-donut-seg"
                 ><title>{{ seg.label }} — {{ seg.count }}건 ({{ seg.pct.toFixed(1) }}%)</title></circle>
-                <text x="80" y="80" text-anchor="middle" dominant-baseline="central" class="adm-donut-total">{{ d.cells.reduce((a, c) => a + c.count, 0).toLocaleString('ko-KR') }}<tspan class="adm-donut-unit">건</tspan></text>
+                <!-- 숫자와 '건' 은 같은 바닥선(글자 밑면)에 — 가운데 맞춤이면 작은 '건' 이 떠 보인다 -->
+                <text x="80" y="86" text-anchor="middle" class="adm-donut-total">{{ d.cells.reduce((a, c) => a + c.count, 0).toLocaleString('ko-KR') }}<tspan class="adm-donut-unit">건</tspan></text>
               </svg>
               <ul class="adm-donut-legend">
                 <li v-for="(c, ci) in d.cells" :key="c.label">
