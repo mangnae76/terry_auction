@@ -309,6 +309,11 @@ button { cursor: pointer; }
 /* 화면 끝까지 긋는 선 — transform 으로 옮기면 반 픽셀에 걸려 선이 흐려지고 파란 밑줄과 1px 어긋났다. left 로 옮긴다 */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--subtab-line); }
 .app-market[data-k="dong"] .adm-view-tabs button { position: relative; z-index: 1; }
+/* 지역분석 다섯 탭 — 요약 상자(내비게이션) 아래에 구분선 하나, 아래 내용과 나눈다 */
+.app-market[data-k="dong"] :is(.adm-gunav, .adm-nav) { position: relative; overflow: visible; margin-bottom: 37px !important; }
+.app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -19px; height: 1px; background: #cfd6e2; pointer-events: none; }
+:root[data-theme="dark"] .app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { background: rgba(255, 255, 255, .28); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { background: rgba(255, 255, 255, .28); } }
 /* 경매지번 공동주택가 및 실거래가 — 지역분석과 같은 틀. 위 제목 상자(.adm-top)는 감추고, 그 단추(저장 · 저장 목록 · 엑셀)는 아래 줄로 옮겼다 */
 .app-market[data-k="case"] .adm-top { display: none !important; }
 .app-market[data-k="case"] .adm-bar.manual { position: static !important; box-shadow: none !important; clip-path: none; margin-top: 10px !important; }
