@@ -118,6 +118,16 @@ const dealRows = computed(() => {
     return dealDesc.value ? -d : d;
   });
 });
+// 쪽 나누기 — 한 쪽 50줄(한 번에 그리는 줄이 적어 가볍다), 쪽 번호는 다섯 개씩 보인다
+const DEAL_PAGE_SIZE = 50;
+const dealPage = ref(1);
+const dealPages = computed(() => Math.max(1, Math.ceil(dealRows.value.length / DEAL_PAGE_SIZE)));
+const dealPageRows = computed(() => dealRows.value.slice((dealPage.value - 1) * DEAL_PAGE_SIZE, dealPage.value * DEAL_PAGE_SIZE));
+const dealPageNums = computed(() => {
+  const first = Math.floor((dealPage.value - 1) / 5) * 5 + 1;
+  return Array.from({ length: Math.min(5, dealPages.value - first + 1) }, (_, i) => first + i);
+});
+
 // 월별 평균가 선 그래프 — 한 색(파랑) 선 + 옅은 면, 칸마다 마우스를 올리면 평균 · 건수
 const TREND_W = 1200; const TREND_H = 320;
 const TREND_PAD = { l: 64, r: 24, t: 16, b: 34 };
@@ -541,6 +551,8 @@ const searched = computed(() => {
 });
 const colFilter = useColumnFilters<DongTradeDetailRow>(searched, COLS);
 const listRows = computed(() => colFilter.rows.value);
+// 거래상세 — 조건 · 검색 · 정렬이 바뀌면 첫 쪽으로 (searched 를 정한 뒤라야 지켜볼 수 있다)
+watch([dealBase, dealSort, dealDesc], () => { dealPage.value = 1; });
 
 // ===== 웹 — 시군구까지만 골랐을 때(읍면동 '전체') 검색리스트는 동별 요약 표 =====
 // 정상거래만 센다(검색조건의 기간 · 면적 · 연식 거르기를 거친 것). 거래가 없는 동도 0건으로 남긴다
@@ -885,7 +897,7 @@ const downloadCsv = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(r, i) in dealRows.slice(0, 300)" :key="i">
+                <tr v-for="(r, i) in dealPageRows" :key="i">
                   <td class="c"><button type="button" class="adm-dong-link" @click="dong = r.umdNm">{{ r.umdNm }}</button></td>
                   <td class="l">{{ r.name || '—' }}</td>
                   <td class="r">{{ r.areaM2 > 0 ? `${r.areaM2.toFixed(1)}㎡ / ${r.pyeong.toFixed(1)}평` : '—' }}</td>
@@ -897,7 +909,15 @@ const downloadCsv = () => {
               </tbody>
             </table>
           </div>
-          <p v-if="dealRows.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ dealRows.length.toLocaleString('ko-KR') }}줄 중</p>
+          <!-- 쪽 나누기 — 한 쪽 50줄, 쪽 번호는 다섯 개씩 -->
+          <nav v-if="dealPages > 1" class="adm-pager" aria-label="쪽 넘기기">
+            <button type="button" :disabled="dealPage === 1" aria-label="처음 쪽" @click="dealPage = 1">«</button>
+            <button type="button" :disabled="dealPage === 1" aria-label="앞 쪽" @click="dealPage -= 1">‹</button>
+            <button v-for="n in dealPageNums" :key="n" type="button" :class="{ on: n === dealPage }" :aria-current="n === dealPage ? 'page' : undefined" @click="dealPage = n">{{ n.toLocaleString('ko-KR') }}</button>
+            <button type="button" :disabled="dealPage === dealPages" aria-label="다음 쪽" @click="dealPage += 1">›</button>
+            <button type="button" :disabled="dealPage === dealPages" aria-label="끝 쪽" @click="dealPage = dealPages">»</button>
+            <span class="adm-pager-info">{{ dealPage.toLocaleString('ko-KR') }} / {{ dealPages.toLocaleString('ko-KR') }}쪽</span>
+          </nav>
         </div>
         <!-- 웹 '상세분포' 탭 — 동마다 구간별 거래건수(정상 + 직거래, 계약해제 제외). 칸이 진할수록 많다. 머리글을 누르면 정렬 -->
         <div v-else-if="webEmbed && listView === 'detail'" class="adm-detail">
@@ -1208,6 +1228,11 @@ const downloadCsv = () => {
 .adm-inbox.grow { flex: 1 1 200px; }
 .adm-inbox.grow input { flex: 1 1 auto; }
 .adm-inline-cond .adm-ghost { height: 40px; }
+.adm-pager { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 6px 0 4px; }
+.adm-pager button { min-width: 36px; height: 36px; padding: 0 10px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-size: 14px; font-weight: 700; color: #4b5563; cursor: pointer; }
+.adm-pager button.on { background: #2b6df3; border-color: #2b6df3; color: #fff; }
+.adm-pager button:disabled { opacity: .4; cursor: default; }
+.adm-pager-info { margin-left: 8px; font-size: 14px; color: #6b7280; }
 .adm-direct-tag { margin-left: 6px; font-size: 12px; font-weight: 700; color: #0f9d7a; }
 .adm-detail { display: flex; flex-direction: column; gap: 10px; }
 .adm-detail-kinds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; } /* 네 단추 같은 폭 */
