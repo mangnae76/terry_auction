@@ -355,13 +355,18 @@ const eokMan = (v: number) => {
   return `${Math.round(v / 10000).toLocaleString('ko-KR')}만`;
 };
 // 웹 — 시군구까지만 골랐을 때 위 요약은 시군구 전체 한 줄(기간은 아래 검색조건에서 고른다)
+const kindBreakdown = computed(() => {
+  const n = (v: number) => v.toLocaleString('ko-KR');
+  return `정상 ${n(counts.value.정상거래)} · 직거래 ${n(counts.value.직거래)} · 해제 ${n(counts.value.계약해제)}`;
+});
 const guNav = computed(() => {
   const prices = normals.value.map((r) => r.priceWon).filter((v) => v > 0);
   const areas = normals.value.map((r) => r.areaM2).filter((v) => v > 0);
   const perM2s = normals.value.filter((r) => r.priceWon > 0 && r.areaM2 > 0).map((r) => r.priceWon / r.areaM2);
   const avgOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
   return [
-    { label: '거래건수', value: `${normals.value.length.toLocaleString('ko-KR')}건`, sub: `직거래 ${counts.value.직거래} · 해제 ${counts.value.계약해제}` },
+    // 거래건수는 직거래 · 해제까지 다 더한 수, 밑에 나눠 적는다 (아래 값들은 정상거래만으로 셈)
+    { label: '거래건수', value: `${filtered.value.length.toLocaleString('ko-KR')}건`, sub: kindBreakdown.value },
     { label: '평균 거래가', value: eokMan(avgOf(prices)) },
     { label: '최저가', value: eokMan(prices.length ? Math.min(...prices) : 0) },
     { label: '최고가', value: eokMan(prices.length ? Math.max(...prices) : 0) },
@@ -506,7 +511,7 @@ const downloadCsv = () => {
         <div v-if="!(webEmbed && !dong)" :class="['adm-kpis', { 'is-web': webEmbed }]">
           <div class="adm-kpi"><small>실거래가 평균</small><strong>{{ won(avgPrice) }}</strong></div>
           <div class="adm-kpi"><small>평당가 평균</small><strong>{{ won(avgUnitPrice) }}</strong></div>
-          <div class="adm-kpi blue"><small>총 거래건수 <em>정상거래</em></small><strong>{{ normals.length.toLocaleString('ko-KR') }}건<em v-if="webEmbed" class="adm-gunav-sub">직거래 {{ counts.직거래 }} · 해제 {{ counts.계약해제 }}</em></strong></div>
+          <div class="adm-kpi blue"><small>총 거래건수 <em v-if="!webEmbed">정상거래</em></small><strong>{{ (webEmbed ? filtered.length : normals.length).toLocaleString('ko-KR') }}건<em v-if="webEmbed" class="adm-gunav-sub">{{ kindBreakdown }}</em></strong></div>
         </div>
 
         <!-- 분포 -->
@@ -584,7 +589,7 @@ const downloadCsv = () => {
           <table class="adm-table adm-dongsum">
             <thead>
               <tr>
-                <th v-for="c in SUM_COLS" :key="c.key" :class="c.key === 'name' ? 'c' : 'r'">
+                <th v-for="c in SUM_COLS" :key="c.key"  class="c">
                   <button type="button" class="adm-sort" @click="toggleSumSort(c.key)">
                     {{ c.label }}<i :class="{ on: sumSortKey === c.key }">{{ sumSortKey === c.key ? (sumSortDesc ? '↓' : '↑') : '⇅' }}</i>
                   </button>
@@ -713,9 +718,9 @@ const downloadCsv = () => {
 .adm-gunav-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .adm-gunav-head strong { font-size: 18px; font-weight: 800; color: #2b6df3; }
 .adm-gunav-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
-.adm-gunav-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border-radius: 8px; background: #fff; }
+.adm-gunav-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 4px; border-radius: 8px; background: #fff; }
 .adm-gunav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
-.adm-gunav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; }
+.adm-gunav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; text-align: center; }
 /* 거래건수 밑 직거래 · 해제 — 시세가 아니라 따로 센 것, 작게 한 줄 내려 */
 .adm-gunav-sub { display: block; margin-top: 4px; font-style: normal; font-size: 14px; font-weight: 600; color: #6b7280; letter-spacing: 0; }
 .adm-sum { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 2px 12px; font-size: 12.5px; color: #6b7280; font-weight: 600; }
@@ -811,6 +816,10 @@ const downloadCsv = () => {
 .adm-dongsum th { color: #2f6b45; font-weight: 800; background: #f3f8f4; }
 .adm-dongsum .l { text-align: left; }
 .adm-dongsum .c { text-align: center; }
+/* 칸 너비를 고르게 — 칸 이름은 가운데, ㎡당 평균가(맨 오른쪽)는 끝에 붙지 않게 안쪽으로 띄운다 */
+.adm-dongsum { table-layout: fixed; width: 100%; }
+.adm-dongsum th { text-align: center; }
+.adm-dongsum :is(th, td):last-child { padding-right: 32px; }
 .adm-dongsum .r { text-align: right; }
 .adm-dongsum td.strong { font-weight: 800; color: #111827; }
 .adm-sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
