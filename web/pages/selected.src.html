@@ -795,6 +795,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-pickbtn img { width: 12px; height: 12px; margin-left: 2px; transition: transform .2s; }
 .app-page[data-k="postwin"] .pw-pickbtn img.up { transform: rotate(180deg); }
 /* 자금관리 낙찰목록 · 매도목록 — 낙찰이후 '낙찰목록' 단추(.ih-pdf)와 같은 크기 · 글자 */
+/* 웹은 제목 줄 · 탭을 다 숨겨 윗머리(.fin-header)가 빈 껍데기다 — 그 1px 테두리가 경로 줄 밑 흰 줄로 남아 통째로 감춘다 */
+.app-page[data-k="finance"] .fin-header { display: none !important; }
 .app-page[data-k="finance"] .fin-stage-count { gap: 8px; }
 .app-page[data-k="finance"] .fin-stage-count button { height: 28px; padding: 0 8px 0 10px; border-radius: 8px; font-size: 14px; }
 .app-page[data-k="finance"] .fin-stage-count .fin-chev { width: 12px; height: 12px; margin-left: 4px; }
