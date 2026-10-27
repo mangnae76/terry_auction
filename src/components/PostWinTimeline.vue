@@ -110,12 +110,36 @@ const onDragMove = (e: PointerEvent) => {
 const onDragEnd = () => {
   if (!dragId.value) return;
   const order = dragOrder.value;
+  const id = dragId.value;
   dragId.value = '';
+  // 끌지 않고 누르기만 했으면 그 칸을 고른다(다시 누르면 풀린다) — 고른 칸에 행삽입 단추가 뜬다
+  const moved = !!order && order.join() !== savedFlow.value.steps.map((x) => x.id).join();
+  selectedId.value = moved || selectedId.value !== id ? id : '';
   if (order) {
     const changed = order.join() !== savedFlow.value.steps.map((x) => x.id).join();
     if (changed) commit({ ...savedFlow.value, steps: flow.value.steps });
   }
   dragOrder.value = null;
+};
+const selectedId = ref('');
+/** 방금 행삽입한 칸 — 이름을 적기 전에 취소하면 그 칸을 도로 지운다 */
+const freshId = ref('');
+const cancelEdit = () => {
+  const id = freshId.value;
+  editingId.value = ''; freshId.value = '';
+  if (id) { remove(id); selectedId.value = ''; }
+};
+/** 행삽입 — 고른 칸 바로 아래에 새 단계를 넣고 곧장 고치기로 연다 */
+const insertBelow = (id: string) => {
+  const nid = newId();
+  edit((f) => {
+    const at = f.steps.findIndex((x) => x.id === id);
+    f.steps.splice(at < 0 ? f.steps.length : at + 1, 0, { id: nid, name: '새 단계', days: 7, base: 'prev' });
+  });
+  selectedId.value = nid;
+  freshId.value = nid;
+  editingId.value = nid;
+  draft.value = { name: '', days: 7, note: '', base: 'prev' };
 };
 const remove = (id: string) => edit((f) => { f.steps = f.steps.filter((x) => x.id !== id); });
 const editingId = ref('');
@@ -124,7 +148,7 @@ const startEdit = (s: PostWinStep) => { editingId.value = s.id; draft.value = { 
 const saveEdit = () => edit((f) => {
   const s = f.steps.find((x) => x.id === editingId.value);
   if (s) { s.name = draft.value.name.trim() || s.name; s.days = Number(draft.value.days) || 0; s.note = draft.value.note.trim(); s.base = draft.value.base; }
-  editingId.value = '';
+  editingId.value = ''; freshId.value = '';
 });
 // 단계 더하기
 const addName = ref('');
@@ -167,7 +191,7 @@ const resetDefault = () => {
           v-for="r in rows"
           :key="r.id"
           :data-id="r.id"
-          :class="['pwt-row', { done: !!r.doneDate, now: r.next, dragging: dragId === r.id }]"
+          :class="['pwt-row', { done: !!r.doneDate, now: r.next, sel: selectedId === r.id, dragging: dragId === r.id }]"
           @pointerdown="onDragStart(r.id, $event)"
           @pointermove="onDragMove"
           @pointerup="onDragEnd"
@@ -178,12 +202,12 @@ const resetDefault = () => {
           <div class="pwt-main">
             <template v-if="editingId === r.id">
               <div class="pwt-edit">
-                <input v-model="draft.name" class="pwt-in" placeholder="단계 이름" />
+                <input v-model="draft.name" class="pwt-in" placeholder="단계 이름" :autofocus="freshId === r.id" @keyup.enter="saveEdit" />
                 <select v-model="draft.base" class="pwt-in sm"><option value="prev">이전 단계 후</option><option value="start">{{ startLabel }} 후</option></select>
                 <input v-model.number="draft.days" type="number" class="pwt-in xs" /> <span class="pwt-unit">일</span>
                 <input v-model="draft.note" class="pwt-in" placeholder="설명" />
                 <button type="button" class="pwt-btn primary" @click="saveEdit">저장</button>
-                <button type="button" class="pwt-btn" @click="editingId = ''">취소</button>
+                <button type="button" class="pwt-btn" @click="cancelEdit">취소</button>
               </div>
             </template>
             <template v-else>
@@ -203,7 +227,10 @@ const resetDefault = () => {
             </template>
           </div>
           <div v-if="editingId !== r.id" class="pwt-ctrl">
-            <!-- 연필 · 지우기 — 다른 화면과 같은 둥근 네모 단추, 같은 크기 -->
+            <!-- 행삽입(고른 칸에서만) · 연필 · 지우기 — 다른 화면과 같은 둥근 네모 단추, 같은 크기 -->
+            <button v-if="selectedId === r.id" type="button" class="ins" aria-label="아래로 행삽입" title="아래로 행삽입" @click="insertBelow(r.id)">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="8" rx="1.5" /><path d="M12 14v7M8.5 17.5h7" /></svg>
+            </button>
             <button type="button" aria-label="고치기" title="고치기" @click="startEdit(r)">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
             </button>
@@ -214,7 +241,8 @@ const resetDefault = () => {
         </li>
       </ol>
 
-      <div class="pwt-add">
+      <!-- 단계 더하기는 칸을 고른 뒤 행삽입 단추로 — 단계가 하나도 없을 때만 여기서 -->
+      <div v-if="!rows.length" class="pwt-add">
         <span class="pwt-add-lab">+ 단계 추가</span>
         <input v-model="addName" class="pwt-in" placeholder="예: 관리비 정산" @keyup.enter="addStep" />
         <select v-model="addBase" class="pwt-in sm"><option value="prev">이전 단계 후</option><option value="start">{{ startLabel }} 후</option></select>
@@ -260,6 +288,8 @@ const resetDefault = () => {
 /* 끌어 옮기기 — 상자를 잡으면 파란 테두리 · 옅은 파랑 바탕, 체크 상자도 파랗게 테를 두른다 */
 .pwt-row { cursor: grab; touch-action: none; user-select: none; border: 1px solid transparent; border-bottom-color: #eef1f6; }
 .pwt-row:active { cursor: grabbing; }
+.pwt-row.sel { border-color: #2b6df3; }
+.pwt-ctrl button.ins { color: #2b6df3; border-color: #bcd0f7; }
 .pwt-row.dragging { border-color: #2b6df3; border-width: 2px; padding: 13px 9px; background: #e8f0ff; box-shadow: 0 6px 16px rgba(43, 109, 243, .18); }
 .pwt-row.dragging .pwt-chk { outline: 2px solid #2b6df3; outline-offset: 2px; }
 .pwt-row :is(input, button, select) { cursor: pointer; }
