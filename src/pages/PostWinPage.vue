@@ -769,7 +769,11 @@ const toggleSection = (key: string) => {
             <!-- 웹 — 시기별 진행내용을 두 칸으로(낙찰 당일 | 잔금 납부 전, 잔금 납부 후 1·2 | 3·4 …) -->
             <div :class="{ 'pw-br-grid': webEmbed && !editing && (g.branches ?? []).length > 1 }">
             <!-- 갈래 그림 — 번호 상자에서 할 일이 갈라진다 -->
-            <div v-for="(br, bri) in (editing ? [] : (g.branches ?? []))" :key="`br-${bri}`" class="pw-br">
+            <div
+              v-for="(br, bri) in (editing ? [] : (g.branches ?? []))"
+              :key="`br-${bri}`"
+              :class="['pw-br', { 'col-break': webEmbed && bri > 0 && /납부\s*후/.test(br.pill ?? '') && !/납부\s*후/.test(g.branches?.[bri - 1]?.pill ?? '') }]"
+            >
               <!-- 때(알약)와 그 한마디 — 때도 챙길 일이라 체크를 둔다 -->
               <div v-if="br.pill" class="pw-br-head">
                 <span class="pw-br-pill"><span class="pw-br-txt">{{ br.pill }}</span></span>
