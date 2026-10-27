@@ -515,10 +515,24 @@ const downloadCsv = () => {
         </div>
 
         <!-- 분포 -->
-        <div class="adm-dists">
+        <div :class="['adm-dists', { 'is-web': webEmbed }]">
           <div v-for="d in DISTS" :key="d.title" class="adm-dist">
-            <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em><small>건 / %</small></div>
-            <div class="adm-dist-cells">
+            <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em><small>{{ webEmbed ? '건수 · %' : '건 / %' }}</small></div>
+            <!-- 웹 — 막대그래프. 막대 높이는 그 분포에서 가장 많은 칸 대비, 위에 건수 · 밑에 구간 · % -->
+            <div v-if="webEmbed" class="adm-bars" role="img" :aria-label="`${d.title} 막대그래프`">
+              <div
+                v-for="c in d.cells"
+                :key="c.label"
+                :class="['adm-bar-col', { top: c.count > 0 && c.count === Math.max(...d.cells.map(x => x.count)) }]"
+                :title="`${c.label} — ${c.count}건 (${c.pct.toFixed(1)}%)`"
+              >
+                <b>{{ c.count }}</b>
+                <span class="adm-bar-track"><i :style="{ height: `${(c.count / Math.max(1, ...d.cells.map(x => x.count))) * 100}%` }" /></span>
+                <small>{{ c.label }}</small>
+                <em>{{ c.pct.toFixed(0) }}%</em>
+              </div>
+            </div>
+            <div v-else class="adm-dist-cells">
               <div v-for="c in d.cells" :key="c.label" :class="['adm-dist-cell', { top: c.count > 0 && c.count === Math.max(...d.cells.map(x => x.count)) }]">
                 <small>{{ c.label }}</small>
                 <strong>{{ c.count }}<em>건</em></strong>
@@ -752,6 +766,20 @@ const downloadCsv = () => {
 .adm-dist-cell span { font-size: 10px; font-weight: 600; color: #aeb8ca; }
 /* 가장 많은 칸만 짚어 준다 — 어디에 몰려 있는지가 한눈에 보여야 한다 */
 .adm-dist-cell.top { background: #eef4ff; border-color: #c7d7f8; }
+/* 웹 — 분포 막대그래프 (한 묶음 한 색, 가장 많은 칸만 진하게) */
+.adm-dists.is-web { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.adm-dists.is-web .adm-dist { padding: 16px 20px 14px; }
+.adm-dists.is-web .adm-dist-head { font-size: 16px; margin-bottom: 12px; }
+.adm-dists.is-web .adm-dist-head :is(em, small) { font-size: 14px; }
+.adm-bars { display: flex; align-items: stretch; gap: 8px; height: 190px; padding: 4px 2px 0; }
+.adm-bar-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: default; }
+.adm-bar-col b { font-size: 14px; font-weight: 800; color: #374151; font-variant-numeric: tabular-nums; }
+.adm-bar-track { flex: 1 1 auto; width: 100%; max-width: 44px; display: flex; align-items: flex-end; border-bottom: 1px solid #d1d5db; }
+.adm-bar-track i { display: block; width: 100%; min-height: 2px; background: #a9c3f7; border-radius: 4px 4px 0 0; transition: background .15s; }
+.adm-bar-col.top .adm-bar-track i, .adm-bar-col:hover .adm-bar-track i { background: #2b6df3; }
+.adm-bar-col.top b { color: #2b6df3; }
+.adm-bar-col small { font-size: 14px; font-weight: 600; color: #4b5563; white-space: nowrap; }
+.adm-bar-col em { font-style: normal; font-size: 14px; color: #9ca3af; }
 .adm-dist-cell.top strong { color: #2b6df3; }
 
 /* 검색조건 */
