@@ -2950,7 +2950,7 @@ const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow
         extra: { id: 'fs.mailMaintAmt', placeholder: '금액 및 기타 입력', money: true },
       },
       {
-        id: 'fs.roofLeak', label: '누수', options: ['O', 'X'], note: true,
+        id: 'fs.roofLeak', label: '누수', options: ['O', 'X'], noteOptions: ['누수 있음', '누수 없음'],
         who: { id: 'fs.roofLeakWho', options: ['임차인', '입주민', '동대표'] },
       },
       {
