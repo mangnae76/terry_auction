@@ -587,11 +587,11 @@ const toggleSection = (key: string) => {
         </div>
       </div>
       <!-- 웹 — 경로(홈 › 낙찰이후 › 탭)는 카드 아래 이 자리로 옮겨 온다 -->
-      <!-- 명도 탭은 경로 오른쪽에 '명도' 단추 하나 — 누르면 명도절차 · 명도 협상 방법을 한 팝업에 -->
+      <!-- 명도 탭은 경로 오른쪽에 '명도 가이드' 단추 하나 — 누르면 명도절차 · 명도 협상 방법을 한 팝업에 -->
       <div v-if="webEmbed" class="pw-crumbrow">
         <div class="pw-crumb" data-crumb-slot />
         <span v-if="activeTab === 'evict' && !editing" class="pw-evbtns">
-          <button type="button" :class="{ on: evPop }" @click="evPop = !evPop">명도</button>
+          <button type="button" :class="{ on: evPop }" @click="evPop = !evPop">명도 가이드</button>
         </span>
       </div>
       <!-- 어느 물건의 일인지 — 탭 밑에 카드로 붙박아 둔다. 누르면 목록이 펼쳐진다 -->
@@ -1860,8 +1860,8 @@ const toggleSection = (key: string) => {
 .pw-crumbrow { display: flex; align-items: center; gap: 12px; }
 .pw-crumbrow .pw-crumb { flex: 1 1 auto; min-width: 0; }
 .pw-evbtns { display: inline-flex; gap: 8px; flex: none; }
-.pw-evbtns button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #374151; font-size: 14px; font-weight: 600; cursor: pointer; }
-.pw-evbtns button:hover, .pw-evbtns button.on { border-color: #2b6df3; color: #2b6df3; }
+.pw-evbtns button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pw-evbtns button:hover, .pw-evbtns button.on { color: #111827; }
 .pw-evpop-veil { position: fixed; inset: 0; z-index: 900; background: rgba(15, 23, 42, .45); }
 .pw-evpop { position: fixed; z-index: 901; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1100px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow: auto; border-radius: 12px; background: #fff; box-shadow: 0 20px 48px rgba(15, 23, 42, .28); }
 .pw-evpop .pw-card { margin: 0; box-shadow: none; }
