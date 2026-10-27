@@ -231,9 +231,54 @@ const sortedCashFlows = computed(() => {
 });
 const cashSortMark = (k: CashSortKey) => (cashSortKey.value === k ? (cashSortDesc.value ? '↓' : '↑') : '⇅');
 const shownCashFlows = computed(() => cut(sortedCashFlows.value));
-const shownBusiness = computed(() => cut(filteredBusiness.value));
-const shownFuelMeal = computed(() => cut(filteredFuelMeal.value));
-const shownItemPurchases = computed(() => cut(filteredItemPurchases.value));
+/** 사업지출 · 유류&식대 · 물품구매 표 정렬 — 머리글을 누르면 그 칸으로(다시 누르면 거꾸로). 기본은 날짜 늦은 순 */
+type SortTab = 'businessExpense' | 'fuelMeal' | 'itemPurchase';
+type Getter = (r: Record<string, unknown>) => string | number;
+const num = (v: unknown) => Number(v || 0);
+const txt = (v: unknown) => String(v ?? '');
+/** 칸마다 [열쇠, 이름, 값 꺼내기, 머리글 class] — 머리글 차례 그대로 */
+const SORT_COLS: Record<SortTab, Array<[string, string, Getter, string?]>> = {
+  businessExpense: [
+    ['date', '결제일', (r) => txt(r.date)], ['auction', '물건구분', (r) => txt(r.auctionLabel)],
+    ['cat', '사용구분', (r) => txt(r.profitCategory || r.memo)], ['detail', '명세', (r) => txt(r.detail)],
+    ['amount', '비용\n(VAT포함)', (r) => num(r.amountWithVat), 'two'], ['note', '비고', (r) => txt(r.note)],
+  ],
+  fuelMeal: [
+    ['date', '사용일', (r) => txt(r.date)], ['store', '사용처', (r) => txt(r.store)], ['cat', '사용구분', (r) => txt(r.category)],
+    ['amount', '비용', (r) => num(r.amount)], ['card', '사용카드', (r) => txt(r.card)], ['note', '비고', (r) => txt(r.note)],
+  ],
+  itemPurchase: [
+    ['date', '결제일', (r) => txt(r.date)], ['cat', '사용구분', (r) => txt(r.category)], ['desc', '상세내역', (r) => txt(r.description)],
+    ['qty', '수량', (r) => num(r.quantity)], ['unit', '단가', (r) => num(r.unitPrice)],
+    ['total', '합계\n(VAT포함)', (r) => num(r.totalWithVat) || num(r.quantity) * num(r.unitPrice), 'two'],
+    ['vendor', '구매처', (r) => txt(r.vendor)], ['card', '사용카드', (r) => txt(r.card)], ['note', '비고', (r) => txt(r.note)],
+  ],
+};
+const tblSort = ref<Record<SortTab, { key: string; desc: boolean }>>({
+  businessExpense: { key: 'date', desc: true }, fuelMeal: { key: 'date', desc: true }, itemPurchase: { key: 'date', desc: true },
+});
+const toggleTblSort = (tab: SortTab, key: string) => {
+  const cur = tblSort.value[tab];
+  const isNum = SORT_COLS[tab].some((c) => c[0] === key && ['amount', 'qty', 'unit', 'total'].includes(key));
+  tblSort.value = { ...tblSort.value, [tab]: cur.key === key ? { key, desc: !cur.desc } : { key, desc: key === 'date' || isNum } };
+};
+const tblSortMark = (tab: SortTab, key: string) => {
+  const cur = tblSort.value[tab];
+  return cur.key === key ? (cur.desc ? '↓' : '↑') : '⇅';
+};
+const sortRows = <T,>(tab: SortTab, list: T[]): T[] => {
+  const { key, desc } = tblSort.value[tab];
+  const get = SORT_COLS[tab].find((c) => c[0] === key)?.[2];
+  if (!get) return list;
+  return [...list].sort((a, b) => {
+    const x = get(a as Record<string, unknown>); const y = get(b as Record<string, unknown>);
+    const d = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'ko');
+    return desc ? -d : d;
+  });
+};
+const shownBusiness = computed(() => cut(sortRows('businessExpense', filteredBusiness.value)));
+const shownFuelMeal = computed(() => cut(sortRows('fuelMeal', filteredFuelMeal.value)));
+const shownItemPurchases = computed(() => cut(sortRows('itemPurchase', filteredItemPurchases.value)));
 /** 지금 탭에서 아직 안 그린 줄 수 */
 const restCount = computed(() => {
   const all = activeTab.value === 'cashFlow' ? filteredCashFlows.value
@@ -602,7 +647,11 @@ const exportExcel = () => {
             <col style="width: 17%" /><col style="width: 21%" /><col />
           </colgroup>
           <thead>
-            <tr><th>결제일</th><th>물건구분</th><th>사용구분</th><th>명세</th><th class="two">비용{{ '\n' }}(VAT포함)</th><th>비고</th></tr>
+            <tr>
+              <th v-for="c in SORT_COLS.businessExpense" :key="c[0]" :class="c[3]">
+                <button type="button" class="fin-sort" @click="toggleTblSort('businessExpense', c[0])">{{ c[1] }}<i :class="{ on: tblSort.businessExpense.key === c[0] }">{{ tblSortMark('businessExpense', c[0]) }}</i></button>
+              </th>
+            </tr>
           </thead>
           <tbody>
             <tr v-for="r in shownBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
@@ -633,7 +682,11 @@ const exportExcel = () => {
             <col style="width: 18%" /><col style="width: 15%" /><col />
           </colgroup>
           <thead>
-            <tr><th>사용일</th><th>사용처</th><th>사용구분</th><th>비용</th><th>사용카드</th><th>비고</th></tr>
+            <tr>
+              <th v-for="c in SORT_COLS.fuelMeal" :key="c[0]" :class="c[3]">
+                <button type="button" class="fin-sort" @click="toggleTblSort('fuelMeal', c[0])">{{ c[1] }}<i :class="{ on: tblSort.fuelMeal.key === c[0] }">{{ tblSortMark('fuelMeal', c[0]) }}</i></button>
+              </th>
+            </tr>
           </thead>
           <tbody>
             <tr v-for="r in shownFuelMeal" :key="r.id" @click="openEdit('fuelMeal', r)">
@@ -661,9 +714,9 @@ const exportExcel = () => {
         <table class="fin-table mid items">
           <thead>
             <tr>
-              <th>결제일</th><th>사용구분</th><th>상세내역</th>
-              <th>수량</th><th>단가</th><th class="two">합계{{ '\n' }}(VAT포함)</th>
-              <th>구매처</th><th>사용카드</th><th>비고</th>
+              <th v-for="c in SORT_COLS.itemPurchase" :key="c[0]" :class="c[3]">
+                <button type="button" class="fin-sort" @click="toggleTblSort('itemPurchase', c[0])">{{ c[1] }}<i :class="{ on: tblSort.itemPurchase.key === c[0] }">{{ tblSortMark('itemPurchase', c[0]) }}</i></button>
+              </th>
             </tr>
           </thead>
           <tbody>
