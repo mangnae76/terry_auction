@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SnapChip from '../components/SnapChip.vue';
+import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import L from 'leaflet';
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -162,9 +164,12 @@ const buildDealYmdList = (months: number): string[] => {
   return list;
 };
 
+/** 저장해 둔 화면을 되살리는 중 — 고르는 칸이 바뀌어도 서로 비우지 않는다 */
+let restoring = false;
 watch(
   () => selectedSido.value,
   () => {
+    if (restoring) return;
     selectedDistrict.value = districtOptions.value[0]?.label ?? '';
   },
 );
@@ -177,6 +182,7 @@ watch(selectedRegion, (region) => { selectedDong.value = region ?? ''; });
 
 // 지역을 바꾸면 고른 동은 푼다. 시군구를 고르면 동 이름을 미리 훑어 둔다
 watch(() => `${selectedSido.value}|${selectedDistrict.value}`, async () => {
+  if (restoring) return;
   selectedDong.value = '';
   selectedRegion.value = null;
   peekDongs.value = [];
@@ -457,7 +463,8 @@ const loadStats = async () => {
       message.value = `${rows.value.length}개 ${unit}의 실거래 건수를 집계했습니다.`;
     }
     await drawMap();
-    void geocodeRegions();
+    saveSnapshot();
+    void geocodeRegions().then(() => { if (webEmbed) void snap.patch({ coords: Array.from(geocodedCoords.value.entries()) }); });
   } catch (error) {
     rows.value = [];
     totalCount.value = 0;
@@ -469,9 +476,47 @@ const loadStats = async () => {
   }
 };
 
-// 처음에는 아무것도 부르지 않는다 — 지역과 기간을 고르고 검색을 눌러야 받는다
-onMounted(() => {
-  void ensureMap();
+// ===== 웹 — 마지막으로 받은 자료를 이 브라우저에 남겨 나갔다 와도 그대로 (composables/useScreenSnapshot) =====
+type Snapshot = {
+  sido: string; district: string; dong: string; propertyType: PropertyType; period: number; dealKind: 'sale' | 'rent';
+  rows: TradeVolumeStat[]; totalCount: number; sourceSummary: string; lastLoadedLabel: string; message: string;
+  queries: Array<[string, string]>; coords: Array<[string, { lat: number; lng: number }]>;
+};
+const snap = useScreenSnapshot<Snapshot>('adm.ranking.snapshot.v1');
+const saveSnapshot = () => {
+  if (!webEmbed || rows.value.length === 0) return;
+  void snap.save({
+    sido: selectedSido.value, district: selectedDistrict.value, dong: selectedDong.value,
+    propertyType: selectedPropertyType.value, period: selectedPeriod.value, dealKind: selectedDealKind.value,
+    rows: rows.value, totalCount: totalCount.value, sourceSummary: sourceSummary.value,
+    lastLoadedLabel: lastLoadedLabel.value, message: message.value,
+    queries: Array.from(regionGeocodeQuery.entries()), coords: Array.from(geocodedCoords.value.entries()),
+  });
+};
+const restoreSnapshot = async () => {
+  if (!webEmbed) return;
+  const s = await snap.restore();
+  if (!s || !Array.isArray(s.rows) || s.rows.length === 0) { snap.state.value = null; return; }
+  restoring = true;
+  selectedSido.value = s.sido; selectedDistrict.value = s.district;
+  selectedPropertyType.value = s.propertyType; selectedPeriod.value = s.period; selectedDealKind.value = s.dealKind;
+  rows.value = s.rows; totalCount.value = s.totalCount; sourceSummary.value = s.sourceSummary;
+  lastLoadedLabel.value = s.lastLoadedLabel; message.value = s.message;
+  regionGeocodeQuery.clear(); (s.queries ?? []).forEach(([k, v]) => regionGeocodeQuery.set(k, v));
+  geocodedCoords.value = new Map(s.coords ?? []);
+  await nextTick();
+  restoring = false;
+  await drawMap();
+  void geocodeRegions(); // 좌표가 빠진 동만 다시 찾는다
+  if (s.dong) selectedDong.value = s.dong;
+};
+// 동을 바꿔 보면 그것도 남긴다
+watch(selectedDong, (v) => { if (webEmbed && !restoring && rows.value.length > 0) void snap.patch({ dong: v }); });
+
+// 처음에는 아무것도 부르지 않는다 — 지역과 기간을 고르고 검색을 눌러야 받는다 (웹은 저장해 둔 화면부터)
+onMounted(async () => {
+  await ensureMap();
+  await restoreSnapshot();
 });
 </script>
 
@@ -579,7 +624,7 @@ onMounted(() => {
           </header>
           <div v-if="webEmbed" :id="filterSlotId" class="tsp-filter-slot" />
           <div v-if="webEmbed" class="tsp-web-picked">
-            <strong>{{ pickedPlaceText }}</strong>
+            <strong class="tsp-picked-title">{{ pickedPlaceText }}<SnapChip :chip="snap.chip.value" /></strong>
             <small v-if="periodText || kindLabel">{{ [periodText, kindLabel, dealKindLabel, rows.length > 0 ? `집계 동 ${selectedRegion ? 1 : rows.length.toLocaleString('ko-KR')}곳` : ''].filter(Boolean).join(' · ') }}</small>
           </div>
           <header v-if="!webEmbed" class="tsp-panel-head">
@@ -799,6 +844,7 @@ onMounted(() => {
   border: 1px solid #e8ecf3; border-radius: 10px; overflow: hidden; background: #e8ecf3; gap: 1px;
 }
 .tsp-stat-grid > div { background: #fff; padding: 9px 10px; min-width: 0; }
+.tsp-picked-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .tsp-unit-m2 { font-size: 0.8em; font-weight: 600; color: #6b7280; }
 .tsp-stat-grid dt { font-size: 10.5px; font-weight: 700; color: #2b6df3; }
 .tsp-stat-grid dd { margin: 2px 0 0; font-size: 13.5px; font-weight: 800; color: #111827; white-space: nowrap; }
