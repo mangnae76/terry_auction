@@ -91,7 +91,12 @@ const ACCOUNT_CARDS_BASE: Card[] = [
   { icon: '🙍', title: '정보수정', desc: '닉네임·개인정보', path: '/profile' },
   { icon: '🚪', title: '회원탈퇴', desc: '계정·자료 삭제', path: '/withdraw' },
 ];
-const ACCOUNT_CARDS = webEmbed ? [...ACCOUNT_CARDS_BASE, ...WEB_AI_CARDS] : ACCOUNT_CARDS_BASE;
+/** 웹 — 중요한 차례로, 두 칸씩 비슷한 것끼리 짝지어 놓는다(왼쪽 | 오른쪽)
+ *  내 계정(정보수정 | AI 설정) → 결제(결제하기 | 결제관리) → 혜택(포인트내역 | 3일무료체험) → 회원탈퇴는 맨 끝 */
+const WEB_ACCOUNT_ORDER = ['정보수정', 'AI 자동 분석 설정', '결제하기', '결제관리', '포인트내역', '3일무료체험', '회원탈퇴'];
+const ACCOUNT_CARDS = webEmbed
+  ? WEB_ACCOUNT_ORDER.map((t) => [...ACCOUNT_CARDS_BASE, ...WEB_AI_CARDS].find((c) => c.title === t)).filter((c): c is Card => !!c)
+  : ACCOUNT_CARDS_BASE;
 
 const toastText = ref('');
 const go = (c: Card) => {
