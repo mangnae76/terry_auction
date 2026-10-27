@@ -95,7 +95,44 @@ const yearMin = ref('');
 const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
-const listView = ref<'table' | 'dist'>('table');
+const listView = ref<'table' | 'dist' | 'detail'>('table');
+// ===== 웹 '상세분포' — 동 × 구간 거래건수 표 =====
+type DetailKind = 'price' | 'area' | 'age' | 'floor';
+const DETAIL_KINDS: Array<{ key: DetailKind; label: string; icon: string }> = [
+  { key: 'price', label: '가격대', icon: 'M12 3v18M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 2.6 4.5 3 4.5 1.4 4.5 3.2-2 3-4.5 3-4.5-1.3-4.5-3' },
+  { key: 'area', label: '면적(평형)', icon: 'M4 20V4l16 16H4zM8 16h3M4 12h3M4 8h3' },
+  { key: 'age', label: '건축연식', icon: 'M4 21V9l8-5 8 5v12M9 21v-6h6v6M3 21h18' },
+  { key: 'floor', label: '층수', icon: 'M4 3h16v18H4zM4 9h16M4 15h16M10 3v18' },
+];
+const detailKind = ref<DetailKind>('price');
+const detailBuckets = computed<Bucket[]>(() => ({
+  price: WEB_PRICE_BUCKETS, area: WEB_AREA_BUCKETS, age: WEB_AGE_BUCKETS, floor: FLOOR_BUCKETS,
+}[detailKind.value]));
+/** 셀 건수 — 실제로 이뤄진 거래(정상 + 직거래). 계약해제는 없던 거래라 뺀다 */
+const detailBase = computed(() => filtered.value.filter((r) => r.kind !== '계약해제'));
+const detailSort = ref<'name' | 'total' | number>('total');
+const detailDesc = ref(true);
+const toggleDetailSort = (k: 'name' | 'total' | number) => {
+  if (detailSort.value === k) detailDesc.value = !detailDesc.value;
+  else { detailSort.value = k; detailDesc.value = k !== 'name'; }
+};
+const detailRows = computed(() => {
+  const by = new Map<string, DongTradeDetailRow[]>();
+  detailBase.value.forEach((r) => { if (r.umdNm) by.set(r.umdNm, [...(by.get(r.umdNm) ?? []), r]); });
+  const rows = Array.from(by.entries()).map(([name, list]) => {
+    const cells = detailBuckets.value.map((b) => list.filter(b.test).length);
+    return { name, cells, total: cells.reduce((a, n) => a + n, 0) };
+  });
+  const k = detailSort.value;
+  return rows.sort((a, b) => {
+    const d = k === 'name' ? a.name.localeCompare(b.name, 'ko') : k === 'total' ? a.total - b.total : a.cells[k] - b.cells[k];
+    return detailDesc.value ? -d : d;
+  });
+});
+/** 칸 색 — 한 색(파랑)의 옅음 → 짙음. 표에서 가장 많은 칸 대비 */
+const detailMax = computed(() => Math.max(1, ...detailRows.value.flatMap((r) => r.cells)));
+const heatStyle = (n: number) => (n > 0 ? { background: `rgba(43, 109, 243, ${(0.08 + 0.42 * (n / detailMax.value)).toFixed(3)})` } : {});
+
 /** 지역분포 그림 — 막대 / 도넛. '지역분포' 탭을 한 번 더 누르면 바뀐다 */
 const distChart = ref<'bar' | 'pie'>('bar');
 const onDistTab = () => {
@@ -686,6 +723,7 @@ const downloadCsv = () => {
               <svg v-if="distChart === 'bar'" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><rect x="1.5" y="8" width="3" height="6.5" rx="1" /><rect x="6.5" y="3" width="3" height="11.5" rx="1" /><rect x="11.5" y="6" width="3" height="8.5" rx="1" /></svg>
               <svg v-else viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3"><circle cx="8" cy="8" r="5.5" stroke-opacity=".35" /><path d="M8 2.5a5.5 5.5 0 0 1 5.5 5.5" /></svg>
             </span></button>
+            <button type="button" role="tab" :aria-selected="listView === 'detail'" :class="{ on: listView === 'detail' }" @click="listView = 'detail'">상세분포</button>
           </nav>
           <span v-if="!webEmbed" class="tag ok">정상거래 {{ counts.정상거래 }}</span>
           <span v-if="!webEmbed" class="tag">직거래 {{ counts.직거래 }}</span>
@@ -699,8 +737,35 @@ const downloadCsv = () => {
           </span>
         </div>
 
+        <!-- 웹 '상세분포' 탭 — 동마다 구간별 거래건수(정상 + 직거래, 계약해제 제외). 칸이 진할수록 많다. 머리글을 누르면 정렬 -->
+        <div v-if="webEmbed && listView === 'detail'" class="adm-detail">
+          <nav class="adm-detail-kinds" role="tablist">
+            <button v-for="k in DETAIL_KINDS" :key="k.key" type="button" role="tab" :aria-selected="detailKind === k.key" :class="{ on: detailKind === k.key }" @click="detailKind = k.key">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="k.icon" /></svg>{{ k.label }}
+            </button>
+          </nav>
+          <p class="adm-detail-cap">동별 {{ DETAIL_KINDS.find((k) => k.key === detailKind)?.label }} 거래건수 분포</p>
+          <div class="adm-table-wrap">
+            <table class="adm-table adm-dongsum adm-heat">
+              <thead>
+                <tr>
+                  <th class="c"><button type="button" class="adm-sort" @click="toggleDetailSort('name')">동<i :class="{ on: detailSort === 'name' }">{{ detailSort === 'name' ? (detailDesc ? '↓' : '↑') : '⇅' }}</i></button></th>
+                  <th v-for="(b, bi) in detailBuckets" :key="b.label" class="c"><button type="button" class="adm-sort" @click="toggleDetailSort(bi)"><span class="adm-heat-h">{{ b.label }}</span><i :class="{ on: detailSort === bi }">{{ detailSort === bi ? (detailDesc ? '↓' : '↑') : '⇅' }}</i></button></th>
+                  <th class="c"><button type="button" class="adm-sort" @click="toggleDetailSort('total')">합계<i :class="{ on: detailSort === 'total' }">{{ detailSort === 'total' ? (detailDesc ? '↓' : '↑') : '⇅' }}</i></button></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in detailRows" :key="r.name">
+                  <td class="c"><button type="button" class="adm-dong-link" @click="dong = r.name">{{ r.name }}</button></td>
+                  <td v-for="(n, ci) in r.cells" :key="ci" class="r" :style="heatStyle(n)" :title="`${r.name} · ${detailBuckets[ci].label} ${n.toLocaleString('ko-KR')}건`">{{ n > 0 ? n.toLocaleString('ko-KR') : '—' }}</td>
+                  <td class="r strong">{{ r.total.toLocaleString('ko-KR') }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
         <!-- 웹 '지역별 분포' 탭 — 지역별 분석 표 자리에 전용면적 · 금액 · 건축연식 · 층 분포 막대그래프 (검색조건으로 거른 거래 기준) -->
-        <div v-if="webEmbed && listView === 'dist'" class="adm-dists is-web">
+        <div v-else-if="webEmbed && listView === 'dist'" class="adm-dists is-web">
           <div v-for="d in DISTS" :key="d.title" class="adm-dist">
             <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em><small>건수 · %</small></div>
             <!-- 웹 — 막대그래프. 막대 높이는 그 분포에서 가장 많은 칸 대비, 위에 건수 · 밑에 구간 · % -->
@@ -931,6 +996,13 @@ const downloadCsv = () => {
 .adm-bar-col small.two { white-space: normal; text-align: center; line-height: 1.3; font-size: 13px; word-break: keep-all; } /* '33~50㎡ / 10~15평' 은 두 줄로 */
 .adm-bar-col em { font-style: normal; font-size: 14px; color: #9ca3af; }
 /* 지역분포 바로 옆 아이콘 — 지금 모양(막대 · 도넛) */
+.adm-detail { display: flex; flex-direction: column; gap: 10px; }
+.adm-detail-kinds { display: flex; gap: 8px; flex-wrap: wrap; }
+.adm-detail-kinds button { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
+.adm-detail-kinds button.on { border-color: #2b6df3; color: #2b6df3; background: #eef4ff; }
+.adm-detail-cap { margin: 4px 2px 0; font-size: 14px; color: #6b7280; }
+.adm-heat td.r { font-variant-numeric: tabular-nums; }
+.adm-heat-h { white-space: normal; word-break: keep-all; line-height: 1.3; }
 .adm-view-kind { display: inline-flex; vertical-align: -2px; margin-left: 3px; color: #9ca3af; }
 .adm-view-tabs button.on .adm-view-kind { color: #2b6df3; }
 /* 도넛 분포도 — 왼쪽 도넛, 오른쪽 범례(구간 · 건수 · %) */
