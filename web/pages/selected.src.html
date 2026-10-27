@@ -459,6 +459,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .crumb-sep { color: var(--faint); font-size: 14px; line-height: 1; }
 /* 지금 자리는 색으로만 알린다 — 경로줄에는 굵은 글씨를 쓰지 않는다 */
 .crumbs strong { color: var(--text); font-weight: 500; }
+.crumb-trail { display: inline-flex; align-items: center; gap: 12px; }
 .toolbar-shell.stuck { box-shadow: 0 8px 18px -12px rgba(15, 23, 42, 0.35); }
 .toolbar {
   position: relative; background: var(--surface); border: 1px solid var(--tb-line); border-radius: 8px;
@@ -1987,7 +1988,7 @@ html, body { overflow-x: clip; }
     <nav class="crumbs" aria-label="현재 위치">
       <a href="#/" data-act="go-list" class="crumb-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1Z"/></svg>홈</a>
       <span class="crumb-sep" aria-hidden="true">›</span>
-      <strong aria-current="page" id="crumbCur">선정목록</strong>
+      <span id="crumbCur" class="crumb-trail"><strong aria-current="page">선정목록</strong></span>
     </nav>
   </div>
   <div class="wrap content" id="content"></div>
@@ -3653,7 +3654,35 @@ html, body { overflow-x: clip; }
     if (r === 'item') { const cur = byId(S.itemId); return ['선정목록', cur ? cur.caseNo : '물건상세', subLabel('item', S.itemTab)].filter(Boolean).join(' › '); }
     return '선정목록';
   }
-  function syncCrumb() { const el = $('crumbCur'); if (el) el.textContent = crumbTrail(); }
+  /* 경로 칸마다 누르면 갈 곳 — 맨 끝(지금 화면)만 검정 글자, 앞 칸은 회색 링크 */
+  let crumbGo = [];
+  function crumbSteps() {
+    const r = S.route;
+    const first = (route) => () => { if (APP_PAGE_NAMES[route]) S.pageTab[route] = SUB_TAB_KEYS[route][0]; if (route === 'market') S.marketTab = SUB_TAB_KEYS.market[0]; if (S.route === route) { writeHash(false); render(); } else go(route); };
+    if (APP_PAGE_NAMES[r]) return [[APP_PAGE_NAMES[r], first(r)], [subLabel(r, S.pageTab[r])]];
+    if (r === 'register') return [['+물건등록', () => { if (R.mode !== 'auto') { R.mode = 'auto'; try { localStorage.setItem('wlp.web.regMode', 'auto'); } catch (e) { /* 그만 */ } } render(); }], [R.mode === 'manual' ? '직접입력' : '자동등록']];
+    if (r === 'trip') return [['임장경로']];
+    if (r === 'market' || r === 'bidrate') {
+      const steps = marketTrail().split(' › ');
+      return steps.map((t, i) => (i === steps.length - 1 ? [t]
+        : i === 0 ? [t, first('market')]
+          : [t, () => { S.marketTab = 'dong'; writeHash(false); render(); }]));
+    }
+    if (r === 'mypage') return [['마이페이지']];
+    if (r === 'item') {
+      const cur = byId(S.itemId);
+      return [['선정목록', () => go('list')], [cur ? cur.caseNo : '물건상세', () => { S.itemTab = 'basic'; writeHash(false); renderSubTabs(); renderItem(); }], [subLabel('item', S.itemTab)]];
+    }
+    return [['선정목록']];
+  }
+  function syncCrumb() {
+    const el = $('crumbCur'); if (!el) return;
+    const steps = crumbSteps().filter((x) => x[0]);
+    crumbGo = steps.map((x) => x[1] || null);
+    el.innerHTML = steps.map(([t], i) => (i === steps.length - 1
+      ? `<strong aria-current="page">${esc(t)}</strong>`
+      : `<a href="#" data-act="crumb" data-v="${i}">${esc(t)}</a><span class="crumb-sep" aria-hidden="true">›</span>`)).join('');
+  }
   /* 물건등록 경로 — '홈 › +물건등록 › 자동등록 / 직접입력' (등록 방법 탭을 바꾸면 따라 바뀐다) */
   function regTrail() { return `+물건등록 › ${R.mode === 'manual' ? '직접입력' : '자동등록'}`; }
   function marketTrail() {
@@ -4079,6 +4108,7 @@ html, body { overflow-x: clip; }
         break;
       }
       case 'go-list': go('list'); break;
+      case 'crumb': { const f = crumbGo[Number(v)]; if (f) f(); break; }   /* 경로 칸 — 그 단계 화면으로 */
       /* 직접 입력 — PDF 로 읽은 줄과 같은 길(importParsedPdfAuctions)로 올린다.
          빈 파싱값을 하나 떠서 적은 칸만 덮어쓰면, 신규·갱신 규칙이 PDF 와 똑같이 돈다 */
       case 'manual-add': try {
