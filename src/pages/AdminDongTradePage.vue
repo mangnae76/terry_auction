@@ -457,11 +457,6 @@ const totalTip = computed(() => {
     '연 = 최근 12개월 합 · 월 = 연 ÷ 12',
   ];
 });
-const kindBreakdown = computed(() => {
-  const n = (v: number) => v.toLocaleString('ko-KR');
-  const of = (k: DongTradeDetailRow['kind']) => all.value.filter((r) => r.kind === k).length; // 12개월 전부 기준
-  return `정상\u00a0${n(of('정상거래'))} · 직거래\u00a0${n(of('직거래'))} · 해제\u00a0${n(of('계약해제'))}`; // 이름 · 숫자는 붙는 칸으로
-});
 const guNav = computed(() => {
   const prices = normals.value.map((r) => r.priceWon).filter((v) => v > 0);
   const areas = normals.value.map((r) => r.areaM2).filter((v) => v > 0);
@@ -469,7 +464,7 @@ const guNav = computed(() => {
   const avgOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
   return [
     // 총 거래건수 — 받아 둔 12개월의 정상 + 직거래(계약해제는 없던 거래라 뺀다)를 연 | 월(월평균)로, 밑에 나눠 적는다
-    { label: '총 거래건수', value: '', ym: { year: yearTotal.value, month: yearTotal.value / 12 }, sub: kindBreakdown.value, tip: totalTip.value },
+    { label: '총 거래건수', value: '', ym: { year: yearTotal.value, month: yearTotal.value / 12 }, tip: totalTip.value }, // 정상 · 직거래 · 해제는 ⓘ 말풍선에만
     { label: loadedDeal.value === 'jeonse' ? '평균 전세가' : '평균 거래가', value: eokMan(avgOf(prices)) },
     { label: '최저가', value: eokMan(prices.length ? Math.min(...prices) : 0) },
     { label: '최고가', value: eokMan(prices.length ? Math.max(...prices) : 0) },
@@ -601,7 +596,7 @@ const downloadCsv = () => {
             <SnapChip :chip="snapChip" />
           </div>
           <div class="adm-gunav-row">
-            <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small>{{ c.label }}<InfoTip v-if="c.tip" :lines="c.tip" /></small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template><em v-if="c.sub" class="adm-gunav-sub">{{ c.sub }}</em></b></div>
+            <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :lines="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template></b></div>
           </div>
         </section>
         <div v-else class="adm-sum">
@@ -615,7 +610,7 @@ const downloadCsv = () => {
         <div v-if="!(webEmbed && !dong)" :class="['adm-kpis', { 'is-web': webEmbed }]">
           <div class="adm-kpi"><small>실거래가 평균</small><strong>{{ won(avgPrice) }}</strong></div>
           <div class="adm-kpi"><small>평당가 평균</small><strong>{{ won(avgUnitPrice) }}</strong></div>
-          <div class="adm-kpi blue"><small>총 거래건수 <em v-if="!webEmbed">정상거래</em></small><strong>{{ (webEmbed ? kindCount('정상거래', filtered) + kindCount('직거래', filtered) : normals.length).toLocaleString('ko-KR') }}건<em v-if="webEmbed" class="adm-gunav-sub">{{ kindBreakdown }}</em></strong></div>
+          <div class="adm-kpi blue"><small>총 거래건수 <em v-if="!webEmbed">정상거래</em></small><strong>{{ (webEmbed ? kindCount('정상거래', filtered) + kindCount('직거래', filtered) : normals.length).toLocaleString('ko-KR') }}건</strong></div>
         </div>
 
         <!-- 분포 (앱) -->
@@ -891,8 +886,6 @@ const downloadCsv = () => {
 .adm-gunav-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 4px; border-radius: 8px; background: #fff; }
 .adm-gunav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
 .adm-gunav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; text-align: center; }
-/* 거래건수 밑 직거래 · 해제 — 시세가 아니라 따로 센 것, 작게 한 줄 내려 */
-.adm-gunav-sub { display: block; margin-top: 4px; font-style: normal; font-size: 12px; font-weight: 600; color: #6b7280; letter-spacing: 0; white-space: normal; word-break: keep-all; } /* 좁은 창에서는 두 줄로 */
 .adm-sum { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 2px 12px; font-size: 12.5px; color: #6b7280; font-weight: 600; }
 .adm-sum strong { font-size: 14.5px; font-weight: 800; color: #111827; }
 .adm-sum .code { font-size: 11px; font-weight: 700; color: #6b7280; background: #eef1f6; border-radius: 999px; padding: 2px 8px; }

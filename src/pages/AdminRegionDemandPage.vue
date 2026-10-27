@@ -207,8 +207,6 @@ const navCells = computed(() => {
     {
       label: '총 거래건수', value: '',
       ym: { year: v.count + directShown.value, month: (v.count + directShown.value) / months.value },
-      // 이름과 숫자 사이는 붙는 칸(\u00a0) — 좁아 줄이 바뀌어도 '해제 / 80' 처럼 갈라지지 않게
-      sub: `정상\u00a0${n(v.count)} · 직거래\u00a0${n(directShown.value)} · 해제\u00a0${n(cancelShown.value)}`,
       tip: [
         `총 거래건수 = 정상 ${n(v.count)}건 + 직거래 ${n(directShown.value)}건 = ${n(v.count + directShown.value)}건`,
         `계약해제 ${n(cancelShown.value)}건은 제외 (없던 거래)`,
@@ -444,9 +442,8 @@ const downloadCsv = () => {
         <p class="adm-nav-scope">{{ sumLabel }}<SnapChip :chip="snap.chip.value" /></p>
         <div class="adm-nav-row">
           <div v-for="c in navCells" :key="c.label" class="adm-nav-box">
-            <small>{{ c.label }}<InfoTip v-if="c.tip" :lines="c.tip" /></small>
+            <small><InfoTip v-if="c.tip" :lines="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small>
             <b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template></b>
-            <em v-if="c.sub" class="adm-nav-sub">{{ c.sub }}</em>
           </div>
         </div>
       </section>
@@ -627,7 +624,6 @@ const downloadCsv = () => {
   background: #fff; border-radius: 8px; text-align: center; min-width: 0;
 }
 .adm-nav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
-.adm-nav-sub { margin-top: -4px; font-style: normal; font-size: 12px; font-weight: 600; color: #6b7280; text-align: center; word-break: keep-all; } /* 거래건수 밑 정상 · 직거래 · 해제 (지역분석과 같은 간격) */
 .adm-nav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; text-align: center; }
 @media (max-width: 1200px) { .adm-nav-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .adm-sum {
