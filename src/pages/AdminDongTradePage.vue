@@ -774,8 +774,8 @@ const downloadCsv = () => {
           </div>
         </div>
 
-        <!-- 검색조건 -->
-        <div class="adm-cond">
+        <!-- 검색조건 (웹 거래상세 탭에서는 개별 거래 목록 밑 한 줄로 옮겨 그린다) -->
+        <div v-if="!(webEmbed && listView === 'deals')" class="adm-cond">
           <div class="adm-cond-head">{{ webEmbed ? '조건검색' : '검색조건' }}</div>
           <div class="adm-cond-body">
             <label v-if="!webEmbed" class="adm-f">
@@ -806,14 +806,6 @@ const downloadCsv = () => {
                 <input v-model="yearMin" class="adm-input tiny" inputmode="numeric" placeholder="1990" />
                 <em>~</em>
                 <input v-model="yearMax" class="adm-input tiny" inputmode="numeric" placeholder="2026" />
-              </span>
-            </label>
-            <!-- 웹 — 돋보기 검색은 표 위 대신 여기(건축년도 옆) -->
-            <label v-if="webEmbed" class="adm-f">
-              <small>검색어</small>
-              <span class="adm-search in-cond">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
-                <input v-model="listQuery" class="adm-input search" placeholder="주소 · 금액 · 층 등으로 검색" />
               </span>
             </label>
             <div class="adm-cond-btns">
@@ -871,10 +863,19 @@ const downloadCsv = () => {
           <div class="adm-deals-head">
             <strong>개별 거래 목록</strong>
             <span>총 {{ dealRows.length.toLocaleString('ko-KR') }}건</span>
-            <span class="adm-search">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
-              <input v-model="listQuery" class="adm-input search" placeholder="건물명 · 동 · 금액 등으로 검색" />
-            </span>
+          </div>
+          <!-- 조건검색을 상자 없이 한 줄로 — 칸 이름은 칸 안 왼쪽에. 검색칸 · 저장 · 초기화까지 한 줄 -->
+          <div class="adm-inline-cond">
+            <label class="adm-inbox"><em>시작일자</em><input v-model="dateFrom" type="date" /></label>
+            <label class="adm-inbox"><em>종료일자</em><input v-model="dateTo" type="date" /></label>
+            <label class="adm-inbox"><em>면적(평)</em><input v-model="areaMin" inputmode="decimal" placeholder="최소" class="num" /><i>~</i><input v-model="areaMax" inputmode="decimal" placeholder="최대" class="num" /></label>
+            <label class="adm-inbox"><em>건축년도</em><input v-model="yearMin" inputmode="numeric" placeholder="1990" class="num" /><i>~</i><input v-model="yearMax" inputmode="numeric" placeholder="2026" class="num" /></label>
+            <label class="adm-inbox grow">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
+              <input v-model="listQuery" placeholder="건물명 · 동 · 금액 등으로 검색" />
+            </label>
+            <button type="button" class="adm-ghost" @click="saveFilters">저장</button>
+            <button type="button" class="adm-ghost" @click="resetFilters">초기화</button>
           </div>
           <div class="adm-table-wrap">
             <table class="adm-table adm-dongsum adm-deals-table">
@@ -1192,6 +1193,21 @@ const downloadCsv = () => {
 .adm-deals-head strong { font-size: 16px; font-weight: 800; color: #111827; }
 .adm-deals-head > span:not(.adm-search) { font-size: 14px; color: #6b7280; }
 .adm-deals-table td.l { text-align: left; }
+/* 거래상세 — 조건검색 한 줄 (상자 없이, 칸 이름은 칸 안 왼쪽 회색) */
+.adm-inline-cond { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adm-inbox {
+  display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 10px;
+  border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; color: #9ca3af;
+}
+.adm-inbox:focus-within { border-color: #2b6df3; }
+.adm-inbox em { font-style: normal; font-size: 14px; font-weight: 600; color: #9ca3af; white-space: nowrap; }
+.adm-inbox i { font-style: normal; color: #c3c9d4; }
+.adm-inbox input { border: 0; outline: none; background: transparent; font: inherit; font-size: 15px; color: #111827; min-width: 0; padding: 0; }
+.adm-inbox input[type='date'] { width: 130px; }
+.adm-inbox input.num { width: 56px; text-align: center; }
+.adm-inbox.grow { flex: 1 1 200px; }
+.adm-inbox.grow input { flex: 1 1 auto; }
+.adm-inline-cond .adm-ghost { height: 40px; }
 .adm-direct-tag { margin-left: 6px; font-size: 12px; font-weight: 700; color: #0f9d7a; }
 .adm-detail { display: flex; flex-direction: column; gap: 10px; }
 .adm-detail-kinds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; } /* 네 단추 같은 폭 */
