@@ -612,6 +612,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page .pw-shell .pw-wrap.super { padding: 4px 24px 20px !important; gap: 12px !important; }
 .app-page .pw-shell .pw-wrap.super .pw-card { padding: 2px 16px 14px !important; }
 .app-page .pw-shell .pw-wrap.super .pw-card-head { padding-top: 8px !important; padding-bottom: 8px !important; }
+/* 명도 시기별 진행내용 — 왼쪽 칸(낙찰 당일 · 단계 상자)을 넓혀 두 줄 이름을 한 줄로(웹만) */
+.app-page[data-k="postwin"] :is(.pw-br-head, .pw-br-step) { grid-template-columns: 250px 16px 1fr; }
+.app-page[data-k="postwin"] .pw-br-left b { white-space: nowrap; }
 /* 표 줄 높이 — 위아래를 넉넉히(6 → 10px) */
 .app-page .pw-shell .pw-tbl:not(.edit) td { padding-top: 10px !important; padding-bottom: 10px !important; }
 .app-page .more-shell { min-height: 0 !important; background: transparent !important; padding-bottom: 40px !important; }

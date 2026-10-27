@@ -788,7 +788,7 @@ const toggleSection = (key: string) => {
               <div v-for="(stp, sti) in br.steps" :key="`st-${bri}-${sti}`" class="pw-br-step">
                 <span class="pw-br-left">
                   <em class="pw-br-no">{{ stp.no }}</em>
-                  <b>{{ stp.label }}</b>
+                  <b>{{ webLabel(stp.label) }}</b>
                 </span>
                 <span class="pw-br-arrow">→</span>
                 <span class="pw-br-items">
