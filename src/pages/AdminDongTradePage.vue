@@ -967,7 +967,7 @@ const downloadCsv = () => {
                   <td class="r">{{ r.floor || '—' }}</td>
                   <td class="r">{{ r.buildYear || '—' }}</td>
                   <td class="c">{{ r.contractDate || '—' }}</td>
-                  <td class="r strong">{{ eokMan(r.priceWon) }}<small v-if="r.kind === '직거래'" class="adm-direct-tag">직거래</small></td>
+                  <td class="r strong"><span class="adm-price-cell"><small v-if="r.kind === '직거래'" class="adm-direct-tag">직거래</small><span class="amt">{{ eokMan(r.priceWon) }}</span></span></td>
                 </tr>
               </tbody>
             </table>
@@ -1296,7 +1296,10 @@ const downloadCsv = () => {
 .adm-pager button.on { background: #2b6df3; border-color: #2b6df3; color: #fff; }
 .adm-pager button:disabled { opacity: .4; cursor: default; }
 .adm-pager-info { margin-left: 8px; font-size: 14px; color: #6b7280; }
-.adm-direct-tag { margin-left: 6px; font-size: 12px; font-weight: 700; color: #0f9d7a; }
+/* 거래금액 칸 — 직거래 표시는 칸 왼쪽, 금액은 오른쪽 끝(금액 자리가 줄마다 같다) */
+.adm-price-cell { display: flex; align-items: center; gap: 8px; }
+.adm-price-cell .amt { margin-left: auto; }
+.adm-direct-tag { font-size: 12px; font-weight: 700; color: #0f9d7a; }
 .adm-detail { display: flex; flex-direction: column; gap: 10px; }
 .adm-detail-kinds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; } /* 네 단추 같은 폭 */
 .adm-detail-kinds button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
