@@ -9,7 +9,8 @@
       "**/.*",
       "**/node_modules/**",
       "myturn-promo/**",
-      "promo-test.html"
+      "promo-test.html",
+      "intro.html"
     ],
     "rewrites": [
       {
