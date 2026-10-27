@@ -959,7 +959,7 @@ const toggleSection = (key: string) => {
                   </td>
                 </tr>
                 <tr v-if="rowsOf(card.kind).length === 0">
-                  <td colspan="5" class="empty">
+                  <td colspan="5" class="pw-int-empty">
                     <template v-if="picked">적어 둔 줄이 없습니다. 위의 ＋ 항목추가를 누르세요.</template>
                     <template v-else>먼저 위에서 물건을 고르세요.</template>
                   </td>
@@ -1673,7 +1673,8 @@ const toggleSection = (key: string) => {
 .pw-int-tbl tbody tr { cursor: pointer; }
 .pw-int-tbl tbody tr:hover { background: #f7f9fd; }
 .pw-int-tbl td small { color: #6b7280; }
-.pw-int-tbl .empty { text-align: center; color: #9ca3af; padding: 20px 6px; }
+/* 이름은 pw-int-empty — 그냥 .empty 면 웹 공통 빈 화면 상자(검은 바탕)가 덮인다 */
+.pw-int-tbl .pw-int-empty { text-align: center; color: #9ca3af; padding: 20px 6px; }
 .pw-int-tbl tbody tr:last-child td { border-bottom: none; }
 
 /* 적는 창 */

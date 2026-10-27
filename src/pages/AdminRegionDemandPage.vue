@@ -541,7 +541,7 @@ const downloadCsv = () => {
                 <em class="bar">|</em>
                 <span class="grp m"><em class="pre">월</em><i>{{ cntInt(monthlyOf(dealOf(r))) }}</i></span><b>{{ cntFrac(monthlyOf(dealOf(r))) }}</b>
               </td>
-              <td class="n strong price"><span class="v">{{ won(r.avgPrice) }}</span></td>
+              <td class="n strong amt"><span class="v">{{ won(r.avgPrice) }}</span></td>
               <td class="n area"><span class="v">{{ areaText(r.avgAreaM2) }}</span></td>
               <td class="n age"><span class="v">{{ ageText(r.avgBuildYear) }}</span></td>
               <td class="n rate"><em v-if="r.turnover > 0" class="pre">연</em><span class="v">{{ pct(r.turnover) }}</span></td>
@@ -700,7 +700,8 @@ const downloadCsv = () => {
 /* 줄끼리 끝자리를 맞춘다 — 값을 같은 폭 상자에 담아 오른쪽으로 붙인다.
    상자째로는 칸 가운데에 서므로 머리글과도 어긋나 보이지 않는다 */
 .adm-table td .v { display: inline-block; text-align: right; }
-.adm-table td.price .v { min-width: 84px; }
+/* 금액 칸 이름은 'amt' — 'price' 로 쓰면 웹 선정목록 카드의 .price(바탕 · 둥근 상자)가 덮여 상자가 한 겹 더 생긴다 */
+.adm-table td.amt .v { min-width: 84px; }
 .adm-table td.area .v { min-width: 36px; }
 .adm-table td.age .v { min-width: 22px; }
 .adm-table td.rate .v { min-width: 44px; }

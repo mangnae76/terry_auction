@@ -626,6 +626,16 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-gr-row { grid-template-columns: repeat(3, 280px); justify-content: center; column-gap: 48px; }
 /* '명도 협상의 기본 · 기술' 분홍 칩도 같은 폭 — 칩 · 시기별 왼쪽 상자 · 표 분홍 칸의 오른쪽 끝선이 한 줄 */
 .app-page[data-k="postwin"] .pw-gr-chip { width: calc(var(--pw-lab-w) + 1px); max-width: none; box-sizing: border-box; }
+/* 인테리어 '항목추가' 창 — 화면 가로를 다 덮지 말고 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에 띄운다 */
+.app-page[data-k="postwin"] .pw-modal {
+  left: 50%; right: auto; width: min(480px, calc(100vw - 32px)); transform: translateX(-50%);
+  top: calc(var(--stick-top, 0px) + var(--gnb-h, 66px) + var(--subtab-h, 44px) + 24px);
+  max-height: calc(100vh - var(--gnb-h, 66px) - var(--subtab-h, 44px) - 64px);
+  padding: 16px 20px 18px;
+}
+.app-page[data-k="postwin"] .pw-modal-head strong { font-size: 16px; }
+.app-page[data-k="postwin"] .pw-modal :is(.pw-modal-sub, .pw-fld small, input, select, textarea, .pw-ebtn) { font-size: 14px; }
+.app-page[data-k="postwin"] .pw-modal .pw-fld { margin-bottom: 10px; }
 /* 표 줄 높이 — 위아래를 넉넉히(6 → 10px) */
 .app-page .pw-shell .pw-tbl:not(.edit) td { padding-top: 10px !important; padding-bottom: 10px !important; }
 .app-page .more-shell { min-height: 0 !important; background: transparent !important; padding-bottom: 40px !important; }
@@ -664,7 +674,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] :is(
   .pw-txt, .pw-note, .pw-count, .pw-nopick, .pw-nopick b, .pw-memo, .pw-qty, .pw-golink,
   .pw-br-txt, .pw-br-item, .pw-br-note, .pw-gr-list li, .pw-sk-item, .pw-tl-day, .pw-tl-span, .pw-tl-label,
-  .pw-int-tools .pw-ebtn, .pw-int-sum, .pw-int-sum b, .pw-int-tbl th, .pw-int-tbl td, .pw-empty, .empty, .pw-rowstep .lab
+  .pw-int-tools .pw-ebtn, .pw-int-sum, .pw-int-sum b, .pw-int-tbl th, .pw-int-tbl td, .pw-empty, .pw-int-empty, .pw-rowstep .lab
 ) { font-size: 14px !important; }
 /* 글자를 키운 만큼 표 칸도 넓힌다 — 비고('동사무소 발급' 등)가 두세 줄로 꺾이지 않게 */
 .app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-label { width: var(--pw-lab-w); }

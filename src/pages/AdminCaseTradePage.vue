@@ -817,7 +817,7 @@ const downloadCsv = () => {
               >
                 <td><span :class="['kind', kindClass(r.kind)]">{{ r.kind }}</span></td>
                 <td>{{ r.contractDate }}</td>
-                <td class="n strong price"><span class="v">{{ r.amount }}</span></td>
+                <td class="n strong amt"><span class="v">{{ r.amount }}</span></td>
                 <td class="n area"><span class="v">{{ areaText(r.areaM2) }}</span></td>
                 <td class="n floor"><span class="v">{{ r.floor || '-' }}</span></td>
                 <td class="addr">{{ [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') }}</td>
@@ -1014,7 +1014,7 @@ const downloadCsv = () => {
 .adm-table td.addr { text-align: left; color: #6b7280; }
 /* 줄끼리 끝자리를 맞춘다 — 값을 같은 폭 상자에 담아 오른쪽에 붙인다 */
 .adm-table td .v { display: inline-block; text-align: right; }
-.adm-table td.price .v { min-width: 150px; }
+.adm-table td.amt .v { min-width: 150px; }
 .adm-table td.area .v { min-width: 92px; }
 .adm-table td.floor .v { min-width: 24px; }
 .kind { display: inline-block; border-radius: 999px; padding: 3px 9px; font-size: 11px; font-weight: 800; }

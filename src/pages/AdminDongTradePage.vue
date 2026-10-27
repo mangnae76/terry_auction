@@ -1110,7 +1110,7 @@ const downloadCsv = () => {
             <tbody>
               <tr v-for="(r, i) in listRows.slice(0, 300)" :key="`${r.contractDate}-${r.name}-${i}`" :class="r.kind !== '정상거래' ? 'off' : ''">
                 <td>{{ r.contractDate }}</td>
-                <td class="n strong price"><span class="v">{{ won(r.priceWon) }}</span></td>
+                <td class="n strong amt"><span class="v">{{ won(r.priceWon) }}</span></td>
                 <td class="n area">
                   <span class="v">{{ r.areaM2.toFixed(2) }} / {{ r.pyeong.toFixed(2) }}</span>
                   <small v-if="r.houseType">{{ r.houseType }}</small>
@@ -1369,7 +1369,7 @@ const downloadCsv = () => {
 .adm-table td.area small { display: block; font-size: 10.5px; font-weight: 600; color: #6b7280; }
 /* 줄끼리 끝자리를 맞춘다 — 값을 같은 폭 상자에 담아 오른쪽에 붙인다 */
 .adm-table td .v { display: inline-block; text-align: right; }
-.adm-table td.price .v { min-width: 96px; }
+.adm-table td.amt .v { min-width: 96px; }
 .adm-table td.unit .v { min-width: 74px; }
 .adm-table td.age .v { min-width: 34px; }
 .kind { font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 2px 8px; }
