@@ -9084,7 +9084,7 @@ const goBack = () => router.back();
                       class="adp-fs-input note adp-agency-trigger"
                       @click.stop="fsPickOpen = fsPickOpen === item.id ? '' : item.id"
                     >
-                      <span :class="['txt', { ph: fieldPickList(item.id, item.noteOptions).length === 0 }]">{{ fieldPickList(item.id, item.noteOptions).join(', ') || '비고' }}</span>
+                      <span :class="['txt', { ph: fieldPickList(item.id, item.noteOptions).length === 0 }]">{{ fieldPickList(item.id, item.noteOptions).join(', ') || '선택' }}</span>
                       <span class="caret">▾</span>
                     </button>
                     <template v-if="fsPickOpen === item.id">
@@ -9106,7 +9106,7 @@ const goBack = () => router.back();
                 <span v-else-if="item.note" class="ext">
                   <input
                     class="adp-fs-input note"
-                    placeholder="비고"
+                    placeholder="선택"
                     :value="fieldVal(fieldNoteId(item.id))"
                     @input="setFieldValNow(fieldNoteId(item.id), ($event.target as HTMLInputElement).value)"
                   />
