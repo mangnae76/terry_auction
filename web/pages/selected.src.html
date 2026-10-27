@@ -630,6 +630,19 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-crumb { order: -1; }
 .app-page[data-k="postwin"] .pw-objwrap > .pw-obj, .app-page[data-k="postwin"] .pw-objctrl, .app-page[data-k="postwin"] .pw-page-title { display: none !important; }
 .app-page[data-k="postwin"] .pw-objwrap { display: none !important; }
+/* 낙찰이후 글자 크기 — 큰 제목 18 · 카드 제목 16 · 중제목(표 왼쪽 이름 · 칩 · 단계 이름) 15 · 나머지 글은 모두 14 이상 */
+.app-page[data-k="postwin"] .pw-super-head h2 { font-size: 18px !important; }
+.app-page[data-k="postwin"] .pw-card-head h2 { font-size: 16px !important; }
+.app-page[data-k="postwin"] :is(.pw-label strong, .pw-labellink strong, .pw-gr-chip, .pw-br-pill .pw-br-txt, .pw-bx-item, .pw-gr-box, .pw-br-left b, .pw-chip) { font-size: 15px !important; }
+.app-page[data-k="postwin"] :is(
+  .pw-txt, .pw-note, .pw-count, .pw-nopick, .pw-nopick b, .pw-memo, .pw-qty, .pw-golink,
+  .pw-br-txt, .pw-br-item, .pw-br-note, .pw-gr-list li, .pw-sk-item, .pw-tl-day, .pw-tl-span, .pw-tl-label,
+  .pw-int-tools .pw-ebtn, .pw-int-sum, .pw-int-sum b, .pw-int-tbl th, .pw-int-tbl td, .pw-empty, .empty, .pw-rowstep .lab
+) { font-size: 14px !important; }
+/* 글자를 키운 만큼 표 칸도 넓힌다 — 비고('동사무소 발급' 등)가 두세 줄로 꺾이지 않게 */
+.app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-label { width: 120px; }
+.app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-qty { width: 60px; }
+.app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-memo { width: 240px; }
 /* 명도 — '낙찰 후 진행 순서' 상자(명도절차 위). 웹은 넓으니 여덟 칸을 한 줄로, 글자는 14 */
 .app-page[data-k="postwin"] .pw-flowcard .pw-flow-map { grid-template-columns: repeat(8, 1fr); gap: 10px 22px; padding: 6px 4px 14px; }
 .app-page[data-k="postwin"] .pw-flowcard .pw-flow-box { font-size: 14px; min-height: 52px; }
