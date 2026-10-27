@@ -447,7 +447,7 @@ const eokMan = (v: number) => {
 const kindBreakdown = computed(() => {
   const n = (v: number) => v.toLocaleString('ko-KR');
   const of = (k: DongTradeDetailRow['kind']) => all.value.filter((r) => r.kind === k).length; // 12개월 전부 기준
-  return `정상 ${n(of('정상거래'))} · 직거래 ${n(of('직거래'))} · 해제 ${n(of('계약해제'))}`;
+  return `정상\u00a0${n(of('정상거래'))} · 직거래\u00a0${n(of('직거래'))} · 해제\u00a0${n(of('계약해제'))}`; // 이름 · 숫자는 붙는 칸으로
 });
 const guNav = computed(() => {
   const prices = normals.value.map((r) => r.priceWon).filter((v) => v > 0);

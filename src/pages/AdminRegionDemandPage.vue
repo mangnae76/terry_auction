@@ -195,8 +195,14 @@ const navCells = computed(() => {
   const v = navStats.value;
   const pct = (x: number) => (x > 0 ? `${x.toFixed(1)}%` : '-');
   return [
-    // 거래건수 한 칸에 연(12개월 합) | 월(월평균) — 손품+현장 매매수요와 같은 표기
-    { label: '거래건수', value: '', ym: { year: v.count, month: v.monthly } },
+    // 거래건수 한 칸에 연(12개월 합) | 월(월평균) — 손품+현장 매매수요와 같은 표기.
+    // 지역분석처럼 직거래 · 해제까지 다 더한 수, 밑에 나눠 적는다 (다른 지표는 정상거래만으로 셈)
+    {
+      label: '거래건수', value: '',
+      ym: { year: v.count + directShown.value + cancelShown.value, month: (v.count + directShown.value + cancelShown.value) / months.value },
+      // 이름과 숫자 사이는 붙는 칸(\u00a0) — 좁아 줄이 바뀌어도 '해제 / 80' 처럼 갈라지지 않게
+      sub: `정상\u00a0${v.count.toLocaleString('ko-KR')} · 직거래\u00a0${directShown.value.toLocaleString('ko-KR')} · 해제\u00a0${cancelShown.value.toLocaleString('ko-KR')}`,
+    },
     { label: '평균 거래가', value: eokShort(v.avgPrice) },
     { label: '평균 건축연수', value: v.age > 0 ? `${v.age}년차` : '-' },
     { label: '거래 회전율', value: pct(v.turnover) },
@@ -417,6 +423,7 @@ const downloadCsv = () => {
           <div v-for="c in navCells" :key="c.label" class="adm-nav-box">
             <small>{{ c.label }}</small>
             <b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template></b>
+            <em v-if="c.sub" class="adm-nav-sub">{{ c.sub }}</em>
           </div>
         </div>
       </section>
@@ -586,6 +593,7 @@ const downloadCsv = () => {
   background: #fff; border: 1px solid #eef1f6; border-radius: 8px; text-align: center; min-width: 0;
 }
 .adm-nav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
+.adm-nav-sub { font-style: normal; font-size: 12px; font-weight: 600; color: #6b7280; text-align: center; word-break: keep-all; } /* 거래건수 밑 정상 · 직거래 · 해제 */
 .adm-nav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; }
 @media (max-width: 1200px) { .adm-nav-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .adm-sum {
