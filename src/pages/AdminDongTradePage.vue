@@ -281,10 +281,11 @@ const distribute = (buckets: Bucket[]) => {
   });
 };
 const DISTS = computed(() => [
-  { title: '전용면적 분포', unit: '㎡/평', cells: distribute(AREA_BUCKETS) },
-  { title: '금액분포', unit: '', cells: distribute(PRICE_BUCKETS) },
-  { title: '건축연식', unit: '', cells: distribute(AGE_BUCKETS) },
-  { title: '층', unit: '', cells: distribute(FLOOR_BUCKETS) },
+  // 웹은 '…별 분포' 로 이름을 맞춘다 (앱은 그대로)
+  { title: webEmbed ? '전용면적별 분포' : '전용면적 분포', unit: '㎡/평', cells: distribute(AREA_BUCKETS) },
+  { title: webEmbed ? '금액대별 분포' : '금액분포', unit: '', cells: distribute(PRICE_BUCKETS) },
+  { title: webEmbed ? '건축연식별 분포' : '건축연식', unit: '', cells: distribute(AGE_BUCKETS) },
+  { title: webEmbed ? '층별 분포' : '층', unit: '', cells: distribute(FLOOR_BUCKETS) },
 ]);
 
 // ===== 검색리스트 =====
