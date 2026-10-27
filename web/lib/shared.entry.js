@@ -245,7 +245,7 @@ export const mountAppPage = (el, key, tab, hooks = {}) => {
     if (p === '/login' || p === '/signup') { nav('login'); return false; }
     if (p === '/' || p.startsWith('/auctions')) { nav('list'); return false; }
     if (p === '/field-trip') { nav('trip'); return false; }
-    if (p === '/web-mypage') { nav('mypage'); return false; }   // 더보기 › 계정관리의 AI 설정 카드 — 웹 마이페이지로
+    if (p === '/web-ai') { nav('ai'); return false; }   // 더보기 › 계정관리의 AI 설정 카드 — 웹이 설정 창을 띄운다
     if (p === '/trade-stats') { nav('market'); return false; }
     /* 낙찰이후 · 자금관리 · 더보기 사이를 오가면 웹 메뉴로 옮긴다(띄운 화면이 아니면) */
     const other = PAGE_OF_PATH[p];

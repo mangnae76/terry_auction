@@ -163,9 +163,9 @@ button { cursor: pointer; }
 .g-menu:hover::after { transform: scaleX(1); opacity: .55; }
 .g-menu.on::after { transform: scaleX(1); opacity: 1; }
 /* +물건등록이 선정목록 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
-/* 메뉴 아홉 — 낙찰이후 · 자금관리가 시장분석 옆에 들어오며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
-.m0 { left: 13.75%; } .m1 { left: 21.73%; } .m2 { left: 28.90%; } .m3 { left: 36.07%; } .m3c { left: 43.24%; }
-.m3d { left: 50.41%; } .m4 { left: 57.58%; } .m5 { left: 64.75%; } .m6 { left: 70.65%; }
+/* 메뉴 여덟 — 마이페이지를 빼며(더보기 › 마이페이지로) 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
+.m0 { left: 13.75%; } .m1 { left: 22.58%; } .m2 { left: 30.60%; } .m3 { left: 38.62%; }
+.m3c { left: 46.63%; } .m3d { left: 54.65%; } .m4 { left: 62.67%; } .m5 { left: 70.69%; }
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: #fff !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
@@ -1227,6 +1227,7 @@ body.trip-full .foot { display: none; }
 .ai-key svg { width: 14px; height: 14px; }
 .ai-setup b { font-size: 13px; font-weight: 800; color: var(--text); white-space: nowrap; }
 .my-set .rg-head { margin-bottom: 6px; }
+.my-dlg-body { display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 160px); overflow: auto; } /* 더보기 › 계정관리의 AI 설정 창 */
 .my-lead { margin: 0 0 12px; font-size: 13px; font-weight: 500; color: var(--text-2); line-height: 1.6; }
 .ai-body.flat { padding: 0; }
 .my-content > * + * { margin-top: 12px; }
@@ -1936,7 +1937,6 @@ html, body { overflow-x: clip; }
       <a class="g-menu m3d" href="#/finance" data-act="go-finance" id="navFinance">자금관리</a>
       <a class="g-menu m4" href="#" data-act="soon" data-name="커뮤니티">커뮤니티</a>
       <a class="g-menu m5" href="#/more" data-act="go-more" id="navMore">더보기</a>
-      <a class="g-menu m6" href="#/mypage" data-act="go-mypage" id="navMy">마이페이지</a>
       <div class="pop-root" data-pop="all" style="display:contents">
         <button type="button" class="g-box" data-act="pop" data-id="all" aria-expanded="false" aria-controls="gMega" aria-label="메뉴 펼치기" data-tip="메뉴 펼치기" data-tip-pos="below">
           <svg viewBox="0 0 10 8"><path d="M5 7.5 0 0h10z" fill="currentColor"/></svg>
@@ -2216,13 +2216,14 @@ html, body { overflow-x: clip; }
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
   const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '더보기' };
-  const PLAIN_ROUTES = ['register', 'trip', 'mypage'];
+  const PLAIN_ROUTES = ['register', 'trip'];
   /** 주소 → { route, itemId, itemTab, sub } */
   const readHash = (h = location.hash) => {
     const m = h.match(/^#\/([\w-]+)(?:\/([\w-]+))?(?:\/([\w-]+))?/) || [];
     const head = m[1] || '';
     if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
     if (head === 'postwin' && m[2] === 'win') return { route: 'postwin', sub: 'evict' }; /* 예전 '낙찰당일' — 명도 탭으로 합쳤다 */
+    if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
     if (head === 'bidrate') return { route: 'market', sub: SUB_TAB_KEYS.market.includes(m[2]) ? m[2] : 'near' }; /* 예전 '낙찰가율분석' 주소 */
     if (SUB_TAB_KEYS[head]) return { route: head, sub: SUB_TAB_KEYS[head].includes(m[2]) ? m[2] : SUB_TAB_KEYS[head][0] };
@@ -2323,7 +2324,6 @@ html, body { overflow-x: clip; }
     ['m3d', [['자금입출금', 'go-finance'], ['사업지출', 'go-finance'], ['유류&식대', 'go-finance'], ['물품구매', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
     ['m5', [['마이페이지', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['공지', 'go-more'], ['고객센터', 'go-more']]],
-    ['m6', [['내 정보', 'go-mypage'], ['포인트', ''], ['결제관리', ''], ['알림설정', '']]],
   ];
   /* 지금 보고 있는 자리 — 펼칠 때마다 다시 그려 표시가 어긋나지 않게 한다 */
   const megaHere = () => {
@@ -3170,6 +3170,13 @@ html, body { overflow-x: clip; }
       if (m.edit >= 0) setTimeout(() => { const el = $('favEditName'); if (el) el.focus(); }, 20); else setTimeout(() => { const el = $('favName'); if (el) el.focus(); }, 20);
       return;
     }
+    if (m.kind === 'aiset') {
+      root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog fav-dlg my-dlg" role="dialog" aria-modal="true" aria-label="AI 설정" style="width:min(720px,100%)">
+        <div class="reg-head"><h2>AI 설정</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
+        <div class="my-dlg-body">${mySetHtml()}</div></div></div>`;
+      aiUnlock(S.aiPane, false);
+      return;
+    }
     if (m.kind === 'ai') {
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog fav-dlg" role="dialog" aria-modal="true" aria-labelledby="aiT" style="width:min(640px,100%)">
         <div class="reg-head"><h2 id="aiT">제미나이 API 키 등록</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
@@ -3751,6 +3758,7 @@ html, body { overflow-x: clip; }
       onNav: (to, a, b) => {
         if (to === 'item') { if (!byId(a)) { toast('선정목록에서 그 물건을 찾지 못했습니다.', 'info'); return; } S.itemTabNext = b === 'survey' ? 'survey' : 'basic'; go('item', a); return; }
         if (to === 'login') { openAppLogin(); return; }
+        if (to === 'ai') { S.modal = { kind: 'aiset' }; renderModal(); return; }   /* AI 설정 창 */
         if (APP_PAGE_NAMES[to]) { if (SUB_TAB_KEYS[to].includes(a)) S.pageTab[to] = a; go(to); return; }
         go(to);
       },
@@ -3821,9 +3829,10 @@ html, body { overflow-x: clip; }
     syncFoldBtn();
   }
   /* 마이페이지 — 지금은 AI 자동 분석 설정 한 칸. 조작부는 자동등록 상자의 것과 같다 */
-  function renderMy() {
+  /* AI 설정 두 상자(AI 자동 분석 설정 · 제미나이 API 키 등록) — 더보기 › 계정관리 카드가 여는 창에서 쓴다(예전 마이페이지 화면과 같은 내용) */
+  function mySetHtml() {
     const m = S.aiPane;
-    $('myContent').innerHTML = `
+    return `
       <section class="rg-results my-set">
         <div class="rg-head">
           <h2>${I.key}AI 자동 분석 설정</h2>
@@ -3839,10 +3848,10 @@ html, body { overflow-x: clip; }
         <div class="rg-head"><h2>${I.key}제미나이 API 키 등록</h2></div>
         <div class="ai-body flat">${aiKeyBody(m)}</div>
       </section>`;
-    aiUnlock(m, false);
   }
+  function renderMy() { $('myContent').innerHTML = mySetHtml(); aiUnlock(S.aiPane, false); }
   /* AI 설정은 두 자리(자동등록 · 마이페이지)에서 보인다 — 바뀌면 지금 보는 쪽만 다시 그린다 */
-  const rerenderAi = () => { if (S.route === 'mypage') renderMy(); else if (S.route === 'register') renderRegister(); };
+  const rerenderAi = () => { if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'mypage') renderMy(); else if (S.route === 'register') renderRegister(); };
   /* 화면 바꾸기 — #/ 선정목록, #/register 선정물건등록 (뒤로가기로 돌아온다) */
   function go(route, id) {
     if (S.route === route && (route !== 'item' || S.itemId === id)) { window.scrollTo(0, 0); return; }
@@ -4178,7 +4187,8 @@ html, body { overflow-x: clip; }
         if (S.route === route) { S.menu = null; writeHash(false); renderSubTabs(); renderMarket(); } else go(route);
         break;
       }
-      case 'go-mypage': S.menu = null; go('mypage'); break;
+      /* 예전 마이페이지 — 없앴다. 더보기 › 마이페이지 탭으로 */
+      case 'go-mypage': S.menu = null; S.pageTab.more = 'mypage'; if (S.route === 'more') { writeHash(false); renderSubTabs(); renderAppPage(); } else go('more'); break;
       /* 낙찰이후 · 자금관리 · 더보기 — 펼침 메뉴의 항목(data-name)이면 그 하위 탭으로 연다 */
       case 'go-postwin': case 'go-finance': case 'go-more': {
         const route = act.slice(3);
@@ -4251,7 +4261,7 @@ html, body { overflow-x: clip; }
       case 'drive-perms': openDrivePerms(); break;
       case 'scan': S.pop = ''; if (needLogin('폴더스캔')) break; doScan(); break;
       case 'pdf-pick': if (needLogin('PDF등록')) break; $('pdfInput').click(); break;
-      case 'ai-toggle': if (!R.aiKey) { if (S.route === 'mypage') { toast('먼저 아래에서 제미나이 API 키를 입력해 주세요.', 'info'); const el = $('aiKeyIn'); if (el) { el.removeAttribute('readonly'); el.focus(); el.scrollIntoView({ block: 'center' }); } break; } S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; if (CLOUD.T) CLOUD.T.setGeminiOn((CLOUD.auth && CLOUD.auth.uid) || '', R.aiOn).catch(() => {}); rerenderAi(); toast(R.aiOn ? 'AI 자동 분석을 켰습니다.' : 'AI 자동 분석을 껐습니다.', 'info'); break;
+      case 'ai-toggle': if (!R.aiKey) { if (S.route === 'mypage' || (S.modal && S.modal.kind === 'aiset')) { toast('먼저 아래에서 제미나이 API 키를 입력해 주세요.', 'info'); const el = $('aiKeyIn'); if (el) { el.removeAttribute('readonly'); el.focus(); el.scrollIntoView({ block: 'center' }); } break; } S.modal = { kind: 'ai' }; renderModal(); break; } R.aiOn = !R.aiOn; if (CLOUD.T) CLOUD.T.setGeminiOn((CLOUD.auth && CLOUD.auth.uid) || '', R.aiOn).catch(() => {}); rerenderAi(); toast(R.aiOn ? 'AI 자동 분석을 켰습니다.' : 'AI 자동 분석을 껐습니다.', 'info'); break;
       case 'ai-key': S.modal = { kind: 'ai' }; renderModal(); break;
       /* 키 칸의 눈 — 적던 글자를 잡아 두고 보기/가리기만 바꾼다 */
       case 'ai-eye': { const m = aiCtx(); const el = $('aiKeyIn'); if (!m || !el) break; m.draft = el.value; m.show = !m.show; aiRedraw(); setTimeout(() => { const x = $('aiKeyIn'); if (x) { x.removeAttribute('readonly'); x.focus(); x.setSelectionRange(x.value.length, x.value.length); } }, 30); break; }

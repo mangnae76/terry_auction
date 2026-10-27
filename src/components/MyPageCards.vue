@@ -78,11 +78,10 @@ const PICK_CARDS = computed<Card[]>(() => [
   { icon: '🛠️', title: '인테리어 업체', desc: '견적·업체 비딩 관리', path: '/interior-vendors' },
 ]);
 
-/** 웹 — 웹 마이페이지에 있는 AI 설정 둘을 계정관리에도 둔다(누르면 웹 마이페이지의 그 자리로). 앱에는 없다 */
+/** 웹 — AI 설정(자동 분석 켜고 끄기 · 제미나이 키 등록 한 창)을 계정관리에 둔다. 누르면 웹이 설정 창을 띄운다. 앱에는 없다 */
 const webEmbed = inject<boolean>('webEmbed', false);
 const WEB_AI_CARDS: Card[] = [
-  { icon: '🤖', title: 'AI 자동 분석 설정', desc: '자동 등록 · 권리 분석 켜고 끄기', path: '/web-mypage' },
-  { icon: '🔑', title: '제미나이 API 키 등록', desc: 'AI 분석에 쓰는 키', path: '/web-mypage' },
+  { icon: '🤖', title: 'AI 자동 분석 설정', desc: '켜고 끄기 · 제미나이 API 키 등록', path: '/web-ai' },
 ];
 const ACCOUNT_CARDS_BASE: Card[] = [
   { icon: '🎁', title: '3일무료체험', desc: '무료로 먼저 써 보기', path: '/trial' },
