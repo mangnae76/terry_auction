@@ -597,7 +597,7 @@ const toggleSection = (key: string) => {
           <div class="ih-top">
             <h1 class="ih-title"><template v-if="webHead"><span class="ih-tag">경매</span><span class="num">{{ webHead.caseNo }}</span></template><template v-else>낙찰한 물건이 없습니다</template></h1>
             <span v-if="webHead" class="ih-court">{{ webHead.court || '–' }} · 낙찰일 <span class="num">{{ webHead.won || '–' }}</span></span>
-            <span class="ih-right">
+            <span class="ih-right pw-pickanchor">
               <button type="button" :class="['ih-pdf', 'pw-pickbtn', { off: !ownedAuctions.length }]" @click.stop="togglePickList">
                 낙찰목록 <img :src="chevronDownIcon" :class="['pw-obj-chev', { up: pickOpen }]" alt="" />
               </button>
@@ -607,7 +607,8 @@ const toggleSection = (key: string) => {
             <span class="ih-kind">{{ webHead.kind }}</span>
             <span class="ih-line"><span class="ih-sale">{{ webHead.sale }}</span></span>
             <button type="button" class="ih-copy" aria-label="주소 복사" @click="copyAddr">주소</button>
-            <p class="ih-addr">{{ webHead.addr }}<template v-if="webHead.bld"> <b>{{ webHead.bld }}</b></template><template v-if="webHead.unit"> <b>{{ webHead.unit }}</b></template></p>
+            <!-- 사이 빈칸은 {{ ' ' }} 로 — <template> 첫머리 빈칸은 Vue 가 지워서 '집원미성빌4403호'처럼 붙는다 -->
+            <p class="ih-addr">{{ webHead.addr }}<template v-if="webHead.bld">{{ ' ' }}<b>{{ webHead.bld }}</b></template><template v-if="webHead.unit">{{ ' ' }}<b>{{ webHead.unit }}</b></template></p>
             <button v-if="hasTable && !editing" type="button" :class="['ih-fold', { up: allCollapsed }]" :aria-label="allCollapsed ? '전체 펼치기' : '전체 접기'" @click="toggleAll"><img :src="chevronDownIcon" alt="" /></button>
           </div>
         </div>
@@ -655,7 +656,8 @@ const toggleSection = (key: string) => {
           </button>
         </div>
 
-        <template v-if="pickOpen && ownedAuctions.length">
+        <!-- 웹은 고정 카드의 낙찰목록 단추 바로 아래에 펼친다 -->
+        <Teleport v-if="pickOpen && ownedAuctions.length" defer to=".pw-pickanchor" :disabled="!webEmbed">
           <div class="pw-objveil" @click="pickOpen = false" />
           <div class="pw-objlist">
             <article
@@ -677,7 +679,7 @@ const toggleSection = (key: string) => {
               </p>
             </article>
           </div>
-        </template>
+        </Teleport>
       </div>
     </div>
 
