@@ -119,6 +119,22 @@ const buildCalcRows = (a: AuctionDetail): CalcRow[] => {
 
 const toggleStageList = (stage: '낙찰' | '매도') => {
   stageListOpen.value = stageListOpen.value === stage ? '' : stage;
+  popDx.value = 0; popDy.value = 0;   // 열 때마다 제자리에서
+};
+/** 낙찰 · 매도목록 창 옮기기 — 머리줄을 잡고 끌면 따라온다(닫기 단추는 제외) */
+const popDx = ref(0);
+const popDy = ref(0);
+const startPopDrag = (e: PointerEvent) => {
+  if ((e.target as HTMLElement).closest('button')) return;
+  const sx = e.clientX - popDx.value;
+  const sy = e.clientY - popDy.value;
+  const el = e.currentTarget as HTMLElement;
+  el.setPointerCapture(e.pointerId);
+  const move = (ev: PointerEvent) => { popDx.value = ev.clientX - sx; popDy.value = ev.clientY - sy; };
+  const up = () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); };
+  el.addEventListener('pointermove', move);
+  el.addEventListener('pointerup', up);
+  el.addEventListener('pointercancel', up);
 };
 const stageListRows = computed(() => (stageListOpen.value ? stageRows(stageListOpen.value) : []));
 /** 주소는 동(洞)부터 — 시·도와 시군구는 뗀다.
@@ -806,8 +822,13 @@ const exportExcel = () => {
     <!-- 낙찰·매도 물건 — 팝업으로 띄운다. 가짓수가 늘어도 아래 내용이 밀리지 않는다 -->
     <Teleport to="body">
       <div v-if="stageListOpen" class="fin-pop-veil" @click="stageListOpen = ''" />
-      <section v-if="stageListOpen" :class="['fin-pop', stageListOpen === '매도' ? 'sold' : 'won']" @click.stop>
-        <header class="fin-pop-head">
+      <section
+        v-if="stageListOpen"
+        :class="['fin-pop', stageListOpen === '매도' ? 'sold' : 'won']"
+        :style="{ '--dx': `${popDx}px`, '--dy': `${popDy}px` }"
+        @click.stop
+      >
+        <header class="fin-pop-head" title="끌어서 옮길 수 있습니다" @pointerdown="startPopDrag">
           <strong>{{ stageListOpen }}목록 <em>{{ stageListRows.length }}건</em></strong>
           <button type="button" class="fin-pop-close" aria-label="닫기" @click="stageListOpen = ''">×</button>
         </header>
@@ -1251,4 +1272,7 @@ const exportExcel = () => {
 .fin-webrow { display: flex; align-items: center; gap: 12px; min-height: 40px; }
 .fin-webrow .fin-crumb { flex: 1 1 auto; min-width: 0; }
 .fin-webrow .fin-stage-count { margin-left: auto; }
+/* 창 옮기기 — 머리줄을 잡고 끈다 */
+.fin-pop { transform: translate(var(--dx, 0px), var(--dy, 0px)); }
+.fin-pop-head { cursor: move; touch-action: none; user-select: none; }
 </style>
