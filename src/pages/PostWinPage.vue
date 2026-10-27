@@ -354,9 +354,25 @@ const INT_CARDS: Array<{
 ];
 const cardOf = (kind: 'bid' | 'cost') => INT_CARDS.find((c) => c.kind === kind) ?? INT_CARDS[0];
 /** 고른 물건의 것만 본다 — 물건은 위 카드에서 고르므로 적을 때 또 고르지 않는다 */
+/** 인테리어 표 정렬(웹) — 머리글을 누르면 그 칸으로, 다시 누르면 거꾸로. 기본은 예상일정 늦은 순 */
+type IntSortKey = 'date' | 'work' | 'status' | 'amount' | 'vendor';
+const intSort = ref<{ key: IntSortKey; desc: boolean }>({ key: 'date', desc: true });
+const toggleIntSort = (key: IntSortKey) => {
+  intSort.value = intSort.value.key === key ? { key, desc: !intSort.value.desc } : { key, desc: key === 'date' || key === 'amount' };
+};
+const intSortMark = (key: IntSortKey) => (intSort.value.key === key ? (intSort.value.desc ? '↓' : '↑') : '⇅');
+const INT_GET: Record<IntSortKey, (r: InteriorExpenseRecord) => string | number> = {
+  date: (r) => r.startDate || r.date || '', work: (r) => r.work || '', status: (r) => r.status || '',
+  amount: (r) => r.amountWithVat || 0, vendor: (r) => r.vendor || '',
+};
 const rowsOf = (kind: 'bid' | 'cost') => interior.rows
   .filter((r) => r.auctionId === (picked.value?.id ?? '') && (r.kind ?? 'cost') === kind)
-  .sort((a, b) => ((b.startDate || b.date || '')).localeCompare(a.startDate || a.date || ''));
+  .sort((a, b) => {
+    const get = INT_GET[intSort.value.key];
+    const x = get(a); const y = get(b);
+    const d = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), 'ko');
+    return intSort.value.desc ? -d : d;
+  });
 const totalOf = (kind: 'bid' | 'cost') => rowsOf(kind)
   .reduce((sum, r) => sum + (r.amountWithVat || 0), 0);
 const money = (n: number) => (n || 0).toLocaleString('ko-KR');
@@ -951,7 +967,13 @@ const toggleSection = (key: string) => {
                 <col style="width: 28%" /><col style="width: 18%" /><col style="width: 23%" />
               </colgroup>
               <thead>
-                <tr>
+                <!-- 웹은 머리글을 눌러 정렬 -->
+                <tr v-if="webEmbed">
+                  <th v-for="c in ([['date', '예상일정'], ['work', '작업내용'], ['status', card.status], ['amount', `${card.amount} (VAT포함)`], ['vendor', '업체명 · 연락처']] as const)" :key="c[0]">
+                    <button type="button" class="pw-sort" @click="toggleIntSort(c[0])">{{ c[1] }}<i :class="{ on: intSort.key === c[0] }">{{ intSortMark(c[0]) }}</i></button>
+                  </th>
+                </tr>
+                <tr v-else>
                   <th>예상일정</th><th>작업내용</th><th>{{ card.status }}</th>
                   <th>{{ card.amount }}{{ '\n' }}(VAT포함)</th><th>업체명{{ '\n' }}연락처</th>
                 </tr>
@@ -1802,4 +1824,8 @@ const toggleSection = (key: string) => {
 .pw-body.app.tab-evict .pw-gr-list li { line-height: 1.7; }
 .pw-body.app.tab-evict .pw-sk-col { gap: 9px; }
 .pw-body.app.tab-evict .pw-sk-item { min-height: 40px; padding-top: 9px; padding-bottom: 9px; line-height: 1.5; }
+/* 정렬 머리글(웹) */
+.pw-sort { border: 0; background: none; padding: 0; color: inherit; font: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.pw-sort i { font-style: normal; font-size: .85em; opacity: .55; }
+.pw-sort i.on { opacity: 1; }
 </style>
