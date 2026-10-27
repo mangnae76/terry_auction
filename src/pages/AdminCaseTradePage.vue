@@ -7,7 +7,9 @@
 // 실거래 맞추기에서는 빠진다 (국토부 거래 자료에 동·호가 없다).
 //
 // 셈과 조회는 services/caseTradeAnalysis.ts 에 있다 — 이 화면은 보여 주기만 한다.
-import { computed, inject, nextTick, ref } from 'vue';
+import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
+import { useScreenSnapshot } from '../composables/useScreenSnapshot';
+import SnapChip from '../components/SnapChip.vue';
 import { useRouter } from 'vue-router';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
 import { analyzeAddress, type CasePropertyType, type CaseTradeRow } from '../services/caseTradeAnalysis';
@@ -514,6 +516,59 @@ const openSnap = (snap: CaseSnapshot) => {
   snapOpen.value = false;
 };
 
+// ===== 웹 — 마지막으로 본 화면을 이 브라우저(IndexedDB)에 남겨, 다른 화면에 갔다 오거나 새로고침해도 그대로 (composables/useScreenSnapshot) =====
+type ScreenSnap = {
+  address: string; kind: CasePropertyType; years: number;
+  region: ResolvedRegion | null; lot: string; ho: string; buildingDong: string;
+  price: ApartPrice | null; rows: CaseTradeRow[]; scanned: number; missed: number; baseArea: number;
+  areaFilter: string; areaNote: string; yearFilter: string; tab: 'all' | '매매' | '전세' | '월세';
+  pickedSale: string; pickedJeonse: string; rateText: string;
+  snapId: string; snapLabel: string; restoredSale: CaseTradeRow | null; restoredJeonse: CaseTradeRow | null; restoredSpot: string;
+  notice: string; ovSido: string; ovDistrictCode: string; ovDong: string; ovLot: string;
+};
+const screen = useScreenSnapshot<ScreenSnap>('adm.case.snapshot.v1');
+const screenChip = screen.chip;
+let restoringScreen = false;
+const collectScreen = (): ScreenSnap => ({
+  address: address.value, kind: kind.value, years: years.value,
+  region: region.value, lot: lot.value, ho: ho.value, buildingDong: buildingDong.value,
+  price: price.value, rows: rows.value, scanned: scanned.value, missed: missed.value, baseArea: baseArea.value,
+  areaFilter: areaFilter.value, areaNote: areaNote.value, yearFilter: yearFilter.value, tab: tab.value,
+  pickedSale: pickedSale.value, pickedJeonse: pickedJeonse.value, rateText: rateText.value,
+  snapId: snapId.value, snapLabel: snapLabel.value, restoredSale: restoredSale.value, restoredJeonse: restoredJeonse.value, restoredSpot: restoredSpot.value,
+  notice: notice.value, ovSido: ovSido.value, ovDistrictCode: ovDistrictCode.value, ovDong: ovDong.value, ovLot: ovLot.value,
+});
+let screenTimer = 0;
+const saveScreen = () => {
+  if (!webEmbed || restoringScreen) return;
+  // 아무것도 안 본 빈 화면은 남기지 않는다 — 앞서 남긴 것을 지우지 않게
+  if (!rows.value.length && !price.value && !restoredSale.value && !restoredJeonse.value) return;
+  window.clearTimeout(screenTimer);
+  screenTimer = window.setTimeout(() => { void screen.save(collectScreen()); }, 300);
+};
+// 분석 결과 · 고른 기준 줄 · 거르기가 바뀌면 남긴다
+watch([rows, price, pickedSale, pickedJeonse, areaFilter, yearFilter, tab, rateText, restoredSale, restoredJeonse], saveScreen);
+onMounted(async () => {
+  if (!webEmbed) return;
+  const s = await screen.restore();
+  if (!s) return;
+  restoringScreen = true;
+  address.value = s.address ?? ''; kind.value = s.kind ?? 'villa'; years.value = s.years ?? 10;
+  region.value = s.region ?? null; lot.value = s.lot ?? ''; ho.value = s.ho ?? ''; buildingDong.value = s.buildingDong ?? '';
+  price.value = s.price ?? null; rows.value = s.rows ?? []; scanned.value = s.scanned ?? 0; missed.value = s.missed ?? 0; baseArea.value = s.baseArea ?? 0;
+  ovSido.value = s.ovSido ?? ''; ovDistrictCode.value = s.ovDistrictCode ?? ''; ovDong.value = s.ovDong ?? ''; ovLot.value = s.ovLot ?? '';
+  snapId.value = s.snapId ?? ''; snapLabel.value = s.snapLabel ?? '';
+  restoredSale.value = s.restoredSale ?? null; restoredJeonse.value = s.restoredJeonse ?? null; restoredSpot.value = s.restoredSpot ?? '';
+  rateText.value = s.rateText ?? rateText.value;
+  areaFilter.value = s.areaFilter ?? ''; areaNote.value = s.areaNote ?? ''; yearFilter.value = s.yearFilter ?? ''; tab.value = s.tab ?? 'all';
+  await nextTick();
+  // 표를 다시 그린 뒤에 고른 줄을 되돌린다(표가 바뀌며 고른 것을 비우는 일이 있어도 덮는다)
+  pickedSale.value = s.pickedSale ?? ''; pickedJeonse.value = s.pickedJeonse ?? '';
+  notice.value = s.notice ?? '';
+  await nextTick();
+  restoringScreen = false;
+});
+
 /** 창에서 이름을 적고 저장 */
 const confirmSave = async () => {
   snapLabel.value = saveName.value.trim() || defaultName();
@@ -629,6 +684,7 @@ const downloadCsv = () => {
       <!-- 웹 — 지역분석의 탭 줄 자리: 왼쪽에 화면 이름 · 저장 단추, 오른쪽에 경로(#admCrumbSlot 로 웹 경로를 옮겨 온다) -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top adm-case-row">
         <strong class="adm-case-title">경매지번 분석</strong>
+        <SnapChip :chip="screenChip" />
         <div class="adm-acts">
           <button type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="askSave">저장</button>
           <button v-if="snapId" type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="saveSnap(true)">덮어쓰기</button>
