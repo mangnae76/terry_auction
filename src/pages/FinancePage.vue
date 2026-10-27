@@ -5,6 +5,7 @@
 import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { shortAddr } from '../utils/address';
+import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 // 세금신고는 그 탭을 눌러야 받아 온다 — 자금관리를 열 때 같이 끌고 오지 않는다
@@ -438,8 +439,9 @@ const exportExcel = () => {
         <!-- 낙찰로 들고 있는 물건과 판 물건 — 돈 이야기의 바탕이라 제목 옆에 적어 둔다 -->
         <span class="fin-stage-count">
           <!-- 건수 앞에 곱하기 — 선정물건의 휴지통·보관함 단추와 같은 표기 -->
-          <button type="button" :class="['won', { on: stageListOpen === '낙찰' }]" @click="toggleStageList('낙찰')">낙찰목록 <i>×</i>{{ wonCount }}</button>
-          <button type="button" :class="['sold', { on: stageListOpen === '매도' }]" @click="toggleStageList('매도')">매도목록 <i>×</i>{{ soldCount }}</button>
+          <!-- 낙찰이후의 '낙찰목록 ×N ▾' 단추와 같은 네모 단추 — 낙찰은 파랑, 매도는 초록 -->
+          <button type="button" :class="['won', { on: stageListOpen === '낙찰' }]" @click="toggleStageList('낙찰')">낙찰목록 <i>×</i>{{ wonCount }}<img :src="chevronDownIcon" :class="['fin-chev', { up: stageListOpen === '낙찰' }]" alt="" /></button>
+          <button type="button" :class="['sold', { on: stageListOpen === '매도' }]" @click="toggleStageList('매도')">매도목록 <i>×</i>{{ soldCount }}<img :src="chevronDownIcon" :class="['fin-chev', { up: stageListOpen === '매도' }]" alt="" /></button>
         </span>
       </h1>
       <nav class="fin-tabs">
@@ -880,16 +882,20 @@ const exportExcel = () => {
 }
 /* 낙찰·매도 건수 — 제목 오른쪽의 알약 둘. 누르면 그 물건을 카드로 펼친다 */
 .fin-stage-count { margin-left: auto; display: inline-flex; gap: 5px; }
+/* 낙찰이후 '낙찰목록' 단추(.pw-objpick)와 같은 네모 — 알약이 아니다 */
 .fin-stage-count button {
-  border: 1px solid transparent; font-family: inherit;
-  font-size: 11.5px; font-weight: 800; cursor: pointer;
-  padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 1px;
+  height: 26px; padding: 0 5px 0 8px; box-sizing: border-box;
+  border: 1px solid #c7d0de; border-radius: 7px; background: #fff; font-family: inherit;
+  font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap;
 }
-.fin-stage-count i { font-style: normal; font-size: 9.5px; font-weight: 700; opacity: 0.6; margin: 0 1px; }
-.fin-stage-count .won { background: #dce5ff; color: #2a3f8f; }
-.fin-stage-count .won.on { border-color: #2a3f8f; }
-.fin-stage-count .sold { background: #e8f7f1; color: #0f7a5c; }
-.fin-stage-count .sold.on { border-color: #0f7a5c; }
+.fin-stage-count i { font-style: normal; font-size: 0.75em; font-weight: 700; opacity: 0.6; margin: 0 1px 0 3px; }
+.fin-chev { width: 16px; height: 16px; object-fit: contain; transition: transform 0.2s; }
+.fin-chev.up { transform: rotate(180deg); }
+.fin-stage-count .won { border-color: #b9c8ee; color: #2a3f8f; }
+.fin-stage-count .won.on { background: #eef3ff; border-color: #2a3f8f; }
+.fin-stage-count .sold { border-color: #b7e0cf; color: #0f7a5c; }
+.fin-stage-count .sold.on { background: #ecf8f2; border-color: #0f7a5c; }
 
 /* 펼친 산정표 — 카드 안쪽에 들어간다 */
 .fin-stage-card.open { border-color: #9fb3d4; }
