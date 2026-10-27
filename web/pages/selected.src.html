@@ -831,20 +831,20 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* (사업지출 · 유류&식대 · 물품구매도 같은 틀 — 요약 상자가 없는 탭은 경로 줄 아래 바로 표) */
 .app-page[data-k="finance"] .fin-shell:is(.tab-businessExpense, .tab-fuelMeal, .tab-itemPurchase) .fin-table-wrap { margin-top: 8px; }
 /* ===== 자금입출금 — 지역분석과 같은 틀: 띠 위 흰 필터 줄(기간 · 엑셀 · 항목추가, 붙박이) → 경로 줄 → 요약 상자(내비게이션) → 구분선 → 표 ===== */
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) .fin-fixed-top { display: flex; flex-direction: column; }
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) .fin-toolbar { order: -2; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px); z-index: 12;
+.app-page[data-k="finance"] .fin-shell .fin-fixed-top { display: flex; flex-direction: column; }
+.app-page[data-k="finance"] .fin-shell .fin-toolbar { order: -2; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px); z-index: 12;
   margin: 0 0 8px; padding: 10px 18px !important; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px;
   box-shadow: 0 0 0 100vmax var(--band); clip-path: inset(-8px -100vmax -8px -100vmax); }
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) .fin-toolbar::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: -9px; width: 100vw; height: 1px; background: var(--subtab-line); pointer-events: none; }
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) .fin-custom-range { order: -1; padding: 0 0 8px !important; }
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) .fin-webrow { order: 0; margin-top: 6px; }
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) .fin-toolbar-right { display: flex !important; align-items: center; gap: 8px; }
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) .fin-period { display: inline-flex !important; gap: 4px; padding: 4px; background: #f1f4f9; border-radius: 8px; }
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) .fin-period-btn { height: 32px; padding: 0 16px !important; font-size: 15px !important; border: 0 !important; background: transparent !important; box-shadow: none !important; color: #6b7280; }
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) .fin-period-btn.active { background: #fff !important; color: #1f2a44 !important; box-shadow: 0 1px 2px rgba(15, 23, 42, .1) !important; }
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) :is(.fin-excel, .fin-add) { height: 40px; min-width: 120px; padding: 0 16px !important; border-radius: 6px !important; font-size: 16px !important; }
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) .fin-excel { margin-left: auto; }
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) :is(.fin-excel, .fin-add) i { font-size: 13px; }
+.app-page[data-k="finance"] .fin-shell .fin-toolbar::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: -9px; width: 100vw; height: 1px; background: var(--subtab-line); pointer-events: none; }
+.app-page[data-k="finance"] .fin-shell .fin-custom-range { order: -1; padding: 0 0 8px !important; }
+.app-page[data-k="finance"] .fin-shell .fin-webrow { order: 0; margin-top: 6px; }
+.app-page[data-k="finance"] .fin-shell .fin-toolbar-right { display: flex !important; align-items: center; gap: 8px; }
+.app-page[data-k="finance"] .fin-shell .fin-period { display: inline-flex !important; gap: 4px; padding: 4px; background: #f1f4f9; border-radius: 8px; }
+.app-page[data-k="finance"] .fin-shell .fin-period-btn { height: 32px; padding: 0 16px !important; font-size: 15px !important; border: 0 !important; background: transparent !important; box-shadow: none !important; color: #6b7280; }
+.app-page[data-k="finance"] .fin-shell .fin-period-btn.active { background: #fff !important; color: #1f2a44 !important; box-shadow: 0 1px 2px rgba(15, 23, 42, .1) !important; }
+.app-page[data-k="finance"] .fin-shell :is(.fin-excel, .fin-add) { height: 40px; min-width: 120px; padding: 0 16px !important; border-radius: 6px !important; font-size: 16px !important; }
+.app-page[data-k="finance"] .fin-shell .fin-excel { margin-left: auto; }
+.app-page[data-k="finance"] .fin-shell :is(.fin-excel, .fin-add) i { font-size: 13px; }
 .app-page[data-k="finance"] .fin-custom-inline { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
 .app-page[data-k="finance"] .fin-custom-inline .fin-date-box { height: 40px; min-width: 130px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; font-size: 15px; color: #111827; cursor: pointer; }
 .app-page[data-k="finance"] .fin-custom-inline .fin-date-sep { color: #9ca3af; }
@@ -868,6 +868,11 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .tax-shell :is(.g-t, .g-sub, .ev-title, .month-head) { font-size: 15px !important; }
 .app-page[data-k="finance"] .tax-shell :is(.tax-card small, .tax-card span, .tax-card p, .tax-card em, .net-head, .net-head span, .net-formula, .net-side span, .net-side small, .net-side p,
   .sub, .yr, .tax-empty, .tax-empty *, .chip, .month-none, .ev-when, .ev-note, .g-s, .g-b, .g-b *, .g-lead, .g-lead *, .g-item, .g-card td, .g-card th, .g-card .r, .g-card i) { font-size: 14px !important; }
+/* 세금신고 내용 — 안쪽 상자들이 좌우 16px 씩 들어가 있어 필터 줄 · 경로 줄과 끝선이 어긋났다. 틀을 16px 씩 벌려 끝선을 맞춘다 */
+.app-page[data-k="finance"] .tax-shell.embedded { margin: 8px -16px 0; }
+/* 세금신고 연도 드롭다운 — 필터 줄 안, 다른 탭의 기간 단추 자리 */
+.app-page[data-k="finance"] .fin-taxyear { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: #374151; }
+.app-page[data-k="finance"] .fin-taxyear select { height: 40px; min-width: 140px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; font: inherit; font-size: 16px; color: #111827; cursor: pointer; }
 /* 사업지출 · 물품구매 머리글 '비용(VAT포함)' · '합계(VAT포함)' — 웹은 칸이 넉넉해 한 줄로(머리줄이 두꺼워 보였다) */
 .app-page[data-k="finance"] .fin-table th.two { white-space: nowrap !important; }
 /* 자금입출금 표 — 글자 규칙대로 14(머리글 굵게), 줄 위아래 넉넉히 */
@@ -875,7 +880,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .fin-table td .pill { font-size: 13px !important; padding: 3px 10px; }
 .app-page[data-k="finance"] .fin-table .fin-empty { font-size: 14px !important; padding: 28px !important; }
 /* 표 — 요약 상자와 같은 좌우 끝선 */
-.app-page[data-k="finance"] .fin-shell:not(.tab-tax) .fin-table-wrap { margin-left: 0 !important; margin-right: 0 !important; }
+.app-page[data-k="finance"] .fin-shell .fin-table-wrap { margin-left: 0 !important; margin-right: 0 !important; }
 /* 요약 상자 — 지역분석 내비게이션처럼 회색 판 위 흰 상자 셋, 이름 14 · 값 18, 아래 구분선 */
 .app-page[data-k="finance"] .fin-summary.fin-nav { position: relative; margin: 8px 0 25px; padding: 12px 14px !important; border-radius: 10px; background: #f5f7fa; gap: 10px !important; } /* 간격 촘촘히 — 경로 줄과 8 · 구분선까지 12 · 표까지 12 */
 .app-page[data-k="finance"] .fin-summary.fin-nav::after { content: ""; position: absolute; left: 0; right: 0; bottom: -13px; height: 1px; background: #cfd6e2; }

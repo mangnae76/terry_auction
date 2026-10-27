@@ -41,6 +41,9 @@ const finance = useFinanceStore();
 const router = useRouter();
 /** 웹에 떴는가 — 웹은 제목 줄을 빼고 낙찰목록 · 매도목록을 경로 줄 오른쪽에 둔다 */
 const webEmbed = inject<boolean>('webEmbed', false);
+/** 웹 세금신고 연도 — 올해부터, 다음 해 하나와 지난 10년 */
+const taxYear = ref(new Date().getFullYear());
+const taxYears = computed(() => { const t = new Date().getFullYear(); return Array.from({ length: 12 }, (_, i) => t + 1 - i); });
 const auctionStore = useAuctionStore();
 /** 머리줄에 적는 건수 — 지금 낙찰로 들고 있는 물건과 판 물건.
  *  단계(bidStatus)를 그대로 센다 — 세금신고가 보는 날짜와 같은 자리에서 온다 */
@@ -547,6 +550,16 @@ const exportExcel = () => {
       </nav>
     </header>
 
+    <!-- 웹 세금신고 — 위 필터 줄 자리에 연도 드롭다운(처음엔 올해) -->
+    <div v-if="webEmbed && activeTab === 'tax'" class="fin-toolbar">
+      <div class="fin-toolbar-right">
+        <label class="fin-taxyear">세금신고 연도
+          <select v-model.number="taxYear">
+            <option v-for="y in taxYears" :key="y" :value="y">{{ y }}년</option>
+          </select>
+        </label>
+      </div>
+    </div>
     <div v-if="activeTab !== 'tax'" class="fin-toolbar">
       <!-- 제목·안내 줄은 적지 않는다 — 탭 이름과 겹친다 -->
       <div class="fin-toolbar-right">
@@ -755,7 +768,7 @@ const exportExcel = () => {
     </template>
 
     <!-- ========== TAB 5: 세금신고 — 세금관리 화면을 그대로 들여온다 ========== -->
-    <TaxPage v-else-if="activeTab === 'tax'" embedded />
+    <TaxPage v-else-if="activeTab === 'tax'" embedded :web-year="webEmbed ? taxYear : null" />
 
     <!-- 줄이 많아 잘라 그린 경우에만 — v-if/v-else 사슬 밖에 둔다 -->
     <button v-if="restCount > 0" type="button" class="fin-more" @click="shownCount += PAGE">

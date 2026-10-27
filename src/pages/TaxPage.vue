@@ -2,19 +2,21 @@
 // 세금관리 — 연도별로 낙찰·매도 건을 모아 사업소득과 세금을 가늠한다.
 // 값은 물건상세 '입찰가산정'에 적어 둔 금액과 낙찰일·매도일에서 끌어온다.
 import { useRouter } from 'vue-router';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import type { AuctionDetail } from '../types/auction';
 
 // 자금관리 안의 '세금신고' 탭에서 불러 쓸 때는 제 머리글과 하단 메뉴를 그리지 않는다.
 // 주소창으로 /tax 를 바로 열면 전처럼 한 장짜리 화면으로 선다.
-const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false });
+/** webYear — 웹은 위 필터 줄의 연도 드롭다운이 해를 정한다(앱은 아래 ‹ 연도 › 그대로) */
+const props = withDefaults(defineProps<{ embedded?: boolean; webYear?: number | null }>(), { embedded: false, webYear: null });
 
 const store = useAuctionStore();
 
 const thisYear = new Date().getFullYear();
-const year = ref(thisYear);
+const year = ref(props.webYear ?? thisYear);
+watch(() => props.webYear, (v) => { if (v) year.value = v; });
 /** 가운데가 선택한 해, 양옆이 앞뒤 해 */
 const yearWindow = computed(() => [year.value + 1, year.value, year.value - 1]);
 
@@ -261,7 +263,7 @@ const router = useRouter();
       <span class="tax-eyebrow">세금 관리 · TAX MANAGEMENT</span>
     </header>
 
-    <div class="tax-years">
+    <div v-if="!props.webYear" class="tax-years">
       <button type="button" class="yr-nav" aria-label="이전 해" @click="year += 1">‹</button>
       <button
         v-for="y in yearWindow"
