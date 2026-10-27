@@ -549,7 +549,7 @@ const toggleSection = (key: string) => {
           </h1>
           <!-- 낙찰 뒤에 밟는 차례 -->
           <button
-            v-if="!(webEmbed && activeTab === 'evict')"
+            v-if="activeTab !== 'evict'"
             type="button"
             class="pw-info"
             aria-label="낙찰 후 진행 순서"
@@ -699,8 +699,8 @@ const toggleSection = (key: string) => {
     </div>
 
     <div :key="activeTab" class="pw-body">
-      <!-- 웹 명도 — ⓘ 에 숨어 있던 '낙찰 후 진행 순서'를 명도절차 위 상자로 펼쳐 둔다 -->
-      <section v-if="webEmbed && activeTab === 'evict'" class="pw-card pw-flowcard">
+      <!-- 명도 — ⓘ 에 숨어 있던 '낙찰 후 진행 순서'를 명도절차 위 상자로 펼쳐 둔다 (앱 · 웹) -->
+      <section v-if="activeTab === 'evict'" :class="['pw-card', 'pw-flowcard', { web: webEmbed }]">
         <!-- 늘 펼쳐 둔다 — 접기 단추 없음 -->
         <header class="pw-card-head pw-flowcard-head">
           <h2>
@@ -1685,6 +1685,21 @@ const toggleSection = (key: string) => {
   white-space: nowrap; word-break: keep-all;
 }
 .pw-flow-list span { flex: 1 1 auto; min-width: 0; color: #374151; }
+/* 명도 탭 '낙찰 후 진행 순서' 상자 — 단계 상자를 누르면 설명 말풍선 (웹 모양은 selected.html 에서 따로) */
+.pw-flowcard-head { cursor: default; }
+.pw-flowcard .pw-flow-map { border-bottom: 0; padding: 4px 4px 8px; }
+.pw-flowcard .pw-flow-box { cursor: pointer; outline: none; }
+.pw-flowcard .pw-flow-box:focus { background: #e3ebff; }
+.pw-flow-tip {
+  display: none; position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 5;
+  width: max-content; max-width: 220px; padding: 7px 10px; border-radius: 8px;
+  background: #1f2937; color: #fff; font-size: 12.5px; font-weight: 500; line-height: 1.45;
+  text-align: left; white-space: normal; box-shadow: 0 6px 16px rgba(17, 24, 39, 0.2); pointer-events: none;
+}
+.pw-flow-box:focus .pw-flow-tip { display: block; }
+/* 줄 양끝 상자는 말풍선을 끝에 맞춰 화면 밖으로 안 나가게 (한 줄 넷) */
+.pw-flowcard:not(.web) .pw-flow-box:nth-child(4n+1) .pw-flow-tip { left: 0; transform: none; }
+.pw-flowcard:not(.web) .pw-flow-box:nth-child(4n) .pw-flow-tip { left: auto; right: 0; transform: none; }
 
 /* 행 더하기·빼기 — 물건상세의 단계 단추와 같은 꼴 */
 /* 행 더하기·빼기 — 물건상세(.adp-mkt-step)와 같은 알약 하나 */
