@@ -115,8 +115,18 @@ const DETAIL_AREA_BUCKETS: Bucket[] = [
   { label: '85~100㎡', test: (r) => m2(r) > 85 && m2(r) <= 100 },
   { label: '100㎡~', test: (r) => m2(r) > 100 },
 ];
+// 상세분포의 건축연식 — 20~30년을 한 칸으로 (표가 넓어지지 않게 여섯 칸)
+// (AGE_BUCKETS 는 아래에서 정한다 — 여기서 펼쳐 쓰면 정하기 전이라 멎는다. 나이 셈 age 는 함수라 괜찮다)
+const DETAIL_AGE_BUCKETS: Bucket[] = [
+  { label: '~5년', test: (r) => age(r) >= 0 && age(r) <= 5 },
+  { label: '5~10년', test: (r) => age(r) > 5 && age(r) <= 10 },
+  { label: '10~15년', test: (r) => age(r) > 10 && age(r) <= 15 },
+  { label: '15~20년', test: (r) => age(r) > 15 && age(r) <= 20 },
+  { label: '20~30년', test: (r) => age(r) > 20 && age(r) <= 30 },
+  { label: '30년~', test: (r) => age(r) > 30 },
+];
 const detailBuckets = computed<Bucket[]>(() => ({
-  price: WEB_PRICE_BUCKETS, area: DETAIL_AREA_BUCKETS, age: WEB_AGE_BUCKETS, floor: FLOOR_BUCKETS,
+  price: WEB_PRICE_BUCKETS, area: DETAIL_AREA_BUCKETS, age: DETAIL_AGE_BUCKETS, floor: FLOOR_BUCKETS,
 }[detailKind.value]));
 /** 표 위 설명 줄 — 면적은 ㎡ 구간이 몇 평쯤인지 함께 */
 const detailCaption = computed(() => {
