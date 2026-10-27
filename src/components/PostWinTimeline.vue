@@ -172,10 +172,10 @@ const resetDefault = () => {
     <header class="pwt-head">
       <h2>
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>
-        법원 진행절차
+        절차진행
       </h2>
       <button v-if="auction" type="button" :class="['pwt-btn', 'deal', { on: !!flow.endedAt }]" @click="endByDeal">{{ flow.endedAt ? `협의 완료 (${flow.endedAt}) — 되돌리기` : '협의 완료로 종료' }}</button>
-      <button v-if="auction" type="button" class="pwt-btn" @click="resetDefault">기본 절차로 초기화</button>
+      <button v-if="auction" type="button" class="pwt-btn" @click="resetDefault">초기화</button>
     </header>
 
     <p v-if="!auction" class="pwt-empty">위에서 낙찰 물건을 고르면 그 물건의 낙찰일부터 절차 일정이 잡힙니다.</p>
@@ -213,9 +213,9 @@ const resetDefault = () => {
             <template v-else>
               <p class="pwt-name">
                 {{ r.name }}
-                <!-- 완료(초록) · 다음진행(빨강) · 예정(파랑) — 채도를 낮춘 작은 칩 -->
+                <!-- 완료(초록) · 진행(빨강) · 예정(파랑) — 채도를 낮춘 진한 바탕에 흰 글자 -->
                 <span v-if="r.doneDate" class="pwt-chip done">완료</span>
-                <span v-else-if="r.next" class="pwt-chip next">다음진행</span>
+                <span v-else-if="r.next" class="pwt-chip next">진행</span>
                 <span v-else-if="!flow.endedAt" class="pwt-chip plan">예정</span>
               </p>
               <p class="pwt-meta">
@@ -275,7 +275,7 @@ const resetDefault = () => {
 .pwt-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 14px; font-weight: 700; line-height: 1; }
 .pwt-chip.done { background: #4f9a68; color: #fff; }
 .pwt-chip.next { background: #c95b5b; color: #fff; }
-.pwt-chip.plan { background: #e5edfb; color: #3f63b0; }
+.pwt-chip.plan { background: #4f72b8; color: #fff; }
 .pwt-meta { margin: 6px 0 0; display: flex; align-items: baseline; gap: 8px; font-size: 14px; }
 .pwt-meta b { font-weight: 700; }
 .pwt-dday { font-weight: 800; color: #111827; }

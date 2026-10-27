@@ -30,7 +30,7 @@ import PostWinTimeline from '../components/PostWinTimeline.vue';
 type TabKey = 'win' | 'flow' | 'biz' | 'balance' | 'evict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
   { key: 'win', label: '낙찰당일', desc: '낙찰가·경쟁 상황, 영수증과 서류 챙기기' },
-  { key: 'flow', label: '법원 진행절차', desc: '낙찰일부터 명도까지 단계별 일정' },   // 웹만(앱 탭 줄에는 안 보인다)
+  { key: 'flow', label: '절차진행', desc: '낙찰일부터 명도까지 단계별 일정' },   // 웹만(앱 탭 줄에는 안 보인다)
   { key: 'evict', label: '명도', desc: '점유자 확인, 인도명령·강제집행, 이사비 협의' },
   { key: 'biz', label: '사업자등록', desc: '매매사업자 등록 · 사업용 계좌 · 사업용 카드' },
   { key: 'balance', label: '잔금·등기', desc: '잔금 납부일, 등기 촉탁, 취득세' },
@@ -228,14 +228,11 @@ const dealAfterFirst = (list: CheckGroup[]) => {
 };
 /** 웹 명도 — 명도절차 · 명도 협상 방법은 화면에서 빼고, 경로 오른쪽 단추로 여는 팝업에 같은 내용을 띄운다 */
 const EV_POP_KEYS = ['ev.flow', 'ev.deal'];
-const evPop = ref('');
+const evPop = ref(false);
 const isEvPop = (g: CheckGroup) => webEmbed && !editing.value && activeTab.value === 'evict' && EV_POP_KEYS.includes(g.key);
-const evPopBtns = computed(() => EV_POP_KEYS
-  .map((k) => evictBook.groups.value.find((g) => g.key === k))
-  .filter((g): g is CheckGroup => !!g));
-const onEvPopKey = (e: KeyboardEvent) => { if (e.key === 'Escape') evPop.value = ''; };
+const onEvPopKey = (e: KeyboardEvent) => { if (e.key === 'Escape') evPop.value = false; };
 watch(evPop, (v) => { if (v) window.addEventListener('keydown', onEvPopKey); else window.removeEventListener('keydown', onEvPopKey); });
-watch(activeTab, () => { evPop.value = ''; });
+watch(activeTab, () => { evPop.value = false; });
 onBeforeUnmount(() => window.removeEventListener('keydown', onEvPopKey));
 const dayGroups = computed<CheckGroup[]>(
   () => (editing.value ? draft.value
@@ -590,17 +587,11 @@ const toggleSection = (key: string) => {
         </div>
       </div>
       <!-- 웹 — 경로(홈 › 낙찰이후 › 탭)는 카드 아래 이 자리로 옮겨 온다 -->
-      <!-- 명도 탭은 경로 오른쪽에 명도절차 · 명도 협상 방법 단추 — 누르면 팝업 -->
+      <!-- 명도 탭은 경로 오른쪽에 '명도' 단추 하나 — 누르면 명도절차 · 명도 협상 방법을 한 팝업에 -->
       <div v-if="webEmbed" class="pw-crumbrow">
         <div class="pw-crumb" data-crumb-slot />
         <span v-if="activeTab === 'evict' && !editing" class="pw-evbtns">
-          <button
-            v-for="g in evPopBtns"
-            :key="g.key"
-            type="button"
-            :class="{ on: evPop === g.key }"
-            @click="evPop = evPop === g.key ? '' : g.key"
-          >{{ g.title }}</button>
+          <button type="button" :class="{ on: evPop }" @click="evPop = !evPop">명도</button>
         </span>
       </div>
       <!-- 어느 물건의 일인지 — 탭 밑에 카드로 붙박아 둔다. 누르면 목록이 펼쳐진다 -->
@@ -672,7 +663,14 @@ const toggleSection = (key: string) => {
     </div>
 
     <div :key="activeTab" :class="['pw-body', `tab-${activeTab}`, { app: !webEmbed }]">
-      <div v-if="evPop" class="pw-evpop-veil" @click="evPop = ''" />
+      <div v-if="evPop" class="pw-evpop-veil" @click="evPop = false" />
+      <!-- 팝업 틀은 늘 두고(v-show) 열 때만 보인다 — 순간이동(Teleport) 받을 자리가 처음부터 있어야 옮겨 온다 -->
+      <div v-if="webEmbed && activeTab === 'evict'" v-show="evPop" class="pw-evpop" role="dialog" aria-label="명도">
+        <button type="button" class="pw-evpop-x" aria-label="닫기" @click="evPop = false">
+          <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+        </button>
+        <div class="pw-evpop-body" />
+      </div>
       <!-- 낙찰당일 — '낙찰 후 진행 순서'를 탭 맨 위 상자로 펼쳐 둔다 (앱 · 웹) -->
       <section v-if="activeTab === 'win'" :class="['pw-card', 'pw-flowcard', { web: webEmbed }]">
         <!-- 늘 펼쳐 둔다 — 접기 단추 없음 -->
@@ -703,13 +701,10 @@ const toggleSection = (key: string) => {
           <img :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(`__super-${bi}`) }]" alt="" />
         </header>
         <template v-if="!blk.super || !isCollapsed(`__super-${bi}`)">
-        <section
-          v-for="(g, ei) in blk.groups"
-          v-show="!isEvPop(g) || evPop === g.key"
-          :key="g.key"
-          :class="['pw-card', { 'pw-evpop': isEvPop(g) }]"
-          :role="isEvPop(g) ? 'dialog' : undefined"
-        >
+        <template v-for="(g, ei) in blk.groups" :key="g.key">
+        <!-- 웹 명도 — 명도절차 · 명도 협상 방법은 팝업 안으로 옮겨 보여 준다 -->
+        <Teleport defer to=".pw-evpop-body" :disabled="!(isEvPop(g) && evPop)">
+        <section v-show="!isEvPop(g) || evPop" class="pw-card">
           <header class="pw-card-head" @click="editing || isEvPop(g) || toggleSection(g.key)">
             <span v-if="editing" class="pw-ttlwrap">
               <input v-model="g.title" class="pw-einput ttl" placeholder="제목" />
@@ -752,10 +747,6 @@ const toggleSection = (key: string) => {
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M16 10h0M8 14h2M12 14h2M16 14h0M8 18h8"/></svg>{{ lk.label }}
             </a>
             <img v-if="!editing && !isEvPop(g)" :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(g.key) }]" alt="" />
-            <!-- 팝업에는 접기 대신 닫기 -->
-            <button v-if="isEvPop(g)" type="button" class="pw-evpop-x" aria-label="닫기" @click.stop="evPop = ''">
-              <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
-            </button>
           </header>
           <div v-if="editing || isEvPop(g) || !isCollapsed(g.key)" class="pw-card-body">
             <textarea v-if="editing" v-model="g.note" class="pw-earea note" rows="2" placeholder="안내 한 줄" />
@@ -966,6 +957,8 @@ const toggleSection = (key: string) => {
             <button v-if="editing" type="button" class="pw-addsec" @click="addSection(blk.at[ei])">＋ 묶음 추가</button>
           </div>
         </section>
+        </Teleport>
+        </template>
         </template>
        </div>
       </template>
@@ -1870,8 +1863,10 @@ const toggleSection = (key: string) => {
 .pw-evbtns button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #374151; font-size: 14px; font-weight: 600; cursor: pointer; }
 .pw-evbtns button:hover, .pw-evbtns button.on { border-color: #2b6df3; color: #2b6df3; }
 .pw-evpop-veil { position: fixed; inset: 0; z-index: 900; background: rgba(15, 23, 42, .45); }
-.pw-card.pw-evpop { position: fixed; z-index: 901; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1100px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow: auto; margin: 0; box-shadow: 0 20px 48px rgba(15, 23, 42, .28); }
-.pw-card.pw-evpop .pw-card-head { cursor: default; }
-.pw-evpop-x { margin-left: auto; width: 26px; height: 26px; padding: 0; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #4b5563; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
+.pw-evpop { position: fixed; z-index: 901; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1100px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow: auto; border-radius: 12px; background: #fff; box-shadow: 0 20px 48px rgba(15, 23, 42, .28); }
+.pw-evpop .pw-card { margin: 0; box-shadow: none; }
+.pw-evpop .pw-card + .pw-card { border-top: 1px solid #eef1f6; border-radius: 0; }
+.pw-evpop .pw-card-head { cursor: default; }
+.pw-evpop-x { position: absolute; top: 14px; right: 16px; z-index: 1; width: 26px; height: 26px; padding: 0; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #4b5563; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
 .pw-evpop-x:hover { background: #f3f4f6; color: #111827; }
 </style>
