@@ -316,6 +316,10 @@ button { cursor: pointer; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { background: rgba(255, 255, 255, .28); } }
 /* 경매지번 공동주택가 및 실거래가 — 지역분석과 같은 틀. 위 제목 상자(.adm-top)는 감추고, 그 단추(저장 · 저장 목록 · 엑셀)는 아래 줄로 옮겼다 */
 .app-market[data-k="case"] .adm-top { display: none !important; }
+/* 고르는 줄의 칸 이름(주소 입력 · 종류 · 실거래 기간)과 제목 줄 아래 안내 칩 · 직접 입력은 웹에서 뺀다 — 지역분석 고르는 줄처럼 칸만 */
+.app-market[data-k="case"] .adm-bar .adm-f > small { display: none !important; }
+.app-market[data-k="case"] .adm-bar { align-items: center !important; }
+.app-market[data-k="case"] :is(.adm-chip-row, .adm-bar.manual) { display: none !important; }
 .app-market[data-k="case"] .adm-bar.manual { position: static !important; box-shadow: none !important; clip-path: none; margin-top: 10px !important; }
 /* 제목 · 단추 줄 — 고르는 줄 높이가 지역분석과 달라(칸 이름이 위에 붙는다) 이 줄은 붙박지 않고 흐른다 */
 .app-market[data-k="case"] .adm-case-row { position: relative !important; top: auto !important; margin-bottom: 16px !important; padding-left: 4px;
