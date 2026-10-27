@@ -189,7 +189,7 @@ const resetDefault = () => {
 .pwt-row { display: flex; align-items: flex-start; gap: 14px; padding: 14px 10px; border-bottom: 1px solid #eef1f6; border-radius: 8px; }
 .pwt-row.done :is(.pwt-name, .pwt-meta, .pwt-note) { color: #9ca3af; }
 /* 지금 시작할 단계(아직 체크 안 한 첫 단계) — 흐린 빨강 칸 */
-.pwt-row.now { background: #fdeeee; border: 1px solid #f6c9c9; border-bottom-color: #f6c9c9; }
+.pwt-row.now { background: #fdeeee; border-bottom-color: transparent; }   /* 테두리 없이 바탕만 */
 .pwt-chk { flex: 0 0 auto; width: 20px; height: 20px; margin: 2px 4px 0 0; accent-color: #2b6df3; cursor: pointer; }
 .pwt-main { flex: 1 1 auto; min-width: 0; }
 .pwt-name { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; }
