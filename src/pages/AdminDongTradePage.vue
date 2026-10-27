@@ -163,8 +163,66 @@ const saveFilters = async () => {
   });
   toast('검색조건을 저장했습니다.');
 };
+// ===== 웹 — 마지막으로 받은 자료를 이 브라우저에 남긴다 =====
+// 새로고침하거나 다른 화면에 갔다 와도 요약 · 지역별 분석 · 지역 분포가 그대로 보이게.
+// (공공데이터 호출 자체는 워커가 저장해 아낀다 — 여기는 화면을 되살리는 몫)
+const SNAP_KEY = 'adm.dong.snapshot.v1';
+type Snapshot = {
+  sido: string; districtCode: string; kind: Kind; dong: string; dealKind: 'sale' | 'jeonse';
+  rows: DongTradeDetailRow[]; dongNames: string[]; period: { from: string; to: string };
+  loadedLabel: string; savedAt: number;
+};
+/** 칩 — 방금 받아 저장했나(updated) · 저장해 둔 걸 되살렸나(restored) · 저장을 못 했나(fail) */
+const snapState = ref<{ kind: 'updated' | 'restored' | 'fail'; at: number } | null>(null);
+const saveSnapshot = () => {
+  if (!webEmbed) return;
+  const snap: Snapshot = {
+    sido: sido.value, districtCode: districtCode.value, kind: kind.value, dong: dong.value, dealKind: loadedDeal.value,
+    rows: all.value, dongNames: dongNames.value, period: period.value, loadedLabel: loadedLabel.value, savedAt: Date.now(),
+  };
+  try {
+    localStorage.setItem(SNAP_KEY, JSON.stringify(snap));
+    snapState.value = { kind: 'updated', at: snap.savedAt };
+  } catch {
+    snapState.value = { kind: 'fail', at: Date.now() };
+  }
+};
+const restoreSnapshot = async () => {
+  if (!webEmbed) return;
+  let snap: Snapshot | null = null;
+  try { snap = JSON.parse(localStorage.getItem(SNAP_KEY) || 'null'); } catch { snap = null; }
+  if (!snap || !Array.isArray(snap.rows) || snap.rows.length === 0) return;
+  restoring = true;
+  sido.value = snap.sido; districtCode.value = snap.districtCode; kind.value = snap.kind; dong.value = snap.dong;
+  dealKind.value = snap.dealKind; loadedDeal.value = snap.dealKind;
+  all.value = snap.rows; dongNames.value = snap.dongNames; period.value = snap.period; loadedLabel.value = snap.loadedLabel;
+  snapState.value = { kind: 'restored', at: snap.savedAt };
+  await nextTick();
+  restoring = false;
+};
+// 동을 바꿔 보면 그 동도 남긴다 — 새로고침해도 보던 동으로
+watch(dong, (v) => {
+  if (!webEmbed || restoring) return;
+  try {
+    const snap = JSON.parse(localStorage.getItem(SNAP_KEY) || 'null') as Snapshot | null;
+    if (snap && snap.districtCode === districtCode.value) localStorage.setItem(SNAP_KEY, JSON.stringify({ ...snap, dong: v }));
+  } catch { /* 못 남겨도 그만 */ }
+});
+const snapAt = (t: number) => {
+  const d = new Date(t);
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  return `${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+};
+const snapChip = computed(() => {
+  const st = snapState.value;
+  if (!st) return null;
+  if (st.kind === 'fail') return { cls: 'fail', text: '저장 못 함 — 새로고침하면 다시 조회해야 합니다' };
+  if (st.kind === 'updated') return { cls: 'ok', text: `업데이트 완료 · 저장됨 ${snapAt(st.at)}` };
+  return { cls: 'saved', text: `저장된 자료 · ${snapAt(st.at)} 조회` };
+});
+
 onMounted(async () => {
-  if (!auth.uid) { prefsLoaded.value = true; return; }
+  if (!auth.uid) { prefsLoaded.value = true; await restoreSnapshot(); return; }
   const prefs = await loadUserPrefs(auth.uid);
   const f = prefs?.adminDongFilter;
   if (f) {
@@ -180,6 +238,7 @@ onMounted(async () => {
     restoring = false;
   }
   prefsLoaded.value = true;
+  await restoreSnapshot(); // 마지막으로 본 자료가 있으면 그게 우선
 });
 
 // ===== 불러오기 =====
@@ -205,6 +264,7 @@ const load = async () => {
     if (dong.value && !res.dongNames.includes(dong.value)) dong.value = '';
     if (res.error) notice.value = res.error;
     if (res.rows.length === 0 && !res.error) notice.value = '그 기간에 거래가 없습니다.';
+    if (res.rows.length > 0) saveSnapshot();
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -212,7 +272,7 @@ const load = async () => {
   }
 };
 // 종류를 바꾸면 받아 둔 줄이 더는 맞지 않는다
-watch(kind, () => { if (district.value) void load(); });
+watch(kind, () => { if (district.value && !restoring) void load(); });
 
 // ===== 거르기 =====
 const toNum = (v: string) => {
@@ -527,6 +587,7 @@ const downloadCsv = () => {
         <section v-if="webEmbed && !dong" class="adm-gunav">
           <div class="adm-gunav-head">
             <strong>{{ loadedLabel }}<template v-if="loadedDeal === 'jeonse'"> 전세</template></strong>
+            <span v-if="snapChip" :class="['adm-snap', snapChip.cls]">{{ snapChip.text }}</span>
           </div>
           <div class="adm-gunav-row">
             <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small>{{ c.label }}</small><b>{{ c.value }}<em v-if="c.sub" class="adm-gunav-sub">{{ c.sub }}</em></b></div>
@@ -534,6 +595,7 @@ const downloadCsv = () => {
         </section>
         <div v-else class="adm-sum">
           <strong>{{ loadedLabel }} {{ dong || '전체' }}</strong>
+          <span v-if="webEmbed && snapChip" :class="['adm-snap', snapChip.cls]">{{ snapChip.text }}</span>
           <span v-if="district" class="code">{{ district.lawdCode }}</span>
           <span>{{ ymd(period.from) }} ~ {{ ymd(period.to) }} 받아 둠</span>
         </div>
@@ -810,6 +872,11 @@ const downloadCsv = () => {
 .adm-gunav-sub { display: block; margin-top: 4px; font-style: normal; font-size: 12px; font-weight: 600; color: #6b7280; letter-spacing: 0; white-space: normal; word-break: keep-all; } /* 좁은 창에서는 두 줄로 */
 .adm-sum { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 2px 12px; font-size: 12.5px; color: #6b7280; font-weight: 600; }
 .adm-sum strong { font-size: 14.5px; font-weight: 800; color: #111827; }
+/* 저장 칩 — 방금 받아 저장(초록) · 저장해 둔 자료(파랑) · 저장 못 함(빨강) */
+.adm-snap { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.adm-snap.ok { background: #e8f7f1; color: #0f9d7a; }
+.adm-snap.saved { background: #eaf1ff; color: #2b6df3; }
+.adm-snap.fail { background: #fdecec; color: #d64545; }
 .adm-sum .code { font-size: 11px; font-weight: 700; color: #6b7280; background: #eef1f6; border-radius: 999px; padding: 2px 8px; }
 
 /* 요약 셋 */
