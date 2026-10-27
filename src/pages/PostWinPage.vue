@@ -2,7 +2,7 @@
 // 낙찰 이후 — 명도와 매도까지의 일을 모아 둘 자리.
 // 틀은 자금관리(.fin-shell)와 같은 짜임이다: 위는 붙박이(제목 + 탭 + 물건 카드),
 // 아래만 구른다. 카드는 물건상세의 권리분석과 같은 꼴 — 제목줄을 누르면 접힌다.
-import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { shortAddr } from '../utils/address';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
@@ -25,9 +25,11 @@ import { addressParts } from '../utils/addressName';
 import { propTypeName } from '../utils/propertyType';
 import type { AgencyRow, AuctionDetail } from '../types/auction';
 import PostWinTimeline from '../components/PostWinTimeline.vue';
+import type { StepTodo } from '../services/postWinTodos';
 
 // 낙찰당일 탭을 다시 맨 왼쪽에 — '낙찰 후 진행 순서' 상자와 낙찰당일 묶음(경매사건 열람 · 명도협상 원칙 · 유선연락 첫통화)
-type TabKey = 'win' | 'flow' | 'biz' | 'balance' | 'evict' | 'repair' | 'sell';
+// 웹은 절차진행 · 절차상세(win · evict · balance 장) · 가이드(gwin · gevict · biz 장) · 인테리어 · 매도·임대 — 장 열쇠가 곧 하위 탭 열쇠다
+type TabKey = 'win' | 'flow' | 'biz' | 'balance' | 'evict' | 'gwin' | 'gevict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
   { key: 'win', label: '낙찰당일', desc: '낙찰가·경쟁 상황, 영수증과 서류 챙기기' },
   { key: 'flow', label: '절차진행', desc: '낙찰일부터 명도까지 단계별 일정' },   // 웹만(앱 탭 줄에는 안 보인다)
@@ -39,7 +41,7 @@ const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
 ];
 const route = useRoute();
 const router = useRouter();
-const TAB_KEYS: TabKey[] = ['win', 'flow', 'evict', 'biz', 'balance', 'repair', 'sell'];
+const TAB_KEYS: TabKey[] = ['win', 'flow', 'evict', 'biz', 'balance', 'gwin', 'gevict', 'repair', 'sell'];
 /** 주소에 적힌 탭으로 연다 — '뒤로' 왔을 때 보던 자리를 지킨다 */
 const initialTab = (): TabKey => {
   const wanted = String(route.query.tab ?? '');
@@ -79,7 +81,9 @@ const BOOK_OF: Partial<Record<TabKey, typeof dayBook>> = {
 };
 /** 낙찰당일 묶음의 key — 명도 탭에 섞여 보이지만 저장은 제 표(day)에 한다 */
 const dayKeys = computed(() => new Set(dayBook.groups.value.map((g) => g.key)));
-const book = computed(() => BOOK_OF[activeTab.value] ?? dayBook);
+/** 가이드 장은 같은 표를 본다 — gwin → 낙찰당일 표, gevict → 명도 표 */
+const viewTab = computed<TabKey>(() => (activeTab.value === 'gwin' ? 'win' : activeTab.value === 'gevict' ? 'evict' : activeTab.value));
+const book = computed(() => BOOK_OF[viewTab.value] ?? dayBook);
 const BOOK_KEY_OF: Partial<Record<TabKey, BookKey>> = { win: 'day', biz: 'biz', balance: 'loan', evict: 'evict' };
 const bookKeyOf = (tab: TabKey): BookKey => BOOK_KEY_OF[tab] ?? 'day';
 onMounted(() => {
@@ -226,21 +230,70 @@ const dealAfterFirst = (list: CheckGroup[]) => {
   const rest = list.filter((g) => g !== deal);
   return [rest[0], deal, ...rest.slice(1)];
 };
-/** 웹 명도 — 명도절차 · 명도 협상 방법은 화면에서 빼고, 경로 오른쪽 단추로 여는 팝업에 같은 내용을 띄운다 */
-const EV_POP_KEYS = ['ev.flow', 'ev.deal'];
-const evPop = ref(false);
-const isEvPop = (g: CheckGroup) => webEmbed && !editing.value && activeTab.value === 'evict' && EV_POP_KEYS.includes(g.key);
-const onEvPopKey = (e: KeyboardEvent) => { if (e.key === 'Escape') evPop.value = false; };
-watch(evPop, (v) => { if (v) window.addEventListener('keydown', onEvPopKey); else window.removeEventListener('keydown', onEvPopKey); });
-watch(activeTab, () => { evPop.value = false; });
-onBeforeUnmount(() => window.removeEventListener('keydown', onEvPopKey));
-const dayGroups = computed<CheckGroup[]>(
-  () => (editing.value ? draft.value
-    : activeTab.value === 'evict' ? dealAfterFirst(evictBook.groups.value)
-        : book.value.groups.value),
-);
+/** 웹 — 체크할 일이 아닌 설명 상자는 가이드로 뺀다(낙찰당일: 명도협상 원칙 · 명도: 명도절차 · 명도 협상 방법) */
+const GUIDE_DAY_KEYS = new Set(['rule']);
+const GUIDE_EVICT_KEYS = new Set(['ev.flow', 'ev.deal']);
+const dayGroups = computed<CheckGroup[]>(() => {
+  if (editing.value) return draft.value;
+  const t = activeTab.value;
+  if (t === 'gwin') return dayBook.groups.value.filter((g) => GUIDE_DAY_KEYS.has(g.key));
+  if (t === 'gevict') return evictBook.groups.value.filter((g) => GUIDE_EVICT_KEYS.has(g.key));
+  if (t === 'evict') return webEmbed ? evictBook.groups.value.filter((g) => !GUIDE_EVICT_KEYS.has(g.key)) : dealAfterFirst(evictBook.groups.value);
+  if (t === 'win' && webEmbed) return dayBook.groups.value.filter((g) => !GUIDE_DAY_KEYS.has(g.key));
+  return book.value.groups.value;
+});
 /** 표가 있는 탭인가 */
-const hasTable = computed(() => activeTab.value in BOOK_OF);
+const hasTable = computed(() => viewTab.value in BOOK_OF);
+/** 웹 — 절차상세 · 가이드 안의 장 단추(경로 오른쪽) */
+const DETAIL_CHAPS: Array<[TabKey, string]> = [['win', '낙찰당일'], ['evict', '명도'], ['balance', '잔금·등기']];
+const GUIDE_CHAPS: Array<[TabKey, string]> = [['gwin', '낙찰당일'], ['gevict', '명도'], ['biz', '사업자등록']];
+const chaps = computed(() => {
+  if (!webEmbed) return [];
+  if (DETAIL_CHAPS.some(([k]) => k === activeTab.value)) return DETAIL_CHAPS;
+  if (GUIDE_CHAPS.some(([k]) => k === activeTab.value)) return GUIDE_CHAPS;
+  return [];
+});
+// === 절차진행의 큰일 — 진행도는 가리킨 상자의 체크로 세고, 바로가기는 그 상자로 ===
+const allGroups = computed(() => [...dayBook.groups.value, ...evictBook.groups.value, ...loanBook.groups.value, ...bizBook.groups.value]);
+const todoIds = (t: StepTodo): string[] | null => {
+  if (!t.group || t.noCount) return null;
+  const g = allGroups.value.find((x) => x.key === t.group);
+  if (!g) return null;
+  if (t.branch != null) {
+    const br = g.branches?.[t.branch];
+    if (!br) return null;
+    return (br.steps ?? []).filter((st) => !t.stepNos || t.stepNos.includes(st.no))
+      .flatMap((st) => (st.items ?? []).map((_it, iti) => brId(g, t.branch as number, `s${st.no}i${iti}`)));
+  }
+  if (g.noCheck) return null;
+  const norm = (v: string) => String(v ?? '').replace(/\s+/g, '');
+  const want = t.section == null ? null : (Array.isArray(t.section) ? t.section : [t.section]).map(norm);
+  const secs = want ? g.sections.filter((sec) => want.includes(norm(sec.label ?? ''))) : g.sections;
+  const all = secs.flatMap((sec) => sec.rows.map((r) => r.id));
+  const ids = t.rows ? all.filter((id) => t.rows!.includes(id)) : all;
+  return ids.length ? ids : null;
+};
+const todoProgress = (t: StepTodo): [number, number] | null => {
+  const ids = todoIds(t);
+  return ids ? [ids.filter((id) => isChecked(id)).length, ids.length] : null;
+};
+/** 바로가기 — 그 장을 열고 상자를 펼쳐 화면에 올린 뒤 잠깐 반짝인다 */
+const flashKey = ref('');
+const goTodo = async (t: StepTodo) => {
+  if (t.page) { void router.push({ path: t.page.path, query: t.page.tab ? { tab: t.page.tab } : {} }); return; }
+  if (!t.tab) return;
+  activeTab.value = t.tab as TabKey;
+  if (!t.group) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  collapsed.value = { ...collapsed.value, [t.group]: false };
+  await nextTick(); await nextTick();
+  const el = document.querySelector(`[data-gkey="${t.group}"]`) as HTMLElement | null;
+  if (!el) return;
+  const head = document.querySelector('.pw-webhead') as HTMLElement | null;
+  const off = (head?.getBoundingClientRect().bottom ?? 120) + 16;
+  window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - off, behavior: 'smooth' });
+  flashKey.value = t.group;
+  window.setTimeout(() => { if (flashKey.value === t.group) flashKey.value = ''; }, 1600);
+};
 /** 체크 칸을 두는 탭인가 — 사업자등록은 한 번 해 두면 되는 일이라 체크가 없다 */
 const checkable = computed(() => activeTab.value === 'win' || activeTab.value === 'balance' || activeTab.value === 'evict');
 
@@ -289,7 +342,7 @@ const saveEdit = async () => {
   toast(auth.uid ? '표를 저장했습니다.' : '로그인한 뒤에 저장됩니다.');
 };
 const resetEdit = () => {
-  draft.value = defaultGroups(bookKeyOf(activeTab.value));
+  draft.value = defaultGroups(bookKeyOf(viewTab.value));
   toast('기본 글로 되돌렸습니다. 저장을 눌러야 굳습니다.');
 };
 const addRow = (gi: number, si: number) => {
@@ -590,8 +643,14 @@ const toggleSection = (key: string) => {
       <!-- 명도 탭은 경로 오른쪽에 '명도 가이드' 단추 하나 — 누르면 명도절차 · 명도 협상 방법을 한 팝업에 -->
       <div v-if="webEmbed" class="pw-crumbrow">
         <div class="pw-crumb" data-crumb-slot />
-        <span v-if="activeTab === 'evict' && !editing" class="pw-evbtns">
-          <button type="button" :class="{ on: evPop }" @click="evPop = !evPop">명도 가이드</button>
+        <span v-if="chaps.length && !editing" class="pw-chaps">
+          <button
+            v-for="[k, label] in chaps"
+            :key="k"
+            type="button"
+            :class="{ on: activeTab === k }"
+            @click="activeTab = k"
+          >{{ label }}</button>
         </span>
       </div>
       <!-- 어느 물건의 일인지 — 탭 밑에 카드로 붙박아 둔다. 누르면 목록이 펼쳐진다 -->
@@ -662,17 +721,10 @@ const toggleSection = (key: string) => {
       </div>
     </div>
 
-    <div :key="activeTab" :class="['pw-body', `tab-${activeTab}`, { app: !webEmbed }]">
-      <div v-if="evPop" class="pw-evpop-veil" @click="evPop = false" />
-      <!-- 팝업 틀은 늘 두고(v-show) 열 때만 보인다 — 순간이동(Teleport) 받을 자리가 처음부터 있어야 옮겨 온다 -->
-      <div v-if="webEmbed && activeTab === 'evict'" v-show="evPop" class="pw-evpop" role="dialog" aria-label="명도">
-        <button type="button" class="pw-evpop-x" aria-label="닫기" @click="evPop = false">
-          <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
-        </button>
-        <div class="pw-evpop-body" />
-      </div>
+    <div :key="activeTab" :class="['pw-body', `tab-${viewTab}`, { app: !webEmbed }]">
       <!-- 낙찰당일 — '낙찰 후 진행 순서'를 탭 맨 위 상자로 펼쳐 둔다 (앱 · 웹) -->
-      <section v-if="activeTab === 'win'" :class="['pw-card', 'pw-flowcard', { web: webEmbed }]">
+      <!-- 웹은 가이드 › 낙찰당일 장에 둔다 -->
+      <section v-if="activeTab === (webEmbed ? 'gwin' : 'win')" :class="['pw-card', 'pw-flowcard', { web: webEmbed }]">
         <!-- 늘 펼쳐 둔다 — 접기 단추 없음 -->
         <header class="pw-card-head pw-flowcard-head">
           <h2>
@@ -702,10 +754,8 @@ const toggleSection = (key: string) => {
         </header>
         <template v-if="!blk.super || !isCollapsed(`__super-${bi}`)">
         <template v-for="(g, ei) in blk.groups" :key="g.key">
-        <!-- 웹 명도 — 명도절차 · 명도 협상 방법은 팝업 안으로 옮겨 보여 준다 -->
-        <Teleport defer to=".pw-evpop-body" :disabled="!(isEvPop(g) && evPop)">
-        <section v-show="!isEvPop(g) || evPop" class="pw-card">
-          <header class="pw-card-head" @click="editing || isEvPop(g) || toggleSection(g.key)">
+        <section :data-gkey="g.key" :class="['pw-card', { 'pw-flash': flashKey === g.key }]">
+          <header class="pw-card-head" @click="editing || toggleSection(g.key)">
             <span v-if="editing" class="pw-ttlwrap">
               <input v-model="g.title" class="pw-einput ttl" placeholder="제목" />
               <input v-model="g.url" class="pw-einput link ttl-link" placeholder="제목 링크 (https://…)" />
@@ -746,9 +796,9 @@ const toggleSection = (key: string) => {
             >
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M16 10h0M8 14h2M12 14h2M16 14h0M8 18h8"/></svg>{{ lk.label }}
             </a>
-            <img v-if="!editing && !isEvPop(g)" :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(g.key) }]" alt="" />
+            <img v-if="!editing" :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(g.key) }]" alt="" />
           </header>
-          <div v-if="editing || isEvPop(g) || !isCollapsed(g.key)" class="pw-card-body">
+          <div v-if="editing || !isCollapsed(g.key)" class="pw-card-body">
             <textarea v-if="editing" v-model="g.note" class="pw-earea note" rows="2" placeholder="안내 한 줄" />
             <p v-else-if="g.note" class="pw-note">{{ g.note }}</p>
             <!-- 가로 띠 그림 — 날짜를 찍어 가는 길 -->
@@ -957,7 +1007,6 @@ const toggleSection = (key: string) => {
             <button v-if="editing" type="button" class="pw-addsec" @click="addSection(blk.at[ei])">＋ 묶음 추가</button>
           </div>
         </section>
-        </Teleport>
         </template>
         </template>
        </div>
@@ -1083,7 +1132,13 @@ const toggleSection = (key: string) => {
       </template>
 
       <!-- 웹 진행절차 — 고른 낙찰 물건의 낙찰일부터 단계 일정 -->
-      <PostWinTimeline v-else-if="activeTab === 'flow'" :auction="picked" @save="(a) => store.saveAuction(a)" />
+      <PostWinTimeline
+        v-else-if="activeTab === 'flow'"
+        :auction="picked"
+        :progress="todoProgress"
+        @save="(a) => store.saveAuction(a)"
+        @go="goTodo"
+      />
       <section v-else class="pw-card">
         <header class="pw-card-head" @click="toggleSection(activeTab)">
           <h2>{{ current().label }}</h2>
@@ -1859,14 +1914,10 @@ const toggleSection = (key: string) => {
 /* 웹 명도 — 경로 줄 오른쪽 단추 · 팝업 */
 .pw-crumbrow { display: flex; align-items: center; gap: 12px; }
 .pw-crumbrow .pw-crumb { flex: 1 1 auto; min-width: 0; }
-.pw-evbtns { display: inline-flex; gap: 8px; flex: none; }
-.pw-evbtns button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; }
-.pw-evbtns button:hover, .pw-evbtns button.on { color: #111827; }
-.pw-evpop-veil { position: fixed; inset: 0; z-index: 900; background: rgba(15, 23, 42, .45); }
-.pw-evpop { position: fixed; z-index: 901; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1100px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow: auto; border-radius: 12px; background: #fff; box-shadow: 0 20px 48px rgba(15, 23, 42, .28); }
-.pw-evpop .pw-card { margin: 0; box-shadow: none; }
-.pw-evpop .pw-card + .pw-card { border-top: 1px solid #eef1f6; border-radius: 0; }
-.pw-evpop .pw-card-head { cursor: default; }
-.pw-evpop-x { position: absolute; top: 14px; right: 16px; z-index: 1; width: 26px; height: 26px; padding: 0; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #4b5563; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
-.pw-evpop-x:hover { background: #f3f4f6; color: #111827; }
+.pw-chaps { display: inline-flex; gap: 6px; flex: none; }
+.pw-chaps button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pw-chaps button:hover { color: #111827; }
+.pw-chaps button.on { border-color: #1f2a44; background: #1f2a44; color: #fff; }
+/* 절차진행 바로가기로 온 상자 — 잠깐 파란 테 */
+.pw-card.pw-flash { box-shadow: 0 0 0 2px #2b6df3; transition: box-shadow .3s; }
 </style>

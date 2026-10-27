@@ -2506,7 +2506,7 @@ html, body { overflow-x: clip; }
      화면마다 따로 적지 않는다: 새 화면 · 새 하위 탭이 생기면 아래 두 표(SUB_TAB_KEYS · readHash/hashOf)에만 더한다 ===== */
   const SUB_TAB_KEYS = {
     market: ['ranking', 'dong', 'case', 'near', 'same'],
-    postwin: ['flow', 'win', 'evict', 'biz', 'balance', 'repair', 'sell'],
+    postwin: ['flow', 'win', 'evict', 'balance', 'gwin', 'gevict', 'biz', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'tax'],
     more: ['mypage', 'billing', 'points', 'news', 'support'],
   };
@@ -2615,7 +2615,7 @@ html, body { overflow-x: clip; }
     ['m1', [['선정목록', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
     ['m3', [['거래랭킹', 'go-market'], ['지역분석', 'go-market'], ['경매지번 분석', 'go-market'], ['인근 매각물건 분석', 'go-market'], ['동일지번 매각물건 분석', 'go-market']]],
-    ['m3c', [['절차진행', 'go-postwin'], ['낙찰당일', 'go-postwin'], ['명도', 'go-postwin'], ['사업자등록', 'go-postwin'], ['잔금·등기', 'go-postwin'], ['인테리어', 'go-postwin'], ['매도·임대', 'go-postwin']]],
+    ['m3c', [['절차진행', 'go-postwin'], ['절차상세', 'go-postwin'], ['가이드', 'go-postwin'], ['인테리어', 'go-postwin'], ['매도·임대', 'go-postwin']]],
     ['m3d', [['자금입출금', 'go-finance'], ['사업지출', 'go-finance'], ['유류&식대', 'go-finance'], ['물품구매', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
     ['m5', [['내 정보', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['공지', 'go-more'], ['고객센터', 'go-more']]],
@@ -3551,7 +3551,7 @@ html, body { overflow-x: clip; }
     /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
     market: [['ranking', '', '거래랭킹'], ['dong', '', '지역분석'], ['case', '', '경매지번 분석'], ['near', '', '인근 매각물건 분석'], ['same', '', '동일지번 매각물건 분석']],
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
-    postwin: [['flow', '', '절차진행'], ['win', '', '낙찰당일'], ['evict', '', '명도'], ['biz', '', '사업자등록'], ['balance', '', '잔금·등기'], ['repair', '', '인테리어'], ['sell', '', '매도·임대']],
+    postwin: [['flow', '', '절차진행'], ['win', '', '절차상세'], ['gwin', '', '가이드'], ['repair', '', '인테리어'], ['sell', '', '매도·임대']],
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '사업지출'], ['fuelMeal', '', '유류&식대'], ['itemPurchase', '', '물품구매'], ['tax', '', '세금신고']],
     more: [['mypage', '', '내 정보'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['news', '', '공지'], ['support', '', '고객센터']],
     item: [['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
@@ -3560,7 +3560,7 @@ html, body { overflow-x: clip; }
     syncCrumb();
     const tabs = SUBTABS[S.route]; const bar = $('subTabs');
     bar.hidden = !tabs; document.body.classList.toggle('has-subtabs', !!tabs);
-    const cur = S.route === 'market' ? S.marketTab : S.route === 'bidrate' ? S.bidrateTab : APP_PAGE_NAMES[S.route] ? S.pageTab[S.route] : S.itemTab;
+    const cur = S.route === 'market' ? S.marketTab : S.route === 'bidrate' ? S.bidrateTab : APP_PAGE_NAMES[S.route] ? subParent(S.route, S.pageTab[S.route]) : S.itemTab;
     $('subTabsIn').innerHTML = tabs ? tabs.map(([k, ic, t]) => `<button type="button" class="subtab ${cur === k ? 'on' : ''}" role="tab" aria-selected="${cur === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
     if (tabs) syncStickTop();
   }
@@ -3973,10 +3973,15 @@ html, body { overflow-x: clip; }
   let marketInner = null;
   window.addEventListener('adm:tab', (e) => { marketInner = (e.detail && e.detail.trail) || null; if (S.route === 'market') syncCrumb(); });
   /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
-  const subLabel = (route, key) => ((SUBTABS[route] || []).find((t) => t[0] === key) || [])[2] || '';
+  /* 낙찰이후 — 장 열쇠는 제 하위 탭(절차상세 · 가이드)에 불이 들어오고, 경로에는 '절차상세 › 명도'처럼 장 이름이 붙는다 */
+  const SUB_PARENT = { postwin: { evict: 'win', balance: 'win', gevict: 'gwin', biz: 'gwin' } };
+  const SUB_CHAP = { postwin: { win: '낙찰당일', evict: '명도', balance: '잔금·등기', gwin: '낙찰당일', gevict: '명도', biz: '사업자등록' } };
+  const subParent = (route, key) => (SUB_PARENT[route] || {})[key] || key;
+  const subLabel = (route, key) => ((SUBTABS[route] || []).find((t) => t[0] === subParent(route, key)) || [])[2] || '';
+  const subChap = (route, key) => (SUB_CHAP[route] || {})[key] || '';
   function crumbTrail() {
     const r = S.route;
-    if (APP_PAGE_NAMES[r]) return [APP_PAGE_NAMES[r], subLabel(r, S.pageTab[r])].filter(Boolean).join(' › ');
+    if (APP_PAGE_NAMES[r]) return [APP_PAGE_NAMES[r], subLabel(r, S.pageTab[r]), subChap(r, S.pageTab[r])].filter(Boolean).join(' › ');
     if (r === 'register') return regTrail();
     if (r === 'trip') return '임장경로';
     if (r === 'market' || r === 'bidrate') return marketTrail();
@@ -3989,7 +3994,12 @@ html, body { overflow-x: clip; }
   function crumbSteps() {
     const r = S.route;
     const first = (route) => () => { if (APP_PAGE_NAMES[route]) S.pageTab[route] = SUB_TAB_KEYS[route][0]; if (route === 'market') S.marketTab = SUB_TAB_KEYS.market[0]; if (S.route === route) { writeHash(false); render(); } else go(route); };
-    if (APP_PAGE_NAMES[r]) return [[APP_PAGE_NAMES[r], first(r)], [subLabel(r, S.pageTab[r])]];
+    if (APP_PAGE_NAMES[r]) {
+      const k = S.pageTab[r]; const ch = subChap(r, k);
+      if (!ch) return [[APP_PAGE_NAMES[r], first(r)], [subLabel(r, k)]];
+      const top = subParent(r, k);
+      return [[APP_PAGE_NAMES[r], first(r)], [subLabel(r, k), () => { S.pageTab[r] = top; writeHash(false); renderSubTabs(); renderAppPage(); }], [ch]];
+    }
     if (r === 'register') return [['+물건등록', () => { if (R.mode !== 'auto') { R.mode = 'auto'; try { localStorage.setItem('wlp.web.regMode', 'auto'); } catch (e) { /* 그만 */ } } render(); }], [R.mode === 'manual' ? '직접입력' : '자동등록']];
     if (r === 'trip') return [['임장경로']];
     if (r === 'market' || r === 'bidrate') {

@@ -4,23 +4,54 @@
 // 단계는 물건마다 저장한다(auction.postWinFlow). 처음 열면 기본 절차로 채운다.
 import { computed, ref } from 'vue';
 import type { AuctionDetail, PostWinFlow, PostWinStep } from '../types/auction';
+import { STEP_KEY_BY_NAME, STEP_TODOS, type StepTodo } from '../services/postWinTodos';
 
-const props = defineProps<{ auction: AuctionDetail | null }>();
-const emit = defineEmits<{ (e: 'save', auction: AuctionDetail): void }>();
+const props = defineProps<{
+  auction: AuctionDetail | null;
+  /** 큰일의 진행도 [한 것, 모두] — 세부 체크가 없는 일은 null */
+  progress?: (t: StepTodo) => [number, number] | null;
+}>();
+const emit = defineEmits<{
+  (e: 'save', auction: AuctionDetail): void;
+  /** 큰일 바로가기 — 절차상세 · 가이드의 그 상자로 */
+  (e: 'go', todo: StepTodo): void;
+}>();
+/** 단계의 큰일 — 기본 단계만 있다(열쇠, 없으면 이름으로) */
+const todosOf = (s: PostWinStep): StepTodo[] => STEP_TODOS[s.key || STEP_KEY_BY_NAME[s.name] || ''] ?? [];
+const progOf = (t: StepTodo) => props.progress?.(t) ?? null;
+const goLabel = (t: StepTodo) => (t.page ? (t.page.tab === 'tax' ? '세금신고' : '자금관리')
+  : t.tab === 'biz' || t.tab === 'gevict' || t.tab === 'gwin' ? '가이드' : t.tab === 'repair' || t.tab === 'sell' ? '열기' : '상세');
 
-/** 기본 절차 — 경매 낙찰 뒤 흔한 흐름(날짜는 대략) */
+/** 기본 절차 — 경매 낙찰 뒤 흔한 흐름(날짜는 대략). 명도 뒤 인테리어 · 매도까지 잇는다 */
 const DEFAULT_STEPS: Array<Omit<PostWinStep, 'id'>> = [
-  { name: '입찰 기일 (시작)', days: 0, base: 'start', note: '경매 입찰 진행' },
-  { name: '매각 결정 기일', days: 7, base: 'prev', note: '법원의 매각 결정' },
-  { name: '매각 허가 확정일', days: 7, base: 'prev', note: '이의신청 기간 종료 후 확정' },
-  { name: '잔금 납부 기한', days: 30, base: 'prev', note: '소유권 이전 및 인도명령 신청' },
-  { name: '인도명령 결정', days: 7, base: 'prev', note: '법원의 인도명령 인용 결정' },
-  { name: '송달 완료 (공시송달)', days: 28, base: 'prev', note: '폐문부재 등으로 인한 공시송달 기간 반영' },
-  { name: '강제집행 계고', days: 14, base: 'prev', note: '송달 후 집행관 사무소 신청' },
-  { name: '강제집행 완료 (종료)', days: 14, base: 'prev', note: '최종 명도 완료 예상일' },
+  { key: 'bid', name: '입찰 기일 (시작)', days: 0, base: 'start', note: '경매 입찰 진행' },
+  { key: 'decide', name: '매각 결정 기일', days: 7, base: 'prev', note: '법원의 매각 결정' },
+  { key: 'confirm', name: '매각 허가 확정일', days: 7, base: 'prev', note: '이의신청 기간 종료 후 확정' },
+  { key: 'balance', name: '잔금 납부 기한', days: 30, base: 'prev', note: '소유권 이전 및 인도명령 신청' },
+  { key: 'order', name: '인도명령 결정', days: 7, base: 'prev', note: '법원의 인도명령 인용 결정' },
+  { key: 'serve', name: '송달 완료 (공시송달)', days: 28, base: 'prev', note: '폐문부재 등으로 인한 공시송달 기간 반영' },
+  { key: 'warn', name: '강제집행 계고', days: 14, base: 'prev', note: '송달 후 집행관 사무소 신청' },
+  { key: 'exec', name: '강제집행 완료 (종료)', days: 14, base: 'prev', note: '최종 명도 완료 예상일' },
+  { key: 'repairStart', name: '인테리어 시작', days: 7, base: 'prev', note: '업체를 골라 공사 시작' },
+  { key: 'repairDone', name: '인테리어 완료', days: 30, base: 'prev', note: '공사 마치고 비용 정리' },
+  { key: 'list', name: '매물 내놓기', days: 7, base: 'prev', note: '중개업소에 내놓기' },
+  { key: 'contract', name: '매도·임대 계약', days: 30, base: 'prev', note: '계약하고 잔금 일정 잡기' },
+  { key: 'close', name: '매도 잔금', days: 30, base: 'prev', note: '잔금 받고 소유권 넘기기' },
+  { key: 'taxPre', name: '매매차익 예정신고', days: 60, base: 'prev', note: '잔금 달 말일부터 2개월 안에 신고·납부' },
+  { key: 'taxFinal', name: '종합소득세 확정신고', days: 0, base: 'prev', note: '이듬해 5월 31일까지' },
 ];
 const newId = () => `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-const defaultFlow = (): PostWinFlow => ({ steps: DEFAULT_STEPS.map((s) => ({ ...s, id: newId() })) });
+const FLOW_VER = 2;
+const defaultFlow = (): PostWinFlow => ({ ver: FLOW_VER, steps: DEFAULT_STEPS.map((s) => ({ ...s, id: newId() })) });
+/** 옛 판(명도에서 끝남)에는 인테리어 · 매도 · 세금 단계를 한 번만 뒤에 붙인다 — 그 뒤에 지운 단계는 되살리지 않는다 */
+const TAIL_KEYS = ['repairStart', 'repairDone', 'list', 'contract', 'close', 'taxPre', 'taxFinal'];
+const upgrade = (f: PostWinFlow): PostWinFlow => {
+  if ((f.ver ?? 1) >= FLOW_VER) return f;
+  const has = new Set(f.steps.map((x) => x.key || STEP_KEY_BY_NAME[x.name] || ''));
+  const tail = DEFAULT_STEPS.filter((d) => TAIL_KEYS.includes(d.key as string) && !has.has(d.key as string))
+    .map((d) => ({ ...d, id: `tail-${d.key}` }));   // 저장 전에도 id 가 흔들리지 않게
+  return { ...f, ver: FLOW_VER, steps: [...f.steps, ...tail] };
+};
 
 /** 한국 시간 그대로 YYYY-MM-DD */
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -38,7 +69,7 @@ const startDate = computed(() => {
 const startLabel = computed(() => (props.auction?.wonDate ? '낙찰일' : '입찰일'));
 
 /** 저장된 흐름(없으면 기본) — 고칠 때는 사본을 만들어 저장한다 */
-const savedFlow = computed<PostWinFlow>(() => props.auction?.postWinFlow ?? defaultFlow());
+const savedFlow = computed<PostWinFlow>(() => (props.auction?.postWinFlow ? upgrade(props.auction.postWinFlow) : defaultFlow()));
 /** 끄는 동안의 차례(단계 id) — 놓을 때 한 번만 저장한다 */
 const dragOrder = ref<string[] | null>(null);
 const dragId = ref('');
@@ -65,12 +96,17 @@ const rows = computed(() => {
   flow.value.steps.forEach((s) => {
     const baseDate = s.base === 'start' ? startDate.value : prevDate;
     const baseName = s.base === 'start' ? startLabel.value : prevName;
-    const planned = baseDate ? addDays(baseDate, s.days) : '';
+    // 예정신고는 잔금 달 말일부터 2개월, 확정신고는 이듬해 5월 31일 — 날 수가 아니라 달력으로 정해진다
+    const planned = !baseDate ? ''
+      : s.key === 'taxPre' ? iso(new Date(parse(baseDate).getFullYear(), parse(baseDate).getMonth() + 3, 0))
+        : s.key === 'taxFinal' ? `${parse(baseDate).getFullYear() + 1}-05-31`
+          : addDays(baseDate, s.days);
     const date = s.doneDate || planned;
     const dday = date ? Math.round((parse(todayIso()).getTime() - parse(date).getTime()) / 86400000) : 0;
     const next = !s.doneDate && !nextMarked && !flow.value.endedAt;
     if (next) nextMarked = true;
-    out.push({ ...s, date, baseText: `${baseName} ${s.days >= 0 ? '+' : ''}${s.days}일`, dday, next });
+    const baseText = s.key === 'taxPre' ? `${baseName} 달 말일 +2개월` : s.key === 'taxFinal' ? '이듬해 5월 말' : `${baseName} ${s.days >= 0 ? '+' : ''}${s.days}일`;
+    out.push({ ...s, date, baseText, dday, next });
     prevDate = date; prevName = s.name;
   });
   return out;
@@ -223,6 +259,15 @@ const resetDefault = () => {
               <p v-if="r.note" class="pwt-note">{{ r.note }}</p>
             </template>
           </div>
+          <!-- 이 단계에 해야 할 큰일 — 세부 체크는 바로가기로 간 절차상세에서 -->
+          <ul v-if="editingId !== r.id && todosOf(r).length" class="pwt-todos">
+            <li v-for="t in todosOf(r)" :key="t.text" :class="['pwt-todo', { full: !!progOf(t) && progOf(t)![0] >= progOf(t)![1] }]">
+              <svg class="pwt-todo-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+              <span class="pwt-todo-t"><em v-if="t.when" class="pwt-when">{{ t.when }}</em>{{ t.text }}</span>
+              <em v-if="progOf(t)" class="pwt-prog">{{ progOf(t)![0] }}/{{ progOf(t)![1] }}</em>
+              <button type="button" class="pwt-go" @click="emit('go', t)">{{ goLabel(t) }} ›</button>
+            </li>
+          </ul>
           <div v-if="editingId !== r.id" class="pwt-ctrl">
             <!-- 행삽입(고른 칸에서만) · 연필 · 지우기 — 다른 화면과 같은 둥근 네모 단추, 같은 크기 -->
             <button v-if="selectedId === r.id" type="button" class="ins" aria-label="아래로 행삽입" title="아래로 행삽입" @click="insertBelow(r.id)">
@@ -269,6 +314,18 @@ const resetDefault = () => {
 .pwt-chk { flex: 0 0 auto; width: 20px; height: 20px; margin: 2px 4px 0 0; accent-color: #2b6df3; cursor: pointer; }
 .pwt-main { flex: 1 1 auto; min-width: 0; }
 .pwt-name { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; }
+/* 큰일 — 단계 옆 칸. 다 한 일은 초록 체크 · 회색 글 */
+.pwt-todos { flex: 0 0 44%; margin: 0; padding: 0 0 0 16px; list-style: none; border-left: 1px solid #eef1f6; display: flex; flex-direction: column; gap: 6px; }
+.pwt-todo { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+.pwt-todo-ico { flex: none; color: #d1d5db; }
+.pwt-todo.full .pwt-todo-ico { color: #4f9a68; }
+.pwt-todo-t { flex: 1 1 auto; min-width: 0; font-size: 15px; font-weight: 700; color: #111827; }
+.pwt-todo.full .pwt-todo-t { color: #9ca3af; }
+.pwt-when { margin-right: 6px; font-style: normal; font-size: 14px; font-weight: 600; color: #9ca3af; }
+.pwt-prog { flex: none; font-style: normal; font-size: 14px; font-weight: 700; color: #6b7280; }
+.pwt-todo.full .pwt-prog { color: #4f9a68; }
+.pwt-go { flex: none; height: 28px; padding: 0 10px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pwt-go:hover { color: #111827; }
 .pwt-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 14px; font-weight: 700; line-height: 1; }
 .pwt-chip.done { background: #4f9a68; color: #fff; }
 .pwt-chip.next { background: #c95b5b; color: #fff; }

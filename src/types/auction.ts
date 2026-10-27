@@ -726,6 +726,8 @@ export interface AuctionSearchParams {
 /** 진행절차 한 단계 — 앞 단계(또는 시작일)에서 며칠 뒤인지로 날짜를 셈한다. 끝내면 그날이 적히고 뒤 단계가 따라 밀린다 */
 export interface PostWinStep {
   id: string;
+  /** 기본 단계 열쇠 — 큰일(postWinTodos)을 찾는 데 쓴다. 손으로 더한 단계는 없다 */
+  key?: string;
   name: string;
   note?: string;
   /** 기준에서 며칠 뒤 */
@@ -739,4 +741,6 @@ export interface PostWinFlow {
   steps: PostWinStep[];
   /** 협의 완료로 끝낸 날 */
   endedAt?: string;
+  /** 기본 단계 판 — 2부터 인테리어 · 매도 · 세금 단계까지 들어 있다 */
+  ver?: number;
 }
