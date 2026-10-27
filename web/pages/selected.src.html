@@ -798,6 +798,11 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .fin-stage-count { gap: 8px; }
 .app-page[data-k="finance"] .fin-stage-count button { height: 28px; padding: 0 8px 0 10px; border-radius: 8px; font-size: 14px; }
 .app-page[data-k="finance"] .fin-stage-count .fin-chev { width: 12px; height: 12px; margin-left: 4px; }
+/* 낙찰목록 · 매도목록 창 — 가로 전체 대신 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에 (창은 body 로 옮겨 그려져 .app-page 밖이다) */
+body > .fin-pop { left: 50% !important; right: auto !important; width: min(760px, calc(100vw - 32px)) !important; transform: translateX(-50%);
+  top: calc(var(--stick-top, 0px) + var(--gnb-h, 66px) + var(--subtab-h, 44px) + 24px) !important; max-height: calc(100vh - var(--gnb-h, 66px) - var(--subtab-h, 44px) - 64px) !important; }
+body > .fin-pop :is(.fin-pop-head strong) { font-size: 16px; }
+body > .fin-pop :is(.fin-pop-head em, .fin-stage-empty) { font-size: 14px; }
 /* ===== 임장경로 — 앱 FieldTripPlannerPage 를 웹 흐름에 맞게 푼다 =====
    앱 화면은 손전화 한 장을 통째로 덮는 고정 틀이다. 웹에서는 머리띠·경로줄 아래에
    보통 글처럼 흘러야 하므로 그 고정만 풀고, 안쪽 짜임은 앱 그대로 둔다 */

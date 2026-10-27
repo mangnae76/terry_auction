@@ -2,7 +2,7 @@
 // 자금관리 — 4개 탭. 모든 데이터는 Firestore에 사용자별로 저장됨.
 // 탭: 사업계좌 자금입출금 / 사업지출내역 / 유류비 & 식대지출 / 물품구매 지출상세
 
-import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, inject, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { shortAddr } from '../utils/address';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
@@ -39,6 +39,8 @@ const rangeValue = computed({
 
 const finance = useFinanceStore();
 const router = useRouter();
+/** 웹에 떴는가 — 웹은 제목 줄을 빼고 낙찰목록 · 매도목록을 경로 줄 오른쪽에 둔다 */
+const webEmbed = inject<boolean>('webEmbed', false);
 const auctionStore = useAuctionStore();
 /** 머리줄에 적는 건수 — 지금 낙찰로 들고 있는 물건과 판 물건.
  *  단계(bidStatus)를 그대로 센다 — 세금신고가 보는 날짜와 같은 자리에서 온다 */
@@ -432,8 +434,16 @@ const exportExcel = () => {
 <template>
   <section class="fin-shell">
     <div class="fin-fixed-top">
+    <!-- 웹 — 제목 줄 대신: 왼쪽 경로(웹 경로를 이 자리로 옮겨 온다) · 오른쪽 낙찰목록 · 매도목록 -->
+    <div v-if="webEmbed" class="fin-webrow">
+      <div class="fin-crumb" data-crumb-slot />
+      <span class="fin-stage-count">
+        <button type="button" :class="['won', { on: stageListOpen === '낙찰' }]" @click="toggleStageList('낙찰')">낙찰목록 <i>×</i>{{ wonCount }}<img :src="chevronDownIcon" :class="['fin-chev', { up: stageListOpen === '낙찰' }]" alt="" /></button>
+        <button type="button" :class="['sold', { on: stageListOpen === '매도' }]" @click="toggleStageList('매도')">매도목록 <i>×</i>{{ soldCount }}<img :src="chevronDownIcon" :class="['fin-chev', { up: stageListOpen === '매도' }]" alt="" /></button>
+      </span>
+    </div>
     <header class="fin-header">
-      <h1 class="fin-page-title">
+      <h1 v-if="!webEmbed" class="fin-page-title">
         <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
         자금관리
         <!-- 낙찰로 들고 있는 물건과 판 물건 — 돈 이야기의 바탕이라 제목 옆에 적어 둔다 -->
@@ -521,7 +531,7 @@ const exportExcel = () => {
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredCashFlows.length === 0">
-              <td colspan="5" class="empty">
+              <td colspan="5" class="fin-empty">
                 <template v-if="finance.cashFlows.length === 0">데이터가 없습니다.</template>
                 <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.cashFlows.length }}건 — 다른 기간 선택)</template>
               </td>
@@ -553,7 +563,7 @@ const exportExcel = () => {
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredBusiness.length === 0">
-              <td colspan="6" class="empty">
+              <td colspan="6" class="fin-empty">
                 <template v-if="finance.businessExpenses.length === 0">데이터가 없습니다.</template>
                 <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.businessExpenses.length }}건)</template>
               </td>
@@ -584,7 +594,7 @@ const exportExcel = () => {
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredFuelMeal.length === 0">
-              <td colspan="6" class="empty">
+              <td colspan="6" class="fin-empty">
                 <template v-if="finance.fuelMeal.length === 0">데이터가 없습니다.</template>
                 <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.fuelMeal.length }}건)</template>
               </td>
@@ -630,7 +640,7 @@ const exportExcel = () => {
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredItemPurchases.length === 0">
-              <td colspan="9" class="empty">
+              <td colspan="9" class="fin-empty">
                 <template v-if="finance.itemPurchases.length === 0">데이터가 없습니다.</template>
                 <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.itemPurchases.length }}건)</template>
               </td>
@@ -1142,17 +1152,18 @@ const exportExcel = () => {
   padding-left: 4px; padding-right: 4px; font-size: 10px; letter-spacing: -0.2px;
 }
 .fin-table.items .desc { white-space: normal; word-break: keep-all; min-width: 84px; }
-.fin-table.mid td:not(.r):not(.empty) { max-width: none; }
+.fin-table.mid td:not(.r):not(.fin-empty) { max-width: none; }
 .fin-table.cash th.r, .fin-table.cash td.r { text-align: right; }
 .fin-table.cash th.l, .fin-table.cash td.l { text-align: left; }
-.fin-table.cash td:not(.r):not(.empty) { max-width: none; }
+.fin-table.cash td:not(.r):not(.fin-empty) { max-width: none; }
 .fin-table td.amt.blue { color: #2563eb; }
 /* 구매처에 주소를 적어 두면 눌러서 바로 간다 */
 .fin-vendor-link { color: #2563eb; text-decoration: underline; text-underline-offset: 2px; }
 .fin-table td.amt.red  { color: #dc2626; }
-.fin-table .empty { text-align: center; color: #9ca3af; padding: 20px; white-space: normal; font-size: 11px; }
+/* 이름은 fin-empty — 그냥 .empty 면 웹 공통 빈 화면 상자(검은 바탕)가 덮인다 */
+.fin-table .fin-empty { text-align: center; color: #9ca3af; padding: 20px; white-space: normal; font-size: 11px; }
 /* 텍스트 셀은 너무 길면 말줄임 — 한 줄 유지. 마우스 오버 시 title 속성으로 전체 표시 */
-.fin-table td:not(.r):not(.empty) {
+.fin-table td:not(.r):not(.fin-empty) {
   max-width: 110px; overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -1227,4 +1238,7 @@ const exportExcel = () => {
   padding: 9px 18px; border: none; background: #2b6df3; color: #fff;
   border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px;
 }
+.fin-webrow { display: flex; align-items: center; gap: 12px; min-height: 40px; }
+.fin-webrow .fin-crumb { flex: 1 1 auto; min-width: 0; }
+.fin-webrow .fin-stage-count { margin-left: auto; }
 </style>
