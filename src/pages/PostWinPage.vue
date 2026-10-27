@@ -227,7 +227,8 @@ const checkable = computed(() => activeTab.value === 'balance' || activeTab.valu
 // === 표 고치기 ===
 // 글을 다 다듬고 나면 postWinBook.ts 의 POST_WIN_EDITABLE 만 false 로 두면
 // 편집 단추가 사라진다. 적어 둔 내용은 그대로 보인다.
-const canEdit = POST_WIN_EDITABLE;
+// 웹은 보기만 — 편집 단추를 두지 않는다(앱에서 고친 표는 웹에도 그대로 보인다)
+const canEdit = POST_WIN_EDITABLE && !webEmbed;
 const editing = ref(false);
 const draft = ref<CheckGroup[]>([]);
 const toastText = ref('');
@@ -528,7 +529,8 @@ const toggleSection = (key: string) => {
   <section class="pw-shell">
     <div class="pw-fixed-top">
       <header class="pw-header">
-        <div class="pw-title-row">
+        <!-- 웹 명도는 ⓘ 도 편집도 없어 빈 줄만 남으니 감춘다 -->
+        <div v-if="!(webEmbed && activeTab === 'evict')" class="pw-title-row">
           <h1 class="pw-page-title">
             <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
             낙찰이후
