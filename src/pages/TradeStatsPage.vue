@@ -119,6 +119,13 @@ const statTotalCount = computed(() => statRows.value.reduce((acc, r) => acc + r.
 const statPriceSum = computed(() => statRows.value.reduce((acc, r) => acc + r.priceSum, 0));
 const statPriceCount = computed(() => statRows.value.reduce((acc, r) => acc + r.priceCount, 0));
 const statAvgPrice = computed(() => (statPriceCount.value > 0 ? statPriceSum.value / statPriceCount.value : 0));
+/** 평당 단가(원/평) — 금액과 전용면적이 다 있는 거래로. ㎡ 단가는 ÷ 3.305785 */
+const statUnitSum = computed(() => statRows.value.reduce((acc, r) => acc + (r.unitSum ?? 0), 0));
+const statUnitCount = computed(() => statRows.value.reduce((acc, r) => acc + (r.unitCount ?? 0), 0));
+const statUnitPrice = computed(() => (statUnitCount.value > 0 ? statUnitSum.value / statUnitCount.value : 0));
+const unitOf = (r: TradeVolumeStat) => ((r.unitCount ?? 0) > 0 ? (r.unitSum ?? 0) / (r.unitCount ?? 1) : 0);
+/** '1,234만' — 단가는 만 원 단위로 */
+const manWon = (won: number) => (won > 0 ? `${Math.round(won / 10000).toLocaleString('ko-KR')}만` : '-');
 /** 지금 보고 있는 범위 — '인천광역시 서해구' */
 const scopeTitle = computed(() => (
   selectedRegion.value
@@ -409,6 +416,8 @@ const loadStats = async () => {
           existing.count += row.count;
           existing.priceSum += row.priceSum;
           existing.priceCount += row.priceCount;
+          existing.unitSum = (existing.unitSum ?? 0) + (row.unitSum ?? 0);
+          existing.unitCount = (existing.unitCount ?? 0) + (row.unitCount ?? 0);
           row.sources.forEach((s) => {
             if (!existing.sources.includes(s)) existing.sources.push(s);
           });
@@ -419,6 +428,8 @@ const loadStats = async () => {
             sources: [...row.sources],
             priceSum: row.priceSum,
             priceCount: row.priceCount,
+            unitSum: row.unitSum ?? 0,
+            unitCount: row.unitCount ?? 0,
           });
         }
       });
@@ -579,7 +590,15 @@ onMounted(() => {
 
           <section class="tsp-stat">
             <h3>통계 정보</h3>
-            <div class="tsp-stat-grid">
+            <!-- 웹 — 첫 줄 세 칸(거래 건수 · 평균가 · 평당 단가), 둘째 줄 두 칸(거래 총액 · 집계 동) -->
+            <div v-if="webEmbed" class="tsp-stat-grid web">
+              <div><dt>거래 건수</dt><dd>{{ statTotalCount.toLocaleString('ko-KR') }}건</dd></div>
+              <div><dt>{{ avgLabel }}</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
+              <div><dt>평당 단가</dt><dd>{{ manWon(statUnitPrice) }}<small class="tsp-unit-m2"> / ㎡ {{ manWon(statUnitPrice / 3.305785) }}</small></dd></div>
+              <div class="half"><dt>거래 총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
+              <div class="half"><dt>집계 동</dt><dd>{{ selectedRegion ? '1곳' : `${rows.length.toLocaleString('ko-KR')}곳` }}</dd></div>
+            </div>
+            <div v-else class="tsp-stat-grid">
               <div><dt>거래 건수</dt><dd>{{ statTotalCount.toLocaleString('ko-KR') }}건</dd></div>
               <div><dt>{{ avgLabel }}</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
               <div><dt>거래 총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
@@ -588,7 +607,7 @@ onMounted(() => {
           </section>
 
           <section class="tsp-rank">
-            <h3>동별 거래 랭킹
+            <h3>{{ webEmbed ? '거래랭킹' : '동별 거래 랭킹' }}
               <small v-if="allRankedRows.length > 0">{{ rankedRows.length }} / {{ allRankedRows.length }}</small>
             </h3>
             <p v-if="rankedRows.length === 0" class="tsp-empty">조회 결과가 여기에 표시됩니다.</p>
@@ -617,7 +636,7 @@ onMounted(() => {
                     </div>
                     <small class="tsp-rank-pct">{{ row.share.toFixed(1) }}%</small>
                   </div>
-                  <small class="tsp-rank-avg">{{ avgLabel }} {{ shortWon(row.avgPrice) }}</small>
+                  <small class="tsp-rank-avg">{{ avgLabel }} {{ shortWon(row.avgPrice) }}<template v-if="webEmbed"> / 평당 {{ manWon(unitOf(row)) }}</template></small>
                 </div>
               </li>
             </ol>
@@ -781,6 +800,11 @@ onMounted(() => {
   border: 1px solid #e8ecf3; border-radius: 10px; overflow: hidden; background: #e8ecf3; gap: 1px;
 }
 .tsp-stat-grid > div { background: #fff; padding: 9px 10px; min-width: 0; }
+/* 웹 — 6칸 격자: 첫 줄 2칸씩 세 칸, 둘째 줄 3칸씩 두 칸 */
+.tsp-stat-grid.web { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.tsp-stat-grid.web > div { grid-column: span 2; }
+.tsp-stat-grid.web > div.half { grid-column: span 3; }
+.tsp-unit-m2 { font-size: 0.8em; font-weight: 600; color: #6b7280; }
 .tsp-stat-grid dt { font-size: 10.5px; font-weight: 700; color: #2b6df3; }
 .tsp-stat-grid dd { margin: 2px 0 0; font-size: 13.5px; font-weight: 800; color: #111827; white-space: nowrap; }
 .tsp-rank .tsp-rank-list { padding: 0; }

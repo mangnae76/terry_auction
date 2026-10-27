@@ -41,6 +41,9 @@ export interface TradeVolumeStat {
   priceSum: number;
   /** 금액이 적혀 온 거래 수 — 합계를 이 수로 나눠야 평균이 맞다 */
   priceCount: number;
+  /** 평당 단가(원/평) 합계 · 건수 — 금액과 전용면적이 다 있는 거래만 */
+  unitSum?: number;
+  unitCount?: number;
 }
 
 export interface TradeVolumeStatsResult {
@@ -333,6 +336,7 @@ const fetchTradeVolumeByPath = async (
   source: string;
   counts: Map<string, number>;
   prices: Map<string, { sum: number; n: number }>;
+  units: Map<string, { sum: number; n: number }>;
   itemCount: number;
 }> => {
   const lawdCode = params.lawdCode ?? '28237';
@@ -350,6 +354,8 @@ const fetchTradeVolumeByPath = async (
   const counts = new Map<string, number>();
   // 거래금액(만원)도 같이 모은다 — 동네마다 평균 매매가를 내려면 합계와 건수가 필요하다
   const prices = new Map<string, { sum: number; n: number }>();
+  // 평당 단가도 — 거래마다 금액 ÷ 평(전용면적 ÷ 3.305785)을 모아 평균을 낸다
+  const units = new Map<string, { sum: number; n: number }>();
   rows.forEach((row) => {
     const region = pickRegionName(row, params.keyword || '기타');
     counts.set(region, (counts.get(region) ?? 0) + 1);
@@ -360,6 +366,13 @@ const fetchTradeVolumeByPath = async (
       cur.sum += manWon * 10000;
       cur.n += 1;
       prices.set(region, cur);
+      const areaM2 = Number(String(row.excluUseAr ?? row['전용면적'] ?? '').replace(/[^\d.]/g, ''));
+      if (areaM2 > 0) {
+        const u = units.get(region) ?? { sum: 0, n: 0 };
+        u.sum += (manWon * 10000) / (areaM2 / 3.305785);
+        u.n += 1;
+        units.set(region, u);
+      }
     }
   });
 
@@ -367,6 +380,7 @@ const fetchTradeVolumeByPath = async (
     source,
     counts,
     prices,
+    units,
     itemCount: rows.length,
   };
 };
@@ -596,6 +610,7 @@ export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Pro
       source: string;
       counts: Map<string, number>;
       prices: Map<string, { sum: number; n: number }>;
+      units: Map<string, { sum: number; n: number }>;
       itemCount: number;
     }>;
   };
@@ -659,11 +674,14 @@ export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Pro
       });
       result.value.counts.forEach((count, region) => {
         const money = result.value.prices.get(region) ?? { sum: 0, n: 0 };
+        const unit = result.value.units.get(region) ?? { sum: 0, n: 0 };
         const current = merged.get(region);
         if (current) {
           current.count += count;
           current.priceSum += money.sum;
           current.priceCount += money.n;
+          current.unitSum = (current.unitSum ?? 0) + unit.sum;
+          current.unitCount = (current.unitCount ?? 0) + unit.n;
           if (!current.sources.includes(source)) {
             current.sources.push(source);
           }
@@ -675,6 +693,8 @@ export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Pro
           sources: [source],
           priceSum: money.sum,
           priceCount: money.n,
+          unitSum: unit.sum,
+          unitCount: unit.n,
         });
       });
       return;
