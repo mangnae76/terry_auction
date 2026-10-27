@@ -469,17 +469,17 @@ const router = useRouter();
     <div v-else class="tax-list">
       <section class="g-card">
         <h2>부동산 매매 사업자 과세 구조</h2>
-        <div class="g-box">
+        <div class="tax-gbox">
           <p class="g-t">사업소득금액 계산</p>
           <p class="g-b">사업소득금액 = 매도가 − 낙찰가 − 취득세 − 필요경비(수리비·이자·중개료 등)</p>
           <p class="g-s">＊ 근거: 소득세법 제19조 제1항 제12호</p>
         </div>
-        <div class="g-box">
+        <div class="tax-gbox">
           <p class="g-t">산출세액 계산</p>
           <p class="g-b">산출세액 = 사업소득금액 × 종합소득세 누진세율<br>지방소득세 = 산출세액 × 10%</p>
           <p class="g-s">＊ 근거: 소득세법 제55조</p>
         </div>
-        <div class="g-box info">
+        <div class="tax-gbox info">
           <p class="g-t">ⓘ 연간 합산 과세 방식</p>
           <p class="g-b">동일 연도에 여러 물건을 매도한 경우 모든 사업소득을 합산하여 종합소득세 누진세율 적용</p>
           <p class="g-s">→ 합산 소득이 높을수록 적용 세율 구간이 상승하여 납부세액이 증가할 수 있음</p>
@@ -788,12 +788,13 @@ const router = useRouter();
 .g-card h2.warn { color: #dc2626; }
 .g-lead { margin: 0 0 12px; font-size: 11.5px; line-height: 1.6; color: #4b5563; }
 .g-lead b { color: #dc2626; }
-.g-box {
+/* 이름은 tax-gbox — 그냥 .g-box 면 웹 머리띠의 펼침 단추(.g-box, 18px 절대 위치)가 덮여 세금 안내가 세로로 찌그러졌다 */
+.tax-gbox {
   background: #f7f8fb; border-radius: 10px; padding: 11px 12px; margin-bottom: 8px;
 }
-.g-box.info { background: #eff4fe; border: 1px solid #d8e4fb; }
+.tax-gbox.info { background: #eff4fe; border: 1px solid #d8e4fb; }
 .g-t { margin: 0; font-size: 13px; font-weight: 800; color: #111827; }
-.g-box.info .g-t { color: #1d4ed8; }
+.tax-gbox.info .g-t { color: #1d4ed8; }
 .g-b { margin: 5px 0 0; font-size: 11px; line-height: 1.6; color: #4b5563; }
 .g-b b { color: #111827; }
 .g-s { margin: 5px 0 0; font-size: 9.5px; color: #9ca3af; }

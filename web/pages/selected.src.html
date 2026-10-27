@@ -862,6 +862,12 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .fin-table.items th:nth-child(8) { width: 9%; }
 .app-page[data-k="finance"] .fin-table.items th:nth-child(9) { width: 20%; }
 .app-page[data-k="finance"] .fin-table.items td { overflow: hidden; text-overflow: ellipsis; }
+/* 세금신고 글자 크기 — 웹 규칙: 카드 제목 16 · 중제목 15 · 나머지 글은 모두 14 이상(큰 숫자는 그대로) */
+.app-page[data-k="finance"] .tax-shell .g-card > h2 { font-size: 16px !important; }
+.app-page[data-k="finance"] .tax-shell .g-card > h2 i { font-size: 14px !important; }
+.app-page[data-k="finance"] .tax-shell :is(.g-t, .g-sub, .ev-title, .month-head) { font-size: 15px !important; }
+.app-page[data-k="finance"] .tax-shell :is(.tax-card small, .tax-card span, .tax-card p, .tax-card em, .net-head, .net-head span, .net-formula, .net-side span, .net-side small, .net-side p,
+  .sub, .yr, .tax-empty, .tax-empty *, .chip, .month-none, .ev-when, .ev-note, .g-s, .g-b, .g-b *, .g-lead, .g-lead *, .g-item, .g-card td, .g-card th, .g-card .r, .g-card i) { font-size: 14px !important; }
 /* 사업지출 · 물품구매 머리글 '비용(VAT포함)' · '합계(VAT포함)' — 웹은 칸이 넉넉해 한 줄로(머리줄이 두꺼워 보였다) */
 .app-page[data-k="finance"] .fin-table th.two { white-space: nowrap !important; }
 /* 자금입출금 표 — 글자 규칙대로 14(머리글 굵게), 줄 위아래 넉넉히 */
