@@ -180,11 +180,8 @@ const resetDefault = () => {
 
     <p v-if="!auction" class="pwt-empty">위에서 낙찰 물건을 고르면 그 물건의 낙찰일부터 절차 일정이 잡힙니다.</p>
     <template v-else>
-      <!-- 설명 없이 쓰게 — 기준일만 한 줄 -->
-      <p class="pwt-guide">
-        <template v-if="startDate">{{ startLabel }} {{ startDate }} 기준</template>
-        <template v-else>낙찰일이 비어 있습니다 — 물건상세에서 낙찰일을 적어 주세요.</template>
-      </p>
+      <!-- 기준일 줄은 두지 않는다 — 낙찰일이 비었을 때만 알린다 -->
+      <p v-if="!startDate" class="pwt-guide">낙찰일이 비어 있습니다 — 물건상세에서 낙찰일을 적어 주세요.</p>
 
       <ol class="pwt-list">
         <li
@@ -264,7 +261,7 @@ const resetDefault = () => {
 .pwt-btn:disabled { opacity: .45; cursor: default; }
 .pwt-guide { margin: 12px 0 10px; font-size: 14px; color: #6b7280; }
 .pwt-empty { margin: 24px 0 8px; text-align: center; font-size: 14px; color: #6b7280; }
-.pwt-list { list-style: none; margin: 0; padding: 0; }
+.pwt-list { list-style: none; margin: 12px 0 0; padding: 0; }
 .pwt-row { display: flex; align-items: flex-start; gap: 14px; padding: 14px 10px; border-bottom: 1px solid #eef1f6; border-radius: 8px; }
 .pwt-row.done :is(.pwt-name, .pwt-meta, .pwt-note) { color: #9ca3af; }
 /* 지금 시작할 단계(아직 체크 안 한 첫 단계) — 흐린 빨강 칸 */
