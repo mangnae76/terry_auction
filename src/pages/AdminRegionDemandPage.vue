@@ -250,15 +250,14 @@ const cntFrac = (n: number) => {
   const t = cntRound(n);
   return Number.isInteger(t) ? '' : `.${Math.round((t - Math.floor(t)) * 10)}`;
 };
-/** 소진기간 — 위에 달 수, 아래에 해로 환산한 값 ('102' / '8년 6개월') */
+/** 소진기간 — 한 줄로 달 수와 해로 환산한 값 ('96개월 / 8년', '130개월 / 10.8년') */
 const clearHead = (n: number) => (n > 0 ? String(Math.round(n)) : '');
+/** 해 환산 — 칸 하나에 한 줄로 들어가게 '8년' · '10.8년' 처럼 소수 한 자리. 1년이 안 되면 적지 않는다 */
 const clearSub = (n: number) => {
-  if (!(n > 0)) return '';
-  let years = Math.floor(Math.round(n) / 12);
-  let rest = Math.round(n) - years * 12;
-  if (rest === 12) { years += 1; rest = 0; }
-  if (years < 1) return '';
-  return rest > 0 ? `${years}년 ${rest}개월` : `${years}년`;
+  const m = Math.round(n);
+  if (!(m >= 12)) return '';
+  const y = Math.round((m / 12) * 10) / 10;
+  return Number.isInteger(y) ? `${y}년` : `${y.toFixed(1)}년`;
 };
 /** 20251015 → 2025년 10월 15일, 202510 → 2025년 10월 */
 const ym = (v: string) => {
@@ -512,7 +511,7 @@ const downloadCsv = () => {
               <th>회전율<small>(%)</small></th>
               <th>매물 소화율<small>(%)</small></th>
               <th>매물 부담율<small>(%)</small></th>
-              <th>매물 소진기간<small>(개월)</small></th>
+              <th>매물 소진기간</th>
             </tr>
           </thead>
           <tbody>
@@ -550,8 +549,7 @@ const downloadCsv = () => {
               <td class="n rate"><span class="v">{{ pct(r.burden) }}</span></td>
               <td class="n clear">
                 <template v-if="r.clearMonths > 0">
-                  <span class="v">{{ clearHead(r.clearMonths) }}</span>
-                  <small v-if="clearSub(r.clearMonths)">{{ clearSub(r.clearMonths) }}</small>
+                  <span class="v">{{ clearHead(r.clearMonths) }}개월</span><small v-if="clearSub(r.clearMonths)"> / {{ clearSub(r.clearMonths) }}</small>
                 </template>
                 <template v-else>-</template>
               </td>
@@ -695,10 +693,10 @@ const downloadCsv = () => {
 /* 소수점 아래 자리도 폭을 잡아 둔다 — 없는 줄과 있는 줄의 전체 너비가
    달라지면 가운데 정렬 때문에 끝선이 어긋난다 */
 .adm-table td.deal b { display: inline-block; width: 11px; text-align: left; font-weight: inherit; }
-/* 매물 소진기간 — 달 수를 위에, 해로 환산한 값을 아래에 */
-.adm-table td.clear { line-height: 1.25; }
+/* 매물 소진기간 — '96개월 / 8년' 한 줄로(해 환산이 아래로 떨어지지 않게) */
+.adm-table td.clear { line-height: 1.25; white-space: nowrap; }
 .adm-table td.clear em { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-left: 1px; }
-.adm-table td.clear small { display: block; font-size: 10.5px; font-weight: 600; color: #6b7280; }
+.adm-table td.clear small { font-size: inherit; font-weight: inherit; color: inherit; }
 /* 줄끼리 끝자리를 맞춘다 — 값을 같은 폭 상자에 담아 오른쪽으로 붙인다.
    상자째로는 칸 가운데에 서므로 머리글과도 어긋나 보이지 않는다 */
 .adm-table td .v { display: inline-block; text-align: right; }

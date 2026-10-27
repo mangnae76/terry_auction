@@ -155,6 +155,13 @@ const memoText = (memo?: string) => (memo ?? '')
     head.trim() ? `${head.trim()}\n${tail}` : tail
   ));
 
+/** 웹은 칸이 넓어 줄을 내리지 않는다 — 줄바꿈을 이어 쓴다.
+ *  이름: '카드사\n선택' → '카드사 선택', '사업용계좌·\n카드만사용' → 붙여서.
+ *  내용 · 비고: 괄호로 시작하는 줄은 한 칸 띄워 잇고, 나머지는 쉼표로 잇는다 */
+const webLabel = (t: string) => (webEmbed ? t.replace(/·\s*\n\s*/g, '·').replace(/\s*\n\s*/g, ' ') : t);
+const webLine = (t: string) => (webEmbed
+  ? t.replace(/\s*\n\s*(?=\()/g, ' ').replace(/\s*\n\s*/g, ', ')
+  : t);
 const isChecked = (id: string) => picked.value?.postWinChecks?.[id] === true;
 /** 갈래 그림의 체크 이름표 — 같은 때(알약)가 여러 번 나와도 한 칸으로 본다 */
 const brId = (g: CheckGroup, bri: number, tail: string) => {
@@ -334,31 +341,6 @@ const FLOW_STEPS: Array<{ name: string; note: string }> = [
   { name: '예정\n신고', note: '양도일이 속한 달의 말일부터 2개월 안에' },
   { name: '확정\n신고', note: '이듬해 5월에 한 해 몫을 합쳐 신고' },
 ];
-const flowOpen = ref(false);
-/** 연 방법 — 마우스로 띄웠을 때는 뒤를 덮지 않는다 */
-const flowByHover = ref(false);
-/** 마우스가 있는 기기(PC)에서는 올려놓기만 해도 뜬다. 손가락은 눌러야 뜬다 */
-const canHover = typeof window !== 'undefined'
-  && typeof window.matchMedia === 'function'
-  && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-let flowHideTimer = 0;
-const flowHoverIn = () => {
-  if (!canHover) return;
-  window.clearTimeout(flowHideTimer);
-  flowByHover.value = true;
-  flowOpen.value = true;
-};
-const flowHoverOut = () => {
-  if (!canHover || !flowByHover.value) return;
-  // 단추에서 설명으로 마우스가 건너갈 틈을 준다
-  flowHideTimer = window.setTimeout(() => { flowOpen.value = false; flowByHover.value = false; }, 180);
-};
-const flowClick = () => {
-  window.clearTimeout(flowHideTimer);
-  flowByHover.value = false;
-  flowOpen.value = !flowOpen.value;
-};
-
 /** 한 번에 다 접고 다 편다 — 물건상세의 전체 접기와 같다 */
 const allCollapsed = computed(
   () => dayGroups.value.length > 0 && dayGroups.value.every((g) => isCollapsed(g.key)),
@@ -544,16 +526,7 @@ const toggleSection = (key: string) => {
             <button type="button" class="pg-back-shared" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
             낙찰이후
           </h1>
-          <!-- 낙찰 뒤에 밟는 차례 -->
-          <button
-            v-if="activeTab !== 'evict'"
-            type="button"
-            class="pw-info"
-            aria-label="낙찰 후 진행 순서"
-            @click="flowClick"
-            @mouseenter="flowHoverIn"
-            @mouseleave="flowHoverOut"
-          >i</button>
+          <!-- ⓘ(낙찰 후 진행 순서)는 뺐다 — 같은 내용이 명도 탭 맨 위 상자에 펼쳐져 있다 -->
           <!-- 표 고치기 — 다 다듬고 나면 POST_WIN_EDITABLE 로 잠근다 -->
           <template v-if="canEdit && hasTable">
             <template v-if="editing">
@@ -578,30 +551,6 @@ const toggleSection = (key: string) => {
           >{{ t.label }}</button>
         </nav>
       </header>
-
-      <!-- 낙찰 후 진행 순서 — 제목 옆 ⓘ 로 연다 -->
-      <template v-if="flowOpen">
-        <div v-if="!flowByHover" class="pw-flowveil" @click="flowOpen = false" />
-        <section
-          class="pw-flow"
-          @click.stop
-          @mouseenter="flowHoverIn"
-          @mouseleave="flowHoverOut"
-        >
-          <header class="pw-flow-head">
-            <strong>낙찰 후 진행 순서</strong>
-            <button type="button" class="pw-flow-close" aria-label="닫기" @click="flowOpen = false">×</button>
-          </header>
-          <div class="pw-flow-map">
-            <span v-for="(st, i) in FLOW_STEPS" :key="st.name" :class="['pw-flow-box', { last: i === FLOW_STEPS.length - 1 }]">{{ st.name }}</span>
-          </div>
-          <ol class="pw-flow-list">
-            <li v-for="st in FLOW_STEPS" :key="`n-${st.name}`">
-              <b>{{ st.name.replace('\n', '') }}</b><span>{{ st.note }}</span>
-            </li>
-          </ol>
-        </section>
-      </template>
 
       <!-- 웹 — 선정목록 물건상세의 고정 카드와 같은 꼴(웹 공통 .item-head · .ih-* 모양). 낙찰목록은 오른쪽 위 -->
       <div v-if="webEmbed" class="pw-webhead">
@@ -923,8 +872,8 @@ const toggleSection = (key: string) => {
                         target="_blank"
                         rel="noopener"
                         @click.stop
-                      ><strong>{{ sectionView(sec).label }}</strong><span class="pw-ext">↗</span></a>
-                      <strong v-else>{{ sectionView(sec).label }}</strong>
+                      ><strong>{{ webLabel(sectionView(sec).label) }}</strong><span class="pw-ext">↗</span></a>
+                      <strong v-else>{{ webLabel(sectionView(sec).label) }}</strong>
                     </td>
                     <td v-if="editing" class="pw-txt edit">
                       <textarea v-model="r.text" class="pw-earea" rows="2" placeholder="할 일" />
@@ -940,8 +889,8 @@ const toggleSection = (key: string) => {
                         target="_blank"
                         rel="noopener"
                         @click.stop
-                      >{{ r.text }}<span class="pw-ext">↗</span></a>
-                      <template v-else>{{ r.text }}</template>
+                      >{{ webLine(r.text) }}<span class="pw-ext">↗</span></a>
+                      <template v-else>{{ webLine(r.text) }}</template>
                     </td>
                     <!-- 부수 — 체크 왼쪽에 제 칸으로 -->
                     <td v-if="editing" class="pw-qty">
@@ -952,7 +901,7 @@ const toggleSection = (key: string) => {
                     <td v-if="editing" class="pw-memo">
                       <input v-model="r.memo" class="pw-einput qty" placeholder="비고" />
                     </td>
-                    <td v-else-if="hasMemo(g)" class="pw-memo">{{ memoText(r.memo) }}</td>
+                    <td v-else-if="hasMemo(g)" class="pw-memo">{{ webLine(memoText(r.memo)) }}</td>
                     <td v-if="editing || (checkable && !g.noCheck)" class="pw-chk">
                       <template v-if="editing">
                         <button type="button" class="pw-mini" title="줄 올리기" @click.stop="moveRow(blk.at[ei], si, ri, -1)">↑</button>
@@ -1180,8 +1129,8 @@ const toggleSection = (key: string) => {
 }
 .pw-body {
   flex: 1 1 auto; overflow-y: auto;
-  /* 좌우 여백 13px — 선정목록 물건상세 카드와 같은 자리(화면 끝에서 13px)에 카드가 선다 */
-  padding: 10px 13px 96px;
+  /* 좌우 여백 8px — 위 사건 카드(낙찰목록 띠)와 끝선을 한 줄로 맞춘다 */
+  padding: 10px 8px 96px;
   /* 카드 사이 틈은 권리분석(.adp-body)과 같이 8px */
   display: flex; flex-direction: column; gap: 8px;
   -webkit-overflow-scrolling: touch;
@@ -1628,29 +1577,7 @@ const toggleSection = (key: string) => {
 .pw-row td.pw-txt.warn { color: #e0574a; }
 .pw-row.done .pw-txt { color: #9ca3af; text-decoration: line-through; }
 
-/* 제목 옆 ⓘ 와 낙찰 후 진행 순서 */
-.pw-info {
-  flex: 0 0 auto; margin-right: auto; margin-left: 3px;
-  /* 글줄 한가운데에 — 글자의 가운데는 줄상자 가운데보다 1px 아래다 */
-  position: relative; top: 1px;
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 19px; height: 19px; padding: 0;
-  border: none; border-radius: 50%; background: #2b6df3;
-  /* 기울이지 않는다 — 정자 i */
-  font-family: inherit; font-size: 12.5px; font-weight: 800; font-style: normal;
-  color: #fff; line-height: 1; cursor: pointer;
-}
-.pw-info:active { background: #1d4ed8; }
-.pw-flowveil { position: fixed; inset: 0; z-index: 40; background: rgba(17, 24, 39, 0.3); }
-.pw-flow {
-  position: absolute; left: 8px; right: 8px; top: 46px; z-index: 41;
-  max-height: 74vh; overflow-y: auto;
-  border: 1px solid #dde3ee; border-radius: 12px; background: #fff;
-  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.18);
-  padding: 10px 12px 12px;
-}
-.pw-flow-head { display: flex; align-items: center; margin-bottom: 9px; }
-.pw-flow-head strong { font-size: 13.5px; font-weight: 800; color: #111827; }
+/* 낙찰 후 진행 순서 — 명도 탭 맨 위 상자 */
 .pw-flow-close {
   margin-left: auto; border: none; background: transparent; cursor: pointer;
   font-size: 18px; line-height: 1; color: #9ca3af; padding: 0 2px;
@@ -1674,14 +1601,6 @@ const toggleSection = (key: string) => {
   position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
   font-size: 9px; color: #9aa6bb;
 }
-/* 한 줄 설명 — 이름 칸은 '매매사업자대출'이 한 줄로 들어갈 만큼 */
-.pw-flow-list { margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
-.pw-flow-list li { display: flex; gap: 8px; align-items: baseline; font-size: 12px; line-height: 1.45; }
-.pw-flow-list b {
-  flex: 0 0 96px; color: #1d4ed8; font-weight: 800;
-  white-space: nowrap; word-break: keep-all;
-}
-.pw-flow-list span { flex: 1 1 auto; min-width: 0; color: #374151; }
 /* 명도 탭 '낙찰 후 진행 순서' 상자 — 단계 상자를 누르면 설명 말풍선 (웹 모양은 selected.html 에서 따로) */
 .pw-flowcard-head { cursor: default; }
 .pw-flowcard .pw-flow-map { border-bottom: 0; padding: 4px 4px 8px; }
@@ -1868,4 +1787,15 @@ const toggleSection = (key: string) => {
 .pw-shell .pw-tbl:not(.edit) .pw-col-memo { width: 88px; }
 /* 낙찰목록 개수 앞 곱하기 — 자금관리 '낙찰목록 ×N' 과 같은 표기 */
 .pw-x { font-style: normal; font-size: 0.75em; font-weight: 700; opacity: 0.6; margin: 0 1px 0 3px; }
+/* 상자 안쪽 여유 — 바깥 폭은 사건 카드에 맞추고, 안의 글이 상자 끝에 바싹 붙지 않게 안쪽을 띄운다. 상자 사이도 조금 더 */
+.pw-shell .pw-body { gap: 12px; }
+.pw-shell .pw-card { padding: 4px 14px 14px; }
+.pw-shell .pw-card-head { padding-top: 9px; padding-bottom: 9px; }
+.pw-shell .pw-wrap.super { padding: 4px 12px 12px; gap: 10px; }
+.pw-shell .pw-wrap.super .pw-card { padding: 2px 10px 10px; }
+/* 표 왼쪽 분홍 칸 이름 — strong 이 굵기를 한 단 더 올려(900) 새까맣게 보였다.
+   다른 중제목(단계 이름 · 칩)과 같은 700 · 짙은 회색으로 맞춘다 (앱 · 웹) */
+.pw-shell .pw-label { color: #374151; }
+.pw-shell :is(.pw-label strong, .pw-labellink strong) { font-weight: 700; }
+.pw-shell .pw-label strong { color: #374151; }
 </style>

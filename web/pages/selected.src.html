@@ -605,8 +605,13 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page :is(.pw-shell, .fin-shell) { position: static !important; inset: auto !important; overflow: visible !important; background: transparent !important; }
 .app-page :is(.pw-fixed-top, .fin-fixed-top) { position: static !important; background: transparent !important; box-shadow: none !important; }
 .app-page :is(.pw-body, .fin-body) { overflow: visible !important; padding-bottom: 40px !important; }
-/* 앱은 카드 좌우를 13px 띄우지만 웹은 넓은 틀 안이라 예전 5px 그대로 */
-.app-page .pw-body { padding-left: 5px !important; padding-right: 5px !important; }
+/* 웹 상자 — 바깥 폭은 사건 카드와 한 줄, 안쪽 표 · 글은 좌우로 넉넉히 들인다 */
+.app-page .pw-body { padding-left: 0 !important; padding-right: 0 !important; gap: 12px !important; }
+.app-page .pw-shell .pw-card { padding: 4px 24px 20px !important; }
+.app-page .pw-shell .pw-card-head { padding-top: 10px !important; padding-bottom: 10px !important; }
+.app-page .pw-shell .pw-wrap.super { padding: 4px 24px 20px !important; gap: 12px !important; }
+.app-page .pw-shell .pw-wrap.super .pw-card { padding: 2px 16px 14px !important; }
+.app-page .pw-shell .pw-wrap.super .pw-card-head { padding-top: 8px !important; padding-bottom: 8px !important; }
 .app-page .more-shell { min-height: 0 !important; background: transparent !important; padding-bottom: 40px !important; }
 .app-page .more-fixed { position: static !important; background: transparent !important; }
 .app-page :is(.pw-tabs, .fin-tabs, .more-titlebar, .quick, .pg-back-shared, .pg-back, .amb) { display: none !important; }
@@ -646,9 +651,11 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
   .pw-int-tools .pw-ebtn, .pw-int-sum, .pw-int-sum b, .pw-int-tbl th, .pw-int-tbl td, .pw-empty, .empty, .pw-rowstep .lab
 ) { font-size: 14px !important; }
 /* 글자를 키운 만큼 표 칸도 넓힌다 — 비고('동사무소 발급' 등)가 두세 줄로 꺾이지 않게 */
-.app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-label { width: 120px; }
+.app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-label { width: 190px; }
+/* 분홍 이름 칸 · 비고는 한 줄로 — 줄바꿈은 글에서 이어 쓰고, 칸을 넓혀 꺾이지 않게 */
+.app-page[data-k="postwin"] .pw-tbl:not(.edit) :is(.pw-label strong, .pw-labellink strong, .pw-memo) { white-space: nowrap; }
 .app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-qty { width: 60px; }
-.app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-memo { width: 240px; }
+.app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-memo { width: 300px; }
 /* 명도 — '낙찰 후 진행 순서' 상자(명도절차 위). 웹은 넓으니 여덟 칸을 한 줄로, 글자는 14 */
 .app-page[data-k="postwin"] .pw-flowcard .pw-flow-map { grid-template-columns: repeat(8, 1fr); gap: 10px 22px; padding: 6px 4px 14px; }
 .app-page[data-k="postwin"] .pw-flowcard .pw-flow-box { font-size: 14px; min-height: 52px; }
