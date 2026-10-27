@@ -105,9 +105,24 @@ const DETAIL_KINDS: Array<{ key: DetailKind; label: string; icon: string }> = [
   { key: 'floor', label: '층수', icon: 'M4 3h16v18H4zM4 9h16M4 15h16M10 3v18' },
 ];
 const detailKind = ref<DetailKind>('price');
+// 상세분포의 면적은 ㎡ 구간(국민주택 85㎡ 기준이 보이게) — 평은 설명 줄에 ≈ 로
+const m2 = (r: DongTradeDetailRow) => r.areaM2;
+const DETAIL_AREA_BUCKETS: Bucket[] = [
+  { label: '~30㎡', test: (r) => m2(r) > 0 && m2(r) <= 30 },
+  { label: '30~50㎡', test: (r) => m2(r) > 30 && m2(r) <= 50 },
+  { label: '50~70㎡', test: (r) => m2(r) > 50 && m2(r) <= 70 },
+  { label: '70~85㎡', test: (r) => m2(r) > 70 && m2(r) <= 85 },
+  { label: '85~100㎡', test: (r) => m2(r) > 85 && m2(r) <= 100 },
+  { label: '100㎡~', test: (r) => m2(r) > 100 },
+];
 const detailBuckets = computed<Bucket[]>(() => ({
-  price: WEB_PRICE_BUCKETS, area: WEB_AREA_BUCKETS, age: WEB_AGE_BUCKETS, floor: FLOOR_BUCKETS,
+  price: WEB_PRICE_BUCKETS, area: DETAIL_AREA_BUCKETS, age: WEB_AGE_BUCKETS, floor: FLOOR_BUCKETS,
 }[detailKind.value]));
+/** 표 위 설명 줄 — 면적은 ㎡ 구간이 몇 평쯤인지 함께 */
+const detailCaption = computed(() => {
+  if (detailKind.value === 'area') return '동별 면적(㎡) 거래건수 분포 — ~30㎡ ≈ 9평 이하 · 30~50㎡ ≈ 9~15평 · 50~70㎡ ≈ 15~21평 · 70~85㎡ ≈ 21~26평 · 85~100㎡ ≈ 26~30평 · 100㎡~ ≈ 30평 이상';
+  return `동별 ${DETAIL_KINDS.find((k) => k.key === detailKind.value)?.label ?? ''} 거래건수 분포`;
+});
 /** 셀 건수 — 실제로 이뤄진 거래(정상 + 직거래). 계약해제는 없던 거래라 뺀다 */
 const detailBase = computed(() => filtered.value.filter((r) => r.kind !== '계약해제'));
 const detailSort = ref<'name' | 'total' | number>('total');
@@ -744,7 +759,7 @@ const downloadCsv = () => {
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="k.icon" /></svg>{{ k.label }}
             </button>
           </nav>
-          <p class="adm-detail-cap">동별 {{ DETAIL_KINDS.find((k) => k.key === detailKind)?.label }} 거래건수 분포</p>
+          <p class="adm-detail-cap">{{ detailCaption }}</p>
           <div class="adm-table-wrap">
             <table class="adm-table adm-dongsum adm-heat">
               <thead>
