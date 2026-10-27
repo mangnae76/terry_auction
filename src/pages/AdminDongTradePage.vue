@@ -583,7 +583,7 @@ const downloadCsv = () => {
           <!-- 웹 — 결과를 두 가지로 본다: 지역별 분석(표) · 지역별 분포(막대그래프) -->
           <nav v-else class="adm-view-tabs" role="tablist">
             <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역별 분석' }}</button>
-            <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="listView = 'dist'">지역별 분포</button>
+            <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="listView = 'dist'">지역 분포</button>
           </nav>
           <span v-if="!webEmbed" class="tag ok">정상거래 {{ counts.정상거래 }}</span>
           <span v-if="!webEmbed" class="tag">직거래 {{ counts.직거래 }}</span>
