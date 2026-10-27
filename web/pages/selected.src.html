@@ -162,6 +162,10 @@ button { cursor: pointer; }
 .g-menu:hover { color: #cfe0ff; }
 .g-menu:hover::after { transform: scaleX(1); opacity: .55; }
 .g-menu.on::after { transform: scaleX(1); opacity: 1; }
+/* 아직 만들지 않은 메뉴(커뮤니티) — 회색으로 눌러도 반응 없는 듯 보이게, 아래 펼침 칸도 회색 */
+.g-menu.off, .g-menu.off:hover { color: #6b7488; cursor: default; }
+.g-menu.off::after { display: none; }
+.g-col.m4 a, .g-col.m4 a:hover { color: #6b7488 !important; cursor: default; background: none !important; }
 /* +물건등록이 선정목록 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
 /* 메뉴 여덟 — 예전 마이페이지를 빼고 더보기를 '마이페이지'로 이름을 바꾸며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
 .m0 { left: 13.75%; } .m1 { left: 22.40%; } .m2 { left: 30.24%; } .m3 { left: 38.08%; }
@@ -1988,7 +1992,7 @@ html, body { overflow-x: clip; }
       <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
       <a class="g-menu m3c" href="#/postwin" data-act="go-postwin" id="navPostwin">낙찰이후</a>
       <a class="g-menu m3d" href="#/finance" data-act="go-finance" id="navFinance">자금관리</a>
-      <a class="g-menu m4" href="#" data-act="soon" data-name="커뮤니티">커뮤니티</a>
+      <a class="g-menu m4 off" href="#" data-act="soon" data-name="커뮤니티" aria-disabled="true" title="준비 중">커뮤니티</a>
       <a class="g-menu m5" href="#/more" data-act="go-more" id="navMore">마이페이지</a>
       <div class="pop-root" data-pop="all" style="display:contents">
         <button type="button" class="g-box" data-act="pop" data-id="all" aria-expanded="false" aria-controls="gMega" aria-label="메뉴 펼치기" data-tip="메뉴 펼치기" data-tip-pos="below">
