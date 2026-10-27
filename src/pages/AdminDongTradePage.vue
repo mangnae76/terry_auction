@@ -862,7 +862,7 @@ const downloadCsv = () => {
           </section>
           <div class="adm-deals-head">
             <strong>개별 거래 목록</strong>
-            <span>총 {{ dealRows.length.toLocaleString('ko-KR') }}건</span>
+            <span>총 거래건수 {{ dealRows.length.toLocaleString('ko-KR') }}건</span>
           </div>
           <!-- 조건검색을 상자 없이 한 줄로 — 칸 이름은 칸 안 왼쪽에. 검색칸 · 저장 · 초기화까지 한 줄 -->
           <div class="adm-inline-cond">
