@@ -850,6 +850,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .fin-custom-inline .fin-date-sep { color: #9ca3af; }
 /* 자금관리 표 — 바탕은 흰색인데 어두운 화면에서 글자가 페이지 글자색(밝은색)을 물려받아 묻혔다 — 표 글자는 늘 짙게 */
 .app-page[data-k="finance"] .fin-table tbody td { color: #111827; }
+/* 사업지출 · 물품구매 머리글 '비용(VAT포함)' · '합계(VAT포함)' — 웹은 칸이 넉넉해 한 줄로(머리줄이 두꺼워 보였다) */
+.app-page[data-k="finance"] .fin-table th.two { white-space: nowrap !important; }
 /* 자금입출금 표 — 글자 규칙대로 14(머리글 굵게), 줄 위아래 넉넉히 */
 .app-page[data-k="finance"] .fin-table :is(th, td) { font-size: 14px !important; padding-top: 14px !important; padding-bottom: 14px !important; }
 .app-page[data-k="finance"] .fin-table td .pill { font-size: 13px !important; padding: 3px 10px; }
@@ -4263,7 +4265,7 @@ html, body { overflow-x: clip; }
       if (!auth.ready) return;
       // 로그인 표시 — 새로고침해도 대문으로 보내지 않게(맨 위 대문 스크립트가 본다)
       try { if (auth.isLoggedIn) localStorage.setItem('ta.web.in', '1'); else localStorage.removeItem('ta.web.in'); } catch (e) { /* 그만 */ }
-      if (!auth.isLoggedIn && (wasIn || !/[?&]login=1\b/.test(location.search))) { location.replace('/intro.html'); return; }
+      if (!auth.isLoggedIn && (wasIn || !/[?&]login=1\b/.test(location.search))) { location.replace(wasIn ? '/intro.html?login=1' : '/intro.html'); return; }   /* 로그아웃이면 로그인 창부터 */
       wasIn = auth.isLoggedIn;
       S.authReady = true;
       const ok = auth.isLoggedIn && T.isAllowedEmail(auth.email);
@@ -4343,7 +4345,7 @@ html, body { overflow-x: clip; }
           .catch(() => { m.busy = false; m.msg = CLOUD.auth.error || '로그인하지 못했습니다.'; if (S.modal === m) renderModal(); });
         break;
       }
-      case 'logout': S.pop = ''; if (CLOUD.auth) CLOUD.auth.logout().then(() => location.replace('/intro.html')); else { location.replace('/intro.html'); } break;   /* 로그아웃 → 대문 */
+      case 'logout': S.pop = ''; if (CLOUD.auth) CLOUD.auth.logout().then(() => location.replace('/intro.html?login=1')); else { location.replace('/intro.html?login=1'); } break;   /* 로그아웃 → 대문(흐린 영상 위 로그인 창부터) */
       case 'pop': S.menu = null; S.binPicked = new Set(); S.calMonth = null; S.pop = S.pop === t.dataset.id ? '' : t.dataset.id; render(); break;
       case 'close-pop': closeLayers(); render(); break;
       case 'set-type': S.type = v; S.pop = ''; render(); break;

@@ -114,6 +114,11 @@ onMounted(() => {
   else if (soloOpen === 'trial' || soloOpen === 'pay') info.value = soloOpen;
 });
 watch(info, (v) => { if (soloOpen && !v) void router.replace('/closed'); });
+/** 무료체험 → 회원가입. 안내 창 하나만 띄운 경우엔 창을 먼저 닫으면 '/closed'(닫힘)가 먼저 가므로 닫지 않고 바로 넘어간다 */
+const goTrialSignup = () => {
+  if (!soloOpen) info.value = '';
+  void router.push('/signup');
+};
 
 const kakaoEnabled = isKakaoLoginConfigured();
 const naverEnabled = isNaverLoginConfigured();
@@ -342,7 +347,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
               type="button"
               class="lp-m-go"
               :disabled="!trialAgree"
-              @click="info = ''; router.push('/signup')"
+              @click="goTrialSignup"
             >
               {{ trialAgree ? `${TRIAL_DAYS}일 무료체험 하기 ›` : '개인정보 수집에 동의해 주세요' }}
             </button>

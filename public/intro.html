@@ -74,12 +74,15 @@
   .ql-links button:hover { color: #4b5563; text-decoration: underline; }
   .ql-links .ql-signup { color: #2b6df3; }
   .ql-links i { font-style: normal; font-size: 11px; color: #cbd2de; }
-  /* 안내 창만 — 앱 로그인 카드는 감추고 그 위에 뜨는 창(.lp-modal)만 보인다 */
+  /* 아이디 찾기 · 비밀번호 찾기 · 무료체험 — 앱 로그인 화면의 그 안내 창을 이 창 자리에 그대로 앉힌다(따로 겹쳐 뜨지 않게) */
   #loginMount .lp-shell { display: contents; }
   #loginMount .lp-card { display: none !important; }
+  #loginMount .lp-modal { position: static !important; inset: auto !important; background: none !important; padding: 0 !important; display: block !important; z-index: auto !important; }
+  #loginMount .lp-modal-box { max-width: none !important; width: 100% !important; max-height: calc(100vh - 48px) !important; border-radius: 16px !important; box-shadow: 0 24px 60px rgba(0, 0, 0, .35); }
+  #loginMount[hidden], #signupMount[hidden] { display: none !important; }
+  .modal.panel > .x { display: none; }   /* 안내 창 · 회원가입은 제 닫기 단추가 있다 */
   /* 회원가입 카드 — 앱의 파란 바탕 · 화면 높이는 걷어내고 카드만, 길면 창 안에서 굴린다 */
   .modal.wide { width: min(440px, calc(100% - 32px)); }
-  .modal.wide > .x { display: none; }
   #signupMount { max-height: calc(100vh - 48px); overflow-y: auto; border-radius: 14px; }
   #signupMount .su-shell { min-height: 0 !important; background: none !important; padding: 0 !important; display: block !important; }
   #signupMount .su-card { max-width: none !important; box-shadow: 0 24px 60px rgba(0, 0, 0, .35); }
@@ -229,50 +232,61 @@
         return auth.loginWithKakao();
       });
     });
-    // 아이디 찾기 · 비밀번호 찾기 · 무료체험 — 그 안내 창만 바로 연다(앱 로그인 화면의 창을 빌려 쓰되 로그인 카드는 감춘다)
-    let soloUnmount = null;
-    quick.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', async () => {
-      const el = $q('loginMount');
-      try {
-        await authNow();
-        if (soloUnmount) { try { soloUnmount(); } catch (e) { /* 그만 */ } }
-        el.innerHTML = ''; el.hidden = false;
-        soloUnmount = T.mountAppLogin(el, (what) => {
-          if (what === 'close') { try { soloUnmount(); } catch (e) { /* 그만 */ } soloUnmount = null; el.hidden = true; }
-        }, b.dataset.open);
-      } catch (e) { showErr('불러오지 못했습니다 — 새로고침 뒤 다시 눌러 주세요.'); }
-    }));
-    // 회원가입 — 영상 위 이 창 안에 앱 회원가입 카드를 띄운다. 닫기 · '로그인'을 누르면 로그인 창으로 돌아온다
-    let signupUnmount = null;
+    // ===== 한 창 안에서 바꿔 보이기 — 로그인 ↔ 아이디 찾기 · 비밀번호 찾기 · 무료체험 · 회원가입. 뒤 영상은 소리 없이 흐리게 계속 돈다 =====
     const modalBox = document.querySelector('.modal');
+    let panelUnmount = null;
+    const dropPanel = () => { if (panelUnmount) { try { panelUnmount(); } catch (e) { /* 그만 */ } panelUnmount = null; } };
+    /** 로그인 카드로 돌아온다 */
     const backToLogin = () => {
-      if (signupUnmount) { try { signupUnmount(); } catch (e) { /* 그만 */ } signupUnmount = null; }
-      $q('signupMount').hidden = true; modalBox.classList.remove('wide'); quick.hidden = false;
+      dropPanel();
+      $q('loginMount').hidden = true; $q('signupMount').hidden = true;
+      modalBox.classList.remove('wide', 'panel'); quick.hidden = false;
     };
-    $q('qlSignup').addEventListener('click', async () => {
-      const el = $q('signupMount');
-      quick.hidden = true; el.hidden = false; modalBox.classList.add('wide');
+    /** 회원가입 카드 */
+    const showSignup = async () => {
+      dropPanel();
+      quick.hidden = true; $q('loginMount').hidden = true;
+      const el = $q('signupMount'); el.hidden = false; el.innerHTML = '<p class="wait">회원가입 화면을 불러오는 중입니다…</p>';
+      modalBox.classList.add('wide', 'panel');
       try {
         await authNow();
         el.innerHTML = '';
-        signupUnmount = T.mountAppSignup(el, (what) => {
+        panelUnmount = T.mountAppSignup(el, (what) => {
           if (what === 'ok') { location.href = '/web?login=1'; return; }
           backToLogin();
         });
-      } catch (e) {
-        el.innerHTML = '<p class="wait">회원가입 화면을 불러오지 못했습니다 — 새로고침 뒤 다시 눌러 주세요.</p>';
-      }
-    });
+      } catch (e) { el.innerHTML = '<p class="wait">회원가입 화면을 불러오지 못했습니다 — 새로고침 뒤 다시 눌러 주세요.</p>'; }
+    };
+    /** 아이디 찾기 · 비밀번호 찾기 · 무료체험 */
+    const showPanel = async (open) => {
+      dropPanel();
+      quick.hidden = true; $q('signupMount').hidden = true;
+      const el = $q('loginMount'); el.hidden = false; el.innerHTML = '<p class="wait">불러오는 중입니다…</p>';
+      modalBox.classList.remove('wide'); modalBox.classList.add('panel');
+      try {
+        await authNow();
+        el.innerHTML = '';
+        panelUnmount = T.mountAppLogin(el, (what) => {
+          if (what === 'signup') { void showSignup(); return; }   // 무료체험 → 가입
+          if (what === 'ok') { location.href = '/web?login=1'; return; }
+          backToLogin();   // 닫기
+        }, open);
+      } catch (e) { el.innerHTML = '<p class="wait">불러오지 못했습니다 — 새로고침 뒤 다시 눌러 주세요.</p>'; }
+    };
+    quick.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => { void showPanel(b.dataset.open); }));
+    $q('qlSignup').addEventListener('click', () => { void showSignup(); });
     const openLogin = () => {
       if (!veil.hidden) return;
       veil.hidden = false;
-      quick.hidden = false; $q('loginMount').hidden = true;
+      backToLogin();
       soundBeforeLogin = !muted && !blocked;
       if (!muted) setMuted(true);
       showErr('');
       setTimeout(() => { ($q('qlId').value ? $q('qlPw') : $q('qlId')).focus(); }, 0);
     };
     document.getElementById('loginBtn').addEventListener('click', openLogin);
+    // 로그아웃하고 왔으면(?login=1) 영상은 흐리게 · 소리 없이 돌리고 로그인 창부터
+    if (/[?&]login=1\b/.test(location.search)) { setMuted(true); openLogin(); }
     document.getElementById('closeLogin').addEventListener('click', closeLogin);
     veil.addEventListener('click', (e) => { if (e.target === veil) closeLogin(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLogin(); });
