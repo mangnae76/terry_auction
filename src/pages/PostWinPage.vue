@@ -22,9 +22,9 @@ import { bidStageOf } from '../utils/stageLabel';
 import { courtInfoOf } from '../utils/auctionSummary';
 import type { AgencyRow, AuctionDetail } from '../types/auction';
 
-type TabKey = 'win' | 'biz' | 'balance' | 'evict' | 'repair' | 'sell';
+// 낙찰당일 탭은 명도 탭으로 합쳤다 — 그 묶음(경매사건 열람 · 명도협상 원칙 · 유선연락 첫통화)은 명도절차 바로 아래에 나온다
+type TabKey = 'biz' | 'balance' | 'evict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
-  { key: 'win', label: '낙찰당일', desc: '낙찰가·경쟁 상황, 영수증과 서류 챙기기' },
   { key: 'biz', label: '사업자등록', desc: '매매사업자 등록 · 사업용 계좌 · 사업용 카드' },
   { key: 'balance', label: '잔금·등기', desc: '잔금 납부일, 등기 촉탁, 취득세' },
   { key: 'evict', label: '명도', desc: '점유자 확인, 인도명령·강제집행, 이사비 협의' },
@@ -33,11 +33,12 @@ const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
 ];
 const route = useRoute();
 const router = useRouter();
-const TAB_KEYS: TabKey[] = ['win', 'biz', 'balance', 'evict', 'repair', 'sell'];
+const TAB_KEYS: TabKey[] = ['biz', 'balance', 'evict', 'repair', 'sell'];
 /** 주소에 적힌 탭으로 연다 — '뒤로' 왔을 때 보던 자리를 지킨다 */
 const initialTab = (): TabKey => {
   const wanted = String(route.query.tab ?? '');
-  return (TAB_KEYS as string[]).includes(wanted) ? (wanted as TabKey) : 'win';
+  if (wanted === 'win') return 'evict';   // 예전 '낙찰당일' 주소
+  return (TAB_KEYS as string[]).includes(wanted) ? (wanted as TabKey) : 'biz';
 };
 const activeTab = ref<TabKey>(initialTab());
 /** 탭 옮기기 — 아래쪽을 보고 있었다면 탭 줄이 보이는 자리까지 부드럽게 올라간다 */
@@ -69,10 +70,14 @@ const loanBook = usePostWinBook('loan');
 const evictBook = usePostWinBook('evict');
 /** 탭마다 보는 표가 다르다 */
 const BOOK_OF: Partial<Record<TabKey, typeof dayBook>> = {
-  win: dayBook, biz: bizBook, balance: loanBook, evict: evictBook,
+  biz: bizBook, balance: loanBook, evict: evictBook,
 };
+/** 낙찰당일 묶음의 key — 명도 탭에 섞여 보이지만 저장은 제 표(day)에 한다 */
+const dayKeys = computed(() => new Set(dayBook.groups.value.map((g) => g.key)));
+/** 명도 탭 — 명도절차(첫 묶음) 바로 아래에 낙찰당일 묶음들을 끼운다 */
+const mergeEvict = (ev: CheckGroup[], day: CheckGroup[]) => [...ev.slice(0, 1), ...day, ...ev.slice(1)];
 const book = computed(() => BOOK_OF[activeTab.value] ?? dayBook);
-const BOOK_KEY_OF: Partial<Record<TabKey, BookKey>> = { win: 'day', biz: 'biz', balance: 'loan', evict: 'evict' };
+const BOOK_KEY_OF: Partial<Record<TabKey, BookKey>> = { biz: 'biz', balance: 'loan', evict: 'evict' };
 const bookKeyOf = (tab: TabKey): BookKey => BOOK_KEY_OF[tab] ?? 'day';
 onMounted(() => {
   void dayBook.load(auth.uid); void bizBook.load(auth.uid);
@@ -181,12 +186,13 @@ const doneCount = (g: CheckGroup) => countIds(g).filter((id) => isChecked(id)).l
 const rowCount = (g: CheckGroup) => countIds(g).length;
 /** 화면에 보이는 표 — 편집 중에는 고치고 있는 사본을 보여 준다 */
 const dayGroups = computed<CheckGroup[]>(
-  () => (editing.value ? draft.value : book.value.groups.value),
+  () => (editing.value ? draft.value
+    : activeTab.value === 'evict' ? mergeEvict(evictBook.groups.value, dayBook.groups.value) : book.value.groups.value),
 );
 /** 표가 있는 탭인가 */
 const hasTable = computed(() => activeTab.value in BOOK_OF);
 /** 체크 칸을 두는 탭인가 — 사업자등록은 한 번 해 두면 되는 일이라 체크가 없다 */
-const checkable = computed(() => activeTab.value === 'win' || activeTab.value === 'balance' || activeTab.value === 'evict');
+const checkable = computed(() => activeTab.value === 'balance' || activeTab.value === 'evict');
 
 // === 표 고치기 ===
 // 글을 다 다듬고 나면 postWinBook.ts 의 POST_WIN_EDITABLE 만 false 로 두면
@@ -211,7 +217,7 @@ const togglePickList = () => {
   pickOpen.value = !pickOpen.value;
 };
 const startEdit = () => {
-  draft.value = JSON.parse(JSON.stringify(book.value.groups.value)) as CheckGroup[];
+  draft.value = JSON.parse(JSON.stringify(dayGroups.value)) as CheckGroup[];
   editing.value = true;
   collapsed.value = {};
 };
@@ -226,13 +232,21 @@ const saveEdit = async () => {
       .map((sec) => ({ ...sec, label: sec.label.trim(), rows: sec.rows.filter((r) => r.text.trim()) }))
       .filter((sec) => sec.rows.length > 0),
   })).filter((g) => g.sections.length > 0);
-  await book.value.save(auth.uid, cleaned);
+  if (activeTab.value === 'evict') {
+    // 명도 탭은 두 표를 섞어 보여 준다 — 저장할 때는 제 표로 나눠 넣는다
+    await dayBook.save(auth.uid, cleaned.filter((g) => dayKeys.value.has(g.key)));
+    await evictBook.save(auth.uid, cleaned.filter((g) => !dayKeys.value.has(g.key)));
+  } else {
+    await book.value.save(auth.uid, cleaned);
+  }
   editing.value = false;
   draft.value = [];
   toast(auth.uid ? '표를 저장했습니다.' : '로그인한 뒤에 저장됩니다.');
 };
 const resetEdit = () => {
-  draft.value = defaultGroups(bookKeyOf(activeTab.value));
+  draft.value = activeTab.value === 'evict'
+    ? mergeEvict(defaultGroups('evict'), defaultGroups('day'))
+    : defaultGroups(bookKeyOf(activeTab.value));
   toast('기본 글로 되돌렸습니다. 저장을 눌러야 굳습니다.');
 };
 const addRow = (gi: number, si: number) => {
@@ -786,7 +800,7 @@ const toggleSection = (key: string) => {
                 <em v-if="st.day">{{ st.day }}</em>{{ st.name }}
               </span>
             </div>
-            <table v-if="editing || g.sections.length" :class="['pw-tbl', { edit: editing, biz: activeTab !== 'win' }]">
+            <table v-if="editing || g.sections.length" :class="['pw-tbl', { edit: editing, biz: !dayKeys.has(g.key) }]">
               <colgroup>
                 <col v-if="editing || hasLabels(g)" class="pw-col-label" />
                 <col />
