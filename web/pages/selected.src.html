@@ -2267,6 +2267,8 @@ html, body { overflow-x: clip; }
   const ro = (w) => { const c = String(w).trim().slice(-1).charCodeAt(0) - 0xac00; if (c < 0 || c > 11171) return '로'; const j = c % 28; return j === 0 || j === 8 ? '로' : '으로'; };
 
   const $ = (id) => document.getElementById(id);
+  /* 경로 표시 요소 — 자리를 옮겨 다니므로 처음에 붙잡아 둔다 */
+  const CRUMBS = document.querySelector('.crumbs');
   const isDark = () => (document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   /* 위 메뉴마다의 아래 메뉴 — 자리 잡기용 이름. 실제 메뉴가 정해지면 여기만 바꾼다 */
@@ -3212,8 +3214,8 @@ html, body { overflow-x: clip; }
     const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip'; const my = S.route === 'mypage'; const market = S.route === 'market' || S.route === 'bidrate'; const page = !!APP_PAGE_NAMES[S.route];
     $('listView').hidden = reg || item || trip || my || market || page; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('marketView').hidden = !market; $('appPageView').hidden = !page; $('fab').hidden = reg || item || trip || my || market || page;
     const cur = item ? byId(S.itemId) : null;
-    $('crumbCur').textContent = page ? APP_PAGE_NAMES[S.route] : reg ? '+물건등록' : trip ? '임장경로' : market ? (S.route === 'bidrate' ? '낙찰가율분석' : '시장분석') : my ? '마이페이지' : item ? `선정목록 › ${cur ? cur.caseNo : '물건상세'}` : '선정목록';
-    { const nav = document.querySelector('.crumbs'); const slot = $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
+    $('crumbCur').textContent = page ? APP_PAGE_NAMES[S.route] : reg ? '+물건등록' : trip ? '임장경로' : market ? marketTrail() : my ? '마이페이지' : item ? `선정목록 › ${cur ? cur.caseNo : '물건상세'}` : '선정목록';
+    { const nav = CRUMBS; const slot = (market && document.getElementById('admCrumbSlot')) || $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
     document.title = page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? (S.route === 'bidrate' ? '마이턴옥션 낙찰가율분석' : '마이턴옥션 시장분석') : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정목록';
     if (!item) closeAppDetail();
@@ -3599,8 +3601,25 @@ html, body { overflow-x: clip; }
   };
   /* ---------- 시장분석 — 지역분석 탭: 분석 도구의 '실거래 분석' 을 그대로 띄운다 ---------- */
   let marketUnmount = null;
-  const closeAppMarket = () => { if (marketUnmount) { try { marketUnmount(); } catch (e) { /* 그만 */ } marketUnmount = null; } };
+  /* 경로 표시 — 지역분석은 화면 안 탭 줄 오른쪽(#admCrumbSlot)에 둔다. 그 화면을 걷기 전에 제자리로 돌려놓는다(같이 사라지지 않게) */
+  const parkCrumbs = () => { const home = $('crumbSlotMarket'); if (CRUMBS && home && CRUMBS.parentNode !== home && document.getElementById('admCrumbSlot')?.contains(CRUMBS)) home.appendChild(CRUMBS); };
+  const closeAppMarket = () => { parkCrumbs(); if (marketUnmount) { try { marketUnmount(); } catch (e) { /* 그만 */ } marketUnmount = null; } };
+  /* 지역분석이 뜨고 나서 생기는 #admCrumbSlot 으로 경로를 옮긴다 */
+  new MutationObserver(() => {
+    const slot = document.getElementById('admCrumbSlot');
+    if (S.route === 'market' && slot && CRUMBS && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS);
+  }).observe(document.getElementById('marketContent') || document.body, { childList: true, subtree: true });
+  /* 지역분석 안 탭 — '홈 › 시장분석 › 지역분석 › 수요공급' */
+  let marketInner = null;
+  window.addEventListener('adm:tab', (e) => { marketInner = (e.detail && e.detail.trail) || null; if (S.route === 'market') $('crumbCur').textContent = marketTrail(); });
+  function marketTrail() {
+    if (S.route === 'bidrate') return '낙찰가율분석';
+    if (S.marketTab === 'dong' && marketInner) return ['시장분석', ...marketInner].join(' › ');
+    const label = (SUBTABS.market.find((t) => t[0] === S.marketTab) || [])[2];
+    return label ? `시장분석 › ${label}` : '시장분석';
+  }
   function renderMarket() {
+    if (S.route === 'market') $('crumbCur').textContent = marketTrail();
     const box = $('marketContent');
     const bid = S.route === 'bidrate';
     const key = bid ? S.bidrateTab : S.marketTab;

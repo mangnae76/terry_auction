@@ -97,6 +97,15 @@ const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
 const listView = ref<'supply' | 'table' | 'dist' | 'detail' | 'deals'>('supply');
+// 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
+const TAB_LABEL: Record<string, string> = { supply: '수요공급', table: '지역별 분석', dist: '지역분포', detail: '상세분포', deals: '거래상세' };
+const tellTab = () => {
+  if (!webEmbed) return;
+  const label = listView.value === 'table' && dong.value ? '검색리스트' : TAB_LABEL[listView.value];
+  window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: ['지역분석', label] } }));
+};
+watch([listView, dong], tellTab);
+onMounted(tellTab);
 /** '수요공급' 탭에 넘길 조건 — token 이 바뀌면 그 탭이 다시 받는다(조회 · 되살림 때) */
 const supplyToken = ref(0);
 const supplyEmbed = computed(() => ({
@@ -767,10 +776,9 @@ const downloadCsv = () => {
       <p v-if="errorMsg" class="adm-msg err">{{ errorMsg }}</p>
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
 
-      <template v-if="all.length > 0">
-        <!-- 웹 — 탭 줄은 요약 상자 위에(탭을 바꿔도 제자리). 수요공급 · 지역별 분석 · 지역분포 · 상세분포 · 거래상세 -->
-        <div v-if="webEmbed" class="adm-list-head adm-tabs-top">
-            <nav class="adm-view-tabs" role="tablist">
+      <!-- 웹 — 탭 줄(요약 상자 위, 탭을 바꿔도 제자리) + 오른쪽에 경로(홈 › 시장분석 › 지역분석 › 탭). 경로는 웹의 경로 표시를 이 자리(#admCrumbSlot)로 옮겨 쓴다 -->
+      <div v-if="webEmbed" class="adm-list-head adm-tabs-top">
+        <nav v-if="all.length > 0" class="adm-view-tabs" role="tablist">
               <button type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요공급</button>
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역별 분석' }}</button>
               <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">지역분포<span class="adm-view-kind" :title="distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 막대'" :aria-label="distChart === 'bar' ? '막대' : '도넛'">
@@ -780,7 +788,10 @@ const downloadCsv = () => {
               <button type="button" role="tab" :aria-selected="listView === 'detail'" :class="{ on: listView === 'detail' }" @click="listView = 'detail'">상세분포</button>
               <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
             </nav>
-        </div>
+        <div id="admCrumbSlot" class="adm-crumb-slot" />
+      </div>
+
+      <template v-if="all.length > 0">
         <section v-if="webEmbed && !dong && listView !== 'supply'" class="adm-gunav">
           <div class="adm-gunav-head">
             <strong>{{ loadedLabel }}<template v-if="loadedDeal === 'jeonse'"> 전세</template></strong>
@@ -1302,7 +1313,8 @@ const downloadCsv = () => {
 .adm-list-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin: 0 2px 10px; }
 .adm-list-head strong { font-size: 14.5px; font-weight: 800; }
 /* 웹 — 결과 보기 탭(밑줄은 ::after 막대) */
-.adm-tabs-top { margin-top: 18px; }
+.adm-tabs-top { margin-top: 18px; display: flex; align-items: center; gap: 12px; }
+.adm-crumb-slot { margin-left: auto; }
 .adm-view-tabs { display: flex; gap: 22px; padding-left: 28px; } /* 글자 두 개쯤 안으로 */
 .adm-view-tabs button { position: relative; border: 0; background: none; padding: 6px 0 8px; font-size: 16px; font-weight: 700; color: #6b7280; cursor: pointer; border-radius: 0; }
 .adm-view-tabs button.on { color: #2b6df3; font-weight: 800; }
