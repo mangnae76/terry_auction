@@ -1194,11 +1194,14 @@ const downloadCsv = () => {
 .adm-deals-table td.l { text-align: left; }
 .adm-direct-tag { margin-left: 6px; font-size: 12px; font-weight: 700; color: #0f9d7a; }
 .adm-detail { display: flex; flex-direction: column; gap: 10px; }
-.adm-detail-kinds { display: flex; gap: 8px; flex-wrap: wrap; }
-.adm-detail-kinds button { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
+.adm-detail-kinds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; } /* 네 단추 같은 폭 */
+.adm-detail-kinds button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
 .adm-detail-kinds button.on { border-color: #2b6df3; color: #2b6df3; background: #eef4ff; }
 .adm-detail-cap { margin: 4px 2px 0; font-size: 14px; color: #6b7280; }
 .adm-heat td.r { font-variant-numeric: tabular-nums; }
+/* 가격대 · 면적 · 연식 · 층수를 오가도 동 · 합계 칸은 제자리 — 첫 칸 · 끝 칸 폭을 못 박고 가운데 구간 칸이 나머지를 고르게 나눈다 */
+.adm-heat th:first-child, .adm-heat td:first-child, .adm-floorsum th:first-child, .adm-floorsum td:first-child { width: 120px; }
+.adm-heat th:last-child, .adm-heat td:last-child, .adm-floorsum th:last-child, .adm-floorsum td:last-child { width: 110px; }
 .adm-floorsum td { font-variant-numeric: tabular-nums; }
 .adm-floorsum td.pct { font-weight: 800; }
 .adm-floorsum td.pct.up { color: #2b6df3; }
