@@ -535,6 +535,7 @@ const toggleSection = (key: string) => {
           </h1>
           <!-- 낙찰 뒤에 밟는 차례 -->
           <button
+            v-if="!(webEmbed && activeTab === 'evict')"
             type="button"
             class="pw-info"
             aria-label="낙찰 후 진행 순서"
@@ -684,6 +685,26 @@ const toggleSection = (key: string) => {
     </div>
 
     <div :key="activeTab" class="pw-body">
+      <!-- 웹 명도 — ⓘ 에 숨어 있던 '낙찰 후 진행 순서'를 명도절차 위 상자로 펼쳐 둔다 -->
+      <section v-if="webEmbed && activeTab === 'evict'" class="pw-card pw-flowcard">
+        <header class="pw-card-head" @click="toggleSection('__flow')">
+          <h2>
+            <svg class="pw-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            낙찰 후 진행 순서
+          </h2>
+          <img :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed('__flow') }]" alt="" />
+        </header>
+        <template v-if="!isCollapsed('__flow')">
+          <div class="pw-flow-map">
+            <span v-for="(st, i) in FLOW_STEPS" :key="st.name" :class="['pw-flow-box', { last: i === FLOW_STEPS.length - 1 }]">{{ st.name }}</span>
+          </div>
+          <ol class="pw-flow-list">
+            <li v-for="st in FLOW_STEPS" :key="`n-${st.name}`">
+              <b>{{ st.name.replace('\n', '') }}</b><span>{{ st.note }}</span>
+            </li>
+          </ol>
+        </template>
+      </section>
       <template v-if="hasTable">
        <div v-for="(blk, bi) in blocks" :key="`blk-${bi}`" :class="['pw-wrap', { super: blk.super }]">
         <!-- 큰 제목 — 상자들을 한 울타리로 묶는다 -->

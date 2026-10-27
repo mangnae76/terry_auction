@@ -630,6 +630,14 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-crumb { order: -1; }
 .app-page[data-k="postwin"] .pw-objwrap > .pw-obj, .app-page[data-k="postwin"] .pw-objctrl, .app-page[data-k="postwin"] .pw-page-title { display: none !important; }
 .app-page[data-k="postwin"] .pw-objwrap { display: none !important; }
+/* 명도 — '낙찰 후 진행 순서' 상자(명도절차 위). 웹은 넓으니 여덟 칸을 한 줄로, 글자는 14 */
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-map { grid-template-columns: repeat(8, 1fr); gap: 10px 22px; padding: 6px 4px 14px; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-box { font-size: 14px; min-height: 52px; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-box:nth-child(4n):not(.last)::after { content: '▶'; position: absolute; right: -16px; top: 50%; transform: translateY(-50%); font-size: 9px; color: #9aa6bb; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-box:not(.last)::after { right: -16px; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-list { margin: 12px 4px 4px; gap: 8px; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-list li { font-size: 14px; }
+.app-page[data-k="postwin"] .pw-flowcard .pw-flow-list b { flex-basis: 120px; }
 /* 낙찰목록 — 단추 바로 아래 오른쪽 끝을 맞춰 펼친다 */
 .app-page[data-k="postwin"] .pw-pickanchor { position: relative; }
 .app-page[data-k="postwin"] .pw-pickanchor .pw-objlist { left: auto; right: 0; top: calc(100% + 6px); width: 520px; max-width: calc(100vw - 32px); }
