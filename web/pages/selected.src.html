@@ -617,6 +617,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] { --pw-lab-w: 250px; }
 .app-page[data-k="postwin"] :is(.pw-br-head, .pw-br-step) { grid-template-columns: calc(var(--pw-lab-w) + 1px) 16px 1fr; }   /* +1 = 표 바깥 테두리 */
 .app-page[data-k="postwin"] .pw-br-left b { white-space: nowrap; }
+/* 명도 — '명도시작은 언제부터?' 세 상자 · '명도 협상 방법' 세 상자는 좌우를 안으로 몰아 작게, 가운데 정렬 */
+.app-page[data-k="postwin"] .pw-bx-row { justify-content: center; gap: 28px; }
+.app-page[data-k="postwin"] .pw-bx-row .pw-bx-item { flex: 0 0 240px; }
+.app-page[data-k="postwin"] .pw-gr-row { grid-template-columns: repeat(3, 280px); justify-content: center; column-gap: 48px; }
 /* 표 줄 높이 — 위아래를 넉넉히(6 → 10px) */
 .app-page .pw-shell .pw-tbl:not(.edit) td { padding-top: 10px !important; padding-bottom: 10px !important; }
 .app-page .more-shell { min-height: 0 !important; background: transparent !important; padding-bottom: 40px !important; }
