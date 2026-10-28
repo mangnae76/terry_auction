@@ -170,7 +170,7 @@ const tabOfQuery = (): FinanceTabKey | '' => {
 };
 const activeTab = ref<FinanceTabKey>(tabOfQuery() || 'cashFlow');
 /** 웹 필터 줄의 다섯 탭 — 앱은 아래 머리의 탭 줄 그대로 */
-const WEB_TABS: Array<[FinanceTabKey, string]> = [['cashFlow', '자금입출금'], ['businessExpense', '사업지출'], ['fuelMeal', '유류&식대'], ['itemPurchase', '물품구매'], ['tax', '세금신고']];
+const WEB_TABS: Array<[FinanceTabKey, string]> = [['cashFlow', '자금입출금'], ['businessExpense', '예정신고비용'], ['fuelMeal', '유류&식대'], ['itemPurchase', '물품구매'], ['tax', '세금신고']];
 watch(() => route.query.tab, () => { const k = tabOfQuery(); if (k && k !== activeTab.value) activeTab.value = k; });
 // 웹 — 화면 안 탭(자금입출금 ~ 세금신고)을 바꾸면 주소에도 적는다(위 웹 경로 · 새로고침이 따라온다). 앱은 그대로
 watch(activeTab, (t) => { if (webEmbed && String(route.query.tab ?? '') !== t) void router.replace({ query: { ...route.query, tab: t } }); });
@@ -533,7 +533,7 @@ const exportExcel = () => {
       ...filteredCashFlows.value.map((r) => [r.date, r.ownerName, r.flowType, r.amount, r.note]),
     ]);
   } else if (activeTab.value === 'businessExpense') {
-    downloadCsv('사업지출.csv', [
+    downloadCsv(webEmbed ? '예정신고비용.csv' : '사업지출.csv', [
       ['결제일', '물건구분', '사용구분', '명세', '비용(VAT포함)', '비고'],
       ...filteredBusiness.value.map((r) => [r.date, r.auctionLabel, r.profitCategory || r.memo, r.detail, r.amountWithVat, r.note]),
     ]);
@@ -866,7 +866,7 @@ const exportExcel = () => {
               <option v-for="o in auctionOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
             </select>
           </label>
-          <label>사업지출 항목
+          <label>{{ webEmbed ? '사용구분' : '사업지출 항목' }}
             <select v-if="webEmbed" :value="beDraft.profitCategory" @change="pickCategory(($event.target as HTMLSelectElement).value)">
               <!-- 예전에 고른 항목(대출이자 · 관리비 …)은 고칠 때 그대로 보이게 -->
               <option v-if="beDraft.profitCategory && !WEB_EXPENSE_CATS.includes(beDraft.profitCategory)" :value="beDraft.profitCategory">{{ beDraft.profitCategory }}</option>
