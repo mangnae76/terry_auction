@@ -818,10 +818,11 @@ const downloadCsv = () => {
 
       <!-- 웹 — 탭 줄(요약 상자 위, 탭을 바꿔도 제자리) + 오른쪽에 경로(홈 › 시장분석 › 지역분석 › 탭). 경로는 웹의 경로 표시를 이 자리(#admCrumbSlot)로 옮겨 쓴다 -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top">
-        <!-- 수익분석 › 유사매물시세 — 거래상세 · 유사매물시세 두 탭만 -->
+        <!-- 수익분석 › 유사매물시세 — 유사매물시세(= 거래상세 화면) · X(준비 중) 두 탭 -->
         <nav v-if="onlyView" class="adm-view-tabs" role="tablist">
-          <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
-          <button type="button" role="tab" :aria-selected="listView === 'similar'" :class="{ on: listView === 'similar' }" @click="listView = 'similar'">유사매물시세</button>
+          <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">유사매물시세</button>
+          <!-- 두 번째 탭은 이름 · 내용을 정하기 전 — 우선 X -->
+          <button type="button" role="tab" :aria-selected="listView === 'similar'" :class="{ on: listView === 'similar' }" @click="listView = 'similar'">X</button>
         </nav>
         <nav v-else-if="all.length > 0 || listView === 'map'" class="adm-view-tabs" role="tablist">
               <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">지도랭킹</button>
@@ -1013,8 +1014,8 @@ const downloadCsv = () => {
         <!-- 웹 수익분석 — '유사매물시세' 탭(준비 중) -->
         <div v-else-if="webEmbed && listView === 'similar'" class="adm-deals">
           <section class="adm-trend">
-            <p class="adm-trend-title">유사매물시세</p>
-            <p class="adm-similar-empty">준비 중입니다 — 어떤 매물 시세를 보여 줄지 정한 뒤 채웁니다.</p>
+            <p class="adm-trend-title">X</p>
+            <p class="adm-similar-empty">준비 중입니다 — 무엇을 보여 줄지 정한 뒤 채웁니다.</p>
           </section>
         </div>
         <!-- 웹 '상세분포' 탭 — 동마다 구간별 거래건수(정상 + 직거래, 계약해제 제외). 칸이 진할수록 많다. 머리글을 누르면 정렬 -->
