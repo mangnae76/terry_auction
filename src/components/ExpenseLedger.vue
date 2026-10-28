@@ -62,6 +62,8 @@ const cols = computed<Array<[SortKey, string]>>(() => [
   ['amount', '비용(VAT포함)'], ...(props.book === 'biz' ? [['vendor', '업체 · 연락처'] as [SortKey, string]] : []), ['note', '비고'],
 ]);
 
+/** 칸 폭 규칙 — 모든 칸이 한 몫, 명세만 두 몫. 칸 수가 바뀌어도(물건 · 업체 칸) 같은 규칙으로 나눈다 */
+const colWidth = (k: SortKey) => `${((k === 'detail' ? 2 : 1) * 100) / (cols.value.length + 1)}%`;
 const money = (n: number) => (n || 0).toLocaleString('ko-KR');
 const shortDate = (d: string) => (d && d.length >= 10 ? d.slice(2).replace(/-/g, '.') : d);
 const labelOf = (id: string) => {
@@ -206,6 +208,7 @@ defineExpose({ openAdd, exportCsv, total });
     </div>
     <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint"><b class="xl-plan">입찰가A</b> 입찰가산정A에서 가져옵니다. 필요시 직접 입력하세요.</span></p>
     <table class="xl-tbl">
+      <colgroup><col v-for="[k] in cols" :key="k" :style="{ width: colWidth(k) }" /></colgroup>
       <thead>
         <tr>
           <th v-for="[k, label] in cols" :key="k" :class="`xc-${k}`"><button type="button" @click="toggleSort(k)">{{ label }}<i :class="{ on: sort.key === k }">{{ mark(k) }}</i></button></th>
@@ -219,7 +222,7 @@ defineExpose({ openAdd, exportCsv, total });
           <td><em :class="['xl-from', r.src === 'plan' ? 'plan' : 'own']" :title="r.src === 'plan' ? '입찰가A에서 가져왔습니다 — 누르면 직접 입력합니다' : '직접 입력한 값'">{{ r.src === 'plan' ? '입찰가A' : '직접입력' }}</em></td>
           <td :title="r.detail" class="l">{{ r.detail }}<span v-if="r.qty && unitOf(r.category)" class="xl-qty">{{ money(r.qty) }}{{ unitOf(r.category)?.[2] }} × {{ money(r.unit) }}원</span><em v-if="r.status" class="xl-st">{{ r.status }}</em></td>
           <td>{{ money(r.amount) }}원</td>
-          <td v-if="book === 'biz'" :title="[r.vendor, r.phone].filter(Boolean).join(' · ')">{{ [r.vendor, r.phone].filter(Boolean).join(' · ') }}</td>
+          <td v-if="book === 'biz'" :title="[r.vendor, r.phone].filter(Boolean).join(' · ')" class="xl-vend"><b v-if="r.vendor">{{ r.vendor }}</b><small v-if="r.phone">{{ r.phone }}</small></td>
           <td :title="r.note">{{ r.note }}</td>
         </tr>
         <tr v-if="!sorted.length"><td :colspan="cols.length" class="xl-empty">적어 둔 {{ BOOK_NAME[book] }}가 없습니다. ＋ 항목추가를 누르세요.</td></tr>
@@ -293,15 +296,16 @@ defineExpose({ openAdd, exportCsv, total });
 .xl-tbl th button { width: 100%; height: 42px; padding: 0 10px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .xl-tbl th i { margin-left: 4px; font-style: normal; font-size: 12px; opacity: .55; }
 .xl-tbl th i.on { opacity: 1; }
-/* 칸 정리 — 글은 모두 가운데, 명세만 왼쪽(머리글도 같은 안쪽 여백에서 시작). 명세가 남는 폭을 가진다.
-   출처(입찰가A · 직접입력)는 명세 바로 왼쪽 좁은 칸에 한 줄로 */
+/* 칸 정리 — 글은 모두 가운데, 명세만 왼쪽(머리글도 같은 안쪽 여백에서 시작). 폭은 colWidth 규칙 */
 .xl-tbl th.xc-detail button { justify-content: flex-start; padding-left: 16px; }
-.xl-tbl th.xc-date { width: 9%; } .xl-tbl th.xc-auction { width: 12%; } .xl-tbl th.xc-category { width: 12%; } .xl-tbl th.xc-from { width: 9%; }
-.xl-tbl th.xc-amount { width: 12%; } .xl-tbl th.xc-vendor { width: 15%; } .xl-tbl th.xc-note { width: 12%; }
 .xl-tbl td { padding: 12px 10px; font-size: 14px; color: #111827; text-align: center; border-top: 1px solid #e5e7eb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .xl-tbl tbody tr:first-child td { border-top: 0; }
 .xl-tbl td.l { text-align: left; padding-left: 16px; }
 .xl-tbl tbody tr { cursor: pointer; }
+/* 업체 · 연락처 — 이름은 위, 번호는 아래(칸이 좁아도 잘리지 않게) */
+.xl-vend b, .xl-vend small { display: block; overflow: hidden; text-overflow: ellipsis; }
+.xl-vend b { font-weight: 500; }
+.xl-vend small { font-size: 12px; color: #6b7280; }
 .xl-tbl tbody tr:hover td { background: #f5f8ff; }
 .xl-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #e9f0fd; color: #1d4ed8; font-size: 13px; }
 .xl-st { margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: #f1f3f6; color: #4b5563; font-style: normal; font-size: 12px; }
