@@ -103,8 +103,8 @@ const pickEvict = async (k: 'deal' | 'exec') => {
     });
   } finally { evBusy.value = false; }
 };
-const srcText = (actual: number, planned: number, tab: string) => (actual && planned ? `실제 ${won(actual)} + A안 ${won(planned)} — ${tab} 탭`
-  : actual ? `실제 기록 — ${tab} 탭` : `입찰가산정 A안 — ${tab} 탭에서 고칩니다`);
+const srcText = (actual: number, planned: number, tab: string) => (actual && planned ? `실제 ${won(actual)} + 입찰가산정A ${won(planned)} — ${tab} 탭`
+  : actual ? `실제 기록 — ${tab} 탭` : `입찰가산정A에서 가져옵니다 — ${tab} 탭에서 직접 입력`);
 /** 매매차익(예정신고) — 매도가 − 낙찰가 − 필요경비 */
 const tradeGain = computed(() => plan.value.sale - plan.value.bid - split.value.need);
 /** 사업소득 — 매매차익 − 사업경비(5월 종합소득세) */
@@ -134,7 +134,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
   <section class="pwm">
     <header class="pwm-head">
       <h2>{{ mode === 'evict' ? '명도분석' : '세금분석' }}</h2>
-      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 필요경비 · 사업경비 탭의 값으로 계산합니다 — 아직 실제 금액을 적지 않은 항목은 입찰가산정 A안 값을 씁니다' }}</span>
+      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 필요경비 · 사업경비 탭의 값으로 계산합니다' }}</span>
     </header>
     <!-- ===== 명도분석 ===== -->
     <template v-if="mode === 'evict'">
@@ -180,11 +180,11 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
           <button type="button" :class="{ on: who === 'biz' }" @click="who = 'biz'">매매사업자</button>
           <button type="button" :class="{ on: who === 'person' }" @click="who = 'person'">개인</button>
         </div>
-        <div class="pwm-seg" title="누르면 명도분석 금액이 사업경비 명도비로 들어갑니다 — 다시 누르면 빼고 A안으로">
+        <div class="pwm-seg" title="누르면 명도분석 금액이 사업경비 명도비로 들어갑니다 — 다시 누르면 빼고 입찰가산정A로">
           <button type="button" :class="{ on: evOn === 'deal' }" :disabled="evBusy" @click="pickEvict('deal')">명도협의 {{ man(evDirect.deal) }}</button>
           <button type="button" :class="{ on: evOn === 'exec' }" :disabled="evBusy" @click="pickEvict('exec')">강제집행 {{ man(evDirect.exec) }}</button>
         </div>
-        <button type="button" class="pwm-go" @click="goPlan">입찰가산정 A안 고치기 ›</button>
+        <button type="button" class="pwm-go" @click="goPlan">입찰가산정A 고치기 ›</button>
       </div>
 
       <div class="pwm-tax">
@@ -192,7 +192,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
           <h3>개별소득세</h3>
           <dl>
             <div><dt>낙찰가</dt><dd>{{ won(plan.bid) }}</dd></div>
-            <div><dt>매도가</dt><dd>{{ won(plan.sale) }}<small>{{ saleFixed ? `확정 — 매도일 ${auction?.sellDate}` : '입찰가산정 A안 예상' }}</small></dd></div>
+            <div><dt>매도가</dt><dd>{{ won(plan.sale) }}<small>{{ saleFixed ? `확정 — 매도일 ${auction?.sellDate}` : '입찰가산정A' }}</small></dd></div>
             <div><dt>필요경비</dt><dd>{{ won(split.need) }}<small>{{ srcText(split.needActual, split.needPlan, '필요경비') }}</small></dd></div>
             <div :class="{ key: who !== 'biz' }"><dt>{{ who === 'biz' ? '매매차익' : '양도차익' }}</dt><dd :class="{ neg: tradeGain < 0 }">{{ won(tradeGain) }}<small>매도가 − 낙찰가 − 필요경비{{ who === 'biz' ? ' — 예정신고' : '' }}</small></dd></div>
             <template v-if="who === 'biz'">

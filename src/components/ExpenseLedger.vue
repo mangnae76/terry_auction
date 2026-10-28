@@ -185,11 +185,11 @@ defineExpose({ openAdd, exportCsv, total });
   <section class="xl">
     <div v-if="tools" class="xl-tools">
       <span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span>
-      <span class="xl-hint">{{ BOOK_HINT[book] }} · 자금관리 › {{ BOOK_NAME[book] }}와 같은 기록<br><b class="xl-plan">A안</b> 줄은 입찰가산정 A안 값 — 누르면 실제 값으로 고쳐 적습니다</span>
+      <span class="xl-hint">{{ BOOK_HINT[book] }} · 자금관리 › {{ BOOK_NAME[book] }}와 같은 기록<br><b class="xl-plan">입찰가산정A</b> 입찰가산정A에서 가져옵니다. 필요시 직접 입력하세요.</span>
       <button type="button" class="xl-btn" @click="exportCsv">⬇ 엑셀저장</button>
       <button type="button" class="xl-btn on" :disabled="auctionId === ''" @click="openAdd">＋ 항목추가</button>
     </div>
-    <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint">{{ BOOK_HINT[book] }} · 낙찰이후 › 진행절차 › {{ BOOK_NAME[book] }}와 같은 기록<br><b class="xl-plan">A안</b> 줄은 입찰가산정 A안 값 — 누르면 실제 값으로 고쳐 적습니다</span></p>
+    <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint">{{ BOOK_HINT[book] }} · 낙찰이후 › 진행절차 › {{ BOOK_NAME[book] }}와 같은 기록<br><b class="xl-plan">입찰가산정A</b> 입찰가산정A에서 가져옵니다. 필요시 직접 입력하세요.</span></p>
     <table class="xl-tbl">
       <thead>
         <tr>
@@ -201,7 +201,7 @@ defineExpose({ openAdd, exportCsv, total });
           <td>{{ shortDate(r.date) }}</td>
           <td v-if="many" :title="r.auctionLabel">{{ r.auctionLabel || labelOf(r.auctionId) || '공통' }}</td>
           <td><span class="xl-pill">{{ r.category }}</span></td>
-          <td :title="r.detail" class="l">{{ r.detail }}<span v-if="r.qty && unitOf(r.category)" class="xl-qty">{{ money(r.qty) }}{{ unitOf(r.category)?.[2] }} × {{ money(r.unit) }}원</span><em v-if="r.status" class="xl-st">{{ r.status }}</em><em v-if="r.src === 'plan'" class="xl-plan" title="입찰가산정 A안 값 — 누르면 실제 값으로 고쳐 적습니다">A안</em></td>
+          <td :title="r.detail" class="l">{{ r.detail }}<span v-if="r.qty && unitOf(r.category)" class="xl-qty">{{ money(r.qty) }}{{ unitOf(r.category)?.[2] }} × {{ money(r.unit) }}원</span><em v-if="r.status" class="xl-st">{{ r.status }}</em><em v-if="r.src === 'plan'" class="xl-plan" title="입찰가산정A에서 가져왔습니다 — 누르면 직접 입력합니다">입찰가산정A</em></td>
           <td class="r">{{ money(r.amount) }}원</td>
           <td v-if="book === 'biz'" :title="[r.vendor, r.phone].filter(Boolean).join(' · ')">{{ [r.vendor, r.phone].filter(Boolean).join(' · ') }}</td>
           <td :title="r.note" class="l">{{ r.note }}</td>
@@ -237,7 +237,7 @@ defineExpose({ openAdd, exportCsv, total });
             </label>
             <template v-if="isItem">
               <label>{{ unitCat?.[0] }}<FormattedNumberInput v-model="draft.qty" live-group align="left" placeholder="0" /></label>
-              <label>{{ unitCat?.[1] }}<FormattedNumberInput v-model="draft.unit" live-group align="left" placeholder="0" /><small v-if="draft.category === '대출이자'" class="xl-sub">입찰가산정 A안 3개월 이자 ÷ 3</small></label>
+              <label>{{ unitCat?.[1] }}<FormattedNumberInput v-model="draft.unit" live-group align="left" placeholder="0" /><small v-if="draft.category === '대출이자'" class="xl-sub">입찰가산정A 3개월 이자 ÷ 3</small></label>
             </template>
             <label>비용(VAT포함)<FormattedNumberInput v-model="draft.amount" live-group align="left" placeholder="0" :disabled="isItem" /><small v-if="isItem" class="xl-sub">{{ unitCat?.[0] }} × {{ unitCat?.[1] }}로 계산합니다</small></label>
             <label v-if="book === 'biz' && draft.category === '수리·인테리어'">현황
