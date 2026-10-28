@@ -256,13 +256,14 @@ const formKeys = ref<FormKey[] | null>(null);
 // 진행절차 안 박스 탭 — 새로고침해도 보던 탭 그대로(이 탭 세션)
 // 세금분석 숫자를 바꾸는 것만 — 명도분석 · 필요경비(예정신고) · 사업경비(5월 종합소득세) → 세금분석.
 // 필요경비 · 사업경비는 자금관리의 같은 이름 탭과 같은 기록이다
-type FlowSub = 'steps' | 'evict' | 'need' | 'biz' | 'tax';
-const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['need', '필요경비'], ['biz', '사업경비'], ['tax', '세금분석']];
+// 매물등록(예전 매도·임대 탭) — 어느 중개사에 얼마에 내놨는지의 기록. 세금 셈과는 따로지만 흐름의 끝이라 맨 뒤에
+type FlowSub = 'steps' | 'evict' | 'need' | 'biz' | 'tax' | 'sell';
+const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['need', '필요경비'], ['biz', '사업경비'], ['tax', '세금분석'], ['sell', '매물등록']];
 const flowSub = ref<FlowSub>((() => {
   try {
     const v = sessionStorage.getItem('pw.flow.sub');
     if (v === 'repair') return 'biz';   // 예전 인테리어 박스 탭 → 사업경비
-    return v === 'evict' || v === 'need' || v === 'biz' || v === 'tax' ? v : 'steps';
+    return v === 'evict' || v === 'need' || v === 'biz' || v === 'tax' || v === 'sell' ? v : 'steps';
   } catch { return 'steps'; }
 })());
 watch(flowSub, (v) => { try { sessionStorage.setItem('pw.flow.sub', v); } catch { /* 그만 */ } });
@@ -440,6 +441,7 @@ const goTodo = async (t: StepTodo) => {
   // 상세 · 가이드는 창으로 — 인테리어 · 매도는 기록 화면이라 그대로 옮겨 간다
   if (t.tab !== 'repair' && t.tab !== 'sell' && (t.group || t.tab === 'biz')) { popTodo.value = t; return; }
   // 웹은 인테리어가 진행절차 안 박스 탭이다
+  if (webEmbed && t.tab === 'sell') { activeTab.value = 'flow'; flowSub.value = 'sell'; window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   if (webEmbed && t.tab === 'repair') { activeTab.value = 'flow'; flowSub.value = 'biz'; window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   activeTab.value = t.tab as TabKey;
   if (!t.group) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
@@ -1278,7 +1280,7 @@ const toggleSection = (key: string) => {
       </template>
 
       <!-- 매도·임대 — 중개 의뢰 현황과 직거래, 같은 꼴의 표 두 장 -->
-      <template v-else-if="activeTab === 'sell'">
+      <template v-else-if="activeTab === 'sell' || (activeTab === 'flow' && flowSub === 'sell')">
         <section v-for="card in SELL_CARDS" :key="card.key" class="pw-card">
           <header class="pw-card-head">
             <h2>
