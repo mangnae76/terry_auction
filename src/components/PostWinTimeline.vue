@@ -204,7 +204,8 @@ const addStep = () => {
   edit((f) => { f.steps.push({ id: newId(), name, days: Number(addDaysN.value) || 0, base: addBase.value }); });
   addName.value = ''; addDaysN.value = 7; addBase.value = 'prev';
 };
-const endByDeal = () => edit((f) => { f.endedAt = f.endedAt ? undefined : todayIso(); });
+// 되돌릴 때는 빈 글자로 — undefined 는 저장 때 빠지고, 합쳐 쓰기(merge)라 예전 종결일이 서버에 그대로 남는다
+const endByDeal = () => edit((f) => { f.endedAt = f.endedAt ? '' : todayIso(); });
 const resetDefault = () => {
   if (!window.confirm('기본 절차로 되돌릴까요? 고친 단계와 완료 표시가 지워집니다.')) return;
   commit(defaultFlow());
