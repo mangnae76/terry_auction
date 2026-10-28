@@ -6,7 +6,7 @@ import { computed, ref, watch } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useFinanceStore } from '../stores/financeStore';
 import { useInteriorStore } from '../stores/interiorStore';
-import { BOOK_HINT, BOOK_NAME, groupsOf, ledgerRows, planAmountsOf, withPlan, type Book, type LedgerRow } from '../services/expenseBook';
+import { BOOK_HINT, BOOK_NAME, groupsOf, ledgerRows, planAmountsOf, planRowsOf, withPlan, type Book, type LedgerRow } from '../services/expenseBook';
 import { cleanupLegacyOnce } from '../services/legacyCleanup';
 import { shortAddr } from '../utils/address';
 import FormattedNumberInput from './FormattedNumberInput.vue';
@@ -127,8 +127,23 @@ const detailPick = computed({
   },
 });
 const busy = ref(false);
+/** 지금 적는 줄에 해당하는 입찰가산정A 줄(있으면) — 0 · 빈칸으로 저장하면 이 값으로 돌아간다 */
+const planMatch = computed(() => {
+  const d = draft.value;
+  const a = auctions.auctions.find((x) => x.id === d.auctionId);
+  if (!a) return null;
+  return planRowsOf(a).find((p) => p.book === props.book && p.category === d.category
+    && (p.category === '수리·인테리어' || p.category === '명도비' || p.detail === d.detail)) ?? null;
+});
 const save = async () => {
   const d = draft.value;
+  // 0 · 빈칸 — 기록을 남기지 않는다(고치던 줄은 지운다). 입찰가산정A 항목이면 그 값으로 돌아간다
+  if (!Number(d.amount)) {
+    if (d.id && d.src === 'be') await finance.deleteBusinessExpense(d.id);
+    else if (d.id && d.src === 'in') await interior.remove(d.id);
+    open.value = false;
+    return;
+  }
   busy.value = true;
   try {
     const label = labelOf(d.auctionId);
@@ -239,7 +254,7 @@ defineExpose({ openAdd, exportCsv, total });
               <label>{{ unitCat?.[0] }}<FormattedNumberInput v-model="draft.qty" live-group align="left" placeholder="0" /></label>
               <label>{{ unitCat?.[1] }}<FormattedNumberInput v-model="draft.unit" live-group align="left" placeholder="0" /><small v-if="draft.category === '대출이자'" class="xl-sub">입찰가산정A 3개월 이자 ÷ 3</small></label>
             </template>
-            <label>비용(VAT포함)<FormattedNumberInput v-model="draft.amount" live-group align="left" placeholder="0" :disabled="isItem" /><small v-if="isItem" class="xl-sub">{{ unitCat?.[0] }} × {{ unitCat?.[1] }}로 계산합니다</small></label>
+            <label>비용(VAT포함)<FormattedNumberInput v-model="draft.amount" live-group align="left" placeholder="0" :disabled="isItem" /><small v-if="isItem" class="xl-sub">{{ unitCat?.[0] }} × {{ unitCat?.[1] }}로 계산합니다</small><small v-if="planMatch" class="xl-sub">0이나 빈칸으로 저장하면 입찰가산정A {{ money(planMatch.amount) }}원으로 돌아갑니다</small></label>
             <label v-if="book === 'biz' && draft.category === '수리·인테리어'">현황
               <select v-model="draft.status"><option v-for="st in ['예정', '진행', '완료']" :key="st" :value="st">{{ st }}</option></select>
             </label>
