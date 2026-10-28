@@ -1053,6 +1053,9 @@ export const fetchDongHouseholds = async (bCode10: string): Promise<number> => {
     return requestJson(url);
   };
   const first = await call(1);
+  // 한도 초과 · 키 오류도 200 으로 올 때가 있다 — 그때 0 을 내면 '세대 없음'과 구분이 안 된다. 오류로 던진다
+  const code = String(first?.response?.header?.resultCode ?? '00');
+  if (!/^0+$/.test(code)) throw new Error(`건축물대장 조회 실패(${code} ${String(first?.response?.header?.resultMsg ?? '')})`);
   const total = Number(first?.response?.body?.totalCount ?? 0) || 0;
   if (total === 0) return 0;
   const pages = Math.min(40, Math.ceil(total / PAGE));

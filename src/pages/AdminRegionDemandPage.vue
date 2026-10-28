@@ -113,7 +113,8 @@ const setManual = (sigungu: string, umdNm: string, field: keyof Manual, raw: str
   saveManualSoon();
 };
 
-/** 건축물대장 세대수 — 읍면동마다(연립·다세대). 열쇠는 손 입력과 같은 rowKey */
+/** 건축물대장 세대수 — 읍면동마다(연립·다세대). 열쇠는 손 입력과 같은 rowKey.
+ *  0 = 받았는데 연립·다세대가 없음 · -1 = 못 받음(한도 · 오류) — 둘을 화면에서 가른다 */
 const autoUnits = ref<Record<string, number>>({});
 let unitsJob = 0;
 const fetchAutoUnits = async () => {
@@ -123,19 +124,32 @@ const fetchAutoUnits = async () => {
   // 하루 한도가 있어 둘씩 차례로 — 한 번 받은 동은 30일 저장(물건상세와 같은 저장소)
   for (let i = 0; i < targets.length; i += 2) {
     await Promise.all(targets.slice(i, i + 2).map(async (r) => {
+      const key = rowKey(r.sigungu, r.umdNm);
+      let value = -1;
       try {
         const region = await resolveRegionFromAddress(`${sido.value} ${r.sigungu} ${r.umdNm}`);
-        if (!region?.bCode10) return;
-        const got = await cachedEntryOrStale('cacheDongUnits', cacheKey(region.bCode10), CACHE_TTL.units,
-          () => fetchDongHouseholds(region.bCode10), (n) => n > 0, 365 * 24 * 60 * 60 * 1000);
-        if (job !== unitsJob || !got.value) return;
-        autoUnits.value = { ...autoUnits.value, [rowKey(r.sigungu, r.umdNm)]: got.value };
-      } catch { /* 못 받으면 손으로 */ }
+        if (region?.bCode10) {
+          const got = await cachedEntryOrStale('cacheDongUnits', cacheKey(region.bCode10), CACHE_TTL.units,
+            () => fetchDongHouseholds(region.bCode10), (n) => n > 0, 365 * 24 * 60 * 60 * 1000);
+          if (got.value !== null) value = got.value;
+        }
+      } catch { /* 못 받음 */ }
+      if (job !== unitsJob) return;
+      autoUnits.value = { ...autoUnits.value, [key]: value };
     }));
     if (job !== unitsJob) return;
   }
 };
 watch([stats, kind], () => { void fetchAutoUnits(); });
+/** 총 세대수 칸의 흐린 글 — 받은 값 · 0(없음) · 못 받음 · 받는 중 */
+const unitsHint = (sigungu: string, umdNm: string) => {
+  if (kind.value !== 'villa') return { text: '입력', tip: '' };
+  const v = autoUnits.value[rowKey(sigungu, umdNm)];
+  if (v === undefined) return { text: '받는 중', tip: '건축물대장에서 세대수를 받는 중' };
+  if (v < 0) return { text: '못 받음', tip: '건축물대장 조회 실패(하루 한도 · 오류) — 직접 입력하거나 내일 다시 조회' };
+  if (v === 0) return { text: '0', tip: '건축물대장에 연립·다세대가 없음(아파트만 있거나 공동주택이 없는 동)' };
+  return { text: v.toLocaleString('ko-KR'), tip: '건축물대장 연립·다세대 세대수 합 — 적으면 그 값이 우선' };
+};
 
 /** 네 지표 — 손품+현장의 매매수요와 같은 식이다 */
 type Row = StatRow & {
@@ -146,7 +160,7 @@ const rows = computed<Row[]>(() => stats.value
   .filter((r) => !dongFilter.value || r.umdNm === dongFilter.value)
   .map((s) => {
   const m = manualOf(s.sigungu, s.umdNm);
-  const units = m.units ?? autoUnits.value[rowKey(s.sigungu, s.umdNm)] ?? 0;
+  const units = m.units ?? Math.max(0, autoUnits.value[rowKey(s.sigungu, s.umdNm)] ?? 0);
   const listings = m.listings ?? 0;
   const monthly = s.count / Math.max(1, months.value);
   // 회전율·소화율은 1년치로 환산한다 — 24개월을 받아도 뜻이 같아야
@@ -567,8 +581,8 @@ const downloadCsv = () => {
                 <input
                   class="adm-cell"
                   inputmode="numeric"
-                  :placeholder="autoUnits[rowKey(r.sigungu, r.umdNm)] ? autoUnits[rowKey(r.sigungu, r.umdNm)].toLocaleString('ko-KR') : '입력'"
-                  :title="autoUnits[rowKey(r.sigungu, r.umdNm)] ? '건축물대장 연립·다세대 세대수 합 — 적으면 그 값이 우선' : ''"
+                  :placeholder="unitsHint(r.sigungu, r.umdNm).text"
+                  :title="unitsHint(r.sigungu, r.umdNm).tip"
                   :value="manualOf(r.sigungu, r.umdNm).units ? manualOf(r.sigungu, r.umdNm).units!.toLocaleString('ko-KR') : ''"
                   @input="setManual(r.sigungu, r.umdNm, 'units', ($event.target as HTMLInputElement).value)"
                 />
