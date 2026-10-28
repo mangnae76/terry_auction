@@ -840,7 +840,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .fin-header { display: none !important; }
 /* …다만 자금관리 다섯 탭(자금입출금 ~ 세금신고)은 마이페이지 아래 3단 박스 탭으로 다시 보인다 — 머리 껍데기는 테두리 · 여백 없이 탭만 */
 .app-page[data-k="finance"] .fin-header:has(.fin-tabs) { display: block !important; order: 1; margin: 4px 0 8px !important; padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; }
-.app-page[data-k="finance"] .fin-header .fin-tabs { display: flex !important; border-bottom: 1px solid var(--boxtab-line); background: transparent !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+.app-page[data-k="finance"] .fin-header .fin-tabs { margin: 0 !important; display: flex !important; border-bottom: 1px solid var(--boxtab-line); background: transparent !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
 .app-page[data-k="finance"] .fin-stage-count { gap: 8px; }
 .app-page[data-k="finance"] .fin-stage-count button { height: 28px; padding: 0 8px 0 10px; border-radius: 8px; font-size: 14px; }
 .app-page[data-k="finance"] .fin-stage-count .fin-chev { width: 12px; height: 12px; margin-left: 4px; }
@@ -2258,7 +2258,7 @@ html, body { overflow-x: clip; }
 :root[data-theme="dark"] { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; } }
 .app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-tabs { --boxtab-on: var(--bg); }
-.app-page[data-k="finance"] .kind-chips { margin: 4px 0 10px; border-bottom: 1px solid var(--boxtab-line); }
+.app-page[data-k="finance"] .kind-chips { margin: 4px 16px 10px !important; border-bottom: 1px solid var(--boxtab-line); } /* 세금 틀(.tax-shell)이 좌우 -16 이라 16 을 돌려준다 — 위 상자들과 끝선 맞춤 */
 :is(.app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-header .fin-tabs) { display: flex !important; align-items: flex-end !important; gap: 4px !important; padding-left: 0 !important; }
 :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab) {
   position: relative; align-self: flex-end !important; display: inline-flex; align-items: center; gap: 6px;
@@ -2346,6 +2346,9 @@ html, body { overflow-x: clip; }
 .app-page[data-k="more"] .prf-h1 { font-size: 16px !important; }
 .app-page[data-k="more"] .prf-who b { font-size: 15px !important; }
 .app-page[data-k="more"] .prf-shell :is(.prf-sub, .prf-warn, .prf-hint, .prf-fld small, .prf-fld small *, .prf-who .lab, .prf-input, .prf-numbtn, .prf-chk, .prf-mail .at, .prf-submit, .prf-seg button, .prf-unit em, .prf-sales, .prf-sales *) { font-size: 14px !important; }
+/* 세금신고 안 두 갈래(소득세 현황 · 신고 일정) — 세금 안내를 가이드로 옮겨 둘만 남았다, 반씩 */
+.app-page[data-k="finance"] .tax-subtabs { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.app-page[data-k="finance"] .tax-subtabs .sub { width: auto !important; }
 </style>
 
 <header class="gnb">
