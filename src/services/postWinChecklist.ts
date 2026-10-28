@@ -37,6 +37,8 @@ export interface CheckGroup {
   note?: string;
   /** 체크 칸을 두지 않는 상자 — 챙기는 일이 아니라 읽어 두는 글일 때 */
   noCheck?: boolean;
+  /** 웹에만 보이는 상자 — 앱 화면에는 넣지 않는다 */
+  webOnly?: boolean;
   /** 제목줄 오른쪽에 세울 바로가기들 (계산기 등) */
   links?: Array<{ label: string; url: string }>;
   /** 여러 상자를 한 울타리로 묶는 큰 제목 — 같은 글을 적은 상자끼리 묶인다 */
@@ -85,6 +87,7 @@ const LABEL_RULES: Array<{ test: RegExp; label: string; href?: string }> = [
 /** 줄 글 속 낱말에 거는 링크 — 저장해 둔 표에도 걸리게 글자로 찾는다 */
 const TEXT_LINKS: Array<{ word: string; href: string }> = [
   { word: '인터넷우체국', href: 'https://www.epost.go.kr/' },
+  { word: '전자소송포털', href: 'https://ecfs.scourt.go.kr/' },
 ];
 /** 줄 글을 [글, 링크] 조각으로 */
 export const textParts = (text: string): Array<{ t: string; href?: string }> => {

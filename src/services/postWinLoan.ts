@@ -200,4 +200,28 @@ export const POST_WIN_LOAN: CheckGroup[] = [
       },
     ],
   },
+  {
+    // 절차진행 '사업자등록'의 체크리스트 (웹만) — 자세한 설명은 가이드 › 사업자등록
+    key: 'ln.biz',
+    title: '사업자등록 하기',
+    note: '잔금 전에 끝내 두면 취득 비용부터 사업 비용으로 잡힌다',
+    webOnly: true,
+    sections: [
+      {
+        label: '등록',
+        rows: [
+          { id: 'ln.biz.r1', depth: 0, text: '홈택스 사업자등록 신청 — 업종코드 703011(주거용 건물 매매업)' },
+          { id: 'ln.biz.r2', depth: 0, text: '사업자등록증 발급 확인(보통 1~2일)' },
+        ],
+      },
+      {
+        label: '계좌 · 카드',
+        rows: [
+          { id: 'ln.biz.a1', depth: 0, text: '사업용 계좌 개설(사업자등록증 · 신분증)' },
+          { id: 'ln.biz.a2', depth: 0, text: '사업용 카드 발급' },
+          { id: 'ln.biz.a3', depth: 0, text: '홈택스에 사업용 계좌 · 카드 등록' },
+        ],
+      },
+    ],
+  },
 ];

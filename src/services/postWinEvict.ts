@@ -162,4 +162,176 @@ export const POST_WIN_EVICT: CheckGroup[] = [
     }],
     sections: [],
   },
+  {
+    // 절차진행 '이사 날짜 협의 및 확정'의 체크리스트 (웹만) — 협의 → 확정 → 이사 당일
+    key: 'ev.move',
+    title: '이사 날짜 협의 및 확정',
+    webOnly: true,
+    sections: [
+      {
+        label: '협의',
+        rows: [
+          { id: 'ev.move.t1', depth: 0, text: '잔금 납부일을 알리고 그 전에 이사하도록 요청' },
+          { id: 'ev.move.t2', depth: 0, text: '이사 희망일 · 이사 갈 곳 확인' },
+          { id: 'ev.move.t3', depth: 0, text: '이사비 요구 시 조건 정리 — 지급은 집을 비운 뒤', warn: true },
+        ],
+      },
+      {
+        label: '확정',
+        rows: [
+          { id: 'ev.move.d1', depth: 0, text: '이사 날짜 합의서 작성 · 서명' },
+          { id: 'ev.move.d2', depth: 0, text: '관리비 · 공과금 정산 날짜 맞추기' },
+        ],
+      },
+      {
+        label: '이사 당일',
+        rows: [
+          { id: 'ev.move.m1', depth: 0, text: '집 상태 확인(파손 · 짐 남김)' },
+          { id: 'ev.move.m2', depth: 0, text: '열쇠 · 출입카드 인수, 명도확인서 받기' },
+        ],
+      },
+    ],
+  },
+  {
+    // 절차진행 '인도명령 신청' (웹만)
+    key: 'ev.order',
+    title: '인도명령 신청',
+    note: '잔금을 낸 날부터 6개월 안에 신청할 수 있다 — 잔금 납부와 함께 내는 것이 가장 빠르다',
+    webOnly: true,
+    sections: [
+      {
+        label: '준비',
+        rows: [
+          { id: 'ev.order.p1', depth: 0, text: '상대방(점유자) 확정 — 채무자 · 소유자 · 대항력 없는 임차인 등' },
+          { id: 'ev.order.p2', depth: 0, text: '점유자 이름 · 주소는 매각물건명세서 · 현황조사서로 확인' },
+        ],
+      },
+      {
+        label: '신청',
+        rows: [
+          { id: 'ev.order.a1', depth: 0, text: '전자소송포털 또는 경매계에 부동산인도명령 신청서 제출' },
+          { id: 'ev.order.a2', depth: 0, text: '인지대 · 송달료 납부(상대방 수만큼)' },
+          { id: 'ev.order.a3', depth: 0, text: '법무사에 맡길 때는 잔금 · 등기와 함께 의뢰' },
+        ],
+      },
+      {
+        label: '확인',
+        rows: [
+          { id: 'ev.order.c1', depth: 0, text: '사건번호 받아 두기 — 진행은 전자소송 · 대법원 사건검색으로' },
+          { id: 'ev.order.c2', depth: 0, text: '심문서 · 보정명령이 오면 기한 안에 답하기', warn: true },
+        ],
+      },
+    ],
+  },
+  {
+    // 절차진행 '내용증명 발송' (웹만)
+    key: 'ev.notice',
+    title: '내용증명 발송',
+    note: '법적 절차를 시작했다는 것을 문서로 남긴다 — 협상을 앞당기는 효과가 크다',
+    webOnly: true,
+    sections: [
+      {
+        label: '적을 내용',
+        rows: [
+          { id: 'ev.notice.w1', depth: 0, text: '낙찰 · 잔금 납부로 소유권을 얻은 사실' },
+          { id: 'ev.notice.w2', depth: 0, text: '집을 비워 달라는 요청과 기한(날짜)' },
+          { id: 'ev.notice.w3', depth: 0, text: '기한을 넘기면 강제집행 · 점유 기간 사용료(부당이득) 청구' },
+          { id: 'ev.notice.w4', depth: 0, text: '연락처 — 협의는 언제든 열려 있다는 한 줄' },
+        ],
+      },
+      {
+        label: '보내기',
+        rows: [
+          { id: 'ev.notice.s1', depth: 0, text: '3부 작성(받는 사람 · 우체국 · 내 보관)' },
+          { id: 'ev.notice.s2', depth: 0, text: '우체국 창구 또는 인터넷우체국으로 발송' },
+          { id: 'ev.notice.s3', depth: 0, text: '배달 결과(수령 · 반송) 확인하고 사본 보관' },
+        ],
+      },
+    ],
+  },
+  {
+    // 절차진행 '인도명령 결정문 송달 확인' (웹만)
+    key: 'ev.serve',
+    title: '인도명령 결정문 송달',
+    note: '결정문이 점유자에게 닿아야 강제집행을 신청할 수 있다',
+    webOnly: true,
+    sections: [
+      {
+        label: '확인',
+        rows: [
+          { id: 'ev.serve.c1', depth: 0, text: '송달 결과 확인 — 전자소송 송달내역 또는 사건검색' },
+        ],
+      },
+      {
+        label: '안 닿을 때',
+        rows: [
+          { id: 'ev.serve.f1', depth: 0, text: '폐문부재면 특별송달(야간 · 휴일) 신청' },
+          { id: 'ev.serve.f2', depth: 0, text: '그래도 안 되면 공시송달 신청', warn: true },
+        ],
+      },
+      {
+        label: '집행 준비',
+        rows: [
+          { id: 'ev.serve.d1', depth: 0, text: '송달증명원 발급' },
+          { id: 'ev.serve.d2', depth: 0, text: '결정문 정본에 집행문 부여 신청' },
+        ],
+      },
+    ],
+  },
+  {
+    // 절차진행 '강제집행 신청' (웹만)
+    key: 'ev.execApply',
+    title: '강제집행 신청',
+    note: '집행관사무소에 접수하면 현장 확인 뒤 계고(자진 퇴거 안내)부터 한다',
+    webOnly: true,
+    sections: [
+      {
+        label: '서류',
+        rows: [
+          { id: 'ev.exa.d1', depth: 0, text: '집행문을 붙인 인도명령 결정문 정본' },
+          { id: 'ev.exa.d2', depth: 0, text: '송달증명원' },
+          { id: 'ev.exa.d3', depth: 0, text: '강제집행 신청서 · 신분증 · 도장' },
+        ],
+      },
+      {
+        label: '접수',
+        rows: [
+          { id: 'ev.exa.a1', depth: 0, text: '관할 법원 집행관사무소에 접수' },
+          { id: 'ev.exa.a2', depth: 0, text: '집행 예납금 납부' },
+          { id: 'ev.exa.a3', depth: 0, text: '계고 날짜 · 집행관 연락처 받아 두기' },
+        ],
+      },
+    ],
+  },
+  {
+    // 절차진행 '강제집행 실시' (웹만)
+    key: 'ev.exec',
+    title: '강제집행 실시',
+    note: '계고 뒤에도 나가지 않으면 집행일이 잡힌다 — 그 전까지도 협의는 계속한다',
+    webOnly: true,
+    sections: [
+      {
+        label: '집행 전',
+        rows: [
+          { id: 'ev.exe.b1', depth: 0, text: '집행일 · 노무 인원 · 비용 예납 확인' },
+          { id: 'ev.exe.b2', depth: 0, text: '참관할 증인(성인 2명) 준비' },
+          { id: 'ev.exe.b3', depth: 0, text: '짐 보관 창고 정하기' },
+        ],
+      },
+      {
+        label: '집행 당일',
+        rows: [
+          { id: 'ev.exe.d1', depth: 0, text: '집행관과 함께 참관, 짐 목록 · 사진 남기기' },
+          { id: 'ev.exe.d2', depth: 0, text: '열쇠 교체 · 집 상태 확인' },
+        ],
+      },
+      {
+        label: '집행 뒤',
+        rows: [
+          { id: 'ev.exe.a1', depth: 0, text: '보관한 짐 처리 절차 진행(찾아가지 않으면 법원 절차로)', warn: true },
+          { id: 'ev.exe.a2', depth: 0, text: '관리비 · 공과금 정산, 명의 변경' },
+        ],
+      },
+    ],
+  },
 ];

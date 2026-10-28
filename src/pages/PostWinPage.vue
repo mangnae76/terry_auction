@@ -251,7 +251,11 @@ const narrowGroup = (g: CheckGroup, t: StepTodo): CheckGroup => {
     .filter((sec) => sec.rows.length > 0);
   return { ...g, sections };
 };
-const popNarrowed = computed(() => !!popTodo.value && !popFull.value && !!(popTodo.value.section || popTodo.value.rows));
+const popNarrowed = computed(() => !!popTodo.value && !popFull.value && !!(popTodo.value.section || popTodo.value.rows || popTodo.value.branch != null));
+/** 갈래 그림은 줄 이름표가 갈래 차례에 묶여 있어 빼지 않고 가린다 — 그 갈래 · 그 번호만 보인다 */
+const popBranchOn = computed(() => popOpen.value && !popFull.value && popTodo.value?.branch != null);
+const brShown = (bri: number) => !popBranchOn.value || bri === popTodo.value?.branch;
+const stepShown = (no: string) => !popBranchOn.value || !popTodo.value?.stepNos || popTodo.value.stepNos.includes(no);
 const popGroups = computed<CheckGroup[]>(() => {
   const t = popTodo.value;
   if (!t) return [];
@@ -272,9 +276,10 @@ const dayGroups = computed<CheckGroup[]>(() => {
   const t = activeTab.value;
   if (t === 'gwin') return dayBook.groups.value.filter((g) => GUIDE_DAY_KEYS.has(g.key));
   if (t === 'gevict') return evictBook.groups.value.filter((g) => GUIDE_EVICT_KEYS.has(g.key));
-  if (t === 'evict') return webEmbed ? evictBook.groups.value.filter((g) => !GUIDE_EVICT_KEYS.has(g.key)) : dealAfterFirst(evictBook.groups.value);
+  if (t === 'evict') return webEmbed ? evictBook.groups.value.filter((g) => !GUIDE_EVICT_KEYS.has(g.key)) : dealAfterFirst(evictBook.groups.value.filter((g) => !g.webOnly));
   if (t === 'win' && webEmbed) return dayBook.groups.value.filter((g) => !GUIDE_DAY_KEYS.has(g.key));
-  return book.value.groups.value;
+  // 앱은 웹 전용 상자(절차진행 큰일의 체크리스트)를 넣지 않는다
+  return webEmbed ? book.value.groups.value : book.value.groups.value.filter((g) => !g.webOnly);
 });
 /** 표가 있는 탭인가 */
 const hasTable = computed(() => viewTab.value in BOOK_OF);
@@ -913,10 +918,11 @@ const toggleSection = (key: string) => {
             </div>
             </div>
             <!-- 웹 — 시기별 진행내용을 두 칸으로(낙찰 당일 | 잔금 납부 전, 잔금 납부 후 1·2 | 3·4 …) -->
-            <div :class="{ 'pw-br-grid': webEmbed && !editing && (g.branches ?? []).length > 1 }">
+            <div :class="{ 'pw-br-grid': webEmbed && !editing && !popBranchOn && (g.branches ?? []).length > 1 }">
             <!-- 갈래 그림 — 번호 상자에서 할 일이 갈라진다 -->
             <div
               v-for="(br, bri) in (editing ? [] : (g.branches ?? []))"
+              v-show="brShown(bri)"
               :key="`br-${bri}`"
               :class="['pw-br', { 'col-break': webEmbed && bri > 0 && /납부\s*후/.test(br.pill ?? '') && !/납부\s*후/.test(g.branches?.[bri - 1]?.pill ?? '') }]"
             >
@@ -926,7 +932,7 @@ const toggleSection = (key: string) => {
                 <span v-if="br.head" class="pw-br-arrow" />
                 <em v-if="br.head" class="pw-br-item flat">{{ br.head }}</em>
               </div>
-              <div v-for="(stp, sti) in br.steps" :key="`st-${bri}-${sti}`" class="pw-br-step">
+              <div v-for="(stp, sti) in br.steps" v-show="stepShown(stp.no)" :key="`st-${bri}-${sti}`" class="pw-br-step">
                 <span class="pw-br-left">
                   <em class="pw-br-no">{{ stp.no }}</em>
                   <b>{{ webLabel(stp.label) }}</b>

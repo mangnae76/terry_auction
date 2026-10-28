@@ -190,6 +190,7 @@ export const usePostWinBook = (key: BookKey = 'day') => {
           super: d.super,
           links: d.links,
           noCheck: d.noCheck,
+          webOnly: d.webOnly,
           flow: d.flow,
           timeline: d.timeline,
           boxes: d.boxes,
