@@ -45,7 +45,7 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
       texts: { 'pw.visit.c1': '연락처 메모 남기기 (통화 시 위 협상내용 참고)' },
     },
     { text: '주민·동대표·관리소 탐문', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c2', 'pw.visit.c3', 'pw.visit.c4'], labels: { 폐문부재연락부재: '주민·동대표·관리소' } },
-    { text: '부동산 방문 — 시세·거래기록', cat: 'proc', tab: 'win', group: 'visit', section: '부동산방문' },
+    { text: '부동산 방문 - 낙찰당일', cat: 'proc', tab: 'win', group: 'visit', section: '부동산방문' },
   ],
   decide: [
     { text: '점유자 다시 연락·재방문', cat: 'evict', tab: 'evict', group: 'ev.revisit' },

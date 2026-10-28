@@ -407,6 +407,8 @@ export interface AuctionDetail {
   postWinChecks?: Record<string, boolean>;
   /** 낙찰이후 · 진행절차 — 낙찰일(입찰일)부터 이어지는 단계와 끝낸 날 (웹) */
   postWinFlow?: PostWinFlow;
+  /** 낙찰이후 · 서식 — 이 물건에서 편집해 저장한 문서 글(서식 열쇠 → 글). 빈 글이면 기본 서식 */
+  postWinDocs?: Record<string, string>;
   /** 낙찰이후 · 매도·임대 — 중개 의뢰 현황 */
   sellAgencyRows?: AgencyRow[];
   /** 낙찰이후 · 매도·임대 — 직거래 */
