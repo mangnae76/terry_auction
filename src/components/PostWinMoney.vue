@@ -131,7 +131,8 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
         <tbody><tr v-for="[k, v] in RISKS" :key="k"><th>{{ k }}</th><td>{{ v }}</td></tr></tbody>
       </table>
 
-      <h3 class="pwm-h">셈에 쓴 값<button type="button" class="pwm-reset" @click="reset">초기화</button></h3>
+      <article class="pwm-box">
+      <h3 class="pwm-h">계산에 쓴 값<button type="button" class="pwm-reset" @click="reset">초기화</button></h3>
       <div class="pwm-fields">
         <label v-for="[k, label, unit] in EV_FIELDS" :key="k">
           <span>{{ label }}</span>
@@ -141,6 +142,7 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
       <ul class="pwm-basis"><li v-for="b in EVICT_BASIS" :key="b">{{ b }}</li></ul>
       <p class="pwm-src">출처 <a v-for="x in EVICT_SOURCES" :key="x.href" :href="x.href" target="_blank" rel="noopener">{{ x.label }} ↗</a></p>
       <p class="pwm-note">기본값은 위 시세를 따른 대략 값입니다 — 업체 견적 · 법원 예납 고지를 받으면 고쳐 쓰세요.</p>
+      </article>
     </template>
 
     <!-- ===== 세금분석 ===== -->
@@ -243,6 +245,8 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
 .pwm-src { margin: 10px 0 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #6b7280; }
 .pwm-src a { color: #1d4ed8; text-decoration: none; }
 .pwm-src a:hover { text-decoration: underline; }
+.pwm-box { margin-top: 22px; border: 1px solid #e3e8f0; border-radius: 10px; padding: 18px 24px 20px; }
+.pwm-box > .pwm-h:first-child { margin-top: 0; }
 .pwm-note { margin: 10px 0 0; font-size: 14px; color: #9ca3af; }
 .pwm-reset { margin-left: auto; height: 30px; padding: 0 12px; border: 1px solid #d0d5dd; border-radius: 6px; background: #fff; color: #374151; font-size: 14px; cursor: pointer; }
 .pwm-taxbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-bottom: 18px; }
