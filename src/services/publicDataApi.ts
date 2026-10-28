@@ -874,6 +874,10 @@ const fetchRealTradeRowsForMonth = async (
     // 한 페이지(기존 500건)만 받으면 거래가 많은 시군구에서 조용히 잘린다.
     // totalCount를 보고 남은 페이지까지 모두 받는다.
     const first = await requestJson(buildPageUrl(1));
+    // 한도 초과 · 키 오류도 200 으로 올 때가 있다 — 그걸 '거래 0건'으로 받아 저장하면
+    // 그 달이 한동안(지난 달은 1년) 빈 채로 굳는다. 오류로 던져 저장하지 않는다
+    const code = String(first?.response?.header?.resultCode ?? '000');
+    if (!/^0+$/.test(code)) throw new Error(`${code} ${String(first?.response?.header?.resultMsg ?? '')}`.trim());
     const rawRows = asArray(first?.response?.body?.items?.item);
     const totalCount = Number(first?.response?.body?.totalCount ?? rawRows.length) || rawRows.length;
     const pages = Math.min(MAX_PAGES, Math.ceil(totalCount / PAGE_SIZE));
@@ -998,7 +1002,8 @@ const fetchMonthWithRetry = async (
 ): Promise<MonthFetchResult> => {
   const id = cacheKey(lawdCd5, path, dealYmd);
   const hit = await readCache<MonthFetchResult>('cacheTradeMonth', id, monthCacheTtl(dealYmd));
-  if (hit && !hit.error) return hit;
+  // 빈 달은 믿지 않고 다시 받는다 — 예전에 오류 응답이 '0건'으로 저장된 것이 남아 있을 수 있다
+  if (hit && !hit.error && hit.rows.length > 0) return hit;
   let last: MonthFetchResult = { rows: [], error: '미조회', typeLabel: '' };
   for (let i = 0; i < tries; i += 1) {
     if (isQuotaBlocked()) return { rows: [], error: QUOTA_EXCEEDED_MSG, typeLabel: '' };
