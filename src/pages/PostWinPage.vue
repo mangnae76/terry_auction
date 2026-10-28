@@ -26,6 +26,7 @@ import { propTypeName } from '../utils/propertyType';
 import type { AgencyRow, AuctionDetail } from '../types/auction';
 import PostWinTimeline from '../components/PostWinTimeline.vue';
 import PostWinForms from '../components/PostWinForms.vue';
+import PostWinMoney from '../components/PostWinMoney.vue';
 import { FORM_BTN, FORMS_OF_ROW, type FormKey } from '../services/postWinForms';
 import { utilityLine } from '../services/utilityContacts';
 import { DETAIL_STEPS, STEP_TITLE, STEP_TODOS, type StepTodo } from '../services/postWinTodos';
@@ -39,7 +40,7 @@ const DETAIL_OF: Partial<Record<string, CheckGroup[]>> = { drepair: DETAIL_REPAI
 type TabKey = 'win' | 'dpre' | 'gdeny' | 'flow' | 'biz' | 'balance' | 'evict' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
   { key: 'win', label: '낙찰당일', desc: '낙찰가·경쟁 상황, 영수증과 서류 챙기기' },
-  { key: 'flow', label: '절차진행', desc: '낙찰일부터 명도까지 단계별 일정' },   // 웹만(앱 탭 줄에는 안 보인다)
+  { key: 'flow', label: '진행절차', desc: '낙찰일부터 명도까지 단계별 일정' },   // 웹만(앱 탭 줄에는 안 보인다)
   { key: 'evict', label: '명도', desc: '점유자 확인, 인도명령·강제집행, 이사비 협의' },
   { key: 'biz', label: '사업자등록', desc: '매매사업자 등록 · 사업용 계좌 · 사업용 카드' },
   { key: 'balance', label: '잔금·등기', desc: '잔금 납부일, 등기 촉탁, 취득세' },
@@ -244,6 +245,11 @@ const GUIDE_EVICT_KEYS = new Set(['ev.flow', 'ev.deal', 'ev.step']);   // 시기
 const popTodo = ref<StepTodo | null>(null);
 /** 서식 창 — 줄 옆 [서식]을 누르면 그 줄에 걸린 서식(여럿이면 탭) */
 const formKeys = ref<FormKey[] | null>(null);
+// 진행절차 안 박스 탭 — 새로고침해도 보던 탭 그대로(이 탭 세션)
+type FlowSub = 'steps' | 'evict' | 'tax';
+const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['tax', '세금분석']];
+const flowSub = ref<FlowSub>((() => { try { const v = sessionStorage.getItem('pw.flow.sub'); return v === 'evict' || v === 'tax' ? v : 'steps'; } catch { return 'steps'; } })());
+watch(flowSub, (v) => { try { sessionStorage.setItem('pw.flow.sub', v); } catch { /* 그만 */ } });
 /** 처음 보일 서식 — 내용증명 2차 카드에서 열면 2차부터 */
 const formStart = ref<FormKey | ''>('');
 const cardFormOf = new Map<string, string>();
@@ -873,9 +879,13 @@ const toggleSection = (key: string) => {
           >{{ st.name }}<span class="pw-flow-tip" role="tooltip">{{ st.note }}</span></span>
         </div>
       </section>
-      <!-- 웹 절차진행 — 고른 낙찰 물건의 낙찰일부터 단계 일정 -->
+      <!-- 웹 진행절차 — 박스 탭 셋: 진행절차(일정 · 해야 할 일) · 명도분석(비용 · 리스크) · 세금분석 -->
+      <nav v-if="activeTab === 'flow'" class="pw-chaptabs" role="tablist">
+        <button v-for="[k, label] in FLOW_SUBS" :key="k" type="button" role="tab" :aria-selected="flowSub === k" :class="{ on: flowSub === k }" @click="flowSub = k">{{ label }}</button>
+      </nav>
+      <PostWinMoney v-if="activeTab === 'flow' && flowSub !== 'steps'" :key="`${picked?.id}-${flowSub}`" :auction="picked" :mode="flowSub === 'evict' ? 'evict' : 'tax'" />
       <PostWinTimeline
-        v-if="activeTab === 'flow'"
+        v-if="activeTab === 'flow' && flowSub === 'steps'"
         :auction="picked"
         :progress="todoProgress"
         @save="(a) => store.saveAuction(a)"
