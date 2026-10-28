@@ -338,11 +338,12 @@ const openAdd = (kind: ModalKind) => {
   if (kind === 'cashFlow') {
     cfDraft.value = { flowType: '출금', amount: 0, date: todayIso() };
   } else if (kind === 'businessExpense') {
+    detailCustom.value = false;
     beDraft.value = {
       auctionId: '',
-      profitCategory: webEmbed ? WEB_EXPENSE_LIST[0] : '기타사업비',
+      profitCategory: webEmbed ? WEB_EXPENSE_CATS[0] : '기타사업비',
       memo: '',
-      detail: '',
+      detail: webEmbed ? WEB_EXPENSE_GROUPS[0][1][0] : '',
       amountWithVat: 0,
       date: todayIso(),
     };
@@ -361,7 +362,12 @@ const openAdd = (kind: ModalKind) => {
 const openEdit = (kind: ModalKind, record: unknown) => {
   modalKind.value = kind;
   if (kind === 'cashFlow') cfDraft.value = { ...(record as CashFlowRecord) };
-  else if (kind === 'businessExpense') beDraft.value = { ...(record as BusinessExpenseRecord) };
+  else if (kind === 'businessExpense') {
+    beDraft.value = { ...(record as BusinessExpenseRecord) };
+    // 목록에 없는 명세(예전 기록 · 직접 쓴 글)는 직접입력 칸으로 보인다
+    const list = WEB_EXPENSE_GROUPS.find(([g]) => g === beDraft.value.profitCategory)?.[1] ?? [];
+    detailCustom.value = !!beDraft.value.detail && !list.includes(beDraft.value.detail);
+  }
   else if (kind === 'fuelMeal') {
     const r = record as FuelMealRecord;
     fmDraft.value = { ...r, users: [...(r.users || [])] };
@@ -398,12 +404,30 @@ const EXPENSE_CATEGORIES = [
 /** 웹 — 팔 때 매매차익 예정신고(종합소득세 기본세율로 먼저 셈)에 넣는 필요경비만.
  *  양도세 필요경비(소득세법 제97조)를 따른다: 취득비용 · 자본적지출 · 양도비용.
  *  대출이자 · 관리비 · 도배 · 장판 같은 수익적지출은 5월 종합소득세 확정신고에서 따로 */
+// 사용구분은 셋만 — 명세는 그 구분의 흔한 항목에서 고르고, 없으면 직접입력
 const WEB_EXPENSE_GROUPS: Array<[string, string[]]> = [
   ['취득비용', ['취득세·지방교육세·농특세', '법무사 수수료(등기)', '국민주택채권 매각차손', '인지세', '취득 관련 소송비용']],
-  ['자본적지출', ['샷시·발코니 확장', '보일러·난방 교체', '배관·설비 교체', '시스템에어컨', '기타 자본적지출']],
+  ['자본적지출', ['샷시·발코니 확장', '보일러·난방 교체', '배관·설비 교체', '시스템에어컨']],
   ['양도비용', ['매도 중개수수료', '세무·신고 수수료', '계약서 작성·공증비']],
 ];
-const WEB_EXPENSE_LIST = WEB_EXPENSE_GROUPS.flatMap(([, list]) => list);
+const WEB_EXPENSE_CATS = WEB_EXPENSE_GROUPS.map(([g]) => g);
+const detailItems = computed(() => WEB_EXPENSE_GROUPS.find(([g]) => g === beDraft.value.profitCategory)?.[1] ?? []);
+/** 명세를 목록에 없는 글로 쓰는 중인가 */
+const detailCustom = ref(false);
+const detailPick = computed({
+  get: () => (detailCustom.value ? '__custom' : (beDraft.value.detail ?? '')),
+  set: (v: string) => {
+    if (v === '__custom') { detailCustom.value = true; beDraft.value.detail = ''; return; }
+    detailCustom.value = false; beDraft.value.detail = v;
+  },
+});
+/** 구분을 바꾸면 명세를 그 구분의 첫 항목으로(직접 쓴 글은 그대로) */
+const pickCategory = (c: string) => {
+  beDraft.value.profitCategory = c;
+  if (detailCustom.value) return;
+  const list = WEB_EXPENSE_GROUPS.find(([g]) => g === c)?.[1] ?? [];
+  if (!list.includes(beDraft.value.detail ?? '')) beDraft.value.detail = list[0] ?? '';
+};
 
 const auctionOptions = computed(() => {
   const label = (a: { caseNumber: string; address?: string }) =>
@@ -843,19 +867,24 @@ const exportExcel = () => {
             </select>
           </label>
           <label>사업지출 항목
-            <select v-if="webEmbed" v-model="beDraft.profitCategory">
+            <select v-if="webEmbed" :value="beDraft.profitCategory" @change="pickCategory(($event.target as HTMLSelectElement).value)">
               <!-- 예전에 고른 항목(대출이자 · 관리비 …)은 고칠 때 그대로 보이게 -->
-              <option v-if="beDraft.profitCategory && !WEB_EXPENSE_LIST.includes(beDraft.profitCategory)" :value="beDraft.profitCategory">{{ beDraft.profitCategory }}</option>
-              <optgroup v-for="[g, list] in WEB_EXPENSE_GROUPS" :key="g" :label="g">
-                <option v-for="c in list" :key="c" :value="c">{{ c }}</option>
-              </optgroup>
+              <option v-if="beDraft.profitCategory && !WEB_EXPENSE_CATS.includes(beDraft.profitCategory)" :value="beDraft.profitCategory">{{ beDraft.profitCategory }}</option>
+              <option v-for="c in WEB_EXPENSE_CATS" :key="c" :value="c">{{ c }}</option>
             </select>
             <select v-else v-model="beDraft.profitCategory">
               <option v-for="c in EXPENSE_CATEGORIES" :key="c" :value="c">{{ c }}</option>
             </select>
-            <small v-if="webEmbed" class="fin-cat-hint">팔 때 예정신고에 넣는 필요경비만 고릅니다 — 대출이자 · 관리비 · 도배 · 장판은 5월 종합소득세에서</small>
+            <small v-if="webEmbed" class="fin-cat-hint">팔 때 예정신고에 넣는 필요경비만 — 대출이자 · 관리비 · 도배 · 장판은 5월 종합소득세에서</small>
           </label>
-          <label>명세<input type="text" v-model="beDraft.detail" /></label>
+          <label v-if="webEmbed">명세
+            <select v-model="detailPick">
+              <option v-for="d in detailItems" :key="d" :value="d">{{ d }}</option>
+              <option value="__custom">직접입력</option>
+            </select>
+            <input v-if="detailCustom" type="text" v-model="beDraft.detail" placeholder="명세를 적어 주세요" class="fin-detail-own" />
+          </label>
+          <label v-else>명세<input type="text" v-model="beDraft.detail" /></label>
           <label>비용 (VAT포함)<FormattedNumberInput v-model="beDraft.amountWithVat" live-group align="left" placeholder="0" /></label>
           <label>비고<input type="text" v-model="beDraft.note" /></label>
         </template>
