@@ -55,6 +55,8 @@ const reset = () => { ev.value = seedEvict(); };
 const deal = computed(() => dealCost(ev.value));
 const exec = computed(() => execCost(ev.value));
 const save = computed(() => exec.value.total - deal.value.total);
+/** 계산에 쓴 값 칸을 펼쳤나 */
+const evEdit = ref(false);
 const EV_FIELDS: Array<[keyof EvictInput, string, string]> = [
   ['loan', '대출금', '원'], ['ratePct', '연 금리', '%'], ['monthlyFee', '한 달 관리비 · 공과금', '원'], ['pyeong', '전용 평수', '평'],
   ['movePerPyeong', '이사비(평당)', '원'], ['dealMonths', '협의 때 걸리는 달', '개월'], ['orderCost', '인도명령 인지 · 송달료', '원'], ['noticeCost', '내용증명 한 번', '원'],
@@ -160,8 +162,14 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 
 
       <article class="pwm-box">
-      <h3 class="pwm-h">계산에 쓴 값<button type="button" class="pwm-reset" @click="reset">초기화</button></h3>
-      <div class="pwm-fields">
+      <!-- 계산에 쓴 값 — 평소엔 접어 두고, 실제 비용(견적 · 예납 고지)이 나오면 [직접입력]으로 펼쳐 고친다 -->
+      <h3 class="pwm-h">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M16 11v7" /></svg>
+        계산에 쓴 값
+        <button type="button" :class="['pwm-edit', { on: evEdit }]" @click="evEdit = !evEdit">{{ evEdit ? '접기' : '직접입력' }}</button>
+        <button v-if="evEdit" type="button" class="pwm-reset" @click="reset">초기화</button>
+      </h3>
+      <div v-if="evEdit" class="pwm-fields">
         <label v-for="[k, label, unit] in EV_FIELDS" :key="k">
           <span>{{ label }}</span>
           <span class="pwm-in"><FormattedNumberInput v-model="ev[k] as number" live-group :max-fraction-digits="unit === '%' ? 2 : 0" /><em>{{ unit }}</em></span>
@@ -274,6 +282,9 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-box { margin-top: 22px; border: 1px solid #e3e8f0; border-radius: 10px; padding: 18px 24px 20px; }
 .pwm-box > .pwm-h:first-child { margin-top: 0; }
 .pwm-note { margin: 10px 0 0; font-size: 14px; color: #9ca3af; }
+.pwm-edit { margin-left: auto; height: 30px; padding: 0 14px; border: 1px solid #2b6df3; border-radius: 6px; background: #fff; color: #1d4ed8; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pwm-edit.on { background: #2b6df3; color: #fff; }
+.pwm-edit + .pwm-reset { margin-left: 0; }
 .pwm-reset { margin-left: auto; height: 30px; padding: 0 12px; border: 1px solid #d0d5dd; border-radius: 6px; background: #fff; color: #374151; font-size: 14px; cursor: pointer; }
 .pwm-taxbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-bottom: 18px; }
 .pwm-seg { display: inline-flex; align-items: center; gap: 6px; }
