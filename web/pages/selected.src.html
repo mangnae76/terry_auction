@@ -2267,8 +2267,10 @@ html, body { overflow-x: clip; }
 .app-page[data-k="finance"] .kind-chips { margin: 4px 16px 10px !important; border-bottom: 1px solid var(--boxtab-line); } /* 세금 틀(.tax-shell)이 좌우 -16 이라 16 을 돌려준다 — 위 상자들과 끝선 맞춤 */
 :is(.app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-header .fin-tabs) { display: flex !important; align-items: flex-end !important; gap: 4px !important; padding-left: 0 !important; }
 :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab) {
-  position: relative; align-self: flex-end !important; display: inline-flex; align-items: center; gap: 6px;
-  height: 34px !important; padding: 0 18px !important; margin: 0 !important;
+  position: relative; align-self: flex-end !important; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  /* 글자 길이와 상관없이 어느 페이지나 같은 폭 — 가장 긴 이름(매각불허가 · 지역분포+아이콘)이 들어가는 폭 */
+  flex: 0 0 116px !important; width: 116px !important; min-width: 116px !important; box-sizing: border-box !important;
+  height: 34px !important; padding: 0 8px !important; margin: 0 !important;
   border: 1px solid transparent !important; border-bottom: 0 !important; border-radius: 8px 8px 0 0 !important;
   background: var(--boxtab-off) !important; color: var(--muted) !important; font-size: 15px !important; font-weight: 600 !important; white-space: nowrap;
   transition: background .12s, color .12s;
@@ -2291,7 +2293,7 @@ html, body { overflow-x: clip; }
 .pw-chaptabs { margin: 4px 0 4px; border-bottom: 1px solid var(--boxtab-line); overflow-x: auto; scrollbar-width: none; }
 .pw-chaptabs::-webkit-scrollbar { display: none; }
 /* 좁은 화면 — 줄바꿈 대신 가로로 밀어 본다 */
-@media (max-width: 1100px) { :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab) { padding: 0 12px !important; } }
+
 
 /* 공용 확인창(앱 AppConfirm) — 웹 글자 규칙(제목 16 · 나머지 14) */
 .app-page .acf-title { font-size: 16px !important; }
