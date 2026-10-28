@@ -18,9 +18,8 @@ const itemKey = () => `pw.forms.item.${props.auction?.id ?? ''}`;
 const read = (k: string): Record<string, string> => { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch { return {}; } };
 const write = (k: string, val: Record<string, string>) => { try { localStorage.setItem(k, JSON.stringify(val)); } catch { /* 그만 */ } };
 const todayText = () => { const d = new Date(); return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`; };
-const a = props.auction;
 /** 사건 카드에서 오는 처음 값 */
-const fresh = (): FormCtx => ({
+const fresh = (): FormCtx => { const a = props.auction; return {
   caseNo: a?.caseNumber ?? '',
   court: a ? courtInfoOf(a).name : '',
   address: a?.address ?? '',
@@ -33,10 +32,13 @@ const fresh = (): FormCtx => ({
   moveDate: '',
   amount: '',
   today: todayText(),
-});
+}; };
 /** 기억해 둔 값 중 빈 칸은 버린다 — 빈 값이 사건 카드 값을 덮어쓰지 않게 */
 const filled = (o: Record<string, string>) => Object.fromEntries(Object.entries(o).filter(([, x]) => String(x ?? '').trim()));
-const vals = ref<FormCtx>({ ...fresh(), ...filled(read(itemKey())), ...filled(read(ME_KEY)) });
+const load = (): FormCtx => ({ ...fresh(), ...filled(read(itemKey())), ...filled(read(ME_KEY)) });
+const vals = ref<FormCtx>(load());
+// 새로고침 뒤 창이 먼저 열리고 물건이 늦게 오면 그때 다시 채운다
+watch(() => props.auction?.id, (id, old) => { if (id && id !== old) vals.value = load(); });
 watch(vals, (x) => {
   write(ME_KEY, { winner: x.winner, phone: x.phone });
   const { winner: _w, phone: _p, today: _t, ...rest } = x;

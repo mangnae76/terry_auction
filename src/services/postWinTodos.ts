@@ -38,7 +38,7 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
   bid: [
     { text: '사건기록 열람', cat: 'proc', tab: 'win', group: 'file' },
     {
-      text: '점유자 협상 or 메모지·연락처 남기기', cat: 'evict', tab: 'win', group: 'visit', noCount: true,
+      text: '점유자 협상 or 메모 - 1차 방문', cat: 'evict', tab: 'win', group: 'visit', noCount: true,
       section: ['협상내용', '폐문부재연락부재'],
       rows: ['pw.visit.n1', 'pw.visit.n2', 'pw.visit.n3', 'pw.visit.n4', 'pw.visit.n5', 'pw.visit.n6', 'pw.visit.n7', 'pw.visit.n8', 'pw.visit.c1'],
       labels: { 협상내용: '만났을 때\n협상내용', 폐문부재연락부재: '못 만났을 때\n메모 남기기' },
@@ -48,10 +48,10 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
     { text: '부동산 방문 - 낙찰당일', cat: 'proc', tab: 'win', group: 'visit', section: '부동산방문' },
   ],
   decide: [
-    { text: '점유자 다시 연락·재방문', cat: 'evict', tab: 'evict', group: 'ev.revisit' },
+    { text: '점유자 재방문 - 2차 방문', cat: 'evict', tab: 'evict', group: 'ev.revisit' },
     { text: '내부·관리비 확인', cat: 'evict', tab: 'win', group: 'visit', section: '내부확인' },
     { text: '훼손이 심하면 매각불허가 신청', cat: 'proc', tab: 'gdeny', group: 'gd.deny' },
-    { text: '1차 내용증명 준비', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c5'], labels: { 폐문부재연락부재: '내용증명' } },
+    { text: '내용증명 - 1차(안내)', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c5'], labels: { 폐문부재연락부재: '내용증명' } },
   ],
   confirm: [
     { text: '이사 날짜 협의 및 확정', cat: 'evict', tab: 'evict', group: 'ev.move' },
@@ -69,9 +69,13 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
     { text: '인도명령 신청', cat: 'evict', tab: 'evict', group: 'ev.order' },
     { text: '점유이전금지 가처분(필요 시)', cat: 'evict', tab: 'evict', group: 'ev.hold' },
   ],
-  order: [{ text: '내용증명 발송', cat: 'evict', tab: 'evict', group: 'ev.notice' }],
+  order: [{ text: '내용증명 - 2차(최고)', cat: 'evict', tab: 'evict', group: 'ev.notice' }],
   serve: [{ text: '인도명령 결정문 송달 확인', cat: 'evict', tab: 'evict', group: 'ev.serve' }],
-  warn: [{ text: '강제집행 신청', cat: 'evict', tab: 'evict', group: 'ev.execApply' }],
+  // 이름은 '무엇 - 몇 차(목적)' — 같은 일을 여러 번 할 때 몇 번째 · 무엇 때문인지 바로 보이게
+  warn: [
+    { text: '내용증명 - 3차(최종통지)', cat: 'evict', tab: 'evict', group: 'ev.notice' },
+    { text: '강제집행 신청', cat: 'evict', tab: 'evict', group: 'ev.execApply' },
+  ],
   exec: [
     { text: '강제집행 실시', cat: 'evict', tab: 'evict', group: 'ev.exec' },
     { text: '미납 공과금 분리 청구', cat: 'evict', tab: 'evict', group: 'ev.util' },
