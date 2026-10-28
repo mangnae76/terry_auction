@@ -127,7 +127,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '지도랭킹', supply: '수요분석', table: '지역별분석', dist: '지역분포', detail: '상세분포', deals: '거래상세', sim: '유사매물시세' };
+const TAB_LABEL: Record<string, string> = { map: '지도랭킹', supply: '수요분석', table: '지역별분석', dist: '지역분포', detail: '상세분포', deals: '거래상세', sim: '유사매물' };
 const tellTab = () => {
   if (!webEmbed || onlyView) return;
   const label = TAB_LABEL[listView.value];
@@ -850,7 +850,7 @@ const downloadCsv = () => {
               <button type="button" role="tab" :aria-selected="listView === 'detail'" :class="{ on: listView === 'detail' }" @click="listView = 'detail'">상세분포</button>
               <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
               <!-- 유사매물시세 — 우선 거래상세와 같은 내용(같은 틀을 함께 쓴다). 내용이 정해지면 여기서 갈라진다 -->
-              <button type="button" role="tab" :aria-selected="listView === 'sim'" :class="{ on: listView === 'sim' }" @click="listView = 'sim'">유사매물시세</button>
+              <button type="button" role="tab" :aria-selected="listView === 'sim'" :class="{ on: listView === 'sim' }" @click="listView = 'sim'">유사매물</button>
             </nav>
         <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
