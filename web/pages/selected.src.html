@@ -1556,8 +1556,9 @@ body.trip-full .foot { display: none; }
 .rg-stats b { color: var(--text); font-weight: 800; margin: 0 1px 0 3px; }
 .rg-stats .n-new b { color: #2b6df3; } .rg-stats .n-chg b { color: #7c3aed; } .rg-stats .n-err b { color: #ef4444; }
 .reg-content { padding-top: 11px; }
-.rg-banner { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 12px; padding: 10px 12px; border-radius: 10px; background: #e5e7eb; font-size: 13px; font-weight: 700; color: #2b6df3; }
-:root[data-theme="dark"] .rg-banner { background: var(--surface-3); color: #8fb0ff; }
+.rg-banner { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 12px; padding: 12px 14px; border-radius: 10px; background: #dbe7ff; border: 1px solid #b6cdf8; font-size: 14px; font-weight: 700; color: #1d4ed8; } /* 진행 · 안내 띠 — 바탕에 묻히지 않게 맑은 파랑 + 테두리 */
+:root[data-theme="dark"] .rg-banner { background: #1e2c4a; border-color: #34508a; color: #a8c2ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .rg-banner { background: #1e2c4a; border-color: #34508a; color: #a8c2ff; } }
 .rg-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: rgDot 1.2s infinite ease-in-out; }
 .rg-dot:nth-child(2) { animation-delay: .2s; } .rg-dot:nth-child(3) { animation-delay: .4s; }
 @keyframes rgDot { 0%, 60%, 100% { opacity: .25; transform: none; } 30% { opacity: 1; transform: translateY(-2px); } }
