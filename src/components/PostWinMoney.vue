@@ -77,7 +77,7 @@ interior.initialize();
 const ledger = computed(() => ledgerRows({ be: finance.businessExpenses, interior: interior.rows }));
 const saleFixed = computed(() => !!props.auction?.sellDate);
 // 명도비도 사업경비 장부의 값(실제 기록, 없으면 A안 명도비) — 명도분석은 견주어 보는 계산기
-const split = computed(() => costSplitOf({ id: props.auction?.id ?? '', wonDate: props.auction?.wonDate, bidCost: props.auction?.bidCost, metrics: props.auction?.metrics }, ledger.value));
+const split = computed(() => costSplitOf({ id: props.auction?.id ?? '', wonDate: props.auction?.wonDate, expectedSaleValue: props.auction?.expectedSaleValue, bidCost: props.auction?.bidCost, metrics: props.auction?.metrics }, ledger.value));
 // 명도협의 · 강제집행 — 누르면 그 금액을 사업경비 명도비로 넣는다(다시 누르면 빼고 A안으로).
 // 늦어지는 달의 이자 · 관리비는 대출이자 · 관리비 줄과 겹치므로 빼고 명도에 드는 돈만 넣는다
 const EV_DETAIL = { deal: '이사비(합의)', exec: '강제집행 비용' } as const;

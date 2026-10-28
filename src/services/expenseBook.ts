@@ -72,30 +72,51 @@ export const ledgerRows = (src: { be: BusinessExpenseRecord[]; interior: Interio
 export interface PlanCost {
   acquisitionTaxAmount?: number; legalCostAmount?: number; brokerageAmount?: number;
   interestAmount?: number; midRepaymentAmount?: number; arrearsFee?: number; repairCost?: number; evictionCost?: number; advertisingCost?: number;
+  acquisitionTaxRate?: number; legalCostRate?: number; brokerageRate?: number; interestRate3m?: number; midRepaymentRate?: number; loanAmount?: number;
 }
 export interface PlanAuction {
-  id: string; wonDate?: string; caseNumber?: string; address?: string;
+  id: string; wonDate?: string; caseNumber?: string; address?: string; expectedSaleValue?: number;
   bidCost?: PlanCost | null; metrics?: { myBidValue?: number; minimumBidValue?: number };
 }
+
+/** 입찰가산정 A안 금액 — 화면(물건상세 입찰가산정)과 같은 규칙으로 비율에서 다시 계산한다.
+ *  (화면은 비율로 금액을 그 자리에서 계산해 보여 주고, 저장된 금액이 비어 있을 수 있다) */
+export const planAmountsOf = (a: PlanAuction) => {
+  const c = a.bidCost ?? {};
+  const bid = a.metrics?.myBidValue || a.metrics?.minimumBidValue || 0;
+  const sale = a.expectedSaleValue || 0;
+  const loan = c.loanAmount || 0;
+  const byRate = (base: number, rate: number | undefined, amount: number | undefined, divisor = 1) =>
+    (rate && rate > 0 && base > 0 ? Math.round((base * rate) / 100 / divisor) : amount || 0);
+  const legalRate = c.legalCostRate ?? 0.5;
+  return {
+    acq: Math.round((bid * (c.acquisitionTaxRate && c.acquisitionTaxRate > 0 ? c.acquisitionTaxRate : 1.1)) / 100),
+    legal: c.legalCostAmount || (legalRate > 0 ? Math.round((bid * legalRate) / 100) : 0),
+    brokerage: byRate(sale, c.brokerageRate, c.brokerageAmount),
+    interest: byRate(loan, c.interestRate3m, c.interestAmount, 4),
+    midRepay: byRate(loan, c.midRepaymentRate, c.midRepaymentAmount),
+    arrears: c.arrearsFee || 0,
+    repair: c.repairCost || 0,
+    evict: c.evictionCost || 0,
+    ad: c.advertisingCost || 0,
+  };
+};
 
 /** A안 기본 줄 — 장부를 빈칸으로 두지 않고 입찰가산정 값을 먼저 깔아 둔다.
  *  같은 물건 · 같은 구분 · 같은 명세의 실제 기록을 적으면 그 줄은 실제 기록으로 바뀐다(A안 줄은 숨는다) */
 export const planRowsOf = (a: PlanAuction): LedgerRow[] => {
-  const c = a.bidCost ?? {};
-  const bid = a.metrics?.myBidValue || a.metrics?.minimumBidValue || 0;
-  const acq = c.acquisitionTaxAmount || Math.round(bid * 0.011);
-  const interest = c.interestAmount || 0;
+  const m = planAmountsOf(a);
   const lines: Array<[Book, string, string, number, number?, number?]> = [
-    ['need', '취득비용', '취득세·지방교육세·농특세', acq],
-    ['need', '취득비용', '법무사 수수료(등기)', c.legalCostAmount || 0],
-    ['need', '양도비용', '매도 중개수수료', c.brokerageAmount || 0],
+    ['need', '취득비용', '취득세·지방교육세·농특세', m.acq],
+    ['need', '취득비용', '법무사 수수료(등기)', m.legal],
+    ['need', '양도비용', '매도 중개수수료', m.brokerage],
     // A안 이자는 3개월 몫 — 3개월 × 한 달 이자로 적어 둔다
-    ['biz', '대출이자', '대출이자', interest, interest ? 3 : 0, interest ? Math.round(interest / 3) : 0],
-    ['biz', '대출이자', '중도상환수수료', c.midRepaymentAmount || 0],
-    ['biz', '관리비·공과금', '미납 관리비', c.arrearsFee || 0],
-    ['biz', '수리·인테리어', '기타 수리', c.repairCost || 0],
-    ['biz', '명도비', '이사비(합의)', c.evictionCost || 0],
-    ['biz', '기타', '광고비', c.advertisingCost || 0],
+    ['biz', '대출이자', '대출이자', m.interest, m.interest ? 3 : 0, m.interest ? Math.round(m.interest / 3) : 0],
+    ['biz', '대출이자', '중도상환수수료', m.midRepay],
+    ['biz', '관리비·공과금', '미납 관리비', m.arrears],
+    ['biz', '수리·인테리어', '기타 수리', m.repair],
+    ['biz', '명도비', '이사비(합의)', m.evict],
+    ['biz', '기타', '광고비', m.ad],
   ];
   return lines.filter(([, , , amt]) => amt > 0).map(([book, category, detail, amount, qty, unit]): LedgerRow => ({
     key: `plan-${a.id}-${detail}`, src: 'plan', id: '', book, auctionId: a.id, auctionLabel: '',

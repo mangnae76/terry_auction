@@ -6,7 +6,7 @@ import { computed, ref, watch } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useFinanceStore } from '../stores/financeStore';
 import { useInteriorStore } from '../stores/interiorStore';
-import { BOOK_HINT, BOOK_NAME, groupsOf, ledgerRows, withPlan, type Book, type LedgerRow } from '../services/expenseBook';
+import { BOOK_HINT, BOOK_NAME, groupsOf, ledgerRows, planAmountsOf, withPlan, type Book, type LedgerRow } from '../services/expenseBook';
 import { cleanupLegacyOnce } from '../services/legacyCleanup';
 import { shortAddr } from '../utils/address';
 import FormattedNumberInput from './FormattedNumberInput.vue';
@@ -96,7 +96,7 @@ watch(() => [draft.value.qty, draft.value.unit, isItem.value] as const, ([q, u, 
 /** 대출이자 한 달 몫 — 입찰가산정 A안의 3개월 이자 ÷ 3 */
 const monthlyInterestOf = (id: string) => {
   const a = auctions.auctions.find((x) => x.id === id);
-  return Math.round((a?.bidCost?.interestAmount || 0) / 3);
+  return a ? Math.round(planAmountsOf(a).interest / 3) : 0;
 };
 const openAdd = () => {
   const [cat, items] = GROUPS.value[0];
