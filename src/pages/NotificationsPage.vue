@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 알림 설정 — 무엇을 알려 줄지 고르고, 지금 걸려 있는 알림을 바로 본다.
 // 알려 줄 거리를 셈하는 규칙은 services/alerts 에 있다 (화면은 그리기만 한다).
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, inject, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
@@ -23,6 +23,24 @@ import {
 } from '../services/alerts';
 
 const router = useRouter();
+const webEmbed = inject<boolean>('webEmbed', false);
+/** 웹 — 알림 이름을 누르면 그 일을 보는 화면으로 */
+const OPT_GO: Partial<Record<AlertKey, { path: string; query?: Record<string, string> }>> = {
+  balanceDue: { path: '/post-win', query: { tab: 'flow' } },
+  bidDay: { path: '/bid-calendar' },
+  acqTax: { path: '/post-win', query: { tab: 'dtax' } },
+  photoQuota: { path: '/more', query: { tab: 'mypage' } },
+  interior: { path: '/post-win', query: { tab: 'repair' } },
+  bidding: { path: '/post-win', query: { tab: 'repair' } },
+  fieldTrip: { path: '/field-trip' },
+  postWinCheck: { path: '/post-win', query: { tab: 'win' } },
+  taxCalendar: { path: '/finance', query: { tab: 'tax' } },
+};
+const goOpt = (k: AlertKey) => { const to = OPT_GO[k]; if (webEmbed && to) void router.push(to); };
+/** 웹 설명 — 잔금은 놓쳐도 바로 보증금을 잃지 않는다(지연이자 연 12% · 재매각기일 3일 전까지). 앱 글은 그대로 */
+const WEB_DESC: Partial<Record<AlertKey, string>> = {
+  balanceDue: '대금지급기한이 다가오면 D-14·7·3·1에 알린다. 기한을 넘기면 지연이자(연 12%)가 붙고, 재매각기일 3일 전까지도 내지 못하면 보증금을 잃는다.',
+};
 const store = useAuctionStore();
 const auth = useAuthStore();
 const interior = useInteriorStore();
@@ -148,10 +166,10 @@ watch(() => auth.uid, (uid) => {
         <p class="alr-note">{{ g.note }}</p>
         <ul class="alr-opts">
           <li v-for="d in groupDefs(g.title)" :key="d.key" class="alr-opt">
-            <span class="alr-opt-txt">
-              <strong>{{ d.name }}</strong>
-              <small>{{ d.desc }}</small>
-            </span>
+            <component :is="webEmbed && OPT_GO[d.key] ? 'button' : 'span'" :type="webEmbed && OPT_GO[d.key] ? 'button' : undefined" :class="['alr-opt-txt', { go: webEmbed && OPT_GO[d.key] }]" @click="goOpt(d.key)">
+              <strong>{{ d.name }}<i v-if="webEmbed && OPT_GO[d.key]" class="alr-go">›</i></strong>
+              <small>{{ (webEmbed && WEB_DESC[d.key]) || d.desc }}</small>
+            </component>
             <button
               type="button"
               :class="['alr-sw', { on: alertOn(prefs, d.key) }]"
@@ -245,4 +263,7 @@ watch(() => auth.uid, (uid) => {
 }
 .alr-sw.on i { left: 21px; }
 .alr-foot { margin: 2px 2px 0; font-size: 11px; line-height: 1.7; color: #9ca3af; word-break: keep-all; }
+.alr-opt-txt.go { border: 0; background: none; padding: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.alr-opt-txt.go:hover strong { text-decoration: underline; text-underline-offset: 3px; }
+.alr-go { margin-left: 4px; font-style: normal; color: #9ca3af; }
 </style>
