@@ -180,26 +180,36 @@ const insertBelow = (id: string) => {
   selectedId.value = nid;
   freshId.value = nid;
   editingId.value = nid;
-  draft.value = { name: '', days: 7, note: '', base: 'prev' };
+  const near = rows.value.find((x) => x.id === id)?.date ?? '';
+  draft.value = { name: '', date: near ? addDays(near, 7) : '', note: '' };
 };
 const remove = (id: string) => edit((f) => { f.steps = f.steps.filter((x) => x.id !== id); });
 const editingId = ref('');
-const draft = ref<{ name: string; days: number; note: string; base: 'prev' | 'start' }>({ name: '', days: 7, note: '', base: 'prev' });
-const startEdit = (s: PostWinStep) => { editingId.value = s.id; draft.value = { name: s.name, days: s.days, note: s.note ?? '', base: s.base }; };
+// 고치기 — 날짜는 달력으로 고르고, 저장할 때 '낙찰일 후 N일'로 바꿔 둔다(차례는 끌어서 옮기니 '이전 단계 후'는 고르지 않는다)
+const draft = ref<{ name: string; date: string; note: string }>({ name: '', date: '', note: '' });
+const startEdit = (s: PostWinStep & { date?: string }) => { editingId.value = s.id; draft.value = { name: s.name, date: s.date ?? '', note: s.note ?? '' }; };
+/** 낙찰일에서 며칠 뒤인지 */
+const daysFromStart = (d: string) => (startDate.value && d ? Math.round((parse(d).getTime() - parse(startDate.value).getTime()) / 86400000) : null);
 const saveEdit = () => edit((f) => {
   const s = f.steps.find((x) => x.id === editingId.value);
-  if (s) { s.name = draft.value.name.trim() || s.name; s.days = Number(draft.value.days) || 0; s.note = draft.value.note.trim(); s.base = draft.value.base; }
+  if (s) {
+    s.name = draft.value.name.trim() || s.name;
+    s.note = draft.value.note.trim();
+    const d = draft.value.date;
+    if (d && s.doneDate) s.doneDate = d;   // 끝낸 단계는 끝낸 날을 고친다
+    else if (d) { const n = daysFromStart(d); if (n != null) { s.base = 'start'; s.days = n; } }
+  }
   editingId.value = ''; freshId.value = '';
 });
 // 단계 더하기
 const addName = ref('');
-const addBase = ref<'prev' | 'start'>('prev');
-const addDaysN = ref(7);
+const addDate = ref('');
 const addStep = () => {
   const name = addName.value.trim();
   if (!name) return;
-  edit((f) => { f.steps.push({ id: newId(), name, days: Number(addDaysN.value) || 0, base: addBase.value }); });
-  addName.value = ''; addDaysN.value = 7; addBase.value = 'prev';
+  const n = daysFromStart(addDate.value);
+  edit((f) => { f.steps.push({ id: newId(), name, days: n ?? 0, base: 'start' }); });
+  addName.value = ''; addDate.value = '';
 };
 // 되돌릴 때는 빈 글자로 — undefined 는 저장 때 빠지고, 합쳐 쓰기(merge)라 예전 종결일이 서버에 그대로 남는다
 // 확인창 — 앱과 같은 공용 창(AppConfirm). 종결 · 초기화는 한 번 더 묻는다
@@ -207,7 +217,7 @@ const confirmBox = ref<ConfirmBox | null>(null);
 const endByDeal = () => {
   if (flow.value.endedAt) { edit((f) => { f.endedAt = ''; }); return; }   // 되돌리기는 바로
   confirmBox.value = {
-    title: '협의로 종결할까요?',
+    title: '명도 협의를 종결할까요?',
     desc: '명도 협의를 마치셨군요, 축하드려요. 종결하면 남은 단계는 진행하지 않는 것으로 표시됩니다. 적어 둔 날짜 · 완료 표시는 지워지지 않고, 나중에 되돌릴 수 있어요.',
     okLabel: '종결하기',
     skipKey: '',
@@ -233,7 +243,7 @@ const resetDefault = () => {
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>
         절차진행
       </h2>
-      <button v-if="auction" type="button" :class="['pwt-btn', 'deal', { on: !!flow.endedAt }]" @click="endByDeal">{{ flow.endedAt ? `협의로종결 (${flow.endedAt}) — 되돌리기` : '협의로종결' }}</button>
+      <button v-if="auction" type="button" :class="['pwt-btn', 'deal', { on: !!flow.endedAt }]" @click="endByDeal">{{ flow.endedAt ? `명도협의종결 (${flow.endedAt}) — 되돌리기` : '명도협의종결' }}</button>
       <button v-if="auction" type="button" class="pwt-btn" @click="resetDefault">초기화</button>
     </header>
 
@@ -242,9 +252,9 @@ const resetDefault = () => {
       <!-- 기준일 줄은 두지 않는다 — 낙찰일이 비었을 때만 알린다 -->
       <p v-if="!startDate" class="pwt-guide">낙찰일이 비어 있습니다 — 물건상세에서 낙찰일을 적어 주세요.</p>
 
-      <!-- 구분 줄 — 왼쪽 법원 절차진행 · 오른쪽 해야 할 일(누르면 상세보기). 칸 폭은 아래 줄과 같다 -->
+      <!-- 구분 줄 — 왼쪽 법원 진행절차 · 오른쪽 해야 할 일(누르면 상세보기). 칸 폭은 아래 줄과 같다 -->
       <div class="pwt-colhead" aria-hidden="true">
-        <span class="c-main">법원 절차진행</span>
+        <span class="c-main">법원 진행절차</span>
         <span class="c-todo">해야 할 일<em>누르면 상세보기</em></span>
         <span class="c-ctrl" />
       </div>
@@ -265,8 +275,8 @@ const resetDefault = () => {
             <template v-if="editingId === r.id">
               <div class="pwt-edit">
                 <input v-model="draft.name" class="pwt-in" placeholder="단계 이름" :autofocus="freshId === r.id" @keyup.enter="saveEdit" />
-                <select v-model="draft.base" class="pwt-in sm"><option value="prev">이전 단계 후</option><option value="start">{{ startLabel }} 후</option></select>
-                <input v-model.number="draft.days" type="number" class="pwt-in xs" /> <span class="pwt-unit">일</span>
+                <input v-model="draft.date" type="date" class="pwt-in sm" />
+                <span v-if="daysFromStart(draft.date) != null" class="pwt-unit">{{ startLabel }} 후 {{ daysFromStart(draft.date) }}일</span>
                 <input v-model="draft.note" class="pwt-in" placeholder="설명" />
                 <button type="button" class="pwt-btn primary" @click="saveEdit">저장</button>
                 <button type="button" class="pwt-btn" @click="cancelEdit">취소</button>
@@ -314,8 +324,8 @@ const resetDefault = () => {
       <div v-if="!rows.length" class="pwt-add">
         <span class="pwt-add-lab">+ 단계 추가</span>
         <input v-model="addName" class="pwt-in" placeholder="예: 관리비 정산" @keyup.enter="addStep" />
-        <select v-model="addBase" class="pwt-in sm"><option value="prev">이전 단계 후</option><option value="start">{{ startLabel }} 후</option></select>
-        <input v-model.number="addDaysN" type="number" class="pwt-in xs" /> <span class="pwt-unit">일</span>
+        <input v-model="addDate" type="date" class="pwt-in sm" />
+        <span v-if="daysFromStart(addDate) != null" class="pwt-unit">{{ startLabel }} 후 {{ daysFromStart(addDate) }}일</span>
         <button type="button" class="pwt-btn primary" :disabled="!addName.trim()" @click="addStep">추가</button>
       </div>
     </template>
