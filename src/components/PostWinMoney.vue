@@ -105,6 +105,12 @@ const result = computed(() => (who.value === 'biz'
   <section class="pwm">
     <!-- ===== 명도분석 ===== -->
     <template v-if="mode === 'evict'">
+      <!-- 한눈에 — 협의 · 강제집행의 기간과 비용, 그 차이 -->
+      <div class="pwm-nav">
+        <div class="deal"><small>협의로 끝날 때</small><b>{{ ev.dealMonths }}개월 · {{ man(deal.total) }}</b></div>
+        <div class="exec"><small>강제집행까지 갈 때</small><b>{{ ev.execMonths }}개월 · {{ man(exec.total) }}</b></div>
+        <div class="gap"><small>차이</small><b>{{ ev.execMonths - ev.dealMonths >= 0 ? '+' : '' }}{{ ev.execMonths - ev.dealMonths }}개월 · {{ save >= 0 ? '+' : '-' }}{{ man(Math.abs(save)) }}</b><em>한 달 늦어질 때마다 {{ man(monthlyCarry(ev)) }}</em></div>
+      </div>
       <div class="pwm-cmp">
         <article class="pwm-case deal">
           <h3>협의로 끝날 때</h3>
@@ -117,10 +123,7 @@ const result = computed(() => (who.value === 'biz'
           <p class="pwm-total">합계 <b>{{ won(exec.total) }}</b></p>
         </article>
       </div>
-      <p class="pwm-save" :class="{ neg: save < 0 }">
-        <template v-if="save >= 0">협의로 끝내면 약 <b>{{ man(save) }}</b> 아낀다 — 한 달 늦어질 때마다 {{ won(monthlyCarry(ev)) }}씩 더 나간다</template>
-        <template v-else>이 값으로는 강제집행 쪽이 <b>{{ man(-save) }}</b> 적다 — 이사비를 다시 본다</template>
-      </p>
+      <p v-if="save < 0" class="pwm-save neg">이 값으로는 강제집행 쪽이 <b>{{ man(-save) }}</b> 적다 — 이사비를 다시 본다</p>
 
       <h3 class="pwm-h">리스크</h3>
       <table class="pwm-tbl">
@@ -191,6 +194,15 @@ const result = computed(() => (who.value === 'biz'
 
 <style scoped>
 .pwm { color-scheme: light; background: #fff; border-radius: 10px; padding: 18px 22px 22px; color: #111827; }
+.pwm-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.pwm-nav > div { display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; border: 1px solid #e3e8f0; border-radius: 10px; }
+.pwm-nav small { font-size: 14px; color: #6b7280; }
+.pwm-nav b { font-size: 18px; font-weight: 800; }
+.pwm-nav em { font-style: normal; font-size: 14px; color: #6b7280; }
+.pwm-nav .deal b { color: #2f7d4a; }
+.pwm-nav .exec b { color: #b44545; }
+.pwm-nav .gap { border-color: #2b6df3; background: #f2f6fe; }
+.pwm-nav .gap b { color: #1d4ed8; }
 .pwm-cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .pwm-case { border: 1px solid #e3e8f0; border-radius: 10px; padding: 14px 16px; }
 .pwm-case.deal { border-top: 3px solid #4f9a68; }
