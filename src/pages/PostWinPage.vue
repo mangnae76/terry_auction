@@ -27,6 +27,7 @@ import type { AgencyRow, AuctionDetail } from '../types/auction';
 import PostWinTimeline from '../components/PostWinTimeline.vue';
 import PostWinForms from '../components/PostWinForms.vue';
 import { FORMS_OF_ROW, type FormKey } from '../services/postWinForms';
+import { utilityLine } from '../services/utilityContacts';
 import { DETAIL_STEPS, STEP_TITLE, STEP_TODOS, type StepTodo } from '../services/postWinTodos';
 import { DETAIL_REPAIR, DETAIL_SELL, DETAIL_TAX } from '../services/postWinDetail';
 /** 웹 절차상세 · 인테리어 · 매도 · 세금 장 — 코드에 둔 체크리스트(고쳐 저장하는 표가 아니다) */
@@ -262,7 +263,11 @@ const narrowGroup = (g: CheckGroup, t: StepTodo): CheckGroup => {
 const todoCard = (t: StepTodo, key: string, sup = ''): CheckGroup | null => {
   const g = allGroups.value.find((x) => x.key === t.group);
   if (!g) return null;
-  return { ...narrowGroup(g, t), key, title: t.text, super: sup, webOnly: false };
+  const card = narrowGroup(g, t);
+  // 공과금 연락처처럼 물건 주소로 채우는 줄
+  const addr = picked.value?.address ?? '';
+  const sections = card.sections.map((sec) => ({ ...sec, rows: sec.rows.map((r) => { const line = utilityLine(r.id, addr); return line ? { ...r, text: line } : r; }) }));
+  return { ...card, sections, key, title: t.text, super: sup, webOnly: false };
 };
 /** 절차상세 장 — 단계 차례대로 [단계 머리 + 큰일 카드들] */
 const detailCards = (chap: string): CheckGroup[] => (DETAIL_STEPS[chap] ?? []).flatMap((sk) => (STEP_TODOS[sk] ?? [])

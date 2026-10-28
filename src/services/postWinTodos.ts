@@ -69,7 +69,10 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
   order: [{ text: '내용증명 발송', cat: 'evict', tab: 'evict', group: 'ev.notice' }],
   serve: [{ text: '인도명령 결정문 송달 확인', cat: 'evict', tab: 'evict', group: 'ev.serve' }],
   warn: [{ text: '강제집행 신청', cat: 'evict', tab: 'evict', group: 'ev.execApply' }],
-  exec: [{ text: '강제집행 실시', cat: 'evict', tab: 'evict', group: 'ev.exec' }],
+  exec: [
+    { text: '강제집행 실시', cat: 'evict', tab: 'evict', group: 'ev.exec' },
+    { text: '미납 공과금 분리 청구', cat: 'evict', tab: 'evict', group: 'ev.util' },
+  ],
   repairStart: [
     { text: '공사 범위·예산 정하기', cat: 'proc', tab: 'drepair', group: 'ri.plan' },
     { text: '인테리어 업체 비딩·계약', cat: 'proc', tab: 'drepair', group: 'ri.bid' },
