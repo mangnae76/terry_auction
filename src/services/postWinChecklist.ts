@@ -90,6 +90,8 @@ const TEXT_LINKS: Array<{ word: string; href: string }> = [
   { word: '전자소송포털', href: 'https://ecfs.scourt.go.kr/' },
   { word: '한전ON', href: 'https://online.kepco.co.kr/' },
   { word: '국세청 홈택스', href: 'https://www.hometax.go.kr/' },
+  // '홈택스'만 적힌 줄도 — 위 '국세청 홈택스'가 먼저 걸리면 그 조각은 건너뛴다
+  { word: '홈택스', href: 'https://www.hometax.go.kr/' },
   { word: '정부24', href: 'https://www.gov.kr/' },
   { word: '위택스', href: 'https://www.wetax.go.kr/' },
   { word: '국민건강보험공단', href: 'https://www.nhis.or.kr/' },
