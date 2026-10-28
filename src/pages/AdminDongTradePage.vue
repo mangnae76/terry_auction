@@ -124,7 +124,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '지도랭킹', supply: '수요분석', table: '지역별 분석', dist: '지역분포', detail: '상세분포', deals: '거래상세', sim: '유사매물시세' };
+const TAB_LABEL: Record<string, string> = { map: '지도랭킹', supply: '수요분석', table: '지역분석', dist: '지역분포', detail: '상세분포', deals: '거래상세', sim: '유사매물시세' };
 const tellTab = () => {
   if (!webEmbed || onlyView) return;
   const label = listView.value === 'table' && dong.value ? '검색리스트' : TAB_LABEL[listView.value];
@@ -701,6 +701,13 @@ const guNav = computed(() => {
     { label: '㎡당 평균가', value: perM2s.length ? `${Math.round(avgOf(perM2s) / 10000).toLocaleString('ko-KR')}만/㎡` : '—' },
   ];
 });
+/** 읍면동을 고르면 위 요약 상자는 셋 — 거래상세 숫자(조건검색까지 거른 것)와 같은 값 */
+const dongNav = computed(() => [
+  { label: '총 거래건수', value: `${(kindCount('정상거래', filtered.value) + kindCount('직거래', filtered.value)).toLocaleString('ko-KR')}건`, ym: null, tip: null },
+  { label: '실거래가 평균', value: won(avgPrice.value), ym: null, tip: null },
+  { label: '평당가 평균', value: won(avgUnitPrice.value), ym: null, tip: null },
+]);
+const navBoxes = computed(() => (dong.value ? dongNav.value : guNav.value));
 const clearColFilters = () => { colFilter.clearAll(); };
 
 const won = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
@@ -829,7 +836,7 @@ const downloadCsv = () => {
         <nav v-else-if="all.length > 0 || listView === 'map'" class="adm-view-tabs" role="tablist">
               <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">지도랭킹</button>
               <button type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
-              <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역별분석' }}</button>
+              <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역분석' }}</button>
               <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">지역분포<span class="adm-view-kind" :title="distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 막대'" :aria-label="distChart === 'bar' ? '막대' : '도넛'">
                 <svg v-if="distChart === 'bar'" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><rect x="1.5" y="8" width="3" height="6.5" rx="1" /><rect x="6.5" y="3" width="3" height="11.5" rx="1" /><rect x="11.5" y="6" width="3" height="8.5" rx="1" /></svg>
                 <svg v-else viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3"><circle cx="8" cy="8" r="5.5" stroke-opacity=".35" /><path d="M8 2.5a5.5 5.5 0 0 1 5.5 5.5" /></svg>
@@ -851,16 +858,17 @@ const downloadCsv = () => {
         @pick-dong="(d: string) => { dong = d; }"
       />
       <template v-if="all.length > 0 && listView !== 'map'">
-        <section v-if="webEmbed && !dong && listView !== 'supply'" class="adm-gunav">
+        <!-- 웹 — 위 요약 상자 틀은 하나. 읍면동을 고르면 안의 상자만 셋(총 거래건수 · 실거래가 평균 · 평당가 평균)으로 -->
+        <section v-if="webEmbed && listView !== 'supply'" class="adm-gunav">
           <div class="adm-gunav-head">
-            <strong>{{ loadedLabel }}<template v-if="loadedDeal === 'jeonse'"> 전세</template></strong>
+            <strong>{{ [loadedLabel, dong, loadedDeal === 'jeonse' ? '전세' : ''].filter(Boolean).join(' ') }}</strong>
             <SnapChip :chip="snapChip" />
           </div>
-          <div class="adm-gunav-row">
-            <div v-for="c in guNav" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :lines="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template></b></div>
+          <div class="adm-gunav-row" :style="{ gridTemplateColumns: `repeat(${navBoxes.length}, minmax(0, 1fr))` }">
+            <div v-for="c in navBoxes" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :lines="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template></b></div>
           </div>
         </section>
-        <div v-else-if="!(webEmbed && listView === 'supply')" class="adm-sum">
+        <div v-else-if="!webEmbed" class="adm-sum">
           <strong>{{ loadedLabel }} {{ dong || '전체' }}</strong>
           <SnapChip v-if="webEmbed" :chip="snapChip" />
           <span v-if="district" class="code">{{ district.lawdCode }}</span>
@@ -868,7 +876,7 @@ const downloadCsv = () => {
         </div>
 
         <!-- 요약 -->
-        <div v-if="!(webEmbed && (!dong || listView === 'supply'))" :class="['adm-kpis', { 'is-web': webEmbed }]">
+        <div v-if="!webEmbed" :class="['adm-kpis', { 'is-web': webEmbed }]">
           <div class="adm-kpi"><small>실거래가 평균</small><strong>{{ won(avgPrice) }}</strong></div>
           <div class="adm-kpi"><small>평당가 평균</small><strong>{{ won(avgUnitPrice) }}</strong></div>
           <div class="adm-kpi blue"><small>총 거래건수 <em v-if="!webEmbed">정상거래</em></small><strong>{{ (webEmbed ? kindCount('정상거래', filtered) + kindCount('직거래', filtered) : normals.length).toLocaleString('ko-KR') }}건</strong></div>

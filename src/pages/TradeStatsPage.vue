@@ -665,7 +665,7 @@ onMounted(async () => {
           </header>
           <div v-if="webEmbed" :id="filterSlotId" class="tsp-filter-slot" />
           <div v-if="webEmbed" class="tsp-web-picked">
-            <strong class="tsp-picked-title">{{ pickedPlaceText }}<SnapChip :chip="embed ? (chip ?? null) : snap.chip.value" /></strong>
+            <strong class="tsp-picked-title">{{ pickedPlaceText }}<SnapChip v-if="!embed" :chip="snap.chip.value" /></strong>
             <small v-if="periodText || kindLabel">{{ [periodText, kindLabel, dealKindLabel, rows.length > 0 ? `집계 동 ${selectedRegion ? 1 : rows.length.toLocaleString('ko-KR')}곳` : ''].filter(Boolean).join(' · ') }}</small>
           </div>
           <header v-if="!webEmbed" class="tsp-panel-head">
@@ -675,10 +675,14 @@ onMounted(async () => {
           </header>
 
           <!-- 웹 — 지도 알약에 무엇을 보일지 하나씩 고른다 -->
-          <div v-if="webEmbed" class="tsp-metric" role="tablist">
-            <button type="button" :class="{ on: pinMetric === 'count' }" @click="pinMetric = 'count'">거래건수</button>
-            <button type="button" :class="{ on: pinMetric === 'avg' }" @click="pinMetric = 'avg'">{{ avgLabel.replace(/\s/g, '') }}</button>
-            <button type="button" :class="{ on: pinMetric === 'unit' }" @click="pinMetric = 'unit'">평당가</button>
+          <!-- 지역분석에 붙어 쓸 때는 저장 칩을 이 단추 묶음 오른쪽에 -->
+          <div v-if="webEmbed" class="tsp-metric-row">
+            <div class="tsp-metric" role="tablist">
+              <button type="button" :class="{ on: pinMetric === 'count' }" @click="pinMetric = 'count'">거래건수</button>
+              <button type="button" :class="{ on: pinMetric === 'avg' }" @click="pinMetric = 'avg'">{{ avgLabel.replace(/\s/g, '') }}</button>
+              <button type="button" :class="{ on: pinMetric === 'unit' }" @click="pinMetric = 'unit'">평당가</button>
+            </div>
+            <SnapChip v-if="embed" :chip="chip ?? null" />
           </div>
           <section class="tsp-stat">
             <h3>통계 정보</h3>
@@ -886,6 +890,8 @@ onMounted(async () => {
 }
 .tsp-panel h3 small { margin-left: auto; font-size: 11px; font-weight: 700; color: #9ca3af; }
 /* 지도 값 고르기 — 통계 정보 위 세 단추(같은 폭) */
+.tsp-metric-row { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; }
+.tsp-metric-row .tsp-metric { flex: 1 1 auto; margin: 0; }
 .tsp-metric { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; margin: 0 0 12px; background: #f1f4f9; border-radius: 8px; }
 .tsp-metric button { height: 32px; border: 0; border-radius: 6px; background: transparent; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; }
 .tsp-metric button.on { background: #fff; color: #1f2a44; box-shadow: 0 1px 2px rgba(15, 23, 42, .1); }
