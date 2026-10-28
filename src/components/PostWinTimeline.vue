@@ -258,11 +258,11 @@ const resetDefault = () => {
             </template>
             <template v-else>
               <p class="pwt-name">
-                {{ r.name }}
-                <!-- 완료(초록) · 진행(빨강) · 예정(파랑) — 채도를 낮춘 진한 바탕에 흰 글자 -->
+                <!-- 완료(초록) · 진행(빨강) · 예정(파랑) — 이름 앞에 두어 칩 자리가 단계마다 같다 -->
                 <span v-if="r.doneDate" class="pwt-chip done">완료</span>
                 <span v-else-if="r.next" class="pwt-chip next">진행</span>
                 <span v-else-if="!flow.endedAt" class="pwt-chip plan">예정</span>
+                {{ r.name }}
               </p>
               <p class="pwt-meta">
                 <b>{{ r.date || '—' }}</b>
