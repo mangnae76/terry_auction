@@ -252,12 +252,6 @@ const recentPrice = computed(() => recentSale.value?.price ?? 0);
 /** 전세도 매매와 같은 꼴로 — 보증금·평당 보증금·건수 */
 const jeonsePriceReal = computed(() => recentJeonse.value?.price ?? 0);
 /** 전세 실거래가가 공동주택가의 몇 %인가 — 보증보험 기준(126%)과 견준다 */
-/** 전세 실거래 평당가 */
-const jeonsePyeong = computed(() => {
-  const r = recentJeonse.value;
-  if (!r || !(r.areaM2 > 0) || !(r.price > 0)) return 0;
-  return Math.round(r.price / (r.areaM2 / PYEONG));
-});
 const jeonseVsPubText = computed(() => {
   const pub = pubValue.value;
   const j = jeonsePriceReal.value;
@@ -734,9 +728,9 @@ const downloadCsv = () => {
       <p v-if="areaNote" class="adm-msg warn">{{ areaNote }}</p>
 
       <template v-if="canSave">
-        <!-- 네 칸 · 세 줄 한 판 — 기준 → 시세 → 추정 전세 → 실제 전세 순.
+        <!-- 세 칸 · 세 줄 한 판 — 기준 → 시세 → 추정 전세 → 실제 전세 순.
              맨 왼쪽은 공동주택가 하나(아래는 비움), 오른쪽 세 칸은 줄마다 가격 · 비율 · 평당가:
-             매매(실거래가 · 공시대비율) / 보증보험 전세(전세가 · 전세가율/갭) / 실거래 전세(실거래가 · 전세가율/갭 · 평당가) -->
+             매매(실거래가 · 공시대비율) / 보증보험 전세(전세가 · 전세가율/갭) / 실거래 전세(실거래가 · 전세가율/갭) -->
         <div class="adm-kpis grid4 case-grid">
           <div class="adm-kpi green">
             <small>
@@ -806,7 +800,6 @@ const downloadCsv = () => {
               <p v-for="(t, i) in realTipLines" :key="i">{{ t }}</p>
             </div>
           </div>
-          <div class="adm-kpi"><small>전세 평당가</small><strong>{{ won(jeonsePyeong) }}</strong></div>
 
           <div class="adm-kpi"><small>매매 실거래가 <span v-if="recentSale" class="adm-kpi-from pick">선택</span> <em v-if="recentSale">{{ rowFace(recentSale) }}</em></small><strong>{{ won(recentPrice) }}</strong><span v-if="!recentSale" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span></div>
           <div class="adm-kpi">
@@ -1002,15 +995,18 @@ const downloadCsv = () => {
 /* 세 줄이 같은 네 칸 틀을 쓴다 — 줄이 달라도 세로로 맞아떨어진다 */
 .adm-kpis.grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .adm-kpis.grid4.nextrow { margin-top: 12px; }
-.adm-kpis.case-grid { grid-template-rows: auto auto auto; }
-.adm-kpis.case-grid > :nth-child(1) { grid-column: 1; grid-row: 1; }  /* 공동주택가 — 기준값, 아래 칸은 비운다 */
-.adm-kpis.case-grid > :nth-child(7) { grid-column: 2; grid-row: 1; }  /* 매매 실거래가 — 시세(전세가율 · 갭의 분모) */
-.adm-kpis.case-grid > :nth-child(8) { grid-column: 3; grid-row: 1; }  /* 공시대비율 = 매매 ÷ 공동주택가 */
-.adm-kpis.case-grid > :nth-child(2) { grid-column: 2; grid-row: 2; }  /* 보증보험 전세가 = 공동주택가 × 비율(추정) */
-.adm-kpis.case-grid > :nth-child(3) { grid-column: 3; grid-row: 2; }  /* 보증보험 전세가율 / 갭 */
-.adm-kpis.case-grid > :nth-child(4) { grid-column: 2; grid-row: 3; }  /* 전세 실거래가(실제) */
-.adm-kpis.case-grid > :nth-child(5) { grid-column: 3; grid-row: 3; }  /* 실거래 전세가율 / 갭 */
-.adm-kpis.case-grid > :nth-child(6) { grid-column: 4; grid-row: 3; }  /* 전세 평당가 */
+/* 세 칸으로 판 폭을 다 쓴다 — 오른쪽 끝을 아래 표 끝선에 */
+.adm-kpis.case-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto auto auto; }
+/* 상자 차례(템플릿): 1 공동주택가 · 2 보증보험 전세가 · 3 보증보험 전세가율/갭 · 4 전세 실거래가 · 5 실거래 전세가율/갭 · 6 매매 실거래가 · 7 공시대비율
+   1열은 공시 · 매매(그 아래 공시대비율 = 매매 ÷ 공시), 2열은 전세가(추정 위 · 실제 아래), 3열은 전세가율/갭(추정 위 · 실제 아래) */
+.adm-kpis.case-grid > :nth-child(1) { grid-column: 1; grid-row: 1; }  /* 공동주택가 */
+.adm-kpis.case-grid > :nth-child(2) { grid-column: 2; grid-row: 1; }  /* 보증보험 전세가 */
+.adm-kpis.case-grid > :nth-child(3) { grid-column: 3; grid-row: 1; }  /* 보증보험 전세가율 / 갭 */
+.adm-kpis.case-grid > :nth-child(6) { grid-column: 1; grid-row: 2; }  /* 매매 실거래가 */
+.adm-kpis.case-grid > :nth-child(4) { grid-column: 2; grid-row: 2; }  /* 전세 실거래가 */
+.adm-kpis.case-grid > :nth-child(5) { grid-column: 3; grid-row: 2; }  /* 실거래 전세가율 / 갭 */
+.adm-kpis.case-grid > :nth-child(7) { grid-column: 1; grid-row: 3; }  /* 공시대비율 */
+
 .adm-kpi { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
 .adm-kpi small { font-size: 11.5px; font-weight: 700; color: #6b7280; display: flex; align-items: baseline; gap: 4px; }
 .adm-kpi small em { font-style: normal; color: #2b6df3; }
