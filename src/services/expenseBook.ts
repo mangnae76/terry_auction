@@ -5,8 +5,8 @@
 // 나머지(수리 · 명도 · 이자 · 관리비 · 유류 · 물품 …)는 이듬해 5월 종합소득세 확정신고에서 빼는 사업경비.
 //
 // 저장 자리는 예전 그대로 쓴다 — 필요경비는 사업지출(businessExpense), 사업경비는 인테리어(interior) 기록.
-// 예전 사업지출의 다른 항목 · 유류&식대 · 물품구매 기록은 사업경비로 읽어 함께 보인다.
-import type { BusinessExpenseRecord, FuelMealRecord, InteriorExpenseRecord, ItemPurchaseRecord } from '../types/finance';
+// 예전 사업지출의 다른 항목 · 유류&식대 · 물품구매는 시험용 덤이라 읽지 않는다.
+import type { BusinessExpenseRecord, InteriorExpenseRecord } from '../types/finance';
 
 export type Book = 'need' | 'biz';
 
@@ -33,23 +33,16 @@ export const BOOK_HINT: Record<Book, string> = {
   biz: '5월 종합소득세에서 빼는 돈 — 수리 · 명도 · 이자 · 관리비 · 유류 · 물품',
 };
 const NEED_CATS = NEED_GROUPS.map(([g]) => g);
+/** 자본적지출 명세 — 수리·인테리어를 적다가 이것을 고르면 필요경비(자본적지출)로 간다 */
+export const CAPITAL_ITEMS = NEED_GROUPS.find(([g]) => g === '자본적지출')?.[1] ?? [];
+/** 직접 쓴 명세가 자본적지출로 보이는가 — 표에 '필요경비 대상' 표시 */
+export const looksCapital = (detail: string) => /샷시|섀시|발코니|확장|보일러|난방|배관|설비 교체|시스템에어컨/.test(detail);
 
-/** 예전 사업지출 항목 → 어느 장부 · 어느 구분 */
-export const legacyOf = (cat: string): { book: Book; category: string } => {
-  if (NEED_CATS.includes(cat)) return { book: 'need', category: cat };
-  if (cat === '소유권이전' || cat === '세금') return { book: 'need', category: '취득비용' };
-  if (cat === '중개수수료') return { book: 'need', category: '양도비용' };
-  if (cat === '인테리어') return { book: 'biz', category: '수리·인테리어' };
-  if (cat === '대출이자') return { book: 'biz', category: '대출이자' };
-  if (cat === '관리비') return { book: 'biz', category: '관리비·공과금' };
-  return { book: 'biz', category: '기타' };
-};
-
-/** 두 장부의 한 줄 — 어디에 저장된 것이든 같은 꼴로 */
+/** 두 장부의 한 줄 */
 export interface LedgerRow {
   key: string;
-  /** be — 사업지출 기록 · in — 인테리어 기록 · fuel · item — 예전 유류&식대 · 물품구매(고치기는 그 창에서) */
-  src: 'be' | 'in' | 'fuel' | 'item';
+  /** be — 사업지출 기록(필요경비) · in — 인테리어 기록(사업경비) */
+  src: 'be' | 'in';
   id: string;
   book: Book;
   auctionId: string;
@@ -64,30 +57,15 @@ export interface LedgerRow {
   note: string;
 }
 
-export const ledgerRows = (src: {
-  be: BusinessExpenseRecord[]; interior: InteriorExpenseRecord[]; fuel: FuelMealRecord[]; item: ItemPurchaseRecord[];
-}): LedgerRow[] => [
-  ...src.be.map((r): LedgerRow => {
-    const l = legacyOf(r.profitCategory || r.memo || '');
-    return {
-      key: `be-${r.id}`, src: 'be', id: r.id, book: l.book, auctionId: r.auctionId || '', auctionLabel: r.auctionLabel || '',
-      date: r.date || '', category: l.category, detail: r.detail || '', amount: r.amountWithVat || 0, vendor: '', phone: '', status: '', note: r.note || '',
-    };
-  }),
+export const ledgerRows = (src: { be: BusinessExpenseRecord[]; interior: InteriorExpenseRecord[] }): LedgerRow[] => [
+  ...src.be.filter((r) => NEED_CATS.includes(r.profitCategory)).map((r): LedgerRow => ({
+    key: `be-${r.id}`, src: 'be', id: r.id, book: 'need', auctionId: r.auctionId || '', auctionLabel: r.auctionLabel || '',
+    date: r.date || '', category: r.profitCategory, detail: r.detail || '', amount: r.amountWithVat || 0, vendor: '', phone: '', status: '', note: r.note || '',
+  })),
   ...src.interior.filter((r) => (r.kind ?? 'cost') === 'cost').map((r): LedgerRow => ({
     key: `in-${r.id}`, src: 'in', id: r.id, book: 'biz', auctionId: r.auctionId || '', auctionLabel: r.auctionLabel || '',
     date: r.startDate || r.date || '', category: r.category || '수리·인테리어', detail: r.work || '', amount: r.amountWithVat || 0,
     vendor: r.vendor || '', phone: r.phone || '', status: r.status || '', note: r.note || '',
-  })),
-  ...src.fuel.map((r): LedgerRow => ({
-    key: `fuel-${r.id}`, src: 'fuel', id: r.id, book: 'biz', auctionId: '', auctionLabel: '',
-    date: r.date || '', category: '유류·식대', detail: [r.category, r.store].filter(Boolean).join(' · '), amount: r.amount || 0,
-    vendor: '', phone: '', status: '', note: r.note || '',
-  })),
-  ...src.item.map((r): LedgerRow => ({
-    key: `item-${r.id}`, src: 'item', id: r.id, book: 'biz', auctionId: r.auctionId || '', auctionLabel: r.auctionLabel || '',
-    date: r.date || '', category: '물품구매', detail: r.description || r.category || '', amount: r.totalWithVat || (r.quantity || 0) * (r.unitPrice || 0),
-    vendor: r.vendor || '', phone: '', status: '', note: r.note || '',
   })),
 ];
 

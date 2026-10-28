@@ -75,7 +75,7 @@ const finance = useFinanceStore();
 const interior = useInteriorStore();
 finance.initialize();
 interior.initialize();
-const ledger = computed(() => ledgerRows({ be: finance.businessExpenses, interior: interior.rows, fuel: finance.fuelMeal, item: finance.itemPurchases }));
+const ledger = computed(() => ledgerRows({ be: finance.businessExpenses, interior: interior.rows }));
 const saleFixed = computed(() => !!props.auction?.sellDate);
 const evictCost = computed(() => (evictPick.value === 'deal' ? deal.value.total : exec.value.total));
 const evictLabel = computed(() => (evictPick.value === 'deal' ? '협의' : '강제집행'));

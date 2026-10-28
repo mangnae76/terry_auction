@@ -171,17 +171,12 @@ const tabOfQuery = (): FinanceTabKey | '' => {
 };
 const activeTab = ref<FinanceTabKey>(((t) => (webEmbed && (t === 'fuelMeal' || t === 'itemPurchase') ? 'interior' : t))(tabOfQuery() || 'cashFlow'));
 /** 웹 필터 줄의 다섯 탭 — 앱은 아래 머리의 탭 줄 그대로 */
-/** 웹 — 필요경비(예정신고) · 사업경비(5월 종합소득세) 두 장부. 예전 유류&식대 · 물품구매 · 인테리어 기록은 사업경비에 함께 보인다 */
+/** 웹 — 필요경비(예정신고) · 사업경비(5월 종합소득세) 두 장부 */
 const WEB_TABS: Array<[FinanceTabKey, string]> = [['cashFlow', '자금입출금'], ['businessExpense', '필요경비'], ['interior', '사업경비'], ['tax', '세금신고']];
 /** 웹 장부 표 — 위 필터 줄의 엑셀 · 항목추가가 이 표로 간다 */
 const ledgerRef = ref<InstanceType<typeof ExpenseLedger> | null>(null);
 const onWeb = (t: FinanceTabKey) => webEmbed && (t === 'businessExpense' || t === 'interior');
 const onAddClick = () => { if (onWeb(activeTab.value)) ledgerRef.value?.openAdd(); else openAdd(activeTab.value as ModalKind); };
-/** 사업경비에 보이는 예전 유류&식대 · 물품구매 줄 — 그 창으로 고친다 */
-const openLegacy = (kind: 'fuelMeal' | 'itemPurchase', id: string) => {
-  const rec = kind === 'fuelMeal' ? finance.fuelMeal.find((r) => r.id === id) : finance.itemPurchases.find((r) => r.id === id);
-  if (rec) openEdit(kind, rec);
-};
 watch(() => route.query.tab, () => { const k = tabOfQuery(); if (k && k !== activeTab.value) activeTab.value = k; });
 // 웹 — 화면 안 탭(자금입출금 ~ 세금신고)을 바꾸면 주소에도 적는다(위 웹 경로 · 새로고침이 따라온다). 앱은 그대로
 watch(activeTab, (t) => { if (webEmbed && String(route.query.tab ?? '') !== t) void router.replace({ query: { ...route.query, tab: t } }); });
@@ -695,7 +690,6 @@ const exportExcel = () => {
       class="fin-ledger"
       :book="activeTab === 'businessExpense' ? 'need' : 'biz'"
       :in-period="isWithinPeriod"
-      @legacy="openLegacy"
     />
     <template v-else-if="activeTab === 'businessExpense'">
       <div class="fin-table-wrap">

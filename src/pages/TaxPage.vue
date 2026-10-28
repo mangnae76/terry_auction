@@ -49,7 +49,7 @@ const finance = useFinanceStore();
 const interior = useInteriorStore();
 if (props.webYear) { finance.initialize(); interior.initialize(); }
 const ledger = computed(() => (props.webYear
-  ? ledgerRows({ be: finance.businessExpenses, interior: interior.rows, fuel: finance.fuelMeal, item: finance.itemPurchases })
+  ? ledgerRows({ be: finance.businessExpenses, interior: interior.rows })
   : []));
 const costsOfUsed = (a: AuctionDetail) => {
   if (!props.webYear) return costsOf(a);
