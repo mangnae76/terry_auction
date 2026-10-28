@@ -286,7 +286,9 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-seg.sm button { height: 28px; padding: 0 10px; }
 .pwm-go { margin-left: auto; height: 32px; padding: 0 14px; border: 1px solid #2b6df3; border-radius: 6px; background: #fff; color: #1d4ed8; font-size: 14px; cursor: pointer; }
 .pwm-go:hover { background: #f2f6fe; }
-.pwm-tax { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+/* 두 카드는 늘 같은 폭 · 같은 높이 — 매매사업자 · 개인을 바꿔도 크기가 흔들리지 않게(높이는 긴 쪽에 맞춘 고정값) */
+.pwm-tax { --pwm-card-h: 560px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
+.pwm-tax > .pwm-card { min-height: var(--pwm-card-h, 0px); display: flex; flex-direction: column; }
 .pwm-card { border: 1px solid #e3e8f0; border-radius: 10px; padding: 20px 26px 22px; }
 .pwm-card h3 { margin: 0 0 6px; font-size: 16px; font-weight: 800; }
 .pwm-card dl { margin: 0; }
