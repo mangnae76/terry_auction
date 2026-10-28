@@ -134,7 +134,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
   <section class="pwm">
     <header class="pwm-head">
       <h2>{{ mode === 'evict' ? '명도분석' : '세금분석' }}</h2>
-      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 셈합니다 — 필요경비 · 사업경비 탭의 값(실제로 적지 않은 줄은 입찰가산정 A안)' }}</span>
+      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 필요경비 · 사업경비 탭의 값으로 계산합니다 — 아직 실제 금액을 적지 않은 항목은 입찰가산정 A안 값을 씁니다' }}</span>
     </header>
     <!-- ===== 명도분석 ===== -->
     <template v-if="mode === 'evict'">
@@ -223,7 +223,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
             <div class="key"><dt>예상 양도소득세</dt><dd>{{ won(taxSum) }}<small>실효세율 {{ effPct }}% · 지방세 {{ won(person.localTax) }} 포함</small></dd></div>
             <div><dt>세후 남는 돈</dt><dd :class="{ neg: person.afterTax < 0 }">{{ won(person.afterTax) }}</dd></div>
           </dl>
-          <p class="pwm-memo" v-if="who === 'biz'">비교과세 — 조정대상지역 주택 · 비사업용 토지 등은 양도세 세율로 셈한 금액과 비교해 큰 쪽을 냅니다(소득세법 제64조). 매도 뒤 2개월 안에 매매차익 예정신고, 이듬해 5월 종합소득세로 합산합니다.</p>
+          <p class="pwm-memo" v-if="who === 'biz'">비교과세 — 조정대상지역 주택 · 비사업용 토지 등은 양도세 세율로 계산한 금액과 비교해 큰 쪽을 냅니다(소득세법 제64조). 매도 뒤 2개월 안에 매매차익 예정신고, 이듬해 5월 종합소득세로 합산합니다.</p>
           <p class="pwm-memo" v-else>1주택 비과세 · 다주택 중과 · 장기보유특별공제는 셈하지 않은 대략 값입니다 — 세무사에게 확인하세요.</p>
         </article>
       </div>

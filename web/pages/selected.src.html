@@ -3969,7 +3969,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     ].join('');
     /* 입찰가산정 — 목록의 수익률 분석과 같은 간이 셈(대출 70% · 비용 4.5%+300만 · 예상 매도가) */
     const r = profitOf(it);
-    if (!r) return itCard('calc', '입찰가산정', itEmpty('입찰가를 정하면 수익을 셈합니다.'), true) + taxTableHtml();
+    if (!r) return itCard('calc', '입찰가산정', itEmpty('입찰가를 정하면 수익을 계산합니다.'), true) + taxTableHtml();
     const bid = it.mine; const gain = r.sale - bid - r.cost; const tax = Math.max(0, Math.round(incomeTax(gain))); const local = Math.round(tax * 0.1);
     const money = (n) => (n < 0 ? `<b class="num neg">−${won(-n)}</b>원` : wonCell(n) || '<b class="num">0</b>원');
     return itCard('calc', '입찰가산정', `<div class="it-cols">

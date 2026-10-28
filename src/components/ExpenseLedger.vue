@@ -239,7 +239,7 @@ defineExpose({ openAdd, exportCsv, total });
               <label>{{ unitCat?.[0] }}<FormattedNumberInput v-model="draft.qty" live-group align="left" placeholder="0" /></label>
               <label>{{ unitCat?.[1] }}<FormattedNumberInput v-model="draft.unit" live-group align="left" placeholder="0" /><small v-if="draft.category === '대출이자'" class="xl-sub">입찰가산정 A안 3개월 이자 ÷ 3</small></label>
             </template>
-            <label>비용(VAT포함)<FormattedNumberInput v-model="draft.amount" live-group align="left" placeholder="0" :disabled="isItem" /><small v-if="isItem" class="xl-sub">{{ unitCat?.[0] }} × {{ unitCat?.[1] }}로 셈합니다</small></label>
+            <label>비용(VAT포함)<FormattedNumberInput v-model="draft.amount" live-group align="left" placeholder="0" :disabled="isItem" /><small v-if="isItem" class="xl-sub">{{ unitCat?.[0] }} × {{ unitCat?.[1] }}로 계산합니다</small></label>
             <label v-if="book === 'biz' && draft.category === '수리·인테리어'">현황
               <select v-model="draft.status"><option v-for="st in ['예정', '진행', '완료']" :key="st" :value="st">{{ st }}</option></select>
             </label>
