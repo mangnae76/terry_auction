@@ -838,6 +838,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 자금관리 낙찰목록 · 매도목록 — 낙찰이후 '낙찰목록' 단추(.ih-pdf)와 같은 크기 · 글자 */
 /* 웹은 제목 줄 · 탭을 다 숨겨 윗머리(.fin-header)가 빈 껍데기다 — 그 1px 테두리가 경로 줄 밑 흰 줄로 남아 통째로 감춘다 */
 .app-page[data-k="finance"] .fin-header { display: none !important; }
+/* …다만 자금관리 다섯 탭(자금입출금 ~ 세금신고)은 마이페이지 아래 3단 박스 탭으로 다시 보인다 — 머리 껍데기는 테두리 · 여백 없이 탭만 */
+.app-page[data-k="finance"] .fin-header:has(.fin-tabs) { display: block !important; order: 1; margin: 4px 0 8px !important; padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; }
+.app-page[data-k="finance"] .fin-header .fin-tabs { display: flex !important; border-bottom: 1px solid var(--boxtab-line); background: transparent !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
 .app-page[data-k="finance"] .fin-stage-count { gap: 8px; }
 .app-page[data-k="finance"] .fin-stage-count button { height: 28px; padding: 0 8px 0 10px; border-radius: 8px; font-size: 14px; }
 .app-page[data-k="finance"] .fin-stage-count .fin-chev { width: 12px; height: 12px; margin-left: 4px; }
@@ -2254,22 +2257,22 @@ html, body { overflow-x: clip; }
 :root { --boxtab-line: #a9b4c6; --boxtab-off: #d8dee8; --boxtab-off-hover: #ccd4e0; }
 :root[data-theme="dark"] { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; } }
-.app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips { --boxtab-on: var(--bg); }
+.app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-tabs { --boxtab-on: var(--bg); }
 .app-page[data-k="finance"] .kind-chips { margin: 4px 0 10px; border-bottom: 1px solid var(--boxtab-line); }
-:is(.app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips) { display: flex !important; align-items: flex-end !important; gap: 4px !important; padding-left: 0 !important; }
-:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button) {
+:is(.app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-header .fin-tabs) { display: flex !important; align-items: flex-end !important; gap: 4px !important; padding-left: 0 !important; }
+:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab) {
   position: relative; align-self: flex-end !important; display: inline-flex; align-items: center; gap: 6px;
   height: 34px !important; padding: 0 18px !important; margin: 0 !important;
   border: 1px solid transparent !important; border-bottom: 0 !important; border-radius: 8px 8px 0 0 !important;
   background: var(--boxtab-off) !important; color: var(--muted) !important; font-size: 15px !important; font-weight: 600 !important; white-space: nowrap;
   transition: background .12s, color .12s;
 }
-:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button):hover { background: var(--boxtab-off-hover) !important; color: var(--text) !important; }
-:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button).on {
+:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab):hover { background: var(--boxtab-off-hover) !important; color: var(--text) !important; }
+:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab):is(.on, .active) {
   z-index: 2; height: 38px !important; margin-bottom: -1px !important;
   border-color: var(--boxtab-line) !important; background: var(--boxtab-on) !important; color: var(--blue) !important; font-weight: 800 !important;
 }
-:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button)::after { display: none !important; }
+:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab)::after { display: none !important; }
 /* 탭 줄 밑선은 진하게 */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top::after { background: var(--boxtab-line) !important; }
 /* 2단 밑줄 탭 — 고른 탭 밑줄을 굵게(3px) */
@@ -2279,7 +2282,7 @@ html, body { overflow-x: clip; }
 .pw-chaptabs { margin: 4px 0 4px; border-bottom: 1px solid var(--boxtab-line); overflow-x: auto; scrollbar-width: none; }
 .pw-chaptabs::-webkit-scrollbar { display: none; }
 /* 좁은 화면 — 줄바꿈 대신 가로로 밀어 본다 */
-@media (max-width: 1100px) { :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button) { padding: 0 12px !important; } }
+@media (max-width: 1100px) { :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab) { padding: 0 12px !important; } }
 
 /* 공용 확인창(앱 AppConfirm) — 웹 글자 규칙(제목 16 · 나머지 14) */
 .app-page .acf-title { font-size: 16px !important; }
@@ -2307,6 +2310,12 @@ html, body { overflow-x: clip; }
 .app-page[data-k="finance"] .web-none { padding: 40px 0; text-align: center; font-size: 14px; color: var(--muted); }
 /* 신고 일정의 달력 그림(span.cal)이 웹 입찰달력 창 규칙(.cal 326px)에 걸려 날짜가 가운데로 밀렸다 */
 .app-page .ev-when .cal { width: auto !important; padding: 0 !important; margin-right: 6px; }
+
+/* 마이페이지 › 알림(앱 알림 화면) — 웹은 머리글(뒤로 · 제목 · 경로)을 빼고 글자 규칙(제목 16 · 중제목 15 · 나머지 14) */
+.app-page[data-k="more"] .alr-header { display: none !important; }
+.app-page[data-k="more"] .alr-card-title { font-size: 16px !important; }
+.app-page[data-k="more"] :is(.alr-opt-txt b, .alr-opt-txt strong, .alr-t) { font-size: 15px !important; }
+.app-page[data-k="more"] :is(.alr-note, .alr-opt-txt small, .alr-opt-txt span, .alr-opt-txt em, .alr-empty, .alr-hidden, .alr-foot, .alr-txt, .alr-txt *, .alr-dday, .alr-where) { font-size: 14px !important; }
 </style>
 
 <header class="gnb">
@@ -2332,7 +2341,7 @@ html, body { overflow-x: clip; }
       <button type="button" class="u-link" data-act="go-more" data-name="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>공지</button>
       <button type="button" class="u-link pay" data-act="go-more" data-name="결제하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>결제하기</button>
       <span class="u-sep" aria-hidden="true"></span>
-      <button type="button" class="u-ico" data-act="soon" data-name="알림" data-tip="알림 2건" data-tip-pos="below" aria-label="알림 2건">
+      <button type="button" class="u-ico" data-act="go-more" data-name="알림" data-tip="알림" data-tip-pos="below" aria-label="알림">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5Z"/><path d="M10.3 19a2 2 0 0 0 3.4 0"/></svg><span class="dot"></span>
       </button>
       <button type="button" class="u-ico" data-act="theme" id="themeBtn" data-tip="밤 화면으로" data-tip-pos="below" aria-label="밤낮 화면 바꾸기"></button>
@@ -2595,7 +2604,7 @@ html, body { overflow-x: clip; }
     market: ['ranking', 'dong', 'case', 'near', 'same'],
     postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'tax'],
-    more: ['mypage', 'billing', 'points', 'news', 'support'],
+    more: ['mypage', 'alerts', 'billing', 'points', 'news', 'support'],
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
   const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지 */
@@ -2704,7 +2713,7 @@ html, body { overflow-x: clip; }
     ['m3', [['거래랭킹', 'go-market'], ['지역분석', 'go-market'], ['경매지번 분석', 'go-market'], ['인근 매각물건 분석', 'go-market'], ['동일지번 매각물건 분석', 'go-market']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['가이드', 'go-postwin'], ['인테리어', 'go-postwin'], ['매도·임대', 'go-postwin']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
-    ['m5', [['내 정보', 'go-more'], ['자금입출금', 'go-finance'], ['세금신고', 'go-finance'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['공지', 'go-more'], ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
+    ['m5', [['내 정보', 'go-more'], ['자금입출금', 'go-finance'], ['세금신고', 'go-finance'], ['알림', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['공지', 'go-more'], ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
   /* 지금 보고 있는 자리 — 펼칠 때마다 다시 그려 표시가 어긋나지 않게 한다 */
   const megaHere = () => {
@@ -3672,14 +3681,16 @@ html, body { overflow-x: clip; }
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '가이드'], ['repair', '', '인테리어'], ['sell', '', '매도·임대']],
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '사업지출'], ['fuelMeal', '', '유류&식대'], ['itemPurchase', '', '물품구매'], ['tax', '', '세금신고']],
-    more: [['mypage', '', '내 정보'], ['finance', '', '자금관리'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['news', '', '공지'], ['support', '', '고객센터']],
+    more: [['mypage', '', '내 정보'], ['finance', '', '자금관리'], ['alerts', '', '알림'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['news', '', '공지'], ['support', '', '고객센터']],
     item: [['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
   };
   function renderSubTabs() {
     syncCrumb();
-    const tabs = SUBTABS[S.route]; const bar = $('subTabs');
+    /* 자금관리는 마이페이지 아래 — 위 탭 줄은 마이페이지 그대로(자금관리에 불), 자금관리 다섯 탭은 화면 안 박스 탭(3단) */
+    const fin = S.route === 'finance';
+    const tabs = fin ? SUBTABS.more : SUBTABS[S.route]; const bar = $('subTabs');
     bar.hidden = !tabs; document.body.classList.toggle('has-subtabs', !!tabs);
-    const cur = S.route === 'market' ? S.marketTab : S.route === 'bidrate' ? S.bidrateTab : APP_PAGE_NAMES[S.route] ? subParent(S.route, S.pageTab[S.route]) : S.itemTab;
+    const cur = fin ? 'finance' : S.route === 'market' ? S.marketTab : S.route === 'bidrate' ? S.bidrateTab : APP_PAGE_NAMES[S.route] ? subParent(S.route, S.pageTab[S.route]) : S.itemTab;
     $('subTabsIn').innerHTML = tabs ? tabs.map(([k, ic, t]) => `<button type="button" class="subtab ${cur === k ? 'on' : ''}" role="tab" aria-selected="${cur === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
     if (tabs) syncStickTop();
   }
@@ -4783,6 +4794,7 @@ html, body { overflow-x: clip; }
         if (S.route === 'market') { S.marketTab = v; writeHash(false); renderSubTabs(); renderMarket(); break; }
         if (S.route === 'bidrate') { S.bidrateTab = v; writeHash(false); renderSubTabs(); renderMarket(); break; }
         if (S.route === 'more' && v === 'finance') { go('finance'); break; }   /* 마이페이지 › 자금관리 — 자금관리 화면으로 */
+        if (S.route === 'finance') { if (v !== 'finance') { S.pageTab.more = v; go('more'); } break; }   /* 자금관리 화면의 위 줄은 마이페이지 탭 */
         if (APP_PAGE_NAMES[S.route]) { S.pageTab[S.route] = v; writeHash(false); renderSubTabs(); renderAppPage(); window.scrollTo(0, 0); break; }
         S.itemTab = v;
         /* 주소에도 남긴다 — 새로고침하면 이 탭으로 다시 연다 (뒤로가기 기록은 늘리지 않는다) */

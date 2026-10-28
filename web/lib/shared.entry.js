@@ -255,8 +255,13 @@ const APP_PAGE_ROUTES = [
 const PAGE_OF_PATH = Object.fromEntries(Object.entries(APP_PAGES).map(([k, p]) => [p, k]));
 export const hasAppPage = (key) => !!APP_PAGES[key];
 /** el 안에 앱 화면(key)을 tab 탭으로 띄운다. 돌려주는 함수로 걷고, .setTab(tab) 으로 탭만 바꾼다 */
+/** 하위 탭이 따로 쪽(경로)인 것 — 마이페이지 › 알림은 앱의 알림 화면(/notifications)을 그대로 띄운다 */
+const TAB_PATHS = { more: { alerts: '/notifications' } };
 export const mountAppPage = (el, key, tab, hooks = {}) => {
   const home = APP_PAGES[key];
+  const tabPaths = TAB_PATHS[key] || {};
+  const tabOfPath = Object.fromEntries(Object.entries(tabPaths).map(([t, p]) => [p, t]));
+  const go = (t) => (tabPaths[t] ? { path: tabPaths[t] } : { path: home, query: t ? { tab: t } : {} });
   const Empty = { render: () => null };
   const router = createRouter({
     history: createMemoryHistory(),
@@ -280,16 +285,19 @@ export const mountAppPage = (el, key, tab, hooks = {}) => {
   });
   /* 앱 화면이 제 탭을 바꾸면(이름 눌러 마이페이지 등) 웹 하위 탭도 따라온다 */
   router.afterEach((to) => {
-    if (to.path === home && hooks.onTab) hooks.onTab(String((to.query && to.query.tab) || ''));
+    if (!hooks.onTab) return;
+    if (to.path === home) hooks.onTab(String((to.query && to.query.tab) || ''));
+    else if (tabOfPath[to.path]) hooks.onTab(tabOfPath[to.path]);
   });
   const app = createApp({ render: () => h(RouterView) });
   app.use(getActivePinia());
   app.use(router);
   app.provide('webEmbed', true);
-  void router.push({ path: home, query: tab ? { tab } : {} });
+  void router.push(go(tab));
   app.mount(el);
   const stop = () => app.unmount();
   stop.setTab = (t) => {
+    if (tabPaths[t]) { if (router.currentRoute.value.path !== tabPaths[t]) void router.push(go(t)); return; }
     if (router.currentRoute.value.path !== home) { void router.push({ path: home, query: { tab: t } }); return; }
     if (String(router.currentRoute.value.query.tab || '') !== t) void router.replace({ path: home, query: { ...router.currentRoute.value.query, tab: t } });
   };

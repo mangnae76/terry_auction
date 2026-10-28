@@ -170,6 +170,8 @@ const tabOfQuery = (): FinanceTabKey | '' => {
 };
 const activeTab = ref<FinanceTabKey>(tabOfQuery() || 'cashFlow');
 watch(() => route.query.tab, () => { const k = tabOfQuery(); if (k && k !== activeTab.value) activeTab.value = k; });
+// 웹 — 화면 안 탭(자금입출금 ~ 세금신고)을 바꾸면 주소에도 적는다(위 웹 경로 · 새로고침이 따라온다). 앱은 그대로
+watch(activeTab, (t) => { if (webEmbed && String(route.query.tab ?? '') !== t) void router.replace({ query: { ...route.query, tab: t } }); });
 const period = ref<PeriodKey>('all');
 const customStart = ref('');
 const customEnd = ref('');
