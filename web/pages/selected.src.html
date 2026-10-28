@@ -1836,7 +1836,9 @@ body.trip-full .foot { display: none; }
 /* 입찰 있는 날 — 파란 동그라미에 흰 숫자(점 대신). 고른 날은 바깥에 파란 고리를 하나 더 */
 .cal-day.has { background: var(--blue); color: #fff; font-weight: 700; }
 .cal-day.has:hover:not(:disabled) { background: var(--blue); filter: brightness(1.12); }
-.cal-day.on, .cal-day.on:hover:not(:disabled) { background: var(--text); color: var(--surface); font-weight: 700; filter: none; } /* 고른 날 — 오늘(파란 고리) · 입찰일(파란 원)과 헷갈리지 않게 글자색으로 채운 원 */
+/* 고른 날 — 흐린 파랑. 입찰일을 고르면 파란 원 둘레에 흐린 파랑 고리 */
+.cal-day.on, .cal-day.on:hover:not(:disabled) { background: color-mix(in srgb, var(--blue) 28%, transparent); font-weight: 700; filter: none; }
+.cal-day.has.on, .cal-day.has.on:hover:not(:disabled) { background: var(--blue); box-shadow: 0 0 0 4px color-mix(in srgb, var(--blue) 32%, transparent); }
 .cal-key { display: inline-flex; align-items: center; gap: 6px; }
 .cal-keys { display: inline-flex; align-items: center; gap: 14px; }
 .cal-key i { width: 12px; height: 12px; border-radius: 50%; background: var(--blue); }
@@ -2750,7 +2752,7 @@ html, body { overflow-x: clip; }
     return `<div class="pop cal" role="dialog" aria-label="입찰일 고르기">
       <div class="cal-head"><button type="button" data-act="cal-move" data-v="-1" aria-label="이전 달">${I.chevL}</button><b class="num">${y}년 ${m + 1}월</b><button type="button" data-act="cal-move" data-v="1" aria-label="다음 달">${I.chevR}</button></div>
       <div class="cal-grid">${cells}</div>
-      <div class="cal-foot"><span class="cal-keys"><span class="cal-key"><i></i>입찰일</span><span class="cal-key"><i class="ring"></i>오늘</span></span>${S.date ? '<button type="button" data-act="set-date" data-v="">날짜 해제</button>' : ''}</div></div>`; /* 고른 날이 있을 때만 — 없으면 풀 것이 없어 눌러도 반응이 없다 */
+      <div class="cal-foot"><span class="cal-keys"><span class="cal-key"><i></i>입찰일</span><span class="cal-key"><i class="ring"></i>오늘</span></span></div></div>`; /* 고른 날을 푸는 건 그 날을 다시 누르면 된다 */
   }
 
   function binHtml(kind, list) {
