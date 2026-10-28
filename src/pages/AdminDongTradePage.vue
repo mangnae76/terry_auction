@@ -99,7 +99,7 @@ const yearMin = ref('');
 const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
-const listView = ref<'map' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'similar'>(onlyView === 'deals' ? 'deals' : 'supply');
+const listView = ref<'map' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'sim' | 'similar'>(onlyView === 'deals' ? 'deals' : 'supply');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
 const mapRun = ref(0);
 const mapEmbed = computed(() => ({
@@ -124,7 +124,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '지도랭킹', supply: '수요분석', table: '지역별 분석', dist: '지역분포', detail: '상세분포', deals: '거래상세' };
+const TAB_LABEL: Record<string, string> = { map: '지도랭킹', supply: '수요분석', table: '지역별 분석', dist: '지역분포', detail: '상세분포', deals: '거래상세', sim: '유사매물시세' };
 const tellTab = () => {
   if (!webEmbed || onlyView) return;
   const label = listView.value === 'table' && dong.value ? '검색리스트' : TAB_LABEL[listView.value];
@@ -834,6 +834,8 @@ const downloadCsv = () => {
               </span></button>
               <button type="button" role="tab" :aria-selected="listView === 'detail'" :class="{ on: listView === 'detail' }" @click="listView = 'detail'">상세분포</button>
               <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
+              <!-- 유사매물시세 — 우선 거래상세와 같은 내용(같은 틀을 함께 쓴다). 내용이 정해지면 여기서 갈라진다 -->
+              <button type="button" role="tab" :aria-selected="listView === 'sim'" :class="{ on: listView === 'sim' }" @click="listView = 'sim'">유사매물시세</button>
             </nav>
         <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
@@ -945,7 +947,7 @@ const downloadCsv = () => {
         <!-- 수요공급은 한 번 띄우면 계속 들고 있다(v-show) — 탭을 오갈 때마다 새로 띄우면 비었다가 차며 깜빡였다 -->
         <AdminRegionDemandPage v-if="webEmbed && supplySeen" v-show="listView === 'supply'" :embed="supplyEmbed" :chip="snapChip" class="adm-supply" />
         <template v-if="webEmbed && listView === 'supply'" />
-        <div v-else-if="webEmbed && listView === 'deals'" class="adm-deals">
+        <div v-else-if="webEmbed && (listView === 'deals' || listView === 'sim')" class="adm-deals">
           <section class="adm-trend">
             <p class="adm-trend-title">월별 평균가 추이 <em>(최근 {{ trend.points.length }}개월 · 정상 + 직거래)</em></p>
             <svg v-if="trend.points.length > 1" class="adm-trend-svg" :viewBox="`0 0 ${TREND_W} ${TREND_H}`" role="img" aria-label="월별 평균가 추이 선 그래프">
