@@ -235,12 +235,30 @@ const GUIDE_DAY_KEYS = new Set(['rule']);
 const GUIDE_EVICT_KEYS = new Set(['ev.flow', 'ev.deal']);
 // === 절차진행 큰일 → 상세 · 가이드를 창으로 — 화면을 옮기지 않고 그 상자만 띄워 체크하고 닫는다 ===
 const popTodo = ref<StepTodo | null>(null);
+/** 창은 그 큰일에 이어진 칸 · 줄만 — '전체 보기'를 누르면 상자 전체 */
+const popFull = ref(false);
+const normLabel = (v: string) => String(v ?? '').replace(/\s+/g, '');
+const narrowGroup = (g: CheckGroup, t: StepTodo): CheckGroup => {
+  if (!t.section && !t.rows) return g;
+  const want = t.section == null ? null : (Array.isArray(t.section) ? t.section : [t.section]).map(normLabel);
+  const sections = g.sections
+    .filter((sec) => !want || want.includes(normLabel(sec.label ?? '')))
+    .map((sec) => ({
+      ...sec,
+      label: t.labels?.[normLabel(sec.label ?? '')] ?? sec.label,
+      rows: t.rows ? sec.rows.filter((r) => t.rows!.includes(r.id)) : sec.rows,
+    }))
+    .filter((sec) => sec.rows.length > 0);
+  return { ...g, sections };
+};
+const popNarrowed = computed(() => !!popTodo.value && !popFull.value && !!(popTodo.value.section || popTodo.value.rows));
 const popGroups = computed<CheckGroup[]>(() => {
   const t = popTodo.value;
   if (!t) return [];
   if (t.tab === 'biz') return bizBook.groups.value;
-  return allGroups.value.filter((g) => g.key === t.group);
+  return allGroups.value.filter((g) => g.key === t.group).map((g) => (popFull.value ? g : narrowGroup(g, t)));
 });
+watch(popTodo, () => { popFull.value = false; });
 const popOpen = computed(() => popGroups.value.length > 0);
 const POP_VIEW: Partial<Record<TabKey, TabKey>> = { gwin: 'win', gevict: 'evict' };
 const popView = computed<TabKey>(() => (popTodo.value?.tab ? (POP_VIEW[popTodo.value.tab as TabKey] ?? popTodo.value.tab as TabKey) : viewTab.value));
@@ -1045,6 +1063,8 @@ const toggleSection = (key: string) => {
         </template>
         </template>
        </div>
+       <!-- 창이 일부만 보일 때 — 상자 전체로 펼치기 -->
+       <div v-if="popNarrowed" class="pw-todo-pop-foot"><button type="button" @click="popFull = true">전체 보기 ›</button></div>
        </div>
        </div>
       </template>
@@ -1949,6 +1969,9 @@ const toggleSection = (key: string) => {
 .pw-todo-pop .pw-wrap, .pw-todo-pop .pw-card { margin: 0; box-shadow: none; }
 .pw-todo-pop .pw-card + .pw-card { border-top: 1px solid #eef1f6; border-radius: 0; }
 .pw-todo-pop .pw-card-head { cursor: default; padding-right: 52px; }
+.pw-todo-pop-foot { display: flex; justify-content: flex-end; padding: 0 18px 14px; }
+.pw-todo-pop-foot button { border: 0; background: none; color: #6b7280; font-size: 14px; cursor: pointer; }
+.pw-todo-pop-foot button:hover { color: #111827; text-decoration: underline; text-underline-offset: 3px; }
 .pw-todo-pop-x { position: absolute; top: 14px; right: 16px; z-index: 2; width: 26px; height: 26px; padding: 0; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #4b5563; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .pw-todo-pop-x:hover { background: #f3f4f6; color: #111827; }
 .pw-chaps { display: inline-flex; gap: 6px; flex: none; }

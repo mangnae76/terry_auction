@@ -26,6 +26,8 @@ export interface StepTodo {
   stepNos?: string[];
   /** 진행도를 세지 않는다(바로가기만) */
   noCount?: boolean;
+  /** 창에서 칸 이름을 바꿔 보인다(공백 뺀 이름 → 새 이름) — 둘 중 하나를 고르는 일에 '만났을 때' 같은 머리를 단다 */
+  labels?: Record<string, string>;
 }
 
 const TAX = { path: '/finance', tab: 'tax' };
@@ -35,14 +37,19 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
   // 낙찰 당일 — 현장 동선 순서. 협상은 이날 하고, 이사는 잔금 납부일까지(그 뒤로는 이자가 내 몫)
   bid: [
     { text: '사건기록 열람', cat: 'proc', tab: 'win', group: 'file' },
-    { text: '점유자 협상 or 메모지·연락처 남기기', cat: 'evict', tab: 'win', group: 'visit', noCount: true },
-    { text: '주민·동대표·관리소 탐문', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c2', 'pw.visit.c3', 'pw.visit.c4'] },
+    {
+      text: '점유자 협상 or 메모지·연락처 남기기', cat: 'evict', tab: 'win', group: 'visit', noCount: true,
+      section: ['협상내용', '폐문부재연락부재'],
+      rows: ['pw.visit.n1', 'pw.visit.n2', 'pw.visit.n3', 'pw.visit.n4', 'pw.visit.n5', 'pw.visit.n6', 'pw.visit.n7', 'pw.visit.n8', 'pw.visit.c1'],
+      labels: { 협상내용: '만났을 때\n협상내용', 폐문부재연락부재: '못 만났을 때\n메모 남기기' },
+    },
+    { text: '주민·동대표·관리소 탐문', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c2', 'pw.visit.c3', 'pw.visit.c4'], labels: { 폐문부재연락부재: '주민·동대표\n관리소 탐문' } },
     { text: '부동산 방문 — 시세·거래기록', cat: 'proc', tab: 'win', group: 'visit', section: '부동산방문' },
   ],
   decide: [
     { text: '점유자 다시 연락·재방문', cat: 'evict', tab: 'evict', group: 'ev.step', branch: 1 },
     { text: '내부·관리비 확인', cat: 'evict', tab: 'win', group: 'visit', section: '내부확인' },
-    { text: '1차 내용증명 준비', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c5'] },
+    { text: '1차 내용증명 준비', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c5'], labels: { 폐문부재연락부재: '내용증명' } },
   ],
   confirm: [
     { text: '이사 날짜 확정 — 잔금 납부일 이전', cat: 'evict', tab: 'win', group: 'visit', noCount: true },
