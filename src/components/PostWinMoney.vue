@@ -7,7 +7,7 @@ import { useAuthStore } from '../stores/authStore';
 import { loadAccountDetail } from '../services/authRepository';
 import type { AuctionDetail } from '../types/auction';
 import FormattedNumberInput from './FormattedNumberInput.vue';
-import { EVICT_DEFAULT, dealCost, execCost, monthlyCarry, taxOf, transferTaxOf, type EvictInput, type HoldTerm } from '../services/postWinMoney';
+import { EVICT_BASIS, EVICT_DEFAULT, dealCost, execCost, monthlyCarry, taxOf, transferTaxOf, type EvictInput, type HoldTerm } from '../services/postWinMoney';
 
 const props = defineProps<{ auction: AuctionDetail | null; mode: 'evict' | 'tax' }>();
 
@@ -41,9 +41,9 @@ const seedTax = () => {
     ad: c?.advertisingCost || 0,
   };
 };
-const ev = ref<EvictInput>({ ...seedEvict(), ...((read().ev as object) ?? {}) });
-// 예전 기본값(평당 10만원)이 그대로 남아 있으면 새 기본값으로 — 손으로 고친 값은 둔다
-if (ev.value.laborPerPyeong === 100_000) ev.value.laborPerPyeong = EVICT_DEFAULT.laborPerPyeong;
+// 예전 셈(노무비 평당 · 이사비 한 덩어리)으로 기억된 값은 버리고 새 기준으로 — 칸이 바뀌었다
+const savedEv = (read().ev as Record<string, unknown> | undefined);
+const ev = ref<EvictInput>({ ...seedEvict(), ...(savedEv && !('laborPerPyeong' in savedEv) ? savedEv : {}) });
 const tx = ref({ ...seedTax(), ...((read().tx as object) ?? {}) });
 /** 세금분석의 명도비 — 명도분석의 어느 쪽으로 넣을지 */
 const evictPick = ref<'deal' | 'exec'>((read().pick as 'deal' | 'exec') || 'deal');
@@ -68,9 +68,10 @@ const exec = computed(() => execCost(ev.value));
 const save = computed(() => exec.value.total - deal.value.total);
 const EV_FIELDS: Array<[keyof EvictInput, string, string]> = [
   ['loan', '대출금', '원'], ['ratePct', '연 금리', '%'], ['monthlyFee', '한 달 관리비 · 공과금', '원'], ['pyeong', '전용 평수', '평'],
-  ['moveMoney', '이사비(협의)', '원'], ['dealMonths', '협의 때 걸리는 달', '개월'], ['orderCost', '인도명령 인지 · 송달료', '원'], ['noticeCost', '내용증명 한 번', '원'],
-  ['execBase', '집행 접수 · 계고 예납', '원'], ['laborPerPyeong', '노무비(평당 · 보통 15~20만원)', '원'], ['truck', '사다리차 · 운반', '원'], ['storagePerMonth', '짐 보관료(한 달)', '원'],
-  ['storageMonths', '보관 달', '개월'], ['serveExtra', '특별 · 공시송달', '원'], ['execMonths', '강제집행 때 걸리는 달', '개월'],
+  ['movePerPyeong', '이사비(평당)', '원'], ['dealMonths', '협의 때 걸리는 달', '개월'], ['orderCost', '인도명령 인지 · 송달료', '원'], ['noticeCost', '내용증명 한 번', '원'],
+  ['execBase', '집행 접수 · 계고 예납', '원'], ['laborDaily', '노무자 일당', '원'], ['locksmith', '열쇠공(개문)', '원'], ['truck', '운반(트럭)', '원'],
+  ['ladder', '사다리차', '원'], ['storagePerMonth', '짐 보관료(한 달)', '원'], ['storageMonths', '보관 달', '개월'], ['serveExtra', '특별 · 공시송달', '원'],
+  ['execMonths', '강제집행 때 걸리는 달', '개월'],
 ];
 const RISKS: Array<[string, string]> = [
   ['대항력 있는 임차인', '보증금을 낙찰자가 물어 줘야 할 수 있다 — 인도명령 대상도 아니다'],
@@ -133,7 +134,8 @@ const result = computed(() => (who.value === 'biz'
           <span class="pwm-in"><FormattedNumberInput v-model="ev[k] as number" live-group :max-fraction-digits="unit === '%' ? 2 : 0" /><em>{{ unit }}</em></span>
         </label>
       </div>
-      <p class="pwm-note">기본값은 대략의 시세입니다 — 업체 견적 · 법원 예납 고지를 받으면 고쳐 쓰세요.</p>
+      <ul class="pwm-basis"><li v-for="b in EVICT_BASIS" :key="b">{{ b }}</li></ul>
+      <p class="pwm-note">기본값은 위 시세를 따른 대략 값입니다 — 업체 견적 · 법원 예납 고지를 받으면 고쳐 쓰세요.</p>
     </template>
 
     <!-- ===== 세금분석 ===== -->
@@ -217,6 +219,7 @@ const result = computed(() => (who.value === 'biz'
 .pwm-in :deep(input) { width: 100%; min-width: 0; height: 34px; padding: 0 10px; border: 1px solid #d0d5dd; border-radius: 6px; font-size: 14px; color: #111827; background: #fff; box-sizing: border-box; }
 .pwm-fields.one .pwm-in { width: 220px; }
 .pwm-in em { font-style: normal; font-size: 14px; color: #6b7280; white-space: nowrap; }
+.pwm-basis { margin: 12px 0 0; padding-left: 18px; font-size: 14px; color: #4b5563; line-height: 1.7; }
 .pwm-note { margin: 10px 0 0; font-size: 14px; color: #9ca3af; }
 .pwm-reset { margin-left: auto; height: 30px; padding: 0 12px; border: 1px solid #d0d5dd; border-radius: 6px; background: #fff; color: #374151; font-size: 14px; cursor: pointer; }
 .pwm-who { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }

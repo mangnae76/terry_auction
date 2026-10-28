@@ -3,25 +3,27 @@
 
 import { taxChainOf } from './profitMath';
 
-/** 명도비용 입력 — 기본값은 대략의 시세, 화면에서 고친다 */
+/** 명도비용 입력 — 기본값은 아래 근거(EVICT_BASIS)의 시세, 화면에서 고친다 */
 export interface EvictInput {
   /** 대출금 · 연 금리(%) — 늦어지는 달마다 이자가 나간다 */
   loan: number;
   ratePct: number;
   /** 한 달 관리비 · 공과금 */
   monthlyFee: number;
-  /** 전용 평수 — 강제집행 노무비를 평으로 셈한다 */
+  /** 전용 평수 — 이사비 · 노무 인원을 평으로 셈한다 */
   pyeong: number;
   // 협의로 끝날 때
-  moveMoney: number;      // 이사비
+  movePerPyeong: number;  // 이사비(평당) — 포장이사 시세
   noticeCost: number;     // 내용증명 등 우편
   orderCost: number;      // 인도명령 인지 · 송달료
   dealMonths: number;     // 잔금 뒤 명도까지 걸리는 달
   // 강제집행까지 갈 때
   serveExtra: number;     // 특별송달 · 공시송달 등
   execBase: number;       // 집행 접수 · 계고 예납
-  laborPerPyeong: number; // 노무비(평당)
-  truck: number;          // 사다리차 · 운반
+  laborDaily: number;     // 노무자 1명 일당
+  locksmith: number;      // 열쇠공(개문)
+  truck: number;          // 운반(트럭)
+  ladder: number;         // 사다리차
   storagePerMonth: number;// 짐 보관료(한 달)
   storageMonths: number;  // 보관 달
   execMonths: number;     // 잔금 뒤 명도까지 걸리는 달
@@ -32,46 +34,69 @@ export const EVICT_DEFAULT: EvictInput = {
   ratePct: 5,
   monthlyFee: 200_000,
   pyeong: 25,
-  moveMoney: 2_000_000,
+  movePerPyeong: 45_000,
   noticeCost: 10_000,
   orderCost: 50_000,
   dealMonths: 1,
   serveExtra: 50_000,
-  execBase: 200_000,
-  laborPerPyeong: 200_000,   // 보통 평당 15~20만원 — 넉넉히 잡는다
-  truck: 300_000,
-  storagePerMonth: 400_000,
+  execBase: 300_000,
+  laborDaily: 120_000,
+  locksmith: 100_000,
+  truck: 500_000,
+  ladder: 200_000,
+  storagePerMonth: 200_000,
   storageMonths: 3,
   execMonths: 4,
 };
+
+/** 기본값의 근거 — 화면 '셈에 쓴 값' 아래에 그대로 보인다 (2026-10 웹 자료 기준, 지역 · 짐 양에 따라 다르다) */
+export const EVICT_BASIS: string[] = [
+  '이사비 — 포장이사 시세(20평대 85~100만원 · 30평대 100~130만원)를 평당 약 4.5만원으로 잡았다. 주거용 이사비 합의는 100만원 안팎이 흔하고, 강제집행 예상비를 넘기지 않는다',
+  '노무비 — 노무자 1명 일당 약 12만원 × 인원. 인원은 평수 ÷ 3(최소 4명) — 33평(84㎡) 아파트에 10~12명',
+  '집행 접수 · 계고 예납 — 계고(집행관 출장) 약 20만원 + 접수 · 수수료',
+  '운반 — 1톤 15만원 · 5톤 50만원(짐이 많으면 5톤) · 짐 보관 — 컨테이너 월 10~30만원',
+  '열쇠공(개문) 10만원 이상 · 사다리차 6층 16만원 · 20층 28만원',
+];
 
 export interface CostLine { label: string; amount: number }
 
 /** 늦어지는 달마다 나가는 돈(이자 + 관리비) */
 export const monthlyCarry = (i: EvictInput) => Math.round((i.loan * i.ratePct) / 100 / 12) + i.monthlyFee;
-
-/** 협의로 끝날 때 */
-export const dealCost = (i: EvictInput): { lines: CostLine[]; total: number } => {
-  const lines: CostLine[] = [
-    { label: '이사비', amount: i.moveMoney },
-    { label: '내용증명 · 우편', amount: i.noticeCost },
-    { label: '인도명령 신청(인지 · 송달료)', amount: i.orderCost },
-    { label: `늦어지는 ${i.dealMonths}개월 이자 · 관리비`, amount: monthlyCarry(i) * i.dealMonths },
-  ];
-  return { lines, total: lines.reduce((a, b) => a + b.amount, 0) };
-};
+/** 강제집행 노무 인원 — 평수 ÷ 3, 최소 4명 */
+export const crewOf = (i: EvictInput) => Math.max(4, Math.ceil(i.pyeong / 3));
+const won = (n: number) => n.toLocaleString('ko-KR');
 
 /** 강제집행까지 갈 때 — 이사비는 주지 않는다 */
-export const execCost = (i: EvictInput): { lines: CostLine[]; total: number } => {
+export const execCost = (i: EvictInput): { lines: CostLine[]; total: number; direct: number } => {
+  const crew = crewOf(i);
+  const direct: CostLine[] = [
+    { label: '집행 접수 · 계고 예납', amount: i.execBase },
+    { label: `노무비(${crew}명 × 일당 ${won(i.laborDaily)}원)`, amount: i.laborDaily * crew },
+    { label: '열쇠공(개문)', amount: i.locksmith },
+    { label: '운반(트럭)', amount: i.truck },
+    { label: '사다리차', amount: i.ladder },
+    { label: `짐 보관료(${i.storageMonths}개월 × ${won(i.storagePerMonth)}원)`, amount: i.storagePerMonth * i.storageMonths },
+  ];
   const lines: CostLine[] = [
     { label: '내용증명 · 우편', amount: i.noticeCost * 2 },
     { label: '인도명령 신청(인지 · 송달료)', amount: i.orderCost },
     { label: '특별송달 · 공시송달', amount: i.serveExtra },
-    { label: '집행 접수 · 계고 예납', amount: i.execBase },
-    { label: `노무비(${i.pyeong}평 × 평당 ${i.laborPerPyeong.toLocaleString('ko-KR')}원)`, amount: i.laborPerPyeong * i.pyeong },
-    { label: '사다리차 · 운반', amount: i.truck },
-    { label: `짐 보관료(${i.storageMonths}개월)`, amount: i.storagePerMonth * i.storageMonths },
+    ...direct,
     { label: `늦어지는 ${i.execMonths}개월 이자 · 관리비`, amount: monthlyCarry(i) * i.execMonths },
+  ];
+  return { lines, total: lines.reduce((a, b) => a + b.amount, 0), direct: direct.reduce((a, b) => a + b.amount, 0) };
+};
+
+/** 이사비 — 평당 × 평수, 강제집행 직접비를 넘지 않게 */
+export const moveMoneyOf = (i: EvictInput) => Math.min(i.movePerPyeong * i.pyeong, execCost(i).direct);
+
+/** 협의로 끝날 때 */
+export const dealCost = (i: EvictInput): { lines: CostLine[]; total: number } => {
+  const lines: CostLine[] = [
+    { label: `이사비(${i.pyeong}평 × 평당 ${won(i.movePerPyeong)}원)`, amount: moveMoneyOf(i) },
+    { label: '내용증명 · 우편', amount: i.noticeCost },
+    { label: '인도명령 신청(인지 · 송달료)', amount: i.orderCost },
+    { label: `늦어지는 ${i.dealMonths}개월 이자 · 관리비`, amount: monthlyCarry(i) * i.dealMonths },
   ];
   return { lines, total: lines.reduce((a, b) => a + b.amount, 0) };
 };
