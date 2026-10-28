@@ -847,6 +847,7 @@ const downloadCsv = () => {
         v-if="webEmbed && listView === 'map'"
         :embed="mapEmbed"
         :run="mapRun"
+        :chip="snapChip"
         @pick-dong="(d: string) => { dong = d; }"
       />
       <template v-if="all.length > 0 && listView !== 'map'">

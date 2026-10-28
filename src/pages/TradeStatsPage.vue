@@ -44,7 +44,8 @@ const webEmbed = inject<boolean>('webEmbed', false);
 /** 웹 지역분석 › 지도 탭에 들어갈 때 — 고르는 칸은 지역분석 것을 쓰고, 조회(run)가 늘 때마다 같은 조건으로 받아 그린다.
  *  지도에서 동을 누르면 pick-dong 으로 지역분석에 알린다 */
 type EmbedFilter = { sido: string; district: string; dong: string; kind: PropertyType; deal: 'sale' | 'rent'; months: number };
-const props = defineProps<{ embed?: EmbedFilter | null; run?: number }>();
+/** chip — 지역분석에 붙어 쓸 때 지역분석의 저장 칩(저장된 자료 · 방금 받아 저장)을 받아 그대로 보인다 */
+const props = defineProps<{ embed?: EmbedFilter | null; run?: number; chip?: { tone: string; text: string } | null }>();
 const emit = defineEmits<{ (e: 'pick-dong', dong: string): void }>();
 /** 고르는 칸을 옮겨 넣을 왼쪽 판 자리 — 화면마다 다른 이름을 써서, 같은 화면이 둘 떠도 칸이 한 판에 두 벌 들어가지 않게 */
 const filterSlotId = `tsp-filter-slot-${Math.random().toString(36).slice(2, 8)}`;
@@ -230,12 +231,17 @@ const isLightBadge = (rank: number) => (rank > TOP_N
   ? webEmbed
   : isPaleHue(hueOf(rank)) || (webEmbed && hueOf(rank) >= 100 && hueOf(rank) <= 170));
 
-/** 지도 표시 — 등수·동 이름·평균가를 한 알약에 담는다 (전에는 동그라미와 이름표가 따로였다) */
+/** 웹 — 지도 알약에 보일 값 하나: 거래건수 · 평균가 · 평당가 (통계 정보 위 단추로 고른다) */
+type PinMetric = 'count' | 'avg' | 'unit';
+const pinMetric = ref<PinMetric>('count');
+const pinValue = (row: RankedRow) => (pinMetric.value === 'avg' ? shortWon(row.avgPrice)
+  : pinMetric.value === 'unit' ? `평${manWon(unitOf(row))}` : `${row.count.toLocaleString('ko-KR')}건`);
+/** 지도 표시 — 등수·동 이름·고른 값을 한 알약에 담는다 (전에는 동그라미와 이름표가 따로였다) */
 const makePin = (row: RankedRow) => {
   const [, deep] = paletteColors(row.rank);
   const color = isLightBadge(row.rank) ? '#1e293b' : '#fff';
   const top = row.rank <= TOP_N ? ' top' : '';
-  const value = `${row.count.toLocaleString('ko-KR')}건`;
+  const value = pinValue(row);
   return L.divIcon({
     className: 'trade-map-marker-wrap',
     html: `<div class="trade-map-pin${top}" style="background:${deep};color:${color}">`
@@ -294,6 +300,11 @@ const drawMap = async () => {
     leafletMap.fitBounds(L.latLngBounds(plotted), { padding: [40, 40], maxZoom: 14 });
   }
 };
+
+// 값만 바꿔 그린다 — 지도 위치 · 확대는 그대로
+watch(pinMetric, () => {
+  allRankedRows.value.forEach((row) => { markerByRegion.get(row.region)?.setIcon(makePin(row)); });
+});
 
 const focusRegion = (region: string) => {
   selectedRegion.value = region;
@@ -654,7 +665,7 @@ onMounted(async () => {
           </header>
           <div v-if="webEmbed" :id="filterSlotId" class="tsp-filter-slot" />
           <div v-if="webEmbed" class="tsp-web-picked">
-            <strong class="tsp-picked-title">{{ pickedPlaceText }}<SnapChip :chip="snap.chip.value" /></strong>
+            <strong class="tsp-picked-title">{{ pickedPlaceText }}<SnapChip :chip="embed ? (chip ?? null) : snap.chip.value" /></strong>
             <small v-if="periodText || kindLabel">{{ [periodText, kindLabel, dealKindLabel, rows.length > 0 ? `집계 동 ${selectedRegion ? 1 : rows.length.toLocaleString('ko-KR')}곳` : ''].filter(Boolean).join(' · ') }}</small>
           </div>
           <header v-if="!webEmbed" class="tsp-panel-head">
@@ -663,6 +674,12 @@ onMounted(async () => {
             <small v-else>지역과 기간을 고르고 {{ webEmbed ? '조회' : '검색' }}를 누르세요</small>
           </header>
 
+          <!-- 웹 — 지도 알약에 무엇을 보일지 하나씩 고른다 -->
+          <div v-if="webEmbed" class="tsp-metric" role="tablist">
+            <button type="button" :class="{ on: pinMetric === 'count' }" @click="pinMetric = 'count'">거래건수</button>
+            <button type="button" :class="{ on: pinMetric === 'avg' }" @click="pinMetric = 'avg'">{{ avgLabel.replace(/\s/g, '') }}</button>
+            <button type="button" :class="{ on: pinMetric === 'unit' }" @click="pinMetric = 'unit'">평당가</button>
+          </div>
           <section class="tsp-stat">
             <h3>통계 정보</h3>
             <!-- 웹 — 첫 줄 거래 건수 · 거래 총액, 둘째 줄 평균가 · 평당 단가 (집계 동은 위 결과 줄에) -->
@@ -868,6 +885,10 @@ onMounted(async () => {
   display: flex; align-items: baseline; gap: 6px;
 }
 .tsp-panel h3 small { margin-left: auto; font-size: 11px; font-weight: 700; color: #9ca3af; }
+/* 지도 값 고르기 — 통계 정보 위 세 단추(같은 폭) */
+.tsp-metric { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; margin: 0 0 12px; background: #f1f4f9; border-radius: 8px; }
+.tsp-metric button { height: 32px; border: 0; border-radius: 6px; background: transparent; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; }
+.tsp-metric button.on { background: #fff; color: #1f2a44; box-shadow: 0 1px 2px rgba(15, 23, 42, .1); }
 /* 통계 정보 — 네 칸짜리 작은 표 */
 .tsp-stat-grid {
   display: grid; grid-template-columns: 1fr 1fr;
