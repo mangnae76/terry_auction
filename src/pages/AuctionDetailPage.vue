@@ -3560,6 +3560,8 @@ const dmClearParts = computed<Array<[string, string]>>(() => {
 });
 /** 숫자를 천 단위로, 없으면 '-' */
 const dmIntText = (value: number) => (value > 0 ? Math.round(value).toLocaleString('ko-KR') : '-');
+/** 월평균 거래량 — 웹 수요분석과 같게 소수 한 자리(반올림) */
+const dmOneText = (value: number) => (value > 0 ? (Math.round(value * 10) / 10).toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '-');
 const dmRateText = (value: number) => (value > 0 ? value.toFixed(2) : '-');
 
 const isChecklistOn = (id: string) => fieldVal(id) === 'Y';
@@ -7853,7 +7855,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell-body">
                     <!-- 12개월 거래량은 국토부 실거래 자동값만 — 손으로 적지 않는다(고치기 중에도 글로만) -->
-                    <strong class="hi-blue adp-dm-two"><em class="adp-dm-pre">연</em><span class="num">{{ dmIntText(deal12mValue) }}</span><em class="adp-dm-bar">|</em><em class="adp-dm-pre">월</em><span class="num">{{ dmIntText(dmMonthly) }}</span></strong>
+                    <strong class="hi-blue adp-dm-two"><em class="adp-dm-pre">연</em><span class="num">{{ dmIntText(deal12mValue) }}</span><em class="adp-dm-bar">|</em><em class="adp-dm-pre">월</em><span class="num">{{ dmOneText(dmMonthly) }}</span></strong>
                   </div>
                 </div>
                 <div :class="['cell split', { lit: dmLit('units') }]" @mouseenter="dmLitEnter('units')" @mouseleave="dmLitLeave()" @click="dmLitTap('units')">
