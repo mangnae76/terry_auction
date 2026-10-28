@@ -1042,10 +1042,11 @@ const BLD_TITLE_API_PATH =
 
 /** 그 법정동의 다세대·연립 세대수 합 — 건축물대장 표제부를 모두 훑어 더한다.
  *  주용도가 '공동주택'인 건물 중 아파트를 뺀 것이 다세대·연립(+도시형생활주택)이다. */
-export const fetchDongHouseholds = async (bCode10: string): Promise<number> => {
+/** 그 동의 건축물대장 표제부 — 같은 건물은 한 번만(대장 고유번호) */
+const fetchDongTitleRows = async (bCode10: string): Promise<Record<string, unknown>[]> => {
   const sigunguCd = bCode10.slice(0, 5);
   const bjdongCd = bCode10.slice(5, 10);
-  if (sigunguCd.length < 5 || bjdongCd.length < 5) return 0;
+  if (sigunguCd.length < 5 || bjdongCd.length < 5) return [];
   const PAGE = 100; // 이 API는 한 번에 100건까지만 준다
   const call = async (pageNo: number) => {
     const url = buildApiUrl(BLD_TITLE_API_PATH);
@@ -1062,24 +1063,39 @@ export const fetchDongHouseholds = async (bCode10: string): Promise<number> => {
   const code = String(first?.response?.header?.resultCode ?? '00');
   if (!/^0+$/.test(code)) throw new Error(`건축물대장 조회 실패(${code} ${String(first?.response?.header?.resultMsg ?? '')})`);
   const total = Number(first?.response?.body?.totalCount ?? 0) || 0;
-  if (total === 0) return 0;
+  if (total === 0) return [];
   const pages = Math.min(40, Math.ceil(total / PAGE));
   const rest = await inBatches(
     Array.from({ length: Math.max(0, pages - 1) }, (_, i) => () => call(i + 2)),
   );
   const rows: Record<string, unknown>[] = [];
   [first, ...rest].forEach((json) => rows.push(...asArray(json?.response?.body?.items?.item)));
-  // 같은 건물이 여러 번 올 수 있다 — 대장 고유번호로 한 번만 센다
   const seen = new Map<string, Record<string, unknown>>();
   rows.forEach((r) => seen.set(String(r.mgmBldrgstPk ?? `${r.platPlc}|${r.bldNm}|${r.dongNm}`), r));
-  let sum = 0;
-  seen.forEach((r) => {
-    if (String(r.mainPurpsCdNm ?? '') !== '공동주택') return;
-    if (/아파트/.test(String(r.etcPurps ?? ''))) return;
-    sum += Number(String(r.hhldCnt ?? '').replace(/[^\d]/g, '')) || 0;
-  });
-  return sum;
+  return [...seen.values()];
 };
+const cnt = (v: unknown) => Number(String(v ?? '').replace(/[^\d]/g, '')) || 0;
+/** 종류별 세대수 — 연립·다세대(공동주택 중 아파트 아님) · 아파트(공동주택 중 아파트) · 오피스텔(호수) */
+export type DongUnits = { villa: number; apt: number; officetel: number };
+export const dongUnitsOf = (rows: Record<string, unknown>[]): DongUnits => {
+  const out: DongUnits = { villa: 0, apt: 0, officetel: 0 };
+  rows.forEach((r) => {
+    const main = String(r.mainPurpsCdNm ?? '');
+    const etc = String(r.etcPurps ?? '');
+    if (main === '공동주택') {
+      if (/아파트/.test(etc)) out.apt += cnt(r.hhldCnt);
+      else out.villa += cnt(r.hhldCnt);
+    } else if (/오피스텔/.test(etc) || /오피스텔/.test(main)) {
+      // 오피스텔은 세대수 칸이 비어 오는 일이 많다 — 호수를 쓴다
+      out.officetel += cnt(r.hoCnt) || cnt(r.hhldCnt);
+    }
+  });
+  return out;
+};
+/** 그 동의 종류별 세대수 한 번에(웹 수요분석) */
+export const fetchDongUnits = async (bCode10: string): Promise<DongUnits> => dongUnitsOf(await fetchDongTitleRows(bCode10));
+/** 그 동의 연립·다세대 세대수(물건상세 매매수요) */
+export const fetchDongHouseholds = async (bCode10: string): Promise<number> => (await fetchDongUnits(bCode10)).villa;
 
 /** 단지 이력을 몇 년치 볼 것인가 — 그보다 오래된 거래는 시세로 쓰기 어렵다 */
 // 단지 전체 실거래 — 2년만 받았더니 '그 호실이 언제 얼마에 팔렸나'가 창 밖으로 나가

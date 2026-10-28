@@ -6,7 +6,8 @@
 //
 // 국토부 실거래는 '시군구 + 달' 로 부르면 읍면동이 한꺼번에 오므로,
 // 12개월치 열두 번이면 표가 다 찬다 (동마다 부르지 않는다).
-// 총 세대수는 건축물대장(연립·다세대)에서 동마다 받아 채운다 — 물건상세 손품조사와 같은 값 · 같은 저장소(30일).
+// 총 세대수는 건축물대장에서 동마다 받아 채운다 — 연립·다세대 · 아파트 · 오피스텔(호수) 종류별로, 30일 저장.
+// 연립·다세대 값은 물건상세 손품조사와 같은 셈이다.
 // 손으로 적으면 그 값이 우선. 총 매물수는 공식 API 가 아니라 손으로 적는다.
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
@@ -16,7 +17,7 @@ import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
-import { dongStatsFromRows, fetchDongHouseholds, fetchDongTradeStats, tradeWindowOf, ymd8Of, type DongTradeDetailRow, type DongTradeStat } from '../services/publicDataApi';
+import { dongStatsFromRows, fetchDongUnits, fetchDongTradeStats, tradeWindowOf, ymd8Of, type DongTradeDetailRow, type DongTradeStat } from '../services/publicDataApi';
 import { resolveRegionFromAddress } from '../services/regionResolver';
 import { cachedEntryOrStale, cacheKey, CACHE_TTL } from '../services/marketCache';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
@@ -118,8 +119,8 @@ const setManual = (sigungu: string, umdNm: string, field: keyof Manual, raw: str
 const autoUnits = ref<Record<string, number>>({});
 let unitsJob = 0;
 const fetchAutoUnits = async () => {
-  if (kind.value !== 'villa') return; // 건축물대장 합산은 연립·다세대만 센다
   const job = ++unitsJob;
+  const k = kind.value;
   const targets = stats.value.filter((r) => !(rowKey(r.sigungu, r.umdNm) in autoUnits.value));
   // 하루 한도가 있어 둘씩 차례로 — 한 번 받은 동은 30일 저장(물건상세와 같은 저장소)
   for (let i = 0; i < targets.length; i += 2) {
@@ -129,9 +130,10 @@ const fetchAutoUnits = async () => {
       try {
         const region = await resolveRegionFromAddress(`${sido.value} ${r.sigungu} ${r.umdNm}`);
         if (region?.bCode10) {
-          const got = await cachedEntryOrStale('cacheDongUnits', cacheKey(region.bCode10), CACHE_TTL.units,
-            () => fetchDongHouseholds(region.bCode10), (n) => n > 0, 365 * 24 * 60 * 60 * 1000);
-          if (got.value !== null) value = got.value;
+          // 한 번 받으면 세 종류가 다 나온다 — 종류를 바꿔도 다시 부르지 않게 동 하나에 한 벌로 저장
+          const got = await cachedEntryOrStale('cacheDongUnitsAll', cacheKey(region.bCode10), CACHE_TTL.units,
+            () => fetchDongUnits(region.bCode10), (u) => u.villa + u.apt + u.officetel > 0, 365 * 24 * 60 * 60 * 1000);
+          if (got.value !== null) value = got.value[k];
         }
       } catch { /* 못 받음 */ }
       if (job !== unitsJob) return;
@@ -143,12 +145,12 @@ const fetchAutoUnits = async () => {
 watch([stats, kind], () => { void fetchAutoUnits(); });
 /** 총 세대수 칸의 흐린 글 — 받은 값 · 0(없음) · 못 받음 · 받는 중 */
 const unitsHint = (sigungu: string, umdNm: string) => {
-  if (kind.value !== 'villa') return { text: '-', tip: '건축물대장 세대수는 연립·다세대만 셉니다' };
+  const what = kind.value === 'apt' ? '아파트 세대수' : kind.value === 'officetel' ? '오피스텔 호수' : '연립·다세대 세대수';
   const v = autoUnits.value[rowKey(sigungu, umdNm)];
   if (v === undefined) return { text: '받는 중', tip: '건축물대장에서 세대수를 받는 중' };
   if (v < 0) return { text: '못 받음', tip: '건축물대장 조회 실패(하루 한도 · 오류) — 내일 다시 조회해 주세요' };
-  if (v === 0) return { text: '0', tip: '건축물대장에 연립·다세대가 없음(아파트만 있거나 공동주택이 없는 동)' };
-  return { text: v.toLocaleString('ko-KR'), tip: '건축물대장 연립·다세대 세대수 합 — 적으면 그 값이 우선' };
+  if (v === 0) return { text: '0', tip: `건축물대장에 해당 건물이 없음(${what} 0)` };
+  return { text: v.toLocaleString('ko-KR'), tip: `건축물대장 ${what} 합` };
 };
 
 /** 네 지표 — 손품+현장의 매매수요와 같은 식이다 */
@@ -612,7 +614,7 @@ const downloadCsv = () => {
       <p v-if="rows.length > 0" class="adm-foot">
         회전율 = 1년 거래량 ÷ 세대수 &nbsp;·&nbsp; 소화율 = 1년 거래량 ÷ 매물수 &nbsp;·&nbsp;
         부담율 = 매물수 ÷ 세대수 &nbsp;·&nbsp; 소진기간 = 매물수 ÷ 월평균 거래량.
-        총 세대수는 건축물대장(연립·다세대)에서 자동으로 채웁니다. 파란 칸(총 매물수)은 손으로 적습니다 — 적어 두면 다음에도 남습니다.
+        총 세대수는 건축물대장에서 자동으로 채웁니다(연립·다세대 · 아파트는 세대수, 오피스텔은 호수). 파란 칸(총 매물수)은 손으로 적습니다 — 적어 두면 다음에도 남습니다.
       </p>
     </div>
   </section>
@@ -719,7 +721,8 @@ const downloadCsv = () => {
 .adm-table thead th { background: #f7f9fc; color: #374151; font-weight: 700; }
 .adm-table thead tr.grp th { background: #eef2f7; font-size: 12px; font-weight: 800; color: #1f3a72; }
 /* 손으로 적는 칸은 파랗게 — 엑셀에서 쓰던 표시 그대로 */
-.adm-table thead th.in, .adm-table thead tr.grp th.in { background: #dbe6ff; color: #1b3f8f; }
+/* 손으로 적는 칸(총 매물수) 머리 — 아래 입력 칸과 같은 흐린 파랑 */
+.adm-table thead th.in, .adm-table thead tr.grp th.in { background: #f7faff; color: #1b3f8f; }
 .adm-table th small { display: block; font-size: 10px; font-weight: 600; color: #9ca3af; }
 .adm-table thead th.in small { color: #4b6cb7; }
 .adm-table tbody tr:last-child td { border-bottom: none; }
