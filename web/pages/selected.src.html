@@ -213,12 +213,12 @@ button { cursor: pointer; }
 .g-login .pic svg { width: 23px; height: 23px; }
 .g-login .txt { min-width: 67px; text-align: left; transition: color .15s; }
 .g-login.named .txt { color: var(--nav-name); }
-.g-login .txt .nim { font-size: .5em; } /* 이름 뒤 '님'은 이름의 절반 크기 */
+.g-login .txt .nim { font-size: .65em; } /* 이름 뒤 '님'은 이름의 절반 크기 */
 .g-login:hover .txt { color: #cfe0ff; }
 .g-login:hover .pic { color: #cfe0ff; }
 .g-login.named:hover .txt { color: #8fdcff; }
 .g-arrow { position: relative; margin-left: 4px; width: 14px; height: 24px; border: 0; padding: 0; background: transparent; display: grid; place-items: center; }
-.g-arrow i { width: 0; height: 0; border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; border-top: 8px solid var(--nav-orange); transition: transform .2s; }
+.g-arrow i { position: relative; top: 2px; width: 0; height: 0; border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; border-top: 8px solid var(--nav-orange); transition: transform .2s; }
 .g-arrow:hover i { transform: translateY(2px); }
 .g-arrow[aria-expanded="true"] i { transform: rotate(180deg); }
 .g-out, .g-join { position: relative; margin-left: 26px; height: 24px; display: inline-flex; align-items: center; border: 0; background: transparent; padding: 0; font-size: var(--menu-fs); font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; }

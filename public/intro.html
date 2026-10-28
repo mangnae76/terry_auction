@@ -131,6 +131,8 @@
     // 이 탭에서 대문을 한 번 봤다 — /web 으로 가면 다시 대문으로 돌려보내지 않는다
     try { sessionStorage.setItem('ta.intro.seen', '1'); } catch (e) { /* 그만 */ }
     const frame = document.getElementById('promo');
+    // 로그아웃하고 왔으면(?login=1) 영상이 처음부터 소리 없이 시작하게 — 영상이 늦게 떠도 소리가 새지 않는다
+    if (/[?&]login=1\b/.test(location.search)) frame.src = '/myturn-promo/index.html?mode=hero&muted=1';
     const sndBtn = document.getElementById('snd');
     const veil = document.getElementById('veil');
     const promo = () => frame.contentWindow && frame.contentWindow.MYTURN_PROMO;

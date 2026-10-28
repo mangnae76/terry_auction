@@ -63,6 +63,7 @@
   const DUR = window.DURATION || 42, probe = document.createElement('audio');
   const audio = new Audio(probe.canPlayType('audio/mp4; codecs="mp4a.40.2"') ? 'media/promo_audio.m4a' : 'media/promo_audio.mp3');
   audio.preload = 'auto';
+  if (/[?&]muted=1\b/.test(location.search)) audio.muted = true;   // 대문이 로그인 창부터 띄울 때 — 소리 없이 시작
   let state = 'idle', t0 = 0, held = 0, raf = 0, ready = false, wantPlay = false, started = false;
   // 대문 모드 — 소리와 함께 바로 재생, 끝나면 처음부터 되풀이.
   // 브라우저가 소리 있는 자동재생을 막으면 소리만 끄고 화면은 그대로 돌린다 — 바깥 대문에 알려 첫 손길에 소리를 켠다
