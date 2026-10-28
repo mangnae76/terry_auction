@@ -173,14 +173,14 @@ button { cursor: pointer; }
 .g-menu:hover { color: #cfe0ff; }
 .g-menu:hover::after { transform: scaleX(1); opacity: .55; }
 .g-menu.on::after { transform: scaleX(1); opacity: 1; }
-/* 아직 만들지 않은 메뉴(커뮤니티) — 회색으로 눌러도 반응 없는 듯 보이게, 아래 펼침 칸도 회색 */
+/* 아직 만들지 않은 메뉴(커뮤니티 · 매뉴얼) — 회색으로 눌러도 반응 없는 듯 보이게, 아래 펼침 칸도 회색 */
 .g-menu.off, .g-menu.off:hover { color: #6b7488; cursor: default; }
 .g-menu.off::after { display: none; }
-.g-col.m4 a, .g-col.m4 a:hover { color: #6b7488 !important; cursor: default; background: none !important; }
+.g-col:is(.m4, .m4m) a, .g-col:is(.m4, .m4m) a:hover { color: #6b7488 !important; cursor: default; background: none !important; }
 /* +물건등록이 선정목록 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
 /* 메뉴 여덟 — 예전 마이페이지를 빼고 더보기를 '마이페이지'로 이름을 바꾸며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
 .m0 { left: 13.75%; } .m1 { left: 22.40%; } .m2 { left: 30.24%; } .m3 { left: 38.08%; }
-.m3c { left: 45.93%; } .m4 { left: 53.77%; } .m5 { left: 61.61%; } /* 자금관리는 마이페이지 아래로 옮겨 한 칸씩 당겼다 */
+.m3c { left: 45.93%; } .m4 { left: 53.77%; } .m4m { left: 61.61%; } .m5 { left: 68.55%; } /* 자금관리는 마이페이지 아래로 옮겨 한 칸씩 당겼다 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 */
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: #fff !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
@@ -2281,6 +2281,8 @@ html, body { overflow-x: clip; }
 :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab)::after { display: none !important; }
 /* 탭 줄 밑선은 진하게 */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top::after { background: var(--boxtab-line) !important; z-index: 3; }
+/* 낙찰이후 — 탭을 눌러도 내용이 떠오르지 않게(장면 이동이 아니다 · 진행절차처럼 바로 바뀐다) */
+.app-page[data-k="postwin"] .pw-body { animation: none !important; }
 /* 박스 탭 밑선은 켜진 탭 위로 지나간다 — 낙찰이후 장 탭과 같게(켜진 탭이 선을 덮지 않는다) */
 /* 2단 밑줄 탭 — 고른 탭 밑줄을 굵게(3px) */
 .subtab::after { height: 3px !important; }
@@ -2411,6 +2413,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
       <a class="g-menu m3c" href="#/postwin" data-act="go-postwin" id="navPostwin">낙찰이후</a>
       <a class="g-menu m4 off" href="#" data-act="soon" data-name="커뮤니티" aria-disabled="true" title="준비 중">커뮤니티</a>
+      <a class="g-menu m4m off" href="#" data-act="soon" data-name="매뉴얼" aria-disabled="true" title="준비 중">매뉴얼</a>
       <a class="g-menu m5" href="#/more" data-act="go-more" id="navMore">마이페이지</a>
       <div class="pop-root" data-pop="all" style="display:contents">
         <button type="button" class="g-box" data-act="pop" data-id="all" aria-expanded="false" aria-controls="gMega" aria-label="메뉴 펼치기" data-tip="메뉴 펼치기" data-tip-pos="below">
@@ -2797,6 +2800,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     ['m3', [['지역분석', 'go-market'], ['경매지번 분석', 'go-market'], ['인근 매각물건 분석', 'go-market'], ['동일지번 매각물건 분석', 'go-market']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['인테리어', 'go-postwin'], ['매도·임대', 'go-postwin'], ['낙찰이후가이드', 'go-postwin']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
+    ['m4m', [['투자9단계', '']]],   /* 준비 중 — 물건선정부터 매도 · 세금까지 */
     ['m5', [['내 정보', 'go-more'], ['자금입출금', 'go-finance'], ['세금신고', 'go-finance'], ['알림', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['공지', 'go-more'], ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
   /* 지금 보고 있는 자리 — 펼칠 때마다 다시 그려 표시가 어긋나지 않게 한다 */
