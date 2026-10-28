@@ -80,15 +80,15 @@ export function useScreenSnapshot<T extends object>(key: string) {
   const at = (t: number) => {
     const d = new Date(t);
     const p2 = (n: number) => String(n).padStart(2, '0');
-    return `${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+    return `${String(d.getFullYear()).slice(2)}.${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
   };
-  /** 칩에 쓸 글과 모양 */
+  /** 칩에 쓸 글과 모양 — 글은 '26.10.29 15:37 조회' 하나로(방금 받은 것은 초록 · 저장해 둔 것은 파랑, 색으로만 가른다) */
   const chip = computed(() => {
     const st = state.value;
     if (!st) return null;
     if (st.kind === 'fail') return { tone: 'fail', text: '저장 못 함 — 새로고침하면 다시 조회해야 합니다' };
-    if (st.kind === 'updated') return { tone: 'ok', text: `업데이트 완료 · 저장됨 ${at(st.at)}` };
-    return { tone: 'saved', text: `저장된 자료 · ${at(st.at)} 조회` };
+    if (st.kind === 'updated') return { tone: 'ok', text: `${at(st.at)} 조회` };
+    return { tone: 'saved', text: `${at(st.at)} 조회` };
   });
 
   return { state, save, restore, patch, chip };
