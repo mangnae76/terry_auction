@@ -3424,7 +3424,6 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['계산', `정상 ${(deal12mAuto.value - deal12mDirect.value).toLocaleString('ko-KR')}건 + 직거래 ${deal12mDirect.value.toLocaleString('ko-KR')}건 = ${deal12mAuto.value.toLocaleString('ko-KR')}건`],
     ['제외', `계약해제 ${deal12mCancelled.value.toLocaleString('ko-KR')}건 (없던 거래)`],
     ['표시', '1년 거래량 | 월평균 거래량'],
-    ['수정', '직접 입력하면 그 값이 우선 · 비우면 자동값'],
   ] },
   units: { arrow: '37%', rows: [
     ['출처', '건축HUB(건축물대장) · 자동 입력'],
@@ -3493,7 +3492,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
 }));
 /** 12개월 거래량 — 국토부 실거래에서 센 값이 기본이고, 손으로 적으면 그 값이 우선.
  *  (총 세대수와 같은 방식. 비워 두면 다시 자동값으로 돌아간다) */
-const deal12mValue = computed(() => dmNum('fs.dm.deal12m') || deal12mAuto.value);
+const deal12mValue = computed(() => deal12mAuto.value); // 국토부 실거래 자동값만(손 입력은 받지 않는다)
 const dmUnits = computed(() => unitsAuto.value); // 건축물대장 자동값만(손 입력은 받지 않는다)
 const dmListings = computed(() => dmNum('fs.dm.listings'));  // 총 매물수 (네이버, 직접 입력)
 const dmMonthly = computed(() => deal12mValue.value / 12);   // 월평균 거래량
@@ -7858,10 +7857,8 @@ const goBack = () => router.back();
                     </button>
                   </div>
                   <div class="cell-body">
-                    <span v-if="editingSurvey.demand" class="adp-dm-pair">
-                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.deal12m')" :placeholder="deal12mAuto > 0 ? String(deal12mAuto) : '입력'" @input="setDmVal('fs.dm.deal12m', ($event.target as HTMLInputElement).value)" />
-                    </span>
-                    <strong v-else class="hi-blue adp-dm-two"><em class="adp-dm-pre">연</em><span class="num">{{ dmIntText(deal12mValue) }}</span><em class="adp-dm-bar">|</em><em class="adp-dm-pre">월</em><span class="num">{{ dmIntText(dmMonthly) }}</span></strong>
+                    <!-- 12개월 거래량은 국토부 실거래 자동값만 — 손으로 적지 않는다(고치기 중에도 글로만) -->
+                    <strong class="hi-blue adp-dm-two"><em class="adp-dm-pre">연</em><span class="num">{{ dmIntText(deal12mValue) }}</span><em class="adp-dm-bar">|</em><em class="adp-dm-pre">월</em><span class="num">{{ dmIntText(dmMonthly) }}</span></strong>
                   </div>
                 </div>
                 <div :class="['cell split', { lit: dmLit('units') }]" @mouseenter="dmLitEnter('units')" @mouseleave="dmLitLeave()" @click="dmLitTap('units')">
