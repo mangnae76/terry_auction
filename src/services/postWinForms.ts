@@ -192,3 +192,14 @@ export const FORMS_OF_ROW: Record<string, FormKey[]> = {
   'ev.move.m3': ['handover'],
   'ev.exe.a2': ['handover'],
 };
+
+/** 줄 옆 단추 이름 — 무슨 서식인지 바로 알게 */
+export const FORM_BTN: Record<FormKey, string> = {
+  memo: '메모 서식',
+  notice1: '내용증명 서식',
+  notice2: '내용증명 서식',
+  notice3: '내용증명 서식',
+  moveAgree: '합의서 서식',
+  proxy: '위임장 서식',
+  handover: '명도확인서 서식',
+};

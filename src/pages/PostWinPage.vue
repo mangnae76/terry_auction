@@ -26,7 +26,7 @@ import { propTypeName } from '../utils/propertyType';
 import type { AgencyRow, AuctionDetail } from '../types/auction';
 import PostWinTimeline from '../components/PostWinTimeline.vue';
 import PostWinForms from '../components/PostWinForms.vue';
-import { FORMS_OF_ROW, type FormKey } from '../services/postWinForms';
+import { FORM_BTN, FORMS_OF_ROW, type FormKey } from '../services/postWinForms';
 import { utilityLine } from '../services/utilityContacts';
 import { DETAIL_STEPS, STEP_TITLE, STEP_TODOS, type StepTodo } from '../services/postWinTodos';
 import { DETAIL_REPAIR, DETAIL_SELL, DETAIL_TAX } from '../services/postWinDetail';
@@ -1067,7 +1067,7 @@ const toggleSection = (key: string) => {
                         @click.stop
                       >{{ webLine(r.text) }}<span class="pw-ext">↗</span></a>
                       <!-- 웹 — '인터넷우체국'처럼 낱말에 걸린 링크는 그 낱말만 (앱은 그대로) -->
-                      <template v-else><template v-for="(pt, pi) in (webEmbed ? textParts(webLine(r.text)) : [{ t: webLine(r.text) }])" :key="pi"><a v-if="pt.href" class="pw-wordlink" :href="pt.href" target="_blank" rel="noopener" @click.stop>{{ pt.t }}<span class="pw-ext">↗</span></a><template v-else>{{ pt.t }}</template></template><button v-if="webEmbed && FORMS_OF_ROW[r.id]" type="button" class="pw-formbtn" @click.stop="formKeys = FORMS_OF_ROW[r.id]">서식</button></template>
+                      <template v-else><template v-for="(pt, pi) in (webEmbed ? textParts(webLine(r.text)) : [{ t: webLine(r.text) }])" :key="pi"><a v-if="pt.href" class="pw-wordlink" :href="pt.href" target="_blank" rel="noopener" @click.stop>{{ pt.t }}<span class="pw-ext">↗</span></a><template v-else>{{ pt.t }}</template></template><button v-if="webEmbed && FORMS_OF_ROW[r.id]" type="button" class="pw-formbtn" @click.stop="formKeys = FORMS_OF_ROW[r.id]">{{ FORM_BTN[FORMS_OF_ROW[r.id][0]] }}</button></template>
                     </td>
                     <!-- 부수 — 체크 왼쪽에 제 칸으로 -->
                     <td v-if="editing" class="pw-qty">
