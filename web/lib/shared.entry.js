@@ -224,7 +224,7 @@ export const mountAppFieldTrip = (el, onDetail) => {
 // === 낙찰이후 · 자금관리 · 더보기 — 앱 화면(PostWinPage · FinancePage · MorePage)을 그대로 띄운다 ===
 // 웹 하위 탭은 ?tab= 으로 고른다(앱 화면이 주소의 탭을 따른다). 계산·저장은 앱이 하던 그대로다.
 // 더보기 안에서 가는 앱 화면(포인트 · 결제관리 · 알림설정 …)도 같은 칸 안에서 앱 화면 그대로 연다 — '뒤로'로 돌아온다.
-// 웹이 받아야 하는 길(물건상세 · 로그인 · 선정목록 · 임장경로 · 다른 메뉴)은 hooks.onNav(웹 열쇠, 값)로 넘긴다.
+// 웹이 받아야 하는 길(물건상세 · 로그인 · 선정물건 · 임장경로 · 다른 메뉴)은 hooks.onNav(웹 열쇠, 값)로 넘긴다.
 import PostWinPage from '../../src/pages/PostWinPage.vue';
 import FinancePage from '../../src/pages/FinancePage.vue';
 import MorePage from '../../src/pages/MorePage.vue';

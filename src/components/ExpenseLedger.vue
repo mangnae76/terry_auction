@@ -208,10 +208,10 @@ defineExpose({ openAdd, exportCsv, total });
             <label>명세
               <select v-model="detailPick">
                 <template v-if="book === 'biz' && draft.category === '수리·인테리어'">
-                  <optgroup label="수리 — 사업경비">
+                  <optgroup label="수익적지출 — 사업경비">
                     <option v-for="d in itemsOf(draft.category)" :key="d" :value="d">{{ d }}</option>
                   </optgroup>
-                  <optgroup label="자본적지출 — 필요경비로 갑니다">
+                  <optgroup label="자본적지출 — 필요경비">
                     <option v-for="d in CAPITAL_ITEMS" :key="d" :value="d">{{ d }}</option>
                   </optgroup>
                 </template>
