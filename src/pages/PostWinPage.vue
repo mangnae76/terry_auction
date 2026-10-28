@@ -303,7 +303,7 @@ const todoCard = (t: StepTodo, key: string, sup = ''): CheckGroup | null => {
   const addr = picked.value?.address ?? '';
   const sections = card.sections.map((sec) => ({ ...sec, rows: sec.rows.map((r) => { const line = utilityLine(r.id, addr); return line ? { ...r, text: line } : r; }) }));
   if (t.form) cardFormOf.set(key, t.form);
-  return { ...card, sections, key, title: t.cardTitle ?? t.text, super: sup, webOnly: false };
+  return { ...card, sections, key, title: t.cardTitle ?? t.text, note: t.cardNote ?? card.note, super: sup, webOnly: false };
 };
 /** 큰일 하나가 띄우는 카드들 — 함께 띄울 카드(also)까지 */
 const todoCards = (t: StepTodo, key: string, sup = ''): CheckGroup[] => {

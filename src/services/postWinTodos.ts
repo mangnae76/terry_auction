@@ -28,6 +28,8 @@ export interface StepTodo {
   noCount?: boolean;
   /** 이 카드에서 서식을 열면 먼저 보일 서식(내용증명 몇 차 등) */
   form?: string;
+  /** 카드 맨 위 안내줄 — 원본 상자의 안내 대신 */
+  cardNote?: string;
   /** 카드 제목 — 없으면 큰일 이름 */
   cardTitle?: string;
   /** 같이 띄울 카드(상자 · 제목) */
@@ -98,11 +100,14 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
       memos: { 'ln.d12': '유효기간 한 달', 'ln.d3': '' },
     },
     { text: '법무비용 확인', cat: 'loan', tab: 'balance', group: 'loan.legal' },
-    { text: '잔금 납부·완납증명', cat: 'proc', tab: 'balance', group: 'loan.self', section: ['1단계경매계방문', '2단계은행·잔금납부', '3단계완납증명원'] },
-    // 4 · 5단계를 한 줄로 — 창에는 두 칸이 같이 뜬다
-    { text: '취득세 신고·납부 · 등기 촉탁', cat: 'proc', tab: 'balance', group: 'loan.self', section: ['4단계취득세신고·납부', '5단계등기촉탁'] },
-    // 같은 날 함께 내는 일이라 한 줄로 — 창에는 두 카드가 같이 뜬다
-    { text: '인도명령 · 점유이전금지 가처분', cat: 'evict', tab: 'evict', group: 'ev.order', cardTitle: '인도명령 신청', also: [{ group: 'ev.hold', title: '점유이전금지 가처분(필요 시)' }] },
+    // 잔금 납부 · 완납증명 · 취득세 · 등기 촉탁 · 인도명령 · 점유이전금지 가처분은 한 묶음 —
+    // 법무사에 맡기면 법무사가 다 하고, 셀프일 때만 직접 한다. 그래서 한 줄로 묶고 창 맨 위에 그 안내를 단다
+    {
+      text: '잔금·등기·인도명령 - 법무사 or 셀프', cat: 'proc', tab: 'balance', group: 'loan.self',
+      cardTitle: '잔금 납부 · 완납증명 · 취득세 · 등기 촉탁',
+      cardNote: '법무사에 맡기면 이 카드와 아래 두 카드는 법무사가 다 합니다 — 셀프일 때만 직접 하세요',
+      also: [{ group: 'ev.order', title: '인도명령 신청' }, { group: 'ev.hold', title: '점유이전금지 가처분(필요 시)' }],
+    },
   ],
   order: [{ text: '내용증명 - 2차(최고)', form: 'notice2', cat: 'evict', tab: 'evict', group: 'ev.notice' }],
   serve: [{ text: '인도명령 결정문 송달 확인', cat: 'evict', tab: 'evict', group: 'ev.serve' }],
