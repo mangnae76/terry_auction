@@ -2254,21 +2254,22 @@ html, body { overflow-x: clip; }
 :root { --boxtab-line: #a9b4c6; --boxtab-off: #d8dee8; --boxtab-off-hover: #ccd4e0; }
 :root[data-theme="dark"] { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; } }
-.app-market .adm-view-tabs, .pw-chaptabs { --boxtab-on: var(--bg); }
-:is(.app-market .adm-view-tabs, .pw-chaptabs) { display: flex !important; align-items: flex-end !important; gap: 4px !important; padding-left: 0 !important; }
-:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button) {
+.app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips { --boxtab-on: var(--bg); }
+.app-page[data-k="finance"] .kind-chips { margin: 4px 0 10px; border-bottom: 1px solid var(--boxtab-line); }
+:is(.app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips) { display: flex !important; align-items: flex-end !important; gap: 4px !important; padding-left: 0 !important; }
+:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button) {
   position: relative; align-self: flex-end !important; display: inline-flex; align-items: center; gap: 6px;
   height: 34px !important; padding: 0 18px !important; margin: 0 !important;
   border: 1px solid transparent !important; border-bottom: 0 !important; border-radius: 8px 8px 0 0 !important;
   background: var(--boxtab-off) !important; color: var(--muted) !important; font-size: 15px !important; font-weight: 600 !important; white-space: nowrap;
   transition: background .12s, color .12s;
 }
-:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button):hover { background: var(--boxtab-off-hover) !important; color: var(--text) !important; }
-:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button).on {
+:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button):hover { background: var(--boxtab-off-hover) !important; color: var(--text) !important; }
+:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button).on {
   z-index: 2; height: 38px !important; margin-bottom: -1px !important;
   border-color: var(--boxtab-line) !important; background: var(--boxtab-on) !important; color: var(--blue) !important; font-weight: 800 !important;
 }
-:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button)::after { display: none !important; }
+:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button)::after { display: none !important; }
 /* 탭 줄 밑선은 진하게 */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top::after { background: var(--boxtab-line) !important; }
 /* 2단 밑줄 탭 — 고른 탭 밑줄을 굵게(3px) */
@@ -2278,7 +2279,7 @@ html, body { overflow-x: clip; }
 .pw-chaptabs { margin: 4px 0 4px; border-bottom: 1px solid var(--boxtab-line); overflow-x: auto; scrollbar-width: none; }
 .pw-chaptabs::-webkit-scrollbar { display: none; }
 /* 좁은 화면 — 줄바꿈 대신 가로로 밀어 본다 */
-@media (max-width: 1100px) { :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button) { padding: 0 12px !important; } }
+@media (max-width: 1100px) { :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button) { padding: 0 12px !important; } }
 
 /* 공용 확인창(앱 AppConfirm) — 웹 글자 규칙(제목 16 · 나머지 14) */
 .app-page .acf-title { font-size: 16px !important; }
@@ -2297,6 +2298,15 @@ html, body { overflow-x: clip; }
 .app-page[data-k="postwin"] .tax-shell :is(.g-t, .g-sub) { font-size: 15px !important; }
 .app-page[data-k="postwin"] .tax-shell :is(.g-b, .g-s, .g-lead, .g-table th, .g-table td, .g-ico) { font-size: 14px !important; }
 .app-page[data-k="postwin"] .tax-shell { padding: 0 !important; }
+
+/* 세금 신고 일정 — 글자색은 하나로(종류별 색 빼기), 제목 15 · 나머지 14 */
+.app-page[data-k="finance"] .month-card .ev :is(.ev-when, .ev-title, .ev-note) { color: #111827 !important; }
+.app-page[data-k="finance"] .month-card .ev .ev-note { color: #4b5563 !important; }
+.app-page[data-k="finance"] .month-card .ev-title { font-size: 15px !important; }
+.app-page[data-k="finance"] .month-card :is(.ev-when, .ev-note, .month-head) { font-size: 14px !important; }
+.app-page[data-k="finance"] .web-none { padding: 40px 0; text-align: center; font-size: 14px; color: var(--muted); }
+/* 신고 일정의 달력 그림(span.cal)이 웹 입찰달력 창 규칙(.cal 326px)에 걸려 날짜가 가운데로 밀렸다 */
+.app-page .ev-when .cal { width: auto !important; padding: 0 !important; margin-right: 6px; }
 </style>
 
 <header class="gnb">

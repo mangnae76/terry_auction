@@ -456,7 +456,9 @@ const router = useRouter();
         >{{ k }}</button>
       </div>
       <div class="tax-list">
-        <article v-for="(list, i) in filteredMonths" :key="i" class="month-card">
+        <!-- 웹은 일정 없는 달을 뺀다 — 다 비면 한 줄만 -->
+        <p v-if="props.webYear && filteredMonths.every((l) => l.length === 0)" class="month-none web-none">{{ year }}년 {{ kindFilter }} 일정이 없습니다</p>
+        <article v-for="(list, i) in filteredMonths" v-show="!(props.webYear && list.length === 0)" :key="i" class="month-card">
           <p class="month-head">{{ year }}년 {{ i + 1 }}월</p>
           <p v-if="list.length === 0" class="month-none">일정 없음</p>
           <div v-for="(e, j) in list" :key="j" :class="['ev', e.tone]">
