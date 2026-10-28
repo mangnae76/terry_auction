@@ -1829,14 +1829,16 @@ body.trip-full .foot { display: none; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .cal-grid .w { text-align: center; font-size: 15px; color: var(--faint); padding: 3px 0; }
 .cal-grid .w.sun { color: #dc2626; }
-.cal-day { position: relative; height: 34px; border: 0; border-radius: 7px; background: transparent; font-size: 14px; color: var(--text); transition: background .12s; }
+.cal-day { position: relative; justify-self: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: transparent; font-size: 14px; color: var(--text); transition: background .12s; }
 .cal-day:hover:not(:disabled) { background: var(--surface-3); }
 .cal-day:disabled { color: var(--line-2); cursor: default; }
 .cal-day.today { box-shadow: inset 0 0 0 1px var(--on-line); }
-.cal-day.has { font-weight: 700; }
-.cal-day.has::after { content: ""; position: absolute; left: 50%; bottom: 4px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--blue); }
-.cal-day.on { background: var(--blue); color: #fff; }
-.cal-day.on::after { background: #fff; }
+/* 입찰 있는 날 — 파란 동그라미에 흰 숫자(점 대신). 고른 날은 바깥에 파란 고리를 하나 더 */
+.cal-day.has { background: var(--blue); color: #fff; font-weight: 700; }
+.cal-day.has:hover:not(:disabled) { background: var(--blue); filter: brightness(1.12); }
+.cal-day.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--blue); }
+.cal-key { display: inline-flex; align-items: center; gap: 6px; }
+.cal-key i { width: 12px; height: 12px; border-radius: 50%; background: var(--blue); }
 .cal-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 4px; font-size: 14px; color: var(--faint); }
 .cal-foot button { border: 1px solid var(--line); background: var(--surface); color: var(--text-2); font-size: 14px; padding: 4px 9px; border-radius: 6px; }
 .cal-foot button:hover { border-color: var(--line-2); color: var(--text); }
@@ -2745,7 +2747,7 @@ html, body { overflow-x: clip; }
     return `<div class="pop cal" role="dialog" aria-label="입찰일 고르기">
       <div class="cal-head"><button type="button" data-act="cal-move" data-v="-1" aria-label="이전 달">${I.chevL}</button><b class="num">${y}년 ${m + 1}월</b><button type="button" data-act="cal-move" data-v="1" aria-label="다음 달">${I.chevR}</button></div>
       <div class="cal-grid">${cells}</div>
-      <div class="cal-foot"><span>점 = 입찰이 있는 날</span><button type="button" data-act="set-date" data-v="">입찰일 전체</button></div></div>`;
+      <div class="cal-foot"><span class="cal-key"><i></i>입찰 있는 날</span><button type="button" data-act="set-date" data-v="">입찰일 전체</button></div></div>`;
   }
 
   function binHtml(kind, list) {
