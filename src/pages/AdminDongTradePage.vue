@@ -886,7 +886,8 @@ const downloadCsv = () => {
         <div v-if="!webEmbed" :class="['adm-kpis', { 'is-web': webEmbed }]">
           <div class="adm-kpi"><small>실거래가 평균</small><strong>{{ won(avgPrice) }}</strong></div>
           <div class="adm-kpi"><small>평당가 평균</small><strong>{{ won(avgUnitPrice) }}</strong></div>
-          <div class="adm-kpi blue"><small>총 거래건수 <em v-if="!webEmbed">정상거래</em></small><strong>{{ (webEmbed ? kindCount('정상거래', filtered) + kindCount('직거래', filtered) : normals.length).toLocaleString('ko-KR') }}건</strong></div>
+          <!-- 앱도 같은 셈 — 정상 + 직거래(계약해제 제외) -->
+          <div class="adm-kpi blue"><small><InfoTip :lines="totalTip">총 거래건수</InfoTip></small><strong>{{ (kindCount('정상거래', filtered) + kindCount('직거래', filtered)).toLocaleString('ko-KR') }}건</strong></div>
         </div>
 
         <!-- 분포 (앱) -->

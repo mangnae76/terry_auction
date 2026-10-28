@@ -8,6 +8,7 @@ import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   fetchTradeVolumeStats,
+  tradeWindowOf,
   type PropertyType,
   type TradeVolumeStat,
 } from '../services/publicDataApi';
@@ -131,13 +132,15 @@ const statTotalCount = computed(() => statRows.value.reduce((acc, r) => acc + r.
 const statDirect = computed(() => statRows.value.reduce((acc, r) => acc + (r.directCount ?? 0), 0));
 const statCancel = computed(() => statRows.value.reduce((acc, r) => acc + (r.cancelCount ?? 0), 0));
 const statMonths = computed(() => Number(selectedPeriod.value) || 12);
+/** 이번 조회의 계약일 범위 — ⓘ 설명에 적는다 */
+const statWindow = ref<{ from: string; to: string } | null>(null);
 const statTip = computed(() => {
   const n = (v: number) => v.toLocaleString('ko-KR');
   const m = statMonths.value;
   return [
     `총 거래건수 = 정상 ${n(statTotalCount.value - statDirect.value)}건 + 직거래 ${n(statDirect.value)}건 = ${n(statTotalCount.value)}건`,
     `계약해제 ${n(statCancel.value)}건은 제외 (없던 거래)`,
-    props.embed?.from && props.embed?.to ? `${props.embed.from.replace(/-/g, '.')} ~ ${props.embed.to.replace(/-/g, '.')} (조회일 기준 ${m}개월)` : `최근 ${m}개월(신고된 달 기준)`,
+    statWindow.value ? `${statWindow.value.from.replace(/-/g, '.')} ~ ${statWindow.value.to.replace(/-/g, '.')} (조회일 기준 ${m}개월)` : `조회일 기준 ${m}개월`,
     m === 12 ? '연 = 12개월 합 · 월 = 연 ÷ 12' : `연 = ${m}개월 합을 1년으로 환산 · 월 = 합 ÷ ${m}`,
   ];
 });
@@ -398,9 +401,13 @@ const loadStats = async () => {
   regionGeocodeQuery.clear();
   progress.value = null;
   try {
-    // 지역분석에 붙어 쓸 때는 지역분석과 같은 날짜 범위 — 그 범위가 걸친 달을 모두 받고 날짜로 거른다
-    const win = props.embed?.from && props.embed?.to ? { from: props.embed.from, to: props.embed.to } : null;
-    const dealYmdList = win ? monthsBetween(win.from, win.to) : buildDealYmdList(selectedPeriod.value);
+    // 기간은 늘 '조회일부터 N개월(계약일)' — 국토부 엑셀과 같은 기준(지역분석 · 수요분석과 같다).
+    // 지역분석에 붙어 쓸 때는 지역분석의 범위를 그대로, 혼자 쓸 때는 오늘로 계산한다. 그 범위가 걸친 달을 모두 받고 날짜로 거른다
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const own = tradeWindowOf(Date.now(), Number(selectedPeriod.value) || 12);
+    const win = props.embed?.from && props.embed?.to ? { from: props.embed.from, to: props.embed.to } : { from: iso(own.start), to: iso(own.end) };
+    statWindow.value = win;
+    const dealYmdList = monthsBetween(win.from, win.to);
 
     type Target = { sido: string; district: DistrictOption };
     const targets: Target[] = isAllDistricts.value
@@ -725,7 +732,7 @@ onMounted(async () => {
               <div><dt>평 단가 / ㎡ 단가</dt><dd><em class="tsp-unit-pre">평</em>{{ manWon(statUnitPrice) }}<em class="tsp-unit-bar">/</em><em class="tsp-unit-pre">㎡</em>{{ manWon(statUnitPrice / 3.305785) }}</dd></div>
             </div>
             <div v-else class="tsp-stat-grid">
-              <div><dt>거래 건수</dt><dd>{{ statTotalCount.toLocaleString('ko-KR') }}건</dd></div>
+              <div><dt><InfoTip :lines="statTip">총 거래건수</InfoTip></dt><dd><YmCount :year="(statTotalCount * 12) / statMonths" :month="statTotalCount / statMonths" /></dd></div>
               <div><dt>{{ avgLabel }}</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
               <div><dt>거래 총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
               <div><dt>집계 동</dt><dd>{{ selectedRegion ? '1곳' : `${rows.length}곳` }}</dd></div>
