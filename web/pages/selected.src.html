@@ -1440,27 +1440,27 @@ body.trip-full .foot { display: none; }
 /* 상자 제목 옆 한 줄 — 무슨 상자인지 */
 .rg-sub { min-width: 0; font-size: 14px; font-weight: 500; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 900px) { .rg-sub { display: none; } }
-.mn-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.mn-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 14px; } /* 세로로 빡빡하지 않게 — 칸 사이 · 칸 높이를 넉넉히 */
 @media (max-width: 900px) { .mn-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .auto-box .rg-acts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .auto-box .rg-drive { flex-wrap: wrap; } }
-.mn-form input { height: 34px; padding: 0 11px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 13px; color: var(--text); min-width: 0; }
+.mn-form input { height: 44px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); font-size: 15px; color: var(--text); min-width: 0; }
 .mn-form input:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 .mn-form .wide { grid-column: span 2; }
 .mn-form .wide4 { grid-column: 1 / -1; }
-.mn-form select, .mn-form textarea { height: 34px; padding: 0 11px; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); font-size: 13px; color: var(--text); min-width: 0; font-family: inherit; }
-.mn-form textarea { height: auto; padding: 8px 11px; line-height: 1.5; resize: vertical; }
+.mn-form select, .mn-form textarea { height: 44px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); font-size: 15px; color: var(--text); min-width: 0; font-family: inherit; }
+.mn-form textarea { height: auto; min-height: 120px; padding: 12px 14px; line-height: 1.6; resize: vertical; }
 .mn-form ::placeholder { color: #9ca3af; }
 /* 고르지 않은 칸(물건종류 · 매각기일 '연도-월-일')도 안내 글자처럼 회색 — 고르면 검정 */
 .mn-form select:has(option[value=""]:checked), .mn-form input[type="date"]:invalid { color: #9ca3af; }
 .mn-form select option { color: var(--text); }
 .mn-form select:focus, .mn-form textarea:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 /* 칸 나눔 — 묶음 이름 한 줄씩 */
-.mn-cap { grid-column: 1 / -1; margin: 4px 0 -2px; font-size: 14px; font-weight: 800; color: var(--muted); letter-spacing: -.2px; }
+.mn-cap { grid-column: 1 / -1; margin: 14px 0 0; font-size: 15px; font-weight: 800; color: var(--muted); letter-spacing: -.2px; }
 .mn-cap:first-child { margin-top: 0; }
 /* 꼭 적어야 하는 칸 — 묶음 이름에 별표 */
 .mn-cap .rq, .mn-req i { margin-left: 3px; color: #dc2626; font-style: normal; font-weight: 800; }
 .mn-req { flex: 0 0 auto; margin-left: auto; font-size: 14px; font-weight: 600; color: var(--muted); }
 .mn-req i { margin: 0 3px 0 0; }
-.mn-form .rg-btn.add { grid-column: 1 / -1; justify-self: center; min-width: 200px; margin-top: 6px; background: var(--blue); border-color: var(--blue); color: #fff; }
+.mn-form .rg-btn.add { grid-column: 1 / -1; justify-self: center; min-width: 240px; height: 48px; font-size: 15px; margin-top: 18px; background: var(--blue); border-color: var(--blue); color: #fff; }
 .rg-row1, .rg-row2 { display: flex; align-items: center; gap: 8px; min-height: 32px; min-width: 0; }
 .rg-title { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; margin-right: 4px; font-size: 14px; font-weight: 800; color: var(--text); white-space: nowrap; cursor: help; }
 .rg-title svg { width: 18px; height: 18px; color: #2a5fbf; }
