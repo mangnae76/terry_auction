@@ -2,7 +2,7 @@
 // 여기서는 그 상자를 가리키기만 한다(체크는 한 곳에만 남는다). 진행도는 가리킨 상자의 체크로 센다.
 
 /** 낙찰이후 하위 탭 열쇠 — 절차상세 장(win · evict · balance), 가이드 장(gevict · biz), 그 밖(repair · sell) */
-export type PostWinTabKey = 'flow' | 'win' | 'dpre' | 'evict' | 'balance' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'biz' | 'repair' | 'sell';
+export type PostWinTabKey = 'flow' | 'win' | 'dpre' | 'gdeny' | 'evict' | 'balance' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'biz' | 'repair' | 'sell';
 
 /** 큰일의 갈래 — 명도 · 대출 · 절차(법원 · 등기 · 사업자 · 인테리어 · 매도 · 세금) */
 export type TodoCat = 'evict' | 'loan' | 'proc';
@@ -50,13 +50,15 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
   decide: [
     { text: '점유자 다시 연락·재방문', cat: 'evict', tab: 'evict', group: 'ev.revisit' },
     { text: '내부·관리비 확인', cat: 'evict', tab: 'win', group: 'visit', section: '내부확인' },
+    { text: '훼손이 심하면 매각불허가 신청', cat: 'proc', tab: 'gdeny', group: 'gd.deny' },
     { text: '1차 내용증명 준비', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c5'], labels: { 폐문부재연락부재: '내용증명' } },
   ],
   confirm: [
     { text: '이사 날짜 협의 및 확정', cat: 'evict', tab: 'evict', group: 'ev.move' },
+    // 사업자등록이 먼저 — 대출 심사 서류에 사업자등록증이 들어간다
+    { text: '사업자등록', cat: 'proc', tab: 'balance', group: 'ln.biz' },
     { text: '대출 심사 서류 준비', cat: 'loan', tab: 'balance', group: 'loan.screen' },
     { text: '대출업체 비딩', cat: 'loan', tab: 'balance', group: 'loan.bid' },
-    { text: '사업자등록', cat: 'proc', tab: 'balance', group: 'ln.biz' },
   ],
   balance: [
     { text: '대출준비서류 챙기기', cat: 'loan', tab: 'balance', group: 'loan.docs' },

@@ -224,7 +224,7 @@ const resetDefault = () => {
         <button type="button" :class="{ on: !catPick }" @click="pickCat('')">전체</button>
         <button v-for="[k, label] in TODO_CATS" :key="k" type="button" :class="[k, { on: catPick === k }]" @click="pickCat(k)">{{ label }}</button>
       </span>
-      <button v-if="auction" type="button" :class="['pwt-btn', 'deal', { on: !!flow.endedAt }]" @click="endByDeal">{{ flow.endedAt ? `협의로 종결 (${flow.endedAt}) — 되돌리기` : '협의로 종결' }}</button>
+      <button v-if="auction" type="button" :class="['pwt-btn', 'deal', { on: !!flow.endedAt }]" @click="endByDeal">{{ flow.endedAt ? `협의로종결 (${flow.endedAt}) — 되돌리기` : '협의로종결' }}</button>
       <button v-if="auction" type="button" class="pwt-btn" @click="resetDefault">초기화</button>
     </header>
 

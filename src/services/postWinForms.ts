@@ -31,7 +31,7 @@ export const FIELD_LABEL: Record<FormField, string> = {
   amount: '이사비(원)',
 };
 
-export type FormKey = 'memo' | 'notice1' | 'notice2' | 'notice3' | 'moveAgree' | 'proxy' | 'handover';
+export type FormKey = 'memo' | 'notice1' | 'notice2' | 'notice3' | 'moveAgree' | 'proxy' | 'handover' | 'denySale' | 'cancelSale';
 export interface FormDef {
   key: FormKey;
   title: string;
@@ -158,6 +158,66 @@ export const FORMS: Record<FormKey, FormDef> = {
       '첨부  위임인 인감증명서 1통',
     ].join('\n'),
   },
+  denySale: {
+    key: 'denySale',
+    title: '매각불허가 신청서',
+    fields: [],
+    body: (c) => [
+      '매각불허가 신청서',
+      '',
+      `사건      ${caseLine(c)}`,
+      `신청인    ${v(c.winner)} (최고가매수신고인)  연락처 ${v(c.phone)}`,
+      `부동산    ${v(c.address)}`,
+      '',
+      '신 청 취 지',
+      '위 사건에 관하여 매각을 허가하지 아니한다는 결정을 구합니다.',
+      '',
+      '신 청 이 유',
+      '1. 신청인은 위 사건의 매각기일에 최고가매수신고인이 되었습니다.',
+      '2. 매각 후 현장을 확인한 결과 위 부동산에 다음과 같은 중대한 훼손(또는 흠)이 있음을 알게 되었습니다.',
+      '   - 내용: ______________________________________________',
+      '   - 확인한 날: __________',
+      '3. 이는 신청인이 책임질 수 없는 사유로 매각물건명세서 등에 나타나지 않은 것으로, 민사집행법 제121조에 따라 매각을 허가하지 아니한다는 결정을 구합니다.',
+      '',
+      '첨부  훼손 사진 · 동영상, 수리 견적서, 관리사무소 확인서 등',
+      '',
+      v(c.today),
+      '',
+      `신청인  ${v(c.winner)}  (인)`,
+      '',
+      `${v(c.court, '○○지방법원')} 귀중`,
+    ].join('\n'),
+  },
+  cancelSale: {
+    key: 'cancelSale',
+    title: '매각허가결정 취소 신청서',
+    fields: [],
+    body: (c) => [
+      '매각허가결정 취소 신청서',
+      '',
+      `사건      ${caseLine(c)}`,
+      `신청인    ${v(c.winner)} (매수인)  연락처 ${v(c.phone)}`,
+      `부동산    ${v(c.address)}`,
+      '',
+      '신 청 취 지',
+      '위 사건에 관하여 귀원이 한 매각허가결정을 취소한다는 결정을 구합니다.',
+      '',
+      '신 청 이 유',
+      '1. 신청인은 위 사건에서 매각허가결정을 받은 매수인으로, 아직 매각대금을 내지 않았습니다.',
+      '2. 매각허가결정 뒤 위 부동산이 다음과 같이 크게 훼손된 사실을 알게 되었습니다.',
+      '   - 내용: ______________________________________________',
+      '   - 확인한 날: __________',
+      '3. 이는 신청인이 책임질 수 없는 사유이므로 민사집행법 제127조에 따라 매각허가결정의 취소를 구합니다.',
+      '',
+      '첨부  훼손 사진 · 동영상, 수리 견적서, 관리사무소 확인서 등',
+      '',
+      v(c.today),
+      '',
+      `신청인  ${v(c.winner)}  (인)`,
+      '',
+      `${v(c.court, '○○지방법원')} 귀중`,
+    ].join('\n'),
+  },
   handover: {
     key: 'handover',
     title: '명도확인서',
@@ -191,15 +251,61 @@ export const FORMS_OF_ROW: Record<string, FormKey[]> = {
   'ev.order.a3': ['proxy'],
   'ev.move.m3': ['handover'],
   'ev.exe.a2': ['handover'],
+  'pw.visit.in3': ['denySale', 'cancelSale'],
+  'gd.deny.p3': ['denySale', 'cancelSale'],
 };
 
-/** 줄 옆 단추 이름 — 무슨 서식인지 바로 알게 */
+/** 줄 옆 단추 이름 — 서식 이름 그대로, 단추라 붙여 쓴다 */
+export const FORM_TAB: Record<FormKey, string> = {
+  memo: '메모', notice1: '1차(안내)', notice2: '2차(최고)', notice3: '3차(최종통지)', moveAgree: '명도합의서', proxy: '위임장', handover: '명도확인서', denySale: '불허가신청', cancelSale: '허가취소신청',
+};
 export const FORM_BTN: Record<FormKey, string> = {
-  memo: '메모 서식',
-  notice1: '내용증명 서식',
-  notice2: '내용증명 서식',
-  notice3: '내용증명 서식',
-  moveAgree: '합의서 서식',
-  proxy: '위임장 서식',
-  handover: '명도확인서 서식',
+  memo: '메모',
+  notice1: '내용증명',
+  notice2: '내용증명',
+  notice3: '내용증명',
+  moveAgree: '명도합의서',
+  proxy: '위임장',
+  handover: '명도확인서',
+  denySale: '매각불허가',
+  cancelSale: '매각불허가',
+};
+
+// ===== 자리표 — 서식 글 속 {사건번호} 같은 자리에 위쪽 칸의 값이 들어간다 =====
+// 사용자가 서식을 고쳐 저장해도 자리표만 남겨 두면 물건마다 값이 채워진다
+export const TOKENS: Array<[string, keyof FormCtx, string]> = [
+  ['사건번호', 'caseNo', '사건번호'],
+  ['법원', 'court', '법원'],
+  ['주소', 'address', '주소'],
+  ['낙찰자', 'winner', '낙찰자 이름'],
+  ['연락처', 'phone', '낙찰자 연락처'],
+  ['점유자', 'occupant', '점유자 이름'],
+  ['잔금납부일', 'balanceDate', '잔금 납부일'],
+  ['인도기한', 'deadline', '인도 기한'],
+  ['집행예정일', 'execDate', '강제집행 신청 예정일'],
+  ['이사날짜', 'moveDate', '이사 날짜'],
+  ['이사비', 'amount', '이사비(원)'],
+  ['오늘', 'today', '작성일'],
+];
+const TOKEN_KEY = new Map(TOKENS.map(([t, k]) => [t, k]));
+/** 기본 서식 — 값 자리에 자리표를 넣어 만든다 */
+export const defaultTemplate = (key: FormKey): string => {
+  const ctx = Object.fromEntries(TOKENS.map(([t, k]) => [k, `{${t}}`])) as unknown as FormCtx;
+  return FORMS[key].body(ctx);
+};
+/** 서식에 값 채우기 — 빈 값은 밑줄 자리로 */
+export const fillTemplate = (tpl: string, ctx: FormCtx): string => tpl.replace(/\{([^{}\n]+)\}/g, (m, name: string) => {
+  const k = TOKEN_KEY.get(name.trim());
+  // 법원은 비면 그냥 뺀다('__________ 2024타경…'처럼 보이지 않게)
+  return k ? (String(ctx[k] ?? '').trim() || (k === 'court' ? '' : '__________')) : m;
+});
+/** 서식에 쓰인 자리표(차례대로) */
+export const tokensIn = (tpl: string): Array<keyof FormCtx> => {
+  const seen: Array<keyof FormCtx> = [];
+  for (const m of tpl.matchAll(/\{([^{}\n]+)\}/g)) {
+    const k = TOKEN_KEY.get(m[1].trim());
+    if (k && !seen.includes(k)) seen.push(k);
+  }
+  // 칸은 늘 같은 차례(사건번호 · 법원 · 주소 · 낙찰자 …)로
+  return TOKENS.map(([, k]) => k).filter((k) => seen.includes(k));
 };

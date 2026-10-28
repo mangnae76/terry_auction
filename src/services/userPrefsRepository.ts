@@ -27,6 +27,8 @@ export interface UserPrefs {
   postWinLoan?: unknown[];
   postWinLoanVersion?: number;
   postWinLoanEdited?: boolean;
+  // 낙찰이후 · 서식 — 사용자가 고쳐 저장한 서식 글({사건번호} 같은 자리표 포함). 빈 글이면 기본 서식
+  postWinForms?: Record<string, string>;
   // 낙찰이후 · 명도 표 (postWinEvict.ts)
   postWinEvict?: unknown[];
   postWinEvictVersion?: number;

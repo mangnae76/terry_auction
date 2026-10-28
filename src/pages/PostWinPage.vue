@@ -30,12 +30,13 @@ import { FORM_BTN, FORMS_OF_ROW, type FormKey } from '../services/postWinForms';
 import { utilityLine } from '../services/utilityContacts';
 import { DETAIL_STEPS, STEP_TITLE, STEP_TODOS, type StepTodo } from '../services/postWinTodos';
 import { DETAIL_REPAIR, DETAIL_SELL, DETAIL_TAX } from '../services/postWinDetail';
+import { GUIDE_DENY } from '../services/postWinGuide';
 /** 웹 절차상세 · 인테리어 · 매도 · 세금 장 — 코드에 둔 체크리스트(고쳐 저장하는 표가 아니다) */
-const DETAIL_OF: Partial<Record<string, CheckGroup[]>> = { drepair: DETAIL_REPAIR, dsell: DETAIL_SELL, dtax: DETAIL_TAX };
+const DETAIL_OF: Partial<Record<string, CheckGroup[]>> = { drepair: DETAIL_REPAIR, dsell: DETAIL_SELL, dtax: DETAIL_TAX, gdeny: GUIDE_DENY };
 
 // 낙찰당일 탭을 다시 맨 왼쪽에 — '낙찰 후 진행 순서' 상자와 낙찰당일 묶음(경매사건 열람 · 명도협상 원칙 · 유선연락 첫통화)
 // 웹은 절차진행 · 절차상세(win · evict · balance 장) · 가이드(gwin · gevict · biz 장) · 인테리어 · 매도·임대 — 장 열쇠가 곧 하위 탭 열쇠다
-type TabKey = 'win' | 'dpre' | 'flow' | 'biz' | 'balance' | 'evict' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'repair' | 'sell';
+type TabKey = 'win' | 'dpre' | 'gdeny' | 'flow' | 'biz' | 'balance' | 'evict' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
   { key: 'win', label: '낙찰당일', desc: '낙찰가·경쟁 상황, 영수증과 서류 챙기기' },
   { key: 'flow', label: '절차진행', desc: '낙찰일부터 명도까지 단계별 일정' },   // 웹만(앱 탭 줄에는 안 보인다)
@@ -47,7 +48,7 @@ const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
 ];
 const route = useRoute();
 const router = useRouter();
-const TAB_KEYS: TabKey[] = ['win', 'dpre', 'flow', 'evict', 'biz', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gevict', 'repair', 'sell'];
+const TAB_KEYS: TabKey[] = ['win', 'dpre', 'gdeny', 'flow', 'evict', 'biz', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gevict', 'repair', 'sell'];
 /** 주소에 적힌 탭으로 연다 — '뒤로' 왔을 때 보던 자리를 지킨다 */
 const initialTab = (): TabKey => {
   const wanted = String(route.query.tab ?? '');
@@ -243,6 +244,15 @@ const GUIDE_EVICT_KEYS = new Set(['ev.flow', 'ev.deal', 'ev.step']);   // 시기
 const popTodo = ref<StepTodo | null>(null);
 /** 서식 창 — 줄 옆 [서식]을 누르면 그 줄에 걸린 서식(여럿이면 탭) */
 const formKeys = ref<FormKey[] | null>(null);
+// 새로고침해도 열어 둔 창(큰일 카드 · 서식)이 다시 뜨게 — 이 탭(세션)에만 적어 둔다
+const POP_SS = 'pw.pop.v1';
+const todoIdOf = (t: StepTodo | null) => {
+  if (!t) return '';
+  // 화면 쪽 값은 감싼(반응형) 객체라 원본과 같은지로는 못 찾는다 — 글로 찾는다
+  for (const [sk, list] of Object.entries(STEP_TODOS)) { const i = list.findIndex((x) => x.text === t.text && x.group === t.group); if (i >= 0) return `${sk}.${i}`; }
+  return '';
+};
+const todoById = (id: string): StepTodo | null => { const [sk, i] = id.split('.'); return STEP_TODOS[sk]?.[Number(i)] ?? null; };
 /** 창은 그 큰일에 이어진 칸 · 줄만 — '전체 보기'를 누르면 상자 전체 */
 const popFull = ref(false);
 const normLabel = (v: string) => String(v ?? '').replace(/\s+/g, '');
@@ -288,13 +298,27 @@ const popGroups = computed<CheckGroup[]>(() => {
   return card ? [card] : [];
 });
 watch(popTodo, () => { popFull.value = false; });
+watch([popTodo, formKeys, popFull], () => {
+  try { sessionStorage.setItem(POP_SS, JSON.stringify({ tab: activeTab.value, todo: todoIdOf(popTodo.value), forms: formKeys.value, full: popFull.value })); } catch { /* 그만 */ }
+});
+onMounted(async () => {
+  // 주소의 탭이 자리 잡은 뒤에 연다 — 그 전에 열면 탭이 바뀌며 닫힌다
+  await router.isReady(); await nextTick(); await new Promise((r) => window.setTimeout(r, 0));
+  try {
+    const st = JSON.parse(sessionStorage.getItem(POP_SS) || 'null');
+    if (st?.tab !== activeTab.value) return;   // 보던 장이 같을 때만 — 다른 장으로 들어오면 창은 닫힌 채
+    if (st?.todo) popTodo.value = todoById(st.todo);
+    if (Array.isArray(st?.forms) && st.forms.length) formKeys.value = st.forms;
+    if (st?.full) void nextTick(() => { popFull.value = true; });
+  } catch { /* 그만 */ }
+});
 const popOpen = computed(() => popGroups.value.length > 0);
 const POP_VIEW: Partial<Record<TabKey, TabKey>> = { gwin: 'win', gevict: 'evict' };
 const popView = computed<TabKey>(() => (popTodo.value?.tab ? (POP_VIEW[popTodo.value.tab as TabKey] ?? popTodo.value.tab as TabKey) : viewTab.value));
 const closePop = () => { popTodo.value = null; };
 const onPopKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !formKeys.value) closePop(); };
 watch(popOpen, (v) => { if (v) window.addEventListener('keydown', onPopKey); else window.removeEventListener('keydown', onPopKey); });
-watch(activeTab, closePop);
+watch(activeTab, () => { closePop(); formKeys.value = null; });
 const dayGroups = computed<CheckGroup[]>(() => {
   if (editing.value) return draft.value;
   if (popOpen.value) return popGroups.value;
@@ -311,8 +335,8 @@ const dayGroups = computed<CheckGroup[]>(() => {
 /** 표가 있는 탭인가 */
 const hasTable = computed(() => viewTab.value in BOOK_OF || !!DETAIL_OF[activeTab.value] || (webEmbed && !!DETAIL_STEPS[activeTab.value]));
 /** 웹 — 절차상세 · 가이드 안의 장 단추(경로 오른쪽) */
-const DETAIL_CHAPS: Array<[TabKey, string]> = [['win', '낙찰당일'], ['dpre', '잔금 전'], ['balance', '잔금·등기'], ['evict', '명도'], ['drepair', '인테리어'], ['dsell', '매도'], ['dtax', '세금']];
-const GUIDE_CHAPS: Array<[TabKey, string]> = [['gwin', '낙찰당일'], ['gevict', '명도'], ['biz', '사업자등록']];
+const DETAIL_CHAPS: Array<[TabKey, string]> = [['win', '낙찰당일'], ['dpre', '잔금전'], ['balance', '잔금·등기'], ['evict', '명도'], ['drepair', '인테리어'], ['dsell', '매도'], ['dtax', '세금']];
+const GUIDE_CHAPS: Array<[TabKey, string]> = [['gwin', '낙찰당일'], ['gdeny', '매각불허가'], ['gevict', '명도'], ['biz', '사업자등록']];
 const chaps = computed(() => {
   if (!webEmbed) return [];
   if (DETAIL_CHAPS.some(([k]) => k === activeTab.value)) return DETAIL_CHAPS;
@@ -320,7 +344,7 @@ const chaps = computed(() => {
   return [];
 });
 // === 절차진행의 큰일 — 진행도는 가리킨 상자의 체크로 세고, 바로가기는 그 상자로 ===
-const allGroups = computed(() => [...dayBook.groups.value, ...evictBook.groups.value, ...loanBook.groups.value, ...bizBook.groups.value, ...DETAIL_REPAIR, ...DETAIL_SELL, ...DETAIL_TAX]);
+const allGroups = computed(() => [...dayBook.groups.value, ...evictBook.groups.value, ...loanBook.groups.value, ...bizBook.groups.value, ...DETAIL_REPAIR, ...DETAIL_SELL, ...DETAIL_TAX, ...GUIDE_DENY]);
 const todoIds = (t: StepTodo): string[] | null => {
   if (!t.group || t.noCount) return null;
   const g = allGroups.value.find((x) => x.key === t.group);
@@ -1099,7 +1123,7 @@ const toggleSection = (key: string) => {
         </template>
        </div>
        <!-- 창이 일부만 보일 때 — 상자 전체로 펼치기 -->
-       <div v-if="popNarrowed" class="pw-todo-pop-foot"><button type="button" @click="popFull = true">전체 보기 ›</button></div>
+       <div v-if="popNarrowed" class="pw-todo-pop-foot"><button type="button" @click="popFull = true">전체보기 ›</button></div>
        </div>
        </div>
       </template>

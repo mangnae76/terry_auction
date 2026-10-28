@@ -242,7 +242,7 @@ export const POST_WIN_EVICT: CheckGroup[] = [
         rows: [
           { id: 'ev.order.a1', depth: 0, text: '전자소송포털 또는 경매계에 부동산인도명령 신청서 제출' },
           { id: 'ev.order.a2', depth: 0, text: '인지대 · 송달료 납부(상대방 수만큼)' },
-          { id: 'ev.order.a3', depth: 0, text: '법무사에 맡길 때는 잔금 · 등기와 함께 의뢰' },
+          { id: 'ev.order.a3', depth: 0, text: '등기를 법무사에 맡길 때(법무사 비딩 때) 인도명령은 서비스로 함께 해 달라고 요청' },
         ],
       },
       {
