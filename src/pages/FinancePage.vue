@@ -340,7 +340,7 @@ const openAdd = (kind: ModalKind) => {
   } else if (kind === 'businessExpense') {
     beDraft.value = {
       auctionId: '',
-      profitCategory: '기타사업비',
+      profitCategory: webEmbed ? WEB_EXPENSE_LIST[0] : '기타사업비',
       memo: '',
       detail: '',
       amountWithVat: 0,
@@ -395,6 +395,15 @@ const villaName = (address?: string) => {
 const EXPENSE_CATEGORIES = [
   '기타사업비', '소유권이전', '인테리어', '대출이자', '관리비', '세금', '중개수수료',
 ];
+/** 웹 — 팔 때 매매차익 예정신고(종합소득세 기본세율로 먼저 셈)에 넣는 필요경비만.
+ *  양도세 필요경비(소득세법 제97조)를 따른다: 취득비용 · 자본적지출 · 양도비용.
+ *  대출이자 · 관리비 · 도배 · 장판 같은 수익적지출은 5월 종합소득세 확정신고에서 따로 */
+const WEB_EXPENSE_GROUPS: Array<[string, string[]]> = [
+  ['취득비용', ['취득세·지방교육세·농특세', '법무사 수수료(등기)', '국민주택채권 매각차손', '인지세', '취득 관련 소송비용']],
+  ['자본적지출', ['샷시·발코니 확장', '보일러·난방 교체', '배관·설비 교체', '시스템에어컨', '기타 자본적지출']],
+  ['양도비용', ['매도 중개수수료', '세무·신고 수수료', '계약서 작성·공증비']],
+];
+const WEB_EXPENSE_LIST = WEB_EXPENSE_GROUPS.flatMap(([, list]) => list);
 
 const auctionOptions = computed(() => {
   const label = (a: { caseNumber: string; address?: string }) =>
@@ -834,9 +843,17 @@ const exportExcel = () => {
             </select>
           </label>
           <label>사업지출 항목
-            <select v-model="beDraft.profitCategory">
+            <select v-if="webEmbed" v-model="beDraft.profitCategory">
+              <!-- 예전에 고른 항목(대출이자 · 관리비 …)은 고칠 때 그대로 보이게 -->
+              <option v-if="beDraft.profitCategory && !WEB_EXPENSE_LIST.includes(beDraft.profitCategory)" :value="beDraft.profitCategory">{{ beDraft.profitCategory }}</option>
+              <optgroup v-for="[g, list] in WEB_EXPENSE_GROUPS" :key="g" :label="g">
+                <option v-for="c in list" :key="c" :value="c">{{ c }}</option>
+              </optgroup>
+            </select>
+            <select v-else v-model="beDraft.profitCategory">
               <option v-for="c in EXPENSE_CATEGORIES" :key="c" :value="c">{{ c }}</option>
             </select>
+            <small v-if="webEmbed" class="fin-cat-hint">팔 때 예정신고에 넣는 필요경비만 고릅니다 — 대출이자 · 관리비 · 도배 · 장판은 5월 종합소득세에서</small>
           </label>
           <label>명세<input type="text" v-model="beDraft.detail" /></label>
           <label>비용 (VAT포함)<FormattedNumberInput v-model="beDraft.amountWithVat" live-group align="left" placeholder="0" /></label>
