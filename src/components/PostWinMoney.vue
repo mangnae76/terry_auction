@@ -36,7 +36,6 @@ const seedEvict = (): EvictInput => {
 const savedEv = (read().ev as Record<string, unknown> | undefined);
 const ev = ref<EvictInput>({ ...seedEvict(), ...(savedEv && !('laborPerPyeong' in savedEv) ? savedEv : {}) });
 /** 세금분석의 명도비 — 명도분석의 어느 쪽으로 넣을지 */
-const evictPick = ref<'deal' | 'exec'>((read().pick as 'deal' | 'exec') || 'deal');
 const who = ref<'biz' | 'person'>((read().who as 'biz' | 'person') || 'biz');
 // 물건에서 따로 고르지 않았으면 내 정보의 사업자 구분을 따른다
 const auth = useAuthStore();
@@ -47,8 +46,8 @@ onMounted(async () => {
   else if (d.bizType === 'biz') who.value = 'biz';
 });
 const term = ref<HoldTerm>((read().term as HoldTerm) || 'lt1');
-watch([ev, evictPick, who, term], () => {
-  try { localStorage.setItem(key(), JSON.stringify({ ev: ev.value, pick: evictPick.value, who: who.value, term: term.value })); } catch { /* 그만 */ }
+watch([ev, who, term], () => {
+  try { localStorage.setItem(key(), JSON.stringify({ ev: ev.value, who: who.value, term: term.value })); } catch { /* 그만 */ }
 }, { deep: true });
 const reset = () => { ev.value = seedEvict(); };
 
@@ -77,9 +76,10 @@ finance.initialize();
 interior.initialize();
 const ledger = computed(() => ledgerRows({ be: finance.businessExpenses, interior: interior.rows }));
 const saleFixed = computed(() => !!props.auction?.sellDate);
-const evictCost = computed(() => (evictPick.value === 'deal' ? deal.value.total : exec.value.total));
-const evictLabel = computed(() => (evictPick.value === 'deal' ? '협의' : '강제집행'));
-const split = computed(() => costSplitOf({ id: props.auction?.id ?? '', bidCost: props.auction?.bidCost, metrics: props.auction?.metrics }, ledger.value, evictCost.value));
+// 명도비도 사업경비 장부의 값(실제 기록, 없으면 A안 명도비) — 명도분석은 견주어 보는 계산기
+const split = computed(() => costSplitOf({ id: props.auction?.id ?? '', wonDate: props.auction?.wonDate, bidCost: props.auction?.bidCost, metrics: props.auction?.metrics }, ledger.value));
+const srcText = (actual: number, planned: number, tab: string) => (actual && planned ? `실제 ${won(actual)} + A안 ${won(planned)} — ${tab} 탭`
+  : actual ? `실제 기록 — ${tab} 탭` : `입찰가산정 A안 — ${tab} 탭에서 고칩니다`);
 /** 매매차익(예정신고) — 매도가 − 낙찰가 − 필요경비 */
 const tradeGain = computed(() => plan.value.sale - plan.value.bid - split.value.need);
 /** 사업소득 — 매매차익 − 사업경비(5월 종합소득세) */
@@ -109,7 +109,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
   <section class="pwm">
     <header class="pwm-head">
       <h2>{{ mode === 'evict' ? '명도분석' : '세금분석' }}</h2>
-      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 셈합니다 — 필요경비 · 사업경비는 실제 기록, 없으면 입찰가산정 A안' }}</span>
+      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 셈합니다 — 필요경비 · 사업경비 탭의 값(실제로 적지 않은 줄은 입찰가산정 A안)' }}</span>
     </header>
     <!-- ===== 명도분석 ===== -->
     <template v-if="mode === 'evict'">
@@ -155,11 +155,6 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
           <button type="button" :class="{ on: who === 'biz' }" @click="who = 'biz'">매매사업자</button>
           <button type="button" :class="{ on: who === 'person' }" @click="who = 'person'">개인</button>
         </div>
-        <div class="pwm-seg">
-          <span>명도비</span>
-          <button type="button" :class="{ on: evictPick === 'deal' }" @click="evictPick = 'deal'">협의 {{ man(deal.total) }}</button>
-          <button type="button" :class="{ on: evictPick === 'exec' }" @click="evictPick = 'exec'">강제집행 {{ man(exec.total) }}</button>
-        </div>
         <button type="button" class="pwm-go" @click="goPlan">입찰가산정 A안 고치기 ›</button>
       </div>
 
@@ -169,10 +164,10 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
           <dl>
             <div><dt>낙찰가</dt><dd>{{ won(plan.bid) }}</dd></div>
             <div><dt>매도가</dt><dd>{{ won(plan.sale) }}<small>{{ saleFixed ? `확정 — 매도일 ${auction?.sellDate}` : '입찰가산정 A안 예상' }}</small></dd></div>
-            <div><dt>필요경비</dt><dd>{{ won(split.need) }}<small>{{ split.needActual ? '실제 기록 — 필요경비 탭' : `A안 — 취득세 ${won(split.acq)}(낙찰가의 ${plan.acqPct}%) · 법무비 · 중개수수료` }}</small></dd></div>
+            <div><dt>필요경비</dt><dd>{{ won(split.need) }}<small>{{ srcText(split.needActual, split.needPlan, '필요경비') }}</small></dd></div>
             <div :class="{ key: who !== 'biz' }"><dt>{{ who === 'biz' ? '매매차익' : '양도차익' }}</dt><dd :class="{ neg: tradeGain < 0 }">{{ won(tradeGain) }}<small>매도가 − 낙찰가 − 필요경비{{ who === 'biz' ? ' — 예정신고' : '' }}</small></dd></div>
             <template v-if="who === 'biz'">
-              <div><dt>사업경비</dt><dd>{{ won(split.biz) }}<small>{{ split.bizActual ? '실제 기록 — 사업경비 탭' : `A안 — 이자 · 수리 · 관리비 등 ${won(split.bizPlan - split.evictPlan)} + 명도비(${evictLabel}) ${won(split.evictPlan)}` }}</small></dd></div>
+              <div><dt>사업경비</dt><dd>{{ won(split.biz) }}<small>{{ srcText(split.bizActual, split.bizPlan, '사업경비') }}</small></dd></div>
               <div class="key"><dt>사업소득</dt><dd :class="{ neg: gain < 0 }">{{ won(gain) }}<small>매매차익 − 사업경비 — 5월 종합소득세</small></dd></div>
             </template>
             <div><dt>부가세 대상</dt><dd><span :class="['pwm-tag', { on: who === 'biz' && vat.taxable }]">{{ who !== 'biz' ? '해당없음' : vat.taxable ? '과세' : '면세' }}</span><small>{{ who !== 'biz' ? '개인 양도는 부가세가 없습니다' : vat.why }}</small></dd></div>

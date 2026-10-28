@@ -6,7 +6,7 @@ import { computed, ref, watch } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useFinanceStore } from '../stores/financeStore';
 import { useInteriorStore } from '../stores/interiorStore';
-import { BOOK_HINT, BOOK_NAME, groupsOf, ledgerRows, type Book, type LedgerRow } from '../services/expenseBook';
+import { BOOK_HINT, BOOK_NAME, groupsOf, ledgerRows, withPlan, type Book, type LedgerRow } from '../services/expenseBook';
 import { cleanupLegacyOnce } from '../services/legacyCleanup';
 import { shortAddr } from '../utils/address';
 import FormattedNumberInput from './FormattedNumberInput.vue';
@@ -30,8 +30,12 @@ finance.initialize();
 interior.initialize();
 cleanupLegacyOnce();
 
-const all = computed(() => ledgerRows({ be: finance.businessExpenses, interior: interior.rows }));
 const many = computed(() => props.auctionId === null);
+/** A안 기본 줄을 깔 물건 — 낙찰이후는 그 물건, 자금관리는 낙찰한 물건 전부 */
+const planAuctions = computed(() => (many.value
+  ? auctions.auctions.filter((a) => !!a.wonDate)
+  : auctions.auctions.filter((a) => a.id === props.auctionId)));
+const all = computed(() => withPlan(ledgerRows({ be: finance.businessExpenses, interior: interior.rows }), planAuctions.value));
 const rows = computed(() => all.value.filter((r) => r.book === props.book
   && (many.value || r.auctionId === props.auctionId)
   && (!props.inPeriod || props.inPeriod(r.date))));
@@ -100,10 +104,12 @@ const openAdd = () => {
   open.value = true;
 };
 const openRow = (r: LedgerRow) => {
+  // A안 줄은 그 값을 채운 새 기록으로 연다 — 저장하면 실제 기록이 되고 A안 줄은 숨는다
+  const plan = r.src === 'plan';
   draft.value = {
-    src: r.src, id: r.id, auctionId: r.auctionId, date: r.date, category: r.category, detail: r.detail,
+    src: r.src === 'plan' ? '' : r.src, id: plan ? '' : r.id, auctionId: r.auctionId, date: plan ? today() : r.date, category: r.category, detail: r.detail,
     custom: !!r.detail && !itemsOf(r.category).includes(r.detail), qty: r.qty || 1, unit: r.unit || 0, amount: r.amount,
-    vendor: r.vendor, phone: r.phone, status: r.status || '예정', note: r.note,
+    vendor: r.vendor, phone: r.phone, status: r.status || '예정', note: plan ? '' : r.note,
   };
   open.value = true;
 };
@@ -179,11 +185,11 @@ defineExpose({ openAdd, exportCsv, total });
   <section class="xl">
     <div v-if="tools" class="xl-tools">
       <span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span>
-      <span class="xl-hint">{{ BOOK_HINT[book] }} · 자금관리 › {{ BOOK_NAME[book] }}와 같은 기록</span>
+      <span class="xl-hint">{{ BOOK_HINT[book] }} · 자금관리 › {{ BOOK_NAME[book] }}와 같은 기록<br><b class="xl-plan">A안</b> 줄은 입찰가산정 A안 값 — 누르면 실제 값으로 고쳐 적습니다</span>
       <button type="button" class="xl-btn" @click="exportCsv">⬇ 엑셀저장</button>
       <button type="button" class="xl-btn on" :disabled="auctionId === ''" @click="openAdd">＋ 항목추가</button>
     </div>
-    <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint">{{ BOOK_HINT[book] }} · 낙찰이후 › 진행절차 › {{ BOOK_NAME[book] }}와 같은 기록</span></p>
+    <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint">{{ BOOK_HINT[book] }} · 낙찰이후 › 진행절차 › {{ BOOK_NAME[book] }}와 같은 기록<br><b class="xl-plan">A안</b> 줄은 입찰가산정 A안 값 — 누르면 실제 값으로 고쳐 적습니다</span></p>
     <table class="xl-tbl">
       <thead>
         <tr>
@@ -191,11 +197,11 @@ defineExpose({ openAdd, exportCsv, total });
         </tr>
       </thead>
       <tbody>
-        <tr v-for="r in sorted" :key="r.key" @click="openRow(r)">
+        <tr v-for="r in sorted" :key="r.key" :class="{ plan: r.src === 'plan' }" @click="openRow(r)">
           <td>{{ shortDate(r.date) }}</td>
           <td v-if="many" :title="r.auctionLabel">{{ r.auctionLabel || labelOf(r.auctionId) || '공통' }}</td>
           <td><span class="xl-pill">{{ r.category }}</span></td>
-          <td :title="r.detail" class="l">{{ r.detail }}<span v-if="r.qty && unitOf(r.category)" class="xl-qty">{{ money(r.qty) }}{{ unitOf(r.category)?.[2] }} × {{ money(r.unit) }}원</span><em v-if="r.status" class="xl-st">{{ r.status }}</em></td>
+          <td :title="r.detail" class="l">{{ r.detail }}<span v-if="r.qty && unitOf(r.category)" class="xl-qty">{{ money(r.qty) }}{{ unitOf(r.category)?.[2] }} × {{ money(r.unit) }}원</span><em v-if="r.status" class="xl-st">{{ r.status }}</em><em v-if="r.src === 'plan'" class="xl-plan" title="입찰가산정 A안 값 — 누르면 실제 값으로 고쳐 적습니다">A안</em></td>
           <td class="r">{{ money(r.amount) }}원</td>
           <td v-if="book === 'biz'" :title="[r.vendor, r.phone].filter(Boolean).join(' · ')">{{ [r.vendor, r.phone].filter(Boolean).join(' · ') }}</td>
           <td :title="r.note" class="l">{{ r.note }}</td>
@@ -285,6 +291,9 @@ defineExpose({ openAdd, exportCsv, total });
 .xl-tbl tbody tr:hover td { background: #f5f8ff; }
 .xl-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #e9f0fd; color: #1d4ed8; font-size: 13px; }
 .xl-st { margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: #f1f3f6; color: #4b5563; font-style: normal; font-size: 12px; }
+.xl-plan { margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: #fff4e5; color: #b45309; font-style: normal; font-weight: 600; font-size: 12px; }
+.xl-hint .xl-plan { margin: 0 4px 0 0; }
+.xl-tbl tr.plan td { color: #6b7280; }
 .xl-qty { margin-left: 10px; font-size: 13px; color: #6b7280; }
 .xl-sub { font-size: 12px; font-weight: 400; color: #6b7280; }
 .xl-form :deep(input:disabled) { background: #f5f7fa; color: #374151; }

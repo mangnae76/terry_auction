@@ -37,8 +37,8 @@ const NEED_CATS = NEED_GROUPS.map(([g]) => g);
 /** 두 장부의 한 줄 */
 export interface LedgerRow {
   key: string;
-  /** be — 사업지출 기록(필요경비) · in — 인테리어 기록(사업경비) */
-  src: 'be' | 'in';
+  /** be — 사업지출 기록(필요경비) · in — 인테리어 기록(사업경비) · plan — 입찰가산정 A안 기본 줄(저장 안 됨) */
+  src: 'be' | 'in' | 'plan';
   id: string;
   book: Book;
   auctionId: string;
@@ -68,32 +68,59 @@ export const ledgerRows = (src: { be: BusinessExpenseRecord[]; interior: Interio
   })),
 ];
 
-export const sumOf = (rows: LedgerRow[], book: Book, auctionId: string) =>
-  rows.filter((r) => r.book === book && r.auctionId === auctionId).reduce((s, r) => s + r.amount, 0);
-
-/** 입찰가산정 A안을 두 갈래로 — 실제 기록이 없을 때 대신 쓴다 */
+/** 입찰가산정 A안의 비용 칸 */
 export interface PlanCost {
   acquisitionTaxAmount?: number; legalCostAmount?: number; brokerageAmount?: number;
   interestAmount?: number; midRepaymentAmount?: number; arrearsFee?: number; repairCost?: number; evictionCost?: number; advertisingCost?: number;
 }
-export const planNeedOf = (c?: PlanCost | null) => (c?.acquisitionTaxAmount || 0) + (c?.legalCostAmount || 0) + (c?.brokerageAmount || 0);
-/** 명도비는 빼고 셈한다 — 명도분석 값을 따로 더할 수 있게 */
-export const planBizOf = (c?: PlanCost | null) => (c?.interestAmount || 0) + (c?.midRepaymentAmount || 0) + (c?.arrearsFee || 0)
-  + (c?.repairCost || 0) + (c?.advertisingCost || 0);
+export interface PlanAuction {
+  id: string; wonDate?: string; caseNumber?: string; address?: string;
+  bidCost?: PlanCost | null; metrics?: { myBidValue?: number; minimumBidValue?: number };
+}
 
-/** 물건 하나의 두 갈래 비용 — 실제 기록이 있으면 그 값, 없으면 입찰가산정 A안.
- *  evict — 명도비를 따로 넣을 때(명도분석 값). 비우면 A안 명도비 */
-export const costSplitOf = (
-  a: { id: string; bidCost?: (PlanCost & { acquisitionTaxAmount?: number }) | null; metrics?: { myBidValue?: number; minimumBidValue?: number } },
-  rows: LedgerRow[], evict?: number,
-) => {
-  const c = a.bidCost;
+/** A안 기본 줄 — 장부를 빈칸으로 두지 않고 입찰가산정 값을 먼저 깔아 둔다.
+ *  같은 물건 · 같은 구분 · 같은 명세의 실제 기록을 적으면 그 줄은 실제 기록으로 바뀐다(A안 줄은 숨는다) */
+export const planRowsOf = (a: PlanAuction): LedgerRow[] => {
+  const c = a.bidCost ?? {};
   const bid = a.metrics?.myBidValue || a.metrics?.minimumBidValue || 0;
-  const acq = c?.acquisitionTaxAmount || Math.round(bid * 0.011);
-  const needActual = sumOf(rows, 'need', a.id);
-  const bizActual = sumOf(rows, 'biz', a.id);
-  const needPlan = acq + (c?.legalCostAmount || 0) + (c?.brokerageAmount || 0);
-  const evictPlan = evict ?? (c?.evictionCost || 0);
-  const bizPlan = planBizOf(c) + evictPlan;
-  return { acq, needActual, bizActual, needPlan, bizPlan, evictPlan, need: needActual || needPlan, biz: bizActual || bizPlan };
+  const acq = c.acquisitionTaxAmount || Math.round(bid * 0.011);
+  const interest = c.interestAmount || 0;
+  const lines: Array<[Book, string, string, number, number?, number?]> = [
+    ['need', '취득비용', '취득세·지방교육세·농특세', acq],
+    ['need', '취득비용', '법무사 수수료(등기)', c.legalCostAmount || 0],
+    ['need', '양도비용', '매도 중개수수료', c.brokerageAmount || 0],
+    // A안 이자는 3개월 몫 — 3개월 × 한 달 이자로 적어 둔다
+    ['biz', '대출이자', '대출이자', interest, interest ? 3 : 0, interest ? Math.round(interest / 3) : 0],
+    ['biz', '대출이자', '중도상환수수료', c.midRepaymentAmount || 0],
+    ['biz', '관리비·공과금', '미납 관리비', c.arrearsFee || 0],
+    ['biz', '수리·인테리어', '기타 수리', c.repairCost || 0],
+    ['biz', '명도비', '이사비(합의)', c.evictionCost || 0],
+    ['biz', '기타', '광고비', c.advertisingCost || 0],
+  ];
+  return lines.filter(([, , , amt]) => amt > 0).map(([book, category, detail, amount, qty, unit]): LedgerRow => ({
+    key: `plan-${a.id}-${detail}`, src: 'plan', id: '', book, auctionId: a.id, auctionLabel: '',
+    date: a.wonDate || '', category, detail, amount, vendor: '', phone: '', status: '', qty: qty || 0, unit: unit || 0, note: '',
+  }));
+};
+// A안 수리비는 한 덩어리 견적 — 실제 수리 기록을 하나라도 적으면 숨는다. 나머지는 같은 명세끼리 바뀐다
+const sameLine = (x: LedgerRow, p: LedgerRow) => x.book === p.book && x.auctionId === p.auctionId && x.category === p.category
+  && (p.category === '수리·인테리어' || x.detail === p.detail);
+/** 실제 기록 + 아직 실제로 적지 않은 A안 줄 */
+export const withPlan = (actual: LedgerRow[], auctions: PlanAuction[]): LedgerRow[] => [
+  ...actual,
+  ...auctions.flatMap(planRowsOf).filter((p) => !actual.some((r) => sameLine(r, p))),
+];
+
+export const sumOf = (rows: LedgerRow[], book: Book, auctionId: string) =>
+  rows.filter((r) => r.book === book && r.auctionId === auctionId).reduce((s, r) => s + r.amount, 0);
+
+/** 물건 하나의 두 갈래 비용 — 실제 기록 + 남은 A안 줄 */
+export const costSplitOf = (a: PlanAuction, actual: LedgerRow[]) => {
+  const rows = withPlan(actual.filter((r) => r.auctionId === a.id), [a]);
+  const part = (book: Book, src: 'plan' | 'real') => rows
+    .filter((r) => r.book === book && (src === 'plan' ? r.src === 'plan' : r.src !== 'plan'))
+    .reduce((s, r) => s + r.amount, 0);
+  const needActual = part('need', 'real'); const needPlan = part('need', 'plan');
+  const bizActual = part('biz', 'real'); const bizPlan = part('biz', 'plan');
+  return { needActual, needPlan, bizActual, bizPlan, need: needActual + needPlan, biz: bizActual + bizPlan };
 };
