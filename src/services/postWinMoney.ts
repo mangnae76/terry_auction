@@ -135,8 +135,8 @@ export const transferTaxOf = (gain: number, term: HoldTerm) => {
   return { base, ratePct, incomeTax, localTax, afterTax: gain - incomeTax - localTax };
 };
 
-/** 입찰가산정 A안에서 세금분석이 쓰는 값 — 낙찰가 · 매도가 · 취득세 · 그 밖의 필요경비(명도비 뺌).
- *  명도비는 명도분석 값으로 바꿔 넣으므로 여기서 뺀다. */
+/** 입찰가산정 A안에서 세금분석이 쓰는 값 — 낙찰가 · 매도가 · 취득세 · 그 밖의 필요경비(명도비 뺌, 수리비 포함).
+ *  명도비는 명도분석 값으로 바꿔 넣으므로 여기서 뺀다. 수리비는 따로도 돌려줘 인테리어 실제 지출로 바꿔 넣을 수 있게 한다. */
 export interface PlanSource {
   metrics?: { myBidValue?: number; minimumBidValue?: number };
   expectedSaleValue?: number;
@@ -151,9 +151,10 @@ export const planOf = (a: PlanSource | null | undefined) => {
   const acq = c.acquisitionTaxAmount || Math.round(bid * 0.011);
   const acqPct = c.acquisitionTaxRate || (bid ? Math.round((acq / bid) * 1000) / 10 : 1.1);
   const interest = (c.interestAmount || 0) + (c.midRepaymentAmount || 0);
+  const repair = c.repairCost || 0;
   const others = (c.legalCostAmount || 0) + interest + (c.brokerageAmount || 0)
-    + (c.arrearsFee || 0) + (c.repairCost || 0) + (c.advertisingCost || 0);
-  return { bid, sale: a?.expectedSaleValue || 0, acq, acqPct, others, interest };
+    + (c.arrearsFee || 0) + repair + (c.advertisingCost || 0);
+  return { bid, sale: a?.expectedSaleValue || 0, acq, acqPct, others, interest, repair };
 };
 
 /** 건물분 부가세 — 매매사업자가 전용 85㎡ 넘는 주택이나 주택 아닌 건물(상가 · 오피스텔 등)을 팔 때 */

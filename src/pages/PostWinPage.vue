@@ -253,9 +253,10 @@ const popTodo = ref<StepTodo | null>(null);
 /** 서식 창 — 줄 옆 [서식]을 누르면 그 줄에 걸린 서식(여럿이면 탭) */
 const formKeys = ref<FormKey[] | null>(null);
 // 진행절차 안 박스 탭 — 새로고침해도 보던 탭 그대로(이 탭 세션)
-type FlowSub = 'steps' | 'evict' | 'tax';
-const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['tax', '세금분석']];
-const flowSub = ref<FlowSub>((() => { try { const v = sessionStorage.getItem('pw.flow.sub'); return v === 'evict' || v === 'tax' ? v : 'steps'; } catch { return 'steps'; } })());
+// 세금분석 숫자를 바꾸는 것만 — 명도비(명도분석) · 수리비(인테리어 실제 지출) → 세금분석
+type FlowSub = 'steps' | 'evict' | 'repair' | 'tax';
+const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['repair', '인테리어'], ['tax', '세금분석']];
+const flowSub = ref<FlowSub>((() => { try { const v = sessionStorage.getItem('pw.flow.sub'); return v === 'evict' || v === 'repair' || v === 'tax' ? v : 'steps'; } catch { return 'steps'; } })());
 watch(flowSub, (v) => { try { sessionStorage.setItem('pw.flow.sub', v); } catch { /* 그만 */ } });
 /** 처음 보일 서식 — 내용증명 2차 카드에서 열면 2차부터 */
 const formStart = ref<FormKey | ''>('');
@@ -430,6 +431,8 @@ const goTodo = async (t: StepTodo) => {
   if (!t.tab) return;
   // 상세 · 가이드는 창으로 — 인테리어 · 매도는 기록 화면이라 그대로 옮겨 간다
   if (t.tab !== 'repair' && t.tab !== 'sell' && (t.group || t.tab === 'biz')) { popTodo.value = t; return; }
+  // 웹은 인테리어가 진행절차 안 박스 탭이다
+  if (webEmbed && t.tab === 'repair') { activeTab.value = 'flow'; flowSub.value = 'repair'; window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   activeTab.value = t.tab as TabKey;
   if (!t.group) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   collapsed.value = { ...collapsed.value, [t.group]: false };
@@ -900,7 +903,7 @@ const toggleSection = (key: string) => {
       <nav v-if="activeTab === 'flow'" class="pw-chaptabs" role="tablist">
         <button v-for="[k, label] in FLOW_SUBS" :key="k" type="button" role="tab" :aria-selected="flowSub === k" :class="{ on: flowSub === k }" @click="flowSub = k">{{ label }}</button>
       </nav>
-      <PostWinMoney v-if="activeTab === 'flow' && flowSub !== 'steps'" :key="`${picked?.id}-${flowSub}`" :auction="picked" :mode="flowSub === 'evict' ? 'evict' : 'tax'" />
+      <PostWinMoney v-if="activeTab === 'flow' && (flowSub === 'evict' || flowSub === 'tax')" :key="`${picked?.id}-${flowSub}`" :auction="picked" :mode="flowSub === 'evict' ? 'evict' : 'tax'" />
       <PostWinTimeline
         v-if="activeTab === 'flow' && flowSub === 'steps'"
         :auction="picked"
@@ -1192,7 +1195,7 @@ const toggleSection = (key: string) => {
       </template>
 
       <!-- 인테리어 — 업체 비딩과 인테리어 비용, 같은 꼴의 표 두 장 -->
-      <template v-else-if="activeTab === 'repair'">
+      <template v-else-if="activeTab === 'repair' || (activeTab === 'flow' && flowSub === 'repair')">
         <section v-for="card in INT_CARDS" :key="card.kind" class="pw-card">
           <header class="pw-card-head">
             <h2>

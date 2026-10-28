@@ -1,11 +1,13 @@
 <script setup lang="ts">
 // 낙찰이후 · 진행절차 옆 박스 탭(웹) — 명도분석(협의 · 강제집행 비용 비교) / 세금분석(A안 기준 차익 · 예상 세금).
 // 명도분석 기본값은 물건 값(대출 · 면적)에서, 없으면 대략의 시세. 칸마다 고쳐 쓴다.
-// 세금분석은 입찰가산정 A안의 낙찰가 · 매도가 · 필요경비를 그대로 쓰고 명도비만 명도분석 값으로 바꾼다 — 고치려면 입찰가산정으로 간다.
+// 세금분석은 입찰가산정 A안의 낙찰가 · 매도가 · 필요경비를 그대로 쓰고, 명도비는 명도분석 값 · 수리비는 인테리어 실제 지출(있으면)로 바꾼다.
+// 매도가는 매도일이 적히면 확정 매도가다(같은 칸). 고치려면 입찰가산정으로 간다.
 // 고른 값은 이 브라우저에 물건마다 기억한다. 세금 셈은 입찰가산정과 같은 profitMath.
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuctionStore } from '../stores/auctionStore';
+import { useInteriorStore } from '../stores/interiorStore';
 import { useAuthStore } from '../stores/authStore';
 import { loadAccountDetail } from '../services/authRepository';
 import type { AuctionDetail } from '../types/auction';
@@ -66,9 +68,18 @@ const store = useAuctionStore();
 /** 입찰가산정으로 — 물건상세 수익분석 탭 */
 const goPlan = () => { if (props.auction?.id) router.push({ path: `/auctions/${props.auction.id}`, query: { tab: 'profit' } }); };
 const plan = computed(() => planOf(props.auction));
+// 인테리어 실제 지출(견적 말고 지출 표) — 적힌 게 있으면 A안 수리비 대신
+const interior = useInteriorStore();
+const repairActual = computed(() => interior.rows
+  .filter((r) => r.auctionId === props.auction?.id && (r.kind ?? 'cost') === 'cost')
+  .reduce((s, r) => s + (r.amountWithVat || 0), 0));
+const repairUsed = computed(() => (repairActual.value > 0 ? repairActual.value : plan.value.repair));
+/** A안 필요경비에서 수리비만 바꿔 넣은 값(명도비 뺌) */
+const othersUsed = computed(() => plan.value.others - plan.value.repair + repairUsed.value);
+const saleFixed = computed(() => !!props.auction?.sellDate);
 const evictCost = computed(() => (evictPick.value === 'deal' ? deal.value.total : exec.value.total));
 const evictLabel = computed(() => (evictPick.value === 'deal' ? '협의' : '강제집행'));
-const costTotal = computed(() => plan.value.acq + plan.value.others + evictCost.value);
+const costTotal = computed(() => plan.value.acq + othersUsed.value + evictCost.value);
 const gain = computed(() => plan.value.sale - plan.value.bid - costTotal.value);
 const vat = computed(() => vatOf(props.auction?.propertyType ?? '', props.auction?.buildingAreaM2 ?? 0));
 // 매출 · 다른 차익 — 매도 기록(매도일 · 매도가)에서 해마다 셈한다. 없으면 0
@@ -94,7 +105,7 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
   <section class="pwm">
     <header class="pwm-head">
       <h2>{{ mode === 'evict' ? '명도분석' : '세금분석' }}</h2>
-      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 입찰가산정 A안 값으로 다시 셈합니다 — 명도비만 명도분석 값으로 바꿔 넣습니다' }}</span>
+      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 입찰가산정 A안 값으로 다시 셈합니다 — 명도비 · 수리비는 실제 값' }}</span>
     </header>
     <!-- ===== 명도분석 ===== -->
     <template v-if="mode === 'evict'">
@@ -153,9 +164,9 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
           <h3>비용 및 차익</h3>
           <dl>
             <div><dt>낙찰가</dt><dd>{{ won(plan.bid) }}</dd></div>
-            <div><dt>매도가</dt><dd>{{ won(plan.sale) }}</dd></div>
+            <div><dt>매도가</dt><dd>{{ won(plan.sale) }}<small>{{ saleFixed ? `확정 — 매도일 ${auction?.sellDate}` : '입찰가산정 A안 예상' }}</small></dd></div>
             <div><dt>취득세</dt><dd>{{ won(plan.acq) }}<small>낙찰가의 {{ plan.acqPct }}%</small></dd></div>
-            <div><dt>필요경비</dt><dd>{{ won(plan.others + evictCost) }}<small>입찰가산정 {{ won(plan.others) }} + 명도비({{ evictLabel }}) {{ won(evictCost) }}</small></dd></div>
+            <div><dt>필요경비</dt><dd>{{ won(othersUsed + evictCost) }}<small>입찰가산정 {{ won(othersUsed - repairUsed) }} + 수리비({{ repairActual > 0 ? '인테리어 실제' : 'A안' }}) {{ won(repairUsed) }} + 명도비({{ evictLabel }}) {{ won(evictCost) }}</small></dd></div>
             <div class="key"><dt>양도차익</dt><dd :class="{ neg: gain < 0 }">{{ won(gain) }}<small>매도가 − 낙찰가 − 취득세 − 필요경비</small></dd></div>
             <div><dt>부가세 대상</dt><dd><span :class="['pwm-tag', { on: who === 'biz' && vat.taxable }]">{{ who !== 'biz' ? '해당없음' : vat.taxable ? '과세' : '면세' }}</span><small>{{ who !== 'biz' ? '개인 양도는 부가세가 없습니다' : vat.why }}</small></dd></div>
           </dl>
