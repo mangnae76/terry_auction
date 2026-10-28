@@ -257,7 +257,11 @@ const todoById = (id: string): StepTodo | null => { const [sk, i] = id.split('.'
 const popFull = ref(false);
 const normLabel = (v: string) => String(v ?? '').replace(/\s+/g, '');
 const narrowGroup = (g: CheckGroup, t: StepTodo): CheckGroup => {
-  if (!t.section && !t.rows) return g;
+  // 상자 통째인 카드도 줄 글만 바꿔 보일 수 있다(texts)
+  if (!t.section && !t.rows) {
+    if (!t.texts) return g;
+    return { ...g, sections: g.sections.map((sec) => ({ ...sec, rows: sec.rows.map((r) => (t.texts?.[r.id] ? { ...r, text: t.texts[r.id] } : r)) })) };
+  }
   const want = t.section == null ? null : (Array.isArray(t.section) ? t.section : [t.section]).map(normLabel);
   const sections = g.sections
     .filter((sec) => !want || want.includes(normLabel(sec.label ?? '')))

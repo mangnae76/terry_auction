@@ -57,7 +57,7 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
     { text: '이사 날짜 협의 및 확정', cat: 'evict', tab: 'evict', group: 'ev.move' },
     // 사업자등록이 먼저 — 대출 심사 서류에 사업자등록증이 들어간다
     { text: '사업자등록', cat: 'proc', tab: 'balance', group: 'ln.biz' },
-    { text: '대출 심사 서류 준비', cat: 'loan', tab: 'balance', group: 'loan.screen' },
+    { text: '대출 심사 서류 준비', cat: 'loan', tab: 'balance', group: 'loan.screen', texts: { 'ln.c6': '2년간 배우자 소득금액증명서 — 본인(낙찰자) 소득이 없을 때만, 배우자 소득으로 심사' } },
     { text: '대출업체 비딩', cat: 'loan', tab: 'balance', group: 'loan.bid' },
   ],
   balance: [
