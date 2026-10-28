@@ -57,7 +57,10 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
     { text: '이사 날짜 협의 및 확정', cat: 'evict', tab: 'evict', group: 'ev.move' },
     // 사업자등록이 먼저 — 대출 심사 서류에 사업자등록증이 들어간다
     { text: '사업자등록', cat: 'proc', tab: 'balance', group: 'ln.biz' },
-    { text: '대출 심사 서류 준비', cat: 'loan', tab: 'balance', group: 'loan.screen', texts: { 'ln.c6': '2년간 배우자 소득금액증명서 — 본인(낙찰자) 소득이 없을 때만, 배우자 소득으로 심사' } },
+    { text: '대출 심사 서류 준비', cat: 'loan', tab: 'balance', group: 'loan.screen', texts: {
+      'ln.c5': '올해 근로소득원천징수 서류 — 회사에 알리지 않고 국세청 홈택스(손택스 앱)에서 직접 발급(전년도분은 지급명세서 제출내역, 올해분은 간이지급명세서 조회)',
+      'ln.c6': '2년간 배우자 소득금액증명서 — 본인(낙찰자) 소득이 없을 때만, 배우자 소득으로 심사',
+    } },
     { text: '대출업체 비딩', cat: 'loan', tab: 'balance', group: 'loan.bid' },
   ],
   balance: [

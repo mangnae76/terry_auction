@@ -89,6 +89,7 @@ const TEXT_LINKS: Array<{ word: string; href: string }> = [
   { word: '인터넷우체국', href: 'https://www.epost.go.kr/' },
   { word: '전자소송포털', href: 'https://ecfs.scourt.go.kr/' },
   { word: '한전ON', href: 'https://online.kepco.co.kr/' },
+  { word: '국세청 홈택스', href: 'https://www.hometax.go.kr/' },
 ];
 /** 줄 글을 [글, 링크] 조각으로 */
 export const textParts = (text: string): Array<{ t: string; href?: string }> => {

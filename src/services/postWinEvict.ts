@@ -217,7 +217,7 @@ export const POST_WIN_EVICT: CheckGroup[] = [
         label: '이사 당일',
         rows: [
           { id: 'ev.move.m1', depth: 0, text: '집 상태 확인(파손 · 짐 남김)' },
-          { id: 'ev.move.m2', depth: 0, text: '열쇠 · 출입카드 인수' },
+          { id: 'ev.move.m2', depth: 0, text: '열쇠 · 출입카드 · 현관 비밀번호 넘겨받기 — 비밀번호는 바로 바꾸기' },
           { id: 'ev.move.m4', depth: 0, text: '관리비 · 공과금(수도 · 가스 · 전기) 납부 확인서 받기 — 못 받으면 관리사무소 · 각 기관에 미납 여부 확인', warn: true },
           { id: 'ev.move.m3', depth: 0, text: '배당받는 임차인(최선순위 포함)이면 이사 확인 뒤 명도확인서 + 인감증명서 건네기', warn: true },
         ],
