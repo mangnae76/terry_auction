@@ -2354,6 +2354,10 @@ html, body { overflow-x: clip; }
 span.cal-day { display: inline-grid; place-items: center; cursor: default; }
 span.cal-day:not(.has):hover { background: transparent !important; }
 span.cal-day.has { cursor: help; }
+/* 단계 고르기 단추(▾) — 글자 수(낙찰 · 유찰 · 임장예정 …)와 상관없이 같은 폭, ▾ 는 오른쪽 끝 · 글은 가운데 */
+.list .phase[data-act="stage-menu"] { width: 104px; padding: 0 22px 0 10px !important; justify-content: center; text-align: center; }
+.ih-stage[data-act="stage-menu"] { position: relative; width: 104px; justify-content: center; padding: 0 22px 0 10px !important; }
+.ih-stage[data-act="stage-menu"] .caret { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); }
 </style>
 
 <header class="gnb">
