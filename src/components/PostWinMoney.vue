@@ -15,6 +15,8 @@ import { useAuthStore } from '../stores/authStore';
 import { loadAccountDetail } from '../services/authRepository';
 import type { AuctionDetail } from '../types/auction';
 import FormattedNumberInput from './FormattedNumberInput.vue';
+import { askEvictAi } from '../services/geminiEvict';
+import { getGeminiKey, isGeminiOn, loadGeminiPrefs } from '../services/geminiPdf';
 import { EVICT_BASIS, EVICT_DEFAULT, EVICT_SOURCES, bizIncomeTaxOf, dealCost, execCost, monthlyCarry, planOf, transferTaxOf, vatOf, type EvictInput, type HoldTerm } from '../services/postWinMoney';
 
 const props = defineProps<{ auction: AuctionDetail | null; mode: 'evict' | 'tax' }>();
@@ -46,10 +48,60 @@ onMounted(async () => {
   else if (d.bizType === 'biz') who.value = 'biz';
 });
 const term = ref<HoldTerm>((read().term as HoldTerm) || 'lt1');
-watch([ev, who, term], () => {
-  try { localStorage.setItem(key(), JSON.stringify({ ev: ev.value, who: who.value, term: term.value })); } catch { /* 그만 */ }
+/** AI 명도 — 고친 칸마다 까닭 · 한두 문장 요약(이 브라우저에 물건마다 기억) */
+const aiNotes = ref<Record<string, string>>((read().aiNotes as Record<string, string>) ?? {});
+const aiSummary = ref(String(read().aiSummary ?? ''));
+watch([ev, who, term, aiNotes, aiSummary], () => {
+  try { localStorage.setItem(key(), JSON.stringify({ ev: ev.value, who: who.value, term: term.value, aiNotes: aiNotes.value, aiSummary: aiSummary.value })); } catch { /* 그만 */ }
 }, { deep: true });
-const reset = () => { ev.value = seedEvict(); };
+const reset = () => { ev.value = seedEvict(); aiNotes.value = {}; aiSummary.value = ''; };
+
+// === AI로 채우기 — 권리분석 AI 결과 · 현장조사 · 물건 정보를 보내 계산에 쓴 값을 고친다(계산은 그대로 정해진 식) ===
+const aiBusy = ref(false);
+const aiErr = ref('');
+/** AI 에게 넘길 사실 — 없는 것은 적지 않는다 */
+const evictFacts = () => {
+  const a = props.auction;
+  if (!a) return '';
+  const r = a.rightsAi;
+  const f = a.fieldSurvey;
+  const sum = a.basicSummary ?? {};
+  const line = (k: string, v: unknown) => (v !== undefined && v !== null && String(v).trim() ? `- ${k}: ${String(v).trim()}` : '');
+  return [
+    line('물건 종류', a.propertyType),
+    line('전용면적', a.buildingAreaM2 ? `${a.buildingAreaM2}㎡ (${Math.round(a.buildingAreaPyeong || a.buildingAreaM2 / 3.3058)}평)` : ''),
+    line('층', [sum['sum.floorCurrent'], sum['sum.floorTotal']].filter(Boolean).join(' / 전체 ')),
+    line('주소', a.address),
+    line('현장조사 점유자', f?.occupantNote), line('현장조사 임대 문제', f?.rentalIssue), line('현장조사 열쇠 · 비번', f?.keyIssue),
+    line('현장조사 미납 관리비 · 공과금', f?.totalArrears), line('현장조사 메모', f?.surveyMemo),
+    line('권리분석 AI 명도 난이도', r?.evict?.level), line('명도 난이도 근거', r?.evict?.reason),
+    line('명도 대응 전략', r?.evict?.strategy), line('명도 투자 조언', r?.evict?.advice),
+    line('위험 요약', r?.risk?.summary), ...(r?.risk?.items ?? []).map((x) => line('위험', x)),
+    line('인수 권리', r?.takeover?.summary),
+  ].filter(Boolean).join('\n');
+};
+const aiFill = async () => {
+  aiErr.value = '';
+  const a = props.auction;
+  if (!a?.rightsAi && !a?.fieldSurvey?.occupantNote && !a?.fieldSurvey?.surveyMemo) {
+    aiErr.value = '먼저 물건상세 › 권리분석에서 AI 분석을 돌리거나 임장조사에 점유자 메모를 적어 주세요 — 근거가 있어야 AI가 값을 고칩니다.';
+    return;
+  }
+  aiBusy.value = true;
+  try {
+    if (!isGeminiOn()) await loadGeminiPrefs(auth.uid).catch(() => undefined);
+    const res = await askEvictAi(getGeminiKey(), evictFacts(), ev.value);
+    const next = { ...ev.value };
+    const notes: Record<string, string> = {};
+    res.changes.forEach((c) => { (next as Record<string, number>)[c.field] = c.value; notes[c.field] = c.reason; });
+    ev.value = next;
+    aiNotes.value = notes;
+    aiSummary.value = res.summary || (res.changes.length ? '' : '근거가 있는 칸이 없어 바꾼 값이 없습니다.');
+    evEdit.value = true;
+  } catch (e) {
+    aiErr.value = e instanceof Error ? e.message : 'AI 명도 실패';
+  } finally { aiBusy.value = false; }
+};
 
 // ===== 명도분석 =====
 const deal = computed(() => dealCost(ev.value));
@@ -166,13 +218,17 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
       <h3 class="pwm-h">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M16 11v7" /></svg>
         계산에 쓴 값
+        <button type="button" class="pwm-ai" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI로 채우기' }}</button>
         <button type="button" :class="['pwm-edit', { on: evEdit }]" @click="evEdit = !evEdit">{{ evEdit ? '접기' : '직접입력' }}</button>
         <button v-if="evEdit" type="button" class="pwm-reset" @click="reset">초기화</button>
       </h3>
+      <p v-if="aiErr" class="pwm-aierr">{{ aiErr }}</p>
+      <p v-if="aiSummary" class="pwm-aisum"><b>AI 요약</b>{{ aiSummary }}</p>
       <div v-if="evEdit" class="pwm-fields">
         <label v-for="[k, label, unit] in EV_FIELDS" :key="k">
           <span>{{ label }}</span>
           <span class="pwm-in"><FormattedNumberInput v-model="ev[k] as number" live-group :max-fraction-digits="unit === '%' ? 2 : 0" /><em>{{ unit }}</em></span>
+          <small v-if="aiNotes[k]" class="pwm-ainote">AI · {{ aiNotes[k] }}</small>
         </label>
       </div>
       <ul class="pwm-basis"><li v-for="b in EVICT_BASIS" :key="b">{{ b }}</li></ul>
@@ -282,6 +338,13 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-box { margin-top: 22px; border: 1px solid #e3e8f0; border-radius: 10px; padding: 18px 24px 20px; }
 .pwm-box > .pwm-h:first-child { margin-top: 0; }
 .pwm-note { margin: 10px 0 0; font-size: 14px; color: #9ca3af; }
+.pwm-ai { margin-left: auto; height: 30px; padding: 0 14px; border: 1px solid #7c3aed; border-radius: 6px; background: #f5f0ff; color: #6d28d9; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pwm-ai:disabled { opacity: .6; cursor: default; }
+.pwm-ai + .pwm-edit { margin-left: 0; }
+.pwm-aierr { margin: 0 0 10px; padding: 10px 12px; border-radius: 8px; background: #fdf0e3; color: #8a4b12; font-size: 14px; }
+.pwm-aisum { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: #f5f0ff; color: #3b2a63; font-size: 14px; line-height: 1.6; }
+.pwm-aisum b { margin-right: 8px; color: #6d28d9; }
+.pwm-ainote { font-size: 12px; color: #6d28d9; line-height: 1.4; }
 .pwm-edit { margin-left: auto; height: 30px; padding: 0 14px; border: 1px solid #2b6df3; border-radius: 6px; background: #fff; color: #1d4ed8; font-size: 14px; font-weight: 600; cursor: pointer; }
 .pwm-edit.on { background: #2b6df3; color: #fff; }
 .pwm-edit + .pwm-reset { margin-left: 0; }
