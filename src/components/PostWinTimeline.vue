@@ -277,7 +277,9 @@ const resetDefault = () => {
             <li v-for="t in todosOf(r)" :key="t.text" :class="['pwt-todo', { full: !!progOf(t) && progOf(t)![0] >= progOf(t)![1] }]">
               <svg class="pwt-todo-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
               <span :class="['pwt-cat', t.cat]">{{ catName(t.cat) }}</span>
-              <span class="pwt-todo-t"><em v-if="t.when" class="pwt-when">{{ t.when }}</em>{{ t.text }}</span>
+              <!-- 꼬리말 칸은 늘 같은 폭(없으면 빈칸) — 본문이 한 줄로 가지런히 선다 -->
+              <em class="pwt-when">{{ t.when || '' }}</em>
+              <span class="pwt-todo-t">{{ t.text }}</span>
               <em v-if="progOf(t)" class="pwt-prog">{{ progOf(t)![0] }}/{{ progOf(t)![1] }}</em>
               <button type="button" class="pwt-go" @click="emit('go', t)">{{ goLabel(t) }} ›</button>
             </li>
@@ -329,11 +331,11 @@ const resetDefault = () => {
 .pwt-main { flex: 1 1 auto; min-width: 0; }
 .pwt-name { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; }
 /* 큰일 — 단계 옆 칸. 다 한 일은 초록 체크 · 회색 글 */
-.pwt-todos { flex: 0 0 44%; margin: 0; padding: 0 0 0 16px; list-style: none; border-left: 1px solid #eef1f6; display: flex; flex-direction: column; gap: 6px; }
+.pwt-todos { flex: 0 0 50%; margin: 0; padding: 0 0 0 16px; list-style: none; border-left: 1px solid #eef1f6; display: flex; flex-direction: column; gap: 6px; }
 .pwt-todo { display: flex; align-items: center; gap: 8px; min-height: 28px; }
 .pwt-todo-ico { flex: none; color: #d1d5db; }
 .pwt-todo.full .pwt-todo-ico { color: #4f9a68; }
-.pwt-todo-t { flex: 1 1 auto; min-width: 0; font-size: 15px; font-weight: 700; color: #111827; }
+.pwt-todo-t { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; font-weight: 700; color: #111827; }
 .pwt-todo.full .pwt-todo-t { color: #9ca3af; }
 /* 갈래 칩 — 상태 칩(진한 바탕)과 헷갈리지 않게 옅은 바탕 · 색 글자. 명도 주황 · 대출 파랑 · 절차 회색 */
 .pwt-cat { flex: none; display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 6px; font-size: 14px; font-weight: 600; line-height: 1; }
@@ -345,7 +347,7 @@ const resetDefault = () => {
 .pwt-cats button:hover { color: #111827; }
 .pwt-cats button.on { border-color: #1f2a44; background: #1f2a44; color: #fff; }
 .pwt-row.dim { opacity: .45; }
-.pwt-when { margin-right: 6px; font-style: normal; font-size: 14px; font-weight: 600; color: #9ca3af; }
+.pwt-when { flex: 0 0 84px; font-style: normal; font-size: 14px; font-weight: 600; color: #9ca3af; white-space: nowrap; }
 .pwt-prog { flex: none; font-style: normal; font-size: 14px; font-weight: 700; color: #6b7280; }
 .pwt-todo.full .pwt-prog { color: #4f9a68; }
 .pwt-go { flex: none; height: 28px; padding: 0 10px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 400; cursor: pointer; }
