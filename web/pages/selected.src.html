@@ -188,7 +188,7 @@ button { cursor: pointer; }
 .g-ico .dot { position: absolute; top: 2px; right: 2px; width: 7px; height: 7px; border-radius: 50%; background: #ff4d4f; box-shadow: 0 0 0 1.5px var(--nav); }
 .g-box {
   /* 상단 메뉴 전부의 아래 메뉴를 한 번에 펼치고 접는 단추 — 속은 비우고 흰 테두리·흰 삼각형 */
-  position: absolute; left: 79.2%; top: 35px; width: 18px; height: 18px; border-radius: 2px; border: 1px solid #fff;
+  position: absolute; left: calc(79.2% + 2em); top: 35px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 2px; border: 1px solid #fff;
   background: transparent; display: grid; place-items: center; padding: 0; transition: background .15s;
 }
 .g-box svg { width: 8px; height: 8px; color: #fff; transition: transform .2s; }
@@ -203,7 +203,7 @@ button { cursor: pointer; }
 .g-col a:hover { color: var(--blue); }
 .g-col a.on { color: var(--blue); font-weight: 700; }
 /* 둘째 줄 오른쪽 — [사람] 로그인(=로그인 뒤엔 이름) ▼ 회원가입(=로그인 뒤엔 로그아웃). 시안 좌표: 82.5% / 글자 84.9% / ▼ 90.6% / 93.75% */
-.g-user { position: absolute; left: 82.5%; top: 33px; height: 24px; display: flex; align-items: center; }
+.g-user { position: absolute; left: calc(82.5% + var(--menu-fs)); top: 33px; height: 24px; display: flex; align-items: center; }
 .g-login {
   position: relative; height: 24px; display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent;
   padding: 0; font-size: var(--menu-fs); font-weight: 700; letter-spacing: -0.3px; white-space: nowrap;
@@ -213,6 +213,7 @@ button { cursor: pointer; }
 .g-login .pic svg { width: 23px; height: 23px; }
 .g-login .txt { min-width: 67px; text-align: left; transition: color .15s; }
 .g-login.named .txt { color: var(--nav-name); }
+.g-login .txt .nim { font-size: .5em; } /* 이름 뒤 '님'은 이름의 절반 크기 */
 .g-login:hover .txt { color: #cfe0ff; }
 .g-login:hover .pic { color: #cfe0ff; }
 .g-login.named:hover .txt { color: #8fdcff; }
@@ -2868,7 +2869,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     { const t = $('navMy'); if (t) { t.classList.toggle('on', S.route === 'mypage'); if (S.route === 'mypage') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 물건상세(선정물건 안)에 들어가도 선정물건 메뉴 밑줄은 그대로 */
     const nav = $('navWatch'); const inList = S.route === 'list' || S.route === 'item'; nav.classList.toggle('on', inList); if (inList) nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
-    $('gLoginTxt').textContent = S.loggedIn ? `${S.userName || '회원'}님` : '로그인';
+    $('gLoginTxt').innerHTML = S.loggedIn ? `${esc(S.userName || '회원')}<span class="nim">님</span>` : '로그인';
     $('gLogin').classList.toggle('named', S.loggedIn);
     $('gLogin').style.visibility = S.authReady ? '' : 'hidden';
     $('gOut').hidden = !S.loggedIn || !S.authReady;

@@ -19,7 +19,8 @@
      영상 테두리에서 24px 안으로 잡는다. --fit = 창 안에 들어가는 영상 폭 */
   /* 영상은 16:9 그대로(늘리지 않는다) — 창 비율이 다르면 위아래나 양옆에 남색 띠가 생기니 단추는 영상 테두리에서 24px 안 */
   :root { --fit: min(100vw, calc(100vh * 16 / 9)); --edge-t: calc((100vh - var(--fit) * 9 / 16) / 2); --edge-r: calc((100vw - var(--fit)) / 2); }
-  .bar { position: fixed; top: calc(var(--edge-t) + 24px); right: calc(var(--edge-r) + 24px); z-index: 20; display: flex; gap: 8px; }
+  /* 자리는 온 픽셀로 끊는다 — 창 크기에 따라 0.125px 같은 자리에 앉으면 테두리와 글자가 따로 맞춰져 글자가 처져 보였다 */
+  .bar { position: fixed; top: round(calc(var(--edge-t) + 24px), 1px); right: round(calc(var(--edge-r) + 24px), 1px); z-index: 20; display: flex; gap: 8px; }
   /* 두 단추 같은 모양 · 같은 높이 — 속이 비친 알약 테두리만(영상을 가리지 않게), 올리면 살짝 채운다 */
   .bar button {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; width: 120px; padding: 0 10px; white-space: nowrap;
@@ -147,7 +148,12 @@
     const setMuted = (m) => { muted = m; blocked = false; hint.hidden = true; const p = promo(); if (p && p.setMuted) p.setMuted(m); paintSnd(); };
     // 막혀 있던 중에 단추를 누르면 그 뜻은 'OFF' — 이미 소리가 안 나니 표시만 OFF 로
     sndBtn.addEventListener('click', () => setMuted(blocked ? true : !muted));
-    const wakeSound = () => { if (blocked) setMuted(false); };
+    // 로그인 창이 떠 있는 동안엔 손길이 닿아도 소리를 켜지 않는다(창에 아이디를 치다 소리가 났다)
+    const wakeSound = () => { if (blocked && veil.hidden) setMuted(false); };
+    // 영상 묶음이 늦게 뜨면 그 전에 끈 소리가 영상에 안 닿았다 — 뜨자마자 지금 상태를 다시 건넨다
+    const syncSound = () => { const p = promo(); if (p && p.setMuted) p.setMuted(muted); };
+    frame.addEventListener('load', syncSound);
+    try { if (frame.contentDocument && frame.contentDocument.readyState === 'complete') syncSound(); } catch (e) { /* 그만 */ }
     document.addEventListener('pointerdown', (e) => { if (!sndBtn.contains(e.target)) wakeSound(); }, true);
     document.addEventListener('keydown', wakeSound, true);
 
@@ -295,7 +301,7 @@
     let looped = false;
     window.addEventListener('message', (e) => {
       if (e.origin !== location.origin || !e.data) return;
-      if (e.data.type === 'myturn-promo:muted') { blocked = true; hint.hidden = false; }   // 단추는 ON 그대로 — 첫 손길에 소리를 낸다
+      if (e.data.type === 'myturn-promo:muted') { if (!veil.hidden) { syncSound(); return; } blocked = true; hint.hidden = false; }   // 단추는 ON 그대로 — 첫 손길에 소리를 낸다
       if (e.data.type === 'myturn-promo:click') { wakeSound(); }
       if (e.data.type === 'myturn-promo:loop' && !looped) { looped = true; openLogin(); }
     });
