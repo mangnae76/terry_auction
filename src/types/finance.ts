@@ -81,6 +81,7 @@ export interface ItemPurchaseRecord extends FinanceBase {
 }
 
 // 'tax' 는 세금관리 화면을 들여온 탭 — 자금관리 안에서 같이 본다
-export type FinanceTabKey = 'cashFlow' | 'businessExpense' | 'fuelMeal' | 'itemPurchase' | 'tax';
+/** interior — 웹만(낙찰이후 인테리어 표와 같은 기록) */
+export type FinanceTabKey = 'cashFlow' | 'businessExpense' | 'fuelMeal' | 'itemPurchase' | 'interior' | 'tax';
 
 export type PeriodKey = 'thisMonth' | 'thisYear' | 'all' | 'custom';
