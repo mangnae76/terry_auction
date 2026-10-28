@@ -848,11 +848,11 @@ const toggleSection = (key: string) => {
       <div v-if="popOpen" class="pw-todo-veil" @click="closePop" />
       <PostWinForms v-if="formKeys" :auction="picked" :keys="formKeys" @close="formKeys = null" />
       <template v-if="hasTable || popOpen">
-       <div :class="{ 'pw-todo-pop': popOpen }" :role="popOpen ? 'dialog' : undefined">
+       <div :class="popOpen ? 'pw-todo-pop' : 'pw-pass'" :role="popOpen ? 'dialog' : undefined">
        <button v-if="popOpen" type="button" class="pw-todo-pop-x" aria-label="닫기" @click="closePop">
          <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
        </button>
-       <div :class="{ 'pw-todo-pop-in': popOpen }">
+       <div :class="popOpen ? 'pw-todo-pop-in' : 'pw-pass'">
        <div v-for="(blk, bi) in blocks" :key="`blk-${bi}`" :class="['pw-wrap', { super: blk.super && !popOpen }]">
         <!-- 큰 제목 — 상자들을 한 울타리로 묶는다 -->
         <header v-if="blk.super && !popOpen" class="pw-super-head" @click="toggleSection(`__super-${bi}`)">
@@ -2022,6 +2022,8 @@ const toggleSection = (key: string) => {
 /* 웹 명도 — 경로 줄 오른쪽 단추 · 팝업 */
 .pw-crumbrow { display: flex; align-items: center; gap: 12px; }
 .pw-crumbrow .pw-crumb { flex: 1 1 auto; min-width: 0; }
+/* 창이 아닐 때 감싼 틀은 없는 셈 — 상자들이 본문의 간격(gap)을 그대로 받는다(틀이 끼면 상자끼리 붙어 모서리가 파여 보인다) */
+.pw-pass { display: contents; }
 .pw-todo-veil { position: fixed; inset: 0; z-index: 900; background: rgba(15, 23, 42, .45); }
 .pw-todo-pop { position: fixed; z-index: 901; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1100px, calc(100vw - 32px)); border-radius: 12px; background: #fff; box-shadow: 0 20px 48px rgba(15, 23, 42, .28); }
 .pw-todo-pop-in { max-height: calc(100vh - 80px); overflow: auto; border-radius: 12px; }
