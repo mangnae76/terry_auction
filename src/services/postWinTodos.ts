@@ -26,6 +26,10 @@ export interface StepTodo {
   stepNos?: string[];
   /** 진행도를 세지 않는다(바로가기만) */
   noCount?: boolean;
+  /** 카드 제목 — 없으면 큰일 이름 */
+  cardTitle?: string;
+  /** 같이 띄울 카드(상자 · 제목) */
+  also?: Array<{ group: string; title: string }>;
   /** 카드에서 비고 칸을 바꿔 보인다(줄 id → 비고, 빈 글이면 비움) */
   memos?: Record<string, string>;
   /** 카드에서 부수 칸을 바꿔 보인다(줄 id → 부수) */
@@ -95,8 +99,8 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
     { text: '잔금 납부·완납증명', cat: 'proc', tab: 'balance', group: 'loan.self', section: ['1단계경매계방문', '2단계은행·잔금납부', '3단계완납증명원'] },
     { text: '취득세 신고·납부', cat: 'proc', tab: 'balance', group: 'loan.self', section: '4단계취득세신고·납부' },
     { text: '등기 촉탁', cat: 'proc', tab: 'balance', group: 'loan.self', section: '5단계등기촉탁' },
-    { text: '인도명령 신청', cat: 'evict', tab: 'evict', group: 'ev.order' },
-    { text: '점유이전금지 가처분(필요 시)', cat: 'evict', tab: 'evict', group: 'ev.hold' },
+    // 같은 날 함께 내는 일이라 한 줄로 — 창에는 두 카드가 같이 뜬다
+    { text: '인도명령 · 점유이전금지 가처분', cat: 'evict', tab: 'evict', group: 'ev.order', cardTitle: '인도명령 신청', also: [{ group: 'ev.hold', title: '점유이전금지 가처분(필요 시)' }] },
   ],
   order: [{ text: '내용증명 - 2차(최고)', cat: 'evict', tab: 'evict', group: 'ev.notice' }],
   serve: [{ text: '인도명령 결정문 송달 확인', cat: 'evict', tab: 'evict', group: 'ev.serve' }],

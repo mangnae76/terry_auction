@@ -288,12 +288,20 @@ const todoCard = (t: StepTodo, key: string, sup = ''): CheckGroup | null => {
   // 공과금 연락처처럼 물건 주소로 채우는 줄
   const addr = picked.value?.address ?? '';
   const sections = card.sections.map((sec) => ({ ...sec, rows: sec.rows.map((r) => { const line = utilityLine(r.id, addr); return line ? { ...r, text: line } : r; }) }));
-  return { ...card, sections, key, title: t.text, super: sup, webOnly: false };
+  return { ...card, sections, key, title: t.cardTitle ?? t.text, super: sup, webOnly: false };
+};
+/** 큰일 하나가 띄우는 카드들 — 함께 띄울 카드(also)까지 */
+const todoCards = (t: StepTodo, key: string, sup = ''): CheckGroup[] => {
+  const main = todoCard(t, key, sup);
+  const extra = (t.also ?? []).map((x, i) => {
+    const g = allGroups.value.find((y) => y.key === x.group);
+    return g ? { ...g, key: `${key}.also${i}`, title: x.title, super: sup, webOnly: false } : null;
+  });
+  return [main, ...extra].filter((g): g is CheckGroup => !!g);
 };
 /** 절차상세 장 — 단계 차례대로 [단계 머리 + 큰일 카드들] */
 const detailCards = (chap: string): CheckGroup[] => (DETAIL_STEPS[chap] ?? []).flatMap((sk) => (STEP_TODOS[sk] ?? [])
-  .map((t, i) => (t.group ? todoCard(t, `card.${sk}.${i}`, STEP_TITLE[sk] ?? sk) : null))
-  .filter((g): g is CheckGroup => !!g));
+  .flatMap((t, i) => (t.group ? todoCards(t, `card.${sk}.${i}`, STEP_TITLE[sk] ?? sk) : [])));
 const popNarrowed = computed(() => !!popTodo.value && !popFull.value && !!(popTodo.value.section || popTodo.value.rows || popTodo.value.branch != null));
 // (전체 보기는 일부만 잘라 띄운 카드에서만 — 상자 하나 통째인 카드는 이미 전체다)
 /** 갈래 그림은 줄 이름표가 갈래 차례에 묶여 있어 빼지 않고 가린다 — 그 갈래 · 그 번호만 보인다 */
@@ -305,8 +313,7 @@ const popGroups = computed<CheckGroup[]>(() => {
   if (!t) return [];
   if (t.tab === 'biz') return bizBook.groups.value;
   if (popFull.value) return allGroups.value.filter((g) => g.key === t.group);
-  const card = todoCard(t, 'card.pop');
-  return card ? [card] : [];
+  return todoCards(t, 'card.pop');
 });
 watch(popTodo, () => { popFull.value = false; });
 watch([popTodo, formKeys, popFull], () => {
