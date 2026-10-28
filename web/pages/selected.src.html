@@ -2382,7 +2382,7 @@ span.cal-day.has { cursor: help; }
 .app-market .tsp-in-dong { --dongmap-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px + var(--bar-h, 62px) + 10px + 40px); }
 .app-market .tsp-in-dong :is(.tsp-filter-slot, .tsp-web-head) { display: none !important; }
 .app-market .tsp-in-dong .tsp-stage { top: var(--dongmap-top) !important; }
-.app-market .tsp-in-dong .tsp-panel { top: calc(var(--dongmap-top) + 18px) !important; }
+.app-market .tsp-in-dong .tsp-panel { top: calc(var(--dongmap-top) + 18px) !important; width: 364px !important; } /* 고르는 칸이 빠져 좁게(546 → 364) */
 html:has(#marketView:not([hidden]) .tsp-in-dong), body:has(#marketView:not([hidden]) .tsp-in-dong) { overflow: hidden; overscroll-behavior: none; }
 body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
 </style>
