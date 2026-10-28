@@ -30,7 +30,7 @@ import { FORM_BTN, FORMS_OF_ROW, type FormKey } from '../services/postWinForms';
 import { utilityLine } from '../services/utilityContacts';
 import { DETAIL_STEPS, STEP_TITLE, STEP_TODOS, type StepTodo } from '../services/postWinTodos';
 import { DETAIL_REPAIR, DETAIL_SELL, DETAIL_TAX } from '../services/postWinDetail';
-import { GUIDE_DENY } from '../services/postWinGuide';
+import { GUIDE_DENY, GUIDE_EVICT_DOCS } from '../services/postWinGuide';
 /** 웹 절차상세 · 인테리어 · 매도 · 세금 장 — 코드에 둔 체크리스트(고쳐 저장하는 표가 아니다) */
 const DETAIL_OF: Partial<Record<string, CheckGroup[]>> = { drepair: DETAIL_REPAIR, dsell: DETAIL_SELL, dtax: DETAIL_TAX, gdeny: GUIDE_DENY };
 
@@ -326,7 +326,7 @@ const dayGroups = computed<CheckGroup[]>(() => {
   if (webEmbed && DETAIL_STEPS[t]) return detailCards(t);
   if (DETAIL_OF[t]) return DETAIL_OF[t] as CheckGroup[];
   if (t === 'gwin') return dayBook.groups.value.filter((g) => GUIDE_DAY_KEYS.has(g.key));
-  if (t === 'gevict') return evictBook.groups.value.filter((g) => GUIDE_EVICT_KEYS.has(g.key));
+  if (t === 'gevict') return [...evictBook.groups.value.filter((g) => GUIDE_EVICT_KEYS.has(g.key)), ...(webEmbed ? GUIDE_EVICT_DOCS : [])];
   if (t === 'evict') return webEmbed ? evictBook.groups.value.filter((g) => !GUIDE_EVICT_KEYS.has(g.key)) : dealAfterFirst(evictBook.groups.value.filter((g) => !g.webOnly));
   if (t === 'win' && webEmbed) return dayBook.groups.value.filter((g) => !GUIDE_DAY_KEYS.has(g.key));
   // 앱은 웹 전용 상자(절차진행 큰일의 체크리스트)를 넣지 않는다

@@ -253,6 +253,8 @@ export const FORMS_OF_ROW: Record<string, FormKey[]> = {
   'ev.exe.a2': ['handover'],
   'pw.visit.in3': ['denySale', 'cancelSale'],
   'gd.deny.p3': ['denySale', 'cancelSale'],
+  'gd.docs.h3': ['handover'],
+  'gd.docs.a3': ['moveAgree'],
 };
 
 /** 줄 옆 단추 이름 — 서식 이름 그대로, 단추라 붙여 쓴다 */
