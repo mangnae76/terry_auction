@@ -2359,7 +2359,9 @@ span.cal-day.has { cursor: help; }
 .ih-stage[data-act="stage-menu"] { position: relative; width: 104px; justify-content: center; padding: 0 22px 0 10px !important; }
 .ih-stage[data-act="stage-menu"] .caret { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); }
 /* 권리분석 › AI 분석 요청 칸 — '건물등기 링크 또는 이미지 Ctrl+V' 안내 글은 작게(12) */
-.app-detail .adp-doc-in .adp-input, .app-detail .adp-doc-in .adp-input::placeholder { font-size: 12px !important; }
+/* 사진 · 서류 붙여넣기 칸('링크 또는 이미지 붙여넣기 · Ctrl+V')은 어디든 같은 크기(12) — 안내 글로 찾아 한 번에 */
+.app-page :is(input[placeholder*="붙여넣기"], input[placeholder*="Ctrl+V"]), .app-page :is(input[placeholder*="붙여넣기"], input[placeholder*="Ctrl+V"])::placeholder,
+.app-detail :is(input[placeholder*="붙여넣기"], input[placeholder*="Ctrl+V"]), .app-detail :is(input[placeholder*="붙여넣기"], input[placeholder*="Ctrl+V"])::placeholder { font-size: 12px !important; }
 </style>
 
 <header class="gnb">
