@@ -892,6 +892,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
   .sub, .yr, .tax-empty, .tax-empty *, .chip, .month-none, .ev-when, .ev-note, .g-s, .g-b, .g-b *, .g-lead, .g-lead *, .g-item, .g-card td, .g-card th, .g-card .r, .g-card i) { font-size: 14px !important; }
 /* 세금신고 내용 — 안쪽 상자들이 좌우 16px 씩 들어가 있어 필터 줄 · 경로 줄과 끝선이 어긋났다. 틀을 16px 씩 벌려 끝선을 맞춘다 */
 .app-page[data-k="finance"] .tax-shell.embedded { margin: 8px -16px 0; }
+/* 낙찰이후가이드 › 세금 — 같은 세금 안내가 좌우 16px 씩 안으로 들어가 다른 장 카드와 끝선이 어긋났다. 안쪽 목록의 여백을 없앤다 */
+.app-page[data-k="postwin"] .tax-shell.embedded .tax-list { margin-left: 0 !important; margin-right: 0 !important; }
 /* 세금신고 연도 드롭다운 — 필터 줄 안, 다른 탭의 기간 단추 자리 */
 /* 기간 단추 묶음(이번달 · 올해 …)과 같은 상자 — 옅은 판 안에 이름 + 흰 드롭다운 */
 .app-page[data-k="finance"] .fin-taxyear { display: inline-flex; align-items: center; gap: 4px; padding: 4px; background: #f1f4f9; border-radius: 8px; }
