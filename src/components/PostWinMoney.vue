@@ -94,7 +94,7 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
   <section class="pwm">
     <header class="pwm-head">
       <h2>{{ mode === 'evict' ? '명도분석' : '세금분석' }}</h2>
-      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 셈합니다' }}</span>
+      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 입찰가산정 A안 값으로 다시 셈합니다 — 명도비만 명도분석 값으로 바꿔 넣습니다' }}</span>
     </header>
     <!-- ===== 명도분석 ===== -->
     <template v-if="mode === 'evict'">
