@@ -1122,7 +1122,7 @@ const downloadCsv = () => {
           </div>
         </div>
 
-        <!-- 웹 지역별분석 — 늘 동별 요약 표(읍면동을 골라도 개별 거래 목록으로 바뀌지 않는다 · 고른 동은 줄을 칠한다).
+        <!-- 웹 지역별분석 — 늘 동별 요약 표(읍면동을 골라도 개별 거래 목록으로 바뀌지 않는다 · 읍면동을 고르면 그 동 한 줄만).
              개별 거래는 거래상세 탭에서 본다 -->
         <div v-else-if="webEmbed" class="adm-table-wrap">
           <table class="adm-table adm-dongsum">
@@ -1136,7 +1136,7 @@ const downloadCsv = () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="d in dongSumRows" :key="d.name" :class="{ picked: d.name === dong }">
+              <tr v-for="d in (dong ? dongSumRows.filter((x) => x.name === dong) : dongSumRows)" :key="d.name">
                 <td class="c"><button type="button" class="adm-dong-link" @click="dong = d.name">{{ d.name }}</button></td>
                 <td class="r">{{ d.count.toLocaleString('ko-KR') }}건</td>
                 <td class="r strong">{{ eokMan(d.avg) }}</td>
@@ -1460,7 +1460,6 @@ const downloadCsv = () => {
 .adm-dongsum :is(th, td):last-child { padding-right: 32px; }
 .adm-dongsum .r { text-align: right; }
 .adm-dongsum td.strong { font-weight: 800; color: #111827; }
-.adm-dongsum tr.picked td { background: #eef4ff; }
 .adm-sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
 .adm-sort i { font-style: normal; font-size: 12px; color: #9ca3af; }
 .adm-sort i.on { color: #2f6b45; }
