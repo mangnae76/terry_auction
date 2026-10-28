@@ -812,7 +812,7 @@ const toggleSection = (key: string) => {
         </header>
         <template v-if="popOpen || !blk.super || !isCollapsed(`__super-${bi}`)">
         <template v-for="(g, ei) in blk.groups" :key="g.key">
-        <section :data-gkey="g.key" :class="['pw-card', { 'pw-flash': flashKey === g.key }]">
+        <section :data-gkey="g.key" :class="['pw-card', { 'pw-flash': flashKey === g.key, 'pw-new': webEmbed && g.webOnly }]">
           <header class="pw-card-head" @click="editing || popOpen || toggleSection(g.key)">
             <span v-if="editing" class="pw-ttlwrap">
               <input v-model="g.title" class="pw-einput ttl" placeholder="제목" />
@@ -1981,6 +1981,9 @@ const toggleSection = (key: string) => {
 .pw-todo-pop-foot button:hover { color: #111827; text-decoration: underline; text-underline-offset: 3px; }
 .pw-todo-pop-x { position: absolute; top: 14px; right: 16px; z-index: 2; width: 26px; height: 26px; padding: 0; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #4b5563; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .pw-todo-pop-x:hover { background: #f3f4f6; color: #111827; }
+/* 웹 — 절차진행 큰일에 맞춰 새로 넣은 상자는 초록 제목 · 초록 테 */
+.pw-card.pw-new { box-shadow: inset 0 0 0 1.5px #4f9a68; }
+.pw-card.pw-new .pw-card-head h2 { color: #2f7d4a; }
 .pw-wordlink { color: #2b6df3; text-decoration: underline; text-underline-offset: 2px; }
 .pw-wordlink:hover { color: #1d4ed8; }
 .pw-chaps { display: inline-flex; gap: 6px; flex: none; }
