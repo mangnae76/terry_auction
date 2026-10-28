@@ -252,6 +252,7 @@ export const FORMS_OF_ROW: Record<string, FormKey[]> = {
   'ev.move.m3': ['handover'],
   'ev.exe.a2': ['handover'],
   'pw.visit.in3': ['denySale', 'cancelSale'],
+  'pw.file.deny': ['denySale', 'cancelSale'],
   'gd.deny.p3': ['denySale', 'cancelSale'],
   'gd.docs.h3': ['handover'],
   'gd.docs.a3': ['moveAgree'],

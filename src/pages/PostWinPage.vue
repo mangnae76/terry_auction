@@ -13,7 +13,7 @@ import AgencyBookModal from '../components/AgencyBookModal.vue';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
-import { groupRows, sectionView, textParts, type CheckGroup } from '../services/postWinChecklist';
+import { groupRows, sectionView, textParts, type CheckGroup, type CheckSection } from '../services/postWinChecklist';
 import { POST_WIN_EDITABLE, defaultGroups, newRowId, usePostWinBook, type BookKey } from '../services/postWinBook';
 import { useInteriorStore } from '../stores/interiorStore';
 import type { InteriorExpenseRecord } from '../types/finance';
@@ -241,6 +241,12 @@ const dealAfterFirst = (list: CheckGroup[]) => {
 };
 /** 웹 — 체크할 일이 아닌 설명 상자는 가이드로 뺀다(낙찰당일: 명도협상 원칙 · 명도: 명도절차 · 명도 협상 방법) */
 const GUIDE_DAY_KEYS = new Set(['rule']);
+/** 웹 — 경매사건 열람 뒤, 명세서에 없던 인수사항이 나오면 매각불허가 신청(보통 다음날, 매각결정기일 전까지) */
+const DAY_DENY: CheckSection = {
+  label: '매각불허가',
+  rows: [{ id: 'pw.file.deny', depth: 0, text: '매각물건명세서에 없던 인수사항이 나오면 매각불허가 신청 — 매각결정기일(낙찰 7일 뒤) 전까지, 보통 다음날' }],
+};
+const webDay = (list: CheckGroup[]) => list.map((g) => (g.key === 'file' ? { ...g, sections: [...g.sections, DAY_DENY] } : g));
 const GUIDE_EVICT_KEYS = new Set(['ev.flow', 'ev.deal', 'ev.step']);   // 시기별 진행내용은 체크할 일이 아니라 흐름 설명 — 가이드로
 // === 절차진행 큰일 → 상세 · 가이드를 창으로 — 화면을 옮기지 않고 그 상자만 띄워 체크하고 닫는다 ===
 const popTodo = ref<StepTodo | null>(null);
@@ -368,7 +374,7 @@ const dayGroups = computed<CheckGroup[]>(() => {
   if (webEmbed && DETAIL_STEPS[t]) return detailCards(t);
   if (DETAIL_OF[t]) return DETAIL_OF[t] as CheckGroup[];
   // 낙찰당일 가이드 — 절차상세 낙찰당일과 같은 내용을 체크 없이 읽기만(명도협상 원칙은 명도 가이드로)
-  if (t === 'gwin' && webEmbed) return dayBook.groups.value.filter((g) => !GUIDE_DAY_KEYS.has(g.key)).map((g) => ({ ...plainTone(g), noCheck: true }));
+  if (t === 'gwin' && webEmbed) return webDay(dayBook.groups.value.filter((g) => !GUIDE_DAY_KEYS.has(g.key))).map((g) => ({ ...plainTone(g), noCheck: true }));
   if (t === 'gwin') return dayBook.groups.value.filter((g) => GUIDE_DAY_KEYS.has(g.key));
   if (t === 'gevict') {
     const list = evictBook.groups.value.filter((g) => GUIDE_EVICT_KEYS.has(g.key));
@@ -380,7 +386,7 @@ const dayGroups = computed<CheckGroup[]>(() => {
     return [...merged.map(plainTone), ...GUIDE_EVICT_DOCS];
   }
   if (t === 'evict') return webEmbed ? evictBook.groups.value.filter((g) => !GUIDE_EVICT_KEYS.has(g.key)) : dealAfterFirst(evictBook.groups.value.filter((g) => !g.webOnly));
-  if (t === 'win' && webEmbed) return dayBook.groups.value.filter((g) => !GUIDE_DAY_KEYS.has(g.key));
+  if (t === 'win' && webEmbed) return webDay(dayBook.groups.value.filter((g) => !GUIDE_DAY_KEYS.has(g.key)));
   // 앱은 웹 전용 상자(절차진행 큰일의 체크리스트)를 넣지 않는다
   return webEmbed ? book.value.groups.value : book.value.groups.value.filter((g) => !g.webOnly);
 });
@@ -396,7 +402,7 @@ const chaps = computed(() => {
   return [];
 });
 // === 절차진행의 큰일 — 진행도는 가리킨 상자의 체크로 세고, 바로가기는 그 상자로 ===
-const allGroups = computed(() => [...dayBook.groups.value, ...evictBook.groups.value, ...loanBook.groups.value, ...bizBook.groups.value, ...DETAIL_REPAIR, ...DETAIL_SELL, ...DETAIL_TAX, ...GUIDE_DENY]);
+const allGroups = computed(() => [...(webEmbed ? webDay(dayBook.groups.value) : dayBook.groups.value), ...evictBook.groups.value, ...loanBook.groups.value, ...bizBook.groups.value, ...DETAIL_REPAIR, ...DETAIL_SELL, ...DETAIL_TAX, ...GUIDE_DENY]);
 const todoIds = (t: StepTodo): string[] | null => {
   if (!t.group || t.noCount) return null;
   const g = allGroups.value.find((x) => x.key === t.group);
