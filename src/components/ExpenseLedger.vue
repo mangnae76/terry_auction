@@ -251,9 +251,9 @@ defineExpose({ openAdd, exportCsv, total });
           </div>
           <p class="xl-mhint">{{ BOOK_HINT[book] }}</p>
           <footer>
-            <button v-if="draft.id" type="button" class="del" @click="remove">삭제</button>
+            <!-- 취소는 ✕ 로 — 삭제 · 저장은 오른쪽에 나란히 -->
             <span class="sp" />
-            <button type="button" @click="open = false">취소</button>
+            <button v-if="draft.id" type="button" class="del" @click="remove">삭제</button>
             <button type="button" class="on" :disabled="busy" @click="save">저장</button>
           </footer>
         </div>
