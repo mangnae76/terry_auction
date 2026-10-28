@@ -2404,7 +2404,11 @@ span.cal-day.has { cursor: help; }
 .app-market .tsp-in-dong { --dongmap-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px + var(--bar-h, 62px) + 10px + 40px); }
 .app-market .tsp-in-dong :is(.tsp-filter-slot, .tsp-web-head) { display: none !important; }
 .app-market .tsp-in-dong .tsp-stage { top: var(--dongmap-top) !important; }
-.app-market .tsp-in-dong .tsp-panel { top: calc(var(--dongmap-top) + 18px) !important; width: 364px !important; } /* 고르는 칸이 빠져 좁게(546 → 364) */
+.app-market .tsp-in-dong .tsp-panel { top: calc(var(--dongmap-top) + 18px) !important; width: 430px !important; } /* 고르는 칸이 빠져 좁게(546 → 364) → 지역 이름 옆 저장 칩 · 평/㎡ 단가가 한 줄에 들어가게 430 */
+/* 지역 이름 바로 옆에 저장 칩(오른쪽 끝으로 밀지 않고 한 줄) */
+.app-market .tsp-in-dong .tsp-picked-title { justify-content: flex-start !important; flex-wrap: nowrap !important; white-space: nowrap; }
+/* 지도 값 단추 — 글자를 단추 정가운데에(전역 button 여백 때문에 아래로 처졌다) */
+.app-market .tsp-in-dong .tsp-metric button { display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; line-height: 1 !important; }
 html:has(#marketView:not([hidden]) .tsp-in-dong), body:has(#marketView:not([hidden]) .tsp-in-dong) { overflow: hidden; overscroll-behavior: none; }
 body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
 </style>
