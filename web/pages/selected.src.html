@@ -179,9 +179,8 @@ button { cursor: pointer; }
 .g-col:is(.m4, .m4m) a, .g-col:is(.m4, .m4m) a:hover { color: #6b7488 !important; cursor: default; background: none !important; }
 /* +물건등록이 선정물건 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
 /* 메뉴 여덟 — 예전 마이페이지를 빼고 더보기를 '마이페이지'로 이름을 바꾸며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
-/* 메뉴 아홉 — 수익분석(시장분석 오른쪽)이 들어오며 다시 잡았다: 글자 폭 + 같은 틈(27px), 1280 폭 기준 */
-.m0 { left: 13.75%; } .m1 { left: 21.72%; } .m2 { left: 28.91%; } .m3 { left: 36.09%; } .m3p { left: 43.28%; }
-.m3c { left: 50.47%; } .m4 { left: 57.66%; } .m4m { left: 64.84%; } .m5 { left: 70.78%; }
+.m0 { left: 13.75%; } .m1 { left: 22.40%; } .m2 { left: 30.24%; } .m3 { left: 38.08%; }
+.m3c { left: 45.93%; } .m4 { left: 53.77%; } .m4m { left: 61.61%; } .m5 { left: 68.55%; } /* 자금관리는 마이페이지 아래로 옮겨 한 칸씩 당겼다 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 · 수익분석은 뺐다 */
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: #fff !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
@@ -2433,7 +2432,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       <a class="g-menu m1" href="#/" data-act="go-list" id="navWatch">선정물건</a>
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
       <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
-      <a class="g-menu m3p" href="#/roi" data-act="go-roi" id="navRoi">수익분석</a>
       <a class="g-menu m3c" href="#/postwin" data-act="go-postwin" id="navPostwin">낙찰이후</a>
       <a class="g-menu m4 off" href="#" data-act="soon" data-name="커뮤니티" aria-disabled="true" title="준비 중">커뮤니티</a>
       <a class="g-menu m4m off" href="#" data-act="soon" data-name="매뉴얼" aria-disabled="true" title="준비 중">매뉴얼</a>
@@ -2714,7 +2712,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'interior', 'tax'],
     more: ['mypage', 'alerts', 'billing', 'points', 'news', 'support'],
-    roi: ['similar'], /* 수익분석 — 시장분석과 같은 틀 */
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
   const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지 */
@@ -2730,6 +2727,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     if (head === 'postwin' && m[2] === 'repair') { try { sessionStorage.setItem('pw.flow.sub', 'biz'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '인테리어' 하위 탭 — 진행절차 안 사업경비 박스 탭으로 */
     if (head === 'finance' && (m[2] === 'fuelMeal' || m[2] === 'itemPurchase')) return { route: 'finance', sub: 'interior' }; /* 예전 유류&식대 · 물품구매 — 사업경비에 함께 보인다 */
     if (head === 'market' && m[2] === 'ranking') { try { sessionStorage.setItem('adm.dong.openMap', '1'); } catch (e) { /* 그만 */ } return { route: 'market', sub: 'dong' }; } /* 예전 '거래랭킹' — 지역분석 › 지도 탭으로 합쳤다 */
+    if (head === 'roi') return { route: 'market', sub: 'dong' }; /* 수익분석은 뺐다 — 예전 주소는 지역분석으로 */
     if (head === 'bidrate') return { route: 'market', sub: SUB_TAB_KEYS.market.includes(m[2]) ? m[2] : 'near' }; /* 예전 '낙찰가율분석' 주소 */
     if (SUB_TAB_KEYS[head]) return { route: head, sub: SUB_TAB_KEYS[head].includes(m[2]) ? m[2] : SUB_TAB_KEYS[head][0] };
     if (PLAIN_ROUTES.includes(head)) return { route: head };
@@ -2738,7 +2736,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   const H0 = readHash();
   const S = {
     marketTab: H0.route === 'market' ? H0.sub : 'dong', /* 시장분석 하위 탭 */
-    roiTab: H0.route === 'roi' ? H0.sub : 'similar', /* 수익분석 하위 탭 */
     /* 낙찰이후 · 자금관리 · 더보기의 하위 탭 */
     pageTab: Object.fromEntries(Object.keys(APP_PAGE_NAMES).map((k) => [k, H0.route === k ? H0.sub : SUB_TAB_KEYS[k][0]])),
     layout: store.get('wlp.web.layout', 'card'), sort: store.get('wlp.web.sort', 'reg'),
@@ -2756,7 +2753,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   };
   /** 지금 화면 → 주소 */
   const hashOf = () => (S.route === 'item' ? itemHash(S.itemId, S.itemTab)
-    : SUB_TAB_KEYS[S.route] ? `#/${S.route}/${S.route === 'market' ? S.marketTab : APP_PAGE_NAMES[S.route] ? S.pageTab[S.route] : S.roiTab}`
+    : SUB_TAB_KEYS[S.route] ? `#/${S.route}/${S.route === 'market' ? S.marketTab : S.pageTab[S.route]}`
       : S.route === 'list' ? '#/' : `#/${S.route}`);
   /** 주소에 적는다 — 화면을 옮길 때는 push(뒤로가기로 돌아온다), 하위 탭만 바꿀 때는 replace */
   const writeHash = (push) => { try { const h = hashOf(); if (location.hash !== h) history[push ? 'pushState' : 'replaceState'](null, '', h); } catch (e) { /* 주소 표시만 못 바꾼다 */ } };
@@ -2825,7 +2822,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     ['m1', [['선정물건', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
     ['m3', [['지역분석', 'go-market'], ['경매지번 분석', 'go-market'], ['인근 매각물건 분석', 'go-market'], ['동일지번 매각물건 분석', 'go-market']]],
-    ['m3p', [['유사매물시세', 'go-roi']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['낙찰이후가이드', 'go-postwin']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
     ['m4m', [['투자9단계', '']]],   /* 준비 중 — 물건선정부터 매도 · 세금까지 */
@@ -2836,7 +2832,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     if (S.route === 'register') return R.mode === 'manual' ? 'mega-manual' : 'mega-auto';
     if (S.route === 'trip') return 'go-trip';
     if (S.route === 'market') return 'go-market';
-    if (S.route === 'roi') return 'go-roi';
     if (APP_PAGE_NAMES[S.route]) return `go-${S.route}`;
     if (S.route === 'mypage') return 'go-mypage';
     if (S.route === 'list') return 'go-list';
@@ -2863,7 +2858,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   function renderHeader() {
     $('navReg').classList.toggle('on', S.route === 'register');
     { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
-    { const t = $('navRoi'); if (t) { t.classList.toggle('on', S.route === 'roi'); if (S.route === 'roi') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     { const t = $('navMarket'); if (t) { t.classList.toggle('on', S.route === 'market'); if (S.route === 'market') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 자금관리는 마이페이지 아래 — 자금관리 화면에서도 마이페이지에 불이 들어온다 */
     [['navPostwin', ['postwin']], ['navMore', ['more', 'finance']]].forEach(([id, rs]) => { const t = $(id); if (t) { const on = rs.includes(S.route); t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
@@ -3794,7 +3788,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   const SUBTABS = {
     /* 물건상세 — 앱 AuctionDetailPage 의 TABS 다섯 칸에서 앱 '손품+현장'을 손품조사 · 임장조사 둘로 나눴다(웹만) */
     /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
-    roi: [['similar', '', '유사매물시세']],
     market: [['dong', '', '지역분석'], ['case', '', '경매지번 분석'], ['near', '', '인근 매각물건 분석'], ['same', '', '동일지번 매각물건 분석']],
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
@@ -3810,19 +3803,19 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     const fin = S.route === 'finance';
     const tabs = fin ? SUBTABS.more : SUBTABS[S.route]; const bar = $('subTabs');
     bar.hidden = !tabs; document.body.classList.toggle('has-subtabs', !!tabs);
-    const cur = fin ? 'finance' : S.route === 'list' ? 'cards' : S.route === 'market' ? S.marketTab : S.route === 'roi' ? S.roiTab : APP_PAGE_NAMES[S.route] ? subParent(S.route, S.pageTab[S.route]) : S.itemTab;
+    const cur = fin ? 'finance' : S.route === 'list' ? 'cards' : S.route === 'market' ? S.marketTab : APP_PAGE_NAMES[S.route] ? subParent(S.route, S.pageTab[S.route]) : S.itemTab;
     $('subTabsIn').innerHTML = tabs ? tabs.map(([k, ic, t]) => `<button type="button" class="subtab ${cur === k ? 'on' : ''}" role="tab" aria-selected="${cur === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
     if (tabs) syncStickTop();
   }
   function render() {
     renderHeader(); requestAnimationFrame(alignUtil);
-    const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip'; const my = S.route === 'mypage'; const market = S.route === 'market' || S.route === 'roi'; const page = !!APP_PAGE_NAMES[S.route];
+    const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip'; const my = S.route === 'mypage'; const market = S.route === 'market'; const page = !!APP_PAGE_NAMES[S.route];
     $('listView').hidden = reg || item || trip || my || market || page; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('marketView').hidden = !market; $('appPageView').hidden = !page; $('fab').hidden = reg || item || trip || my || market || page;
     const cur = item ? byId(S.itemId) : null;
     syncCrumb();
     { const nav = CRUMBS; const slot = (market && document.getElementById('admCrumbSlot')) || (page && document.querySelector('#appPageContent [data-crumb-slot]')) || $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
-    document.title = page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? (S.route === 'roi' ? '마이턴옥션 수익분석' : '마이턴옥션 시장분석') : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
+    document.title = page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? '마이턴옥션 시장분석' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
     if (!item) closeAppDetail();
     if (!trip) closeAppTrip();
     if (!market) closeAppMarket();
@@ -4234,7 +4227,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     if (APP_PAGE_NAMES[r]) return [r === 'finance' ? '마이페이지' : '', APP_PAGE_NAMES[r], subLabel(r, S.pageTab[r]), subChap(r, S.pageTab[r])].filter(Boolean).join(' › ');
     if (r === 'register') return regTrail();
     if (r === 'trip') return '임장경로';
-    if (r === 'market' || r === 'roi') return marketTrail();
+    if (r === 'market') return marketTrail();
     if (r === 'mypage') return '마이페이지';
     if (r === 'item') { const cur = byId(S.itemId); return ['선정물건', cur ? cur.caseNo : '물건상세', subLabel('item', S.itemTab)].filter(Boolean).join(' › '); }
     return '선정물건';
@@ -4253,8 +4246,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     }
     if (r === 'register') return [['+물건등록', () => { if (R.mode !== 'auto') { R.mode = 'auto'; try { localStorage.setItem('wlp.web.regMode', 'auto'); } catch (e) { /* 그만 */ } } render(); }], [R.mode === 'manual' ? '직접입력' : '자동등록']];
     if (r === 'trip') return [['임장경로']];
-    if (r === 'roi') { const steps = marketTrail().split(' › '); return steps.map((t, i) => (i === steps.length - 1 ? [t] : [t, () => go('roi')])); }
-    if (r === 'market' || r === 'roi') {
+    if (r === 'market') {
       const steps = marketTrail().split(' › ');
       return steps.map((t, i) => (i === steps.length - 1 ? [t]
         : i === 0 ? [t, first('market')]
@@ -4278,7 +4270,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   /* 물건등록 경로 — '홈 › +물건등록 › 자동등록 / 직접입력' (등록 방법 탭을 바꾸면 따라 바뀐다) */
   function regTrail() { return `+물건등록 › ${R.mode === 'manual' ? '직접입력' : '자동등록'}`; }
   function marketTrail() {
-    if (S.route === 'roi') { const label = (SUBTABS.roi.find((t) => t[0] === S.roiTab) || [])[2]; return label ? `수익분석 › ${label}` : '수익분석'; }
     if (S.marketTab === 'dong' && marketInner) return ['시장분석', ...marketInner].join(' › ');
     const label = (SUBTABS.market.find((t) => t[0] === S.marketTab) || [])[2];
     return label ? `시장분석 › ${label}` : '시장분석';
@@ -4286,15 +4277,14 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   function renderMarket() {
     syncCrumb();
     const box = $('marketContent');
-    const bid = S.route === 'roi';
-    const key = bid ? S.roiTab : S.marketTab;
+    const key = S.marketTab;
     const label = (SUBTABS[S.route].find((t) => t[0] === key) || [])[2] || '';
     const T = CLOUD.T;
     if (!CLOUD.on || !T || !T.hasAppAdminScreen || !T.hasAppAdminScreen(key)) {
       closeAppMarket();
       const msg = !CLOUD.on ? (S.authReady ? '로그인하면 볼 수 있습니다.' : '불러오는 중입니다…') : '준비 중인 화면입니다.';
       /* 아직 없는 분석 화면(인근 · 동일지번)도 틀은 지역분석과 같게 — 고르는 줄 띠, 제목 줄 오른쪽 경로(#admCrumbSlot) */
-      box.innerHTML = CLOUD.on && (bid || ['near', 'same'].includes(key))
+      box.innerHTML = CLOUD.on && ['near', 'same'].includes(key)
         ? `<div class="mk-scaffold"><div class="mk-bar"><input type="text" disabled placeholder="사건번호 또는 주소 — 준비 중입니다" /><button type="button" disabled>분석</button></div>`
           + `<div class="mk-row"><strong>${esc(label)}</strong><div id="admCrumbSlot" class="adm-crumb-slot"></div></div>${itCard('chart', label, itEmpty(msg), true)}</div>`
         : itCard('chart', label, itEmpty(msg), true);
@@ -4313,7 +4303,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     if (!document.contains(mountEl)) { try { stop(); } catch (e) { /* 그만 */ } return; }
     marketUnmount = stop;
     /* 수익분석은 탭 이름을 알리지 않는다 — 경로를 제목 줄 오른쪽 칸(#admCrumbSlot)으로 직접 옮긴다 */
-    if (S.route === 'roi') requestAnimationFrame(() => { const slot = document.getElementById('admCrumbSlot'); if (CRUMBS && slot && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS); });
   }
   /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면을 띄워 두고, 하위 탭만 바꿀 때는 다시 띄우지 않고 탭만 넘긴다 */
   let pageUnmount = null; let pageKey = '';
@@ -4455,7 +4444,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     S.route = h.route;
     if (h.route === 'item') { S.itemId = h.itemId; S.lastItemId = h.itemId; S.itemTab = h.itemTab; }
     if (h.route === 'market') S.marketTab = h.sub;
-    if (h.route === 'roi') S.roiTab = h.sub;
     if (APP_PAGE_NAMES[h.route]) S.pageTab[h.route] = h.sub;
     S.pop = ''; S.menu = null; render();
   });
@@ -4791,10 +4779,10 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       } catch (err) { console.error('[직접입력] 등록 실패', err); toast(`적지 못했습니다 — ${(err && err.message) || '까닭을 알 수 없습니다'}`, 'info'); break; }
       case 'go-trip': go('trip'); break;
       /* 펼침 메뉴의 항목(data-name)을 누르면 그 하위 탭으로 바로 연다 */
-      case 'go-market': case 'go-roi': {
-        const route = act === 'go-market' ? 'market' : 'roi';
+      case 'go-market': {
+        const route = 'market';
         const hit = (SUBTABS[route].find((x) => x[2] === t.dataset.name) || [])[0];
-        if (hit) { if (route === 'market') S.marketTab = hit; else S.roiTab = hit; }
+        if (hit) S.marketTab = hit;
         if (S.route === route) { S.menu = null; writeHash(false); renderSubTabs(); renderMarket(); } else go(route);
         break;
       }
@@ -4919,7 +4907,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       }
       case 'subtab': {
         if (S.route === 'market') { S.marketTab = v; writeHash(false); renderSubTabs(); renderMarket(); break; }
-        if (S.route === 'roi') { S.roiTab = v; writeHash(false); renderSubTabs(); renderMarket(); break; }
         if (S.route === 'more' && v === 'finance') { go('finance'); break; }   /* 마이페이지 › 자금관리 — 자금관리 화면으로 */
         if (S.route === 'finance') { if (v !== 'finance') { S.pageTab.more = v; go('more'); } break; }   /* 자금관리 화면의 위 줄은 마이페이지 탭 */
         if (APP_PAGE_NAMES[S.route]) { S.pageTab[S.route] = v; writeHash(false); renderSubTabs(); renderAppPage(); window.scrollTo(0, 0); break; }

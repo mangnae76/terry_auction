@@ -16,6 +16,7 @@ import YmCount from '../components/YmCount.vue';
 import InfoTip from '../components/InfoTip.vue';
 import AdminRegionDemandPage from './AdminRegionDemandPage.vue';
 import TradeStatsPage from './TradeStatsPage.vue';
+import AdminCaseTradePage from './AdminCaseTradePage.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
@@ -29,8 +30,6 @@ const KINDS: Array<{ key: Kind; label: string }> = [
 const router = useRouter();
 /** 웹 시장분석 › 지역분석에 띄웠는가 — 웹(shared.entry.js)이 넣어 준다. 분석 도구에서는 false */
 const webEmbed = inject<boolean>('webEmbed', false);
-/** 웹 수익분석 › 유사매물시세 — 이 화면을 한 탭(거래상세)만 띄워 쓴다. 고르는 줄 · 거래상세 거르개는 그대로 */
-const onlyView = inject<string>('admOnly', '');
 const auth = useAuthStore();
 
 // 시도 → 시군구 → 읍면동 차례로 좁힌다. 여기는 한 시군구씩만 받는다 —
@@ -99,7 +98,7 @@ const yearMin = ref('');
 const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
-const listView = ref<'map' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'sim' | 'similar'>(onlyView === 'deals' ? 'deals' : 'supply');
+const listView = ref<'map' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case' | 'sim'>('supply');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
 const mapRun = ref(0);
 const mapEmbed = computed(() => ({
@@ -113,7 +112,7 @@ const mapEmbed = computed(() => ({
   from: dateFrom.value,
   to: dateTo.value,
 }));
-try { if (!onlyView && sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
+try { if (sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
 // 웹 — 고르는 줄 · 탭 줄을 위에 붙여 둔다(CSS sticky). 탭 줄은 고르는 줄 높이만큼 아래에 붙어야 해서 그 높이를 --bar-h 로 흘려 준다
 const barEl = ref<HTMLElement | null>(null);
 let barObserver: ResizeObserver | null = null;
@@ -127,9 +126,9 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '지도랭킹', supply: '수요분석', table: '지역별분석', dist: '지역분포', detail: '상세분포', deals: '거래상세', sim: '유사매물' };
+const TAB_LABEL: Record<string, string> = { map: '지도랭킹', supply: '수요분석', table: '지역별분석', dist: '지역분포', detail: '상세분포', deals: '거래상세', case: '경매지번', sim: '유사매물' };
 const tellTab = () => {
-  if (!webEmbed || onlyView) return;
+  if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
   window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: ['지역분석', label] } }));
 };
@@ -781,7 +780,9 @@ const downloadCsv = () => {
 
     <div class="adm-body">
       <!-- 지역 -->
-      <div ref="barEl" class="adm-bar">
+      <!-- 경매지번 탭에서는 이 줄 대신 경매지번의 주소 줄이 이 자리(admTopBarSlot)에 온다 -->
+      <div id="admTopBarSlot" class="app-market adm-topbar-slot" data-k="case" />
+      <div v-show="listView !== 'case'" ref="barEl" class="adm-bar">
         <label class="adm-f">
           <small>시 · 도</small>
           <select v-model="sido" :class="['adm-input', 'narrow', { ph: !sido }]">
@@ -833,13 +834,7 @@ const downloadCsv = () => {
 
       <!-- 웹 — 탭 줄(요약 상자 위, 탭을 바꿔도 제자리) + 오른쪽에 경로(홈 › 시장분석 › 지역분석 › 탭). 경로는 웹의 경로 표시를 이 자리(#admCrumbSlot)로 옮겨 쓴다 -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top">
-        <!-- 수익분석 › 유사매물시세 — 유사매물시세(= 거래상세 화면) · X(준비 중) 두 탭 -->
-        <nav v-if="onlyView" class="adm-view-tabs" role="tablist">
-          <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">유사매물시세</button>
-          <!-- 두 번째 탭은 이름 · 내용을 정하기 전 — 우선 X -->
-          <button type="button" role="tab" :aria-selected="listView === 'similar'" :class="{ on: listView === 'similar' }" @click="listView = 'similar'">X</button>
-        </nav>
-        <nav v-else-if="all.length > 0 || listView === 'map'" class="adm-view-tabs" role="tablist">
+        <nav v-if="all.length > 0 || listView === 'map' || listView === 'case'" class="adm-view-tabs" role="tablist">
               <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">지도랭킹</button>
               <button type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">지역별분석</button>
@@ -849,6 +844,8 @@ const downloadCsv = () => {
               </span></button>
               <button type="button" role="tab" :aria-selected="listView === 'detail'" :class="{ on: listView === 'detail' }" @click="listView = 'detail'">상세분포</button>
               <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
+              <!-- 경매지번 — 시장분석 › 경매지번 분석 화면을 그대로(주소 줄 · 종류 · 기간 · 내비 · 표 · 저장). 주소 줄은 위 고르는 줄 자리에 -->
+              <button type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">경매지번</button>
               <!-- 유사매물시세 — 우선 거래상세와 같은 내용(같은 틀을 함께 쓴다). 내용이 정해지면 여기서 갈라진다 -->
               <button type="button" role="tab" :aria-selected="listView === 'sim'" :class="{ on: listView === 'sim' }" @click="listView = 'sim'">유사매물</button>
             </nav>
@@ -863,7 +860,8 @@ const downloadCsv = () => {
         :chip="snapChip"
         @pick-dong="(d: string) => { dong = d; }"
       />
-      <template v-if="all.length > 0 && listView !== 'map'">
+      <div v-if="webEmbed && listView === 'case'" class="adm-case-in app-market" data-k="case"><AdminCaseTradePage in-dong /></div>
+      <template v-if="all.length > 0 && listView !== 'map' && listView !== 'case'">
         <!-- 웹 — 위 요약 상자 틀은 하나. 읍면동을 고르면 안의 상자만 셋(총 거래건수 · 실거래가 평균 · 평당가 평균)으로 -->
         <section v-if="webEmbed && listView !== 'supply'" class="adm-gunav">
           <div class="adm-gunav-head">
@@ -968,7 +966,7 @@ const downloadCsv = () => {
         <template v-if="webEmbed && listView === 'supply'" />
         <div v-else-if="webEmbed && (listView === 'deals' || listView === 'sim')" class="adm-deals">
           <!-- 유사매물시세(시장분석 탭 · 수익분석)에는 월별 평균가 추이를 두지 않는다 — 거래상세에만 -->
-          <section v-if="listView === 'deals' && !onlyView" class="adm-trend">
+          <section v-if="listView === 'deals'" class="adm-trend">
             <p class="adm-trend-title">월별 평균가 추이 <em>(최근 {{ trend.points.length }}개월 · 정상 + 직거래)</em></p>
             <svg v-if="trend.points.length > 1" class="adm-trend-svg" :viewBox="`0 0 ${TREND_W} ${TREND_H}`" role="img" aria-label="월별 평균가 추이 선 그래프">
               <g v-for="t in trend.ticks" :key="t.v">
@@ -1032,13 +1030,6 @@ const downloadCsv = () => {
             <button type="button" :disabled="dealPage === dealPages" aria-label="끝 쪽" @click="dealPage = dealPages">»</button>
             <span class="adm-pager-info">{{ dealPage.toLocaleString('ko-KR') }} / {{ dealPages.toLocaleString('ko-KR') }}쪽</span>
           </nav>
-        </div>
-        <!-- 웹 수익분석 — '유사매물시세' 탭(준비 중) -->
-        <div v-else-if="webEmbed && listView === 'similar'" class="adm-deals">
-          <section class="adm-trend">
-            <p class="adm-trend-title">X</p>
-            <p class="adm-similar-empty">준비 중입니다 — 무엇을 보여 줄지 정한 뒤 채웁니다.</p>
-          </section>
         </div>
         <!-- 웹 '상세분포' 탭 — 동마다 구간별 거래건수(정상 + 직거래, 계약해제 제외). 칸이 진할수록 많다. 머리글을 누르면 정렬 -->
         <div v-else-if="webEmbed && listView === 'detail'" class="adm-detail">
@@ -1317,7 +1308,6 @@ const downloadCsv = () => {
 .adm-deals { display: flex; flex-direction: column; gap: 12px; }
 .adm-trend { background: #fff; border: 1px solid #e8ecf3; border-radius: 12px; padding: 16px 20px 10px; }
 .adm-trend-title { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #1f3a72; }
-.adm-similar-empty { margin: 8px 0 4px; padding: 28px 10px; text-align: center; font-size: 14px; color: #6b7280; }
 .adm-trend-title em { font-style: normal; font-size: 14px; font-weight: 600; color: #9ca3af; }
 .adm-trend-svg { width: 100%; height: auto; display: block; }
 .adm-trend-svg .grid { stroke: #eef1f6; stroke-width: 1; }

@@ -34,6 +34,9 @@ const KINDS: Array<{ key: CasePropertyType; label: string }> = [
 const YEARS = [2, 4, 8, 10];
 const PYEONG = 3.305785;
 
+/** inDong — 지역분석 › 경매지번 탭 안에 붙어 쓴다(주소 줄은 지역분석 고르는 줄 자리로, 경로는 지역분석 탭 줄에) */
+const props = withDefaults(defineProps<{ inDong?: boolean }>(), { inDong: false });
+const inDong = computed(() => props.inDong);
 const router = useRouter();
 /** 웹에 떴는가 — 웹은 지역분석과 같은 틀(띠 위 고르는 줄 → 제목 · 단추 줄 + 오른쪽 경로)로 보인다 */
 const webEmbed = inject<boolean>('webEmbed', false);
@@ -654,6 +657,8 @@ const downloadCsv = () => {
 
     <div class="adm-body" @click="tip = ''">
       <!-- 주소 한 줄 -->
+      <!-- 지역분석 › 경매지번 탭 안에 붙어 쓸 때는 이 줄을 지역분석의 고르는 줄 자리로 옮긴다 -->
+      <Teleport to="#admTopBarSlot" :disabled="!inDong">
       <div class="adm-bar">
         <label class="adm-f grow">
           <small>주소 입력 <em>시·도부터 지번·호수까지</em></small>
@@ -680,6 +685,7 @@ const downloadCsv = () => {
           {{ loading ? '분석 중…' : '분석' }}
         </button>
       </div>
+      </Teleport>
 
       <!-- 웹 — 지역분석의 탭 줄 자리: 왼쪽에 화면 이름 · 저장 단추, 오른쪽에 경로(#admCrumbSlot 로 웹 경로를 옮겨 온다) -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top adm-case-row">
@@ -691,7 +697,7 @@ const downloadCsv = () => {
           <button type="button" class="adm-csv" @click="openSnapPanel">저장 목록</button>
           <button type="button" class="adm-csv" :disabled="tableRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
         </div>
-        <div id="admCrumbSlot" class="adm-crumb-slot" />
+        <div v-if="!inDong" id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
 
       <div class="adm-print-only">
