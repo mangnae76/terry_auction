@@ -6961,7 +6961,7 @@ const goBack = () => router.back();
                     <span class="adp-pub-search-main">
                       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
                         <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
-                      </svg><span>{{ fetchingPublicTrade ? '조회 중…' : '검색' }}</span>
+                      </svg><span>{{ fetchingPublicTrade ? '조회 중…' : (webEmbed ? '조회' : '검색') }}</span>
                     </span>
                   </button>
                   <button

@@ -342,7 +342,7 @@ const runWithConcurrency = async <T, R>(
 
 const loadStats = async () => {
   if (!selectedSido.value || !selectedDistrict.value) {
-    message.value = '시·도와 시·군·구를 고른 뒤 검색해 주세요.';
+    message.value = webEmbed ? '시·도와 시·군·구를 고른 뒤 조회해 주세요.' : '시·도와 시·군·구를 고른 뒤 검색해 주세요.';
     return;
   }
   if (!selectedPeriod.value) {
@@ -606,7 +606,7 @@ onMounted(async () => {
               :disabled="loading || !selectedSido || !selectedDistrict || !selectedPeriod"
               @click="loadStats"
             >
-              {{ loading ? '검색 중…' : '검색' }}
+              {{ loading ? (webEmbed ? '조회 중…' : '검색 중…') : (webEmbed ? '조회' : '검색') }}
             </button>
           </div>
           <p v-if="progress" class="tsp-note">불러오는 중 {{ progress.done }} / {{ progress.total }}</p>
@@ -633,7 +633,7 @@ onMounted(async () => {
           <header v-if="!webEmbed" class="tsp-panel-head">
             <strong>{{ scopeTitle }}</strong>
             <small v-if="lastLoadedLabel">{{ periodText }} · {{ kindLabel }}</small>
-            <small v-else>지역과 기간을 고르고 검색을 누르세요</small>
+            <small v-else>지역과 기간을 고르고 {{ webEmbed ? '조회' : '검색' }}를 누르세요</small>
           </header>
 
           <section class="tsp-stat">
