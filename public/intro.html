@@ -24,12 +24,12 @@
   /* 두 단추 같은 모양 · 같은 높이 — 속이 비친 알약 테두리만(영상을 가리지 않게), 올리면 살짝 채운다 */
   .bar button {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; width: 120px; padding: 0 10px; white-space: nowrap;
-    border-radius: 999px; border: 1.5px solid #8a94a6; background: transparent; color: #8a94a6;
+    border-radius: 999px; border: 1.5px solid #111; background: transparent; color: #111;
     font: inherit; font-size: 13px; font-weight: 700; line-height: 1; cursor: pointer; 
     transition: background .15s, border-color .15s;
   }
-  /* 평소엔 회색 테두리 · 회색 글자(영상 바탕이 흰 장면에서도 보이게), 올리면 회색으로 채우고 흰 글자 */
-  .bar button:hover { color: #fff; background: #8a94a6; border-color: #8a94a6; }
+  /* 까만 테두리 · 까만 글자 — 흰 영상 바탕에서도, 로그인 창이 떠 흐린 회색이 깔려도 보이게. 올리면 까맣게 채우고 흰 글자 */
+  .bar button:hover { color: #fff; background: #111; border-color: #111; }
   /* 한글 글꼴은 위쪽 여백이 커 가운데 맞춤이어도 글자가 떠 보인다 — 1px 내려 알약 세로 가운데에 */
   .bar button span { position: relative; top: 1px; }
   /* 브라우저가 소리 자동재생을 막았을 때 — 사운드 단추 아래 작은 안내 */
