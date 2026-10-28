@@ -2687,6 +2687,22 @@ html, body { overflow-x: clip; }
   };
 
   /* ---------- 머리띠 — 로그인 전: 로그인 ▼ 회원가입 / 로그인 뒤: 강정인님 ▼ 로그아웃 ---------- */
+  /* 오른쪽 위 작은 메뉴줄(대문 시험 · 공지 · 결제하기 · 알림 · 화면)의 끝을 아래 '로그아웃 · 회원가입' 글자 끝에 맞춘다.
+     그 글자(회원가입 · 로그아웃)와 이름 폭이 바뀌므로 그릴 때마다 재서 옮긴다. 줄이 겹쳐 흐르는 좁은 화면에선 하지 않는다 */
+  function alignUtil() {
+    const util = document.querySelector('.g-util');
+    const end = [...document.querySelectorAll('.g-out, .g-join')].find((e) => e.offsetParent);
+    const last = util && [...util.children].filter((e) => e.offsetParent).pop();
+    if (!util || !end || !last) return;
+    util.style.transform = '';
+    if (getComputedStyle(util).position !== 'absolute') return;
+    const mark = last.querySelector('svg') || last;
+    const dx = Math.round(end.getBoundingClientRect().right - mark.getBoundingClientRect().right);
+    if (dx) util.style.transform = `translateX(${dx}px)`;
+  }
+  window.addEventListener('resize', () => requestAnimationFrame(alignUtil));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => alignUtil());
+  { const gu = document.querySelector('.g-user'); if (gu && window.ResizeObserver) new ResizeObserver(() => alignUtil()).observe(gu); }
   function renderHeader() {
     $('navReg').classList.toggle('on', S.route === 'register');
     { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
@@ -3635,7 +3651,7 @@ html, body { overflow-x: clip; }
     if (tabs) syncStickTop();
   }
   function render() {
-    renderHeader();
+    renderHeader(); requestAnimationFrame(alignUtil);
     const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip'; const my = S.route === 'mypage'; const market = S.route === 'market' || S.route === 'bidrate'; const page = !!APP_PAGE_NAMES[S.route];
     $('listView').hidden = reg || item || trip || my || market || page; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('marketView').hidden = !market; $('appPageView').hidden = !page; $('fab').hidden = reg || item || trip || my || market || page;
     const cur = item ? byId(S.itemId) : null;
@@ -3836,7 +3852,7 @@ html, body { overflow-x: clip; }
       body = block('인근역세권', kvTable([`<tr><th>지하철(${st.length})</th><td class="grid2">${list(st, (p) => placeLink(p.name, `${p.name}(${p.distance})`))}</td></tr>`]))
         + block('교육환경', kvTable([['초등학교', edu.elementary], ['중학교', edu.middle], ['고등학교', edu.high]].map(([k, arr]) => `<tr><th>${k}(${arr.length})</th><td class="grid">${list(arr, (x) => placeLink(x))}</td></tr>`)))
         + block('주변환경', near.length ? kvTable(near.map((g) => `<tr><th>${g.label}(${g.total})</th><td class="grid2">${g.items.map((p) => placeLink(p.name, `${p.name}(${p.distance})`)).join('')}</td></tr>`))
-          : busy ? '<p class="it-emptyline">카카오 지도에서 조회 중…</p>' : `<p class="it-emptyline">500m 이내 주변환경 정보 없음 <button type="button" class="it-fetch" data-act="kakao-near" data-id="${it.id}">카카오 지도에서 불러오기</button></p>`);
+          : busy ? '<p class="it-emptyline">지도에서 조회 중…</p>' : `<p class="it-emptyline">500m 이내 주변환경 정보 없음 <button type="button" class="it-fetch" data-act="kakao-near" data-id="${it.id}">지도에서불러오기</button></p>`);
     } else {
       const edu = T.eduInfoOf(a); const pdf = T.pdfNearbyDisplayOf(a); const ag = a.adminAgencyItems || [];
       const kakao = T.nearbyDisplayOf(env);
@@ -3847,7 +3863,7 @@ html, body { overflow-x: clip; }
           + (ag.length ? `<ul class="it-agency">${ag.map((x) => `<li><p>${placeLink(x.name, x.name)}${x.type ? ` <span class="it-sub">(${esc(x.type)})</span>` : ''}</p>${x.address ? `<p class="it-sub">${x.zip ? `[${esc(x.zip)}] ` : ''}${esc(x.address)}</p>` : ''}${x.phone || x.fax ? `<p class="it-sub">${x.phone ? `전화 ${esc(x.phone)}` : ''}${x.phone && x.fax ? ' / ' : ''}${x.fax ? `팩스 ${esc(x.fax)}` : ''}</p>` : ''}${x.area ? `<p class="it-sub">관할구역 ${esc(x.area)}</p>` : ''}</li>`).join('')}</ul>` : '')
           || '<p class="it-emptyline">PDF 주변환경 정보 없음</p>';
       } else {
-        near = busy ? '<p class="it-emptyline">카카오 지도에서 조회 중…</p>'
+        near = busy ? '<p class="it-emptyline">지도에서 조회 중…</p>'
           : !env ? `<p class="it-emptyline">카카오 지도 검색 결과를 불러오지 못했습니다. <button type="button" class="it-fetch" data-act="kakao-near" data-id="${it.id}">다시 시도</button></p>`
           : kakao.length ? kvTable(kakao.map((g) => `<tr><th>${g.label}(${g.total})</th><td class="grid2">${list(g.items, (p) => placeLink(p.name, `${p.name}(${p.distance})`))}</td></tr>`)) : '<p class="it-emptyline">카카오 검색 결과 없음</p>';
       }
