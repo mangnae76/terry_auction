@@ -255,8 +255,6 @@ const formKeys = ref<FormKey[] | null>(null);
 // 진행절차 안 박스 탭 — 새로고침해도 보던 탭 그대로(이 탭 세션)
 type FlowSub = 'steps' | 'evict' | 'tax';
 const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['tax', '세금분석']];
-/** 박스 탭 옆 한 줄 — 어느 사건을 무엇으로 보는지 */
-const FLOW_CAP: Record<FlowSub, string> = { steps: '사건을 기록 관리합니다', evict: '사건의 명도 비용을 비교합니다', tax: '사건의 예상 세금을 셈합니다' };
 const flowSub = ref<FlowSub>((() => { try { const v = sessionStorage.getItem('pw.flow.sub'); return v === 'evict' || v === 'tax' ? v : 'steps'; } catch { return 'steps'; } })());
 watch(flowSub, (v) => { try { sessionStorage.setItem('pw.flow.sub', v); } catch { /* 그만 */ } });
 /** 처음 보일 서식 — 내용증명 2차 카드에서 열면 2차부터 */
@@ -901,7 +899,6 @@ const toggleSection = (key: string) => {
       <!-- 웹 진행절차 — 박스 탭 셋: 진행절차(일정 · 해야 할 일) · 명도분석(비용 · 리스크) · 세금분석 -->
       <nav v-if="activeTab === 'flow'" class="pw-chaptabs" role="tablist">
         <button v-for="[k, label] in FLOW_SUBS" :key="k" type="button" role="tab" :aria-selected="flowSub === k" :class="{ on: flowSub === k }" @click="flowSub = k">{{ label }}</button>
-        <span v-if="picked?.caseNumber" class="pw-flow-cap">경매 <b>{{ picked.caseNumber }}</b> {{ FLOW_CAP[flowSub] }}</span>
       </nav>
       <PostWinMoney v-if="activeTab === 'flow' && flowSub !== 'steps'" :key="`${picked?.id}-${flowSub}`" :auction="picked" :mode="flowSub === 'evict' ? 'evict' : 'tax'" />
       <PostWinTimeline

@@ -10,7 +10,7 @@ import { useAuthStore } from '../stores/authStore';
 import { loadAccountDetail } from '../services/authRepository';
 import type { AuctionDetail } from '../types/auction';
 import FormattedNumberInput from './FormattedNumberInput.vue';
-import { EVICT_BASIS, EVICT_DEFAULT, bizIncomeTaxOf, dealCost, execCost, monthlyCarry, planOf, transferTaxOf, vatOf, type EvictInput, type HoldTerm } from '../services/postWinMoney';
+import { EVICT_BASIS, EVICT_DEFAULT, EVICT_SOURCES, bizIncomeTaxOf, dealCost, execCost, monthlyCarry, planOf, transferTaxOf, vatOf, type EvictInput, type HoldTerm } from '../services/postWinMoney';
 
 const props = defineProps<{ auction: AuctionDetail | null; mode: 'evict' | 'tax' }>();
 
@@ -100,6 +100,10 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
 
 <template>
   <section class="pwm">
+    <header class="pwm-head">
+      <h2>{{ mode === 'evict' ? '명도분석' : '세금분석' }}</h2>
+      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 셈합니다' }}</span>
+    </header>
     <!-- ===== 명도분석 ===== -->
     <template v-if="mode === 'evict'">
       <!-- 한눈에 — 협의 · 강제집행의 기간과 비용, 그 차이 -->
@@ -135,6 +139,7 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
         </label>
       </div>
       <ul class="pwm-basis"><li v-for="b in EVICT_BASIS" :key="b">{{ b }}</li></ul>
+      <p class="pwm-src">출처 <a v-for="x in EVICT_SOURCES" :key="x.href" :href="x.href" target="_blank" rel="noopener">{{ x.label }} ↗</a></p>
       <p class="pwm-note">기본값은 위 시세를 따른 대략 값입니다 — 업체 견적 · 법원 예납 고지를 받으면 고쳐 쓰세요.</p>
     </template>
 
@@ -196,6 +201,10 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
 
 <style scoped>
 .pwm { color-scheme: light; background: #fff; border-radius: 10px; padding: 24px 32px 30px; color: #111827; }
+.pwm-head { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid #eef1f6; }
+.pwm-head h2 { margin: 0; font-size: 16px; font-weight: 800; color: #111827; }
+.pwm-cap { font-size: 14px; color: #6b7280; }
+.pwm-cap b { color: #111827; font-weight: 700; }
 .pwm-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
 .pwm-nav > div { display: flex; flex-direction: column; gap: 6px; padding: 16px 22px; border: 1px solid #e3e8f0; border-radius: 10px; }
 .pwm-nav small { font-size: 14px; color: #6b7280; }
@@ -231,6 +240,9 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
 .pwm-in :deep(input) { width: 100%; min-width: 0; height: 34px; padding: 0 10px; border: 1px solid #d0d5dd; border-radius: 6px; font-size: 14px; color: #111827; background: #fff; box-sizing: border-box; }
 .pwm-in em { font-style: normal; font-size: 14px; color: #6b7280; white-space: nowrap; }
 .pwm-basis { margin: 12px 0 0; padding-left: 18px; font-size: 14px; color: #4b5563; line-height: 1.7; }
+.pwm-src { margin: 10px 0 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #6b7280; }
+.pwm-src a { color: #1d4ed8; text-decoration: none; }
+.pwm-src a:hover { text-decoration: underline; }
 .pwm-note { margin: 10px 0 0; font-size: 14px; color: #9ca3af; }
 .pwm-reset { margin-left: auto; height: 30px; padding: 0 12px; border: 1px solid #d0d5dd; border-radius: 6px; background: #fff; color: #374151; font-size: 14px; cursor: pointer; }
 .pwm-taxbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-bottom: 18px; }

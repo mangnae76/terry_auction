@@ -243,6 +243,7 @@ const resetDefault = () => {
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg>
         진행절차
       </h2>
+      <span v-if="auction?.caseNumber" class="pwt-cap">경매 <b>{{ auction.caseNumber }}</b> 사건을 기록 관리합니다</span>
       <button v-if="auction" type="button" :class="['pwt-btn', 'deal', { on: !!flow.endedAt }]" @click="endByDeal">{{ flow.endedAt ? `명도협의종결 (${flow.endedAt}) — 되돌리기` : '명도협의종결' }}</button>
       <button v-if="auction" type="button" class="pwt-btn" @click="resetDefault">초기화</button>
     </header>
@@ -336,7 +337,10 @@ const resetDefault = () => {
 <style scoped>
 .pwt { color-scheme: light; background: #fff; border-radius: 10px; padding: 18px 22px 20px; color: #111827; }
 .pwt-head { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid #eef1f6; }
-.pwt-head h2 { margin: 0 auto 0 0; display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: #111827; }
+.pwt-cap { font-size: 14px; color: #6b7280; }
+.pwt-cap b { color: #111827; font-weight: 700; }
+.pwt-head > button:first-of-type { margin-left: auto; }
+.pwt-head h2 { margin: 0 12px 0 0; display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: #111827; }
 .pwt-btn { height: 34px; padding: 0 14px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; font-weight: 700; color: #374151; cursor: pointer; }
 .pwt-btn:hover { background: #f5f7fb; }
 .pwt-btn.deal.on { background: #374151; border-color: #374151; color: #fff; }
