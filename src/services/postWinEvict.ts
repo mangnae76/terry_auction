@@ -255,6 +255,36 @@ export const POST_WIN_EVICT: CheckGroup[] = [
     ],
   },
   {
+    // 절차진행 '점유이전금지 가처분(필요 시)' (웹만) — 인도명령은 결정문에 적힌 사람에게만 집행되니, 점유자가 바뀔 수 있으면 묶어 둔다
+    key: 'ev.hold',
+    title: '점유이전금지 가처분',
+    note: '잔금을 낸 뒤 신청할 수 있다 — 인도명령과 같은 날 함께 내는 것이 흔하다. 모든 물건에 필요하지는 않다',
+    webOnly: true,
+    sections: [
+      {
+        label: '필요한가',
+        rows: [
+          { id: 'ev.hold.q1', depth: 0, text: '점유자가 연락을 피하거나 비협조적인가' },
+          { id: 'ev.hold.q2', depth: 0, text: '위장 임차인 · 유치권 주장 · 점유자가 여럿이거나 바뀔 수 있는가' },
+        ],
+      },
+      {
+        label: '신청',
+        rows: [
+          { id: 'ev.hold.a1', depth: 0, text: '부동산 관할 법원에 점유이전금지 가처분 신청(인도명령과 별도 사건)' },
+          { id: 'ev.hold.a2', depth: 0, text: '법원이 정한 담보 제공 — 현금 공탁 또는 보증보험증권' },
+        ],
+      },
+      {
+        label: '집행',
+        rows: [
+          { id: 'ev.hold.e1', depth: 0, text: '결정을 받은 날부터 2주 안에 집행 신청', warn: true },
+          { id: 'ev.hold.e2', depth: 0, text: '집행관이 현장에 고시문을 붙였는지 확인 · 사진 남기기' },
+        ],
+      },
+    ],
+  },
+  {
     // 절차진행 '내용증명 발송' (웹만)
     key: 'ev.notice',
     title: '내용증명 발송',

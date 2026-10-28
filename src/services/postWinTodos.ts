@@ -65,6 +65,7 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
     { text: '취득세 신고·납부', cat: 'proc', tab: 'balance', group: 'loan.self', section: '4단계취득세신고·납부' },
     { text: '등기 촉탁', cat: 'proc', tab: 'balance', group: 'loan.self', section: '5단계등기촉탁' },
     { text: '인도명령 신청', cat: 'evict', tab: 'evict', group: 'ev.order' },
+    { text: '점유이전금지 가처분(필요 시)', cat: 'evict', tab: 'evict', group: 'ev.hold' },
   ],
   order: [{ text: '내용증명 발송', cat: 'evict', tab: 'evict', group: 'ev.notice' }],
   serve: [{ text: '인도명령 결정문 송달 확인', cat: 'evict', tab: 'evict', group: 'ev.serve' }],
