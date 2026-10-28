@@ -6,8 +6,8 @@
 //
 // 국토부 실거래는 '시군구 + 달' 로 부르면 읍면동이 한꺼번에 오므로,
 // 12개월치 열두 번이면 표가 다 찬다 (동마다 부르지 않는다).
-// 총 세대수·총 매물수는 아직 손으로 적는다 — 세대수는 건축물대장을 동마다
-// 훑어야 해서 하루 한도에 닿고, 매물수는 공식 API 가 아니다.
+// 총 세대수는 건축물대장(연립·다세대)에서 동마다 받아 채운다 — 물건상세 손품조사와 같은 값 · 같은 저장소(30일).
+// 손으로 적으면 그 값이 우선. 총 매물수는 공식 API 가 아니라 손으로 적는다.
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
@@ -16,7 +16,9 @@ import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
-import { dongStatsFromRows, fetchDongTradeStats, tradeWindowOf, ymd8Of, type DongTradeDetailRow, type DongTradeStat } from '../services/publicDataApi';
+import { dongStatsFromRows, fetchDongHouseholds, fetchDongTradeStats, tradeWindowOf, ymd8Of, type DongTradeDetailRow, type DongTradeStat } from '../services/publicDataApi';
+import { resolveRegionFromAddress } from '../services/regionResolver';
+import { cachedEntryOrStale, cacheKey, CACHE_TTL } from '../services/marketCache';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 
 type Kind = 'villa' | 'apt' | 'officetel';
@@ -111,6 +113,30 @@ const setManual = (sigungu: string, umdNm: string, field: keyof Manual, raw: str
   saveManualSoon();
 };
 
+/** 건축물대장 세대수 — 읍면동마다(연립·다세대). 열쇠는 손 입력과 같은 rowKey */
+const autoUnits = ref<Record<string, number>>({});
+let unitsJob = 0;
+const fetchAutoUnits = async () => {
+  if (kind.value !== 'villa') return; // 건축물대장 합산은 연립·다세대만 센다
+  const job = ++unitsJob;
+  const targets = stats.value.filter((r) => !(rowKey(r.sigungu, r.umdNm) in autoUnits.value));
+  // 하루 한도가 있어 둘씩 차례로 — 한 번 받은 동은 30일 저장(물건상세와 같은 저장소)
+  for (let i = 0; i < targets.length; i += 2) {
+    await Promise.all(targets.slice(i, i + 2).map(async (r) => {
+      try {
+        const region = await resolveRegionFromAddress(`${sido.value} ${r.sigungu} ${r.umdNm}`);
+        if (!region?.bCode10) return;
+        const got = await cachedEntryOrStale('cacheDongUnits', cacheKey(region.bCode10), CACHE_TTL.units,
+          () => fetchDongHouseholds(region.bCode10), (n) => n > 0, 365 * 24 * 60 * 60 * 1000);
+        if (job !== unitsJob || !got.value) return;
+        autoUnits.value = { ...autoUnits.value, [rowKey(r.sigungu, r.umdNm)]: got.value };
+      } catch { /* 못 받으면 손으로 */ }
+    }));
+    if (job !== unitsJob) return;
+  }
+};
+watch([stats, kind], () => { void fetchAutoUnits(); });
+
 /** 네 지표 — 손품+현장의 매매수요와 같은 식이다 */
 type Row = StatRow & {
   units: number; listings: number;
@@ -120,7 +146,7 @@ const rows = computed<Row[]>(() => stats.value
   .filter((r) => !dongFilter.value || r.umdNm === dongFilter.value)
   .map((s) => {
   const m = manualOf(s.sigungu, s.umdNm);
-  const units = m.units ?? 0;
+  const units = m.units ?? autoUnits.value[rowKey(s.sigungu, s.umdNm)] ?? 0;
   const listings = m.listings ?? 0;
   const monthly = s.count / Math.max(1, months.value);
   // 회전율·소화율은 1년치로 환산한다 — 24개월을 받아도 뜻이 같아야
@@ -537,11 +563,13 @@ const downloadCsv = () => {
               <td v-if="!embedded" class="gu">{{ r.sigungu }}</td>
               <td class="nm">{{ r.umdNm }}</td>
               <td class="in">
+                <!-- 건축물대장 자동값은 흐린 글씨(placeholder)로, 손으로 적으면 그 값이 우선 -->
                 <input
                   class="adm-cell"
                   inputmode="numeric"
-                  placeholder="입력"
-                  :value="r.units ? r.units.toLocaleString('ko-KR') : ''"
+                  :placeholder="autoUnits[rowKey(r.sigungu, r.umdNm)] ? autoUnits[rowKey(r.sigungu, r.umdNm)].toLocaleString('ko-KR') : '입력'"
+                  :title="autoUnits[rowKey(r.sigungu, r.umdNm)] ? '건축물대장 연립·다세대 세대수 합 — 적으면 그 값이 우선' : ''"
+                  :value="manualOf(r.sigungu, r.umdNm).units ? manualOf(r.sigungu, r.umdNm).units!.toLocaleString('ko-KR') : ''"
                   @input="setManual(r.sigungu, r.umdNm, 'units', ($event.target as HTMLInputElement).value)"
                 />
               </td>
@@ -579,7 +607,7 @@ const downloadCsv = () => {
       <p v-if="rows.length > 0" class="adm-foot">
         회전율 = 1년 거래량 ÷ 세대수 &nbsp;·&nbsp; 소화율 = 1년 거래량 ÷ 매물수 &nbsp;·&nbsp;
         부담율 = 매물수 ÷ 세대수 &nbsp;·&nbsp; 소진기간 = 매물수 ÷ 월평균 거래량.
-        파란 칸(세대수·매물수)은 손으로 적습니다 — 적어 두면 다음에도 남습니다.
+        총 세대수는 건축물대장(연립·다세대)에서 자동으로 채웁니다(흐린 숫자) — 적으면 그 값이 우선. 총 매물수는 손으로 적습니다 — 적어 두면 다음에도 남습니다.
       </p>
     </div>
   </section>
