@@ -123,21 +123,25 @@ const RETRYABLE_STATUS = new Set([502, 503, 504, 408]);
 
 /** 일일 한도를 다 쓰면 자정까지 아무리 불러도 429다 — 한 번 겪으면 그날은 더 안 부른다 */
 export const QUOTA_EXCEEDED_MSG = '국토부 API 일일 요청 한도를 다 썼습니다 — 자정이 지나면 다시 됩니다.';
-let quotaBlockedAt = 0;
+// 한도는 API마다 따로다 — 건축물대장(세대수)을 많이 불러 막혀도 실거래 조회까지 막으면 안 된다
+type QuotaFamily = 'trade' | 'bld';
+const quotaBlockedAt: Record<QuotaFamily, number> = { trade: 0, bld: 0 };
+const familyOf = (url: URL): QuotaFamily => (/BldRgst|ArchPms/i.test(url.pathname) ? 'bld' : 'trade');
 const quotaResetAt = (at: number) => {
   const d = new Date(at);
   d.setHours(24, 0, 0, 0); // 다음 자정
   return d.getTime();
 };
-export const isQuotaBlocked = () => {
-  if (!quotaBlockedAt) return false;
-  if (Date.now() >= quotaResetAt(quotaBlockedAt)) {
-    quotaBlockedAt = 0;
+export const isQuotaBlocked = (family: QuotaFamily = 'trade') => {
+  const at = quotaBlockedAt[family];
+  if (!at) return false;
+  if (Date.now() >= quotaResetAt(at)) {
+    quotaBlockedAt[family] = 0;
     return false;
   }
   return true;
 };
-const markQuotaBlocked = () => { quotaBlockedAt = Date.now(); };
+const markQuotaBlocked = (family: QuotaFamily) => { quotaBlockedAt[family] = Date.now(); };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // data.go.kr이 응답을 안 주고 매달리는 날이 있다. 그러면 프록시가 522를 뱉기 전까지
@@ -158,7 +162,8 @@ const isRetryableError = (err: unknown) =>
 
 const requestJson = async (url: URL) => {
   // 한도를 넘긴 날은 더 부르지 않는다 — 괜히 수십 번 더 던져 봐야 전부 429다
-  if (isQuotaBlocked()) throw new Error(QUOTA_EXCEEDED_MSG);
+  const family = familyOf(url);
+  if (isQuotaBlocked(family)) throw new Error(QUOTA_EXCEEDED_MSG);
   let lastErr: unknown = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
@@ -169,7 +174,7 @@ const requestJson = async (url: URL) => {
         if (response.status === 429) {
           // 429 는 '1초에 너무 많이'(잠깐)일 때도 온다 — 쉬었다가 두 번 더 해 보고, 그래도 막히면 그때 하루 한도로 본다
           if (attempt < 2) { await sleep(1500 * (attempt + 1)); continue; }
-          markQuotaBlocked();
+          markQuotaBlocked(family);
           throw new Error(QUOTA_EXCEEDED_MSG);
         }
         if (RETRYABLE_STATUS.has(response.status) && attempt < 2) {
@@ -1597,6 +1602,8 @@ export const fetchDongTradeDetails = async (params: {
     5,
   );
   const errSet = new Set(settled.map((r) => r.error).filter((v): v is string => !!v));
+  // 한도에 걸려 아예 못 부른 달이 있으면 '0건'이 아니라 한도 초과로 알린다(조용히 비면 '거래 없음'으로 보였다)
+  if (settled.length < dealYmds.length) errSet.add(isQuotaBlocked() ? QUOTA_EXCEEDED_MSG : `${dealYmds.length - settled.length}개월 자료를 받지 못했습니다`);
   const raw = settled.flatMap((r) => r.rows) as Record<string, unknown>[];
 
   const num = (v: unknown) => Number(String(v ?? '').replace(/[^\d.]/g, ''));

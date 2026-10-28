@@ -967,7 +967,8 @@ const downloadCsv = () => {
         <AdminRegionDemandPage v-if="webEmbed && supplySeen" v-show="listView === 'supply'" :embed="supplyEmbed" :chip="snapChip" class="adm-supply" />
         <template v-if="webEmbed && listView === 'supply'" />
         <div v-else-if="webEmbed && (listView === 'deals' || listView === 'sim')" class="adm-deals">
-          <section class="adm-trend">
+          <!-- 유사매물시세(시장분석 탭 · 수익분석)에는 월별 평균가 추이를 두지 않는다 — 거래상세에만 -->
+          <section v-if="listView === 'deals' && !onlyView" class="adm-trend">
             <p class="adm-trend-title">월별 평균가 추이 <em>(최근 {{ trend.points.length }}개월 · 정상 + 직거래)</em></p>
             <svg v-if="trend.points.length > 1" class="adm-trend-svg" :viewBox="`0 0 ${TREND_W} ${TREND_H}`" role="img" aria-label="월별 평균가 추이 선 그래프">
               <g v-for="t in trend.ticks" :key="t.v">
