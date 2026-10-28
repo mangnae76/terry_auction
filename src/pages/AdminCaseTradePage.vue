@@ -745,8 +745,9 @@ const downloadCsv = () => {
       <p v-if="areaNote" class="adm-msg warn">{{ areaNote }}</p>
 
       <template v-if="canSave">
-        <!-- 네 칸 자리에 세 줄 — 공동주택가·매매 / 보증보험 전세 / 실거래 전세 -->
-        <div class="adm-kpis grid4">
+        <!-- 네 칸 · 세 줄 한 판 — 왼쪽 칸은 기준값(공동주택가 · 보증보험 전세가), 오른쪽 세 칸은 보증보험 / 실거래 전세 / 매매.
+             자리는 아래 .case-grid 의 칸 지정으로 잡는다(빈자리: 1줄 4칸 · 3줄 1칸) -->
+        <div class="adm-kpis grid4 case-grid">
           <div class="adm-kpi green">
             <small>
               공동주택가
@@ -755,9 +756,7 @@ const downloadCsv = () => {
             </small>
             <strong>{{ won(pubValue) }}</strong>
           </div>
-        </div>
 
-        <div class="adm-kpis grid4 nextrow">
           <div class="adm-kpi">
             <small>보증보험 전세가 <em><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" />%</em></small>
             <strong>{{ won(jeonsePrice) }}</strong>
@@ -789,9 +788,7 @@ const downloadCsv = () => {
             </div>
           </div>
           <div class="adm-kpi"><small>보증보험 전세 평당가</small><strong>{{ won(jeonsePubPyeong) }}</strong></div>
-        </div>
 
-        <div class="adm-kpis grid4 nextrow">
           <div class="adm-kpi"><small>전세 실거래가 <span v-if="recentJeonse" class="adm-kpi-from pick">선택</span> <em v-if="recentJeonse">{{ rowFace(recentJeonse) }}</em></small><strong>{{ won(jeonsePriceReal) }}</strong><span v-if="!recentJeonse" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span><span v-if="jeonseVsPubText" class="adm-kpi-sub">{{ jeonseVsPubText }}</span></div>
           <div class="adm-kpi tipbox">
             <small>
@@ -821,9 +818,7 @@ const downloadCsv = () => {
             </div>
           </div>
           <div class="adm-kpi"><small>전세 평당가</small><strong>{{ won(jeonsePyeong) }}</strong></div>
-        </div>
 
-        <div class="adm-kpis grid4 nextrow">
           <div class="adm-kpi"><small>매매 실거래가 <span v-if="recentSale" class="adm-kpi-from pick">선택</span> <em v-if="recentSale">{{ rowFace(recentSale) }}</em></small><strong>{{ won(recentPrice) }}</strong><span v-if="!recentSale" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span></div>
           <div class="adm-kpi">
             <small>공시대비율</small>
@@ -1019,6 +1014,17 @@ const downloadCsv = () => {
 /* 세 줄이 같은 네 칸 틀을 쓴다 — 줄이 달라도 세로로 맞아떨어진다 */
 .adm-kpis.grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .adm-kpis.grid4.nextrow { margin-top: 12px; }
+.adm-kpis.case-grid { grid-template-rows: auto auto auto; }
+.adm-kpis.case-grid > :nth-child(1) { grid-column: 1; grid-row: 1; }  /* 공동주택가 */
+.adm-kpis.case-grid > :nth-child(2) { grid-column: 1; grid-row: 2; }  /* 보증보험 전세가 */
+.adm-kpis.case-grid > :nth-child(3) { grid-column: 2; grid-row: 1; }  /* 보증보험 전세가율 / 갭 */
+.adm-kpis.case-grid > :nth-child(4) { grid-column: 3; grid-row: 1; }  /* 보증보험 전세 평당가 */
+.adm-kpis.case-grid > :nth-child(5) { grid-column: 2; grid-row: 2; }  /* 전세 실거래가 */
+.adm-kpis.case-grid > :nth-child(6) { grid-column: 3; grid-row: 2; }  /* 실거래 전세가율 / 갭 */
+.adm-kpis.case-grid > :nth-child(7) { grid-column: 4; grid-row: 2; }  /* 전세 평당가 */
+.adm-kpis.case-grid > :nth-child(8) { grid-column: 2; grid-row: 3; }  /* 매매 실거래가 */
+.adm-kpis.case-grid > :nth-child(9) { grid-column: 3; grid-row: 3; }  /* 공시대비율 */
+.adm-kpis.case-grid > :nth-child(10) { grid-column: 4; grid-row: 3; } /* 매매 평당가 */
 .adm-kpi { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
 .adm-kpi small { font-size: 11.5px; font-weight: 700; color: #6b7280; display: flex; align-items: baseline; gap: 4px; }
 .adm-kpi small em { font-style: normal; color: #2b6df3; }
@@ -1113,7 +1119,7 @@ const downloadCsv = () => {
 .adm-ghost.pick { border-color: #f3c6d1; color: #c2185b; }
 .adm-foot { margin: 10px 2px 0; font-size: 11.5px; color: #9ca3af; }
 
-@media (max-width: 1100px) { .adm-kpis.grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .adm-kpis.grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .adm-kpis.case-grid > * { grid-column: auto !important; grid-row: auto !important; } }
 @media (max-width: 760px) {
   .adm-top-in, .adm-body { padding-left: 14px; padding-right: 14px; }
   .adm-f { flex: 1 1 100%; }
