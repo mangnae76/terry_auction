@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // 낙찰이후 · 진행절차 옆 박스 탭(웹) — 명도분석(협의 · 강제집행 비용 비교) / 세금분석(A안 기준 차익 · 예상 세금).
 // 명도분석 기본값은 물건 값(대출 · 면적)에서, 없으면 대략의 시세. 칸마다 고쳐 쓴다.
-// 세금분석은 입찰가산정 A안의 낙찰가 · 매도가 · 필요경비를 그대로 쓰고, 명도비는 명도분석 값 · 수리비는 인테리어 실제 지출(있으면)로 바꾼다.
+// 세금분석은 필요경비 · 사업경비 장부의 값(실제로 적지 않은 줄은 입찰가산정 A안)을 쓴다.
+// 명도협의 · 강제집행 단추를 누르면 명도분석 금액이 사업경비 명도비로 들어간다.
 // 매도가는 매도일이 적히면 확정 매도가다(같은 칸). 고치려면 입찰가산정으로 간다.
 // 고른 값은 이 브라우저에 물건마다 기억한다. 세금 셈은 입찰가산정과 같은 profitMath.
 import { computed, onMounted, ref, watch } from 'vue';
@@ -35,7 +36,6 @@ const seedEvict = (): EvictInput => {
 // 예전 셈(노무비 평당 · 이사비 한 덩어리)으로 기억된 값은 버리고 새 기준으로 — 칸이 바뀌었다
 const savedEv = (read().ev as Record<string, unknown> | undefined);
 const ev = ref<EvictInput>({ ...seedEvict(), ...(savedEv && !('laborPerPyeong' in savedEv) ? savedEv : {}) });
-/** 세금분석의 명도비 — 명도분석의 어느 쪽으로 넣을지 */
 const who = ref<'biz' | 'person'>((read().who as 'biz' | 'person') || 'biz');
 // 물건에서 따로 고르지 않았으면 내 정보의 사업자 구분을 따른다
 const auth = useAuthStore();
@@ -78,6 +78,31 @@ const ledger = computed(() => ledgerRows({ be: finance.businessExpenses, interio
 const saleFixed = computed(() => !!props.auction?.sellDate);
 // 명도비도 사업경비 장부의 값(실제 기록, 없으면 A안 명도비) — 명도분석은 견주어 보는 계산기
 const split = computed(() => costSplitOf({ id: props.auction?.id ?? '', wonDate: props.auction?.wonDate, bidCost: props.auction?.bidCost, metrics: props.auction?.metrics }, ledger.value));
+// 명도협의 · 강제집행 — 누르면 그 금액을 사업경비 명도비로 넣는다(다시 누르면 빼고 A안으로).
+// 늦어지는 달의 이자 · 관리비는 대출이자 · 관리비 줄과 겹치므로 빼고 명도에 드는 돈만 넣는다
+const EV_DETAIL = { deal: '이사비(합의)', exec: '강제집행 비용' } as const;
+const evDirect = computed(() => ({
+  deal: deal.value.total - monthlyCarry(ev.value) * ev.value.dealMonths,
+  exec: exec.value.total - monthlyCarry(ev.value) * ev.value.execMonths,
+}));
+const evRows = computed(() => interior.rows.filter((r) => r.auctionId === props.auction?.id && r.category === '명도비' && String(r.note || '').startsWith('명도분석')));
+const evOn = computed(() => (evRows.value.some((r) => r.work === EV_DETAIL.deal) ? 'deal' : evRows.value.some((r) => r.work === EV_DETAIL.exec) ? 'exec' : ''));
+const evBusy = ref(false);
+const pickEvict = async (k: 'deal' | 'exec') => {
+  const a = props.auction;
+  if (!a?.id || evBusy.value) return;
+  evBusy.value = true;
+  try {
+    const was = evOn.value;
+    for (const r of evRows.value) await interior.remove(r.id);
+    if (was === k) return;
+    await interior.save({
+      kind: 'cost', auctionId: a.id, auctionLabel: a.caseNumber, category: '명도비', work: EV_DETAIL[k], status: '',
+      startDate: new Date().toISOString().slice(0, 10), endDate: '', amountWithVat: Math.round(evDirect.value[k]),
+      vendor: '', phone: '', note: k === 'deal' ? '명도분석 협의' : '명도분석 강제집행',
+    });
+  } finally { evBusy.value = false; }
+};
 const srcText = (actual: number, planned: number, tab: string) => (actual && planned ? `실제 ${won(actual)} + A안 ${won(planned)} — ${tab} 탭`
   : actual ? `실제 기록 — ${tab} 탭` : `입찰가산정 A안 — ${tab} 탭에서 고칩니다`);
 /** 매매차익(예정신고) — 매도가 − 낙찰가 − 필요경비 */
@@ -154,6 +179,10 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
         <div class="pwm-seg">
           <button type="button" :class="{ on: who === 'biz' }" @click="who = 'biz'">매매사업자</button>
           <button type="button" :class="{ on: who === 'person' }" @click="who = 'person'">개인</button>
+        </div>
+        <div class="pwm-seg" title="누르면 명도분석 금액이 사업경비 명도비로 들어갑니다 — 다시 누르면 빼고 A안으로">
+          <button type="button" :class="{ on: evOn === 'deal' }" :disabled="evBusy" @click="pickEvict('deal')">명도협의 {{ man(evDirect.deal) }}</button>
+          <button type="button" :class="{ on: evOn === 'exec' }" :disabled="evBusy" @click="pickEvict('exec')">강제집행 {{ man(evDirect.exec) }}</button>
         </div>
         <button type="button" class="pwm-go" @click="goPlan">입찰가산정 A안 고치기 ›</button>
       </div>
@@ -251,6 +280,9 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-seg > span { font-size: 14px; color: #6b7280; margin-right: 2px; }
 .pwm-seg button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; cursor: pointer; }
 .pwm-seg button.on { border-color: #2b6df3; background: #2b6df3; color: #fff; }
+/* 위 줄 단추는 글자 길이와 상관없이 같은 폭 — 매매사업자 · 개인 · 명도협의 · 강제집행 */
+.pwm-taxbar > .pwm-seg button { width: 132px; padding: 0 8px; }
+.pwm-seg button:disabled { opacity: .6; cursor: default; }
 .pwm-seg.sm button { height: 28px; padding: 0 10px; }
 .pwm-go { margin-left: auto; height: 32px; padding: 0 14px; border: 1px solid #2b6df3; border-radius: 6px; background: #fff; color: #1d4ed8; font-size: 14px; cursor: pointer; }
 .pwm-go:hover { background: #f2f6fe; }

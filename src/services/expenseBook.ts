@@ -102,9 +102,10 @@ export const planRowsOf = (a: PlanAuction): LedgerRow[] => {
     date: a.wonDate || '', category, detail, amount, vendor: '', phone: '', status: '', qty: qty || 0, unit: unit || 0, note: '',
   }));
 };
-// A안 수리비는 한 덩어리 견적 — 실제 수리 기록을 하나라도 적으면 숨는다. 나머지는 같은 명세끼리 바뀐다
+// A안 수리비 · 명도비는 한 덩어리 견적 — 그 구분의 실제 기록을 하나라도 적으면 숨는다. 나머지는 같은 명세끼리 바뀐다
+const LUMP = ['수리·인테리어', '명도비'];
 const sameLine = (x: LedgerRow, p: LedgerRow) => x.book === p.book && x.auctionId === p.auctionId && x.category === p.category
-  && (p.category === '수리·인테리어' || x.detail === p.detail);
+  && (LUMP.includes(p.category) || x.detail === p.detail);
 /** 실제 기록 + 아직 실제로 적지 않은 A안 줄 */
 export const withPlan = (actual: LedgerRow[], auctions: PlanAuction[]): LedgerRow[] => [
   ...actual,
