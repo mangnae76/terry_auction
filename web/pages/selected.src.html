@@ -180,7 +180,7 @@ button { cursor: pointer; }
 /* +물건등록이 선정목록 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
 /* 메뉴 여덟 — 예전 마이페이지를 빼고 더보기를 '마이페이지'로 이름을 바꾸며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
 .m0 { left: 13.75%; } .m1 { left: 22.40%; } .m2 { left: 30.24%; } .m3 { left: 38.08%; }
-.m3c { left: 45.93%; } .m3d { left: 53.77%; } .m4 { left: 61.61%; } .m5 { left: 69.45%; }
+.m3c { left: 45.93%; } .m4 { left: 53.77%; } .m5 { left: 61.61%; } /* 자금관리는 마이페이지 아래로 옮겨 한 칸씩 당겼다 */
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: #fff !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
@@ -197,7 +197,7 @@ button { cursor: pointer; }
 
 /* 펼친 아래 메뉴 — 머리띠 바로 밑 한 띠. 칸은 위 메뉴와 같은 가로 자리에 선다 */
 .g-mega { position: absolute; left: 0; right: 0; top: 100%; z-index: 39; background: var(--surface); border-bottom: 1px solid var(--line); box-shadow: 0 14px 28px -18px rgba(15, 23, 42, 0.45); animation: pop-in .16s ease-out; }
-.g-mega-in { position: relative; min-height: 232px; }
+.g-mega-in { position: relative; min-height: 290px; } /* 마이페이지 칸이 일곱 줄(자금관리를 아래로 옮김) */
 .g-col { position: absolute; top: 16px; display: grid; gap: 2px; min-width: 120px; }
 .g-col a { display: block; padding: 6px 0; font-size: var(--tab-fs); color: var(--text-2); text-decoration: none; white-space: nowrap; transition: color .12s; }
 .g-col a:hover { color: var(--blue); }
@@ -2295,7 +2295,6 @@ html, body { overflow-x: clip; }
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
       <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
       <a class="g-menu m3c" href="#/postwin" data-act="go-postwin" id="navPostwin">낙찰이후</a>
-      <a class="g-menu m3d" href="#/finance" data-act="go-finance" id="navFinance">자금관리</a>
       <a class="g-menu m4 off" href="#" data-act="soon" data-name="커뮤니티" aria-disabled="true" title="준비 중">커뮤니티</a>
       <a class="g-menu m5" href="#/more" data-act="go-more" id="navMore">마이페이지</a>
       <div class="pop-root" data-pop="all" style="display:contents">
@@ -2681,9 +2680,8 @@ html, body { overflow-x: clip; }
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
     ['m3', [['거래랭킹', 'go-market'], ['지역분석', 'go-market'], ['경매지번 분석', 'go-market'], ['인근 매각물건 분석', 'go-market'], ['동일지번 매각물건 분석', 'go-market']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['가이드', 'go-postwin'], ['인테리어', 'go-postwin'], ['매도·임대', 'go-postwin']]],
-    ['m3d', [['자금입출금', 'go-finance'], ['사업지출', 'go-finance'], ['유류&식대', 'go-finance'], ['물품구매', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
-    ['m5', [['내 정보', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['공지', 'go-more'], ['고객센터', 'go-more']]],
+    ['m5', [['내 정보', 'go-more'], ['자금입출금', 'go-finance'], ['세금신고', 'go-finance'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['공지', 'go-more'], ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
   /* 지금 보고 있는 자리 — 펼칠 때마다 다시 그려 표시가 어긋나지 않게 한다 */
   const megaHere = () => {
@@ -2719,7 +2717,8 @@ html, body { overflow-x: clip; }
     { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     { const t = $('navBidrate'); if (t) { t.classList.toggle('on', S.route === 'bidrate'); if (S.route === 'bidrate') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     { const t = $('navMarket'); if (t) { t.classList.toggle('on', S.route === 'market'); if (S.route === 'market') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
-    [['navPostwin', 'postwin'], ['navFinance', 'finance'], ['navMore', 'more']].forEach(([id, r]) => { const t = $(id); if (t) { t.classList.toggle('on', S.route === r); if (S.route === r) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
+    /* 자금관리는 마이페이지 아래 — 자금관리 화면에서도 마이페이지에 불이 들어온다 */
+    [['navPostwin', ['postwin']], ['navMore', ['more', 'finance']]].forEach(([id, rs]) => { const t = $(id); if (t) { const on = rs.includes(S.route); t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
     { const t = $('navMy'); if (t) { t.classList.toggle('on', S.route === 'mypage'); if (S.route === 'mypage') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 물건상세(선정목록 안)에 들어가도 선정목록 메뉴 밑줄은 그대로 */
     const nav = $('navWatch'); const inList = S.route === 'list' || S.route === 'item'; nav.classList.toggle('on', inList); if (inList) nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
@@ -3650,7 +3649,7 @@ html, body { overflow-x: clip; }
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '가이드'], ['repair', '', '인테리어'], ['sell', '', '매도·임대']],
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '사업지출'], ['fuelMeal', '', '유류&식대'], ['itemPurchase', '', '물품구매'], ['tax', '', '세금신고']],
-    more: [['mypage', '', '내 정보'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['news', '', '공지'], ['support', '', '고객센터']],
+    more: [['mypage', '', '내 정보'], ['finance', '', '자금관리'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['news', '', '공지'], ['support', '', '고객센터']],
     item: [['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
   };
   function renderSubTabs() {
@@ -4078,7 +4077,7 @@ html, body { overflow-x: clip; }
   const subChap = (route, key) => (SUB_CHAP[route] || {})[key] || '';
   function crumbTrail() {
     const r = S.route;
-    if (APP_PAGE_NAMES[r]) return [APP_PAGE_NAMES[r], subLabel(r, S.pageTab[r]), subChap(r, S.pageTab[r])].filter(Boolean).join(' › ');
+    if (APP_PAGE_NAMES[r]) return [r === 'finance' ? '마이페이지' : '', APP_PAGE_NAMES[r], subLabel(r, S.pageTab[r]), subChap(r, S.pageTab[r])].filter(Boolean).join(' › ');
     if (r === 'register') return regTrail();
     if (r === 'trip') return '임장경로';
     if (r === 'market' || r === 'bidrate') return marketTrail();
@@ -4093,6 +4092,7 @@ html, body { overflow-x: clip; }
     const first = (route) => () => { if (APP_PAGE_NAMES[route]) S.pageTab[route] = SUB_TAB_KEYS[route][0]; if (route === 'market') S.marketTab = SUB_TAB_KEYS.market[0]; if (S.route === route) { writeHash(false); render(); } else go(route); };
     if (APP_PAGE_NAMES[r]) {
       const k = S.pageTab[r]; const ch = subChap(r, k);
+      if (r === 'finance') return [['마이페이지', first('more')], [APP_PAGE_NAMES[r], first(r)], [subLabel(r, k)]];   /* 자금관리는 마이페이지 아래 */
       if (!ch) return [[APP_PAGE_NAMES[r], first(r)], [subLabel(r, k)]];
       const top = subParent(r, k);
       return [[APP_PAGE_NAMES[r], first(r)], [subLabel(r, k), () => { S.pageTab[r] = top; writeHash(false); renderSubTabs(); renderAppPage(); }], [ch]];
@@ -4759,6 +4759,7 @@ html, body { overflow-x: clip; }
       case 'subtab': {
         if (S.route === 'market') { S.marketTab = v; writeHash(false); renderSubTabs(); renderMarket(); break; }
         if (S.route === 'bidrate') { S.bidrateTab = v; writeHash(false); renderSubTabs(); renderMarket(); break; }
+        if (S.route === 'more' && v === 'finance') { go('finance'); break; }   /* 마이페이지 › 자금관리 — 자금관리 화면으로 */
         if (APP_PAGE_NAMES[S.route]) { S.pageTab[S.route] = v; writeHash(false); renderSubTabs(); renderAppPage(); window.scrollTo(0, 0); break; }
         S.itemTab = v;
         /* 주소에도 남긴다 — 새로고침하면 이 탭으로 다시 연다 (뒤로가기 기록은 늘리지 않는다) */
