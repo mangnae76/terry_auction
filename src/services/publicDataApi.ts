@@ -167,6 +167,8 @@ const requestJson = async (url: URL) => {
       });
       if (!response.ok) {
         if (response.status === 429) {
+          // 429 는 '1초에 너무 많이'(잠깐)일 때도 온다 — 쉬었다가 두 번 더 해 보고, 그래도 막히면 그때 하루 한도로 본다
+          if (attempt < 2) { await sleep(1500 * (attempt + 1)); continue; }
           markQuotaBlocked();
           throw new Error(QUOTA_EXCEEDED_MSG);
         }
@@ -1065,11 +1067,14 @@ const fetchDongTitleRows = async (bCode10: string): Promise<Record<string, unkno
   const total = Number(first?.response?.body?.totalCount ?? 0) || 0;
   if (total === 0) return [];
   const pages = Math.min(40, Math.ceil(total / PAGE));
-  const rest = await inBatches(
-    Array.from({ length: Math.max(0, pages - 1) }, (_, i) => () => call(i + 2)),
-  );
+  // 쪽은 한 장씩 차례로 — 한꺼번에 던지면 429(너무 많이)로 막힌다(아파트가 많은 동은 수십 쪽)
+  const rest: unknown[] = [];
+  for (let pg = 2; pg <= pages; pg += 1) {
+    rest.push(await call(pg));
+    await sleep(120);
+  }
   const rows: Record<string, unknown>[] = [];
-  [first, ...rest].forEach((json) => rows.push(...asArray(json?.response?.body?.items?.item)));
+  ([first, ...rest] as Array<{ response?: { body?: { items?: { item?: unknown } } } }>).forEach((json) => rows.push(...asArray(json?.response?.body?.items?.item)));
   const seen = new Map<string, Record<string, unknown>>();
   rows.forEach((r) => seen.set(String(r.mgmBldrgstPk ?? `${r.platPlc}|${r.bldNm}|${r.dongNm}`), r));
   return [...seen.values()];

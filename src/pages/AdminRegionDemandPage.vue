@@ -122,9 +122,9 @@ const fetchAutoUnits = async () => {
   const job = ++unitsJob;
   const k = kind.value;
   const targets = stats.value.filter((r) => !(rowKey(r.sigungu, r.umdNm) in autoUnits.value));
-  // 하루 한도가 있어 둘씩 차례로 — 한 번 받은 동은 30일 저장(물건상세와 같은 저장소)
-  for (let i = 0; i < targets.length; i += 2) {
-    await Promise.all(targets.slice(i, i + 2).map(async (r) => {
+  // 동은 한 곳씩 차례로(한꺼번에 부르면 429 로 막힌다) — 한 번 받은 동은 30일 저장
+  for (let i = 0; i < targets.length; i += 1) {
+    await Promise.all(targets.slice(i, i + 1).map(async (r) => {
       const key = rowKey(r.sigungu, r.umdNm);
       let value = -1;
       try {
