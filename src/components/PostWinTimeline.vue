@@ -351,7 +351,7 @@ const resetDefault = () => {
 .pwt-cats button:hover { color: #111827; }
 .pwt-cats button.on { border-color: #1f2a44; background: #1f2a44; color: #fff; }
 .pwt-row.dim { opacity: .45; }
-.pwt-chip { display: inline-flex; align-items: center; height: 19px; padding: 0 6px; border-radius: 5px; font-size: 14px; font-weight: 700; line-height: 1; }
+.pwt-chip { display: inline-flex; align-items: center; height: 18px; padding: 0 5px; border-radius: 5px; font-size: 12px; font-weight: 700; line-height: 1; }
 .pwt-chip.done { background: #4f9a68; color: #fff; }
 .pwt-chip.next { background: #c95b5b; color: #fff; }
 .pwt-chip.plan { background: #4f72b8; color: #fff; }
