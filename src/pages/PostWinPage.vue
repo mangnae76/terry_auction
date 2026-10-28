@@ -247,6 +247,12 @@ const formKeys = ref<FormKey[] | null>(null);
 /** 처음 보일 서식 — 내용증명 2차 카드에서 열면 2차부터 */
 const formStart = ref<FormKey | ''>('');
 const cardFormOf = new Map<string, string>();
+/** 단추 이름 — 내용증명 2차 카드면 '내용증명2차'처럼 차수까지 */
+const formBtnLabel = (keys: FormKey[], cardKey: string) => {
+  const want = cardFormOf.get(cardKey) as FormKey | undefined;
+  const n = want && keys.includes(want) ? /notice(\d)/.exec(want)?.[1] : '';
+  return `${FORM_BTN[keys[0]]}${n ? `${n}차` : ''}`;
+};
 const openForms = (keys: FormKey[], cardKey: string) => {
   const want = cardFormOf.get(cardKey) as FormKey | undefined;
   formStart.value = want && keys.includes(want) ? want : '';
@@ -1121,7 +1127,7 @@ const toggleSection = (key: string) => {
                         @click.stop
                       >{{ webLine(r.text) }}<span class="pw-ext">↗</span></a>
                       <!-- 웹 — '인터넷우체국'처럼 낱말에 걸린 링크는 그 낱말만 (앱은 그대로) -->
-                      <template v-else><template v-for="(pt, pi) in (webEmbed ? textParts(webLine(r.text)) : [{ t: webLine(r.text) }])" :key="pi"><a v-if="pt.href" class="pw-wordlink" :href="pt.href" target="_blank" rel="noopener" @click.stop>{{ pt.t }}<span class="pw-ext">↗</span></a><template v-else>{{ pt.t }}</template></template><button v-if="webEmbed && FORMS_OF_ROW[r.id]" type="button" class="pw-formbtn" @click.stop="openForms(FORMS_OF_ROW[r.id], g.key)">{{ FORM_BTN[FORMS_OF_ROW[r.id][0]] }}</button></template>
+                      <template v-else><template v-for="(pt, pi) in (webEmbed ? textParts(webLine(r.text)) : [{ t: webLine(r.text) }])" :key="pi"><a v-if="pt.href" class="pw-wordlink" :href="pt.href" target="_blank" rel="noopener" @click.stop>{{ pt.t }}<span class="pw-ext">↗</span></a><template v-else>{{ pt.t }}</template></template><button v-if="webEmbed && FORMS_OF_ROW[r.id]" type="button" class="pw-formbtn" @click.stop="openForms(FORMS_OF_ROW[r.id], g.key)">{{ formBtnLabel(FORMS_OF_ROW[r.id], g.key) }}</button></template>
                     </td>
                     <!-- 부수 — 체크 왼쪽에 제 칸으로 -->
                     <td v-if="editing" class="pw-qty">
