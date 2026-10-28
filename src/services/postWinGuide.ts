@@ -80,4 +80,41 @@ export const GUIDE_EVICT_DOCS: CheckGroup[] = [
       },
     ],
   },
+  {
+    key: 'gd.order',
+    title: '인도명령은 누구 이름으로 신청하나',
+    note: '소유자만 쓰면 안 된다 — 결정문에 이름이 있는 사람에게만 집행된다. 소유자와 실제 사는 사람을 모두 적어 한 번에 낸다',
+    noCheck: true,
+    sections: [
+      {
+        label: '소유자 · 채무자',
+        rows: [
+          { id: 'gd.order.o1', depth: 0, text: '심문 없이 바로 결정이 나서 가장 빠르다' },
+          { id: 'gd.order.o2', depth: 0, text: '함께 사는 가족 · 직원(점유보조자)은 소유자 이름의 결정으로 같이 집행된다' },
+          { id: 'gd.order.o3', depth: 0, text: '그러나 임차인 · 제3자가 살면 소유자 이름만으로는 그 사람을 내보낼 수 없다', warn: true },
+        ],
+      },
+      {
+        label: '그 밖의 점유자',
+        rows: [
+          { id: 'gd.order.p1', depth: 0, text: '현황조사서 · 전입세대열람에 나온 사람을 상대방으로 함께 적는다' },
+          { id: 'gd.order.p2', depth: 0, text: '원칙상 법원이 심문해서 조금 더 걸린다 — 권리 없이 사는 게 뚜렷하면 심문 없이도 된다' },
+          { id: 'gd.order.p3', depth: 0, text: '대항력 있는 임차인은 인도명령 대상이 아니다 — 보증금 문제라 협의 · 명도소송으로' },
+        ],
+      },
+      {
+        label: '점유자를 모를 때',
+        rows: [
+          { id: 'gd.order.u1', depth: 0, text: '알고 있는 사람(소유자 · 현황조사서상 점유자)으로 먼저 낸다' },
+          { id: 'gd.order.u2', depth: 0, text: '점유자가 바뀔 것 같으면 점유이전금지 가처분을 함께 — 바뀐 사람에게도 집행된다' },
+        ],
+      },
+      {
+        label: '기한',
+        rows: [
+          { id: 'gd.order.t1', depth: 0, text: '잔금 낸 날부터 6개월 안 — 넘기면 명도소송으로 가야 해서 몇 달이 더 걸린다', warn: true },
+        ],
+      },
+    ],
+  },
 ];
