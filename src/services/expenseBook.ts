@@ -50,7 +50,7 @@ export interface LedgerRow {
   vendor: string;
   phone: string;
   status: string;
-  /** 물품구매 — 수량 · 단가(없으면 0) */
+  /** 물품구매 · 대출이자 · 관리비 — 수(개 · 개월) · 단가(없으면 0) */
   qty: number;
   unit: number;
   note: string;

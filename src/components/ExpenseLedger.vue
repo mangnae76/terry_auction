@@ -77,11 +77,23 @@ const open = ref(false);
 const draft = ref<Draft>({ src: '', id: '', auctionId: '', date: '', category: '', detail: '', custom: false, qty: 0, unit: 0, amount: 0, vendor: '', phone: '', status: '', note: '' });
 const today = () => new Date().toISOString().slice(0, 10);
 const itemsOf = (cat: string) => GROUPS.value.find(([g]) => g === cat)?.[1] ?? [];
-/** 물품구매 — 수량 · 단가 칸이 나오고 비용은 둘을 곱한다 */
-const isItem = computed(() => props.book === 'biz' && draft.value.category === '물품구매');
+/** 곱해서 셈하는 사업경비 — [수 칸 이름, 단가 칸 이름, 표에 붙는 단위]. 비용 = 수 × 단가 */
+const UNIT_CATS: Record<string, [string, string, string]> = {
+  물품구매: ['수량', '단가', '개'],
+  대출이자: ['개월', '월이자', '개월'],
+  '관리비·공과금': ['개월', '월금액', '개월'],
+};
+const unitOf = (cat: string) => (props.book === 'biz' ? UNIT_CATS[cat] : undefined);
+const unitCat = computed(() => unitOf(draft.value.category));
+const isItem = computed(() => !!unitCat.value);
 watch(() => [draft.value.qty, draft.value.unit, isItem.value] as const, ([q, u, on]) => {
   if (on) draft.value.amount = Number(q || 0) * Number(u || 0);
 });
+/** 대출이자 한 달 몫 — 입찰가산정 A안의 3개월 이자 ÷ 3 */
+const monthlyInterestOf = (id: string) => {
+  const a = auctions.auctions.find((x) => x.id === id);
+  return Math.round((a?.bidCost?.interestAmount || 0) / 3);
+};
 const openAdd = () => {
   const [cat, items] = GROUPS.value[0];
   draft.value = { src: '', id: '', auctionId: props.auctionId ?? '', date: today(), category: cat, detail: items[0] ?? '', custom: false, qty: 1, unit: 0, amount: 0, vendor: '', phone: '', status: '예정', note: '' };
@@ -97,6 +109,8 @@ const openRow = (r: LedgerRow) => {
 };
 const pickCategory = (c: string) => {
   draft.value.category = c;
+  // 대출이자는 A안 한 달 이자를 먼저 넣어 둔다 — 개월만 고치면 된다
+  if (c === '대출이자' && !draft.value.unit) draft.value.unit = monthlyInterestOf(draft.value.auctionId);
   if (!draft.value.custom && !itemsOf(c).includes(draft.value.detail)) draft.value.detail = itemsOf(c)[0] ?? '';
 };
 const detailPick = computed({
@@ -181,7 +195,7 @@ defineExpose({ openAdd, exportCsv, total });
           <td>{{ shortDate(r.date) }}</td>
           <td v-if="many" :title="r.auctionLabel">{{ r.auctionLabel || labelOf(r.auctionId) || '공통' }}</td>
           <td><span class="xl-pill">{{ r.category }}</span></td>
-          <td :title="r.detail" class="l">{{ r.detail }}<span v-if="r.qty" class="xl-qty">{{ money(r.qty) }}개 × {{ money(r.unit) }}원</span><em v-if="r.status" class="xl-st">{{ r.status }}</em></td>
+          <td :title="r.detail" class="l">{{ r.detail }}<span v-if="r.qty && unitOf(r.category)" class="xl-qty">{{ money(r.qty) }}{{ unitOf(r.category)?.[2] }} × {{ money(r.unit) }}원</span><em v-if="r.status" class="xl-st">{{ r.status }}</em></td>
           <td class="r">{{ money(r.amount) }}원</td>
           <td v-if="book === 'biz'" :title="[r.vendor, r.phone].filter(Boolean).join(' · ')">{{ [r.vendor, r.phone].filter(Boolean).join(' · ') }}</td>
           <td :title="r.note" class="l">{{ r.note }}</td>
@@ -216,10 +230,10 @@ defineExpose({ openAdd, exportCsv, total });
               <input v-if="draft.custom" v-model="draft.detail" type="text" placeholder="명세를 적어 주세요" />
             </label>
             <template v-if="isItem">
-              <label>수량<FormattedNumberInput v-model="draft.qty" live-group align="left" placeholder="0" /></label>
-              <label>단가<FormattedNumberInput v-model="draft.unit" live-group align="left" placeholder="0" /></label>
+              <label>{{ unitCat?.[0] }}<FormattedNumberInput v-model="draft.qty" live-group align="left" placeholder="0" /></label>
+              <label>{{ unitCat?.[1] }}<FormattedNumberInput v-model="draft.unit" live-group align="left" placeholder="0" /><small v-if="draft.category === '대출이자'" class="xl-sub">입찰가산정 A안 3개월 이자 ÷ 3</small></label>
             </template>
-            <label>비용(VAT포함)<FormattedNumberInput v-model="draft.amount" live-group align="left" placeholder="0" :disabled="isItem" /><small v-if="isItem" class="xl-sub">수량 × 단가로 셈합니다</small></label>
+            <label>비용(VAT포함)<FormattedNumberInput v-model="draft.amount" live-group align="left" placeholder="0" :disabled="isItem" /><small v-if="isItem" class="xl-sub">{{ unitCat?.[0] }} × {{ unitCat?.[1] }}로 셈합니다</small></label>
             <label v-if="book === 'biz' && draft.category === '수리·인테리어'">현황
               <select v-model="draft.status"><option v-for="st in ['예정', '진행', '완료']" :key="st" :value="st">{{ st }}</option></select>
             </label>
@@ -261,7 +275,8 @@ defineExpose({ openAdd, exportCsv, total });
 .xl-tbl th i { margin-left: 4px; font-style: normal; font-size: 12px; opacity: .55; }
 .xl-tbl th i.on { opacity: 1; }
 .xl-tbl th.xc-date { width: 10%; } .xl-tbl th.xc-auction { width: 13%; } .xl-tbl th.xc-category { width: 12%; }
-.xl-tbl th.xc-amount { width: 13%; } .xl-tbl th.xc-vendor { width: 16%; } .xl-tbl th.xc-note { width: 16%; }
+.xl-tbl th.xc-detail { width: 26%; } .xl-tbl th.xc-amount { width: 12%; } .xl-tbl th.xc-vendor { width: 15%; }
+/* 비고가 남는 폭을 가진다 — 명세가 지나치게 넓어지지 않게 */
 .xl-tbl td { padding: 12px 10px; font-size: 14px; color: #111827; text-align: center; border-top: 1px solid #e5e7eb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .xl-tbl tbody tr:first-child td { border-top: 0; }
 .xl-tbl td.l { text-align: left; }

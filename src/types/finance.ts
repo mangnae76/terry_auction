@@ -40,7 +40,7 @@ export interface InteriorExpenseRecord extends FinanceBase {
   work: string;            // 작업내용 (예: 도배, 바닥)
   /** 웹 사업경비의 사용구분(수리·인테리어 · 명도비 · 대출이자 …) — 없으면 수리·인테리어 */
   category?: string;
-  /** 물품구매일 때 — 수량 × 단가 = 비용 */
+  /** 물품구매(수량 × 단가) · 대출이자 · 관리비(개월 × 월금액) — 곱한 값이 비용 */
   quantity?: number;
   unitPrice?: number;
   status: string;          // 현황 (예정 · 진행 · 완료)
