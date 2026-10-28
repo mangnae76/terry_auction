@@ -29,6 +29,8 @@ const KINDS: Array<{ key: Kind; label: string }> = [
 const router = useRouter();
 /** 웹 시장분석 › 지역분석에 띄웠는가 — 웹(shared.entry.js)이 넣어 준다. 분석 도구에서는 false */
 const webEmbed = inject<boolean>('webEmbed', false);
+/** 웹 수익분석 › 유사매물시세 — 이 화면을 한 탭(거래상세)만 띄워 쓴다. 고르는 줄 · 거래상세 거르개는 그대로 */
+const onlyView = inject<string>('admOnly', '');
 const auth = useAuthStore();
 
 // 시도 → 시군구 → 읍면동 차례로 좁힌다. 여기는 한 시군구씩만 받는다 —
@@ -97,7 +99,7 @@ const yearMin = ref('');
 const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
-const listView = ref<'map' | 'supply' | 'table' | 'dist' | 'detail' | 'deals'>('supply');
+const listView = ref<'map' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'similar'>(onlyView === 'deals' ? 'deals' : 'supply');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
 const mapRun = ref(0);
 const mapEmbed = computed(() => ({
@@ -108,7 +110,7 @@ const mapEmbed = computed(() => ({
   deal: (dealKind.value === 'jeonse' ? 'rent' : 'sale') as 'sale' | 'rent',
   months: periodMonths.value || 12,
 }));
-try { if (sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
+try { if (!onlyView && sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
 // 웹 — 고르는 줄 · 탭 줄을 위에 붙여 둔다(CSS sticky). 탭 줄은 고르는 줄 높이만큼 아래에 붙어야 해서 그 높이를 --bar-h 로 흘려 준다
 const barEl = ref<HTMLElement | null>(null);
 let barObserver: ResizeObserver | null = null;
@@ -124,7 +126,7 @@ onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
 const TAB_LABEL: Record<string, string> = { supply: '수요분석', table: '지역별 분석', dist: '지역분포', detail: '상세분포', deals: '거래상세' };
 const tellTab = () => {
-  if (!webEmbed) return;
+  if (!webEmbed || onlyView) return;
   const label = listView.value === 'table' && dong.value ? '검색리스트' : TAB_LABEL[listView.value];
   window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: ['지역분석', label] } }));
 };
@@ -816,7 +818,12 @@ const downloadCsv = () => {
 
       <!-- 웹 — 탭 줄(요약 상자 위, 탭을 바꿔도 제자리) + 오른쪽에 경로(홈 › 시장분석 › 지역분석 › 탭). 경로는 웹의 경로 표시를 이 자리(#admCrumbSlot)로 옮겨 쓴다 -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top">
-        <nav v-if="all.length > 0 || listView === 'map'" class="adm-view-tabs" role="tablist">
+        <!-- 수익분석 › 유사매물시세 — 거래상세 · 유사매물시세 두 탭만 -->
+        <nav v-if="onlyView" class="adm-view-tabs" role="tablist">
+          <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
+          <button type="button" role="tab" :aria-selected="listView === 'similar'" :class="{ on: listView === 'similar' }" @click="listView = 'similar'">유사매물시세</button>
+        </nav>
+        <nav v-else-if="all.length > 0 || listView === 'map'" class="adm-view-tabs" role="tablist">
               <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">지도</button>
               <button type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역별분석' }}</button>
@@ -1002,6 +1009,13 @@ const downloadCsv = () => {
             <button type="button" :disabled="dealPage === dealPages" aria-label="끝 쪽" @click="dealPage = dealPages">»</button>
             <span class="adm-pager-info">{{ dealPage.toLocaleString('ko-KR') }} / {{ dealPages.toLocaleString('ko-KR') }}쪽</span>
           </nav>
+        </div>
+        <!-- 웹 수익분석 — '유사매물시세' 탭(준비 중) -->
+        <div v-else-if="webEmbed && listView === 'similar'" class="adm-deals">
+          <section class="adm-trend">
+            <p class="adm-trend-title">유사매물시세</p>
+            <p class="adm-similar-empty">준비 중입니다 — 어떤 매물 시세를 보여 줄지 정한 뒤 채웁니다.</p>
+          </section>
         </div>
         <!-- 웹 '상세분포' 탭 — 동마다 구간별 거래건수(정상 + 직거래, 계약해제 제외). 칸이 진할수록 많다. 머리글을 누르면 정렬 -->
         <div v-else-if="webEmbed && listView === 'detail'" class="adm-detail">
@@ -1281,6 +1295,7 @@ const downloadCsv = () => {
 .adm-deals { display: flex; flex-direction: column; gap: 12px; }
 .adm-trend { background: #fff; border: 1px solid #e8ecf3; border-radius: 12px; padding: 16px 20px 10px; }
 .adm-trend-title { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #1f3a72; }
+.adm-similar-empty { margin: 8px 0 4px; padding: 28px 10px; text-align: center; font-size: 14px; color: #6b7280; }
 .adm-trend-title em { font-style: normal; font-size: 14px; font-weight: 600; color: #9ca3af; }
 .adm-trend-svg { width: 100%; height: auto; display: block; }
 .adm-trend-svg .grid { stroke: #eef1f6; stroke-width: 1; }

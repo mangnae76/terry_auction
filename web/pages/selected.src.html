@@ -4286,14 +4286,18 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       { const slot = document.getElementById('admCrumbSlot'); if (CRUMBS && slot && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS); }
       return;
     }
-    if (marketUnmount && box.querySelector(`.app-market[data-k="${key}"]`)) return;
+    /* 유사매물시세는 지역분석 화면(거래상세만) — 틀 · 거르개 CSS 를 그대로 받게 data-k 는 dong */
+    const dk = key === 'similar' ? 'dong' : key;
+    if (marketUnmount && box.querySelector(`.app-market[data-k="${dk}"][data-s="${key}"]`)) return;
     closeAppMarket();
-    box.innerHTML = `<div class="app-market" data-k="${key}" id="appMarketMount"></div>`;
+    box.innerHTML = `<div class="app-market" data-k="${dk}" data-s="${key}" id="appMarketMount"></div>`;
     /* 붙이는 도중 다시 그려 두 번 붙으면 화면에 남은 쪽만 잡는다 (낙찰이후 탭이 안 바뀌던 것과 같은 까닭) */
     const mountEl = $('appMarketMount');
     const stop = T.mountAppAdmin(mountEl, key);
     if (!document.contains(mountEl)) { try { stop(); } catch (e) { /* 그만 */ } return; }
     marketUnmount = stop;
+    /* 수익분석은 탭 이름을 알리지 않는다 — 경로를 제목 줄 오른쪽 칸(#admCrumbSlot)으로 직접 옮긴다 */
+    if (S.route === 'roi') requestAnimationFrame(() => { const slot = document.getElementById('admCrumbSlot'); if (CRUMBS && slot && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS); });
   }
   /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면을 띄워 두고, 하위 탭만 바꿀 때는 다시 띄우지 않고 탭만 넘긴다 */
   let pageUnmount = null; let pageKey = '';

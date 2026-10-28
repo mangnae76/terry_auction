@@ -166,10 +166,12 @@ const ADMIN_SCREENS = {
   region: ['/admin/region-demand', AdminRegionDemandPage],
   dong: ['/admin/dong-trades', AdminDongTradePage],
   case: ['/admin/case-trades', AdminCaseTradePage],
+  /* 수익분석 › 유사매물시세 — 지역분석 화면을 거래상세 한 탭만 */
+  similar: ['/admin/dong-trades', AdminDongTradePage, 'deals'],
 };
 export const hasAppAdminScreen = (key) => !!ADMIN_SCREENS[key];
 export const mountAppAdmin = (el, key) => {
-  const [path, component] = ADMIN_SCREENS[key];
+  const [path, component, only = ''] = ADMIN_SCREENS[key];
   const Empty = { render: () => null };
   const router = createRouter({
     history: createMemoryHistory(),
@@ -179,6 +181,7 @@ export const mountAppAdmin = (el, key) => {
   app.use(getActivePinia());
   app.use(router);
   app.provide('webEmbed', true);
+  app.provide('admOnly', only);
   void router.push(path);
   app.mount(el);
   return () => app.unmount();
