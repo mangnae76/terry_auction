@@ -187,7 +187,7 @@ export const POST_WIN_EVICT: CheckGroup[] = [
       {
         label: '그래도 안 되면',
         rows: [
-          { id: 'ev.rev.n1', depth: 0, text: '내용증명 준비 → 잔금 납부와 함께 인도명령 신청', warn: true },
+          { id: 'ev.rev.n1', depth: 0, text: '내용증명 1차(안내) 준비', warn: true },
         ],
       },
     ],
