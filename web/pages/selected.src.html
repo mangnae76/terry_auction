@@ -2279,6 +2279,11 @@ html, body { overflow-x: clip; }
 .pw-chaptabs::-webkit-scrollbar { display: none; }
 /* 좁은 화면 — 줄바꿈 대신 가로로 밀어 본다 */
 @media (max-width: 1100px) { :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button) { padding: 0 12px !important; } }
+
+/* 공용 확인창(앱 AppConfirm) — 웹 글자 규칙(제목 16 · 나머지 14) */
+.app-page .acf-title { font-size: 16px !important; }
+.app-page :is(.acf-desc, .acf-skip, .acf-btns button) { font-size: 14px !important; }
+.app-page .acf-backdrop { z-index: 960 !important; } .app-page .acf-box { z-index: 961 !important; }
 </style>
 
 <header class="gnb">

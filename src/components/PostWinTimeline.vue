@@ -5,6 +5,8 @@
 import { computed, ref } from 'vue';
 import type { AuctionDetail, PostWinFlow, PostWinStep } from '../types/auction';
 import { STEP_KEY_BY_NAME, STEP_TODOS, type StepTodo } from '../services/postWinTodos';
+import AppConfirm from './AppConfirm.vue';
+import type { ConfirmBox } from '../services/confirmBox';
 
 const props = defineProps<{
   auction: AuctionDetail | null;
@@ -200,10 +202,27 @@ const addStep = () => {
   addName.value = ''; addDaysN.value = 7; addBase.value = 'prev';
 };
 // 되돌릴 때는 빈 글자로 — undefined 는 저장 때 빠지고, 합쳐 쓰기(merge)라 예전 종결일이 서버에 그대로 남는다
-const endByDeal = () => edit((f) => { f.endedAt = f.endedAt ? '' : todayIso(); });
+// 확인창 — 앱과 같은 공용 창(AppConfirm). 종결 · 초기화는 한 번 더 묻는다
+const confirmBox = ref<ConfirmBox | null>(null);
+const endByDeal = () => {
+  if (flow.value.endedAt) { edit((f) => { f.endedAt = ''; }); return; }   // 되돌리기는 바로
+  confirmBox.value = {
+    title: '협의로 종결할까요?',
+    desc: '명도 협의를 마치셨군요, 축하드려요. 종결하면 남은 단계는 진행하지 않는 것으로 표시됩니다. 적어 둔 날짜 · 완료 표시는 지워지지 않고, 나중에 되돌릴 수 있어요.',
+    okLabel: '종결하기',
+    skipKey: '',
+    tone: 'calm',
+    run: () => edit((f) => { f.endedAt = todayIso(); }),
+  };
+};
 const resetDefault = () => {
-  if (!window.confirm('기본 절차로 되돌릴까요? 고친 단계와 완료 표시가 지워집니다.')) return;
-  commit(defaultFlow());
+  confirmBox.value = {
+    title: '기본 절차로 초기화할까요?',
+    desc: '고친 단계 · 더한 단계 · 완료 표시가 모두 지워지고 처음 절차로 돌아갑니다. 되돌릴 수 없어요.',
+    okLabel: '초기화',
+    skipKey: '',
+    run: () => commit(defaultFlow()),
+  };
 };
 </script>
 
@@ -300,6 +319,7 @@ const resetDefault = () => {
         <button type="button" class="pwt-btn primary" :disabled="!addName.trim()" @click="addStep">추가</button>
       </div>
     </template>
+    <AppConfirm :box="confirmBox" @close="confirmBox = null" />
   </section>
 </template>
 
