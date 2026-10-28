@@ -324,7 +324,7 @@ const resetDefault = () => {
 .pwt-when { margin-right: 6px; font-style: normal; font-size: 14px; font-weight: 600; color: #9ca3af; }
 .pwt-prog { flex: none; font-style: normal; font-size: 14px; font-weight: 700; color: #6b7280; }
 .pwt-todo.full .pwt-prog { color: #4f9a68; }
-.pwt-go { flex: none; height: 28px; padding: 0 10px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pwt-go { flex: none; height: 28px; padding: 0 10px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 400; cursor: pointer; }
 .pwt-go:hover { color: #111827; }
 .pwt-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 14px; font-weight: 700; line-height: 1; }
 .pwt-chip.done { background: #4f9a68; color: #fff; }

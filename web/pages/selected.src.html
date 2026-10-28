@@ -720,6 +720,12 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-int-tbl td :is(b, small) { font-size: 14px !important; font-weight: 500 !important; color: inherit !important; }
 /* 인테리어 현황 표 — 줄 위아래를 넉넉히 */
 .app-page[data-k="postwin"] .pw-int-tbl :is(th, td) { padding-top: 13px !important; padding-bottom: 13px !important; }
+/* 예상일정은 한 줄로('26.10.27 ~ 26.11.03'), 다섯 칸은 고르게 — 날짜 · 업체 칸은 조금 넓게, 줄 바꿈 없이 */
+.app-page[data-k="postwin"] .pw-int-tbl td.span :is(b, small) { display: inline !important; margin: 0 !important; }
+.app-page[data-k="postwin"] .pw-int-tbl td.span small::before { content: ' '; }
+.app-page[data-k="postwin"] .pw-int-tbl td.span { letter-spacing: 0 !important; }
+.app-page[data-k="postwin"] .pw-int-tbl col { width: 20% !important; }
+.app-page[data-k="postwin"] .pw-int-tbl :is(th, td) { padding-left: 10px !important; padding-right: 10px !important; }
 /* 매도·임대 — 중개 의뢰 현황 · 직거래 등록 상자: 글자는 규칙대로 14(제목 16), 칸 높이 · 위아래 여유를 넓힌다 */
 .app-page[data-k="postwin"] .agency-table { gap: 12px; }
 /* 업체 · 직거래 상자를 한 줄에 둘씩 */
