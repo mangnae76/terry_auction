@@ -33,8 +33,6 @@ export const BOOK_HINT: Record<Book, string> = {
   biz: '5월 종합소득세에서 빼는 돈 — 수리 · 명도 · 이자 · 관리비 · 유류 · 물품',
 };
 const NEED_CATS = NEED_GROUPS.map(([g]) => g);
-/** 사업경비에 적힌 명세가 자본적지출로 보이는가 — 표에 '필요경비 대상' 표시, 고칠 때 필요경비로 옮길 수 있다 */
-export const looksCapital = (detail: string) => /샷시|섀시|발코니|확장|보일러|난방|배관|설비 교체|시스템에어컨/.test(detail);
 
 /** 두 장부의 한 줄 */
 export interface LedgerRow {
@@ -52,18 +50,21 @@ export interface LedgerRow {
   vendor: string;
   phone: string;
   status: string;
+  /** 물품구매 — 수량 · 단가(없으면 0) */
+  qty: number;
+  unit: number;
   note: string;
 }
 
 export const ledgerRows = (src: { be: BusinessExpenseRecord[]; interior: InteriorExpenseRecord[] }): LedgerRow[] => [
   ...src.be.filter((r) => NEED_CATS.includes(r.profitCategory)).map((r): LedgerRow => ({
     key: `be-${r.id}`, src: 'be', id: r.id, book: 'need', auctionId: r.auctionId || '', auctionLabel: r.auctionLabel || '',
-    date: r.date || '', category: r.profitCategory, detail: r.detail || '', amount: r.amountWithVat || 0, vendor: '', phone: '', status: '', note: r.note || '',
+    date: r.date || '', category: r.profitCategory, detail: r.detail || '', amount: r.amountWithVat || 0, vendor: '', phone: '', status: '', qty: 0, unit: 0, note: r.note || '',
   })),
   ...src.interior.filter((r) => (r.kind ?? 'cost') === 'cost').map((r): LedgerRow => ({
     key: `in-${r.id}`, src: 'in', id: r.id, book: 'biz', auctionId: r.auctionId || '', auctionLabel: r.auctionLabel || '',
     date: r.startDate || r.date || '', category: r.category || '수리·인테리어', detail: r.work || '', amount: r.amountWithVat || 0,
-    vendor: r.vendor || '', phone: r.phone || '', status: r.status || '', note: r.note || '',
+    vendor: r.vendor || '', phone: r.phone || '', status: r.status || '', qty: r.quantity || 0, unit: r.unitPrice || 0, note: r.note || '',
   })),
 ];
 

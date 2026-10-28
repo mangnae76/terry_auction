@@ -1,12 +1,13 @@
 <script setup lang="ts">
 // 물건별 비용 장부(웹) — 필요경비 · 사업경비 한 갈래의 표 + 적기 창.
 // 낙찰이후 진행절차(물건 하나)와 자금관리(모든 물건)가 같이 쓴다 — 저장 자리가 같아 어느 쪽에서 적어도 양쪽에 보인다.
-// 분류 · 예전 기록 읽기는 services/expenseBook.
-import { computed, ref } from 'vue';
+// 분류는 services/expenseBook. 물품구매는 수량 × 단가로 비용을 셈한다.
+import { computed, ref, watch } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useFinanceStore } from '../stores/financeStore';
 import { useInteriorStore } from '../stores/interiorStore';
-import { BOOK_HINT, BOOK_NAME, groupsOf, ledgerRows, looksCapital, type Book, type LedgerRow } from '../services/expenseBook';
+import { BOOK_HINT, BOOK_NAME, groupsOf, ledgerRows, type Book, type LedgerRow } from '../services/expenseBook';
+import { cleanupLegacyOnce } from '../services/legacyCleanup';
 import { shortAddr } from '../utils/address';
 import FormattedNumberInput from './FormattedNumberInput.vue';
 import AppConfirm from './AppConfirm.vue';
@@ -27,6 +28,7 @@ const finance = useFinanceStore();
 const interior = useInteriorStore();
 finance.initialize();
 interior.initialize();
+cleanupLegacyOnce();
 
 const all = computed(() => ledgerRows({ be: finance.businessExpenses, interior: interior.rows }));
 const many = computed(() => props.auctionId === null);
@@ -70,28 +72,29 @@ const auctionOptions = computed(() => {
 
 // === 적기 창 ===
 const GROUPS = computed(() => groupsOf(props.book));
-interface Draft { src: 'be' | 'in' | ''; id: string; auctionId: string; date: string; category: string; detail: string; custom: boolean; amount: number; vendor: string; phone: string; status: string; note: string }
+interface Draft { src: 'be' | 'in' | ''; id: string; auctionId: string; date: string; category: string; detail: string; custom: boolean; qty: number; unit: number; amount: number; vendor: string; phone: string; status: string; note: string }
 const open = ref(false);
-const draft = ref<Draft>({ src: '', id: '', auctionId: '', date: '', category: '', detail: '', custom: false, amount: 0, vendor: '', phone: '', status: '', note: '' });
+const draft = ref<Draft>({ src: '', id: '', auctionId: '', date: '', category: '', detail: '', custom: false, qty: 0, unit: 0, amount: 0, vendor: '', phone: '', status: '', note: '' });
 const today = () => new Date().toISOString().slice(0, 10);
 const itemsOf = (cat: string) => GROUPS.value.find(([g]) => g === cat)?.[1] ?? [];
+/** 물품구매 — 수량 · 단가 칸이 나오고 비용은 둘을 곱한다 */
+const isItem = computed(() => props.book === 'biz' && draft.value.category === '물품구매');
+watch(() => [draft.value.qty, draft.value.unit, isItem.value] as const, ([q, u, on]) => {
+  if (on) draft.value.amount = Number(q || 0) * Number(u || 0);
+});
 const openAdd = () => {
   const [cat, items] = GROUPS.value[0];
-  draft.value = { src: '', id: '', auctionId: props.auctionId ?? '', date: today(), category: cat, detail: items[0] ?? '', custom: false, amount: 0, vendor: '', phone: '', status: '예정', note: '' };
-  moveNeed.value = false;
+  draft.value = { src: '', id: '', auctionId: props.auctionId ?? '', date: today(), category: cat, detail: items[0] ?? '', custom: false, qty: 1, unit: 0, amount: 0, vendor: '', phone: '', status: '예정', note: '' };
   open.value = true;
 };
 const openRow = (r: LedgerRow) => {
   draft.value = {
     src: r.src, id: r.id, auctionId: r.auctionId, date: r.date, category: r.category, detail: r.detail,
-    custom: !!r.detail && !itemsOf(r.category).includes(r.detail), amount: r.amount, vendor: r.vendor, phone: r.phone, status: r.status || '예정', note: r.note,
+    custom: !!r.detail && !itemsOf(r.category).includes(r.detail), qty: r.qty || 1, unit: r.unit || 0, amount: r.amount,
+    vendor: r.vendor, phone: r.phone, status: r.status || '예정', note: r.note,
   };
-  moveNeed.value = false;
   open.value = true;
 };
-/** 예전에 사업경비로 적은 자본적지출(샷시 …) — 고칠 때 '필요경비로 옮기기'를 켜면 필요경비(자본적지출)로 간다 */
-const moveNeed = ref(false);
-const toNeed = computed(() => props.book === 'biz' && moveNeed.value);
 const pickCategory = (c: string) => {
   draft.value.category = c;
   if (!draft.value.custom && !itemsOf(c).includes(draft.value.detail)) draft.value.detail = itemsOf(c)[0] ?? '';
@@ -109,20 +112,17 @@ const save = async () => {
   busy.value = true;
   try {
     const label = labelOf(d.auctionId);
-    if (props.book === 'need' || toNeed.value) {
+    if (props.book === 'need') {
       await finance.saveBusinessExpense({
         ...(d.src === 'be' ? { id: d.id } : {}), auctionId: d.auctionId, auctionLabel: label,
-        profitCategory: toNeed.value ? '자본적지출' : d.category, memo: '', detail: d.detail, amountWithVat: Number(d.amount || 0), date: d.date,
-        // 필요경비 표엔 업체 칸이 없다 — 옮길 때 업체 · 연락처는 비고에 붙인다
-        note: toNeed.value ? [d.note, [d.vendor, d.phone].filter(Boolean).join(' ')].filter(Boolean).join(' · ') : d.note,
+        profitCategory: d.category, memo: '', detail: d.detail, amountWithVat: Number(d.amount || 0), date: d.date, note: d.note,
       });
-      // 사업경비에 적혀 있던 자본적지출은 필요경비로 옮긴다
-      if (toNeed.value && d.src === 'in' && d.id) await interior.remove(d.id);
     } else {
       await interior.save({
         ...(d.src === 'in' ? { id: d.id } : {}), kind: 'cost', auctionId: d.auctionId, auctionLabel: label,
         category: d.category, work: d.detail, status: d.category === '수리·인테리어' ? d.status : '',
         startDate: d.date, endDate: '', amountWithVat: Number(d.amount || 0), vendor: d.vendor, phone: d.phone, note: d.note,
+        quantity: isItem.value ? Number(d.qty || 0) : 0, unitPrice: isItem.value ? Number(d.unit || 0) : 0,
       });
     }
     open.value = false;
@@ -150,8 +150,8 @@ const remove = () => {
 /** 엑셀(csv) */
 const exportCsv = () => {
   const esc = (v: string | number) => { const t = String(v ?? ''); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
-  const head = ['날짜', '물건', '사용구분', '명세', '비용(VAT포함)', '업체', '연락처', '비고'];
-  const body = sorted.value.map((r) => [r.date, r.auctionLabel || labelOf(r.auctionId), r.category, r.detail, r.amount, r.vendor, r.phone, r.note]);
+  const head = ['날짜', '물건', '사용구분', '명세', '수량', '단가', '비용(VAT포함)', '업체', '연락처', '비고'];
+  const body = sorted.value.map((r) => [r.date, r.auctionLabel || labelOf(r.auctionId), r.category, r.detail, r.qty || '', r.unit || '', r.amount, r.vendor, r.phone, r.note]);
   const text = '﻿' + [head, ...body].map((r) => r.map(esc).join(',')).join('\n');
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
@@ -181,7 +181,7 @@ defineExpose({ openAdd, exportCsv, total });
           <td>{{ shortDate(r.date) }}</td>
           <td v-if="many" :title="r.auctionLabel">{{ r.auctionLabel || labelOf(r.auctionId) || '공통' }}</td>
           <td><span class="xl-pill">{{ r.category }}</span></td>
-          <td :title="r.detail" class="l">{{ r.detail }}<em v-if="r.status" class="xl-st">{{ r.status }}</em><em v-if="book === 'biz' && looksCapital(r.detail)" class="xl-cap" title="자본적지출로 보입니다 — 눌러서 '필요경비로 옮기기'를 켜고 저장하면 필요경비로 옮겨집니다">필요경비 대상</em></td>
+          <td :title="r.detail" class="l">{{ r.detail }}<span v-if="r.qty" class="xl-qty">{{ money(r.qty) }}개 × {{ money(r.unit) }}원</span><em v-if="r.status" class="xl-st">{{ r.status }}</em></td>
           <td class="r">{{ money(r.amount) }}원</td>
           <td v-if="book === 'biz'" :title="[r.vendor, r.phone].filter(Boolean).join(' · ')">{{ [r.vendor, r.phone].filter(Boolean).join(' · ') }}</td>
           <td :title="r.note" class="l">{{ r.note }}</td>
@@ -215,7 +215,11 @@ defineExpose({ openAdd, exportCsv, total });
               </select>
               <input v-if="draft.custom" v-model="draft.detail" type="text" placeholder="명세를 적어 주세요" />
             </label>
-            <label>비용(VAT포함)<FormattedNumberInput v-model="draft.amount" live-group align="left" placeholder="0" /></label>
+            <template v-if="isItem">
+              <label>수량<FormattedNumberInput v-model="draft.qty" live-group align="left" placeholder="0" /></label>
+              <label>단가<FormattedNumberInput v-model="draft.unit" live-group align="left" placeholder="0" /></label>
+            </template>
+            <label>비용(VAT포함)<FormattedNumberInput v-model="draft.amount" live-group align="left" placeholder="0" :disabled="isItem" /><small v-if="isItem" class="xl-sub">수량 × 단가로 셈합니다</small></label>
             <label v-if="book === 'biz' && draft.category === '수리·인테리어'">현황
               <select v-model="draft.status"><option v-for="st in ['예정', '진행', '완료']" :key="st" :value="st">{{ st }}</option></select>
             </label>
@@ -225,9 +229,7 @@ defineExpose({ openAdd, exportCsv, total });
             </template>
             <label class="wide">비고<input v-model="draft.note" type="text" /></label>
           </div>
-          <label v-if="book === 'biz' && draft.id && looksCapital(draft.detail)" class="xl-move"><input v-model="moveNeed" type="checkbox" /> 자본적지출이라 필요경비로 옮기기</label>
-          <p v-if="toNeed" class="xl-mhint warn">저장하면 필요경비(자본적지출)로 옮겨져 예정신고 때 빠집니다.</p>
-          <p v-else class="xl-mhint">{{ BOOK_HINT[book] }}</p>
+          <p class="xl-mhint">{{ BOOK_HINT[book] }}</p>
           <footer>
             <button v-if="draft.id" type="button" class="del" @click="remove">삭제</button>
             <span class="sp" />
@@ -252,11 +254,14 @@ defineExpose({ openAdd, exportCsv, total });
 .xl-btn:disabled { opacity: .5; cursor: default; }
 .xl-tbl { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; background: #fff; border: 1px solid #d0d5dd; border-radius: 8px; overflow: hidden; }
 .xl-tbl th { background: #1f2a44; color: #fff; padding: 0; font-size: 14px; font-weight: 700; }
-.xl-tbl th button { width: 100%; height: 42px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.xl-tbl th button { width: 100%; height: 42px; padding: 0 10px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+/* 머리글은 칸 글과 같은 쪽으로 — 명세 · 비고는 왼쪽, 비용은 오른쪽 */
+.xl-tbl th:is(.xc-detail, .xc-note) button { justify-content: flex-start; }
+.xl-tbl th.xc-amount button { justify-content: flex-end; }
 .xl-tbl th i { margin-left: 4px; font-style: normal; font-size: 12px; opacity: .55; }
 .xl-tbl th i.on { opacity: 1; }
-.xl-tbl th.xc-date { width: 11%; } .xl-tbl th.xc-auction { width: 15%; } .xl-tbl th.xc-category { width: 13%; }
-.xl-tbl th.xc-amount { width: 14%; } .xl-tbl th.xc-vendor { width: 17%; }
+.xl-tbl th.xc-date { width: 10%; } .xl-tbl th.xc-auction { width: 13%; } .xl-tbl th.xc-category { width: 12%; }
+.xl-tbl th.xc-amount { width: 13%; } .xl-tbl th.xc-vendor { width: 16%; } .xl-tbl th.xc-note { width: 16%; }
 .xl-tbl td { padding: 12px 10px; font-size: 14px; color: #111827; text-align: center; border-top: 1px solid #e5e7eb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .xl-tbl tbody tr:first-child td { border-top: 0; }
 .xl-tbl td.l { text-align: left; }
@@ -265,9 +270,9 @@ defineExpose({ openAdd, exportCsv, total });
 .xl-tbl tbody tr:hover td { background: #f5f8ff; }
 .xl-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #e9f0fd; color: #1d4ed8; font-size: 13px; }
 .xl-st { margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: #f1f3f6; color: #4b5563; font-style: normal; font-size: 12px; }
-.xl-cap { margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: #fdecec; color: #b44545; font-style: normal; font-size: 12px; }
-.xl-mhint.warn { color: #b44545; }
-.xl-move { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 14px; color: #b44545; cursor: pointer; }
+.xl-qty { margin-left: 10px; font-size: 13px; color: #6b7280; }
+.xl-sub { font-size: 12px; font-weight: 400; color: #6b7280; }
+.xl-form :deep(input:disabled) { background: #f5f7fa; color: #374151; }
 .xl-empty { padding: 28px 10px !important; color: #6b7280 !important; cursor: default; }
 .xl-veil { position: fixed; inset: 0; z-index: 150; background: rgba(15, 23, 42, .45); display: grid; place-items: center; padding: 20px; }
 .xl-modal { color-scheme: light; width: min(560px, 100%); background: #fff; border-radius: 14px; padding: 20px 22px 18px; color: #111827; box-shadow: 0 20px 40px rgba(15, 23, 42, .25); }

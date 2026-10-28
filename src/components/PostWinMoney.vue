@@ -165,7 +165,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 
       <div class="pwm-tax">
         <article class="pwm-card">
-          <h3>비용 및 차익</h3>
+          <h3>개별소득세</h3>
           <dl>
             <div><dt>낙찰가</dt><dd>{{ won(plan.bid) }}</dd></div>
             <div><dt>매도가</dt><dd>{{ won(plan.sale) }}<small>{{ saleFixed ? `확정 — 매도일 ${auction?.sellDate}` : '입찰가산정 A안 예상' }}</small></dd></div>
