@@ -38,7 +38,7 @@ export const EVICT_DEFAULT: EvictInput = {
   dealMonths: 1,
   serveExtra: 50_000,
   execBase: 200_000,
-  laborPerPyeong: 100_000,
+  laborPerPyeong: 200_000,   // 보통 평당 15~20만원 — 넉넉히 잡는다
   truck: 300_000,
   storagePerMonth: 400_000,
   storageMonths: 3,
@@ -68,7 +68,7 @@ export const execCost = (i: EvictInput): { lines: CostLine[]; total: number } =>
     { label: '인도명령 신청(인지 · 송달료)', amount: i.orderCost },
     { label: '특별송달 · 공시송달', amount: i.serveExtra },
     { label: '집행 접수 · 계고 예납', amount: i.execBase },
-    { label: `노무비(${i.pyeong}평 × 평당)`, amount: i.laborPerPyeong * i.pyeong },
+    { label: `노무비(${i.pyeong}평 × 평당 ${i.laborPerPyeong.toLocaleString('ko-KR')}원)`, amount: i.laborPerPyeong * i.pyeong },
     { label: '사다리차 · 운반', amount: i.truck },
     { label: `짐 보관료(${i.storageMonths}개월)`, amount: i.storagePerMonth * i.storageMonths },
     { label: `늦어지는 ${i.execMonths}개월 이자 · 관리비`, amount: monthlyCarry(i) * i.execMonths },

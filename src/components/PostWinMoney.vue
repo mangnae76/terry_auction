@@ -42,6 +42,8 @@ const seedTax = () => {
   };
 };
 const ev = ref<EvictInput>({ ...seedEvict(), ...((read().ev as object) ?? {}) });
+// 예전 기본값(평당 10만원)이 그대로 남아 있으면 새 기본값으로 — 손으로 고친 값은 둔다
+if (ev.value.laborPerPyeong === 100_000) ev.value.laborPerPyeong = EVICT_DEFAULT.laborPerPyeong;
 const tx = ref({ ...seedTax(), ...((read().tx as object) ?? {}) });
 /** 세금분석의 명도비 — 명도분석의 어느 쪽으로 넣을지 */
 const evictPick = ref<'deal' | 'exec'>((read().pick as 'deal' | 'exec') || 'deal');
@@ -67,7 +69,7 @@ const save = computed(() => exec.value.total - deal.value.total);
 const EV_FIELDS: Array<[keyof EvictInput, string, string]> = [
   ['loan', '대출금', '원'], ['ratePct', '연 금리', '%'], ['monthlyFee', '한 달 관리비 · 공과금', '원'], ['pyeong', '전용 평수', '평'],
   ['moveMoney', '이사비(협의)', '원'], ['dealMonths', '협의 때 걸리는 달', '개월'], ['orderCost', '인도명령 인지 · 송달료', '원'], ['noticeCost', '내용증명 한 번', '원'],
-  ['execBase', '집행 접수 · 계고 예납', '원'], ['laborPerPyeong', '노무비(평당)', '원'], ['truck', '사다리차 · 운반', '원'], ['storagePerMonth', '짐 보관료(한 달)', '원'],
+  ['execBase', '집행 접수 · 계고 예납', '원'], ['laborPerPyeong', '노무비(평당 · 보통 15~20만원)', '원'], ['truck', '사다리차 · 운반', '원'], ['storagePerMonth', '짐 보관료(한 달)', '원'],
   ['storageMonths', '보관 달', '개월'], ['serveExtra', '특별 · 공시송달', '원'], ['execMonths', '강제집행 때 걸리는 달', '개월'],
 ];
 const RISKS: Array<[string, string]> = [
