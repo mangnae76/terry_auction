@@ -25,14 +25,14 @@ import { addressParts } from '../utils/addressName';
 import { propTypeName } from '../utils/propertyType';
 import type { AgencyRow, AuctionDetail } from '../types/auction';
 import PostWinTimeline from '../components/PostWinTimeline.vue';
-import type { StepTodo } from '../services/postWinTodos';
+import { DETAIL_STEPS, STEP_TITLE, STEP_TODOS, type StepTodo } from '../services/postWinTodos';
 import { DETAIL_REPAIR, DETAIL_SELL, DETAIL_TAX } from '../services/postWinDetail';
 /** 웹 절차상세 · 인테리어 · 매도 · 세금 장 — 코드에 둔 체크리스트(고쳐 저장하는 표가 아니다) */
 const DETAIL_OF: Partial<Record<string, CheckGroup[]>> = { drepair: DETAIL_REPAIR, dsell: DETAIL_SELL, dtax: DETAIL_TAX };
 
 // 낙찰당일 탭을 다시 맨 왼쪽에 — '낙찰 후 진행 순서' 상자와 낙찰당일 묶음(경매사건 열람 · 명도협상 원칙 · 유선연락 첫통화)
 // 웹은 절차진행 · 절차상세(win · evict · balance 장) · 가이드(gwin · gevict · biz 장) · 인테리어 · 매도·임대 — 장 열쇠가 곧 하위 탭 열쇠다
-type TabKey = 'win' | 'flow' | 'biz' | 'balance' | 'evict' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'repair' | 'sell';
+type TabKey = 'win' | 'dpre' | 'flow' | 'biz' | 'balance' | 'evict' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
   { key: 'win', label: '낙찰당일', desc: '낙찰가·경쟁 상황, 영수증과 서류 챙기기' },
   { key: 'flow', label: '절차진행', desc: '낙찰일부터 명도까지 단계별 일정' },   // 웹만(앱 탭 줄에는 안 보인다)
@@ -44,7 +44,7 @@ const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
 ];
 const route = useRoute();
 const router = useRouter();
-const TAB_KEYS: TabKey[] = ['win', 'flow', 'evict', 'biz', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gevict', 'repair', 'sell'];
+const TAB_KEYS: TabKey[] = ['win', 'dpre', 'flow', 'evict', 'biz', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gevict', 'repair', 'sell'];
 /** 주소에 적힌 탭으로 연다 — '뒤로' 왔을 때 보던 자리를 지킨다 */
 const initialTab = (): TabKey => {
   const wanted = String(route.query.tab ?? '');
@@ -252,10 +252,20 @@ const narrowGroup = (g: CheckGroup, t: StepTodo): CheckGroup => {
       rows: (t.rows ? sec.rows.filter((r) => t.rows!.includes(r.id)) : sec.rows).map((r) => (t.texts?.[r.id] ? { ...r, text: t.texts[r.id] } : r)),
     }))
     .filter((sec) => sec.rows.length > 0);
-  // 일부만 띄울 때는 제목을 그 큰일로 — 상자 이름(유선연락 첫통화 …)이 맞지 않는 칸이 많다. 상자 전체 안내줄도 뺀다
-  return { ...g, title: t.text, note: '', sections };
+  return { ...g, note: '', sections };   // 일부만 띄울 때는 상자 전체 안내줄을 뺀다
 };
+/** 큰일 카드 — 원본 상자에서 그 큰일 몫만 잘라, 제목을 큰일 이름으로. 절차상세 목록과 창이 같은 카드를 쓴다 */
+const todoCard = (t: StepTodo, key: string, sup = ''): CheckGroup | null => {
+  const g = allGroups.value.find((x) => x.key === t.group);
+  if (!g) return null;
+  return { ...narrowGroup(g, t), key, title: t.text, super: sup, webOnly: false };
+};
+/** 절차상세 장 — 단계 차례대로 [단계 머리 + 큰일 카드들] */
+const detailCards = (chap: string): CheckGroup[] => (DETAIL_STEPS[chap] ?? []).flatMap((sk) => (STEP_TODOS[sk] ?? [])
+  .map((t, i) => (t.group ? todoCard(t, `card.${sk}.${i}`, STEP_TITLE[sk] ?? sk) : null))
+  .filter((g): g is CheckGroup => !!g));
 const popNarrowed = computed(() => !!popTodo.value && !popFull.value && !!(popTodo.value.section || popTodo.value.rows || popTodo.value.branch != null));
+// (전체 보기는 일부만 잘라 띄운 카드에서만 — 상자 하나 통째인 카드는 이미 전체다)
 /** 갈래 그림은 줄 이름표가 갈래 차례에 묶여 있어 빼지 않고 가린다 — 그 갈래 · 그 번호만 보인다 */
 const popBranchOn = computed(() => popOpen.value && !popFull.value && popTodo.value?.branch != null);
 const brShown = (bri: number) => !popBranchOn.value || bri === popTodo.value?.branch;
@@ -264,7 +274,9 @@ const popGroups = computed<CheckGroup[]>(() => {
   const t = popTodo.value;
   if (!t) return [];
   if (t.tab === 'biz') return bizBook.groups.value;
-  return allGroups.value.filter((g) => g.key === t.group).map((g) => (popFull.value ? g : narrowGroup(g, t)));
+  if (popFull.value) return allGroups.value.filter((g) => g.key === t.group);
+  const card = todoCard(t, 'card.pop');
+  return card ? [card] : [];
 });
 watch(popTodo, () => { popFull.value = false; });
 const popOpen = computed(() => popGroups.value.length > 0);
@@ -278,6 +290,7 @@ const dayGroups = computed<CheckGroup[]>(() => {
   if (editing.value) return draft.value;
   if (popOpen.value) return popGroups.value;
   const t = activeTab.value;
+  if (webEmbed && DETAIL_STEPS[t]) return detailCards(t);
   if (DETAIL_OF[t]) return DETAIL_OF[t] as CheckGroup[];
   if (t === 'gwin') return dayBook.groups.value.filter((g) => GUIDE_DAY_KEYS.has(g.key));
   if (t === 'gevict') return evictBook.groups.value.filter((g) => GUIDE_EVICT_KEYS.has(g.key));
@@ -287,9 +300,9 @@ const dayGroups = computed<CheckGroup[]>(() => {
   return webEmbed ? book.value.groups.value : book.value.groups.value.filter((g) => !g.webOnly);
 });
 /** 표가 있는 탭인가 */
-const hasTable = computed(() => viewTab.value in BOOK_OF || !!DETAIL_OF[activeTab.value]);
+const hasTable = computed(() => viewTab.value in BOOK_OF || !!DETAIL_OF[activeTab.value] || (webEmbed && !!DETAIL_STEPS[activeTab.value]));
 /** 웹 — 절차상세 · 가이드 안의 장 단추(경로 오른쪽) */
-const DETAIL_CHAPS: Array<[TabKey, string]> = [['win', '낙찰당일'], ['evict', '명도'], ['balance', '잔금·등기'], ['drepair', '인테리어'], ['dsell', '매도'], ['dtax', '세금']];
+const DETAIL_CHAPS: Array<[TabKey, string]> = [['win', '낙찰당일'], ['dpre', '잔금 전'], ['balance', '잔금·등기'], ['evict', '명도'], ['drepair', '인테리어'], ['dsell', '매도'], ['dtax', '세금']];
 const GUIDE_CHAPS: Array<[TabKey, string]> = [['gwin', '낙찰당일'], ['gevict', '명도'], ['biz', '사업자등록']];
 const chaps = computed(() => {
   if (!webEmbed) return [];
@@ -343,7 +356,7 @@ const goTodo = async (t: StepTodo) => {
 /** 체크 칸을 두는 탭인가 — 사업자등록은 한 번 해 두면 되는 일이라 체크가 없다 */
 const checkable = computed(() => {
   const t = popOpen.value ? popTodo.value?.tab : activeTab.value;
-  return t === 'win' || t === 'balance' || t === 'evict' || t === 'drepair' || t === 'dsell' || t === 'dtax';
+  return t === 'win' || t === 'dpre' || t === 'balance' || t === 'evict' || t === 'drepair' || t === 'dsell' || t === 'dtax';
 });
 
 // === 표 고치기 ===

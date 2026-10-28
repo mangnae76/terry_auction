@@ -2,7 +2,7 @@
 // 여기서는 그 상자를 가리키기만 한다(체크는 한 곳에만 남는다). 진행도는 가리킨 상자의 체크로 센다.
 
 /** 낙찰이후 하위 탭 열쇠 — 절차상세 장(win · evict · balance), 가이드 장(gevict · biz), 그 밖(repair · sell) */
-export type PostWinTabKey = 'flow' | 'win' | 'evict' | 'balance' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'biz' | 'repair' | 'sell';
+export type PostWinTabKey = 'flow' | 'win' | 'dpre' | 'evict' | 'balance' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'biz' | 'repair' | 'sell';
 
 /** 큰일의 갈래 — 명도 · 대출 · 절차(법원 · 등기 · 사업자 · 인테리어 · 매도 · 세금) */
 export type TodoCat = 'evict' | 'loan' | 'proc';
@@ -108,4 +108,33 @@ export const STEP_KEY_BY_NAME: Record<string, string> = {
   '매도 잔금': 'close',
   '매매차익 예정신고': 'taxPre',
   '종합소득세 확정신고': 'taxFinal',
+};
+
+/** 절차상세(웹)의 장 → 그 장에 담는 단계(차례대로). 장 안에서는 단계 머리 아래 큰일 카드가 붙는다 */
+export const DETAIL_STEPS: Record<string, string[]> = {
+  win: ['bid'],
+  dpre: ['decide', 'confirm'],
+  balance: ['balance'],
+  evict: ['order', 'serve', 'warn', 'exec'],
+  drepair: ['repairStart', 'repairDone'],
+  dsell: ['list', 'contract', 'close'],
+  dtax: ['taxPre', 'taxFinal'],
+};
+/** 절차상세의 단계 머리 */
+export const STEP_TITLE: Record<string, string> = {
+  bid: '입찰 기일 · 낙찰 당일',
+  decide: '매각 결정 기일',
+  confirm: '매각 허가 확정',
+  balance: '잔금 납부',
+  order: '인도명령 결정',
+  serve: '결정문 송달',
+  warn: '강제집행 계고',
+  exec: '강제집행 완료',
+  repairStart: '인테리어 시작',
+  repairDone: '인테리어 완료',
+  list: '매물 내놓기',
+  contract: '매도·임대 계약',
+  close: '매도 잔금',
+  taxPre: '매매차익 예정신고',
+  taxFinal: '종합소득세 확정신고',
 };

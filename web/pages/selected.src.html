@@ -2527,7 +2527,7 @@ html, body { overflow-x: clip; }
      화면마다 따로 적지 않는다: 새 화면 · 새 하위 탭이 생기면 아래 두 표(SUB_TAB_KEYS · readHash/hashOf)에만 더한다 ===== */
   const SUB_TAB_KEYS = {
     market: ['ranking', 'dong', 'case', 'near', 'same'],
-    postwin: ['flow', 'win', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gevict', 'biz', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
+    postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gevict', 'biz', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'tax'],
     more: ['mypage', 'billing', 'points', 'news', 'support'],
   };
@@ -4011,8 +4011,8 @@ html, body { overflow-x: clip; }
   window.addEventListener('adm:tab', (e) => { marketInner = (e.detail && e.detail.trail) || null; if (S.route === 'market') syncCrumb(); });
   /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
   /* 낙찰이후 — 장 열쇠는 제 하위 탭(절차상세 · 가이드)에 불이 들어오고, 경로에는 '절차상세 › 명도'처럼 장 이름이 붙는다 */
-  const SUB_PARENT = { postwin: { evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win', gevict: 'gwin', biz: 'gwin' } };
-  const SUB_CHAP = { postwin: { win: '낙찰당일', evict: '명도', balance: '잔금·등기', drepair: '인테리어', dsell: '매도', dtax: '세금', gwin: '낙찰당일', gevict: '명도', biz: '사업자등록' } };
+  const SUB_PARENT = { postwin: { dpre: 'win', evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win', gevict: 'gwin', biz: 'gwin' } };
+  const SUB_CHAP = { postwin: { win: '낙찰당일', dpre: '잔금 전', evict: '명도', balance: '잔금·등기', drepair: '인테리어', dsell: '매도', dtax: '세금', gwin: '낙찰당일', gevict: '명도', biz: '사업자등록' } };
   const subParent = (route, key) => (SUB_PARENT[route] || {})[key] || key;
   const subLabel = (route, key) => ((SUBTABS[route] || []).find((t) => t[0] === subParent(route, key)) || [])[2] || '';
   const subChap = (route, key) => (SUB_CHAP[route] || {})[key] || '';
