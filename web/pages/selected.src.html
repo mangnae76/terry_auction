@@ -3776,15 +3776,17 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['sell', '', '매도·임대'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어는 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
     more: [['mypage', '', '내 정보'], ['finance', '', '자금관리'], ['alerts', '', '알림'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['news', '', '공지'], ['support', '', '고객센터']],
-    item: [['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
+    item: [['cards', '', '물건카드'], ['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
   };
+  /* 선정목록도 같은 줄 — 맨 앞 '물건카드'가 목록, 나머지는 마지막으로 본 물건(없으면 목록 맨 위 물건)의 상세 탭 */
+  SUBTABS.list = SUBTABS.item;
   function renderSubTabs() {
     syncCrumb();
     /* 자금관리는 마이페이지 아래 — 위 탭 줄은 마이페이지 그대로(자금관리에 불), 자금관리 다섯 탭은 화면 안 박스 탭(3단) */
     const fin = S.route === 'finance';
     const tabs = fin ? SUBTABS.more : SUBTABS[S.route]; const bar = $('subTabs');
     bar.hidden = !tabs; document.body.classList.toggle('has-subtabs', !!tabs);
-    const cur = fin ? 'finance' : S.route === 'market' ? S.marketTab : S.route === 'bidrate' ? S.bidrateTab : APP_PAGE_NAMES[S.route] ? subParent(S.route, S.pageTab[S.route]) : S.itemTab;
+    const cur = fin ? 'finance' : S.route === 'list' ? 'cards' : S.route === 'market' ? S.marketTab : S.route === 'bidrate' ? S.bidrateTab : APP_PAGE_NAMES[S.route] ? subParent(S.route, S.pageTab[S.route]) : S.itemTab;
     $('subTabsIn').innerHTML = tabs ? tabs.map(([k, ic, t]) => `<button type="button" class="subtab ${cur === k ? 'on' : ''}" role="tab" aria-selected="${cur === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
     if (tabs) syncStickTop();
   }
@@ -4413,14 +4415,14 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   function go(route, id) {
     if (S.route === route && (route !== 'item' || S.itemId === id)) { window.scrollTo(0, 0); return; }
     S.route = route; S.pop = ''; S.menu = null;
-    if (route === 'item') { S.itemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
+    if (route === 'item') { S.itemId = id; S.lastItemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
     render(); window.scrollTo(0, 0);
     writeHash(true);
   }
   window.addEventListener('popstate', () => {
     const h = readHash();
     S.route = h.route;
-    if (h.route === 'item') { S.itemId = h.itemId; S.itemTab = h.itemTab; }
+    if (h.route === 'item') { S.itemId = h.itemId; S.lastItemId = h.itemId; S.itemTab = h.itemTab; }
     if (h.route === 'market') S.marketTab = h.sub;
     if (h.route === 'bidrate') S.bidrateTab = h.sub;
     if (APP_PAGE_NAMES[h.route]) S.pageTab[h.route] = h.sub;
@@ -4890,6 +4892,12 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
         if (S.route === 'more' && v === 'finance') { go('finance'); break; }   /* 마이페이지 › 자금관리 — 자금관리 화면으로 */
         if (S.route === 'finance') { if (v !== 'finance') { S.pageTab.more = v; go('more'); } break; }   /* 자금관리 화면의 위 줄은 마이페이지 탭 */
         if (APP_PAGE_NAMES[S.route]) { S.pageTab[S.route] = v; writeHash(false); renderSubTabs(); renderAppPage(); window.scrollTo(0, 0); break; }
+        if (v === 'cards') { go('list'); break; }   /* 물건카드 — 선정목록으로 */
+        if (S.route === 'list') {
+          const id = (S.lastItemId && byId(S.lastItemId)) ? S.lastItemId : (visible()[0] || {}).id;
+          if (!id) { toast('물건이 없습니다 — 먼저 물건을 등록해 주세요.', 'info'); break; }
+          S.itemTabNext = v; go('item', id); break;
+        }
         S.itemTab = v;
         /* 주소에도 남긴다 — 새로고침하면 이 탭으로 다시 연다 (뒤로가기 기록은 늘리지 않는다) */
         writeHash(false);
