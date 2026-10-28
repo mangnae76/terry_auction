@@ -109,6 +109,9 @@ const mapEmbed = computed(() => ({
   kind: kind.value,
   deal: (dealKind.value === 'jeonse' ? 'rent' : 'sale') as 'sale' | 'rent',
   months: periodMonths.value || 12,
+  // 지도도 같은 날짜 범위(조회일 기준 N개월)로 센다 — 건수가 지역분석 · 수요분석과 맞게
+  from: dateFrom.value,
+  to: dateTo.value,
 }));
 try { if (!onlyView && sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
 // 웹 — 고르는 줄 · 탭 줄을 위에 붙여 둔다(CSS sticky). 탭 줄은 고르는 줄 높이만큼 아래에 붙어야 해서 그 높이를 --bar-h 로 흘려 준다
@@ -675,7 +678,9 @@ const eokMan = (v: number) => {
 // ===== 총 거래건수 = 정상 + 직거래 (계약해제 제외) — 앱 · 웹 모든 '총 거래건수' 가 같은 셈 =====
 /** 고른 기간(조회일 기준 3 · 6 · 12개월)에 든 거래 — 동 · 면적 · 연식 거르기 전. 요약 상자 · 수요분석이 이것으로 센다 */
 const windowRows = computed(() => all.value.filter(inWindow));
-const kindCount = (k: DongTradeDetailRow['kind'], rows = windowRows.value) => rows.filter((r) => r.kind === k).length;
+/** 총 거래건수의 범위 — 읍면동을 고르면 그 동만(수요분석과 같게) */
+const windowScoped = computed(() => (dong.value ? windowRows.value.filter((r) => r.umdNm === dong.value) : windowRows.value));
+const kindCount = (k: DongTradeDetailRow['kind'], rows = windowScoped.value) => rows.filter((r) => r.kind === k).length;
 const yearTotal = computed(() => kindCount('정상거래') + kindCount('직거래'));
 const totalTip = computed(() => {
   const n = (v: number) => v.toLocaleString('ko-KR');
@@ -703,7 +708,8 @@ const guNav = computed(() => {
 });
 /** 읍면동을 고르면 위 요약 상자는 셋 — 거래상세 숫자(조건검색까지 거른 것)와 같은 값 */
 const dongNav = computed(() => [
-  { label: '총 거래건수', value: `${(kindCount('정상거래', filtered.value) + kindCount('직거래', filtered.value)).toLocaleString('ko-KR')}건`, ym: null, tip: null },
+  // 총 거래건수 — 동 '전체'와 같은 꼴(연 | 월 · ⓘ 셈)로, 그 동의 정상 + 직거래(계약해제 제외)
+  { label: '총 거래건수', value: '', ym: { year: (yearTotal.value * 12) / periodMonths.value, month: yearTotal.value / periodMonths.value }, tip: totalTip.value },
   { label: '실거래가 평균', value: won(avgPrice.value), ym: null, tip: null },
   { label: '평당가 평균', value: won(avgUnitPrice.value), ym: null, tip: null },
 ]);

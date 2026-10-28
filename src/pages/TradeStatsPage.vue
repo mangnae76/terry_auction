@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import SnapChip from '../components/SnapChip.vue';
+import InfoTip from '../components/InfoTip.vue';
+import YmCount from '../components/YmCount.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import L from 'leaflet';
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
@@ -43,7 +45,8 @@ const shortWon = (won: number): string => {
 const webEmbed = inject<boolean>('webEmbed', false);
 /** 웹 지역분석 › 지도 탭에 들어갈 때 — 고르는 칸은 지역분석 것을 쓰고, 조회(run)가 늘 때마다 같은 조건으로 받아 그린다.
  *  지도에서 동을 누르면 pick-dong 으로 지역분석에 알린다 */
-type EmbedFilter = { sido: string; district: string; dong: string; kind: PropertyType; deal: 'sale' | 'rent'; months: number };
+/** from · to — 지역분석의 조회 기간(YYYY-MM-DD). 주면 지도도 같은 날짜 범위로 센다 */
+type EmbedFilter = { sido: string; district: string; dong: string; kind: PropertyType; deal: 'sale' | 'rent'; months: number; from?: string; to?: string };
 /** chip — 지역분석에 붙어 쓸 때 지역분석의 저장 칩(저장된 자료 · 방금 받아 저장)을 받아 그대로 보인다 */
 const props = defineProps<{ embed?: EmbedFilter | null; run?: number; chip?: { tone: string; text: string } | null }>();
 const emit = defineEmits<{ (e: 'pick-dong', dong: string): void }>();
@@ -124,6 +127,20 @@ const statRows = computed(() => (
   selectedRegion.value ? rows.value.filter((r) => r.region === selectedRegion.value) : rows.value
 ));
 const statTotalCount = computed(() => statRows.value.reduce((acc, r) => acc + r.count, 0));
+// 총 거래건수 = 정상 + 직거래(계약해제는 없던 거래라 뺀다) — 지역분석 · 수요분석과 같은 셈, ⓘ 에 셈을 적는다
+const statDirect = computed(() => statRows.value.reduce((acc, r) => acc + (r.directCount ?? 0), 0));
+const statCancel = computed(() => statRows.value.reduce((acc, r) => acc + (r.cancelCount ?? 0), 0));
+const statMonths = computed(() => Number(selectedPeriod.value) || 12);
+const statTip = computed(() => {
+  const n = (v: number) => v.toLocaleString('ko-KR');
+  const m = statMonths.value;
+  return [
+    `총 거래건수 = 정상 ${n(statTotalCount.value - statDirect.value)}건 + 직거래 ${n(statDirect.value)}건 = ${n(statTotalCount.value)}건`,
+    `계약해제 ${n(statCancel.value)}건은 제외 (없던 거래)`,
+    props.embed?.from && props.embed?.to ? `${props.embed.from.replace(/-/g, '.')} ~ ${props.embed.to.replace(/-/g, '.')} (조회일 기준 ${m}개월)` : `최근 ${m}개월(신고된 달 기준)`,
+    m === 12 ? '연 = 12개월 합 · 월 = 연 ÷ 12' : `연 = ${m}개월 합을 1년으로 환산 · 월 = 합 ÷ ${m}`,
+  ];
+});
 const statPriceSum = computed(() => statRows.value.reduce((acc, r) => acc + r.priceSum, 0));
 const statPriceCount = computed(() => statRows.value.reduce((acc, r) => acc + r.priceCount, 0));
 const statAvgPrice = computed(() => (statPriceCount.value > 0 ? statPriceSum.value / statPriceCount.value : 0));
@@ -156,6 +173,17 @@ const kindLabel = computed(
   () => propertyOptions.find((o) => o.value === selectedPropertyType.value)?.label ?? '전체',
 );
 
+/** from ~ to(YYYY-MM-DD)가 걸친 달 — 늦은 달부터 */
+const monthsBetween = (from: string, to: string): string[] => {
+  const list: string[] = [];
+  const d = new Date(`${to.slice(0, 7)}-01T00:00:00`);
+  const end = new Date(`${from.slice(0, 7)}-01T00:00:00`);
+  while (d >= end && list.length < 60) {
+    list.push(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`);
+    d.setMonth(d.getMonth() - 1);
+  }
+  return list;
+};
 const buildDealYmdList = (months: number): string[] => {
   const list: string[] = [];
   const base = new Date();
@@ -370,7 +398,9 @@ const loadStats = async () => {
   regionGeocodeQuery.clear();
   progress.value = null;
   try {
-    const dealYmdList = buildDealYmdList(selectedPeriod.value);
+    // 지역분석에 붙어 쓸 때는 지역분석과 같은 날짜 범위 — 그 범위가 걸친 달을 모두 받고 날짜로 거른다
+    const win = props.embed?.from && props.embed?.to ? { from: props.embed.from, to: props.embed.to } : null;
+    const dealYmdList = win ? monthsBetween(win.from, win.to) : buildDealYmdList(selectedPeriod.value);
 
     type Target = { sido: string; district: DistrictOption };
     const targets: Target[] = isAllDistricts.value
@@ -395,6 +425,7 @@ const loadStats = async () => {
             dealYmdList,
             propertyType: selectedPropertyType.value,
             dealKind: selectedDealKind.value,
+            ...(win ? { dateFrom: win.from, dateTo: win.to } : {}),
           });
           return { target, result };
         } catch (error) {
@@ -443,6 +474,8 @@ const loadStats = async () => {
           existing.priceCount += row.priceCount;
           existing.unitSum = (existing.unitSum ?? 0) + (row.unitSum ?? 0);
           existing.unitCount = (existing.unitCount ?? 0) + (row.unitCount ?? 0);
+          existing.directCount = (existing.directCount ?? 0) + (row.directCount ?? 0);
+          existing.cancelCount = (existing.cancelCount ?? 0) + (row.cancelCount ?? 0);
           row.sources.forEach((s) => {
             if (!existing.sources.includes(s)) existing.sources.push(s);
           });
@@ -455,6 +488,8 @@ const loadStats = async () => {
             priceCount: row.priceCount,
             unitSum: row.unitSum ?? 0,
             unitCount: row.unitCount ?? 0,
+            directCount: row.directCount ?? 0,
+            cancelCount: row.cancelCount ?? 0,
           });
         }
       });
@@ -665,7 +700,7 @@ onMounted(async () => {
           </header>
           <div v-if="webEmbed" :id="filterSlotId" class="tsp-filter-slot" />
           <div v-if="webEmbed" class="tsp-web-picked">
-            <strong class="tsp-picked-title">{{ pickedPlaceText }}<SnapChip v-if="!embed" :chip="snap.chip.value" /></strong>
+            <strong class="tsp-picked-title">{{ pickedPlaceText }}<SnapChip :chip="embed ? (chip ?? null) : snap.chip.value" /></strong>
             <small v-if="periodText || kindLabel">{{ [periodText, kindLabel, dealKindLabel, rows.length > 0 ? `집계 동 ${selectedRegion ? 1 : rows.length.toLocaleString('ko-KR')}곳` : ''].filter(Boolean).join(' · ') }}</small>
           </div>
           <header v-if="!webEmbed" class="tsp-panel-head">
@@ -675,20 +710,16 @@ onMounted(async () => {
           </header>
 
           <!-- 웹 — 지도 알약에 무엇을 보일지 하나씩 고른다 -->
-          <!-- 지역분석에 붙어 쓸 때는 저장 칩을 이 단추 묶음 오른쪽에 -->
-          <div v-if="webEmbed" class="tsp-metric-row">
-            <div class="tsp-metric" role="tablist">
-              <button type="button" :class="{ on: pinMetric === 'count' }" @click="pinMetric = 'count'">거래건수</button>
-              <button type="button" :class="{ on: pinMetric === 'avg' }" @click="pinMetric = 'avg'">{{ avgLabel.replace(/\s/g, '') }}</button>
-              <button type="button" :class="{ on: pinMetric === 'unit' }" @click="pinMetric = 'unit'">평당가</button>
-            </div>
-            <SnapChip v-if="embed" :chip="chip ?? null" />
+          <div v-if="webEmbed" class="tsp-metric" role="tablist">
+            <button type="button" :class="{ on: pinMetric === 'count' }" @click="pinMetric = 'count'">거래건수</button>
+            <button type="button" :class="{ on: pinMetric === 'avg' }" @click="pinMetric = 'avg'">{{ avgLabel.replace(/\s/g, '') }}</button>
+            <button type="button" :class="{ on: pinMetric === 'unit' }" @click="pinMetric = 'unit'">평당가</button>
           </div>
           <section class="tsp-stat">
             <h3>통계 정보</h3>
             <!-- 웹 — 첫 줄 거래 건수 · 거래 총액, 둘째 줄 평균가 · 평당 단가 (집계 동은 위 결과 줄에) -->
             <div v-if="webEmbed" class="tsp-stat-grid">
-              <div><dt>거래 건수</dt><dd>{{ statTotalCount.toLocaleString('ko-KR') }}건</dd></div>
+              <div><dt><InfoTip :lines="statTip">총 거래건수</InfoTip></dt><dd><YmCount :year="(statTotalCount * 12) / statMonths" :month="statTotalCount / statMonths" /></dd></div>
               <div><dt>거래 총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
               <div><dt>{{ avgLabel }}</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
               <div><dt>평 단가 / ㎡ 단가</dt><dd><em class="tsp-unit-pre">평</em>{{ manWon(statUnitPrice) }}<em class="tsp-unit-bar">/</em><em class="tsp-unit-pre">㎡</em>{{ manWon(statUnitPrice / 3.305785) }}</dd></div>
@@ -890,8 +921,6 @@ onMounted(async () => {
 }
 .tsp-panel h3 small { margin-left: auto; font-size: 11px; font-weight: 700; color: #9ca3af; }
 /* 지도 값 고르기 — 통계 정보 위 세 단추(같은 폭) */
-.tsp-metric-row { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; }
-.tsp-metric-row .tsp-metric { flex: 1 1 auto; margin: 0; }
 .tsp-metric { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; margin: 0 0 12px; background: #f1f4f9; border-radius: 8px; }
 .tsp-metric button { height: 32px; border: 0; border-radius: 6px; background: transparent; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; }
 .tsp-metric button.on { background: #fff; color: #1f2a44; box-shadow: 0 1px 2px rgba(15, 23, 42, .1); }

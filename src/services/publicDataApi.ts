@@ -44,6 +44,9 @@ export interface TradeVolumeStat {
   /** 평당 단가(원/평) 합계 · 건수 — 금액과 전용면적이 다 있는 거래만 */
   unitSum?: number;
   unitCount?: number;
+  /** count 가운데 직거래 · count 에서 뺀 계약해제(없던 거래) — '총 거래건수 = 정상 + 직거래' 설명용 */
+  directCount?: number;
+  cancelCount?: number;
 }
 
 export interface TradeVolumeStatsResult {
@@ -329,7 +332,7 @@ const fetchMolitTradeByPath = async (
 };
 
 const fetchTradeVolumeByPath = async (
-  params: AuctionSearchParams,
+  params: AuctionSearchParams & { dateFrom?: string; dateTo?: string },
   path: string,
   source: string,
 ): Promise<{
@@ -337,28 +340,38 @@ const fetchTradeVolumeByPath = async (
   counts: Map<string, number>;
   prices: Map<string, { sum: number; n: number }>;
   units: Map<string, { sum: number; n: number }>;
+  directs: Map<string, number>;
+  cancels: Map<string, number>;
   itemCount: number;
 }> => {
   const lawdCode = params.lawdCode ?? '28237';
   const dealYmd = params.dealYmd ?? new Date().toISOString().slice(0, 7).replace('-', '');
-  const url = buildApiUrl(path);
-  setServiceKey(url);
-  url.searchParams.set('LAWD_CD', lawdCode);
-  url.searchParams.set('DEAL_YMD', dealYmd);
-  url.searchParams.set('numOfRows', '200');
-  url.searchParams.set('pageNo', '1');
-  url.searchParams.set('_type', 'json');
-
-  const json = await requestJson(url);
-  const rows = asArray(json?.response?.body?.items?.item);
+  // 지역분석과 같은 달별 자료(모든 쪽을 다 받고 서버에 저장해 둔 것)를 쓴다 — 직거래 · 계약해제 칸까지 그대로 있어 셈이 같다
+  const month = await fetchMonthWithRetry(path, lawdCode, dealYmd);
+  if (month.error && month.rows.length === 0) throw new Error(month.error);
+  const rows = month.rows;
   const counts = new Map<string, number>();
+  // 총 거래건수 = 정상 + 직거래, 계약해제는 없던 거래라 뺀다(지역분석과 같은 셈). 평균가 · 단가는 정상거래만
+  const directs = new Map<string, number>();
+  const cancels = new Map<string, number>();
   // 거래금액(만원)도 같이 모은다 — 동네마다 평균 매매가를 내려면 합계와 건수가 필요하다
   const prices = new Map<string, { sum: number; n: number }>();
   // 평당 단가도 — 거래마다 금액 ÷ 평(전용면적 ÷ 3.305785)을 모아 평균을 낸다
   const units = new Map<string, { sum: number; n: number }>();
+  const from = params.dateFrom ? new Date(`${params.dateFrom}T00:00:00`) : null;
+  const to = params.dateTo ? new Date(`${params.dateTo}T23:59:59`) : null;
   rows.forEach((row) => {
+    if (from || to) {
+      const d = rowDealDate(row);
+      if (d && ((from && d < from) || (to && d > to))) return;
+    }
     const region = pickRegionName(row, params.keyword || '기타');
+    const cancelled = String(row.cdealType ?? '').trim().toUpperCase() === 'O'
+      || String(row.cdealDay ?? '').replace(/[^\d]/g, '').length >= 6;
+    if (cancelled) { cancels.set(region, (cancels.get(region) ?? 0) + 1); return; }
     counts.set(region, (counts.get(region) ?? 0) + 1);
+    const direct = String(row.dealingGbn ?? row['거래유형'] ?? '').includes('직거래');
+    if (direct) { directs.set(region, (directs.get(region) ?? 0) + 1); return; }
     // 전월세 자료에는 거래금액이 없다 — 보증금(만원)을 그 자리에 쓴다
     const manWon = Number(String(row.dealAmount ?? row['거래금액'] ?? row.deposit ?? row['보증금액'] ?? '').replace(/[^\d]/g, ''));
     if (manWon > 0) {
@@ -381,6 +394,8 @@ const fetchTradeVolumeByPath = async (
     counts,
     prices,
     units,
+    directs,
+    cancels,
     itemCount: rows.length,
   };
 };
@@ -581,6 +596,9 @@ export interface TradeVolumeStatsParams extends AuctionSearchParams {
   dealYmdList?: string[];
   /** 매매(기본) / 전월세 — 전월세면 각 종류의 전월세 자료를 부르고 평균은 보증금으로 낸다 */
   dealKind?: 'sale' | 'rent';
+  /** 계약일 범위(YYYY-MM-DD) — 주면 그 안의 거래만 센다(지역분석의 '조회일 기준 N개월'과 같은 기간) */
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Promise<TradeVolumeStatsResult> => {
@@ -611,6 +629,8 @@ export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Pro
       counts: Map<string, number>;
       prices: Map<string, { sum: number; n: number }>;
       units: Map<string, { sum: number; n: number }>;
+      directs: Map<string, number>;
+      cancels: Map<string, number>;
       itemCount: number;
     }>;
   };
@@ -672,9 +692,14 @@ export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Pro
         status: 'success',
         itemCount: result.value.itemCount,
       });
-      result.value.counts.forEach((count, region) => {
+      // 해제만 있던 동도 해제 건수는 남긴다 — 거래건수 0 인 동은 아래에서 뺀다
+      const regions = new Set([...result.value.counts.keys(), ...result.value.cancels.keys()]);
+      regions.forEach((region) => {
+        const count = result.value.counts.get(region) ?? 0;
         const money = result.value.prices.get(region) ?? { sum: 0, n: 0 };
         const unit = result.value.units.get(region) ?? { sum: 0, n: 0 };
+        const direct = result.value.directs.get(region) ?? 0;
+        const cancel = result.value.cancels.get(region) ?? 0;
         const current = merged.get(region);
         if (current) {
           current.count += count;
@@ -682,6 +707,8 @@ export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Pro
           current.priceCount += money.n;
           current.unitSum = (current.unitSum ?? 0) + unit.sum;
           current.unitCount = (current.unitCount ?? 0) + unit.n;
+          current.directCount = (current.directCount ?? 0) + direct;
+          current.cancelCount = (current.cancelCount ?? 0) + cancel;
           if (!current.sources.includes(source)) {
             current.sources.push(source);
           }
@@ -695,6 +722,8 @@ export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Pro
           priceCount: money.n,
           unitSum: unit.sum,
           unitCount: unit.n,
+          directCount: direct,
+          cancelCount: cancel,
         });
       });
       return;
@@ -711,7 +740,7 @@ export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Pro
   });
 
   return {
-    rows: [...merged.values()].sort((a, b) => b.count - a.count || a.region.localeCompare(b.region, 'ko')),
+    rows: [...merged.values()].filter((r) => r.count > 0).sort((a, b) => b.count - a.count || a.region.localeCompare(b.region, 'ko')),
     totalCount,
     sources,
     warning: sources.length === 0 ? '거래건수 통계를 불러오지 못했습니다.' : undefined,

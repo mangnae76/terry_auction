@@ -2405,8 +2405,10 @@ span.cal-day.has { cursor: help; }
 .app-market .tsp-in-dong :is(.tsp-filter-slot, .tsp-web-head) { display: none !important; }
 .app-market .tsp-in-dong .tsp-stage { top: var(--dongmap-top) !important; }
 .app-market .tsp-in-dong .tsp-panel { top: calc(var(--dongmap-top) + 18px) !important; width: 430px !important; } /* 고르는 칸이 빠져 좁게(546 → 364) → 지역 이름 옆 저장 칩 · 평/㎡ 단가가 한 줄에 들어가게 430 */
-/* 지역 이름 바로 옆에 저장 칩(오른쪽 끝으로 밀지 않고 한 줄) */
-.app-market .tsp-in-dong .tsp-picked-title { justify-content: flex-start !important; flex-wrap: nowrap !important; white-space: nowrap; }
+/* 총 거래건수 ⓘ 말풍선 — 판 왼쪽에 붙은 칸이라 가운데 정렬이면 왼쪽이 잘린다. 칸 왼쪽에서 펼친다 */
+.app-market .tsp-in-dong .tsp-stat .itip-bubble { left: 0 !important; transform: none !important; }
+/* 지역 이름과 저장 칩 한 줄 — 칩은 오른쪽 끝 */
+.app-market .tsp-in-dong .tsp-picked-title { justify-content: space-between !important; flex-wrap: nowrap !important; white-space: nowrap; } /* 저장 칩은 오른쪽 끝(통계 정보 상자 오른쪽 끝선과 맞춤) */
 /* 지도 값 회색 판 — 판 칸마다 주는 위 여백(14)이 이 판에도 붙어 단추가 아래로 쏠렸다. 사방 4 로 */
 .app-market .tsp-in-dong .tsp-metric { padding: 4px !important; }
 /* 지도 값 단추 — 글자를 단추 정가운데에(전역 button 여백 때문에 아래로 처졌다) */
