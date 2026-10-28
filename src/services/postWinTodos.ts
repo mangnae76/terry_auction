@@ -35,8 +35,7 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
   // 낙찰 당일 — 현장 동선 순서. 협상은 이날 하고, 이사는 잔금 납부일까지(그 뒤로는 이자가 내 몫)
   bid: [
     { text: '사건기록 열람', cat: 'proc', tab: 'win', group: 'file' },
-    { text: '점유자 바로 협상 — 이사는 잔금 납부일까지', cat: 'evict', tab: 'win', group: 'visit', section: '협상내용' },
-    { text: '메모지·연락처 남기기', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c1'] },
+    { text: '점유자 협상 or 메모지·연락처 남기기', cat: 'evict', tab: 'win', group: 'visit', noCount: true },
     { text: '주민·동대표·관리소 탐문', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c2', 'pw.visit.c3', 'pw.visit.c4'] },
     { text: '부동산 방문 — 시세·거래기록', cat: 'proc', tab: 'win', group: 'visit', section: '부동산방문' },
   ],

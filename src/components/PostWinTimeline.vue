@@ -339,10 +339,11 @@ const resetDefault = () => {
 /* 큰일 — 단계 옆 칸. 다 한 일은 초록 체크 · 회색 글 */
 .pwt-todos { flex: 0 0 50%; margin: 0; padding: 0 0 0 16px; list-style: none; border-left: 1px solid #eef1f6; display: flex; flex-direction: column; gap: 6px; }
 .pwt-todo { display: flex; align-items: center; gap: 8px; min-height: 28px; }
-.pwt-todo-t { flex: 1 1 auto; min-width: 0; padding: 0; border: 0; background: none; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; font-weight: 700; color: #111827; cursor: pointer; }
+.pwt-todo-t { flex: 0 1 auto; max-width: 100%; min-width: 0; padding: 0; border: 0; background: none; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; font-weight: 700; color: #111827; cursor: pointer; }
 .pwt-todo-t:hover { text-decoration: underline; text-underline-offset: 3px; }
-.pwt-arrow { margin-left: 4px; font-style: normal; color: #9ca3af; opacity: 0; }
-.pwt-todo-t:hover .pwt-arrow { opacity: 1; }
+/* 누르는 자리는 글자 길이만큼 — 그 옆 빈 곳은 줄 고르기 · 끌어 옮기기. 화살표는 처음부터 보여 눌러도 된다는 걸 알린다 */
+.pwt-arrow { margin-left: 5px; font-style: normal; color: #9ca3af; }
+.pwt-todo-t:hover .pwt-arrow { color: #111827; }
 .pwt-todo.full .pwt-todo-t { color: #9ca3af; }
 .pwt-cats { display: inline-flex; gap: 4px; margin-right: 8px; }
 .pwt-cats button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; cursor: pointer; }
