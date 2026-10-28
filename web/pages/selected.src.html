@@ -2026,7 +2026,9 @@ table.list { width: 100%; border-collapse: collapse; min-width: 1150px; }
 .list .t-case { white-space: nowrap; }
 .list .t-case b { display: block; }
 .list .t-case span { color: var(--text-2); font-size: 14px; }
-.list .t-addr { font-weight: 700; }
+/* 주소는 한 줄 — 남는 폭을 다 쓰고, 그래도 넘치면 … (올리면 전체 주소 말풍선) */
+.list .t-addr { font-weight: 700; width: 100%; max-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.list td:not(.t-addr), .list th { padding-left: 10px; padding-right: 10px; }
 .list .t-addr b { color: var(--blue); }
 .list .t-price { white-space: nowrap; font-weight: 700; }
 .list .t-price small { display: block; color: var(--faint); font-size: 14px; font-weight: 500; }
@@ -2059,6 +2061,12 @@ table.list { width: 100%; border-collapse: collapse; min-width: 1150px; }
 [aria-expanded="true"][data-tip]::after { display: none; }
 /* 손가락 화면에서는 말풍선을 끈다 — 숨은 말풍선이 가로 스크롤을 만들지 않게 */
 @media (hover: none), (max-width: 640px) { [data-tip]::after { display: none; } }
+/* 표 상자(가로 스크롤)는 밖으로 나간 말풍선을 자른다 — 표 안 말풍선은 맨 위층(.tip-float)에 따로 띄운다 */
+.table-wrap [data-tip]::after { display: none; }
+.tip-float { position: fixed; z-index: 9999; left: 0; top: 0; background: #1f2937; color: #f9fafb; font-size: 14px; font-weight: 600; line-height: 1.3; padding: 5px 8px; border-radius: 6px; white-space: nowrap;
+  pointer-events: none; opacity: 0; transition: opacity .12s; }
+.tip-float.on { opacity: 1; transition-delay: .2s; }
+@media (hover: none), (max-width: 640px) { .tip-float { display: none; } }
 html, body { overflow-x: clip; }
 
 /* 떠 있는 메뉴 */
@@ -2864,7 +2872,7 @@ html, body { overflow-x: clip; }
       <td>${starsHtml(it)}</td>
       <td class="t-date num">${orDash(it.date)}</td>
       <td class="t-case"><b class="num">${orDash(hl(it.caseNo))}</b><span>${orDash(hl(it.court))}</span></td>
-      <td class="t-addr"><span class="type-mark">${esc(TYPE_NAME(it.type))}</span>${addrHtml(it)}</td>
+      <td class="t-addr" data-tip="${esc([it.addr, it.bld, it.unit].filter(Boolean).join(' '))}" data-tip-trunc><span class="type-mark">${esc(TYPE_NAME(it.type))}</span>${addrHtml(it)}</td>
       <td class="t-price r num"${tip(eok(it.apr))}>${won(it.apr) || DASH}</td>
       <td class="t-price r num"${tip(eok(it.min))}>${won(it.min) || DASH}<small>${esc(it.round)}${it.min && it.apr ? ` · ${pct(it.min, it.apr)}%` : ''}</small></td>
       <td class="t-price r num mine">${it.mine ? won(it.mine) : `<span style="color:var(--faint)">${DASH}</span>`}</td>
@@ -4775,6 +4783,22 @@ html, body { overflow-x: clip; }
     });
     el.classList.toggle('tip-below', top - 40 < ceiling);
   });
+  /* 표 안 말풍선 — 맨 위층에 띄워 표 상자에 잘리지 않게. 주소처럼 data-tip-trunc 가 붙은 칸은 글이 잘렸을 때만 */
+  const tipFloat = document.createElement('div'); tipFloat.className = 'tip-float'; tipFloat.setAttribute('role', 'tooltip'); document.body.appendChild(tipFloat);
+  const hideTipFloat = () => tipFloat.classList.remove('on');
+  document.addEventListener('mouseover', (e) => {
+    const el = e.target.closest('.table-wrap [data-tip]');
+    if (!el || (el.hasAttribute('data-tip-trunc') && el.scrollWidth <= el.clientWidth)) { hideTipFloat(); return; }
+    tipFloat.textContent = el.dataset.tip;
+    const r = el.getBoundingClientRect(); const w = tipFloat.offsetWidth; const h = tipFloat.offsetHeight;
+    let ceiling = 0;
+    document.querySelectorAll('.gnb, .subtabs, .toolbar-shell').forEach((bar) => { if (bar.hidden || !bar.offsetParent) return; const b = bar.getBoundingClientRect(); if (b.bottom <= r.top + 1) ceiling = Math.max(ceiling, b.bottom); });
+    const x = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), innerWidth - w - 8);
+    const y = r.top - h - 7 < ceiling ? r.bottom + 7 : r.top - h - 7;
+    tipFloat.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+    tipFloat.classList.add('on');
+  });
+  window.addEventListener('scroll', hideTipFloat, true);
   /* 별 미리보기 — 마우스를 올린 별까지 미리 칠해 보인다 */
   document.addEventListener('mouseover', (e) => {
     const star = e.target.closest('.star'); const wrapEl = e.target.closest('.stars');
