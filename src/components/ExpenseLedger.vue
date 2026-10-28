@@ -6,7 +6,7 @@ import { computed, ref } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useFinanceStore } from '../stores/financeStore';
 import { useInteriorStore } from '../stores/interiorStore';
-import { BOOK_HINT, BOOK_NAME, CAPITAL_ITEMS, groupsOf, ledgerRows, looksCapital, type Book, type LedgerRow } from '../services/expenseBook';
+import { BOOK_HINT, BOOK_NAME, groupsOf, ledgerRows, looksCapital, type Book, type LedgerRow } from '../services/expenseBook';
 import { shortAddr } from '../utils/address';
 import FormattedNumberInput from './FormattedNumberInput.vue';
 import AppConfirm from './AppConfirm.vue';
@@ -78,17 +78,20 @@ const itemsOf = (cat: string) => GROUPS.value.find(([g]) => g === cat)?.[1] ?? [
 const openAdd = () => {
   const [cat, items] = GROUPS.value[0];
   draft.value = { src: '', id: '', auctionId: props.auctionId ?? '', date: today(), category: cat, detail: items[0] ?? '', custom: false, amount: 0, vendor: '', phone: '', status: '예정', note: '' };
+  moveNeed.value = false;
   open.value = true;
 };
 const openRow = (r: LedgerRow) => {
   draft.value = {
     src: r.src, id: r.id, auctionId: r.auctionId, date: r.date, category: r.category, detail: r.detail,
-    custom: !!r.detail && !itemsOf(r.category).includes(r.detail) && !(props.book === 'biz' && CAPITAL_ITEMS.includes(r.detail)), amount: r.amount, vendor: r.vendor, phone: r.phone, status: r.status || '예정', note: r.note,
+    custom: !!r.detail && !itemsOf(r.category).includes(r.detail), amount: r.amount, vendor: r.vendor, phone: r.phone, status: r.status || '예정', note: r.note,
   };
+  moveNeed.value = false;
   open.value = true;
 };
-/** 수리·인테리어에서 자본적지출 명세를 골랐나 — 저장하면 필요경비(자본적지출)로 간다 */
-const toNeed = computed(() => props.book === 'biz' && draft.value.category === '수리·인테리어' && CAPITAL_ITEMS.includes(draft.value.detail));
+/** 예전에 사업경비로 적은 자본적지출(샷시 …) — 고칠 때 '필요경비로 옮기기'를 켜면 필요경비(자본적지출)로 간다 */
+const moveNeed = ref(false);
+const toNeed = computed(() => props.book === 'biz' && moveNeed.value);
 const pickCategory = (c: string) => {
   draft.value.category = c;
   if (!draft.value.custom && !itemsOf(c).includes(draft.value.detail)) draft.value.detail = itemsOf(c)[0] ?? '';
@@ -178,7 +181,7 @@ defineExpose({ openAdd, exportCsv, total });
           <td>{{ shortDate(r.date) }}</td>
           <td v-if="many" :title="r.auctionLabel">{{ r.auctionLabel || labelOf(r.auctionId) || '공통' }}</td>
           <td><span class="xl-pill">{{ r.category }}</span></td>
-          <td :title="r.detail" class="l">{{ r.detail }}<em v-if="r.status" class="xl-st">{{ r.status }}</em><em v-if="book === 'biz' && looksCapital(r.detail)" class="xl-cap" title="자본적지출로 보입니다 — 눌러서 명세를 자본적지출 항목으로 고르면 필요경비로 옮겨집니다">필요경비 대상</em></td>
+          <td :title="r.detail" class="l">{{ r.detail }}<em v-if="r.status" class="xl-st">{{ r.status }}</em><em v-if="book === 'biz' && looksCapital(r.detail)" class="xl-cap" title="자본적지출로 보입니다 — 눌러서 '필요경비로 옮기기'를 켜고 저장하면 필요경비로 옮겨집니다">필요경비 대상</em></td>
           <td class="r">{{ money(r.amount) }}원</td>
           <td v-if="book === 'biz'" :title="[r.vendor, r.phone].filter(Boolean).join(' · ')">{{ [r.vendor, r.phone].filter(Boolean).join(' · ') }}</td>
           <td :title="r.note" class="l">{{ r.note }}</td>
@@ -207,15 +210,7 @@ defineExpose({ openAdd, exportCsv, total });
             </label>
             <label>명세
               <select v-model="detailPick">
-                <template v-if="book === 'biz' && draft.category === '수리·인테리어'">
-                  <optgroup label="수익적지출 — 사업경비">
-                    <option v-for="d in itemsOf(draft.category)" :key="d" :value="d">{{ d }}</option>
-                  </optgroup>
-                  <optgroup label="자본적지출 — 필요경비">
-                    <option v-for="d in CAPITAL_ITEMS" :key="d" :value="d">{{ d }}</option>
-                  </optgroup>
-                </template>
-                <option v-for="d in (book === 'biz' && draft.category === '수리·인테리어' ? [] : itemsOf(draft.category))" :key="d" :value="d">{{ d }}</option>
+                <option v-for="d in itemsOf(draft.category)" :key="d" :value="d">{{ d }}</option>
                 <option value="__custom">직접입력</option>
               </select>
               <input v-if="draft.custom" v-model="draft.detail" type="text" placeholder="명세를 적어 주세요" />
@@ -230,7 +225,8 @@ defineExpose({ openAdd, exportCsv, total });
             </template>
             <label class="wide">비고<input v-model="draft.note" type="text" /></label>
           </div>
-          <p v-if="toNeed" class="xl-mhint warn">자본적지출입니다 — 저장하면 필요경비(자본적지출)에 들어가 예정신고 때 빠집니다.</p>
+          <label v-if="book === 'biz' && draft.id && looksCapital(draft.detail)" class="xl-move"><input v-model="moveNeed" type="checkbox" /> 자본적지출이라 필요경비로 옮기기</label>
+          <p v-if="toNeed" class="xl-mhint warn">저장하면 필요경비(자본적지출)로 옮겨져 예정신고 때 빠집니다.</p>
           <p v-else class="xl-mhint">{{ BOOK_HINT[book] }}</p>
           <footer>
             <button v-if="draft.id" type="button" class="del" @click="remove">삭제</button>
@@ -271,6 +267,7 @@ defineExpose({ openAdd, exportCsv, total });
 .xl-st { margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: #f1f3f6; color: #4b5563; font-style: normal; font-size: 12px; }
 .xl-cap { margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: #fdecec; color: #b44545; font-style: normal; font-size: 12px; }
 .xl-mhint.warn { color: #b44545; }
+.xl-move { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 14px; color: #b44545; cursor: pointer; }
 .xl-empty { padding: 28px 10px !important; color: #6b7280 !important; cursor: default; }
 .xl-veil { position: fixed; inset: 0; z-index: 150; background: rgba(15, 23, 42, .45); display: grid; place-items: center; padding: 20px; }
 .xl-modal { color-scheme: light; width: min(560px, 100%); background: #fff; border-radius: 14px; padding: 20px 22px 18px; color: #111827; box-shadow: 0 20px 40px rgba(15, 23, 42, .25); }

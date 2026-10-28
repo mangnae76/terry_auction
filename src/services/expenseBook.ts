@@ -33,9 +33,7 @@ export const BOOK_HINT: Record<Book, string> = {
   biz: '5월 종합소득세에서 빼는 돈 — 수리 · 명도 · 이자 · 관리비 · 유류 · 물품',
 };
 const NEED_CATS = NEED_GROUPS.map(([g]) => g);
-/** 자본적지출 명세 — 수리·인테리어를 적다가 이것을 고르면 필요경비(자본적지출)로 간다 */
-export const CAPITAL_ITEMS = NEED_GROUPS.find(([g]) => g === '자본적지출')?.[1] ?? [];
-/** 직접 쓴 명세가 자본적지출로 보이는가 — 표에 '필요경비 대상' 표시 */
+/** 사업경비에 적힌 명세가 자본적지출로 보이는가 — 표에 '필요경비 대상' 표시, 고칠 때 필요경비로 옮길 수 있다 */
 export const looksCapital = (detail: string) => /샷시|섀시|발코니|확장|보일러|난방|배관|설비 교체|시스템에어컨/.test(detail);
 
 /** 두 장부의 한 줄 */
