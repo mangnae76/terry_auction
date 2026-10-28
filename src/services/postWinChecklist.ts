@@ -90,6 +90,10 @@ const TEXT_LINKS: Array<{ word: string; href: string }> = [
   { word: '전자소송포털', href: 'https://ecfs.scourt.go.kr/' },
   { word: '한전ON', href: 'https://online.kepco.co.kr/' },
   { word: '국세청 홈택스', href: 'https://www.hometax.go.kr/' },
+  { word: '정부24', href: 'https://www.gov.kr/' },
+  { word: '위택스', href: 'https://www.wetax.go.kr/' },
+  { word: '국민건강보험공단', href: 'https://www.nhis.or.kr/' },
+  { word: '대법원 전자가족관계등록시스템', href: 'https://efamily.scourt.go.kr/' },
 ];
 /** 줄 글을 [글, 링크] 조각으로 */
 export const textParts = (text: string): Array<{ t: string; href?: string }> => {

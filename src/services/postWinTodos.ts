@@ -26,6 +26,10 @@ export interface StepTodo {
   stepNos?: string[];
   /** 진행도를 세지 않는다(바로가기만) */
   noCount?: boolean;
+  /** 카드에서 비고 칸을 바꿔 보인다(줄 id → 비고, 빈 글이면 비움) */
+  memos?: Record<string, string>;
+  /** 카드에서 부수 칸을 바꿔 보인다(줄 id → 부수) */
+  qtys?: Record<string, string>;
   /** 창에서 줄 글을 바꿔 보인다(줄 id → 새 글) */
   texts?: Record<string, string>;
   /** 창에서 칸 이름을 바꿔 보인다(공백 뺀 이름 → 새 이름) — 둘 중 하나를 고르는 일에 '만났을 때' 같은 머리를 단다 */
@@ -58,13 +62,35 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
     // 사업자등록이 먼저 — 대출 심사 서류에 사업자등록증이 들어간다
     { text: '사업자등록', cat: 'proc', tab: 'balance', group: 'ln.biz' },
     { text: '대출 심사 서류 준비', cat: 'loan', tab: 'balance', group: 'loan.screen', texts: {
+      'ln.c3': '전년도 신용카드 내역서 — 카드사 홈페이지 · 앱',
+      'ln.c4': '전년도 소득금액증명서 — 국세청 홈택스',
       'ln.c5': '올해 근로소득원천징수 서류 — 회사에 알리지 않고 국세청 홈택스(손택스 앱)에서 직접 발급(전년도분은 지급명세서 제출내역, 올해분은 간이지급명세서 조회)',
       'ln.c6': '2년간 배우자 소득금액증명서 — 본인(낙찰자) 소득이 없을 때만, 배우자 소득으로 심사',
     } },
     { text: '대출업체 비딩', cat: 'loan', tab: 'balance', group: 'loan.bid' },
   ],
   balance: [
-    { text: '대출준비서류 챙기기', cat: 'loan', tab: 'balance', group: 'loan.docs' },
+    {
+      text: '대출준비서류 챙기기', cat: 'loan', tab: 'balance', group: 'loan.docs',
+      // 원본 표에 비어 있던 부수 — 웹 카드에서 채운다(앱 · 원본 표는 그대로)
+      qtys: { 'ln.d1': '원본', 'ln.d2': '원본', 'ln.d13': '1부', 'ln.d14': '각 1부', 'ln.d17': '1부' },
+      // 떼는 곳 — 인터넷으로 되는 서류는 기관 이름(링크), 안 되는 서류는 방문
+      texts: {
+        'ln.d3': '인감증명서 — 주민센터 방문(인터넷 발급 안 됨)',
+        'ln.d4': '가족관계증명서(상세) — 대법원 전자가족관계등록시스템 · 정부24',
+        'ln.d5': '주민등록등본 — 정부24',
+        'ln.d6': '주민등록 원초본 — 정부24',
+        'ln.d7': '국세완납증명서 — 국세청 홈택스',
+        'ln.d8': '지방세완납증명서 — 위택스 · 정부24',
+        'ln.d12': '지방세 세목별과세증명서(최근 2년) — 위택스 · 정부24',
+        'ln.d13': '매매사업자등록증명원 — 국세청 홈택스',
+        'ln.d14': '입찰보증금영수증 / 매각결정통지서 / 대금지급기한통지서 — 법원에서 받은 것',
+        'ln.d15': '재직증명서(회사), 근로소득원천징수영수증(최근 2년) — 국세청 홈택스',
+        'ln.d16': '건강보험자격득실확인서, 보험료납부확인서(최근 1년) — 국민건강보험공단 · 정부24',
+        'ln.d17': '전입세대열람(낙찰받은 물건) — 주민센터 방문(인터넷 발급 안 됨)',
+      },
+      memos: { 'ln.d12': '유효기간 한 달', 'ln.d3': '' },
+    },
     { text: '법무비용 확인', cat: 'loan', tab: 'balance', group: 'loan.legal' },
     { text: '잔금 납부·완납증명', cat: 'proc', tab: 'balance', group: 'loan.self', section: ['1단계경매계방문', '2단계은행·잔금납부', '3단계완납증명원'] },
     { text: '취득세 신고·납부', cat: 'proc', tab: 'balance', group: 'loan.self', section: '4단계취득세신고·납부' },

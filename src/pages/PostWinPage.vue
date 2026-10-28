@@ -258,9 +258,16 @@ const popFull = ref(false);
 const normLabel = (v: string) => String(v ?? '').replace(/\s+/g, '');
 const narrowGroup = (g: CheckGroup, t: StepTodo): CheckGroup => {
   // 상자 통째인 카드도 줄 글만 바꿔 보일 수 있다(texts)
+  // 줄 글(texts) · 부수(qtys)만 바꿔 보이기 — 원본 표는 건드리지 않는다
+  const touch = (r: CheckGroup['sections'][number]['rows'][number]) => ({
+    ...r,
+    ...(t.texts?.[r.id] ? { text: t.texts[r.id] } : {}),
+    ...(t.qtys?.[r.id] ? { qty: t.qtys[r.id] } : {}),
+    ...(t.memos && r.id in t.memos ? { memo: t.memos[r.id] } : {}),
+  });
   if (!t.section && !t.rows) {
-    if (!t.texts) return g;
-    return { ...g, sections: g.sections.map((sec) => ({ ...sec, rows: sec.rows.map((r) => (t.texts?.[r.id] ? { ...r, text: t.texts[r.id] } : r)) })) };
+    if (!t.texts && !t.qtys && !t.memos) return g;
+    return { ...g, sections: g.sections.map((sec) => ({ ...sec, rows: sec.rows.map(touch) })) };
   }
   const want = t.section == null ? null : (Array.isArray(t.section) ? t.section : [t.section]).map(normLabel);
   const sections = g.sections
@@ -268,7 +275,7 @@ const narrowGroup = (g: CheckGroup, t: StepTodo): CheckGroup => {
     .map((sec) => ({
       ...sec,
       label: t.labels?.[normLabel(sec.label ?? '')] ?? sec.label,
-      rows: (t.rows ? sec.rows.filter((r) => t.rows!.includes(r.id)) : sec.rows).map((r) => (t.texts?.[r.id] ? { ...r, text: t.texts[r.id] } : r)),
+      rows: (t.rows ? sec.rows.filter((r) => t.rows!.includes(r.id)) : sec.rows).map(touch),
     }))
     .filter((sec) => sec.rows.length > 0);
   return { ...g, note: '', sections };   // 일부만 띄울 때는 상자 전체 안내줄을 뺀다
