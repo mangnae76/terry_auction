@@ -2362,6 +2362,11 @@ span.cal-day.has { cursor: help; }
 /* 사진 · 서류 붙여넣기 칸('링크 또는 이미지 붙여넣기 · Ctrl+V')은 어디든 같은 크기(12) — 안내 글로 찾아 한 번에 */
 .app-page :is(input[placeholder*="붙여넣기"], input[placeholder*="Ctrl+V"]), .app-page :is(input[placeholder*="붙여넣기"], input[placeholder*="Ctrl+V"])::placeholder,
 .app-detail :is(input[placeholder*="붙여넣기"], input[placeholder*="Ctrl+V"]), .app-detail :is(input[placeholder*="붙여넣기"], input[placeholder*="Ctrl+V"])::placeholder { font-size: 12px !important; }
+/* 손품조사 › 실거래가 · 전세가 등 값 칸 — 편집을 누르면 입력칸이 앱 크기(26 · 11~13)로 작아졌다. 웹은 칸을 꽉 채우고 글자는 보던 값과 같은 15 */
+.app-detail .adp-mkt-cells .cell :is(input.adp-mkt-input, button.adp-mkt-input, .adp-mkt-input input) { height: 38px !important; font-size: 15px !important; padding: 0 10px !important; box-sizing: border-box; }
+.app-detail .adp-mkt-cells .cell > :is(input.adp-mkt-input, .adp-mkt-input) { width: calc(100% - 12px) !important; margin: 4px 6px !important; }
+.app-detail .adp-mkt-cells .cell .adp-mkt-unit { display: flex !important; align-items: center; gap: 4px; width: calc(100% - 12px); margin: 4px 6px; font-size: 15px !important; }
+.app-detail .adp-mkt-cells .cell .adp-mkt-twoym + .adp-mkt-input { font-size: 14px !important; }
 </style>
 
 <header class="gnb">
