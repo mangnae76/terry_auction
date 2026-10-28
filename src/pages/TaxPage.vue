@@ -10,7 +10,8 @@ import type { AuctionDetail } from '../types/auction';
 // 자금관리 안의 '세금신고' 탭에서 불러 쓸 때는 제 머리글과 하단 메뉴를 그리지 않는다.
 // 주소창으로 /tax 를 바로 열면 전처럼 한 장짜리 화면으로 선다.
 /** webYear — 웹은 위 필터 줄의 연도 드롭다운이 해를 정한다(앱은 아래 ‹ 연도 › 그대로) */
-const props = withDefaults(defineProps<{ embedded?: boolean; webYear?: number | null }>(), { embedded: false, webYear: null });
+/** guideOnly — 웹 가이드 › 세금 장: '세금 안내'만 보인다(웹 자금관리 세금신고에서는 세금 안내 탭을 뺀다) */
+const props = withDefaults(defineProps<{ embedded?: boolean; webYear?: number | null; guideOnly?: boolean }>(), { embedded: false, webYear: null, guideOnly: false });
 
 const store = useAuctionStore();
 
@@ -140,7 +141,7 @@ const openId = ref<string | null>(null);
 const toggleRow = (id: string) => { openId.value = openId.value === id ? null : id; };
 
 type SubTab = 'income' | 'schedule' | 'guide';
-const subTab = ref<SubTab>('income');
+const subTab = ref<SubTab>(props.guideOnly ? 'guide' : 'income');
 
 /** 아직 안 판 채로 그 해에 낙찰만 한 건 */
 const wonOnlyRows = computed(() => wonThisYear.value.filter((a) => !a.sellDate));
@@ -263,7 +264,7 @@ const router = useRouter();
       <span class="tax-eyebrow">세금 관리 · TAX MANAGEMENT</span>
     </header>
 
-    <div v-if="!props.webYear" class="tax-years">
+    <div v-if="!props.webYear && !props.guideOnly" class="tax-years">
       <button type="button" class="yr-nav" aria-label="이전 해" @click="year += 1">‹</button>
       <button
         v-for="y in yearWindow"
@@ -275,7 +276,7 @@ const router = useRouter();
       <button type="button" class="yr-nav" aria-label="다음 해" @click="year -= 1">›</button>
     </div>
 
-    <div class="tax-cards">
+    <div v-if="!props.guideOnly" class="tax-cards">
       <div class="tax-card grey">
         <small>매도 완료</small>
         <strong>{{ soldThisYear.length }}건</strong>
@@ -299,7 +300,7 @@ const router = useRouter();
     </div>
 
     <!-- 세후 순수익 -->
-    <div class="tax-net">
+    <div v-if="!props.guideOnly" class="tax-net">
       <div class="net-main">
         <p class="net-head">세후 순수익 — 세금 납부 후 실질 수익 <span>(비인정 경비 포함 모든 지출 차감)</span></p>
         <strong class="net-value">{{ won(netProfit, true) }}</strong>
@@ -313,7 +314,7 @@ const router = useRouter();
       </div>
     </div>
 
-    <nav class="tax-subtabs">
+    <nav v-if="!props.guideOnly" class="tax-subtabs">
       <button type="button" :class="['sub', { on: subTab === 'income' }]" @click="subTab = 'income'">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="4" y="3" width="16" height="18" rx="2" /><path d="M12 7v10M14.5 9.5a2.5 2.5 0 0 0-5 .5c0 2 5 1.5 5 3.5a2.5 2.5 0 0 1-5 .5" />
@@ -326,7 +327,7 @@ const router = useRouter();
         </svg>
         신고 일정
       </button>
-      <button type="button" :class="['sub', { on: subTab === 'guide' }]" @click="subTab = 'guide'">
+      <button v-if="!props.webYear" type="button" :class="['sub', { on: subTab === 'guide' }]" @click="subTab = 'guide'">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h4" />
         </svg>

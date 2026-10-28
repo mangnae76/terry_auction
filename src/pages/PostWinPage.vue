@@ -27,6 +27,7 @@ import type { AgencyRow, AuctionDetail } from '../types/auction';
 import PostWinTimeline from '../components/PostWinTimeline.vue';
 import PostWinForms from '../components/PostWinForms.vue';
 import PostWinMoney from '../components/PostWinMoney.vue';
+import TaxPage from './TaxPage.vue';
 import { FORM_BTN, FORMS_OF_ROW, type FormKey } from '../services/postWinForms';
 import { utilityLine } from '../services/utilityContacts';
 import { DETAIL_STEPS, STEP_TITLE, STEP_TODOS, type StepTodo } from '../services/postWinTodos';
@@ -37,7 +38,7 @@ const DETAIL_OF: Partial<Record<string, CheckGroup[]>> = { drepair: DETAIL_REPAI
 
 // 낙찰당일 탭을 다시 맨 왼쪽에 — '낙찰 후 진행 순서' 상자와 낙찰당일 묶음(경매사건 열람 · 명도협상 원칙 · 유선연락 첫통화)
 // 웹은 절차진행 · 절차상세(win · evict · balance 장) · 가이드(gwin · gevict · biz 장) · 인테리어 · 매도·임대 — 장 열쇠가 곧 하위 탭 열쇠다
-type TabKey = 'win' | 'dpre' | 'gdeny' | 'flow' | 'biz' | 'balance' | 'evict' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'repair' | 'sell';
+type TabKey = 'win' | 'dpre' | 'gdeny' | 'gtax' | 'flow' | 'biz' | 'balance' | 'evict' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
   { key: 'win', label: '낙찰당일', desc: '낙찰가·경쟁 상황, 영수증과 서류 챙기기' },
   { key: 'flow', label: '진행절차', desc: '낙찰일부터 명도까지 단계별 일정' },   // 웹만(앱 탭 줄에는 안 보인다)
@@ -49,7 +50,7 @@ const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
 ];
 const route = useRoute();
 const router = useRouter();
-const TAB_KEYS: TabKey[] = ['win', 'dpre', 'gdeny', 'flow', 'evict', 'biz', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gevict', 'repair', 'sell'];
+const TAB_KEYS: TabKey[] = ['win', 'dpre', 'gdeny', 'gtax', 'flow', 'evict', 'biz', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gevict', 'repair', 'sell'];
 /** 주소에 적힌 탭으로 연다 — '뒤로' 왔을 때 보던 자리를 지킨다 */
 const initialTab = (): TabKey => {
   const wanted = String(route.query.tab ?? '');
@@ -375,7 +376,7 @@ const dayGroups = computed<CheckGroup[]>(() => {
 const hasTable = computed(() => viewTab.value in BOOK_OF || !!DETAIL_OF[activeTab.value] || (webEmbed && !!DETAIL_STEPS[activeTab.value]));
 /** 웹 — 절차상세 · 가이드 안의 장 단추(경로 오른쪽) */
 const DETAIL_CHAPS: Array<[TabKey, string]> = [['win', '낙찰당일'], ['dpre', '잔금전'], ['balance', '잔금·등기'], ['evict', '명도'], ['drepair', '인테리어'], ['dsell', '매도'], ['dtax', '세금']];
-const GUIDE_CHAPS: Array<[TabKey, string]> = [['gwin', '낙찰당일'], ['gdeny', '매각불허가'], ['gevict', '명도'], ['biz', '사업자등록']];
+const GUIDE_CHAPS: Array<[TabKey, string]> = [['gwin', '낙찰당일'], ['gdeny', '매각불허가'], ['gevict', '명도'], ['biz', '사업자등록'], ['gtax', '세금']];
 const chaps = computed(() => {
   if (!webEmbed) return [];
   if (DETAIL_CHAPS.some(([k]) => k === activeTab.value)) return DETAIL_CHAPS;
@@ -1293,6 +1294,8 @@ const toggleSection = (key: string) => {
         </section>
       </template>
 
+      <!-- 가이드 › 세금 — 자금관리 세금신고에 있던 '세금 안내'(설명은 가이드, 기록 · 계산은 자금관리) -->
+      <TaxPage v-else-if="activeTab === 'gtax'" embedded guide-only />
       <section v-else-if="activeTab !== 'flow'" class="pw-card">
         <header class="pw-card-head" @click="toggleSection(activeTab)">
           <h2>{{ current().label }}</h2>

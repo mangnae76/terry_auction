@@ -2284,6 +2284,19 @@ html, body { overflow-x: clip; }
 .app-page .acf-title { font-size: 16px !important; }
 .app-page :is(.acf-desc, .acf-skip, .acf-btns button) { font-size: 14px !important; }
 .app-page .acf-backdrop { z-index: 960 !important; } .app-page .acf-box { z-index: 961 !important; }
+
+/* 자금관리 › 세금신고 요약 상자 — 바탕(#e7ebf1)에 묻히지 않게: 매도 완료는 흰색, 종합소득세 · 취득세는 맑고 진한 파랑 */
+.app-page[data-k="finance"] .tax-card { border: 1px solid transparent; }
+.app-page[data-k="finance"] .tax-card.grey { background: #fff !important; border-color: #dfe4ec; }
+.app-page[data-k="finance"] .tax-card.blue { background: #d4e4ff !important; border-color: #a9c7fb; }
+.app-page[data-k="finance"] .tax-card:not(.grey):not(.red):not(.blue):not(.green) { background: #e2edff !important; border-color: #bcd3fa; }
+
+/* 가이드 › 세금(자금관리 '세금 안내'를 옮김) — 웹 글자 규칙: 상자 제목 16 · 중제목 15 · 나머지 14 */
+.app-page[data-k="postwin"] .tax-shell .g-card h2 { font-size: 16px !important; }
+.app-page[data-k="postwin"] .tax-shell .g-card h2 i { font-size: 14px !important; }
+.app-page[data-k="postwin"] .tax-shell :is(.g-t, .g-sub) { font-size: 15px !important; }
+.app-page[data-k="postwin"] .tax-shell :is(.g-b, .g-s, .g-lead, .g-table th, .g-table td, .g-ico) { font-size: 14px !important; }
+.app-page[data-k="postwin"] .tax-shell { padding: 0 !important; }
 </style>
 
 <header class="gnb">
@@ -2570,7 +2583,7 @@ html, body { overflow-x: clip; }
      화면마다 따로 적지 않는다: 새 화면 · 새 하위 탭이 생기면 아래 두 표(SUB_TAB_KEYS · readHash/hashOf)에만 더한다 ===== */
   const SUB_TAB_KEYS = {
     market: ['ranking', 'dong', 'case', 'near', 'same'],
-    postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
+    postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'tax'],
     more: ['mypage', 'billing', 'points', 'news', 'support'],
   };
@@ -4070,8 +4083,8 @@ html, body { overflow-x: clip; }
   window.addEventListener('adm:tab', (e) => { marketInner = (e.detail && e.detail.trail) || null; if (S.route === 'market') syncCrumb(); });
   /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
   /* 낙찰이후 — 장 열쇠는 제 하위 탭(절차상세 · 가이드)에 불이 들어오고, 경로에는 '절차상세 › 명도'처럼 장 이름이 붙는다 */
-  const SUB_PARENT = { postwin: { dpre: 'win', evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win', gevict: 'gwin', gdeny: 'gwin', biz: 'gwin' } };
-  const SUB_CHAP = { postwin: { win: '낙찰당일', dpre: '잔금전', evict: '명도', balance: '잔금·등기', drepair: '인테리어', dsell: '매도', dtax: '세금', gwin: '낙찰당일', gdeny: '매각불허가', gevict: '명도', biz: '사업자등록' } };
+  const SUB_PARENT = { postwin: { dpre: 'win', evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win', gevict: 'gwin', gdeny: 'gwin', biz: 'gwin', gtax: 'gwin' } };
+  const SUB_CHAP = { postwin: { win: '낙찰당일', dpre: '잔금전', evict: '명도', balance: '잔금·등기', drepair: '인테리어', dsell: '매도', dtax: '세금', gwin: '낙찰당일', gdeny: '매각불허가', gtax: '세금', gevict: '명도', biz: '사업자등록' } };
   const subParent = (route, key) => (SUB_PARENT[route] || {})[key] || key;
   const subLabel = (route, key) => ((SUBTABS[route] || []).find((t) => t[0] === subParent(route, key)) || [])[2] || '';
   const subChap = (route, key) => (SUB_CHAP[route] || {})[key] || '';
