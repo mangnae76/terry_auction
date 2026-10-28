@@ -1781,6 +1781,7 @@ body.trip-full .foot { display: none; }
 
 .chips-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 10px 2px 0; }
 .chips-row:empty { display: none; }
+.chips-row.keep { display: flex; min-height: 34px; }
 .f-chip { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 4px 0 10px; border-radius: 13px; background: var(--blue-soft); color: #2a5fbf; border: 1px solid #c9d8ff; font-size: 14px; font-weight: 600; }
 .f-chip button { width: 18px; height: 18px; border: 0; background: transparent; color: inherit; border-radius: 50%; display: grid; place-items: center; padding: 0; }
 .f-chip button:hover { background: rgba(42, 95, 191, 0.14); }
@@ -1830,7 +1831,7 @@ body.trip-full .foot { display: none; }
 .cal-grid .w { text-align: center; font-size: 15px; color: var(--text-2); padding: 3px 0; }
 .cal-grid .w.sun, .cal-day.sun { color: #dc2626; }
 .cal-grid .w.sat, .cal-day.sat { color: #2563eb; }
-.cal-day { position: relative; justify-self: center; align-self: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: transparent; font-size: 14px; color: var(--text); transition: background .12s; }
+.cal-day { position: relative; justify-self: center; align-self: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: transparent; font-size: 14px; color: var(--text); }
 .cal-day:hover:not(:disabled) { background: var(--surface-3); }
 .cal-day.today { box-shadow: inset 0 0 0 1.5px var(--blue); }
 /* 입찰 있는 날 — 파란 동그라미에 흰 숫자(점 대신). 고른 날은 바깥에 파란 고리를 하나 더 */
@@ -2701,7 +2702,13 @@ html, body { overflow-x: clip; }
       ${S.pop === 'court' ? `<div class="pop" role="menu" aria-label="법원" style="min-width:230px"><button type="button" class="opt ${!S.court ? 'on' : ''}" data-act="set-court" data-v="">${I.court}법원전체<span class="r">${live().length}</span></button>${courts().map((ct) => `<button type="button" class="opt ${S.court === ct ? 'on' : ''}" data-act="set-court" data-v="${esc(ct)}">${esc(ct)}<span class="r">${live().filter((it) => it.court === ct).length}</span></button>`).join('')}</div>` : ''}`;
     $('tbSort').innerHTML = `<button type="button" class="sort-btn ${S.sort === 'route' ? 'on' : ''}" data-act="toggle-sort" aria-label="${S.sort === 'route' ? '정렬: 임장순. 누르면 날짜순으로 바뀝니다' : '정렬: 날짜순. 누르면 임장순으로 바뀝니다'}"${tip(S.sort === 'route' ? '임장순 (누르면 날짜순)' : '날짜순 (누르면 임장순)')}>${S.sort === 'route' ? I.sortRoute : I.sortDate}${S.sort === 'route' ? '임장순' : '날짜순'}${SWAP}</button>
       <button type="button" class="sort-btn layout ${S.layout === 'list' ? 'on' : ''}" data-act="toggle-layout" aria-pressed="${S.layout === 'list'}" aria-label="${S.layout === 'list' ? '보기: 목록. 누르면 카드로 바뀝니다' : '보기: 카드. 누르면 목록으로 바뀝니다'}"${tip(S.layout === 'list' ? '목록 (누르면 카드)' : '카드 (누르면 목록)')}>${S.layout === 'list' ? I.list : I.grid}${S.layout === 'list' ? '목록' : '카드'}${SWAP}</button>`;
-    $('tbDate').innerHTML = `<button type="button" class="chip ${S.date ? 'on' : ''}" data-act="pop" data-id="cal" aria-expanded="${S.pop === 'cal'}"${tip(S.date ? '' : '입찰일로 걸러 보기')}>${I.cal}<span class="num">${dotDate(S.date || TODAY_YMD)}</span></button>${S.pop === 'cal' ? calendarHtml() : ''}`;
+    /* 달력이 열린 채 날짜만 고른 때는 다시 그리지 않고 표시만 바꾼다 — 통째로 그리면 깜빡인다 */
+    const calOpen = S.calPatch && S.pop === 'cal' && document.querySelector('#tbDate .pop.cal');
+    if (calOpen) {
+      const box = $('tbDate'); const chipB = box.querySelector('.chip');
+      chipB.classList.toggle('on', !!S.date); chipB.querySelector('.num').textContent = dotDate(S.date || TODAY_YMD);
+      box.querySelectorAll('.cal-day').forEach((b) => { const on = S.date === b.dataset.k; b.classList.toggle('on', on); b.dataset.v = on ? '' : b.dataset.k; });
+    } else $('tbDate').innerHTML = `<button type="button" class="chip ${S.date ? 'on' : ''}" data-act="pop" data-id="cal" aria-expanded="${S.pop === 'cal'}"${tip(S.date ? '' : '입찰일로 걸러 보기')}>${I.cal}<span class="num">${dotDate(S.date || TODAY_YMD)}</span></button>${S.pop === 'cal' ? calendarHtml() : ''}`;
     $('qClear').hidden = !S.q;
 
     /* 단계 띠 — 전체 | 손품조사 ▶ 임장예정 ▶ 임장완료 ▶ 입찰산정 ▶ 입찰진행 ▶ 낙찰 ▶ 유찰 ▶ 취소 ▶ 매도 */
@@ -2723,9 +2730,16 @@ html, body { overflow-x: clip; }
     const chips = [];
     if (S.type) chips.push(['type', type.label]);
     if (S.court) chips.push(['court', S.court]);
-    if (S.date) chips.push(['date', `입찰일 ${shortDate(S.date)}`]);
     if (S.q) chips.push(['q', `“${S.q}”`]);
-    $('chips').innerHTML = chips.length ? `<span class="n"><b class="num">${visible().length}</b>건</span>${chips.map(([k, l]) => `<span class="f-chip">${esc(l)}<button type="button" data-act="clear-filter" data-v="${k}" aria-label="${esc(l)} 빼기">${I.x}</button></span>`).join('')}<button type="button" class="reset" data-act="reset-filters">모두 지우기</button>` : '';
+    /* 달력으로 고른 날 — 칩 · 모두 지우기 대신 '10월 27일 입찰 1건 / 입찰 없음' 한 줄(푸는 건 달력에서 그 날을 다시 누른다) */
+    const nShown = visible().length;
+    const [, dm, dd] = (S.date || '').split('-').map(Number);
+    const dateLine = S.date ? `<span class="n">${dm}월 ${dd}일 ${nShown ? `입찰 <b class="num">${nShown}</b>건` : '입찰 없음'}</span>` : '';
+    /* 달력이 열려 있으면 이 줄 자리를 늘 잡아 둔다 — 날짜를 골랐다 풀 때 아래 목록이 덜컹이지 않게 */
+    $('chips').classList.toggle('keep', S.pop === 'cal');
+    $('chips').innerHTML = (S.date || chips.length)
+      ? `${S.date ? dateLine : `<span class="n"><b class="num">${nShown}</b>건</span>`}${chips.map(([k, l]) => `<span class="f-chip">${esc(l)}<button type="button" data-act="clear-filter" data-v="${k}" aria-label="${esc(l)} 빼기">${I.x}</button></span>`).join('')}${chips.length ? '<button type="button" class="reset" data-act="reset-filters">모두 지우기</button>' : ''}`
+      : '';
 
     const pb = $('pickbar');
     pb.hidden = !S.pick;
@@ -2747,7 +2761,7 @@ html, body { overflow-x: clip; }
     for (let d = 1; d <= days; d += 1) {
       const key = `${y}-${pad(m + 1)}-${pad(d)}`; const n = byDate[key] || 0;
       const wd = (start + d - 1) % 7;
-      cells += `<button type="button" class="cal-day num ${wd === 0 ? 'sun' : wd === 6 ? 'sat' : ''} ${key === TODAY_YMD ? 'today' : ''} ${n ? 'has' : ''} ${S.date === key ? 'on' : ''}" data-act="set-date" data-v="${S.date === key ? '' : key}" ${n ? `data-tip="${n}건"` : ''} aria-label="${m + 1}월 ${d}일${n ? ` ${n}건` : ''}">${d}</button>`;
+      cells += `<button type="button" class="cal-day num ${wd === 0 ? 'sun' : wd === 6 ? 'sat' : ''} ${key === TODAY_YMD ? 'today' : ''} ${n ? 'has' : ''} ${S.date === key ? 'on' : ''}" data-act="set-date" data-k="${key}" data-v="${S.date === key ? '' : key}" ${n ? `data-tip="${n}건"` : ''} aria-label="${m + 1}월 ${d}일${n ? ` ${n}건` : ''}">${d}</button>`;
     }
     return `<div class="pop cal" role="dialog" aria-label="입찰일 고르기">
       <div class="cal-head"><button type="button" data-act="cal-move" data-v="-1" aria-label="이전 달">${I.chevL}</button><b class="num">${y}년 ${m + 1}월</b><button type="button" data-act="cal-move" data-v="1" aria-label="다음 달">${I.chevR}</button></div>
@@ -4400,7 +4414,7 @@ html, body { overflow-x: clip; }
       case 'set-stage': S.stage = v; render(); break;
       case 'cal-move': { const base = S.calMonth || (S.date ? parseYmd(S.date) : new Date(TODAY)); S.calMonth = new Date(base.getFullYear(), base.getMonth() + Number(v), 1); render(); break; }
       /* 날짜를 골라도 달력은 열어 둔다 — 아래 목록이 바로 따라 바뀌는 것을 보며 다른 날로 옮겨 볼 수 있게. 고른 날을 다시 누르면 풀린다 */
-      case 'set-date': S.date = v; render(); break;
+      case 'set-date': S.date = v; S.calPatch = true; renderToolbar(); renderContent(); S.calPatch = false; break;
       case 'toggle-sort': S.sort = S.sort === 'route' ? 'reg' : 'route'; store.set('wlp.web.sort', S.sort); render(); break;
       case 'clear-q': S.q = ''; $('q').value = ''; $('q').focus(); render(); break;
       case 'clear-filter': if (v === 'q') { S.q = ''; $('q').value = ''; } else S[v] = ''; render(); break;
