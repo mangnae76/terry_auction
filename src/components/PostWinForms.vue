@@ -8,7 +8,7 @@ import { FORMS, FORM_TAB, TOKENS, defaultTemplate, fillTemplate, tokensIn, type 
 import { courtInfoOf } from '../utils/auctionSummary';
 import { useAuctionStore } from '../stores/auctionStore';
 
-const props = defineProps<{ auction: AuctionDetail | null; keys: FormKey[] }>();
+const props = defineProps<{ auction: AuctionDetail | null; keys: FormKey[]; start?: FormKey }>();
 const emit = defineEmits<{ (e: 'close'): void }>();
 const store = useAuctionStore();
 
@@ -47,7 +47,7 @@ watch(vals, (x) => {
 
 // ===== 탭(내용증명 1 · 2 · 3차처럼 여럿일 때) — 새로고침 뒤에도 그대로 =====
 const CUR_SS = 'pw.form.cur';
-const cur = ref<FormKey>((() => { try { const k = sessionStorage.getItem(CUR_SS) as FormKey | null; return k && props.keys.includes(k) ? k : props.keys[0]; } catch { return props.keys[0]; } })());
+const cur = ref<FormKey>((() => { if (props.start && props.keys.includes(props.start)) return props.start; try { const k = sessionStorage.getItem(CUR_SS) as FormKey | null; return k && props.keys.includes(k) ? k : props.keys[0]; } catch { return props.keys[0]; } })());
 watch(cur, (k) => { try { sessionStorage.setItem(CUR_SS, k); } catch { /* 그만 */ } }, { immediate: true });
 const form = computed(() => FORMS[cur.value]);
 

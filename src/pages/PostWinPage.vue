@@ -244,6 +244,14 @@ const GUIDE_EVICT_KEYS = new Set(['ev.flow', 'ev.deal', 'ev.step']);   // 시기
 const popTodo = ref<StepTodo | null>(null);
 /** 서식 창 — 줄 옆 [서식]을 누르면 그 줄에 걸린 서식(여럿이면 탭) */
 const formKeys = ref<FormKey[] | null>(null);
+/** 처음 보일 서식 — 내용증명 2차 카드에서 열면 2차부터 */
+const formStart = ref<FormKey | ''>('');
+const cardFormOf = new Map<string, string>();
+const openForms = (keys: FormKey[], cardKey: string) => {
+  const want = cardFormOf.get(cardKey) as FormKey | undefined;
+  formStart.value = want && keys.includes(want) ? want : '';
+  formKeys.value = keys;
+};
 // 새로고침해도 열어 둔 창(큰일 카드 · 서식)이 다시 뜨게 — 이 탭(세션)에만 적어 둔다
 const POP_SS = 'pw.pop.v1';
 const todoIdOf = (t: StepTodo | null) => {
@@ -288,6 +296,7 @@ const todoCard = (t: StepTodo, key: string, sup = ''): CheckGroup | null => {
   // 공과금 연락처처럼 물건 주소로 채우는 줄
   const addr = picked.value?.address ?? '';
   const sections = card.sections.map((sec) => ({ ...sec, rows: sec.rows.map((r) => { const line = utilityLine(r.id, addr); return line ? { ...r, text: line } : r; }) }));
+  if (t.form) cardFormOf.set(key, t.form);
   return { ...card, sections, key, title: t.cardTitle ?? t.text, super: sup, webOnly: false };
 };
 /** 큰일 하나가 띄우는 카드들 — 함께 띄울 카드(also)까지 */
@@ -867,7 +876,7 @@ const toggleSection = (key: string) => {
         @go="goTodo"
       />
       <div v-if="popOpen" class="pw-todo-veil" @click="closePop" />
-      <PostWinForms v-if="formKeys" :auction="picked" :keys="formKeys" @close="formKeys = null" />
+      <PostWinForms v-if="formKeys" :key="formStart + formKeys.join()" :auction="picked" :keys="formKeys" :start="formStart || undefined" @close="formKeys = null" />
       <template v-if="hasTable || popOpen">
        <div :class="popOpen ? 'pw-todo-pop' : 'pw-pass'" :role="popOpen ? 'dialog' : undefined">
        <button v-if="popOpen" type="button" class="pw-todo-pop-x" aria-label="닫기" @click="closePop">
@@ -1112,7 +1121,7 @@ const toggleSection = (key: string) => {
                         @click.stop
                       >{{ webLine(r.text) }}<span class="pw-ext">↗</span></a>
                       <!-- 웹 — '인터넷우체국'처럼 낱말에 걸린 링크는 그 낱말만 (앱은 그대로) -->
-                      <template v-else><template v-for="(pt, pi) in (webEmbed ? textParts(webLine(r.text)) : [{ t: webLine(r.text) }])" :key="pi"><a v-if="pt.href" class="pw-wordlink" :href="pt.href" target="_blank" rel="noopener" @click.stop>{{ pt.t }}<span class="pw-ext">↗</span></a><template v-else>{{ pt.t }}</template></template><button v-if="webEmbed && FORMS_OF_ROW[r.id]" type="button" class="pw-formbtn" @click.stop="formKeys = FORMS_OF_ROW[r.id]">{{ FORM_BTN[FORMS_OF_ROW[r.id][0]] }}</button></template>
+                      <template v-else><template v-for="(pt, pi) in (webEmbed ? textParts(webLine(r.text)) : [{ t: webLine(r.text) }])" :key="pi"><a v-if="pt.href" class="pw-wordlink" :href="pt.href" target="_blank" rel="noopener" @click.stop>{{ pt.t }}<span class="pw-ext">↗</span></a><template v-else>{{ pt.t }}</template></template><button v-if="webEmbed && FORMS_OF_ROW[r.id]" type="button" class="pw-formbtn" @click.stop="openForms(FORMS_OF_ROW[r.id], g.key)">{{ FORM_BTN[FORMS_OF_ROW[r.id][0]] }}</button></template>
                     </td>
                     <!-- 부수 — 체크 왼쪽에 제 칸으로 -->
                     <td v-if="editing" class="pw-qty">

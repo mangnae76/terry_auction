@@ -26,6 +26,8 @@ export interface StepTodo {
   stepNos?: string[];
   /** 진행도를 세지 않는다(바로가기만) */
   noCount?: boolean;
+  /** 이 카드에서 서식을 열면 먼저 보일 서식(내용증명 몇 차 등) */
+  form?: string;
   /** 카드 제목 — 없으면 큰일 이름 */
   cardTitle?: string;
   /** 같이 띄울 카드(상자 · 제목) */
@@ -59,7 +61,7 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
     { text: '점유자 재방문 - 2차 방문', cat: 'evict', tab: 'evict', group: 'ev.revisit' },
     { text: '내부·관리비 확인', cat: 'evict', tab: 'win', group: 'visit', section: '내부확인' },
     { text: '훼손이 심하면 매각불허가 신청', cat: 'proc', tab: 'gdeny', group: 'gd.deny' },
-    { text: '내용증명 - 1차(안내)', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c5'], labels: { 폐문부재연락부재: '내용증명' } },
+    { text: '내용증명 - 1차(안내)', form: 'notice1', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c5'], labels: { 폐문부재연락부재: '내용증명' } },
   ],
   confirm: [
     { text: '이사 날짜 협의 및 확정', cat: 'evict', tab: 'evict', group: 'ev.move' },
@@ -102,11 +104,11 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
     // 같은 날 함께 내는 일이라 한 줄로 — 창에는 두 카드가 같이 뜬다
     { text: '인도명령 · 점유이전금지 가처분', cat: 'evict', tab: 'evict', group: 'ev.order', cardTitle: '인도명령 신청', also: [{ group: 'ev.hold', title: '점유이전금지 가처분(필요 시)' }] },
   ],
-  order: [{ text: '내용증명 - 2차(최고)', cat: 'evict', tab: 'evict', group: 'ev.notice' }],
+  order: [{ text: '내용증명 - 2차(최고)', form: 'notice2', cat: 'evict', tab: 'evict', group: 'ev.notice' }],
   serve: [{ text: '인도명령 결정문 송달 확인', cat: 'evict', tab: 'evict', group: 'ev.serve' }],
   // 이름은 '무엇 - 몇 차(목적)' — 같은 일을 여러 번 할 때 몇 번째 · 무엇 때문인지 바로 보이게
   warn: [
-    { text: '내용증명 - 3차(최종통지)', cat: 'evict', tab: 'evict', group: 'ev.notice' },
+    { text: '내용증명 - 3차(최종통지)', form: 'notice3', cat: 'evict', tab: 'evict', group: 'ev.notice' },
     { text: '강제집행 신청', cat: 'evict', tab: 'evict', group: 'ev.execApply' },
   ],
   exec: [
