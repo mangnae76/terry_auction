@@ -46,6 +46,21 @@ export const GUIDE_DENY: CheckGroup[] = [
 /** 가이드 › 명도 — 명도확인서와 명도합의서는 이름이 비슷해 자주 헷갈린다 */
 export const GUIDE_EVICT_DOCS: CheckGroup[] = [
   {
+    // 명도분석 화면에 있던 리스크 표를 가이드로 — 셈이 아니라 미리 알아 둘 설명
+    key: 'gd.risk',
+    title: '명도시 리스크',
+    note: '이런 경우엔 기간 · 비용이 늘어난다 — 입찰 전 · 잔금 전에 미리 확인한다',
+    noCheck: true,
+    sections: [
+      { label: '대항력 있는 임차인', rows: [{ id: 'gd.risk.r1', depth: 0, text: '보증금을 낙찰자가 물어 줘야 할 수 있다 — 인도명령 대상도 아니다' }] },
+      { label: '유치권 주장', rows: [{ id: 'gd.risk.r2', depth: 0, text: '공사대금 등을 이유로 버티면 소송까지 갈 수 있다' }] },
+      { label: '점유자가 바뀜', rows: [{ id: 'gd.risk.r3', depth: 0, text: '인도명령은 적힌 사람에게만 — 점유이전금지 가처분으로 막는다' }] },
+      { label: '연락두절 · 폐문부재', rows: [{ id: 'gd.risk.r4', depth: 0, text: '송달이 늦어져 특별 · 공시송달로 1~2개월 더 걸린다' }] },
+      { label: '짐을 두고 감', rows: [{ id: 'gd.risk.r5', depth: 0, text: '강제집행 뒤 보관 · 처리 절차로 몇 달 더 걸리고 보관료가 쌓인다' }] },
+      { label: '미납 관리비', rows: [{ id: 'gd.risk.r6', depth: 0, text: '공용부분은 낙찰자 몫 — 미리 금액을 확인한다' }] },
+    ],
+  },
+  {
     key: 'gd.docs',
     title: '명도확인서와 명도합의서 차이',
     note: '명도확인서는 법원에 내는 \'이사했다\'는 확인, 명도합의서는 둘 사이의 \'언제 · 얼마에 나간다\'는 약속',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 낙찰이후 · 진행절차 옆 박스 탭(웹) — 명도분석(협의 · 강제집행 비용 비교 + 리스크) / 세금분석(A안 기준 차익 · 예상 세금).
+// 낙찰이후 · 진행절차 옆 박스 탭(웹) — 명도분석(협의 · 강제집행 비용 비교) / 세금분석(A안 기준 차익 · 예상 세금).
 // 명도분석 기본값은 물건 값(대출 · 면적)에서, 없으면 대략의 시세. 칸마다 고쳐 쓴다.
 // 세금분석은 입찰가산정 A안의 낙찰가 · 매도가 · 필요경비를 그대로 쓰고 명도비만 명도분석 값으로 바꾼다 — 고치려면 입찰가산정으로 간다.
 // 고른 값은 이 브라우저에 물건마다 기억한다. 세금 셈은 입찰가산정과 같은 profitMath.
@@ -58,14 +58,6 @@ const EV_FIELDS: Array<[keyof EvictInput, string, string]> = [
   ['execBase', '집행 접수 · 계고 예납', '원'], ['laborDaily', '노무자 일당', '원'], ['locksmith', '열쇠공(개문)', '원'], ['truck', '운반(트럭)', '원'],
   ['ladder', '사다리차', '원'], ['storagePerMonth', '짐 보관료(한 달)', '원'], ['storageMonths', '보관 달', '개월'], ['serveExtra', '특별 · 공시송달', '원'],
   ['execMonths', '강제집행 때 걸리는 달', '개월'],
-];
-const RISKS: Array<[string, string]> = [
-  ['대항력 있는 임차인', '보증금을 낙찰자가 물어 줘야 할 수 있다 — 인도명령 대상도 아니다'],
-  ['유치권 주장', '공사대금 등을 이유로 버티면 소송까지 갈 수 있다'],
-  ['점유자가 바뀜', '인도명령은 적힌 사람에게만 — 점유이전금지 가처분으로 막는다'],
-  ['연락 두절 · 폐문부재', '송달이 늦어져 특별 · 공시송달로 1~2개월 더 걸린다'],
-  ['짐을 두고 감', '강제집행 뒤 보관 · 처리 절차로 몇 달 더 걸리고 보관료가 쌓인다'],
-  ['미납 관리비', '공용부분은 낙찰자 몫 — 미리 금액을 확인한다'],
 ];
 
 // ===== 세금분석 =====
@@ -126,10 +118,6 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
       </div>
       <p v-if="save < 0" class="pwm-save neg">이 값으로는 강제집행 쪽이 <b>{{ man(-save) }}</b> 적다 — 이사비를 다시 본다</p>
 
-      <h3 class="pwm-h">리스크</h3>
-      <table class="pwm-tbl">
-        <tbody><tr v-for="[k, v] in RISKS" :key="k"><th>{{ k }}</th><td>{{ v }}</td></tr></tbody>
-      </table>
 
       <article class="pwm-box">
       <h3 class="pwm-h">계산에 쓴 값<button type="button" class="pwm-reset" @click="reset">초기화</button></h3>
@@ -232,10 +220,6 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
 .pwm-save.neg { background: #fdf0e3; color: #8a4b12; }
 .pwm-h { display: flex; align-items: center; gap: 10px; margin: 22px 0 10px; font-size: 15px; font-weight: 800; }
 .pwm-sub { font-style: normal; font-size: 14px; font-weight: 600; color: #6b7280; }
-.pwm-tbl { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e3e8f0; border-radius: 8px; overflow: hidden; }
-.pwm-tbl th, .pwm-tbl td { padding: 10px 12px; font-size: 14px; text-align: left; border-top: 1px solid #eef1f6; }
-.pwm-tbl tr:first-child :is(th, td) { border-top: 0; }
-.pwm-tbl th { width: 200px; background: #fdf4f4; font-weight: 700; white-space: nowrap; }
 .pwm-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 14px; }
 .pwm-fields label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: #4b5563; }
 .pwm-in { display: inline-flex; align-items: center; gap: 6px; }
