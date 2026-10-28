@@ -163,6 +163,36 @@ export const POST_WIN_EVICT: CheckGroup[] = [
     sections: [],
   },
   {
+    // 절차진행 '점유자 다시 연락 · 재방문' (웹만) — 첫날 못 만났거나 연락이 없을 때
+    key: 'ev.revisit',
+    title: '점유자 다시 연락 · 재방문',
+    note: "잔금 납부 전까지는 '소통'만 — 만날 때까지 여러 번 나눠 찾아간다",
+    webOnly: true,
+    sections: [
+      {
+        label: '기다리기',
+        rows: [
+          { id: 'ev.rev.w1', depth: 0, text: '남긴 연락처로 연락 오는지 며칠 기다리기' },
+          { id: 'ev.rev.w2', depth: 0, text: '관리소 · 동대표에게 점유자 연락 부탁' },
+        ],
+      },
+      {
+        label: '다시 찾아가기',
+        rows: [
+          { id: 'ev.rev.v1', depth: 0, text: '시간을 바꿔 방문(저녁 · 주말)' },
+          { id: 'ev.rev.v2', depth: 0, text: '못 만나면 쪽지 · 연락처 다시 남기기' },
+          { id: 'ev.rev.v3', depth: 0, text: '만나면 협상내용대로 고지(이사는 잔금 납부일까지)' },
+        ],
+      },
+      {
+        label: '그래도 안 되면',
+        rows: [
+          { id: 'ev.rev.n1', depth: 0, text: '내용증명 준비 → 잔금 납부와 함께 인도명령 신청', warn: true },
+        ],
+      },
+    ],
+  },
+  {
     // 절차진행 '이사 날짜 협의 및 확정'의 체크리스트 (웹만) — 협의 → 확정 → 이사 당일
     key: 'ev.move',
     title: '이사 날짜 협의 및 확정',
