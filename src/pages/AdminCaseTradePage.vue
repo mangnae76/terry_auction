@@ -745,8 +745,8 @@ const downloadCsv = () => {
       <p v-if="areaNote" class="adm-msg warn">{{ areaNote }}</p>
 
       <template v-if="canSave">
-        <!-- 네 칸 · 세 줄 한 판 — 첫 줄 공동주택가 · 보증보험 전세가 · 보증보험 전세가율/갭 · 공시대비율,
-             둘째 줄 실거래 전세 셋 + 보증보험 전세 평당가, 셋째 줄 매매 실거래가 · 매매 평당가. 자리는 아래 .case-grid 칸 지정 -->
+        <!-- 네 칸 · 세 줄 한 판 — 맨 왼쪽은 공동주택가 하나(아래는 비움), 오른쪽 세 칸은 줄마다 한 묶음:
+             보증보험(전세가 · 전세가율/갭 · 평당가) / 실거래 전세(실거래가 · 전세가율/갭 · 평당가) / 매매(실거래가 · 공시대비율 · 평당가) -->
         <div class="adm-kpis grid4 case-grid">
           <div class="adm-kpi green">
             <small>
@@ -1015,16 +1015,16 @@ const downloadCsv = () => {
 .adm-kpis.grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .adm-kpis.grid4.nextrow { margin-top: 12px; }
 .adm-kpis.case-grid { grid-template-rows: auto auto auto; }
-.adm-kpis.case-grid > :nth-child(1) { grid-column: 1; grid-row: 1; }  /* 공동주택가 */
+.adm-kpis.case-grid > :nth-child(1) { grid-column: 1; grid-row: 1; }  /* 공동주택가 — 그 아래 칸은 비운다 */
 .adm-kpis.case-grid > :nth-child(2) { grid-column: 2; grid-row: 1; }  /* 보증보험 전세가 */
 .adm-kpis.case-grid > :nth-child(3) { grid-column: 3; grid-row: 1; }  /* 보증보험 전세가율 / 갭 */
-.adm-kpis.case-grid > :nth-child(9) { grid-column: 4; grid-row: 1; }  /* 공시대비율 */
-.adm-kpis.case-grid > :nth-child(5) { grid-column: 1; grid-row: 2; }  /* 전세 실거래가 */
-.adm-kpis.case-grid > :nth-child(6) { grid-column: 2; grid-row: 2; }  /* 실거래 전세가율 / 갭 */
-.adm-kpis.case-grid > :nth-child(7) { grid-column: 3; grid-row: 2; }  /* 전세 평당가 */
-.adm-kpis.case-grid > :nth-child(4) { grid-column: 4; grid-row: 2; }  /* 보증보험 전세 평당가 */
-.adm-kpis.case-grid > :nth-child(8) { grid-column: 1; grid-row: 3; }  /* 매매 실거래가 */
-.adm-kpis.case-grid > :nth-child(10) { grid-column: 2; grid-row: 3; } /* 매매 평당가 */
+.adm-kpis.case-grid > :nth-child(4) { grid-column: 4; grid-row: 1; }  /* 보증보험 전세 평당가 */
+.adm-kpis.case-grid > :nth-child(5) { grid-column: 2; grid-row: 2; }  /* 전세 실거래가 */
+.adm-kpis.case-grid > :nth-child(6) { grid-column: 3; grid-row: 2; }  /* 실거래 전세가율 / 갭 */
+.adm-kpis.case-grid > :nth-child(7) { grid-column: 4; grid-row: 2; }  /* 전세 평당가 */
+.adm-kpis.case-grid > :nth-child(8) { grid-column: 2; grid-row: 3; }  /* 매매 실거래가 */
+.adm-kpis.case-grid > :nth-child(9) { grid-column: 3; grid-row: 3; }  /* 공시대비율 */
+.adm-kpis.case-grid > :nth-child(10) { grid-column: 4; grid-row: 3; } /* 매매 평당가 */
 .adm-kpi { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
 .adm-kpi small { font-size: 11.5px; font-weight: 700; color: #6b7280; display: flex; align-items: baseline; gap: 4px; }
 .adm-kpi small em { font-style: normal; color: #2b6df3; }
