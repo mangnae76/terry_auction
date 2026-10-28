@@ -113,6 +113,8 @@ const mapEmbed = computed(() => ({
   to: dateTo.value,
 }));
 try { if (sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
+// 예전 시장분석 › 경매지번 분석 주소로 오면 경매지번 탭으로
+try { if (sessionStorage.getItem('adm.dong.openCase') === '1') { sessionStorage.removeItem('adm.dong.openCase'); listView.value = 'case'; } } catch { /* 그만 */ }
 // 웹 — 고르는 줄 · 탭 줄을 위에 붙여 둔다(CSS sticky). 탭 줄은 고르는 줄 높이만큼 아래에 붙어야 해서 그 높이를 --bar-h 로 흘려 준다
 const barEl = ref<HTMLElement | null>(null);
 let barObserver: ResizeObserver | null = null;
