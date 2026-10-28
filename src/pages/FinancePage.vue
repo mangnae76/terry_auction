@@ -169,6 +169,8 @@ const tabOfQuery = (): FinanceTabKey | '' => {
   return (FIN_TABS as string[]).includes(k) ? (k as FinanceTabKey) : '';
 };
 const activeTab = ref<FinanceTabKey>(tabOfQuery() || 'cashFlow');
+/** 웹 필터 줄의 다섯 탭 — 앱은 아래 머리의 탭 줄 그대로 */
+const WEB_TABS: Array<[FinanceTabKey, string]> = [['cashFlow', '자금입출금'], ['businessExpense', '사업지출'], ['fuelMeal', '유류&식대'], ['itemPurchase', '물품구매'], ['tax', '세금신고']];
 watch(() => route.query.tab, () => { const k = tabOfQuery(); if (k && k !== activeTab.value) activeTab.value = k; });
 // 웹 — 화면 안 탭(자금입출금 ~ 세금신고)을 바꾸면 주소에도 적는다(위 웹 경로 · 새로고침이 따라온다). 앱은 그대로
 watch(activeTab, (t) => { if (webEmbed && String(route.query.tab ?? '') !== t) void router.replace({ query: { ...route.query, tab: t } }); });
@@ -552,17 +554,37 @@ const exportExcel = () => {
       </nav>
     </header>
 
-    <!-- 웹 세금신고 — 위 필터 줄 자리에 연도 드롭다운(처음엔 올해) -->
-    <div v-if="webEmbed && activeTab === 'tax'" class="fin-toolbar">
+    <!-- 웹 — 띠 위 흰 필터 줄 왼쪽에 다섯 탭, 오른쪽에 기간(세금신고는 당해년도) · 엑셀 · 항목추가 -->
+    <div v-if="webEmbed" class="fin-toolbar">
       <div class="fin-toolbar-right">
-        <label class="fin-taxyear"><span>당해년도 선택</span>
-          <select v-model.number="taxYear">
-            <option v-for="y in taxYears" :key="y" :value="y">{{ y }}년</option>
-          </select>
-        </label>
+        <nav class="fin-period fin-tabseg" role="tablist">
+          <button v-for="[k, label] in WEB_TABS" :key="k" type="button" role="tab" :aria-selected="activeTab === k" :class="['fin-period-btn', { active: activeTab === k }]" @click="activeTab = k">{{ label }}</button>
+        </nav>
+        <div class="fin-tb-end">
+          <label v-if="activeTab === 'tax'" class="fin-taxyear"><span>당해년도</span>
+            <select v-model.number="taxYear">
+              <option v-for="y in taxYears" :key="y" :value="y">{{ y }}년</option>
+            </select>
+          </label>
+          <template v-else>
+            <div class="fin-period">
+              <button :class="['fin-period-btn', { active: period === 'thisMonth' }]" @click="period = 'thisMonth'">이번달</button>
+              <button :class="['fin-period-btn', { active: period === 'thisYear' }]" @click="period = 'thisYear'">올해</button>
+              <button :class="['fin-period-btn', { active: period === 'all' }]" @click="period = 'all'">총기간</button>
+              <button :class="['fin-period-btn', { active: period === 'custom' }]" @click="period = 'custom'">직접선택</button>
+            </div>
+            <div v-if="period === 'custom'" class="fin-custom-inline">
+              <button type="button" class="fin-date-box" @click="rangeTarget = 'start'"><span>{{ customStart || '시작일' }}</span></button>
+              <span class="fin-date-sep">~</span>
+              <button type="button" class="fin-date-box" @click="rangeTarget = 'end'"><span>{{ customEnd || '종료일' }}</span></button>
+            </div>
+            <button type="button" class="fin-excel" @click="exportExcel"><i>⬇</i>엑셀저장</button>
+            <button type="button" class="fin-add" @click="openAdd(activeTab as ModalKind)"><i>+</i>항목추가</button>
+          </template>
+        </div>
       </div>
     </div>
-    <div v-if="activeTab !== 'tax'" class="fin-toolbar">
+    <div v-if="!webEmbed && activeTab !== 'tax'" class="fin-toolbar">
       <!-- 제목·안내 줄은 적지 않는다 — 탭 이름과 겹친다 -->
       <div class="fin-toolbar-right">
         <div class="fin-period">

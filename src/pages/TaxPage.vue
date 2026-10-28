@@ -297,10 +297,16 @@ const router = useRouter();
         <strong class="blue">{{ won(acqTaxTotal) }}</strong>
         <em>낙찰 후 60일 이내 납부</em>
       </div>
+      <!-- 웹 — 세후 순수익도 같은 줄의 다섯째 칸(앱은 아래 큰 상자) -->
+      <div v-if="props.webYear" class="tax-card net">
+        <small>세후 순수익</small>
+        <strong class="green">{{ won(netProfit, true) }}</strong>
+        <em>사업소득 − 종합소득세</em>
+      </div>
     </div>
 
     <!-- 세후 순수익 -->
-    <div v-if="!props.guideOnly" class="tax-net">
+    <div v-if="!props.guideOnly && !props.webYear" class="tax-net">
       <div class="net-main">
         <p class="net-head">세후 순수익 — 세금 납부 후 실질 수익 <span>(비인정 경비 포함 모든 지출 차감)</span></p>
         <strong class="net-value">{{ won(netProfit, true) }}</strong>

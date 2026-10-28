@@ -839,7 +839,12 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 웹은 제목 줄 · 탭을 다 숨겨 윗머리(.fin-header)가 빈 껍데기다 — 그 1px 테두리가 경로 줄 밑 흰 줄로 남아 통째로 감춘다 */
 .app-page[data-k="finance"] .fin-header { display: none !important; }
 /* …다만 자금관리 다섯 탭(자금입출금 ~ 세금신고)은 마이페이지 아래 3단 박스 탭으로 다시 보인다 — 머리 껍데기는 테두리 · 여백 없이 탭만 */
-.app-page[data-k="finance"] .fin-header:has(.fin-tabs) { display: block !important; order: 1; margin: 4px 0 8px !important; padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; }
+/* (다섯 탭은 띠 위 흰 필터 줄 왼쪽으로 옮겼다 — 머리는 통째로 감춘다) */
+.app-page[data-k="finance"] .fin-shell .fin-toolbar-right { flex-wrap: wrap; row-gap: 8px; }
+.app-page[data-k="finance"] .fin-shell .fin-tb-end { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.app-page[data-k="finance"] .fin-shell .fin-tb-end .fin-excel { margin-left: 0; }
+.app-page[data-k="finance"] .fin-shell .fin-tabseg .fin-period-btn { font-weight: 600; }
+.app-page[data-k="finance"] .fin-shell .fin-tabseg .fin-period-btn.active { color: #2b6df3 !important; font-weight: 700; }
 .app-page[data-k="finance"] .fin-header .fin-tabs { margin: 0 !important; display: flex !important; border-bottom: 1px solid var(--boxtab-line); background: transparent !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
 .app-page[data-k="finance"] .fin-stage-count { gap: 8px; }
 .app-page[data-k="finance"] .fin-stage-count button { height: 28px; padding: 0 8px 0 10px; border-radius: 8px; font-size: 14px; }
@@ -2292,9 +2297,17 @@ html, body { overflow-x: clip; }
 
 /* 자금관리 › 세금신고 요약 상자 — 바탕(#e7ebf1)에 묻히지 않게: 매도 완료는 흰색, 종합소득세 · 취득세는 맑고 진한 파랑 */
 .app-page[data-k="finance"] .tax-card { border: 1px solid transparent; }
+/* 요약 다섯 칸 한 줄 — 매도완료 · 취득세 · 총사업소득 · 연간합산종합소득세 · 세후순수익 */
+.app-page[data-k="finance"] .tax-cards { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+.app-page[data-k="finance"] .tax-card.grey { order: 1; }
+.app-page[data-k="finance"] .tax-card:not(.grey):not(.red):not(.blue):not(.green):not(.net) { order: 2; }
+.app-page[data-k="finance"] .tax-card.red { order: 3; }
+.app-page[data-k="finance"] .tax-card.blue { order: 4; }
+.app-page[data-k="finance"] .tax-card.net { order: 5; background: #e6f6ec !important; border-color: #b7e2c6; }
+@media (max-width: 1100px) { .app-page[data-k="finance"] .tax-cards { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
 .app-page[data-k="finance"] .tax-card.grey { background: #fff !important; border-color: #dfe4ec; }
 .app-page[data-k="finance"] .tax-card.blue { background: #d4e4ff !important; border-color: #a9c7fb; }
-.app-page[data-k="finance"] .tax-card:not(.grey):not(.red):not(.blue):not(.green) { background: #e2edff !important; border-color: #bcd3fa; }
+.app-page[data-k="finance"] .tax-card:not(.grey):not(.red):not(.blue):not(.green):not(.net) { background: #e2edff !important; border-color: #bcd3fa; }
 
 /* 가이드 › 세금(자금관리 '세금 안내'를 옮김) — 웹 글자 규칙: 상자 제목 16 · 중제목 15 · 나머지 14 */
 .app-page[data-k="postwin"] .tax-shell .g-card h2 { font-size: 16px !important; }
