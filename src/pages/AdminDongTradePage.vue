@@ -15,6 +15,7 @@ import SnapChip from '../components/SnapChip.vue';
 import YmCount from '../components/YmCount.vue';
 import InfoTip from '../components/InfoTip.vue';
 import AdminRegionDemandPage from './AdminRegionDemandPage.vue';
+import TradeStatsPage from './TradeStatsPage.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
@@ -96,7 +97,18 @@ const yearMin = ref('');
 const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
-const listView = ref<'supply' | 'table' | 'dist' | 'detail' | 'deals'>('supply');
+const listView = ref<'map' | 'supply' | 'table' | 'dist' | 'detail' | 'deals'>('supply');
+// 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
+const mapRun = ref(0);
+const mapEmbed = computed(() => ({
+  sido: sido.value,
+  district: district.value?.label ?? '',
+  dong: dong.value,
+  kind: kind.value,
+  deal: (dealKind.value === 'jeonse' ? 'rent' : 'sale') as 'sale' | 'rent',
+  months: periodMonths.value || 12,
+}));
+try { if (sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
 // 웹 — 고르는 줄 · 탭 줄을 위에 붙여 둔다(CSS sticky). 탭 줄은 고르는 줄 높이만큼 아래에 붙어야 해서 그 높이를 --bar-h 로 흘려 준다
 const barEl = ref<HTMLElement | null>(null);
 let barObserver: ResizeObserver | null = null;
@@ -440,6 +452,7 @@ const load = async () => {
     });
     asOf.value = askedAt;
     all.value = res.rows;
+    mapRun.value += 1;
     dongNames.value = res.dongNames;
     period.value = { from: res.periodFrom, to: res.periodTo };
     loadedLabel.value = `${sido.value} ${d.label}`;
@@ -803,7 +816,8 @@ const downloadCsv = () => {
 
       <!-- 웹 — 탭 줄(요약 상자 위, 탭을 바꿔도 제자리) + 오른쪽에 경로(홈 › 시장분석 › 지역분석 › 탭). 경로는 웹의 경로 표시를 이 자리(#admCrumbSlot)로 옮겨 쓴다 -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top">
-        <nav v-if="all.length > 0" class="adm-view-tabs" role="tablist">
+        <nav v-if="all.length > 0 || listView === 'map'" class="adm-view-tabs" role="tablist">
+              <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">지도</button>
               <button type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역별분석' }}</button>
               <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">지역분포<span class="adm-view-kind" :title="distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 막대'" :aria-label="distChart === 'bar' ? '막대' : '도넛'">
@@ -816,7 +830,14 @@ const downloadCsv = () => {
         <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
 
-      <template v-if="all.length > 0">
+      <!-- 지도 — 지역분석의 조건(지역 · 종류 · 매매 · 기간)으로 거래량 랭킹 지도. 지도에서 동을 누르면 위 읍면동도 따라온다 -->
+      <TradeStatsPage
+        v-if="webEmbed && listView === 'map'"
+        :embed="mapEmbed"
+        :run="mapRun"
+        @pick-dong="(d: string) => { dong = d; }"
+      />
+      <template v-if="all.length > 0 && listView !== 'map'">
         <section v-if="webEmbed && !dong && listView !== 'supply'" class="adm-gunav">
           <div class="adm-gunav-head">
             <strong>{{ loadedLabel }}<template v-if="loadedDeal === 'jeonse'"> 전세</template></strong>

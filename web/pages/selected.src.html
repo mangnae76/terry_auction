@@ -370,71 +370,71 @@ button { cursor: pointer; }
 /* 다른 화면으로 가도 랭킹지도는 숨긴 채 남아 있다 — 시장분석이 보일 때만 잠근다 */
 html:has(#marketView:not([hidden]) .app-market[data-k="ranking"]), body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) { overflow: hidden; overscroll-behavior: none; }
 body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) .foot { display: none; }
-.app-market[data-k="ranking"] .adm-shell { min-height: 0; background: transparent; }
-.app-market[data-k="ranking"] .adm-body { padding: 0 !important; max-width: none !important; }
-.app-market[data-k="ranking"] .tsp-stage {
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .adm-shell { min-height: 0; background: transparent; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .adm-body { padding: 0 !important; max-width: none !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-stage {
   position: fixed !important; left: 0 !important; right: 0 !important; width: auto !important; margin: 0 !important;
   top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)) !important; bottom: 0 !important; height: auto !important; min-height: 0 !important;
   border: 0 !important; border-radius: 0 !important; z-index: 0;
 }
 /* 제목·설명 줄(지역별 거래량 랭킹 · 지도와 함께 …)은 웹에서 통째로 감춘다 */
-.app-market[data-k="ranking"] .adm-top { display: none !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .adm-top { display: none !important; }
 /* 고르는 칸 — 왼쪽 판 맨 위(통계 정보 위)에 한 줄씩: 시도 · 시군구 · 읍면동 · 종류 · 기간 · 검색.
    칸 크기는 물건등록 칸과 같게(높이 34 · 모서리 6), 칸 위 작은 이름은 감추고 칸 안에 '○○ 선택' */
-.app-market[data-k="ranking"] .tsp-filter { display: none !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter { display: none !important; }
 /* 통계 정보 — 이름(거래 건수 · 거래 총액 · 평균가 · 평당 단가)은 회색 보통 글자, 값은 파랑 */
-.app-market[data-k="ranking"] .tsp-stat-grid dt { color: #6b7280 !important; font-weight: 400 !important; }
-.app-market[data-k="ranking"] .tsp-stat-grid dd { color: #2b6df3 !important; }
-.app-market[data-k="ranking"] .tsp-filter-slot { display: flex; flex-direction: column; gap: 8px; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-stat-grid dt { color: #6b7280 !important; font-weight: 400 !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-stat-grid dd { color: #2b6df3 !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot { display: flex; flex-direction: column; gap: 8px; }
 /* 줄 차례: 시도 · 시군구 · 읍면동 → 종류 · 매매/전월세 → 기간 → 검색 (여섯 칸 격자) */
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar > * { grid-column: 1 / -1; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar > .tsp-f:nth-child(1) { grid-column: 1 / 3; grid-row: 1; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar > .tsp-f:nth-child(2) { grid-column: 3 / 5; grid-row: 1; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar > .tsp-f:nth-child(3) { grid-column: 5 / 7; grid-row: 1; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar > .tsp-f:nth-child(4) { grid-column: 1 / 5; grid-row: 2; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-bar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-bar > * { grid-column: 1 / -1; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-bar > .tsp-f:nth-child(1) { grid-column: 1 / 3; grid-row: 1; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-bar > .tsp-f:nth-child(2) { grid-column: 3 / 5; grid-row: 1; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-bar > .tsp-f:nth-child(3) { grid-column: 5 / 7; grid-row: 1; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-bar > .tsp-f:nth-child(4) { grid-column: 1 / 5; grid-row: 2; }
 /* 종류 옆에 매매/전월세, 그 아래 기간 한 줄 */
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar > .tsp-f-deal { grid-column: 5 / 7; grid-row: 2; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar > .tsp-f-period { grid-column: 1 / -1; grid-row: 3; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-bar > .tsp-search-btn { grid-row: 4; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-f { flex: 0 0 auto; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-f > small { display: none; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-search-btn { margin-left: 0; width: 100%; }
-.app-market[data-k="ranking"] .tsp-filter-slot :is(.tsp-select, .tsp-seg, .tsp-search-btn) { height: var(--ctl-h) !important; border-radius: 6px !important; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-select { font-size: 14px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-bar > .tsp-f-deal { grid-column: 5 / 7; grid-row: 2; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-bar > .tsp-f-period { grid-column: 1 / -1; grid-row: 3; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-bar > .tsp-search-btn { grid-row: 4; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-f { flex: 0 0 auto; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-f > small { display: none; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-search-btn { margin-left: 0; width: 100%; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot :is(.tsp-select, .tsp-seg, .tsp-search-btn) { height: var(--ctl-h) !important; border-radius: 6px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-select { font-size: 14px !important; }
 /* 아직 안 고른 칸의 '○○ 선택' 은 흐린 회색 (고르면 검정) */
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-select.ph { color: #9ca3af !important; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-select.ph option { color: #111827; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-select.ph { color: #9ca3af !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-select.ph option { color: #111827; }
 /* 판 맨 위 제목 · 안내, 검색 아래 고른 결과 — 그리고 칸 사이마다 가름선 */
-.app-market[data-k="ranking"] .tsp-web-head { display: flex; flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; } /* 제목 옆에 설명 한 줄 */
-.app-market[data-k="ranking"] .tsp-web-head strong { font-size: 16px; font-weight: 800; color: #111827; }
-.app-market[data-k="ranking"] .tsp-web-head small { font-size: 14px; color: #6b7280; }
-.app-market[data-k="ranking"] .tsp-web-picked { display: flex; flex-direction: column; gap: 3px; }
-.app-market[data-k="ranking"] .tsp-web-picked strong { font-size: 16px; font-weight: 800; color: #111827; }
-.app-market[data-k="ranking"] .tsp-web-picked small { font-size: 14px; font-weight: 600; color: #2b6df3; }
-.app-market[data-k="ranking"] .tsp-panel > * + * { border-top: 1px solid #e5e7eb; padding-top: 14px; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-web-head { display: flex; flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; } /* 제목 옆에 설명 한 줄 */
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-web-head strong { font-size: 16px; font-weight: 800; color: #111827; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-web-head small { font-size: 14px; color: #6b7280; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-web-picked { display: flex; flex-direction: column; gap: 3px; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-web-picked strong { font-size: 16px; font-weight: 800; color: #111827; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-web-picked small { font-size: 14px; font-weight: 600; color: #2b6df3; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-panel > * + * { border-top: 1px solid #e5e7eb; padding-top: 14px; }
 /* 지도 알약(등수 · 동 · 건수) — 약 20% 크게 */
-.app-market[data-k="ranking"] .trade-map-pin { padding: 4px 11px 4px 4px !important; gap: 6px !important; }
-.app-market[data-k="ranking"] .trade-map-pin i { width: 20px !important; height: 20px !important; font-size: 12.5px !important; }
-.app-market[data-k="ranking"] .trade-map-pin b { font-size: 13px !important; }
-.app-market[data-k="ranking"] .trade-map-pin span { font-size: 12.5px !important; }
-.app-market[data-k="ranking"] .trade-map-pin.top { padding: 5px 13px 5px 5px !important; }
-.app-market[data-k="ranking"] .trade-map-pin.top i { width: 23px !important; height: 23px !important; font-size: 14px !important; }
-.app-market[data-k="ranking"] .trade-map-pin.top b { font-size: 15px !important; }
-.app-market[data-k="ranking"] .trade-map-pin.top span { font-size: 14px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .trade-map-pin { padding: 4px 11px 4px 4px !important; gap: 6px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .trade-map-pin i { width: 20px !important; height: 20px !important; font-size: 12.5px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .trade-map-pin b { font-size: 13px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .trade-map-pin span { font-size: 12.5px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .trade-map-pin.top { padding: 5px 13px 5px 5px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .trade-map-pin.top i { width: 23px !important; height: 23px !important; font-size: 14px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .trade-map-pin.top b { font-size: 15px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .trade-map-pin.top span { font-size: 14px !important; }
 /* 왼쪽 판 글자 · 칸 크기 — 최소 14, 소제목(거래량 랭킹 · 고른 지역 · 통계 정보 · 동별 거래 랭킹) 16.
    고르는 칸은 높이 40 · 글자 16 (입력 칸 규칙), 종류 · 거래 단추 15 */
-.app-market[data-k="ranking"] .tsp-panel :is(.tsp-web-head strong, .tsp-web-picked strong, h3) { font-size: 16px !important; }
-.app-market[data-k="ranking"] .tsp-panel h3 small { font-size: 14px !important; }
-.app-market[data-k="ranking"] .tsp-filter-slot :is(.tsp-select, .tsp-seg, .tsp-search-btn) { height: 40px !important; }
-.app-market[data-k="ranking"] .tsp-filter-slot :is(.tsp-select, .tsp-search-btn) { font-size: 16px !important; }
-.app-market[data-k="ranking"] .tsp-filter-slot .tsp-seg-btn { font-size: 15px !important; }
-.app-market[data-k="ranking"] .tsp-panel :is(.tsp-stat-grid dt, .tsp-rank-avg, .tsp-rank-pct, .tsp-empty, .tsp-note) { font-size: 14px !important; }
-.app-market[data-k="ranking"] .tsp-panel .tsp-stat-grid dd { font-size: 16px !important; }
-.app-market[data-k="ranking"] .tsp-panel :is(.tsp-rank-name, .tsp-rank-count) { font-size: 16px !important; }
-.app-market[data-k="ranking"] .tsp-panel .tsp-rank-badge { font-size: 14px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-panel :is(.tsp-web-head strong, .tsp-web-picked strong, h3) { font-size: 16px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-panel h3 small { font-size: 14px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot :is(.tsp-select, .tsp-seg, .tsp-search-btn) { height: 40px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot :is(.tsp-select, .tsp-search-btn) { font-size: 16px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-filter-slot .tsp-seg-btn { font-size: 15px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-panel :is(.tsp-stat-grid dt, .tsp-rank-avg, .tsp-rank-pct, .tsp-empty, .tsp-note) { font-size: 14px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-panel .tsp-stat-grid dd { font-size: 16px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-panel :is(.tsp-rank-name, .tsp-rank-count) { font-size: 16px !important; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-panel .tsp-rank-badge { font-size: 14px !important; }
 /* 왼쪽 판 — 임장경로의 왼쪽 칸과 같은 자리 · 같은 폭(546) · 화면 밑단까지 */
-.app-market[data-k="ranking"] .tsp-panel {
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-panel {
   position: fixed !important; left: 18px !important; width: 546px !important; max-width: calc(100vw - 36px) !important;
   top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 18px) !important; bottom: 18px !important;
 }
@@ -2377,6 +2377,14 @@ span.cal-day.has { cursor: help; }
 .app-detail .adp-pd-reset.adp-pd-del svg { width: 16px !important; height: 16px !important; }
 /* 저장 칩('저장된 자료 · 10.27 23:54 조회' 등) — 어디서든 굵기 빼고 작게(12) */
 .snap-chip { height: 22px !important; padding: 0 8px !important; font-size: 12px !important; font-weight: 400 !important; }
+
+/* 지역분석 › 지도 탭(예전 거래랭킹) — 고르는 칸 · 제목은 지역분석 것을 쓰니 감추고, 지도는 탭 줄 아래부터 화면 끝까지 */
+.app-market .tsp-in-dong { --dongmap-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px + var(--bar-h, 62px) + 10px + 40px); }
+.app-market .tsp-in-dong :is(.tsp-filter-slot, .tsp-web-head) { display: none !important; }
+.app-market .tsp-in-dong .tsp-stage { top: var(--dongmap-top) !important; }
+.app-market .tsp-in-dong .tsp-panel { top: calc(var(--dongmap-top) + 18px) !important; }
+html:has(#marketView:not([hidden]) .tsp-in-dong), body:has(#marketView:not([hidden]) .tsp-in-dong) { overflow: hidden; overscroll-behavior: none; }
+body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
 </style>
 
 <header class="gnb">
@@ -2662,7 +2670,7 @@ span.cal-day.has { cursor: help; }
   /* ===== 주소 한 곳 — 어느 화면 · 어느 하위 탭을 보는지 주소(#/…)에 적고, 새로고침 · 뒤로가기 때 거기서 되살린다.
      화면마다 따로 적지 않는다: 새 화면 · 새 하위 탭이 생기면 아래 두 표(SUB_TAB_KEYS · readHash/hashOf)에만 더한다 ===== */
   const SUB_TAB_KEYS = {
-    market: ['ranking', 'dong', 'case', 'near', 'same'],
+    market: ['dong', 'case', 'near', 'same'], /* 거래랭킹은 지역분석 › 지도 탭으로 */
     postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'tax'],
     more: ['mypage', 'alerts', 'billing', 'points', 'news', 'support'],
@@ -2677,6 +2685,7 @@ span.cal-day.has { cursor: help; }
     if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
+    if (head === 'market' && m[2] === 'ranking') { try { sessionStorage.setItem('adm.dong.openMap', '1'); } catch (e) { /* 그만 */ } return { route: 'market', sub: 'dong' }; } /* 예전 '거래랭킹' — 지역분석 › 지도 탭으로 합쳤다 */
     if (head === 'bidrate') return { route: 'market', sub: SUB_TAB_KEYS.market.includes(m[2]) ? m[2] : 'near' }; /* 예전 '낙찰가율분석' 주소 */
     if (SUB_TAB_KEYS[head]) return { route: head, sub: SUB_TAB_KEYS[head].includes(m[2]) ? m[2] : SUB_TAB_KEYS[head][0] };
     if (PLAIN_ROUTES.includes(head)) return { route: head };
@@ -2684,7 +2693,7 @@ span.cal-day.has { cursor: help; }
   };
   const H0 = readHash();
   const S = {
-    marketTab: H0.route === 'market' ? H0.sub : 'ranking', /* 시장분석 하위 탭 */
+    marketTab: H0.route === 'market' ? H0.sub : 'dong', /* 시장분석 하위 탭 */
     bidrateTab: H0.route === 'bidrate' ? H0.sub : 'near', /* 낙찰가율분석 하위 탭 */
     /* 낙찰이후 · 자금관리 · 더보기의 하위 탭 */
     pageTab: Object.fromEntries(Object.keys(APP_PAGE_NAMES).map((k) => [k, H0.route === k ? H0.sub : SUB_TAB_KEYS[k][0]])),
@@ -2771,7 +2780,7 @@ span.cal-day.has { cursor: help; }
     ['m0', [['자동등록', 'mega-auto'], ['직접입력', 'mega-manual'], ['입찰달력', '']]],   /* 입찰달력은 선정목록 칸에도 그대로(복사) */
     ['m1', [['선정목록', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
-    ['m3', [['거래랭킹', 'go-market'], ['지역분석', 'go-market'], ['경매지번 분석', 'go-market'], ['인근 매각물건 분석', 'go-market'], ['동일지번 매각물건 분석', 'go-market']]],
+    ['m3', [['지역분석', 'go-market'], ['경매지번 분석', 'go-market'], ['인근 매각물건 분석', 'go-market'], ['동일지번 매각물건 분석', 'go-market']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['가이드', 'go-postwin'], ['인테리어', 'go-postwin'], ['매도·임대', 'go-postwin']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
     ['m5', [['내 정보', 'go-more'], ['자금입출금', 'go-finance'], ['세금신고', 'go-finance'], ['알림', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['공지', 'go-more'], ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
@@ -3739,7 +3748,7 @@ span.cal-day.has { cursor: help; }
   const SUBTABS = {
     /* 물건상세 — 앱 AuctionDetailPage 의 TABS 다섯 칸에서 앱 '손품+현장'을 손품조사 · 임장조사 둘로 나눴다(웹만) */
     /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
-    market: [['ranking', '', '거래랭킹'], ['dong', '', '지역분석'], ['case', '', '경매지번 분석'], ['near', '', '인근 매각물건 분석'], ['same', '', '동일지번 매각물건 분석']],
+    market: [['dong', '', '지역분석'], ['case', '', '경매지번 분석'], ['near', '', '인근 매각물건 분석'], ['same', '', '동일지번 매각물건 분석']],
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '가이드'], ['repair', '', '인테리어'], ['sell', '', '매도·임대']],
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '사업지출'], ['fuelMeal', '', '유류&식대'], ['itemPurchase', '', '물품구매'], ['tax', '', '세금신고']],

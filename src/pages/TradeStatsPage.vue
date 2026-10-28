@@ -41,6 +41,11 @@ const shortWon = (won: number): string => {
 };
 /** 웹 시장분석 › 거래량 랭킹에 띄웠는가 — 웹(shared.entry.js)이 넣어 준다. 분석 도구에서는 false */
 const webEmbed = inject<boolean>('webEmbed', false);
+/** 웹 지역분석 › 지도 탭에 들어갈 때 — 고르는 칸은 지역분석 것을 쓰고, 조회(run)가 늘 때마다 같은 조건으로 받아 그린다.
+ *  지도에서 동을 누르면 pick-dong 으로 지역분석에 알린다 */
+type EmbedFilter = { sido: string; district: string; dong: string; kind: PropertyType; deal: 'sale' | 'rent'; months: number };
+const props = defineProps<{ embed?: EmbedFilter | null; run?: number }>();
+const emit = defineEmits<{ (e: 'pick-dong', dong: string): void }>();
 /** 고르는 칸을 옮겨 넣을 왼쪽 판 자리 — 화면마다 다른 이름을 써서, 같은 화면이 둘 떠도 칸이 한 판에 두 벌 들어가지 않게 */
 const filterSlotId = `tsp-filter-slot-${Math.random().toString(36).slice(2, 8)}`;
 const router = useRouter();
@@ -487,7 +492,7 @@ type Snapshot = {
 };
 const snap = useScreenSnapshot<Snapshot>('adm.ranking.snapshot.v1');
 const saveSnapshot = () => {
-  if (!webEmbed || rows.value.length === 0) return;
+  if (!webEmbed || props.embed || rows.value.length === 0) return;
   void snap.save({
     sido: selectedSido.value, district: selectedDistrict.value, dong: selectedDong.value,
     propertyType: selectedPropertyType.value, period: selectedPeriod.value, dealKind: selectedDealKind.value,
@@ -514,18 +519,40 @@ const restoreSnapshot = async () => {
   if (s.dong) selectedDong.value = s.dong;
 };
 // 동을 바꿔 보면 그것도 남긴다
-watch(selectedDong, (v) => { if (webEmbed && !restoring && rows.value.length > 0) void snap.patch({ dong: v }); });
+watch(selectedDong, (v) => { if (webEmbed && !props.embed && !restoring && rows.value.length > 0) void snap.patch({ dong: v }); });
+
+// ===== 지역분석 › 지도 탭 — 지역분석의 조건으로 받아 그린다(받은 달은 서버에 모아 둔 것을 쓴다) =====
+const syncEmbed = async () => {
+  const e = props.embed;
+  if (!e || !e.sido || !e.district) return;
+  restoring = true;
+  selectedSido.value = e.sido;
+  await nextTick();
+  selectedDistrict.value = e.district;
+  selectedPropertyType.value = e.kind;
+  selectedDealKind.value = e.deal;
+  selectedPeriod.value = e.months || 12;
+  await nextTick();
+  restoring = false;
+  await loadStats();
+  selectedDong.value = e.dong || '';
+};
+watch(() => props.run, (v) => { if (props.embed && v) void syncEmbed(); });
+watch(() => props.embed?.months, (m, old) => { if (props.embed && props.run && m && m !== old) void syncEmbed(); });
+watch(() => props.embed?.dong, (d) => { if (props.embed && (d ?? '') !== selectedDong.value) selectedDong.value = d ?? ''; });
+watch(selectedDong, (v) => { if (props.embed && !restoring) emit('pick-dong', v || ''); });
 
 // 처음에는 아무것도 부르지 않는다 — 지역과 기간을 고르고 검색을 눌러야 받는다 (웹은 저장해 둔 화면부터)
 onMounted(async () => {
   await ensureMap();
+  if (props.embed) { if (props.run) await syncEmbed(); return; }
   await restoreSnapshot();
 });
 </script>
 
 <template>
   <!-- 틀은 분석 도구의 '실거래 분석'과 같은 것을 쓴다 — 같은 자료를 눈으로 보는 화면이다 -->
-  <section class="adm-shell">
+  <section :class="['adm-shell', { 'tsp-in-dong': !!embed }]">
     <header class="adm-top">
       <div class="adm-top-in">
         <button type="button" class="adm-back" aria-label="뒤로" @click="router.push('/admin')">
