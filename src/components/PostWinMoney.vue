@@ -1,13 +1,16 @@
 <script setup lang="ts">
-// 낙찰이후 · 진행절차 옆 박스 탭(웹) — 명도분석(협의 · 강제집행 비용 비교 + 리스크) / 세금분석(필요경비 · 예상 세금).
-// 기본값은 물건 값(입찰가산정에 적어 둔 대출 · 취득세 · 매도가 · 면적)에서 가져오고, 없으면 대략의 시세. 칸마다 고쳐 쓴다.
-// 고친 값은 이 브라우저에 물건마다 기억한다. 세금 셈은 입찰가산정과 같은 profitMath.
+// 낙찰이후 · 진행절차 옆 박스 탭(웹) — 명도분석(협의 · 강제집행 비용 비교 + 리스크) / 세금분석(A안 기준 차익 · 예상 세금).
+// 명도분석 기본값은 물건 값(대출 · 면적)에서, 없으면 대략의 시세. 칸마다 고쳐 쓴다.
+// 세금분석은 입찰가산정 A안의 낙찰가 · 매도가 · 필요경비를 그대로 쓰고 명도비만 명도분석 값으로 바꾼다 — 고치려면 입찰가산정으로 간다.
+// 고른 값은 이 브라우저에 물건마다 기억한다. 세금 셈은 입찰가산정과 같은 profitMath.
 import { computed, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { loadAccountDetail } from '../services/authRepository';
 import type { AuctionDetail } from '../types/auction';
 import FormattedNumberInput from './FormattedNumberInput.vue';
-import { EVICT_BASIS, EVICT_DEFAULT, dealCost, execCost, monthlyCarry, taxOf, transferTaxOf, type EvictInput, type HoldTerm } from '../services/postWinMoney';
+import { EVICT_BASIS, EVICT_DEFAULT, bizIncomeTaxOf, dealCost, execCost, monthlyCarry, planOf, transferTaxOf, vatOf, type EvictInput, type HoldTerm } from '../services/postWinMoney';
 
 const props = defineProps<{ auction: AuctionDetail | null; mode: 'evict' | 'tax' }>();
 
@@ -25,26 +28,9 @@ const seedEvict = (): EvictInput => {
     pyeong: Math.round(a?.buildingAreaPyeong || EVICT_DEFAULT.pyeong),
   };
 };
-const seedTax = () => {
-  const a = props.auction; const c = a?.bidCost;
-  const bid = a?.metrics?.myBidValue || 0;
-  return {
-    bid,
-    sale: a?.expectedSaleValue || 0,
-    acq: c?.acquisitionTaxAmount || Math.round(bid * 0.011),
-    legal: c?.legalCostAmount || 0,
-    interest: c?.interestAmount || 0,
-    midRepay: c?.midRepaymentAmount || 0,
-    brokerage: c?.brokerageAmount || 0,
-    repair: c?.repairCost || 0,
-    arrears: c?.arrearsFee || 0,
-    ad: c?.advertisingCost || 0,
-  };
-};
 // 예전 셈(노무비 평당 · 이사비 한 덩어리)으로 기억된 값은 버리고 새 기준으로 — 칸이 바뀌었다
 const savedEv = (read().ev as Record<string, unknown> | undefined);
 const ev = ref<EvictInput>({ ...seedEvict(), ...(savedEv && !('laborPerPyeong' in savedEv) ? savedEv : {}) });
-const tx = ref({ ...seedTax(), ...((read().tx as object) ?? {}) });
 /** 세금분석의 명도비 — 명도분석의 어느 쪽으로 넣을지 */
 const evictPick = ref<'deal' | 'exec'>((read().pick as 'deal' | 'exec') || 'deal');
 const who = ref<'biz' | 'person'>((read().who as 'biz' | 'person') || 'biz');
@@ -57,10 +43,10 @@ onMounted(async () => {
   else if (d.bizType === 'biz') who.value = 'biz';
 });
 const term = ref<HoldTerm>((read().term as HoldTerm) || 'lt1');
-watch([ev, tx, evictPick, who, term], () => {
-  try { localStorage.setItem(key(), JSON.stringify({ ev: ev.value, tx: tx.value, pick: evictPick.value, who: who.value, term: term.value })); } catch { /* 그만 */ }
+watch([ev, evictPick, who, term], () => {
+  try { localStorage.setItem(key(), JSON.stringify({ ev: ev.value, pick: evictPick.value, who: who.value, term: term.value })); } catch { /* 그만 */ }
 }, { deep: true });
-const reset = () => { ev.value = seedEvict(); tx.value = seedTax(); };
+const reset = () => { ev.value = seedEvict(); };
 
 // ===== 명도분석 =====
 const deal = computed(() => dealCost(ev.value));
@@ -83,22 +69,33 @@ const RISKS: Array<[string, string]> = [
 ];
 
 // ===== 세금분석 =====
+const router = useRouter();
+const store = useAuctionStore();
+/** 입찰가산정으로 — 물건상세 수익분석 탭 */
+const goPlan = () => { if (props.auction?.id) router.push({ path: `/auctions/${props.auction.id}`, query: { tab: 'profit' } }); };
+const plan = computed(() => planOf(props.auction));
 const evictCost = computed(() => (evictPick.value === 'deal' ? deal.value.total : exec.value.total));
-const TX_FIELDS: Array<[string, string]> = [
-  ['acq', '취득세'], ['legal', '법무비'], ['interest', '대출이자'], ['midRepay', '중도상환수수료'],
-  ['brokerage', '매도 중개수수료'], ['repair', '수리 · 인테리어'], ['arrears', '미납 관리비'], ['ad', '광고비'],
-];
-const costLines = computed(() => [
-  ...TX_FIELDS.map(([k, label]) => ({ label, amount: Number((tx.value as Record<string, number>)[k]) || 0 })),
-  { label: `명도비(${evictPick.value === 'deal' ? '협의' : '강제집행'})`, amount: evictCost.value },
-]);
-const biz = computed(() => taxOf({ bid: tx.value.bid, sale: tx.value.sale, costs: costLines.value }));
+const evictLabel = computed(() => (evictPick.value === 'deal' ? '협의' : '강제집행'));
+const costTotal = computed(() => plan.value.acq + plan.value.others + evictCost.value);
+const gain = computed(() => plan.value.sale - plan.value.bid - costTotal.value);
+const vat = computed(() => vatOf(props.auction?.propertyType ?? '', props.auction?.buildingAreaM2 ?? 0));
+// 매출 · 다른 차익 — 매도 기록(매도일 · 매도가)에서 해마다 셈한다. 없으면 0
+const thisYear = new Date().getFullYear();
+const soldIn = (y: number) => store.auctions.filter((x) => x.id !== props.auction?.id && String(x.sellDate ?? '').startsWith(String(y)));
+const salesOf = (y: number) => soldIn(y).reduce((s, x) => s + (x.expectedSaleValue || 0), 0);
+const lastSales = computed(() => salesOf(thisYear - 1));
+const thisSales = computed(() => salesOf(thisYear));
+const otherGain = computed(() => soldIn(thisYear).reduce((s, x) => {
+  const p = planOf(x);
+  return s + Math.max(0, p.sale - p.bid - p.acq - p.others - (x.bidCost?.evictionCost || 0));
+}, 0));
+const biz = computed(() => bizIncomeTaxOf(gain.value, otherGain.value));
 // 개인 양도세는 대출이자 · 중도상환수수료를 경비로 넣지 못한다 — 그만큼 차익에 되돌린다
-const personGain = computed(() => biz.value.gain + (Number(tx.value.interest) || 0) + (Number(tx.value.midRepay) || 0));
+const personGain = computed(() => gain.value + plan.value.interest);
 const person = computed(() => transferTaxOf(personGain.value, term.value));
-const result = computed(() => (who.value === 'biz'
-  ? { label: '사업소득세(매매사업자)', rate: biz.value.ratePct, tax: biz.value.incomeTax, local: biz.value.localTax, after: biz.value.afterTax }
-  : { label: '양도소득세(개인)', rate: person.value.ratePct, tax: person.value.incomeTax, local: person.value.localTax, after: person.value.afterTax }));
+const res = computed(() => (who.value === 'biz' ? biz.value : person.value));
+const taxSum = computed(() => res.value.incomeTax + res.value.localTax);
+const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.value) * 1000) / 10 : 0));
 </script>
 
 <template>
@@ -143,59 +140,64 @@ const result = computed(() => (who.value === 'biz'
 
     <!-- ===== 세금분석 ===== -->
     <template v-else>
-      <div class="pwm-who">
-        <button type="button" :class="{ on: who === 'biz' }" @click="who = 'biz'">매매사업자</button>
-        <button type="button" :class="{ on: who === 'person' }" @click="who = 'person'">개인양도세</button>
-        <template v-if="who === 'person'">
-          <span class="pwm-sep" />
-          <button type="button" :class="{ on: term === 'lt1' }" @click="term = 'lt1'">1년미만</button>
-          <button type="button" :class="{ on: term === 'lt2' }" @click="term = 'lt2'">2년미만</button>
-          <button type="button" :class="{ on: term === 'ge2' }" @click="term = 'ge2'">2년이상</button>
-        </template>
+      <div class="pwm-taxbar">
+        <div class="pwm-seg">
+          <button type="button" :class="{ on: who === 'biz' }" @click="who = 'biz'">매매사업자</button>
+          <button type="button" :class="{ on: who === 'person' }" @click="who = 'person'">개인</button>
+        </div>
+        <div class="pwm-seg">
+          <span>명도비</span>
+          <button type="button" :class="{ on: evictPick === 'deal' }" @click="evictPick = 'deal'">협의 {{ man(deal.total) }}</button>
+          <button type="button" :class="{ on: evictPick === 'exec' }" @click="evictPick = 'exec'">강제집행 {{ man(exec.total) }}</button>
+        </div>
+        <button type="button" class="pwm-go" @click="goPlan">입찰가산정 A안 고치기 ›</button>
       </div>
 
-      <div class="pwm-sum">
-        <div><small>{{ who === 'biz' ? '매매차익' : '양도차익(이자 · 중도상환 제외)' }}</small><b :class="{ neg: (who === 'biz' ? biz.gain : personGain) < 0 }">{{ won(who === 'biz' ? biz.gain : personGain) }}</b></div>
-        <div><small>{{ result.label }}{{ result.rate ? ` ${result.rate}%` : '' }}</small><b>{{ won(result.tax) }}</b></div>
-        <div><small>지방소득세</small><b>{{ won(result.local) }}</b></div>
-        <div class="main"><small>세후 남는 돈</small><b :class="{ neg: result.after < 0 }">{{ won(result.after) }}</b></div>
-      </div>
+      <div class="pwm-tax">
+        <article class="pwm-card">
+          <h3>비용 및 차익</h3>
+          <dl>
+            <div><dt>낙찰가</dt><dd>{{ won(plan.bid) }}</dd></div>
+            <div><dt>매도가</dt><dd>{{ won(plan.sale) }}</dd></div>
+            <div><dt>취득세</dt><dd>{{ won(plan.acq) }}<small>낙찰가의 {{ plan.acqPct }}%</small></dd></div>
+            <div><dt>필요경비</dt><dd>{{ won(plan.others + evictCost) }}<small>입찰가산정 {{ won(plan.others) }} + 명도비({{ evictLabel }}) {{ won(evictCost) }}</small></dd></div>
+            <div class="key"><dt>양도차익</dt><dd :class="{ neg: gain < 0 }">{{ won(gain) }}<small>매도가 − 낙찰가 − 취득세 − 필요경비</small></dd></div>
+            <div><dt>부가세 대상</dt><dd><span :class="['pwm-tag', { on: who === 'biz' && vat.taxable }]">{{ who !== 'biz' ? '해당없음' : vat.taxable ? '과세' : '면세' }}</span><small>{{ who !== 'biz' ? '개인 양도는 부가세가 없습니다' : vat.why }}</small></dd></div>
+          </dl>
+        </article>
 
-      <div class="pwm-cols">
-        <div>
-          <h3 class="pwm-h">사고파는 값</h3>
-          <div class="pwm-fields one">
-            <label><span>낙찰가</span><span class="pwm-in"><FormattedNumberInput v-model="tx.bid" live-group /><em>원</em></span></label>
-            <label><span>예상 매도가</span><span class="pwm-in"><FormattedNumberInput v-model="tx.sale" live-group /><em>원</em></span></label>
-          </div>
-          <h3 class="pwm-h">명도비</h3>
-          <div class="pwm-who sm">
-            <button type="button" :class="{ on: evictPick === 'deal' }" @click="evictPick = 'deal'">협의 {{ man(deal.total) }}</button>
-            <button type="button" :class="{ on: evictPick === 'exec' }" @click="evictPick = 'exec'">강제집행 {{ man(exec.total) }}</button>
-          </div>
-        </div>
-        <div>
-          <h3 class="pwm-h">필요경비 <em class="pwm-sub">합계 {{ won(biz.costTotal) }}</em></h3>
-          <div class="pwm-fields one">
-            <label v-for="[k, label] in TX_FIELDS" :key="k"><span>{{ label }}</span><span class="pwm-in"><FormattedNumberInput v-model="(tx as Record<string, number>)[k]" live-group /><em>원</em></span></label>
-          </div>
-        </div>
+        <article class="pwm-card">
+          <h3>{{ who === 'biz' ? '종합소득세(예상)' : '양도소득세(예상)' }}</h3>
+          <dl v-if="who === 'biz'">
+            <div><dt>전년도 매출</dt><dd>{{ won(lastSales) }}<small>{{ lastSales >= 300_000_000 ? '3억 이상 — 복식부기 의무' : '3억 미만 — 간편장부 대상' }}</small></dd></div>
+            <div><dt>금년도 누적매출</dt><dd>{{ won(thisSales) }}<small>올해 다른 매매차익 {{ won(otherGain) }}</small></dd></div>
+            <div><dt>적용 세율</dt><dd>{{ biz.ratePct }}%<small>과세표준 {{ won(biz.base) }} — 올해 차익 합산</small></dd></div>
+            <div class="key"><dt>예상 종합소득세</dt><dd>{{ won(taxSum) }}<small>실효세율 {{ effPct }}% · 지방세 {{ won(biz.localTax) }} 포함</small></dd></div>
+            <div><dt>세후 남는 돈</dt><dd :class="{ neg: biz.afterTax < 0 }">{{ won(biz.afterTax) }}</dd></div>
+          </dl>
+          <dl v-else>
+            <div><dt>보유 기간</dt><dd><span class="pwm-seg sm">
+              <button type="button" :class="{ on: term === 'lt1' }" @click="term = 'lt1'">1년미만</button>
+              <button type="button" :class="{ on: term === 'lt2' }" @click="term = 'lt2'">2년미만</button>
+              <button type="button" :class="{ on: term === 'ge2' }" @click="term = 'ge2'">2년이상</button>
+            </span></dd></div>
+            <div><dt>양도차익</dt><dd>{{ won(personGain) }}<small>대출이자 · 중도상환 {{ won(plan.interest) }}은 경비로 못 넣음</small></dd></div>
+            <div><dt>적용 세율</dt><dd>{{ person.ratePct }}%<small>과세표준 {{ won(person.base) }} — 기본공제 250만원</small></dd></div>
+            <div class="key"><dt>예상 양도소득세</dt><dd>{{ won(taxSum) }}<small>실효세율 {{ effPct }}% · 지방세 {{ won(person.localTax) }} 포함</small></dd></div>
+            <div><dt>세후 남는 돈</dt><dd :class="{ neg: person.afterTax < 0 }">{{ won(person.afterTax) }}</dd></div>
+          </dl>
+          <p class="pwm-memo" v-if="who === 'biz'">비교과세 — 조정대상지역 주택 · 비사업용 토지 등은 양도세 세율로 셈한 금액과 비교해 큰 쪽을 냅니다(소득세법 제64조). 매도 뒤 2개월 안에 매매차익 예정신고, 이듬해 5월 종합소득세로 합산합니다.</p>
+          <p class="pwm-memo" v-else>1주택 비과세 · 다주택 중과 · 장기보유특별공제는 셈하지 않은 대략 값입니다 — 세무사에게 확인하세요.</p>
+        </article>
       </div>
-      <ul class="pwm-notes">
-        <li>매매사업자는 팔 때마다 매매차익 예정신고(잔금 달 말일부터 2개월 안), 이듬해 5월에 종합소득세로 합산합니다.</li>
-        <li>조정대상지역 주택 등은 비교과세로 양도세 세율과 비교해 큰 쪽을 냅니다 — 해당하는지 세무사에게 확인하세요.</li>
-        <li>개인 양도세는 기본공제 250만 원만 넣은 대략 값입니다(1주택 비과세 · 중과 · 장기보유특별공제는 셈하지 않음). 개인은 대출이자를 경비로 넣지 못합니다.</li>
-        <li>전용 85㎡ 넘는 주택 · 상가는 건물분 부가세가 따로 붙습니다.</li>
-      </ul>
-      <button type="button" class="pwm-reset" @click="reset">초기화</button>
     </template>
   </section>
 </template>
 
 <style scoped>
-.pwm { color-scheme: light; background: #fff; border-radius: 10px; padding: 18px 22px 22px; color: #111827; }
+.pwm { color-scheme: light; background: #fff; border-radius: 10px; padding: 24px 32px 30px; color: #111827; }
 .pwm-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
-.pwm-nav > div { display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; border: 1px solid #e3e8f0; border-radius: 10px; }
+.pwm-nav > div { display: flex; flex-direction: column; gap: 6px; padding: 16px 22px; border: 1px solid #e3e8f0; border-radius: 10px; }
 .pwm-nav small { font-size: 14px; color: #6b7280; }
 .pwm-nav b { font-size: 18px; font-weight: 800; }
 .pwm-nav em { font-style: normal; font-size: 14px; color: #6b7280; }
@@ -204,7 +206,7 @@ const result = computed(() => (who.value === 'biz'
 .pwm-nav .gap { border-color: #2b6df3; background: #f2f6fe; }
 .pwm-nav .gap b { color: #1d4ed8; }
 .pwm-cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.pwm-case { border: 1px solid #e3e8f0; border-radius: 10px; padding: 14px 16px; }
+.pwm-case { border: 1px solid #e3e8f0; border-radius: 10px; padding: 18px 24px 20px; }
 .pwm-case.deal { border-top: 3px solid #4f9a68; }
 .pwm-case.exec { border-top: 3px solid #c95b5b; }
 .pwm-case h3 { margin: 0 0 10px; font-size: 16px; font-weight: 800; }
@@ -224,27 +226,35 @@ const result = computed(() => (who.value === 'biz'
 .pwm-tbl tr:first-child :is(th, td) { border-top: 0; }
 .pwm-tbl th { width: 200px; background: #fdf4f4; font-weight: 700; white-space: nowrap; }
 .pwm-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 14px; }
-.pwm-fields.one { grid-template-columns: 1fr; }
 .pwm-fields label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: #4b5563; }
-.pwm-fields.one label { flex-direction: row; align-items: center; justify-content: space-between; }
 .pwm-in { display: inline-flex; align-items: center; gap: 6px; }
 .pwm-in :deep(input) { width: 100%; min-width: 0; height: 34px; padding: 0 10px; border: 1px solid #d0d5dd; border-radius: 6px; font-size: 14px; color: #111827; background: #fff; box-sizing: border-box; }
-.pwm-fields.one .pwm-in { width: 220px; }
 .pwm-in em { font-style: normal; font-size: 14px; color: #6b7280; white-space: nowrap; }
 .pwm-basis { margin: 12px 0 0; padding-left: 18px; font-size: 14px; color: #4b5563; line-height: 1.7; }
 .pwm-note { margin: 10px 0 0; font-size: 14px; color: #9ca3af; }
 .pwm-reset { margin-left: auto; height: 30px; padding: 0 12px; border: 1px solid #d0d5dd; border-radius: 6px; background: #fff; color: #374151; font-size: 14px; cursor: pointer; }
-.pwm-who { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.pwm-who button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; cursor: pointer; }
-.pwm-who button.on { border-color: #2b6df3; background: #2b6df3; color: #fff; }
-.pwm-sep { width: 1px; height: 20px; background: #e3e8f0; margin: 0 4px; }
-.pwm-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 14px 0 6px; }
-.pwm-sum > div { border: 1px solid #e3e8f0; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
-.pwm-sum small { font-size: 14px; color: #6b7280; }
-.pwm-sum b { font-size: 18px; font-weight: 800; }
-.pwm-sum .main { border-color: #2b6df3; background: #f2f6fe; }
-.pwm-sum b.neg, .pwm-sum .neg { color: #b44545; }
-.pwm-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.pwm-notes { margin: 18px 0 12px; padding-left: 18px; font-size: 14px; color: #6b7280; line-height: 1.7; }
-@media (max-width: 1100px) { .pwm-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pwm-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.pwm-taxbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-bottom: 18px; }
+.pwm-seg { display: inline-flex; align-items: center; gap: 6px; }
+.pwm-seg > span { font-size: 14px; color: #6b7280; margin-right: 2px; }
+.pwm-seg button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; cursor: pointer; }
+.pwm-seg button.on { border-color: #2b6df3; background: #2b6df3; color: #fff; }
+.pwm-seg.sm button { height: 28px; padding: 0 10px; }
+.pwm-go { margin-left: auto; height: 32px; padding: 0 14px; border: 1px solid #2b6df3; border-radius: 6px; background: #fff; color: #1d4ed8; font-size: 14px; cursor: pointer; }
+.pwm-go:hover { background: #f2f6fe; }
+.pwm-tax { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+.pwm-card { border: 1px solid #e3e8f0; border-radius: 10px; padding: 20px 26px 22px; }
+.pwm-card h3 { margin: 0 0 6px; font-size: 16px; font-weight: 800; }
+.pwm-card dl { margin: 0; }
+.pwm-card dl > div { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 14px 4px; border-bottom: 1px solid #eef1f6; }
+.pwm-card dl > div:last-child { border-bottom: 0; }
+.pwm-card dt { font-size: 14px; font-weight: 700; color: #374151; white-space: nowrap; }
+.pwm-card dd { margin: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 15px; font-weight: 700; color: #111827; text-align: right; }
+.pwm-card dd small { font-size: 12px; font-weight: 400; color: #6b7280; }
+.pwm-card .key dt { font-size: 15px; color: #111827; }
+.pwm-card .key dd { font-size: 18px; font-weight: 800; color: #1d4ed8; }
+.pwm-card dd.neg { color: #b44545; }
+.pwm-tag { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #f1f3f6; color: #4b5563; font-size: 13px; font-weight: 700; }
+.pwm-tag.on { background: #fdecec; color: #b44545; }
+.pwm-memo { margin: 12px 0 0; padding: 12px 16px; border-radius: 8px; background: #f7f8fa; font-size: 13px; color: #4b5563; line-height: 1.6; }
+@media (max-width: 1100px) { .pwm-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pwm-tax { grid-template-columns: 1fr; } }
 </style>

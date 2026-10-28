@@ -249,6 +249,8 @@ const formKeys = ref<FormKey[] | null>(null);
 // 진행절차 안 박스 탭 — 새로고침해도 보던 탭 그대로(이 탭 세션)
 type FlowSub = 'steps' | 'evict' | 'tax';
 const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['tax', '세금분석']];
+/** 박스 탭 옆 한 줄 — 어느 사건을 무엇으로 보는지 */
+const FLOW_CAP: Record<FlowSub, string> = { steps: '사건을 기록 관리합니다', evict: '사건의 명도 비용을 비교합니다', tax: '사건의 예상 세금을 셈합니다' };
 const flowSub = ref<FlowSub>((() => { try { const v = sessionStorage.getItem('pw.flow.sub'); return v === 'evict' || v === 'tax' ? v : 'steps'; } catch { return 'steps'; } })());
 watch(flowSub, (v) => { try { sessionStorage.setItem('pw.flow.sub', v); } catch { /* 그만 */ } });
 /** 처음 보일 서식 — 내용증명 2차 카드에서 열면 2차부터 */
@@ -365,8 +367,18 @@ const dayGroups = computed<CheckGroup[]>(() => {
   const t = activeTab.value;
   if (webEmbed && DETAIL_STEPS[t]) return detailCards(t);
   if (DETAIL_OF[t]) return DETAIL_OF[t] as CheckGroup[];
+  // 낙찰당일 가이드 — 절차상세 낙찰당일과 같은 내용을 체크 없이 읽기만(명도협상 원칙은 명도 가이드로)
+  if (t === 'gwin' && webEmbed) return dayBook.groups.value.filter((g) => !GUIDE_DAY_KEYS.has(g.key)).map((g) => ({ ...plainTone(g), noCheck: true }));
   if (t === 'gwin') return dayBook.groups.value.filter((g) => GUIDE_DAY_KEYS.has(g.key));
-  if (t === 'gevict') return [...evictBook.groups.value.filter((g) => GUIDE_EVICT_KEYS.has(g.key)).map((g) => (webEmbed ? plainTone(g) : g)), ...(webEmbed ? GUIDE_EVICT_DOCS : [])];
+  if (t === 'gevict') {
+    const list = evictBook.groups.value.filter((g) => GUIDE_EVICT_KEYS.has(g.key));
+    if (!webEmbed) return list;
+    // 명도협상 원칙(낙찰당일 표)을 명도 협상 방법 바로 앞에
+    const rule = dayBook.groups.value.filter((g) => GUIDE_DAY_KEYS.has(g.key));
+    const at = list.findIndex((g) => g.key === 'ev.deal');
+    const merged = at < 0 ? [...list, ...rule] : [...list.slice(0, at), ...rule, ...list.slice(at)];
+    return [...merged.map(plainTone), ...GUIDE_EVICT_DOCS];
+  }
   if (t === 'evict') return webEmbed ? evictBook.groups.value.filter((g) => !GUIDE_EVICT_KEYS.has(g.key)) : dealAfterFirst(evictBook.groups.value.filter((g) => !g.webOnly));
   if (t === 'win' && webEmbed) return dayBook.groups.value.filter((g) => !GUIDE_DAY_KEYS.has(g.key));
   // 앱은 웹 전용 상자(절차진행 큰일의 체크리스트)를 넣지 않는다
@@ -883,6 +895,7 @@ const toggleSection = (key: string) => {
       <!-- 웹 진행절차 — 박스 탭 셋: 진행절차(일정 · 해야 할 일) · 명도분석(비용 · 리스크) · 세금분석 -->
       <nav v-if="activeTab === 'flow'" class="pw-chaptabs" role="tablist">
         <button v-for="[k, label] in FLOW_SUBS" :key="k" type="button" role="tab" :aria-selected="flowSub === k" :class="{ on: flowSub === k }" @click="flowSub = k">{{ label }}</button>
+        <span v-if="picked?.caseNumber" class="pw-flow-cap">경매 <b>{{ picked.caseNumber }}</b> {{ FLOW_CAP[flowSub] }}</span>
       </nav>
       <PostWinMoney v-if="activeTab === 'flow' && flowSub !== 'steps'" :key="`${picked?.id}-${flowSub}`" :auction="picked" :mode="flowSub === 'evict' ? 'evict' : 'tax'" />
       <PostWinTimeline

@@ -128,3 +128,42 @@ export const transferTaxOf = (gain: number, term: HoldTerm) => {
   const localTax = incomeTax / 10;
   return { base, ratePct, incomeTax, localTax, afterTax: gain - incomeTax - localTax };
 };
+
+/** 입찰가산정 A안에서 세금분석이 쓰는 값 — 낙찰가 · 매도가 · 취득세 · 그 밖의 필요경비(명도비 뺌).
+ *  명도비는 명도분석 값으로 바꿔 넣으므로 여기서 뺀다. */
+export interface PlanSource {
+  metrics?: { myBidValue?: number; minimumBidValue?: number };
+  expectedSaleValue?: number;
+  bidCost?: Partial<{
+    acquisitionTaxAmount: number; acquisitionTaxRate: number; legalCostAmount: number; interestAmount: number;
+    midRepaymentAmount: number; brokerageAmount: number; arrearsFee: number; repairCost: number; advertisingCost: number;
+  }>;
+}
+export const planOf = (a: PlanSource | null | undefined) => {
+  const c = a?.bidCost ?? {};
+  const bid = a?.metrics?.myBidValue || a?.metrics?.minimumBidValue || 0;
+  const acq = c.acquisitionTaxAmount || Math.round(bid * 0.011);
+  const acqPct = c.acquisitionTaxRate || (bid ? Math.round((acq / bid) * 1000) / 10 : 1.1);
+  const interest = (c.interestAmount || 0) + (c.midRepaymentAmount || 0);
+  const others = (c.legalCostAmount || 0) + interest + (c.brokerageAmount || 0)
+    + (c.arrearsFee || 0) + (c.repairCost || 0) + (c.advertisingCost || 0);
+  return { bid, sale: a?.expectedSaleValue || 0, acq, acqPct, others, interest };
+};
+
+/** 건물분 부가세 — 매매사업자가 전용 85㎡ 넘는 주택이나 주택 아닌 건물(상가 · 오피스텔 등)을 팔 때 */
+export const vatOf = (propertyType: string, areaM2: number) => {
+  const housing = /아파트|다세대|연립|빌라|단독|다가구|주택/.test(propertyType || '');
+  if (!housing) return { taxable: true, why: `${propertyType || '주택 아닌 건물'} — 건물분 부가세 10%` };
+  if (areaM2 > 85) return { taxable: true, why: `전용 ${Math.round(areaM2 * 10) / 10}㎡ 주택(85㎡ 초과) — 건물분 부가세 10%` };
+  return { taxable: false, why: `전용 ${areaM2 ? `${Math.round(areaM2 * 10) / 10}㎡` : '85㎡ 이하'} 국민주택 규모 — 면세` };
+};
+
+/** 종합소득세 — 올해 다른 매매차익에 이 물건 차익을 더한 과세표준으로 셈하고, 이 물건 몫(늘어난 만큼)만 돌려준다 */
+export const bizIncomeTaxOf = (gain: number, otherGain: number) => {
+  const before = taxChainOf(Math.max(0, otherGain));
+  const total = Math.max(0, otherGain + gain);
+  const after = taxChainOf(total);
+  const incomeTax = Math.max(0, after.incomeTax - before.incomeTax);
+  const localTax = Math.max(0, after.localTax - before.localTax);
+  return { base: total, ratePct: after.ratePct, incomeTax, localTax, afterTax: gain - incomeTax - localTax };
+};
