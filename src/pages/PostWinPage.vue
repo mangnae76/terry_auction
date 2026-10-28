@@ -738,15 +738,6 @@ const toggleSection = (key: string) => {
       <!-- 명도 탭은 경로 오른쪽에 '명도 가이드' 단추 하나 — 누르면 명도절차 · 명도 협상 방법을 한 팝업에 -->
       <div v-if="webEmbed" class="pw-crumbrow">
         <div class="pw-crumb" data-crumb-slot />
-        <span v-if="chaps.length && !editing" class="pw-chaps">
-          <button
-            v-for="[k, label] in chaps"
-            :key="k"
-            type="button"
-            :class="{ on: activeTab === k }"
-            @click="activeTab = k"
-          >{{ label }}</button>
-        </span>
       </div>
       <!-- 어느 물건의 일인지 — 탭 밑에 카드로 붙박아 둔다. 누르면 목록이 펼쳐진다 -->
       <div class="pw-objwrap">
@@ -817,6 +808,18 @@ const toggleSection = (key: string) => {
     </div>
 
     <div :key="activeTab" :class="['pw-body', `tab-${popOpen ? popView : viewTab}`, { app: !webEmbed }]">
+      <!-- 웹 — 절차상세 · 가이드의 장 탭(박스형, 내용 바로 위) -->
+      <nav v-if="chaps.length && !editing" class="pw-chaptabs" role="tablist">
+        <button
+          v-for="[k, label] in chaps"
+          :key="k"
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === k"
+          :class="{ on: activeTab === k }"
+          @click="activeTab = k"
+        >{{ label }}</button>
+      </nav>
       <!-- 낙찰당일 — '낙찰 후 진행 순서'를 탭 맨 위 상자로 펼쳐 둔다 (앱 · 웹) -->
       <!-- 웹은 가이드 › 낙찰당일 장에 둔다 -->
       <section v-if="activeTab === (webEmbed ? 'gwin' : 'win')" :class="['pw-card', 'pw-flowcard', { web: webEmbed }]">
@@ -2042,10 +2045,6 @@ const toggleSection = (key: string) => {
 .pw-formbtn:hover { background: #e3ecfc; }
 .pw-wordlink { color: #2b6df3; text-decoration: underline; text-underline-offset: 2px; }
 .pw-wordlink:hover { color: #1d4ed8; }
-.pw-chaps { display: inline-flex; gap: 6px; flex: none; }
-.pw-chaps button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; }
-.pw-chaps button:hover { color: #111827; }
-.pw-chaps button.on { border-color: #1f2a44; background: #1f2a44; color: #fff; }
 /* 절차진행 바로가기로 온 상자 — 잠깐 파란 테 */
 .pw-card.pw-flash { box-shadow: 0 0 0 2px #2b6df3; transition: box-shadow .3s; }
 </style>

@@ -2240,6 +2240,39 @@ html, body { overflow-x: clip; }
   .pop.right { right: auto; left: 0; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
+
+/* ===== 박스형 탭 (공통 모듈) — 2단 · 3단 탭은 모두 이 꼴 =====
+   탭 줄 밑에 진한 선 한 줄, 안 고른 탭은 옅은 상자, 고른 탭은 위로 4px 올라온 흰(바탕색) 상자 — 위 두 모서리만 둥글고 밑선을 덮어 아래 내용과 이어진다.
+   쓰는 곳: 하위 탭 줄(.subtabs) · 물건등록 탭(.reg-tabbar) · 시장분석 지역분석 탭(.adm-view-tabs) · 낙찰이후 장 탭(.pw-chaptabs).
+   고른 탭의 바탕은 그 아래 내용의 바탕과 같아야 한다 — 줄마다 --boxtab-on 으로 정한다 */
+:root { --boxtab-line: #a9b4c6; --boxtab-off: #d8dee8; --boxtab-off-hover: #ccd4e0; }
+:root[data-theme="dark"] { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; } }
+.subtabs { --boxtab-on: var(--band); border-bottom-color: var(--boxtab-line); }
+.reg-tabbar { --boxtab-on: var(--surface); }
+.app-market .adm-view-tabs, .pw-chaptabs { --boxtab-on: var(--bg); }
+:is(.subtabs-in, .reg-tabbar, .app-market .adm-view-tabs, .pw-chaptabs) { display: flex !important; align-items: flex-end !important; gap: 4px !important; padding-left: 0 !important; }
+:is(.subtab, .reg-tab, .app-market .adm-view-tabs > button, .pw-chaptabs > button) {
+  position: relative; align-self: flex-end !important; display: inline-flex; align-items: center; gap: 6px;
+  height: 34px !important; padding: 0 18px !important; margin: 0 !important;
+  border: 1px solid transparent !important; border-bottom: 0 !important; border-radius: 8px 8px 0 0 !important;
+  background: var(--boxtab-off) !important; color: var(--muted) !important; font-size: 15px !important; font-weight: 600 !important; white-space: nowrap;
+  transition: background .12s, color .12s;
+}
+:is(.subtab, .reg-tab, .app-market .adm-view-tabs > button, .pw-chaptabs > button):hover { background: var(--boxtab-off-hover) !important; color: var(--text) !important; }
+:is(.subtab, .reg-tab, .app-market .adm-view-tabs > button, .pw-chaptabs > button).on {
+  z-index: 2; height: 38px !important; margin-bottom: -1px !important;
+  border-color: var(--boxtab-line) !important; background: var(--boxtab-on) !important; color: var(--blue) !important; font-weight: 800 !important;
+}
+:is(.subtab, .reg-tab, .app-market .adm-view-tabs > button, .pw-chaptabs > button)::after { display: none !important; }
+/* 탭 줄 밑선은 진하게 */
+.reg-tabbar::after, .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top::after { background: var(--boxtab-line) !important; }
+.app-market .adm-tabs-top { overflow: visible; }
+/* 낙찰이후 장 탭 — 내용 바로 위, 밑선은 내용 폭만큼 */
+.pw-chaptabs { margin: 4px 0 4px; border-bottom: 1px solid var(--boxtab-line); overflow-x: auto; scrollbar-width: none; }
+.pw-chaptabs::-webkit-scrollbar { display: none; }
+/* 좁은 화면 — 줄바꿈 대신 가로로 밀어 본다 */
+@media (max-width: 1100px) { :is(.subtab, .reg-tab, .app-market .adm-view-tabs > button, .pw-chaptabs > button) { padding: 0 12px !important; } }
 </style>
 
 <header class="gnb">
