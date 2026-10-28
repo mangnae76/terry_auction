@@ -143,10 +143,10 @@ const fetchAutoUnits = async () => {
 watch([stats, kind], () => { void fetchAutoUnits(); });
 /** 총 세대수 칸의 흐린 글 — 받은 값 · 0(없음) · 못 받음 · 받는 중 */
 const unitsHint = (sigungu: string, umdNm: string) => {
-  if (kind.value !== 'villa') return { text: '입력', tip: '' };
+  if (kind.value !== 'villa') return { text: '-', tip: '건축물대장 세대수는 연립·다세대만 셉니다' };
   const v = autoUnits.value[rowKey(sigungu, umdNm)];
   if (v === undefined) return { text: '받는 중', tip: '건축물대장에서 세대수를 받는 중' };
-  if (v < 0) return { text: '못 받음', tip: '건축물대장 조회 실패(하루 한도 · 오류) — 직접 입력하거나 내일 다시 조회' };
+  if (v < 0) return { text: '못 받음', tip: '건축물대장 조회 실패(하루 한도 · 오류) — 내일 다시 조회해 주세요' };
   if (v === 0) return { text: '0', tip: '건축물대장에 연립·다세대가 없음(아파트만 있거나 공동주택이 없는 동)' };
   return { text: v.toLocaleString('ko-KR'), tip: '건축물대장 연립·다세대 세대수 합 — 적으면 그 값이 우선' };
 };
@@ -160,7 +160,7 @@ const rows = computed<Row[]>(() => stats.value
   .filter((r) => !dongFilter.value || r.umdNm === dongFilter.value)
   .map((s) => {
   const m = manualOf(s.sigungu, s.umdNm);
-  const units = m.units ?? Math.max(0, autoUnits.value[rowKey(s.sigungu, s.umdNm)] ?? 0);
+  const units = Math.max(0, autoUnits.value[rowKey(s.sigungu, s.umdNm)] ?? 0); // 건축물대장 자동값만
   const listings = m.listings ?? 0;
   const monthly = s.count / Math.max(1, months.value);
   // 회전율·소화율은 1년치로 환산한다 — 24개월을 받아도 뜻이 같아야
@@ -553,14 +553,15 @@ const downloadCsv = () => {
         <table :class="['adm-table', { even: embedded }]">
           <thead>
             <tr class="grp">
-              <th :colspan="embedded ? 1 : 2">{{ embedded ? '구분' : '주소지 정보' }}</th>
-              <th colspan="2" class="in">수치입력</th>
+              <!-- 총 세대수는 건축물대장 자동값이라 구분 쪽으로 — 손으로 적는 칸(수치입력)은 총 매물수 하나 -->
+              <th :colspan="embedded ? 2 : 3">{{ embedded ? '구분' : '주소지 정보' }}</th>
+              <th class="in">수치입력</th>
               <th colspan="8">지표결과</th>
             </tr>
             <tr>
               <th v-if="!embedded">소속 구</th>
               <th>{{ embedded ? '동/지역' : '읍면동' }}</th>
-              <th class="in">총 세대수</th>
+              <th>총 세대수</th>
               <th class="in">총 매물수</th>
               <th>{{ webEmbed ? '총 거래건수' : '총 거래량' }}<small>(최근 {{ months }}개월)</small></th>
               <th>평균가<small>(최근 {{ months }}개월)</small></th>
@@ -576,17 +577,8 @@ const downloadCsv = () => {
             <tr v-for="r in rows" :key="`${r.sigungu}|${r.umdNm}`">
               <td v-if="!embedded" class="gu">{{ r.sigungu }}</td>
               <td class="nm">{{ r.umdNm }}</td>
-              <td class="in">
-                <!-- 건축물대장 자동값은 흐린 글씨(placeholder)로, 손으로 적으면 그 값이 우선 -->
-                <input
-                  class="adm-cell"
-                  inputmode="numeric"
-                  :placeholder="unitsHint(r.sigungu, r.umdNm).text"
-                  :title="unitsHint(r.sigungu, r.umdNm).tip"
-                  :value="manualOf(r.sigungu, r.umdNm).units ? manualOf(r.sigungu, r.umdNm).units!.toLocaleString('ko-KR') : ''"
-                  @input="setManual(r.sigungu, r.umdNm, 'units', ($event.target as HTMLInputElement).value)"
-                />
-              </td>
+              <!-- 총 세대수 — 건축물대장 자동값을 글로만(손으로 적지 않는다) -->
+              <td :class="['units', { miss: unitsHint(r.sigungu, r.umdNm).text === '못 받음' }]" :title="unitsHint(r.sigungu, r.umdNm).tip">{{ unitsHint(r.sigungu, r.umdNm).text }}</td>
               <td class="in">
                 <input
                   class="adm-cell"
@@ -621,7 +613,7 @@ const downloadCsv = () => {
       <p v-if="rows.length > 0" class="adm-foot">
         회전율 = 1년 거래량 ÷ 세대수 &nbsp;·&nbsp; 소화율 = 1년 거래량 ÷ 매물수 &nbsp;·&nbsp;
         부담율 = 매물수 ÷ 세대수 &nbsp;·&nbsp; 소진기간 = 매물수 ÷ 월평균 거래량.
-        총 세대수는 건축물대장(연립·다세대)에서 자동으로 채웁니다(흐린 숫자) — 적으면 그 값이 우선. 총 매물수는 손으로 적습니다 — 적어 두면 다음에도 남습니다.
+        총 세대수는 건축물대장(연립·다세대)에서 자동으로 채웁니다. 파란 칸(총 매물수)은 손으로 적습니다 — 적어 두면 다음에도 남습니다.
       </p>
     </div>
   </section>
@@ -774,6 +766,9 @@ const downloadCsv = () => {
   font-weight: 700; text-align: right;
 }
 .adm-cell:focus { outline: none; border-color: #2b6df3; }
+/* 총 세대수 — 자동값을 글로만(칸 없음), 다른 숫자 칸과 같은 검은 글씨 */
+.adm-table td.units { text-align: right; color: #111827; font-weight: 600; }
+.adm-table td.units.miss { color: #b44545; font-weight: 500; }
 .adm-cell::placeholder { color: #aebbd6; font-weight: 400; }
 
 .adm-foot { margin: 14px 2px 0; font-size: 11.5px; line-height: 1.7; color: #9ca3af; }

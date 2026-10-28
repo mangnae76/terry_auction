@@ -3431,7 +3431,6 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['갱신', `30일 후 업데이트${unitsUpdatedAt.value ? ` (${unitsUpdatedAt.value})` : ''}`],
     ['범위', `${surveyAreaLabel.value} 연립·다세대`],
     ['합산', '건물마다의 세대수를 모두 더한 값'],
-    ['수정', '직접 입력하면 그 값이 우선'],
     ['이동!', 'KOSIS(주택의 종류별 주택 읍면동)'],
   ] },
   listings: { arrow: '62%', rows: [
@@ -3495,7 +3494,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
 /** 12개월 거래량 — 국토부 실거래에서 센 값이 기본이고, 손으로 적으면 그 값이 우선.
  *  (총 세대수와 같은 방식. 비워 두면 다시 자동값으로 돌아간다) */
 const deal12mValue = computed(() => dmNum('fs.dm.deal12m') || deal12mAuto.value);
-const dmUnits = computed(() => dmNum('fs.dm.units') || unitsAuto.value); // 직접 입력 우선, 없으면 건축물대장
+const dmUnits = computed(() => unitsAuto.value); // 건축물대장 자동값만(손 입력은 받지 않는다)
 const dmListings = computed(() => dmNum('fs.dm.listings'));  // 총 매물수 (네이버, 직접 입력)
 const dmMonthly = computed(() => deal12mValue.value / 12);   // 월평균 거래량
 // 연간 회전율 = 12개월 거래량 ÷ 총세대수 × 100
@@ -7888,10 +7887,8 @@ const goBack = () => router.back();
                     </button>
                   </div>
                   <div class="cell-body">
-                    <span v-if="editingSurvey.demand" class="adp-dm-pair">
-                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.units')" :placeholder="unitsAuto > 0 ? String(unitsAuto) : '입력'" @input="setDmVal('fs.dm.units', ($event.target as HTMLInputElement).value)" />
-                    </span>
-                    <strong v-else class="hi-blue"><span class="num">{{ dmIntText(dmUnits) }}</span></strong>
+                    <!-- 총 세대수는 건축물대장 자동값만 — 손으로 적지 않는다(고치기 중에도 글로만) -->
+                    <strong class="hi-blue"><span class="num">{{ dmIntText(dmUnits) }}</span></strong>
                   </div>
                 </div>
                 <div :class="['cell split', { lit: dmLit('listings') }]" @mouseenter="dmLitEnter('listings')" @mouseleave="dmLitLeave()" @click="dmLitTap('listings')">
