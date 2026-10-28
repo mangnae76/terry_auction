@@ -82,6 +82,20 @@ const LABEL_RULES: Array<{ test: RegExp; label: string; href?: string }> = [
   { test: /전자소송/, label: '전자소송포털', href: 'https://ecfs.scourt.go.kr/' },
 ];
 
+/** 줄 글 속 낱말에 거는 링크 — 저장해 둔 표에도 걸리게 글자로 찾는다 */
+const TEXT_LINKS: Array<{ word: string; href: string }> = [
+  { word: '인터넷우체국', href: 'https://www.epost.go.kr/' },
+];
+/** 줄 글을 [글, 링크] 조각으로 */
+export const textParts = (text: string): Array<{ t: string; href?: string }> => {
+  let parts: Array<{ t: string; href?: string }> = [{ t: text }];
+  TEXT_LINKS.forEach(({ word, href }) => {
+    parts = parts.flatMap((p) => (p.href || !p.t.includes(word) ? [p]
+      : p.t.split(word).flatMap((piece, i) => (i === 0 ? [{ t: piece }] : [{ t: word, href }, { t: piece }]))));
+  });
+  return parts.filter((p) => p.t);
+};
+
 /** 화면에 보일 이름과 갈 곳 */
 export const sectionView = (sec: CheckSection): { label: string; href: string } => {
   const raw = (sec.label ?? '').trim();

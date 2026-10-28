@@ -13,7 +13,7 @@ import AgencyBookModal from '../components/AgencyBookModal.vue';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
-import { groupRows, sectionView, type CheckGroup } from '../services/postWinChecklist';
+import { groupRows, sectionView, textParts, type CheckGroup } from '../services/postWinChecklist';
 import { POST_WIN_EDITABLE, defaultGroups, newRowId, usePostWinBook, type BookKey } from '../services/postWinBook';
 import { useInteriorStore } from '../stores/interiorStore';
 import type { InteriorExpenseRecord } from '../types/finance';
@@ -1032,7 +1032,8 @@ const toggleSection = (key: string) => {
                         rel="noopener"
                         @click.stop
                       >{{ webLine(r.text) }}<span class="pw-ext">↗</span></a>
-                      <template v-else>{{ webLine(r.text) }}</template>
+                      <!-- 웹 — '인터넷우체국'처럼 낱말에 걸린 링크는 그 낱말만 (앱은 그대로) -->
+                      <template v-else><template v-for="(pt, pi) in (webEmbed ? textParts(webLine(r.text)) : [{ t: webLine(r.text) }])" :key="pi"><a v-if="pt.href" class="pw-wordlink" :href="pt.href" target="_blank" rel="noopener" @click.stop>{{ pt.t }}<span class="pw-ext">↗</span></a><template v-else>{{ pt.t }}</template></template></template>
                     </td>
                     <!-- 부수 — 체크 왼쪽에 제 칸으로 -->
                     <td v-if="editing" class="pw-qty">
@@ -1974,6 +1975,8 @@ const toggleSection = (key: string) => {
 .pw-todo-pop-foot button:hover { color: #111827; text-decoration: underline; text-underline-offset: 3px; }
 .pw-todo-pop-x { position: absolute; top: 14px; right: 16px; z-index: 2; width: 26px; height: 26px; padding: 0; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #4b5563; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .pw-todo-pop-x:hover { background: #f3f4f6; color: #111827; }
+.pw-wordlink { color: #2b6df3; text-decoration: underline; text-underline-offset: 2px; }
+.pw-wordlink:hover { color: #1d4ed8; }
 .pw-chaps { display: inline-flex; gap: 6px; flex: none; }
 .pw-chaps button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; }
 .pw-chaps button:hover { color: #111827; }
