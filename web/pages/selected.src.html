@@ -804,6 +804,11 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-tbl:not(.edit) :is(.pw-label strong, .pw-labellink strong, .pw-memo) { white-space: nowrap; }
 .app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-qty { width: 60px; }
 .app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-memo { width: 300px; }
+/* 좁은 화면 — 이름 · 비고 칸을 줄여 가운데 글이 한 줄에 들어가게 */
+@media (max-width: 1279px) {
+  .app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-label { width: 150px; }
+  .app-page[data-k="postwin"] .pw-tbl:not(.edit) .pw-col-memo { width: 210px; }
+}
 /* 낙찰당일 — '낙찰 후 진행 순서' 상자(탭 맨 위). 웹은 넓으니 여덟 칸을 한 줄로, 글자는 14 */
 .app-page[data-k="postwin"] .pw-flowcard .pw-flow-map { grid-template-columns: repeat(8, 1fr); gap: 10px 22px; padding: 6px 4px 14px; }
 .app-page[data-k="postwin"] .pw-flowcard .pw-flow-box { font-size: 14px; min-height: 52px; }
