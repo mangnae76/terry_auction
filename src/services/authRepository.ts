@@ -166,12 +166,17 @@ export interface AccountDetail {
   smsOptIn: boolean;
   address1: string;
   address2: string;
+  /** 사업자 구분 — 'biz' 개인 매매사업자 · 'none' 아님 · '' 안 적음 (세금분석의 기본 선택에 쓴다) */
+  bizType: '' | 'biz' | 'none';
+  /** 주택 보유수 — 직접 적는다 */
+  houseCount: string;
 }
 
 export const emptyAccountDetail = (): AccountDetail => ({
   nickname: '', emailId: '', emailDomain: '', emailOptIn: false,
   phone1: '', phone2: '', phone3: '', smsOptIn: false,
   address1: '', address2: '',
+  bizType: '', houseCount: '',
 });
 
 export const loadAccountDetail = async (uid: string): Promise<AccountDetail> => {

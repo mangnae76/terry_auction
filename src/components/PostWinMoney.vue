@@ -2,7 +2,9 @@
 // 낙찰이후 · 진행절차 옆 박스 탭(웹) — 명도분석(협의 · 강제집행 비용 비교 + 리스크) / 세금분석(필요경비 · 예상 세금).
 // 기본값은 물건 값(입찰가산정에 적어 둔 대출 · 취득세 · 매도가 · 면적)에서 가져오고, 없으면 대략의 시세. 칸마다 고쳐 쓴다.
 // 고친 값은 이 브라우저에 물건마다 기억한다. 세금 셈은 입찰가산정과 같은 profitMath.
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useAuthStore } from '../stores/authStore';
+import { loadAccountDetail } from '../services/authRepository';
 import type { AuctionDetail } from '../types/auction';
 import FormattedNumberInput from './FormattedNumberInput.vue';
 import { EVICT_DEFAULT, dealCost, execCost, monthlyCarry, taxOf, transferTaxOf, type EvictInput, type HoldTerm } from '../services/postWinMoney';
@@ -44,6 +46,14 @@ const tx = ref({ ...seedTax(), ...((read().tx as object) ?? {}) });
 /** 세금분석의 명도비 — 명도분석의 어느 쪽으로 넣을지 */
 const evictPick = ref<'deal' | 'exec'>((read().pick as 'deal' | 'exec') || 'deal');
 const who = ref<'biz' | 'person'>((read().who as 'biz' | 'person') || 'biz');
+// 물건에서 따로 고르지 않았으면 내 정보의 사업자 구분을 따른다
+const auth = useAuthStore();
+onMounted(async () => {
+  if (read().who) return;
+  const d = await loadAccountDetail(auth.uid);
+  if (d.bizType === 'none') who.value = 'person';
+  else if (d.bizType === 'biz') who.value = 'biz';
+});
 const term = ref<HoldTerm>((read().term as HoldTerm) || 'lt1');
 watch([ev, tx, evictPick, who, term], () => {
   try { localStorage.setItem(key(), JSON.stringify({ ev: ev.value, tx: tx.value, pick: evictPick.value, who: who.value, term: term.value })); } catch { /* 그만 */ }

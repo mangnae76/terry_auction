@@ -1,11 +1,12 @@
 <script setup lang="ts">
 // 내 정보 수정 — 비밀번호·연락처·주소를 고친다.
 // 더보기의 '정보 수정' 알약과 마이페이지의 '내 정보 수정'에서 들어온다.
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, inject, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import { useAuthStore } from '../stores/authStore';
+import { useAuctionStore } from '../stores/auctionStore';
 import {
   changePassword,
   emptyAccountDetail,
@@ -17,6 +18,14 @@ import {
 
 const router = useRouter();
 const auth = useAuthStore();
+const webEmbed = inject<boolean>('webEmbed', false);
+// 웹 — 사업자 구분 · 주택 보유수는 적고, 매출은 매도 기록(매도일 · 매도가)으로 해마다 저절로 셈한다
+const auctionStore = useAuctionStore();
+const thisYear = new Date().getFullYear();
+const salesOf = (y: number) => auctionStore.auctions
+  .filter((a) => String(a.sellDate ?? '').startsWith(String(y)))
+  .reduce((sum, a) => sum + (a.expectedSaleValue || 0), 0);
+const wonText = (n: number) => (n ? `${n.toLocaleString('ko-KR')}원` : '매도 기록 없음');
 
 /** 자주 쓰는 메일 주소는 골라 넣는다 */
 const MAIL_DOMAINS = ['직접입력', 'naver.com', 'gmail.com', 'daum.net', 'hanmail.net', 'nate.com', 'kakao.com'];
@@ -176,6 +185,28 @@ const submit = async () => {
           <input v-model="form.address2" class="prf-input mt" placeholder="상세주소 — 예: 분당동, 샛별마을" />
         </div>
 
+        <!-- 웹 — 사업자 · 주택 · 매출(세금 셈의 바탕) -->
+        <template v-if="webEmbed">
+          <div class="prf-fld">
+            <small>사업자 구분</small>
+            <div class="prf-seg">
+              <button type="button" :class="{ on: form.bizType === 'biz' }" @click="form.bizType = 'biz'">개인매매사업자</button>
+              <button type="button" :class="{ on: form.bizType === 'none' }" @click="form.bizType = 'none'">사업자아님</button>
+            </div>
+          </div>
+          <label class="prf-fld">
+            <small>주택 보유수</small>
+            <span class="prf-unit"><input v-model="form.houseCount" class="prf-input" inputmode="numeric" placeholder="0" @input="form.houseCount = form.houseCount.replace(/\D/g, '')" /><em>채</em></span>
+          </label>
+          <div class="prf-fld">
+            <small>매출 <i class="prf-auto">매도 기록에서 저절로</i></small>
+            <div class="prf-sales">
+              <span><b>{{ thisYear - 1 }}년</b>{{ wonText(salesOf(thisYear - 1)) }}</span>
+              <span><b>{{ thisYear }}년</b>{{ wonText(salesOf(thisYear)) }}</span>
+            </div>
+          </div>
+        </template>
+
         <button type="button" class="prf-submit" :disabled="saving || loading" @click="submit">
           {{ saving ? '저장하는 중…' : '내 정보 수정' }}
         </button>
@@ -262,4 +293,14 @@ const submit = async () => {
   font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer;
 }
 .prf-submit:disabled { opacity: .6; cursor: default; }
+.prf-seg { display: inline-flex; gap: 6px; }
+.prf-seg button { height: 34px; padding: 0 14px; border: 1px solid #d0d5dd; border-radius: 6px; background: #fff; color: #4b5563; cursor: pointer; }
+.prf-seg button.on { border-color: #2b6df3; background: #2b6df3; color: #fff; }
+.prf-unit { display: inline-flex; align-items: center; gap: 6px; }
+.prf-unit .prf-input { width: 120px; text-align: right; }
+.prf-unit em { font-style: normal; color: #6b7280; }
+.prf-auto { margin-left: 6px; font-style: normal; color: #9ca3af; }
+.prf-sales { display: flex; gap: 24px; }
+.prf-sales span { display: inline-flex; gap: 8px; align-items: baseline; color: #111827; }
+.prf-sales b { color: #6b7280; font-weight: 600; }
 </style>
