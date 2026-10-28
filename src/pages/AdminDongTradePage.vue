@@ -410,6 +410,8 @@ const restoreSnapshot = async () => {
   await nextTick();
   restoring = false;
   supplyToken.value += 1;
+  // 지도랭킹도 되살린 조건으로 — 조회를 눌러야만 받던 탓에 저장된 화면에서는 지도가 비어 있었다
+  mapRun.value += 1;
 };
 // 동을 바꿔 보면 그 동도 남긴다 — 새로고침해도 보던 동으로
 watch(dong, (v) => {
