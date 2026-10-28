@@ -124,7 +124,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { supply: '수요분석', table: '지역별 분석', dist: '지역분포', detail: '상세분포', deals: '거래상세' };
+const TAB_LABEL: Record<string, string> = { map: '지도랭킹', supply: '수요분석', table: '지역별 분석', dist: '지역분포', detail: '상세분포', deals: '거래상세' };
 const tellTab = () => {
   if (!webEmbed || onlyView) return;
   const label = listView.value === 'table' && dong.value ? '검색리스트' : TAB_LABEL[listView.value];
@@ -824,7 +824,7 @@ const downloadCsv = () => {
           <button type="button" role="tab" :aria-selected="listView === 'similar'" :class="{ on: listView === 'similar' }" @click="listView = 'similar'">유사매물시세</button>
         </nav>
         <nav v-else-if="all.length > 0 || listView === 'map'" class="adm-view-tabs" role="tablist">
-              <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">지도</button>
+              <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">지도랭킹</button>
               <button type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">{{ dong ? '검색리스트' : '지역별분석' }}</button>
               <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">지역분포<span class="adm-view-kind" :title="distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 막대'" :aria-label="distChart === 'bar' ? '막대' : '도넛'">
