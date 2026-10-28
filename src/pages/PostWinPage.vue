@@ -27,6 +27,7 @@ import type { AgencyRow, AuctionDetail } from '../types/auction';
 import PostWinTimeline from '../components/PostWinTimeline.vue';
 import PostWinForms from '../components/PostWinForms.vue';
 import ExpenseLedger from '../components/ExpenseLedger.vue';
+import { BOOK_HINT } from '../services/expenseBook';
 import PostWinMoney from '../components/PostWinMoney.vue';
 import TaxPage from './TaxPage.vue';
 import { FORM_BTN, FORMS_OF_ROW, type FormKey } from '../services/postWinForms';
@@ -914,7 +915,7 @@ const toggleSection = (key: string) => {
         <button v-for="[k, label] in FLOW_SUBS" :key="k" type="button" role="tab" :aria-selected="flowSub === k" :class="{ on: flowSub === k }" @click="flowSub = k">{{ label }}</button>
       </nav>
       <section v-if="activeTab === 'flow' && (flowSub === 'need' || flowSub === 'biz')" class="pw-card pw-ledger">
-        <header class="pw-card-head"><h2>{{ flowSub === 'need' ? '필요경비' : '사업경비' }}<span v-if="picked?.caseNumber" class="pw-ledger-cap">경매 <b>{{ picked.caseNumber }}</b> 사건에 쓴 돈</span></h2></header>
+        <header class="pw-card-head"><h2>{{ flowSub === 'need' ? '필요경비' : '사업경비' }}<span class="pw-ledger-cap">{{ BOOK_HINT[flowSub] }}</span></h2></header>
         <div class="pw-card-body">
           <ExpenseLedger :key="`${picked?.id}-${flowSub}`" :book="flowSub" :auction-id="picked?.id ?? ''" tools />
         </div>

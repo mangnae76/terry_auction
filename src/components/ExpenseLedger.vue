@@ -200,11 +200,11 @@ defineExpose({ openAdd, exportCsv, total });
   <section class="xl">
     <div v-if="tools" class="xl-tools">
       <span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span>
-      <span class="xl-hint">{{ BOOK_HINT[book] }} · 자금관리 › {{ BOOK_NAME[book] }}와 같은 기록<br><b class="xl-plan">입찰가A</b> 입찰가A에서 가져옵니다. 필요시 직접 입력하세요.</span>
+      <span class="xl-hint"><b class="xl-plan">입찰가A</b> 입찰가산정A에서 가져옵니다. 필요시 직접 입력하세요.</span>
       <button type="button" class="xl-btn" @click="exportCsv">⬇ 엑셀저장</button>
       <button type="button" class="xl-btn on" :disabled="auctionId === ''" @click="openAdd">＋ 항목추가</button>
     </div>
-    <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint">{{ BOOK_HINT[book] }} · 낙찰이후 › 진행절차 › {{ BOOK_NAME[book] }}와 같은 기록<br><b class="xl-plan">입찰가A</b> 입찰가A에서 가져옵니다. 필요시 직접 입력하세요.</span></p>
+    <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint"><b class="xl-plan">입찰가A</b> 입찰가산정A에서 가져옵니다. 필요시 직접 입력하세요.</span></p>
     <table class="xl-tbl">
       <thead>
         <tr>
