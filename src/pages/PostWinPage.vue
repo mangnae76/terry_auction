@@ -233,8 +233,24 @@ const dealAfterFirst = (list: CheckGroup[]) => {
 /** 웹 — 체크할 일이 아닌 설명 상자는 가이드로 뺀다(낙찰당일: 명도협상 원칙 · 명도: 명도절차 · 명도 협상 방법) */
 const GUIDE_DAY_KEYS = new Set(['rule']);
 const GUIDE_EVICT_KEYS = new Set(['ev.flow', 'ev.deal']);
+// === 절차진행 큰일 → 상세 · 가이드를 창으로 — 화면을 옮기지 않고 그 상자만 띄워 체크하고 닫는다 ===
+const popTodo = ref<StepTodo | null>(null);
+const popGroups = computed<CheckGroup[]>(() => {
+  const t = popTodo.value;
+  if (!t) return [];
+  if (t.tab === 'biz') return bizBook.groups.value;
+  return allGroups.value.filter((g) => g.key === t.group);
+});
+const popOpen = computed(() => popGroups.value.length > 0);
+const POP_VIEW: Partial<Record<TabKey, TabKey>> = { gwin: 'win', gevict: 'evict' };
+const popView = computed<TabKey>(() => (popTodo.value?.tab ? (POP_VIEW[popTodo.value.tab as TabKey] ?? popTodo.value.tab as TabKey) : viewTab.value));
+const closePop = () => { popTodo.value = null; };
+const onPopKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closePop(); };
+watch(popOpen, (v) => { if (v) window.addEventListener('keydown', onPopKey); else window.removeEventListener('keydown', onPopKey); });
+watch(activeTab, closePop);
 const dayGroups = computed<CheckGroup[]>(() => {
   if (editing.value) return draft.value;
+  if (popOpen.value) return popGroups.value;
   const t = activeTab.value;
   if (t === 'gwin') return dayBook.groups.value.filter((g) => GUIDE_DAY_KEYS.has(g.key));
   if (t === 'gevict') return evictBook.groups.value.filter((g) => GUIDE_EVICT_KEYS.has(g.key));
@@ -282,6 +298,8 @@ const flashKey = ref('');
 const goTodo = async (t: StepTodo) => {
   if (t.page) { void router.push({ path: t.page.path, query: t.page.tab ? { tab: t.page.tab } : {} }); return; }
   if (!t.tab) return;
+  // 상세 · 가이드는 창으로 — 인테리어 · 매도는 기록 화면이라 그대로 옮겨 간다
+  if (t.tab !== 'repair' && t.tab !== 'sell' && (t.group || t.tab === 'biz')) { popTodo.value = t; return; }
   activeTab.value = t.tab as TabKey;
   if (!t.group) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   collapsed.value = { ...collapsed.value, [t.group]: false };
@@ -295,7 +313,10 @@ const goTodo = async (t: StepTodo) => {
   window.setTimeout(() => { if (flashKey.value === t.group) flashKey.value = ''; }, 1600);
 };
 /** 체크 칸을 두는 탭인가 — 사업자등록은 한 번 해 두면 되는 일이라 체크가 없다 */
-const checkable = computed(() => activeTab.value === 'win' || activeTab.value === 'balance' || activeTab.value === 'evict');
+const checkable = computed(() => {
+  const t = popOpen.value ? popTodo.value?.tab : activeTab.value;
+  return t === 'win' || t === 'balance' || t === 'evict';
+});
 
 // === 표 고치기 ===
 // 글을 다 다듬고 나면 postWinBook.ts 의 POST_WIN_EDITABLE 만 false 로 두면
@@ -721,7 +742,7 @@ const toggleSection = (key: string) => {
       </div>
     </div>
 
-    <div :key="activeTab" :class="['pw-body', `tab-${viewTab}`, { app: !webEmbed }]">
+    <div :key="activeTab" :class="['pw-body', `tab-${popOpen ? popView : viewTab}`, { app: !webEmbed }]">
       <!-- 낙찰당일 — '낙찰 후 진행 순서'를 탭 맨 위 상자로 펼쳐 둔다 (앱 · 웹) -->
       <!-- 웹은 가이드 › 낙찰당일 장에 둔다 -->
       <section v-if="activeTab === (webEmbed ? 'gwin' : 'win')" :class="['pw-card', 'pw-flowcard', { web: webEmbed }]">
@@ -742,20 +763,34 @@ const toggleSection = (key: string) => {
           >{{ st.name }}<span class="pw-flow-tip" role="tooltip">{{ st.note }}</span></span>
         </div>
       </section>
-      <template v-if="hasTable">
-       <div v-for="(blk, bi) in blocks" :key="`blk-${bi}`" :class="['pw-wrap', { super: blk.super }]">
+      <!-- 웹 절차진행 — 고른 낙찰 물건의 낙찰일부터 단계 일정 -->
+      <PostWinTimeline
+        v-if="activeTab === 'flow'"
+        :auction="picked"
+        :progress="todoProgress"
+        @save="(a) => store.saveAuction(a)"
+        @go="goTodo"
+      />
+      <div v-if="popOpen" class="pw-todo-veil" @click="closePop" />
+      <template v-if="hasTable || popOpen">
+       <div :class="{ 'pw-todo-pop': popOpen }" :role="popOpen ? 'dialog' : undefined">
+       <button v-if="popOpen" type="button" class="pw-todo-pop-x" aria-label="닫기" @click="closePop">
+         <svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M2 2l10 10M12 2 2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+       </button>
+       <div :class="{ 'pw-todo-pop-in': popOpen }">
+       <div v-for="(blk, bi) in blocks" :key="`blk-${bi}`" :class="['pw-wrap', { super: blk.super && !popOpen }]">
         <!-- 큰 제목 — 상자들을 한 울타리로 묶는다 -->
-        <header v-if="blk.super" class="pw-super-head" @click="toggleSection(`__super-${bi}`)">
+        <header v-if="blk.super && !popOpen" class="pw-super-head" @click="toggleSection(`__super-${bi}`)">
           <h2>
             <svg class="pw-h2-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6"/><path d="M5 10v9M19 10v9M9 10v9M15 10v9M3 21h18"/></svg>
             {{ blk.super }}
           </h2>
           <img :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(`__super-${bi}`) }]" alt="" />
         </header>
-        <template v-if="!blk.super || !isCollapsed(`__super-${bi}`)">
+        <template v-if="popOpen || !blk.super || !isCollapsed(`__super-${bi}`)">
         <template v-for="(g, ei) in blk.groups" :key="g.key">
         <section :data-gkey="g.key" :class="['pw-card', { 'pw-flash': flashKey === g.key }]">
-          <header class="pw-card-head" @click="editing || toggleSection(g.key)">
+          <header class="pw-card-head" @click="editing || popOpen || toggleSection(g.key)">
             <span v-if="editing" class="pw-ttlwrap">
               <input v-model="g.title" class="pw-einput ttl" placeholder="제목" />
               <input v-model="g.url" class="pw-einput link ttl-link" placeholder="제목 링크 (https://…)" />
@@ -796,9 +831,9 @@ const toggleSection = (key: string) => {
             >
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M16 10h0M8 14h2M12 14h2M16 14h0M8 18h8"/></svg>{{ lk.label }}
             </a>
-            <img v-if="!editing" :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(g.key) }]" alt="" />
+            <img v-if="!editing && !popOpen" :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(g.key) }]" alt="" />
           </header>
-          <div v-if="editing || !isCollapsed(g.key)" class="pw-card-body">
+          <div v-if="editing || popOpen || !isCollapsed(g.key)" class="pw-card-body">
             <textarea v-if="editing" v-model="g.note" class="pw-earea note" rows="2" placeholder="안내 한 줄" />
             <p v-else-if="g.note" class="pw-note">{{ g.note }}</p>
             <!-- 가로 띠 그림 — 날짜를 찍어 가는 길 -->
@@ -1010,6 +1045,8 @@ const toggleSection = (key: string) => {
         </template>
         </template>
        </div>
+       </div>
+       </div>
       </template>
 
       <!-- 인테리어 — 업체 비딩과 인테리어 비용, 같은 꼴의 표 두 장 -->
@@ -1131,15 +1168,7 @@ const toggleSection = (key: string) => {
         </section>
       </template>
 
-      <!-- 웹 진행절차 — 고른 낙찰 물건의 낙찰일부터 단계 일정 -->
-      <PostWinTimeline
-        v-else-if="activeTab === 'flow'"
-        :auction="picked"
-        :progress="todoProgress"
-        @save="(a) => store.saveAuction(a)"
-        @go="goTodo"
-      />
-      <section v-else class="pw-card">
+      <section v-else-if="activeTab !== 'flow'" class="pw-card">
         <header class="pw-card-head" @click="toggleSection(activeTab)">
           <h2>{{ current().label }}</h2>
           <img :src="chevronDownIcon" :class="['pw-chev', { up: isCollapsed(activeTab) }]" alt="" />
@@ -1914,6 +1943,14 @@ const toggleSection = (key: string) => {
 /* 웹 명도 — 경로 줄 오른쪽 단추 · 팝업 */
 .pw-crumbrow { display: flex; align-items: center; gap: 12px; }
 .pw-crumbrow .pw-crumb { flex: 1 1 auto; min-width: 0; }
+.pw-todo-veil { position: fixed; inset: 0; z-index: 900; background: rgba(15, 23, 42, .45); }
+.pw-todo-pop { position: fixed; z-index: 901; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1100px, calc(100vw - 32px)); border-radius: 12px; background: #fff; box-shadow: 0 20px 48px rgba(15, 23, 42, .28); }
+.pw-todo-pop-in { max-height: calc(100vh - 80px); overflow: auto; border-radius: 12px; }
+.pw-todo-pop .pw-wrap, .pw-todo-pop .pw-card { margin: 0; box-shadow: none; }
+.pw-todo-pop .pw-card + .pw-card { border-top: 1px solid #eef1f6; border-radius: 0; }
+.pw-todo-pop .pw-card-head { cursor: default; padding-right: 52px; }
+.pw-todo-pop-x { position: absolute; top: 14px; right: 16px; z-index: 2; width: 26px; height: 26px; padding: 0; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #4b5563; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.pw-todo-pop-x:hover { background: #f3f4f6; color: #111827; }
 .pw-chaps { display: inline-flex; gap: 6px; flex: none; }
 .pw-chaps button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 600; cursor: pointer; }
 .pw-chaps button:hover { color: #111827; }

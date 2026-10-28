@@ -11,8 +11,6 @@ export const TODO_CATS: Array<[TodoCat, string]> = [['evict', '명도'], ['loan'
 export interface StepTodo {
   text: string;
   cat: TodoCat;
-  /** '만나면' · '못 만나면'처럼 둘 중 하나만 하는 일에 붙이는 작은 말 */
-  when?: string;
   /** 바로가기로 열 탭(장) */
   tab?: PostWinTabKey;
   /** 다른 메뉴로 갈 때(자금관리 · 세금신고 등) — 앱 경로와 탭 */
@@ -37,18 +35,18 @@ export const STEP_TODOS: Record<string, StepTodo[]> = {
   // 낙찰 당일 — 현장 동선 순서. 협상은 이날 하고, 이사는 잔금 납부일까지(그 뒤로는 이자가 내 몫)
   bid: [
     { text: '사건기록 열람', cat: 'proc', tab: 'win', group: 'file' },
-    { text: '점유자 바로 협상 — 이사는 잔금 납부일까지', cat: 'evict', when: '만나면', tab: 'win', group: 'visit', section: '협상내용' },
-    { text: '메모지·연락처 남기기', cat: 'evict', when: '못 만나면', tab: 'win', group: 'visit', rows: ['pw.visit.c1'] },
+    { text: '점유자 바로 협상 — 이사는 잔금 납부일까지', cat: 'evict', tab: 'win', group: 'visit', section: '협상내용' },
+    { text: '메모지·연락처 남기기', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c1'] },
     { text: '주민·동대표·관리소 탐문', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c2', 'pw.visit.c3', 'pw.visit.c4'] },
     { text: '부동산 방문 — 시세·거래기록', cat: 'proc', tab: 'win', group: 'visit', section: '부동산방문' },
   ],
   decide: [
-    { text: '점유자 다시 연락·재방문', cat: 'evict', when: '만날 때까지', tab: 'evict', group: 'ev.step', branch: 1 },
+    { text: '점유자 다시 연락·재방문', cat: 'evict', tab: 'evict', group: 'ev.step', branch: 1 },
     { text: '내부·관리비 확인', cat: 'evict', tab: 'win', group: 'visit', section: '내부확인' },
-    { text: '1차 내용증명 준비', cat: 'evict', when: '연락 안 되면', tab: 'win', group: 'visit', rows: ['pw.visit.c5'] },
+    { text: '1차 내용증명 준비', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c5'] },
   ],
   confirm: [
-    { text: '이사 날짜 확정 — 잔금 납부일 이전', cat: 'evict', when: '합의되면', tab: 'win', group: 'visit', noCount: true },
+    { text: '이사 날짜 확정 — 잔금 납부일 이전', cat: 'evict', tab: 'win', group: 'visit', noCount: true },
     { text: '대출 심사 서류 준비', cat: 'loan', tab: 'balance', group: 'loan.screen' },
     { text: '대출업체 비딩', cat: 'loan', tab: 'balance', group: 'loan.bid' },
     { text: '사업자등록', cat: 'proc', tab: 'biz' },

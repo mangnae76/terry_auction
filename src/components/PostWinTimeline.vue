@@ -23,12 +23,12 @@ const CAT_KEY = 'pw.flow.cat';
 const readCat = (): TodoCat | '' => { try { const v = localStorage.getItem(CAT_KEY) || ''; return TODO_CATS.some(([k]) => k === v) ? (v as TodoCat) : ''; } catch { return ''; } };
 const catPick = ref<TodoCat | ''>(readCat());
 const pickCat = (c: TodoCat | '') => { catPick.value = c; try { localStorage.setItem(CAT_KEY, c); } catch { /* 그만 */ } };
-const catName = (c: TodoCat) => TODO_CATS.find(([k]) => k === c)?.[1] ?? '';
 const todosOf = (s: PostWinStep): StepTodo[] => allTodosOf(s).filter((t) => !catPick.value || t.cat === catPick.value);
 const dimRow = (s: PostWinStep) => !!catPick.value && allTodosOf(s).length > 0 && todosOf(s).length === 0;
 const progOf = (t: StepTodo) => props.progress?.(t) ?? null;
-const goLabel = (t: StepTodo) => (t.page ? (t.page.tab === 'tax' ? '세금신고' : '자금관리')
-  : t.tab === 'biz' || t.tab === 'gevict' || t.tab === 'gwin' ? '가이드' : t.tab === 'repair' || t.tab === 'sell' ? '열기' : '상세');
+const isFull = (t: StepTodo) => { const p = progOf(t); return !!p && p[0] >= p[1]; };
+const goTitle = (t: StepTodo) => (t.page ? (t.page.tab === 'tax' ? '세금신고로 가기' : '자금관리로 가기')
+  : t.tab === 'repair' ? '인테리어로 가기' : t.tab === 'sell' ? '매도·임대로 가기' : t.group || t.tab === 'biz' ? '자세히 보기' : '');
 
 /** 기본 절차 — 경매 낙찰 뒤 흔한 흐름(날짜는 대략). 명도 뒤 인테리어 · 매도까지 잇는다 */
 const DEFAULT_STEPS: Array<Omit<PostWinStep, 'id'>> = [
@@ -223,7 +223,7 @@ const resetDefault = () => {
         <button type="button" :class="{ on: !catPick }" @click="pickCat('')">전체</button>
         <button v-for="[k, label] in TODO_CATS" :key="k" type="button" :class="[k, { on: catPick === k }]" @click="pickCat(k)">{{ label }}</button>
       </span>
-      <button v-if="auction" type="button" :class="['pwt-btn', 'deal', { on: !!flow.endedAt }]" @click="endByDeal">{{ flow.endedAt ? `협의 완료 (${flow.endedAt}) — 되돌리기` : '협의 완료로 종료' }}</button>
+      <button v-if="auction" type="button" :class="['pwt-btn', 'deal', { on: !!flow.endedAt }]" @click="endByDeal">{{ flow.endedAt ? `협의로 종결 (${flow.endedAt}) — 되돌리기` : '협의로 종결' }}</button>
       <button v-if="auction" type="button" class="pwt-btn" @click="resetDefault">초기화</button>
     </header>
 
@@ -232,6 +232,12 @@ const resetDefault = () => {
       <!-- 기준일 줄은 두지 않는다 — 낙찰일이 비었을 때만 알린다 -->
       <p v-if="!startDate" class="pwt-guide">낙찰일이 비어 있습니다 — 물건상세에서 낙찰일을 적어 주세요.</p>
 
+      <!-- 구분 줄 — 왼쪽 법원 절차진행 · 오른쪽 해야 할 일(누르면 상세보기). 칸 폭은 아래 줄과 같다 -->
+      <div class="pwt-colhead" aria-hidden="true">
+        <span class="c-main">법원 절차진행</span>
+        <span class="c-todo">해야 할 일<em>누르면 상세보기</em></span>
+        <span class="c-ctrl" />
+      </div>
       <ol class="pwt-list">
         <li
           v-for="r in rows"
@@ -274,14 +280,9 @@ const resetDefault = () => {
           </div>
           <!-- 이 단계에 해야 할 큰일 — 세부 체크는 바로가기로 간 절차상세에서 -->
           <ul v-if="editingId !== r.id && todosOf(r).length" class="pwt-todos">
-            <li v-for="t in todosOf(r)" :key="t.text" :class="['pwt-todo', { full: !!progOf(t) && progOf(t)![0] >= progOf(t)![1] }]">
-              <svg class="pwt-todo-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-              <span :class="['pwt-cat', t.cat]">{{ catName(t.cat) }}</span>
-              <!-- 꼬리말 칸은 늘 같은 폭(없으면 빈칸) — 본문이 한 줄로 가지런히 선다 -->
-              <em class="pwt-when">{{ t.when || '' }}</em>
-              <span class="pwt-todo-t">{{ t.text }}</span>
-              <em v-if="progOf(t)" class="pwt-prog">{{ progOf(t)![0] }}/{{ progOf(t)![1] }}</em>
-              <button type="button" class="pwt-go" @click="emit('go', t)">{{ goLabel(t) }} ›</button>
+            <!-- 한 줄은 글만(다 한 일은 회색) — 글을 누르면 그 상세(창) · 가이드(창) · 화면으로 -->
+            <li v-for="t in todosOf(r)" :key="t.text" :class="['pwt-todo', { full: isFull(t) }]">
+              <button type="button" class="pwt-todo-t" :title="goTitle(t)" @click="emit('go', t)">{{ t.text }}<i class="pwt-arrow">›</i></button>
             </li>
           </ul>
           <div v-if="editingId !== r.id" class="pwt-ctrl">
@@ -322,7 +323,12 @@ const resetDefault = () => {
 .pwt-btn:disabled { opacity: .45; cursor: default; }
 .pwt-guide { margin: 12px 0 10px; font-size: 14px; color: #6b7280; }
 .pwt-empty { margin: 24px 0 8px; text-align: center; font-size: 14px; color: #6b7280; }
-.pwt-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.pwt-colhead { display: flex; align-items: center; gap: 14px; margin-top: 12px; padding: 9px 11px; border-radius: 8px; background: #f5f7fa; font-size: 14px; font-weight: 700; color: #4b5563; }
+.pwt-colhead .c-main { flex: 1 1 auto; min-width: 0; }
+.pwt-colhead .c-todo { flex: 0 0 50%; padding-left: 17px; }
+.pwt-colhead .c-todo em { margin-left: 8px; font-style: normal; font-weight: 400; color: #9ca3af; }
+.pwt-colhead .c-ctrl { flex: 0 0 102px; }
+.pwt-list { list-style: none; margin: 4px 0 0; padding: 0; }
 .pwt-row { display: flex; align-items: flex-start; gap: 14px; padding: 14px 10px; border-bottom: 1px solid #eef1f6; border-radius: 8px; }
 .pwt-row.done :is(.pwt-name, .pwt-meta, .pwt-note) { color: #9ca3af; }
 /* 지금 시작할 단계(아직 체크 안 한 첫 단계) — 흐린 빨강 칸 */
@@ -333,25 +339,16 @@ const resetDefault = () => {
 /* 큰일 — 단계 옆 칸. 다 한 일은 초록 체크 · 회색 글 */
 .pwt-todos { flex: 0 0 50%; margin: 0; padding: 0 0 0 16px; list-style: none; border-left: 1px solid #eef1f6; display: flex; flex-direction: column; gap: 6px; }
 .pwt-todo { display: flex; align-items: center; gap: 8px; min-height: 28px; }
-.pwt-todo-ico { flex: none; color: #d1d5db; }
-.pwt-todo.full .pwt-todo-ico { color: #4f9a68; }
-.pwt-todo-t { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; font-weight: 700; color: #111827; }
+.pwt-todo-t { flex: 1 1 auto; min-width: 0; padding: 0; border: 0; background: none; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; font-weight: 700; color: #111827; cursor: pointer; }
+.pwt-todo-t:hover { text-decoration: underline; text-underline-offset: 3px; }
+.pwt-arrow { margin-left: 4px; font-style: normal; color: #9ca3af; opacity: 0; }
+.pwt-todo-t:hover .pwt-arrow { opacity: 1; }
 .pwt-todo.full .pwt-todo-t { color: #9ca3af; }
-/* 갈래 칩 — 상태 칩(진한 바탕)과 헷갈리지 않게 옅은 바탕 · 색 글자. 명도 주황 · 대출 파랑 · 절차 회색 */
-.pwt-cat { flex: none; display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 6px; font-size: 14px; font-weight: 600; line-height: 1; }
-.pwt-cat.evict { background: #fdf0e3; color: #b4631c; }
-.pwt-cat.loan { background: #e8effc; color: #3f63b0; }
-.pwt-cat.proc { background: #eff1f5; color: #4b5563; }
 .pwt-cats { display: inline-flex; gap: 4px; margin-right: 8px; }
 .pwt-cats button { height: 32px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; cursor: pointer; }
 .pwt-cats button:hover { color: #111827; }
 .pwt-cats button.on { border-color: #1f2a44; background: #1f2a44; color: #fff; }
 .pwt-row.dim { opacity: .45; }
-.pwt-when { flex: 0 0 84px; font-style: normal; font-size: 14px; font-weight: 600; color: #9ca3af; white-space: nowrap; }
-.pwt-prog { flex: none; font-style: normal; font-size: 14px; font-weight: 700; color: #6b7280; }
-.pwt-todo.full .pwt-prog { color: #4f9a68; }
-.pwt-go { flex: none; height: 28px; padding: 0 10px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; font-weight: 400; cursor: pointer; }
-.pwt-go:hover { color: #111827; }
 .pwt-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; font-size: 14px; font-weight: 700; line-height: 1; }
 .pwt-chip.done { background: #4f9a68; color: #fff; }
 .pwt-chip.next { background: #c95b5b; color: #fff; }
