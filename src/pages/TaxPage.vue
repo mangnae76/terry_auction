@@ -5,6 +5,9 @@ import { useRouter } from 'vue-router';
 import { computed, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
+import { useFinanceStore } from '../stores/financeStore';
+import { useInteriorStore } from '../stores/interiorStore';
+import { costSplitOf, ledgerRows } from '../services/expenseBook';
 import type { AuctionDetail } from '../types/auction';
 
 // 자금관리 안의 '세금신고' 탭에서 불러 쓸 때는 제 머리글과 하단 메뉴를 그리지 않는다.
@@ -41,10 +44,26 @@ const costsOf = (a: AuctionDetail) => {
     + (c.evictionCost ?? 0)
     + (c.advertisingCost ?? 0);
 };
+// 웹 — 필요경비 · 사업경비 실제 기록(낙찰이후 진행절차 · 자금관리)이 있으면 입찰가산정 A안 대신 쓴다. 앱은 A안 그대로
+const finance = useFinanceStore();
+const interior = useInteriorStore();
+if (props.webYear) { finance.initialize(); interior.initialize(); }
+const ledger = computed(() => (props.webYear
+  ? ledgerRows({ be: finance.businessExpenses, interior: interior.rows, fuel: finance.fuelMeal, item: finance.itemPurchases })
+  : []));
+const costsOfUsed = (a: AuctionDetail) => {
+  if (!props.webYear) return costsOf(a);
+  const c = costSplitOf(a, ledger.value);
+  return c.need + c.biz;
+};
 const incomeOf = (a: AuctionDetail) =>
-  (a.expectedSaleValue ?? 0) - (a.metrics?.myBidValue ?? 0) - costsOf(a);
+  (a.expectedSaleValue ?? 0) - (a.metrics?.myBidValue ?? 0) - costsOfUsed(a);
 
-const totalIncome = computed(() => soldThisYear.value.reduce((sum, a) => sum + incomeOf(a), 0));
+/** 물건에 묶지 않은 그 해 사업경비(유류 · 식대 · 사무용품 …) — 5월 종합소득에서 뺀다 */
+const commonBizCost = computed(() => ledger.value
+  .filter((r) => r.book === 'biz' && !r.auctionId && yearOf(r.date) === year.value)
+  .reduce((s, r) => s + r.amount, 0));
+const totalIncome = computed(() => soldThisYear.value.reduce((sum, a) => sum + incomeOf(a), 0) - commonBizCost.value);
 
 /** 종합소득세 누진세율 — 개인소득세율표와 같은 구간 */
 const progressiveTax = (base: number) => {
@@ -81,7 +100,7 @@ const acqTaxTotal = computed(() =>
 const netProfit = computed(() => totalIncome.value - incomeTax.value);
 /** 매도한 건들의 매입비용(입찰가+경비) 합과 매도가 합 */
 const totalBuyCost = computed(() =>
-  soldThisYear.value.reduce((sum, a) => sum + (a.metrics?.myBidValue ?? 0) + costsOf(a), 0),
+  soldThisYear.value.reduce((sum, a) => sum + (a.metrics?.myBidValue ?? 0) + costsOfUsed(a), 0),
 );
 const totalSalePrice = computed(() =>
   soldThisYear.value.reduce((sum, a) => sum + (a.expectedSaleValue ?? 0), 0),
@@ -113,8 +132,8 @@ const holdMonths = (a: AuctionDetail) => {
 };
 /** 건별 계산 — 그 물건만 단독으로 봤을 때 */
 const acqTaxOf = (a: AuctionDetail) => a.bidCost?.acquisitionTaxAmount ?? 0;
-const etcCostOf = (a: AuctionDetail) => costsOf(a) - acqTaxOf(a);
-const buyCostOf = (a: AuctionDetail) => (a.metrics?.myBidValue ?? 0) + costsOf(a);
+const etcCostOf = (a: AuctionDetail) => costsOfUsed(a) - acqTaxOf(a);
+const buyCostOf = (a: AuctionDetail) => (a.metrics?.myBidValue ?? 0) + costsOfUsed(a);
 const ownIncomeTaxOf = (a: AuctionDetail) => Math.round(progressiveTax(incomeOf(a)));
 const ownLocalTaxOf = (a: AuctionDetail) => Math.round(ownIncomeTaxOf(a) * 0.1);
 const ownTotalTaxOf = (a: AuctionDetail) => ownIncomeTaxOf(a) + ownLocalTaxOf(a);
@@ -436,7 +455,7 @@ const router = useRouter();
             <dl v-if="openId === a.id" class="row-detail">
               <div><dt>입찰가</dt><dd>{{ won(a.metrics?.myBidValue ?? 0) }}</dd></div>
               <div><dt>취득세</dt><dd>{{ won(a.bidCost?.acquisitionTaxAmount ?? 0) }}</dd></div>
-              <div><dt>필요경비</dt><dd>{{ won(costsOf(a)) }}</dd></div>
+              <div><dt>{{ props.webYear ? '경비 합계' : '필요경비' }}</dt><dd>{{ won(costsOfUsed(a)) }}</dd></div>
             </dl>
           </article>
         </template>

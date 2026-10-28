@@ -26,6 +26,7 @@ import { propTypeName } from '../utils/propertyType';
 import type { AgencyRow, AuctionDetail } from '../types/auction';
 import PostWinTimeline from '../components/PostWinTimeline.vue';
 import PostWinForms from '../components/PostWinForms.vue';
+import ExpenseLedger from '../components/ExpenseLedger.vue';
 import PostWinMoney from '../components/PostWinMoney.vue';
 import TaxPage from './TaxPage.vue';
 import { FORM_BTN, FORMS_OF_ROW, type FormKey } from '../services/postWinForms';
@@ -253,10 +254,17 @@ const popTodo = ref<StepTodo | null>(null);
 /** 서식 창 — 줄 옆 [서식]을 누르면 그 줄에 걸린 서식(여럿이면 탭) */
 const formKeys = ref<FormKey[] | null>(null);
 // 진행절차 안 박스 탭 — 새로고침해도 보던 탭 그대로(이 탭 세션)
-// 세금분석 숫자를 바꾸는 것만 — 명도비(명도분석) · 수리비(인테리어 실제 지출) → 세금분석
-type FlowSub = 'steps' | 'evict' | 'repair' | 'tax';
-const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['repair', '인테리어'], ['tax', '세금분석']];
-const flowSub = ref<FlowSub>((() => { try { const v = sessionStorage.getItem('pw.flow.sub'); return v === 'evict' || v === 'repair' || v === 'tax' ? v : 'steps'; } catch { return 'steps'; } })());
+// 세금분석 숫자를 바꾸는 것만 — 명도분석 · 필요경비(예정신고) · 사업경비(5월 종합소득세) → 세금분석.
+// 필요경비 · 사업경비는 자금관리의 같은 이름 탭과 같은 기록이다
+type FlowSub = 'steps' | 'evict' | 'need' | 'biz' | 'tax';
+const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['need', '필요경비'], ['biz', '사업경비'], ['tax', '세금분석']];
+const flowSub = ref<FlowSub>((() => {
+  try {
+    const v = sessionStorage.getItem('pw.flow.sub');
+    if (v === 'repair') return 'biz';   // 예전 인테리어 박스 탭 → 사업경비
+    return v === 'evict' || v === 'need' || v === 'biz' || v === 'tax' ? v : 'steps';
+  } catch { return 'steps'; }
+})());
 watch(flowSub, (v) => { try { sessionStorage.setItem('pw.flow.sub', v); } catch { /* 그만 */ } });
 /** 처음 보일 서식 — 내용증명 2차 카드에서 열면 2차부터 */
 const formStart = ref<FormKey | ''>('');
@@ -432,7 +440,7 @@ const goTodo = async (t: StepTodo) => {
   // 상세 · 가이드는 창으로 — 인테리어 · 매도는 기록 화면이라 그대로 옮겨 간다
   if (t.tab !== 'repair' && t.tab !== 'sell' && (t.group || t.tab === 'biz')) { popTodo.value = t; return; }
   // 웹은 인테리어가 진행절차 안 박스 탭이다
-  if (webEmbed && t.tab === 'repair') { activeTab.value = 'flow'; flowSub.value = 'repair'; window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  if (webEmbed && t.tab === 'repair') { activeTab.value = 'flow'; flowSub.value = 'biz'; window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   activeTab.value = t.tab as TabKey;
   if (!t.group) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   collapsed.value = { ...collapsed.value, [t.group]: false };
@@ -903,6 +911,12 @@ const toggleSection = (key: string) => {
       <nav v-if="activeTab === 'flow'" class="pw-chaptabs" role="tablist">
         <button v-for="[k, label] in FLOW_SUBS" :key="k" type="button" role="tab" :aria-selected="flowSub === k" :class="{ on: flowSub === k }" @click="flowSub = k">{{ label }}</button>
       </nav>
+      <section v-if="activeTab === 'flow' && (flowSub === 'need' || flowSub === 'biz')" class="pw-card pw-ledger">
+        <header class="pw-card-head"><h2>{{ flowSub === 'need' ? '필요경비' : '사업경비' }}<span v-if="picked?.caseNumber" class="pw-ledger-cap">경매 <b>{{ picked.caseNumber }}</b> 사건에 쓴 돈</span></h2></header>
+        <div class="pw-card-body">
+          <ExpenseLedger :key="`${picked?.id}-${flowSub}`" :book="flowSub" :auction-id="picked?.id ?? ''" tools />
+        </div>
+      </section>
       <PostWinMoney v-if="activeTab === 'flow' && (flowSub === 'evict' || flowSub === 'tax')" :key="`${picked?.id}-${flowSub}`" :auction="picked" :mode="flowSub === 'evict' ? 'evict' : 'tax'" />
       <PostWinTimeline
         v-if="activeTab === 'flow' && flowSub === 'steps'"
@@ -1195,7 +1209,7 @@ const toggleSection = (key: string) => {
       </template>
 
       <!-- 인테리어 — 업체 비딩과 인테리어 비용, 같은 꼴의 표 두 장 -->
-      <template v-else-if="activeTab === 'repair' || (activeTab === 'flow' && flowSub === 'repair')">
+      <template v-else-if="activeTab === 'repair'">
         <section v-for="card in INT_CARDS" :key="card.kind" class="pw-card">
           <header class="pw-card-head">
             <h2>
@@ -1923,6 +1937,8 @@ const toggleSection = (key: string) => {
 .pw-int-tools { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 .pw-int-sum { margin-right: auto; font-size: 12px; font-weight: 600; color: #374151; }
 .pw-int-sum:has(+ .pw-int-sync) { margin-right: 0; }
+.pw-ledger-cap { margin-left: 12px; font-size: 14px; font-weight: 400; color: #6b7280; }
+.pw-ledger-cap b { color: #111827; font-weight: 700; }
 .pw-int-sync { margin: 0 auto 0 12px; font-size: 13px; color: #6b7280; }
 .pw-int-sum b { font-size: 13px; font-weight: 800; color: #111827; }
 .pw-int-tbl { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed;

@@ -8,6 +8,8 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useInteriorStore } from '../stores/interiorStore';
+import { useFinanceStore } from '../stores/financeStore';
+import { costSplitOf, ledgerRows } from '../services/expenseBook';
 import { useAuthStore } from '../stores/authStore';
 import { loadAccountDetail } from '../services/authRepository';
 import type { AuctionDetail } from '../types/auction';
@@ -68,19 +70,20 @@ const store = useAuctionStore();
 /** 입찰가산정으로 — 물건상세 수익분석 탭 */
 const goPlan = () => { if (props.auction?.id) router.push({ path: `/auctions/${props.auction.id}`, query: { tab: 'profit' } }); };
 const plan = computed(() => planOf(props.auction));
-// 인테리어 실제 지출(견적 말고 지출 표) — 적힌 게 있으면 A안 수리비 대신
+// 실제 기록 — 진행절차 필요경비 · 사업경비(자금관리와 같은 기록). 적힌 게 있으면 A안 대신 쓴다
+const finance = useFinanceStore();
 const interior = useInteriorStore();
-const repairActual = computed(() => interior.rows
-  .filter((r) => r.auctionId === props.auction?.id && (r.kind ?? 'cost') === 'cost')
-  .reduce((s, r) => s + (r.amountWithVat || 0), 0));
-const repairUsed = computed(() => (repairActual.value > 0 ? repairActual.value : plan.value.repair));
-/** A안 필요경비에서 수리비만 바꿔 넣은 값(명도비 뺌) */
-const othersUsed = computed(() => plan.value.others - plan.value.repair + repairUsed.value);
+finance.initialize();
+interior.initialize();
+const ledger = computed(() => ledgerRows({ be: finance.businessExpenses, interior: interior.rows, fuel: finance.fuelMeal, item: finance.itemPurchases }));
 const saleFixed = computed(() => !!props.auction?.sellDate);
 const evictCost = computed(() => (evictPick.value === 'deal' ? deal.value.total : exec.value.total));
 const evictLabel = computed(() => (evictPick.value === 'deal' ? '협의' : '강제집행'));
-const costTotal = computed(() => plan.value.acq + othersUsed.value + evictCost.value);
-const gain = computed(() => plan.value.sale - plan.value.bid - costTotal.value);
+const split = computed(() => costSplitOf({ id: props.auction?.id ?? '', bidCost: props.auction?.bidCost, metrics: props.auction?.metrics }, ledger.value, evictCost.value));
+/** 매매차익(예정신고) — 매도가 − 낙찰가 − 필요경비 */
+const tradeGain = computed(() => plan.value.sale - plan.value.bid - split.value.need);
+/** 사업소득 — 매매차익 − 사업경비(5월 종합소득세) */
+const gain = computed(() => tradeGain.value - split.value.biz);
 const vat = computed(() => vatOf(props.auction?.propertyType ?? '', props.auction?.buildingAreaM2 ?? 0));
 // 매출 · 다른 차익 — 매도 기록(매도일 · 매도가)에서 해마다 셈한다. 없으면 0
 const thisYear = new Date().getFullYear();
@@ -90,22 +93,23 @@ const lastSales = computed(() => salesOf(thisYear - 1));
 const thisSales = computed(() => salesOf(thisYear));
 const otherGain = computed(() => soldIn(thisYear).reduce((s, x) => {
   const p = planOf(x);
-  return s + Math.max(0, p.sale - p.bid - p.acq - p.others - (x.bidCost?.evictionCost || 0));
+  const c = costSplitOf(x, ledger.value);
+  return s + Math.max(0, p.sale - p.bid - c.need - c.biz);
 }, 0));
 const biz = computed(() => bizIncomeTaxOf(gain.value, otherGain.value));
-// 개인 양도세는 대출이자 · 중도상환수수료를 경비로 넣지 못한다 — 그만큼 차익에 되돌린다
-const personGain = computed(() => gain.value + plan.value.interest);
+// 개인 양도세는 필요경비만 뺀다 — 사업경비(이자 · 수리 · 명도 …)는 경비가 아니다
+const personGain = computed(() => tradeGain.value);
 const person = computed(() => transferTaxOf(personGain.value, term.value));
 const res = computed(() => (who.value === 'biz' ? biz.value : person.value));
 const taxSum = computed(() => res.value.incomeTax + res.value.localTax);
-const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.value) * 1000) / 10 : 0));
+const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : personGain.value; return g > 0 ? Math.round((taxSum.value / g) * 1000) / 10 : 0; });
 </script>
 
 <template>
   <section class="pwm">
     <header class="pwm-head">
       <h2>{{ mode === 'evict' ? '명도분석' : '세금분석' }}</h2>
-      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 입찰가산정 A안 값으로 다시 셈합니다 — 명도비 · 수리비는 실제 값' }}</span>
+      <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 셈합니다 — 필요경비 · 사업경비는 실제 기록, 없으면 입찰가산정 A안' }}</span>
     </header>
     <!-- ===== 명도분석 ===== -->
     <template v-if="mode === 'evict'">
@@ -165,9 +169,12 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
           <dl>
             <div><dt>낙찰가</dt><dd>{{ won(plan.bid) }}</dd></div>
             <div><dt>매도가</dt><dd>{{ won(plan.sale) }}<small>{{ saleFixed ? `확정 — 매도일 ${auction?.sellDate}` : '입찰가산정 A안 예상' }}</small></dd></div>
-            <div><dt>취득세</dt><dd>{{ won(plan.acq) }}<small>낙찰가의 {{ plan.acqPct }}%</small></dd></div>
-            <div><dt>필요경비</dt><dd>{{ won(othersUsed + evictCost) }}<small>입찰가산정 {{ won(othersUsed - repairUsed) }} + 수리비({{ repairActual > 0 ? '인테리어 실제' : 'A안' }}) {{ won(repairUsed) }} + 명도비({{ evictLabel }}) {{ won(evictCost) }}</small></dd></div>
-            <div class="key"><dt>양도차익</dt><dd :class="{ neg: gain < 0 }">{{ won(gain) }}<small>매도가 − 낙찰가 − 취득세 − 필요경비</small></dd></div>
+            <div><dt>필요경비</dt><dd>{{ won(split.need) }}<small>{{ split.needActual ? '실제 기록 — 필요경비 탭' : `A안 — 취득세 ${won(split.acq)}(낙찰가의 ${plan.acqPct}%) · 법무비 · 중개수수료` }}</small></dd></div>
+            <div :class="{ key: who !== 'biz' }"><dt>{{ who === 'biz' ? '매매차익' : '양도차익' }}</dt><dd :class="{ neg: tradeGain < 0 }">{{ won(tradeGain) }}<small>매도가 − 낙찰가 − 필요경비{{ who === 'biz' ? ' — 예정신고' : '' }}</small></dd></div>
+            <template v-if="who === 'biz'">
+              <div><dt>사업경비</dt><dd>{{ won(split.biz) }}<small>{{ split.bizActual ? '실제 기록 — 사업경비 탭' : `A안 — 이자 · 수리 · 관리비 등 ${won(split.bizPlan - split.evictPlan)} + 명도비(${evictLabel}) ${won(split.evictPlan)}` }}</small></dd></div>
+              <div class="key"><dt>사업소득</dt><dd :class="{ neg: gain < 0 }">{{ won(gain) }}<small>매매차익 − 사업경비 — 5월 종합소득세</small></dd></div>
+            </template>
             <div><dt>부가세 대상</dt><dd><span :class="['pwm-tag', { on: who === 'biz' && vat.taxable }]">{{ who !== 'biz' ? '해당없음' : vat.taxable ? '과세' : '면세' }}</span><small>{{ who !== 'biz' ? '개인 양도는 부가세가 없습니다' : vat.why }}</small></dd></div>
           </dl>
         </article>
@@ -187,7 +194,7 @@ const effPct = computed(() => (gain.value > 0 ? Math.round((taxSum.value / gain.
               <button type="button" :class="{ on: term === 'lt2' }" @click="term = 'lt2'">2년미만</button>
               <button type="button" :class="{ on: term === 'ge2' }" @click="term = 'ge2'">2년이상</button>
             </span></dd></div>
-            <div><dt>양도차익</dt><dd>{{ won(personGain) }}<small>대출이자 · 중도상환 {{ won(plan.interest) }}은 경비로 못 넣음</small></dd></div>
+            <div><dt>양도차익</dt><dd>{{ won(personGain) }}<small>필요경비만 뺌 — 이자 · 수리 · 명도비는 개인 양도세 경비가 아님</small></dd></div>
             <div><dt>적용 세율</dt><dd>{{ person.ratePct }}%<small>과세표준 {{ won(person.base) }} — 기본공제 250만원</small></dd></div>
             <div class="key"><dt>예상 양도소득세</dt><dd>{{ won(taxSum) }}<small>실효세율 {{ effPct }}% · 지방세 {{ won(person.localTax) }} 포함</small></dd></div>
             <div><dt>세후 남는 돈</dt><dd :class="{ neg: person.afterTax < 0 }">{{ won(person.afterTax) }}</dd></div>

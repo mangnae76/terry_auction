@@ -15,7 +15,7 @@ import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useFinanceStore } from '../stores/financeStore';
 import { useAuctionStore } from '../stores/auctionStore';
-import { useInteriorStore } from '../stores/interiorStore';
+import ExpenseLedger from '../components/ExpenseLedger.vue';
 import { bidStageOf } from '../utils/stageLabel';
 import { bidPriceOf, costsOf, incomeOf, shortCourt } from '../utils/auctionSummary';
 import type { AuctionDetail } from '../types/auction';
@@ -24,7 +24,6 @@ import type {
   CashFlowRecord,
   FinanceTabKey,
   FuelMealRecord,
-  InteriorExpenseRecord,
   ItemPurchaseRecord,
   PeriodKey,
 } from '../types/finance';
@@ -170,9 +169,19 @@ const tabOfQuery = (): FinanceTabKey | '' => {
   const k = String(route.query.tab ?? '');
   return (FIN_TABS as string[]).includes(k) ? (k as FinanceTabKey) : '';
 };
-const activeTab = ref<FinanceTabKey>(tabOfQuery() || 'cashFlow');
+const activeTab = ref<FinanceTabKey>(((t) => (webEmbed && (t === 'fuelMeal' || t === 'itemPurchase') ? 'interior' : t))(tabOfQuery() || 'cashFlow'));
 /** 웹 필터 줄의 다섯 탭 — 앱은 아래 머리의 탭 줄 그대로 */
-const WEB_TABS: Array<[FinanceTabKey, string]> = [['cashFlow', '자금입출금'], ['businessExpense', '예정신고비용'], ['fuelMeal', '유류&식대'], ['itemPurchase', '물품구매'], ['interior', '인테리어'], ['tax', '세금신고']];
+/** 웹 — 필요경비(예정신고) · 사업경비(5월 종합소득세) 두 장부. 예전 유류&식대 · 물품구매 · 인테리어 기록은 사업경비에 함께 보인다 */
+const WEB_TABS: Array<[FinanceTabKey, string]> = [['cashFlow', '자금입출금'], ['businessExpense', '필요경비'], ['interior', '사업경비'], ['tax', '세금신고']];
+/** 웹 장부 표 — 위 필터 줄의 엑셀 · 항목추가가 이 표로 간다 */
+const ledgerRef = ref<InstanceType<typeof ExpenseLedger> | null>(null);
+const onWeb = (t: FinanceTabKey) => webEmbed && (t === 'businessExpense' || t === 'interior');
+const onAddClick = () => { if (onWeb(activeTab.value)) ledgerRef.value?.openAdd(); else openAdd(activeTab.value as ModalKind); };
+/** 사업경비에 보이는 예전 유류&식대 · 물품구매 줄 — 그 창으로 고친다 */
+const openLegacy = (kind: 'fuelMeal' | 'itemPurchase', id: string) => {
+  const rec = kind === 'fuelMeal' ? finance.fuelMeal.find((r) => r.id === id) : finance.itemPurchases.find((r) => r.id === id);
+  if (rec) openEdit(kind, rec);
+};
 watch(() => route.query.tab, () => { const k = tabOfQuery(); if (k && k !== activeTab.value) activeTab.value = k; });
 // 웹 — 화면 안 탭(자금입출금 ~ 세금신고)을 바꾸면 주소에도 적는다(위 웹 경로 · 새로고침이 따라온다). 앱은 그대로
 watch(activeTab, (t) => { if (webEmbed && String(route.query.tab ?? '') !== t) void router.replace({ query: { ...route.query, tab: t } }); });
@@ -210,13 +219,6 @@ const filteredCashFlows = computed(() => byDateDesc(finance.cashFlows.filter((r)
 const filteredBusiness = computed(() => byDateDesc(finance.businessExpenses.filter((r) => isWithinPeriod(r.date))));
 const filteredFuelMeal = computed(() => byDateDesc(finance.fuelMeal.filter((r) => isWithinPeriod(r.date))));
 const filteredItemPurchases = computed(() => byDateDesc(finance.itemPurchases.filter((r) => isWithinPeriod(r.date))));
-// 웹 인테리어 — 낙찰이후 › 진행절차 › 인테리어 표와 같은 기록(같은 저장소)이라 어느 쪽에서 적어도 양쪽에 보인다
-const interior = useInteriorStore();
-if (webEmbed) interior.initialize();
-const intDateOf = (r: InteriorExpenseRecord) => r.startDate || r.date || '';
-const filteredInterior = computed(() => interior.rows
-  .filter((r) => (r.kind ?? 'cost') === 'cost' && isWithinPeriod(intDateOf(r)))
-  .map((r) => ({ ...r, date: intDateOf(r) })));
 
 /** 줄이 아주 많으면 화면이 무거워진다 — 처음에는 이만큼만 그리고 '더 보기'로 늘린다.
  *  합계·엑셀 저장은 자른 것이 아니라 거른 전체를 본다. */
@@ -248,7 +250,7 @@ const sortedCashFlows = computed(() => {
 const cashSortMark = (k: CashSortKey) => (cashSortKey.value === k ? (cashSortDesc.value ? '↓' : '↑') : '⇅');
 const shownCashFlows = computed(() => cut(sortedCashFlows.value));
 /** 사업지출 · 유류&식대 · 물품구매 표 정렬 — 머리글을 누르면 그 칸으로(다시 누르면 거꾸로). 기본은 날짜 늦은 순 */
-type SortTab = 'businessExpense' | 'fuelMeal' | 'itemPurchase' | 'interior';
+type SortTab = 'businessExpense' | 'fuelMeal' | 'itemPurchase';
 type Getter = (r: Record<string, unknown>) => string | number;
 const num = (v: unknown) => Number(v || 0);
 const txt = (v: unknown) => String(v ?? '');
@@ -269,15 +271,9 @@ const SORT_COLS: Record<SortTab, Array<[string, string, Getter, string?]>> = {
     ['total', '합계\n(VAT포함)', (r) => num(r.totalWithVat) || num(r.quantity) * num(r.unitPrice), 'two'],
     ['vendor', '구매처', (r) => txt(r.vendor)], ['card', '사용카드', (r) => txt(r.card)], ['note', '비고', (r) => txt(r.note)],
   ],
-  interior: [
-    ['date', '예상일정', (r) => txt(r.date)], ['auction', '물건구분', (r) => txt(r.auctionLabel)], ['work', '작업내용', (r) => txt(r.work)],
-    ['status', '현황', (r) => txt(r.status)], ['amount', '비용\n(VAT포함)', (r) => num(r.amountWithVat), 'two'],
-    ['vendor', '업체명 · 연락처', (r) => txt(r.vendor)], ['note', '비고', (r) => txt(r.note)],
-  ],
 };
 const tblSort = ref<Record<SortTab, { key: string; desc: boolean }>>({
   businessExpense: { key: 'date', desc: true }, fuelMeal: { key: 'date', desc: true }, itemPurchase: { key: 'date', desc: true },
-  interior: { key: 'date', desc: true },
 });
 const toggleTblSort = (tab: SortTab, key: string) => {
   const cur = tblSort.value[tab];
@@ -301,15 +297,12 @@ const sortRows = <T,>(tab: SortTab, list: T[]): T[] => {
 const shownBusiness = computed(() => cut(sortRows('businessExpense', filteredBusiness.value)));
 const shownFuelMeal = computed(() => cut(sortRows('fuelMeal', filteredFuelMeal.value)));
 const shownItemPurchases = computed(() => cut(sortRows('itemPurchase', filteredItemPurchases.value)));
-const shownInterior = computed(() => cut(sortRows('interior', filteredInterior.value)));
-const interiorTotal = computed(() => filteredInterior.value.reduce((s, r) => s + (r.amountWithVat || 0), 0));
 /** 지금 탭에서 아직 안 그린 줄 수 */
 const restCount = computed(() => {
   const all = activeTab.value === 'cashFlow' ? filteredCashFlows.value
     : activeTab.value === 'businessExpense' ? filteredBusiness.value
     : activeTab.value === 'fuelMeal' ? filteredFuelMeal.value
     : activeTab.value === 'itemPurchase' ? filteredItemPurchases.value
-    : activeTab.value === 'interior' ? filteredInterior.value
     : [];
   return Math.max(0, all.length - shownCount.value);
 });
@@ -342,12 +335,10 @@ const webUrl = (raw?: string) => {
 };
 
 // === 모달 상태 ===
-type ModalKind = '' | 'cashFlow' | 'businessExpense' | 'fuelMeal' | 'itemPurchase' | 'interior';
+type ModalKind = '' | 'cashFlow' | 'businessExpense' | 'fuelMeal' | 'itemPurchase';
 const modalKind = ref<ModalKind>('');
 const cfDraft = ref<Partial<CashFlowRecord>>({});
 const beDraft = ref<Partial<BusinessExpenseRecord>>({});
-const inDraft = ref<Partial<InteriorExpenseRecord>>({});
-const INT_STATUS = ['예정', '진행', '완료'];
 const fmDraft = ref<Partial<FuelMealRecord>>({});
 const ipDraft = ref<Partial<ItemPurchaseRecord>>({});
 
@@ -355,19 +346,14 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const openAdd = (kind: ModalKind) => {
   modalKind.value = kind;
-  if (kind === 'interior') {
-    inDraft.value = { kind: 'cost', auctionId: '', status: '예정', startDate: todayIso(), endDate: '', work: '', amountWithVat: 0, vendor: '', phone: '', note: '' };
-    return;
-  }
   if (kind === 'cashFlow') {
     cfDraft.value = { flowType: '출금', amount: 0, date: todayIso() };
   } else if (kind === 'businessExpense') {
-    detailCustom.value = false;
     beDraft.value = {
       auctionId: '',
-      profitCategory: webEmbed ? WEB_EXPENSE_CATS[0] : '기타사업비',
+      profitCategory: '기타사업비',
       memo: '',
-      detail: webEmbed ? WEB_EXPENSE_GROUPS[0][1][0] : '',
+      detail: '',
       amountWithVat: 0,
       date: todayIso(),
     };
@@ -385,14 +371,8 @@ const openAdd = (kind: ModalKind) => {
 
 const openEdit = (kind: ModalKind, record: unknown) => {
   modalKind.value = kind;
-  if (kind === 'interior') { inDraft.value = { ...(record as InteriorExpenseRecord) }; return; }
   if (kind === 'cashFlow') cfDraft.value = { ...(record as CashFlowRecord) };
-  else if (kind === 'businessExpense') {
-    beDraft.value = { ...(record as BusinessExpenseRecord) };
-    // 목록에 없는 명세(예전 기록 · 직접 쓴 글)는 직접입력 칸으로 보인다
-    const list = WEB_EXPENSE_GROUPS.find(([g]) => g === beDraft.value.profitCategory)?.[1] ?? [];
-    detailCustom.value = !!beDraft.value.detail && !list.includes(beDraft.value.detail);
-  }
+  else if (kind === 'businessExpense') beDraft.value = { ...(record as BusinessExpenseRecord) };
   else if (kind === 'fuelMeal') {
     const r = record as FuelMealRecord;
     fmDraft.value = { ...r, users: [...(r.users || [])] };
@@ -426,33 +406,6 @@ const villaName = (address?: string) => {
 const EXPENSE_CATEGORIES = [
   '기타사업비', '소유권이전', '인테리어', '대출이자', '관리비', '세금', '중개수수료',
 ];
-/** 웹 — 팔 때 매매차익 예정신고(종합소득세 기본세율로 먼저 셈)에 넣는 필요경비만.
- *  양도세 필요경비(소득세법 제97조)를 따른다: 취득비용 · 자본적지출 · 양도비용.
- *  대출이자 · 관리비 · 도배 · 장판 같은 수익적지출은 5월 종합소득세 확정신고에서 따로 */
-// 사용구분은 셋만 — 명세는 그 구분의 흔한 항목에서 고르고, 없으면 직접입력
-const WEB_EXPENSE_GROUPS: Array<[string, string[]]> = [
-  ['취득비용', ['취득세·지방교육세·농특세', '법무사 수수료(등기)', '국민주택채권 매각차손', '인지세', '취득 관련 소송비용']],
-  ['자본적지출', ['샷시·발코니 확장', '보일러·난방 교체', '배관·설비 교체', '시스템에어컨']],
-  ['양도비용', ['매도 중개수수료', '세무·신고 수수료', '계약서 작성·공증비']],
-];
-const WEB_EXPENSE_CATS = WEB_EXPENSE_GROUPS.map(([g]) => g);
-const detailItems = computed(() => WEB_EXPENSE_GROUPS.find(([g]) => g === beDraft.value.profitCategory)?.[1] ?? []);
-/** 명세를 목록에 없는 글로 쓰는 중인가 */
-const detailCustom = ref(false);
-const detailPick = computed({
-  get: () => (detailCustom.value ? '__custom' : (beDraft.value.detail ?? '')),
-  set: (v: string) => {
-    if (v === '__custom') { detailCustom.value = true; beDraft.value.detail = ''; return; }
-    detailCustom.value = false; beDraft.value.detail = v;
-  },
-});
-/** 구분을 바꾸면 명세를 그 구분의 첫 항목으로(직접 쓴 글은 그대로) */
-const pickCategory = (c: string) => {
-  beDraft.value.profitCategory = c;
-  if (detailCustom.value) return;
-  const list = WEB_EXPENSE_GROUPS.find(([g]) => g === c)?.[1] ?? [];
-  if (!list.includes(beDraft.value.detail ?? '')) beDraft.value.detail = list[0] ?? '';
-};
 
 const auctionOptions = computed(() => {
   const label = (a: { caseNumber: string; address?: string }) =>
@@ -481,10 +434,6 @@ const onSave = async () => {
       const a = auctionStore.auctions.find((x) => x.id === beDraft.value.auctionId);
       beDraft.value.auctionLabel = a ? (villaName(a.address) || a.caseNumber) : '';
       await finance.saveBusinessExpense(beDraft.value);
-    } else if (modalKind.value === 'interior') {
-      const a = auctionStore.auctions.find((x) => x.id === inDraft.value.auctionId);
-      // 물건 이름은 낙찰이후 인테리어 표와 같은 꼴로
-      await interior.save({ ...inDraft.value, auctionLabel: a ? (shortAddr(a.address) || a.caseNumber) : '', amountWithVat: Number(inDraft.value.amountWithVat ?? 0) });
     } else if (modalKind.value === 'fuelMeal') {
       await finance.saveFuelMeal(fmDraft.value);
     } else if (modalKind.value === 'itemPurchase') {
@@ -520,8 +469,6 @@ const runDelete = async () => {
       await finance.deleteCashFlow(cfDraft.value.id);
     } else if (modalKind.value === 'businessExpense' && beDraft.value.id) {
       await finance.deleteBusinessExpense(beDraft.value.id);
-    } else if (modalKind.value === 'interior' && inDraft.value.id) {
-      await interior.remove(inDraft.value.id);
     } else if (modalKind.value === 'fuelMeal' && fmDraft.value.id) {
       await finance.deleteFuelMeal(fmDraft.value.id);
     } else if (modalKind.value === 'itemPurchase' && ipDraft.value.id) {
@@ -558,6 +505,7 @@ const cardShort = (v?: string) => String(v ?? '').replace(/\s*카드$/, '').trim
 const shortDate = (d?: string) => (d && /^\d{4}[-./]/.test(d) ? d.slice(2) : (d ?? ''));
 
 const exportExcel = () => {
+  if (onWeb(activeTab.value)) { ledgerRef.value?.exportCsv(); return; }
   if (activeTab.value === 'cashFlow') {
     downloadCsv('자금입출금.csv', [
       ['일자', '명세', '입출금', '금액', '비고'],
@@ -567,11 +515,6 @@ const exportExcel = () => {
     downloadCsv(webEmbed ? '예정신고비용.csv' : '사업지출.csv', [
       ['결제일', '물건구분', '사용구분', '명세', '비용(VAT포함)', '비고'],
       ...filteredBusiness.value.map((r) => [r.date, r.auctionLabel, r.profitCategory || r.memo, r.detail, r.amountWithVat, r.note]),
-    ]);
-  } else if (activeTab.value === 'interior') {
-    downloadCsv('인테리어.csv', [
-      ['시작', '완료', '물건구분', '작업내용', '현황', '비용(VAT포함)', '업체명', '연락처', '비고'],
-      ...filteredInterior.value.map((r) => [r.startDate || r.date || '', r.endDate, r.auctionLabel, r.work, r.status, r.amountWithVat, r.vendor, r.phone, r.note]),
     ]);
   } else if (activeTab.value === 'fuelMeal') {
     downloadCsv('유류식대.csv', [
@@ -648,7 +591,7 @@ const exportExcel = () => {
               <button type="button" class="fin-date-box" @click="rangeTarget = 'end'"><span>{{ customEnd || '종료일' }}</span></button>
             </div>
             <button type="button" class="fin-excel" @click="exportExcel"><i>⬇</i>엑셀저장</button>
-            <button type="button" class="fin-add" @click="openAdd(activeTab as ModalKind)"><i>+</i>항목추가</button>
+            <button type="button" class="fin-add" @click="onAddClick"><i>+</i>항목추가</button>
           </template>
         </div>
       </div>
@@ -744,6 +687,16 @@ const exportExcel = () => {
     </template>
 
     <!-- ========== TAB 2: 사업지출내역 ========== -->
+    <!-- 웹 — 필요경비 · 사업경비 장부(낙찰이후 진행절차의 같은 이름 탭과 같은 기록) -->
+    <ExpenseLedger
+      v-else-if="onWeb(activeTab)"
+      ref="ledgerRef"
+      :key="activeTab"
+      class="fin-ledger"
+      :book="activeTab === 'businessExpense' ? 'need' : 'biz'"
+      :in-period="isWithinPeriod"
+      @legacy="openLegacy"
+    />
     <template v-else-if="activeTab === 'businessExpense'">
       <div class="fin-table-wrap">
         <table class="fin-table mid">
@@ -860,43 +813,6 @@ const exportExcel = () => {
       </div>
     </template>
 
-    <!-- ========== 웹 인테리어 — 낙찰이후 인테리어 표와 같은 기록 ========== -->
-    <template v-else-if="activeTab === 'interior'">
-      <p class="fin-int-sum">합계 <b>{{ fmtMoney(interiorTotal) }}</b>원 <span>낙찰이후 › 진행절차 › 인테리어와 같은 기록입니다 — 어느 쪽에서 적어도 양쪽에 보입니다</span></p>
-      <div class="fin-table-wrap">
-        <table class="fin-table mid">
-          <colgroup>
-            <col style="width: 11%" /><col style="width: 14%" /><col style="width: 18%" /><col style="width: 9%" />
-            <col style="width: 14%" /><col style="width: 18%" /><col />
-          </colgroup>
-          <thead>
-            <tr>
-              <th v-for="c in SORT_COLS.interior" :key="c[0]" :class="c[3]">
-                <button type="button" class="fin-sort" @click="toggleTblSort('interior', c[0])">{{ c[1] }}<i :class="{ on: tblSort.interior.key === c[0] }">{{ tblSortMark('interior', c[0]) }}</i></button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in shownInterior" :key="r.id" @click="openEdit('interior', r)">
-              <td>{{ shortDate(r.date) }}</td>
-              <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
-              <td :title="r.work">{{ r.work }}</td>
-              <td><span class="pill cat">{{ r.status || '-' }}</span></td>
-              <td>{{ fmtMoney(r.amountWithVat || 0) }}원</td>
-              <td :title="[r.vendor, r.phone].filter(Boolean).join(' · ')">{{ [r.vendor, r.phone].filter(Boolean).join(' · ') }}</td>
-              <td :title="r.note">{{ r.note }}</td>
-            </tr>
-            <tr v-if="filteredInterior.length === 0">
-              <td colspan="7" class="fin-empty">
-                <template v-if="interior.rows.length === 0">데이터가 없습니다.</template>
-                <template v-else>이 기간에 해당하는 데이터가 없습니다.</template>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </template>
-
     <!-- ========== TAB 5: 세금신고 — 세금관리 화면을 그대로 들여온다 ========== -->
     <TaxPage v-else-if="activeTab === 'tax'" embedded :web-year="webEmbed ? taxYear : null" />
 
@@ -939,25 +855,12 @@ const exportExcel = () => {
               <option v-for="o in auctionOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
             </select>
           </label>
-          <label>{{ webEmbed ? '사용구분' : '사업지출 항목' }}
-            <select v-if="webEmbed" :value="beDraft.profitCategory" @change="pickCategory(($event.target as HTMLSelectElement).value)">
-              <!-- 예전에 고른 항목(대출이자 · 관리비 …)은 고칠 때 그대로 보이게 -->
-              <option v-if="beDraft.profitCategory && !WEB_EXPENSE_CATS.includes(beDraft.profitCategory)" :value="beDraft.profitCategory">{{ beDraft.profitCategory }}</option>
-              <option v-for="c in WEB_EXPENSE_CATS" :key="c" :value="c">{{ c }}</option>
-            </select>
-            <select v-else v-model="beDraft.profitCategory">
+          <label>사업지출 항목
+            <select v-model="beDraft.profitCategory">
               <option v-for="c in EXPENSE_CATEGORIES" :key="c" :value="c">{{ c }}</option>
             </select>
-            <small v-if="webEmbed" class="fin-cat-hint">팔 때 예정신고에 넣는 필요경비만 — 대출이자 · 관리비 · 도배 · 장판은 5월 종합소득세에서</small>
           </label>
-          <label v-if="webEmbed">명세
-            <select v-model="detailPick">
-              <option v-for="d in detailItems" :key="d" :value="d">{{ d }}</option>
-              <option value="__custom">직접입력</option>
-            </select>
-            <input v-if="detailCustom" type="text" v-model="beDraft.detail" placeholder="명세를 적어 주세요" class="fin-detail-own" />
-          </label>
-          <label v-else>명세<input type="text" v-model="beDraft.detail" /></label>
+          <label>명세<input type="text" v-model="beDraft.detail" /></label>
           <label>비용 (VAT포함)<FormattedNumberInput v-model="beDraft.amountWithVat" live-group align="left" placeholder="0" /></label>
           <label>비고<input type="text" v-model="beDraft.note" /></label>
         </template>
@@ -1028,37 +931,9 @@ const exportExcel = () => {
           <label>비고<input type="text" v-model="ipDraft.note" /></label>
         </template>
 
-        <!-- 웹 인테리어 -->
-        <template v-else-if="modalKind === 'interior'">
-          <label>물건구분
-            <select v-model="inDraft.auctionId">
-              <option value="">선택 안함</option>
-              <option v-for="o in auctionOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
-            </select>
-          </label>
-          <div class="row2">
-            <label>작업내용<input type="text" v-model="inDraft.work" placeholder="도배 · 바닥 · 샷시" /></label>
-            <label>현황
-              <select v-model="inDraft.status">
-                <option v-for="st in INT_STATUS" :key="st" :value="st">{{ st }}</option>
-              </select>
-            </label>
-          </div>
-          <div class="row2">
-            <label>예상시작<input type="date" v-model="inDraft.startDate" /></label>
-            <label>예상완료<input type="date" v-model="inDraft.endDate" /></label>
-          </div>
-          <label>비용 (VAT포함)<FormattedNumberInput v-model="inDraft.amountWithVat" live-group align="left" placeholder="0" /></label>
-          <div class="row2">
-            <label>업체명<input type="text" v-model="inDraft.vendor" /></label>
-            <label>연락처<input type="tel" v-model="inDraft.phone" /></label>
-          </div>
-          <label>비고<input type="text" v-model="inDraft.note" /></label>
-        </template>
-
         <footer>
           <button
-            v-if="(modalKind === 'interior' && inDraft.id) || (modalKind === 'cashFlow' && cfDraft.id)
+            v-if="(modalKind === 'cashFlow' && cfDraft.id)
               || (modalKind === 'businessExpense' && beDraft.id)
               || (modalKind === 'fuelMeal' && fmDraft.id)
               || (modalKind === 'itemPurchase' && ipDraft.id)"

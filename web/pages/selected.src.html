@@ -866,11 +866,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .fin-shell :is(.fin-excel, .fin-add) { height: 40px; min-width: 120px; padding: 0 16px !important; border-radius: 6px !important; font-size: 16px !important; }
 .app-page[data-k="finance"] .fin-shell .fin-excel { margin-left: auto; }
 .app-page[data-k="finance"] .fin-shell :is(.fin-excel, .fin-add) i { font-size: 13px; }
-.app-page[data-k="finance"] .fin-detail-own { margin-top: 6px; }
-.app-page[data-k="finance"] .fin-int-sum { margin: 8px 2px 8px; font-size: 15px; color: var(--text); }
-.app-page[data-k="finance"] .fin-int-sum b { font-weight: 800; }
-.app-page[data-k="finance"] .fin-int-sum span { margin-left: 10px; font-size: 13px; color: var(--muted); }
-.app-page[data-k="finance"] .fin-cat-hint { display: block; margin-top: 6px; font-size: 12px; font-weight: 400; color: #6b7280; line-height: 1.5; }
+.app-page[data-k="finance"] .fin-ledger { margin-top: 8px; }
 .app-page[data-k="finance"] .fin-custom-inline { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
 .app-page[data-k="finance"] .fin-custom-inline .fin-date-box { height: 40px; min-width: 130px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; font-size: 15px; color: #111827; cursor: pointer; }
 .app-page[data-k="finance"] .fin-custom-inline .fin-date-sep { color: #9ca3af; }
@@ -2709,7 +2705,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
-    if (head === 'postwin' && m[2] === 'repair') { try { sessionStorage.setItem('pw.flow.sub', 'repair'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '인테리어' 하위 탭 — 진행절차 안 박스 탭으로 옮겼다 */
+    if (head === 'postwin' && m[2] === 'repair') { try { sessionStorage.setItem('pw.flow.sub', 'biz'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '인테리어' 하위 탭 — 진행절차 안 사업경비 박스 탭으로 */
+    if (head === 'finance' && (m[2] === 'fuelMeal' || m[2] === 'itemPurchase')) return { route: 'finance', sub: 'interior' }; /* 예전 유류&식대 · 물품구매 — 사업경비에 함께 보인다 */
     if (head === 'market' && m[2] === 'ranking') { try { sessionStorage.setItem('adm.dong.openMap', '1'); } catch (e) { /* 그만 */ } return { route: 'market', sub: 'dong' }; } /* 예전 '거래랭킹' — 지역분석 › 지도 탭으로 합쳤다 */
     if (head === 'bidrate') return { route: 'market', sub: SUB_TAB_KEYS.market.includes(m[2]) ? m[2] : 'near' }; /* 예전 '낙찰가율분석' 주소 */
     if (SUB_TAB_KEYS[head]) return { route: head, sub: SUB_TAB_KEYS[head].includes(m[2]) ? m[2] : SUB_TAB_KEYS[head][0] };
@@ -3777,7 +3774,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     market: [['dong', '', '지역분석'], ['case', '', '경매지번 분석'], ['near', '', '인근 매각물건 분석'], ['same', '', '동일지번 매각물건 분석']],
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['sell', '', '매도·임대'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어는 진행절차 안 박스 탭 */
-    finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '예정신고비용'], ['fuelMeal', '', '유류&식대'], ['itemPurchase', '', '물품구매'], ['interior', '', '인테리어'], ['tax', '', '세금신고']],
+    finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
     more: [['mypage', '', '내 정보'], ['finance', '', '자금관리'], ['alerts', '', '알림'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['news', '', '공지'], ['support', '', '고객센터']],
     item: [['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
   };

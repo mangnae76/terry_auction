@@ -38,6 +38,8 @@ export interface InteriorExpenseRecord extends FinanceBase {
   /** 어느 표의 줄인지 — 'bid' 업체 비딩 · 'cost' 인테리어 비용 */
   kind: 'bid' | 'cost';
   work: string;            // 작업내용 (예: 도배, 바닥)
+  /** 웹 사업경비의 사용구분(수리·인테리어 · 명도비 · 대출이자 …) — 없으면 수리·인테리어 */
+  category?: string;
   status: string;          // 현황 (예정 · 진행 · 완료)
   startDate: string;       // 예상시작 YYYY-MM-DD
   endDate: string;         // 예상완료 YYYY-MM-DD
