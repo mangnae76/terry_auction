@@ -553,9 +553,8 @@ const downloadCsv = () => {
         <table :class="['adm-table', { even: embedded }]">
           <thead>
             <tr class="grp">
-              <!-- 총 세대수는 건축물대장 자동값이라 구분 쪽으로 — 손으로 적는 칸(수치입력)은 총 매물수 하나 -->
-              <th :colspan="embedded ? 2 : 3">{{ embedded ? '구분' : '주소지 정보' }}</th>
-              <th class="in">수치입력</th>
+              <!-- 구분이 총 매물수까지 덮는다 — 손으로 적는 칸은 총 매물수 하나라 따로 묶지 않고 그 칸 머리만 파랗게 -->
+              <th :colspan="embedded ? 3 : 4">{{ embedded ? '구분' : '주소지 정보' }}</th>
               <th colspan="8">지표결과</th>
             </tr>
             <tr>
