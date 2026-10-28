@@ -4,8 +4,13 @@
 /** 낙찰이후 하위 탭 열쇠 — 절차상세 장(win · evict · balance), 가이드 장(gevict · biz), 그 밖(repair · sell) */
 export type PostWinTabKey = 'flow' | 'win' | 'evict' | 'balance' | 'gwin' | 'gevict' | 'biz' | 'repair' | 'sell';
 
+/** 큰일의 갈래 — 명도 · 대출 · 절차(법원 · 등기 · 사업자 · 인테리어 · 매도 · 세금) */
+export type TodoCat = 'evict' | 'loan' | 'proc';
+export const TODO_CATS: Array<[TodoCat, string]> = [['evict', '명도'], ['loan', '대출'], ['proc', '절차']];
+
 export interface StepTodo {
   text: string;
+  cat: TodoCat;
   /** '만나면' · '못 만나면'처럼 둘 중 하나만 하는 일에 붙이는 작은 말 */
   when?: string;
   /** 바로가기로 열 탭(장) */
@@ -31,42 +36,42 @@ const TAX = { path: '/finance', tab: 'tax' };
 export const STEP_TODOS: Record<string, StepTodo[]> = {
   // 낙찰 당일 — 현장 동선 순서. 협상은 이날 하고, 이사는 잔금 납부일까지(그 뒤로는 이자가 내 몫)
   bid: [
-    { text: '사건기록 열람', tab: 'win', group: 'file' },
-    { text: '점유자 바로 협상 — 이사는 잔금 납부일까지', when: '만나면', tab: 'win', group: 'visit', section: '협상내용' },
-    { text: '메모지·연락처 남기기', when: '못 만나면', tab: 'win', group: 'visit', rows: ['pw.visit.c1'] },
-    { text: '주민·동대표·관리소 탐문', tab: 'win', group: 'visit', rows: ['pw.visit.c2', 'pw.visit.c3', 'pw.visit.c4'] },
-    { text: '부동산 방문 — 시세·거래기록', tab: 'win', group: 'visit', section: '부동산방문' },
+    { text: '사건기록 열람', cat: 'proc', tab: 'win', group: 'file' },
+    { text: '점유자 바로 협상 — 이사는 잔금 납부일까지', cat: 'evict', when: '만나면', tab: 'win', group: 'visit', section: '협상내용' },
+    { text: '메모지·연락처 남기기', cat: 'evict', when: '못 만나면', tab: 'win', group: 'visit', rows: ['pw.visit.c1'] },
+    { text: '주민·동대표·관리소 탐문', cat: 'evict', tab: 'win', group: 'visit', rows: ['pw.visit.c2', 'pw.visit.c3', 'pw.visit.c4'] },
+    { text: '부동산 방문 — 시세·거래기록', cat: 'proc', tab: 'win', group: 'visit', section: '부동산방문' },
   ],
   decide: [
-    { text: '점유자 다시 연락·재방문', when: '만날 때까지', tab: 'evict', group: 'ev.step', branch: 1 },
-    { text: '내부·관리비 확인', tab: 'win', group: 'visit', section: '내부확인' },
-    { text: '1차 내용증명 준비', when: '연락 안 되면', tab: 'win', group: 'visit', rows: ['pw.visit.c5'] },
+    { text: '점유자 다시 연락·재방문', cat: 'evict', when: '만날 때까지', tab: 'evict', group: 'ev.step', branch: 1 },
+    { text: '내부·관리비 확인', cat: 'evict', tab: 'win', group: 'visit', section: '내부확인' },
+    { text: '1차 내용증명 준비', cat: 'evict', when: '연락 안 되면', tab: 'win', group: 'visit', rows: ['pw.visit.c5'] },
   ],
   confirm: [
-    { text: '이사 날짜 확정 — 잔금 납부일 이전', when: '합의되면', tab: 'win', group: 'visit', noCount: true },
-    { text: '대출 심사 서류 준비', tab: 'balance', group: 'loan.screen' },
-    { text: '대출업체 비딩', tab: 'balance', group: 'loan.bid' },
-    { text: '사업자등록', tab: 'biz' },
+    { text: '이사 날짜 확정 — 잔금 납부일 이전', cat: 'evict', when: '합의되면', tab: 'win', group: 'visit', noCount: true },
+    { text: '대출 심사 서류 준비', cat: 'loan', tab: 'balance', group: 'loan.screen' },
+    { text: '대출업체 비딩', cat: 'loan', tab: 'balance', group: 'loan.bid' },
+    { text: '사업자등록', cat: 'proc', tab: 'biz' },
   ],
   balance: [
-    { text: '대출준비서류 챙기기', tab: 'balance', group: 'loan.docs' },
-    { text: '법무비용 확인', tab: 'balance', group: 'loan.legal' },
-    { text: '잔금 납부·완납증명', tab: 'balance', group: 'loan.self', section: ['1단계경매계방문', '2단계은행·잔금납부', '3단계완납증명원'] },
-    { text: '취득세 신고·납부', tab: 'balance', group: 'loan.self', section: '4단계취득세신고·납부' },
-    { text: '등기 촉탁', tab: 'balance', group: 'loan.self', section: '5단계등기촉탁' },
-    { text: '인도명령 신청', tab: 'evict', group: 'ev.step', branch: 2, stepNos: ['1'] },
+    { text: '대출준비서류 챙기기', cat: 'loan', tab: 'balance', group: 'loan.docs' },
+    { text: '법무비용 확인', cat: 'loan', tab: 'balance', group: 'loan.legal' },
+    { text: '잔금 납부·완납증명', cat: 'proc', tab: 'balance', group: 'loan.self', section: ['1단계경매계방문', '2단계은행·잔금납부', '3단계완납증명원'] },
+    { text: '취득세 신고·납부', cat: 'proc', tab: 'balance', group: 'loan.self', section: '4단계취득세신고·납부' },
+    { text: '등기 촉탁', cat: 'proc', tab: 'balance', group: 'loan.self', section: '5단계등기촉탁' },
+    { text: '인도명령 신청', cat: 'evict', tab: 'evict', group: 'ev.step', branch: 2, stepNos: ['1'] },
   ],
-  order: [{ text: '내용증명 발송', tab: 'evict', group: 'ev.step', branch: 2, stepNos: ['2'] }],
-  serve: [{ text: '인도명령 결정문 송달 확인', tab: 'evict', group: 'ev.step', branch: 3, stepNos: ['3'] }],
-  warn: [{ text: '강제집행 신청', tab: 'evict', group: 'ev.step', branch: 3, stepNos: ['4'] }],
-  exec: [{ text: '강제집행 실시', tab: 'evict', group: 'ev.step', branch: 4, stepNos: ['5'] }],
-  repairStart: [{ text: '인테리어 업체 비딩', tab: 'repair' }],
-  repairDone: [{ text: '인테리어 비용 정리', tab: 'repair' }],
-  list: [{ text: '중개업소 의뢰·매물 내놓기', tab: 'sell' }],
-  contract: [{ text: '매도·임대 계약', tab: 'sell' }],
-  close: [{ text: '매도 잔금 받기·자금 정리', page: { path: '/finance', tab: 'cashFlow' } }],
-  taxPre: [{ text: '매매차익 예정신고·납부', page: TAX }],
-  taxFinal: [{ text: '종합소득세 확정신고', page: TAX }],
+  order: [{ text: '내용증명 발송', cat: 'evict', tab: 'evict', group: 'ev.step', branch: 2, stepNos: ['2'] }],
+  serve: [{ text: '인도명령 결정문 송달 확인', cat: 'evict', tab: 'evict', group: 'ev.step', branch: 3, stepNos: ['3'] }],
+  warn: [{ text: '강제집행 신청', cat: 'evict', tab: 'evict', group: 'ev.step', branch: 3, stepNos: ['4'] }],
+  exec: [{ text: '강제집행 실시', cat: 'evict', tab: 'evict', group: 'ev.step', branch: 4, stepNos: ['5'] }],
+  repairStart: [{ text: '인테리어 업체 비딩', cat: 'proc', tab: 'repair' }],
+  repairDone: [{ text: '인테리어 비용 정리', cat: 'proc', tab: 'repair' }],
+  list: [{ text: '중개업소 의뢰·매물 내놓기', cat: 'proc', tab: 'sell' }],
+  contract: [{ text: '매도·임대 계약', cat: 'proc', tab: 'sell' }],
+  close: [{ text: '매도 잔금 받기·자금 정리', cat: 'proc', page: { path: '/finance', tab: 'cashFlow' } }],
+  taxPre: [{ text: '매매차익 예정신고·납부', cat: 'proc', page: TAX }],
+  taxFinal: [{ text: '종합소득세 확정신고', cat: 'proc', page: TAX }],
 };
 
 /** 옛 저장본(열쇠 없음)은 이름으로 찾는다 */
