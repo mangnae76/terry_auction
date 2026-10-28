@@ -2406,7 +2406,15 @@ span.cal-day.has { cursor: help; }
 .app-market .tsp-in-dong .tsp-stage { top: var(--dongmap-top) !important; }
 .app-market .tsp-in-dong .tsp-panel { top: calc(var(--dongmap-top) + 18px) !important; width: 430px !important; } /* 고르는 칸이 빠져 좁게(546 → 364) → 지역 이름 옆 저장 칩 · 평/㎡ 단가가 한 줄에 들어가게 430 */
 /* 총 거래건수 ⓘ 말풍선 — 판 왼쪽에 붙은 칸이라 가운데 정렬이면 왼쪽이 잘린다. 칸 왼쪽에서 펼친다 */
-.app-market .tsp-in-dong .tsp-stat .itip-bubble { left: 0 !important; transform: none !important; }
+.app-market .tsp-in-dong .tsp-stat .itip-bubble { left: 0 !important; transform: none !important; min-width: 0 !important; width: max-content; max-width: 360px; white-space: normal !important; }
+/* 통계정보 네 칸 — 말풍선이 칸 묶음 밖으로 나와야 해서 묶음의 overflow 를 풀고, 둥근 모서리는 칸마다 준다 */
+.app-market .tsp-in-dong .tsp-stat-grid { overflow: visible !important; }
+.app-market .tsp-in-dong .tsp-stat-grid > div:nth-child(1) { border-top-left-radius: 9px; }
+.app-market .tsp-in-dong .tsp-stat-grid > div:nth-child(2) { border-top-right-radius: 9px; }
+.app-market .tsp-in-dong .tsp-stat-grid > div:nth-child(3) { border-bottom-left-radius: 9px; }
+.app-market .tsp-in-dong .tsp-stat-grid > div:nth-child(4) { border-bottom-right-radius: 9px; }
+/* ⓘ 말풍선 글은 굵게 하지 않는다 — 웹 어디서나(칸 이름의 굵기를 물려받지 않게) */
+.itip-bubble, .itip-bubble * { font-weight: 400 !important; }
 /* 지역 이름과 저장 칩 한 줄 — 칩은 오른쪽 끝 */
 .app-market .tsp-in-dong .tsp-picked-title { justify-content: space-between !important; flex-wrap: nowrap !important; white-space: nowrap; } /* 저장 칩은 오른쪽 끝(통계 정보 상자 오른쪽 끝선과 맞춤) */
 /* 지도 값 회색 판 — 판 칸마다 주는 위 여백(14)이 이 판에도 붙어 단추가 아래로 쏠렸다. 사방 4 로 */

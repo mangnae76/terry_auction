@@ -723,18 +723,18 @@ onMounted(async () => {
             <button type="button" :class="{ on: pinMetric === 'unit' }" @click="pinMetric = 'unit'">평당가</button>
           </div>
           <section class="tsp-stat">
-            <h3>통계 정보</h3>
+            <h3>통계정보</h3>
             <!-- 웹 — 첫 줄 거래 건수 · 거래 총액, 둘째 줄 평균가 · 평당 단가 (집계 동은 위 결과 줄에) -->
             <div v-if="webEmbed" class="tsp-stat-grid">
               <div><dt><InfoTip :lines="statTip">총 거래건수</InfoTip></dt><dd><YmCount :year="(statTotalCount * 12) / statMonths" :month="statTotalCount / statMonths" /></dd></div>
-              <div><dt>거래 총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
+              <div><dt>거래총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
               <div><dt>{{ avgLabel }}</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
               <div><dt>평 단가 / ㎡ 단가</dt><dd><em class="tsp-unit-pre">평</em>{{ manWon(statUnitPrice) }}<em class="tsp-unit-bar">/</em><em class="tsp-unit-pre">㎡</em>{{ manWon(statUnitPrice / 3.305785) }}</dd></div>
             </div>
             <div v-else class="tsp-stat-grid">
               <div><dt><InfoTip :lines="statTip">총 거래건수</InfoTip></dt><dd><YmCount :year="(statTotalCount * 12) / statMonths" :month="statTotalCount / statMonths" /></dd></div>
               <div><dt>{{ avgLabel }}</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
-              <div><dt>거래 총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
+              <div><dt>거래총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
               <div><dt>집계 동</dt><dd>{{ selectedRegion ? '1곳' : `${rows.length}곳` }}</dd></div>
             </div>
           </section>
