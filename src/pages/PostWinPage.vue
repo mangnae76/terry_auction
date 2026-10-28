@@ -1207,6 +1207,7 @@ const toggleSection = (key: string) => {
             <div class="pw-int-tools">
               <!-- 합계는 단추와 같은 줄 왼쪽에 -->
               <span class="pw-int-sum">합계 <b>{{ money(totalOf(card.kind)) }}</b>원</span>
+              <span v-if="webEmbed" class="pw-int-sync">자금관리 › 인테리어와 같은 기록입니다 — 어느 쪽에서 적어도 양쪽에 보입니다</span>
               <button type="button" class="pw-ebtn" @click="exportInterior(card.kind, card.file)">⬇ 엑셀저장</button>
               <button type="button" class="pw-ebtn on" :disabled="!picked" @click="openIntAdd(card.kind)">＋ 항목추가</button>
             </div>
@@ -1921,6 +1922,8 @@ const toggleSection = (key: string) => {
 /* 인테리어 비용 */
 .pw-int-tools { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 .pw-int-sum { margin-right: auto; font-size: 12px; font-weight: 600; color: #374151; }
+.pw-int-sum:has(+ .pw-int-sync) { margin-right: 0; }
+.pw-int-sync { margin: 0 auto 0 12px; font-size: 13px; color: #6b7280; }
 .pw-int-sum b { font-size: 13px; font-weight: 800; color: #111827; }
 .pw-int-tbl { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed;
   background: #fff; border: 1px solid #d0d5dd; border-radius: 8px; }
