@@ -2878,6 +2878,8 @@ html, body { overflow-x: clip; }
     });
     if (!list.length) {
       const filtered = S.type || S.court || S.date || S.q || S.stage !== 'all';
+      /* 달력에서 물건 없는 날을 고른 것 — 지울 조건을 권할 일이 아니라 그날 목록이 비었다는 한 줄이면 된다 */
+      if (S.date) { root.innerHTML = '<div class="empty"><b>목록이 없습니다</b></div>'; return; }
       root.innerHTML = `<div class="empty"><b>${filtered ? '조건에 맞는 물건이 없습니다' : '표시할 물건이 없습니다'}</b><span>${filtered ? (['won', 'fail', 'cancel', 'sold'].includes(S.stage) ? '카드의 낙찰·유찰·취소·매도 알약을 누르면 여기에 모입니다.' : '걸어 둔 조건을 바꾸거나 지워 보세요.') : '선정물건등록으로 첫 물건을 넣어 보세요.'}</span><button type="button" data-act="${filtered ? 'reset-all' : 'register'}">${filtered ? '조건 모두 지우기' : '선정물건등록'}</button></div>`;
       return;
     }
