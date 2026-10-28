@@ -25,6 +25,8 @@ import { addressParts } from '../utils/addressName';
 import { propTypeName } from '../utils/propertyType';
 import type { AgencyRow, AuctionDetail } from '../types/auction';
 import PostWinTimeline from '../components/PostWinTimeline.vue';
+import PostWinForms from '../components/PostWinForms.vue';
+import { FORMS_OF_ROW, type FormKey } from '../services/postWinForms';
 import { DETAIL_STEPS, STEP_TITLE, STEP_TODOS, type StepTodo } from '../services/postWinTodos';
 import { DETAIL_REPAIR, DETAIL_SELL, DETAIL_TAX } from '../services/postWinDetail';
 /** 웹 절차상세 · 인테리어 · 매도 · 세금 장 — 코드에 둔 체크리스트(고쳐 저장하는 표가 아니다) */
@@ -238,6 +240,8 @@ const GUIDE_DAY_KEYS = new Set(['rule']);
 const GUIDE_EVICT_KEYS = new Set(['ev.flow', 'ev.deal', 'ev.step']);   // 시기별 진행내용은 체크할 일이 아니라 흐름 설명 — 가이드로
 // === 절차진행 큰일 → 상세 · 가이드를 창으로 — 화면을 옮기지 않고 그 상자만 띄워 체크하고 닫는다 ===
 const popTodo = ref<StepTodo | null>(null);
+/** 서식 창 — 줄 옆 [서식]을 누르면 그 줄에 걸린 서식(여럿이면 탭) */
+const formKeys = ref<FormKey[] | null>(null);
 /** 창은 그 큰일에 이어진 칸 · 줄만 — '전체 보기'를 누르면 상자 전체 */
 const popFull = ref(false);
 const normLabel = (v: string) => String(v ?? '').replace(/\s+/g, '');
@@ -283,7 +287,7 @@ const popOpen = computed(() => popGroups.value.length > 0);
 const POP_VIEW: Partial<Record<TabKey, TabKey>> = { gwin: 'win', gevict: 'evict' };
 const popView = computed<TabKey>(() => (popTodo.value?.tab ? (POP_VIEW[popTodo.value.tab as TabKey] ?? popTodo.value.tab as TabKey) : viewTab.value));
 const closePop = () => { popTodo.value = null; };
-const onPopKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closePop(); };
+const onPopKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !formKeys.value) closePop(); };
 watch(popOpen, (v) => { if (v) window.addEventListener('keydown', onPopKey); else window.removeEventListener('keydown', onPopKey); });
 watch(activeTab, closePop);
 const dayGroups = computed<CheckGroup[]>(() => {
@@ -813,6 +817,7 @@ const toggleSection = (key: string) => {
         @go="goTodo"
       />
       <div v-if="popOpen" class="pw-todo-veil" @click="closePop" />
+      <PostWinForms v-if="formKeys" :auction="picked" :keys="formKeys" @close="formKeys = null" />
       <template v-if="hasTable || popOpen">
        <div :class="{ 'pw-todo-pop': popOpen }" :role="popOpen ? 'dialog' : undefined">
        <button v-if="popOpen" type="button" class="pw-todo-pop-x" aria-label="닫기" @click="closePop">
@@ -1057,7 +1062,7 @@ const toggleSection = (key: string) => {
                         @click.stop
                       >{{ webLine(r.text) }}<span class="pw-ext">↗</span></a>
                       <!-- 웹 — '인터넷우체국'처럼 낱말에 걸린 링크는 그 낱말만 (앱은 그대로) -->
-                      <template v-else><template v-for="(pt, pi) in (webEmbed ? textParts(webLine(r.text)) : [{ t: webLine(r.text) }])" :key="pi"><a v-if="pt.href" class="pw-wordlink" :href="pt.href" target="_blank" rel="noopener" @click.stop>{{ pt.t }}<span class="pw-ext">↗</span></a><template v-else>{{ pt.t }}</template></template></template>
+                      <template v-else><template v-for="(pt, pi) in (webEmbed ? textParts(webLine(r.text)) : [{ t: webLine(r.text) }])" :key="pi"><a v-if="pt.href" class="pw-wordlink" :href="pt.href" target="_blank" rel="noopener" @click.stop>{{ pt.t }}<span class="pw-ext">↗</span></a><template v-else>{{ pt.t }}</template></template><button v-if="webEmbed && FORMS_OF_ROW[r.id]" type="button" class="pw-formbtn" @click.stop="formKeys = FORMS_OF_ROW[r.id]">서식</button></template>
                     </td>
                     <!-- 부수 — 체크 왼쪽에 제 칸으로 -->
                     <td v-if="editing" class="pw-qty">
@@ -2002,6 +2007,8 @@ const toggleSection = (key: string) => {
 /* 웹 — 절차진행 큰일에 맞춰 새로 넣은 상자는 초록 제목 · 초록 테 */
 .pw-card.pw-new { box-shadow: inset 0 0 0 1.5px #4f9a68; }
 .pw-card.pw-new .pw-card-head h2 { color: #2f7d4a; }
+.pw-formbtn { margin-left: 8px; height: 24px; padding: 0 8px; border: 1px solid #c7d6f5; border-radius: 6px; background: #f2f6fe; color: #2b5fc4; font-size: 14px; font-weight: 600; cursor: pointer; vertical-align: middle; }
+.pw-formbtn:hover { background: #e3ecfc; }
 .pw-wordlink { color: #2b6df3; text-decoration: underline; text-underline-offset: 2px; }
 .pw-wordlink:hover { color: #1d4ed8; }
 .pw-chaps { display: inline-flex; gap: 6px; flex: none; }
