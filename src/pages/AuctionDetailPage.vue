@@ -3071,11 +3071,7 @@ const setExtraNote = (key: string, value: string) => {
 
 // === 매매수요 (빌라) — 동단위 수요·공급 지표 ===
 // 주소는 시 > 구 > 동 순서로 받고, 시/도는 서울·경기·인천만 다룬다.
-// 매매수요는 편집 버튼 없이 바로 고친다 — 적는 즉시 저장한다
-const setDmVal = (id: string, value: string) => {
-  setFieldVal(id, value);
-  persistSoon();
-};
+// 손으로 적는 칸은 총 매물수 하나 — 12개월 거래량 · 총 세대수는 자동값만
 /** 총 매물수는 네이버에서 사람이 세어 적는 값이라 받아 오는 시각이 없다.
  *  대신 '적은 시각'을 같이 남겨 말풍선의 갱신 줄에 쓴다. 비우면 시각도 지운다.
  *  (지우는 건 '' 로 해야 한다 — merge 저장이라 delete 로는 서버 값이 안 지워진다) */
@@ -3490,8 +3486,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['적정', '180% 이상 ↑ (높을수록 좋다)'],
   ] },
 }));
-/** 12개월 거래량 — 국토부 실거래에서 센 값이 기본이고, 손으로 적으면 그 값이 우선.
- *  (총 세대수와 같은 방식. 비워 두면 다시 자동값으로 돌아간다) */
+/** 12개월 거래량 · 총 세대수 — 국토부 실거래 · 건축물대장 자동값만 쓴다(손 입력 없음) */
 const deal12mValue = computed(() => deal12mAuto.value); // 국토부 실거래 자동값만(손 입력은 받지 않는다)
 const dmUnits = computed(() => unitsAuto.value); // 건축물대장 자동값만(손 입력은 받지 않는다)
 const dmListings = computed(() => dmNum('fs.dm.listings'));  // 총 매물수 (네이버, 직접 입력)
