@@ -1129,7 +1129,7 @@ const downloadCsv = () => {
           </div>
         </div>
         <div v-else-if="webEmbed && listView === 'deals'" class="adm-deals">
-          <!-- 거래 타임라인 — 점 = 거래 한 건, 월별 가운데 값 선 · 월별 거래량 막대, 재생. 달을 누르면 아래 목록이 그 달로 -->
+          <!-- 거래 타임라인 — 점 = 거래 한 건, 월별 중간값 선 · 월별 거래량 막대, 재생. 달을 누르면 아래 목록이 그 달로 -->
           <TradeTimeline v-model="dealMonth" :rows="dealBase" />
           <div class="adm-deals-head">
             <strong>개별 거래 목록<template v-if="dealMonth"> · {{ dealMonth.slice(0, 4) }}년 {{ Number(dealMonth.slice(5, 7)) }}월</template></strong>

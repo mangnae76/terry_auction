@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 점 쌓기 분포도 — 거래 1건 = 점 1개(많으면 N건씩 묶는다)를 구간 칸에 쌓는다.
 // 기준(면적 · 금액 · 연식 · 층)을 바꾸면 같은 점들이 날아가 새 구간으로 다시 쌓인다.
-// 칸 위에는 건수와 그 칸의 가운데 값. 점 색은 계약연도 · 연식 · 층 · 금액 중에서 고른다.
+// 칸 위에는 건수와 그 칸의 중간값. 점 색은 계약연도 · 연식 · 층 · 금액 중에서 고른다.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { DongTradeDetailRow } from '../services/publicDataApi';
 
@@ -169,7 +169,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
         </div>
       </div>
     </div>
-    <p class="dsc-read">점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래이고, 칸 위 파란 숫자는 그 구간의 가운데 값입니다. 기준을 바꾸면 같은 점들이 새 구간으로 옮겨 갑니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></p>
+    <p class="dsc-read">점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래이고, 칸 위 파란 숫자는 그 구간의 중간값입니다. 기준을 바꾸면 같은 점들이 새 구간으로 옮겨 갑니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></p>
     <div class="dsc-board">
       <canvas ref="cv" class="dsc-cv" aria-label="점 쌓기 분포도" @mousemove="onMove" @mouseleave="onLeave" />
       <div v-if="tip" class="dsc-tip" :style="{ left: `${tip.x}px`, top: `${tip.y}px` }">

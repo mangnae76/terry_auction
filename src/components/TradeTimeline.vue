@@ -37,10 +37,13 @@ const insight = computed(() => {
   const busiest = [...st].sort((a, b) => b.n - a.n)[0];
   const k = Math.min(3, Math.floor(st.length / 2));
   const pick = (ms: string[]) => median(deals.value.filter((r) => ms.includes(monthOf(r))).map((r) => r.priceWon));
-  const head = pick(st.slice(0, k).map((s) => s.m)); const tail = pick(st.slice(-k).map((s) => s.m));
+  const headMs = st.slice(0, k).map((s) => s.m); const tailMs = st.slice(-k).map((s) => s.m);
+  const head = pick(headMs); const tail = pick(tailMs);
   const chg = head ? (tail / head - 1) * 100 : 0;
   const ym = (m: string) => `${m.slice(0, 4)}년 ${Number(m.slice(5, 7))}월`;
-  return `거래가 가장 많았던 달은 <em>${ym(busiest.m)}(${busiest.n.toLocaleString('ko-KR')}건)</em>입니다. 처음 ${k}개월 중간값 ${eok(head)} → 최근 ${k}개월 ${eok(tail)}으로 <em>${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%</em> ${chg >= 0 ? '올랐습니다' : '내렸습니다'}.`;
+  // 어느 달인지 괄호로 — '처음 3개월(25년 10월 · 11월 · 12월)'
+  const months = (ms: string[]) => ms.map((m, i) => (i === 0 || m.slice(0, 4) !== ms[i - 1].slice(0, 4) ? `${m.slice(2, 4)}년 ${Number(m.slice(5, 7))}월` : `${Number(m.slice(5, 7))}월`)).join(' · ');
+  return `거래가 가장 많았던 달은 <em>${ym(busiest.m)}(${busiest.n.toLocaleString('ko-KR')}건)</em>입니다. 처음 ${k}개월(${months(headMs)}) 중간값 ${eok(head)} → 최근 ${k}개월(${months(tailMs)}) ${eok(tail)}으로 <em>${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%</em> ${chg >= 0 ? '올랐습니다' : '내렸습니다'}.`;
 });
 
 // ===== 그리기 =====

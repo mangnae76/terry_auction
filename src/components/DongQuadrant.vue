@@ -118,7 +118,7 @@ const onMove = (e: MouseEvent) => {
   if (d !== hover) { hover = d; redraw(); }
   if (!d) { tip.value = null; return; }
   const { guUnit, avgN } = model.value;
-  tip.value = { x: Math.min(x + 20, W - 250), y: Math.max(y - 70, 4), lines: [['동', `${d.name} · ${QN[d.q]}`], ['거래', `${d.n.toLocaleString('ko-KR')}건 (동 평균 ${Math.round(avgN).toLocaleString('ko-KR')}건)`], ['평균 평당가', `${man(d.unit)} (평균 대비 ${d.unit >= guUnit ? '+' : ''}${((d.unit / guUnit - 1) * 100).toFixed(0)}%)`], ['평균가', `${eok(d.avg)} · 가운데 ${eok(d.med)}`], ['누르면', '이 동으로 좁힘']] };
+  tip.value = { x: Math.min(x + 20, W - 250), y: Math.max(y - 70, 4), lines: [['동', `${d.name} · ${QN[d.q]}`], ['거래', `${d.n.toLocaleString('ko-KR')}건 (동 평균 ${Math.round(avgN).toLocaleString('ko-KR')}건)`], ['평균 평당가', `${man(d.unit)} (평균 대비 ${d.unit >= guUnit ? '+' : ''}${((d.unit / guUnit - 1) * 100).toFixed(0)}%)`], ['평균가', `${eok(d.avg)} · 중간값 ${eok(d.med)}`], ['누르면', '이 동으로 좁힘']] };
 };
 const onLeave = () => { hover = null; tip.value = null; redraw(); };
 const onClick = (e: MouseEvent) => { const b = cv.value?.getBoundingClientRect(); if (!b) return; const d = hit(e.clientX - b.left, e.clientY - b.top); if (d) emit('pick-dong', d.name); };
