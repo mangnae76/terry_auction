@@ -1568,7 +1568,7 @@ const downloadCsv = () => {
 .adm-price-cell .amt { margin-left: auto; }
 .adm-direct-tag { font-size: 12px; font-weight: 700; color: #0f9d7a; }
 .adm-detail { display: flex; flex-direction: column; gap: 10px; }
-.adm-detail-kinds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; } /* 네 단추 같은 폭 */
+.adm-detail-kinds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-width: 640px; } /* 네 단추 같은 폭 — 유형분포 단추(.dsc-kinds)와 같은 크기 */
 .adm-detail-kinds button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
 .adm-detail-kinds button.on { border-color: #2b6df3; color: #2b6df3; background: #eef4ff; }
 .adm-detail-cap { display: flex; align-items: center; margin: 4px 2px 0; padding-left: 20px; font-size: 14px; color: #6b7280; }
