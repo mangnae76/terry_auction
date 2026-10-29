@@ -7813,8 +7813,6 @@ const goBack = () => router.back();
           <div v-if="!isCollapsed('demand')" class="adp-dm-body">
             <div class="adp-dm-head">
               <strong class="adp-dm-title">1. <span class="adp-dm-area">{{ surveyAreaLabel }}</span> 수요분석</strong>
-              <button v-if="!editingSurvey.demand" class="adp-edit-btn" type="button" @click.stop="editingSurvey.demand = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('demand')">완료</button>
             </div>
 
             <!-- ① 기준수치 — 이름 칸에 대면 설명이 뜬다(칸이 작아 아이콘만으로는 누르기 어렵다) -->
@@ -7895,10 +7893,10 @@ const goBack = () => router.back();
                     </button>
                   </div>
                   <div class="cell-body">
-                    <span v-if="editingSurvey.demand" class="adp-dm-pair">
-                      <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.listings')" placeholder="입력" @input="setListingsVal(($event.target as HTMLInputElement).value)" />
+                    <!-- 손으로 넣는 칸은 총 매물수 하나 — 편집 단추 없이 늘 입력칸, 넣으면 곧바로 저장(persistSoon) -->
+                    <span class="adp-dm-pair">
+                      <input class="adp-mkt-input" inputmode="numeric" :value="dmListings > 0 ? dmListings.toLocaleString('ko-KR') : ''" placeholder="입력" @input="setListingsVal(($event.target as HTMLInputElement).value)" />
                     </span>
-                    <strong v-else class="hi-blue"><span class="num">{{ dmIntText(dmListings) }}</span></strong>
                   </div>
                 </div>
               </div>
