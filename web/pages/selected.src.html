@@ -372,6 +372,21 @@ button { cursor: pointer; }
 .adm-case-in .adm-case-block:not(.cond) { border-bottom: 0; border-radius: 10px 10px 0 0; padding-bottom: 4px; }
 .adm-case-in .adm-case-tail { border: 1px solid #e5e7eb; border-top: 0; border-radius: 0 0 10px 10px; padding: 0 16px 16px; background: #fff; }
 .adm-case-in .adm-case-tail .adm-tabs { margin-top: 12px; }
+/* ① 리스트 위 두 줄 — 가격정보 경매지번 표와 같은 색(연한 바탕 + 그 색 글씨, 고르면 진한 바탕 + 흰 글씨) */
+.adm-case-in .adm-tabs.two-row { display: grid !important; grid-template-columns: repeat(4, 1fr); gap: 8px !important; }
+.adm-case-in .adm-tabs.two-row .adm-tab { border: none !important; font-weight: 700; justify-content: center; }
+.adm-case-in .adm-tabs.two-row .adm-tab.t-all { background: #e4f4fd; color: #4bbbe8; }
+.adm-case-in .adm-tabs.two-row .adm-tab.t-buy { background: #e6ecfd; color: #6690f5; }
+.adm-case-in .adm-tabs.two-row .adm-tab.t-jeon { background: #e4f7ea; color: #4cc471; }
+.adm-case-in .adm-tabs.two-row .adm-tab.t-wol { background: #fdeee3; color: #f79351; }
+.adm-case-in .adm-tabs.two-row .adm-tab.on { color: #fff; font-weight: 800; box-shadow: 0 1px 4px rgba(17, 24, 39, .22); }
+.adm-case-in .adm-tabs.two-row .adm-tab.t-all.on { background: #0284c7; }
+.adm-case-in .adm-tabs.two-row .adm-tab.t-buy.on { background: #1d4ed8; }
+.adm-case-in .adm-tabs.two-row .adm-tab.t-jeon.on { background: #15803d; }
+.adm-case-in .adm-tabs.two-row .adm-tab.t-wol.on { background: #c2410c; }
+.adm-case-in .adm-sel-row { display: flex; gap: 8px; margin: 8px 0 10px; }
+.adm-case-in .adm-sel-row select.adm-input { flex: 1 1 0; width: auto !important; height: 40px !important; border-radius: 8px !important; font-size: 14px !important; box-sizing: border-box; }
+.adm-case-in .adm-sel-row :is(.adm-ghost, .adm-flt-clear) { height: 40px !important; border-radius: 8px !important; font-size: 14px !important; padding: 0 16px !important; }
 /* 전세가 비율 칸 — 크게 */
 .adm-case-in .case12 .adm-rate-input { width: 52px; height: 26px; font-size: 14px; border-radius: 6px; padding: 0 6px; }
 .adm-case-in .case12 small em:has(.adm-rate-input) { font-size: 14px; display: inline-flex; align-items: center; gap: 2px; }
