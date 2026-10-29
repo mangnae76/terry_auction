@@ -11427,15 +11427,18 @@ tr.tone-take { background: #fff5f5; }
   color: #111827; text-align: center; vertical-align: middle; word-break: keep-all;
 }
 .adp-mkt-table thead th { background: #f3f4f6; font-weight: 700; line-height: 1.25; }
-/* 앱 시세조사 — 표 줄이 빡빡해 복잡해 보였다. 칸 위아래를 넓혀(머리 6 → 9 · 값 7 → 11) 숨 쉴 틈을 준다.
-   웹은 따로 정한 값(--tbl-py)이 있어 :not(.app-detail …) 로 앱에만 */
-.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-mkt-cells.adp-dm-table .cell > small,
-.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-mkt-cells.adp-dm-table .cell .cell-head { padding-top: 9px; padding-bottom: 9px; }
-.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-mkt-cells.adp-dm-table .cell > :is(strong, span, .adp-mkt-unit),
-.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-mkt-cells.adp-dm-table .cell .cell-body { padding-top: 11px; padding-bottom: 11px; }
-.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-table.adp-dm-tbl th { padding-top: 9px; padding-bottom: 9px; }
-.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-table.adp-dm-tbl td { padding-top: 11px; padding-bottom: 11px; }
-.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-mkt-block + .adp-mkt-block { margin-top: 14px; }
+/* 앱 손품+현장 — 수요조사부터 4. 부동산 현장 상담까지 표 줄이 빡빡해 복잡해 보였다. 칸 위아래 · 블록 사이를 넓힌다.
+   웹은 따로 정한 값(--tbl-py 등)이 있어 :not(.app-detail *) 로 앱에만 */
+.adp-mkt-cells.adp-dm-table:not(.app-detail *) .cell > small,
+.adp-mkt-cells.adp-dm-table:not(.app-detail *) .cell .cell-head { padding-top: 9px; padding-bottom: 9px; }
+.adp-mkt-cells.adp-dm-table:not(.app-detail *) .cell > :is(strong, span, .adp-mkt-unit),
+.adp-mkt-cells.adp-dm-table:not(.app-detail *) .cell :is(.cell-body, .cell-grade) { padding-top: 11px; padding-bottom: 11px; }
+.adp-table.adp-dm-tbl:not(.app-detail *) th { padding-top: 9px; padding-bottom: 9px; }
+.adp-table.adp-dm-tbl:not(.app-detail *) td { padding-top: 11px; padding-bottom: 11px; }
+.adp-ind-table:not(.app-detail *) :is(th, td) { padding-top: 9px; padding-bottom: 9px; }
+.adp-ruser-table:not(.app-detail *) .adp-ruser-cell { padding-top: 12px; padding-bottom: 12px; }
+.adp-mkt-block:not(.app-detail *) + .adp-mkt-block { margin-top: 14px; }
+.adp-dm-body:not(.app-detail *) > .adp-dm-head:not(:first-child) { margin-top: 10px; }
 .adp-mkt-table th small { display: block; font-size: 9px; color: #6b7280; font-weight: 600; }
 .adp-mkt-table th.rh { background: #f3f4f6; font-weight: 700; width: 92px; line-height: 1.25; }
 .adp-mkt-table th.red, .adp-mkt-table td.red { color: #e0574a; font-weight: 800; }

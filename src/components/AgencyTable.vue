@@ -260,6 +260,10 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
 /* 쓰는 쪽(AuctionDetailPage)의 scoped 스타일은 이 안까지 닿지 않는다 —
    상담표에 필요한 모양만 여기에 따로 적어 둔다 */
 .agency-table { display: flex; flex-direction: column; gap: 6px; padding: 0 2px; }
+/* 앱 — 업체 카드 사이 · 안쪽을 조금 넉넉히(빡빡해 보였다). 웹은 따로 정한 값이 있어 :not(.app-detail *) 로 앱에만 */
+.agency-table:not(.app-detail *) { gap: 10px; }
+.agency-table:not(.app-detail *) .adp-agency-item { padding: 9px 10px 10px; }
+.agency-table:not(.app-detail *) .adp-agency-line + .adp-agency-line { margin-top: 7px; padding-top: 7px; }
 .adp-agency-item {
   background: #fafbfc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 5px 10px 6px;
 }
