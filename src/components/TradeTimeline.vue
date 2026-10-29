@@ -3,6 +3,7 @@
 // 열면 왼쪽 달부터 재생되고, 끝나면 가운데에 '다시 재생'. 달을 누르면 그 달을 고른다(v-model, 'YYYY.MM') — 아래 목록이 그 달로 좁혀진다.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { DongTradeDetailRow } from '../services/publicDataApi';
+import { CHART_ICONS } from '../services/chartIcons';
 
 const props = defineProps<{ rows: DongTradeDetailRow[]; modelValue: string }>();
 const emit = defineEmits<{ 'update:modelValue': [string] }>();
@@ -19,9 +20,9 @@ const colorKey = ref<'age' | 'floor' | 'area'>('age');
 /** 원래 그래프 — 점 · 막대 없이 월별 평균가 꺾은선만(단순한 걸 원하는 사람용) */
 const simple = ref(false);
 const COLORS = {
-  age: { label: '연식', keys: ['21년차 이상', '16~20년차', '11~15년차', '6~10년차', '5년차 이하'], tier: (r: DongTradeDetailRow) => { const a = r.buildYear ? thisYear - r.buildYear + 1 : 99; return a <= 5 ? 4 : a <= 10 ? 3 : a <= 15 ? 2 : a <= 20 ? 1 : 0; } },
-  floor: { label: '층', keys: ['지하 · 1층', '2층', '3층', '4층', '5층 이상'], tier: (r: DongTradeDetailRow) => (r.floorNum <= 1 ? 0 : r.floorNum === 2 ? 1 : r.floorNum === 3 ? 2 : r.floorNum === 4 ? 3 : 4) },
-  area: { label: '면적', keys: ['10평 미만', '10~15평', '15~20평', '20~25평', '25평 이상'], tier: (r: DongTradeDetailRow) => (r.pyeong < 10 ? 0 : r.pyeong < 15 ? 1 : r.pyeong < 20 ? 2 : r.pyeong < 25 ? 3 : 4) },
+  age: { label: '연식', icon: CHART_ICONS.age, keys: ['21년차 이상', '16~20년차', '11~15년차', '6~10년차', '5년차 이하'], tier: (r: DongTradeDetailRow) => { const a = r.buildYear ? thisYear - r.buildYear + 1 : 99; return a <= 5 ? 4 : a <= 10 ? 3 : a <= 15 ? 2 : a <= 20 ? 1 : 0; } },
+  floor: { label: '층수', icon: CHART_ICONS.floor, keys: ['지하 · 1층', '2층', '3층', '4층', '5층 이상'], tier: (r: DongTradeDetailRow) => (r.floorNum <= 1 ? 0 : r.floorNum === 2 ? 1 : r.floorNum === 3 ? 2 : r.floorNum === 4 ? 3 : 4) },
+  area: { label: '면적', icon: CHART_ICONS.area, keys: ['10평 미만', '10~15평', '15~20평', '20~25평', '25평 이상'], tier: (r: DongTradeDetailRow) => (r.pyeong < 10 ? 0 : r.pyeong < 15 ? 1 : r.pyeong < 20 ? 2 : r.pyeong < 25 ? 3 : 4) },
 } as const;
 
 const deals = computed(() => props.rows.filter((r) => r.priceWon > 0 && r.contractDate).slice().sort((a, b) => a.dealTime - b.dealTime));
@@ -184,14 +185,14 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
           <template v-if="!simple">
             <span class="ttl-colors-lab">색</span>
             <div class="ttl-seg" role="tablist" aria-label="점 색">
-              <button v-for="(c, k) in COLORS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">{{ c.label }}</button>
+              <button v-for="(c, k) in COLORS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="c.icon" /></svg>{{ c.label }}</button>
             </div>
           </template>
           <!-- 단순 그래프 — 면적 단추 오른쪽 끝 -->
           <button type="button" class="ttl-simple" @click="toggleSimple">{{ simple ? '타임라인 보기' : '단순 그래프' }}</button>
         </div>
         <!-- 색 뜻은 색 단추 바로 아래 — 단추와 범례가 이어져 보이게 -->
-        <div v-if="!simple" class="ttl-foot"><span v-for="(l, i) in COLORS[colorKey].keys" :key="l" class="ttl-key"><i :class="`t${i}`" />{{ l }}</span></div>
+        <div v-if="!simple" class="ttl-foot"><span v-for="(l, i) in [...COLORS[colorKey].keys].reverse()" :key="l" class="ttl-key"><i :class="`t${4 - i}`" />{{ l }}</span></div>
       </div>
     </div>
     <div class="ttl-read">
@@ -221,7 +222,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .ttl-colors { display: inline-flex; align-items: center; gap: 8px; }
 .ttl-colors-lab { font-size: 13px; font-weight: 700; color: #6b7280; }
 .ttl-seg { display: grid; grid-auto-flow: column; gap: 6px; }
-.ttl-seg button { height: 34px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; }
+.ttl-seg button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 78px; height: 34px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; }
 .ttl-seg button.on { border-color: #2b6df3; background: #eef3ff; color: #2b6df3; }
 .ttl-read { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid #e3e8f0; border-radius: 10px; background: #fff; font-size: 14px; line-height: 1.65; color: #111827; }
 .ttl-read p { margin: 0; display: grid; grid-template-columns: 64px 1fr; gap: 10px; }

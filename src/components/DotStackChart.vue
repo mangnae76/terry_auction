@@ -4,9 +4,10 @@
 // 칸 위에는 건수와 그 칸의 중간값. 점 색은 계약연도 · 연식 · 층 · 금액 중에서 고른다.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { DongTradeDetailRow } from '../services/publicDataApi';
+import { CHART_ICONS } from '../services/chartIcons';
 
 export type DotBucket = { label: string; test: (r: DongTradeDetailRow) => boolean };
-export type DotView = { key: string; title: string; buckets: DotBucket[] };
+export type DotView = { key: string; title: string; icon?: string; buckets: DotBucket[] };
 
 const props = defineProps<{ rows: DongTradeDetailRow[]; views: DotView[] }>();
 
@@ -25,10 +26,10 @@ const per = ref(1);
 const dropped = ref<Array<{ label: string; n: number }>>([]);
 
 const COLOR_KEYS = {
-  year: { label: '계약연도', tier: (r: DongTradeDetailRow, years: number[]) => Math.max(0, 4 - (years[years.length - 1] - Number(r.contractDate.slice(0, 4)))) },
-  age: { label: '연식', tier: (r: DongTradeDetailRow) => { const a = ageOf(r); return a <= 5 ? 4 : a <= 10 ? 3 : a <= 15 ? 2 : a <= 20 ? 1 : 0; } },
-  floor: { label: '층', tier: (r: DongTradeDetailRow) => (r.floorNum <= 1 ? 0 : r.floorNum === 2 ? 1 : r.floorNum === 3 ? 2 : r.floorNum === 4 ? 3 : 4) },
-  price: { label: '금액', tier: (r: DongTradeDetailRow) => (r.priceWon < 1.2 * EOK ? 0 : r.priceWon < 1.4 * EOK ? 1 : r.priceWon < 1.6 * EOK ? 2 : r.priceWon < 2 * EOK ? 3 : 4) },
+  year: { label: '계약연도', icon: CHART_ICONS.year, tier: (r: DongTradeDetailRow, years: number[]) => Math.max(0, 4 - (years[years.length - 1] - Number(r.contractDate.slice(0, 4)))) },
+  age: { label: '연식', icon: CHART_ICONS.age, tier: (r: DongTradeDetailRow) => { const a = ageOf(r); return a <= 5 ? 4 : a <= 10 ? 3 : a <= 15 ? 2 : a <= 20 ? 1 : 0; } },
+  floor: { label: '층수', icon: CHART_ICONS.floor, tier: (r: DongTradeDetailRow) => (r.floorNum <= 1 ? 0 : r.floorNum === 2 ? 1 : r.floorNum === 3 ? 2 : r.floorNum === 4 ? 3 : 4) },
+  price: { label: '금액', icon: CHART_ICONS.price, tier: (r: DongTradeDetailRow) => (r.priceWon < 1.2 * EOK ? 0 : r.priceWon < 1.4 * EOK ? 1 : r.priceWon < 1.6 * EOK ? 2 : r.priceWon < 2 * EOK ? 3 : 4) },
 } as const;
 const years = computed(() => [...new Set(props.rows.map((r) => Number(r.contractDate.slice(0, 4))))].sort());
 const legend = computed(() => {
@@ -158,15 +159,16 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 <template>
   <section class="dsc">
     <div class="dsc-top">
-      <div class="dsc-seg" role="tablist" aria-label="분포 기준">
-        <button v-for="v in views" :key="v.key" type="button" :class="{ on: viewKey === v.key }" @click="pickView(v.key)">{{ v.title }}</button>
+      <!-- 상세분포 단추와 같은 꼴(같은 폭 · 높이 40 · 아이콘 18) -->
+      <div class="dsc-kinds" role="tablist" aria-label="분포 기준">
+        <button v-for="v in views" :key="v.key" type="button" :class="{ on: viewKey === v.key }" @click="pickView(v.key)"><svg v-if="v.icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="v.icon" /></svg>{{ v.title }}</button>
       </div>
       <!-- '색' 은 단추 밖에 한 번만 — 단추마다 '색 ○○' 이라 적으니 말이 겹쳤다 -->
       <div class="dsc-right">
         <div class="dsc-colors">
           <span class="dsc-colors-lab">색</span>
           <div class="dsc-seg sm" role="tablist" aria-label="점 색">
-            <button v-for="(c, k) in COLOR_KEYS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">{{ c.label }}</button>
+            <button v-for="(c, k) in COLOR_KEYS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="c.icon" /></svg>{{ c.label }}</button>
           </div>
         </div>
         <!-- 색 뜻은 색 단추 바로 아래 — 단추와 범례가 이어져 보이게 -->
@@ -188,14 +190,17 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 
 <style scoped>
 .dsc { display: flex; flex-direction: column; gap: 10px; }
-.dsc-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.dsc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.dsc-kinds { flex: 1 1 520px; max-width: 640px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.dsc-kinds button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-family: inherit; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
+.dsc-kinds button.on { border-color: #2b6df3; color: #2b6df3; background: #eef4ff; }
 .dsc-seg { display: grid; grid-auto-flow: column; gap: 6px; }
 .dsc-seg button { height: 40px; padding: 0 14px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 14px; font-weight: 700; color: #6b7280; cursor: pointer; }
 .dsc-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .dsc-legend { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; font-size: 13px; color: #6b7280; }
 .dsc-colors { display: inline-flex; align-items: center; gap: 8px; }
 .dsc-colors-lab { font-size: 13px; font-weight: 700; color: #6b7280; }
-.dsc-seg.sm button { height: 34px; font-size: 13px; padding: 0 12px; }
+.dsc-seg.sm button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 78px; height: 34px; font-size: 13px; padding: 0 12px; }
 .dsc-seg button.on { border-color: #2b6df3; background: #eef3ff; color: #2b6df3; }
 .dsc-read { margin: 0; font-size: 13px; color: #6b7280; line-height: 1.6; }
 .dsc-read b { color: #2b6df3; }

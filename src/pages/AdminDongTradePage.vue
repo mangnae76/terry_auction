@@ -22,6 +22,7 @@ import AdminCaseTradePage from './AdminCaseTradePage.vue';
 import DotStackChart, { type DotView } from '../components/DotStackChart.vue';
 import BubbleMatrix from '../components/BubbleMatrix.vue';
 import TradeTimeline from '../components/TradeTimeline.vue';
+import { CHART_ICONS } from '../services/chartIcons';
 import DongQuadrant from '../components/DongQuadrant.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
@@ -208,10 +209,10 @@ const dealMonth = ref('');
 // ===== 웹 '상세분포' — 동 × 구간 거래건수 표 =====
 type DetailKind = 'price' | 'area' | 'age' | 'floor';
 const DETAIL_KINDS: Array<{ key: DetailKind; label: string; icon: string }> = [
-  { key: 'price', label: '가격대', icon: 'M12 3v18M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 2.6 4.5 3 4.5 1.4 4.5 3.2-2 3-4.5 3-4.5-1.3-4.5-3' },
-  { key: 'area', label: '면적(평형)', icon: 'M4 20V4l16 16H4zM8 16h3M4 12h3M4 8h3' },
-  { key: 'age', label: '건축연식', icon: 'M4 21V9l8-5 8 5v12M9 21v-6h6v6M3 21h18' },
-  { key: 'floor', label: '층수', icon: 'M4 3h16v18H4zM4 9h16M4 15h16M10 3v18' },
+  { key: 'price', label: '금액대', icon: CHART_ICONS.price },
+  { key: 'area', label: '전용면적', icon: CHART_ICONS.area },
+  { key: 'age', label: '건축연식', icon: CHART_ICONS.age },
+  { key: 'floor', label: '층수', icon: CHART_ICONS.floor },
 ];
 const detailKind = ref<DetailKind>('price');
 // 상세분포의 면적은 ㎡ 구간(국민주택 85㎡ 기준이 보이게) — 평은 설명 줄에 ≈ 로
@@ -270,7 +271,7 @@ const manText = (won: number) => (won > 0 ? `${Math.round(won / 10000).toLocaleS
 const pctText = (v: number | null) => (v === null ? '—' : `${v > 0 ? '+' : ''}${Math.round(v * 10) / 10}%`);
 /** 표 위 설명 줄 — 면적은 ㎡ 구간이 몇 평쯤인지 함께(웹은 제목만) */
 const detailCaption = computed(() => {
-  if (detailKind.value === 'area') return webEmbed ? `동별 면적(${areaUnit.value === 'py' ? '평' : '㎡'}) 거래건수 분포` : '동별 면적(㎡) 거래건수 분포 — ~30㎡ ≈ 9평 이하 · 30~50㎡ ≈ 9~15평 · 50~70㎡ ≈ 15~21평 · 70~85㎡ ≈ 21~26평 · 85~100㎡ ≈ 26~30평 · 100㎡~ ≈ 30평 이상';
+  if (detailKind.value === 'area') return webEmbed ? `동별 전용면적(${areaUnit.value === 'py' ? '평' : '㎡'}) 거래건수 분포` : '동별 면적(㎡) 거래건수 분포 — ~30㎡ ≈ 9평 이하 · 30~50㎡ ≈ 9~15평 · 50~70㎡ ≈ 15~21평 · 70~85㎡ ≈ 21~26평 · 85~100㎡ ≈ 26~30평 · 100㎡~ ≈ 30평 이상';
   return `동별 ${DETAIL_KINDS.find((k) => k.key === detailKind.value)?.label ?? ''} 거래건수 분포`;
 });
 /** 셀 건수 — 실제로 이뤄진 거래(정상 + 직거래). 계약해제는 없던 거래라 뺀다 */
@@ -700,10 +701,11 @@ const distribute = (buckets: Bucket[]) => {
 };
 /** 점 쌓기 — 유형분포 네 가지를 한 그림에서 단추로 바꿔 본다(같은 구간 · 같은 거래) */
 const DOT_VIEWS = computed<DotView[]>(() => [
-  { key: 'area', title: '전용면적', buckets: WEB_AREA_BUCKETS.map((b) => ({ ...b, label: areaUnit.value === 'm2' ? b.alt ?? b.label : b.label })) },
-  { key: 'price', title: '금액대', buckets: WEB_PRICE_BUCKETS },
-  { key: 'age', title: '건축연식', buckets: WEB_AGE_BUCKETS },
-  { key: 'floor', title: '층', buckets: FLOOR_BUCKETS },
+  // 상세분포 단추와 같은 이름 · 차례 · 아이콘(금액대 · 전용면적 · 건축연식 · 층수)
+  { key: 'price', title: '금액대', icon: CHART_ICONS.price, buckets: WEB_PRICE_BUCKETS },
+  { key: 'area', title: '전용면적', icon: CHART_ICONS.area, buckets: WEB_AREA_BUCKETS.map((b) => ({ ...b, label: areaUnit.value === 'm2' ? b.alt ?? b.label : b.label })) },
+  { key: 'age', title: '건축연식', icon: CHART_ICONS.age, buckets: WEB_AGE_BUCKETS },
+  { key: 'floor', title: '층수', icon: CHART_ICONS.floor, buckets: FLOOR_BUCKETS },
 ]);
 const DISTS = computed(() => [
   // 웹은 '…별 분포' 로 이름을 맞춘다 (앱은 그대로)
@@ -1196,7 +1198,7 @@ const downloadCsv = () => {
           </template>
           <p class="adm-detail-cap">{{ detailCaption }}<button v-if="webEmbed && detailKind === 'area'" type="button" class="adm-unit-tg" :aria-label="`면적 단위 바꾸기 — 지금 ${areaUnit === 'py' ? '평' : '㎡'}`" @click="areaUnit = areaUnit === 'py' ? 'm2' : 'py'"><span :class="{ on: areaUnit === 'py' }">평</span><span :class="{ on: areaUnit === 'm2' }">㎡</span></button></p>
           <!-- 동 × 구간을 원으로(크기 = 건수, 색 = 평균 평당가). 숫자 표는 '숫자 보기'로 편다 -->
-          <BubbleMatrix :rows="detailBase" :buckets="detailBuckets" :dongs="detailRows.map((r) => r.name)" @pick-dong="(d: string) => { dong = d; }" />
+          <BubbleMatrix :rows="detailBase" :unit-name="DETAIL_KINDS.find((k) => k.key === detailKind)?.label ?? ''" :buckets="detailBuckets" :dongs="detailRows.map((r) => r.name)" @pick-dong="(d: string) => { dong = d; }" />
           <button type="button" class="adm-detail-numtg" @click="detailShowTable = !detailShowTable">{{ detailShowTable ? '숫자 표 접기' : '숫자 보기' }}</button>
           <template v-if="detailShowTable">
           <div class="adm-table-wrap">
@@ -1558,7 +1560,7 @@ const downloadCsv = () => {
 .adm-direct-tag { font-size: 12px; font-weight: 700; color: #0f9d7a; }
 .adm-detail { display: flex; flex-direction: column; gap: 10px; }
 .adm-detail-kinds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; } /* 네 단추 같은 폭 */
-.adm-detail-kinds button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
+.adm-detail-kinds button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
 .adm-detail-kinds button.on { border-color: #2b6df3; color: #2b6df3; background: #eef4ff; }
 .adm-detail-cap { display: flex; align-items: center; margin: 4px 2px 0; padding-left: 20px; font-size: 14px; color: #6b7280; }
 .adm-heat td.r { font-variant-numeric: tabular-nums; }
