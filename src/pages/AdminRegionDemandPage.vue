@@ -148,7 +148,7 @@ const unitsHint = (sigungu: string, umdNm: string) => {
   const what = kind.value === 'apt' ? '아파트 세대수' : kind.value === 'officetel' ? '오피스텔 호수' : '연립·다세대 세대수';
   const v = autoUnits.value[rowKey(sigungu, umdNm)];
   if (v === undefined) return { text: '받는 중', tip: '건축물대장에서 세대수를 받는 중' };
-  if (v < 0) return { text: '못 받음', tip: '건축물대장 조회 실패(하루 한도 · 오류) — 내일 다시 조회해 주세요' };
+  if (v < 0) return { text: webEmbed ? '받기실패' : '못 받음', fail: true, tip: '건축물대장 조회 실패(하루 한도 · 오류) — 내일 다시 조회해 주세요' };
   if (v === 0) return { text: '0', tip: `건축물대장에 해당 건물이 없음(${what} 0)` };
   return { text: v.toLocaleString('ko-KR'), tip: `건축물대장 ${what} 합` };
 };
@@ -579,7 +579,7 @@ const downloadCsv = () => {
               <td v-if="!embedded" class="gu">{{ r.sigungu }}</td>
               <td class="nm">{{ r.umdNm }}</td>
               <!-- 총 세대수 — 건축물대장 자동값을 글로만(손으로 적지 않는다) -->
-              <td :class="['units', { miss: unitsHint(r.sigungu, r.umdNm).text === '못 받음', wait: webEmbed && unitsHint(r.sigungu, r.umdNm).text === '받는 중' }]" :title="unitsHint(r.sigungu, r.umdNm).tip">{{ unitsHint(r.sigungu, r.umdNm).text }}</td>
+              <td :class="['units', { miss: unitsHint(r.sigungu, r.umdNm).fail, wait: webEmbed && unitsHint(r.sigungu, r.umdNm).text === '받는 중' }]" :title="unitsHint(r.sigungu, r.umdNm).tip">{{ unitsHint(r.sigungu, r.umdNm).text }}</td>
               <td class="in">
                 <input
                   class="adm-cell"
