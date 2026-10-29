@@ -7914,13 +7914,11 @@ const goBack = () => router.back();
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg>
                     </button>
                   </div>
-                  <div class="cell-body naver-row">
+                  <div class="cell-body">
                     <span v-if="editingSurvey.demand" class="adp-dm-pair">
                       <input class="adp-mkt-input" inputmode="numeric" :value="fieldVal('fs.dm.listings')" placeholder="입력" @input="setListingsVal(($event.target as HTMLInputElement).value)" />
                     </span>
                     <strong v-else class="hi-blue"><span class="num">{{ dmIntText(dmListings) }}</span></strong>
-                    <!-- 네이버 부동산에서 그 동 매물 수를 보고 와 적는다 — 누르면 네이버 부동산이 열리고 '지역 동' 검색어가 복사된다 -->
-                    <button type="button" class="adp-naver-btn" @click.stop="openListingLookup">네이버 매물<svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button>
                   </div>
                 </div>
               </div>
@@ -11012,12 +11010,6 @@ tr.tone-take { background: #fff5f5; }
   text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px;
 }
 .adp-dm-link:active { color: #2b6df3; }
-/* 총 매물수 옆 '네이버 매물 ↗' 알약 — 값 오른쪽에 작게 */
-.adp-naver-btn { display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; height: 22px; margin-left: 6px; padding: 0 8px; border: 1px solid #d5dbe5; border-radius: 999px; background: #fff; color: #374151; font-family: inherit; font-size: 11px; font-weight: 600; white-space: nowrap; cursor: pointer; }
-.adp-naver-btn:hover { border-color: #2b6df3; color: #2b6df3; }
-.adp-naver-btn svg { flex: 0 0 auto; }
-/* 칸이 좁은 앱에선 알약이 값 밑으로 내려간다 */
-.adp-mkt-cells .cell.split .cell-body.naver-row { flex-wrap: wrap; row-gap: 4px; }
 .adp-dm-block + .adp-dm-block { margin-top: 10px; }
 .adp-dm-block.boxed + .adp-dm-block.boxed { margin-top: 10px; }
 .adp-dm-head.sec2 { margin-top: 7px; padding-top: 6px; border-top: 1px solid #eef1f6; }
