@@ -2612,7 +2612,7 @@ const INDIV_GROUPS: IndivGroup[] = [
         options: ['판상형', '타워형', '복층형', '2베이', '3베이', '4베이', '다락'], rate: '5%',
       },
       {
-        id: 'ind.rooms', label: '방/화장실', multi: true,
+        id: 'ind.rooms', label: '구조', multi: true,
         options: ['1방', '2방', '3방', '4방', '1화', '2화', '3화'], rate: '5%',
       },
       { id: 'ind.view', label: '뷰', options: ['뻥뷰', '단지뷰'], rate: '5%' },
