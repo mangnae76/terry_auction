@@ -214,7 +214,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 <style scoped>
 .ttl { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
 .ttl-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.ttl-top strong { font-size: 16px; font-weight: 800; color: #111827; }
+.ttl-top strong { padding-left: 20px; font-size: 16px; font-weight: 800; color: #111827; }
 .ttl-top strong em { font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; }
 .ttl-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .ttl-simple { height: 34px; padding: 0 12px; margin-left: 6px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
