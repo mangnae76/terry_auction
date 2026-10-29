@@ -115,6 +115,10 @@ service cloud.firestore {
     match /cacheDongUnits/{id} {
       allow read, write: if isAllowedUser();
     }
+    // 동 하나의 세대수 세 종류(연립·다세대 · 아파트 · 오피스텔) 한 벌 — 웹 수요분석
+    match /cacheDongUnitsAll/{id} {
+      allow read, write: if isAllowedUser();
+    }
     // 달 단위 실거래 — 지역·종류·달이 같으면 값이 같아 모두가 나눠 쓴다
     match /cacheTradeMonth/{id} {
       allow read, write: if isAllowedUser();
