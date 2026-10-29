@@ -346,12 +346,27 @@ const drawMap = async () => {
   if (plotted.length > 0) {
     leafletMap.fitBounds(L.latLngBounds(plotted), { padding: [40, 40], maxZoom: 14 });
   }
+  markSelectedPin();
 };
 
 // 값만 바꿔 그린다 — 지도 위치 · 확대는 그대로
 watch(pinMetric, () => {
   allRankedRows.value.forEach((row) => { markerByRegion.get(row.region)?.setIcon(makePin(row)); });
+  markSelectedPin();
 });
+/** 웹 — 고른 알약은 커지며 파란 테두리가 퍼지고 맨 앞으로, 나머지 알약은 흐리게 */
+const markSelectedPin = () => {
+  if (!webEmbed) return;
+  const sel = selectedRegion.value;
+  markerByRegion.forEach((m, region) => {
+    const el = m.getElement()?.querySelector('.trade-map-pin');
+    if (!el) return;
+    el.classList.toggle('sel', region === sel);
+    el.classList.toggle('dim', !!sel && region !== sel);
+    m.setZIndexOffset(region === sel ? 1000 : 0);
+  });
+};
+watch(selectedRegion, () => { void nextTick(markSelectedPin); });
 
 const focusRegion = (region: string) => {
   selectedRegion.value = region;
@@ -989,6 +1004,11 @@ onMounted(async () => {
   font-style: normal; font-size: 10.5px; font-weight: 800;
 }
 :global(.trade-map-pin b) { font-size: 11px; font-weight: 800; }
+/* 웹 — 고른 알약(.sel)은 커지고 파란 테두리가 한 번 퍼진다, 나머지(.dim)는 흐리게 */
+:global(.trade-map-pin) { transition: transform .25s cubic-bezier(.3, 1.4, .5, 1), opacity .2s, box-shadow .2s, filter .2s; }
+:global(.trade-map-pin.sel) { transform: scale(1.22); box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(43, 109, 243, .7), 0 10px 22px rgba(17, 24, 39, .3); animation: tmPinRing 1.2s ease-out 1; }
+:global(.trade-map-pin.dim) { opacity: .45; filter: saturate(.5); }
+@keyframes tmPinRing { 0% { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(43, 109, 243, .7), 0 0 0 6px rgba(43, 109, 243, .5); } 100% { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(43, 109, 243, .7), 0 0 0 22px rgba(43, 109, 243, 0); } }
 :global(.trade-map-pin span) { font-size: 10.5px; font-weight: 700; opacity: 0.92; }
 /* 앞 다섯은 한 치수 크게 — 지도에서 먼저 눈에 들어와야 한다 */
 :global(.trade-map-pin.top) { padding: 4px 11px 4px 4px; }
