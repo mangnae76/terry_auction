@@ -4,6 +4,7 @@
 // 공공데이터 호출 자체는 워커가 저장해 아낀다 — 여기는 '화면이 비지 않게' 하는 몫이다.
 // 칩(SnapChip)이 지금 상태를 알린다: 방금 받아 저장 · 저장해 둔 걸 되살림 · 저장 못 함.
 import { computed, ref } from 'vue';
+import { UPDATE_PREFIX, updateStamp } from '../services/updateStamp';
 
 export type SnapState = { kind: 'updated' | 'restored' | 'fail'; at: number } | null;
 
@@ -77,18 +78,15 @@ export function useScreenSnapshot<T extends object>(key: string) {
     } catch { /* 못 남겨도 그만 */ }
   };
 
-  const at = (t: number) => {
-    const d = new Date(t);
-    const p2 = (n: number) => String(n).padStart(2, '0');
-    return `${String(d.getFullYear()).slice(2)}.${p2(d.getMonth() + 1)}.${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
-  };
-  /** 칩에 쓸 글과 모양 — 글은 '26.10.29 15:37 조회' 하나로(방금 받은 것은 초록 · 저장해 둔 것은 파랑, 색으로만 가른다) */
+  /** 앱 손품조사와 같은 꼴 — 'UPDATE : 261029 PM 03:37' (services/updateStamp 한 곳) */
+  const at = (t: number) => `${UPDATE_PREFIX}${updateStamp(t)}`;
+  /** 칩에 쓸 글과 모양 — 글은 'UPDATE : …' 하나로(방금 받은 것은 초록 · 저장해 둔 것은 파랑, 색으로만 가른다) */
   const chip = computed(() => {
     const st = state.value;
     if (!st) return null;
     if (st.kind === 'fail') return { tone: 'fail', text: '저장 못 함 — 새로고침하면 다시 조회해야 합니다' };
-    if (st.kind === 'updated') return { tone: 'ok', text: `${at(st.at)} 조회` };
-    return { tone: 'saved', text: `${at(st.at)} 조회` };
+    if (st.kind === 'updated') return { tone: 'ok', text: at(st.at) };
+    return { tone: 'saved', text: at(st.at) };
   });
 
   return { state, save, restore, patch, chip };
