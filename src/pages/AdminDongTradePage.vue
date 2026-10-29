@@ -274,9 +274,9 @@ const floorSummary = computed(() => {
 });
 const manText = (won: number) => (won > 0 ? `${Math.round(won / 10000).toLocaleString('ko-KR')}만` : '—');
 const pctText = (v: number | null) => (v === null ? '—' : `${v > 0 ? '+' : ''}${Math.round(v * 10) / 10}%`);
-/** 표 위 설명 줄 — 면적은 ㎡ 구간이 몇 평쯤인지 함께 */
+/** 표 위 설명 줄 — 면적은 ㎡ 구간이 몇 평쯤인지 함께(웹은 제목만) */
 const detailCaption = computed(() => {
-  if (detailKind.value === 'area') return '동별 면적(㎡) 거래건수 분포 — ~30㎡ ≈ 9평 이하 · 30~50㎡ ≈ 9~15평 · 50~70㎡ ≈ 15~21평 · 70~85㎡ ≈ 21~26평 · 85~100㎡ ≈ 26~30평 · 100㎡~ ≈ 30평 이상';
+  if (detailKind.value === 'area') return webEmbed ? '동별 면적(㎡) 거래건수 분포' : '동별 면적(㎡) 거래건수 분포 — ~30㎡ ≈ 9평 이하 · 30~50㎡ ≈ 9~15평 · 50~70㎡ ≈ 15~21평 · 70~85㎡ ≈ 21~26평 · 85~100㎡ ≈ 26~30평 · 100㎡~ ≈ 30평 이상';
   return `동별 ${DETAIL_KINDS.find((k) => k.key === detailKind.value)?.label ?? ''} 거래건수 분포`;
 });
 /** 셀 건수 — 실제로 이뤄진 거래(정상 + 직거래). 계약해제는 없던 거래라 뺀다 */
