@@ -428,6 +428,8 @@ const restoreSnapshot = async () => {
   dealKind.value = s.dealKind; loadedDeal.value = s.dealKind;
   all.value = s.rows; dongNames.value = s.dongNames; period.value = s.period; loadedLabel.value = s.loadedLabel;
   asOf.value = s.asOf ?? s.savedAt ?? Date.now();
+  // 거래랭킹도 되살린 조건으로 받는다 — 빠뜨리면 조회를 다시 누르기 전까지 세 목록이 비어 있었다
+  if (s.districtCode) lastQuery.value = { lawd: s.districtCode, kind: s.kind, deal: s.dealKind ?? 'sale' };
   await nextTick();
   restoring = false;
   supplyToken.value += 1;
@@ -501,7 +503,7 @@ const rankByDong = computed<RankRow[]>(() => {
   });
   return [...m.entries()].map(([name, v]) => ({ name, ...v, pct: v.prev > 0 ? ((v.cur - v.prev) / v.prev) * 100 : null }));
 });
-/** 세 목록 — 급증(증가율 높은 순) · 급감(감소율 큰 순) · 거래량(많은 순). 전년이 없던 동은 증감을 매기지 않는다 */
+/** 세 목록(왼쪽부터) — 거래량(많은 순) · 급증(증가율 높은 순) · 급감(감소율 큰 순). 전년이 없던 동은 증감을 매기지 않는다 */
 const rankLists = computed(() => {
   const list = rankByDong.value;
   // 전년이 몇 건 안 되면 1 → 3 건도 +200% 가 된다 — 급증 · 급감은 전년 RANK_MIN 건 이상인 동만 견준다
@@ -511,9 +513,9 @@ const rankLists = computed(() => {
   const top = list.filter((r) => r.cur > 0).sort((a, b) => (b.cur - a.cur) || a.name.localeCompare(b.name, 'ko')).slice(0, 10);
   const n = list.length;
   return [
+    { key: 'top', title: '거래량 TOP10', sub: `최근 1년 거래건수 많은 순 · 동 ${n}곳 중`, rows: top, empty: '거래가 없습니다' },
     { key: 'up', title: '거래급증 TOP10', sub: `전년 ${RANK_MIN}건 이상 · 증가율 높은 순 · 동 ${n}곳 중`, rows: up, empty: '전년보다 늘어난 동이 없습니다' },
     { key: 'down', title: '거래급감 TOP10', sub: `전년 ${RANK_MIN}건 이상 · 감소율 큰 순 · 동 ${n}곳 중`, rows: down, empty: '전년보다 줄어든 동이 없습니다' },
-    { key: 'top', title: '거래량 TOP10', sub: `최근 1년 거래건수 많은 순 · 동 ${n}곳 중`, rows: top, empty: '거래가 없습니다' },
   ];
 });
 const rankPctText = (p: number | null) => (p === null ? '신규' : `${p > 0 ? '▲ +' : '▼ '}${p.toFixed(1)}%`);
