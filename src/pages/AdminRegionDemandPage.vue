@@ -9,8 +9,7 @@
 // 총 세대수는 건축물대장에서 동마다 받아 채운다 — 연립·다세대 · 아파트 · 오피스텔(호수) 종류별로, 30일 저장.
 // 연립·다세대 값은 물건상세 손품조사와 같은 셈이다.
 // 손으로 적으면 그 값이 우선. 총 매물수는 공식 API 가 아니라 손으로 적는다.
-import { naverListingUrl } from '../services/naverListing';
-import { geocodeAddress } from '../services/routeOptimizer';
+import { openNaverDongListing } from '../services/naverListing';
 import { dealCountTip, type TipRow } from '../services/tipRows';
 import { DEMAND_TOTAL_TIP, demandFitText, demandGradeOf, demandTip, demandTotalGrade } from '../services/demandGrade';
 import InfoTip from '../components/InfoTip.vue';
@@ -296,15 +295,8 @@ const dmInputs = computed(() => {
       tip: [['입력', '아래 표 총 매물수 칸에 직접 입력'], ['합산', '동마다 적은 매물수를 모두 더한 값'], ['찾기', `네이버 부동산 · ${kindWhat.value} 매물 수`]] as TipRow[] },
   ];
 });
-/** 동 줄의 '네이버 매물 ↗' — 그 동 가운데 자리를 찾아 '그 동만 보기' 지도로 연다.
- *  자리를 찾는 동안 새 창이 막히지 않게 창부터 열고 주소를 나중에 넣는다 */
-const openDongListing = async (r: Row) => {
-  const q = [sido.value, r.sigungu, r.umdNm].filter(Boolean).join(' ');
-  const w = window.open('', '_blank');
-  const p = await geocodeAddress(q).catch(() => null);
-  const url = p ? naverListingUrl({ lat: p.lat, lng: p.lng }, kind.value) : 'https://fin.land.naver.com/map';
-  if (w) w.location.href = url; else window.open(url, '_blank');
-};
+/** 동 줄의 '네이버매물 ↗' — 그 동만 보기 지도로(services/naverListing) */
+const openDongListing = (r: Row) => openNaverDongListing([sido.value, r.sigungu, r.umdNm].filter(Boolean).join(' '), kind.value);
 const dmTotal = computed(() => demandTotalGrade(Object.values(navStats.value.grades)));
 const dmResults = computed(() => {
   const v = navStats.value;

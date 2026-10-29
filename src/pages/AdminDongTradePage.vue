@@ -3,6 +3,7 @@
 //
 // 시군구 12개월치를 한 번 받아 두고, 읍면동·기간·면적·연식은 받아 둔 줄
 // 안에서 추린다. 조건을 바꿀 때마다 다시 부르면 하루 한도만 깎아먹는다.
+import { openNaverDongListing } from '../services/naverListing';
 import { dealCountTip } from '../services/tipRows';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -493,6 +494,8 @@ const loadRank = async () => {
   } catch (e) { rankErr.value = e instanceof Error ? e.message : '전년 자료를 받지 못했습니다'; } finally { if (key === rankKey) rankLoading.value = false; }
 };
 watch([listView, lastQuery, asOf], () => { void loadRank(); });
+/** 거래랭킹 탭 — 읍면동 칸을 뺀다 */
+const noDongPick = computed(() => !!props.rankMode && listView.value === 'top');
 const RANK_MIN = 5;
 /** 지역 칸 밑에 적을 시군구 이름 */
 const rankGu = computed(() => district.value?.label ?? '');
@@ -868,7 +871,7 @@ const downloadCsv = () => {
       <!-- 지역 -->
       <!-- 경매지번 탭에서는 이 줄 대신 경매지번의 주소 줄이 이 자리(admTopBarSlot)에 온다 -->
       <div id="admTopBarSlot" class="app-market adm-topbar-slot" data-k="case" />
-      <div v-show="listView !== 'case'" ref="barEl" class="adm-bar">
+      <div v-show="listView !== 'case'" ref="barEl" :class="['adm-bar', { 'no-dong': noDongPick }]">
         <label class="adm-f">
           <small>시 · 도</small>
           <select v-model="sido" :class="['adm-input', 'narrow', { ph: !sido }]">
@@ -883,7 +886,8 @@ const downloadCsv = () => {
             <option v-for="d in districts" :key="d.lawdCode" :value="d.lawdCode">{{ d.label }}</option>
           </select>
         </label>
-        <label class="adm-f">
+        <!-- 거래랭킹은 시군구 안 모든 동을 줄 세우니 읍면동은 고르지 않는다 — 칸을 빼고 시도 · 시군구 칸을 넓힌다 -->
+        <label v-if="!noDongPick" class="adm-f">
           <small>읍 · 면 · 동</small>
           <select v-model="dong" :class="['adm-input', 'narrow', { ph: !dong }]" :disabled="dongOptions.length === 0">
             <option value="">{{ dongPeeking ? '불러오는 중…' : (webEmbed ? '읍면동 선택' : '전체') }}</option>
@@ -1066,7 +1070,7 @@ const downloadCsv = () => {
               <tbody>
                 <tr v-for="(r, i) in g.rows" :key="r.name">
                   <td class="no">{{ i + 1 }}</td>
-                  <td class="c"><b>{{ r.name }}</b><small>{{ rankGu }}</small></td>
+                  <td class="c"><b>{{ r.name }}<button type="button" class="nv-btn" :title="`${r.name}만 보기 — 네이버 부동산 매매 매물`" @click="openNaverDongListing([sido, rankGu, r.name].filter(Boolean).join(' '), lastQuery?.kind ?? kind)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></b><small>{{ rankGu }}</small></td>
                   <td class="c"><b>{{ r.cur.toLocaleString('ko-KR') }}<em>건</em></b><small>전년 {{ r.prev.toLocaleString('ko-KR') }}</small></td>
                   <td class="c"><span :class="['adm-rank-pct', r.pct === null ? 'new' : r.pct > 0 ? 'up' : r.pct < 0 ? 'down' : '']">{{ rankPctText(r.pct) }}</span></td>
                 </tr>
@@ -1385,6 +1389,8 @@ const downloadCsv = () => {
 .adm-rank-tbl td.empty { padding: 8px 4px; height: 38px; text-align: center; color: #9ca3af; }
 .adm-rank-tbl tr.pad td { color: transparent; }
 /* 증감 알약 — 우리 등급 색 그대로: 늘면 연빨강 바탕 ▲ · 줄면 연파랑 바탕 ▼ · 전년 없음은 회색 */
+.adm-rank-tbl td b .nv-btn { display: inline-flex; align-items: center; gap: 2px; height: 20px; margin-left: 6px; padding: 0 6px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; color: #6b7280; font-family: inherit; font-size: 12px; font-weight: 400; vertical-align: middle; cursor: pointer; }
+.adm-rank-tbl td b .nv-btn:hover { border-color: #2b6df3; color: #2b6df3; }
 .adm-rank-pct { display: inline-block; min-width: 76px; padding: 3px 8px; border-radius: 999px; font-size: 13px; font-weight: 700; text-align: center; }
 .adm-rank-pct.up { background: #fde2e2; color: #c22e2e; }
 .adm-rank-pct.down { background: #dbe7ff; color: #1d4ed8; }

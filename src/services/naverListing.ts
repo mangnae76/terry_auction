@@ -1,3 +1,4 @@
+import { geocodeAddress } from './routeOptimizer';
 // 네이버 부동산 매물 보기 — 손품조사 총 매물수에서 쓴다.
 // 그 동 위치 · 매매 · 물건 종류 필터가 걸린 채로 지도가 열리고, 지도 아래에 '매물 N'이 바로 보인다.
 //
@@ -36,4 +37,13 @@ export const openNaverListing = (query: string, place?: { lat: number; lng: numb
   if (place) { window.open(naverListingUrl(place, kind), '_blank'); return; }
   try { void navigator.clipboard?.writeText(query); } catch { /* 복사만 못 한다 */ }
   window.open('https://fin.land.naver.com/map', '_blank');
+};
+
+/** 동 이름만 알 때 — 그 동 가운데 자리를 찾아 '그 동만 보기' 지도로 연다(수요분석 표 · 거래랭킹의 동 줄).
+ *  자리를 찾는 동안 새 창이 막히지 않게 창부터 열고 주소를 나중에 넣는다 */
+export const openNaverDongListing = async (query: string, kind: NaverKind = 'villa') => {
+  const w = window.open('', '_blank');
+  const p = await geocodeAddress(query).catch(() => null);
+  const url = p ? naverListingUrl({ lat: p.lat, lng: p.lng }, kind) : 'https://fin.land.naver.com/map';
+  if (w) w.location.href = url; else window.open(url, '_blank');
 };
