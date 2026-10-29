@@ -9,7 +9,7 @@
 // 총 세대수는 건축물대장에서 동마다 받아 채운다 — 연립·다세대 · 아파트 · 오피스텔(호수) 종류별로, 30일 저장.
 // 연립·다세대 값은 물건상세 손품조사와 같은 셈이다.
 // 손으로 적으면 그 값이 우선. 총 매물수는 공식 API 가 아니라 손으로 적는다.
-import { dealCountTip } from '../services/tipRows';
+import { dealCountTip, type TipRow } from '../services/tipRows';
 import { demandFitText, demandGradeOf, demandTip } from '../services/demandGrade';
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
@@ -245,7 +245,7 @@ const navStats = computed(() => {
   const burden = units > 0 ? (listings / units) * 100 : 0;
   const clearMonths = monthly > 0 && listings > 0 ? listings / monthly : 0;
   return {
-    count, avgPrice, monthly,
+    count, avgPrice, monthly, yearly, units, listings,
     age: avgYear > 0 ? new Date().getFullYear() - Math.round(avgYear) + 1 : 0,
     turnover, absorb, burden, clearMonths,
     // 앱 매매수요와 같은 등급 — 준비 조건도 같다(세대수 · 매물수가 있어야)
@@ -257,32 +257,46 @@ const navStats = computed(() => {
     },
   };
 });
-/** '1.28억' · '9,800만' — 상자 안은 짧게 */
-const eokShort = (n: number) => {
-  if (!(n > 0)) return '-';
-  if (n >= 100000000) return `${(Math.round(n / 1000000) / 100).toFixed(2)}억`;
-  return `${Math.round(n / 10000).toLocaleString('ko-KR')}만`;
-};
 /** 말풍선 속 종류 이름 */
 const kindWhat = computed(() => (kind.value === 'apt' ? '아파트' : kind.value === 'officetel' ? '오피스텔' : '연립·다세대'));
-const navCells = computed(() => {
+/** 제목 — '인천광역시 서해구' (읍면동을 고르면 '… 검암동') 뒤에 '수요분석' */
+const dmArea = computed(() => [loadedLabel.value, dongFilter.value].filter(Boolean).join(' '));
+// ===== 웹 요약 — 앱 매매수요(① 수치 · ② 지표)와 같은 칸 · 같은 연계 =====
+type DmId = 'deal' | 'units' | 'listings' | 'turn' | 'absorb' | 'burden' | 'clear';
+/** 칸을 짚으면 켜지는 칸 — 앱 AuctionDetailPage 의 DM_LIT_LINKS 와 같다 */
+const DM_LIT_LINKS: Record<DmId, DmId[]> = {
+  turn: ['turn', 'deal', 'units'],          // 거래 회전율 = 거래량 ÷ 총세대수
+  absorb: ['absorb', 'deal', 'listings'],   // 매물 소화율 = 거래량 ÷ 총매물수
+  burden: ['burden', 'listings', 'units'],  // 매물 부담률 = 총매물수 ÷ 총세대수
+  clear: ['clear', 'listings', 'deal'],     // 매물 소진기간 = 총매물수 ÷ 월평균 거래량
+  deal: ['deal', 'turn', 'absorb', 'clear'],
+  units: ['units', 'turn', 'burden'],
+  listings: ['listings', 'absorb', 'burden', 'clear'],
+};
+const dmLitKey = ref<DmId | ''>('');
+const dmLit = (id: DmId) => (dmLitKey.value ? DM_LIT_LINKS[dmLitKey.value].includes(id) : false);
+const dmInputs = computed(() => {
   const v = navStats.value;
-  const pct = (x: number) => (x > 0 ? `${x.toFixed(1)}%` : '-');
   // 20251030 → 2025-10-30 (말풍선은 2025.10.30 꼴)
   const day = (x: string) => (x.length >= 6 ? [x.slice(0, 4), x.slice(4, 6), x.slice(6, 8)].filter(Boolean).join('-') : x);
+  const n = (x: number) => (x > 0 ? x.toLocaleString('ko-KR') : '-');
   return [
-    // 총 거래건수 — 정상 + 직거래(계약해제는 없던 거래라 뺀다)를 연 | 월(월평균)로, 밑에 나눠 적는다 (다른 지표는 정상거래만으로 셈)
-    {
-      label: '총 거래건수', value: '',
-      ym: { year: v.count + directShown.value, month: (v.count + directShown.value) / months.value },
-      tip: dealCountTip({ normal: v.count, direct: directShown.value, cancel: cancelShown.value, months: months.value, from: day(period.value.from), to: day(period.value.to) }),
-    },
-    { label: loadedDeal.value === 'jeonse' ? '평균 전세가' : '평균 거래가', value: eokShort(v.avgPrice) },
-    { label: '평균 건축연수', value: v.age > 0 ? `${v.age}년차` : '-' },
-    { label: '거래 회전율', value: pct(v.turnover), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value) },
-    { label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value) },
-    { label: '매물 부담률', value: pct(v.burden), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value) },
-    { label: '매물 소진기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value) },
+    { id: 'deal' as DmId, label: '총 거래건수', value: '', ym: { year: v.yearly, month: v.monthly },
+      tip: dealCountTip({ normal: v.count, direct: directShown.value, cancel: cancelShown.value, months: months.value, from: day(period.value.from), to: day(period.value.to) }) },
+    { id: 'units' as DmId, label: '총 세대수', value: n(v.units), ym: null,
+      tip: [['출처', '건축HUB(건축물대장) · 자동 입력'], ['갱신', '30일 후 업데이트'], ['범위', `${dmArea.value} ${kindWhat.value}`], ['합산', '건물마다의 세대수를 모두 더한 값']] as TipRow[] },
+    { id: 'listings' as DmId, label: '총 매물수', value: n(v.listings), ym: null,
+      tip: [['입력', '아래 표 총 매물수 칸에 직접 입력'], ['합산', '동마다 적은 매물수를 모두 더한 값'], ['찾기', `네이버 부동산 · ${kindWhat.value} 매물 수`]] as TipRow[] },
+  ];
+});
+const dmResults = computed(() => {
+  const v = navStats.value;
+  const pct = (x: number) => (x > 0 ? `${x.toFixed(1)}%` : '-');
+  return [
+    { id: 'turn' as DmId, label: '거래 회전율', value: pct(v.turnover), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value) },
+    { id: 'absorb' as DmId, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value) },
+    { id: 'burden' as DmId, label: '매물 부담률', value: pct(v.burden), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value) },
+    { id: 'clear' as DmId, label: '매물 소진기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value) },
   ];
 });
 const areaText = (n: number) => (n > 0 ? n.toFixed(1) : '-');
@@ -528,12 +542,20 @@ const downloadCsv = () => {
       </p>
 
       <!-- 웹 — 고른 범위 전체를 한눈에: 요약 상자 줄 (고르는 칸 바로 아래) -->
-      <section v-if="webEmbed && rows.length > 0" class="adm-nav">
-        <p class="adm-nav-scope">{{ sumLabel }}<SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
-        <div class="adm-nav-row">
-          <div v-for="c in navCells" :key="c.label" class="adm-nav-box">
-            <small><InfoTip v-if="c.tip" :rows="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small>
-            <b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" /><template v-if="'grade' in c && c.grade && c.grade !== '-'"><em class="nbar">|</em><span :class="['gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['fit', { bad: c.grade === 'C' }]">/ {{ demandFitText(c.grade) }}</span></template></b>
+      <!-- 앱 매매수요와 같은 짜임 — 위 ① 수치(거래량 · 세대수 · 매물수) 3칸, 아래 ② 지표 4칸. 두 줄은 시작과 끝이 같다.
+           칸에 마우스를 대면 그 값과 이어진 칸이 같이 빨갛게 켜진다(앱 DM_LIT_LINKS 와 같은 짝) -->
+      <section v-if="webEmbed && rows.length > 0" class="adm-nav dm">
+        <p class="adm-nav-scope"><span><span class="area">{{ dmArea }}</span> 수요분석</span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
+        <div class="dm-row c3">
+          <div v-for="c in dmInputs" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
+            <div class="dm-head"><InfoTip :rows="c.tip">{{ c.label }}</InfoTip></div>
+            <div class="dm-body"><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" /></b></div>
+          </div>
+        </div>
+        <div class="dm-row c4">
+          <div v-for="c in dmResults" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
+            <div class="dm-head"><InfoTip :rows="c.tip">{{ c.label }}</InfoTip></div>
+            <div class="dm-body"><b><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="nbar">|</em><span :class="['gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['fit', { bad: c.grade === 'C' }]">/ {{ demandFitText(c.grade) }}</span></template></b></div>
           </div>
         </div>
       </section>
@@ -703,23 +725,26 @@ const downloadCsv = () => {
 /* 요약 상자 줄 — 지역분석(.adm-gunav)과 크기 · 글자를 똑같이 맞춘다 */
 .adm-nav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }
 .adm-nav-scope { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; font-size: 18px; font-weight: 800; color: #2b6df3; }
-.adm-nav-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; }
-.adm-nav-box {
-  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 4px;
-  background: #fff; border-radius: 8px; text-align: center; min-width: 0;
-}
-.adm-nav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
-/* 요약 상자 등급 — 숫자 옆 막대(총 거래건수의 연 | 월 막대와 같은 꼴) 뒤 'A / 적합'. 색은 앱 매매수요와 같다 */
-.adm-nav-box .nbar { font-style: normal; font-weight: 400; color: #c3c9d4; margin: 0 7px; }
-/* 등급 동그라미 — 앱 매매수요 등급 뱃지(adp-dm-grade)와 같은 값: 22px 원 · 13px · A 빨강 · B 파랑 · C 회색 */
-.adm-nav-box .gd { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; vertical-align: 2px; font-size: 13px; font-weight: 800; line-height: 1; }
-.adm-nav-box .gd.g-A { background: #fde2e2; color: #c22e2e; }
-.adm-nav-box .gd.g-B { background: #cfdeff; color: #1d4ed8; }
-.adm-nav-box .gd.g-C { background: #e5e7eb; color: #111827; }
-.adm-nav-box .fit { margin-left: 3px; font-size: 12px; font-weight: 800; color: #1f7a45; }
-.adm-nav-box .fit.bad { color: #c22e2e; }
-.adm-nav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; text-align: center; }
-@media (max-width: 1200px) { .adm-nav-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* 웹 수요분석 요약 — 제목은 지역(파랑) + '수요분석'(검정). 위 3칸 · 아래 4칸, 두 줄 시작과 끝을 맞춘다 */
+.adm-nav.dm .adm-nav-scope { color: #111827; }
+.adm-nav.dm .adm-nav-scope .area { color: #2b6df3; }
+.dm-row { display: grid; gap: 12px; }
+.dm-row.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
+.dm-row.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* 칸 — 앱 매매수요 칸처럼 위 이름 띠(회색) + 아래 값(흰색). 이어진 칸은 빨갛게(앱 .lit 와 같은 색) */
+.dm-cell { min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; overflow: visible; transition: background .12s, border-color .12s; }
+.dm-head { display: flex; justify-content: center; padding: 8px 6px; border-bottom: 1px solid #e3e8f0; border-radius: 8px 8px 0 0; background: #f3f6fb; font-size: 14px; color: #6b7280; white-space: nowrap; }
+.dm-body { display: flex; justify-content: center; align-items: center; padding: 14px 6px; }
+.dm-body b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; display: inline-flex; align-items: center; }
+.dm-cell.lit { background: #fdecea; border-color: #f3c2bc; }
+.dm-cell.lit .dm-head { background: #fbdcd8; border-bottom-color: #f3c2bc; }
+.dm-cell .nbar { font-style: normal; font-weight: 400; color: #c3c9d4; margin: 0 7px; }
+.dm-cell .gd { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 13px; font-weight: 800; line-height: 1; }
+.dm-cell .gd.g-A { background: #fde2e2; color: #c22e2e; }
+.dm-cell .gd.g-B { background: #cfdeff; color: #1d4ed8; }
+.dm-cell .gd.g-C { background: #e5e7eb; color: #111827; }
+.dm-cell .fit { margin-left: 3px; font-size: 12px; font-weight: 800; color: #1f7a45; }
+.dm-cell .fit.bad { color: #c22e2e; }
 .adm-sum {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   margin: 18px 2px 10px; font-size: 12.5px; color: #6b7280; font-weight: 600;
