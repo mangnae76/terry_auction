@@ -24,7 +24,6 @@ import BubbleMatrix from '../components/BubbleMatrix.vue';
 import TradeTimeline from '../components/TradeTimeline.vue';
 import { CHART_ICONS } from '../services/chartIcons';
 import DongQuadrant from '../components/DongQuadrant.vue';
-import RankRace from '../components/RankRace.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
@@ -998,8 +997,6 @@ const downloadCsv = () => {
         :chip="snapChip"
         @pick-dong="(d: string) => { dong = d; }"
       />
-      <!-- 랭킹지도 아래 — 달마다 동 순위가 바뀌는 막대 레이스 -->
-      <RankRace v-if="webEmbed && listView === 'map' && quadRows.length" :rows="quadRows" />
       <div v-if="webEmbed && listView === 'case'" class="adm-case-in app-market" data-k="case"><AdminCaseTradePage in-dong /></div>
       <template v-if="all.length > 0 && listView !== 'map' && listView !== 'case'">
         <!-- 웹 — 위 요약 상자 틀은 하나. 읍면동을 고르면 안의 상자만 셋(총 거래건수 · 실거래가 평균 · 평당가 평균)으로 -->

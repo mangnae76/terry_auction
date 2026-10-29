@@ -124,6 +124,24 @@ const allRankedRows = computed<RankedRow[]>(() => {
 const rankedRows = computed<RankedRow[]>(() => allRankedRows.value.slice(0, TOP_N));
 
 const topCount = computed(() => rankedRows.value[0]?.count ?? 0);
+// 웹 — 순위 목록 움직임: 건수가 0(또는 앞 값)에서 새 값까지 올라간다. 순위가 바뀌면 줄이 제자리로 미끄러진다(TransitionGroup)
+const shownCount = ref<Record<string, number>>({});
+const rankMotion = webEmbed && !(typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+let countRaf = 0;
+watch(rankedRows, (rows) => {
+  if (!rankMotion) return;
+  const from = { ...shownCount.value }; const t0 = performance.now(); const DUR = 900;
+  cancelAnimationFrame(countRaf);
+  const step = (now: number) => {
+    const k = Math.min(1, (now - t0) / DUR); const e = 1 - Math.pow(1 - k, 3);
+    const next: Record<string, number> = {};
+    rows.forEach((r) => { const a = from[r.region] ?? 0; next[r.region] = a + (r.count - a) * e; });
+    shownCount.value = next;
+    if (k < 1) countRaf = requestAnimationFrame(step);
+  };
+  countRaf = requestAnimationFrame(step);
+}, { immediate: true });
+const countText = (row: RankedRow) => Math.round(rankMotion ? (shownCount.value[row.region] ?? row.count) : row.count).toLocaleString();
 
 /** 통계 정보 — 동을 고르면 그 동 것만, 아니면 받아 온 동을 통째로 센다 */
 const statRows = computed(() => (
@@ -742,11 +760,13 @@ onMounted(async () => {
               <small v-if="allRankedRows.length > 0">{{ rankedRows.length }} / {{ allRankedRows.length }}</small>
             </h3>
             <p v-if="rankedRows.length === 0" class="tsp-empty">조회 결과가 여기에 표시됩니다.</p>
-            <ol v-else class="tsp-rank-list">
+            <!-- 웹 — 줄이 차례로 올라오고, 순위가 바뀌면 줄이 미끄러져 자리를 바꾼다(기간 · 매매/전세를 바꿀 때 레이스처럼) -->
+            <TransitionGroup v-else tag="ol" :name="rankMotion ? 'tsp-rk' : 'tsp-rk-off'" class="tsp-rank-list" :class="{ anim: rankMotion }" appear>
               <li
-                v-for="row in rankedRows"
+                v-for="(row, idx) in rankedRows"
                 :key="row.region"
                 :class="['tsp-rank-row', { active: selectedRegion === row.region }]"
+                :style="{ '--i': idx }"
                 @click="focusRegion(row.region)"
               >
                 <span
@@ -756,7 +776,7 @@ onMounted(async () => {
                 <div class="tsp-rank-main">
                   <div class="tsp-rank-top">
                     <strong class="tsp-rank-name">{{ row.region }}</strong>
-                    <strong class="tsp-rank-count">{{ row.count.toLocaleString() }}건</strong>
+                    <strong class="tsp-rank-count">{{ countText(row) }}건</strong>
                   </div>
                   <div class="tsp-rank-bot">
                     <div class="tsp-rank-bar">
@@ -770,7 +790,7 @@ onMounted(async () => {
                   <small class="tsp-rank-avg">{{ avgLabel }} {{ shortWon(row.avgPrice) }}<template v-if="webEmbed"> / 평당 {{ manWon(unitOf(row)) }}</template></small>
                 </div>
               </li>
-            </ol>
+            </TransitionGroup>
           </section>
         </aside>
       </section>
@@ -899,6 +919,17 @@ onMounted(async () => {
   flex: 1 1 auto; background: #eef0f5; height: 8px; border-radius: 999px; overflow: hidden;
 }
 .tsp-rank-fill { display: block; height: 100%; border-radius: 999px; transition: width 0.3s; }
+/* 웹 순위 움직임 — 줄이 아래에서 차례로 올라오고, 동그라미가 톡 튀고, 막대가 왼쪽부터 찬다. 순위가 바뀌면 줄이 미끄러진다 */
+.tsp-rank-list { position: relative; }
+.tsp-rk-enter-from { opacity: 0; transform: translateY(16px); }
+.tsp-rk-enter-active { transition: opacity .45s ease, transform .5s cubic-bezier(.2, .8, .2, 1); transition-delay: calc(var(--i, 0) * 55ms); }
+.tsp-rk-move { transition: transform .65s cubic-bezier(.2, .8, .2, 1); }
+.tsp-rk-leave-active { position: absolute; left: 0; right: 0; transition: opacity .25s ease; }
+.tsp-rk-leave-to { opacity: 0; }
+.tsp-rank-list.anim .tsp-rank-badge { animation: tspPop .5s cubic-bezier(.3, 1.6, .5, 1) both; animation-delay: calc(var(--i, 0) * 55ms + 120ms); }
+.tsp-rank-list.anim .tsp-rank-fill { animation: tspFill .9s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 55ms + 180ms); }
+@keyframes tspPop { 0% { transform: scale(0); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes tspFill { from { width: 0; } }
 .tsp-rank-pct { font-size: 12px; color: #9ca3af; font-weight: 500; flex-shrink: 0; min-width: 42px; text-align: right; }
 
 .tsp-empty { margin: 12px 14px 16px; padding: 30px 14px; text-align: center; color: #9ca3af; font-size: 13px; background: #fafafa; border: 1px dashed #e5e7eb; border-radius: 10px; }
