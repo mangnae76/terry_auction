@@ -346,6 +346,13 @@ button { cursor: pointer; }
 .adm-case-in .adm-case-row::after { display: none !important; }
 /* 경매지번 탭 — 제목 줄부터 표까지 흰 상자 하나 */
 .adm-case-in .adm-case-card { margin-top: 14px; padding: 4px 20px 20px; background: var(--surface); border: 1px solid var(--card-line); border-radius: 14px; }
+/* 경매지번 표 위 줄 — 알약 대신 네모(앱처럼), 전체 · 매매 · 전세 · 월세 · 선택 풀기 · 면적 · 년도 · 초기화 모두 높이 40 · 간격 8 */
+.adm-case-in .adm-tabs { gap: 8px !important; }
+.adm-case-in .adm-tabs :is(.adm-tab, .adm-ghost, .adm-flt-clear, select.adm-input) { box-sizing: border-box; height: 40px !important; border-radius: 8px !important; font-size: 14px !important; margin: 0 !important; }
+.adm-case-in .adm-tabs :is(.adm-tab, .adm-ghost, .adm-flt-clear) { padding: 0 16px !important; display: inline-flex; align-items: center; }
+/* 전세가 비율 칸 — 크게 */
+.adm-case-in .case12 .adm-rate-input { width: 52px; height: 26px; font-size: 14px; border-radius: 6px; padding: 0 6px; }
+.adm-case-in .case12 small em:has(.adm-rate-input) { font-size: 14px; display: inline-flex; align-items: center; gap: 2px; }
 /* 업데이트 칩 — 제목 줄 오른쪽 끝, 아래 칸들의 오른쪽 끝선에 맞춘다 */
 .adm-case-in .adm-case-row .snap-chip { margin-left: auto; }
 .adm-case-in .adm-case-row { margin-top: 0 !important; position: static !important; background: transparent !important; box-shadow: none !important; clip-path: none !important; border: 0 !important; }

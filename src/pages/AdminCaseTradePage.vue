@@ -756,7 +756,7 @@ const downloadCsv = () => {
              매매(실거래가 · 공시대비율) / 보증보험 전세(전세가 · 전세가율/갭) / 실거래 전세(실거래가 · 전세가율/갭) -->
         <!-- 웹 — 손품조사 시세조사의 실거래가 조사와 같은 12칸: 매매 줄 · 전세 줄(전용면적 · 거래일자/층 · 실거래가 · 평당가) · 공시 줄 -->
         <template v-if="webEmbed">
-          <div v-for="g in tradeLines" :key="g.key" class="adm-kpis grid4 case12">
+          <div v-for="g in tradeLines" :key="g.key" :class="['adm-kpis grid4 case12', g.row ? `on-${g.key}` : '']">
             <div :class="['adm-kpi', { lit: lit(g.k.area) }]" @mouseenter="litOn(g.k.area)" @mouseleave="litOff">
               <small>전용면적</small><strong><UnitText :text="tradeArea(g.row)" /></strong>
             </div>
@@ -764,7 +764,7 @@ const downloadCsv = () => {
               <small>거래일자 / 층</small><strong><UnitText :text="tradeWhen(g.row)" /></strong>
             </div>
             <div :class="['adm-kpi', { lit: lit(g.k.real) }]" @mouseenter="litOn(g.k.real)" @mouseleave="litOff">
-              <small>{{ g.label }} 실거래가 <span v-if="g.row" class="adm-kpi-from pick">선택</span></small>
+              <small>{{ g.label }} 실거래가</small>
               <strong><UnitText :text="won(g.row?.price ?? 0)" suffix="원" /></strong>
               <span v-if="!g.row" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span>
             </div>
@@ -928,7 +928,7 @@ const downloadCsv = () => {
               <tr
                 v-for="(r, i) in tableRows.slice(0, 300)"
                 :key="`${r.contractDate}-${r.floor}-${i}`"
-                :class="{ off: isOff(r.kind), picked: isPicked(r) }"
+                :class="{ off: isOff(r.kind), picked: isPicked(r), 'picked-sale': rowKey(r) === pickedSale, 'picked-jeonse': rowKey(r) === pickedJeonse }"
                 @click="pickRow(r)"
               >
                 <td><span :class="['kind', kindClass(r.kind)]">{{ r.kind }}</span></td>
@@ -1065,7 +1065,7 @@ const downloadCsv = () => {
 /* 말풍선(InfoTip under=box)이 칸 바로 아래에 뜨도록 칸을 기준 상자로 */
 .adm-kpis.case12 .adm-kpi { position: relative; }
 /* 이어진 칸 — 가격정보 실거래가 조사 .lit 와 같은 색 */
-.adm-kpis.case12 .adm-kpi.lit { background: #fff5f5; border-color: #f6d5d5; }
+.adm-kpis.case12 .adm-kpi.lit, .adm-kpis.case12[class*="on-"] .adm-kpi.lit { background: #fff5f5; border-color: #f6d5d5; }
 .adm-kpis.case12 .adm-kpi.green .adm-kpi-sub { padding-left: 0; }
 .adm-case-sub { font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; margin-left: 2px; }
 /* 세 칸으로 판 폭을 다 쓴다 — 오른쪽 끝을 아래 표 끝선에 */
@@ -1164,6 +1164,13 @@ const downloadCsv = () => {
 /* 지금 기준으로 쓰고 있는 줄 — 연한 붉은색으로 칠한다 */
 .adm-table tbody tr.picked td { background: #fff0f3; }
 .adm-table tbody tr.picked:hover td { background: #ffe6ec; }
+/* 고른 매매 줄은 파랑 · 전세 줄은 초록(위 알약 색) — 위 12칸의 그 줄도 같은 색으로 찬다 */
+.adm-table tbody tr.picked-sale td { background: #eef4ff; }
+.adm-table tbody tr.picked-sale:hover td { background: #e3edff; }
+.adm-table tbody tr.picked-jeonse td { background: #ebf8f3; }
+.adm-table tbody tr.picked-jeonse:hover td { background: #dff3eb; }
+.adm-kpis.case12.on-sale .adm-kpi { background: #eef4ff; border-color: #d3e1fd; }
+.adm-kpis.case12.on-jeonse .adm-kpi { background: #ebf8f3; border-color: #c9eadc; }
 .adm-table tbody tr { cursor: pointer; }
 .adm-kpi-from {
   font-size: 10.5px; font-weight: 800; color: #6b7280;
