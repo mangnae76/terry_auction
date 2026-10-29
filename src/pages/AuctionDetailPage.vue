@@ -10839,14 +10839,29 @@ tr.tone-take { background: #fff5f5; }
   .adp-ind-pair .adp-ind-table col:first-child { width: 74px !important; }
   .adp-ind-pair .adp-ind-table col:last-child { width: 62px !important; }
   .adp-ind-pair .adp-ind-toggles .adp-toggle-btn { padding-left: 6px; padding-right: 6px; }
+  /* 나란히 서면 두 표 모두 위 모서리를 둥글게 */
+  .adp-ind-pair .adp-ind-table + .adp-ind-table { border-top-left-radius: 8px; border-top-right-radius: 8px; }
+  .adp-ind-pair .adp-ind-table + .adp-ind-table > thead > tr:first-child > :first-child { border-top-left-radius: 7px !important; }
+  .adp-ind-pair .adp-ind-table + .adp-ind-table > thead > tr:first-child > :last-child { border-top-right-radius: 7px !important; }
 }
-.adp-ind-foot { margin-top: 8px; }
-.adp-ind-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.adp-ind-table { width: 100%; table-layout: fixed; } /* 모서리 8 은 공통 .adp-table(separate) 이 맡는다 — collapse 로 덮지 않는다 */
 .adp-ind-table th, .adp-ind-table td {
-  /* 줄이 많은 표다 — 글자는 그대로 두고 위아래 여백만 줄인다 (7 → 5px) */
-  border: 1px solid #e5e7eb; padding: 5px 6px; font-size: 13px; color: #111827;
+  /* 줄이 많은 표다 — 글자는 그대로 두고 위아래 여백만 줄인다 (7 → 5px). 칸 선은 위 · 왼쪽만(겹쳐 두꺼워지지 않게) */
+  border: 0; border-top: 1px solid #e5e7eb; border-left: 1px solid #e5e7eb; padding: 5px 6px; font-size: 13px; color: #111827;
   text-align: center; vertical-align: middle; word-break: keep-all;
 }
+.adp-ind-table tr > :first-child { border-left: 0; }
+.adp-ind-table > thead > tr:first-child > *,
+.adp-ind-table > tfoot > tr:first-child > * { border-top: 0; }
+/* 개별성 적용가 줄은 두 표 바로 아래에 붙인다 — 두 표는 아래 모서리를 펴고, 적용가 줄이 아래 모서리만 둥글다 */
+.adp-ind-pair .adp-ind-table { border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.adp-ind-pair .adp-ind-table > tbody:last-of-type > tr:last-child > * { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+/* 좁아서 위아래로 쌓이면 둘째 표의 위 모서리도 편다 */
+.adp-ind-pair .adp-ind-table + .adp-ind-table { border-top-left-radius: 0; border-top-right-radius: 0; }
+.adp-ind-pair .adp-ind-table + .adp-ind-table > thead > tr:first-child > * { border-radius: 0 !important; }
+.adp-ind-foot { margin-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
+.adp-ind-foot > tfoot > tr:last-child > :first-child { border-bottom-left-radius: 7px; }
+.adp-ind-foot > tfoot > tr:last-child > :last-child { border-bottom-right-radius: 7px; }
 /* 그룹 머리줄 (구역내 / 단지내 개별성) */
 .adp-ind-head th {
   background: #f3f6fb; font-weight: 700; font-size: 12.5px; color: #6b7280; text-align: center;

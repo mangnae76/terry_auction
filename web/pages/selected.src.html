@@ -1308,6 +1308,10 @@ body.trip-full .foot { display: none; }
 .app-detail :is(.adp-note-bubble, .adp-dm-bubble) { font-size: 14px !important; }
 /* 룸수 — 웹은 제 칸에 서므로 위 여백이 필요 없다 */
 .app-detail .adp-ruser-table .adp-ruser-room { margin-top: 0 !important; }
+/* 실사용자 + 입지등수 — 등수 칸은 40 정사각형, 입지조건 이름 줄도 같은 높이 · 줄 사이 8 (붙어 보였다) */
+.app-detail.tab-survey .adp-ruser-table .adp-ruser-cond-row { height: 40px !important; }
+.app-detail.tab-survey .adp-ruser-table .adp-ruser-cond-row + .adp-ruser-cond-row { margin-top: 8px !important; }
+.app-detail.tab-survey .adp-ruser-table .adp-ruser-rank { flex: 0 0 40px !important; width: 40px !important; height: 40px !important; min-height: 40px !important; padding: 0 !important; border-radius: 8px !important; font-size: 14px !important; line-height: 38px; }
 .app-detail .adp-ruser-table .adp-ruser-select { min-height: var(--ctl-h) !important; height: auto !important; padding-top: 6px !important; padding-bottom: 6px !important; }
 /* 평균등수 — 앱과 같은 30 (14 하한 규칙에 눌리지 않게 못 박는다) */
 .app-detail .adp-ruser-sum { font-size: 30px !important; }
@@ -1336,6 +1340,24 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-survey .adp-ind-table > colgroup > col:first-child { width: 125px !important; }
 /* 웹 손품조사 — 매매수요 ① 수치입력 · ② 지표결과 표는 세로로 넉넉히 (줄 높이 약 두 배) */
 .app-detail.tab-survey :is(.dm-input, .dm-result) .cell .cell-head { min-height: 76px !important; padding-top: 16px !important; padding-bottom: 16px !important; }
+/* ===== 웹 손품조사 개별성 분석 — 편집 상태까지 한 가지 크기로(글자 14 아래 없음 · 칸 높이 34 · 둥근 모서리 8 · 알약은 같은 높이 · 같은 최소폭) ===== */
+.app-detail.tab-survey .adp-ind-table :is(th, td) { font-size: 14px !important; }
+.app-detail.tab-survey .adp-ind-table .adp-ind-ctl .row { gap: 6px !important; }
+.app-detail.tab-survey .adp-ind-table :is(input.adp-ind-input, button.adp-ind-input, select.adp-ind-input, .adp-agency-trigger, select) { height: 34px !important; min-height: 34px !important; padding: 0 10px !important; border: 1px solid #dde3ee !important; border-radius: 8px !important; font-size: 14px !important; font-weight: 400 !important; box-sizing: border-box; }
+/* 내용 칸의 입력 · 선택은 칸을 꽉 채운다(층 '전체 · 해당' 두 칸은 반씩) */
+.app-detail.tab-survey .adp-ind-table .adp-ind-ctl :is(input.adp-ind-input:not(.rate), button.adp-ind-input, .adp-agency-trigger, select) { flex: 1 1 0 !important; width: auto !important; min-width: 0 !important; max-width: none !important; }
+.app-detail.tab-survey .adp-ind-table .adp-ind-year { justify-content: center !important; font-size: 14px !important; }
+/* 비율 칸 — 같은 폭(56) 가운데 */
+.app-detail.tab-survey .adp-ind-table input.adp-ind-input.rate { flex: 0 0 48px !important; width: 48px !important; height: 34px !important; padding: 0 4px !important; text-align: center; font-size: 14px !important; }
+.app-detail.tab-survey .adp-ind-table .adp-ind-rate-row { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+/* 비율 칸은 '48 칸 + %'가 들어가게 84, 아래 적용가 줄도 같은 폭 */
+.app-detail.tab-survey :is(.adp-ind-pair .adp-ind-table, .adp-ind-foot) col:last-child { width: 84px !important; }
+/* '선택' 칸(향 · 타입 · 건물외부 …)도 내용 칸을 꽉 — 감싼 칸까지 늘린다 */
+.app-detail.tab-survey .adp-ind-table .adp-ind-ctl :is(.adp-agency-multi, .adp-ind-multi) { display: flex; flex: 1 1 0; width: 100%; min-width: 0; }
+.app-detail.tab-survey .adp-ind-table .adp-ind-ctl .adp-agency-trigger { width: 100% !important; }
+/* 알약 단추(O · X · 계단식 · 뻥뷰 · 좋음 …) — 동그란 알약, 같은 높이 · 같은 최소폭 · 14 */
+.app-detail.tab-survey .adp-ind-table .adp-ind-toggles { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px !important; }
+.app-detail.tab-survey .adp-ind-table .adp-ind-toggles .adp-toggle-btn { height: 30px !important; min-width: 64px !important; padding: 0 12px !important; border-radius: 999px !important; font-size: 14px !important; line-height: 28px; overflow: visible !important; }
 /* ===== 웹 손품조사 수요분석 — 시장분석 › 수요분석 요약과 같은 상자 꼴(회색 판 위 떨어진 흰 상자 · 이름 띠 · 값 · 등급은 값 옆 막대 뒤). 앱은 그대로 ===== */
 /* 판 하나 — 제목(1. ○○동 수요분석) · ① · ② 를 한 회색 판에(수요분석 카드만 — 입지/개별성 카드는 그대로) */
 /* 판 하나 — ① · ② 두 묶음을 이어 붙여 한 회색 판으로(같은 상자 안 '2. 입지/개별성'은 그대로) */
