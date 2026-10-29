@@ -243,12 +243,12 @@ const detailKind = ref<DetailKind>('price');
 // 상세분포의 면적은 ㎡ 구간(국민주택 85㎡ 기준이 보이게) — 평은 설명 줄에 ≈ 로
 const m2 = (r: DongTradeDetailRow) => r.areaM2;
 const DETAIL_AREA_BUCKETS: Bucket[] = [
-  { label: '~30㎡', test: (r) => m2(r) > 0 && m2(r) <= 30 },
-  { label: '30~50㎡', test: (r) => m2(r) > 30 && m2(r) <= 50 },
-  { label: '50~70㎡', test: (r) => m2(r) > 50 && m2(r) <= 70 },
-  { label: '70~85㎡', test: (r) => m2(r) > 70 && m2(r) <= 85 },
-  { label: '85~100㎡', test: (r) => m2(r) > 85 && m2(r) <= 100 },
-  { label: '100㎡~', test: (r) => m2(r) > 100 },
+  { label: '~30㎡', alt: '~9평', test: (r) => m2(r) > 0 && m2(r) <= 30 },
+  { label: '30~50㎡', alt: '9~15평', test: (r) => m2(r) > 30 && m2(r) <= 50 },
+  { label: '50~70㎡', alt: '15~21평', test: (r) => m2(r) > 50 && m2(r) <= 70 },
+  { label: '70~85㎡', alt: '21~26평', test: (r) => m2(r) > 70 && m2(r) <= 85 },
+  { label: '85~100㎡', alt: '26~30평', test: (r) => m2(r) > 85 && m2(r) <= 100 },
+  { label: '100㎡~', alt: '30평~', test: (r) => m2(r) > 100 },
 ];
 // 상세분포의 건축연식 — 20~30년을 한 칸으로 (표가 넓어지지 않게 여섯 칸)
 // (AGE_BUCKETS 는 아래에서 정한다 — 여기서 펼쳐 쓰면 정하기 전이라 멎는다. 나이 셈 age 는 함수라 괜찮다)
@@ -271,7 +271,10 @@ const DETAIL_FLOOR_BUCKETS: Bucket[] = [
   { label: '5층~', test: (r) => r.floorNum >= 5 },
 ];
 const detailBuckets = computed<Bucket[]>(() => ({
-  price: WEB_PRICE_BUCKETS, area: DETAIL_AREA_BUCKETS, age: DETAIL_AGE_BUCKETS, floor: DETAIL_FLOOR_BUCKETS,
+  price: WEB_PRICE_BUCKETS,
+  // 면적 — 웹은 평 · ㎡ 중 하나(유형분포 토글과 같은 설정 areaUnit), 앱은 ㎡
+  area: webEmbed && areaUnit.value === 'py' ? DETAIL_AREA_BUCKETS.map((b) => ({ ...b, label: b.alt ?? b.label })) : DETAIL_AREA_BUCKETS,
+  age: DETAIL_AGE_BUCKETS, floor: DETAIL_FLOOR_BUCKETS,
 }[detailKind.value]));
 /** 층별 평균 평당가 — 전체 평균과 견줘 어느 층을 더 쳐주는지 (정상 + 직거래, 값이 있는 것만) */
 const floorSummary = computed(() => {
@@ -293,7 +296,7 @@ const manText = (won: number) => (won > 0 ? `${Math.round(won / 10000).toLocaleS
 const pctText = (v: number | null) => (v === null ? '—' : `${v > 0 ? '+' : ''}${Math.round(v * 10) / 10}%`);
 /** 표 위 설명 줄 — 면적은 ㎡ 구간이 몇 평쯤인지 함께(웹은 제목만) */
 const detailCaption = computed(() => {
-  if (detailKind.value === 'area') return webEmbed ? '동별 면적(㎡) 거래건수 분포' : '동별 면적(㎡) 거래건수 분포 — ~30㎡ ≈ 9평 이하 · 30~50㎡ ≈ 9~15평 · 50~70㎡ ≈ 15~21평 · 70~85㎡ ≈ 21~26평 · 85~100㎡ ≈ 26~30평 · 100㎡~ ≈ 30평 이상';
+  if (detailKind.value === 'area') return webEmbed ? `동별 면적(${areaUnit.value === 'py' ? '평' : '㎡'}) 거래건수 분포` : '동별 면적(㎡) 거래건수 분포 — ~30㎡ ≈ 9평 이하 · 30~50㎡ ≈ 9~15평 · 50~70㎡ ≈ 15~21평 · 70~85㎡ ≈ 21~26평 · 85~100㎡ ≈ 26~30평 · 100㎡~ ≈ 30평 이상';
   return `동별 ${DETAIL_KINDS.find((k) => k.key === detailKind.value)?.label ?? ''} 거래건수 분포`;
 });
 /** 셀 건수 — 실제로 이뤄진 거래(정상 + 직거래). 계약해제는 없던 거래라 뺀다 */
@@ -1209,7 +1212,7 @@ const downloadCsv = () => {
               </table>
             </div>
           </template>
-          <p class="adm-detail-cap">{{ detailCaption }}</p>
+          <p class="adm-detail-cap">{{ detailCaption }}<button v-if="webEmbed && detailKind === 'area'" type="button" class="adm-unit-tg" :aria-label="`면적 단위 바꾸기 — 지금 ${areaUnit === 'py' ? '평' : '㎡'}`" @click="areaUnit = areaUnit === 'py' ? 'm2' : 'py'"><span :class="{ on: areaUnit === 'py' }">평</span><span :class="{ on: areaUnit === 'm2' }">㎡</span></button></p>
           <div class="adm-table-wrap">
             <table class="adm-table adm-dongsum adm-heat">
               <thead>
@@ -1290,10 +1293,6 @@ const downloadCsv = () => {
                   <button type="button" class="adm-sort" @click="toggleSumSort(c.key)">
                     {{ c.label }}<i :class="{ on: sumSortKey === c.key }">{{ sumSortKey === c.key ? (sumSortDesc ? '↓' : '↑') : '⇅' }}</i>
                   </button>
-                  <!-- 평균면적 — 평 · ㎡ 중 하나만(유형분포 토글과 같은 설정) -->
-                  <button v-if="c.key === 'area' && webEmbed" type="button" class="adm-unit-tg" :aria-label="`면적 단위 바꾸기 — 지금 ${areaUnit === 'py' ? '평' : '㎡'}`" @click.stop="areaUnit = areaUnit === 'py' ? 'm2' : 'py'">
-                    <span :class="{ on: areaUnit === 'py' }">평</span><span :class="{ on: areaUnit === 'm2' }">㎡</span>
-                  </button>
                 </th>
               </tr>
             </thead>
@@ -1305,7 +1304,7 @@ const downloadCsv = () => {
                 <td class="r">{{ eokMan(d.median) }}</td>
                 <td class="r">{{ eokMan(d.min) }}</td>
                 <td class="r">{{ eokMan(d.max) }}</td>
-                <td class="r">{{ d.area > 0 ? (webEmbed ? (areaUnit === 'py' ? `${(d.area / 3.305785).toFixed(1)}평` : `${d.area.toFixed(1)}㎡`) : areaText(d.area)) : '—' }}</td>
+                <td class="r">{{ d.area > 0 ? areaText(d.area) : '—' }}</td>
                 <!-- 요약 상자 · 랭킹지도와 같은 꼴 — '평 783만 / ㎡ 237만' -->
                 <td class="r"><UnitText v-if="d.perM2 > 0" :text="`평 ${Math.round((d.perM2 * 3.305785) / 10000).toLocaleString('ko-KR')}만 / ㎡ ${Math.round(d.perM2 / 10000).toLocaleString('ko-KR')}만`" /><template v-else>—</template></td>
               </tr>
@@ -1546,6 +1545,9 @@ const downloadCsv = () => {
 .adm-inbox input[type='date'] { width: 130px; }
 .adm-inbox input.num { width: 56px; text-align: center; }
 .adm-inbox.grow { flex: 1 1 200px; }
+/* 거래상세 · 유사매물 — 날짜 · 면적 · 연식 칸을 뺀 뒤 검색칸이 줄 끝까지 늘어났다 — 예전 크기(360)로 오른쪽에 */
+.adm-deals .adm-inline-cond { justify-content: flex-end; }
+.adm-deals .adm-inline-cond .adm-inbox.grow { flex: 0 0 360px; }
 .adm-inbox.grow input { flex: 1 1 auto; }
 .adm-inline-cond .adm-ghost { height: 40px; }
 .adm-pager { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 6px 0 4px; }
@@ -1561,7 +1563,7 @@ const downloadCsv = () => {
 .adm-detail-kinds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; } /* 네 단추 같은 폭 */
 .adm-detail-kinds button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
 .adm-detail-kinds button.on { border-color: #2b6df3; color: #2b6df3; background: #eef4ff; }
-.adm-detail-cap { margin: 4px 2px 0; font-size: 14px; color: #6b7280; }
+.adm-detail-cap { display: flex; align-items: center; margin: 4px 2px 0; font-size: 14px; color: #6b7280; }
 .adm-heat td.r { font-variant-numeric: tabular-nums; }
 /* 가격대 · 면적 · 연식 · 층수를 오가도 동 · 합계 칸은 제자리 — 첫 칸 · 끝 칸 폭을 못 박고 가운데 구간 칸이 나머지를 고르게 나눈다 */
 .adm-heat th:first-child, .adm-heat td:first-child, .adm-floorsum th:first-child, .adm-floorsum td:first-child { width: 120px; }
