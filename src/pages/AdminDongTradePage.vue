@@ -20,6 +20,7 @@ import AdminRegionDemandPage from './AdminRegionDemandPage.vue';
 import TradeStatsPage from './TradeStatsPage.vue';
 import AdminCaseTradePage from './AdminCaseTradePage.vue';
 import DotStackChart, { type DotView } from '../components/DotStackChart.vue';
+import BubbleMatrix from '../components/BubbleMatrix.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
@@ -303,6 +304,8 @@ const detailCaption = computed(() => {
 });
 /** 셀 건수 — 실제로 이뤄진 거래(정상 + 직거래). 계약해제는 없던 거래라 뺀다 */
 const detailBase = computed(() => filtered.value.filter((r) => r.kind !== '계약해제'));
+/** 상세분포 숫자 표 — 기본은 접고 버블 판만 */
+const detailShowTable = ref(false);
 const detailSort = ref<'name' | 'total' | number>('total');
 const detailDesc = ref(true);
 const toggleDetailSort = (k: 'name' | 'total' | number) => {
@@ -1224,6 +1227,10 @@ const downloadCsv = () => {
             </div>
           </template>
           <p class="adm-detail-cap">{{ detailCaption }}<button v-if="webEmbed && detailKind === 'area'" type="button" class="adm-unit-tg" :aria-label="`면적 단위 바꾸기 — 지금 ${areaUnit === 'py' ? '평' : '㎡'}`" @click="areaUnit = areaUnit === 'py' ? 'm2' : 'py'"><span :class="{ on: areaUnit === 'py' }">평</span><span :class="{ on: areaUnit === 'm2' }">㎡</span></button></p>
+          <!-- 동 × 구간을 원으로(크기 = 건수, 색 = 평균 평당가). 숫자 표는 '숫자 보기'로 편다 -->
+          <BubbleMatrix :rows="detailBase" :buckets="detailBuckets" :dongs="detailRows.map((r) => r.name)" @pick-dong="(d: string) => { dong = d; }" />
+          <button type="button" class="adm-detail-numtg" @click="detailShowTable = !detailShowTable">{{ detailShowTable ? '숫자 표 접기' : '숫자 보기' }}</button>
+          <template v-if="detailShowTable">
           <div class="adm-table-wrap">
             <table class="adm-table adm-dongsum adm-heat">
               <thead>
@@ -1242,6 +1249,7 @@ const downloadCsv = () => {
               </tbody>
             </table>
           </div>
+          </template>
         </div>
         <!-- 웹 '지역별 분포' 탭 — 지역별 분석 표 자리에 전용면적 · 금액 · 건축연식 · 층 분포 막대그래프 (검색조건으로 거른 거래 기준) -->
         <DotStackChart v-else-if="webEmbed && listView === 'dist' && distChart === 'dots'" :rows="dealsCounted" :views="DOT_VIEWS" class="adm-dotstack" />
@@ -1465,6 +1473,7 @@ const downloadCsv = () => {
 .adm-rank-notes b { font-weight: 400; color: inherit; }
 .adm-rank-pct.flat { background: #f3f4f6; color: #6b7280; }
 
+.adm-detail-numtg { align-self: flex-start; height: 34px; margin: 4px 0 8px; padding: 0 14px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
 .adm-gunav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }
 .adm-gunav-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .adm-gunav-head strong { font-size: 18px; font-weight: 800; color: #2b6df3; }
