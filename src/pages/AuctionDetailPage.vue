@@ -7839,16 +7839,15 @@ const goBack = () => router.back();
 
 
 
-        <!-- 손품분석 — 본건사진 아래에 지역분석 수요분석(수요분석 상자 · 동 표)을 넣는다 -->
-        <slot v-if="sonpumMode" name="son-demand" />
         <!-- 매매수요 — 동단위 수요·공급 (빌라) -->
         <section class="adp-card">
-          <header v-if="!sonpumMode" class="adp-card-head adp-survey-head" @click="toggleSection('demand')">
+          <header class="adp-card-head adp-survey-head" @click="toggleSection('demand')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V10M9 21V4M15 21v-7M21 21v-11"/></svg>수요조사</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('demand') }]" alt="" />
           </header>
-          <div v-if="sonpumMode || !isCollapsed('demand')" class="adp-dm-body">
-            <!-- 1. 수요분석 — 손품분석에서는 위 지역분석 수요분석이 대신한다 -->
+          <div v-if="!isCollapsed('demand')" class="adp-dm-body">
+            <!-- 1. 수요분석 — 손품분석에서는 지역분석 수요분석(수요분석 상자 · 동 표)이 대신한다(slot 'son-demand') -->
+            <slot v-if="sonpumMode" name="son-demand" />
             <template v-if="!sonpumMode">
             <div class="adp-dm-head">
               <strong class="adp-dm-title">1. <span class="adp-dm-area">{{ surveyAreaLabel }}</span> 수요분석</strong>

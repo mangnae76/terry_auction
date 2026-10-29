@@ -404,6 +404,10 @@ button { cursor: pointer; }
 /* 2. 입지/개별성 — 카드 안 단락 테두리(상자 속 상자)는 손품분석에서는 빼고 한 겹으로 */
 .app-market[data-s="son"] .adp-dm-body > :is(.adp-dm-head.sec2, .adp-dm-block, .adp-dm-block.boxed) { border: 0 !important; border-radius: 0 !important; padding-left: 0 !important; padding-right: 0 !important; background: none !important; }
 .app-market[data-s="son"] .adp-dm-body > .adp-dm-head.sec2 { margin-top: 0 !important; }
+/* 손품분석 수요조사 — 흰 카드 안이라 회색 수요분석 상자를 흰 바탕 + 얇은 테두리로, 동 표 · 입지/개별성과 같은 안쪽 선에 맞춘다 */
+.app-market[data-s="son"] .son-demand .adm-nav.dm { background: var(--surface) !important; border: 1px solid #e3e8f0; margin-top: 4px !important; }
+.app-market[data-s="son"] .son-demand .adm-nav.dm::after { left: 0 !important; right: 0 !important; }
+.app-market[data-s="son"] .adp-dm-body > .adp-dm-head.sec2 { margin-top: 18px !important; padding-top: 0 !important; }
 #sonHead .ih-fold { display: none; }
 #sonShell[hidden] { display: none !important; }
 /* 업데이트 칩 — 제목 줄 오른쪽 끝, 아래 칸들의 오른쪽 끝선에 맞춘다 */
@@ -595,6 +599,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .u-ico svg { width: 18px; height: 18px; }
 .u-ico .dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: #ff4d4f; box-shadow: 0 0 0 1.5px var(--band); }
 .crumbs { display: flex; justify-content: flex-start; align-items: center; gap: 12px; height: 30px; padding-left: 2px; font-size: 13px; color: var(--muted); }
+/* 경로는 오른쪽 끝 — 아래 상자들의 오른쪽 끝선에 맞춘다(선정물건 · 물건상세 탭들 · 낙찰이후 · 마이페이지). 물건등록은 그대로 */
+:is(#crumbSlotList, #crumbSlotItem, #crumbSlotAppPage, #crumbSlotMy) > .crumbs { justify-content: flex-end; padding-left: 0; padding-right: 2px; }
+/* 낙찰이후 등 앱 화면 안 경로도 오른쪽 끝(제자리) — 탭 줄로 끌어올리면 안내 띠 · 상자와 겹치는 화면이 있었다 */
+#appPageContent [data-crumb-slot] > .crumbs { justify-content: flex-end; padding-left: 0; padding-right: 2px; }
 .crumbs a { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); text-decoration: none; transition: color .15s; }
 .crumbs a:hover { color: var(--blue); }
 .crumbs svg { width: 15px; height: 15px; }
