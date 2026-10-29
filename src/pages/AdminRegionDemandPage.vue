@@ -9,6 +9,7 @@
 // 총 세대수는 건축물대장에서 동마다 받아 채운다 — 연립·다세대 · 아파트 · 오피스텔(호수) 종류별로, 30일 저장.
 // 연립·다세대 값은 물건상세 손품조사와 같은 셈이다.
 // 손으로 적으면 그 값이 우선. 총 매물수는 공식 API 가 아니라 손으로 적는다.
+import { demandFitText, demandGradeOf, type DemandGrade } from '../services/demandGrade';
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
@@ -157,6 +158,7 @@ const unitsHint = (sigungu: string, umdNm: string) => {
 type Row = StatRow & {
   units: number; listings: number;
   turnover: number; absorb: number; burden: number; clearMonths: number;
+  grades: { turnover: DemandGrade; absorb: DemandGrade; burden: DemandGrade; clear: DemandGrade };
 };
 const rows = computed<Row[]>(() => stats.value
   .filter((r) => !dongFilter.value || r.umdNm === dongFilter.value)
@@ -164,18 +166,27 @@ const rows = computed<Row[]>(() => stats.value
   const m = manualOf(s.sigungu, s.umdNm);
   const units = Math.max(0, autoUnits.value[rowKey(s.sigungu, s.umdNm)] ?? 0); // 건축물대장 자동값만
   const listings = m.listings ?? 0;
-  const monthly = s.count / Math.max(1, months.value);
+  const deals = dealOf(s);   // 웹은 정상 + 직거래(총 거래건수와 같은 셈)
+  const monthly = deals / Math.max(1, months.value);
   // 회전율·소화율은 1년치로 환산한다 — 24개월을 받아도 뜻이 같아야
   // 손품+현장의 등급 기준(연 거래량 ÷ 세대수)과 그대로 견줄 수 있다
-  const yearly = s.count / Math.max(1, months.value / 12);
+  const yearly = deals / Math.max(1, months.value / 12);
+  const turnover = units > 0 ? (yearly / units) * 100 : 0;
+  const absorb = listings > 0 ? (yearly / listings) * 100 : 0;
+  const burden = units > 0 ? (listings / units) * 100 : 0;
+  const clearMonths = monthly > 0 && listings > 0 ? listings / monthly : 0;
   return {
     ...s,
     units,
     listings,
-    turnover: units > 0 ? (yearly / units) * 100 : 0,
-    absorb: listings > 0 ? (yearly / listings) * 100 : 0,
-    burden: units > 0 ? (listings / units) * 100 : 0,
-    clearMonths: monthly > 0 && listings > 0 ? listings / monthly : 0,
+    turnover, absorb, burden, clearMonths,
+    // 앱 매매수요와 같은 등급 — 준비 조건도 같다(세대수 · 매물수가 있어야)
+    grades: {
+      turnover: demandGradeOf('turnover', units > 0, turnover),
+      absorb: demandGradeOf('absorb', listings > 0, absorb),
+      burden: demandGradeOf('burden', units > 0 && listings > 0, burden),
+      clear: demandGradeOf('clear', units > 0 && listings > 0, clearMonths),
+    },
   };
 }));
 
@@ -281,7 +292,7 @@ const ageText = (buildYear: number) => (
 const pct = (n: number) => (n > 0 ? `${n.toFixed(1)}%` : '-');
 /** 거래량을 연·월로 가른다 — 24개월을 받아도 1년치로 환산해 견준다 */
 /** 표의 거래 칸 — 웹은 총 거래건수(정상 + 직거래, 계약해제 제외), 분석 도구는 정상거래만(예전 그대로) */
-const dealOf = (r: Row) => (webEmbed ? r.count + (r.directCount ?? 0) : r.count);
+const dealOf = (r: { count: number; directCount?: number }) => (webEmbed ? r.count + (r.directCount ?? 0) : r.count);
 const yearlyOf = (count: number) => count / Math.max(1, months.value / 12);
 const monthlyOf = (count: number) => count / Math.max(1, months.value);
 /** 작은 동은 월 0건으로 뭉개진다 — 10건 아래는 소수 한 자리까지.
@@ -591,22 +602,23 @@ const downloadCsv = () => {
                   @input="setManual(r.sigungu, r.umdNm, 'listings', ($event.target as HTMLInputElement).value)"
                 />
               </td>
-              <td class="n strong deal">
+              <td :class="['n', 'deal', { strong: !webEmbed }]">
                 <span class="grp y"><em class="pre">연</em><i>{{ cntInt(yearlyOf(dealOf(r))) }}</i></span><b>{{ cntFrac(yearlyOf(dealOf(r))) }}</b>
                 <em class="bar">|</em>
                 <span class="grp m"><em class="pre">월</em><i>{{ cntInt(monthlyOf(dealOf(r))) }}</i></span><b>{{ cntFrac(monthlyOf(dealOf(r))) }}</b>
               </td>
-              <td class="n strong amt"><span class="v">{{ won(r.avgPrice) }}</span></td>
+              <td :class="['n', 'amt', { strong: !webEmbed }]"><span class="v">{{ won(r.avgPrice) }}</span></td>
               <td class="n area"><span class="v">{{ areaText(r.avgAreaM2) }}</span></td>
               <td class="n age"><span class="v">{{ ageText(r.avgBuildYear) }}</span></td>
-              <td class="n rate"><em v-if="r.turnover > 0" class="pre">연</em><span class="v">{{ pct(r.turnover) }}</span></td>
-              <td class="n rate"><em v-if="r.absorb > 0" class="pre">연</em><span class="v">{{ pct(r.absorb) }}</span></td>
-              <td class="n rate"><span class="v">{{ pct(r.burden) }}</span></td>
+              <td class="n rate"><em v-if="r.turnover > 0" class="pre">연</em><span class="v">{{ pct(r.turnover) }}</span><template v-if="webEmbed && r.grades.turnover !== '-'"><em class="bar">|</em><b :class="['gd', `g-${r.grades.turnover}`]">{{ r.grades.turnover }}</b><span :class="['fit', { bad: r.grades.turnover === 'C' }]">/ {{ demandFitText(r.grades.turnover) }}</span></template></td>
+              <td class="n rate"><em v-if="r.absorb > 0" class="pre">연</em><span class="v">{{ pct(r.absorb) }}</span><template v-if="webEmbed && r.grades.absorb !== '-'"><em class="bar">|</em><b :class="['gd', `g-${r.grades.absorb}`]">{{ r.grades.absorb }}</b><span :class="['fit', { bad: r.grades.absorb === 'C' }]">/ {{ demandFitText(r.grades.absorb) }}</span></template></td>
+              <td class="n rate"><span class="v">{{ pct(r.burden) }}</span><template v-if="webEmbed && r.grades.burden !== '-'"><em class="bar">|</em><b :class="['gd', `g-${r.grades.burden}`]">{{ r.grades.burden }}</b><span :class="['fit', { bad: r.grades.burden === 'C' }]">/ {{ demandFitText(r.grades.burden) }}</span></template></td>
               <td class="n clear">
                 <template v-if="r.clearMonths > 0">
                   <span class="v">{{ clearHead(r.clearMonths) }}개월</span><small v-if="clearSub(r.clearMonths)"> / {{ clearSub(r.clearMonths) }}</small>
                 </template>
                 <template v-else>-</template>
+                <template v-if="webEmbed && r.grades.clear !== '-'"><em class="bar">|</em><b :class="['gd', `g-${r.grades.clear}`]">{{ r.grades.clear }}</b><span :class="['fit', { bad: r.grades.clear === 'C' }]">/ {{ demandFitText(r.grades.clear) }}</span></template>
               </td>
             </tr>
           </tbody>
@@ -737,6 +749,14 @@ const downloadCsv = () => {
 /* 총 거래량 — 연 | 월 두 값을 가운데 막대로 가른다 (손품+현장과 같은 꼴) */
 .adm-table td.deal { white-space: nowrap; letter-spacing: -0.3px; font-size: 11.5px; }
 .adm-table td em.pre { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-right: 3px; }
+.adm-table td.rate em.bar, .adm-table td.clear em.bar { font-style: normal; font-weight: 400; color: #c3cbd8; margin: 0 6px; }
+/* 등급 — 앱 매매수요와 같은 색(A 빨강 · B 파랑 · C 검정), 적합은 초록 · 부적합은 빨강 */
+.adm-table td .gd { font-weight: 800; }
+.adm-table td .gd.g-A { color: #c22e2e; }
+.adm-table td .gd.g-B { color: #1d4ed8; }
+.adm-table td .gd.g-C { color: #111827; }
+.adm-table td .fit { margin-left: 3px; font-size: 12px; font-weight: 800; color: #1f7a45; white-space: nowrap; }
+.adm-table td .fit.bad { color: #c22e2e; }
 .adm-table td.deal em.bar { font-style: normal; font-weight: 400; color: #c3cbd8; margin: 0 3px; }
 /* 숫자 자리를 못 박는다 — 연은 세 자리, 월은 두 자리.
    앞붙임(연·월)은 제자리에 서고 숫자는 그 안에서 오른쪽에 붙어,
