@@ -1123,6 +1123,7 @@ const downloadCsv = () => {
           </span>
           <span class="dim">시군구 전체 {{ scanned.toLocaleString('ko-KR') }}건에서 추림</span>
           <span v-if="missed > 0" class="dim">{{ missed }}개월치 못 받음</span>
+          <template v-if="webEmbed"><button type="button" class="list-fold" :aria-expanded="listOpen1" :aria-label="listOpen1 ? '실거래 리스트 접기' : '실거래 리스트 펼치기'" :title="listOpen1 ? '접기' : '펼치기'" @click="listOpen1 = !listOpen1"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" :class="{ up: listOpen1 }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button></template>
         </div>
 
         <div v-show="!webEmbed || listOpen1" class="adm-table-wrap">
@@ -1173,7 +1174,6 @@ const downloadCsv = () => {
         </div>
         <p v-if="(!webEmbed || listOpen1) && tableRows.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ tableRows.length.toLocaleString('ko-KR') }}줄은 엑셀로 내려받으세요.</p>
         <p v-else-if="(!webEmbed || listOpen1) && tableRows.length === 0" class="adm-foot">{{ countLabel }} 데이터 없음</p>
-        <div v-if="webEmbed" class="list-fold"><button type="button" class="adm-ghost" :aria-expanded="listOpen1" @click="listOpen1 = !listOpen1">{{ listOpen1 ? '접기' : '펼치기' }}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" :class="{ up: listOpen1 }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button></div>
         </div>
         </template>
         <!-- ② 실거래가 조건분석 그룹 — 자기 조건(면적 · 건축년도 · 계약일)과 그 조건의 같은 동 매매 리스트. ① 고르기와 필터를 같이 쓰지 않는다 -->
@@ -1195,6 +1195,7 @@ const downloadCsv = () => {
           <div class="adm-sum under">
             <strong class="list-title">실거래 리스트</strong>
             <span>{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 = 정상거래 {{ condSales.filter((r) => r.kind === '매매').length.toLocaleString('ko-KR') }}건 + 직거래 {{ condSales.filter((r) => r.kind === '직거래').length.toLocaleString('ko-KR') }}건 · 계약해제 제외</span>
+            <button type="button" class="list-fold" :aria-expanded="listOpen2" :aria-label="listOpen2 ? '실거래 리스트 접기' : '실거래 리스트 펼치기'" :title="listOpen2 ? '접기' : '펼치기'" @click="listOpen2 = !listOpen2"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" :class="{ up: listOpen2 }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button>
           </div>
           <div v-show="listOpen2" class="adm-table-wrap">
             <table class="adm-table">
@@ -1239,7 +1240,6 @@ const downloadCsv = () => {
             </table>
           </div>
           <p v-if="listOpen2 && condSales.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 평균은 {{ condSales.length.toLocaleString('ko-KR') }}건 전체로 계산합니다.</p>
-          <div v-if="webEmbed" class="list-fold"><button type="button" class="adm-ghost" :aria-expanded="listOpen2" @click="listOpen2 = !listOpen2">{{ listOpen2 ? '접기' : '펼치기' }}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" :class="{ up: listOpen2 }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button></div>
         </section>
       </template>
       </div>
@@ -1351,9 +1351,9 @@ const downloadCsv = () => {
 .adm-sum strong { font-size: 15px; font-weight: 800; color: #111827; }
 .adm-sum .dim { color: #9ca3af; }
 .adm-sum .list-title { font-size: 15px; font-weight: 800; color: #111827; }
-/* 실거래 리스트 접기 — 표 아래 오른쪽 */
-.list-fold { display: flex; justify-content: flex-end; margin-top: 10px; }
-.list-fold .adm-ghost { display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 12px; border-radius: 8px; font-size: 13px; }
+/* 실거래 리스트 접기 — 제목 줄 오른쪽 끝, 글자 없이 꺾쇠만(앱 가격정보 검색리스트와 같은 꼴) */
+.adm-sum .list-fold { align-self: center; margin-left: auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; color: #4b5563; cursor: pointer; }
+.adm-sum .list-fold:hover { border-color: #2b6df3; color: #2b6df3; }
 .list-fold svg { transition: transform .2s; }
 .list-fold svg.up { transform: rotate(180deg); }
 /* 표 바로 위 — 이 표가 어느 자료에서 나왔는지.
