@@ -358,6 +358,16 @@ button { cursor: pointer; }
 .adm-case-in .adm-table td span.v { font-size: 14px !important; vertical-align: top; }
 /* 구분 알약은 글 한 줄 높이(20) 안에 — 줄 높이가 지역별분석 표(49)와 같아진다 */
 .adm-case-in .adm-table td .kind { font-size: 12px; line-height: 20px; padding: 0 9px; vertical-align: top; }
+/* 거래 표 칸 폭 — 구분 · 계약일 · 거래금액 · 전용 · 건축년도 · 층 · 주소 */
+.adm-case-in .adm-table { table-layout: fixed; }
+.adm-case-in .adm-table :is(th, td):nth-child(1) { width: 9%; }
+.adm-case-in .adm-table :is(th, td):nth-child(2) { width: 12%; }
+.adm-case-in .adm-table :is(th, td):nth-child(3) { width: 19%; }
+.adm-case-in .adm-table :is(th, td):nth-child(4) { width: 14%; }
+.adm-case-in .adm-table :is(th, td):nth-child(5) { width: 10%; }
+.adm-case-in .adm-table :is(th, td):nth-child(6) { width: 7%; }
+.adm-case-in .adm-table td.n { text-align: center !important; }
+.adm-case-in .adm-table td.addr { padding-left: 16px !important; padding-right: 12px !important; }
 /* 전세가 비율 칸 — 크게 */
 .adm-case-in .case12 .adm-rate-input { width: 52px; height: 26px; font-size: 14px; border-radius: 6px; padding: 0 6px; }
 .adm-case-in .case12 small em:has(.adm-rate-input) { font-size: 14px; display: inline-flex; align-items: center; gap: 2px; }

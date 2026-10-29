@@ -259,9 +259,9 @@ const COLS: Array<ColumnDef<CaseTradeRow>> = [
   { key: 'date', label: '계약일', text: (r) => r.contractDate || '-', order: (r) => Number(r.contractDate.replace(/\D/g, '')) || 0 },
   { key: 'amount', label: '거래금액', text: (r) => r.amount, order: (r) => r.price },
   { key: 'area', label: '전용(㎡/평)', text: (r) => areaText(r.areaM2), order: (r) => r.areaM2 },
-  { key: 'floor', label: '층', text: (r) => r.floor || '-', order: (r) => Number(String(r.floor).replace(/[^\d-]/g, '')) || 0 },
   { key: 'build', label: '건축년도', text: (r) => (r.buildYear ? String(r.buildYear) : '-'), order: (r) => r.buildYear ?? 0 },
-  { key: 'place', label: '단지', text: (r) => [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') },
+  { key: 'floor', label: '층', text: (r) => r.floor || '-', order: (r) => Number(String(r.floor).replace(/[^\d-]/g, '')) || 0 },
+  { key: 'place', label: '주소', text: (r) => [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') },
 ];
 
 const shown = computed(() => byAreaYear.value.filter((r) => (
@@ -500,6 +500,14 @@ const snapId = ref('');
 
 const canSave = computed(() => !!(price.value || recentSale.value || recentJeonse.value));
 const snapTone = ref<'info' | 'success' | 'error'>('success');
+/** 표 한 줄의 주소 — 시 · 구까지 붙여 그대로 검색창에 넣을 수 있게 */
+const copyAddr = async (r: CaseTradeRow) => {
+  const code = ovDistrictCode.value || region.value?.lawdCd5 || '';
+  const sido = ovSido.value || REGION_GROUPS.find((g) => g.districts.some((x) => x.lawdCode === code))?.sido || region.value?.sido || '';
+  const gu = (ovDistrictCode.value ? ovDistricts.value.find((x) => x.lawdCode === ovDistrictCode.value)?.label : region.value?.sigungu) || '';
+  const text = [sido, gu, r.umdNm, r.jibun, r.name].filter(Boolean).join(' ');
+  try { await navigator.clipboard.writeText(text); flash(`복사했습니다 — ${text}`); } catch { flash('복사하지 못했습니다.', 'error'); }
+};
 const flash = (text: string, tone: 'info' | 'success' | 'error' = 'success') => {
   snapTone.value = tone;
   snapMsg.value = text;
@@ -655,6 +663,8 @@ onMounted(async () => {
   notice.value = s.notice ?? '';
   await nextTick();
   restoringScreen = false;
+  // 같은 동 거래가 없는 예전 저장본(4년 · 유사물건 이전) — 사람이 다시 누르지 않게 저절로 한 번 받는다
+  if (address.value.trim() && (!s.dongRows?.length || s.years !== years.value)) void run();
 });
 
 /** 창에서 이름을 적고 저장 */
@@ -882,7 +892,7 @@ const downloadCsv = () => {
             <div class="adm-kpi">
               <small><InfoTip :rows="condTip" under="box">조건분석 평균</InfoTip></small>
               <strong v-if="condAvg > 0"><UnitText :text="won(condAvg)" suffix="원" /></strong>
-              <strong v-else class="ask">{{ dongRows.length ? '조건에 맞는 매매 없음' : '분석을 다시 누르면 계산합니다' }}</strong>
+              <strong v-else class="ask">{{ loading ? '받는 중' : '조건에 맞는 매매 없음' }}</strong>
             </div>
           </div>
         </section>
@@ -1036,9 +1046,16 @@ const downloadCsv = () => {
                 <td>{{ r.contractDate }}</td>
                 <td class="n strong amt"><span class="v">{{ r.amount }}</span></td>
                 <td class="n area"><span class="v">{{ areaText(r.areaM2) }}</span></td>
+                <td class="n build">{{ r.buildYear || '-' }}</td>
                 <td class="n floor"><span class="v">{{ r.floor || '-' }}</span></td>
-                <td class="n">{{ r.buildYear || '-' }}</td>
-                <td class="addr">{{ [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') }}</td>
+                <td class="addr">
+                  <span class="addr-in">
+                    <span class="addr-t">{{ [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') }}</span>
+                    <button type="button" class="adm-copy" aria-label="주소 복사" title="주소 복사" @click.stop="copyAddr(r)">
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
+                    </button>
+                  </span>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -1185,6 +1202,11 @@ const downloadCsv = () => {
 .adm-rng-in { width: 52px; height: 28px; border: 1px solid #e3e8f0; border-radius: 6px; padding: 0 6px; font-family: inherit; font-size: 13px; color: #111827; text-align: right; box-sizing: border-box; }
 .adm-rng-in.date { width: 128px; text-align: left; }
 .adm-rng-in:focus { outline: none; border-color: #2b6df3; }
+/* 주소 칸 — 글은 왼쪽, 복사 단추는 칸 끝 */
+.addr-in { display: flex; align-items: center; gap: 8px; }
+.addr-t { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.adm-copy { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; color: #6b7280; cursor: pointer; }
+.adm-copy:hover { border-color: #2b6df3; color: #2b6df3; }
 .adm-case-block-head em { font-style: normal; font-size: 13px; font-weight: 400; color: #6b7280; margin-left: 2px; }
 /* 세 칸으로 판 폭을 다 쓴다 — 오른쪽 끝을 아래 표 끝선에 */
 .adm-kpis.case-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto auto auto; }
