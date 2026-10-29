@@ -538,7 +538,8 @@ const gapTipLines = computed(() => {
 
 const areaText = (m2: number) => (m2 > 0 ? `${m2.toFixed(2)} / ${(m2 / PYEONG).toFixed(2)}` : '-');
 const areaOptText = (opt: string) => {
-  if (opt.startsWith('py')) return `${opt.slice(2)}평대`;
+  // 평대 묶음도 ㎡ / 평 으로 — '39.67~42.98㎡ / 12평대'
+  if (opt.startsWith('py')) { const py = Number(opt.slice(2)); return `${(py * PYEONG).toFixed(2)}~${((py + 1) * PYEONG).toFixed(2)}㎡ / ${py}평대`; }
   const m2 = Number(opt);
   return m2 > 0 ? `${m2.toFixed(2)}㎡ / ${(m2 / PYEONG).toFixed(2)}평` : opt;
 };
