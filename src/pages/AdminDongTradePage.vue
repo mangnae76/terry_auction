@@ -528,6 +528,51 @@ const rankLists = computed(() => {
     { key: 'down', title: '거래급감 TOP10', sub: `전년 ${RANK_MIN}건 이상 · 감소율 큰 순 · 동 ${n}곳 중`, rows: down, empty: '전년보다 줄어든 동이 없습니다' },
   ];
 });
+// ===== 거래랭킹 동별 표 — 네이버 매물 수(손 입력, 수요분석과 같은 저장 자리) · 활발도 =====
+type RankManual = { units?: number; listings?: number };
+const rankManual = ref<Record<string, RankManual>>({});
+let rankManualLoaded = false;
+const rankKeyOf = (name: string) => `${lastQuery.value?.kind ?? kind.value}|${rankGu.value}|${name}`;
+const loadRankManual = async () => {
+  if (!auth.uid || !props.rankMode) return;
+  const prefs = await loadUserPrefs(auth.uid);
+  rankManual.value = { ...((prefs as { adminRegionManual?: Record<string, RankManual> } | null)?.adminRegionManual ?? {}) };
+  rankManualLoaded = true;
+};
+onMounted(() => { void loadRankManual(); });
+watch(() => auth.uid, () => { void loadRankManual(); });
+let rankSaveTimer: ReturnType<typeof setTimeout> | null = null;
+const setRankListings = (name: string, raw: string) => {
+  const n = Number(raw.replace(/[^\d]/g, ''));
+  const k = rankKeyOf(name);
+  rankManual.value = { ...rankManual.value, [k]: { ...(rankManual.value[k] ?? {}), listings: Number.isFinite(n) && n > 0 ? n : undefined } };
+  if (!rankManualLoaded || !auth.uid) return;
+  if (rankSaveTimer) clearTimeout(rankSaveTimer);
+  rankSaveTimer = setTimeout(() => { rankSaveTimer = null; void saveUserPrefs(auth.uid, { adminRegionManual: rankManual.value }); }, 700);
+};
+const RANK_DONG_COLS = [
+  { key: 'name', label: '동' }, { key: 'cur', label: '최근 1년 실거래' }, { key: 'prev', label: '전년 동기' },
+  { key: 'pct', label: '증감' }, { key: 'listings', label: '네이버 매물 수' }, { key: 'activity', label: '활발도' },
+] as const;
+type RankSortKey = typeof RANK_DONG_COLS[number]['key'];
+const rankSort = ref<RankSortKey>('cur');
+const rankDesc = ref(true);
+const toggleRankSort = (k: RankSortKey) => { if (rankSort.value === k) rankDesc.value = !rankDesc.value; else { rankSort.value = k; rankDesc.value = k !== 'name'; } };
+const rankDongRows = computed(() => {
+  const rows = rankByDong.value.map((r) => {
+    const listings = rankManual.value[rankKeyOf(r.name)]?.listings ?? 0;
+    return { ...r, listings, activity: listings > 0 ? r.cur / listings : null };
+  });
+  const k = rankSort.value;
+  const val = (r: typeof rows[number]) => (k === 'name' ? 0 : (r[k] ?? -Infinity) as number);
+  return rows.sort((a, b) => {
+    const d = k === 'name' ? a.name.localeCompare(b.name, 'ko') : val(a) - val(b);
+    return rankDesc.value ? -d : d;
+  });
+});
+/** 증감 — ±3% 안은 보합 */
+const rankTone = (p: number | null) => (p === null ? 'new' : Math.abs(p) < 3 ? 'flat' : p > 0 ? 'up' : 'down');
+const rankPctLabel = (p: number | null) => (p === null ? '신규' : Math.abs(p) < 3 ? `${p > 0 ? '+' : ''}${p.toFixed(1)}% 보합` : rankPctText(p));
 const rankPctText = (p: number | null) => (p === null ? '신규' : `${p > 0 ? '▲ +' : '▼ '}${p.toFixed(1)}%`);
 
 // ===== 불러오기 =====
@@ -1070,7 +1115,7 @@ const downloadCsv = () => {
               <tbody>
                 <tr v-for="(r, i) in g.rows" :key="r.name">
                   <td class="no">{{ i + 1 }}</td>
-                  <td class="c"><b>{{ r.name }}<button type="button" class="nv-btn" :title="`${r.name}만 보기 — 네이버 부동산 매매 매물`" @click="openNaverDongListing([sido, rankGu, r.name].filter(Boolean).join(' '), lastQuery?.kind ?? kind)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></b><small>{{ rankGu }}</small></td>
+                  <td class="c"><b>{{ r.name }}</b><small>{{ rankGu }}</small></td>
                   <td class="c"><b>{{ r.cur.toLocaleString('ko-KR') }}<em>건</em></b><small>전년 {{ r.prev.toLocaleString('ko-KR') }}</small></td>
                   <td class="c"><span :class="['adm-rank-pct', r.pct === null ? 'new' : r.pct > 0 ? 'up' : r.pct < 0 ? 'down' : '']">{{ rankPctText(r.pct) }}</span></td>
                 </tr>
@@ -1079,6 +1124,27 @@ const downloadCsv = () => {
                 <tr v-for="k in Math.max(0, 10 - Math.max(1, g.rows.length))" :key="`pad${k}`" class="pad"><td class="no">&nbsp;</td><td class="l"><b>&nbsp;</b><small>&nbsp;</small></td><td /><td /></tr>
               </tbody>
             </table>
+          </section>
+          <!-- 동별 표 — 참고 화면처럼 세 카드 밑에. 동 옆 '네이버매물 ↗'(그 동만 보기) · 네이버 매물 수는 손으로(수요분석 매물수와 같은 값) · 활발도 = 최근 1년 ÷ 매물 수 -->
+          <section v-show="!rankLoading" class="adm-rank-dong">
+            <header><strong>{{ rankGu }} 동별 거래</strong><small>최근 1년 · 전년 같은 12개월 대비 · 동 {{ rankByDong.length }}곳</small></header>
+            <table class="adm-rank-dtbl">
+              <colgroup><col style="width: 26%" /><col /><col /><col /><col style="width: 16%" /><col /></colgroup>
+              <thead><tr>
+                <th v-for="h in RANK_DONG_COLS" :key="h.key" :class="h.key === 'name' ? 'l' : 'c'"><button type="button" class="adm-sort" @click="toggleRankSort(h.key)">{{ h.label }}<i :class="{ on: rankSort === h.key }">{{ rankSort === h.key ? (rankDesc ? '↓' : '↑') : '⇅' }}</i></button></th>
+              </tr></thead>
+              <tbody>
+                <tr v-for="r in rankDongRows" :key="r.name">
+                  <td class="l"><span class="nm">{{ r.name }}</span><button type="button" class="nv-btn" :title="`${r.name}만 보기 — 네이버 부동산 매매 매물`" @click="openNaverDongListing([sido, rankGu, r.name].filter(Boolean).join(' '), lastQuery?.kind ?? kind)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></td>
+                  <td class="c"><b>{{ r.cur.toLocaleString('ko-KR') }}</b><em>건</em></td>
+                  <td class="c">{{ r.prev.toLocaleString('ko-KR') }}<em>건</em></td>
+                  <td class="c"><span :class="['adm-rank-pct', rankTone(r.pct)]">{{ rankPctLabel(r.pct) }}</span></td>
+                  <td class="c"><input class="adm-rank-in" inputmode="numeric" placeholder="매물 수" :value="r.listings ? r.listings.toLocaleString('ko-KR') : ''" @input="setRankListings(r.name, ($event.target as HTMLInputElement).value)" /></td>
+                  <td class="c"><b v-if="r.activity !== null">{{ r.activity.toFixed(2) }}</b><template v-else>-</template></td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="adm-rank-note">입력한 네이버 매물 수는 계정에 저장되어 다음에도 남고, 수요분석 매물수와 같은 값입니다. 활발도 = 최근 1년 거래건수 ÷ 네이버 매물 수.</p>
           </section>
         </div>
         <div v-else-if="webEmbed && (listView === 'deals' || listView === 'sim')" class="adm-deals">
@@ -1389,12 +1455,31 @@ const downloadCsv = () => {
 .adm-rank-tbl td.empty { padding: 8px 4px; height: 38px; text-align: center; color: #9ca3af; }
 .adm-rank-tbl tr.pad td { color: transparent; }
 /* 증감 알약 — 우리 등급 색 그대로: 늘면 연빨강 바탕 ▲ · 줄면 연파랑 바탕 ▼ · 전년 없음은 회색 */
-.adm-rank-tbl td b .nv-btn { display: inline-flex; align-items: center; gap: 2px; height: 20px; margin-left: 6px; padding: 0 6px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; color: #6b7280; font-family: inherit; font-size: 12px; font-weight: 400; vertical-align: middle; cursor: pointer; }
-.adm-rank-tbl td b .nv-btn:hover { border-color: #2b6df3; color: #2b6df3; }
 .adm-rank-pct { display: inline-block; min-width: 76px; padding: 3px 8px; border-radius: 999px; font-size: 13px; font-weight: 700; text-align: center; }
 .adm-rank-pct.up { background: #fde2e2; color: #c22e2e; }
 .adm-rank-pct.down { background: #dbe7ff; color: #1d4ed8; }
 .adm-rank-pct.new { background: #eef1f6; color: #4b5563; }
+.adm-rank-pct.flat { background: #f3f4f6; color: #6b7280; }
+/* 동별 표 — 세 카드 밑 한 장, 우리 표 꼴(모서리 8 · 머리 회청색 띠 · 14) */
+.adm-rank-dong { grid-column: 1 / -1; margin-top: 4px; background: #fff; border: 1px solid #e3e8f0; border-radius: 8px; padding: 16px 18px 12px; }
+.adm-rank-dong header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.adm-rank-dong header strong { font-size: 16px; font-weight: 800; color: #111827; }
+.adm-rank-dong header small { font-size: 12px; color: #6b7280; }
+.adm-rank-dtbl { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; border: 1px solid #e3e8f0; border-radius: 8px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.adm-rank-dtbl th { padding: 9px 8px; background: #f3f6fb; color: #374151; font-weight: 700; border-bottom: 1px solid #e3e8f0; }
+.adm-rank-dtbl th:first-child { border-top-left-radius: 7px; } .adm-rank-dtbl th:last-child { border-top-right-radius: 7px; }
+.adm-rank-dtbl td { padding: 8px; border-top: 1px solid #f1f4f9; color: #111827; white-space: nowrap; vertical-align: middle; }
+.adm-rank-dtbl tbody tr:first-child td { border-top: 0; }
+.adm-rank-dtbl :is(th, td).l { text-align: left; } .adm-rank-dtbl :is(th, td).c { text-align: center; }
+.adm-rank-dtbl th .adm-sort { font-weight: 700; color: #374151; }
+.adm-rank-dtbl td .nm { font-weight: 700; }
+.adm-rank-dtbl td em { font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; margin-left: 2px; }
+.adm-rank-dtbl td .nv-btn { display: inline-flex; align-items: center; gap: 2px; height: 20px; margin-left: 8px; padding: 0 6px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; color: #6b7280; font-family: inherit; font-size: 12px; font-weight: 400; vertical-align: middle; cursor: pointer; }
+.adm-rank-dtbl td .nv-btn:hover { border-color: #2b6df3; color: #2b6df3; }
+.adm-rank-in { width: 100%; max-width: 140px; height: 34px; box-sizing: border-box; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: 700; color: #2b6df3; text-align: center; }
+.adm-rank-in::placeholder { font-weight: 400; color: #9ca3af; }
+.adm-rank-in:focus { outline: none; border-color: #2b6df3; }
+.adm-rank-note { margin: 10px 2px 0; font-size: 12px; color: #6b7280; }
 .adm-gunav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }
 .adm-gunav-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .adm-gunav-head strong { font-size: 18px; font-weight: 800; color: #2b6df3; }
