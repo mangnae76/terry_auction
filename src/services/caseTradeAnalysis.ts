@@ -65,6 +65,24 @@ const loadDistrict = async (lawdCd5: string, propertyType: CasePropertyType, yea
   return fresh;
 };
 
+/** 유사물건 · 조건분석 거르기 — 기간(시작~종료일자, 기간선택 개월) · 면적(평) · 건축년도. 빈 칸은 전체 */
+export type TradeRange = { months: number; from: string; to: string; areaMin: string; areaMax: string; buildMin: string; buildMax: string };
+export const RANGE_MONTHS = [1, 3, 6, 12];
+const PY = 3.305785;
+const num = (v: string) => Number(String(v ?? '').replace(/[^\d.]/g, '')) || 0;
+export const matchRange = (r: CaseTradeRow, f: TradeRange): boolean => {
+  const d = r.contractDate.replace(/\D/g, '');
+  const from = f.from.replace(/\D/g, ''); const to = f.to.replace(/\D/g, '');
+  if (from && d < from) return false;
+  if (to && d > to) return false;
+  const py = r.areaM2 / PY;
+  if (num(f.areaMin) > 0 && py < num(f.areaMin)) return false;
+  if (num(f.areaMax) > 0 && py > num(f.areaMax)) return false;
+  if (num(f.buildMin) > 0 && !((r.buildYear ?? 0) >= num(f.buildMin))) return false;
+  if (num(f.buildMax) > 0 && !((r.buildYear ?? 9999) <= num(f.buildMax))) return false;
+  return true;
+};
+
 /**
  * 경매지번 실거래가 — 그 건물 거래 중 이 호실과 면적이 가장 가까운 것, 같으면 가장 최근.
  * 같은 평형이 있으면 그것이, 없으면 평수가 조금 다른 같은 건물 거래가 선다(정의: 같은 건물 같은 평형 → 비슷한 평형).

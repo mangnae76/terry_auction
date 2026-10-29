@@ -15,7 +15,8 @@ import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import SnapChip from '../components/SnapChip.vue';
 import { useRouter } from 'vue-router';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
-import { analyzeAddress, pickCaseTrade, type CasePropertyType, type CaseTradeRow } from '../services/caseTradeAnalysis';
+import { analyzeAddress, matchRange, pickCaseTrade, type CasePropertyType, type CaseTradeRow, type TradeRange } from '../services/caseTradeAnalysis';
+import TradeRangeFilter from '../components/TradeRangeFilter.vue';
 import { tradeWindowOf } from '../services/publicDataApi';
 import { priceUnitText, shortPlaceName } from '../services/addressLookup';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
@@ -193,49 +194,25 @@ const resetFilters = () => {
 const simSale = ref('');
 const simJeonse = ref('');
 const ymdText = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-/** 유사물건만 더 거른다 — 건축년도 시작~끝 · 검색 기간(계약일) 시작~끝. 기간 기본은 받은 4년 전체 */
-const simBuildFrom = ref('');
-const simBuildTo = ref('');
-const simDateFrom = ref('');
-const simDateTo = ref('');
+/** 기본 거르기 — 기간선택 12개월(조회일부터, tradeWindowOf) · 면적 · 건축년도 전체 */
+const defaultRange = (): TradeRange => {
+  const w = tradeWindowOf(Date.now(), 12);
+  return { months: 12, from: ymdText(w.start), to: ymdText(w.end), areaMin: '', areaMax: '', buildMin: '', buildMax: '' };
+};
+/** 유사물건 거르기 — 실거래가 조건분석과 같은 칸(TradeRangeFilter), 값은 따로 */
+const simF = ref<TradeRange>(defaultRange());
 const resetSim = () => {
   areaFilter.value = ''; yearFilter.value = '';
-  simBuildFrom.value = ''; simBuildTo.value = ''; simDateFrom.value = ''; simDateTo.value = '';
+  simF.value = defaultRange();
   simSale.value = ''; simJeonse.value = '';
 };
-const numOf = (v: string) => Number(String(v).replace(/[^\d.]/g, ''));
-// ===== ② 실거래가 조건분석 — ① 유사물건 고르기와 따로 노는 자기 조건 =====
-const condAreaFrom = ref('');
-const condAreaTo = ref('');
-const condBuildFrom = ref('');
-const condBuildTo = ref('');
-const condDateFrom = ref('');
-const condDateTo = ref('');
-const resetCond = () => {
-  const w = tradeWindowOf(Date.now(), 12);
-  condAreaFrom.value = ''; condAreaTo.value = '';
-  condBuildFrom.value = ''; condBuildTo.value = '';
-  condDateFrom.value = ymdText(w.start); condDateTo.value = ymdText(w.end);
-};
-resetCond();
+// ===== ② 실거래가 조건분석 — 유사물건과 같은 거르기 칸, 값은 따로 =====
+const condF = ref<TradeRange>(defaultRange());
+const resetCond = () => { condF.value = defaultRange(); };
 /** 조건에 맞는 같은 동 매매(정상거래 · 직거래, 계약해제는 받을 때 이미 뺐다) */
-const condSales = computed(() => {
-  const aF = numOf(condAreaFrom.value); const aT = numOf(condAreaTo.value);
-  const bF = numOf(condBuildFrom.value); const bT = numOf(condBuildTo.value);
-  const dF = condDateFrom.value.replace(/\D/g, ''); const dT = condDateTo.value.replace(/\D/g, '');
-  return dongRows.value.filter((r) => {
-    if (!((r.kind === '매매' || r.kind === '직거래') && r.price > 0)) return false;
-    const py = r.areaM2 / PYEONG;
-    if (aF > 0 && py < aF) return false;
-    if (aT > 0 && py > aT) return false;
-    if (bF > 0 && !((r.buildYear ?? 0) >= bF)) return false;
-    if (bT > 0 && !((r.buildYear ?? 9999) <= bT)) return false;
-    const d = r.contractDate.replace(/\D/g, '');
-    if (dF && d < dF) return false;
-    if (dT && d > dT) return false;
-    return true;
-  });
-});
+const condSales = computed(() => dongRows.value.filter((r) => (
+  (r.kind === '매매' || r.kind === '직거래') && r.price > 0 && matchRange(r, condF.value)
+)));
 const condAvg = computed(() => (condSales.value.length ? condSales.value.reduce((t, r) => t + r.price, 0) / condSales.value.length : 0));
 /** 손품조사 조건분석과 같은 글 — 면적은 걸러진 매매의 실제 최소~최대, 사용승인은 건축년도 범위 + 몇 년차 */
 /** 시작 · 끝 두 줄(손품조사 앱 칸과 같이) — 한 줄이면 칸을 넘친다 */
@@ -247,7 +224,7 @@ const condAreaPair = computed<[string, string] | null>(() => {
 });
 const condPeriodText = computed(() => {
   const sd = (v: string) => (v ? v.slice(2, 7).replace(/-/g, '.') : '');
-  const f = sd(condDateFrom.value); const t = sd(condDateTo.value);
+  const f = sd(condF.value.from); const t = sd(condF.value.to);
   return f || t ? `${f}~${t}` : '-';
 });
 const condApprovalText = computed(() => {
@@ -295,15 +272,7 @@ const yearOptions = computed(() => {
 });
 /** 면적·연도만 거른 줄 — 요약과 탭 건수가 이걸 본다 */
 const byAreaYear = computed(() => baseList.value.filter((r) => {
-  if (webEmbed && mode.value === MODES[1]) {
-    const bF = numOf(simBuildFrom.value); const bT = numOf(simBuildTo.value);
-    if (bF > 0 && !((r.buildYear ?? 0) >= bF)) return false;
-    if (bT > 0 && !((r.buildYear ?? 9999) <= bT)) return false;
-    const d = r.contractDate.replace(/\D/g, '');
-    const dF = simDateFrom.value.replace(/\D/g, ''); const dT = simDateTo.value.replace(/\D/g, '');
-    if (dF && d < dF) return false;
-    if (dT && d > dT) return false;
-  }
+  if (webEmbed && mode.value === MODES[1]) return matchRange(r, simF.value);
   if (areaFilter.value) {
     if (areaFilter.value.startsWith('py')) { if (simBucket(r.areaM2) !== areaFilter.value) return false; }
     else if (String(r.areaM2) !== areaFilter.value) return false;
@@ -672,8 +641,8 @@ type ScreenSnap = {
   address: string; kind: CasePropertyType; years: number;
   region: ResolvedRegion | null; lot: string; ho: string; buildingDong: string;
   price: ApartPrice | null; rows: CaseTradeRow[]; dongRows?: CaseTradeRow[]; mode?: CaseMode;
-  cond?: { aF: string; aT: string; bF: string; bT: string; dF: string; dT: string };
-  sim?: { sale: string; jeonse: string; bF?: string; bT?: string; dF?: string; dT?: string };
+  condF?: TradeRange; simF?: TradeRange;
+  sim?: { sale: string; jeonse: string };
   scanned: number; missed: number; baseArea: number;
   areaFilter: string; areaNote: string; yearFilter: string; tab: 'all' | '매매' | '전세' | '월세';
   pickedSale: string; pickedJeonse: string; rateText: string;
@@ -687,8 +656,8 @@ const collectScreen = (): ScreenSnap => ({
   address: address.value, kind: kind.value, years: years.value,
   region: region.value, lot: lot.value, ho: ho.value, buildingDong: buildingDong.value,
   price: price.value, rows: rows.value, dongRows: dongRows.value, mode: mode.value,
-  cond: { aF: condAreaFrom.value, aT: condAreaTo.value, bF: condBuildFrom.value, bT: condBuildTo.value, dF: condDateFrom.value, dT: condDateTo.value },
-  sim: { sale: simSale.value, jeonse: simJeonse.value, bF: simBuildFrom.value, bT: simBuildTo.value, dF: simDateFrom.value, dT: simDateTo.value },
+  condF: condF.value, simF: simF.value,
+  sim: { sale: simSale.value, jeonse: simJeonse.value },
   scanned: scanned.value, missed: missed.value, baseArea: baseArea.value,
   areaFilter: areaFilter.value, areaNote: areaNote.value, yearFilter: yearFilter.value, tab: tab.value,
   pickedSale: pickedSale.value, pickedJeonse: pickedJeonse.value, rateText: rateText.value,
@@ -704,7 +673,7 @@ const saveScreen = () => {
   screenTimer = window.setTimeout(() => { void screen.save(collectScreen()); }, 300);
 };
 // 분석 결과 · 고른 기준 줄 · 거르기가 바뀌면 남긴다
-watch([rows, price, pickedSale, pickedJeonse, areaFilter, yearFilter, tab, rateText, restoredSale, restoredJeonse, mode, simSale, simJeonse, simBuildFrom, simBuildTo, simDateFrom, simDateTo, condAreaFrom, condAreaTo, condBuildFrom, condBuildTo, condDateFrom, condDateTo], saveScreen);
+watch([rows, price, pickedSale, pickedJeonse, areaFilter, yearFilter, tab, rateText, restoredSale, restoredJeonse, mode, simSale, simJeonse, simF, condF], saveScreen, { deep: true });
 onMounted(async () => {
   if (!webEmbed) return;
   const s = await screen.restore();
@@ -714,8 +683,9 @@ onMounted(async () => {
   region.value = s.region ?? null; lot.value = s.lot ?? ''; ho.value = s.ho ?? ''; buildingDong.value = s.buildingDong ?? '';
   price.value = s.price ?? null; // 예전 저장본에 남은 계약해제 줄은 뺀다(없던 거래)
   rows.value = (s.rows ?? []).filter((r) => r.kind !== '계약해제'); dongRows.value = (s.dongRows ?? []).filter((r) => r.kind !== '계약해제'); mode.value = s.mode ?? MODES[0];
-  if (s.cond) { condAreaFrom.value = s.cond.aF; condAreaTo.value = s.cond.aT; condBuildFrom.value = s.cond.bF; condBuildTo.value = s.cond.bT; condDateFrom.value = s.cond.dF; condDateTo.value = s.cond.dT; }
-  if (s.sim) { simSale.value = s.sim.sale ?? ''; simJeonse.value = s.sim.jeonse ?? ''; simBuildFrom.value = s.sim.bF ?? ''; simBuildTo.value = s.sim.bT ?? ''; simDateFrom.value = s.sim.dF ?? ''; simDateTo.value = s.sim.dT ?? ''; }
+  if (s.condF) condF.value = s.condF;
+  if (s.simF) simF.value = s.simF;
+  if (s.sim) { simSale.value = s.sim.sale ?? ''; simJeonse.value = s.sim.jeonse ?? ''; }
   scanned.value = s.scanned ?? 0; missed.value = s.missed ?? 0; baseArea.value = s.baseArea ?? 0;
   ovSido.value = s.ovSido ?? ''; ovDistrictCode.value = s.ovDistrictCode ?? ''; ovDong.value = s.ovDong ?? ''; ovLot.value = s.ovLot ?? '';
   snapId.value = s.snapId ?? ''; snapLabel.value = s.snapLabel ?? '';
@@ -1059,7 +1029,11 @@ const downloadCsv = () => {
             <button type="button" class="adm-ghost" @click="resetFilters">초기화</button>
           </template>
         </div>
-        <div v-if="webEmbed" class="adm-sel-row">
+        <!-- 유사물건 — 예전 가격정보 조건분석과 같은 거르기 칸(기간선택 · 시작~종료일자 · 면적 · 건축년도) -->
+        <TradeRangeFilter v-if="webEmbed && mode === MODES[1]" v-model="simF" class="adm-trf">
+          <button type="button" class="adm-ghost" @click="resetFilters">초기화</button>
+        </TradeRangeFilter>
+        <div v-else-if="webEmbed" class="adm-sel-row">
           <select v-model="areaFilter" class="adm-input">
             <option value="">전체면적(㎡/평)</option>
             <option v-for="o in areaOptions" :key="o" :value="o">{{ areaOptText(o) }}</option>
@@ -1068,18 +1042,13 @@ const downloadCsv = () => {
             <option value="">거래년도</option>
             <option v-for="o in yearOptions" :key="o" :value="o">{{ o }}</option>
           </select>
-          <!-- 유사물건만 — 건축년도 · 검색 기간(계약일), 모두 시작~끝 -->
-          <template v-if="mode === MODES[1]">
-            <span class="adm-rng"><small>건축년도</small><input v-model="simBuildFrom" class="adm-rng-in" inputmode="numeric" maxlength="4" placeholder="년" />~<input v-model="simBuildTo" class="adm-rng-in" inputmode="numeric" maxlength="4" placeholder="년" /></span>
-            <span class="adm-rng"><small>검색 기간</small><input v-model="simDateFrom" type="date" class="adm-rng-in date" />~<input v-model="simDateTo" type="date" class="adm-rng-in date" /></span>
-          </template>
           <button v-if="colFilter.activeCount.value > 0" type="button" class="adm-flt-clear" @click="colFilter.clearAll()">걸러내기 {{ colFilter.activeCount.value }}칸 해제</button>
           <button type="button" class="adm-ghost" @click="resetFilters">초기화</button>
         </div>
 
         <div class="adm-sum under">
           <span v-if="webEmbed && mode === MODES[1]">
-            최근 {{ years }}년 · {{ region?.dong || '같은 동' }} {{ dongRows.length.toLocaleString('ko-KR') }}건<template v-if="areaFilter || yearFilter"> 중 {{ byAreaYear.length.toLocaleString('ko-KR') }}건</template>
+            최근 {{ years }}년 · {{ region?.dong || '같은 동' }} {{ dongRows.length.toLocaleString('ko-KR') }}건 중 조건 {{ byAreaYear.length.toLocaleString('ko-KR') }}건
           </span>
           <span v-else>
             최근 {{ years }}년 · 이 지번 {{ rows.length.toLocaleString('ko-KR') }}건<template v-if="areaFilter"> 중 전용 {{ areaFilter }}㎡ {{ byAreaYear.length.toLocaleString('ko-KR') }}건</template>
@@ -1150,15 +1119,11 @@ const downloadCsv = () => {
               <strong v-else class="ask">조건에 맞는 매매 없음</strong>
             </div>
           </div>
-          <div class="adm-tabs cond-bar">
-            <span class="adm-rng"><small>면적</small><input v-model="condAreaFrom" class="adm-rng-in" inputmode="decimal" placeholder="평" />~<input v-model="condAreaTo" class="adm-rng-in" inputmode="decimal" placeholder="평" /></span>
-            <span class="adm-rng"><small>건축년도</small><input v-model="condBuildFrom" class="adm-rng-in" inputmode="numeric" maxlength="4" placeholder="년" />~<input v-model="condBuildTo" class="adm-rng-in" inputmode="numeric" maxlength="4" placeholder="년" /></span>
-            <span class="adm-rng"><small>계약일</small><input v-model="condDateFrom" type="date" class="adm-rng-in date" />~<input v-model="condDateTo" type="date" class="adm-rng-in date" /></span>
-            <span class="adm-tab-fill" />
+          <TradeRangeFilter v-model="condF" class="adm-trf">
             <button type="button" class="adm-ghost" @click="resetCond">초기화</button>
-          </div>
+          </TradeRangeFilter>
           <div class="adm-sum under">
-            <span>{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 (정상거래 · 직거래)</span>
+            <span>{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 = 정상거래 {{ condSales.filter((r) => r.kind === '매매').length.toLocaleString('ko-KR') }}건 + 직거래 {{ condSales.filter((r) => r.kind === '직거래').length.toLocaleString('ko-KR') }}건 · 계약해제 제외</span>
           </div>
           <div class="adm-table-wrap">
             <table class="adm-table">
