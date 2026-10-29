@@ -31,7 +31,7 @@ const val = (e: Event) => (e.target as HTMLInputElement).value;
       <input class="trf-in" type="date" :value="modelValue.to" @input="set({ to: val($event), months: 0 })" />
     </div>
     <div class="trf-row">
-      <span class="trf-lab">면적</span>
+      <span class="trf-lab">면적선택</span>
       <span class="trf-pair">
         <input class="trf-in" inputmode="decimal" placeholder="최소 전체" :value="modelValue.areaMin" @input="set({ areaMin: val($event) })" /><em>평</em>
         <i>~</i>
