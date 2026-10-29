@@ -257,6 +257,8 @@ const condPeriodText = computed(() => {
   const f = sd(condF.value.from); const t = sd(condF.value.to);
   return f || t ? `${f}~${t}` : '-';
 });
+/** 표 건축년도 — '2014 / 13년차'(사용승인 칸과 같은 셈: 올해 − 건축년도 + 1). 국토부 실거래에는 월이 없다 */
+const buildText = (y?: number) => (y && y > 1800 ? `${y} / ${Math.max(1, new Date().getFullYear() - y + 1)}년차` : '-');
 const condApprovalText = computed(() => {
   const ys = condSales.value.map((r) => r.buildYear ?? 0).filter((v) => v > 1800);
   if (!ys.length) return '-';
@@ -1154,7 +1156,7 @@ const downloadCsv = () => {
                 <td>{{ r.contractDate }}</td>
                 <td class="n strong amt"><span class="v">{{ r.amount }}</span></td>
                 <td class="n area"><span class="v">{{ areaText(r.areaM2) }}</span></td>
-                <td class="n build">{{ r.buildYear || '-' }}</td>
+                <td class="n build">{{ buildText(r.buildYear) }}</td>
                 <td class="n floor"><span class="v">{{ r.floor || '-' }}</span></td>
                 <td class="addr">
                   <span class="addr-in">
@@ -1221,7 +1223,7 @@ const downloadCsv = () => {
                   <td>{{ r.contractDate }}</td>
                   <td class="n strong amt"><span class="v">{{ r.amount }}</span></td>
                   <td class="n area"><span class="v">{{ areaText(r.areaM2) }}</span></td>
-                  <td class="n build">{{ r.buildYear || '-' }}</td>
+                  <td class="n build">{{ buildText(r.buildYear) }}</td>
                   <td class="n floor"><span class="v">{{ r.floor || '-' }}</span></td>
                   <td class="addr">
                     <span class="addr-in">
