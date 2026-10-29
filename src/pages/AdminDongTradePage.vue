@@ -575,8 +575,8 @@ const setRankListings = (r: RankRow, raw: string) => {
   rankSaveTimer = setTimeout(() => { rankSaveTimer = null; void saveUserPrefs(auth.uid, { adminRegionManual: rankManual.value }); }, 700);
 };
 const RANK_DONG_COLS = [
-  { key: 'name', label: '동' }, { key: 'cur', label: '최근 1년 실거래' }, { key: 'prev', label: '전년 동기' },
-  { key: 'pct', label: '증감' }, { key: 'listings', label: '네이버 매물 수' }, { key: 'activity', label: '활발도' },
+  { key: 'name', label: '동/지역' }, { key: 'listings', label: '네이버 매물 수' }, { key: 'cur', label: '최근 1년 실거래' },
+  { key: 'prev', label: '전년 동기' }, { key: 'pct', label: '증감' }, { key: 'activity', label: '활발도' },
 ] as const;
 type RankSortKey = typeof RANK_DONG_COLS[number]['key'];
 const rankSort = ref<RankSortKey>('cur');
@@ -1168,17 +1168,18 @@ const downloadCsv = () => {
           <section v-show="!rankLoading" class="adm-rank-dong">
             <header><strong>{{ rankScope?.label }} 동별 거래</strong><small>최근 1년 · 전년 같은 12개월 대비 · 동 {{ rankByDong.length }}곳</small></header>
             <table class="adm-rank-dtbl">
-              <colgroup><col style="width: 26%" /><col /><col /><col /><col style="width: 16%" /><col /></colgroup>
+              <!-- 동/지역만 넓게(네이버 링크가 붙는다), 나머지 다섯 칸은 같은 폭 -->
+              <colgroup><col style="width: 24%" /><col /><col /><col /><col /><col /></colgroup>
               <thead><tr>
-                <th v-for="h in RANK_DONG_COLS" :key="h.key" :class="h.key === 'name' ? 'l' : 'c'"><button type="button" class="adm-sort" @click="toggleRankSort(h.key)">{{ h.label }}<i :class="{ on: rankSort === h.key }">{{ rankSort === h.key ? (rankDesc ? '↓' : '↑') : '⇅' }}</i></button></th>
+                <th v-for="h in RANK_DONG_COLS" :key="h.key" :class="'c'"><button type="button" class="adm-sort" @click="toggleRankSort(h.key)">{{ h.label }}<i :class="{ on: rankSort === h.key }">{{ rankSort === h.key ? (rankDesc ? '↓' : '↑') : '⇅' }}</i></button></th>
               </tr></thead>
               <tbody>
                 <tr v-for="r in rankDongRows" :key="r.id" :class="['pick', { on: rankPick?.id === r.id }]" @click="pickRankDong(r)">
-                  <td class="l"><span class="nm">{{ r.name }}</span><small v-if="rankManyGu" class="gu">{{ rankSub(r) }}</small><button type="button" class="nv-btn" :title="`${r.name}만 보기 — 네이버 부동산 매매 매물`" @click.stop="openNaverDongListing([r.sido, r.gu, r.name].filter(Boolean).join(' '), lastQuery?.kind ?? kind)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></td>
+                  <td class="c"><span class="nm">{{ r.name }}</span><small v-if="rankManyGu" class="gu">{{ rankSub(r) }}</small><button type="button" class="nv-btn" :title="`${r.name}만 보기 — 네이버 부동산 매매 매물`" @click.stop="openNaverDongListing([r.sido, r.gu, r.name].filter(Boolean).join(' '), lastQuery?.kind ?? kind)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></td>
+                  <td class="c"><input class="adm-rank-in" inputmode="numeric" @click.stop placeholder="매물 수" :value="r.listings ? r.listings.toLocaleString('ko-KR') : ''" @input="setRankListings(r, ($event.target as HTMLInputElement).value)" /></td>
                   <td class="c"><b>{{ r.cur.toLocaleString('ko-KR') }}</b><em>건</em></td>
                   <td class="c">{{ r.prev.toLocaleString('ko-KR') }}<em>건</em></td>
                   <td class="c"><span :class="['adm-rank-pct', rankTone(r.pct)]">{{ rankPctLabel(r.pct) }}</span></td>
-                  <td class="c"><input class="adm-rank-in" inputmode="numeric" @click.stop placeholder="매물 수" :value="r.listings ? r.listings.toLocaleString('ko-KR') : ''" @input="setRankListings(r, ($event.target as HTMLInputElement).value)" /></td>
                   <td class="c"><b v-if="r.activity !== null">{{ r.activity.toFixed(2) }}</b><template v-else>-</template></td>
                 </tr>
               </tbody>
@@ -1515,6 +1516,8 @@ const downloadCsv = () => {
 .adm-rank-dtbl th { padding: 9px 8px; background: #f3f6fb; color: #374151; font-weight: 700; border-bottom: 1px solid #e3e8f0; }
 .adm-rank-dtbl th:first-child { border-top-left-radius: 7px; } .adm-rank-dtbl th:last-child { border-top-right-radius: 7px; }
 .adm-rank-dtbl td { padding: 8px; border-top: 1px solid #f1f4f9; color: #111827; white-space: nowrap; vertical-align: middle; }
+/* 세로 칸 선 — 연하게, 첫 칸 왼쪽은 표 테두리가 맡는다 */
+.adm-rank-dtbl :is(th, td) + :is(th, td) { border-left: 1px solid #eef1f6; }
 .adm-rank-dtbl tbody tr:first-child td { border-top: 0; }
 .adm-rank-dtbl :is(th, td).l { text-align: left; } .adm-rank-dtbl :is(th, td).c { text-align: center; }
 .adm-rank-dtbl th .adm-sort { font-weight: 700; color: #374151; }
