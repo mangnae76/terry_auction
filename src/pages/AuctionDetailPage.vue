@@ -7895,7 +7895,7 @@ const goBack = () => router.back();
                   <div class="cell-body">
                     <!-- 손으로 넣는 칸은 총 매물수 하나 — 편집 단추 없이 늘 입력칸, 넣으면 곧바로 저장(persistSoon) -->
                     <span class="adp-dm-pair">
-                      <input class="adp-mkt-input" inputmode="numeric" :value="dmListings > 0 ? dmListings.toLocaleString('ko-KR') : ''" placeholder="입력" @input="setListingsVal(($event.target as HTMLInputElement).value)" />
+                      <input class="adp-mkt-input dm-val" inputmode="numeric" :value="dmListings > 0 ? dmListings.toLocaleString('ko-KR') : ''" placeholder="입력" @input="setListingsVal(($event.target as HTMLInputElement).value)" />
                     </span>
                   </div>
                 </div>
@@ -11059,6 +11059,8 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-block-head small { font-size: 11px; color: #2b6df3; font-weight: 500; }
 .adp-dm-pair { display: flex; align-items: center; justify-content: center; gap: 3px; width: 100%; font-size: 11px; font-weight: 700; color: #4b5563; }
 .adp-dm-pair .adp-mkt-input { flex: 1 1 0; min-width: 0; }
+/* 총 매물수 입력칸 — 옆 칸 값(총 세대수 등)과 같은 글꼴 · 크기 · 굵기 · 파랑 */
+.adp-dm-pair .adp-mkt-input.dm-val { font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; }
 .adp-dm-std {
   width: 34px; border: 1px solid #e3e8f0; border-radius: 5px; background: #fff;
   padding: 1px 3px; font-size: 10px; font-weight: 700; color: #374151; text-align: center;

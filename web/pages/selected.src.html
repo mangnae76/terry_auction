@@ -1228,6 +1228,8 @@ body.trip-full .foot { display: none; }
 /* 웹 손품조사 — 수요공급 표의 숫자만 20 (연·월·% 같은 글은 14 그대로).
    위 14 규칙은 :where 라 무게가 가벼워 이 규칙이 이긴다 */
 .app-detail.tab-survey :is(.dm-input, .dm-result) .num { font-size: 20px !important; }
+/* 총 매물수 입력칸도 옆 값과 같은 20 · 굵게 · 파랑 (입력칸 16 규칙보다 세게) */
+.app-detail.tab-survey .dm-input .adp-dm-pair input.adp-mkt-input.dm-val:not([type="checkbox"]) { font-family: inherit; font-size: 20px !important; font-weight: 700; color: #2b6df3; }
 /* 지표결과 등급(동그라미) · 적합/부적합도 20 — 동그라미는 글자에 맞춰 22 → 34 로 키운다 */
 .app-detail.tab-survey .dm-result .adp-dm-grade { width: 34px !important; height: 34px !important; font-size: 20px !important; }
 .app-detail.tab-survey .dm-result .adp-dm-fit { font-size: 20px !important; }
