@@ -75,4 +75,4 @@ export const DEMAND_PLAIN: Record<DemandMetric, string> = {
   burden: '매물이 얼마나 쌓였나',
 };
 /** 종합 칸 쉬운 말 */
-export const DEMAND_TOTAL_PLAIN = '네 지표를 묶은 판단';
+export const DEMAND_TOTAL_PLAIN = '수요지표 4가지 합산';
