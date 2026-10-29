@@ -7,13 +7,14 @@ import type { TipRow } from '../services/tipRows';
 
 /** show — 감싼 칸이 열고 닫을 때(칸 전체에 마우스를 대면 뜨게). 안 주면 ⓘ 와 이름에 댈 때만 */
 /** align='end' — 화면 오른쪽 끝 칸은 말풍선을 왼쪽으로 펼친다(가운데로 펼치면 화면 밖으로 잘렸다) */
-const props = defineProps<{ rows: TipRow[]; show?: boolean; align?: 'end' }>();
+/** under='box' — 말풍선을 ⓘ 밑이 아니라 감싼 칸(가장 가까운 position 이 있는 상자) 아래 밖에 띄운다. 칸 안 숫자를 가리지 않는다(손품조사 말풍선과 같은 자리) */
+const props = defineProps<{ rows: TipRow[]; show?: boolean; align?: 'end'; under?: 'box' }>();
 const hover = ref(false);
 const open = computed(() => (props.show === undefined ? hover.value : props.show || hover.value));
 </script>
 
 <template>
-  <span class="itip" @mouseenter="hover = true" @mouseleave="hover = false" @click.stop="hover = !hover">
+  <span :class="['itip', { box: under === 'box' }]" @mouseenter="hover = true" @mouseleave="hover = false" @click.stop="hover = !hover">
     <slot />
     <svg class="itip-i" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-label="설명"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg>
     <span v-if="open" :class="['itip-bubble', { end: align === 'end' }]" role="tooltip">
@@ -25,6 +26,9 @@ const open = computed(() => (props.show === undefined ? hover.value : props.show
 <style scoped>
 .itip { position: relative; display: inline-flex; align-items: center; gap: 3px; cursor: help; }
 .itip-i { color: #9ca3af; flex: 0 0 auto; }
+.itip.box { position: static; }
+.itip.box .itip-bubble { top: calc(100% + 8px); }
+.itip.box .itip-bubble.end { right: 0; }
 .itip:hover .itip-i { color: #2b6df3; }
 .itip-bubble {
   position: absolute; z-index: 30; left: 50%; top: calc(100% + 8px); transform: translateX(-50%);

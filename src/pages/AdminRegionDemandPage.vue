@@ -566,19 +566,19 @@ const downloadCsv = () => {
         <p class="dm-block-head">① 기초수치</p>
         <div class="dm-row c3">
           <div v-for="c in dmInputs" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
-            <div class="dm-head"><InfoTip :rows="c.tip">{{ c.label }}</InfoTip></div>
+            <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip></div>
             <div class="dm-body"><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" /></b></div>
           </div>
         </div>
         <p class="dm-block-head">② 수요지표</p>
         <div class="dm-row c5">
           <div v-for="c in dmResults" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
-            <div class="dm-head"><InfoTip :rows="c.tip">{{ c.label }}</InfoTip></div>
+            <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip></div>
             <div class="dm-body"><b><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="nbar">|</em><span :class="['gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['fit', { bad: c.grade === 'C' }]">/ {{ demandFitText(c.grade) }}</span></template></b></div>
           </div>
           <!-- 종합 — 손품조사 매매수요의 종합 칸과 같다(등급 동그라미 + 적합) -->
           <div class="dm-cell total">
-            <div class="dm-head"><InfoTip :rows="DEMAND_TOTAL_TIP" align="end">종합</InfoTip></div>
+            <div class="dm-head"><InfoTip :rows="DEMAND_TOTAL_TIP" align="end" under="box">종합</InfoTip></div>
             <div class="dm-body"><b><template v-if="dmTotal !== '-'"><span :class="['gd', `g-${dmTotal}`]">{{ dmTotal }}</span><span :class="['fit', { bad: dmTotal === 'C' }]">{{ demandFitText(dmTotal) }}</span></template><template v-else>-</template></b></div>
           </div>
         </div>
@@ -762,7 +762,7 @@ const downloadCsv = () => {
 .dm-row.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .dm-cell.total .fit { margin-left: 6px; }
 /* 칸 — 앱 매매수요 칸처럼 위 이름 띠(회색) + 아래 값(흰색). 이어진 칸은 빨갛게(앱 .lit 와 같은 색) */
-.dm-cell { min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; overflow: visible; transition: background .12s, border-color .12s; }
+.dm-cell { position: relative; min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; overflow: visible; transition: background .12s, border-color .12s; }
 .dm-head { display: flex; justify-content: center; padding: 8px 6px; border-bottom: 1px solid #e3e8f0; border-radius: 8px 8px 0 0; background: #f3f6fb; font-size: 14px; color: #6b7280; white-space: nowrap; }
 .dm-body { display: flex; justify-content: center; align-items: center; padding: 14px 6px; }
 .dm-body b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; display: inline-flex; align-items: center; }
