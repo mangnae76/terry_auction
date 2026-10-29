@@ -23,6 +23,7 @@ const rememberPlaceRows = (id: string, rows: PlaceRow[]) => {
 </script>
 
 <script setup lang="ts">
+import { openNaverListing } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
@@ -3137,7 +3138,7 @@ const openListingLookup = () => {
   const area = (auction.value?.address ?? '').trim().split(/\s+/).slice(0, 2).join(' ');
   const query = [area, dong].filter(Boolean).join(' ').trim() || dong;
   void copyText(query);
-  window.open('https://m.land.naver.com/', '_blank');
+  openNaverListing(query);
 };
 
 // 12개월 거래량 기본값 — 그 동의 다세대·연립 실거래 1년치 건수.
