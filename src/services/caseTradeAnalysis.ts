@@ -85,7 +85,8 @@ export const pickCaseTrade = (rows: CaseTradeRow[], kinds: Array<CaseTradeRow['k
 
 /** 국토부 자료를 화면이 쓰는 한 줄 꼴로 편다 */
 const toRows = (data: Awaited<ReturnType<typeof fetchPlaceHistory>>): CaseTradeRow[] => [
-  ...data.trades.map((r) => ({
+  // 계약해제는 없던 거래다 — 표 · 자동 판단 · 평균 어디에도 넣지 않는다(정상거래 · 직거래만)
+  ...data.trades.filter((r) => !r.cancelled).map((r) => ({
     // 해제가 직거래보다 세다 — 해제된 계약은 거래유형과 상관없이 없던 거래다
     kind: (r.cancelled ? '계약해제' : (r.dealType === '직거래' ? '직거래' : '매매')) as CaseTradeRow['kind'],
     contractDate: r.contractDate,

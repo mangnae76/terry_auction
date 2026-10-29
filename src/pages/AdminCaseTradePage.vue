@@ -679,7 +679,8 @@ onMounted(async () => {
   restoringScreen = true;
   address.value = s.address ?? ''; kind.value = s.kind ?? 'villa'; years.value = webEmbed ? 4 : (s.years ?? 10);
   region.value = s.region ?? null; lot.value = s.lot ?? ''; ho.value = s.ho ?? ''; buildingDong.value = s.buildingDong ?? '';
-  price.value = s.price ?? null; rows.value = s.rows ?? []; dongRows.value = s.dongRows ?? []; mode.value = s.mode ?? MODES[0];
+  price.value = s.price ?? null; // 예전 저장본에 남은 계약해제 줄은 뺀다(없던 거래)
+  rows.value = (s.rows ?? []).filter((r) => r.kind !== '계약해제'); dongRows.value = (s.dongRows ?? []).filter((r) => r.kind !== '계약해제'); mode.value = s.mode ?? MODES[0];
   if (s.sim) { simAreaFrom.value = s.sim.aF; simAreaTo.value = s.sim.aT; simBuildFrom.value = s.sim.bF; simBuildTo.value = s.sim.bT; simDateFrom.value = s.sim.dF; simDateTo.value = s.sim.dT; simSale.value = s.sim.sale; simJeonse.value = s.sim.jeonse; }
   scanned.value = s.scanned ?? 0; missed.value = s.missed ?? 0; baseArea.value = s.baseArea ?? 0;
   ovSido.value = s.ovSido ?? ''; ovDistrictCode.value = s.ovDistrictCode ?? ''; ovDong.value = s.ovDong ?? ''; ovLot.value = s.ovLot ?? '';

@@ -861,7 +861,8 @@ const loadSamePlaceTrades = async (forceReload = false) => {
     }
     const { trades, rents, missedMonths } = data;
     const rows: PlaceRow[] = [
-      ...trades.filter((r) => mine(r.apartmentName, r.umdNm, r.jibun)).map((r) => ({
+      // 계약해제는 없던 거래다 — 정상거래 · 직거래만 (총 거래건수와 같은 셈)
+      ...trades.filter((r) => !r.cancelled && mine(r.apartmentName, r.umdNm, r.jibun)).map((r) => ({
         kind: (/직거래/.test(r.dealType ?? '') ? '직거래' : '매매') as PlaceRow['kind'],
         contractDate: r.contractDate,
         amount: formatWonSimple(r.price),
