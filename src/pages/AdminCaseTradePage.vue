@@ -544,8 +544,18 @@ const fullAddr = (r: CaseTradeRow, withName = true) => {
   const gu = (ovDistrictCode.value ? ovDistricts.value.find((x) => x.lawdCode === ovDistrictCode.value)?.label : region.value?.sigungu) || '';
   return [sido, gu, r.umdNm, r.jibun, withName ? r.name : ''].filter(Boolean).join(' ');
 };
-/** 주소를 누르면 그 건물 자리 네이버 부동산 지도 — 같은 입지인지(값이 비슷할 자리인지) 지도로 본다. 지번이 없으면 건물 이름까지 넣어 찾는다 */
-const openAddr = (r: CaseTradeRow) => { void openNaverSpot(fullAddr(r, !r.jibun), kind.value); };
+/** 주소 옆 지도 단추 — 같은 입지인지(값이 비슷할 자리인지) 지도로 본다.
+ *  아파트 · 오피스텔은 네이버 부동산(그 자리 지도), 빌라는 부동산플래닛(건물 화면이 열린다).
+ *  부동산플래닛은 주소로 건물을 바로 여는 주소 꼴이 없어 '동 지번'을 복사해 두고 지도를 연다 — 검색칸에 붙여넣으면 그 건물 */
+const mapSite = computed<'naver' | 'planet'>(() => (kind.value === 'villa' ? 'planet' : 'naver'));
+const openAddr = (r: CaseTradeRow) => {
+  if (mapSite.value === 'naver') { void openNaverSpot(fullAddr(r, !r.jibun), kind.value); return; }
+  window.open('https://map.bdsplanet.com/', '_blank');
+  const q = [r.umdNm, r.jibun || r.name].filter(Boolean).join(' ');
+  navigator.clipboard.writeText(q)
+    .then(() => flash(`복사했습니다 — 부동산플래닛 검색칸에 붙여넣으세요(${q})`))
+    .catch(() => flash(`부동산플래닛 검색칸에 '${q}'를 넣으세요`, 'info'));
+};
 const copyAddr = async (r: CaseTradeRow) => {
   const text = fullAddr(r);
   try { await navigator.clipboard.writeText(text); flash(`복사했습니다 — ${text}`); } catch { flash('복사하지 못했습니다.', 'error'); }
@@ -1129,9 +1139,7 @@ const downloadCsv = () => {
                 <td class="addr">
                   <span class="addr-in">
                     <span class="addr-t">{{ [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') }}</span>
-                    <button v-if="webEmbed" type="button" class="adm-copy nv" aria-label="네이버 부동산 지도" title="네이버 부동산 지도에서 이 자리 보기(매매 · 전세)" @click.stop="openAddr(r)">
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6" /><path d="M20 4l-9 9" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>
-                    </button>
+                    <button v-if="webEmbed" type="button" :class="['adm-copy', 'map-go', mapSite]" :aria-label="mapSite === 'naver' ? '네이버 부동산 지도' : '부동산플래닛'" :title="mapSite === 'naver' ? '네이버 부동산 지도에서 이 자리 보기(매매 · 전세)' : '부동산플래닛에서 이 건물 보기 — 주소를 복사해 둡니다'" @click.stop="openAddr(r)">{{ mapSite === 'naver' ? 'N' : 'P' }}</button>
                     <button type="button" class="adm-copy" aria-label="주소 복사" title="주소 복사" @click.stop="copyAddr(r)">
                       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
                     </button>
@@ -1196,9 +1204,7 @@ const downloadCsv = () => {
                   <td class="addr">
                     <span class="addr-in">
                       <span class="addr-t">{{ [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') }}</span>
-                      <button v-if="webEmbed" type="button" class="adm-copy nv" aria-label="네이버 부동산 지도" title="네이버 부동산 지도에서 이 자리 보기(매매 · 전세)" @click.stop="openAddr(r)">
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6" /><path d="M20 4l-9 9" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>
-                    </button>
+                      <button v-if="webEmbed" type="button" :class="['adm-copy', 'map-go', mapSite]" :aria-label="mapSite === 'naver' ? '네이버 부동산 지도' : '부동산플래닛'" :title="mapSite === 'naver' ? '네이버 부동산 지도에서 이 자리 보기(매매 · 전세)' : '부동산플래닛에서 이 건물 보기 — 주소를 복사해 둡니다'" @click.stop="openAddr(r)">{{ mapSite === 'naver' ? 'N' : 'P' }}</button>
                     <button type="button" class="adm-copy" aria-label="주소 복사" title="주소 복사" @click.stop="copyAddr(r)">
                         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
                       </button>
@@ -1363,7 +1369,11 @@ const downloadCsv = () => {
 .adm-auto-load { align-self: center; font-size: 13px; color: #6b7280; white-space: nowrap; }
 .addr-in { display: flex; align-items: center; gap: 8px; }
 .addr-t { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.adm-copy.nv:hover { border-color: #03a94d; color: #03a94d; }   /* 네이버 초록 */
+.adm-copy.map-go { font-size: 12px; font-weight: 800; line-height: 1; }
+.adm-copy.map-go.naver { color: #03a94d; }   /* 네이버 초록 */
+.adm-copy.map-go.planet { color: #2f5bea; }   /* 부동산플래닛 파랑 */
+.adm-copy.map-go.naver:hover { border-color: #03a94d; }
+.adm-copy.map-go.planet:hover { border-color: #2f5bea; }
 .adm-copy { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; color: #6b7280; cursor: pointer; }
 .adm-copy:hover { border-color: #2b6df3; color: #2b6df3; }
 .adm-case-block-head em { font-style: normal; font-size: 13px; font-weight: 400; color: #6b7280; margin-left: 2px; }
