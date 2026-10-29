@@ -9,7 +9,8 @@
 // 총 세대수는 건축물대장에서 동마다 받아 채운다 — 연립·다세대 · 아파트 · 오피스텔(호수) 종류별로, 30일 저장.
 // 연립·다세대 값은 물건상세 손품조사와 같은 셈이다.
 // 손으로 적으면 그 값이 우선. 총 매물수는 공식 API 가 아니라 손으로 적는다.
-import { demandFitText, demandGradeOf } from '../services/demandGrade';
+import { dealCountTip } from '../services/tipRows';
+import { demandFitText, demandGradeOf, demandTip } from '../services/demandGrade';
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
@@ -262,27 +263,26 @@ const eokShort = (n: number) => {
   if (n >= 100000000) return `${(Math.round(n / 1000000) / 100).toFixed(2)}억`;
   return `${Math.round(n / 10000).toLocaleString('ko-KR')}만`;
 };
+/** 말풍선 속 종류 이름 */
+const kindWhat = computed(() => (kind.value === 'apt' ? '아파트' : kind.value === 'officetel' ? '오피스텔' : '연립·다세대'));
 const navCells = computed(() => {
   const v = navStats.value;
   const pct = (x: number) => (x > 0 ? `${x.toFixed(1)}%` : '-');
-  const n = (x: number) => x.toLocaleString('ko-KR');
+  // 20251030 → 2025-10-30 (말풍선은 2025.10.30 꼴)
+  const day = (x: string) => (x.length >= 6 ? [x.slice(0, 4), x.slice(4, 6), x.slice(6, 8)].filter(Boolean).join('-') : x);
   return [
     // 총 거래건수 — 정상 + 직거래(계약해제는 없던 거래라 뺀다)를 연 | 월(월평균)로, 밑에 나눠 적는다 (다른 지표는 정상거래만으로 셈)
     {
       label: '총 거래건수', value: '',
       ym: { year: v.count + directShown.value, month: (v.count + directShown.value) / months.value },
-      tip: [
-        `총 거래건수 = 정상 ${n(v.count)}건 + 직거래 ${n(directShown.value)}건 = ${n(v.count + directShown.value)}건`,
-        `계약해제 ${n(cancelShown.value)}건은 제외 (없던 거래)`,
-        `연 = 최근 ${months.value}개월 합 · 월 = 연 ÷ ${months.value}`,
-      ],
+      tip: dealCountTip({ normal: v.count, direct: directShown.value, cancel: cancelShown.value, months: months.value, from: day(period.value.from), to: day(period.value.to) }),
     },
     { label: loadedDeal.value === 'jeonse' ? '평균 전세가' : '평균 거래가', value: eokShort(v.avgPrice) },
     { label: '평균 건축연수', value: v.age > 0 ? `${v.age}년차` : '-' },
-    { label: '거래 회전율', value: pct(v.turnover), grade: v.grades.turnover },
-    { label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb },
-    { label: '매물 부담률', value: pct(v.burden), grade: v.grades.burden },
-    { label: '매물 소진기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-', grade: v.grades.clear },
+    { label: '거래 회전율', value: pct(v.turnover), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value) },
+    { label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value) },
+    { label: '매물 부담률', value: pct(v.burden), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value) },
+    { label: '매물 소진기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value) },
   ];
 });
 const areaText = (n: number) => (n > 0 ? n.toFixed(1) : '-');
@@ -532,7 +532,7 @@ const downloadCsv = () => {
         <p class="adm-nav-scope">{{ sumLabel }}<SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
         <div class="adm-nav-row">
           <div v-for="c in navCells" :key="c.label" class="adm-nav-box">
-            <small><InfoTip v-if="c.tip" :lines="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small>
+            <small><InfoTip v-if="c.tip" :rows="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small>
             <b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" /><template v-if="'grade' in c && c.grade && c.grade !== '-'"><em class="nbar">|</em><span :class="['gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['fit', { bad: c.grade === 'C' }]">/ {{ demandFitText(c.grade) }}</span></template></b>
           </div>
         </div>
@@ -711,11 +711,12 @@ const downloadCsv = () => {
 .adm-nav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
 /* 요약 상자 등급 — 숫자 옆 막대(총 거래건수의 연 | 월 막대와 같은 꼴) 뒤 'A / 적합'. 색은 앱 매매수요와 같다 */
 .adm-nav-box .nbar { font-style: normal; font-weight: 400; color: #c3c9d4; margin: 0 7px; }
-.adm-nav-box .gd { font-weight: 800; }
-.adm-nav-box .gd.g-A { color: #c22e2e; }
-.adm-nav-box .gd.g-B { color: #1d4ed8; }
-.adm-nav-box .gd.g-C { color: #111827; }
-.adm-nav-box .fit { margin-left: 4px; font-size: 14px; font-weight: 800; color: #1f7a45; }
+/* 등급 동그라미 — 앱 매매수요 등급 뱃지(adp-dm-grade)와 같은 값: 22px 원 · 13px · A 빨강 · B 파랑 · C 회색 */
+.adm-nav-box .gd { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; vertical-align: 2px; font-size: 13px; font-weight: 800; line-height: 1; }
+.adm-nav-box .gd.g-A { background: #fde2e2; color: #c22e2e; }
+.adm-nav-box .gd.g-B { background: #cfdeff; color: #1d4ed8; }
+.adm-nav-box .gd.g-C { background: #e5e7eb; color: #111827; }
+.adm-nav-box .fit { margin-left: 3px; font-size: 12px; font-weight: 800; color: #1f7a45; }
 .adm-nav-box .fit.bad { color: #c22e2e; }
 .adm-nav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; text-align: center; }
 @media (max-width: 1200px) { .adm-nav-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

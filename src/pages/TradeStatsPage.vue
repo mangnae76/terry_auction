@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { dealCountTip } from '../services/tipRows';
 import SnapChip from '../components/SnapChip.vue';
 import InfoTip from '../components/InfoTip.vue';
 import UnitText from '../components/UnitText.vue';
@@ -136,14 +137,10 @@ const statMonths = computed(() => Number(selectedPeriod.value) || 12);
 /** 이번 조회의 계약일 범위 — ⓘ 설명에 적는다 */
 const statWindow = ref<{ from: string; to: string } | null>(null);
 const statTip = computed(() => {
-  const n = (v: number) => v.toLocaleString('ko-KR');
-  const m = statMonths.value;
-  return [
-    `총 거래건수 = 정상 ${n(statTotalCount.value - statDirect.value)}건 + 직거래 ${n(statDirect.value)}건 = ${n(statTotalCount.value)}건`,
-    `계약해제 ${n(statCancel.value)}건은 제외 (없던 거래)`,
-    statWindow.value ? `${statWindow.value.from.replace(/-/g, '.')} ~ ${statWindow.value.to.replace(/-/g, '.')} (조회일 기준 ${m}개월)` : `조회일 기준 ${m}개월`,
-    m === 12 ? '연 = 12개월 합 · 월 = 연 ÷ 12' : `연 = ${m}개월 합을 1년으로 환산 · 월 = 합 ÷ ${m}`,
-  ];
+  return dealCountTip({
+    normal: statTotalCount.value - statDirect.value, direct: statDirect.value, cancel: statCancel.value,
+    months: statMonths.value, from: statWindow.value?.from, to: statWindow.value?.to,
+  });
 });
 const statPriceSum = computed(() => statRows.value.reduce((acc, r) => acc + r.priceSum, 0));
 const statPriceCount = computed(() => statRows.value.reduce((acc, r) => acc + r.priceCount, 0));
@@ -727,13 +724,13 @@ onMounted(async () => {
             <h3>통계정보</h3>
             <!-- 웹 — 첫 줄 거래 건수 · 거래 총액, 둘째 줄 평균가 · 평당 단가 (집계 동은 위 결과 줄에) -->
             <div v-if="webEmbed" class="tsp-stat-grid">
-              <div><dt><InfoTip :lines="statTip">총 거래건수</InfoTip></dt><dd><YmCount :year="(statTotalCount * 12) / statMonths" :month="statTotalCount / statMonths" /></dd></div>
+              <div><dt><InfoTip :rows="statTip">총 거래건수</InfoTip></dt><dd><YmCount :year="(statTotalCount * 12) / statMonths" :month="statTotalCount / statMonths" /></dd></div>
               <div><dt>거래총액</dt><dd><UnitText :text="shortWon(statPriceSum)" /></dd></div>
               <div><dt>{{ avgLabel }}</dt><dd><UnitText :text="shortWon(statAvgPrice)" /></dd></div>
               <div><dt>평 단가 / ㎡ 단가</dt><dd><em class="tsp-unit-pre">평</em><UnitText :text="manWon(statUnitPrice)" /><em class="tsp-unit-bar">/</em><em class="tsp-unit-pre">㎡</em><UnitText :text="manWon(statUnitPrice / 3.305785)" /></dd></div>
             </div>
             <div v-else class="tsp-stat-grid">
-              <div><dt><InfoTip :lines="statTip">총 거래건수</InfoTip></dt><dd><YmCount :year="(statTotalCount * 12) / statMonths" :month="statTotalCount / statMonths" /></dd></div>
+              <div><dt><InfoTip :rows="statTip">총 거래건수</InfoTip></dt><dd><YmCount :year="(statTotalCount * 12) / statMonths" :month="statTotalCount / statMonths" /></dd></div>
               <div><dt>{{ avgLabel }}</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
               <div><dt>거래총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
               <div><dt>집계 동</dt><dd>{{ selectedRegion ? '1곳' : `${rows.length}곳` }}</dd></div>

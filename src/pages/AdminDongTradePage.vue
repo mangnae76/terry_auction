@@ -3,6 +3,7 @@
 //
 // 시군구 12개월치를 한 번 받아 두고, 읍면동·기간·면적·연식은 받아 둔 줄
 // 안에서 추린다. 조건을 바꿀 때마다 다시 부르면 하루 한도만 깎아먹는다.
+import { dealCountTip } from '../services/tipRows';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
@@ -704,13 +705,10 @@ const windowScoped = computed(() => (dong.value ? windowRows.value.filter((r) =>
 const kindCount = (k: DongTradeDetailRow['kind'], rows = windowScoped.value) => rows.filter((r) => r.kind === k).length;
 const yearTotal = computed(() => kindCount('정상거래') + kindCount('직거래'));
 const totalTip = computed(() => {
-  const n = (v: number) => v.toLocaleString('ko-KR');
-  return [
-    `총 거래건수 = 정상 ${n(kindCount('정상거래'))}건 + 직거래 ${n(kindCount('직거래'))}건 = ${n(yearTotal.value)}건`,
-    `계약해제 ${n(kindCount('계약해제'))}건은 제외 (없던 거래)`,
-    `${dateFrom.value.replace(/-/g, '.')} ~ ${dateTo.value.replace(/-/g, '.')} (조회일 기준 ${periodMonths.value}개월)`,
-    periodMonths.value === 12 ? '연 = 12개월 합 · 월 = 연 ÷ 12' : `연 = ${periodMonths.value}개월 합을 1년으로 환산 · 월 = 합 ÷ ${periodMonths.value}`,
-  ];
+  return dealCountTip({
+    normal: kindCount('정상거래'), direct: kindCount('직거래'), cancel: kindCount('계약해제'),
+    months: periodMonths.value, from: dateFrom.value, to: dateTo.value,
+  });
 });
 const guNav = computed(() => {
   const prices = normals.value.map((r) => r.priceWon).filter((v) => v > 0);
@@ -892,7 +890,7 @@ const downloadCsv = () => {
           </div>
           <!-- 상자 폭은 수요분석(일곱 칸)과 같게 늘 일곱 몫 — 상자 수가 달라도 크기는 그대로 -->
           <div class="adm-gunav-row">
-            <div v-for="c in navBoxes" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :lines="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" :suffix="'suffix' in c ? c.suffix : undefined" /></b></div>
+            <div v-for="c in navBoxes" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :rows="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" :suffix="'suffix' in c ? c.suffix : undefined" /></b></div>
           </div>
         </section>
         <div v-else-if="!webEmbed" class="adm-sum">
@@ -907,7 +905,7 @@ const downloadCsv = () => {
           <div class="adm-kpi"><small>실거래가 평균</small><strong>{{ won(avgPrice) }}</strong></div>
           <div class="adm-kpi"><small>평당가 평균</small><strong>{{ won(avgUnitPrice) }}</strong></div>
           <!-- 앱도 같은 셈 — 정상 + 직거래(계약해제 제외) -->
-          <div class="adm-kpi blue"><small><InfoTip :lines="totalTip">총 거래건수</InfoTip></small><strong>{{ (kindCount('정상거래', filtered) + kindCount('직거래', filtered)).toLocaleString('ko-KR') }}건</strong></div>
+          <div class="adm-kpi blue"><small><InfoTip :rows="totalTip">총 거래건수</InfoTip></small><strong>{{ (kindCount('정상거래', filtered) + kindCount('직거래', filtered)).toLocaleString('ko-KR') }}건</strong></div>
         </div>
 
         <!-- 분포 (앱) -->
