@@ -11059,6 +11059,12 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-block-head small { font-size: 11px; color: #2b6df3; font-weight: 500; }
 .adp-dm-pair { display: flex; align-items: center; justify-content: center; gap: 3px; width: 100%; font-size: 11px; font-weight: 700; color: #4b5563; }
 .adp-dm-pair .adp-mkt-input { flex: 1 1 0; min-width: 0; }
+/* ① 기초수치 세 칸 — 값을 칸 가운데에(웹과 같게). 숫자 · 단위 최소폭(끝자리 맞춤)을 풀고 입력칸 글도 가운데 */
+.adp-dm-block .dm-input .cell strong .num,
+.adp-dm-block .dm-input .cell strong em { min-width: 0; }
+.adp-dm-block .dm-input .cell .adp-mkt-input { text-align: center; }
+/* 값 칸이 칸 높이를 다 채워 세로 가운데에 — 입력칸이 있는 총 매물수 칸이 더 높아, 옆 두 칸 숫자가 위로 떠 보였다 */
+.adp-dm-block .dm-input .cell.split .cell-body { flex: 1 1 auto; }
 /* 총 매물수 입력칸 — 옆 칸 값(총 세대수 등)과 같은 글꼴 · 크기 · 굵기 · 파랑 */
 .adp-dm-pair .adp-mkt-input.dm-val { font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; }
 .adp-dm-std {
