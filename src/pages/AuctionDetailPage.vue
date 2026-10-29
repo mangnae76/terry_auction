@@ -7206,7 +7206,7 @@ const goBack = () => router.back();
               :class="['adp-ai-start', 'adp-ai-head', { done: !!auction?.rightsAi && !rightsAiBusy }]"
               :disabled="rightsAiBusy"
               @click.stop="onAiHeadClick"
-            >{{ rightsAiBusy ? '분석 중…' : (auction?.rightsAi ? 'AI 분석 완료' : (webEmbed ? 'AI 권리분석 시작' : 'AI 분석 시작')) }}</button>
+            >{{ rightsAiBusy ? '분석 중…' : (auction?.rightsAi ? 'AI 권리분석 완료' : 'AI 권리분석 시작') }}</button>
             <img v-else :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsPhotos') }]" alt="" />
           </header>
           <div v-if="webEmbed || !isCollapsed('rightsPhotos')">
@@ -7261,7 +7261,7 @@ const goBack = () => router.back();
                 :disabled="rightsAiBusy || !!auction?.rightsAi"
                 :title="rightsAiBusy ? '분석하고 있습니다' : (auction?.rightsAi ? '이미 분석했습니다 — 오른쪽에서 다시 받을 수 있습니다' : '올려 둔 서류로 권리분석을 받습니다')"
                 @click="requestRightsAi"
-              >{{ rightsAiBusy ? '분석 중…' : (auction?.rightsAi ? 'AI 분석 완료' : (webEmbed ? 'AI 권리분석 시작' : 'AI 분석 시작')) }}</button>
+              >{{ rightsAiBusy ? '분석 중…' : (auction?.rightsAi ? 'AI 권리분석 완료' : 'AI 권리분석 시작') }}</button>
               <button
                 v-if="auction?.rightsAi && !rightsAiBusy"
                 type="button"
@@ -7881,7 +7881,7 @@ const goBack = () => router.back();
                 <div :class="['cell split', { lit: dmLit('listings') }]" @mouseenter="dmLitEnter('listings')" @mouseleave="dmLitLeave()" @click="dmLitTap('listings')">
                   <div class="cell-head">
                     <!-- 옆 칸 이름(총 세대수)과 같은 글자 요소(small) — 단추로 두면 웹의 단추 글자 규칙을 받아 모양이 달라졌다. 누르면 네이버 매물 -->
-                    <small class="adp-dm-link" role="button" tabindex="0" @click.stop="openListingLookup" @keydown.enter.stop="openListingLookup">총 매물수</small>
+                    <small class="adp-dm-link" role="button" tabindex="0" @click.stop="openListingLookup" @keydown.enter.stop="openListingLookup">총 매물수<svg class="adp-dm-link-ico" viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></small>
                     <button
                       type="button"
                       class="adp-dm-info"
@@ -11003,7 +11003,9 @@ tr.tone-take { background: #fff5f5; }
   line-height: 1.2; text-align: center;
 }
 /* 옆 칸 이름(총 세대수)과 같은 모양 — 밑줄 없이, 누를 수 있다는 것만 마우스를 대면 파랗게 */
-.adp-mkt-cells .cell small.adp-dm-link { cursor: pointer; }
+.adp-mkt-cells .cell small.adp-dm-link { cursor: pointer; display: inline-flex; align-items: center; gap: 2px; }
+/* 누르면 네이버 매물로 간다는 표시 — 밑줄 대신 작은 ↗ */
+.adp-dm-link-ico { flex: 0 0 auto; }
 .adp-mkt-cells .cell small.adp-dm-link:hover, .adp-mkt-cells .cell small.adp-dm-link:active { color: #2b6df3; }
 .adp-dm-block + .adp-dm-block { margin-top: 10px; }
 .adp-dm-block.boxed + .adp-dm-block.boxed { margin-top: 10px; }
