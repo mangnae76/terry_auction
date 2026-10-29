@@ -391,6 +391,9 @@ button { cursor: pointer; }
 .adm-case-in .adm-trf { margin: 8px 0 10px; }
 .adm-case-in .adm-case-block.cond .adm-trf { margin-top: 16px; }
 .adm-case-in .adm-trf .adm-ghost { height: 40px !important; border-radius: 8px !important; font-size: 14px !important; padding: 0 16px !important; }
+/* ① 실거래가 조사 · ② 실거래가 조건분석 사이 가르는 선 */
+.adm-case-in .adm-case-block.cond { position: relative; margin-top: 33px !important; }
+.adm-case-in .adm-case-block.cond::before { content: ""; position: absolute; left: 0; right: 0; top: -17px; height: 1px; background: #dfe4ec; }
 /* 전세가 비율 칸 — 크게 */
 .adm-case-in .case12 .adm-rate-input { width: 52px; height: 26px; font-size: 14px; border-radius: 6px; padding: 0 6px; }
 .adm-case-in .case12 small em:has(.adm-rate-input) { font-size: 14px; display: inline-flex; align-items: center; gap: 2px; }
