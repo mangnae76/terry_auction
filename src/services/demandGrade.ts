@@ -66,3 +66,13 @@ export const DEMAND_TOTAL_TIP: Array<[string, string]> = [
   ['기준', '평균 2.5↑ A · 1.5↑ B · 그 아래 C'],
   ['조건', '네 등급 중 셋 이상 매겨져야 종합등급이 나온다'],
 ];
+
+/** 칸 이름 밑 쉬운 말 — 공식을 몰라도 뜻이 들어오게(앱 · 웹 같은 말) */
+export const DEMAND_PLAIN: Record<DemandMetric, string> = {
+  absorb: '얼마나 잘 팔리나',
+  clear: '다 팔리는 데 걸리는 시간',
+  turnover: '동네 거래가 얼마나 도나',
+  burden: '매물이 얼마나 쌓였나',
+};
+/** 종합 칸 쉬운 말 */
+export const DEMAND_TOTAL_PLAIN = '네 지표를 묶은 판단';

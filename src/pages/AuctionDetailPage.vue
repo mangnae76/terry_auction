@@ -23,6 +23,7 @@ const rememberPlaceRows = (id: string, rows: PlaceRow[]) => {
 </script>
 
 <script setup lang="ts">
+import { DEMAND_PLAIN, DEMAND_TOTAL_PLAIN } from '../services/demandGrade';
 import { openNaverListing } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -7947,6 +7948,7 @@ const goBack = () => router.back();
                         <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
                       </svg>
                     </button>
+                    <em v-if="webEmbed" class="adp-dm-plain">{{ DEMAND_PLAIN.absorb }}</em>
                   </div>
                   <div class="cell-body">
                     <strong class="hi-blue"><em class="adp-dm-pre">연</em><span class="num">{{ dmRateText(dmAbsorb) }}</span><em>%</em></strong>
@@ -7971,6 +7973,7 @@ const goBack = () => router.back();
                         <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
                       </svg>
                     </button>
+                    <em v-if="webEmbed" class="adp-dm-plain">{{ DEMAND_PLAIN.clear }}</em>
                   </div>
                   <div class="cell-body">
                     <strong class="hi-blue adp-dm-clear"><template v-for="(part, pi) in dmClearParts" :key="pi"><span :class="['num', { 'adp-dm-slash': part[0] === '/', 'adp-dm-gap': pi > 0 && part[0] !== '/' && !!dmClearParts[pi - 1][1] }]">{{ part[0] }}</span><em v-if="part[1]">{{ part[1] }}</em></template></strong>
@@ -7996,6 +7999,7 @@ const goBack = () => router.back();
                         <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
                       </svg>
                     </button>
+                    <em v-if="webEmbed" class="adp-dm-plain">{{ DEMAND_PLAIN.turnover }}</em>
                   </div>
                   <div class="cell-body">
                     <strong class="hi-blue"><em class="adp-dm-pre">연</em><span class="num">{{ dmRateText(dmTurnover) }}</span><em>%</em></strong>
@@ -8020,6 +8024,7 @@ const goBack = () => router.back();
                         <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
                       </svg>
                     </button>
+                    <em v-if="webEmbed" class="adp-dm-plain">{{ DEMAND_PLAIN.burden }}</em>
                   </div>
                   <div class="cell-body">
                     <strong class="hi-blue"><span class="num">{{ dmRateText(dmBurden) }}</span><em>%</em></strong>
@@ -8044,6 +8049,7 @@ const goBack = () => router.back();
                         <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
                       </svg>
                     </button>
+                    <em v-if="webEmbed" class="adp-dm-plain">{{ DEMAND_TOTAL_PLAIN }}</em>
                   </div>
                   <div class="cell-total">
                     <strong :class="['adp-dm-grade', `g-${levelTone(dmTotalGrade)}`]">{{ dmTotalGrade }}</strong>
@@ -11149,11 +11155,13 @@ tr.tone-take { background: #fff5f5; }
 .adp-mkt-cells .cell.split { padding: 0; gap: 0; overflow: hidden; }
 .adp-mkt-cells .cell.split .cell-head {
   width: 100%; box-sizing: border-box;
-  display: flex; align-items: center; justify-content: center; gap: 3px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px;
   /* 라벨이 한 줄이든 두 줄이든 네 칸의 머리 높이를 같게 — 줄이 들쭉날쭉하지 않게 */
   min-height: 38px;
   padding: 5px 3px; border-bottom: 1px solid #e3e8f0;
 }
+/* 수요지표 이름 밑 쉬운 말(얼마나 잘 팔리나 …) — 웹만(앱은 칸이 좁다), 한 줄 아래 작고 흐리게 */
+.adp-dm-plain { flex: 0 0 100%; font-style: normal; font-size: 12px; font-weight: 400; color: #9ca3af; line-height: 1.25; text-align: center; word-break: keep-all; }
 .adp-mkt-cells .cell.split .cell-body {
   width: 100%; box-sizing: border-box;
   display: flex; align-items: center; justify-content: center;

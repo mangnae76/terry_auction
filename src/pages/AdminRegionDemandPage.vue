@@ -12,7 +12,7 @@
 import { fetchDongUnitCount, peekDongUnitCount } from '../services/dongUnits';
 import { openNaverDongListing } from '../services/naverListing';
 import { dealCountTip, type TipRow } from '../services/tipRows';
-import { DEMAND_TOTAL_TIP, demandFitText, demandGradeOf, demandTip, demandTotalGrade } from '../services/demandGrade';
+import { DEMAND_PLAIN, DEMAND_TOTAL_PLAIN, DEMAND_TOTAL_TIP, demandFitText, demandGradeOf, demandTip, demandTotalGrade } from '../services/demandGrade';
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
@@ -296,10 +296,10 @@ const dmResults = computed(() => {
   const pct = (x: number) => (x > 0 ? `${x.toFixed(1)}%` : '-');
   return [
     // 가장 중요한 지표(내놓으면 팔리나)를 맨 앞에, 짝(같은 뜻을 개월로)인 소진기간을 바로 옆에 — 소화율 → 소진기간 → 회전율 → 부담률
-    { id: 'absorb' as DmId, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value) },
-    { id: 'clear' as DmId, label: '매물 소진기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value) },
-    { id: 'turn' as DmId, label: '거래 회전율', value: pct(v.turnover), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value) },
-    { id: 'burden' as DmId, label: '매물 부담률', value: pct(v.burden), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value) },
+    { id: 'absorb' as DmId, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value), plain: DEMAND_PLAIN.absorb },
+    { id: 'clear' as DmId, label: '매물 소진기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value), plain: DEMAND_PLAIN.clear },
+    { id: 'turn' as DmId, label: '거래 회전율', value: pct(v.turnover), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value), plain: DEMAND_PLAIN.turnover },
+    { id: 'burden' as DmId, label: '매물 부담률', value: pct(v.burden), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value), plain: DEMAND_PLAIN.burden },
   ];
 });
 const areaText = (n: number) => (n > 0 ? n.toFixed(1) : '-');
@@ -559,12 +559,12 @@ const downloadCsv = () => {
         <p class="dm-block-head">② 수요지표</p>
         <div class="dm-row c5">
           <div v-for="c in dmResults" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
-            <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip></div>
+            <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip><em class="dm-plain">{{ c.plain }}</em></div>
             <div class="dm-body"><b><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="nbar">|</em><span :class="['gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['fit', { bad: c.grade === 'C' }]">/ {{ demandFitText(c.grade) }}</span></template></b></div>
           </div>
           <!-- 종합 — 손품조사 매매수요의 종합 칸과 같다(등급 동그라미 + 적합) -->
           <div class="dm-cell total">
-            <div class="dm-head"><InfoTip :rows="DEMAND_TOTAL_TIP" align="end" under="box">종합</InfoTip></div>
+            <div class="dm-head"><InfoTip :rows="DEMAND_TOTAL_TIP" align="end" under="box">종합</InfoTip><em class="dm-plain">{{ DEMAND_TOTAL_PLAIN }}</em></div>
             <div class="dm-body"><b><template v-if="dmTotal !== '-'"><span :class="['gd', `g-${dmTotal}`]">{{ dmTotal }}</span><span :class="['fit', { bad: dmTotal === 'C' }]">{{ demandFitText(dmTotal) }}</span></template><template v-else>-</template></b></div>
           </div>
         </div>
@@ -749,7 +749,9 @@ const downloadCsv = () => {
 .dm-cell.total .fit { margin-left: 6px; }
 /* 칸 — 앱 매매수요 칸처럼 위 이름 띠(회색) + 아래 값(흰색). 이어진 칸은 빨갛게(앱 .lit 와 같은 색) */
 .dm-cell { position: relative; min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; overflow: visible; transition: background .12s, border-color .12s; }
-.dm-head { display: flex; justify-content: center; padding: 8px 6px; border-bottom: 1px solid #e3e8f0; border-radius: 8px 8px 0 0; background: #f3f6fb; font-size: 14px; color: #6b7280; white-space: nowrap; }
+.dm-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; padding: 8px 6px; border-bottom: 1px solid #e3e8f0; border-radius: 8px 8px 0 0; background: #f3f6fb; font-size: 14px; color: #6b7280; white-space: nowrap; }
+/* 이름 밑 쉬운 말 — 작고 흐리게 한 줄 */
+.dm-plain { flex: 0 0 100%; margin-top: 2px; font-style: normal; font-size: 12px; color: #9ca3af; text-align: center; }
 .dm-body { display: flex; justify-content: center; align-items: center; padding: 14px 6px; }
 .dm-body b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; display: inline-flex; align-items: center; }
 .dm-cell.lit { background: #fff5f5; border-color: #f6d5d5; }
