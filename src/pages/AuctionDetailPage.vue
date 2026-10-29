@@ -2842,6 +2842,8 @@ watch(
   () => { if (Object.values(editingSurvey.value).some(Boolean)) persistSoon(); },
   { deep: true },
 );
+/** 개별성 분석 입력 상태 — 웹은 편집 단추 없이 늘 입력(값은 손을 멈추면 저절로 저장), 앱은 편집 단추로 */
+const indivEditing = computed(() => webEmbed || editingSurvey.value.individuality);
 const saveSurveyAndClose = async (key: keyof typeof editingSurvey.value) => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
@@ -8219,8 +8221,8 @@ const goBack = () => router.back();
             <div class="adp-dm-block boxed">
             <div class="adp-dm-sub">
               ② 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
-              <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
+              <button v-if="!webEmbed && !editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+              <button v-else-if="!webEmbed" class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
             </div>
           <div class="adp-ind-body">
             <!-- 빌라 개별성 · 호실 개별성 — 넓으면 나란히, 좁으면 위아래 -->
@@ -8236,10 +8238,10 @@ const goBack = () => router.back();
                 <tr v-for="item in g.items" :key="item.id">
                   <th :class="['adp-ind-label', { survey: item.survey }]">{{ item.label }}</th>
                   <td class="adp-ind-ctl">
-                    <div :class="['row', { left: editingSurvey.individuality && (item.yearMonth || item.half) }]">
+                    <div :class="['row', { left: indivEditing && (item.yearMonth || item.half) }]">
                       <template v-if="item.yearMonth">
                         <button
-                          v-if="editingSurvey.individuality"
+                          v-if="indivEditing"
                           type="button"
                           class="adp-ind-input adp-ind-year"
                           @click="indivAgeOpen = true"
@@ -8248,28 +8250,28 @@ const goBack = () => router.back();
                         <span v-if="indivAgeYears" class="adp-ind-years">/ {{ indivAgeYears }}</span>
                       </template>
                       <template v-else-if="item.custom === 'units'">
-                        <span v-if="editingSurvey.individuality" class="adp-sum-pair units">
+                        <span v-if="indivEditing" class="adp-sum-pair units">
                           <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.units')" placeholder="세대수" @input="setSumVal('sum.units', ($event.target as HTMLInputElement).value)" />세대 /
                           <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.areaUnits')" placeholder="해당면적" @input="setSumVal('sum.areaUnits', ($event.target as HTMLInputElement).value)" />세대
                         </span>
                         <strong v-else>{{ indivUnitsText }}</strong>
                       </template>
                       <template v-else-if="item.custom === 'dong'">
-                        <span v-if="editingSurvey.individuality" class="adp-sum-pair">
+                        <span v-if="indivEditing" class="adp-sum-pair">
                           총<input class="adp-ind-input" inputmode="numeric" :value="indivValue('ind.dongTotal')" placeholder="0" @input="setIndivValue('ind.dongTotal', ($event.target as HTMLInputElement).value)" />개동 /
                           입지조건<input class="adp-ind-input" :value="indivValue('ind.dongNote')" placeholder="500m내" @input="setIndivValue('ind.dongNote', ($event.target as HTMLInputElement).value)" />
                         </span>
                         <strong v-else>{{ indivDongText }}</strong>
                       </template>
                       <template v-else-if="item.custom === 'floor'">
-                        <span v-if="editingSurvey.individuality" class="adp-sum-pair">
+                        <span v-if="indivEditing" class="adp-sum-pair">
                           <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value)" />층 중
                           <input class="adp-ind-input" inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value)" />층
                         </span>
                         <strong v-else>{{ indivFloorText }}</strong>
                       </template>
                       <template v-else-if="item.combo">
-                        <strong v-if="!editingSurvey.individuality">{{ indivValue(item.id) || '-' }}</strong>
+                        <strong v-if="!indivEditing">{{ indivValue(item.id) || '-' }}</strong>
                         <div v-else class="adp-agency-multi adp-ind-multi">
                           <button
                             type="button"
@@ -8303,7 +8305,7 @@ const goBack = () => router.back();
                           </template>
                         </div>
                       </template>
-                      <template v-else-if="editingSurvey.individuality">
+                      <template v-else-if="indivEditing">
                         <span v-if="item.text && item.suffix" class="adp-ind-suffix">
                           <input
                             class="adp-ind-input"
@@ -8414,11 +8416,11 @@ const goBack = () => router.back();
                           <strong v-if="item.sub">/ {{ indivValue(item.sub.id) || '-' }}</strong>
                         </template>
                       </template>
-                      <span v-if="item.id === 'ind.parking' && editingSurvey.individuality && indivParkingPerHome" class="adp-ind-years">/ {{ indivParkingPerHome }}</span>
+                      <span v-if="item.id === 'ind.parking' && indivEditing && indivParkingPerHome" class="adp-ind-years">/ {{ indivParkingPerHome }}</span>
                     </div>
                   </td>
                   <td class="adp-ind-rate">
-                    <span v-if="editingSurvey.individuality" class="adp-ind-rate-row">
+                    <span v-if="indivEditing" class="adp-ind-rate-row">
                       <input
                         class="adp-ind-input rate"
                         :value="indivValue(`${item.id}.rate`)"
