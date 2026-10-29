@@ -1290,6 +1290,10 @@ const downloadCsv = () => {
                   <button type="button" class="adm-sort" @click="toggleSumSort(c.key)">
                     {{ c.label }}<i :class="{ on: sumSortKey === c.key }">{{ sumSortKey === c.key ? (sumSortDesc ? '↓' : '↑') : '⇅' }}</i>
                   </button>
+                  <!-- 평균면적 — 평 · ㎡ 중 하나만(유형분포 토글과 같은 설정) -->
+                  <button v-if="c.key === 'area' && webEmbed" type="button" class="adm-unit-tg" :aria-label="`면적 단위 바꾸기 — 지금 ${areaUnit === 'py' ? '평' : '㎡'}`" @click.stop="areaUnit = areaUnit === 'py' ? 'm2' : 'py'">
+                    <span :class="{ on: areaUnit === 'py' }">평</span><span :class="{ on: areaUnit === 'm2' }">㎡</span>
+                  </button>
                 </th>
               </tr>
             </thead>
@@ -1301,7 +1305,7 @@ const downloadCsv = () => {
                 <td class="r">{{ eokMan(d.median) }}</td>
                 <td class="r">{{ eokMan(d.min) }}</td>
                 <td class="r">{{ eokMan(d.max) }}</td>
-                <td class="r">{{ d.area > 0 ? areaText(d.area) : '—' }}</td>
+                <td class="r">{{ d.area > 0 ? (webEmbed ? (areaUnit === 'py' ? `${(d.area / 3.305785).toFixed(1)}평` : `${d.area.toFixed(1)}㎡`) : areaText(d.area)) : '—' }}</td>
                 <!-- 요약 상자 · 랭킹지도와 같은 꼴 — '평 783만 / ㎡ 237만' -->
                 <td class="r"><UnitText v-if="d.perM2 > 0" :text="`평 ${Math.round((d.perM2 * 3.305785) / 10000).toLocaleString('ko-KR')}만 / ㎡ ${Math.round(d.perM2 / 10000).toLocaleString('ko-KR')}만`" /><template v-else>—</template></td>
               </tr>
