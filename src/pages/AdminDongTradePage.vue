@@ -476,42 +476,65 @@ onMounted(async () => {
 
 // ===== 랭킹분석 › 거래랭킹 — 1년 거래건수(정상 + 직거래)를 전년 같은 12개월과 견준다. 24개월을 받는다(겹치는 12개월은 저장본) =====
 const lastQuery = ref<{ lawd: string; kind: Kind; deal: 'sale' | 'jeonse' } | null>(null);
-const rankRows = ref<DongTradeDetailRow[]>([]);
+/** 거래랭킹의 범위 — 이름(제목에 쓴다) + 받을 시군구들.
+ *  지금은 조회한 시군구 하나만. 시도 전체 · 전국으로 넓힐 때는 parts 에 그 시군구들을 담고 label 을 '서울특별시' · '전국' 으로 —
+ *  받기 · 세기 · 줄 세우기 · 표 제목 · 네이버 링크 · 매물 수 저장은 모두 이 범위를 따르므로 다른 곳은 고치지 않는다 */
+type RankScope = { label: string; parts: Array<{ lawd: string; sido: string; gu: string }> };
+const rankScope = computed<RankScope | null>(() => {
+  const q = lastQuery.value;
+  if (!q) return null;
+  const sidoName = REGION_GROUPS.find((g) => districtsOf(g.sido).some((d) => d.lawdCode === q.lawd))?.sido ?? sido.value;
+  const gu = districtsOf(sidoName).find((d) => d.lawdCode === q.lawd)?.label ?? '';
+  return { label: gu || sidoName, parts: [{ lawd: q.lawd, sido: sidoName, gu }] };
+});
+/** 범위가 시군구 여럿이면 동 밑에 '시도 시군구', 하나면 시군구만 */
+const rankManyGu = computed(() => (rankScope.value?.parts.length ?? 0) > 1);
+type RankDeal = DongTradeDetailRow & { sido: string; gu: string };
+const rankRows = ref<RankDeal[]>([]);
 const rankLoading = ref(false);
 const rankErr = ref('');
 let rankKey = '';
 const loadRank = async () => {
   const q = lastQuery.value;
-  if (!props.rankMode || listView.value !== 'top' || !q) return;
-  const key = `${q.lawd}|${q.kind}|${q.deal}|${asOf.value}`;
+  const scope = rankScope.value;
+  if (!props.rankMode || listView.value !== 'top' || !q || !scope) return;
+  const key = `${scope.parts.map((x) => x.lawd).join(',')}|${q.kind}|${q.deal}|${asOf.value}`;
   if (key === rankKey) return;
   rankKey = key; rankLoading.value = true; rankErr.value = '';
   try {
-    const res = await fetchDongTradeDetails({ lawdCd5: q.lawd, propertyType: q.kind, months: 24, dealKind: q.deal });
-    if (key !== rankKey) return;
-    rankRows.value = res.rows;
-    if (res.error) rankErr.value = res.error;
+    // 시군구마다 차례로(한꺼번에 부르면 한도에 걸린다) — 줄마다 시도 · 시군구를 붙여 둔다(동 이름은 시군구마다 겹친다)
+    const all: RankDeal[] = [];
+    const errs = new Set<string>();
+    for (const part of scope.parts) {
+      const res = await fetchDongTradeDetails({ lawdCd5: part.lawd, propertyType: q.kind, months: 24, dealKind: q.deal });
+      if (key !== rankKey) return;
+      res.rows.forEach((r) => all.push({ ...r, sido: part.sido, gu: part.gu }));
+      if (res.error) errs.add(res.error);
+    }
+    rankRows.value = all;
+    if (errs.size) rankErr.value = [...errs].join(' · ');
   } catch (e) { rankErr.value = e instanceof Error ? e.message : '전년 자료를 받지 못했습니다'; } finally { if (key === rankKey) rankLoading.value = false; }
 };
 watch([listView, lastQuery, asOf], () => { void loadRank(); });
 /** 거래랭킹 탭 — 읍면동 칸을 뺀다 */
 const noDongPick = computed(() => !!props.rankMode && listView.value === 'top');
 const RANK_MIN = 5;
-/** 지역 칸 밑에 적을 시군구 이름 */
-const rankGu = computed(() => district.value?.label ?? '');
-type RankRow = { name: string; cur: number; prev: number; pct: number | null };
+type RankRow = { id: string; name: string; sido: string; gu: string; cur: number; prev: number; pct: number | null };
+/** 동 이름 밑 한 줄 */
+const rankSub = (r: RankRow) => (rankManyGu.value ? `${r.sido} ${r.gu}` : r.gu);
 /** 동마다 이번 1년 · 전년 1년 거래건수(계약해제 제외) */
 const rankByDong = computed<RankRow[]>(() => {
   const s12 = tradeWindowOf(asOf.value, 12).start.getTime();
   const s24 = tradeWindowOf(asOf.value, 24).start.getTime();
-  const m = new Map<string, { cur: number; prev: number }>();
+  const m = new Map<string, RankRow>();
   rankRows.value.forEach((r) => {
     if (r.kind === '계약해제' || !r.umdNm || !r.dealTime) return;
-    const e = m.get(r.umdNm) ?? { cur: 0, prev: 0 };
+    const id = `${r.sido}|${r.gu}|${r.umdNm}`;
+    const e = m.get(id) ?? { id, name: r.umdNm, sido: r.sido, gu: r.gu, cur: 0, prev: 0, pct: null };
     if (r.dealTime >= s12) e.cur += 1; else if (r.dealTime >= s24) e.prev += 1;
-    m.set(r.umdNm, e);
+    m.set(id, e);
   });
-  return [...m.entries()].map(([name, v]) => ({ name, ...v, pct: v.prev > 0 ? ((v.cur - v.prev) / v.prev) * 100 : null }));
+  return [...m.values()].map((v) => ({ ...v, pct: v.prev > 0 ? ((v.cur - v.prev) / v.prev) * 100 : null }));
 });
 /** 세 목록(왼쪽부터) — 거래량(많은 순) · 급증(증가율 높은 순) · 급감(감소율 큰 순). 전년이 없던 동은 증감을 매기지 않는다 */
 const rankLists = computed(() => {
@@ -532,7 +555,8 @@ const rankLists = computed(() => {
 type RankManual = { units?: number; listings?: number };
 const rankManual = ref<Record<string, RankManual>>({});
 let rankManualLoaded = false;
-const rankKeyOf = (name: string) => `${lastQuery.value?.kind ?? kind.value}|${rankGu.value}|${name}`;
+/** 수요분석 매물수와 같은 열쇠 — 종류 | 시군구 | 동 */
+const rankKeyOf = (r: { gu: string; name: string }) => `${lastQuery.value?.kind ?? kind.value}|${r.gu}|${r.name}`;
 const loadRankManual = async () => {
   if (!auth.uid || !props.rankMode) return;
   const prefs = await loadUserPrefs(auth.uid);
@@ -542,9 +566,9 @@ const loadRankManual = async () => {
 onMounted(() => { void loadRankManual(); });
 watch(() => auth.uid, () => { void loadRankManual(); });
 let rankSaveTimer: ReturnType<typeof setTimeout> | null = null;
-const setRankListings = (name: string, raw: string) => {
+const setRankListings = (r: RankRow, raw: string) => {
   const n = Number(raw.replace(/[^\d]/g, ''));
-  const k = rankKeyOf(name);
+  const k = rankKeyOf(r);
   rankManual.value = { ...rankManual.value, [k]: { ...(rankManual.value[k] ?? {}), listings: Number.isFinite(n) && n > 0 ? n : undefined } };
   if (!rankManualLoaded || !auth.uid) return;
   if (rankSaveTimer) clearTimeout(rankSaveTimer);
@@ -560,7 +584,7 @@ const rankDesc = ref(true);
 const toggleRankSort = (k: RankSortKey) => { if (rankSort.value === k) rankDesc.value = !rankDesc.value; else { rankSort.value = k; rankDesc.value = k !== 'name'; } };
 const rankDongRows = computed(() => {
   const rows = rankByDong.value.map((r) => {
-    const listings = rankManual.value[rankKeyOf(r.name)]?.listings ?? 0;
+    const listings = rankManual.value[rankKeyOf(r)]?.listings ?? 0;
     return { ...r, listings, activity: listings > 0 ? r.cur / listings : null };
   });
   const k = rankSort.value;
@@ -840,9 +864,20 @@ const guNav = computed(() => {
   ];
 });
 /** 읍면동을 고르면 위 요약 상자는 셋 — 거래상세 숫자(조건검색까지 거른 것)와 같은 값 */
+/** 거래랭킹에서 고른 동 — 위 요약 상자가 그 동 내용(전년 동기 · 증감 포함)으로 바뀐다. 다시 누르면 시군구 전체로 */
+const rankPick = computed(() => (props.rankMode && listView.value === 'top' && dong.value
+  ? rankByDong.value.find((r) => r.name === dong.value && r.gu === (rankScope.value?.parts[0]?.gu ?? r.gu)) ?? null : null));
+const pickRankDong = (r: { name: string }) => {
+  dong.value = dong.value === r.name ? '' : r.name;
+  void nextTick(() => { const nav = document.querySelector('.adm-gunav'); if (nav && nav.getBoundingClientRect().top < 0) nav.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+};
 const dongNav = computed(() => [
   // 총 거래건수 — 동 '전체'와 같은 꼴(연 | 월 · ⓘ 셈)로, 그 동의 정상 + 직거래(계약해제 제외)
   { label: '총 거래건수', value: '', ym: { year: (yearTotal.value * 12) / periodMonths.value, month: yearTotal.value / periodMonths.value }, tip: totalTip.value },
+  ...(rankPick.value ? [
+    { label: '전년 동기', value: `${rankPick.value.prev.toLocaleString('ko-KR')}건`, ym: null, tip: null },
+    { label: '증감', value: rankPctLabel(rankPick.value.pct), ym: null, tip: null, tone: rankTone(rankPick.value.pct) },
+  ] : []),
   { label: '실거래가 평균', value: won(avgPrice.value), suffix: '원', ym: null, tip: null },
   { label: '평당가 평균', value: won(avgUnitPrice.value), suffix: '원', ym: null, tip: null },
 ]);
@@ -1008,7 +1043,7 @@ const downloadCsv = () => {
           </div>
           <!-- 상자는 줄 폭을 꽉 채워 고르게(상자 수가 여섯이든 셋이든) -->
           <div class="adm-gunav-row">
-            <div v-for="c in navBoxes" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :rows="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" :suffix="'suffix' in c ? c.suffix : undefined" /></b></div>
+            <div v-for="c in navBoxes" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :rows="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b :class="'tone' in c ? `t-${c.tone}` : ''"><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" :suffix="'suffix' in c ? c.suffix : undefined" /></b></div>
           </div>
         </section>
         <div v-else-if="!webEmbed" class="adm-sum">
@@ -1113,9 +1148,9 @@ const downloadCsv = () => {
               <colgroup><col style="width: 28px" /><col /><col /><col /></colgroup>
               <thead><tr><th /><th class="c">지역</th><th class="c">최근 1년</th><th class="c">증감</th></tr></thead>
               <tbody>
-                <tr v-for="(r, i) in g.rows" :key="r.name">
+                <tr v-for="(r, i) in g.rows" :key="r.id" :class="['pick', { on: rankPick?.id === r.id }]" @click="pickRankDong(r)">
                   <td class="no">{{ i + 1 }}</td>
-                  <td class="c"><b>{{ r.name }}</b><small>{{ rankGu }}</small></td>
+                  <td class="c"><b>{{ r.name }}</b><small>{{ rankSub(r) }}</small></td>
                   <td class="c"><b>{{ r.cur.toLocaleString('ko-KR') }}<em>건</em></b><small>전년 {{ r.prev.toLocaleString('ko-KR') }}</small></td>
                   <td class="c"><span :class="['adm-rank-pct', r.pct === null ? 'new' : r.pct > 0 ? 'up' : r.pct < 0 ? 'down' : '']">{{ rankPctText(r.pct) }}</span></td>
                 </tr>
@@ -1131,19 +1166,19 @@ const downloadCsv = () => {
           </div>
           <!-- 동별 표 — 참고 화면처럼 세 카드 밑에. 동 옆 '네이버매물 ↗'(그 동만 보기) · 네이버 매물 수는 손으로(수요분석 매물수와 같은 값) · 활발도 = 최근 1년 ÷ 매물 수 -->
           <section v-show="!rankLoading" class="adm-rank-dong">
-            <header><strong>{{ rankGu }} 동별 거래</strong><small>최근 1년 · 전년 같은 12개월 대비 · 동 {{ rankByDong.length }}곳</small></header>
+            <header><strong>{{ rankScope?.label }} 동별 거래</strong><small>최근 1년 · 전년 같은 12개월 대비 · 동 {{ rankByDong.length }}곳</small></header>
             <table class="adm-rank-dtbl">
               <colgroup><col style="width: 26%" /><col /><col /><col /><col style="width: 16%" /><col /></colgroup>
               <thead><tr>
                 <th v-for="h in RANK_DONG_COLS" :key="h.key" :class="h.key === 'name' ? 'l' : 'c'"><button type="button" class="adm-sort" @click="toggleRankSort(h.key)">{{ h.label }}<i :class="{ on: rankSort === h.key }">{{ rankSort === h.key ? (rankDesc ? '↓' : '↑') : '⇅' }}</i></button></th>
               </tr></thead>
               <tbody>
-                <tr v-for="r in rankDongRows" :key="r.name">
-                  <td class="l"><span class="nm">{{ r.name }}</span><button type="button" class="nv-btn" :title="`${r.name}만 보기 — 네이버 부동산 매매 매물`" @click="openNaverDongListing([sido, rankGu, r.name].filter(Boolean).join(' '), lastQuery?.kind ?? kind)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></td>
+                <tr v-for="r in rankDongRows" :key="r.id" :class="['pick', { on: rankPick?.id === r.id }]" @click="pickRankDong(r)">
+                  <td class="l"><span class="nm">{{ r.name }}</span><small v-if="rankManyGu" class="gu">{{ rankSub(r) }}</small><button type="button" class="nv-btn" :title="`${r.name}만 보기 — 네이버 부동산 매매 매물`" @click.stop="openNaverDongListing([r.sido, r.gu, r.name].filter(Boolean).join(' '), lastQuery?.kind ?? kind)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></td>
                   <td class="c"><b>{{ r.cur.toLocaleString('ko-KR') }}</b><em>건</em></td>
                   <td class="c">{{ r.prev.toLocaleString('ko-KR') }}<em>건</em></td>
                   <td class="c"><span :class="['adm-rank-pct', rankTone(r.pct)]">{{ rankPctLabel(r.pct) }}</span></td>
-                  <td class="c"><input class="adm-rank-in" inputmode="numeric" placeholder="매물 수" :value="r.listings ? r.listings.toLocaleString('ko-KR') : ''" @input="setRankListings(r.name, ($event.target as HTMLInputElement).value)" /></td>
+                  <td class="c"><input class="adm-rank-in" inputmode="numeric" @click.stop placeholder="매물 수" :value="r.listings ? r.listings.toLocaleString('ko-KR') : ''" @input="setRankListings(r, ($event.target as HTMLInputElement).value)" /></td>
                   <td class="c"><b v-if="r.activity !== null">{{ r.activity.toFixed(2) }}</b><template v-else>-</template></td>
                 </tr>
               </tbody>
@@ -1456,6 +1491,9 @@ const downloadCsv = () => {
 .adm-rank-tbl td b { display: block; font-size: 14px; font-weight: 600; }
 .adm-rank-tbl td small { display: block; margin-top: 2px; font-size: 12px; color: #9ca3af; }
 .adm-rank-tbl td em { font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; margin-left: 1px; }
+.adm-rank3 tr.pick { cursor: pointer; }
+.adm-rank3 tr.pick:hover td { background: #f7f9fc; }
+.adm-rank3 tr.pick.on td { background: #eef4ff; }
 .adm-rank-tbl td.empty { padding: 8px 4px; height: 38px; text-align: center; color: #9ca3af; }
 .adm-rank-tbl tr.pad td { color: transparent; }
 /* 증감 알약 — 우리 등급 색 그대로: 늘면 연빨강 바탕 ▲ · 줄면 연파랑 바탕 ▼ · 전년 없음은 회색 */
@@ -1481,6 +1519,7 @@ const downloadCsv = () => {
 .adm-rank-dtbl :is(th, td).l { text-align: left; } .adm-rank-dtbl :is(th, td).c { text-align: center; }
 .adm-rank-dtbl th .adm-sort { font-weight: 700; color: #374151; }
 .adm-rank-dtbl td .nm { font-weight: 700; }
+.adm-rank-dtbl td .gu { margin-left: 6px; font-size: 12px; color: #9ca3af; }
 .adm-rank-dtbl td em { font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; margin-left: 2px; }
 .adm-rank-dtbl td .nv-btn { display: inline-flex; align-items: center; gap: 2px; height: 20px; margin-left: 8px; padding: 0 6px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; color: #6b7280; font-family: inherit; font-size: 12px; font-weight: 400; vertical-align: middle; cursor: pointer; }
 .adm-rank-dtbl td .nv-btn:hover { border-color: #2b6df3; color: #2b6df3; }
@@ -1495,6 +1534,9 @@ const downloadCsv = () => {
 .adm-gunav-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 12px; }
 .adm-gunav-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 4px; border-radius: 8px; background: #fff; }
 .adm-gunav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
+.adm-gunav-box b.t-up { color: #c22e2e; }
+.adm-gunav-box b.t-down { color: #1d4ed8; }
+.adm-gunav-box b.t-flat, .adm-gunav-box b.t-new { color: #4b5563; }
 .adm-gunav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; text-align: center; }
 .adm-sum { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 2px 12px; font-size: 12.5px; color: #6b7280; font-weight: 600; }
 .adm-sum strong { font-size: 14.5px; font-weight: 800; color: #111827; }
