@@ -836,7 +836,13 @@ const loadSamePlaceTrades = async (forceReload = false) => {
       const j = squash(jibun ?? '');
       return !!d && !!j && lot.endsWith(`${d}${j}`);
     };
-    const mine = (name?: string, umdNm?: string, jibun?: string) => byName(name) || byLot(umdNm, jibun);
+    // 지번이 있으면 지번까지 맞아야 이 건물이다 — 이름만 보면 다른 동 · 다른 지번의 같은 이름 빌라(검암동 636-5 '더라이프' 등)가 섞였다.
+    // 이름으로는 지번을 모를 때만, 그것도 같은 동 안에서만 맞춘다
+    const hasLot = /\d/.test(lot);
+    const dongHere = squash(region.dong ?? '');
+    const mine = (name?: string, umdNm?: string, jibun?: string) => (hasLot
+      ? byLot(umdNm, jibun)
+      : byName(name) && (!dongHere || squash(umdNm ?? '') === dongHere));
     // 받은 건 무조건 저장한다. 한 달이라도 실패하면 저장을 건너뛰게 해 뒀더니
     // 매번 처음부터 다시 받고 있었다. 모자란 건 '다시 조회'로 메운다.
     const placeKey = cacheKey(region.lawdCd5, publicTradeType.value, `y${PLACE_HISTORY_YEARS}`);
