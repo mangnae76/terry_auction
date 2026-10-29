@@ -21,6 +21,7 @@ import TradeStatsPage from './TradeStatsPage.vue';
 import AdminCaseTradePage from './AdminCaseTradePage.vue';
 import DotStackChart, { type DotView } from '../components/DotStackChart.vue';
 import BubbleMatrix from '../components/BubbleMatrix.vue';
+import TradeTimeline from '../components/TradeTimeline.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
@@ -184,7 +185,8 @@ const toggleDealSort = (k: DealKey) => {
 };
 const dealRows = computed(() => {
   const k = dealSort.value;
-  return [...dealBase.value].sort((a, b) => {
+  const base = dealMonth.value ? dealBase.value.filter((r) => r.contractDate.startsWith(dealMonth.value)) : dealBase.value;
+  return [...base].sort((a, b) => {
     const d = typeof a[k] === 'string' ? String(a[k]).localeCompare(String(b[k]), 'ko') : Number(a[k]) - Number(b[k]);
     return dealDesc.value ? -d : d;
   });
@@ -199,40 +201,8 @@ const dealPageNums = computed(() => {
   return Array.from({ length: Math.min(5, dealPages.value - first + 1) }, (_, i) => first + i);
 });
 
-// 월별 평균가 선 그래프 — 한 색(파랑) 선 + 옅은 면, 칸마다 마우스를 올리면 평균 · 건수
-const TREND_W = 1200; const TREND_H = 320;
-const TREND_PAD = { l: 64, r: 24, t: 16, b: 34 };
-const trend = computed(() => {
-  const by = new Map<string, number[]>();
-  dealBase.value.forEach((r) => {
-    if (!(r.priceWon > 0) || !r.contractDate) return;
-    const key = r.contractDate.slice(0, 7); // 'YYYY.MM'
-    by.set(key, [...(by.get(key) ?? []), r.priceWon]);
-  });
-  const keys = Array.from(by.keys()).sort();
-  const avgs = keys.map((k) => { const xs = by.get(k)!; return xs.reduce((a, b) => a + b, 0) / xs.length; });
-  const lo0 = avgs.length ? Math.min(...avgs) : 0; const hi0 = avgs.length ? Math.max(...avgs) : 1;
-  // 눈금은 깔끔한 값(1 · 2 · 2.5 · 5 × 10ⁿ 간격)으로 — 7,688만 같은 어중간한 값이 서지 않게
-  const span = Math.max(hi0 - lo0, hi0 * 0.05, 1);
-  const raw = (span * 1.3) / 4;
-  const mag = 10 ** Math.floor(Math.log10(raw));
-  const nice = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((v) => v >= raw) ?? raw;
-  const lo = Math.max(0, Math.floor((lo0 - span * 0.15) / nice) * nice);
-  const hi = lo + nice * 4 >= hi0 ? lo + nice * 4 : Math.ceil((hi0 + span * 0.15) / nice) * nice;
-  const plotW = TREND_W - TREND_PAD.l - TREND_PAD.r; const plotH = TREND_H - TREND_PAD.t - TREND_PAD.b;
-  const step = keys.length > 1 ? plotW / (keys.length - 1) : plotW;
-  const yOf = (v: number) => TREND_PAD.t + plotH - ((v - lo) / (hi - lo)) * plotH;
-  const points = keys.map((k, i) => ({
-    key: k, label: k, avg: avgs[i], n: by.get(k)!.length,
-    x: TREND_PAD.l + i * step, y: yOf(avgs[i]),
-  }));
-  const line = points.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-  const base = TREND_PAD.t + plotH;
-  const area = points.length ? `${line} L${points[points.length - 1].x.toFixed(1)},${base} L${points[0].x.toFixed(1)},${base} Z` : '';
-  const nTicks = Math.round((hi - lo) / nice);
-  const ticks = Array.from({ length: nTicks + 1 }, (_, i) => { const v = lo + nice * i; return { v, y: yOf(v), label: eokMan(v) }; });
-  return { points, line, area, ticks, step };
-});
+// 거래 타임라인(TradeTimeline)에서 고른 달 — 'YYYY.MM'. 고르면 아래 개별 거래 목록이 그 달로 좁혀진다
+const dealMonth = ref('');
 
 // ===== 웹 '상세분포' — 동 × 구간 거래건수 표 =====
 type DetailKind = 'price' | 'area' | 'age' | 'floor';
@@ -757,6 +727,9 @@ const colFilter = useColumnFilters<DongTradeDetailRow>(searched, COLS);
 const listRows = computed(() => colFilter.rows.value);
 // 거래상세 — 조건 · 검색 · 정렬이 바뀌면 첫 쪽으로 (searched 를 정한 뒤라야 지켜볼 수 있다)
 watch([dealBase, dealSort, dealDesc], () => { dealPage.value = 1; });
+// 조건이 바뀌면 고른 달은 푼다(searched 를 정한 뒤라야 지켜볼 수 있다)
+watch(dealBase, () => { dealMonth.value = ''; });
+watch(dealMonth, () => { dealPage.value = 1; });
 
 // ===== 웹 — 시군구까지만 골랐을 때(읍면동 '전체') 검색리스트는 동별 요약 표 =====
 // 정상거래만 센다(검색조건의 기간 · 면적 · 연식 거르기를 거친 것). 거래가 없는 동도 0건으로 남긴다
@@ -1141,28 +1114,12 @@ const downloadCsv = () => {
           </div>
         </div>
         <div v-else-if="webEmbed && listView === 'deals'" class="adm-deals">
-          <!-- 유사매물시세(시장분석 탭 · 수익분석)에는 월별 평균가 추이를 두지 않는다 — 거래상세에만 -->
-          <section v-if="listView === 'deals'" class="adm-trend">
-            <p class="adm-trend-title">월별 평균가 추이 <em>(최근 {{ trend.points.length }}개월 · 정상 + 직거래)</em></p>
-            <svg v-if="trend.points.length > 1" class="adm-trend-svg" :viewBox="`0 0 ${TREND_W} ${TREND_H}`" role="img" aria-label="월별 평균가 추이 선 그래프">
-              <g v-for="t in trend.ticks" :key="t.v">
-                <line :x1="TREND_PAD.l" :x2="TREND_W - TREND_PAD.r" :y1="t.y" :y2="t.y" class="grid" />
-                <text :x="TREND_PAD.l - 8" :y="t.y" text-anchor="end" dominant-baseline="central" class="ax">{{ t.label }}</text>
-              </g>
-              <path :d="trend.area" class="area" />
-              <path :d="trend.line" class="line" />
-              <g v-for="pt in trend.points" :key="pt.key" class="pt">
-                <line :x1="pt.x" :x2="pt.x" :y1="TREND_PAD.t" :y2="TREND_H - TREND_PAD.b" class="hover-line" />
-                <circle :cx="pt.x" :cy="pt.y" r="4.5" class="dot" />
-                <rect :x="pt.x - trend.step / 2" :y="TREND_PAD.t" :width="trend.step" :height="TREND_H - TREND_PAD.t - TREND_PAD.b" class="hit"><title>{{ pt.key }} — 평균 {{ eokMan(pt.avg) }} · {{ pt.n.toLocaleString('ko-KR') }}건</title></rect>
-                <text :x="pt.x" :y="TREND_H - TREND_PAD.b + 18" text-anchor="middle" class="ax">{{ pt.label }}</text>
-              </g>
-            </svg>
-            <p v-else class="adm-trend-empty">두 달 이상 거래가 있어야 추이를 그립니다.</p>
-          </section>
+          <!-- 거래 타임라인 — 점 = 거래 한 건, 월별 가운데 값 선 · 월별 거래량 막대, 재생. 달을 누르면 아래 목록이 그 달로 -->
+          <TradeTimeline v-model="dealMonth" :rows="dealBase" />
           <div class="adm-deals-head">
-            <strong>개별 거래 목록</strong>
+            <strong>개별 거래 목록<template v-if="dealMonth"> · {{ dealMonth.slice(0, 4) }}년 {{ Number(dealMonth.slice(5, 7)) }}월</template></strong>
             <span>총 거래건수 {{ dealRows.length.toLocaleString('ko-KR') }}건</span>
+            <button v-if="dealMonth" type="button" class="adm-deal-all" @click="dealMonth = ''">전체 보기</button>
           </div>
           <!-- 검색칸 · 저장 · 초기화 한 줄 (시작 · 종료일자 · 면적 · 건축년도 칸은 뺐다) -->
           <div class="adm-inline-cond">
@@ -1473,6 +1430,7 @@ const downloadCsv = () => {
 .adm-rank-notes b { font-weight: 400; color: inherit; }
 .adm-rank-pct.flat { background: #f3f4f6; color: #6b7280; }
 
+.adm-deal-all { height: 30px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
 .adm-detail-numtg { align-self: flex-start; height: 34px; margin: 4px 0 8px; padding: 0 14px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
 .adm-gunav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }
 .adm-gunav-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
