@@ -166,6 +166,7 @@ const run = async () => {
     if (!res.price) {
       notice.value = notice.value || '공동주택가 자료가 없습니다 — 공동주택이 아니거나 아직 고시 전입니다.';
     }
+    if (props.preset) restorePresetPicks();
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -685,6 +686,22 @@ const saveScreen = () => {
 };
 // 분석 결과 · 고른 기준 줄 · 거르기가 바뀌면 남긴다
 watch([rows, price, pickedSale, pickedJeonse, areaFilter, yearFilter, tab, rateText, restoredSale, restoredJeonse, mode, simSale, simJeonse, simF, condF], saveScreen, { deep: true });
+// 손품분석 — 고른 줄 · 거르기를 물건마다 기억한다. 화면을 다시 띄워도(탭 오가기 · 웹 다시 그리기) 다시 조회한 뒤 되살린다
+type PresetPicks = { mode: CaseMode; tab: typeof tab.value; simF: TradeRange; condF: TradeRange; simSale: string; simJeonse: string; pickedSale: string; pickedJeonse: string };
+const presetKey = () => (props.preset ? `son.case.${props.preset.kind}.${props.preset.address}` : '');
+const savePresetPicks = () => {
+  if (!props.preset || loading.value || !rows.value.length && !dongRows.value.length) return;
+  const v: PresetPicks = { mode: mode.value, tab: tab.value, simF: simF.value, condF: condF.value, simSale: simSale.value, simJeonse: simJeonse.value, pickedSale: pickedSale.value, pickedJeonse: pickedJeonse.value };
+  try { sessionStorage.setItem(presetKey(), JSON.stringify(v)); } catch { /* 기억만 못 한다 */ }
+};
+const restorePresetPicks = () => {
+  let v: PresetPicks | null = null;
+  try { v = JSON.parse(sessionStorage.getItem(presetKey()) || 'null'); } catch { v = null; }
+  if (!v) return;
+  mode.value = v.mode; tab.value = v.tab; simF.value = v.simF; condF.value = v.condF;
+  simSale.value = v.simSale; simJeonse.value = v.simJeonse; pickedSale.value = v.pickedSale; pickedJeonse.value = v.pickedJeonse;
+};
+watch([mode, tab, simF, condF, simSale, simJeonse, pickedSale, pickedJeonse], savePresetPicks, { deep: true });
 // 물건이 준 주소 · 종류 — 바뀔 때마다 바로 조회
 watch(() => props.preset && `${props.preset.address}|${props.preset.kind}`, (v) => {
   if (!v || !props.preset) return;
@@ -1049,7 +1066,7 @@ const downloadCsv = () => {
           </template>
         </div>
         <!-- 유사물건 — 예전 가격정보 조건분석과 같은 거르기 칸(기간선택 · 시작~종료일자 · 면적 · 건축년도) -->
-        <TradeRangeFilter v-if="webEmbed && mode === MODES[1]" v-model="simF" class="adm-trf">
+        <TradeRangeFilter v-if="webEmbed && mode === MODES[1]" v-model="simF" :month-choices="[3, 6, 12]" class="adm-trf">
           <button type="button" class="adm-ghost" @click="resetFilters">초기화</button>
         </TradeRangeFilter>
         <div v-else-if="webEmbed" class="adm-sel-row">

@@ -32,6 +32,8 @@ watch(pickId, (v) => { writeLS(PICK_KEY, v); window.dispatchEvent(new CustomEven
 // 고른 물건이 목록에 없으면(처음 · 지운 물건) 맨 앞 물건으로 — 고르는 칸이 비어 보이지 않게
 watch(list, (l) => { if (l.length && !l.some((a) => a.id === pickId.value)) pickId.value = l[0].id; }, { immediate: true });
 const tab = ref<'demand' | 'price'>(readLS(TAB_KEY) === 'price' ? 'price' : 'demand');
+const priceSeen = ref(false);
+watch(tab, (v) => { if (v === 'price') priceSeen.value = true; }, { immediate: true });
 // 웹 경로에 지금 탭 — '홈 › 시장분석 › 손품분석 › 수요분석'
 const tellTab = () => window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: ['손품분석', tab.value === 'price' ? '시세조사' : '수요분석'] } }));
 watch(tab, (v) => { writeLS(TAB_KEY, v); tellTab(); }, { immediate: true });
@@ -106,7 +108,8 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
           </template>
         </AuctionDetailPage>
       </div>
-      <div v-if="tab === 'price' && casePreset" class="adm-case-in app-market son-price" data-k="case">
+      <!-- 시세조사는 한 번 열면 띄워 둔다 — 탭을 오가도 다시 조회하지 않고 고른 줄 · 거르기가 그대로 남는다 -->
+      <div v-if="casePreset && (tab === 'price' || priceSeen)" v-show="tab === 'price'" class="adm-case-in app-market son-price" data-k="case">
         <AdminCaseTradePage in-dong :preset="casePreset" />
       </div>
     </template>

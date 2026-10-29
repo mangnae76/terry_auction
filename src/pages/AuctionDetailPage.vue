@@ -1805,6 +1805,9 @@ watch(
     if (!id || fetchedAuctionId.value === id) return;
     fetchedAuctionId.value = id;
     // 급한 것부터 — 단지 전체(2년치 × 매매/전월세 = 50번 호출)를 먼저 던지면 이 둘이 밀려서 실패한다
+    // 손품분석(웹 시장분석)은 본건사진 · 입지/개별성만 쓴다 — 가격정보 10년치 · 건축물대장을 뒤에서 받으면
+    // 탭을 옮겨도 멈추지 않고 시세조사 조회와 같은 길을 막는다. 입지등수에 쓰는 주변환경만 받는다
+    if (sonpumMode) { void Promise.resolve().then(() => fetchNearbyForAuction()); return; }
     void (async () => {
       await fetchPublicTradeRows();
       await fetchDeal12mCount();
