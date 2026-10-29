@@ -3100,25 +3100,6 @@ const surveyDongName = computed(() => {
 /** 제목에 쓸 지역 이름 — 못 찾으면 예전처럼 '동단위' */
 const surveyAreaLabel = computed(() => surveyDongName.value || '동단위');
 
-// 다세대·연립 세대수는 자동으로 가져올 수 있는 무료 경로가 없다(공공데이터 키 발급 필요).
-// 그래서 그 동의 주택 종류별 통계를 바로 띄워 주고, 숫자는 눈으로 보고 넣게 돕는다.
-const openHouseholdLookup = () => {
-  const dong = surveyDongName.value;
-  if (!dong) {
-    flashToast('주소에서 동 이름을 찾지 못했습니다.', 'error');
-    return;
-  }
-  void copyText(dong);
-  const query = encodeURIComponent(`${dong} 주택의 종류별 주택`);
-  window.open(`https://kosis.kr/search/search.do?query=${query}`, '_blank');
-};
-
-/** 국토부 실거래가 공개시스템 — 거래량을 눈으로 확인하거나 더 캐 볼 때 */
-const openMolitRtSite = () => {
-  void copyText(surveyDongName.value || jibunAddress.value);
-  window.open('https://rt.molit.go.kr/', '_blank');
-};
-
 /** 국토부 공동주택가격 열람 — 유사물건은 자동조회가 안 되니 직접 찾아 적어야 한다.
  *  주소를 복사해 두면 그 창에 붙여 넣기만 하면 된다. */
 const openOfficialPriceSite = () => {
@@ -3441,7 +3422,6 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['갱신', `30일 후 업데이트${unitsUpdatedAt.value ? ` (${unitsUpdatedAt.value})` : ''}`],
     ['범위', `${surveyAreaLabel.value} 연립·다세대`],
     ['합산', '건물마다의 세대수를 모두 더한 값'],
-    ['이동!', 'KOSIS(주택의 종류별 주택 읍면동)'],
   ] },
   listings: { arrow: '62%', rows: [
     ['입력', '직접 입력'],
@@ -7846,7 +7826,7 @@ const goBack = () => router.back();
               <div class="adp-mkt-cells c3 adp-dm-table dm-input">
                 <div :class="['cell split', { lit: dmLit('deal') }]" @mouseenter="dmLitEnter('deal')" @mouseleave="dmLitLeave()" @click="dmLitTap('deal')">
                   <div class="cell-head">
-                    <button type="button" class="adp-dm-link" @click.stop="openMolitRtSite">총 거래건수</button>
+                    <small>총 거래건수</small>
                     <button
                       v-if="deal12mState !== 'fresh'"
                       type="button"
@@ -7875,7 +7855,7 @@ const goBack = () => router.back();
                 </div>
                 <div :class="['cell split', { lit: dmLit('units') }]" @mouseenter="dmLitEnter('units')" @mouseleave="dmLitLeave()" @click="dmLitTap('units')">
                   <div class="cell-head">
-                    <button type="button" class="adp-dm-link" @click.stop="openHouseholdLookup">총 세대수</button>
+                    <small>총 세대수</small>
                     <button
                       v-if="unitsState !== 'fresh'"
                       type="button"
