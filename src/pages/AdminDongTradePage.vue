@@ -102,7 +102,7 @@ const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
 /** 웹 시장분석 › 랭킹분석 — 같은 화면을 랭킹 탭(랭킹지도 · 거래랭킹)만으로 띄운다. 지역분석은 그 둘을 뺀 탭 */
 const props = defineProps<{ rankMode?: boolean }>();
-const listView = ref<'map' | 'top' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case' | 'sim'>(props.rankMode ? 'map' : 'supply');
+const listView = ref<'map' | 'top' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case'>(props.rankMode ? 'map' : 'supply');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
 const mapRun = ref(0);
 const mapEmbed = computed(() => ({
@@ -118,9 +118,10 @@ const mapEmbed = computed(() => ({
 }));
 // 웹 — 보던 안 탭을 이 브라우저에 남겨 새로고침해도 그 탭으로(지역분석 · 랭킹분석 따로). 아래 예전 주소 표시가 있으면 그쪽이 이긴다
 const VIEW_KEY = `adm.view.${props.rankMode ? 'rank' : 'dong'}`;
-const VIEWS_OF_MODE: string[] = props.rankMode ? ['map', 'top'] : ['supply', 'table', 'dist', 'detail', 'deals', 'case', 'sim'];
+const VIEWS_OF_MODE: string[] = props.rankMode ? ['map', 'top'] : ['supply', 'table', 'dist', 'detail', 'deals', 'case'];
 if (webEmbed) {
-  try { const v = localStorage.getItem(VIEW_KEY); if (v && VIEWS_OF_MODE.includes(v)) listView.value = v as typeof listView.value; } catch { /* 그만 */ }
+  // 유사매물 탭은 뺐다 — 유사물건 찾기는 시세조사 안에서. 그 탭에 있던 사람은 시세조사로
+  try { const raw = localStorage.getItem(VIEW_KEY); const v = raw === 'sim' ? 'case' : raw; if (v && VIEWS_OF_MODE.includes(v)) listView.value = v as typeof listView.value; } catch { /* 그만 */ }
 }
 watch(listView, (v) => { if (webEmbed && VIEWS_OF_MODE.includes(v)) { try { localStorage.setItem(VIEW_KEY, v); } catch { /* 그만 */ } } });
 try { if (props.rankMode && sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
@@ -145,7 +146,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '시세조사', sim: '유사매물' };
+const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '시세조사' };
 const tellTab = () => {
   if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
@@ -979,8 +980,6 @@ const downloadCsv = () => {
               <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
               <!-- 경매지번 — 시장분석 › 경매지번 분석 화면을 그대로(주소 줄 · 종류 · 기간 · 내비 · 표 · 저장). 주소 줄은 위 고르는 줄 자리에 -->
               <button type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">시세조사</button>
-              <!-- 유사매물시세 — 우선 거래상세와 같은 내용(같은 틀을 함께 쓴다). 내용이 정해지면 여기서 갈라진다 -->
-              <button type="button" role="tab" :aria-selected="listView === 'sim'" :class="{ on: listView === 'sim' }" @click="listView = 'sim'">유사매물</button>
             </nav>
         <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
@@ -1126,7 +1125,7 @@ const downloadCsv = () => {
             <p>※ 최근 1년 = 조회일 기준 12개월, 전년 동기 = 그 앞 12개월(정상 + 직거래, 계약해제 제외). 전년 동기 거래가 없는 동은 증감을 매기지 않고 '신규'로 둡니다.</p>
           </div>
         </div>
-        <div v-else-if="webEmbed && (listView === 'deals' || listView === 'sim')" class="adm-deals">
+        <div v-else-if="webEmbed && listView === 'deals'" class="adm-deals">
           <!-- 유사매물시세(시장분석 탭 · 수익분석)에는 월별 평균가 추이를 두지 않는다 — 거래상세에만 -->
           <section v-if="listView === 'deals'" class="adm-trend">
             <p class="adm-trend-title">월별 평균가 추이 <em>(최근 {{ trend.points.length }}개월 · 정상 + 직거래)</em></p>
@@ -1147,7 +1146,7 @@ const downloadCsv = () => {
             <p v-else class="adm-trend-empty">두 달 이상 거래가 있어야 추이를 그립니다.</p>
           </section>
           <div class="adm-deals-head">
-            <strong>{{ listView === 'sim' ? '실거래 조건 분석' : '개별 거래 목록' }}</strong>
+            <strong>개별 거래 목록</strong>
             <span>총 거래건수 {{ dealRows.length.toLocaleString('ko-KR') }}건</span>
           </div>
           <!-- 검색칸 · 저장 · 초기화 한 줄 (시작 · 종료일자 · 면적 · 건축년도 칸은 뺐다) -->
