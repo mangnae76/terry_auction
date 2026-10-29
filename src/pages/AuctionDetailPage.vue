@@ -2864,8 +2864,8 @@ watch(
   () => { if (Object.values(editingSurvey.value).some(Boolean)) persistSoon(); },
   { deep: true },
 );
-/** 개별성 분석 입력 상태 — 웹은 편집 단추 없이 늘 입력(값은 손을 멈추면 저절로 저장), 앱은 편집 단추로 */
-const indivEditing = computed(() => webEmbed || editingSurvey.value.individuality);
+/** 개별성 분석 입력 상태 — 앱 · 웹 모두 편집 단추로 연다(유사 목록을 넣을 때 편집 화면이 필요하다) */
+const indivEditing = computed(() => editingSurvey.value.individuality);
 const saveSurveyAndClose = async (key: keyof typeof editingSurvey.value) => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
@@ -8243,8 +8243,8 @@ const goBack = () => router.back();
             <div class="adp-dm-block boxed">
             <div class="adp-dm-sub">
               ② 개별성 분석 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('indiv', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('indiv', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'indiv'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">해당 경매물건 분석 → 유사 빌라 비교 (호갱, 네부, 감평서)</span></span>
-              <button v-if="!webEmbed && !editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-              <button v-else-if="!webEmbed" class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
+              <button v-if="!editingSurvey.individuality" class="adp-edit-btn" type="button" @click.stop="editingSurvey.individuality = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+              <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('individuality')">완료</button>
             </div>
           <div class="adp-ind-body">
             <!-- 빌라 개별성 · 호실 개별성 — 넓으면 나란히, 좁으면 위아래 -->
