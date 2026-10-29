@@ -950,7 +950,7 @@ const downloadCsv = () => {
             <strong>{{ loadedLabel }}<template v-if="dong">{{ ` · ${dong}` }}</template><template v-if="loadedDeal === 'jeonse'">{{ ' 전세' }}</template></strong>
             <SnapChip :chip="snapChip" />
           </div>
-          <!-- 상자 폭은 수요분석(일곱 칸)과 같게 늘 일곱 몫 — 상자 수가 달라도 크기는 그대로 -->
+          <!-- 상자는 줄 폭을 꽉 채워 고르게(상자 수가 여섯이든 셋이든) -->
           <div class="adm-gunav-row">
             <div v-for="c in navBoxes" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :rows="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" :suffix="'suffix' in c ? c.suffix : undefined" /></b></div>
           </div>
@@ -1385,7 +1385,8 @@ const downloadCsv = () => {
 .adm-gunav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }
 .adm-gunav-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .adm-gunav-head strong { font-size: 18px; font-weight: 800; color: #2b6df3; }
-.adm-gunav-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; }
+/* 상자 수(여섯 · 셋)만큼 줄 폭을 꽉 채워 고르게 나눈다 — 일곱 몫으로 두니 오른쪽이 비었다 */
+.adm-gunav-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 12px; }
 .adm-gunav-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 4px; border-radius: 8px; background: #fff; }
 .adm-gunav-box small { font-size: 14px; color: #6b7280; white-space: nowrap; }
 .adm-gunav-box b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; text-align: center; }
