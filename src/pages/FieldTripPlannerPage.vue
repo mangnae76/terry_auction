@@ -4,6 +4,7 @@ import { Clipboard } from '@capacitor/clipboard';
 import { Capacitor } from '@capacitor/core';
 import { currentRouteJob, trackRouteJob } from '../services/routeJob';
 import L from 'leaflet';
+import { addBaseTiles } from '../services/mapTiles';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { saveFieldTripPlan } from '../services/auctionRepository';
@@ -728,9 +729,7 @@ const ensureMap = async () => {
   map = L.map('trip-map', {
     zoomControl: true,
   }).setView([37.545, 126.675], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap',
-  }).addTo(map);
+  addBaseTiles(map);
   markerLayer = L.layerGroup().addTo(map);
   lockMap();
   map.on('click', unlockMap);

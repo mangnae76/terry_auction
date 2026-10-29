@@ -5,6 +5,7 @@ import InfoTip from '../components/InfoTip.vue';
 import UnitText from '../components/UnitText.vue';
 import YmCount from '../components/YmCount.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
+import { addBaseTiles } from '../services/mapTiles';
 import L from 'leaflet';
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -309,9 +310,7 @@ const ensureMap = async () => {
   // 웹은 확대 단계를 잘게(0.25) — 동들을 다 담되 한 단계씩 뚝 멀어지지 않게
   leafletMap = L.map('trade-map', { zoomControl: false, zoomSnap: webEmbed ? 0.25 : 1 }).setView([37.48, 126.68], 11);
   L.control.zoom({ position: 'topright' }).addTo(leafletMap);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap',
-  }).addTo(leafletMap);
+  addBaseTiles(leafletMap);
   markerLayer = L.layerGroup().addTo(leafletMap);
 };
 
