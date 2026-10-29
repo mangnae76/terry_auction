@@ -40,7 +40,8 @@ const YEARS = [2, 4, 8, 10];
 const PYEONG = 3.305785;
 
 /** inDong — 지역분석 › 경매지번 탭 안에 붙어 쓴다(주소 줄은 지역분석 고르는 줄 자리로, 경로는 지역분석 탭 줄에) */
-const props = withDefaults(defineProps<{ inDong?: boolean }>(), { inDong: false });
+/** preset — 손품분석처럼 물건이 주소 · 종류를 주면 위 주소 줄 없이 바로 조회한다(저장본도 쓰지 않는다) */
+const props = withDefaults(defineProps<{ inDong?: boolean; preset?: { address: string; kind: CasePropertyType } | null }>(), { inDong: false, preset: null });
 const inDong = computed(() => props.inDong);
 const router = useRouter();
 /** 웹에 떴는가 — 웹은 지역분석과 같은 틀(띠 위 고르는 줄 → 제목 · 단추 줄 + 오른쪽 경로)로 보인다 */
@@ -670,7 +671,7 @@ const collectScreen = (): ScreenSnap => ({
 });
 let screenTimer = 0;
 const saveScreen = () => {
-  if (!webEmbed || restoringScreen) return;
+  if (!webEmbed || restoringScreen || props.preset) return;
   // 아무것도 안 본 빈 화면은 남기지 않는다 — 앞서 남긴 것을 지우지 않게
   if (!rows.value.length && !price.value && !restoredSale.value && !restoredJeonse.value) return;
   window.clearTimeout(screenTimer);
@@ -678,8 +679,14 @@ const saveScreen = () => {
 };
 // 분석 결과 · 고른 기준 줄 · 거르기가 바뀌면 남긴다
 watch([rows, price, pickedSale, pickedJeonse, areaFilter, yearFilter, tab, rateText, restoredSale, restoredJeonse, mode, simSale, simJeonse, simF, condF], saveScreen, { deep: true });
+// 물건이 준 주소 · 종류 — 바뀔 때마다 바로 조회
+watch(() => props.preset && `${props.preset.address}|${props.preset.kind}`, (v) => {
+  if (!v || !props.preset) return;
+  address.value = props.preset.address; kind.value = props.preset.kind;
+  void run();
+}, { immediate: true });
 onMounted(async () => {
-  if (!webEmbed) return;
+  if (!webEmbed || props.preset) return;
   const s = await screen.restore();
   if (!s) return;
   restoringScreen = true;
@@ -793,7 +800,7 @@ const downloadCsv = () => {
     <div class="adm-body" @click="tip = ''">
       <!-- 주소 한 줄 -->
       <!-- 지역분석 › 경매지번 탭 안에 붙어 쓸 때는 이 줄을 지역분석의 고르는 줄 자리로 옮긴다 -->
-      <Teleport defer to="#admTopBarSlot" :disabled="!inDong">
+      <Teleport v-if="!preset" defer to="#admTopBarSlot" :disabled="!inDong">
       <div class="adm-bar">
         <label class="adm-f grow">
           <small>주소 입력 <em>시·도부터 지번·호수까지</em></small>

@@ -160,6 +160,7 @@ import HousingIndexPage from '../../src/pages/HousingIndexPage.vue';
 import AdminRegionDemandPage from '../../src/pages/AdminRegionDemandPage.vue';
 import AdminDongTradePage from '../../src/pages/AdminDongTradePage.vue';
 import AdminCaseTradePage from '../../src/pages/AdminCaseTradePage.vue';
+import SonpumAnalysisPage from '../../src/pages/SonpumAnalysisPage.vue';
 const ADMIN_SCREENS = {
   ranking: ['/trade-stats', TradeStatsPage],
   kb: ['/admin/housing-index', HousingIndexPage],
@@ -168,6 +169,8 @@ const ADMIN_SCREENS = {
   /* 랭킹분석 — 지역분석과 같은 화면을 랭킹 탭(랭킹지도 · 거래랭킹)만으로 */
   rank: ['/admin/dong-rank', AdminDongTradePage, { rankMode: true }],
   case: ['/admin/case-trades', AdminCaseTradePage],
+  /* 손품분석 — 경매 카드로 물건 하나를 골라 수요분석 · 시세조사(위 검색 줄 없음) */
+  son: ['/admin/sonpum', SonpumAnalysisPage],
 };
 export const hasAppAdminScreen = (key) => !!ADMIN_SCREENS[key];
 export const mountAppAdmin = (el, key) => {
