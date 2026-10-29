@@ -410,8 +410,9 @@ button { cursor: pointer; }
 /* 손품분석 동/지역 표 — 칸 색칠 · 색 세로줄은 빼고, 머리글 글자색만: 세대수 · 매물수 진한 파랑, 회전율 빨강 */
 .app-market[data-s="son"] .son-demand .adm-table :is(th, td) { background: var(--surface) !important; border-left-color: #eef1f6 !important; border-right-color: #eef1f6 !important; box-shadow: none !important; }
 .app-market[data-s="son"] .son-demand .adm-table thead th { background: #f7f9fc !important; color: #374151 !important; }
-.app-market[data-s="son"] .son-demand .adm-table thead th.in, .app-market[data-s="son"] .son-demand .adm-table thead th.in small { color: #1d4ed8 !important; }   /* 세대수 · 매물수(네이버 매물수) — 진한 파랑 */
-.app-market[data-s="son"] .son-demand .adm-table thead th.turn, .app-market[data-s="son"] .son-demand .adm-table thead th.turn small { color: #d0342c !important; }   /* 회전율만 빨강 */
+.app-market[data-s="son"] .son-demand .adm-table thead th.in, .app-market[data-s="son"] .son-demand .adm-table thead th.in small { color: #1e3a8a !important; }   /* 세대수 · 매물수(네이버 매물수) — 검정에 가까운 파랑 */
+.app-market[data-s="son"] .son-demand .adm-table td.nm { color: #1e3a8a !important; }   /* 동 이름(검암동)도 같은 파랑 */
+.app-market[data-s="son"] .son-demand .adm-table thead th.turn, .app-market[data-s="son"] .son-demand .adm-table thead th.turn small { color: #7f1d1d !important; }   /* 회전율만 — 검정에 가까운 빨강 */
 /* 손품분석 수요조사 — 흰 카드 안이라 회색 수요분석 상자를 흰 바탕 + 얇은 테두리로, 동 표 · 입지/개별성과 같은 안쪽 선에 맞춘다 */
 .app-market[data-s="son"] .son-demand .adm-nav.dm { background: var(--surface) !important; border: 1px solid #e3e8f0; margin-top: 4px !important; }
 .app-market[data-s="son"] .son-demand .adm-nav.dm::after { left: 0 !important; right: 0 !important; }
