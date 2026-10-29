@@ -22,7 +22,7 @@ import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
 import { dongStatsFromRows, fetchDongUnits, fetchDongTradeStats, tradeWindowOf, ymd8Of, type DongTradeDetailRow, type DongTradeStat } from '../services/publicDataApi';
 import { resolveRegionFromAddress } from '../services/regionResolver';
-import { cachedEntryOrStale, cacheKey, CACHE_TTL } from '../services/marketCache';
+import { cachedEntryOrStale, cacheKey, CACHE_TTL, readCacheEntry } from '../services/marketCache';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 
 type Kind = 'villa' | 'apt' | 'officetel';
@@ -137,6 +137,11 @@ const fetchAutoUnits = async () => {
           const got = await cachedEntryOrStale('cacheDongUnitsAll', cacheKey(region.bCode10), CACHE_TTL.units,
             () => fetchDongUnits(region.bCode10), (u) => u.villa + u.apt + u.officetel > 0, 365 * 24 * 60 * 60 * 1000);
           if (got.value !== null) value = got.value[k];
+          // 오늘 한도에 걸려 못 받았으면 — 앱 물건상세가 받아 둔 그 동의 연립·다세대 세대수(cacheDongUnits)라도 쓴다
+          else if (k === 'villa') {
+            const old = await readCacheEntry<number>('cacheDongUnits', cacheKey(region.bCode10), 365 * 24 * 60 * 60 * 1000);
+            if (old && old.value > 0) value = old.value;
+          }
         }
       } catch { /* 못 받음 */ }
       if (job !== unitsJob) return;
