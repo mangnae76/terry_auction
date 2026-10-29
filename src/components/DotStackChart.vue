@@ -108,10 +108,10 @@ function draw(now: number) {
   c.clearRect(0, 0, W, H);
   c.textAlign = 'center';
   cols.forEach((col) => {
-    c.fillStyle = P.sub; c.font = '600 12px "Pretendard", "Apple SD Gothic Neo", sans-serif'; c.fillText(col.label, col.x, H - 12);
+    c.fillStyle = P.sub; c.font = '600 14px "Pretendard", "Apple SD Gothic Neo", sans-serif'; c.fillText(col.label, col.x, H - 12);
     if (!col.n) return;
-    c.fillStyle = P.ink; c.font = '700 13px "Pretendard", sans-serif'; c.fillText(`${col.n.toLocaleString('ko-KR')}건`, col.x, col.topY - 22);
-    if (col.median) { c.fillStyle = P.accent; c.font = '700 12px "Pretendard", sans-serif'; c.fillText(eok(col.median), col.x, col.topY - 8); }
+    c.fillStyle = P.ink; c.font = '700 14px "Pretendard", sans-serif'; c.fillText(`${col.n.toLocaleString('ko-KR')}건`, col.x, col.topY - 24);
+    if (col.median) { c.fillStyle = P.accent; c.font = '700 13px "Pretendard", sans-serif'; c.fillText(eok(col.median), col.x, col.topY - 8); }
   });
   c.strokeStyle = P.line; c.lineWidth = 1; c.beginPath(); c.moveTo(0, H - 29.5); c.lineTo(W, H - 29.5); c.stroke();
   dots.forEach((d) => {

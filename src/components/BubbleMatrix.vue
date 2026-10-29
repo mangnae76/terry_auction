@@ -9,7 +9,7 @@ const props = defineProps<{ rows: DongTradeDetailRow[]; buckets: Bucket[]; dongs
 const emit = defineEmits<{ 'pick-dong': [string] }>();
 
 const EOK = 100_000_000;
-const ROW_H = 46; const TOP = 40; const LEFT = 88; const RIGHT = 104;
+const ROW_H = 62; const TOP = 46; const LEFT = 100; const RIGHT = 112;   // 줄 · 원을 키웠다(작다는 말을 들었다)
 const unitOf = (r: DongTradeDetailRow) => (r.priceWon > 0 && r.pyeong > 0 ? r.priceWon / r.pyeong : 0);
 const man = (won: number) => `${Math.round(won / 10000).toLocaleString('ko-KR')}만`;
 const eok = (won: number) => (won >= EOK ? `${Number((won / EOK).toFixed(2))}억` : man(won));
@@ -72,15 +72,15 @@ function draw(now: number) {
   const nb = props.buckets.length; const cw = (W - LEFT - RIGHT) / Math.max(1, nb); const rmax = Math.min(cw, ROW_H) / 2 - 3;
   const max = Math.max(1, ...cells.value.list.map((x) => x.n)); const tmax = Math.max(1, ...totals.value);
   c.clearRect(0, 0, W, H);
-  c.textAlign = 'center'; c.fillStyle = P.sub; c.font = '600 12px "Pretendard", "Apple SD Gothic Neo", sans-serif';
-  props.buckets.forEach((b, ci) => c.fillText(b.label, LEFT + cw * (ci + 0.5), 22));
+  c.textAlign = 'center'; c.fillStyle = P.sub; c.font = '600 13px "Pretendard", "Apple SD Gothic Neo", sans-serif';
+  props.buckets.forEach((b, ci) => c.fillText(b.label, LEFT + cw * (ci + 0.5), 26));
   props.dongs.forEach((d, ri) => {
     const y = TOP + ROW_H * (ri + 0.5);
     c.strokeStyle = P.grid; c.lineWidth = 1; c.beginPath(); c.moveTo(LEFT, y + 0.5); c.lineTo(W - RIGHT, y + 0.5); c.stroke();
-    c.textAlign = 'right'; c.fillStyle = P.ink; c.font = '600 13px "Pretendard", sans-serif'; c.fillText(d, LEFT - 14, y + 4);
+    c.textAlign = 'right'; c.fillStyle = P.ink; c.font = '600 14px "Pretendard", sans-serif'; c.fillText(d, LEFT - 14, y + 4);
     const bw = (totals.value[ri] / tmax) * (RIGHT - 52);
     c.fillStyle = P.bar; c.beginPath(); c.roundRect(W - RIGHT + 12, y - 4, Math.max(bw, 2), 8, 4); c.fill();
-    c.textAlign = 'left'; c.fillStyle = P.sub; c.font = '700 12px "Pretendard", sans-serif'; c.fillText(totals.value[ri].toLocaleString('ko-KR'), W - RIGHT + 16 + bw, y + 4);
+    c.textAlign = 'left'; c.fillStyle = P.sub; c.font = '700 13px "Pretendard", sans-serif'; c.fillText(totals.value[ri].toLocaleString('ko-KR'), W - RIGHT + 16 + bw, y + 4);
   });
   prev.forEach((p) => {
     const s = 1 - ease(t / 260); if (s <= 0 || !p.r) return; busy = true;
@@ -94,7 +94,7 @@ function draw(now: number) {
     const r = Math.max(2.5, Math.sqrt(cell.n / max) * rmax); cell.r = r;
     if (s <= 0) return;
     c.fillStyle = P.tones[cell.tone]; c.beginPath(); c.arc(cell.x, cell.y, r * s, 0, Math.PI * 2); c.fill();
-    if (s > 0.98 && r > 13) { c.textAlign = 'center'; c.fillStyle = cell.tone >= 3 ? '#fff' : P.ink; c.font = '700 11px "Pretendard", sans-serif'; c.fillText(String(cell.n), cell.x, cell.y + 4); }
+    if (s > 0.98 && r > 14) { c.textAlign = 'center'; c.fillStyle = cell.tone >= 3 ? '#fff' : P.ink; c.font = '700 12px "Pretendard", sans-serif'; c.fillText(String(cell.n), cell.x, cell.y + 4); }
   });
   lastDrawn = cells.value.list;
   if (hover && hover.n) { c.strokeStyle = P.ink; c.lineWidth = 1.5; c.beginPath(); c.arc(hover.x, hover.y, hover.r + 2, 0, Math.PI * 2); c.stroke(); }

@@ -81,18 +81,18 @@ function draw(now: number) {
   const P = PAL(); const t = reduce ? 1e9 : now - t0; const { dongs, guUnit, avgN } = model.value; const { nMax, uLo, uHi, sx, sy } = scales();
   const cx0 = sx(avgN); const cy0 = sy(guUnit);
   c.clearRect(0, 0, W, H);
-  c.font = '700 13px "Pretendard", sans-serif'; c.fillStyle = P.faint;
+  c.font = '700 14px "Pretendard", sans-serif'; c.fillStyle = P.faint;
   c.textAlign = 'right'; c.fillText('활발 · 비쌈', W - PAD.r - 6, PAD.t + 16); c.fillText('활발 · 저렴', W - PAD.r - 6, H - PAD.b - 10);
   c.textAlign = 'left'; c.fillText('한산 · 비쌈', PAD.l + 8, PAD.t + 16); c.fillText('한산 · 저렴', PAD.l + 8, H - PAD.b - 10);
-  c.strokeStyle = P.grid; c.lineWidth = 1; c.font = '500 11px "Pretendard", sans-serif'; c.fillStyle = P.sub;
+  c.strokeStyle = P.grid; c.lineWidth = 1; c.font = '600 13px "Pretendard", sans-serif'; c.fillStyle = P.sub;
   [300, 500, 700, 1000, 1500, 2000, 3000, 5000, 7000, 10000].forEach((u) => { const won = u * 10000; if (won < uLo || won > uHi) return; const y = sy(won); c.beginPath(); c.moveTo(PAD.l, y + 0.5); c.lineTo(W - PAD.r, y + 0.5); c.stroke(); c.textAlign = 'right'; c.fillText(`${u.toLocaleString('ko-KR')}만`, PAD.l - 8, y + 4); });
   const stepN = [10, 20, 25, 50, 100, 200, 250, 500, 1000].find((s) => nMax / s <= 8) ?? 1000;
   for (let n = 0; n <= nMax; n += stepN) { c.textAlign = 'center'; c.fillText(`${n.toLocaleString('ko-KR')}건`, sx(n), H - PAD.b + 18); }
-  c.font = '600 12px "Pretendard", sans-serif'; c.fillText('거래건수 →', (PAD.l + W - PAD.r) / 2, H - 10);
+  c.font = '600 13px "Pretendard", sans-serif'; c.fillText('거래건수 →', (PAD.l + W - PAD.r) / 2, H - 10);
   c.save(); c.translate(16, (PAD.t + H - PAD.b) / 2); c.rotate(-Math.PI / 2); c.fillText('평균 평당가 →', 0, 0); c.restore();
   c.strokeStyle = P.mark; c.setLineDash([5, 5]); c.lineWidth = 1.2;
   c.beginPath(); c.moveTo(cx0 + 0.5, PAD.t); c.lineTo(cx0 + 0.5, H - PAD.b); c.moveTo(PAD.l, cy0 + 0.5); c.lineTo(W - PAD.r, cy0 + 0.5); c.stroke(); c.setLineDash([]);
-  c.fillStyle = P.mark; c.font = '700 11px "Pretendard", sans-serif'; c.textAlign = 'left'; c.fillText(`평균 ${man(guUnit)} · 동당 ${Math.round(avgN).toLocaleString('ko-KR')}건`, cx0 + 6, PAD.t + 34);
+  c.fillStyle = P.mark; c.font = '700 13px "Pretendard", sans-serif'; c.textAlign = 'left'; c.fillText(`평균 ${man(guUnit)} · 동당 ${Math.round(avgN).toLocaleString('ko-KR')}건`, cx0 + 6, PAD.t + 34);
   let busy = false;
   [...dongs].sort((a, b) => b.r - a.r).forEach((d, i) => {
     const k = (t - i * 60) / 750; if (k < 1) busy = true;
@@ -102,7 +102,7 @@ function draw(now: number) {
     const dim = props.selected && props.selected !== d.name;
     c.globalAlpha = (dim ? 0.35 : 0.88) * fade; c.fillStyle = P.q[d.q]; c.beginPath(); c.arc(d.x, d.y, r, 0, Math.PI * 2); c.fill();
     c.globalAlpha = fade; c.strokeStyle = P.card; c.lineWidth = 2; c.stroke();
-    c.textAlign = 'center'; c.font = `700 ${r > 22 ? 13 : 11}px "Pretendard", sans-serif`;
+    c.textAlign = 'center'; c.font = `700 ${r > 22 ? 14 : 12}px "Pretendard", sans-serif`;
     if (r > 18) { c.fillStyle = d.q <= 2 ? '#fff' : P.ink; c.fillText(d.name, d.x, d.y + 4); } else { c.fillStyle = P.ink; c.fillText(d.name, d.x, d.y - r - 5); }
     c.globalAlpha = 1;
     if (hover === d || props.selected === d.name) { c.strokeStyle = P.ink; c.lineWidth = 2; c.beginPath(); c.arc(d.x, d.y, r + 3, 0, Math.PI * 2); c.stroke(); }
