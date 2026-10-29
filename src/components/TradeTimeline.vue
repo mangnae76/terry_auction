@@ -194,7 +194,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
       </div>
     </div>
     <div class="ttl-read">
-      <p><b>읽는 법</b><span v-if="simple">월별 평균 거래가를 이은 꺾은선입니다. 월을 누르면 그달 거래로 정리됩니다.</span><span v-else>오른쪽으로 갈수록 최근, 위로 갈수록 고가 거래입니다. 검은 선은 월 중간값, 바닥 막대는 월 거래량입니다. 월을 누르면 그달 거래로 정리됩니다.</span></p>
+      <p><b>읽는법</b><span v-if="simple">월별 평균 거래가를 이은 꺾은선입니다. 월을 누르면 그달 거래로 정리됩니다.</span><span v-else>오른쪽으로 갈수록 최근, 위로 갈수록 고가 거래입니다. 검은 선은 월 중간값, 바닥 막대는 월 거래량입니다. 월을 누르면 그달 거래로 정리됩니다.</span></p>
       <p v-if="insight"><b>한눈에</b><span v-html="insight" /></p>
     </div>
     <div class="ttl-board">

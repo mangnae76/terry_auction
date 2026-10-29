@@ -141,7 +141,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 <template>
   <div class="bm">
     <div class="bm-read">
-      <p><b>읽는 법</b><span>줄 하나가 동 하나입니다. <em>원이 클수록 그 칸 거래가 많고, 색이 진할수록 비쌉니다</em>(평균 평당가). 같은 줄의 큰 원이 그 동의 주력 상품이고, 같은 칸을 위아래로 보면 동끼리 값 차이가 보입니다. 동 이름을 누르면 그 동으로 좁힙니다.</span></p>
+      <p><b>읽는법</b><span>줄 하나가 동 하나입니다. <em>원이 클수록 그 칸 거래가 많고, 색이 진할수록 비쌉니다</em>(평균 평당가). 같은 줄의 큰 원이 그 동의 주력 상품이고, 같은 칸을 위아래로 보면 동끼리 값 차이가 보입니다. 동 이름을 누르면 그 동으로 좁힙니다.</span></p>
       <p v-if="insight"><b>한눈에</b><span v-html="insight" /></p>
     </div>
     <div class="bm-board">

@@ -141,7 +141,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
       </div>
     </div>
     <div class="dq-read">
-      <p><b>읽는 법</b><span>원 하나가 동 하나입니다. <em>오른쪽일수록 거래가 활발하고, 위로 갈수록 평당가가 비쌉니다.</em> 빨간 십자선은 평균이라 네 칸으로 나뉩니다. 원에 마우스를 대면 그 동의 숫자가 뜨고, 누르면 그 동으로 좁힙니다.</span></p>
+      <p><b>읽는법</b><span>원 하나가 동 하나입니다. <em>오른쪽일수록 거래가 활발하고, 위로 갈수록 평당가가 비쌉니다.</em> 빨간 십자선은 평균이라 네 칸으로 나뉩니다. 원에 마우스를 대면 그 동의 숫자가 뜨고, 누르면 그 동으로 좁힙니다.</span></p>
       <p v-if="insight"><b>한눈에</b><span v-html="insight" /></p>
     </div>
     <div class="dq-board">
