@@ -612,8 +612,8 @@ const downloadCsv = () => {
       <div v-if="rows.length > 0" class="adm-table-wrap">
         <!-- 지역분석 안 탭(embedded)은 시군구 하나만 보므로 '소속 구' 칸은 뺀다 — 모든 줄이 같은 값이다 -->
         <table :class="['adm-table', { even: embedded }]">
-          <!-- 웹 — 동 이름 옆 '네이버 매물 ↗'이 들어가게 첫 칸만 넓히고(190) 나머지 열 칸이 남은 폭을 고르게 나눈다 -->
-          <colgroup v-if="webEmbed && embedded"><col style="width: 190px" /><col v-for="i in 10" :key="i" /></colgroup>
+          <!-- 웹 — 동 이름 옆 '네이버 매물 ↗'이 들어가게 첫 칸만 넓히고(160) 나머지 열 칸이 남은 폭을 고르게 나눈다 -->
+          <colgroup v-if="webEmbed && embedded"><col style="width: 160px" /><col v-for="i in 10" :key="i" /></colgroup>
           <thead>
             <!-- 웹은 묶음 머리(구분 · 수요지표)를 뺀다 -->
             <tr v-if="!webEmbed" class="grp">
@@ -640,7 +640,7 @@ const downloadCsv = () => {
           <tbody>
             <tr v-for="r in rows" :key="`${r.sigungu}|${r.umdNm}`">
               <td v-if="!embedded" class="gu">{{ r.sigungu }}</td>
-              <td class="nm">{{ r.umdNm }}<button v-if="webEmbed" type="button" class="nv-btn" :title="`${r.umdNm}만 보기 — 네이버 부동산 매매 매물`" @click="openDongListing(r)">네이버 매물<svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></td>
+              <td class="nm">{{ r.umdNm }}<button v-if="webEmbed" type="button" class="nv-btn" :title="`${r.umdNm}만 보기 — 네이버 부동산 매매 매물`" @click="openDongListing(r)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></td>
               <!-- 총 세대수 — 건축물대장 자동값을 글로만(손으로 적지 않는다) -->
               <td :class="['units', { miss: unitsHint(r.sigungu, r.umdNm).fail, wait: webEmbed && unitsHint(r.sigungu, r.umdNm).text === '받는 중' }]" :title="unitsHint(r.sigungu, r.umdNm).tip">{{ unitsHint(r.sigungu, r.umdNm).text }}</td>
               <td class="in">
@@ -809,7 +809,7 @@ const downloadCsv = () => {
 .adm-table td.gu { font-weight: 700; color: #374151; white-space: nowrap; }
 .adm-table td.nm { font-weight: 800; white-space: nowrap; }
 /* 웹 — 동 이름 옆 '네이버 매물 ↗' (그 동만 보기 · 매매 · 종류 필터로 연다) */
-.nv-btn { display: inline-flex; align-items: center; gap: 3px; height: 24px; margin-left: 8px; padding: 0 9px; border: 1px solid #d5dbe5; border-radius: 999px; background: #fff; color: #374151; font-family: inherit; font-size: 12px; font-weight: 600; vertical-align: middle; cursor: pointer; }
+.nv-btn { display: inline-flex; align-items: center; gap: 2px; height: 20px; margin-left: 6px; padding: 0 6px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; color: #6b7280; font-family: inherit; font-size: 12px; font-weight: 400; vertical-align: middle; cursor: pointer; } /* 링크일 뿐이라 작게 · 회색 · 굵기 없이(웹 글자 하한 12) */
 .nv-btn:hover { border-color: #2b6df3; color: #2b6df3; }
 .adm-table td.n { font-variant-numeric: tabular-nums; }
 .adm-table td.n.strong { font-weight: 800; }
