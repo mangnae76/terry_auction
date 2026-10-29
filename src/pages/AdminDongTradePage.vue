@@ -1125,6 +1125,10 @@ const downloadCsv = () => {
               </tbody>
             </table>
           </section>
+          <div v-show="!rankLoading" class="adm-rank-notes">
+            <p>※ 급증 · 급감은 <b>전년 동기 {{ RANK_MIN }}건 이상</b> 거래된 동만 견줍니다 — 거래가 원래 적어 증감률만 커 보이는 착시를 뺍니다. <b>거래량 TOP10은 거르지 않고 최근 1년 거래건수 순</b>입니다 — 팔 때 받아 줄 사람이 몇 명인지 보는 칸입니다.</p>
+            <p>※ 최근 1년 = 조회일 기준 12개월, 전년 동기 = 그 앞 12개월(정상 + 직거래, 계약해제 제외). 전년 동기 거래가 없는 동은 증감을 매기지 않고 '신규'로 둡니다.</p>
+          </div>
           <!-- 동별 표 — 참고 화면처럼 세 카드 밑에. 동 옆 '네이버매물 ↗'(그 동만 보기) · 네이버 매물 수는 손으로(수요분석 매물수와 같은 값) · 활발도 = 최근 1년 ÷ 매물 수 -->
           <section v-show="!rankLoading" class="adm-rank-dong">
             <header><strong>{{ rankGu }} 동별 거래</strong><small>최근 1년 · 전년 같은 12개월 대비 · 동 {{ rankByDong.length }}곳</small></header>
@@ -1436,12 +1440,12 @@ const downloadCsv = () => {
 .adm-msg.err { background: #fef2f2; color: #b91c1c; }
 .adm-msg.warn { background: #fffbeb; color: #92400e; }
 
-.adm-rank3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.adm-rank3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: stretch; } /* 세 카드 높이 · 아래 끝선 같게(안내 줄이 접혀도) */
 .adm-rank3 > .adm-msg { grid-column: 1 / -1; }
 .adm-rank-card { background: #fff; border: 1px solid #e3e8f0; border-radius: 8px; padding: 16px 18px 8px; min-width: 0; }
 .adm-rank-card header { margin-bottom: 10px; }
 .adm-rank-card header strong { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: #111827; }
-.adm-rank-card header small { display: block; margin-top: 4px; font-size: 12px; color: #6b7280; }
+.adm-rank-card header small { display: block; margin-top: 4px; font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* 한 줄로 — 접히면 그 카드만 표가 밀렸다 */
 .adm-rank-tbl { width: 100%; table-layout: fixed; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .adm-rank-tbl th { padding: 6px 4px; border-bottom: 1px solid #e3e8f0; font-size: 12px; font-weight: 600; color: #6b7280; text-align: center; }
 .adm-rank-tbl td { padding: 8px 4px; border-bottom: 1px solid #f1f4f9; text-align: center; vertical-align: middle; color: #111827; white-space: nowrap; }
@@ -1459,6 +1463,10 @@ const downloadCsv = () => {
 .adm-rank-pct.up { background: #fde2e2; color: #c22e2e; }
 .adm-rank-pct.down { background: #dbe7ff; color: #1d4ed8; }
 .adm-rank-pct.new { background: #eef1f6; color: #4b5563; }
+.adm-rank-notes { grid-column: 1 / -1; padding: 10px 14px; border-radius: 8px; background: #f5f7fa; }
+.adm-rank-notes p { margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280; }
+.adm-rank-notes p + p { margin-top: 2px; }
+.adm-rank-notes b { font-weight: 700; color: #374151; }
 .adm-rank-pct.flat { background: #f3f4f6; color: #6b7280; }
 /* 동별 표 — 세 카드 밑 한 장, 우리 표 꼴(모서리 8 · 머리 회청색 띠 · 14) */
 .adm-rank-dong { grid-column: 1 / -1; margin-top: 4px; background: #fff; border: 1px solid #e3e8f0; border-radius: 8px; padding: 16px 18px 12px; }
