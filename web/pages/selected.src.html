@@ -4321,13 +4321,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   }).observe(document.getElementById('appPageContent') || document.body, { childList: true, subtree: true });
   /* 지역분석 안 탭 — '홈 › 시장분석 › 지역분석 › 수요공급' */
   let marketInner = null;
-  /* 손품조사 '시장분석으로 조사하기' → 시장분석 › 지역분석(사건 카드를 단 채) · 사건 카드 '물건으로 돌아가기' → 넘어왔던 물건 탭 */
-  window.addEventListener('adp:openMarket', () => { S.marketTab = 'dong'; go('market'); });
-  window.addEventListener('adm:backToItem', (e) => {
-    const d = (e && e.detail) || {}; if (!d.id) return;
-    S.itemTabNext = ITEM_TABS.includes(d.tab) ? d.tab : 'survey';
-    go('item', d.id);
-  });
   window.addEventListener('adm:tab', (e) => { marketInner = (e.detail && e.detail.trail) || null; if (S.route === 'market') syncCrumb(); });
   /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
   /* 낙찰이후 — 장 열쇠는 제 하위 탭(절차상세 · 가이드)에 불이 들어오고, 경로에는 '절차상세 › 명도'처럼 장 이름이 붙는다 */

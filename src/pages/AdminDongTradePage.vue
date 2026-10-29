@@ -4,9 +4,6 @@
 // 시군구 12개월치를 한 번 받아 두고, 읍면동·기간·면적·연식은 받아 둔 줄
 // 안에서 추린다. 조건을 바꿀 때마다 다시 부르면 하루 한도만 깎아먹는다.
 import { dealCountTip } from '../services/tipRows';
-import { applyPreview, applyToAuction, marketCase, marketPick, type ApplyRow } from '../services/marketCase';
-import { resolveRegionFromAddress } from '../services/regionResolver';
-import { useAuctionStore } from '../stores/auctionStore';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
@@ -457,7 +454,7 @@ watch(dong, (v) => {
 const snapChip = snap.chip;
 
 onMounted(async () => {
-  if (!auth.uid) { prefsLoaded.value = true; await restoreSnapshot(); mountDone = true; void presetFromCase(); return; }
+  if (!auth.uid) { prefsLoaded.value = true; await restoreSnapshot(); return; }
   const prefs = await loadUserPrefs(auth.uid);
   const f = prefs?.adminDongFilter;
   if (f) {
@@ -477,79 +474,7 @@ onMounted(async () => {
   }
   prefsLoaded.value = true;
   await restoreSnapshot(); // 마지막으로 본 자료가 있으면 그게 우선
-  mountDone = true;
-  void presetFromCase();
 });
-
-// ===== 웹 — 손품조사에서 들고 넘어온 사건(사건 카드) · 필터를 그 동으로 · '이 물건에 적용' =====
-const auctionStore = useAuctionStore();
-let mountDone = false;
-let presetFor = '';
-/** 사건의 주소로 시도 · 시군구 · 동 · 종류를 맞추고(이미 그 자료면 다시 받지 않는다) 수요분석 탭을 연다 */
-const presetFromCase = async () => {
-  const c = marketCase.value;
-  if (!webEmbed || props.rankMode || !c || !mountDone || presetFor === c.auctionId) return;
-  presetFor = c.auctionId;
-  const region = await resolveRegionFromAddress(c.address).catch(() => null);
-  if (!region?.lawdCd5) return;
-  const group = REGION_GROUPS.find((g) => districtsOf(g.sido).some((d) => d.lawdCode === region.lawdCd5));
-  if (!group) return;
-  const same = districtCode.value === region.lawdCd5 && kind.value === c.kind && all.value.length > 0;
-  restoring = true;
-  sido.value = group.sido;
-  await nextTick();
-  districtCode.value = region.lawdCd5;
-  kind.value = c.kind;
-  await nextTick();
-  restoring = false;
-  if (!same) await load();
-  dong.value = region.dong || '';
-  if (listView.value !== 'case') listView.value = 'supply';
-};
-watch(marketCase, () => { presetFor = ''; void presetFromCase(); });
-const caseAuction = computed(() => (marketCase.value ? auctionStore.getById(marketCase.value.auctionId) ?? null : null));
-const closeCase = () => { marketCase.value = null; };
-const backToItem = () => {
-  const c = marketCase.value;
-  if (c) window.dispatchEvent(new CustomEvent('adm:backToItem', { detail: { id: c.auctionId, tab: c.backTab } }));
-};
-const manText2 = (won: number) => (won > 0 ? (won >= 1e8 ? `${(Math.round(won / 1e6) / 100).toFixed(2)}억` : `${Math.round(won / 1e4).toLocaleString('ko-KR')}만`) : '-');
-// 적용 미리보기 — 수요분석에 넣어 둔 이 동의 매물수 · 경매지번 탭에서 고른 매매 · 전세 거래
-const applyOpen = ref(false);
-const applyRows = ref<ApplyRow[]>([]);
-const applyKeys = ref<string[]>([]);
-const applyValues = ref<Parameters<typeof applyPreview>[1]>({});
-const applyBusy = ref(false);
-/** 가져온 값은 있는데 물건과 모두 같은지 — 빈 창 문구를 가른다 */
-const applyHasAny = computed(() => !!(applyValues.value.listings || applyValues.value.sale || applyValues.value.jeonse));
-const openApply = async () => {
-  const c = marketCase.value; const a = caseAuction.value;
-  if (!c || !a) { toast('물건을 찾지 못했습니다 — 선정물건에서 다시 열어 주세요.', 'error'); return; }
-  let listings = 0;
-  if (auth.uid && dong.value && district.value) {
-    const prefs = await loadUserPrefs(auth.uid);
-    const manual = (prefs as { adminRegionManual?: Record<string, { listings?: number }> } | null)?.adminRegionManual ?? {};
-    listings = manual[`${c.kind}|${district.value.label}|${dong.value}`]?.listings ?? 0;
-  }
-  const samePlace = !!marketPick.address && marketPick.address.replace(/\s+/g, '') === c.address.replace(/\s+/g, '');
-  applyValues.value = { listings, sale: samePlace ? marketPick.sale : null, jeonse: samePlace ? marketPick.jeonse : null };
-  applyRows.value = applyPreview(a, applyValues.value);
-  applyKeys.value = applyRows.value.map((r) => r.key);
-  applyOpen.value = true;
-};
-const doApply = async () => {
-  const a = caseAuction.value;
-  if (!a || applyKeys.value.length === 0) { applyOpen.value = false; return; }
-  applyBusy.value = true;
-  try {
-    applyToAuction(a, applyValues.value, applyKeys.value);
-    await auctionStore.saveAuction(a);
-    toast(`손품조사에 ${applyKeys.value.length}개 값을 적용했습니다.`);
-    applyOpen.value = false;
-  } catch {
-    toast('적용하지 못했습니다 — 다시 해 주세요.', 'error');
-  } finally { applyBusy.value = false; }
-};
 
 // ===== 랭킹분석 › 거래랭킹 — 1년 거래건수(정상 + 직거래)를 전년 같은 12개월과 견준다. 24개월을 받는다(겹치는 12개월은 저장본) =====
 const lastQuery = ref<{ lawd: string; kind: Kind; deal: 'sale' | 'jeonse' } | null>(null);
@@ -1038,38 +963,6 @@ const downloadCsv = () => {
       <p v-else-if="notice" class="adm-msg warn">{{ notice }}</p>
 
       <!-- 웹 — 탭 줄(요약 상자 위, 탭을 바꿔도 제자리) + 오른쪽에 경로(홈 › 시장분석 › 지역분석 › 탭). 경로는 웹의 경로 표시를 이 자리(#admCrumbSlot)로 옮겨 쓴다 -->
-      <!-- 사건 카드 — 손품조사에서 '시장분석으로 조사하기'로 들고 넘어온 물건. '이 물건에 적용'으로 수요조사 · 시세조사 칸을 채운다 -->
-      <section v-if="webEmbed && !props.rankMode && marketCase" class="adm-casecard">
-        <img v-if="marketCase.photo" :src="marketCase.photo" alt="" class="thumb" />
-        <span v-else class="thumb blank" aria-hidden="true" />
-        <div class="info">
-          <strong>{{ marketCase.caseNo }}<em>{{ marketCase.typeLabel }}<template v-if="marketCase.areaM2"> · {{ marketCase.areaM2.toFixed(1) }}㎡</template></em></strong>
-          <small>{{ marketCase.address }}</small>
-          <small class="money">감정 {{ manText2(marketCase.appraisal) }} · 최저 {{ manText2(marketCase.minBid) }}<template v-if="marketCase.bidDate"> · 매각기일 {{ marketCase.bidDate }}</template></small>
-        </div>
-        <div class="acts">
-          <button type="button" class="go" @click="openApply">이 물건에 적용</button>
-          <button type="button" class="back" @click="backToItem">물건으로 돌아가기</button>
-          <button type="button" class="x" aria-label="사건 카드 닫기" title="사건 카드 닫기" @click="closeCase">×</button>
-        </div>
-      </section>
-      <!-- 적용 미리보기 — 바뀔 값(전 → 후)을 먼저 보이고, 고른 줄만 넣는다. 이미 값이 든 칸을 바꾸는 줄은 따로 알린다 -->
-      <div v-if="applyOpen" class="adm-apply-veil" @click.self="applyOpen = false">
-        <div class="adm-apply" role="dialog" aria-label="이 물건에 적용">
-          <header><strong>이 물건에 적용</strong><small>{{ marketCase?.caseNo }}</small></header>
-          <template v-if="applyRows.length">
-            <label v-for="r in applyRows" :key="r.key" class="row">
-              <input v-model="applyKeys" type="checkbox" :value="r.key" />
-              <span class="lab">{{ r.label }}</span>
-              <span class="was">{{ r.before || '—' }}</span><span class="arr">→</span><span class="now">{{ r.after }}</span>
-              <em v-if="r.manual" class="warn">지금 들어 있는 값을 바꿉니다</em>
-            </label>
-          </template>
-          <p v-else-if="applyHasAny" class="empty">손품조사에 이미 같은 값이 들어 있습니다. 다른 값을 넣으려면 경매지번 탭에서 다른 거래를 고르거나, 수요분석 표의 매물수를 고친 뒤 다시 누르세요.</p>
-          <p v-else class="empty">적용할 값이 없습니다. 수요분석 표에서 이 동의 매물수를 넣거나, 경매지번 탭에서 매매 · 전세 거래를 고른 뒤 다시 누르세요.</p>
-          <footer><button type="button" class="ghost" @click="applyOpen = false">취소</button><button type="button" class="go" :disabled="applyBusy || applyKeys.length === 0" @click="doApply">{{ applyBusy ? '적용 중…' : '적용' }}</button></footer>
-        </div>
-      </div>
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top">
         <nav v-if="props.rankMode" class="adm-view-tabs" role="tablist">
               <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">랭킹지도</button>
@@ -1560,33 +1453,6 @@ const downloadCsv = () => {
 .adm-rank-notes b { font-weight: 400; color: inherit; }
 .adm-rank-pct.flat { background: #f3f4f6; color: #6b7280; }
 
-.adm-casecard { display: flex; align-items: center; gap: 14px; margin: 4px 0 10px; padding: 12px 16px; border: 1.5px solid #bcd0f7; border-radius: 10px; background: #f3f7ff; }
-.adm-casecard .thumb { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 8px; object-fit: cover; background: #dde5f2; }
-.adm-casecard .info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.adm-casecard .info strong { font-size: 16px; font-weight: 800; color: #111827; }
-.adm-casecard .info strong em { margin-left: 8px; font-style: normal; font-size: 13px; font-weight: 400; color: #6b7280; }
-.adm-casecard .info small { font-size: 13px; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.adm-casecard .info small.money { color: #6b7280; }
-.adm-casecard .acts { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
-.adm-casecard .acts button, .adm-apply footer button { height: 36px; padding: 0 14px; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
-.adm-casecard .acts .go, .adm-apply .go { border: 0; background: #2b6df3; color: #fff; }
-.adm-casecard .acts .go:hover, .adm-apply .go:hover { background: #1d5ce0; }
-.adm-casecard .acts .back, .adm-apply .ghost { border: 1px solid #c9d6ee; background: #fff; color: #1f3a72; }
-.adm-casecard .acts .x { width: 32px; padding: 0; border: 0; background: transparent; color: #9ca3af; font-size: 20px; }
-.adm-apply-veil { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(15, 23, 42, .35); }
-.adm-apply { width: min(560px, calc(100vw - 32px)); background: #fff; border-radius: 12px; padding: 18px 20px 16px; box-shadow: 0 20px 50px rgba(15, 23, 42, .25); display: flex; flex-direction: column; gap: 10px; }
-.adm-apply header { display: flex; align-items: baseline; gap: 10px; }
-.adm-apply header strong { font-size: 17px; font-weight: 800; color: #111827; }
-.adm-apply header small { font-size: 13px; color: #6b7280; }
-.adm-apply .row { display: grid; grid-template-columns: auto 1fr auto auto auto; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #e3e8f0; border-radius: 8px; font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer; }
-.adm-apply .row .lab { color: #374151; }
-.adm-apply .row .was { color: #9ca3af; text-decoration: line-through; }
-.adm-apply .row .arr { color: #9ca3af; }
-.adm-apply .row .now { color: #2b6df3; font-weight: 700; }
-.adm-apply .row .warn { grid-column: 2 / -1; font-style: normal; font-size: 12px; color: #b4740f; }
-.adm-apply .empty { margin: 0; padding: 12px; border-radius: 8px; background: #f5f7fa; font-size: 14px; color: #4b5563; }
-.adm-apply footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
-.adm-apply footer .go:disabled { background: #aeb8ca; cursor: default; }
 .adm-gunav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }
 .adm-gunav-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .adm-gunav-head strong { font-size: 18px; font-weight: 800; color: #2b6df3; }

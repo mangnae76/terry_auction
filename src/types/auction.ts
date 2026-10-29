@@ -647,8 +647,6 @@ export interface SurveyForm {
   mktLowRows?: LowListingRow[];
   /** 시세조사 항목값 — 'mkt.a.area' 같은 id별 입력값 */
   mktValues?: Record<string, string>;
-  /** 시장분석 '이 물건에 적용'을 마지막으로 누른 때(YYMMDD HH:mm) */
-  marketAppliedAt?: string;
   /** 부동산 정보 표 */
   agencyRows?: AgencyRow[];
   /** 현장조사 4. 부동산 현장 상담 */

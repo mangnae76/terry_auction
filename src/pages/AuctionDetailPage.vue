@@ -23,7 +23,6 @@ const rememberPlaceRows = (id: string, rows: PlaceRow[]) => {
 </script>
 
 <script setup lang="ts">
-import { caseOf, marketCase } from '../services/marketCase';
 import { getBuildingFacts } from '../services/buildingFacts';
 import { DEMAND_PLAIN, DEMAND_TOTAL_PLAIN } from '../services/demandGrade';
 import { openNaverListing } from '../services/naverListing';
@@ -2492,7 +2491,6 @@ const defaultSurveyForm = () => ({
   households: '', parkingPerHouse: '', insideSurveyDone: false,
   repairState: '', insideNote: '',
   pdfAutoFilled: false,
-  marketAppliedAt: '' as string | undefined,
 });
 const surveyForm = computed(() => {
   if (!auction.value) return defaultSurveyForm();
@@ -2845,14 +2843,6 @@ watch(() => auction.value?.id, async (id) => {
 // 카드마다·단락마다 따로 여닫는다. deal = 급매가의 1.실거래가 조사,
 // listing = 2.저렴매물조사 (예전에는 둘이 location 하나를 같이 썼다)
 const editingSurvey = ref({ field: false, deal: false, listing: false, individuality: false, realUser: false, demand: false });
-/** 웹 — 이 물건을 들고 시장분석으로(사건 카드 · 필터가 이 동으로 맞춰진다). 넘어가기 전에 지금까지 적은 값을 적어 둔다 */
-const openMarketForThis = () => {
-  if (!auction.value) return;
-  // 저장은 뒤에서 — 기다리다 저장이 늦거나 실패하면 넘어가지 못했다
-  void persistSurvey().catch(() => { /* 다음 저장 때 다시 */ });
-  marketCase.value = caseOf(auction.value, activeTab.value);
-  window.dispatchEvent(new CustomEvent('adp:openMarket', { detail: { id: auction.value.id } }));
-};
 const persistSurvey = async () => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
@@ -7803,16 +7793,6 @@ const goBack = () => router.back();
       </template>
 
       <template v-if="activeTab === 'survey' && auction">
-        <!-- 웹 — 손품조사의 첫 단계: 시장분석으로 넘어가 이 동을 조사하고, '이 물건에 적용'으로 수요조사 · 시세조사 칸을 채운다 -->
-        <section v-if="webEmbed" class="adp-card adp-market-go">
-          <div class="adp-market-go-in">
-            <div class="txt">
-              <strong>시장분석으로 조사하기</strong>
-              <small>이 물건의 동을 지역분석에서 조사하고, '이 물건에 적용'으로 수요조사 · 시세조사 칸을 채웁니다.<template v-if="surveyForm.marketAppliedAt"> 마지막 적용 {{ surveyForm.marketAppliedAt }}</template></small>
-            </div>
-            <button type="button" class="adp-market-go-btn" @click="openMarketForThis">시장분석 열기<svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button>
-          </div>
-        </section>
         <!-- 본건사진 — 전경 + 평면도 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('photos')">
@@ -10922,13 +10902,6 @@ tr.tone-take { background: #fff5f5; }
 /* 항목 이름(연식~건물내부 · 층~수리유무)은 회색 — 값이 먼저 눈에 들어오게 */
 .adp-ind-pair .adp-ind-label { color: #6b7280; }
 /* PDF · 건축물대장에서 자동으로 채우는 항목(년식 · 주차수 · 엘베 · 현관구조 · 층)은 이름 글자를 블루그레이로(살짝 티만) — 앱 · 웹 */
-/* 웹 손품조사 맨 위 — 시장분석으로 넘어가는 입구 */
-.adp-market-go-in { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; }
-.adp-market-go-in .txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.adp-market-go-in strong { font-size: 16px; font-weight: 800; color: #111827; }
-.adp-market-go-in small { font-size: 13px; color: #6b7280; }
-.adp-market-go-btn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 18px; border: 0; border-radius: 8px; background: #2b6df3; color: #fff; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
-.adp-market-go-btn:hover { background: #1d5ce0; }
 .adp-ind-pair .adp-ind-label.auto { color: #5f7a99; }
 /* 앱 편집 상태 — 칸마다 제각각이던 글자(10 · 10.5 · 11 · 11.5 · 12.5)를 12 하나로 */
 .adp-ind-table :is(.adp-ind-input, .adp-ind-year, .adp-agency-trigger, .adp-toggle-btn, .adp-ind-years, .adp-sum-pair) { font-size: 12px; }
