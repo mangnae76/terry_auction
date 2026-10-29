@@ -3370,7 +3370,9 @@ const tipEnter = (key: DmTipKey) => { if (hasHover) dmTip.value = key; };
    (적어 둔 % 는 네 칸 표 기준이라 세 칸 표에서는 '총 매물수' 설명이 '총 세대수' 아래에 떴다) */
 let lastTipBtn: HTMLElement | null = null;
 const rememberTipBtn = (e: Event) => {
-  const b = (e.target as HTMLElement | null)?.closest?.('.adp-dm-info') as HTMLElement | null;
+  // ⓘ 만이 아니라 칸 어디에 대도 그 칸의 ⓘ 자리로 꼬리를 단다(칸 전체가 말풍선을 띄운다)
+  const t = e.target as HTMLElement | null;
+  const b = (t?.closest?.('.adp-dm-info') ?? t?.closest?.('.adp-dm-block .cell')?.querySelector('.adp-dm-info')) as HTMLElement | null;
   if (b) lastTipBtn = b;
 };
 onMounted(() => {
@@ -7822,7 +7824,7 @@ const goBack = () => router.back();
               </div>
               <div class="adp-dm-rowwrap">
               <div class="adp-mkt-cells c3 adp-dm-table dm-input">
-                <div :class="['cell split', { lit: dmLit('deal') }]" @mouseenter="dmLitEnter('deal')" @mouseleave="dmLitLeave()" @click="dmLitTap('deal')">
+                <div :class="['cell split', { lit: dmLit('deal') }]" @mouseenter="dmLitEnter('deal'); webEmbed && tipEnter('deal')" @mouseleave="dmLitLeave(); webEmbed && tipLeave()" @click="dmLitTap('deal')">
                   <div class="cell-head">
                     <small>총 거래건수</small>
                     <button
@@ -7851,7 +7853,7 @@ const goBack = () => router.back();
                     <strong class="hi-blue adp-dm-two"><em class="adp-dm-pre">연</em><span class="num">{{ dmIntText(deal12mValue) }}</span><em class="adp-dm-bar">|</em><em class="adp-dm-pre">월</em><span class="num">{{ dmOneText(dmMonthly) }}</span></strong>
                   </div>
                 </div>
-                <div :class="['cell split', { lit: dmLit('units') }]" @mouseenter="dmLitEnter('units')" @mouseleave="dmLitLeave()" @click="dmLitTap('units')">
+                <div :class="['cell split', { lit: dmLit('units') }]" @mouseenter="dmLitEnter('units'); webEmbed && tipEnter('units')" @mouseleave="dmLitLeave(); webEmbed && tipLeave()" @click="dmLitTap('units')">
                   <div class="cell-head">
                     <small>총 세대수</small>
                     <button
@@ -7878,7 +7880,7 @@ const goBack = () => router.back();
                     <strong class="hi-blue"><span class="num">{{ dmIntText(dmUnits) }}</span></strong>
                   </div>
                 </div>
-                <div :class="['cell split', { lit: dmLit('listings') }]" @mouseenter="dmLitEnter('listings')" @mouseleave="dmLitLeave()" @click="dmLitTap('listings')">
+                <div :class="['cell split', { lit: dmLit('listings') }]" @mouseenter="dmLitEnter('listings'); webEmbed && tipEnter('listings')" @mouseleave="dmLitLeave(); webEmbed && tipLeave()" @click="dmLitTap('listings')">
                   <div class="cell-head">
                     <button type="button" class="adp-dm-link" @click.stop="openListingLookup">총 매물수</button>
                     <button
@@ -7931,7 +7933,7 @@ const goBack = () => router.back();
               </div>
               <div class="adp-dm-rowwrap">
               <div :class="['adp-mkt-cells', 'c4', 'adp-dm-table', 'dm-result', { 'has-total': webEmbed }]">
-                <div :class="['cell split calc', { lit: dmLit('turn') }]" @mouseenter="dmLitEnter('turn')" @mouseleave="dmLitLeave()" @click="dmLitTap('turn')">
+                <div :class="['cell split calc', { lit: dmLit('turn') }]" @mouseenter="dmLitEnter('turn'); webEmbed && tipEnter('turn')" @mouseleave="dmLitLeave(); webEmbed && tipLeave()" @click="dmLitTap('turn')">
                   <div class="cell-head">
                     <small>거래 회전율</small>
                     <button
@@ -7955,7 +7957,7 @@ const goBack = () => router.back();
                     <span v-if="dmTurnGrade !== '-'" :class="['adp-dm-fit', { bad: dmTurnGrade === 'C' }]">/ {{ dmFitText(dmTurnGrade) }}</span>
                   </div>
                 </div>
-                <div :class="['cell split calc', { lit: dmLit('absorb') }]" @mouseenter="dmLitEnter('absorb')" @mouseleave="dmLitLeave()" @click="dmLitTap('absorb')">
+                <div :class="['cell split calc', { lit: dmLit('absorb') }]" @mouseenter="dmLitEnter('absorb'); webEmbed && tipEnter('absorb')" @mouseleave="dmLitLeave(); webEmbed && tipLeave()" @click="dmLitTap('absorb')">
                   <div class="cell-head">
                     <small>매물 소화율</small>
                     <button
@@ -7979,7 +7981,7 @@ const goBack = () => router.back();
                     <span v-if="dmAbsorbGrade !== '-'" :class="['adp-dm-fit', { bad: dmAbsorbGrade === 'C' }]">/ {{ dmFitText(dmAbsorbGrade) }}</span>
                   </div>
                 </div>
-                <div :class="['cell split calc', { lit: dmLit('burden') }]" @mouseenter="dmLitEnter('burden')" @mouseleave="dmLitLeave()" @click="dmLitTap('burden')">
+                <div :class="['cell split calc', { lit: dmLit('burden') }]" @mouseenter="dmLitEnter('burden'); webEmbed && tipEnter('burden')" @mouseleave="dmLitLeave(); webEmbed && tipLeave()" @click="dmLitTap('burden')">
                   <div class="cell-head">
                     <small>매물 부담률</small>
                     <button
@@ -8003,7 +8005,7 @@ const goBack = () => router.back();
                     <span v-if="dmBurdenGrade !== '-'" :class="['adp-dm-fit', { bad: dmBurdenGrade === 'C' }]">/ {{ dmFitText(dmBurdenGrade) }}</span>
                   </div>
                 </div>
-                <div :class="['cell split calc', { lit: dmLit('clear') }]" @mouseenter="dmLitEnter('clear')" @mouseleave="dmLitLeave()" @click="dmLitTap('clear')">
+                <div :class="['cell split calc', { lit: dmLit('clear') }]" @mouseenter="dmLitEnter('clear'); webEmbed && tipEnter('clear')" @mouseleave="dmLitLeave(); webEmbed && tipLeave()" @click="dmLitTap('clear')">
                   <div class="cell-head">
                     <small>매물 소진기간</small>
                     <button
@@ -8028,7 +8030,7 @@ const goBack = () => router.back();
                   </div>
                 </div>
                 <!-- 웹 — '종합' 을 표 오른쪽 한 칸으로. 값 줄과 등급 줄을 한 칸으로 합쳐 등급·적합여부를 크게 -->
-                <div v-if="webEmbed" class="cell split calc dm-total-cell">
+                <div v-if="webEmbed" class="cell split calc dm-total-cell" @mouseenter="tipEnter('total')" @mouseleave="tipLeave()">
                   <div class="cell-head">
                     <small>종합</small>
                     <button

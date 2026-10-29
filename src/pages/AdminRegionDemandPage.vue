@@ -305,6 +305,8 @@ const openDongListing = async (r: Row) => {
   const url = p ? naverListingUrl({ lat: p.lat, lng: p.lng }, kind.value) : 'https://fin.land.naver.com/map';
   if (w) w.location.href = url; else window.open(url, '_blank');
 };
+/** 종합 칸에 마우스를 댔나 — 말풍선을 칸 전체로 띄운다 */
+const dmTotalHover = ref(false);
 const dmTotal = computed(() => demandTotalGrade(Object.values(navStats.value.grades)));
 const dmResults = computed(() => {
   const v = navStats.value;
@@ -566,19 +568,19 @@ const downloadCsv = () => {
         <p class="dm-block-head">① 기초수치</p>
         <div class="dm-row c3">
           <div v-for="c in dmInputs" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
-            <div class="dm-head"><InfoTip :rows="c.tip">{{ c.label }}</InfoTip></div>
+            <div class="dm-head"><InfoTip :rows="c.tip" :show="dmLitKey === c.id">{{ c.label }}</InfoTip></div>
             <div class="dm-body"><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" /></b></div>
           </div>
         </div>
         <p class="dm-block-head">② 수요지표</p>
         <div class="dm-row c5">
           <div v-for="c in dmResults" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
-            <div class="dm-head"><InfoTip :rows="c.tip">{{ c.label }}</InfoTip></div>
+            <div class="dm-head"><InfoTip :rows="c.tip" :show="dmLitKey === c.id">{{ c.label }}</InfoTip></div>
             <div class="dm-body"><b><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="nbar">|</em><span :class="['gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['fit', { bad: c.grade === 'C' }]">/ {{ demandFitText(c.grade) }}</span></template></b></div>
           </div>
           <!-- 종합 — 손품조사 매매수요의 종합 칸과 같다(등급 동그라미 + 적합) -->
-          <div class="dm-cell total">
-            <div class="dm-head"><InfoTip :rows="DEMAND_TOTAL_TIP">종합</InfoTip></div>
+          <div class="dm-cell total" @mouseenter="dmTotalHover = true" @mouseleave="dmTotalHover = false">
+            <div class="dm-head"><InfoTip :rows="DEMAND_TOTAL_TIP" :show="dmTotalHover" align="end">종합</InfoTip></div>
             <div class="dm-body"><b><template v-if="dmTotal !== '-'"><span :class="['gd', `g-${dmTotal}`]">{{ dmTotal }}</span><span :class="['fit', { bad: dmTotal === 'C' }]">{{ demandFitText(dmTotal) }}</span></template><template v-else>-</template></b></div>
           </div>
         </div>
