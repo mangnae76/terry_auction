@@ -10911,8 +10911,8 @@ tr.tone-take { background: #fff5f5; }
 /* '현황' 칸 글자는 한 가지 크기로 못 박는다 — 값도 꼬리말도 같은 13px (년식·주차수 기준) */
 .adp-ind-ctl .row strong,
 .adp-ind-ctl .row .adp-sum-pair,
-.adp-ind-ctl .row > span { font-size: 13px; font-weight: 800; }
-.adp-ind-ctl .row strong.hi { color: #2b6df3; }
+.adp-ind-ctl .row > span { font-size: 13px; font-weight: 400; } /* 내용 값은 보통 굵기 — 굵게 하니 표가 무거웠다 */
+.adp-ind-ctl .row strong.hi { color: #2b6df3; font-weight: 800; } /* 개별성 적용가만 굵게 */
 .adp-ind-ctl .note {
   flex: 1 1 0; min-width: 0; text-align: left; font-size: 10.5px; color: #9ca3af; line-height: 1.2;
 }
@@ -11427,6 +11427,15 @@ tr.tone-take { background: #fff5f5; }
   color: #111827; text-align: center; vertical-align: middle; word-break: keep-all;
 }
 .adp-mkt-table thead th { background: #f3f4f6; font-weight: 700; line-height: 1.25; }
+/* 앱 시세조사 — 표 줄이 빡빡해 복잡해 보였다. 칸 위아래를 넓혀(머리 6 → 9 · 값 7 → 11) 숨 쉴 틈을 준다.
+   웹은 따로 정한 값(--tbl-py)이 있어 :not(.app-detail …) 로 앱에만 */
+.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-mkt-cells.adp-dm-table .cell > small,
+.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-mkt-cells.adp-dm-table .cell .cell-head { padding-top: 9px; padding-bottom: 9px; }
+.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-mkt-cells.adp-dm-table .cell > :is(strong, span, .adp-mkt-unit),
+.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-mkt-cells.adp-dm-table .cell .cell-body { padding-top: 11px; padding-bottom: 11px; }
+.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-table.adp-dm-tbl th { padding-top: 9px; padding-bottom: 9px; }
+.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-table.adp-dm-tbl td { padding-top: 11px; padding-bottom: 11px; }
+.adp-mkt-body:not(.app-detail .adp-mkt-body) .adp-mkt-block + .adp-mkt-block { margin-top: 14px; }
 .adp-mkt-table th small { display: block; font-size: 9px; color: #6b7280; font-weight: 600; }
 .adp-mkt-table th.rh { background: #f3f4f6; font-weight: 700; width: 92px; line-height: 1.25; }
 .adp-mkt-table th.red, .adp-mkt-table td.red { color: #e0574a; font-weight: 800; }
