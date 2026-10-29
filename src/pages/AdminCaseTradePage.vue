@@ -7,6 +7,7 @@
 // 실거래 맞추기에서는 빠진다 (국토부 거래 자료에 동·호가 없다).
 //
 // 셈과 조회는 services/caseTradeAnalysis.ts 에 있다 — 이 화면은 보여 주기만 한다.
+import UnitText from '../components/UnitText.vue';
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import SnapChip from '../components/SnapChip.vue';
@@ -738,12 +739,12 @@ const downloadCsv = () => {
               <em v-if="price">{{ price.year }}.01.01 기준</em>
               <template v-if="price && priceUnit"><i class="adm-bar2">|</i><em>{{ priceUnit }}</em></template>
             </small>
-            <strong>{{ won(pubValue) }}</strong>
+            <strong><UnitText :text="won(pubValue)" suffix="원" /></strong>
           </div>
 
           <div class="adm-kpi">
             <small>보증보험 전세가 <em><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" />%</em></small>
-            <strong>{{ won(jeonsePrice) }}</strong>
+            <strong><UnitText :text="won(jeonsePrice)" suffix="원" /></strong>
             <span class="adm-kpi-sub">공동주택가 × {{ jeonseRate }}%</span>
           </div>
           <div class="adm-kpi tipbox">
@@ -759,7 +760,7 @@ const downloadCsv = () => {
                 @click.stop="toggleTip('gap')"
               >!</button>
             </small>
-            <strong>{{ jeonseRatioText }}<em v-if="gapText" class="adm-gap"> / {{ gapText }}</em></strong>
+            <strong><UnitText :text="jeonseRatioText" /><em v-if="gapText" class="adm-gap"> / <UnitText :text="gapText" suffix="원" /></em></strong>
             <span class="adm-kpi-sub">보증보험 전세가 ÷ 매매 실거래가</span>
             <div
               v-if="tip === 'gap'"
@@ -772,7 +773,7 @@ const downloadCsv = () => {
             </div>
           </div>
 
-          <div class="adm-kpi"><small>전세 실거래가 <span v-if="recentJeonse" class="adm-kpi-from pick">선택</span> <em v-if="recentJeonse">{{ rowFace(recentJeonse) }}</em></small><strong>{{ won(jeonsePriceReal) }}</strong><span v-if="!recentJeonse" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span><span v-if="jeonseVsPubText" class="adm-kpi-sub">{{ jeonseVsPubText }}</span></div>
+          <div class="adm-kpi"><small>전세 실거래가 <span v-if="recentJeonse" class="adm-kpi-from pick">선택</span> <em v-if="recentJeonse">{{ rowFace(recentJeonse) }}</em></small><strong><UnitText :text="won(jeonsePriceReal)" suffix="원" /></strong><span v-if="!recentJeonse" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span><span v-if="jeonseVsPubText" class="adm-kpi-sub">{{ jeonseVsPubText }}</span></div>
           <div class="adm-kpi tipbox">
             <small>
               실거래 전세가율 / 갭
@@ -787,7 +788,7 @@ const downloadCsv = () => {
               >!</button>
             </small>
             <strong :class="{ over: realRatioNum > 100 }">
-              {{ realJeonseRatioText }}<em v-if="realGapText" :class="['adm-gap', { neg: realGapValue < 0 }]"> / {{ realGapText }}</em>
+              <UnitText :text="realJeonseRatioText" /><em v-if="realGapText" :class="['adm-gap', { neg: realGapValue < 0 }]"> / <UnitText :text="realGapText" suffix="원" /></em>
             </strong>
             <span class="adm-kpi-sub">전세 실거래가 ÷ 매매 실거래가</span>
             <div
@@ -801,10 +802,10 @@ const downloadCsv = () => {
             </div>
           </div>
 
-          <div class="adm-kpi"><small>매매 실거래가 <span v-if="recentSale" class="adm-kpi-from pick">선택</span> <em v-if="recentSale">{{ rowFace(recentSale) }}</em></small><strong>{{ won(recentPrice) }}</strong><span v-if="!recentSale" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span></div>
+          <div class="adm-kpi"><small>매매 실거래가 <span v-if="recentSale" class="adm-kpi-from pick">선택</span> <em v-if="recentSale">{{ rowFace(recentSale) }}</em></small><strong><UnitText :text="won(recentPrice)" suffix="원" /></strong><span v-if="!recentSale" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span></div>
           <div class="adm-kpi">
             <small>공시대비율</small>
-            <strong>{{ pubRatioText }}</strong>
+            <strong><UnitText :text="pubRatioText" /></strong>
             <span class="adm-kpi-sub">매매 실거래가 ÷ 공동주택가</span>
           </div>
         </div>

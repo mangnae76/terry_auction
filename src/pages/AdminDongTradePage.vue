@@ -12,6 +12,7 @@ import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
 import AppToast from '../components/AppToast.vue';
 import SnapChip from '../components/SnapChip.vue';
+import UnitText from '../components/UnitText.vue';
 import YmCount from '../components/YmCount.vue';
 import InfoTip from '../components/InfoTip.vue';
 import AdminRegionDemandPage from './AdminRegionDemandPage.vue';
@@ -730,8 +731,8 @@ const guNav = computed(() => {
 const dongNav = computed(() => [
   // 총 거래건수 — 동 '전체'와 같은 꼴(연 | 월 · ⓘ 셈)로, 그 동의 정상 + 직거래(계약해제 제외)
   { label: '총 거래건수', value: '', ym: { year: (yearTotal.value * 12) / periodMonths.value, month: yearTotal.value / periodMonths.value }, tip: totalTip.value },
-  { label: '실거래가 평균', value: won(avgPrice.value), ym: null, tip: null },
-  { label: '평당가 평균', value: won(avgUnitPrice.value), ym: null, tip: null },
+  { label: '실거래가 평균', value: won(avgPrice.value), suffix: '원', ym: null, tip: null },
+  { label: '평당가 평균', value: won(avgUnitPrice.value), suffix: '원', ym: null, tip: null },
 ]);
 const navBoxes = computed(() => (dong.value ? dongNav.value : guNav.value));
 const clearColFilters = () => { colFilter.clearAll(); };
@@ -891,7 +892,7 @@ const downloadCsv = () => {
           </div>
           <!-- 상자 폭은 수요분석(일곱 칸)과 같게 늘 일곱 몫 — 상자 수가 달라도 크기는 그대로 -->
           <div class="adm-gunav-row">
-            <div v-for="c in navBoxes" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :lines="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template></b></div>
+            <div v-for="c in navBoxes" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :lines="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" :suffix="'suffix' in c ? c.suffix : undefined" /></b></div>
           </div>
         </section>
         <div v-else-if="!webEmbed" class="adm-sum">

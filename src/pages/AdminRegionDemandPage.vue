@@ -13,6 +13,7 @@ import { demandFitText, demandGradeOf, type DemandGrade } from '../services/dema
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
+import UnitText from '../components/UnitText.vue';
 import YmCount from '../components/YmCount.vue';
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -257,7 +258,7 @@ const navStats = computed(() => {
 /** '1.28억' · '9,800만' — 상자 안은 짧게 */
 const eokShort = (n: number) => {
   if (!(n > 0)) return '-';
-  if (n >= 100000000) return `${(Math.round(n / 1000000) / 100).toLocaleString('ko-KR')}억`;
+  if (n >= 100000000) return `${(Math.round(n / 1000000) / 100).toFixed(2)}억`;
   return `${Math.round(n / 10000).toLocaleString('ko-KR')}만`;
 };
 const navCells = computed(() => {
@@ -531,7 +532,7 @@ const downloadCsv = () => {
         <div class="adm-nav-row">
           <div v-for="c in navCells" :key="c.label" class="adm-nav-box">
             <small><InfoTip v-if="c.tip" :lines="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small>
-            <b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><template v-else>{{ c.value }}</template></b>
+            <b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" /></b>
           </div>
         </div>
       </section>
