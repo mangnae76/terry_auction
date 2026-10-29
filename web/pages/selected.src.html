@@ -1312,6 +1312,21 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-survey .adp-ruser-table .adp-ruser-cond-row { height: 40px !important; }
 .app-detail.tab-survey .adp-ruser-table .adp-ruser-cond-row + .adp-ruser-cond-row { margin-top: 8px !important; }
 .app-detail.tab-survey .adp-ruser-table .adp-ruser-rank { flex: 0 0 40px !important; width: 40px !important; height: 40px !important; min-height: 40px !important; padding: 0 !important; border-radius: 8px !important; font-size: 14px !important; line-height: 38px; }
+/* 전용면적 · 룸수 고르는 칸 — 같은 폭(칸을 꽉) · 같은 높이(전용은 '12평 / 39.7㎡' 두 줄이라 그 높이에 맞춘다) */
+.app-detail.tab-survey .adp-ruser-table .adp-ruser-select { width: 150px !important; max-width: 100%; min-height: 52px !important; box-sizing: border-box; }
+/* 개별성 두 표가 위아래로 쌓일 때(칸이 좁을 때) — 사이를 띄우고, 위 표는 아래 모서리까지 둥글게 · 아래 표는 위 모서리를 둥글게(적용가 줄은 아래 표에 붙는다) */
+@container (max-width: 899.98px) {
+  /* 웹은 900 아래면 위아래로 — 나란히 두면 칸이 찌그러지고 두 표 높이가 달라 아래가 어긋났다 */
+  .app-detail.tab-survey .adp-ind-pair { grid-template-columns: minmax(0, 1fr) !important; row-gap: 12px !important; }
+  .app-detail.tab-survey .adp-ind-pair .adp-ind-table col:first-child { width: 125px !important; }
+  .app-detail.tab-survey .adp-ind-pair .adp-ind-table col:last-child { width: 84px !important; }
+  .app-detail.tab-survey .adp-ind-pair .adp-ind-table:first-child { border-bottom: 1px solid #e5e7eb !important; border-bottom-left-radius: 8px !important; border-bottom-right-radius: 8px !important; }
+  .app-detail.tab-survey .adp-ind-pair .adp-ind-table:first-child > tbody:last-of-type > tr:last-child > :first-child { border-bottom-left-radius: 7px !important; }
+  .app-detail.tab-survey .adp-ind-pair .adp-ind-table:first-child > tbody:last-of-type > tr:last-child > :last-child { border-bottom-right-radius: 7px !important; }
+  .app-detail.tab-survey .adp-ind-pair .adp-ind-table + .adp-ind-table { border-top-left-radius: 8px !important; border-top-right-radius: 8px !important; }
+  .app-detail.tab-survey .adp-ind-pair .adp-ind-table + .adp-ind-table > thead > tr:first-child > :first-child { border-top-left-radius: 7px !important; }
+  .app-detail.tab-survey .adp-ind-pair .adp-ind-table + .adp-ind-table > thead > tr:first-child > :last-child { border-top-right-radius: 7px !important; }
+}
 .app-detail .adp-ruser-table .adp-ruser-select { min-height: var(--ctl-h) !important; height: auto !important; padding-top: 6px !important; padding-bottom: 6px !important; }
 /* 평균등수 — 앱과 같은 30 (14 하한 규칙에 눌리지 않게 못 박는다) */
 .app-detail .adp-ruser-sum { font-size: 30px !important; }
