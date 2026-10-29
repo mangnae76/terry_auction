@@ -1133,17 +1133,15 @@ const downloadCsv = () => {
           <TradeTimeline v-model="dealMonth" :rows="dealBase" />
           <div class="adm-deals-head">
             <strong>개별 거래 목록<template v-if="dealMonth"> · {{ dealMonth.slice(0, 4) }}년 {{ Number(dealMonth.slice(5, 7)) }}월</template></strong>
-            <span>총 거래건수 {{ dealRows.length.toLocaleString('ko-KR') }}건</span>
-            <button v-if="dealMonth" type="button" class="adm-deal-all" @click="dealMonth = ''">전체 보기</button>
           </div>
-          <!-- 검색칸 · 저장 · 초기화 한 줄 (시작 · 종료일자 · 면적 · 건축년도 칸은 뺐다) -->
+          <!-- 건수(왼쪽) · 검색칸(오른쪽) 한 줄. 저장 · 초기화는 뺐다 — 거르던 칸(기간 · 면적 · 건축년도)이 없어져 할 일이 없었다 -->
           <div class="adm-inline-cond">
+            <span class="adm-deal-count">총 거래건수 <b>{{ dealRows.length.toLocaleString('ko-KR') }}건</b></span>
+            <button v-if="dealMonth" type="button" class="adm-deal-all" @click="dealMonth = ''">전체 보기</button>
             <label class="adm-inbox grow">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
               <input v-model="listQuery" placeholder="건물명 · 동으로 검색" />
             </label>
-            <button type="button" class="adm-ghost" @click="saveFilters">저장</button>
-            <button type="button" class="adm-ghost" @click="resetFilters">초기화</button>
           </div>
           <div class="adm-table-wrap">
             <table class="adm-table adm-dongsum adm-deals-table">
@@ -1449,6 +1447,8 @@ const downloadCsv = () => {
 .adm-rank-notes b { font-weight: 400; color: inherit; }
 .adm-rank-pct.flat { background: #f3f4f6; color: #6b7280; }
 
+.adm-deal-count { margin-right: auto; font-size: 14px; color: #6b7280; }
+.adm-deal-count b { color: #111827; font-weight: 700; }
 .adm-deal-all { height: 30px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
 .adm-detail-numtg { align-self: flex-start; height: 34px; margin: 4px 0 8px; padding: 0 14px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
 .adm-gunav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }

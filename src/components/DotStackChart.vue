@@ -162,11 +162,15 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
         <button v-for="v in views" :key="v.key" type="button" :class="{ on: viewKey === v.key }" @click="pickView(v.key)">{{ v.title }}</button>
       </div>
       <!-- '색' 은 단추 밖에 한 번만 — 단추마다 '색 ○○' 이라 적으니 말이 겹쳤다 -->
-      <div class="dsc-colors">
-        <span class="dsc-colors-lab">색</span>
-        <div class="dsc-seg sm" role="tablist" aria-label="점 색">
-          <button v-for="(c, k) in COLOR_KEYS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">{{ c.label }}</button>
+      <div class="dsc-right">
+        <div class="dsc-colors">
+          <span class="dsc-colors-lab">색</span>
+          <div class="dsc-seg sm" role="tablist" aria-label="점 색">
+            <button v-for="(c, k) in COLOR_KEYS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">{{ c.label }}</button>
+          </div>
         </div>
+        <!-- 색 뜻은 색 단추 바로 아래 — 단추와 범례가 이어져 보이게 -->
+        <div class="dsc-legend"><span v-for="l in legend" :key="l.label" class="dsc-key"><i :class="`t${l.tone}`" />{{ l.label }}</span></div>
       </div>
     </div>
     <p class="dsc-read">점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래이고, 칸 위 파란 숫자는 그 구간의 중간값입니다. 기준을 바꾸면 같은 점들이 새 구간으로 옮겨 갑니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></p>
@@ -177,7 +181,6 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
       </div>
     </div>
     <div class="dsc-foot">
-      <span v-for="l in legend" :key="l.label" class="dsc-key"><i :class="`t${l.tone}`" />{{ l.label }}</span>
       <button type="button" class="dsc-replay" @click="replay">다시 쌓기</button>
     </div>
   </section>
@@ -188,6 +191,8 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dsc-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .dsc-seg { display: grid; grid-auto-flow: column; gap: 6px; }
 .dsc-seg button { height: 40px; padding: 0 14px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 14px; font-weight: 700; color: #6b7280; cursor: pointer; }
+.dsc-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.dsc-legend { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; font-size: 13px; color: #6b7280; }
 .dsc-colors { display: inline-flex; align-items: center; gap: 8px; }
 .dsc-colors-lab { font-size: 13px; font-weight: 700; color: #6b7280; }
 .dsc-seg.sm button { height: 34px; font-size: 13px; padding: 0 12px; }

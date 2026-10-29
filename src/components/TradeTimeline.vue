@@ -16,6 +16,8 @@ const monthEnd = (m: string) => new Date(Number(m.slice(0, 4)), Number(m.slice(5
 const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : 0; };
 
 const colorKey = ref<'age' | 'floor' | 'area'>('age');
+/** 원래 그래프 — 점 · 막대 없이 월별 평균가 꺾은선만(단순한 걸 원하는 사람용) */
+const simple = ref(false);
 const COLORS = {
   age: { label: '연식', keys: ['21년차 이상', '16~20년차', '11~15년차', '6~10년차', '5년차 이하'], tier: (r: DongTradeDetailRow) => { const a = r.buildYear ? thisYear - r.buildYear + 1 : 99; return a <= 5 ? 4 : a <= 10 ? 3 : a <= 15 ? 2 : a <= 20 ? 1 : 0; } },
   floor: { label: '층', keys: ['지하 · 1층', '2층', '3층', '4층', '5층 이상'], tier: (r: DongTradeDetailRow) => (r.floorNum <= 1 ? 0 : r.floorNum === 2 ? 1 : r.floorNum === 3 ? 2 : r.floorNum === 4 ? 3 : 4) },
@@ -24,7 +26,7 @@ const COLORS = {
 
 const deals = computed(() => props.rows.filter((r) => r.priceWon > 0 && r.contractDate).slice().sort((a, b) => a.dealTime - b.dealTime));
 const months = computed(() => [...new Set(deals.value.map(monthOf))].sort());
-const stats = computed(() => months.value.map((m) => { const l = deals.value.filter((r) => monthOf(r) === m); return { m, n: l.length, med: median(l.map((r) => r.priceWon)) }; }));
+const stats = computed(() => months.value.map((m) => { const l = deals.value.filter((r) => monthOf(r) === m); return { m, n: l.length, med: median(l.map((r) => r.priceWon)), avg: l.length ? l.reduce((a, r) => a + r.priceWon, 0) / l.length : 0 }; }));
 /** 세로 끝 — 위쪽 몇 건 때문에 판이 눌리지 않게 95% 지점 기준으로 깔끔한 값 */
 const yTop = computed(() => {
   const s = deals.value.map((r) => r.priceWon).sort((a, b) => a - b);
@@ -86,6 +88,23 @@ function draw(now: number) {
   for (let v = step; v <= yTop.value + 1; v += step) { const y = sy(v); c.strokeStyle = P.grid; c.lineWidth = 1; c.beginPath(); c.moveTo(PAD.l, y + 0.5); c.lineTo(W - PAD.r, y + 0.5); c.stroke(); c.fillStyle = P.sub; c.fillText(eok(v), PAD.l - 8, y + 4); }
   // 고른 달 · 마우스 올린 달 띠
   ([[pick, P.soft], [hoverM, P.grid]] as Array<[string | null, string]>).forEach(([m, col]) => { if (!m) return; const [a, b] = mX(m); c.fillStyle = col; c.fillRect(a, PAD.t, b - a, H - PAD.t - 18); });
+  if (simple.value) {        // 원래 그래프 — 월별 평균가 꺾은선 + 옅은 면, 점마다 값
+    // 세로는 평균가 범위에 맞춘다(점 그림의 4억 판을 그대로 쓰면 위가 텅 비었다)
+    const avgs = stats.value.map((s) => s.avg).filter((v) => v > 0);
+    const lo = Math.min(...avgs) * 0.85; const hi = Math.max(...avgs) * 1.12; const bottom = H - 30;
+    const sy2 = (v: number) => bottom - ((v - lo) / (hi - lo || 1)) * (bottom - PAD.t - 10);
+    c.clearRect(0, 0, W, H);
+    ([[pick, P.soft], [hoverM, P.grid]] as Array<[string | null, string]>).forEach(([m, col]) => { if (!m) return; const [a, b] = mX(m); c.fillStyle = col; c.fillRect(a, PAD.t, b - a, H - PAD.t - 18); });
+    const pl = stats.value.map((s) => { const [a, b] = mX(s.m); return { x: (a + b) / 2, y: sy2(s.avg), s }; });
+    if (pl.length) {
+      c.fillStyle = P.soft; c.beginPath(); c.moveTo(pl[0].x, bottom); pl.forEach((p) => c.lineTo(p.x, p.y)); c.lineTo(pl[pl.length - 1].x, bottom); c.closePath(); c.fill();
+      c.strokeStyle = P.accent; c.lineWidth = 2.5; c.beginPath(); pl.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.stroke();
+      pl.forEach((p) => { c.fillStyle = P.card; c.beginPath(); c.arc(p.x, p.y, 5, 0, Math.PI * 2); c.fill(); c.strokeStyle = P.accent; c.lineWidth = 2; c.stroke(); c.fillStyle = P.ink; c.font = '700 11px "Pretendard", sans-serif'; c.textAlign = 'center'; c.fillText(eok(p.s.avg), p.x, p.y - 12); });
+    }
+    c.fillStyle = P.sub; c.font = '600 11px "Pretendard", sans-serif'; c.textAlign = 'center';
+    stats.value.forEach((s) => { const [a, b] = mX(s.m); c.fillText(`${Number(s.m.slice(5, 7))}월`, (a + b) / 2, H - 6); });
+    playing.value = false; raf = 0; return;
+  }
   // 바닥 막대 — 월별 거래량
   const nmax = Math.max(1, ...stats.value.map((s) => s.n)); const base = H - 22; const per = (T1 - T0) / Math.max(1, months.value.length);
   stats.value.forEach((s) => {
@@ -128,7 +147,7 @@ const onMove = (e: MouseEvent) => {
   const b = cv.value?.getBoundingClientRect(); if (!b) return;
   const x = e.clientX - b.left; const y = e.clientY - b.top;
   let best: Pt | null = null; let bd = 49;
-  pts.forEach((p) => { const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bd) { bd = d; best = p; } });
+  if (!simple.value) pts.forEach((p) => { const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bd) { bd = d; best = p; } });
   hover = best; hoverM = monthAt(x); redraw();
   const h = best as Pt | null;
   if (h) {
@@ -147,6 +166,7 @@ const onClick = (e: MouseEvent) => {
   emit('update:modelValue', props.modelValue === m ? '' : m);
 };
 const pickColor = (k: keyof typeof COLORS) => { colorKey.value = k; redraw(); };
+const toggleSimple = () => { simple.value = !simple.value; tip.value = null; if (simple.value) { cancelAnimationFrame(raf); raf = 0; redraw(); } else replay(); };
 
 watch(() => props.rows, () => { resize(); replay(); });
 watch(() => props.modelValue, redraw);
@@ -158,16 +178,23 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 <template>
   <section class="ttl">
     <div class="ttl-top">
-      <strong>거래 타임라인 <em>(점 = 거래 한 건 · 정상 + 직거래)</em></strong>
-      <div class="ttl-colors">
-        <span class="ttl-colors-lab">색</span>
-        <div class="ttl-seg" role="tablist" aria-label="점 색">
-          <button v-for="(c, k) in COLORS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">{{ c.label }}</button>
+      <strong>{{ simple ? '월별 평균가' : '거래 타임라인' }} <em>({{ simple ? '정상 + 직거래' : '점 = 거래 한 건 · 정상 + 직거래' }})</em></strong>
+      <div class="ttl-right">
+        <div class="ttl-colors">
+          <button type="button" class="ttl-simple" @click="toggleSimple">{{ simple ? '타임라인 보기' : '원래 그래프' }}</button>
+          <template v-if="!simple">
+            <span class="ttl-colors-lab">색</span>
+            <div class="ttl-seg" role="tablist" aria-label="점 색">
+              <button v-for="(c, k) in COLORS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">{{ c.label }}</button>
+            </div>
+          </template>
         </div>
+        <!-- 색 뜻은 색 단추 바로 아래 — 단추와 범례가 이어져 보이게 -->
+        <div v-if="!simple" class="ttl-foot"><span v-for="(l, i) in COLORS[colorKey].keys" :key="l" class="ttl-key"><i :class="`t${i}`" />{{ l }}</span></div>
       </div>
     </div>
     <div class="ttl-read">
-      <p><b>읽는 법</b><span>오른쪽으로 갈수록 최근, 위로 갈수록 고가 거래입니다. 검은 선은 월 중간값, 바닥 막대는 월 거래량입니다. 월을 누르면 그달 거래로 정리됩니다.</span></p>
+      <p><b>읽는 법</b><span v-if="simple">월별 평균 거래가를 이은 꺾은선입니다. 월을 누르면 그달 거래로 정리됩니다.</span><span v-else>오른쪽으로 갈수록 최근, 위로 갈수록 고가 거래입니다. 검은 선은 월 중간값, 바닥 막대는 월 거래량입니다. 월을 누르면 그달 거래로 정리됩니다.</span></p>
       <p v-if="insight"><b>한눈에</b><span v-html="insight" /></p>
     </div>
     <div class="ttl-board">
@@ -175,11 +202,10 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
       <div v-if="tip" class="ttl-tip" :style="{ left: `${tip.x}px`, top: `${tip.y}px` }">
         <template v-for="l in tip.lines" :key="l[0]"><b>{{ l[0] }}</b><span>{{ l[1] }}</span></template>
       </div>
-      <button v-if="!playing && deals.length" type="button" class="ttl-play" aria-label="다시 재생" @click="replay">
+      <button v-if="!simple && !playing && deals.length" type="button" class="ttl-play" aria-label="다시 재생" @click="replay">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" /></svg><span>다시 재생</span>
       </button>
     </div>
-    <div class="ttl-foot"><span v-for="(l, i) in COLORS[colorKey].keys" :key="l" class="ttl-key"><i :class="`t${i}`" />{{ l }}</span></div>
   </section>
 </template>
 
@@ -188,6 +214,8 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .ttl-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .ttl-top strong { font-size: 16px; font-weight: 800; color: #111827; }
 .ttl-top strong em { font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; }
+.ttl-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.ttl-simple { height: 34px; padding: 0 12px; margin-right: 6px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
 .ttl-colors { display: inline-flex; align-items: center; gap: 8px; }
 .ttl-colors-lab { font-size: 13px; font-weight: 700; color: #6b7280; }
 .ttl-seg { display: grid; grid-auto-flow: column; gap: 6px; }
