@@ -156,6 +156,7 @@ const run = async () => {
     areaNote.value = '';
     // 표는 전체로 펴 두되 아무것도 집어 두지 않는다 — 고르는 건 사람 몫
     tab.value = 'all';
+    modeView.value = { 경매물건: freshView(), 유사물건: freshView() };
     await nextTick();
     pickNone();
     // 그 건물 거래가 하나도 없으면 유사물건부터 펴 둔다
@@ -190,6 +191,19 @@ const resetFilters = () => {
   }
   areaFilter.value = ''; yearFilter.value = ''; tab.value = '매매';
   clearPicks();
+  colFilter.clearAll();
+};
+
+/** 경매물건 · 유사물건 알약 — 알약마다 표 탭(전체 · 매매 · 전세 · 월세) · 면적 · 거래년도를 따로 기억한다.
+ *  유사물건에서 전세를 펴 두고 경매물건에 다녀와도 전세 그대로 (예전엔 알약을 누를 때마다 전체로 돌아갔다) */
+type ModeView = { tab: typeof tab.value; areaFilter: string; yearFilter: string };
+const freshView = (): ModeView => ({ tab: 'all', areaFilter: '', yearFilter: '' });
+const modeView = ref<Record<CaseMode, ModeView>>({ 경매물건: freshView(), 유사물건: freshView() });
+const switchMode = (m: CaseMode) => {
+  if (m === mode.value) return;
+  modeView.value[mode.value] = { tab: tab.value, areaFilter: areaFilter.value, yearFilter: yearFilter.value };
+  const v = modeView.value[m];
+  mode.value = m; tab.value = v.tab; areaFilter.value = v.areaFilter; yearFilter.value = v.yearFilter;
   colFilter.clearAll();
 };
 
@@ -700,21 +714,23 @@ const saveScreen = () => {
 // 분석 결과 · 고른 기준 줄 · 거르기가 바뀌면 남긴다
 watch([rows, price, pickedSale, pickedJeonse, areaFilter, yearFilter, tab, rateText, restoredSale, restoredJeonse, mode, simSale, simJeonse, simF, condF], saveScreen, { deep: true });
 // 손품분석 — 고른 줄 · 거르기를 물건마다 기억한다. 화면을 다시 띄워도(탭 오가기 · 웹 다시 그리기) 다시 조회한 뒤 되살린다
-type PresetPicks = { mode: CaseMode; tab: typeof tab.value; simF: TradeRange; condF: TradeRange; simSale: string; simJeonse: string; pickedSale: string; pickedJeonse: string };
+type PresetPicks = { modeView?: Record<CaseMode, ModeView>; areaFilter?: string; yearFilter?: string; mode: CaseMode; tab: typeof tab.value; simF: TradeRange; condF: TradeRange; simSale: string; simJeonse: string; pickedSale: string; pickedJeonse: string };
 const presetKey = () => (props.preset ? `son.case.${props.preset.kind}.${props.preset.address}` : '');
 const savePresetPicks = () => {
   if (!props.preset || loading.value || !rows.value.length && !dongRows.value.length) return;
-  const v: PresetPicks = { mode: mode.value, tab: tab.value, simF: simF.value, condF: condF.value, simSale: simSale.value, simJeonse: simJeonse.value, pickedSale: pickedSale.value, pickedJeonse: pickedJeonse.value };
+  const v: PresetPicks = { modeView: modeView.value, areaFilter: areaFilter.value, yearFilter: yearFilter.value, mode: mode.value, tab: tab.value, simF: simF.value, condF: condF.value, simSale: simSale.value, simJeonse: simJeonse.value, pickedSale: pickedSale.value, pickedJeonse: pickedJeonse.value };
   try { sessionStorage.setItem(presetKey(), JSON.stringify(v)); } catch { /* 기억만 못 한다 */ }
 };
 const restorePresetPicks = () => {
   let v: PresetPicks | null = null;
   try { v = JSON.parse(sessionStorage.getItem(presetKey()) || 'null'); } catch { v = null; }
   if (!v) return;
+  if (v.modeView) modeView.value = v.modeView;
+  areaFilter.value = v.areaFilter ?? ''; yearFilter.value = v.yearFilter ?? '';
   mode.value = v.mode; tab.value = v.tab; simF.value = v.simF; condF.value = v.condF;
   simSale.value = v.simSale; simJeonse.value = v.simJeonse; pickedSale.value = v.pickedSale; pickedJeonse.value = v.pickedJeonse;
 };
-watch([mode, tab, simF, condF, simSale, simJeonse, pickedSale, pickedJeonse], savePresetPicks, { deep: true });
+watch([mode, tab, modeView, areaFilter, yearFilter, simF, condF, simSale, simJeonse, pickedSale, pickedJeonse], savePresetPicks, { deep: true });
 // 물건이 준 주소 · 종류 — 바뀔 때마다 바로 조회
 watch(() => props.preset && `${props.preset.address}|${props.preset.kind}`, (v) => {
   if (!v || !props.preset) return;
@@ -934,7 +950,7 @@ const downloadCsv = () => {
             <span>{{ preset ? '① ' : '' }}{{ mode === MODES[0] ? '경매지번' : '유사물건' }} 실거래가<em>(매매·전세)</em></span>
             <!-- 경매물건 / 유사물건 — 손품조사 실거래가 조사의 알약 두 개와 같다. 둘 중 하나를 쓴다 -->
             <span class="adm-mode-pills">
-              <button v-for="m in MODES" :key="m" type="button" :class="['adm-mode-pill', { on: mode === m }]" :aria-pressed="mode === m" @click="mode = m; tab = 'all'; areaFilter = ''; yearFilter = ''; colFilter.clearAll()">{{ m }}</button>
+              <button v-for="m in MODES" :key="m" type="button" :class="['adm-mode-pill', { on: mode === m }]" :aria-pressed="mode === m" @click="switchMode(m)">{{ m }}</button>
             </span>
           </div>
           <div v-for="g in tradeLines" :key="g.key" :class="['adm-kpis grid4 case12', g.row ? `on-${g.key}` : '']">
