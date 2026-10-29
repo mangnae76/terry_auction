@@ -24,6 +24,7 @@ import BubbleMatrix from '../components/BubbleMatrix.vue';
 import TradeTimeline from '../components/TradeTimeline.vue';
 import { CHART_ICONS } from '../services/chartIcons';
 import DongQuadrant from '../components/DongQuadrant.vue';
+import RankRace from '../components/RankRace.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
@@ -997,6 +998,8 @@ const downloadCsv = () => {
         :chip="snapChip"
         @pick-dong="(d: string) => { dong = d; }"
       />
+      <!-- 랭킹지도 아래 — 달마다 동 순위가 바뀌는 막대 레이스 -->
+      <RankRace v-if="webEmbed && listView === 'map' && quadRows.length" :rows="quadRows" />
       <div v-if="webEmbed && listView === 'case'" class="adm-case-in app-market" data-k="case"><AdminCaseTradePage in-dong /></div>
       <template v-if="all.length > 0 && listView !== 'map' && listView !== 'case'">
         <!-- 웹 — 위 요약 상자 틀은 하나. 읍면동을 고르면 안의 상자만 셋(총 거래건수 · 실거래가 평균 · 평당가 평균)으로 -->
@@ -1105,18 +1108,19 @@ const downloadCsv = () => {
         <div v-else-if="webEmbed && listView === 'top'" class="adm-rank3">
           <p v-if="rankLoading" class="adm-msg">전년 같은 기간 거래를 받는 중입니다…</p>
           <p v-else-if="rankErr" class="adm-msg warn">{{ rankErr }}</p>
-          <section v-for="g in rankLists" v-show="!rankLoading" :key="g.key" class="adm-rank-card">
+          <!-- 받을 때마다(asOf) 새로 그려 줄이 차례로 미끄러져 들어오고 건수 막대가 자란다 -->
+          <section v-for="(g, gi) in rankLists" v-show="!rankLoading" :key="`${g.key}-${asOf}`" class="adm-rank-card" :style="{ '--g': gi }">
             <header><strong>{{ g.title }}</strong><small>{{ g.sub }}</small></header>
             <table class="adm-rank-tbl">
               <!-- 순위 칸만 좁게, 지역 · 최근 1년 · 증감은 같은 몫 — 세 칸 사이가 고르다 -->
               <colgroup><col style="width: 28px" /><col /><col /><col /></colgroup>
               <thead><tr><th /><th class="c">지역</th><th class="c">최근 1년 거래</th><th class="c">증감(전년 대비)</th></tr></thead>
               <tbody>
-                <tr v-for="(r, i) in g.rows" :key="r.id" :class="['pick', { on: rankPick?.id === r.id }]" @click="pickRankDong(r)">
+                <tr v-for="(r, i) in g.rows" :key="r.id" :class="['pick', 'rk-in', { on: rankPick?.id === r.id }]" :style="{ '--i': i }" @click="pickRankDong(r)">
                   <td class="no">{{ i + 1 }}</td>
                   <td class="c"><b>{{ r.name }}</b><small>{{ rankSub(r) }}</small></td>
                   <!-- 두 줄 나란히 — 이번 1년 · 전년(앞에 '전년'), 숫자 끝자리를 맞춘다 -->
-                  <td class="c"><span class="cnt2"><i /><b>{{ r.cur.toLocaleString('ko-KR') }}</b><em>건</em><i>전년</i><b class="pv">{{ r.prev.toLocaleString('ko-KR') }}</b><em>건</em></span></td>
+                  <td class="c rk-cell"><span class="rk-bar" :style="{ width: `${Math.max(4, (r.cur / Math.max(1, ...g.rows.map((x) => x.cur))) * 100)}%` }" /><span class="cnt2"><i /><b>{{ r.cur.toLocaleString('ko-KR') }}</b><em>건</em><i>전년</i><b class="pv">{{ r.prev.toLocaleString('ko-KR') }}</b><em>건</em></span></td>
                   <td class="c"><span :class="['adm-rank-pct', r.pct === null ? 'new' : r.pct > 0 ? 'up' : r.pct < 0 ? 'down' : '']">{{ rankPctText(r.pct) }}</span></td>
                 </tr>
                 <tr v-if="g.rows.length === 0" class="pad"><td colspan="4" class="empty">{{ g.empty }}</td></tr>
@@ -1416,6 +1420,14 @@ const downloadCsv = () => {
 .adm-rank-card header { margin-bottom: 10px; }
 .adm-rank-card header strong { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: #111827; }
 .adm-rank-card header small { display: block; margin-top: 4px; font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* 한 줄로 — 접히면 그 카드만 표가 밀렸다 */
+/* 거래랭킹 움직임 — 줄이 위에서부터 차례로 미끄러져 들어오고(카드마다 조금씩 늦게), 최근 1년 칸 뒤 막대가 자란다 */
+.rk-in { animation: rkIn .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--g, 0) * 120ms + var(--i, 0) * 55ms); }
+@keyframes rkIn { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+.rk-cell { position: relative; }
+.rk-bar { position: absolute; left: 0; top: 50%; height: 70%; transform: translateY(-50%) scaleX(0); transform-origin: left center; border-radius: 6px; background: #eef3ff; z-index: 0; animation: rkBar .8s cubic-bezier(.2, .8, .2, 1) forwards; animation-delay: calc(var(--g, 0) * 120ms + var(--i, 0) * 55ms + 150ms); }
+.rk-cell .cnt2 { position: relative; z-index: 1; }
+@keyframes rkBar { to { transform: translateY(-50%) scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .rk-in, .rk-bar { animation: none; } .rk-bar { transform: translateY(-50%); } }
 .adm-rank-tbl { width: 100%; table-layout: fixed; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .adm-rank-tbl th { padding: 6px 4px; border-bottom: 1px solid #e3e8f0; font-size: 12px; font-weight: 600; color: #6b7280; text-align: center; }
 .adm-rank-tbl td { padding: 8px 4px; border-bottom: 1px solid #f1f4f9; text-align: center; vertical-align: middle; color: #111827; white-space: nowrap; }
