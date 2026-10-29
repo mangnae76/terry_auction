@@ -135,7 +135,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '지도랭킹', supply: '수요분석', table: '지역별분석', dist: '지역분포', detail: '상세분포', deals: '거래상세', case: '경매지번', sim: '유사매물' };
+const TAB_LABEL: Record<string, string> = { map: '지도랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '경매지번', sim: '유사매물' };
 const tellTab = () => {
   if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
@@ -322,7 +322,7 @@ watch(listView, async () => {
   if (tabTopBefore !== null && now !== undefined) window.scrollBy(0, now - tabTopBefore);
   tabTopBefore = null;
 }, { flush: 'post' });
-/** 지역분포 그림 — 막대 / 도넛. '지역분포' 탭을 한 번 더 누르면 바뀐다 */
+/** 유형분포 그림 — 막대 / 도넛. '유형분포' 탭을 한 번 더 누르면 바뀐다 */
 const distChart = ref<'bar' | 'pie'>('bar');
 const onDistTab = () => {
   if (listView.value === 'dist') distChart.value = distChart.value === 'bar' ? 'pie' : 'bar';
@@ -400,7 +400,7 @@ const saveFilters = async () => {
   });
   toast('검색조건을 저장했습니다.');
 };
-// ===== 웹 — 마지막으로 받은 자료를 이 브라우저에 남겨 새로고침해도 요약 · 지역별 분석 · 지역분포가 그대로 (composables/useScreenSnapshot) =====
+// ===== 웹 — 마지막으로 받은 자료를 이 브라우저에 남겨 새로고침해도 요약 · 지역별 분석 · 유형분포가 그대로 (composables/useScreenSnapshot) =====
 type Snapshot = {
   sido: string; districtCode: string; kind: Kind; dong: string; dealKind: 'sale' | 'jeonse';
   rows: DongTradeDetailRow[]; dongNames: string[]; period: { from: string; to: string };
@@ -860,7 +860,7 @@ const downloadCsv = () => {
               <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">지도랭킹</button>
               <button type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">지역별분석</button>
-              <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">지역분포<span class="adm-view-kind" :title="distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 막대'" :aria-label="distChart === 'bar' ? '막대' : '도넛'">
+              <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">유형분포<span class="adm-view-kind" :title="distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 막대'" :aria-label="distChart === 'bar' ? '막대' : '도넛'">
                 <svg v-if="distChart === 'bar'" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><rect x="1.5" y="8" width="3" height="6.5" rx="1" /><rect x="6.5" y="3" width="3" height="11.5" rx="1" /><rect x="11.5" y="6" width="3" height="8.5" rx="1" /></svg>
                 <svg v-else viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3"><circle cx="8" cy="8" r="5.5" stroke-opacity=".35" /><path d="M8 2.5a5.5 5.5 0 0 1 5.5 5.5" /></svg>
               </span></button>
@@ -1330,7 +1330,7 @@ const downloadCsv = () => {
 .adm-bar-col small { font-size: 14px; font-weight: 600; color: #4b5563; white-space: nowrap; }
 .adm-bar-col small.two { white-space: normal; text-align: center; line-height: 1.3; font-size: 13px; word-break: keep-all; } /* '33~50㎡ / 10~15평' 은 두 줄로 */
 .adm-bar-col em { font-style: normal; font-size: 14px; color: #9ca3af; }
-/* 지역분포 바로 옆 아이콘 — 지금 모양(막대 · 도넛) */
+/* 유형분포 바로 옆 아이콘 — 지금 모양(막대 · 도넛) */
 .adm-deals { display: flex; flex-direction: column; gap: 12px; }
 .adm-trend { background: #fff; border: 1px solid #e8ecf3; border-radius: 12px; padding: 16px 20px 10px; }
 .adm-trend-title { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #1f3a72; }
