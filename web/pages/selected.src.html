@@ -364,7 +364,7 @@ button { cursor: pointer; }
 /* 업데이트 칩 — 제목 줄 오른쪽 끝, 아래 칸들의 오른쪽 끝선에 맞춘다 */
 .adm-case-in .adm-case-row .snap-chip { margin-left: auto; }
 /* 제목 줄 — 아래 묶음 상자와 간격을 줄인다(위 여백과 균형) */
-.adm-case-in.app-market[data-k="case"] .adm-case-row { height: 40px !important; margin-top: 6px !important; margin-bottom: 6px !important; }
+.adm-case-in.app-market[data-k="case"] .adm-case-row { height: 40px !important; margin-top: 6px !important; margin-bottom: 6px !important; position: static !important; z-index: auto !important; } /* 붙박이 탭 줄(z 11) 위로 올라와 스크롤 때 탭을 뚫고 지나갔다 — 흐르는 줄로 */
 .adm-case-in .adm-case-row { margin-top: 0 !important; position: static !important; background: transparent !important; box-shadow: none !important; clip-path: none !important; border: 0 !important; }
 .app-market[data-k="case"] .adm-case-title { align-self: center; font-size: 16px; font-weight: 800; color: var(--text); white-space: nowrap; }
 .app-market[data-k="case"] .adm-case-row .adm-acts { margin-left: 16px; align-self: center; flex-wrap: nowrap; }
