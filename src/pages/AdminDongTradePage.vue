@@ -145,7 +145,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '경매지번', sim: '유사매물' };
+const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '시세조사', sim: '유사매물' };
 const tellTab = () => {
   if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
@@ -978,7 +978,7 @@ const downloadCsv = () => {
               <button type="button" role="tab" :aria-selected="listView === 'detail'" :class="{ on: listView === 'detail' }" @click="listView = 'detail'">상세분포</button>
               <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
               <!-- 경매지번 — 시장분석 › 경매지번 분석 화면을 그대로(주소 줄 · 종류 · 기간 · 내비 · 표 · 저장). 주소 줄은 위 고르는 줄 자리에 -->
-              <button type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">경매지번</button>
+              <button type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">시세조사</button>
               <!-- 유사매물시세 — 우선 거래상세와 같은 내용(같은 틀을 함께 쓴다). 내용이 정해지면 여기서 갈라진다 -->
               <button type="button" role="tab" :aria-selected="listView === 'sim'" :class="{ on: listView === 'sim' }" @click="listView = 'sim'">유사매물</button>
             </nav>
