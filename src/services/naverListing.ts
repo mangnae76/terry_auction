@@ -5,7 +5,7 @@
 //   tradeTypes        A1 = 매매
 //   realEstateTypes   빌라 A05-A06-A07-C02 (사용자가 필터를 걸어 확인) · 아파트 A01-A04 · 오피스텔 B01
 //   center            경도-위도. 각 값 × 1e7 + 2e9 를 62진수(0-9a-zA-Z)로 — 서울시청 3zhF48-2AM354 로 맞춰 봤다
-//   zoom              16 (동 하나가 화면에 들어온다)
+//   zoom              15 (16 은 동 일부만 보였다 — 한 단계 넓게)
 
 export type NaverKind = 'villa' | 'apt' | 'officetel';
 
@@ -28,7 +28,7 @@ export const naverCoord = (v: number) => {
 /** 그 자리 · 그 종류 매매 매물 지도 주소 */
 export const naverListingUrl = (p: { lat: number; lng: number }, kind: NaverKind) =>
   `https://fin.land.naver.com/map?layer=${LAYER}&tradeTypes=A1&realEstateTypes=${REAL_ESTATE_TYPES[kind]}`
-  + `&center=${naverCoord(p.lng)}-${naverCoord(p.lat)}&zoom=16`;
+  + `&center=${naverCoord(p.lng)}-${naverCoord(p.lat)}&zoom=15`;
 
 /** 자리를 알면 그 자리로, 모르면 '지역 동' 검색어를 복사하고 네이버 부동산 첫 화면을 연다 */
 export const openNaverListing = (query: string, place?: { lat: number; lng: number } | null, kind: NaverKind = 'villa') => {
