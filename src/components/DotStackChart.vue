@@ -10,15 +10,19 @@ export type DotView = { key: string; title: string; buckets: DotBucket[] };
 
 const props = defineProps<{ rows: DongTradeDetailRow[]; views: DotView[] }>();
 
-const MAX_DOTS = 2400;            // 이보다 많으면 점 하나에 여러 건을 묶는다
+const MIN_DOT = 11;                // 점 지름이 이보다 작아지면 점 하나에 여러 건을 묶는다(작은 점이 빽빽하면 눈이 아팠다)
+const RARE = 0.01;                // 전체의 1% 미만 구간은 칸에서 뺀다(30평~ 2건 같은 칸이 판을 좁혔다)
 const EOK = 100_000_000;
 const thisYear = new Date().getFullYear();
 const ageOf = (r: DongTradeDetailRow) => (r.buildYear ? thisYear - r.buildYear + 1 : 99);
 
 const viewKey = ref(props.views[0]?.key ?? '');
-const colorKey = ref<'year' | 'age' | 'floor' | 'price'>('year');
+// 기본 색은 연식 — 기간이 1년이면 계약연도는 두 가지뿐이라 거의 한 색(짙은 남색)으로 빽빽해 눈이 아팠다
+const colorKey = ref<'year' | 'age' | 'floor' | 'price'>('age');
 const view = computed(() => props.views.find((v) => v.key === viewKey.value) ?? props.views[0]);
-const per = computed(() => Math.max(1, Math.ceil(props.rows.length / MAX_DOTS)));
+const per = ref(1);
+/** 뺀 구간 — 설명 줄에 적는다 */
+const dropped = ref<Array<{ label: string; n: number }>>([]);
 
 const COLOR_KEYS = {
   year: { label: '계약연도', tier: (r: DongTradeDetailRow, years: number[]) => Math.max(0, 4 - (years[years.length - 1] - Number(r.contractDate.slice(0, 4)))) },
@@ -47,7 +51,7 @@ const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced
 const dark = () => document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
 const PAL = () => (dark()
   ? { tones: ['#22355c', '#2c4e8f', '#3d6cc4', '#6b9cff', '#b9d0ff'], ink: '#e8edf6', sub: '#9aa6ba', accent: '#6b9cff', line: '#2a3650' }
-  : { tones: ['#c9d8f8', '#9ab8f2', '#6493ea', '#2f6fe0', '#173f99'], ink: '#111827', sub: '#6b7280', accent: '#2b6df3', line: '#e3e8f0' });
+  : { tones: ['#cfdcf7', '#a3bff2', '#7299e8', '#4a78d8', '#2d56b3'], ink: '#111827', sub: '#6b7280', accent: '#2b6df3', line: '#e3e8f0' });
 const ease = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 const resize = () => {
@@ -60,15 +64,23 @@ const resize = () => {
 /** 구간마다 줄을 모아 오래된 것부터 아래로 쌓을 자리를 정한다. 같은 거래는 같은 점(key)이라 기준을 바꾸면 그 점이 옮겨 간다 */
 const layout = (first: boolean) => {
   const v = view.value; if (!v || !W) return;
-  const groups = v.buckets.map((b) => props.rows.filter((r) => b.test(r)).sort((a, c) => a.dealTime - c.dealTime));
-  // 같은 거래(줄 객체)면 같은 점 — 기준을 바꾸면 그 점이 제자리에서 새 자리로 옮겨 간다
+  const all = v.buckets.map((b, bi) => ({ b, bi, list: props.rows.filter((r) => b.test(r)).sort((a, c) => a.dealTime - c.dealTime) }));
+  const floor = Math.max(1, Math.ceil(props.rows.length * RARE));
+  const shown = all.filter((g) => g.list.length >= floor);
+  dropped.value = all.filter((g) => g.list.length > 0 && g.list.length < floor).map((g) => ({ label: g.b.label, n: g.list.length }));
+  const groups = shown.map((g) => g.list);
   const prev = new Map(dots.map((d) => [d.rows[0], d]));
   const tierOf = (r: DongTradeDetailRow) => COLOR_KEYS[colorKey.value].tier(r, years.value);
-  const top = 46; const bottom = 34; const colW = W / groups.length;
-  const counts = groups.map((g) => Math.ceil(g.length / per.value)); const max = Math.max(1, ...counts);
-  let G = 2; D = 9;
-  for (; D > 2; D -= 1) { const k = Math.max(1, Math.floor((colW - 14) / (D + G))); if (Math.ceil(max / k) * (D + G) <= H - top - bottom) break; }
-  if (D <= 3) G = 1;
+  const top = 46; const bottom = 34; const colW = W / Math.max(1, groups.length);
+  const G = 3;
+  // 점 지름을 MIN_DOT 이상으로 지키도록 묶음 크기(per)를 1 · 2 · 3 … 으로 늘려 본다
+  let counts: number[] = []; D = 16;
+  for (per.value = 1; per.value < 500; per.value += 1) {
+    counts = groups.map((g) => Math.ceil(g.length / per.value)); const max = Math.max(1, ...counts);
+    let d = 16;
+    for (; d >= MIN_DOT; d -= 1) { const kk = Math.max(1, Math.floor((colW - 14) / (d + G))); if (Math.ceil(max / kk) * (d + G) <= H - top - bottom) break; }
+    if (d >= MIN_DOT) { D = d; break; }
+  }
   const k = Math.max(1, Math.floor((colW - 14) / (D + G)));
   const next: Dot[] = [];
   cols = groups.map((g, ci) => {
@@ -84,7 +96,7 @@ const layout = (first: boolean) => {
       next.push(dot);
     }
     const prices = g.map((r) => r.priceWon).filter((p) => p > 0).sort((a, c) => a - c);
-    return { label: v.buckets[ci].label, x: ci * colW + colW / 2, topY: H - bottom - Math.ceil(counts[ci] / k) * (D + G), n: g.length, median: prices.length ? prices[Math.floor(prices.length / 2)] : 0 };
+    return { label: shown[ci].b.label, x: ci * colW + colW / 2, topY: H - bottom - Math.ceil(counts[ci] / k) * (D + G), n: g.length, median: prices.length ? prices[Math.floor(prices.length / 2)] : 0 };
   });
   dots = next; t0 = performance.now();
   cancelAnimationFrame(raf); raf = requestAnimationFrame(draw);
@@ -153,7 +165,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
         <button v-for="(c, k) in COLOR_KEYS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">색 {{ c.label }}</button>
       </div>
     </div>
-    <p class="dsc-read">점 하나가 거래 {{ per > 1 ? `${per}건` : '한 건' }}입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래이고, 칸 위 파란 숫자는 그 구간의 가운데 값입니다. 기준을 바꾸면 같은 점들이 새 구간으로 옮겨 갑니다.</p>
+    <p class="dsc-read">점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래이고, 칸 위 파란 숫자는 그 구간의 가운데 값입니다. 기준을 바꾸면 같은 점들이 새 구간으로 옮겨 갑니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></p>
     <div class="dsc-board">
       <canvas ref="cv" class="dsc-cv" aria-label="점 쌓기 분포도" @mousemove="onMove" @mouseleave="onLeave" />
       <div v-if="tip" class="dsc-tip" :style="{ left: `${tip.x}px`, top: `${tip.y}px` }">
@@ -175,14 +187,15 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dsc-seg.sm button { height: 34px; font-size: 13px; padding: 0 12px; }
 .dsc-seg button.on { border-color: #2b6df3; background: #eef3ff; color: #2b6df3; }
 .dsc-read { margin: 0; font-size: 13px; color: #6b7280; line-height: 1.6; }
-.dsc-board { position: relative; background: #fff; border: 1px solid #e3e8f0; border-radius: 10px; padding: 12px 10px 6px; }
-.dsc-cv { display: block; width: 100%; height: 440px; }
+.dsc-read b { color: #2b6df3; }
+.dsc-board { position: relative; background: #f6f8fb; border: 1px solid #e3e8f0; border-radius: 10px; padding: 12px 10px 6px; }
+.dsc-cv { display: block; width: 100%; height: 580px; }
 .dsc-tip { position: absolute; z-index: 5; pointer-events: none; display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; min-width: 200px; padding: 9px 11px; border-radius: 8px; background: #1f2937; color: #f3f4f6; font-size: 12.5px; line-height: 1.55; box-shadow: 0 10px 24px rgba(17, 24, 39, .25); }
 .dsc-tip b { font-weight: 600; color: #9aa6ba; }
 .dsc-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: #6b7280; }
 .dsc-key { display: inline-flex; align-items: center; gap: 5px; }
 .dsc-key i { width: 10px; height: 10px; border-radius: 50%; }
-.dsc-key i.t0 { background: #c9d8f8; } .dsc-key i.t1 { background: #9ab8f2; } .dsc-key i.t2 { background: #6493ea; } .dsc-key i.t3 { background: #2f6fe0; } .dsc-key i.t4 { background: #173f99; }
+.dsc-key i.t0 { background: #cfdcf7; } .dsc-key i.t1 { background: #a3bff2; } .dsc-key i.t2 { background: #7299e8; } .dsc-key i.t3 { background: #4a78d8; } .dsc-key i.t4 { background: #2d56b3; }
 .dsc-replay { margin-left: auto; height: 32px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .dsc-replay { display: none; } }
 </style>

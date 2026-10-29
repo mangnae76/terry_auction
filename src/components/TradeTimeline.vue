@@ -190,7 +190,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .ttl-read b { font-size: 12px; font-weight: 700; color: #2b6df3; padding-top: 2px; }
 .ttl-read :deep(em) { font-style: normal; font-weight: 600; background: linear-gradient(transparent 62%, #eef3ff 62%); }
 .ttl-board { position: relative; background: #fff; border: 1px solid #e3e8f0; border-radius: 10px; padding: 12px 10px 6px; overflow-x: auto; }
-.ttl-cv { display: block; width: 100%; min-width: 720px; height: 500px; cursor: crosshair; }
+.ttl-cv { display: block; width: 100%; min-width: 720px; height: 640px; cursor: crosshair; }
 .ttl-tip { position: absolute; z-index: 5; pointer-events: none; display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; min-width: 200px; padding: 9px 11px; border-radius: 8px; background: #1f2937; color: #f3f4f6; font-size: 12.5px; line-height: 1.55; box-shadow: 0 10px 24px rgba(17, 24, 39, .25); }
 .ttl-tip b { font-weight: 600; color: #9aa6ba; }
 .ttl-play { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 3; display: inline-flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 22px 12px; border: 0; border-radius: 18px; background: rgba(255, 255, 255, .72); color: #2b6df3; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; opacity: .55; transition: opacity .2s, transform .2s; box-shadow: 0 8px 24px rgba(17, 24, 39, .10); backdrop-filter: blur(2px); }

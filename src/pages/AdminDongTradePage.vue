@@ -22,6 +22,7 @@ import AdminCaseTradePage from './AdminCaseTradePage.vue';
 import DotStackChart, { type DotView } from '../components/DotStackChart.vue';
 import BubbleMatrix from '../components/BubbleMatrix.vue';
 import TradeTimeline from '../components/TradeTimeline.vue';
+import DongQuadrant from '../components/DongQuadrant.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
@@ -581,6 +582,20 @@ const inWindow = (r: DongTradeDetailRow) => {
   const to = dateTo.value ? new Date(`${dateTo.value}T23:59:59`).getTime() : Infinity;
   return r.dealTime >= from && r.dealTime <= to;
 };
+/** 기간 · 면적 · 연식 거르기(읍면동은 빼고) — 동 사분면은 동을 골라도 모든 동을 그린다 */
+const passCond = (r: DongTradeDetailRow) => {
+  const aMin = toNum(areaMin.value);
+  const aMax = toNum(areaMax.value);
+  const yMin = toNum(yearMin.value);
+  const yMax = toNum(yearMax.value);
+  if (!inWindow(r)) return false;
+  if (aMin && r.pyeong < aMin) return false;
+  if (aMax && r.pyeong > aMax) return false;
+  if (yMin && (!r.buildYear || r.buildYear < yMin)) return false;
+  if (yMax && (!r.buildYear || r.buildYear > yMax)) return false;
+  return true;
+};
+const quadRows = computed(() => all.value.filter((r) => r.kind !== '계약해제' && passCond(r)));
 const filtered = computed(() => {
   const target = dong.value;
   const aMin = toNum(areaMin.value);
@@ -1262,7 +1277,10 @@ const downloadCsv = () => {
 
         <!-- 웹 지역별분석 — 늘 동별 요약 표(읍면동을 골라도 개별 거래 목록으로 바뀌지 않는다 · 읍면동을 고르면 그 동 한 줄만).
              개별 거래는 거래상세 탭에서 본다 -->
-        <div v-else-if="webEmbed" class="adm-table-wrap">
+        <div v-else-if="webEmbed" class="adm-sum-wrap">
+          <!-- 동 사분면 — 거래건수 × 평균 평당가, 원을 누르면 그 동으로. 아래 표는 그대로 -->
+          <DongQuadrant v-if="listView === 'table'" :rows="quadRows" :selected="dong" @pick-dong="(d: string) => { dong = d; }" />
+        <div class="adm-table-wrap">
           <table class="adm-table adm-dongsum">
             <thead>
               <tr>
@@ -1287,6 +1305,7 @@ const downloadCsv = () => {
               </tr>
             </tbody>
           </table>
+        </div>
         </div>
         <div v-else class="adm-table-wrap">
           <table class="adm-table">
