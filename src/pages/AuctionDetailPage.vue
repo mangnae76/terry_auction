@@ -3135,11 +3135,25 @@ const openListingLookup = () => {
   }
   // 네이버 부동산의 동 검색 주소는 지역에 따라 '없는 동'으로 떨어진다.
   // 그래서 첫 화면만 띄우고, 검색어는 클립보드에 넣어 바로 붙여넣게 한다.
-  const area = (auction.value?.address ?? '').trim().split(/\s+/).slice(0, 2).join(' ');
-  const query = [area, dong].filter(Boolean).join(' ').trim() || dong;
-  void copyText(query);
-  openNaverListing(query);
+  if (naverPlace.value) { openNaverListing(naverListingQuery.value, naverPlace.value, publicTradeType.value); return; }
+  void copyText(naverListingQuery.value);
+  openNaverListing(naverListingQuery.value);
 };
+/** '인천광역시 서구 검암동' — 네이버 지도를 그 동 가운데에 세울 검색어 */
+const naverListingQuery = computed(() => {
+  const area = (auction.value?.address ?? '').trim().split(/\s+/).slice(0, 2).join(' ');
+  return [area, surveyDongName.value].filter(Boolean).join(' ').trim();
+});
+/** 그 동 가운데 자리 — 물건(동)이 바뀌면 다시 찾는다. 누르는 순간 찾으면 브라우저가 새 창을 막아 미리 찾아 둔다 */
+const naverPlace = ref<{ lat: number; lng: number } | null>(null);
+watch(naverListingQuery, async (q) => {
+  naverPlace.value = null;
+  if (!q || !surveyDongName.value) return;
+  try {
+    const p = await geocodeAddress(q);
+    if (q === naverListingQuery.value && p && Number.isFinite(p.lat) && Number.isFinite(p.lng)) naverPlace.value = { lat: p.lat, lng: p.lng };
+  } catch { /* 못 찾으면 검색어 복사로 */ }
+}, { immediate: true });
 
 // 12개월 거래량 기본값 — 그 동의 다세대·연립 실거래 1년치 건수.
 // 회전율 분모가 '동 전체 다세대·연립 세대수'라 면적 조건은 걸지 않는다.
