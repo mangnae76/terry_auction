@@ -14,3 +14,29 @@ export const dealCountTip = (o: { normal: number; direct: number; cancel: number
   ['기간', o.from && o.to ? `${dot(o.from)} ~ ${dot(o.to)} (조회일 기준 ${o.months}개월)` : `조회일 기준 ${o.months}개월`],
   ['연월', o.months === 12 ? '연 = 12개월 합 · 월 = 연 ÷ 12' : `연 = ${o.months}개월 합을 1년으로 환산 · 월 = 합 ÷ ${o.months}`],
 ];
+
+/** 실거래가 조사(가격정보 · 시장분석 경매지번) — 공시 줄 네 칸 말풍선 */
+export const jeonseRateTip = (rate: number): TipRow[] => [
+  ['공식', `공동주택가 × ${rate}%`],
+  ['의미', '허그 보증 126% 전세가 추정치'],
+  ['수정', '퍼센트 칸에 적어 비율을 고칠 수 있음'],
+];
+export const PUB_RATIO_TIP: TipRow[] = [
+  ['공식', '매매 실거래가 ÷ 공동주택가 × 100'],
+  ['의미', '공시가격 대비 실거래가 수준'],
+];
+export const JEONSE_RATIO_TIP: TipRow[] = [
+  ['공식', '전세가 ÷ 매매 실거래가 × 100'],
+  ['갭', '매매 실거래가 − 전세가'],
+  ['의미', '매매가에서 전세보증금이 차지하는 몫'],
+  ['높으면', '적은 돈으로 사지만 역전세·깡통 위험이 커진다'],
+];
+export const pubPriceTip = (o: { year?: string; unit?: string }): TipRow[] => {
+  if (!o.year) return [['조회', '결과 없음']];
+  const rows: TipRow[] = [
+    ['출처', '국토교통부 공시가격 API · 실시간'],
+    ['기준', `${o.year}-01-01 · 연 1회 공시`],
+  ];
+  if (o.unit) rows.push(['대상', o.unit]);
+  return rows;
+};

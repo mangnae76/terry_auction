@@ -8,6 +8,8 @@
 //
 // 셈과 조회는 services/caseTradeAnalysis.ts 에 있다 — 이 화면은 보여 주기만 한다.
 import UnitText from '../components/UnitText.vue';
+import InfoTip from '../components/InfoTip.vue';
+import { JEONSE_RATIO_TIP, PUB_RATIO_TIP, jeonseRateTip, pubPriceTip } from '../services/tipRows';
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import SnapChip from '../components/SnapChip.vue';
@@ -266,10 +268,34 @@ const rowFace = (r: CaseTradeRow | null) => {
   const floor = r.floor ? `${r.floor}층` : '';
   return [r.contractDate, area, floor].filter(Boolean).join(' · ');
 };
+/** 웹 12칸 — 매매 줄 · 전세 줄. 칸마다 고른 줄의 전용면적 · 거래일자/층 · 실거래가 · 평당가 */
+const tradeArea = (r: CaseTradeRow | null) => (r && r.areaM2 > 0 ? `${r.areaM2.toFixed(2)}㎡ / ${(r.areaM2 / PYEONG).toFixed(2)}평` : '-');
+const tradeWhen = (r: CaseTradeRow | null) => (r ? [r.contractDate.replace(/\./g, '-'), r.floor ? `${r.floor}층` : ''].filter(Boolean).join(' / ') : '-');
+const perPyeong = (r: CaseTradeRow | null) => (r && r.areaM2 > 0 && r.price > 0 ? r.price / (r.areaM2 / PYEONG) : 0);
 /** 기준 전세 — 표에서 고른 줄만 */
 const recentJeonse = computed(() => (
   byAreaYear.value.find((r) => rowKey(r) === pickedJeonse.value) ?? restoredJeonse.value
 ));
+const tradeLines = computed(() => [
+  { key: 'sale', label: '매매', row: recentSale.value, k: { area: 'area', date: 'date', real: 'real', unit: 'unit' } },
+  { key: 'jeonse', label: '전세', row: recentJeonse.value, k: { area: 'jArea', date: 'jDate', real: 'jReal', unit: 'jUnit' } },
+]);
+/** 칸을 짚으면 그 값을 만든 칸이 같이 켜진다 — 가격정보 실거래가 조사(MKT_LIT_LINKS)와 같은 짝 */
+const LIT_LINKS: Record<string, string[]> = {
+  unit: ['unit', 'real', 'area'],
+  jUnit: ['jUnit', 'jReal', 'jArea'],
+  jeonse: ['jeonse', 'pub'],
+  pubRatio: ['pubRatio', 'real', 'pub'],
+  saleRatio: ['saleRatio', 'jeonse', 'real'],
+  pub: ['pub', 'jeonse', 'pubRatio', 'saleRatio'],
+  real: ['real', 'unit', 'pubRatio', 'saleRatio'],
+  jReal: ['jReal', 'jUnit'],
+};
+const litKey = ref('');
+const lit = (id: string) => (LIT_LINKS[litKey.value] ?? []).includes(id);
+const litOn = (id: string) => { litKey.value = id; };
+const litOff = () => { litKey.value = ''; };
+const pubTip = computed(() => pubPriceTip({ year: price.value?.year, unit: priceUnit.value }));
 /** 고른 줄인지 저절로 잡힌 줄인지 — 요약 칸에 적어 둔다 */
 
 
@@ -671,16 +697,12 @@ const downloadCsv = () => {
       </div>
       </Teleport>
 
+      <!-- 웹 — 제목 줄부터 표까지 흰 상자 하나로 감싼다(.adm-case-card) -->
+      <div class="adm-case-card">
       <!-- 웹 — 지역분석의 탭 줄 자리: 왼쪽에 화면 이름 · 저장 단추, 오른쪽에 경로(#admCrumbSlot 로 웹 경로를 옮겨 온다) -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top adm-case-row">
-        <strong class="adm-case-title">경매지번 분석</strong>
+        <strong class="adm-case-title">경매지번 실거래가<em class="adm-case-sub">(매매·전세)</em></strong>
         <SnapChip :chip="screenChip" />
-        <div class="adm-acts">
-          <button type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="askSave">저장</button>
-          <button v-if="snapId" type="button" class="adm-csv" :disabled="!canSave || snapBusy" @click="saveSnap(true)">덮어쓰기</button>
-          <button type="button" class="adm-csv" @click="openSnapPanel">저장 목록</button>
-          <button type="button" class="adm-csv" :disabled="tableRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
-        </div>
         <div v-if="!inDong" id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
 
@@ -732,7 +754,48 @@ const downloadCsv = () => {
         <!-- 세 칸 · 세 줄 한 판 — 기준 → 시세 → 추정 전세 → 실제 전세 순.
              맨 왼쪽은 공동주택가 하나(아래는 비움), 오른쪽 세 칸은 줄마다 가격 · 비율 · 평당가:
              매매(실거래가 · 공시대비율) / 보증보험 전세(전세가 · 전세가율/갭) / 실거래 전세(실거래가 · 전세가율/갭) -->
-        <div class="adm-kpis grid4 case-grid">
+        <!-- 웹 — 손품조사 시세조사의 실거래가 조사와 같은 12칸: 매매 줄 · 전세 줄(전용면적 · 거래일자/층 · 실거래가 · 평당가) · 공시 줄 -->
+        <template v-if="webEmbed">
+          <div v-for="g in tradeLines" :key="g.key" class="adm-kpis grid4 case12">
+            <div :class="['adm-kpi', { lit: lit(g.k.area) }]" @mouseenter="litOn(g.k.area)" @mouseleave="litOff">
+              <small>전용면적</small><strong><UnitText :text="tradeArea(g.row)" /></strong>
+            </div>
+            <div :class="['adm-kpi', { lit: lit(g.k.date) }]" @mouseenter="litOn(g.k.date)" @mouseleave="litOff">
+              <small>거래일자 / 층</small><strong><UnitText :text="tradeWhen(g.row)" /></strong>
+            </div>
+            <div :class="['adm-kpi', { lit: lit(g.k.real) }]" @mouseenter="litOn(g.k.real)" @mouseleave="litOff">
+              <small>{{ g.label }} 실거래가 <span v-if="g.row" class="adm-kpi-from pick">선택</span></small>
+              <strong><UnitText :text="won(g.row?.price ?? 0)" suffix="원" /></strong>
+              <span v-if="!g.row" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span>
+            </div>
+            <div :class="['adm-kpi', { lit: lit(g.k.unit) }]" @mouseenter="litOn(g.k.unit)" @mouseleave="litOff">
+              <small>{{ g.label }} 평당가</small><strong><UnitText :text="won(perPyeong(g.row))" suffix="원" /></strong>
+            </div>
+          </div>
+          <div class="adm-kpis grid4 case12">
+            <div :class="['adm-kpi green', { lit: lit('pub') }]" @mouseenter="litOn('pub')" @mouseleave="litOff">
+              <small><InfoTip :rows="pubTip" under="box">공동주택가</InfoTip><em v-if="price">{{ price.year }}.01.01 기준</em></small>
+              <strong><UnitText :text="won(pubValue)" suffix="원" /></strong>
+              <span v-if="price && priceUnit" class="adm-kpi-sub">{{ priceUnit }}</span>
+            </div>
+            <div :class="['adm-kpi', { lit: lit('jeonse') }]" @mouseenter="litOn('jeonse')" @mouseleave="litOff">
+              <small><InfoTip :rows="jeonseRateTip(jeonseRate)" under="box">전세가</InfoTip><em><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" />%</em></small>
+              <strong><UnitText :text="won(jeonsePrice)" suffix="원" /></strong>
+              <span class="adm-kpi-sub">공동주택가 × {{ jeonseRate }}%</span>
+            </div>
+            <div :class="['adm-kpi', { lit: lit('saleRatio') }]" @mouseenter="litOn('saleRatio')" @mouseleave="litOff">
+              <small><InfoTip :rows="JEONSE_RATIO_TIP" under="box">전세가율 / 갭</InfoTip></small>
+              <strong><UnitText :text="jeonseRatioText" /><em v-if="gapText" class="adm-gap"> / <UnitText :text="gapText" suffix="원" /></em></strong>
+              <span class="adm-kpi-sub">전세가 ÷ 매매 실거래가</span>
+            </div>
+            <div :class="['adm-kpi', { lit: lit('pubRatio') }]" @mouseenter="litOn('pubRatio')" @mouseleave="litOff">
+              <small><InfoTip :rows="PUB_RATIO_TIP" under="box" align="end">공시대비율</InfoTip></small>
+              <strong><UnitText :text="pubRatioText" /></strong>
+              <span class="adm-kpi-sub">매매 실거래가 ÷ 공동주택가</span>
+            </div>
+          </div>
+        </template>
+        <div v-else class="adm-kpis grid4 case-grid">
           <div class="adm-kpi green">
             <small>
               공동주택가
@@ -882,6 +945,7 @@ const downloadCsv = () => {
         <p v-else-if="tableRows.length === 0" class="adm-foot">{{ countLabel }} 데이터 없음</p>
         </template>
       </template>
+      </div>
     </div>
 
     <ColumnFilterPanel :ctl="colFilter" />
@@ -996,6 +1060,14 @@ const downloadCsv = () => {
 /* 세 줄이 같은 네 칸 틀을 쓴다 — 줄이 달라도 세로로 맞아떨어진다 */
 .adm-kpis.grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .adm-kpis.grid4.nextrow { margin-top: 12px; }
+/* 웹 12칸 — 네 칸 세 줄, 줄 사이 12 */
+.adm-kpis.case12 + .adm-kpis.case12 { margin-top: 12px; }
+/* 말풍선(InfoTip under=box)이 칸 바로 아래에 뜨도록 칸을 기준 상자로 */
+.adm-kpis.case12 .adm-kpi { position: relative; }
+/* 이어진 칸 — 가격정보 실거래가 조사 .lit 와 같은 색 */
+.adm-kpis.case12 .adm-kpi.lit { background: #fff5f5; border-color: #f6d5d5; }
+.adm-kpis.case12 .adm-kpi.green .adm-kpi-sub { padding-left: 0; }
+.adm-case-sub { font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; margin-left: 2px; }
 /* 세 칸으로 판 폭을 다 쓴다 — 오른쪽 끝을 아래 표 끝선에 */
 .adm-kpis.case-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto auto auto; }
 /* 상자 차례(템플릿): 1 공동주택가 · 2 보증보험 전세가 · 3 보증보험 전세가율/갭 · 4 전세 실거래가 · 5 실거래 전세가율/갭 · 6 매매 실거래가 · 7 공시대비율
