@@ -7825,7 +7825,7 @@ const goBack = () => router.back();
             <!-- ① 기준수치 — 이름 칸에 대면 설명이 뜬다(칸이 작아 아이콘만으로는 누르기 어렵다) -->
             <div class="adp-dm-block">
               <div class="adp-dm-block-head">
-                <span class="t">① 수치입력</span>
+                <span class="t">① 기초수치</span>
               </div>
               <div class="adp-dm-rowwrap">
               <div class="adp-mkt-cells c3 adp-dm-table dm-input">
@@ -7916,7 +7916,7 @@ const goBack = () => router.back();
             <!-- ② 지표 — 이름 칸에 대면 계산식이 뜬다 -->
             <div class="adp-dm-block">
               <div class="adp-dm-block-head">
-                <span class="t">② 지표결과</span>
+                <span class="t">② 수요지표</span>
                 <div v-if="!webEmbed" class="adp-dm-total">
                   <span class="lab">종합</span>
                   <button

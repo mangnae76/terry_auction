@@ -551,12 +551,14 @@ const downloadCsv = () => {
            칸에 마우스를 대면 그 값과 이어진 칸이 같이 빨갛게 켜진다(앱 DM_LIT_LINKS 와 같은 짝) -->
       <section v-if="webEmbed && rows.length > 0" class="adm-nav dm">
         <p class="adm-nav-scope"><span><span class="area">{{ dmArea }}</span> 수요분석</span><SnapChip :chip="embedded ? (props.chip ?? null) : snap.chip.value" /></p>
+        <p class="dm-block-head">① 기초수치</p>
         <div class="dm-row c3">
           <div v-for="c in dmInputs" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
             <div class="dm-head"><InfoTip :rows="c.tip">{{ c.label }}</InfoTip></div>
             <div class="dm-body"><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" /></b></div>
           </div>
         </div>
+        <p class="dm-block-head">② 수요지표</p>
         <div class="dm-row c4">
           <div v-for="c in dmResults" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
             <div class="dm-head"><InfoTip :rows="c.tip">{{ c.label }}</InfoTip></div>
@@ -594,11 +596,11 @@ const downloadCsv = () => {
         <!-- 지역분석 안 탭(embedded)은 시군구 하나만 보므로 '소속 구' 칸은 뺀다 — 모든 줄이 같은 값이다 -->
         <table :class="['adm-table', { even: embedded }]">
           <thead>
-            <!-- 웹은 묶음 머리(구분 · 지표결과)를 뺀다 -->
+            <!-- 웹은 묶음 머리(구분 · 수요지표)를 뺀다 -->
             <tr v-if="!webEmbed" class="grp">
               <!-- 구분이 총 매물수까지 덮는다 — 손으로 적는 칸은 총 매물수 하나라 따로 묶지 않고 그 칸 머리만 파랗게 -->
               <th :colspan="embedded ? 3 : 4">{{ embedded ? '구분' : '주소지 정보' }}</th>
-              <th colspan="8">지표결과</th>
+              <th colspan="8">수요지표</th>
             </tr>
             <tr>
               <th v-if="!embedded">소속 구</th>
@@ -734,7 +736,9 @@ const downloadCsv = () => {
 .adm-nav.dm .adm-nav-scope { color: #111827; }
 .adm-nav.dm .adm-nav-scope .area { color: #2b6df3; }
 .dm-row { display: grid; gap: 12px; }
-.dm-row.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
+.dm-row.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; }
+/* 두 줄 제목 — 앱 매매수요의 ① 기초수치 · ② 수요지표와 같은 이름 */
+.dm-block-head { margin: 0 0 8px 2px; font-size: 14px; font-weight: 700; color: #111827; }
 .dm-row.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 /* 칸 — 앱 매매수요 칸처럼 위 이름 띠(회색) + 아래 값(흰색). 이어진 칸은 빨갛게(앱 .lit 와 같은 색) */
 .dm-cell { min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; overflow: visible; transition: background .12s, border-color .12s; }
