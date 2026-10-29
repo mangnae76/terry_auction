@@ -20,6 +20,7 @@ import TradeRangeFilter from '../components/TradeRangeFilter.vue';
 import { tradeWindowOf } from '../services/publicDataApi';
 import { priceUnitText, shortPlaceName } from '../services/addressLookup';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
+import { openNaverSpot } from '../services/naverListing';
 import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
@@ -536,11 +537,16 @@ const snapId = ref('');
 const canSave = computed(() => !!(price.value || recentSale.value || recentJeonse.value));
 const snapTone = ref<'info' | 'success' | 'error'>('success');
 /** 표 한 줄의 주소 — 시 · 구까지 붙여 그대로 검색창에 넣을 수 있게 */
-const copyAddr = async (r: CaseTradeRow) => {
+const fullAddr = (r: CaseTradeRow, withName = true) => {
   const code = ovDistrictCode.value || region.value?.lawdCd5 || '';
   const sido = ovSido.value || REGION_GROUPS.find((g) => g.districts.some((x) => x.lawdCode === code))?.sido || region.value?.sido || '';
   const gu = (ovDistrictCode.value ? ovDistricts.value.find((x) => x.lawdCode === ovDistrictCode.value)?.label : region.value?.sigungu) || '';
-  const text = [sido, gu, r.umdNm, r.jibun, r.name].filter(Boolean).join(' ');
+  return [sido, gu, r.umdNm, r.jibun, withName ? r.name : ''].filter(Boolean).join(' ');
+};
+/** 주소를 누르면 그 건물 자리 네이버 부동산 지도 — 같은 입지인지(값이 비슷할 자리인지) 지도로 본다. 지번이 없으면 건물 이름까지 넣어 찾는다 */
+const openAddr = (r: CaseTradeRow) => { void openNaverSpot(fullAddr(r, !r.jibun), kind.value); };
+const copyAddr = async (r: CaseTradeRow) => {
+  const text = fullAddr(r);
   try { await navigator.clipboard.writeText(text); flash(`복사했습니다 — ${text}`); } catch { flash('복사하지 못했습니다.', 'error'); }
 };
 const flash = (text: string, tone: 'info' | 'success' | 'error' = 'success') => {
@@ -1106,6 +1112,9 @@ const downloadCsv = () => {
                 <td class="addr">
                   <span class="addr-in">
                     <span class="addr-t">{{ [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') }}</span>
+                    <button v-if="webEmbed" type="button" class="adm-copy nv" aria-label="네이버 부동산 지도" title="네이버 부동산 지도에서 이 자리 보기(매매 · 전세)" @click.stop="openAddr(r)">
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6" /><path d="M20 4l-9 9" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>
+                    </button>
                     <button type="button" class="adm-copy" aria-label="주소 복사" title="주소 복사" @click.stop="copyAddr(r)">
                       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
                     </button>
@@ -1123,14 +1132,14 @@ const downloadCsv = () => {
         <section v-if="webEmbed && dongRows.length > 0" class="adm-case-block cond">
           <div class="adm-case-block-head"><span>{{ preset ? '② ' : '' }}실거래가 조건분석<em>(같은 동 · 조건 평균)</em></span></div>
           <div class="adm-kpis grid4 case12">
-            <div class="adm-kpi"><small>전용면적범위</small><strong class="rng one"><template v-if="condAreaPair"><UnitText :text="condAreaPair[0]" /><i class="rng-sep">~</i><UnitText :text="condAreaPair[1]" /></template><template v-else>-</template></strong></div>
-            <div class="adm-kpi"><small>거래기간</small><strong class="rng"><UnitText :text="condPeriodText" /></strong></div>
-            <div class="adm-kpi"><small>사용승인</small><strong class="rng"><UnitText :text="condApprovalText" /></strong></div>
             <div class="adm-kpi">
               <small><InfoTip :rows="condTip" under="box" align="end">국토부 실거래 평균</InfoTip></small>
               <strong v-if="condAvg > 0"><UnitText :text="won(condAvg)" suffix="원" /></strong>
               <strong v-else class="ask">조건에 맞는 매매 없음</strong>
             </div>
+            <div class="adm-kpi"><small>전용면적범위</small><strong class="rng one"><template v-if="condAreaPair"><UnitText :text="condAreaPair[0]" /><i class="rng-sep">~</i><UnitText :text="condAreaPair[1]" /></template><template v-else>-</template></strong></div>
+            <div class="adm-kpi"><small>사용승인</small><strong class="rng"><UnitText :text="condApprovalText" /></strong></div>
+            <div class="adm-kpi"><small>거래기간</small><strong class="rng"><UnitText :text="condPeriodText" /></strong></div>
           </div>
           <TradeRangeFilter v-model="condF" :month-choices="[3, 6, 12]" class="adm-trf">
             <button type="button" class="adm-ghost" @click="resetCond">초기화</button>
@@ -1170,7 +1179,10 @@ const downloadCsv = () => {
                   <td class="addr">
                     <span class="addr-in">
                       <span class="addr-t">{{ [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') }}</span>
-                      <button type="button" class="adm-copy" aria-label="주소 복사" title="주소 복사" @click.stop="copyAddr(r)">
+                      <button v-if="webEmbed" type="button" class="adm-copy nv" aria-label="네이버 부동산 지도" title="네이버 부동산 지도에서 이 자리 보기(매매 · 전세)" @click.stop="openAddr(r)">
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6" /><path d="M20 4l-9 9" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>
+                    </button>
+                    <button type="button" class="adm-copy" aria-label="주소 복사" title="주소 복사" @click.stop="copyAddr(r)">
                         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
                       </button>
                     </span>
@@ -1334,6 +1346,7 @@ const downloadCsv = () => {
 .adm-auto-load { align-self: center; font-size: 13px; color: #6b7280; white-space: nowrap; }
 .addr-in { display: flex; align-items: center; gap: 8px; }
 .addr-t { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.adm-copy.nv:hover { border-color: #03a94d; color: #03a94d; }   /* 네이버 초록 */
 .adm-copy { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; color: #6b7280; cursor: pointer; }
 .adm-copy:hover { border-color: #2b6df3; color: #2b6df3; }
 .adm-case-block-head em { font-style: normal; font-size: 13px; font-weight: 400; color: #6b7280; margin-left: 2px; }
