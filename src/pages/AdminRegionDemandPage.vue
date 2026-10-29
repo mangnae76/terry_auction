@@ -295,8 +295,9 @@ const dmResults = computed(() => {
   const v = navStats.value;
   const pct = (x: number) => (x > 0 ? `${x.toFixed(1)}%` : '-');
   return [
-    { id: 'turn' as DmId, label: '거래 회전율', value: pct(v.turnover), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value) },
+    // 가장 중요한 지표(내놓으면 팔리나)를 맨 앞에 — 매물 소화율 → 거래 회전율 → 부담률 → 소진기간
     { id: 'absorb' as DmId, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value) },
+    { id: 'turn' as DmId, label: '거래 회전율', value: pct(v.turnover), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value) },
     { id: 'burden' as DmId, label: '매물 부담률', value: pct(v.burden), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value) },
     { id: 'clear' as DmId, label: '매물 소진기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value) },
   ];
@@ -615,8 +616,8 @@ const downloadCsv = () => {
               <th>평균가<small>(최근 {{ months }}개월)</small></th>
               <th>평균 전용면적<small>(㎡)</small></th>
               <th>평균 건축연수<small>(년)</small></th>
-              <th :class="{ turn: webEmbed }">회전율<small>(%)</small></th>
               <th>매물 소화율<small>(%)</small></th>
+              <th :class="{ turn: webEmbed }">회전율<small>(%)</small></th>
               <th>매물 부담율<small>(%)</small></th>
               <th v-if="webEmbed">매물<br>소진기간</th>
               <th v-else>매물 소진기간</th>
@@ -645,8 +646,8 @@ const downloadCsv = () => {
               <td :class="['n', 'amt', { strong: !webEmbed }]"><span class="v">{{ won(r.avgPrice) }}</span></td>
               <td class="n area"><span class="v">{{ areaText(r.avgAreaM2) }}</span></td>
               <td class="n age"><span class="v">{{ ageText(r.avgBuildYear) }}</span></td>
-              <td :class="['n', 'rate', { turn: webEmbed }]"><em v-if="r.turnover > 0" class="pre">연</em><span class="v">{{ pct(r.turnover) }}</span></td>
               <td class="n rate"><em v-if="r.absorb > 0" class="pre">연</em><span class="v">{{ pct(r.absorb) }}</span></td>
+              <td :class="['n', 'rate', { turn: webEmbed }]"><em v-if="r.turnover > 0" class="pre">연</em><span class="v">{{ pct(r.turnover) }}</span></td>
               <td class="n rate"><span class="v">{{ pct(r.burden) }}</span></td>
               <td class="n clear">
                 <template v-if="r.clearMonths > 0">
