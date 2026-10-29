@@ -7880,7 +7880,8 @@ const goBack = () => router.back();
                 </div>
                 <div :class="['cell split', { lit: dmLit('listings') }]" @mouseenter="dmLitEnter('listings')" @mouseleave="dmLitLeave()" @click="dmLitTap('listings')">
                   <div class="cell-head">
-                    <button type="button" class="adp-dm-link" @click.stop="openListingLookup">총 매물수</button>
+                    <!-- 옆 칸 이름(총 세대수)과 같은 글자 요소(small) — 단추로 두면 웹의 단추 글자 규칙을 받아 모양이 달라졌다. 누르면 네이버 매물 -->
+                    <small class="adp-dm-link" role="button" tabindex="0" @click.stop="openListingLookup" @keydown.enter.stop="openListingLookup">총 매물수</small>
                     <button
                       type="button"
                       class="adp-dm-info"
@@ -10987,7 +10988,8 @@ tr.tone-take { background: #fff5f5; }
   line-height: 1.2; text-align: center;
 }
 /* 옆 칸 이름(총 세대수)과 같은 모양 — 밑줄 없이, 누를 수 있다는 것만 마우스를 대면 파랗게 */
-.adp-dm-link:hover, .adp-dm-link:active { color: #2b6df3; }
+.adp-mkt-cells .cell small.adp-dm-link { cursor: pointer; }
+.adp-mkt-cells .cell small.adp-dm-link:hover, .adp-mkt-cells .cell small.adp-dm-link:active { color: #2b6df3; }
 .adp-dm-block + .adp-dm-block { margin-top: 10px; }
 .adp-dm-block.boxed + .adp-dm-block.boxed { margin-top: 10px; }
 .adp-dm-head.sec2 { margin-top: 7px; padding-top: 6px; border-top: 1px solid #eef1f6; }

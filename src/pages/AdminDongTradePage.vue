@@ -116,6 +116,13 @@ const mapEmbed = computed(() => ({
   from: dateFrom.value,
   to: dateTo.value,
 }));
+// 웹 — 보던 안 탭을 이 브라우저에 남겨 새로고침해도 그 탭으로(지역분석 · 랭킹분석 따로). 아래 예전 주소 표시가 있으면 그쪽이 이긴다
+const VIEW_KEY = `adm.view.${props.rankMode ? 'rank' : 'dong'}`;
+const VIEWS_OF_MODE: string[] = props.rankMode ? ['map', 'top'] : ['supply', 'table', 'dist', 'detail', 'deals', 'case', 'sim'];
+if (webEmbed) {
+  try { const v = localStorage.getItem(VIEW_KEY); if (v && VIEWS_OF_MODE.includes(v)) listView.value = v as typeof listView.value; } catch { /* 그만 */ }
+}
+watch(listView, (v) => { if (webEmbed && VIEWS_OF_MODE.includes(v)) { try { localStorage.setItem(VIEW_KEY, v); } catch { /* 그만 */ } } });
 try { if (props.rankMode && sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
 // 예전 시장분석 › 경매지번 분석 주소로 오면 경매지번 탭으로
 try { if (sessionStorage.getItem('adm.dong.openCase') === '1') { sessionStorage.removeItem('adm.dong.openCase'); listView.value = 'case'; } } catch { /* 그만 */ }
@@ -1055,13 +1062,13 @@ const downloadCsv = () => {
             <table class="adm-rank-tbl">
               <!-- 순위 칸만 좁게, 지역 · 최근 1년 · 증감은 같은 몫 — 세 칸 사이가 고르다 -->
               <colgroup><col style="width: 28px" /><col /><col /><col /></colgroup>
-              <thead><tr><th /><th class="l">지역</th><th class="c">최근 1년</th><th class="r">증감</th></tr></thead>
+              <thead><tr><th /><th class="c">지역</th><th class="c">최근 1년</th><th class="c">증감</th></tr></thead>
               <tbody>
                 <tr v-for="(r, i) in g.rows" :key="r.name">
                   <td class="no">{{ i + 1 }}</td>
-                  <td class="l"><b>{{ r.name }}</b><small>{{ rankGu }}</small></td>
+                  <td class="c"><b>{{ r.name }}</b><small>{{ rankGu }}</small></td>
                   <td class="c"><b>{{ r.cur.toLocaleString('ko-KR') }}<em>건</em></b><small>전년 {{ r.prev.toLocaleString('ko-KR') }}</small></td>
-                  <td class="r"><span :class="['adm-rank-pct', r.pct === null ? 'new' : r.pct > 0 ? 'up' : r.pct < 0 ? 'down' : '']">{{ rankPctText(r.pct) }}</span></td>
+                  <td class="c"><span :class="['adm-rank-pct', r.pct === null ? 'new' : r.pct > 0 ? 'up' : r.pct < 0 ? 'down' : '']">{{ rankPctText(r.pct) }}</span></td>
                 </tr>
                 <tr v-if="g.rows.length === 0" class="pad"><td colspan="4" class="empty">{{ g.empty }}</td></tr>
                 <!-- 늘 열 줄 크기 — 동이 적어 열 개를 못 채워도 세 카드 높이가 같다 -->

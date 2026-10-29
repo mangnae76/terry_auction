@@ -1334,6 +1334,35 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-survey .adp-ind-table > colgroup > col:first-child { width: 125px !important; }
 /* 웹 손품조사 — 매매수요 ① 수치입력 · ② 지표결과 표는 세로로 넉넉히 (줄 높이 약 두 배) */
 .app-detail.tab-survey :is(.dm-input, .dm-result) .cell .cell-head { min-height: 76px !important; padding-top: 16px !important; padding-bottom: 16px !important; }
+/* ===== 웹 손품조사 수요분석 — 시장분석 › 수요분석 요약과 같은 상자 꼴(회색 판 위 떨어진 흰 상자 · 이름 띠 · 값 · 등급은 값 옆 막대 뒤). 앱은 그대로 ===== */
+/* 판 하나 — 제목(1. ○○동 수요분석) · ① · ② 를 한 회색 판에(수요분석 카드만 — 입지/개별성 카드는 그대로) */
+/* 판 하나 — ① · ② 두 묶음을 이어 붙여 한 회색 판으로(같은 상자 안 '2. 입지/개별성'은 그대로) */
+.app-detail.tab-survey .adp-dm-body .adp-dm-block:has(.dm-input) { background: #f5f7fa !important; border-radius: 10px 10px 0 0; padding: 16px 18px 8px; }
+.app-detail.tab-survey .adp-dm-body .adp-dm-block:has(.dm-result) { background: #f5f7fa !important; border-radius: 0 0 10px 10px; padding: 8px 18px 18px; }
+.app-detail.tab-survey .adp-dm-body .adp-dm-block:has(.dm-result) { margin-top: 0 !important; }
+.app-detail.tab-survey .adp-dm-body .adp-mkt-cells.adp-dm-table { gap: 12px !important; border: 0 !important; border-radius: 0 !important; overflow: visible !important; background: transparent !important; }
+.app-detail.tab-survey .adp-dm-body .adp-mkt-cells.adp-dm-table .cell { border: 1px solid #e3e8f0 !important; border-radius: 8px !important; overflow: hidden; background: #fff !important; }
+.app-detail.tab-survey .adp-dm-body :is(.dm-input, .dm-result) .cell .cell-head { min-height: 0 !important; padding: 8px 6px !important; border-bottom: 1px solid #e3e8f0; background: #f3f6fb !important; }
+.app-detail.tab-survey .adp-dm-body :is(.dm-input, .dm-result) .cell .cell-body { padding: 14px 6px !important; background: #fff !important; }
+.app-detail.tab-survey .adp-dm-body :is(.dm-input, .dm-result) .num { font-size: 18px !important; }
+.app-detail.tab-survey .adp-dm-body .dm-input .adp-dm-pair input.adp-mkt-input.dm-val:not([type="checkbox"]) { font-size: 18px !important; font-weight: 800 !important; min-height: 34px !important; }
+/* ② 등급 — 값 옆에 막대(|) 뒤 동그라미 · 적합, 등급이 없으면(-) 안 보인다 */
+.app-detail.tab-survey .adp-dm-body .dm-result .cell.split:not(.dm-total-cell) { flex-direction: row !important; flex-wrap: wrap; justify-content: center; align-items: center; }
+.app-detail.tab-survey .adp-dm-body .dm-result .cell.split:not(.dm-total-cell) > .cell-head { flex: 0 0 100%; }
+.app-detail.tab-survey .adp-dm-body .dm-result .cell.split:not(.dm-total-cell) > .cell-body { flex: 0 0 auto; width: auto !important; padding-right: 0 !important; }
+.app-detail.tab-survey .adp-dm-body .dm-result .cell.split:not(.dm-total-cell) > .cell-grade { flex: 0 0 auto; width: auto !important; border-top: 0 !important; padding: 14px 6px 14px 0 !important; background: transparent !important; }
+.app-detail.tab-survey .adp-dm-body .dm-result .cell.split:not(.dm-total-cell) > .cell-grade::before { content: '|'; margin: 0 7px; font-weight: 400; color: #c3c9d4; }
+.app-detail.tab-survey .adp-dm-body .dm-result .cell.split > .cell-grade:has(.adp-dm-grade.g-none) { display: none !important; }
+.app-detail.tab-survey .adp-dm-body .dm-result .adp-dm-grade, .app-detail.tab-survey .adp-dm-body .dm-result .dm-total-cell .adp-dm-grade { width: 22px !important; height: 22px !important; font-size: 13px !important; }
+.app-detail.tab-survey .adp-dm-body .dm-result .adp-dm-fit, .app-detail.tab-survey .adp-dm-body .dm-result .dm-total-cell .adp-dm-fit { font-size: 12px !important; }
+.app-detail.tab-survey .adp-dm-body .dm-result .dm-total-cell .cell-total { flex: 1 1 auto; padding: 14px 6px; }
+/* 종합에 등급이 없을 때(-)는 동그라미 없이 글자 '-' 만 — 수요분석 요약과 같게 */
+.app-detail.tab-survey .adp-dm-body .dm-result .dm-total-cell .adp-dm-grade.g-none { background: transparent !important; color: #2b6df3 !important; font-size: 18px !important; }
+/* 이어진 칸 — 수요분석 요약과 같은 연빨강 */
+.app-detail.tab-survey .adp-dm-body .adp-mkt-cells.adp-dm-table .cell.lit { background: #fdecea !important; border-color: #f3c2bc !important; }
+.app-detail.tab-survey .adp-dm-body .adp-mkt-cells.adp-dm-table .cell.lit .cell-head { background: #fbdcd8 !important; border-bottom-color: #f3c2bc; }
+.app-detail.tab-survey .adp-dm-body .adp-mkt-cells.adp-dm-table .cell.lit :is(.cell-body, .cell-grade) { background: transparent !important; }
+
 .app-detail.tab-survey :is(.dm-input, .dm-result) .cell .cell-body,
 .app-detail.tab-survey :is(.dm-input, .dm-result) .cell .cell-grade { padding-top: 24px !important; padding-bottom: 24px !important; }
 
