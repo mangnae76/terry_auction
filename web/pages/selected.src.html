@@ -2436,8 +2436,11 @@ span.cal-day.has { cursor: help; }
 .app-market .tsp-in-dong .tsp-stat-grid > div:nth-child(2) { border-top-right-radius: 9px; }
 .app-market .tsp-in-dong .tsp-stat-grid > div:nth-child(3) { border-bottom-left-radius: 9px; }
 .app-market .tsp-in-dong .tsp-stat-grid > div:nth-child(4) { border-bottom-right-radius: 9px; }
-/* ⓘ 말풍선 글은 굵게 하지 않는다 — 웹 어디서나(칸 이름의 굵기를 물려받지 않게) */
-.itip-bubble, .itip-bubble * { font-weight: 400 !important; }
+/* 툴팁 · 말풍선은 웹 어디서나 굵게 하지 않는다(작은 글씨에 굵기를 주면 오히려 안 읽힌다) — 새 말풍선을 만들면 이 줄에 더한다.
+   data-tip(단추 말풍선) · ⓘ(InfoTip) · 앱 화면의 말풍선(매매수요 · 메모 · 경매지번 · 달력 · 진행절차) · role=tooltip 전부 */
+[data-tip]::after,
+:is(.itip-bubble, .adp-dm-bubble, .adp-note-bubble, .adm-tip, .cal-tip, .pw-flow-tip, [role="tooltip"], .leaflet-tooltip),
+:is(.itip-bubble, .adp-dm-bubble, .adp-note-bubble, .adm-tip, .cal-tip, .pw-flow-tip, [role="tooltip"], .leaflet-tooltip) * { font-weight: 400 !important; }
 /* 지역 이름과 저장 칩 한 줄 — 칩은 오른쪽 끝 */
 .app-market .tsp-in-dong .tsp-picked-title { justify-content: space-between !important; flex-wrap: nowrap !important; white-space: nowrap; } /* 저장 칩은 오른쪽 끝(통계 정보 상자 오른쪽 끝선과 맞춤) */
 /* 지도 값 회색 판 — 판 칸마다 주는 위 여백(14)이 이 판에도 붙어 단추가 아래로 쏠렸다. 사방 4 로 */
