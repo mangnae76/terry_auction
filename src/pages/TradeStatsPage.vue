@@ -306,7 +306,8 @@ const ensureMap = async () => {
   const container = document.getElementById('trade-map');
   if (!container) return;
   // 확대·축소 단추는 오른쪽으로 — 왼쪽은 통계 판이 덮는다
-  leafletMap = L.map('trade-map', { zoomControl: false }).setView([37.48, 126.68], 11);
+  // 웹은 확대 단계를 잘게(0.25) — 동들을 다 담되 한 단계씩 뚝 멀어지지 않게
+  leafletMap = L.map('trade-map', { zoomControl: false, zoomSnap: webEmbed ? 0.25 : 1 }).setView([37.48, 126.68], 11);
   L.control.zoom({ position: 'topright' }).addTo(leafletMap);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap',
@@ -344,7 +345,8 @@ const drawMap = async () => {
   });
 
   if (plotted.length > 0) {
-    leafletMap.fitBounds(L.latLngBounds(plotted), { padding: [40, 40], maxZoom: 14 });
+    // 웹 — 동들을 꽉 차게(여백 줄임) 담는다. 확대 단계가 잘아(zoomSnap 0.25) 필요 이상 멀어지지 않는다
+    leafletMap.fitBounds(L.latLngBounds(plotted), { padding: webEmbed ? [12, 12] : [40, 40], maxZoom: 14 });
   }
   markSelectedPin();
 };
@@ -1007,7 +1009,7 @@ onMounted(async () => {
 /* 웹 — 고른 알약(.sel)은 커지고 파란 테두리가 한 번 퍼진다, 나머지(.dim)는 흐리게 */
 :global(.trade-map-pin) { transition: transform .25s cubic-bezier(.3, 1.4, .5, 1), opacity .2s, box-shadow .2s, filter .2s; }
 :global(.trade-map-pin.sel) { transform: scale(1.22); box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(43, 109, 243, .7), 0 10px 22px rgba(17, 24, 39, .3); animation: tmPinRing 1.2s ease-out 1; }
-:global(.trade-map-pin.dim) { opacity: .45; filter: saturate(.5); }
+:global(.trade-map-pin.dim) { opacity: .8; filter: saturate(.75); }   /* 너무 흐리면 다른 동이 안 보였다 */
 @keyframes tmPinRing { 0% { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(43, 109, 243, .7), 0 0 0 6px rgba(43, 109, 243, .5); } 100% { box-shadow: 0 0 0 3px #fff, 0 0 0 6px rgba(43, 109, 243, .7), 0 0 0 22px rgba(43, 109, 243, 0); } }
 :global(.trade-map-pin span) { font-size: 10.5px; font-weight: 700; opacity: 0.92; }
 /* 앞 다섯은 한 치수 크게 — 지도에서 먼저 눈에 들어와야 한다 */
