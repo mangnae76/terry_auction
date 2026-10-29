@@ -3,7 +3,6 @@
 //
 // 시군구 12개월치를 한 번 받아 두고, 읍면동·기간·면적·연식은 받아 둔 줄
 // 안에서 추린다. 조건을 바꿀 때마다 다시 부르면 하루 한도만 깎아먹는다.
-import { openNaverDongListing } from '../services/naverListing';
 import { dealCountTip } from '../services/tipRows';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -159,11 +158,26 @@ const supplyToken = ref(0);
 /** 수요공급 탭을 한 번이라도 열었나 — 열고 나면 계속 띄워 둔다 */
 const supplySeen = ref(false);
 watch(listView, (v) => { if (v === 'supply') supplySeen.value = true; }, { immediate: true });
+/** 수요분석 '전년 동기' — 고른 기간(3 · 6 · 12개월)을 한 해 앞으로 옮긴 창의 동별 거래건수(정상 + 직거래). 24개월을 받기 전엔 없음 */
+const prevCounts = computed<Record<string, number> | null>(() => {
+  if (props.rankMode || rankRows.value.length === 0) return null;
+  const back = new Date(asOf.value); back.setFullYear(back.getFullYear() - 1);
+  const w = tradeWindowOf(back, periodMonths.value);
+  const s0 = w.start.getTime(); const e0 = w.end.getTime();
+  const out: Record<string, number> = {};
+  rankByDong.value.forEach((r) => { out[r.name] = 0; });
+  rankRows.value.forEach((r) => {
+    if (r.kind === '계약해제' || !r.umdNm || r.dealTime < s0 || r.dealTime > e0) return;
+    out[r.umdNm] = (out[r.umdNm] ?? 0) + 1;
+  });
+  return out;
+});
 const supplyEmbed = computed(() => ({
   sido: sido.value, districtCode: districtCode.value, dong: dong.value, kind: kind.value,
   dealKind: loadedDeal.value, months: periodMonths.value, token: supplyToken.value,
   // 수요분석은 따로 국토부에 묻지 않고 이 화면이 받아 둔 같은 거래 · 같은 기준일로 센다(숫자가 하나로)
   rows: windowRows.value, asOf: asOf.value, label: loadedLabel.value,
+  prev: prevCounts.value,
 }));
 // ===== 웹 '거래상세' — 월별 평균가 추이 + 개별 거래 목록 (조건검색 · 검색어를 따른다, 계약해제 제외) =====
 const dealBase = computed(() => searched.value.filter((r) => r.kind !== '계약해제'));
@@ -497,7 +511,9 @@ let rankKey = '';
 const loadRank = async () => {
   const q = lastQuery.value;
   const scope = rankScope.value;
-  if (!props.rankMode || listView.value !== 'top' || !q || !scope) return;
+  // 랭킹분석 › 거래랭킹, 지역분석 › 수요분석(전년 동기 · 증감 칸) 둘 다 24개월을 쓴다
+  const wants = props.rankMode ? listView.value === 'top' : listView.value === 'supply';
+  if (!wants || !q || !scope) return;
   const key = `${scope.parts.map((x) => x.lawd).join(',')}|${q.kind}|${q.deal}|${asOf.value}`;
   if (key === rankKey) return;
   rankKey = key; rankLoading.value = true; rankErr.value = '';
@@ -550,49 +566,6 @@ const rankLists = computed(() => {
     { key: 'up', title: '거래급증 TOP10', sub: `전년 ${RANK_MIN}건 이상 · 증가율 높은 순 · 동 ${n}곳 중`, rows: up, empty: '전년보다 늘어난 동이 없습니다' },
     { key: 'down', title: '거래급감 TOP10', sub: `전년 ${RANK_MIN}건 이상 · 감소율 큰 순 · 동 ${n}곳 중`, rows: down, empty: '전년보다 줄어든 동이 없습니다' },
   ];
-});
-// ===== 거래랭킹 동별 표 — 네이버 매물 수(손 입력, 수요분석과 같은 저장 자리) · 활발도 =====
-type RankManual = { units?: number; listings?: number };
-const rankManual = ref<Record<string, RankManual>>({});
-let rankManualLoaded = false;
-/** 수요분석 매물수와 같은 열쇠 — 종류 | 시군구 | 동 */
-const rankKeyOf = (r: { gu: string; name: string }) => `${lastQuery.value?.kind ?? kind.value}|${r.gu}|${r.name}`;
-const loadRankManual = async () => {
-  if (!auth.uid || !props.rankMode) return;
-  const prefs = await loadUserPrefs(auth.uid);
-  rankManual.value = { ...((prefs as { adminRegionManual?: Record<string, RankManual> } | null)?.adminRegionManual ?? {}) };
-  rankManualLoaded = true;
-};
-onMounted(() => { void loadRankManual(); });
-watch(() => auth.uid, () => { void loadRankManual(); });
-let rankSaveTimer: ReturnType<typeof setTimeout> | null = null;
-const setRankListings = (r: RankRow, raw: string) => {
-  const n = Number(raw.replace(/[^\d]/g, ''));
-  const k = rankKeyOf(r);
-  rankManual.value = { ...rankManual.value, [k]: { ...(rankManual.value[k] ?? {}), listings: Number.isFinite(n) && n > 0 ? n : undefined } };
-  if (!rankManualLoaded || !auth.uid) return;
-  if (rankSaveTimer) clearTimeout(rankSaveTimer);
-  rankSaveTimer = setTimeout(() => { rankSaveTimer = null; void saveUserPrefs(auth.uid, { adminRegionManual: rankManual.value }); }, 700);
-};
-const RANK_DONG_COLS = [
-  { key: 'name', label: '동/지역' }, { key: 'listings', label: '네이버 매물 수' }, { key: 'cur', label: '최근 1년 실거래' },
-  { key: 'prev', label: '전년 동기' }, { key: 'pct', label: '증감(전년 대비)' }, { key: 'activity', label: '활발도' },
-] as const;
-type RankSortKey = typeof RANK_DONG_COLS[number]['key'];
-const rankSort = ref<RankSortKey>('cur');
-const rankDesc = ref(true);
-const toggleRankSort = (k: RankSortKey) => { if (rankSort.value === k) rankDesc.value = !rankDesc.value; else { rankSort.value = k; rankDesc.value = k !== 'name'; } };
-const rankDongRows = computed(() => {
-  const rows = rankByDong.value.map((r) => {
-    const listings = rankManual.value[rankKeyOf(r)]?.listings ?? 0;
-    return { ...r, listings, activity: listings > 0 ? r.cur / listings : null };
-  });
-  const k = rankSort.value;
-  const val = (r: typeof rows[number]) => (k === 'name' ? 0 : (r[k] ?? -Infinity) as number);
-  return rows.sort((a, b) => {
-    const d = k === 'name' ? a.name.localeCompare(b.name, 'ko') : val(a) - val(b);
-    return rankDesc.value ? -d : d;
-  });
 });
 /** 증감 — ±3% 안은 보합 */
 const rankTone = (p: number | null) => (p === null ? 'new' : Math.abs(p) < 3 ? 'flat' : p > 0 ? 'up' : 'down');
@@ -1164,28 +1137,6 @@ const downloadCsv = () => {
             <p>※ 급증 · 급감은 <b>전년 동기 {{ RANK_MIN }}건 이상</b> 거래된 동만 견줍니다 — 거래가 원래 적어 증감률만 커 보이는 착시를 뺍니다. <b>거래량 TOP10은 거르지 않고 최근 1년 거래건수 순</b>입니다 — 팔 때 받아 줄 사람이 몇 명인지 보는 칸입니다.</p>
             <p>※ 최근 1년 = 조회일 기준 12개월, 전년 동기 = 그 앞 12개월(정상 + 직거래, 계약해제 제외). 전년 동기 거래가 없는 동은 증감을 매기지 않고 '신규'로 둡니다.</p>
           </div>
-          <!-- 동별 표 — 참고 화면처럼 세 카드 밑에. 동 옆 '네이버매물 ↗'(그 동만 보기) · 네이버 매물 수는 손으로(수요분석 매물수와 같은 값) · 활발도 = 최근 1년 ÷ 매물 수 -->
-          <section v-show="!rankLoading" class="adm-rank-dong">
-            <header><strong>{{ rankScope?.label }} 동별 거래</strong><small>최근 1년 · 전년 같은 12개월 대비 · 동 {{ rankByDong.length }}곳</small></header>
-            <table class="adm-rank-dtbl">
-              <!-- 동/지역만 넓게(네이버 링크가 붙는다), 나머지 다섯 칸은 같은 폭 -->
-              <colgroup><col style="width: 24%" /><col /><col /><col /><col /><col /></colgroup>
-              <thead><tr>
-                <th v-for="h in RANK_DONG_COLS" :key="h.key" :class="'c'"><button type="button" class="adm-sort" @click="toggleRankSort(h.key)">{{ h.label }}<i :class="{ on: rankSort === h.key }">{{ rankSort === h.key ? (rankDesc ? '↓' : '↑') : '⇅' }}</i></button></th>
-              </tr></thead>
-              <tbody>
-                <tr v-for="r in rankDongRows" :key="r.id" :class="['pick', { on: rankPick?.id === r.id }]" @click="pickRankDong(r)">
-                  <td class="c"><span class="nm">{{ r.name }}</span><small v-if="rankManyGu" class="gu">{{ rankSub(r) }}</small><button type="button" class="nv-btn" :title="`${r.name}만 보기 — 네이버 부동산 매매 매물`" @click.stop="openNaverDongListing([r.sido, r.gu, r.name].filter(Boolean).join(' '), lastQuery?.kind ?? kind)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></td>
-                  <td class="c"><input class="adm-rank-in" inputmode="numeric" @click.stop placeholder="매물 수" :value="r.listings ? r.listings.toLocaleString('ko-KR') : ''" @input="setRankListings(r, ($event.target as HTMLInputElement).value)" /></td>
-                  <td class="c"><b>{{ r.cur.toLocaleString('ko-KR') }}</b><em>건</em></td>
-                  <td class="c">{{ r.prev.toLocaleString('ko-KR') }}<em>건</em></td>
-                  <td class="c"><span :class="['adm-rank-pct', rankTone(r.pct)]">{{ rankPctLabel(r.pct) }}</span></td>
-                  <td class="c"><b v-if="r.activity !== null">{{ r.activity.toFixed(2) }}</b><template v-else>-</template></td>
-                </tr>
-              </tbody>
-            </table>
-            <p class="adm-rank-note">입력한 네이버 매물 수는 계정에 저장되어 다음에도 남고, 수요분석 매물수와 같은 값입니다. 활발도 = 최근 1년 거래건수 ÷ 네이버 매물 수.</p>
-          </section>
         </div>
         <div v-else-if="webEmbed && (listView === 'deals' || listView === 'sim')" class="adm-deals">
           <!-- 유사매물시세(시장분석 탭 · 수익분석)에는 월별 평균가 추이를 두지 않는다 — 거래상세에만 -->
@@ -1507,29 +1458,7 @@ const downloadCsv = () => {
 .adm-rank-notes p + p { margin-top: 2px; }
 .adm-rank-notes b { font-weight: 400; color: inherit; }
 .adm-rank-pct.flat { background: #f3f4f6; color: #6b7280; }
-/* 동별 표 — 세 카드 밑 한 장, 우리 표 꼴(모서리 8 · 머리 회청색 띠 · 14) */
-.adm-rank-dong { grid-column: 1 / -1; margin-top: 4px; background: #fff; border: 1px solid #e3e8f0; border-radius: 8px; padding: 16px 18px 12px; }
-.adm-rank-dong header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
-.adm-rank-dong header strong { font-size: 16px; font-weight: 800; color: #111827; }
-.adm-rank-dong header small { font-size: 12px; color: #6b7280; }
-.adm-rank-dtbl { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; border: 1px solid #e3e8f0; border-radius: 8px; font-size: 14px; font-variant-numeric: tabular-nums; }
-.adm-rank-dtbl th { padding: 9px 8px; background: #f3f6fb; color: #374151; font-weight: 700; border-bottom: 1px solid #e3e8f0; }
-.adm-rank-dtbl th:first-child { border-top-left-radius: 7px; } .adm-rank-dtbl th:last-child { border-top-right-radius: 7px; }
-.adm-rank-dtbl td { padding: 8px; border-top: 1px solid #f1f4f9; color: #111827; white-space: nowrap; vertical-align: middle; }
-/* 세로 칸 선 — 연하게, 첫 칸 왼쪽은 표 테두리가 맡는다 */
-.adm-rank-dtbl :is(th, td) + :is(th, td) { border-left: 1px solid #eef1f6; }
-.adm-rank-dtbl tbody tr:first-child td { border-top: 0; }
-.adm-rank-dtbl :is(th, td).l { text-align: left; } .adm-rank-dtbl :is(th, td).c { text-align: center; }
-.adm-rank-dtbl th .adm-sort { font-weight: 700; color: #374151; }
-.adm-rank-dtbl td .nm { font-weight: 700; }
-.adm-rank-dtbl td .gu { margin-left: 6px; font-size: 12px; color: #9ca3af; }
-.adm-rank-dtbl td em { font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; margin-left: 2px; }
-.adm-rank-dtbl td .nv-btn { display: inline-flex; align-items: center; gap: 2px; height: 20px; margin-left: 8px; padding: 0 6px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; color: #6b7280; font-family: inherit; font-size: 12px; font-weight: 400; vertical-align: middle; cursor: pointer; }
-.adm-rank-dtbl td .nv-btn:hover { border-color: #2b6df3; color: #2b6df3; }
-.adm-rank-in { width: 100%; max-width: 140px; height: 34px; box-sizing: border-box; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: 700; color: #2b6df3; text-align: center; }
-.adm-rank-in::placeholder { font-weight: 400; color: #9ca3af; }
-.adm-rank-in:focus { outline: none; border-color: #2b6df3; }
-.adm-rank-note { margin: 10px 2px 0; font-size: 12px; color: #6b7280; }
+
 .adm-gunav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }
 .adm-gunav-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .adm-gunav-head strong { font-size: 18px; font-weight: 800; color: #2b6df3; }

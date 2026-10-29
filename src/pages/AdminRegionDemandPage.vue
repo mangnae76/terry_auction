@@ -42,6 +42,8 @@ type EmbedFilter = {
   sido: string; districtCode: string; dong: string; kind: Kind; dealKind: 'sale' | 'jeonse'; months: number; token: number;
   /** 지역분석이 받아 둔 거래(기간 안) · 조회 기준 시각 · 이름 — 있으면 다시 묻지 않고 이것으로 센다 */
   rows?: DongTradeDetailRow[]; asOf?: number; label?: string;
+  /** 전년 동기 동별 거래건수(같은 길이의 창을 한 해 앞으로) — 지역분석이 24개월을 받은 뒤에 온다 */
+  prev?: Record<string, number> | null;
 };
 const props = defineProps<{ embed?: EmbedFilter | null; chip?: { tone: string; text: string } | null }>();
 const embedded = computed(() => !!props.embed);
@@ -317,6 +319,12 @@ const ageText = (buildYear: number) => (
 const pct = (n: number) => (n > 0 ? `${n.toFixed(1)}%` : '-');
 /** 거래량을 연·월로 가른다 — 24개월을 받아도 1년치로 환산해 견준다 */
 /** 표의 거래 칸 — 웹은 총 거래건수(정상 + 직거래, 계약해제 제외), 분석 도구는 정상거래만(예전 그대로) */
+/** 전년 동기 거래건수 — 아직 못 받았으면 null */
+const prevOf = (r: Row) => (props.embed?.prev ? (props.embed.prev[r.umdNm] ?? 0) : null);
+/** 증감(전년 대비) — 거래랭킹과 같은 셈 · 같은 표시(±3% 안은 보합, 전년 0 은 신규) */
+const chgPct = (r: Row) => { const p = prevOf(r); return p ? ((dealOf(r) - p) / p) * 100 : null; };
+const chgTone = (r: Row) => { const v = chgPct(r); return v === null ? 'new' : Math.abs(v) < 3 ? 'flat' : v > 0 ? 'up' : 'down'; };
+const chgText = (r: Row) => { const v = chgPct(r); if (v === null) return '신규'; if (Math.abs(v) < 3) return `${v > 0 ? '+' : ''}${v.toFixed(1)}% 보합`; return `${v > 0 ? '▲ +' : '▼ '}${v.toFixed(1)}%`; };
 const dealOf = (r: { count: number; directCount?: number }) => (webEmbed ? r.count + (r.directCount ?? 0) : r.count);
 const yearlyOf = (count: number) => count / Math.max(1, months.value / 12);
 const monthlyOf = (count: number) => count / Math.max(1, months.value);
@@ -605,7 +613,7 @@ const downloadCsv = () => {
         <!-- 지역분석 안 탭(embedded)은 시군구 하나만 보므로 '소속 구' 칸은 뺀다 — 모든 줄이 같은 값이다 -->
         <table :class="['adm-table', { even: embedded }]">
           <!-- 웹 — 동 이름 옆 '네이버 매물 ↗'이 들어가게 첫 칸만 넓히고(160) 나머지 열 칸이 남은 폭을 고르게 나눈다 -->
-          <colgroup v-if="webEmbed && embedded"><col style="width: 160px" /><col v-for="i in 10" :key="i" /></colgroup>
+          <colgroup v-if="webEmbed && embedded"><col style="width: 160px" /><col v-for="i in 12" :key="i" /></colgroup>
           <thead>
             <!-- 웹은 묶음 머리(구분 · 수요지표)를 뺀다 -->
             <tr v-if="!webEmbed" class="grp">
@@ -619,6 +627,7 @@ const downloadCsv = () => {
               <th>{{ webEmbed ? '세대수' : '총 세대수' }}</th>
               <th class="in">{{ webEmbed ? '매물수' : '총 매물수' }}<small v-if="webEmbed">(네이버 매물수)</small></th>
               <th>{{ webEmbed ? '거래건수' : '총 거래량' }}<small>(최근 {{ months }}개월)</small></th>
+              <template v-if="webEmbed && embedded"><th>전년 동기<small>(1년 전 같은 {{ months }}개월)</small></th><th>증감<small>(전년 대비)</small></th></template>
               <th>평균가<small>(최근 {{ months }}개월)</small></th>
               <th>평균 전용면적<small>(㎡)</small></th>
               <th>평균 건축연수<small>(년)</small></th>
@@ -649,6 +658,10 @@ const downloadCsv = () => {
                 <em class="bar">|</em>
                 <span class="grp m"><em class="pre">월</em><i>{{ cntInt(monthlyOf(dealOf(r))) }}</i></span><b>{{ cntFrac(monthlyOf(dealOf(r))) }}</b>
               </td>
+              <template v-if="webEmbed && embedded">
+                <td class="n prev"><template v-if="prevOf(r) !== null">{{ prevOf(r)!.toLocaleString('ko-KR') }}<em class="u">건</em></template><template v-else>…</template></td>
+                <td class="n chg"><span v-if="prevOf(r) !== null" :class="['chg-pill', chgTone(r)]">{{ chgText(r) }}</span><template v-else>…</template></td>
+              </template>
               <td :class="['n', 'amt', { strong: !webEmbed }]"><span class="v">{{ won(r.avgPrice) }}</span></td>
               <td class="n area"><span class="v">{{ areaText(r.avgAreaM2) }}</span></td>
               <td class="n age"><span class="v">{{ ageText(r.avgBuildYear) }}</span></td>
@@ -800,6 +813,13 @@ const downloadCsv = () => {
 .adm-table tbody tr:hover td { background: #fafbfe; }
 .adm-table td.gu { font-weight: 700; color: #374151; white-space: nowrap; }
 .adm-table td.nm { font-weight: 800; white-space: nowrap; }
+/* 전년 동기 · 증감 — 거래랭킹 알약과 같은 색(늘면 연빨강 · 줄면 연파랑 · 보합 · 신규 회색) */
+.adm-table td.prev em.u { font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; margin-left: 1px; }
+.adm-table td.chg { text-align: center; }
+.chg-pill { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.chg-pill.up { background: #fde2e2; color: #c22e2e; }
+.chg-pill.down { background: #dbe7ff; color: #1d4ed8; }
+.chg-pill.flat, .chg-pill.new { background: #eef1f6; color: #4b5563; }
 /* 웹 — 동 이름 옆 '네이버 매물 ↗' (그 동만 보기 · 매매 · 종류 필터로 연다) */
 .nv-btn { display: inline-flex; align-items: center; gap: 2px; height: 20px; margin-left: 6px; padding: 0 6px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; color: #6b7280; font-family: inherit; font-size: 12px; font-weight: 400; vertical-align: middle; cursor: pointer; } /* 링크일 뿐이라 작게 · 회색 · 굵기 없이(웹 글자 하한 12) */
 .nv-btn:hover { border-color: #2b6df3; color: #2b6df3; }
