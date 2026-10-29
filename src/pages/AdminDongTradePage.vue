@@ -435,8 +435,11 @@ onMounted(async () => {
     kind.value = (f.kind as Kind) || kind.value;
     dong.value = f.dong || '';
     applyPeriod(f.periodMonths || 12);
-    areaMin.value = f.areaMin ?? ''; areaMax.value = f.areaMax ?? '';
-    yearMin.value = f.yearMin ?? ''; yearMax.value = f.yearMax ?? '';
+    // 웹은 면적 · 건축년도 칸이 없다 — 예전에 저장한 값이 보이지 않게 걸러 내지 않도록 웹에선 안 불러온다
+    if (!webEmbed) {
+      areaMin.value = f.areaMin ?? ''; areaMax.value = f.areaMax ?? '';
+      yearMin.value = f.yearMin ?? ''; yearMax.value = f.yearMax ?? '';
+    }
     await nextTick();
     restoring = false;
   }
@@ -990,15 +993,11 @@ const downloadCsv = () => {
             <strong>{{ listView === 'sim' ? '실거래 조건 분석' : '개별 거래 목록' }}</strong>
             <span>총 거래건수 {{ dealRows.length.toLocaleString('ko-KR') }}건</span>
           </div>
-          <!-- 조건검색을 상자 없이 한 줄로 — 칸 이름은 칸 안 왼쪽에. 검색칸 · 저장 · 초기화까지 한 줄 -->
+          <!-- 검색칸 · 저장 · 초기화 한 줄 (시작 · 종료일자 · 면적 · 건축년도 칸은 뺐다) -->
           <div class="adm-inline-cond">
-            <label class="adm-inbox"><em>시작일자</em><input v-model="dateFrom" type="date" /></label>
-            <label class="adm-inbox"><em>종료일자</em><input v-model="dateTo" type="date" /></label>
-            <label class="adm-inbox"><em>면적(평)</em><input v-model="areaMin" inputmode="decimal" placeholder="최소" class="num" /><i>~</i><input v-model="areaMax" inputmode="decimal" placeholder="최대" class="num" /></label>
-            <label class="adm-inbox"><em>건축년도</em><input v-model="yearMin" inputmode="numeric" placeholder="1990" class="num" /><i>~</i><input v-model="yearMax" inputmode="numeric" placeholder="2026" class="num" /></label>
             <label class="adm-inbox grow">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
-              <input v-model="listQuery" placeholder="건물명 · 동 · 금액 등으로 검색" />
+              <input v-model="listQuery" placeholder="건물명 · 동으로 검색" />
             </label>
             <button type="button" class="adm-ghost" @click="saveFilters">저장</button>
             <button type="button" class="adm-ghost" @click="resetFilters">초기화</button>
