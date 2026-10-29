@@ -2621,7 +2621,7 @@ const INDIV_GROUPS: IndivGroup[] = [
     ],
   },
 ];
-/** PDF(건축물대장 · 단지정보)에서 자동으로 채우는 항목 — 웹은 이름을 빨갛게(아래 watch 의 자동 채움과 같은 목록) */
+/** PDF(건축물대장 · 단지정보) · 건축물대장 API 로 자동으로 채우는 항목 — 이름 글자를 블루그레이로(아래 watch 의 자동 채움과 같은 목록) */
 const INDIV_AUTO = new Set(['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.floorNum']);
 const indivValue = (id: string) => surveyForm.value.indivValues?.[id] ?? '';
 // 년식 — 사용승인 연월(YYYY-MM)을 휠로 고르고, 옆에 올해 기준 연차를 보여 준다
@@ -8258,7 +8258,7 @@ const goBack = () => router.back();
               <thead><tr class="adp-ind-head"><th>구분</th><th>내용</th><th>비율</th></tr></thead>
               <tbody>
                 <tr v-for="item in g.items" :key="item.id">
-                  <th :class="['adp-ind-label', { survey: item.survey, auto: webEmbed && INDIV_AUTO.has(item.id) }]" :title="webEmbed && INDIV_AUTO.has(item.id) ? 'PDF(건축물대장)에서 자동으로 채운 항목' : undefined">{{ item.label }}</th>
+                  <th :class="['adp-ind-label', { survey: item.survey, auto: INDIV_AUTO.has(item.id) }]" :title="INDIV_AUTO.has(item.id) ? 'PDF · 건축물대장에서 자동으로 채우는 항목' : undefined">{{ item.label }}</th>
                   <td class="adp-ind-ctl">
                     <div :class="['row', { left: indivEditing && (item.yearMonth || item.half) }]">
                       <template v-if="item.yearMonth">
@@ -10903,8 +10903,8 @@ tr.tone-take { background: #fff5f5; }
 .adp-ind-label { background: #fafbfc; font-weight: 700; font-size: 12.5px; line-height: 1.25; }
 /* 항목 이름(연식~건물내부 · 층~수리유무)은 회색 — 값이 먼저 눈에 들어오게 */
 .adp-ind-pair .adp-ind-label { color: #6b7280; }
-/* 웹 — PDF · 건축물대장에서 자동으로 채우는 항목은 이름 칸을 아주 흐린 블루그레이로(살짝 티만) */
-.adp-ind-pair .adp-ind-label.auto { background: #eaf0f7; }
+/* PDF · 건축물대장에서 자동으로 채우는 항목(년식 · 주차수 · 엘베 · 현관구조 · 층)은 이름 글자를 블루그레이로(살짝 티만) — 앱 · 웹 */
+.adp-ind-pair .adp-ind-label.auto { color: #5f7a99; }
 /* 앱 편집 상태 — 칸마다 제각각이던 글자(10 · 10.5 · 11 · 11.5 · 12.5)를 12 하나로 */
 .adp-ind-table :is(.adp-ind-input, .adp-ind-year, .adp-agency-trigger, .adp-toggle-btn, .adp-ind-years, .adp-sum-pair) { font-size: 12px; }
 .adp-ind-ctl .row { display: flex; align-items: center; justify-content: center; gap: 4px; }
