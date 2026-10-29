@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 거래 타임라인 — 점 하나 = 거래 한 건(가로 계약일 · 세로 금액), 검은 선 = 월별 가운데 값, 바닥 막대 = 월별 거래량.
+// 거래 타임라인 — 점 하나 = 거래 한 건(가로 계약일 · 세로 금액), 검은 선 = 월별 중간값, 바닥 막대 = 월별 거래량.
 // 열면 왼쪽 달부터 재생되고, 끝나면 가운데에 '다시 재생'. 달을 누르면 그 달을 고른다(v-model, 'YYYY.MM') — 아래 목록이 그 달로 좁혀진다.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { DongTradeDetailRow } from '../services/publicDataApi';
@@ -40,7 +40,7 @@ const insight = computed(() => {
   const head = pick(st.slice(0, k).map((s) => s.m)); const tail = pick(st.slice(-k).map((s) => s.m));
   const chg = head ? (tail / head - 1) * 100 : 0;
   const ym = (m: string) => `${m.slice(0, 4)}년 ${Number(m.slice(5, 7))}월`;
-  return `거래가 가장 많았던 달은 <em>${ym(busiest.m)}(${busiest.n.toLocaleString('ko-KR')}건)</em>입니다. 처음 ${k}개월 가운데 값 ${eok(head)} → 최근 ${k}개월 ${eok(tail)}으로 <em>${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%</em> ${chg >= 0 ? '올랐습니다' : '내렸습니다'}.`;
+  return `거래가 가장 많았던 달은 <em>${ym(busiest.m)}(${busiest.n.toLocaleString('ko-KR')}건)</em>입니다. 처음 ${k}개월 중간값 ${eok(head)} → 최근 ${k}개월 ${eok(tail)}으로 <em>${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%</em> ${chg >= 0 ? '올랐습니다' : '내렸습니다'}.`;
 });
 
 // ===== 그리기 =====
@@ -102,12 +102,12 @@ function draw(now: number) {
     c.fillStyle = P.tones[COLORS[colorKey.value].tier(p.r)]; c.beginPath(); c.arc(p.x, p.y, 3.2 + fresh * 3, 0, Math.PI * 2); c.fill();
   });
   c.globalAlpha = 1;
-  // 월별 가운데 값 선
+  // 월별 중간값 선
   const line = stats.value.filter((s) => monthStart(s.m) + per / 2 <= head).map((s) => { const [a, b] = mX(s.m); return { x: (a + b) / 2, y: sy(s.med), s }; });
   if (line.length) {
     c.strokeStyle = P.ink; c.lineWidth = 2.2; c.beginPath(); line.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.stroke();
     line.forEach((p) => { c.fillStyle = P.card; c.beginPath(); c.arc(p.x, p.y, 4.5, 0, Math.PI * 2); c.fill(); c.strokeStyle = P.ink; c.lineWidth = 2; c.stroke(); });
-    const last = line[line.length - 1]; c.fillStyle = P.ink; c.font = '700 12px "Pretendard", sans-serif'; c.textAlign = 'right'; c.fillText(`가운데 값 ${eok(last.s.med)}`, last.x - 10, last.y - 10);
+    const last = line[line.length - 1]; c.fillStyle = P.ink; c.font = '700 12px "Pretendard", sans-serif'; c.textAlign = 'right'; c.fillText(`중간값 ${eok(last.s.med)}`, last.x - 10, last.y - 10);
   }
   if (k < 1) { const x = sx(head); c.strokeStyle = P.accent; c.lineWidth = 2; c.beginPath(); c.moveTo(x, PAD.t); c.lineTo(x, H - 22); c.stroke(); }
   if (hover) { c.strokeStyle = P.ink; c.lineWidth = 1.5; c.beginPath(); c.arc(hover.x, hover.y, 6, 0, Math.PI * 2); c.stroke(); }
@@ -134,7 +134,7 @@ const onMove = (e: MouseEvent) => {
   } else if (hoverM) {
     const i = months.value.indexOf(hoverM); const s = stats.value[i]; const p = stats.value[i - 1];
     const dn = p ? s.n - p.n : null; const dm = p && p.med ? (s.med / p.med - 1) * 100 : null;
-    tip.value = { x: Math.min(x + 18, W - 230), y: Math.max(y - 80, 4), lines: [['달', `${hoverM.slice(0, 4)}년 ${Number(hoverM.slice(5, 7))}월`], ['거래', `${s.n.toLocaleString('ko-KR')}건${dn == null ? '' : ` (전달 ${dn >= 0 ? '+' : ''}${dn})`}`], ['가운데 값', `${eok(s.med)}${dm == null ? '' : ` (${dm >= 0 ? '+' : ''}${dm.toFixed(1)}%)`}`], ['누르면', '아래 목록이 이 달로']] };
+    tip.value = { x: Math.min(x + 18, W - 230), y: Math.max(y - 80, 4), lines: [['달', `${hoverM.slice(0, 4)}년 ${Number(hoverM.slice(5, 7))}월`], ['거래', `${s.n.toLocaleString('ko-KR')}건${dn == null ? '' : ` (전달 ${dn >= 0 ? '+' : ''}${dn})`}`], ['중간값', `${eok(s.med)}${dm == null ? '' : ` (${dm >= 0 ? '+' : ''}${dm.toFixed(1)}%)`}`], ['누르면', '아래 목록이 이 달로']] };
   } else tip.value = null;
 };
 const onLeave = () => { hover = null; hoverM = null; tip.value = null; redraw(); };
@@ -164,7 +164,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
       </div>
     </div>
     <div class="ttl-read">
-      <p><b>읽는 법</b><span>오른쪽으로 갈수록 최근, 위로 갈수록 비싸게 팔린 거래입니다. 검은 선은 달마다 가운데 값, 바닥 막대는 그 달 거래량입니다. 달을 누르면 아래 목록이 그 달 거래로 좁혀집니다.</span></p>
+      <p><b>읽는 법</b><span>오른쪽으로 갈수록 최근, 위로 갈수록 고가 거래입니다. 검은 선은 월 중간값, 바닥 막대는 월 거래량입니다. 월을 누르면 그달 거래로 정리됩니다.</span></p>
       <p v-if="insight"><b>한눈에</b><span v-html="insight" /></p>
     </div>
     <div class="ttl-board">
