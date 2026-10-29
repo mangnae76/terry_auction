@@ -11337,7 +11337,9 @@ tr.tone-take { background: #fff5f5; }
 /* 매물 소진기간의 '/' — 앞뒤를 한 칸씩 띄운다 */
 /* 매물 소진기간 — '91M / 7Y 7M'.
    숫자·단위는 붙이고, 슬래시 앞뒤와 '7Y' 다음에만 한 칸 띄운다 */
-.adp-dm-block .adp-mkt-cells .cell strong .num.adp-dm-slash { min-width: 0; margin: 0 5px; }
+.adp-dm-block .adp-mkt-cells .cell strong .num.adp-dm-slash { min-width: 0; margin: 0 5px; font-weight: 400; color: #c3cbd8; } /* 소진기간 '111M / 9Y 3M' 의 빗금은 회색 — 숫자만 파랑 */
+/* 소진기간 · 연월의 단위 글자(Y · M · 연 · 월)는 회색 */
+.adp-dm-block .adp-mkt-cells .cell strong.hi-blue em { color: #6b7280 !important; }
 .adp-dm-block .adp-mkt-cells .cell strong .num.adp-dm-gap { margin-left: 5px; }
 .adp-dm-block .adp-mkt-cells .cell strong.adp-dm-clear .num { min-width: 0; }
 .adp-dm-block .adp-mkt-cells .cell strong.adp-dm-clear em { min-width: 0; margin-left: 0; }
