@@ -353,11 +353,18 @@ button { cursor: pointer; }
 /* 전체 · 매매 · 전세 · 월세는 선택 풀기 앞까지 같은 폭으로 길게 — 빈 칸(.adm-tab-fill)은 쓰지 않는다 */
 .adm-case-in .adm-tabs .adm-tab { flex: 1 1 0; justify-content: center; min-width: 0; }
 .adm-case-in .adm-tabs .adm-tab-fill { display: none; }
+/* 시세조사 아래 거래 표 — 지역별분석 표(.adm-dongsum)와 같은 위아래 14 · 글자 14 */
+.adm-case-in .adm-table :is(th, td) { padding-top: 14px !important; padding-bottom: 14px !important; font-size: 14px !important; line-height: 1.45 !important; }
+.adm-case-in .adm-table td span.v { font-size: 14px !important; vertical-align: top; }
+/* 구분 알약은 글 한 줄 높이(20) 안에 — 줄 높이가 지역별분석 표(49)와 같아진다 */
+.adm-case-in .adm-table td .kind { font-size: 12px; line-height: 20px; padding: 0 9px; vertical-align: top; }
 /* 전세가 비율 칸 — 크게 */
 .adm-case-in .case12 .adm-rate-input { width: 52px; height: 26px; font-size: 14px; border-radius: 6px; padding: 0 6px; }
 .adm-case-in .case12 small em:has(.adm-rate-input) { font-size: 14px; display: inline-flex; align-items: center; gap: 2px; }
 /* 업데이트 칩 — 제목 줄 오른쪽 끝, 아래 칸들의 오른쪽 끝선에 맞춘다 */
 .adm-case-in .adm-case-row .snap-chip { margin-left: auto; }
+/* 제목 줄 — 아래 묶음 상자와 간격을 줄인다(위 여백과 균형) */
+.adm-case-in.app-market[data-k="case"] .adm-case-row { height: 40px !important; margin-top: 6px !important; margin-bottom: 6px !important; }
 .adm-case-in .adm-case-row { margin-top: 0 !important; position: static !important; background: transparent !important; box-shadow: none !important; clip-path: none !important; border: 0 !important; }
 .app-market[data-k="case"] .adm-case-title { align-self: center; font-size: 16px; font-weight: 800; color: var(--text); white-space: nowrap; }
 .app-market[data-k="case"] .adm-case-row .adm-acts { margin-left: 16px; align-self: center; flex-wrap: nowrap; }
