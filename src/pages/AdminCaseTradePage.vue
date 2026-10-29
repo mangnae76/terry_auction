@@ -895,7 +895,7 @@ const downloadCsv = () => {
         <!-- 손품조사 실거래가 조사와 같은 짜임 — 작은 제목 아래 '경매지번 실거래가' 묶음 상자 하나에 12칸 -->
         <section v-if="webEmbed" class="adm-case-block">
           <div class="adm-case-block-head">
-            <span>{{ mode === MODES[0] ? '경매지번' : '유사물건' }} 실거래가<em>(매매·전세)</em></span>
+            <span>{{ preset ? '① ' : '' }}{{ mode === MODES[0] ? '경매지번' : '유사물건' }} 실거래가<em>(매매·전세)</em></span>
             <!-- 경매물건 / 유사물건 — 손품조사 실거래가 조사의 알약 두 개와 같다. 둘 중 하나를 쓴다 -->
             <span class="adm-mode-pills">
               <button v-for="m in MODES" :key="m" type="button" :class="['adm-mode-pill', { on: mode === m }]" :aria-pressed="mode === m" @click="mode = m; tab = 'all'; areaFilter = ''; yearFilter = ''; colFilter.clearAll()">{{ m }}</button>
@@ -1121,7 +1121,7 @@ const downloadCsv = () => {
         </template>
         <!-- ② 실거래가 조건분석 그룹 — 자기 조건(면적 · 건축년도 · 계약일)과 그 조건의 같은 동 매매 리스트. ① 고르기와 필터를 같이 쓰지 않는다 -->
         <section v-if="webEmbed && dongRows.length > 0" class="adm-case-block cond">
-          <div class="adm-case-block-head"><span>실거래가 조건분석<em>(같은 동 · 조건 평균)</em></span></div>
+          <div class="adm-case-block-head"><span>{{ preset ? '② ' : '' }}실거래가 조건분석<em>(같은 동 · 조건 평균)</em></span></div>
           <div class="adm-kpis grid4 case12">
             <div class="adm-kpi"><small>전용면적범위</small><strong class="rng two"><template v-if="condAreaPair"><span><UnitText :text="condAreaPair[0]" /> ~</span><span><UnitText :text="condAreaPair[1]" /></span></template><template v-else>-</template></strong></div>
             <div class="adm-kpi"><small>거래기간</small><strong class="rng"><UnitText :text="condPeriodText" /></strong></div>
