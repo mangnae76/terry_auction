@@ -135,7 +135,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '지도랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '경매지번', sim: '유사매물' };
+const TAB_LABEL: Record<string, string> = { map: '랭킹지도', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '경매지번', sim: '유사매물' };
 const tellTab = () => {
   if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
@@ -428,7 +428,7 @@ const restoreSnapshot = async () => {
   await nextTick();
   restoring = false;
   supplyToken.value += 1;
-  // 지도랭킹도 되살린 조건으로 — 조회를 눌러야만 받던 탓에 저장된 화면에서는 지도가 비어 있었다
+  // 랭킹지도도 되살린 조건으로 — 조회를 눌러야만 받던 탓에 저장된 화면에서는 지도가 비어 있었다
   mapRun.value += 1;
 };
 // 동을 바꿔 보면 그 동도 남긴다 — 새로고침해도 보던 동으로
@@ -857,7 +857,7 @@ const downloadCsv = () => {
       <!-- 웹 — 탭 줄(요약 상자 위, 탭을 바꿔도 제자리) + 오른쪽에 경로(홈 › 시장분석 › 지역분석 › 탭). 경로는 웹의 경로 표시를 이 자리(#admCrumbSlot)로 옮겨 쓴다 -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top">
         <nav v-if="all.length > 0 || listView === 'map' || listView === 'case'" class="adm-view-tabs" role="tablist">
-              <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">지도랭킹</button>
+              <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">랭킹지도</button>
               <button type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">지역별분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">유형분포<span class="adm-view-kind" :title="distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 막대'" :aria-label="distChart === 'bar' ? '막대' : '도넛'">

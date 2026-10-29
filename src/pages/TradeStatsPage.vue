@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import SnapChip from '../components/SnapChip.vue';
 import InfoTip from '../components/InfoTip.vue';
+import UnitText from '../components/UnitText.vue';
 import YmCount from '../components/YmCount.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import L from 'leaflet';
@@ -702,7 +703,7 @@ onMounted(async () => {
         <aside class="tsp-panel">
           <!-- 웹 판 — 제목·안내 → 고르는 칸 → 고른 결과 → 통계 정보 → 동별 랭킹 (사이마다 가름선) -->
           <header v-if="webEmbed" class="tsp-web-head">
-            <strong>거래랭킹</strong>
+            <strong>지역별 랭킹지도</strong>
             <small>지도와 함께 지역별 거래량 랭킹 등을 봅니다.</small>
           </header>
           <div v-if="webEmbed" :id="filterSlotId" class="tsp-filter-slot" />
@@ -727,9 +728,9 @@ onMounted(async () => {
             <!-- 웹 — 첫 줄 거래 건수 · 거래 총액, 둘째 줄 평균가 · 평당 단가 (집계 동은 위 결과 줄에) -->
             <div v-if="webEmbed" class="tsp-stat-grid">
               <div><dt><InfoTip :lines="statTip">총 거래건수</InfoTip></dt><dd><YmCount :year="(statTotalCount * 12) / statMonths" :month="statTotalCount / statMonths" /></dd></div>
-              <div><dt>거래총액</dt><dd>{{ shortWon(statPriceSum) }}</dd></div>
-              <div><dt>{{ avgLabel }}</dt><dd>{{ shortWon(statAvgPrice) }}</dd></div>
-              <div><dt>평 단가 / ㎡ 단가</dt><dd><em class="tsp-unit-pre">평</em>{{ manWon(statUnitPrice) }}<em class="tsp-unit-bar">/</em><em class="tsp-unit-pre">㎡</em>{{ manWon(statUnitPrice / 3.305785) }}</dd></div>
+              <div><dt>거래총액</dt><dd><UnitText :text="shortWon(statPriceSum)" /></dd></div>
+              <div><dt>{{ avgLabel }}</dt><dd><UnitText :text="shortWon(statAvgPrice)" /></dd></div>
+              <div><dt>평 단가 / ㎡ 단가</dt><dd><em class="tsp-unit-pre">평</em><UnitText :text="manWon(statUnitPrice)" /><em class="tsp-unit-bar">/</em><em class="tsp-unit-pre">㎡</em><UnitText :text="manWon(statUnitPrice / 3.305785)" /></dd></div>
             </div>
             <div v-else class="tsp-stat-grid">
               <div><dt><InfoTip :lines="statTip">총 거래건수</InfoTip></dt><dd><YmCount :year="(statTotalCount * 12) / statMonths" :month="statTotalCount / statMonths" /></dd></div>
@@ -940,6 +941,8 @@ onMounted(async () => {
 .tsp-picked-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 /* '평 817만 / ㎡ 247만' — 평 · ㎡ 는 작은 회색 머리글자 */
 .tsp-unit-pre { font-style: normal; font-size: 0.8em; font-weight: 600; color: #6b7280; margin-right: 3px; }
+/* 웹 — 단위는 UnitText 와 같은 12px · 700 · 회색 */
+.tsp-stat-grid .tsp-unit-pre { font-size: 12px; font-weight: 700; }
 .tsp-unit-bar { font-style: normal; font-weight: 400; color: #c3c9d4; margin: 0 6px; }
 .tsp-stat-grid dt { font-size: 10.5px; font-weight: 700; color: #2b6df3; }
 .tsp-stat-grid dd { margin: 2px 0 0; font-size: 13.5px; font-weight: 800; color: #111827; white-space: nowrap; }

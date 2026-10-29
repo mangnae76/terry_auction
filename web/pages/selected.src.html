@@ -435,7 +435,7 @@ body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) .foot { displa
 :is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-web-head small { font-size: 14px; color: #6b7280; }
 :is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-web-picked { display: flex; flex-direction: column; gap: 3px; }
 :is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-web-picked strong { font-size: 16px; font-weight: 800; color: #111827; }
-:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-web-picked small { font-size: 14px; font-weight: 600; color: #2b6df3; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-web-picked small { font-size: 14px; font-weight: 400; color: #2b6df3; }
 :is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-panel > * + * { border-top: 1px solid #e5e7eb; padding-top: 14px; }
 /* 지도 알약(등수 · 동 · 건수) — 약 20% 크게 */
 :is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .trade-map-pin { padding: 4px 11px 4px 4px !important; gap: 6px !important; }
@@ -2425,7 +2425,7 @@ span.cal-day.has { cursor: help; }
 
 /* 지역분석 › 지도 탭(예전 거래랭킹) — 고르는 칸 · 제목은 지역분석 것을 쓰니 감추고, 지도는 탭 줄 아래부터 화면 끝까지 */
 .app-market .tsp-in-dong { --dongmap-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px + var(--bar-h, 62px) + 10px + 40px); }
-.app-market .tsp-in-dong :is(.tsp-filter-slot, .tsp-web-head) { display: none !important; }
+.app-market .tsp-in-dong :is(.tsp-filter-slot, .tsp-web-head small) { display: none !important; } /* 제목(지역별 랭킹지도)만 남긴다 */
 .app-market .tsp-in-dong .tsp-stage { top: var(--dongmap-top) !important; }
 .app-market .tsp-in-dong .tsp-panel { top: calc(var(--dongmap-top) + 18px) !important; width: 430px !important; } /* 고르는 칸이 빠져 좁게(546 → 364) → 지역 이름 옆 저장 칩 · 평/㎡ 단가가 한 줄에 들어가게 430 */
 /* 총 거래건수 ⓘ 말풍선 — 판 왼쪽에 붙은 칸이라 가운데 정렬이면 왼쪽이 잘린다. 칸 왼쪽에서 펼친다 */
@@ -2732,7 +2732,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   /* ===== 주소 한 곳 — 어느 화면 · 어느 하위 탭을 보는지 주소(#/…)에 적고, 새로고침 · 뒤로가기 때 거기서 되살린다.
      화면마다 따로 적지 않는다: 새 화면 · 새 하위 탭이 생기면 아래 두 표(SUB_TAB_KEYS · readHash/hashOf)에만 더한다 ===== */
   const SUB_TAB_KEYS = {
-    market: ['dong', 'sale'], /* 매각사례 = 인근 · 동일지번 매각물건 분석(안 박스 탭 S.saleTab) · 거래랭킹은 지역분석 › 지도랭킹 탭으로, 경매지번 분석은 지역분석 › 경매지번 탭으로 */
+    market: ['dong', 'sale'], /* 매각사례 = 인근 · 동일지번 매각물건 분석(안 박스 탭 S.saleTab) · 거래랭킹은 지역분석 › 랭킹지도 탭으로, 경매지번 분석은 지역분석 › 경매지번 탭으로 */
     postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'interior', 'tax'],
     more: ['mypage', 'alerts', 'billing', 'points', 'news', 'support'],
