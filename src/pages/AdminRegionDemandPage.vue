@@ -579,7 +579,7 @@ const downloadCsv = () => {
               <td v-if="!embedded" class="gu">{{ r.sigungu }}</td>
               <td class="nm">{{ r.umdNm }}</td>
               <!-- 총 세대수 — 건축물대장 자동값을 글로만(손으로 적지 않는다) -->
-              <td :class="['units', { miss: unitsHint(r.sigungu, r.umdNm).text === '못 받음' }]" :title="unitsHint(r.sigungu, r.umdNm).tip">{{ unitsHint(r.sigungu, r.umdNm).text }}</td>
+              <td :class="['units', { miss: unitsHint(r.sigungu, r.umdNm).text === '못 받음', wait: webEmbed && unitsHint(r.sigungu, r.umdNm).text === '받는 중' }]" :title="unitsHint(r.sigungu, r.umdNm).tip">{{ unitsHint(r.sigungu, r.umdNm).text }}</td>
               <td class="in">
                 <input
                   class="adm-cell"
@@ -771,6 +771,7 @@ const downloadCsv = () => {
 /* 총 세대수 — 자동값을 글로만(칸 없음), 다른 숫자 칸과 같은 검은 글씨 */
 .adm-table td.units { text-align: right; color: #111827; font-weight: 600; }
 .adm-table td.units.miss { color: #b44545; font-weight: 500; }
+.adm-table td.units.wait { font-weight: 400; }   /* 웹 — 받는 중은 굵게 하지 않는다 */
 .adm-cell::placeholder { color: #aebbd6; font-weight: 400; }
 
 .adm-foot { margin: 14px 2px 0; font-size: 11.5px; line-height: 1.7; color: #9ca3af; }
