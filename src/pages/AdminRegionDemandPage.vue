@@ -609,7 +609,7 @@ const downloadCsv = () => {
             <tr>
               <th v-if="!embedded">소속 구</th>
               <th>{{ embedded ? '동/지역' : '읍면동' }}</th>
-              <th>{{ webEmbed ? '세대수' : '총 세대수' }}</th>
+              <th :class="{ in: webEmbed }">{{ webEmbed ? '세대수' : '총 세대수' }}</th>
               <th class="in">{{ webEmbed ? '매물수' : '총 매물수' }}<small v-if="webEmbed">(네이버 매물수)</small></th>
               <th>{{ webEmbed ? '거래건수' : '총 거래량' }}<small>(최근 {{ months }}개월)</small></th>
               <th>평균가<small>(최근 {{ months }}개월)</small></th>
@@ -627,7 +627,7 @@ const downloadCsv = () => {
               <td v-if="!embedded" class="gu">{{ r.sigungu }}</td>
               <td class="nm">{{ r.umdNm }}<button v-if="webEmbed" type="button" class="nv-btn" :title="`${r.umdNm}만 보기 — 네이버 부동산 매매 매물`" @click="openDongListing(r)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></td>
               <!-- 총 세대수 — 건축물대장 자동값을 글로만(손으로 적지 않는다) -->
-              <td :class="['units', { miss: unitsHint(r.sigungu, r.umdNm).fail, wait: webEmbed && unitsHint(r.sigungu, r.umdNm).text === '받는 중' }]" :title="unitsHint(r.sigungu, r.umdNm).tip">{{ unitsHint(r.sigungu, r.umdNm).text }}</td>
+              <td :class="['units', { 'in-tint': webEmbed, miss: unitsHint(r.sigungu, r.umdNm).fail, wait: webEmbed && unitsHint(r.sigungu, r.umdNm).text === '받는 중' }]" :title="unitsHint(r.sigungu, r.umdNm).tip">{{ unitsHint(r.sigungu, r.umdNm).text }}</td>
               <td class="in">
                 <input
                   class="adm-cell"
@@ -799,6 +799,8 @@ const downloadCsv = () => {
 .adm-table td.n { font-variant-numeric: tabular-nums; }
 .adm-table td.n.strong { font-weight: 800; }
 .adm-table td.in { background: #f7faff; padding: 6px 8px; }
+/* 웹 — 세대수 칸도 매물수 칸과 같은 연하늘(입력칸 여백은 그대로) */
+.adm-table td.in-tint { background: #f7faff; }
 /* 웹 — 회전율 칸은 매물수 칸(연파랑)처럼 연분홍으로 칠해 눈에 띄게 */
 .adm-table thead th.turn { background: #fff5f5; color: #b42318; }
 .adm-table thead th.turn small { color: #d9534f; }
