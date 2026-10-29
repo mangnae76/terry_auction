@@ -27,6 +27,8 @@ export interface CaseTradeRow {
   umdNm: string;
   name: string;
   jibun: string;
+  /** 건축년도 — 유사물건을 연식으로 거를 때 쓴다(국토부 자료에 없으면 비어 있다) */
+  buildYear?: number;
 }
 
 export interface CaseTradeResult {
@@ -40,6 +42,8 @@ export interface CaseTradeResult {
   baseAreaM2: number;
   /** 그 지번(또는 단지)의 거래만 */
   rows: CaseTradeRow[];
+  /** 같은 동의 모든 거래 — 유사물건 · 조건분석 평균을 여기서 거른다(국토부를 더 부르지 않는다) */
+  dongRows: CaseTradeRow[];
   /** 시군구 전체로 받아 둔 거래 수 — 얼마나 큰 자료에서 추렸는지 */
   scanned: number;
   /** 세 번 눌러도 못 받은 달 수 */
@@ -61,6 +65,24 @@ const loadDistrict = async (lawdCd5: string, propertyType: CasePropertyType, yea
   return fresh;
 };
 
+/**
+ * 경매지번 실거래가 — 그 건물 거래 중 이 호실과 면적이 가장 가까운 것, 같으면 가장 최근.
+ * 같은 평형이 있으면 그것이, 없으면 평수가 조금 다른 같은 건물 거래가 선다(정의: 같은 건물 같은 평형 → 비슷한 평형).
+ * 이 호실 면적을 모르면 가장 최근 거래.
+ */
+export const pickCaseTrade = (rows: CaseTradeRow[], kinds: Array<CaseTradeRow['kind']>, baseAreaM2: number): CaseTradeRow | null => {
+  const list = rows.filter((r) => kinds.includes(r.kind) && r.price > 0);
+  if (list.length === 0) return null;
+  // 0.05㎡ 안쪽은 같은 평형으로 본다(신고 면적 소수 끝자리 차이)
+  const gap = (r: CaseTradeRow) => (baseAreaM2 > 0 && r.areaM2 > 0 ? Math.max(0, Math.abs(r.areaM2 - baseAreaM2) - 0.05) : 0);
+  return list.reduce((best, r) => {
+    const d = gap(r) - gap(best);
+    if (d < 0) return r;
+    if (d > 0) return best;
+    return r.contractDate > best.contractDate ? r : best;
+  }, list[0]);
+};
+
 /** 국토부 자료를 화면이 쓰는 한 줄 꼴로 편다 */
 const toRows = (data: Awaited<ReturnType<typeof fetchPlaceHistory>>): CaseTradeRow[] => [
   ...data.trades.map((r) => ({
@@ -74,6 +96,7 @@ const toRows = (data: Awaited<ReturnType<typeof fetchPlaceHistory>>): CaseTradeR
     umdNm: r.umdNm,
     name: r.apartmentName ?? '',
     jibun: r.jibun ?? '',
+    buildYear: r.buildYear,
   })),
   // 전월세는 국토부가 '만원'으로 준다 — 매매(원)와 한 칸에 서니 원으로 맞춰 적는다
   ...data.rents.map((r) => ({
@@ -88,6 +111,7 @@ const toRows = (data: Awaited<ReturnType<typeof fetchPlaceHistory>>): CaseTradeR
     umdNm: r.umdNm,
     name: r.apartmentName ?? '',
     jibun: r.jibun ?? '',
+    buildYear: r.buildYear,
   })),
 ].sort((a, b) => b.contractDate.localeCompare(a.contractDate));
 
@@ -133,7 +157,7 @@ export const analyzeAddress = async (
   const empty: CaseTradeResult = {
     region: hit.region, parts: hit.parts, price: hit.price,
     baseAreaM2: hit.price?.areaM2 ?? 0,
-    rows: [], scanned: 0, missedMonths: 0,
+    rows: [], dongRows: [], scanned: 0, missedMonths: 0,
   };
   const lawdCd5 = overrides.lawdCd5 || hit.region?.lawdCd5 || '';
   if (!/^\d{5}$/.test(lawdCd5)) {
@@ -147,9 +171,11 @@ export const analyzeAddress = async (
   try {
     const data = await loadDistrict(lawdCd5, input.propertyType, input.years);
     const rows = toRows(data);
+    const dong = squash(overrides.umdNm ?? hit.region?.dong ?? '');
     return {
       ...empty,
       rows: pickHere(rows, { umdNm: overrides.umdNm ?? hit.region?.dong, lot, name }),
+      dongRows: dong ? rows.filter((r) => squash(r.umdNm) === dong) : [],
       scanned: rows.length,
       missedMonths: data.missedMonths,
     };
