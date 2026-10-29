@@ -607,7 +607,7 @@ const downloadCsv = () => {
               <th>평균가<small>(최근 {{ months }}개월)</small></th>
               <th>평균 전용면적<small>(㎡)</small></th>
               <th>평균 건축연수<small>(년)</small></th>
-              <th>회전율<small>(%)</small></th>
+              <th :class="{ turn: webEmbed }">회전율<small>(%)</small></th>
               <th>매물 소화율<small>(%)</small></th>
               <th>매물 부담율<small>(%)</small></th>
               <th v-if="webEmbed">매물<br>소진기간</th>
@@ -637,7 +637,7 @@ const downloadCsv = () => {
               <td :class="['n', 'amt', { strong: !webEmbed }]"><span class="v">{{ won(r.avgPrice) }}</span></td>
               <td class="n area"><span class="v">{{ areaText(r.avgAreaM2) }}</span></td>
               <td class="n age"><span class="v">{{ ageText(r.avgBuildYear) }}</span></td>
-              <td class="n rate"><em v-if="r.turnover > 0" class="pre">연</em><span class="v">{{ pct(r.turnover) }}</span></td>
+              <td :class="['n', 'rate', { turn: webEmbed }]"><em v-if="r.turnover > 0" class="pre">연</em><span class="v">{{ pct(r.turnover) }}</span></td>
               <td class="n rate"><em v-if="r.absorb > 0" class="pre">연</em><span class="v">{{ pct(r.absorb) }}</span></td>
               <td class="n rate"><span class="v">{{ pct(r.burden) }}</span></td>
               <td class="n clear">
@@ -791,6 +791,10 @@ const downloadCsv = () => {
 .adm-table td.n { font-variant-numeric: tabular-nums; }
 .adm-table td.n.strong { font-weight: 800; }
 .adm-table td.in { background: #f7faff; padding: 6px 8px; }
+/* 웹 — 회전율 칸은 매물수 칸(연파랑)처럼 연분홍으로 칠해 눈에 띄게 */
+.adm-table thead th.turn { background: #fff5f5; color: #b42318; }
+.adm-table thead th.turn small { color: #d9534f; }
+.adm-table td.turn { background: #fff5f5; }
 /* 총 거래량 — 연 | 월 두 값을 가운데 막대로 가른다 (손품+현장과 같은 꼴) */
 .adm-table td.deal { white-space: nowrap; letter-spacing: -0.3px; font-size: 11.5px; }
 .adm-table td em.pre { font-style: normal; font-size: 10.5px; font-weight: 600; color: #6b7280; margin-right: 3px; }
