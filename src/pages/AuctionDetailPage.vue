@@ -7206,7 +7206,7 @@ const goBack = () => router.back();
               :class="['adp-ai-start', 'adp-ai-head', { done: !!auction?.rightsAi && !rightsAiBusy }]"
               :disabled="rightsAiBusy"
               @click.stop="onAiHeadClick"
-            >{{ rightsAiBusy ? '분석 중…' : (auction?.rightsAi ? 'AI 분석 완료' : 'AI 분석 시작') }}</button>
+            >{{ rightsAiBusy ? '분석 중…' : (auction?.rightsAi ? 'AI 분석 완료' : (webEmbed ? 'AI 권리분석 시작' : 'AI 분석 시작')) }}</button>
             <img v-else :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsPhotos') }]" alt="" />
           </header>
           <div v-if="webEmbed || !isCollapsed('rightsPhotos')">
@@ -7261,7 +7261,7 @@ const goBack = () => router.back();
                 :disabled="rightsAiBusy || !!auction?.rightsAi"
                 :title="rightsAiBusy ? '분석하고 있습니다' : (auction?.rightsAi ? '이미 분석했습니다 — 오른쪽에서 다시 받을 수 있습니다' : '올려 둔 서류로 권리분석을 받습니다')"
                 @click="requestRightsAi"
-              >{{ rightsAiBusy ? '분석 중…' : (auction?.rightsAi ? 'AI 분석 완료' : 'AI 분석 시작') }}</button>
+              >{{ rightsAiBusy ? '분석 중…' : (auction?.rightsAi ? 'AI 분석 완료' : (webEmbed ? 'AI 권리분석 시작' : 'AI 분석 시작')) }}</button>
               <button
                 v-if="auction?.rightsAi && !rightsAiBusy"
                 type="button"
