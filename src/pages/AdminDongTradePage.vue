@@ -100,7 +100,9 @@ const yearMin = ref('');
 const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
-const listView = ref<'map' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case' | 'sim'>('supply');
+/** 웹 시장분석 › 랭킹분석 — 같은 화면을 랭킹 탭(랭킹지도 · 거래랭킹)만으로 띄운다. 지역분석은 그 둘을 뺀 탭 */
+const props = defineProps<{ rankMode?: boolean }>();
+const listView = ref<'map' | 'top' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case' | 'sim'>(props.rankMode ? 'map' : 'supply');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
 const mapRun = ref(0);
 const mapEmbed = computed(() => ({
@@ -114,7 +116,7 @@ const mapEmbed = computed(() => ({
   from: dateFrom.value,
   to: dateTo.value,
 }));
-try { if (sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
+try { if (props.rankMode && sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
 // 예전 시장분석 › 경매지번 분석 주소로 오면 경매지번 탭으로
 try { if (sessionStorage.getItem('adm.dong.openCase') === '1') { sessionStorage.removeItem('adm.dong.openCase'); listView.value = 'case'; } } catch { /* 그만 */ }
 // 웹 — 고르는 줄 · 탭 줄을 위에 붙여 둔다(CSS sticky). 탭 줄은 고르는 줄 높이만큼 아래에 붙어야 해서 그 높이를 --bar-h 로 흘려 준다
@@ -136,11 +138,11 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '랭킹지도', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '경매지번', sim: '유사매물' };
+const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '경매지번', sim: '유사매물' };
 const tellTab = () => {
   if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
-  window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: ['지역분석', label] } }));
+  window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: [props.rankMode ? '랭킹분석' : '지역분석', label] } }));
 };
 watch([listView, dong], tellTab);
 onMounted(tellTab);
@@ -462,6 +464,60 @@ onMounted(async () => {
   await restoreSnapshot(); // 마지막으로 본 자료가 있으면 그게 우선
 });
 
+// ===== 랭킹분석 › 거래랭킹 — 1년 거래건수(정상 + 직거래)를 전년 같은 12개월과 견준다. 24개월을 받는다(겹치는 12개월은 저장본) =====
+const lastQuery = ref<{ lawd: string; kind: Kind; deal: 'sale' | 'jeonse' } | null>(null);
+const rankRows = ref<DongTradeDetailRow[]>([]);
+const rankLoading = ref(false);
+const rankErr = ref('');
+let rankKey = '';
+const loadRank = async () => {
+  const q = lastQuery.value;
+  if (!props.rankMode || listView.value !== 'top' || !q) return;
+  const key = `${q.lawd}|${q.kind}|${q.deal}|${asOf.value}`;
+  if (key === rankKey) return;
+  rankKey = key; rankLoading.value = true; rankErr.value = '';
+  try {
+    const res = await fetchDongTradeDetails({ lawdCd5: q.lawd, propertyType: q.kind, months: 24, dealKind: q.deal });
+    if (key !== rankKey) return;
+    rankRows.value = res.rows;
+    if (res.error) rankErr.value = res.error;
+  } catch (e) { rankErr.value = e instanceof Error ? e.message : '전년 자료를 받지 못했습니다'; } finally { if (key === rankKey) rankLoading.value = false; }
+};
+watch([listView, lastQuery, asOf], () => { void loadRank(); });
+const RANK_MIN = 5;
+/** 지역 칸 밑에 적을 시군구 이름 */
+const rankGu = computed(() => district.value?.label ?? '');
+type RankRow = { name: string; cur: number; prev: number; pct: number | null };
+/** 동마다 이번 1년 · 전년 1년 거래건수(계약해제 제외) */
+const rankByDong = computed<RankRow[]>(() => {
+  const s12 = tradeWindowOf(asOf.value, 12).start.getTime();
+  const s24 = tradeWindowOf(asOf.value, 24).start.getTime();
+  const m = new Map<string, { cur: number; prev: number }>();
+  rankRows.value.forEach((r) => {
+    if (r.kind === '계약해제' || !r.umdNm || !r.dealTime) return;
+    const e = m.get(r.umdNm) ?? { cur: 0, prev: 0 };
+    if (r.dealTime >= s12) e.cur += 1; else if (r.dealTime >= s24) e.prev += 1;
+    m.set(r.umdNm, e);
+  });
+  return [...m.entries()].map(([name, v]) => ({ name, ...v, pct: v.prev > 0 ? ((v.cur - v.prev) / v.prev) * 100 : null }));
+});
+/** 세 목록 — 급증(증가율 높은 순) · 급감(감소율 큰 순) · 거래량(많은 순). 전년이 없던 동은 증감을 매기지 않는다 */
+const rankLists = computed(() => {
+  const list = rankByDong.value;
+  // 전년이 몇 건 안 되면 1 → 3 건도 +200% 가 된다 — 급증 · 급감은 전년 RANK_MIN 건 이상인 동만 견준다
+  const base = list.filter((r) => r.pct !== null && r.prev >= RANK_MIN);
+  const up = base.filter((r) => r.pct! > 0).sort((a, b) => (b.pct! - a.pct!) || (b.cur - a.cur)).slice(0, 10);
+  const down = base.filter((r) => r.pct! < 0).sort((a, b) => (a.pct! - b.pct!) || (b.prev - a.prev)).slice(0, 10);
+  const top = list.filter((r) => r.cur > 0).sort((a, b) => (b.cur - a.cur) || a.name.localeCompare(b.name, 'ko')).slice(0, 10);
+  const n = list.length;
+  return [
+    { key: 'up', title: '거래급증 TOP10', sub: `전년 ${RANK_MIN}건 이상 · 증가율 높은 순 · 동 ${n}곳 중`, rows: up, empty: '전년보다 늘어난 동이 없습니다' },
+    { key: 'down', title: '거래급감 TOP10', sub: `전년 ${RANK_MIN}건 이상 · 감소율 큰 순 · 동 ${n}곳 중`, rows: down, empty: '전년보다 줄어든 동이 없습니다' },
+    { key: 'top', title: '거래량 TOP10', sub: `최근 1년 거래건수 많은 순 · 동 ${n}곳 중`, rows: top, empty: '거래가 없습니다' },
+  ];
+});
+const rankPctText = (p: number | null) => (p === null ? '신규' : `${p > 0 ? '▲ +' : '▼ '}${p.toFixed(1)}%`);
+
 // ===== 불러오기 =====
 const load = async () => {
   const d = district.value;
@@ -478,6 +534,7 @@ const load = async () => {
     });
     asOf.value = askedAt;
     all.value = res.rows;
+    lastQuery.value = { lawd: d.lawdCode, kind: kind.value, deal: webEmbed ? dealKind.value : 'sale' };
     mapRun.value += 1;
     dongNames.value = res.dongNames;
     period.value = { from: res.periodFrom, to: res.periodTo };
@@ -854,8 +911,11 @@ const downloadCsv = () => {
 
       <!-- 웹 — 탭 줄(요약 상자 위, 탭을 바꿔도 제자리) + 오른쪽에 경로(홈 › 시장분석 › 지역분석 › 탭). 경로는 웹의 경로 표시를 이 자리(#admCrumbSlot)로 옮겨 쓴다 -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top">
-        <nav v-if="all.length > 0 || listView === 'map' || listView === 'case'" class="adm-view-tabs" role="tablist">
+        <nav v-if="props.rankMode" class="adm-view-tabs" role="tablist">
               <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">랭킹지도</button>
+              <button type="button" role="tab" :aria-selected="listView === 'top'" :class="{ on: listView === 'top' }" @click="listView = 'top'">거래랭킹</button>
+            </nav>
+        <nav v-else-if="all.length > 0 || listView === 'case'" class="adm-view-tabs" role="tablist">
               <button type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">지역별분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">유형분포<span class="adm-view-kind" :title="distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 막대'" :aria-label="distChart === 'bar' ? '막대' : '도넛'">
@@ -984,6 +1044,26 @@ const downloadCsv = () => {
         <!-- 수요공급은 한 번 띄우면 계속 들고 있다(v-show) — 탭을 오갈 때마다 새로 띄우면 비었다가 차며 깜빡였다 -->
         <AdminRegionDemandPage v-if="webEmbed && supplySeen" v-show="listView === 'supply'" :embed="supplyEmbed" :chip="snapChip" class="adm-supply" />
         <template v-if="webEmbed && listView === 'supply'" />
+        <!-- 랭킹분석 › 거래랭킹 — 세 목록(급증 · 급감 · 거래량) 나란히. 1년 = 조회일 기준 12개월, 전년 = 그 앞 12개월 -->
+        <div v-else-if="webEmbed && listView === 'top'" class="adm-rank3">
+          <p v-if="rankLoading" class="adm-msg">전년 같은 기간 거래를 받는 중입니다…</p>
+          <p v-else-if="rankErr" class="adm-msg warn">{{ rankErr }}</p>
+          <section v-for="g in rankLists" v-show="!rankLoading" :key="g.key" class="adm-rank-card">
+            <header><strong>{{ g.title }}</strong><small>{{ g.sub }}</small></header>
+            <table class="adm-rank-tbl">
+              <thead><tr><th>#</th><th class="l">지역</th><th class="r">최근 1년</th><th class="r">증감</th></tr></thead>
+              <tbody>
+                <tr v-for="(r, i) in g.rows" :key="r.name">
+                  <td class="no">{{ i + 1 }}</td>
+                  <td class="l"><b>{{ r.name }}</b><small>{{ rankGu }}</small></td>
+                  <td class="r"><b>{{ r.cur.toLocaleString('ko-KR') }}<em>건</em></b><small>전년 {{ r.prev.toLocaleString('ko-KR') }}</small></td>
+                  <td class="r"><span :class="['adm-rank-pct', r.pct === null ? 'new' : r.pct > 0 ? 'up' : r.pct < 0 ? 'down' : '']">{{ rankPctText(r.pct) }}</span></td>
+                </tr>
+                <tr v-if="g.rows.length === 0"><td colspan="4" class="empty">{{ g.empty }}</td></tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
         <div v-else-if="webEmbed && (listView === 'deals' || listView === 'sim')" class="adm-deals">
           <!-- 유사매물시세(시장분석 탭 · 수익분석)에는 월별 평균가 추이를 두지 않는다 — 거래상세에만 -->
           <section v-if="listView === 'deals'" class="adm-trend">
@@ -1273,6 +1353,27 @@ const downloadCsv = () => {
 .adm-msg.err { background: #fef2f2; color: #b91c1c; }
 .adm-msg.warn { background: #fffbeb; color: #92400e; }
 
+.adm-rank3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.adm-rank3 > .adm-msg { grid-column: 1 / -1; }
+.adm-rank-card { background: #fff; border: 1px solid #e3e8f0; border-radius: 8px; padding: 16px 18px 8px; min-width: 0; }
+.adm-rank-card header { margin-bottom: 10px; }
+.adm-rank-card header strong { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: #111827; }
+.adm-rank-card header small { display: block; margin-top: 4px; font-size: 12px; color: #6b7280; }
+.adm-rank-tbl { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.adm-rank-tbl th { padding: 6px 4px; border-bottom: 1px solid #e3e8f0; font-size: 12px; font-weight: 600; color: #6b7280; text-align: center; }
+.adm-rank-tbl td { padding: 8px 4px; border-bottom: 1px solid #f1f4f9; text-align: center; vertical-align: middle; color: #111827; white-space: nowrap; }
+.adm-rank-tbl :is(th, td).l { text-align: left; }
+.adm-rank-tbl :is(th, td).r { text-align: right; }
+.adm-rank-tbl td.no { width: 28px; font-size: 13px; color: #6b7280; }
+.adm-rank-tbl td b { display: block; font-size: 14px; font-weight: 600; }
+.adm-rank-tbl td small { display: block; margin-top: 2px; font-size: 12px; color: #9ca3af; }
+.adm-rank-tbl td em { font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; margin-left: 1px; }
+.adm-rank-tbl td.empty { padding: 24px 4px; text-align: center; color: #9ca3af; }
+/* 증감 알약 — 우리 등급 색 그대로: 늘면 연빨강 바탕 ▲ · 줄면 연파랑 바탕 ▼ · 전년 없음은 회색 */
+.adm-rank-pct { display: inline-block; min-width: 76px; padding: 3px 8px; border-radius: 999px; font-size: 13px; font-weight: 700; text-align: center; }
+.adm-rank-pct.up { background: #fde2e2; color: #c22e2e; }
+.adm-rank-pct.down { background: #dbe7ff; color: #1d4ed8; }
+.adm-rank-pct.new { background: #eef1f6; color: #4b5563; }
 .adm-gunav { margin: 18px 0 14px; padding: 16px 18px 18px; border-radius: 10px; background: #f5f7fa; }
 .adm-gunav-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .adm-gunav-head strong { font-size: 18px; font-weight: 800; color: #2b6df3; }

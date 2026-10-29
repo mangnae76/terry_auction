@@ -165,15 +165,17 @@ const ADMIN_SCREENS = {
   kb: ['/admin/housing-index', HousingIndexPage],
   region: ['/admin/region-demand', AdminRegionDemandPage],
   dong: ['/admin/dong-trades', AdminDongTradePage],
+  /* 랭킹분석 — 지역분석과 같은 화면을 랭킹 탭(랭킹지도 · 거래랭킹)만으로 */
+  rank: ['/admin/dong-rank', AdminDongTradePage, { rankMode: true }],
   case: ['/admin/case-trades', AdminCaseTradePage],
 };
 export const hasAppAdminScreen = (key) => !!ADMIN_SCREENS[key];
 export const mountAppAdmin = (el, key) => {
-  const [path, component] = ADMIN_SCREENS[key];
+  const [path, component, props] = ADMIN_SCREENS[key];
   const Empty = { render: () => null };
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path, component }, { path: '/:rest(.*)*', component: Empty }],
+    routes: [{ path, component, props: props ?? false }, { path: '/:rest(.*)*', component: Empty }],
   });
   const app = createApp({ render: () => h(RouterView) });
   app.use(getActivePinia());
