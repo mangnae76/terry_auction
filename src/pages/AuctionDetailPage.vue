@@ -3433,26 +3433,26 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['공식', '12개월 거래량 ÷ 12'],
     ['의미', '1년 거래량을 나눈 한 달 평균 거래 건수'],
   ] },
-  turn: { arrow: '12%', rows: [
+  turn: { arrow: '62%', rows: [
     ['공식', '12개월 거래량 ÷ 총 세대수 × 100'],
     ['의미', '연립·다세대 중 1년에 몇 %가 손바뀜되나'],
     ['기준', 'A 3%↑ · B 1.5~3% · C 1.5%↓'],
     ['적정', '3% 이상 ↑ (높을수록 좋다)'],
   ] },
-  burden: { arrow: '37%', rows: [
+  burden: { arrow: '87%', rows: [
     ['공식', '총 매물수 ÷ 총 세대수 × 100'],
     ['의미', '연립·다세대 중 몇 %가 매물로 나와 있나'],
     ['기준', 'A 3%↓ · B 3~5% · C 5%↑'],
     ['적정', '3% 이하 ↓ (낮을수록 좋다)'],
   ] },
-  clear: { arrow: '62%', rows: [
+  clear: { arrow: '37%', rows: [
     ['공식', '총 매물수 ÷ 연평균 거래량 (×12 = 달 수)'],
     ['의미', '총 누적 매물이 다 팔리는 데 걸리는 달 수'],
     ['기준', 'A 6M↓ · B 6~12M · C 12M↑'],
     ['적정', '6M 이하 ↓ (짧을수록 좋다)'],
   ] },
   total: { arrow: '72%', rows: [
-    ['대상', '거래 회전율 · 매물 소화율 · 매물 부담률 · 매물 소진기간'],
+    ['대상', '매물 소화율 · 매물 소진기간 · 거래 회전율 · 매물 부담률'],
     ['공식', '네 등급을 A 3 · B 2 · C 1로 바꿔 평균을 낸다'],
     ['기준', '평균 2.5↑ A · 1.5↑ B · 그 아래 C'],
     ['조건', '네 등급 중 셋 이상 매겨져야 종합등급이 나온다'],
@@ -3474,7 +3474,7 @@ const dmTipData = computed<Record<string, { arrow: string; rows: Array<[string, 
     ['기준', 'A 180%↑ · B 120~180% · C 120%↓'],
     ['의미', '12개월 거래량 ÷ 총 매물수'],
   ] },
-  absorb: { arrow: '87%', rows: [
+  absorb: { arrow: '12%', rows: [
     ['공식', '12개월 거래량 ÷ 총 매물수 × 100'],
     ['의미', '나와 있는 매물 중 한 해에 몇 %가 팔리나'],
     ['기준', 'A 180%↑ · B 120~180% · C 120%↓'],
@@ -7932,30 +7932,6 @@ const goBack = () => router.back();
               </div>
               <div class="adp-dm-rowwrap">
               <div :class="['adp-mkt-cells', 'c4', 'adp-dm-table', 'dm-result', { 'has-total': webEmbed }]">
-                <div :class="['cell split calc', { lit: dmLit('turn') }]" @mouseenter="dmLitEnter('turn')" @mouseleave="dmLitLeave()" @click="dmLitTap('turn')">
-                  <div class="cell-head">
-                    <small>거래 회전율</small>
-                    <button
-                      type="button"
-                      class="adp-dm-info"
-                      aria-label="설명"
-                      @mouseenter="tipEnter('turn')"
-                      @mouseleave="tipLeave()"
-                      @click.stop="dmTip = dmTip === 'turn' ? '' : 'turn'"
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div class="cell-body">
-                    <strong class="hi-blue"><em class="adp-dm-pre">연</em><span class="num">{{ dmRateText(dmTurnover) }}</span><em>%</em></strong>
-                  </div>
-                  <div class="cell-grade">
-                    <strong :class="['adp-dm-grade', `g-${levelTone(dmTurnGrade)}`]">{{ dmTurnGrade }}</strong>
-                    <span v-if="dmTurnGrade !== '-'" :class="['adp-dm-fit', { bad: dmTurnGrade === 'C' }]">/ {{ dmFitText(dmTurnGrade) }}</span>
-                  </div>
-                </div>
                 <div :class="['cell split calc', { lit: dmLit('absorb') }]" @mouseenter="dmLitEnter('absorb')" @mouseleave="dmLitLeave()" @click="dmLitTap('absorb')">
                   <div class="cell-head">
                     <small>매물 소화율</small>
@@ -7978,30 +7954,6 @@ const goBack = () => router.back();
                   <div class="cell-grade">
                     <strong :class="['adp-dm-grade', `g-${levelTone(dmAbsorbGrade)}`]">{{ dmAbsorbGrade }}</strong>
                     <span v-if="dmAbsorbGrade !== '-'" :class="['adp-dm-fit', { bad: dmAbsorbGrade === 'C' }]">/ {{ dmFitText(dmAbsorbGrade) }}</span>
-                  </div>
-                </div>
-                <div :class="['cell split calc', { lit: dmLit('burden') }]" @mouseenter="dmLitEnter('burden')" @mouseleave="dmLitLeave()" @click="dmLitTap('burden')">
-                  <div class="cell-head">
-                    <small>매물 부담률</small>
-                    <button
-                      type="button"
-                      class="adp-dm-info"
-                      aria-label="설명"
-                      @mouseenter="tipEnter('burden')"
-                      @mouseleave="tipLeave()"
-                      @click.stop="dmTip = dmTip === 'burden' ? '' : 'burden'"
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div class="cell-body">
-                    <strong class="hi-blue"><span class="num">{{ dmRateText(dmBurden) }}</span><em>%</em></strong>
-                  </div>
-                  <div class="cell-grade">
-                    <strong :class="['adp-dm-grade', `g-${levelTone(dmBurdenGrade)}`]">{{ dmBurdenGrade }}</strong>
-                    <span v-if="dmBurdenGrade !== '-'" :class="['adp-dm-fit', { bad: dmBurdenGrade === 'C' }]">/ {{ dmFitText(dmBurdenGrade) }}</span>
                   </div>
                 </div>
                 <div :class="['cell split calc', { lit: dmLit('clear') }]" @mouseenter="dmLitEnter('clear')" @mouseleave="dmLitLeave()" @click="dmLitTap('clear')">
@@ -8029,6 +7981,54 @@ const goBack = () => router.back();
                   </div>
                 </div>
                 <!-- 웹 — '종합' 을 표 오른쪽 한 칸으로. 값 줄과 등급 줄을 한 칸으로 합쳐 등급·적합여부를 크게 -->
+                <div :class="['cell split calc', { lit: dmLit('turn') }]" @mouseenter="dmLitEnter('turn')" @mouseleave="dmLitLeave()" @click="dmLitTap('turn')">
+                  <div class="cell-head">
+                    <small>거래 회전율</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="tipEnter('turn')"
+                      @mouseleave="tipLeave()"
+                      @click.stop="dmTip = dmTip === 'turn' ? '' : 'turn'"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-body">
+                    <strong class="hi-blue"><em class="adp-dm-pre">연</em><span class="num">{{ dmRateText(dmTurnover) }}</span><em>%</em></strong>
+                  </div>
+                  <div class="cell-grade">
+                    <strong :class="['adp-dm-grade', `g-${levelTone(dmTurnGrade)}`]">{{ dmTurnGrade }}</strong>
+                    <span v-if="dmTurnGrade !== '-'" :class="['adp-dm-fit', { bad: dmTurnGrade === 'C' }]">/ {{ dmFitText(dmTurnGrade) }}</span>
+                  </div>
+                </div>
+                <div :class="['cell split calc', { lit: dmLit('burden') }]" @mouseenter="dmLitEnter('burden')" @mouseleave="dmLitLeave()" @click="dmLitTap('burden')">
+                  <div class="cell-head">
+                    <small>매물 부담률</small>
+                    <button
+                      type="button"
+                      class="adp-dm-info"
+                      aria-label="설명"
+                      @mouseenter="tipEnter('burden')"
+                      @mouseleave="tipLeave()"
+                      @click.stop="dmTip = dmTip === 'burden' ? '' : 'burden'"
+                    >
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="cell-body">
+                    <strong class="hi-blue"><span class="num">{{ dmRateText(dmBurden) }}</span><em>%</em></strong>
+                  </div>
+                  <div class="cell-grade">
+                    <strong :class="['adp-dm-grade', `g-${levelTone(dmBurdenGrade)}`]">{{ dmBurdenGrade }}</strong>
+                    <span v-if="dmBurdenGrade !== '-'" :class="['adp-dm-fit', { bad: dmBurdenGrade === 'C' }]">/ {{ dmFitText(dmBurdenGrade) }}</span>
+                  </div>
+                </div>
                 <div v-if="webEmbed" class="cell split calc dm-total-cell">
                   <div class="cell-head">
                     <small>종합</small>
