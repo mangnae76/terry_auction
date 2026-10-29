@@ -1097,7 +1097,7 @@ const downloadCsv = () => {
                 :class="{ off: isOff(r.kind), picked: isPicked(r), 'picked-sale': webEmbed ? rowKey(r) === saleKeyNow : rowKey(r) === pickedSale, 'picked-jeonse': webEmbed ? rowKey(r) === jeonseKeyNow : rowKey(r) === pickedJeonse }"
                 @click="pickRow(r)"
               >
-                <td><span :class="['kind', kindClass(r.kind)]">{{ r.kind }}</span></td>
+                <td class="kd"><svg v-if="webEmbed && (rowKey(r) === saleKeyNow || rowKey(r) === jeonseKeyNow)" class="pick-v" viewBox="0 0 16 16" aria-label="선택"><path d="M3 8.5l3.2 3L13 4.5" /></svg><span :class="['kind', kindClass(r.kind)]">{{ r.kind }}</span></td>
                 <td>{{ r.contractDate }}</td>
                 <td class="n strong amt"><span class="v">{{ r.amount }}</span></td>
                 <td class="n area"><span class="v">{{ areaText(r.areaM2) }}</span></td>
@@ -1123,7 +1123,7 @@ const downloadCsv = () => {
         <section v-if="webEmbed && dongRows.length > 0" class="adm-case-block cond">
           <div class="adm-case-block-head"><span>{{ preset ? '② ' : '' }}실거래가 조건분석<em>(같은 동 · 조건 평균)</em></span></div>
           <div class="adm-kpis grid4 case12">
-            <div class="adm-kpi"><small>전용면적범위</small><strong class="rng two"><template v-if="condAreaPair"><span><UnitText :text="condAreaPair[0]" /> ~</span><span><UnitText :text="condAreaPair[1]" /></span></template><template v-else>-</template></strong></div>
+            <div class="adm-kpi"><small>전용면적범위</small><strong class="rng one"><template v-if="condAreaPair"><UnitText :text="condAreaPair[0]" /><i class="rng-sep">~</i><UnitText :text="condAreaPair[1]" /></template><template v-else>-</template></strong></div>
             <div class="adm-kpi"><small>거래기간</small><strong class="rng"><UnitText :text="condPeriodText" /></strong></div>
             <div class="adm-kpi"><small>사용승인</small><strong class="rng"><UnitText :text="condApprovalText" /></strong></div>
             <div class="adm-kpi">
@@ -1317,7 +1317,9 @@ const downloadCsv = () => {
 .adm-case-block.cond .cond-bar { margin: 16px 0 10px; }
 /* 범위 글은 길어 한 단계 작게 */
 .adm-kpis.case12 .adm-kpi strong.rng { font-size: 16px; }
-.adm-kpis.case12 .adm-kpi strong.rng.two { display: flex; flex-direction: column; line-height: 24px; }
+/* 전용면적범위 — 한 줄로(시작 ~ 끝). 칸을 넘치지 않게 한 단계 더 작게 */
+.adm-kpis.case12 .adm-kpi strong.rng.one { font-size: 15px; white-space: nowrap; letter-spacing: -0.3px; }
+.rng-sep { font-style: normal; margin: 0 6px; color: #6b7280; }
 /* 경매물건 / 유사물건 알약 — 고른 쪽만 파랗게 */
 .adm-mode-pills { display: inline-flex; gap: 6px; }
 .adm-mode-pill { height: 30px; padding: 0 14px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; }
@@ -1436,6 +1438,15 @@ const downloadCsv = () => {
 .adm-table tbody tr.picked-sale:hover td { background: #e3edff; }
 .adm-table tbody tr.picked-jeonse td { background: #ebf8f3; }
 .adm-table tbody tr.picked-jeonse:hover td { background: #dff3eb; }
+/* 웹 — 줄 색은 더 옅게 하고, 구분 칸 앞 V 표시로 '고른 줄'을 또렷하게 */
+.adm-case-in .adm-table tbody tr.picked-sale td { background: #f6f9ff; }
+.adm-case-in .adm-table tbody tr.picked-sale:hover td { background: #eef4ff; }
+.adm-case-in .adm-table tbody tr.picked-jeonse td { background: #f4fbf8; }
+.adm-case-in .adm-table tbody tr.picked-jeonse:hover td { background: #ebf8f3; }
+.adm-table td.kd { position: relative; }
+.pick-v { position: absolute; left: 6px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+tr.picked-sale .pick-v { stroke: #2b6df3; }
+tr.picked-jeonse .pick-v { stroke: #16a34a; }
 .adm-kpis.case12.on-sale .adm-kpi { background: #eef4ff; border-color: #d3e1fd; }
 .adm-kpis.case12.on-jeonse .adm-kpi { background: #ebf8f3; border-color: #c9eadc; }
 .adm-table tbody tr { cursor: pointer; }

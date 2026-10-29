@@ -25,23 +25,28 @@ const pickDate = (v: string) => { if (dateKey.value) set({ [dateKey.value]: v, m
 
 <template>
   <div class="trf">
-    <div class="trf-row">
+    <!-- 왼쪽 · 오른쪽 정확히 반씩: 기간선택 끝(12개월) = 면적 최대 끝, 시작일자 시작 = 건축년도 시작 -->
+    <div class="trf-cell">
       <span class="trf-lab">기간선택</span>
       <div class="trf-months" :style="{ gridTemplateColumns: `repeat(${monthChoices.length}, 1fr)` }">
         <button v-for="m in monthChoices" :key="m" type="button" :class="['trf-m', { on: modelValue.months === m }]" @click="pickMonths(m)">{{ m }}개월</button>
       </div>
+    </div>
+    <div class="trf-cell">
       <span class="trf-lab">시작일자</span>
       <button type="button" class="trf-in trf-date" @click="dateKey = 'from'">{{ modelValue.from || '시작일자' }}</button>
       <span class="trf-lab">종료일자</span>
       <button type="button" class="trf-in trf-date" @click="dateKey = 'to'">{{ modelValue.to || '종료일자' }}</button>
     </div>
-    <div class="trf-row">
+    <div class="trf-cell">
       <span class="trf-lab">면적선택</span>
       <span class="trf-pair">
-        <input class="trf-in" inputmode="decimal" placeholder="최소 전체" :value="modelValue.areaMin" @input="set({ areaMin: val($event) })" /><em>평</em>
+        <span class="trf-unit"><input class="trf-in" inputmode="decimal" placeholder="최소 전체" :value="modelValue.areaMin" @input="set({ areaMin: val($event) })" /><em>평</em></span>
         <i>~</i>
-        <input class="trf-in" inputmode="decimal" placeholder="최대 전체" :value="modelValue.areaMax" @input="set({ areaMax: val($event) })" /><em>평</em>
+        <span class="trf-unit"><input class="trf-in" inputmode="decimal" placeholder="최대 전체" :value="modelValue.areaMax" @input="set({ areaMax: val($event) })" /><em>평</em></span>
       </span>
+    </div>
+    <div class="trf-cell">
       <span class="trf-lab">건축년도</span>
       <span class="trf-pair">
         <input class="trf-in" inputmode="numeric" maxlength="4" placeholder="전체" :value="modelValue.buildMin" @input="set({ buildMin: val($event) })" />
@@ -62,9 +67,9 @@ const pickDate = (v: string) => { if (dateKey.value) set({ [dateKey.value]: v, m
 </template>
 
 <style scoped>
-.trf { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; }
-.trf-row { display: grid; grid-template-columns: auto 1.6fr auto 1fr auto 1fr; align-items: center; gap: 8px 10px; }
-.trf-row:last-child { grid-template-columns: auto 1.6fr auto 1fr auto; }
+.trf { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 28px; padding: 12px 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; }
+.trf-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.trf-cell > .trf-months, .trf-cell > .trf-pair, .trf-cell > .trf-date { flex: 1; }
 .trf-lab { font-size: 14px; font-weight: 700; color: #374151; white-space: nowrap; }
 .trf-months { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .trf-m { height: 40px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 14px; font-weight: 700; color: #6b7280; cursor: pointer; }
@@ -74,6 +79,12 @@ const pickDate = (v: string) => { if (dateKey.value) set({ [dateKey.value]: v, m
 .trf-in:focus { outline: none; border-color: #2b6df3; }
 .trf-in::placeholder { color: #9aa3b2; }
 .trf-pair { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.trf-pair em { font-style: normal; font-size: 13px; color: #6b7280; }
+.trf-pair > * { flex: 1; min-width: 0; }
+.trf-pair > i { flex: none; }
+/* 평은 칸 안쪽 오른쪽에 */
+.trf-unit { position: relative; display: block; }
+.trf-unit .trf-in { padding-right: 30px; }
+.trf-unit em { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: 13px; color: #6b7280; pointer-events: none; }
 .trf-pair i { font-style: normal; color: #9aa3b2; }
+.trf-cell > :slotted(*) { flex: none; }
 </style>

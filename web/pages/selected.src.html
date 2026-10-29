@@ -392,8 +392,7 @@ button { cursor: pointer; }
 .adm-case-in .adm-case-block.cond .adm-trf { margin-top: 16px; }
 .adm-case-in .adm-trf .adm-ghost { height: 40px !important; border-radius: 8px !important; font-size: 14px !important; padding: 0 16px !important; }
 /* ① 실거래가 조사 · ② 실거래가 조건분석 사이 가르는 선 */
-.adm-case-in .adm-case-block.cond { position: relative; margin-top: 33px !important; }
-.adm-case-in .adm-case-block.cond::before { content: ""; position: absolute; left: 0; right: 0; top: -17px; height: 1px; background: #dfe4ec; }
+.adm-case-in .adm-case-block.cond { margin-top: 16px !important; }   /* ① · ② 두 상자 사이 — 가르는 선 없이 16 */
 /* 전세가 비율 칸 — 크게 */
 .adm-case-in .case12 .adm-rate-input { width: 52px; height: 26px; font-size: 14px; border-radius: 6px; padding: 0 6px; }
 .adm-case-in .case12 small em:has(.adm-rate-input) { font-size: 14px; display: inline-flex; align-items: center; gap: 2px; }
@@ -426,6 +425,9 @@ button { cursor: pointer; }
 /* 입지/개별성 상자 안쪽 여백도 수요분석 상자와 같은 18 — 두 상자의 제목 · 표 시작선이 칼같이 맞게 */
 .app-market[data-s="son"] .adp-dm-body > :is(.adp-dm-head.sec2, .adp-dm-block, .adp-dm-block.boxed) { padding-left: 18px !important; padding-right: 18px !important; }
 .app-market[data-s="son"] .adp-dm-body > .adp-dm-head.sec2 { padding-top: 16px !important; }
+/* 손품분석 시세조사 — 수요분석과 같은 선: 흰 카드는 머리 카드 양끝(160~1440), 안쪽 상자는 25 들어가(185~1415), 상자 안 여백 18 */
+.app-market[data-s="son"] .son-price .adm-case-card { padding-left: 24px !important; padding-right: 24px !important; }
+.app-market[data-s="son"] .son-price :is(.adm-case-block, .adm-case-tail) { padding-left: 18px !important; padding-right: 18px !important; }
 #sonHead .ih-fold { display: none; }
 #sonShell[hidden] { display: none !important; }
 /* 업데이트 칩 — 제목 줄 오른쪽 끝, 아래 칸들의 오른쪽 끝선에 맞춘다 */
