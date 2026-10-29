@@ -868,7 +868,8 @@ const downloadCsv = () => {
           <button v-if="colFilter.activeCount.value > 0" type="button" class="adm-flt-clear" @click="colFilter.clearAll()">
             걸러내기 {{ colFilter.activeCount.value }}칸 해제
           </button>
-          <button v-if="pickedSale || pickedJeonse" type="button" class="adm-ghost pick" @click="clearPicks">선택 풀기</button>
+          <!-- 웹은 초기화가 고른 줄까지 푼다 — 선택 풀기는 앱 관리자 화면에만 -->
+          <button v-if="!webEmbed && (pickedSale || pickedJeonse)" type="button" class="adm-ghost pick" @click="clearPicks">선택 풀기</button>
           <select v-model="areaFilter" class="adm-input narrow">
             <option value="">전체면적(㎡/평)</option>
             <option v-for="o in areaOptions" :key="o" :value="o">{{ areaOptText(o) }}</option>
