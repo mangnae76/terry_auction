@@ -12,5 +12,5 @@ export const dealCountTip = (o: { normal: number; direct: number; cancel: number
   ['건수', `정상 ${n(o.normal)}건 + 직거래 ${n(o.direct)}건 = ${n(o.normal + o.direct)}건`],
   ['제외', `계약해제 ${n(o.cancel)}건 — 없던 거래`],
   ['기간', o.from && o.to ? `${dot(o.from)} ~ ${dot(o.to)} (조회일 기준 ${o.months}개월)` : `조회일 기준 ${o.months}개월`],
-  ['연 · 월', o.months === 12 ? '연 = 12개월 합 · 월 = 연 ÷ 12' : `연 = ${o.months}개월 합을 1년으로 환산 · 월 = 합 ÷ ${o.months}`],
+  ['연월', o.months === 12 ? '연 = 12개월 합 · 월 = 연 ÷ 12' : `연 = ${o.months}개월 합을 1년으로 환산 · 월 = 합 ÷ ${o.months}`],
 ];

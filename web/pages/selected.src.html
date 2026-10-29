@@ -2445,6 +2445,9 @@ span.cal-day.has { cursor: help; }
 .app-market .tsp-in-dong .tsp-picked-title { justify-content: space-between !important; flex-wrap: nowrap !important; white-space: nowrap; } /* 저장 칩은 오른쪽 끝(통계 정보 상자 오른쪽 끝선과 맞춤) */
 /* 지도 값 회색 판 — 판 칸마다 주는 위 여백(14)이 이 판에도 붙어 단추가 아래로 쏠렸다. 사방 4 로 */
 .app-market .tsp-in-dong .tsp-metric { padding: 4px !important; }
+/* 결과 줄(지역 · 최근 12개월 …) → 탭 → 구분선 사이를 같은 16 으로 (패널 줄 사이 12 에 4 를 더한다) */
+.app-market .tsp-in-dong .tsp-web-picked { margin-bottom: 4px; }
+.app-market .tsp-in-dong .tsp-metric { margin-bottom: 4px !important; }
 /* 지도 값 단추 — 글자를 단추 정가운데에(전역 button 여백 때문에 아래로 처졌다) */
 .app-market .tsp-in-dong .tsp-metric button { display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; line-height: 1 !important; }
 html:has(#marketView:not([hidden]) .tsp-in-dong), body:has(#marketView:not([hidden]) .tsp-in-dong) { overflow: hidden; overscroll-behavior: none; }
