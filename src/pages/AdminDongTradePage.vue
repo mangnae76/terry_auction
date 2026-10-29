@@ -327,10 +327,17 @@ const onDistTab = () => {
   if (listView.value === 'dist') distChart.value = distChart.value === 'bar' ? 'pie' : 'bar';
   else listView.value = 'dist';
 };
-// 도넛 — 반지름 · 둘레, 구간 차례대로 옅은 파랑 → 짙은 파랑
+// 도넛 — 반지름 · 둘레. 색은 많은 조각부터 빨 · 주 · 노 · 초 · 파 · 남 · 보(눈이 편한 부드러운 무지개)
 const DONUT_R = 56;
 const DONUT_C = 2 * Math.PI * DONUT_R;
-const DONUT_RAMP = ['#dbe7ff', '#bcd2fd', '#9cbcfa', '#7aa4f7', '#588cf4', '#2b6df3', '#2257cc', '#1a44a3']; // 구간 여덟까지
+const DONUT_RAINBOW = ['#ec7272', '#f3a15a', '#f1cd5b', '#6cc38f', '#5b95ea', '#6670c9', '#a07fd4', '#c3cad6']; // 여덟째(구간 여덟까지)는 회색
+/** 구간마다 색 — 건수가 많은 차례로 무지개 색을 준다(같으면 앞 구간 먼저) */
+const donutColors = (cells: Array<{ count: number }>) => {
+  const order = cells.map((_, i) => i).sort((a, b) => cells[b].count - cells[a].count || a - b);
+  const out: string[] = [];
+  order.forEach((ci, rank) => { out[ci] = DONUT_RAINBOW[Math.min(rank, DONUT_RAINBOW.length - 1)]; });
+  return out;
+};
 const DONUT_GAP = 2;
 /** 조각마다 시작 자리 · 길이 (둘레 기준). 조각 사이 2px 틈 */
 const donutSegs = (cells: Array<{ label: string; count: number; pct: number }>) => {
@@ -536,7 +543,7 @@ const avgUnitPrice = computed(() => {
 });
 
 // ===== 분포 =====
-type Bucket = { label: string; test: (r: DongTradeDetailRow) => boolean };
+type Bucket = { label: string; alt?: string; test: (r: DongTradeDetailRow) => boolean };
 const AREA_BUCKETS: Bucket[] = [
   { label: '~10평', test: (r) => r.pyeong > 0 && r.pyeong < 10 },
   { label: '10~15평', test: (r) => r.pyeong >= 10 && r.pyeong < 15 },
@@ -570,15 +577,17 @@ const FLOOR_BUCKETS: Bucket[] = [
   { label: '4층', test: (r) => r.floorNum === 4 },
   { label: '5층~', test: (r) => r.floorNum >= 5 },
 ];
-// 웹 — 구간을 더 잘게(앱은 그대로). 면적은 ㎡ / 평 함께, 25~30평 · 30평~ / 3~5억 · 5~10억 · 10억~ / 25~30년 · 30년~
+// 웹 — 구간을 더 잘게(앱은 그대로). 면적은 평으로 보이고 토글로 ㎡(alt), 25~30평 · 30평~ / 3~5억 · 5~10억 · 10억~ / 25~30년 · 30년~
 const WEB_AREA_BUCKETS: Bucket[] = [
-  { label: '~33㎡ / 10평', test: (r) => r.pyeong > 0 && r.pyeong < 10 },
-  { label: '33~50㎡ / 10~15평', test: (r) => r.pyeong >= 10 && r.pyeong < 15 },
-  { label: '50~66㎡ / 15~20평', test: (r) => r.pyeong >= 15 && r.pyeong < 20 },
-  { label: '66~83㎡ / 20~25평', test: (r) => r.pyeong >= 20 && r.pyeong < 25 },
-  { label: '83~99㎡ / 25~30평', test: (r) => r.pyeong >= 25 && r.pyeong < 30 },
-  { label: '99㎡~ / 30평~', test: (r) => r.pyeong >= 30 },
+  { label: '~10평', alt: '~33㎡', test: (r) => r.pyeong > 0 && r.pyeong < 10 },
+  { label: '10~15평', alt: '33~50㎡', test: (r) => r.pyeong >= 10 && r.pyeong < 15 },
+  { label: '15~20평', alt: '50~66㎡', test: (r) => r.pyeong >= 15 && r.pyeong < 20 },
+  { label: '20~25평', alt: '66~83㎡', test: (r) => r.pyeong >= 20 && r.pyeong < 25 },
+  { label: '25~30평', alt: '83~99㎡', test: (r) => r.pyeong >= 25 && r.pyeong < 30 },
+  { label: '30평~', alt: '99㎡~', test: (r) => r.pyeong >= 30 },
 ];
+/** 웹 전용면적별 분포 — 평(기본) · ㎡ 중 하나만 보인다(둘을 같이 적으니 어지러웠다) */
+const areaUnit = ref<'py' | 'm2'>('py');
 const WEB_PRICE_BUCKETS: Bucket[] = [
   ...PRICE_BUCKETS.slice(0, 5),
   { label: '3~5억', test: (r) => r.priceWon >= 3 * EOK && r.priceWon < 5 * EOK },
@@ -599,10 +608,11 @@ const distribute = (buckets: Bucket[]) => {
 };
 const DISTS = computed(() => [
   // 웹은 '…별 분포' 로 이름을 맞춘다 (앱은 그대로)
-  { title: webEmbed ? '전용면적별 분포' : '전용면적 분포', unit: '㎡/평', cells: distribute(webEmbed ? WEB_AREA_BUCKETS : AREA_BUCKETS) },
-  { title: webEmbed ? '금액대별 분포' : '금액분포', unit: '', cells: distribute(webEmbed ? WEB_PRICE_BUCKETS : PRICE_BUCKETS) },
-  { title: webEmbed ? '건축연식별 분포' : '건축연식', unit: '', cells: distribute(webEmbed ? WEB_AGE_BUCKETS : AGE_BUCKETS) },
-  { title: webEmbed ? '층별 분포' : '층', unit: '', cells: distribute(FLOOR_BUCKETS) },
+  { title: webEmbed ? '전용면적별 분포' : '전용면적 분포', unit: webEmbed ? '' : '㎡/평', areaToggle: webEmbed,
+    cells: distribute(webEmbed ? WEB_AREA_BUCKETS.map((b) => ({ ...b, label: areaUnit.value === 'm2' ? b.alt ?? b.label : b.label })) : AREA_BUCKETS) },
+  { title: webEmbed ? '금액대별 분포' : '금액분포', unit: '', areaToggle: false, cells: distribute(webEmbed ? WEB_PRICE_BUCKETS : PRICE_BUCKETS) },
+  { title: webEmbed ? '건축연식별 분포' : '건축연식', unit: '', areaToggle: false, cells: distribute(webEmbed ? WEB_AGE_BUCKETS : AGE_BUCKETS) },
+  { title: webEmbed ? '층별 분포' : '층', unit: '', areaToggle: false, cells: distribute(FLOOR_BUCKETS) },
 ]);
 
 // ===== 검색리스트 =====
@@ -1084,7 +1094,11 @@ const downloadCsv = () => {
         <!-- 웹 '지역별 분포' 탭 — 지역별 분석 표 자리에 전용면적 · 금액 · 건축연식 · 층 분포 막대그래프 (검색조건으로 거른 거래 기준) -->
         <div v-else-if="webEmbed && listView === 'dist'" class="adm-dists is-web">
           <div v-for="d in DISTS" :key="d.title" class="adm-dist">
-            <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em><small>건수 · %</small></div>
+            <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em>
+              <button v-if="d.areaToggle" type="button" class="adm-unit-tg" :aria-label="`면적 단위 바꾸기 — 지금 ${areaUnit === 'py' ? '평' : '㎡'}`" @click="areaUnit = areaUnit === 'py' ? 'm2' : 'py'">
+                <span :class="{ on: areaUnit === 'py' }">평</span><span :class="{ on: areaUnit === 'm2' }">㎡</span>
+              </button>
+              <small>건수 · %</small></div>
             <!-- 웹 — 막대그래프. 막대 높이는 그 분포에서 가장 많은 칸 대비, 위에 건수 · 밑에 구간 · % -->
             <div v-if="distChart === 'bar'" class="adm-bars" role="img" :aria-label="`${d.title} 막대그래프`">
               <div
@@ -1099,7 +1113,7 @@ const downloadCsv = () => {
                 <em>{{ c.pct.toFixed(0) }}%</em>
               </div>
             </div>
-            <!-- 도넛 — 구간이 차례가 있는 값이라 한 색의 옅음 → 짙음으로. 조각 사이 2px 흰 틈 -->
+            <!-- 도넛 — 많은 조각부터 빨주노초파남보. 조각 사이 2px 흰 틈 -->
             <div v-else class="adm-donut-wrap">
               <svg class="adm-donut" viewBox="0 0 160 160" role="img" :aria-label="`${d.title} 도넛 분포도`">
                 <circle cx="80" cy="80" :r="DONUT_R" fill="none" stroke="#f1f4f9" stroke-width="28" />
@@ -1107,7 +1121,7 @@ const downloadCsv = () => {
                   v-for="(seg, si) in donutSegs(d.cells)"
                   :key="seg.label"
                   cx="80" cy="80" :r="DONUT_R" fill="none"
-                  :stroke="DONUT_RAMP[si % DONUT_RAMP.length]" stroke-width="28"
+                  :stroke="donutColors(d.cells)[si]" stroke-width="28"
                   :stroke-dasharray="`${seg.len} ${DONUT_C - seg.len}`"
                   :stroke-dashoffset="-seg.start"
                   transform="rotate(-90 80 80)"
@@ -1118,7 +1132,7 @@ const downloadCsv = () => {
               </svg>
               <ul class="adm-donut-legend">
                 <li v-for="(c, ci) in d.cells" :key="c.label">
-                  <i :style="{ background: DONUT_RAMP[ci % DONUT_RAMP.length] }" />
+                  <i :style="{ background: donutColors(d.cells)[ci] }" />
                   <span>{{ c.label }}</span>
                   <b>{{ c.count }}</b>
                   <em>{{ c.pct.toFixed(0) }}%</em>
@@ -1300,6 +1314,10 @@ const downloadCsv = () => {
 .adm-dists.is-web { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .adm-dists.is-web .adm-dist { padding: 16px 20px 14px; }
 .adm-dists.is-web .adm-dist-head { font-size: 16px; margin-bottom: 12px; }
+/* 전용면적별 분포 — 평 · ㎡ 토글(제목 옆 작은 알약, 고른 쪽만 채운다) */
+.adm-unit-tg { align-self: center; display: inline-flex; gap: 2px; margin-left: 6px; padding: 2px; border: 1px solid #dde3ee; border-radius: 999px; background: #f3f5f9; cursor: pointer; }
+.adm-unit-tg span { min-width: 26px; height: 20px; padding: 0 6px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #6b7280; }
+.adm-unit-tg span.on { background: #1f3a72; color: #fff; }
 .adm-dists.is-web .adm-dist-head :is(em, small) { font-size: 14px; }
 .adm-bars { display: flex; align-items: stretch; gap: 8px; height: 190px; padding: 4px 2px 0; }
 .adm-bar-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: default; }
