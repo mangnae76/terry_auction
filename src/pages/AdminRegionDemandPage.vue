@@ -9,7 +9,7 @@
 // 총 세대수는 건축물대장에서 동마다 받아 채운다 — 연립·다세대 · 아파트 · 오피스텔(호수) 종류별로, 30일 저장.
 // 연립·다세대 값은 물건상세 손품조사와 같은 셈이다.
 // 손으로 적으면 그 값이 우선. 총 매물수는 공식 API 가 아니라 손으로 적는다.
-import { fetchDongUnitCount } from '../services/dongUnits';
+import { fetchDongUnitCount, peekDongUnitCount } from '../services/dongUnits';
 import { openNaverDongListing } from '../services/naverListing';
 import { dealCountTip, type TipRow } from '../services/tipRows';
 import { DEMAND_TOTAL_TIP, demandFitText, demandGradeOf, demandTip, demandTotalGrade } from '../services/demandGrade';
@@ -124,7 +124,15 @@ let unitsJob = 0;
 const fetchAutoUnits = async () => {
   const job = ++unitsJob;
   const k = kind.value;
-  const targets = stats.value.filter((r) => !(rowKey(r.sigungu, r.umdNm) in autoUnits.value));
+  const first = stats.value.filter((r) => !(rowKey(r.sigungu, r.umdNm) in autoUnits.value));
+  // 저장된 값은 한꺼번에 먼저 읽는다(건축물대장 한도와 상관없다) — 새로고침 때 '받는 중'이 동마다 차례로 오래 남았다
+  const peeked = await Promise.all(first.map((r) => peekDongUnitCount(`${sido.value} ${r.sigungu} ${r.umdNm}`, k)));
+  if (job !== unitsJob) return;
+  const hits: Record<string, number> = {};
+  first.forEach((r, i) => { const v = peeked[i]; if (v !== undefined) hits[rowKey(r.sigungu, r.umdNm)] = v; });
+  if (Object.keys(hits).length) autoUnits.value = { ...autoUnits.value, ...hits };
+  // 저장본이 없는 동만 건축물대장에 하나씩 차례로 묻는다
+  const targets = first.filter((r) => !(rowKey(r.sigungu, r.umdNm) in hits));
   // 동은 한 곳씩 차례로(한꺼번에 부르면 429 로 막힌다) — 한 번 받은 동은 30일 저장
   for (let i = 0; i < targets.length; i += 1) {
     await Promise.all(targets.slice(i, i + 1).map(async (r) => {

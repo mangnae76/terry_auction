@@ -23,3 +23,18 @@ export const fetchDongUnitCount = async (address: string, kind: UnitKind): Promi
   } catch { /* 못 받음 */ }
   return -1;
 };
+
+/** 저장된 값만 본다(건축물대장은 부르지 않는다) — 화면을 다시 열 때 한꺼번에 읽어 '받는 중'을 짧게. 없으면 undefined */
+export const peekDongUnitCount = async (address: string, kind: UnitKind): Promise<number | undefined> => {
+  try {
+    const region = await resolveRegionFromAddress(address);
+    if (!region?.bCode10) return undefined;
+    const hit = await readCacheEntry<{ villa: number; apt: number; officetel: number }>('cacheDongUnitsAll', cacheKey(region.bCode10), YEAR);
+    if (hit) return hit.value[kind];
+    if (kind === 'villa') {
+      const old = await readCacheEntry<number>('cacheDongUnits', cacheKey(region.bCode10), YEAR);
+      if (old && old.value > 0) return old.value;
+    }
+  } catch { /* 저장본 없음 */ }
+  return undefined;
+};
