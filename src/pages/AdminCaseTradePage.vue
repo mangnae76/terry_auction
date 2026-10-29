@@ -111,9 +111,17 @@ const callCount = computed(() => years.value * 12 * 2);
 /** 화면 머리의 칩 — 되살린 스냅샷이면 저장해 둔 글을 그대로 쓴다 */
 const chipText = computed(() => restoredSpot.value || spotChip.value);
 
+/** 마지막으로 받은 주소 — 같은 주소로 칸만 벗어날 때는 다시 받지 않는다 */
+const lastRunAddress = ref('');
+const pickKind = (k: CasePropertyType) => {
+  if (kind.value === k) return;
+  kind.value = k;
+  if (webEmbed && address.value.trim()) void run();
+};
 const run = async () => {
   const text = address.value.trim();
   if (!text || loading.value) return;
+  lastRunAddress.value = text;
   loading.value = true;
   errorMsg.value = '';
   notice.value = '';
@@ -656,6 +664,7 @@ onMounted(async () => {
   snapId.value = s.snapId ?? ''; snapLabel.value = s.snapLabel ?? '';
   restoredSale.value = s.restoredSale ?? null; restoredJeonse.value = s.restoredJeonse ?? null; restoredSpot.value = s.restoredSpot ?? '';
   rateText.value = s.rateText ?? rateText.value;
+  lastRunAddress.value = (s.address ?? '').trim();
   areaFilter.value = s.areaFilter ?? ''; areaNote.value = s.areaNote ?? ''; yearFilter.value = s.yearFilter ?? ''; tab.value = s.tab ?? 'all';
   await nextTick();
   // 표를 다시 그린 뒤에 고른 줄을 되돌린다(표가 바뀌며 고른 것을 비우는 일이 있어도 덮는다)
@@ -762,12 +771,13 @@ const downloadCsv = () => {
             class="adm-input wide"
             placeholder="예) 인천광역시 서구 검암동 670-4 203호"
             @keyup.enter="run"
+            @blur="webEmbed && address.trim() !== lastRunAddress && run()"
           />
         </label>
         <label class="adm-f">
           <small>종류</small>
           <div class="adm-seg">
-            <button v-for="k in KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: kind === k.key }]" @click="kind = k.key">{{ k.label }}</button>
+            <button v-for="k in KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: kind === k.key }]" @click="pickKind(k.key)">{{ k.label }}</button>
           </div>
         </label>
         <label v-if="!webEmbed" class="adm-f">
@@ -776,7 +786,9 @@ const downloadCsv = () => {
             <button v-for="y in YEARS" :key="y" type="button" :class="['adm-seg-btn', { on: years === y }]" @click="years = y">{{ y }}년</button>
           </div>
         </label>
-        <button type="button" class="adm-load" :disabled="loading || !address.trim()" @click="run">
+        <!-- 웹 시세조사는 분석 단추가 없다 — 주소(Enter · 칸 벗어남) · 종류를 바꾸면 저절로 받는다 -->
+        <span v-if="webEmbed && loading" class="adm-auto-load">받는 중…</span>
+        <button v-if="!webEmbed" type="button" class="adm-load" :disabled="loading || !address.trim()" @click="run">
           {{ loading ? '분석 중…' : '분석' }}
         </button>
       </div>
@@ -1203,6 +1215,7 @@ const downloadCsv = () => {
 .adm-rng-in.date { width: 128px; text-align: left; }
 .adm-rng-in:focus { outline: none; border-color: #2b6df3; }
 /* 주소 칸 — 글은 왼쪽, 복사 단추는 칸 끝 */
+.adm-auto-load { align-self: center; font-size: 13px; color: #6b7280; white-space: nowrap; }
 .addr-in { display: flex; align-items: center; gap: 8px; }
 .addr-t { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .adm-copy { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; color: #6b7280; cursor: pointer; }
