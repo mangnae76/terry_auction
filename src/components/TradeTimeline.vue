@@ -181,13 +181,14 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
       <strong>{{ simple ? '월별 평균가' : '거래 타임라인' }} <em>({{ simple ? '정상 + 직거래' : '점 = 거래 한 건 · 정상 + 직거래' }})</em></strong>
       <div class="ttl-right">
         <div class="ttl-colors">
-          <button type="button" class="ttl-simple" @click="toggleSimple">{{ simple ? '타임라인 보기' : '원래 그래프' }}</button>
           <template v-if="!simple">
             <span class="ttl-colors-lab">색</span>
             <div class="ttl-seg" role="tablist" aria-label="점 색">
               <button v-for="(c, k) in COLORS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">{{ c.label }}</button>
             </div>
           </template>
+          <!-- 단순 그래프 — 면적 단추 오른쪽 끝 -->
+          <button type="button" class="ttl-simple" @click="toggleSimple">{{ simple ? '타임라인 보기' : '단순 그래프' }}</button>
         </div>
         <!-- 색 뜻은 색 단추 바로 아래 — 단추와 범례가 이어져 보이게 -->
         <div v-if="!simple" class="ttl-foot"><span v-for="(l, i) in COLORS[colorKey].keys" :key="l" class="ttl-key"><i :class="`t${i}`" />{{ l }}</span></div>
@@ -206,6 +207,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" /></svg><span>다시 재생</span>
       </button>
     </div>
+
   </section>
 </template>
 
@@ -215,7 +217,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .ttl-top strong { font-size: 16px; font-weight: 800; color: #111827; }
 .ttl-top strong em { font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; }
 .ttl-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-.ttl-simple { height: 34px; padding: 0 12px; margin-right: 6px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
+.ttl-simple { height: 34px; padding: 0 12px; margin-left: 6px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
 .ttl-colors { display: inline-flex; align-items: center; gap: 8px; }
 .ttl-colors-lab { font-size: 13px; font-weight: 700; color: #6b7280; }
 .ttl-seg { display: grid; grid-auto-flow: column; gap: 6px; }

@@ -1131,11 +1131,9 @@ const downloadCsv = () => {
         <div v-else-if="webEmbed && listView === 'deals'" class="adm-deals">
           <!-- 거래 타임라인 — 점 = 거래 한 건, 월별 중간값 선 · 월별 거래량 막대, 재생. 달을 누르면 아래 목록이 그 달로 -->
           <TradeTimeline v-model="dealMonth" :rows="dealBase" />
-          <div class="adm-deals-head">
-            <strong>개별 거래 목록<template v-if="dealMonth"> · {{ dealMonth.slice(0, 4) }}년 {{ Number(dealMonth.slice(5, 7)) }}월</template></strong>
-          </div>
-          <!-- 건수(왼쪽) · 검색칸(오른쪽) 한 줄. 저장 · 초기화는 뺐다 — 거르던 칸(기간 · 면적 · 건축년도)이 없어져 할 일이 없었다 -->
+          <!-- 제목 · 건수(왼쪽) · 검색칸(오른쪽) 한 줄. 저장 · 초기화는 뺐다 — 거르던 칸(기간 · 면적 · 건축년도)이 없어져 할 일이 없었다 -->
           <div class="adm-inline-cond">
+            <strong class="adm-deal-title">개별 거래 목록<template v-if="dealMonth"> · {{ dealMonth.slice(0, 4) }}년 {{ Number(dealMonth.slice(5, 7)) }}월</template></strong>
             <span class="adm-deal-count">총 거래건수 <b>{{ dealRows.length.toLocaleString('ko-KR') }}건</b></span>
             <button v-if="dealMonth" type="button" class="adm-deal-all" @click="dealMonth = ''">전체 보기</button>
             <label class="adm-inbox grow">
@@ -1447,7 +1445,8 @@ const downloadCsv = () => {
 .adm-rank-notes b { font-weight: 400; color: inherit; }
 .adm-rank-pct.flat { background: #f3f4f6; color: #6b7280; }
 
-.adm-deal-count { margin-right: auto; font-size: 14px; color: #6b7280; }
+.adm-deal-title { font-size: 16px; font-weight: 800; color: #111827; white-space: nowrap; }
+.adm-deal-count { margin-right: auto; white-space: nowrap; font-size: 14px; color: #6b7280; }
 .adm-deal-count b { color: #111827; font-weight: 700; }
 .adm-deal-all { height: 30px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
 .adm-detail-numtg { align-self: flex-start; height: 34px; margin: 4px 0 8px; padding: 0 14px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
