@@ -1502,10 +1502,10 @@ const downloadCsv = () => {
 .adm-rank-pct.up { background: #fde2e2; color: #c22e2e; }
 .adm-rank-pct.down { background: #dbe7ff; color: #1d4ed8; }
 .adm-rank-pct.new { background: #eef1f6; color: #4b5563; }
-.adm-rank-notes { grid-column: 1 / -1; padding: 10px 14px; border-radius: 8px; background: #f5f7fa; }
-.adm-rank-notes p { margin: 0; font-size: 13px; line-height: 1.6; color: #6b7280; }
+.adm-rank-notes { grid-column: 1 / -1; padding: 0 2px; } /* 상자 없이 바닥에 흐린 회색 글로 */
+.adm-rank-notes p { margin: 0; font-size: 12px; line-height: 1.6; color: #9ca3af; }
 .adm-rank-notes p + p { margin-top: 2px; }
-.adm-rank-notes b { font-weight: 700; color: #374151; }
+.adm-rank-notes b { font-weight: 400; color: inherit; }
 .adm-rank-pct.flat { background: #f3f4f6; color: #6b7280; }
 /* 동별 표 — 세 카드 밑 한 장, 우리 표 꼴(모서리 8 · 머리 회청색 띠 · 14) */
 .adm-rank-dong { grid-column: 1 / -1; margin-top: 4px; background: #fff; border: 1px solid #e3e8f0; border-radius: 8px; padding: 16px 18px 12px; }
