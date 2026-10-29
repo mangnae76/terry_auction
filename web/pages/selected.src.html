@@ -368,6 +368,10 @@ button { cursor: pointer; }
 .adm-case-in .adm-table :is(th, td):nth-child(6) { width: 7%; }
 .adm-case-in .adm-table td.n { text-align: center !important; }
 .adm-case-in .adm-table td.addr { padding-left: 16px !important; padding-right: 12px !important; }
+/* ① 실거래가 조사 그룹 — 12칸 상자(.adm-case-block 첫째)와 아래 필터 · 리스트(.adm-case-tail)를 한 상자로 잇는다 */
+.adm-case-in .adm-case-block:not(.cond) { border-bottom: 0; border-radius: 10px 10px 0 0; padding-bottom: 4px; }
+.adm-case-in .adm-case-tail { border: 1px solid #e5e7eb; border-top: 0; border-radius: 0 0 10px 10px; padding: 0 16px 16px; background: #fff; }
+.adm-case-in .adm-case-tail .adm-tabs { margin-top: 12px; }
 /* 전세가 비율 칸 — 크게 */
 .adm-case-in .case12 .adm-rate-input { width: 52px; height: 26px; font-size: 14px; border-radius: 6px; padding: 0 6px; }
 .adm-case-in .case12 small em:has(.adm-rate-input) { font-size: 14px; display: inline-flex; align-items: center; gap: 2px; }

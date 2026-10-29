@@ -225,8 +225,38 @@ const simRows = computed(() => {
     return true;
   });
 });
-/** 실거래가 조건분석 — 조건에 맞는 매매(직거래 포함 · 해제 제외) 평균 */
-const condSales = computed(() => simRows.value.filter((r) => (r.kind === '매매' || r.kind === '직거래') && r.price > 0));
+// ===== ② 실거래가 조건분석 — ① 유사물건 고르기와 따로 노는 자기 조건 =====
+const condAreaFrom = ref('');
+const condAreaTo = ref('');
+const condBuildFrom = ref('');
+const condBuildTo = ref('');
+const condDateFrom = ref('');
+const condDateTo = ref('');
+const resetCond = () => {
+  const w = tradeWindowOf(Date.now(), 12);
+  condAreaFrom.value = ''; condAreaTo.value = '';
+  condBuildFrom.value = ''; condBuildTo.value = '';
+  condDateFrom.value = ymdText(w.start); condDateTo.value = ymdText(w.end);
+};
+resetCond();
+/** 조건에 맞는 같은 동 매매(정상거래 · 직거래, 계약해제는 받을 때 이미 뺐다) */
+const condSales = computed(() => {
+  const aF = numOf(condAreaFrom.value); const aT = numOf(condAreaTo.value);
+  const bF = numOf(condBuildFrom.value); const bT = numOf(condBuildTo.value);
+  const dF = condDateFrom.value.replace(/\D/g, ''); const dT = condDateTo.value.replace(/\D/g, '');
+  return dongRows.value.filter((r) => {
+    if (!((r.kind === '매매' || r.kind === '직거래') && r.price > 0)) return false;
+    const py = r.areaM2 / PYEONG;
+    if (aF > 0 && py < aF) return false;
+    if (aT > 0 && py > aT) return false;
+    if (bF > 0 && !((r.buildYear ?? 0) >= bF)) return false;
+    if (bT > 0 && !((r.buildYear ?? 9999) <= bT)) return false;
+    const d = r.contractDate.replace(/\D/g, '');
+    if (dF && d < dF) return false;
+    if (dT && d > dT) return false;
+    return true;
+  });
+});
 const condAvg = computed(() => (condSales.value.length ? condSales.value.reduce((t, r) => t + r.price, 0) / condSales.value.length : 0));
 /** 손품조사 조건분석과 같은 글 — 면적은 걸러진 매매의 실제 최소~최대, 사용승인은 건축년도 범위 + 몇 년차 */
 /** 시작 · 끝 두 줄(손품조사 앱 칸과 같이) — 한 줄이면 칸을 넘친다 */
@@ -238,7 +268,7 @@ const condAreaPair = computed<[string, string] | null>(() => {
 });
 const condPeriodText = computed(() => {
   const sd = (v: string) => (v ? v.slice(2, 7).replace(/-/g, '.') : '');
-  const f = sd(simDateFrom.value); const t = sd(simDateTo.value);
+  const f = sd(condDateFrom.value); const t = sd(condDateTo.value);
   return f || t ? `${f}~${t}` : '-';
 });
 const condApprovalText = computed(() => {
@@ -392,7 +422,7 @@ const condTip = computed(() => [
   ['공식', '조건에 맞는 같은 동 매매가 합 ÷ 건수'] as [string, string],
   ['건수', `매매 ${condSales.value.length.toLocaleString('ko-KR')}건 (직거래 포함 · 계약해제 제외)`] as [string, string],
   ['평당', condAvgPerPy.value > 0 ? `평균 ${won(condAvgPerPy.value)}원` : '-'] as [string, string],
-  ['조건', '유사물건 표 위의 면적 · 건축년도 · 계약일'] as [string, string],
+  ['조건', '이 상자 아래의 면적 · 건축년도 · 계약일'] as [string, string],
 ]);
 const pubTip = computed(() => pubPriceTip({ year: price.value?.year, unit: priceUnit.value }));
 /** 고른 줄인지 저절로 잡힌 줄인지 — 요약 칸에 적어 둔다 */
@@ -641,6 +671,7 @@ type ScreenSnap = {
   address: string; kind: CasePropertyType; years: number;
   region: ResolvedRegion | null; lot: string; ho: string; buildingDong: string;
   price: ApartPrice | null; rows: CaseTradeRow[]; dongRows?: CaseTradeRow[]; mode?: CaseMode;
+  cond?: { aF: string; aT: string; bF: string; bT: string; dF: string; dT: string };
   sim?: { aF: string; aT: string; bF: string; bT: string; dF: string; dT: string; sale: string; jeonse: string };
   scanned: number; missed: number; baseArea: number;
   areaFilter: string; areaNote: string; yearFilter: string; tab: 'all' | '매매' | '전세' | '월세';
@@ -655,6 +686,7 @@ const collectScreen = (): ScreenSnap => ({
   address: address.value, kind: kind.value, years: years.value,
   region: region.value, lot: lot.value, ho: ho.value, buildingDong: buildingDong.value,
   price: price.value, rows: rows.value, dongRows: dongRows.value, mode: mode.value,
+  cond: { aF: condAreaFrom.value, aT: condAreaTo.value, bF: condBuildFrom.value, bT: condBuildTo.value, dF: condDateFrom.value, dT: condDateTo.value },
   sim: { aF: simAreaFrom.value, aT: simAreaTo.value, bF: simBuildFrom.value, bT: simBuildTo.value, dF: simDateFrom.value, dT: simDateTo.value, sale: simSale.value, jeonse: simJeonse.value },
   scanned: scanned.value, missed: missed.value, baseArea: baseArea.value,
   areaFilter: areaFilter.value, areaNote: areaNote.value, yearFilter: yearFilter.value, tab: tab.value,
@@ -671,7 +703,7 @@ const saveScreen = () => {
   screenTimer = window.setTimeout(() => { void screen.save(collectScreen()); }, 300);
 };
 // 분석 결과 · 고른 기준 줄 · 거르기가 바뀌면 남긴다
-watch([rows, price, pickedSale, pickedJeonse, areaFilter, yearFilter, tab, rateText, restoredSale, restoredJeonse, mode, simSale, simJeonse, simAreaFrom, simAreaTo, simBuildFrom, simBuildTo, simDateFrom, simDateTo], saveScreen);
+watch([rows, price, pickedSale, pickedJeonse, areaFilter, yearFilter, tab, rateText, restoredSale, restoredJeonse, mode, simSale, simJeonse, simAreaFrom, simAreaTo, simBuildFrom, simBuildTo, simDateFrom, simDateTo, condAreaFrom, condAreaTo, condBuildFrom, condBuildTo, condDateFrom, condDateTo], saveScreen);
 onMounted(async () => {
   if (!webEmbed) return;
   const s = await screen.restore();
@@ -681,6 +713,7 @@ onMounted(async () => {
   region.value = s.region ?? null; lot.value = s.lot ?? ''; ho.value = s.ho ?? ''; buildingDong.value = s.buildingDong ?? '';
   price.value = s.price ?? null; // 예전 저장본에 남은 계약해제 줄은 뺀다(없던 거래)
   rows.value = (s.rows ?? []).filter((r) => r.kind !== '계약해제'); dongRows.value = (s.dongRows ?? []).filter((r) => r.kind !== '계약해제'); mode.value = s.mode ?? MODES[0];
+  if (s.cond) { condAreaFrom.value = s.cond.aF; condAreaTo.value = s.cond.aT; condBuildFrom.value = s.cond.bF; condBuildTo.value = s.cond.bT; condDateFrom.value = s.cond.dF; condDateTo.value = s.cond.dT; }
   if (s.sim) { simAreaFrom.value = s.sim.aF; simAreaTo.value = s.sim.aT; simBuildFrom.value = s.sim.bF; simBuildTo.value = s.sim.bT; simDateFrom.value = s.sim.dF; simDateTo.value = s.sim.dT; simSale.value = s.sim.sale; simJeonse.value = s.sim.jeonse; }
   scanned.value = s.scanned ?? 0; missed.value = s.missed ?? 0; baseArea.value = s.baseArea ?? 0;
   ovSido.value = s.ovSido ?? ''; ovDistrictCode.value = s.ovDistrictCode ?? ''; ovDong.value = s.ovDong ?? ''; ovLot.value = s.ovLot ?? '';
@@ -920,21 +953,6 @@ const downloadCsv = () => {
             </div>
           </div>
         </section>
-        <!-- ② 실거래가 조건분석 — 아래 조건(면적 · 건축년도 · 계약일)에 맞는 같은 동 매매 평균 한 칸 -->
-        <section v-if="webEmbed" class="adm-case-block cond">
-          <div class="adm-case-block-head"><span>실거래가 조건분석<em>(같은 동 · 조건 평균)</em></span></div>
-          <div class="adm-kpis grid4 case12">
-            <!-- 손품조사 ③ 실거래가 조건분석과 같은 네 칸 — 조건에 맞는 매매 줄의 실제 범위 · 기간 · 사용승인 · 평균 -->
-            <div class="adm-kpi"><small>전용면적범위</small><strong class="rng two"><template v-if="condAreaPair"><span><UnitText :text="condAreaPair[0]" /> ~</span><span><UnitText :text="condAreaPair[1]" /></span></template><template v-else>-</template></strong></div>
-            <div class="adm-kpi"><small>거래기간</small><strong class="rng"><UnitText :text="condPeriodText" /></strong></div>
-            <div class="adm-kpi"><small>사용승인</small><strong class="rng"><UnitText :text="condApprovalText" /></strong></div>
-            <div class="adm-kpi">
-              <small><InfoTip :rows="condTip" under="box" align="end">국토부 실거래 평균</InfoTip></small>
-              <strong v-if="condAvg > 0"><UnitText :text="won(condAvg)" suffix="원" /></strong>
-              <strong v-else class="ask">{{ loading ? '받는 중' : '조건에 맞는 매매 없음' }}</strong>
-            </div>
-          </div>
-        </section>
         <div v-else class="adm-kpis grid4 case-grid">
           <div class="adm-kpi green">
             <small>
@@ -1013,8 +1031,9 @@ const downloadCsv = () => {
           </div>
         </div>
 
-        <!-- 탭 · 거르기 -->
-        <template v-if="rows.length > 0">
+        <!-- 탭 · 거르기 — 웹은 ① 실거래가 조사 상자의 아랫부분(.adm-case-tail)으로 이어 붙는다 -->
+        <template v-if="rows.length > 0 || (webEmbed && dongRows.length > 0)">
+        <div class="adm-case-tail">
         <div class="adm-tabs">
           <button :class="['adm-tab', 't-all', { on: tab === 'all' }]" @click="tab = 'all'">전체 ({{ counts.all }})</button>
           <button :class="['adm-tab', 't-buy', { on: tab === '매매' }]" @click="tab = '매매'">매매 ({{ counts.매매 }})</button>
@@ -1101,7 +1120,56 @@ const downloadCsv = () => {
         </div>
         <p v-if="tableRows.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ tableRows.length.toLocaleString('ko-KR') }}줄은 엑셀로 내려받으세요.</p>
         <p v-else-if="tableRows.length === 0" class="adm-foot">{{ countLabel }} 데이터 없음</p>
+        </div>
         </template>
+        <!-- ② 실거래가 조건분석 그룹 — 자기 조건(면적 · 건축년도 · 계약일)과 그 조건의 같은 동 매매 리스트. ① 고르기와 필터를 같이 쓰지 않는다 -->
+        <section v-if="webEmbed && dongRows.length > 0" class="adm-case-block cond">
+          <div class="adm-case-block-head"><span>실거래가 조건분석<em>(같은 동 · 조건 평균)</em></span></div>
+          <div class="adm-kpis grid4 case12">
+            <div class="adm-kpi"><small>전용면적범위</small><strong class="rng two"><template v-if="condAreaPair"><span><UnitText :text="condAreaPair[0]" /> ~</span><span><UnitText :text="condAreaPair[1]" /></span></template><template v-else>-</template></strong></div>
+            <div class="adm-kpi"><small>거래기간</small><strong class="rng"><UnitText :text="condPeriodText" /></strong></div>
+            <div class="adm-kpi"><small>사용승인</small><strong class="rng"><UnitText :text="condApprovalText" /></strong></div>
+            <div class="adm-kpi">
+              <small><InfoTip :rows="condTip" under="box" align="end">국토부 실거래 평균</InfoTip></small>
+              <strong v-if="condAvg > 0"><UnitText :text="won(condAvg)" suffix="원" /></strong>
+              <strong v-else class="ask">조건에 맞는 매매 없음</strong>
+            </div>
+          </div>
+          <div class="adm-tabs cond-bar">
+            <span class="adm-rng"><small>면적</small><input v-model="condAreaFrom" class="adm-rng-in" inputmode="decimal" placeholder="평" />~<input v-model="condAreaTo" class="adm-rng-in" inputmode="decimal" placeholder="평" /></span>
+            <span class="adm-rng"><small>건축년도</small><input v-model="condBuildFrom" class="adm-rng-in" inputmode="numeric" maxlength="4" placeholder="년" />~<input v-model="condBuildTo" class="adm-rng-in" inputmode="numeric" maxlength="4" placeholder="년" /></span>
+            <span class="adm-rng"><small>계약일</small><input v-model="condDateFrom" type="date" class="adm-rng-in date" />~<input v-model="condDateTo" type="date" class="adm-rng-in date" /></span>
+            <span class="adm-tab-fill" />
+            <button type="button" class="adm-ghost" @click="resetCond">초기화</button>
+          </div>
+          <div class="adm-sum under">
+            <span>{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 (정상거래 · 직거래)</span>
+          </div>
+          <div class="adm-table-wrap">
+            <table class="adm-table">
+              <thead><tr><th>구분</th><th>계약일</th><th>거래금액</th><th>전용(㎡/평)</th><th>건축년도</th><th>층</th><th>주소</th></tr></thead>
+              <tbody>
+                <tr v-for="(r, i) in condSales.slice(0, 300)" :key="`c-${r.contractDate}-${r.floor}-${i}`">
+                  <td><span :class="['kind', kindClass(r.kind)]">{{ r.kind }}</span></td>
+                  <td>{{ r.contractDate }}</td>
+                  <td class="n strong amt"><span class="v">{{ r.amount }}</span></td>
+                  <td class="n area"><span class="v">{{ areaText(r.areaM2) }}</span></td>
+                  <td class="n build">{{ r.buildYear || '-' }}</td>
+                  <td class="n floor"><span class="v">{{ r.floor || '-' }}</span></td>
+                  <td class="addr">
+                    <span class="addr-in">
+                      <span class="addr-t">{{ [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') }}</span>
+                      <button type="button" class="adm-copy" aria-label="주소 복사" title="주소 복사" @click.stop="copyAddr(r)">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
+                      </button>
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-if="condSales.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 평균은 {{ condSales.length.toLocaleString('ko-KR') }}건 전체로 계산합니다.</p>
+        </section>
       </template>
       </div>
     </div>
@@ -1230,7 +1298,8 @@ const downloadCsv = () => {
 /* 경매지번 실거래가 묶음 — 손품조사 .adp-mkt-block 처럼 얇은 테두리 상자, 맨 위에 이름 */
 .adm-case-block { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px 16px; background: #fff; }
 .adm-case-block-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; font-size: 15px; font-weight: 800; color: #111827; }
-.adm-case-block.cond { margin-top: 12px; }
+.adm-case-block.cond { margin-top: 16px; }
+.adm-case-block.cond .cond-bar { margin: 16px 0 10px; }
 /* 범위 글은 길어 한 단계 작게 */
 .adm-kpis.case12 .adm-kpi strong.rng { font-size: 16px; }
 .adm-kpis.case12 .adm-kpi strong.rng.two { display: flex; flex-direction: column; line-height: 24px; }
