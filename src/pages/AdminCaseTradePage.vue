@@ -324,6 +324,9 @@ const shortName = computed(() => (
 // 기준 거래 고르기 — 비워 두면 '가장 최근 정상 거래'.
 // 줄을 누르면 그 거래가 기준이 되고, 위 지표가 그 값으로 다시 선다.
 const rowKey = (r: CaseTradeRow) => `${r.kind}|${r.contractDate}|${r.price}|${r.areaM2}|${r.floor}`;
+/** 웹 실거래 리스트 접기 — ① 경매물건 · 유사물건 표, ② 조건분석 표 (가격정보 검색리스트 접기와 같은 일) */
+const listOpen1 = ref(true);
+const listOpen2 = ref(true);
 const pickedSale = ref('');
 const pickedJeonse = ref('');
 /** 아무것도 집지 않은 자리 — 지표는 사람이 고른 줄로만 선다 */
@@ -1093,6 +1096,7 @@ const downloadCsv = () => {
         </div>
 
         <div class="adm-sum under">
+          <strong v-if="webEmbed" class="list-title">실거래 리스트</strong>
           <span v-if="webEmbed && mode === MODES[1]">
             최근 {{ years }}년 · {{ region?.dong || '같은 동' }} {{ dongRows.length.toLocaleString('ko-KR') }}건 중 조건 {{ byAreaYear.length.toLocaleString('ko-KR') }}건
           </span>
@@ -1103,7 +1107,7 @@ const downloadCsv = () => {
           <span v-if="missed > 0" class="dim">{{ missed }}개월치 못 받음</span>
         </div>
 
-        <div class="adm-table-wrap">
+        <div v-show="!webEmbed || listOpen1" class="adm-table-wrap">
           <table class="adm-table">
             <thead>
               <tr>
@@ -1149,8 +1153,9 @@ const downloadCsv = () => {
             </tbody>
           </table>
         </div>
-        <p v-if="tableRows.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ tableRows.length.toLocaleString('ko-KR') }}줄은 엑셀로 내려받으세요.</p>
-        <p v-else-if="tableRows.length === 0" class="adm-foot">{{ countLabel }} 데이터 없음</p>
+        <p v-if="(!webEmbed || listOpen1) && tableRows.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 전체 {{ tableRows.length.toLocaleString('ko-KR') }}줄은 엑셀로 내려받으세요.</p>
+        <p v-else-if="(!webEmbed || listOpen1) && tableRows.length === 0" class="adm-foot">{{ countLabel }} 데이터 없음</p>
+        <div v-if="webEmbed" class="list-fold"><button type="button" class="adm-ghost" :aria-expanded="listOpen1" @click="listOpen1 = !listOpen1">{{ listOpen1 ? '접기' : '펼치기' }}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" :class="{ up: listOpen1 }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button></div>
         </div>
         </template>
         <!-- ② 실거래가 조건분석 그룹 — 자기 조건(면적 · 건축년도 · 계약일)과 그 조건의 같은 동 매매 리스트. ① 고르기와 필터를 같이 쓰지 않는다 -->
@@ -1170,9 +1175,10 @@ const downloadCsv = () => {
             <button type="button" class="adm-ghost" @click="resetCond">초기화</button>
           </TradeRangeFilter>
           <div class="adm-sum under">
+            <strong class="list-title">실거래 리스트</strong>
             <span>{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 = 정상거래 {{ condSales.filter((r) => r.kind === '매매').length.toLocaleString('ko-KR') }}건 + 직거래 {{ condSales.filter((r) => r.kind === '직거래').length.toLocaleString('ko-KR') }}건 · 계약해제 제외</span>
           </div>
-          <div class="adm-table-wrap">
+          <div v-show="listOpen2" class="adm-table-wrap">
             <table class="adm-table">
               <thead>
                 <tr>
@@ -1214,7 +1220,8 @@ const downloadCsv = () => {
               </tbody>
             </table>
           </div>
-          <p v-if="condSales.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 평균은 {{ condSales.length.toLocaleString('ko-KR') }}건 전체로 계산합니다.</p>
+          <p v-if="listOpen2 && condSales.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 평균은 {{ condSales.length.toLocaleString('ko-KR') }}건 전체로 계산합니다.</p>
+          <div v-if="webEmbed" class="list-fold"><button type="button" class="adm-ghost" :aria-expanded="listOpen2" @click="listOpen2 = !listOpen2">{{ listOpen2 ? '접기' : '펼치기' }}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" :class="{ up: listOpen2 }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button></div>
         </section>
       </template>
       </div>
@@ -1325,6 +1332,12 @@ const downloadCsv = () => {
 .adm-sum { margin: 18px 0 12px; padding-left: 2px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: #6b7280; }
 .adm-sum strong { font-size: 15px; font-weight: 800; color: #111827; }
 .adm-sum .dim { color: #9ca3af; }
+.adm-sum .list-title { font-size: 15px; font-weight: 800; color: #111827; }
+/* 실거래 리스트 접기 — 표 아래 오른쪽 */
+.list-fold { display: flex; justify-content: flex-end; margin-top: 10px; }
+.list-fold .adm-ghost { display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 12px; border-radius: 8px; font-size: 13px; }
+.list-fold svg { transition: transform .2s; }
+.list-fold svg.up { transform: rotate(180deg); }
 /* 표 바로 위 — 이 표가 어느 자료에서 나왔는지.
    '전체' 알약의 글자 시작선에 맞춘다 (테두리 1 + 안여백 14) */
 .adm-sum.under { margin: 0 0 8px; padding-left: 15px; font-size: 12px; }
