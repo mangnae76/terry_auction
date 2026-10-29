@@ -834,9 +834,11 @@ const downloadCsv = () => {
 
       <!-- 웹 — 제목 줄부터 표까지 흰 상자 하나로 감싼다(.adm-case-card) -->
       <div class="adm-case-card">
+      <!-- 손품분석 — 손품조사 카드 제목처럼 '시세조사'(아이콘) 아래에 실거래가 조사(아이콘 없음) -->
+      <div v-if="preset" class="adm-sise-head"><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세조사</div>
       <!-- 웹 — 지역분석의 탭 줄 자리: 왼쪽에 화면 이름 · 저장 단추, 오른쪽에 경로(#admCrumbSlot 로 웹 경로를 옮겨 온다) -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top adm-case-row">
-        <strong class="adm-case-title"><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>실거래가 조사</strong>
+        <strong class="adm-case-title"><template v-if="!preset"><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg></template>실거래가 조사</strong>
         <SnapChip :chip="screenChip" />
         <div v-if="!inDong" id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
@@ -1310,6 +1312,7 @@ const downloadCsv = () => {
 .adm-case-block-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; font-size: 15px; font-weight: 800; color: #111827; }
 .adm-case-block.cond { margin-top: 16px; }
 /* 제목 앞 아이콘 — 손품조사 카드 제목 아이콘과 같은 크기 · 색 */
+.adm-sise-head { display: flex; align-items: center; padding: 14px 4px 4px; font-size: 16px; font-weight: 800; color: #111827; }
 .adm-h-ico { flex: none; margin-right: 6px; vertical-align: -2px; color: #2b6df3; }
 .adm-case-block.cond .cond-bar { margin: 16px 0 10px; }
 /* 범위 글은 길어 한 단계 작게 */
