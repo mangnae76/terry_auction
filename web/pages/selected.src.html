@@ -350,6 +350,9 @@ button { cursor: pointer; }
 .adm-case-in .adm-tabs { gap: 8px !important; }
 .adm-case-in .adm-tabs :is(.adm-tab, .adm-ghost, .adm-flt-clear, select.adm-input) { box-sizing: border-box; height: 40px !important; border-radius: 8px !important; font-size: 14px !important; margin: 0 !important; }
 .adm-case-in .adm-tabs :is(.adm-tab, .adm-ghost, .adm-flt-clear) { padding: 0 16px !important; display: inline-flex; align-items: center; }
+/* 전체 · 매매 · 전세 · 월세는 선택 풀기 앞까지 같은 폭으로 길게 — 빈 칸(.adm-tab-fill)은 쓰지 않는다 */
+.adm-case-in .adm-tabs .adm-tab { flex: 1 1 0; justify-content: center; min-width: 0; }
+.adm-case-in .adm-tabs .adm-tab-fill { display: none; }
 /* 전세가 비율 칸 — 크게 */
 .adm-case-in .case12 .adm-rate-input { width: 52px; height: 26px; font-size: 14px; border-radius: 6px; padding: 0 6px; }
 .adm-case-in .case12 small em:has(.adm-rate-input) { font-size: 14px; display: inline-flex; align-items: center; gap: 2px; }
