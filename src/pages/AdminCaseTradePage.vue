@@ -757,19 +757,20 @@ const downloadCsv = () => {
         <!-- 웹 — 손품조사 시세조사의 실거래가 조사와 같은 12칸: 매매 줄 · 전세 줄(전용면적 · 거래일자/층 · 실거래가 · 평당가) · 공시 줄 -->
         <template v-if="webEmbed">
           <div v-for="g in tradeLines" :key="g.key" :class="['adm-kpis grid4 case12', g.row ? `on-${g.key}` : '']">
+            <div :class="['adm-kpi', { lit: lit(g.k.real) }]" @mouseenter="litOn(g.k.real)" @mouseleave="litOff">
+              <small>{{ g.label }} 실거래가</small>
+              <!-- 고르기 전에는 금액 자리에 안내를 — 줄 수가 같아 칸 높이가 흔들리지 않는다 -->
+              <strong v-if="g.row"><UnitText :text="won(g.row.price)" suffix="원" /></strong>
+              <strong v-else class="ask">리스트에서 {{ g.label }}를 선택하세요</strong>
+            </div>
+            <div :class="['adm-kpi', { lit: lit(g.k.unit) }]" @mouseenter="litOn(g.k.unit)" @mouseleave="litOff">
+              <small>{{ g.label }} 평당가</small><strong><UnitText :text="won(perPyeong(g.row))" suffix="원" /></strong>
+            </div>
             <div :class="['adm-kpi', { lit: lit(g.k.area) }]" @mouseenter="litOn(g.k.area)" @mouseleave="litOff">
               <small>전용면적</small><strong><UnitText :text="tradeArea(g.row)" /></strong>
             </div>
             <div :class="['adm-kpi', { lit: lit(g.k.date) }]" @mouseenter="litOn(g.k.date)" @mouseleave="litOff">
               <small>거래일자 / 층</small><strong><UnitText :text="tradeWhen(g.row)" /></strong>
-            </div>
-            <div :class="['adm-kpi', { lit: lit(g.k.real) }]" @mouseenter="litOn(g.k.real)" @mouseleave="litOff">
-              <small>{{ g.label }} 실거래가</small>
-              <strong><UnitText :text="won(g.row?.price ?? 0)" suffix="원" /></strong>
-              <span v-if="!g.row" class="adm-kpi-sub ask">리스트에서 실거래를 선택하세요</span>
-            </div>
-            <div :class="['adm-kpi', { lit: lit(g.k.unit) }]" @mouseenter="litOn(g.k.unit)" @mouseleave="litOff">
-              <small>{{ g.label }} 평당가</small><strong><UnitText :text="won(perPyeong(g.row))" suffix="원" /></strong>
             </div>
           </div>
           <div class="adm-kpis grid4 case12">
@@ -1062,6 +1063,8 @@ const downloadCsv = () => {
 .adm-kpis.grid4.nextrow { margin-top: 12px; }
 /* 웹 12칸 — 네 칸 세 줄, 줄 사이 12 */
 .adm-kpis.case12 + .adm-kpis.case12 { margin-top: 12px; }
+.adm-kpis.case12 .adm-kpi strong { line-height: 28px; }
+.adm-kpis.case12 .adm-kpi strong.ask { font-size: 14px; font-weight: 600; letter-spacing: 0; color: #2b6df3; }
 /* 말풍선(InfoTip under=box)이 칸 바로 아래에 뜨도록 칸을 기준 상자로 */
 .adm-kpis.case12 .adm-kpi { position: relative; }
 /* 이어진 칸 — 가격정보 실거래가 조사 .lit 와 같은 색 */
