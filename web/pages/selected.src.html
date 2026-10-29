@@ -360,6 +360,23 @@ button { cursor: pointer; }
 .mk-scaffold .mk-row::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--subtab-line); }
 .mk-scaffold .mk-row strong { font-size: 16px; font-weight: 800; color: var(--text); }
 .mk-scaffold .mk-row .adm-crumb-slot { margin-left: auto; }
+/* 매각사례 — 지역분석 고르는 줄과 같은 모양(앱 화면의 scoped 값을 그대로 옮겼다 · 웹 덮어쓰기는 .app-market 규칙이 그대로 받는다) */
+.mk-sale .adm-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; padding: 16px 18px; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; }
+.mk-sale .adm-f { display: flex; flex-direction: column; gap: 6px; }
+.mk-sale .adm-f small { display: flex; align-items: baseline; gap: 4px; font-size: 11px; font-weight: 700; color: #6b7280; }
+.mk-sale .adm-input { box-sizing: border-box; width: 240px; height: 36px; padding: 0 11px; border: 1px solid #dde3ee; border-radius: 9px; background: #fff; font-family: inherit; font-size: 13.5px; color: #111827; }
+.mk-sale .adm-input.narrow { width: 160px; }
+.mk-sale .adm-input:focus { border-color: #2b6df3; outline: none; }
+.mk-sale .adm-seg { display: inline-flex; gap: 4px; padding: 3px; border-radius: 9px; background: #f3f5f9; }
+.mk-sale .adm-seg-btn { padding: 7px 13px; border: none; border-radius: 7px; background: none; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #6b7280; white-space: nowrap; cursor: pointer; }
+.mk-sale .adm-seg-btn.on { background: #fff; color: #1f3a72; box-shadow: 0 1px 3px #1118271a; }
+.mk-sale .adm-load { height: 36px; margin-left: auto; padding: 0 20px; border: none; border-radius: 9px; background: #1f3a72; font-family: inherit; font-size: 13px; font-weight: 800; color: #fff; cursor: pointer; }
+.mk-sale .adm-load:disabled { background: #aeb8ca; cursor: default; }
+.mk-sale .adm-tabs-top { position: relative; display: flex; align-items: center; gap: 12px; }
+.mk-sale .adm-tabs-top .adm-crumb-slot { margin-left: auto; }
+/* 박스 탭 이름이 길어(동일지번 매각물건 분석) 116 칸에 안 들어간다 — 이 두 탭만 글자 폭에 맞춘다 */
+.app-market.mk-sale[data-k][data-s] .adm-tabs-top .adm-view-tabs > button { flex: 0 0 auto !important; width: auto !important; min-width: 116px !important; padding: 0 18px !important; }
+.mk-sale .mk-sale-body { margin-top: 16px; }
 /* 수요공급 표 — 지역별 분석 표(.adm-dongsum)와 같은 글자 크기 · 줄 높이. '연 · 월' 같은 작은 머리글자(em.pre)와 칸 이름 밑 단위(small)는 그대로 */
 .app-market[data-k="dong"] .adm-supply .adm-table :is(th, td) { font-size: 14px !important; padding-top: 9px !important; padding-bottom: 9px !important; } /* 입력칸이 있어 위아래 9 면 지역별 분석 표 줄 높이(49)와 같다 */
 .app-market[data-k="dong"] .adm-supply .adm-table td :is(span.v, span.grp, i, b, em.bar) { font-size: 14px !important; }
@@ -2715,7 +2732,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   /* ===== 주소 한 곳 — 어느 화면 · 어느 하위 탭을 보는지 주소(#/…)에 적고, 새로고침 · 뒤로가기 때 거기서 되살린다.
      화면마다 따로 적지 않는다: 새 화면 · 새 하위 탭이 생기면 아래 두 표(SUB_TAB_KEYS · readHash/hashOf)에만 더한다 ===== */
   const SUB_TAB_KEYS = {
-    market: ['dong', 'near', 'same'], /* 거래랭킹은 지역분석 › 지도랭킹 탭으로, 경매지번 분석은 지역분석 › 경매지번 탭으로 */
+    market: ['dong', 'sale'], /* 매각사례 = 인근 · 동일지번 매각물건 분석(안 박스 탭 S.saleTab) · 거래랭킹은 지역분석 › 지도랭킹 탭으로, 경매지번 분석은 지역분석 › 경매지번 탭으로 */
     postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'interior', 'tax'],
     more: ['mypage', 'alerts', 'billing', 'points', 'news', 'support'],
@@ -2736,7 +2753,9 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     if (head === 'market' && m[2] === 'case') { try { sessionStorage.setItem('adm.dong.openCase', '1'); } catch (e) { /* 그만 */ } return { route: 'market', sub: 'dong' }; } /* 예전 '경매지번 분석' — 지역분석 › 경매지번 탭으로 */
     if (head === 'market' && m[2] === 'ranking') { try { sessionStorage.setItem('adm.dong.openMap', '1'); } catch (e) { /* 그만 */ } return { route: 'market', sub: 'dong' }; } /* 예전 '거래랭킹' — 지역분석 › 지도 탭으로 합쳤다 */
     if (head === 'roi') return { route: 'market', sub: 'dong' }; /* 수익분석은 뺐다 — 예전 주소는 지역분석으로 */
-    if (head === 'bidrate') return { route: 'market', sub: SUB_TAB_KEYS.market.includes(m[2]) ? m[2] : 'near' }; /* 예전 '낙찰가율분석' 주소 */
+    if (head === 'bidrate') return { route: 'market', sub: 'sale', saleTab: m[2] === 'same' ? 'same' : 'near' }; /* 예전 '낙찰가율분석' 주소 */
+    if (head === 'market' && (m[2] === 'near' || m[2] === 'same')) return { route: 'market', sub: 'sale', saleTab: m[2] }; /* 예전 인근 · 동일지번 하위 탭 — 매각사례 안 박스 탭으로 */
+    if (head === 'market' && m[2] === 'sale') return { route: 'market', sub: 'sale', saleTab: m[3] === 'same' ? 'same' : 'near' };
     if (SUB_TAB_KEYS[head]) return { route: head, sub: SUB_TAB_KEYS[head].includes(m[2]) ? m[2] : SUB_TAB_KEYS[head][0] };
     if (PLAIN_ROUTES.includes(head)) return { route: head };
     return { route: 'list' };
@@ -2744,6 +2763,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   const H0 = readHash();
   const S = {
     marketTab: H0.route === 'market' ? H0.sub : 'dong', /* 시장분석 하위 탭 */
+    saleTab: H0.saleTab || 'near', /* 매각사례 안 박스 탭 — near 인근 · same 동일지번 */
     /* 낙찰이후 · 자금관리 · 더보기의 하위 탭 */
     pageTab: Object.fromEntries(Object.keys(APP_PAGE_NAMES).map((k) => [k, H0.route === k ? H0.sub : SUB_TAB_KEYS[k][0]])),
     layout: store.get('wlp.web.layout', 'card'), sort: store.get('wlp.web.sort', 'reg'),
@@ -2761,6 +2781,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   };
   /** 지금 화면 → 주소 */
   const hashOf = () => (S.route === 'item' ? itemHash(S.itemId, S.itemTab)
+    : S.route === 'market' && S.marketTab === 'sale' ? `#/market/sale/${S.saleTab}`
     : SUB_TAB_KEYS[S.route] ? `#/${S.route}/${S.route === 'market' ? S.marketTab : S.pageTab[S.route]}`
       : S.route === 'list' ? '#/' : `#/${S.route}`);
   /** 주소에 적는다 — 화면을 옮길 때는 push(뒤로가기로 돌아온다), 하위 탭만 바꿀 때는 replace */
@@ -2829,7 +2850,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     ['m0', [['자동등록', 'mega-auto'], ['직접입력', 'mega-manual'], ['입찰달력', '']]],   /* 입찰달력은 선정물건 칸에도 그대로(복사) */
     ['m1', [['선정물건', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
-    ['m3', [['지역분석', 'go-market'], ['인근 매각물건 분석', 'go-market'], ['동일지번 매각물건 분석', 'go-market']]],
+    ['m3', [['지역분석', 'go-market'], ['매각사례', 'go-market']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['낙찰이후가이드', 'go-postwin']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
     ['m4m', [['투자9단계', '']]],   /* 준비 중 — 물건선정부터 매도 · 세금까지 */
@@ -3796,7 +3817,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   const SUBTABS = {
     /* 물건상세 — 앱 AuctionDetailPage 의 TABS 다섯 칸에서 앱 '손품+현장'을 손품조사 · 임장조사 둘로 나눴다(웹만) */
     /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
-    market: [['dong', '', '지역분석'], ['near', '', '인근 매각물건 분석'], ['same', '', '동일지번 매각물건 분석']],
+    market: [['dong', '', '지역분석'], ['sale', '', '매각사례']],
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
@@ -4258,7 +4279,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       const steps = marketTrail().split(' › ');
       return steps.map((t, i) => (i === steps.length - 1 ? [t]
         : i === 0 ? [t, first('market')]
-          : [t, () => { S.marketTab = 'dong'; writeHash(false); render(); }]));
+          : [t, () => { if (S.marketTab !== 'sale') S.marketTab = 'dong'; writeHash(false); render(); }]));
     }
     if (r === 'mypage') return [['마이페이지']];
     if (r === 'item') {
@@ -4280,7 +4301,23 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   function marketTrail() {
     if (S.marketTab === 'dong' && marketInner) return ['시장분석', ...marketInner].join(' › ');
     const label = (SUBTABS.market.find((t) => t[0] === S.marketTab) || [])[2];
+    if (S.marketTab === 'sale') return `시장분석 › 매각사례 › ${SALE_TABS.find((t) => t[0] === S.saleTab)[1]}`;
     return label ? `시장분석 › ${label}` : '시장분석';
+  }
+  /* 매각사례 — 고르는 줄은 지역분석과 똑같이(같은 칸 · 같은 모양), 그 밑 박스 탭 둘: 인근 · 동일지번 매각물건 분석. 분석 화면은 아직 준비 중 */
+  const SALE_TABS = [['near', '인근 매각물건 분석'], ['same', '동일지번 매각물건 분석']];
+  const SALE_SIDO = ['서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원특별자치도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도'];
+  const SALE_SEG = { kind: ['연립다세대', '아파트', '오피스텔'], deal: ['매매', '전세'], period: ['3개월', '6개월', '12개월'] };
+  const saleSeg = { kind: '연립다세대', deal: '매매', period: '12개월' };
+  function saleCaseHtml() {
+    const seg = (k, title) => `<label class="adm-f"><small>${title}</small><div class="adm-seg">${SALE_SEG[k].map((v) => `<button type="button" class="adm-seg-btn ${saleSeg[k] === v ? 'on' : ''}" data-act="sale-seg" data-k="${k}" data-v="${v}">${v}</button>`).join('')}</div></label>`;
+    const sel = (title, ph, opts) => `<label class="adm-f"><small>${title}</small><select class="adm-input narrow ph" ${opts ? '' : 'disabled'}><option value="">${ph}</option>${(opts || []).map((o) => `<option value="${o}">${o}</option>`).join('')}</select></label>`;
+    const label = SALE_TABS.find((t) => t[0] === S.saleTab)[1];
+    return `<div class="app-market mk-sale" data-k="dong" data-s="sale"><section class="adm-shell"><div class="adm-body">`
+      + `<div class="adm-bar">${sel('시 · 도', '시도선택', SALE_SIDO)}${sel('시 · 군 · 구', '시군구 선택')}${sel('읍 · 면 · 동', '읍면동 선택')}${seg('kind', '종류')}${seg('deal', '거래')}${seg('period', '기간')}<button type="button" class="adm-load" disabled>조회</button></div>`
+      + `<div class="adm-tabs-top"><nav class="adm-view-tabs">${SALE_TABS.map(([k, t]) => `<button type="button" class="${S.saleTab === k ? 'on' : ''}" data-act="sale-tab" data-v="${k}">${t}</button>`).join('')}</nav><div id="admCrumbSlot" class="adm-crumb-slot"></div></div>`
+      + `<div class="mk-sale-body">${itCard('chart', label, itEmpty('준비 중인 화면입니다.'), true)}</div>`
+      + `</div></section></div>`;
   }
   function renderMarket() {
     syncCrumb();
@@ -4288,6 +4325,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     const key = S.marketTab;
     const label = (SUBTABS[S.route].find((t) => t[0] === key) || [])[2] || '';
     const T = CLOUD.T;
+    if (key === 'sale') { closeAppMarket(); box.innerHTML = saleCaseHtml(); { const slot = document.getElementById('admCrumbSlot'); if (CRUMBS && slot && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS); } return; }
     if (!CLOUD.on || !T || !T.hasAppAdminScreen || !T.hasAppAdminScreen(key)) {
       closeAppMarket();
       const msg = !CLOUD.on ? (S.authReady ? '로그인하면 볼 수 있습니다.' : '불러오는 중입니다…') : '준비 중인 화면입니다.';
@@ -4451,7 +4489,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     const h = readHash();
     S.route = h.route;
     if (h.route === 'item') { S.itemId = h.itemId; S.lastItemId = h.itemId; S.itemTab = h.itemTab; }
-    if (h.route === 'market') S.marketTab = h.sub;
+    if (h.route === 'market') { S.marketTab = h.sub; if (h.saleTab) S.saleTab = h.saleTab; }
     if (APP_PAGE_NAMES[h.route]) S.pageTab[h.route] = h.sub;
     S.pop = ''; S.menu = null; render();
   });
@@ -4785,6 +4823,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
           .catch((err) => { console.error('[직접입력] 등록 실패', err); toast(`적지 못했습니다 — ${(err && err.message) || '까닭을 알 수 없습니다'}`, 'info'); });
         break;
       } catch (err) { console.error('[직접입력] 등록 실패', err); toast(`적지 못했습니다 — ${(err && err.message) || '까닭을 알 수 없습니다'}`, 'info'); break; }
+      case 'sale-tab': S.saleTab = t.dataset.v; writeHash(false); syncCrumb(); renderMarket(); break;
+      case 'sale-seg': saleSeg[t.dataset.k] = t.dataset.v; renderMarket(); break;
       case 'go-trip': go('trip'); break;
       /* 펼침 메뉴의 항목(data-name)을 누르면 그 하위 탭으로 바로 연다 */
       case 'go-market': {
