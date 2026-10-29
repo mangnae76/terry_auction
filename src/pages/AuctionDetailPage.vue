@@ -10869,10 +10869,9 @@ tr.tone-take { background: #fff5f5; }
   .adp-ind-pair .adp-ind-table col:first-child { width: 74px !important; }
   .adp-ind-pair .adp-ind-table col:last-child { width: 62px !important; }
   .adp-ind-pair .adp-ind-toggles .adp-toggle-btn { padding-left: 6px; padding-right: 6px; }
-  /* 나란히 서면 두 표 모두 위 모서리를 둥글게 */
-  .adp-ind-pair .adp-ind-table + .adp-ind-table { border-top-left-radius: 8px; border-top-right-radius: 8px; }
-  .adp-ind-pair .adp-ind-table + .adp-ind-table > thead > tr:first-child > :first-child { border-top-left-radius: 7px !important; }
-  .adp-ind-pair .adp-ind-table + .adp-ind-table > thead > tr:first-child > :last-child { border-top-right-radius: 7px !important; }
+  /* 나란히 서면 두 표 모두 아래 모서리를 펴서 그 밑 적용가 줄에 붙인다 */
+  .adp-ind-pair .adp-ind-table { border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .adp-ind-pair .adp-ind-table > tbody:last-of-type > tr:last-child > * { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 }
 .adp-ind-table { width: 100%; table-layout: fixed; } /* 모서리 8 은 공통 .adp-table(separate) 이 맡는다 — collapse 로 덮지 않는다 */
 .adp-ind-table th, .adp-ind-table td {
@@ -10883,12 +10882,11 @@ tr.tone-take { background: #fff5f5; }
 .adp-ind-table tr > :first-child { border-left: 0; }
 .adp-ind-table > thead > tr:first-child > *,
 .adp-ind-table > tfoot > tr:first-child > * { border-top: 0; }
-/* 개별성 적용가 줄은 두 표 바로 아래에 붙인다 — 두 표는 아래 모서리를 펴고, 적용가 줄이 아래 모서리만 둥글다 */
-.adp-ind-pair .adp-ind-table { border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-.adp-ind-pair .adp-ind-table > tbody:last-of-type > tr:last-child > * { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-/* 좁아서 위아래로 쌓이면 둘째 표의 위 모서리도 편다 */
-.adp-ind-pair .adp-ind-table + .adp-ind-table { border-top-left-radius: 0; border-top-right-radius: 0; }
-.adp-ind-pair .adp-ind-table + .adp-ind-table > thead > tr:first-child > * { border-radius: 0 !important; }
+/* 좁아서 위아래로 쌓일 때(앱) — 두 표 사이를 띄우고, 첫 표는 네 모서리 둥글게 · 둘째 표는 위 모서리 둥글고 아래는 펴서
+   개별성 적용가 줄을 바로 붙인다(적용가 줄이 아래 모서리만 둥글다) */
+.adp-ind-pair { row-gap: 12px; }
+.adp-ind-pair .adp-ind-table + .adp-ind-table { border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.adp-ind-pair .adp-ind-table + .adp-ind-table > tbody:last-of-type > tr:last-child > * { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 .adp-ind-foot { margin-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
 .adp-ind-foot > tfoot > tr:last-child > :first-child { border-bottom-left-radius: 7px; }
 .adp-ind-foot > tfoot > tr:last-child > :last-child { border-bottom-right-radius: 7px; }
@@ -11435,7 +11433,6 @@ tr.tone-take { background: #fff5f5; }
 .adp-mkt-cells.adp-dm-table:not(.app-detail *) .cell :is(.cell-body, .cell-grade) { padding-top: 11px; padding-bottom: 11px; }
 .adp-table.adp-dm-tbl:not(.app-detail *) th { padding-top: 9px; padding-bottom: 9px; }
 .adp-table.adp-dm-tbl:not(.app-detail *) td { padding-top: 11px; padding-bottom: 11px; }
-.adp-ind-table:not(.app-detail *) :is(th, td) { padding-top: 9px; padding-bottom: 9px; }
 .adp-ruser-table:not(.app-detail *) .adp-ruser-cell { padding-top: 12px; padding-bottom: 12px; }
 .adp-mkt-block:not(.app-detail *) + .adp-mkt-block { margin-top: 14px; }
 .adp-dm-body:not(.app-detail *) > .adp-dm-head:not(:first-child) { margin-top: 10px; }
