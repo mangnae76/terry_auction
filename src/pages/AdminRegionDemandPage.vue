@@ -743,8 +743,8 @@ const downloadCsv = () => {
 .dm-head { display: flex; justify-content: center; padding: 8px 6px; border-bottom: 1px solid #e3e8f0; border-radius: 8px 8px 0 0; background: #f3f6fb; font-size: 14px; color: #6b7280; white-space: nowrap; }
 .dm-body { display: flex; justify-content: center; align-items: center; padding: 14px 6px; }
 .dm-body b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; display: inline-flex; align-items: center; }
-.dm-cell.lit { background: #fdecea; border-color: #f3c2bc; }
-.dm-cell.lit .dm-head { background: #fbdcd8; border-bottom-color: #f3c2bc; }
+.dm-cell.lit { background: #fff5f5; border-color: #f6d5d5; }
+.dm-cell.lit .dm-head { background: #ffecec; border-bottom-color: #f6d5d5; }
 .dm-cell .nbar { font-style: normal; font-weight: 400; color: #c3c9d4; margin: 0 7px; }
 .dm-cell .gd { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 13px; font-weight: 800; line-height: 1; }
 .dm-cell .gd.g-A { background: #fde2e2; color: #c22e2e; }

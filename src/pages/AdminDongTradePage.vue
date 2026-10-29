@@ -816,7 +816,8 @@ const guNav = computed(() => {
     { label: '최저가', value: eokMan(prices.length ? Math.min(...prices) : 0) },
     { label: '최고가', value: eokMan(prices.length ? Math.max(...prices) : 0) },
     { label: '평균면적', value: areas.length ? areaText(avgOf(areas)) : '—' },
-    { label: '㎡당 평균가', value: perM2s.length ? `${Math.round(avgOf(perM2s) / 10000).toLocaleString('ko-KR')}만/㎡` : '—' },
+    // 랭킹지도 통계정보와 같은 꼴 — '평 783만 / ㎡ 237만'
+    { label: '평 단가 / ㎡ 단가', value: perM2s.length ? `평 ${Math.round((avgOf(perM2s) * 3.305785) / 10000).toLocaleString('ko-KR')}만 / ㎡ ${Math.round(avgOf(perM2s) / 10000).toLocaleString('ko-KR')}만` : '—' },
   ];
 });
 /** 읍면동을 고르면 위 요약 상자는 셋 — 거래상세 숫자(조건검색까지 거른 것)와 같은 값 */

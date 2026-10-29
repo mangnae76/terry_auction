@@ -11342,15 +11342,15 @@ tr.tone-take { background: #fff5f5; }
 /* 표로 묶인 줄에서는 계산 칸도 흰색 — 색은 머리줄에만 */
 .adp-mkt-cells.adp-dm-table .cell.calc { background: #fff; }
 /* 짚은 칸과 그 값을 만든 칸 — 칸을 통째로 묶어 보여 준다.
-   색은 앱이 쓰는 붉은 계열(#e0574a)에 맞췄다.
+   색은 연분홍(#fff5f5 · 머리 #ffecec) — 수요분석 회전율 칸과 같은 색.
    calc 칸과 머리글이 각자 바탕을 잡고 있어 선택자를 한 단계씩 좁혀야 이긴다 */
 .adp-mkt-cells .cell.lit,
-.adp-mkt-cells.adp-dm-table .cell.calc.lit { background: #fdecea; }
+.adp-mkt-cells.adp-dm-table .cell.calc.lit { background: #fff5f5; }
 /* 머리줄·값줄이 각자 바탕을 잡고 있어 한 단계씩 좁혀 덮는다 */
 .adp-mkt-cells.adp-dm-table .cell.lit > small,
-.adp-mkt-cells.adp-dm-table .cell.lit .cell-head { background: #fbdcd8; }
+.adp-mkt-cells.adp-dm-table .cell.lit .cell-head { background: #ffecec; }
 .adp-mkt-cells.adp-dm-table .cell.lit .cell-body,
-.adp-mkt-cells.adp-dm-table .cell.lit .cell-grade { background: #fdecea; }
+.adp-mkt-cells.adp-dm-table .cell.lit .cell-grade { background: #fff5f5; }
 /* 줄 수가 다른 칸이 섞여 있으면 값이 위로 붙는다 — 가로·세로 모두 가운데로 */
 .adp-mkt-cells.center-y .cell > strong,
 .adp-mkt-cells.center-y .cell > span { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; }
