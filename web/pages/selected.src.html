@@ -397,6 +397,9 @@ button { cursor: pointer; }
 /* 전세가 비율 칸 — 크게 */
 .adm-case-in .case12 .adm-rate-input { width: 52px; height: 26px; font-size: 14px; border-radius: 6px; padding: 0 6px; }
 .adm-case-in .case12 small em:has(.adm-rate-input) { font-size: 14px; display: inline-flex; align-items: center; gap: 2px; }
+/* 손품분석 머리 카드 — 선정물건 손품조사 머리와 같은 꼴. 전체 접기 단추는 물건 화면에만 */
+#sonHead { margin-top: 14px; }
+#sonHead .ih-fold { display: none; }
 /* 업데이트 칩 — 제목 줄 오른쪽 끝, 아래 칸들의 오른쪽 끝선에 맞춘다 */
 .adm-case-in .adm-case-row .snap-chip { margin-left: auto; }
 /* 제목 줄 — 아래 묶음 상자와 간격을 줄인다(위 여백과 균형) */
@@ -4454,6 +4457,15 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       + `<div class="mk-sale-body">${itCard('chart', label, itEmpty('준비 중인 화면입니다.'), true)}</div>`
       + `</div></section></div>`;
   }
+  /* 손품분석 머리 카드 — 고른 물건(앱 화면이 'son.pick' 에 적고 son:pick 으로 알린다) */
+  function renderSonHead() {
+    const el = $('sonHead'); if (!el) return;
+    let id = ''; try { id = localStorage.getItem('son.pick') || ''; } catch (e) { /* 그만 */ }
+    const it = id ? byId(id) : null;
+    el.hidden = !it;
+    el.innerHTML = it ? itemHeadHtml(it) : '';
+  }
+  window.addEventListener('son:pick', () => { if (S.route === 'market' && S.marketTab === 'son') renderSonHead(); });
   function renderMarket() {
     syncCrumb();
     const box = $('marketContent');
@@ -4475,9 +4487,12 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     }
     /* 유사매물시세는 지역분석 화면(거래상세만) — 틀 · 거르개 CSS 를 그대로 받게 data-k 는 dong */
     const dk = key === 'similar' || key === 'rank' ? 'dong' : key; /* 랭킹분석도 지역분석 화면 — 틀 CSS(data-k=dong)를 그대로 받는다 */
-    if (marketUnmount && box.querySelector(`.app-market[data-k="${dk}"][data-s="${key}"]`)) return;
+    if (marketUnmount && box.querySelector(`.app-market[data-k="${dk}"][data-s="${key}"]`)) { if (key === 'son') renderSonHead(); return; }
     closeAppMarket();
-    box.innerHTML = `<div class="app-market" data-k="${dk}" data-s="${key}" id="appMarketMount"></div>`;
+    /* 손품분석 — 위는 선정물건 손품조사와 똑같은 물건 머리 카드(itemHeadHtml), 아래가 앱 화면(수요분석 · 시세조사) */
+    box.innerHTML = (key === 'son' ? '<div class="toolbar item-head son-head" id="sonHead"></div>' : '')
+      + `<div class="app-market" data-k="${dk}" data-s="${key}" id="appMarketMount"></div>`;
+    if (key === 'son') renderSonHead();
     /* 붙이는 도중 다시 그려 두 번 붙으면 화면에 남은 쪽만 잡는다 (낙찰이후 탭이 안 바뀌던 것과 같은 까닭) */
     const mountEl = $('appMarketMount');
     const stop = T.mountAppAdmin(mountEl, key);
