@@ -2620,6 +2620,8 @@ const INDIV_GROUPS: IndivGroup[] = [
     ],
   },
 ];
+/** PDF(건축물대장 · 단지정보)에서 자동으로 채우는 항목 — 웹은 이름을 빨갛게(아래 watch 의 자동 채움과 같은 목록) */
+const INDIV_AUTO = new Set(['ind.age', 'ind.parking', 'ind.elevator', 'ind.corridor', 'ind.floorNum']);
 const indivValue = (id: string) => surveyForm.value.indivValues?.[id] ?? '';
 // 년식 — 사용승인 연월(YYYY-MM)을 휠로 고르고, 옆에 올해 기준 연차를 보여 준다
 const indivAgeOpen = ref(false);
@@ -8236,7 +8238,7 @@ const goBack = () => router.back();
               <thead><tr class="adp-ind-head"><th>구분</th><th>내용</th><th>비율</th></tr></thead>
               <tbody>
                 <tr v-for="item in g.items" :key="item.id">
-                  <th :class="['adp-ind-label', { survey: item.survey }]">{{ item.label }}</th>
+                  <th :class="['adp-ind-label', { survey: item.survey, auto: webEmbed && INDIV_AUTO.has(item.id) }]" :title="webEmbed && INDIV_AUTO.has(item.id) ? 'PDF(건축물대장)에서 자동으로 채운 항목' : undefined">{{ item.label }}</th>
                   <td class="adp-ind-ctl">
                     <div :class="['row', { left: indivEditing && (item.yearMonth || item.half) }]">
                       <template v-if="item.yearMonth">
@@ -10881,6 +10883,7 @@ tr.tone-take { background: #fff5f5; }
 .adp-ind-label { background: #fafbfc; font-weight: 700; font-size: 12.5px; line-height: 1.25; }
 /* 항목 이름(연식~건물내부 · 층~수리유무)은 회색 — 값이 먼저 눈에 들어오게 */
 .adp-ind-pair .adp-ind-label { color: #6b7280; }
+.adp-ind-pair .adp-ind-label.auto { color: #e0574a; }
 .adp-ind-ctl .row { display: flex; align-items: center; justify-content: center; gap: 4px; }
 /* '현황' 칸 글자는 한 가지 크기로 못 박는다 — 값도 꼬리말도 같은 13px (년식·주차수 기준) */
 .adp-ind-ctl .row strong,
