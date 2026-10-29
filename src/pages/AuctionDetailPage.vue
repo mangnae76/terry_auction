@@ -10985,9 +10985,9 @@ tr.tone-take { background: #fff5f5; }
   border: none; background: transparent; padding: 0; cursor: pointer;
   font-family: inherit; font-size: 12px; font-weight: 700; color: #6b7280;
   line-height: 1.2; text-align: center;
-  text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px;
 }
-.adp-dm-link:active { color: #2b6df3; }
+/* 옆 칸 이름(총 세대수)과 같은 모양 — 밑줄 없이, 누를 수 있다는 것만 마우스를 대면 파랗게 */
+.adp-dm-link:hover, .adp-dm-link:active { color: #2b6df3; }
 .adp-dm-block + .adp-dm-block { margin-top: 10px; }
 .adp-dm-block.boxed + .adp-dm-block.boxed { margin-top: 10px; }
 .adp-dm-head.sec2 { margin-top: 7px; padding-top: 6px; border-top: 1px solid #eef1f6; }
@@ -11067,6 +11067,9 @@ tr.tone-take { background: #fff5f5; }
 .adp-dm-block .dm-input .cell.split .cell-body { flex: 1 1 auto; }
 /* 총 매물수 입력칸 — 옆 칸 값(총 세대수 등)과 같은 글꼴 · 크기 · 굵기 · 파랑 */
 .adp-dm-pair .adp-mkt-input.dm-val { font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; }
+/* 입력칸은 칸 폭을 다 쓰지 않고 숫자 몇 자리 들어갈 만큼만, 가운데 */
+.adp-dm-block .dm-input .adp-dm-pair:has(.dm-val) { flex: 0 0 auto; justify-content: center; }
+.adp-dm-pair .adp-mkt-input.dm-val { flex: 0 0 auto; width: 76px; min-width: 0; }
 .adp-dm-std {
   width: 34px; border: 1px solid #e3e8f0; border-radius: 5px; background: #fff;
   padding: 1px 3px; font-size: 10px; font-weight: 700; color: #374151; text-align: center;
