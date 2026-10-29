@@ -2928,7 +2928,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     ['m0', [['자동등록', 'mega-auto'], ['직접입력', 'mega-manual'], ['입찰달력', '']]],   /* 입찰달력은 선정물건 칸에도 그대로(복사) */
     ['m1', [['선정물건', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
-    ['m3', [['지역분석', 'go-market'], ['랭킹분석', 'go-market'], ['매각사례', 'go-market']]],
+    ['m3', [['지역분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['낙찰이후가이드', 'go-postwin']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
     ['m4m', [['투자9단계', '']]],   /* 준비 중 — 물건선정부터 매도 · 세금까지 */
@@ -3895,7 +3895,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   const SUBTABS = {
     /* 물건상세 — 앱 AuctionDetailPage 의 TABS 다섯 칸에서 앱 '손품+현장'을 손품조사 · 임장조사 둘로 나눴다(웹만) */
     /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
-    market: [['dong', '', '지역분석'], ['rank', '', '랭킹분석'], ['sale', '', '매각사례']],
+    market: [['dong', '', '지역분석'], ['rank', '', '랭킹분석'], ['sale', '', '경매사례']],
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
@@ -4379,7 +4379,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   function marketTrail() {
     if ((S.marketTab === 'dong' || S.marketTab === 'rank') && marketInner) return ['시장분석', ...marketInner].join(' › ');
     const label = (SUBTABS.market.find((t) => t[0] === S.marketTab) || [])[2];
-    if (S.marketTab === 'sale') return `시장분석 › 매각사례 › ${SALE_TABS.find((t) => t[0] === S.saleTab)[1]}`;
+    if (S.marketTab === 'sale') return `시장분석 › 경매사례 › ${SALE_TABS.find((t) => t[0] === S.saleTab)[1]}`;
     return label ? `시장분석 › ${label}` : '시장분석';
   }
   /* 매각사례 — 고르는 줄은 지역분석과 똑같이(같은 칸 · 같은 모양), 그 밑 박스 탭 둘: 인근 · 동일지번 매각물건 분석. 분석 화면은 아직 준비 중 */
