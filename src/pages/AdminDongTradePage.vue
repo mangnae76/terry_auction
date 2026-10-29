@@ -576,7 +576,7 @@ const setRankListings = (r: RankRow, raw: string) => {
 };
 const RANK_DONG_COLS = [
   { key: 'name', label: '동/지역' }, { key: 'listings', label: '네이버 매물 수' }, { key: 'cur', label: '최근 1년 실거래' },
-  { key: 'prev', label: '전년 동기' }, { key: 'pct', label: '증감' }, { key: 'activity', label: '활발도' },
+  { key: 'prev', label: '전년 동기' }, { key: 'pct', label: '증감(전년 대비)' }, { key: 'activity', label: '활발도' },
 ] as const;
 type RankSortKey = typeof RANK_DONG_COLS[number]['key'];
 const rankSort = ref<RankSortKey>('cur');
@@ -1146,7 +1146,7 @@ const downloadCsv = () => {
             <table class="adm-rank-tbl">
               <!-- 순위 칸만 좁게, 지역 · 최근 1년 · 증감은 같은 몫 — 세 칸 사이가 고르다 -->
               <colgroup><col style="width: 28px" /><col /><col /><col /></colgroup>
-              <thead><tr><th /><th class="c">지역</th><th class="c">최근 1년</th><th class="c">증감</th></tr></thead>
+              <thead><tr><th /><th class="c">지역</th><th class="c">최근 1년</th><th class="c">증감(전년 대비)</th></tr></thead>
               <tbody>
                 <tr v-for="(r, i) in g.rows" :key="r.id" :class="['pick', { on: rankPick?.id === r.id }]" @click="pickRankDong(r)">
                   <td class="no">{{ i + 1 }}</td>
