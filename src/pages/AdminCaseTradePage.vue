@@ -7,6 +7,7 @@
 // 실거래 맞추기에서는 빠진다 (국토부 거래 자료에 동·호가 없다).
 //
 // 셈과 조회는 services/caseTradeAnalysis.ts 에 있다 — 이 화면은 보여 주기만 한다.
+import { marketCase, marketPick } from '../services/marketCase';
 import UnitText from '../components/UnitText.vue';
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
@@ -270,6 +271,14 @@ const rowFace = (r: CaseTradeRow | null) => {
 const recentJeonse = computed(() => (
   byAreaYear.value.find((r) => rowKey(r) === pickedJeonse.value) ?? restoredJeonse.value
 ));
+// 사건 카드의 '이 물건에 적용'이 가져갈 수 있게 — 고른 매매 · 전세 거래와 그 주소를 함께 남긴다
+watch([recentSale, recentJeonse, address], () => {
+  if (!props.inDong) return;
+  const pick = (r: CaseTradeRow | null) => (r && r.price > 0 ? { price: r.price, date: r.contractDate, floor: String(r.floor ?? ''), areaM2: r.areaM2 } : null);
+  marketPick.sale = pick(recentSale.value);
+  marketPick.jeonse = pick(recentJeonse.value);
+  marketPick.address = address.value;
+}, { immediate: true });
 /** 고른 줄인지 저절로 잡힌 줄인지 — 요약 칸에 적어 둔다 */
 
 
@@ -538,6 +547,13 @@ watch([rows, price, pickedSale, pickedJeonse, areaFilter, yearFilter, tab, rateT
 onMounted(async () => {
   if (!webEmbed) return;
   const s = await screen.restore();
+  // 손품조사에서 사건을 들고 넘어왔으면 — 저장된 화면이 다른 주소일 때 그 사건 주소로 새로 조회한다
+  const c = props.inDong ? marketCase.value : null;
+  if (c && (!s || (s.address ?? '').replace(/\s+/g, '') !== c.address.replace(/\s+/g, ''))) {
+    address.value = c.address; kind.value = c.kind;
+    await run();
+    return;
+  }
   if (!s) return;
   restoringScreen = true;
   address.value = s.address ?? ''; kind.value = s.kind ?? 'villa'; years.value = s.years ?? 10;
