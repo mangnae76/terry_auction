@@ -554,7 +554,8 @@ const downloadCsv = () => {
         <!-- 지역분석 안 탭(embedded)은 시군구 하나만 보므로 '소속 구' 칸은 뺀다 — 모든 줄이 같은 값이다 -->
         <table :class="['adm-table', { even: embedded }]">
           <thead>
-            <tr class="grp">
+            <!-- 웹은 묶음 머리(구분 · 지표결과)를 뺀다 -->
+            <tr v-if="!webEmbed" class="grp">
               <!-- 구분이 총 매물수까지 덮는다 — 손으로 적는 칸은 총 매물수 하나라 따로 묶지 않고 그 칸 머리만 파랗게 -->
               <th :colspan="embedded ? 3 : 4">{{ embedded ? '구분' : '주소지 정보' }}</th>
               <th colspan="8">지표결과</th>
@@ -571,7 +572,8 @@ const downloadCsv = () => {
               <th>회전율<small>(%)</small></th>
               <th>매물 소화율<small>(%)</small></th>
               <th>매물 부담율<small>(%)</small></th>
-              <th>매물 소진기간</th>
+              <th v-if="webEmbed">매물<br>소진기간</th>
+              <th v-else>매물 소진기간</th>
             </tr>
           </thead>
           <tbody>
