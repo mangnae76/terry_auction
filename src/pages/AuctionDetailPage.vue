@@ -8102,7 +8102,7 @@ const goBack = () => router.back();
 
             </template>
             <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title">2. 입지/개별성<small>(구역내등수)</small></strong>
+              <strong class="adp-dm-title">{{ sonpumMode ? '' : '2. ' }}입지/개별성<small>(구역내등수)</small></strong>
             </div>
 
 
