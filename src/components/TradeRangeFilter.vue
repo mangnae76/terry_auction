@@ -5,7 +5,8 @@
 import { tradeWindowOf } from '../services/publicDataApi';
 import { RANGE_MONTHS, type TradeRange } from '../services/caseTradeAnalysis';
 
-const props = defineProps<{ modelValue: TradeRange }>();
+/** monthChoices — 기간선택 단추(기본 1 · 3 · 6 · 12개월). 조건분석은 1개월을 뺀다 */
+const props = withDefaults(defineProps<{ modelValue: TradeRange; monthChoices?: number[] }>(), { monthChoices: () => RANGE_MONTHS });
 const emit = defineEmits<{ 'update:modelValue': [TradeRange] }>();
 
 const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -21,8 +22,8 @@ const val = (e: Event) => (e.target as HTMLInputElement).value;
   <div class="trf">
     <div class="trf-row">
       <span class="trf-lab">기간선택</span>
-      <div class="trf-months">
-        <button v-for="m in RANGE_MONTHS" :key="m" type="button" :class="['trf-m', { on: modelValue.months === m }]" @click="pickMonths(m)">{{ m }}개월</button>
+      <div class="trf-months" :style="{ gridTemplateColumns: `repeat(${monthChoices.length}, 1fr)` }">
+        <button v-for="m in monthChoices" :key="m" type="button" :class="['trf-m', { on: modelValue.months === m }]" @click="pickMonths(m)">{{ m }}개월</button>
       </div>
       <span class="trf-lab">시작일자</span>
       <input class="trf-in" type="date" :value="modelValue.from" @input="set({ from: val($event), months: 0 })" />

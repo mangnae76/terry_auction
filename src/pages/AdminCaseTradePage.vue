@@ -1119,7 +1119,7 @@ const downloadCsv = () => {
               <strong v-else class="ask">조건에 맞는 매매 없음</strong>
             </div>
           </div>
-          <TradeRangeFilter v-model="condF" class="adm-trf">
+          <TradeRangeFilter v-model="condF" :month-choices="[3, 6, 12]" class="adm-trf">
             <button type="button" class="adm-ghost" @click="resetCond">초기화</button>
           </TradeRangeFilter>
           <div class="adm-sum under">
