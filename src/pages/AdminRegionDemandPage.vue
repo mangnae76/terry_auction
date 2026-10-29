@@ -674,7 +674,8 @@ const downloadCsv = () => {
         </table>
       </div>
 
-      <p v-if="rows.length > 0" class="adm-foot">
+      <!-- 웹은 표 밑 셈 설명을 뺀다(요약 칸의 ⓘ 말풍선에 같은 내용이 있다) -->
+      <p v-if="!webEmbed && rows.length > 0" class="adm-foot">
         회전율 = 1년 거래량 ÷ 세대수 &nbsp;·&nbsp; 소화율 = 1년 거래량 ÷ 매물수 &nbsp;·&nbsp;
         부담율 = 매물수 ÷ 세대수 &nbsp;·&nbsp; 소진기간 = 매물수 ÷ 월평균 거래량.
         총 세대수는 건축물대장에서 자동으로 채웁니다(연립·다세대 · 아파트는 세대수, 오피스텔은 호수). 파란 칸(총 매물수)은 손으로 적습니다 — 적어 두면 다음에도 남습니다.
