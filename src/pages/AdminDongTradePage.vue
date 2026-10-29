@@ -1053,15 +1053,19 @@ const downloadCsv = () => {
           <section v-for="g in rankLists" v-show="!rankLoading" :key="g.key" class="adm-rank-card">
             <header><strong>{{ g.title }}</strong><small>{{ g.sub }}</small></header>
             <table class="adm-rank-tbl">
-              <thead><tr><th>#</th><th class="l">지역</th><th class="r">최근 1년</th><th class="r">증감</th></tr></thead>
+              <!-- 순위 칸만 좁게, 지역 · 최근 1년 · 증감은 같은 몫 — 세 칸 사이가 고르다 -->
+              <colgroup><col style="width: 28px" /><col /><col /><col /></colgroup>
+              <thead><tr><th /><th class="l">지역</th><th class="c">최근 1년</th><th class="r">증감</th></tr></thead>
               <tbody>
                 <tr v-for="(r, i) in g.rows" :key="r.name">
                   <td class="no">{{ i + 1 }}</td>
                   <td class="l"><b>{{ r.name }}</b><small>{{ rankGu }}</small></td>
-                  <td class="r"><b>{{ r.cur.toLocaleString('ko-KR') }}<em>건</em></b><small>전년 {{ r.prev.toLocaleString('ko-KR') }}</small></td>
+                  <td class="c"><b>{{ r.cur.toLocaleString('ko-KR') }}<em>건</em></b><small>전년 {{ r.prev.toLocaleString('ko-KR') }}</small></td>
                   <td class="r"><span :class="['adm-rank-pct', r.pct === null ? 'new' : r.pct > 0 ? 'up' : r.pct < 0 ? 'down' : '']">{{ rankPctText(r.pct) }}</span></td>
                 </tr>
-                <tr v-if="g.rows.length === 0"><td colspan="4" class="empty">{{ g.empty }}</td></tr>
+                <tr v-if="g.rows.length === 0" class="pad"><td colspan="4" class="empty">{{ g.empty }}</td></tr>
+                <!-- 늘 열 줄 크기 — 동이 적어 열 개를 못 채워도 세 카드 높이가 같다 -->
+                <tr v-for="k in Math.max(0, 10 - Math.max(1, g.rows.length))" :key="`pad${k}`" class="pad"><td class="no">&nbsp;</td><td class="l"><b>&nbsp;</b><small>&nbsp;</small></td><td /><td /></tr>
               </tbody>
             </table>
           </section>
@@ -1361,16 +1365,18 @@ const downloadCsv = () => {
 .adm-rank-card header { margin-bottom: 10px; }
 .adm-rank-card header strong { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: #111827; }
 .adm-rank-card header small { display: block; margin-top: 4px; font-size: 12px; color: #6b7280; }
-.adm-rank-tbl { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.adm-rank-tbl { width: 100%; table-layout: fixed; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .adm-rank-tbl th { padding: 6px 4px; border-bottom: 1px solid #e3e8f0; font-size: 12px; font-weight: 600; color: #6b7280; text-align: center; }
 .adm-rank-tbl td { padding: 8px 4px; border-bottom: 1px solid #f1f4f9; text-align: center; vertical-align: middle; color: #111827; white-space: nowrap; }
 .adm-rank-tbl :is(th, td).l { text-align: left; }
 .adm-rank-tbl :is(th, td).r { text-align: right; }
+.adm-rank-tbl :is(th, td).c { text-align: center; }
 .adm-rank-tbl td.no { width: 28px; font-size: 13px; color: #6b7280; }
 .adm-rank-tbl td b { display: block; font-size: 14px; font-weight: 600; }
 .adm-rank-tbl td small { display: block; margin-top: 2px; font-size: 12px; color: #9ca3af; }
 .adm-rank-tbl td em { font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; margin-left: 1px; }
-.adm-rank-tbl td.empty { padding: 24px 4px; text-align: center; color: #9ca3af; }
+.adm-rank-tbl td.empty { padding: 8px 4px; height: 38px; text-align: center; color: #9ca3af; }
+.adm-rank-tbl tr.pad td { color: transparent; }
 /* 증감 알약 — 우리 등급 색 그대로: 늘면 연빨강 바탕 ▲ · 줄면 연파랑 바탕 ▼ · 전년 없음은 회색 */
 .adm-rank-pct { display: inline-block; min-width: 76px; padding: 3px 8px; border-radius: 999px; font-size: 13px; font-weight: 700; text-align: center; }
 .adm-rank-pct.up { background: #fde2e2; color: #c22e2e; }
