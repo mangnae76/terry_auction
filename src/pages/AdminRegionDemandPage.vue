@@ -10,7 +10,7 @@
 // 연립·다세대 값은 물건상세 손품조사와 같은 셈이다.
 // 손으로 적으면 그 값이 우선. 총 매물수는 공식 API 가 아니라 손으로 적는다.
 import { dealCountTip, type TipRow } from '../services/tipRows';
-import { demandFitText, demandGradeOf, demandTip } from '../services/demandGrade';
+import { DEMAND_TOTAL_TIP, demandFitText, demandGradeOf, demandTip, demandTotalGrade } from '../services/demandGrade';
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
@@ -294,6 +294,7 @@ const dmInputs = computed(() => {
       tip: [['입력', '아래 표 총 매물수 칸에 직접 입력'], ['합산', '동마다 적은 매물수를 모두 더한 값'], ['찾기', `네이버 부동산 · ${kindWhat.value} 매물 수`]] as TipRow[] },
   ];
 });
+const dmTotal = computed(() => demandTotalGrade(Object.values(navStats.value.grades)));
 const dmResults = computed(() => {
   const v = navStats.value;
   const pct = (x: number) => (x > 0 ? `${x.toFixed(1)}%` : '-');
@@ -559,10 +560,15 @@ const downloadCsv = () => {
           </div>
         </div>
         <p class="dm-block-head">② 수요지표</p>
-        <div class="dm-row c4">
+        <div class="dm-row c5">
           <div v-for="c in dmResults" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
             <div class="dm-head"><InfoTip :rows="c.tip">{{ c.label }}</InfoTip></div>
             <div class="dm-body"><b><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="nbar">|</em><span :class="['gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['fit', { bad: c.grade === 'C' }]">/ {{ demandFitText(c.grade) }}</span></template></b></div>
+          </div>
+          <!-- 종합 — 손품조사 매매수요의 종합 칸과 같다(등급 동그라미 + 적합) -->
+          <div class="dm-cell total">
+            <div class="dm-head"><InfoTip :rows="DEMAND_TOTAL_TIP">종합</InfoTip></div>
+            <div class="dm-body"><b><template v-if="dmTotal !== '-'"><span :class="['gd', `g-${dmTotal}`]">{{ dmTotal }}</span><span :class="['fit', { bad: dmTotal === 'C' }]">{{ demandFitText(dmTotal) }}</span></template><template v-else>-</template></b></div>
           </div>
         </div>
       </section>
@@ -739,7 +745,8 @@ const downloadCsv = () => {
 .dm-row.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; }
 /* 두 줄 제목 — 앱 매매수요의 ① 기초수치 · ② 수요지표와 같은 이름 */
 .dm-block-head { margin: 0 0 8px 2px; font-size: 14px; font-weight: 700; color: #111827; }
-.dm-row.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dm-row.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.dm-cell.total .fit { margin-left: 6px; }
 /* 칸 — 앱 매매수요 칸처럼 위 이름 띠(회색) + 아래 값(흰색). 이어진 칸은 빨갛게(앱 .lit 와 같은 색) */
 .dm-cell { min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; overflow: visible; transition: background .12s, border-color .12s; }
 .dm-head { display: flex; justify-content: center; padding: 8px 6px; border-bottom: 1px solid #e3e8f0; border-radius: 8px 8px 0 0; background: #f3f6fb; font-size: 14px; color: #6b7280; white-space: nowrap; }

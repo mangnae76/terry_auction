@@ -50,3 +50,19 @@ export const demandTip = (metric: DemandMetric, what: string): Array<[string, st
     ['적정', '6개월 이하 ↓ (짧을수록 좋다)'],
   ],
 } as Record<DemandMetric, Array<[string, string]>>)[metric];
+
+/** 종합등급 — 네 등급을 A 3 · B 2 · C 1 로 바꿔 평균(2.5↑ A · 1.5↑ B · 그 아래 C). 셋 이상 매겨져야 나온다(앱 dmTotalGrade 와 같다) */
+export const demandTotalGrade = (grades: DemandGrade[]): DemandGrade => {
+  const scored = grades.filter((g) => g !== '-').map((g) => ({ A: 3, B: 2, C: 1 } as Record<string, number>)[g] ?? 0);
+  if (scored.length < 3) return '-';
+  const avg = scored.reduce((a, b) => a + b, 0) / scored.length;
+  return avg >= 2.5 ? 'A' : avg >= 1.5 ? 'B' : 'C';
+};
+
+/** 종합 말풍선 — 앱 매매수요(dmTipData.total)와 같은 줄 */
+export const DEMAND_TOTAL_TIP: Array<[string, string]> = [
+  ['대상', '거래 회전율 · 매물 소화율 · 매물 부담률 · 매물 소진기간'],
+  ['공식', '네 등급을 A 3 · B 2 · C 1로 바꿔 평균을 낸다'],
+  ['기준', '평균 2.5↑ A · 1.5↑ B · 그 아래 C'],
+  ['조건', '네 등급 중 셋 이상 매겨져야 종합등급이 나온다'],
+];
