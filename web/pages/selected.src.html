@@ -1345,7 +1345,8 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-survey .adp-ind-table .adp-ind-ctl .row { gap: 6px !important; }
 .app-detail.tab-survey .adp-ind-table :is(input.adp-ind-input, button.adp-ind-input, select.adp-ind-input, .adp-agency-trigger, select) { height: 34px !important; min-height: 34px !important; padding: 0 10px !important; border: 1px solid #dde3ee !important; border-radius: 8px !important; font-size: 14px !important; font-weight: 400 !important; box-sizing: border-box; }
 /* 내용 칸의 입력 · 선택은 칸을 꽉 채운다(층 '전체 · 해당' 두 칸은 반씩) */
-.app-detail.tab-survey .adp-ind-table .adp-ind-ctl :is(input.adp-ind-input:not(.rate), button.adp-ind-input, .adp-agency-trigger, select) { flex: 1 1 0 !important; width: auto !important; min-width: 0 !important; max-width: none !important; }
+.app-detail.tab-survey .adp-ind-table .adp-ind-ctl :is(input.adp-ind-input:not(.rate), button.adp-ind-input, .adp-agency-trigger, select) { flex: 0 1 220px !important; width: auto !important; min-width: 0 !important; max-width: 220px !important; }
+/* 내용 칸 입력은 220 까지만 — 칸 끝까지 늘이니 '13년차' · '몇 대' 칸이 너무 컸다 */
 .app-detail.tab-survey .adp-ind-table .adp-ind-year { justify-content: center !important; font-size: 14px !important; }
 /* 비율 칸 — 같은 폭(56) 가운데 */
 .app-detail.tab-survey .adp-ind-table input.adp-ind-input.rate { flex: 0 0 48px !important; width: 48px !important; height: 34px !important; padding: 0 4px !important; text-align: center; font-size: 14px !important; }
@@ -1353,7 +1354,7 @@ body.trip-full .foot { display: none; }
 /* 비율 칸은 '48 칸 + %'가 들어가게 84, 아래 적용가 줄도 같은 폭 */
 .app-detail.tab-survey :is(.adp-ind-pair .adp-ind-table, .adp-ind-foot) col:last-child { width: 84px !important; }
 /* '선택' 칸(향 · 타입 · 건물외부 …)도 내용 칸을 꽉 — 감싼 칸까지 늘린다 */
-.app-detail.tab-survey .adp-ind-table .adp-ind-ctl :is(.adp-agency-multi, .adp-ind-multi) { display: flex; flex: 1 1 0; width: 100%; min-width: 0; }
+.app-detail.tab-survey .adp-ind-table .adp-ind-ctl :is(.adp-agency-multi, .adp-ind-multi) { display: flex; justify-content: center; flex: 0 1 220px; width: 100%; max-width: 220px; min-width: 0; }
 .app-detail.tab-survey .adp-ind-table .adp-ind-ctl .adp-agency-trigger { width: 100% !important; }
 /* 알약 단추(O · X · 계단식 · 뻥뷰 · 좋음 …) — 동그란 알약, 같은 높이 · 같은 최소폭 · 14 */
 .app-detail.tab-survey .adp-ind-table .adp-ind-toggles { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px !important; }

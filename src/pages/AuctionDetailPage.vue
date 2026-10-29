@@ -10903,7 +10903,10 @@ tr.tone-take { background: #fff5f5; }
 .adp-ind-label { background: #fafbfc; font-weight: 700; font-size: 12.5px; line-height: 1.25; }
 /* 항목 이름(연식~건물내부 · 층~수리유무)은 회색 — 값이 먼저 눈에 들어오게 */
 .adp-ind-pair .adp-ind-label { color: #6b7280; }
-.adp-ind-pair .adp-ind-label.auto { color: #e0574a; }
+/* 웹 — PDF · 건축물대장에서 자동으로 채우는 항목은 이름 칸을 아주 흐린 블루그레이로(살짝 티만) */
+.adp-ind-pair .adp-ind-label.auto { background: #eaf0f7; }
+/* 앱 편집 상태 — 칸마다 제각각이던 글자(10 · 10.5 · 11 · 11.5 · 12.5)를 12 하나로 */
+.adp-ind-table :is(.adp-ind-input, .adp-ind-year, .adp-agency-trigger, .adp-toggle-btn, .adp-ind-years, .adp-sum-pair) { font-size: 12px; }
 .adp-ind-ctl .row { display: flex; align-items: center; justify-content: center; gap: 4px; }
 /* '현황' 칸 글자는 한 가지 크기로 못 박는다 — 값도 꼬리말도 같은 13px (년식·주차수 기준) */
 .adp-ind-ctl .row strong,
