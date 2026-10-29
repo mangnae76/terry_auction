@@ -2607,16 +2607,16 @@ const INDIV_GROUPS: IndivGroup[] = [
     items: [
       { id: 'ind.floorNum', label: '층', custom: 'floor', rate: '3%' },
       { id: 'ind.direction', label: '향', multi: true, options: ['동', '서', '남', '북'], rate: '5%' },
-      { id: 'ind.view', label: '뷰', options: ['뻥뷰', '단지뷰'], rate: '5%' },
       {
         id: 'ind.type', label: '타입', multi: true,
         options: ['판상형', '타워형', '복층형', '2베이', '3베이', '4베이', '다락'], rate: '5%',
       },
-      { id: 'ind.sunlight', label: '일조량', survey: true, options: ['좋음', '보통', '나쁨'], rate: '5%' },
       {
         id: 'ind.rooms', label: '방/화장실', multi: true,
         options: ['1방', '2방', '3방', '4방', '1화', '2화', '3화'], rate: '5%',
       },
+      { id: 'ind.view', label: '뷰', options: ['뻥뷰', '단지뷰'], rate: '5%' },
+      { id: 'ind.sunlight', label: '일조량', survey: true, options: ['좋음', '보통', '나쁨'], rate: '5%' },
       { id: 'ind.repair', label: '수리유무', survey: true, options: ['부분수리', '올수리'], note: '올수리 1500 > 부분수리 500~1000 현금, 샷시 판단', rate: '10%' },
     ],
   },
