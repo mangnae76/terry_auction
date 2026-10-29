@@ -780,7 +780,7 @@ const dongSumRows = computed(() => [...dongSums.value].sort((a, b) => {
 const SUM_COLS: Array<{ key: keyof DongSum; label: string }> = [
   { key: 'name', label: '동/지역' }, { key: 'count', label: '총 거래건수' }, { key: 'avg', label: '평균가' },
   { key: 'median', label: '중간가' }, { key: 'min', label: '최저가' }, { key: 'max', label: '최고가' },
-  { key: 'area', label: '평균면적' }, { key: 'perM2', label: '㎡당 평균가' },
+  { key: 'area', label: '평균면적' }, { key: 'perM2', label: '평 단가 / ㎡ 단가' },
 ];
 /** '48.1㎡ / 14.6평' */
 const areaText = (m2: number) => `${m2.toFixed(1)}㎡ / ${(m2 / 3.305785).toFixed(1)}평`;
@@ -1302,7 +1302,8 @@ const downloadCsv = () => {
                 <td class="r">{{ eokMan(d.min) }}</td>
                 <td class="r">{{ eokMan(d.max) }}</td>
                 <td class="r">{{ d.area > 0 ? areaText(d.area) : '—' }}</td>
-                <td class="r">{{ d.perM2 > 0 ? `${Math.round(d.perM2 / 10000).toLocaleString('ko-KR')}만/㎡` : '—/㎡' }}</td>
+                <!-- 요약 상자 · 랭킹지도와 같은 꼴 — '평 783만 / ㎡ 237만' -->
+                <td class="r"><UnitText v-if="d.perM2 > 0" :text="`평 ${Math.round((d.perM2 * 3.305785) / 10000).toLocaleString('ko-KR')}만 / ㎡ ${Math.round(d.perM2 / 10000).toLocaleString('ko-KR')}만`" /><template v-else>—</template></td>
               </tr>
             </tbody>
           </table>
