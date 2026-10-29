@@ -161,8 +161,12 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
       <div class="dsc-seg" role="tablist" aria-label="분포 기준">
         <button v-for="v in views" :key="v.key" type="button" :class="{ on: viewKey === v.key }" @click="pickView(v.key)">{{ v.title }}</button>
       </div>
-      <div class="dsc-seg sm" role="tablist" aria-label="점 색">
-        <button v-for="(c, k) in COLOR_KEYS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">색 {{ c.label }}</button>
+      <!-- '색' 은 단추 밖에 한 번만 — 단추마다 '색 ○○' 이라 적으니 말이 겹쳤다 -->
+      <div class="dsc-colors">
+        <span class="dsc-colors-lab">색</span>
+        <div class="dsc-seg sm" role="tablist" aria-label="점 색">
+          <button v-for="(c, k) in COLOR_KEYS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">{{ c.label }}</button>
+        </div>
       </div>
     </div>
     <p class="dsc-read">점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래이고, 칸 위 파란 숫자는 그 구간의 가운데 값입니다. 기준을 바꾸면 같은 점들이 새 구간으로 옮겨 갑니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></p>
@@ -184,6 +188,8 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dsc-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .dsc-seg { display: grid; grid-auto-flow: column; gap: 6px; }
 .dsc-seg button { height: 40px; padding: 0 14px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 14px; font-weight: 700; color: #6b7280; cursor: pointer; }
+.dsc-colors { display: inline-flex; align-items: center; gap: 8px; }
+.dsc-colors-lab { font-size: 13px; font-weight: 700; color: #6b7280; }
 .dsc-seg.sm button { height: 34px; font-size: 13px; padding: 0 12px; }
 .dsc-seg button.on { border-color: #2b6df3; background: #eef3ff; color: #2b6df3; }
 .dsc-read { margin: 0; font-size: 13px; color: #6b7280; line-height: 1.6; }

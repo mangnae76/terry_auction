@@ -156,8 +156,11 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
   <section class="ttl">
     <div class="ttl-top">
       <strong>거래 타임라인 <em>(점 = 거래 한 건 · 정상 + 직거래)</em></strong>
-      <div class="ttl-seg" role="tablist" aria-label="점 색">
-        <button v-for="(c, k) in COLORS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">색 {{ c.label }}</button>
+      <div class="ttl-colors">
+        <span class="ttl-colors-lab">색</span>
+        <div class="ttl-seg" role="tablist" aria-label="점 색">
+          <button v-for="(c, k) in COLORS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">{{ c.label }}</button>
+        </div>
       </div>
     </div>
     <div class="ttl-read">
@@ -182,6 +185,8 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .ttl-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .ttl-top strong { font-size: 16px; font-weight: 800; color: #111827; }
 .ttl-top strong em { font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; }
+.ttl-colors { display: inline-flex; align-items: center; gap: 8px; }
+.ttl-colors-lab { font-size: 13px; font-weight: 700; color: #6b7280; }
 .ttl-seg { display: grid; grid-auto-flow: column; gap: 6px; }
 .ttl-seg button { height: 34px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; }
 .ttl-seg button.on { border-color: #2b6df3; background: #eef3ff; color: #2b6df3; }
