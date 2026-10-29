@@ -82,6 +82,8 @@ const props = defineProps<{
 const router = useRouter();
 /** 웹 물건상세에 띄웠는가 — 웹(shared.entry.js)이 넣어 준다. 앱에서는 늘 false */
 const webEmbed = inject<boolean>('webEmbed', false);
+/** 웹 시장분석 › 손품분석이 띄웠는가 — 손품조사에서 본건사진 · 2. 입지/개별성만 남기고, 그 사이에 지역분석 수요분석(slot 'son-demand')을 넣는다 */
+const sonpumMode = inject<boolean>('sonpumMode', false);
 const route = useRoute();
 const store = useAuctionStore();
 const authStore = useAuthStore();
@@ -91,12 +93,13 @@ const TAB_KEYS: TabKey[] = ['basic', 'rights', 'profit', 'verify', 'survey'];
 // 다른 화면에서 ?tab=survey 로 들어오면 그 탭을 바로 연다
 const initialTab = (): TabKey => {
   const wanted = String(route.query.tab ?? '');
+  if (sonpumMode) return 'survey';
   return (TAB_KEYS as string[]).includes(wanted) ? (wanted as TabKey) : 'basic';
 };
 const activeTab = ref<TabKey>(initialTab());
 // 보던 탭을 주소에 적어 둔다 — 다른 화면에 갔다 '뒤로' 와도 그 자리로 돌아온다
 watch(activeTab, (tab) => {
-  if (String(route.query.tab ?? '') === tab) return;
+  if (sonpumMode || String(route.query.tab ?? '') === tab) return;
   void router.replace({ query: { ...route.query, tab } });
 });
 // 입지정보 카드 — 전체 / 500m 이내
@@ -7836,13 +7839,17 @@ const goBack = () => router.back();
 
 
 
+        <!-- 손품분석 — 본건사진 아래에 지역분석 수요분석(수요분석 상자 · 동 표)을 넣는다 -->
+        <slot v-if="sonpumMode" name="son-demand" />
         <!-- 매매수요 — 동단위 수요·공급 (빌라) -->
         <section class="adp-card">
-          <header class="adp-card-head adp-survey-head" @click="toggleSection('demand')">
+          <header v-if="!sonpumMode" class="adp-card-head adp-survey-head" @click="toggleSection('demand')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V10M9 21V4M15 21v-7M21 21v-11"/></svg>수요조사</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('demand') }]" alt="" />
           </header>
-          <div v-if="!isCollapsed('demand')" class="adp-dm-body">
+          <div v-if="sonpumMode || !isCollapsed('demand')" class="adp-dm-body">
+            <!-- 1. 수요분석 — 손품분석에서는 위 지역분석 수요분석이 대신한다 -->
+            <template v-if="!sonpumMode">
             <div class="adp-dm-head">
               <strong class="adp-dm-title">1. <span class="adp-dm-area">{{ surveyAreaLabel }}</span> 수요분석</strong>
             </div>
@@ -8094,6 +8101,7 @@ const goBack = () => router.back();
               </div>
             </div>
 
+            </template>
             <div class="adp-dm-head sec2">
               <strong class="adp-dm-title">2. 입지/개별성<small>(구역내등수)</small></strong>
             </div>
@@ -8484,6 +8492,8 @@ const goBack = () => router.back();
           </div>
         </section>
 
+        <!-- 손품분석에서는 여기까지(본건사진 · 수요분석 · 입지/개별성) — 아래 카드들은 손품조사에서만 -->
+        <template v-if="!sonpumMode">
         <!-- 실거래가 조사 -->
         <section class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('survPrice')">
@@ -9283,6 +9293,7 @@ const goBack = () => router.back();
         </section>
 
 
+        </template>
       </template>
     </div>
 

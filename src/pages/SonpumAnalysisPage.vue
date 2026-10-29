@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 시장분석 › 손품분석 — 물건 하나를 골라(경매 카드) 그 물건 기준으로 수요분석 · 시세조사를 본다.
 // 위 검색 줄은 없다: 주소 · 동 · 종류는 고른 물건에서 나온다. 여기서 다듬어 물건 상세의 손품조사로 옮길 화면이다.
-import { computed, ref, watch } from 'vue';
+import { computed, provide, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useAuctionStore } from '../stores/auctionStore';
 import type { AuctionDetail } from '../types/auction';
@@ -11,6 +11,10 @@ import { fetchDongTradeDetails, tradeWindowOf, type DongTradeDetailRow } from '.
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import AdminRegionDemandPage from './AdminRegionDemandPage.vue';
 import AdminCaseTradePage from './AdminCaseTradePage.vue';
+import AuctionDetailPage from './AuctionDetailPage.vue';
+
+// 손품조사 화면을 손품분석 모드로 — 본건사진 · 입지/개별성만, 그 사이에 아래 수요분석을 끼운다
+provide('sonpumMode', true);
 
 const store = useAuctionStore();
 const { auctions } = storeToRefs(store);
@@ -78,6 +82,7 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
 <template>
   <section class="son">
     <p v-if="!list.length" class="son-empty">선정물건이 없습니다. 물건을 등록하면 여기서 손품분석을 할 수 있습니다.</p>
+    <!-- 물건은 선정물건에서 마지막으로 연 물건(웹이 'son.pick' 에 적는다) — 위 머리 카드가 그 물건이라 따로 고르는 칸은 없다 -->
     <template v-else-if="auction">
 
       <!-- 탭 줄 — 지역분석과 같은 상자 탭(수요분석 · 시세조사), 오른쪽 끝에 물건 바꾸기 · 경로(#admCrumbSlot) -->
@@ -86,19 +91,20 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
           <button type="button" role="tab" :class="{ on: tab === 'demand' }" :aria-selected="tab === 'demand'" @click="tab = 'demand'">수요분석</button>
           <button type="button" role="tab" :class="{ on: tab === 'price' }" :aria-selected="tab === 'price'" @click="tab = 'price'">시세조사</button>
         </nav>
-        <label class="son-pick">
-          <span>물건 바꾸기</span>
-          <select v-model="pickId">
-            <option v-for="a in list" :key="a.id" :value="a.id">{{ a.caseNumber }} · {{ (a.address || '').split(' ').slice(1, 4).join(' ') }}</option>
-          </select>
-        </label>
         <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
 
-      <div v-show="tab === 'demand'" class="app-market son-demand" data-k="dong">
-        <p v-if="loading" class="son-msg">{{ region?.label }} 최근 12개월 거래를 받는 중입니다…</p>
-        <AdminRegionDemandPage v-if="demandEmbed && rows.length" :embed="demandEmbed" class="adm-supply" />
-        <p v-else-if="!loading && region" class="son-msg">이 지역의 최근 12개월 거래가 없습니다.</p>
+      <!-- 수요분석 — 손품조사 그대로(본건사진 → 지역분석 수요분석 → 2. 입지/개별성) -->
+      <div v-if="tab === 'demand'" class="app-detail tab-survey son-detail">
+        <AuctionDetailPage :key="auction.id" mode="view" :id="auction.id">
+          <template #son-demand>
+            <div class="son-demand">
+              <p v-if="loading" class="son-msg">{{ region?.label }} 최근 12개월 거래를 받는 중입니다…</p>
+              <AdminRegionDemandPage v-if="demandEmbed && rows.length" :embed="demandEmbed" class="adm-supply" />
+              <p v-else-if="!loading && region" class="son-msg">이 지역의 최근 12개월 거래가 없습니다.</p>
+            </div>
+          </template>
+        </AuctionDetailPage>
       </div>
       <div v-if="tab === 'price' && casePreset" class="adm-case-in app-market son-price" data-k="case">
         <AdminCaseTradePage in-dong :preset="casePreset" />
@@ -108,12 +114,9 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
 </template>
 
 <style scoped>
-.son { display: flex; flex-direction: column; gap: 14px; }
+.son { display: flex; flex-direction: column; gap: 10px; }
+.son-tabbar .adm-crumb-slot { margin-left: auto; }
 .adm-crumb-slot { align-self: center; }
 .son-empty, .son-msg { margin: 0; padding: 24px; border: 1px dashed #dde3ee; border-radius: 12px; background: #fff; color: #6b7280; font-size: 14px; text-align: center; }
-.son-pick { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280; }
-.son-pick select { height: 36px; max-width: 360px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; color: #111827; }
 .son-tabbar { position: relative; display: flex !important; align-items: flex-end; gap: 12px; }
-.son-pick { margin-left: auto; align-self: center; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280; }
-.son-pick select { height: 34px; max-width: 320px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; color: #111827; }
 </style>
