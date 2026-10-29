@@ -626,6 +626,8 @@ const filtered = computed(() => {
 });
 /** 지표와 분포는 정상거래만 센다 — 직거래·해제는 시세가 아니다 */
 const normals = computed(() => filtered.value.filter((r) => r.kind === '정상거래'));
+/** 웹 분포 — 총 거래건수와 같은 셈(정상거래 + 직거래, 계약해제 제외) */
+const dealsCounted = computed(() => filtered.value.filter((r) => r.kind !== '계약해제'));
 const counts = computed(() => ({
   정상거래: filtered.value.filter((r) => r.kind === '정상거래').length,
   직거래: filtered.value.filter((r) => r.kind === '직거래').length,
@@ -701,9 +703,10 @@ const WEB_AGE_BUCKETS: Bucket[] = [
   { label: '30년~', test: (r) => age(r) > 30 },
 ];
 const distribute = (buckets: Bucket[]) => {
-  const total = normals.value.length;
+  const base = webEmbed ? dealsCounted.value : normals.value;
+  const total = base.length;
   return buckets.map((b) => {
-    const count = normals.value.filter(b.test).length;
+    const count = base.filter(b.test).length;
     return { label: b.label, count, pct: total > 0 ? (count / total) * 100 : 0 };
   });
 };
@@ -1241,7 +1244,7 @@ const downloadCsv = () => {
           </div>
         </div>
         <!-- 웹 '지역별 분포' 탭 — 지역별 분석 표 자리에 전용면적 · 금액 · 건축연식 · 층 분포 막대그래프 (검색조건으로 거른 거래 기준) -->
-        <DotStackChart v-else-if="webEmbed && listView === 'dist' && distChart === 'dots'" :rows="normals" :views="DOT_VIEWS" class="adm-dotstack" />
+        <DotStackChart v-else-if="webEmbed && listView === 'dist' && distChart === 'dots'" :rows="dealsCounted" :views="DOT_VIEWS" class="adm-dotstack" />
         <div v-else-if="webEmbed && listView === 'dist'" class="adm-dists is-web">
           <div v-for="d in DISTS" :key="d.title" class="adm-dist">
             <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em>
