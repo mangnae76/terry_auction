@@ -2,7 +2,9 @@
 // 실거래 거르기 칸 — 시세조사의 유사물건 · 실거래가 조건분석이 같이 쓴다(예전 가격정보 조건분석과 같은 항목).
 // 기간선택을 누르면 시작 · 종료일자가 같이 바뀌고, 날짜를 손으로 고치면 기간선택은 풀린다.
 // 검색 단추 · 저장은 없다 — 이미 받은 자료를 거르는 것이라 값을 바꾸면 바로 걸러진다.
+import { ref } from 'vue';
 import { tradeWindowOf } from '../services/publicDataApi';
+import DateWheelPicker from './DateWheelPicker.vue';
 import { RANGE_MONTHS, type TradeRange } from '../services/caseTradeAnalysis';
 
 /** monthChoices — 기간선택 단추(기본 1 · 3 · 6 · 12개월). 조건분석은 1개월을 뺀다 */
@@ -16,6 +18,9 @@ const pickMonths = (m: number) => {
   set({ months: m, from: ymd(w.start), to: ymd(w.end) });
 };
 const val = (e: Event) => (e.target as HTMLInputElement).value;
+// 날짜는 앱 손품조사와 같은 휠 달력(DateWheelPicker)으로 — 브라우저 흰 달력을 쓰지 않는다
+const dateKey = ref<'' | 'from' | 'to'>('');
+const pickDate = (v: string) => { if (dateKey.value) set({ [dateKey.value]: v, months: 0 }); };
 </script>
 
 <template>
@@ -26,9 +31,9 @@ const val = (e: Event) => (e.target as HTMLInputElement).value;
         <button v-for="m in monthChoices" :key="m" type="button" :class="['trf-m', { on: modelValue.months === m }]" @click="pickMonths(m)">{{ m }}개월</button>
       </div>
       <span class="trf-lab">시작일자</span>
-      <input class="trf-in" type="date" :value="modelValue.from" @input="set({ from: val($event), months: 0 })" />
+      <button type="button" class="trf-in trf-date" @click="dateKey = 'from'">{{ modelValue.from || '시작일자' }}</button>
       <span class="trf-lab">종료일자</span>
-      <input class="trf-in" type="date" :value="modelValue.to" @input="set({ to: val($event), months: 0 })" />
+      <button type="button" class="trf-in trf-date" @click="dateKey = 'to'">{{ modelValue.to || '종료일자' }}</button>
     </div>
     <div class="trf-row">
       <span class="trf-lab">면적선택</span>
@@ -45,6 +50,14 @@ const val = (e: Event) => (e.target as HTMLInputElement).value;
       </span>
       <slot />
     </div>
+    <Teleport to="body">
+      <DateWheelPicker
+        :model-value="dateKey ? modelValue[dateKey] : ''"
+        :open="dateKey !== ''"
+        @update:model-value="pickDate"
+        @close="dateKey = ''"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -57,6 +70,7 @@ const val = (e: Event) => (e.target as HTMLInputElement).value;
 .trf-m { height: 40px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 14px; font-weight: 700; color: #6b7280; cursor: pointer; }
 .trf-m.on { border-color: #2b6df3; background: #eef3ff; color: #2b6df3; }
 .trf-in { box-sizing: border-box; width: 100%; min-width: 0; height: 40px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 14px; color: #111827; }
+.trf-date { text-align: left; cursor: pointer; }
 .trf-in:focus { outline: none; border-color: #2b6df3; }
 .trf-in::placeholder { color: #9aa3b2; }
 .trf-pair { display: flex; align-items: center; gap: 6px; min-width: 0; }

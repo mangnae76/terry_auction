@@ -206,13 +206,26 @@ const resetSim = () => {
   simF.value = defaultRange();
   simSale.value = ''; simJeonse.value = '';
 };
+const COLS: Array<ColumnDef<CaseTradeRow>> = [
+  { key: 'kind', label: '구분', text: (r) => r.kind },
+  { key: 'date', label: '계약일', text: (r) => r.contractDate || '-', order: (r) => Number(r.contractDate.replace(/\D/g, '')) || 0 },
+  { key: 'amount', label: '거래금액', text: (r) => r.amount, order: (r) => r.price },
+  { key: 'area', label: '전용(㎡/평)', text: (r) => areaText(r.areaM2), order: (r) => r.areaM2 },
+  { key: 'build', label: '건축년도', text: (r) => (r.buildYear ? String(r.buildYear) : '-'), order: (r) => r.buildYear ?? 0 },
+  { key: 'floor', label: '층', text: (r) => r.floor || '-', order: (r) => Number(String(r.floor).replace(/[^\d-]/g, '')) || 0 },
+  { key: 'place', label: '주소', text: (r) => [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') },
+];
+
 // ===== ② 실거래가 조건분석 — 유사물건과 같은 거르기 칸, 값은 따로 =====
 const condF = ref<TradeRange>(defaultRange());
-const resetCond = () => { condF.value = defaultRange(); };
+const resetCond = () => { condF.value = defaultRange(); condColFilter.clearAll(); };
 /** 조건에 맞는 같은 동 매매(정상거래 · 직거래, 계약해제는 받을 때 이미 뺐다) */
-const condSales = computed(() => dongRows.value.filter((r) => (
+const condRangeSales = computed(() => dongRows.value.filter((r) => (
   (r.kind === '매매' || r.kind === '직거래') && r.price > 0 && matchRange(r, condF.value)
 )));
+/** 표 머리글(구분 ~ 층) ▽ 고르기까지 건 줄 — 평균 · 네 칸이 이걸 따른다(손품조사 조건분석과 같다) */
+const condColFilter = useColumnFilters<CaseTradeRow>(condRangeSales, COLS.filter((c) => c.key !== 'place'));
+const condSales = computed(() => condColFilter.rows.value);
 const condAvg = computed(() => (condSales.value.length ? condSales.value.reduce((t, r) => t + r.price, 0) / condSales.value.length : 0));
 /** 손품조사 조건분석과 같은 글 — 면적은 걸러진 매매의 실제 최소~최대, 사용승인은 건축년도 범위 + 몇 년차 */
 /** 시작 · 끝 두 줄(손품조사 앱 칸과 같이) — 한 줄이면 칸을 넘친다 */
@@ -282,15 +295,6 @@ const byAreaYear = computed(() => baseList.value.filter((r) => {
 }));
 // 표의 칸마다 값 목록으로 한 번 더 추린다 (실거래가 조건 분석과 같은 방식).
 // 위 지표는 걸러낸 결과를 따르지 않는다 — 지표의 기준은 줄을 눌러 고른다.
-const COLS: Array<ColumnDef<CaseTradeRow>> = [
-  { key: 'kind', label: '구분', text: (r) => r.kind },
-  { key: 'date', label: '계약일', text: (r) => r.contractDate || '-', order: (r) => Number(r.contractDate.replace(/\D/g, '')) || 0 },
-  { key: 'amount', label: '거래금액', text: (r) => r.amount, order: (r) => r.price },
-  { key: 'area', label: '전용(㎡/평)', text: (r) => areaText(r.areaM2), order: (r) => r.areaM2 },
-  { key: 'build', label: '건축년도', text: (r) => (r.buildYear ? String(r.buildYear) : '-'), order: (r) => r.buildYear ?? 0 },
-  { key: 'floor', label: '층', text: (r) => r.floor || '-', order: (r) => Number(String(r.floor).replace(/[^\d-]/g, '')) || 0 },
-  { key: 'place', label: '주소', text: (r) => [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ') },
-];
 
 const shown = computed(() => byAreaYear.value.filter((r) => (
   tab.value === 'all' || r.kind === tab.value || (tab.value === '매매' && r.kind === '직거래')
@@ -1127,7 +1131,25 @@ const downloadCsv = () => {
           </div>
           <div class="adm-table-wrap">
             <table class="adm-table">
-              <thead><tr><th>구분</th><th>계약일</th><th>거래금액</th><th>전용(㎡/평)</th><th>건축년도</th><th>층</th><th>주소</th></tr></thead>
+              <thead>
+                <tr>
+                  <th v-for="c in COLS" :key="c.key">
+                    <span class="th-in">
+                      {{ c.label }}
+                      <button
+                        v-if="c.key !== 'place'"
+                        type="button"
+                        class="adm-flt"
+                        :class="{ on: condColFilter.isActive(c.key), open: condColFilter.openKey.value === c.key }"
+                        :aria-label="`${c.label} 걸러내기`"
+                        @click.stop="condColFilter.open(c.key, $event)"
+                      >
+                        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8L3 5Z" /></svg>
+                      </button>
+                    </span>
+                  </th>
+                </tr>
+              </thead>
               <tbody>
                 <tr v-for="(r, i) in condSales.slice(0, 300)" :key="`c-${r.contractDate}-${r.floor}-${i}`">
                   <td><span :class="['kind', kindClass(r.kind)]">{{ r.kind }}</span></td>
@@ -1155,6 +1177,7 @@ const downloadCsv = () => {
     </div>
 
     <ColumnFilterPanel :ctl="colFilter" />
+    <ColumnFilterPanel :ctl="condColFilter" />
     <AppToast :visible="!!snapMsg" :text="snapMsg" :tone="snapTone" />
     <AppConfirm :box="confirmBox" @close="confirmBox = null" />
 
