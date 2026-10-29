@@ -340,6 +340,8 @@ button { cursor: pointer; }
 /* 제목 · 단추 줄 — 고르는 줄 높이가 지역분석과 달라(칸 이름이 위에 붙는다) 이 줄은 붙박지 않고 흐른다 */
 .app-market[data-k="case"] .adm-case-row { position: relative !important; top: auto !important; margin-bottom: 16px !important; padding-left: 4px;
   display: flex !important; align-items: center !important; gap: 12px; height: 48px !important; flex-wrap: nowrap; }
+/* 경매지번 주소 줄이 들어오는 자리 — 상자 없이(display:contents) 두어야 그 줄이 지역분석 고르는 줄처럼 위에 붙는다(자리 상자 안에 갇혀 같이 흘러갔다) */
+.adm-topbar-slot { display: contents; }
 /* 지역분석 › 경매지번 탭 안 — 긴 밑줄은 탭 줄 밑에만. 경매지번 제목 줄(.adm-case-row)의 밑줄은 지운다 */
 .adm-case-in .adm-case-row::after { display: none !important; }
 .adm-case-in .adm-case-row { margin-top: 14px !important; position: static !important; background: transparent !important; box-shadow: none !important; clip-path: none !important; border: 0 !important; }

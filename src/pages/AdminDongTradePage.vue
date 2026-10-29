@@ -121,10 +121,16 @@ let barObserver: ResizeObserver | null = null;
 onMounted(() => {
   if (!webEmbed || !barEl.value) return;
   const host = barEl.value.closest('.app-market') as HTMLElement | null;
-  const apply = () => { if (host && barEl.value) host.style.setProperty('--bar-h', `${Math.round(barEl.value.getBoundingClientRect().height)}px`); };
+  // 경매지번 탭에선 고르는 줄이 감춰지고 경매지번 주소 줄(admTopBarSlot)이 그 자리에 선다 — 보이는 줄의 높이를 쓴다
+  const caseBar = () => document.querySelector<HTMLElement>('#admTopBarSlot > .adm-bar');
+  const apply = () => {
+    const h = Math.max(...[barEl.value, caseBar()].map((el) => (el ? el.getBoundingClientRect().height : 0)));
+    if (host) host.style.setProperty('--bar-h', `${Math.round(h)}px`);
+  };
   apply();
   barObserver = new ResizeObserver(apply);
   barObserver.observe(barEl.value);
+  watch(listView, () => { void nextTick(() => requestAnimationFrame(() => { const el = caseBar(); if (el) barObserver?.observe(el); apply(); })); }, { immediate: true });
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'

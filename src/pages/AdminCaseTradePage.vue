@@ -641,7 +641,7 @@ const downloadCsv = () => {
     <div class="adm-body" @click="tip = ''">
       <!-- 주소 한 줄 -->
       <!-- 지역분석 › 경매지번 탭 안에 붙어 쓸 때는 이 줄을 지역분석의 고르는 줄 자리로 옮긴다 -->
-      <Teleport to="#admTopBarSlot" :disabled="!inDong">
+      <Teleport defer to="#admTopBarSlot" :disabled="!inDong">
       <div class="adm-bar">
         <label class="adm-f grow">
           <small>주소 입력 <em>시·도부터 지번·호수까지</em></small>
