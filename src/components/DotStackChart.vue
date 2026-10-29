@@ -1,0 +1,188 @@
+<script setup lang="ts">
+// 점 쌓기 분포도 — 거래 1건 = 점 1개(많으면 N건씩 묶는다)를 구간 칸에 쌓는다.
+// 기준(면적 · 금액 · 연식 · 층)을 바꾸면 같은 점들이 날아가 새 구간으로 다시 쌓인다.
+// 칸 위에는 건수와 그 칸의 가운데 값. 점 색은 계약연도 · 연식 · 층 · 금액 중에서 고른다.
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import type { DongTradeDetailRow } from '../services/publicDataApi';
+
+export type DotBucket = { label: string; test: (r: DongTradeDetailRow) => boolean };
+export type DotView = { key: string; title: string; buckets: DotBucket[] };
+
+const props = defineProps<{ rows: DongTradeDetailRow[]; views: DotView[] }>();
+
+const MAX_DOTS = 2400;            // 이보다 많으면 점 하나에 여러 건을 묶는다
+const EOK = 100_000_000;
+const thisYear = new Date().getFullYear();
+const ageOf = (r: DongTradeDetailRow) => (r.buildYear ? thisYear - r.buildYear + 1 : 99);
+
+const viewKey = ref(props.views[0]?.key ?? '');
+const colorKey = ref<'year' | 'age' | 'floor' | 'price'>('year');
+const view = computed(() => props.views.find((v) => v.key === viewKey.value) ?? props.views[0]);
+const per = computed(() => Math.max(1, Math.ceil(props.rows.length / MAX_DOTS)));
+
+const COLOR_KEYS = {
+  year: { label: '계약연도', tier: (r: DongTradeDetailRow, years: number[]) => Math.max(0, 4 - (years[years.length - 1] - Number(r.contractDate.slice(0, 4)))) },
+  age: { label: '연식', tier: (r: DongTradeDetailRow) => { const a = ageOf(r); return a <= 5 ? 4 : a <= 10 ? 3 : a <= 15 ? 2 : a <= 20 ? 1 : 0; } },
+  floor: { label: '층', tier: (r: DongTradeDetailRow) => (r.floorNum <= 1 ? 0 : r.floorNum === 2 ? 1 : r.floorNum === 3 ? 2 : r.floorNum === 4 ? 3 : 4) },
+  price: { label: '금액', tier: (r: DongTradeDetailRow) => (r.priceWon < 1.2 * EOK ? 0 : r.priceWon < 1.4 * EOK ? 1 : r.priceWon < 1.6 * EOK ? 2 : r.priceWon < 2 * EOK ? 3 : 4) },
+} as const;
+const years = computed(() => [...new Set(props.rows.map((r) => Number(r.contractDate.slice(0, 4))))].sort());
+const legend = computed(() => {
+  if (colorKey.value === 'year') { const ys = years.value.slice(-5); return ys.map((y, i) => ({ tone: 5 - ys.length + i, label: `${y}년` })); }
+  if (colorKey.value === 'age') return [[4, '5년차 이하'], [3, '6~10년차'], [2, '11~15년차'], [1, '16~20년차'], [0, '21년차 이상']].map(([tone, label]) => ({ tone: tone as number, label: label as string }));
+  if (colorKey.value === 'floor') return ['지하 · 1층', '2층', '3층', '4층', '5층 이상'].map((label, tone) => ({ tone, label }));
+  return ['1.2억 미만', '1.2~1.4억', '1.4~1.6억', '1.6~2억', '2억 이상'].map((label, tone) => ({ tone, label }));
+});
+
+const eok = (won: number) => (won >= EOK ? `${Number((won / EOK).toFixed(2))}억` : `${Math.round(won / 10000).toLocaleString('ko-KR')}만`);
+
+// ===== 그리기 =====
+const cv = ref<HTMLCanvasElement | null>(null);
+const tip = ref<{ x: number; y: number; lines: Array<[string, string]> } | null>(null);
+type Dot = { key: string; rows: DongTradeDetailRow[]; tone: number; x: number; y: number; sx: number; sy: number; tx: number; ty: number; delay: number };
+let dots: Dot[] = [];
+let cols: Array<{ label: string; x: number; topY: number; n: number; median: number }> = [];
+let W = 0; let H = 0; let D = 8; let t0 = 0; let raf = 0; let hover: Dot | null = null;
+const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const dark = () => document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+const PAL = () => (dark()
+  ? { tones: ['#22355c', '#2c4e8f', '#3d6cc4', '#6b9cff', '#b9d0ff'], ink: '#e8edf6', sub: '#9aa6ba', accent: '#6b9cff', line: '#2a3650' }
+  : { tones: ['#c9d8f8', '#9ab8f2', '#6493ea', '#2f6fe0', '#173f99'], ink: '#111827', sub: '#6b7280', accent: '#2b6df3', line: '#e3e8f0' });
+const ease = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+const resize = () => {
+  const el = cv.value; if (!el) return;
+  const r = el.getBoundingClientRect(); const d = devicePixelRatio || 1;
+  W = r.width; H = r.height; el.width = W * d; el.height = H * d;
+  el.getContext('2d')?.setTransform(d, 0, 0, d, 0, 0);
+};
+
+/** 구간마다 줄을 모아 오래된 것부터 아래로 쌓을 자리를 정한다. 같은 거래는 같은 점(key)이라 기준을 바꾸면 그 점이 옮겨 간다 */
+const layout = (first: boolean) => {
+  const v = view.value; if (!v || !W) return;
+  const groups = v.buckets.map((b) => props.rows.filter((r) => b.test(r)).sort((a, c) => a.dealTime - c.dealTime));
+  // 같은 거래(줄 객체)면 같은 점 — 기준을 바꾸면 그 점이 제자리에서 새 자리로 옮겨 간다
+  const prev = new Map(dots.map((d) => [d.rows[0], d]));
+  const tierOf = (r: DongTradeDetailRow) => COLOR_KEYS[colorKey.value].tier(r, years.value);
+  const top = 46; const bottom = 34; const colW = W / groups.length;
+  const counts = groups.map((g) => Math.ceil(g.length / per.value)); const max = Math.max(1, ...counts);
+  let G = 2; D = 9;
+  for (; D > 2; D -= 1) { const k = Math.max(1, Math.floor((colW - 14) / (D + G))); if (Math.ceil(max / k) * (D + G) <= H - top - bottom) break; }
+  if (D <= 3) G = 1;
+  const k = Math.max(1, Math.floor((colW - 14) / (D + G)));
+  const next: Dot[] = [];
+  cols = groups.map((g, ci) => {
+    const x0 = ci * colW + (colW - k * (D + G) + G) / 2;
+    for (let i = 0, n = 0; i < g.length; i += per.value, n += 1) {
+      const chunk = g.slice(i, i + per.value);
+      const key = `${chunk[0].dealTime}|${chunk[0].priceWon}|${chunk[0].jibun}|${chunk[0].floor}|${i}`;
+      const tx = x0 + (n % k) * (D + G) + D / 2; const ty = H - bottom - Math.floor(n / k) * (D + G) - D / 2;
+      const old = prev.get(chunk[0]);
+      const dot: Dot = { key, rows: chunk, tone: tierOf(chunk[0]), x: tx, y: ty, tx, ty, sx: tx, sy: ty, delay: 0 };
+      if (first || !old) { dot.sx = tx + (Math.random() - 0.5) * 40; dot.sy = -20 - Math.random() * 120; dot.delay = Math.floor(n / k) * 8 + Math.random() * 160; }
+      else { dot.sx = old.x; dot.sy = old.y; dot.delay = Math.random() * 260; }
+      next.push(dot);
+    }
+    const prices = g.map((r) => r.priceWon).filter((p) => p > 0).sort((a, c) => a - c);
+    return { label: v.buckets[ci].label, x: ci * colW + colW / 2, topY: H - bottom - Math.ceil(counts[ci] / k) * (D + G), n: g.length, median: prices.length ? prices[Math.floor(prices.length / 2)] : 0 };
+  });
+  dots = next; t0 = performance.now();
+  cancelAnimationFrame(raf); raf = requestAnimationFrame(draw);
+};
+
+function draw(now: number) {
+  const el = cv.value; const c = el?.getContext('2d'); if (!c) return;
+  const P = PAL(); const t = reduce ? 1e9 : now - t0; let busy = false;
+  c.clearRect(0, 0, W, H);
+  c.textAlign = 'center';
+  cols.forEach((col) => {
+    c.fillStyle = P.sub; c.font = '600 12px "Pretendard", "Apple SD Gothic Neo", sans-serif'; c.fillText(col.label, col.x, H - 12);
+    if (!col.n) return;
+    c.fillStyle = P.ink; c.font = '700 13px "Pretendard", sans-serif'; c.fillText(`${col.n.toLocaleString('ko-KR')}건`, col.x, col.topY - 22);
+    if (col.median) { c.fillStyle = P.accent; c.font = '700 12px "Pretendard", sans-serif'; c.fillText(eok(col.median), col.x, col.topY - 8); }
+  });
+  c.strokeStyle = P.line; c.lineWidth = 1; c.beginPath(); c.moveTo(0, H - 29.5); c.lineTo(W, H - 29.5); c.stroke();
+  dots.forEach((d) => {
+    const k = (t - d.delay) / 750; if (k < 1) busy = true;
+    const e = ease(k); d.x = d.sx + (d.tx - d.sx) * e; d.y = d.sy + (d.ty - d.sy) * e;
+    c.fillStyle = P.tones[d.tone] ?? P.tones[2]; c.beginPath(); c.arc(d.x, d.y, D / 2, 0, Math.PI * 2); c.fill();
+  });
+  if (hover) { c.strokeStyle = P.ink; c.lineWidth = 1.5; c.beginPath(); c.arc(hover.x, hover.y, D / 2 + 2, 0, Math.PI * 2); c.stroke(); }
+  raf = busy ? requestAnimationFrame(draw) : 0;
+}
+const redraw = () => { if (!raf) raf = requestAnimationFrame(draw); };
+
+const onMove = (e: MouseEvent) => {
+  const el = cv.value; if (!el) return;
+  const b = el.getBoundingClientRect(); const x = e.clientX - b.left; const y = e.clientY - b.top;
+  let best: Dot | null = null; let bd = Math.max(36, D * D);
+  dots.forEach((d) => { const dd = (d.x - x) ** 2 + (d.y - y) ** 2; if (dd < bd) { bd = dd; best = d; } });
+  if (best !== hover) { hover = best; redraw(); }
+  const h = best as Dot | null;
+  if (!h) { tip.value = null; return; }
+  const r = h.rows[0];
+  const lines: Array<[string, string]> = h.rows.length > 1
+    ? [['거래', `${h.rows.length}건 묶음`], ['첫 거래', `${r.umdNm} ${r.jibun} ${r.name}`.trim()], ['금액', `${eok(Math.min(...h.rows.map((x) => x.priceWon)))} ~ ${eok(Math.max(...h.rows.map((x) => x.priceWon)))}`]]
+    : [['주소', `${r.umdNm} ${r.jibun} ${r.name}`.trim()], ['계약일', r.contractDate], ['금액', eok(r.priceWon)], ['전용', `${r.areaM2.toFixed(2)}㎡ / ${r.pyeong.toFixed(2)}평`], ['층 · 건축', `${r.floor || '-'}층 · ${r.buildYear ? `${r.buildYear}년(${ageOf(r)}년차)` : '-'}`]];
+  tip.value = { x: Math.min(h.x + 20, W - 230), y: Math.max(h.y - 80, 4), lines };
+};
+const onLeave = () => { hover = null; tip.value = null; redraw(); };
+
+const pickView = (k: string) => { if (k !== viewKey.value) { viewKey.value = k; layout(false); } };
+const pickColor = (k: keyof typeof COLOR_KEYS) => { colorKey.value = k; dots.forEach((d) => { d.tone = COLOR_KEYS[k].tier(d.rows[0], years.value); }); redraw(); };
+const replay = () => { dots = []; layout(true); };
+
+watch(() => props.rows, () => layout(true));
+watch(() => props.views.map((v) => v.buckets.map((b) => b.label).join()).join('|'), () => layout(false));
+let ro: ResizeObserver | null = null;
+onMounted(() => {
+  resize(); layout(true);
+  ro = new ResizeObserver(() => { resize(); layout(false); });
+  if (cv.value) ro.observe(cv.value);
+});
+onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
+</script>
+
+<template>
+  <section class="dsc">
+    <div class="dsc-top">
+      <div class="dsc-seg" role="tablist" aria-label="분포 기준">
+        <button v-for="v in views" :key="v.key" type="button" :class="{ on: viewKey === v.key }" @click="pickView(v.key)">{{ v.title }}</button>
+      </div>
+      <div class="dsc-seg sm" role="tablist" aria-label="점 색">
+        <button v-for="(c, k) in COLOR_KEYS" :key="k" type="button" :class="{ on: colorKey === k }" @click="pickColor(k)">색 {{ c.label }}</button>
+      </div>
+    </div>
+    <p class="dsc-read">점 하나가 거래 {{ per > 1 ? `${per}건` : '한 건' }}입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래이고, 칸 위 파란 숫자는 그 구간의 가운데 값입니다. 기준을 바꾸면 같은 점들이 새 구간으로 옮겨 갑니다.</p>
+    <div class="dsc-board">
+      <canvas ref="cv" class="dsc-cv" aria-label="점 쌓기 분포도" @mousemove="onMove" @mouseleave="onLeave" />
+      <div v-if="tip" class="dsc-tip" :style="{ left: `${tip.x}px`, top: `${tip.y}px` }">
+        <template v-for="l in tip.lines" :key="l[0]"><b>{{ l[0] }}</b><span>{{ l[1] }}</span></template>
+      </div>
+    </div>
+    <div class="dsc-foot">
+      <span v-for="l in legend" :key="l.label" class="dsc-key"><i :class="`t${l.tone}`" />{{ l.label }}</span>
+      <button type="button" class="dsc-replay" @click="replay">다시 쌓기</button>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.dsc { display: flex; flex-direction: column; gap: 10px; }
+.dsc-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.dsc-seg { display: grid; grid-auto-flow: column; gap: 6px; }
+.dsc-seg button { height: 40px; padding: 0 14px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 14px; font-weight: 700; color: #6b7280; cursor: pointer; }
+.dsc-seg.sm button { height: 34px; font-size: 13px; padding: 0 12px; }
+.dsc-seg button.on { border-color: #2b6df3; background: #eef3ff; color: #2b6df3; }
+.dsc-read { margin: 0; font-size: 13px; color: #6b7280; line-height: 1.6; }
+.dsc-board { position: relative; background: #fff; border: 1px solid #e3e8f0; border-radius: 10px; padding: 12px 10px 6px; }
+.dsc-cv { display: block; width: 100%; height: 440px; }
+.dsc-tip { position: absolute; z-index: 5; pointer-events: none; display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; min-width: 200px; padding: 9px 11px; border-radius: 8px; background: #1f2937; color: #f3f4f6; font-size: 12.5px; line-height: 1.55; box-shadow: 0 10px 24px rgba(17, 24, 39, .25); }
+.dsc-tip b { font-weight: 600; color: #9aa6ba; }
+.dsc-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: #6b7280; }
+.dsc-key { display: inline-flex; align-items: center; gap: 5px; }
+.dsc-key i { width: 10px; height: 10px; border-radius: 50%; }
+.dsc-key i.t0 { background: #c9d8f8; } .dsc-key i.t1 { background: #9ab8f2; } .dsc-key i.t2 { background: #6493ea; } .dsc-key i.t3 { background: #2f6fe0; } .dsc-key i.t4 { background: #173f99; }
+.dsc-replay { margin-left: auto; height: 32px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .dsc-replay { display: none; } }
+</style>

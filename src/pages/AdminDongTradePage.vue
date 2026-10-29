@@ -19,6 +19,7 @@ import InfoTip from '../components/InfoTip.vue';
 import AdminRegionDemandPage from './AdminRegionDemandPage.vue';
 import TradeStatsPage from './TradeStatsPage.vue';
 import AdminCaseTradePage from './AdminCaseTradePage.vue';
+import DotStackChart, { type DotView } from '../components/DotStackChart.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
@@ -336,10 +337,10 @@ watch(listView, async () => {
   if (tabTopBefore !== null && now !== undefined) window.scrollBy(0, now - tabTopBefore);
   tabTopBefore = null;
 }, { flush: 'post' });
-/** 유형분포 그림 — 막대 / 도넛. '유형분포' 탭을 한 번 더 누르면 바뀐다 */
-const distChart = ref<'bar' | 'pie'>('bar');
+/** 유형분포 그림 — 점 쌓기(기본) / 막대 / 도넛. '유형분포' 탭을 한 번 더 누르면 차례로 바뀐다 */
+const distChart = ref<'dots' | 'bar' | 'pie'>('dots');
 const onDistTab = () => {
-  if (listView.value === 'dist') distChart.value = distChart.value === 'bar' ? 'pie' : 'bar';
+  if (listView.value === 'dist') distChart.value = distChart.value === 'dots' ? 'bar' : distChart.value === 'bar' ? 'pie' : 'dots';
   else listView.value = 'dist';
 };
 // 도넛 — 반지름 · 둘레. 색은 많은 조각부터 빨 · 주 · 노 · 초 · 파 · 남 · 보(눈이 편한 부드러운 무지개)
@@ -706,6 +707,13 @@ const distribute = (buckets: Bucket[]) => {
     return { label: b.label, count, pct: total > 0 ? (count / total) * 100 : 0 };
   });
 };
+/** 점 쌓기 — 유형분포 네 가지를 한 그림에서 단추로 바꿔 본다(같은 구간 · 같은 거래) */
+const DOT_VIEWS = computed<DotView[]>(() => [
+  { key: 'area', title: '전용면적', buckets: WEB_AREA_BUCKETS.map((b) => ({ ...b, label: areaUnit.value === 'm2' ? b.alt ?? b.label : b.label })) },
+  { key: 'price', title: '금액대', buckets: WEB_PRICE_BUCKETS },
+  { key: 'age', title: '건축연식', buckets: WEB_AGE_BUCKETS },
+  { key: 'floor', title: '층', buckets: FLOOR_BUCKETS },
+]);
 const DISTS = computed(() => [
   // 웹은 '…별 분포' 로 이름을 맞춘다 (앱은 그대로)
   { title: webEmbed ? '전용면적별 분포' : '전용면적 분포', unit: webEmbed ? '' : '㎡/평', areaToggle: webEmbed,
@@ -974,8 +982,9 @@ const downloadCsv = () => {
               <!-- 경매지번 — 시장분석 › 경매지번 분석 화면을 그대로(주소 줄 · 종류 · 기간 · 내비 · 표 · 저장). 주소 줄은 위 고르는 줄 자리에 -->
               <button type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">시세조사</button>
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">지역별분석</button>
-              <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">유형분포<span class="adm-view-kind" :title="distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 막대'" :aria-label="distChart === 'bar' ? '막대' : '도넛'">
-                <svg v-if="distChart === 'bar'" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><rect x="1.5" y="8" width="3" height="6.5" rx="1" /><rect x="6.5" y="3" width="3" height="11.5" rx="1" /><rect x="11.5" y="6" width="3" height="8.5" rx="1" /></svg>
+              <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">유형분포<span class="adm-view-kind" :title="distChart === 'dots' ? '점 쌓기 — 한 번 더 누르면 막대' : distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 점 쌓기'" :aria-label="distChart === 'dots' ? '점 쌓기' : distChart === 'bar' ? '막대' : '도넛'">
+                <svg v-if="distChart === 'dots'" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><circle cx="3" cy="13" r="1.6" /><circle cx="3" cy="9" r="1.6" /><circle cx="8" cy="13" r="1.6" /><circle cx="8" cy="9" r="1.6" /><circle cx="8" cy="5" r="1.6" /><circle cx="13" cy="13" r="1.6" /></svg>
+                <svg v-else-if="distChart === 'bar'" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><rect x="1.5" y="8" width="3" height="6.5" rx="1" /><rect x="6.5" y="3" width="3" height="11.5" rx="1" /><rect x="11.5" y="6" width="3" height="8.5" rx="1" /></svg>
                 <svg v-else viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3"><circle cx="8" cy="8" r="5.5" stroke-opacity=".35" /><path d="M8 2.5a5.5 5.5 0 0 1 5.5 5.5" /></svg>
               </span></button>
               <button type="button" role="tab" :aria-selected="listView === 'detail'" :class="{ on: listView === 'detail' }" @click="listView = 'detail'">상세분포</button>
@@ -1232,6 +1241,7 @@ const downloadCsv = () => {
           </div>
         </div>
         <!-- 웹 '지역별 분포' 탭 — 지역별 분석 표 자리에 전용면적 · 금액 · 건축연식 · 층 분포 막대그래프 (검색조건으로 거른 거래 기준) -->
+        <DotStackChart v-else-if="webEmbed && listView === 'dist' && distChart === 'dots'" :rows="normals" :views="DOT_VIEWS" class="adm-dotstack" />
         <div v-else-if="webEmbed && listView === 'dist'" class="adm-dists is-web">
           <div v-for="d in DISTS" :key="d.title" class="adm-dist">
             <div class="adm-dist-head">{{ d.title }} <em v-if="d.unit">{{ d.unit }}</em>
