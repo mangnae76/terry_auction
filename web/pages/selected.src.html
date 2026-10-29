@@ -402,6 +402,15 @@ button { cursor: pointer; }
 .app-market[data-s="son"] .adm-tabs-top { position: relative !important; top: auto !important; margin-top: 4px !important; }
 #marketView:has(#sonShell:not([hidden])) #crumbSlotMarket { display: none; }   /* 경로는 탭 줄 오른쪽으로 갔다 — 빈 줄을 남기지 않는다 */
 /* 입지/개별성 — 제목 · ① · ② 를 상자 하나로 묶는다(손품조사의 단락 상자 그대로) */
+/* 손품분석 줄 맞춤 — 흰 카드는 머리 카드와 같은 시작 · 끝선(바깥 여백 0), 카드 안 제목 · 내용은 머리 카드 안 회색 칸과 같은 안쪽 선(25px) */
+.app-market[data-s="son"] .son-detail :is(.adp-shell, .adp-body) { padding-left: 0 !important; padding-right: 0 !important; }
+.app-market[data-s="son"] .son-detail .adp-card { margin-left: 0 !important; margin-right: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }
+.app-market[data-s="son"] .son-detail .adp-card > .adp-card-head { padding-left: 25px !important; padding-right: 25px !important; }
+.app-market[data-s="son"] .son-detail .adp-card > :not(header) { margin-left: 0 !important; margin-right: 0 !important; padding-left: 25px !important; padding-right: 25px !important; }
+/* 손품분석 동/지역 표 — 칸 색칠 · 색 세로줄은 빼고, 머리글 글자만 세대수 · 매물수 · 회전율을 빨간색으로 */
+.app-market[data-s="son"] .son-demand .adm-table :is(th, td) { background: var(--surface) !important; border-left-color: #eef1f6 !important; border-right-color: #eef1f6 !important; box-shadow: none !important; }
+.app-market[data-s="son"] .son-demand .adm-table thead th { background: #f7f9fc !important; color: #374151 !important; }
+.app-market[data-s="son"] .son-demand .adm-table thead th:is(.in, .turn), .app-market[data-s="son"] .son-demand .adm-table thead th:is(.in, .turn) small { color: #d0342c !important; }
 /* 손품분석 수요조사 — 흰 카드 안이라 회색 수요분석 상자를 흰 바탕 + 얇은 테두리로, 동 표 · 입지/개별성과 같은 안쪽 선에 맞춘다 */
 .app-market[data-s="son"] .son-demand .adm-nav.dm { background: var(--surface) !important; border: 1px solid #e3e8f0; margin-top: 4px !important; }
 .app-market[data-s="son"] .son-demand .adm-nav.dm::after { left: 0 !important; right: 0 !important; }
