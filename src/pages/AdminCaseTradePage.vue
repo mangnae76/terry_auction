@@ -228,6 +228,28 @@ const simRows = computed(() => {
 /** 실거래가 조건분석 — 조건에 맞는 매매(직거래 포함 · 해제 제외) 평균 */
 const condSales = computed(() => simRows.value.filter((r) => (r.kind === '매매' || r.kind === '직거래') && r.price > 0));
 const condAvg = computed(() => (condSales.value.length ? condSales.value.reduce((t, r) => t + r.price, 0) / condSales.value.length : 0));
+/** 손품조사 조건분석과 같은 글 — 면적은 걸러진 매매의 실제 최소~최대, 사용승인은 건축년도 범위 + 몇 년차 */
+/** 시작 · 끝 두 줄(손품조사 앱 칸과 같이) — 한 줄이면 칸을 넘친다 */
+const condAreaPair = computed<[string, string] | null>(() => {
+  const a = condSales.value.map((r) => r.areaM2).filter((v) => v > 0);
+  if (!a.length) return null;
+  const pair = (m2: number) => `${m2.toFixed(2)}㎡ / ${(m2 / PYEONG).toFixed(2)}평`;
+  return [pair(Math.min(...a)), pair(Math.max(...a))];
+});
+const condPeriodText = computed(() => {
+  const sd = (v: string) => (v ? v.slice(2, 7).replace(/-/g, '.') : '');
+  const f = sd(simDateFrom.value); const t = sd(simDateTo.value);
+  return f || t ? `${f}~${t}` : '-';
+});
+const condApprovalText = computed(() => {
+  const ys = condSales.value.map((r) => r.buildYear ?? 0).filter((v) => v > 1800);
+  if (!ys.length) return '-';
+  const min = Math.min(...ys); const max = Math.max(...ys);
+  const yy = (y: number) => String(y % 100).padStart(2, '0');
+  const thisYear = new Date().getFullYear();
+  const age = (y: number) => Math.max(1, thisYear - y + 1);
+  return `${yy(min)}.01~${yy(max)}.12 / ${min === max ? `${age(min)}년차` : `${age(max)}~${age(min)}년차`}`;
+});
 const condAvgPerPy = computed(() => {
   const list = condSales.value.filter((r) => r.areaM2 > 0);
   return list.length ? list.reduce((t, r) => t + r.price / (r.areaM2 / PYEONG), 0) / list.length : 0;
@@ -901,8 +923,12 @@ const downloadCsv = () => {
         <section v-if="webEmbed" class="adm-case-block cond">
           <div class="adm-case-block-head"><span>실거래가 조건분석<em>(같은 동 · 조건 평균)</em></span></div>
           <div class="adm-kpis grid4 case12">
+            <!-- 손품조사 ③ 실거래가 조건분석과 같은 네 칸 — 조건에 맞는 매매 줄의 실제 범위 · 기간 · 사용승인 · 평균 -->
+            <div class="adm-kpi"><small>전용면적범위</small><strong class="rng two"><template v-if="condAreaPair"><span><UnitText :text="condAreaPair[0]" /> ~</span><span><UnitText :text="condAreaPair[1]" /></span></template><template v-else>-</template></strong></div>
+            <div class="adm-kpi"><small>거래기간</small><strong class="rng"><UnitText :text="condPeriodText" /></strong></div>
+            <div class="adm-kpi"><small>사용승인</small><strong class="rng"><UnitText :text="condApprovalText" /></strong></div>
             <div class="adm-kpi">
-              <small><InfoTip :rows="condTip" under="box">조건분석 평균</InfoTip></small>
+              <small><InfoTip :rows="condTip" under="box" align="end">국토부 실거래 평균</InfoTip></small>
               <strong v-if="condAvg > 0"><UnitText :text="won(condAvg)" suffix="원" /></strong>
               <strong v-else class="ask">{{ loading ? '받는 중' : '조건에 맞는 매매 없음' }}</strong>
             </div>
@@ -1204,6 +1230,9 @@ const downloadCsv = () => {
 .adm-case-block { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px 16px; background: #fff; }
 .adm-case-block-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; font-size: 15px; font-weight: 800; color: #111827; }
 .adm-case-block.cond { margin-top: 12px; }
+/* 범위 글은 길어 한 단계 작게 */
+.adm-kpis.case12 .adm-kpi strong.rng { font-size: 16px; }
+.adm-kpis.case12 .adm-kpi strong.rng.two { display: flex; flex-direction: column; line-height: 24px; }
 /* 경매물건 / 유사물건 알약 — 고른 쪽만 파랗게 */
 .adm-mode-pills { display: inline-flex; gap: 6px; }
 .adm-mode-pill { height: 30px; padding: 0 14px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; }
