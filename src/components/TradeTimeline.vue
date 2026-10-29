@@ -55,7 +55,7 @@ const playing = ref(false);
 type Pt = { r: DongTradeDetailRow; x: number; y: number; jit: number };
 let pts: Pt[] = [];
 let W = 0; let H = 0; let play0 = 0; let raf = 0; let hover: Pt | null = null; let hoverM: string | null = null;
-const PAD = { l: 60, r: 18, t: 16 }; const BAR_H = 70; const GAP = 26; const PLAY_MS = 3600;
+const PAD = { l: 66, r: 18, t: 16 }; const BAR_H = 70; const GAP = 26; const PLAY_MS = 3600;
 const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const dark = () => document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
 const PAL = () => (dark()
@@ -81,7 +81,7 @@ function draw(now: number) {
   const pick = props.modelValue;
   c.clearRect(0, 0, W, H);
   // 금액 눈금 다섯 줄
-  c.font = '500 11px "Pretendard", sans-serif'; c.textAlign = 'right';
+  c.font = '600 13px "Pretendard", sans-serif'; c.textAlign = 'right';
   // 눈금 간격은 1 · 2 · 2.5 · 5 × 10ⁿ 중에서 — 8,000만 · 1.6억 같은 어중간한 값이 서지 않게
   const raw = yTop.value / 5; const mag = 10 ** Math.floor(Math.log10(raw));
   const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((v) => v >= raw) ?? raw;
@@ -99,9 +99,9 @@ function draw(now: number) {
     if (pl.length) {
       c.fillStyle = P.soft; c.beginPath(); c.moveTo(pl[0].x, bottom); pl.forEach((p) => c.lineTo(p.x, p.y)); c.lineTo(pl[pl.length - 1].x, bottom); c.closePath(); c.fill();
       c.strokeStyle = P.accent; c.lineWidth = 2.5; c.beginPath(); pl.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.stroke();
-      pl.forEach((p) => { c.fillStyle = P.card; c.beginPath(); c.arc(p.x, p.y, 5, 0, Math.PI * 2); c.fill(); c.strokeStyle = P.accent; c.lineWidth = 2; c.stroke(); c.fillStyle = P.ink; c.font = '700 11px "Pretendard", sans-serif'; c.textAlign = 'center'; c.fillText(eok(p.s.avg), p.x, p.y - 12); });
+      pl.forEach((p) => { c.fillStyle = P.card; c.beginPath(); c.arc(p.x, p.y, 5, 0, Math.PI * 2); c.fill(); c.strokeStyle = P.accent; c.lineWidth = 2; c.stroke(); c.fillStyle = P.ink; c.font = '700 13px "Pretendard", sans-serif'; c.textAlign = 'center'; c.fillText(eok(p.s.avg), p.x, p.y - 12); });
     }
-    c.fillStyle = P.sub; c.font = '600 11px "Pretendard", sans-serif'; c.textAlign = 'center';
+    c.fillStyle = P.sub; c.font = '600 13px "Pretendard", sans-serif'; c.textAlign = 'center';
     stats.value.forEach((s) => { const [a, b] = mX(s.m); c.fillText(`${Number(s.m.slice(5, 7))}월`, (a + b) / 2, H - 6); });
     playing.value = false; raf = 0; return;
   }
@@ -112,8 +112,8 @@ function draw(now: number) {
     const grow = Math.min(1, Math.max(0, (head - monthStart(s.m)) / per)); const h = (s.n / nmax) * (BAR_H - 16) * grow;
     c.fillStyle = s.m === pick ? P.accent : P.bar; c.beginPath(); c.roundRect(a + 5, base - h, Math.max(2, b - a - 10), h, [4, 4, 0, 0]); c.fill();
     c.textAlign = 'center';
-    if (grow >= 1) { c.fillStyle = P.sub; c.font = '700 11px "Pretendard", sans-serif'; c.fillText(s.n.toLocaleString('ko-KR'), mid, base - h - 4); }
-    c.fillStyle = P.sub; c.font = '600 11px "Pretendard", sans-serif'; c.fillText(`${Number(s.m.slice(5, 7))}월`, mid, H - 6);
+    if (grow >= 1) { c.fillStyle = P.sub; c.font = '700 13px "Pretendard", sans-serif'; c.fillText(s.n.toLocaleString('ko-KR'), mid, base - h - 4); }
+    c.fillStyle = P.sub; c.font = '600 13px "Pretendard", sans-serif'; c.fillText(`${Number(s.m.slice(5, 7))}월`, mid, H - 6);
   });
   // 점 — 재생 머리가 지나간 거래만, 막 나타난 점은 잠깐 크게
   pts.forEach((p) => {
@@ -129,7 +129,7 @@ function draw(now: number) {
   if (line.length) {
     c.strokeStyle = P.ink; c.lineWidth = 2.2; c.beginPath(); line.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.stroke();
     line.forEach((p) => { c.fillStyle = P.card; c.beginPath(); c.arc(p.x, p.y, 4.5, 0, Math.PI * 2); c.fill(); c.strokeStyle = P.ink; c.lineWidth = 2; c.stroke(); });
-    const last = line[line.length - 1]; c.fillStyle = P.ink; c.font = '700 12px "Pretendard", sans-serif'; c.textAlign = 'right'; c.fillText(`중간값 ${eok(last.s.med)}`, last.x - 10, last.y - 10);
+    const last = line[line.length - 1]; c.fillStyle = P.ink; c.font = '700 13px "Pretendard", sans-serif'; c.textAlign = 'right'; c.fillText(`중간값 ${eok(last.s.med)}`, last.x - 10, last.y - 10);
   }
   if (k < 1) { const x = sx(head); c.strokeStyle = P.accent; c.lineWidth = 2; c.beginPath(); c.moveTo(x, PAD.t); c.lineTo(x, H - 22); c.stroke(); }
   if (hover) { c.strokeStyle = P.ink; c.lineWidth = 1.5; c.beginPath(); c.arc(hover.x, hover.y, 6, 0, Math.PI * 2); c.stroke(); }
@@ -231,7 +231,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .ttl-cv { display: block; width: 100%; min-width: 720px; height: 640px; cursor: crosshair; }
 .ttl-tip { position: absolute; z-index: 5; pointer-events: none; display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; min-width: 200px; padding: 9px 11px; border-radius: 8px; background: #1f2937; color: #f3f4f6; font-size: 12.5px; line-height: 1.55; box-shadow: 0 10px 24px rgba(17, 24, 39, .25); }
 .ttl-tip b { font-weight: 600; color: #9aa6ba; }
-.ttl-play { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 3; display: inline-flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 22px 12px; border: 0; border-radius: 18px; background: rgba(255, 255, 255, .72); color: #2b6df3; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; opacity: .55; transition: opacity .2s, transform .2s; box-shadow: 0 8px 24px rgba(17, 24, 39, .10); backdrop-filter: blur(2px); }
+.ttl-play { position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%); z-index: 3; display: inline-flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 22px 12px; border: 0; border-radius: 18px; background: rgba(255, 255, 255, .72); color: #2b6df3; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; opacity: .2; transition: opacity .2s, transform .2s; box-shadow: 0 8px 24px rgba(17, 24, 39, .10); backdrop-filter: blur(2px); }
 .ttl-play svg { width: 56px; height: 56px; padding: 12px 10px 12px 14px; border-radius: 50%; background: #2b6df3; color: #fff; box-sizing: border-box; }
 .ttl-board:hover .ttl-play, .ttl-play:focus-visible { opacity: 1; }
 .ttl-play:hover { transform: translate(-50%, -50%) scale(1.05); }
