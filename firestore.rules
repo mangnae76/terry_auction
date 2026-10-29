@@ -119,6 +119,10 @@ service cloud.firestore {
     match /cacheDongUnitsAll/{id} {
       allow read, write: if isAllowedUser();
     }
+    // 필지 하나의 건축물대장 주차대수 · 승강기 수 — 개별성 분석
+    match /cacheBldFacts/{id} {
+      allow read, write: if isAllowedUser();
+    }
     // 달 단위 실거래 — 지역·종류·달이 같으면 값이 같아 모두가 나눠 쓴다
     match /cacheTradeMonth/{id} {
       allow read, write: if isAllowedUser();

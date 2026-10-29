@@ -23,6 +23,7 @@ const rememberPlaceRows = (id: string, rows: PlaceRow[]) => {
 </script>
 
 <script setup lang="ts">
+import { getBuildingFacts } from '../services/buildingFacts';
 import { DEMAND_PLAIN, DEMAND_TOTAL_PLAIN } from '../services/demandGrade';
 import { openNaverListing } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -2819,6 +2820,25 @@ watch(
   },
   { immediate: true },
 );
+
+// 주차수 · 엘베 — PDF에 없으면 그 필지의 건축물대장(표제부)에서 채운다. 사람이 넣은 값은 덮지 않는다
+watch(() => auction.value?.id, async (id) => {
+  const a = auction.value;
+  if (!id || !a?.address) return;
+  const v0 = surveyForm.value?.indivValues ?? {};
+  const needParking = !/^\d+$/.test(v0['ind.parking'] ?? '');
+  const needElevator = !v0['ind.elevator'];
+  if (!needParking && !needElevator) return;
+  const facts = await getBuildingFacts(a.address);
+  if (!facts || auction.value?.id !== id) return;
+  const sf = surveyForm.value;
+  if (!sf.indivValues) sf.indivValues = {};
+  const v = sf.indivValues;
+  let changed = false;
+  if (!/^\d+$/.test(v['ind.parking'] ?? '') && facts.parking > 0) { v['ind.parking'] = String(facts.parking); changed = true; }
+  if (!v['ind.elevator']) { v['ind.elevator'] = facts.elevator > 0 ? 'O' : 'X'; changed = true; }
+  if (changed) persistSoon();
+}, { immediate: true });
 
 // 카드마다·단락마다 따로 여닫는다. deal = 급매가의 1.실거래가 조사,
 // listing = 2.저렴매물조사 (예전에는 둘이 location 하나를 같이 썼다)

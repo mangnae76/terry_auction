@@ -1104,6 +1104,35 @@ export const dongUnitsOf = (rows: Record<string, unknown>[]): DongUnits => {
 };
 /** 그 동의 종류별 세대수 한 번에(웹 수요분석) */
 export const fetchDongUnits = async (bCode10: string): Promise<DongUnits> => dongUnitsOf(await fetchDongTitleRows(bCode10));
+
+/** 한 필지(지번)의 건축물대장 표제부 — 주차대수 · 승강기 수. 개별성 분석의 주차수 · 엘베를 PDF에 없을 때 채운다.
+ *  jibun = '670-4' · '12' · '산 12-3'. 건물이 여럿이면 더한다. 못 찾으면 null(그때는 손으로) */
+export type BuildingFacts = { parking: number; elevator: number };
+export const fetchBuildingFacts = async (bCode10: string, jibun: string): Promise<BuildingFacts | null> => {
+  const m = jibun.replace(/\s+/g, ' ').match(/^(산\s*)?(\d+)(?:-(\d+))?$/);
+  if (!m || bCode10.length < 10) return null;
+  const url = buildApiUrl(BLD_TITLE_API_PATH);
+  setServiceKey(url);
+  url.searchParams.set('sigunguCd', bCode10.slice(0, 5));
+  url.searchParams.set('bjdongCd', bCode10.slice(5, 10));
+  url.searchParams.set('platGbCd', m[1] ? '1' : '0');
+  url.searchParams.set('bun', m[2].padStart(4, '0'));
+  url.searchParams.set('ji', (m[3] ?? '0').padStart(4, '0'));
+  url.searchParams.set('numOfRows', '50');
+  url.searchParams.set('pageNo', '1');
+  url.searchParams.set('_type', 'json');
+  const json = await requestJson(url);
+  const code = String(json?.response?.header?.resultCode ?? '00');
+  if (!/^0+$/.test(code)) throw new Error(`건축물대장 조회 실패(${code})`);
+  const rows = asArray(json?.response?.body?.items?.item) as Record<string, unknown>[];
+  if (rows.length === 0) return null;
+  let parking = 0; let elevator = 0;
+  rows.forEach((r) => {
+    parking += cnt(r.indrMechUtcnt) + cnt(r.oudrMechUtcnt) + cnt(r.indrAutoUtcnt) + cnt(r.oudrAutoUtcnt);
+    elevator += cnt(r.rideUseElvtCnt) + cnt(r.emgenUseElvtCnt);
+  });
+  return { parking, elevator };
+};
 /** 그 동의 연립·다세대 세대수(물건상세 매매수요) */
 export const fetchDongHouseholds = async (bCode10: string): Promise<number> => (await fetchDongUnits(bCode10)).villa;
 
