@@ -1108,7 +1108,7 @@ const downloadCsv = () => {
         </template>
         <!-- ② 실거래가 조건분석 그룹 — 자기 조건(면적 · 건축년도 · 계약일)과 그 조건의 같은 동 매매 리스트. ① 고르기와 필터를 같이 쓰지 않는다 -->
         <section v-if="webEmbed && dongRows.length > 0" class="adm-case-block cond">
-          <div class="adm-case-block-head"><span><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>실거래가 조건분석<em>(같은 동 · 조건 평균)</em></span></div>
+          <div class="adm-case-block-head"><span>실거래가 조건분석<em>(같은 동 · 조건 평균)</em></span></div>
           <div class="adm-kpis grid4 case12">
             <div class="adm-kpi"><small>전용면적범위</small><strong class="rng two"><template v-if="condAreaPair"><span><UnitText :text="condAreaPair[0]" /> ~</span><span><UnitText :text="condAreaPair[1]" /></span></template><template v-else>-</template></strong></div>
             <div class="adm-kpi"><small>거래기간</small><strong class="rng"><UnitText :text="condPeriodText" /></strong></div>
