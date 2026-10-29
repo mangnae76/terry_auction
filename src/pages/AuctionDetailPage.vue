@@ -2588,9 +2588,9 @@ const INDIV_GROUPS: IndivGroup[] = [
     items: [
       { id: 'ind.age', label: '년식', yearMonth: true, rate: '-15%' },
       { id: 'ind.parking', label: '주차수', text: true, half: true, rate: '5%' },
-      { id: 'ind.slope', label: '경사', survey: true, options: ['O', 'X'], rate: '-5%' },
       { id: 'ind.elevator', label: '엘베', options: ['O', 'X'], rate: '10%' },
       { id: 'ind.corridor', label: '현관구조', options: ['계단식', '복도식'], rate: '10%' },
+      { id: 'ind.slope', label: '경사', survey: true, options: ['O', 'X'], rate: '-5%' },
       {
         id: 'ind.mgmt', label: '건물외부', survey: true, multi: true,
         options: ['좋음', '양호', '나쁨', '지정주차', '곰팡이', '누수', '결로'], rate: '-5%',
