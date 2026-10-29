@@ -179,8 +179,9 @@ button { cursor: pointer; }
 .g-col:is(.m4, .m4m) a, .g-col:is(.m4, .m4m) a:hover { color: #6b7488 !important; cursor: default; background: none !important; }
 /* +물건등록이 선정물건 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
 /* 메뉴 여덟 — 예전 마이페이지를 빼고 더보기를 '마이페이지'로 이름을 바꾸며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
-.m0 { left: 13.75%; } .m1 { left: 22.40%; } .m2 { left: 30.24%; } .m3 { left: 38.08%; }
-.m3c { left: 45.93%; } .m4 { left: 53.77%; } .m4m { left: 61.61%; } .m5 { left: 68.55%; } /* 자금관리는 마이페이지 아래로 옮겨 한 칸씩 당겼다 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 · 수익분석은 뺐다 */
+/* 메뉴 전부(아래 펼침 칸도 같은 자리) 두 글자만큼 왼쪽으로 — --menu-shift. 좁은 창(1,416 아래)에선 로고에 붙지 않게 덜 옮긴다 */
+.m0 { left: calc(13.75% - var(--menu-shift)); } .m1 { left: calc(22.40% - var(--menu-shift)); } .m2 { left: calc(30.24% - var(--menu-shift)); } .m3 { left: calc(38.08% - var(--menu-shift)); }
+.m3c { left: calc(45.93% - var(--menu-shift)); } .m4 { left: calc(53.77% - var(--menu-shift)); } .m4m { left: calc(61.61% - var(--menu-shift)); } .m5 { left: calc(68.55% - var(--menu-shift)); } /* 자금관리는 마이페이지 아래로 옮겨 한 칸씩 당겼다 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 · 수익분석은 뺐다 */
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: #fff !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
@@ -266,7 +267,7 @@ button { cursor: pointer; }
 /* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
    하위 탭 글자 — 물건상세(물건정보~입찰가산정) · 물건등록(자동등록 · 직접입력) 등 모든 탭 줄이 이 값 하나를 쓴다.
    창이 좁아지면 아래 @media 에서 이 값만 바꾼다 */
-:root { --menu-fs: 18px; --tab-fs: 16px; --tab-px: 22px; --tab-h: 44px; } /* 하위 탭 높이도 한 값 — 시장분석 · 물건상세 하위 탭과 물건등록 탭이 같이 쓴다 */
+:root { --menu-shift: min(calc(var(--menu-fs) * 2), max(0px, calc((100vw - 1200px) / 6))); --menu-fs: 18px; --tab-fs: 16px; --tab-px: 22px; --tab-h: 44px; } /* 하위 탭 높이도 한 값 — 시장분석 · 물건상세 하위 탭과 물건등록 탭이 같이 쓴다 */
 /* 카드 안쪽 여백 — 모든 웹 카드가 이 값을 쓴다.
    --card-pad-x: 카드 테두리에서 제목까지(제목 자리는 이 값으로 고정)
    --card-inset: 제목 아래 내용을 제목보다 한 단 더 안으로 (하위로 갈수록 안쪽)
