@@ -825,7 +825,7 @@ const downloadCsv = () => {
       <div class="adm-case-card">
       <!-- 웹 — 지역분석의 탭 줄 자리: 왼쪽에 화면 이름 · 저장 단추, 오른쪽에 경로(#admCrumbSlot 로 웹 경로를 옮겨 온다) -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top adm-case-row">
-        <strong class="adm-case-title">실거래가 조사</strong>
+        <strong class="adm-case-title"><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>실거래가 조사</strong>
         <SnapChip :chip="screenChip" />
         <div v-if="!inDong" id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
@@ -1108,7 +1108,7 @@ const downloadCsv = () => {
         </template>
         <!-- ② 실거래가 조건분석 그룹 — 자기 조건(면적 · 건축년도 · 계약일)과 그 조건의 같은 동 매매 리스트. ① 고르기와 필터를 같이 쓰지 않는다 -->
         <section v-if="webEmbed && dongRows.length > 0" class="adm-case-block cond">
-          <div class="adm-case-block-head"><span>실거래가 조건분석<em>(같은 동 · 조건 평균)</em></span></div>
+          <div class="adm-case-block-head"><span><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>실거래가 조건분석<em>(같은 동 · 조건 평균)</em></span></div>
           <div class="adm-kpis grid4 case12">
             <div class="adm-kpi"><small>전용면적범위</small><strong class="rng two"><template v-if="condAreaPair"><span><UnitText :text="condAreaPair[0]" /> ~</span><span><UnitText :text="condAreaPair[1]" /></span></template><template v-else>-</template></strong></div>
             <div class="adm-kpi"><small>거래기간</small><strong class="rng"><UnitText :text="condPeriodText" /></strong></div>
@@ -1279,6 +1279,8 @@ const downloadCsv = () => {
 .adm-case-block { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px 16px; background: #fff; }
 .adm-case-block-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; font-size: 15px; font-weight: 800; color: #111827; }
 .adm-case-block.cond { margin-top: 16px; }
+/* 제목 앞 아이콘 — 손품조사 카드 제목 아이콘과 같은 크기 · 색 */
+.adm-h-ico { flex: none; margin-right: 6px; vertical-align: -2px; color: #2b6df3; }
 .adm-case-block.cond .cond-bar { margin: 16px 0 10px; }
 /* 범위 글은 길어 한 단계 작게 */
 .adm-kpis.case12 .adm-kpi strong.rng { font-size: 16px; }
