@@ -253,7 +253,8 @@ button { cursor: pointer; }
 /* ================= 도구 상자 — 시안처럼 연회색 띠 위의 흰 상자 ================= */
 .toolbar-shell { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--band); padding: 8px 0 12px; transition: box-shadow .2s; }
 /* 머리띠 오른쪽 위(로그아웃 위) — 공지·결제하기 | 알림·밤낮. 메뉴 글자(top 32) 위 빈 자리에 작게 */
-.g-util { position: absolute; right: -4px; top: 3px; display: flex; align-items: center; gap: 2px; }
+.g-util { position: absolute; right: -4px; top: 3px; display: flex; align-items: center; gap: 10px; }   /* 대문 시험 ~ 밤낮 사이를 넉넉히 */
+.g-util .u-sep { margin: 0 2px; }
 .g-util .u-link { height: 28px; font-size: 15px; color: rgba(255, 255, 255, 0.78) !important; }
 .g-util .u-link svg, .g-util .u-ico { color: rgba(255, 255, 255, 0.78) !important; }
 .g-util .u-link svg { width: 17px; height: 17px; }
