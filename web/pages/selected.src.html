@@ -516,6 +516,10 @@ button { cursor: pointer; }
 .app-market.mk-sale[data-k][data-s] .adm-tabs-top .adm-view-tabs > button { flex: 0 0 auto !important; width: auto !important; min-width: 116px !important; padding: 0 18px !important; }
 .mk-sale .mk-sale-body { margin-top: 16px; }
 /* 수요공급 표 — 지역별 분석 표(.adm-dongsum)와 같은 글자 크기 · 줄 높이. '연 · 월' 같은 작은 머리글자(em.pre)와 칸 이름 밑 단위(small)는 그대로 */
+/* 지역분석 수요분석 — 손품분석 수요조사와 같은 짜임: 흰 카드(탭 시작 ~ 조회 상자 끝) 안에 얇은 선 상자(수요분석 요약), 그 아래 동/지역 표 */
+.app-market[data-s="dong"] .adm-supply { box-sizing: border-box; margin-top: 18px; padding: 20px 25px 25px !important; background: var(--surface) !important; border: 1px solid var(--card-line) !important; border-radius: 14px !important; }
+.app-market[data-s="dong"] .adm-supply .adm-nav.dm { margin: 0 0 18px !important; padding: 16px 18px 18px !important; background: var(--surface) !important; border: 1px solid #e3e8f0; border-radius: 10px; }
+.app-market[data-s="dong"] .adm-supply :is(.adm-body, .adm-shell) { padding: 0 !important; margin: 0 !important; }
 .app-market[data-k="dong"] .adm-supply .adm-table :is(th, td) { font-size: 14px !important; padding-top: 9px !important; padding-bottom: 9px !important; } /* 입력칸이 있어 위아래 9 면 지역별 분석 표 줄 높이(49)와 같다 */
 .app-market[data-k="dong"] .adm-supply .adm-table td :is(span.v, span.grp, i, b, em.bar) { font-size: 14px !important; }
 .app-market[data-k="dong"] .adm-supply .adm-table input.adm-cell { font-size: 14px !important; }
