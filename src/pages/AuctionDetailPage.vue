@@ -6903,14 +6903,14 @@ const goBack = () => router.back();
                 <span class="sub">감정가의 {{ formatPct(scBidPct(sc)) }}</span>
               </div>
               <div class="bida-kpi">
-                <span class="lab">실투자금</span>
-                <strong>{{ formatMoney(scNetInvestment(sc)) }}<small>원</small></strong>
-                <span class="sub">대출 {{ cashMoney(sc.cost.loanAmount ?? 0) }}({{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}) 제외</span>
-              </div>
-              <div class="bida-kpi">
                 <span class="lab">예상 매도가</span>
                 <strong>{{ formatMoney(scSale(sc)) }}<small>원</small></strong>
                 <span class="sub">필요한 내 돈 {{ cashMoney(scCashOut(sc).total) }}</span>
+              </div>
+              <div class="bida-kpi">
+                <span class="lab">실투자금</span>
+                <strong>{{ formatMoney(scNetInvestment(sc)) }}<small>원</small></strong>
+                <span class="sub">대출 {{ cashMoney(sc.cost.loanAmount ?? 0) }}({{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}) 제외</span>
               </div>
               <div class="bida-kpi navy">
                 <span class="lab">{{ sc.label }} 세후 순이익</span>
