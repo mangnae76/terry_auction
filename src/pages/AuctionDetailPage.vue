@@ -8827,7 +8827,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell">
                     <small>평당가</small>
-                    <strong class="son-auto" title="매매호가 ÷ 전용면적(평)으로 자동 계산합니다">{{ lowUnitTextG(g.sim, i - 1) }}</strong>
+                    <strong :class="['son-auto', { empty: lowUnitTextG(g.sim, i - 1) === '-' }]" title="매매호가 ÷ 전용면적(평)으로 자동 계산합니다">{{ lowUnitTextG(g.sim, i - 1) === '-' ? '자동 입력' : lowUnitTextG(g.sim, i - 1) }}</strong>
                   </div>
                   <div class="cell">
                     <small>전용면적</small>
