@@ -293,6 +293,15 @@ const condQuery = ref('');
 const condFound = computed(() => findRows(condSales.value, condQuery.value));
 const caseQuery = ref('');
 const caseFound = computed(() => (webEmbed ? findRows(tableRows.value, caseQuery.value) : tableRows.value));
+/** ③ 전세 평균 — 매매와 같은 거르기(condF)를 건 같은 동 전세. 두 평균으로 동네 전세가율 · 갭을 낸다.
+ *  갱신 계약이 섞여 실제 시세보다 조금 낮게 나올 수 있다 */
+const condJeonse = computed(() => dongRows.value.filter((r) => r.kind === '전세' && r.price > 0 && matchRange(r, condF.value)));
+const condJeonseAvg = computed(() => (condJeonse.value.length ? condJeonse.value.reduce((t, r) => t + r.price, 0) / condJeonse.value.length : 0));
+const avgPerPy = (list: CaseTradeRow[], avg: number) => {
+  const xs = list.filter((r) => r.areaM2 > 0);
+  return xs.length && avg > 0 ? avg / (xs.reduce((t, r) => t + r.areaM2, 0) / xs.length / PYEONG) : 0;
+};
+const condJeonsePerPyeong = computed(() => avgPerPy(condJeonse.value, condJeonseAvg.value));
 /** ③ 평당가 — 평균 금액 ÷ 평균 전용평(걸러진 매매 전체) */
 const condPerPyeong = computed(() => {
   const list = condSales.value.filter((r) => r.areaM2 > 0);
@@ -486,6 +495,11 @@ const condTip = computed(() => [
   ['건수', `매매 ${condSales.value.length.toLocaleString('ko-KR')}건 (직거래 포함 · 계약해제 제외)`] as [string, string],
   ['평당', condAvgPerPy.value > 0 ? `평균 ${won(condAvgPerPy.value)}원` : '-'] as [string, string],
   ['조건', '이 상자 아래의 면적 · 건축년도 · 계약일'] as [string, string],
+]);
+const condJeonseTip = computed(() => [
+  ['공식', '매매와 같은 조건의 같은 동 전세 보증금 합 ÷ 건수'] as [string, string],
+  ['건수', `전세 ${condJeonse.value.length.toLocaleString('ko-KR')}건`] as [string, string],
+  ['주의', '갱신 계약(시세보다 낮은 재계약)이 섞여 실제 시세보다 조금 낮게 나올 수 있습니다'] as [string, string],
 ]);
 const pubTip = computed(() => pubPriceTip({ year: price.value?.year, unit: priceUnit.value }));
 /** 고른 줄인지 저절로 잡힌 줄인지 — 요약 칸에 적어 둔다 */
@@ -1044,15 +1058,23 @@ const downloadCsv = () => {
                   <td v-if="l.row" class="res-place">{{ placeOf(l.row) }}</td>
                   <td v-else class="res-place res-note">{{ l.note }}</td>
                 </tr>
+                <!-- ③ 평균 매매 · 전세 — 같은 거르기(condF). 전세가율/갭은 두 평균으로, 전용 범위 · 거래기간은 두 줄이 같은 조건이라 한 칸 -->
                 <tr :class="['res-avg', { has: condAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
-                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condTip" under="box">③ 실거래가 평균</InfoTip></td>
-                  <td class="n res-amt"><template v-if="condAvg > 0">{{ won(condAvg) }}</template><span v-else class="res-empty">조건에 맞는 매매 없음</span></td>
+                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condTip" under="box">③ 평균 매매</InfoTip></td>
+                  <td class="n res-amt"><template v-if="condAvg > 0">{{ won(condAvg) }}</template><span v-else class="res-empty">데이터 없음</span></td>
                   <td class="n">{{ won(condPerPyeong) }}</td>
-                  <td class="n res-pair">-</td>
+                  <td rowspan="2" class="n res-pair">{{ condAvg > 0 && condJeonseAvg > 0 ? `${pct(condJeonseAvg, condAvg)} / ${Math.round(condAvg - condJeonseAvg).toLocaleString('ko-KR')}` : '-' }}</td>
                   <td class="n">{{ pct(condAvg, pubValue) }}</td>
-                  <td class="n"><span v-if="condAreaPair" class="res-rng"><span>{{ condAreaPair[0] }} ~</span><span>{{ condAreaPair[1] }}</span></span><template v-else>-</template></td>
-                  <td class="n">{{ condPeriodText }}</td>
+                  <td rowspan="2" class="n res-pair res-span"><span v-if="condAreaPair" class="res-rng"><span>{{ condAreaPair[0] }} ~</span><span>{{ condAreaPair[1] }}</span></span><template v-else>-</template></td>
+                  <td rowspan="2" class="n res-pair res-span">{{ condPeriodText }}</td>
                   <td class="res-place">{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 · 사용승인 {{ condApprovalText.replace(' / ', ' · 연식 ') }}</td>
+                </tr>
+                <tr :class="['res-avg', { has: condJeonseAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
+                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condJeonseTip" under="box">③ 평균 전세</InfoTip></td>
+                  <td class="n res-amt"><template v-if="condJeonseAvg > 0">{{ won(condJeonseAvg) }}</template><span v-else class="res-empty">데이터 없음</span></td>
+                  <td class="n">{{ won(condJeonsePerPyeong) }}</td>
+                  <td class="n">{{ pct(condJeonseAvg, pubValue) }}</td>
+                  <td class="res-place">{{ region?.dong || '같은 동' }} 전세 {{ condJeonse.length.toLocaleString('ko-KR') }}건 · 매매와 같은 조건</td>
                 </tr>
               </tbody>
             </table>

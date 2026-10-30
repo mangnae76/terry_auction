@@ -414,6 +414,7 @@ button { cursor: pointer; }
 .adm-case-in .res-table td.res-amt { font-size: 15px !important; font-weight: 800; color: #111827; }
 .adm-case-in .res-table td.res-place { text-align: left !important; color: #6b7280; }
 .adm-case-in .res-table td.res-pair { border-left: 1px solid #eef1f6; border-right: 1px solid #eef1f6; font-weight: 700; }
+.adm-case-in .res-table td.res-pair.res-span { font-weight: 400; }   /* ③ 두 줄이 같이 쓰는 조건(전용 범위 · 거래기간) — 굵게 하지 않는다 */
 .adm-case-in .res-table .res-empty { color: #9ca3af; font-weight: 400; font-size: 13px !important; }
 .adm-case-in .res-table td.res-note { color: #dc2626; font-size: 13px !important; }   /* 비어 있는 줄 — 어디서 고르면 되는지 */
 .adm-case-in .res-dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #d1d5db; vertical-align: middle; }
@@ -1441,6 +1442,7 @@ body.trip-full .foot { display: none; }
 .app-detail.tab-survey .adp-ruser-table .adp-ruser-rank { flex: 0 0 40px !important; width: 40px !important; height: 40px !important; min-height: 40px !important; padding: 0 !important; border-radius: 8px !important; font-size: 14px !important; line-height: 38px; }
 /* 전용면적 · 룸수 고르는 칸 — 같은 폭(칸을 꽉) · 같은 높이(전용은 '12평 / 39.7㎡' 두 줄이라 그 높이에 맞춘다) */
 .app-detail.tab-survey .adp-ruser-table .adp-ruser-select { width: 150px !important; max-width: 100%; min-height: 52px !important; box-sizing: border-box; }
+.app-detail.tab-survey .adp-ruser-table td > .adp-rcase-dd { width: 150px; max-width: 100%; margin-left: auto !important; margin-right: auto !important; }   /* 면적 · 룸수 고르는 칸 — 머리글(전용면적 · 룸수) 가운데에 */
 /* 개별성 두 표가 위아래로 쌓일 때(칸이 좁을 때) — 사이를 띄우고, 위 표는 아래 모서리까지 둥글게 · 아래 표는 위 모서리를 둥글게(적용가 줄은 아래 표에 붙는다) */
 @container (max-width: 899.98px) {
   /* 웹은 900 아래면 위아래로 — 나란히 두면 칸이 찌그러지고 두 표 높이가 달라 아래가 어긋났다 */
