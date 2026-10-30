@@ -725,6 +725,8 @@ button { cursor: pointer; }
 .mk-sale .adm-load:disabled { background: #aeb8ca; cursor: default; }
 .mk-sale .adm-tabs-top { position: relative; display: flex; align-items: center; gap: 12px; }
 .mk-sale .adm-tabs-top .adm-crumb-slot { margin-left: auto; }
+/* 지역분석 · 손품분석 · 랭킹분석 탭 줄은 상자보다 양쪽 2px 좁다 — 경로만 2px 밖으로 내어 다른 화면처럼 상자 끝에서 24px 안 */
+.app-market:is([data-k="dong"], [data-k="case"]):not(.mk-sale) .adm-tabs-top .adm-crumb-slot { margin-right: -2px; }
 /* 박스 탭 이름이 길어(동일지번 매각물건 분석) 116 칸에 안 들어간다 — 이 두 탭만 글자 폭에 맞춘다 */
 .app-market.mk-sale[data-k][data-s] .adm-tabs-top .adm-view-tabs > button { flex: 0 0 auto !important; width: auto !important; min-width: 116px !important; padding: 0 18px !important; }
 .mk-sale .mk-sale-body { margin-top: 16px; }
@@ -880,8 +882,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .u-ico svg { width: 18px; height: 18px; }
 .u-ico .dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: #ff4d4f; box-shadow: 0 0 0 1.5px var(--band); }
 .crumbs { display: flex; justify-content: flex-start; align-items: center; gap: 12px; height: 30px; padding-left: 2px; font-size: 13px; color: var(--muted); }
-/* 경로는 오른쪽 끝 — 아래 상자들의 오른쪽 끝선에 맞춘다(선정물건 · 물건상세 탭들 · 낙찰이후 · 마이페이지). 물건등록은 그대로 */
-:is(#crumbSlotList, #crumbSlotItem, #crumbSlotAppPage, #crumbSlotMy) > .crumbs { justify-content: flex-end; padding-left: 0; padding-right: 2px; }
+/* 경로는 오른쪽 끝 — 아래 상자들의 오른쪽 끝선에 맞춘다. 모든 화면 같게(선정물건 · 물건상세 · 물건등록 · 임장경로 · 시장분석 · 낙찰이후 · 마이페이지) */
+:is(#crumbSlotList, #crumbSlotItem, #crumbSlotAppPage, #crumbSlotMy, #crumbSlotReg, #crumbSlotTrip, #crumbSlotMarket) > .crumbs { justify-content: flex-end; padding-left: 0; padding-right: 2px; }
 /* 낙찰이후 등 앱 화면 안 경로도 오른쪽 끝(제자리) — 탭 줄로 끌어올리면 안내 띠 · 상자와 겹치는 화면이 있었다 */
 #appPageContent [data-crumb-slot] > .crumbs { justify-content: flex-end; padding-left: 0; padding-right: 2px; }
 /* 경로(홈 › …) — 오른쪽 상자 끝선에서 글자 두 개쯤 안으로. 모든 탭 같게 */
