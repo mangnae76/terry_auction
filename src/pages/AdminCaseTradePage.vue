@@ -293,6 +293,13 @@ const condQuery = ref('');
 const condFound = computed(() => findRows(condSales.value, condQuery.value));
 const caseQuery = ref('');
 const caseFound = computed(() => (webEmbed ? findRows(tableRows.value, caseQuery.value) : tableRows.value));
+/** ③ 평당가 — 평균 금액 ÷ 평균 전용평(걸러진 매매 전체) */
+const condPerPyeong = computed(() => {
+  const list = condSales.value.filter((r) => r.areaM2 > 0);
+  if (!list.length || condAvg.value <= 0) return 0;
+  const py = list.reduce((t, r) => t + r.areaM2, 0) / list.length / PYEONG;
+  return condAvg.value / py;
+});
 const condAvg = computed(() => (condSales.value.length ? condSales.value.reduce((t, r) => t + r.price, 0) / condSales.value.length : 0));
 /** 손품조사 조건분석과 같은 글 — 면적은 걸러진 매매의 실제 최소~최대, 사용승인은 건축년도 범위 + 몇 년차 */
 /** 시작 · 끝 두 줄(손품조사 앱 칸과 같이) — 한 줄이면 칸을 넘친다 */
@@ -466,10 +473,10 @@ const pairText = (sale: CaseTradeRow | null, jeonse: CaseTradeRow | null) => (sa
   : '-');
 const placeOf = (r: CaseTradeRow) => [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ');
 const resultLines = computed(() => [
-  { key: 'cs', tool: 'case' as Tool, label: '① 경매지번 매매', kind: 'sale', row: caseSaleRow.value, empty: '이 건물 매매 거래 없음 — ② 유사물건에서 고르세요', pair: pairText(caseSaleRow.value, caseJeonseRow.value) },
-  { key: 'cj', tool: 'case' as Tool, label: '① 경매지번 전세', kind: 'jeonse', row: caseJeonseRow.value, empty: '이 건물 전세 거래 없음 — ② 유사물건에서 고르세요', pair: null },
-  { key: 'ss', tool: 'sim' as Tool, label: '② 유사 매매', kind: 'sale', row: simSaleRow.value, empty: '② 유사물건 리스트에서 매매를 고르세요', pair: pairText(simSaleRow.value, simJeonseRow.value) },
-  { key: 'sj', tool: 'sim' as Tool, label: '② 유사 전세', kind: 'jeonse', row: simJeonseRow.value, empty: '② 유사물건 리스트에서 전세를 고르세요', pair: null },
+  { key: 'cs', tool: 'case' as Tool, label: '① 경매지번 매매', kind: 'sale', row: caseSaleRow.value, empty: '데이터 없음', note: '② 유사물건에서 고르세요', pair: pairText(caseSaleRow.value, caseJeonseRow.value) },
+  { key: 'cj', tool: 'case' as Tool, label: '① 경매지번 전세', kind: 'jeonse', row: caseJeonseRow.value, empty: '데이터 없음', note: '② 유사물건에서 고르세요', pair: null },
+  { key: 'ss', tool: 'sim' as Tool, label: '② 유사 매매', kind: 'sale', row: simSaleRow.value, empty: '고르기 전', note: '② 리스트에서 매매를 고르세요', pair: pairText(simSaleRow.value, simJeonseRow.value) },
+  { key: 'sj', tool: 'sim' as Tool, label: '② 유사 전세', kind: 'jeonse', row: simJeonseRow.value, empty: '고르기 전', note: '② 리스트에서 전세를 고르세요', pair: null },
 ]);
 /** 표에서 파랑 · 초록으로 칠할 줄 — 위 칸에 지금 들어가 있는 거래(자동 판단 포함) */
 const saleKeyNow = computed(() => (recentSale.value ? rowKey(recentSale.value) : ''));
@@ -1028,26 +1035,24 @@ const downloadCsv = () => {
                 <!-- 칸 순서는 중요한 것부터 — 금액 · 평당가 · 전세가율/갭 · 공시대비율, 그다음 전용 · 거래일자 · 위치 -->
                 <tr v-for="l in resultLines" :key="l.key" :class="[`res-${l.kind}`, { has: !!l.row, cur: tool === l.tool }]" @click="pickTool(l.tool)">
                   <td class="res-name"><i :class="['res-dot', l.kind]" />{{ l.label }}</td>
-                  <td class="n res-amt">{{ l.row ? won(l.row.price) : '-' }}</td>
+                  <td class="n res-amt"><template v-if="l.row">{{ won(l.row.price) }}</template><span v-else class="res-empty">{{ l.empty }}</span></td>
                   <td class="n">{{ l.row ? won(perPyeong(l.row)) : '-' }}</td>
                   <td v-if="l.pair !== null" rowspan="2" class="n res-pair">{{ l.pair }}</td>
                   <td class="n">{{ pct(l.row?.price ?? 0, pubValue) }}</td>
-                  <template v-if="l.row">
-                    <td class="n">{{ areaText(l.row.areaM2) }}</td>
-                    <td class="n">{{ tradeWhen(l.row) }}</td>
-                    <td class="res-place">{{ placeOf(l.row) }}</td>
-                  </template>
-                  <td v-else colspan="3" class="res-empty">{{ l.empty }}</td>
+                  <td class="n">{{ l.row ? areaText(l.row.areaM2) : '-' }}</td>
+                  <td class="n">{{ l.row ? tradeWhen(l.row) : '-' }}</td>
+                  <td v-if="l.row" class="res-place">{{ placeOf(l.row) }}</td>
+                  <td v-else class="res-place res-note">{{ l.note }}</td>
                 </tr>
                 <tr :class="['res-avg', { has: condAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
-                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condTip" under="box">③ 조건 평균(매매)</InfoTip></td>
+                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condTip" under="box">③ 실거래가 평균</InfoTip></td>
                   <td class="n res-amt"><template v-if="condAvg > 0">{{ won(condAvg) }}</template><span v-else class="res-empty">조건에 맞는 매매 없음</span></td>
-                  <td class="n">-</td>
+                  <td class="n">{{ won(condPerPyeong) }}</td>
                   <td class="n res-pair">-</td>
                   <td class="n">{{ pct(condAvg, pubValue) }}</td>
                   <td class="n"><span v-if="condAreaPair" class="res-rng"><span>{{ condAreaPair[0] }} ~</span><span>{{ condAreaPair[1] }}</span></span><template v-else>-</template></td>
                   <td class="n">{{ condPeriodText }}</td>
-                  <td class="res-place">{{ region?.dong || '같은 동' }} {{ condSales.length.toLocaleString('ko-KR') }}건 · {{ condApprovalText }}</td>
+                  <td class="res-place">{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 · 사용승인 {{ condApprovalText.replace(' / ', ' · 연식 ') }}</td>
                 </tr>
               </tbody>
             </table>

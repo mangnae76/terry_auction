@@ -402,6 +402,7 @@ button { cursor: pointer; }
 .adm-case-in .res-pub em { font-style: normal; font-size: 12px; color: #6b7280; }
 .adm-case-in .res-hint { margin-left: auto; font-size: 12px; color: #6b7280; }
 .adm-case-in .res-table { table-layout: fixed !important; width: 100% !important; }
+.adm-case-in .adm-case-block.res > .adm-table-wrap { margin-left: 0 !important; margin-right: 0 !important; }   /* 표 양끝 = 아래 ①②③ 상자의 전체 · 월세 단추 양끝 */
 .adm-case-in .res-table :is(th, td) { white-space: normal !important; padding-left: 8px !important; padding-right: 8px !important; }
 .adm-case-in .res-table th:nth-child(1) { width: 15% !important; } .adm-case-in .res-table th:nth-child(2) { width: 11% !important; }
 .adm-case-in .res-table th:nth-child(3) { width: 9% !important; } .adm-case-in .res-table th:nth-child(4) { width: 13% !important; }
@@ -413,9 +414,10 @@ button { cursor: pointer; }
 .adm-case-in .res-table td.res-amt { font-size: 15px !important; font-weight: 800; color: #111827; }
 .adm-case-in .res-table td.res-place { text-align: left !important; color: #6b7280; }
 .adm-case-in .res-table td.res-pair { border-left: 1px solid #eef1f6; border-right: 1px solid #eef1f6; font-weight: 700; }
-.adm-case-in .res-table .res-empty { text-align: center !important; color: #9ca3af; font-weight: 400; font-size: 13px !important; }
+.adm-case-in .res-table .res-empty { color: #9ca3af; font-weight: 400; font-size: 13px !important; }
+.adm-case-in .res-table td.res-note { color: #dc2626; font-size: 13px !important; }   /* 비어 있는 줄 — 어디서 고르면 되는지 */
 .adm-case-in .res-dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #d1d5db; vertical-align: middle; }
-.adm-case-in tr.has .res-dot { background: #dc2626; }   /* 값이 들어간 줄은 빨간 점, 비면 회색 점 — 줄 색은 칠하지 않는다 */
+.adm-case-in tr.has .res-dot { background: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, .18), 0 0 6px 1px rgba(239, 68, 68, .55); }   /* 값이 들어간 줄은 빨간 점, 비면 회색 점 — 줄 색은 칠하지 않는다 */
 /* ③ 전용면적 범위 — 두 줄(시작 ~ / 끝)의 왼쪽 끝을 맞춘다 */
 .adm-case-in .res-rng { display: inline-flex; flex-direction: column; align-items: flex-start; text-align: left; }
 /* 도구 탭 ①②③ — 웹 상자 탭 꼴(밑선 위에 올라앉는다), 옆에 지금 탭이 하는 일을 빨간 글로. 아래 상자(.adm-case-tail)가 탭 밑선에 붙는다 */
