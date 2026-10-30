@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 고객센터 — 더보기 · 바로가기의 '고객센터'에서 들어온다.
 // 글은 services/supportFaq 에 있고 여기서는 그리기만 한다.
-import { computed, ref } from 'vue';
+import { computed, inject, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppToast from './AppToast.vue';
 import {
@@ -15,6 +15,12 @@ import {
 import { POLICIES } from '../services/boardNews';
 
 const router = useRouter();
+
+/** 웹은 둘로 나눠 띄운다 — 자주 찾는 도움말은 커뮤니티 › FAQ(only='faq'), 나머지는 마이페이지 › 고객센터. 앱은 한 화면 그대로 */
+const props = defineProps<{ only?: 'faq' }>();
+const webEmbed = inject('webEmbed', false);
+const showFaq = computed(() => !webEmbed || props.only === 'faq');
+const showRest = computed(() => props.only !== 'faq');
 
 /** 처음에는 여덟 개만 — 더 보고 싶으면 펼친다 */
 const FIRST = 8;
@@ -50,7 +56,7 @@ const openContact = (c: ContactWay) => {
   <div class="sup-wrap">
     <div class="sup-body">
         <!-- 자주 찾는 도움말 -->
-        <section class="sup-card">
+        <section v-if="showFaq" class="sup-card">
           <h2 class="sup-h2">자주 찾는 도움말</h2>
           <ul class="sup-faq">
             <li v-for="f in faqs" :key="f.q" :class="['sup-q', { on: openQ === f.q }]">
@@ -74,7 +80,7 @@ const openContact = (c: ContactWay) => {
         </section>
   
         <!-- 이용방법 및 안내 -->
-        <section class="sup-card">
+        <section v-if="showRest" class="sup-card">
           <h2 class="sup-h2">마이턴 옥션 이용방법 및 안내</h2>
           <div v-for="g in SUPPORT_GUIDES" :key="g.title" class="sup-guide">
             <h3 class="sup-h3">{{ g.title }}</h3>
@@ -88,7 +94,7 @@ const openContact = (c: ContactWay) => {
         </section>
   
         <!-- 1:1 문의 -->
-        <section class="sup-card">
+        <section v-if="showRest" class="sup-card">
           <h2 class="sup-h2">1:1 고객문의 안내</h2>
           <button v-for="c in SUPPORT_CONTACTS" :key="c.title" type="button" class="sup-contact" @click="openContact(c)">
             <span class="sup-c-ico">{{ c.icon }}</span>
@@ -101,7 +107,7 @@ const openContact = (c: ContactWay) => {
         </section>
   
         <!-- 앱 내려받기 -->
-        <section class="sup-card">
+        <section v-if="showRest" class="sup-card">
           <h2 class="sup-h2">앱 내려받기</h2>
           <p class="sup-app-txt">
             경매정보 플랫폼 마이턴 옥션 — 손품부터 낙찰 이후까지 한 곳에서 봅니다.
@@ -114,7 +120,7 @@ const openContact = (c: ContactWay) => {
         </section>
       </div>
       <!-- 약관 및 정책 -->
-        <section class="sup-card">
+        <section v-if="showRest" class="sup-card">
           <h2 class="sup-h2">약관 및 정책</h2>
           <button
             v-for="p in POLICIES"

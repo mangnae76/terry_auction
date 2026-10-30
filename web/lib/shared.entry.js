@@ -235,12 +235,23 @@ export const mountAppFieldTrip = (el, onDetail) => {
 import PostWinPage from '../../src/pages/PostWinPage.vue';
 import FinancePage from '../../src/pages/FinancePage.vue';
 import MorePage from '../../src/pages/MorePage.vue';
-const APP_PAGES = { postwin: '/post-win', finance: '/finance', more: '/more' };
+import NewsBody from '../../src/components/NewsBody.vue';
+import SupportBody from '../../src/components/SupportBody.vue';
+import { useRoute } from 'vue-router';
+/** 커뮤니티(웹만) — 공지(공지사항 · 이벤트 · 업데이트, 예전 마이페이지 › 공지) · FAQ(자주 찾는 도움말, 예전 고객센터 맨 위) */
+const CommunityPage = {
+  setup() {
+    const route = useRoute();
+    return () => h('div', { class: 'community-shell' }, [route.query.tab === 'faq' ? h(SupportBody, { only: 'faq' }) : h(NewsBody)]);
+  },
+};
+const APP_PAGES = { postwin: '/post-win', finance: '/finance', more: '/more', community: '/community' };
 const APP_PAGE_ROUTES = [
   { path: '/post-win', component: PostWinPage },
   { path: '/finance', component: FinancePage },
   { path: '/tax', redirect: { path: '/finance', query: { tab: 'tax' } } },
   { path: '/more', component: MorePage },
+  { path: '/community', component: CommunityPage },
   { path: '/trash', component: () => import('../../src/pages/TrashPage.vue') },
   { path: '/archive', component: () => import('../../src/pages/TrashPage.vue') },
   { path: '/bid-calendar', component: () => import('../../src/pages/BidCalendarPage.vue') },
@@ -285,6 +296,7 @@ export const mountAppPage = (el, key, tab, hooks = {}) => {
     if (p === '/field-trip') { nav('trip'); return false; }
     if (p === '/web-ai') { nav('ai'); return false; }   // 더보기 › 계정관리의 AI 설정 카드 — 웹이 설정 창을 띄운다
     if (p === '/trade-stats') { nav('market'); return false; }
+    if (p === '/more' && to.query && to.query.tab === 'news') { nav('community', 'notice'); return false; }   /* 공지는 커뮤니티로 옮겼다(웹) */
     /* 낙찰이후 · 자금관리 · 더보기 사이를 오가면 웹 메뉴로 옮긴다(띄운 화면이 아니면) */
     const other = PAGE_OF_PATH[p];
     if (other && other !== key) { nav(other, String((to.query && to.query.tab) || '')); return false; }

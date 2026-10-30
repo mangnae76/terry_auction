@@ -176,7 +176,7 @@ button { cursor: pointer; }
 /* 아직 만들지 않은 메뉴(커뮤니티 · 매뉴얼) — 회색으로 눌러도 반응 없는 듯 보이게, 아래 펼침 칸도 회색 */
 .g-menu.off, .g-menu.off:hover { color: #6b7488; cursor: default; }
 .g-menu.off::after { display: none; }
-.g-col:is(.m4, .m4m) a, .g-col:is(.m4, .m4m) a:hover { color: #6b7488 !important; cursor: default; background: none !important; }
+.g-col.m4m a, .g-col.m4m a:hover, .g-col.m4 a[data-act="soon"], .g-col.m4 a[data-act="soon"]:hover { color: #6b7488 !important; cursor: default; background: none !important; }
 /* +물건등록이 선정물건 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
 /* 메뉴 여덟 — 예전 마이페이지를 빼고 더보기를 '마이페이지'로 이름을 바꾸며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
 /* 메뉴 전부(아래 펼침 칸도 같은 자리) 두 글자만큼 왼쪽으로 — --menu-shift. 좁은 창(1,416 아래)에선 로고에 붙지 않게 덜 옮긴다 */
@@ -1147,11 +1147,17 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page .more-fixed { position: static !important; background: transparent !important; }
 .app-page :is(.pw-tabs, .fin-tabs, .more-titlebar, .quick, .pg-back-shared, .pg-back, .amb) { display: none !important; }
 .app-page .more-card.first { margin-top: 0 !important; }
+/* 공지 · 이벤트 · 업데이트는 커뮤니티 › 공지로 옮겼다 — 마이페이지 위 이벤트 띠도 뺀다(웹) */
+.app-page[data-k="more"] .evb { display: none !important; }
+/* 커뮤니티 FAQ · 마이페이지 고객센터 — 바깥 여백은 공지 카드와 같게(0), 꼬리표는 14px 글이 다 들어가는 폭으로(잘리던 것) */
+.app-page[data-k="community"] .sup-body { padding: 0 !important; }
+:is(.app-page[data-k="more"], .app-page[data-k="community"]) .sup-tag { width: 148px !important; }
+:is(.app-page[data-k="more"], .app-page[data-k="community"]) .sup-q-txt { padding-right: 160px !important; }
 /* 웹 마이페이지(앱 더보기 화면) — 글자 최소 14, 제목은 단계별로: 묶음 제목 18 · 작은 제목 16 · 카드 이름 16. 기호(▾ ✓ ✦)는 그대로 */
-.app-page[data-k="more"] :is(.mpc-h2, .pt-head, .sup-h2, .nws-h) { font-size: 18px !important; }
-.app-page[data-k="more"] :is(.pt-blue-sec h3, .pt-h3, .sup-h3) { font-size: 16px !important; }
-.app-page[data-k="more"] :is(.mpc-txt strong, .sup-q-txt, .bil-plan-head, .bil-off-txt strong, .pt-grade-top strong, .sup-c-txt strong, .evb-card strong) { font-size: 16px !important; }
-.app-page[data-k="more"] :is(
+:is(.app-page[data-k="more"], .app-page[data-k="community"]) :is(.mpc-h2, .pt-head, .sup-h2, .nws-h) { font-size: 18px !important; }
+:is(.app-page[data-k="more"], .app-page[data-k="community"]) :is(.pt-blue-sec h3, .pt-h3, .sup-h3) { font-size: 16px !important; }
+:is(.app-page[data-k="more"], .app-page[data-k="community"]) :is(.mpc-txt strong, .sup-q-txt, .bil-plan-head, .bil-off-txt strong, .pt-grade-top strong, .sup-c-txt strong, .evb-card strong) { font-size: 16px !important; }
+:is(.app-page[data-k="more"], .app-page[data-k="community"]) :is(
   .profile-main .pill, .evb-card .badge, .evb-card small, .evb-foot em, .evb-foot .cta,
   .mpc-who, .mpc-who em, .mpc-chip, .mpc-val small, .mpc-txt small, .mpc-tally, .mpc-type, .more-version,
   .bil-off-txt small, .bil-note, .bil-note b, .bil-plan-head .tag, .bil-plan-sub, .bil-row .lab, .bil-row .val, .bil-row .val .pill, .bil-row .val small, .bil-allbtn, .bil-way, .bil-fine,
@@ -2893,7 +2899,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
       <a class="g-menu m3c" href="#/postwin" data-act="go-postwin" id="navPostwin">낙찰이후</a>
       <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
-      <a class="g-menu m4 off" href="#" data-act="soon" data-name="커뮤니티" aria-disabled="true" title="준비 중">커뮤니티</a>
+      <a class="g-menu m4" href="#/community" data-act="go-community" id="navCommunity">커뮤니티</a>
       <a class="g-menu m4m off" href="#" data-act="soon" data-name="매뉴얼" aria-disabled="true" title="준비 중">매뉴얼</a>
       <a class="g-menu m5" href="#/more" data-act="go-more" id="navMore">마이페이지</a>
       <div class="pop-root" data-pop="all" style="display:contents">
@@ -2905,7 +2911,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       <div class="g-util" aria-label="바로가기">
       <!-- 시험 — 소개 영상 대문. 아직 공개 전이라 이 컴퓨터(localhost)에서만 보인다 (확정되면 빼거나 자리를 옮긴다) -->
       <a class="u-link" href="/promo-test.html" id="promoTestLink" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m10 9.5 5 2.5-5 2.5z"/></svg>대문 시험</a>
-      <button type="button" class="u-link" data-act="go-more" data-name="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>공지</button>
+      <button type="button" class="u-link" data-act="go-community" data-name="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>공지</button>
       <button type="button" class="u-link pay" data-act="go-more" data-name="결제하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>결제하기</button>
       <span class="u-sep" aria-hidden="true"></span>
       <button type="button" class="u-ico" data-act="go-more" data-name="알림" data-tip="알림" data-tip-pos="below" aria-label="알림">
@@ -3175,16 +3181,18 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     market: ['dong', 'son', 'rank', 'sale'], /* 랭킹분석 = 랭킹지도 · 거래랭킹(지역분석 화면을 랭킹 탭만으로) · 매각사례 = 인근 · 동일지번 매각물건 분석(안 박스 탭 S.saleTab) · 거래랭킹은 지역분석 › 랭킹지도 탭으로, 경매지번 분석은 지역분석 › 경매지번 탭으로 */
     postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'interior', 'tax'],
-    more: ['mypage', 'alerts', 'billing', 'points', 'news', 'support'],
+    more: ['mypage', 'alerts', 'billing', 'points', 'support'],   /* 공지는 커뮤니티로 옮겼다 */
+    community: ['notice', 'faq'],   /* 공지(공지사항 · 이벤트 · 업데이트) · FAQ(자주 찾는 도움말) — 마이페이지 공지 · 고객센터에서 옮겼다(웹) */
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
-  const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지 */
+  const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지', community: '커뮤니티' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지 */
   const PLAIN_ROUTES = ['register', 'trip'];
   /** 주소 → { route, itemId, itemTab, sub } */
   const readHash = (h = location.hash) => {
     const m = h.match(/^#\/([\w-]+)(?:\/([\w-]+))?(?:\/([\w-]+))?/) || [];
     const head = m[1] || '';
     if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: m[3] === 'verify' ? 'survey' : ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
+    if (head === 'more' && m[2] === 'news') return { route: 'community', sub: 'notice' }; /* 예전 마이페이지 › 공지 — 커뮤니티로 옮겼다 */
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
     if (head === 'postwin' && m[2] === 'sell') { try { sessionStorage.setItem('pw.flow.sub', 'sell'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '매도·임대' — 진행절차 안 매물등록 박스 탭 */
@@ -3292,9 +3300,9 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['체크리스트', '']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['가이드', 'go-postwin', '낙찰이후가이드']]],
     ['m3', [['지역분석', 'go-market'], ['손품분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
-    ['m4', [['공지사항', ''], ['자유게시판', '']]],
+    ['m4', [['공지', 'go-community'], ['FAQ', 'go-community'], ['자유게시판', '']]],
     ['m4m', [['투자9단계', '']]],   /* 준비 중 — 물건선정부터 매도 · 세금까지 */
-    ['m5', [['내 정보', 'go-more'], ['자금입출금', 'go-finance'], ['세금신고', 'go-finance'], ['알림', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['공지', 'go-more'], ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
+    ['m5', [['내 정보', 'go-more'], ['자금입출금', 'go-finance'], ['세금신고', 'go-finance'], ['알림', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
   /* 지금 보고 있는 자리 — 펼칠 때마다 다시 그려 표시가 어긋나지 않게 한다 */
   const megaHere = () => {
@@ -3329,7 +3337,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     { const t = $('navMarket'); if (t) { t.classList.toggle('on', S.route === 'market'); if (S.route === 'market') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 자금관리는 마이페이지 아래 — 자금관리 화면에서도 마이페이지에 불이 들어온다 */
-    [['navPostwin', ['postwin']], ['navMore', ['more', 'finance']]].forEach(([id, rs]) => { const t = $(id); if (t) { const on = rs.includes(S.route); t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
+    [['navPostwin', ['postwin']], ['navMore', ['more', 'finance']], ['navCommunity', ['community']]].forEach(([id, rs]) => { const t = $(id); if (t) { const on = rs.includes(S.route); t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
     { const t = $('navMy'); if (t) { t.classList.toggle('on', S.route === 'mypage'); if (S.route === 'mypage') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 물건상세(선정물건 안)에 들어가도 선정물건 메뉴 밑줄은 그대로 */
     const nav = $('navWatch'); const inList = S.route === 'list' || S.route === 'item'; nav.classList.toggle('on', inList); if (inList) nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
@@ -3359,8 +3367,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       <button type="button" class="um-btn" role="menuitem" data-act="go-more" data-name="내 정보">내 정보</button>
       <button type="button" class="um-btn" role="menuitem" data-act="go-more" data-name="결제하기">결제하기</button>
       <button type="button" class="um-btn" role="menuitem" data-act="go-more" data-name="포인트">포인트</button>
-      <button type="button" class="um-btn" role="menuitem" data-act="go-more" data-name="공지">공지</button>
-      <button type="button" class="um-btn" role="menuitem" data-act="go-more" data-name="고객센터">고객센터</button>
+            <button type="button" class="um-btn" role="menuitem" data-act="go-more" data-name="고객센터">고객센터</button>
       <div class="um-sep"><button type="button" class="um-btn out" role="menuitem" data-act="logout">로그아웃</button></div>
     </div>`
       : '';
@@ -4261,7 +4268,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
-    more: [['mypage', '', '내 정보'], ['finance', '', '자금관리'], ['alerts', '', '알림'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['news', '', '공지'], ['support', '', '고객센터']],
+    more: [['mypage', '', '내 정보'], ['finance', '', '자금관리'], ['alerts', '', '알림'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['support', '', '고객센터']],
+    community: [['notice', '', '공지'], ['faq', '', 'FAQ']],
     /* 가격정보는 뺐다 — 시세는 손품조사(시세분석 · 손품결론), 인근 매각사례는 손품결론 아래로 옮겼다(웹). 옛 주소(…/verify)는 손품조사로 */
     item: [['cards', '', '물건카드'], ['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['profit', '', '입찰가산정']],
   };
@@ -4996,6 +5004,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     if (h.route === 'market') { S.marketTab = h.sub; if (h.saleTab) S.saleTab = h.saleTab; }
     if (APP_PAGE_NAMES[h.route]) S.pageTab[h.route] = h.sub;
     S.pop = ''; S.menu = null; render();
+    if (/^#\/more\/news/.test(location.hash)) writeHash(false);   /* 예전 공지 주소 — 커뮤니티 주소로 고쳐 적는다 */
   });
 
   const byId = (id) => items.find((x) => x.id === id);
@@ -5341,7 +5350,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       /* 예전 마이페이지 — 없앴다. 더보기 › 마이페이지 탭으로 */
       case 'go-mypage': S.menu = null; S.pageTab.more = 'mypage'; if (S.route === 'more') { writeHash(false); renderSubTabs(); renderAppPage(); } else go('more'); break;
       /* 낙찰이후 · 자금관리 · 더보기 — 펼침 메뉴의 항목(data-name)이면 그 하위 탭으로 연다 */
-      case 'go-postwin': case 'go-finance': case 'go-more': {
+      case 'go-postwin': case 'go-finance': case 'go-more': case 'go-community': {
         const route = act.slice(3);
         const hit = (SUBTABS[route].find((x) => x[2] === t.dataset.name) || [])[0];
         if (hit) S.pageTab[route] = hit;
