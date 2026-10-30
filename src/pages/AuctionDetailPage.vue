@@ -6548,7 +6548,8 @@ const goBack = () => router.back();
           </div>
           <!-- A·B·C 입찰가 — 표를 한참 내려 보다가도 다른 안이 얼마였는지 보여야 한다.
                눌러서 그 표로 건너뛴다. 표가 늘면 옆으로 밀어 본다 -->
-          <div v-if="!isCollapsed('profit')" :class="['adp-profit-nav', { 'adp-tab-web-plan': webEmbed }]">
+          <!-- 웹은 안 칩 줄을 뺀다 — 표를 누르거나 칸에 들어가면 그 안이 골라진다 -->
+          <div v-if="!isCollapsed('profit') && !webEmbed" class="adp-profit-nav">
             <!-- 안 칩 — 크게 'A안', 그 아래 낙찰 비중 · 입찰가. 고른 안은 파랗게, 그 안의 표만 아래에 선다.
                  안을 지우는 단추는 아래 표 이름 줄(초기화 옆)에 있다 -->
             <div
@@ -6572,7 +6573,7 @@ const goBack = () => router.back();
           </div>
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
           <template v-for="(sc, si) in profitScenarios" :key="sc.label">
-          <div v-if="!isCollapsed('profit')" :class="['adp-profit-head-row', { 'is-dim': si !== selectedPlan }]">
+          <div v-if="!isCollapsed('profit')" :class="['adp-profit-head-row', { 'is-dim': si !== selectedPlan }]" @pointerdown="webEmbed && (selectedPlan = si)" @focusin="webEmbed && (selectedPlan = si)">
             <!-- 표가 하나뿐이어도 'A안' 을 낸다 — 둘이 될 때 이름이 생기면 어느 쪽이
                  먼저 적은 표인지 헷갈린다 -->
             <span class="adp-profit-label">{{ sc.label }}</span>
@@ -6598,7 +6599,7 @@ const goBack = () => router.back();
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </button>
           </div>
-          <table v-if="!isCollapsed('profit')" :id="`profit-tbl-${si}`" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0, 'is-dim': si !== selectedPlan }]">
+          <table v-if="!isCollapsed('profit')" :id="`profit-tbl-${si}`" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0, 'is-dim': si !== selectedPlan }]" @pointerdown="webEmbed && (selectedPlan = si)" @focusin="webEmbed && (selectedPlan = si)">
             <thead>
               <tr><th>구분</th><th>상세</th><th class="r">비중 (%)</th><th class="r">금액</th></tr>
             </thead>
@@ -10655,11 +10656,6 @@ tr.tone-take { background: #fff5f5; }
 .adp-chip-vals { display: inline-flex; flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0 3px; min-width: 0; white-space: nowrap; }
 .adp-chip-vals small { font-size: 9.5px; font-weight: 700; }
 .adp-chip-vals strong { font-size: 12px; font-weight: 800; }
-.adp-tab-web-plan .adp-profit-chip:has(.adp-chip-vals) { gap: 14px; padding: 10px 14px; }
-.adp-tab-web-plan .adp-profit-chip:has(.adp-chip-vals) .adp-chip-plan { font-size: 18px; line-height: 1.1; }
-.adp-tab-web-plan .adp-chip-vals { gap: 6px; flex-wrap: nowrap; }
-.adp-tab-web-plan .adp-chip-vals small { font-size: 16px; }
-.adp-tab-web-plan .adp-chip-vals strong { font-size: 18px; }
 /* 고른 안 — 파랗게 눌린 칩 */
 .adp-profit-chip.on { border-color: #2b6df3; background: #2b6df3; }
 .adp-profit-chip.on :is(.adp-chip-plan, small, strong) { color: #fff; }
