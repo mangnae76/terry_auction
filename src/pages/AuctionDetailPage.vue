@@ -2277,6 +2277,13 @@ const scSetLegalPct = (sc: ProfitScenario, raw: string | number) => {
   sc.cost.legalCostRate = pct;
   sc.cost.legalCostAmount = Math.round((scBid(sc) * pct) / 100);
 };
+/** 예상 매도가 슬라이더 — 감정가 대비 %. 만원 단위로 맞춘다 */
+const scSalePct = (sc: ProfitScenario) => (apprValue.value > 0 ? (scSale(sc) / apprValue.value) * 100 : 0);
+const scSetSaleByApprPct = (sc: ProfitScenario, raw: string | number) => {
+  const pct = typeof raw === 'number' ? raw : parseFloat(raw);
+  if (!Number.isFinite(pct) || apprValue.value <= 0) return;
+  sc.sale.expectedSaleValue = Math.round((apprValue.value * pct) / 100 / 10_000) * 10_000;
+};
 const scSetBidByApprPct = (sc: ProfitScenario, raw: string | number) => {
   const pct = typeof raw === 'number' ? raw : parseFloat(raw);
   if (!Number.isFinite(pct)) return;
@@ -6949,11 +6956,15 @@ const goBack = () => router.back();
 
                 <section class="bida-card">
                   <h3 class="bida-h">수익</h3>
-                  <div class="bx-row hi sale"><span class="bx-k"><label :for="`bida-sale-${si}`">예상 매도가</label></span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput :id="`bida-sale-${si}`" v-model="sc.sale.expectedSaleValue" class="bx-f amt big" live-group /></span></div>
+                  <div class="bx-row hi sale"><span class="bx-k"><label :for="`bida-sale-${si}`">예상 매도가</label></span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? scSalePct(sc).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-sale-${si}`" v-model="sc.sale.expectedSaleValue" class="bx-f amt big" live-group /></span></div>
+                  <div v-if="apprValue > 0" class="bx-slide sale">
+                    <input type="range" min="60" max="150" step="0.1" :value="Math.min(150, Math.max(60, scSalePct(sc)))" :aria-label="`${sc.label} 감정가 대비 예상 매도가`" @input="scSetSaleByApprPct(sc, ($event.target as HTMLInputElement).value)" />
+                    <div class="lab"><span>60%</span><span>감정가 100%</span><span>150%</span></div>
+                  </div>
                   <div class="bx-row"><span class="bx-k"><label :for="`bida-alt-${si}`">입금가</label></span><span class="bx-d">계산에 안 들어가는 메모</span><span class="bx-p"></span><span class="bx-a"><input :id="`bida-alt-${si}`" :value="scSaleAlt(sc)" class="bx-f amt" @input="scSetSaleAlt(sc, ($event.target as HTMLInputElement).value)" /></span></div>
                   <div class="bx-row"><span class="bx-k">총투자금</span><span class="bx-d">입찰가 + 비용</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTotalInvest(sc)) }}</b></span></div>
                   <div class="bx-row"><span class="bx-k">사업소득금액</span><span class="bx-d">매도가 − 입찰가 − 비용</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro" :class="{ neg: scGain(sc) < 0 }">{{ formatMoney(scGain(sc)) }}</b></span></div>
-                  <div class="bx-row"><span class="bx-k">사업소득세</span><span class="bx-d">세율 − 누진공제</span><span class="bx-p"><input class="bx-f pct" :value="scTaxRate(sc)" inputmode="decimal" aria-label="사업소득세율" @input="limitPct($event); scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i><em class="bx-minus">−</em><input class="bx-f ded" :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" aria-label="누진공제(만원)" @input="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" /><i>만</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTransferTax(sc)) }}</b></span></div>
+                  <div class="bx-row"><span class="bx-k">사업소득세</span><span class="bx-d">세율 − 누진공제</span><span class="bx-p"><input class="bx-f pct rate" :value="scTaxRate(sc)" inputmode="decimal" aria-label="사업소득세율" @input="limitPct($event); scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i><em class="bx-minus">−</em><input class="bx-f ded" :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" aria-label="누진공제(만원)" @input="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" /><i>만</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTransferTax(sc)) }}</b></span></div>
                   <div class="bx-row last"><span class="bx-k">지방세</span><span class="bx-d">소득세 대비</span><span class="bx-p"><input class="bx-f pct" :value="String(scLocalTaxRate(sc))" inputmode="decimal" aria-label="지방세율" @input="limitPct($event); scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scLocalTax(sc)) }}</b></span></div>
                   <div class="bx-row net"><span class="bx-k">세후 순이익</span><span class="bx-d"><span :class="['rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro" :class="{ neg: scAfterTaxProfit(sc) < 0 }">{{ formatMoney(scAfterTaxProfit(sc)) }}</b></span></div>
                   <!-- 목표 순이익을 적으면 입찰가를 거꾸로 푼다 -->
@@ -13069,20 +13080,21 @@ select.adp-pub-input option { text-align: center; }
   .bida-grid { grid-template-columns: 1fr; }
 }
 /* 입찰정보 · 수익 · 비용 줄 — 클래식 표처럼 항목 | 설명(오른쪽 맞춤) | 비중 | 금액 네 칸. 고치는 칸은 모두 같은 상자, 보기만 하는 값은 상자 없이 같은 자리 */
-.bx-row { display: grid; grid-template-columns: auto minmax(0, 1fr) 150px 160px; align-items: center; column-gap: 12px; min-height: 44px; border-bottom: 1px solid #f0f2f7; font-size: 14px; color: #111827; }
+.bx-row { display: grid; grid-template-columns: auto minmax(0, 1fr) 162px 132px; align-items: center; column-gap: 10px; min-height: 44px; border-bottom: 1px solid #f0f2f7; font-size: 14px; color: #111827; }
 .bx-row.last { border-bottom: 0; }
 .bx-k { white-space: nowrap; color: #374151; }
 .bx-k label { cursor: pointer; }
 .bx-no { display: inline-block; width: 24px; font-style: normal; font-size: 12px; font-weight: 700; color: #9aa3b2; }
 .bx-d { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-size: 12px; color: #9aa3b2; }
-.bx-p { display: inline-flex; align-items: center; gap: 4px; justify-self: start; white-space: nowrap; }
+.bx-p { display: inline-flex; align-items: center; gap: 3px; justify-self: start; white-space: nowrap; }
 .bx-p i { font-style: normal; font-size: 12px; color: #6b7280; }
-.bx-minus { font-style: normal; margin: 0 2px; color: #6b7280; }
+.bx-minus { font-style: normal; margin: 0; color: #6b7280; }
 .bx-a { min-width: 0; text-align: right; }
 .bida .bx-f, .bida :deep(.bx-f) { box-sizing: border-box; height: 30px; padding: 0 9px; border: 1px solid #dfe4ec; border-radius: 6px; background: #fff; font-family: inherit; font-size: 16px; font-weight: 600; color: #111827; text-align: right; }   /* 웹 입력칸은 16 으로 고정돼 있다 — 보기만 하는 값도 16 으로 맞춘다 */
 .bida .bx-f:focus, .bida :deep(.bx-f:focus) { outline: none; border-color: #2b6df3; box-shadow: 0 0 0 2px rgba(43, 109, 243, .12); }
 .bida .bx-f.pct { width: 64px; }
-.bida .bx-f.ded { width: 52px; }
+.bida .bx-f.ded { width: 58px; padding: 0 6px; }
+.bida .bx-f.pct.rate { width: 52px; }   /* 세율은 정수 — 공제 칸이 같은 줄에 들어가게 좁힌다 */
 .bida :deep(.bx-f.amt), .bida .bx-f.amt { width: 100%; }
 .bida .bx-f.ro { display: inline-flex; align-items: center; justify-content: flex-end; border-color: transparent; background: transparent; font-weight: 600; }
 .bida .bx-f.ro.neg { color: #d64545; }
@@ -13095,6 +13107,7 @@ select.adp-pub-input option { text-align: center; }
 .bx-row.hi.sale :deep(.bx-f.amt.big) { color: #9a3412; }
 .bx-slide { padding: 2px 0 12px; border-bottom: 1px solid #f0f2f7; }
 .bx-slide input[type='range'] { width: 100%; margin: 0; accent-color: #2b6df3; cursor: pointer; }
+.bx-slide.sale input[type='range'] { accent-color: #c2410c; }
 .bx-slide .lab { display: flex; justify-content: space-between; margin-top: 4px; font-size: 12px; color: #6b7280; }
 .bx-row.net { border-bottom: 1px solid #f0f2f7; }   /* 세후 순이익도 흰 바탕 한 줄 — 수익률 칩만 붙인다 */
 .bx-row.net .bx-k { font-weight: 800; }
