@@ -412,6 +412,9 @@ button { cursor: pointer; }
 .adm-case-in .res-table tbody tr { cursor: pointer; }
 .adm-case-in .res-table td.res-name { text-align: left !important; padding-left: 16px !important; font-weight: 700; white-space: nowrap; }
 .adm-case-in .res-table td.res-amt { font-size: 15px !important; font-weight: 800; color: #111827; }
+/* 실거래가 · 평당가 — 1의 자리 끝을 맞춘다(오른쪽 정렬 + 같은 폭 숫자). 칸 가운데쯤 오게 오른쪽 여백을 넉넉히, '데이터 없음'은 가운데 */
+.adm-case-in .res-table tbody td:is(:nth-child(2), :nth-child(3)) { text-align: right !important; padding-right: 26px !important; font-variant-numeric: tabular-nums; }
+.adm-case-in .res-table tbody td:is(:nth-child(2), :nth-child(3)) .res-empty { display: block; text-align: center; margin-right: -18px; }
 .adm-case-in .res-table td.res-place { text-align: left !important; color: #6b7280; }
 .adm-case-in .res-table td.res-pair { border-left: 1px solid #eef1f6; border-right: 1px solid #eef1f6; font-weight: 700; }
 .adm-case-in .res-table td.res-pair.res-span { font-weight: 400; }   /* ③ 두 줄이 같이 쓰는 조건(전용 범위 · 거래기간) — 굵게 하지 않는다 */

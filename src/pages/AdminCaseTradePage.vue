@@ -1074,7 +1074,7 @@ const downloadCsv = () => {
                   <td class="n res-amt"><template v-if="condJeonseAvg > 0">{{ won(condJeonseAvg) }}</template><span v-else class="res-empty">데이터 없음</span></td>
                   <td class="n">{{ won(condJeonsePerPyeong) }}</td>
                   <td class="n">{{ pct(condJeonseAvg, pubValue) }}</td>
-                  <td class="res-place">{{ region?.dong || '같은 동' }} 전세 {{ condJeonse.length.toLocaleString('ko-KR') }}건 · 매매와 같은 조건</td>
+                  <td class="res-place">{{ region?.dong || '같은 동' }} 전세 {{ condJeonse.length.toLocaleString('ko-KR') }}건 · 매매와 동일 조건</td>
                 </tr>
               </tbody>
             </table>
