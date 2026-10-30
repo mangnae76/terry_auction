@@ -386,6 +386,39 @@ export interface BuildingHeaderInfo {
   commonUse?: string;          // 공용부 상세용도 (계단실/복도)
 }
 
+/** 시세조사에서 고른 거래 한 줄 — 국토부 자료를 다시 받지 않아도 보이게 내용을 통째로 남긴다 */
+export interface MarketPickRow {
+  kind: string;
+  contractDate: string;
+  amount: string;
+  price: number;
+  areaM2: number;
+  floor: string;
+  umdNm: string;
+  name: string;
+  jibun: string;
+  buildYear?: number;
+}
+/** 시세조사 거르기 조건 — 기간선택(개월) · 시작~종료일자 · 면적(평) · 건축년도 */
+export interface MarketPickRange { months: number; from: string; to: string; areaMin: string; areaMax: string; buildMin: string; buildMax: string }
+/** 시세조사(웹 손품분석)에서 고른 값 — 물건 문서에 같이 남겨 웹 · 앱 · 다른 기기에서 같게 본다.
+ *  ① 경매지번은 손으로 고르지 않으면 자동 판단이라 caseManual 로 구분한다 */
+export interface MarketPicks {
+  caseSale: MarketPickRow | null;
+  caseJeonse: MarketPickRow | null;
+  caseManual: { sale: boolean; jeonse: boolean };
+  simSale: MarketPickRow | null;
+  simJeonse: MarketPickRow | null;
+  simRange?: MarketPickRange;
+  condRange?: MarketPickRange;
+  /** 화면에 보인 ③ 평균 · ④ 보증보험 — 앱이 다시 계산하지 않고 보여 줄 수 있게 */
+  condSaleAvg: number;
+  condJeonseAvg: number;
+  pubPrice: number;
+  hugJeonse: number;
+  savedAt: number;
+}
+
 export interface AuctionDetail {
   id: string;
   uid?: string;       // 소유 사용자 (Firebase Auth uid). 비어있는 옛 데이터는 어느 사용자에게도 안 보임.
@@ -415,6 +448,8 @@ export interface AuctionDetail {
   directSellRows?: AgencyRow[];
   /** 보관함에 넣은 물건 — 버린 것이 아니라 잠시 내려놓은 것 */
   archived?: boolean;
+  /** 시세조사(웹 손품분석)에서 고른 매매 · 전세와 거르기 — 브라우저가 아니라 물건에 남긴다 */
+  marketPicks?: MarketPicks;
   /** 별표로 매긴 중요도 — 없으면 빈 별, 1~3을 돌아가며 매긴다 */
   priority?: number;
   /** 입찰 상태 — 입찰대기 / 입찰포기 / 입찰진행. status(관심·임장·입찰·낙찰·탈락)와는 별개 */

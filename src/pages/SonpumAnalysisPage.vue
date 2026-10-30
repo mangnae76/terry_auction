@@ -78,7 +78,8 @@ const demandEmbed = computed(() => (region.value && auction.value ? {
 } : null));
 
 // ===== 시세조사 — 물건 주소 · 종류로 바로 조회 =====
-const casePreset = computed(() => (auction.value?.address ? { address: auction.value.address, kind: kindOf(auction.value.propertyType) } : null));
+// id — 시세조사에서 고른 값을 이 물건 문서에 남긴다(웹 · 앱 · 다른 기기에서 같게)
+const casePreset = computed(() => (auction.value?.address ? { address: auction.value.address, kind: kindOf(auction.value.propertyType), id: auction.value.id } : null));
 </script>
 
 <template>

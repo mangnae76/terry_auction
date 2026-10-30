@@ -21,6 +21,8 @@ import { tradeWindowOf } from '../services/publicDataApi';
 import { priceUnitText, shortPlaceName } from '../services/addressLookup';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
 import { openNaverSpot } from '../services/naverListing';
+import { useAuctionStore } from '../stores/auctionStore';
+import type { MarketPickRow, MarketPicks } from '../types/auction';
 import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
@@ -42,7 +44,7 @@ const PYEONG = 3.305785;
 
 /** inDong — 지역분석 › 경매지번 탭 안에 붙어 쓴다(주소 줄은 지역분석 고르는 줄 자리로, 경로는 지역분석 탭 줄에) */
 /** preset — 손품분석처럼 물건이 주소 · 종류를 주면 위 주소 줄 없이 바로 조회한다(저장본도 쓰지 않는다) */
-const props = withDefaults(defineProps<{ inDong?: boolean; preset?: { address: string; kind: CasePropertyType } | null }>(), { inDong: false, preset: null });
+const props = withDefaults(defineProps<{ inDong?: boolean; preset?: { address: string; kind: CasePropertyType; id?: string } | null }>(), { inDong: false, preset: null });
 const inDong = computed(() => props.inDong);
 const router = useRouter();
 /** 웹에 떴는가 — 웹은 지역분석과 같은 틀(띠 위 고르는 줄 → 제목 · 단추 줄 + 오른쪽 경로)로 보인다 */
@@ -174,7 +176,7 @@ const run = async () => {
     if (!res.price) {
       notice.value = notice.value || '공동주택가 자료가 없습니다 — 공동주택이 아니거나 아직 고시 전입니다.';
     }
-    if (props.preset) restorePresetPicks();
+    if (props.preset) { restorePresetPicks(); restorePicksFromAuction(); }
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -491,8 +493,12 @@ const hugPerPyeong = computed(() => (jeonsePrice.value > 0 && baseArea.value > 0
  *  전세가율 / 갭은 같은 출처의 매매와 전세끼리만 계산한다(① 끼리 · ② 끼리) */
 const caseSaleRow = computed(() => rows.value.find((r) => rowKey(r) === pickedSale.value) ?? restoredSale.value ?? autoSale.value);
 const caseJeonseRow = computed(() => rows.value.find((r) => rowKey(r) === pickedJeonse.value) ?? restoredJeonse.value ?? autoJeonse.value);
-const simSaleRow = computed(() => dongRows.value.find((r) => rowKey(r) === simSale.value) ?? null);
-const simJeonseRow = computed(() => dongRows.value.find((r) => rowKey(r) === simJeonse.value) ?? null);
+/** 물건에 남겨 둔 유사 줄 — 다시 받은 국토부 자료에 그 줄이 없어도(달이 바뀌어 빠짐 등) 남긴 내용으로 보인다 */
+const simSavedSale = ref<CaseTradeRow | null>(null);
+const simSavedJeonse = ref<CaseTradeRow | null>(null);
+const savedIf = (saved: CaseTradeRow | null, key: string) => (saved && key && rowKey(saved) === key ? saved : null);
+const simSaleRow = computed(() => dongRows.value.find((r) => rowKey(r) === simSale.value) ?? savedIf(simSavedSale.value, simSale.value));
+const simJeonseRow = computed(() => dongRows.value.find((r) => rowKey(r) === simJeonse.value) ?? savedIf(simSavedJeonse.value, simJeonse.value));
 const pct = (a: number, b: number) => (a > 0 && b > 0 ? `${Math.round((a / b) * 100)}%` : '-');
 const pairText = (sale: CaseTradeRow | null, jeonse: CaseTradeRow | null) => (sale && jeonse
   ? `${pct(jeonse.price, sale.price)} / ${(sale.price - jeonse.price).toLocaleString('ko-KR')}`
@@ -837,6 +843,61 @@ const restorePresetPicks = () => {
   simF.value = v.simF; condF.value = v.condF;
   simSale.value = v.simSale; simJeonse.value = v.simJeonse; pickedSale.value = v.pickedSale; pickedJeonse.value = v.pickedJeonse;
 };
+// ===== 고른 값은 물건 문서(Firestore)에 — 브라우저를 지워도 · 다른 기기 · 앱에서도 같게 =====
+const auctionStore = useAuctionStore();
+const toPick = (r: CaseTradeRow | null): MarketPickRow | null => (r ? {
+  kind: r.kind, contractDate: r.contractDate, amount: r.amount, price: r.price, areaM2: r.areaM2, floor: r.floor,
+  umdNm: r.umdNm, name: r.name, jibun: r.jibun, ...(r.buildYear ? { buildYear: r.buildYear } : {}),
+} : null);
+const fromPick = (p: MarketPickRow | null | undefined): CaseTradeRow | null => (p ? { ...p, kind: p.kind as CaseTradeRow['kind'] } : null);
+const collectPicks = (): Omit<MarketPicks, 'savedAt'> => ({
+  caseSale: toPick(caseSaleRow.value), caseJeonse: toPick(caseJeonseRow.value),
+  caseManual: { sale: !!pickedSale.value || !!restoredSale.value, jeonse: !!pickedJeonse.value || !!restoredJeonse.value },
+  simSale: toPick(simSaleRow.value), simJeonse: toPick(simJeonseRow.value),
+  simRange: { ...simF.value }, condRange: { ...condF.value },
+  condSaleAvg: Math.round(condAvg.value), condJeonseAvg: Math.round(condJeonseAvg.value),
+  pubPrice: pubValue.value, hugJeonse: jeonsePrice.value,
+});
+let picksRestoring = false;
+let lastPicksJson = '';
+let picksTimer = 0;
+const savePicksToAuction = () => {
+  const id = props.preset?.id;
+  if (!webEmbed || !id || loading.value || picksRestoring || (!rows.value.length && !dongRows.value.length)) return;
+  const body = collectPicks();
+  const json = JSON.stringify(body);
+  if (json === lastPicksJson) return;
+  window.clearTimeout(picksTimer);
+  picksTimer = window.setTimeout(() => {
+    const a = auctionStore.auctions.find((x) => x.id === id);
+    if (!a) return;
+    lastPicksJson = json;
+    void auctionStore.saveAuction({ ...a, marketPicks: { ...body, savedAt: Date.now() } }).catch(() => { lastPicksJson = ''; });
+  }, 800);
+};
+/** 조회가 끝난 뒤 — 물건에 남긴 고른 값 · 거르기를 되살린다(브라우저 기억보다 앞선다) */
+const restorePicksFromAuction = () => {
+  const id = props.preset?.id;
+  const mp = id ? auctionStore.auctions.find((x) => x.id === id)?.marketPicks : undefined;
+  if (!mp) return;
+  picksRestoring = true;
+  if (mp.simRange) simF.value = { ...mp.simRange };
+  if (mp.condRange) condF.value = { ...mp.condRange };
+  const back = (p: MarketPickRow | null | undefined) => { const r = fromPick(p); return r ? rowKey(r) : ''; };
+  simSavedSale.value = fromPick(mp.simSale); simSale.value = back(mp.simSale);
+  simSavedJeonse.value = fromPick(mp.simJeonse); simJeonse.value = back(mp.simJeonse);
+  // ① 은 손으로 고른 것만 되살린다 — 고른 줄이 지금 자료에 있으면 그 줄을, 없으면 남긴 내용을
+  const caseBack = (p: MarketPickRow | null | undefined, manual: boolean, setKey: (k: string) => void, setSaved: (r: CaseTradeRow | null) => void) => {
+    if (!manual || !p) return;
+    const r = fromPick(p)!;
+    if (rows.value.some((x) => rowKey(x) === rowKey(r))) setKey(rowKey(r)); else setSaved(r);
+  };
+  caseBack(mp.caseSale, mp.caseManual?.sale, (k) => { pickedSale.value = k; }, (r) => { restoredSale.value = r; });
+  caseBack(mp.caseJeonse, mp.caseManual?.jeonse, (k) => { pickedJeonse.value = k; }, (r) => { restoredJeonse.value = r; });
+  lastPicksJson = JSON.stringify(collectPicks());
+  void nextTick(() => { picksRestoring = false; });
+};
+watch([pickedSale, pickedJeonse, restoredSale, restoredJeonse, simSale, simJeonse, simF, condF, condAvg, condJeonseAvg, pubValue], savePicksToAuction, { deep: true });
 watch([mode, tab, tool], writeView);
 watch([mode, tab, modeView, areaFilter, yearFilter, simF, condF, simSale, simJeonse, pickedSale, pickedJeonse], savePresetPicks, { deep: true });
 // 물건이 준 주소 · 종류 — 바뀔 때마다 바로 조회
