@@ -2501,6 +2501,20 @@ const taxRefIdx = computed(() => {
   const g = sc ? scGain(sc) : 0;
   return g > 0 ? TAX_REF.findIndex(([limit]) => g <= limit) : -1;
 });
+/** 오른쪽 '돈이 나가는 순서' 가 붙을 높이 — 예상수익분석 고정 머리 바로 아래 */
+const bidaTop = ref(0);
+let bidaRaf = 0;
+const measureBidaTop = () => {
+  bidaRaf = 0;
+  if (!webNew.value) return;
+  const el = document.querySelector('.adp-profit-sticky');
+  if (!el) return;
+  const v = Math.round((parseFloat(getComputedStyle(el).top) || 0) + el.getBoundingClientRect().height + 12);
+  if (v !== bidaTop.value) bidaTop.value = v;
+};
+const onBidaResize = () => { if (!bidaRaf) bidaRaf = requestAnimationFrame(measureBidaTop); };
+onMounted(() => { window.addEventListener('resize', onBidaResize); window.addEventListener('scroll', onBidaResize, { passive: true }); nextTick(measureBidaTop); });
+onBeforeUnmount(() => { window.removeEventListener('resize', onBidaResize); window.removeEventListener('scroll', onBidaResize); if (bidaRaf) cancelAnimationFrame(bidaRaf); });
 /* 새화면은 칸이 늘 열려 있다. 값이 실제로 바뀌었을 때만 손을 멈추면 적는다(물건을 읽은 것만으로는 적지 않는다) */
 let profitJson = '';
 watch(() => auction.value?.id, () => { profitJson = ''; });
@@ -6925,7 +6939,8 @@ const goBack = () => router.back();
 
             <!-- 왼쪽 입찰정보 · 비용 · 수익과 줄을 맞춰 돈이 나가는 순서를 나눈다 — 오른쪽은 세로 선으로 이어진 타임라인
                  (입찰정보 ↔ 1 입찰 당일, 비용 ↔ 2 잔금 납부일, 수익 ↔ 3 명도·수리 · 합계 · 그 다음). 빈 자리는 선이 이어 준다 -->
-            <div class="bida-grid tl">
+            <div class="bida-grid">
+              <div class="bida-col">
                 <section class="bida-card">
                   <h3 class="bida-h">입찰정보</h3>
                   <div class="bx-row"><span class="bx-k">감정가</span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(apprValue) }}</b></span></div>
@@ -6938,16 +6953,6 @@ const goBack = () => router.back();
                   </div>
                   <div class="bx-row last"><span class="bx-k">대출(사업자)</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cLoan-${si}`, scPctOfBid(sc, sc.cost.loanAmount))" inputmode="decimal" aria-label="대출 비중" @blur="pctDone()" @input="pctType(`cLoan-${si}`, $event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.loanAmount" class="bx-f amt" live-group /></span></div>
                 </section>
-              <div class="bida-tl first">
-                <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
-                <div v-for="step in scCashOut(sc).steps.slice(0, 1)" :key="step.no" class="bidc-step">
-                  <span class="no">{{ step.no }} · {{ step.when }}</span>
-                  <b>{{ cashMoney(step.amount) }}</b>
-                  <span class="what">{{ step.what }}</span>
-                  <span v-for="row in step.rows" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
-                  <span v-if="step.note" class="bidc-stepnote">{{ step.note }}</span>
-                </div>
-              </div>
                 <section class="bida-card">
                   <div class="bida-hrow"><h3 class="bida-h">비용</h3></div>
                   <div class="bx-row"><span class="bx-k"><i class="bx-no">01</i>취득세</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cAcq-${si}`, scPctOfBid(sc, sc.cost.acquisitionTaxAmount))" inputmode="decimal" aria-label="취득세 비중" @blur="pctDone()" @input="pctType(`cAcq-${si}`, $event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.acquisitionTaxAmount" class="bx-f amt" live-group @update:model-value="scSyncAcqRate(sc)" /></span></div>
@@ -6961,15 +6966,6 @@ const goBack = () => router.back();
                   <div class="bx-row last"><span class="bx-k"><i class="bx-no">09</i>광고비</span><span class="bx-d">원천징수 3.3% 포함</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.advertisingCost" class="bx-f amt" live-group /></span></div>
                   <div class="bx-row sum"><span class="bx-k">필요경비합계</span><span class="bx-d">01 ~ 09</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTotalCosts(sc)) }}</b></span></div>
                 </section>
-              <div class="bida-tl">
-                <div v-for="step in scCashOut(sc).steps.slice(1, 2)" :key="step.no" class="bidc-step">
-                  <span class="no">{{ step.no }} · {{ step.when }}</span>
-                  <b>{{ cashMoney(step.amount) }}</b>
-                  <span class="what">{{ step.what }}</span>
-                  <span v-for="row in step.rows" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
-                  <span v-if="step.note" class="bidc-stepnote">{{ step.note }}</span>
-                </div>
-              </div>
                 <section class="bida-card">
                   <h3 class="bida-h">수익</h3>
                   <div class="bx-row hi sale"><span class="bx-k"><label :for="`bida-sale-${si}`">예상 매도가</label></span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? scSalePct(sc).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-sale-${si}`" v-model="sc.sale.expectedSaleValue" class="bx-f amt big" live-group /></span></div>
@@ -6986,22 +6982,30 @@ const goBack = () => router.back();
                   <!-- 목표 순이익을 적으면 입찰가를 거꾸로 푼다 -->
                   <div class="bx-row goal"><span class="bx-k"><label :for="`bida-goal-${si}`">목표 순이익</label></span><span class="bx-d">적으면 입찰가 역계산</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput :id="`bida-goal-${si}`" :model-value="Math.round(scAfterTaxProfit(sc))" class="bx-f amt" live-group @update:model-value="scSetAfterTaxProfit(sc, $event)" /></span></div>
                 </section>
-              <div class="bida-r3">
-                <div class="bida-tl last">
-                  <div v-for="step in scCashOut(sc).steps.slice(2)" :key="step.no" class="bidc-step">
-                    <span class="no">{{ step.no }} · {{ step.when }}</span>
-                    <b>{{ cashMoney(step.amount) }}</b>
-                    <span class="what">{{ step.what }}</span>
-                    <span v-for="row in step.rows" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
-                    <span v-if="step.note" class="bidc-stepnote">{{ step.note }}</span>
+              </div>
+              <!-- 돈이 나가는 순서 — 한 상자. 왼쪽을 내려 보는 동안 위에 붙어 따라온다 -->
+              <div class="bida-right" :style="bidaTop ? { top: `${bidaTop}px` } : undefined">
+                <section class="bida-card bida-cash">
+                  <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
+                  <div class="bidc-steps">
+                    <div v-for="step in scCashOut(sc).steps" :key="step.no" class="bidc-step">
+                      <span class="no">{{ step.no }} · {{ step.when }}</span>
+                      <b>{{ cashMoney(step.amount) }}</b>
+                      <span class="what">{{ step.what }}</span>
+                      <span v-for="row in step.rows" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
+                      <span v-if="step.note" class="bidc-stepnote">{{ step.note }}</span>
+                    </div>
                   </div>
                   <div class="bidc-cashsum"><span>필요한 내 돈 합계</span><b>{{ cashMoney(scCashOut(sc).total) }}</b></div>
                   <div v-if="scCashOut(sc).later.length" class="bidc-later boxed">
                     <span class="lab">그 다음에 나가는 돈</span>
                     <span v-for="row in scCashOut(sc).later" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
                   </div>
-                </div>
+                </section>
               </div>
+            </div>
+            <!-- 아래 줄 — 왼쪽 세율표 · 오른쪽 계산 공식, 그 아래 자동 적용 -->
+            <div class="bida-grid bida-low">
               <!-- 개인소득세율 — 따로 있던 칸을 상자로 감싸 예상수익분석 안으로. 고른 안의 사업소득금액이 걸리는 구간을 짚어 준다 -->
               <section class="bida-card bida-taxr">
                 <h3 class="bida-h">개인소득세율<small>종합소득세</small></h3>
@@ -13142,21 +13146,6 @@ select.adp-pub-input option { text-align: center; }
 .bida-taxr .bx-row.cur { margin: 0 -12px; padding: 0 12px; border-radius: 8px; background: #f5f8ff; }
 .bida-taxr .bx-row.cur .bx-k, .bida-taxr .bx-row.cur .bx-f.ro { font-weight: 800; color: #1f2a44; }
 .bida-taxr .cur-chip { padding: 2px 8px; border-radius: 6px; background: #2b6df3; font-size: 12px; font-weight: 700; color: #fff; }
-/* 돈이 나가는 순서 타임라인 — 왼쪽 상자와 줄을 맞춘다. 선은 칸 사이 틈(12px)까지 이어 그린다 */
-.bida-grid.tl { align-items: stretch; }
-.bida-grid.tl > .bida-card { align-self: start; }
-.bida-tl { position: relative; padding: 0 0 0 30px; min-width: 0; }
-.bida-tl::before { content: ''; position: absolute; left: 11px; top: 0; bottom: -12px; width: 2px; background: #dbe3f1; }
-.bida-tl.first::before { top: 54px; }
-.bida-tl.last::before { bottom: 0; }
-.bida-tl .bida-h { margin: 6px 0 14px -30px; padding-left: 30px; }
-.bida-tl .bidc-step { position: relative; background: #fff; }
-.bida-tl .bidc-step + .bidc-step { margin-top: 10px; }
-.bida-grid.tl > .bida-taxr, .bida-grid.tl > .bida-formula { align-self: start; }   /* 수익 아래 한 줄 — 왼쪽 세율표 · 오른쪽 공식, 위 끝 맞춤 */
-.bida-tl .bidc-step::before { content: ''; position: absolute; left: -26px; top: 16px; width: 10px; height: 10px; border: 2px solid #2b6df3; border-radius: 50%; background: #fff; }
-.bida-tl .bidc-step { grid-template-columns: 110px 1fr auto; }
-.bida-r3 { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.bida-r3 .bida-tl { flex: none; }
 .bida-formula dl { margin: 0; display: grid; grid-template-columns: 96px minmax(0, 1fr); column-gap: 12px; }
 .bida-formula dt, .bida-formula dd { padding: 7px 0; border-bottom: 1px solid #f0f2f7; }
 .bida-formula dt:nth-last-of-type(1), .bida-formula dd:last-child { border-bottom: 0; }
@@ -13166,11 +13155,15 @@ select.adp-pub-input option { text-align: center; }
 .bida-formula dd em { font-style: normal; font-size: 13px; color: #6b7280; }
 .bida-formula dd span { font-size: 13px; color: #374151; overflow-wrap: anywhere; }
 .bida-formula dd b { font-weight: 800; color: #1f2a44; }
-.bida-auto.wide { grid-column: 1 / -1; }   /* 맨 아래 두 칸 다 */
+.bida-auto.wide { grid-column: 1 / -1; }
+.bida-low { align-items: start; }   /* 맨 아래 두 칸 다 */
 .bida-auto { padding: 16px 20px; border: 1px solid #e3e8f0; border-radius: 14px; background: #f7f9fc; }
 .bida-auto .bida-h { margin-bottom: 8px; font-size: 15px; }
 .bida-auto ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: #4b5563; }
 .bida-auto .todo { margin: 10px 0 0; font-size: 12px; color: #9aa3b2; }
+.bida-right { position: sticky; top: 0; align-self: start; min-width: 0; }   /* 왼쪽을 내려 보는 동안 위에 붙어 따라온다 */
+.bida-cash .bidc-step { grid-template-columns: 110px 1fr auto; }   /* 반 폭 — 때 칸을 줄인다 */
+.bida-cash .bidc-later.boxed { margin-top: 12px; }
 .bida-plans { display: flex; align-items: center; gap: 10px; }
 .bida-seg { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; background: #e3e8f1; }
 .bida-seg button { height: 34px; padding: 0 18px; border: 0; border-radius: 8px; background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; color: #4b5563; cursor: pointer; }
@@ -13194,6 +13187,5 @@ select.adp-pub-input option { text-align: center; }
 .bidc-later { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
 .bidc-later .lab { font-size: 14px; font-weight: 700; color: #374151; }
 .bidc-later.boxed { position: relative; padding: 14px 18px; border: 1px solid #e5e9f2; border-radius: 10px; background: #fff; }   /* 위 단계 카드와 같은 꼴 */
-.bida-tl .bidc-later.boxed::before { content: ''; position: absolute; left: -26px; top: 16px; width: 10px; height: 10px; border: 2px solid #9aa3b2; border-radius: 50%; background: #fff; }
 .bidc-later.boxed .lab { color: #2b6df3; font-weight: 800; }
 </style>
