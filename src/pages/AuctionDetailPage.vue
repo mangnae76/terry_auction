@@ -8783,7 +8783,9 @@ const goBack = () => router.back();
             </template>
             <template v-else>
             <!-- 손품분석 — 경매빌라 · 유사빌라 매물호가를 알약 없이 둘 다 펼친다(저장 자리는 알약과 같다) -->
-            <div v-for="g in LOW_GROUPS" :key="g.label" class="adp-mkt-block">
+            <!-- 경매빌라 · 유사빌라 매물호가를 상자 하나에 -->
+            <div class="adp-mkt-block son-lowcase">
+            <template v-for="g in LOW_GROUPS" :key="g.label">
               <div class="adp-mkt-block-head">
                 <span class="t">{{ g.label }}</span>
                 <span v-if="editingSurvey.listing" class="adp-mkt-step">
@@ -8822,6 +8824,7 @@ const goBack = () => router.back();
                   </div>
                 </div>
               </template>
+            </template>
             </div>
             </template>
 

@@ -488,7 +488,19 @@ button { cursor: pointer; }
 #sonNaverSlot .adp-salecase-table :is(th, td) { text-align: center; }   /* 매각사례 빈 표 — 가운데 정렬 */
 /* 시세조사 아래 카드(네이버 매물조사 · 매각사례 · 부동산 유선상담) — 위 시세조사 카드와 같은 짜임:
    제목은 아이콘 + 16px, 카드 위 끝 → 첫 제목 15, 제목 → 상자 16, 상자 → 다음 제목 16, 상자 176~1424 */
+/* 시세조사 카드 ↔ 아래 카드 사이 — 수요분석 탭 카드 사이와 같은 8 (시세조사 화면 아래 여백을 걷고, .son 줄 간격 10 에서 2 를 당긴다) */
+.app-market[data-s="son"] .son-price :is(.adm-shell, .adm-body) { padding-bottom: 0 !important; margin-bottom: 0 !important; }
+#sonNaverSlot { margin-top: -2px; }
 #sonNaverSlot .adp-card { margin-top: 0 !important; }
+/* 위 시세조사 카드와 같은 둥글기 · 테두리(카드 14, 안 상자 10, 표 8), 표 끝선은 실거래 리스트 표와 같은 191~1409(상자 안쪽 14) */
+#sonNaverSlot .adp-card { border: 1px solid var(--card-line) !important; border-radius: 14px !important; box-shadow: none !important; padding-bottom: 0 !important; }
+#sonNaverSlot .adp-mkt-body > :last-child { margin-bottom: 0 !important; }
+#sonNaverSlot :is(.adp-mkt-block, .adp-sub-block) { box-sizing: border-box; border: 1px solid #e5e7eb !important; border-radius: 10px !important; padding: 12px 14px 14px !important; background: #fff; }
+#sonNaverSlot .adp-card > .adp-mkt-body { padding-left: 15px !important; padding-right: 15px !important; }   /* 카드 테두리 1 + 15 = 상자 176~1424(위 시세조사와 같다) */
+/* 시세조사 표도 모서리 8(표 공통 규칙) */
+.adm-case-in .adm-table-wrap { border-radius: 8px !important; }
+#sonNaverSlot :is(.adp-dm-table, .adp-table-wrap, .adp-mkt-cells) { margin-left: 0 !important; margin-right: 0 !important; border-radius: 8px !important; }
+#sonNaverSlot .son-lowcase .adp-mkt-cells + .adp-mkt-block-head { margin-top: 16px; }
 #sonNaverSlot .adp-mkt-body { padding-top: 9px !important; padding-bottom: 16px !important; }   /* 카드 위 4 + 9 + 제목 줄 안 2 = 15 */
 #sonNaverSlot .adp-mkt-body > .adp-dm-head:first-child { margin-top: 0 !important; }
 #sonNaverSlot .adp-dm-head { margin: 0 0 16px !important; padding: 0 !important; min-height: 0 !important; border: 0 !important; }
