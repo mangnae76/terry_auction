@@ -13152,6 +13152,7 @@ select.adp-pub-input option { text-align: center; }
 .bida-right { align-self: stretch; display: flex; flex-direction: column; min-width: 0; }
 .bida-right > .bida-card { flex: 1 1 auto; }
 .bida-grid.even { align-items: stretch; }
+.bida-grid.even > .bida-card:first-child { align-self: start; }   /* 왼쪽(입찰정보 · 수익)은 제 높이대로 — 일부러 늘리지 않는다 */
 .bida-cash .bidc-step { grid-template-columns: 110px 1fr auto; }   /* 반 폭 — 때 칸을 줄인다 */
 .bida-cash .bidc-later.boxed { margin-top: 12px; }
 .bida-right { display: flex; flex-direction: column; gap: 12px; }
