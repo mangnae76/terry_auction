@@ -1262,7 +1262,21 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="more"] .sup-store { height: 44px !important; border-radius: 8px !important; }
 .app-page[data-k="more"] .sup-policy { min-height: 48px; padding: 0 !important; font-size: 14px !important; }
 /* 자금관리 — 자금입출금 합계 띠도 흰 카드 */
-.app-page[data-k="finance"] .fin-summary.fin-nav { background: var(--surface) !important; border: 1px solid var(--card-line); border-radius: 14px !important; }
+/* 자금관리 — 탭 내용 전체를 흰 큰 상자 하나로(폭 160–1440 · 모서리 14 · 안쪽 20/24). 경로는 위 줄 오른쪽 끝에 홀로,
+   낙찰목록 · 매도목록은 상자 첫 줄 오른쪽(필요경비 · 사업경비는 합계 줄과 같은 줄) */
+.app-page[data-k="finance"] .fin-webrow .fin-crumb { flex: 1 1 auto; }
+.app-page[data-k="finance"] .fin-body { position: relative; margin-top: 8px; padding: 20px 24px !important; background: var(--surface) !important; border: 1px solid var(--card-line); border-radius: 14px; }
+.app-page[data-k="finance"] .fin-boxhead { display: flex; align-items: center; min-height: 28px; margin: 0 0 12px; }
+.app-page[data-k="finance"] .fin-boxtitle { font-size: 16px; font-weight: 800; color: var(--text); }
+.app-page[data-k="finance"] .fin-shell:is(.tab-businessExpense, .tab-interior, .tab-fuelMeal, .tab-itemPurchase) .fin-boxhead { position: absolute; top: 20px; right: 24px; margin: 0; z-index: 2; }
+.app-page[data-k="finance"] .fin-shell .fin-ledger { margin-top: 0 !important; }
+.app-page[data-k="finance"] .fin-ledger .xl-head { display: flex; align-items: center; min-height: 28px; margin: 0 0 12px !important; padding-right: 260px; }
+/* 자금입출금 합계 띠 · 세금신고 요약 상자 — 흰 상자 안의 선 상자(내비게이터) */
+.app-page[data-k="finance"] .fin-summary.fin-nav { margin: 0 0 12px !important; background: var(--surface) !important; border: 1px solid var(--card-line); border-radius: 10px !important; }
+.app-page[data-k="finance"] .fin-summary.fin-nav::after { display: none !important; }
+.app-page[data-k="finance"] .tax-shell.embedded { margin: 0 !important; padding: 0 !important; background: transparent !important; }
+.app-page[data-k="finance"] .tax-shell.embedded > * { margin-left: 0 !important; margin-right: 0 !important; }   /* 소득세 현황 · 신고 일정 줄 등 — 위 상자와 양끝을 맞춘다 */
+.app-page[data-k="finance"] .tax-shell .tax-cards { margin: 0 0 12px !important; padding: 12px 14px !important; border: 1px solid var(--card-line); border-radius: 10px; background: var(--surface); }
 
 #appPageView .content { padding-top: 0; }
 /* 낙찰이후 — 선정물건 물건상세처럼: 하위 탭 아래 띠(--band) 위 고정 카드(사건 카드) → 경로 → 내용. 카드는 위에 붙어 있다 */

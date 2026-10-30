@@ -532,13 +532,9 @@ const exportExcel = () => {
 <template>
   <section :class="['fin-shell', `tab-${activeTab}`]">
     <div class="fin-fixed-top">
-    <!-- 웹 — 제목 줄 대신: 왼쪽 경로(웹 경로를 이 자리로 옮겨 온다) · 오른쪽 낙찰목록 · 매도목록 -->
+    <!-- 웹 — 제목 줄 대신: 오른쪽 경로(웹 경로를 이 자리로 옮겨 온다). 낙찰목록 · 매도목록은 아래 흰 상자 첫 줄로 옮겼다. (예전: 오른쪽 낙찰목록 · 매도목록 -->
     <div v-if="webEmbed" class="fin-webrow">
       <div class="fin-crumb" data-crumb-slot />
-      <span class="fin-stage-count">
-        <button type="button" :class="['won', { on: stageListOpen === '낙찰' }]" @click="toggleStageList('낙찰')">낙찰목록 <i>×</i>{{ wonCount }}<img :src="chevronDownIcon" :class="['fin-chev', { up: stageListOpen === '낙찰' }]" alt="" /></button>
-        <button type="button" :class="['sold', { on: stageListOpen === '매도' }]" @click="toggleStageList('매도')">매도목록 <i>×</i>{{ soldCount }}<img :src="chevronDownIcon" :class="['fin-chev', { up: stageListOpen === '매도' }]" alt="" /></button>
-      </span>
     </div>
     <header class="fin-header">
       <h1 v-if="!webEmbed" class="fin-page-title">
@@ -629,6 +625,14 @@ const exportExcel = () => {
     </div>
 
     <div class="fin-body">
+    <!-- 웹 — 흰 상자 첫 줄: 왼쪽 탭 이름(자금입출금 · 세금신고), 오른쪽 낙찰목록 · 매도목록. 필요경비 · 사업경비는 합계 줄 오른쪽에 선다 -->
+    <div v-if="webEmbed" class="fin-boxhead">
+      <strong v-if="activeTab === 'cashFlow' || activeTab === 'tax'" class="fin-boxtitle">{{ WEB_TABS.find((t) => t[0] === activeTab)?.[1] }}</strong>
+      <span class="fin-stage-count">
+        <button type="button" :class="['won', { on: stageListOpen === '낙찰' }]" @click="toggleStageList('낙찰')">낙찰목록 <i>×</i>{{ wonCount }}<img :src="chevronDownIcon" :class="['fin-chev', { up: stageListOpen === '낙찰' }]" alt="" /></button>
+        <button type="button" :class="['sold', { on: stageListOpen === '매도' }]" @click="toggleStageList('매도')">매도목록 <i>×</i>{{ soldCount }}<img :src="chevronDownIcon" :class="['fin-chev', { up: stageListOpen === '매도' }]" alt="" /></button>
+      </span>
+    </div>
     <!-- ========== TAB 1: 자금입출금 ========== -->
     <template v-if="activeTab === 'cashFlow'">
       <!-- 웹 — 지역분석의 요약 상자(내비게이션)와 같은 틀: 상자 셋(이름 줄은 두지 않는다) -->
