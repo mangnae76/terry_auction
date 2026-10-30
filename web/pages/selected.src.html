@@ -155,14 +155,14 @@ button { cursor: pointer; }
 
 /* ================= 머리띠 — 시안의 좌표를 1280 폭 기준 비율로 옮긴다 ================= */
 .gnb { background: var(--nav); color: var(--nav-text); position: relative; z-index: 40; }
-.gnb-in { position: relative; height: 66px; }
+.gnb-in { position: relative; height: 70px; }   /* 66 → 70 — 위 작은 단추들이 너무 붙어 4px 키움. 아래 화면은 --gnb-h 를 보고 같이 내려간다 */
 .gnb a, .gnb button { color: inherit; text-decoration: none; }
-/* 로고 — 머리띠 높이(66) 가운데, 시안 폭(약 133px)에 맞춘 44px 높이 */
-.g-logo { position: absolute; left: -0.47%; top: 11px; display: block; }
+/* 로고 — 머리띠 높이(70) 가운데, 시안 폭(약 133px)에 맞춘 44px 높이 */
+.g-logo { position: absolute; left: -0.47%; top: 13px; display: block; }
 .g-logo img { display: block; height: 44px; width: auto; transition: transform .4s cubic-bezier(.2, .9, .3, 1.4); }
 .g-logo:hover img { transform: rotate(-4deg) scale(1.04); }
 .g-menu {
-  position: absolute; top: 32px; height: 26px; display: inline-flex; align-items: center;
+  position: absolute; top: 35px; height: 26px; display: inline-flex; align-items: center;
   font-size: var(--menu-fs); font-weight: 700; letter-spacing: -0.3px; white-space: nowrap;
   transition: color .15s;
 }
@@ -189,7 +189,7 @@ button { cursor: pointer; }
 .g-ico .dot { position: absolute; top: 2px; right: 2px; width: 7px; height: 7px; border-radius: 50%; background: #ff4d4f; box-shadow: 0 0 0 1.5px var(--nav); }
 .g-box {
   /* 상단 메뉴 전부의 아래 메뉴를 한 번에 펼치고 접는 단추 — 속은 비우고 흰 테두리·흰 삼각형 */
-  position: absolute; left: calc(79.2% + 2em); top: 35px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 2px; border: 1px solid #fff;
+  position: absolute; left: calc(79.2% + 2em); top: 38px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 2px; border: 1px solid #fff;
   background: transparent; display: grid; place-items: center; padding: 0; transition: background .15s;
 }
 .g-box svg { width: 8px; height: 8px; color: #fff; transition: transform .2s; }
@@ -204,7 +204,7 @@ button { cursor: pointer; }
 .g-col a:hover { color: var(--blue); }
 .g-col a.on { color: var(--blue); font-weight: 700; }
 /* 둘째 줄 오른쪽 — [사람] 로그인(=로그인 뒤엔 이름) ▼ 회원가입(=로그인 뒤엔 로그아웃). 시안 좌표: 82.5% / 글자 84.9% / ▼ 90.6% / 93.75% */
-.g-user { position: absolute; left: calc(82.5% + var(--menu-fs)); top: 33px; height: 24px; display: flex; align-items: center; }
+.g-user { position: absolute; left: calc(82.5% + var(--menu-fs)); top: 36px; height: 24px; display: flex; align-items: center; }
 .g-login {
   position: relative; height: 24px; display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent;
   padding: 0; font-size: var(--menu-fs); font-weight: 700; letter-spacing: -0.3px; white-space: nowrap;
@@ -224,8 +224,8 @@ button { cursor: pointer; }
 .g-arrow[aria-expanded="true"] i { transform: rotate(180deg); }
 .g-out, .g-join { position: relative; margin-left: 26px; height: 24px; display: inline-flex; align-items: center; border: 0; background: transparent; padding: 0; font-size: var(--menu-fs); font-weight: 700; letter-spacing: -0.3px; white-space: nowrap; }
 .g-out:hover, .g-join:hover { color: #cfe0ff; text-decoration: underline; text-underline-offset: 4px; }
-.g-pop { position: absolute; top: 64px; z-index: 50; }
-.g-pop.user { left: auto; right: 0; top: 34px; }
+.g-pop { position: absolute; top: 68px; z-index: 50; }
+.g-pop.user { left: auto; right: 0; top: 37px; }
 
 /* 회원정보 펼침 — 앱 머리글(AppMobileHeader) '마이턴 회원정보' 메뉴와 같은 짜임, 글자만 웹 기본 크기로 */
 .um { min-width: 272px; padding: 0 0 6px; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow-pop); overflow: hidden; animation: pop-in .14s ease-out; }
@@ -253,15 +253,16 @@ button { cursor: pointer; }
 /* ================= 도구 상자 — 시안처럼 연회색 띠 위의 흰 상자 ================= */
 .toolbar-shell { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--band); padding: 8px 0 12px; transition: box-shadow .2s; }
 /* 머리띠 오른쪽 위(로그아웃 위) — 공지·결제하기 | 알림·밤낮. 메뉴 글자(top 32) 위 빈 자리에 작게 */
-.g-util { position: absolute; right: -4px; top: 2px; display: flex; align-items: center; gap: 2px; }
-.g-util .u-link { height: 26px; font-size: 14px; color: rgba(255, 255, 255, 0.78) !important; }
+.g-util { position: absolute; right: -4px; top: 3px; display: flex; align-items: center; gap: 2px; }
+.g-util .u-link { height: 28px; font-size: 15px; color: rgba(255, 255, 255, 0.78) !important; }
 .g-util .u-link svg, .g-util .u-ico { color: rgba(255, 255, 255, 0.78) !important; }
+.g-util .u-link svg { width: 17px; height: 17px; }
 .g-util .u-link.pay, .g-util .u-link.pay svg { color: #9fc0ff !important; }
 .g-util .u-link:hover, .g-util .u-ico:hover { background: rgba(255, 255, 255, 0.12); color: #fff !important; }
 .g-util .u-link:hover svg { color: #fff !important; }
-.g-util .u-ico { width: 26px; height: 26px; }
-.g-util .u-ico svg { width: 16px; height: 16px; }
-.g-util .u-sep { background: rgba(255, 255, 255, 0.28); height: 12px; }
+.g-util .u-ico { width: 28px; height: 28px; }
+.g-util .u-ico svg { width: 18px; height: 18px; }
+.g-util .u-sep { background: rgba(255, 255, 255, 0.28); height: 13px; }
 .g-util .u-ico .dot { top: 4px; right: 4px; box-shadow: 0 0 0 1.5px var(--nav); }
 /* 하위 탭 줄 — 참고 시안처럼 흰 띠, 아래 #D8E0EE 선으로 단을 나눈다. 밑줄은 ::after 막대(테두리는 둥근 모서리로 U자가 된다) */
 /* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
@@ -853,7 +854,7 @@ body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) .foot { displa
    남색 머리띠 → [하위 탭 줄] → 필터 상자(.toolbar-shell) 를 한 덩어리로 위에 붙인다. 어느 화면이든
    필터 상자는 .toolbar-shell 로 감싸기만 하면 된다. 높이는 변수로 — 머리띠 --gnb-h, 하위 탭 줄 --subtab-h.
    화면 폭과 상관없이 늘 고정한다. 좁은 화면에선 머리띠가 두 줄이 되므로 --gnb-h 는 syncStickTop() 이 실제 높이로 맞춘다 */
-:root { --gnb-h: 66px; --subtab-h: 45px; --stick-top: env(safe-area-inset-top, 0px); }
+:root { --gnb-h: 70px; --subtab-h: 45px; --stick-top: env(safe-area-inset-top, 0px); }
 .gnb { position: sticky; top: var(--stick-top); }
 .subtabs { top: calc(var(--stick-top) + var(--gnb-h)); }
 .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h)); }
@@ -1094,8 +1095,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 인테리어 '항목추가' 창 — 화면 가로를 다 덮지 말고 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에 띄운다 */
 .app-page[data-k="postwin"] .pw-modal {
   left: 50%; right: auto; width: min(480px, calc(100vw - 32px)); transform: translateX(-50%);
-  top: calc(var(--stick-top, 0px) + var(--gnb-h, 66px) + var(--subtab-h, 44px) + 24px);
-  max-height: calc(100vh - var(--gnb-h, 66px) - var(--subtab-h, 44px) - 64px);
+  top: calc(var(--stick-top, 0px) + var(--gnb-h, 70px) + var(--subtab-h, 44px) + 24px);
+  max-height: calc(100vh - var(--gnb-h, 70px) - var(--subtab-h, 44px) - 64px);
   padding: 16px 20px 18px;
 }
 .app-page[data-k="postwin"] .pw-modal-head strong { font-size: 16px; }
@@ -1136,8 +1137,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 중개업체 관리 창 — 가로 전체가 아니라 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에(웹 어디서 열든 — 낙찰이후 · 손품조사) */
 :is(.app-page[data-k="postwin"], body) .abm-box {
   left: 50%; right: auto; width: min(640px, calc(100vw - 32px)); transform: translateX(-50%);
-  top: calc(var(--stick-top, 0px) + var(--gnb-h, 66px) + var(--subtab-h, 44px) + 24px);
-  max-height: calc(100vh - var(--gnb-h, 66px) - var(--subtab-h, 44px) - 64px);
+  top: calc(var(--stick-top, 0px) + var(--gnb-h, 70px) + var(--subtab-h, 44px) + 24px);
+  max-height: calc(100vh - var(--gnb-h, 70px) - var(--subtab-h, 44px) - 64px);
   padding: 16px 20px 18px;
 }
 :is(.app-page[data-k="postwin"], body) .abm-head strong { font-size: 16px; }
@@ -1475,7 +1476,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .fin-nav .sum-card strong { font-size: 18px !important; font-weight: 800; }
 /* 낙찰목록 · 매도목록 창 — 가로 전체 대신 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에 (창은 body 로 옮겨 그려져 .app-page 밖이다) */
 body > .fin-pop { left: 50% !important; right: auto !important; width: min(640px, calc(100vw - 32px)) !important; transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) !important;
-  top: calc(var(--stick-top, 0px) + var(--gnb-h, 66px) + var(--subtab-h, 44px) + 24px) !important; max-height: calc(100vh - var(--gnb-h, 66px) - var(--subtab-h, 44px) - 64px) !important; }
+  top: calc(var(--stick-top, 0px) + var(--gnb-h, 70px) + var(--subtab-h, 44px) + 24px) !important; max-height: calc(100vh - var(--gnb-h, 70px) - var(--subtab-h, 44px) - 64px) !important; }
 body > .fin-pop :is(.fin-pop-head strong) { font-size: 16px; }
 body > .fin-pop :is(.fin-pop-head em, .fin-stage-empty) { font-size: 14px; }
 body > .fin-pop .fin-stage-card :is(small, span, b, em, strong, a, p, div) { font-size: 14px; }
@@ -1484,9 +1485,9 @@ body > .fin-pop .fin-stage-card :is(small, span, b, em, strong, a, p, div) { fon
 .app-page[data-k="finance"] .fin-modal :is(label, input, select, .hint, footer button) { font-size: 14px !important; }
 .app-page[data-k="finance"] .fin-modal :is(input, select) { height: 40px; }
 /* 자금관리 항목 창(다섯 탭 모두 같은 틀) — 세로로 길쭉하지 않게 두 칸씩 나란히, 폭 640 · 머리띠 · 하위 탭 아래에 */
-.app-page[data-k="finance"] .fin-modal-backdrop { align-items: flex-start !important; padding-top: calc(var(--stick-top, 0px) + var(--gnb-h, 66px) + var(--subtab-h, 44px) + 24px) !important; }
+.app-page[data-k="finance"] .fin-modal-backdrop { align-items: flex-start !important; padding-top: calc(var(--stick-top, 0px) + var(--gnb-h, 70px) + var(--subtab-h, 44px) + 24px) !important; }
 .app-page[data-k="finance"] .fin-modal { max-width: 640px !important; padding: 18px 22px !important; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 14px; align-content: start;
-  max-height: calc(100vh - var(--gnb-h, 66px) - var(--subtab-h, 44px) - 64px) !important; }
+  max-height: calc(100vh - var(--gnb-h, 70px) - var(--subtab-h, 44px) - 64px) !important; }
 .app-page[data-k="finance"] .fin-modal > :is(header, footer) { grid-column: 1 / -1; }
 .app-page[data-k="finance"] .fin-modal .row2 { display: contents !important; }
 /* ===== 임장경로 — 앱 FieldTripPlannerPage 를 웹 흐름에 맞게 푼다 =====
