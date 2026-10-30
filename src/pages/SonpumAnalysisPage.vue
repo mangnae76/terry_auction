@@ -66,7 +66,8 @@ const rows = ref<DongTradeDetailRow[]>([]);
 const asOf = ref(0);
 const loading = ref(false);
 const token = ref(0);
-watch(() => [region.value?.districtCode, auction.value?.propertyType], async () => {
+// 열쇠는 글 하나로 — 배열로 두면 물건을 저장할 때마다(새 객체) 같은 값인데도 다시 받아 '받는 중'이 깜빡였다
+watch(() => `${region.value?.districtCode ?? ''}|${auction.value?.propertyType ?? ''}`, async () => {
   rows.value = [];
   const r = region.value; const a = auction.value;
   if (!r || !a) return;

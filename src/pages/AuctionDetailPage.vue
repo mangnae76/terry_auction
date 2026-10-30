@@ -2887,10 +2887,19 @@ const persistSoon = () => {
 onBeforeUnmount(() => { if (saveTimer) { clearTimeout(saveTimer); void persistSurvey(); } });
 // 편집 구역의 칸은 저장을 눌러야 들어갔다 — 안 누르고 나가면 사라졌다.
 // 이제 어느 칸이 바뀌든 손을 멈추면 적고, '완료'는 닫으면서 한 번 더 적는다.
+// 값이 실제로 바뀌었을 때만 — 저장하면 물건이 새 객체로 바뀌어 '바뀌었다'고 또 저장하는 고리가 생겼다(손품조사 ④ 칸은 늘 열려 있다)
+let surveyJson = '';
+watch(() => auction.value?.id, () => { surveyJson = ''; });   // 다른 물건으로 바뀌면 처음부터(그 물건을 읽은 것만으로 저장하지 않게)
 watch(
   () => auction.value?.surveyForm,
-  () => { if (Object.values(editingSurvey.value).some(Boolean)) persistSoon(); },
-  { deep: true },
+  (sf) => {
+    const json = JSON.stringify(sf ?? null);
+    if (json === surveyJson) return;
+    const first = !surveyJson;
+    surveyJson = json;
+    if (!first && Object.values(editingSurvey.value).some(Boolean)) persistSoon();
+  },
+  { deep: true, immediate: true },
 );
 /** 개별성 분석 입력 상태 — 앱 · 웹 모두 편집 단추로 연다(유사 목록을 넣을 때 편집 화면이 필요하다) */
 const indivEditing = computed(() => editingSurvey.value.individuality);
