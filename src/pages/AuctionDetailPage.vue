@@ -2019,6 +2019,8 @@ const profitScenarios = computed<ProfitScenario[]>(() => {
 
 /** 돈이 나가는 순서 칸의 금액 — 0 도 '0원' 으로 적는다 (빈 줄처럼 보이면 안 된다) */
 /** 계산 공식에 쓰는 숫자 — 0 도 '-' 가 아닌 0 으로 */
+/** % 를 소수 둘째 자리까지 — 1.10 */
+const fmtPctPlain = (n: number) => (Number.isFinite(n) ? n.toFixed(2) : '0.00');
 const fmtN = (n: number) => Math.round(n || 0).toLocaleString('ko-KR');
 const cashMoney = (n: number) => `${Math.round(n || 0).toLocaleString('ko-KR')}원`;
 
@@ -6924,6 +6926,7 @@ const goBack = () => router.back();
             <!-- 왼쪽 입찰정보 · 비용 · 수익과 줄을 맞춰 돈이 나가는 순서를 나눈다 — 오른쪽은 세로 선으로 이어진 타임라인
                  (입찰정보 ↔ 1 입찰 당일, 비용 ↔ 2 잔금 납부일, 수익 ↔ 3 명도·수리 · 합계 · 그 다음). 빈 자리는 선이 이어 준다 -->
             <div class="bida-grid tl">
+                <div class="bida-c1">
                 <section class="bida-card">
                   <h3 class="bida-h">입찰정보</h3>
                   <div class="bx-row"><span class="bx-k">감정가</span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(apprValue) }}</b></span></div>
@@ -6936,6 +6939,18 @@ const goBack = () => router.back();
                   </div>
                   <div class="bx-row last"><span class="bx-k">대출(사업자)</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cLoan-${si}`, scPctOfBid(sc, sc.cost.loanAmount))" inputmode="decimal" aria-label="대출 비중" @blur="pctDone()" @input="pctType(`cLoan-${si}`, $event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.loanAmount" class="bx-f amt" live-group /></span></div>
                 </section>
+                <!-- 자동 적용 항목 — 지금 계산에 실제로 들어가는 기준만 적는다(보유주택 수 · 규제지역 취득세는 아직 계산에 없다) -->
+                <section class="bida-auto">
+                  <h3 class="bida-h">자동 적용 항목</h3>
+                  <ul>
+                    <li>취득세 · 법무비(채권) — 입찰가의 {{ fmtPctPlain(scPctOfBid(sc, sc.cost.acquisitionTaxAmount)) }}% · {{ fmtPctPlain(scPctOfBid(sc, sc.cost.legalCostAmount)) }}%, 입찰가가 바뀌면 따라 계산</li>
+                    <li>중도상환 · 이자 — 대출금 기준, 이자는 연이율의 3개월분</li>
+                    <li>사업소득세 — 매매사업자(종합소득세) 기준, 사업소득금액 구간별 세율 · 누진공제 자동</li>
+                    <li>지방세 — 사업소득세의 {{ scLocalTaxRate(sc) }}%</li>
+                  </ul>
+                  <p class="todo">보유주택 수 · 규제지역에 따른 취득세, 낙찰가 구간별 인지 · 채권은 준비 중입니다</p>
+                </section>
+                </div>
               <div class="bida-tl first">
                 <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
                 <div v-for="step in scCashOut(sc).steps.slice(0, 1)" :key="step.no" class="bidc-step">
@@ -13150,6 +13165,11 @@ select.adp-pub-input option { text-align: center; }
 .bida-formula dd em { font-style: normal; font-size: 13px; color: #6b7280; }
 .bida-formula dd span { font-size: 13px; color: #374151; overflow-wrap: anywhere; }
 .bida-formula dd b { font-weight: 800; color: #1f2a44; }
+.bida-c1 { display: flex; flex-direction: column; gap: 12px; min-width: 0; align-self: start; }
+.bida-auto { padding: 16px 20px; border: 1px solid #e3e8f0; border-radius: 14px; background: #f7f9fc; }
+.bida-auto .bida-h { margin-bottom: 8px; font-size: 15px; }
+.bida-auto ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: #4b5563; }
+.bida-auto .todo { margin: 10px 0 0; font-size: 12px; color: #9aa3b2; }
 .bida-plans { display: flex; align-items: center; gap: 10px; }
 .bida-seg { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; background: #e3e8f1; }
 .bida-seg button { height: 34px; padding: 0 18px; border: 0; border-radius: 8px; background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; color: #4b5563; cursor: pointer; }

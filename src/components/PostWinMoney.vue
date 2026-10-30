@@ -5,7 +5,7 @@
 // 명도협의 · 강제집행 단추를 누르면 명도분석 금액이 사업경비 명도비로 들어간다.
 // 매도가는 매도일이 적히면 확정 매도가다(같은 칸). 고치려면 입찰가산정으로 간다.
 // 고른 값은 이 브라우저에 물건마다 기억한다. 세금 셈은 입찰가산정과 같은 profitMath.
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, inject, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useInteriorStore } from '../stores/interiorStore';
@@ -157,8 +157,11 @@ const pickEvict = async (k: 'deal' | 'exec') => {
     });
   } finally { evBusy.value = false; }
 };
-const srcText = (actual: number, planned: number, tab: string) => (actual && planned ? `실제 ${won(actual)} + 입찰가A ${won(planned)} — ${tab} 탭`
-  : actual ? `실제 기록 — ${tab} 탭` : `입찰가A에서 가져옵니다 — ${tab} 탭에서 직접 입력`);
+// 웹은 '입찰가A' 대신 화면 이름 '입찰가산정' 으로 부른다(새화면엔 A안 이름이 크게 서지 않는다)
+const webEmbed = inject<boolean>('webEmbed', false);
+const planName = webEmbed ? '입찰가산정' : '입찰가A';
+const srcText = (actual: number, planned: number, tab: string) => (actual && planned ? `실제 ${won(actual)} + ${planName} ${won(planned)} — ${tab} 탭`
+  : actual ? `실제 기록 — ${tab} 탭` : `${planName}에서 가져옵니다 — ${tab} 탭에서 직접 입력`);
 /** 매매차익(예정신고) — 매도가 − 낙찰가 − 필요경비 */
 const tradeGain = computed(() => plan.value.sale - plan.value.bid - split.value.need);
 /** 사업소득 — 매매차익 − 사업경비(5월 종합소득세) */
