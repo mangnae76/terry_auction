@@ -39,7 +39,8 @@ const notReady = (what: string) => {
 };
 
 const goGuide = (g: GuideItem) => {
-  if (!g.path) { notReady(g.label); return; }
+  // 웹 — 이벤트 보기는 아직 준비 중(이벤트 화면을 따로 만들 때 연다)
+  if (!g.path || (webEmbed && g.label === '이벤트 보기')) { notReady(g.label); return; }
   router.push({ path: g.path, query: g.query });
 };
 const openPolicy = (p: { name: string; path: string }) => {
@@ -109,7 +110,8 @@ const openContact = (c: ContactWay) => {
         <!-- 앱 내려받기 -->
         <section v-if="showRest" class="sup-card">
           <h2 class="sup-h2">앱 내려받기</h2>
-          <p class="sup-app-txt">
+          <p v-if="webEmbed" class="sup-app-txt">실전 경매 임장앱, 마이턴 옥션</p>
+          <p v-else class="sup-app-txt">
             경매정보 플랫폼 마이턴 옥션 — 손품부터 낙찰 이후까지 한 곳에서 봅니다.
             앱 설치는 준비 중이며, 지금은 웹 화면을 홈 화면에 추가해 앱처럼 쓸 수 있습니다.
           </p>
