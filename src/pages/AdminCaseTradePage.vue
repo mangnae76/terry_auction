@@ -290,7 +290,10 @@ const findRows = (list: CaseTradeRow[], query: string) => {
   return list.filter((r) => squashQ([r.contractDate, r.amount, String(r.price), areaText(r.areaM2), buildText(r.buildYear), r.floor ? `${r.floor}층` : '', r.umdNm, r.jibun, r.name].join(' ')).includes(q));
 };
 const condQuery = ref('');
+/** ③ 리스트에 보일 쪽 — 매매(머리글 ▽ 고르기 포함) 또는 전세(같은 거르기) */
+const condKind = ref<'매매' | '전세'>('매매');
 const condFound = computed(() => findRows(condSales.value, condQuery.value));
+const condShown = computed(() => (condKind.value === '전세' ? findRows(condJeonse.value, condQuery.value) : condFound.value));
 const caseQuery = ref('');
 const caseFound = computed(() => (webEmbed ? findRows(tableRows.value, caseQuery.value) : tableRows.value));
 /** ③ 전세 평균 — 매매와 같은 거르기(condF)를 건 같은 동 전세. 두 평균으로 동네 전세가율 · 갭을 낸다.
@@ -993,7 +996,7 @@ const downloadCsv = () => {
       <div v-if="preset" class="adm-sise-head"><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세조사</div>
       <!-- 웹 — 지역분석의 탭 줄 자리: 왼쪽에 화면 이름 · 저장 단추, 오른쪽에 경로(#admCrumbSlot 로 웹 경로를 옮겨 온다) -->
       <div v-if="webEmbed" class="adm-list-head adm-tabs-top adm-case-row">
-        <strong class="adm-case-title"><template v-if="!preset"><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg></template>실거래가 조사</strong>
+        <strong v-if="!preset" class="adm-case-title"><template v-if="!preset"><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg></template>실거래가 조사</strong>
         <SnapChip :chip="screenChip" />
         <div v-if="!inDong" id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
@@ -1066,7 +1069,7 @@ const downloadCsv = () => {
                   <td class="n res-amt"><template v-if="l.row">{{ won(l.row.price) }}</template><span v-else class="res-empty">{{ l.empty }}</span></td>
                   <td class="n">{{ l.row ? won(perPyeong(l.row)) : '-' }}</td>
                   <td v-if="l.pair !== null" rowspan="2" class="n res-pair">{{ l.pair }}</td>
-                  <td class="n">{{ pct(l.row?.price ?? 0, pubValue) }}</td>
+                  <td class="n">{{ l.kind === 'sale' ? pct(l.row?.price ?? 0, pubValue) : '-' }}</td>
                   <td class="n">{{ l.row ? areaText(l.row.areaM2) : '-' }}</td>
                   <td class="n">{{ l.row ? tradeWhen(l.row) : '-' }}</td>
                   <td v-if="l.row" class="res-place">{{ placeOf(l.row) }}</td>
@@ -1087,7 +1090,7 @@ const downloadCsv = () => {
                   <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condJeonseTip">③ 평균 전세가</InfoTip></td>
                   <td class="n res-amt"><template v-if="condJeonseAvg > 0">{{ won(condJeonseAvg) }}</template><span v-else class="res-empty">데이터 없음</span></td>
                   <td class="n">{{ won(condJeonsePerPyeong) }}</td>
-                  <td class="n">{{ pct(condJeonseAvg, pubValue) }}</td>
+                  <td class="n">-</td>
                   <td class="res-place">{{ region?.dong || '같은 동' }} 전세 {{ condJeonse.length.toLocaleString('ko-KR') }}건 · 매매와 동일 조건</td>
                 </tr>
                 <!-- ④ 보증보험 전세가 — 경매물건 공동주택가 × 126%. 전세가율/갭은 있는 매매가(① → ② → ③ 평균)와 견준다 -->
@@ -1096,7 +1099,7 @@ const downloadCsv = () => {
                   <td class="n res-amt"><template v-if="jeonsePrice > 0">{{ won(jeonsePrice) }}</template><span v-else class="res-empty">데이터 없음</span></td>
                   <td class="n">{{ won(hugPerPyeong) }}</td>
                   <td class="n res-pair">{{ hugBase ? `${pct(jeonsePrice, hugBase.price)} / ${Math.round(hugBase.price - jeonsePrice).toLocaleString('ko-KR')}` : '-' }}</td>
-                  <td class="n">{{ jeonseRate }}%</td>
+                  <td class="n">-</td>
                   <td class="n">{{ baseArea > 0 ? areaText(baseArea) : '-' }}</td>
                   <td class="n">{{ price ? `${price.year}.01.01 기준` : '-' }}</td>
                   <td class="res-place">공동주택가 × {{ jeonseRate }}%<template v-if="hugBase"> · 전세가율은 {{ hugBase.label }} 기준</template></td>
@@ -1307,16 +1310,22 @@ const downloadCsv = () => {
         <!-- ② 실거래가 조건분석 그룹 — 자기 조건(면적 · 건축년도 · 계약일)과 그 조건의 같은 동 매매 리스트. ① 고르기와 필터를 같이 쓰지 않는다 -->
         <!-- ③ 조건분석 — 같은 동 조건 매매 평균. 평균 · 면적범위 · 사용승인 · 거래기간은 위 시세종합 표 ③ 줄에 -->
         <section v-if="webEmbed && dongRows.length > 0 && tool === 'cond'" class="adm-case-tail cond">
+          <!-- 매매 · 전세 — 위 시세종합 ③ 평균 매매가 · 평균 전세가가 어떤 거래로 나왔는지 본다(거르기는 같다) -->
+          <div class="adm-tabs two-row cond-kinds">
+            <button :class="['adm-tab', 't-buy', { on: condKind === '매매' }]" @click="condKind = '매매'">매매 ({{ condSales.length.toLocaleString('ko-KR') }})</button>
+            <button :class="['adm-tab', 't-jeon', { on: condKind === '전세' }]" @click="condKind = '전세'">전세 ({{ condJeonse.length.toLocaleString('ko-KR') }})</button>
+          </div>
           <TradeRangeFilter v-model="condF" :month-choices="[3, 6, 12]" class="adm-trf">
             <button type="button" class="adm-ghost" @click="resetCond">초기화</button>
           </TradeRangeFilter>
           <div class="adm-sum under">
             <strong class="list-title">실거래 리스트</strong>
-            <span>{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 = 정상거래 {{ condSales.filter((r) => r.kind === '매매').length.toLocaleString('ko-KR') }}건 + 직거래 {{ condSales.filter((r) => r.kind === '직거래').length.toLocaleString('ko-KR') }}건 · 계약해제 제외</span>
+            <span v-if="condKind === '전세'">{{ region?.dong || '같은 동' }} 전세 {{ condJeonse.length.toLocaleString('ko-KR') }}건 · 매매와 동일 조건</span>
+            <span v-else>{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 = 정상거래 {{ condSales.filter((r) => r.kind === '매매').length.toLocaleString('ko-KR') }}건 + 직거래 {{ condSales.filter((r) => r.kind === '직거래').length.toLocaleString('ko-KR') }}건 · 계약해제 제외</span>
             <div class="list-find">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
               <input v-model="condQuery" type="search" placeholder="계약일 · 금액 · 면적 · 건축년도 · 층 · 주소 검색" aria-label="실거래 리스트 안에서 찾기" />
-              <small v-if="condQuery.trim()">{{ condFound.length.toLocaleString('ko-KR') }}건</small>
+              <small v-if="condQuery.trim()">{{ condShown.length.toLocaleString('ko-KR') }}건</small>
               <button v-if="condQuery" type="button" aria-label="검색어 지우기" @click="condQuery = ''">×</button>
             </div>
             <button type="button" class="list-fold" :aria-expanded="listOpen2" :aria-label="listOpen2 ? '실거래 리스트 접기' : '실거래 리스트 펼치기'" :title="listOpen2 ? '접기' : '펼치기'" @click="listOpen2 = !listOpen2"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" :class="{ up: listOpen2 }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button>
@@ -1329,7 +1338,7 @@ const downloadCsv = () => {
                     <span class="th-in">
                       {{ c.label }}
                       <button
-                        v-if="c.key !== 'place'"
+                        v-if="c.key !== 'place' && condKind === '매매'"
                         type="button"
                         class="adm-flt"
                         :class="{ on: condColFilter.isActive(c.key), open: condColFilter.openKey.value === c.key }"
@@ -1343,7 +1352,7 @@ const downloadCsv = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(r, i) in condFound.slice(0, 300)" :key="`c-${r.contractDate}-${r.floor}-${i}`">
+                <tr v-for="(r, i) in condShown.slice(0, 300)" :key="`c-${r.contractDate}-${r.floor}-${i}`">
                   <td><span :class="['kind', kindClass(r.kind)]">{{ r.kind }}</span></td>
                   <td>{{ r.contractDate }}</td>
                   <td class="n strong amt"><span class="v">{{ r.amount }}</span></td>
@@ -1363,7 +1372,7 @@ const downloadCsv = () => {
               </tbody>
             </table>
           </div>
-          <p v-if="listOpen2 && condSales.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 평균은 {{ condSales.length.toLocaleString('ko-KR') }}건 전체로 계산합니다.</p>
+          <p v-if="listOpen2 && condKind === '매매' && condSales.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 평균은 {{ condSales.length.toLocaleString('ko-KR') }}건 전체로 계산합니다.</p>
         </section>
       </template>
       </div>
