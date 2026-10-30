@@ -26,7 +26,7 @@ const rememberPlaceRows = (id: string, rows: PlaceRow[]) => {
 import { getBuildingFacts } from '../services/buildingFacts';
 import { DEMAND_PLAIN, DEMAND_TOTAL_PLAIN } from '../services/demandGrade';
 import { openNaverListing } from '../services/naverListing';
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
@@ -84,6 +84,8 @@ const router = useRouter();
 const webEmbed = inject<boolean>('webEmbed', false);
 /** 웹 시장분석 › 손품분석이 띄웠는가 — 손품조사에서 본건사진 · 2. 입지/개별성만 남기고, 그 사이에 지역분석 수요분석(slot 'son-demand')을 넣는다 */
 const sonpumMode = inject<boolean>('sonpumMode', false);
+/** 손품분석의 지금 탭 — 손품결론 탭을 처음 열 때만 결론에 드는 값(1년 거래량 · 세대수)을 받는다 */
+const sonpumTab = inject<Ref<string> | null>('sonpumTab', null);
 const route = useRoute();
 const store = useAuctionStore();
 const authStore = useAuthStore();
@@ -1807,7 +1809,17 @@ watch(
     // 급한 것부터 — 단지 전체(2년치 × 매매/전월세 = 50번 호출)를 먼저 던지면 이 둘이 밀려서 실패한다
     // 손품분석(웹 시장분석)은 본건사진 · 입지/개별성만 쓴다 — 가격정보 10년치 · 건축물대장을 뒤에서 받으면
     // 탭을 옮겨도 멈추지 않고 시세조사 조회와 같은 길을 막는다. 입지등수에 쓰는 주변환경만 받는다
-    if (sonpumMode) { void Promise.resolve().then(() => fetchNearbyForAuction()); return; }
+    if (sonpumMode) {
+      void Promise.resolve().then(() => fetchNearbyForAuction());
+      // 손품결론 탭을 열 때 한 번 — 시세조사 조회와 길이 겹치지 않게 그때만 받는다
+      let concLoaded = false;
+      const stop = watch(() => sonpumTab?.value, (t) => {
+        if (t !== 'conc' || concLoaded) return;
+        concLoaded = true; stop();
+        void (async () => { await fetchDeal12mCount(); await fetchDongUnits(); })();
+      }, { immediate: true });
+      return;
+    }
     void (async () => {
       await fetchPublicTradeRows();
       await fetchDeal12mCount();
@@ -8893,8 +8905,8 @@ const goBack = () => router.back();
           </div>
         </section>
         </Teleport>
-        <template v-if="!sonpumMode">
-
+        <!-- 손품결론 — 손품분석에서는 시세조사 옆 손품결론 탭(#sonConcSlot)으로 옮겨 보인다 -->
+        <Teleport defer to="#sonConcSlot" :disabled="!sonpumMode">
         <!-- 손품결론 — 매매수요조사(등수·거래율·적체)와 급매가 결론을 한 카드로 모은다 -->
         <section class="adp-card adp-conc-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('realUser')">
@@ -8903,7 +8915,7 @@ const goBack = () => router.back();
             <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('realUser')">완료</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('realUser') }]" alt="" />
           </header>
-          <div v-if="!isCollapsed('realUser')">
+          <div v-if="sonpumMode || !isCollapsed('realUser')">
             <!-- 거래율 — 아실 거래량 기준이라 아파트일 때만 쓴다 -->
             <div v-if="isApartment" class="adp-sub-block">
               <div class="adp-sub-head">
@@ -9069,6 +9081,8 @@ const goBack = () => router.back();
             </div>
           </div>
         </section>
+        </Teleport>
+        <template v-if="!sonpumMode">
 
         <section class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('survField')">

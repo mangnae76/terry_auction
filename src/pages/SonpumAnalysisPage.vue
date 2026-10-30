@@ -31,11 +31,16 @@ const auction = computed<AuctionDetail | null>(() => list.value.find((a) => a.id
 watch(pickId, (v) => { writeLS(PICK_KEY, v); window.dispatchEvent(new CustomEvent('son:pick', { detail: v })); });
 // 고른 물건이 목록에 없으면(처음 · 지운 물건) 맨 앞 물건으로 — 고르는 칸이 비어 보이지 않게
 watch(list, (l) => { if (l.length && !l.some((a) => a.id === pickId.value)) pickId.value = l[0].id; }, { immediate: true });
-const tab = ref<'demand' | 'price'>(readLS(TAB_KEY) === 'price' ? 'price' : 'demand');
+type SonTab = 'demand' | 'price' | 'conc';
+const TAB_LABEL: Record<SonTab, string> = { demand: '수요분석', price: '시세조사', conc: '손품결론' };
+const savedTab = readLS(TAB_KEY);
+const tab = ref<SonTab>(savedTab === 'price' || savedTab === 'conc' ? savedTab : 'demand');
+// 손품조사 화면이 지금 탭을 알게 — 손품결론 탭을 열 때만 결론 값을 받는다
+provide('sonpumTab', tab);
 const priceSeen = ref(false);
 watch(tab, (v) => { if (v === 'price') priceSeen.value = true; }, { immediate: true });
 // 웹 경로에 지금 탭 — '홈 › 시장분석 › 손품분석 › 수요분석'
-const tellTab = () => window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: ['손품분석', tab.value === 'price' ? '시세조사' : '수요분석'] } }));
+const tellTab = () => window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: ['손품분석', TAB_LABEL[tab.value]] } }));
 watch(tab, (v) => { writeLS(TAB_KEY, v); tellTab(); }, { immediate: true });
 
 const kindOf = (t: string): CasePropertyType => (/아파트/.test(t) ? 'apt' : /오피스텔/.test(t) ? 'officetel' : 'villa');
@@ -93,6 +98,7 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
         <nav class="adm-view-tabs" role="tablist">
           <button type="button" role="tab" :class="{ on: tab === 'demand' }" :aria-selected="tab === 'demand'" @click="tab = 'demand'">수요분석</button>
           <button type="button" role="tab" :class="{ on: tab === 'price' }" :aria-selected="tab === 'price'" @click="tab = 'price'">시세조사</button>
+          <button type="button" role="tab" :class="{ on: tab === 'conc' }" :aria-selected="tab === 'conc'" @click="tab = 'conc'">손품결론</button>
         </nav>
         <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
@@ -116,6 +122,8 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
       </div>
       <!-- 네이버 매물조사 — 선정물건 손품조사의 그 단락(물건 값 그대로, 고치면 물건에 저장). 위 손품조사 화면이 여기로 옮겨 그린다 -->
       <div v-show="tab === 'price'" id="sonNaverSlot" class="app-detail tab-survey son-detail son-naver" />
+      <!-- 손품결론 — 선정물건 손품조사의 손품결론 카드 그대로(위 손품조사 화면이 여기로 옮겨 그린다) -->
+      <div v-show="tab === 'conc'" id="sonConcSlot" class="app-detail tab-survey son-detail son-conc" />
     </template>
   </section>
 </template>
