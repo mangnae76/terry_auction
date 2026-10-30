@@ -230,7 +230,7 @@ const switchMode = (m: CaseMode) => {
 };
 
 /** 웹 도구 탭 — ① 경매지번 · ② 유사물건 · ③ 조건분석. 거르기 · 리스트 틀은 하나, 값은 탭마다 따로(①② 는 알약 기억 modeView, ③ 은 condF).
- *  고른 결과는 탭 밖 '시세 결과' 표에 모여 탭을 바꿔도 다 보인다 */
+ *  고른 결과는 탭 밖 '시세종합' 표에 모여 탭을 바꿔도 다 보인다 */
 type Tool = 'case' | 'sim' | 'cond';
 const TOOLS: { key: Tool; label: string; desc: string }[] = [
   { key: 'case', label: '① 경매지번', desc: '이 물건과 같은 건물(경매지번)의 실거래에서 매매 · 전세를 고릅니다 — 같은 건물 같은 평형이 가장 정확한 시세입니다' },
@@ -446,7 +446,7 @@ const rowFace = (r: CaseTradeRow | null) => {
   const floor = r.floor ? `${r.floor}층` : '';
   return [r.contractDate, area, floor].filter(Boolean).join(' · ');
 };
-/** 웹 시세 결과 표 칸 — 거래일자/층 · 평당가 */
+/** 웹 시세종합 표 칸 — 거래일자/층 · 평당가 */
 const tradeWhen = (r: CaseTradeRow | null) => (r ? [r.contractDate.replace(/\./g, '-'), r.floor ? `${r.floor}층` : ''].filter(Boolean).join(' / ') : '-');
 const perPyeong = (r: CaseTradeRow | null) => (r && r.areaM2 > 0 && r.price > 0 ? r.price / (r.areaM2 / PYEONG) : 0);
 /** 기준 전세 — 표에서 고른 줄만 */
@@ -454,7 +454,7 @@ const recentJeonse = computed(() => {
   if (webEmbed && mode.value === MODES[1]) return dongRows.value.find((r) => rowKey(r) === simJeonse.value) ?? null;
   return rows.value.find((r) => rowKey(r) === pickedJeonse.value) ?? restoredJeonse.value ?? (webEmbed ? autoJeonse.value : null);
 });
-/** 웹 '시세 결과' 표 — ① 경매지번 매매 · 전세, ② 유사 매매 · 전세. 알약(도구 탭)과 상관없이 각자 고른 값.
+/** 웹 '시세종합' 표 — ① 경매지번 매매 · 전세, ② 유사 매매 · 전세. 알약(도구 탭)과 상관없이 각자 고른 값.
  *  전세가율 / 갭은 같은 출처의 매매와 전세끼리만 계산한다(① 끼리 · ② 끼리) */
 const caseSaleRow = computed(() => rows.value.find((r) => rowKey(r) === pickedSale.value) ?? restoredSale.value ?? autoSale.value);
 const caseJeonseRow = computed(() => rows.value.find((r) => rowKey(r) === pickedJeonse.value) ?? restoredJeonse.value ?? autoJeonse.value);
@@ -1011,10 +1011,10 @@ const downloadCsv = () => {
              매매(실거래가 · 공시대비율) / 보증보험 전세(전세가 · 전세가율/갭) / 실거래 전세(실거래가 · 전세가율/갭) -->
         <!-- 웹 — 손품조사 시세조사의 실거래가 조사와 같은 12칸: 매매 줄 · 전세 줄(전용면적 · 거래일자/층 · 실거래가 · 평당가) · 공시 줄 -->
         <!-- 손품조사 실거래가 조사와 같은 짜임 — 작은 제목 아래 '경매지번 실거래가' 묶음 상자 하나에 12칸 -->
-        <!-- 웹 — 시세 결과 표 하나: ① 경매지번 매매 · 전세, ② 유사 매매 · 전세, ③ 조건 평균. 고르는 도구는 아래 탭(①②③)이고, 결과는 탭을 바꿔도 여기 다 남는다 -->
+        <!-- 웹 — 시세종합 표 하나: ① 경매지번 매매 · 전세, ② 유사 매매 · 전세, ③ 조건 평균. 고르는 도구는 아래 탭(①②③)이고, 결과는 탭을 바꿔도 여기 다 남는다 -->
         <section v-if="webEmbed" class="adm-case-block res">
           <div class="res-head">
-            <strong class="list-title">시세 결과</strong>
+            <strong class="list-title">시세종합</strong>
             <span class="res-pub"><InfoTip :rows="pubTip" under="box">공동주택가</InfoTip><b><UnitText :text="won(pubValue)" suffix="원" /></b><em v-if="price">{{ price.year }}.01.01 기준</em></span>
             <span class="res-pub"><InfoTip :rows="jeonseRateTip(jeonseRate)" under="box">전세가</InfoTip><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" aria-label="전세가 비율" />%<b><UnitText :text="won(jeonsePrice)" suffix="원" /></b></span>
             <span class="res-hint">줄을 누르면 아래 그 도구로 넘어갑니다</span>
