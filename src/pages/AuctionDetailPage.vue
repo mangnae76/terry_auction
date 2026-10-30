@@ -6588,7 +6588,8 @@ const goBack = () => router.back();
               </button>
             </span>
             <span :class="['adp-auto-chip', { 'web-solo': webEmbed }]">✦ 자동계산</span>
-            <span v-if="webEmbed && !isCollapsed('profit')" class="adp-mkt-step adp-head-step" @click.stop>
+            <!-- 새화면은 안 고르기 줄(＋B안…)로 늘리므로 표 −/＋ 를 뺀다. 클래식은 늘릴 곳이 이것뿐이라 남긴다 -->
+            <span v-if="webEmbed && !webNew && !isCollapsed('profit')" class="adp-mkt-step adp-head-step" @click.stop>
               <span class="lab">표</span>
               <button type="button" aria-label="산정표 삭제" :disabled="profitScenarios.length <= 1" @click.stop="removeProfitScenario">−</button>
               <button type="button" aria-label="산정표 추가" :disabled="profitScenarios.length >= PROFIT_MAX" @click.stop="addProfitScenario">＋</button>
