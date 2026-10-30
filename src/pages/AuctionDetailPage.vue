@@ -2473,6 +2473,25 @@ const pickPlanTab = async (si: number) => {
     if (profitScenarios.value[si]) selectedPlan.value = si;
   }
 };
+/** 오른쪽 판이 붙을 높이 — 위 고정 묶음(예상수익분석 제목 · 날짜 줄) 바로 아래. 묶음 높이가 화면마다 달라 재서 쓴다 */
+const biddTop = ref(0);
+const measureBiddTop = () => {
+  if (!webNew.value) return;
+  const el = document.querySelector('.adp-profit-sticky');
+  if (!el) return;
+  const t = parseFloat(getComputedStyle(el).top) || 0;
+  const v = Math.round(t + el.getBoundingClientRect().height + 12);
+  if (v !== biddTop.value) biddTop.value = v;
+};
+onMounted(() => {
+  window.addEventListener('scroll', measureBiddTop, { passive: true });
+  window.addEventListener('resize', measureBiddTop);
+  nextTick(measureBiddTop);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', measureBiddTop);
+  window.removeEventListener('resize', measureBiddTop);
+});
 /** 탭에 적는 순이익 — '2,050만' */
 const manText = (n: number) => `${Math.round(n / 10_000).toLocaleString('ko-KR')}만`;
 /* 새화면은 칸이 늘 열려 있다. 값이 실제로 바뀌었을 때만 손을 멈추면 적는다(물건을 읽은 것만으로는 적지 않는다) */
@@ -6615,7 +6634,8 @@ const goBack = () => router.back();
           <div v-if="!isCollapsed('profit') && (!webNew || si === selectedPlan)" :class="['adp-profit-head-row', { 'is-dim': si !== selectedPlan && !webNew }]" @pointerdown="webEmbed && (selectedPlan = si)" @focusin="webEmbed && (selectedPlan = si)">
             <!-- 표가 하나뿐이어도 'A안' 을 낸다 — 둘이 될 때 이름이 생기면 어느 쪽이
                  먼저 적은 표인지 헷갈린다 -->
-            <span class="adp-profit-label">{{ sc.label }}</span>
+            <!-- 새화면은 이름을 뺀다 — 어느 안인지는 오른쪽 탭이 보여 준다 -->
+            <span v-if="!webNew" class="adp-profit-label">{{ sc.label }}</span>
             <!-- 웹은 비고 칸을 뺀다 — 적어 둔 값은 그대로 남는다 -->
             <input
               v-if="!webEmbed"
@@ -6909,7 +6929,7 @@ const goBack = () => router.back();
               </section>
             </div>
 
-            <div class="bidd-right">
+            <div class="bidd-right" :style="biddTop ? { top: `${biddTop}px`, maxHeight: `calc(100vh - ${biddTop}px - 16px)` } : undefined">
               <div class="bidd-tabs" role="tablist">
                 <button
                   v-for="(label, ti) in PROFIT_NAV_LABELS"
@@ -6930,8 +6950,11 @@ const goBack = () => router.back();
               </div>
               <aside class="bidd-board">
                 <span class="bidd-b-lab">{{ sc.label }} 세후 순이익</span>
-                <strong :class="['bidd-b-big', { neg: scAfterTaxProfit(sc) < 0 }]">{{ formatMoney(scAfterTaxProfit(sc)) }}<small>원</small></strong>
-                <span :class="['bidd-b-rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span>
+                <!-- 순이익과 수익률은 한 줄 — 숫자 폭을 고르게 해 + · − 가 바뀌어도 자리가 흔들리지 않는다 -->
+                <div class="bidd-b-top">
+                  <strong :class="['bidd-b-big', { neg: scAfterTaxProfit(sc) < 0 }]">{{ formatMoney(scAfterTaxProfit(sc)) }}<small>원</small></strong>
+                  <span :class="['bidd-b-rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span>
+                </div>
                 <dl class="bidd-dl">
                   <dt>예상 매도가</dt><dd>{{ formatMoney(scSale(sc)) }}</dd>
                   <dt>− 입찰가</dt><dd>{{ formatMoney(scBid(sc)) }}</dd>
@@ -13027,6 +13050,8 @@ select.adp-pub-input option { text-align: center; }
 .bidd-sum em { font-style: normal; font-size: 12px; color: #a16207; }
 .bidd-sum b { margin-left: auto; font-size: 17px; font-weight: 800; color: #854d0e; }
 .bidd-right { position: sticky; top: calc(var(--stick-top, 0px) + 230px); display: flex; flex-direction: column; min-width: 0; }
+/* 판은 화면 높이 안에 — 넘치는 아래쪽은 판 안에서 내려 본다(탭은 늘 보인다) */
+.bidd-board { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #3b4a6d transparent; }
 /* 탭은 판과 같은 폭 — 판의 위 모서리를 각지게 해 탭이 판에 그대로 이어진다(둥근 모서리에 탭 끝이 잘려 보였다) */
 .bidd-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .bidd-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 52px; border: 1px solid #d5dbe6; border-bottom: 0; border-radius: 10px 10px 0 0; background: #fff; font-family: inherit; color: #374151; cursor: pointer; }
@@ -13041,7 +13066,9 @@ select.adp-pub-input option { text-align: center; }
 .bidd-b-big { font-size: 32px; font-weight: 800; letter-spacing: -0.8px; }
 .bidd-b-big small { margin-left: 4px; font-size: 16px; }
 .bidd-b-big.neg, .bidd-dl dd.neg { color: #ff9b9b; }
-.bidd-b-rate { align-self: flex-start; margin-top: 4px; padding: 4px 10px; border-radius: 6px; background: #2f8f5b; font-size: 14px; font-weight: 800; }
+.bidd-b-top { display: flex; align-items: center; gap: 12px; }
+.bidd-b-big, .bidd-b-rate { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bidd-b-rate { flex: none; margin-left: auto; min-width: 128px; box-sizing: border-box; padding: 5px 10px; border-radius: 6px; background: #2f8f5b; font-size: 14px; font-weight: 800; text-align: center; }
 .bidd-b-rate.neg { background: #b4444a; }
 .bidd-dl { margin: 12px 0 0; padding-top: 14px; border-top: 1px solid #34436a; display: grid; grid-template-columns: 1fr auto; align-items: center; row-gap: 10px; font-size: 14px; }
 .bidd-dl dt { display: flex; align-items: center; gap: 4px; color: #c9d3ea; }
