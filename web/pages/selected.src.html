@@ -1278,6 +1278,51 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .tax-shell.embedded > * { margin-left: 0 !important; margin-right: 0 !important; }   /* 소득세 현황 · 신고 일정 줄 등 — 위 상자와 양끝을 맞춘다 */
 .app-page[data-k="finance"] .tax-shell .tax-cards { margin: 0 0 12px !important; padding: 12px 14px !important; border: 1px solid var(--card-line); border-radius: 10px; background: var(--surface); }
 
+/* ===== 웹 마이페이지 › 내 정보에서 들어가는 화면들(보관함 · 휴지통 · 중개업체 관리 · 입찰달력 · 인테리어 업체 · 3일무료체험 · 결제하기 · 결제관리 · 포인트내역 · 정보수정 · 회원탈퇴)
+   앱 화면 그대로라 하늘색 바탕 · 뒤로 화살표 · 작은 글이 남아 있었다 — 큰 흰 상자 하나 + 안은 선 상자, 제목은 아이콘 + 16, 글은 14 이상 ===== */
+.app-page[data-k="more"] :is(.trs-shell, .agb-shell, .cal-shell, .ivp-shell, .tr-shell, .bil-shell, .pay-shell, .ph-shell, .prf-shell, .wd-shell) { min-height: 0 !important; margin: 0 !important; padding: 20px 24px 24px !important; background: var(--surface) !important; border: 1px solid var(--card-line); border-radius: 14px; box-shadow: none !important; }
+.app-page[data-k="more"] :is(.trs-header, .agb-header, .cal-header, .ivp-header, .tr-header, .bil-header, .pay-header, .ph-header, .prf-header, .wd-header) { display: flex !important; align-items: center; gap: 10px; margin: 0 0 16px !important; padding: 0 0 14px !important; border: 0 !important; border-bottom: 1px solid var(--card-line) !important; background: transparent !important; position: static !important; }
+.app-page[data-k="more"] :is(.trs-header, .agb-header, .cal-header, .ivp-header, .tr-header, .bil-header, .pay-header, .ph-header, .prf-header, .wd-header) :is(.trs-back, .agb-back, .pg-back, .pg-back-shared, .tr-back, .bil-back, .pay-back, .ph-back, .prf-back, .wd-back, .tr-crumb, .bil-crumb, .pay-crumb, .ph-crumb, .prf-crumb, .wd-crumb) { display: none !important; }
+.app-page[data-k="more"] :is(.trs-title, .agb-title, .cal-title, .ivp-title, .tr-title, .bil-title, .pay-title, .ph-title, .prf-title, .wd-title) { display: inline-flex !important; align-items: center; gap: 10px; margin: 0 !important; font-size: 16px !important; font-weight: 800 !important; color: var(--text) !important; }
+/* 제목 앞 아이콘 — 내 정보 카드의 아이콘과 같은 것 · 같은 상자 */
+.app-page[data-k="more"] :is(.trs-title, .agb-title, .cal-title, .ivp-title, .tr-title, .bil-title, .pay-title, .ph-title, .prf-title, .wd-title)::before { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9px; background: #eef2fc; font-size: 16px; }
+.app-page[data-k="more"] .agb-title::before { content: '🏢'; }
+.app-page[data-k="more"] .cal-title::before { content: '📅'; }
+.app-page[data-k="more"] .ivp-title::before { content: '🛠️'; }
+.app-page[data-k="more"] .tr-title::before { content: '🎁'; }
+.app-page[data-k="more"] .bil-title::before { content: '🧾'; }
+.app-page[data-k="more"] .pay-title::before { content: '💳'; }
+.app-page[data-k="more"] .ph-title::before { content: '🅿️'; }
+.app-page[data-k="more"] .prf-title::before { content: '🙍'; }
+.app-page[data-k="more"] .wd-title::before { content: '🚪'; }
+.app-page[data-k="more"] .trs-shell:not(.trash) .trs-title::before { content: '📦'; }
+.app-page[data-k="more"] .trs-shell.trash .trs-title::before { content: '🗑️'; }
+.app-page[data-k="more"] :is(.trs-eyebrow, .cal-eyebrow) { font-size: 14px !important; }
+/* 안쪽 묶음 — 바깥 흰 상자 안에서는 바탕 없이 · 여백 0 */
+.app-page[data-k="more"] :is(.tr-body, .pay-body, .ph-body, .prf-body, .wd-body, .agb-body) { padding: 0 !important; background: transparent !important; }
+/* 안쪽 카드 — 선 상자(흰 바탕 · 선 · 모서리 10) */
+.app-page[data-k="more"] :is(.trs-shell, .agb-shell, .cal-shell, .ivp-shell, .tr-shell, .bil-shell, .pay-shell, .ph-shell, .prf-shell, .wd-shell) :is(.cal-card, .ivp-card, .tr-card, .prf-card, .wd-card, .pay-card, .ph-card, .trs-card, .trs-item, .agb-card) { background: var(--surface) !important; border: 1px solid var(--card-line) !important; border-radius: 10px !important; box-shadow: none !important; }
+/* 인테리어 업체 표 — 머리글과 칸을 같은 가운데 줄에, 예상일정 · 업체는 한 줄 */
+.app-page[data-k="more"] .ivp-tbl :is(th, td) { text-align: center !important; vertical-align: middle !important; font-size: 14px !important; padding: 12px 8px !important; }
+.app-page[data-k="more"] .ivp-tbl th { white-space: nowrap !important; }
+.app-page[data-k="more"] .ivp-tbl td :is(b, small) { display: inline !important; font-size: 14px !important; }
+.app-page[data-k="more"] .ivp-tbl td.span, .app-page[data-k="more"] .ivp-tbl td.vend { white-space: nowrap; }
+.app-page[data-k="more"] .ivp-tbl td.span small, .app-page[data-k="more"] .ivp-tbl td.vend small { margin-left: 6px; }
+.app-page[data-k="more"] :is(.ivp-note, .ivp-sum, .ivp-sort, .ivp-btn) { font-size: 14px !important; }
+.app-page[data-k="more"] .ivp-tbl td.empty { display: table-cell !important; padding: 28px 8px !important; border: 0 !important; background: none !important; color: #9ca3af; }   /* 웹 공통 .empty(점선 상자)와 이름이 겹쳐 칸 합치기가 풀렸다 */
+/* 내 정보 — 나의 선정물건 카드도 다른 카드와 같은 흰 바탕(하늘색 빼기) */
+.app-page[data-k="more"] .mpc-card.lead { background: var(--surface) !important; border-color: var(--card-line) !important; }
+/* 결제하기 — 큰 흰 상자 하나, 안은 선 상자. 기간별 할인은 아래 안내 글까지 한 상자 */
+.app-page[data-k="more"] .bil-body { padding: 20px 24px !important; background: var(--surface) !important; border: 1px solid var(--card-line) !important; border-radius: 14px !important; }
+.app-page[data-k="more"] .bil-shell .bil-body { padding: 0 !important; border: 0 !important; }
+.app-page[data-k="more"] .bil-card.off { margin: 0 !important; padding: 14px 20px !important; background: var(--surface) !important; border: 1px solid var(--card-line) !important; border-bottom: 0 !important; border-radius: 10px 10px 0 0 !important; }
+.app-page[data-k="more"] .bil-card.off + .bil-note { margin: -12px 0 0 !important; padding: 0 20px 14px !important; background: var(--surface); border: 1px solid var(--card-line); border-top: 0; border-radius: 0 0 10px 10px; }
+.app-page[data-k="more"] .bil-off-badge { background: #fff4e6 !important; }
+.app-page[data-k="more"] :is(.bil-plans, .bil-card.sum, .bil-fine) { border-radius: 10px !important; }
+.app-page[data-k="more"] .bil-plans { padding: 16px 20px !important; }
+.app-page[data-k="more"] .bil-card.sum { padding: 4px 20px !important; }
+.app-page[data-k="more"] .bil-fine { padding: 14px 20px !important; }
+
 #appPageView .content { padding-top: 0; }
 /* 낙찰이후 — 선정물건 물건상세처럼: 하위 탭 아래 띠(--band) 위 고정 카드(사건 카드) → 경로 → 내용. 카드는 위에 붙어 있다 */
 /* 사건 카드는 스크롤해도 고정 — 붙박이는 부모 상자 안에서만 붙으니 윗묶음(.pw-fixed-top)은 풀고 바깥(.pw-shell) 흐름에 세운다 */
@@ -4964,6 +5009,36 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면을 띄워 두고, 하위 탭만 바꿀 때는 다시 띄우지 않고 탭만 넘긴다 */
   let pageUnmount = null; let pageKey = '';
   const closeAppPage = () => { { const home = $('crumbSlotAppPage'); const inner = document.querySelector('#appPageContent [data-crumb-slot]'); if (CRUMBS && home && inner && inner.contains(CRUMBS)) home.appendChild(CRUMBS); } if (pageUnmount) { try { pageUnmount(); } catch (e) { /* 그만 */ } pageUnmount = null; pageKey = ''; } };
+  /* 마이페이지(앱 화면) — 글이 14 보다 작으면 14로 올린다(앱은 11~13 글이 많다). 한 글자(기호 · 배지 · 단위)는 그대로.
+     화면이 바뀌면(하위 화면으로 들어가기 · 목록이 늘기) 다시 본다 */
+  let min14Tick = 0;
+  const bumpMin14 = () => {
+    min14Tick = 0;
+    const root = document.querySelector('#appPageContent .app-page[data-k="more"]');
+    if (!root) return;
+    root.querySelectorAll('*').forEach((el) => {
+      if (el.dataset.min14) return;
+      const field = el.matches('input, select, textarea');
+      if (!field && ![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1)) return;
+      const f = parseFloat(getComputedStyle(el).fontSize);
+      if (f && f < 14) { el.style.setProperty('font-size', '14px', 'important'); el.dataset.min14 = '1'; }
+    });
+    /* 하위 화면(큰 흰 상자) 안의 흐린 하늘색 · 회색 바탕 — 흰 바탕 + 선으로(앱에서 쓰던 바탕). 노랑 · 빨강 알림 바탕은 그대로 */
+    root.querySelectorAll(SUB_SHELLS).forEach((shell) => shell.querySelectorAll('*').forEach((el) => {
+      if (el.dataset.nobg) return;
+      const cs = getComputedStyle(el); const m = cs.backgroundColor.match(/\d+/g);
+      if (!m || (m[3] !== undefined && +m[3] === 0)) return;
+      const [r, g, b] = m.map(Number);
+      if (r === 255 && g === 255 && b === 255) return;
+      if (!(r >= 232 && g >= 236 && b >= 242 && b >= r && b >= g - 2)) return;   // 흐린 푸른빛 · 회색만
+      el.dataset.nobg = '1';
+      el.style.setProperty('background', 'var(--surface)', 'important');
+      if (parseFloat(cs.borderTopWidth) === 0 && el.offsetHeight > 30) el.style.setProperty('border', '1px solid var(--card-line)', 'important');
+    }));
+  };
+  const SUB_SHELLS = '.trs-shell, .agb-shell, .cal-shell, .ivp-shell, .tr-shell, .bil-shell, .pay-shell, .ph-shell, .prf-shell, .wd-shell';
+  new MutationObserver(() => { if (S.route === 'more' && !min14Tick) min14Tick = setTimeout(bumpMin14, 120); })
+    .observe(document.getElementById('appPageContent') || document.body, { childList: true, subtree: true, characterData: true });
   function renderAppPage() {
     const box = $('appPageContent');
     const key = S.route; const tab = S.pageTab[key];

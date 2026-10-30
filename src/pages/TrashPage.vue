@@ -129,7 +129,7 @@ const stageTone = (item: AuctionDetail) => (stageToneOf(item) === 'bidding' ? 'b
 </script>
 
 <template>
-  <section class="trs-shell">
+  <section :class="['trs-shell', { trash: !isArchive }]">
     <header class="trs-header">
       <button type="button" class="trs-back" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
       <h1 class="trs-title">{{ shelfName }}</h1>
