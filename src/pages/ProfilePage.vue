@@ -8,6 +8,7 @@ import AppToast from '../components/AppToast.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useAuctionStore } from '../stores/auctionStore';
 import {
+  BIZ_TYPES,
   changePassword,
   emptyAccountDetail,
   hasPasswordLogin,
@@ -190,8 +191,7 @@ const submit = async () => {
           <div class="prf-fld">
             <small>사업자 구분</small>
             <div class="prf-seg">
-              <button type="button" :class="{ on: form.bizType === 'biz' }" @click="form.bizType = 'biz'">개인매매사업자</button>
-              <button type="button" :class="{ on: form.bizType === 'none' }" @click="form.bizType = 'none'">사업자아님</button>
+              <button v-for="[k, label] in BIZ_TYPES" :key="k" type="button" :class="{ on: form.bizType === k }" @click="form.bizType = k">{{ label }}</button>
             </div>
           </div>
           <label class="prf-fld">

@@ -4,7 +4,7 @@
 import { computed, inject, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
-import { checkEmailTaken, saveSignupExtra } from '../services/authRepository';
+import { BIZ_TYPES, checkEmailTaken, saveSignupExtra, type BizType } from '../services/authRepository';
 import {
   PRIVACY_CHILD,
   PRIVACY_EFFECTIVE,
@@ -48,6 +48,8 @@ const joinPathDetail = ref('');
 /** 추천코드 — 웹만(앱은 아직 받지 않는다) */
 const webEmbed = inject<boolean>('webEmbed', false);
 const referralCode = ref('');
+/** 사업자 구분 — 웹만(세금분석의 기본 선택이 된다) */
+const bizType = ref<BizType>('');
 
 const agreeTerms = ref(false);
 const agreePrivacy = ref(false);
@@ -131,7 +133,7 @@ const onSubmit = async () => {
       region: region.value,
       joinPath: joinPath.value,
       joinPathDetail: joinPathDetail.value.trim(),
-      ...(webEmbed ? { referralCode: referralCode.value.trim() } : {}),
+      ...(webEmbed ? { referralCode: referralCode.value.trim(), bizType: bizType.value } : {}),
       smsOptIn: agreeSms.value,
       agreedAt: new Date().toISOString(),
     });
@@ -200,6 +202,13 @@ const onSubmit = async () => {
           <option value="">시/도 선택</option>
           <option v-for="s in SIDO" :key="s" :value="s">{{ s }}</option>
         </select></span>
+
+        <div v-if="webEmbed" class="su-block">
+          <small class="su-blabel">사업자 구분</small>
+          <div class="su-seg">
+            <button v-for="[k, label] in BIZ_TYPES" :key="k" type="button" :class="{ on: bizType === k }" @click="bizType = k">{{ label }}</button>
+          </div>
+        </div>
 
         <div v-if="webEmbed" class="su-block">
           <small class="su-blabel">추천코드</small>
@@ -393,6 +402,10 @@ const onSubmit = async () => {
   font-size: 14px; font-weight: 800; color: #ef4444; line-height: 1;
 }
 :is(.su-reqwrap, .su-lockwrap).req .su-input, .su-row.phone.req .su-input:first-child { padding-left: 24px; }
+/* 사업자 구분 — 네 칸 한 줄, 고른 칸은 남색 */
+.su-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.su-seg button { height: 40px; padding: 0 4px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; font-family: inherit; font-size: 12.5px; color: #4b5563; cursor: pointer; white-space: nowrap; }
+.su-seg button.on { border-color: #2a3f8f; background: #2a3f8f; color: #fff; font-weight: 700; }
 /* 추천코드 아래 한 줄 안내 */
 .su-refnote { font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .su-radios { display: flex; flex-wrap: wrap; gap: 4px 12px; }

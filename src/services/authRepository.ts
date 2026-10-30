@@ -166,8 +166,8 @@ export interface AccountDetail {
   smsOptIn: boolean;
   address1: string;
   address2: string;
-  /** 사업자 구분 — 'biz' 개인 매매사업자 · 'none' 아님 · '' 안 적음 (세금분석의 기본 선택에 쓴다) */
-  bizType: '' | 'biz' | 'none';
+  /** 사업자 구분 — 'none' 개인 · 'corp' 법인 · 'biz' 개인매매사업자 · 'corpBiz' 법인매매사업자 · '' 안 적음 (세금분석의 기본 선택에 쓴다) */
+  bizType: BizType;
   /** 주택 보유수 — 직접 적는다 */
   houseCount: string;
 }
@@ -204,6 +204,10 @@ export const saveAccountDetail = async (uid: string, detail: AccountDetail): Pro
 };
 
 /** 가입할 때 같이 받는 것들 — users/{uid} 에 함께 담는다 */
+export type BizType = '' | 'none' | 'corp' | 'biz' | 'corpBiz';
+/** 사업자 구분 — 화면에 늘어놓는 차례 그대로 */
+export const BIZ_TYPES: Array<[Exclude<BizType, ''>, string]> = [['none', '개인'], ['corp', '법인'], ['biz', '개인매매사업자'], ['corpBiz', '법인매매사업자']];
+
 export interface SignupExtra {
   realName: string;
   phone: string;
@@ -212,6 +216,8 @@ export interface SignupExtra {
   joinPathDetail: string;
   /** 추천코드 — 웹 회원가입에서만 받는다(없으면 빈 칸) */
   referralCode?: string;
+  /** 사업자 구분 — 웹 회원가입에서 고른다 */
+  bizType?: BizType;
   smsOptIn: boolean;
   agreedAt: string;
 }

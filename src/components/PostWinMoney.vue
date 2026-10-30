@@ -45,7 +45,7 @@ onMounted(async () => {
   if (read().who) return;
   const d = await loadAccountDetail(auth.uid);
   if (d.bizType === 'none') who.value = 'person';
-  else if (d.bizType === 'biz') who.value = 'biz';
+  else if (d.bizType === 'biz') who.value = 'biz';   // 법인 · 법인매매사업자는 법인세 셈이 아직 없어 기본(매매사업자) 그대로
 });
 const term = ref<HoldTerm>((read().term as HoldTerm) || 'lt1');
 /** AI 명도 — 고친 칸마다 까닭 · 한두 문장 요약(이 브라우저에 물건마다 기억) */
