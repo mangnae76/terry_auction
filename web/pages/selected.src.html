@@ -1127,16 +1127,16 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] :is(.adp-agency-del, .buyers-add) { height: 38px !important; flex-basis: 38px !important; width: 38px; font-size: 16px !important; }
 .app-page[data-k="postwin"] .adp-agency-call { width: 26px; height: 26px; right: 6px; }
 .app-page[data-k="postwin"] .adp-agency-tel .adp-mkt-input.dial { padding-right: 38px; }
-/* 중개업체 관리 창 — 가로 전체가 아니라 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에 */
-.app-page[data-k="postwin"] .abm-box {
+/* 중개업체 관리 창 — 가로 전체가 아니라 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에(웹 어디서 열든 — 낙찰이후 · 손품조사) */
+:is(.app-page[data-k="postwin"], body) .abm-box {
   left: 50%; right: auto; width: min(640px, calc(100vw - 32px)); transform: translateX(-50%);
   top: calc(var(--stick-top, 0px) + var(--gnb-h, 66px) + var(--subtab-h, 44px) + 24px);
   max-height: calc(100vh - var(--gnb-h, 66px) - var(--subtab-h, 44px) - 64px);
   padding: 16px 20px 18px;
 }
-.app-page[data-k="postwin"] .abm-head strong { font-size: 16px; }
-.app-page[data-k="postwin"] .abm-box :is(.abm-note, .agb-eyebrow, .agb-add, .agb-sort, .agb-fld small, .agb-input, .agb-empty, .agb-save) { font-size: 14px !important; }
-.app-page[data-k="postwin"] .abm-box .agb-input { height: 36px; }
+:is(.app-page[data-k="postwin"], body) .abm-head strong { font-size: 16px; }
+:is(.app-page[data-k="postwin"], body) .abm-box :is(.abm-note, .agb-eyebrow, .agb-add, .agb-sort, .agb-fld small, .agb-input, .agb-empty, .agb-save) { font-size: 14px !important; }
+:is(.app-page[data-k="postwin"], body) .abm-box .agb-input { height: 40px; }
 /* 표 줄 높이 — 위아래를 넉넉히(6 → 10px) */
 .app-page .pw-shell .pw-tbl:not(.edit) td { padding-top: 10px !important; padding-bottom: 10px !important; }
 .app-page .more-shell { min-height: 0 !important; background: transparent !important; padding-bottom: 40px !important; }

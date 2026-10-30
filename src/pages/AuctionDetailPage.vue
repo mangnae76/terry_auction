@@ -4459,8 +4459,14 @@ const MKT_CONC_ROWS: ConcRow[] = [
 ];
 /** 예전부터 쓰던 칸은 그 필드를 그대로 쓴다 — 저장해 둔 값이 날아가지 않게 */
 /** 표의 머리줄에 설 것들 — 눕힌 표에서는 면적·평당가·가격이 머리다 */
-const concHeads = (t: ConcTable): ConcCol[] =>
-  (t.vertical ? MKT_CONC_ROWS.map((r) => ({ key: r.key, label: r.label })) : t.cols);
+const concHeads = (t: ConcTable): ConcCol[] => {
+  if (!t.vertical) return t.cols;
+  // 손품조사(웹 시장분석) — 조사가격을 왼쪽, 평당가를 오른쪽 끝(시세결론과 같은 순서)
+  if (sonpumMode) return [{ key: 'price', label: '조사가격' }, { key: 'unit', label: '평당가' }];
+  return MKT_CONC_ROWS.map((r) => ({ key: r.key, label: r.label }));
+};
+/** 표 제목 — 손품조사에선 붙여 쓴다(시세결론 · 급매가결론) */
+const concTitle = (t: ConcTable) => (sonpumMode ? t.title.replace(/\s+/g, '') : t.title);
 /** 표의 줄로 내려올 것들 — 눕힌 표에서는 출처(경매지번 실거래가 …)가 줄이다 */
 const concLines = (t: ConcTable): ConcCol[] =>
   (t.vertical ? t.cols : MKT_CONC_ROWS.map((r) => ({ key: r.key, label: r.label })));
@@ -9041,9 +9047,9 @@ const goBack = () => router.back();
             <!-- 시세 결론 / 급매가 결론 — 생김새가 같아 한 벌로 그린다 -->
             <!-- 손품분석 시세 결론 — 시세분석에서 고른 값 · 호가매물의 평당가 · 가격과 평균(줄 이름은 시세종합과 같다) -->
             <div v-if="sonpumMode" class="adp-sub-block son-conc-block">
-              <div class="adp-sub-head"><h3>시세 결론</h3></div>
+              <div class="adp-sub-head"><h3>시세결론</h3></div>
               <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table bold-price conc-vert">
-                <thead><tr><th class="adp-conc-corner">구분</th><th>가격</th><th>평당가</th></tr></thead>
+                <thead><tr><th class="adp-conc-corner">구분</th><th>조사가격</th><th>평당가</th></tr></thead>
                 <tbody>
                   <tr v-for="l in sonConcLines" :key="l.key">
                     <th :class="['adp-conc-side', { off: sonConcOff(l.key) }]"><label class="adp-conc-pick inline"><input type="checkbox" :checked="!sonConcOff(l.key)" @change="toggleSonConc(l.key)" /></label>{{ l.label }}</th>
@@ -9060,7 +9066,7 @@ const goBack = () => router.back();
             </div>
             <div v-for="t in (sonpumMode ? CONC_TABLES.filter((x) => x.title !== '시세 결론') : CONC_TABLES)" :key="t.title" class="adp-sub-block">
               <div class="adp-sub-head">
-                <h3>{{ t.title }}<span v-if="t.boldPrice" class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('concMean', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('concMean', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'concMean'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">체크를 풀면 평균값에서 제외</span></span></h3>
+                <h3>{{ concTitle(t) }}<span v-if="t.boldPrice" class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('concMean', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('concMean', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'concMean'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">체크를 풀면 평균값에서 제외</span></span></h3>
               </div>
               <table :class="['adp-table', 'adp-mkt-table', 'fit', 'adp-dm-tbl', 'adp-conc-table', { 'bold-price': t.boldPrice, 'conc-urgent': t.note, 'conc-vert': t.vertical }]">
                 <thead>
