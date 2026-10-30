@@ -264,14 +264,18 @@ const condRangeSales = computed(() => dongRows.value.filter((r) => (
 /** 표 머리글(구분 ~ 층) ▽ 고르기까지 건 줄 — 평균 · 네 칸이 이걸 따른다(손품조사 조건분석과 같다) */
 const condColFilter = useColumnFilters<CaseTradeRow>(condRangeSales, COLS.filter((c) => c.key !== 'place'));
 const condSales = computed(() => condColFilter.rows.value);
-/** 실거래 리스트 검색 — 표 줄만 좁힌다(평균 · 네 칸은 거르기 결과 그대로). 앱 가격정보 '검색리스트 안에서 찾기'와 같은 항목 */
+/** 실거래 리스트 검색 — 표 줄만 좁힌다(평균 · 칸은 거르기 결과 그대로). 앱 가격정보 '검색리스트 안에서 찾기'와 같은 항목.
+ *  ① 경매물건 · 유사물건 리스트, ② 조건분석 리스트가 같은 규칙을 쓴다 */
+const squashQ = (v: string) => v.replace(/[\s,]/g, '');
+const findRows = (list: CaseTradeRow[], query: string) => {
+  const q = squashQ(query.trim());
+  if (!q) return list;
+  return list.filter((r) => squashQ([r.contractDate, r.amount, String(r.price), areaText(r.areaM2), buildText(r.buildYear), r.floor ? `${r.floor}층` : '', r.umdNm, r.jibun, r.name].join(' ')).includes(q));
+};
 const condQuery = ref('');
-const condFound = computed(() => {
-  const q = condQuery.value.trim().replace(/[\s,]/g, '');
-  if (!q) return condSales.value;
-  return condSales.value.filter((r) => [r.contractDate, r.amount, String(r.price), areaText(r.areaM2), buildText(r.buildYear), r.floor ? `${r.floor}층` : '', r.umdNm, r.jibun, r.name]
-    .join(' ').replace(/[\s,]/g, '').includes(q));
-});
+const condFound = computed(() => findRows(condSales.value, condQuery.value));
+const caseQuery = ref('');
+const caseFound = computed(() => (webEmbed ? findRows(tableRows.value, caseQuery.value) : tableRows.value));
 const condAvg = computed(() => (condSales.value.length ? condSales.value.reduce((t, r) => t + r.price, 0) / condSales.value.length : 0));
 /** 손품조사 조건분석과 같은 글 — 면적은 걸러진 매매의 실제 최소~최대, 사용승인은 건축년도 범위 + 몇 년차 */
 /** 시작 · 끝 두 줄(손품조사 앱 칸과 같이) — 한 줄이면 칸을 넘친다 */
@@ -1154,6 +1158,12 @@ const downloadCsv = () => {
           </span>
           <span class="dim">시군구 전체 {{ scanned.toLocaleString('ko-KR') }}건에서 추림</span>
           <span v-if="missed > 0" class="dim">{{ missed }}개월치 못 받음</span>
+          <template v-if="webEmbed"><div class="list-find">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input v-model="caseQuery" type="search" placeholder="계약일 · 금액 · 면적 · 건축년도 · 층 · 주소 검색" aria-label="실거래 리스트 안에서 찾기" />
+            <small v-if="caseQuery.trim()">{{ caseFound.length.toLocaleString('ko-KR') }}건</small>
+            <button v-if="caseQuery" type="button" aria-label="검색어 지우기" @click="caseQuery = ''">×</button>
+          </div></template>
           <template v-if="webEmbed"><button type="button" class="list-fold" :aria-expanded="listOpen1" :aria-label="listOpen1 ? '실거래 리스트 접기' : '실거래 리스트 펼치기'" :title="listOpen1 ? '접기' : '펼치기'" @click="listOpen1 = !listOpen1"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" :class="{ up: listOpen1 }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button></template>
         </div>
 
@@ -1179,7 +1189,7 @@ const downloadCsv = () => {
             </thead>
             <tbody>
               <tr
-                v-for="(r, i) in tableRows.slice(0, 300)"
+                v-for="(r, i) in caseFound.slice(0, 300)"
                 :key="`${r.contractDate}-${r.floor}-${i}`"
                 :class="{ off: isOff(r.kind), picked: isPicked(r), 'picked-sale': webEmbed ? rowKey(r) === saleKeyNow : rowKey(r) === pickedSale, 'picked-jeonse': webEmbed ? rowKey(r) === jeonseKeyNow : rowKey(r) === pickedJeonse }"
                 @click="pickRow(r)"
@@ -1226,13 +1236,13 @@ const downloadCsv = () => {
           <div class="adm-sum under">
             <strong class="list-title">실거래 리스트</strong>
             <span>{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 = 정상거래 {{ condSales.filter((r) => r.kind === '매매').length.toLocaleString('ko-KR') }}건 + 직거래 {{ condSales.filter((r) => r.kind === '직거래').length.toLocaleString('ko-KR') }}건 · 계약해제 제외</span>
+            <div class="list-find">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+              <input v-model="condQuery" type="search" placeholder="계약일 · 금액 · 면적 · 건축년도 · 층 · 주소 검색" aria-label="실거래 리스트 안에서 찾기" />
+              <small v-if="condQuery.trim()">{{ condFound.length.toLocaleString('ko-KR') }}건</small>
+              <button v-if="condQuery" type="button" aria-label="검색어 지우기" @click="condQuery = ''">×</button>
+            </div>
             <button type="button" class="list-fold" :aria-expanded="listOpen2" :aria-label="listOpen2 ? '실거래 리스트 접기' : '실거래 리스트 펼치기'" :title="listOpen2 ? '접기' : '펼치기'" @click="listOpen2 = !listOpen2"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" :class="{ up: listOpen2 }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button>
-          </div>
-          <div v-show="listOpen2" class="list-find">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-            <input v-model="condQuery" type="search" placeholder="계약일 · 금액 · 면적 · 건축년도 · 층 · 주소 검색" aria-label="실거래 리스트 안에서 찾기" />
-            <small v-if="condQuery.trim()">{{ condFound.length.toLocaleString('ko-KR') }}건</small>
-            <button v-if="condQuery" type="button" aria-label="검색어 지우기" @click="condQuery = ''">×</button>
           </div>
           <div v-show="listOpen2" class="adm-table-wrap">
             <table class="adm-table">
@@ -1389,9 +1399,11 @@ const downloadCsv = () => {
 .adm-sum .dim { color: #9ca3af; }
 .adm-sum .list-title { font-size: 15px; font-weight: 800; color: #111827; }
 /* 실거래 리스트 접기 — 제목 줄 오른쪽 끝, 글자 없이 꺾쇠만(앱 가격정보 검색리스트와 같은 꼴) */
-.adm-sum .list-fold { align-self: center; margin-left: auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; color: #4b5563; cursor: pointer; }
-.list-find { display: flex; align-items: center; gap: 8px; height: 40px; margin: 0 0 12px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; color: #9ca3af; }
+.adm-sum .list-fold { flex: none; align-self: center; margin-left: auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; color: #4b5563; cursor: pointer; }
+.adm-sum:has(.list-find) { align-items: center; flex-wrap: nowrap; }
+.list-find { flex: 1 1 260px; max-width: 420px; margin-left: auto; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; color: #9ca3af; }
 .list-find:focus-within { border-color: #2b6df3; }
+.adm-sum .list-find ~ .list-fold { margin-left: 0; }
 .list-find input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font-family: inherit; font-size: 14px; color: #111827; }
 .list-find input::placeholder { color: #9aa3b2; }
 .list-find input::-webkit-search-cancel-button { display: none; }
