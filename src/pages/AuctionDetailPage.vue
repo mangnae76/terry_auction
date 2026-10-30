@@ -8797,6 +8797,16 @@ const goBack = () => router.back();
               <template v-for="i in lowRowCountG(g.sim)" :key="`low-${g.sim}-${i}`">
                 <div class="adp-mkt-cells c4 adp-dm-table">
                   <div class="cell">
+                    <small>매매호가 (저가)</small>
+                    <FormattedNumberInput v-if="editingSurvey.listing" :model-value="mktVal(lowKeyG(g.sim, i - 1, 'saleAsk'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(lowKeyG(g.sim, i - 1, 'saleAsk'), $event)" />
+                    <strong v-else class="hi">{{ mktMoney(lowKeyG(g.sim, i - 1, 'saleAsk')) }}</strong>
+                  </div>
+                  <div class="cell">
+                    <small>평당가</small>
+                    <FormattedNumberInput v-if="editingSurvey.listing" :model-value="mktVal(lowKeyG(g.sim, i - 1, 'unit'))" mode="string" class="adp-mkt-input" :placeholder="lowUnitAutoG(g.sim, i - 1) > 0 ? lowUnitAutoG(g.sim, i - 1).toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(lowKeyG(g.sim, i - 1, 'unit'), $event)" />
+                    <strong v-else :class="{ typed: lowUnitTypedG(g.sim, i - 1) }">{{ lowUnitTextG(g.sim, i - 1) }}</strong>
+                  </div>
+                  <div class="cell">
                     <small>전용면적</small>
                     <span v-if="editingSurvey.listing" class="adp-mkt-unit">
                       <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(lowKeyG(g.sim, i - 1, 'area'))" placeholder="0" @input="setMktVal(lowKeyG(g.sim, i - 1, 'area'), ($event.target as HTMLInputElement).value)" />㎡
@@ -8807,16 +8817,6 @@ const goBack = () => router.back();
                     <small>주소</small>
                     <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="!g.sim ? (subjectHasDong ? '동 · 층 · 호' : '층 · 호') : '빌라명 · 층 · 호'" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
                     <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTypedG(g.sim, i - 1) }]">{{ lowAddrTextG(g.sim, i - 1) }}</strong>
-                  </div>
-                  <div class="cell">
-                    <small>평당가</small>
-                    <FormattedNumberInput v-if="editingSurvey.listing" :model-value="mktVal(lowKeyG(g.sim, i - 1, 'unit'))" mode="string" class="adp-mkt-input" :placeholder="lowUnitAutoG(g.sim, i - 1) > 0 ? lowUnitAutoG(g.sim, i - 1).toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(lowKeyG(g.sim, i - 1, 'unit'), $event)" />
-                    <strong v-else :class="{ typed: lowUnitTypedG(g.sim, i - 1) }">{{ lowUnitTextG(g.sim, i - 1) }}</strong>
-                  </div>
-                  <div class="cell">
-                    <small>매매호가 (저가)</small>
-                    <FormattedNumberInput v-if="editingSurvey.listing" :model-value="mktVal(lowKeyG(g.sim, i - 1, 'saleAsk'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(lowKeyG(g.sim, i - 1, 'saleAsk'), $event)" />
-                    <strong v-else class="hi">{{ mktMoney(lowKeyG(g.sim, i - 1, 'saleAsk')) }}</strong>
                   </div>
                   <div class="cell adp-mkt-wide">
                     <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'note'))" placeholder="비고" @input="setMktVal(lowKeyG(g.sim, i - 1, 'note'), ($event.target as HTMLInputElement).value)" />
