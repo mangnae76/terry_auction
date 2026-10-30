@@ -143,6 +143,26 @@ const fetchAutoUnits = async () => {
     }));
     if (job !== unitsJob) return;
   }
+  // 못 받은 동(-1)은 잠깐 쉬었다 두 번 더 — 한꺼번에 몰려 429(잠깐 막힘)로 실패한 것이 대부분이다
+  for (const waitMs of [4000, 10000]) {
+    const failed = targets.filter((r) => autoUnits.value[rowKey(r.sigungu, r.umdNm)] === -1);
+    if (!failed.length) return;
+    await new Promise((done) => { setTimeout(done, waitMs); });
+    for (const r of failed) {
+      if (job !== unitsJob) return;
+      const value = await fetchDongUnitCount(`${sido.value} ${r.sigungu} ${r.umdNm}`, k);
+      if (job !== unitsJob) return;
+      autoUnits.value = { ...autoUnits.value, [rowKey(r.sigungu, r.umdNm)]: value };
+    }
+  }
+};
+/** '받기실패' 칸을 누르면 그 동만 바로 다시 받는다 */
+const retryUnits = async (r: StatRow) => {
+  const key = rowKey(r.sigungu, r.umdNm);
+  const { [key]: _drop, ...rest } = autoUnits.value;
+  autoUnits.value = rest;
+  const value = await fetchDongUnitCount(`${sido.value} ${r.sigungu} ${r.umdNm}`, kind.value);
+  autoUnits.value = { ...autoUnits.value, [key]: value };
 };
 watch([stats, kind], () => { void fetchAutoUnits(); });
 /** 총 세대수 칸의 흐린 글 — 받은 값 · 0(없음) · 못 받음 · 받는 중 */
@@ -150,7 +170,7 @@ const unitsHint = (sigungu: string, umdNm: string) => {
   const what = kind.value === 'apt' ? '아파트 세대수' : kind.value === 'officetel' ? '오피스텔 호수' : '연립·다세대 세대수';
   const v = autoUnits.value[rowKey(sigungu, umdNm)];
   if (v === undefined) return { text: '받는 중', tip: '건축물대장에서 세대수를 받는 중' };
-  if (v < 0) return { text: webEmbed ? '받기실패' : '못 받음', fail: true, tip: '건축물대장 조회 실패(하루 한도 · 오류) — 내일 다시 조회해 주세요' };
+  if (v < 0) return { text: webEmbed ? '받기실패' : '못 받음', fail: true, tip: webEmbed ? '건축물대장 조회 실패(하루 한도 · 잠깐 막힘) — 누르면 다시 받습니다' : '건축물대장 조회 실패(하루 한도 · 오류) — 내일 다시 조회해 주세요' };
   if (v === 0) return { text: '0', tip: `건축물대장에 해당 건물이 없음(${what} 0)` };
   return { text: v.toLocaleString('ko-KR'), tip: `건축물대장 ${what} 합` };
 };
@@ -628,7 +648,7 @@ const downloadCsv = () => {
               <td v-if="!embedded" class="gu">{{ r.sigungu }}</td>
               <td class="nm">{{ r.umdNm }}<button v-if="webEmbed" type="button" class="nv-btn" :title="`${r.umdNm}만 보기 — 네이버 부동산 매매 매물`" @click="openDongListing(r)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button></td>
               <!-- 총 세대수 — 건축물대장 자동값을 글로만(손으로 적지 않는다) -->
-              <td :class="['units', { 'in-tint': webEmbed, miss: unitsHint(r.sigungu, r.umdNm).fail, wait: webEmbed && unitsHint(r.sigungu, r.umdNm).text === '받는 중' }]" :title="unitsHint(r.sigungu, r.umdNm).tip">{{ unitsHint(r.sigungu, r.umdNm).text }}</td>
+              <td :class="['units', { 'in-tint': webEmbed, miss: unitsHint(r.sigungu, r.umdNm).fail, wait: webEmbed && unitsHint(r.sigungu, r.umdNm).text === '받는 중' }]" :title="unitsHint(r.sigungu, r.umdNm).tip"><button v-if="webEmbed && unitsHint(r.sigungu, r.umdNm).fail" type="button" class="units-retry" @click="retryUnits(r)">받기실패 ↻</button><template v-else>{{ unitsHint(r.sigungu, r.umdNm).text }}</template></td>
               <td class="in">
                 <input
                   class="adm-cell"
@@ -858,4 +878,7 @@ const downloadCsv = () => {
   .adm-f { flex: 1 1 100%; }
   .adm-load { margin-left: 0; }
 }
+/* 웹 — 못 받은 세대수는 눌러서 다시 받기 */
+.units-retry { padding: 0; border: 0; background: none; font-family: inherit; font-size: inherit; color: #b91c1c; cursor: pointer; }
+.units-retry:hover { text-decoration: underline; }
 </style>
