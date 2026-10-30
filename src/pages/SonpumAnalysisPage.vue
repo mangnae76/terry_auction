@@ -37,6 +37,9 @@ const savedTab = readLS(TAB_KEY);
 const tab = ref<SonTab>(savedTab === 'price' || savedTab === 'conc' ? savedTab : 'demand');
 // 손품조사 화면이 지금 탭을 알게 — 손품결론 탭을 열 때만 결론 값을 받는다
 provide('sonpumTab', tab);
+// 시세분석 ④ 호가분석 자리(#sonAskSlot)가 생겼는지 — 손품조사 화면이 네이버 매물조사를 거기로 옮길지 정한다
+const sonAskReady = ref(false);
+provide('sonAskReady', sonAskReady);
 const priceSeen = ref(false);
 watch(tab, (v) => { if (v === 'price') priceSeen.value = true; }, { immediate: true });
 // 웹 경로에 지금 탭 — '홈 › 시장분석 › 손품분석 › 수요분석'

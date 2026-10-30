@@ -10,7 +10,7 @@
 import UnitText from '../components/UnitText.vue';
 import InfoTip from '../components/InfoTip.vue';
 import { JEONSE_RATIO_TIP, PUB_RATIO_TIP, pubPriceTip } from '../services/tipRows';
-import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onMounted, ref, watch, type Ref } from 'vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import SnapChip from '../components/SnapChip.vue';
 import { useRouter } from 'vue-router';
@@ -170,7 +170,7 @@ const run = async () => {
       modeView.value[MODES[1]].tab = savedTab(sv, MODES[1]);
       tab.value = modeView.value[mode.value].tab;
     }
-    tool.value = sv?.tool && ['case', 'sim', 'cond'].includes(sv.tool) ? sv.tool : (mode.value === MODES[1] ? 'sim' : 'case');
+    tool.value = sv?.tool && ['case', 'sim', 'cond', 'ask'].includes(sv.tool) && (sv.tool !== 'ask' || props.preset) ? sv.tool : (mode.value === MODES[1] ? 'sim' : 'case');
     resetSim();
     if (res.rows.length === 0) notice.value = '그 지번의 실거래가 없습니다 — 기간을 늘리거나 직접 고르기로 지번을 고쳐 보세요.';
     else if (res.missedMonths > 0) notice.value = `${res.missedMonths}개월치를 받지 못했습니다 — 다시 누르면 채워집니다.`;
@@ -234,13 +234,18 @@ const switchMode = (m: CaseMode) => {
 
 /** 웹 도구 탭 — ① 경매지번 · ② 유사물건 · ③ 조건분석. 거르기 · 리스트 틀은 하나, 값은 탭마다 따로(①② 는 알약 기억 modeView, ③ 은 condF).
  *  고른 결과는 탭 밖 '시세종합' 표에 모여 탭을 바꿔도 다 보인다 */
-type Tool = 'case' | 'sim' | 'cond';
+type Tool = 'case' | 'sim' | 'cond' | 'ask';
 const TOOLS: { key: Tool; label: string; desc: string }[] = [
   { key: 'case', label: '① 경매지번', desc: '경매물건과 같은 건물의 실거래가에서 매매 · 전세를 고릅니다 — 같은 건물 · 같은 평형 거래를 먼저 참고합니다' },
   { key: 'sim', label: '② 유사물건', desc: '경매지번에 거래가 없을 때 대신 유사물건을 찾습니다 — 면적 · 연식 · 기간 등 경매물건과 비슷한 조건을 고려해 매매 · 전세를 고릅니다' },
   { key: 'cond', label: '③ 조건분석', desc: '동 전체에서 경매물건과 비슷한 조건의 매매 · 전세 평균가입니다 — 기간 · 면적 · 건축년도 등으로 유사 조건을 정합니다' },
+  { key: 'ask', label: '④ 호가분석', desc: '네이버 부동산 등에서 본 매물 호가를 직접 적습니다 — 실거래가 아니라 부르는 값이라 평균 · 전세가율에는 넣지 않습니다' },
 ];
 const tool = ref<Tool>('case');
+/** ④ 호가분석은 손품분석에만 — 값이 물건의 손품조사(매물호가)에 있다 */
+const toolList = computed(() => TOOLS.filter((t) => t.key !== 'ask' || !!props.preset));
+const sonAskReady = inject<Ref<boolean> | null>('sonAskReady', null);
+const askSlotRef = (el: unknown) => { if (sonAskReady) sonAskReady.value = !!el; };
 const toolDesc = computed(() => TOOLS.find((t) => t.key === tool.value)?.desc ?? '');
 const pickTool = (t: Tool) => {
   tool.value = t;
@@ -492,6 +497,31 @@ const hugTip = computed(() => [
 ]);
 /** ④ 평당가 — 보증보험 전세가 ÷ 경매물건 전용평 */
 const hugPerPyeong = computed(() => (jeonsePrice.value > 0 && baseArea.value > 0 ? jeonsePrice.value / (baseArea.value / PYEONG) : 0));
+/** ④ 호가 — 물건의 손품조사 매물호가(경매빌라 mkt.c.* · 유사빌라 mkt.c.sim.*)에서 가장 낮은 호가 줄. 평균 · 전세가율에는 넣지 않는다 */
+type AskPick = { price: number; areaM2: number; unit: number; addr: string; count: number };
+const askAuction = computed(() => (props.preset?.id ? auctionStore.auctions.find((x) => x.id === props.preset?.id) : undefined));
+const askOf = (sim: boolean): AskPick | null => {
+  const mv = askAuction.value?.surveyForm?.mktValues ?? {};
+  const key = (i: number, f: string) => `mkt.c.${sim ? 'sim.' : ''}${i === 0 ? f : `${f}${i}`}`;
+  const digits = (v: unknown) => Number(String(v ?? '').replace(/[^\d]/g, '')) || 0;
+  const n = Math.min(10, Math.max(1, Number(mv[sim ? 'mkt.c.sim.rowCount' : 'mkt.c.rowCount'] || (sim ? mv['mkt.c.rowCount'] : '')) || 1));
+  let best: Omit<AskPick, 'count'> | null = null; let count = 0;
+  for (let i = 0; i < n; i += 1) {
+    const price = digits(mv[key(i, 'saleAsk')]);
+    if (!price) continue;
+    count += 1;
+    const typedArea = Number(String(mv[key(i, 'area')] ?? '').replace(/[^\d.]/g, '')) || 0;
+    const areaM2 = typedArea || (!sim ? (askAuction.value?.buildingAreaM2 ?? 0) : 0);
+    const unit = digits(mv[key(i, 'unit')]) || (areaM2 > 0 ? Math.round(price / (areaM2 / PYEONG)) : 0);
+    const addr = String(mv[key(i, 'addr')] ?? '').trim();
+    if (!best || price < best.price) best = { price, areaM2, unit, addr };
+  }
+  return best ? { ...best, count } : null;
+};
+const askLines = computed(() => (props.preset ? [
+  { key: 'ac', label: '④ 경매빌라 호가', row: askOf(false) },
+  { key: 'as', label: '④ 유사빌라 호가', row: askOf(true) },
+] : []));
 /** 웹 '시세종합' 표 — ① 경매지번 매매 · 전세, ② 유사 매매 · 전세. 알약(도구 탭)과 상관없이 각자 고른 값.
  *  전세가율 / 갭은 같은 출처의 매매와 전세끼리만 계산한다(① 끼리 · ② 끼리) */
 const caseSaleRow = computed(() => rows.value.find((r) => rowKey(r) === pickedSale.value) ?? restoredSale.value ?? autoSale.value);
@@ -1162,9 +1192,21 @@ const downloadCsv = () => {
                   <td class="n">-</td>
                   <td class="res-place">{{ region?.dong || '같은 동' }} 전세 {{ condJeonse.length.toLocaleString('ko-KR') }}건 · 매매와 동일 조건</td>
                 </tr>
-                <!-- ④ 보증보험 전세가 — 경매물건 공동주택가 × 126%. 전세가율/갭은 있는 매매가(① → ② → ③ 평균)와 견준다 -->
+                <!-- ④ 호가 — 손품조사 매물호가의 가장 낮은 값(직접 적은 값). 실거래가 아니라 점은 주황, 전세가율은 비운다 -->
+                <tr v-for="a in askLines" :key="a.key" :class="['res-ask', { has: !!a.row }]" @click="pickTool('ask')">
+                  <td class="res-name"><i class="res-dot ask" />{{ a.label }}</td>
+                  <td class="n res-amt"><template v-if="a.row">{{ won(a.row.price) }}</template><span v-else class="res-empty">적은 호가 없음</span></td>
+                  <td class="n">{{ a.row ? won(a.row.unit) : '-' }}</td>
+                  <td class="n res-pair">-</td>
+                  <td class="n">{{ a.row ? pct(a.row.price, pubValue) : '-' }}</td>
+                  <td class="n">{{ a.row && a.row.areaM2 > 0 ? areaText(a.row.areaM2) : '-' }}</td>
+                  <td class="n">호가</td>
+                  <td v-if="a.row" class="res-place">{{ a.row.addr || '-' }} · 최저 호가 · {{ a.row.count }}건 중</td>
+                  <td v-else class="res-place res-note">④ 호가분석에서 적으세요</td>
+                </tr>
+                <!-- ⑤ 보증보험 전세가 — 경매물건 공동주택가 × 126%. 전세가율/갭은 있는 매매가(① → ② → ③ 평균)와 견준다 -->
                 <tr :class="['res-hug', { has: jeonsePrice > 0 }]">
-                  <td class="res-name"><i class="res-dot" /><InfoTip :rows="hugTip">④ 보증보험 전세가</InfoTip></td>
+                  <td class="res-name"><i class="res-dot" /><InfoTip :rows="hugTip">{{ preset ? '⑤' : '④' }} 보증보험 전세가</InfoTip></td>
                   <td class="n res-amt"><template v-if="jeonsePrice > 0">{{ won(jeonsePrice) }}</template><span v-else class="res-empty">데이터 없음</span></td>
                   <td class="n">{{ won(hugPerPyeong) }}</td>
                   <td class="n res-pair">{{ hugBase ? `${pct(jeonsePrice, hugBase.price)} / ${Math.round(hugBase.price - jeonsePrice).toLocaleString('ko-KR')}` : '-' }}</td>
@@ -1258,12 +1300,12 @@ const downloadCsv = () => {
         <!-- 웹 도구 탭 — 상자 탭 ①②③, 옆에 지금 탭이 무엇을 왜 하는지 빨간 글 -->
         <div v-if="webEmbed && (rows.length > 0 || dongRows.length > 0)" class="tool-bar">
           <nav class="adm-view-tabs tool-tabs" role="tablist" aria-label="시세 도구">
-            <button v-for="t in TOOLS" :key="t.key" type="button" role="tab" :class="{ on: tool === t.key }" :aria-selected="tool === t.key" @click="pickTool(t.key)">{{ t.label }}</button>
+            <button v-for="t in toolList" :key="t.key" type="button" role="tab" :class="{ on: tool === t.key }" :aria-selected="tool === t.key" @click="pickTool(t.key)">{{ t.label }}</button>
           </nav>
           <p class="tool-desc">{{ toolDesc }}</p>
         </div>
         <!-- 탭 · 거르기 — 웹은 도구 탭 ① · ② 아래 상자(.adm-case-tail) -->
-        <template v-if="(rows.length > 0 || (webEmbed && dongRows.length > 0)) && (!webEmbed || tool !== 'cond')">
+        <template v-if="(rows.length > 0 || (webEmbed && dongRows.length > 0)) && (!webEmbed || (tool !== 'cond' && tool !== 'ask'))">
         <div class="adm-case-tail">
         <!-- 웹 — 가격정보 경매지번 표와 같은 두 줄: 위 전체 · 매매 · 전세 · 월세(상자 끝까지), 아래 면적 · 거래년도 · 초기화 -->
         <div :class="['adm-tabs', { 'two-row': webEmbed }]">
@@ -1442,6 +1484,8 @@ const downloadCsv = () => {
           </div>
           <p v-if="listOpen2 && condKind === '매매' && condSales.length > 300" class="adm-foot">앞의 300줄만 보여 줍니다 — 평균은 {{ condSales.length.toLocaleString('ko-KR') }}건 전체로 계산합니다.</p>
         </section>
+        <!-- ④ 호가분석 — 손품조사 화면이 네이버 매물조사(매물호가)를 여기로 옮겨 그린다. 자리는 늘 두고(v-show) 탭일 때만 보인다 -->
+        <div v-if="webEmbed && preset" v-show="tool === 'ask'" id="sonAskSlot" :ref="askSlotRef" class="adm-case-tail ask-tail app-detail tab-survey son-detail" />
       </template>
       </div>
     </div>
