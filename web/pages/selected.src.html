@@ -464,24 +464,24 @@ button { cursor: pointer; }
 .app-market[data-s="son"] .son-detail .adp-card > .adp-card-head { padding-left: 16px !important; padding-right: 16px !important; }
 .app-market[data-s="son"] .son-detail .adp-card > :not(header) { margin-left: 0 !important; margin-right: 0 !important; padding-left: 16px !important; padding-right: 16px !important; }
 /* 손품분석 동/지역 표 — 칸 색칠 · 색 세로줄은 빼고, 머리글 글자색만: 세대수 · 매물수 진한 파랑, 회전율 빨강 */
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-table :is(th, td) { background: var(--surface) !important; border-left-color: #eef1f6 !important; border-right-color: #eef1f6 !important; box-shadow: none !important; }
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-table thead th { background: #f7f9fc !important; color: #374151 !important; }
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-table thead th.in, :is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-table thead th.in small { color: #1e3a8a !important; }   /* 세대수 · 매물수(네이버 매물수) — 검정에 가까운 파랑 */
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-table td.nm { color: #1e3a8a !important; }   /* 동 이름(검암동)도 같은 파랑 */
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-table thead th.turn, :is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-table thead th.turn small { color: #7f1d1d !important; }   /* 회전율만 — 검정에 가까운 빨강 */
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table :is(th, td) { background: var(--surface) !important; border-left-color: #eef1f6 !important; border-right-color: #eef1f6 !important; box-shadow: none !important; }
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th { background: #f7f9fc !important; color: #374151 !important; }
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th.in, :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th.in small { color: #1e3a8a !important; }   /* 세대수 · 매물수(네이버 매물수) — 검정에 가까운 파랑 */
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table td.nm { color: #1e3a8a !important; }   /* 동 이름(검암동)도 같은 파랑 */
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th.turn, :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th.turn small { color: #7f1d1d !important; }   /* 회전율만 — 검정에 가까운 빨강 */
 /* 손품분석 수요조사 — 수요분석 상자(제목 · 기초수치 · 수요지표)와 동/지역 표를 흰 바탕 + 얇은 테두리 상자 하나로 묶는다.
    둘 사이 가르는 선은 상자 안쪽 폭에서 양끝을 조금 줄여 긋는다 */
 /* 지역분석 수요분석 흰 카드 — 손품분석의 물건 상세 카드(.adp-card)와 같은 바탕 · 테두리, 안쪽 25 */
 /* 수요분석 동/지역 표 — 거래건수(연 · 월) 칸만 넓게(빡빡했다). 나머지 칸은 고르게 */
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-table.even colgroup col:nth-child(4) { width: 132px; }
-.app-market[data-s="dong"] .dm-card { box-sizing: border-box; margin-top: 18px; padding: 16px 15px; background: var(--surface); border: 1px solid var(--card-line); border-radius: 14px; }
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-supply { background: var(--surface); border: 1px solid #e3e8f0; border-radius: 10px; padding: 16px 14px 16px; margin-top: 4px; }
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-nav.dm { background: none !important; border: 0 !important; margin: 0 0 37px !important; padding: 0 !important; }
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-supply :is(.adm-table-wrap, .adm-body, .adm-shell) { margin-bottom: 0 !important; padding-bottom: 0 !important; }
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-supply :is(.adm-body, .adm-shell) { padding-top: 0 !important; }
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-nav-scope { font-size: 15px !important; font-weight: 800 !important; }   /* '○○동 수요분석' — 입지/개별성 제목과 같은 15 */
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-nav-scope .area { font-size: 15px !important; }
-:is(.app-market[data-s="son"] .son-demand, .app-market[data-s="dong"] .dm-card) .adm-nav.dm::after { left: 24px !important; right: 24px !important; }
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table.even colgroup col:nth-child(4) { width: 132px; }
+.app-market .dm-card { box-sizing: border-box; margin-top: 18px; padding: 16px 15px; background: var(--surface); border: 1px solid var(--card-line); border-radius: 14px; }
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-supply { background: var(--surface); border: 1px solid #e3e8f0; border-radius: 10px; padding: 16px 14px 16px; margin-top: 4px; }
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-nav.dm { background: none !important; border: 0 !important; margin: 0 0 37px !important; padding: 0 !important; }
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-supply :is(.adm-table-wrap, .adm-body, .adm-shell) { margin-bottom: 0 !important; padding-bottom: 0 !important; }
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-supply :is(.adm-body, .adm-shell) { padding-top: 0 !important; }
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-nav-scope { font-size: 15px !important; font-weight: 800 !important; }   /* '○○동 수요분석' — 입지/개별성 제목과 같은 15 */
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-nav-scope .area { font-size: 15px !important; }
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-nav.dm::after { left: 24px !important; right: 24px !important; }
 .app-market[data-s="son"] .adp-dm-body > .adp-dm-head.sec2 { margin-top: 18px !important; }
 /* 입지/개별성 상자 안쪽 여백도 수요분석 상자와 같은 18 — 두 상자의 제목 · 표 시작선이 칼같이 맞게 */
 .app-market[data-s="son"] .adp-dm-body > :is(.adp-dm-head.sec2, .adp-dm-block, .adp-dm-block.boxed) { padding-left: 14px !important; padding-right: 14px !important; }
@@ -3190,7 +3190,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     if (head === 'postwin' && m[2] === 'sell') { try { sessionStorage.setItem('pw.flow.sub', 'sell'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '매도·임대' — 진행절차 안 매물등록 박스 탭 */
     if (head === 'postwin' && m[2] === 'repair') { try { sessionStorage.setItem('pw.flow.sub', 'biz'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '인테리어' 하위 탭 — 진행절차 안 사업경비 박스 탭으로 */
     if (head === 'finance' && (m[2] === 'fuelMeal' || m[2] === 'itemPurchase')) return { route: 'finance', sub: 'interior' }; /* 예전 유류&식대 · 물품구매 — 사업경비에 함께 보인다 */
-    if (head === 'market' && m[2] === 'case') { try { sessionStorage.setItem('adm.dong.openCase', '1'); } catch (e) { /* 그만 */ } return { route: 'market', sub: 'dong' }; } /* 예전 '경매지번 분석' — 지역분석 › 경매지번 탭으로 */
+    if (head === 'market' && m[2] === 'case') { try { sessionStorage.setItem('adm.dong.openCase', '1'); } catch (e) { /* 그만 */ } return { route: 'market', sub: 'son' }; } /* 예전 '경매지번 분석' — 손품조사 › 시세분석 탭으로 */
     if (head === 'market' && m[2] === 'ranking') { try { sessionStorage.setItem('adm.dong.openMap', '1'); } catch (e) { /* 그만 */ } return { route: 'market', sub: 'rank' }; } /* 예전 '거래랭킹' — 랭킹분석 › 랭킹지도로 */
     if (head === 'roi') return { route: 'market', sub: 'dong' }; /* 수익분석은 뺐다 — 예전 주소는 지역분석으로 */
     if (head === 'bidrate') return { route: 'market', sub: 'sale', saleTab: m[2] === 'same' ? 'same' : 'near' }; /* 예전 '낙찰가율분석' 주소 */
@@ -3290,7 +3290,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     ['m0', [['자동등록', 'mega-auto'], ['직접입력', 'mega-manual'], ['입찰달력', '']]],   /* 입찰달력은 선정물건 칸에도 그대로(복사) */
     ['m1', [['선정물건', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
-    ['m3', [['지역분석', 'go-market'], ['손품조사', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
+    ['m3', [['지역분석', 'go-market'], ['손품분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['낙찰이후가이드', 'go-postwin']]],
     ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
     ['m4m', [['투자9단계', '']]],   /* 준비 중 — 물건선정부터 매도 · 세금까지 */
@@ -4257,7 +4257,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   const SUBTABS = {
     /* 물건상세 — 앱 AuctionDetailPage 의 TABS 다섯 칸에서 앱 '손품+현장'을 손품조사 · 임장조사 둘로 나눴다(웹만) */
     /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
-    market: [['dong', '', '지역분석'], ['son', '', '손품조사'], ['rank', '', '랭킹분석'], ['sale', '', '경매사례']],
+    market: [['dong', '', '지역분석'], ['son', '', '손품분석'], ['rank', '', '랭킹분석'], ['sale', '', '경매사례']],
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
@@ -4789,7 +4789,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   function renderSonHead() {
     const el = $('sonHead'); const shell = $('sonShell'); if (!el || !shell) return;
     let id = ''; try { id = localStorage.getItem('son.pick') || ''; } catch (e) { /* 그만 */ }
-    const on = S.route === 'market' && S.marketTab === 'son';
+    const on = false;   /* 시장분석 손품조사는 이제 사건 카드 없이 주소 검색(지역분석과 같은 검색창) — 머리 카드는 선정물건 손품조사에만 */
     const it = on && id ? byId(id) : null;
     shell.hidden = !it;
     el.innerHTML = it ? itemHeadHtml(it) : '';
@@ -4817,10 +4817,12 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     }
     /* 유사매물시세는 지역분석 화면(거래상세만) — 틀 · 거르개 CSS 를 그대로 받게 data-k 는 dong */
     const dk = key === 'similar' || key === 'rank' || key === 'son' ? 'dong' : key; /* 랭킹분석도 지역분석 화면 — 틀 CSS(data-k=dong)를 그대로 받는다 */
-    if (marketUnmount && box.querySelector(`.app-market[data-k="${dk}"][data-s="${key}"]`)) { renderSonHead(); return; }
+    /* 시장분석 손품조사는 지역분석 화면 — 선정물건 손품조사용 [data-s="son"] 규칙이 닿지 않게 data-s 를 'sonq' 로 */
+    const ds = key === 'son' ? 'sonq' : key;
+    if (marketUnmount && box.querySelector(`.app-market[data-k="${dk}"][data-s="${ds}"]`)) { renderSonHead(); return; }
     closeAppMarket();
     /* 손품분석 — 위는 선정물건 손품조사와 똑같은 물건 머리 카드(itemHeadHtml), 아래가 앱 화면(수요분석 · 시세조사) */
-    box.innerHTML = `<div class="app-market" data-k="${dk}" data-s="${key}" id="appMarketMount"></div>`;
+    box.innerHTML = `<div class="app-market" data-k="${dk}" data-s="${ds}" id="appMarketMount"></div>`;
     renderSonHead();
     /* 붙이는 도중 다시 그려 두 번 붙으면 화면에 남은 쪽만 잡는다 (낙찰이후 탭이 안 바뀌던 것과 같은 까닭) */
     const mountEl = $('appMarketMount');
@@ -4938,7 +4940,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     closeAppDetail();
     box.innerHTML = '<div class="app-market item-son" data-k="dong" data-s="son" id="itemSonMount"></div>';
     detailKey = key;
-    const stop = CLOUD.T.mountAppAdmin($('itemSonMount'), 'son');
+    const stop = CLOUD.T.mountAppAdmin($('itemSonMount'), 'sonItem');
     detailUnmount = () => { parkItemCrumbs(); stop(); };
   }
   function renderItem() {

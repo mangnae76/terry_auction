@@ -20,6 +20,7 @@ import TradeRangeFilter from '../components/TradeRangeFilter.vue';
 import { tradeWindowOf } from '../services/publicDataApi';
 import { priceUnitText, shortPlaceName } from '../services/addressLookup';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
+import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import { openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { useAuctionStore } from '../stores/auctionStore';
 import { updateStamp } from '../services/updateStamp';
@@ -170,13 +171,14 @@ const run = async () => {
       modeView.value[MODES[1]].tab = savedTab(sv, MODES[1]);
       tab.value = modeView.value[mode.value].tab;
     }
-    tool.value = sv?.tool && ['case', 'sim', 'cond', 'ask'].includes(sv.tool) && (sv.tool !== 'ask' || props.preset) ? sv.tool : (mode.value === MODES[1] ? 'sim' : 'case');
+    tool.value = sv?.tool && ['case', 'sim', 'cond', 'ask'].includes(sv.tool) ? sv.tool : (mode.value === MODES[1] ? 'sim' : 'case');
     resetSim();
     if (res.rows.length === 0) notice.value = '그 지번의 실거래가 없습니다 — 기간을 늘리거나 직접 고르기로 지번을 고쳐 보세요.';
     else if (res.missedMonths > 0) notice.value = `${res.missedMonths}개월치를 받지 못했습니다 — 다시 누르면 채워집니다.`;
     if (!res.price) {
       notice.value = notice.value || '공동주택가 자료가 없습니다 — 공동주택이 아니거나 아직 고시 전입니다.';
     }
+    if (!props.preset) loadLocalAsk();
     if (props.preset) {
       restorePresetPicks(); restorePicksFromAuction(); presetRunAt.value = Date.now();
       // 조회가 끝나면 한 번 적는다 — 고르지 않고 열어만 봐도 ③ 평균 · 보증보험이 물건에 남아 손품결론이 읽는다
@@ -247,7 +249,8 @@ const TOOLS: { key: Tool; label: string; desc: string }[] = [
 ];
 const tool = ref<Tool>('case');
 /** ④ 호가분석은 손품분석에만 — 값이 물건의 손품조사(매물호가)에 있다 */
-const toolList = computed(() => TOOLS.filter((t) => t.key !== 'ask' || !!props.preset));
+/** ④ 호가분석 — 선정물건은 물건의 손품조사 칸(옮겨 그림), 시장분석(물건 없음)은 이 화면 안 칸(주소마다 이 브라우저에 남김) */
+const toolList = computed(() => TOOLS);
 const sonAskReady = inject<Ref<boolean> | null>('sonAskReady', null);
 const askSlotRef = (el: unknown) => { if (sonAskReady) sonAskReady.value = !!el; };
 const toolDesc = computed(() => TOOLS.find((t) => t.key === tool.value)?.desc ?? '');
@@ -522,10 +525,46 @@ const askOf = (sim: boolean): AskPick | null => {
   }
   return best ? { ...best, count } : null;
 };
-const askLines = computed(() => (props.preset ? [
-  { key: 'ac', label: '④ 경매빌라 호가', row: askOf(false) },
-  { key: 'as', label: '④ 유사빌라 호가', row: askOf(true) },
-] : []));
+// ===== 시장분석 ④ 호가분석 — 물건이 없어 주소마다 이 브라우저에 적어 둔다(네이버 등에서 본 가장 낮은 호가 몇 줄) =====
+type AskLocalRow = { ask: string; area: string; addr: string; note: string };
+type AskGroupKey = 'case' | 'sim';
+const ASK_GROUPS: { key: AskGroupKey; label: string }[] = [{ key: 'case', label: '경매빌라 호가매물' }, { key: 'sim', label: '유사빌라 호가매물' }];
+const blankAsk = (): AskLocalRow => ({ ask: '', area: '', addr: '', note: '' });
+const localAsk = ref<Record<AskGroupKey, AskLocalRow[]>>({ case: [blankAsk()], sim: [blankAsk()] });
+const askLocalKey = () => `caseTrade.ask.${kind.value}.${lastRunAddress.value.replace(/\s+/g, '')}`;
+const loadLocalAsk = () => {
+  let v: Record<AskGroupKey, AskLocalRow[]> | null = null;
+  try { v = JSON.parse(localStorage.getItem(askLocalKey()) || 'null'); } catch { v = null; }
+  localAsk.value = v && Array.isArray(v.case) && Array.isArray(v.sim) ? v : { case: [blankAsk()], sim: [blankAsk()] };
+};
+watch(localAsk, (v) => { if (props.preset || !lastRunAddress.value) return; try { localStorage.setItem(askLocalKey(), JSON.stringify(v)); } catch { /* 기억만 못 한다 */ } }, { deep: true });
+const askDigits = (v: string) => Number(String(v ?? '').replace(/[^\d]/g, '')) || 0;
+const askAreaOf = (g: AskGroupKey, r: AskLocalRow) => Number(String(r.area ?? '').replace(/[^\d.]/g, '')) || (g === 'case' ? baseArea.value : 0);
+const askUnitOf = (g: AskGroupKey, r: AskLocalRow) => { const p = askDigits(r.ask); const a = askAreaOf(g, r); return p > 0 && a > 0 ? Math.round(p / (a / PYEONG)) : 0; };
+const addAskRow = (g: AskGroupKey) => { if (localAsk.value[g].length < 10) localAsk.value[g].push(blankAsk()); };
+const removeAskRow = (g: AskGroupKey) => { if (localAsk.value[g].length > 1) localAsk.value[g].pop(); };
+const localAskPick = (g: AskGroupKey): AskPick | null => {
+  const rs = localAsk.value[g].filter((r) => askDigits(r.ask) > 0);
+  if (!rs.length) return null;
+  const best = rs.reduce((a, b) => (askDigits(b.ask) < askDigits(a.ask) ? b : a));
+  return { price: askDigits(best.ask), areaM2: askAreaOf(g, best), unit: askUnitOf(g, best), addr: best.addr.trim(), count: rs.length };
+};
+/** ④ 지도 단추 — 경매빌라는 검색한 주소, 유사빌라는 그 줄에 적은 주소(동을 앞에) */
+const openAskLocal = (g: AskGroupKey, r: AskLocalRow, site: 'planet' | 'naver') => {
+  const dongName = region.value?.dong ?? '';
+  const typed = r.addr.trim();
+  if (site === 'naver') {
+    const full = g === 'case' ? lastRunAddress.value : typed ? `${region.value?.sido ?? ''} ${region.value?.sigungu ?? ''} ${dongName} ${typed}` : '';
+    if (full.trim()) void openNaverSpot(full, kind.value);
+    return;
+  }
+  const q = g === 'case' ? [dongName, lot.value].filter(Boolean).join(' ') : (typed && dongName && !typed.includes(dongName) ? `${dongName} ${typed}` : typed || dongName);
+  void openPlanetSpot(q).then((ok) => (ok ? flash(`복사했습니다 — 부동산플래닛 검색칸에 붙여넣으세요(${q})`) : flash(`부동산플래닛 검색칸에 '${q}'를 넣으세요`, 'info')));
+};
+const askLines = computed(() => [
+  { key: 'ac', label: '④ 경매빌라 호가', row: props.preset ? askOf(false) : localAskPick('case') },
+  { key: 'as', label: '④ 유사빌라 호가', row: props.preset ? askOf(true) : localAskPick('sim') },
+]);
 /** 웹 '시세종합' 표 — ① 경매지번 매매 · 전세, ② 유사 매매 · 전세. 알약(도구 탭)과 상관없이 각자 고른 값.
  *  전세가율 / 갭은 같은 출처의 매매와 전세끼리만 계산한다(① 끼리 · ② 끼리) */
 const caseSaleRow = computed(() => rows.value.find((r) => rowKey(r) === pickedSale.value) ?? restoredSale.value ?? autoSale.value);
@@ -1492,6 +1531,26 @@ const downloadCsv = () => {
         </section>
         <!-- ④ 호가분석 — 손품조사 화면이 네이버 매물조사(매물호가)를 여기로 옮겨 그린다. 자리는 늘 두고(v-show) 탭일 때만 보인다 -->
         <div v-if="webEmbed && preset" v-show="tool === 'ask'" id="sonAskSlot" :ref="askSlotRef" class="adm-case-tail ask-tail app-detail tab-survey son-detail" />
+        <!-- ④ 호가분석(시장분석 — 물건 없음) — 선정물건 ④ 와 같은 짜임. 칸이 곧 입력칸, 평당가는 호가 ÷ 면적으로 자동 -->
+        <section v-if="webEmbed && !preset && tool === 'ask'" class="adm-case-tail ask-local">
+          <div v-for="g in ASK_GROUPS" :key="g.key" class="al-group">
+            <div class="al-head">
+              <span class="t">{{ g.label }}</span>
+              <span class="al-note">호가분석은 수동 입력하세요</span>
+              <span class="al-step"><span class="lab">행</span><button type="button" aria-label="행 삭제" :disabled="localAsk[g.key].length <= 1" @click="removeAskRow(g.key)">−</button><button type="button" aria-label="행 추가" :disabled="localAsk[g.key].length >= 10" @click="addAskRow(g.key)">＋</button></span>
+            </div>
+            <div v-for="(r, i) in localAsk[g.key]" :key="`${g.key}-${i}`" class="al-table">
+              <div class="al-row al-th"><span>매매호가 (저가)</span><span>평당가</span><span>전용면적</span><span>주소</span></div>
+              <div class="al-row">
+                <span class="al-cell"><FormattedNumberInput v-model="r.ask" mode="string" class="al-in" align="center" placeholder="호가 입력" /></span>
+                <span :class="['al-cell', 'al-auto', { 'al-none': !askUnitOf(g.key, r) }]">{{ askUnitOf(g.key, r) ? askUnitOf(g.key, r).toLocaleString('ko-KR') : '자동 입력' }}</span>
+                <span class="al-cell al-area"><input v-model="r.area" :class="['al-in', { need: !!r.ask && !askAreaOf(g.key, r) }]" inputmode="decimal" :placeholder="g.key === 'case' && baseArea > 0 ? String(baseArea) : '면적 입력'" /><em>㎡</em></span>
+                <span class="al-cell al-addr"><input v-model="r.addr" class="al-in" :placeholder="g.key === 'case' ? '동층호 입력' : '빌라명 · 층 · 호 입력'" /><span class="al-links"><button type="button" class="adm-copy map-go planet" aria-label="부동산플래닛" @click="openAskLocal(g.key, r, 'planet')">P</button><button type="button" class="adm-copy map-go naver" aria-label="네이버 부동산" @click="openAskLocal(g.key, r, 'naver')">N</button></span></span>
+              </div>
+              <div class="al-row al-wide"><input v-model="r.note" class="al-in" placeholder="비고 입력" /></div>
+            </div>
+          </div>
+        </section>
       </template>
       </div>
     </div>
@@ -1861,4 +1920,30 @@ tr.picked-jeonse .pick-v { stroke: #16a34a; }
   .adm-body { padding: 0; max-width: none; }
   .adm-kpi, .adm-table-wrap { break-inside: avoid; box-shadow: none; }
 }
+/* 시장분석 ④ 호가분석 — 선정물건 ④(손품조사 칸)와 같은 짜임 */
+.ask-local { padding-top: 12px !important; }
+.al-group + .al-group { margin-top: 16px; }
+.al-head { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+.al-head .t { font-size: 15px; font-weight: 800; color: #111827; }
+.al-note { font-size: 13px; color: #6b7280; }
+.al-step { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; height: 26px; padding: 0 6px 0 10px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; }
+.al-step .lab { font-size: 13px; font-weight: 700; color: #374151; margin-right: 4px; }
+.al-step button { width: 20px; height: 20px; padding: 0; border: 0; background: none; font-size: 15px; color: #2b6df3; cursor: pointer; }
+.al-step button:disabled { color: #c3c9d4; cursor: default; }
+.al-table { border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #fff; }
+.al-table + .al-table { margin-top: 8px; }
+.al-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.al-row > * + * { border-left: 1px solid #e5e7eb; }
+.al-th > span { display: flex; align-items: center; justify-content: center; height: 30px; background: #f3f6fb; font-size: 14px; font-weight: 700; color: #374151; border-bottom: 1px solid #e5e7eb; }
+.al-cell { position: relative; display: flex; align-items: center; justify-content: center; height: 46px; font-size: 14px; color: #111827; }
+.al-auto.al-none { color: #9aa3b2; }
+.al-wide { grid-template-columns: 1fr; border-top: 1px solid #e5e7eb; }
+.al-in, .al-cell input { box-sizing: border-box; width: 100%; height: 46px; padding: 0 12px; border: 0; border-radius: 0; background: transparent; font-family: inherit; font-size: 14px; color: #111827; text-align: center; }
+.al-in:focus, .al-cell input:focus { outline: none; box-shadow: inset 0 0 0 2px #2b6df3; }
+.al-in::placeholder { color: #9aa3b2; }
+.al-in.need::placeholder { color: #dc2626; }
+.al-area em { position: absolute; right: 12px; font-style: normal; font-size: 13px; color: #6b7280; pointer-events: none; }
+.al-addr .al-in { text-align: left; padding-right: 72px; }
+.al-wide .al-in { text-align: left; padding-left: 14px; }
+.al-links { position: absolute; right: 8px; display: inline-flex; gap: 4px; }
 </style>

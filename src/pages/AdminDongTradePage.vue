@@ -105,9 +105,10 @@ const yearMin = ref('');
 const yearMax = ref('');
 const listQuery = ref('');
 /** 웹 — 결과 보기: 표(지역별 분석 · 검색리스트) / 막대그래프(지역별 분포) */
-/** 웹 시장분석 › 랭킹분석 — 같은 화면을 랭킹 탭(랭킹지도 · 거래랭킹)만으로 띄운다. 지역분석은 그 둘을 뺀 탭 */
-const props = defineProps<{ rankMode?: boolean }>();
-const listView = ref<'map' | 'top' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case'>(props.rankMode ? 'map' : 'supply');
+/** 웹 시장분석 › 랭킹분석 — 같은 화면을 랭킹 탭(랭킹지도 · 거래랭킹)만으로 띄운다.
+ *  시장분석 › 손품조사(sonMode) — 같은 화면을 수요분석 · 시세분석 탭만으로(검색창은 지역분석과 똑같다). 지역분석은 그 넷을 뺀 탭 */
+const props = defineProps<{ rankMode?: boolean; sonMode?: boolean }>();
+const listView = ref<'map' | 'top' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case'>(props.rankMode ? 'map' : props.sonMode ? 'supply' : 'table');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
 const mapRun = ref(0);
 const mapEmbed = computed(() => ({
@@ -122,8 +123,8 @@ const mapEmbed = computed(() => ({
   to: dateTo.value,
 }));
 // 웹 — 보던 안 탭을 이 브라우저에 남겨 새로고침해도 그 탭으로(지역분석 · 랭킹분석 따로). 아래 예전 주소 표시가 있으면 그쪽이 이긴다
-const VIEW_KEY = `adm.view.${props.rankMode ? 'rank' : 'dong'}`;
-const VIEWS_OF_MODE: string[] = props.rankMode ? ['map', 'top'] : ['supply', 'table', 'dist', 'detail', 'deals', 'case'];
+const VIEW_KEY = `adm.view.${props.rankMode ? 'rank' : props.sonMode ? 'son' : 'dong'}`;
+const VIEWS_OF_MODE: string[] = props.rankMode ? ['map', 'top'] : props.sonMode ? ['supply', 'case'] : ['table', 'dist', 'detail', 'deals'];
 if (webEmbed) {
   // 유사매물 탭은 뺐다 — 유사물건 찾기는 시세조사 안에서. 그 탭에 있던 사람은 시세조사로
   try { const raw = localStorage.getItem(VIEW_KEY); const v = raw === 'sim' ? 'case' : raw; if (v && VIEWS_OF_MODE.includes(v)) listView.value = v as typeof listView.value; } catch { /* 그만 */ }
@@ -131,7 +132,7 @@ if (webEmbed) {
 watch(listView, (v) => { if (webEmbed && VIEWS_OF_MODE.includes(v)) { try { localStorage.setItem(VIEW_KEY, v); } catch { /* 그만 */ } } });
 try { if (props.rankMode && sessionStorage.getItem('adm.dong.openMap') === '1') { sessionStorage.removeItem('adm.dong.openMap'); listView.value = 'map'; } } catch { /* 그만 */ }
 // 예전 시장분석 › 경매지번 분석 주소로 오면 경매지번 탭으로
-try { if (sessionStorage.getItem('adm.dong.openCase') === '1') { sessionStorage.removeItem('adm.dong.openCase'); listView.value = 'case'; } } catch { /* 그만 */ }
+try { if (props.sonMode && sessionStorage.getItem('adm.dong.openCase') === '1') { sessionStorage.removeItem('adm.dong.openCase'); listView.value = 'case'; } } catch { /* 그만 */ }
 // 웹 — 고르는 줄 · 탭 줄을 위에 붙여 둔다(CSS sticky). 탭 줄은 고르는 줄 높이만큼 아래에 붙어야 해서 그 높이를 --bar-h 로 흘려 준다
 const barEl = ref<HTMLElement | null>(null);
 let barObserver: ResizeObserver | null = null;
@@ -155,7 +156,7 @@ const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭
 const tellTab = () => {
   if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
-  window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: [props.rankMode ? '랭킹분석' : '지역분석', label] } }));
+  window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: [props.rankMode ? '랭킹분석' : props.sonMode ? '손품분석' : '지역분석', label] } }));
 };
 watch([listView, dong], tellTab);
 onMounted(tellTab);
@@ -974,9 +975,10 @@ const downloadCsv = () => {
               <button type="button" role="tab" :aria-selected="listView === 'top'" :class="{ on: listView === 'top' }" @click="listView = 'top'">거래랭킹</button>
             </nav>
         <nav v-else-if="all.length > 0 || listView === 'case'" class="adm-view-tabs" role="tablist">
-              <button type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
+              <button v-if="props.sonMode" type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
               <!-- 경매지번 — 시장분석 › 경매지번 분석 화면을 그대로(주소 줄 · 종류 · 기간 · 내비 · 표 · 저장). 주소 줄은 위 고르는 줄 자리에 -->
-              <button type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">시세분석</button>
+              <button v-if="props.sonMode" type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">시세분석</button>
+              <template v-if="!props.sonMode">
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">지역별분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">유형분포<span class="adm-view-kind" :title="distChart === 'dots' ? '점 쌓기 — 한 번 더 누르면 막대' : distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 점 쌓기'" :aria-label="distChart === 'dots' ? '점 쌓기' : distChart === 'bar' ? '막대' : '도넛'">
                 <svg v-if="distChart === 'dots'" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><circle cx="3" cy="13" r="1.6" /><circle cx="3" cy="9" r="1.6" /><circle cx="8" cy="13" r="1.6" /><circle cx="8" cy="9" r="1.6" /><circle cx="8" cy="5" r="1.6" /><circle cx="13" cy="13" r="1.6" /></svg>
@@ -985,6 +987,7 @@ const downloadCsv = () => {
               </span></button>
               <button type="button" role="tab" :aria-selected="listView === 'detail'" :class="{ on: listView === 'detail' }" @click="listView = 'detail'">상세분포</button>
               <button type="button" role="tab" :aria-selected="listView === 'deals'" :class="{ on: listView === 'deals' }" @click="listView = 'deals'">거래상세</button>
+              </template>
             </nav>
         <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
