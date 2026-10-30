@@ -13027,7 +13027,8 @@ select.adp-pub-input option { text-align: center; }
 .bidd-sum em { font-style: normal; font-size: 12px; color: #a16207; }
 .bidd-sum b { margin-left: auto; font-size: 17px; font-weight: 800; color: #854d0e; }
 .bidd-right { position: sticky; top: calc(var(--stick-top, 0px) + 230px); display: flex; flex-direction: column; min-width: 0; }
-.bidd-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 0 6px; }
+/* 탭은 판과 같은 폭 — 판의 위 모서리를 각지게 해 탭이 판에 그대로 이어진다(둥근 모서리에 탭 끝이 잘려 보였다) */
+.bidd-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .bidd-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 52px; border: 1px solid #d5dbe6; border-bottom: 0; border-radius: 10px 10px 0 0; background: #fff; font-family: inherit; color: #374151; cursor: pointer; }
 .bidd-tab b { font-size: 15px; font-weight: 800; }
 .bidd-tab span { font-size: 12px; color: #6b7280; }
@@ -13035,7 +13036,7 @@ select.adp-pub-input option { text-align: center; }
 .bidd-tab.on span { color: #c9d3ea; }
 .bidd-tab.add { border-style: dashed; border-color: #c3cbd8; background: transparent; font-size: 14px; font-weight: 700; color: #9aa3b2; }
 .bidd-tab:disabled { cursor: default; opacity: .5; }
-.bidd-board { display: flex; flex-direction: column; gap: 6px; padding: 22px 24px 20px; border-radius: 14px; background: #1f2a44; color: #fff; }
+.bidd-board { display: flex; flex-direction: column; gap: 6px; padding: 22px 24px 20px; border-radius: 0 0 14px 14px; background: #1f2a44; color: #fff; }
 .bidd-b-lab { font-size: 14px; color: #c9d3ea; }
 .bidd-b-big { font-size: 32px; font-weight: 800; letter-spacing: -0.8px; }
 .bidd-b-big small { margin-left: 4px; font-size: 16px; }
