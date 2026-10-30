@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue';
+import { computed, inject, nextTick, ref, watch } from 'vue';
 import { formatNumber, sanitizeNumericInput, toEditableNumberString, toFiniteNumber } from '../utils/numberFormat';
 
 const props = withDefaults(
@@ -29,6 +29,9 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: number | string): void;
 }>();
 
+/** 웹은 숫자 쉼표 규칙(입력칸도 천 단위 쉼표) — 적는 중에도 늘 쉼표를 끼운다. 앱은 칸마다 liveGroup 으로 정한 대로 */
+const webEmbed = inject<boolean>('webEmbed', false);
+const liveGroupOn = computed(() => props.liveGroup || webEmbed);
 const isFocused = ref(false);
 const displayValue = ref('');
 
@@ -59,7 +62,7 @@ const updateDisplayFromModel = () => {
   const model = props.modelValue ?? '';
   const editable = toEditableNumberString(model, { maxFractionDigits: props.maxFractionDigits });
   displayValue.value = isFocused.value
-    ? (props.liveGroup ? groupDigits(editable) : editable)
+    ? (liveGroupOn.value ? groupDigits(editable) : editable)
     : formatNumber(model, {
         minFractionDigits: props.minFractionDigits,
         maxFractionDigits: props.maxFractionDigits,
@@ -95,7 +98,7 @@ const onInput = (event: Event) => {
   const caret = target.selectionStart ?? raw.length;
   const normalized = sanitizeNumericInput(raw, props.maxFractionDigits);
   emitValue(normalized);
-  if (!props.liveGroup) {
+  if (!liveGroupOn.value) {
     displayValue.value = normalized;
     return;
   }
@@ -108,7 +111,7 @@ const onInput = (event: Event) => {
 const onFocus = () => {
   isFocused.value = true;
   const editable = toEditableNumberString(props.modelValue ?? '', { maxFractionDigits: props.maxFractionDigits });
-  displayValue.value = props.liveGroup ? groupDigits(editable) : editable;
+  displayValue.value = liveGroupOn.value ? groupDigits(editable) : editable;
 };
 
 const onBlur = () => {
