@@ -2103,26 +2103,6 @@ const scLocalTax = (sc: ProfitScenario) => localTaxOf(scTransferTax(sc), scLocal
 const scAfterTaxProfit = (sc: ProfitScenario) => afterTaxProfitOf(scGain(sc), scTransferTax(sc), scLocalTax(sc));
 const scNetInvestment = (sc: ProfitScenario) => scBid(sc) - (sc.cost?.loanAmount ?? 0) + scTotalCosts(sc);
 const scTotalInvest = (sc: ProfitScenario) => scBid(sc) + scTotalCosts(sc);
-/** 비용 구성 막대(웹) — 항목마다 색이 정해져 있어 금액 순서가 바뀌어도 색은 그대로다 */
-const COST_MIX: [string, string, (sc: ProfitScenario) => number][] = [
-  ['수리비', '#2b6df3', (sc) => sc.cost?.repairCost ?? 0],
-  ['취득세', '#6f9cf7', (sc) => sc.cost?.acquisitionTaxAmount ?? 0],
-  ['이자', '#9db9fa', (sc) => sc.cost?.interestAmount ?? 0],
-  ['중도상환', '#c3d4fb', (sc) => sc.cost?.midRepaymentAmount ?? 0],
-  ['명도비', '#f2a65a', (sc) => sc.cost?.evictionCost ?? 0],
-  ['매도중개료', '#f7c38f', (sc) => sc.cost?.brokerageAmount ?? 0],
-  ['법무비', '#8b95a7', (sc) => sc.cost?.legalCostAmount ?? 0],
-  ['미납관리비', '#b4bccb', (sc) => sc.cost?.arrearsFee ?? 0],
-  ['광고비', '#d5dbe6', (sc) => scAdvertising(sc)],
-];
-const scCostMix = (sc: ProfitScenario) => {
-  const total = scTotalCosts(sc);
-  if (total <= 0) return [];
-  return COST_MIX
-    .map(([label, color, get]) => ({ label, color, v: get(sc) }))
-    .filter((x) => x.v > 0)
-    .map((x) => ({ ...x, pct: Math.round((x.v / total) * 100) }));
-};
 const scAfterTaxRate = (sc: ProfitScenario) => (
   scNetInvestment(sc) > 0 ? (scAfterTaxProfit(sc) / scNetInvestment(sc)) * 100 : 0
 );
@@ -6986,11 +6966,6 @@ const goBack = () => router.back();
                 <div class="bx-row"><span class="bx-k"><i class="bx-no">08</i>명도비</span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.evictionCost" class="bx-f amt" live-group /></span></div>
                 <div class="bx-row last"><span class="bx-k"><i class="bx-no">09</i>광고비</span><span class="bx-d">원천징수 3.3% 포함</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.advertisingCost" class="bx-f amt" live-group /></span></div>
                 <div class="bx-row sum"><span class="bx-k">필요경비합계</span><span class="bx-d">01 ~ 09</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTotalCosts(sc)) }}</b></span></div>
-                <div v-if="scCostMix(sc).length" class="bida-mix">
-                  <span class="lab">비용 구성</span>
-                  <div class="bar"><span v-for="m in scCostMix(sc)" :key="m.label" :style="{ flex: m.v, background: m.color }" :title="`${m.label} ${cashMoney(m.v)}`"></span></div>
-                  <div class="legend"><span v-for="m in scCostMix(sc)" :key="m.label"><i :style="{ background: m.color }"></i>{{ m.label }} {{ m.pct }}%</span></div>
-                </div>
               </section>
 
             <section class="bida-card bida-cash">
@@ -13070,11 +13045,6 @@ select.adp-pub-input option { text-align: center; }
 .bida-hrow .bida-h { margin: 0; }
 .bida-hrow .hint { margin-left: auto; font-size: 14px; color: #6b7280; }
 /* % 칸은 오른쪽 금액 칸(200) 바로 왼쪽 한 세로줄 — 입찰정보 · 수익 · 비용 모두 같은 자리 */
-.bida-mix { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-.bida-mix .lab { font-size: 14px; color: #4b5563; }
-.bida-mix .bar { display: flex; gap: 2px; height: 12px; border-radius: 999px; overflow: hidden; }
-.bida-mix .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: #4b5563; }
-.bida-mix .legend i { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 2px; vertical-align: 1px; }
 @media (max-width: 1100px) {
   .bida-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bida-grid { grid-template-columns: 1fr; }
