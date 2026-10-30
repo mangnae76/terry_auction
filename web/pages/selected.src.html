@@ -478,6 +478,9 @@ button { cursor: pointer; }
 /* 손품분석 시세조사 — 수요분석과 같은 선: 흰 카드는 머리 카드 양끝(160~1440), 안쪽 상자는 25 들어가(185~1415), 상자 안 여백 18 */
 .app-market[data-s="son"] .son-price .adm-case-card { padding-left: 24px !important; padding-right: 24px !important; }
 .app-market[data-s="son"] .son-price :is(.adm-case-block, .adm-case-tail) { padding-left: 18px !important; padding-right: 18px !important; }
+/* 손품분석 시세조사 세로 간격 — 수요분석 카드와 같게: 카드 위 끝 → 제목 15, 제목 → 첫 상자 16 */
+.app-market[data-s="son"] .son-price .adm-sise-head { padding-top: 10px !important; padding-bottom: 0 !important; }
+.app-market[data-s="son"] .son-price .adm-case-block.res { margin-top: 16px !important; }
 #sonHead .ih-fold { display: none; }
 #sonShell[hidden] { display: none !important; }
 /* 업데이트 칩 — 제목 줄 오른쪽 끝, 아래 칸들의 오른쪽 끝선에 맞춘다 */
