@@ -393,7 +393,7 @@ button { cursor: pointer; }
 .adm-case-in .adm-trf .adm-ghost { height: 40px !important; border-radius: 8px !important; font-size: 14px !important; padding: 0 16px !important; }
 /* ① 실거래가 조사 · ② 실거래가 조건분석 사이 가르는 선 */
 .adm-case-in .adm-case-block.cond { margin-top: 16px !important; }   /* ① · ② 두 상자 사이 — 가르는 선 없이 16 */
-/* 시세종합 표 — 맨 위 상자 하나(① 경매지번 · ② 유사 · ③ 조건 평균). 고른 매매 줄은 옅은 파랑, 전세 줄은 옅은 초록 */
+/* 시세종합 표 — 맨 위 상자 하나(① 경매지번 · ② 유사 · ③ 조건 평균). 줄 색은 칠하지 않는다 — 값이 들어간 줄은 구분 칸 빨간 점으로 보인다 */
 .adm-case-in .adm-case-block.res { border-bottom: 1px solid #e5e7eb; border-radius: 10px; padding-bottom: 16px; }
 .adm-case-in .res-head { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin: 0 0 12px; }
 .adm-case-in .res-head .list-title { font-size: 15px; font-weight: 800; color: #111827; }
@@ -404,23 +404,20 @@ button { cursor: pointer; }
 .adm-case-in .res-table { table-layout: fixed !important; width: 100% !important; }
 .adm-case-in .res-table :is(th, td) { white-space: normal !important; padding-left: 8px !important; padding-right: 8px !important; }
 .adm-case-in .res-table th:nth-child(1) { width: 15% !important; } .adm-case-in .res-table th:nth-child(2) { width: 11% !important; }
-.adm-case-in .res-table th:nth-child(3) { width: 9% !important; } .adm-case-in .res-table th:nth-child(4) { width: 12% !important; }
-.adm-case-in .res-table th:nth-child(5) { width: 13% !important; } .adm-case-in .res-table th:nth-child(6) { width: auto !important; }
-.adm-case-in .res-table th:nth-child(7) { width: 13% !important; } .adm-case-in .res-table th:nth-child(8) { width: 9% !important; }
+.adm-case-in .res-table th:nth-child(3) { width: 9% !important; } .adm-case-in .res-table th:nth-child(4) { width: 13% !important; }
+.adm-case-in .res-table th:nth-child(5) { width: 9% !important; } .adm-case-in .res-table th:nth-child(6) { width: 12% !important; }
+.adm-case-in .res-table th:nth-child(7) { width: 12% !important; } .adm-case-in .res-table th:nth-child(8) { width: auto !important; }
 .adm-case-in .res-table td { width: auto !important; }
 .adm-case-in .res-table tbody tr { cursor: pointer; }
 .adm-case-in .res-table td.res-name { text-align: left !important; padding-left: 16px !important; font-weight: 700; white-space: nowrap; }
 .adm-case-in .res-table td.res-amt { font-size: 15px !important; font-weight: 800; color: #111827; }
 .adm-case-in .res-table td.res-place { text-align: left !important; color: #6b7280; }
-.adm-case-in .res-table td.res-pair { border-left: 1px solid #eef1f6; font-weight: 700; }
-.adm-case-in .res-table .res-empty { text-align: left !important; color: #9ca3af; font-weight: 400; font-size: 13px !important; }
-.adm-case-in .res-table tr.res-sale.has td { background: #f6f9ff; }
-.adm-case-in .res-table tr.res-jeonse.has td { background: #f4fbf8; }
-.adm-case-in .res-table tr.cur td.res-name { color: #2b6df3; }
+.adm-case-in .res-table td.res-pair { border-left: 1px solid #eef1f6; border-right: 1px solid #eef1f6; font-weight: 700; }
+.adm-case-in .res-table .res-empty { text-align: center !important; color: #9ca3af; font-weight: 400; font-size: 13px !important; }
 .adm-case-in .res-dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #d1d5db; vertical-align: middle; }
-.adm-case-in tr.has .res-dot.sale { background: #2b6df3; }
-.adm-case-in tr.has .res-dot.jeonse { background: #16a34a; }
-.adm-case-in tr.has .res-dot.avg { background: #6b7280; }
+.adm-case-in tr.has .res-dot { background: #dc2626; }   /* 값이 들어간 줄은 빨간 점, 비면 회색 점 — 줄 색은 칠하지 않는다 */
+/* ③ 전용면적 범위 — 두 줄(시작 ~ / 끝)의 왼쪽 끝을 맞춘다 */
+.adm-case-in .res-rng { display: inline-flex; flex-direction: column; align-items: flex-start; text-align: left; }
 /* 도구 탭 ①②③ — 웹 상자 탭 꼴(밑선 위에 올라앉는다), 옆에 지금 탭이 하는 일을 빨간 글로. 아래 상자(.adm-case-tail)가 탭 밑선에 붙는다 */
 .adm-case-in .tool-bar { display: flex; align-items: flex-end; gap: 16px; margin-top: 16px; border-bottom: 1px solid var(--boxtab-line); }
 .adm-case-in .tool-tabs { --boxtab-on: #fff; flex: none; }

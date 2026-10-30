@@ -233,9 +233,9 @@ const switchMode = (m: CaseMode) => {
  *  고른 결과는 탭 밖 '시세종합' 표에 모여 탭을 바꿔도 다 보인다 */
 type Tool = 'case' | 'sim' | 'cond';
 const TOOLS: { key: Tool; label: string; desc: string }[] = [
-  { key: 'case', label: '① 경매지번', desc: '이 물건과 같은 건물(경매지번)의 실거래에서 매매 · 전세를 고릅니다 — 같은 건물 같은 평형이 가장 정확한 시세입니다' },
-  { key: 'sim', label: '② 유사물건', desc: '이 건물에 거래가 없거나 모자랄 때, 같은 동 비슷한 물건(면적 · 연식 · 기간)에서 매매 · 전세를 고릅니다' },
-  { key: 'cond', label: '③ 조건분석', desc: '같은 동에서 조건에 맞는 매매의 평균을 냅니다 — 고른 시세가 동네 시세에서 벗어나지 않는지 견줘 봅니다' },
+  { key: 'case', label: '① 경매지번', desc: '경매물건과 같은 건물의 실거래가에서 매매 · 전세를 고릅니다 — 같은 건물 같은 평형이 가장 정확한 시세입니다' },
+  { key: 'sim', label: '② 유사물건', desc: '경매물건과 동일 물건이 없어서 유사한 물건을 찾습니다 — 같은 동 비슷한 물건(면적 · 연식 · 기간)에서 매매 · 전세를 고릅니다' },
+  { key: 'cond', label: '③ 조건분석', desc: '동 전체에서 경매물건과 조건이 비슷한 매매의 평균가입니다 — 기간 · 면적 · 건축년도로 조건을 정합니다' },
 ];
 const tool = ref<Tool>('case');
 const toolDesc = computed(() => TOOLS.find((t) => t.key === tool.value)?.desc ?? '');
@@ -1022,31 +1022,32 @@ const downloadCsv = () => {
           <div class="adm-table-wrap">
             <table class="adm-table res-table">
               <thead>
-                <tr><th>구분</th><th>실거래가</th><th>평당가</th><th>전용(㎡/평)</th><th>거래일자 / 층</th><th>위치</th><th><InfoTip :rows="JEONSE_RATIO_TIP" under="box">전세가율 / 갭</InfoTip></th><th><InfoTip :rows="PUB_RATIO_TIP" under="box" align="end">공시대비율</InfoTip></th></tr>
+                <tr><th>구분</th><th>실거래가</th><th>평당가</th><th><InfoTip :rows="JEONSE_RATIO_TIP" under="box">전세가율 / 갭</InfoTip></th><th><InfoTip :rows="PUB_RATIO_TIP" under="box">공시대비율</InfoTip></th><th>전용(㎡/평)</th><th>거래일자 / 층</th><th>위치 / 기타</th></tr>
               </thead>
               <tbody>
+                <!-- 칸 순서는 중요한 것부터 — 금액 · 평당가 · 전세가율/갭 · 공시대비율, 그다음 전용 · 거래일자 · 위치 -->
                 <tr v-for="l in resultLines" :key="l.key" :class="[`res-${l.kind}`, { has: !!l.row, cur: tool === l.tool }]" @click="pickTool(l.tool)">
                   <td class="res-name"><i :class="['res-dot', l.kind]" />{{ l.label }}</td>
+                  <td class="n res-amt">{{ l.row ? won(l.row.price) : '-' }}</td>
+                  <td class="n">{{ l.row ? won(perPyeong(l.row)) : '-' }}</td>
+                  <td v-if="l.pair !== null" rowspan="2" class="n res-pair">{{ l.pair }}</td>
+                  <td class="n">{{ pct(l.row?.price ?? 0, pubValue) }}</td>
                   <template v-if="l.row">
-                    <td class="n res-amt">{{ won(l.row.price) }}</td>
-                    <td class="n">{{ won(perPyeong(l.row)) }}</td>
                     <td class="n">{{ areaText(l.row.areaM2) }}</td>
                     <td class="n">{{ tradeWhen(l.row) }}</td>
                     <td class="res-place">{{ placeOf(l.row) }}</td>
                   </template>
-                  <td v-else colspan="5" class="res-empty">{{ l.empty }}</td>
-                  <td v-if="l.pair !== null" rowspan="2" class="n res-pair">{{ l.pair }}</td>
-                  <td class="n">{{ pct(l.row?.price ?? 0, pubValue) }}</td>
+                  <td v-else colspan="3" class="res-empty">{{ l.empty }}</td>
                 </tr>
                 <tr :class="['res-avg', { has: condAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
                   <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condTip" under="box">③ 조건 평균(매매)</InfoTip></td>
                   <td class="n res-amt"><template v-if="condAvg > 0">{{ won(condAvg) }}</template><span v-else class="res-empty">조건에 맞는 매매 없음</span></td>
                   <td class="n">-</td>
-                  <td class="n">{{ condAreaPair ? `${condAreaPair[0]} ~ ${condAreaPair[1]}` : '-' }}</td>
+                  <td class="n res-pair">-</td>
+                  <td class="n">{{ pct(condAvg, pubValue) }}</td>
+                  <td class="n"><span v-if="condAreaPair" class="res-rng"><span>{{ condAreaPair[0] }} ~</span><span>{{ condAreaPair[1] }}</span></span><template v-else>-</template></td>
                   <td class="n">{{ condPeriodText }}</td>
                   <td class="res-place">{{ region?.dong || '같은 동' }} {{ condSales.length.toLocaleString('ko-KR') }}건 · {{ condApprovalText }}</td>
-                  <td class="n">-</td>
-                  <td class="n">{{ pct(condAvg, pubValue) }}</td>
                 </tr>
               </tbody>
             </table>
