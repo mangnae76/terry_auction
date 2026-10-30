@@ -13121,17 +13121,17 @@ select.adp-pub-input option { text-align: center; }
 .bida :deep(.bx-f.amt), .bida .bx-f.amt { width: 100%; }
 .bida .bx-f.ro { display: inline-flex; align-items: center; justify-content: flex-end; border-color: transparent; background: transparent; font-weight: 600; }
 .bida .bx-f.ro.neg { color: #d64545; }
-.bx-row.hi { margin: 4px -12px; padding: 0 12px; border-bottom: 0; border-radius: 8px; }
+.bx-row.hi { margin: 0 -12px; padding: 0 12px; border-bottom: 1px solid transparent; border-radius: 8px; }
 .bx-row.hi .bx-k { font-weight: 800; color: #1f2a44; }
 .bx-row.hi.bid { background: #f5f8ff; }
 .bx-row.hi.sale { background: #fff6f4; }
 .bx-row.hi.sale .bx-k { color: #9a3412; }
 .bida :deep(.bx-f.amt.big) { height: 34px; font-size: 16px; font-weight: 800; color: #1f2a44; }
 .bx-row.hi.sale :deep(.bx-f.amt.big) { color: #9a3412; }
-.bx-slide { padding: 2px 0 12px; border-bottom: 1px solid #f0f2f7; }
+.bx-slide { box-sizing: border-box; height: 88px; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 0; border-bottom: 1px solid #f0f2f7; }   /* 줄 두 칸(44 × 2) — 아래 줄들이 한 칸 격자에 그대로 놓인다 */
 .bx-slide input[type='range'] { width: 100%; margin: 0; accent-color: #2b6df3; cursor: pointer; }
 .bx-slide.sale input[type='range'] { accent-color: #c2410c; }
-.bx-slide .lab { display: flex; justify-content: space-between; margin-top: 4px; font-size: 12px; color: #6b7280; }
+.bx-slide .lab { display: flex; justify-content: space-between; margin-top: 0; font-size: 12px; color: #6b7280; }
 .bx-row.net { border-bottom: 1px solid #f0f2f7; }   /* 세후 순이익도 흰 바탕 한 줄 — 수익률 칩만 붙인다 */
 .bx-row.net .bx-k { font-weight: 800; }
 .bx-row.net .rate { padding: 2px 8px; border-radius: 6px; background: #e7f6ee; font-size: 12px; font-weight: 700; color: #1f7a4a; }
