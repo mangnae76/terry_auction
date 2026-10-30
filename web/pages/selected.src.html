@@ -498,44 +498,56 @@ button { cursor: pointer; }
 /* 시세조사 카드 ↔ 아래 카드 사이 — 수요분석 탭 카드 사이와 같은 8 (시세조사 화면 아래 여백을 걷고, .son 줄 간격 10 에서 2 를 당긴다) */
 .app-market[data-s="son"] .son-price :is(.adm-shell, .adm-body) { padding-bottom: 0 !important; margin-bottom: 0 !important; }
 #sonNaverSlot { margin-top: -2px; }
-#sonNaverSlot .adp-card { margin-top: 0 !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-card { margin-top: 0 !important; }
 /* 위 시세조사 카드와 같은 둥글기 · 테두리(카드 14, 안 상자 10, 표 8), 표 끝선은 실거래 리스트 표와 같은 191~1409(상자 안쪽 14) */
-#sonNaverSlot .adp-card { border: 1px solid var(--card-line) !important; border-radius: 14px !important; box-shadow: none !important; padding-bottom: 0 !important; }
-#sonNaverSlot .adp-mkt-body > :last-child { margin-bottom: 0 !important; }
-#sonNaverSlot :is(.adp-mkt-block, .adp-sub-block) { box-sizing: border-box; border: 1px solid #e5e7eb !important; border-radius: 10px !important; padding: 12px 14px 14px !important; background: #fff; }
-#sonNaverSlot .adp-card > .adp-mkt-body { padding-left: 15px !important; padding-right: 15px !important; }   /* 카드 테두리 1 + 15 = 상자 176~1424(위 시세조사와 같다) */
+:is(#sonNaverSlot, #sonConcSlot) .adp-card { border: 1px solid var(--card-line) !important; border-radius: 14px !important; box-shadow: none !important; padding-bottom: 0 !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-mkt-body > :last-child { margin-bottom: 0 !important; }
+:is(#sonNaverSlot, #sonConcSlot) :is(.adp-mkt-block, .adp-sub-block) { box-sizing: border-box; border: 1px solid #e5e7eb !important; border-radius: 10px !important; padding: 12px 14px 14px !important; background: #fff; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-card > .adp-mkt-body { padding-left: 15px !important; padding-right: 15px !important; }   /* 카드 테두리 1 + 15 = 상자 176~1424(위 시세조사와 같다) */
 /* 시세조사 표도 모서리 8(표 공통 규칙) */
 .adm-case-in .adm-table-wrap { border-radius: 8px !important; }
-#sonNaverSlot :is(.adp-dm-table, .adp-table-wrap, .adp-mkt-cells) { margin-left: 0 !important; margin-right: 0 !important; border-radius: 8px !important; }
-#sonNaverSlot .son-lowcase .adp-mkt-cells + .adp-mkt-block-head { margin-top: 16px; }
+:is(#sonNaverSlot, #sonConcSlot) :is(.adp-dm-table, .adp-table-wrap, .adp-mkt-cells) { margin-left: 0 !important; margin-right: 0 !important; border-radius: 8px !important; }
+:is(#sonNaverSlot, #sonConcSlot) .son-lowcase .adp-mkt-cells + .adp-mkt-block-head { margin-top: 16px; }
 /* 글자 — 시세조사(실거래 리스트)와 같은 규칙: 작은 제목 15/800, 곁글 13 회색, 표 머리 14/700, 표 값 14/400(금액만 700) */
-#sonNaverSlot .adp-mkt-block-head .t { font-size: 15px !important; font-weight: 800 !important; color: #111827 !important; }
-#sonNaverSlot .adp-mkt-block-head .adp-dm-addr { font-size: 13px !important; font-weight: 400 !important; color: #6b7280 !important; margin-left: 6px; }
-#sonNaverSlot .adp-mkt-cells .cell > small { font-size: 14px !important; font-weight: 700 !important; color: #374151 !important; }
-#sonNaverSlot .adp-mkt-cells .cell > strong { font-size: 14px !important; font-weight: 400 !important; color: #111827 !important; }
-#sonNaverSlot .adp-mkt-cells .cell > strong.hi { font-weight: 700 !important; }
-#sonNaverSlot .adp-mkt-cells .cell.adp-mkt-wide > strong { color: #9ca3af !important; }
-#sonNaverSlot .adp-mkt-cells .cell.adp-mkt-wide > strong.filled { color: #111827 !important; }
-#sonNaverSlot .adp-salecase-table th { font-size: 14px !important; font-weight: 700 !important; color: #374151 !important; }
-#sonNaverSlot .adp-salecase-table td { font-size: 14px !important; font-weight: 400 !important; color: #9ca3af; }
-#sonNaverSlot .adp-sub-block :is(label, small, span, input, select, button) { font-size: 14px; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-mkt-block-head .t { font-size: 15px !important; font-weight: 800 !important; color: #111827 !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-mkt-block-head .adp-dm-addr { font-size: 13px !important; font-weight: 400 !important; color: #6b7280 !important; margin-left: 6px; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-mkt-cells .cell > small { font-size: 14px !important; font-weight: 700 !important; color: #374151 !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-mkt-cells .cell > strong { font-size: 14px !important; font-weight: 400 !important; color: #111827 !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-mkt-cells .cell > strong.hi { font-weight: 700 !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-mkt-cells .cell.adp-mkt-wide > strong { color: #9ca3af !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-mkt-cells .cell.adp-mkt-wide > strong.filled { color: #111827 !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-salecase-table th { font-size: 14px !important; font-weight: 700 !important; color: #374151 !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-salecase-table td { font-size: 14px !important; font-weight: 400 !important; color: #9ca3af; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-sub-block :is(label, small, span, input, select, button) { font-size: 14px; }
 /* 매물호가 주소 칸 — 지도(빌라 P 부동산플래닛 · 아파트 N 네이버) · 주소 복사 단추. 시세조사 표 주소 칸과 같은 꼴 */
-#sonNaverSlot .adp-mkt-cells .cell:has(> .son-addr-acts) { position: relative; }
-#sonNaverSlot .son-addr-acts { position: absolute; right: 10px; bottom: 0; display: inline-flex; align-items: center; gap: 6px; }   /* 값 줄 오른쪽 끝 — 글자 아래로 떨어지지 않게 */
-#sonNaverSlot :is(.son-map-go, .son-addr-copy) { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; color: #6b7280; cursor: pointer; font-family: inherit; }
-#sonNaverSlot .son-map-go { font-size: 12px !important; font-weight: 800; line-height: 1; }
-#sonNaverSlot .son-map-go.naver { color: #03a94d; } #sonNaverSlot .son-map-go.naver:hover { border-color: #03a94d; }
-#sonNaverSlot .son-map-go.planet { color: #2f5bea; } #sonNaverSlot .son-map-go.planet:hover { border-color: #2f5bea; }
-#sonNaverSlot .son-addr-copy:hover { border-color: #2b6df3; color: #2b6df3; }
-#sonNaverSlot .adp-mkt-body { padding-top: 9px !important; padding-bottom: 16px !important; }   /* 카드 위 4 + 9 + 제목 줄 안 2 = 15 */
-#sonNaverSlot .adp-mkt-body > .adp-dm-head:first-child { margin-top: 0 !important; }
-#sonNaverSlot .adp-dm-head { margin: 0 0 16px !important; padding: 0 !important; min-height: 0 !important; border: 0 !important; }
-#sonNaverSlot .adp-dm-head.sec2 { margin-top: 16px !important; }
-#sonNaverSlot .adp-dm-title { display: inline-flex; align-items: center; padding: 0 !important; font-size: 16px !important; font-weight: 800 !important; color: #111827; line-height: 23px; }
-#sonNaverSlot .son-h-ico { flex: none; margin-right: 6px; color: #2b6df3; }
-#sonNaverSlot :is(.adp-mkt-block, .adp-sub-block) { margin: 0 !important; }
-#sonNaverSlot .adp-mkt-block + .adp-mkt-block { margin-top: 16px !important; }
-#sonNaverSlot .son-salecase .adp-table-wrap + .adp-mkt-block-head { margin-top: 16px; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-mkt-cells .cell:has(> .son-addr-acts) { position: relative; }
+:is(#sonNaverSlot, #sonConcSlot) .son-addr-acts { position: absolute; right: 10px; bottom: 0; display: inline-flex; align-items: center; gap: 6px; }   /* 값 줄 오른쪽 끝 — 글자 아래로 떨어지지 않게 */
+:is(#sonNaverSlot, #sonConcSlot) :is(.son-map-go, .son-addr-copy) { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; padding: 0; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; color: #6b7280; cursor: pointer; font-family: inherit; }
+:is(#sonNaverSlot, #sonConcSlot) .son-map-go { font-size: 12px !important; font-weight: 800; line-height: 1; }
+:is(#sonNaverSlot, #sonConcSlot) .son-map-go.naver { color: #03a94d; } :is(#sonNaverSlot, #sonConcSlot) .son-map-go.naver:hover { border-color: #03a94d; }
+:is(#sonNaverSlot, #sonConcSlot) .son-map-go.planet { color: #2f5bea; } :is(#sonNaverSlot, #sonConcSlot) .son-map-go.planet:hover { border-color: #2f5bea; }
+:is(#sonNaverSlot, #sonConcSlot) .son-addr-copy:hover { border-color: #2b6df3; color: #2b6df3; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-mkt-body { padding-top: 9px !important; padding-bottom: 16px !important; }   /* 카드 위 4 + 9 + 제목 줄 안 2 = 15 */
+:is(#sonNaverSlot, #sonConcSlot) .adp-mkt-body > .adp-dm-head:first-child { margin-top: 0 !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-dm-head { margin: 0 0 16px !important; padding: 0 !important; min-height: 0 !important; border: 0 !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-dm-head.sec2 { margin-top: 16px !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-dm-title { display: inline-flex; align-items: center; padding: 0 !important; font-size: 16px !important; font-weight: 800 !important; color: #111827; line-height: 23px; }
+:is(#sonNaverSlot, #sonConcSlot) .son-h-ico { flex: none; margin-right: 6px; color: #2b6df3; }
+:is(#sonNaverSlot, #sonConcSlot) :is(.adp-mkt-block, .adp-sub-block) { margin: 0 !important; }
+:is(#sonNaverSlot, #sonConcSlot) .adp-mkt-block + .adp-mkt-block { margin-top: 16px !important; }
+:is(#sonNaverSlot, #sonConcSlot) .son-salecase .adp-table-wrap + .adp-mkt-block-head { margin-top: 16px; }
+/* 손품결론 카드 머리 — 시세분석 제목과 같은 꼴(아이콘 파랑 + 16/800 검정), 카드 위 끝 → 제목 15 */
+#sonConcSlot .adp-card > .adp-card-head { padding-top: 15px !important; padding-bottom: 0 !important; border: 0 !important; min-height: 0 !important; }
+#sonConcSlot .adp-card > .adp-card-head h2 { font-size: 16px !important; font-weight: 800 !important; color: #111827 !important; line-height: 23px; }
+#sonConcSlot .adp-card > .adp-card-head .adp-h2-ico { width: 16px; height: 16px; color: #2b6df3 !important; }
+#sonConcSlot .adp-card > .adp-card-head .adp-head-red { color: #111827 !important; }   /* 제목 글은 검정 — 시세분석 · 수요분석 제목과 같게 */
+#sonConcSlot .adp-table td strong { font-size: 14px !important; font-weight: 400 !important; }
+#sonConcSlot .adp-card > :not(header) { padding-left: 15px !important; padding-right: 15px !important; padding-top: 16px !important; padding-bottom: 16px !important; }
+#sonConcSlot .adp-card > .adp-card-head { padding-left: 15px !important; padding-right: 15px !important; }
+#sonConcSlot :is(.adp-sub-block, .adp-mkt-block) + :is(.adp-sub-block, .adp-mkt-block) { margin-top: 16px !important; }
+#sonConcSlot .adp-sub-head { margin: 0 0 12px !important; padding: 0 !important; font-size: 15px !important; font-weight: 800 !important; color: #111827 !important; }
+#sonConcSlot .adp-table :is(th) { font-size: 14px !important; font-weight: 700 !important; color: #374151 !important; }
+#sonConcSlot .adp-table :is(td) { font-size: 14px !important; }
 #sonHead .ih-fold { display: none; }
 #sonShell[hidden] { display: none !important; }
 /* 업데이트 칩 — 제목 줄 오른쪽 끝, 아래 칸들의 오른쪽 끝선에 맞춘다 */
