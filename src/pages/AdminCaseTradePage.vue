@@ -22,6 +22,7 @@ import { priceUnitText, shortPlaceName } from '../services/addressLookup';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
 import { openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { useAuctionStore } from '../stores/auctionStore';
+import { updateStamp } from '../services/updateStamp';
 import type { MarketPickRow, MarketPicks } from '../types/auction';
 import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
@@ -176,7 +177,7 @@ const run = async () => {
     if (!res.price) {
       notice.value = notice.value || '공동주택가 자료가 없습니다 — 공동주택이 아니거나 아직 고시 전입니다.';
     }
-    if (props.preset) { restorePresetPicks(); restorePicksFromAuction(); }
+    if (props.preset) { restorePresetPicks(); restorePicksFromAuction(); presetRunAt.value = Date.now(); }
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -800,7 +801,11 @@ type ScreenSnap = {
   notice: string; ovSido: string; ovDistrictCode: string; ovDong: string; ovLot: string;
 };
 const screen = useScreenSnapshot<ScreenSnap>('adm.case.snapshot.v1');
-const screenChip = screen.chip;
+/** 손품분석은 화면 저장을 쓰지 않아 칩이 없었다 — 조회가 끝난 시각으로 같은 꼴(UPDATE : …, 초록)을 만든다 */
+const presetRunAt = ref(0);
+const screenChip = computed(() => (props.preset
+  ? (presetRunAt.value ? { tone: 'ok', text: `UPDATE : ${updateStamp(presetRunAt.value)}` } : null)
+  : screen.chip.value));
 let restoringScreen = false;
 const collectScreen = (): ScreenSnap => ({
   address: address.value, kind: kind.value, years: years.value,
@@ -1056,12 +1061,12 @@ const downloadCsv = () => {
       <div :class="['adm-case-card', { folded: webEmbed && !siseOpen }]">
       <!-- 손품분석 — 손품조사 카드 제목처럼 '시세조사'(아이콘) 아래에 실거래가 조사(아이콘 없음) -->
       <!-- 시세분석 제목(손품분석 · 지역분석) — 오른쪽 끝 꺾쇠로 카드를 접고 편다 -->
-      <div v-if="webEmbed" class="adm-sise-head"><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세분석<button type="button" class="sise-fold" :aria-expanded="siseOpen" :aria-label="siseOpen ? '시세분석 접기' : '시세분석 펼치기'" :title="siseOpen ? '접기' : '펼치기'" @click="siseOpen = !siseOpen"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" :class="{ up: siseOpen }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button></div>
+      <div v-if="webEmbed" class="adm-sise-head"><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세분석<SnapChip :chip="screenChip" class="sise-chip" /><button type="button" class="sise-fold" :aria-expanded="siseOpen" :aria-label="siseOpen ? '시세분석 접기' : '시세분석 펼치기'" :title="siseOpen ? '접기' : '펼치기'" @click="siseOpen = !siseOpen"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" :class="{ up: siseOpen }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button></div>
       <!-- 웹 — 지역분석의 탭 줄 자리: 왼쪽에 화면 이름 · 저장 단추, 오른쪽에 경로(#admCrumbSlot 로 웹 경로를 옮겨 온다) -->
       <!-- 손품분석은 제목도 경로도 없어 이 줄을 띄우지 않는다(빈 줄이 남아 표가 내려앉았다) -->
-      <div v-if="webEmbed && !preset" class="adm-list-head adm-tabs-top adm-case-row">
-        <SnapChip :chip="screenChip" />
-        <div v-if="!inDong" id="admCrumbSlot" class="adm-crumb-slot" />
+      <!-- 경로 줄은 지역분석 밖에서 쓸 때만 — UPDATE 칩은 제목 줄(접기 왼쪽)로 올렸다(빈 줄이 남아 표가 내려앉았다) -->
+      <div v-if="webEmbed && !preset && !inDong" class="adm-list-head adm-tabs-top adm-case-row">
+        <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
 
       <div class="adm-print-only">
