@@ -158,9 +158,15 @@ const run = async () => {
     tab.value = 'all';
     modeView.value = { 경매물건: freshView(), 유사물건: freshView() };
     await nextTick();
+    const sv = webEmbed ? readView() : null;
     pickNone();
     // 그 건물 거래가 하나도 없으면 유사물건부터 펴 둔다
-    mode.value = pickCaseTrade(res.rows, ['매매', '직거래', '전세'], 0) ? MODES[0] : MODES[1];
+    mode.value = sv?.mode && MODES.includes(sv.mode) ? sv.mode : (pickCaseTrade(res.rows, ['매매', '직거래', '전세'], 0) ? MODES[0] : MODES[1]);
+    if (sv) {
+      modeView.value[MODES[0]].tab = savedTab(sv, MODES[0]);
+      modeView.value[MODES[1]].tab = savedTab(sv, MODES[1]);
+      tab.value = modeView.value[mode.value].tab;
+    }
     resetSim();
     if (res.rows.length === 0) notice.value = '그 지번의 실거래가 없습니다 — 기간을 늘리거나 직접 고르기로 지번을 고쳐 보세요.';
     else if (res.missedMonths > 0) notice.value = `${res.missedMonths}개월치를 받지 못했습니다 — 다시 누르면 채워집니다.`;
@@ -194,6 +200,21 @@ const resetFilters = () => {
   colFilter.clearAll();
 };
 
+/** 고른 알약(경매물건 · 유사물건)과 알약마다 고른 표 탭(전체 · 매매 · 전세 · 월세)은 물건 · 화면과 상관없이 늘 그대로 —
+ *  다른 탭 · 다른 물건 · 새 창으로 들어와도 마지막에 고른 대로 연다(브라우저에 남긴다) */
+const VIEW_KEY = 'caseTrade.view';
+type SavedView = { mode: CaseMode; tabs: Partial<Record<CaseMode, string>> };
+const readView = (): SavedView | null => { try { return JSON.parse(localStorage.getItem(VIEW_KEY) || 'null'); } catch { return null; } };
+const writeView = () => {
+  if (!webEmbed || loading.value) return;
+  const tabs = { ...(readView()?.tabs ?? {}), [mode.value]: tab.value };
+  try { localStorage.setItem(VIEW_KEY, JSON.stringify({ mode: mode.value, tabs })); } catch { /* 기억만 못 한다 */ }
+};
+const TABS = ['all', '매매', '전세', '월세'] as const;
+const savedTab = (v: SavedView | null, m: CaseMode): typeof tab.value => {
+  const t = v?.tabs?.[m];
+  return (TABS as readonly string[]).includes(t ?? '') ? (t as typeof tab.value) : 'all';
+};
 /** 경매물건 · 유사물건 알약 — 알약마다 표 탭(전체 · 매매 · 전세 · 월세) · 면적 · 거래년도를 따로 기억한다.
  *  유사물건에서 전세를 펴 두고 경매물건에 다녀와도 전세 그대로 (예전엔 알약을 누를 때마다 전체로 돌아갔다) */
 type ModeView = { tab: typeof tab.value; areaFilter: string; yearFilter: string };
@@ -243,6 +264,14 @@ const condRangeSales = computed(() => dongRows.value.filter((r) => (
 /** 표 머리글(구분 ~ 층) ▽ 고르기까지 건 줄 — 평균 · 네 칸이 이걸 따른다(손품조사 조건분석과 같다) */
 const condColFilter = useColumnFilters<CaseTradeRow>(condRangeSales, COLS.filter((c) => c.key !== 'place'));
 const condSales = computed(() => condColFilter.rows.value);
+/** 실거래 리스트 검색 — 표 줄만 좁힌다(평균 · 네 칸은 거르기 결과 그대로). 앱 가격정보 '검색리스트 안에서 찾기'와 같은 항목 */
+const condQuery = ref('');
+const condFound = computed(() => {
+  const q = condQuery.value.trim().replace(/[\s,]/g, '');
+  if (!q) return condSales.value;
+  return condSales.value.filter((r) => [r.contractDate, r.amount, String(r.price), areaText(r.areaM2), buildText(r.buildYear), r.floor ? `${r.floor}층` : '', r.umdNm, r.jibun, r.name]
+    .join(' ').replace(/[\s,]/g, '').includes(q));
+});
 const condAvg = computed(() => (condSales.value.length ? condSales.value.reduce((t, r) => t + r.price, 0) / condSales.value.length : 0));
 /** 손품조사 조건분석과 같은 글 — 면적은 걸러진 매매의 실제 최소~최대, 사용승인은 건축년도 범위 + 몇 년차 */
 /** 시작 · 끝 두 줄(손품조사 앱 칸과 같이) — 한 줄이면 칸을 넘친다 */
@@ -721,17 +750,19 @@ const presetKey = () => (props.preset ? `son.case.${props.preset.kind}.${props.p
 const savePresetPicks = () => {
   if (!props.preset || loading.value || !rows.value.length && !dongRows.value.length) return;
   const v: PresetPicks = { modeView: modeView.value, areaFilter: areaFilter.value, yearFilter: yearFilter.value, mode: mode.value, tab: tab.value, simF: simF.value, condF: condF.value, simSale: simSale.value, simJeonse: simJeonse.value, pickedSale: pickedSale.value, pickedJeonse: pickedJeonse.value };
-  try { sessionStorage.setItem(presetKey(), JSON.stringify(v)); } catch { /* 기억만 못 한다 */ }
+  try { localStorage.setItem(presetKey(), JSON.stringify(v)); } catch { /* 기억만 못 한다 */ }
 };
 const restorePresetPicks = () => {
   let v: PresetPicks | null = null;
-  try { v = JSON.parse(sessionStorage.getItem(presetKey()) || 'null'); } catch { v = null; }
+  try { v = JSON.parse(localStorage.getItem(presetKey()) || 'null'); } catch { v = null; }
   if (!v) return;
-  if (v.modeView) modeView.value = v.modeView;
-  areaFilter.value = v.areaFilter ?? ''; yearFilter.value = v.yearFilter ?? '';
-  mode.value = v.mode; tab.value = v.tab; simF.value = v.simF; condF.value = v.condF;
+  // 알약 · 표 탭은 물건과 상관없는 기억(readView)을 따른다 — 여기서는 그 물건의 면적 · 연도 · 거르기 · 고른 줄만
+  if (v.modeView) { modeView.value[MODES[0]].areaFilter = v.modeView[MODES[0]]?.areaFilter ?? ''; modeView.value[MODES[0]].yearFilter = v.modeView[MODES[0]]?.yearFilter ?? ''; modeView.value[MODES[1]].areaFilter = v.modeView[MODES[1]]?.areaFilter ?? ''; modeView.value[MODES[1]].yearFilter = v.modeView[MODES[1]]?.yearFilter ?? ''; }
+  if (v.mode === mode.value) { areaFilter.value = v.areaFilter ?? ''; yearFilter.value = v.yearFilter ?? ''; }
+  simF.value = v.simF; condF.value = v.condF;
   simSale.value = v.simSale; simJeonse.value = v.simJeonse; pickedSale.value = v.pickedSale; pickedJeonse.value = v.pickedJeonse;
 };
+watch([mode, tab], writeView);
 watch([mode, tab, modeView, areaFilter, yearFilter, simF, condF, simSale, simJeonse, pickedSale, pickedJeonse], savePresetPicks, { deep: true });
 // 물건이 준 주소 · 종류 — 바뀔 때마다 바로 조회
 watch(() => props.preset && `${props.preset.address}|${props.preset.kind}`, (v) => {
@@ -1197,6 +1228,12 @@ const downloadCsv = () => {
             <span>{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 = 정상거래 {{ condSales.filter((r) => r.kind === '매매').length.toLocaleString('ko-KR') }}건 + 직거래 {{ condSales.filter((r) => r.kind === '직거래').length.toLocaleString('ko-KR') }}건 · 계약해제 제외</span>
             <button type="button" class="list-fold" :aria-expanded="listOpen2" :aria-label="listOpen2 ? '실거래 리스트 접기' : '실거래 리스트 펼치기'" :title="listOpen2 ? '접기' : '펼치기'" @click="listOpen2 = !listOpen2"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" :class="{ up: listOpen2 }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button>
           </div>
+          <div v-show="listOpen2" class="list-find">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            <input v-model="condQuery" type="search" placeholder="계약일 · 금액 · 면적 · 건축년도 · 층 · 주소 검색" aria-label="실거래 리스트 안에서 찾기" />
+            <small v-if="condQuery.trim()">{{ condFound.length.toLocaleString('ko-KR') }}건</small>
+            <button v-if="condQuery" type="button" aria-label="검색어 지우기" @click="condQuery = ''">×</button>
+          </div>
           <div v-show="listOpen2" class="adm-table-wrap">
             <table class="adm-table">
               <thead>
@@ -1219,7 +1256,7 @@ const downloadCsv = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(r, i) in condSales.slice(0, 300)" :key="`c-${r.contractDate}-${r.floor}-${i}`">
+                <tr v-for="(r, i) in condFound.slice(0, 300)" :key="`c-${r.contractDate}-${r.floor}-${i}`">
                   <td><span :class="['kind', kindClass(r.kind)]">{{ r.kind }}</span></td>
                   <td>{{ r.contractDate }}</td>
                   <td class="n strong amt"><span class="v">{{ r.amount }}</span></td>
@@ -1353,6 +1390,13 @@ const downloadCsv = () => {
 .adm-sum .list-title { font-size: 15px; font-weight: 800; color: #111827; }
 /* 실거래 리스트 접기 — 제목 줄 오른쪽 끝, 글자 없이 꺾쇠만(앱 가격정보 검색리스트와 같은 꼴) */
 .adm-sum .list-fold { align-self: center; margin-left: auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; color: #4b5563; cursor: pointer; }
+.list-find { display: flex; align-items: center; gap: 8px; height: 40px; margin: 0 0 12px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; color: #9ca3af; }
+.list-find:focus-within { border-color: #2b6df3; }
+.list-find input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font-family: inherit; font-size: 14px; color: #111827; }
+.list-find input::placeholder { color: #9aa3b2; }
+.list-find input::-webkit-search-cancel-button { display: none; }
+.list-find small { flex: none; font-size: 13px; font-weight: 700; color: #2b6df3; }
+.list-find button { flex: none; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: #eef1f6; font-size: 15px; line-height: 1; color: #6b7280; cursor: pointer; }
 .adm-sum .list-fold:hover { border-color: #2b6df3; color: #2b6df3; }
 .list-fold svg { transition: transform .2s; }
 .list-fold svg.up { transform: rotate(180deg); }
