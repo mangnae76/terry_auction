@@ -3983,6 +3983,39 @@ const lowAddrTyped = (index: number) => !!mktVal(lowKey(index, 'addr')).trim();
  *  저장 자리는 알약과 같다(경매 mkt.c.* · 유사 mkt.c.sim.*). 유사 줄 수는 따로 센다(없으면 예전 공용 줄 수) */
 /** 주소 앞 건물 이름 — 위 물건 카드 주소의 건물 이름 그대로('더라이프주건축물'). 동 · 층 · 호는 줄마다 손으로 */
 const subjectBuildingName = computed(() => subjectBuildingLabel.value.trim());
+/** 손품분석 손품결론 · 시세 결론 — 시세분석에서 고른 값(물건의 marketPicks)과 ④ 호가매물(가장 낮은 호가)의 평당가 · 가격, 그 평균.
+ *  줄 이름은 시세종합과 같다. 체크를 풀면 평균에서 뺀다(물건에 남는다) */
+type SonConcLine = { key: string; label: string; unit: number; price: number };
+const askMin = (sim: boolean) => {
+  let best: { price: number; unit: number } | null = null;
+  for (let i = 0; i < lowRowCountG(sim); i += 1) {
+    const price = parseDigits(mktVal(lowKeyG(sim, i, 'saleAsk')));
+    if (!price) continue;
+    const unit = parseDigits(mktVal(lowKeyG(sim, i, 'unit'))) || lowUnitAutoG(sim, i);
+    if (!best || price < best.price) best = { price, unit };
+  }
+  return best;
+};
+const perPyOf = (price: number, m2: number) => (price > 0 && m2 > 0 ? Math.round(price / (m2 / PYEONG_TO_M2)) : 0);
+const sonConcLines = computed<SonConcLine[]>(() => {
+  const mp = auction.value?.marketPicks;
+  const ca = askMin(false); const sa = askMin(true);
+  return [
+    { key: 'caseSale', label: '경매지번 매매가', unit: perPyOf(mp?.caseSale?.price ?? 0, mp?.caseSale?.areaM2 ?? 0), price: mp?.caseSale?.price ?? 0 },
+    { key: 'simSale', label: '유사 매매가', unit: perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), price: mp?.simSale?.price ?? 0 },
+    { key: 'condSale', label: '평균 매매가', unit: mp?.condSalePerPy ?? 0, price: mp?.condSaleAvg ?? 0 },
+    { key: 'askCase', label: '경매빌라 호가매물', unit: ca?.unit ?? 0, price: ca?.price ?? 0 },
+    { key: 'askSim', label: '유사빌라 호가매물', unit: sa?.unit ?? 0, price: sa?.price ?? 0 },
+  ];
+});
+const sonConcOff = (key: string) => mktVal(`son.conc.off.${key}`) === '1';
+const toggleSonConc = (key: string) => { setMktVal(`son.conc.off.${key}`, sonConcOff(key) ? '' : '1'); persistSoon(); };
+const sonConcMean = computed(() => {
+  const on = sonConcLines.value.filter((l) => !sonConcOff(l.key));
+  const avg = (xs: number[]) => { const v = xs.filter((x) => x > 0); return v.length ? Math.round(v.reduce((t, x) => t + x, 0) / v.length) : 0; };
+  return { unit: avg(on.map((l) => l.unit)), price: avg(on.map((l) => l.price)) };
+});
+const wonText = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
 const LOW_GROUPS = [{ sim: false, label: '경매빌라 호가매물' }, { sim: true, label: '유사빌라 호가매물' }];
 const lowKeyG = (sim: boolean, index: number, field: string) => `mkt.c.${sim ? 'sim.' : ''}${index === 0 ? field : `${field}${index}`}`;
 const lowCountKey = (sim: boolean) => (sim ? 'mkt.c.sim.rowCount' : 'mkt.c.rowCount');
@@ -8997,7 +9030,26 @@ const goBack = () => router.back();
             </div>
 
             <!-- 시세 결론 / 급매가 결론 — 생김새가 같아 한 벌로 그린다 -->
-            <div v-for="t in CONC_TABLES" :key="t.title" class="adp-sub-block">
+            <!-- 손품분석 시세 결론 — 시세분석에서 고른 값 · 호가매물의 평당가 · 가격과 평균(줄 이름은 시세종합과 같다) -->
+            <div v-if="sonpumMode" class="adp-sub-block son-conc-block">
+              <div class="adp-sub-head"><h3>시세 결론</h3></div>
+              <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table bold-price conc-vert">
+                <thead><tr><th class="adp-conc-corner">구분</th><th>평당가</th><th>가격</th></tr></thead>
+                <tbody>
+                  <tr v-for="l in sonConcLines" :key="l.key">
+                    <th :class="['adp-conc-side', { off: sonConcOff(l.key) }]"><label class="adp-conc-pick inline"><input type="checkbox" :checked="!sonConcOff(l.key)" @change="toggleSonConc(l.key)" /></label>{{ l.label }}</th>
+                    <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.unit) }}</span></td>
+                    <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.price) }}</span></td>
+                  </tr>
+                  <tr>
+                    <th class="adp-conc-side mid big">평균</th>
+                    <td class="num mean"><span class="adp-conc-v">{{ wonText(sonConcMean.unit) }}</span></td>
+                    <td class="num mean"><span class="adp-conc-v">{{ wonText(sonConcMean.price) }}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-for="t in (sonpumMode ? CONC_TABLES.filter((x) => x.title !== '시세 결론') : CONC_TABLES)" :key="t.title" class="adp-sub-block">
               <div class="adp-sub-head">
                 <h3>{{ t.title }}<span v-if="t.boldPrice" class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('concMean', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('concMean', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'concMean'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">체크를 풀면 평균값에서 제외</span></span></h3>
               </div>

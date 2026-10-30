@@ -889,7 +889,7 @@ const collectPicks = (): Omit<MarketPicks, 'savedAt'> => ({
   caseManual: { sale: !!pickedSale.value || !!restoredSale.value, jeonse: !!pickedJeonse.value || !!restoredJeonse.value },
   simSale: toPick(simSaleRow.value), simJeonse: toPick(simJeonseRow.value),
   simRange: { ...simF.value }, condRange: { ...condF.value },
-  condSaleAvg: Math.round(condAvg.value), condJeonseAvg: Math.round(condJeonseAvg.value),
+  condSaleAvg: Math.round(condAvg.value), condSalePerPy: Math.round(condPerPyeong.value), condJeonseAvg: Math.round(condJeonseAvg.value),
   pubPrice: pubValue.value, hugJeonse: jeonsePrice.value,
 });
 let picksRestoring = false;

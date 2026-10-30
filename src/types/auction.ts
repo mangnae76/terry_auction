@@ -413,6 +413,8 @@ export interface MarketPicks {
   condRange?: MarketPickRange;
   /** 화면에 보인 ③ 평균 · ④ 보증보험 — 앱이 다시 계산하지 않고 보여 줄 수 있게 */
   condSaleAvg: number;
+  /** ③ 평균 매매가의 평당가(평균 금액 ÷ 평균 전용평) — 손품결론이 쓴다 */
+  condSalePerPy?: number;
   condJeonseAvg: number;
   pubPrice: number;
   hugJeonse: number;
