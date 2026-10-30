@@ -210,6 +210,8 @@ export interface SignupExtra {
   region: string;
   joinPath: string;
   joinPathDetail: string;
+  /** 추천코드 — 웹 회원가입에서만 받는다(없으면 빈 칸) */
+  referralCode?: string;
   smsOptIn: boolean;
   agreedAt: string;
 }

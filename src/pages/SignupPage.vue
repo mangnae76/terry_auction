@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 회원가입 — 로그인 화면의 '회원가입'에서 들어온다.
 // 이름·아이디(이메일)·비밀번호·연락처·지역·가입경로를 받고, 약관에 동의하면 계정을 만든다.
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, inject, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { checkEmailTaken, saveSignupExtra } from '../services/authRepository';
@@ -45,6 +45,9 @@ const phone3 = ref('');
 const region = ref('');
 const joinPath = ref('');
 const joinPathDetail = ref('');
+/** 추천코드 — 웹만(앱은 아직 받지 않는다) */
+const webEmbed = inject<boolean>('webEmbed', false);
+const referralCode = ref('');
 
 const agreeTerms = ref(false);
 const agreePrivacy = ref(false);
@@ -115,6 +118,7 @@ const onSubmit = async () => {
   if (idChecked.value === 'taken') { authStore.error = '이미 쓰고 있는 아이디입니다.'; return; }
   if (password.value.length < 6 || password.value.length > 30) { authStore.error = '비밀번호는 6~30자입니다.'; return; }
   if (password.value !== passwordConfirm.value) { authStore.error = '비밀번호가 서로 다릅니다.'; return; }
+  if (webEmbed && (phone2.value.length < 3 || phone3.value.length < 4)) { authStore.error = '휴대폰 번호를 적어 주세요.'; return; }
   if (!region.value) { authStore.error = '시/도를 골라 주세요.'; return; }
   if (!agreeTerms.value || !agreePrivacy.value) { authStore.error = '[필수] 약관에 동의해 주세요.'; return; }
 
@@ -127,6 +131,7 @@ const onSubmit = async () => {
       region: region.value,
       joinPath: joinPath.value,
       joinPathDetail: joinPathDetail.value.trim(),
+      ...(webEmbed ? { referralCode: referralCode.value.trim() } : {}),
       smsOptIn: agreeSms.value,
       agreedAt: new Date().toISOString(),
     });
@@ -164,36 +169,43 @@ const onSubmit = async () => {
       </div>
 
       <form class="su-form" @submit.prevent="onSubmit">
-        <input v-model="realName" class="su-input" placeholder="이름 (실명)" autocomplete="name" />
+        <!-- 웹 — 필수 칸은 칸 왼쪽 안에 빨간 별(이름 · 아이디 · 비밀번호 · 재확인 · 휴대폰 · 시/도) -->
+        <span :class="['su-reqwrap', { req: webEmbed }]"><input v-model="realName" class="su-input" placeholder="이름 (실명)" autocomplete="name" /></span>
 
         <div class="su-row">
-          <span class="su-lockwrap">
+          <span :class="['su-lockwrap', { req: webEmbed }]">
             <input v-model="email" class="su-input" placeholder="아이디 (메일 주소)" autocomplete="username" inputmode="email" />
             <i class="su-lock">🔒</i>
           </span>
           <button type="button" class="su-sidebtn" :disabled="checking" @click="onCheckId">중복확인</button>
         </div>
 
-        <span class="su-lockwrap">
+        <span :class="['su-lockwrap', { req: webEmbed }]">
           <input v-model="password" type="password" class="su-input" placeholder="영문,숫자 특수문자 일부허용 (6~30자)" autocomplete="new-password" />
           <i class="su-lock">🔒</i>
         </span>
-        <span class="su-lockwrap">
+        <span :class="['su-lockwrap', { req: webEmbed }]">
           <input v-model="passwordConfirm" type="password" class="su-input" placeholder="비밀번호 재확인" autocomplete="new-password" />
           <i class="su-lock">🔒</i>
         </span>
 
-        <div class="su-row phone">
+        <div :class="['su-row', 'phone', { req: webEmbed }]">
           <input :value="phone1" class="su-input" inputmode="numeric" @input="onPhone('p1', $event.target as HTMLInputElement, 3)" />
           <input :value="phone2" class="su-input" inputmode="numeric" placeholder="0000" @input="onPhone('p2', $event.target as HTMLInputElement, 4)" />
           <input :value="phone3" class="su-input" inputmode="numeric" placeholder="0000" @input="onPhone('p3', $event.target as HTMLInputElement, 4)" />
           <button type="button" class="su-sidebtn fill" @click="onVerifyPhone">인증요청</button>
         </div>
 
-        <select v-model="region" class="su-input">
+        <span :class="['su-reqwrap', { req: webEmbed }]"><select v-model="region" class="su-input">
           <option value="">시/도 선택</option>
           <option v-for="s in SIDO" :key="s" :value="s">{{ s }}</option>
-        </select>
+        </select></span>
+
+        <div v-if="webEmbed" class="su-block">
+          <small class="su-blabel">추천코드</small>
+          <input v-model="referralCode" class="su-input" placeholder="추천코드 입력 (선택)" autocomplete="off" />
+          <small class="su-refnote">코드에 따라 무료 이용 기간이 자동 적용됩니다.</small>
+        </div>
 
         <div class="su-block">
           <small class="su-blabel">가입경로</small>
@@ -373,6 +385,16 @@ const onSubmit = async () => {
 
 .su-block { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 .su-blabel { font-size: 11.5px; font-weight: 700; color: #374151; }
+/* 필수 칸 빨간 별(웹) — 칸 왼쪽 안, 글은 별 뒤로 */
+.su-reqwrap { position: relative; display: block; }
+:is(.su-reqwrap, .su-lockwrap, .su-row.phone).req { position: relative; }
+:is(.su-reqwrap, .su-lockwrap, .su-row.phone).req::before {
+  content: '*'; position: absolute; left: 11px; top: 50%; transform: translateY(-46%); z-index: 1; pointer-events: none;
+  font-size: 14px; font-weight: 800; color: #ef4444; line-height: 1;
+}
+:is(.su-reqwrap, .su-lockwrap).req .su-input, .su-row.phone.req .su-input:first-child { padding-left: 24px; }
+/* 추천코드 아래 한 줄 안내 */
+.su-refnote { font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .su-radios { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .su-radio { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: #4b5563; cursor: pointer; }
 .su-radio input { width: 13px; height: 13px; accent-color: #2a3f8f; }
