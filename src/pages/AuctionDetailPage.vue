@@ -4060,11 +4060,11 @@ const lowUnitTextG = (sim: boolean, index: number) => {
 };
 const lowAddrTypedG = (sim: boolean, index: number) => !!mktVal(lowKeyG(sim, index, 'addr')).trim();
 /** 손품분석 ④ 호가분석 — 매물호가 머리 줄의 지도 단추 둘(부동산플래닛 P · 네이버 N). 매물을 찾아보고 손으로 적는다.
- *  경매빌라는 이 물건 자리, 유사빌라는 첫 줄에 적은 주소(없으면 이 동) */
+ *  줄마다 — 경매빌라는 이 물건 자리, 유사빌라는 그 줄에 적은 주소(없으면 이 동) */
 const subjectDong = computed(() => jibunAddress.value.split(/\s+/).find((t) => /[동리가]$/.test(t) && !/^\d/.test(t)) ?? '');
 const askKind = computed(() => (isApartment.value ? 'apt' : /오피스텔/.test(auction.value?.propertyType ?? '') ? 'officetel' : 'villa'));
-const openAskMap = (sim: boolean, site: 'planet' | 'naver') => {
-  const typed = sim ? mktVal(lowKeyG(true, 0, 'addr')).trim() : '';
+const openAskMap = (sim: boolean, site: 'planet' | 'naver', index = 0) => {
+  const typed = sim ? mktVal(lowKeyG(true, index, 'addr')).trim() : '';
   const region = jibunAddress.value.split(/\s+/).slice(0, 3).join(' ');
   if (site === 'naver') {
     if (!sim) { void openNaverSpot(fullAddress.value, askKind.value); return; }
@@ -8850,10 +8850,6 @@ const goBack = () => router.back();
               <div class="adp-mkt-block-head">
                 <span class="t">{{ g.label }}</span>
                 <span class="son-ask-note">호가분석은 수동 입력하세요</span>
-                <span class="son-ask-links">
-                  <button type="button" class="son-map-go planet" aria-label="부동산플래닛" title="부동산플래닛에서 보기 — 동 · 지번을 복사해 둡니다" @click.stop="openAskMap(g.sim, 'planet')">P</button>
-                  <button type="button" class="son-map-go naver" aria-label="네이버 부동산" title="네이버 부동산 지도에서 보기" @click.stop="openAskMap(g.sim, 'naver')">N</button>
-                </span>
                 <span v-if="editingSurvey.listing" class="adp-mkt-step">
                   <span class="lab">행</span>
                   <button type="button" aria-label="행 삭제" :disabled="lowRowCountG(g.sim) <= 1" @click="removeLowRowG(g.sim)">−</button>
@@ -8869,7 +8865,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell">
                     <small>평당가</small>
-                    <strong :class="['son-auto', { empty: lowUnitTextG(g.sim, i - 1) === '-' }]" title="매매호가 ÷ 전용면적(평)으로 자동 계산합니다">{{ lowUnitTextG(g.sim, i - 1) === '-' ? '자동 입력' : lowUnitTextG(g.sim, i - 1) }}</strong>
+                    <strong :class="['son-auto', { 'son-auto-empty': lowUnitTextG(g.sim, i - 1) === '-' }]" title="매매호가 ÷ 전용면적(평)으로 자동 계산합니다">{{ lowUnitTextG(g.sim, i - 1) === '-' ? '자동 입력' : lowUnitTextG(g.sim, i - 1) }}</strong>
                   </div>
                   <div class="cell">
                     <small>전용면적</small>
@@ -8882,6 +8878,10 @@ const goBack = () => router.back();
                     <small>주소</small>
                     <span v-if="editingSurvey.listing" class="son-addr-field"><em v-if="!g.sim && subjectBuildingName" class="son-addr-head" :title="subjectBuildingName">{{ subjectBuildingName }}</em><input class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="!g.sim ? (subjectHasDong ? '동층호 입력' : '층호 입력') : '빌라명 · 층 · 호 입력'" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" /></span>
                     <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTypedG(g.sim, i - 1) }]">{{ lowAddrTextG(g.sim, i - 1) }}</strong>
+                    <span class="son-row-links">
+                      <button type="button" class="son-map-go planet" aria-label="부동산플래닛" title="부동산플래닛에서 이 줄 주소 보기 — 동 · 지번을 복사해 둡니다" @click.stop="openAskMap(g.sim, 'planet', i - 1)">P</button>
+                      <button type="button" class="son-map-go naver" aria-label="네이버 부동산" title="네이버 부동산 지도에서 이 줄 주소 보기" @click.stop="openAskMap(g.sim, 'naver', i - 1)">N</button>
+                    </span>
                   </div>
                   <div class="cell adp-mkt-wide">
                     <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'note'))" placeholder="비고 입력" @input="setMktVal(lowKeyG(g.sim, i - 1, 'note'), ($event.target as HTMLInputElement).value)" />
