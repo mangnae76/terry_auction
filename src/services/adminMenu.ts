@@ -31,6 +31,7 @@ export const OPS_MENU: OpsGroup[] = [
       },
       { key: 'notice', label: '공지 관리', desc: '점검·정책처럼 알려야 하는 것', ready: true },
       { key: 'update', label: '업데이트 관리', desc: '새로 붙은 기능·고친 것', ready: true },
+      { key: 'issue', label: '오류및제한 관리', desc: '알려진 오류 · 막힌 기능 · 쓰임새 제한', ready: true },
       { key: 'popup', label: '앱 시작 팝업', desc: '앱을 열 때 한 번 뜨는 안내', need: '배너 구조를 그대로 쓰면 됩니다' },
     ],
   },

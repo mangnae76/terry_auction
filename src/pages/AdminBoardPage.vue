@@ -34,6 +34,7 @@ const KINDS: Array<{ key: BoardKind; label: string; hint: string; tags: string[]
   { key: 'banner', label: '이벤트', hint: '배너로 띄우거나 공지 탭의 이벤트 목록에 줄로 넣는다', tags: EVENT_TAGS },
   { key: 'notice', label: '공지사항', hint: '점검·정책처럼 알려야 하는 것', tags: ['안내', '점검', '중요'] },
   { key: 'update', label: '업데이트', hint: '새로 붙은 기능·고친 것', tags: ['신규', '기능', '개선'] },
+  { key: 'issue', label: '오류및제한', hint: '알려진 오류 · 막혀 있는 기능 · 쓰임새 제한(웹 커뮤니티 › 오류및제한 탭)', tags: ['오류', '제한', '해결'] },
 ];
 
 const posts = ref<BoardPost[]>([]);
@@ -75,7 +76,7 @@ onUnmounted(() => { if (unsub) unsub(); });
 /* ───────── 왼쪽 메뉴 ───────── */
 
 const menu = ref('banner');
-const KIND_KEYS: BoardKind[] = ['banner', 'notice', 'update'];
+const KIND_KEYS: BoardKind[] = ['banner', 'notice', 'update', 'issue'];
 /** 고른 메뉴가 글 상자면 그 종류, 아니면 아직 만들지 않은 칸 */
 const menuKind = computed(() =>
   (KIND_KEYS as string[]).includes(menu.value) ? (menu.value as BoardKind) : null);

@@ -238,6 +238,7 @@ import MorePage from '../../src/pages/MorePage.vue';
 import NewsBody from '../../src/components/NewsBody.vue';
 import SupportBody from '../../src/components/SupportBody.vue';
 import EventBanner from '../../src/components/EventBanner.vue';
+import IssuesBody from '../../src/components/IssuesBody.vue';
 import { useRoute, useRouter } from 'vue-router';
 /** 커뮤니티(웹만) — 공지(이벤트 배너 + 공지사항 · 이벤트 · 업데이트, 예전 마이페이지 › 공지) · FAQ(자주 찾는 도움말, 예전 고객센터 맨 위) */
 const CommunityPage = {
@@ -251,6 +252,7 @@ const CommunityPage = {
     };
     return () => h('div', { class: 'community-shell' }, route.query.tab === 'faq'
       ? [h(SupportBody, { only: 'faq' })]
+      : route.query.tab === 'issue' ? [h(IssuesBody)]
       : [h(EventBanner, { onOpen: openEvent }), h(NewsBody)]);
   },
 };

@@ -13,7 +13,7 @@ import {
 } from 'firebase/firestore';
 import { firestore, firestoreDisabledReason } from './firebase';
 
-export type BoardKind = 'event' | 'notice' | 'update' | 'banner';
+export type BoardKind = 'event' | 'notice' | 'update' | 'banner' | 'issue';   // issue — 오류및제한(웹 커뮤니티 탭)
 
 export interface BoardPost {
   id: string;
