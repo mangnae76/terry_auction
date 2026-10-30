@@ -8876,7 +8876,7 @@ const goBack = () => router.back();
                   <div class="cell">
                     <small>전용면적</small>
                     <span v-if="editingSurvey.listing" class="adp-mkt-unit">
-                      <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(lowKeyG(g.sim, i - 1, 'area'))" placeholder="면적 입력" @input="setMktVal(lowKeyG(g.sim, i - 1, 'area'), ($event.target as HTMLInputElement).value)" />㎡
+                      <input :class="['adp-mkt-input', { need: !!mktVal(lowKeyG(g.sim, i - 1, 'saleAsk')) && !mktAreaNum(lowKeyG(g.sim, i - 1, 'area')) }]" inputmode="decimal" :value="mktAreaNum(lowKeyG(g.sim, i - 1, 'area'))" placeholder="면적 입력" @input="setMktVal(lowKeyG(g.sim, i - 1, 'area'), ($event.target as HTMLInputElement).value)" />㎡
                     </span>
                     <strong v-else class="adp-mkt-area1">{{ mktAreaText(lowKeyG(g.sim, i - 1, 'area')) }}</strong>
                   </div>
