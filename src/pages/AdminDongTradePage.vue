@@ -1099,7 +1099,10 @@ const downloadCsv = () => {
         <!-- 웹 '거래상세' 탭 — 월별 평균가 추이(선 그래프) + 개별 거래 목록. 조건검색(기간 · 면적 · 연식 · 검색어)을 그대로 따른다 -->
         <!-- 웹 '수요공급' 탭 — 수요공급 화면(세대수 · 매물수 입력, 회전율 · 소화율 · 부담률 · 소진기간, 요약 상자 7개)을 그대로. 조건은 위 고르는 줄 -->
         <!-- 수요공급은 한 번 띄우면 계속 들고 있다(v-show) — 탭을 오갈 때마다 새로 띄우면 비었다가 차며 깜빡였다 -->
-        <AdminRegionDemandPage v-if="webEmbed && supplySeen" v-show="listView === 'supply'" :embed="supplyEmbed" :chip="snapChip" class="adm-supply" />
+        <!-- 흰 카드(.dm-card) 안에 수요분석 상자 — 손품분석 수요조사와 같은 짜임(웹 CSS 가 같은 규칙을 씌운다) -->
+        <div v-if="webEmbed && supplySeen" v-show="listView === 'supply'" class="dm-card">
+          <AdminRegionDemandPage :embed="supplyEmbed" :chip="snapChip" class="adm-supply" />
+        </div>
         <template v-if="webEmbed && listView === 'supply'" />
         <!-- 랭킹분석 › 거래랭킹 — 세 목록(급증 · 급감 · 거래량) 나란히. 1년 = 조회일 기준 12개월, 전년 = 그 앞 12개월 -->
         <div v-else-if="webEmbed && listView === 'top'" class="adm-rank3">
