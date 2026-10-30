@@ -6580,7 +6580,8 @@ const goBack = () => router.back();
               </svg>
               예상수익분석
             </h2>
-            <!-- 웹은 날짜를 머리(자동계산 왼쪽)로 올린다 — 따로 있던 날짜 줄을 걷어 아래가 위로 붙는다 -->
+            <span :class="['adp-auto-chip', { 'web-solo': webEmbed }]">✦ 자동계산</span>
+            <!-- 웹은 날짜를 머리(자동계산 오른쪽)로 올린다 — 따로 있던 날짜 줄을 걷어 아래가 위로 붙는다 -->
             <span v-if="webEmbed && !isCollapsed('profit')" class="adp-head-dates" @click.stop>
               <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
                 <em>낙찰일</em>
@@ -6595,7 +6596,6 @@ const goBack = () => router.back();
                 <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.sellDate) }">{{ shortYmd(auction.sellDate) || '날짜입력' }}</span></span>
               </button>
             </span>
-            <span :class="['adp-auto-chip', { 'web-solo': webEmbed }]">✦ 자동계산</span>
             <!-- 새화면은 안 고르기 줄(＋B안…)로 늘리므로 표 −/＋ 를 뺀다. 클래식은 늘릴 곳이 이것뿐이라 남긴다 -->
             <span v-if="webEmbed && !webNew && !isCollapsed('profit')" class="adp-mkt-step adp-head-step" @click.stop>
               <span class="lab">표</span>
@@ -13063,8 +13063,11 @@ select.adp-pub-input option { text-align: center; }
   .adp-base-row .quad-v small, .adp-rcase-item small, .adp-rdoc-label, .adp-rdoc-task, .adp-empty.sm, .adp-empty.one
 ) { font-size: 14px; }
 /* ===== 웹 입찰가산정 새화면(D안) — 왼쪽 입력 · 오른쪽 안 탭 + 남색 계산판 ===== */
-.adp-auto-chip.web-solo { margin-right: auto; }
-.adp-head-dates { display: inline-flex; align-items: center; gap: 14px; margin-left: 14px; }
+/* 웹 머리 줄 — 제목 바로 옆 자동계산, 이어서 날짜. 오른쪽 끝으로는 표 −/＋ · 새화면/클래식이 밀려 간다 */
+.adp-head-step, .adp-view-seg { margin-left: auto; }
+.adp-head-step + .adp-view-seg { margin-left: 0; }
+.adp-view-seg ~ .adp-edit-btn { margin-left: 8px; }
+.adp-head-dates { display: inline-flex; align-items: center; gap: 14px; margin-left: 10px; }
 .adp-head-dates .adp-pd-item { cursor: pointer; }
 .adp-head-step { margin-right: 8px; }
 .adp-view-seg { display: inline-flex; gap: 3px; padding: 3px; margin-right: 6px; border-radius: 9px; background: #e3e8f1; }
