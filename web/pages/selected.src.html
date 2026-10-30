@@ -393,16 +393,19 @@ button { cursor: pointer; }
 .adm-case-in .adm-trf .adm-ghost { height: 40px !important; border-radius: 8px !important; font-size: 14px !important; padding: 0 16px !important; }
 /* ① 실거래가 조사 · ② 실거래가 조건분석 사이 가르는 선 */
 .adm-case-in .adm-case-block.cond { margin-top: 16px !important; }   /* ① · ② 두 상자 사이 — 가르는 선 없이 16 */
-/* 시세종합 표 — 맨 위 상자 하나(① 경매지번 · ② 유사 · ③ 조건 평균). 줄 색은 칠하지 않는다 — 값이 들어간 줄은 구분 칸 빨간 점으로 보인다 */
+/* 시세종합 표 — 맨 위 상자 하나(① 경매지번 · ② 유사 · ③ 조건 평균). 줄 색은 칠하지 않는다 — 값이 들어간 줄은 구분 칸 초록 점으로 보인다 */
 .adm-case-in .adm-case-block.res { border-bottom: 1px solid #e5e7eb; border-radius: 10px; padding-bottom: 16px; }
-.adm-case-in .res-head { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin: 0 0 12px; }
+.adm-case-in .res-head { display: flex; align-items: center; justify-content: flex-start !important; gap: 18px; flex-wrap: wrap; margin: 0 0 12px; }
+.adm-case-in .res-head .res-pub { margin: 0 !important; }
 .adm-case-in .res-head .list-title { font-size: 15px; font-weight: 800; color: #111827; }
 .adm-case-in .res-pub { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: #374151; }
 .adm-case-in .res-pub b { font-size: 15px; font-weight: 800; color: #111827; }
 .adm-case-in .res-pub em { font-style: normal; font-size: 12px; color: #6b7280; }
-.adm-case-in .res-hint { margin-left: auto; font-size: 12px; color: #6b7280; }
+.adm-case-in .res-hint { margin: 8px 2px 0; text-align: right; font-size: 12px; color: #6b7280; }   /* 표 아래 오른쪽 안내 */
 .adm-case-in .res-table { table-layout: fixed !important; width: 100% !important; }
-.adm-case-in .adm-case-block.res > .adm-table-wrap { margin-left: 0 !important; margin-right: 0 !important; }   /* 표 양끝 = 아래 ①②③ 상자의 전체 · 월세 단추 양끝 */
+.adm-case-in .adm-case-block.res > .adm-table-wrap { margin-left: 0 !important; margin-right: 0 !important; overflow: visible !important; }   /* 말풍선이 표 상자에 잘리지 않게 */
+.adm-case-in .res-table thead th:first-child { border-top-left-radius: 8px; } .adm-case-in .res-table thead th:last-child { border-top-right-radius: 8px; }
+.adm-case-in .res-table th .itip-bubble { text-align: left; }   /* 표 양끝 = 아래 ①②③ 상자의 전체 · 월세 단추 양끝 */
 .adm-case-in .res-table :is(th, td) { white-space: normal !important; padding-left: 8px !important; padding-right: 8px !important; }
 .adm-case-in .res-table th:nth-child(1) { width: 15% !important; } .adm-case-in .res-table th:nth-child(2) { width: 11% !important; }
 .adm-case-in .res-table th:nth-child(3) { width: 9% !important; } .adm-case-in .res-table th:nth-child(4) { width: 13% !important; }
@@ -410,6 +413,10 @@ button { cursor: pointer; }
 .adm-case-in .res-table th:nth-child(7) { width: 12% !important; } .adm-case-in .res-table th:nth-child(8) { width: auto !important; }
 .adm-case-in .res-table td { width: auto !important; }
 .adm-case-in .res-table tbody tr { cursor: pointer; }
+.adm-case-in .res-table tbody td { padding-top: 18px !important; padding-bottom: 18px !important; }   /* 줄 높이 넉넉히 — 읽기 편하게 */
+/* 구분 칸 말풍선 — 왼쪽 끝에서 펼친다(가운데로 펼치면 표 밖 왼쪽으로 삐져나갔다) */
+.adm-case-in .res-table td.res-name .itip-bubble { left: 0; transform: none; }
+.adm-case-in .res-table td.res-name .itip-bubble::before { left: 14px; transform: none; }
 .adm-case-in .res-table td.res-name { text-align: left !important; padding-left: 16px !important; font-weight: 700; white-space: nowrap; }
 .adm-case-in .res-table td.res-amt { font-size: 15px !important; font-weight: 800; color: #111827; }
 /* 실거래가 · 평당가 — 1의 자리 끝을 맞춘다(오른쪽 정렬 + 같은 폭 숫자). 칸 가운데쯤 오게 오른쪽 여백을 넉넉히, '데이터 없음'은 가운데 */
@@ -421,7 +428,10 @@ button { cursor: pointer; }
 .adm-case-in .res-table .res-empty { color: #9ca3af; font-weight: 400; font-size: 13px !important; }
 .adm-case-in .res-table td.res-note { color: #dc2626; font-size: 13px !important; }   /* 비어 있는 줄 — 어디서 고르면 되는지 */
 .adm-case-in .res-dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #d1d5db; vertical-align: middle; }
-.adm-case-in tr.has .res-dot { background: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, .18), 0 0 6px 1px rgba(239, 68, 68, .55); }   /* 값이 들어간 줄은 빨간 점, 비면 회색 점 — 줄 색은 칠하지 않는다 */
+.adm-case-in tr.has .res-dot { background: #22c55e; box-shadow: 0 0 0 2px rgba(34, 197, 94, .18), 0 0 6px 1px rgba(34, 197, 94, .6); }   /* 값이 들어간 줄은 초록 점(켜짐), 비면 회색 점 — 줄 색은 칠하지 않는다 */
+/* 머리 줄 툴팁 — 이름 · ⓘ 를 흐리지 않게 */
+.adm-case-in .res-pub .itip { color: #374151; }
+.adm-case-in .res-pub .itip-i { color: #6b7280; }
 /* ③ 전용면적 범위 — 두 줄(시작 ~ / 끝)의 왼쪽 끝을 맞춘다 */
 .adm-case-in .res-rng { display: inline-flex; flex-direction: column; align-items: flex-start; text-align: left; }
 /* 도구 탭 ①②③ — 웹 상자 탭 꼴(밑선 위에 올라앉는다), 옆에 지금 탭이 하는 일을 빨간 글로. 아래 상자(.adm-case-tail)가 탭 밑선에 붙는다 */

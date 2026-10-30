@@ -9,7 +9,7 @@
 // 셈과 조회는 services/caseTradeAnalysis.ts 에 있다 — 이 화면은 보여 주기만 한다.
 import UnitText from '../components/UnitText.vue';
 import InfoTip from '../components/InfoTip.vue';
-import { JEONSE_RATIO_TIP, PUB_RATIO_TIP, jeonseRateTip, pubPriceTip } from '../services/tipRows';
+import { JEONSE_RATIO_TIP, PUB_RATIO_TIP, pubPriceTip } from '../services/tipRows';
 import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import SnapChip from '../components/SnapChip.vue';
@@ -470,6 +470,20 @@ const recentJeonse = computed(() => {
   if (webEmbed && mode.value === MODES[1]) return dongRows.value.find((r) => rowKey(r) === simJeonse.value) ?? null;
   return rows.value.find((r) => rowKey(r) === pickedJeonse.value) ?? restoredJeonse.value ?? (webEmbed ? autoJeonse.value : null);
 });
+/** ④ 보증보험 전세가와 견줄 매매가 — ① 경매지번 → ② 유사 → ③ 평균 순으로 있는 것 */
+const hugBase = computed<{ price: number; label: string } | null>(() => {
+  if (caseSaleRow.value) return { price: caseSaleRow.value.price, label: '① 경매지번 매매가' };
+  if (simSaleRow.value) return { price: simSaleRow.value.price, label: '② 유사 매매가' };
+  if (condAvg.value > 0) return { price: condAvg.value, label: '③ 평균 매매가' };
+  return null;
+});
+const hugTip = computed(() => [
+  ['공식', `경매물건 공동주택가 × ${jeonseRate.value}%`] as [string, string],
+  ['의미', 'HUG 전세보증보험에 들 수 있는 전세 상한'] as [string, string],
+  ['비교', '전세가율 / 갭은 ① → ② → ③ 순으로 있는 매매가와 견줍니다'] as [string, string],
+]);
+/** ④ 평당가 — 보증보험 전세가 ÷ 경매물건 전용평 */
+const hugPerPyeong = computed(() => (jeonsePrice.value > 0 && baseArea.value > 0 ? jeonsePrice.value / (baseArea.value / PYEONG) : 0));
 /** 웹 '시세종합' 표 — ① 경매지번 매매 · 전세, ② 유사 매매 · 전세. 알약(도구 탭)과 상관없이 각자 고른 값.
  *  전세가율 / 갭은 같은 출처의 매매와 전세끼리만 계산한다(① 끼리 · ② 끼리) */
 const caseSaleRow = computed(() => rows.value.find((r) => rowKey(r) === pickedSale.value) ?? restoredSale.value ?? autoSale.value);
@@ -514,6 +528,8 @@ const JEONSE_RATE = 126;
 const pubValue = computed(() => price.value?.price ?? 0);
 const rateText = ref(String(JEONSE_RATE));
 const jeonseRate = computed(() => {
+  // 웹은 HUG 보증보험 기준 126% 고정 — 사람마다 바꿀 값이 아니다(정책이 바뀌면 JEONSE_RATE 한 곳만)
+  if (webEmbed) return JEONSE_RATE;
   const r = Number(rateText.value.replace(/[^\d.]/g, ''));
   return Number.isFinite(r) && r > 0 ? r : JEONSE_RATE;
 });
@@ -1036,14 +1052,12 @@ const downloadCsv = () => {
         <section v-if="webEmbed" class="adm-case-block res">
           <div class="res-head">
             <strong class="list-title">시세종합</strong>
-            <span class="res-pub"><InfoTip :rows="pubTip" under="box">공동주택가</InfoTip><b><UnitText :text="won(pubValue)" suffix="원" /></b><em v-if="price">{{ price.year }}.01.01 기준</em></span>
-            <span class="res-pub"><InfoTip :rows="jeonseRateTip(jeonseRate)" under="box">전세가</InfoTip><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" aria-label="전세가 비율" />%<b><UnitText :text="won(jeonsePrice)" suffix="원" /></b></span>
-            <span class="res-hint">줄을 누르면 아래 그 도구로 넘어갑니다</span>
+            <span class="res-pub"><InfoTip :rows="pubTip">경매물건 공동주택가</InfoTip><b><UnitText :text="won(pubValue)" suffix="원" /></b><em v-if="price">{{ price.year }}.01.01 기준</em></span>
           </div>
           <div class="adm-table-wrap">
             <table class="adm-table res-table">
               <thead>
-                <tr><th>구분</th><th>실거래가</th><th>평당가</th><th><InfoTip :rows="JEONSE_RATIO_TIP" under="box">전세가율 / 갭</InfoTip></th><th><InfoTip :rows="PUB_RATIO_TIP" under="box">공시대비율</InfoTip></th><th>전용(㎡/평)</th><th>거래일자 / 층</th><th>위치 / 기타</th></tr>
+                <tr><th>구분</th><th>실거래가</th><th>평당가</th><th><InfoTip :rows="JEONSE_RATIO_TIP">전세가율 / 갭</InfoTip></th><th><InfoTip :rows="PUB_RATIO_TIP">공시대비율</InfoTip></th><th>전용(㎡/평)</th><th>거래일자 / 층</th><th>위치 / 기타</th></tr>
               </thead>
               <tbody>
                 <!-- 칸 순서는 중요한 것부터 — 금액 · 평당가 · 전세가율/갭 · 공시대비율, 그다음 전용 · 거래일자 · 위치 -->
@@ -1060,7 +1074,7 @@ const downloadCsv = () => {
                 </tr>
                 <!-- ③ 평균 매매 · 전세 — 같은 거르기(condF). 전세가율/갭은 두 평균으로, 전용 범위 · 거래기간은 두 줄이 같은 조건이라 한 칸 -->
                 <tr :class="['res-avg', { has: condAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
-                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condTip" under="box">③ 평균 매매가</InfoTip></td>
+                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condTip">③ 평균 매매가</InfoTip></td>
                   <td class="n res-amt"><template v-if="condAvg > 0">{{ won(condAvg) }}</template><span v-else class="res-empty">데이터 없음</span></td>
                   <td class="n">{{ won(condPerPyeong) }}</td>
                   <td rowspan="2" class="n res-pair">{{ condAvg > 0 && condJeonseAvg > 0 ? `${pct(condJeonseAvg, condAvg)} / ${Math.round(condAvg - condJeonseAvg).toLocaleString('ko-KR')}` : '-' }}</td>
@@ -1070,15 +1084,27 @@ const downloadCsv = () => {
                   <td class="res-place">{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 · 사용승인 {{ condApprovalText.replace(' / ', ' · 연식 ') }}</td>
                 </tr>
                 <tr :class="['res-avg', { has: condJeonseAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
-                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condJeonseTip" under="box">③ 평균 전세가</InfoTip></td>
+                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condJeonseTip">③ 평균 전세가</InfoTip></td>
                   <td class="n res-amt"><template v-if="condJeonseAvg > 0">{{ won(condJeonseAvg) }}</template><span v-else class="res-empty">데이터 없음</span></td>
                   <td class="n">{{ won(condJeonsePerPyeong) }}</td>
                   <td class="n">{{ pct(condJeonseAvg, pubValue) }}</td>
                   <td class="res-place">{{ region?.dong || '같은 동' }} 전세 {{ condJeonse.length.toLocaleString('ko-KR') }}건 · 매매와 동일 조건</td>
                 </tr>
+                <!-- ④ 보증보험 전세가 — 경매물건 공동주택가 × 126%. 전세가율/갭은 있는 매매가(① → ② → ③ 평균)와 견준다 -->
+                <tr :class="['res-hug', { has: jeonsePrice > 0 }]">
+                  <td class="res-name"><i class="res-dot" /><InfoTip :rows="hugTip">④ 보증보험 전세가</InfoTip></td>
+                  <td class="n res-amt"><template v-if="jeonsePrice > 0">{{ won(jeonsePrice) }}</template><span v-else class="res-empty">데이터 없음</span></td>
+                  <td class="n">{{ won(hugPerPyeong) }}</td>
+                  <td class="n res-pair">{{ hugBase ? `${pct(jeonsePrice, hugBase.price)} / ${Math.round(hugBase.price - jeonsePrice).toLocaleString('ko-KR')}` : '-' }}</td>
+                  <td class="n">{{ jeonseRate }}%</td>
+                  <td class="n">{{ baseArea > 0 ? areaText(baseArea) : '-' }}</td>
+                  <td class="n">{{ price ? `${price.year}.01.01 기준` : '-' }}</td>
+                  <td class="res-place">공동주택가 × {{ jeonseRate }}%<template v-if="hugBase"> · 전세가율은 {{ hugBase.label }} 기준</template></td>
+                </tr>
               </tbody>
             </table>
           </div>
+          <p class="res-hint">표의 셀을 선택하면 분석 영역으로 넘어갑니다</p>
         </section>
         <div v-else class="adm-kpis grid4 case-grid">
           <div class="adm-kpi green">
