@@ -407,7 +407,8 @@ button { cursor: pointer; }
 .adm-case-in .res-table thead th:first-child { border-top-left-radius: 8px; } .adm-case-in .res-table thead th:last-child { border-top-right-radius: 8px; }
 .adm-case-in .res-table th .itip-bubble { text-align: left; }   /* 표 양끝 = 아래 ①②③ 상자의 전체 · 월세 단추 양끝 */
 .adm-case-in .res-table :is(th, td) { white-space: normal !important; padding-left: 8px !important; padding-right: 8px !important; }
-.adm-case-in .res-table th:nth-child(1) { width: 15% !important; } .adm-case-in .res-table th:nth-child(2) { width: 11% !important; }
+.adm-case-in .res-table th:nth-child(1) { width: 172px !important; }   /* 줄 이름(① 경매지번 매매가)이 좁은 화면에서도 한 줄로 */
+.adm-case-in .res-table :is(td.res-name, td.res-amt) { white-space: nowrap !important; } .adm-case-in .res-table th:nth-child(2) { width: 11% !important; }
 .adm-case-in .res-table th:nth-child(3) { width: 9% !important; } .adm-case-in .res-table th:nth-child(4) { width: 13% !important; }
 .adm-case-in .res-table th:nth-child(5) { width: 9% !important; } .adm-case-in .res-table th:nth-child(6) { width: 12% !important; }
 .adm-case-in .res-table th:nth-child(7) { width: 12% !important; } .adm-case-in .res-table th:nth-child(8) { width: auto !important; }
