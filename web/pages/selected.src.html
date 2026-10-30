@@ -180,8 +180,8 @@ button { cursor: pointer; }
 /* +물건등록이 선정물건 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
 /* 메뉴 여덟 — 예전 마이페이지를 빼고 더보기를 '마이페이지'로 이름을 바꾸며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
 /* 메뉴 전부(아래 펼침 칸도 같은 자리) 두 글자만큼 왼쪽으로 — --menu-shift. 좁은 창(1,416 아래)에선 로고에 붙지 않게 덜 옮긴다 */
-.m0 { left: calc(13.75% - var(--menu-shift)); } .m1 { left: calc(22.40% - var(--menu-shift)); } .m2 { left: calc(30.24% - var(--menu-shift)); } .m3 { left: calc(38.08% - var(--menu-shift)); }
-.m3c { left: calc(45.93% - var(--menu-shift)); } .m4 { left: calc(53.77% - var(--menu-shift)); } .m4m { left: calc(61.61% - var(--menu-shift)); } .m5 { left: calc(68.55% - var(--menu-shift)); } /* 자금관리는 마이페이지 아래로 옮겨 한 칸씩 당겼다 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 · 수익분석은 뺐다 */
+.m0 { left: calc(13.75% - var(--menu-shift)); } .m1 { left: calc(22.40% - var(--menu-shift)); } .m2 { left: calc(30.24% - var(--menu-shift)); } .m3c { left: calc(38.08% - var(--menu-shift)); }
+.m3 { left: calc(45.93% - var(--menu-shift)); } .m4 { left: calc(53.77% - var(--menu-shift)); } .m4m { left: calc(61.61% - var(--menu-shift)); } .m5 { left: calc(68.55% - var(--menu-shift)); } /* 자금관리는 마이페이지 아래로 옮겨 한 칸씩 당겼다 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 · 수익분석은 뺐다 */
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: #fff !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
@@ -2891,8 +2891,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       <a class="g-menu m0" href="#/register" data-act="go-register" id="navReg">+물건등록</a>
       <a class="g-menu m1" href="#/" data-act="go-list" id="navWatch">선정물건</a>
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
-      <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
       <a class="g-menu m3c" href="#/postwin" data-act="go-postwin" id="navPostwin">낙찰이후</a>
+      <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
       <a class="g-menu m4 off" href="#" data-act="soon" data-name="커뮤니티" aria-disabled="true" title="준비 중">커뮤니티</a>
       <a class="g-menu m4m off" href="#" data-act="soon" data-name="매뉴얼" aria-disabled="true" title="준비 중">매뉴얼</a>
       <a class="g-menu m5" href="#/more" data-act="go-more" id="navMore">마이페이지</a>
@@ -3289,10 +3289,10 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   const MEGA = [
     ['m0', [['자동등록', 'mega-auto'], ['직접입력', 'mega-manual'], ['입찰달력', '']]],   /* 입찰달력은 선정물건 칸에도 그대로(복사) */
     ['m1', [['선정물건', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
-    ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['임장 체크리스트', '']]],
-    ['m3', [['지역분석', 'go-market'], ['손품분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
+    ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['체크리스트', '']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['낙찰이후가이드', 'go-postwin']]],
-    ['m4', [['공지사항', ''], ['자유게시판', ''], ['낙찰후기', '']]],
+    ['m3', [['지역분석', 'go-market'], ['손품분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
+    ['m4', [['공지사항', ''], ['자유게시판', '']]],
     ['m4m', [['투자9단계', '']]],   /* 준비 중 — 물건선정부터 매도 · 세금까지 */
     ['m5', [['내 정보', 'go-more'], ['자금입출금', 'go-finance'], ['세금신고', 'go-finance'], ['알림', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['공지', 'go-more'], ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
