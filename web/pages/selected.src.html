@@ -3184,7 +3184,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   const readHash = (h = location.hash) => {
     const m = h.match(/^#\/([\w-]+)(?:\/([\w-]+))?(?:\/([\w-]+))?/) || [];
     const head = m[1] || '';
-    if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
+    if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: m[3] === 'verify' ? 'survey' : ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
     if (head === 'postwin' && m[2] === 'sell') { try { sessionStorage.setItem('pw.flow.sub', 'sell'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '매도·임대' — 진행절차 안 매물등록 박스 탭 */
@@ -4262,7 +4262,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
     more: [['mypage', '', '내 정보'], ['finance', '', '자금관리'], ['alerts', '', '알림'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['news', '', '공지'], ['support', '', '고객센터']],
-    item: [['cards', '', '물건카드'], ['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['verify', '', '가격정보'], ['profit', '', '입찰가산정']],
+    /* 가격정보는 뺐다 — 시세는 손품조사(시세분석 · 손품결론), 인근 매각사례는 손품결론 아래로 옮겼다(웹). 옛 주소(…/verify)는 손품조사로 */
+    item: [['cards', '', '물건카드'], ['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['profit', '', '입찰가산정']],
   };
   /* 선정물건도 같은 줄 — 맨 앞 '물건카드'가 목록, 나머지는 마지막으로 본 물건(없으면 목록 맨 위 물건)의 상세 탭 */
   SUBTABS.list = SUBTABS.item;
@@ -4855,7 +4856,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       onTab: (t) => { if (S.route !== key || !SUB_TAB_KEYS[key].includes(t) || S.pageTab[key] === t) return; S.pageTab[key] = t; writeHash(false); renderSubTabs(); },
       /* 앱 화면이 웹 메뉴 쪽 길을 부르면 웹이 받는다 */
       onNav: (to, a, b) => {
-        if (to === 'item') { if (!byId(a)) { toast('선정물건에서 그 물건을 찾지 못했습니다.', 'info'); return; } S.itemTabNext = ITEM_TABS.includes(b) ? b : 'basic'; go('item', a); return; }
+        if (to === 'item') { if (!byId(a)) { toast('선정물건에서 그 물건을 찾지 못했습니다.', 'info'); return; } S.itemTabNext = b === 'verify' ? 'survey' : ITEM_TABS.includes(b) ? b : 'basic'; go('item', a); return; }
         if (to === 'login') { openAppLogin(); return; }
         if (to === 'ai') { S.modal = { kind: 'aiset' }; renderModal(); return; }   /* AI 설정 창 */
         if (APP_PAGE_NAMES[to]) { if (SUB_TAB_KEYS[to].includes(a)) S.pageTab[to] = a; go(to); return; }
@@ -4946,6 +4947,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     $('itemHead').innerHTML = itemHeadHtml(it);
     try { localStorage.setItem('son.pick', it.id); } catch (e) { /* 그만 */ } /* 손품분석은 마지막으로 연 물건을 본다 */
     /* 손품조사 탭 — 시장분석 › 손품조사와 같은 화면(같은 부품)을 이 물건으로 띄운다. 옛 손품조사 틀(물건상세 카드들)은 웹에서 쓰지 않는다 */
+    if (S.itemTab === 'verify') { S.itemTab = 'survey'; renderSubTabs(); syncCrumb(); }   /* 가격정보 탭은 뺐다 */
+    if (/\/verify$/.test(location.hash)) writeHash(false);   /* 옛 주소(…/verify)는 손품조사 주소로 바꿔 둔다 */
     if (S.itemTab === 'survey') { renderItemSon(it); return; }
     if (['rights', 'survey', 'field', 'verify', 'profit'].includes(S.itemTab)) { renderAppDetailTab(it, S.itemTab); setTimeout(syncFoldBtn, 300); return; }
     closeAppDetail();

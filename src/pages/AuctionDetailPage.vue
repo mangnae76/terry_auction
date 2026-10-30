@@ -2755,7 +2755,10 @@ const indivRateTotal = computed(() => {
   return sum;
 });
 const indivAdjustedPrice = computed(() => {
-  const base = mktSaleAvgValue.value;
+  // 손품조사(웹)는 옛 가격정보 조건분석 평균을 받지 않는다 — 손품결론 시세결론 평균(없으면 시세분석 ③ 평균 매매가)이 기준
+  const base = sonpumMode
+    ? (sonConcMean.value.price || auction.value?.marketPicks?.condSaleAvg || 0)
+    : mktSaleAvgValue.value;
   if (base <= 0) return '-';
   return Math.round(base * (1 + indivRateTotal.value / 100)).toLocaleString('ko-KR');
 });
@@ -4025,6 +4028,8 @@ const sonConcMean = computed(() => {
   return { unit: avg(on.map((l) => l.unit)), price: avg(on.map((l) => l.price)) };
 });
 const wonText = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
+/** 인근 매각사례 — 값이 하나라도 있는 줄만(빈 줄만 있으면 '데이터 없음') */
+const nearBidRowsFilled = computed(() => nearBidRows.value.filter((r) => [r.saleInfo, r.appraisal, r.minimum, r.winning, r.rate, r.expectedWinning].some((v) => String(v ?? '').trim())));
 const LOW_GROUPS = [{ sim: false, label: '경매빌라 호가매물' }, { sim: true, label: '유사빌라 호가매물' }];
 const lowKeyG = (sim: boolean, index: number, field: string) => `mkt.c.${sim ? 'sim.' : ''}${index === 0 ? field : `${field}${index}`}`;
 const lowCountKey = (sim: boolean) => (sim ? 'mkt.c.sim.rowCount' : 'mkt.c.rowCount');
@@ -9152,6 +9157,29 @@ const goBack = () => router.back();
                   </tr>
                 </tbody>
               </table>
+            </div>
+            <!-- 인근 매각사례 — PDF 분석 자료(물건 등록 때 읽은 인근 매각 통계). 웹은 가격정보 탭을 빼서 여기서 본다 -->
+            <div v-if="sonpumMode" class="adp-sub-block son-near-block">
+              <div class="adp-sub-head"><h3>인근매각사례 <span class="adp-head-note">{{ auction?.address?.split(' ').slice(0, 3).join(' ') || '' }} {{ auction?.propertyType || '' }}</span></h3></div>
+              <table v-if="nearBidRowsFilled.length > 0" class="adp-table adp-cases-table">
+                <thead>
+                  <tr>
+                    <th class="c">구분</th>
+                    <th class="c">평균감정가<br>평균매각가</th>
+                    <th class="c">입찰인원<br>매각가율</th>
+                    <th class="c">예상매각가</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(r, i) in nearBidRowsFilled" :key="i">
+                    <td class="c">{{ r.saleInfo }}</td>
+                    <td class="c pre"><span>{{ r.appraisal }}</span><span v-if="r.minimum" class="adp-line2">{{ r.minimum }}</span></td>
+                    <td class="c pre"><span>{{ r.winning }}</span><span v-if="r.rate" class="adp-line2 b-blue">{{ r.rate }}</span></td>
+                    <td class="c"><strong>{{ r.expectedWinning }}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p v-else class="adp-empty">매각사례 데이터 없음 — 물건 등록 때 읽은 PDF 에 인근 매각 통계가 없습니다</p>
             </div>
           </div>
         </section>
