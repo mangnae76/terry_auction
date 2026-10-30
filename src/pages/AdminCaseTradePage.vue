@@ -1056,7 +1056,7 @@ const downloadCsv = () => {
         <section v-if="webEmbed" class="adm-case-block res">
           <div class="res-head">
             <strong class="list-title">시세종합</strong>
-            <span class="res-pub"><InfoTip :rows="pubTip">경매물건 공동주택가</InfoTip><b><UnitText :text="won(pubValue)" suffix="원" /></b><em v-if="price">{{ price.year }}.01.01 기준</em></span>
+            <span class="res-pub"><InfoTip :rows="pubTip">{{ preset ? '경매물건' : '검색 주소' }} 공동주택가</InfoTip><b><UnitText :text="won(pubValue)" suffix="원" /></b><em v-if="price">{{ price.year }}.01.01 기준</em></span>
           </div>
           <div class="adm-table-wrap">
             <table class="adm-table res-table">
