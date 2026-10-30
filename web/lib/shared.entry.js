@@ -237,12 +237,21 @@ import FinancePage from '../../src/pages/FinancePage.vue';
 import MorePage from '../../src/pages/MorePage.vue';
 import NewsBody from '../../src/components/NewsBody.vue';
 import SupportBody from '../../src/components/SupportBody.vue';
-import { useRoute } from 'vue-router';
-/** 커뮤니티(웹만) — 공지(공지사항 · 이벤트 · 업데이트, 예전 마이페이지 › 공지) · FAQ(자주 찾는 도움말, 예전 고객센터 맨 위) */
+import EventBanner from '../../src/components/EventBanner.vue';
+import { useRoute, useRouter } from 'vue-router';
+/** 커뮤니티(웹만) — 공지(이벤트 배너 + 공지사항 · 이벤트 · 업데이트, 예전 마이페이지 › 공지) · FAQ(자주 찾는 도움말, 예전 고객센터 맨 위) */
 const CommunityPage = {
   setup() {
     const route = useRoute();
-    return () => h('div', { class: 'community-shell' }, [route.query.tab === 'faq' ? h(SupportBody, { only: 'faq' }) : h(NewsBody)]);
+    const router = useRouter();
+    /* 배너를 누르면 — 글이 있으면 그 글, 없으면 아래 이벤트 묶음으로(앱 더보기와 같다) */
+    const openEvent = (id) => {
+      if (id) { void router.push(`/post/${id}`); return; }
+      document.querySelector('.community-shell [data-sec="event"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    return () => h('div', { class: 'community-shell' }, route.query.tab === 'faq'
+      ? [h(SupportBody, { only: 'faq' })]
+      : [h(EventBanner, { onOpen: openEvent }), h(NewsBody)]);
   },
 };
 const APP_PAGES = { postwin: '/post-win', finance: '/finance', more: '/more', community: '/community' };
