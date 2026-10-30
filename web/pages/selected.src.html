@@ -1165,7 +1165,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
   .mpc-val small, .mpc-txt small,
   .bil-off-txt small, .bil-note, .bil-note b, .bil-plan-head .tag, .bil-plan-sub, .bil-row .lab, .bil-row .val, .bil-row .val .pill, .bil-row .val small, .bil-allbtn, .bil-way, .bil-fine,
   .pt-blue-sec p, .pt-card li, .more-shell li, .pt-pt1, .pt-band, .pt-band span, .pt-band b, .pt-grade span, .pt-grade b, .pt-notes li, .pt-benefit small, .pt-benefit em,
-  .nws-row .tag, .nws-row .txt, .nws-none, .nws-lead,
+  .nws-row .tag, .nws-row .txt,
   .sup-tag, .sup-qmark, .sup-more, .sup-tile small, .sup-c-txt small, .sup-app-txt, .sup-store, .sup-policy
 ) { font-size: 14px !important; }
 
@@ -3350,7 +3350,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'interior', 'tax'],
     more: ['mypage', 'alerts', 'billing', 'points', 'support'],   /* 공지는 커뮤니티로 옮겼다 */
-    community: ['notice', 'issue', 'faq'],   /* 공지(공지사항 · 이벤트 · 업데이트) · FAQ(자주 찾는 도움말) — 마이페이지 공지 · 고객센터에서 옮겼다(웹) */
+    community: ['notice', 'suggest', 'faq'],   /* 공지(공지사항 · 이벤트 · 업데이트) · FAQ(자주 찾는 도움말) — 마이페이지 공지 · 고객센터에서 옮겼다(웹) */
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
   const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지', community: '커뮤니티' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지 */
@@ -3360,6 +3360,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     const m = h.match(/^#\/([\w-]+)(?:\/([\w-]+))?(?:\/([\w-]+))?/) || [];
     const head = m[1] || '';
     if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: m[3] === 'verify' ? 'survey' : ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
+    if (head === 'community' && m[2] === 'issue') return { route: 'community', sub: 'suggest' }; /* 잠깐 있던 '오류및제한' 주소 — 오류및제안 게시판으로 */
     if (head === 'more' && m[2] === 'news') return { route: 'community', sub: 'notice' }; /* 예전 마이페이지 › 공지 — 커뮤니티로 옮겼다 */
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
@@ -3469,7 +3470,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['가이드', 'go-postwin', '낙찰이후가이드']]],
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m3', [['지역분석', 'go-market'], ['손품분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
-    ['m4', [['공지', 'go-community'], ['오류및제한', 'go-community'], ['FAQ', 'go-community'], ['자유게시판', '']]],
+    ['m4', [['공지', 'go-community'], ['오류및제안', 'go-community'], ['FAQ', 'go-community'], ['자유게시판', '']]],
     ['m4m', [['투자9단계', '']]],   /* 준비 중 — 물건선정부터 매도 · 세금까지 */
     ['m5', [['내 정보', 'go-more'], ['알림', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
@@ -4438,7 +4439,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
     more: [['mypage', '', '내 정보'], ['alerts', '', '알림'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['support', '', '고객센터']],
-    community: [['notice', '', '공지'], ['issue', '', '오류및제한'], ['faq', '', 'FAQ']],
+    community: [['notice', '', '공지'], ['suggest', '', '오류및제안'], ['faq', '', 'FAQ']],
     /* 가격정보는 뺐다 — 시세는 손품조사(시세분석 · 손품결론), 인근 매각사례는 손품결론 아래로 옮겼다(웹). 옛 주소(…/verify)는 손품조사로 */
     item: [['cards', '', '물건카드'], ['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['profit', '', '입찰가산정']],
   };

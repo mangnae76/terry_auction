@@ -8,6 +8,10 @@ export const ALLOWED_EMAILS = [
   'hansun440@gmail.com',
 ];
 
+/** 운영자 — firestore.rules 의 isAdmin 과 같이 맞춘다(게시판 글 지우기 · 운영자 표시) */
+export const ADMIN_EMAILS = ['dark_0417@nate.com', 'mangnae760723@gmail.com'];
+export const isAdminEmail = (email?: string | null): boolean => !!email && ADMIN_EMAILS.includes(email.toLowerCase());
+
 export const isAllowedEmail = (email?: string | null): boolean => {
   const normalized = (email ?? '').trim().toLowerCase();
   return normalized.length > 0 && ALLOWED_EMAILS.includes(normalized);

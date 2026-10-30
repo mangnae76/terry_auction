@@ -31,6 +31,30 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // 오류및제안 게시판(웹 커뮤니티) — 회원이 쓰고 모두 읽는다. 내 글만 고치고 지운다, 조회수는 1씩만, 운영자는 모두 지운다
+    match /suggestPosts/{id} {
+      allow read: if isAllowedUser();
+      allow create: if isAllowedUser()
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.views == 0
+        && request.resource.data.commentCount == 0;
+      allow update: if isAdmin()
+        || (isAllowedUser() && resource.data.authorUid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'body', 'updatedAt']))
+        || (isAllowedUser() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
+            && request.resource.data.views == resource.data.views + 1)
+        || (isAllowedUser() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount'])
+            && (request.resource.data.commentCount - resource.data.commentCount) in [1, -1]);
+      allow delete: if isAdmin() || (isAllowedUser() && resource.data.authorUid == request.auth.uid);
+
+      match /comments/{cid} {
+        allow read: if isAllowedUser();
+        allow create: if isAllowedUser() && request.resource.data.authorUid == request.auth.uid
+          && (request.resource.data.get('admin', false) == false || isAdmin());   // '운영자' 표시는 운영자만
+        allow delete: if isAdmin() || (isAllowedUser() && resource.data.authorUid == request.auth.uid);
+      }
+    }
+
     // 사용자 프로필 — 본인 것만 읽고 쓸 수 있음
     match /users/{uid} {
       allow read, write: if isAllowedUser() && request.auth.uid == uid;

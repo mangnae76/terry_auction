@@ -74,7 +74,7 @@ export const useBoardFeed = () => {
 
   const of = (kind: BoardPost['kind']) => posts.value.filter((p) => p.kind === kind);
   const live = (rows: BoardPost[]) => rows.filter((p) => isLive(p, now.value));
-  const rowsOf = (kind: 'event' | 'notice' | 'update' | 'issue', fallback: NewsRow[]) => computed<NewsRow[]>(() => {
+  const rowsOf = (kind: 'event' | 'notice' | 'update', fallback: NewsRow[]) => computed<NewsRow[]>(() => {
     // 이벤트 줄은 두 군데서 온다 — 이벤트 글과, '이벤트 목록에도' 켜 둔 배너
     // (옛 글 중 배너로 띄우던 이벤트는 배너로만 나가니 여기서 뺀다)
     const pool = kind === 'event'
@@ -99,8 +99,6 @@ export const useBoardFeed = () => {
     events: rowsOf('event', EVENTS),
     notices: rowsOf('notice', NOTICES),
     updates: rowsOf('update', UPDATES),
-    /** 오류및제한 — 알려진 오류 · 쓰임새 제한(관리자 글만, 기본 글 없음) */
-    issues: rowsOf('issue', []),
     banners: computed(() => {
       // 배너는 따로 쓰지만, 옛 글(이벤트에 배너 표시)도 그대로 읽는다
       // '배너' 를 끈 글은 이벤트 목록에만 선다
