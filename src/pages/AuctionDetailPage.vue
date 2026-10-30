@@ -2506,8 +2506,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onBiddScroll);
   if (biddRaf) cancelAnimationFrame(biddRaf);
 });
-/** 탭에 적는 순이익 — '2,050만' */
-const manText = (n: number) => `${Math.round(n / 10_000).toLocaleString('ko-KR')}만`;
 /* 새화면은 칸이 늘 열려 있다. 값이 실제로 바뀌었을 때만 손을 멈추면 적는다(물건을 읽은 것만으로는 적지 않는다) */
 let profitJson = '';
 watch(() => auction.value?.id, () => { profitJson = ''; });
@@ -6965,7 +6963,6 @@ const goBack = () => router.back();
                 >
                   <template v-if="profitScenarios[ti]">
                     <b>{{ label }}안</b>
-                    <span>{{ formatPct(scBidPct(profitScenarios[ti])) }} · {{ manText(scAfterTaxProfit(profitScenarios[ti])) }}</span>
                   </template>
                   <template v-else>＋ {{ label }}안</template>
                 </button>
@@ -13076,11 +13073,9 @@ select.adp-pub-input option { text-align: center; }
 .bidd-board { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #3b4a6d transparent; }
 /* 탭은 판과 같은 폭 — 판의 위 모서리를 각지게 해 탭이 판에 그대로 이어진다(둥근 모서리에 탭 끝이 잘려 보였다) */
 .bidd-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.bidd-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 52px; border: 1px solid #d5dbe6; border-bottom: 0; border-radius: 10px 10px 0 0; background: #fff; font-family: inherit; color: #374151; cursor: pointer; }
+.bidd-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 44px; border: 1px solid #d5dbe6; border-bottom: 0; border-radius: 10px 10px 0 0; background: #fff; font-family: inherit; color: #374151; cursor: pointer; }
 .bidd-tab b { font-size: 15px; font-weight: 800; }
-.bidd-tab span { font-size: 12px; color: #6b7280; }
 .bidd-tab.on { border-color: #1f2a44; background: #1f2a44; color: #fff; }
-.bidd-tab.on span { color: #c9d3ea; }
 .bidd-tab.add { border-style: dashed; border-color: #c3cbd8; background: transparent; font-size: 14px; font-weight: 700; color: #9aa3b2; }
 .bidd-tab:disabled { cursor: default; opacity: .5; }
 .bidd-board { display: flex; flex-direction: column; gap: 6px; padding: 22px 24px 20px; border-radius: 0 0 14px 14px; background: #1f2a44; color: #fff; }
