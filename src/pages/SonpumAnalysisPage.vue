@@ -32,7 +32,7 @@ watch(pickId, (v) => { writeLS(PICK_KEY, v); window.dispatchEvent(new CustomEven
 // 고른 물건이 목록에 없으면(처음 · 지운 물건) 맨 앞 물건으로 — 고르는 칸이 비어 보이지 않게
 watch(list, (l) => { if (l.length && !l.some((a) => a.id === pickId.value)) pickId.value = l[0].id; }, { immediate: true });
 type SonTab = 'demand' | 'price' | 'conc';
-const TAB_LABEL: Record<SonTab, string> = { demand: '수요분석', price: '시세조사', conc: '손품결론' };
+const TAB_LABEL: Record<SonTab, string> = { demand: '수요분석', price: '시세분석', conc: '손품결론' };
 const savedTab = readLS(TAB_KEY);
 const tab = ref<SonTab>(savedTab === 'price' || savedTab === 'conc' ? savedTab : 'demand');
 // 손품조사 화면이 지금 탭을 알게 — 손품결론 탭을 열 때만 결론 값을 받는다
@@ -97,7 +97,7 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
       <div class="adm-list-head adm-tabs-top son-tabbar">
         <nav class="adm-view-tabs" role="tablist">
           <button type="button" role="tab" :class="{ on: tab === 'demand' }" :aria-selected="tab === 'demand'" @click="tab = 'demand'">수요분석</button>
-          <button type="button" role="tab" :class="{ on: tab === 'price' }" :aria-selected="tab === 'price'" @click="tab = 'price'">시세조사</button>
+          <button type="button" role="tab" :class="{ on: tab === 'price' }" :aria-selected="tab === 'price'" @click="tab = 'price'">시세분석</button>
           <button type="button" role="tab" :class="{ on: tab === 'conc' }" :aria-selected="tab === 'conc'" @click="tab = 'conc'">손품결론</button>
         </nav>
         <div id="admCrumbSlot" class="adm-crumb-slot" />

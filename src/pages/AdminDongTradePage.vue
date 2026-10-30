@@ -151,7 +151,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 지역분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '시세조사' };
+const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '시세분석' };
 const tellTab = () => {
   if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
@@ -976,7 +976,7 @@ const downloadCsv = () => {
         <nav v-else-if="all.length > 0 || listView === 'case'" class="adm-view-tabs" role="tablist">
               <button type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
               <!-- 경매지번 — 시장분석 › 경매지번 분석 화면을 그대로(주소 줄 · 종류 · 기간 · 내비 · 표 · 저장). 주소 줄은 위 고르는 줄 자리에 -->
-              <button type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">시세조사</button>
+              <button type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">시세분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">지역별분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">유형분포<span class="adm-view-kind" :title="distChart === 'dots' ? '점 쌓기 — 한 번 더 누르면 막대' : distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 점 쌓기'" :aria-label="distChart === 'dots' ? '점 쌓기' : distChart === 'bar' ? '막대' : '도넛'">
                 <svg v-if="distChart === 'dots'" viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><circle cx="3" cy="13" r="1.6" /><circle cx="3" cy="9" r="1.6" /><circle cx="8" cy="13" r="1.6" /><circle cx="8" cy="9" r="1.6" /><circle cx="8" cy="5" r="1.6" /><circle cx="13" cy="13" r="1.6" /></svg>

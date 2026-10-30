@@ -57,3 +57,10 @@ export const openNaverSpot = async (address: string, kind: NaverKind = 'villa') 
   if (!p) { try { void navigator.clipboard?.writeText(address); } catch { /* 복사만 못 한다 */ } }
   if (w) w.location.href = url; else window.open(url, '_blank');
 };
+
+/** 부동산플래닛 — 주소로 건물을 바로 여는 주소 꼴이 없어 검색어('동 지번')를 복사해 두고 지도를 연다.
+ *  검색칸에 붙여넣고 맨 위를 누르면 그 건물 화면. 복사했으면 true */
+export const openPlanetSpot = async (query: string): Promise<boolean> => {
+  window.open('https://map.bdsplanet.com/', '_blank');
+  try { await navigator.clipboard.writeText(query); return true; } catch { return false; }
+};

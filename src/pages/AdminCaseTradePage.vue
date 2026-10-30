@@ -20,7 +20,7 @@ import TradeRangeFilter from '../components/TradeRangeFilter.vue';
 import { tradeWindowOf } from '../services/publicDataApi';
 import { priceUnitText, shortPlaceName } from '../services/addressLookup';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
-import { openNaverSpot } from '../services/naverListing';
+import { openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { useAuctionStore } from '../stores/auctionStore';
 import type { MarketPickRow, MarketPicks } from '../types/auction';
 import AppToast from '../components/AppToast.vue';
@@ -412,6 +412,8 @@ const shortName = computed(() => (
 // 줄을 누르면 그 거래가 기준이 되고, 위 지표가 그 값으로 다시 선다.
 const rowKey = (r: CaseTradeRow) => `${r.kind}|${r.contractDate}|${r.price}|${r.areaM2}|${r.floor}`;
 /** 웹 실거래 리스트 접기 — ① 경매물건 · 유사물건 표, ② 조건분석 표 (가격정보 검색리스트 접기와 같은 일) */
+/** 시세분석 카드 접기 — 접으면 제목 줄만 남는다 */
+const siseOpen = ref(true);
 const listOpen1 = ref(true);
 const listOpen2 = ref(true);
 const pickedSale = ref('');
@@ -679,11 +681,8 @@ const fullAddr = (r: CaseTradeRow, withName = true) => {
 const mapSite = computed<'naver' | 'planet'>(() => (kind.value === 'villa' ? 'planet' : 'naver'));
 const openAddr = (r: CaseTradeRow) => {
   if (mapSite.value === 'naver') { void openNaverSpot(fullAddr(r, !r.jibun), kind.value); return; }
-  window.open('https://map.bdsplanet.com/', '_blank');
   const q = [r.umdNm, r.jibun || r.name].filter(Boolean).join(' ');
-  navigator.clipboard.writeText(q)
-    .then(() => flash(`복사했습니다 — 부동산플래닛 검색칸에 붙여넣으세요(${q})`))
-    .catch(() => flash(`부동산플래닛 검색칸에 '${q}'를 넣으세요`, 'info'));
+  void openPlanetSpot(q).then((ok) => (ok ? flash(`복사했습니다 — 부동산플래닛 검색칸에 붙여넣으세요(${q})`) : flash(`부동산플래닛 검색칸에 '${q}'를 넣으세요`, 'info')));
 };
 const copyAddr = async (r: CaseTradeRow) => {
   const text = fullAddr(r);
@@ -1054,9 +1053,10 @@ const downloadCsv = () => {
       </Teleport>
 
       <!-- 웹 — 제목 줄부터 표까지 흰 상자 하나로 감싼다(.adm-case-card) -->
-      <div class="adm-case-card">
+      <div :class="['adm-case-card', { folded: webEmbed && !siseOpen }]">
       <!-- 손품분석 — 손품조사 카드 제목처럼 '시세조사'(아이콘) 아래에 실거래가 조사(아이콘 없음) -->
-      <div v-if="preset" class="adm-sise-head"><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세조사</div>
+      <!-- 시세분석 제목(손품분석 · 지역분석) — 오른쪽 끝 꺾쇠로 카드를 접고 편다 -->
+      <div v-if="webEmbed" class="adm-sise-head"><svg class="adm-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세분석<button type="button" class="sise-fold" :aria-expanded="siseOpen" :aria-label="siseOpen ? '시세분석 접기' : '시세분석 펼치기'" :title="siseOpen ? '접기' : '펼치기'" @click="siseOpen = !siseOpen"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" :class="{ up: siseOpen }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button></div>
       <!-- 웹 — 지역분석의 탭 줄 자리: 왼쪽에 화면 이름 · 저장 단추, 오른쪽에 경로(#admCrumbSlot 로 웹 경로를 옮겨 온다) -->
       <!-- 손품분석은 제목도 경로도 없어 이 줄을 띄우지 않는다(빈 줄이 남아 표가 내려앉았다) -->
       <div v-if="webEmbed && !preset" class="adm-list-head adm-tabs-top adm-case-row">
