@@ -107,11 +107,11 @@ defineExpose({ save, dirty });
         <div class="agb-line">
           <label class="agb-fld region">
             <small>지역</small>
-            <input v-model="row.region" class="agb-input" placeholder="동네" @input="touch" />
+            <input v-model="row.region" class="agb-input" :placeholder="webEmbed ? '지역' : '동네'" @input="touch" />
           </label>
           <label class="agb-fld name">
             <small>상호</small>
-            <input v-model="row.name" class="agb-input" placeholder="상호 입력" @input="touch" />
+            <input v-model="row.name" class="agb-input" :placeholder="webEmbed ? '상호' : '상호 입력'" @input="touch" />
           </label>
           <label class="agb-fld">
             <small>연락처</small>
@@ -133,11 +133,11 @@ defineExpose({ save, dirty });
         </div>
         <label class="agb-fld wide">
           <small>평가</small>
-          <input v-model="row.rating" class="agb-input" placeholder="써 보고 남길 말 — 응대·매물 수준 등" @input="touch" />
+          <input v-model="row.rating" class="agb-input" :placeholder="webEmbed ? '평가 — 써 보고 남길 말(응대 · 매물 수준 등)' : '써 보고 남길 말 — 응대·매물 수준 등'" @input="touch" />
         </label>
         <label v-if="webEmbed" class="agb-fld wide">
           <small>협의</small>
-          <input v-model="row.deal" class="agb-input" placeholder="이 업체와 협의한 내용 — 입금 · 매도 조건 등" @input="touch" />
+          <input v-model="row.deal" class="agb-input" placeholder="협의 — 이 업체와 협의한 내용(입금 · 매도 조건 등)" @input="touch" />
         </label>
       </article>
 
@@ -203,8 +203,9 @@ defineExpose({ save, dirty });
 .agb-panel.web .agb-list { gap: 10px; }
 .agb-panel.web .agb-card { padding: 14px; gap: 10px; border-radius: 10px; }
 .agb-panel.web .agb-line { gap: 10px; }
-.agb-panel.web .agb-fld { gap: 6px; }
-.agb-panel.web .agb-fld small { font-size: 14px; font-weight: 700; color: #374151; }
+.agb-panel.web .agb-fld { gap: 0; }
+.agb-panel.web .agb-line { align-items: center; }   /* 이름표를 뺀 뒤 — 줄마다 칸 40, 줄 사이 10, 상자 안쪽 14 로 고르게 */
+.agb-panel.web .agb-fld small { display: none; }   /* 웹 — 칸 이름(지역 · 상호 · 연락처 · 평가 · 협의)은 빼고 칸 안 안내 글로 */
 .agb-panel.web .agb-input { height: 40px; padding: 0 12px; border-radius: 8px; font-size: 14px; }
 .agb-panel.web .agb-del { flex-basis: 40px; height: 40px; border-radius: 8px; font-size: 18px; line-height: 38px; }
 .agb-panel.web .agb-call { width: 26px; height: 26px; right: 7px; }
