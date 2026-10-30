@@ -3981,8 +3981,8 @@ const lowAddrText = (index: number) => {
 const lowAddrTyped = (index: number) => !!mktVal(lowKey(index, 'addr')).trim();
 /** 손품분석(웹 시장분석) — 경매빌라 · 유사빌라 매물호가를 알약 없이 둘 다 펼친다.
  *  저장 자리는 알약과 같다(경매 mkt.c.* · 유사 mkt.c.sim.*). 유사 줄 수는 따로 센다(없으면 예전 공용 줄 수) */
-/** 주소 앞 건물 이름 — 등기 말('주건축물')은 떼고 '더라이프'처럼 */
-const subjectBuildingName = computed(() => subjectBuildingLabel.value.replace(/\s*주?건축물$/, '').trim());
+/** 주소 앞 건물 이름 — 위 물건 카드 주소의 건물 이름 그대로('더라이프주건축물'). 동 · 층 · 호는 줄마다 손으로 */
+const subjectBuildingName = computed(() => subjectBuildingLabel.value.trim());
 const LOW_GROUPS = [{ sim: false, label: '경매빌라 호가매물' }, { sim: true, label: '유사빌라 호가매물' }];
 const lowKeyG = (sim: boolean, index: number, field: string) => `mkt.c.${sim ? 'sim.' : ''}${index === 0 ? field : `${field}${index}`}`;
 const lowCountKey = (sim: boolean) => (sim ? 'mkt.c.sim.rowCount' : 'mkt.c.rowCount');
@@ -8822,7 +8822,7 @@ const goBack = () => router.back();
                 <div class="adp-mkt-cells c4 adp-dm-table">
                   <div class="cell">
                     <small>매매호가 (저가)</small>
-                    <FormattedNumberInput v-if="editingSurvey.listing" :model-value="mktVal(lowKeyG(g.sim, i - 1, 'saleAsk'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(lowKeyG(g.sim, i - 1, 'saleAsk'), $event)" />
+                    <FormattedNumberInput v-if="editingSurvey.listing" :model-value="mktVal(lowKeyG(g.sim, i - 1, 'saleAsk'))" mode="string" class="adp-mkt-input" placeholder="호가 입력" @update:model-value="setMktVal(lowKeyG(g.sim, i - 1, 'saleAsk'), $event)" />
                     <strong v-else class="hi">{{ mktMoney(lowKeyG(g.sim, i - 1, 'saleAsk')) }}</strong>
                   </div>
                   <div class="cell">
@@ -8832,17 +8832,17 @@ const goBack = () => router.back();
                   <div class="cell">
                     <small>전용면적</small>
                     <span v-if="editingSurvey.listing" class="adp-mkt-unit">
-                      <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(lowKeyG(g.sim, i - 1, 'area'))" placeholder="0" @input="setMktVal(lowKeyG(g.sim, i - 1, 'area'), ($event.target as HTMLInputElement).value)" />㎡
+                      <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(lowKeyG(g.sim, i - 1, 'area'))" placeholder="면적 입력" @input="setMktVal(lowKeyG(g.sim, i - 1, 'area'), ($event.target as HTMLInputElement).value)" />㎡
                     </span>
                     <strong v-else class="adp-mkt-area1">{{ mktAreaText(lowKeyG(g.sim, i - 1, 'area')) }}</strong>
                   </div>
                   <div class="cell">
                     <small>주소</small>
-                    <span v-if="editingSurvey.listing" class="son-addr-field"><em v-if="!g.sim && subjectBuildingName" class="son-addr-head" :title="subjectBuildingName">{{ subjectBuildingName }}</em><input class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="!g.sim ? (subjectHasDong ? '동 · 층 · 호' : '층 · 호') : '빌라명 · 층 · 호'" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" /></span>
+                    <span v-if="editingSurvey.listing" class="son-addr-field"><em v-if="!g.sim && subjectBuildingName" class="son-addr-head" :title="subjectBuildingName">{{ subjectBuildingName }}</em><input class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="!g.sim ? (subjectHasDong ? '동층호 입력' : '층호 입력') : '빌라명 · 층 · 호 입력'" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" /></span>
                     <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTypedG(g.sim, i - 1) }]">{{ lowAddrTextG(g.sim, i - 1) }}</strong>
                   </div>
                   <div class="cell adp-mkt-wide">
-                    <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'note'))" placeholder="비고" @input="setMktVal(lowKeyG(g.sim, i - 1, 'note'), ($event.target as HTMLInputElement).value)" />
+                    <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'note'))" placeholder="비고 입력" @input="setMktVal(lowKeyG(g.sim, i - 1, 'note'), ($event.target as HTMLInputElement).value)" />
                     <strong v-else :class="{ filled: !!mktVal(lowKeyG(g.sim, i - 1, 'note')) }">{{ mktVal(lowKeyG(g.sim, i - 1, 'note')) || '비고' }}</strong>
                   </div>
                 </div>

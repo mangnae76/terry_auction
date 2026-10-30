@@ -588,7 +588,8 @@ button { cursor: pointer; }
 #sonAskSlot .adp-mkt-unit, #sonAskSlot .son-addr-field, #sonAskSlot .son-auto { height: 46px !important; width: 100% !important; margin: 0 !important; box-sizing: border-box; }
 #sonAskSlot .adp-mkt-unit { padding-right: 12px; }
 #sonAskSlot .son-addr-field { padding-left: 12px; gap: 4px; }
-#sonAskSlot .son-addr-field .adp-mkt-input { flex: 0 0 110px !important; width: 110px !important; text-align: left; padding-left: 4px !important; }   /* 동 · 층 · 호 칸은 좁게 고정 — 건물 이름이 남은 폭을 다 쓴다 */
+#sonAskSlot .son-addr-field .adp-mkt-input { text-align: left; padding-left: 4px !important; }
+#sonAskSlot .son-addr-head + .adp-mkt-input { flex: 0 0 110px !important; width: 110px !important; }   /* 경매빌라만 — 건물 이름 옆 동층호 칸은 좁게. 유사빌라는 칸 전체 */   /* 동 · 층 · 호 칸은 좁게 고정 — 건물 이름이 남은 폭을 다 쓴다 */
 #sonAskSlot .adp-mkt-cells .cell.adp-mkt-wide .adp-mkt-input { text-align: left; padding-left: 14px !important; }
 /* 부동산 유선상담 — 겹상자 없이 바깥 상자 하나, 칸 높이 40 · 글자 14 · 모서리 8(웹 규격) */
 #sonNaverSlot .agency-table { border: 0 !important; padding: 0 !important; background: none !important; box-shadow: none !important; }
