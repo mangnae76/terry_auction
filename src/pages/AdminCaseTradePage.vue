@@ -177,7 +177,11 @@ const run = async () => {
     if (!res.price) {
       notice.value = notice.value || '공동주택가 자료가 없습니다 — 공동주택이 아니거나 아직 고시 전입니다.';
     }
-    if (props.preset) { restorePresetPicks(); restorePicksFromAuction(); presetRunAt.value = Date.now(); }
+    if (props.preset) {
+      restorePresetPicks(); restorePicksFromAuction(); presetRunAt.value = Date.now();
+      // 조회가 끝나면 한 번 적는다 — 고르지 않고 열어만 봐도 ③ 평균 · 보증보험이 물건에 남아 손품결론이 읽는다
+      void nextTick(() => nextTick(() => savePicksToAuction()));
+    }
   } catch (err) {
     errorMsg.value = err instanceof Error ? err.message : String(err);
   } finally {
@@ -928,7 +932,9 @@ const restorePicksFromAuction = () => {
   };
   caseBack(mp.caseSale, mp.caseManual?.sale, (k) => { pickedSale.value = k; }, (r) => { restoredSale.value = r; });
   caseBack(mp.caseJeonse, mp.caseManual?.jeonse, (k) => { pickedJeonse.value = k; }, (r) => { restoredJeonse.value = r; });
-  lastPicksJson = JSON.stringify(collectPicks());
+  // 남긴 값과 견준다 — 다르면(새 칸이 생겼거나 평균이 달라졌으면) 아래에서 한 번 적는다
+  const { savedAt: _at, ...stored } = mp;
+  lastPicksJson = JSON.stringify(stored);
   void nextTick(() => { picksRestoring = false; });
 };
 watch([pickedSale, pickedJeonse, restoredSale, restoredJeonse, simSale, simJeonse, simF, condF, condAvg, condJeonseAvg, pubValue], savePicksToAuction, { deep: true });

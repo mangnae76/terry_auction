@@ -9034,17 +9034,17 @@ const goBack = () => router.back();
             <div v-if="sonpumMode" class="adp-sub-block son-conc-block">
               <div class="adp-sub-head"><h3>시세 결론</h3></div>
               <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table bold-price conc-vert">
-                <thead><tr><th class="adp-conc-corner">구분</th><th>평당가</th><th>가격</th></tr></thead>
+                <thead><tr><th class="adp-conc-corner">구분</th><th>가격</th><th>평당가</th></tr></thead>
                 <tbody>
                   <tr v-for="l in sonConcLines" :key="l.key">
                     <th :class="['adp-conc-side', { off: sonConcOff(l.key) }]"><label class="adp-conc-pick inline"><input type="checkbox" :checked="!sonConcOff(l.key)" @change="toggleSonConc(l.key)" /></label>{{ l.label }}</th>
-                    <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.unit) }}</span></td>
                     <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.price) }}</span></td>
+                    <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.unit) }}</span></td>
                   </tr>
                   <tr>
                     <th class="adp-conc-side mid big">평균</th>
-                    <td class="num mean"><span class="adp-conc-v">{{ wonText(sonConcMean.unit) }}</span></td>
                     <td class="num mean"><span class="adp-conc-v">{{ wonText(sonConcMean.price) }}</span></td>
+                    <td class="num mean"><span class="adp-conc-v">{{ wonText(sonConcMean.unit) }}</span></td>
                   </tr>
                 </tbody>
               </table>
