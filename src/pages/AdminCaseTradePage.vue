@@ -497,6 +497,8 @@ const pct = (a: number, b: number) => (a > 0 && b > 0 ? `${Math.round((a / b) * 
 const pairText = (sale: CaseTradeRow | null, jeonse: CaseTradeRow | null) => (sale && jeonse
   ? `${pct(jeonse.price, sale.price)} / ${(sale.price - jeonse.price).toLocaleString('ko-KR')}`
   : '-');
+/** 시세종합 표 전용 칸 — 단위는 머리글(㎡/평)에만, 칸 안은 숫자만 */
+const bare = (t: string) => t.replace(/[㎡평]/g, '');
 const placeOf = (r: CaseTradeRow) => [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ');
 const resultLines = computed(() => [
   { key: 'cs', tool: 'case' as Tool, label: '① 경매지번 매매가', kind: 'sale', row: caseSaleRow.value, empty: '데이터 없음', note: '② 유사물건에서 고르세요', pair: pairText(caseSaleRow.value, caseJeonseRow.value) },
@@ -1081,7 +1083,7 @@ const downloadCsv = () => {
                   <td class="n">{{ won(condPerPyeong) }}</td>
                   <td rowspan="2" class="n res-pair">{{ condAvg > 0 && condJeonseAvg > 0 ? `${pct(condJeonseAvg, condAvg)} / ${Math.round(condAvg - condJeonseAvg).toLocaleString('ko-KR')}` : '-' }}</td>
                   <td class="n">{{ pct(condAvg, pubValue) }}</td>
-                  <td rowspan="2" class="n res-pair res-span"><span v-if="condAreaPair" class="res-rng"><span>{{ condAreaPair[0] }} ~</span><span>{{ condAreaPair[1] }}</span></span><template v-else>-</template></td>
+                  <td rowspan="2" class="n res-pair res-span"><span v-if="condAreaPair" class="res-rng"><span>{{ bare(condAreaPair[0]) }} ~</span><span>{{ bare(condAreaPair[1]) }}</span></span><template v-else>-</template></td>
                   <td rowspan="2" class="n res-pair res-span">{{ condPeriodText }}</td>
                   <td class="res-place">{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 · 사용승인 {{ condApprovalText.replace(' / ', ' · 연식 ') }}</td>
                 </tr>
