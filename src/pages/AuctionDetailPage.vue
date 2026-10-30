@@ -2453,6 +2453,41 @@ const resetScenarioRates = (sc: ProfitScenario) => {
   });
 };
 
+/* 웹 입찰가산정 보기 — 새화면(왼쪽 입력 · 오른쪽 남색 계산판) / 클래식(예전 표). 고른 것은 다음에도 그대로 */
+const PROFIT_VIEW_KEY = 'adp.web.profitView';
+const profitView = ref<'new' | 'classic'>((() => {
+  try { return localStorage.getItem(PROFIT_VIEW_KEY) === 'classic' ? 'classic' : 'new'; } catch { return 'new'; }
+})());
+const setProfitView = (v: 'new' | 'classic') => {
+  profitView.value = v;
+  if (v === 'new') editingProfit.value = false;
+  try { localStorage.setItem(PROFIT_VIEW_KEY, v); } catch { /* 저장 못 해도 화면은 바뀐다 */ }
+};
+const webNew = computed(() => webEmbed && profitView.value === 'new');
+/** 안 탭 — 있는 안은 고르고, 바로 다음 빈 칸은 눌러서 안을 하나 더 만든다 */
+const pickPlanTab = async (si: number) => {
+  if (profitScenarios.value[si]) { selectedPlan.value = si; return; }
+  if (si !== profitScenarios.value.length) return;
+  try { await addProfitScenario(); } finally {
+    // 저장이 늦거나 실패해도 안은 이미 생겼다 — 그 안으로 넘어간다
+    if (profitScenarios.value[si]) selectedPlan.value = si;
+  }
+};
+/** 탭에 적는 순이익 — '2,050만' */
+const manText = (n: number) => `${Math.round(n / 10_000).toLocaleString('ko-KR')}만`;
+/* 새화면은 칸이 늘 열려 있다. 값이 실제로 바뀌었을 때만 손을 멈추면 적는다(물건을 읽은 것만으로는 적지 않는다) */
+let profitJson = '';
+watch(() => auction.value?.id, () => { profitJson = ''; });
+watch(
+  () => (webNew.value && auction.value ? JSON.stringify([auction.value.metrics?.myBidValue, auction.value.expectedSaleValue, auction.value.expectedSaleValue2, auction.value.bidCost, auction.value.bidScenarios]) : ''),
+  (json) => {
+    if (!json) { profitJson = ''; return; }
+    if (!profitJson) { profitJson = json; return; }
+    if (json === profitJson) return;
+    profitJson = json;
+    persistSoon();
+  },
+);
 const saveProfit = async () => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
@@ -6519,9 +6554,13 @@ const goBack = () => router.back();
               </svg>
               예상수익분석
             </h2>
-            <span class="adp-auto-chip">✦ 자동계산</span>
-            <button v-if="!editingProfit" class="adp-edit-btn" type="button" @click.stop="startEditProfit"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveProfit">완료</button>
+            <span :class="['adp-auto-chip', { 'web-solo': webEmbed }]">✦ 자동계산</span>
+            <span v-if="webEmbed" class="adp-view-seg" @click.stop>
+              <button type="button" :class="{ on: profitView === 'new' }" :aria-pressed="profitView === 'new'" @click="setProfitView('new')">새화면</button>
+              <button type="button" :class="{ on: profitView === 'classic' }" :aria-pressed="profitView === 'classic'" @click="setProfitView('classic')">클래식</button>
+            </span>
+            <button v-if="!editingProfit && !webNew" class="adp-edit-btn" type="button" @click.stop="startEditProfit"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+            <button v-else-if="!webNew" class="adp-edit-btn save" type="button" @click.stop="saveProfit">완료</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('profit') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('profit')" class="adp-profit-dates">
@@ -6573,7 +6612,7 @@ const goBack = () => router.back();
           </div>
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
           <template v-for="(sc, si) in profitScenarios" :key="sc.label">
-          <div v-if="!isCollapsed('profit')" :class="['adp-profit-head-row', { 'is-dim': si !== selectedPlan }]" @pointerdown="webEmbed && (selectedPlan = si)" @focusin="webEmbed && (selectedPlan = si)">
+          <div v-if="!isCollapsed('profit') && (!webNew || si === selectedPlan)" :class="['adp-profit-head-row', { 'is-dim': si !== selectedPlan && !webNew }]" @pointerdown="webEmbed && (selectedPlan = si)" @focusin="webEmbed && (selectedPlan = si)">
             <!-- 표가 하나뿐이어도 'A안' 을 낸다 — 둘이 될 때 이름이 생기면 어느 쪽이
                  먼저 적은 표인지 헷갈린다 -->
             <span class="adp-profit-label">{{ sc.label }}</span>
@@ -6601,7 +6640,7 @@ const goBack = () => router.back();
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </button>
           </div>
-          <table v-if="!isCollapsed('profit')" :id="`profit-tbl-${si}`" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0, 'is-dim': si !== selectedPlan }]" @pointerdown="webEmbed && (selectedPlan = si)" @focusin="webEmbed && (selectedPlan = si)">
+          <table v-if="!isCollapsed('profit') && !webNew" :id="`profit-tbl-${si}`" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0, 'is-dim': si !== selectedPlan }]" @pointerdown="webEmbed && (selectedPlan = si)" @focusin="webEmbed && (selectedPlan = si)">
             <thead>
               <tr><th>구분</th><th>상세</th><th class="r">비중 (%)</th><th class="r">금액</th></tr>
             </thead>
@@ -6789,9 +6828,139 @@ const goBack = () => router.back();
             </tbody>
           </table>
 
+          <!-- ===== 웹 새화면(D안) — 왼쪽 절반은 고른 안의 값을 고치는 칸(늘 열려 있다), 오른쪽 절반은 안 탭 + 남색 계산판(내려도 따라온다) ===== -->
+          <div v-if="webNew && !isCollapsed('profit') && si === selectedPlan" :id="`profit-tbl-${si}`" class="bidd">
+            <div class="bidd-left">
+              <section class="bidd-card">
+                <div class="bidd-hrow"><h3 class="bidd-h">입찰가 정하기</h3><span class="bidd-tag">{{ sc.label }}</span></div>
+                <div class="bidd-big-row">
+                  <label class="bidd-lab" :for="`bidd-bid-${si}`">입찰가</label>
+                  <FormattedNumberInput :id="`bidd-bid-${si}`" v-model="sc.bid.myBidValue" class="bidd-big" live-group />
+                  <span class="bidd-won">원</span>
+                </div>
+                <div v-if="apprValue > 0" class="bidd-slide">
+                  <input type="range" min="50" max="110" step="0.1" :value="Math.min(110, Math.max(50, scBidPct(sc)))" :aria-label="`${sc.label} 감정가 대비 입찰가`" @input="scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" />
+                  <div class="lab">
+                    <span>50%</span>
+                    <span v-if="auction.metrics.minimumBidValue > 0">최저가 {{ formatPct((auction.metrics.minimumBidValue / apprValue) * 100) }}</span>
+                    <b>감정가의 {{ formatPct(scBidPct(sc)) }}</b>
+                    <span>110%</span>
+                  </div>
+                </div>
+                <div class="bidd-minis">
+                  <div><span>감정가</span><b>{{ formatMoney(apprValue) }}</b></div>
+                  <div><span>{{ auction.auctionRound ? `최저가(${auction.auctionRound})` : '최저가' }}</span><b>{{ formatMoney(auction.metrics.minimumBidValue) }}</b></div>
+                  <div><span>보증금 10%</span><b>{{ formatMoney(bidDeposit) }}</b></div>
+                </div>
+              </section>
+
+              <!-- 비용 — 예전 표처럼 항목 · 비중 · 금액을 한 줄씩 -->
+              <section class="bidd-card">
+                <div class="bidd-hrow"><h3 class="bidd-h">비용</h3><span class="bidd-hint">비중 · 금액 칸을 눌러 고칩니다</span></div>
+                <div class="bidd-row head"><span></span><span>항목</span><span>비중</span><span>금액</span></div>
+                <div class="bidd-row loan">
+                  <span class="no"></span><span class="k">대출(사업자)</span>
+                  <span class="bidd-pct"><input :value="pctShow(`cLoan-${si}`, scPctOfBid(sc, sc.cost.loanAmount))" inputmode="decimal" aria-label="대출 비중" @blur="pctDone()" @input="pctType(`cLoan-${si}`, $event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span>
+                  <FormattedNumberInput v-model="sc.cost.loanAmount" class="bidd-amt" live-group />
+                </div>
+                <div class="bidd-row">
+                  <span class="no">①</span><span class="k">취득세</span>
+                  <span class="bidd-pct"><input :value="pctShow(`cAcq-${si}`, scPctOfBid(sc, sc.cost.acquisitionTaxAmount))" inputmode="decimal" aria-label="취득세 비중" @blur="pctDone()" @input="pctType(`cAcq-${si}`, $event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span>
+                  <FormattedNumberInput v-model="sc.cost.acquisitionTaxAmount" class="bidd-amt" live-group @update:model-value="scSyncAcqRate(sc)" />
+                </div>
+                <div class="bidd-row">
+                  <span class="no">②</span><span class="k">법무비 · 채권</span>
+                  <span class="bidd-pct"><input :value="pctShow(`cLegal-${si}`, scPctOfBid(sc, sc.cost.legalCostAmount))" inputmode="decimal" aria-label="법무비 비중" @blur="pctDone()" @input="pctType(`cLegal-${si}`, $event); scSetLegalPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span>
+                  <b class="bidd-ro">{{ formatMoney(sc.cost.legalCostAmount) }}</b>
+                </div>
+                <div class="bidd-row">
+                  <span class="no">③</span><span class="k">중도상환</span>
+                  <span class="bidd-pct"><input :value="pctShow(`cMid-${si}`, scRowPct(sc, RATE_ROWS[0]))" inputmode="decimal" aria-label="중도상환 비율" @blur="pctDone()" @input="pctType(`cMid-${si}`, $event); scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><i>%</i></span>
+                  <FormattedNumberInput v-model="sc.cost.midRepaymentAmount" class="bidd-amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" />
+                </div>
+                <div class="bidd-row">
+                  <span class="no">④</span><span class="k">이자(3개월)</span>
+                  <span class="bidd-pct"><input :value="pctShow(`cInt-${si}`, scRowPct(sc, RATE_ROWS[1]))" inputmode="decimal" aria-label="이자율" @blur="pctDone()" @input="pctType(`cInt-${si}`, $event); scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><i>%</i></span>
+                  <FormattedNumberInput v-model="sc.cost.interestAmount" class="bidd-amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" />
+                </div>
+                <div class="bidd-row">
+                  <span class="no">⑤</span><span class="k">매도중개료</span>
+                  <span class="bidd-pct"><input :value="pctShow(`cBrk-${si}`, scRowPct(sc, RATE_ROWS[2]))" inputmode="decimal" aria-label="매도중개료율" @blur="pctDone()" @input="pctType(`cBrk-${si}`, $event); scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><i>%</i></span>
+                  <b class="bidd-ro">{{ formatMoney(sc.cost.brokerageAmount) }}</b>
+                </div>
+                <div class="bidd-row"><span class="no">⑥</span><span class="k">미납관리비</span><span class="bidd-dash">-</span><FormattedNumberInput v-model="sc.cost.arrearsFee" class="bidd-amt" live-group /></div>
+                <div class="bidd-row"><span class="no">⑦</span><span class="k">수리비</span><span class="bidd-dash">-</span><FormattedNumberInput v-model="sc.cost.repairCost" class="bidd-amt" live-group /></div>
+                <div class="bidd-row"><span class="no">⑧</span><span class="k">명도비</span><span class="bidd-dash">-</span><FormattedNumberInput v-model="sc.cost.evictionCost" class="bidd-amt" live-group /></div>
+                <div class="bidd-row last"><span class="no">⑨</span><span class="k">광고비<small>원천징수 3.3% 포함</small></span><span class="bidd-dash">-</span><FormattedNumberInput v-model="sc.cost.advertisingCost" class="bidd-amt" live-group /></div>
+                <div class="bidd-sum"><span>필요경비합계</span><em>①~⑨</em><b>{{ formatMoney(scTotalCosts(sc)) }}</b></div>
+              </section>
+
+              <section class="bidd-card">
+                <h3 class="bidd-h">매도가</h3>
+                <div class="bidd-big-row">
+                  <label class="bidd-lab" :for="`bidd-sale-${si}`">예상 매도가</label>
+                  <FormattedNumberInput :id="`bidd-sale-${si}`" v-model="sc.sale.expectedSaleValue" class="bidd-big sale" live-group />
+                  <span class="bidd-won">원</span>
+                </div>
+                <div class="bidd-big-row sub">
+                  <label class="bidd-lab" :for="`bidd-alt-${si}`">입금가</label>
+                  <input :id="`bidd-alt-${si}`" :value="scSaleAlt(sc)" class="bidd-note" placeholder="메모 칸 — 계산에 안 들어갑니다" @input="scSetSaleAlt(sc, ($event.target as HTMLInputElement).value)" />
+                </div>
+              </section>
+            </div>
+
+            <div class="bidd-right">
+              <div class="bidd-tabs" role="tablist">
+                <button
+                  v-for="(label, ti) in PROFIT_NAV_LABELS"
+                  :key="`tab-${label}`"
+                  type="button"
+                  role="tab"
+                  :aria-selected="ti === selectedPlan"
+                  :disabled="!profitScenarios[ti] && ti !== profitScenarios.length"
+                  :class="['bidd-tab', { on: ti === selectedPlan, add: !profitScenarios[ti] }]"
+                  @click="pickPlanTab(ti)"
+                >
+                  <template v-if="profitScenarios[ti]">
+                    <b>{{ label }}안</b>
+                    <span>{{ formatPct(scBidPct(profitScenarios[ti])) }} · {{ manText(scAfterTaxProfit(profitScenarios[ti])) }}</span>
+                  </template>
+                  <template v-else>＋ {{ label }}안</template>
+                </button>
+              </div>
+              <aside class="bidd-board">
+                <span class="bidd-b-lab">{{ sc.label }} 세후 순이익</span>
+                <strong :class="['bidd-b-big', { neg: scAfterTaxProfit(sc) < 0 }]">{{ formatMoney(scAfterTaxProfit(sc)) }}<small>원</small></strong>
+                <span :class="['bidd-b-rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span>
+                <dl class="bidd-dl">
+                  <dt>예상 매도가</dt><dd>{{ formatMoney(scSale(sc)) }}</dd>
+                  <dt>− 입찰가</dt><dd>{{ formatMoney(scBid(sc)) }}</dd>
+                  <dt>− 필요경비합계</dt><dd>{{ formatMoney(scTotalCosts(sc)) }}</dd>
+                  <dt class="em">= 사업소득금액</dt><dd :class="{ neg: scGain(sc) < 0 }">{{ formatMoney(scGain(sc)) }}</dd>
+                  <dt>− 사업소득세<span class="bidd-in"><input :value="scTaxRate(sc)" inputmode="decimal" aria-label="사업소득세율" @input="limitPct($event); scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" />%</span>− 공제<span class="bidd-in"><input :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" aria-label="누진공제(만원)" @input="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" />만</span></dt><dd>{{ formatMoney(scTransferTax(sc)) }}</dd>
+                  <dt>− 지방세<span class="bidd-in"><input :value="String(scLocalTaxRate(sc))" inputmode="decimal" aria-label="지방세율" @input="limitPct($event); scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" />%</span></dt><dd>{{ formatMoney(scLocalTax(sc)) }}</dd>
+                  <dt class="em strong">= 세후 순이익</dt><dd :class="['green', { neg: scAfterTaxProfit(sc) < 0 }]">{{ formatMoney(scAfterTaxProfit(sc)) }}</dd>
+                </dl>
+                <dl class="bidd-dl">
+                  <dt>총투자금<small>입찰가 + 비용</small></dt><dd>{{ formatMoney(scTotalInvest(sc)) }}</dd>
+                  <dt>실투자금<small>대출 제외</small></dt><dd class="gold">{{ formatMoney(scNetInvestment(sc)) }}</dd>
+                  <dt>필요한 내 돈</dt><dd>{{ formatMoney(scCashOut(sc).total) }}</dd>
+                </dl>
+                <!-- 목표 순이익을 적으면 입찰가를 거꾸로 푼다 -->
+                <label class="bidd-goal">
+                  <span>목표 순이익을 적으면 입찰가를 거꾸로 계산합니다</span>
+                  <FormattedNumberInput :model-value="Math.round(scAfterTaxProfit(sc))" class="bidd-goal-in" live-group @update:model-value="scSetAfterTaxProfit(sc, $event)" />
+                </label>
+                <div class="bidd-cash">
+                  <span class="t">돈이 나가는 순서</span>
+                  <div v-for="step in scCashOut(sc).steps" :key="step.no" class="r" :title="step.note || ''"><span>{{ step.no }} · {{ step.when }} {{ step.what }}</span><b>{{ formatMoney(step.amount) }}</b></div>
+                </div>
+              </aside>
+            </div>
+          </div>
           <!-- 돈이 나가는 순서 — 위 표의 값을 '언제 얼마가 필요한가' 로 다시 묶은 것 -->
           <!-- 돈이 나가는 순서는 고른 안(위 칩) 하나만 -->
-          <section v-if="!isCollapsed('profit') && si === selectedPlan" class="adp-cash">
+          <section v-if="!isCollapsed('profit') && si === selectedPlan && !webNew" class="adp-cash">
             <h3>돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
             <div v-for="step in scCashOut(sc).steps" :key="step.no" class="adp-cash-step">
               <div class="adp-cash-head">
@@ -12806,4 +12975,94 @@ select.adp-pub-input option { text-align: center; }
   .adp-base-note, .adp-sub-note:not(.adp-rows-cap), .adp-warn-banner, .adp-table .adp-desc,
   .adp-base-row .quad-v small, .adp-rcase-item small, .adp-rdoc-label, .adp-rdoc-task, .adp-empty.sm, .adp-empty.one
 ) { font-size: 14px; }
+/* ===== 웹 입찰가산정 새화면(D안) — 왼쪽 입력 · 오른쪽 안 탭 + 남색 계산판 ===== */
+.adp-auto-chip.web-solo { margin-right: auto; }
+.adp-view-seg { display: inline-flex; gap: 3px; padding: 3px; margin-right: 6px; border-radius: 9px; background: #e3e8f1; }
+.adp-view-seg button { height: 28px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; font-family: inherit; font-size: 13px; font-weight: 600; color: #4b5563; cursor: pointer; }
+.adp-view-seg button.on { background: #fff; color: #1f2a44; font-weight: 800; box-shadow: 0 1px 2px rgba(15, 23, 42, .12); }
+.bidd { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 8px; }
+.bidd-left { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.bidd-card { padding: 18px 22px; background: #fff; border: 1px solid #e5e9f2; border-radius: 14px; }
+.bidd-h { margin: 0 0 12px; font-size: 16px; font-weight: 800; color: #111827; }
+.bidd-hrow { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.bidd-hrow .bidd-h { margin: 0; }
+.bidd-tag { padding: 2px 8px; border-radius: 6px; background: #1f2a44; color: #fff; font-size: 12px; font-weight: 700; }
+.bidd-hint { margin-left: auto; font-size: 12px; color: #6b7280; }
+.bidd-big-row { display: flex; align-items: center; gap: 10px; }
+.bidd-big-row.sub { margin-top: 8px; }
+.bidd-lab { flex: none; width: 76px; font-size: 14px; font-weight: 700; color: #111827; }
+.bidd-big-row.sub .bidd-lab { font-weight: 400; color: #4b5563; }
+.bidd-won { flex: none; font-size: 15px; font-weight: 700; color: #374151; }
+.bidd :deep(.bidd-big) { flex: 1; min-width: 0; box-sizing: border-box; height: 48px; padding: 0 14px; border: 2px solid #2b6df3; border-radius: 10px; background: #fff; font-family: inherit; font-size: 20px; font-weight: 800; color: #1f2a44; text-align: right; }
+.bidd :deep(.bidd-big.sale) { height: 44px; border: 1px solid #d5dbe6; font-size: 18px; color: #111827; }
+.bidd :deep(.bidd-big:focus) { outline: none; border-color: #2b6df3; box-shadow: 0 0 0 3px rgba(43, 109, 243, .15); }
+.bidd-note { flex: 1; min-width: 0; box-sizing: border-box; height: 36px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 8px; font-family: inherit; font-size: 13px; color: #111827; }
+.bidd-note:focus { outline: none; border-color: #2b6df3; }
+.bidd-slide { padding: 14px 0 0 86px; }
+.bidd-slide input[type='range'] { width: 100%; margin: 0; accent-color: #2b6df3; cursor: pointer; }
+.bidd-slide .lab { display: flex; justify-content: space-between; margin-top: 6px; font-size: 12px; color: #6b7280; }
+.bidd-slide .lab b { color: #2b6df3; font-weight: 800; }
+.bidd-minis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.bidd-minis > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid #e5e9f2; border-radius: 10px; }
+.bidd-minis span { font-size: 12px; color: #6b7280; }
+.bidd-minis b { font-size: 15px; font-weight: 800; color: #111827; }
+.bidd-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) 84px 150px; align-items: center; column-gap: 8px; min-height: 38px; border-bottom: 1px solid #f0f2f7; font-size: 14px; color: #111827; }
+.bidd-row.last { border-bottom: 0; }
+.bidd-row.head { min-height: 30px; border-bottom-color: #e5e9f2; font-size: 12px; color: #6b7280; }
+.bidd-row.head span:nth-child(n+3) { justify-self: end; }
+.bidd-row.loan { background: #f8fafd; }
+.bidd-row.loan .k { font-weight: 700; }
+.bidd-row .no { font-size: 12px; font-weight: 700; color: #9aa3b2; text-align: center; }
+.bidd-row .k small { margin-left: 6px; font-size: 12px; color: #9ca3af; }
+.bidd-pct { justify-self: end; display: inline-flex; align-items: center; gap: 2px; }
+.bidd-pct input { width: 60px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; background: #f7f9ff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; text-align: right; }
+.bidd-pct input:focus { outline: none; border-color: #2b6df3; background: #fff; }
+.bidd-pct i { font-style: normal; font-size: 12px; color: #6b7280; }
+.bidd-dash { justify-self: end; padding-right: 14px; font-size: 13px; color: #9aa3b2; }
+.bidd :deep(.bidd-amt) { justify-self: end; width: 150px; box-sizing: border-box; height: 28px; padding: 0 4px; border: 0; border-bottom: 1px dashed #d5dbe6; border-radius: 0; background: transparent; font-family: inherit; font-size: 14px; font-weight: 700; color: #111827; text-align: right; }
+.bidd :deep(.bidd-amt:focus) { outline: none; border-bottom: 1px solid #2b6df3; }
+.bidd-ro { justify-self: end; padding-right: 4px; font-size: 14px; font-weight: 600; color: #4b5563; }
+.bidd-sum { display: flex; align-items: center; gap: 8px; min-height: 46px; margin-top: 6px; padding: 0 14px; border-radius: 10px; background: #fffaeb; border: 1px solid #f3e1a6; }
+.bidd-sum span { font-size: 14px; font-weight: 800; color: #854d0e; }
+.bidd-sum em { font-style: normal; font-size: 12px; color: #a16207; }
+.bidd-sum b { margin-left: auto; font-size: 17px; font-weight: 800; color: #854d0e; }
+.bidd-right { position: sticky; top: calc(var(--stick-top, 0px) + 230px); display: flex; flex-direction: column; min-width: 0; }
+.bidd-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; padding: 0 6px; }
+.bidd-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 52px; border: 1px solid #d5dbe6; border-bottom: 0; border-radius: 10px 10px 0 0; background: #fff; font-family: inherit; color: #374151; cursor: pointer; }
+.bidd-tab b { font-size: 15px; font-weight: 800; }
+.bidd-tab span { font-size: 12px; color: #6b7280; }
+.bidd-tab.on { border-color: #1f2a44; background: #1f2a44; color: #fff; }
+.bidd-tab.on span { color: #c9d3ea; }
+.bidd-tab.add { border-style: dashed; border-color: #c3cbd8; background: transparent; font-size: 14px; font-weight: 700; color: #9aa3b2; }
+.bidd-tab:disabled { cursor: default; opacity: .5; }
+.bidd-board { display: flex; flex-direction: column; gap: 6px; padding: 22px 24px 20px; border-radius: 14px; background: #1f2a44; color: #fff; }
+.bidd-b-lab { font-size: 14px; color: #c9d3ea; }
+.bidd-b-big { font-size: 32px; font-weight: 800; letter-spacing: -0.8px; }
+.bidd-b-big small { margin-left: 4px; font-size: 16px; }
+.bidd-b-big.neg, .bidd-dl dd.neg { color: #ff9b9b; }
+.bidd-b-rate { align-self: flex-start; margin-top: 4px; padding: 4px 10px; border-radius: 6px; background: #2f8f5b; font-size: 14px; font-weight: 800; }
+.bidd-b-rate.neg { background: #b4444a; }
+.bidd-dl { margin: 12px 0 0; padding-top: 14px; border-top: 1px solid #34436a; display: grid; grid-template-columns: 1fr auto; align-items: center; row-gap: 10px; font-size: 14px; }
+.bidd-dl dt { display: flex; align-items: center; gap: 4px; color: #c9d3ea; }
+.bidd-dl dt small { margin-left: 4px; font-size: 12px; }
+.bidd-dl dt.em { color: #fff; font-weight: 700; }
+.bidd-dl dt.strong { font-weight: 800; }
+.bidd-dl dd { margin: 0; font-weight: 700; text-align: right; }
+.bidd-dl dd.gold { color: #ffd28a; font-weight: 800; }
+.bidd-dl dd.green { color: #9fe0b8; font-weight: 800; }
+.bidd-in { display: inline-flex; align-items: center; gap: 2px; margin-left: 4px; }
+.bidd-in input { width: 40px; height: 24px; box-sizing: border-box; padding: 0 5px; border: 1px solid #3b4a6d; border-radius: 5px; background: #26345a; font-family: inherit; font-size: 12px; color: #fff; text-align: right; }
+.bidd-in input:focus { outline: none; border-color: #8fb2ff; }
+.bidd-goal { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; padding-top: 14px; border-top: 1px solid #34436a; font-size: 13px; color: #c9d3ea; }
+.bidd-board :deep(.bidd-goal-in) { box-sizing: border-box; height: 42px; padding: 0 12px; border: 1px solid #3b4a6d; border-radius: 8px; background: #26345a; font-family: inherit; font-size: 16px; font-weight: 800; color: #fff; text-align: right; }
+.bidd-board :deep(.bidd-goal-in:focus) { outline: none; border-color: #8fb2ff; }
+.bidd-cash { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; padding-top: 14px; border-top: 1px solid #34436a; font-size: 13px; }
+.bidd-cash .t { color: #c9d3ea; }
+.bidd-cash .r { display: flex; gap: 10px; }
+.bidd-cash .r span { min-width: 0; color: #c9d3ea; }
+.bidd-cash .r b { margin-left: auto; flex: none; }
+@media (max-width: 1100px) {
+  .bidd { grid-template-columns: 1fr; }
+  .bidd-right { position: static; }
+}
 </style>
