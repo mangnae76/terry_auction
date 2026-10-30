@@ -6919,7 +6919,6 @@ const goBack = () => router.back();
               <div class="bida-col">
                 <section class="bida-card">
                   <h3 class="bida-h">입찰정보</h3>
-                  <div class="bx-row bx-head"><span class="bx-k">항목</span><span class="bx-d"></span><span class="bx-p">비중</span><span class="bx-a">금액</span></div>
                   <div class="bx-row"><span class="bx-k">감정가</span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(apprValue) }}</b></span></div>
                   <div class="bx-row"><span class="bx-k">{{ auction.auctionRound ? `최저가(${auction.auctionRound})` : '최저가' }}</span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? ((auction.metrics.minimumBidValue / apprValue) * 100).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(auction.metrics.minimumBidValue) }}</b></span></div>
                   <div class="bx-row"><span class="bx-k">보증금</span><span class="bx-d">최저가의</span><span class="bx-p"><b class="bx-f pct ro">10.00</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(bidDeposit) }}</b></span></div>
@@ -6933,7 +6932,6 @@ const goBack = () => router.back();
 
                 <section class="bida-card">
                   <h3 class="bida-h">수익</h3>
-                  <div class="bx-row bx-head"><span class="bx-k">항목</span><span class="bx-d"></span><span class="bx-p">비중</span><span class="bx-a">금액</span></div>
                   <div class="bx-row hi sale"><span class="bx-k"><label :for="`bida-sale-${si}`">예상 매도가</label></span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput :id="`bida-sale-${si}`" v-model="sc.sale.expectedSaleValue" class="bx-f amt big" live-group /></span></div>
                   <div class="bx-row"><span class="bx-k"><label :for="`bida-alt-${si}`">입금가</label></span><span class="bx-d">계산에 안 들어가는 메모</span><span class="bx-p"></span><span class="bx-a"><input :id="`bida-alt-${si}`" :value="scSaleAlt(sc)" class="bx-f amt" @input="scSetSaleAlt(sc, ($event.target as HTMLInputElement).value)" /></span></div>
                   <div class="bx-row"><span class="bx-k">총투자금</span><span class="bx-d">입찰가 + 비용</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTotalInvest(sc)) }}</b></span></div>
@@ -6948,7 +6946,6 @@ const goBack = () => router.back();
 
               <section class="bida-card">
                 <div class="bida-hrow"><h3 class="bida-h">비용</h3><span class="hint">비중 · 금액 칸을 눌러 고칩니다</span></div>
-                <div class="bx-row bx-head"><span class="bx-k">항목</span><span class="bx-d"></span><span class="bx-p">비중</span><span class="bx-a">금액</span></div>
                 <div class="bx-row"><span class="bx-k"><i class="bx-no">01</i>취득세</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cAcq-${si}`, scPctOfBid(sc, sc.cost.acquisitionTaxAmount))" inputmode="decimal" aria-label="취득세 비중" @blur="pctDone()" @input="pctType(`cAcq-${si}`, $event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.acquisitionTaxAmount" class="bx-f amt" live-group @update:model-value="scSyncAcqRate(sc)" /></span></div>
                 <div class="bx-row"><span class="bx-k"><i class="bx-no">02</i>법무비 · 채권</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cLegal-${si}`, scPctOfBid(sc, sc.cost.legalCostAmount))" inputmode="decimal" aria-label="법무비 비중" @blur="pctDone()" @input="pctType(`cLegal-${si}`, $event); scSetLegalPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(sc.cost.legalCostAmount) }}</b></span></div>
                 <div class="bx-row"><span class="bx-k"><i class="bx-no">03</i>중도상환</span><span class="bx-d">대출금 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cMid-${si}`, scRowPct(sc, RATE_ROWS[0]))" inputmode="decimal" aria-label="중도상환 비율" @blur="pctDone()" @input="pctType(`cMid-${si}`, $event); scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.midRepaymentAmount" class="bx-f amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" /></span></div>
@@ -13045,8 +13042,6 @@ select.adp-pub-input option { text-align: center; }
 /* 입찰정보 · 수익 · 비용 줄 — 클래식 표처럼 항목 | 설명(오른쪽 맞춤) | 비중 | 금액 네 칸. 고치는 칸은 모두 같은 상자, 보기만 하는 값은 상자 없이 같은 자리 */
 .bx-row { display: grid; grid-template-columns: auto minmax(0, 1fr) 150px 160px; align-items: center; column-gap: 12px; min-height: 44px; border-bottom: 1px solid #f0f2f7; font-size: 14px; color: #111827; }
 .bx-row.last { border-bottom: 0; }
-.bx-row.bx-head { min-height: 30px; border-bottom-color: #e5e9f2; font-size: 12px; color: #6b7280; }
-.bx-row.bx-head .bx-a { text-align: right; padding-right: 10px; }
 .bx-k { white-space: nowrap; color: #374151; }
 .bx-k label { cursor: pointer; }
 .bx-no { display: inline-block; width: 24px; font-style: normal; font-size: 12px; font-weight: 700; color: #9aa3b2; }
