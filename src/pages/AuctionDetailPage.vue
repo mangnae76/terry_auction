@@ -3964,6 +3964,51 @@ const lowAddrText = (index: number) => {
 };
 /** 손으로 적은 줄은 파랗게 — 평당가와 같은 규칙 */
 const lowAddrTyped = (index: number) => !!mktVal(lowKey(index, 'addr')).trim();
+/** 손품분석(웹 시장분석) — 경매빌라 · 유사빌라 매물호가를 알약 없이 둘 다 펼친다.
+ *  저장 자리는 알약과 같다(경매 mkt.c.* · 유사 mkt.c.sim.*). 유사 줄 수는 따로 센다(없으면 예전 공용 줄 수) */
+const LOW_GROUPS = [{ sim: false, label: '① 경매빌라 매물호가' }, { sim: true, label: '② 유사빌라 매물호가' }];
+const lowKeyG = (sim: boolean, index: number, field: string) => `mkt.c.${sim ? 'sim.' : ''}${index === 0 ? field : `${field}${index}`}`;
+const lowCountKey = (sim: boolean) => (sim ? 'mkt.c.sim.rowCount' : 'mkt.c.rowCount');
+const lowRowCountG = (sim: boolean) => {
+  const n = Number(mktVal(lowCountKey(sim)) || (sim ? mktVal('mkt.c.rowCount') : '')) || 1;
+  return Math.min(LOW_ROW_MAX, Math.max(1, n));
+};
+const addLowRowG = async (sim: boolean) => {
+  setMktVal(lowCountKey(sim), String(Math.min(LOW_ROW_MAX, lowRowCountG(sim) + 1)));
+  await persistSurvey();
+};
+const removeLowRowG = (sim: boolean) => {
+  const last = lowRowCountG(sim) - 1;
+  if (last < 1) return;
+  const drop = async () => {
+    LOW_ROW_FIELDS.forEach((f) => { setMktVal(lowKeyG(sim, last, f), ''); });
+    setMktVal(lowCountKey(sim), String(last));
+    await persistSurvey();
+  };
+  const written = LOW_ROW_FIELDS.some((f) => mktVal(lowKeyG(sim, last, f)).trim());
+  if (!written) { void drop(); return; }
+  askConfirm({ title: '마지막 줄을 지울까요?', desc: '적어 둔 내용이 같이 사라집니다.', okLabel: '지우기', skipKey: 'skip-low-row-delete', run: drop });
+};
+const lowUnitAutoG = (sim: boolean, index: number) => {
+  const price = parseDigits(mktVal(lowKeyG(sim, index, 'saleAsk')));
+  const py = (Number(mktAreaNum(lowKeyG(sim, index, 'area'))) || 0) / PYEONG_TO_M2;
+  return price > 0 && py > 0 ? Math.round(price / py) : 0;
+};
+const lowUnitTypedG = (sim: boolean, index: number) => parseDigits(mktVal(lowKeyG(sim, index, 'unit'))) > 0;
+const lowUnitTextG = (sim: boolean, index: number) => {
+  const typed = parseDigits(mktVal(lowKeyG(sim, index, 'unit')));
+  const n = typed > 0 ? typed : lowUnitAutoG(sim, index);
+  return n > 0 ? n.toLocaleString('ko-KR') : '-';
+};
+const lowAddrTypedG = (sim: boolean, index: number) => !!mktVal(lowKeyG(sim, index, 'addr')).trim();
+const lowAddrTextG = (sim: boolean, index: number) => {
+  const typed = mktVal(lowKeyG(sim, index, 'addr')).trim();
+  const head = sim ? '' : subjectBuildingLabel.value;
+  if (!head) return typed || '-';
+  if (!typed) return head;
+  const name = head.split(' ')[0];
+  return name && typed.includes(name) ? typed : `${head} ${typed}`;
+};
 const mk = (group: 'b' | 'c' | 'd', field: string) =>
   (mktMode(group) === '유사물건' ? `mkt.${group}.sim.${field}` : `mkt.${group}.${field}`);
 // 출처 안내 — 아파트와 빌라가 보는 사이트가 다르다
@@ -8495,14 +8540,15 @@ const goBack = () => router.back();
         </section>
 
         <!-- 손품분석에서는 여기까지(본건사진 · 수요분석 · 입지/개별성) — 아래 카드들은 손품조사에서만 -->
-        <template v-if="!sonpumMode">
-        <!-- 실거래가 조사 -->
+        <!-- 실거래가 조사 — 손품분석에서는 이 카드의 네이버 매물조사만 시세조사 탭 아래(#sonNaverSlot)로 옮겨 보인다 -->
+        <Teleport defer to="#sonNaverSlot" :disabled="!sonpumMode">
         <section class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('survPrice')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세조사</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>{{ sonpumMode ? '네이버 매물조사' : '시세조사' }}</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survPrice') }]" alt="" />
           </header>
-          <div v-if="!isCollapsed('survPrice')" class="adp-mkt-body">
+          <div v-if="sonpumMode || !isCollapsed('survPrice')" class="adp-mkt-body">
+            <template v-if="!sonpumMode">
             <div class="adp-dm-head">
               <strong class="adp-dm-title">1. 실거래가 조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('deal', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('deal', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'deal'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용</span></span></strong>
               <button v-if="!editingSurvey.deal" class="adp-edit-btn" type="button" @click.stop="editingSurvey.deal = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
@@ -8659,12 +8705,14 @@ const goBack = () => router.back();
               </div>
             </div>
 
+            </template>
             <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title">2. 네이버 매물조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
+              <strong class="adp-dm-title">{{ sonpumMode ? '매물호가' : '2. 네이버 매물조사' }} <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
               <button v-if="!editingSurvey.listing" class="adp-edit-btn" type="button" @click.stop="editingSurvey.listing = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('listing')">완료</button>
             </div>
 
+            <template v-if="!sonpumMode">
             <!-- ① 해당 빌라 저가 매물 — 줄을 늘려 가며 적는다 -->
             <div class="adp-mkt-block">
               <div class="adp-mkt-block-head">
@@ -8717,9 +8765,54 @@ const goBack = () => router.back();
                 </div>
               </template>
             </div>
+            </template>
+            <template v-else>
+            <!-- 손품분석 — 경매빌라 · 유사빌라 매물호가를 알약 없이 둘 다 펼친다(저장 자리는 알약과 같다) -->
+            <div v-for="g in LOW_GROUPS" :key="g.label" class="adp-mkt-block">
+              <div class="adp-mkt-block-head">
+                <span class="t">{{ g.label }}</span>
+                <span v-if="editingSurvey.listing" class="adp-mkt-step">
+                  <span class="lab">행</span>
+                  <button type="button" aria-label="행 삭제" :disabled="lowRowCountG(g.sim) <= 1" @click="removeLowRowG(g.sim)">−</button>
+                  <button type="button" aria-label="행 추가" :disabled="lowRowCountG(g.sim) >= LOW_ROW_MAX" @click="addLowRowG(g.sim)">＋</button>
+                </span>
+              </div>
+              <template v-for="i in lowRowCountG(g.sim)" :key="`low-${g.sim}-${i}`">
+                <div class="adp-mkt-cells c4 adp-dm-table">
+                  <div class="cell">
+                    <small>전용면적</small>
+                    <span v-if="editingSurvey.listing" class="adp-mkt-unit">
+                      <input class="adp-mkt-input" inputmode="decimal" :value="mktAreaNum(lowKeyG(g.sim, i - 1, 'area'))" placeholder="0" @input="setMktVal(lowKeyG(g.sim, i - 1, 'area'), ($event.target as HTMLInputElement).value)" />㎡
+                    </span>
+                    <strong v-else class="adp-mkt-area1">{{ mktAreaText(lowKeyG(g.sim, i - 1, 'area')) }}</strong>
+                  </div>
+                  <div class="cell">
+                    <small>주소</small>
+                    <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="!g.sim ? (subjectHasDong ? '동 · 층 · 호' : '층 · 호') : '빌라명 · 층 · 호'" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
+                    <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTypedG(g.sim, i - 1) }]">{{ lowAddrTextG(g.sim, i - 1) }}</strong>
+                  </div>
+                  <div class="cell">
+                    <small>평당가</small>
+                    <FormattedNumberInput v-if="editingSurvey.listing" :model-value="mktVal(lowKeyG(g.sim, i - 1, 'unit'))" mode="string" class="adp-mkt-input" :placeholder="lowUnitAutoG(g.sim, i - 1) > 0 ? lowUnitAutoG(g.sim, i - 1).toLocaleString('ko-KR') : '0'" @update:model-value="setMktVal(lowKeyG(g.sim, i - 1, 'unit'), $event)" />
+                    <strong v-else :class="{ typed: lowUnitTypedG(g.sim, i - 1) }">{{ lowUnitTextG(g.sim, i - 1) }}</strong>
+                  </div>
+                  <div class="cell">
+                    <small>매매호가 (저가)</small>
+                    <FormattedNumberInput v-if="editingSurvey.listing" :model-value="mktVal(lowKeyG(g.sim, i - 1, 'saleAsk'))" mode="string" class="adp-mkt-input" placeholder="0" @update:model-value="setMktVal(lowKeyG(g.sim, i - 1, 'saleAsk'), $event)" />
+                    <strong v-else class="hi">{{ mktMoney(lowKeyG(g.sim, i - 1, 'saleAsk')) }}</strong>
+                  </div>
+                  <div class="cell adp-mkt-wide">
+                    <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'note'))" placeholder="비고" @input="setMktVal(lowKeyG(g.sim, i - 1, 'note'), ($event.target as HTMLInputElement).value)" />
+                    <strong v-else :class="{ filled: !!mktVal(lowKeyG(g.sim, i - 1, 'note')) }">{{ mktVal(lowKeyG(g.sim, i - 1, 'note')) || '비고' }}</strong>
+                  </div>
+                </div>
+              </template>
+            </div>
+            </template>
 
 
 
+            <template v-if="!sonpumMode">
             <!-- 3. 동일지번 매각물건 — 같은 번지에서 전에 팔린 물건. 값을 가늠하는 바로 옆 사례다 -->
             <div class="adp-dm-head sec2">
               <strong class="adp-dm-title">3. 동일지번 매각물건<PhotoCountMark :n="photoAreaCount('sameLot')" /> <span class="adp-dm-addr">{{ lotWithBuildingAddress }}</span></strong>
@@ -8773,8 +8866,11 @@ const goBack = () => router.back();
             <div class="adp-sub-block noline">
               <AgencyTable :rows="agencyRows" :min-rows="AGENCY_ROW_MIN" @change="persistSoon" @remove="removeAgencyRow" />
             </div>
+            </template>
           </div>
         </section>
+        </Teleport>
+        <template v-if="!sonpumMode">
 
         <!-- 손품결론 — 매매수요조사(등수·거래율·적체)와 급매가 결론을 한 카드로 모은다 -->
         <section class="adp-card adp-conc-card">

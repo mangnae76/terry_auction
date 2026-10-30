@@ -98,7 +98,8 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
       </div>
 
       <!-- 수요분석 — 손품조사 그대로(본건사진 → 지역분석 수요분석 → 2. 입지/개별성) -->
-      <div v-if="tab === 'demand'" class="app-detail tab-survey son-detail">
+      <!-- 늘 띄워 둔다(v-show) — 이 화면이 시세조사 탭 아래 네이버 매물조사(#sonNaverSlot)도 그린다 -->
+      <div v-show="tab === 'demand'" class="app-detail tab-survey son-detail">
         <AuctionDetailPage :key="auction.id" mode="view" :id="auction.id">
           <template #son-demand>
             <div class="son-demand">
@@ -113,6 +114,8 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
       <div v-if="casePreset && (tab === 'price' || priceSeen)" v-show="tab === 'price'" class="adm-case-in app-market son-price" data-k="case">
         <AdminCaseTradePage in-dong :preset="casePreset" />
       </div>
+      <!-- 네이버 매물조사 — 선정물건 손품조사의 그 단락(물건 값 그대로, 고치면 물건에 저장). 위 손품조사 화면이 여기로 옮겨 그린다 -->
+      <div v-show="tab === 'price'" id="sonNaverSlot" class="app-detail tab-survey son-detail son-naver" />
     </template>
   </section>
 </template>
