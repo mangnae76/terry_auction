@@ -625,7 +625,7 @@ button { cursor: pointer; }
 #sonHead .ih-fold { display: none; }
 /* 선정물건 손품조사 — 경로가 화면 안 탭 줄로 갔으니 빈 경로 줄은 숨긴다(시장분석 손품조사와 같은 모양) */
 #itemView:has(#itemContent .item-son) #crumbSlotItem { display: none; }
-#itemView:has(#itemContent .item-son) #itemHead .ih-fold { display: none; }   /* 전체 접기는 옛 손품조사 카드용 — 시장분석 손품조사 머리와 같게 뺀다 */
+#itemView:has(#itemContent .item-son) #itemHead .ih-fold { visibility: hidden; pointer-events: none; }   /* 전체 접기는 옛 손품조사 카드용 — 단추만 감추고 자리는 남겨 사건 카드 높이가 다른 탭(권리분석 등)과 같게(탭 바꿀 때 흔들림 없음) */
 /* ===== 다크 모드 — 시장분석(지역분석 · 손품분석 · 경매사례)에서 이번에 만든 화면. 흰 상자 · 검정 글을 테마 변수로 ===== */
 /* 바탕 — 안쪽 상자 · 표 · 거르기 칸은 카드 바탕을 그대로(흰 상자가 떠 있지 않게), 선은 어두운 선 */
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market[data-s="son"] .son-detail, .mk-sale) :is(.adm-case-block, .adm-case-tail, .adm-table-wrap, .adm-trf, .adm-sel-row, .adm-kpi, .list-find, .sc-box, .sc-table, .adp-mkt-block, .adp-sub-block, .adp-table-wrap, .adp-mkt-cells, .adm-supply, .adm-nav.dm, .dm-row > *) { background: transparent !important; border-color: var(--card-line) !important; }
