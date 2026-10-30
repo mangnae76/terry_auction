@@ -1544,7 +1544,7 @@ const downloadCsv = () => {
               <div class="al-row">
                 <span class="al-cell"><FormattedNumberInput v-model="r.ask" mode="string" class="al-in" align="center" placeholder="호가 입력" /></span>
                 <span :class="['al-cell', 'al-auto', { 'al-none': !askUnitOf(g.key, r) }]">{{ askUnitOf(g.key, r) ? askUnitOf(g.key, r).toLocaleString('ko-KR') : '자동 입력' }}</span>
-                <span class="al-cell al-area"><input v-model="r.area" :class="['al-in', { need: !!r.ask && !askAreaOf(g.key, r) }]" inputmode="decimal" :placeholder="g.key === 'case' && baseArea > 0 ? String(baseArea) : '면적 입력'" /><em>㎡</em></span>
+                <span class="al-cell al-area"><input v-model="r.area" :class="['al-in', { need: !!r.ask && !askAreaOf(g.key, r), 'al-base': g.key === 'case' && baseArea > 0 }]" inputmode="decimal" :placeholder="g.key === 'case' && baseArea > 0 ? String(baseArea) : '면적 입력'" /><em>㎡</em></span>
                 <span class="al-cell al-addr"><input v-model="r.addr" class="al-in" :placeholder="g.key === 'case' ? '동층호 입력' : '빌라명 · 층 · 호 입력'" /><span class="al-links"><button type="button" class="adm-copy map-go planet" aria-label="부동산플래닛" @click="openAskLocal(g.key, r, 'planet')">P</button><button type="button" class="adm-copy map-go naver" aria-label="네이버 부동산" @click="openAskLocal(g.key, r, 'naver')">N</button></span></span>
               </div>
               <div class="al-row al-wide"><input v-model="r.note" class="al-in" placeholder="비고 입력" /></div>
@@ -1942,6 +1942,7 @@ tr.picked-jeonse .pick-v { stroke: #16a34a; }
 .al-in:focus, .al-cell input:focus { outline: none; box-shadow: inset 0 0 0 2px #2b6df3; }
 .al-in::placeholder { color: #9aa3b2; }
 .al-in.need::placeholder { color: #dc2626; }
+.al-in.al-base::placeholder { color: #111827; }   /* 경매빌라 전용면적 — 검색한 물건 면적이 기본값이라 값처럼 검정(선정물건 ④ 와 같게) */
 .al-area em { position: absolute; right: 12px; font-style: normal; font-size: 13px; color: #6b7280; pointer-events: none; }
 .al-addr .al-in { text-align: left; padding-right: 72px; }
 .al-wide .al-in { text-align: left; padding-left: 14px; }
