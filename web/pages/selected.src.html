@@ -3522,6 +3522,36 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     if (dx) util.style.transform = `translateX(${dx}px)`;
   }
   window.addEventListener('resize', () => requestAnimationFrame(alignUtil));
+  /* 위 메뉴 아홉(+물건등록 ~ 마이페이지) — 글자 사이 빈 틈을 같게. 시작은 원래 자리에서 1.5글자 오른쪽, 끝은 '메뉴 펼치기' 단추.
+     글 폭이 메뉴마다 달라 왼쪽 끝을 같은 간격(%)으로 두면 긴 메뉴 뒤가 좁아졌다. 아래 펼침 칸(.g-col 같은 이름)도 같은 자리에 세운다.
+     줄이 겹쳐 흐르는 좁은 화면(메뉴가 absolute 가 아닐 때)에선 하지 않는다 */
+  const menuStyle = document.createElement('style');
+  document.head.appendChild(menuStyle);
+  function layoutMenu() {
+    menuStyle.textContent = '';
+    const items = [...document.querySelectorAll('.gnb-in > .g-menu')];
+    const box = document.querySelector('.gnb-in .g-box');
+    const host = document.querySelector('.gnb-in');
+    if (!items.length || !box || !host || getComputedStyle(items[0]).position !== 'absolute') return;
+    const x0 = host.getBoundingClientRect().left;
+    const fs = parseFloat(getComputedStyle(items[0]).fontSize) || 18;
+    const start = items[0].getBoundingClientRect().left - x0 + fs * 1.5;
+    const end = box.getBoundingClientRect().left - x0;
+    const widths = items.map((e) => e.getBoundingClientRect().width);
+    const gap = (end - start - widths.reduce((a, b) => a + b, 0)) / items.length;
+    if (!(gap > 8)) return;
+    let x = start;
+    const rules = items.map((e, i) => {
+      const cls = [...e.classList].find((c) => /^m\d/.test(c));
+      const r = `.gnb-in > .g-menu.${cls}, .g-mega-in > .g-col.${cls} { left: ${Math.round(x)}px; }`;
+      x += widths[i] + gap;
+      return r;
+    });
+    menuStyle.textContent = rules.join('\n');
+  }
+  window.addEventListener('resize', () => requestAnimationFrame(layoutMenu));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layoutMenu());
+  layoutMenu();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => alignUtil());
   { const gu = document.querySelector('.g-user'); if (gu && window.ResizeObserver) new ResizeObserver(() => alignUtil()).observe(gu); }
   function renderHeader() {
