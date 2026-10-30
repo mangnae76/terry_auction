@@ -2103,6 +2103,26 @@ const scLocalTax = (sc: ProfitScenario) => localTaxOf(scTransferTax(sc), scLocal
 const scAfterTaxProfit = (sc: ProfitScenario) => afterTaxProfitOf(scGain(sc), scTransferTax(sc), scLocalTax(sc));
 const scNetInvestment = (sc: ProfitScenario) => scBid(sc) - (sc.cost?.loanAmount ?? 0) + scTotalCosts(sc);
 const scTotalInvest = (sc: ProfitScenario) => scBid(sc) + scTotalCosts(sc);
+/** 비용 구성 막대(웹) — 항목마다 색이 정해져 있어 금액 순서가 바뀌어도 색은 그대로다 */
+const COST_MIX: [string, string, (sc: ProfitScenario) => number][] = [
+  ['수리비', '#2b6df3', (sc) => sc.cost?.repairCost ?? 0],
+  ['취득세', '#6f9cf7', (sc) => sc.cost?.acquisitionTaxAmount ?? 0],
+  ['이자', '#9db9fa', (sc) => sc.cost?.interestAmount ?? 0],
+  ['중도상환', '#c3d4fb', (sc) => sc.cost?.midRepaymentAmount ?? 0],
+  ['명도비', '#f2a65a', (sc) => sc.cost?.evictionCost ?? 0],
+  ['매도중개료', '#f7c38f', (sc) => sc.cost?.brokerageAmount ?? 0],
+  ['법무비', '#8b95a7', (sc) => sc.cost?.legalCostAmount ?? 0],
+  ['미납관리비', '#b4bccb', (sc) => sc.cost?.arrearsFee ?? 0],
+  ['광고비', '#d5dbe6', (sc) => scAdvertising(sc)],
+];
+const scCostMix = (sc: ProfitScenario) => {
+  const total = scTotalCosts(sc);
+  if (total <= 0) return [];
+  return COST_MIX
+    .map(([label, color, get]) => ({ label, color, v: get(sc) }))
+    .filter((x) => x.v > 0)
+    .map((x) => ({ ...x, pct: Math.round((x.v / total) * 100) }));
+};
 const scAfterTaxRate = (sc: ProfitScenario) => (
   scNetInvestment(sc) > 0 ? (scAfterTaxProfit(sc) / scNetInvestment(sc)) * 100 : 0
 );
@@ -6799,128 +6819,157 @@ const goBack = () => router.back();
             </tbody>
           </table>
 
-          <!-- ===== 웹 입찰가산정 — 왼쪽 입력(입찰가 · 비용 · 매도가 · 돈이 나가는 순서) · 오른쪽 결과판(내려도 따라온다). 칸은 늘 열려 있고 손을 멈추면 저장 ===== -->
-          <div v-if="webEmbed && !isCollapsed('profit') && si === selectedPlan" :id="`profit-tbl-${si}`" class="bidc">
-            <div class="bidc-left">
-              <section class="bidc-card">
-                <h3 class="bidc-h">입찰가 정하기</h3>
-                <div class="bidc-bid">
-                  <label class="bidc-bid-lab" :for="`bidc-bid-${si}`">입찰가</label>
-                  <FormattedNumberInput :id="`bidc-bid-${si}`" v-model="sc.bid.myBidValue" class="bidc-big" live-group />
-                  <span class="bidc-unit">원</span>
-                </div>
-                <div v-if="apprValue > 0" class="bidc-slide">
-                  <input type="range" min="50" max="110" step="0.1" :value="Math.min(110, Math.max(50, scBidPct(sc)))" :aria-label="`${sc.label} 감정가 대비 입찰가`" @input="scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" />
-                  <div class="bidc-slide-lab">
-                    <span>50%</span>
-                    <span v-if="auction.metrics.minimumBidValue > 0">최저가 {{ formatPct((auction.metrics.minimumBidValue / apprValue) * 100) }}</span>
-                    <b>감정가의 {{ formatPct(scBidPct(sc)) }}</b>
-                    <span>110%</span>
-                  </div>
-                </div>
-                <div class="bidc-minis">
-                  <div class="bidc-mini"><span>감정가</span><b>{{ formatMoney(apprValue) }}</b></div>
-                  <div class="bidc-mini"><span>{{ auction.auctionRound ? `최저가(${auction.auctionRound})` : '최저가' }}</span><b>{{ formatMoney(auction.metrics.minimumBidValue) }}</b></div>
-                  <div class="bidc-mini"><span>보증금 10%</span><b>{{ formatMoney(bidDeposit) }}</b></div>
-                </div>
-              </section>
+          <!-- ===== 웹 입찰가산정(A안) — 위 요약 카드 넷, 아래 입찰정보 · 수익 | 비용 목록, 맨 아래 돈이 나가는 순서. 칸은 늘 열려 있고 손을 멈추면 저장 ===== -->
+          <div v-if="webEmbed && !isCollapsed('profit') && si === selectedPlan" :id="`profit-tbl-${si}`" class="bida">
+            <div class="bida-sum">
+              <div class="bida-kpi">
+                <span class="lab">입찰가</span>
+                <strong>{{ formatMoney(scBid(sc)) }}<small>원</small></strong>
+                <span class="sub">감정가의 {{ formatPct(scBidPct(sc)) }}<template v-if="auction.metrics.minimumBidValue > 0"> · 최저가 대비 {{ formatPct((scBid(sc) / auction.metrics.minimumBidValue) * 100) }}</template></span>
+              </div>
+              <div class="bida-kpi">
+                <span class="lab">실투자금</span>
+                <strong>{{ formatMoney(scNetInvestment(sc)) }}<small>원</small></strong>
+                <span class="sub">대출 {{ cashMoney(sc.cost.loanAmount ?? 0) }}({{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}) 제외</span>
+              </div>
+              <div class="bida-kpi">
+                <span class="lab">예상 매도가</span>
+                <strong>{{ formatMoney(scSale(sc)) }}<small>원</small></strong>
+                <span class="sub">필요한 내 돈 {{ cashMoney(scCashOut(sc).total) }}</span>
+              </div>
+              <div class="bida-kpi navy">
+                <span class="lab">{{ sc.label }} 세후 순이익</span>
+                <strong :class="{ neg: scAfterTaxProfit(sc) < 0 }">{{ formatMoney(scAfterTaxProfit(sc)) }}<small>원</small></strong>
+                <span :class="['sub', 'rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span>
+              </div>
+            </div>
 
-              <section class="bidc-card">
-                <div class="bidc-hrow"><h3 class="bidc-h">비용</h3><span class="bidc-hint">칸을 눌러 고칩니다 · 비중을 바꾸면 금액이 따라옵니다</span></div>
-                <div class="bidc-tiles">
-                  <div class="bidc-tile">
-                    <div class="bidc-tile-top"><span>대출(사업자)</span><span class="bidc-pct"><input :value="pctShow(`cLoan-${si}`, scPctOfBid(sc, sc.cost.loanAmount))" inputmode="decimal" @blur="pctDone()" @input="pctType(`cLoan-${si}`, $event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span></div>
-                    <FormattedNumberInput v-model="sc.cost.loanAmount" class="bidc-amt" live-group />
+            <div class="bida-grid">
+              <div class="bida-col">
+                <section class="bida-card">
+                  <h3 class="bida-h">입찰정보</h3>
+                  <div class="bida-row"><span class="k">감정가</span><b>{{ cashMoney(apprValue) }}</b></div>
+                  <div class="bida-row"><span class="k">{{ auction.auctionRound ? `최저가(${auction.auctionRound})` : '최저가' }}</span><b>{{ cashMoney(auction.metrics.minimumBidValue) }}</b></div>
+                  <div class="bida-row"><span class="k">보증금</span><span class="bida-chip">10%</span><b>{{ cashMoney(bidDeposit) }}</b></div>
+                  <div class="bida-hi bid">
+                    <div class="top">
+                      <label class="k" :for="`bida-bid-${si}`">입찰가</label>
+                      <span class="bida-chip on">{{ formatPct(scBidPct(sc)) }}</span>
+                      <FormattedNumberInput :id="`bida-bid-${si}`" v-model="sc.bid.myBidValue" class="bida-in big" live-group />
+                      <span class="won">원</span>
+                    </div>
+                    <div v-if="apprValue > 0" class="bida-slide">
+                      <input type="range" min="50" max="110" step="0.1" :value="Math.min(110, Math.max(50, scBidPct(sc)))" :aria-label="`${sc.label} 감정가 대비 입찰가`" @input="scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" />
+                      <div class="lab">
+                        <span>50%</span>
+                        <span v-if="auction.metrics.minimumBidValue > 0">최저가 {{ formatPct((auction.metrics.minimumBidValue / apprValue) * 100) }}</span>
+                        <span>110%</span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="bidc-tile">
-                    <div class="bidc-tile-top"><span>취득세</span><span class="bidc-pct"><input :value="pctShow(`cAcq-${si}`, scPctOfBid(sc, sc.cost.acquisitionTaxAmount))" inputmode="decimal" @blur="pctDone()" @input="pctType(`cAcq-${si}`, $event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span></div>
-                    <FormattedNumberInput v-model="sc.cost.acquisitionTaxAmount" class="bidc-amt" live-group @update:model-value="scSyncAcqRate(sc)" />
+                  <div class="bida-row last">
+                    <span class="k">대출(사업자)</span>
+                    <span class="bida-pct"><input :value="pctShow(`cLoan-${si}`, scPctOfBid(sc, sc.cost.loanAmount))" inputmode="decimal" aria-label="대출 비중" @blur="pctDone()" @input="pctType(`cLoan-${si}`, $event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span>
+                    <FormattedNumberInput v-model="sc.cost.loanAmount" class="bida-in" live-group /><span class="won">원</span>
                   </div>
-                  <div class="bidc-tile">
-                    <div class="bidc-tile-top"><span>법무비 · 채권</span><span class="bidc-pct"><input :value="pctShow(`cLegal-${si}`, scPctOfBid(sc, sc.cost.legalCostAmount))" inputmode="decimal" @blur="pctDone()" @input="pctType(`cLegal-${si}`, $event); scSetLegalPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span></div>
-                    <b class="bidc-amt-ro">{{ formatMoney(sc.cost.legalCostAmount) }}</b>
-                  </div>
-                  <div class="bidc-tile">
-                    <div class="bidc-tile-top"><span>중도상환</span><span class="bidc-pct"><input :value="pctShow(`cMid-${si}`, scRowPct(sc, RATE_ROWS[0]))" inputmode="decimal" @blur="pctDone()" @input="pctType(`cMid-${si}`, $event); scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><i>%</i></span></div>
-                    <FormattedNumberInput v-model="sc.cost.midRepaymentAmount" class="bidc-amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" />
-                  </div>
-                  <div class="bidc-tile">
-                    <div class="bidc-tile-top"><span>이자(3개월)</span><span class="bidc-pct"><input :value="pctShow(`cInt-${si}`, scRowPct(sc, RATE_ROWS[1]))" inputmode="decimal" @blur="pctDone()" @input="pctType(`cInt-${si}`, $event); scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><i>%</i></span></div>
-                    <FormattedNumberInput v-model="sc.cost.interestAmount" class="bidc-amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" />
-                  </div>
-                  <div class="bidc-tile">
-                    <div class="bidc-tile-top"><span>매도중개료</span><span class="bidc-pct"><input :value="pctShow(`cBrk-${si}`, scRowPct(sc, RATE_ROWS[2]))" inputmode="decimal" @blur="pctDone()" @input="pctType(`cBrk-${si}`, $event); scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><i>%</i></span></div>
-                    <b class="bidc-amt-ro">{{ formatMoney(sc.cost.brokerageAmount) }}</b>
-                  </div>
-                  <div class="bidc-tile"><div class="bidc-tile-top"><span>미납관리비</span></div><FormattedNumberInput v-model="sc.cost.arrearsFee" class="bidc-amt" live-group /></div>
-                  <div class="bidc-tile"><div class="bidc-tile-top"><span>수리비</span></div><FormattedNumberInput v-model="sc.cost.repairCost" class="bidc-amt" live-group /></div>
-                  <div class="bidc-tile"><div class="bidc-tile-top"><span>명도비</span></div><FormattedNumberInput v-model="sc.cost.evictionCost" class="bidc-amt" live-group /></div>
-                  <div class="bidc-tile"><div class="bidc-tile-top"><span>광고비</span><small>원천징수 3.3% 포함</small></div><FormattedNumberInput v-model="sc.cost.advertisingCost" class="bidc-amt" live-group /></div>
-                  <div class="bidc-tile sum"><span>필요경비합계</span><b>{{ formatMoney(scTotalCosts(sc)) }}</b></div>
-                </div>
-              </section>
+                </section>
 
-              <section class="bidc-card">
-                <h3 class="bidc-h">팔 때</h3>
-                <div class="bidc-bid">
-                  <label class="bidc-bid-lab" :for="`bidc-sale-${si}`">예상 매도가</label>
-                  <FormattedNumberInput :id="`bidc-sale-${si}`" v-model="sc.sale.expectedSaleValue" class="bidc-big sale" live-group />
-                  <span class="bidc-unit">원</span>
-                </div>
-                <div class="bidc-bid sub">
-                  <label class="bidc-bid-lab" :for="`bidc-alt-${si}`">입금가</label>
-                  <input :id="`bidc-alt-${si}`" :value="scSaleAlt(sc)" class="bidc-note" placeholder="다른 값이면 얼마인지 적어 두는 칸(계산에는 들어가지 않습니다)" @input="scSetSaleAlt(sc, ($event.target as HTMLInputElement).value)" />
-                </div>
-              </section>
-
-              <section class="bidc-card">
-                <h3 class="bidc-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
-                <div class="bidc-steps">
-                  <div v-for="step in scCashOut(sc).steps" :key="step.no" class="bidc-step">
-                    <span class="no">{{ step.no }} · {{ step.when }}</span>
-                    <b>{{ cashMoney(step.amount) }}</b>
-                    <span class="what">{{ step.what }}</span>
-                    <span v-for="row in step.rows" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
-                    <span v-if="step.note" class="bidc-stepnote">{{ step.note }}</span>
+                <section class="bida-card">
+                  <h3 class="bida-h">수익</h3>
+                  <div class="bida-hi sale">
+                    <div class="top">
+                      <label class="k" :for="`bida-sale-${si}`">예상 매도가</label>
+                      <FormattedNumberInput :id="`bida-sale-${si}`" v-model="sc.sale.expectedSaleValue" class="bida-in big" live-group />
+                      <span class="won">원</span>
+                    </div>
                   </div>
+                  <div class="bida-row">
+                    <label class="k" :for="`bida-alt-${si}`">입금가</label>
+                    <input :id="`bida-alt-${si}`" :value="scSaleAlt(sc)" class="bida-note" placeholder="메모 칸 — 계산에 안 들어갑니다" @input="scSetSaleAlt(sc, ($event.target as HTMLInputElement).value)" />
+                  </div>
+                  <div class="bida-row"><span class="k">총투자금</span><span class="f">입찰가 + 비용</span><b>{{ cashMoney(scTotalInvest(sc)) }}</b></div>
+                  <div class="bida-row"><span class="k">사업소득금액</span><span class="f">매도가 − 입찰가 − 비용</span><b :class="{ neg: scGain(sc) < 0 }">{{ cashMoney(scGain(sc)) }}</b></div>
+                  <div class="bida-row">
+                    <span class="k">사업소득세</span>
+                    <span class="f">과세표준<span class="bida-pct"><input :value="scTaxRate(sc)" inputmode="decimal" aria-label="사업소득세율" @input="limitPct($event); scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span>− 공제<span class="bida-pct"><input :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" aria-label="누진공제(만원)" @input="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" /><i>만</i></span></span>
+                    <b>{{ cashMoney(scTransferTax(sc)) }}</b>
+                  </div>
+                  <div class="bida-row last">
+                    <span class="k">지방세</span>
+                    <span class="f">소득세의<span class="bida-pct"><input :value="String(scLocalTaxRate(sc))" inputmode="decimal" aria-label="지방세율" @input="limitPct($event); scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span></span>
+                    <b>{{ cashMoney(scLocalTax(sc)) }}</b>
+                  </div>
+                  <div class="bida-net">
+                    <span class="k">세후 순이익</span>
+                    <span :class="['rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span>
+                    <b :class="{ neg: scAfterTaxProfit(sc) < 0 }">{{ cashMoney(scAfterTaxProfit(sc)) }}</b>
+                  </div>
+                  <!-- 목표 순이익을 적으면 입찰가를 거꾸로 푼다 -->
+                  <div class="bida-row goal">
+                    <label class="k" :for="`bida-goal-${si}`">목표 순이익</label>
+                    <span class="f">적으면 입찰가를 거꾸로 계산합니다</span>
+                    <FormattedNumberInput :id="`bida-goal-${si}`" :model-value="Math.round(scAfterTaxProfit(sc))" class="bida-in" live-group @update:model-value="scSetAfterTaxProfit(sc, $event)" /><span class="won">원</span>
+                  </div>
+                </section>
+              </div>
+
+              <section class="bida-card">
+                <div class="bida-hrow"><h3 class="bida-h">비용</h3><span class="hint">비중 · 금액은 눌러서 고칩니다</span></div>
+                <div class="bida-row">
+                  <span class="no">01</span><span class="k">취득세</span>
+                  <span class="bida-pct"><input :value="pctShow(`cAcq-${si}`, scPctOfBid(sc, sc.cost.acquisitionTaxAmount))" inputmode="decimal" aria-label="취득세 비중" @blur="pctDone()" @input="pctType(`cAcq-${si}`, $event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span>
+                  <FormattedNumberInput v-model="sc.cost.acquisitionTaxAmount" class="bida-in" live-group @update:model-value="scSyncAcqRate(sc)" /><span class="won">원</span>
                 </div>
-                <div class="bidc-cashsum"><span>필요한 내 돈 합계</span><b>{{ cashMoney(scCashOut(sc).total) }}</b></div>
-                <div v-if="scCashOut(sc).later.length" class="bidc-later">
-                  <span class="lab">그 다음에 나가는 돈</span>
-                  <span v-for="row in scCashOut(sc).later" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
+                <div class="bida-row">
+                  <span class="no">02</span><span class="k">법무비 · 채권</span>
+                  <span class="bida-pct"><input :value="pctShow(`cLegal-${si}`, scPctOfBid(sc, sc.cost.legalCostAmount))" inputmode="decimal" aria-label="법무비 비중" @blur="pctDone()" @input="pctType(`cLegal-${si}`, $event); scSetLegalPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span>
+                  <b>{{ cashMoney(sc.cost.legalCostAmount ?? 0) }}</b>
+                </div>
+                <div class="bida-row">
+                  <span class="no">03</span><span class="k">중도상환</span>
+                  <span class="bida-pct"><input :value="pctShow(`cMid-${si}`, scRowPct(sc, RATE_ROWS[0]))" inputmode="decimal" aria-label="중도상환 비율" @blur="pctDone()" @input="pctType(`cMid-${si}`, $event); scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><i>%</i></span>
+                  <FormattedNumberInput v-model="sc.cost.midRepaymentAmount" class="bida-in" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" /><span class="won">원</span>
+                </div>
+                <div class="bida-row">
+                  <span class="no">04</span><span class="k">이자(3개월)</span>
+                  <span class="bida-pct"><input :value="pctShow(`cInt-${si}`, scRowPct(sc, RATE_ROWS[1]))" inputmode="decimal" aria-label="이자율" @blur="pctDone()" @input="pctType(`cInt-${si}`, $event); scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><i>%</i></span>
+                  <FormattedNumberInput v-model="sc.cost.interestAmount" class="bida-in" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" /><span class="won">원</span>
+                </div>
+                <div class="bida-row">
+                  <span class="no">05</span><span class="k">매도중개료</span>
+                  <span class="bida-pct"><input :value="pctShow(`cBrk-${si}`, scRowPct(sc, RATE_ROWS[2]))" inputmode="decimal" aria-label="매도중개료율" @blur="pctDone()" @input="pctType(`cBrk-${si}`, $event); scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><i>%</i></span>
+                  <b>{{ cashMoney(sc.cost.brokerageAmount ?? 0) }}</b>
+                </div>
+                <div class="bida-row"><span class="no">06</span><span class="k">미납관리비</span><FormattedNumberInput v-model="sc.cost.arrearsFee" class="bida-in" live-group /><span class="won">원</span></div>
+                <div class="bida-row"><span class="no">07</span><span class="k">수리비</span><FormattedNumberInput v-model="sc.cost.repairCost" class="bida-in" live-group /><span class="won">원</span></div>
+                <div class="bida-row"><span class="no">08</span><span class="k">명도비</span><FormattedNumberInput v-model="sc.cost.evictionCost" class="bida-in" live-group /><span class="won">원</span></div>
+                <div class="bida-row last"><span class="no">09</span><span class="k">광고비</span><span class="f">원천징수 3.3% 포함</span><FormattedNumberInput v-model="sc.cost.advertisingCost" class="bida-in" live-group /><span class="won">원</span></div>
+                <div class="bida-costsum"><span>필요경비합계</span><b>{{ cashMoney(scTotalCosts(sc)) }}</b></div>
+                <div v-if="scCostMix(sc).length" class="bida-mix">
+                  <span class="lab">비용 구성</span>
+                  <div class="bar"><span v-for="m in scCostMix(sc)" :key="m.label" :style="{ flex: m.v, background: m.color }" :title="`${m.label} ${cashMoney(m.v)}`"></span></div>
+                  <div class="legend"><span v-for="m in scCostMix(sc)" :key="m.label"><i :style="{ background: m.color }"></i>{{ m.label }} {{ m.pct }}%</span></div>
                 </div>
               </section>
             </div>
 
-            <aside class="bidc-result">
-              <span class="bidc-r-lab">{{ sc.label }} 세후 순이익</span>
-              <strong :class="['bidc-r-big', { neg: scAfterTaxProfit(sc) < 0 }]">{{ formatMoney(scAfterTaxProfit(sc)) }}<small>원</small></strong>
-              <span :class="['bidc-r-rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span>
-              <dl class="bidc-r-dl">
-                <dt>예상 매도가</dt><dd>{{ formatMoney(scSale(sc)) }}</dd>
-                <dt>− 입찰가</dt><dd>{{ formatMoney(scBid(sc)) }}</dd>
-                <dt>− 필요경비</dt><dd>{{ formatMoney(scTotalCosts(sc)) }}</dd>
-                <dt>= 사업소득금액</dt><dd :class="{ neg: scGain(sc) < 0 }">{{ formatMoney(scGain(sc)) }}</dd>
-                <dt>− 사업소득세 {{ scBracket(sc) }}</dt><dd>{{ formatMoney(scTransferTax(sc)) }}</dd>
-                <dt>− 지방세 {{ scLocalTaxRate(sc) }}%</dt><dd>{{ formatMoney(scLocalTax(sc)) }}</dd>
-              </dl>
-              <dl class="bidc-r-dl">
-                <dt>총투자금</dt><dd>{{ formatMoney(scTotalInvest(sc)) }}</dd>
-                <dt>실투자금</dt><dd class="gold">{{ formatMoney(scNetInvestment(sc)) }}</dd>
-                <dt>필요한 내 돈</dt><dd>{{ cashMoney(scCashOut(sc).total) }}</dd>
-              </dl>
-              <!-- 목표 순이익을 적으면 입찰가를 거꾸로 푼다 -->
-              <label class="bidc-r-goal">
-                <span>목표 순이익으로 입찰가 풀기</span>
-                <FormattedNumberInput :model-value="Math.round(scAfterTaxProfit(sc))" class="bidc-r-in" live-group @update:model-value="scSetAfterTaxProfit(sc, $event)" />
-              </label>
-              <div class="bidc-r-tax">
-                <span>세금 기준</span>
-                <span class="f">소득세<input :value="scTaxRate(sc)" inputmode="decimal" aria-label="사업소득세율" @input="limitPct($event); scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" />%</span>
-                <span class="f">공제<input :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" aria-label="누진공제(만원)" @input="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" />만</span>
-                <span class="f">지방세<input :value="String(scLocalTaxRate(sc))" inputmode="decimal" aria-label="지방세율" @input="limitPct($event); scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" />%</span>
+            <section class="bida-card">
+              <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
+              <div class="bidc-steps">
+                <div v-for="step in scCashOut(sc).steps" :key="step.no" class="bidc-step">
+                  <span class="no">{{ step.no }} · {{ step.when }}</span>
+                  <b>{{ cashMoney(step.amount) }}</b>
+                  <span class="what">{{ step.what }}</span>
+                  <span v-for="row in step.rows" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
+                  <span v-if="step.note" class="bidc-stepnote">{{ step.note }}</span>
+                </div>
               </div>
-            </aside>
+              <div class="bidc-cashsum"><span>필요한 내 돈 합계</span><b>{{ cashMoney(scCashOut(sc).total) }}</b></div>
+              <div v-if="scCashOut(sc).later.length" class="bidc-later">
+                <span class="lab">그 다음에 나가는 돈</span>
+                <span v-for="row in scCashOut(sc).later" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
+              </div>
+            </section>
           </div>
           <!-- 돈이 나가는 순서 — 위 표의 값을 '언제 얼마가 필요한가' 로 다시 묶은 것 -->
           <!-- 돈이 나가는 순서는 고른 안(위 칩) 하나만 -->
@@ -12945,47 +12994,78 @@ select.adp-pub-input option { text-align: center; }
   .adp-base-row .quad-v small, .adp-rcase-item small, .adp-rdoc-label, .adp-rdoc-task, .adp-empty.sm, .adp-empty.one
 ) { font-size: 14px; }
 
-/* ===== 웹 입찰가산정(C안) — 왼쪽 입력 · 오른쪽 결과판. 카드 흰 바탕 · 선 · 모서리 14, 글 14 이상 ===== */
-.bidc { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; margin-top: 12px; }
-.bidc-left { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.bidc-card { background: #fff; border: 1px solid #e5e9f2; border-radius: 14px; padding: 20px 24px; }
-.bidc-h { margin: 0 0 14px; font-size: 16px; font-weight: 800; color: #111827; }
-.bidc-h small { margin-left: 10px; font-size: 14px; font-weight: 400; color: #6b7280; }
-.bidc-hrow { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
-.bidc-hrow .bidc-h { margin: 0; }
-.bidc-hint { margin-left: auto; font-size: 14px; color: #6b7280; }
-.bidc-bid { display: flex; align-items: center; gap: 12px; }
-.bidc-bid + .bidc-bid { margin-top: 10px; }
-.bidc-bid-lab { flex: none; width: 92px; font-size: 15px; font-weight: 700; color: #111827; }
-.bidc-unit { font-size: 15px; font-weight: 700; color: #374151; }
-.bidc :deep(.bidc-big) { flex: 1; min-width: 0; box-sizing: border-box; height: 52px; padding: 0 16px; border: 2px solid #2b6df3; border-radius: 10px; font-family: inherit; font-size: 20px; font-weight: 800; color: #1f2a44; text-align: right; background: #fff; }
-.bidc :deep(.bidc-big.sale) { border: 1px solid #d5dbe6; }
-.bidc :deep(.bidc-big:focus) { outline: none; box-shadow: 0 0 0 3px rgba(43, 109, 243, .15); }
-.bidc-note { flex: 1; min-width: 0; box-sizing: border-box; height: 40px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; color: #111827; }
-.bidc-note:focus { outline: none; border-color: #2a3f8f; }
-.bidc-slide { padding: 16px 0 0 104px; }
-.bidc-slide input[type='range'] { width: 100%; margin: 0; accent-color: #2b6df3; cursor: pointer; }
-.bidc-slide-lab { display: flex; justify-content: space-between; margin-top: 6px; font-size: 13px; color: #6b7280; }
-.bidc-slide-lab b { color: #2b6df3; font-weight: 800; }
-.bidc-minis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
-.bidc-mini { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border: 1px solid #e5e9f2; border-radius: 10px; }
-.bidc-mini span { font-size: 13px; color: #6b7280; }
-.bidc-mini b { font-size: 16px; font-weight: 800; color: #111827; }
-.bidc-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.bidc-tile { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid #e5e9f2; border-radius: 10px; transition: border-color .15s; }
-.bidc-tile:focus-within { border-color: #2b6df3; }
-.bidc-tile-top { display: flex; align-items: center; gap: 6px; min-height: 26px; font-size: 14px; color: #4b5563; }
-.bidc-tile-top small { margin-left: auto; font-size: 12px; color: #9ca3af; }
-.bidc-pct { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; }
-.bidc-pct input { width: 56px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; font-family: inherit; font-size: 14px; font-weight: 700; color: #2b6df3; text-align: right; background: #f7f9ff; }
-.bidc-pct input:focus { outline: none; border-color: #2b6df3; background: #fff; }
-.bidc-pct i { font-style: normal; font-size: 13px; color: #6b7280; }
-.bidc :deep(.bidc-amt) { width: 100%; box-sizing: border-box; height: 34px; padding: 0; border: 0; border-bottom: 1px dashed #d5dbe6; border-radius: 0; background: transparent; font-family: inherit; font-size: 17px; font-weight: 800; color: #111827; text-align: right; }
-.bidc :deep(.bidc-amt:focus) { outline: none; border-bottom: 1px solid #2b6df3; }
-.bidc-amt-ro { display: block; height: 34px; line-height: 34px; font-size: 17px; font-weight: 800; color: #6b7280; text-align: right; }
-.bidc-tile.sum { grid-column: span 2; flex-direction: row; align-items: center; background: #fffaeb; border-color: #f3e1a6; }
-.bidc-tile.sum span { font-size: 15px; font-weight: 800; color: #854d0e; }
-.bidc-tile.sum b { margin-left: auto; font-size: 19px; font-weight: 800; color: #854d0e; }
+/* 웹 입찰가산정 A안 — 요약 카드 넷 + 묶음 목록 */
+.bida { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.bida-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.bida-kpi { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 20px 22px; background: #fff; border: 1px solid #e5e9f2; border-radius: 14px; }
+.bida-kpi .lab, .bida-kpi .sub { font-size: 14px; color: #4b5563; }
+.bida-kpi strong { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #111827; white-space: nowrap; }
+.bida-kpi strong small { margin-left: 4px; font-size: 15px; font-weight: 700; }
+.bida-kpi.navy { background: #1f2a44; border-color: #1f2a44; }
+.bida-kpi.navy .lab { color: #c9d3ea; }
+.bida-kpi.navy strong { color: #fff; }
+.bida-kpi.navy strong.neg { color: #ff9b9b; }
+.bida-kpi .sub.rate { color: #9fe0b8; font-weight: 700; }
+.bida-kpi .sub.rate.neg { color: #ff9b9b; }
+.bida-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.bida-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.bida-card { min-width: 0; padding: 20px 24px; background: #fff; border: 1px solid #e5e9f2; border-radius: 14px; }
+.bida-h { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #111827; }
+.bida-h small { margin-left: 10px; font-size: 14px; font-weight: 400; color: #6b7280; }
+.bida-hrow { display: flex; align-items: baseline; margin-bottom: 8px; }
+.bida-hrow .bida-h { margin: 0; }
+.bida-hrow .hint { margin-left: auto; font-size: 14px; color: #6b7280; }
+.bida-row { display: flex; align-items: center; gap: 10px; min-height: 46px; border-bottom: 1px solid #f0f2f7; font-size: 15px; }
+.bida-row.last { border-bottom: 0; }
+.bida-row .k { flex: none; color: #374151; }
+.bida-row .no { flex: none; width: 22px; font-size: 13px; font-weight: 700; color: #9aa3b2; }
+.bida-row .f { display: inline-flex; align-items: center; gap: 4px; min-width: 0; font-size: 13px; color: #6b7280; }
+.bida-row > b { margin-left: auto; font-weight: 700; color: #111827; white-space: nowrap; }
+.bida-row > b.neg, .bida-net b.neg { color: #d64545; }
+.bida-row .won { margin-left: -9px; }
+.bida-row .won, .bida-hi .won { flex: none; font-size: 15px; font-weight: 700; color: #374151; }
+.bida-chip { flex: none; padding: 2px 8px; border-radius: 6px; background: #eef3ff; color: #2b6df3; font-size: 13px; font-weight: 700; }
+.bida-chip.on { background: #2b6df3; color: #fff; }
+.bida :deep(.bida-in) { margin-left: auto; width: 150px; box-sizing: border-box; height: 34px; padding: 0 2px; border: 0; border-bottom: 1px dashed #d5dbe6; border-radius: 0; background: transparent; font-family: inherit; font-size: 15px; font-weight: 700; color: #111827; text-align: right; }
+.bida :deep(.bida-in:focus) { outline: none; border-bottom: 1px solid #2b6df3; }
+.bida-row .bida-pct + :deep(.bida-in), .bida-row .f + :deep(.bida-in) { margin-left: auto; }
+.bida-pct { flex: none; display: inline-flex; align-items: center; gap: 2px; }
+.bida-pct input { width: 52px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; background: #f7f9ff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; text-align: right; }
+.bida-pct input:focus { outline: none; border-color: #2b6df3; background: #fff; }
+.bida-pct i { font-style: normal; font-size: 13px; color: #6b7280; }
+.bida-note { margin-left: auto; flex: 1; min-width: 0; max-width: 360px; box-sizing: border-box; height: 34px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; color: #111827; }
+.bida-note:focus { outline: none; border-color: #2b6df3; }
+.bida-hi { margin: 8px 0; padding: 10px 14px; border-radius: 10px; }
+.bida-hi.bid { background: #f5f8ff; border: 1px solid #c9d8fb; }
+.bida-hi.sale { margin-top: 0; background: #fff6f4; border: 1px solid #f6d5cf; }
+.bida-hi .top { display: flex; align-items: center; gap: 10px; min-height: 40px; }
+.bida-hi .k { font-size: 15px; font-weight: 800; color: #1f2a44; }
+.bida-hi.sale .k, .bida-hi.sale .won { color: #9a3412; }
+.bida-hi :deep(.bida-in.big) { width: 200px; height: 40px; padding: 0 12px; border: 1px solid #c9d8fb; border-radius: 8px; background: #fff; font-size: 17px; font-weight: 800; color: #1f2a44; }
+.bida-hi.sale :deep(.bida-in.big) { border-color: #f6d5cf; color: #9a3412; }
+.bida-hi :deep(.bida-in.big:focus) { border: 1px solid #2b6df3; box-shadow: 0 0 0 3px rgba(43, 109, 243, .15); }
+.bida-slide { margin-top: 10px; }
+.bida-slide input[type='range'] { width: 100%; margin: 0; accent-color: #2b6df3; cursor: pointer; }
+.bida-slide .lab { display: flex; justify-content: space-between; margin-top: 4px; font-size: 13px; color: #6b7280; }
+.bida-net { display: flex; align-items: center; gap: 10px; min-height: 60px; margin-top: 8px; padding: 0 16px; border-radius: 10px; background: #1f2a44; color: #fff; font-size: 15px; }
+.bida-net .k { font-weight: 800; }
+.bida-net .rate { padding: 2px 8px; border-radius: 6px; background: #2f8f5b; font-size: 13px; font-weight: 700; }
+.bida-net .rate.neg { background: #b4444a; }
+.bida-net b { margin-left: auto; font-size: 18px; font-weight: 800; }
+.bida-net b.neg { color: #ff9b9b; }
+.bida-row.goal { margin-top: 4px; border-bottom: 0; }
+.bida-costsum { display: flex; align-items: center; min-height: 56px; margin-top: 8px; padding: 0 14px; border-radius: 10px; background: #fffaeb; border: 1px solid #f3e1a6; font-size: 15px; }
+.bida-costsum span { font-weight: 800; color: #854d0e; }
+.bida-costsum b { margin-left: auto; font-size: 17px; font-weight: 800; color: #854d0e; }
+.bida-mix { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.bida-mix .lab { font-size: 14px; color: #4b5563; }
+.bida-mix .bar { display: flex; gap: 2px; height: 12px; border-radius: 999px; overflow: hidden; }
+.bida-mix .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: #4b5563; }
+.bida-mix .legend i { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 2px; vertical-align: 1px; }
+@media (max-width: 1100px) {
+  .bida-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bida-grid { grid-template-columns: 1fr; }
+}
 .bidc-steps { display: grid; grid-template-columns: 1fr; gap: 10px; }   /* 단계마다 한 줄 — 이름이 길어 세 칸이면 금액이 꺾였다 */
 .adp-auto-chip.web-solo { margin-right: auto; }   /* 웹은 편집 단추가 없어 칩이 가운데로 밀렸다 — 제목 옆에 붙인다 */
 .bidc-step { display: grid; grid-template-columns: 170px 1fr auto; column-gap: 16px; row-gap: 6px; align-items: baseline; padding: 14px 18px; border: 1px solid #e5e9f2; border-radius: 10px; }
@@ -13001,27 +13081,4 @@ select.adp-pub-input option { text-align: center; }
 .bidc-cashsum b { margin-left: auto; font-size: 18px; font-weight: 800; color: #c2410c; }
 .bidc-later { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
 .bidc-later .lab { font-size: 14px; font-weight: 700; color: #374151; }
-/* 결과판 — 남색, 내려도 따라온다 */
-.bidc-result { position: sticky; top: calc(var(--stick-top, 0px) + 230px); display: flex; flex-direction: column; gap: 6px; padding: 24px 24px 20px; border-radius: 14px; background: #1f2a44; color: #fff; }
-.bidc-r-lab { font-size: 14px; color: #c9d3ea; }
-.bidc-r-big { font-size: 32px; font-weight: 800; letter-spacing: -0.8px; }
-.bidc-r-big small { margin-left: 4px; font-size: 16px; }
-.bidc-r-big.neg, .bidc-r-dl dd.neg { color: #ff9b9b; }
-.bidc-r-rate { align-self: flex-start; margin-top: 4px; padding: 4px 10px; border-radius: 6px; background: #2f8f5b; font-size: 14px; font-weight: 800; }
-.bidc-r-rate.neg { background: #b4444a; }
-.bidc-r-dl { margin: 14px 0 0; padding-top: 14px; border-top: 1px solid #34436a; display: grid; grid-template-columns: 1fr auto; row-gap: 10px; font-size: 15px; }
-.bidc-r-dl dt { color: #c9d3ea; }
-.bidc-r-dl dd { margin: 0; font-weight: 700; text-align: right; }
-.bidc-r-dl dd.gold { color: #ffd28a; font-weight: 800; }
-.bidc-r-goal { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; padding-top: 14px; border-top: 1px solid #34436a; font-size: 14px; color: #c9d3ea; }
-.bidc-result :deep(.bidc-r-in) { box-sizing: border-box; height: 42px; padding: 0 12px; border: 1px solid #3b4a6d; border-radius: 8px; background: #26345a; font-family: inherit; font-size: 16px; font-weight: 800; color: #fff; text-align: right; }
-.bidc-result :deep(.bidc-r-in:focus) { outline: none; border-color: #8fb2ff; }
-.bidc-r-tax { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 12px; font-size: 14px; color: #c9d3ea; }
-.bidc-r-tax .f { display: inline-flex; align-items: center; gap: 4px; }
-.bidc-r-tax input { width: 44px; height: 28px; box-sizing: border-box; padding: 0 6px; border: 1px solid #3b4a6d; border-radius: 6px; background: #26345a; font-family: inherit; font-size: 14px; color: #fff; text-align: right; }
-@media (max-width: 1100px) {
-  .bidc { grid-template-columns: 1fr; }
-  .bidc-result { position: static; }
-  .bidc-tiles, .bidc-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 </style>
