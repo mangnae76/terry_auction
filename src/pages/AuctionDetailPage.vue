@@ -2490,14 +2490,21 @@ const measureBiddTop = () => {
   const h = Math.max(BIDD_MIN_H, Math.round(Math.min(window.innerHeight - 16, leftBottom) - v));
   if (h !== biddMaxH.value) biddMaxH.value = h;
 };
+// 스크롤마다 바로 재면 화면을 그리는 도중에 높이가 바뀌어 스크롤이 덜컥거린다 — 한 그림에 한 번만
+let biddRaf = 0;
+const onBiddScroll = () => {
+  if (biddRaf || !webNew.value) return;
+  biddRaf = requestAnimationFrame(() => { biddRaf = 0; measureBiddTop(); });
+};
 onMounted(() => {
-  window.addEventListener('scroll', measureBiddTop, { passive: true });
-  window.addEventListener('resize', measureBiddTop);
+  window.addEventListener('scroll', onBiddScroll, { passive: true });
+  window.addEventListener('resize', onBiddScroll);
   nextTick(measureBiddTop);
 });
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', measureBiddTop);
-  window.removeEventListener('resize', measureBiddTop);
+  window.removeEventListener('scroll', onBiddScroll);
+  window.removeEventListener('resize', onBiddScroll);
+  if (biddRaf) cancelAnimationFrame(biddRaf);
 });
 /** 탭에 적는 순이익 — '2,050만' */
 const manText = (n: number) => `${Math.round(n / 10_000).toLocaleString('ko-KR')}만`;
@@ -13066,7 +13073,7 @@ select.adp-pub-input option { text-align: center; }
 .bidd-sum b { margin-left: auto; font-size: 17px; font-weight: 800; color: #854d0e; }
 .bidd-right { position: sticky; top: calc(var(--stick-top, 0px) + 230px); display: flex; flex-direction: column; min-width: 0; }
 /* 판은 화면 높이 안에 — 넘치는 아래쪽은 판 안에서 내려 본다(탭은 늘 보인다) */
-.bidd-board { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #3b4a6d transparent; }
+.bidd-board { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #3b4a6d transparent; }
 /* 탭은 판과 같은 폭 — 판의 위 모서리를 각지게 해 탭이 판에 그대로 이어진다(둥근 모서리에 탭 끝이 잘려 보였다) */
 .bidd-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .bidd-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 52px; border: 1px solid #d5dbe6; border-bottom: 0; border-radius: 10px 10px 0 0; background: #fff; font-family: inherit; color: #374151; cursor: pointer; }
