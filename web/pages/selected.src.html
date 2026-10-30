@@ -1310,7 +1310,12 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="more"] :is(.trs-shell, .agb-shell, .cal-shell, .ivp-shell, .tr-shell, .bil-shell, .pay-shell, .ph-shell, .prf-shell, .wd-shell) :is(.cal-card, .ivp-card, .tr-card, .prf-card, .wd-card, .pay-card, .ph-card, .trs-card, .trs-item, .agb-card) { background: var(--surface) !important; border: 1px solid var(--card-line) !important; border-radius: 10px !important; box-shadow: none !important; }
 /* 인테리어 업체 표 — 머리글과 칸을 같은 가운데 줄에, 예상일정 · 업체는 한 줄 */
 .app-page[data-k="more"] .ivp-tbl :is(th, td) { text-align: center !important; vertical-align: middle !important; font-size: 14px !important; padding: 12px 8px !important; }
-.app-page[data-k="more"] .ivp-tbl th { white-space: nowrap !important; }
+.app-page[data-k="more"] .ivp-tbl th { white-space: nowrap !important; height: 46px; background: #1f2a44 !important; color: #fff !important; font-weight: 700 !important; border-bottom: 0 !important; }   /* 머리글은 웹 표 공통 남색(자금관리 표와 같다) */
+/* 표를 감싸던 선 상자는 걷고, 표는 업체추가 줄과 같은 폭으로 */
+.app-page[data-k="more"] .ivp-shell .ivp-card { margin: 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; }
+.app-page[data-k="more"] .ivp-shell .ivp-tools { gap: 8px !important; margin: 0 0 12px !important; }
+.app-page[data-k="more"] .ivp-shell .ivp-note { margin: 0 0 16px !important; }
+.app-page[data-k="more"] .ivp-tbl { border-color: #e5e7eb !important; }
 .app-page[data-k="more"] .ivp-tbl td :is(b, small) { display: inline !important; font-size: 14px !important; }
 .app-page[data-k="more"] .ivp-tbl td.span, .app-page[data-k="more"] .ivp-tbl td.vend { white-space: nowrap; }
 .app-page[data-k="more"] .ivp-tbl td.span small, .app-page[data-k="more"] .ivp-tbl td.vend small { margin-left: 6px; }
@@ -5037,7 +5042,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     });
     /* 하위 화면(큰 흰 상자) 안의 흐린 하늘색 · 회색 바탕 — 흰 바탕 + 선으로(앱에서 쓰던 바탕). 노랑 · 빨강 알림 바탕은 그대로 */
     root.querySelectorAll(SUB_SHELLS).forEach((shell) => shell.querySelectorAll('*').forEach((el) => {
-      if (el.dataset.nobg) return;
+      if (el.dataset.nobg || el.closest('thead')) return;   // 표 머리글은 제 색(남색) 그대로
       const cs = getComputedStyle(el); const m = cs.backgroundColor.match(/\d+/g);
       if (!m || (m[3] !== undefined && +m[3] === 0)) return;
       const [r, g, b] = m.map(Number);
