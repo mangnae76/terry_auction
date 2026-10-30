@@ -8838,7 +8838,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell">
                     <small>주소</small>
-                    <span v-if="editingSurvey.listing" class="son-addr-field"><em v-if="!g.sim && subjectBuildingName" class="son-addr-head">{{ subjectBuildingName }}</em><input class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="!g.sim ? (subjectHasDong ? '동 · 층 · 호' : '층 · 호') : '빌라명 · 층 · 호'" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" /></span>
+                    <span v-if="editingSurvey.listing" class="son-addr-field"><em v-if="!g.sim && subjectBuildingName" class="son-addr-head" :title="subjectBuildingName">{{ subjectBuildingName }}</em><input class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="!g.sim ? (subjectHasDong ? '동 · 층 · 호' : '층 · 호') : '빌라명 · 층 · 호'" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" /></span>
                     <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTypedG(g.sim, i - 1) }]">{{ lowAddrTextG(g.sim, i - 1) }}</strong>
                   </div>
                   <div class="cell adp-mkt-wide">
@@ -9441,11 +9441,12 @@ const goBack = () => router.back();
 
     <span v-if="addrTip" class="adp-note-bubble" :style="webEmbed ? { top: `${addrTipTop}px`, left: `${addrTipLeft}px`, right: 'auto', width: 'max-content', maxWidth: '360px', textAlign: 'left' } : { top: `${addrTipTop}px` }" @click.stop="addrTip = ''">{{ addrTip }}</span>
 
-    <AppConfirm :box="confirmBox" @close="confirmBox = null" />
+    <!-- 손품분석은 이 화면이 숨은 탭(수요분석) 자리에 있어 창 · 알림이 같이 숨었다 — 화면 맨 위(body)로 꺼낸다 -->
+    <Teleport to="body" :disabled="!sonpumMode"><AppConfirm :box="confirmBox" @close="confirmBox = null" /></Teleport>
 
-    <AgencyBookModal :open="agencyBookOpen" @close="agencyBookOpen = false" />
+    <Teleport to="body" :disabled="!sonpumMode"><AgencyBookModal :open="agencyBookOpen" @close="agencyBookOpen = false" /></Teleport>
     <AppMobileBottomNav active="watchlist" />
-    <AppToast :visible="!!copiedMsg" :text="copiedMsg" :tone="copiedTone" />
+    <Teleport to="body" :disabled="!sonpumMode"><AppToast :visible="!!copiedMsg" :text="copiedMsg" :tone="copiedTone" /></Teleport>
 
     <DateWheelPicker
       v-model="mktDealYmValue"
