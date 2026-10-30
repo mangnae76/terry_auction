@@ -482,10 +482,10 @@ const pairText = (sale: CaseTradeRow | null, jeonse: CaseTradeRow | null) => (sa
   : '-');
 const placeOf = (r: CaseTradeRow) => [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ');
 const resultLines = computed(() => [
-  { key: 'cs', tool: 'case' as Tool, label: '① 경매지번 매매', kind: 'sale', row: caseSaleRow.value, empty: '데이터 없음', note: '② 유사물건에서 고르세요', pair: pairText(caseSaleRow.value, caseJeonseRow.value) },
-  { key: 'cj', tool: 'case' as Tool, label: '① 경매지번 전세', kind: 'jeonse', row: caseJeonseRow.value, empty: '데이터 없음', note: '② 유사물건에서 고르세요', pair: null },
-  { key: 'ss', tool: 'sim' as Tool, label: '② 유사 매매', kind: 'sale', row: simSaleRow.value, empty: '고르기 전', note: '② 리스트에서 매매를 고르세요', pair: pairText(simSaleRow.value, simJeonseRow.value) },
-  { key: 'sj', tool: 'sim' as Tool, label: '② 유사 전세', kind: 'jeonse', row: simJeonseRow.value, empty: '고르기 전', note: '② 리스트에서 전세를 고르세요', pair: null },
+  { key: 'cs', tool: 'case' as Tool, label: '① 경매지번 매매가', kind: 'sale', row: caseSaleRow.value, empty: '데이터 없음', note: '② 유사물건에서 고르세요', pair: pairText(caseSaleRow.value, caseJeonseRow.value) },
+  { key: 'cj', tool: 'case' as Tool, label: '① 경매지번 전세가', kind: 'jeonse', row: caseJeonseRow.value, empty: '데이터 없음', note: '② 유사물건에서 고르세요', pair: null },
+  { key: 'ss', tool: 'sim' as Tool, label: '② 유사 매매가', kind: 'sale', row: simSaleRow.value, empty: '고르기 전', note: '② 리스트에서 매매를 고르세요', pair: pairText(simSaleRow.value, simJeonseRow.value) },
+  { key: 'sj', tool: 'sim' as Tool, label: '② 유사 전세가', kind: 'jeonse', row: simJeonseRow.value, empty: '고르기 전', note: '② 리스트에서 전세를 고르세요', pair: null },
 ]);
 /** 표에서 파랑 · 초록으로 칠할 줄 — 위 칸에 지금 들어가 있는 거래(자동 판단 포함) */
 const saleKeyNow = computed(() => (recentSale.value ? rowKey(recentSale.value) : ''));
@@ -1060,7 +1060,7 @@ const downloadCsv = () => {
                 </tr>
                 <!-- ③ 평균 매매 · 전세 — 같은 거르기(condF). 전세가율/갭은 두 평균으로, 전용 범위 · 거래기간은 두 줄이 같은 조건이라 한 칸 -->
                 <tr :class="['res-avg', { has: condAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
-                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condTip" under="box">③ 평균 매매</InfoTip></td>
+                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condTip" under="box">③ 평균 매매가</InfoTip></td>
                   <td class="n res-amt"><template v-if="condAvg > 0">{{ won(condAvg) }}</template><span v-else class="res-empty">데이터 없음</span></td>
                   <td class="n">{{ won(condPerPyeong) }}</td>
                   <td rowspan="2" class="n res-pair">{{ condAvg > 0 && condJeonseAvg > 0 ? `${pct(condJeonseAvg, condAvg)} / ${Math.round(condAvg - condJeonseAvg).toLocaleString('ko-KR')}` : '-' }}</td>
@@ -1070,7 +1070,7 @@ const downloadCsv = () => {
                   <td class="res-place">{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 · 사용승인 {{ condApprovalText.replace(' / ', ' · 연식 ') }}</td>
                 </tr>
                 <tr :class="['res-avg', { has: condJeonseAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
-                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condJeonseTip" under="box">③ 평균 전세</InfoTip></td>
+                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condJeonseTip" under="box">③ 평균 전세가</InfoTip></td>
                   <td class="n res-amt"><template v-if="condJeonseAvg > 0">{{ won(condJeonseAvg) }}</template><span v-else class="res-empty">데이터 없음</span></td>
                   <td class="n">{{ won(condJeonsePerPyeong) }}</td>
                   <td class="n">{{ pct(condJeonseAvg, pubValue) }}</td>
