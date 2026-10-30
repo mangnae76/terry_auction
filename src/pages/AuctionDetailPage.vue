@@ -2103,26 +2103,6 @@ const scLocalTax = (sc: ProfitScenario) => localTaxOf(scTransferTax(sc), scLocal
 const scAfterTaxProfit = (sc: ProfitScenario) => afterTaxProfitOf(scGain(sc), scTransferTax(sc), scLocalTax(sc));
 const scNetInvestment = (sc: ProfitScenario) => scBid(sc) - (sc.cost?.loanAmount ?? 0) + scTotalCosts(sc);
 const scTotalInvest = (sc: ProfitScenario) => scBid(sc) + scTotalCosts(sc);
-/** 비용 구성 막대(웹) — 항목마다 색이 정해져 있어 금액 순서가 바뀌어도 색은 그대로다 */
-const COST_MIX: [string, string, (sc: ProfitScenario) => number][] = [
-  ['수리비', '#2b6df3', (sc) => sc.cost?.repairCost ?? 0],
-  ['취득세', '#6f9cf7', (sc) => sc.cost?.acquisitionTaxAmount ?? 0],
-  ['이자', '#9db9fa', (sc) => sc.cost?.interestAmount ?? 0],
-  ['중도상환', '#c3d4fb', (sc) => sc.cost?.midRepaymentAmount ?? 0],
-  ['명도비', '#f2a65a', (sc) => sc.cost?.evictionCost ?? 0],
-  ['매도중개료', '#f7c38f', (sc) => sc.cost?.brokerageAmount ?? 0],
-  ['법무비', '#8b95a7', (sc) => sc.cost?.legalCostAmount ?? 0],
-  ['미납관리비', '#b4bccb', (sc) => sc.cost?.arrearsFee ?? 0],
-  ['광고비', '#d5dbe6', (sc) => scAdvertising(sc)],
-];
-const scCostMix = (sc: ProfitScenario) => {
-  const total = scTotalCosts(sc);
-  if (total <= 0) return [];
-  return COST_MIX
-    .map(([label, color, get]) => ({ label, color, v: get(sc) }))
-    .filter((x) => x.v > 0)
-    .map((x) => ({ ...x, pct: Math.round((x.v / total) * 100) }));
-};
 const scAfterTaxRate = (sc: ProfitScenario) => (
   scNetInvestment(sc) > 0 ? (scAfterTaxProfit(sc) / scNetInvestment(sc)) * 100 : 0
 );
@@ -2473,19 +2453,6 @@ const resetScenarioRates = (sc: ProfitScenario) => {
   });
 };
 
-/* 웹 입찰가산정 — 칸이 늘 열려 있다. 표 값이 실제로 바뀌었을 때만 손을 멈추면 적는다(물건을 읽은 것만으로는 적지 않는다) */
-let profitJson = '';
-watch(() => auction.value?.id, () => { profitJson = ''; });
-watch(
-  () => (webEmbed && auction.value ? JSON.stringify([auction.value.metrics?.myBidValue, auction.value.expectedSaleValue, auction.value.bidCost, auction.value.bidScenarios]) : ''),
-  (json) => {
-    if (!json) return;
-    if (!profitJson) { profitJson = json; return; }
-    if (json === profitJson) return;
-    profitJson = json;
-    persistSoon();
-  },
-);
 const saveProfit = async () => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
@@ -6552,9 +6519,9 @@ const goBack = () => router.back();
               </svg>
               예상수익분석
             </h2>
-            <span :class="['adp-auto-chip', { 'web-solo': webEmbed }]">✦ 자동계산</span>
-            <button v-if="!editingProfit && !webEmbed" class="adp-edit-btn" type="button" @click.stop="startEditProfit"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-            <button v-else-if="!webEmbed" class="adp-edit-btn save" type="button" @click.stop="saveProfit">완료</button>
+            <span class="adp-auto-chip">✦ 자동계산</span>
+            <button v-if="!editingProfit" class="adp-edit-btn" type="button" @click.stop="startEditProfit"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
+            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveProfit">완료</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('profit') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('profit')" class="adp-profit-dates">
@@ -6605,7 +6572,7 @@ const goBack = () => router.back();
           </div>
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
           <template v-for="(sc, si) in profitScenarios" :key="sc.label">
-          <div v-if="!isCollapsed('profit') && (!webEmbed || si === selectedPlan)" :class="['adp-profit-head-row', { 'is-dim': si !== selectedPlan }]">
+          <div v-if="!isCollapsed('profit')" :class="['adp-profit-head-row', { 'is-dim': si !== selectedPlan }]">
             <!-- 표가 하나뿐이어도 'A안' 을 낸다 — 둘이 될 때 이름이 생기면 어느 쪽이
                  먼저 적은 표인지 헷갈린다 -->
             <span class="adp-profit-label">{{ sc.label }}</span>
@@ -6631,7 +6598,7 @@ const goBack = () => router.back();
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </button>
           </div>
-          <table v-if="!isCollapsed('profit') && !webEmbed" :id="`profit-tbl-${si}`" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0, 'is-dim': si !== selectedPlan }]">
+          <table v-if="!isCollapsed('profit')" :id="`profit-tbl-${si}`" :class="['adp-table', 'adp-profit-table', 'v2', { alt: si > 0, 'is-dim': si !== selectedPlan }]">
             <thead>
               <tr><th>구분</th><th>상세</th><th class="r">비중 (%)</th><th class="r">금액</th></tr>
             </thead>
@@ -6819,161 +6786,9 @@ const goBack = () => router.back();
             </tbody>
           </table>
 
-          <!-- ===== 웹 입찰가산정(A안) — 위 요약 카드 넷, 아래 입찰정보 · 수익 | 비용 목록, 맨 아래 돈이 나가는 순서. 칸은 늘 열려 있고 손을 멈추면 저장 ===== -->
-          <div v-if="webEmbed && !isCollapsed('profit') && si === selectedPlan" :id="`profit-tbl-${si}`" class="bida">
-            <div class="bida-sum">
-              <div class="bida-kpi">
-                <span class="lab">입찰가</span>
-                <strong>{{ formatMoney(scBid(sc)) }}<small>원</small></strong>
-                <span class="sub">감정가의 {{ formatPct(scBidPct(sc)) }}<template v-if="auction.metrics.minimumBidValue > 0"> · 최저가 대비 {{ formatPct((scBid(sc) / auction.metrics.minimumBidValue) * 100) }}</template></span>
-              </div>
-              <div class="bida-kpi">
-                <span class="lab">실투자금</span>
-                <strong>{{ formatMoney(scNetInvestment(sc)) }}<small>원</small></strong>
-                <span class="sub">대출 {{ cashMoney(sc.cost.loanAmount ?? 0) }}({{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}) 제외</span>
-              </div>
-              <div class="bida-kpi">
-                <span class="lab">예상 매도가</span>
-                <strong>{{ formatMoney(scSale(sc)) }}<small>원</small></strong>
-                <span class="sub">필요한 내 돈 {{ cashMoney(scCashOut(sc).total) }}</span>
-              </div>
-              <div class="bida-kpi navy">
-                <span class="lab">{{ sc.label }} 세후 순이익</span>
-                <strong :class="{ neg: scAfterTaxProfit(sc) < 0 }">{{ formatMoney(scAfterTaxProfit(sc)) }}<small>원</small></strong>
-                <span :class="['sub', 'rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span>
-              </div>
-            </div>
-
-            <div class="bida-grid">
-              <div class="bida-col">
-                <section class="bida-card">
-                  <h3 class="bida-h">입찰정보</h3>
-                  <div class="bida-row"><span class="k">감정가</span><b>{{ cashMoney(apprValue) }}</b></div>
-                  <div class="bida-row"><span class="k">{{ auction.auctionRound ? `최저가(${auction.auctionRound})` : '최저가' }}</span><b>{{ cashMoney(auction.metrics.minimumBidValue) }}</b></div>
-                  <div class="bida-row"><span class="k">보증금</span><span class="bida-chip">10%</span><b>{{ cashMoney(bidDeposit) }}</b></div>
-                  <div class="bida-hi bid">
-                    <div class="top">
-                      <label class="k" :for="`bida-bid-${si}`">입찰가</label>
-                      <span class="bida-chip on">{{ formatPct(scBidPct(sc)) }}</span>
-                      <FormattedNumberInput :id="`bida-bid-${si}`" v-model="sc.bid.myBidValue" class="bida-in big" live-group />
-                      <span class="won">원</span>
-                    </div>
-                    <div v-if="apprValue > 0" class="bida-slide">
-                      <input type="range" min="50" max="110" step="0.1" :value="Math.min(110, Math.max(50, scBidPct(sc)))" :aria-label="`${sc.label} 감정가 대비 입찰가`" @input="scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" />
-                      <div class="lab">
-                        <span>50%</span>
-                        <span v-if="auction.metrics.minimumBidValue > 0">최저가 {{ formatPct((auction.metrics.minimumBidValue / apprValue) * 100) }}</span>
-                        <span>110%</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="bida-row last">
-                    <span class="k">대출(사업자)</span>
-                    <span class="bida-pct"><input :value="pctShow(`cLoan-${si}`, scPctOfBid(sc, sc.cost.loanAmount))" inputmode="decimal" aria-label="대출 비중" @blur="pctDone()" @input="pctType(`cLoan-${si}`, $event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span>
-                    <FormattedNumberInput v-model="sc.cost.loanAmount" class="bida-in" live-group /><span class="won">원</span>
-                  </div>
-                </section>
-
-                <section class="bida-card">
-                  <h3 class="bida-h">수익</h3>
-                  <div class="bida-hi sale">
-                    <div class="top">
-                      <label class="k" :for="`bida-sale-${si}`">예상 매도가</label>
-                      <FormattedNumberInput :id="`bida-sale-${si}`" v-model="sc.sale.expectedSaleValue" class="bida-in big" live-group />
-                      <span class="won">원</span>
-                    </div>
-                  </div>
-                  <div class="bida-row">
-                    <label class="k" :for="`bida-alt-${si}`">입금가</label>
-                    <input :id="`bida-alt-${si}`" :value="scSaleAlt(sc)" class="bida-note" placeholder="메모 칸 — 계산에 안 들어갑니다" @input="scSetSaleAlt(sc, ($event.target as HTMLInputElement).value)" />
-                  </div>
-                  <div class="bida-row"><span class="k">총투자금</span><span class="f">입찰가 + 비용</span><b>{{ cashMoney(scTotalInvest(sc)) }}</b></div>
-                  <div class="bida-row"><span class="k">사업소득금액</span><span class="f">매도가 − 입찰가 − 비용</span><b :class="{ neg: scGain(sc) < 0 }">{{ cashMoney(scGain(sc)) }}</b></div>
-                  <div class="bida-row">
-                    <span class="k">사업소득세</span>
-                    <span class="f">과세표준<span class="bida-pct"><input :value="scTaxRate(sc)" inputmode="decimal" aria-label="사업소득세율" @input="limitPct($event); scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span>− 공제<span class="bida-pct"><input :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" aria-label="누진공제(만원)" @input="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" /><i>만</i></span></span>
-                    <b>{{ cashMoney(scTransferTax(sc)) }}</b>
-                  </div>
-                  <div class="bida-row last">
-                    <span class="k">지방세</span>
-                    <span class="f">소득세의<span class="bida-pct"><input :value="String(scLocalTaxRate(sc))" inputmode="decimal" aria-label="지방세율" @input="limitPct($event); scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span></span>
-                    <b>{{ cashMoney(scLocalTax(sc)) }}</b>
-                  </div>
-                  <div class="bida-net">
-                    <span class="k">세후 순이익</span>
-                    <span :class="['rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span>
-                    <b :class="{ neg: scAfterTaxProfit(sc) < 0 }">{{ cashMoney(scAfterTaxProfit(sc)) }}</b>
-                  </div>
-                  <!-- 목표 순이익을 적으면 입찰가를 거꾸로 푼다 -->
-                  <div class="bida-row goal">
-                    <label class="k" :for="`bida-goal-${si}`">목표 순이익</label>
-                    <span class="f">적으면 입찰가를 거꾸로 계산합니다</span>
-                    <FormattedNumberInput :id="`bida-goal-${si}`" :model-value="Math.round(scAfterTaxProfit(sc))" class="bida-in" live-group @update:model-value="scSetAfterTaxProfit(sc, $event)" /><span class="won">원</span>
-                  </div>
-                </section>
-              </div>
-
-              <section class="bida-card">
-                <div class="bida-hrow"><h3 class="bida-h">비용</h3><span class="hint">비중 · 금액은 눌러서 고칩니다</span></div>
-                <div class="bida-row">
-                  <span class="no">01</span><span class="k">취득세</span>
-                  <span class="bida-pct"><input :value="pctShow(`cAcq-${si}`, scPctOfBid(sc, sc.cost.acquisitionTaxAmount))" inputmode="decimal" aria-label="취득세 비중" @blur="pctDone()" @input="pctType(`cAcq-${si}`, $event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span>
-                  <FormattedNumberInput v-model="sc.cost.acquisitionTaxAmount" class="bida-in" live-group @update:model-value="scSyncAcqRate(sc)" /><span class="won">원</span>
-                </div>
-                <div class="bida-row">
-                  <span class="no">02</span><span class="k">법무비 · 채권</span>
-                  <span class="bida-pct"><input :value="pctShow(`cLegal-${si}`, scPctOfBid(sc, sc.cost.legalCostAmount))" inputmode="decimal" aria-label="법무비 비중" @blur="pctDone()" @input="pctType(`cLegal-${si}`, $event); scSetLegalPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span>
-                  <b>{{ cashMoney(sc.cost.legalCostAmount ?? 0) }}</b>
-                </div>
-                <div class="bida-row">
-                  <span class="no">03</span><span class="k">중도상환</span>
-                  <span class="bida-pct"><input :value="pctShow(`cMid-${si}`, scRowPct(sc, RATE_ROWS[0]))" inputmode="decimal" aria-label="중도상환 비율" @blur="pctDone()" @input="pctType(`cMid-${si}`, $event); scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><i>%</i></span>
-                  <FormattedNumberInput v-model="sc.cost.midRepaymentAmount" class="bida-in" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" /><span class="won">원</span>
-                </div>
-                <div class="bida-row">
-                  <span class="no">04</span><span class="k">이자(3개월)</span>
-                  <span class="bida-pct"><input :value="pctShow(`cInt-${si}`, scRowPct(sc, RATE_ROWS[1]))" inputmode="decimal" aria-label="이자율" @blur="pctDone()" @input="pctType(`cInt-${si}`, $event); scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><i>%</i></span>
-                  <FormattedNumberInput v-model="sc.cost.interestAmount" class="bida-in" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" /><span class="won">원</span>
-                </div>
-                <div class="bida-row">
-                  <span class="no">05</span><span class="k">매도중개료</span>
-                  <span class="bida-pct"><input :value="pctShow(`cBrk-${si}`, scRowPct(sc, RATE_ROWS[2]))" inputmode="decimal" aria-label="매도중개료율" @blur="pctDone()" @input="pctType(`cBrk-${si}`, $event); scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><i>%</i></span>
-                  <b>{{ cashMoney(sc.cost.brokerageAmount ?? 0) }}</b>
-                </div>
-                <div class="bida-row"><span class="no">06</span><span class="k">미납관리비</span><FormattedNumberInput v-model="sc.cost.arrearsFee" class="bida-in" live-group /><span class="won">원</span></div>
-                <div class="bida-row"><span class="no">07</span><span class="k">수리비</span><FormattedNumberInput v-model="sc.cost.repairCost" class="bida-in" live-group /><span class="won">원</span></div>
-                <div class="bida-row"><span class="no">08</span><span class="k">명도비</span><FormattedNumberInput v-model="sc.cost.evictionCost" class="bida-in" live-group /><span class="won">원</span></div>
-                <div class="bida-row last"><span class="no">09</span><span class="k">광고비</span><span class="f">원천징수 3.3% 포함</span><FormattedNumberInput v-model="sc.cost.advertisingCost" class="bida-in" live-group /><span class="won">원</span></div>
-                <div class="bida-costsum"><span>필요경비합계</span><b>{{ cashMoney(scTotalCosts(sc)) }}</b></div>
-                <div v-if="scCostMix(sc).length" class="bida-mix">
-                  <span class="lab">비용 구성</span>
-                  <div class="bar"><span v-for="m in scCostMix(sc)" :key="m.label" :style="{ flex: m.v, background: m.color }" :title="`${m.label} ${cashMoney(m.v)}`"></span></div>
-                  <div class="legend"><span v-for="m in scCostMix(sc)" :key="m.label"><i :style="{ background: m.color }"></i>{{ m.label }} {{ m.pct }}%</span></div>
-                </div>
-              </section>
-            </div>
-
-            <section class="bida-card">
-              <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
-              <div class="bidc-steps">
-                <div v-for="step in scCashOut(sc).steps" :key="step.no" class="bidc-step">
-                  <span class="no">{{ step.no }} · {{ step.when }}</span>
-                  <b>{{ cashMoney(step.amount) }}</b>
-                  <span class="what">{{ step.what }}</span>
-                  <span v-for="row in step.rows" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
-                  <span v-if="step.note" class="bidc-stepnote">{{ step.note }}</span>
-                </div>
-              </div>
-              <div class="bidc-cashsum"><span>필요한 내 돈 합계</span><b>{{ cashMoney(scCashOut(sc).total) }}</b></div>
-              <div v-if="scCashOut(sc).later.length" class="bidc-later">
-                <span class="lab">그 다음에 나가는 돈</span>
-                <span v-for="row in scCashOut(sc).later" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
-              </div>
-            </section>
-          </div>
           <!-- 돈이 나가는 순서 — 위 표의 값을 '언제 얼마가 필요한가' 로 다시 묶은 것 -->
           <!-- 돈이 나가는 순서는 고른 안(위 칩) 하나만 -->
-          <section v-if="!isCollapsed('profit') && si === selectedPlan && !webEmbed" class="adp-cash">
+          <section v-if="!isCollapsed('profit') && si === selectedPlan" class="adp-cash">
             <h3>돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
             <div v-for="step in scCashOut(sc).steps" :key="step.no" class="adp-cash-step">
               <div class="adp-cash-head">
@@ -12993,92 +12808,4 @@ select.adp-pub-input option { text-align: center; }
   .adp-base-note, .adp-sub-note:not(.adp-rows-cap), .adp-warn-banner, .adp-table .adp-desc,
   .adp-base-row .quad-v small, .adp-rcase-item small, .adp-rdoc-label, .adp-rdoc-task, .adp-empty.sm, .adp-empty.one
 ) { font-size: 14px; }
-
-/* 웹 입찰가산정 A안 — 요약 카드 넷 + 묶음 목록 */
-.bida { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
-.bida-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.bida-kpi { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 20px 22px; background: #fff; border: 1px solid #e5e9f2; border-radius: 14px; }
-.bida-kpi .lab, .bida-kpi .sub { font-size: 14px; color: #4b5563; }
-.bida-kpi strong { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #111827; white-space: nowrap; }
-.bida-kpi strong small { margin-left: 4px; font-size: 15px; font-weight: 700; }
-.bida-kpi.navy { background: #1f2a44; border-color: #1f2a44; }
-.bida-kpi.navy .lab { color: #c9d3ea; }
-.bida-kpi.navy strong { color: #fff; }
-.bida-kpi.navy strong.neg { color: #ff9b9b; }
-.bida-kpi .sub.rate { color: #9fe0b8; font-weight: 700; }
-.bida-kpi .sub.rate.neg { color: #ff9b9b; }
-.bida-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
-.bida-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.bida-card { min-width: 0; padding: 20px 24px; background: #fff; border: 1px solid #e5e9f2; border-radius: 14px; }
-.bida-h { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #111827; }
-.bida-h small { margin-left: 10px; font-size: 14px; font-weight: 400; color: #6b7280; }
-.bida-hrow { display: flex; align-items: baseline; margin-bottom: 8px; }
-.bida-hrow .bida-h { margin: 0; }
-.bida-hrow .hint { margin-left: auto; font-size: 14px; color: #6b7280; }
-.bida-row { display: flex; align-items: center; gap: 10px; min-height: 46px; border-bottom: 1px solid #f0f2f7; font-size: 15px; }
-.bida-row.last { border-bottom: 0; }
-.bida-row .k { flex: none; color: #374151; }
-.bida-row .no { flex: none; width: 22px; font-size: 13px; font-weight: 700; color: #9aa3b2; }
-.bida-row .f { display: inline-flex; align-items: center; gap: 4px; min-width: 0; font-size: 13px; color: #6b7280; }
-.bida-row > b { margin-left: auto; font-weight: 700; color: #111827; white-space: nowrap; }
-.bida-row > b.neg, .bida-net b.neg { color: #d64545; }
-.bida-row .won { margin-left: -9px; }
-.bida-row .won, .bida-hi .won { flex: none; font-size: 15px; font-weight: 700; color: #374151; }
-.bida-chip { flex: none; padding: 2px 8px; border-radius: 6px; background: #eef3ff; color: #2b6df3; font-size: 13px; font-weight: 700; }
-.bida-chip.on { background: #2b6df3; color: #fff; }
-.bida :deep(.bida-in) { margin-left: auto; width: 150px; box-sizing: border-box; height: 34px; padding: 0 2px; border: 0; border-bottom: 1px dashed #d5dbe6; border-radius: 0; background: transparent; font-family: inherit; font-size: 15px; font-weight: 700; color: #111827; text-align: right; }
-.bida :deep(.bida-in:focus) { outline: none; border-bottom: 1px solid #2b6df3; }
-.bida-row .bida-pct + :deep(.bida-in), .bida-row .f + :deep(.bida-in) { margin-left: auto; }
-.bida-pct { flex: none; display: inline-flex; align-items: center; gap: 2px; }
-.bida-pct input { width: 52px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; background: #f7f9ff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; text-align: right; }
-.bida-pct input:focus { outline: none; border-color: #2b6df3; background: #fff; }
-.bida-pct i { font-style: normal; font-size: 13px; color: #6b7280; }
-.bida-note { margin-left: auto; flex: 1; min-width: 0; max-width: 360px; box-sizing: border-box; height: 34px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; color: #111827; }
-.bida-note:focus { outline: none; border-color: #2b6df3; }
-.bida-hi { margin: 8px 0; padding: 10px 14px; border-radius: 10px; }
-.bida-hi.bid { background: #f5f8ff; border: 1px solid #c9d8fb; }
-.bida-hi.sale { margin-top: 0; background: #fff6f4; border: 1px solid #f6d5cf; }
-.bida-hi .top { display: flex; align-items: center; gap: 10px; min-height: 40px; }
-.bida-hi .k { font-size: 15px; font-weight: 800; color: #1f2a44; }
-.bida-hi.sale .k, .bida-hi.sale .won { color: #9a3412; }
-.bida-hi :deep(.bida-in.big) { width: 200px; height: 40px; padding: 0 12px; border: 1px solid #c9d8fb; border-radius: 8px; background: #fff; font-size: 17px; font-weight: 800; color: #1f2a44; }
-.bida-hi.sale :deep(.bida-in.big) { border-color: #f6d5cf; color: #9a3412; }
-.bida-hi :deep(.bida-in.big:focus) { border: 1px solid #2b6df3; box-shadow: 0 0 0 3px rgba(43, 109, 243, .15); }
-.bida-slide { margin-top: 10px; }
-.bida-slide input[type='range'] { width: 100%; margin: 0; accent-color: #2b6df3; cursor: pointer; }
-.bida-slide .lab { display: flex; justify-content: space-between; margin-top: 4px; font-size: 13px; color: #6b7280; }
-.bida-net { display: flex; align-items: center; gap: 10px; min-height: 60px; margin-top: 8px; padding: 0 16px; border-radius: 10px; background: #1f2a44; color: #fff; font-size: 15px; }
-.bida-net .k { font-weight: 800; }
-.bida-net .rate { padding: 2px 8px; border-radius: 6px; background: #2f8f5b; font-size: 13px; font-weight: 700; }
-.bida-net .rate.neg { background: #b4444a; }
-.bida-net b { margin-left: auto; font-size: 18px; font-weight: 800; }
-.bida-net b.neg { color: #ff9b9b; }
-.bida-row.goal { margin-top: 4px; border-bottom: 0; }
-.bida-costsum { display: flex; align-items: center; min-height: 56px; margin-top: 8px; padding: 0 14px; border-radius: 10px; background: #fffaeb; border: 1px solid #f3e1a6; font-size: 15px; }
-.bida-costsum span { font-weight: 800; color: #854d0e; }
-.bida-costsum b { margin-left: auto; font-size: 17px; font-weight: 800; color: #854d0e; }
-.bida-mix { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-.bida-mix .lab { font-size: 14px; color: #4b5563; }
-.bida-mix .bar { display: flex; gap: 2px; height: 12px; border-radius: 999px; overflow: hidden; }
-.bida-mix .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: #4b5563; }
-.bida-mix .legend i { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 2px; vertical-align: 1px; }
-@media (max-width: 1100px) {
-  .bida-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .bida-grid { grid-template-columns: 1fr; }
-}
-.bidc-steps { display: grid; grid-template-columns: 1fr; gap: 10px; }   /* 단계마다 한 줄 — 이름이 길어 세 칸이면 금액이 꺾였다 */
-.adp-auto-chip.web-solo { margin-right: auto; }   /* 웹은 편집 단추가 없어 칩이 가운데로 밀렸다 — 제목 옆에 붙인다 */
-.bidc-step { display: grid; grid-template-columns: 170px 1fr auto; column-gap: 16px; row-gap: 6px; align-items: baseline; padding: 14px 18px; border: 1px solid #e5e9f2; border-radius: 10px; }
-.bidc-step > .row, .bidc-step > .bidc-stepnote { grid-column: 2 / -1; }
-.bidc-step .no { grid-column: 1; grid-row: 1; font-size: 14px; font-weight: 800; color: #2b6df3; }
-.bidc-step > b { grid-column: 3; grid-row: 1; font-size: 18px; font-weight: 800; color: #111827; text-align: right; }
-.bidc-step .what { grid-column: 2; grid-row: 1; font-size: 15px; font-weight: 700; color: #374151; }
-.bidc-step .row, .bidc-later .row { display: flex; font-size: 14px; color: #6b7280; }
-.bidc-step .row em, .bidc-later .row em { font-style: normal; margin-right: auto; }
-.bidc-stepnote { font-size: 14px; color: #9ca3af; }
-.bidc-cashsum { display: flex; align-items: center; margin-top: 12px; padding: 14px 18px; border-radius: 10px; background: #fff7ed; }
-.bidc-cashsum span { font-size: 15px; font-weight: 800; color: #9a3412; }
-.bidc-cashsum b { margin-left: auto; font-size: 18px; font-weight: 800; color: #c2410c; }
-.bidc-later { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
-.bidc-later .lab { font-size: 14px; font-weight: 700; color: #374151; }
 </style>
