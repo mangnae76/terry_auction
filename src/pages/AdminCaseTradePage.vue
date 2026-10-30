@@ -234,8 +234,8 @@ const switchMode = (m: CaseMode) => {
 type Tool = 'case' | 'sim' | 'cond';
 const TOOLS: { key: Tool; label: string; desc: string }[] = [
   { key: 'case', label: '① 경매지번', desc: '경매물건과 같은 건물의 실거래가에서 매매 · 전세를 고릅니다 — 같은 건물 · 같은 평형 거래를 먼저 참고합니다' },
-  { key: 'sim', label: '② 유사물건', desc: '경매물건과 동일 물건이 없어서 유사한 물건을 찾습니다 — 같은 동 비슷한 물건(면적 · 연식 · 기간)에서 매매 · 전세를 고릅니다' },
-  { key: 'cond', label: '③ 조건분석', desc: '동 전체에서 경매물건과 조건이 비슷한 매매의 평균가입니다 — 기간 · 면적 · 건축년도로 조건을 정합니다' },
+  { key: 'sim', label: '② 유사물건', desc: '경매지번에 거래가 없을 때 대신 유사물건을 찾습니다 — 면적 · 연식 · 기간 등 경매물건과 비슷한 조건을 고려해 매매 · 전세를 고릅니다' },
+  { key: 'cond', label: '③ 조건분석', desc: '동 전체에서 경매물건과 비슷한 조건의 매매 · 전세 평균가입니다 — 기간 · 면적 · 건축년도 등으로 유사 조건을 정합니다' },
 ];
 const tool = ref<Tool>('case');
 const toolDesc = computed(() => TOOLS.find((t) => t.key === tool.value)?.desc ?? '');
