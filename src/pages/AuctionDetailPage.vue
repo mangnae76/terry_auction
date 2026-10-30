@@ -2493,6 +2493,23 @@ const pickPlanTab = async (si: number) => {
     if (profitScenarios.value[si]) selectedPlan.value = si;
   }
 };
+/** 개인소득세율 — [한도, 과세표준, 세율(%), 누진공제(만원)] */
+const TAX_REF: [number, string, number, number][] = [
+  [14_000_000, '1,400만원 이하', 6, 0],
+  [50_000_000, '5,000만원 이하', 15, 126],
+  [88_000_000, '8,800만원 이하', 24, 576],
+  [150_000_000, '1억5천만원 이하', 35, 1544],
+  [300_000_000, '3억원 이하', 38, 1994],
+  [500_000_000, '5억원 이하', 40, 2594],
+  [1_000_000_000, '10억원 이하', 42, 3594],
+  [Infinity, '10억원 초과', 45, 6594],
+];
+/** 고른 안의 사업소득금액이 걸리는 구간 — 손해면 짚지 않는다 */
+const taxRefIdx = computed(() => {
+  const sc = profitScenarios.value[selectedPlan.value];
+  const g = sc ? scGain(sc) : 0;
+  return g > 0 ? TAX_REF.findIndex(([limit]) => g <= limit) : -1;
+});
 /* 새화면은 칸이 늘 열려 있다. 값이 실제로 바뀌었을 때만 손을 멈추면 적는다(물건을 읽은 것만으로는 적지 않는다) */
 let profitJson = '';
 watch(() => auction.value?.id, () => { profitJson = ''; });
@@ -6944,6 +6961,8 @@ const goBack = () => router.back();
                 </section>
               </div>
 
+              <!-- 오른쪽 열 — 비용, 그 아래 돈이 나가는 순서(왼쪽이 길어 비던 자리) -->
+              <div class="bida-col">
               <section class="bida-card">
                 <div class="bida-hrow"><h3 class="bida-h">비용</h3><span class="hint">비중 · 금액 칸을 눌러 고칩니다</span></div>
                 <div class="bx-row"><span class="bx-k"><i class="bx-no">01</i>취득세</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cAcq-${si}`, scPctOfBid(sc, sc.cost.acquisitionTaxAmount))" inputmode="decimal" aria-label="취득세 비중" @blur="pctDone()" @input="pctType(`cAcq-${si}`, $event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.acquisitionTaxAmount" class="bx-f amt" live-group @update:model-value="scSyncAcqRate(sc)" /></span></div>
@@ -6962,9 +6981,8 @@ const goBack = () => router.back();
                   <div class="legend"><span v-for="m in scCostMix(sc)" :key="m.label"><i :style="{ background: m.color }"></i>{{ m.label }} {{ m.pct }}%</span></div>
                 </div>
               </section>
-            </div>
 
-            <section class="bida-card">
+            <section class="bida-card bida-cash">
               <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
               <div class="bidc-steps">
                 <div v-for="step in scCashOut(sc).steps" :key="step.no" class="bidc-step">
@@ -6981,6 +6999,8 @@ const goBack = () => router.back();
                 <span v-for="row in scCashOut(sc).later" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
               </div>
             </section>
+              </div>
+            </div>
           </div>
           <!-- 돈이 나가는 순서 — 위 표의 값을 '언제 얼마가 필요한가' 로 다시 묶은 것 -->
           <!-- 돈이 나가는 순서는 고른 안(위 칩) 하나만 -->
@@ -7017,7 +7037,16 @@ const goBack = () => router.back();
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>개인소득세율 <span class="adp-head-note">종합소득세</span></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('taxRef') }]" alt="" />
           </header>
-          <table v-if="!isCollapsed('taxRef')" class="adp-table adp-tax-ref">
+          <!-- 웹 새화면 — 위 입찰가산정 상자와 같은 줄 꼴. 고른 안의 사업소득금액이 걸리는 구간을 짚어 준다 -->
+          <div v-if="!isCollapsed('taxRef') && webNew" class="bida bida-taxr">
+            <div v-for="(t, ti) in TAX_REF" :key="t[1]" :class="['bx-row', { last: ti === TAX_REF.length - 1, cur: ti === taxRefIdx }]">
+              <span class="bx-k">{{ t[1] }}</span>
+              <span class="bx-d"><span v-if="ti === taxRefIdx" class="cur-chip">{{ profitScenarios[selectedPlan]?.label }} 구간</span></span>
+              <span class="bx-p"><b class="bx-f pct ro">{{ t[2] }}</b><i>%</i></span>
+              <span class="bx-a"><b class="bx-f ro">{{ t[3] ? `공제 ${t[3].toLocaleString('ko-KR')}만원` : '-' }}</b></span>
+            </div>
+          </div>
+          <table v-if="!isCollapsed('taxRef') && !webNew" class="adp-table adp-tax-ref">
             <thead>
               <tr><th>과세표준</th><th class="r">세율</th><th class="r">누진공제</th></tr>
             </thead>
@@ -13077,6 +13106,11 @@ select.adp-pub-input option { text-align: center; }
 .bx-row.sum .bx-k { font-weight: 800; color: #854d0e; }
 .bx-row.sum .bx-d { color: #a16207; }
 .bx-row.sum .bx-f.ro { font-size: 17px; font-weight: 800; color: #854d0e; }
+.bida-cash .bidc-step { grid-template-columns: 120px 1fr auto; }   /* 오른쪽 열은 반 폭 — 때 칸을 줄인다 */
+.bida-taxr { gap: 0; margin-top: 4px; }
+.bida-taxr .bx-row.cur { margin: 0 -12px; padding: 0 12px; border-radius: 8px; background: #f5f8ff; }
+.bida-taxr .bx-row.cur .bx-k, .bida-taxr .bx-row.cur .bx-f.ro { font-weight: 800; color: #1f2a44; }
+.bida-taxr .cur-chip { padding: 2px 8px; border-radius: 6px; background: #2b6df3; font-size: 12px; font-weight: 700; color: #fff; }
 .bida-plans { display: flex; align-items: center; gap: 10px; }
 .bida-seg { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; background: #e3e8f1; }
 .bida-seg button { height: 34px; padding: 0 18px; border: 0; border-radius: 8px; background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; color: #4b5563; cursor: pointer; }
