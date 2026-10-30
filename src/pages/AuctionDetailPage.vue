@@ -6960,16 +6960,6 @@ const goBack = () => router.back();
                   <span v-for="row in step.rows" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
                   <span v-if="step.note" class="bidc-stepnote">{{ step.note }}</span>
                 </div>
-                <!-- 개인소득세율 — 따로 있던 칸을 상자로 감싸 예상수익분석 안으로. 고른 안의 사업소득금액이 걸리는 구간을 짚어 준다 -->
-                <section class="bida-card bida-taxr">
-                  <h3 class="bida-h">개인소득세율<small>종합소득세</small></h3>
-                  <div v-for="(t, ti) in TAX_REF" :key="t[1]" :class="['bx-row', { last: ti === TAX_REF.length - 1, cur: ti === taxRefIdx }]">
-                    <span class="bx-k">{{ t[1] }}</span>
-                    <span class="bx-d"><span v-if="ti === taxRefIdx" class="cur-chip">{{ sc.label }} 구간</span></span>
-                    <span class="bx-p"><b class="bx-f pct ro">{{ t[2] }}</b><i>%</i></span>
-                    <span class="bx-a"><b class="bx-f ro">{{ t[3] ? `공제 ${t[3].toLocaleString('ko-KR')}만` : '-' }}</b></span>
-                  </div>
-                </section>
               </div>
                 <section class="bida-card">
                   <div class="bida-hrow"><h3 class="bida-h">비용</h3></div>
@@ -6992,24 +6982,6 @@ const goBack = () => router.back();
                   <span v-for="row in step.rows" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
                   <span v-if="step.note" class="bidc-stepnote">{{ step.note }}</span>
                 </div>
-                <!-- 계산 공식 — 지금 고른 안의 숫자로 풀어 보여 준다 -->
-                <section class="bida-card bida-formula">
-                  <h3 class="bida-h">계산 공식</h3>
-                  <dl>
-                    <dt>양도차익<small>사업소득금액</small></dt>
-                    <dd><em>예상 매도가 − 입찰가 − 필요경비합계</em><span>{{ fmtN(scSale(sc)) }} − {{ fmtN(scBid(sc)) }} − {{ fmtN(scTotalCosts(sc)) }} = <b>{{ fmtN(scGain(sc)) }}</b></span></dd>
-                    <dt>사업소득세</dt>
-                    <dd><em>사업소득금액 × 세율 − 누진공제</em><span>{{ fmtN(Math.max(0, scGain(sc))) }} × {{ scTaxRate(sc) }}% − {{ fmtN(scTaxDeduct(sc)) }} = <b>{{ fmtN(scTransferTax(sc)) }}</b></span></dd>
-                    <dt>지방세</dt>
-                    <dd><em>사업소득세 × {{ scLocalTaxRate(sc) }}%</em><span>{{ fmtN(scTransferTax(sc)) }} × {{ scLocalTaxRate(sc) }}% = <b>{{ fmtN(scLocalTax(sc)) }}</b></span></dd>
-                    <dt>세후 순이익<small>매도 수익</small></dt>
-                    <dd><em>사업소득금액 − 사업소득세 − 지방세</em><span>{{ fmtN(scGain(sc)) }} − {{ fmtN(scTransferTax(sc)) }} − {{ fmtN(scLocalTax(sc)) }} = <b>{{ fmtN(scAfterTaxProfit(sc)) }}</b></span></dd>
-                    <dt>실투자금</dt>
-                    <dd><em>입찰가 − 대출 + 필요경비합계</em><span>{{ fmtN(scBid(sc)) }} − {{ fmtN(sc.cost.loanAmount ?? 0) }} + {{ fmtN(scTotalCosts(sc)) }} = <b>{{ fmtN(scNetInvestment(sc)) }}</b></span></dd>
-                    <dt>수익률</dt>
-                    <dd><em>세후 순이익 ÷ 실투자금 × 100</em><span>{{ fmtN(scAfterTaxProfit(sc)) }} ÷ {{ fmtN(scNetInvestment(sc)) }} × 100 = <b>{{ formatPct(scAfterTaxRate(sc)) }}</b></span></dd>
-                  </dl>
-                </section>
               </div>
                 <section class="bida-card">
                   <h3 class="bida-h">수익</h3>
@@ -7043,6 +7015,34 @@ const goBack = () => router.back();
                   </div>
                 </div>
               </div>
+              <!-- 개인소득세율 — 따로 있던 칸을 상자로 감싸 예상수익분석 안으로. 고른 안의 사업소득금액이 걸리는 구간을 짚어 준다 -->
+              <section class="bida-card bida-taxr">
+                <h3 class="bida-h">개인소득세율<small>종합소득세</small></h3>
+                <div v-for="(t, ti) in TAX_REF" :key="t[1]" :class="['bx-row', { last: ti === TAX_REF.length - 1, cur: ti === taxRefIdx }]">
+                  <span class="bx-k">{{ t[1] }}</span>
+                  <span class="bx-d"><span v-if="ti === taxRefIdx" class="cur-chip">{{ sc.label }} 구간</span></span>
+                  <span class="bx-p"><b class="bx-f pct ro">{{ t[2] }}</b><i>%</i></span>
+                  <span class="bx-a"><b class="bx-f ro">{{ t[3] ? `공제 ${t[3].toLocaleString('ko-KR')}만` : '-' }}</b></span>
+                </div>
+              </section>
+              <!-- 계산 공식 — 지금 고른 안의 숫자로 풀어 보여 준다 -->
+              <section class="bida-card bida-formula">
+                <h3 class="bida-h">계산 공식</h3>
+                <dl>
+                  <dt>양도차익<small>사업소득금액</small></dt>
+                  <dd><em>예상 매도가 − 입찰가 − 필요경비합계</em><span>{{ fmtN(scSale(sc)) }} − {{ fmtN(scBid(sc)) }} − {{ fmtN(scTotalCosts(sc)) }} = <b>{{ fmtN(scGain(sc)) }}</b></span></dd>
+                  <dt>사업소득세</dt>
+                  <dd><em>사업소득금액 × 세율 − 누진공제</em><span>{{ fmtN(Math.max(0, scGain(sc))) }} × {{ scTaxRate(sc) }}% − {{ fmtN(scTaxDeduct(sc)) }} = <b>{{ fmtN(scTransferTax(sc)) }}</b></span></dd>
+                  <dt>지방세</dt>
+                  <dd><em>사업소득세 × {{ scLocalTaxRate(sc) }}%</em><span>{{ fmtN(scTransferTax(sc)) }} × {{ scLocalTaxRate(sc) }}% = <b>{{ fmtN(scLocalTax(sc)) }}</b></span></dd>
+                  <dt>세후 순이익<small>매도 수익</small></dt>
+                  <dd><em>사업소득금액 − 사업소득세 − 지방세</em><span>{{ fmtN(scGain(sc)) }} − {{ fmtN(scTransferTax(sc)) }} − {{ fmtN(scLocalTax(sc)) }} = <b>{{ fmtN(scAfterTaxProfit(sc)) }}</b></span></dd>
+                  <dt>실투자금</dt>
+                  <dd><em>입찰가 − 대출 + 필요경비합계</em><span>{{ fmtN(scBid(sc)) }} − {{ fmtN(sc.cost.loanAmount ?? 0) }} + {{ fmtN(scTotalCosts(sc)) }} = <b>{{ fmtN(scNetInvestment(sc)) }}</b></span></dd>
+                  <dt>수익률</dt>
+                  <dd><em>세후 순이익 ÷ 실투자금 × 100</em><span>{{ fmtN(scAfterTaxProfit(sc)) }} ÷ {{ fmtN(scNetInvestment(sc)) }} × 100 = <b>{{ formatPct(scAfterTaxRate(sc)) }}</b></span></dd>
+                </dl>
+              </section>
             </div>
           </div>
           <!-- 돈이 나가는 순서 — 위 표의 값을 '언제 얼마가 필요한가' 로 다시 묶은 것 -->
@@ -13154,7 +13154,7 @@ select.adp-pub-input option { text-align: center; }
 .bida-tl .bida-h { margin: 6px 0 14px -30px; padding-left: 30px; }
 .bida-tl .bidc-step { position: relative; background: #fff; }
 .bida-tl .bidc-step + .bidc-step { margin-top: 10px; }
-.bida-tl .bida-taxr, .bida-tl .bida-formula { margin-top: 12px; }   /* 단계 카드 아래 — 왼쪽 상자 옆 빈 자리를 채운다(1 옆 세율표, 2 옆 계산 공식) */
+.bida-grid.tl > .bida-taxr, .bida-grid.tl > .bida-formula { align-self: start; }   /* 수익 아래 한 줄 — 왼쪽 세율표 · 오른쪽 공식, 위 끝 맞춤 */
 .bida-tl .bidc-step::before { content: ''; position: absolute; left: -26px; top: 16px; width: 10px; height: 10px; border: 2px solid #2b6df3; border-radius: 50%; background: #fff; }
 .bida-tl .bidc-step { grid-template-columns: 110px 1fr auto; }
 .bida-r3 { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
