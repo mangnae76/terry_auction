@@ -6577,7 +6577,9 @@ const goBack = () => router.back();
             <!-- 표가 하나뿐이어도 'A안' 을 낸다 — 둘이 될 때 이름이 생기면 어느 쪽이
                  먼저 적은 표인지 헷갈린다 -->
             <span class="adp-profit-label">{{ sc.label }}</span>
+            <!-- 웹은 비고 칸을 뺀다 — 적어 둔 값은 그대로 남는다 -->
             <input
+              v-if="!webEmbed"
               v-model="sc.cost.note"
               class="adp-profit-note"
               placeholder="비고"
