@@ -2509,7 +2509,7 @@ const measureBidaTop = () => {
   if (!webNew.value) return;
   const el = document.querySelector('.adp-profit-sticky');
   if (!el) return;
-  const v = Math.round((parseFloat(getComputedStyle(el).top) || 0) + el.getBoundingClientRect().height + 12);
+  const v = Math.round((parseFloat(getComputedStyle(el).top) || 0) + el.getBoundingClientRect().height);
   if (v !== bidaTop.value) bidaTop.value = v;
 };
 const onBidaResize = () => { if (!bidaRaf) bidaRaf = requestAnimationFrame(measureBidaTop); };
@@ -6914,28 +6914,6 @@ const goBack = () => router.back();
                 </button>
               </span>
             </div>
-            <div class="bida-sum">
-              <div class="bida-kpi">
-                <span class="lab">입찰가</span>
-                <strong>{{ formatMoney(scBid(sc)) }}<small>원</small></strong>
-                <span class="sub">감정가의 {{ formatPct(scBidPct(sc)) }}</span>
-              </div>
-              <div class="bida-kpi">
-                <span class="lab">예상 매도가</span>
-                <strong>{{ formatMoney(scSale(sc)) }}<small>원</small></strong>
-                <span class="sub">필요한 내 돈 {{ cashMoney(scCashOut(sc).total) }}</span>
-              </div>
-              <div class="bida-kpi">
-                <span class="lab">실투자금</span>
-                <strong>{{ formatMoney(scNetInvestment(sc)) }}<small>원</small></strong>
-                <span class="sub">대출 {{ cashMoney(sc.cost.loanAmount ?? 0) }}({{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}) 제외</span>
-              </div>
-              <div class="bida-kpi navy">
-                <span class="lab">{{ sc.label }} 세후 순이익</span>
-                <strong :class="{ neg: scAfterTaxProfit(sc) < 0 }">{{ formatMoney(scAfterTaxProfit(sc)) }}<small>원</small></strong>
-                <span :class="['sub', 'rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span>
-              </div>
-            </div>
 
             <!-- 왼쪽 입찰정보 · 비용 · 수익과 줄을 맞춰 돈이 나가는 순서를 나눈다 — 오른쪽은 세로 선으로 이어진 타임라인
                  (입찰정보 ↔ 1 입찰 당일, 비용 ↔ 2 잔금 납부일, 수익 ↔ 3 명도·수리 · 합계 · 그 다음). 빈 자리는 선이 이어 준다 -->
@@ -6984,7 +6962,30 @@ const goBack = () => router.back();
                 </section>
               </div>
               <!-- 돈이 나가는 순서 — 한 상자. 왼쪽을 내려 보는 동안 위에 붙어 따라온다 -->
-              <div class="bida-right" :style="bidaTop ? { top: `${bidaTop}px` } : undefined">
+              <div class="bida-right">
+                <!-- 요약 넷 — 오른쪽 위 2×2. 머리 바로 아래에 붙어 늘 보이고, 돈이 나가는 순서는 그 아래로 지나간다 -->
+                <div class="bida-sum" :style="bidaTop ? { top: `${bidaTop}px` } : undefined">
+                  <div class="bida-kpi">
+                    <span class="lab">입찰가</span>
+                    <strong>{{ formatMoney(scBid(sc)) }}<small>원</small></strong>
+                    <span class="sub">감정가의 {{ formatPct(scBidPct(sc)) }}</span>
+                  </div>
+                  <div class="bida-kpi">
+                    <span class="lab">예상 매도가</span>
+                    <strong>{{ formatMoney(scSale(sc)) }}<small>원</small></strong>
+                    <span class="sub">필요한 내 돈 {{ cashMoney(scCashOut(sc).total) }}</span>
+                  </div>
+                  <div class="bida-kpi">
+                    <span class="lab">실투자금</span>
+                    <strong>{{ formatMoney(scNetInvestment(sc)) }}<small>원</small></strong>
+                    <span class="sub">대출 {{ cashMoney(sc.cost.loanAmount ?? 0) }}({{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}) 제외</span>
+                  </div>
+                  <div class="bida-kpi navy">
+                    <span class="lab">{{ sc.label }} 세후 순이익</span>
+                    <strong :class="{ neg: scAfterTaxProfit(sc) < 0 }">{{ formatMoney(scAfterTaxProfit(sc)) }}<small>원</small></strong>
+                    <span :class="['sub', 'rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span>
+                  </div>
+                </div>
                 <section class="bida-card bida-cash">
                   <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
                   <div class="bidc-steps">
@@ -13161,9 +13162,20 @@ select.adp-pub-input option { text-align: center; }
 .bida-auto .bida-h { margin-bottom: 8px; font-size: 15px; }
 .bida-auto ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: #4b5563; }
 .bida-auto .todo { margin: 10px 0 0; font-size: 12px; color: #9aa3b2; }
-.bida-right { position: sticky; top: 0; align-self: start; min-width: 0; }   /* 왼쪽을 내려 보는 동안 위에 붙어 따라온다 */
+.bida-right { align-self: stretch; min-width: 0; }   /* 왼쪽 끝까지 늘어나야 안의 요약 넷이 끝까지 붙어 따라온다 */
 .bida-cash .bidc-step { grid-template-columns: 110px 1fr auto; }   /* 반 폭 — 때 칸을 줄인다 */
 .bida-cash .bidc-later.boxed { margin-top: 12px; }
+.bida-right { display: flex; flex-direction: column; gap: 12px; }
+.bida-right .bida-sum { position: sticky; top: 0; z-index: 5; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px 0; margin: -12px 0 -12px; background: #fff; }   /* 흰 바탕 — 아래로 지나가는 상자를 가린다 */
+.bida-right .bida-kpi { gap: 4px; padding: 14px 18px; }
+.bida-right .bida-kpi strong { font-size: 22px; }
+.bida-right .bida-kpi strong small { font-size: 14px; }
+.bida-right .bida-kpi .sub, .bida-right .bida-kpi .lab { font-size: 13px; }
+/* 개인소득세율은 옆 계산 공식과 아래 끝을 맞춘다 — 줄 간격을 그 높이에 고르게 나눈다 */
+.bida-low { align-items: stretch; }
+.bida-low > .bida-taxr { display: flex; flex-direction: column; }
+.bida-low > .bida-taxr .bx-row { flex: 1 1 auto; }
+.bida-low > .bida-auto.wide { align-self: start; }
 .bida-plans { display: flex; align-items: center; gap: 10px; }
 .bida-seg { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; background: #e3e8f1; }
 .bida-seg button { height: 34px; padding: 0 18px; border: 0; border-radius: 8px; background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; color: #4b5563; cursor: pointer; }
