@@ -556,6 +556,17 @@ button { cursor: pointer; }
 #sonAskSlot .adp-mkt-block-head { margin-top: 0; }
 /* 시세종합 ④ 호가 줄 — 직접 적은 값이라 점은 주황 */
 .adm-case-in tr.has .res-dot.ask { background: #f59e0b !important; box-shadow: 0 0 0 2px rgba(245, 158, 11, .18), 0 0 6px 1px rgba(245, 158, 11, .6) !important; }
+/* 경매사례 › 인근 매각물건 분석 — 매각사례 카드(시세분석과 같은 짜임: 카드 14 · 상자 10 · 표 8, 제목 아이콘 + 16/800, 위 15 · 제목→상자 16) */
+.mk-sale .sc-card { box-sizing: border-box; margin-top: 18px; padding: 15px 15px 16px; background: var(--surface); border: 1px solid var(--card-line); border-radius: 14px; }
+.mk-sale .sc-head { display: flex; align-items: center; gap: 6px; margin: 0 0 16px; font-size: 16px; font-weight: 800; line-height: 23px; color: #111827; }
+.mk-sale .sc-head svg { color: #2b6df3; }
+.mk-sale .sc-box { padding: 12px 14px 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; }
+.mk-sale .sc-sub { margin: 0 0 10px; font-size: 15px; font-weight: 800; color: #111827; }
+.mk-sale .sc-table + .sc-sub { margin-top: 16px; }
+.mk-sale .sc-table { border: 1px solid #e8ecf3; border-radius: 8px; overflow: hidden; }
+.mk-sale .sc-table table { width: 100%; border-collapse: collapse; }
+.mk-sale .sc-table th { padding: 12px 8px; background: #f7f9fc; font-size: 14px; font-weight: 700; color: #374151; text-align: center; border-bottom: 1px solid #eef1f6; }
+.mk-sale .sc-table td { padding: 12px 8px; font-size: 14px; color: #9ca3af; text-align: center; border-top: 1px solid #eef1f6; }
 #sonHead .ih-fold { display: none; }
 #sonShell[hidden] { display: none !important; }
 /* 업데이트 칩 — 제목 줄 오른쪽 끝, 아래 칸들의 오른쪽 끝선에 맞춘다 */
@@ -4616,6 +4627,16 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   const SALE_SIDO = ['서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원특별자치도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도'];
   const SALE_SEG = { kind: ['연립다세대', '아파트', '오피스텔'], deal: ['매매', '전세'], period: ['3개월', '6개월', '12개월'] };
   const saleSeg = { kind: '연립다세대', deal: '매매', period: '12개월' };
+  /* 인근 매각물건 분석 — 손품분석 시세분석에 있던 매각사례(동일지번 · 인근 매각물건 빈 표)를 여기로. 받는 곳을 붙이기 전까지 비워 둔다 */
+  function saleCaseCard() {
+    const cols = ['사건번호', '매각기일', '감정가', '매각가', '매각가율', '전용(㎡/평)', '층', '비고'];
+    const table = `<div class="sc-table"><table><thead><tr>${cols.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>${[1, 2, 3].map(() => `<tr>${cols.map(() => '<td>-</td>').join('')}</tr>`).join('')}</tbody></table></div>`;
+    const gavel = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>';
+    return `<section class="sc-card"><div class="sc-head">${gavel}매각사례</div><div class="sc-box">`
+      + `<div class="sc-sub">동일지번 매각물건</div>${table}`
+      + `<div class="sc-sub">인근 매각물건 분석</div>${table}`
+      + `</div></section>`;
+  }
   function saleCaseHtml() {
     const seg = (k, title) => `<label class="adm-f"><small>${title}</small><div class="adm-seg">${SALE_SEG[k].map((v) => `<button type="button" class="adm-seg-btn ${saleSeg[k] === v ? 'on' : ''}" data-act="sale-seg" data-k="${k}" data-v="${v}">${v}</button>`).join('')}</div></label>`;
     const sel = (title, ph, opts) => `<label class="adm-f"><small>${title}</small><select class="adm-input narrow ph" ${opts ? '' : 'disabled'}><option value="">${ph}</option>${(opts || []).map((o) => `<option value="${o}">${o}</option>`).join('')}</select></label>`;
@@ -4623,7 +4644,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     return `<div class="app-market mk-sale" data-k="dong" data-s="sale"><section class="adm-shell"><div class="adm-body">`
       + `<div class="adm-bar">${sel('시 · 도', '시도선택', SALE_SIDO)}${sel('시 · 군 · 구', '시군구 선택')}${sel('읍 · 면 · 동', '읍면동 선택')}${seg('kind', '종류')}${seg('deal', '거래')}${seg('period', '기간')}<button type="button" class="adm-load" disabled>조회</button></div>`
       + `<div class="adm-tabs-top"><nav class="adm-view-tabs">${SALE_TABS.map(([k, t]) => `<button type="button" class="${S.saleTab === k ? 'on' : ''}" data-act="sale-tab" data-v="${k}">${t}</button>`).join('')}</nav><div id="admCrumbSlot" class="adm-crumb-slot"></div></div>`
-      + `<div class="mk-sale-body">${itCard('chart', label, itEmpty('준비 중인 화면입니다.'), true)}</div>`
+      + `<div class="mk-sale-body">${S.saleTab === 'near' ? saleCaseCard() : itCard('chart', label, itEmpty('준비 중인 화면입니다.'), true)}</div>`
       + `</div></section></div>`;
   }
   /* 손품분석 머리 카드 — 고른 물건(앱 화면이 'son.pick' 에 적고 son:pick 으로 알린다) */
