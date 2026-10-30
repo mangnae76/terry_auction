@@ -6572,7 +6572,27 @@ const goBack = () => router.back();
               </svg>
               예상수익분석
             </h2>
+            <!-- 웹은 날짜를 머리(자동계산 왼쪽)로 올린다 — 따로 있던 날짜 줄을 걷어 아래가 위로 붙는다 -->
+            <span v-if="webEmbed && !isCollapsed('profit')" class="adp-head-dates" @click.stop>
+              <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
+                <em>낙찰일</em>
+                <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) }">{{ shortYmd(auction.wonDate) || '날짜입력' }}</span></span>
+              </button>
+              <button type="button" class="adp-pd-item" @click="profitDateTarget = 'balanceDueDate'" title="법원이 통지한 대금지급기한 — 비우면 낙찰일+45일로 셈한다">
+                <em>잔금기한</em>
+                <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.balanceDueDate) }">{{ shortYmd(auction.balanceDueDate) || '날짜입력' }}</span></span>
+              </button>
+              <button type="button" class="adp-pd-item" @click="profitDateTarget = 'sellDate'">
+                <em>매도일</em>
+                <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.sellDate) }">{{ shortYmd(auction.sellDate) || '날짜입력' }}</span></span>
+              </button>
+            </span>
             <span :class="['adp-auto-chip', { 'web-solo': webEmbed }]">✦ 자동계산</span>
+            <span v-if="webEmbed && !isCollapsed('profit')" class="adp-mkt-step adp-head-step" @click.stop>
+              <span class="lab">표</span>
+              <button type="button" aria-label="산정표 삭제" :disabled="profitScenarios.length <= 1" @click.stop="removeProfitScenario">−</button>
+              <button type="button" aria-label="산정표 추가" :disabled="profitScenarios.length >= PROFIT_MAX" @click.stop="addProfitScenario">＋</button>
+            </span>
             <span v-if="webEmbed" class="adp-view-seg" @click.stop>
               <button type="button" :class="{ on: profitView === 'new' }" :aria-pressed="profitView === 'new'" @click="setProfitView('new')">새화면</button>
               <button type="button" :class="{ on: profitView === 'classic' }" :aria-pressed="profitView === 'classic'" @click="setProfitView('classic')">클래식</button>
@@ -6581,7 +6601,7 @@ const goBack = () => router.back();
             <button v-else-if="!webNew" class="adp-edit-btn save" type="button" @click.stop="saveProfit">완료</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('profit') }]" alt="" />
           </header>
-          <div v-if="!isCollapsed('profit')" class="adp-profit-dates">
+          <div v-if="!isCollapsed('profit') && !webEmbed" class="adp-profit-dates">
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
               <em>낙찰일</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) }">{{ shortYmd(auction.wonDate) || '날짜입력' }}</span></span>
@@ -13040,6 +13060,9 @@ select.adp-pub-input option { text-align: center; }
 ) { font-size: 14px; }
 /* ===== 웹 입찰가산정 새화면(D안) — 왼쪽 입력 · 오른쪽 안 탭 + 남색 계산판 ===== */
 .adp-auto-chip.web-solo { margin-right: auto; }
+.adp-head-dates { display: inline-flex; align-items: center; gap: 14px; margin-left: 14px; }
+.adp-head-dates .adp-pd-item { cursor: pointer; }
+.adp-head-step { margin-right: 8px; }
 .adp-view-seg { display: inline-flex; gap: 3px; padding: 3px; margin-right: 6px; border-radius: 9px; background: #e3e8f1; }
 .adp-view-seg button { height: 28px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; font-family: inherit; font-size: 13px; font-weight: 600; color: #4b5563; cursor: pointer; }
 .adp-view-seg button.on { background: #fff; color: #1f2a44; font-weight: 800; box-shadow: 0 1px 2px rgba(15, 23, 42, .12); }
