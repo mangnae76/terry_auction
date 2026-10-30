@@ -6935,6 +6935,20 @@ const goBack = () => router.back();
                 </section>
 
                 <section class="bida-card">
+                  <div class="bida-hrow"><h3 class="bida-h">비용</h3></div>
+                  <div class="bx-row"><span class="bx-k"><i class="bx-no">01</i>취득세</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cAcq-${si}`, scPctOfBid(sc, sc.cost.acquisitionTaxAmount))" inputmode="decimal" aria-label="취득세 비중" @blur="pctDone()" @input="pctType(`cAcq-${si}`, $event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.acquisitionTaxAmount" class="bx-f amt" live-group @update:model-value="scSyncAcqRate(sc)" /></span></div>
+                  <div class="bx-row"><span class="bx-k"><i class="bx-no">02</i>법무비 · 채권</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cLegal-${si}`, scPctOfBid(sc, sc.cost.legalCostAmount))" inputmode="decimal" aria-label="법무비 비중" @blur="pctDone()" @input="pctType(`cLegal-${si}`, $event); scSetLegalPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(sc.cost.legalCostAmount) }}</b></span></div>
+                  <div class="bx-row"><span class="bx-k"><i class="bx-no">03</i>중도상환</span><span class="bx-d">대출금 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cMid-${si}`, scRowPct(sc, RATE_ROWS[0]))" inputmode="decimal" aria-label="중도상환 비율" @blur="pctDone()" @input="pctType(`cMid-${si}`, $event); scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.midRepaymentAmount" class="bx-f amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" /></span></div>
+                  <div class="bx-row"><span class="bx-k"><i class="bx-no">04</i>이자(3개월)</span><span class="bx-d">대출금 · 연이율</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cInt-${si}`, scRowPct(sc, RATE_ROWS[1]))" inputmode="decimal" aria-label="이자율" @blur="pctDone()" @input="pctType(`cInt-${si}`, $event); scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.interestAmount" class="bx-f amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" /></span></div>
+                  <div class="bx-row"><span class="bx-k"><i class="bx-no">05</i>매도중개료</span><span class="bx-d">매도가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cBrk-${si}`, scRowPct(sc, RATE_ROWS[2]))" inputmode="decimal" aria-label="매도중개료율" @blur="pctDone()" @input="pctType(`cBrk-${si}`, $event); scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(sc.cost.brokerageAmount) }}</b></span></div>
+                  <div class="bx-row"><span class="bx-k"><i class="bx-no">06</i>미납관리비</span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.arrearsFee" class="bx-f amt" live-group /></span></div>
+                  <div class="bx-row"><span class="bx-k"><i class="bx-no">07</i>수리비</span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.repairCost" class="bx-f amt" live-group /></span></div>
+                  <div class="bx-row"><span class="bx-k"><i class="bx-no">08</i>명도비</span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.evictionCost" class="bx-f amt" live-group /></span></div>
+                  <div class="bx-row last"><span class="bx-k"><i class="bx-no">09</i>광고비</span><span class="bx-d">원천징수 3.3% 포함</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.advertisingCost" class="bx-f amt" live-group /></span></div>
+                  <div class="bx-row sum"><span class="bx-k">필요경비합계</span><span class="bx-d">01 ~ 09</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTotalCosts(sc)) }}</b></span></div>
+                </section>
+
+                <section class="bida-card">
                   <h3 class="bida-h">수익</h3>
                   <div class="bx-row hi sale"><span class="bx-k"><label :for="`bida-sale-${si}`">예상 매도가</label></span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? scSalePct(sc).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-sale-${si}`" v-model="sc.sale.expectedSaleValue" class="bx-f amt big" live-group /></span></div>
                   <div v-if="apprValue > 0" class="bx-slide sale">
@@ -6951,33 +6965,10 @@ const goBack = () => router.back();
                   <div class="bx-row goal"><span class="bx-k"><label :for="`bida-goal-${si}`">목표 순이익</label></span><span class="bx-d">적으면 입찰가 역계산</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput :id="`bida-goal-${si}`" :model-value="Math.round(scAfterTaxProfit(sc))" class="bx-f amt" live-group @update:model-value="scSetAfterTaxProfit(sc, $event)" /></span></div>
                 </section>
 
-                <!-- 개인소득세율 — 따로 있던 칸을 상자로 감싸 이 아래로. 고른 안의 사업소득금액이 걸리는 구간을 짚어 준다 -->
-                <section class="bida-card bida-taxr">
-                  <h3 class="bida-h">개인소득세율<small>종합소득세</small></h3>
-                  <div v-for="(t, ti) in TAX_REF" :key="t[1]" :class="['bx-row', { last: ti === TAX_REF.length - 1, cur: ti === taxRefIdx }]">
-                    <span class="bx-k">{{ t[1] }}</span>
-                    <span class="bx-d"><span v-if="ti === taxRefIdx" class="cur-chip">{{ sc.label }} 구간</span></span>
-                    <span class="bx-p"><b class="bx-f pct ro">{{ t[2] }}</b><i>%</i></span>
-                    <span class="bx-a"><b class="bx-f ro">{{ t[3] ? `공제 ${t[3].toLocaleString('ko-KR')}만` : '-' }}</b></span>
-                  </div>
-                </section>
               </div>
 
-              <!-- 오른쪽 열 — 비용, 그 아래 돈이 나가는 순서(왼쪽이 길어 비던 자리) -->
+              <!-- 오른쪽 열 — 돈이 나가는 순서, 그 아래 개인소득세율 -->
               <div class="bida-col">
-              <section class="bida-card">
-                <div class="bida-hrow"><h3 class="bida-h">비용</h3></div>
-                <div class="bx-row"><span class="bx-k"><i class="bx-no">01</i>취득세</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cAcq-${si}`, scPctOfBid(sc, sc.cost.acquisitionTaxAmount))" inputmode="decimal" aria-label="취득세 비중" @blur="pctDone()" @input="pctType(`cAcq-${si}`, $event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.acquisitionTaxAmount" class="bx-f amt" live-group @update:model-value="scSyncAcqRate(sc)" /></span></div>
-                <div class="bx-row"><span class="bx-k"><i class="bx-no">02</i>법무비 · 채권</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cLegal-${si}`, scPctOfBid(sc, sc.cost.legalCostAmount))" inputmode="decimal" aria-label="법무비 비중" @blur="pctDone()" @input="pctType(`cLegal-${si}`, $event); scSetLegalPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(sc.cost.legalCostAmount) }}</b></span></div>
-                <div class="bx-row"><span class="bx-k"><i class="bx-no">03</i>중도상환</span><span class="bx-d">대출금 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cMid-${si}`, scRowPct(sc, RATE_ROWS[0]))" inputmode="decimal" aria-label="중도상환 비율" @blur="pctDone()" @input="pctType(`cMid-${si}`, $event); scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.midRepaymentAmount" class="bx-f amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" /></span></div>
-                <div class="bx-row"><span class="bx-k"><i class="bx-no">04</i>이자(3개월)</span><span class="bx-d">대출금 · 연이율</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cInt-${si}`, scRowPct(sc, RATE_ROWS[1]))" inputmode="decimal" aria-label="이자율" @blur="pctDone()" @input="pctType(`cInt-${si}`, $event); scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.interestAmount" class="bx-f amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" /></span></div>
-                <div class="bx-row"><span class="bx-k"><i class="bx-no">05</i>매도중개료</span><span class="bx-d">매도가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cBrk-${si}`, scRowPct(sc, RATE_ROWS[2]))" inputmode="decimal" aria-label="매도중개료율" @blur="pctDone()" @input="pctType(`cBrk-${si}`, $event); scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(sc.cost.brokerageAmount) }}</b></span></div>
-                <div class="bx-row"><span class="bx-k"><i class="bx-no">06</i>미납관리비</span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.arrearsFee" class="bx-f amt" live-group /></span></div>
-                <div class="bx-row"><span class="bx-k"><i class="bx-no">07</i>수리비</span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.repairCost" class="bx-f amt" live-group /></span></div>
-                <div class="bx-row"><span class="bx-k"><i class="bx-no">08</i>명도비</span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.evictionCost" class="bx-f amt" live-group /></span></div>
-                <div class="bx-row last"><span class="bx-k"><i class="bx-no">09</i>광고비</span><span class="bx-d">원천징수 3.3% 포함</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.advertisingCost" class="bx-f amt" live-group /></span></div>
-                <div class="bx-row sum"><span class="bx-k">필요경비합계</span><span class="bx-d">01 ~ 09</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTotalCosts(sc)) }}</b></span></div>
-              </section>
 
             <section class="bida-card bida-cash">
               <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
@@ -6994,6 +6985,17 @@ const goBack = () => router.back();
               <div v-if="scCashOut(sc).later.length" class="bidc-later">
                 <span class="lab">그 다음에 나가는 돈</span>
                 <span v-for="row in scCashOut(sc).later" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
+              </div>
+            </section>
+
+            <!-- 개인소득세율 — 따로 있던 칸을 상자로 감싸 예상수익분석 안으로. 고른 안의 사업소득금액이 걸리는 구간을 짚어 준다 -->
+            <section class="bida-card bida-taxr">
+              <h3 class="bida-h">개인소득세율<small>종합소득세</small></h3>
+              <div v-for="(t, ti) in TAX_REF" :key="t[1]" :class="['bx-row', { last: ti === TAX_REF.length - 1, cur: ti === taxRefIdx }]">
+                <span class="bx-k">{{ t[1] }}</span>
+                <span class="bx-d"><span v-if="ti === taxRefIdx" class="cur-chip">{{ sc.label }} 구간</span></span>
+                <span class="bx-p"><b class="bx-f pct ro">{{ t[2] }}</b><i>%</i></span>
+                <span class="bx-a"><b class="bx-f ro">{{ t[3] ? `공제 ${t[3].toLocaleString('ko-KR')}만` : '-' }}</b></span>
               </div>
             </section>
               </div>
