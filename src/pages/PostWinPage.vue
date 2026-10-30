@@ -768,7 +768,7 @@ const toggleSection = (key: string) => {
           </template>
         </div>
         <!-- 체크는 '그 물건의 기록'이라 물건을 골라야 눌린다 — 까닭을 적어 둔다 -->
-        <p v-if="checkable && !picked" class="pw-nopick">
+        <p v-if="!webEmbed && checkable && !picked" class="pw-nopick">
           낙찰 물건이 없으면 체크할 수 없습니다 — 선정물건에서 단계를 <b>낙찰</b>로 바꿔 주세요.
         </p>
         <nav class="pw-tabs">
@@ -890,6 +890,10 @@ const toggleSection = (key: string) => {
           @click="activeTab = k"
         >{{ label }}</button>
       </nav>
+      <!-- 웹 — 물건이 없을 때 알림은 탭 줄 아래(탭은 사건 카드 바로 밑, 손품조사와 같은 자리) -->
+      <p v-if="webEmbed && checkable && !picked && activeTab !== 'flow'" class="pw-nopick">
+        낙찰 물건이 없으면 체크할 수 없습니다 — 선정물건에서 단계를 <b>낙찰</b>로 바꿔 주세요.
+      </p>
       <!-- 낙찰당일 — '낙찰 후 진행 순서'를 탭 맨 위 상자로 펼쳐 둔다 (앱 · 웹) -->
       <!-- 웹은 가이드 › 낙찰당일 장에 둔다 -->
       <section v-if="activeTab === (webEmbed ? 'gwin' : 'win')" :class="['pw-card', 'pw-flowcard', { web: webEmbed }]">
@@ -914,6 +918,10 @@ const toggleSection = (key: string) => {
       <nav v-if="activeTab === 'flow'" class="pw-chaptabs" role="tablist">
         <button v-for="[k, label] in FLOW_SUBS" :key="k" type="button" role="tab" :aria-selected="flowSub === k" :class="{ on: flowSub === k }" @click="flowSub = k">{{ label }}</button>
       </nav>
+      <!-- 웹 — 물건이 없을 때 알림은 탭 줄 아래(탭은 사건 카드 바로 밑, 손품조사와 같은 자리) -->
+      <p v-if="webEmbed && checkable && !picked && activeTab === 'flow'" class="pw-nopick">
+        낙찰 물건이 없으면 체크할 수 없습니다 — 선정물건에서 단계를 <b>낙찰</b>로 바꿔 주세요.
+      </p>
       <section v-if="activeTab === 'flow' && (flowSub === 'need' || flowSub === 'biz')" class="pw-card pw-ledger">
         <header class="pw-card-head"><h2>{{ flowSub === 'need' ? '필요경비' : '사업경비' }}<span class="pw-ledger-cap">{{ BOOK_HINT[flowSub] }}</span></h2></header>
         <div class="pw-card-body">

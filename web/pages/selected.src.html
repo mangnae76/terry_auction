@@ -2853,6 +2853,15 @@ html, body { overflow-x: clip; }
 .app-market .adm-tabs-top { overflow: visible; }
 /* 낙찰이후 장 탭 — 내용 바로 위, 밑선은 내용 폭만큼 */
 .pw-chaptabs { margin: 4px 0 4px; border-bottom: 1px solid var(--boxtab-line); overflow-x: auto; scrollbar-width: none; }
+/* 낙찰이후 장 탭(진행절차 · 절차상세 · 가이드) — 손품조사 탭 줄과 같게: 사건 카드 띠 바로 아래 10px, 높이 40, 밑선은 화면 양끝까지, 경로는 탭 줄 오른쪽 */
+/* 사건 카드 — 물건상세 카드와 줄 높이를 같게(첫 줄 32 · 둘째 줄 30(별 자리) · 아래 묶음 78) → 카드 140, 탭 줄 높이가 손품조사와 같다 */
+.app-page[data-k="postwin"] .pw-webhead .ih-top { min-height: 32px; }
+.app-page[data-k="postwin"] .pw-webhead .ih-line { min-height: 30px; align-items: center; }
+.app-page[data-k="postwin"] .pw-webhead .ih-prop { min-height: 78px; box-sizing: border-box; }
+.app-page[data-k="postwin"] .pw-chaptabs { position: relative; height: 40px; box-sizing: border-box; margin: 0 !important; border-bottom: 0 !important; overflow: visible !important; }
+.app-page[data-k="postwin"] .pw-chaptabs::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--boxtab-line); z-index: 3; pointer-events: none; }
+.app-page[data-k="postwin"] .pw-crumbrow { position: relative; z-index: 4; height: 0; margin: 0 !important; padding: 0 !important; }
+.app-page[data-k="postwin"] .pw-crumbrow [data-crumb-slot] { position: absolute; right: -2px; top: 15px; }   /* 탭 줄(10px 아래) 안에서 손품조사 경로와 같은 높이 · 끝 */
 .pw-chaptabs::-webkit-scrollbar { display: none; }
 /* 좁은 화면 — 줄바꿈 대신 가로로 밀어 본다 */
 
@@ -3442,7 +3451,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     { const t = $('navMy'); if (t) { t.classList.toggle('on', S.route === 'mypage'); if (S.route === 'mypage') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 물건상세(선정물건 안)에 들어가도 선정물건 메뉴 밑줄은 그대로 */
     const nav = $('navWatch'); const inList = S.route === 'list' || S.route === 'item'; nav.classList.toggle('on', inList); if (inList) nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
-    $('gLoginTxt').innerHTML = S.loggedIn ? `${esc(S.userName || '회원')}<span class="nim">님</span>` : '로그인';
+    $('gLoginTxt').innerHTML = S.loggedIn ? `${esc(S.userName || '회원')} <span class="nim">님</span>` : '로그인';
     $('gLogin').classList.toggle('named', S.loggedIn);
     $('gLogin').style.visibility = S.authReady ? '' : 'hidden';
     $('gOut').hidden = !S.loggedIn || !S.authReady;
@@ -3458,7 +3467,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     $('userPop').innerHTML = S.pop !== 'user' ? '' : S.loggedIn ? `<div class="um" role="menu" aria-label="마이턴 회원정보">
       <div class="um-head">마이턴 회원정보</div>
       <div class="um-info">
-        <span class="um-name"><span class="um-badge" title="WELCOME 등급">W</span><strong>${esc(S.userName || '회원')}님</strong><em class="um-id">${CLOUD.auth && CLOUD.auth.email ? `(${esc(CLOUD.auth.email)})` : ''}</em></span>
+        <span class="um-name"><span class="um-badge" title="WELCOME 등급">W</span><strong>${esc(S.userName || '회원')} 님</strong><em class="um-id">${CLOUD.auth && CLOUD.auth.email ? `(${esc(CLOUD.auth.email)})` : ''}</em></span>
         <dl class="um-facts">
           <dt><button type="button" class="um-link" data-act="soon" data-name="보유포인트">보유포인트<i>›</i></button></dt><dd class="blue num">0 P</dd>
           <dt><button type="button" class="um-link" data-act="soon" data-name="결제내역">결제내역<i>›</i></button></dt><dd class="orange num">999일</dd>
