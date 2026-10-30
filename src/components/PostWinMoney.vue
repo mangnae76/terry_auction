@@ -187,8 +187,11 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 <template>
   <section class="pwm">
     <header class="pwm-head">
-      <h2>{{ mode === 'evict' ? '명도분석' : '세금분석' }}</h2>
+      <!-- 명도분석은 AI 로 값을 채운다 — 제목에 AI 표시, 오른쪽 끝에 시작 단추(권리분석 'AI 권리분석 시작'과 같은 꼴) -->
+      <h2 v-if="mode === 'evict'"><svg class="pwm-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>AI 명도분석</h2>
+      <h2 v-else>세금분석</h2>
       <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 필요경비 · 사업경비 탭의 값으로 계산합니다' }}</span>
+      <button v-if="mode === 'evict'" type="button" class="pwm-ai-start head" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI 명도분석 시작' }}</button>
     </header>
     <!-- ===== 명도분석 ===== -->
     <template v-if="mode === 'evict'">
@@ -218,8 +221,9 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
       <h3 class="pwm-h">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M16 11v7" /></svg>
         계산에 쓴 값
-        <button type="button" class="pwm-ai" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI로 채우기' }}</button>
+        <!-- 직접입력은 왼쪽, AI 는 오른쪽 — 두 단추는 같은 크기 -->
         <button type="button" :class="['pwm-edit', { on: evEdit }]" @click="evEdit = !evEdit">{{ evEdit ? '접기' : '직접입력' }}</button>
+        <button type="button" class="pwm-ai-start" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI 명도분석 시작' }}</button>
         <button v-if="evEdit" type="button" class="pwm-reset" @click="reset">초기화</button>
       </h3>
       <p v-if="aiErr" class="pwm-aierr">{{ aiErr }}</p>
@@ -298,7 +302,8 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 <style scoped>
 .pwm { color-scheme: light; background: #fff; border-radius: 10px; padding: 24px 32px 30px; color: #111827; }
 .pwm-head { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid #eef1f6; }
-.pwm-head h2 { margin: 0; font-size: 16px; font-weight: 800; color: #111827; }
+.pwm-head h2 { margin: 0; display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: #111827; }
+.pwm-h2-ico { flex: none; color: #2a5fbf; }   /* 권리분석 카드 제목 아이콘과 같은 색 */
 .pwm-cap { font-size: 14px; color: #6b7280; }
 .pwm-cap b { color: #111827; font-weight: 700; }
 .pwm-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
@@ -345,9 +350,16 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-aisum { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: #f5f0ff; color: #3b2a63; font-size: 14px; line-height: 1.6; }
 .pwm-aisum b { margin-right: 8px; color: #6d28d9; }
 .pwm-ainote { font-size: 12px; color: #6d28d9; line-height: 1.4; }
-.pwm-edit { margin-left: auto; height: 30px; padding: 0 14px; border: 1px solid #2b6df3; border-radius: 6px; background: #fff; color: #1d4ed8; font-size: 14px; font-weight: 600; cursor: pointer; }
+/* AI 명도분석 시작 · 직접입력 — 권리분석 'AI 권리분석 시작'과 같은 크기(높이 34 · 모서리 10 · 14px 굵게), 둘은 같은 폭 */
+.pwm-ai-start, .pwm-edit { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 128px; height: 34px; padding: 0 16px; border-radius: 10px; font-size: 14px; font-weight: 800; letter-spacing: -0.3px; cursor: pointer; }
+.pwm-ai-start { border: 0; background: #2b6df3; color: #fff; transition: background .15s; }
+.pwm-ai-start:hover:not(:disabled) { background: #1f5fe0; }
+.pwm-ai-start:disabled { background: #9db9ef; cursor: default; }
+.pwm-ai-start.head { margin-left: auto; }
+.pwm-edit { margin-left: auto; border: 1px solid #2b6df3; background: #fff; color: #1d4ed8; }
+.pwm-edit + .pwm-ai-start { margin-left: 0; }
 .pwm-edit.on { background: #2b6df3; color: #fff; }
-.pwm-edit + .pwm-reset { margin-left: 0; }
+.pwm-edit + .pwm-reset, .pwm-ai-start + .pwm-reset { margin-left: 0; }
 .pwm-reset { margin-left: auto; height: 30px; padding: 0 12px; border: 1px solid #d0d5dd; border-radius: 6px; background: #fff; color: #374151; font-size: 14px; cursor: pointer; }
 .pwm-taxbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-bottom: 18px; }
 .pwm-seg { display: inline-flex; align-items: center; gap: 6px; }

@@ -30,7 +30,7 @@ export const groupsOf = (book: Book) => (book === 'need' ? NEED_GROUPS : BIZ_GRO
 export const BOOK_NAME: Record<Book, string> = { need: '필요경비', biz: '사업경비' };
 export const BOOK_HINT: Record<Book, string> = {
   need: '팔 때 예정신고에서 빼는 돈 — 취득비용 · 자본적지출 · 양도비용',
-  biz: '5월 종합소득세에서 빼는 돈 — 수리 · 명도 · 이자 · 관리비 · 유류 · 물품',
+  biz: '5월 종합소득세에서 빼는 돈 — 수익적지출 · 수리 · 명도 · 이자 · 관리비 · 유류 · 물품',   // 필요경비의 '자본적지출'과 짝 — 세법 이름을 맨 앞에
 };
 const NEED_CATS = NEED_GROUPS.map(([g]) => g);
 
