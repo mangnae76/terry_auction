@@ -25,7 +25,7 @@ const rememberPlaceRows = (id: string, rows: PlaceRow[]) => {
 <script setup lang="ts">
 import { getBuildingFacts } from '../services/buildingFacts';
 import { DEMAND_PLAIN, DEMAND_TOTAL_PLAIN } from '../services/demandGrade';
-import { openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
+import { openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
@@ -2869,7 +2869,8 @@ watch(() => auction.value?.id, async (id) => {
 
 // 카드마다·단락마다 따로 여닫는다. deal = 급매가의 1.실거래가 조사,
 // listing = 2.저렴매물조사 (예전에는 둘이 location 하나를 같이 썼다)
-const editingSurvey = ref({ field: false, deal: false, listing: false, individuality: false, realUser: false, demand: false });
+// 손품분석 ④ 호가분석은 편집 단추 없이 칸이 늘 열려 있다(적으면 손을 멈출 때 저장)
+const editingSurvey = ref({ field: false, deal: false, listing: sonpumMode, individuality: false, realUser: false, demand: false });
 const persistSurvey = async () => {
   if (!auction.value) return;
   await store.saveAuction(auction.value);
@@ -4015,25 +4016,20 @@ const lowUnitTextG = (sim: boolean, index: number) => {
   return n > 0 ? n.toLocaleString('ko-KR') : '-';
 };
 const lowAddrTypedG = (sim: boolean, index: number) => !!mktVal(lowKeyG(sim, index, 'addr')).trim();
-/** 손품분석 매물호가 주소 칸의 지도 단추 — 빌라는 부동산플래닛(동 지번 복사 후 지도), 아파트 · 오피스텔은 네이버 부동산 그 자리 지도.
- *  경매빌라 줄은 이 물건 주소, 유사빌라 줄은 적어 둔 주소(동을 앞에 붙여) */
-const lowMapSite = computed<'naver' | 'planet'>(() => (isApartment.value || /오피스텔/.test(auction.value?.propertyType ?? '') ? 'naver' : 'planet'));
+/** 손품분석 ④ 호가분석 — 매물호가 머리 줄의 지도 단추 둘(부동산플래닛 P · 네이버 N). 매물을 찾아보고 손으로 적는다.
+ *  경매빌라는 이 물건 자리, 유사빌라는 첫 줄에 적은 주소(없으면 이 동) */
 const subjectDong = computed(() => jibunAddress.value.split(/\s+/).find((t) => /[동리가]$/.test(t) && !/^\d/.test(t)) ?? '');
-const lowFullAddr = (sim: boolean, index: number) => {
-  if (!sim) return fullAddress.value;
-  const typed = mktVal(lowKeyG(true, index, 'addr')).trim();
-  if (!typed) return '';
-  const head = jibunAddress.value.split(/\s+/).slice(0, 3).join(' ');
-  return typed.startsWith(head.split(' ')[0] ?? '') ? typed : `${head} ${typed}`;
-};
-const lowPlanetQuery = (sim: boolean, index: number) => {
-  if (!sim) return lotOnlyAddress.value.split(/\s+/).slice(-2).join(' ');
-  const typed = mktVal(lowKeyG(true, index, 'addr')).trim();
-  return typed && subjectDong.value && !typed.includes(subjectDong.value) ? `${subjectDong.value} ${typed}` : typed;
-};
-const openLowMap = (sim: boolean, index: number) => {
-  if (lowMapSite.value === 'naver') { void openNaverSpot(lowFullAddr(sim, index), isApartment.value ? 'apt' : 'officetel'); return; }
-  const q = lowPlanetQuery(sim, index);
+const askKind = computed(() => (isApartment.value ? 'apt' : /오피스텔/.test(auction.value?.propertyType ?? '') ? 'officetel' : 'villa'));
+const openAskMap = (sim: boolean, site: 'planet' | 'naver') => {
+  const typed = sim ? mktVal(lowKeyG(true, 0, 'addr')).trim() : '';
+  const region = jibunAddress.value.split(/\s+/).slice(0, 3).join(' ');
+  if (site === 'naver') {
+    if (!sim) { void openNaverSpot(fullAddress.value, askKind.value); return; }
+    if (typed) { void openNaverSpot(`${region} ${typed}`, askKind.value); return; }
+    void openNaverDongListing(region, askKind.value);
+    return;
+  }
+  const q = !sim ? lotOnlyAddress.value.split(/\s+/).slice(-2).join(' ') : (typed ? (subjectDong.value && !typed.includes(subjectDong.value) ? `${subjectDong.value} ${typed}` : typed) : subjectDong.value);
   void openPlanetSpot(q).then((ok) => flashToast(ok ? `복사했습니다 — 부동산플래닛 검색칸에 붙여넣으세요(${q})` : `부동산플래닛 검색칸에 '${q}'를 넣으세요`, ok ? 'success' : 'info'));
 };
 const lowAddrTextG = (sim: boolean, index: number) => {
@@ -8743,8 +8739,8 @@ const goBack = () => router.back();
             </template>
             <!-- 네이버 매물조사 — 손품분석은 시세분석 ④ 호가분석 탭(#sonAskSlot)으로 옮겨 보인다 -->
             <Teleport :key="`ask-${!!sonAskReady}`" defer to="#sonAskSlot" :disabled="!sonpumMode || !sonAskReady">
-            <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title"><template v-if="sonpumMode"><svg class="son-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>네이버 매물조사</template><template v-else>2. 네이버 매물조사</template> <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
+            <div v-if="!sonpumMode" class="adp-dm-head sec2">
+              <strong class="adp-dm-title">2. 네이버 매물조사 <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
               <button v-if="!editingSurvey.listing" class="adp-edit-btn" type="button" @click.stop="editingSurvey.listing = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('listing')">완료</button>
             </div>
@@ -8810,6 +8806,11 @@ const goBack = () => router.back();
             <template v-for="g in LOW_GROUPS" :key="g.label">
               <div class="adp-mkt-block-head">
                 <span class="t">{{ g.label }}</span>
+                <span class="son-ask-note">호가분석은 수동 입력하세요</span>
+                <span class="son-ask-links">
+                  <button type="button" class="son-map-go planet" aria-label="부동산플래닛" title="부동산플래닛에서 보기 — 동 · 지번을 복사해 둡니다" @click.stop="openAskMap(g.sim, 'planet')">P</button>
+                  <button type="button" class="son-map-go naver" aria-label="네이버 부동산" title="네이버 부동산 지도에서 보기" @click.stop="openAskMap(g.sim, 'naver')">N</button>
+                </span>
                 <span v-if="editingSurvey.listing" class="adp-mkt-step">
                   <span class="lab">행</span>
                   <button type="button" aria-label="행 삭제" :disabled="lowRowCountG(g.sim) <= 1" @click="removeLowRowG(g.sim)">−</button>
@@ -8839,10 +8840,6 @@ const goBack = () => router.back();
                     <small>주소</small>
                     <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="!g.sim ? (subjectHasDong ? '동 · 층 · 호' : '층 · 호') : '빌라명 · 층 · 호'" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" />
                     <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTypedG(g.sim, i - 1) }]">{{ lowAddrTextG(g.sim, i - 1) }}</strong>
-                    <span v-if="!editingSurvey.listing && lowFullAddr(g.sim, i - 1)" class="son-addr-acts">
-                      <button type="button" :class="['son-map-go', lowMapSite]" :aria-label="lowMapSite === 'naver' ? '네이버 부동산 지도' : '부동산플래닛'" :title="lowMapSite === 'naver' ? '네이버 부동산 지도에서 이 자리 보기' : '부동산플래닛에서 이 건물 보기 — 동 · 지번을 복사해 둡니다'" @click.stop="openLowMap(g.sim, i - 1)">{{ lowMapSite === 'naver' ? 'N' : 'P' }}</button>
-                      <button type="button" class="son-addr-copy" aria-label="주소 복사" title="주소 복사" @click.stop="copyText(lowFullAddr(g.sim, i - 1))"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg></button>
-                    </span>
                   </div>
                   <div class="cell adp-mkt-wide">
                     <input v-if="editingSurvey.listing" class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'note'))" placeholder="비고" @input="setMktVal(lowKeyG(g.sim, i - 1, 'note'), ($event.target as HTMLInputElement).value)" />
