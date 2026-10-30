@@ -167,6 +167,7 @@ const run = async () => {
       modeView.value[MODES[1]].tab = savedTab(sv, MODES[1]);
       tab.value = modeView.value[mode.value].tab;
     }
+    tool.value = sv?.tool && ['case', 'sim', 'cond'].includes(sv.tool) ? sv.tool : (mode.value === MODES[1] ? 'sim' : 'case');
     resetSim();
     if (res.rows.length === 0) notice.value = '그 지번의 실거래가 없습니다 — 기간을 늘리거나 직접 고르기로 지번을 고쳐 보세요.';
     else if (res.missedMonths > 0) notice.value = `${res.missedMonths}개월치를 받지 못했습니다 — 다시 누르면 채워집니다.`;
@@ -203,12 +204,12 @@ const resetFilters = () => {
 /** 고른 알약(경매물건 · 유사물건)과 알약마다 고른 표 탭(전체 · 매매 · 전세 · 월세)은 물건 · 화면과 상관없이 늘 그대로 —
  *  다른 탭 · 다른 물건 · 새 창으로 들어와도 마지막에 고른 대로 연다(브라우저에 남긴다) */
 const VIEW_KEY = 'caseTrade.view';
-type SavedView = { mode: CaseMode; tabs: Partial<Record<CaseMode, string>> };
+type SavedView = { mode: CaseMode; tabs: Partial<Record<CaseMode, string>>; tool?: Tool };
 const readView = (): SavedView | null => { try { return JSON.parse(localStorage.getItem(VIEW_KEY) || 'null'); } catch { return null; } };
 const writeView = () => {
   if (!webEmbed || loading.value) return;
   const tabs = { ...(readView()?.tabs ?? {}), [mode.value]: tab.value };
-  try { localStorage.setItem(VIEW_KEY, JSON.stringify({ mode: mode.value, tabs })); } catch { /* 기억만 못 한다 */ }
+  try { localStorage.setItem(VIEW_KEY, JSON.stringify({ mode: mode.value, tabs, tool: tool.value })); } catch { /* 기억만 못 한다 */ }
 };
 const TABS = ['all', '매매', '전세', '월세'] as const;
 const savedTab = (v: SavedView | null, m: CaseMode): typeof tab.value => {
@@ -226,6 +227,22 @@ const switchMode = (m: CaseMode) => {
   const v = modeView.value[m];
   mode.value = m; tab.value = v.tab; areaFilter.value = v.areaFilter; yearFilter.value = v.yearFilter;
   colFilter.clearAll();
+};
+
+/** 웹 도구 탭 — ① 경매지번 · ② 유사물건 · ③ 조건분석. 거르기 · 리스트 틀은 하나, 값은 탭마다 따로(①② 는 알약 기억 modeView, ③ 은 condF).
+ *  고른 결과는 탭 밖 '시세 결과' 표에 모여 탭을 바꿔도 다 보인다 */
+type Tool = 'case' | 'sim' | 'cond';
+const TOOLS: { key: Tool; label: string; desc: string }[] = [
+  { key: 'case', label: '① 경매지번', desc: '이 물건과 같은 건물(경매지번)의 실거래에서 매매 · 전세를 고릅니다 — 같은 건물 같은 평형이 가장 정확한 시세입니다' },
+  { key: 'sim', label: '② 유사물건', desc: '이 건물에 거래가 없거나 모자랄 때, 같은 동 비슷한 물건(면적 · 연식 · 기간)에서 매매 · 전세를 고릅니다' },
+  { key: 'cond', label: '③ 조건분석', desc: '같은 동에서 조건에 맞는 매매의 평균을 냅니다 — 고른 시세가 동네 시세에서 벗어나지 않는지 견줘 봅니다' },
+];
+const tool = ref<Tool>('case');
+const toolDesc = computed(() => TOOLS.find((t) => t.key === tool.value)?.desc ?? '');
+const pickTool = (t: Tool) => {
+  tool.value = t;
+  if (t === 'case') switchMode(MODES[0]);
+  else if (t === 'sim') switchMode(MODES[1]);
 };
 
 // ===== ① 유사물건 — 고른 줄. 거르기는 경매물건과 같은 면적 · 거래년도(가격정보 경매지번 표와 같은 소팅) =====
@@ -429,8 +446,7 @@ const rowFace = (r: CaseTradeRow | null) => {
   const floor = r.floor ? `${r.floor}층` : '';
   return [r.contractDate, area, floor].filter(Boolean).join(' · ');
 };
-/** 웹 12칸 — 매매 줄 · 전세 줄. 칸마다 고른 줄의 전용면적 · 거래일자/층 · 실거래가 · 평당가 */
-const tradeArea = (r: CaseTradeRow | null) => (r && r.areaM2 > 0 ? `${r.areaM2.toFixed(2)}㎡ / ${(r.areaM2 / PYEONG).toFixed(2)}평` : '-');
+/** 웹 시세 결과 표 칸 — 거래일자/층 · 평당가 */
 const tradeWhen = (r: CaseTradeRow | null) => (r ? [r.contractDate.replace(/\./g, '-'), r.floor ? `${r.floor}층` : ''].filter(Boolean).join(' / ') : '-');
 const perPyeong = (r: CaseTradeRow | null) => (r && r.areaM2 > 0 && r.price > 0 ? r.price / (r.areaM2 / PYEONG) : 0);
 /** 기준 전세 — 표에서 고른 줄만 */
@@ -438,13 +454,26 @@ const recentJeonse = computed(() => {
   if (webEmbed && mode.value === MODES[1]) return dongRows.value.find((r) => rowKey(r) === simJeonse.value) ?? null;
   return rows.value.find((r) => rowKey(r) === pickedJeonse.value) ?? restoredJeonse.value ?? (webEmbed ? autoJeonse.value : null);
 });
+/** 웹 '시세 결과' 표 — ① 경매지번 매매 · 전세, ② 유사 매매 · 전세. 알약(도구 탭)과 상관없이 각자 고른 값.
+ *  전세가율 / 갭은 같은 출처의 매매와 전세끼리만 계산한다(① 끼리 · ② 끼리) */
+const caseSaleRow = computed(() => rows.value.find((r) => rowKey(r) === pickedSale.value) ?? restoredSale.value ?? autoSale.value);
+const caseJeonseRow = computed(() => rows.value.find((r) => rowKey(r) === pickedJeonse.value) ?? restoredJeonse.value ?? autoJeonse.value);
+const simSaleRow = computed(() => dongRows.value.find((r) => rowKey(r) === simSale.value) ?? null);
+const simJeonseRow = computed(() => dongRows.value.find((r) => rowKey(r) === simJeonse.value) ?? null);
+const pct = (a: number, b: number) => (a > 0 && b > 0 ? `${Math.round((a / b) * 100)}%` : '-');
+const pairText = (sale: CaseTradeRow | null, jeonse: CaseTradeRow | null) => (sale && jeonse
+  ? `${pct(jeonse.price, sale.price)} / ${(sale.price - jeonse.price).toLocaleString('ko-KR')}`
+  : '-');
+const placeOf = (r: CaseTradeRow) => [r.umdNm, r.jibun, r.name].filter(Boolean).join(' ');
+const resultLines = computed(() => [
+  { key: 'cs', tool: 'case' as Tool, label: '① 경매지번 매매', kind: 'sale', row: caseSaleRow.value, empty: '이 건물 매매 거래 없음 — ② 유사물건에서 고르세요', pair: pairText(caseSaleRow.value, caseJeonseRow.value) },
+  { key: 'cj', tool: 'case' as Tool, label: '① 경매지번 전세', kind: 'jeonse', row: caseJeonseRow.value, empty: '이 건물 전세 거래 없음 — ② 유사물건에서 고르세요', pair: null },
+  { key: 'ss', tool: 'sim' as Tool, label: '② 유사 매매', kind: 'sale', row: simSaleRow.value, empty: '② 유사물건 리스트에서 매매를 고르세요', pair: pairText(simSaleRow.value, simJeonseRow.value) },
+  { key: 'sj', tool: 'sim' as Tool, label: '② 유사 전세', kind: 'jeonse', row: simJeonseRow.value, empty: '② 유사물건 리스트에서 전세를 고르세요', pair: null },
+]);
 /** 표에서 파랑 · 초록으로 칠할 줄 — 위 칸에 지금 들어가 있는 거래(자동 판단 포함) */
 const saleKeyNow = computed(() => (recentSale.value ? rowKey(recentSale.value) : ''));
 const jeonseKeyNow = computed(() => (recentJeonse.value ? rowKey(recentJeonse.value) : ''));
-const tradeLines = computed(() => [
-  { key: 'sale', label: '매매', row: recentSale.value },
-  { key: 'jeonse', label: '전세', row: recentJeonse.value },
-]);
 const condTip = computed(() => [
   ['공식', '조건에 맞는 같은 동 매매가 합 ÷ 건수'] as [string, string],
   ['건수', `매매 ${condSales.value.length.toLocaleString('ko-KR')}건 (직거래 포함 · 계약해제 제외)`] as [string, string],
@@ -766,7 +795,7 @@ const restorePresetPicks = () => {
   simF.value = v.simF; condF.value = v.condF;
   simSale.value = v.simSale; simJeonse.value = v.simJeonse; pickedSale.value = v.pickedSale; pickedJeonse.value = v.pickedJeonse;
 };
-watch([mode, tab], writeView);
+watch([mode, tab, tool], writeView);
 watch([mode, tab, modeView, areaFilter, yearFilter, simF, condF, simSale, simJeonse, pickedSale, pickedJeonse], savePresetPicks, { deep: true });
 // 물건이 준 주소 · 종류 — 바뀔 때마다 바로 조회
 watch(() => props.preset && `${props.preset.address}|${props.preset.kind}`, (v) => {
@@ -982,48 +1011,45 @@ const downloadCsv = () => {
              매매(실거래가 · 공시대비율) / 보증보험 전세(전세가 · 전세가율/갭) / 실거래 전세(실거래가 · 전세가율/갭) -->
         <!-- 웹 — 손품조사 시세조사의 실거래가 조사와 같은 12칸: 매매 줄 · 전세 줄(전용면적 · 거래일자/층 · 실거래가 · 평당가) · 공시 줄 -->
         <!-- 손품조사 실거래가 조사와 같은 짜임 — 작은 제목 아래 '경매지번 실거래가' 묶음 상자 하나에 12칸 -->
-        <section v-if="webEmbed" class="adm-case-block">
-          <div class="adm-case-block-head">
-            <span>{{ preset ? '① ' : '' }}{{ mode === MODES[0] ? '경매지번' : '유사물건' }} 실거래가<em>(매매·전세)</em></span>
-            <!-- 경매물건 / 유사물건 — 손품조사 실거래가 조사의 알약 두 개와 같다. 둘 중 하나를 쓴다 -->
-            <span class="adm-mode-pills">
-              <button v-for="m in MODES" :key="m" type="button" :class="['adm-mode-pill', { on: mode === m }]" :aria-pressed="mode === m" @click="switchMode(m)">{{ m }}</button>
-            </span>
+        <!-- 웹 — 시세 결과 표 하나: ① 경매지번 매매 · 전세, ② 유사 매매 · 전세, ③ 조건 평균. 고르는 도구는 아래 탭(①②③)이고, 결과는 탭을 바꿔도 여기 다 남는다 -->
+        <section v-if="webEmbed" class="adm-case-block res">
+          <div class="res-head">
+            <strong class="list-title">시세 결과</strong>
+            <span class="res-pub"><InfoTip :rows="pubTip" under="box">공동주택가</InfoTip><b><UnitText :text="won(pubValue)" suffix="원" /></b><em v-if="price">{{ price.year }}.01.01 기준</em></span>
+            <span class="res-pub"><InfoTip :rows="jeonseRateTip(jeonseRate)" under="box">전세가</InfoTip><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" aria-label="전세가 비율" />%<b><UnitText :text="won(jeonsePrice)" suffix="원" /></b></span>
+            <span class="res-hint">줄을 누르면 아래 그 도구로 넘어갑니다</span>
           </div>
-          <div v-for="g in tradeLines" :key="g.key" :class="['adm-kpis grid4 case12', g.row ? `on-${g.key}` : '']">
-            <div class="adm-kpi">
-              <small>{{ g.label }} 실거래가</small>
-              <!-- 고르기 전에는 금액 자리에 안내를 — 줄 수가 같아 칸 높이가 흔들리지 않는다 -->
-              <strong v-if="g.row"><UnitText :text="won(g.row.price)" suffix="원" /></strong>
-              <strong v-else class="ask">{{ mode === MODES[0] ? `이 건물 ${g.label} 거래 없음` : `리스트에서 ${g.label}를 선택하세요` }}</strong>
-            </div>
-            <div class="adm-kpi">
-              <small>{{ g.label }} 평당가</small><strong><UnitText :text="won(perPyeong(g.row))" suffix="원" /></strong>
-            </div>
-            <div class="adm-kpi">
-              <small>전용면적</small><strong><UnitText :text="tradeArea(g.row)" /></strong>
-            </div>
-            <div class="adm-kpi">
-              <small>거래일자 / 층</small><strong><UnitText :text="tradeWhen(g.row)" /></strong>
-            </div>
-          </div>
-          <div class="adm-kpis grid4 case12">
-            <div class="adm-kpi green">
-              <small><InfoTip :rows="pubTip" under="box">공동주택가</InfoTip><em v-if="price">{{ price.year }}.01.01 기준</em></small>
-              <strong><UnitText :text="won(pubValue)" suffix="원" /></strong>
-            </div>
-            <div class="adm-kpi">
-              <small><InfoTip :rows="jeonseRateTip(jeonseRate)" under="box">전세가</InfoTip><em><input v-model="rateText" class="adm-rate-input" inputmode="numeric" placeholder="126" />%</em></small>
-              <strong><UnitText :text="won(jeonsePrice)" suffix="원" /></strong>
-            </div>
-            <div class="adm-kpi">
-              <small><InfoTip :rows="JEONSE_RATIO_TIP" under="box">전세가율 / 갭</InfoTip></small>
-              <strong><UnitText :text="jeonseRatioText" /><em v-if="gapText" class="adm-gap"> / <UnitText :text="gapText" suffix="원" /></em></strong>
-            </div>
-            <div class="adm-kpi">
-              <small><InfoTip :rows="PUB_RATIO_TIP" under="box" align="end">공시대비율</InfoTip></small>
-              <strong><UnitText :text="pubRatioText" /></strong>
-            </div>
+          <div class="adm-table-wrap">
+            <table class="adm-table res-table">
+              <thead>
+                <tr><th>구분</th><th>실거래가</th><th>평당가</th><th>전용(㎡/평)</th><th>거래일자 / 층</th><th>위치</th><th><InfoTip :rows="JEONSE_RATIO_TIP" under="box">전세가율 / 갭</InfoTip></th><th><InfoTip :rows="PUB_RATIO_TIP" under="box" align="end">공시대비율</InfoTip></th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="l in resultLines" :key="l.key" :class="[`res-${l.kind}`, { has: !!l.row, cur: tool === l.tool }]" @click="pickTool(l.tool)">
+                  <td class="res-name"><i :class="['res-dot', l.kind]" />{{ l.label }}</td>
+                  <template v-if="l.row">
+                    <td class="n res-amt">{{ won(l.row.price) }}</td>
+                    <td class="n">{{ won(perPyeong(l.row)) }}</td>
+                    <td class="n">{{ areaText(l.row.areaM2) }}</td>
+                    <td class="n">{{ tradeWhen(l.row) }}</td>
+                    <td class="res-place">{{ placeOf(l.row) }}</td>
+                  </template>
+                  <td v-else colspan="5" class="res-empty">{{ l.empty }}</td>
+                  <td v-if="l.pair !== null" rowspan="2" class="n res-pair">{{ l.pair }}</td>
+                  <td class="n">{{ pct(l.row?.price ?? 0, pubValue) }}</td>
+                </tr>
+                <tr :class="['res-avg', { has: condAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
+                  <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condTip" under="box">③ 조건 평균(매매)</InfoTip></td>
+                  <td class="n res-amt"><template v-if="condAvg > 0">{{ won(condAvg) }}</template><span v-else class="res-empty">조건에 맞는 매매 없음</span></td>
+                  <td class="n">-</td>
+                  <td class="n">{{ condAreaPair ? `${condAreaPair[0]} ~ ${condAreaPair[1]}` : '-' }}</td>
+                  <td class="n">{{ condPeriodText }}</td>
+                  <td class="res-place">{{ region?.dong || '같은 동' }} {{ condSales.length.toLocaleString('ko-KR') }}건 · {{ condApprovalText }}</td>
+                  <td class="n">-</td>
+                  <td class="n">{{ pct(condAvg, pubValue) }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
         <div v-else class="adm-kpis grid4 case-grid">
@@ -1104,8 +1130,15 @@ const downloadCsv = () => {
           </div>
         </div>
 
-        <!-- 탭 · 거르기 — 웹은 ① 실거래가 조사 상자의 아랫부분(.adm-case-tail)으로 이어 붙는다 -->
-        <template v-if="rows.length > 0 || (webEmbed && dongRows.length > 0)">
+        <!-- 웹 도구 탭 — 상자 탭 ①②③, 옆에 지금 탭이 무엇을 왜 하는지 빨간 글 -->
+        <div v-if="webEmbed && (rows.length > 0 || dongRows.length > 0)" class="tool-bar">
+          <nav class="adm-view-tabs tool-tabs" role="tablist" aria-label="시세 도구">
+            <button v-for="t in TOOLS" :key="t.key" type="button" role="tab" :class="{ on: tool === t.key }" :aria-selected="tool === t.key" @click="pickTool(t.key)">{{ t.label }}</button>
+          </nav>
+          <p class="tool-desc">{{ toolDesc }}</p>
+        </div>
+        <!-- 탭 · 거르기 — 웹은 도구 탭 ① · ② 아래 상자(.adm-case-tail) -->
+        <template v-if="(rows.length > 0 || (webEmbed && dongRows.length > 0)) && (!webEmbed || tool !== 'cond')">
         <div class="adm-case-tail">
         <!-- 웹 — 가격정보 경매지번 표와 같은 두 줄: 위 전체 · 매매 · 전세 · 월세(상자 끝까지), 아래 면적 · 거래년도 · 초기화 -->
         <div :class="['adm-tabs', { 'two-row': webEmbed }]">
@@ -1218,18 +1251,8 @@ const downloadCsv = () => {
         </div>
         </template>
         <!-- ② 실거래가 조건분석 그룹 — 자기 조건(면적 · 건축년도 · 계약일)과 그 조건의 같은 동 매매 리스트. ① 고르기와 필터를 같이 쓰지 않는다 -->
-        <section v-if="webEmbed && dongRows.length > 0" class="adm-case-block cond">
-          <div class="adm-case-block-head"><span>{{ preset ? '② ' : '' }}실거래가 조건분석<em>(같은 동 · 조건 평균)</em></span></div>
-          <div class="adm-kpis grid4 case12">
-            <div class="adm-kpi">
-              <small><InfoTip :rows="condTip" under="box" align="end">국토부 실거래 평균</InfoTip></small>
-              <strong v-if="condAvg > 0"><UnitText :text="won(condAvg)" suffix="원" /></strong>
-              <strong v-else class="ask">조건에 맞는 매매 없음</strong>
-            </div>
-            <div class="adm-kpi"><small>전용면적범위</small><strong class="rng one"><template v-if="condAreaPair"><UnitText :text="condAreaPair[0]" /><i class="rng-sep">~</i><UnitText :text="condAreaPair[1]" /></template><template v-else>-</template></strong></div>
-            <div class="adm-kpi"><small>사용승인</small><strong class="rng"><UnitText :text="condApprovalText" /></strong></div>
-            <div class="adm-kpi"><small>거래기간</small><strong class="rng"><UnitText :text="condPeriodText" /></strong></div>
-          </div>
+        <!-- ③ 조건분석 — 같은 동 조건 매매 평균. 평균 · 면적범위 · 사용승인 · 거래기간은 위 시세 결과 표 ③ 줄에 -->
+        <section v-if="webEmbed && dongRows.length > 0 && tool === 'cond'" class="adm-case-tail cond">
           <TradeRangeFilter v-model="condF" :month-choices="[3, 6, 12]" class="adm-trf">
             <button type="button" class="adm-ghost" @click="resetCond">초기화</button>
           </TradeRangeFilter>
