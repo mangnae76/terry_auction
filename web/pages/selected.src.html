@@ -446,7 +446,7 @@ button { cursor: pointer; }
 /* 도구 탭 ①②③ — 웹 상자 탭 꼴(밑선 위에 올라앉는다), 옆에 지금 탭이 하는 일을 빨간 글로. 아래 상자(.adm-case-tail)가 탭 밑선에 붙는다 */
 .adm-case-in .tool-bar { display: flex; align-items: flex-end; gap: 16px; margin-top: 16px; border-bottom: 1px solid var(--boxtab-line); }
 .adm-case-in .tool-tabs { --boxtab-on: #fff; flex: none; }
-.adm-case-in .tool-desc { margin: 0 0 9px; min-width: 0; font-size: 13px; font-weight: 400; color: #dc2626; line-height: 1.45; }
+.adm-case-in .tool-desc { margin: 0 0 9px; min-width: 0; font-size: 13px; font-weight: 400; color: var(--text, #111827); line-height: 1.45; }   /* 도구 탭 설명 글 — 검정(빨강은 경고처럼 읽혀서) */
 .adm-case-in .tool-bar + .adm-case-tail, .adm-case-in .adm-case-tail.cond { padding-top: 4px; }
 .adm-case-in .adm-case-tail.cond .adm-trf { margin-top: 12px; }
 .adm-case-in .adm-tabs.two-row.cond-kinds { grid-template-columns: repeat(2, 1fr); margin-top: 12px; }
