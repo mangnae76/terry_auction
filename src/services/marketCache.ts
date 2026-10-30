@@ -163,3 +163,37 @@ export const loadOrFail = async <T>(
   }
   return { value: null, savedAt: 0, state: 'failed' };
 };
+
+// ===== 1MB 를 넘는 값 — 조각으로 나눠 적는다 =====
+// 문서 하나가 1MB 를 넘으면 Firestore 가 받지 않는다(시군구 4년치 실거래가 그렇다).
+// 머리 문서(조각 수 · 적은 시각)와 조각 문서(id#0, id#1 …)로 나눈다. 조각은 글(JSON)을 잘라 담는다.
+const PIECE = 700 * 1024;
+export const readChunkedCache = async <T>(collection: string, id: string, maxAgeMs: number): Promise<T | null> => {
+  if (!firestore || !id) return null;
+  try {
+    const head = await getDoc(doc(firestore, collection, id));
+    if (!head.exists()) return null;
+    const h = head.data() as { savedAt?: number; pieces?: number };
+    const savedAt = Number(h.savedAt ?? 0);
+    const pieces = Number(h.pieces ?? 0);
+    if (!savedAt || !pieces || Date.now() - savedAt > maxAgeMs) return null;
+    const parts = await Promise.all(Array.from({ length: pieces }, (_, i) => getDoc(doc(firestore!, collection, `${id}#${i}`))));
+    if (parts.some((p) => !p.exists())) return null;
+    const text = parts.map((p) => String((p.data() as { text?: string }).text ?? '')).join('');
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+};
+export const writeChunkedCache = async <T>(collection: string, id: string, payload: T): Promise<void> => {
+  if (!firestore || !id) return;
+  try {
+    const text = JSON.stringify(payload);
+    const pieces = Math.max(1, Math.ceil(text.length / PIECE));
+    await Promise.all(Array.from({ length: pieces }, (_, i) => setDoc(doc(firestore!, collection, `${id}#${i}`), { text: text.slice(i * PIECE, (i + 1) * PIECE) })));
+    // 머리는 조각을 다 적은 뒤에 — 머리가 먼저 서면 반쯤 적힌 조각을 읽을 수 있다
+    await setDoc(doc(firestore, collection, id), { savedAt: Date.now(), pieces, updatedAt: serverTimestamp() });
+  } catch {
+    /* 무시 */
+  }
+};

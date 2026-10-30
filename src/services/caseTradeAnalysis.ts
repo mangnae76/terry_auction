@@ -7,7 +7,8 @@
 // 화면이 아니라 여기에 둔 까닭: 분석 도구가 앱과 갈라져도 이 함수는 그대로
 // 따라간다. Vue·스토어·물건 객체를 모르고, 주소를 받아 값을 돌려줄 뿐이다.
 import { fetchPlaceHistory } from './publicDataApi';
-import { cacheKey, readCache, writeCache, CACHE_TTL } from './marketCache';
+import { cacheKey, readChunkedCache, writeChunkedCache, CACHE_TTL } from './marketCache';
+import { browserCacheGet, browserCachePut } from './browserCache';
 import { lookupAddress, type AddressParts } from './addressLookup';
 import type { ResolvedRegion } from './regionResolver';
 import type { ApartPrice } from './vworldApi';
@@ -58,10 +59,17 @@ const won = (n: number) => (n > 0 ? Math.round(n).toLocaleString('ko-KR') : '-')
 const loadDistrict = async (lawdCd5: string, propertyType: CasePropertyType, years: number) => {
   const key = cacheKey(lawdCd5, propertyType, `y${years}`);
   type Payload = Awaited<ReturnType<typeof fetchPlaceHistory>>;
-  const hit = await readCache<Payload>('cachePlaceHistory', key, CACHE_TTL.place);
-  if (hit) return hit;
+  // ① 이 브라우저 → ② DB(조각으로 나눠 둔 것, 다른 기기 · 다른 사람이 받아 둔 것) → ③ 국토부에서 새로(194번쯤). 하루 지나면 새로
+  const local = await browserCacheGet<Payload>(`place_${key}`, CACHE_TTL.place);
+  if (local) return local;
+  const shared = await readChunkedCache<Payload>('cachePlaceHistoryV2', key, CACHE_TTL.place);
+  if (shared) { void browserCachePut(`place_${key}`, shared); return shared; }
   const fresh = await fetchPlaceHistory({ lawdCd5, propertyType, years });
-  void writeCache('cachePlaceHistory', key, fresh);
+  // 몇 달을 못 받았으면 남기지 않는다 — 덜 받은 값이 하루 동안 굳는다
+  if (fresh.missedMonths === 0) {
+    void browserCachePut(`place_${key}`, fresh);
+    void writeChunkedCache('cachePlaceHistoryV2', key, fresh);
+  }
   return fresh;
 };
 

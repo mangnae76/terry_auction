@@ -112,6 +112,10 @@ service cloud.firestore {
     match /cachePlaceHistory/{id} {
       allow read, write: if isAllowedUser();
     }
+    // 시군구 4년치 — 1MB 를 넘어 조각(id#0 …)으로 나눠 적는다
+    match /cachePlaceHistoryV2/{id} {
+      allow read, write: if isAllowedUser();
+    }
     match /cacheDongUnits/{id} {
       allow read, write: if isAllowedUser();
     }
