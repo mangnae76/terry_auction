@@ -580,6 +580,28 @@ button { cursor: pointer; }
 #sonAskSlot .son-addr-field { display: flex; align-items: center; gap: 8px; width: 100%; height: 40px; }
 #sonAskSlot .son-addr-field .adp-mkt-input { flex: 1; min-width: 0; }
 #sonAskSlot .son-addr-head { flex: none; font-style: normal; font-size: 14px; color: #111827; white-space: nowrap; }
+/* 값 칸 위아래 — 머리글 아래 위 4 · 아래 4 로 모두 같게(매매호가만 4 내려가 있고 나머지는 붙어 있었다) */
+/* 칸이 곧 입력칸 — 칸 안에 박스를 또 두지 않는다(물건등록 직접입력처럼). 누르면 칸 안쪽에 파란 테두리 */
+#sonAskSlot .adp-mkt-cells .cell > :not(small) { margin: 0 !important; }
+#sonAskSlot .adp-mkt-cells .adp-mkt-input { width: 100% !important; margin: 0 !important; height: 46px !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; text-align: center; padding: 0 12px !important; }
+#sonAskSlot .adp-mkt-cells .adp-mkt-input:focus { outline: none; box-shadow: inset 0 0 0 2px #2b6df3 !important; }
+#sonAskSlot .adp-mkt-unit, #sonAskSlot .son-addr-field, #sonAskSlot .son-auto { height: 46px !important; width: 100% !important; margin: 0 !important; box-sizing: border-box; }
+#sonAskSlot .adp-mkt-unit { padding-right: 12px; }
+#sonAskSlot .son-addr-field { padding-left: 12px; gap: 4px; }
+#sonAskSlot .son-addr-field .adp-mkt-input { text-align: left; padding-left: 4px !important; }
+#sonAskSlot .adp-mkt-cells .cell.adp-mkt-wide .adp-mkt-input { text-align: left; padding-left: 14px !important; }
+/* 부동산 유선상담 — 겹상자 없이 바깥 상자 하나, 칸 높이 40 · 글자 14 · 모서리 8(웹 규격) */
+#sonNaverSlot .agency-table { border: 0 !important; padding: 0 !important; background: none !important; box-shadow: none !important; }
+#sonNaverSlot .agency-table :is(.adp-mkt-input, .adp-agency-trigger) { box-sizing: border-box; height: 40px !important; font-size: 14px !important; border-radius: 8px !important; }
+#sonNaverSlot .agency-table :is(.lab, .adp-agency-fld > em, .adp-agency-fld > small, .txt, .note-txt) { font-size: 14px !important; }
+#sonNaverSlot .agency-table .adp-agency-line { gap: 10px !important; padding: 6px 0 !important; }
+#sonNaverSlot .agency-table .adp-agency-item { background: none !important; border: 0 !important; padding: 0 !important; border-radius: 0 !important; }
+#sonNaverSlot .agency-table input { box-sizing: border-box; height: 40px !important; font-size: 14px !important; border-radius: 8px !important; }
+#sonNaverSlot .agency-table .adp-agency-tel { display: block; height: auto !important; overflow: visible !important; }
+#sonNaverSlot .agency-table .adp-agency-line { align-items: center !important; }
+#sonNaverSlot .agency-table .adp-agency-item + .adp-agency-item { margin-top: 12px; padding-top: 12px; border-top: 1px solid #eef1f6; }
+
+#sonAskSlot .adp-mkt-cells .cell { padding-bottom: 0 !important; }
 /* 시세종합 ④ 호가 줄 — 직접 적은 값이라 점은 주황 */
 .adm-case-in tr.has .res-dot.ask { background: #f59e0b !important; box-shadow: 0 0 0 2px rgba(245, 158, 11, .18), 0 0 6px 1px rgba(245, 158, 11, .6) !important; }
 /* 경매사례 › 인근 매각물건 분석 — 매각사례 카드(시세분석과 같은 짜임: 카드 14 · 상자 10 · 표 8, 제목 아이콘 + 16/800, 위 15 · 제목→상자 16) */

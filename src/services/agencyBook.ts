@@ -15,6 +15,8 @@ export interface AgencyPreset {
   region?: string;
   /** 써 보고 남긴 평가 — 상담표의 '정보'와 달리 업소에 붙는다 */
   rating?: string;
+  /** 이 업체와 협의한 내용(웹 중개업체 관리) — 입금 · 매도 조건 등. 물건별 상담표가 아니라 업소에 붙는다 */
+  deal?: string;
 }
 
 /** 처음 쓰는 사용자에게 깔아 두는 목록 */

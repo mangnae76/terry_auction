@@ -2,7 +2,7 @@
 // 중개업체 목록을 고치는 자리 — '중개업체 관리' 화면과 상담표의 팝업이 같이 쓴다.
 // 목록 자체는 services/agencyBook 한곳에 있고, 여기서 저장하면 상담표의 상호
 // 드롭다운이 바로 따라 바뀐다.
-import { onMounted, ref, watch } from 'vue';
+import { inject, onMounted, ref, watch } from 'vue';
 import AppConfirm from './AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import { useAuthStore } from '../stores/authStore';
@@ -10,6 +10,8 @@ import { newAgencyId, telDigits, useAgencyBook, type AgencyPreset } from '../ser
 import { formatPhone } from '../utils/phone';
 
 const emit = defineEmits<{ (e: 'saved', count: number): void }>();
+/** 웹 — 업체마다 '협의' 칸을 더 두고, 글자 · 칸을 웹 규격(글자 14 · 칸 40 · 모서리 8)으로 */
+const webEmbed = inject<boolean>('webEmbed', false);
 
 const auth = useAuthStore();
 const book = useAgencyBook();
@@ -44,7 +46,7 @@ const sortBy = (key: 'name' | 'region') => {
   touch();
 };
 const addRow = () => {
-  rows.value.push({ id: newAgencyId(), name: '', phone: '', region: '', rating: '' });
+  rows.value.push({ id: newAgencyId(), name: '', phone: '', region: '', rating: '', deal: '' });
   touch();
 };
 const setPhone = (row: AgencyPreset, el: HTMLInputElement) => {
@@ -90,7 +92,7 @@ defineExpose({ save, dirty });
 </script>
 
 <template>
-  <div class="agb-panel">
+  <div :class="['agb-panel', { web: webEmbed }]">
     <div class="agb-tools">
       <span class="agb-eyebrow">{{ rows.length }}곳</span>
       <button type="button" class="agb-add" @click="addRow">＋ 업체 추가</button>
@@ -132,6 +134,10 @@ defineExpose({ save, dirty });
         <label class="agb-fld wide">
           <small>평가</small>
           <input v-model="row.rating" class="agb-input" placeholder="써 보고 남길 말 — 응대·매물 수준 등" @input="touch" />
+        </label>
+        <label v-if="webEmbed" class="agb-fld wide">
+          <small>협의</small>
+          <input v-model="row.deal" class="agb-input" placeholder="이 업체와 협의한 내용 — 입금 · 매도 조건 등" @input="touch" />
         </label>
       </article>
 
@@ -189,4 +195,18 @@ defineExpose({ save, dirty });
   color: #e0574a; font-size: 15px; line-height: 26px; cursor: pointer;
 }
 .agb-empty { text-align: center; color: #9ca3af; padding: 18px 0; font-size: 13px; }
+/* 웹 규격 — 글자 하한 12, 이름표 14 굵게, 칸 40 · 모서리 8, 상자 안쪽 14 · 사이 10 */
+.agb-panel.web { gap: 12px; }
+.agb-panel.web .agb-eyebrow { font-size: 13px; }
+.agb-panel.web :is(.agb-add, .agb-save) { height: 34px; padding: 0 14px; font-size: 14px; }
+.agb-panel.web .agb-sort { padding: 6px 12px; font-size: 13px; }
+.agb-panel.web .agb-list { gap: 10px; }
+.agb-panel.web .agb-card { padding: 14px; gap: 10px; border-radius: 10px; }
+.agb-panel.web .agb-line { gap: 10px; }
+.agb-panel.web .agb-fld { gap: 6px; }
+.agb-panel.web .agb-fld small { font-size: 14px; font-weight: 700; color: #374151; }
+.agb-panel.web .agb-input { height: 40px; padding: 0 12px; border-radius: 8px; font-size: 14px; }
+.agb-panel.web .agb-del { flex-basis: 40px; height: 40px; border-radius: 8px; font-size: 18px; line-height: 38px; }
+.agb-panel.web .agb-call { width: 26px; height: 26px; right: 7px; }
+.agb-panel.web .agb-empty { font-size: 14px; }
 </style>

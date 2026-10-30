@@ -14,7 +14,9 @@ const props = withDefaults(defineProps<{
   editing?: boolean;
   /** 이 수보다 많을 때만 줄마다 × 를 보여 준다 */
   minRows?: number;
-}>(), { editing: true, minRows: 1 });
+  /** 협의 줄을 뺀다 — 웹 손품분석은 협의를 중개업체 관리(업소별)에 적는다 */
+  hideNote?: boolean;
+}>(), { editing: true, minRows: 1, hideNote: false });
 
 const emit = defineEmits<{
   /** 값이 바뀌었다 — 저장은 부르는 쪽이 한다 */
@@ -246,7 +248,7 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
           <span v-else :class="['note-txt', { filled: !!row.opinion }]">{{ row.opinion || '-' }}</span>
         </label>
       </div>
-      <div class="adp-agency-line">
+      <div v-if="!props.hideNote" class="adp-agency-line">
         <label class="adp-agency-fld note-fld wide">
           <em class="lab">협의</em>
           <input
