@@ -2475,6 +2475,9 @@ const pickPlanTab = async (si: number) => {
 };
 /** 오른쪽 판이 붙을 높이 — 위 고정 묶음(예상수익분석 제목 · 날짜 줄) 바로 아래. 묶음 높이가 화면마다 달라 재서 쓴다 */
 const biddTop = ref(0);
+/** 판 높이 — 화면 아래까지. 왼쪽이 끝나 가면 판은 고정 지점에 그대로 두고 아래쪽만 줄인다(밀려 올라가 탭이 가리지 않게) */
+const biddMaxH = ref(0);
+const BIDD_MIN_H = 220;
 const measureBiddTop = () => {
   if (!webNew.value) return;
   const el = document.querySelector('.adp-profit-sticky');
@@ -2482,6 +2485,10 @@ const measureBiddTop = () => {
   const t = parseFloat(getComputedStyle(el).top) || 0;
   const v = Math.round(t + el.getBoundingClientRect().height + 12);
   if (v !== biddTop.value) biddTop.value = v;
+  const left = document.querySelector('.bidd-left');
+  const leftBottom = left ? left.getBoundingClientRect().bottom : Infinity;
+  const h = Math.max(BIDD_MIN_H, Math.round(Math.min(window.innerHeight - 16, leftBottom) - v));
+  if (h !== biddMaxH.value) biddMaxH.value = h;
 };
 onMounted(() => {
   window.addEventListener('scroll', measureBiddTop, { passive: true });
@@ -6631,11 +6638,10 @@ const goBack = () => router.back();
           </div>
           <!-- 산정표 — A안·B안… 생김새가 같아 한 벌만 그리고 값만 갈아 끼운다 -->
           <template v-for="(sc, si) in profitScenarios" :key="sc.label">
-          <div v-if="!isCollapsed('profit') && (!webNew || si === selectedPlan)" :class="['adp-profit-head-row', { 'is-dim': si !== selectedPlan && !webNew }]" @pointerdown="webEmbed && (selectedPlan = si)" @focusin="webEmbed && (selectedPlan = si)">
+          <div v-if="!isCollapsed('profit') && !webNew" :class="['adp-profit-head-row', { 'is-dim': si !== selectedPlan }]" @pointerdown="webEmbed && (selectedPlan = si)" @focusin="webEmbed && (selectedPlan = si)">
             <!-- 표가 하나뿐이어도 'A안' 을 낸다 — 둘이 될 때 이름이 생기면 어느 쪽이
                  먼저 적은 표인지 헷갈린다 -->
-            <!-- 새화면은 이름을 뺀다 — 어느 안인지는 오른쪽 탭이 보여 준다 -->
-            <span v-if="!webNew" class="adp-profit-label">{{ sc.label }}</span>
+            <span class="adp-profit-label">{{ sc.label }}</span>
             <!-- 웹은 비고 칸을 뺀다 — 적어 둔 값은 그대로 남는다 -->
             <input
               v-if="!webEmbed"
@@ -6852,7 +6858,18 @@ const goBack = () => router.back();
           <div v-if="webNew && !isCollapsed('profit') && si === selectedPlan" :id="`profit-tbl-${si}`" class="bidd">
             <div class="bidd-left">
               <section class="bidd-card">
-                <div class="bidd-hrow"><h3 class="bidd-h">입찰가 정하기</h3><span class="bidd-tag">{{ sc.label }}</span></div>
+                <!-- 초기화 · 삭제는 이 상자 머리에 — 위에 따로 있던 이름 줄을 걷어 상자들이 위로 붙는다 -->
+                <div class="bidd-hrow">
+                  <h3 class="bidd-h">입찰가 정하기</h3>
+                  <span class="bidd-acts">
+                    <button type="button" class="adp-pd-reset" title="이 안의 대출·취득세·법무비 비중을 기본값으로" @click.stop="resetScenarioRates(sc)">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화
+                    </button>
+                    <button v-if="profitScenarios.length > 1" type="button" class="adp-pd-reset adp-pd-del" :aria-label="`${sc.label} 삭제`" :title="`${sc.label} 삭제`" @click.stop="removeProfitScenarioAt(si)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                    </button>
+                  </span>
+                </div>
                 <div class="bidd-big-row">
                   <label class="bidd-lab" :for="`bidd-bid-${si}`">입찰가</label>
                   <FormattedNumberInput :id="`bidd-bid-${si}`" v-model="sc.bid.myBidValue" class="bidd-big" live-group />
@@ -6877,42 +6894,42 @@ const goBack = () => router.back();
               <!-- 비용 — 예전 표처럼 항목 · 비중 · 금액을 한 줄씩 -->
               <section class="bidd-card">
                 <div class="bidd-hrow"><h3 class="bidd-h">비용</h3><span class="bidd-hint">비중 · 금액 칸을 눌러 고칩니다</span></div>
-                <div class="bidd-row head"><span></span><span>항목</span><span>비중</span><span>금액</span></div>
+                <div class="bidd-row head"><span></span><span>항목</span><span>비중</span><span>금액</span><span></span></div>
                 <div class="bidd-row loan">
                   <span class="no"></span><span class="k">대출(사업자)</span>
                   <span class="bidd-pct"><input :value="pctShow(`cLoan-${si}`, scPctOfBid(sc, sc.cost.loanAmount))" inputmode="decimal" aria-label="대출 비중" @blur="pctDone()" @input="pctType(`cLoan-${si}`, $event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span>
-                  <FormattedNumberInput v-model="sc.cost.loanAmount" class="bidd-amt" live-group />
+                  <FormattedNumberInput v-model="sc.cost.loanAmount" class="bidd-amt" live-group /><span class="bidd-wn">원</span>
                 </div>
                 <div class="bidd-row">
                   <span class="no">①</span><span class="k">취득세</span>
                   <span class="bidd-pct"><input :value="pctShow(`cAcq-${si}`, scPctOfBid(sc, sc.cost.acquisitionTaxAmount))" inputmode="decimal" aria-label="취득세 비중" @blur="pctDone()" @input="pctType(`cAcq-${si}`, $event); scSetAmountByPct(sc, 'acquisitionTaxAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span>
-                  <FormattedNumberInput v-model="sc.cost.acquisitionTaxAmount" class="bidd-amt" live-group @update:model-value="scSyncAcqRate(sc)" />
+                  <FormattedNumberInput v-model="sc.cost.acquisitionTaxAmount" class="bidd-amt" live-group @update:model-value="scSyncAcqRate(sc)" /><span class="bidd-wn">원</span>
                 </div>
                 <div class="bidd-row">
                   <span class="no">②</span><span class="k">법무비 · 채권</span>
                   <span class="bidd-pct"><input :value="pctShow(`cLegal-${si}`, scPctOfBid(sc, sc.cost.legalCostAmount))" inputmode="decimal" aria-label="법무비 비중" @blur="pctDone()" @input="pctType(`cLegal-${si}`, $event); scSetLegalPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span>
-                  <b class="bidd-ro">{{ formatMoney(sc.cost.legalCostAmount) }}</b>
+                  <b class="bidd-ro">{{ formatMoney(sc.cost.legalCostAmount) }}</b><span class="bidd-wn">원</span>
                 </div>
                 <div class="bidd-row">
                   <span class="no">③</span><span class="k">중도상환</span>
                   <span class="bidd-pct"><input :value="pctShow(`cMid-${si}`, scRowPct(sc, RATE_ROWS[0]))" inputmode="decimal" aria-label="중도상환 비율" @blur="pctDone()" @input="pctType(`cMid-${si}`, $event); scSetRowPct(sc, RATE_ROWS[0], ($event.target as HTMLInputElement).value)" /><i>%</i></span>
-                  <FormattedNumberInput v-model="sc.cost.midRepaymentAmount" class="bidd-amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" />
+                  <FormattedNumberInput v-model="sc.cost.midRepaymentAmount" class="bidd-amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[0])" /><span class="bidd-wn">원</span>
                 </div>
                 <div class="bidd-row">
                   <span class="no">④</span><span class="k">이자(3개월)</span>
                   <span class="bidd-pct"><input :value="pctShow(`cInt-${si}`, scRowPct(sc, RATE_ROWS[1]))" inputmode="decimal" aria-label="이자율" @blur="pctDone()" @input="pctType(`cInt-${si}`, $event); scSetRowPct(sc, RATE_ROWS[1], ($event.target as HTMLInputElement).value)" /><i>%</i></span>
-                  <FormattedNumberInput v-model="sc.cost.interestAmount" class="bidd-amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" />
+                  <FormattedNumberInput v-model="sc.cost.interestAmount" class="bidd-amt" live-group @update:model-value="scSyncRowRate(sc, RATE_ROWS[1])" /><span class="bidd-wn">원</span>
                 </div>
                 <div class="bidd-row">
                   <span class="no">⑤</span><span class="k">매도중개료</span>
                   <span class="bidd-pct"><input :value="pctShow(`cBrk-${si}`, scRowPct(sc, RATE_ROWS[2]))" inputmode="decimal" aria-label="매도중개료율" @blur="pctDone()" @input="pctType(`cBrk-${si}`, $event); scSetRowPct(sc, RATE_ROWS[2], ($event.target as HTMLInputElement).value)" /><i>%</i></span>
-                  <b class="bidd-ro">{{ formatMoney(sc.cost.brokerageAmount) }}</b>
+                  <b class="bidd-ro">{{ formatMoney(sc.cost.brokerageAmount) }}</b><span class="bidd-wn">원</span>
                 </div>
-                <div class="bidd-row"><span class="no">⑥</span><span class="k">미납관리비</span><span class="bidd-dash">-</span><FormattedNumberInput v-model="sc.cost.arrearsFee" class="bidd-amt" live-group /></div>
-                <div class="bidd-row"><span class="no">⑦</span><span class="k">수리비</span><span class="bidd-dash">-</span><FormattedNumberInput v-model="sc.cost.repairCost" class="bidd-amt" live-group /></div>
-                <div class="bidd-row"><span class="no">⑧</span><span class="k">명도비</span><span class="bidd-dash">-</span><FormattedNumberInput v-model="sc.cost.evictionCost" class="bidd-amt" live-group /></div>
-                <div class="bidd-row last"><span class="no">⑨</span><span class="k">광고비<small>원천징수 3.3% 포함</small></span><span class="bidd-dash">-</span><FormattedNumberInput v-model="sc.cost.advertisingCost" class="bidd-amt" live-group /></div>
-                <div class="bidd-sum"><span>필요경비합계</span><em>①~⑨</em><b>{{ formatMoney(scTotalCosts(sc)) }}</b></div>
+                <div class="bidd-row"><span class="no">⑥</span><span class="k">미납관리비</span><span class="bidd-dash">-</span><FormattedNumberInput v-model="sc.cost.arrearsFee" class="bidd-amt" live-group /><span class="bidd-wn">원</span></div>
+                <div class="bidd-row"><span class="no">⑦</span><span class="k">수리비</span><span class="bidd-dash">-</span><FormattedNumberInput v-model="sc.cost.repairCost" class="bidd-amt" live-group /><span class="bidd-wn">원</span></div>
+                <div class="bidd-row"><span class="no">⑧</span><span class="k">명도비</span><span class="bidd-dash">-</span><FormattedNumberInput v-model="sc.cost.evictionCost" class="bidd-amt" live-group /><span class="bidd-wn">원</span></div>
+                <div class="bidd-row last"><span class="no">⑨</span><span class="k">광고비<small>원천징수 3.3% 포함</small></span><span class="bidd-dash">-</span><FormattedNumberInput v-model="sc.cost.advertisingCost" class="bidd-amt" live-group /><span class="bidd-wn">원</span></div>
+                <div class="bidd-sum"><span>필요경비합계</span><em>①~⑨</em><b>{{ formatMoney(scTotalCosts(sc)) }}</b><span class="bidd-wn sum">원</span></div>
               </section>
 
               <section class="bidd-card">
@@ -6925,11 +6942,12 @@ const goBack = () => router.back();
                 <div class="bidd-big-row sub">
                   <label class="bidd-lab" :for="`bidd-alt-${si}`">입금가</label>
                   <input :id="`bidd-alt-${si}`" :value="scSaleAlt(sc)" class="bidd-note" placeholder="메모 칸 — 계산에 안 들어갑니다" @input="scSetSaleAlt(sc, ($event.target as HTMLInputElement).value)" />
+                  <span class="bidd-won">원</span>
                 </div>
               </section>
             </div>
 
-            <div class="bidd-right" :style="biddTop ? { top: `${biddTop}px`, maxHeight: `calc(100vh - ${biddTop}px - 16px)` } : undefined">
+            <div class="bidd-right" :style="biddTop ? { top: `${biddTop}px`, maxHeight: `${biddMaxH}px` } : undefined">
               <div class="bidd-tabs" role="tablist">
                 <button
                   v-for="(label, ti) in PROFIT_NAV_LABELS"
@@ -13007,15 +13025,15 @@ select.adp-pub-input option { text-align: center; }
 .bidd-left { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .bidd-card { padding: 18px 22px; background: #fff; border: 1px solid #e5e9f2; border-radius: 14px; }
 .bidd-h { margin: 0 0 12px; font-size: 16px; font-weight: 800; color: #111827; }
-.bidd-hrow { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.bidd-hrow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .bidd-hrow .bidd-h { margin: 0; }
-.bidd-tag { padding: 2px 8px; border-radius: 6px; background: #1f2a44; color: #fff; font-size: 12px; font-weight: 700; }
+.bidd-acts { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
 .bidd-hint { margin-left: auto; font-size: 12px; color: #6b7280; }
 .bidd-big-row { display: flex; align-items: center; gap: 10px; }
 .bidd-big-row.sub { margin-top: 8px; }
 .bidd-lab { flex: none; width: 76px; font-size: 14px; font-weight: 700; color: #111827; }
 .bidd-big-row.sub .bidd-lab { font-weight: 400; color: #4b5563; }
-.bidd-won { flex: none; font-size: 15px; font-weight: 700; color: #374151; }
+.bidd-won { flex: none; width: 20px; font-size: 15px; font-weight: 700; color: #374151; text-align: right; }   /* 원 칸 폭을 비용 줄과 같게 — 값 칸 오른쪽 끝이 한 줄로 선다 */
 .bidd :deep(.bidd-big) { flex: 1; min-width: 0; box-sizing: border-box; height: 48px; padding: 0 14px; border: 2px solid #2b6df3; border-radius: 10px; background: #fff; font-family: inherit; font-size: 20px; font-weight: 800; color: #1f2a44; text-align: right; }
 .bidd :deep(.bidd-big.sale) { height: 44px; border: 1px solid #d5dbe6; font-size: 18px; color: #111827; }
 .bidd :deep(.bidd-big:focus) { outline: none; border-color: #2b6df3; box-shadow: 0 0 0 3px rgba(43, 109, 243, .15); }
@@ -13029,7 +13047,7 @@ select.adp-pub-input option { text-align: center; }
 .bidd-minis > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid #e5e9f2; border-radius: 10px; }
 .bidd-minis span { font-size: 12px; color: #6b7280; }
 .bidd-minis b { font-size: 15px; font-weight: 800; color: #111827; }
-.bidd-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) 84px 150px; align-items: center; column-gap: 8px; min-height: 38px; border-bottom: 1px solid #f0f2f7; font-size: 14px; color: #111827; }
+.bidd-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) 84px 150px 22px; align-items: center; column-gap: 8px; min-height: 38px; border-bottom: 1px solid #f0f2f7; font-size: 14px; color: #111827; }
 .bidd-row.last { border-bottom: 0; }
 .bidd-row.head { min-height: 30px; border-bottom-color: #e5e9f2; font-size: 12px; color: #6b7280; }
 .bidd-row.head span:nth-child(n+3) { justify-self: end; }
@@ -13041,6 +13059,8 @@ select.adp-pub-input option { text-align: center; }
 .bidd-pct input { width: 60px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; background: #f7f9ff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; text-align: right; }
 .bidd-pct input:focus { outline: none; border-color: #2b6df3; background: #fff; }
 .bidd-pct i { font-style: normal; font-size: 12px; color: #6b7280; }
+.bidd-wn { justify-self: end; font-size: 14px; font-weight: 700; color: #374151; }
+.bidd-wn.sum { margin-left: 4px; font-size: 15px; color: #854d0e; }
 .bidd-dash { justify-self: end; padding-right: 14px; font-size: 13px; color: #9aa3b2; }
 .bidd :deep(.bidd-amt) { justify-self: end; width: 150px; box-sizing: border-box; height: 28px; padding: 0 4px; border: 0; border-bottom: 1px dashed #d5dbe6; border-radius: 0; background: transparent; font-family: inherit; font-size: 14px; font-weight: 700; color: #111827; text-align: right; }
 .bidd :deep(.bidd-amt:focus) { outline: none; border-bottom: 1px solid #2b6df3; }
