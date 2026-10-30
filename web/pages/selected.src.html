@@ -401,7 +401,7 @@ button { cursor: pointer; }
 .adm-case-in .res-pub { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: #374151; }
 .adm-case-in .res-pub b { font-size: 15px; font-weight: 800; color: #111827; }
 .adm-case-in .res-pub em { font-style: normal; font-size: 12px; color: #6b7280; }
-.adm-case-in .res-hint { margin: 8px 2px 0; text-align: right; font-size: 12px; color: #6b7280; }   /* 표 아래 오른쪽 안내 */
+.adm-case-in .res-head .res-hint { margin-left: auto !important; font-size: 12px; color: #6b7280; }   /* 표 위 오른쪽 안내 — 제목 줄 끝 */
 .adm-case-in .res-table { table-layout: fixed !important; width: 100% !important; }
 .adm-case-in .adm-case-block.res > .adm-table-wrap { margin-left: 0 !important; margin-right: 0 !important; overflow: visible !important; }   /* 말풍선이 표 상자에 잘리지 않게 */
 .adm-case-in .res-table thead th:first-child { border-top-left-radius: 8px; } .adm-case-in .res-table thead th:last-child { border-top-right-radius: 8px; }
@@ -478,12 +478,26 @@ button { cursor: pointer; }
 .app-market[data-s="son"] .adp-dm-body > :is(.adp-dm-head.sec2, .adp-dm-block, .adp-dm-block.boxed) { padding-left: 14px !important; padding-right: 14px !important; }
 .app-market[data-s="son"] .adp-dm-body > .adp-dm-head.sec2 { padding-top: 16px !important; }
 /* 손품분석 시세조사 — 수요분석과 같은 선: 흰 카드는 머리 카드 양끝(160~1440), 안쪽 상자는 25 들어가(185~1415), 상자 안 여백 18 */
-.app-market[data-s="son"] .son-price .adm-case-card { padding-left: 24px !important; padding-right: 24px !important; }
-.app-market[data-s="son"] .son-price :is(.adm-case-block, .adm-case-tail) { padding-left: 18px !important; padding-right: 18px !important; }
+/* 시세조사 카드(손품분석 · 지역분석) — 수요분석과 같은 선: 상자 176~1424(카드 안쪽 15 + 테두리 1), 상자 안쪽 14, 아래 16 */
+.adm-case-in .adm-case-card { padding-left: 15px !important; padding-right: 15px !important; padding-bottom: 16px !important; }
+.adm-case-in :is(.adm-case-block, .adm-case-tail) { padding-left: 14px !important; padding-right: 14px !important; }
+.app-market[data-s="son"] .son-price .adm-sise-head { padding-left: 0 !important; padding-right: 0 !important; }
 /* 손품분석 시세조사 세로 간격 — 수요분석 카드와 같게: 카드 위 끝 → 제목 15, 제목 → 첫 상자 16 */
 .app-market[data-s="son"] .son-price .adm-sise-head { padding-top: 10px !important; padding-bottom: 0 !important; }
 .app-market[data-s="son"] .son-price .adm-case-block.res { margin-top: 16px !important; }
 #sonNaverSlot .adp-salecase-table :is(th, td) { text-align: center; }   /* 매각사례 빈 표 — 가운데 정렬 */
+/* 시세조사 아래 카드(네이버 매물조사 · 매각사례 · 부동산 유선상담) — 위 시세조사 카드와 같은 짜임:
+   제목은 아이콘 + 16px, 카드 위 끝 → 첫 제목 15, 제목 → 상자 16, 상자 → 다음 제목 16, 상자 176~1424 */
+#sonNaverSlot .adp-card { margin-top: 0 !important; }
+#sonNaverSlot .adp-mkt-body { padding-top: 9px !important; padding-bottom: 16px !important; }   /* 카드 위 4 + 9 + 제목 줄 안 2 = 15 */
+#sonNaverSlot .adp-mkt-body > .adp-dm-head:first-child { margin-top: 0 !important; }
+#sonNaverSlot .adp-dm-head { margin: 0 0 16px !important; padding: 0 !important; min-height: 0 !important; border: 0 !important; }
+#sonNaverSlot .adp-dm-head.sec2 { margin-top: 16px !important; }
+#sonNaverSlot .adp-dm-title { display: inline-flex; align-items: center; padding: 0 !important; font-size: 16px !important; font-weight: 800 !important; color: #111827; line-height: 23px; }
+#sonNaverSlot .son-h-ico { flex: none; margin-right: 6px; color: #2b6df3; }
+#sonNaverSlot :is(.adp-mkt-block, .adp-sub-block) { margin: 0 !important; }
+#sonNaverSlot .adp-mkt-block + .adp-mkt-block { margin-top: 16px !important; }
+#sonNaverSlot .son-salecase .adp-table-wrap + .adp-mkt-block-head { margin-top: 16px; }
 #sonHead .ih-fold { display: none; }
 #sonShell[hidden] { display: none !important; }
 /* 업데이트 칩 — 제목 줄 오른쪽 끝, 아래 칸들의 오른쪽 끝선에 맞춘다 */

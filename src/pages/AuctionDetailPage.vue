@@ -3967,9 +3967,9 @@ const lowAddrTyped = (index: number) => !!mktVal(lowKey(index, 'addr')).trim();
 /** 손품분석(웹 시장분석) — 경매빌라 · 유사빌라 매물호가를 알약 없이 둘 다 펼친다.
  *  저장 자리는 알약과 같다(경매 mkt.c.* · 유사 mkt.c.sim.*). 유사 줄 수는 따로 센다(없으면 예전 공용 줄 수) */
 /** 손품분석 매각사례 — ① 같은 번지에서 팔린 물건 ② 인근 매각물건. 받는 곳을 붙이기 전까지 빈 표 */
-const SALE_CASES = [{ key: 'lot', label: '① 동일지번 매각물건' }, { key: 'near', label: '② 인근 매각물건 분석' }];
+const SALE_CASES = [{ key: 'lot', label: '동일지번 매각물건' }, { key: 'near', label: '인근 매각물건 분석' }];
 const nearSaleRegion = computed(() => [auction.value?.address?.split(' ').slice(0, 3).join(' ') ?? '', auction.value?.propertyType ?? ''].filter(Boolean).join(' '));
-const LOW_GROUPS = [{ sim: false, label: '① 경매빌라 매물호가' }, { sim: true, label: '② 유사빌라 매물호가' }];
+const LOW_GROUPS = [{ sim: false, label: '경매빌라 매물호가' }, { sim: true, label: '유사빌라 매물호가' }];
 const lowKeyG = (sim: boolean, index: number, field: string) => `mkt.c.${sim ? 'sim.' : ''}${index === 0 ? field : `${field}${index}`}`;
 const lowCountKey = (sim: boolean) => (sim ? 'mkt.c.sim.rowCount' : 'mkt.c.rowCount');
 const lowRowCountG = (sim: boolean) => {
@@ -8546,8 +8546,8 @@ const goBack = () => router.back();
         <!-- 실거래가 조사 — 손품분석에서는 이 카드의 네이버 매물조사만 시세조사 탭 아래(#sonNaverSlot)로 옮겨 보인다 -->
         <Teleport defer to="#sonNaverSlot" :disabled="!sonpumMode">
         <section class="adp-card">
-          <header class="adp-card-head adp-survey-head" @click="toggleSection('survPrice')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>{{ sonpumMode ? '손품조사' : '시세조사' }}</h2>
+          <header v-if="!sonpumMode" class="adp-card-head adp-survey-head" @click="toggleSection('survPrice')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg>시세조사</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('survPrice') }]" alt="" />
           </header>
           <div v-if="sonpumMode || !isCollapsed('survPrice')" class="adp-mkt-body">
@@ -8710,7 +8710,7 @@ const goBack = () => router.back();
 
             </template>
             <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title">{{ sonpumMode ? '1. 네이버 매물조사' : '2. 네이버 매물조사' }} <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
+              <strong class="adp-dm-title"><template v-if="sonpumMode"><svg class="son-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>네이버 매물조사</template><template v-else>2. 네이버 매물조사</template> <span class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('cheap', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('cheap', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'cheap'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">유사 입지·개별성 필터 적용 (네부)</span></span></strong>
               <button v-if="!editingSurvey.listing" class="adp-edit-btn" type="button" @click.stop="editingSurvey.listing = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
               <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('listing')">완료</button>
             </div>
@@ -8860,23 +8860,26 @@ const goBack = () => router.back();
             <!-- 손품분석 — 2. 매각사례(① 동일지번 매각물건 · ② 인근 매각물건 분석). 아직 받는 곳이 없어 빈 표로 둔다 -->
             <template v-if="sonpumMode">
               <div class="adp-dm-head sec2">
-                <strong class="adp-dm-title">2. 매각사례</strong>
+                <strong class="adp-dm-title"><svg class="son-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>매각사례</strong>
               </div>
-              <div v-for="sc in SALE_CASES" :key="sc.key" class="adp-mkt-block">
-                <div class="adp-mkt-block-head">
-                  <span class="t">{{ sc.label }} <span class="adp-dm-addr">{{ sc.key === 'lot' ? lotWithBuildingAddress : nearSaleRegion }}</span></span>
-                </div>
-                <div class="adp-table-wrap">
-                  <table class="adp-table adp-salecase-table">
-                    <thead><tr><th>사건번호</th><th>매각기일</th><th>감정가</th><th>매각가</th><th>매각가율</th><th>전용(㎡/평)</th><th>층</th><th>비고</th></tr></thead>
-                    <tbody><tr v-for="r in 3" :key="r"><td v-for="c in 8" :key="c">-</td></tr></tbody>
-                  </table>
-                </div>
+              <!-- 동일지번 · 인근 두 표를 상자 하나에 -->
+              <div class="adp-mkt-block son-salecase">
+                <template v-for="sc in SALE_CASES" :key="sc.key">
+                  <div class="adp-mkt-block-head">
+                    <span class="t">{{ sc.label }} <span class="adp-dm-addr">{{ sc.key === 'lot' ? lotWithBuildingAddress : nearSaleRegion }}</span></span>
+                  </div>
+                  <div class="adp-table-wrap">
+                    <table class="adp-table adp-salecase-table">
+                      <thead><tr><th>사건번호</th><th>매각기일</th><th>감정가</th><th>매각가</th><th>매각가율</th><th>전용(㎡/평)</th><th>층</th><th>비고</th></tr></thead>
+                      <tbody><tr v-for="r in 3" :key="r"><td v-for="c in 8" :key="c">-</td></tr></tbody>
+                    </table>
+                  </div>
+                </template>
               </div>
             </template>
             <!-- 4. 부동산 유선 상담 — 한 업체를 두 줄로 나눠 가로 스크롤 없이 담는다(손품분석은 3번) -->
             <div class="adp-dm-head sec2">
-              <strong class="adp-dm-title">{{ sonpumMode ? '3. 부동산 유선상담' : '4. 부동산 유선 상담' }}</strong>
+              <strong class="adp-dm-title"><template v-if="sonpumMode"><svg class="son-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" /></svg>부동산 유선상담</template><template v-else>4. 부동산 유선 상담</template></strong>
               <button type="button" class="adp-mkt-addrow agency-book" title="중개업체 관리" @click="agencyBookOpen = true">＋ 업체</button>
               <span class="adp-mkt-step">
                 <span class="lab">행</span>

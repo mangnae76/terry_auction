@@ -1119,6 +1119,7 @@ const downloadCsv = () => {
           <div class="res-head">
             <strong class="list-title">시세종합</strong>
             <span class="res-pub"><InfoTip :rows="pubTip">{{ preset ? '경매물건' : '검색 주소' }} 공동주택가</InfoTip><b><UnitText :text="won(pubValue)" suffix="원" /></b><em v-if="price">{{ price.year }}.01.01 기준</em></span>
+            <span class="res-hint">표의 셀을 선택하면 분석 영역으로 넘어갑니다</span>
           </div>
           <div class="adm-table-wrap">
             <table class="adm-table res-table">
@@ -1170,7 +1171,6 @@ const downloadCsv = () => {
               </tbody>
             </table>
           </div>
-          <p class="res-hint">표의 셀을 선택하면 분석 영역으로 넘어갑니다</p>
         </section>
         <div v-else class="adm-kpis grid4 case-grid">
           <div class="adm-kpi green">
