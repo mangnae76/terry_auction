@@ -1251,7 +1251,7 @@ const downloadCsv = () => {
         </div>
         </template>
         <!-- ② 실거래가 조건분석 그룹 — 자기 조건(면적 · 건축년도 · 계약일)과 그 조건의 같은 동 매매 리스트. ① 고르기와 필터를 같이 쓰지 않는다 -->
-        <!-- ③ 조건분석 — 같은 동 조건 매매 평균. 평균 · 면적범위 · 사용승인 · 거래기간은 위 시세 결과 표 ③ 줄에 -->
+        <!-- ③ 조건분석 — 같은 동 조건 매매 평균. 평균 · 면적범위 · 사용승인 · 거래기간은 위 시세종합 표 ③ 줄에 -->
         <section v-if="webEmbed && dongRows.length > 0 && tool === 'cond'" class="adm-case-tail cond">
           <TradeRangeFilter v-model="condF" :month-choices="[3, 6, 12]" class="adm-trf">
             <button type="button" class="adm-ghost" @click="resetCond">초기화</button>
