@@ -1287,6 +1287,12 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 제목 앞 아이콘 — 내 정보 카드의 아이콘과 같은 것 · 같은 상자 */
 .app-page[data-k="more"] :is(.trs-title, .agb-title, .cal-title, .ivp-title, .tr-title, .bil-title, .pay-title, .ph-title, .prf-title, .wd-title)::before { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9px; background: #eef2fc; font-size: 16px; }
 .app-page[data-k="more"] .agb-title::before { content: '🏢'; }
+/* 중개업체 관리 — '중개업체 리스트' 제목을 업체 추가 줄 왼쪽에, 그 옆에 '4곳'(따로 있던 제목 줄은 걷는다) */
+.app-page[data-k="more"] .agb-shell .agb-list-head { display: none !important; }
+.app-page[data-k="more"] .agb-shell .agb-note { margin: 0 0 16px !important; }   /* 안내 상자 양끝을 아래 목록 줄과 맞춘다 */
+.app-page[data-k="more"] .agb-shell .agb-tools { gap: 8px !important; margin-bottom: 12px; }
+.app-page[data-k="more"] .agb-shell .agb-tools::before { content: '중개업체 리스트'; font-size: 16px; font-weight: 800; color: var(--text); white-space: nowrap; }
+.app-page[data-k="more"] .agb-shell .agb-eyebrow { font-size: 14px !important; }
 .app-page[data-k="more"] .cal-title::before { content: '📅'; }
 .app-page[data-k="more"] .ivp-title::before { content: '🛠️'; }
 .app-page[data-k="more"] .tr-title::before { content: '🎁'; }
