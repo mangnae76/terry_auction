@@ -6895,7 +6895,7 @@ const goBack = () => router.back();
               <div class="bida-kpi">
                 <span class="lab">입찰가</span>
                 <strong>{{ formatMoney(scBid(sc)) }}<small>원</small></strong>
-                <span class="sub">감정가의 {{ formatPct(scBidPct(sc)) }}<template v-if="auction.metrics.minimumBidValue > 0"> · 최저가 대비 {{ formatPct((scBid(sc) / auction.metrics.minimumBidValue) * 100) }}</template></span>
+                <span class="sub">감정가의 {{ formatPct(scBidPct(sc)) }}</span>
               </div>
               <div class="bida-kpi">
                 <span class="lab">실투자금</span>
@@ -6920,11 +6920,11 @@ const goBack = () => router.back();
                   <h3 class="bida-h">입찰정보</h3>
                   <div class="bida-row"><span class="k">감정가</span><b>{{ cashMoney(apprValue) }}</b></div>
                   <div class="bida-row"><span class="k">{{ auction.auctionRound ? `최저가(${auction.auctionRound})` : '최저가' }}</span><b>{{ cashMoney(auction.metrics.minimumBidValue) }}</b></div>
-                  <div class="bida-row"><span class="k">보증금</span><span class="bida-chip">10%</span><b>{{ cashMoney(bidDeposit) }}</b></div>
+                  <div class="bida-row"><span class="k">보증금</span><span class="bida-pct"><span class="bida-chip">10</span><i>%</i></span><b>{{ cashMoney(bidDeposit) }}</b></div>
                   <div class="bida-hi bid">
                     <div class="top">
                       <label class="k" :for="`bida-bid-${si}`">입찰가</label>
-                      <span class="bida-chip on">{{ formatPct(scBidPct(sc)) }}</span>
+                      <span class="bida-pct"><span class="bida-chip on">{{ scBidPct(sc).toFixed(2) }}</span><i>%</i></span>
                       <FormattedNumberInput :id="`bida-bid-${si}`" v-model="sc.bid.myBidValue" class="bida-in big" live-group />
                       <span class="won">원</span>
                     </div>
@@ -6961,12 +6961,14 @@ const goBack = () => router.back();
                   <div class="bida-row"><span class="k">사업소득금액</span><span class="f">매도가 − 입찰가 − 비용</span><b :class="{ neg: scGain(sc) < 0 }">{{ cashMoney(scGain(sc)) }}</b></div>
                   <div class="bida-row">
                     <span class="k">사업소득세</span>
-                    <span class="f">과세표준<span class="bida-pct"><input :value="scTaxRate(sc)" inputmode="decimal" aria-label="사업소득세율" @input="limitPct($event); scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span>− 공제<span class="bida-pct"><input :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" aria-label="누진공제(만원)" @input="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" /><i>만</i></span></span>
+                    <span class="f">공제<span class="bida-pct sm"><input :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" aria-label="누진공제(만원)" @input="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" /><i>만</i></span></span>
+                    <span class="bida-pct"><input :value="scTaxRate(sc)" inputmode="decimal" aria-label="사업소득세율" @input="limitPct($event); scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span>
                     <b>{{ cashMoney(scTransferTax(sc)) }}</b>
                   </div>
                   <div class="bida-row last">
                     <span class="k">지방세</span>
-                    <span class="f">소득세의<span class="bida-pct"><input :value="String(scLocalTaxRate(sc))" inputmode="decimal" aria-label="지방세율" @input="limitPct($event); scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span></span>
+                    <span class="f">소득세의</span>
+                    <span class="bida-pct"><input :value="String(scLocalTaxRate(sc))" inputmode="decimal" aria-label="지방세율" @input="limitPct($event); scSetLocalTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span>
                     <b>{{ cashMoney(scLocalTax(sc)) }}</b>
                   </div>
                   <div class="bida-net">
@@ -13067,7 +13069,8 @@ select.adp-pub-input option { text-align: center; }
 .adp-view-seg button { height: 28px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; font-family: inherit; font-size: 13px; font-weight: 600; color: #4b5563; cursor: pointer; }
 .adp-view-seg button.on { background: #fff; color: #1f2a44; font-weight: 800; box-shadow: 0 1px 2px rgba(15, 23, 42, .12); }
 /* 웹 입찰가산정 A안 — 요약 카드 넷 + 묶음 목록 */
-.bida { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.bida { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; font-variant-numeric: tabular-nums; }   /* 숫자 폭을 고르게 — 끌어서 값이 바뀌어도 칸이 들썩이지 않게 */
+.bida-kpi .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* 설명은 한 줄 — 두 줄로 꺾이면 카드 높이가 오르내렸다 */
 .bida-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .bida-kpi { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 20px 22px; background: #fff; border: 1px solid #e5e9f2; border-radius: 14px; }
 .bida-kpi .lab, .bida-kpi .sub { font-size: 14px; color: #4b5563; }
@@ -13092,19 +13095,23 @@ select.adp-pub-input option { text-align: center; }
 .bida-row .k { flex: none; color: #374151; }
 .bida-row .no { flex: none; width: 22px; font-size: 13px; font-weight: 700; color: #9aa3b2; }
 .bida-row .f { display: inline-flex; align-items: center; gap: 4px; min-width: 0; font-size: 13px; color: #6b7280; }
-.bida-row > b { margin-left: auto; font-weight: 700; color: #111827; white-space: nowrap; }
+.bida-row > b { margin-left: auto; min-width: 200px; text-align: right; font-weight: 700; color: #111827; white-space: nowrap; }
 .bida-row > b.neg, .bida-net b.neg { color: #d64545; }
 .bida-row .won { margin-left: -9px; }
-.bida-row .won, .bida-hi .won { flex: none; font-size: 15px; font-weight: 700; color: #374151; }
-.bida-chip { flex: none; padding: 2px 8px; border-radius: 6px; background: #eef3ff; color: #2b6df3; font-size: 13px; font-weight: 700; }
+.bida-hi .won { margin-left: -9px; }
+.bida-row .won, .bida-hi .won { flex: none; width: 15px; text-align: right; font-size: 15px; font-weight: 700; color: #374151; }
+.bida-chip { display: inline-block; width: 64px; height: 26px; line-height: 26px; box-sizing: border-box; padding: 0 6px; border-radius: 6px; background: #eef3ff; color: #2b6df3; font-size: 16px; font-weight: 700; text-align: right; }   /* 옆 입력칸 % 글자(16)와 같게 */
 .bida-chip.on { background: #2b6df3; color: #fff; }
-.bida :deep(.bida-in) { margin-left: auto; width: 150px; box-sizing: border-box; height: 34px; padding: 0 2px; border: 0; border-bottom: 1px dashed #d5dbe6; border-radius: 0; background: transparent; font-family: inherit; font-size: 15px; font-weight: 700; color: #111827; text-align: right; }
+.bida :deep(.bida-in) { margin-left: auto; width: 184px; box-sizing: border-box; height: 34px; padding: 0 2px; border: 0; border-bottom: 1px dashed #d5dbe6; border-radius: 0; background: transparent; font-family: inherit; font-size: 15px; font-weight: 700; color: #111827; text-align: right; }
 .bida :deep(.bida-in:focus) { outline: none; border-bottom: 1px solid #2b6df3; }
-.bida-row .bida-pct + :deep(.bida-in), .bida-row .f + :deep(.bida-in) { margin-left: auto; }
-.bida-pct { flex: none; display: inline-flex; align-items: center; gap: 2px; }
-.bida-pct input { width: 52px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; background: #f7f9ff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; text-align: right; }
+/* % 칸은 오른쪽 금액 칸(200) 바로 왼쪽 한 세로줄 — 입찰정보 · 수익 · 비용 모두 같은 자리 */
+.bida-row .bida-pct + :deep(.bida-in), .bida-hi .bida-pct + :deep(.bida-in), .bida-row .bida-pct + b { margin-left: 0; }
+.bida-pct { flex: none; margin-left: auto; display: inline-flex; align-items: center; gap: 2px; }
+.bida-row .f .bida-pct { margin-left: 2px; }
+.bida-pct.sm input { width: 52px; }
+.bida-pct input { width: 64px; height: 26px; box-sizing: border-box; padding: 0 6px; border: 1px solid #e3e8f0; border-radius: 6px; background: #f7f9ff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; text-align: right; }
 .bida-pct input:focus { outline: none; border-color: #2b6df3; background: #fff; }
-.bida-pct i { font-style: normal; font-size: 13px; color: #6b7280; }
+.bida-pct i { width: 12px; font-style: normal; font-size: 13px; color: #6b7280; }
 .bida-note { margin-left: auto; flex: 1; min-width: 0; max-width: 360px; box-sizing: border-box; height: 34px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 8px; font-family: inherit; font-size: 14px; color: #111827; }
 .bida-note:focus { outline: none; border-color: #2b6df3; }
 .bida-hi { margin: 8px 0; padding: 10px 14px; border-radius: 10px; }
@@ -13113,7 +13120,7 @@ select.adp-pub-input option { text-align: center; }
 .bida-hi .top { display: flex; align-items: center; gap: 10px; min-height: 40px; }
 .bida-hi .k { font-size: 15px; font-weight: 800; color: #1f2a44; }
 .bida-hi.sale .k, .bida-hi.sale .won { color: #9a3412; }
-.bida-hi :deep(.bida-in.big) { width: 200px; height: 40px; padding: 0 12px; border: 1px solid #c9d8fb; border-radius: 8px; background: #fff; font-size: 17px; font-weight: 800; color: #1f2a44; }
+.bida-hi :deep(.bida-in.big) { width: 169px; height: 40px; padding: 0 12px; border: 1px solid #c9d8fb; border-radius: 8px; background: #fff; font-size: 17px; font-weight: 800; color: #1f2a44; }
 .bida-hi.sale :deep(.bida-in.big) { border-color: #f6d5cf; color: #9a3412; }
 .bida-hi :deep(.bida-in.big:focus) { border: 1px solid #2b6df3; box-shadow: 0 0 0 3px rgba(43, 109, 243, .15); }
 .bida-slide { margin-top: 10px; }
