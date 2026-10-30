@@ -427,6 +427,14 @@ button { cursor: pointer; }
 .adm-case-in .res-table td.res-pair.res-span { font-weight: 400; }   /* ③ 두 줄이 같이 쓰는 조건(전용 범위 · 거래기간) — 굵게 하지 않는다 */
 .adm-case-in .res-table .res-empty { color: #9ca3af; font-weight: 400; font-size: 13px !important; }
 .adm-case-in .res-table td.res-note { color: #dc2626; font-size: 13px !important; }   /* 비어 있는 줄 — 어디서 고르면 되는지 */
+/* 도구 탭(①~④)을 고르면 시세종합의 그 짝 두 줄을 파란 테두리로 감싼다 — 지금 어느 값을 손보는지 */
+.adm-case-in .res-table tr.cur.pt td { box-shadow: inset 0 2px 0 #2b6df3; }
+.adm-case-in .res-table tr.cur.pt td:first-child { box-shadow: inset 2px 0 0 #2b6df3, inset 0 2px 0 #2b6df3; }
+.adm-case-in .res-table tr.cur.pt td:last-child { box-shadow: inset -2px 0 0 #2b6df3, inset 0 2px 0 #2b6df3; }
+.adm-case-in .res-table tr.cur.pt td[rowspan] { box-shadow: inset 0 2px 0 #2b6df3, inset 0 -2px 0 #2b6df3; }
+.adm-case-in .res-table tr.cur.pb td { box-shadow: inset 0 -2px 0 #2b6df3; }
+.adm-case-in .res-table tr.cur.pb td:first-child { box-shadow: inset 2px 0 0 #2b6df3, inset 0 -2px 0 #2b6df3; }
+.adm-case-in .res-table tr.cur.pb td:last-child { box-shadow: inset -2px 0 0 #2b6df3, inset 0 -2px 0 #2b6df3; }
 .adm-case-in .res-dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #d1d5db; vertical-align: middle; }
 .adm-case-in tr.has .res-dot { background: #22c55e; box-shadow: 0 0 0 2px rgba(34, 197, 94, .18), 0 0 6px 1px rgba(34, 197, 94, .6); }   /* 값이 들어간 줄은 초록 점(켜짐), 비면 회색 점 — 줄 색은 칠하지 않는다 */
 /* 머리 줄 툴팁 — 이름 · ⓘ 를 흐리지 않게 */

@@ -3,7 +3,7 @@
 //
 // 예전에는 두 곳에 같은 마크업이 복사돼 있어, 한쪽만 고치면 서로 어긋났다.
 // 칸 구성·안내글·삭제 버튼을 여기 한곳에서만 고치면 두 화면이 같이 바뀐다.
-import { onMounted, ref, watch } from 'vue';
+import { inject, onMounted, ref, watch } from 'vue';
 import { useAuthStore } from '../stores/authStore';
 import { telDigits, useAgencyBook } from '../services/agencyBook';
 import type { AgencyRow } from '../types/auction';
@@ -24,6 +24,11 @@ const emit = defineEmits<{
 }>();
 
 const INFO_OPTIONS = ['친절', '불친절', '적극', '비적극'];
+/** 웹 — 맨 위 '선택 안 함'으로 고른 상호 · 정보를 비운다(다시 누르면 지워지는 것을 몰라 한 번 고르면 못 비웠다), 상호 왼쪽에 업체 지역 */
+const webEmbed = inject<boolean>('webEmbed', false);
+const regionOf = (name: string | undefined) => (webEmbed && name ? book.findByName(name)?.region?.trim() ?? '' : '');
+const clearName = (row: AgencyRow) => { row.name = ''; nameOpen.value = -1; emit('change'); };
+const clearInfo = (row: AgencyRow) => { row.info = ''; infoOpen.value = -1; emit('change'); };
 /** 열려 있는 드롭다운 — 표마다 따로 센다 */
 const infoOpen = ref(-1);
 const nameOpen = ref(-1);
@@ -128,19 +133,20 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
               class="adp-mkt-input left adp-agency-trigger"
               @click="nameOpen = nameOpen === i ? -1 : i"
             >
-              <span :class="['txt', { ph: !row.name }]">{{ row.name || '상호선택' }}</span>
+              <span :class="['txt', { ph: !row.name }]"><em v-if="regionOf(row.name)" class="agency-rg">{{ regionOf(row.name) }}</em>{{ row.name || '상호선택' }}</span>
               <span class="caret">▾</span>
             </button>
             <template v-if="nameOpen === i">
               <div class="adp-agency-backdrop" @click="nameOpen = -1" />
               <ul class="adp-agency-options">
+                <li v-if="webEmbed" class="adp-agency-option clear" @click="clearName(row)"><span>선택 안 함</span></li>
                 <li
                   v-for="opt in nameOptions(row)"
                   :key="opt"
                   :class="['adp-agency-option', { on: row.name === opt }]"
                   @click="pickName(row, opt)"
                 >
-                  <span>{{ opt }}</span>
+                  <span><em v-if="regionOf(opt)" class="agency-rg">{{ regionOf(opt) }}</em>{{ opt }}</span>
                   <span v-if="row.name === opt" class="ck">✓</span>
                 </li>
               </ul>
@@ -178,6 +184,7 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
             <template v-if="infoOpen === i">
               <div class="adp-agency-backdrop" @click="infoOpen = -1" />
               <ul class="adp-agency-options">
+                <li v-if="webEmbed" class="adp-agency-option clear" @click="clearInfo(row)"><span>선택 안 함</span></li>
                 <li
                   v-for="opt in INFO_OPTIONS"
                   :key="opt"
@@ -377,4 +384,7 @@ const rangeText = (row: AgencyRow, g: { from: MoneyKey; to: MoneyKey }) => {
   border: 1px solid #f0d4d0; background: #fdecea; color: #e0574a;
   border-radius: 6px; height: 26px; padding: 0; line-height: 24px; font-size: 14px; cursor: pointer;
 }
+/* 웹 — 상호 왼쪽 업체 지역(작은 회색), 맨 위 '선택 안 함' */
+.agency-rg { font-style: normal; margin-right: 6px; font-size: 12px; color: #6b7280; }
+.adp-agency-option.clear { color: #9ca3af; }
 </style>

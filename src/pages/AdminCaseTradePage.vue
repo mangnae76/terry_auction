@@ -1163,7 +1163,7 @@ const downloadCsv = () => {
               </thead>
               <tbody>
                 <!-- 칸 순서는 중요한 것부터 — 금액 · 평당가 · 전세가율/갭 · 공시대비율, 그다음 전용 · 거래일자 · 위치 -->
-                <tr v-for="l in resultLines" :key="l.key" :class="[`res-${l.kind}`, { has: !!l.row, cur: tool === l.tool }]" @click="pickTool(l.tool)">
+                <tr v-for="l in resultLines" :key="l.key" :class="[`res-${l.kind}`, l.kind === 'sale' ? 'pt' : 'pb', { has: !!l.row, cur: tool === l.tool }]" @click="pickTool(l.tool)">
                   <td class="res-name"><i :class="['res-dot', l.kind]" />{{ l.label }}</td>
                   <td class="n res-amt"><template v-if="l.row">{{ won(l.row.price) }}</template><span v-else class="res-empty">{{ l.empty }}</span></td>
                   <td class="n">{{ l.row ? won(perPyeong(l.row)) : '-' }}</td>
@@ -1175,7 +1175,7 @@ const downloadCsv = () => {
                   <td v-else class="res-place res-note">{{ l.note }}</td>
                 </tr>
                 <!-- ③ 평균 매매 · 전세 — 같은 거르기(condF). 전세가율/갭은 두 평균으로, 전용 범위 · 거래기간은 두 줄이 같은 조건이라 한 칸 -->
-                <tr :class="['res-avg', { has: condAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
+                <tr :class="['res-avg', 'pt', { has: condAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
                   <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condTip">③ 평균 매매가</InfoTip></td>
                   <td class="n res-amt"><template v-if="condAvg > 0">{{ won(condAvg) }}</template><span v-else class="res-empty">데이터 없음</span></td>
                   <td class="n">{{ won(condPerPyeong) }}</td>
@@ -1185,7 +1185,7 @@ const downloadCsv = () => {
                   <td rowspan="2" class="n res-pair res-span">{{ condPeriodText }}</td>
                   <td class="res-place">{{ region?.dong || '같은 동' }} 매매 {{ condSales.length.toLocaleString('ko-KR') }}건 · 사용승인 {{ condApprovalText.replace(' / ', ' · 연식 ') }}</td>
                 </tr>
-                <tr :class="['res-avg', { has: condJeonseAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
+                <tr :class="['res-avg', 'pb', { has: condJeonseAvg > 0, cur: tool === 'cond' }]" @click="pickTool('cond')">
                   <td class="res-name"><i class="res-dot avg" /><InfoTip :rows="condJeonseTip">③ 평균 전세가</InfoTip></td>
                   <td class="n res-amt"><template v-if="condJeonseAvg > 0">{{ won(condJeonseAvg) }}</template><span v-else class="res-empty">데이터 없음</span></td>
                   <td class="n">{{ won(condJeonsePerPyeong) }}</td>
@@ -1193,7 +1193,7 @@ const downloadCsv = () => {
                   <td class="res-place">{{ region?.dong || '같은 동' }} 전세 {{ condJeonse.length.toLocaleString('ko-KR') }}건 · 매매와 동일 조건</td>
                 </tr>
                 <!-- ④ 호가 — 손품조사 매물호가의 가장 낮은 값(직접 적은 값). 실거래가 아니라 점은 주황, 전세가율은 비운다 -->
-                <tr v-for="a in askLines" :key="a.key" :class="['res-ask', { has: !!a.row }]" @click="pickTool('ask')">
+                <tr v-for="a in askLines" :key="a.key" :class="['res-ask', a.key === 'ac' ? 'pt' : 'pb', { has: !!a.row, cur: tool === 'ask' }]" @click="pickTool('ask')">
                   <td class="res-name"><i class="res-dot ask" />{{ a.label }}</td>
                   <td class="n res-amt"><template v-if="a.row">{{ won(a.row.price) }}</template><span v-else class="res-empty">적은 호가 없음</span></td>
                   <td class="n">{{ a.row ? won(a.row.unit) : '-' }}</td>
