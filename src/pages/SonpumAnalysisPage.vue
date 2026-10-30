@@ -43,7 +43,7 @@ provide('sonAskReady', sonAskReady);
 const priceSeen = ref(false);
 watch(tab, (v) => { if (v === 'price') priceSeen.value = true; }, { immediate: true });
 // 웹 경로에 지금 탭 — '홈 › 시장분석 › 손품분석 › 수요분석'
-const tellTab = () => window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: ['손품분석', TAB_LABEL[tab.value]] } }));
+const tellTab = () => window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: ['손품조사', TAB_LABEL[tab.value]] } }));
 watch(tab, (v) => { writeLS(TAB_KEY, v); tellTab(); }, { immediate: true });
 
 const kindOf = (t: string): CasePropertyType => (/아파트/.test(t) ? 'apt' : /오피스텔/.test(t) ? 'officetel' : 'villa');
@@ -92,7 +92,7 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
 
 <template>
   <section class="son">
-    <p v-if="!list.length" class="son-empty">선정물건이 없습니다. 물건을 등록하면 여기서 손품분석을 할 수 있습니다.</p>
+    <p v-if="!list.length" class="son-empty">선정물건이 없습니다. 물건을 등록하면 여기서 손품조사를 할 수 있습니다.</p>
     <!-- 물건은 선정물건에서 마지막으로 연 물건(웹이 'son.pick' 에 적는다) — 위 머리 카드가 그 물건이라 따로 고르는 칸은 없다 -->
     <template v-else-if="auction">
 
