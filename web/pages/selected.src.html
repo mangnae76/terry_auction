@@ -623,6 +623,9 @@ button { cursor: pointer; }
 .mk-sale .sc-table th { padding: 12px 8px; background: #f7f9fc; font-size: 14px; font-weight: 700; color: #374151; text-align: center; border-bottom: 1px solid #eef1f6; }
 .mk-sale .sc-table td { padding: 12px 8px; font-size: 14px; color: #9ca3af; text-align: center; border-top: 1px solid #eef1f6; }
 #sonHead .ih-fold { display: none; }
+/* 선정물건 손품조사 — 경로가 화면 안 탭 줄로 갔으니 빈 경로 줄은 숨긴다(시장분석 손품조사와 같은 모양) */
+#itemView:has(#itemContent .item-son) #crumbSlotItem { display: none; }
+#itemView:has(#itemContent .item-son) #itemHead .ih-fold { display: none; }   /* 전체 접기는 옛 손품조사 카드용 — 시장분석 손품조사 머리와 같게 뺀다 */
 /* ===== 다크 모드 — 시장분석(지역분석 · 손품분석 · 경매사례)에서 이번에 만든 화면. 흰 상자 · 검정 글을 테마 변수로 ===== */
 /* 바탕 — 안쪽 상자 · 표 · 거르기 칸은 카드 바탕을 그대로(흰 상자가 떠 있지 않게), 선은 어두운 선 */
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market[data-s="son"] .son-detail, .mk-sale) :is(.adm-case-block, .adm-case-tail, .adm-table-wrap, .adm-trf, .adm-sel-row, .adm-kpi, .list-find, .sc-box, .sc-table, .adp-mkt-block, .adp-sub-block, .adp-table-wrap, .adp-mkt-cells, .adm-supply, .adm-nav.dm, .dm-row > *) { background: transparent !important; border-color: var(--card-line) !important; }
@@ -4279,7 +4282,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     $('listView').hidden = reg || item || trip || my || market || page; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('marketView').hidden = !market; $('appPageView').hidden = !page; $('fab').hidden = reg || item || trip || my || market || page;
     const cur = item ? byId(S.itemId) : null;
     syncCrumb();
-    { const nav = CRUMBS; const slot = (market && document.getElementById('admCrumbSlot')) || (page && document.querySelector('#appPageContent [data-crumb-slot]')) || $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
+    { const nav = CRUMBS; const slot = (market && document.getElementById('admCrumbSlot')) || (item && document.querySelector('#itemContent #admCrumbSlot')) || (page && document.querySelector('#appPageContent [data-crumb-slot]')) || $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
     document.title = page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? '마이턴옥션 시장분석' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
     if (!item) closeAppDetail();
@@ -4678,9 +4681,21 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     const slot = document.querySelector('#appPageContent [data-crumb-slot]');
     if (APP_PAGE_NAMES[S.route] && slot && CRUMBS && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS);
   }).observe(document.getElementById('appPageContent') || document.body, { childList: true, subtree: true });
+  /* 선정물건 손품조사 — 경로는 화면 안 탭 줄 오른쪽(#admCrumbSlot)으로, 걷을 때 제자리(#crumbSlotItem)로 */
+  const parkItemCrumbs = () => { const home = $('crumbSlotItem'); if (CRUMBS && home && CRUMBS.parentNode !== home) home.appendChild(CRUMBS); };
+  new MutationObserver(() => {
+    const slot = document.querySelector('#itemContent #admCrumbSlot');
+    if (S.route === 'item' && slot && CRUMBS && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS);
+  }).observe(document.getElementById('itemContent') || document.body, { childList: true, subtree: true });
+  /* 손품조사 안 탭(수요분석 · 시세분석 · 손품결론) — 선정물건 경로 끝에 붙인다 */
+  let itemInner = '';
   /* 지역분석 안 탭 — '홈 › 시장분석 › 지역분석 › 수요공급' */
   let marketInner = null;
-  window.addEventListener('adm:tab', (e) => { marketInner = (e.detail && e.detail.trail) || null; if (S.route === 'market') syncCrumb(); });
+  window.addEventListener('adm:tab', (e) => {
+    marketInner = (e.detail && e.detail.trail) || null;
+    if (S.route === 'market') syncCrumb();
+    if (S.route === 'item') { const t = (e.detail && e.detail.trail) || []; itemInner = S.itemTab === 'survey' ? (t[t.length - 1] || '') : ''; syncCrumb(); }
+  });
   /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
   /* 낙찰이후 — 장 열쇠는 제 하위 탭(절차상세 · 가이드)에 불이 들어오고, 경로에는 '절차상세 › 명도'처럼 장 이름이 붙는다 */
   const SUB_PARENT = { postwin: { dpre: 'win', evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win', gevict: 'gwin', gdeny: 'gwin', biz: 'gwin', gtax: 'gwin' } };
@@ -4695,7 +4710,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     if (r === 'trip') return '임장경로';
     if (r === 'market') return marketTrail();
     if (r === 'mypage') return '마이페이지';
-    if (r === 'item') { const cur = byId(S.itemId); return ['선정물건', cur ? cur.caseNo : '물건상세', subLabel('item', S.itemTab)].filter(Boolean).join(' › '); }
+    if (r === 'item') { const cur = byId(S.itemId); return ['선정물건', cur ? cur.caseNo : '물건상세', subLabel('item', S.itemTab), S.itemTab === 'survey' ? itemInner : ''].filter(Boolean).join(' › '); }
     return '선정물건';
   }
   /* 경로 칸마다 누르면 갈 곳 — 맨 끝(지금 화면)만 검정 글자, 앞 칸은 회색 링크 */
@@ -4721,7 +4736,10 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     if (r === 'mypage') return [['마이페이지']];
     if (r === 'item') {
       const cur = byId(S.itemId);
-      return [['선정물건', () => go('list')], [cur ? cur.caseNo : '물건상세', () => { S.itemTab = 'basic'; writeHash(false); renderSubTabs(); renderItem(); }], [subLabel('item', S.itemTab)]];
+      const base = [['선정물건', () => go('list')], [cur ? cur.caseNo : '물건상세', () => { S.itemTab = 'basic'; writeHash(false); renderSubTabs(); renderItem(); }]];
+      /* 손품조사 — 안 탭(수요분석 · 시세분석 · 손품결론)까지. 시장분석 손품조사 경로와 같은 꼴 */
+      if (S.itemTab === 'survey' && itemInner) return [...base, [subLabel('item', S.itemTab), () => {}], [itemInner]];
+      return [...base, [subLabel('item', S.itemTab)]];
     }
     return [['선정물건']];
   }
@@ -4904,11 +4922,31 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     const onWin = () => relayout(); window.addEventListener('resize', onWin);
     detailUnmount = () => { mo.disconnect(); ro.disconnect(); window.removeEventListener('resize', onWin); cancelAnimationFrame(raf); stop(); };
   }
+  /* 선정물건 › 손품조사 — 시장분석 손품조사 화면(SonpumAnalysisPage)을 그대로. 물건은 'son.pick'(바로 위에서 이 물건으로 적는다) */
+  function renderItemSon(it) {
+    const box = $('itemContent');
+    if (!CLOUD.on || !CLOUD.raw.has(it.id)) {
+      closeAppDetail();
+      box.innerHTML = itCard('info', '손품조사', itEmpty(S.authReady
+        ? '로그인하면 손품조사 화면이 열립니다 — 예시 물건은 이 탭을 보여 줄 수 없습니다.'
+        : '불러오는 중입니다…'), true);
+      return;
+    }
+    const key = `${it.id}:son`;
+    if (detailKey === key && box.querySelector('.item-son')) return;
+    closeAppDetail();
+    box.innerHTML = '<div class="app-market item-son" data-k="dong" data-s="son" id="itemSonMount"></div>';
+    detailKey = key;
+    const stop = CLOUD.T.mountAppAdmin($('itemSonMount'), 'son');
+    detailUnmount = () => { parkItemCrumbs(); stop(); };
+  }
   function renderItem() {
     const it = byId(S.itemId);
     if (!it) { $('itemHead').innerHTML = '<div class="ih-top"><button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button><h1 class="ih-title">물건을 찾을 수 없습니다</h1></div>'; $('itemContent').innerHTML = ''; return; }
     $('itemHead').innerHTML = itemHeadHtml(it);
     try { localStorage.setItem('son.pick', it.id); } catch (e) { /* 그만 */ } /* 손품분석은 마지막으로 연 물건을 본다 */
+    /* 손품조사 탭 — 시장분석 › 손품조사와 같은 화면(같은 부품)을 이 물건으로 띄운다. 옛 손품조사 틀(물건상세 카드들)은 웹에서 쓰지 않는다 */
+    if (S.itemTab === 'survey') { renderItemSon(it); return; }
     if (['rights', 'survey', 'field', 'verify', 'profit'].includes(S.itemTab)) { renderAppDetailTab(it, S.itemTab); setTimeout(syncFoldBtn, 300); return; }
     closeAppDetail();
     $('itemContent').innerHTML = `<div class="it-grid ${S.itFold ? 'folded' : ''}">${itemTabHtml(it, S.itemTab)}</div>`;
