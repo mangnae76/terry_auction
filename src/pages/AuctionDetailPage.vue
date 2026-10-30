@@ -2475,9 +2475,8 @@ const pickPlanTab = async (si: number) => {
 };
 /** 오른쪽 판이 붙을 높이 — 위 고정 묶음(예상수익분석 제목 · 날짜 줄) 바로 아래. 묶음 높이가 화면마다 달라 재서 쓴다 */
 const biddTop = ref(0);
-/** 판 높이 — 화면 아래까지. 왼쪽이 끝나 가면 판은 고정 지점에 그대로 두고 아래쪽만 줄인다(밀려 올라가 탭이 가리지 않게) */
+/** 판 높이 — 화면 아래까지(줄이지 않는다). 판 아래가 왼쪽 끝에 닿으면 판은 거기서 멈추고 화면과 같이 올라간다 */
 const biddMaxH = ref(0);
-const BIDD_MIN_H = 220;
 const measureBiddTop = () => {
   if (!webNew.value) return;
   const el = document.querySelector('.adp-profit-sticky');
@@ -2485,9 +2484,7 @@ const measureBiddTop = () => {
   const t = parseFloat(getComputedStyle(el).top) || 0;
   const v = Math.round(t + el.getBoundingClientRect().height + 12);
   if (v !== biddTop.value) biddTop.value = v;
-  const left = document.querySelector('.bidd-left');
-  const leftBottom = left ? left.getBoundingClientRect().bottom : Infinity;
-  const h = Math.max(BIDD_MIN_H, Math.round(Math.min(window.innerHeight - 16, leftBottom) - v));
+  const h = Math.round(window.innerHeight - 16 - v);
   if (h !== biddMaxH.value) biddMaxH.value = h;
 };
 // 스크롤마다 바로 재면 화면을 그리는 도중에 높이가 바뀌어 스크롤이 덜컥거린다 — 한 그림에 한 번만
