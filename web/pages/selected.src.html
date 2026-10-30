@@ -564,13 +564,22 @@ button { cursor: pointer; }
 #sonAskSlot .adp-mkt-block-head { margin-top: 0; }
 #sonAskSlot .adp-mkt-block-head { display: flex; align-items: center; gap: 8px; }
 #sonAskSlot .son-ask-note { font-size: 13px; font-weight: 400; color: #6b7280; }   /* 곁글 — 시세분석 규칙(13 회색) */
-#sonAskSlot .son-ask-links { display: inline-flex; align-items: center; gap: 6px; }
-#sonAskSlot .adp-mkt-block-head .adp-mkt-step { margin-left: auto; }
+#sonAskSlot .son-ask-links { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }   /* P · N 은 오른쪽 끝 행 ± 바로 왼쪽 */
+#sonAskSlot .adp-mkt-block-head .adp-mkt-step { margin-left: 2px; }
 #sonAskSlot .son-lowcase { padding-top: 12px !important; }   /* 탭 밑선 → 첫 제목 — 다른 탭(전체~월세 줄)과 같은 12 */
 /* 입력칸 글자 — 표 값과 같은 14 보통, 칸 높이 40 · 모서리 8(시세분석 거르기 칸과 같게) */
 #sonAskSlot .adp-mkt-input { box-sizing: border-box; height: 40px !important; font-size: 14px !important; font-weight: 400 !important; color: #111827 !important; border-radius: 8px !important; }
 #sonAskSlot .adp-mkt-input::placeholder { font-size: 14px; font-weight: 400; color: #9aa3b2; }
 #sonAskSlot .adp-mkt-unit { font-size: 14px !important; font-weight: 400 !important; }
+/* 칸 줄 맞춤 — 전용면적(㎡ 붙은 칸)도 다른 칸과 같은 높이 · 같은 줄 */
+#sonAskSlot .adp-mkt-cells .cell { display: flex; flex-direction: column; justify-content: flex-start; }
+#sonAskSlot .adp-mkt-unit { display: flex !important; align-items: center; gap: 6px; margin: 0 !important; height: 40px; }
+#sonAskSlot .adp-mkt-unit .adp-mkt-input { flex: 1; min-width: 0; margin: 0 !important; }
+/* 자동값 — 평당가(호가 ÷ 면적), 경매빌라 주소 앞 건물 이름 */
+#sonAskSlot .son-auto { display: flex; align-items: center; justify-content: center; height: 40px; font-size: 14px !important; font-weight: 400 !important; color: #111827 !important; }
+#sonAskSlot .son-addr-field { display: flex; align-items: center; gap: 8px; width: 100%; height: 40px; }
+#sonAskSlot .son-addr-field .adp-mkt-input { flex: 1; min-width: 0; }
+#sonAskSlot .son-addr-head { flex: none; font-style: normal; font-size: 14px; color: #111827; white-space: nowrap; }
 /* 시세종합 ④ 호가 줄 — 직접 적은 값이라 점은 주황 */
 .adm-case-in tr.has .res-dot.ask { background: #f59e0b !important; box-shadow: 0 0 0 2px rgba(245, 158, 11, .18), 0 0 6px 1px rgba(245, 158, 11, .6) !important; }
 /* 경매사례 › 인근 매각물건 분석 — 매각사례 카드(시세분석과 같은 짜임: 카드 14 · 상자 10 · 표 8, 제목 아이콘 + 16/800, 위 15 · 제목→상자 16) */
