@@ -1,19 +1,21 @@
 <script setup lang="ts">
 // 회원탈퇴 — 마이페이지의 '회원탈퇴'에서 들어온다.
 // 지우기 전에 무엇이 사라지는지 먼저 알린다. 실제 삭제 처리는 아직 붙이지 않았다.
-import { computed, ref } from 'vue';
+import { computed, inject, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 
 const router = useRouter();
 
+// 웹은 메뉴 이름이 '낙찰관리' 다
+const webEmbed = inject<boolean>('webEmbed', false);
 const KEEP_NOTES = [
   '가입된 회원정보와 결제내역 정보가 삭제됩니다.',
   '가입된 전화번호는 재가입 부당이득 방지를 위해 3개월간 보관됩니다.',
 ];
 const LOSE_NOTES = [
-  '경매 물건 관리, 임장경로, 자금관리, 낙찰이후 등 회원제 서비스를 이용할 수 없습니다.',
+  `경매 물건 관리, 임장경로, 자금관리, ${webEmbed ? '낙찰관리' : '낙찰이후'} 등 회원제 서비스를 이용할 수 없습니다.`,
   '선정물건으로 등록한 물건과 현장사진이 모두 삭제됩니다. (다른 아이디로 재가입 후 다시 등록해야 합니다)',
   '저장해 둔 검색조건과 중개업체 목록이 삭제됩니다.',
 ];
