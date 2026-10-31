@@ -224,7 +224,6 @@ const finalCase = (k: 'deal' | 'exec') => {
   return { direct: g.direct, delay: g.delay, months: g.months, evTotal, tax, net, rate: netInvest.value > 0 ? Math.round((net / netInvest.value) * 10000) / 100 : 0 };
 };
 const finals = computed(() => ({ deal: finalCase('deal'), exec: finalCase('exec') }));
-const better = computed(() => (finals.value.deal.net >= finals.value.exec.net ? 'deal' : 'exec'));
 const acqTax = computed(() => A.value?.bidCost?.acquisitionTaxAmount ?? 0);
 const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : personGain.value; return g > 0 ? Math.round((taxSum.value / g) * 1000) / 10 : 0; });
 </script>
@@ -313,7 +312,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
           <em v-if="!acctBiz">내 정보에서 사업자 구분을 정해 주세요 — 지금은 매매사업자 기준</em>
           <em v-else-if="acctBiz === 'corp' || acctBiz === 'corpBiz'">법인세 계산은 준비 중 — 지금은 매매사업자 기준</em>
         </span>
-        <div class="pwm-seg" :title="`누르면 명도분석 금액이 사업경비 명도비로 들어갑니다 — 다시 누르면 빼고 ${webEmbed ? '수익분석 확정안' : '입찰가A'} 값으로`">
+        <div v-if="!webEmbed" class="pwm-seg" :title="`누르면 명도분석 금액이 사업경비 명도비로 들어갑니다 — 다시 누르면 빼고 ${webEmbed ? '수익분석 확정안' : '입찰가A'} 값으로`">
           <button type="button" :class="{ on: evOn === 'deal' }" :disabled="evBusy" @click="pickEvict('deal')">명도협의 {{ man(evDirect.deal) }}</button>
           <button type="button" :class="{ on: evOn === 'exec' }" :disabled="evBusy" @click="pickEvict('exec')">강제집행 {{ man(evDirect.exec) }}</button>
         </div>
@@ -363,20 +362,22 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
           <p class="pwm-memo" v-else>1주택 비과세 · 다주택 중과 · 장기보유특별공제는 셈하지 않은 대략 값입니다 — 세무사에게 확인하세요.</p>
         </article>
       </div>
-      <!-- 최종 예상 순수익 — 명도협의 · 강제집행 두 경우를 나란히(웹). 경우마다 명도비 + 지연 비용을 넣고 세금까지 다시 계산 -->
-      <article v-if="webEmbed" class="pwm-card pwm-final">
-        <h3><svg class="pwm-h3-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="m7 15 4-4 3 3 5-6" /></svg>최종 예상 순수익 <em>명도협의 · 강제집행 비교</em></h3>
-        <div class="pwm-ftbl" role="table">
-          <div class="r head" role="row"><span /><b :class="{ best: better === 'deal' }">명도협의<i v-if="evOn === 'deal'">확정</i></b><b :class="{ best: better === 'exec' }">강제집행<i v-if="evOn === 'exec'">확정</i></b></div>
-          <div class="r" role="row"><span>{{ who === 'biz' ? '매매차익' : '양도차익' }}<small>매도가 − 낙찰가 − 필요경비</small></span><b>{{ won(tradeGain) }}</b><b>{{ won(tradeGain) }}</b></div>
-          <div class="r" role="row"><span>− 사업경비<small>명도비 빼고(이자 · 관리비 · 수리 · 광고 …)</small></span><b>{{ won(bizBase) }}</b><b>{{ won(bizBase) }}</b></div>
-          <div class="r" role="row"><span>− 명도비<small>이사비 · 강제집행 비용 · 서류</small></span><b>{{ won(finals.deal.direct) }}</b><b>{{ won(finals.exec.direct) }}</b></div>
-          <div class="r" role="row"><span>− 지연 비용<small>늦어지는 달 이자 · 관리비</small></span><b>{{ won(finals.deal.delay) }}<small>{{ finals.deal.months }}개월</small></b><b>{{ won(finals.exec.delay) }}<small>{{ finals.exec.months }}개월</small></b></div>
-          <div class="r" role="row"><span>− 세금<small>{{ who === 'biz' ? '종합소득세' : '양도소득세' }} + 지방세</small></span><b>{{ won(finals.deal.tax) }}</b><b>{{ won(finals.exec.tax) }}</b></div>
-          <div class="r total" role="row"><span>세후 순수익</span><b :class="{ neg: finals.deal.net < 0 }">{{ won(finals.deal.net) }}<small>실투자금 대비 {{ finals.deal.rate.toFixed(2) }}%</small></b><b :class="{ neg: finals.exec.net < 0 }">{{ won(finals.exec.net) }}<small>실투자금 대비 {{ finals.exec.rate.toFixed(2) }}%</small></b></div>
+      <!-- 최종 예상 순수익(명도비용 포함) — 두 시나리오를 상자 둘로 알려 준다(고르거나 확정하지 않는다). 명도비용은 명도분석 합계 그대로 -->
+      <section v-if="webEmbed" class="pwm-finals">
+        <h3 class="pwm-finals-h"><svg class="pwm-h3-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="m7 15 4-4 3 3 5-6" /></svg>최종 예상 순수익 <em>명도비용 포함</em></h3>
+        <div class="pwm-finals-grid">
+          <article v-for="[k, no, name] in ([['deal', '시나리오 1', '명도협의로 끝날 때'], ['exec', '시나리오 2', '강제집행까지 갈 때']] as const)" :key="k" :class="['pwm-card', 'pwm-final', k]">
+            <h4><small>{{ no }}</small>{{ name }}</h4>
+            <dl>
+              <div><dt>{{ who === 'biz' ? '매매차익' : '양도차익' }}</dt><dd>{{ won(tradeGain) }}<small>매도가 − 낙찰가 − 필요경비</small></dd></div>
+              <div><dt>− 사업경비</dt><dd>{{ won(bizBase) }}<small>이자 · 관리비 · 수리 · 광고 등(명도비용 빼고)</small></dd></div>
+              <div><dt>− 명도비용</dt><dd>{{ won(finals[k].evTotal) }}<small>명도분석 합계 — 명도비 {{ won(finals[k].direct) }} + 지연 비용 {{ won(finals[k].delay) }}</small></dd></div>
+              <div><dt>− 세금</dt><dd>{{ won(finals[k].tax) }}<small>{{ who === 'biz' ? '종합소득세' : '양도소득세' }} + 지방세</small></dd></div>
+              <div class="total"><dt>세후 순수익</dt><dd :class="{ neg: finals[k].net < 0 }">{{ won(finals[k].net) }}<small>실투자금 {{ won(netInvest) }} 대비 {{ finals[k].rate.toFixed(2) }}%</small></dd></div>
+            </dl>
+          </article>
         </div>
-        <p class="pwm-fnote">명도비 · 지연 비용은 명도분석의 값입니다(실제 견적이 나오면 명도분석 › 직접입력에서 고치세요). 차이 {{ won(Math.abs(finals.deal.net - finals.exec.net)) }} — {{ better === 'deal' ? '명도협의' : '강제집행' }} 쪽이 남는 돈이 많습니다.</p>
-      </article>
+      </section>
       <!-- 중요 안내 — 세금 계산은 참고용(웹). 아이콘 · 제목 한 줄 + 짧은 세 줄 -->
       <aside v-if="webEmbed" class="pwm-notice" role="note">
         <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3Z" /><path d="M12 10v4" /><path d="M12 17.5h.01" /></svg></span>
@@ -506,30 +507,28 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 /* 명도비 상자 — 머리 줄과 세부 항목을 한 바탕 안에. 바탕은 양옆 10px 내밀고 글은 제자리('원' 끝이 한 줄) */
 .pwm-grpbox { margin: 10px -10px 4px; padding: 2px 10px 6px; border-radius: 8px; background: #f5f7fb; }
 .pwm-grpbox .pwm-grp { margin: 0 -10px; background: transparent; }
-.pwm-grpbox li { border-bottom-color: #e6eaf2; }
+.pwm-grpbox li { padding-left: 24px; border-bottom-color: #e6eaf2; }   /* 명도비보다 두 글자쯤 안쪽 */
+.pwm-grpbox li span, .pwm-grpbox li b { font-weight: 400; color: #4b5563; }
 .pwm-grpbox li:last-child { border-bottom: 0; }
 /* 바탕 띠는 양옆으로 10px 내밀고 글은 제자리 — 명도비 · 지연 비용 · 세부 · 합계의 '원' 끝이 한 줄에 선다 */
 .pwm-grp { display: flex; align-items: baseline; gap: 8px; margin: 10px -10px 4px; padding: 8px 10px; border-radius: 8px; background: #f5f7fb; font-size: 14px; font-weight: 800; color: #1f2a44; }
 .pwm-grp em { margin-left: 4px; font-style: normal; font-size: 12px; font-weight: 500; color: #6b7280; }
 .pwm-grp b { margin-left: auto; font-weight: 800; }
-/* 최종 예상 순수익 — 두 경우 비교 표, 남는 돈이 많은 쪽 머리에 초록 */
-.pwm-final { margin-top: 16px; }
-.pwm-final h3 em { margin-left: 6px; font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; }
-.pwm-ftbl { display: flex; flex-direction: column; margin-top: 8px; font-variant-numeric: tabular-nums; }
-.pwm-ftbl .r { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid #f0f2f7; font-size: 14px; }
-.pwm-ftbl .r > span { display: flex; flex-direction: column; color: #374151; font-weight: 600; }
-.pwm-ftbl .r > span small { font-size: 12px; font-weight: 400; color: #9aa3b2; }
-.pwm-ftbl .r > b { display: flex; flex-direction: column; align-items: flex-end; font-weight: 700; color: #111827; }
-.pwm-ftbl .r > b small { font-size: 12px; font-weight: 400; color: #6b7280; }
-.pwm-ftbl .r.head { padding-top: 4px; border-bottom: 1px solid #e5e9f2; }
-.pwm-ftbl .r.head b { flex-direction: row; justify-content: flex-end; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; color: #1f2a44; }
-.pwm-ftbl .r.head b.best { color: #1f7a4a; }
-.pwm-ftbl .r.head b i { padding: 1px 6px; border-radius: 5px; background: #1f7a4a; font-style: normal; font-size: 11px; font-weight: 800; color: #fff; }
-.pwm-ftbl .r.total { margin-top: 6px; padding: 12px 14px; border: 0; border-radius: 10px; background: #1f2a44; }
-.pwm-ftbl .r.total > span, .pwm-ftbl .r.total > b { color: #fff; font-weight: 800; }
-.pwm-ftbl .r.total > b { font-size: 17px; }
-.pwm-ftbl .r.total > b.neg { color: #ff9b9b; }
-.pwm-ftbl .r.total > b small { color: #c9d3ea; }
-.pwm-fnote { margin: 10px 2px 0; font-size: 13px; color: #6b7280; }
 .pwm-card dl > div.sub dt { padding-left: 12px; color: #6b7280; font-weight: 500; }
+/* 최종 예상 순수익 — 시나리오 둘을 상자 둘로(정보만, 고르지 않는다) */
+.pwm-finals { margin-top: 16px; }
+.pwm-finals-h { display: flex; align-items: center; gap: 7px; margin: 0 0 10px; font-size: 16px; font-weight: 800; }
+.pwm-finals-h em { font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; }
+.pwm-finals-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pwm-final { font-variant-numeric: tabular-nums; }
+.pwm-final.deal { border-top: 3px solid #4f9a68; }
+.pwm-final.exec { border-top: 3px solid #c95b5b; }
+.pwm-final h4 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 6px; font-size: 15px; font-weight: 800; color: #111827; }
+.pwm-final h4 small { font-size: 12px; font-weight: 700; color: #6b7280; }
+.pwm-final dl > div.total { margin-top: 6px; padding: 12px 14px; border: 0; border-radius: 10px; background: #1f2a44; }
+.pwm-final dl > div.total dt, .pwm-final dl > div.total dd { color: #fff; font-weight: 800; }
+.pwm-final dl > div.total dd { font-size: 18px; }
+.pwm-final dl > div.total dd.neg { color: #ff9b9b; }
+.pwm-final dl > div.total small { color: #c9d3ea; font-weight: 500; }
+@media (max-width: 900px) { .pwm-finals-grid { grid-template-columns: 1fr; } }
 </style>
