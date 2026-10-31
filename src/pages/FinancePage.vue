@@ -715,7 +715,7 @@ const exportExcel = () => {
           <tbody>
             <tr v-for="r in shownBusiness" :key="r.id" @click="openEdit('businessExpense', r)">
               <td>{{ shortDate(r.date) }}</td>
-              <td :title="r.auctionLabel">{{ r.auctionLabel || '-' }}</td>
+              <td :title="r.auctionLabel">{{ r.auctionLabel || (webEmbed ? '공통' : '-') }}</td>
               <td :title="r.profitCategory || r.memo"><span class="pill memo">{{ r.profitCategory || r.memo || '-' }}</span></td>
               <td :title="r.detail">{{ r.detail }}</td>
               <td>{{ fmtMoney(r.amountWithVat) }}</td>
@@ -851,7 +851,7 @@ const exportExcel = () => {
           <label>날짜<input type="date" v-model="beDraft.date" /></label>
           <label>물건구분
             <select v-model="beDraft.auctionId">
-              <option value="">선택 안함</option>
+              <option value="">{{ webEmbed ? '공통(물건 없음)' : '선택 안함' }}</option>
               <option v-for="o in auctionOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
             </select>
           </label>
