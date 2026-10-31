@@ -2338,7 +2338,7 @@ body.trip-full .foot { display: none; }
   .rg-meta { grid-column: 2 / -1; grid-row: 2; }
 }
 /* 떠 있는 선정물건등록 — 웹에서는 내보이지 않는다.
-   머리띠에 '+물건등록'이 늘 떠 있어 같은 자리로 가는 길이 둘이 되고, 지도·목록 위를 가린다.
+   머리띠에 '물건등록'이 늘 떠 있어 같은 자리로 가는 길이 둘이 되고, 지도·목록 위를 가린다.
    (끌어 옮기는 손잡이까지 걷어내지 않고 한 줄로 감춘다 — 앱의 .wlp-fab 은 그대로 쓴다) */
 .fab { display: none !important; }
 .fab {
@@ -3092,7 +3092,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   <div class="wrap">
     <div class="gnb-in">
       <a class="g-logo" href="#" data-act="noop" aria-label="마이턴옥션 홈"><img src="{{LOGO_WHITE}}" alt="MYTURN AUCTION"></a>
-      <a class="g-menu m0" href="#/register" data-act="go-register" id="navReg">+물건등록</a>
+      <a class="g-menu m0" href="#/register" data-act="go-register" id="navReg">물건등록</a>
       <a class="g-menu m1" href="#/" data-act="go-list" id="navWatch">선정물건</a>
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
       <a class="g-menu m3c" href="#/postwin" data-act="go-postwin" id="navPostwin">낙찰관리</a>
@@ -4258,7 +4258,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     /* 등록 방법 탭 — 자동 등록(폴더·PDF 로 가져와 AI 가 읽는 한 절차, Plus) · 직접 입력(손으로 적기) */
     const tabbar = `
       <div class="reg-tabbar" role="tablist" aria-label="물건등록 방법">
-        <span class="subtab-where" aria-hidden="true">+물건등록<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
+        <span class="subtab-where" aria-hidden="true">물건등록<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
         <button type="button" role="tab" class="reg-tab ${AUTO ? 'on' : ''}" aria-selected="${AUTO}" data-act="reg-mode" data-v="auto">${I.cloud}자동등록<span class="plan-tag plus">Plus</span></button>
         <button type="button" role="tab" class="reg-tab ${AUTO ? '' : 'on'}" aria-selected="${!AUTO}" data-act="reg-mode" data-v="manual">${I.pencil}직접입력</button>
       </div>`;
@@ -4303,7 +4303,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     R.popShown = S.pop === 'folders';
     $('regContent').innerHTML = `
       <section class="rg-lead-box">
-        <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I.info}</svg>+물건등록</h2>
+        <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I.info}</svg>물건등록</h2>
         <p>선정된 경매 물건을 등록하고 관리하세요. AI가 정보를 분석 정리하여 선정물건 카드 안에서 볼 수 있습니다.</p>
       </section>
       ${autoBox}
@@ -4975,7 +4975,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       const top = subParent(r, k);
       return [[APP_PAGE_NAMES[r], first(r)], [subLabel(r, k), () => { S.pageTab[r] = top; writeHash(false); renderSubTabs(); renderAppPage(); }], [ch]];
     }
-    if (r === 'register') return [['+물건등록', () => { if (R.mode !== 'auto') { R.mode = 'auto'; try { localStorage.setItem('wlp.web.regMode', 'auto'); } catch (e) { /* 그만 */ } } render(); }], [R.mode === 'manual' ? '직접입력' : '자동등록']];
+    if (r === 'register') return [['물건등록', () => { if (R.mode !== 'auto') { R.mode = 'auto'; try { localStorage.setItem('wlp.web.regMode', 'auto'); } catch (e) { /* 그만 */ } } render(); }], [R.mode === 'manual' ? '직접입력' : '자동등록']];
     if (r === 'trip') return [['임장경로']];
     if (r === 'market') {
       const steps = marketTrail().split(' › ');
@@ -5002,7 +5002,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       : `<a href="#" data-act="crumb" data-v="${i}">${esc(t)}</a><span class="crumb-sep" aria-hidden="true">›</span>`)).join('');
   }
   /* 물건등록 경로 — '홈 › +물건등록 › 자동등록 / 직접입력' (등록 방법 탭을 바꾸면 따라 바뀐다) */
-  function regTrail() { return `+물건등록 › ${R.mode === 'manual' ? '직접입력' : '자동등록'}`; }
+  function regTrail() { return `물건등록 › ${R.mode === 'manual' ? '직접입력' : '자동등록'}`; }
   function marketTrail() {
     if (['dong', 'rank', 'son'].includes(S.marketTab) && marketInner) return ['시장분석', ...marketInner].join(' › ');
     const label = (SUBTABS.market.find((t) => t[0] === S.marketTab) || [])[2];
