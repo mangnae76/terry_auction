@@ -2053,16 +2053,21 @@ body.trip-full .foot { display: none; }
 /* 등록 방법 탭 — 자동 등록(Plus) · 직접 입력. 밑줄은 ::after 막대로(전역 button 둥근모서리를 피한다) */
 /* 아래 회색 줄은 창 끝까지 — 띠처럼 긋는다 (html·body 가 overflow-x: clip 이라 가로 스크롤은 생기지 않는다) */
 .reg-tabbar { position: relative; display: flex; align-items: stretch; gap: 2px; }
+/* 다른 하위 탭 줄과 같게 — 흰 띠(화면 끝까지) + 줄 앞 지금 위치 */
+.reg-tabbar::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; z-index: 0; width: 100vw; transform: translateX(-50%); background: var(--surface); }
+.reg-tabbar .subtab-where { position: relative; z-index: 1; align-self: center; }
 .reg-tabbar::after { content: ""; position: absolute; left: 50%; bottom: 0; z-index: 0; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); } /* 물건상세 하위 탭 줄과 같은 색 */
 .reg-shell { padding-top: 0; padding-bottom: 0; } /* 탭 줄이 상자 전체 — 위아래 띠를 남기지 않는다 */
 /* 물건등록 탭 띠도 시장분석 · 물건상세 하위 탭 띠와 같은 높이: 탭(--tab-h 44) + 아래 선 1 = 45 */
 .reg-tabbar { height: calc(var(--tab-h) + 1px); }
 .reg-tabbar .reg-tab { align-self: flex-start; }
-.reg-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; height: var(--tab-h); padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
+.reg-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; height: var(--tab-h); padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--text-2); white-space: nowrap; transition: color .15s; }
 .reg-tab svg { width: 17px; height: 17px; }
 .reg-tab:hover { color: var(--text); }
-.reg-tab.on { color: var(--blue); font-weight: 800; }
-.reg-tab::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 0; height: 3px; border-radius: 2px 2px 0 0; background: var(--blue); transform: scaleX(0); transition: transform .2s ease; }
+.reg-tab.on { color: var(--nav); font-weight: 800; }   /* 하위 탭 줄과 같게(시안 C) — 남색 글자 + 주황 밑줄, 밤엔 밝은 글자 */
+:root[data-theme="dark"] .reg-tab.on { color: var(--text); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .reg-tab.on { color: var(--text); } }
+.reg-tab::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 0; height: 3px; border-radius: 2px 2px 0 0; background: var(--nav-orange); transform: scaleX(0); transition: transform .2s ease; }
 .reg-tab:hover::after { transform: scaleX(1); opacity: .45; }
 .reg-tab.on::after { transform: scaleX(1); opacity: 1; animation: tab-bar-in .22s ease; }
 @keyframes tab-bar-in { from { transform: scaleX(0); } to { transform: scaleX(1); } }
@@ -2766,8 +2771,8 @@ html, body { overflow-x: clip; }
 .reg-tabs { display: flex; gap: 2px; padding: 12px 20px 0; border-bottom: 1px solid var(--line); }
 .reg-tabs button { position: relative; height: 38px; padding: 0 10px; border: 0; background: transparent; font-size: 13.5px; font-weight: 700; color: var(--faint); }
 .reg-tabs button:hover { color: var(--text); }
-.reg-tabs button.on { color: var(--blue); }
-.reg-tabs button.on::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: -1px; height: 2px; background: var(--blue); }
+.reg-tabs button.on { color: var(--nav); }
+.reg-tabs button.on::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: -1px; height: 3px; background: var(--nav-orange); }
 .reg-body { padding: 18px 20px; display: grid; gap: 14px; }
 .field label { display: block; font-size: 14px; font-weight: 700; color: var(--text-2); margin-bottom: 5px; }
 .field label span { color: var(--faint); font-weight: 500; }
@@ -4253,6 +4258,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     /* 등록 방법 탭 — 자동 등록(폴더·PDF 로 가져와 AI 가 읽는 한 절차, Plus) · 직접 입력(손으로 적기) */
     const tabbar = `
       <div class="reg-tabbar" role="tablist" aria-label="물건등록 방법">
+        <span class="subtab-where" aria-hidden="true">+물건등록<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>
         <button type="button" role="tab" class="reg-tab ${AUTO ? 'on' : ''}" aria-selected="${AUTO}" data-act="reg-mode" data-v="auto">${I.cloud}자동등록<span class="plan-tag plus">Plus</span></button>
         <button type="button" role="tab" class="reg-tab ${AUTO ? '' : 'on'}" aria-selected="${!AUTO}" data-act="reg-mode" data-v="manual">${I.pencil}직접입력</button>
       </div>`;
