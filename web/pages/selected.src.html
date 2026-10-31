@@ -3725,9 +3725,11 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const x0 = host.getBoundingClientRect().left;
     const fs = parseFloat(getComputedStyle(items[0]).fontSize) || 18;
     const start = items[0].getBoundingClientRect().left - x0 + fs * 1.5;
-    const end = box.getBoundingClientRect().left - x0;
+    /* 끝 — 마이페이지 오른쪽 끝을 위 줄 '로그아웃'(로그인 전엔 '회원가입') 글자 오른쪽 끝에 맞춘다. 사이 틈은 모두 같게 */
+    const out = [...document.querySelectorAll('.g-util .g-out, .g-util .g-join')].find((e) => e.offsetParent);
+    const end = (out ? out.getBoundingClientRect().right : box.getBoundingClientRect().left) - x0;
     const widths = items.map((e) => e.getBoundingClientRect().width);
-    const gap = (end - start - widths.reduce((a, b) => a + b, 0)) / items.length;
+    const gap = (end - start - widths.reduce((a, b) => a + b, 0)) / (items.length - 1);
     if (!(gap > 8)) return;
     let x = start;
     const rules = items.map((e, i) => {
@@ -3741,6 +3743,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   window.addEventListener('resize', () => requestAnimationFrame(layoutMenu));
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layoutMenu());
   layoutMenu();
+  /* 로그인 전 · 뒤로 위 줄(회원가입 ↔ 로그아웃)이 바뀌면 끝 자리도 다시 잰다 */
+  { const gu = document.querySelector('.g-util .g-user'); if (gu && window.ResizeObserver) new ResizeObserver(() => layoutMenu()).observe(gu); }
   function renderHeader() {
     $('navReg').classList.toggle('on', S.route === 'register');
     { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
