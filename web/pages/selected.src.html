@@ -177,12 +177,12 @@ button { cursor: pointer; }
 /* 아직 만들지 않은 메뉴(커뮤니티 · 매뉴얼) — 회색으로 눌러도 반응 없는 듯 보이게, 아래 펼침 칸도 회색 */
 .g-menu.off, .g-menu.off:hover { color: #6b7488; cursor: default; }
 .g-menu.off::after { display: none; }
-.g-col.m4m a, .g-col.m4m a:hover, .g-col.m4 a[data-act="soon"], .g-col.m4 a[data-act="soon"]:hover { color: #6b7488 !important; cursor: default; background: none !important; }
+.g-col:is(.m4s, .m4m) a, .g-col:is(.m4s, .m4m) a:hover, .g-col.m4 a[data-act="soon"], .g-col.m4 a[data-act="soon"]:hover { color: #6b7488 !important; cursor: default; background: none !important; }
 /* +물건등록이 선정물건 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
 /* 메뉴 여덟 — 예전 마이페이지를 빼고 더보기를 '마이페이지'로 이름을 바꾸며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
 /* 메뉴 전부(아래 펼침 칸도 같은 자리) 두 글자만큼 왼쪽으로 — --menu-shift. 좁은 창(1,416 아래)에선 로고에 붙지 않게 덜 옮긴다 */
 .m0 { left: calc(13.75% - var(--menu-shift)); } .m1 { left: calc(22.00% - var(--menu-shift)); } .m2 { left: calc(29.39% - var(--menu-shift)); } .m3c { left: calc(36.79% - var(--menu-shift)); } .m3f { left: calc(44.18% - var(--menu-shift)); }
-.m3 { left: calc(51.57% - var(--menu-shift)); } .m4 { left: calc(58.96% - var(--menu-shift)); } .m4m { left: calc(66.36% - var(--menu-shift)); } .m5 { left: calc(73.75% - var(--menu-shift)); } /* 자금관리를 낙찰이후 오른쪽 위 메뉴로 꺼내 한 칸 늘었다 — +물건등록(글이 길다) 다음만 조금 넓게, 나머지는 7.39% 고르게 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 */
+.m3 { left: calc(51.57% - var(--menu-shift)); } .m4 { left: calc(58.96% - var(--menu-shift)); } .m4s { left: calc(64% - var(--menu-shift)); } .m4m { left: calc(66.36% - var(--menu-shift)); } .m5 { left: calc(73.75% - var(--menu-shift)); } /* 자금관리를 낙찰이후 오른쪽 위 메뉴로 꺼내 한 칸 늘었다 — +물건등록(글이 길다) 다음만 조금 넓게, 나머지는 7.39% 고르게 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 */
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: var(--nav-text) !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
@@ -191,7 +191,8 @@ button { cursor: pointer; }
 .g-box {
   /* 상단 메뉴 전부의 아래 메뉴를 한 번에 펼치고 접는 단추 — 속은 비우고 흰 테두리·흰 삼각형 */
   /* 높이 — 메뉴 글자 윗선(≈39)과 밑줄 막대 아래(69) 사이 가운데(54)에 상자 가운데를 둔다 */
-  position: absolute; left: calc(79.2% + 2em); top: 45px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 2px; border: 1px solid var(--nav-text);
+  /* 가로 — 1280 상자 오른쪽 끝(이름 · 로그아웃이 위 줄로 올라가 빈 자리). 메뉴 열은 이 단추 앞까지 고르게 벌어진다 */
+  position: absolute; left: calc(100% - 18px); top: 45px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 2px; border: 1px solid var(--nav-text);
   background: transparent; display: grid; place-items: center; padding: 0; transition: background .15s;
 }
 .g-box svg { width: 8px; height: 8px; color: var(--nav-text); transition: transform .2s; }
@@ -3139,6 +3140,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <a class="g-menu m3f" href="#/finance" data-act="go-finance" id="navFinance">자금관리</a>
       <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
       <a class="g-menu m4" href="#/community" data-act="go-community" id="navCommunity">커뮤니티</a>
+      <a class="g-menu m4s off" href="#" data-act="soon" data-name="스토어" aria-disabled="true" title="준비 중">스토어</a>
       <a class="g-menu m4m off" href="#" data-act="soon" data-name="매뉴얼" aria-disabled="true" title="준비 중">매뉴얼</a>
       <a class="g-menu m5" href="#/more" data-act="go-more" id="navMore">마이페이지</a>
       <div class="pop-root" data-pop="all" style="display:contents">
@@ -3555,6 +3557,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m3', [['지역분석', 'go-market'], ['손품분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
     ['m4', [['공지', 'go-community'], ['오류및제안', 'go-community'], ['FAQ', 'go-community'], ['자유게시판', '']]],
+    ['m4s', [['준비중', '', '스토어']]],   /* 스토어 — 준비 중 */
     ['m4m', [['투자9단계', '']]],   /* 준비 중 — 물건선정부터 매도 · 세금까지 */
     ['m5', [['내 정보', 'go-more'], ['알림', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];

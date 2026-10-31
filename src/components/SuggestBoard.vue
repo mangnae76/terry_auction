@@ -123,7 +123,9 @@ const whoOf = (x: { authorName: string; admin?: boolean }) => (x.admin ? '운영
 
     <!-- 목록 -->
     <template v-if="view === 'list'">
+      <!-- 글쓰기는 찾기 줄 맨 앞(제목 고르는 칸 왼쪽) -->
       <form class="sgb-search" @submit.prevent="search">
+        <button type="button" class="sgb-btn green" @click="startWrite">글쓰기</button>
         <select v-model="field" class="sgb-select">
           <option v-for="[k, label] in FIELDS" :key="k" :value="k">{{ label }}</option>
         </select>
@@ -146,11 +148,10 @@ const whoOf = (x: { authorName: string; admin?: boolean }) => (x.admin ? '운영
           </tbody>
         </table>
       </div>
-      <div class="sgb-foot">
-        <nav v-if="pages > 1" class="sgb-pages">
+      <div v-if="pages > 1" class="sgb-foot">
+        <nav class="sgb-pages">
           <button v-for="n in pages" :key="n" type="button" :class="{ on: n === page }" @click="page = n">{{ n }}</button>
         </nav>
-        <button type="button" class="sgb-btn green" @click="startWrite">글쓰기</button>
       </div>
     </template>
 
