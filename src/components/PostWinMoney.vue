@@ -167,7 +167,7 @@ const pickEvict = async (k: 'deal' | 'exec') => {
   } finally { evBusy.value = false; }
 };
 // 웹은 '입찰가A' 대신 화면 이름 '수익분석' 으로 부른다(새화면엔 A안 이름이 크게 서지 않는다)
-const planName = webEmbed ? '수익분석' : '입찰가A';
+const planName = webEmbed ? '수익분석 확정안' : '입찰가A';   // 웹은 수익분석에서 확정한 안의 값을 쓴다
 const srcText = (actual: number, planned: number, tab: string) => (actual && planned ? `실제 ${won(actual)} + ${planName} ${won(planned)} — ${tab} 탭`
   : actual ? `실제 기록 — ${tab} 탭` : `${planName}에서 가져옵니다 — ${tab} 탭에서 직접 입력`);
 /** 매매차익(예정신고) — 매도가 − 낙찰가 − 필요경비 */
@@ -271,10 +271,11 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 
       <div class="pwm-tax">
         <article class="pwm-card">
-          <h3>개별소득세</h3>
+          <!-- 웹 — 제목 '비용 및 차익' + 아이콘(동전 쌓기) -->
+          <h3><svg v-if="webEmbed" class="pwm-h3-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v4c0 1.7 3.1 3 7 3s7-1.3 7-3V6" /><path d="M5 10v4c0 1.7 3.1 3 7 3s7-1.3 7-3v-4" /><path d="M5 14v4c0 1.7 3.1 3 7 3s7-1.3 7-3v-4" /></svg>{{ webEmbed ? '비용 및 차익' : '개별소득세' }}</h3>
           <dl>
             <div><dt>낙찰가</dt><dd>{{ won(plan.bid) }}</dd></div>
-            <div><dt>매도가</dt><dd>{{ won(plan.sale) }}<small>{{ saleFixed ? `확정 — 매도일 ${auction?.sellDate}` : '입찰가A' }}</small></dd></div>
+            <div><dt>매도가</dt><dd>{{ won(plan.sale) }}<small>{{ saleFixed ? `확정 — 매도일 ${auction?.sellDate}` : planName }}</small></dd></div>
             <div><dt>필요경비</dt><dd>{{ won(split.need) }}<small>{{ srcText(split.needActual, split.needPlan, '필요경비') }}</small></dd></div>
             <div :class="{ key: who !== 'biz' }"><dt>{{ who === 'biz' ? '매매차익' : '양도차익' }}</dt><dd :class="{ neg: tradeGain < 0 }">{{ won(tradeGain) }}<small>매도가 − 낙찰가 − 필요경비{{ who === 'biz' ? ' — 예정신고' : '' }}</small></dd></div>
             <template v-if="who === 'biz'">
@@ -286,7 +287,8 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
         </article>
 
         <article class="pwm-card">
-          <h3>{{ who === 'biz' ? '종합소득세(예상)' : '양도소득세(예상)' }}</h3>
+          <!-- 웹 — 아이콘(세금 고지서) -->
+          <h3><svg v-if="webEmbed" class="pwm-h3-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2V2z" /><path d="M9 7h6M9 11h6" /><path d="m9.5 16 5-3" /><circle cx="9.5" cy="13" r=".6" /><circle cx="14.5" cy="16" r=".6" /></svg>{{ who === 'biz' ? '종합소득세(예상)' : '양도소득세(예상)' }}</h3>
           <dl v-if="who === 'biz'">
             <div><dt>전년도 매출</dt><dd>{{ won(lastSales) }}<small>{{ lastSales >= 300_000_000 ? '3억 이상 — 복식부기 의무' : '3억 미만 — 간편장부 대상' }}</small></dd></div>
             <div><dt>금년도 누적매출</dt><dd>{{ won(thisSales) }}<small>{{ otherFromAcct ? '다른 소득금액(내 정보)' : '올해 다른 매매차익' }} {{ won(otherGain) }}</small></dd></div>
@@ -403,7 +405,8 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-tax { --pwm-card-h: 560px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
 .pwm-tax > .pwm-card { min-height: var(--pwm-card-h, 0px); display: flex; flex-direction: column; }
 .pwm-card { border: 1px solid #e3e8f0; border-radius: 10px; padding: 20px 26px 22px; }
-.pwm-card h3 { margin: 0 0 6px; font-size: 16px; font-weight: 800; }
+.pwm-card h3 { margin: 0 0 6px; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 7px; }
+.pwm-h3-ico { flex: none; width: 17px; height: 17px; color: #2a5fbf; }   /* 다른 카드 제목 아이콘과 같은 파랑 */
 .pwm-card dl { margin: 0; }
 .pwm-card dl > div { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 14px 4px; border-bottom: 1px solid #eef1f6; }
 .pwm-card dl > div:last-child { border-bottom: 0; }

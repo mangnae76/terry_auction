@@ -7,7 +7,7 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { withConfirmedPlan } from '../services/confirmedPlan';
 // 웹은 입찰가산정 탭 이름이 '수익분석' 이고, 수익분석에서 '확정' 한 안의 값을 쓴다(앱은 그대로 A안)
 const webEmbedLedger = inject<boolean>('webEmbed', false);
-const planSrc = webEmbedLedger ? '수익분석' : '입찰가산정A';
+const planSrc = webEmbedLedger ? '수익분석 확정안' : '입찰가산정A';
 const planned = <T extends Parameters<typeof withConfirmedPlan>[0]>(a: T): T => (webEmbedLedger ? withConfirmedPlan(a) : a) as T;
 import { useFinanceStore } from '../stores/financeStore';
 import { useInteriorStore } from '../stores/interiorStore';
