@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
+import AddressSearchInput from '../components/AddressSearchInput.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useAuctionStore } from '../stores/auctionStore';
 import {
@@ -198,7 +199,9 @@ const submit = async () => {
         <!-- 주소 -->
         <div class="prf-fld">
           <small>주소</small>
-          <input v-model="form.address1" class="prf-input" placeholder="예: 경기 성남시 분당구 수내로 181" />
+          <!-- 웹 — 주소 찾기(동 이름 · 도로명 · 건물 이름 일부만 적어도 후보) -->
+          <AddressSearchInput v-if="webEmbed" v-model="form.address1" input-class="prf-input" placeholder="동 이름 · 도로명 · 건물 이름으로 찾기 — 예: 정자동" />
+          <input v-else v-model="form.address1" class="prf-input" placeholder="예: 경기 성남시 분당구 수내로 181" />
           <input v-model="form.address2" class="prf-input mt" placeholder="상세주소 — 예: 분당동, 샛별마을" />
         </div>
 
