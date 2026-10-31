@@ -141,15 +141,13 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
   <section class="dq">
     <div class="dq-top">
       <strong>동 사분면 <em>(원 = 동 · 정상 + 직거래)</em></strong>
-      <!-- 동 하나로 좁혔을 때 — 위 탭까지 가지 않고 여기서 전체로 되돌린다 -->
-      <button v-if="selected" type="button" class="dq-all" @click="emit('pick-dong', '')"><b>{{ selected }}</b>만 보는 중<span>전체 동 보기</span></button>
       <div class="dq-seg" role="tablist" aria-label="원 크기">
         <button type="button" :class="{ on: sizeKey === 'avg' }" @click="pickSize('avg')">원 크기 평균가</button>
         <button type="button" :class="{ on: sizeKey === 'n' }" @click="pickSize('n')">원 크기 거래건수</button>
       </div>
     </div>
     <div class="dq-read">
-      <p><b>읽는법</b><span>원 하나가 동 하나입니다. <em>오른쪽일수록 거래가 활발하고, 위로 갈수록 평당가가 비쌉니다.</em> 빨간 십자선은 평균이라 네 칸으로 나뉩니다. 원에 마우스를 대면 그 동의 숫자가 뜨고, 누르면 그 동으로 좁힙니다. 같은 원을 다시 누르거나 빈 곳을 누르면 전체 동으로 돌아갑니다.</span></p>
+      <p><b>읽는법</b><span>원 하나가 동 하나입니다. <em>오른쪽일수록 거래가 활발하고, 위로 갈수록 평당가가 비쌉니다.</em> 빨간 십자선은 평균이라 네 칸으로 나뉩니다. 원에 마우스를 대면 그 동의 숫자가 뜨고, 누르면 그 동으로 좁힙니다.</span></p>
       <p v-if="insight"><b>한눈에</b><span v-html="insight" /></p>
     </div>
     <div class="dq-board">
@@ -167,10 +165,6 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dq-top strong { padding-left: 20px; font-size: 16px; font-weight: 800; color: #111827; }
 .dq-top strong em { font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; }
 .dq-seg { display: grid; grid-auto-flow: column; gap: 6px; }
-.dq-all { margin-right: auto; display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 6px 0 12px; border: 1px solid #c9d8fb; border-radius: 999px; background: #f5f8ff; font-family: inherit; font-size: 14px; color: #1f2a44; cursor: pointer; }
-.dq-all b { font-weight: 800; }
-.dq-all span { padding: 3px 10px; border-radius: 999px; background: #2b6df3; font-size: 13px; font-weight: 700; color: #fff; }
-.dq-all:hover span { background: #1f5fe0; }
 .dq-seg button { height: 34px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #6b7280; cursor: pointer; }
 .dq-seg button.on { border-color: #2b6df3; background: #eef3ff; color: #2b6df3; }
 .dq-read { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid #e3e8f0; border-radius: 10px; background: #fff; font-size: 14px; line-height: 1.65; color: #111827; }

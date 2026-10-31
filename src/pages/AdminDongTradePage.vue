@@ -1285,8 +1285,6 @@ const downloadCsv = () => {
         <div v-else-if="webEmbed" class="adm-sum-wrap">
           <!-- 동 사분면 — 거래건수 × 평균 평당가, 원을 누르면 그 동으로. 아래 표는 그대로 -->
           <DongQuadrant v-if="listView === 'table'" :rows="quadRows" :selected="dong" @pick-dong="(d: string) => { dong = d; }" />
-        <!-- 동 하나만 보는 중 — 표에서 시작했으니 되돌리기도 표 바로 위에서 -->
-        <div v-if="dong" class="adm-dong-only"><span><b>{{ dong }}</b>만 보는 중</span><button type="button" @click="dong = ''">전체 동 보기</button></div>
         <div class="adm-table-wrap">
           <table class="adm-table adm-dongsum">
             <thead>
@@ -1693,8 +1691,4 @@ const downloadCsv = () => {
 .adm-sort i.on { color: #2f6b45; }
 .adm-dong-link { border: 0; background: none; padding: 0; font: inherit; font-weight: 700; color: #111827; cursor: pointer; }
 .adm-dong-link:hover { color: #2b6df3; text-decoration: underline; }
-.adm-dong-only { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; padding: 8px 8px 8px 14px; border: 1px solid #c9d8fb; border-radius: 8px; background: #f5f8ff; font-size: 14px; color: #1f2a44; }
-.adm-dong-only b { font-weight: 800; }
-.adm-dong-only button { margin-left: auto; height: 30px; padding: 0 14px; border: 0; border-radius: 6px; background: #2b6df3; font-family: inherit; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer; }
-.adm-dong-only button:hover { background: #1f5fe0; }
 </style>
