@@ -750,7 +750,7 @@ button { cursor: pointer; }
 /* 지도가 화면을 통째로 쓰는 화면 — 페이지 자체는 굴러가지 않는다(판은 제 안에서만 굴러간다) */
 /* 다른 화면으로 가도 랭킹지도는 숨긴 채 남아 있다 — 시장분석이 보일 때만 잠근다 */
 html:has(#marketView:not([hidden]) .app-market[data-k="ranking"]), body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) { overflow: hidden; overscroll-behavior: none; }
-body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) .foot { display: none; }
+body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) :is(.foot, .foot-note) { display: none; }
 :is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .adm-shell { min-height: 0; background: transparent; }
 :is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .adm-body { padding: 0 !important; max-width: none !important; }
 :is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-stage {
@@ -1617,7 +1617,7 @@ body > .fin-pop .fin-stage-card :is(small, span, b, em, strong, a, p, div) { fon
 .app-trip .ftp-fixed-top, .app-trip .ftp-update-bar, .app-trip .ftp-list { max-width: none !important; margin-left: 0 !important; margin-right: 0 !important; }
 .app-trip .ftp-fixed-top { background: transparent; }
 /* 지도가 화면을 채우므로 바닥글은 임장경로에서 비운다 */
-body.trip-full .foot { display: none; }
+body.trip-full :is(.foot, .foot-note) { display: none; }
 .app-detail .adp-shell { min-height: 0 !important; padding-bottom: 0 !important; background: transparent !important; }
 /* 웹 — 웹에 띄운 앱 화면(물건상세 모든 탭)도 13 미만 글자는 14 로. ▾·▼ 같은 기호는 그대로 */
 .app-detail :where(
@@ -2799,6 +2799,10 @@ html, body { overflow-x: clip; }
 
 /* ================= 바닥글 — 시안 그대로 ================= */
 .foot { background: var(--foot); color: var(--foot-text); }
+/* 유의사항 한 줄 — 바닥 띠 위, 옅은 띠 · 가운데 */
+.foot-note { margin-top: 48px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.foot-note p { margin: 0; padding-block: 16px; font-size: 13px; line-height: 1.6; color: var(--muted); text-align: center; text-wrap: balance; }
+.foot-note b { margin-right: 4px; font-weight: 700; color: var(--text-2); }
 .foot-in { position: relative; min-height: 164px; padding-block: 26px 48px; } /* 바닥 띠를 얇게 — 로고 위 여백을 줄였다(56 → 26) */
 .f-brand { display: flex; align-items: center; gap: 10px; margin: 0 0 12px 3px; }
 .f-brand img { height: 32px; width: auto; display: block; } /* 머리띠 로고(44px)와 너무 벌어지지 않게 */
@@ -3085,7 +3089,7 @@ span.cal-day.has { cursor: help; }
 /* 지도 값 단추 — 글자를 단추 정가운데에(전역 button 여백 때문에 아래로 처졌다) */
 .app-market .tsp-in-dong .tsp-metric button { display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; line-height: 1 !important; }
 html:has(#marketView:not([hidden]) .tsp-in-dong), body:has(#marketView:not([hidden]) .tsp-in-dong) { overflow: hidden; overscroll-behavior: none; }
-body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
+body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { display: none; }
 </style>
 
 <header class="gnb">
@@ -3217,6 +3221,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   <button type="button" class="fab" id="fab" data-act="register" data-tip="끌어서 옮길 수 있어요 · 오른쪽 클릭하면 제자리" data-tip-pos="left"><span class="plus">+</span>선정물건등록</button>
 </main>
 
+<!-- 유의사항 — 모든 화면 맨 아래(바닥 띠 바로 위) 공통 한 줄 -->
+<div class="foot-note" role="note"><div class="wrap"><p><b>※ 유의사항</b> 제공되는 정보는 참고용이며, 사실과 다를 수 있습니다. 투자의 책임은 본인에게 있으며, 입찰 전 반드시 공부열람 및 현장조사를 하시기 바랍니다.</p></div></div>
 <footer class="foot">
   <div class="wrap">
     <div class="foot-in">
