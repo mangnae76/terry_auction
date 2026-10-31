@@ -2361,7 +2361,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 :root[data-theme="dark"] :is(.dq-read, .ttl-read, .bm-read) em { background: linear-gradient(transparent 62%, rgba(91, 140, 255, .3) 62%) !important; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.dq-read, .ttl-read, .bm-read) em { background: linear-gradient(transparent 62%, rgba(91, 140, 255, .3) 62%) !important; } }
 /* 바닥 링크 글(저작권정책 · 사업제휴) — 제목 16 · 본문 14, 길면 창 안에서 내려 읽는다 */
-.dialog.doc-dlg { width: min(820px, 100%); }
+.dialog.doc-dlg { width: min(1040px, 100%); }   /* 넓게 — 약관 글이 너무 길게 늘어지지 않게 */
 /* 스토어 구매하기 창 */
 .dialog.buy-dlg { width: min(520px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; padding: 28px 30px 30px; display: flex; flex-direction: column; gap: 16px; }
 .buy-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
