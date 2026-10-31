@@ -561,6 +561,10 @@ const sampleAuctions: AuctionDetail[] = [
   },
 ];
 
+/** 새 물건 비용 기본값을 덮어쓸 것 — 웹은 명도비를 0원으로 시작한다(명도비는 명도분석에서 계산해 세금분석에 넣는다). 앱은 비워 둔다 */
+let draftCostOverride: Partial<ReturnType<typeof defaultBidCost>> = {};
+export const setDraftCostDefaults = (patch: Partial<ReturnType<typeof defaultBidCost>>) => { draftCostOverride = { ...patch }; };
+
 const createDraftAuction = (): AuctionDetail => ({
   id: createId(),
   eventDate: new Date().toISOString().slice(0, 10),
@@ -640,7 +644,7 @@ const createDraftAuction = (): AuctionDetail => ({
     checklist: defaultRightsChecklist(),
   },
   excelAnalysis: defaultExcelAnalysis(),
-  bidCost: defaultBidCost(),
+  bidCost: { ...defaultBidCost(), ...draftCostOverride },
   marketDemand: defaultMarketDemand(),
   importMeta: {
     source: 'manual',

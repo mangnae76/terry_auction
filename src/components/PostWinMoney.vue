@@ -187,7 +187,8 @@ const srcText = (actual: number, planned: number, tab: string) => (actual && pla
 /** 매매차익(예정신고) — 매도가 − 낙찰가 − 필요경비 */
 const tradeGain = computed(() => plan.value.sale - plan.value.bid - split.value.need);
 /** 사업소득 — 매매차익 − 사업경비(5월 종합소득세) */
-const gain = computed(() => tradeGain.value - split.value.biz);
+// 웹 위쪽 카드는 명도비를 빼고 계산한다(명도 전 기준) — 명도비용은 아래 두 시나리오 상자에서 명도분석 값으로 넣는다
+const gain = computed(() => tradeGain.value - (webEmbed ? bizBase.value : split.value.biz));
 const vat = computed(() => vatOf(props.auction?.propertyType ?? '', props.auction?.buildingAreaM2 ?? 0));
 // 매출 · 다른 차익 — 매도 기록(매도일 · 매도가)에서 해마다 셈한다. 없으면 0
 const thisYear = new Date().getFullYear();
@@ -332,7 +333,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
             <div v-if="webEmbed" class="sub"><dt>└ 취득세</dt><dd>{{ won(acqTax) }}<small>취득세 · 지방교육세 · 농특세(필요경비에 포함)</small></dd></div>
             <div :class="{ key: who !== 'biz' }"><dt>{{ who === 'biz' ? '매매차익' : '양도차익' }}</dt><dd :class="{ neg: tradeGain < 0 }">{{ won(tradeGain) }}<small>매도가 − 낙찰가 − 필요경비{{ who === 'biz' ? ' — 예정신고' : '' }}</small></dd></div>
             <template v-if="who === 'biz'">
-              <div><dt>사업경비</dt><dd>{{ won(split.biz) }}<small>{{ srcText(split.bizActual, split.bizPlan, '사업경비') }}</small></dd></div>
+              <div><dt>사업경비</dt><dd>{{ won(webEmbed ? bizBase : split.biz) }}<small>{{ webEmbed ? '명도비용 빼고 — 명도비용은 아래 시나리오에서 넣습니다' : srcText(split.bizActual, split.bizPlan, '사업경비') }}</small></dd></div>
               <div class="key"><dt>사업소득</dt><dd :class="{ neg: gain < 0 }">{{ won(gain) }}<small>매매차익 − 사업경비 — 5월 종합소득세</small></dd></div>
             </template>
             <div><dt>부가세 대상</dt><dd><span :class="['pwm-tag', { on: who === 'biz' && vat.taxable }]">{{ who !== 'biz' ? '해당없음' : vat.taxable ? '과세' : '면세' }}</span><small>{{ who !== 'biz' ? '개인 양도는 부가세가 없습니다' : vat.why }}</small></dd></div>
