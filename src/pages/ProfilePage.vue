@@ -129,7 +129,7 @@ const submit = async () => {
     <div class="prf-body">
       <section class="prf-card">
         <h2 class="prf-h1">내 정보 수정</h2>
-        <p class="prf-sub">비밀번호·연락처·주소 등 개인정보를 수정합니다.</p>
+        <p class="prf-sub">{{ webEmbed ? '비밀번호 · 연락처 · 세금 계산 기준을 수정합니다.' : '비밀번호·연락처·주소 등 개인정보를 수정합니다.' }}</p>
         <p class="prf-warn">🔒 본인 확인을 위해 현재 비밀번호를 입력해야 정보수정이 가능합니다.</p>
 
         <!-- 누구로 들어와 있는지 -->
@@ -138,7 +138,9 @@ const submit = async () => {
           <span class="lab">아이디</span><b>{{ loginId }}</b>
         </div>
 
-        <!-- 비밀번호 -->
+        <!-- 비밀번호 — 웹은 묶음 제목 + 한 줄 세 칸 -->
+        <h3 v-if="webEmbed" class="prf-sec">비밀번호 변경</h3>
+        <div :class="{ 'prf-grid3': webEmbed }">
         <label class="prf-fld">
           <small>현재 비밀번호</small>
           <input v-model="currentPw" type="password" class="prf-input" :disabled="!canChangePw" placeholder="현재 비밀번호 입력" autocomplete="current-password" />
@@ -157,9 +159,11 @@ const submit = async () => {
             <i class="prf-lock">🔒</i>
           </span>
         </label>
+        </div>
         <p v-if="!canChangePw" class="prf-hint">카카오·네이버로 들어온 계정이라 바꿀 비밀번호가 없습니다.</p>
 
         <!-- 이메일 · 휴대폰 — 웹은 한 줄에 나란히 -->
+        <h3 v-if="webEmbed" class="prf-sec">연락처</h3>
         <div :class="{ 'prf-pair': webEmbed }">
         <!-- 이메일 -->
         <div class="prf-fld">
@@ -205,33 +209,35 @@ const submit = async () => {
           <input v-model="form.address2" class="prf-input mt" placeholder="상세주소 — 예: 분당동, 샛별마을" />
         </div>
 
-        <!-- 웹 — 사업자 · 주택 · 매출(세금 셈의 바탕) -->
+        <!-- 웹 — 세금 계산 기준(사업자 · 주택 · 매출 · 다른 소득). 비운 매출은 매도 기록에서 계산한 값(흐린 글)을 쓴다 -->
         <template v-if="webEmbed">
-          <label class="prf-fld">
-            <small>사업자 구분</small>
-            <select v-model="form.bizType" class="prf-input prf-select">
-              <option value="">선택하세요</option>
-              <option v-for="[k, label] in BIZ_TYPES" :key="k" :value="k">{{ label }}</option>
-            </select>
-          </label>
-          <label class="prf-fld">
-            <small>주택 보유수</small>
-            <span class="prf-unit"><input v-model="form.houseCount" class="prf-input" inputmode="numeric" placeholder="0" @input="form.houseCount = form.houseCount.replace(/\D/g, '')" /><em>채</em></span>
-          </label>
-          <!-- 세금 계산 기준 — 직접 적는다. 비우면 매도 기록에서 셈한 값(흐린 글)을 쓴다 -->
-          <div class="prf-fld">
-            <small>매출 <i class="prf-auto">비우면 매도 기록에서 계산합니다</i></small>
-            <div class="prf-sales">
-              <label v-for="y in [thisYear - 1, thisYear]" :key="`s${y}`"><b>{{ y }}년</b><span class="prf-unit"><FormattedNumberInput v-model="salesInput[y]" mode="string" class="prf-input" :placeholder="salesOf(y).toLocaleString('ko-KR')" /><em>원</em></span></label>
-            </div>
+          <h3 class="prf-sec">세금 계산 기준 <i class="prf-auto">세금분석이 이 값으로 계산합니다</i></h3>
+          <div class="prf-grid3">
+            <label class="prf-fld">
+              <small>사업자 구분</small>
+              <select v-model="form.bizType" class="prf-input">
+                <option value="">선택하세요</option>
+                <option v-for="[k, label] in BIZ_TYPES" :key="k" :value="k">{{ label }}</option>
+              </select>
+            </label>
+            <label class="prf-fld">
+              <small>주택 보유수</small>
+              <span class="prf-unit"><input v-model="form.houseCount" class="prf-input" inputmode="numeric" placeholder="0" @input="form.houseCount = form.houseCount.replace(/\D/g, '')" /><em>채</em></span>
+            </label>
+            <span aria-hidden="true" />
+            <label v-for="y in [thisYear - 1, thisYear]" :key="`s${y}`" class="prf-fld">
+              <small>{{ y }}년 매출</small>
+              <span class="prf-unit"><FormattedNumberInput v-model="salesInput[y]" mode="string" class="prf-input" :placeholder="salesOf(y).toLocaleString('ko-KR')" /><em>원</em></span>
+            </label>
+            <label class="prf-fld">
+              <small>{{ thisYear }}년 다른 소득금액</small>
+              <span class="prf-unit"><FormattedNumberInput v-model="otherInput" mode="string" class="prf-input" placeholder="0" /><em>원</em></span>
+            </label>
           </div>
-          <label class="prf-fld">
-            <small>{{ thisYear }}년 다른 소득금액 <i class="prf-auto">이 앱 밖의 매출 − 경비. 종합소득세 구간을 정할 때 더합니다</i></small>
-            <span class="prf-unit"><FormattedNumberInput v-model="otherInput" mode="string" class="prf-input" placeholder="0" /><em>원</em></span>
-          </label>
+          <p class="prf-hint">매출을 비우면 매도 기록에서 계산합니다(흐린 숫자). 다른 소득금액은 이 앱 밖의 매출 − 경비로, 종합소득세 구간을 정할 때 더합니다.</p>
         </template>
 
-        <button type="button" class="prf-submit" :disabled="saving || loading" @click="submit">
+        <button type="button" :class="['prf-submit', { web: webEmbed }]" :disabled="saving || loading" @click="submit">
           {{ saving ? '저장하는 중…' : '내 정보 수정' }}
         </button>
       </section>
@@ -333,4 +339,15 @@ const submit = async () => {
 .prf-select { max-width: 220px; }
 .prf-sales span { display: inline-flex; gap: 8px; align-items: baseline; color: #111827; }
 .prf-sales b { color: #6b7280; font-weight: 600; }
+
+/* ===== 웹 정보수정 정리 — 묶음 제목(구분선) · 한 줄 세 칸 격자 · 같은 높이 칸 · 단추 가운데 ===== */
+.prf-sec { display: flex; align-items: baseline; gap: 8px; margin: 22px 0 10px; padding-top: 18px; border-top: 1px solid #edf0f5; font-size: 15px; font-weight: 800; color: #1f2a44; }
+.prf-sec .prf-auto { font-size: 13px; font-weight: 400; }
+.prf-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 20px; align-items: start; }
+.prf-grid3 > .prf-fld { min-width: 0; margin-bottom: 0; }
+.prf-grid3 .prf-unit { display: flex; width: 100%; }
+.prf-grid3 .prf-unit > :first-child, .prf-grid3 .prf-unit :deep(.prf-input) { flex: 1; width: auto !important; min-width: 0; }
+.prf-grid3 select.prf-input { width: 100%; }
+.prf-submit.web { display: block; width: 280px; max-width: 100%; margin: 28px auto 0; }
+@media (max-width: 900px) { .prf-grid3 { grid-template-columns: 1fr; } .prf-grid3 > span[aria-hidden] { display: none; } }
 </style>
