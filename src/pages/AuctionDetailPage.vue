@@ -6900,30 +6900,24 @@ const goBack = () => router.back();
             <!-- 안 고르기 — 있는 안은 고르고, 바로 다음 빈 칸은 눌러서 안을 하나 더 만든다. 초기화 · 삭제는 같은 줄 오른쪽 -->
             <div class="bida-plans">
               <div class="bida-seg" role="tablist">
-                <!-- 안마다 앞에 확정 동그라미(누르면 그 안으로 확정 · 확정은 하나) + 안 이름(누르면 그 안을 본다) -->
-                <div
+                <button
                   v-for="(label, ti) in PROFIT_NAV_LABELS"
                   :key="`seg-${label}`"
-                  :class="['bida-plan', { on: ti === selectedPlan, add: !profitScenarios[ti], ok: !!profitScenarios[ti] && ti === confirmedIdx }]"
-                >
-                  <button
-                    v-if="profitScenarios[ti]"
-                    type="button"
-                    :class="['bida-tick', { on: ti === confirmedIdx }]"
-                    :aria-pressed="ti === confirmedIdx"
-                    :aria-label="`${label}안 확정`"
-                    :title="ti === confirmedIdx ? `${label}안으로 확정했습니다 — 낙찰관리 · 세금분석 · 자금관리가 이 안 값을 씁니다` : `${label}안으로 확정`"
-                    @click="confirmPlan(ti)"
-                  ><svg v-if="ti === confirmedIdx" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10" /></svg></button>
-                  <button
-                    type="button"
-                    role="tab"
-                    class="bida-plan-name"
-                    :aria-selected="ti === selectedPlan"
-                    :disabled="!profitScenarios[ti] && ti !== profitScenarios.length"
-                    @click="pickPlanTab(ti)"
-                  >{{ profitScenarios[ti] ? `${label}안` : `＋ ${label}안` }}</button>
-                </div>
+                  type="button"
+                  role="tab"
+                  :aria-selected="ti === selectedPlan"
+                  :disabled="!profitScenarios[ti] && ti !== profitScenarios.length"
+                  :class="{ on: ti === selectedPlan, add: !profitScenarios[ti] }"
+                  @click="pickPlanTab(ti)"
+                >{{ profitScenarios[ti] ? `${label}안` : `＋ ${label}안` }}</button>
+              </div>
+              <!-- 확정 — 탭(보기)과 따로. 체크한 안이 확정(하나만), 낙찰관리 · 세금분석 · 자금관리가 그 안 값을 쓴다 -->
+              <div class="bida-confirm" role="radiogroup" aria-label="확정할 안">
+                <span class="lab">확정</span>
+                <label v-for="(sc2, ci) in profitScenarios" :key="`ok-${ci}`" :class="['bida-ck', { on: ci === confirmedIdx }]">
+                  <input type="radio" name="bida-confirm" :checked="ci === confirmedIdx" @change="confirmPlan(ci)" />
+                  <i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10" /></svg></i>{{ sc2.label }}
+                </label>
               </div>
               <span class="bida-acts">
                 <button type="button" class="adp-pd-reset" title="이 안의 대출·취득세·법무비 비중을 기본값으로" @click.stop="resetScenarioRates(sc)">
@@ -13199,20 +13193,23 @@ select.adp-pub-input option { text-align: center; }
 .bida-low > .bida-auto { align-self: start; }
 .bida-plans { display: flex; align-items: center; gap: 10px; }
 .bida-seg { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; background: #e3e8f1; }
-.bida-seg .bida-plan { display: inline-flex; align-items: center; gap: 2px; padding-left: 10px; border-radius: 8px; }
-.bida-seg .bida-plan.add { padding-left: 0; }
-.bida-seg .bida-plan.on { background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .12); }
-.bida-seg .bida-plan.ok { box-shadow: inset 0 0 0 2px #1f7a4a; }
-.bida-seg .bida-plan.on.ok { box-shadow: inset 0 0 0 2px #1f7a4a, 0 1px 2px rgba(15, 23, 42, .12); }
+.bida-seg button { height: 34px; padding: 0 18px; border: 0; border-radius: 8px; background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; color: #4b5563; cursor: pointer; }
+.bida-seg button.on { background: #fff; color: #1f2a44; font-weight: 800; box-shadow: 0 1px 2px rgba(15, 23, 42, .12); }
+.bida-seg button.add { color: #9aa3b2; }
+.bida-seg button:disabled { cursor: default; opacity: .5; }
+/* 확정 체크 묶음 — 탭 오른쪽, 체크한 안 하나가 확정 */
+.bida-confirm { display: inline-flex; align-items: center; gap: 4px; height: 42px; padding: 0 8px 0 12px; border: 1px solid #e3e8f1; border-radius: 10px; background: #fff; }
+.bida-confirm .lab { margin-right: 4px; font-size: 13px; font-weight: 700; color: #6b7280; }
+.bida-ck { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px 0 6px; border-radius: 7px; font-size: 14px; font-weight: 600; color: #374151; cursor: pointer; }
+.bida-ck:hover { background: #f3f5f9; }
+.bida-ck input { position: absolute; opacity: 0; width: 0; height: 0; }
+.bida-ck i { display: inline-grid; place-items: center; width: 18px; height: 18px; border: 1.5px solid #c3cbd8; border-radius: 5px; background: #fff; }
+.bida-ck i svg { width: 11px; height: 11px; color: #fff; opacity: 0; }
+.bida-ck.on { color: #1f7a4a; font-weight: 800; }
+.bida-ck.on i { border-color: #1f7a4a; background: #1f7a4a; }
+.bida-ck.on i svg { opacity: 1; }
+.bida-ck input:focus-visible + i { box-shadow: 0 0 0 3px rgba(31, 122, 74, .25); }
 .bida-ok { margin-left: 6px; padding: 1px 6px; border-radius: 5px; background: #1f7a4a; font-size: 11px; font-weight: 800; color: #fff; vertical-align: 1px; }
-.bida-tick { display: inline-grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 1.5px solid #c3cbd8; border-radius: 50%; background: #fff; cursor: pointer; }
-.bida-tick:hover { border-color: #1f7a4a; }
-.bida-tick.on { border-color: #1f7a4a; background: #1f7a4a; }
-.bida-tick svg { width: 10px; height: 10px; color: #fff; }
-.bida-seg .bida-plan-name { height: 34px; padding: 0 16px 0 8px; border: 0; border-radius: 8px; background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; color: #4b5563; cursor: pointer; }
-.bida-seg .bida-plan.on .bida-plan-name { color: #1f2a44; font-weight: 800; }
-.bida-seg .bida-plan.add .bida-plan-name { padding-left: 16px; color: #9aa3b2; }
-.bida-seg .bida-plan-name:disabled { cursor: default; opacity: .5; }
 .bida-acts { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
 /* 돈이 나가는 순서(새화면) */
 .bidc-steps { display: grid; grid-template-columns: 1fr; gap: 10px; }   /* 단계마다 한 줄 — 이름이 길어 세 칸이면 금액이 꺾였다 */
