@@ -177,12 +177,12 @@ button { cursor: pointer; }
 /* 아직 만들지 않은 메뉴(커뮤니티 · 매뉴얼) — 회색으로 눌러도 반응 없는 듯 보이게, 아래 펼침 칸도 회색 */
 .g-menu.off, .g-menu.off:hover { color: #6b7488; cursor: default; }
 .g-menu.off::after { display: none; }
-.g-col:is(.m4s, .m4m) a, .g-col:is(.m4s, .m4m) a:hover, .g-col.m4 a[data-act="soon"], .g-col.m4 a[data-act="soon"]:hover { color: #6b7488 !important; cursor: default; background: none !important; }
+.g-col.m4m a, .g-col.m4m a:hover, .g-col.m4 a[data-act="soon"], .g-col.m4 a[data-act="soon"]:hover { color: #6b7488 !important; cursor: default; background: none !important; }
 /* +물건등록이 선정물건 왼쪽 첫 자리에 들어오며 앞 메뉴 셋이 한 칸씩 밀렸다(시장정보는 비어 있던 42% 자리로) */
 /* 메뉴 여덟 — 예전 마이페이지를 빼고 더보기를 '마이페이지'로 이름을 바꾸며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
 /* 메뉴 전부(아래 펼침 칸도 같은 자리) 두 글자만큼 왼쪽으로 — --menu-shift. 좁은 창(1,416 아래)에선 로고에 붙지 않게 덜 옮긴다 */
 .m0 { left: calc(13.75% - var(--menu-shift)); } .m1 { left: calc(22.00% - var(--menu-shift)); } .m2 { left: calc(29.39% - var(--menu-shift)); } .m3c { left: calc(36.79% - var(--menu-shift)); } .m3f { left: calc(44.18% - var(--menu-shift)); }
-.m3 { left: calc(51.57% - var(--menu-shift)); } .m4 { left: calc(58.96% - var(--menu-shift)); } .m4s { left: calc(64% - var(--menu-shift)); } .m4m { left: calc(66.36% - var(--menu-shift)); } .m5 { left: calc(73.75% - var(--menu-shift)); } /* 자금관리를 낙찰이후 오른쪽 위 메뉴로 꺼내 한 칸 늘었다 — +물건등록(글이 길다) 다음만 조금 넓게, 나머지는 7.39% 고르게 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 */
+.m3 { left: calc(51.57% - var(--menu-shift)); } .m4 { left: calc(58.96% - var(--menu-shift)); } .m4s { left: calc(62% - var(--menu-shift)); } .m4a { left: calc(64% - var(--menu-shift)); } .m4m { left: calc(66.36% - var(--menu-shift)); } .m5 { left: calc(73.75% - var(--menu-shift)); } /* 자금관리를 낙찰이후 오른쪽 위 메뉴로 꺼내 한 칸 늘었다 — +물건등록(글이 길다) 다음만 조금 넓게, 나머지는 7.39% 고르게 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 */
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: var(--nav-text) !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
@@ -192,7 +192,7 @@ button { cursor: pointer; }
   /* 상단 메뉴 전부의 아래 메뉴를 한 번에 펼치고 접는 단추 — 속은 비우고 흰 테두리·흰 삼각형 */
   /* 높이 — 메뉴 글자 윗선(≈39)과 밑줄 막대 아래(69) 사이 가운데(54)에 상자 가운데를 둔다 */
   /* 가로 — 1280 상자 오른쪽 끝(이름 · 로그아웃이 위 줄로 올라가 빈 자리). 메뉴 열은 이 단추 앞까지 고르게 벌어진다 */
-  position: absolute; left: calc(100% - 18px); top: 45px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 2px; border: 1px solid var(--nav-text);
+  position: absolute; left: calc(100% - 22px); top: 43px; width: 22px; font-size: var(--menu-fs); height: 22px; border-radius: 5px; border: 1px solid var(--nav-text);
   background: transparent; display: grid; place-items: center; padding: 0; transition: background .15s;
 }
 .g-box svg { width: 8px; height: 8px; color: var(--nav-text); transition: transform .2s; }
@@ -268,6 +268,8 @@ button { cursor: pointer; }
 .g-util .u-ico svg { width: 18px; height: 18px; }
 .g-util .u-sep { background: rgba(255, 255, 255, 0.28); height: 13px; }
 .g-util .u-ico .dot { top: 4px; right: 4px; box-shadow: 0 0 0 1.5px var(--nav); }
+.g-util .u-ico.theme-box { width: 22px; height: 22px; margin-left: -4px; border: 1px solid var(--nav-text); border-radius: 5px; color: var(--nav-text) !important; }   /* 아래 펼치기 상자와 같은 크기 · 모서리 */
+.g-util .u-ico.theme-box svg { width: 14px; height: 14px; }
 /* 이름 ▼ · 로그아웃 — 위 작은 줄 안(밤낮 오른쪽). 공지 · 결제하기와 같은 규격: 높이 28 · 글자 15 · 그림 17 */
 .gnb .g-util .g-user { position: relative; left: auto; top: auto; height: 28px; order: 0; }
 .g-util .g-login, .g-util .g-out, .g-util .g-join { height: 28px; font-size: 15px; font-weight: 600; }
@@ -903,7 +905,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .u-ico .dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: #ff4d4f; box-shadow: 0 0 0 1.5px var(--band); }
 .crumbs { display: flex; justify-content: flex-start; align-items: center; gap: 12px; height: 30px; padding-left: 2px; font-size: 13px; color: var(--muted); }
 /* 경로는 오른쪽 끝 — 아래 상자들의 오른쪽 끝선에 맞춘다. 모든 화면 같게(선정물건 · 물건상세 · 물건등록 · 임장경로 · 시장분석 · 낙찰이후 · 마이페이지) */
-:is(#crumbSlotList, #crumbSlotItem, #crumbSlotAppPage, #crumbSlotMy, #crumbSlotReg, #crumbSlotTrip, #crumbSlotMarket) > .crumbs { justify-content: flex-end; padding-left: 0; padding-right: 2px; }
+:is(#crumbSlotList, #crumbSlotItem, #crumbSlotAppPage, #crumbSlotMy, #crumbSlotReg, #crumbSlotTrip, #crumbSlotMarket, #crumbSlotInfo) > .crumbs { justify-content: flex-end; padding-left: 0; padding-right: 2px; }
 /* 낙찰이후 등 앱 화면 안 경로도 오른쪽 끝(제자리) — 탭 줄로 끌어올리면 안내 띠 · 상자와 겹치는 화면이 있었다 */
 #appPageContent [data-crumb-slot] > .crumbs { justify-content: flex-end; padding-left: 0; padding-right: 2px; }
 /* 경로(홈 › …) — 오른쪽 상자 끝선에서 글자 두 개쯤 안으로. 모든 탭 같게 */
@@ -2285,6 +2287,54 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .rg-missing ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; color: #6b5a3a; line-height: 1.6; }
 /* 폴더 등록·AI 키 창 */
 .dialog.fav-dlg { width: min(880px, 100%); padding: 0; overflow: hidden; }
+/* ===== 스토어 · 모바일앱 — 큰 흰 상자 하나에 제목까지 ===== */
+.info-box { margin-top: 12px; padding: 26px 28px 30px; background: var(--surface); border: 1px solid var(--card-line); border-radius: 14px; }
+.info-head { padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.info-head h2 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 800; color: var(--text); }
+.info-head h2 svg { width: 20px; height: 20px; color: var(--blue); }
+.info-head p { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+.st-tabs { display: flex; gap: 24px; margin: 14px 0 18px; border-bottom: 1px solid var(--line); }
+.st-tabs button { position: relative; height: 40px; padding: 0 2px; border: 0; background: transparent; font-size: 15px; font-weight: 600; color: var(--text-2); cursor: pointer; }
+.st-tabs button.on { color: var(--text); font-weight: 800; }
+.st-tabs button.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--nav-orange); }
+.st-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.st-card { display: flex; flex-direction: column; border: 1px solid var(--card-line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.st-cover { position: relative; height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; color: #fff; }
+.st-cover.navy { background: #26345c; } .st-cover.blue { background: #2f5aa8; } .st-cover.green { background: #3f8a5a; }
+.st-cover strong { font-size: 26px; line-height: 1.25; font-weight: 800; letter-spacing: -0.5px; }
+.st-cover small { font-size: 13px; opacity: .85; }
+.st-kind { position: absolute; left: 12px; top: 12px; padding: 2px 8px; border-radius: 4px; background: #fff4e5; color: #b45309; font-size: 12px; font-weight: 700; }
+.st-body { position: relative; flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 14px 16px 16px; }
+.st-body h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--text); }
+.st-body h3 em { font-style: normal; color: var(--blue); }
+.st-body p { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+.st-soon { align-self: flex-start; padding: 1px 8px; border-radius: 4px; background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 700; }
+.st-buy { margin-top: auto; height: 38px; border: 0; border-radius: 8px; background: var(--surface-2); color: var(--muted); font-size: 14px; font-weight: 700; cursor: not-allowed; }
+.mb-hero { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 40px; align-items: center; max-width: 1000px; margin: 0 auto; padding: 30px 12px 26px; }
+.mb-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-size: 12px; font-weight: 700; }
+.mb-copy h3 { margin: 14px 0 12px; font-size: 30px; line-height: 1.3; font-weight: 800; color: var(--text); }
+.mb-copy h3 em { font-style: normal; color: var(--blue); }
+.mb-copy p { margin: 0; max-width: 560px; font-size: 15px; line-height: 1.7; color: var(--text-2); }
+.mb-stores { display: flex; gap: 10px; margin-top: 22px; }
+.mb-stores button { height: 42px; padding: 0 20px; border: 0; border-radius: 8px; background: #1f2a44; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
+.mb-stores button:first-child { background: #2b6df3; }
+.mb-note { display: block; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.mb-phone { justify-self: center; width: 230px; height: 440px; padding: 10px; border: 1px solid var(--line-2); border-radius: 34px; background: #111827; box-shadow: var(--shadow-hover); }
+.mb-screen { position: relative; height: 100%; border-radius: 26px; overflow: hidden; background: #f4f6fb; padding: 14px 10px; display: flex; flex-direction: column; gap: 8px; }
+.mb-bar { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 6px; }
+.mb-bar b { font-size: 14px; color: #1f2a44; } .mb-bar i { width: 16px; height: 16px; border-radius: 4px; background: #d5dbe6; }
+.mb-sum { padding: 10px; border-radius: 10px; background: #2b6df3; color: #fff; font-size: 12px; font-weight: 700; }
+.mb-item { display: grid; gap: 2px; padding: 10px; border-radius: 10px; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .06); }
+.mb-item b { font-size: 12px; color: #111827; } .mb-item small { font-size: 12px; color: #6b7280; }
+.mb-tag { justify-self: start; padding: 0 6px; border-radius: 4px; background: #eef3ff; color: #2b6df3; font-size: 12px; font-weight: 700; }
+.mb-nav { position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; justify-content: space-around; padding: 10px; border-radius: 12px; background: #fff; }
+.mb-nav i { width: 18px; height: 18px; border-radius: 5px; background: #d5dbe6; } .mb-nav i.on { background: #2b6df3; }
+.mb-feats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.mb-feat { padding: 16px 18px; border: 1px solid var(--card-line); border-radius: 12px; background: var(--surface); }
+.mb-feat h4 { margin: 0 0 8px; display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 800; color: var(--text); }
+.mb-feat h4 svg { width: 16px; height: 16px; color: var(--blue); }
+.mb-feat p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+@media (max-width: 900px) { .st-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .mb-hero { grid-template-columns: 1fr; } .mb-feats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 /* 밤 화면 — '한눈에' 글의 밑줄 띠(낮엔 연한 파랑)를 밤 색으로. 흰 상자처럼 떠 보이던 것 */
 :root[data-theme="dark"] :is(.dq-read, .ttl-read, .bm-read) em { background: linear-gradient(transparent 62%, rgba(91, 140, 255, .3) 62%) !important; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.dq-read, .ttl-read, .bm-read) em { background: linear-gradient(transparent 62%, rgba(91, 140, 255, .3) 62%) !important; } }
@@ -3140,7 +3190,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <a class="g-menu m3f" href="#/finance" data-act="go-finance" id="navFinance">자금관리</a>
       <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
       <a class="g-menu m4" href="#/community" data-act="go-community" id="navCommunity">커뮤니티</a>
-      <a class="g-menu m4s off" href="#" data-act="soon" data-name="스토어" aria-disabled="true" title="준비 중">스토어</a>
+      <a class="g-menu m4s" href="#/store" data-act="go-store" id="navStore">스토어</a>
+      <a class="g-menu m4a" href="#/mobile" data-act="go-mobile" id="navMobile">모바일앱</a>
       <a class="g-menu m4m off" href="#" data-act="soon" data-name="매뉴얼" aria-disabled="true" title="준비 중">매뉴얼</a>
       <a class="g-menu m5" href="#/more" data-act="go-more" id="navMore">마이페이지</a>
       <div class="pop-root" data-pop="all" style="display:contents">
@@ -3148,7 +3199,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
           <svg viewBox="0 0 10 8"><path d="M5 7.5 0 0h10z" fill="currentColor"/></svg>
         </button>
       </div>
-      <!-- 머리띠 오른쪽 위 — 공지 · 결제하기 | 알림 · 밤낮 | 이름 ▼ · 로그아웃 -->
+      <!-- 머리띠 오른쪽 위 — 공지 · 결제하기 | 알림 | 이름 ▼ · 로그아웃 · [밤낮] -->
       <div class="g-util" aria-label="바로가기">
       <!-- 시험 — 소개 영상 대문. 아직 공개 전이라 이 컴퓨터(localhost)에서만 보인다 (확정되면 빼거나 자리를 옮긴다) -->
       <a class="u-link" href="/promo-test.html" id="promoTestLink" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m10 9.5 5 2.5-5 2.5z"/></svg>대문 시험</a>
@@ -3158,7 +3209,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <button type="button" class="u-ico" data-act="go-more" data-name="알림" data-tip="알림" data-tip-pos="below" aria-label="알림">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5Z"/><path d="M10.3 19a2 2 0 0 0 3.4 0"/></svg><span class="dot"></span>
       </button>
-      <button type="button" class="u-ico" data-act="theme" id="themeBtn" data-tip="밤 화면으로" data-tip-pos="below" aria-label="밤낮 화면 바꾸기"></button>
       <span class="u-sep" aria-hidden="true"></span>
       <!-- 이름 ▼ · 로그아웃 — 밤낮 오른쪽, 이 줄 규격(글자 15 · 그림 17)으로 -->
       <div class="g-user pop-root" data-pop="user">
@@ -3170,6 +3220,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
         <button type="button" class="g-join" id="gJoin" data-act="soon" data-name="회원가입" hidden>회원가입</button>
         <div class="g-pop user" id="userPop"></div>
       </div>
+      <!-- 밤낮 — 로그아웃 오른쪽 끝, 둥근 상자. 아래 메뉴 펼치기 상자와 같은 세로줄(오른쪽 끝 · 같은 크기) -->
+      <button type="button" class="u-ico theme-box" data-act="theme" id="themeBtn" data-tip="밤 화면으로" data-tip-pos="below" aria-label="밤낮 화면 바꾸기"></button>
 </div>
     </div>
   </div>
@@ -3252,6 +3304,11 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   <div id="appPageView" hidden>
     <div class="wrap crumb-slot" id="crumbSlotAppPage"></div>
     <div class="wrap content apppage-content" id="appPageContent"></div>
+  </div>
+  <!-- 스토어 · 모바일앱 — 웹 안내 화면(큰 흰 상자에 제목까지) -->
+  <div id="infoView" hidden>
+    <div class="wrap crumb-slot" id="crumbSlotInfo"></div>
+    <div class="wrap content info-content" id="infoContent"></div>
   </div>
   <!-- 마이페이지 — 지금은 AI 자동 분석 설정만. 설정 방식은 물건등록에 있던 것과 같다 -->
   <div id="myView" hidden>
@@ -3440,7 +3497,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
   const APP_PAGE_NAMES = { postwin: '낙찰관리', finance: '자금관리', more: '마이페이지', community: '커뮤니티' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지 */
-  const PLAIN_ROUTES = ['register', 'trip'];
+  const PLAIN_ROUTES = ['register', 'trip', 'store', 'mobile'];
   /** 주소 → { route, itemId, itemTab, sub } */
   const readHash = (h = location.hash) => {
     const m = h.match(/^#\/([\w-]+)(?:\/([\w-]+))?(?:\/([\w-]+))?/) || [];
@@ -3557,7 +3614,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m3', [['지역분석', 'go-market'], ['손품분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
     ['m4', [['공지', 'go-community'], ['오류및제안', 'go-community'], ['FAQ', 'go-community'], ['자유게시판', '']]],
-    ['m4s', [['준비중', '', '스토어']]],   /* 스토어 — 준비 중 */
+    ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store']]],
+    ['m4a', [['앱소개', 'go-mobile']]],
     ['m4m', [['투자9단계', '']]],   /* 준비 중 — 물건선정부터 매도 · 세금까지 */
     ['m5', [['내 정보', 'go-more'], ['알림', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
@@ -3565,6 +3623,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const megaHere = () => {
     if (S.route === 'register') return R.mode === 'manual' ? 'mega-manual' : 'mega-auto';
     if (S.route === 'trip') return 'go-trip';
+    if (S.route === 'store') return 'go-store';
+    if (S.route === 'mobile') return 'go-mobile';
     if (S.route === 'market') return 'go-market';
     if (APP_PAGE_NAMES[S.route]) return `go-${S.route}`;
     if (S.route === 'mypage') return 'go-mypage';
@@ -3609,6 +3669,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     { const t = $('navMarket'); if (t) { t.classList.toggle('on', S.route === 'market'); if (S.route === 'market') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 자금관리는 마이페이지 아래 — 자금관리 화면에서도 마이페이지에 불이 들어온다 */
     [['navPostwin', ['postwin']], ['navFinance', ['finance']], ['navMore', ['more']], ['navCommunity', ['community']]].forEach(([id, rs]) => { const t = $(id); if (t) { const on = rs.includes(S.route); t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
+    [['navStore', 'store'], ['navMobile', 'mobile']].forEach(([id, r]) => { const t = $(id); if (t) { const on = S.route === r; t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
     { const t = $('navMy'); if (t) { t.classList.toggle('on', S.route === 'mypage'); if (S.route === 'mypage') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 물건상세(선정물건 안)에 들어가도 선정물건 메뉴 밑줄은 그대로 */
     const nav = $('navWatch'); const inList = S.route === 'list' || S.route === 'item'; nav.classList.toggle('on', inList); if (inList) nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
@@ -4666,19 +4727,20 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   }
   function render() {
     renderHeader();
-    const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip'; const my = S.route === 'mypage'; const market = S.route === 'market'; const page = !!APP_PAGE_NAMES[S.route];
-    $('listView').hidden = reg || item || trip || my || market || page; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('marketView').hidden = !market; $('appPageView').hidden = !page; $('fab').hidden = reg || item || trip || my || market || page;
+    const reg = S.route === 'register'; const item = S.route === 'item'; const trip = S.route === 'trip'; const my = S.route === 'mypage'; const market = S.route === 'market'; const page = !!APP_PAGE_NAMES[S.route]; const info = S.route === 'store' || S.route === 'mobile';
+    $('infoView').hidden = !info;
+    $('listView').hidden = reg || item || trip || my || market || page || info; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('marketView').hidden = !market; $('appPageView').hidden = !page; $('fab').hidden = reg || item || trip || my || market || page || info;
     const cur = item ? byId(S.itemId) : null;
     syncCrumb();
-    { const nav = CRUMBS; const slot = (market && document.getElementById('admCrumbSlot')) || (item && document.querySelector('#itemContent #admCrumbSlot')) || (page && document.querySelector('#appPageContent [data-crumb-slot]')) || $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
+    { const nav = CRUMBS; const slot = (market && document.getElementById('admCrumbSlot')) || (item && document.querySelector('#itemContent #admCrumbSlot')) || (page && document.querySelector('#appPageContent [data-crumb-slot]')) || $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : info ? 'crumbSlotInfo' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
-    document.title = page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? '마이턴옥션 시장분석' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
+    document.title = info ? `마이턴옥션 ${S.route === 'store' ? '스토어' : '모바일앱'}` : page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? '마이턴옥션 시장분석' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
     if (!item) closeAppDetail();
     if (!trip) closeAppTrip();
     if (!market) closeAppMarket();
     if (!page) closeAppPage();
     document.body.classList.toggle('trip-full', trip);
-    if (page) renderAppPage(); else if (reg) renderRegister(); else if (trip) renderTrip(); else if (market) renderMarket(); else if (my) renderMy(); else if (item) renderItem(); else { renderToolbar(); renderContent(); }
+    if (page) renderAppPage(); else if (info) renderInfo(); else if (reg) renderRegister(); else if (trip) renderTrip(); else if (market) renderMarket(); else if (my) renderMy(); else if (item) renderItem(); else { renderToolbar(); renderContent(); }
     renderFloat();
   }
   /* ===== 물건상세 — 앱 AuctionDetailPage 를 따른다 =====
@@ -5121,6 +5183,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
           : [t, () => { if (!['sale', 'rank', 'son'].includes(S.marketTab)) S.marketTab = 'dong'; writeHash(false); render(); }]));
     }
     if (r === 'mypage') return [['마이페이지']];
+    if (r === 'store') return [['스토어']];
+    if (r === 'mobile') return [['모바일앱']];
     if (r === 'item') {
       const cur = byId(S.itemId);
       const base = [['선정물건', () => go('list')], [cur ? cur.caseNo : '물건상세', () => { S.itemTab = 'basic'; writeHash(false); renderSubTabs(); renderItem(); }]];
@@ -5394,6 +5458,51 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
         <div class="ai-body flat">${aiKeyBody(m)}</div>
       </section>`;
   }
+  /* ===== 스토어 · 모바일앱 — 웹 안내 화면 =====
+     스토어는 아직 파는 상품이 없다 — 표지 카드는 자리표시(준비중)이고 가격 · 구매는 막아 둔다. 상품이 정해지면 STORE_ITEMS 만 바꾼다.
+     모바일앱 소개는 우리 앱에 실제로 있는 기능만 적는다(숫자 · 남의 글을 지어내지 않는다) */
+  if (!S.storeTab) S.storeTab = store.get('wlp.web.storeTab', 'all');
+  const STORE_TABS = [['all', '전체'], ['ebook', '전자책'], ['report', '리포트']];
+  const STORE_ITEMS = [
+    { kind: 'ebook', tone: 'navy', tag: '기초', cover: ['경매', '첫걸음'], sub: '사건 보는 법부터 입찰까지', title: '경매 첫걸음', desc: '처음 경매를 시작하는 분을 위한 입문서' },
+    { kind: 'ebook', tone: 'blue', tag: '필수', cover: ['권리분석', '핵심 정리'], sub: '말소기준권리와 인수 권리', title: '권리분석 핵심 정리', desc: '입찰 전에 꼭 확인할 권리관계' },
+    { kind: 'ebook', tone: 'green', tag: '실전', cover: ['명도', '완전정복'], sub: '협의부터 강제집행까지', title: '명도 완전정복', desc: '협의 · 내용증명 · 인도명령 · 강제집행 순서' },
+    { kind: 'ebook', tone: 'navy', tag: '실전', cover: ['매매사업자', '세금 가이드'], sub: '필요경비 · 사업경비 · 종합소득세', title: '매매사업자 세금 가이드', desc: '낙찰부터 매도까지 세금 흐름' },
+    { kind: 'report', tone: 'blue', tag: '리포트', cover: ['지역별', '시장 리포트'], sub: '시장분석 데이터로 정리', title: '지역별 시장 리포트', desc: '실거래 흐름과 지역 순위를 한 권으로' },
+    { kind: 'report', tone: 'green', tag: '리포트', cover: ['임장', '체크리스트'], sub: '현장에서 바로 쓰는 점검표', title: '임장 체크리스트', desc: '현장조사 항목을 빠짐없이' },
+  ];
+  const storeHtml = () => {
+    const list = STORE_ITEMS.filter((x) => S.storeTab === 'all' || x.kind === S.storeTab);
+    const card = (x) => `<article class="st-card"><div class="st-cover ${x.tone}"><span class="st-kind">${x.kind === 'ebook' ? '전자책' : '리포트'}</span><strong>${x.cover.map(esc).join('<br>')}</strong><small>${esc(x.sub)}</small></div>`
+      + `<div class="st-body"><h3><em>[${esc(x.tag)}]</em> ${esc(x.title)}</h3><p>${esc(x.desc)}</p><span class="st-soon">준비중</span><button type="button" class="st-buy" disabled>출시 예정</button></div></article>`;
+    return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>스토어</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트를 준비하고 있습니다.</p></div>`
+      + `<nav class="st-tabs" role="tablist">${STORE_TABS.map(([k, t]) => `<button type="button" role="tab" class="${S.storeTab === k ? 'on' : ''}" aria-selected="${S.storeTab === k}" data-act="store-tab" data-v="${k}">${t}</button>`).join('')}</nav>`
+      + `<div class="st-grid">${list.map(card).join('')}</div></section>`;
+  };
+  const MOBILE_FEATS = [
+    ['doc', 'PDF 자동등록', '매각물건명세서 · 감정평가서 PDF를 올리면 사건번호 · 주소 · 감정가를 채웁니다'],
+    ['pin', '임장경로', '선정물건을 지도에 올리고 방문 순서를 동선최적화로 정리합니다'],
+    ['scale', '권리분석', '등기 · 임차인 권리관계를 물건마다 정리합니다'],
+    ['chart', '손품조사', '수요분석 · 시세분석으로 현장 가기 전에 살펴봅니다'],
+    ['pct', '수익분석', 'A~D안 입찰가를 비교하고 확정한 안으로 세후 수익을 계산합니다'],
+    ['check', '낙찰관리', '진행절차 · 명도분석 · 세금분석을 낙찰 뒤 순서대로'],
+    ['won', '자금관리', '자금입출금 · 필요경비 · 사업경비를 물건별로 기록합니다'],
+    ['apt', '시장분석', '지역분석 · 랭킹분석 · 경매사례로 시장 흐름을 봅니다'],
+  ];
+  const mobileHtml = () => {
+    const phone = `<div class="mb-phone" aria-hidden="true"><div class="mb-screen"><div class="mb-bar"><b>마이턴옥션</b><i></i></div>`
+      + ['선정물건 3건', ''].slice(0, 1).map((t) => `<div class="mb-sum">${t}</div>`).join('')
+      + [['2025타경1234', '아파트', '2억 4,700만'], ['2025타경5678', '다세대', '1억 3,500만'], ['2025타경9012', '오피스텔', '9,800만']]
+        .map(([c, k, p]) => `<div class="mb-item"><span class="mb-tag">${k}</span><b>${c}</b><small>감정가 ${p}</small></div>`).join('')
+      + `<div class="mb-nav"><i class="on"></i><i></i><i></i><i></i></div></div></div>`;
+    return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18h2"/></svg>마이턴옥션 모바일앱</h2><p>현장에서도 경매 분석을 이어 가세요. PC와 모바일을 함께 쓰면 더 편합니다.</p></div>`
+      + `<div class="mb-hero"><div class="mb-copy"><span class="mb-badge">실전 경매 임장앱</span><h3>손품부터 낙찰 이후까지,<br><em>한 앱에서</em></h3>`
+      + `<p>물건 등록부터 임장 동선, 권리 · 수익 분석, 낙찰 뒤 명도 · 세금까지 현장에서 필요한 것을 하나의 앱으로 봅니다. 3일 무료체험으로 먼저 써 보세요.</p>`
+      + `<div class="mb-stores"><button type="button" data-act="soon" data-name="Google Play">Google Play</button><button type="button" data-act="soon" data-name="App Store">App Store</button></div>`
+      + `<small class="mb-note">앱 출시 준비 중 · 지금은 웹에서 같은 기능을 쓸 수 있습니다</small></div>${phone}</div>`
+      + `<div class="mb-feats">${MOBILE_FEATS.map(([ic, t, d]) => `<article class="mb-feat"><h4>${secIc(ic)}${t}</h4><p>${d}</p></article>`).join('')}</div></section>`;
+  };
+  function renderInfo() { $('infoContent').innerHTML = S.route === 'store' ? storeHtml() : mobileHtml(); }
   function renderMy() { $('myContent').innerHTML = mySetHtml(); aiUnlock(S.aiPane, false); }
   /* AI 설정은 두 자리(자동등록 · 마이페이지)에서 보인다 — 바뀌면 지금 보는 쪽만 다시 그린다 */
   const rerenderAi = () => { if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'mypage') renderMy(); else if (S.route === 'register') renderRegister(); };
@@ -5760,6 +5869,10 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       /* 예전 마이페이지 — 없앴다. 더보기 › 마이페이지 탭으로 */
       case 'go-mypage': S.menu = null; S.pageTab.more = 'mypage'; if (S.route === 'more') { writeHash(false); renderSubTabs(); renderAppPage(); } else go('more'); break;
       /* 낙찰이후 · 자금관리 · 더보기 — 펼침 메뉴의 항목(data-name)이면 그 하위 탭으로 연다 */
+      /* 스토어 — 펼침 칸의 전체 · 전자책 · 리포트는 그 탭으로 */
+      case 'go-store': { const k = { 전체: 'all', 전자책: 'ebook', 리포트: 'report' }[t.dataset.name]; if (k) { S.storeTab = k; store.set('wlp.web.storeTab', k); } S.menu = null; S.pop = ''; if (S.route === 'store') render(); else go('store'); } break;
+      case 'go-mobile': S.menu = null; S.pop = ''; if (S.route === 'mobile') render(); else go('mobile'); break;
+      case 'store-tab': S.storeTab = v; store.set('wlp.web.storeTab', v); renderInfo(); break;
       case 'go-postwin': case 'go-finance': case 'go-more': case 'go-community': {
         const route = act.slice(3);
         const hit = (SUBTABS[route].find((x) => x[2] === t.dataset.name) || [])[0];
