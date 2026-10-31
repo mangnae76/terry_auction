@@ -195,6 +195,13 @@ const personGain = computed(() => tradeGain.value);
 const person = computed(() => transferTaxOf(personGain.value, term.value));
 const res = computed(() => (who.value === 'biz' ? biz.value : person.value));
 const taxSum = computed(() => res.value.incomeTax + res.value.localTax);
+/** 최종 예상 순수익(웹) — 명도분석에서 고른 명도비(확정)까지 넣고 매도가에서 낙찰가 · 비용 · 세금을 모두 뺀 마지막 값 */
+const evictCost = computed(() => (evRows.value.length ? evRows.value.reduce((n, r) => n + (Number(r.amountWithVat) || 0), 0) : (A.value?.bidCost?.evictionCost ?? 0)));
+// 수익분석의 명도비는 임의 예상값 — 명도분석에서 협의 · 강제집행을 골라야 확정 금액이 된다
+const evictLabel = computed(() => (evOn.value === 'deal' ? '명도협의 확정(명도분석)' : evOn.value === 'exec' ? '강제집행 확정(명도분석)' : '확정 전 — 수익분석 예상값입니다. 명도분석에서 협의 · 강제집행을 고르세요'));
+const netProfit = computed(() => tradeGain.value - split.value.biz - taxSum.value);
+const netInvest = computed(() => plan.value.bid - (A.value?.bidCost?.loanAmount ?? 0) + split.value.need + split.value.biz);
+const netRate = computed(() => (netInvest.value > 0 ? Math.round((netProfit.value / netInvest.value) * 10000) / 100 : 0));
 const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : personGain.value; return g > 0 ? Math.round((taxSum.value / g) * 1000) / 10 : 0; });
 </script>
 
@@ -311,6 +318,19 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
           <p class="pwm-memo" v-else>1주택 비과세 · 다주택 중과 · 장기보유특별공제는 셈하지 않은 대략 값입니다 — 세무사에게 확인하세요.</p>
         </article>
       </div>
+      <!-- 최종 예상 순수익 — 명도비 확정 금액까지 넣은 결과표(웹) -->
+      <article v-if="webEmbed" class="pwm-card pwm-final">
+        <h3><svg class="pwm-h3-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="m7 15 4-4 3 3 5-6" /></svg>최종 예상 순수익</h3>
+        <dl>
+          <div><dt>매도가</dt><dd>{{ won(plan.sale) }}</dd></div>
+          <div><dt>− 낙찰가</dt><dd>{{ won(plan.bid) }}</dd></div>
+          <div><dt>− 필요경비</dt><dd>{{ won(split.need) }}<small>취득세 · 법무사 수수료 · 매도 중개수수료</small></dd></div>
+          <div><dt>− 사업경비</dt><dd>{{ won(split.biz) }}<small>대출이자 · 중도상환 · 관리비 · 수리 · 명도비 · 광고비</small></dd></div>
+          <div class="sub"><dt>└ 명도비</dt><dd>{{ won(evictCost) }}<small :class="evOn ? 'ok' : 'warn'">{{ evictLabel }}</small></dd></div>
+          <div><dt>− 세금</dt><dd>{{ won(taxSum) }}<small>{{ who === 'biz' ? '종합소득세' : '양도소득세' }} + 지방세</small></dd></div>
+          <div class="total"><dt>세후 순수익</dt><dd :class="{ neg: netProfit < 0 }">{{ won(netProfit) }}<small>실투자금 {{ won(netInvest) }} 대비 {{ netRate.toFixed(2) }}%</small></dd></div>
+        </dl>
+      </article>
       <!-- 중요 안내 — 세금 계산은 참고용(웹). 아이콘 · 제목 한 줄 + 짧은 세 줄 -->
       <aside v-if="webEmbed" class="pwm-notice" role="note">
         <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3Z" /><path d="M12 10v4" /><path d="M12 17.5h.01" /></svg></span>
@@ -432,4 +452,14 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-notice li::before { content: ""; position: absolute; left: 2px; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: #f59e0b; }
 .pwm-notice li.key { color: #92400e; }
 .pwm-notice p.last { margin: 4px 0 0; padding-top: 10px; border-top: 1px dashed #f3dfb8; font-size: 13px; font-weight: 400; line-height: 1.6; color: #6b7280; }
+/* 최종 예상 순수익(웹) — 세금 카드 아래 한 장, 마지막 줄 남색 */
+.pwm-final { margin-top: 16px; }
+.pwm-final dl > div.sub dt { padding-left: 12px; color: #6b7280; font-weight: 500; }
+.pwm-final small.ok { color: #1f7a4a; font-weight: 700; }
+.pwm-final small.warn { color: #b45309; font-weight: 700; }
+.pwm-final dl > div.total { margin-top: 6px; padding: 12px 14px; border: 0; border-radius: 10px; background: #1f2a44; }
+.pwm-final dl > div.total dt, .pwm-final dl > div.total dd { color: #fff; font-weight: 800; }
+.pwm-final dl > div.total dd { font-size: 18px; }
+.pwm-final dl > div.total dd.neg { color: #ff9b9b; }
+.pwm-final dl > div.total small { color: #c9d3ea; font-weight: 500; }
 </style>
