@@ -327,7 +327,9 @@ const todoCard = (t: StepTodo, key: string, sup = ''): CheckGroup | null => {
   const addr = picked.value?.address ?? '';
   const sections = card.sections.map((sec) => ({ ...sec, rows: sec.rows.map((r) => { const line = utilityLine(r.id, addr); return line ? { ...r, text: line } : r; }) }));
   if (t.form) cardFormOf.set(key, t.form);
-  return { ...card, sections, key, title: t.cardTitle ?? t.text, note: t.cardNote ?? card.note, super: sup, webOnly: false };
+  // 웹 — 셀프 잔금 · 등기 카드는 원본 상자 이름('셀프 잔금납부 및 등기')을 제목으로(찾기 쉽게). 앱은 그대로
+  const title = webEmbed && g.key === 'loan.self' && g.title.trim() ? g.title : (t.cardTitle ?? t.text);
+  return { ...card, sections, key, title, note: t.cardNote ?? card.note, super: sup, webOnly: false };
 };
 /** 큰일 하나가 띄우는 카드들 — 함께 띄울 카드(also)까지 */
 const todoCards = (t: StepTodo, key: string, sup = ''): CheckGroup[] => {
