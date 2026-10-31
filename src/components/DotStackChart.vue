@@ -111,8 +111,14 @@ function draw(now: number) {
   cols.forEach((col) => {
     c.fillStyle = P.sub; c.font = '600 14px "Pretendard", "Apple SD Gothic Neo", sans-serif'; c.fillText(col.label, col.x, H - 12);
     if (!col.n) return;
-    c.fillStyle = P.ink; c.font = '700 14px "Pretendard", sans-serif'; c.fillText(`${col.n.toLocaleString('ko-KR')}건`, col.x, col.topY - 24);
-    if (col.median) { c.fillStyle = P.accent; c.font = '700 13px "Pretendard", sans-serif'; c.fillText(eok(col.median), col.x, col.topY - 8); }
+    // 칸 위 두 줄 — 위 '중간값 7,300만'(파랑), 아래 '843건'. 이름을 붙여 따로 읽는 법을 찾지 않게
+    if (col.median) {
+      const t = `중간값 ${eok(col.median)}`; const room = (cols.length > 1 ? cols[1].x - cols[0].x : W) - 8;
+      c.fillStyle = P.accent; c.font = '700 13px "Pretendard", sans-serif';
+      if (c.measureText(t).width > room) c.font = '700 12px "Pretendard", sans-serif';   // 칸이 좁으면 한 단계 작게 — 옆 칸 글과 겹치지 않게
+      c.fillText(t, col.x, col.topY - 24);
+    }
+    c.fillStyle = P.ink; c.font = '700 14px "Pretendard", sans-serif'; c.fillText(`${col.n.toLocaleString('ko-KR')}건`, col.x, col.topY - 8);
   });
   c.strokeStyle = P.line; c.lineWidth = 1; c.beginPath(); c.moveTo(0, H - 29.5); c.lineTo(W, H - 29.5); c.stroke();
   dots.forEach((d) => {
@@ -175,7 +181,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
         <div class="dsc-legend"><span v-for="l in legend" :key="l.label" class="dsc-key"><i :class="`t${l.tone}`" />{{ l.label }}</span></div>
       </div>
     </div>
-    <p class="dsc-read">점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래이고, 칸 위 파란 숫자는 그 구간의 중간값입니다. 기준을 바꾸면 같은 점들이 새 구간으로 옮겨 갑니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></p>
+    <p class="dsc-read">점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래입니다. 기준을 바꾸면 같은 점들이 새 구간으로 옮겨 갑니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></p>
     <div class="dsc-board">
       <canvas ref="cv" class="dsc-cv" aria-label="점 쌓기 분포도" @mousemove="onMove" @mouseleave="onLeave" />
       <div v-if="tip" class="dsc-tip" :style="{ left: `${tip.x}px`, top: `${tip.y}px` }">
