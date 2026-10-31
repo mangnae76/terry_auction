@@ -285,7 +285,7 @@ button { cursor: pointer; }
 /* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
    하위 탭 글자 — 물건상세(물건정보~입찰가산정) · 물건등록(자동등록 · 직접입력) 등 모든 탭 줄이 이 값 하나를 쓴다.
    창이 좁아지면 아래 @media 에서 이 값만 바꾼다 */
-:root { --menu-shift: min(calc(var(--menu-fs) * 2), max(0px, calc((100vw - 1200px) / 6))); --menu-fs: 15px; --tab-fs: 14px; --tab-px: 20px; --tab-h: 38px; }
+:root { --menu-shift: min(calc(var(--menu-fs) * 2), max(0px, calc((100vw - 1200px) / 6))); --menu-fs: 16px; --tab-fs: 15px; --tab-px: 20px; --tab-h: 38px; }
 /* 제목 글자 — 웹 한 곳. 카드 제목 · 큰 제목 · 화면 제목(10-31 메뉴 · 탭과 함께 10% 줄임: 16→14.4 · 18→16.2 · 20→18). 앱 화면 부품은 var(--title-fs, 16px) 로 읽어 앱은 그대로 */
 :root { --title-fs: 14.4px; --title-lg-fs: 16.2px; --title-xl-fs: 18px; } /* 하위 탭 높이도 한 값 — 시장분석 · 물건상세 하위 탭과 물건등록 탭이 같이 쓴다 */
 /* 카드 안쪽 여백 — 모든 웹 카드가 이 값을 쓴다.
@@ -2984,7 +2984,7 @@ html, body { overflow-x: clip; }
   .gnb-in { display: flex; align-items: flex-end; gap: 22px; padding-bottom: 6px; box-sizing: border-box; }   /* 메뉴 줄은 아래에 — 위 작은 줄(공지 ~ 밤낮)과 겹치지 않게 */
   .gnb-in > .g-logo { align-self: center; }
   .gnb .g-logo, .gnb .g-menu, .gnb .g-icons, .gnb .g-box, .gnb .g-box[data-tip], .gnb .g-user { position: relative; left: auto; top: auto; }
-  :root { --menu-fs: 13.5px; --tab-fs: 13px; --tab-px: 14px; }
+  :root { --menu-fs: 14.5px; --tab-fs: 14px; --tab-px: 14px; }
   .g-menu::after { bottom: -6px; }   /* 띠 바닥(54)에 붙는다 — 메뉴 줄 아래 여백 6 */
   .g-menu.m4 { margin-left: auto; }
   .g-icons { order: 10; } .g-box { order: 11; flex: 0 0 auto; }
