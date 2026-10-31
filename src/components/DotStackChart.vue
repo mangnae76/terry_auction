@@ -141,8 +141,8 @@ function draw(now: number) {
   cols.forEach((col) => {
     c.fillStyle = P.sub; c.font = '600 14px "Pretendard", "Apple SD Gothic Neo", sans-serif'; c.fillText(col.label, col.x, H - 12);
     if (!col.n) return;
-    // 칸 위 두 줄 — 위 '거래 843건', 아래 파란 중간값('7,300만'). 파란 숫자 뜻은 위 안내 줄에 적는다
-    c.fillStyle = P.ink; c.font = '700 14px "Pretendard", sans-serif'; c.fillText(`거래 ${col.n.toLocaleString('ko-KR')}건`, col.x, col.topY - 24);
+    // 칸 위 두 줄 — 위 '843건', 아래 파란 중간값('7,300만'). 파란 숫자 뜻은 위 안내 줄에 적는다
+    c.fillStyle = P.ink; c.font = '700 14px "Pretendard", sans-serif'; c.fillText(`${col.n.toLocaleString('ko-KR')}건`, col.x, col.topY - 24);
     if (col.median) {
       const t = eok(col.median); const room = (cols.length > 1 ? cols[1].x - cols[0].x : W) - 8;
       c.fillStyle = P.accent; c.font = '700 13px "Pretendard", sans-serif';
