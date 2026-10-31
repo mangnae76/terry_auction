@@ -911,6 +911,18 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 #itemContent .item-son .son-tabbar { margin-top: 0 !important; }
 /* 물건상세 모든 탭 — 안의 카드 좌우 끝을 위 사건 카드(고정 카드) 끝과 같게(틀의 좌우 5px 여백을 뺀다, 손품조사와 같게) */
 #itemContent .app-detail .adp-body { padding-left: 0 !important; padding-right: 0 !important; }
+/* ===== 물건상세 내용 세로 줄이기(10-31, 웹만) — 권리분석 · 수익분석 · 임장조사 · 손품결론. 위 1 · 2 · 3단 띠 · 필터는 그대로, 수요분석 · 시세분석도 그대로 ===== */
+#itemContent :is(.app-detail.tab-rights, .app-detail.tab-profit, .app-detail.tab-field, .son-conc) .adp-card-head { padding-top: 6px !important; padding-bottom: 5px !important; min-height: 38px !important; }
+#itemContent :is(.app-detail.tab-rights, .app-detail.tab-profit, .app-detail.tab-field, .son-conc) .adp-card { padding-bottom: 12px !important; }
+#itemContent :is(.app-detail.tab-rights, .app-detail.tab-field) .adp-body { row-gap: 10px !important; }
+/* 권리분석 — 표 줄 위아래 */
+#itemContent .app-detail.tab-rights table :is(th, td) { padding-top: 7px !important; padding-bottom: 7px !important; }
+/* 수익분석 — 입찰정보 · 비용 · 수익 줄 44 → 38, 입력 칸 30 */
+#itemContent .app-detail.tab-profit .bx-row { min-height: 38px !important; }
+#itemContent .app-detail.tab-field { --ctl-h: 30px; }   /* 임장조사 입력 칸 34 → 30 */
+#itemContent .app-detail.tab-field :is(.adp-fs-input, .adp-fs-multi, .adp-fs-unit, .adp-mkt-input) { height: var(--ctl-h) !important; min-height: 0 !important; }
+/* 손품결론 — 표 줄 위아래 */
+#itemContent .son-conc .adp-conc-table :is(th, td) { padding-top: 7px !important; padding-bottom: 7px !important; }
 #appPageContent:has(.app-page:is([data-k="more"], [data-k="community"])) { padding-top: 12px; }
 /* 경로를 카드 아래로 옮겨 간 빈 자리는 2px 도 남기지 않는다 — 남으면 낙찰이후 고정 카드가 붙을 때 2px 튄다 */
 #crumbSlotAppPage:empty { display: none; }
@@ -1824,7 +1836,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .app-detail :is(.adp-agency-fld > span, .adp-agency-tel-view, .adp-mkt-input, .adp-agency-range input.rng, .adp-agency-range .val,
   .adp-agency-range .lab, .adp-agency-fld.note-fld > .lab, .adp-agency-range .sep, .adp-agency-range .unit, .adp-agency-trigger, .adp-agency-trigger .txt) { font-weight: 400 !important; }
 /* 웹 임장조사 — 현장조사 · 현장 상담 · 체크리스트도 손품조사와 같은 세로 여유 */
-.app-detail.tab-field .adp-fs-row { padding-top: 8px !important; padding-bottom: 8px !important; }
+.app-detail.tab-field .adp-fs-row { padding-top: 5px !important; padding-bottom: 5px !important; }   /* 10-31 세로 줄임 8 → 5 */
 /* 웹 입찰가산정 — 예상수익분석의 낙찰일 · 잔금일 · 매도일: 칸 사이를 띄우고 날짜 칸을 가로로 넉넉히(80 → 132) */
 .app-detail .adp-profit-dates { gap: 18px !important; }
 .app-detail .adp-pd-item { gap: 8px !important; margin-right: 0 !important; }
