@@ -6,7 +6,6 @@ import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
-import AddressSearchInput from '../components/AddressSearchInput.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useAuctionStore } from '../stores/auctionStore';
 import {
@@ -196,12 +195,10 @@ const submit = async () => {
           <p class="prf-hint red">※ [번호수정] 버튼을 먼저 누르셔야 번호 입력이 가능합니다.</p>
         </div>
 
-        <!-- 주소 -->
-        <div class="prf-fld">
+        <!-- 주소 — 웹은 받지 않는다(앱은 그대로). 저장된 값은 지우지 않는다 -->
+        <div v-if="!webEmbed" class="prf-fld">
           <small>주소</small>
-          <!-- 웹 — 주소 찾기(동 이름 · 도로명 · 건물 이름 일부만 적어도 후보) -->
-          <AddressSearchInput v-if="webEmbed" v-model="form.address1" input-class="prf-input" placeholder="동 이름 · 도로명 · 건물 이름으로 찾기 — 예: 정자동" />
-          <input v-else v-model="form.address1" class="prf-input" placeholder="예: 경기 성남시 분당구 수내로 181" />
+          <input v-model="form.address1" class="prf-input" placeholder="예: 경기 성남시 분당구 수내로 181" />
           <input v-model="form.address2" class="prf-input mt" placeholder="상세주소 — 예: 분당동, 샛별마을" />
         </div>
 
