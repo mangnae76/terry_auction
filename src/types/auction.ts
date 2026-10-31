@@ -505,7 +505,7 @@ export interface AuctionDetail {
   expectedProfitRate: number;
   /** A안 말고 더 만든 산정표 (B안·C안…) */
   bidScenarios?: BidScenario[];
-  /** 확정한 입찰안 — 0(없음) = A안, 1~3 = B~D안. 웹 낙찰관리 · 세금분석 · 자금관리가 이 안의 값을 쓴다 */
+  /** 확정한 입찰안 — 없음(-1) = 확정 안 함, 0 = A안, 1~3 = B~D안. 웹 낙찰관리 · 세금분석 · 자금관리가 이 안의 값을 쓴다(확정 안 함이면 A안) */
   confirmedPlan?: number;
   fieldSurvey: FieldSurvey;
   rights: RightsAnalysis;

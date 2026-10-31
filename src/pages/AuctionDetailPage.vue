@@ -23,7 +23,7 @@ const rememberPlaceRows = (id: string, rows: PlaceRow[]) => {
 </script>
 
 <script setup lang="ts">
-import { confirmedPlanOf } from '../services/confirmedPlan';
+import { confirmedMarkOf } from '../services/confirmedPlan';
 import { getBuildingFacts } from '../services/buildingFacts';
 import { DEMAND_PLAIN, DEMAND_TOTAL_PLAIN } from '../services/demandGrade';
 import { openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
@@ -2468,9 +2468,11 @@ const resetScenarioRates = (sc: ProfitScenario) => {
 // 웹은 늘 새화면 — 새화면/클래식 바꾸기 단추를 뺐다
 const webNew = computed(() => webEmbed);
 /** 확정한 안 — 동그라미를 누르면 그 안으로(확정은 하나). 웹 낙찰관리 · 세금분석 · 자금관리가 이 안 값을 쓴다 */
-const confirmedIdx = computed(() => confirmedPlanOf(auction.value));
+const confirmedIdx = computed(() => confirmedMarkOf(auction.value));   // -1 = 확정 안 함(처음엔 아무것도 체크돼 있지 않다)
 const confirmPlan = (ti: number) => {
   const a = auction.value; if (!a || !profitScenarios.value[ti]) return;
+  // 확정한 안을 다시 누르면 확정을 푼다
+  if (confirmedIdx.value === ti) { a.confirmedPlan = -1; persistSoon(); return; }
   a.confirmedPlan = ti;
   selectedPlan.value = ti;   // 확정하면 그 안을 바로 보여 준다 — 요약 카드 · 표 값이 확정 안으로 바뀐다
   persistSoon();
@@ -6908,7 +6910,7 @@ const goBack = () => router.back();
                   :class="['bida-plan', { on: ti === selectedPlan, add: !profitScenarios[ti] }]"
                 >
                   <label v-if="profitScenarios[ti]" :class="['bida-ck', { on: ti === confirmedIdx }]" :title="`${label}안으로 확정`">
-                    <input type="checkbox" :checked="ti === confirmedIdx" :aria-label="`${label}안 확정`" @change="confirmPlan(ti); ($event.target as HTMLInputElement).checked = true" />
+                    <input type="checkbox" :checked="ti === confirmedIdx" :aria-label="`${label}안 확정`" @change="confirmPlan(ti)" />
                     <i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10" /></svg></i>
                   </label>
                   <button
@@ -6921,7 +6923,7 @@ const goBack = () => router.back();
                   >{{ profitScenarios[ti] ? `${label}안` : `＋ ${label}안` }}</button>
                 </div>
                 <!-- 상자 끝 — 지금 확정한 안 -->
-                <span class="bida-okname">{{ PROFIT_NAV_LABELS[confirmedIdx] }}안 확정</span>
+                <span v-if="confirmedIdx >= 0" class="bida-okname">{{ PROFIT_NAV_LABELS[confirmedIdx] }}안 확정</span>
               </div>
               <span class="bida-acts">
                 <button type="button" class="adp-pd-reset" title="이 안의 대출·취득세·법무비 비중을 기본값으로" @click.stop="resetScenarioRates(sc)">
