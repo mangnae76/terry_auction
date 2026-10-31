@@ -12,8 +12,6 @@ export type DotView = { key: string; title: string; icon?: string; buckets: DotB
 const props = defineProps<{ rows: DongTradeDetailRow[]; views: DotView[] }>();
 
 const MIN_DOT = 9;                 // 점 지름 하한
-const MAX_H = 900;                 // 판 높이 상한 — 이 안에 한 건씩 다 들어가면 묶지 않는다
-const PER_STEPS = [1, 10, 50, 100]; // 점 하나에 담는 건수 — 딱 떨어지는 수만
 const RARE = 0.01;                // 전체의 1% 미만 구간은 칸에서 뺀다(30평~ 2건 같은 칸이 판을 좁혔다)
 const EOK = 100_000_000;
 const thisYear = new Date().getFullYear();
@@ -106,18 +104,14 @@ const layout = (first: boolean) => {
   const tierOf = (r: DongTradeDetailRow) => COLOR_KEYS[colorKey.value].tier(r, years.value);
   const top = 46; const bottom = 34; const colW = W / Math.max(1, groups.length);
   const G = 3;
-  // 점 하나에 몇 건 — 1건이 기본, 판 높이(최대 MAX_H) 안에 다 못 들어갈 만큼 많을 때만 10 · 50 · 100건(2 · 3건 같은 어중간한 묶음은 읽기 어렵다)
-  const kMin = Math.max(1, Math.floor((colW - 14) / (MIN_DOT + G)));
-  const needH = (p: number) => Math.ceil(Math.max(1, ...groups.map((g) => Math.ceil(g.length / p))) / kMin) * (MIN_DOT + G) + top + bottom + 4;
-  per.value = PER_STEPS.find((p) => needH(p) <= MAX_H) ?? PER_STEPS[PER_STEPS.length - 1];
-  {
-    const want = Math.round(Math.min(MAX_H, Math.max(580, needH(per.value))));
-    const el = cv.value;
-    if (el && Math.abs(want - H) > 2) { el.style.height = `${want}px`; resize(); }
+  // 판 크기는 고정(기준을 바꿔도 그대로). 점 하나에 1건이 기본이고, 판에 다 못 들어가면 2 · 3건 … 필요한 만큼만 묶는다
+  let counts: number[] = []; D = 16;
+  for (per.value = 1; per.value < 500; per.value += 1) {
+    counts = groups.map((g) => Math.ceil(g.length / per.value)); const max = Math.max(1, ...counts);
+    let d = 16;
+    for (; d >= MIN_DOT; d -= 1) { const kk = Math.max(1, Math.floor((colW - 14) / (d + G))); if (Math.ceil(max / kk) * (d + G) <= H - top - bottom) break; }
+    if (d >= MIN_DOT) { D = d; break; }
   }
-  // 점 지름은 16 에서 줄여 가며 판 높이에 맞는 가장 큰 값
-  const counts = groups.map((g) => Math.ceil(g.length / per.value)); const max = Math.max(1, ...counts);
-  for (D = 16; D > MIN_DOT; D -= 1) { const kk = Math.max(1, Math.floor((colW - 14) / (D + G))); if (Math.ceil(max / kk) * (D + G) <= H - top - bottom) break; }
   const k = Math.max(1, Math.floor((colW - 14) / (D + G)));
   const next: Dot[] = [];
   cols = groups.map((g, ci) => {
@@ -177,9 +171,10 @@ const onMove = (e: MouseEvent) => {
   if (!h) { tip.value = null; return; }
   const r = h.rows[0];
   const lines: Array<[string, string]> = h.rows.length > 1
-    ? [['거래', `${h.rows.length}건 묶음`], ['계약', (() => { const ds = h.rows.map((x) => x.contractDate).sort(); return ds[0] === ds[ds.length - 1] ? ds[0] : `${ds[0]} ~ ${ds[ds.length - 1]}`; })()], ['첫 거래', `${r.umdNm} ${r.jibun} ${r.name}`.trim()], ['금액', `${eok(Math.min(...h.rows.map((x) => x.priceWon)))} ~ ${eok(Math.max(...h.rows.map((x) => x.priceWon)))}`]]
+    ? [['거래', `${h.rows.length}건`] as [string, string], ...h.rows.map((x) => [x.contractDate, `${eok(x.priceWon)} · ${x.floor || '-'}층 · ${`${x.umdNm} ${x.jibun} ${x.name}`.trim()}`] as [string, string])]
     : [['주소', `${r.umdNm} ${r.jibun} ${r.name}`.trim()], ['계약일', r.contractDate], ['금액', eok(r.priceWon)], ['전용', `${r.areaM2.toFixed(2)}㎡ / ${r.pyeong.toFixed(2)}평`], ['층 · 건축', `${r.floor || '-'}층 · ${r.buildYear ? `${r.buildYear}년(${ageOf(r)}년차)` : '-'}`]];
-  tip.value = { x: Math.min(h.x + 20, W - 230), y: Math.max(h.y - 80, 4), lines };
+  const tw = h.rows.length > 1 ? 360 : 230;   // 묶음 말풍선은 거래마다 한 줄이라 넓다 — 오른쪽 끝에서 잘리지 않게
+  tip.value = { x: Math.max(4, Math.min(h.x + 20, W - tw)), y: Math.max(h.y - 80, 4), lines };
 };
 const onLeave = () => { hover = null; tip.value = null; redraw(); };
 
@@ -224,7 +219,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
     <div class="dsc-board">
       <canvas ref="cv" class="dsc-cv" aria-label="점 쌓기 분포도" @mousemove="onMove" @mouseleave="onLeave" />
       <div v-if="tip" class="dsc-tip" :style="{ left: `${tip.x}px`, top: `${tip.y}px` }">
-        <template v-for="l in tip.lines" :key="l[0]"><b>{{ l[0] }}</b><span>{{ l[1] }}</span></template>
+        <template v-for="(l, li) in tip.lines" :key="li"><b>{{ l[0] }}</b><span>{{ l[1] }}</span></template>
       </div>
     </div>
     <!-- 한눈에 — 결과를 사람 말로 -->
@@ -267,7 +262,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dsc-sum > b { flex: none; font-weight: 800; color: #1f2a44; }
 .dsc-sum :deep(b) { font-weight: 800; color: #2b6df3; }
 .dsc-board { position: relative; background: #f6f8fb; border: 1px solid #e3e8f0; border-radius: 10px; padding: 12px 10px 6px; }
-.dsc-cv { display: block; width: 100%; height: 580px; }   /* 높이는 그릴 때 거래 수에 맞춰 다시 정한다(580 ~ 900) */
+.dsc-cv { display: block; width: 100%; height: clamp(420px, calc(100vh - 430px), 760px); }   /* 판 크기 고정 — 화면 높이에 맞춰 위 단추부터 '한눈에'까지 한 화면에 든다. 기준을 바꿔도 그대로 */
 .dsc-tip { position: absolute; z-index: 5; pointer-events: none; display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; min-width: 200px; padding: 9px 11px; border-radius: 8px; background: #1f2937; color: #f3f4f6; font-size: 12.5px; line-height: 1.55; box-shadow: 0 10px 24px rgba(17, 24, 39, .25); }
 .dsc-tip b { font-weight: 600; color: #9aa6ba; }
 .dsc-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: #6b7280; }
