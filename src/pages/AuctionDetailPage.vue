@@ -2509,7 +2509,11 @@ const measureBidaTop = () => {
   if (!webNew.value) return;
   const el = document.querySelector('.adp-profit-sticky');
   if (!el) return;
-  const v = Math.round((parseFloat(getComputedStyle(el).top) || 0) + el.getBoundingClientRect().height + 12);
+  const base = Math.round((parseFloat(getComputedStyle(el).top) || 0) + el.getBoundingClientRect().height + 12);
+  const box = document.querySelector('.bida-right');
+  const h = box ? box.getBoundingClientRect().height : 0;
+  // 세율표 + 돈이 나가는 순서가 화면보다 길면 아래 끝이 화면 안에 들도록 위로 올려 붙인다
+  const v = Math.min(base, Math.round(window.innerHeight - h - 12));
   if (v !== bidaTop.value) bidaTop.value = v;
 };
 const onBidaResize = () => { if (!bidaRaf) bidaRaf = requestAnimationFrame(measureBidaTop); };
@@ -6985,7 +6989,17 @@ const goBack = () => router.back();
               </div>
               <!-- 돈이 나가는 순서 — 한 상자. 왼쪽을 내려 보는 동안 위에 붙어 따라온다 -->
                 <div class="bida-right" :style="bidaTop ? { top: `${bidaTop}px` } : undefined">
-                  <section class="bida-card bida-cash">
+                  <!-- 개인소득세율 — 따로 있던 칸을 상자로 감싸 예상수익분석 안으로. 고른 안의 사업소득금액이 걸리는 구간을 짚어 준다 -->
+                <section class="bida-card bida-taxr">
+                  <h3 class="bida-h">개인소득세율<small>종합소득세</small></h3>
+                  <div v-for="(t, ti) in TAX_REF" :key="t[1]" :class="['bx-row', { last: ti === TAX_REF.length - 1, cur: ti === taxRefIdx }]">
+                    <span class="bx-k">{{ t[1] }}</span>
+                    <span class="bx-d"><span v-if="ti === taxRefIdx" class="cur-chip">{{ sc.label }} 구간</span></span>
+                    <span class="bx-p"><b class="bx-f pct ro">{{ t[2] }}</b><i>%</i></span>
+                    <span class="bx-a"><b class="bx-f ro">{{ t[3] ? `공제 ${t[3].toLocaleString('ko-KR')}만` : '-' }}</b></span>
+                  </div>
+                </section>
+                <section class="bida-card bida-cash">
                     <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
                     <div class="bidc-steps">
                       <div v-for="step in scCashOut(sc).steps" :key="step.no" class="bidc-step">
@@ -7004,18 +7018,8 @@ const goBack = () => router.back();
                   </section>
                 </div>
             </div>
-            <!-- 아래 줄 — 왼쪽 세율표 · 오른쪽 계산 공식, 그 아래 자동 적용 -->
+            <!-- 아래 줄 — 왼쪽 계산 공식 · 오른쪽 자동 적용 -->
             <div class="bida-grid bida-low">
-              <!-- 개인소득세율 — 따로 있던 칸을 상자로 감싸 예상수익분석 안으로. 고른 안의 사업소득금액이 걸리는 구간을 짚어 준다 -->
-              <section class="bida-card bida-taxr">
-                <h3 class="bida-h">개인소득세율<small>종합소득세</small></h3>
-                <div v-for="(t, ti) in TAX_REF" :key="t[1]" :class="['bx-row', { last: ti === TAX_REF.length - 1, cur: ti === taxRefIdx }]">
-                  <span class="bx-k">{{ t[1] }}</span>
-                  <span class="bx-d"><span v-if="ti === taxRefIdx" class="cur-chip">{{ sc.label }} 구간</span></span>
-                  <span class="bx-p"><b class="bx-f pct ro">{{ t[2] }}</b><i>%</i></span>
-                  <span class="bx-a"><b class="bx-f ro">{{ t[3] ? `공제 ${t[3].toLocaleString('ko-KR')}만` : '-' }}</b></span>
-                </div>
-              </section>
               <!-- 계산 공식 — 지금 고른 안의 숫자로 풀어 보여 준다 -->
               <section class="bida-card bida-formula">
                 <h3 class="bida-h">계산 공식</h3>
@@ -7035,7 +7039,7 @@ const goBack = () => router.back();
                 </dl>
               </section>
               <!-- 자동 적용 항목 — 지금 계산에 실제로 들어가는 기준만 적는다(보유주택 수 · 규제지역 취득세는 아직 계산에 없다) -->
-              <section class="bida-auto wide">
+              <section class="bida-auto">
                 <h3 class="bida-h">자동 적용 항목</h3>
                 <ul>
                   <li>취득세 · 법무비(채권) — 입찰가의 {{ fmtPctPlain(scPctOfBid(sc, sc.cost.acquisitionTaxAmount)) }}% · {{ fmtPctPlain(scPctOfBid(sc, sc.cost.legalCostAmount)) }}%, 입찰가가 바뀌면 따라 계산</li>
@@ -13165,11 +13169,8 @@ select.adp-pub-input option { text-align: center; }
 .bida-cash .bidc-step { grid-template-columns: 110px 1fr auto; }   /* 반 폭 — 때 칸을 줄인다 */
 .bida-cash .bidc-later.boxed { margin-top: 12px; }
 .bida-right { display: flex; flex-direction: column; gap: 12px; }
-/* 개인소득세율은 옆 계산 공식과 아래 끝을 맞춘다 — 줄 간격을 그 높이에 고르게 나눈다 */
 .bida-low { align-items: stretch; }
-.bida-low > .bida-taxr { display: flex; flex-direction: column; }
-.bida-low > .bida-taxr .bx-row { flex: 1 1 auto; }
-.bida-low > .bida-auto.wide { align-self: start; }
+.bida-low > .bida-auto { align-self: start; }
 .bida-plans { display: flex; align-items: center; gap: 10px; }
 .bida-seg { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; background: #e3e8f1; }
 .bida-seg button { height: 34px; padding: 0 18px; border: 0; border-radius: 8px; background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; color: #4b5563; cursor: pointer; }
