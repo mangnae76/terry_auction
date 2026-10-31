@@ -192,7 +192,7 @@ button { cursor: pointer; }
   /* 상단 메뉴 전부의 아래 메뉴를 한 번에 펼치고 접는 단추 — 속은 비우고 흰 테두리·흰 삼각형 */
   /* 높이 — 메뉴 글자 잉크의 가운데(≈35)에 상자 가운데를 둔다 */
   /* 가로 — 1280 상자 오른쪽 끝(이름 · 로그아웃이 위 줄로 올라가 빈 자리). 메뉴 열은 이 단추 앞까지 고르게 벌어진다 */
-  position: absolute; left: calc(100% - 18px); top: 28px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 5px; border: 1px solid var(--nav-text);
+  position: absolute; left: calc(100% - 18px); top: 28px; width: 18px; flex: none; font-size: var(--menu-fs); height: 18px; border-radius: 5px; border: 1px solid var(--nav-text);
   background: transparent; display: grid; place-items: center; padding: 0; transition: background .15s;
 }
 .g-box svg { width: 7px; height: 7px; color: var(--nav-text); transition: transform .2s; }
@@ -274,15 +274,17 @@ button { cursor: pointer; }
 .g-util .u-ico.theme-box { width: 18px; height: 18px; margin-left: -4px; border: 0; border-radius: 5px; color: var(--nav-text) !important; }   /* 아래 펼치기 상자와 같은 크기 · 모서리 */
 .g-util .u-ico.theme-box svg { width: 15px; height: 15px; }   /* 상자 없이 아이콘만 */
 /* 이름 ▼ · 로그아웃 — 위 작은 줄 안(밤낮 오른쪽). 공지 · 결제하기와 같은 규격: 높이 28 · 글자 15 · 그림 17 */
-.gnb .g-util .g-user { position: relative; left: auto; top: auto; height: 20px; order: 0; }
-.g-util .g-login, .g-util .g-out, .g-util .g-join { height: 20px; font-size: 12px; font-weight: 600; }
-.g-util .g-login .pic { width: 16px; height: 20px; color: rgba(255, 255, 255, 0.78); }
-.g-util .g-login .pic svg { width: 13px; height: 13px; }
-.g-util .g-login .txt { min-width: 0; }
-.g-util .g-arrow { height: 20px; margin-left: 3px; }
-.g-util .g-arrow i { top: 1px; border-left-width: 4px; border-right-width: 4px; border-top-width: 6px; }
-.g-util .g-out, .g-util .g-join { margin-left: 12px; font-weight: 400; color: rgba(255, 255, 255, 0.78) !important; }   /* 공지 · 결제하기와 같은 굵기 · 색 — 이름만 진하게 */
-.g-util .g-pop.user { top: 26px; }
+.g-right { position: absolute; right: 0; top: 24px; height: 26px; display: flex; align-items: center; gap: 18px; }   /* 메뉴 줄과 같은 높이 */
+.gnb .g-right :is(.g-box, .g-box[data-tip], .g-user) { position: relative; left: auto; top: auto; }
+.gnb .g-right .g-user { height: 26px; }
+.g-right .g-login, .g-right .g-out, .g-right .g-join { height: 26px; font-size: 12px; font-weight: 600; }
+.g-right .g-login .pic { width: 16px; height: 26px; color: rgba(255, 255, 255, 0.78); }
+.g-right .g-login .pic svg { width: 13px; height: 13px; }
+.g-right .g-login .txt { min-width: 0; }
+.g-right .g-arrow { height: 26px; margin-left: 3px; }
+.g-right .g-arrow i { top: 1px; border-left-width: 4px; border-right-width: 4px; border-top-width: 6px; }
+.g-right .g-out, .g-right .g-join { margin-left: 12px; font-weight: 400; color: rgba(255, 255, 255, 0.78) !important; }   /* 공지 · 결제하기와 같은 굵기 · 색 — 이름만 진하게 */
+.g-right .g-pop.user { top: 30px; }
 /* 하위 탭 줄 — 참고 시안처럼 흰 띠, 아래 #D8E0EE 선으로 단을 나눈다. 밑줄은 ::after 막대(테두리는 둥근 모서리로 U자가 된다) */
 /* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
    하위 탭 글자 — 물건상세(물건정보~입찰가산정) · 물건등록(자동등록 · 직접입력) 등 모든 탭 줄이 이 값 하나를 쓴다.
@@ -2995,14 +2997,16 @@ html, body { overflow-x: clip; }
 
 /* ================= 좁은 화면 — 시안 좌표를 지킬 수 없으면 줄을 세운다 ================= */
 @media (max-width: 1240px) {
-  .gnb-in { display: flex; align-items: flex-end; gap: 22px; padding-bottom: 6px; box-sizing: border-box; }   /* 메뉴 줄은 아래에 — 위 작은 줄(공지 ~ 밤낮)과 겹치지 않게 */
+  .gnb-in { display: flex; align-items: flex-end; gap: 14px; padding-bottom: 6px; box-sizing: border-box; }
+  .gnb .g-right { gap: 12px; }
+  .gnb .g-right .g-box { order: 0; }   /* 묶음 안에서도 펼치기 상자가 이름 앞 */   /* 메뉴 줄은 아래에 — 위 작은 줄(공지 ~ 밤낮)과 겹치지 않게 */
   .gnb-in > .g-logo { align-self: center; }
   .gnb .g-logo, .gnb .g-menu, .gnb .g-icons, .gnb .g-box, .gnb .g-box[data-tip], .gnb .g-user { position: relative; left: auto; top: auto; }
   :root { --menu-fs: 14.5px; --tab-fs: 14px; --tab-px: 14px; }
   .g-menu::after { bottom: -6px; }   /* 띠 바닥(54)에 붙는다 — 메뉴 줄 아래 여백 6 */
   .g-menu.m4 { margin-left: auto; }
   .g-icons { order: 10; } .g-box { order: 11; flex: 0 0 auto; }
-  .g-user { order: 12; } .g-login, .g-out, .g-join { font-size: var(--menu-fs); }
+  .gnb .g-right { position: relative; right: auto; top: auto; order: 12; }
   .g-login .txt { min-width: 0; } .g-out, .g-join { margin-left: 14px; }
   .g-pop.user { left: auto; right: 0; }
   .g-mega-in { min-height: 0; display: flex; flex-wrap: wrap; gap: 8px 36px; padding-block: 14px 18px; }
@@ -3282,12 +3286,24 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <a class="g-menu m4a" href="#/mobile" data-act="go-mobile" id="navMobile">모바일앱</a>
       <a class="g-menu m4m" href="#/manual" data-act="go-manual" id="navManual">매뉴얼</a>
       <a class="g-menu m5" href="#/more" data-act="go-more" id="navMore">마이페이지</a>
+      <!-- 메뉴 줄 오른쪽 끝 — [펼치기 ▼] 이름 ▼ · 로그아웃 (10-31 위 줄에서 내렸다) -->
+      <div class="g-right">
       <div class="pop-root" data-pop="all" style="display:contents">
-        <button type="button" class="g-box" data-act="pop" data-id="all" aria-expanded="false" aria-controls="gMega" aria-label="메뉴 펼치기" data-tip="메뉴 펼치기" data-tip-pos="below">
-          <svg viewBox="0 0 10 8"><path d="M5 7.5 0 0h10z" fill="currentColor"/></svg>
-        </button>
+          <button type="button" class="g-box" data-act="pop" data-id="all" aria-expanded="false" aria-controls="gMega" aria-label="메뉴 펼치기" data-tip="메뉴 펼치기" data-tip-pos="below">
+            <svg viewBox="0 0 10 8"><path d="M5 7.5 0 0h10z" fill="currentColor"/></svg>
+          </button>
+        </div>
+      <div class="g-user pop-root" data-pop="user">
+          <button type="button" class="g-login" id="gLogin" data-act="login-btn" aria-haspopup="menu" style="visibility:hidden">
+            <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.2" r="3.7"/><path d="M4.8 20.2c1.3-3.6 3.9-5.4 7.2-5.4s5.9 1.8 7.2 5.4"/></svg></span><span class="txt" id="gLoginTxt">로그인</span>
+          </button>
+          <button type="button" class="g-arrow" data-act="login-btn" aria-expanded="false" aria-label="내 메뉴"><i></i></button>
+          <button type="button" class="g-out" id="gOut" data-act="logout">로그아웃</button>
+          <button type="button" class="g-join" id="gJoin" data-act="soon" data-name="회원가입" hidden>회원가입</button>
+          <div class="g-pop user" id="userPop"></div>
+        </div>
       </div>
-      <!-- 머리띠 오른쪽 위 — 공지 · 결제하기 · 이용가이드 | 알림 · 이름 ▼ · 로그아웃 · [밤낮] (칸막이는 하나) -->
+      <!-- 머리띠 오른쪽 위 — 공지 · 결제하기 · 이용가이드 | 알림 · 밤낮 (이름 · 로그아웃은 메뉴 줄 오른쪽 끝) -->
       <div class="g-util" aria-label="바로가기">
       <!-- 시험 — 소개 영상 대문. 아직 공개 전이라 이 컴퓨터(localhost)에서만 보인다 (확정되면 빼거나 자리를 옮긴다) -->
       <a class="u-link" href="/promo-test.html" id="promoTestLink" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m10 9.5 5 2.5-5 2.5z"/></svg>대문 시험</a>
@@ -3299,16 +3315,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <button type="button" class="u-ico u-bell" data-act="go-more" data-name="알림" data-tip="알림" data-tip-pos="below" aria-label="알림">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5Z"/><path d="M10.3 19a2 2 0 0 0 3.4 0"/></svg><span class="dot"></span>
       </button>
-      <!-- 이름 ▼ · 로그아웃 — 밤낮 오른쪽, 이 줄 규격(글자 15 · 그림 17)으로 -->
-      <div class="g-user pop-root" data-pop="user">
-        <button type="button" class="g-login" id="gLogin" data-act="login-btn" aria-haspopup="menu" style="visibility:hidden">
-          <span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.2" r="3.7"/><path d="M4.8 20.2c1.3-3.6 3.9-5.4 7.2-5.4s5.9 1.8 7.2 5.4"/></svg></span><span class="txt" id="gLoginTxt">로그인</span>
-        </button>
-        <button type="button" class="g-arrow" data-act="login-btn" aria-expanded="false" aria-label="내 메뉴"><i></i></button>
-        <button type="button" class="g-out" id="gOut" data-act="logout">로그아웃</button>
-        <button type="button" class="g-join" id="gJoin" data-act="soon" data-name="회원가입" hidden>회원가입</button>
-        <div class="g-pop user" id="userPop"></div>
-      </div>
       <!-- 밤낮 — 로그아웃 오른쪽 끝, 둥근 상자. 아래 메뉴 펼치기 상자와 같은 세로줄(오른쪽 끝 · 같은 크기) -->
       <button type="button" class="u-ico theme-box" data-act="theme" id="themeBtn" data-tip="밤 화면으로" data-tip-pos="below" aria-label="밤낮 화면 바꾸기"></button>
 </div>
@@ -3739,11 +3745,11 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const x0 = host.getBoundingClientRect().left;
     const fs = parseFloat(getComputedStyle(items[0]).fontSize) || 18;
     const start = items[0].getBoundingClientRect().left - x0 + fs * 1.5;
-    /* 끝 — 마이페이지 오른쪽 끝을 위 줄 '로그아웃'(로그인 전엔 '회원가입') 글자 오른쪽 끝에 맞춘다. 사이 틈은 모두 같게 */
-    const out = [...document.querySelectorAll('.g-util .g-out, .g-util .g-join')].find((e) => e.offsetParent);
-    const end = (out ? out.getBoundingClientRect().right : box.getBoundingClientRect().left) - x0;
+    /* 끝 — 오른쪽 묶음([펼치기 ▼] 이름 · 로그아웃) 앞. 마지막 메뉴와 묶음 사이도 같은 틈 */
+    const right = document.querySelector('.gnb-in > .g-right');
+    const end = (right ? right.getBoundingClientRect().left : box.getBoundingClientRect().left) - x0;
     const widths = items.map((e) => e.getBoundingClientRect().width);
-    const gap = (end - start - widths.reduce((a, b) => a + b, 0)) / (items.length - 1);
+    const gap = (end - start - widths.reduce((a, b) => a + b, 0)) / items.length;
     if (!(gap > 8)) return;
     let x = start;
     const rules = items.map((e, i) => {
@@ -3757,8 +3763,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   window.addEventListener('resize', () => requestAnimationFrame(layoutMenu));
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layoutMenu());
   layoutMenu();
-  /* 로그인 전 · 뒤로 위 줄(회원가입 ↔ 로그아웃)이 바뀌면 끝 자리도 다시 잰다 */
-  { const gu = document.querySelector('.g-util .g-user'); if (gu && window.ResizeObserver) new ResizeObserver(() => layoutMenu()).observe(gu); }
+  /* 로그인 전 · 뒤로 오른쪽 묶음(회원가입 ↔ 이름 · 로그아웃) 폭이 바뀌면 메뉴 간격도 다시 잰다 */
+  { const gr = document.querySelector('.gnb-in > .g-right'); if (gr && window.ResizeObserver) new ResizeObserver(() => layoutMenu()).observe(gr); }
   function renderHeader() {
     $('navReg').classList.toggle('on', S.route === 'register');
     { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
