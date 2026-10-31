@@ -247,7 +247,9 @@ defineExpose({ openAdd, exportCsv, total, pick, togglePick });
       <button type="button" class="xl-btn on" :disabled="auctionId === ''" @click="openAdd">＋ 항목추가</button>
     </div>
     <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint"><b class="xl-plan">입찰가A</b> {{ planSrc }}에서 가져옵니다. 필요시 직접 입력하세요.</span></p>
-    <PickBar v-if="pick" :n="pickedRows.length" :all="allPicked" :note="sorted.some((r) => r.src === 'plan') ? '입찰가A 줄은 지울 수 없습니다 — 수익분석에서 0으로 바꾸면 사라집니다' : ''" @all="pickAll" @delete="deletePicked" @close="togglePick" />
+    <PickBar v-if="pick" :n="pickedRows.length" :all="allPicked" @all="pickAll" @delete="deletePicked" @close="togglePick">
+      <template v-if="sorted.some((r) => r.src === 'plan')" #note><b class="xl-plan lead">입찰가A</b> 줄은 지울 수 없습니다 — 수익분석에서 0으로 바꾸면 사라집니다</template>
+    </PickBar>
     <table class="xl-tbl">
       <colgroup><col v-if="pick" class="xc-pickcol" /><col v-for="[k] in cols" :key="k" :style="{ width: colWidth(k) }" /></colgroup>
       <thead>
@@ -364,7 +366,7 @@ defineExpose({ openAdd, exportCsv, total, pick, togglePick });
 .xl-from.plan { background: #fff4e5; color: #b45309; }
 .xl-from.own { background: #e9f0fd; color: #1d4ed8; }
 .xl-plan { margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: #fff4e5; color: #b45309; font-style: normal; font-weight: 600; font-size: 12px; }
-.xl-hint .xl-plan { margin: 0 4px 0 0; }
+.xl-hint .xl-plan, .xl-plan.lead { margin: 0 4px 0 0; }
 .xl-tbl tr.plan td { color: #6b7280; }
 .xl-qty { margin-left: 10px; font-size: 13px; color: #6b7280; }
 .xl-sub { font-size: 12px; font-weight: 400; color: #6b7280; }
