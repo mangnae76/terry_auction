@@ -247,7 +247,7 @@ defineExpose({ openAdd, exportCsv, total, pick, togglePick });
       <button type="button" class="xl-btn on" :disabled="auctionId === ''" @click="openAdd">＋ 항목추가</button>
     </div>
     <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint"><b class="xl-plan">입찰가A</b> {{ planSrc }}에서 가져옵니다. 필요시 직접 입력하세요.</span></p>
-    <PickBar v-if="pick" :n="pickedRows.length" :all="allPicked" @all="pickAll" @delete="deletePicked" @close="togglePick" />
+    <PickBar v-if="pick" :n="pickedRows.length" :all="allPicked" :note="sorted.some((r) => r.src === 'plan') ? '입찰가A 줄은 지울 수 없습니다 — 수익분석에서 0으로 바꾸면 사라집니다' : ''" @all="pickAll" @delete="deletePicked" @close="togglePick" />
     <table class="xl-tbl">
       <colgroup><col v-if="pick" class="xc-pickcol" /><col v-for="[k] in cols" :key="k" :style="{ width: colWidth(k) }" /></colgroup>
       <thead>
