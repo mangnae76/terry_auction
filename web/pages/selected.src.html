@@ -192,10 +192,10 @@ button { cursor: pointer; }
   /* 상단 메뉴 전부의 아래 메뉴를 한 번에 펼치고 접는 단추 — 속은 비우고 흰 테두리·흰 삼각형 */
   /* 높이 — 메뉴 글자(잉크 ≈35~50)의 가운데(≈42)에 상자 가운데를 둔다 */
   /* 가로 — 1280 상자 오른쪽 끝(이름 · 로그아웃이 위 줄로 올라가 빈 자리). 메뉴 열은 이 단추 앞까지 고르게 벌어진다 */
-  position: absolute; left: calc(100% - 20px); top: 32px; width: 20px; font-size: var(--menu-fs); height: 20px; border-radius: 5px; border: 1px solid var(--nav-text);
+  position: absolute; left: calc(100% - 18px); top: 33px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 5px; border: 1px solid var(--nav-text);
   background: transparent; display: grid; place-items: center; padding: 0; transition: background .15s;
 }
-.g-box svg { width: 8px; height: 8px; color: var(--nav-text); transition: transform .2s; }
+.g-box svg { width: 7px; height: 7px; color: var(--nav-text); transition: transform .2s; }
 .g-box:hover { background: rgba(255, 255, 255, 0.14); }
 .g-box[aria-expanded="true"] svg { transform: rotate(180deg); }
 
@@ -258,34 +258,34 @@ button { cursor: pointer; }
 /* 머리띠 오른쪽 위(로그아웃 위) — 공지·결제하기 | 알림·밤낮. 메뉴 글자(top 32) 위 빈 자리에 작게 */
 .g-util { position: absolute; right: 0; top: 2px; display: flex; align-items: center; gap: 18px; }   /* 대문 시험 ~ 로그아웃 사이를 넉넉히(알림 · 밤낮이 붙어 보이지 않게) */
 .g-util .u-sep { margin: 0 4px; }
-.g-util .u-link { height: 24px; font-size: 13.5px; color: rgba(255, 255, 255, 0.78) !important; }
+.g-util .u-link { height: 20px; font-size: 12px; color: rgba(255, 255, 255, 0.78) !important; }
 .g-util .u-link svg, .g-util .u-ico { color: rgba(255, 255, 255, 0.78) !important; }
-.g-util .u-link svg { width: 15px; height: 15px; }
+.g-util .u-link svg { width: 13px; height: 13px; }
 .g-util .u-link.pay, .g-util .u-link.pay svg { color: #9fc0ff !important; }
 .g-util .u-link:hover, .g-util .u-ico:hover { background: rgba(255, 255, 255, 0.12); color: #fff !important; }
 .g-util .u-link:hover svg { color: #fff !important; }
-.g-util .u-ico { width: 24px; height: 24px; }
-.g-util .u-ico svg { width: 16px; height: 16px; }
+.g-util .u-ico { width: 20px; height: 20px; }
+.g-util .u-ico svg { width: 14px; height: 14px; }
 .g-util .u-sep { background: rgba(255, 255, 255, 0.28); height: 13px; }
 .g-util .u-ico .dot { top: 4px; right: 4px; box-shadow: 0 0 0 1.5px var(--nav); }
 .g-util .u-bell { margin-right: 8px; }   /* 알림 종 — 이름과 넉넉히 */
-.g-util .u-ico.theme-box { width: 20px; height: 20px; margin-left: -4px; border: 1px solid var(--nav-text); border-radius: 5px; color: var(--nav-text) !important; }   /* 아래 펼치기 상자와 같은 크기 · 모서리 */
-.g-util .u-ico.theme-box svg { width: 13px; height: 13px; }
+.g-util .u-ico.theme-box { width: 18px; height: 18px; margin-left: -4px; border: 1px solid var(--nav-text); border-radius: 5px; color: var(--nav-text) !important; }   /* 아래 펼치기 상자와 같은 크기 · 모서리 */
+.g-util .u-ico.theme-box svg { width: 11px; height: 11px; }
 /* 이름 ▼ · 로그아웃 — 위 작은 줄 안(밤낮 오른쪽). 공지 · 결제하기와 같은 규격: 높이 28 · 글자 15 · 그림 17 */
-.gnb .g-util .g-user { position: relative; left: auto; top: auto; height: 24px; order: 0; }
-.g-util .g-login, .g-util .g-out, .g-util .g-join { height: 24px; font-size: 13.5px; font-weight: 600; }
-.g-util .g-login .pic { width: 18px; height: 24px; color: rgba(255, 255, 255, 0.78); }
-.g-util .g-login .pic svg { width: 15px; height: 15px; }
+.gnb .g-util .g-user { position: relative; left: auto; top: auto; height: 20px; order: 0; }
+.g-util .g-login, .g-util .g-out, .g-util .g-join { height: 20px; font-size: 12px; font-weight: 600; }
+.g-util .g-login .pic { width: 16px; height: 20px; color: rgba(255, 255, 255, 0.78); }
+.g-util .g-login .pic svg { width: 13px; height: 13px; }
 .g-util .g-login .txt { min-width: 0; }
-.g-util .g-arrow { height: 24px; margin-left: 3px; }
+.g-util .g-arrow { height: 20px; margin-left: 3px; }
 .g-util .g-arrow i { top: 1px; border-left-width: 4px; border-right-width: 4px; border-top-width: 6px; }
 .g-util .g-out, .g-util .g-join { margin-left: 12px; font-weight: 400; color: rgba(255, 255, 255, 0.78) !important; }   /* 공지 · 결제하기와 같은 굵기 · 색 — 이름만 진하게 */
-.g-util .g-pop.user { top: 30px; }
+.g-util .g-pop.user { top: 26px; }
 /* 하위 탭 줄 — 참고 시안처럼 흰 띠, 아래 #D8E0EE 선으로 단을 나눈다. 밑줄은 ::after 막대(테두리는 둥근 모서리로 U자가 된다) */
 /* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
    하위 탭 글자 — 물건상세(물건정보~입찰가산정) · 물건등록(자동등록 · 직접입력) 등 모든 탭 줄이 이 값 하나를 쓴다.
    창이 좁아지면 아래 @media 에서 이 값만 바꾼다 */
-:root { --menu-shift: min(calc(var(--menu-fs) * 2), max(0px, calc((100vw - 1200px) / 6))); --menu-fs: 16.2px; --tab-fs: 14.4px; --tab-px: 20px; --tab-h: 36px; }
+:root { --menu-shift: min(calc(var(--menu-fs) * 2), max(0px, calc((100vw - 1200px) / 6))); --menu-fs: 14.6px; --tab-fs: 13px; --tab-px: 20px; --tab-h: 36px; }
 /* 제목 글자 — 웹 한 곳. 카드 제목 · 큰 제목 · 화면 제목(10-31 메뉴 · 탭과 함께 10% 줄임: 16→14.4 · 18→16.2 · 20→18). 앱 화면 부품은 var(--title-fs, 16px) 로 읽어 앱은 그대로 */
 :root { --title-fs: 14.4px; --title-lg-fs: 16.2px; --title-xl-fs: 18px; } /* 하위 탭 높이도 한 값 — 시장분석 · 물건상세 하위 탭과 물건등록 탭이 같이 쓴다 */
 /* 카드 안쪽 여백 — 모든 웹 카드가 이 값을 쓴다.
@@ -2960,7 +2960,7 @@ html, body { overflow-x: clip; }
   .gnb-in { display: flex; align-items: flex-end; gap: 22px; padding-bottom: 7px; box-sizing: border-box; }   /* 메뉴 줄은 아래에 — 위 작은 줄(공지 ~ 밤낮)과 겹치지 않게 */
   .gnb-in > .g-logo { align-self: center; }
   .gnb .g-logo, .gnb .g-menu, .gnb .g-icons, .gnb .g-box, .gnb .g-box[data-tip], .gnb .g-user { position: relative; left: auto; top: auto; }
-  :root { --menu-fs: 14.4px; --tab-fs: 13.5px; --tab-px: 14px; }
+  :root { --menu-fs: 13px; --tab-fs: 12.2px; --tab-px: 14px; }
   .g-menu::after { bottom: -7px; }   /* 띠 바닥(60)에 붙는다 — 메뉴 줄 아래 여백 7 */
   .g-menu.m4 { margin-left: auto; }
   .g-icons { order: 10; } .g-box { order: 11; flex: 0 0 auto; }
@@ -3007,7 +3007,7 @@ html, body { overflow-x: clip; }
   .toolbar-shell { padding: 6px 0 12px; }
   .gnb-in { gap: 6px 14px; }
   .g-logo img { height: 32px; }
-  :root { --menu-fs: 12.6px; --tab-fs: 12.6px; --tab-px: 9px; }
+  :root { --menu-fs: 12px; --tab-fs: 12px; --tab-px: 9px; }
   .g-menu::after { display: none; }
   .step { padding: 0 9px; font-size: 14px; }
   .fab { left: 16px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); height: 42px; padding: 0 18px; font-size: 14px; }
