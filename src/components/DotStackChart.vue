@@ -197,12 +197,11 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
   <section class="dsc">
     <div class="dsc-top">
       <!-- 상세분포 단추와 같은 꼴(같은 폭 · 높이 40 · 아이콘 18) -->
-      <!-- 왼쪽 — 기준 단추, 그 아래 읽는 법 한 줄(오른쪽 색 범례 줄과 나란히 — 판이 위로 올라온다) -->
+      <!-- 왼쪽 — 기준 단추 -->
       <div class="dsc-left">
         <div class="dsc-kinds" role="tablist" aria-label="분포 기준">
           <button v-for="v in views" :key="v.key" type="button" :class="{ on: viewKey === v.key }" @click="pickView(v.key)"><svg v-if="v.icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="v.icon" /></svg>{{ v.title }}</button>
         </div>
-        <p class="dsc-read">점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래이고, 칸 위 파란 숫자는 중간값입니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></p>
       </div>
       <!-- '색' 은 단추 밖에 한 번만 — 단추마다 '색 ○○' 이라 적으니 말이 겹쳤다 -->
       <div class="dsc-right">
@@ -216,14 +215,17 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
         <div class="dsc-legend"><span class="dsc-legend-lab">범례</span><span v-for="l in legend" :key="l.label" class="dsc-key"><i :class="`t${l.tone}`" />{{ l.label }}</span></div>
       </div>
     </div>
+    <!-- 읽는법 · 한눈에 — 지역별분석 · 상세분포와 같은 상자(판 위) -->
+    <div class="dsc-readbox">
+      <p><b>읽는법</b><span>점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래이고, 칸 위 파란 숫자는 중간값입니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></span></p>
+      <p v-if="insight"><b>한눈에</b><span v-html="insight" /></p>
+    </div>
     <div class="dsc-board">
       <canvas ref="cv" class="dsc-cv" aria-label="점 쌓기 분포도" @mousemove="onMove" @mouseleave="onLeave" />
       <div v-if="tip" class="dsc-tip" :style="{ left: `${tip.x}px`, top: `${tip.y}px` }">
         <template v-for="(l, li) in tip.lines" :key="li"><b>{{ l[0] }}</b><span>{{ l[1] }}</span></template>
       </div>
     </div>
-    <!-- 한눈에 — 결과를 사람 말로 -->
-    <p v-if="insight" class="dsc-sum"><b>한눈에</b><span v-html="insight" /></p>
     <div class="dsc-foot">
       <button type="button" class="dsc-replay" @click="replay">다시 쌓기</button>
     </div>
@@ -235,14 +237,12 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dsc-top { display: grid; grid-template-columns: minmax(0, 640px) auto; justify-content: space-between; align-items: center; gap: 8px 16px; }
 .dsc-top > .dsc-left, .dsc-top > .dsc-right { display: contents; }   /* 두 묶음을 풀어 한 격자에 — 안내 줄과 범례가 같은 줄에 선다 */
 .dsc-top .dsc-kinds { grid-column: 1; grid-row: 1; }
-.dsc-top .dsc-read { grid-column: 1; grid-row: 2; }
 .dsc-top .dsc-colors { grid-column: 2; grid-row: 1; justify-self: end; }
-.dsc-top .dsc-legend { grid-column: 2; grid-row: 2; justify-self: end; }
+.dsc-top .dsc-legend { grid-column: 1 / -1; grid-row: 2; justify-self: end; }
 @media (max-width: 900px) {
   .dsc-top { grid-template-columns: minmax(0, 1fr); }
   .dsc-top .dsc-kinds { grid-row: 1; } .dsc-top .dsc-colors { grid-column: 1; grid-row: 2; justify-self: start; }
-  .dsc-top .dsc-read { grid-row: 3; } .dsc-top .dsc-legend { grid-column: 1; grid-row: 4; justify-self: start; }
-}
+  }
 .dsc-kinds { flex: 1 1 520px; max-width: 640px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .dsc-kinds button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-family: inherit; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
 .dsc-kinds button.on { border-color: #2b6df3; color: #2b6df3; background: #eef4ff; }
@@ -256,13 +256,12 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dsc-colors-lab { font-size: 13px; font-weight: 700; color: #6b7280; }
 .dsc-seg.sm button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 78px; height: 34px; font-size: 13px; padding: 0 12px; }
 .dsc-seg button.on { border-color: #2b6df3; background: #eef3ff; color: #2b6df3; }
-.dsc-read { margin: 0; font-size: 13px; color: #6b7280; line-height: 1.6; }
-.dsc-read b { color: #2b6df3; }
-.dsc-sum { display: flex; gap: 10px; margin: 0; padding: 12px 14px; border-radius: 8px; background: #f5f8ff; font-size: 14px; line-height: 1.6; color: #374151; }
-.dsc-sum > b { flex: none; font-weight: 800; color: #1f2a44; }
-.dsc-sum :deep(b) { font-weight: 800; color: #2b6df3; }
+.dsc-readbox { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid #e3e8f0; border-radius: 10px; background: #fff; font-size: 14px; line-height: 1.6; color: #374151; }
+.dsc-readbox p { margin: 0; display: grid; grid-template-columns: 64px 1fr; gap: 10px; }
+.dsc-readbox p > b { font-size: 12px; font-weight: 700; color: #2b6df3; padding-top: 2px; }
+.dsc-readbox :deep(b) { font-weight: 800; color: #1f2a44; }
 .dsc-board { position: relative; background: #f6f8fb; border: 1px solid #e3e8f0; border-radius: 10px; padding: 12px 10px 6px; }
-.dsc-cv { display: block; width: 100%; height: clamp(420px, calc(100vh - 430px), 760px); }   /* 판 크기 고정 — 화면 높이에 맞춰 위 단추부터 '한눈에'까지 한 화면에 든다. 기준을 바꿔도 그대로 */
+.dsc-cv { display: block; width: 100%; height: 520px; }   /* 판 크기 고정 — 층수 기준 때 크기. 기준을 바꿔도 · 화면 높이가 달라도 그대로 */
 .dsc-tip { position: absolute; z-index: 5; pointer-events: none; display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; min-width: 200px; padding: 9px 11px; border-radius: 8px; background: #1f2937; color: #f3f4f6; font-size: 12.5px; line-height: 1.55; box-shadow: 0 10px 24px rgba(17, 24, 39, .25); }
 .dsc-tip b { font-weight: 600; color: #9aa6ba; }
 .dsc-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: #6b7280; }
