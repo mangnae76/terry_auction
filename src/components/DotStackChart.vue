@@ -41,6 +41,36 @@ const legend = computed(() => {
 
 const eok = (won: number) => (won >= EOK ? `${Number((won / EOK).toFixed(2))}억` : `${Math.round(won / 10000).toLocaleString('ko-KR')}만`);
 
+/** 한눈에 — 지금 기준(면적 · 금액 · 연식 · 층)의 결과를 두세 마디로. 칸 숫자를 사람 말로 다시 읽어 준다 */
+const insight = computed(() => {
+  const v = view.value; const rows = props.rows; if (!v || rows.length < 5) return '';
+  const floor = Math.max(1, Math.ceil(rows.length * RARE));
+  const med = (list: DongTradeDetailRow[]) => { const p = list.map((r) => r.priceWon).filter((x) => x > 0).sort((a, b) => a - b); return p.length ? p[Math.floor(p.length / 2)] : 0; };
+  const g = v.buckets.map((b) => { const list = rows.filter((r) => b.test(r)); return { label: b.label, list, n: list.length, m: med(list) }; }).filter((x) => x.n >= floor);
+  if (!g.length) return '';
+  const total = g.reduce((a, x) => a + x.n, 0);
+  const pct = (n: number, of: number) => Math.round((n / of) * 100);
+  const top = [...g].sort((a, b) => b.n - a.n)[0];
+  const parts = [`거래가 가장 많은 구간은 <b>${top.label}</b>입니다(${total.toLocaleString('ko-KR')}건 중 ${top.n.toLocaleString('ko-KR')}건, ${pct(top.n, total)}%).`];
+  // 금액 기준은 칸 자체가 금액이라 중간값 비교를 빼고, 나머지는 중간값이 가장 낮은 · 높은 구간을 짚는다
+  const priced = g.filter((x) => x.m > 0);
+  if (v.key !== 'price' && priced.length >= 2) {
+    const lo = priced.reduce((a, x) => (x.m < a.m ? x : a)); const hi = priced.reduce((a, x) => (x.m > a.m ? x : a));
+    if (lo !== hi) parts.push(`중간값은 <b>${lo.label}</b> 구간이 ${eok(lo.m)}으로 가장 낮고, <b>${hi.label}</b> 구간이 ${eok(hi.m)}으로 가장 높습니다.`);
+  }
+  // 최근 6개월만 따로 — 많이 팔린 구간이 바뀌었으면 알려 준다
+  const cut = Date.now() - 183 * 86400000;
+  const recent = g.map((x) => ({ label: x.label, n: x.list.filter((r) => r.dealTime >= cut).length }));
+  const rTotal = recent.reduce((a, x) => a + x.n, 0);
+  if (rTotal >= 5) {
+    const rTop = [...recent].sort((a, b) => b.n - a.n)[0];
+    parts.push(rTop.label === top.label
+      ? `최근 6개월(${rTotal.toLocaleString('ko-KR')}건)도 같은 구간이 ${pct(rTop.n, rTotal)}%로 가장 많습니다.`
+      : `최근 6개월(${rTotal.toLocaleString('ko-KR')}건)은 <b>${rTop.label}</b> 구간이 ${pct(rTop.n, rTotal)}%로 가장 많아 흐름이 바뀌었습니다.`);
+  }
+  return parts.join(' ');
+});
+
 // ===== 그리기 =====
 const cv = ref<HTMLCanvasElement | null>(null);
 const tip = ref<{ x: number; y: number; lines: Array<[string, string]> } | null>(null);
@@ -191,6 +221,8 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
         <template v-for="l in tip.lines" :key="l[0]"><b>{{ l[0] }}</b><span>{{ l[1] }}</span></template>
       </div>
     </div>
+    <!-- 한눈에 — 결과를 사람 말로 -->
+    <p v-if="insight" class="dsc-sum"><b>한눈에</b><span v-html="insight" /></p>
     <div class="dsc-foot">
       <button type="button" class="dsc-replay" @click="replay">다시 쌓기</button>
     </div>
@@ -215,6 +247,9 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dsc-seg button.on { border-color: #2b6df3; background: #eef3ff; color: #2b6df3; }
 .dsc-read { margin: 0; font-size: 13px; color: #6b7280; line-height: 1.6; }
 .dsc-read b { color: #2b6df3; }
+.dsc-sum { display: flex; gap: 10px; margin: 0; padding: 12px 14px; border-radius: 8px; background: #f5f8ff; font-size: 14px; line-height: 1.6; color: #374151; }
+.dsc-sum > b { flex: none; font-weight: 800; color: #1f2a44; }
+.dsc-sum :deep(b) { font-weight: 800; color: #2b6df3; }
 .dsc-board { position: relative; background: #f6f8fb; border: 1px solid #e3e8f0; border-radius: 10px; padding: 12px 10px 6px; }
 .dsc-cv { display: block; width: 100%; height: 580px; }
 .dsc-tip { position: absolute; z-index: 5; pointer-events: none; display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; min-width: 200px; padding: 9px 11px; border-radius: 8px; background: #1f2937; color: #f3f4f6; font-size: 12.5px; line-height: 1.55; box-shadow: 0 10px 24px rgba(17, 24, 39, .25); }
