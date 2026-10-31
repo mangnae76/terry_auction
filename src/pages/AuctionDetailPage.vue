@@ -2539,6 +2539,8 @@ watch(
     profitJson = json;
     persistSoon();
   },
+  // 화면을 여는 순간 처음 값을 기억한다 — 안 그러면 첫 번째로 고친 값을 '처음 값'으로 삼아 한 번만 고치고 나가면 저장되지 않았다
+  { immediate: true },
 );
 const saveProfit = async () => {
   if (!auction.value) return;
