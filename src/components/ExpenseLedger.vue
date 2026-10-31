@@ -2,8 +2,10 @@
 // 물건별 비용 장부(웹) — 필요경비 · 사업경비 한 갈래의 표 + 적기 창.
 // 낙찰이후 진행절차(물건 하나)와 자금관리(모든 물건)가 같이 쓴다 — 저장 자리가 같아 어느 쪽에서 적어도 양쪽에 보인다.
 // 분류는 services/expenseBook. 물품구매는 수량 × 단가로 비용을 셈한다.
-import { computed, ref, watch } from 'vue';
+import { computed, inject, ref, watch } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
+// 웹은 입찰가산정 탭 이름이 '수익분석' 이다
+const planSrc = inject<boolean>('webEmbed', false) ? '수익분석' : '입찰가산정A';
 import { useFinanceStore } from '../stores/financeStore';
 import { useInteriorStore } from '../stores/interiorStore';
 import { BOOK_HINT, BOOK_NAME, groupsOf, ledgerRows, planAmountsOf, planRowsOf, withPlan, type Book, type LedgerRow } from '../services/expenseBook';
@@ -202,11 +204,11 @@ defineExpose({ openAdd, exportCsv, total });
   <section class="xl">
     <div v-if="tools" class="xl-tools">
       <span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span>
-      <span class="xl-hint"><b class="xl-plan">입찰가A</b> 입찰가산정A에서 가져옵니다. 필요시 직접 입력하세요.</span>
+      <span class="xl-hint"><b class="xl-plan">입찰가A</b> {{ planSrc }}에서 가져옵니다. 필요시 직접 입력하세요.</span>
       <button type="button" class="xl-btn" @click="exportCsv">⬇ 엑셀저장</button>
       <button type="button" class="xl-btn on" :disabled="auctionId === ''" @click="openAdd">＋ 항목추가</button>
     </div>
-    <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint"><b class="xl-plan">입찰가A</b> 입찰가산정A에서 가져옵니다. 필요시 직접 입력하세요.</span></p>
+    <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint"><b class="xl-plan">입찰가A</b> {{ planSrc }}에서 가져옵니다. 필요시 직접 입력하세요.</span></p>
     <table class="xl-tbl">
       <colgroup><col v-for="[k] in cols" :key="k" :style="{ width: colWidth(k) }" /></colgroup>
       <thead>

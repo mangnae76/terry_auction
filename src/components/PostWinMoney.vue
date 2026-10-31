@@ -157,9 +157,9 @@ const pickEvict = async (k: 'deal' | 'exec') => {
     });
   } finally { evBusy.value = false; }
 };
-// 웹은 '입찰가A' 대신 화면 이름 '입찰가산정' 으로 부른다(새화면엔 A안 이름이 크게 서지 않는다)
+// 웹은 '입찰가A' 대신 화면 이름 '수익분석' 으로 부른다(새화면엔 A안 이름이 크게 서지 않는다)
 const webEmbed = inject<boolean>('webEmbed', false);
-const planName = webEmbed ? '입찰가산정' : '입찰가A';
+const planName = webEmbed ? '수익분석' : '입찰가A';
 const srcText = (actual: number, planned: number, tab: string) => (actual && planned ? `실제 ${won(actual)} + ${planName} ${won(planned)} — ${tab} 탭`
   : actual ? `실제 기록 — ${tab} 탭` : `${planName}에서 가져옵니다 — ${tab} 탭에서 직접 입력`);
 /** 매매차익(예정신고) — 매도가 − 낙찰가 − 필요경비 */

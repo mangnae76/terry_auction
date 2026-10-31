@@ -864,11 +864,13 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--text-2); white-space: nowrap; transition: color .15s; }
 .subtab svg { width: 16px; height: 16px; }
 .subtab:hover { color: var(--text); }
-.subtab.on { color: var(--blue); font-weight: 800; }
+.subtab.on { color: var(--nav); font-weight: 800; }   /* 시안 C — 고른 탭은 남색 글자 + 위 메뉴와 같은 주황 밑줄 */
+:root[data-theme="dark"] .subtab.on { color: var(--text); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .subtab.on { color: var(--text); } }
 /* 지금 위치 — 줄 맨 앞 위 메뉴 이름(굵게) + 꺾쇠, 오른쪽에 가는 선으로 탭들과 나눈다 */
 .subtab-where { display: inline-flex; align-items: center; gap: 8px; align-self: center; height: 22px; padding: 0 18px 0 8px; margin-right: 4px; border-right: 1px solid var(--subtab-line); font-size: var(--tab-fs); font-weight: 800; color: var(--text); white-space: nowrap; }   /* 밤 화면에서도 읽히게 글자색 토큰 */
 .subtab-where svg { width: 14px; height: 14px; color: var(--faint); }
-.subtab::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 3px; border-radius: 2px 2px 0 0; background: var(--blue); transform: scaleX(0); transition: transform .2s ease; }
+.subtab::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 3px; border-radius: 2px 2px 0 0; background: var(--nav-orange); transform: scaleX(0); transition: transform .2s ease; }
 .subtab:hover::after { transform: scaleX(1); opacity: .45; }
 .subtab.on::after { transform: scaleX(1); opacity: 1; animation: tab-bar-in .22s ease; }
 .crumb-slot { padding-top: 2px; }
@@ -3495,7 +3497,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   /* 전체 메뉴 — 머리띠 메뉴 아래로 한 줄씩 떨어진다. [글, 손잡이, 하위 탭 이름(글과 다를 때)] 로 적고 손잡이가 없으면 '준비 중' */
   const MEGA = [
     ['m0', [['자동등록', 'mega-auto'], ['직접입력', 'mega-manual'], ['입찰달력', '']]],   /* 입찰달력은 선정물건 칸에도 그대로(복사) */
-    ['m1', [['선정물건', 'go-list'], ['입찰달력', ''], ['수익계산', ''], ['보관함', ''], ['휴지통', '']]],
+    ['m1', [['선정물건', 'go-list'], ['입찰달력', ''], ['수익분석', ''], ['보관함', ''], ['휴지통', '']]],
     ['m2', [['임장동선', 'go-trip'], ['방문기록', ''], ['체크리스트', '']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['가이드', 'go-postwin', '낙찰관리가이드']]],
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
@@ -4501,7 +4503,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     more: [['mypage', '', '내 정보'], ['alerts', '', '알림', 'hide'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['support', '', '고객센터']],
     community: [['notice', '', '공지'], ['suggest', '', '오류및제안'], ['faq', '', 'FAQ']],
     /* 가격정보는 뺐다 — 시세는 손품조사(시세분석 · 손품결론), 인근 매각사례는 손품결론 아래로 옮겼다(웹). 옛 주소(…/verify)는 손품조사로 */
-    item: [['cards', '', '물건카드'], ['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['profit', '', '입찰가산정']],
+    item: [['cards', '', '물건카드'], ['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['field', '', '임장조사'], ['profit', '', '수익분석']],
   };
   /* 선정물건도 같은 줄 — 맨 앞 '물건카드'가 목록, 나머지는 마지막으로 본 물건(없으면 목록 맨 위 물건)의 상세 탭 */
   SUBTABS.list = SUBTABS.item;
@@ -4697,10 +4699,10 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     ].join('');
     /* 입찰가산정 — 목록의 수익률 분석과 같은 간이 셈(대출 70% · 비용 4.5%+300만 · 예상 매도가) */
     const r = profitOf(it);
-    if (!r) return itCard('calc', '입찰가산정', itEmpty('입찰가를 정하면 수익을 계산합니다.'), true) + taxTableHtml();
+    if (!r) return itCard('calc', '수익분석', itEmpty('입찰가를 정하면 수익을 계산합니다.'), true) + taxTableHtml();
     const bid = it.mine; const gain = r.sale - bid - r.cost; const tax = Math.max(0, Math.round(incomeTax(gain))); const local = Math.round(tax * 0.1);
     const money = (n) => (n < 0 ? `<b class="num neg">−${won(-n)}</b>원` : wonCell(n) || '<b class="num">0</b>원');
-    return itCard('calc', '입찰가산정', `<div class="it-cols">
+    return itCard('calc', '수익분석', `<div class="it-cols">
         <div><h3>입찰정보</h3>${itRows([['감정가', wonCell(it.apr)], [`최저가${it.round ? ` (${esc(it.round)})` : ''}`, wonCell(it.min)], ['입찰보증금', wonCell(Math.round(it.min * 0.1))], ['입찰가', wonCell(bid)], ['대출', wonCell(r.loan)]])}</div>
         <div><h3>비용</h3>${itRows([['총비용', wonCell(r.cost)]])}<p class="it-note">취득세·법무·이자·중개·명도 등을 합친 간이 값(입찰가의 4.5% + 300만원)입니다.</p></div>
         <div><h3>수익</h3>${itRows([['매도가', wonCell(r.sale)], ['총투자금', wonCell(bid + r.cost)], ['실투자금', money(r.net)], ['매매차익', money(gain)], ['사업소득세', money(tax)], ['지방소득세', money(local)], ['세후 순이익', money(r.after)], ['세후 수익률', `<b class="num ${r.rate < 0 ? 'neg' : 'pos'}">${r.rate.toFixed(1)}</b>%`]])}</div>
@@ -5945,5 +5947,75 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   const savedTheme = store.get('wlp.web.theme', '');
   if (savedTheme === 'dark' || savedTheme === 'light') document.documentElement.dataset.theme = savedTheme;
   render();
+})();
+/* ===== 밤 화면 맞춤 (공통 모듈) =====
+   바깥 틀(머리띠 · 탭 · 목록)은 색 변수로 밤 색이 되지만, 안에 띄운 앱 화면(물건상세 · 입찰가산정 · 낙찰관리 · 마이페이지 …)은
+   흰색 · 연한 색 · 진한 글자를 직접 박아 둔 곳이 많아 밤에도 흰 판이 남았다. 밤 화면일 때만 그런 곳을 찾아 밤 색으로 바꾸고,
+   낮 화면으로 돌아가면 바꾼 것을 모두 되돌린다. 머리띠 · 하위 탭 · 바닥 띠 · 지도 · 사진은 건드리지 않는다 */
+(() => {
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const isDark = () => { const t = document.documentElement.getAttribute('data-theme'); return t === 'dark' || (t !== 'light' && mq.matches); };
+  const SKIP = '.gnb, .subtabs, .foot, .leaflet-container, svg, img, canvas, video, iframe, [data-dk-skip]';
+  const rgb = (c) => { const m = c && c.match(/[\d.]+/g); if (!m || m.length < 3) return null; const [r, g, b, a = 1] = m.map(Number); return { r, g, b, a }; };
+  const lum = ({ r, g, b }) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  const hs = ({ r, g, b }) => {
+    const R = r / 255, G = g / 255, B = b / 255, mx = Math.max(R, G, B), mn = Math.min(R, G, B), d = mx - mn, l = (mx + mn) / 2;
+    if (!d) return { h: 0, s: 0 };
+    const s = d / (1 - Math.abs(2 * l - 1));
+    const h = mx === R ? 60 * (((G - B) / d) % 6) : mx === G ? 60 * ((B - R) / d + 2) : 60 * ((R - G) / d + 4);
+    return { h: Math.round((h + 360) % 360), s };
+  };
+  const touched = new Set();
+  const undo = (e) => { (e.__dk || []).forEach((k) => e.style.removeProperty(k)); e.__dk = null; touched.delete(e); };
+  function plan(e) {
+    const cs = getComputedStyle(e); const out = [];
+    const bg = rgb(cs.backgroundColor);
+    if (bg && bg.a >= 0.5 && cs.backgroundImage === 'none' && lum(bg) > 0.86) {
+      const { h, s } = hs(bg);
+      const field = /^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName);
+      out.push(['background-color', s < 0.25 || lum(bg) > 0.975 ? (field ? 'var(--surface-2)' : 'var(--surface)') : `hsla(${h}, 65%, 55%, 0.16)`]);
+    }
+    const fg = rgb(cs.color);
+    if (fg && fg.a >= 0.5 && lum(fg) < 0.38) {
+      const { h, s } = hs(fg);
+      out.push(['color', s < 0.2 ? 'var(--text)' : `hsl(${h}, ${Math.round(Math.min(85, s * 100))}%, 74%)`]);
+    }
+    // 두께가 있는 쪽 선만 본다 — 아래 선만 있는 줄은 위 선 색이 글자색이라 놓쳤다
+    if (['Top', 'Right', 'Bottom', 'Left'].some((d) => {
+      if (!(parseFloat(cs[`border${d}Width`]) > 0)) return false;
+      const bc = rgb(cs[`border${d}Color`]);
+      return bc && bc.a >= 0.3 && lum(bc) > 0.78;
+    })) out.push(['border-color', 'var(--line)']);
+    return out;
+  }
+  let raf = 0;
+  function sweep() {
+    raf = 0;
+    if (!isDark()) { [...touched].forEach(undo); return; }
+    // 읽기를 먼저 다 하고 쓰기는 나중에 — 하나씩 읽고 쓰면 그릴 때마다 다시 계산해 느려진다
+    const todo = [];
+    for (const e of document.body.querySelectorAll('*')) {
+      if (e.__dk || e.closest(SKIP)) continue;
+      const out = plan(e);
+      if (out.length) todo.push([e, out]);
+    }
+    for (const [e, out] of todo) {
+      out.forEach(([k, v]) => e.style.setProperty(k, v, 'important'));
+      e.__dk = out.map(([k]) => k); touched.add(e);
+    }
+  }
+  const soon = () => { if (!raf) raf = requestAnimationFrame(sweep); };
+  // 모양(class)이 바뀐 칸은 바꾼 것을 걷고 다시 본다 — 켜진 탭 · 고른 칩이 옛 색에 묶이지 않게
+  new MutationObserver((ms) => {
+    let hit = false;
+    for (const m of ms) {
+      if (m.type === 'attributes' && m.target === document.documentElement) { hit = true; continue; }
+      if (m.type === 'attributes' && m.target.__dk) undo(m.target);
+      hit = true;
+    }
+    if (hit) soon();
+  }).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'data-theme'] });
+  if (mq.addEventListener) mq.addEventListener('change', soon);
+  soon();
 })();
 </script>
