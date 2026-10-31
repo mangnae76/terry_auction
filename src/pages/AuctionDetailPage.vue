@@ -2501,22 +2501,18 @@ const taxRefIdx = computed(() => {
   const g = sc ? scGain(sc) : 0;
   return g > 0 ? TAX_REF.findIndex(([limit]) => g <= limit) : -1;
 });
-/** 오른쪽 상자 높이 맞춤 — 세율표는 입찰정보와 같게, 돈이 나가는 순서의 합계 줄은 왼쪽 필요경비합계와 같은 높이 */
+/** 오른쪽 상자 높이 맞춤 — 세율표는 입찰정보와 같게, 계산 공식 아래 끝은 수익 아래 끝과 같게 */
 let bidaRaf = 0;
 const measureBidaTop = () => {
   bidaRaf = 0;
   if (!webNew.value) return;
-  // 돈이 나가는 순서 — 단계 묶음을 늘려 '필요한 내 돈 합계' 를 왼쪽 '필요경비합계' 와 같은 높이에. 상자 안 위치끼리 견줘 스크롤과 상관없다
-  const costCard = document.querySelector('.bida-col .bx-row.sum')?.closest('.bida-card') as HTMLElement | null;
-  const sumRow = document.querySelector('.bida-col .bx-row.sum') as HTMLElement | null;
-  const cashCard = document.querySelector('.bida-right .bida-cash') as HTMLElement | null;
-  const cashSum = cashCard?.querySelector('.bidc-cashsum') as HTMLElement | null;
-  const stepsEl = cashCard?.querySelector('.bidc-steps') as HTMLElement | null;
-  if (costCard && sumRow && cashCard && cashSum && stepsEl) {
-    const want = sumRow.getBoundingClientRect().top - costCard.getBoundingClientRect().top;
-    const now = cashSum.getBoundingClientRect().top - cashCard.getBoundingClientRect().top;
-    // 지금 높이에 모자란 만큼 더한다(넘치면 줄인다 — 내용보다 작게는 줄지 않는다)
-    if (Math.abs(want - now) > 0.5) stepsEl.style.minHeight = `${Math.max(0, Math.round(stepsEl.getBoundingClientRect().height + (want - now)))}px`;
+  // 계산 공식 상자 아래 끝을 왼쪽 수익 상자 아래 끝에 맞춘다 — 늘어난 높이는 공식 줄 사이에 고르게
+  const profitCard = document.querySelector('.bida-col > .bida-card:last-child') as HTMLElement | null;
+  const formula = document.querySelector('.bida-right .bida-formula') as HTMLElement | null;
+  if (profitCard && formula) {
+    const want = Math.round(profitCard.getBoundingClientRect().bottom - formula.getBoundingClientRect().top);
+    const h = `${Math.max(0, want)}px`;
+    if (formula.style.minHeight !== h) formula.style.minHeight = h;
   }
   // 개인소득세율 상자 높이를 왼쪽 입찰정보 상자와 같게 — 줄 간격은 그 높이에 고르게 나눈다
   const info = document.querySelector('.bida-col > .bida-card') as HTMLElement | null;
@@ -13182,14 +13178,16 @@ select.adp-pub-input option { text-align: center; }
 .bida-auto ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: #4b5563; }
 .bida-auto .todo { margin: 10px 0 0; font-size: 12px; color: #9aa3b2; }
 .bida-right { align-self: start; min-width: 0; }   /* 따라오지 않는다 — 왼쪽과 함께 스크롤(따라오면 보기 불편했다) */
-.bida-cash .bidc-step { grid-template-columns: 110px 1fr auto; }   /* 반 폭 — 때 칸을 줄인다 */
+.bida-cash .bidc-step { grid-template-columns: 110px 1fr auto; row-gap: 3px; padding: 10px 16px; }   /* 반 폭 — 때 칸을 줄이고 위아래도 촘촘히 */
 .bida-cash .bidc-later.boxed { margin-top: 12px; }
 /* 필요한 내 돈 합계 — 왼쪽 필요경비합계 줄과 같은 크기(높이 48 · 글 14 / 금액 17 · 모서리 8 · 양옆 -12) */
 .bida-cash .bidc-cashsum { min-height: 48px; box-sizing: border-box; margin: 12px -12px 0; padding: 0 20px 0 11px; border: 1px solid #fed7aa; border-radius: 8px; }
 .bida-cash .bidc-cashsum span { font-size: 14px; }
 .bida-cash .bidc-cashsum b { font-size: 17px; }
-/* 단계 사이를 벌려 합계 줄 높이를 왼쪽 필요경비합계와 맞춘다(높이는 그릴 때 잰다) */
-.bida-cash .bidc-steps { display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+/* 단계 사이는 촘촘히 — 남는 높이는 아래 계산 공식이 채운다 */
+.bida-cash .bidc-steps { gap: 8px; }
+.bida-right .bida-formula { display: flex; flex-direction: column; }
+.bida-right .bida-formula dl { flex: 1 1 auto; align-content: space-between; }
 .bida-right { display: flex; flex-direction: column; gap: 12px; }
 .bida-low { align-items: stretch; }
 .bida-low > .bida-auto { align-self: start; }
