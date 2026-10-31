@@ -3744,7 +3744,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     if (!items.length || !box || !host || getComputedStyle(items[0]).position !== 'absolute') return;
     const x0 = host.getBoundingClientRect().left;
     const fs = parseFloat(getComputedStyle(items[0]).fontSize) || 18;
-    const start = items[0].getBoundingClientRect().left - x0 + fs * 1.5;
+    const start = items[0].getBoundingClientRect().left - x0 - fs * 1.5;   /* 10-31 물건등록을 글자 3개만큼 로고 쪽으로(+1.5 → −1.5) */
     /* 끝 — 오른쪽 묶음([펼치기 ▼] 이름 · 로그아웃) 앞. 마지막 메뉴와 묶음 사이도 같은 틈 */
     const right = document.querySelector('.gnb-in > .g-right');
     const end = (right ? right.getBoundingClientRect().left : box.getBoundingClientRect().left) - x0;
