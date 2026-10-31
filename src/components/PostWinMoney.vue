@@ -302,15 +302,17 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
           <p class="pwm-memo" v-else>1주택 비과세 · 다주택 중과 · 장기보유특별공제는 셈하지 않은 대략 값입니다 — 세무사에게 확인하세요.</p>
         </article>
       </div>
-      <!-- 중요 안내사항 — 세금 계산은 참고용(웹) -->
+      <!-- 중요 안내 — 세금 계산은 참고용(웹). 아이콘 · 제목 한 줄 + 짧은 세 줄 -->
       <aside v-if="webEmbed" class="pwm-notice" role="note">
-        <h4><svg viewBox="0 0 24 24" fill="#fde68a" stroke="#1f2937" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 21h20L12 3Z" /><path d="M12 10v5" stroke-linecap="round" /><circle cx="12" cy="18" r="1" fill="#1f2937" stroke="none" /></svg>중요 안내사항</h4>
-        <p>본 세금 계산 결과는 일반적인 기준에 따른 참고용 예상 금액입니다. 실제 세금은 개인의 소득 상황, 보유 자산, 공제 항목, 세법 개정 등 다양한 요인에 따라 달라질 수 있습니다.</p>
-        <div class="pwm-notice-in">
-          <b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4h6v3H9zM9 12h6M9 16h4" /></svg>정확한 세금 계산을 위해서는 반드시 세무사와 상담하시기 바랍니다.</b>
-          <span>개인별 세부 항목(장기보유특별공제, 1세대1주택 비과세, 기타 공제 등)은 본 계산에 포함되지 않았습니다.</span>
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3Z" /><path d="M12 10v4" /><path d="M12 17.5h.01" /></svg></span>
+        <div class="body">
+          <h4>세금 계산은 참고용 예상 금액입니다</h4>
+          <ul>
+            <li>일반적인 기준으로 계산했습니다. 실제 세금은 소득 · 보유 자산 · 공제 · 세법 개정에 따라 달라집니다.</li>
+            <li>장기보유특별공제 · 1세대1주택 비과세 등 개인별 공제는 빠져 있습니다.</li>
+            <li class="key">신고 전 반드시 세무사와 상담하세요. 이 계산 결과에 대한 법적 책임은 지지 않습니다.</li>
+          </ul>
         </div>
-        <p class="sub">본 서비스는 세금 계산 결과에 대한 법적 책임을 지지 않으며, 최종 의사결정은 전문가의 상담을 받으신 후 진행하시기를 권장드립니다.</p>
       </aside>
     </template>
   </section>
@@ -408,14 +410,14 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-memo { margin: 12px 0 0; padding: 12px 16px; border-radius: 8px; background: #f7f8fa; font-size: 13px; color: #4b5563; line-height: 1.6; }
 @media (max-width: 1100px) { .pwm-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pwm-tax { grid-template-columns: 1fr; } }
 
-/* 중요 안내사항(웹 세금분석) — 살구 상자, 글은 굵기 400(노란 알림 상자 규칙). 제목 · 세무사 상담 줄만 굵게 */
-.pwm-notice { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; padding: 22px 24px; border: 1px solid #f5c26b; border-radius: 12px; background: #fbf6ef; }
-.pwm-notice h4 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 18px; font-weight: 800; color: #9a4b0b; }
-.pwm-notice h4 svg { width: 26px; height: 26px; flex: none; }
-.pwm-notice p { margin: 0; font-size: 14px; font-weight: 400; line-height: 1.7; color: #374151; }
-.pwm-notice p.sub { font-size: 13px; color: #6b7280; }
-.pwm-notice-in { display: flex; flex-direction: column; gap: 4px; padding: 14px 18px; border-left: 3px solid #f59e0b; border-radius: 6px; background: #fff; }
-.pwm-notice-in b { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #9a4b0b; }
-.pwm-notice-in b svg { width: 16px; height: 16px; flex: none; color: #4b5563; }
-.pwm-notice-in span { font-size: 13px; font-weight: 400; color: #4b5563; }
+/* 중요 안내(웹 세금분석) — 흰 상자 + 왼쪽 호박색 막대 · 둥근 아이콘, 글은 굵기 400(노란 알림 규칙) */
+.pwm-notice { display: flex; gap: 14px; margin-top: 16px; padding: 18px 20px 18px 18px; border: 1px solid #f3dfb8; border-left: 4px solid #f59e0b; border-radius: 12px; background: #fffdf8; }
+.pwm-notice .ico { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #fef3c7; color: #b45309; }
+.pwm-notice .ico svg { width: 20px; height: 20px; }
+.pwm-notice .body { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.pwm-notice h4 { margin: 6px 0 0; font-size: 15px; font-weight: 800; color: #92400e; }
+.pwm-notice ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.pwm-notice li { position: relative; padding-left: 14px; font-size: 14px; font-weight: 400; line-height: 1.6; color: #4b5563; }
+.pwm-notice li::before { content: ""; position: absolute; left: 2px; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: #f59e0b; }
+.pwm-notice li.key { color: #92400e; }
 </style>
