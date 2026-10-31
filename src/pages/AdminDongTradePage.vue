@@ -1203,7 +1203,7 @@ const downloadCsv = () => {
               </table>
             </div>
           </template>
-          <p class="adm-detail-cap">{{ detailCaption }}<button v-if="webEmbed && detailKind === 'area'" type="button" class="adm-unit-tg" :aria-label="`면적 단위 바꾸기 — 지금 ${areaUnit === 'py' ? '평' : '㎡'}`" @click="areaUnit = areaUnit === 'py' ? 'm2' : 'py'"><span :class="{ on: areaUnit === 'py' }">평</span><span :class="{ on: areaUnit === 'm2' }">㎡</span></button></p>
+          <p :class="['adm-detail-cap', { 'is-title': webEmbed }]"><template v-if="webEmbed"><strong>{{ detailCaption }} <em>(원 = 동 × 구간 · 정상 + 직거래)</em></strong></template><template v-else>{{ detailCaption }}</template><button v-if="webEmbed && detailKind === 'area'" type="button" class="adm-unit-tg" :aria-label="`면적 단위 바꾸기 — 지금 ${areaUnit === 'py' ? '평' : '㎡'}`" @click="areaUnit = areaUnit === 'py' ? 'm2' : 'py'"><span :class="{ on: areaUnit === 'py' }">평</span><span :class="{ on: areaUnit === 'm2' }">㎡</span></button></p>
           <!-- 동 × 구간을 원으로(크기 = 건수, 색 = 평균 평당가). 숫자 표는 '숫자 보기'로 편다 -->
           <BubbleMatrix :rows="detailBase" :unit-name="DETAIL_KINDS.find((k) => k.key === detailKind)?.label ?? ''" :buckets="detailBuckets" :dongs="detailRows.map((r) => r.name)" @pick-dong="(d: string) => { dong = d; }" />
           <button type="button" class="adm-detail-numtg" @click="detailShowTable = !detailShowTable">{{ detailShowTable ? '숫자 표 접기' : '숫자 보기' }}</button>
@@ -1580,6 +1580,9 @@ const downloadCsv = () => {
 .adm-detail-kinds button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
 .adm-detail-kinds button.on { border-color: #2b6df3; color: #2b6df3; background: #eef4ff; }
 .adm-detail-cap { display: flex; align-items: center; margin: 4px 2px 0; padding-left: 20px; font-size: 14px; color: #6b7280; }
+/* 웹 — 다른 탭 제목(거래 타임라인 · 동 사분면 · 유형 분포)과 같은 꼴: 16 굵게 + 괄호 설명 13 */
+.adm-detail-cap.is-title strong { font-size: 16px; font-weight: 800; color: #111827; }
+.adm-detail-cap.is-title strong em { font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; }
 .adm-heat td.r { font-variant-numeric: tabular-nums; }
 /* 가격대 · 면적 · 연식 · 층수를 오가도 동 · 합계 칸은 제자리 — 첫 칸 · 끝 칸 폭을 못 박고 가운데 구간 칸이 나머지를 고르게 나눈다 */
 .adm-heat th:first-child, .adm-heat td:first-child, .adm-floorsum th:first-child, .adm-floorsum td:first-child { width: 120px; }

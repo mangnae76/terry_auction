@@ -195,6 +195,8 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 
 <template>
   <section class="dsc">
+    <!-- 제목 — 거래 타임라인 · 동 사분면 · 상세분포와 같은 꼴 -->
+    <strong class="dsc-title">{{ view?.title ?? '유형' }}별 거래 분포 <em>(점 = 거래 · 정상 + 직거래)</em></strong>
     <div class="dsc-top">
       <!-- 상세분포 단추와 같은 꼴(같은 폭 · 높이 40 · 아이콘 18) -->
       <!-- 왼쪽 — 기준 단추 -->
@@ -234,6 +236,8 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 
 <style scoped>
 .dsc { display: flex; flex-direction: column; gap: 10px; }
+.dsc-title { padding-left: 20px; font-size: 16px; font-weight: 800; color: #111827; }
+.dsc-title em { font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; }
 .dsc-top { display: grid; grid-template-columns: minmax(0, 640px) auto; justify-content: space-between; align-items: center; gap: 8px 16px; }
 .dsc-top > .dsc-left, .dsc-top > .dsc-right { display: contents; }   /* 두 묶음을 풀어 한 격자에 — 안내 줄과 범례가 같은 줄에 선다 */
 .dsc-top .dsc-kinds { grid-column: 1; grid-row: 1; }
