@@ -113,8 +113,8 @@ const openContact = (c: ContactWay) => {
           </button>
         </section>
   
-        <!-- 앱 내려받기 -->
-        <section v-if="showRest" class="sup-card">
+        <!-- 앱 내려받기 — 웹은 맨 위(이용방법 및 안내 위)로 올린다(selected.html 의 order) -->
+        <section v-if="showRest" class="sup-card sup-app">
           <h2 class="sup-h2">앱 내려받기</h2>
           <p v-if="webEmbed" class="sup-app-txt">실전 경매 임장앱, 마이턴 옥션</p>
           <p v-else class="sup-app-txt">

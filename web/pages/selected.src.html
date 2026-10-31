@@ -40,7 +40,7 @@
   --muted: #6b7280;
   --faint: #9ca3af;
   --nav: #213366;
-  --nav-text: #ffffff;
+  --nav-text: #ffffff; --foot-link: #fff; --chip-gray: #d5dbe6;
   --nav-name: #50c3fc;
   --nav-orange: #f4700a; /* 고른 메뉴 밑줄 — 탁하지 않게 채도를 올리고 명도를 낮췄다 */
   --blue: #2b6df3;
@@ -94,8 +94,8 @@
   :root:not([data-theme="light"]) {
     --bg: #0f141f; --band: #131a28; --row-line: #232d42; --subtab-line: #2a3650; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
     --line: #2a3449; --line-2: #34405a; --tb-line: #34405a; --card-line: #253046;
-    --text: #e6eaf2; --text-2: #b4bccb; --muted: #8b95a8; --faint: #6e788c;
-    --nav: #172449; --nav-name: #50c3fc;
+    --text: #cfd6e2; --text-2: #a9b2c2; --muted: #8b95a8; --faint: #6e788c;
+    --nav: #172449; --nav-name: #50c3fc; --nav-text: #cdd5e3; --foot-link: #c3cad6; --chip-gray: #3a4660;
     --blue: #5b8cff; --blue-soft: rgba(91, 140, 255, 0.14); --cta-hover: #6a91f5;
     --pill-line: #3a4660; --pill-text: #9aa4b8;
     --on-line: #7d93f5; --on-bg: rgba(107, 133, 240, 0.22); --on-text: #b5c3ff;
@@ -116,8 +116,9 @@
 :root[data-theme="dark"] {
   --bg: #0f141f; --band: #131a28; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
   --line: #2a3449; --line-2: #34405a; --tb-line: #34405a; --card-line: #253046;
-  --text: #e6eaf2; --text-2: #b4bccb; --muted: #8b95a8; --faint: #6e788c;
-  --nav: #172449; --nav-name: #50c3fc;
+  --row-line: #232d42; --subtab-line: #2a3650;   /* 밤낮 단추로 켰을 때도 탭 줄 선이 밤 색이게(빠져 있어 낮 색 흰 선이 나왔다) */
+  --text: #cfd6e2; --text-2: #a9b2c2; --muted: #8b95a8; --faint: #6e788c;
+  --nav: #172449; --nav-name: #50c3fc; --nav-text: #cdd5e3; --foot-link: #c3cad6; --chip-gray: #3a4660;
   --blue: #5b8cff; --blue-soft: rgba(91, 140, 255, 0.14); --cta-hover: #6a91f5;
   --pill-line: #3a4660; --pill-text: #9aa4b8;
   --on-line: #7d93f5; --on-bg: rgba(107, 133, 240, 0.22); --on-text: #b5c3ff;
@@ -183,17 +184,17 @@ button { cursor: pointer; }
 .m0 { left: calc(13.75% - var(--menu-shift)); } .m1 { left: calc(22.00% - var(--menu-shift)); } .m2 { left: calc(29.39% - var(--menu-shift)); } .m3c { left: calc(36.79% - var(--menu-shift)); } .m3f { left: calc(44.18% - var(--menu-shift)); }
 .m3 { left: calc(51.57% - var(--menu-shift)); } .m4 { left: calc(58.96% - var(--menu-shift)); } .m4m { left: calc(66.36% - var(--menu-shift)); } .m5 { left: calc(73.75% - var(--menu-shift)); } /* 자금관리를 낙찰이후 오른쪽 위 메뉴로 꺼내 한 칸 늘었다 — +물건등록(글이 길다) 다음만 조금 넓게, 나머지는 7.39% 고르게 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 */
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
-.g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: #fff !important; border-radius: 6px; transition: color .15s, background .15s; }
+.g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: var(--nav-text) !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
 .g-ico svg { width: 17px; height: 17px; }
 .g-ico .dot { position: absolute; top: 2px; right: 2px; width: 7px; height: 7px; border-radius: 50%; background: #ff4d4f; box-shadow: 0 0 0 1.5px var(--nav); }
 .g-box {
   /* 상단 메뉴 전부의 아래 메뉴를 한 번에 펼치고 접는 단추 — 속은 비우고 흰 테두리·흰 삼각형 */
   /* 높이 — 메뉴 글자 윗선(≈39)과 밑줄 막대 아래(69) 사이 가운데(54)에 상자 가운데를 둔다 */
-  position: absolute; left: calc(79.2% + 2em); top: 45px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 2px; border: 1px solid #fff;
+  position: absolute; left: calc(79.2% + 2em); top: 45px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 2px; border: 1px solid var(--nav-text);
   background: transparent; display: grid; place-items: center; padding: 0; transition: background .15s;
 }
-.g-box svg { width: 8px; height: 8px; color: #fff; transition: transform .2s; }
+.g-box svg { width: 8px; height: 8px; color: var(--nav-text); transition: transform .2s; }
 .g-box:hover { background: rgba(255, 255, 255, 0.14); }
 .g-box[aria-expanded="true"] svg { transform: rotate(180deg); }
 
@@ -211,7 +212,7 @@ button { cursor: pointer; }
   padding: 0; font-size: var(--menu-fs); font-weight: 700; letter-spacing: -0.3px; white-space: nowrap;
 }
 /* 사람 그림 — 앱 머리글(AppMobileHeader)의 흉상 선 그림 그대로, 상자 없이 */
-.g-login .pic { width: 27px; height: 24px; display: grid; place-items: center; color: #fff; transition: color .15s; }
+.g-login .pic { width: 27px; height: 24px; display: grid; place-items: center; color: var(--nav-text); transition: color .15s; }
 .g-login .pic svg { width: 23px; height: 23px; }
 .g-login .txt { min-width: 67px; text-align: left; transition: color .15s; }
 .g-login.named .txt { color: var(--nav-name); }
@@ -254,7 +255,7 @@ button { cursor: pointer; }
 /* ================= 도구 상자 — 시안처럼 연회색 띠 위의 흰 상자 ================= */
 .toolbar-shell { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--band); padding: 8px 0 12px; transition: box-shadow .2s; }
 /* 머리띠 오른쪽 위(로그아웃 위) — 공지·결제하기 | 알림·밤낮. 메뉴 글자(top 32) 위 빈 자리에 작게 */
-.g-util { position: absolute; right: -4px; top: 3px; display: flex; align-items: center; gap: 18px; }   /* 대문 시험 ~ 로그아웃 사이를 넉넉히(알림 · 밤낮이 붙어 보이지 않게) */
+.g-util { position: absolute; right: 0; top: 3px; display: flex; align-items: center; gap: 18px; }   /* 대문 시험 ~ 로그아웃 사이를 넉넉히(알림 · 밤낮이 붙어 보이지 않게) */
 .g-util .u-sep { margin: 0 4px; }
 .g-util .u-link { height: 28px; font-size: 15px; color: rgba(255, 255, 255, 0.78) !important; }
 .g-util .u-link svg, .g-util .u-ico { color: rgba(255, 255, 255, 0.78) !important; }
@@ -1268,6 +1269,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="more"] .pt-benefit em { font-size: 14px !important; }
 /* 고객센터 — 카드 폭을 위 박스와 같게, 문의 줄은 이름 옆에 설명 한 줄 */
 .app-page[data-k="more"] .sup-body { padding: 0 !important; gap: 12px !important; }
+.app-page[data-k="more"] .sup-body > .sup-app { order: -1; }   /* 앱 내려받기를 이용방법 및 안내 위로 */
 .app-page[data-k="more"] .sup-body + .sup-card { margin-top: 12px; }
 .app-page[data-k="more"] .sup-card { padding: 20px 24px !important; }
 .app-page[data-k="more"] .sup-h2 { margin: 0 0 12px !important; font-size: 16px !important; }
@@ -2282,6 +2284,9 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .rg-missing ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; color: #6b5a3a; line-height: 1.6; }
 /* 폴더 등록·AI 키 창 */
 .dialog.fav-dlg { width: min(880px, 100%); padding: 0; overflow: hidden; }
+/* 밤 화면 — '한눈에' 글의 밑줄 띠(낮엔 연한 파랑)를 밤 색으로. 흰 상자처럼 떠 보이던 것 */
+:root[data-theme="dark"] :is(.dq-read, .ttl-read, .bm-read) em { background: linear-gradient(transparent 62%, rgba(91, 140, 255, .3) 62%) !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.dq-read, .ttl-read, .bm-read) em { background: linear-gradient(transparent 62%, rgba(91, 140, 255, .3) 62%) !important; } }
 /* 바닥 링크 글(저작권정책 · 사업제휴) — 제목 16 · 본문 14, 길면 창 안에서 내려 읽는다 */
 .dialog.doc-dlg { width: min(820px, 100%); }
 .doc-body { max-height: calc(100vh - 160px); overflow-y: auto; padding: 8px 28px 26px; font-size: 14px; line-height: 1.75; color: var(--text-2); }
@@ -2843,7 +2848,7 @@ html, body { overflow-x: clip; }
 .f-copy { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); font-size: 14px; color: var(--foot-text); letter-spacing: .2px; white-space: nowrap; }
 .f-right { position: absolute; right: 0; top: 29px; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; }
 .f-links { display: flex; gap: 28px; }
-.f-links a { color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size .2s; }
+.f-links a { color: var(--foot-link); text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size .2s; }
 .f-links a:hover { background-size: 100% 1px; }
 .f-social { display: flex; align-items: center; gap: 10px; height: 36px; }   /* 이용약관 줄 아래 — 유튜브 · 네이버 카페 · 네이버 블로그 · 인스타그램 */
 .f-social a { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .22); color: #c8cdd8; text-decoration: none; transition: color .15s, border-color .15s, background .15s; }
@@ -6107,15 +6112,19 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   function plan(e) {
     const cs = getComputedStyle(e); const out = [];
     const bg = rgb(cs.backgroundColor);
-    if (bg && bg.a >= 0.5 && cs.backgroundImage === 'none' && lum(bg) > 0.86) {
+    if (bg && bg.a >= 0.5 && cs.backgroundImage === 'none' && lum(bg) > 0.8) {
       const { h, s } = hs(bg);
       const field = /^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName);
-      out.push(['background-color', s < 0.25 || lum(bg) > 0.975 ? (field ? 'var(--surface-2)' : 'var(--surface)') : `hsla(${h}, 65%, 55%, 0.16)`]);
+      // 흰 판 → 밤 판, 밝은 회색(칩 · 동그라미) → 어두운 회색, 연한 색 → 옅은 색 띠
+      out.push(['background-color', lum(bg) > 0.975 || (s < 0.25 && lum(bg) > 0.93) ? (field ? 'var(--surface-2)' : 'var(--surface)')
+        : s < 0.25 ? 'var(--chip-gray)' : `hsla(${h}, 65%, 55%, 0.16)`]);
     }
     const fg = rgb(cs.color);
     if (fg && fg.a >= 0.5 && lum(fg) < 0.38) {
       const { h, s } = hs(fg);
       out.push(['color', s < 0.2 ? 'var(--text)' : `hsl(${h}, ${Math.round(Math.min(85, s * 100))}%, 74%)`]);
+    } else if (fg && fg.a >= 0.5 && lum(fg) > 0.92 && hs(fg).s < 0.2) {
+      out.push(['color', 'var(--text)']);   // 박아 둔 흰 글자 — 밤엔 눈이 아파 한 단 낮춘다
     }
     // 두께가 있는 쪽 선만 본다 — 아래 선만 있는 줄은 위 선 색이 글자색이라 놓쳤다
     if (['Top', 'Right', 'Bottom', 'Left'].some((d) => {
