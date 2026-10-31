@@ -166,8 +166,12 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
   <section class="dsc">
     <div class="dsc-top">
       <!-- 상세분포 단추와 같은 꼴(같은 폭 · 높이 40 · 아이콘 18) -->
-      <div class="dsc-kinds" role="tablist" aria-label="분포 기준">
-        <button v-for="v in views" :key="v.key" type="button" :class="{ on: viewKey === v.key }" @click="pickView(v.key)"><svg v-if="v.icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="v.icon" /></svg>{{ v.title }}</button>
+      <!-- 왼쪽 — 기준 단추, 그 아래 읽는 법 한 줄(오른쪽 색 범례 줄과 나란히 — 판이 위로 올라온다) -->
+      <div class="dsc-left">
+        <div class="dsc-kinds" role="tablist" aria-label="분포 기준">
+          <button v-for="v in views" :key="v.key" type="button" :class="{ on: viewKey === v.key }" @click="pickView(v.key)"><svg v-if="v.icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="v.icon" /></svg>{{ v.title }}</button>
+        </div>
+        <p class="dsc-read">점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래입니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></p>
       </div>
       <!-- '색' 은 단추 밖에 한 번만 — 단추마다 '색 ○○' 이라 적으니 말이 겹쳤다 -->
       <div class="dsc-right">
@@ -181,7 +185,6 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
         <div class="dsc-legend"><span v-for="l in legend" :key="l.label" class="dsc-key"><i :class="`t${l.tone}`" />{{ l.label }}</span></div>
       </div>
     </div>
-    <p class="dsc-read">점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래입니다. 기준을 바꾸면 같은 점들이 새 구간으로 옮겨 갑니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></p>
     <div class="dsc-board">
       <canvas ref="cv" class="dsc-cv" aria-label="점 쌓기 분포도" @mousemove="onMove" @mouseleave="onLeave" />
       <div v-if="tip" class="dsc-tip" :style="{ left: `${tip.x}px`, top: `${tip.y}px` }">
@@ -203,6 +206,8 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dsc-seg { display: grid; grid-auto-flow: column; gap: 6px; }
 .dsc-seg button { height: 40px; padding: 0 14px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 14px; font-weight: 700; color: #6b7280; cursor: pointer; }
 .dsc-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.dsc-left { flex: 1 1 520px; max-width: 640px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dsc-left .dsc-kinds { flex: none; max-width: none; }
 .dsc-legend { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; font-size: 13px; color: #6b7280; }
 .dsc-colors { display: inline-flex; align-items: center; gap: 8px; }
 .dsc-colors-lab { font-size: 13px; font-weight: 700; color: #6b7280; }
