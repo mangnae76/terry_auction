@@ -121,7 +121,18 @@ const aiFill = async () => {
 };
 
 // ===== 명도분석 =====
-const deal = computed(() => dealCost(ev.value));
+// 웹 — 수익분석(확정안)에 명도비를 적었으면 '협의로 끝날 때' 명도비로 그 금액을 쓴다(사용자가 적은 값이 먼저). 안 적었으면(0원) 자동 계산
+const planEvict = computed(() => (webEmbed ? A.value?.bidCost?.evictionCost ?? 0 : 0));
+const dealFromPlan = computed(() => planEvict.value > 0);
+/** 자동 계산이었으면 얼마였나(협의 명도비) — 수익분석 값을 쓸 때 견주어 보라고 작게 적는다 */
+const dealAutoDirect = computed(() => { const b = dealCost(ev.value); return b.total - b.lines[b.lines.length - 1].amount; });
+const deal = computed(() => {
+  const base = dealCost(ev.value);
+  if (!dealFromPlan.value) return base;
+  const delay = base.lines[base.lines.length - 1];   // 맨 끝 줄이 늦어지는 달 이자 · 관리비
+  const lines = [{ label: `명도비(${planName}에 적은 값)`, amount: planEvict.value }, delay];
+  return { lines, total: lines.reduce((n, l) => n + l.amount, 0) };
+});
 const exec = computed(() => execCost(ev.value));
 const save = computed(() => exec.value.total - deal.value.total);
 /** 명도 비용을 두 묶음으로 — 명도비(이사비 또는 강제집행 비용 · 서류) · 지연 비용(늦어지는 달 이자 · 관리비) */
@@ -251,8 +262,9 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
           <h3>협의로 끝날 때</h3>
           <template v-if="webEmbed">
             <div class="pwm-grpbox">
-              <p class="pwm-grp"><span>명도비 <em>이사비 · 서류</em></span><b>{{ won(evGroups.deal.direct) }}</b></p>
+              <p class="pwm-grp"><span>명도비 <em>{{ dealFromPlan ? `${planName}에 적은 값 — 지우면 자동 계산` : '이사비 · 서류' }}</em></span><b>{{ won(evGroups.deal.direct) }}</b></p>
               <ul><li v-for="l in evGroups.deal.lines" :key="l.label"><span>{{ l.label }}</span><b>{{ won(l.amount) }}</b></li></ul>
+              <p v-if="dealFromPlan" class="pwm-auto">자동 계산이면 {{ won(dealAutoDirect) }}(이사비 · 서류)</p>
             </div>
             <p class="pwm-grp"><span>지연 비용 <em>늦어지는 {{ evGroups.deal.months }}개월 이자 · 관리비</em></span><b>{{ won(evGroups.deal.delay) }}</b></p>
           </template>
@@ -515,6 +527,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-grpbox li { padding-left: 24px; border-bottom-color: #e6eaf2; }   /* 명도비보다 두 글자쯤 안쪽 */
 .pwm-grpbox li span, .pwm-grpbox li b { font-weight: 400; color: #4b5563; }
 .pwm-grpbox li:last-child { border-bottom: 0; }
+.pwm-auto { margin: 2px 0 0; padding-left: 24px; font-size: 12px; color: #9aa3b2; }
 /* 바탕 띠는 양옆으로 10px 내밀고 글은 제자리 — 명도비 · 지연 비용 · 세부 · 합계의 '원' 끝이 한 줄에 선다 */
 .pwm-grp { display: flex; align-items: baseline; gap: 8px; margin: 10px -10px 4px; padding: 8px 10px; border-radius: 8px; background: #f5f7fb; font-size: 14px; font-weight: 800; color: #1f2a44; }
 .pwm-grp em { margin-left: 4px; font-style: normal; font-size: 12px; font-weight: 500; color: #6b7280; }
