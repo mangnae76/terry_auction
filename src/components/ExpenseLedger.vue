@@ -4,8 +4,11 @@
 // 분류는 services/expenseBook. 물품구매는 수량 × 단가로 비용을 셈한다.
 import { computed, inject, ref, watch } from 'vue';
 import { useAuctionStore } from '../stores/auctionStore';
-// 웹은 입찰가산정 탭 이름이 '수익분석' 이다
-const planSrc = inject<boolean>('webEmbed', false) ? '수익분석' : '입찰가산정A';
+import { withConfirmedPlan } from '../services/confirmedPlan';
+// 웹은 입찰가산정 탭 이름이 '수익분석' 이고, 수익분석에서 '확정' 한 안의 값을 쓴다(앱은 그대로 A안)
+const webEmbedLedger = inject<boolean>('webEmbed', false);
+const planSrc = webEmbedLedger ? '수익분석' : '입찰가산정A';
+const planned = <T extends Parameters<typeof withConfirmedPlan>[0]>(a: T): T => (webEmbedLedger ? withConfirmedPlan(a) : a) as T;
 import { useFinanceStore } from '../stores/financeStore';
 import { useInteriorStore } from '../stores/interiorStore';
 import { BOOK_HINT, BOOK_NAME, groupsOf, ledgerRows, planAmountsOf, planRowsOf, withPlan, type Book, type LedgerRow } from '../services/expenseBook';
@@ -36,7 +39,7 @@ const many = computed(() => props.auctionId === null);
 /** A안 기본 줄을 깔 물건 — 낙찰이후는 그 물건, 자금관리는 낙찰한 물건 전부 */
 const planAuctions = computed(() => (many.value
   ? auctions.auctions.filter((a) => !!a.wonDate)
-  : auctions.auctions.filter((a) => a.id === props.auctionId)));
+  : auctions.auctions.filter((a) => a.id === props.auctionId)).map((a) => planned(a)));
 const all = computed(() => withPlan(ledgerRows({ be: finance.businessExpenses, interior: interior.rows }), planAuctions.value));
 const rows = computed(() => all.value.filter((r) => r.book === props.book
   && (many.value || r.auctionId === props.auctionId)
@@ -100,7 +103,7 @@ watch(() => [draft.value.qty, draft.value.unit, isItem.value] as const, ([q, u, 
 /** 대출이자 한 달 몫 — 입찰가산정 A안의 3개월 이자 ÷ 3 */
 const monthlyInterestOf = (id: string) => {
   const a = auctions.auctions.find((x) => x.id === id);
-  return a ? Math.round(planAmountsOf(a).interest / 3) : 0;
+  return a ? Math.round(planAmountsOf(planned(a)).interest / 3) : 0;
 };
 const openAdd = () => {
   const [cat, items] = GROUPS.value[0];
@@ -136,7 +139,7 @@ const planMatch = computed(() => {
   const d = draft.value;
   const a = auctions.auctions.find((x) => x.id === d.auctionId);
   if (!a) return null;
-  return planRowsOf(a).find((p) => p.book === props.book && p.category === d.category
+  return planRowsOf(planned(a)).find((p) => p.book === props.book && p.category === d.category
     && (p.category === '수리·인테리어' || p.category === '명도비' || p.detail === d.detail)) ?? null;
 });
 const save = async () => {

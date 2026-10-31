@@ -5287,17 +5287,18 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   /* 앱 물건(AuctionDetail) → 웹 카드 한 장. 값은 앱 셈 함수로 낸다 */
   const toWebItem = (a) => {
     const T = CLOUD.T;
+    const P = T.withConfirmedPlan ? T.withConfirmedPlan(a) : a;   /* 입찰가 · 매도가 · 대출은 수익분석에서 확정한 안의 값 */
     const sum = { ...T.summarySeedOf(a), ...Object.fromEntries(Object.entries(a.basicSummary || {}).filter(([, v]) => v)) };
     const parts = T.addressParts(a.address || '', sum['sum.buildingName']);
     return {
       id: a.id, date: a.eventDate || '', court: a.courtName || '', caseNo: a.caseNumber || '',
       land: Number(a.landAreaM2) || 0, bldg: Number(a.buildingAreaM2) || 0, type: a.propertyType || '',
       addr: parts.before.trim(), bld: parts.name, unit: `${parts.mid}${parts.unit}`.trim(),
-      apr: T.bidBaseValueOf(a), round: T.currentRoundLabelOf(a), min: T.currentMinBidOf(a), mine: (a.metrics && a.metrics.myBidValue) || 0,
+      apr: T.bidBaseValueOf(a), round: T.currentRoundLabelOf(a), min: T.currentMinBidOf(a), mine: (P.metrics && P.metrics.myBidValue) || 0,
       status: a.status, bid: T.bidStageOf(a), priority: a.priority || 0,
       archived: !!a.archived && !a.hidden, trashed: !!a.hidden,
       fromFolder: ((a.importMeta && a.importMeta.pdfFolderUrl) || '').match(/folders\/([\w-]+)/)?.[1] || '',
-      sale: (a.bidCost && a.bidCost.salePrice) || a.expectedSaleValue || 0, loan: (a.bidCost && a.bidCost.loanAmount) || 0,
+      sale: (P.bidCost && P.bidCost.salePrice) || P.expectedSaleValue || 0, loan: (P.bidCost && P.bidCost.loanAmount) || 0,
     };
   };
   /* 예시 물건을 앱 물건 모양으로 — 물건상세가 앱 셈 함수 하나로 그려지게 */

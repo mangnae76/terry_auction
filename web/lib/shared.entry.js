@@ -15,6 +15,8 @@ export {
 } from '../../src/services/geminiPdf';
 // 기일내역에서 이번 회차 고르기
 export { pickCurrentRound } from '../../src/utils/auctionSchedule';
+// 수익분석에서 확정한 입찰안 — 목록 카드의 입찰가 · 매도가가 이 안의 값을 쓴다
+export { withConfirmedPlan, confirmedPlanOf } from '../../src/services/confirmedPlan';
 // 주소 → 지번 · 건물명 · 동층호 토막
 export { addressParts, addressWithName, hasBuildingName } from '../../src/utils/addressName';
 // 물건 종류 이름·배지 글자

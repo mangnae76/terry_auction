@@ -6,6 +6,7 @@
 // 매도가는 매도일이 적히면 확정 매도가다(같은 칸). 고치려면 입찰가산정으로 간다.
 // 고른 값은 이 브라우저에 물건마다 기억한다. 세금 셈은 입찰가산정과 같은 profitMath.
 import { computed, inject, onMounted, ref, watch } from 'vue';
+import { withConfirmedPlan } from '../services/confirmedPlan';
 import { useRouter } from 'vue-router';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useInteriorStore } from '../stores/interiorStore';
@@ -20,6 +21,10 @@ import { getGeminiKey, isGeminiOn, loadGeminiPrefs } from '../services/geminiPdf
 import { EVICT_BASIS, EVICT_DEFAULT, EVICT_SOURCES, bizIncomeTaxOf, dealCost, execCost, monthlyCarry, planOf, transferTaxOf, vatOf, type EvictInput, type HoldTerm } from '../services/postWinMoney';
 
 const props = defineProps<{ auction: AuctionDetail | null; mode: 'evict' | 'tax' }>();
+// 웹은 수익분석에서 '확정' 한 안의 입찰가 · 매도가 · 비용을 쓴다(앱은 그대로 A안)
+const webEmbed = inject<boolean>('webEmbed', false);
+const planned = <T extends AuctionDetail | null | undefined>(a: T): T => (webEmbed ? withConfirmedPlan(a) : a) as T;
+const A = computed(() => planned(props.auction));
 
 const key = () => `pw.money.${props.auction?.id ?? ''}`;
 const read = (): Record<string, unknown> => { try { return JSON.parse(localStorage.getItem(key()) || '{}') || {}; } catch { return {}; } };
@@ -28,7 +33,7 @@ const man = (n: number) => `${Math.round((n || 0) / 10_000).toLocaleString('ko-K
 
 /** 물건 값에서 처음 값 */
 const seedEvict = (): EvictInput => {
-  const a = props.auction;
+  const a = A.value;
   return {
     ...EVICT_DEFAULT,
     loan: a?.bidCost?.loanAmount || EVICT_DEFAULT.loan,
@@ -122,7 +127,7 @@ const router = useRouter();
 const store = useAuctionStore();
 /** 입찰가산정으로 — 물건상세 수익분석 탭 */
 const goPlan = () => { if (props.auction?.id) router.push({ path: `/auctions/${props.auction.id}`, query: { tab: 'profit' } }); };
-const plan = computed(() => planOf(props.auction));
+const plan = computed(() => planOf(A.value));
 // 실제 기록 — 진행절차 필요경비 · 사업경비(자금관리와 같은 기록). 적힌 게 있으면 A안 대신 쓴다
 const finance = useFinanceStore();
 const interior = useInteriorStore();
@@ -131,7 +136,7 @@ interior.initialize();
 const ledger = computed(() => ledgerRows({ be: finance.businessExpenses, interior: interior.rows }));
 const saleFixed = computed(() => !!props.auction?.sellDate);
 // 명도비도 사업경비 장부의 값(실제 기록, 없으면 A안 명도비) — 명도분석은 견주어 보는 계산기
-const split = computed(() => costSplitOf({ id: props.auction?.id ?? '', wonDate: props.auction?.wonDate, expectedSaleValue: props.auction?.expectedSaleValue, bidCost: props.auction?.bidCost, metrics: props.auction?.metrics }, ledger.value));
+const split = computed(() => costSplitOf({ id: props.auction?.id ?? '', wonDate: props.auction?.wonDate, expectedSaleValue: A.value?.expectedSaleValue, bidCost: A.value?.bidCost, metrics: A.value?.metrics }, ledger.value));
 // 명도협의 · 강제집행 — 누르면 그 금액을 사업경비 명도비로 넣는다(다시 누르면 빼고 A안으로).
 // 늦어지는 달의 이자 · 관리비는 대출이자 · 관리비 줄과 겹치므로 빼고 명도에 드는 돈만 넣는다
 const EV_DETAIL = { deal: '이사비(합의)', exec: '강제집행 비용' } as const;
@@ -158,7 +163,6 @@ const pickEvict = async (k: 'deal' | 'exec') => {
   } finally { evBusy.value = false; }
 };
 // 웹은 '입찰가A' 대신 화면 이름 '수익분석' 으로 부른다(새화면엔 A안 이름이 크게 서지 않는다)
-const webEmbed = inject<boolean>('webEmbed', false);
 const planName = webEmbed ? '수익분석' : '입찰가A';
 const srcText = (actual: number, planned: number, tab: string) => (actual && planned ? `실제 ${won(actual)} + ${planName} ${won(planned)} — ${tab} 탭`
   : actual ? `실제 기록 — ${tab} 탭` : `${planName}에서 가져옵니다 — ${tab} 탭에서 직접 입력`);
@@ -170,12 +174,12 @@ const vat = computed(() => vatOf(props.auction?.propertyType ?? '', props.auctio
 // 매출 · 다른 차익 — 매도 기록(매도일 · 매도가)에서 해마다 셈한다. 없으면 0
 const thisYear = new Date().getFullYear();
 const soldIn = (y: number) => store.auctions.filter((x) => x.id !== props.auction?.id && String(x.sellDate ?? '').startsWith(String(y)));
-const salesOf = (y: number) => soldIn(y).reduce((s, x) => s + (x.expectedSaleValue || 0), 0);
+const salesOf = (y: number) => soldIn(y).reduce((s, x) => s + (planned(x).expectedSaleValue || 0), 0);
 const lastSales = computed(() => salesOf(thisYear - 1));
 const thisSales = computed(() => salesOf(thisYear));
 const otherGain = computed(() => soldIn(thisYear).reduce((s, x) => {
-  const p = planOf(x);
-  const c = costSplitOf(x, ledger.value);
+  const p = planOf(planned(x));
+  const c = costSplitOf(planned(x), ledger.value);
   return s + Math.max(0, p.sale - p.bid - c.need - c.biz);
 }, 0));
 const biz = computed(() => bizIncomeTaxOf(gain.value, otherGain.value));

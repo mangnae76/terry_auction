@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // 세금관리 — 연도별로 낙찰·매도 건을 모아 사업소득과 세금을 가늠한다.
 // 값은 물건상세 '입찰가산정'에 적어 둔 금액과 낙찰일·매도일에서 끌어온다.
+import { withConfirmedPlan } from '../services/confirmedPlan';
 import { useRouter } from 'vue-router';
 import { computed, ref, watch } from 'vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
@@ -26,8 +27,10 @@ const yearWindow = computed(() => [year.value + 1, year.value, year.value - 1]);
 
 const yearOf = (date?: string) => (date ? Number(date.slice(0, 4)) : 0);
 
-const soldThisYear = computed(() => store.auctions.filter((a) => yearOf(a.sellDate) === year.value));
-const wonThisYear = computed(() => store.auctions.filter((a) => yearOf(a.wonDate) === year.value));
+// 웹은 수익분석에서 '확정' 한 안의 입찰가 · 매도가 · 비용으로 셈한다(앱은 A안)
+const planList = computed(() => (props.webYear ? store.auctions.map((a) => withConfirmedPlan(a)) : store.auctions));
+const soldThisYear = computed(() => planList.value.filter((a) => yearOf(a.sellDate) === year.value));
+const wonThisYear = computed(() => planList.value.filter((a) => yearOf(a.wonDate) === year.value));
 const holdingCount = computed(() => store.auctions.filter((a) => a.wonDate && !a.sellDate).length);
 
 /** 입찰가산정의 비용 항목 합계 — 대출은 빌린 돈이라 뺀다 */

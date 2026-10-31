@@ -3,6 +3,7 @@
 // 탭: 사업계좌 자금입출금 / 사업지출내역 / 유류비 & 식대지출 / 물품구매 지출상세
 
 import { computed, defineAsyncComponent, inject, onMounted, onUnmounted, ref, watch } from 'vue';
+import { withConfirmedPlan } from '../services/confirmedPlan';
 import { useRoute, useRouter } from 'vue-router';
 import { shortAddr } from '../utils/address';
 import chevronDownIcon from '../assets/icones/chevron-down (1).png';
@@ -73,10 +74,11 @@ const pctText = (part: number, whole: number) => (whole > 0 ? `${((part / whole)
 /** 펼친 카드의 산정표 — 같은 물건이면 다시 셈하지 않는다 (목록을 다시 그릴 때마다 돌던 자리) */
 const calcCache = new Map<string, CalcRow[]>();
 const calcRows = (a: AuctionDetail): CalcRow[] => {
-  const hit = calcCache.get(a.id);
+  const k = `${a.id}|${a.confirmedPlan ?? 0}`;   // 확정한 안이 바뀌면 다시 셈한다
+  const hit = calcCache.get(k);
   if (hit) return hit;
-  const rows = buildCalcRows(a);
-  calcCache.set(a.id, rows);
+  const rows = buildCalcRows(webEmbed ? withConfirmedPlan(a) : a);   // 웹은 수익분석에서 확정한 안(앱은 A안)
+  calcCache.set(k, rows);
   return rows;
 };
 const buildCalcRows = (a: AuctionDetail): CalcRow[] => {
