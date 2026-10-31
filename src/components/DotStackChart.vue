@@ -104,6 +104,14 @@ const layout = (first: boolean) => {
   const tierOf = (r: DongTradeDetailRow) => COLOR_KEYS[colorKey.value].tier(r, years.value);
   const top = 46; const bottom = 34; const colW = W / Math.max(1, groups.length);
   const G = 3;
+  // 한 건 = 점 하나(지름 MIN_DOT)로 그릴 높이를 재서 판을 그만큼 늘린다(580 ~ 720). 그래도 넘치면 아래에서 묶는다
+  {
+    const kk = Math.max(1, Math.floor((colW - 14) / (MIN_DOT + G)));
+    const need = Math.ceil(Math.max(1, ...groups.map((g) => g.length)) / kk) * (MIN_DOT + G) + top + bottom + 4;
+    const want = Math.round(Math.min(720, Math.max(580, need)));
+    const el = cv.value;
+    if (el && Math.abs(want - H) > 2) { el.style.height = `${want}px`; resize(); }
+  }
   // 점 지름을 MIN_DOT 이상으로 지키도록 묶음 크기(per)를 1 · 2 · 3 … 으로 늘려 본다
   let counts: number[] = []; D = 16;
   for (per.value = 1; per.value < 500; per.value += 1) {
@@ -141,10 +149,10 @@ function draw(now: number) {
   cols.forEach((col) => {
     c.fillStyle = P.sub; c.font = '600 14px "Pretendard", "Apple SD Gothic Neo", sans-serif'; c.fillText(col.label, col.x, H - 12);
     if (!col.n) return;
-    // 칸 위 두 줄 — 위 '거래 843건', 아래 '중간값 7,300만'(파랑). 이름을 붙여 따로 읽는 법을 찾지 않게
+    // 칸 위 두 줄 — 위 '거래 843건', 아래 파란 중간값('7,300만'). 파란 숫자 뜻은 위 안내 줄에 적는다
     c.fillStyle = P.ink; c.font = '700 14px "Pretendard", sans-serif'; c.fillText(`거래 ${col.n.toLocaleString('ko-KR')}건`, col.x, col.topY - 24);
     if (col.median) {
-      const t = `중간값 ${eok(col.median)}`; const room = (cols.length > 1 ? cols[1].x - cols[0].x : W) - 8;
+      const t = eok(col.median); const room = (cols.length > 1 ? cols[1].x - cols[0].x : W) - 8;
       c.fillStyle = P.accent; c.font = '700 13px "Pretendard", sans-serif';
       if (c.measureText(t).width > room) c.font = '700 12px "Pretendard", sans-serif';   // 칸이 좁으면 한 단계 작게 — 옆 칸 글과 겹치지 않게
       c.fillText(t, col.x, col.topY - 8);
@@ -201,7 +209,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
         <div class="dsc-kinds" role="tablist" aria-label="분포 기준">
           <button v-for="v in views" :key="v.key" type="button" :class="{ on: viewKey === v.key }" @click="pickView(v.key)"><svg v-if="v.icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="v.icon" /></svg>{{ v.title }}</button>
         </div>
-        <p class="dsc-read">점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래입니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></p>
+        <p class="dsc-read">점 하나가 거래 <b>{{ per > 1 ? `${per}건` : '한 건' }}</b>입니다. 칸마다 아래가 오래된 거래, 위가 최근 거래이고, 칸 위 파란 숫자는 중간값입니다.<template v-if="dropped.length"> 거래가 1% 미만인 구간({{ dropped.map((x) => `${x.label} ${x.n}건`).join(' · ') }})은 뺐습니다.</template></p>
       </div>
       <!-- '색' 은 단추 밖에 한 번만 — 단추마다 '색 ○○' 이라 적으니 말이 겹쳤다 -->
       <div class="dsc-right">
@@ -231,7 +239,17 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 
 <style scoped>
 .dsc { display: flex; flex-direction: column; gap: 10px; }
-.dsc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.dsc-top { display: grid; grid-template-columns: minmax(0, 640px) auto; justify-content: space-between; align-items: center; gap: 8px 16px; }
+.dsc-top > .dsc-left, .dsc-top > .dsc-right { display: contents; }   /* 두 묶음을 풀어 한 격자에 — 안내 줄과 범례가 같은 줄에 선다 */
+.dsc-top .dsc-kinds { grid-column: 1; grid-row: 1; }
+.dsc-top .dsc-read { grid-column: 1; grid-row: 2; }
+.dsc-top .dsc-colors { grid-column: 2; grid-row: 1; justify-self: end; }
+.dsc-top .dsc-legend { grid-column: 2; grid-row: 2; justify-self: end; }
+@media (max-width: 900px) {
+  .dsc-top { grid-template-columns: minmax(0, 1fr); }
+  .dsc-top .dsc-kinds { grid-row: 1; } .dsc-top .dsc-colors { grid-column: 1; grid-row: 2; justify-self: start; }
+  .dsc-top .dsc-read { grid-row: 3; } .dsc-top .dsc-legend { grid-column: 1; grid-row: 4; justify-self: start; }
+}
 .dsc-kinds { flex: 1 1 520px; max-width: 640px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .dsc-kinds button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 14px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; font-family: inherit; font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; }
 .dsc-kinds button.on { border-color: #2b6df3; color: #2b6df3; background: #eef4ff; }
@@ -251,7 +269,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dsc-sum > b { flex: none; font-weight: 800; color: #1f2a44; }
 .dsc-sum :deep(b) { font-weight: 800; color: #2b6df3; }
 .dsc-board { position: relative; background: #f6f8fb; border: 1px solid #e3e8f0; border-radius: 10px; padding: 12px 10px 6px; }
-.dsc-cv { display: block; width: 100%; height: 580px; }
+.dsc-cv { display: block; width: 100%; height: 580px; }   /* 높이는 그릴 때 거래 수에 맞춰 다시 정한다(580 ~ 720) */
 .dsc-tip { position: absolute; z-index: 5; pointer-events: none; display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; min-width: 200px; padding: 9px 11px; border-radius: 8px; background: #1f2937; color: #f3f4f6; font-size: 12.5px; line-height: 1.55; box-shadow: 0 10px 24px rgba(17, 24, 39, .25); }
 .dsc-tip b { font-weight: 600; color: #9aa6ba; }
 .dsc-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: #6b7280; }
