@@ -156,19 +156,19 @@ button { cursor: pointer; }
 
 /* ================= 머리띠 — 시안의 좌표를 1280 폭 기준 비율로 옮긴다 ================= */
 .gnb { background: var(--nav); color: var(--nav-text); position: relative; z-index: 40; }
-.gnb-in { position: relative; height: 60px; }   /* 70 → 60(10-31 글자를 줄이며 머리 높이도 줄임). 아래 화면은 --gnb-h 를 보고 같이 올라간다 */   /* 66 → 70 — 위 작은 단추들이 너무 붙어 4px 키움. 아래 화면은 --gnb-h 를 보고 같이 내려간다 */
+.gnb-in { position: relative; height: 50px; }   /* 70 → 60 → 50(10-31 글자를 줄이며 머리 높이도 줄임). 아래 화면은 --gnb-h 를 보고 같이 올라간다 */   /* 66 → 70 — 위 작은 단추들이 너무 붙어 4px 키움. 아래 화면은 --gnb-h 를 보고 같이 내려간다 */
 .gnb a, .gnb button { color: inherit; text-decoration: none; }
 /* 로고 — 머리띠 높이(70) 가운데, 시안 폭(약 133px)에 맞춘 44px 높이 */
-.g-logo { position: absolute; left: -0.47%; top: 13px; display: block; }
-.g-logo img { display: block; height: 44px; width: auto; transition: transform .4s cubic-bezier(.2, .9, .3, 1.4); }
+.g-logo { position: absolute; left: -0.47%; top: 7px; display: block; }
+.g-logo img { display: block; height: 36px; width: auto; transition: transform .4s cubic-bezier(.2, .9, .3, 1.4); }
 .g-logo:hover img { transform: rotate(-4deg) scale(1.04); }
 .g-menu {
-  position: absolute; top: 28px; height: 26px; display: inline-flex; align-items: center;
+  position: absolute; top: 22px; height: 26px; display: inline-flex; align-items: center;
   font-size: var(--menu-fs); font-weight: 700; letter-spacing: -0.3px; white-space: nowrap;
   transition: color .15s;
 }
 .g-menu::after {
-  content: ""; position: absolute; left: -9px; right: -9px; bottom: -5px; height: 3px; border-radius: 2px 2px 0 0;
+  content: ""; position: absolute; left: -9px; right: -9px; bottom: -2px; height: 3px; border-radius: 2px 2px 0 0;
   background: var(--nav-orange); transform: scaleX(0); transition: transform .2s ease;
 }
 .g-menu:hover { color: #cfe0ff; }
@@ -190,9 +190,9 @@ button { cursor: pointer; }
 .g-ico .dot { position: absolute; top: 2px; right: 2px; width: 7px; height: 7px; border-radius: 50%; background: #ff4d4f; box-shadow: 0 0 0 1.5px var(--nav); }
 .g-box {
   /* 상단 메뉴 전부의 아래 메뉴를 한 번에 펼치고 접는 단추 — 속은 비우고 흰 테두리·흰 삼각형 */
-  /* 높이 — 메뉴 글자(잉크 ≈35~50)의 가운데(≈42)에 상자 가운데를 둔다 */
+  /* 높이 — 메뉴 글자 잉크의 가운데(≈35)에 상자 가운데를 둔다 */
   /* 가로 — 1280 상자 오른쪽 끝(이름 · 로그아웃이 위 줄로 올라가 빈 자리). 메뉴 열은 이 단추 앞까지 고르게 벌어진다 */
-  position: absolute; left: calc(100% - 18px); top: 33px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 5px; border: 1px solid var(--nav-text);
+  position: absolute; left: calc(100% - 18px); top: 26px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 5px; border: 1px solid var(--nav-text);
   background: transparent; display: grid; place-items: center; padding: 0; transition: background .15s;
 }
 .g-box svg { width: 7px; height: 7px; color: var(--nav-text); transition: transform .2s; }
@@ -254,9 +254,9 @@ button { cursor: pointer; }
 [hidden] { display: none !important; }
 
 /* ================= 도구 상자 — 시안처럼 연회색 띠 위의 흰 상자 ================= */
-.toolbar-shell { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--band); padding: 6px 0 8px; transition: box-shadow .2s; }
+.toolbar-shell { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--band); padding: 6px 0 6px; transition: box-shadow .2s; }
 /* 머리띠 오른쪽 위(로그아웃 위) — 공지·결제하기 | 알림·밤낮. 메뉴 글자(top 32) 위 빈 자리에 작게 */
-.g-util { position: absolute; right: 0; top: 2px; display: flex; align-items: center; gap: 18px; }   /* 대문 시험 ~ 로그아웃 사이를 넉넉히(알림 · 밤낮이 붙어 보이지 않게) */
+.g-util { position: absolute; right: 0; top: 1px; display: flex; align-items: center; gap: 18px; }   /* 대문 시험 ~ 로그아웃 사이를 넉넉히(알림 · 밤낮이 붙어 보이지 않게) */
 .g-util .u-sep { margin: 0 4px; }
 .g-util .u-link { height: 20px; font-size: 12px; color: rgba(255, 255, 255, 0.78) !important; }
 .g-util .u-link svg, .g-util .u-ico { color: rgba(255, 255, 255, 0.78) !important; }
@@ -285,7 +285,7 @@ button { cursor: pointer; }
 /* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
    하위 탭 글자 — 물건상세(물건정보~입찰가산정) · 물건등록(자동등록 · 직접입력) 등 모든 탭 줄이 이 값 하나를 쓴다.
    창이 좁아지면 아래 @media 에서 이 값만 바꾼다 */
-:root { --menu-shift: min(calc(var(--menu-fs) * 2), max(0px, calc((100vw - 1200px) / 6))); --menu-fs: 14.6px; --tab-fs: 13px; --tab-px: 20px; --tab-h: 36px; }
+:root { --menu-shift: min(calc(var(--menu-fs) * 2), max(0px, calc((100vw - 1200px) / 6))); --menu-fs: 14.6px; --tab-fs: 13px; --tab-px: 20px; --tab-h: 30px; }
 /* 제목 글자 — 웹 한 곳. 카드 제목 · 큰 제목 · 화면 제목(10-31 메뉴 · 탭과 함께 10% 줄임: 16→14.4 · 18→16.2 · 20→18). 앱 화면 부품은 var(--title-fs, 16px) 로 읽어 앱은 그대로 */
 :root { --title-fs: 14.4px; --title-lg-fs: 16.2px; --title-xl-fs: 18px; } /* 하위 탭 높이도 한 값 — 시장분석 · 물건상세 하위 탭과 물건등록 탭이 같이 쓴다 */
 /* 카드 안쪽 여백 — 모든 웹 카드가 이 값을 쓴다.
@@ -310,11 +310,11 @@ button { cursor: pointer; }
 .app-market .adm-shell { min-height: 0 !important; background: transparent !important; }
 .app-market .adm-body { padding: 0 0 40px !important; max-width: none !important; }
 /* 시장분석 탭 공통 고르는 줄 — 거래량 랭킹 판과 같은 규칙: 칸·단추 높이 40 · 모서리 6, 칸 글자 16, 종류 단추 15, 단추 글자 16 */
-.app-market .adm-bar :is(select.adm-input, input.adm-input, .adm-load, .adm-csv) { height: 40px !important; border-radius: 6px !important; }
-.app-market .adm-bar :is(select.adm-input, input.adm-input) { font-size: 16px !important; }
-.app-market .adm-bar :is(.adm-load, .adm-csv) { font-size: 16px !important; padding: 0 18px !important; min-width: 136px; white-space: nowrap; } /* 조회 · 엑셀 내려받기 같은 폭 */
-.app-market .adm-bar .adm-seg { height: 40px; box-sizing: border-box; border-radius: 6px !important; align-items: center; }
-.app-market .adm-bar .adm-seg-btn { font-size: 15px !important; }
+.app-market .adm-bar :is(select.adm-input, input.adm-input, .adm-load, .adm-csv) { height: 32px !important; border-radius: 6px !important; }
+.app-market .adm-bar :is(select.adm-input, input.adm-input) { font-size: 14px !important; }
+.app-market .adm-bar :is(.adm-load, .adm-csv) { font-size: 14px !important; padding: 0 18px !important; min-width: 136px; white-space: nowrap; } /* 조회 · 엑셀 내려받기 같은 폭 */
+.app-market .adm-bar .adm-seg { height: 32px; box-sizing: border-box; border-radius: 6px !important; align-items: center; }
+.app-market .adm-bar .adm-seg-btn { font-size: 14px !important; }
 .app-market .adm-bar .adm-f > small { font-size: 14px !important; }
 .app-market .adm-sum { font-size: 14px !important; } .app-market .adm-sum strong { font-size: 16px !important; }
 /* 지역분석 — 화면 제목 줄(제목 · 설명 · 엑셀 단추)은 웹에서 통째로 감춘다. 엑셀 내려받기는 '조회' 옆으로 옮겼다 */
@@ -326,16 +326,17 @@ button { cursor: pointer; }
 .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar select.adm-input.narrow { width: 200px !important; }
 /* 지역분석 — 고르는 칸 · 종류 · 엑셀 내려받기 · 조회가 한 줄에 서게 */
 .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar { flex-wrap: nowrap !important; }
+@media (max-width: 1240px) { .app-market:is([data-k="region"], [data-k="dong"]) .adm-bar { flex-wrap: wrap !important; row-gap: 6px !important; } }   /* 좁은 화면 — 조회 단추가 잘리지 않게 다음 줄로 */
 /* 지역분석 — 고르는 줄(흰 카드)을 물건정보 카드처럼 화면 끝까지 이어지는 띠(--band) 위에 얹는다.
    띠는 카드 그림자를 화면 폭만큼 펼쳐 만들고, 위아래 16px 만 남기고 자른다 */
 /* 고르는 줄 띠 · 탭 줄은 위(머리띠 · 하위 탭 아래)에 붙어 있고 아래 내용만 흐른다 — 물건상세의 위 카드처럼 */
-.app-market:is([data-k="dong"], [data-k="case"]) .adm-bar { box-shadow: 0 0 0 100vmax var(--band) !important; clip-path: inset(-8px -100vmax -8px -100vmax); margin-top: 0 !important; margin-bottom: 8px !important; padding-top: 10px !important; padding-bottom: 10px !important;
-  position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px); z-index: 12; } /* 띠 안 위아래 8px — 사건 카드(낙찰이후)와 같은 간격, 가운데. 띠 아래 선(::after)은 -9px — 절대위치는 테두리(1px) 안쪽 기준이라 -8 이면 띠 바탕이 선 밑으로 1px 남는다 */
+.app-market:is([data-k="dong"], [data-k="case"]) .adm-bar { box-shadow: 0 0 0 100vmax var(--band) !important; clip-path: inset(-6px -100vmax -6px -100vmax); margin-top: 0 !important; margin-bottom: 6px !important; padding-top: 6px !important; padding-bottom: 6px !important;
+  position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 6px); z-index: 12; } /* 띠 안 위아래 8px — 사건 카드(낙찰이후)와 같은 간격, 가운데. 띠 아래 선(::after)은 -9px — 절대위치는 테두리(1px) 안쪽 기준이라 -8 이면 띠 바탕이 선 밑으로 1px 남는다 */
 /* (붙는 자리 = 처음 놓인 자리 — 둘이 다르면 내리는 순간 몇 px 움직였다 멈춰 흔들려 보인다. 띠는 하위 탭 바로 아래부터 덮는다) */
-.app-market:is([data-k="dong"], [data-k="case"]) .adm-bar:not(.manual)::after { content: ""; position: absolute; left: 50%; bottom: -9px; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); pointer-events: none; } /* 띠 아래 끝 선 */
+.app-market:is([data-k="dong"], [data-k="case"]) .adm-bar:not(.manual)::after { content: ""; position: absolute; left: 50%; bottom: -7px; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); pointer-events: none; } /* 띠 아래 끝 선 */
 /* 탭 줄(수요공급 · 지역별 분석 · …) 밑줄을 화면 끝까지 */
-.app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top { padding-bottom: 0; margin-top: 10px !important; height: 40px; box-sizing: border-box; align-items: stretch !important;
-  position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px + var(--bar-h, 62px) + 10px); z-index: 11;
+.app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top { padding-bottom: 0; margin-top: 6px !important; height: 34px; box-sizing: border-box; align-items: stretch !important;
+  position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 6px + var(--bar-h, 50px) + 6px); z-index: 11;
   background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(-12px -100vmax 0 -100vmax); }
 /* 아래 바닥 띠(.foot)가 표 바로 밑에 붙어 올라와 보였다 — 표 한 줄쯤 띄운다 */
 #marketView:has(.app-market:is([data-k="dong"], [data-k="case"])) .market-content { padding-bottom: 56px; }
@@ -873,12 +874,17 @@ body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) :is(.foot, .fo
    남색 머리띠 → [하위 탭 줄] → 필터 상자(.toolbar-shell) 를 한 덩어리로 위에 붙인다. 어느 화면이든
    필터 상자는 .toolbar-shell 로 감싸기만 하면 된다. 높이는 변수로 — 머리띠 --gnb-h, 하위 탭 줄 --subtab-h.
    화면 폭과 상관없이 늘 고정한다. 좁은 화면에선 머리띠가 두 줄이 되므로 --gnb-h 는 syncStickTop() 이 실제 높이로 맞춘다 */
-:root { --gnb-h: 60px; --subtab-h: 37px; --stick-top: env(safe-area-inset-top, 0px); }
+:root { --gnb-h: 50px; --subtab-h: 31px; --stick-top: env(safe-area-inset-top, 0px); }
 .gnb { position: sticky; top: var(--stick-top); }
 .subtabs { top: calc(var(--stick-top) + var(--gnb-h)); }
 .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h)); }
 body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)); }
-.subtabs-in { display: flex; align-items: stretch; gap: 8px; height: var(--tab-h); }
+.subtabs > .wrap { display: flex; align-items: center; gap: 16px; }
+.subtabs-in { display: flex; align-items: stretch; gap: 8px; height: var(--tab-h); flex: 1 1 auto; min-width: 0; }
+/* 경로(홈 › …) — 모든 화면 하위 탭 줄 오른쪽 끝 한 곳(10-31, 따로 있던 경로 줄을 없앰) */
+.sub-crumb { flex: none; }
+.sub-crumb > .crumbs { height: var(--tab-h); padding: 0 2px 0 0 !important; justify-content: flex-end; }
+.sub-crumb:empty { display: none; }
 .subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--text-2); white-space: nowrap; transition: color .15s; }
 .subtab svg { width: 16px; height: 16px; }
 .subtab:hover { color: var(--text); }
@@ -893,6 +899,12 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .subtab.on::after { transform: scaleX(1); opacity: 1; animation: tab-bar-in .22s ease; }
 .crumb-slot { padding-top: 2px; }
 .crumb-slot + .content { padding-top: 6px; }
+/* 경로가 하위 탭 줄로 가 빈 자리 — 머리(띠 · 하위 탭 · 3단 띠) 아래 본문까지 틈은 모든 화면 12.
+   3단 띠(시장분석 고르는 줄)가 본문 맨 위에 오는 화면은 띠 안 위 틈 6 */
+.crumb-slot:not(:has(.crumbs)) { padding-top: 0; }
+.crumb-slot:not(:has(.crumbs)) + .content { padding-top: 12px; }
+#marketView .crumb-slot:not(:has(.crumbs)) + .content { padding-top: 6px; }
+#appPageContent:has(.app-page:is([data-k="more"], [data-k="community"])) { padding-top: 12px; }
 /* 경로를 카드 아래로 옮겨 간 빈 자리는 2px 도 남기지 않는다 — 남으면 낙찰이후 고정 카드가 붙을 때 2px 튄다 */
 #crumbSlotAppPage:empty { display: none; }
 .u-link { text-decoration: none; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; font-size: 13px; color: var(--text-2); white-space: nowrap; transition: background .15s, color .15s; }
@@ -924,7 +936,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .toolbar {
   position: relative; background: var(--surface); border: 1px solid var(--tb-line); border-radius: 8px;
   /* 세로를 줄였다 — 위·아래 여백 10, 두 줄 사이 8, 두 줄 모두 높이 28. 오른쪽 끝은 보관함·휴지통·고르기 */
-  padding: 10px 24px; display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 8px;
+  padding: 7px 24px; display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 6px;
 }
 /* 윗줄 상자는 32 — 아랫줄 단계(28)보다 한 단계 크게, 테두리는 아랫줄 '전체' 상자와 같은 색 */
 .tb-row1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-height: 32px; }
@@ -1021,8 +1033,15 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .demo-note { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 9px 14px; border-radius: 8px; background: #fff7e6; border: 1px solid #f5d79e; color: #8a5a00; font-size: 13px; }
 :root[data-theme="dark"] .demo-note { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #fbbf24; }
 /* ===== 물건상세 — 고정 카드(앱 adp-sticky-head) ===== */
-.item-head { row-gap: 6px; padding-top: 8px; padding-bottom: 8px; }
+.item-head { row-gap: 4px; padding-top: 6px; padding-bottom: 6px; }
 .ih-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+/* 사건 카드 단 통일(10-31) — 물건상세 · 낙찰관리 모두 첫 줄 28 · 정보 상자 62(종류 줄 26 + 주소 줄 26) */
+.item-head .ih-top { height: 28px; min-height: 0 !important; }
+.item-head .ih-top :is(.ih-back, .ibtn) { height: 28px; }
+.item-head .ih-right { height: 28px; align-items: center; }
+.item-head .ih-line { height: 26px; min-height: 0 !important; }
+.item-head .ih-stars { height: 26px; }
+.item-head .ih-prop { height: 62px; min-height: 0 !important; box-sizing: border-box; align-content: center; }
 .ih-back { flex: 0 0 auto; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--text-2); display: grid; place-items: center; }
 .ih-back:hover { background: var(--surface-3); color: var(--text); }
 .ih-back svg { width: 18px; height: 18px; }
@@ -1044,7 +1063,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .ih-stage { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-family: inherit; }
 .ih-stage .caret { font-style: normal; font-size: 11px; opacity: .8; }
 /* 1줄: 종류 칩 · 중요도·매각구분·면적 / 2줄: 주소 복사(종류 칩 아래) · 주소 */
-.ih-prop { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; padding: 6px 12px; border-radius: 8px; background: var(--surface-2); }
+.ih-prop { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2px 10px; padding: 4px 12px; border-radius: 8px; background: var(--surface-2); }
 .ih-line { display: flex; align-items: center; gap: 10px; min-width: 0; grid-column: 2 / 4; }
 /* 전체 접기 — 별 아래, 앱 .adp-fold-all 과 같은 모양(34×26 · 16px 화살표) */
 .ih-fold { grid-column: 3; justify-self: end; width: 34px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -1077,7 +1096,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page :is(.pw-fixed-top, .fin-fixed-top) { position: static !important; background: transparent !important; box-shadow: none !important; }
 .app-page :is(.pw-body, .fin-body) { overflow: visible !important; padding-bottom: 40px !important; }
 /* 웹 상자 — 바깥 폭은 사건 카드와 한 줄, 안쪽 표 · 글은 좌우로 넉넉히 들인다 */
-.app-page .pw-body { padding-left: 0 !important; padding-right: 0 !important; gap: 12px !important; }
+.app-page .pw-body { padding-left: 0 !important; padding-right: 0 !important; padding-top: 6px !important; gap: 12px !important; }   /* 사건 카드 띠 → 박스 탭 6(모든 화면 같은 틈) */
 .app-page .pw-shell .pw-card { padding: 4px 24px 20px !important; }
 .app-page .pw-shell .pw-card-head { padding-top: 10px !important; padding-bottom: 10px !important; }
 .app-page .pw-shell .pw-wrap.super { padding: 4px 24px 20px !important; gap: 12px !important; }
@@ -1366,7 +1385,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .pw-shell { display: flex !important; flex-direction: column; }
 .app-page[data-k="postwin"] .pw-fixed-top { display: contents; }
 .app-page[data-k="postwin"] .pw-webhead { order: -2; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)); z-index: 25;
-  padding: 8px 0 12px; background: var(--band); }
+  padding: 6px 0 6px; background: var(--band); }
 /* 띠는 좌우 끝까지 — clip-path 를 쓰면 아래로 펼치는 낙찰목록까지 잘리니 뒤판(::before)으로 깐다 */
 .app-page[data-k="postwin"] .pw-webhead::before { content: ''; position: absolute; inset: 0 calc(50% - 50vw); z-index: -1; background: var(--band); }
 .app-page[data-k="postwin"] .pw-crumbrow { order: -1; }
@@ -1437,22 +1456,24 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .fin-shell:is(.tab-businessExpense, .tab-fuelMeal, .tab-itemPurchase) .fin-table-wrap { margin-top: 8px; }
 /* ===== 자금입출금 — 지역분석과 같은 틀: 띠 위 흰 필터 줄(기간 · 엑셀 · 항목추가, 붙박이) → 경로 줄 → 요약 상자(내비게이션) → 구분선 → 표 ===== */
 .app-page[data-k="finance"] .fin-shell .fin-fixed-top { display: flex; flex-direction: column; }
-.app-page[data-k="finance"] .fin-shell .fin-toolbar { order: -2; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 8px); z-index: 12;
-  margin: 0 0 8px; padding: 10px 18px !important; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px;
-  box-shadow: 0 0 0 100vmax var(--band); clip-path: inset(-8px -100vmax -8px -100vmax); }
-.app-page[data-k="finance"] .fin-shell .fin-toolbar::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: -9px; width: 100vw; height: 1px; background: var(--subtab-line); pointer-events: none; }
+.app-page[data-k="finance"] .fin-shell .fin-toolbar { order: -2; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 6px); z-index: 12;
+  margin: 6px 0 6px; padding: 6px 18px !important; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px;
+  box-shadow: 0 0 0 100vmax var(--band); clip-path: inset(-6px -100vmax -6px -100vmax); }
+.app-page[data-k="finance"] .fin-shell .fin-toolbar::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: -7px; width: 100vw; height: 1px; background: var(--subtab-line); pointer-events: none; }
 .app-page[data-k="finance"] .fin-shell .fin-custom-range { order: -1; padding: 0 0 8px !important; }
 .app-page[data-k="finance"] .fin-shell .fin-webrow { order: 0; margin-top: 6px; }
+.app-page[data-k="finance"] .fin-shell .fin-webrow:not(:has(.crumbs)) { display: none; }   /* 경로는 하위 탭 줄로 갔다 */
+.app-page[data-k="finance"] .fin-shell .fin-body { margin-top: 12px !important; }   /* 3단 띠 → 본문 12(모든 화면 같은 틈) */
 .app-page[data-k="finance"] .fin-shell .fin-toolbar-right { display: flex !important; align-items: center; gap: 8px; }
-.app-page[data-k="finance"] .fin-shell .fin-period { display: inline-flex !important; gap: 4px; padding: 4px; background: #f1f4f9; border-radius: 8px; }
-.app-page[data-k="finance"] .fin-shell .fin-period-btn { height: 32px; padding: 0 16px !important; font-size: 15px !important; border: 0 !important; background: transparent !important; box-shadow: none !important; color: #6b7280; }
+.app-page[data-k="finance"] .fin-shell .fin-period { display: inline-flex !important; gap: 4px; padding: 3px; background: #f1f4f9; border-radius: 8px; }
+.app-page[data-k="finance"] .fin-shell .fin-period-btn { height: 26px; padding: 0 14px !important; font-size: 14px !important; border: 0 !important; background: transparent !important; box-shadow: none !important; color: #6b7280; }
 .app-page[data-k="finance"] .fin-shell .fin-period-btn.active { background: #fff !important; color: #1f2a44 !important; box-shadow: 0 1px 2px rgba(15, 23, 42, .1) !important; }
-.app-page[data-k="finance"] .fin-shell :is(.fin-excel, .fin-pick, .fin-add) { height: 40px; min-width: 120px; padding: 0 16px !important; border-radius: 6px !important; font-size: 16px !important; }
+.app-page[data-k="finance"] .fin-shell :is(.fin-excel, .fin-pick, .fin-add) { height: 32px; min-width: 110px; padding: 0 14px !important; border-radius: 6px !important; font-size: 14px !important; }
 .app-page[data-k="finance"] .fin-shell .fin-excel { margin-left: auto; }
 .app-page[data-k="finance"] .fin-shell :is(.fin-excel, .fin-add) i { font-size: 13px; }
 .app-page[data-k="finance"] .fin-ledger { margin-top: 8px; }
 .app-page[data-k="finance"] .fin-custom-inline { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
-.app-page[data-k="finance"] .fin-custom-inline .fin-date-box { height: 40px; min-width: 130px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; font-size: 15px; color: #111827; cursor: pointer; }
+.app-page[data-k="finance"] .fin-custom-inline .fin-date-box { height: 32px; min-width: 130px; padding: 0 12px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; font-size: 15px; color: #111827; cursor: pointer; }
 .app-page[data-k="finance"] .fin-custom-inline .fin-date-sep { color: #9ca3af; }
 /* 자금관리 표 — 바탕은 흰색인데 어두운 화면에서 글자가 페이지 글자색(밝은색)을 물려받아 묻혔다 — 표 글자는 늘 짙게 */
 .app-page[data-k="finance"] .fin-table tbody td { color: #111827; }
@@ -2501,7 +2522,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .cta .plus { display: inline-block; margin-right: 5px; transition: transform .25s; }
 .cta:hover .plus { transform: rotate(90deg); }
 
-.tb-row2 { display: flex; align-items: center; min-height: 28px; }
+.tb-row2 { display: flex; align-items: center; min-height: 26px; }
 /* 단계 띠 — 남는 폭을 칸 사이에 고르게 나눈다 */
 .tabs { display: flex; align-items: center; justify-content: space-between; min-width: 0; overflow-x: auto; scrollbar-width: none; flex: 1 1 auto; }
 .tabs::-webkit-scrollbar { display: none; }
@@ -2957,11 +2978,11 @@ html, body { overflow-x: clip; }
 
 /* ================= 좁은 화면 — 시안 좌표를 지킬 수 없으면 줄을 세운다 ================= */
 @media (max-width: 1240px) {
-  .gnb-in { display: flex; align-items: flex-end; gap: 22px; padding-bottom: 7px; box-sizing: border-box; }   /* 메뉴 줄은 아래에 — 위 작은 줄(공지 ~ 밤낮)과 겹치지 않게 */
+  .gnb-in { display: flex; align-items: flex-end; gap: 22px; padding-bottom: 4px; box-sizing: border-box; }   /* 메뉴 줄은 아래에 — 위 작은 줄(공지 ~ 밤낮)과 겹치지 않게 */
   .gnb-in > .g-logo { align-self: center; }
   .gnb .g-logo, .gnb .g-menu, .gnb .g-icons, .gnb .g-box, .gnb .g-box[data-tip], .gnb .g-user { position: relative; left: auto; top: auto; }
   :root { --menu-fs: 13px; --tab-fs: 12.2px; --tab-px: 14px; }
-  .g-menu::after { bottom: -7px; }   /* 띠 바닥(60)에 붙는다 — 메뉴 줄 아래 여백 7 */
+  .g-menu::after { bottom: -4px; }   /* 띠 바닥(50)에 붙는다 — 메뉴 줄 아래 여백 4 */
   .g-menu.m4 { margin-left: auto; }
   .g-icons { order: 10; } .g-box { order: 11; flex: 0 0 auto; }
   .g-user { order: 12; } .g-login, .g-out, .g-join { font-size: var(--menu-fs); }
@@ -3063,14 +3084,14 @@ html, body { overflow-x: clip; }
   position: relative; align-self: flex-end !important; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   /* 글자 길이와 상관없이 어느 페이지나 같은 폭 — 가장 긴 이름(매각불허가 · 유형분포+아이콘)이 들어가는 폭 */
   flex: 0 0 116px !important; width: 116px !important; min-width: 116px !important; box-sizing: border-box !important;
-  height: 34px !important; padding: 0 8px !important; margin: 0 !important;
+  height: 30px !important; padding: 0 8px !important; margin: 0 !important;
   border: 1px solid transparent !important; border-bottom: 0 !important; border-radius: 8px 8px 0 0 !important;
-  background: var(--boxtab-off) !important; color: var(--muted) !important; font-size: 15px !important; font-weight: 600 !important; white-space: nowrap;
+  background: var(--boxtab-off) !important; color: var(--muted) !important; font-size: 14px !important; font-weight: 600 !important; white-space: nowrap;
   transition: background .12s, color .12s;
 }
 :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab):hover { background: var(--boxtab-off-hover) !important; color: var(--text) !important; }
 :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab):is(.on, .active) {
-  z-index: 2; height: 38px !important; margin-bottom: 0 !important;
+  z-index: 2; height: 34px !important; margin-bottom: 0 !important;
   border-color: var(--boxtab-line) !important; background: var(--boxtab-on) !important; color: var(--blue) !important; font-weight: 800 !important;
 }
 :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab)::after { display: none !important; }
@@ -3086,10 +3107,10 @@ html, body { overflow-x: clip; }
 .pw-chaptabs { margin: 4px 0 4px; border-bottom: 1px solid var(--boxtab-line); overflow-x: auto; scrollbar-width: none; }
 /* 낙찰이후 장 탭(진행절차 · 절차상세 · 가이드) — 손품조사 탭 줄과 같게: 사건 카드 띠 바로 아래 10px, 높이 40, 밑선은 화면 양끝까지, 경로는 탭 줄 오른쪽 */
 /* 사건 카드 — 물건상세 카드와 줄 높이를 같게(첫 줄 32 · 둘째 줄 30(별 자리) · 아래 묶음 78) → 카드 140, 탭 줄 높이가 손품조사와 같다 */
-.app-page[data-k="postwin"] .pw-webhead .ih-top { min-height: 32px; }
-.app-page[data-k="postwin"] .pw-webhead .ih-line { min-height: 30px; align-items: center; }
-.app-page[data-k="postwin"] .pw-webhead .ih-prop { min-height: 70px; box-sizing: border-box; }
-.app-page[data-k="postwin"] .pw-chaptabs { position: relative; height: 40px; box-sizing: border-box; margin: 0 !important; border-bottom: 0 !important; overflow: visible !important; }
+.app-page[data-k="postwin"] .pw-webhead .ih-top { min-height: 28px; }
+.app-page[data-k="postwin"] .pw-webhead .ih-line { min-height: 26px; align-items: center; }
+.app-page[data-k="postwin"] .pw-webhead .ih-prop { min-height: 56px; box-sizing: border-box; }
+.app-page[data-k="postwin"] .pw-chaptabs { position: relative; height: 34px; box-sizing: border-box; margin: 0 !important; border-bottom: 0 !important; overflow: visible !important; }
 .app-page[data-k="postwin"] .pw-chaptabs::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--boxtab-line); z-index: 3; pointer-events: none; }
 .app-page[data-k="postwin"] .pw-crumbrow { position: relative; z-index: 4; height: 0; margin: 0 !important; padding: 0 !important; }
 .app-page[data-k="postwin"] .pw-crumbrow [data-crumb-slot] { position: absolute; right: -2px; top: 15px; }   /* 탭 줄(10px 아래) 안에서 손품조사 경로와 같은 높이 · 끝 */
@@ -3281,7 +3302,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
 
 <main>
   <!-- 하위 탭 — 하위 탭이 있는 화면에서만 머리띠 아래 한 단 더 선다(없으면 숨기고 필터 상자가 머리띠에 바로 붙는다) -->
-  <nav class="subtabs" id="subTabs" hidden aria-label="하위 메뉴"><div class="wrap"><div class="subtabs-in" id="subTabsIn" role="tablist"></div></div></nav>
+  <nav class="subtabs" id="subTabs" hidden aria-label="하위 메뉴"><div class="wrap"><div class="subtabs-in" id="subTabsIn" role="tablist"></div><div class="sub-crumb" id="subCrumbSlot"></div></div></nav>
   <div id="listView">
   <div class="toolbar-shell" id="toolbarShell">
     <div class="wrap">
@@ -4794,6 +4815,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const curOn = S.route === 'more' && cur === 'alerts' ? 'mypage' : cur;
     $('subTabsIn').innerHTML = tabs ? whereTag() + tabs.filter((x) => x[3] !== 'hide').map(([k, ic, t]) => `<button type="button" class="subtab ${curOn === k ? 'on' : ''}" role="tab" aria-selected="${curOn === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
     if (tabs) syncStickTop();
+    { const sc = $('subCrumbSlot'); if (tabs && sc && CRUMBS && CRUMBS.parentNode !== sc) sc.appendChild(CRUMBS); }
   }
   function render() {
     renderHeader();
@@ -4802,7 +4824,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     $('listView').hidden = reg || item || trip || my || market || page || info; $('regView').hidden = !reg; $('itemView').hidden = !item; $('tripView').hidden = !trip; $('myView').hidden = !my; $('marketView').hidden = !market; $('appPageView').hidden = !page; $('fab').hidden = reg || item || trip || my || market || page || info;
     const cur = item ? byId(S.itemId) : null;
     syncCrumb();
-    { const nav = CRUMBS; const slot = (market && document.getElementById('admCrumbSlot')) || (item && document.querySelector('#itemContent #admCrumbSlot')) || (page && document.querySelector('#appPageContent [data-crumb-slot]')) || $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : info ? 'crumbSlotInfo' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
+    if (!SUBTABS[S.route]) { const nav = CRUMBS; const slot = (market && document.getElementById('admCrumbSlot')) || (item && document.querySelector('#itemContent #admCrumbSlot')) || (page && document.querySelector('#appPageContent [data-crumb-slot]')) || $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : info ? 'crumbSlotInfo' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
     document.title = info ? `마이턴옥션 ${S.route === 'store' ? '스토어' : S.route === 'manual' ? '매뉴얼' : '모바일앱'}` : page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? '마이턴옥션 시장분석' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
     if (!item) closeAppDetail();
@@ -5194,17 +5216,20 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   /* 지역분석이 뜨고 나서 생기는 #admCrumbSlot 으로 경로를 옮긴다 */
   new MutationObserver(() => {
     const slot = document.getElementById('admCrumbSlot');
+    if (SUBTABS[S.route]) return;   /* 경로는 하위 탭 줄에 */
     if (S.route === 'market' && slot && CRUMBS && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS);
   }).observe(document.getElementById('marketContent') || document.body, { childList: true, subtree: true });
   /* 낙찰이후 등 앱 화면 안의 경로 자리([data-crumb-slot])로도 옮긴다 */
   new MutationObserver(() => {
     const slot = document.querySelector('#appPageContent [data-crumb-slot]');
+    if (SUBTABS[S.route]) return;
     if (APP_PAGE_NAMES[S.route] && slot && CRUMBS && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS);
   }).observe(document.getElementById('appPageContent') || document.body, { childList: true, subtree: true });
   /* 선정물건 손품조사 — 경로는 화면 안 탭 줄 오른쪽(#admCrumbSlot)으로, 걷을 때 제자리(#crumbSlotItem)로 */
-  const parkItemCrumbs = () => { const home = $('crumbSlotItem'); if (CRUMBS && home && CRUMBS.parentNode !== home) home.appendChild(CRUMBS); };
+  const parkItemCrumbs = () => { const home = $('crumbSlotItem'); if (CRUMBS && home && CRUMBS.parentNode !== home && $('itemContent')?.contains(CRUMBS)) home.appendChild(CRUMBS); };
   new MutationObserver(() => {
     const slot = document.querySelector('#itemContent #admCrumbSlot');
+    if (SUBTABS[S.route]) return;
     if (S.route === 'item' && slot && CRUMBS && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS);
   }).observe(document.getElementById('itemContent') || document.body, { childList: true, subtree: true });
   /* 손품조사 안 탭(수요분석 · 시세분석 · 손품결론) — 선정물건 경로 끝에 붙인다 */
@@ -5323,7 +5348,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const key = S.marketTab;
     const label = (SUBTABS[S.route].find((t) => t[0] === key) || [])[2] || '';
     const T = CLOUD.T;
-    if (key === 'sale') { closeAppMarket(); box.innerHTML = saleCaseHtml(); { const slot = document.getElementById('admCrumbSlot'); if (CRUMBS && slot && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS); } return; }
+    if (key === 'sale') { closeAppMarket(); box.innerHTML = saleCaseHtml(); return; }
     if (!CLOUD.on || !T || !T.hasAppAdminScreen || !T.hasAppAdminScreen(key)) {
       closeAppMarket();
       const msg = !CLOUD.on ? (S.authReady ? '로그인하면 볼 수 있습니다.' : '불러오는 중입니다…') : '준비 중인 화면입니다.';
@@ -5333,7 +5358,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
           + `<div class="mk-row"><strong>${esc(label)}</strong><div id="admCrumbSlot" class="adm-crumb-slot"></div></div>${itCard('chart', label, itEmpty(msg), true)}</div>`
         : itCard('chart', label, itEmpty(msg), true);
       /* 경로는 제목 줄 오른쪽 칸으로 — 처음 그릴 때는 칸이 아직 없었다 */
-      { const slot = document.getElementById('admCrumbSlot'); if (CRUMBS && slot && CRUMBS.parentNode !== slot) slot.appendChild(CRUMBS); }
       return;
     }
     /* 유사매물시세는 지역분석 화면(거래상세만) — 틀 · 거르개 CSS 를 그대로 받게 data-k 는 dong */
