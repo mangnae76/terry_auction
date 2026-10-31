@@ -6,7 +6,7 @@
 // 매도가는 매도일이 적히면 확정 매도가다(같은 칸). 고치려면 입찰가산정으로 간다.
 // 고른 값은 이 브라우저에 물건마다 기억한다. 세금 셈은 입찰가산정과 같은 profitMath.
 import { computed, inject, onMounted, ref, watch } from 'vue';
-import { withConfirmedPlan } from '../services/confirmedPlan';
+import { withConfirmedPlan, confirmedMarkOf } from '../services/confirmedPlan';
 import { useRouter } from 'vue-router';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useInteriorStore } from '../stores/interiorStore';
@@ -232,8 +232,11 @@ const finalCase = (k: EvKey) => {
 };
 const finals = computed(() => ({ plan: finalCase('plan'), deal: finalCase('deal'), exec: finalCase('exec') }));
 /** 보일 시나리오 — 협의 종결이면 강제집행은 뺀다 */
+// 수익분석 몇 안의 명도비인지 이름에 — 확정 안 했으면 A안 값을 쓴다
+const planMarked = computed(() => confirmedMarkOf(props.auction) >= 0);
+const planEvictName = computed(() => `수익분석 ${'ABCD'[Math.max(0, confirmedMarkOf(props.auction))]}안 명도비`);
 const evScenarios = computed(() => ([
-  ['plan', '수익분석 명도비', `${planName}에 적은 금액 그대로`],
+  ['plan', `${planEvictName.value}`, planMarked.value ? '확정한 안에 적은 금액 그대로' : '확정한 안이 없어 A안 금액 그대로'],
   ['deal', '명도협의', '자동 계산 — 이사비 · 서류 · 지연 비용'],
   ['exec', '강제집행', '자동 계산 — 집행 비용 · 서류 · 지연 비용'],
 ] as Array<[EvKey, string, string]>));
@@ -262,7 +265,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
       <div :class="['pwm-cmp', { three: webEmbed && !dealDone, two: webEmbed && dealDone }]">
         <!-- ① 수익분석에 사용자가 적은 명도비 — 그대로 -->
         <article v-if="webEmbed" class="pwm-case plan">
-          <h3>수익분석에 적은 명도비</h3>
+          <h3>{{ planEvictName }}</h3>
           <div class="pwm-grpbox">
             <p class="pwm-grp"><span>명도비 <em>{{ planName }}에 적은 금액 그대로</em></span><b>{{ won(planEvict) }}</b></p>
           </div>
@@ -398,7 +401,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
             <dl>
               <div><dt>{{ who === 'biz' ? '매매차익' : '양도차익' }}</dt><dd>{{ won(tradeGain) }}<small>매도가 − 낙찰가 − 필요경비</small></dd></div>
               <div><dt>− 사업경비</dt><dd>{{ won(bizBase) }}<small>이자 · 관리비 · 수리 · 광고 등(명도비용 빼고)</small></dd></div>
-              <div><dt>− 명도비용</dt><dd>{{ won(finals[k].evTotal) }}<small>{{ k === 'plan' ? '수익분석에 적은 금액 그대로' : `명도분석 합계 — 명도비 ${won(finals[k].direct)} + 지연 비용 ${won(finals[k].delay)}` }}</small></dd></div>
+              <div class="ev"><dt>− 명도비용</dt><dd><span class="pwm-evchip">{{ won(finals[k].evTotal) }}</span><small>{{ k === 'plan' ? '수익분석에 적은 금액 그대로' : `명도분석 합계 — 명도비 ${won(finals[k].direct)} + 지연 비용 ${won(finals[k].delay)}` }}</small></dd></div>
               <div><dt>− 세금</dt><dd>{{ won(finals[k].tax) }}<small>{{ who === 'biz' ? '종합소득세' : '양도소득세' }} + 지방세</small></dd></div>
               <div class="total"><dt>세후 순수익</dt><dd :class="{ neg: finals[k].net < 0 }">{{ won(finals[k].net) }}<small>실투자금 {{ won(netInvest) }} 대비 {{ finals[k].rate.toFixed(2) }}%</small></dd></div>
             </dl>
@@ -574,6 +577,14 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-final.plan { border-top: 3px solid #2b6df3; }
 .pwm-final h4 em { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 400; color: #9aa3b2; }
 .pwm-finals-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* 세 카드에서 다른 건 명도비용뿐 — 그 줄만 카드 색으로 칠하고 금액은 칩으로 */
+.pwm-finals-grid.rows .pwm-final dl > div.ev { margin: 2px -10px; padding: 12px 14px; border-bottom: 0; border-radius: 8px; background: #eef3fe; }
+.pwm-finals-grid.rows .pwm-final.deal dl > div.ev { background: #ecf6ef; }
+.pwm-finals-grid.rows .pwm-final.exec dl > div.ev { background: #fbefef; }
+.pwm-evchip { display: inline-block; padding: 3px 12px; border-radius: 999px; background: #2b6df3; color: #fff; font-size: 15px; font-weight: 800; }
+.pwm-final.deal .pwm-evchip { background: #3f8a5a; }
+.pwm-final.exec .pwm-evchip { background: #c24f4f; }
+.pwm-finals-grid.rows .pwm-final dl > div.ev small { color: #4b5563; }
 /* 최종 카드끼리 매매차익 · 사업경비 · 명도비용 · 세금 · 세후 순수익 줄을 같은 높이에 — 제목 + 다섯 줄을 subgrid 로 */
 .pwm-finals-grid.rows { grid-template-rows: repeat(6, auto); }
 .pwm-finals-grid.rows > .pwm-final { display: grid; grid-row: span 6; grid-template-rows: subgrid; row-gap: 0; }
