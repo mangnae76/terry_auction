@@ -2507,6 +2507,10 @@ let bidaRaf = 0;
 const measureBidaTop = () => {
   bidaRaf = 0;
   if (!webNew.value) return;
+  // 개인소득세율 상자 높이를 왼쪽 입찰정보 상자와 같게 — 줄 간격은 그 높이에 고르게 나눈다
+  const info = document.querySelector('.bida-col > .bida-card') as HTMLElement | null;
+  const taxBox = document.querySelector('.bida-right .bida-taxr') as HTMLElement | null;
+  if (info && taxBox) { const h = `${Math.round(info.getBoundingClientRect().height)}px`; if (taxBox.style.minHeight !== h) taxBox.style.minHeight = h; }
   const el = document.querySelector('.adp-profit-sticky');
   if (!el) return;
   const base = Math.round((parseFloat(getComputedStyle(el).top) || 0) + el.getBoundingClientRect().height + 12);
@@ -13146,7 +13150,9 @@ select.adp-pub-input option { text-align: center; }
 .bx-row.sum .bx-k { font-weight: 800; color: #854d0e; }
 .bx-row.sum .bx-d { color: #a16207; }
 .bx-row.sum .bx-f.ro { font-size: 17px; font-weight: 800; color: #854d0e; }
-.bida-taxr .bx-row { min-height: 34px; }   /* 참고표는 촘촘히 — 옆 입찰정보 상자 높이에 가깝게 */
+.bida-taxr .bx-row { min-height: 34px; }
+.bida-right .bida-taxr { display: flex; flex-direction: column; }
+.bida-right .bida-taxr .bx-row { flex: 1 1 auto; }   /* 참고표는 촘촘히 — 옆 입찰정보 상자 높이에 가깝게 */
 .bida-taxr .bx-row.cur { margin: 0 -12px; padding: 0 12px; border-radius: 8px; background: #f5f8ff; }
 .bida-taxr .bx-row.cur .bx-k, .bida-taxr .bx-row.cur .bx-f.ro { font-weight: 800; color: #1f2a44; }
 .bida-taxr .cur-chip { padding: 2px 8px; border-radius: 6px; background: #2b6df3; font-size: 12px; font-weight: 700; color: #fff; }
