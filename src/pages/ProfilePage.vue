@@ -159,6 +159,8 @@ const submit = async () => {
         </label>
         <p v-if="!canChangePw" class="prf-hint">카카오·네이버로 들어온 계정이라 바꿀 비밀번호가 없습니다.</p>
 
+        <!-- 이메일 · 휴대폰 — 웹은 한 줄에 나란히 -->
+        <div :class="{ 'prf-pair': webEmbed }">
         <!-- 이메일 -->
         <div class="prf-fld">
           <small class="with-chk">
@@ -193,6 +195,7 @@ const submit = async () => {
             <button type="button" :class="['prf-numbtn', { on: !phoneLocked }]" @click="phoneLocked = !phoneLocked">번호수정</button>
           </div>
           <p class="prf-hint red">※ [번호수정] 버튼을 먼저 누르셔야 번호 입력이 가능합니다.</p>
+        </div>
         </div>
 
         <!-- 주소 — 웹은 받지 않는다(앱은 그대로). 저장된 값은 지우지 않는다 -->
@@ -321,6 +324,9 @@ const submit = async () => {
 .prf-unit .prf-input { width: 120px; text-align: right; }
 .prf-unit em { font-style: normal; color: #6b7280; }
 .prf-auto { margin-left: 6px; font-style: normal; color: #9ca3af; }
+.prf-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 28px; align-items: start; }
+.prf-pair > .prf-fld { min-width: 0; }
+@media (max-width: 900px) { .prf-pair { grid-template-columns: 1fr; } }
 .prf-sales { display: flex; flex-wrap: wrap; gap: 10px 24px; }
 .prf-sales label { display: inline-flex; align-items: center; gap: 8px; }
 .prf-unit :deep(.prf-input) { width: 160px; text-align: right; }
