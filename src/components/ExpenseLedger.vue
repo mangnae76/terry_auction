@@ -16,6 +16,7 @@ import { cleanupLegacyOnce } from '../services/legacyCleanup';
 import { shortAddr } from '../utils/address';
 import FormattedNumberInput from './FormattedNumberInput.vue';
 import AppConfirm from './AppConfirm.vue';
+import PickBar from './PickBar.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 
 const props = withDefaults(defineProps<{
@@ -191,6 +192,37 @@ const remove = () => {
   confirmBox.value = box;
 };
 
+// === 골라 지우기 — 직접 적은 줄만(입찰가A 줄은 저장된 기록이 아니라 지울 것이 없다) ===
+const pick = ref(false);
+const picked = ref(new Set<string>());
+const pickable = computed(() => sorted.value.filter((r) => r.src !== 'plan'));
+const pickedRows = computed(() => pickable.value.filter((r) => picked.value.has(r.key)));
+const allPicked = computed(() => pickable.value.length > 0 && pickedRows.value.length === pickable.value.length);
+const togglePick = () => { pick.value = !pick.value; picked.value = new Set(); };
+const pickOne = (r: LedgerRow) => {
+  if (r.src === 'plan') return;
+  const next = new Set(picked.value);
+  if (next.has(r.key)) next.delete(r.key); else next.add(r.key);
+  picked.value = next;
+};
+const pickAll = () => { picked.value = allPicked.value ? new Set() : new Set(pickable.value.map((r) => r.key)); };
+const onRow = (r: LedgerRow) => (pick.value ? pickOne(r) : openRow(r));
+const deletePicked = () => {
+  const list = pickedRows.value;
+  if (!list.length) return;
+  // 한꺼번에 지우는 일은 되돌릴 수 없어 '오늘 하루 보지 않기'를 내지 않는다
+  confirmBox.value = {
+    title: `${list.length.toLocaleString('ko-KR')}건을 삭제할까요?`, desc: '삭제하면 되살릴 수 없습니다.', okLabel: '삭제', skipKey: '',
+    run: async () => {
+      for (const r of list) {
+        if (r.src === 'be') await finance.deleteBusinessExpense(r.id);
+        else if (r.src === 'in') await interior.remove(r.id);
+      }
+      picked.value = new Set();
+    },
+  };
+};
+
 /** 엑셀(csv) */
 const exportCsv = () => {
   const esc = (v: string | number) => { const t = String(v ?? ''); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
@@ -202,7 +234,7 @@ const exportCsv = () => {
   a.href = url; a.download = `${BOOK_NAME[props.book]}.csv`; a.click();
   URL.revokeObjectURL(url);
 };
-defineExpose({ openAdd, exportCsv, total });
+defineExpose({ openAdd, exportCsv, total, pick, togglePick });
 </script>
 
 <template>
@@ -211,18 +243,22 @@ defineExpose({ openAdd, exportCsv, total });
       <span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span>
       <span class="xl-hint"><b class="xl-plan">입찰가A</b> {{ planSrc }}에서 가져옵니다. 필요시 직접 입력하세요.</span>
       <button type="button" class="xl-btn" @click="exportCsv">⬇ 엑셀저장</button>
+      <button type="button" :class="['xl-btn', { picking: pick }]" @click="togglePick">선택</button>
       <button type="button" class="xl-btn on" :disabled="auctionId === ''" @click="openAdd">＋ 항목추가</button>
     </div>
     <p v-else class="xl-head"><span class="xl-sum">합계 <b>{{ money(total) }}</b>원</span><span class="xl-hint"><b class="xl-plan">입찰가A</b> {{ planSrc }}에서 가져옵니다. 필요시 직접 입력하세요.</span></p>
+    <PickBar v-if="pick" :n="pickedRows.length" :all="allPicked" @all="pickAll" @delete="deletePicked" @close="togglePick" />
     <table class="xl-tbl">
-      <colgroup><col v-for="[k] in cols" :key="k" :style="{ width: colWidth(k) }" /></colgroup>
+      <colgroup><col v-if="pick" class="xc-pickcol" /><col v-for="[k] in cols" :key="k" :style="{ width: colWidth(k) }" /></colgroup>
       <thead>
         <tr>
+          <th v-if="pick" class="xc-pick"><input type="checkbox" :checked="allPicked" :disabled="!pickable.length" aria-label="전체선택" @change="pickAll" /></th>
           <th v-for="[k, label] in cols" :key="k" :class="`xc-${k}`"><button type="button" @click="toggleSort(k)">{{ label }}<i :class="{ on: sort.key === k }">{{ mark(k) }}</i></button></th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="r in sorted" :key="r.key" :class="{ plan: r.src === 'plan' }" @click="openRow(r)">
+        <tr v-for="r in sorted" :key="r.key" :class="{ plan: r.src === 'plan', picked: pick && picked.has(r.key) }" @click="onRow(r)">
+          <td v-if="pick" class="xc-pick"><input v-if="r.src !== 'plan'" type="checkbox" :checked="picked.has(r.key)" tabindex="-1" aria-hidden="true" /></td>
           <td>{{ shortDate(r.date) }}</td>
           <td v-if="many" :title="r.auctionLabel">{{ r.auctionLabel || labelOf(r.auctionId) || '공통' }}</td>
           <td><span class="xl-pill">{{ r.category }}</span></td>
@@ -232,7 +268,7 @@ defineExpose({ openAdd, exportCsv, total });
           <td v-if="book === 'biz'" :title="[r.vendor, r.phone].filter(Boolean).join(' · ')" class="xl-vend"><b v-if="r.vendor">{{ r.vendor }}</b><small v-if="r.phone">{{ r.phone }}</small></td>
           <td :title="r.note">{{ r.note }}</td>
         </tr>
-        <tr v-if="!sorted.length"><td :colspan="cols.length" class="xl-empty">적어 둔 {{ BOOK_NAME[book] }}가 없습니다. ＋ 항목추가를 누르세요.</td></tr>
+        <tr v-if="!sorted.length"><td :colspan="cols.length + (pick ? 1 : 0)" class="xl-empty">적어 둔 {{ BOOK_NAME[book] }}가 없습니다. ＋ 항목추가를 누르세요.</td></tr>
       </tbody>
     </table>
 
@@ -299,6 +335,13 @@ defineExpose({ openAdd, exportCsv, total });
 .xl-btn { height: 34px; padding: 0 14px; border: 1px solid #2b6df3; border-radius: 6px; background: #fff; color: #1d4ed8; font-size: 14px; cursor: pointer; }
 .xl-btn.on { background: #2b6df3; color: #fff; }
 .xl-btn:disabled { opacity: .5; cursor: default; }
+.xl-btn.picking { background: #eef3fe; }
+/* 골라 지우기 — 체크칸은 줄을 누르면 따라 바뀐다(칸 자체는 누름을 받지 않는다) */
+.xc-pickcol { width: 44px; }
+.xl-tbl .xc-pick { text-align: center; }
+.xl-tbl .xc-pick input { width: 16px; height: 16px; margin: 0; vertical-align: middle; accent-color: #2b6df3; }
+.xl-tbl td.xc-pick input { pointer-events: none; }
+.xl-tbl tr.picked td { background: #eef3fe; }
 .xl-tbl { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; background: #fff; border: 1px solid #d0d5dd; border-radius: 8px; overflow: hidden; }
 .xl-tbl th { background: #1f2a44; color: #fff; padding: 0; font-size: 14px; font-weight: 700; }
 .xl-tbl th button { width: 100%; height: 42px; padding: 0 10px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; }

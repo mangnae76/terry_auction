@@ -12,6 +12,7 @@ import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 // 세금신고는 그 탭을 눌러야 받아 온다 — 자금관리를 열 때 같이 끌고 오지 않는다
 const TaxPage = defineAsyncComponent(() => import('./TaxPage.vue'));
 import AppConfirm from '../components/AppConfirm.vue';
+import PickBar from '../components/PickBar.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import DateWheelPicker from '../components/DateWheelPicker.vue';
 import { useFinanceStore } from '../stores/financeStore';
@@ -246,6 +247,30 @@ const sortedCashFlows = computed(() => {
 });
 const cashSortMark = (k: CashSortKey) => (cashSortKey.value === k ? (cashSortDesc.value ? '↓' : '↑') : '⇅');
 const shownCashFlows = computed(() => cut(sortedCashFlows.value));
+// 골라 지우기(웹) — 자금입출금은 여기서, 필요경비 · 사업경비는 장부 표(ExpenseLedger)가 한다. 단추는 항목추가 옆 하나
+const cashPick = ref(false);
+const cashPicked = ref(new Set<string>());
+const cashPickedRows = computed(() => shownCashFlows.value.filter((r) => cashPicked.value.has(r.id)));
+const cashAllPicked = computed(() => shownCashFlows.value.length > 0 && cashPickedRows.value.length === shownCashFlows.value.length);
+const toggleCashPick = () => { cashPick.value = !cashPick.value; cashPicked.value = new Set(); };
+const pickCash = (id: string) => {
+  const next = new Set(cashPicked.value);
+  if (next.has(id)) next.delete(id); else next.add(id);
+  cashPicked.value = next;
+};
+const pickAllCash = () => { cashPicked.value = cashAllPicked.value ? new Set() : new Set(shownCashFlows.value.map((r) => r.id)); };
+const deletePickedCash = () => {
+  const list = cashPickedRows.value;
+  if (!list.length) return;
+  // 한꺼번에 지우는 일은 되돌릴 수 없어 '오늘 하루 보지 않기'를 내지 않는다
+  confirmBox.value = {
+    title: `${list.length.toLocaleString('ko-KR')}건을 삭제할까요?`, desc: '삭제하면 되살릴 수 없습니다.', okLabel: '삭제', skipKey: '',
+    run: async () => { for (const r of list) await finance.deleteCashFlow(r.id); cashPicked.value = new Set(); },
+  };
+};
+const pickOn = computed(() => (onWeb(activeTab.value) ? !!ledgerRef.value?.pick : cashPick.value));
+const onPickClick = () => { if (onWeb(activeTab.value)) ledgerRef.value?.togglePick(); else toggleCashPick(); };
+watch(activeTab, () => { cashPick.value = false; cashPicked.value = new Set(); });
 /** 사업지출 · 유류&식대 · 물품구매 표 정렬 — 머리글을 누르면 그 칸으로(다시 누르면 거꾸로). 기본은 날짜 늦은 순 */
 type SortTab = 'businessExpense' | 'fuelMeal' | 'itemPurchase';
 type Getter = (r: Record<string, unknown>) => string | number;
@@ -584,6 +609,7 @@ const exportExcel = () => {
               <button type="button" class="fin-date-box" @click="rangeTarget = 'end'"><span>{{ customEnd || '종료일' }}</span></button>
             </div>
             <button type="button" class="fin-excel" @click="exportExcel"><i>⬇</i>엑셀저장</button>
+            <button type="button" :class="['fin-pick', { on: pickOn }]" @click="onPickClick">선택</button>
             <button type="button" class="fin-add" @click="onAddClick"><i>+</i>항목추가</button>
           </template>
         </div>
@@ -653,23 +679,27 @@ const exportExcel = () => {
         </div>
       </div>
 
+      <PickBar v-if="cashPick" :n="cashPickedRows.length" :all="cashAllPicked" @all="pickAllCash" @delete="deletePickedCash" @close="toggleCashPick" />
       <div class="fin-table-wrap">
         <table class="fin-table cash">
           <!-- 칸 너비를 못 박는다 — 글자가 왼쪽에 몰리지 않게 -->
           <colgroup>
+            <col v-if="cashPick" style="width: 44px" />
             <col style="width: 16%" /><col style="width: 19%" /><col style="width: 14%" />
             <col style="width: 21%" /><col />
           </colgroup>
           <thead>
             <!-- 머리글을 누르면 그 칸으로 정렬(⇅ · ↑ · ↓) -->
             <tr>
+              <th v-if="cashPick" class="fin-pickcell"><input type="checkbox" :checked="cashAllPicked" :disabled="!shownCashFlows.length" aria-label="전체선택" @change="pickAllCash" /></th>
               <th v-for="c in ([['date', '일자'], ['ownerName', '명세'], ['flowType', '입출금'], ['amount', '개인 자금'], ['note', '비고']] as const)" :key="c[0]" :class="{ r: c[0] === 'amount' }">
                 <button type="button" class="fin-sort" @click="toggleCashSort(c[0])">{{ c[1] }}<i :class="{ on: cashSortKey === c[0] }">{{ cashSortMark(c[0]) }}</i></button>
               </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="r in shownCashFlows" :key="r.id" @click="openEdit('cashFlow', r)">
+            <tr v-for="r in shownCashFlows" :key="r.id" :class="{ picked: cashPick && cashPicked.has(r.id) }" @click="cashPick ? pickCash(r.id) : openEdit('cashFlow', r)">
+              <td v-if="cashPick" class="fin-pickcell"><input type="checkbox" :checked="cashPicked.has(r.id)" tabindex="-1" aria-hidden="true" /></td>
               <td>{{ shortDate(r.date) }}</td>
               <td :title="r.ownerName">{{ r.ownerName }}</td>
               <td><span :class="['pill', r.flowType === '입금' ? 'in' : 'out']">{{ r.flowType }}</span></td>
@@ -677,7 +707,7 @@ const exportExcel = () => {
               <td :title="r.note">{{ r.note }}</td>
             </tr>
             <tr v-if="filteredCashFlows.length === 0">
-              <td colspan="5" class="fin-empty">
+              <td :colspan="cashPick ? 6 : 5" class="fin-empty">
                 <template v-if="finance.cashFlows.length === 0">데이터가 없습니다.</template>
                 <template v-else>이 기간에 해당하는 데이터가 없습니다. (전체 {{ finance.cashFlows.length }}건 — 다른 기간 선택)</template>
               </td>
@@ -1238,6 +1268,13 @@ const exportExcel = () => {
   white-space: nowrap; text-align: center; letter-spacing: -0.3px;
 }
 .fin-add { background: #2b6df3; color: #fff; border-color: #2b6df3; }
+/* 골라 지우기(웹) — 항목추가 옆 '선택' 단추와 표 맨 앞 체크칸(줄을 누르면 따라 바뀐다) */
+.fin-pick { padding: 7px 2px; border: 1px solid #2b6df3; border-radius: 8px; background: #fff; color: #1d4ed8; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.fin-pick.on { background: #eef3fe; }
+.fin-pickcell { text-align: center !important; }
+.fin-pickcell input { width: 16px; height: 16px; margin: 0; vertical-align: middle; accent-color: #2b6df3; }
+td.fin-pickcell input { pointer-events: none; }
+.fin-table tr.picked td { background: #eef3fe; }
 /* 아이콘은 글자보다 작게 — 좁은 칸에서 글자를 밀어내지 않게 */
 .fin-excel i, .fin-add i { font-style: normal; font-size: 9px; margin-right: 2px; }
 .fin-custom-range {
