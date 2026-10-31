@@ -7030,30 +7030,30 @@ const goBack = () => router.back();
                       <span v-for="row in scCashOut(sc).later" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
                     </div>
                   </section>
+                <!-- 계산 공식 — 지금 고른 안의 숫자로 풀어 보여 준다 -->
+                <section class="bida-card bida-formula">
+                  <h3 class="bida-h">계산 공식</h3>
+                  <dl>
+                    <dt>양도차익<small>사업소득금액</small></dt>
+                    <dd><em>예상 매도가 − 입찰가 − 필요경비합계</em><span>{{ fmtN(scSale(sc)) }} − {{ fmtN(scBid(sc)) }} − {{ fmtN(scTotalCosts(sc)) }} = <b>{{ fmtN(scGain(sc)) }}</b></span></dd>
+                    <dt>사업소득세</dt>
+                    <dd><em>사업소득금액 × 세율 − 누진공제</em><span>{{ fmtN(Math.max(0, scGain(sc))) }} × {{ scTaxRate(sc) }}% − {{ fmtN(scTaxDeduct(sc)) }} = <b>{{ fmtN(scTransferTax(sc)) }}</b></span></dd>
+                    <dt>지방세</dt>
+                    <dd><em>사업소득세 × {{ scLocalTaxRate(sc) }}%</em><span>{{ fmtN(scTransferTax(sc)) }} × {{ scLocalTaxRate(sc) }}% = <b>{{ fmtN(scLocalTax(sc)) }}</b></span></dd>
+                    <dt>세후 순이익<small>매도 수익</small></dt>
+                    <dd><em>사업소득금액 − 사업소득세 − 지방세</em><span>{{ fmtN(scGain(sc)) }} − {{ fmtN(scTransferTax(sc)) }} − {{ fmtN(scLocalTax(sc)) }} = <b>{{ fmtN(scAfterTaxProfit(sc)) }}</b></span></dd>
+                    <dt>실투자금</dt>
+                    <dd><em>입찰가 − 대출 + 필요경비합계</em><span>{{ fmtN(scBid(sc)) }} − {{ fmtN(sc.cost.loanAmount ?? 0) }} + {{ fmtN(scTotalCosts(sc)) }} = <b>{{ fmtN(scNetInvestment(sc)) }}</b></span></dd>
+                    <dt>수익률</dt>
+                    <dd><em>세후 순이익 ÷ 실투자금 × 100</em><span>{{ fmtN(scAfterTaxProfit(sc)) }} ÷ {{ fmtN(scNetInvestment(sc)) }} × 100 = <b>{{ formatPct(scAfterTaxRate(sc)) }}</b></span></dd>
+                  </dl>
+                </section>
                 </div>
             </div>
-            <!-- 아래 줄 — 왼쪽 계산 공식 · 오른쪽 자동 적용 -->
+            <!-- 아래 줄 — 자동 적용 항목(두 칸 너비) -->
             <div class="bida-grid bida-low">
-              <!-- 계산 공식 — 지금 고른 안의 숫자로 풀어 보여 준다 -->
-              <section class="bida-card bida-formula">
-                <h3 class="bida-h">계산 공식</h3>
-                <dl>
-                  <dt>양도차익<small>사업소득금액</small></dt>
-                  <dd><em>예상 매도가 − 입찰가 − 필요경비합계</em><span>{{ fmtN(scSale(sc)) }} − {{ fmtN(scBid(sc)) }} − {{ fmtN(scTotalCosts(sc)) }} = <b>{{ fmtN(scGain(sc)) }}</b></span></dd>
-                  <dt>사업소득세</dt>
-                  <dd><em>사업소득금액 × 세율 − 누진공제</em><span>{{ fmtN(Math.max(0, scGain(sc))) }} × {{ scTaxRate(sc) }}% − {{ fmtN(scTaxDeduct(sc)) }} = <b>{{ fmtN(scTransferTax(sc)) }}</b></span></dd>
-                  <dt>지방세</dt>
-                  <dd><em>사업소득세 × {{ scLocalTaxRate(sc) }}%</em><span>{{ fmtN(scTransferTax(sc)) }} × {{ scLocalTaxRate(sc) }}% = <b>{{ fmtN(scLocalTax(sc)) }}</b></span></dd>
-                  <dt>세후 순이익<small>매도 수익</small></dt>
-                  <dd><em>사업소득금액 − 사업소득세 − 지방세</em><span>{{ fmtN(scGain(sc)) }} − {{ fmtN(scTransferTax(sc)) }} − {{ fmtN(scLocalTax(sc)) }} = <b>{{ fmtN(scAfterTaxProfit(sc)) }}</b></span></dd>
-                  <dt>실투자금</dt>
-                  <dd><em>입찰가 − 대출 + 필요경비합계</em><span>{{ fmtN(scBid(sc)) }} − {{ fmtN(sc.cost.loanAmount ?? 0) }} + {{ fmtN(scTotalCosts(sc)) }} = <b>{{ fmtN(scNetInvestment(sc)) }}</b></span></dd>
-                  <dt>수익률</dt>
-                  <dd><em>세후 순이익 ÷ 실투자금 × 100</em><span>{{ fmtN(scAfterTaxProfit(sc)) }} ÷ {{ fmtN(scNetInvestment(sc)) }} × 100 = <b>{{ formatPct(scAfterTaxRate(sc)) }}</b></span></dd>
-                </dl>
-              </section>
               <!-- 자동 적용 항목 — 지금 계산에 실제로 들어가는 기준만 적는다(보유주택 수 · 규제지역 취득세는 아직 계산에 없다) -->
-              <section class="bida-auto">
+              <section class="bida-auto wide">
                 <h3 class="bida-h">자동 적용 항목</h3>
                 <ul>
                   <li>취득세 · 법무비(채권) — 입찰가의 {{ fmtPctPlain(scPctOfBid(sc, sc.cost.acquisitionTaxAmount)) }}% · {{ fmtPctPlain(scPctOfBid(sc, sc.cost.legalCostAmount)) }}%, 입찰가가 바뀌면 따라 계산</li>
