@@ -1182,6 +1182,8 @@ const downloadCsv = () => {
         </div>
         <!-- 웹 '상세분포' 탭 — 동마다 구간별 거래건수(정상 + 직거래, 계약해제 제외). 칸이 진할수록 많다. 머리글을 누르면 정렬 -->
         <div v-else-if="webEmbed && listView === 'detail'" class="adm-detail">
+          <!-- 제목은 맨 위 — 동 사분면 · 유형분포 · 거래 타임라인과 같은 자리 -->
+          <p :class="['adm-detail-cap', { 'is-title': webEmbed }]"><template v-if="webEmbed"><strong>{{ detailCaption }} <em>(원 = 동 × 구간 · 정상 + 직거래)</em></strong></template><template v-else>{{ detailCaption }}</template><button v-if="webEmbed && detailKind === 'area'" type="button" class="adm-unit-tg" :aria-label="`면적 단위 바꾸기 — 지금 ${areaUnit === 'py' ? '평' : '㎡'}`" @click="areaUnit = areaUnit === 'py' ? 'm2' : 'py'"><span :class="{ on: areaUnit === 'py' }">평</span><span :class="{ on: areaUnit === 'm2' }">㎡</span></button></p>
           <nav class="adm-detail-kinds" role="tablist">
             <button v-for="k in DETAIL_KINDS" :key="k.key" type="button" role="tab" :aria-selected="detailKind === k.key" :class="{ on: detailKind === k.key }" @click="detailKind = k.key">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="k.icon" /></svg>{{ k.label }}
@@ -1203,7 +1205,6 @@ const downloadCsv = () => {
               </table>
             </div>
           </template>
-          <p :class="['adm-detail-cap', { 'is-title': webEmbed }]"><template v-if="webEmbed"><strong>{{ detailCaption }} <em>(원 = 동 × 구간 · 정상 + 직거래)</em></strong></template><template v-else>{{ detailCaption }}</template><button v-if="webEmbed && detailKind === 'area'" type="button" class="adm-unit-tg" :aria-label="`면적 단위 바꾸기 — 지금 ${areaUnit === 'py' ? '평' : '㎡'}`" @click="areaUnit = areaUnit === 'py' ? 'm2' : 'py'"><span :class="{ on: areaUnit === 'py' }">평</span><span :class="{ on: areaUnit === 'm2' }">㎡</span></button></p>
           <!-- 동 × 구간을 원으로(크기 = 건수, 색 = 평균 평당가). 숫자 표는 '숫자 보기'로 편다 -->
           <BubbleMatrix :rows="detailBase" :unit-name="DETAIL_KINDS.find((k) => k.key === detailKind)?.label ?? ''" :buckets="detailBuckets" :dongs="detailRows.map((r) => r.name)" @pick-dong="(d: string) => { dong = d; }" />
           <button type="button" class="adm-detail-numtg" @click="detailShowTable = !detailShowTable">{{ detailShowTable ? '숫자 표 접기' : '숫자 보기' }}</button>
