@@ -2309,7 +2309,8 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .st-body h3 em { font-style: normal; color: var(--blue); }
 .st-body p { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
 .st-soon { align-self: flex-start; padding: 1px 8px; border-radius: 4px; background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 700; }
-.st-buy { margin-top: auto; height: 38px; border: 0; border-radius: 8px; background: var(--surface-2); color: var(--muted); font-size: 14px; font-weight: 700; cursor: not-allowed; }
+.st-buy { margin-top: auto; height: 40px; border: 1px solid var(--blue); border-radius: 8px; background: var(--surface); color: var(--blue); font-size: 14px; font-weight: 700; cursor: pointer; }
+.st-buy:hover { background: var(--blue-soft); }
 .mb-hero { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 40px; align-items: center; max-width: 1000px; margin: 0 auto; padding: 30px 12px 26px; }
 .mb-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-size: 12px; font-weight: 700; }
 .mb-copy h3 { margin: 14px 0 12px; font-size: 30px; line-height: 1.3; font-weight: 800; color: var(--text); }
@@ -2344,6 +2345,31 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.dq-read, .ttl-read, .bm-read) em { background: linear-gradient(transparent 62%, rgba(91, 140, 255, .3) 62%) !important; } }
 /* 바닥 링크 글(저작권정책 · 사업제휴) — 제목 16 · 본문 14, 길면 창 안에서 내려 읽는다 */
 .dialog.doc-dlg { width: min(820px, 100%); }
+/* 스토어 구매하기 창 */
+.dialog.buy-dlg { width: min(520px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; padding: 28px 30px 30px; display: flex; flex-direction: column; gap: 16px; }
+.buy-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.buy-head h2 { margin: 0; font-size: 22px; font-weight: 800; }
+.buy-head p { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+.buy-head .x { flex: none; width: 44px; height: 44px; margin: -8px -10px 0 0; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; }
+.buy-head .x:hover { background: var(--surface-2); color: var(--text); }
+.buy-head .x svg { width: 20px; height: 20px; }
+.buy-box { margin: 0; padding: 16px 20px; border-radius: 12px; background: var(--surface-2); }
+.buy-sum { display: grid; gap: 10px; }
+.buy-sum div { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+.buy-sum dt { color: var(--text-2); } .buy-sum dd { margin: 0; color: var(--text); } .buy-sum dd b { font-size: 18px; font-weight: 800; }
+.buy-who { display: grid; gap: 12px; }
+.buy-who-h { display: flex; align-items: baseline; justify-content: space-between; } .buy-who-h b { font-size: 16px; font-weight: 800; } .buy-who-h small { font-size: 12px; color: var(--muted); }
+.buy-fld { display: grid; gap: 6px; font-size: 14px; color: var(--text-2); }
+.buy-fld input { height: 46px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); font: inherit; font-size: 15px; color: var(--text); }
+.buy-refund { padding: 14px 18px; border: 1px solid #f3d27a; border-radius: 12px; background: #fff8e6; font-size: 14px; line-height: 1.6; color: #92400e; }   /* 노란 알림 — 굵기 없음 */
+:root[data-theme="dark"] .buy-refund { background: rgba(243, 210, 122, .12); border-color: rgba(243, 210, 122, .35); color: #f3d27a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .buy-refund { background: rgba(243, 210, 122, .12); border-color: rgba(243, 210, 122, .35); color: #f3d27a; } }
+.buy-agree { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 15px; color: var(--text-2); cursor: pointer; }
+.buy-agree input { width: 20px; height: 20px; margin: 0; accent-color: #2b6df3; }
+.buy-agree a { color: var(--blue); } .buy-agree em { font-style: normal; color: #dc2626; }
+.buy-pay { height: 56px; border: 0; border-radius: 12px; background: #2b6df3; color: #fff; font-size: 17px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
+.buy-pay svg { width: 20px; height: 20px; }
+.buy-pay:disabled { opacity: .45; cursor: not-allowed; }
 .doc-body { max-height: calc(100vh - 160px); overflow-y: auto; padding: 8px 28px 26px; font-size: 14px; line-height: 1.75; color: var(--text-2); }
 .doc-body h3 { margin: 22px 0 6px; font-size: 16px; font-weight: 800; color: var(--text); }
 .doc-body p { margin: 0; }
@@ -4656,6 +4682,21 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       setTimeout(() => { const el = $(m.email ? 'loginPw' : 'loginEmail'); if (el) el.focus(); }, 20);
       return;
     }
+    if (m.kind === 'buy') {
+      /* 스토어 구매하기 — 금액 · 결제 수단 / 구매자 정보(내 정보에서 채움) / 환불 안내 / 약관 동의 / 결제. 결제 연동(PG) 전이라 결제는 '준비 중' */
+      const x = STORE_ITEMS[m.i] || STORE_ITEMS[0];
+      const fld = (id, label, val, ph, type = 'text') => `<label class="buy-fld" for="${id}">${label}<input id="${id}" type="${type}" value="${esc(val || '')}" placeholder="${ph}"></label>`;
+      root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog buy-dlg" role="dialog" aria-modal="true" aria-labelledby="buyT">
+        <div class="buy-head"><div><h2 id="buyT">구매하기</h2><p>[${esc(x.tag)}] ${esc(x.title)} · ${x.kind === 'ebook' ? '전자책' : '리포트'}</p></div><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
+        <dl class="buy-box buy-sum"><div><dt>상품 금액</dt><dd><b>가격 미정</b></dd></div><div><dt>결제 수단</dt><dd>카드 · 간편결제</dd></div></dl>
+        <div class="buy-box buy-who"><div class="buy-who-h"><b>구매자 정보</b><small>내 정보에서 채웠습니다</small></div>
+          ${fld('buyName', '이름', m.name ?? S.userName, '이름')}${fld('buyPhone', '연락처', m.phone, '010-0000-0000', 'tel')}${fld('buyEmail', '이메일', m.email ?? (CLOUD.auth && CLOUD.auth.email), 'name@example.com', 'email')}</div>
+        <div class="buy-refund">환불 안내<br>결제 후 7일 이내, 내려받기 전이면 전액 환불합니다.<br>내려받은 뒤에는 환불이 제한될 수 있습니다.</div>
+        <label class="buy-agree"><input type="checkbox" id="buyAgree" data-act="buy-agree" ${m.agree ? 'checked' : ''}><span><a href="#" data-act="doc" data-v="terms">이용약관</a> 및 <a href="#" data-act="doc" data-v="refund">환불정책</a>에 동의합니다 <em>*</em></span></label>
+        <button type="button" class="buy-pay" id="buyPay" data-act="buy-pay" ${m.agree ? '' : 'disabled'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>카드·간편결제로 결제하기</button>
+      </div></div>`;
+      return;
+    }
     if (m.kind === 'doc') {
       const d = DOCS[m.v]; if (!d) { S.modal = null; root.innerHTML = ''; return; }
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog fav-dlg doc-dlg" role="dialog" aria-modal="true" aria-labelledby="docT">
@@ -5477,7 +5518,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const storeHtml = () => {
     const list = STORE_ITEMS.filter((x) => S.storeTab === 'all' || x.kind === S.storeTab);
     const card = (x) => `<article class="st-card"><div class="st-cover ${x.tone}"><span class="st-kind">${x.kind === 'ebook' ? '전자책' : '리포트'}</span><strong>${x.cover.map(esc).join('<br>')}</strong><small>${esc(x.sub)}</small></div>`
-      + `<div class="st-body"><h3><em>[${esc(x.tag)}]</em> ${esc(x.title)}</h3><p>${esc(x.desc)}</p><span class="st-soon">준비중</span><button type="button" class="st-buy" disabled>출시 예정</button></div></article>`;
+      + `<div class="st-body"><h3><em>[${esc(x.tag)}]</em> ${esc(x.title)}</h3><p>${esc(x.desc)}</p><span class="st-soon">가격 미정</span><button type="button" class="st-buy" data-act="store-buy" data-v="${STORE_ITEMS.indexOf(x)}">구매하기</button></div></article>`;
     return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>스토어</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트를 준비하고 있습니다.</p></div>`
       + `<nav class="st-tabs" role="tablist">${STORE_TABS.map(([k, t]) => `<button type="button" role="tab" class="${S.storeTab === k ? 'on' : ''}" aria-selected="${S.storeTab === k}" data-act="store-tab" data-v="${k}">${t}</button>`).join('')}</nav>`
       + `<div class="st-grid">${list.map(card).join('')}</div></section>`;
@@ -5506,9 +5547,9 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       + `<small class="mb-note">앱 출시 준비 중 · 지금은 웹에서 같은 기능을 쓸 수 있습니다</small></div>${phone}</div>`
       + `<div class="mb-feats">${MOBILE_FEATS.map(([ic, t, d]) => `<article class="mb-feat"><h4>${secIc(ic)}${t}</h4><p>${d}</p></article>`).join('')}</div>`
       + `<h3 class="mb-shots-title">실제 앱 화면</h3><div class="mb-shots">${shots}</div>`
-      + `<div class="mb-more"><button type="button" data-act="mobile-more">자세히보기<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></div></section>`;
+      + `<div class="mb-more"><button type="button" data-act="mobile-more">자세한정보보기<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></div></section>`;
   };
-  /* 모바일앱 자세히보기 — 앱 랜딩 페이지(나중에 만든다). 주소가 정해지면 여기만 적는다. 비어 있으면 '준비 중' */
+  /* 모바일앱 자세한정보보기 — 앱 랜딩 페이지(나중에 만든다). 주소가 정해지면 여기만 적는다. 비어 있으면 '준비 중' */
   const MOBILE_LANDING_URL = '';
   function renderInfo() { $('infoContent').innerHTML = S.route === 'store' ? storeHtml() : mobileHtml(); }
   function renderMy() { $('myContent').innerHTML = mySetHtml(); aiUnlock(S.aiPane, false); }
@@ -5690,7 +5731,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     if (t.tagName === 'A') e.preventDefault();
     switch (act) {
       case 'noop': break;
-      case 'doc': e.preventDefault(); S.pop = ''; S.modal = { kind: 'doc', v: t.dataset.v }; renderModal(); break;   /* 바닥 저작권정책 · 사업제휴 — 창으로 */
+      case 'doc': { e.preventDefault(); S.pop = ''; const buy = S.modal && S.modal.kind === 'buy' ? S.modal : null; if (buy) { buy.name = ($('buyName') || {}).value; buy.phone = ($('buyPhone') || {}).value; buy.email = ($('buyEmail') || {}).value; } S.modal = { kind: 'doc', v: t.dataset.v, back: buy }; renderModal(); break; }   /* 바닥 저작권정책 · 사업제휴 — 창으로 */
       case 'soon': S.pop = ''; render(); toast(`‘${t.dataset.name}’ 화면은 다음 단계에서 연결합니다.`, 'info'); break;
       case 'theme': {
         const root = document.documentElement;
@@ -5881,6 +5922,9 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       case 'go-store': { const k = { 전체: 'all', 전자책: 'ebook', 리포트: 'report' }[t.dataset.name]; if (k) { S.storeTab = k; store.set('wlp.web.storeTab', k); } S.menu = null; S.pop = ''; if (S.route === 'store') render(); else go('store'); } break;
       case 'go-mobile': S.menu = null; S.pop = ''; if (S.route === 'mobile') render(); else go('mobile'); break;
       case 'mobile-more': if (MOBILE_LANDING_URL) location.href = MOBILE_LANDING_URL; else toast('‘앱 소개 페이지’는 준비 중입니다.', 'info'); break;
+      case 'store-buy': if (!S.loggedIn) { toast('로그인한 뒤 구매할 수 있습니다.', 'info'); openAppLogin(); break; } S.modal = { kind: 'buy', i: Number(v) || 0 }; renderModal(); break;
+      case 'buy-agree': if (S.modal && S.modal.kind === 'buy') { S.modal.agree = t.checked; const b = $('buyPay'); if (b) b.disabled = !t.checked; } break;
+      case 'buy-pay': toast('결제는 준비 중입니다 — 결제 연동이 끝나면 열립니다.', 'info'); break;
       case 'store-tab': S.storeTab = v; store.set('wlp.web.storeTab', v); renderInfo(); break;
       case 'go-postwin': case 'go-finance': case 'go-more': case 'go-community': {
         const route = act.slice(3);
