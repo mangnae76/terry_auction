@@ -134,6 +134,8 @@ const detailPick = computed({
   },
 });
 const busy = ref(false);
+/** 필요경비는 물건별로 셈하는 돈 — 물건 없이는 저장하지 않는다(사업경비는 '공통' 가능) */
+const needNoItem = computed(() => props.book === 'need' && !draft.value.auctionId);
 /** 지금 적는 줄에 해당하는 입찰가A 줄(있으면) — 0 · 빈칸으로 저장하면 이 값으로 돌아간다 */
 const planMatch = computed(() => {
   const d = draft.value;
@@ -242,9 +244,10 @@ defineExpose({ openAdd, exportCsv, total });
             <label>날짜<input v-model="draft.date" type="date" /></label>
             <label v-if="many">물건
               <select v-model="draft.auctionId">
-                <option value="">{{ book === 'biz' ? '공통(물건 없음)' : '선택 안함' }}</option>
+                <option value="" :disabled="book === 'need'">{{ book === 'biz' ? '공통(물건 없음)' : '물건을 고르세요' }}</option>
                 <option v-for="o in auctionOptions" :key="o.id" :value="o.id">{{ o.label }}</option>
               </select>
+              <small v-if="needNoItem" class="xl-sub">필요경비는 물건마다 계산합니다 — 물건을 골라야 저장됩니다</small>
             </label>
             <label>사용구분
               <select :value="draft.category" @change="pickCategory(($event.target as HTMLSelectElement).value)">
@@ -278,7 +281,7 @@ defineExpose({ openAdd, exportCsv, total });
             <!-- 취소는 ✕ 로 — 삭제 · 저장은 오른쪽에 나란히 -->
             <span class="sp" />
             <button v-if="draft.id" type="button" class="del" @click="remove">삭제</button>
-            <button type="button" class="on" :disabled="busy" @click="save">저장</button>
+            <button type="button" class="on" :disabled="busy || (needNoItem && !!Number(draft.amount))" @click="save">저장</button>
           </footer>
         </div>
       </div>
