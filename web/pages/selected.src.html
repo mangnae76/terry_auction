@@ -2291,6 +2291,8 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .doc-body ul ul { margin-top: 2px; }
 .doc-body h4 { margin: 14px 0 4px; font-size: 14px; font-weight: 700; color: var(--text); }
 .doc-body ol { margin: 0; padding-left: 22px; }
+.doc-eff { margin-top: 16px !important; font-size: 13px; color: var(--muted); }
+.doc-body h3 + .doc-contact { margin-top: 6px; }
 .doc-dl { margin: 0; display: grid; grid-template-columns: 90px 1fr; row-gap: 4px; }
 .doc-dl dt { color: var(--text); }
 .doc-dl dd { margin: 0; }
@@ -4408,15 +4410,26 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       + `<h3>아동의 개인정보보호</h3><p>${esc(L.PRIVACY_CHILD)}</p>`
       + `<h3>부칙</h3><p>이 개인정보 처리방침은 ${esc(L.PRIVACY_EFFECTIVE)}부터 시행합니다.</p>`;
   };
-  /* 환불정책 — 이용약관 제4장(요금 · 환불)과 포인트 주의사항의 환불 줄을 한곳에 */
+  /* 환불정책 — 마이턴옥션 유료 이용권. 환불 금액 규칙은 이용약관 제13조 글을 그대로 가져온다(약관과 어긋나지 않게).
+     포인트 줄은 포인트 주의사항에서 환불 · 결제취소 줄만 */
   const refundBody = () => {
     const L = window.TAPdf || {};
-    const ch = (L.TERMS_CHAPTERS || []).find((c) => /환불/.test(c.title));
-    if (!ch) return '<p>환불정책을 불러오지 못했습니다 — 새로고침 뒤 다시 열어 주세요.</p>';
+    const art = (L.TERMS_CHAPTERS || []).flatMap((c) => c.articles).find((a) => /환불 규정/.test(a.title));
+    if (!art) return '<p>환불정책을 불러오지 못했습니다 — 새로고침 뒤 다시 열어 주세요.</p>';
     const pts = (L.POINT_CAUTIONS || []).filter((t) => /환불|결제취소/.test(t));
-    return `<p class="doc-lead">이용약관 ${esc(ch.title)}의 내용을 옮겨 정리했습니다.</p>${docArticles(ch.articles)}`
-      + (pts.length ? `<h4>포인트</h4>${docList(pts, 'ul')}` : '')
-      + '<div class="doc-contact"><b>환불 문의</b> 전화 02-456-1234 · 메일 contact@myturn.com</div>';
+    return `<p class="doc-lead">마이턴(이하 '회사')이 운영하는 마이턴옥션(이하 '서비스') 유료 이용권의 환불 정책입니다.</p>
+      <h3>1. 디지털 콘텐츠 특성</h3>
+      <p>서비스는 「전자상거래 등에서의 소비자보호에 관한 법률」에 따른 디지털 콘텐츠(무형상품)입니다. 서비스 이용을 시작한 뒤에는 청약철회가 제한될 수 있습니다.</p>
+      <h3>2. 환불 기준</h3>
+      <p>이용약관 ${esc(art.title)}에 따릅니다.</p>${docList(art.items)}
+      <h3>3. 환불 절차</h3>
+      <ol><li>고객센터(전화 또는 메일)로 환불 신청</li><li>회사가 이용 내역 확인</li><li>환불 금액을 안내한 뒤 결제한 수단으로 돌려 드림(카드는 카드사 사정에 따라 며칠 걸릴 수 있습니다)</li></ol>
+      <h3>4. 포인트</h3>${docList(pts, 'ul')}
+      <h3>5. 이용권 만료</h3>
+      <p>환불은 남은 이용 기간에 대해서만 합니다. 이용 기간이 끝난 이용권은 환불 대상이 아닙니다.</p>
+      <h3>6. 문의</h3>
+      <div class="doc-contact"><b>환불 문의</b> 전화 02-456-1234 · 메일 contact@myturn.com</div>
+      <p class="doc-eff">이 환불정책은 이용약관과 같이 ${esc(L.TERMS_EFFECTIVE || '')}부터 시행합니다.</p>`;
   };
   const DOCS = {
     terms: { title: '이용약관', body: termsBody },
