@@ -261,10 +261,51 @@ const logRequest = (parts: RightsDocPart[], promptText: string, payloadBytes: nu
 
 const wait = (ms: number) => new Promise((done) => { setTimeout(done, ms); });
 
+/** 답은 조금씩 받는다(스트리밍). 한꺼번에 받으면 서류가 많을 때 2분을 넘겨 끊겼다.
+ *  - 소식 없이 기다리는 최대 시간: AI 가 서류를 읽고 생각하는 동안은 아무것도 안 오니 넉넉히
+ *  - 처음부터 끝까지 기다리는 최대 시간: 그래도 끝이 안 나면 끊고 까닭을 알린다 (대기 화면이 영원히 돌지 않게) */
+const RIGHTS_IDLE_MS = 120_000;
+const RIGHTS_TOTAL_MS = 300_000;
+
+type StreamChunk = {
+  error?: { message?: string };
+  candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>;
+};
+
+/** 조금씩 오는 답(SSE 'data: {…}' 줄들)을 읽어 글을 이어 붙인다. 조각이 올 때마다 onChunk 를 부른다 */
+export const readStreamText = async (res: Response, onChunk: () => void = () => {}): Promise<string> => {
+  let out = '';
+  const take = (line: string) => {
+    if (!line.startsWith('data:')) return;
+    let j: StreamChunk;
+    try { j = JSON.parse(line.slice(5).trim()) as StreamChunk; } catch { return; }
+    if (j.error) throw new GeminiError(`AI 분석 실패 — ${j.error.message || '오류'}`);
+    for (const p of j.candidates?.[0]?.content?.parts ?? []) if (!p.thought) out += p.text ?? '';
+  };
+  if (!res.body) { // 조금씩 읽기를 못 하는 환경 — 다 받은 뒤 한 번에
+    (await res.text()).split('\n').forEach((l) => take(l.trim()));
+    return out;
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    onChunk();
+    buf += dec.decode(value, { stream: true });
+    let i = buf.indexOf('\n');
+    while (i >= 0) {
+      take(buf.slice(0, i).trim());
+      buf = buf.slice(i + 1);
+      i = buf.indexOf('\n');
+    }
+  }
+  take((buf + dec.decode()).trim());
+  return out;
+};
+
 /** 서류를 Gemini 에 보내 권리분석을 받아 온다 */
-/** 한 번 묻는 데 기다리는 최대 시간 — 서류 다섯 장을 읽어도 보통 1분 안이다.
- *  이보다 길면 끊고 까닭을 알린다 (안 끊으면 대기 화면이 영원히 돈다) */
-const RIGHTS_TIMEOUT_MS = 120_000;
 
 export const askRightsAnalysis = async (
   key: string,
@@ -302,51 +343,61 @@ export const askRightsAnalysis = async (
   // 무엇이 넘어가는지 눈으로 볼 수 있게 콘솔에 찍어 둔다 (파일은 크기만 — base64 는 수 MB 다)
   logRequest(parts, promptText, payload.length);
 
-  type Body = {
-    error?: { message?: string };
-    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-  };
   let res: Response | null = null;
-  let body: Body = {};
+  let text = '';
   // 혼잡(503)·잠깐 한도(429)는 잠시 뒤 다시 — 두 번까지 (geminiPdf 와 같은 규칙)
   let model = RIGHTS_MODEL;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if (signal?.aborted) throw new GeminiError('분석을 취소했습니다');
-    // 시간 제한 — 정해 둔 시간이 지나거나 사용자가 취소하면 끊는다
+    // 시간 제한 — 소식 없이 오래 있거나, 전체가 너무 길거나, 사용자가 취소하면 끊는다
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), RIGHTS_TIMEOUT_MS);
+    let why = '' as 'idle' | 'total' | '';
+    let idle = setTimeout(() => { why = 'idle'; ctrl.abort(); }, RIGHTS_IDLE_MS);
+    const total = setTimeout(() => { why = 'total'; ctrl.abort(); }, RIGHTS_TOTAL_MS);
+    const onChunk = () => {
+      clearTimeout(idle);
+      idle = setTimeout(() => { why = 'idle'; ctrl.abort(); }, RIGHTS_IDLE_MS);
+    };
     const onCancel = () => ctrl.abort();
     signal?.addEventListener('abort', onCancel);
+    let errMsg = '';
     try {
-      res = await fetch(`${GEMINI_API}/models/${model}:generateContent`, {
+      res = await fetch(`${GEMINI_API}/models/${model}:streamGenerateContent?alt=sse`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
         body: payload,
         signal: ctrl.signal,
       });
-      body = await res.json().catch(() => ({})) as Body;
+      if (res.ok) text = await readStreamText(res, onChunk);
+      else {
+        // 실패 답은 한 덩어리 JSON 이다 (배열로 싸여 올 때도 있다)
+        const b = await res.json().catch(() => ({})) as { error?: { message?: string } } | Array<{ error?: { message?: string } }>;
+        errMsg = (Array.isArray(b) ? b[0]?.error?.message : b.error?.message) ?? '';
+      }
     } catch (err) {
+      if (err instanceof GeminiError) throw err;
       if (signal?.aborted) throw new GeminiError('분석을 취소했습니다');
-      if (ctrl.signal.aborted) throw new GeminiError(`AI 응답이 ${RIGHTS_TIMEOUT_MS / 1000}초 안에 오지 않았습니다 — 잠시 뒤 다시 해 주세요`);
+      if (why === 'idle') throw new GeminiError(`AI 가 ${RIGHTS_IDLE_MS / 1000}초 동안 답이 없었습니다 — 잠시 뒤 다시 해 주세요`);
+      if (why === 'total') throw new GeminiError(`AI 분석이 ${RIGHTS_TOTAL_MS / 60_000}분 안에 끝나지 않았습니다 — 서류를 줄여 다시 해 주세요`);
       throw new GeminiError(`AI 서버에 닿지 못했습니다 — 인터넷 연결을 확인해 주세요 (${err instanceof Error ? err.message : ''})`);
     } finally {
-      clearTimeout(timer);
+      clearTimeout(idle);
+      clearTimeout(total);
       signal?.removeEventListener('abort', onCancel);
     }
+    if (res.ok) break;
     // 그 이름의 모델이 없으면 PDF 읽기와 같은 모델로 한 번 더 — 기능이 멎지 않게
     if (res.status === 404 && model !== GEMINI_MODEL) { model = GEMINI_MODEL; continue; }
-    if (res.status !== 503 && res.status !== 429) break;
+    if (res.status !== 503 && res.status !== 429) {
+      const reason = res.status === 403 || res.status === 401 ? '키를 확인해 주세요' : errMsg || `오류 ${res.status}`;
+      throw new GeminiError(`AI 분석 실패 — ${reason}`);
+    }
     if (attempt < 2) await wait(attempt === 0 ? 3000 : 8000);
   }
   if (!res) throw new GeminiError('AI 분석 실패');
   if (!res.ok) {
-    const why = res.status === 403 || res.status === 401 ? '키를 확인해 주세요'
-      : res.status === 429 ? '사용 한도에 걸렸습니다'
-        : res.status === 503 ? 'Gemini 서버가 붐빕니다. 잠시 뒤 다시 해 주세요'
-          : body.error?.message || `오류 ${res.status}`;
-    throw new GeminiError(`AI 분석 실패 — ${why}`);
+    throw new GeminiError(`AI 분석 실패 — ${res.status === 429 ? '사용 한도에 걸렸습니다' : 'Gemini 서버가 붐빕니다. 잠시 뒤 다시 해 주세요'}`);
   }
-  const text = body.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
   if (!text.trim()) throw new GeminiError('AI 분석 실패 — 답이 비어 있습니다');
   let raw: Partial<RightsAi>;
   try {

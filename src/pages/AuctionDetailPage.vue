@@ -7721,7 +7721,7 @@ const goBack = () => router.back();
             </div>
             <!-- 분석 상태 — 못 했으면 까닭, 했으면 무엇을 보고 언제 했는지 -->
             <p v-if="rightsAiErr" class="adp-plan-err">{{ rightsAiErr }}</p>
-            <p v-else-if="rightsAiBusy" class="adp-doc-old">서류를 읽고 있습니다 — 10초쯤 걸립니다.</p>
+            <p v-else-if="rightsAiBusy" class="adp-doc-old">서류를 읽고 있습니다 — 서류가 많으면 2~3분 걸립니다.</p>
             <template v-else-if="auction?.rightsAi">
               <!-- '○장으로 분석 · 날짜' 는 카드 머리 오른쪽에 선다 (앱·웹) -->
               <p v-if="rightsAi?.missingDocs.length" class="adp-ai-missing">
@@ -9866,7 +9866,7 @@ const goBack = () => router.back();
           />
         </span>
         <b>AI가 권리분석을 하고 있습니다</b>
-        <span>서류가 많으면 1분쯤 걸립니다 · {{ rightsAiSec }}초</span>
+        <span>서류가 많으면 2~3분 걸립니다 · {{ rightsAiSec }}초</span>
         <button type="button" class="adp-ai-wait-cancel" @click="cancelRightsAi">취소</button>
       </div>
     </div>

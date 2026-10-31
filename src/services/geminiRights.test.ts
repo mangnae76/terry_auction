@@ -1,7 +1,7 @@
 // AI 가 적어 준 답을 다듬는 자리 — 인수·말소를 앱이 다시 셈하는지 본다.
 // (AI 는 볼 때마다 판단이 달라져 개수가 0·1·2 로 흔들렸다. 날짜만 읽혔으면 규칙은 하나다)
 import { describe, it, expect } from 'vitest';
-import { normalizeRightsAi, type RightsAi } from './geminiRights';
+import { normalizeRightsAi, readStreamText, type RightsAi } from './geminiRights';
 
 const row = (rank: string, kind: string, date: string, status: string, holder = '아무개') =>
   ({ rank, kind, date, holder, amount: '', status, note: '' });
@@ -69,5 +69,26 @@ describe('인수·소멸은 AI 가 가르고, 앱은 세기만 한다', () => {
     const ai = normalizeRightsAi({ rows: [] } as unknown as Partial<RightsAi>);
     expect(ai.takeover.summary).toBe('인수할 권리 없음');
     expect(ai.extinguish.summary).toBe('소멸될 권리 없음');
+  });
+});
+
+describe('답을 조금씩 받기(스트리밍)', () => {
+  const sse = (chunks: string[]) => new Response(new ReadableStream({
+    start(c) { chunks.forEach((x) => c.enqueue(new TextEncoder().encode(x))); c.close(); },
+  }));
+  const line = (text: string, thought = false) =>
+    `data: ${JSON.stringify({ candidates: [{ content: { parts: [{ text, thought }] } }] })}\r\n\r\n`;
+
+  it('조각을 이어 붙이고, 줄이 중간에 잘려 와도 맞게 읽는다', async () => {
+    const all = line('{"a":') + line('생각 중', true) + line('1}');
+    let n = 0;
+    const text = await readStreamText(sse([all.slice(0, 17), all.slice(17, 60), all.slice(60)]), () => { n += 1; });
+    expect(text).toBe('{"a":1}');
+    expect(n).toBe(3);
+  });
+
+  it('도중에 오류 조각이 오면 까닭을 알린다', async () => {
+    await expect(readStreamText(sse([line('{'), 'data: {"error":{"message":"끊김"}}\n\n'])))
+      .rejects.toThrow('끊김');
   });
 });
