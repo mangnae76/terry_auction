@@ -964,7 +964,7 @@ onMounted(async () => {
   border: 1px solid #e3e8f0; border-radius: 14px; padding: 16px 16px 18px;
   box-shadow: 0 10px 30px rgba(17, 24, 39, 0.14);
 }
-.tsp-panel-head strong { display: block; font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
+.tsp-panel-head strong { display: block; font-size: var(--title-fs, 16px); font-weight: 800; letter-spacing: -0.3px; }
 /* 조건 요약과 통계 이름표는 앱이 쓰는 파랑으로 — 값(검정)과 한눈에 갈린다 */
 .tsp-panel-head small { display: block; margin-top: 3px; font-size: 11.5px; color: #2b6df3; font-weight: 700; }
 .tsp-panel h3 {

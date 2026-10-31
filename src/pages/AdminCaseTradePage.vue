@@ -1697,7 +1697,7 @@ const downloadCsv = () => {
 .adm-case-block-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; font-size: 15px; font-weight: 800; color: #111827; }
 .adm-case-block.cond { margin-top: 16px; }
 /* 제목 앞 아이콘 — 손품조사 카드 제목 아이콘과 같은 크기 · 색 */
-.adm-sise-head { display: flex; align-items: center; padding: 14px 4px 4px; font-size: 16px; font-weight: 800; color: #111827; }
+.adm-sise-head { display: flex; align-items: center; padding: 14px 4px 4px; font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; }
 .adm-h-ico { flex: none; margin-right: 6px; vertical-align: -2px; color: #2b6df3; }
 .adm-case-block.cond .cond-bar { margin: 16px 0 10px; }
 /* 범위 글은 길어 한 단계 작게 */

@@ -375,7 +375,7 @@ defineExpose({ openAdd, exportCsv, total, pick, togglePick });
 .xl-veil { position: fixed; inset: 0; z-index: 150; background: rgba(15, 23, 42, .45); display: grid; place-items: center; padding: 20px; }
 .xl-modal { color-scheme: light; width: min(560px, 100%); background: #fff; border-radius: 14px; padding: 20px 22px 18px; color: #111827; box-shadow: 0 20px 40px rgba(15, 23, 42, .25); }
 .xl-modal header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.xl-modal h3 { margin: 0; font-size: 16px; font-weight: 800; }
+.xl-modal h3 { margin: 0; font-size: var(--title-fs, 16px); font-weight: 800; }
 .xl-modal .x { border: 0; background: none; font-size: 16px; color: #6b7280; cursor: pointer; }
 .xl-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
 .xl-form label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; color: #374151; }

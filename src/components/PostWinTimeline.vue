@@ -342,7 +342,7 @@ const resetDefault = () => {
 .pwt-cap { font-size: 14px; color: #6b7280; }
 .pwt-cap b { color: #111827; font-weight: 700; }
 .pwt-head > button:first-of-type { margin-left: auto; }
-.pwt-head h2 { margin: 0 12px 0 0; display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: #111827; }
+.pwt-head h2 { margin: 0 12px 0 0; display: inline-flex; align-items: center; gap: 6px; font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; }
 .pwt-btn { height: 34px; padding: 0 14px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; font-weight: 700; color: #374151; cursor: pointer; }
 .pwt-btn:hover { background: #f5f7fb; }
 .pwt-btn.deal.on { background: #374151; border-color: #374151; color: #fff; }

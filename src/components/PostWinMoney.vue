@@ -428,7 +428,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 <style scoped>
 .pwm { color-scheme: light; background: #fff; border-radius: 10px; padding: 24px 32px 30px; color: #111827; }
 .pwm-head { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid #eef1f6; }
-.pwm-head h2 { margin: 0; display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: #111827; }
+.pwm-head h2 { margin: 0; display: inline-flex; align-items: center; gap: 6px; font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; }
 .pwm-h2-ico { flex: none; color: #2a5fbf; }   /* 권리분석 카드 제목 아이콘과 같은 색 */
 .pwm-cap { font-size: 14px; color: #6b7280; }
 .pwm-cap b { color: #111827; font-weight: 700; }
@@ -445,7 +445,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-case { border: 1px solid #e3e8f0; border-radius: 10px; padding: 18px 24px 20px; font-variant-numeric: tabular-nums; }
 .pwm-case.deal { border-top: 3px solid #4f9a68; }
 .pwm-case.exec { border-top: 3px solid #c95b5b; }
-.pwm-case h3 { margin: 0 0 10px; font-size: 16px; font-weight: 800; }
+.pwm-case h3 { margin: 0 0 10px; font-size: var(--title-fs, 16px); font-weight: 800; }
 .pwm-case ul { margin: 0; padding: 0; list-style: none; }
 .pwm-case li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed #eef1f6; font-size: 14px; }
 .pwm-case li span { color: #4b5563; }
@@ -504,7 +504,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-tax { --pwm-card-h: 560px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
 .pwm-tax > .pwm-card { min-height: var(--pwm-card-h, 0px); display: flex; flex-direction: column; }
 .pwm-card { border: 1px solid #e3e8f0; border-radius: 10px; padding: 20px 26px 22px; }
-.pwm-card h3 { margin: 0 0 6px; font-size: 16px; font-weight: 800; display: flex; align-items: center; gap: 7px; }
+.pwm-card h3 { margin: 0 0 6px; font-size: var(--title-fs, 16px); font-weight: 800; display: flex; align-items: center; gap: 7px; }
 .pwm-h3-ico { flex: none; width: 17px; height: 17px; color: #2a5fbf; }   /* 다른 카드 제목 아이콘과 같은 파랑 */
 .pwm-card dl { margin: 0; }
 .pwm-card dl > div { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 14px 4px; border-bottom: 1px solid #eef1f6; }

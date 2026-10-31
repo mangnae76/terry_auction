@@ -10339,7 +10339,7 @@ const goBack = () => router.back();
 }
 .adp-card-head h2 {
   /* 물건상세 카드 제목은 모든 탭 16 (웹 물건정보 카드와 같다) */
-  margin: 0; font-size: 16px; font-weight: 800; color: #111827;
+  margin: 0; font-size: var(--title-fs, 16px); font-weight: 800; color: #111827;
   display: inline-flex; align-items: center; gap: 5px; min-width: 0;
 }
 /* 카드 제목 앞 아이콘 */
@@ -13114,7 +13114,7 @@ select.adp-pub-input option { text-align: center; }
 .bida-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
 .bida-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .bida-card { min-width: 0; padding: 20px 24px; background: #fff; border: 1px solid #e5e9f2; border-radius: 14px; }
-.bida-h { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #111827; }
+.bida-h { margin: 0 0 8px; font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; }
 .bida-h small { margin-left: 10px; font-size: 14px; font-weight: 400; color: #6b7280; }
 .bida-hrow { display: flex; align-items: baseline; margin-bottom: 8px; }
 .bida-hrow .bida-h { margin: 0; }

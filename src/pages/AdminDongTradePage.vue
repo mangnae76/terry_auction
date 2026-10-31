@@ -1422,7 +1422,7 @@ const downloadCsv = () => {
 .adm-rank3 > .adm-msg { grid-column: 1 / -1; }
 .adm-rank-card { background: #fff; border: 1px solid #e3e8f0; border-radius: 8px; padding: 16px 18px 8px; min-width: 0; }
 .adm-rank-card header { margin-bottom: 10px; }
-.adm-rank-card header strong { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: #111827; }
+.adm-rank-card header strong { display: flex; align-items: center; gap: 6px; font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; }
 .adm-rank-card header small { display: block; margin-top: 4px; font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* 한 줄로 — 접히면 그 카드만 표가 밀렸다 */
 /* 거래랭킹 움직임 — 줄이 위에서부터 차례로 미끄러져 들어오고(카드마다 조금씩 늦게), 최근 1년 칸 뒤 막대가 자란다 */
 .rk-in { animation: rkIn .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--g, 0) * 120ms + var(--i, 0) * 55ms); }
@@ -1463,7 +1463,7 @@ const downloadCsv = () => {
 .adm-rank-notes b { font-weight: 400; color: inherit; }
 .adm-rank-pct.flat { background: #f3f4f6; color: #6b7280; }
 
-.adm-deal-title { padding-left: 20px; font-size: 16px; font-weight: 800; color: #111827; white-space: nowrap; }
+.adm-deal-title { padding-left: 20px; font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; white-space: nowrap; }
 .adm-deal-count { margin-right: auto; white-space: nowrap; font-size: 14px; color: #6b7280; }
 .adm-deal-count b { color: #111827; font-weight: 700; }
 .adm-deal-all { height: 30px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
@@ -1511,7 +1511,7 @@ const downloadCsv = () => {
 /* 웹 — 분포 막대그래프 (한 묶음 한 색, 가장 많은 칸만 진하게) */
 .adm-dists.is-web { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .adm-dists.is-web .adm-dist { padding: 16px 20px 14px; }
-.adm-dists.is-web .adm-dist-head { font-size: 16px; margin-bottom: 12px; }
+.adm-dists.is-web .adm-dist-head { font-size: var(--title-fs, 16px); margin-bottom: 12px; }
 /* 전용면적별 분포 — 평 · ㎡ 토글(제목 옆 작은 알약, 고른 쪽만 채운다) */
 .adm-unit-tg { align-self: center; display: inline-flex; gap: 2px; margin-left: 6px; padding: 2px; border: 1px solid #dde3ee; border-radius: 999px; background: #f3f5f9; cursor: pointer; }
 .adm-unit-tg span { min-width: 26px; height: 20px; padding: 0 6px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #6b7280; }
@@ -1530,7 +1530,7 @@ const downloadCsv = () => {
 /* 유형분포 바로 옆 아이콘 — 지금 모양(막대 · 도넛) */
 .adm-deals { display: flex; flex-direction: column; gap: 12px; }
 .adm-trend { background: #fff; border: 1px solid #e8ecf3; border-radius: 12px; padding: 16px 20px 10px; }
-.adm-trend-title { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: #1f3a72; }
+.adm-trend-title { margin: 0 0 8px; font-size: var(--title-fs, 16px); font-weight: 800; color: #1f3a72; }
 .adm-trend-title em { font-style: normal; font-size: 14px; font-weight: 600; color: #9ca3af; }
 .adm-trend-svg { width: 100%; height: auto; display: block; }
 .adm-trend-svg .grid { stroke: #eef1f6; stroke-width: 1; }
@@ -1544,7 +1544,7 @@ const downloadCsv = () => {
 .adm-trend-svg .pt:hover .dot { fill: #2b6df3; }
 .adm-trend-empty { margin: 8px 0; font-size: 14px; color: #6b7280; }
 .adm-deals-head { display: flex; align-items: center; gap: 10px; margin: 4px 2px 0; }
-.adm-deals-head strong { font-size: 16px; font-weight: 800; color: #111827; }
+.adm-deals-head strong { font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; }
 .adm-deals-head > span:not(.adm-search) { font-size: 14px; color: #6b7280; }
 .adm-deals-table td.l { text-align: left; }
 /* 거래상세 — 조건검색 한 줄 (상자 없이, 칸 이름은 칸 안 왼쪽 회색) */
@@ -1580,7 +1580,7 @@ const downloadCsv = () => {
 .adm-detail-kinds button.on { border-color: #2b6df3; color: #2b6df3; background: #eef4ff; }
 .adm-detail-cap { display: flex; align-items: center; margin: 4px 2px 0; padding-left: 20px; font-size: 14px; color: #6b7280; }
 /* 웹 — 다른 탭 제목(거래 타임라인 · 동 사분면 · 유형 분포)과 같은 꼴: 16 굵게 + 괄호 설명 13 */
-.adm-detail-cap.is-title strong { font-size: 16px; font-weight: 800; color: #111827; }
+.adm-detail-cap.is-title strong { font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; }
 .adm-detail-cap.is-title strong em { font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; }
 .adm-heat td.r { font-variant-numeric: tabular-nums; }
 /* 가격대 · 면적 · 연식 · 층수를 오가도 동 · 합계 칸은 제자리 — 첫 칸 · 끝 칸 폭을 못 박고 가운데 구간 칸이 나머지를 고르게 나눈다 */

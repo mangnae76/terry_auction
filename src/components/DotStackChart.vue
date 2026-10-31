@@ -236,7 +236,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 
 <style scoped>
 .dsc { display: flex; flex-direction: column; gap: 10px; }
-.dsc-title { padding-left: 20px; font-size: 16px; font-weight: 800; color: #111827; }
+.dsc-title { padding-left: 20px; font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; }
 .dsc-title em { font-style: normal; font-size: 13px; font-weight: 500; color: #6b7280; }
 .dsc-top { display: grid; grid-template-columns: minmax(0, 640px) auto; justify-content: space-between; align-items: center; gap: 8px 16px; }
 .dsc-top > .dsc-left, .dsc-top > .dsc-right { display: contents; }   /* 두 묶음을 풀어 한 격자에 — 안내 줄과 범례가 같은 줄에 선다 */

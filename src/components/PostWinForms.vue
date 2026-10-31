@@ -148,7 +148,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 .pwf { position: fixed; z-index: 951; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(860px, calc(100vw - 32px)); max-height: calc(100vh - 48px);
   display: flex; flex-direction: column; color-scheme: light; background: #fff; color: #111827; border-radius: 12px; box-shadow: 0 20px 48px rgba(15, 23, 42, .28); }
 .pwf-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px 12px 20px; border-bottom: 1px solid #eef1f6; }
-.pwf-head h2 { margin: 0; font-size: 16px; font-weight: 800; }
+.pwf-head h2 { margin: 0; font-size: var(--title-fs, 16px); font-weight: 800; }
 .pwf-tabs { display: inline-flex; gap: 4px; }
 .pwf-tabs button { height: 30px; padding: 0 10px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #6b7280; font-size: 14px; cursor: pointer; }
 .pwf-tabs button:hover { color: #111827; }

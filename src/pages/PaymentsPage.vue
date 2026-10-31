@@ -126,7 +126,7 @@ const notReady = (what: string) => {
 .pay-title { margin: 0; font-size: 20px; font-weight: 800; color: #111827; }
 .pay-crumb { margin-left: auto; font-size: 11px; color: #9ca3af; }
 .pay-body { padding: 14px 12px; }
-.pay-h2 { margin: 0; text-align: center; font-size: 16px; font-weight: 800; color: #111827; }
+.pay-h2 { margin: 0; text-align: center; font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; }
 .pay-lead { margin: 5px 0 12px; text-align: center; font-size: 11.5px; color: #8a93a4; word-break: keep-all; }
 
 /* 요약 */

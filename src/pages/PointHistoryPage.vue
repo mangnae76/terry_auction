@@ -122,7 +122,7 @@ const money = (n: number) => n.toLocaleString('ko-KR');
 .ph-title { margin: 0; font-size: 20px; font-weight: 800; color: #111827; }
 .ph-crumb { margin-left: auto; font-size: 11px; color: #9ca3af; }
 .ph-body { padding: 14px 12px; }
-.ph-h2 { margin: 0; text-align: center; font-size: 16px; font-weight: 800; color: #111827; }
+.ph-h2 { margin: 0; text-align: center; font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; }
 .ph-lead {
   margin: 5px 0 12px; text-align: center; font-size: 11.5px; color: #8a93a4; word-break: keep-all;
   display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;
