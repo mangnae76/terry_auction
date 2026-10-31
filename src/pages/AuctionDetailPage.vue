@@ -2464,17 +2464,8 @@ const resetScenarioRates = (sc: ProfitScenario) => {
   });
 };
 
-/* 웹 입찰가산정 보기 — 새화면(왼쪽 입력 · 오른쪽 남색 계산판) / 클래식(예전 표). 고른 것은 다음에도 그대로 */
-const PROFIT_VIEW_KEY = 'adp.web.profitView';
-const profitView = ref<'new' | 'classic'>((() => {
-  try { return localStorage.getItem(PROFIT_VIEW_KEY) === 'classic' ? 'classic' : 'new'; } catch { return 'new'; }
-})());
-const setProfitView = (v: 'new' | 'classic') => {
-  profitView.value = v;
-  if (v === 'new') editingProfit.value = false;
-  try { localStorage.setItem(PROFIT_VIEW_KEY, v); } catch { /* 저장 못 해도 화면은 바뀐다 */ }
-};
-const webNew = computed(() => webEmbed && profitView.value === 'new');
+// 웹은 늘 새화면 — 새화면/클래식 바꾸기 단추를 뺐다
+const webNew = computed(() => webEmbed);
 /** 안 탭 — 있는 안은 고르고, 바로 다음 빈 칸은 눌러서 안을 하나 더 만든다 */
 const pickPlanTab = async (si: number) => {
   if (profitScenarios.value[si]) { selectedPlan.value = si; return; }
@@ -2571,7 +2562,8 @@ const toggleAllSections = () => {
   ALL_SECTION_KEYS.forEach((key) => { map[key] = next; });
   collapsed.value = map;
 };
-const isCollapsed = (key: string) => !!collapsed.value[key];
+// 웹 예상수익분석은 접지 않는다(접기 단추를 뺐다) — 예전에 접어 둔 물건도 펼쳐 보인다
+const isCollapsed = (key: string) => (webEmbed && key === 'profit' ? false : !!collapsed.value[key]);
 
 
 // === 손품조사 폼 ===
@@ -6597,7 +6589,7 @@ const goBack = () => router.back();
           <!-- 제목과 날짜 줄은 화면에 붙여 둔다 — 표를 한참 내려 보다가도
                어느 안(A·B)을 보고 있는지, 진행상황이 무엇인지 늘 보여야 한다 -->
           <div :class="['adp-profit-sticky', { folded: isCollapsed('profit') }]">
-          <header class="adp-card-head adp-profit-head" @click="toggleSection('profit')">
+          <header class="adp-card-head adp-profit-head" @click="!webEmbed && toggleSection('profit')">
             <h2>
               <svg class="adp-profit-ico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 17 9.5 10.5l4 4L21 7" /><path d="M15 7h6v6" />
@@ -6626,13 +6618,9 @@ const goBack = () => router.back();
               <button type="button" aria-label="산정표 삭제" :disabled="profitScenarios.length <= 1" @click.stop="removeProfitScenario">−</button>
               <button type="button" aria-label="산정표 추가" :disabled="profitScenarios.length >= PROFIT_MAX" @click.stop="addProfitScenario">＋</button>
             </span>
-            <span v-if="webEmbed" class="adp-view-seg" @click.stop>
-              <button type="button" :class="{ on: profitView === 'new' }" :aria-pressed="profitView === 'new'" @click="setProfitView('new')">새화면</button>
-              <button type="button" :class="{ on: profitView === 'classic' }" :aria-pressed="profitView === 'classic'" @click="setProfitView('classic')">클래식</button>
-            </span>
             <button v-if="!editingProfit && !webNew" class="adp-edit-btn" type="button" @click.stop="startEditProfit"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
             <button v-else-if="!webNew" class="adp-edit-btn save" type="button" @click.stop="saveProfit">완료</button>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('profit') }]" alt="" />
+            <img v-if="!webEmbed" :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('profit') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('profit') && !webEmbed" class="adp-profit-dates">
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
@@ -13077,9 +13065,11 @@ select.adp-pub-input option { text-align: center; }
 .adp-head-step, .adp-view-seg { margin-left: auto; }
 .adp-head-step + .adp-view-seg { margin-left: 0; }
 .adp-view-seg ~ .adp-edit-btn { margin-left: 8px; }
+.adp-profit-head:has(.adp-head-dates) { justify-content: flex-start; }   /* 웹 — 오른쪽 단추가 빠져 칩 · 날짜가 양끝으로 벌어지지 않게 제목 옆에 모은다 */
 .adp-head-dates { display: inline-flex; align-items: center; gap: 14px; margin-left: 10px; }
 .adp-head-dates .adp-pd-item { cursor: pointer; }
 .adp-head-step { margin-right: 8px; }
+/* (새화면/클래식 바꾸기 단추는 뺐다) */
 .adp-view-seg { display: inline-flex; gap: 3px; padding: 3px; margin-right: 6px; border-radius: 9px; background: #e3e8f1; }
 .adp-view-seg button { height: 28px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; font-family: inherit; font-size: 13px; font-weight: 600; color: #4b5563; cursor: pointer; }
 .adp-view-seg button.on { background: #fff; color: #1f2a44; font-weight: 800; box-shadow: 0 1px 2px rgba(15, 23, 42, .12); }
