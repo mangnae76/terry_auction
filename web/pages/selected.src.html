@@ -2796,10 +2796,11 @@ html, body { overflow-x: clip; }
 .f-info { margin: 0 0 0 3px; font-size: 14px; line-height: 1.55; }
 /* 저작권 — 맨 아랫줄 가운데, 바닥에서 조금 띄운다 */
 .f-copy { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); font-size: 14px; color: var(--foot-text); letter-spacing: .2px; white-space: nowrap; }
-.f-links { position: absolute; left: 78.8%; top: 29px; display: flex; gap: 28px; }
+.f-right { position: absolute; left: 78.8%; top: 29px; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; }
+.f-links { display: flex; gap: 28px; }
 .f-links a { color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size .2s; }
 .f-links a:hover { background-size: 100% 1px; }
-.f-social { position: absolute; left: 78.8%; top: 66px; display: flex; align-items: center; gap: 10px; height: 36px; }   /* 이용약관 줄 아래 — 유튜브 · 네이버 카페 · 네이버 블로그 · 인스타그램 */
+.f-social { display: flex; align-items: center; gap: 10px; height: 36px; }   /* 이용약관 줄 아래 — 유튜브 · 네이버 카페 · 네이버 블로그 · 인스타그램 */
 .f-social a { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .22); color: #c8cdd8; text-decoration: none; transition: color .15s, border-color .15s, background .15s; }
 .f-social a:hover { color: #fff; border-color: rgba(255, 255, 255, .5); background: rgba(255, 255, 255, .06); }
 .f-social svg { width: 18px; height: 18px; }
@@ -2817,7 +2818,8 @@ html, body { overflow-x: clip; }
   .g-pop.user { left: auto; right: 0; }
   .g-mega-in { min-height: 0; display: flex; flex-wrap: wrap; gap: 8px 36px; padding-block: 14px 18px; }
   .g-col { position: static; }
-  .f-copy, .f-links, .f-social { position: relative; left: auto; top: auto; margin-top: 14px; width: fit-content; }
+  .f-copy, .f-right { position: relative; left: auto; top: auto; margin-top: 14px; width: fit-content; }
+  .f-right { align-items: flex-start; gap: 14px; }
   .foot-in { display: grid; padding-bottom: 22px; }
   .f-copy { transform: none; bottom: auto; justify-self: center; margin-top: 26px; order: 10; white-space: normal; text-align: center; }
 }
@@ -3211,6 +3213,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
       <div class="f-brand"><img src="{{LOGO_WHITE}}" alt="MYTURN AUCTION"><span>마이턴</span></div>
       <p class="f-info">대표 강정인 · 사업자번호 000-00-03787 · 통신판매신고 2026-서울광진-1320<br>주소 서울시 광진구 강변역로4길 68, 3층301호<br>문의 02-456-1234 · 대표메일 contact@myturn.com</p>
       <div class="f-copy">COPYRIGHT ⓒMyTurn. ALL RIGHTS RESERVED.</div>
+      <!-- 오른쪽 묶음 — 이용약관 줄과 채널 아이콘 줄. 아이콘 줄 오른쪽 끝을 '환불정책' 끝에 맞춘다 -->
+      <div class="f-right">
       <div class="f-links">
         <a href="#" data-act="soon" data-name="이용약관">이용약관</a>
         <a href="#" data-act="soon" data-name="개인정보처리방침">개인정보처리방침</a>
@@ -3222,6 +3226,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
         <a href="https://cafe.naver.com/answerrichmarble" target="_blank" rel="noopener" aria-label="네이버 카페" data-tip="네이버 카페" data-tip-pos="below"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5v2M12 3.5v2"/></svg></a>
         <a href="https://blog.naver.com/goldenboy2024" target="_blank" rel="noopener" aria-label="네이버 블로그" data-tip="네이버 블로그" data-tip-pos="below"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H10l-4 3v-3H4z"/><path d="M9 8v5M9 10.5h1.6a1.25 1.25 0 0 1 0 2.5H9M14 9.5v3.5"/></svg></a>
         <a href="#" data-act="soon" data-name="인스타그램" aria-label="인스타그램" data-tip="인스타그램" data-tip-pos="below"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg></a>
+      </div>
       </div>
     </div>
   </div>
