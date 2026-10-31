@@ -43,7 +43,13 @@ const goGuide = (g: GuideItem) => {
   if (!g.path || (webEmbed && g.label === '이벤트 보기')) { notReady(g.label); return; }
   router.push({ path: g.path, query: g.query });
 };
+/** 웹 약관 및 정책 — 위치기반은 빼고 넷. 누르면 웹 쪽 글 창(바닥 링크와 같은 창)을 연다 */
+const WEB_POLICIES: Array<{ name: string; key: string }> = [
+  { name: '이용약관', key: 'terms' }, { name: '개인정보처리방침', key: 'privacy' }, { name: '환불정책', key: 'refund' }, { name: '저작권정책', key: 'copyright' },
+];
+const policies = computed(() => (webEmbed ? WEB_POLICIES.map((p) => ({ name: p.name, path: p.key })) : POLICIES));
 const openPolicy = (p: { name: string; path: string }) => {
+  if (webEmbed) { window.dispatchEvent(new CustomEvent('myturn:doc', { detail: p.path })); return; }
   if (!p.path) { notReady(p.name); return; }
   router.push(p.path);
 };
@@ -125,7 +131,7 @@ const openContact = (c: ContactWay) => {
         <section v-if="showRest" class="sup-card">
           <h2 class="sup-h2">약관 및 정책</h2>
           <button
-            v-for="p in POLICIES"
+            v-for="p in policies"
             :key="p.name"
             type="button"
             class="sup-policy"

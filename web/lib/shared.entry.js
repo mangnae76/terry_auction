@@ -23,6 +23,9 @@ export { addressParts, addressWithName, hasBuildingName } from '../../src/utils/
 export { propTypeName, propTypeMark } from '../../src/utils/propertyType';
 // 수익 셈(세율 구간 · 누진공제 · 세후 순이익) — 입찰가산정과 같은 셈
 export { taxChainOf, taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf } from '../../src/services/profitMath';
+// 약관 글 — 바닥 링크 · 고객센터의 이용약관 · 개인정보처리방침 · 환불정책 창이 앱과 같은 글을 쓴다
+export { TERMS_CHAPTERS, TERMS_EFFECTIVE, PRIVACY_SECTIONS, PRIVACY_OFFICER, PRIVACY_CHILD, PRIVACY_EFFECTIVE } from '../../src/services/legalTerms';
+export { POINT_CAUTIONS } from '../../src/services/pointPolicy';
 
 // === 앱 자료 연결 — 앱이 쓰는 로그인·물건 저장소(Pinia)를 그대로 쓴다 ===
 // 웹(/web)은 앱과 같은 주소라, 같은 브라우저에서 앱에 로그인해 두었으면 그 로그인이 그대로 이어진다.

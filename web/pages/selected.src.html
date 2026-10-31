@@ -2289,6 +2289,11 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .doc-body p { margin: 0; }
 .doc-body ul { margin: 0; padding-left: 20px; }
 .doc-body ul ul { margin-top: 2px; }
+.doc-body h4 { margin: 14px 0 4px; font-size: 14px; font-weight: 700; color: var(--text); }
+.doc-body ol { margin: 0; padding-left: 22px; }
+.doc-dl { margin: 0; display: grid; grid-template-columns: 90px 1fr; row-gap: 4px; }
+.doc-dl dt { color: var(--text); }
+.doc-dl dd { margin: 0; }
 .doc-body b { color: var(--text); }
 .doc-body a { color: var(--blue); }
 .doc-scope, .doc-lead { margin-top: 12px !important; }
@@ -2834,7 +2839,7 @@ html, body { overflow-x: clip; }
 .f-info { margin: 0 0 0 3px; font-size: 14px; line-height: 1.55; }
 /* 저작권 — 맨 아랫줄 가운데, 바닥에서 조금 띄운다 */
 .f-copy { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); font-size: 14px; color: var(--foot-text); letter-spacing: .2px; white-space: nowrap; }
-.f-right { position: absolute; left: 78.8%; top: 29px; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; }
+.f-right { position: absolute; right: 0; top: 29px; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; }
 .f-links { display: flex; gap: 28px; }
 .f-links a { color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; white-space: nowrap; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size .2s; }
 .f-links a:hover { background-size: 100% 1px; }
@@ -3255,13 +3260,14 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <div class="f-brand"><img src="{{LOGO_WHITE}}" alt="MYTURN AUCTION"><span>마이턴</span></div>
       <p class="f-info">대표 강정인 · 사업자번호 000-00-03787 · 통신판매신고 2026-서울광진-1320<br>주소 서울시 광진구 강변역로4길 68, 3층301호<br>문의 02-456-1234 · 대표메일 contact@myturn.com</p>
       <div class="f-copy">COPYRIGHT ⓒMyTurn. ALL RIGHTS RESERVED.</div>
-      <!-- 오른쪽 묶음 — 이용약관 줄과 채널 아이콘 줄. 아이콘 줄 오른쪽 끝을 링크 줄 끝(사업제휴)에 맞춘다 -->
+      <!-- 오른쪽 묶음 — 이용약관 줄과 채널 아이콘 줄. 둘 다 1280 상자 안쪽 오른쪽 끝(사업제휴 · 인스타그램)에 세로로 맞춘다 -->
       <div class="f-right">
       <div class="f-links">
-        <a href="#" data-act="soon" data-name="이용약관">이용약관</a>
+        <a href="#" data-act="soon" data-name="회사소개">회사소개</a>
+        <a href="#" data-act="doc" data-v="terms">이용약관</a>
         <a href="#" data-act="doc" data-v="copyright">저작권정책</a>
-        <a href="#" data-act="soon" data-name="개인정보처리방침">개인정보처리방침</a>
-        <a href="#" data-act="soon" data-name="환불정책">환불정책</a>
+        <a href="#" data-act="doc" data-v="privacy">개인정보처리방침</a>
+        <a href="#" data-act="doc" data-v="refund">환불정책</a>
         <a href="#" data-act="doc" data-v="partner">사업제휴</a>
       </div>
       <!-- 바깥 채널 — 아이콘만(이름은 말풍선). 카페 · 블로그는 새 창, 유튜브 · 인스타그램은 주소가 정해지면 href 만 바꾼다 -->
@@ -4384,7 +4390,38 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const skipsToday = (k) => k && (store.get(SKIP_KEY, {})[k] === TODAY_YMD);
   /* 바닥 링크로 여는 글 — 저작권정책 · 사업제휴. 연락처는 바닥 띠(f-info)와 같은 값 */
   const DOC_CONTACT = '<div class="doc-contact">위 이용 목적 밖으로 쓰시려면 아래로 문의해 주세요.<br><b>저작권 · 사업제휴 문의</b> 전화 02-456-1234 · 메일 contact@myturn.com</div>';
+  /* 이용약관 · 개인정보처리방침 · 환불정책 — 글은 앱과 같은 것(services/legalTerms · pointPolicy) */
+  const docList = (items, tag = 'ol') => (items && items.length ? `<${tag}>${items.map((x) => `<li>${esc(x).replace(/\n/g, '<br>')}</li>`).join('')}</${tag}>` : '');
+  const docArticles = (arts) => arts.map((a) => `<h4>${esc(a.title)}</h4>${a.text ? `<p>${esc(a.text)}</p>` : ''}${docList(a.items)}`).join('');
+  const termsBody = () => {
+    const L = window.TAPdf || {};
+    if (!L.TERMS_CHAPTERS) return '<p>약관을 불러오지 못했습니다 — 새로고침 뒤 다시 열어 주세요.</p>';
+    return L.TERMS_CHAPTERS.map((ch) => `<h3>${esc(ch.title)}</h3>${docArticles(ch.articles)}`).join('')
+      + `<h3>부칙</h3><p>이 약관은 ${esc(L.TERMS_EFFECTIVE)}부터 시행하며, 종전의 이용약관은 이 약관으로 대체합니다.</p>`;
+  };
+  const privacyBody = () => {
+    const L = window.TAPdf || {};
+    if (!L.PRIVACY_SECTIONS) return '<p>처리방침을 불러오지 못했습니다 — 새로고침 뒤 다시 열어 주세요.</p>';
+    const blk = (b) => (b.kind === 'p' ? `<p>${esc(b.text)}</p>` : b.kind === 'label' ? `<h4>${esc(b.text)}</h4>` : docList(b.items, b.kind === 'ol' ? 'ol' : 'ul'));
+    return L.PRIVACY_SECTIONS.map((sec) => `<h3>${esc(sec.title)}</h3>${sec.blocks.map(blk).join('')}`).join('')
+      + `<h3>개인정보 관리책임자</h3><dl class="doc-dl">${L.PRIVACY_OFFICER.map((r) => `<dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd>`).join('')}</dl>`
+      + `<h3>아동의 개인정보보호</h3><p>${esc(L.PRIVACY_CHILD)}</p>`
+      + `<h3>부칙</h3><p>이 개인정보 처리방침은 ${esc(L.PRIVACY_EFFECTIVE)}부터 시행합니다.</p>`;
+  };
+  /* 환불정책 — 이용약관 제4장(요금 · 환불)과 포인트 주의사항의 환불 줄을 한곳에 */
+  const refundBody = () => {
+    const L = window.TAPdf || {};
+    const ch = (L.TERMS_CHAPTERS || []).find((c) => /환불/.test(c.title));
+    if (!ch) return '<p>환불정책을 불러오지 못했습니다 — 새로고침 뒤 다시 열어 주세요.</p>';
+    const pts = (L.POINT_CAUTIONS || []).filter((t) => /환불|결제취소/.test(t));
+    return `<p class="doc-lead">이용약관 ${esc(ch.title)}의 내용을 옮겨 정리했습니다.</p>${docArticles(ch.articles)}`
+      + (pts.length ? `<h4>포인트</h4>${docList(pts, 'ul')}` : '')
+      + '<div class="doc-contact"><b>환불 문의</b> 전화 02-456-1234 · 메일 contact@myturn.com</div>';
+  };
   const DOCS = {
+    terms: { title: '이용약관', body: termsBody },
+    privacy: { title: '개인정보처리방침', body: privacyBody },
+    refund: { title: '환불정책', body: refundBody },
     copyright: { title: '마이턴옥션 저작권 정책', body: `
       <p class="doc-scope"><b>적용대상</b> 마이턴(이하 '회사')이 운영하는 마이턴옥션 웹과 앱(이하 '서비스')에서 제공하는 모든 정보와 자료</p>
       <h3>제1조 목적</h3>
@@ -4435,6 +4472,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <p>보내 주신 제안은 검토한 뒤 담당자가 연락드립니다.</p>
       <div class="doc-contact"><b>사업제휴 문의</b> 메일 <a href="mailto:contact@myturn.com">contact@myturn.com</a> · 전화 02-456-1234</div>` },
   };
+  window.addEventListener('myturn:doc', (e) => { if (DOCS[e.detail]) { S.pop = ''; S.modal = { kind: 'doc', v: e.detail }; renderModal(); } });   /* 고객센터 › 약관 및 정책 */
   function askConfirm(box) { if (skipsToday(box.skipKey)) { box.run(); return; } S.modal = { kind: 'confirm', ...box }; renderModal(); }
   /* 키 칸 속내용 — 창(팝업)과 마이페이지가 같은 것을 쓴다 */
   const aiKeyBody = (m) => `
@@ -4537,7 +4575,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       const d = DOCS[m.v]; if (!d) { S.modal = null; root.innerHTML = ''; return; }
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog fav-dlg doc-dlg" role="dialog" aria-modal="true" aria-labelledby="docT">
         <div class="reg-head"><h2 id="docT">${d.title}</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
-        <div class="doc-body">${d.body}</div></div></div>`;
+        <div class="doc-body">${typeof d.body === 'function' ? d.body() : d.body}</div></div></div>`;
       return;
     }
     if (m.kind === 'confirm') {
