@@ -156,19 +156,19 @@ button { cursor: pointer; }
 
 /* ================= 머리띠 — 시안의 좌표를 1280 폭 기준 비율로 옮긴다 ================= */
 .gnb { background: var(--nav); color: var(--nav-text); position: relative; z-index: 40; }
-.gnb-in { position: relative; height: 70px; }   /* 66 → 70 — 위 작은 단추들이 너무 붙어 4px 키움. 아래 화면은 --gnb-h 를 보고 같이 내려간다 */
+.gnb-in { position: relative; height: 60px; }   /* 70 → 60(10-31 글자를 줄이며 머리 높이도 줄임). 아래 화면은 --gnb-h 를 보고 같이 올라간다 */   /* 66 → 70 — 위 작은 단추들이 너무 붙어 4px 키움. 아래 화면은 --gnb-h 를 보고 같이 내려간다 */
 .gnb a, .gnb button { color: inherit; text-decoration: none; }
 /* 로고 — 머리띠 높이(70) 가운데, 시안 폭(약 133px)에 맞춘 44px 높이 */
 .g-logo { position: absolute; left: -0.47%; top: 13px; display: block; }
 .g-logo img { display: block; height: 44px; width: auto; transition: transform .4s cubic-bezier(.2, .9, .3, 1.4); }
 .g-logo:hover img { transform: rotate(-4deg) scale(1.04); }
 .g-menu {
-  position: absolute; top: 35px; height: 26px; display: inline-flex; align-items: center;
+  position: absolute; top: 28px; height: 26px; display: inline-flex; align-items: center;
   font-size: var(--menu-fs); font-weight: 700; letter-spacing: -0.3px; white-space: nowrap;
   transition: color .15s;
 }
 .g-menu::after {
-  content: ""; position: absolute; left: -9px; right: -9px; bottom: -8px; height: 3px; border-radius: 2px 2px 0 0;
+  content: ""; position: absolute; left: -9px; right: -9px; bottom: -5px; height: 3px; border-radius: 2px 2px 0 0;
   background: var(--nav-orange); transform: scaleX(0); transition: transform .2s ease;
 }
 .g-menu:hover { color: #cfe0ff; }
@@ -190,9 +190,9 @@ button { cursor: pointer; }
 .g-ico .dot { position: absolute; top: 2px; right: 2px; width: 7px; height: 7px; border-radius: 50%; background: #ff4d4f; box-shadow: 0 0 0 1.5px var(--nav); }
 .g-box {
   /* 상단 메뉴 전부의 아래 메뉴를 한 번에 펼치고 접는 단추 — 속은 비우고 흰 테두리·흰 삼각형 */
-  /* 높이 — 메뉴 글자(잉크 41~58)의 가운데(≈49)에 상자 가운데를 둔다 */
+  /* 높이 — 메뉴 글자(잉크 ≈35~50)의 가운데(≈42)에 상자 가운데를 둔다 */
   /* 가로 — 1280 상자 오른쪽 끝(이름 · 로그아웃이 위 줄로 올라가 빈 자리). 메뉴 열은 이 단추 앞까지 고르게 벌어진다 */
-  position: absolute; left: calc(100% - 22px); top: 38px; width: 22px; font-size: var(--menu-fs); height: 22px; border-radius: 5px; border: 1px solid var(--nav-text);
+  position: absolute; left: calc(100% - 20px); top: 32px; width: 20px; font-size: var(--menu-fs); height: 20px; border-radius: 5px; border: 1px solid var(--nav-text);
   background: transparent; display: grid; place-items: center; padding: 0; transition: background .15s;
 }
 .g-box svg { width: 8px; height: 8px; color: var(--nav-text); transition: transform .2s; }
@@ -254,38 +254,38 @@ button { cursor: pointer; }
 [hidden] { display: none !important; }
 
 /* ================= 도구 상자 — 시안처럼 연회색 띠 위의 흰 상자 ================= */
-.toolbar-shell { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--band); padding: 8px 0 12px; transition: box-shadow .2s; }
+.toolbar-shell { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--band); padding: 6px 0 8px; transition: box-shadow .2s; }
 /* 머리띠 오른쪽 위(로그아웃 위) — 공지·결제하기 | 알림·밤낮. 메뉴 글자(top 32) 위 빈 자리에 작게 */
-.g-util { position: absolute; right: 0; top: 3px; display: flex; align-items: center; gap: 18px; }   /* 대문 시험 ~ 로그아웃 사이를 넉넉히(알림 · 밤낮이 붙어 보이지 않게) */
+.g-util { position: absolute; right: 0; top: 2px; display: flex; align-items: center; gap: 18px; }   /* 대문 시험 ~ 로그아웃 사이를 넉넉히(알림 · 밤낮이 붙어 보이지 않게) */
 .g-util .u-sep { margin: 0 4px; }
-.g-util .u-link { height: 28px; font-size: 15px; color: rgba(255, 255, 255, 0.78) !important; }
+.g-util .u-link { height: 24px; font-size: 13.5px; color: rgba(255, 255, 255, 0.78) !important; }
 .g-util .u-link svg, .g-util .u-ico { color: rgba(255, 255, 255, 0.78) !important; }
-.g-util .u-link svg { width: 17px; height: 17px; }
+.g-util .u-link svg { width: 15px; height: 15px; }
 .g-util .u-link.pay, .g-util .u-link.pay svg { color: #9fc0ff !important; }
 .g-util .u-link:hover, .g-util .u-ico:hover { background: rgba(255, 255, 255, 0.12); color: #fff !important; }
 .g-util .u-link:hover svg { color: #fff !important; }
-.g-util .u-ico { width: 28px; height: 28px; }
-.g-util .u-ico svg { width: 18px; height: 18px; }
+.g-util .u-ico { width: 24px; height: 24px; }
+.g-util .u-ico svg { width: 16px; height: 16px; }
 .g-util .u-sep { background: rgba(255, 255, 255, 0.28); height: 13px; }
 .g-util .u-ico .dot { top: 4px; right: 4px; box-shadow: 0 0 0 1.5px var(--nav); }
 .g-util .u-bell { margin-right: 8px; }   /* 알림 종 — 이름과 넉넉히 */
-.g-util .u-ico.theme-box { width: 22px; height: 22px; margin-left: -4px; border: 1px solid var(--nav-text); border-radius: 5px; color: var(--nav-text) !important; }   /* 아래 펼치기 상자와 같은 크기 · 모서리 */
-.g-util .u-ico.theme-box svg { width: 14px; height: 14px; }
+.g-util .u-ico.theme-box { width: 20px; height: 20px; margin-left: -4px; border: 1px solid var(--nav-text); border-radius: 5px; color: var(--nav-text) !important; }   /* 아래 펼치기 상자와 같은 크기 · 모서리 */
+.g-util .u-ico.theme-box svg { width: 13px; height: 13px; }
 /* 이름 ▼ · 로그아웃 — 위 작은 줄 안(밤낮 오른쪽). 공지 · 결제하기와 같은 규격: 높이 28 · 글자 15 · 그림 17 */
-.gnb .g-util .g-user { position: relative; left: auto; top: auto; height: 28px; order: 0; }
-.g-util .g-login, .g-util .g-out, .g-util .g-join { height: 28px; font-size: 15px; font-weight: 600; }
-.g-util .g-login .pic { width: 20px; height: 28px; color: rgba(255, 255, 255, 0.78); }
-.g-util .g-login .pic svg { width: 17px; height: 17px; }
+.gnb .g-util .g-user { position: relative; left: auto; top: auto; height: 24px; order: 0; }
+.g-util .g-login, .g-util .g-out, .g-util .g-join { height: 24px; font-size: 13.5px; font-weight: 600; }
+.g-util .g-login .pic { width: 18px; height: 24px; color: rgba(255, 255, 255, 0.78); }
+.g-util .g-login .pic svg { width: 15px; height: 15px; }
 .g-util .g-login .txt { min-width: 0; }
-.g-util .g-arrow { height: 28px; margin-left: 3px; }
+.g-util .g-arrow { height: 24px; margin-left: 3px; }
 .g-util .g-arrow i { top: 1px; border-left-width: 4px; border-right-width: 4px; border-top-width: 6px; }
 .g-util .g-out, .g-util .g-join { margin-left: 12px; font-weight: 400; color: rgba(255, 255, 255, 0.78) !important; }   /* 공지 · 결제하기와 같은 굵기 · 색 — 이름만 진하게 */
-.g-util .g-pop.user { top: 34px; }
+.g-util .g-pop.user { top: 30px; }
 /* 하위 탭 줄 — 참고 시안처럼 흰 띠, 아래 #D8E0EE 선으로 단을 나눈다. 밑줄은 ::after 막대(테두리는 둥근 모서리로 U자가 된다) */
 /* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
    하위 탭 글자 — 물건상세(물건정보~입찰가산정) · 물건등록(자동등록 · 직접입력) 등 모든 탭 줄이 이 값 하나를 쓴다.
    창이 좁아지면 아래 @media 에서 이 값만 바꾼다 */
-:root { --menu-shift: min(calc(var(--menu-fs) * 2), max(0px, calc((100vw - 1200px) / 6))); --menu-fs: 16.2px; --tab-fs: 14.4px; --tab-px: 20px; --tab-h: 40px; }
+:root { --menu-shift: min(calc(var(--menu-fs) * 2), max(0px, calc((100vw - 1200px) / 6))); --menu-fs: 16.2px; --tab-fs: 14.4px; --tab-px: 20px; --tab-h: 36px; }
 /* 제목 글자 — 웹 한 곳. 카드 제목 · 큰 제목 · 화면 제목(10-31 메뉴 · 탭과 함께 10% 줄임: 16→14.4 · 18→16.2 · 20→18). 앱 화면 부품은 var(--title-fs, 16px) 로 읽어 앱은 그대로 */
 :root { --title-fs: 14.4px; --title-lg-fs: 16.2px; --title-xl-fs: 18px; } /* 하위 탭 높이도 한 값 — 시장분석 · 물건상세 하위 탭과 물건등록 탭이 같이 쓴다 */
 /* 카드 안쪽 여백 — 모든 웹 카드가 이 값을 쓴다.
@@ -873,7 +873,7 @@ body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) :is(.foot, .fo
    남색 머리띠 → [하위 탭 줄] → 필터 상자(.toolbar-shell) 를 한 덩어리로 위에 붙인다. 어느 화면이든
    필터 상자는 .toolbar-shell 로 감싸기만 하면 된다. 높이는 변수로 — 머리띠 --gnb-h, 하위 탭 줄 --subtab-h.
    화면 폭과 상관없이 늘 고정한다. 좁은 화면에선 머리띠가 두 줄이 되므로 --gnb-h 는 syncStickTop() 이 실제 높이로 맞춘다 */
-:root { --gnb-h: 70px; --subtab-h: 45px; --stick-top: env(safe-area-inset-top, 0px); }
+:root { --gnb-h: 60px; --subtab-h: 37px; --stick-top: env(safe-area-inset-top, 0px); }
 .gnb { position: sticky; top: var(--stick-top); }
 .subtabs { top: calc(var(--stick-top) + var(--gnb-h)); }
 .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h)); }
@@ -906,7 +906,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .u-ico:hover { background: var(--surface-3); color: var(--text); }
 .u-ico svg { width: 18px; height: 18px; }
 .u-ico .dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: #ff4d4f; box-shadow: 0 0 0 1.5px var(--band); }
-.crumbs { display: flex; justify-content: flex-start; align-items: center; gap: 12px; height: 30px; padding-left: 2px; font-size: 13px; color: var(--muted); }
+.crumbs { display: flex; justify-content: flex-start; align-items: center; gap: 12px; height: 26px; padding-left: 2px; font-size: 13px; color: var(--muted); }
 /* 경로는 오른쪽 끝 — 아래 상자들의 오른쪽 끝선에 맞춘다. 모든 화면 같게(선정물건 · 물건상세 · 물건등록 · 임장경로 · 시장분석 · 낙찰이후 · 마이페이지) */
 :is(#crumbSlotList, #crumbSlotItem, #crumbSlotAppPage, #crumbSlotMy, #crumbSlotReg, #crumbSlotTrip, #crumbSlotMarket, #crumbSlotInfo) > .crumbs { justify-content: flex-end; padding-left: 0; padding-right: 2px; }
 /* 낙찰이후 등 앱 화면 안 경로도 오른쪽 끝(제자리) — 탭 줄로 끌어올리면 안내 띠 · 상자와 겹치는 화면이 있었다 */
@@ -1021,7 +1021,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .demo-note { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 9px 14px; border-radius: 8px; background: #fff7e6; border: 1px solid #f5d79e; color: #8a5a00; font-size: 13px; }
 :root[data-theme="dark"] .demo-note { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #fbbf24; }
 /* ===== 물건상세 — 고정 카드(앱 adp-sticky-head) ===== */
-.item-head { row-gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+.item-head { row-gap: 6px; padding-top: 8px; padding-bottom: 8px; }
 .ih-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .ih-back { flex: 0 0 auto; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--text-2); display: grid; place-items: center; }
 .ih-back:hover { background: var(--surface-3); color: var(--text); }
@@ -1044,7 +1044,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .ih-stage { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-family: inherit; }
 .ih-stage .caret { font-style: normal; font-size: 11px; opacity: .8; }
 /* 1줄: 종류 칩 · 중요도·매각구분·면적 / 2줄: 주소 복사(종류 칩 아래) · 주소 */
-.ih-prop { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 6px 10px; padding: 8px 12px; border-radius: 8px; background: var(--surface-2); }
+.ih-prop { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; padding: 6px 12px; border-radius: 8px; background: var(--surface-2); }
 .ih-line { display: flex; align-items: center; gap: 10px; min-width: 0; grid-column: 2 / 4; }
 /* 전체 접기 — 별 아래, 앱 .adp-fold-all 과 같은 모양(34×26 · 16px 화살표) */
 .ih-fold { grid-column: 3; justify-self: end; width: 34px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -2957,10 +2957,11 @@ html, body { overflow-x: clip; }
 
 /* ================= 좁은 화면 — 시안 좌표를 지킬 수 없으면 줄을 세운다 ================= */
 @media (max-width: 1240px) {
-  .gnb-in { display: flex; align-items: center; gap: 22px; }
+  .gnb-in { display: flex; align-items: flex-end; gap: 22px; padding-bottom: 7px; box-sizing: border-box; }   /* 메뉴 줄은 아래에 — 위 작은 줄(공지 ~ 밤낮)과 겹치지 않게 */
+  .gnb-in > .g-logo { align-self: center; }
   .gnb .g-logo, .gnb .g-menu, .gnb .g-icons, .gnb .g-box, .gnb .g-box[data-tip], .gnb .g-user { position: relative; left: auto; top: auto; }
   :root { --menu-fs: 14.4px; --tab-fs: 13.5px; --tab-px: 14px; }
-  .g-menu::after { bottom: -20px; }
+  .g-menu::after { bottom: -7px; }   /* 띠 바닥(60)에 붙는다 — 메뉴 줄 아래 여백 7 */
   .g-menu.m4 { margin-left: auto; }
   .g-icons { order: 10; } .g-box { order: 11; flex: 0 0 auto; }
   .g-user { order: 12; } .g-login, .g-out, .g-join { font-size: var(--menu-fs); }
@@ -3087,7 +3088,7 @@ html, body { overflow-x: clip; }
 /* 사건 카드 — 물건상세 카드와 줄 높이를 같게(첫 줄 32 · 둘째 줄 30(별 자리) · 아래 묶음 78) → 카드 140, 탭 줄 높이가 손품조사와 같다 */
 .app-page[data-k="postwin"] .pw-webhead .ih-top { min-height: 32px; }
 .app-page[data-k="postwin"] .pw-webhead .ih-line { min-height: 30px; align-items: center; }
-.app-page[data-k="postwin"] .pw-webhead .ih-prop { min-height: 78px; box-sizing: border-box; }
+.app-page[data-k="postwin"] .pw-webhead .ih-prop { min-height: 70px; box-sizing: border-box; }
 .app-page[data-k="postwin"] .pw-chaptabs { position: relative; height: 40px; box-sizing: border-box; margin: 0 !important; border-bottom: 0 !important; overflow: visible !important; }
 .app-page[data-k="postwin"] .pw-chaptabs::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--boxtab-line); z-index: 3; pointer-events: none; }
 .app-page[data-k="postwin"] .pw-crumbrow { position: relative; z-index: 4; height: 0; margin: 0 !important; padding: 0 !important; }
