@@ -2501,7 +2501,7 @@ const taxRefIdx = computed(() => {
   const g = sc ? scGain(sc) : 0;
   return g > 0 ? TAX_REF.findIndex(([limit]) => g <= limit) : -1;
 });
-/** 오른쪽 상자 높이 맞춤 — 세율표는 입찰정보와 같게, 계산 공식 아래 끝은 수익 아래 끝과 같게 */
+/** 오른쪽 상자 높이 맞춤 — 계산 공식 아래 끝을 수익 아래 끝과 같게 */
 let bidaRaf = 0;
 const measureBidaTop = () => {
   bidaRaf = 0;
@@ -2514,10 +2514,6 @@ const measureBidaTop = () => {
     const h = `${Math.max(0, want)}px`;
     if (formula.style.minHeight !== h) formula.style.minHeight = h;
   }
-  // 개인소득세율 상자 높이를 왼쪽 입찰정보 상자와 같게 — 줄 간격은 그 높이에 고르게 나눈다
-  const info = document.querySelector('.bida-col > .bida-card') as HTMLElement | null;
-  const taxBox = document.querySelector('.bida-right .bida-taxr') as HTMLElement | null;
-  if (info && taxBox) { const h = `${Math.round(info.getBoundingClientRect().height)}px`; if (taxBox.style.minHeight !== h) taxBox.style.minHeight = h; }
 };
 const onBidaResize = () => { if (!bidaRaf) bidaRaf = requestAnimationFrame(measureBidaTop); };
 let bidaRo: ResizeObserver | null = null;
@@ -6997,19 +6993,9 @@ const goBack = () => router.back();
                   <div class="bx-row goal"><span class="bx-k"><label :for="`bida-goal-${si}`">목표 순이익</label></span><span class="bx-d">적으면 입찰가 역계산</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput :id="`bida-goal-${si}`" :model-value="Math.round(scAfterTaxProfit(sc))" class="bx-f amt" live-group @update:model-value="scSetAfterTaxProfit(sc, $event)" /></span></div>
                 </section>
               </div>
-              <!-- 오른쪽 — 개인소득세율 · 돈이 나가는 순서. 왼쪽과 함께 스크롤 -->
+              <!-- 오른쪽 — 돈이 나가는 순서 · 개인소득세율 · 계산 공식. 왼쪽과 함께 스크롤 -->
                 <div class="bida-right">
-                  <!-- 개인소득세율 — 따로 있던 칸을 상자로 감싸 예상수익분석 안으로. 고른 안의 사업소득금액이 걸리는 구간을 짚어 준다 -->
-                <section class="bida-card bida-taxr">
-                  <h3 class="bida-h">개인소득세율<small>종합소득세</small></h3>
-                  <div v-for="(t, ti) in TAX_REF" :key="t[1]" :class="['bx-row', { last: ti === TAX_REF.length - 1, cur: ti === taxRefIdx }]">
-                    <span class="bx-k">{{ t[1] }}</span>
-                    <span class="bx-d"><span v-if="ti === taxRefIdx" class="cur-chip">{{ sc.label }} 구간</span></span>
-                    <span class="bx-p"><b class="bx-f pct ro">{{ t[2] }}</b><i>%</i></span>
-                    <span class="bx-a"><b class="bx-f ro">{{ t[3] ? `공제 ${t[3].toLocaleString('ko-KR')}만` : '-' }}</b></span>
-                  </div>
-                </section>
-                <section class="bida-card bida-cash">
+                  <section class="bida-card bida-cash">
                     <h3 class="bida-h">돈이 나가는 순서<small>언제 얼마가 필요한지 미리 준비해 두세요.</small></h3>
                     <div class="bidc-steps">
                       <div v-for="step in scCashOut(sc).steps" :key="step.no" class="bidc-step">
@@ -7026,6 +7012,16 @@ const goBack = () => router.back();
                       <span v-for="row in scCashOut(sc).later" :key="row.label" class="row"><em>{{ row.label }}</em>{{ cashMoney(row.amount) }}</span>
                     </div>
                   </section>
+                <!-- 개인소득세율 — 따로 있던 칸을 상자로 감싸 예상수익분석 안으로. 고른 안의 사업소득금액이 걸리는 구간을 짚어 준다 -->
+                <section class="bida-card bida-taxr">
+                  <h3 class="bida-h">개인소득세율<small>종합소득세</small></h3>
+                  <div v-for="(t, ti) in TAX_REF" :key="t[1]" :class="['bx-row', { last: ti === TAX_REF.length - 1, cur: ti === taxRefIdx }]">
+                    <span class="bx-k">{{ t[1] }}</span>
+                    <span class="bx-d"><span v-if="ti === taxRefIdx" class="cur-chip">{{ sc.label }} 구간</span></span>
+                    <span class="bx-p"><b class="bx-f pct ro">{{ t[2] }}</b><i>%</i></span>
+                    <span class="bx-a"><b class="bx-f ro">{{ t[3] ? `공제 ${t[3].toLocaleString('ko-KR')}만` : '-' }}</b></span>
+                  </div>
+                </section>
                 <!-- 계산 공식 — 지금 고른 안의 숫자로 풀어 보여 준다 -->
                 <section class="bida-card bida-formula">
                   <h3 class="bida-h">계산 공식</h3>
