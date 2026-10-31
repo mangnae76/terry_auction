@@ -6919,9 +6919,7 @@ const goBack = () => router.back();
                 <button type="button" class="adp-pd-reset" title="이 안의 대출·취득세·법무비 비중을 기본값으로" @click.stop="resetScenarioRates(sc)">
                   <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /></svg>초기화
                 </button>
-                <button v-if="profitScenarios.length > 1" type="button" class="adp-pd-reset adp-pd-del" :aria-label="`${sc.label} 삭제`" :title="`${sc.label} 삭제`" @click.stop="removeProfitScenarioAt(si)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
-                </button>
+                
               </span>
             </div>
 
