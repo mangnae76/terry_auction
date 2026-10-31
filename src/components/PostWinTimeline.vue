@@ -2,7 +2,9 @@
 // 낙찰이후 · 진행절차 (웹) — 고른 낙찰 물건의 낙찰일(없으면 입찰기일)에서 시작해
 // 단계마다 '앞 단계 + N일'로 날짜를 셈한다. [완료]를 누르면 그날이 적히고 뒤 단계가 따라 밀린다.
 // 단계는 물건마다 저장한다(auction.postWinFlow). 처음 열면 기본 절차로 채운다.
-import { computed, ref } from 'vue';
+import { computed, inject, ref } from 'vue';
+// 웹은 구분 줄 이름을 '진행절차' 로(앱은 '법원 진행절차' 그대로)
+const webEmbedTl = inject<boolean>('webEmbed', false);
 import type { AuctionDetail, PostWinFlow, PostWinStep } from '../types/auction';
 import { STEP_KEY_BY_NAME, STEP_TODOS, type StepTodo } from '../services/postWinTodos';
 import AppConfirm from './AppConfirm.vue';
@@ -255,7 +257,7 @@ const resetDefault = () => {
 
       <!-- 구분 줄 — 왼쪽 법원 진행절차 · 오른쪽 해야 할 일(누르면 상세보기). 칸 폭은 아래 줄과 같다 -->
       <div class="pwt-colhead" aria-hidden="true">
-        <span class="c-main">법원 진행절차</span>
+        <span class="c-main">{{ webEmbedTl ? '진행절차' : '법원 진행절차' }}</span>
         <span class="c-todo">해야 할 일<em>누르면 상세보기</em></span>
         <span class="c-ctrl" />
       </div>
