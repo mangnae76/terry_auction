@@ -259,7 +259,7 @@ const formKeys = ref<FormKey[] | null>(null);
 // 필요경비 · 사업경비는 자금관리의 같은 이름 탭과 같은 기록이다
 // 매물등록(예전 매도·임대 탭) — 어느 중개사에 얼마에 내놨는지의 기록. 세금 셈과는 따로지만 흐름의 끝이라 맨 뒤에
 type FlowSub = 'steps' | 'evict' | 'need' | 'biz' | 'tax' | 'sell';
-const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['need', '필요경비'], ['biz', '사업경비'], ['tax', '세금분석'], ['sell', '매물등록']];
+const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['tax', '세금분석'], ['need', '필요경비'], ['biz', '사업경비'], ['sell', '매물등록']];   // 필요경비 · 사업경비는 세금분석 오른쪽
 const flowSub = ref<FlowSub>((() => {
   try {
     const v = sessionStorage.getItem('pw.flow.sub');
