@@ -2501,8 +2501,7 @@ const taxRefIdx = computed(() => {
   const g = sc ? scGain(sc) : 0;
   return g > 0 ? TAX_REF.findIndex(([limit]) => g <= limit) : -1;
 });
-/** 오른쪽 '돈이 나가는 순서' 가 붙을 높이 — 예상수익분석 고정 머리 바로 아래 */
-const bidaTop = ref(0);
+/** 오른쪽 상자 높이 맞춤 — 세율표는 입찰정보와 같게, 돈이 나가는 순서의 합계 줄은 왼쪽 필요경비합계와 같은 높이 */
 let bidaRaf = 0;
 const measureBidaTop = () => {
   bidaRaf = 0;
@@ -2523,14 +2522,6 @@ const measureBidaTop = () => {
   const info = document.querySelector('.bida-col > .bida-card') as HTMLElement | null;
   const taxBox = document.querySelector('.bida-right .bida-taxr') as HTMLElement | null;
   if (info && taxBox) { const h = `${Math.round(info.getBoundingClientRect().height)}px`; if (taxBox.style.minHeight !== h) taxBox.style.minHeight = h; }
-  const el = document.querySelector('.adp-profit-sticky');
-  if (!el) return;
-  const base = Math.round((parseFloat(getComputedStyle(el).top) || 0) + el.getBoundingClientRect().height + 12);
-  const box = document.querySelector('.bida-right');
-  const h = box ? box.getBoundingClientRect().height : 0;
-  // 세율표 + 돈이 나가는 순서가 화면보다 길면 아래 끝이 화면 안에 들도록 위로 올려 붙인다
-  const v = Math.min(base, Math.round(window.innerHeight - h - 12));
-  if (v !== bidaTop.value) bidaTop.value = v;
 };
 const onBidaResize = () => { if (!bidaRaf) bidaRaf = requestAnimationFrame(measureBidaTop); };
 let bidaRo: ResizeObserver | null = null;
@@ -2540,8 +2531,8 @@ const watchBida = () => nextTick(() => {
   onBidaResize();
 });
 watch(() => [activeTab.value, webNew.value, selectedPlan.value, profitScenarios.value.length], watchBida);
-onMounted(() => { window.addEventListener('resize', onBidaResize); window.addEventListener('scroll', onBidaResize, { passive: true }); watchBida(); });
-onBeforeUnmount(() => { window.removeEventListener('resize', onBidaResize); window.removeEventListener('scroll', onBidaResize); if (bidaRaf) cancelAnimationFrame(bidaRaf); bidaRo?.disconnect(); });
+onMounted(() => { window.addEventListener('resize', onBidaResize); watchBida(); });
+onBeforeUnmount(() => { window.removeEventListener('resize', onBidaResize); if (bidaRaf) cancelAnimationFrame(bidaRaf); bidaRo?.disconnect(); });
 /* 새화면은 칸이 늘 열려 있다. 값이 실제로 바뀌었을 때만 손을 멈추면 적는다(물건을 읽은 것만으로는 적지 않는다) */
 let profitJson = '';
 watch(() => auction.value?.id, () => { profitJson = ''; });
@@ -7010,8 +7001,8 @@ const goBack = () => router.back();
                   <div class="bx-row goal"><span class="bx-k"><label :for="`bida-goal-${si}`">목표 순이익</label></span><span class="bx-d">적으면 입찰가 역계산</span><span class="bx-p"></span><span class="bx-a"><FormattedNumberInput :id="`bida-goal-${si}`" :model-value="Math.round(scAfterTaxProfit(sc))" class="bx-f amt" live-group @update:model-value="scSetAfterTaxProfit(sc, $event)" /></span></div>
                 </section>
               </div>
-              <!-- 돈이 나가는 순서 — 한 상자. 왼쪽을 내려 보는 동안 위에 붙어 따라온다 -->
-                <div class="bida-right" :style="bidaTop ? { top: `${bidaTop}px` } : undefined">
+              <!-- 오른쪽 — 개인소득세율 · 돈이 나가는 순서. 왼쪽과 함께 스크롤 -->
+                <div class="bida-right">
                   <!-- 개인소득세율 — 따로 있던 칸을 상자로 감싸 예상수익분석 안으로. 고른 안의 사업소득금액이 걸리는 구간을 짚어 준다 -->
                 <section class="bida-card bida-taxr">
                   <h3 class="bida-h">개인소득세율<small>종합소득세</small></h3>
@@ -13190,7 +13181,7 @@ select.adp-pub-input option { text-align: center; }
 .bida-auto .bida-h { margin-bottom: 8px; font-size: 15px; }
 .bida-auto ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: #4b5563; }
 .bida-auto .todo { margin: 10px 0 0; font-size: 12px; color: #9aa3b2; }
-.bida-right { position: sticky; top: 0; align-self: start; min-width: 0; }   /* 왼쪽을 내려 보는 동안 위에 붙어 따라온다 */
+.bida-right { align-self: start; min-width: 0; }   /* 따라오지 않는다 — 왼쪽과 함께 스크롤(따라오면 보기 불편했다) */
 .bida-cash .bidc-step { grid-template-columns: 110px 1fr auto; }   /* 반 폭 — 때 칸을 줄인다 */
 .bida-cash .bidc-later.boxed { margin-top: 12px; }
 /* 필요한 내 돈 합계 — 왼쪽 필요경비합계 줄과 같은 크기(높이 48 · 글 14 / 금액 17 · 모서리 8 · 양옆 -12) */
