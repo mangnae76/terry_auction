@@ -2472,6 +2472,7 @@ const confirmedIdx = computed(() => confirmedPlanOf(auction.value));
 const confirmPlan = (ti: number) => {
   const a = auction.value; if (!a || !profitScenarios.value[ti]) return;
   a.confirmedPlan = ti;
+  selectedPlan.value = ti;   // 확정하면 그 안을 바로 보여 준다 — 요약 카드 · 표 값이 확정 안으로 바뀐다
   persistSoon();
 };
 /** 안 탭 — 있는 안은 고르고, 바로 다음 빈 칸은 눌러서 안을 하나 더 만든다 */
