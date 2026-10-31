@@ -850,7 +850,7 @@ body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) .foot { displa
   top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px)) !important; z-index: 20 !important;
 }
 .res > :not(.res-head) { margin-left: calc(var(--card-inset) / 2); margin-right: calc(var(--card-inset) / 2); }
-.subtabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 31; background: var(--band); border-bottom: 1px solid var(--subtab-line); }
+.subtabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 31; background: var(--surface); border-bottom: 1px solid var(--subtab-line); box-shadow: 0 1px 0 rgba(15, 23, 42, .03); }   /* 흰 바탕 — 회색 띠라 눈에 잘 안 들어왔다 */
 /* ===== 틀 고정 (모든 화면 공통 모듈) =====
    남색 머리띠 → [하위 탭 줄] → 필터 상자(.toolbar-shell) 를 한 덩어리로 위에 붙인다. 어느 화면이든
    필터 상자는 .toolbar-shell 로 감싸기만 하면 된다. 높이는 변수로 — 머리띠 --gnb-h, 하위 탭 줄 --subtab-h.
@@ -861,11 +861,14 @@ body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) .foot { displa
 .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h)); }
 body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h)); }
 .subtabs-in { display: flex; align-items: stretch; gap: 8px; height: var(--tab-h); }
-.subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--muted); white-space: nowrap; transition: color .15s; }
+.subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--text-2); white-space: nowrap; transition: color .15s; }
 .subtab svg { width: 16px; height: 16px; }
 .subtab:hover { color: var(--text); }
 .subtab.on { color: var(--blue); font-weight: 800; }
-.subtab::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px 2px 0 0; background: var(--blue); transform: scaleX(0); transition: transform .2s ease; }
+/* 지금 위치 — 줄 맨 앞 위 메뉴 이름(굵게) + 꺾쇠, 오른쪽에 가는 선으로 탭들과 나눈다 */
+.subtab-where { display: inline-flex; align-items: center; gap: 8px; align-self: center; height: 22px; padding: 0 18px 0 8px; margin-right: 4px; border-right: 1px solid var(--subtab-line); font-size: var(--tab-fs); font-weight: 800; color: var(--text); white-space: nowrap; }   /* 밤 화면에서도 읽히게 글자색 토큰 */
+.subtab-where svg { width: 14px; height: 14px; color: var(--faint); }
+.subtab::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 3px; border-radius: 2px 2px 0 0; background: var(--blue); transform: scaleX(0); transition: transform .2s ease; }
 .subtab:hover::after { transform: scaleX(1); opacity: .45; }
 .subtab.on::after { transform: scaleX(1); opacity: 1; animation: tab-bar-in .22s ease; }
 .crumb-slot { padding-top: 2px; }
@@ -4502,6 +4505,9 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
   };
   /* 선정물건도 같은 줄 — 맨 앞 '물건카드'가 목록, 나머지는 마지막으로 본 물건(없으면 목록 맨 위 물건)의 상세 탭 */
   SUBTABS.list = SUBTABS.item;
+  /* 하위 탭 줄 맨 앞 — 지금 어느 위 메뉴 안인지 굵게('선정물건 ›') */
+  const SUB_WHERE = { list: '선정물건', item: '선정물건', market: '시장분석', postwin: '낙찰관리', finance: '자금관리', more: '마이페이지', community: '커뮤니티' };
+  const whereTag = () => (SUB_WHERE[S.route] ? `<span class="subtab-where" aria-hidden="true">${SUB_WHERE[S.route]}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>` : '');
   function renderSubTabs() {
     syncCrumb();
     /* 자금관리는 마이페이지 아래 — 위 탭 줄은 마이페이지 그대로(자금관리에 불), 자금관리 다섯 탭은 화면 안 박스 탭(3단) */
@@ -4510,7 +4516,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) .foot { display: none; }
     const cur = S.route === 'list' ? 'cards' : S.route === 'market' ? S.marketTab : APP_PAGE_NAMES[S.route] ? subParent(S.route, S.pageTab[S.route]) : S.itemTab;
     /* 'hide' 탭(마이페이지 › 알림)은 줄에 세우지 않는다 — 종 아이콘 · 내 정보 카드로 들어가고, 그동안은 내 정보에 불 */
     const curOn = S.route === 'more' && cur === 'alerts' ? 'mypage' : cur;
-    $('subTabsIn').innerHTML = tabs ? tabs.filter((x) => x[3] !== 'hide').map(([k, ic, t]) => `<button type="button" class="subtab ${curOn === k ? 'on' : ''}" role="tab" aria-selected="${curOn === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
+    $('subTabsIn').innerHTML = tabs ? whereTag() + tabs.filter((x) => x[3] !== 'hide').map(([k, ic, t]) => `<button type="button" class="subtab ${curOn === k ? 'on' : ''}" role="tab" aria-selected="${curOn === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
     if (tabs) syncStickTop();
   }
   function render() {
