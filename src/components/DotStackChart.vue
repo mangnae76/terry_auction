@@ -11,7 +11,9 @@ export type DotView = { key: string; title: string; icon?: string; buckets: DotB
 
 const props = defineProps<{ rows: DongTradeDetailRow[]; views: DotView[] }>();
 
-const MIN_DOT = 9;                 // 점 지름 하한 — 한 건 = 점 하나로 그리고, 모자라는 자리는 판을 세로로 늘려 채운다(묶지 않는다)
+const MIN_DOT = 9;                 // 점 지름 하한
+const MAX_H = 900;                 // 판 높이 상한 — 이 안에 한 건씩 다 들어가면 묶지 않는다
+const PER_STEPS = [1, 10, 50, 100]; // 점 하나에 담는 건수 — 딱 떨어지는 수만
 const RARE = 0.01;                // 전체의 1% 미만 구간은 칸에서 뺀다(30평~ 2건 같은 칸이 판을 좁혔다)
 const EOK = 100_000_000;
 const thisYear = new Date().getFullYear();
@@ -104,17 +106,17 @@ const layout = (first: boolean) => {
   const tierOf = (r: DongTradeDetailRow) => COLOR_KEYS[colorKey.value].tier(r, years.value);
   const top = 46; const bottom = 34; const colW = W / Math.max(1, groups.length);
   const G = 3;
-  // 한 건 = 점 하나(지름 MIN_DOT)로 그릴 높이를 재서 판을 그만큼 늘린다(580 이상)
+  // 점 하나에 몇 건 — 1건이 기본, 판 높이(최대 MAX_H) 안에 다 못 들어갈 만큼 많을 때만 10 · 50 · 100건(2 · 3건 같은 어중간한 묶음은 읽기 어렵다)
+  const kMin = Math.max(1, Math.floor((colW - 14) / (MIN_DOT + G)));
+  const needH = (p: number) => Math.ceil(Math.max(1, ...groups.map((g) => Math.ceil(g.length / p))) / kMin) * (MIN_DOT + G) + top + bottom + 4;
+  per.value = PER_STEPS.find((p) => needH(p) <= MAX_H) ?? PER_STEPS[PER_STEPS.length - 1];
   {
-    const kk = Math.max(1, Math.floor((colW - 14) / (MIN_DOT + G)));
-    const need = Math.ceil(Math.max(1, ...groups.map((g) => g.length)) / kk) * (MIN_DOT + G) + top + bottom + 4;
-    const want = Math.round(Math.max(580, need));   // 위쪽 한도 없음 — 점을 묶지 않는다
+    const want = Math.round(Math.min(MAX_H, Math.max(580, needH(per.value))));
     const el = cv.value;
     if (el && Math.abs(want - H) > 2) { el.style.height = `${want}px`; resize(); }
   }
-  // 한 건 = 점 하나(per 1). 점 지름은 16 에서 줄여 가며 판 높이에 맞는 가장 큰 값
-  per.value = 1;
-  const counts = groups.map((g) => g.length); const max = Math.max(1, ...counts);
+  // 점 지름은 16 에서 줄여 가며 판 높이에 맞는 가장 큰 값
+  const counts = groups.map((g) => Math.ceil(g.length / per.value)); const max = Math.max(1, ...counts);
   for (D = 16; D > MIN_DOT; D -= 1) { const kk = Math.max(1, Math.floor((colW - 14) / (D + G))); if (Math.ceil(max / kk) * (D + G) <= H - top - bottom) break; }
   const k = Math.max(1, Math.floor((colW - 14) / (D + G)));
   const next: Dot[] = [];
@@ -265,7 +267,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dsc-sum > b { flex: none; font-weight: 800; color: #1f2a44; }
 .dsc-sum :deep(b) { font-weight: 800; color: #2b6df3; }
 .dsc-board { position: relative; background: #f6f8fb; border: 1px solid #e3e8f0; border-radius: 10px; padding: 12px 10px 6px; }
-.dsc-cv { display: block; width: 100%; height: 580px; }   /* 높이는 그릴 때 거래 수에 맞춰 다시 정한다(580 이상) */
+.dsc-cv { display: block; width: 100%; height: 580px; }   /* 높이는 그릴 때 거래 수에 맞춰 다시 정한다(580 ~ 900) */
 .dsc-tip { position: absolute; z-index: 5; pointer-events: none; display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; min-width: 200px; padding: 9px 11px; border-radius: 8px; background: #1f2937; color: #f3f4f6; font-size: 12.5px; line-height: 1.55; box-shadow: 0 10px 24px rgba(17, 24, 39, .25); }
 .dsc-tip b { font-weight: 600; color: #9aa6ba; }
 .dsc-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: #6b7280; }
