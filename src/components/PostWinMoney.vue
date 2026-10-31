@@ -313,12 +313,13 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
       <aside v-if="webEmbed" class="pwm-notice" role="note">
         <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 21h20L12 3Z" /><path d="M12 10v4" /><path d="M12 17.5h.01" /></svg></span>
         <div class="body">
-          <h4>세금 계산은 참고용 예상 금액입니다</h4>
+          <h4>중요 안내사항</h4>
           <ul>
-            <li>일반적인 기준으로 계산했습니다. 실제 세금은 소득 · 보유 자산 · 공제 · 세법 개정에 따라 달라집니다.</li>
+            <li>세금 계산은 참고용 예상 금액입니다. 일반적인 기준으로 계산했으며, 실제 세금은 소득 · 보유 자산 · 공제 · 세법 개정에 따라 달라집니다.</li>
             <li>장기보유특별공제 · 1세대1주택 비과세 등 개인별 공제는 빠져 있습니다.</li>
-            <li class="key">신고 전 반드시 세무사와 상담하세요. 이 계산 결과에 대한 법적 책임은 지지 않습니다.</li>
+            <li class="key">신고 전 반드시 세무사와 상담하세요.</li>
           </ul>
+          <p class="last">본 서비스는 세금 계산 결과에 대한 법적 책임을 지지 않으며, 최종 의사결정은 전문가의 상담을 받으신 후 진행하시기를 권장드립니다.</p>
         </div>
       </aside>
     </template>
@@ -427,4 +428,5 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-notice li { position: relative; padding-left: 14px; font-size: 14px; font-weight: 400; line-height: 1.6; color: #4b5563; }
 .pwm-notice li::before { content: ""; position: absolute; left: 2px; top: 9px; width: 5px; height: 5px; border-radius: 50%; background: #f59e0b; }
 .pwm-notice li.key { color: #92400e; }
+.pwm-notice p.last { margin: 4px 0 0; padding-top: 10px; border-top: 1px dashed #f3dfb8; font-size: 13px; font-weight: 400; line-height: 1.6; color: #6b7280; }
 </style>
