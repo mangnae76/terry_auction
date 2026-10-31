@@ -164,7 +164,7 @@ button { cursor: pointer; }
 .g-logo:hover img { transform: rotate(-4deg) scale(1.04); }
 .g-menu {
   position: absolute; top: 24px; height: 26px; display: inline-flex; align-items: center;
-  font-size: var(--menu-fs); font-weight: 500; letter-spacing: -0.3px; white-space: nowrap;
+  font-size: var(--menu-fs); font-weight: 600; letter-spacing: -0.3px; white-space: nowrap;
   transition: color .15s;
 }
 .g-menu::after {
@@ -891,10 +891,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .reg-tabbar .sub-crumb { position: relative; z-index: 1; margin-left: auto; align-self: center; }   /* 탭 줄 흰 바탕(::before) 위로 */
 .sub-crumb > .crumbs { height: var(--tab-h); padding: 0 2px 0 0 !important; justify-content: flex-end; }
 .sub-crumb:empty { display: none; }
-.subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 500; color: var(--text-2); white-space: nowrap; transition: color .15s; }
+.subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--text-2); white-space: nowrap; transition: color .15s; }
 .subtab svg { width: 16px; height: 16px; }
 .subtab:hover { color: var(--text); }
-.subtab.on { color: var(--nav); font-weight: 500; }   /* 10-31 메인 · 하위 탭 모두 500 — 고른 탭은 색 · 주황 밑줄로 */   /* 시안 C — 고른 탭은 남색 글자 + 위 메뉴와 같은 주황 밑줄 */
+.subtab.on { color: var(--nav); font-weight: 600; }   /* 10-31 메인 · 하위 탭 모두 600 — 고른 탭은 색 · 주황 밑줄로 */   /* 시안 C — 고른 탭은 남색 글자 + 위 메뉴와 같은 주황 밑줄 */
 :root[data-theme="dark"] .subtab.on { color: var(--text); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .subtab.on { color: var(--text); } }
 /* 지금 위치 — 줄 맨 앞 위 메뉴 이름(굵게) + 꺾쇠, 오른쪽에 가는 선으로 탭들과 나눈다 */
@@ -2108,10 +2108,10 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 /* 물건등록 탭 띠도 시장분석 · 물건상세 하위 탭 띠와 같은 높이: 탭(--tab-h 44) + 아래 선 1 = 45 */
 .reg-tabbar { height: calc(var(--tab-h) + 1px); }
 .reg-tabbar .reg-tab { align-self: flex-start; }
-.reg-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; height: var(--tab-h); padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 500; color: var(--text-2); white-space: nowrap; transition: color .15s; }
+.reg-tab { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 7px; height: var(--tab-h); padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--text-2); white-space: nowrap; transition: color .15s; }
 .reg-tab svg { width: 17px; height: 17px; }
 .reg-tab:hover { color: var(--text); }
-.reg-tab.on { color: var(--nav); font-weight: 500; }   /* 하위 탭 줄과 같게(시안 C) — 남색 글자 + 주황 밑줄, 밤엔 밝은 글자 */
+.reg-tab.on { color: var(--nav); font-weight: 600; }   /* 하위 탭 줄과 같게(시안 C) — 남색 글자 + 주황 밑줄, 밤엔 밝은 글자 */
 :root[data-theme="dark"] .reg-tab.on { color: var(--text); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .reg-tab.on { color: var(--text); } }
 .reg-tab::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 0; height: 3px; border-radius: 2px 2px 0 0; background: var(--nav-orange); transform: scaleX(0); transition: transform .2s ease; }
