@@ -267,10 +267,12 @@ button { cursor: pointer; }
 .g-util .u-ico { width: 20px; height: 20px; }
 .g-util .u-ico svg { width: 14px; height: 14px; }
 .g-util .u-sep { background: rgba(255, 255, 255, 0.28); height: 13px; }
-.g-util .u-ico .dot { top: 4px; right: 4px; box-shadow: 0 0 0 1.5px var(--nav); }
+.g-util .u-ico .dot { top: 0; right: -6px; box-shadow: 0 0 0 1.5px var(--nav); }   /* 종을 가리지 않게 오른쪽 위 바깥 */
+.g-util .u-link .u-dot { align-self: flex-start; width: 6px; height: 6px; margin: 2px 0 0 2px; border-radius: 50%; background: #ff4d4f; }   /* 새 공지 — '공지' 글자 오른쪽 위 */
+.g-util .u-link .u-dot[hidden] { display: none; }
 .g-util .u-bell { margin-right: 8px; }   /* 알림 종 — 이름과 넉넉히 */
-.g-util .u-ico.theme-box { width: 18px; height: 18px; margin-left: -4px; border: 1px solid var(--nav-text); border-radius: 5px; color: var(--nav-text) !important; }   /* 아래 펼치기 상자와 같은 크기 · 모서리 */
-.g-util .u-ico.theme-box svg { width: 11px; height: 11px; }
+.g-util .u-ico.theme-box { width: 18px; height: 18px; margin-left: -4px; border: 0; border-radius: 5px; color: var(--nav-text) !important; }   /* 아래 펼치기 상자와 같은 크기 · 모서리 */
+.g-util .u-ico.theme-box svg { width: 15px; height: 15px; }   /* 상자 없이 아이콘만 */
 /* 이름 ▼ · 로그아웃 — 위 작은 줄 안(밤낮 오른쪽). 공지 · 결제하기와 같은 규격: 높이 28 · 글자 15 · 그림 17 */
 .gnb .g-util .g-user { position: relative; left: auto; top: auto; height: 20px; order: 0; }
 .g-util .g-login, .g-util .g-out, .g-util .g-join { height: 20px; font-size: 12px; font-weight: 600; }
@@ -3289,7 +3291,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <div class="g-util" aria-label="바로가기">
       <!-- 시험 — 소개 영상 대문. 아직 공개 전이라 이 컴퓨터(localhost)에서만 보인다 (확정되면 빼거나 자리를 옮긴다) -->
       <a class="u-link" href="/promo-test.html" id="promoTestLink" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m10 9.5 5 2.5-5 2.5z"/></svg>대문 시험</a>
-      <button type="button" class="u-link" data-act="go-community" data-name="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>공지</button>
+      <button type="button" class="u-link" data-act="go-community" data-name="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>공지<span class="u-dot" id="noticeDot" hidden></span></button>
       <button type="button" class="u-link pay" data-act="go-more" data-name="결제하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>결제하기</button>
       <!-- 웹 이용가이드 — 내용을 만들면 WEB_GUIDE_URL 에 주소만 적는다(비어 있으면 준비 중) -->
       <button type="button" class="u-link" data-act="web-guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5M9 8h7M9 12h5"/></svg>이용가이드</button>
@@ -5756,6 +5758,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const auth = T.useAuthStore(); const st = T.useAuctionStore();
     Object.assign(CLOUD, { T, auth, store: st });
     auth.initialize();
+    /* 새 공지 · 이벤트 · 업데이트 — 앱 공지 탭과 같은 셈으로 '공지' 옆 점 */
+    if (T.useBoardNew) { try { const bn = T.useBoardNew(); T.watch(() => bn.any.value, (v) => { const d = $('noticeDot'); if (d) d.hidden = !v; }, { immediate: true }); } catch (e) { /* 점만 못 띄운다 */ } }
     const fromStore = () => {
       if (!CLOUD.on) return;
       const all = [...st.auctions, ...st.archivedAuctions, ...st.hiddenAuctions];
