@@ -392,7 +392,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
       <!-- 최종 예상 순수익(명도비용 포함) — 두 시나리오를 상자 둘로 알려 준다(고르거나 확정하지 않는다). 명도비용은 명도분석 합계 그대로 -->
       <section v-if="webEmbed" class="pwm-finals">
         <h3 class="pwm-finals-h"><svg class="pwm-h3-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18" /><path d="m7 15 4-4 3 3 5-6" /></svg>최종 예상 순수익 <em>명도비용 포함</em></h3>
-        <div :class="['pwm-finals-grid', { three: evScenarios.length === 3 }]">
+        <div :class="['pwm-finals-grid', { three: evScenarios.length === 3, rows: webEmbed }]">
           <article v-for="([k, name, sub], ni) in evScenarios" :key="k" :class="['pwm-card', 'pwm-final', k]">
             <h4><small>{{ ni + 1 }}</small>{{ name }}<em>{{ sub }}</em></h4>
             <dl>
@@ -574,5 +574,9 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-final.plan { border-top: 3px solid #2b6df3; }
 .pwm-final h4 em { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 400; color: #9aa3b2; }
 .pwm-finals-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* 최종 카드끼리 매매차익 · 사업경비 · 명도비용 · 세금 · 세후 순수익 줄을 같은 높이에 — 제목 + 다섯 줄을 subgrid 로 */
+.pwm-finals-grid.rows { grid-template-rows: repeat(6, auto); }
+.pwm-finals-grid.rows > .pwm-final { display: grid; grid-row: span 6; grid-template-rows: subgrid; row-gap: 0; }
+.pwm-finals-grid.rows > .pwm-final > dl { display: contents; }
 @media (max-width: 1100px) { .pwm-cmp.three, .pwm-finals-grid.three { grid-template-columns: 1fr; } }
 </style>
