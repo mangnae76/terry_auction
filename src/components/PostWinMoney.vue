@@ -308,7 +308,9 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
         </div>
         <!-- 웹 — 사업자 구분은 내 정보에서 정한다 -->
         <span v-else class="pwm-biz">
-          사업자 구분 <b>{{ BIZ_LABEL[acctBiz] ?? '안 정함' }}</b><small>내 정보</small>
+          사업자 구분 <b>{{ BIZ_LABEL[acctBiz] ?? '안 정함' }}</b>
+          <!-- 바로가기 — 내 정보 수정으로 가서 고치고, 돌아오면 다시 읽어 계산한다 -->
+          <button type="button" class="pwm-bizgo" title="내 정보 수정에서 사업자 구분 바꾸기" @click="router.push('/profile')">내 정보에서 수정<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></button>
           <em v-if="!acctBiz">내 정보에서 사업자 구분을 정해 주세요 — 지금은 매매사업자 기준</em>
           <em v-else-if="acctBiz === 'corp' || acctBiz === 'corpBiz'">법인세 계산은 준비 중 — 지금은 매매사업자 기준</em>
         </span>
@@ -501,7 +503,9 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-notice p.last { margin: 4px 0 0; padding-top: 10px; border-top: 1px dashed #f3dfb8; font-size: 13px; font-weight: 400; line-height: 1.6; color: #6b7280; }
 .pwm-biz { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 14px; color: #4b5563; }
 .pwm-biz b { font-weight: 800; color: #1f2a44; }
-.pwm-biz small { padding: 1px 6px; border-radius: 5px; background: #eef1f6; font-size: 12px; color: #6b7280; }
+.pwm-bizgo { display: inline-flex; align-items: center; gap: 2px; height: 26px; padding: 0 6px 0 9px; border: 1px solid #c9d8fb; border-radius: 13px; background: #f5f8ff; font-family: inherit; font-size: 12px; font-weight: 700; color: #2b6df3; cursor: pointer; }
+.pwm-bizgo:hover { background: #e8efff; }
+.pwm-bizgo svg { width: 13px; height: 13px; }
 .pwm-biz em { font-style: normal; font-size: 13px; color: #b45309; }
 /* 명도분석 두 묶음(웹) — 명도비 · 지연 비용 머리 줄 */
 /* 명도비 상자 — 머리 줄과 세부 항목을 한 바탕 안에. 바탕은 양옆 10px 내밀고 글은 제자리('원' 끝이 한 줄) */
