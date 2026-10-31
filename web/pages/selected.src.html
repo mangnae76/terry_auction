@@ -335,8 +335,9 @@ button { cursor: pointer; }
 /* (붙는 자리 = 처음 놓인 자리 — 둘이 다르면 내리는 순간 몇 px 움직였다 멈춰 흔들려 보인다. 띠는 하위 탭 바로 아래부터 덮는다) */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-bar:not(.manual)::after { content: ""; position: absolute; left: 50%; bottom: -7px; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); pointer-events: none; } /* 띠 아래 끝 선 */
 /* 탭 줄(수요공급 · 지역별 분석 · …) 밑줄을 화면 끝까지 */
-.app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top { padding-bottom: 0; margin-top: 6px !important; height: 34px; box-sizing: border-box; align-items: stretch !important;
-  position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 6px + var(--bar-h, 46px) + 6px); z-index: 11;
+.app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top { padding-bottom: 0; margin-top: 12px !important; height: 34px;   /* 고르는 줄(6 아래 띠 끝) → 탭 6 — 손품조사 · 낙찰관리 박스 탭과 같은 틈 */
+  box-sizing: border-box; align-items: stretch !important;
+  position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 6px + var(--bar-h, 46px) + 12px); z-index: 11;
   background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(-12px -100vmax 0 -100vmax); }
 /* 아래 바닥 띠(.foot)가 표 바로 밑에 붙어 올라와 보였다 — 표 한 줄쯤 띄운다 */
 #marketView:has(.app-market:is([data-k="dong"], [data-k="case"])) .market-content { padding-bottom: 56px; }
