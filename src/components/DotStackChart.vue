@@ -11,7 +11,7 @@ export type DotView = { key: string; title: string; icon?: string; buckets: DotB
 
 const props = defineProps<{ rows: DongTradeDetailRow[]; views: DotView[] }>();
 
-const MIN_DOT = 11;                // 점 지름이 이보다 작아지면 점 하나에 여러 건을 묶는다(작은 점이 빽빽하면 눈이 아팠다)
+const MIN_DOT = 9;                 // 점 지름 하한 — 한 건 = 점 하나로 그리고, 모자라는 자리는 판을 세로로 늘려 채운다(묶지 않는다)
 const RARE = 0.01;                // 전체의 1% 미만 구간은 칸에서 뺀다(30평~ 2건 같은 칸이 판을 좁혔다)
 const EOK = 100_000_000;
 const thisYear = new Date().getFullYear();
@@ -104,22 +104,18 @@ const layout = (first: boolean) => {
   const tierOf = (r: DongTradeDetailRow) => COLOR_KEYS[colorKey.value].tier(r, years.value);
   const top = 46; const bottom = 34; const colW = W / Math.max(1, groups.length);
   const G = 3;
-  // 한 건 = 점 하나(지름 MIN_DOT)로 그릴 높이를 재서 판을 그만큼 늘린다(580 ~ 720). 그래도 넘치면 아래에서 묶는다
+  // 한 건 = 점 하나(지름 MIN_DOT)로 그릴 높이를 재서 판을 그만큼 늘린다(580 이상)
   {
     const kk = Math.max(1, Math.floor((colW - 14) / (MIN_DOT + G)));
     const need = Math.ceil(Math.max(1, ...groups.map((g) => g.length)) / kk) * (MIN_DOT + G) + top + bottom + 4;
-    const want = Math.round(Math.min(720, Math.max(580, need)));
+    const want = Math.round(Math.max(580, need));   // 위쪽 한도 없음 — 점을 묶지 않는다
     const el = cv.value;
     if (el && Math.abs(want - H) > 2) { el.style.height = `${want}px`; resize(); }
   }
-  // 점 지름을 MIN_DOT 이상으로 지키도록 묶음 크기(per)를 1 · 2 · 3 … 으로 늘려 본다
-  let counts: number[] = []; D = 16;
-  for (per.value = 1; per.value < 500; per.value += 1) {
-    counts = groups.map((g) => Math.ceil(g.length / per.value)); const max = Math.max(1, ...counts);
-    let d = 16;
-    for (; d >= MIN_DOT; d -= 1) { const kk = Math.max(1, Math.floor((colW - 14) / (d + G))); if (Math.ceil(max / kk) * (d + G) <= H - top - bottom) break; }
-    if (d >= MIN_DOT) { D = d; break; }
-  }
+  // 한 건 = 점 하나(per 1). 점 지름은 16 에서 줄여 가며 판 높이에 맞는 가장 큰 값
+  per.value = 1;
+  const counts = groups.map((g) => g.length); const max = Math.max(1, ...counts);
+  for (D = 16; D > MIN_DOT; D -= 1) { const kk = Math.max(1, Math.floor((colW - 14) / (D + G))); if (Math.ceil(max / kk) * (D + G) <= H - top - bottom) break; }
   const k = Math.max(1, Math.floor((colW - 14) / (D + G)));
   const next: Dot[] = [];
   cols = groups.map((g, ci) => {
@@ -269,7 +265,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dsc-sum > b { flex: none; font-weight: 800; color: #1f2a44; }
 .dsc-sum :deep(b) { font-weight: 800; color: #2b6df3; }
 .dsc-board { position: relative; background: #f6f8fb; border: 1px solid #e3e8f0; border-radius: 10px; padding: 12px 10px 6px; }
-.dsc-cv { display: block; width: 100%; height: 580px; }   /* 높이는 그릴 때 거래 수에 맞춰 다시 정한다(580 ~ 720) */
+.dsc-cv { display: block; width: 100%; height: 580px; }   /* 높이는 그릴 때 거래 수에 맞춰 다시 정한다(580 이상) */
 .dsc-tip { position: absolute; z-index: 5; pointer-events: none; display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; min-width: 200px; padding: 9px 11px; border-radius: 8px; background: #1f2937; color: #f3f4f6; font-size: 12.5px; line-height: 1.55; box-shadow: 0 10px 24px rgba(17, 24, 39, .25); }
 .dsc-tip b { font-weight: 600; color: #9aa6ba; }
 .dsc-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: #6b7280; }
