@@ -156,19 +156,19 @@ button { cursor: pointer; }
 
 /* ================= 머리띠 — 시안의 좌표를 1280 폭 기준 비율로 옮긴다 ================= */
 .gnb { background: var(--nav); color: var(--nav-text); position: relative; z-index: 40; }
-.gnb-in { position: relative; height: 50px; }   /* 70 → 60 → 50(10-31 글자를 줄이며 머리 높이도 줄임). 아래 화면은 --gnb-h 를 보고 같이 올라간다 */   /* 66 → 70 — 위 작은 단추들이 너무 붙어 4px 키움. 아래 화면은 --gnb-h 를 보고 같이 내려간다 */
+.gnb-in { position: relative; height: 54px; }   /* 70 → 60 → 50(10-31 글자를 줄이며 머리 높이도 줄임). 아래 화면은 --gnb-h 를 보고 같이 올라간다 */   /* 66 → 70 — 위 작은 단추들이 너무 붙어 4px 키움. 아래 화면은 --gnb-h 를 보고 같이 내려간다 */
 .gnb a, .gnb button { color: inherit; text-decoration: none; }
 /* 로고 — 머리띠 높이(70) 가운데, 시안 폭(약 133px)에 맞춘 44px 높이 */
-.g-logo { position: absolute; left: -0.47%; top: 7px; display: block; }
+.g-logo { position: absolute; left: -0.47%; top: 9px; display: block; }
 .g-logo img { display: block; height: 36px; width: auto; transition: transform .4s cubic-bezier(.2, .9, .3, 1.4); }
 .g-logo:hover img { transform: rotate(-4deg) scale(1.04); }
 .g-menu {
-  position: absolute; top: 22px; height: 26px; display: inline-flex; align-items: center;
+  position: absolute; top: 24px; height: 26px; display: inline-flex; align-items: center;
   font-size: var(--menu-fs); font-weight: 700; letter-spacing: -0.3px; white-space: nowrap;
   transition: color .15s;
 }
 .g-menu::after {
-  content: ""; position: absolute; left: -9px; right: -9px; bottom: -2px; height: 3px; border-radius: 2px 2px 0 0;
+  content: ""; position: absolute; left: -9px; right: -9px; bottom: -4px; height: 3px; border-radius: 2px 2px 0 0;
   background: var(--nav-orange); transform: scaleX(0); transition: transform .2s ease;
 }
 .g-menu:hover { color: #cfe0ff; }
@@ -192,7 +192,7 @@ button { cursor: pointer; }
   /* 상단 메뉴 전부의 아래 메뉴를 한 번에 펼치고 접는 단추 — 속은 비우고 흰 테두리·흰 삼각형 */
   /* 높이 — 메뉴 글자 잉크의 가운데(≈35)에 상자 가운데를 둔다 */
   /* 가로 — 1280 상자 오른쪽 끝(이름 · 로그아웃이 위 줄로 올라가 빈 자리). 메뉴 열은 이 단추 앞까지 고르게 벌어진다 */
-  position: absolute; left: calc(100% - 18px); top: 26px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 5px; border: 1px solid var(--nav-text);
+  position: absolute; left: calc(100% - 18px); top: 28px; width: 18px; font-size: var(--menu-fs); height: 18px; border-radius: 5px; border: 1px solid var(--nav-text);
   background: transparent; display: grid; place-items: center; padding: 0; transition: background .15s;
 }
 .g-box svg { width: 7px; height: 7px; color: var(--nav-text); transition: transform .2s; }
@@ -256,7 +256,7 @@ button { cursor: pointer; }
 /* ================= 도구 상자 — 시안처럼 연회색 띠 위의 흰 상자 ================= */
 .toolbar-shell { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--band); padding: 6px 0 6px; transition: box-shadow .2s; }
 /* 머리띠 오른쪽 위(로그아웃 위) — 공지·결제하기 | 알림·밤낮. 메뉴 글자(top 32) 위 빈 자리에 작게 */
-.g-util { position: absolute; right: 0; top: 1px; display: flex; align-items: center; gap: 18px; }   /* 대문 시험 ~ 로그아웃 사이를 넉넉히(알림 · 밤낮이 붙어 보이지 않게) */
+.g-util { position: absolute; right: 0; top: 2px; display: flex; align-items: center; gap: 18px; }   /* 대문 시험 ~ 로그아웃 사이를 넉넉히(알림 · 밤낮이 붙어 보이지 않게) */
 .g-util .u-sep { margin: 0 4px; }
 .g-util .u-link { height: 20px; font-size: 12px; color: rgba(255, 255, 255, 0.78) !important; }
 .g-util .u-link svg, .g-util .u-ico { color: rgba(255, 255, 255, 0.78) !important; }
@@ -285,7 +285,7 @@ button { cursor: pointer; }
 /* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
    하위 탭 글자 — 물건상세(물건정보~입찰가산정) · 물건등록(자동등록 · 직접입력) 등 모든 탭 줄이 이 값 하나를 쓴다.
    창이 좁아지면 아래 @media 에서 이 값만 바꾼다 */
-:root { --menu-shift: min(calc(var(--menu-fs) * 2), max(0px, calc((100vw - 1200px) / 6))); --menu-fs: 14.6px; --tab-fs: 13px; --tab-px: 20px; --tab-h: 30px; }
+:root { --menu-shift: min(calc(var(--menu-fs) * 2), max(0px, calc((100vw - 1200px) / 6))); --menu-fs: 14.6px; --tab-fs: 13px; --tab-px: 20px; --tab-h: 38px; }
 /* 제목 글자 — 웹 한 곳. 카드 제목 · 큰 제목 · 화면 제목(10-31 메뉴 · 탭과 함께 10% 줄임: 16→14.4 · 18→16.2 · 20→18). 앱 화면 부품은 var(--title-fs, 16px) 로 읽어 앱은 그대로 */
 :root { --title-fs: 14.4px; --title-lg-fs: 16.2px; --title-xl-fs: 18px; } /* 하위 탭 높이도 한 값 — 시장분석 · 물건상세 하위 탭과 물건등록 탭이 같이 쓴다 */
 /* 카드 안쪽 여백 — 모든 웹 카드가 이 값을 쓴다.
@@ -294,7 +294,7 @@ button { cursor: pointer; }
    --list-pad-l/r: 선정물건 물건 카드 · 수익률 분석 카드의 좌우 안쪽 여백 */
 :root { --card-pad-x: 24px; --card-inset: 12px; --list-pad-l: 20px; --list-pad-r: 18px; }
 /* 표 · 입력칸 세로 여유 — 웹 물건상세(손품조사 · 임장조사 …)의 표 칸 위아래 여백과 입력칸 높이를 이 두 값 하나로 */
-:root { --tbl-py: 14px; --ctl-h: 34px; }
+:root { --tbl-py: 10px; --ctl-h: 34px; }   /* 표 줄 위아래 14 → 10(10-31 세로 줄이기, 모든 웹 표) */
 .it-card { padding-left: var(--card-pad-x); padding-right: var(--card-pad-x); }
 .it-card > :not(.it-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
 .rg-results > :not(.rg-head) { margin-left: var(--card-inset); margin-right: var(--card-inset); }
@@ -314,7 +314,7 @@ button { cursor: pointer; }
 .app-market .adm-bar :is(select.adm-input, input.adm-input) { font-size: 14px !important; }
 .app-market .adm-bar :is(.adm-load, .adm-csv) { font-size: 14px !important; padding: 0 18px !important; min-width: 136px; white-space: nowrap; } /* 조회 · 엑셀 내려받기 같은 폭 */
 .app-market .adm-bar .adm-seg { height: 32px; box-sizing: border-box; border-radius: 6px !important; align-items: center; }
-.app-market .adm-bar .adm-seg-btn { font-size: 14px !important; }
+.app-market .adm-bar .adm-seg-btn { font-size: 14px !important; height: 26px; padding: 0 13px !important; display: inline-flex; align-items: center; }   /* 칸 32 안에(위아래 3) */
 .app-market .adm-bar .adm-f > small { font-size: 14px !important; }
 .app-market .adm-sum { font-size: 14px !important; } .app-market .adm-sum strong { font-size: 16px !important; }
 /* 지역분석 — 화면 제목 줄(제목 · 설명 · 엑셀 단추)은 웹에서 통째로 감춘다. 엑셀 내려받기는 '조회' 옆으로 옮겼다 */
@@ -336,7 +336,7 @@ button { cursor: pointer; }
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-bar:not(.manual)::after { content: ""; position: absolute; left: 50%; bottom: -7px; width: 100vw; height: 1px; transform: translateX(-50%); background: var(--subtab-line); pointer-events: none; } /* 띠 아래 끝 선 */
 /* 탭 줄(수요공급 · 지역별 분석 · …) 밑줄을 화면 끝까지 */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top { padding-bottom: 0; margin-top: 6px !important; height: 34px; box-sizing: border-box; align-items: stretch !important;
-  position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 6px + var(--bar-h, 50px) + 6px); z-index: 11;
+  position: sticky !important; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 6px + var(--bar-h, 46px) + 6px); z-index: 11;
   background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(-12px -100vmax 0 -100vmax); }
 /* 아래 바닥 띠(.foot)가 표 바로 밑에 붙어 올라와 보였다 — 표 한 줄쯤 띄운다 */
 #marketView:has(.app-market:is([data-k="dong"], [data-k="case"])) .market-content { padding-bottom: 56px; }
@@ -344,8 +344,8 @@ button { cursor: pointer; }
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--subtab-line); }
 .app-market[data-k="dong"] .adm-view-tabs button { position: relative; z-index: 1; }
 /* 지역분석 다섯 탭 — 요약 상자(내비게이션) 아래에 구분선 하나, 아래 내용과 나눈다 */
-.app-market[data-k="dong"] :is(.adm-gunav, .adm-nav) { position: relative; overflow: visible; margin-bottom: 37px !important; }
-.app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -19px; height: 1px; background: #cfd6e2; pointer-events: none; }
+.app-market[data-k="dong"] :is(.adm-gunav, .adm-nav) { position: relative; overflow: visible; margin-bottom: 25px !important; }
+.app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -13px; height: 1px; background: #cfd6e2; pointer-events: none; }
 :root[data-theme="dark"] .app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { background: rgba(255, 255, 255, .28); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { background: rgba(255, 255, 255, .28); } }
 /* 경매지번 공동주택가 및 실거래가 — 지역분석과 같은 틀. 위 제목 상자(.adm-top)는 감추고, 그 단추(저장 · 저장 목록 · 엑셀)는 아래 줄로 옮겼다 */
@@ -495,9 +495,9 @@ button { cursor: pointer; }
 /* 지역분석 수요분석 흰 카드 — 손품분석의 물건 상세 카드(.adp-card)와 같은 바탕 · 테두리, 안쪽 25 */
 /* 수요분석 동/지역 표 — 거래건수(연 · 월) 칸만 넓게(빡빡했다). 나머지 칸은 고르게 */
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table.even colgroup col:nth-child(4) { width: 132px; }
-.app-market .dm-card { box-sizing: border-box; margin-top: 18px; padding: 16px 15px; background: var(--surface); border: 1px solid var(--card-line); border-radius: 14px; }
+.app-market .dm-card { box-sizing: border-box; margin-top: 12px; padding: 12px 15px; background: var(--surface); border: 1px solid var(--card-line); border-radius: 14px; }
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-supply { background: var(--surface); border: 1px solid #e3e8f0; border-radius: 10px; padding: 16px 14px 16px; margin-top: 4px; }
-:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-nav.dm { background: none !important; border: 0 !important; margin: 0 0 37px !important; padding: 0 !important; }
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-nav.dm { background: none !important; border: 0 !important; margin: 0 0 25px !important; padding: 0 !important; }
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-supply :is(.adm-table-wrap, .adm-body, .adm-shell) { margin-bottom: 0 !important; padding-bottom: 0 !important; }
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-supply :is(.adm-body, .adm-shell) { padding-top: 0 !important; }
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-nav-scope { font-size: 15px !important; font-weight: 800 !important; }   /* '○○동 수요분석' — 입지/개별성 제목과 같은 15 */
@@ -874,7 +874,7 @@ body:has(#marketView:not([hidden]) .app-market[data-k="ranking"]) :is(.foot, .fo
    남색 머리띠 → [하위 탭 줄] → 필터 상자(.toolbar-shell) 를 한 덩어리로 위에 붙인다. 어느 화면이든
    필터 상자는 .toolbar-shell 로 감싸기만 하면 된다. 높이는 변수로 — 머리띠 --gnb-h, 하위 탭 줄 --subtab-h.
    화면 폭과 상관없이 늘 고정한다. 좁은 화면에선 머리띠가 두 줄이 되므로 --gnb-h 는 syncStickTop() 이 실제 높이로 맞춘다 */
-:root { --gnb-h: 50px; --subtab-h: 31px; --stick-top: env(safe-area-inset-top, 0px); }
+:root { --gnb-h: 54px; --subtab-h: 39px; --stick-top: env(safe-area-inset-top, 0px); }
 .gnb { position: sticky; top: var(--stick-top); }
 .subtabs { top: calc(var(--stick-top) + var(--gnb-h)); }
 .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h)); }
@@ -905,6 +905,11 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .crumb-slot:not(:has(.crumbs)) { padding-top: 0; }
 .crumb-slot:not(:has(.crumbs)) + .content { padding-top: 12px; }
 #marketView .crumb-slot:not(:has(.crumbs)) + .content { padding-top: 6px; }
+/* 박스 탭이 본문 맨 위에 오는 화면(손품조사 수요분석 · 시세분석 · 손품결론)도 3단 띠 → 박스 탭 6 — 낙찰관리 진행절차 탭과 같은 높이 */
+#itemView .crumb-slot:not(:has(.crumbs)) + .content:has(> .item-son, .item-son) { padding-top: 6px; }
+#itemContent .item-son .son-tabbar { margin-top: 0 !important; }
+/* 물건상세 모든 탭 — 안의 카드 좌우 끝을 위 사건 카드(고정 카드) 끝과 같게(틀의 좌우 5px 여백을 뺀다, 손품조사와 같게) */
+#itemContent .app-detail .adp-body { padding-left: 0 !important; padding-right: 0 !important; }
 #appPageContent:has(.app-page:is([data-k="more"], [data-k="community"])) { padding-top: 12px; }
 /* 경로를 카드 아래로 옮겨 간 빈 자리는 2px 도 남기지 않는다 — 남으면 낙찰이후 고정 카드가 붙을 때 2px 튄다 */
 #crumbSlotAppPage:empty { display: none; }
@@ -1295,7 +1300,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 자금관리 — 탭 내용 전체를 흰 큰 상자 하나로(폭 160–1440 · 모서리 14 · 안쪽 20/24). 경로는 위 줄 오른쪽 끝에 홀로,
    낙찰목록 · 매도목록은 상자 첫 줄 오른쪽(필요경비 · 사업경비는 합계 줄과 같은 줄) */
 .app-page[data-k="finance"] .fin-webrow .fin-crumb { flex: 1 1 auto; }
-.app-page[data-k="finance"] .fin-body { position: relative; margin-top: 8px; padding: 20px 24px !important; background: var(--surface) !important; border: 1px solid var(--card-line); border-radius: 14px; }
+.app-page[data-k="finance"] .fin-body { position: relative; margin-top: 8px; padding: 14px 24px !important; background: var(--surface) !important; border: 1px solid var(--card-line); border-radius: 14px; }
 .app-page[data-k="finance"] .fin-boxhead { display: flex; align-items: center; min-height: 28px; margin: 0 0 12px; }
 .app-page[data-k="finance"] .fin-boxtitle { font-size: var(--title-fs); font-weight: 800; color: var(--text); }
 .app-page[data-k="finance"] .fin-shell:is(.tab-businessExpense, .tab-interior, .tab-fuelMeal, .tab-itemPurchase) .fin-boxhead { position: absolute; top: 20px; right: 24px; margin: 0; z-index: 2; }
@@ -1306,7 +1311,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .fin-summary.fin-nav::after { display: none !important; }
 .app-page[data-k="finance"] .tax-shell.embedded { margin: 0 !important; padding: 0 !important; background: transparent !important; }
 .app-page[data-k="finance"] .tax-shell.embedded > * { margin-left: 0 !important; margin-right: 0 !important; }   /* 소득세 현황 · 신고 일정 줄 등 — 위 상자와 양끝을 맞춘다 */
-.app-page[data-k="finance"] .tax-shell .tax-cards { margin: 0 0 12px !important; padding: 12px 14px !important; border: 1px solid var(--card-line); border-radius: 10px; background: var(--surface); }
+.app-page[data-k="finance"] .tax-shell .tax-cards { margin: 0 0 10px !important; padding: 8px 12px !important; border: 1px solid var(--card-line); border-radius: 10px; background: var(--surface); }
 
 /* ===== 웹 마이페이지 › 내 정보에서 들어가는 화면들(보관함 · 휴지통 · 중개업체 관리 · 입찰달력 · 인테리어 업체 · 3일무료체험 · 결제하기 · 결제관리 · 포인트내역 · 정보수정 · 회원탈퇴)
    앱 화면 그대로라 하늘색 바탕 · 뒤로 화살표 · 작은 글이 남아 있었다 — 큰 흰 상자 하나 + 안은 선 상자, 제목은 아이콘 + 16, 글은 14 이상 ===== */
@@ -1486,9 +1491,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="postwin"] .tax-shell.embedded .tax-list { margin-left: 0 !important; margin-right: 0 !important; }
 /* 세금신고 연도 드롭다운 — 필터 줄 안, 다른 탭의 기간 단추 자리 */
 /* 기간 단추 묶음(이번달 · 올해 …)과 같은 상자 — 옅은 판 안에 이름 + 흰 드롭다운 */
-.app-page[data-k="finance"] .fin-taxyear { display: inline-flex; align-items: center; gap: 4px; padding: 4px; background: #f1f4f9; border-radius: 8px; }
-.app-page[data-k="finance"] .fin-taxyear > span { padding: 0 12px 0 14px; font-size: 15px; font-weight: 700; color: #6b7280; }
-.app-page[data-k="finance"] .fin-taxyear select { height: 32px; min-width: 120px; padding: 0 10px; border: 0; border-radius: 6px; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .1); font: inherit; font-size: 15px; font-weight: 700; color: #1f2a44; cursor: pointer; }
+.app-page[data-k="finance"] .fin-taxyear { display: inline-flex; align-items: center; gap: 4px; padding: 3px; background: #f1f4f9; border-radius: 8px; }
+.app-page[data-k="finance"] .fin-taxyear > span { padding: 0 10px 0 12px; font-size: 14px; font-weight: 700; color: #6b7280; }
+.app-page[data-k="finance"] .fin-taxyear select { height: 26px; min-width: 120px; padding: 0 10px; border: 0; border-radius: 6px; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .1); font: inherit; font-size: 15px; font-weight: 700; color: #1f2a44; cursor: pointer; }
 /* 사업지출 · 물품구매 머리글 '비용(VAT포함)' · '합계(VAT포함)' — 웹은 칸이 넉넉해 한 줄로(머리줄이 두꺼워 보였다) */
 .app-page[data-k="finance"] .fin-table th.two { white-space: nowrap !important; }
 /* 자금입출금 표 — 글자 규칙대로 14(머리글 굵게), 줄 위아래 넉넉히 */
@@ -1502,7 +1507,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="finance"] .fin-summary.fin-nav::after { content: ""; position: absolute; left: 0; right: 0; bottom: -13px; height: 1px; background: #cfd6e2; }
 :root[data-theme="dark"] .app-page[data-k="finance"] .fin-summary.fin-nav::after { background: rgba(255, 255, 255, .28); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .app-page[data-k="finance"] .fin-summary.fin-nav::after { background: rgba(255, 255, 255, .28); } }
-.app-page[data-k="finance"] .fin-nav .sum-card { padding: 12px 4px !important; gap: 6px !important; border-radius: 8px; } /* 바탕색은 앱 그대로 — 총 입금 흐린 빨강 · 총 출금 흐린 파랑 · 잔액 흐린 회색 */
+.app-page[data-k="finance"] .fin-nav .sum-card { padding: 8px 4px !important; gap: 3px !important; border-radius: 8px; } /* 바탕색은 앱 그대로 — 총 입금 흐린 빨강 · 총 출금 흐린 파랑 · 잔액 흐린 회색 */
 .app-page[data-k="finance"] .fin-nav .sum-card small { font-size: 14px !important; color: #6b7280; }
 .app-page[data-k="finance"] .fin-nav .sum-card strong { font-size: 18px !important; font-weight: 800; }
 /* 낙찰목록 · 매도목록 창 — 가로 전체 대신 가운데 알맞은 크기로, 머리띠 · 하위 탭 아래에 (창은 body 로 옮겨 그려져 .app-page 밖이다) */
@@ -2295,6 +2300,19 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .rg-missing ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; color: #6b5a3a; line-height: 1.6; }
 /* 폴더 등록·AI 키 창 */
 .dialog.fav-dlg { width: min(880px, 100%); padding: 0; overflow: hidden; }
+/* ===== 시장분석 세로 줄이기(10-31, 웹만) — 지역별분석 ~ 거래상세 · 손품분석. 위아래 여백 약 30% ↓, 같은 종류는 같은 값 ===== */
+.app-market .adm-gunav { margin: 12px 0 10px !important; padding: 10px 14px 12px !important; }
+.app-market .adm-gunav-box { padding: 10px 4px !important; gap: 5px !important; }
+.app-market .adm-sum { margin: 10px 2px 8px !important; }
+.app-market .adm-kpi { padding: 10px 14px !important; gap: 3px !important; }
+.app-market :is(.adm-dist, .adm-dists.is-web .adm-dist) { padding: 12px 18px 10px !important; }
+.app-market .adm-trend { padding: 12px 18px 8px !important; }
+.app-market .adm-rank-card { padding: 12px 16px 6px !important; }
+.app-market .adm-dongsum :is(th, td) { padding-top: var(--tbl-py) !important; padding-bottom: var(--tbl-py) !important; }
+.app-market .adm-deals-table :is(th, td) { padding-top: var(--tbl-py) !important; padding-bottom: var(--tbl-py) !important; }
+:is(.app-market, .app-detail) :is(.ttl-read, .dq-read, .bm-read, .dsc-readbox) { padding: 8px 12px !important; gap: 3px !important; line-height: 1.5 !important; }   /* 한눈에 · 읽는 법 상자 */
+:is(.app-market, .app-detail) :is(.ttl-board, .dsc-board) { padding: 8px 8px 4px !important; }
+:is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-supply { padding: 12px 12px !important; }
 /* ===== 스토어 · 모바일앱 — 큰 흰 상자 하나에 제목까지 ===== */
 .info-box { margin-top: 12px; padding: 26px 28px 30px; background: var(--surface); border: 1px solid var(--card-line); border-radius: 14px; }
 .info-head { padding-bottom: 16px; border-bottom: 1px solid var(--line); }
@@ -2962,11 +2980,11 @@ html, body { overflow-x: clip; }
 
 /* ================= 좁은 화면 — 시안 좌표를 지킬 수 없으면 줄을 세운다 ================= */
 @media (max-width: 1240px) {
-  .gnb-in { display: flex; align-items: flex-end; gap: 22px; padding-bottom: 4px; box-sizing: border-box; }   /* 메뉴 줄은 아래에 — 위 작은 줄(공지 ~ 밤낮)과 겹치지 않게 */
+  .gnb-in { display: flex; align-items: flex-end; gap: 22px; padding-bottom: 6px; box-sizing: border-box; }   /* 메뉴 줄은 아래에 — 위 작은 줄(공지 ~ 밤낮)과 겹치지 않게 */
   .gnb-in > .g-logo { align-self: center; }
   .gnb .g-logo, .gnb .g-menu, .gnb .g-icons, .gnb .g-box, .gnb .g-box[data-tip], .gnb .g-user { position: relative; left: auto; top: auto; }
   :root { --menu-fs: 13px; --tab-fs: 12.2px; --tab-px: 14px; }
-  .g-menu::after { bottom: -4px; }   /* 띠 바닥(50)에 붙는다 — 메뉴 줄 아래 여백 4 */
+  .g-menu::after { bottom: -6px; }   /* 띠 바닥(54)에 붙는다 — 메뉴 줄 아래 여백 6 */
   .g-menu.m4 { margin-left: auto; }
   .g-icons { order: 10; } .g-box { order: 11; flex: 0 0 auto; }
   .g-user { order: 12; } .g-login, .g-out, .g-join { font-size: var(--menu-fs); }
