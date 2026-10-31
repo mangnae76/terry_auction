@@ -2507,6 +2507,18 @@ let bidaRaf = 0;
 const measureBidaTop = () => {
   bidaRaf = 0;
   if (!webNew.value) return;
+  // 돈이 나가는 순서 — 단계 묶음을 늘려 '필요한 내 돈 합계' 를 왼쪽 '필요경비합계' 와 같은 높이에. 상자 안 위치끼리 견줘 스크롤과 상관없다
+  const costCard = document.querySelector('.bida-col .bx-row.sum')?.closest('.bida-card') as HTMLElement | null;
+  const sumRow = document.querySelector('.bida-col .bx-row.sum') as HTMLElement | null;
+  const cashCard = document.querySelector('.bida-right .bida-cash') as HTMLElement | null;
+  const cashSum = cashCard?.querySelector('.bidc-cashsum') as HTMLElement | null;
+  const stepsEl = cashCard?.querySelector('.bidc-steps') as HTMLElement | null;
+  if (costCard && sumRow && cashCard && cashSum && stepsEl) {
+    const want = sumRow.getBoundingClientRect().top - costCard.getBoundingClientRect().top;
+    const now = cashSum.getBoundingClientRect().top - cashCard.getBoundingClientRect().top;
+    // 지금 높이에 모자란 만큼 더한다(넘치면 줄인다 — 내용보다 작게는 줄지 않는다)
+    if (Math.abs(want - now) > 0.5) stepsEl.style.minHeight = `${Math.max(0, Math.round(stepsEl.getBoundingClientRect().height + (want - now)))}px`;
+  }
   // 개인소득세율 상자 높이를 왼쪽 입찰정보 상자와 같게 — 줄 간격은 그 높이에 고르게 나눈다
   const info = document.querySelector('.bida-col > .bida-card') as HTMLElement | null;
   const taxBox = document.querySelector('.bida-right .bida-taxr') as HTMLElement | null;
@@ -2521,8 +2533,15 @@ const measureBidaTop = () => {
   if (v !== bidaTop.value) bidaTop.value = v;
 };
 const onBidaResize = () => { if (!bidaRaf) bidaRaf = requestAnimationFrame(measureBidaTop); };
-onMounted(() => { window.addEventListener('resize', onBidaResize); window.addEventListener('scroll', onBidaResize, { passive: true }); nextTick(measureBidaTop); });
-onBeforeUnmount(() => { window.removeEventListener('resize', onBidaResize); window.removeEventListener('scroll', onBidaResize); if (bidaRaf) cancelAnimationFrame(bidaRaf); });
+let bidaRo: ResizeObserver | null = null;
+const watchBida = () => nextTick(() => {
+  const el = document.querySelector('.bida-col');
+  if (el && window.ResizeObserver) { bidaRo?.disconnect(); bidaRo = new ResizeObserver(onBidaResize); bidaRo.observe(el); }
+  onBidaResize();
+});
+watch(() => [activeTab.value, webNew.value, selectedPlan.value, profitScenarios.value.length], watchBida);
+onMounted(() => { window.addEventListener('resize', onBidaResize); window.addEventListener('scroll', onBidaResize, { passive: true }); watchBida(); });
+onBeforeUnmount(() => { window.removeEventListener('resize', onBidaResize); window.removeEventListener('scroll', onBidaResize); if (bidaRaf) cancelAnimationFrame(bidaRaf); bidaRo?.disconnect(); });
 /* 새화면은 칸이 늘 열려 있다. 값이 실제로 바뀌었을 때만 손을 멈추면 적는다(물건을 읽은 것만으로는 적지 않는다) */
 let profitJson = '';
 watch(() => auction.value?.id, () => { profitJson = ''; });
@@ -13174,6 +13193,12 @@ select.adp-pub-input option { text-align: center; }
 .bida-right { position: sticky; top: 0; align-self: start; min-width: 0; }   /* 왼쪽을 내려 보는 동안 위에 붙어 따라온다 */
 .bida-cash .bidc-step { grid-template-columns: 110px 1fr auto; }   /* 반 폭 — 때 칸을 줄인다 */
 .bida-cash .bidc-later.boxed { margin-top: 12px; }
+/* 필요한 내 돈 합계 — 왼쪽 필요경비합계 줄과 같은 크기(높이 48 · 글 14 / 금액 17 · 모서리 8 · 양옆 -12) */
+.bida-cash .bidc-cashsum { min-height: 48px; box-sizing: border-box; margin: 12px -12px 0; padding: 0 20px 0 11px; border: 1px solid #fed7aa; border-radius: 8px; }
+.bida-cash .bidc-cashsum span { font-size: 14px; }
+.bida-cash .bidc-cashsum b { font-size: 17px; }
+/* 단계 사이를 벌려 합계 줄 높이를 왼쪽 필요경비합계와 맞춘다(높이는 그릴 때 잰다) */
+.bida-cash .bidc-steps { display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
 .bida-right { display: flex; flex-direction: column; gap: 12px; }
 .bida-low { align-items: stretch; }
 .bida-low > .bida-auto { align-self: start; }
