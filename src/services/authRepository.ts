@@ -170,13 +170,17 @@ export interface AccountDetail {
   bizType: BizType;
   /** 주택 보유수 — 직접 적는다 */
   houseCount: string;
+  /** 해마다 매출 — 직접 적는다(연도 → 원). 적지 않은 해는 매도 기록에서 셈한다. 전년도 매출로 장부 의무를 가린다 */
+  salesByYear: Record<string, number>;
+  /** 해마다 이 앱 밖의 다른 소득금액(매출 − 경비) — 종합소득세 과세 구간에 더한다. 적지 않으면 매도 기록의 다른 매매차익 */
+  otherIncomeByYear: Record<string, number>;
 }
 
 export const emptyAccountDetail = (): AccountDetail => ({
   nickname: '', emailId: '', emailDomain: '', emailOptIn: false,
   phone1: '', phone2: '', phone3: '', smsOptIn: false,
   address1: '', address2: '',
-  bizType: '', houseCount: '',
+  bizType: '', houseCount: '', salesByYear: {}, otherIncomeByYear: {},
 });
 
 export const loadAccountDetail = async (uid: string): Promise<AccountDetail> => {

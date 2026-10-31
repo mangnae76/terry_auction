@@ -46,9 +46,13 @@ const ev = ref<EvictInput>({ ...seedEvict(), ...(savedEv && !('laborPerPyeong' i
 const who = ref<'biz' | 'person'>((read().who as 'biz' | 'person') || 'biz');
 // 물건에서 따로 고르지 않았으면 내 정보의 사업자 구분을 따른다
 const auth = useAuthStore();
+// 내 정보의 세금 계산 기준(웹) — 매출 · 다른 소득금액을 적어 두었으면 그 값을 쓴다
+const acctSales = ref<Record<string, number>>({});
+const acctOther = ref<Record<string, number>>({});
 onMounted(async () => {
-  if (read().who) return;
   const d = await loadAccountDetail(auth.uid);
+  if (webEmbed) { acctSales.value = d.salesByYear ?? {}; acctOther.value = d.otherIncomeByYear ?? {}; }
+  if (read().who) return;
   if (d.bizType === 'none') who.value = 'person';
   else if (d.bizType === 'biz') who.value = 'biz';   // 법인 · 법인매매사업자는 법인세 셈이 아직 없어 기본(매매사업자) 그대로
 });
@@ -175,13 +179,16 @@ const vat = computed(() => vatOf(props.auction?.propertyType ?? '', props.auctio
 const thisYear = new Date().getFullYear();
 const soldIn = (y: number) => store.auctions.filter((x) => x.id !== props.auction?.id && String(x.sellDate ?? '').startsWith(String(y)));
 const salesOf = (y: number) => soldIn(y).reduce((s, x) => s + (planned(x).expectedSaleValue || 0), 0);
-const lastSales = computed(() => salesOf(thisYear - 1));
-const thisSales = computed(() => salesOf(thisYear));
-const otherGain = computed(() => soldIn(thisYear).reduce((s, x) => {
+const lastSales = computed(() => acctSales.value[thisYear - 1] ?? salesOf(thisYear - 1));   // 내 정보에 적었으면 그 값
+const thisSales = computed(() => acctSales.value[thisYear] ?? salesOf(thisYear));
+const otherGainRec = computed(() => soldIn(thisYear).reduce((s, x) => {
   const p = planOf(planned(x));
   const c = costSplitOf(planned(x), ledger.value);
   return s + Math.max(0, p.sale - p.bid - c.need - c.biz);
 }, 0));
+// 과세 구간에 더할 다른 소득 — 내 정보에 적었으면 그 값, 아니면 매도 기록의 다른 매매차익
+const otherGain = computed(() => acctOther.value[thisYear] ?? otherGainRec.value);
+const otherFromAcct = computed(() => acctOther.value[thisYear] != null);
 const biz = computed(() => bizIncomeTaxOf(gain.value, otherGain.value));
 // 개인 양도세는 필요경비만 뺀다 — 사업경비(이자 · 수리 · 명도 …)는 경비가 아니다
 const personGain = computed(() => tradeGain.value);
@@ -282,7 +289,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
           <h3>{{ who === 'biz' ? '종합소득세(예상)' : '양도소득세(예상)' }}</h3>
           <dl v-if="who === 'biz'">
             <div><dt>전년도 매출</dt><dd>{{ won(lastSales) }}<small>{{ lastSales >= 300_000_000 ? '3억 이상 — 복식부기 의무' : '3억 미만 — 간편장부 대상' }}</small></dd></div>
-            <div><dt>금년도 누적매출</dt><dd>{{ won(thisSales) }}<small>올해 다른 매매차익 {{ won(otherGain) }}</small></dd></div>
+            <div><dt>금년도 누적매출</dt><dd>{{ won(thisSales) }}<small>{{ otherFromAcct ? '다른 소득금액(내 정보)' : '올해 다른 매매차익' }} {{ won(otherGain) }}</small></dd></div>
             <div><dt>적용 세율</dt><dd>{{ biz.ratePct }}%<small>과세표준 {{ won(biz.base) }} — 올해 차익 합산</small></dd></div>
             <div class="key"><dt>예상 종합소득세</dt><dd>{{ won(taxSum) }}<small>실효세율 {{ effPct }}% · 지방세 {{ won(biz.localTax) }} 포함</small></dd></div>
             <div><dt>세후 남는 돈</dt><dd :class="{ neg: biz.afterTax < 0 }">{{ won(biz.afterTax) }}</dd></div>

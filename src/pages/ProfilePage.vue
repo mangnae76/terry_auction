@@ -5,6 +5,7 @@ import { computed, inject, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
+import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import { useAuthStore } from '../stores/authStore';
 import { useAuctionStore } from '../stores/auctionStore';
 import {
@@ -26,7 +27,13 @@ const thisYear = new Date().getFullYear();
 const salesOf = (y: number) => auctionStore.auctions
   .filter((a) => String(a.sellDate ?? '').startsWith(String(y)))
   .reduce((sum, a) => sum + (a.expectedSaleValue || 0), 0);
-const wonText = (n: number) => (n ? `${n.toLocaleString('ko-KR')}원` : '매도 기록 없음');
+// 세금 계산 기준(웹) — 매출(전년도 · 올해)과 올해 다른 소득금액을 직접 적는다. 빈칸은 '안 적음'(매도 기록에서 셈)
+const salesInput = ref<Record<number, string>>({});
+const otherInput = ref('');
+const numOf = (v: string | undefined): number | null => {
+  const t = String(v ?? '').replace(/[^\d.-]/g, '');
+  return t ? Number(t) : null;
+};
 
 /** 자주 쓰는 메일 주소는 골라 넣는다 */
 const MAIL_DOMAINS = ['직접입력', 'naver.com', 'gmail.com', 'daum.net', 'hanmail.net', 'nate.com', 'kakao.com'];
@@ -53,6 +60,9 @@ const load = async (uid: string) => {
   // 닉네임은 로그인 정보가 먼저다 (저장된 것이 비어 있을 수 있다)
   form.value = { ...saved, nickname: saved.nickname || auth.nickname };
   domainPick.value = MAIL_DOMAINS.includes(saved.emailDomain) ? saved.emailDomain : '직접입력';
+  const sy = saved.salesByYear ?? {}; const oy = saved.otherIncomeByYear ?? {};
+  salesInput.value = Object.fromEntries([thisYear - 1, thisYear].map((y) => [y, sy[y] != null ? String(sy[y]) : '']));
+  otherInput.value = oy[thisYear] != null ? String(oy[thisYear]) : '';
   phoneLocked.value = true;
   loading.value = false;
 };
@@ -90,6 +100,12 @@ const submit = async () => {
   saving.value = true;
   try {
     if (wantsPw) await changePassword(currentPw.value, nextPw.value);
+    if (webEmbed) {
+      const sales = { ...(form.value.salesByYear ?? {}) }; const other = { ...(form.value.otherIncomeByYear ?? {}) };
+      for (const y of [thisYear - 1, thisYear]) { const n = numOf(salesInput.value[y]); if (n === null) delete sales[y]; else sales[y] = n; }
+      { const n = numOf(otherInput.value); if (n === null) delete other[thisYear]; else other[thisYear] = n; }
+      form.value = { ...form.value, salesByYear: sales, otherIncomeByYear: other };
+    }
     await saveAccountDetail(auth.uid, form.value);
     currentPw.value = ''; nextPw.value = ''; nextPw2.value = '';
     phoneLocked.value = true;
@@ -188,23 +204,28 @@ const submit = async () => {
 
         <!-- 웹 — 사업자 · 주택 · 매출(세금 셈의 바탕) -->
         <template v-if="webEmbed">
-          <div class="prf-fld">
+          <label class="prf-fld">
             <small>사업자 구분</small>
-            <div class="prf-seg">
-              <button v-for="[k, label] in BIZ_TYPES" :key="k" type="button" :class="{ on: form.bizType === k }" @click="form.bizType = k">{{ label }}</button>
-            </div>
-          </div>
+            <select v-model="form.bizType" class="prf-input prf-select">
+              <option value="">선택하세요</option>
+              <option v-for="[k, label] in BIZ_TYPES" :key="k" :value="k">{{ label }}</option>
+            </select>
+          </label>
           <label class="prf-fld">
             <small>주택 보유수</small>
             <span class="prf-unit"><input v-model="form.houseCount" class="prf-input" inputmode="numeric" placeholder="0" @input="form.houseCount = form.houseCount.replace(/\D/g, '')" /><em>채</em></span>
           </label>
+          <!-- 세금 계산 기준 — 직접 적는다. 비우면 매도 기록에서 셈한 값(흐린 글)을 쓴다 -->
           <div class="prf-fld">
-            <small>매출 <i class="prf-auto">매도 기록에서 저절로</i></small>
+            <small>매출 <i class="prf-auto">비우면 매도 기록에서 계산합니다</i></small>
             <div class="prf-sales">
-              <span><b>{{ thisYear - 1 }}년</b>{{ wonText(salesOf(thisYear - 1)) }}</span>
-              <span><b>{{ thisYear }}년</b>{{ wonText(salesOf(thisYear)) }}</span>
+              <label v-for="y in [thisYear - 1, thisYear]" :key="`s${y}`"><b>{{ y }}년</b><span class="prf-unit"><FormattedNumberInput v-model="salesInput[y]" mode="string" class="prf-input" :placeholder="salesOf(y).toLocaleString('ko-KR')" /><em>원</em></span></label>
             </div>
           </div>
+          <label class="prf-fld">
+            <small>{{ thisYear }}년 다른 소득금액 <i class="prf-auto">이 앱 밖의 매출 − 경비. 종합소득세 구간을 정할 때 더합니다</i></small>
+            <span class="prf-unit"><FormattedNumberInput v-model="otherInput" mode="string" class="prf-input" placeholder="0" /><em>원</em></span>
+          </label>
         </template>
 
         <button type="button" class="prf-submit" :disabled="saving || loading" @click="submit">
@@ -300,7 +321,10 @@ const submit = async () => {
 .prf-unit .prf-input { width: 120px; text-align: right; }
 .prf-unit em { font-style: normal; color: #6b7280; }
 .prf-auto { margin-left: 6px; font-style: normal; color: #9ca3af; }
-.prf-sales { display: flex; gap: 24px; }
+.prf-sales { display: flex; flex-wrap: wrap; gap: 10px 24px; }
+.prf-sales label { display: inline-flex; align-items: center; gap: 8px; }
+.prf-unit :deep(.prf-input) { width: 160px; text-align: right; }
+.prf-select { max-width: 220px; }
 .prf-sales span { display: inline-flex; gap: 8px; align-items: baseline; color: #111827; }
 .prf-sales b { color: #6b7280; font-weight: 600; }
 </style>
