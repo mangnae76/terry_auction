@@ -244,10 +244,10 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
   <section class="pwm">
     <header class="pwm-head">
       <!-- 명도분석은 AI 로 값을 채운다 — 제목에 AI 표시, 오른쪽 끝에 시작 단추(권리분석 'AI 권리분석 시작'과 같은 꼴) -->
-      <h2 v-if="mode === 'evict'"><svg class="pwm-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>AI 명도분석</h2>
+      <h2 v-if="mode === 'evict'"><svg class="pwm-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 1.9 1.9.8-1.9.8L19 20.4l-.8-1.9-1.9-.8 1.9-.8z"/></svg>{{ webEmbed ? '명도분석' : 'AI 명도분석' }}</h2>
       <h2 v-else>세금분석</h2>
       <span v-if="auction?.caseNumber" class="pwm-cap">경매 <b>{{ auction.caseNumber }}</b> {{ mode === 'evict' ? '사건의 명도 비용을 비교합니다' : '사건의 예상 세금을 필요경비 · 사업경비 탭의 값으로 계산합니다' }}</span>
-      <button v-if="mode === 'evict'" type="button" class="pwm-ai-start head" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI 명도분석 시작' }}</button>
+      <button v-if="mode === 'evict' && !webEmbed" type="button" class="pwm-ai-start head" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI 명도분석 시작' }}</button>
     </header>
     <!-- ===== 명도분석 ===== -->
     <template v-if="mode === 'evict'">
@@ -292,7 +292,8 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
       <h3 class="pwm-h">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M16 11v7" /></svg>
         계산에 쓴 값
-        <!-- 직접입력은 왼쪽, AI 는 오른쪽 — 두 단추는 같은 크기. 웹은 위 머리에 같은 AI 단추가 있어 여기선 뺀다 -->
+        <!-- 앱: 직접입력 왼쪽 · AI 오른쪽. 웹: AI 명도분석 시작을 직접입력 왼쪽에(머리 단추는 뺐다) — 두 단추는 같은 크기 -->
+        <button v-if="webEmbed" type="button" class="pwm-ai-start lead" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI 명도분석 시작' }}</button>
         <button type="button" :class="['pwm-edit', { on: evEdit }]" @click="evEdit = !evEdit">{{ evEdit ? '접기' : '직접입력' }}</button>
         <button v-if="!webEmbed" type="button" class="pwm-ai-start" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI 명도분석 시작' }}</button>
         <button v-if="evEdit" type="button" class="pwm-reset" @click="reset">초기화</button>
@@ -467,6 +468,8 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-ai-start:hover:not(:disabled) { background: #1f5fe0; }
 .pwm-ai-start:disabled { background: #9db9ef; cursor: default; }
 .pwm-ai-start.head { margin-left: auto; }
+.pwm-ai-start.lead { margin-left: auto; }
+.pwm-ai-start.lead + .pwm-edit { margin-left: 8px; }
 .pwm-edit { margin-left: auto; border: 1px solid #2b6df3; background: #fff; color: #1d4ed8; }
 .pwm-edit + .pwm-ai-start { margin-left: 0; }
 .pwm-edit.on { background: #2b6df3; color: #fff; }
