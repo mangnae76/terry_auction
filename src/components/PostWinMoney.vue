@@ -49,9 +49,17 @@ const auth = useAuthStore();
 // 내 정보의 세금 계산 기준(웹) — 매출 · 다른 소득금액을 적어 두었으면 그 값을 쓴다
 const acctSales = ref<Record<string, number>>({});
 const acctOther = ref<Record<string, number>>({});
+// 웹은 늘 내 정보의 사업자 구분으로 계산한다(물건마다 고르는 단추는 뺐다)
+const acctBiz = ref<string>('');
+const BIZ_LABEL: Record<string, string> = { none: '개인', corp: '법인', biz: '개인매매사업자', corpBiz: '법인매매사업자' };
 onMounted(async () => {
   const d = await loadAccountDetail(auth.uid);
-  if (webEmbed) { acctSales.value = d.salesByYear ?? {}; acctOther.value = d.otherIncomeByYear ?? {}; }
+  if (webEmbed) {
+    acctSales.value = d.salesByYear ?? {}; acctOther.value = d.otherIncomeByYear ?? {};
+    acctBiz.value = d.bizType || '';
+    who.value = d.bizType === 'none' ? 'person' : 'biz';   // 법인 · 법인매매사업자 · 안 고름은 법인세 계산이 없어 매매사업자 기준
+    return;
+  }
   if (read().who) return;
   if (d.bizType === 'none') who.value = 'person';
   else if (d.bizType === 'biz') who.value = 'biz';   // 법인 · 법인매매사업자는 법인세 셈이 아직 없어 기본(매매사업자) 그대로
@@ -265,15 +273,21 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
     <!-- ===== 세금분석 ===== -->
     <template v-else>
       <div class="pwm-taxbar">
-        <div class="pwm-seg">
+        <div v-if="!webEmbed" class="pwm-seg">
           <button type="button" :class="{ on: who === 'biz' }" @click="who = 'biz'">매매사업자</button>
           <button type="button" :class="{ on: who === 'person' }" @click="who = 'person'">개인</button>
         </div>
-        <div class="pwm-seg" title="누르면 명도분석 금액이 사업경비 명도비로 들어갑니다 — 다시 누르면 빼고 입찰가A로">
+        <!-- 웹 — 사업자 구분은 내 정보에서 정한다 -->
+        <span v-else class="pwm-biz">
+          사업자 구분 <b>{{ BIZ_LABEL[acctBiz] ?? '안 정함' }}</b><small>내 정보</small>
+          <em v-if="!acctBiz">내 정보에서 사업자 구분을 정해 주세요 — 지금은 매매사업자 기준</em>
+          <em v-else-if="acctBiz === 'corp' || acctBiz === 'corpBiz'">법인세 계산은 준비 중 — 지금은 매매사업자 기준</em>
+        </span>
+        <div class="pwm-seg" :title="`누르면 명도분석 금액이 사업경비 명도비로 들어갑니다 — 다시 누르면 빼고 ${webEmbed ? '수익분석 확정안' : '입찰가A'} 값으로`">
           <button type="button" :class="{ on: evOn === 'deal' }" :disabled="evBusy" @click="pickEvict('deal')">명도협의 {{ man(evDirect.deal) }}</button>
           <button type="button" :class="{ on: evOn === 'exec' }" :disabled="evBusy" @click="pickEvict('exec')">강제집행 {{ man(evDirect.exec) }}</button>
         </div>
-        <button type="button" class="pwm-go" @click="goPlan">입찰가A 고치기 ›</button>
+        <button type="button" class="pwm-go" @click="goPlan">{{ webEmbed ? '수익분석 고치기 ›' : '입찰가A 고치기 ›' }}</button>
       </div>
 
       <div class="pwm-tax">
@@ -462,4 +476,8 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-final dl > div.total dd { font-size: 18px; }
 .pwm-final dl > div.total dd.neg { color: #ff9b9b; }
 .pwm-final dl > div.total small { color: #c9d3ea; font-weight: 500; }
+.pwm-biz { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 14px; color: #4b5563; }
+.pwm-biz b { font-weight: 800; color: #1f2a44; }
+.pwm-biz small { padding: 1px 6px; border-radius: 5px; background: #eef1f6; font-size: 12px; color: #6b7280; }
+.pwm-biz em { font-style: normal; font-size: 13px; color: #b45309; }
 </style>
