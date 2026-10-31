@@ -250,8 +250,10 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
         <article class="pwm-case deal">
           <h3>협의로 끝날 때</h3>
           <template v-if="webEmbed">
-            <p class="pwm-grp"><span>명도비 <em>이사비 · 서류</em></span><b>{{ won(evGroups.deal.direct) }}</b></p>
-            <ul><li v-for="l in evGroups.deal.lines" :key="l.label"><span>{{ l.label }}</span><b>{{ won(l.amount) }}</b></li></ul>
+            <div class="pwm-grpbox">
+              <p class="pwm-grp"><span>명도비 <em>이사비 · 서류</em></span><b>{{ won(evGroups.deal.direct) }}</b></p>
+              <ul><li v-for="l in evGroups.deal.lines" :key="l.label"><span>{{ l.label }}</span><b>{{ won(l.amount) }}</b></li></ul>
+            </div>
             <p class="pwm-grp"><span>지연 비용 <em>늦어지는 {{ evGroups.deal.months }}개월 이자 · 관리비</em></span><b>{{ won(evGroups.deal.delay) }}</b></p>
           </template>
           <ul v-else><li v-for="l in deal.lines" :key="l.label"><span>{{ l.label }}</span><b>{{ won(l.amount) }}</b></li></ul>
@@ -260,8 +262,10 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
         <article class="pwm-case exec">
           <h3>강제집행까지 갈 때</h3>
           <template v-if="webEmbed">
-            <p class="pwm-grp"><span>명도비 <em>강제집행 비용 · 서류</em></span><b>{{ won(evGroups.exec.direct) }}</b></p>
-            <ul><li v-for="l in evGroups.exec.lines" :key="l.label"><span>{{ l.label }}</span><b>{{ won(l.amount) }}</b></li></ul>
+            <div class="pwm-grpbox">
+              <p class="pwm-grp"><span>명도비 <em>강제집행 비용 · 서류</em></span><b>{{ won(evGroups.exec.direct) }}</b></p>
+              <ul><li v-for="l in evGroups.exec.lines" :key="l.label"><span>{{ l.label }}</span><b>{{ won(l.amount) }}</b></li></ul>
+            </div>
             <p class="pwm-grp"><span>지연 비용 <em>늦어지는 {{ evGroups.exec.months }}개월 이자 · 관리비</em></span><b>{{ won(evGroups.exec.delay) }}</b></p>
           </template>
           <ul v-else><li v-for="l in exec.lines" :key="l.label"><span>{{ l.label }}</span><b>{{ won(l.amount) }}</b></li></ul>
@@ -407,7 +411,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-nav .gap { border-color: #2b6df3; background: #f2f6fe; }
 .pwm-nav .gap b { color: #1d4ed8; }
 .pwm-cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.pwm-case { border: 1px solid #e3e8f0; border-radius: 10px; padding: 18px 24px 20px; }
+.pwm-case { border: 1px solid #e3e8f0; border-radius: 10px; padding: 18px 24px 20px; font-variant-numeric: tabular-nums; }
 .pwm-case.deal { border-top: 3px solid #4f9a68; }
 .pwm-case.exec { border-top: 3px solid #c95b5b; }
 .pwm-case h3 { margin: 0 0 10px; font-size: 16px; font-weight: 800; }
@@ -499,7 +503,13 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
 .pwm-biz small { padding: 1px 6px; border-radius: 5px; background: #eef1f6; font-size: 12px; color: #6b7280; }
 .pwm-biz em { font-style: normal; font-size: 13px; color: #b45309; }
 /* 명도분석 두 묶음(웹) — 명도비 · 지연 비용 머리 줄 */
-.pwm-grp { display: flex; align-items: baseline; gap: 8px; margin: 10px 0 4px; padding: 8px 10px; border-radius: 8px; background: #f5f7fb; font-size: 14px; font-weight: 800; color: #1f2a44; }
+/* 명도비 상자 — 머리 줄과 세부 항목을 한 바탕 안에. 바탕은 양옆 10px 내밀고 글은 제자리('원' 끝이 한 줄) */
+.pwm-grpbox { margin: 10px -10px 4px; padding: 2px 10px 6px; border-radius: 8px; background: #f5f7fb; }
+.pwm-grpbox .pwm-grp { margin: 0 -10px; background: transparent; }
+.pwm-grpbox li { border-bottom-color: #e6eaf2; }
+.pwm-grpbox li:last-child { border-bottom: 0; }
+/* 바탕 띠는 양옆으로 10px 내밀고 글은 제자리 — 명도비 · 지연 비용 · 세부 · 합계의 '원' 끝이 한 줄에 선다 */
+.pwm-grp { display: flex; align-items: baseline; gap: 8px; margin: 10px -10px 4px; padding: 8px 10px; border-radius: 8px; background: #f5f7fb; font-size: 14px; font-weight: 800; color: #1f2a44; }
 .pwm-grp em { margin-left: 4px; font-style: normal; font-size: 12px; font-weight: 500; color: #6b7280; }
 .pwm-grp b { margin-left: auto; font-weight: 800; }
 /* 최종 예상 순수익 — 두 경우 비교 표, 남는 돈이 많은 쪽 머리에 초록 */
