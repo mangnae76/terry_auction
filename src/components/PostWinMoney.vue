@@ -311,7 +311,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
         <span v-else class="pwm-biz">
           사업자 구분 <b>{{ BIZ_LABEL[acctBiz] ?? '안 정함' }}</b>
           <!-- 바로가기 — 내 정보 수정으로 가서 고치고, 돌아오면 다시 읽어 계산한다 -->
-          <button type="button" class="pwm-bizgo" title="내 정보 수정에서 사업자 구분 바꾸기" @click="router.push('/profile')">내 정보에서 수정<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></button>
+          <button type="button" class="pwm-bizgo" title="내 정보 수정에서 사업자 구분 바꾸기" @click="router.push('/profile')">내 정보<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></button>
           <em v-if="!acctBiz">내 정보에서 사업자 구분을 정해 주세요 — 지금은 매매사업자 기준</em>
           <em v-else-if="acctBiz === 'corp' || acctBiz === 'corpBiz'">법인세 계산은 준비 중 — 지금은 매매사업자 기준</em>
         </span>
