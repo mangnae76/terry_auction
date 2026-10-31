@@ -6901,12 +6901,16 @@ const goBack = () => router.back();
             <!-- 안 고르기 — 있는 안은 고르고, 바로 다음 빈 칸은 눌러서 안을 하나 더 만든다. 초기화 · 삭제는 같은 줄 오른쪽 -->
             <div class="bida-plans">
               <div class="bida-seg" role="tablist">
-                <!-- 안마다 이름(누르면 그 안을 본다) 옆에 체크 상자(누르면 그 안으로 확정 · 하나만) -->
+                <!-- 안마다 체크 상자(왼쪽 · 누르면 그 안으로 확정 · 하나만) + 이름(누르면 그 안을 본다) -->
                 <div
                   v-for="(label, ti) in PROFIT_NAV_LABELS"
                   :key="`seg-${label}`"
                   :class="['bida-plan', { on: ti === selectedPlan, add: !profitScenarios[ti] }]"
                 >
+                  <label v-if="profitScenarios[ti]" :class="['bida-ck', { on: ti === confirmedIdx }]" :title="`${label}안으로 확정`">
+                    <input type="checkbox" :checked="ti === confirmedIdx" :aria-label="`${label}안 확정`" @change="confirmPlan(ti); ($event.target as HTMLInputElement).checked = true" />
+                    <i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10" /></svg></i>
+                  </label>
                   <button
                     type="button"
                     role="tab"
@@ -6915,10 +6919,6 @@ const goBack = () => router.back();
                     :disabled="!profitScenarios[ti] && ti !== profitScenarios.length"
                     @click="pickPlanTab(ti)"
                   >{{ profitScenarios[ti] ? `${label}안` : `＋ ${label}안` }}</button>
-                  <label v-if="profitScenarios[ti]" :class="['bida-ck', { on: ti === confirmedIdx }]" :title="`${label}안으로 확정`">
-                    <input type="checkbox" :checked="ti === confirmedIdx" :aria-label="`${label}안 확정`" @change="confirmPlan(ti); ($event.target as HTMLInputElement).checked = true" />
-                    <i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10" /></svg></i>
-                  </label>
                 </div>
                 <!-- 상자 끝 — 지금 확정한 안 -->
                 <span class="bida-okname">{{ PROFIT_NAV_LABELS[confirmedIdx] }}안 확정</span>
@@ -13198,12 +13198,12 @@ select.adp-pub-input option { text-align: center; }
 .bida-plans { display: flex; align-items: center; gap: 10px; }
 .bida-seg { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; background: #e3e8f1; }
 .bida-seg { align-items: center; }
-.bida-seg .bida-plan { display: inline-flex; align-items: center; gap: 2px; padding-right: 8px; border-radius: 8px; }
-.bida-seg .bida-plan.add { padding-right: 0; }
+.bida-seg .bida-plan { display: inline-flex; align-items: center; gap: 0; padding-left: 8px; border-radius: 8px; }
+.bida-seg .bida-plan.add { padding-left: 0; }
 .bida-seg .bida-plan.on { background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .12); }
-.bida-plan-name { height: 34px; padding: 0 6px 0 16px; border: 0; border-radius: 8px; background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; color: #4b5563; cursor: pointer; }
+.bida-plan-name { height: 34px; padding: 0 16px 0 6px; border: 0; border-radius: 8px; background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; color: #4b5563; cursor: pointer; }
 .bida-plan.on .bida-plan-name { color: #1f2a44; font-weight: 800; }
-.bida-plan.add .bida-plan-name { padding-right: 16px; color: #9aa3b2; }
+.bida-plan.add .bida-plan-name { padding-left: 16px; color: #9aa3b2; }
 .bida-plan-name:disabled { cursor: default; opacity: .5; }
 /* 확정 체크 상자 — 체크한 안 하나가 확정 */
 .bida-ck { position: relative; display: inline-grid; place-items: center; width: 22px; height: 22px; cursor: pointer; }
