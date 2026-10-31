@@ -171,7 +171,7 @@ const onMove = (e: MouseEvent) => {
   if (!h) { tip.value = null; return; }
   const r = h.rows[0];
   const lines: Array<[string, string]> = h.rows.length > 1
-    ? [['거래', `${h.rows.length}건 묶음`], ['첫 거래', `${r.umdNm} ${r.jibun} ${r.name}`.trim()], ['금액', `${eok(Math.min(...h.rows.map((x) => x.priceWon)))} ~ ${eok(Math.max(...h.rows.map((x) => x.priceWon)))}`]]
+    ? [['거래', `${h.rows.length}건 묶음`], ['계약', (() => { const ds = h.rows.map((x) => x.contractDate).sort(); return ds[0] === ds[ds.length - 1] ? ds[0] : `${ds[0]} ~ ${ds[ds.length - 1]}`; })()], ['첫 거래', `${r.umdNm} ${r.jibun} ${r.name}`.trim()], ['금액', `${eok(Math.min(...h.rows.map((x) => x.priceWon)))} ~ ${eok(Math.max(...h.rows.map((x) => x.priceWon)))}`]]
     : [['주소', `${r.umdNm} ${r.jibun} ${r.name}`.trim()], ['계약일', r.contractDate], ['금액', eok(r.priceWon)], ['전용', `${r.areaM2.toFixed(2)}㎡ / ${r.pyeong.toFixed(2)}평`], ['층 · 건축', `${r.floor || '-'}층 · ${r.buildYear ? `${r.buildYear}년(${ageOf(r)}년차)` : '-'}`]];
   tip.value = { x: Math.min(h.x + 20, W - 230), y: Math.max(h.y - 80, 4), lines };
 };
@@ -212,7 +212,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
           </div>
         </div>
         <!-- 색 뜻은 색 단추 바로 아래 — 단추와 범례가 이어져 보이게 -->
-        <div class="dsc-legend"><span v-for="l in legend" :key="l.label" class="dsc-key"><i :class="`t${l.tone}`" />{{ l.label }}</span></div>
+        <div class="dsc-legend"><span class="dsc-legend-lab">범례</span><span v-for="l in legend" :key="l.label" class="dsc-key"><i :class="`t${l.tone}`" />{{ l.label }}</span></div>
       </div>
     </div>
     <div class="dsc-board">
@@ -256,6 +256,7 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 .dsc-tip b { font-weight: 600; color: #9aa6ba; }
 .dsc-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: #6b7280; }
 .dsc-key { display: inline-flex; align-items: center; gap: 5px; }
+.dsc-legend-lab { font-weight: 700; color: #374151; }
 .dsc-key i { width: 10px; height: 10px; border-radius: 50%; }
 .dsc-key i.t0 { background: #cfdcf7; } .dsc-key i.t1 { background: #a3bff2; } .dsc-key i.t2 { background: #7299e8; } .dsc-key i.t3 { background: #4a78d8; } .dsc-key i.t4 { background: #2d56b3; }
 .dsc-replay { margin-left: auto; height: 32px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font-family: inherit; font-size: 13px; font-weight: 700; color: #2b6df3; cursor: pointer; }
