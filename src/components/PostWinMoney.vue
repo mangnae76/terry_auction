@@ -228,9 +228,9 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
       <h3 class="pwm-h">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M16 11v7" /></svg>
         계산에 쓴 값
-        <!-- 직접입력은 왼쪽, AI 는 오른쪽 — 두 단추는 같은 크기 -->
+        <!-- 직접입력은 왼쪽, AI 는 오른쪽 — 두 단추는 같은 크기. 웹은 위 머리에 같은 AI 단추가 있어 여기선 뺀다 -->
         <button type="button" :class="['pwm-edit', { on: evEdit }]" @click="evEdit = !evEdit">{{ evEdit ? '접기' : '직접입력' }}</button>
-        <button type="button" class="pwm-ai-start" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI 명도분석 시작' }}</button>
+        <button v-if="!webEmbed" type="button" class="pwm-ai-start" :disabled="aiBusy" @click="aiFill">{{ aiBusy ? 'AI가 읽는 중…' : 'AI 명도분석 시작' }}</button>
         <button v-if="evEdit" type="button" class="pwm-reset" @click="reset">초기화</button>
       </h3>
       <p v-if="aiErr" class="pwm-aierr">{{ aiErr }}</p>
