@@ -141,14 +141,14 @@ function draw(now: number) {
   cols.forEach((col) => {
     c.fillStyle = P.sub; c.font = '600 14px "Pretendard", "Apple SD Gothic Neo", sans-serif'; c.fillText(col.label, col.x, H - 12);
     if (!col.n) return;
-    // 칸 위 두 줄 — 위 '중간값 7,300만'(파랑), 아래 '843건'. 이름을 붙여 따로 읽는 법을 찾지 않게
+    // 칸 위 두 줄 — 위 '거래 843건', 아래 '중간값 7,300만'(파랑). 이름을 붙여 따로 읽는 법을 찾지 않게
+    c.fillStyle = P.ink; c.font = '700 14px "Pretendard", sans-serif'; c.fillText(`거래 ${col.n.toLocaleString('ko-KR')}건`, col.x, col.topY - 24);
     if (col.median) {
       const t = `중간값 ${eok(col.median)}`; const room = (cols.length > 1 ? cols[1].x - cols[0].x : W) - 8;
       c.fillStyle = P.accent; c.font = '700 13px "Pretendard", sans-serif';
       if (c.measureText(t).width > room) c.font = '700 12px "Pretendard", sans-serif';   // 칸이 좁으면 한 단계 작게 — 옆 칸 글과 겹치지 않게
-      c.fillText(t, col.x, col.topY - 24);
+      c.fillText(t, col.x, col.topY - 8);
     }
-    c.fillStyle = P.ink; c.font = '700 14px "Pretendard", sans-serif'; c.fillText(`${col.n.toLocaleString('ko-KR')}건`, col.x, col.topY - 8);
   });
   c.strokeStyle = P.line; c.lineWidth = 1; c.beginPath(); c.moveTo(0, H - 29.5); c.lineTo(W, H - 29.5); c.stroke();
   dots.forEach((d) => {
