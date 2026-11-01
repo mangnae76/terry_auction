@@ -650,6 +650,8 @@ button { cursor: pointer; }
 .mk-sale .sc-lot .adm-f { display: flex; flex-direction: column; gap: 6px; }
 .mk-sale .sc-lot select.adm-input { width: 380px; max-width: 100%; height: 36px; font-size: 14px; }
 .mk-sale .sc-lot-sum { font-size: 14px; color: var(--muted); padding-bottom: 8px; }
+.mk-sale .sc-wait { margin: 0 0 14px; padding: 10px 14px; border-radius: 8px; background: var(--surface-2, #f4f7fc); font-size: 14px; color: var(--muted); }
+.mk-sale .sc-wait b { color: var(--text); font-weight: 700; }
 .mk-sale .sc-table { border: 1px solid #e8ecf3; border-radius: 8px; overflow: hidden; overflow-x: auto; }
 .mk-sale .sc-table table { width: 100%; min-width: 1400px; border-collapse: collapse; table-layout: fixed; }
 .mk-sale .sc-table :is(th, td) { white-space: nowrap; }
@@ -5382,8 +5384,53 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   /* 매각사례 — 고르는 줄은 지역분석과 똑같이(같은 칸 · 같은 모양), 그 밑 박스 탭 둘: 인근 · 동일지번 매각물건 분석. 분석 화면은 아직 준비 중 */
   const SALE_TABS = [['near', '인근 매각물건 분석'], ['same', '동일지번 매각물건 분석']];
   const SALE_SIDO = ['서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원특별자치도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도'];
-  const SALE_SEG = { kind: ['연립다세대', '아파트', '오피스텔'], deal: ['매매', '전세'], period: ['3개월', '6개월', '12개월'] };
-  const saleSeg = { kind: '연립다세대', deal: '매매', period: '12개월' };
+  /* 거래(매매 · 전세)는 경매 매각에 없어 뺐다. 기간은 매각사례가 오래 쌓여 24 · 36개월 · 전체까지 */
+  const SALE_SEG = { kind: ['연립다세대', '아파트', '오피스텔'], period: ['3개월', '6개월', '12개월', '24개월', '36개월', '전체'] };
+  /* 고른 지역 · 종류 · 기간은 이 브라우저에 남긴다. 표는 [조회]를 눌러야 나온다(처음엔 비움) */
+  const SALE_Q_KEY = 'ta.web.sale.q';
+  const saleSeg = (() => {
+    const d = { kind: '연립다세대', period: '12개월', sido: '', sgg: '', dong: '' };
+    try { const v = { ...d, ...JSON.parse(localStorage.getItem(SALE_Q_KEY) || '{}') }; if (!SALE_SEG.period.includes(v.period)) v.period = d.period; if (!SALE_SEG.kind.includes(v.kind)) v.kind = d.kind; return v; } catch (e) { return d; }
+  })();
+  const saleSave = () => { try { localStorage.setItem(SALE_Q_KEY, JSON.stringify(saleSeg)); } catch (e) { /* 그만 */ } };
+  let saleApplied = null;   /* [조회]를 누른 때의 조건 — 이것으로 표를 채운다 */
+  /* 모은 물건의 동네 — '인천 서구 검암동' → { sido: '인천', sgg: '서구', dong: '검암동' } (한 번 읽고 기억) */
+  const agRegParts = (r) => {
+    if (r.__reg === undefined) { const k = agRegionOf(r['소재지']); const t = k ? k.split(' ') : []; r.__reg = t.length >= 3 ? { sido: t[0], sgg: t.slice(1, -1).join(' '), dong: t[t.length - 1] } : null; }
+    return r.__reg;
+  };
+  const saleSidoName = (short) => SALE_SIDO.find((f) => AG_SIDO[f] === short) || short;
+  /* 고르는 칸 목록 — 모은 물건이 있는 지역만 */
+  function saleRegionOpts() {
+    const sidos = new Set(); const sggs = new Set(); const dongs = new Set();
+    AG.recs.forEach((r) => {
+      const g = agRegParts(r); if (!g) return;
+      sidos.add(g.sido);
+      if (g.sido === saleSeg.sido) sggs.add(g.sgg);
+      if (g.sido === saleSeg.sido && g.sgg === saleSeg.sgg) dongs.add(g.dong);
+    });
+    const ko = (a, b) => a.localeCompare(b, 'ko');
+    return { sido: [...sidos].sort(ko), sgg: [...sggs].sort(ko), dong: [...dongs].sort(ko) };
+  }
+  /* 종류 — 도우미가 적은 목록 종류('다세대주택')로. 종류가 없는 예전 물건은 어느 종류에나 */
+  const SALE_KIND_RE = { 연립다세대: /다세대|연립|빌라|도시형/, 아파트: /아파트/, 오피스텔: /오피스텔/ };
+  const saleCut = (p) => { const n = parseInt(p, 10); if (!n) return ''; const d = new Date(); d.setMonth(d.getMonth() - n); return d.toISOString().slice(0, 10); };
+  /* 조회한 조건에 맞는 물건 — 조회 전이면 null. 같은 조건 · 같은 데이터면 다시 거르지 않는다 */
+  function saleRows() {
+    const q = saleApplied; if (!q) return null;
+    if (AG.srOf === AG.recs && AG.srQ === q) return AG.sr;
+    const cut = saleCut(q.period); const re = SALE_KIND_RE[q.kind];
+    AG.sr = AG.recs.filter((r) => {
+      const g = agRegParts(r);
+      return g && g.sido === q.sido && (!q.sgg || g.sgg === q.sgg) && (!q.dong || g.dong === q.dong)
+        && (!r['종류'] || !re || re.test(String(r['종류'])))
+        && (!cut || String(r['매각일'] || '').replace(/\./g, '-').slice(0, 10) >= cut);
+    });
+    AG.srOf = AG.recs; AG.srQ = q;
+    return AG.sr;
+  }
+  const saleWhere = (q) => [saleSidoName(q.sido), q.sgg, q.dong].filter(Boolean).join(' ') + ` · ${q.kind} · ${q.period}`;
+  const SC_WAIT = '<div class="sc-wait">위에서 지역을 고르고 <b>조회</b>를 누르면 모은 매각물건이 나옵니다.</div>';
   /* 매각물건 표 — 칸은 auction-web 검색리스트(auction_gui.LIST_COLS)와 같게. rows 가 null 이면 빈 표(관리자가 아니거나 아직 없음) */
   const SC_COLS = ['사건번호', '매각년월일', '감정가', '최저입찰가', '매각가', '매각가율', '유찰회수', '전용㎡/평', '건축연월', '건축년차', '층', '주소'];
   const SC_WIDTHS = [116, 96, 104, 104, 104, 74, 72, 104, 76, 72, 44];   /* 주소는 남는 자리 전부 — 표끼리 칸이 같은 자리에 오게 */
@@ -5397,11 +5444,13 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   /* 인근 탭 — 동일지번(고른 지번) · 인근(모은 것 전부). 관리자만 도우미가 모은 물건으로 채운다. 최근 매각부터 */
   function saleCaseCard() {
     const mine = agIsAdmin() && AG.recs.length;
-    const lot = mine ? agLotPick() : null;
+    const rows = mine ? saleRows() : null;
+    const lot = rows ? agLotPick(rows) : null;
     const lotName = lot ? `<span class="sc-lot-name">${esc(lot.key)}${lot.name ? ` ${esc(lot.name)}` : ''}</span>` : '';
-    return `<section class="sc-card"><div class="sc-head">${SC_GAVEL}매각사례</div><div class="sc-box">`
-      + `<div class="sc-sub">동일지번 매각물건${lotName}${mine ? scCnt(lot ? lot.rows.length : 0) : ''}</div>${saleTable(lot ? lot.rows : null)}`
-      + `<div class="sc-sub">인근 매각물건${mine ? scCnt(AG.recs.length) : ''}</div>${saleTable(mine ? AG.recs : null)}`
+    const top = !mine ? '' : !rows ? SC_WAIT : `<div class="sc-wait">${esc(saleWhere(saleApplied))}${rows.length ? '' : ' — 조건에 맞는 매각물건이 없습니다.'}</div>`;
+    return `<section class="sc-card"><div class="sc-head">${SC_GAVEL}매각사례</div><div class="sc-box">${top}`
+      + `<div class="sc-sub">동일지번 매각물건${lotName}${rows ? scCnt(lot ? lot.rows.length : 0) : ''}</div>${saleTable(lot ? lot.rows : null)}`
+      + `<div class="sc-sub">인근 매각물건${rows ? scCnt(rows.length) : ''}</div>${saleTable(rows)}`
       + `</div></section>`;
   }
   /* 동일지번 — 따로 긁지 않는다. 인근 목록에 같은 지번 물건이 이미 들어 있어(거리 0) 소재지의 '동 + 지번'으로 묶어 고른다.
@@ -5418,10 +5467,10 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const AG_LOT_KEY = 'ta.web.agent.lot';
   let agLotSel = (() => { try { return localStorage.getItem(AG_LOT_KEY) || ''; } catch (e) { return ''; } })();
   /* 지번 묶음 — 건수 많은 순. 모은 물건이 바뀔 때만 다시 묶는다 */
-  function agLots() {
-    if (AG.lotsOf === AG.recs) return AG.lots;
+  function agLots(rows) {
+    if (AG.lotsOf === rows) return AG.lots;
     const m = new Map();
-    AG.recs.forEach((r) => {
+    rows.forEach((r) => {
       const key = agLotOf(r['소재지']); if (!key) return;
       const g = m.get(key) || { key, rows: [], own: 0, names: new Map() };
       g.rows.push(r);
@@ -5431,24 +5480,26 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     });
     AG.lots = [...m.values()].map((g) => ({ key: g.key, rows: g.rows, own: g.own, name: ([...g.names.entries()].sort((a, b) => b[1] - a[1])[0] || [''])[0] }))
       .sort((a, b) => b.rows.length - a.rows.length || a.key.localeCompare(b.key, 'ko'));
-    AG.lotsOf = AG.recs;
+    AG.lotsOf = rows;
     return AG.lots;
   }
   /* 고른 지번 — 없으면 동일지번으로 따로 모은 지번, 그것도 없으면 건수 많은 지번 */
-  function agLotPick() {
-    const lots = agLots();
+  function agLotPick(rows) {
+    const lots = agLots(rows);
     return lots.find((l) => l.key === agLotSel) || lots.slice().sort((a, b) => b.own - a.own)[0] || null;
   }
   /* 동일지번 탭 — 지번 고르기 + 그 지번의 매각물건 */
   function sameLotCard() {
-    const lots = agLots(); const cur = agLotPick();
+    const rows = saleRows();
+    if (!rows) return `<section class="sc-card"><div class="sc-head">${SC_GAVEL}동일지번 매각물건</div><div class="sc-box">${SC_WAIT}${saleTable(null)}</div></section>`;
+    const lots = agLots(rows); const cur = agLotPick(rows);
     const opts = lots.map((l) => `<option value="${esc(l.key)}" ${cur && l.key === cur.key ? 'selected' : ''}>${esc(l.key)}${l.name ? ` ${esc(l.name)}` : ''} · ${l.rows.length.toLocaleString('ko-KR')}건${l.own ? ' · 동일지번수집' : ''}</option>`).join('');
     const rates = cur ? cur.rows.map((r) => Number(r['매각가율'])).filter((v) => v > 0) : [];
     const avg = rates.length ? `${((rates.reduce((a, b) => a + b, 0) / rates.length) * 100).toFixed(1)}%` : '-';
     const sum = cur ? `<span class="sc-lot-sum">따로 모은 동일지번 ${cur.own.toLocaleString('ko-KR')}건 · 인근 데이터 ${(cur.rows.length - cur.own).toLocaleString('ko-KR')}건 · 평균 매각가율 ${avg}</span>` : '';
     const pick = lots.length
       ? `<div class="sc-lot"><label class="adm-f"><small>지번 (${lots.length.toLocaleString('ko-KR')}곳 · 건수 많은 순)</small><select class="adm-input" data-act="ag-lot">${opts}</select></label>${sum}</div>`
-      : '<div class="sc-lot"><span class="sc-lot-sum">모은 매각물건이 없습니다 — 인근 탭의 도우미로 인근매각물건을 먼저 모아 주세요.</span></div>';
+      : `<div class="sc-lot"><span class="sc-lot-sum">${esc(saleWhere(saleApplied))} — 조건에 맞는 매각물건이 없습니다.</span></div>`;
     return `<section class="sc-card"><div class="sc-head">${SC_GAVEL}동일지번 매각물건${cur ? scCnt(cur.rows.length) : ''}</div><div class="sc-box">${pick}${saleTable(cur ? cur.rows : null)}</div></section>`;
   }
   /* ===== 집 PC 수집 도우미(관리자만) — auction-web 과 같은 방식: 여기서 누르면 Firestore 로 명령 → 집 PC agent.py 가 로그인된 크롬으로 옥션원 · 탱크옥션 수집 → 관리자 계정 아래에만 저장 =====
@@ -5591,7 +5642,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       AG.recs = recs.slice().sort((a, b) => String(b['매각일'] || '').localeCompare(String(a['매각일'] || '')));
       AG.meta = meta;
     } catch (e) { AG.recs = []; }
-    agPaint(); agPaintTable();
+    if (agSaleOpen()) renderMarket(); else { agPaint(); agPaintTable(); }   /* 고르는 칸(지역 목록)도 새 데이터로 */
   }
   /* 관리자로 경매사례를 처음 열 때 붙는다 — 상태 · 모은 물건을 지켜보고, 보고 있는 동안 1분마다 '보고 있다'를 알려 도우미가 3초마다 명령을 확인하게 */
   function agStart() {
@@ -5643,10 +5694,17 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   }
   function saleCaseHtml() {
     const seg = (k, title) => `<label class="adm-f"><small>${title}</small><div class="adm-seg">${SALE_SEG[k].map((v) => `<button type="button" class="adm-seg-btn ${saleSeg[k] === v ? 'on' : ''}" data-act="sale-seg" data-k="${k}" data-v="${v}">${v}</button>`).join('')}</div></label>`;
-    const sel = (title, ph, opts) => `<label class="adm-f"><small>${title}</small><select class="adm-input narrow ph" ${opts ? '' : 'disabled'}><option value="">${ph}</option>${(opts || []).map((o) => `<option value="${o}">${o}</option>`).join('')}</select></label>`;
+    /* 관리자 — 모은 물건이 있는 지역만 고른다. 아니면 예전처럼 빈 칸 */
+    const ro = agIsAdmin() && AG.recs.length ? saleRegionOpts() : null;
+    const sel = (k, title, ph, opts) => {
+      const v = ro ? saleSeg[k] : '';
+      const list = opts || [];
+      return `<label class="adm-f"><small>${title}</small><select class="adm-input narrow ${v && list.some((o) => o[0] === v) ? '' : 'ph'}" ${ro ? `data-act="sale-q" data-k="${k}"` : ''} ${opts && list.length ? '' : 'disabled'}><option value="">${ph}</option>${list.map(([val, txt]) => `<option value="${esc(val)}" ${v === val ? 'selected' : ''}>${esc(txt)}</option>`).join('')}</select></label>`;
+    };
+    const sidoOpts = ro ? ro.sido.map((v) => [v, saleSidoName(v)]) : SALE_SIDO.map((v) => [v, v]);
     const label = SALE_TABS.find((t) => t[0] === S.saleTab)[1];
     return `<div class="app-market mk-sale" data-k="dong" data-s="sale"><section class="adm-shell"><div class="adm-body">`
-      + `<div class="adm-bar">${sel('시 · 도', '시도선택', SALE_SIDO)}${sel('시 · 군 · 구', '시군구 선택')}${sel('읍 · 면 · 동', '읍면동 선택')}${seg('kind', '종류')}${seg('deal', '거래')}${seg('period', '기간')}<button type="button" class="adm-load" disabled>조회</button></div>`
+      + `<div class="adm-bar">${sel('sido', '시 · 도', '시도선택', sidoOpts)}${sel('sgg', '시 · 군 · 구', '시군구 선택', ro ? ro.sgg.map((v) => [v, v]) : null)}${sel('dong', '읍 · 면 · 동', '읍면동 선택', ro ? ro.dong.map((v) => [v, v]) : null)}${seg('kind', '종류')}${seg('period', '기간')}<button type="button" class="adm-load" data-act="sale-go" ${ro && saleSeg.sido && ro.sido.includes(saleSeg.sido) ? '' : 'disabled'}>조회</button></div>`
       + `<div class="adm-tabs-top"><nav class="adm-view-tabs">${SALE_TABS.map(([k, t]) => `<button type="button" class="${S.saleTab === k ? 'on' : ''}" data-act="sale-tab" data-v="${k}">${t}</button>`).join('')}</nav><div id="admCrumbSlot" class="adm-crumb-slot"></div></div>`
       + `<div class="mk-sale-body">${agIsAdmin() && S.saleTab === 'near' ? agPanelHtml() : ''}${S.saleTab === 'near' ? saleCaseCard() : agIsAdmin() ? sameLotCard() : itCard('chart', label, itEmpty('준비 중인 화면입니다.'), true)}</div>`
       + `</div></section></div>`;
@@ -6325,7 +6383,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
         break;
       } catch (err) { console.error('[직접입력] 등록 실패', err); toast(`적지 못했습니다 — ${(err && err.message) || '까닭을 알 수 없습니다'}`, 'info'); break; }
       case 'sale-tab': S.saleTab = t.dataset.v; writeHash(false); syncCrumb(); renderMarket(); break;
-      case 'sale-seg': saleSeg[t.dataset.k] = t.dataset.v; renderMarket(); break;
+      case 'sale-seg': saleSeg[t.dataset.k] = t.dataset.v; saleSave(); renderMarket(); break;
+      case 'sale-go': saleApplied = { ...saleSeg }; renderMarket(); break;
       case 'ag-sel': agSel[t.dataset.k] = t.dataset.k === 'months' ? Number(t.dataset.v) : t.dataset.v; agSaveSel(); agPaint(); break;
       case 'ag-fresh': agSel.fresh = !!t.checked; break;
       case 'ag-cmd': void agSend(t.dataset.v); break;
@@ -6539,6 +6598,12 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   document.addEventListener('change', (e) => {
     if (e.target.id === 'pdfInput') { const fs = [...(e.target.files || [])]; e.target.value = ''; parseFiles(fs); return; }
     if (e.target.id === 'regFile' && e.target.files && e.target.files[0]) { S.modal.file = e.target.files[0].name; renderModal(); return; }
+    if (e.target.dataset && e.target.dataset.act === 'sale-q') {
+      const k = e.target.dataset.k; saleSeg[k] = e.target.value;
+      if (k === 'sido') { saleSeg.sgg = ''; saleSeg.dong = ''; }
+      if (k === 'sgg') saleSeg.dong = '';
+      saleSave(); renderMarket(); return;
+    }
     if (e.target.dataset && e.target.dataset.act === 'ag-lot') { agLotSel = e.target.value; try { localStorage.setItem(AG_LOT_KEY, agLotSel); } catch (err) { /* 그만 */ } agPaintTable(); return; }
     if (S.modal && S.modal.kind === 'register') readReg();
   });
