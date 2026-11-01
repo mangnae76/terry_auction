@@ -1,0 +1,115 @@
+// 국토부 실거래(RTMS) 한 달치 받기 · 저장 문서 이름 — 새벽 적재 작업이 쓰는 순수 함수들.
+// 화면(src/services/publicDataApi.ts · marketCache.ts)과 똑같은 모양으로 적어야 화면이 그대로 읽는다.
+// 그래서 문서 이름(cacheKey) · 종류 이름(typeLabel) · 받아 온 줄 모양을 앱 코드와 같게 둔다 — rtms.test.mjs 가 앱 코드와 맞는지 본다.
+
+/** 화면이 쓰는 국토부 주소 — publicDataApi.ts 의 *_API_PATH 와 같다 */
+export const PATHS = {
+  aptTrade: '/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev',
+  aptRent: '/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent',
+  offiTrade: '/1613000/RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade',
+  offiRent: '/1613000/RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent',
+  villaTrade: '/1613000/RTMSDataSvcRHTrade/getRTMSDataSvcRHTrade',
+  villaRent: '/1613000/RTMSDataSvcRHRent/getRTMSDataSvcRHRent',
+  singleTrade: '/1613000/RTMSDataSvcSHTrade/getRTMSDataSvcSHTrade',
+  singleRent: '/1613000/RTMSDataSvcSHRent/getRTMSDataSvcSHRent',
+  nrgTrade: '/1613000/RTMSDataSvcNrgTrade/getRTMSDataSvcNrgTrade',
+};
+/** 손으로 지역을 더할 때 쓰는 이름 — 'apt' 면 아파트 매매 · 전월세 둘 다 */
+export const KIND_PATHS = {
+  apt: [PATHS.aptTrade, PATHS.aptRent],
+  villa: [PATHS.villaTrade, PATHS.villaRent],
+  officetel: [PATHS.offiTrade, PATHS.offiRent],
+  single: [PATHS.singleTrade, PATHS.singleRent],
+  commercial: [PATHS.nrgTrade],
+};
+
+export const COLLECTION = 'cacheTradeMonth';
+
+/** marketCache.ts 의 cacheKey 와 같다 */
+export const cacheKey = (...parts) =>
+  parts.map((p) => String(p).replace(/\s+/g, '').replace(/[/\\.#$[\]]/g, '-')).join('_');
+export const docId = (lawdCd5, path, ymd) => cacheKey(lawdCd5, path, ymd);
+
+/** 문서 이름 → 지역 · 주소 · 달. 모르는 주소면 null */
+export const parseDocId = (id) => {
+  const m = /^(\d{5})_(.+)_(\d{6})$/.exec(id);
+  if (!m) return null;
+  const path = Object.values(PATHS).find((p) => cacheKey(p) === m[2]);
+  return path ? { lawdCd5: m[1], path, ymd: m[3] } : null;
+};
+
+/** publicDataApi.ts 의 propertyTypeLabel 과 같다 (전월세 주소는 주소 그대로) */
+export const typeLabelOf = (path) => {
+  if (path === PATHS.villaTrade) return '연립다세대';
+  if (path === PATHS.offiTrade) return '오피스텔';
+  if (path === PATHS.aptTrade) return '아파트';
+  return path;
+};
+
+/** 한국 시각 기준 n 달 전의 'YYYYMM' (0 = 이번 달) */
+export const ymdAgo = (n, now = Date.now()) => {
+  const k = new Date(now + 9 * 3600 * 1000);
+  const d = new Date(Date.UTC(k.getUTCFullYear(), k.getUTCMonth() - n, 1));
+  return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+};
+
+const asArray = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? [v] : []);
+const sleep = (ms) => new Promise((ok) => { setTimeout(ok, ms); });
+
+/** 하루 한도에 걸렸거나 이 키로 신청 안 된 API — 이 주소는 오늘 더 부르지 않는다 */
+export class QuotaError extends Error {}
+
+/** 한 쪽 받기 — 잠깐 막힘(429 · 5xx · 끊김)은 두 번 더 */
+const getPage = async (url, fetchImpl) => {
+  let last = null;
+  for (let i = 0; i < 3; i += 1) {
+    try {
+      const res = await fetchImpl(url, { headers: { Accept: 'application/json' } });
+      const text = await res.text();
+      if (/LIMITED_NUMBER_OF_SERVICE_REQUESTS/i.test(text)) throw new QuotaError('하루 호출 한도 초과');
+      if (/SERVICE_KEY_IS_NOT_REGISTERED|SERVICE_ACCESS_DENIED/i.test(text)) throw new QuotaError('이 키로 신청 안 된 API');
+      if (res.status === 429 || res.status >= 500) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${text.slice(0, 120)}`);
+      try { return JSON.parse(text); } catch { throw new Error(`JSON 아님 ${text.slice(0, 120)}`); }
+    } catch (err) {
+      if (err instanceof QuotaError) throw err;
+      last = err;
+      await sleep(1500 * (i + 1));
+    }
+  }
+  throw last;
+};
+
+/** 한 달치 — publicDataApi.ts 의 fetchRealTradeRowsForMonth 와 같은 모양 { rows, typeLabel } 을 돌려준다.
+ *  rows 는 국토부 줄 그대로에 __typeLabel 을 붙인 것. 몇 쪽이든 다 받는다(한 쪽 1,000줄 · 10쪽까지) */
+export const fetchMonth = async ({ path, lawdCd5, ymd, serviceKey, fetchImpl = fetch }) => {
+  const typeLabel = typeLabelOf(path);
+  const PAGE_SIZE = 1000;
+  const MAX_PAGES = 10;
+  const pageUrl = (pageNo) => {
+    const u = new URL(`https://apis.data.go.kr${path}`);
+    u.searchParams.set('serviceKey', serviceKey);
+    u.searchParams.set('LAWD_CD', lawdCd5);
+    u.searchParams.set('DEAL_YMD', ymd);
+    u.searchParams.set('numOfRows', String(PAGE_SIZE));
+    u.searchParams.set('pageNo', String(pageNo));
+    u.searchParams.set('_type', 'json');
+    return u.toString();
+  };
+  let calls = 1;
+  const first = await getPage(pageUrl(1), fetchImpl);
+  const code = String(first?.response?.header?.resultCode ?? '000');
+  if (!/^0+$/.test(code)) {
+    const msg = `${code} ${String(first?.response?.header?.resultMsg ?? '')}`.trim();
+    if (code === '22') throw new QuotaError(msg);
+    throw new Error(msg);
+  }
+  const raw = asArray(first?.response?.body?.items?.item);
+  const total = Number(first?.response?.body?.totalCount ?? raw.length) || raw.length;
+  const pages = Math.min(MAX_PAGES, Math.ceil(total / PAGE_SIZE));
+  for (let p = 2; p <= pages; p += 1) {
+    calls += 1;
+    raw.push(...asArray((await getPage(pageUrl(p), fetchImpl))?.response?.body?.items?.item));
+  }
+  return { result: { rows: raw.map((r) => ({ ...r, __typeLabel: typeLabel })), typeLabel }, calls };
+};

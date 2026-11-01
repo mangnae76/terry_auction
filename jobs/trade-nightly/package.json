@@ -1,0 +1,13 @@
+{
+  "name": "trade-nightly",
+  "private": true,
+  "type": "module",
+  "description": "새벽 1시 국토부 실거래 적재 (GitHub Actions)",
+  "scripts": {
+    "start": "node run.mjs"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}
