@@ -1,0 +1,1634 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- 마이턴옥션 이용가이드 — 웹 머리띠 '이용가이드' 단추가 여는 페이지(/guide/). 2026-11-01 claude.ai 아티팩트에서 옮겨 왔다 -->
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<title>마이턴옥션 이용가이드</title>
+<meta name="description" content="마이턴옥션 웹 이용가이드 — 서비스 목표, 주요 기능, 페이지별 메뉴 설명, 사용 방법, 멤버십, FAQ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap">
+<style>
+/* 레이아웃: 마이턴옥션 웹과 같은 틀 — 남색 머리띠 · 흰 장(章) 줄 · 블루그레이 바탕 위 흰 카드. 한 장으로 이어지는 스크롤 문서이며,
+   넓은 화면에서는 왼쪽에 지금 읽는 장의 목차가 따라온다. 색 · 글꼴 · 크기 규칙은 마이턴옥션 웹(/web)의 디자인 토큰을 그대로 옮겼다 */
+:root{
+  --bg:#e7ebf1;--surface:#ffffff;--surface-2:#f8fafc;--surface-3:#f1f5f9;
+  --line:#e5e7eb;--line-2:#d5dbe6;--card-line:#eef0f5;--row-line:#f1f3f7;--subtab-line:#d8e0ee;
+  --text:#111827;--text-2:#4b5563;--muted:#6b7280;--faint:#9ca3af;
+  --nav:#213366;--nav-2:#2b4078;--nav-deep:#14213d;--nav-text:#ffffff;--nav-dim:#c3cde6;--nav-name:#50c3fc;--nav-line:rgba(255,255,255,.22);
+  --accent:#f4700a;--accent-soft:#f0a35e;--strong:#213366;--tab-on:#213366;
+  --blue:#2b6df3;--blue-soft:#eef3ff;--cta:#4d7bef;
+  --on-line:#6b85f0;--on-bg:#dce5ff;--on-text:#3850c2;
+  --head-bg:#f3f6ff;--head-line:#e6ecfb;--head-text:#1f3a72;
+  --plus:#eda134;--star:#facc15;--star-empty:#a8adb8;
+  --ok:#16a34a;--danger:#d14343;--warn-bg:#fff7e8;--warn-line:#f3d9a4;--warn-text:#7a4f00;
+  --st-desk:#2563eb;--st-plan:#16a34a;--st-visited:#15803d;--st-bid:#ca8a04;--st-running:#dc2626;--st-won:#4f5fd6;--st-fail:#7c8695;--st-sold:#0d9488;
+  --tier-welcome:#6d5bd0;--tier-silver:#6b7584;--tier-gold:#c27c0e;--tier-family:#0d9488;
+  --foot:#252a39;--foot-text:#9aa1b2;--foot-strong:#ffffff;
+  --scrim:rgba(15,23,42,.45);
+  --shot-dim:none;
+  --shadow-card:0 1px 3px rgba(15,23,42,.06);
+  --shadow-hover:0 10px 24px -10px rgba(33,51,102,.28),0 2px 6px rgba(15,23,42,.06);
+  --shadow-pop:0 14px 36px -10px rgba(15,23,42,.3),0 3px 10px rgba(15,23,42,.08);
+  --font:"Pretendard","Noto Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --gnb-h:57px;--nav-h:46px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141f;--surface:#182031;--surface-2:#1d2638;--surface-3:#232d42;
+  --line:#2a3449;--line-2:#34405a;--card-line:#253046;--row-line:#232d42;--subtab-line:#2a3650;
+  --text:#cfd6e2;--text-2:#a9b2c2;--muted:#8b95a8;--faint:#6e788c;
+  --nav:#172449;--nav-2:#22346a;--nav-deep:#0f1830;--nav-text:#e3e8f2;--nav-dim:#9fb0d6;--nav-name:#50c3fc;--nav-line:rgba(255,255,255,.16);
+  --accent:#f4700a;--accent-soft:#f0a35e;--strong:#3d5bb0;--tab-on:#e6ecff;
+  --blue:#5b8cff;--blue-soft:rgba(91,140,255,.14);--cta:#4d7bef;
+  --on-line:#7d93f5;--on-bg:rgba(107,133,240,.22);--on-text:#b5c3ff;
+  --head-bg:rgba(91,140,255,.12);--head-line:rgba(91,140,255,.22);--head-text:#b5c3ff;
+  --plus:#eda134;--star:#facc15;--star-empty:#5b6579;
+  --ok:#3fcf74;--danger:#ff7a7a;--warn-bg:rgba(237,161,52,.12);--warn-line:rgba(237,161,52,.35);--warn-text:#f3c87a;
+  --st-desk:#6b9bff;--st-plan:#3fcf74;--st-visited:#34b26a;--st-bid:#e9b83a;--st-running:#ff6b6b;--st-won:#8b98ff;--st-fail:#97a1b2;--st-sold:#2dd4bf;
+  --tier-welcome:#a597ff;--tier-silver:#a3adbd;--tier-gold:#f0b54a;--tier-family:#2dd4bf;
+  --foot:#0b0f18;--foot-text:#7f889b;--foot-strong:#e3e8f2;
+  --scrim:rgba(0,0,0,.6);
+  --shot-dim:brightness(.9);
+  --shadow-card:0 1px 3px rgba(0,0,0,.35);
+  --shadow-hover:0 12px 26px -10px rgba(0,0,0,.7),0 2px 6px rgba(0,0,0,.3);
+  --shadow-pop:0 16px 40px -10px rgba(0,0,0,.75);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f141f;--surface:#182031;--surface-2:#1d2638;--surface-3:#232d42;
+  --line:#2a3449;--line-2:#34405a;--card-line:#253046;--row-line:#232d42;--subtab-line:#2a3650;
+  --text:#cfd6e2;--text-2:#a9b2c2;--muted:#8b95a8;--faint:#6e788c;
+  --nav:#172449;--nav-2:#22346a;--nav-deep:#0f1830;--nav-text:#e3e8f2;--nav-dim:#9fb0d6;--nav-name:#50c3fc;--nav-line:rgba(255,255,255,.16);
+  --accent:#f4700a;--accent-soft:#f0a35e;--strong:#3d5bb0;--tab-on:#e6ecff;
+  --blue:#5b8cff;--blue-soft:rgba(91,140,255,.14);--cta:#4d7bef;
+  --on-line:#7d93f5;--on-bg:rgba(107,133,240,.22);--on-text:#b5c3ff;
+  --head-bg:rgba(91,140,255,.12);--head-line:rgba(91,140,255,.22);--head-text:#b5c3ff;
+  --plus:#eda134;--star:#facc15;--star-empty:#5b6579;
+  --ok:#3fcf74;--danger:#ff7a7a;--warn-bg:rgba(237,161,52,.12);--warn-line:rgba(237,161,52,.35);--warn-text:#f3c87a;
+  --st-desk:#6b9bff;--st-plan:#3fcf74;--st-visited:#34b26a;--st-bid:#e9b83a;--st-running:#ff6b6b;--st-won:#8b98ff;--st-fail:#97a1b2;--st-sold:#2dd4bf;
+  --tier-welcome:#a597ff;--tier-silver:#a3adbd;--tier-gold:#f0b54a;--tier-family:#2dd4bf;
+  --foot:#0b0f18;--foot-text:#7f889b;--foot-strong:#e3e8f2;
+  --scrim:rgba(0,0,0,.6);
+  --shot-dim:brightness(.9);
+  --shadow-card:0 1px 3px rgba(0,0,0,.35);
+  --shadow-hover:0 12px 26px -10px rgba(0,0,0,.7),0 2px 6px rgba(0,0,0,.3);
+  --shadow-pop:0 16px 40px -10px rgba(0,0,0,.75);
+  color-scheme:dark;
+}
+
+/* ---------- 바탕 ---------- */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:50;background:var(--nav)}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
+.ic{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.125em}
+.wrap{width:100%;max-width:1344px;margin:0 auto;padding-left:max(32px,env(safe-area-inset-left,0px));padding-right:max(32px,env(safe-area-inset-right,0px))}
+@media (max-width:720px){.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+
+/* ---------- 머리띠 ---------- */
+.gnb{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:var(--nav);color:var(--nav-text)}
+.gnb-in{display:flex;align-items:center;justify-content:space-between;gap:16px;height:57px}
+.g-brand{display:flex;align-items:center;gap:12px;min-width:0;text-decoration:none}
+.g-brand img{display:block;height:34px;width:auto}
+.g-brand span{font-size:15px;font-weight:700;color:var(--nav-name);padding-left:12px;border-left:1px solid var(--nav-line);white-space:nowrap;letter-spacing:-.2px}
+.g-tools{position:relative;display:flex;align-items:center;gap:6px;flex:none}
+.ver-btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px 0 12px;border-radius:999px;border:1px solid var(--nav-line);background:transparent;color:var(--nav-text);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.icon-btn{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:8px;border:0;background:transparent;color:var(--nav-text);font-size:18px}
+.ver-btn:hover,.icon-btn:hover{background:rgba(255,255,255,.1)}
+@media (max-width:560px){.g-brand img{height:28px}.g-brand span{font-size:14px}}
+
+/* ---------- 장(章) 줄 ---------- */
+.secnav{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--gnb-h));z-index:30;background:var(--surface);border-bottom:1px solid var(--subtab-line);box-shadow:0 1px 0 rgba(15,23,42,.03)}
+.secnav-in{display:flex;align-items:stretch;gap:2px;height:var(--nav-h);overflow-x:auto;scrollbar-width:none}
+.secnav-in::-webkit-scrollbar{display:none}
+.secnav a{position:relative;display:flex;align-items:center;gap:6px;padding:0 14px;font-size:15px;font-weight:600;color:var(--text-2);white-space:nowrap;text-decoration:none;transition:color .15s}
+.secnav a:first-child{padding-left:2px}
+.secnav a:hover{color:var(--text)}
+.secnav a.on{color:var(--tab-on)}
+.secnav a::after{content:"";position:absolute;left:8px;right:8px;bottom:0;height:3px;border-radius:2px 2px 0 0;background:var(--accent);transform:scaleX(0);transition:transform .2s ease}
+.secnav a:first-child::after{left:0}
+.secnav a.on::after{transform:scaleX(1)}
+.secnav .no{font-size:11.5px;font-weight:800;color:var(--faint);font-variant-numeric:tabular-nums}
+.secnav a.on .no{color:var(--accent)}
+@media (max-width:560px){.secnav a{font-size:14px;padding:0 11px}.secnav .no{display:none}}
+
+/* ---------- 이전 버전 띠 ---------- */
+.oldbar{background:var(--warn-bg);border-bottom:1px solid var(--warn-line);color:var(--warn-text);font-size:13.5px}
+.oldbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;padding-block:10px}
+.oldbar b{font-weight:800}
+.oldbar button{height:30px;padding:0 12px;border-radius:6px;border:1px solid var(--warn-line);background:var(--surface);color:var(--text);font-size:13px;font-weight:700}
+
+/* ---------- 본문 틀: 왼쪽 목차 + 오른쪽 글 ---------- */
+main{flex:1;padding-block:24px 64px}
+.layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:1180px){.layout{grid-template-columns:minmax(0,1fr)}.side{display:none}}
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--gnb-h) + var(--nav-h) + 20px);max-height:calc(100vh - var(--gnb-h) - var(--nav-h) - 40px);overflow:auto;padding:4px 2px 12px}
+.side h6{margin:0 0 10px;font-size:12px;font-weight:800;letter-spacing:.4px;color:var(--muted)}
+.side ol{list-style:none;margin:0;padding:0;display:grid;gap:2px;border-left:2px solid var(--line-2)}
+.side a{display:block;margin-left:-2px;padding:6px 10px 6px 14px;border-left:2px solid transparent;font-size:13.5px;font-weight:600;line-height:1.4;color:var(--text-2);text-decoration:none}
+.side a:hover{color:var(--text)}
+.side a.on{border-left-color:var(--accent);color:var(--tab-on);font-weight:800}
+.side .star{color:var(--accent);margin-left:4px;font-size:11px;vertical-align:1px}
+.content{display:grid;gap:56px;min-width:0}
+
+/* ---------- 장 ---------- */
+.sec{display:grid;gap:16px;min-width:0;scroll-margin-top:calc(env(safe-area-inset-top,0px) + var(--gnb-h) + var(--nav-h) + 12px)}
+.sec-head{display:grid;gap:6px;padding:4px 2px}
+.sec-no{font-size:12.5px;font-weight:800;letter-spacing:1.2px;color:var(--accent);font-variant-numeric:tabular-nums}
+.sec-head h2{display:flex;align-items:center;gap:10px;margin:0;font-size:26px;line-height:1.25;font-weight:800;letter-spacing:-.6px;text-wrap:balance}
+.sec-head h2 .ic{color:var(--blue)}
+.sec-head p{margin:0;font-size:15px;color:var(--muted);max-width:70ch}
+.panel{min-width:0;overflow:hidden;background:var(--surface);border:1px solid var(--card-line);border-radius:14px;box-shadow:var(--shadow-card);padding:24px 28px 28px;scroll-margin-top:calc(env(safe-area-inset-top,0px) + var(--gnb-h) + var(--nav-h) + 14px)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;padding-bottom:14px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.panel-head h3{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0;font-size:18px;font-weight:800;letter-spacing:-.3px}
+.panel-head h3>.ic{color:var(--blue)}
+.panel-head .path{font-size:12.5px;font-weight:600;color:var(--muted)}
+.panel-body{display:grid;gap:18px;min-width:0}
+.panel.key{border-color:color-mix(in srgb,var(--accent) 45%,var(--card-line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent),var(--shadow-card)}
+@media (max-width:720px){.panel{padding:18px 16px 22px;border-radius:12px}.sec-head h2{font-size:22px}.content{gap:44px}}
+
+/* 글 */
+.lead{margin:0;font-size:16.5px;line-height:1.75;color:var(--text);max-width:72ch}
+.p{margin:0;font-size:15px;line-height:1.75;color:var(--text-2);max-width:72ch}
+.lead b,.p b,.list b,.note b,.tbl td b,.card p b,.step-b p b,.faq .a b{color:var(--text);font-weight:700}
+.bh{margin:8px 0 0;font-size:16px;font-weight:800;letter-spacing:-.2px}
+.list{margin:0;padding-left:20px;display:grid;gap:6px;font-size:15px;line-height:1.7;color:var(--text-2);max-width:76ch}
+.list li::marker{color:var(--faint)}
+.req{color:var(--danger);font-weight:800}
+.big-quote{margin:0;padding:22px 24px;border-radius:12px;background:var(--nav);color:var(--nav-text);font-size:22px;line-height:1.45;font-weight:800;letter-spacing:-.5px;text-wrap:balance}
+.big-quote em{font-style:normal;color:var(--accent-soft)}
+.big-quote small{display:block;margin-top:6px;font-size:14px;font-weight:600;color:var(--nav-dim);letter-spacing:0}
+@media (max-width:720px){.big-quote{font-size:18px;padding:18px}}
+
+/* 꼬리표 · 칩 */
+.tag{display:inline-flex;align-items:center;height:19px;padding:0 6px;border-radius:4px;font-size:11.5px;font-weight:800;letter-spacing:.2px;line-height:1;white-space:nowrap;flex:none}
+.tag.plus{background:var(--plus);color:#fff}
+.tag.soon{background:var(--surface-3);color:var(--muted);border:1px solid var(--line-2)}
+.tag.new{background:var(--accent);color:#fff}
+.tag.key{background:var(--accent);color:#fff}
+.chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.chips-label{font-size:13px;font-weight:700;color:var(--muted);margin-right:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text-2);font-size:13.5px;font-weight:600;white-space:nowrap}
+
+/* 카드 묶음 */
+.cards{display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));gap:12px}
+@media (max-width:980px){.cards{--cols:2!important}}
+@media (max-width:600px){.cards{--cols:1!important}}
+.card{display:flex;flex-direction:column;gap:8px;min-width:0;padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.card.dark{background:var(--nav);border-color:var(--nav);color:var(--nav-text)}
+.card.dark p{color:var(--nav-dim)}
+.card.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.card.hot p{color:#fff3e8}
+.card-no{font-size:12px;font-weight:800;letter-spacing:.6px;color:var(--accent);font-variant-numeric:tabular-nums}
+.card.dark .card-no{color:var(--accent-soft)}
+.card.hot .card-no{color:#fff3e8}
+.card-h{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin:0;font-size:15.5px;font-weight:800;letter-spacing:-.2px}
+.card-ic{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--blue-soft);color:var(--blue);font-size:17px;flex:none}
+.card p{margin:0;font-size:14px;line-height:1.65;color:var(--text-2)}
+.card .more{margin-top:auto;padding-top:4px;display:inline-flex;align-items:center;gap:2px;align-self:flex-start;font-size:13px;font-weight:700;color:var(--blue);text-decoration:none}
+.card .more:hover{text-decoration:underline;text-underline-offset:3px}
+.card.dark .more{color:var(--accent-soft)}
+
+/* 따라하기 */
+.steps{list-style:none;margin:0;padding:0;display:grid}
+.step{position:relative;display:grid;grid-template-columns:32px minmax(0,1fr);column-gap:14px;padding-bottom:20px}
+.step:last-child{padding-bottom:0}
+.step:not(:last-child)::before{content:"";position:absolute;left:15px;top:36px;bottom:6px;width:2px;border-radius:1px;background:var(--line-2)}
+.step-n{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--strong);color:#fff;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+.step-b{min-width:0;padding-top:4px;display:grid;gap:4px;justify-items:start}
+.step-b h4{margin:0;font-size:15.5px;font-weight:800;letter-spacing:-.2px}
+.step-b p{margin:0;font-size:14.5px;line-height:1.7;color:var(--text-2);max-width:72ch}
+
+/* 표 */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.tbl table{width:100%;border-collapse:collapse;font-size:14px;min-width:540px}
+.tbl th{padding:10px 16px;background:var(--head-bg);border-bottom:1px solid var(--head-line);color:var(--head-text);font-size:13.5px;font-weight:700;text-align:left;white-space:nowrap}
+.tbl td{padding:12px 16px;border-bottom:1px solid var(--row-line);color:var(--text-2);line-height:1.65;vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td:first-child{color:var(--text);font-weight:700;white-space:nowrap}
+.tbl-note{margin:8px 2px 0;font-size:13px;color:var(--muted)}
+
+/* 알림 상자 */
+.note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:14px 16px;border-radius:10px;border:1px solid var(--head-line);background:var(--blue-soft);font-size:14.5px;line-height:1.7;color:var(--text-2)}
+.note>.ic{font-size:18px;color:var(--blue);margin-top:3px}
+.note .nt{display:block;margin-bottom:2px;color:var(--text);font-weight:800}
+.note.tip{background:var(--surface-2);border-color:var(--line)}
+.note.tip>.ic{color:var(--plus)}
+.note.warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn-text)}
+.note.warn>.ic,.note.warn .nt,.note.warn b{color:var(--warn-text)}
+
+/* 단추 */
+.go{display:flex;flex-wrap:wrap;gap:8px}
+.mini{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface);color:var(--text-2);font-size:12.5px;font-weight:700;text-decoration:none;white-space:nowrap}
+.mini:hover{border-color:var(--on-line);color:var(--text)}
+.open-app{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border-radius:6px;border:1px solid var(--head-line);background:var(--blue-soft);color:var(--blue);font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap}
+.open-app:hover{border-color:var(--on-line)}
+
+/* 대문(히어로) */
+.hero{position:relative;isolation:isolate;overflow:hidden;border-radius:16px;padding:36px;background:var(--nav);color:var(--nav-text);display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:32px;align-items:center}
+.hero::after{content:"";position:absolute;z-index:-1;right:-160px;top:-180px;width:480px;height:480px;border-radius:50%;background:var(--nav-name);opacity:.12}
+.hero-badge{justify-self:start;display:inline-flex;align-items:center;height:28px;padding:0 14px;border-radius:999px;background:var(--accent-soft);color:var(--nav-deep);font-size:13px;font-weight:900;letter-spacing:1px}
+.hero-copy{display:grid;gap:16px;align-content:start}
+.hero-title{margin:0;font-size:34px;line-height:1.28;font-weight:900;letter-spacing:-1px;text-wrap:balance}
+.hero-title em{font-style:normal;color:var(--accent-soft)}
+.hero p{margin:0;font-size:15.5px;line-height:1.75;color:var(--nav-dim);max-width:48ch}
+.hero p b{color:var(--nav-text)}
+.hero-chips{display:flex;flex-wrap:wrap;gap:6px}
+.hero-chips span{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;background:var(--nav-2);color:var(--nav-text);font-size:12.5px;font-weight:700}
+.hero-chips span.hot{background:var(--accent);color:#fff}
+.hero-photo{position:relative;min-width:0;margin:0;overflow:hidden;border-radius:14px;background:var(--nav-deep);box-shadow:0 0 0 1px rgba(255,255,255,.08),0 8px 18px -12px rgba(0,0,0,.35)}
+.hero-photo img{display:block;width:100%;height:auto}
+.hero-photo figcaption{display:grid;gap:6px;padding:18px 24px 20px;background:var(--nav-deep)}
+.hero-photo figcaption span{font-size:14.5px;line-height:1.65;color:#e2e8f5;text-wrap:pretty}
+.hero-photo figcaption b{font-size:24px;line-height:1.3;font-weight:900;letter-spacing:-.6px;color:var(--accent-soft)}
+@media (max-width:720px){.hero-photo figcaption{padding:16px 16px 18px}.hero-photo figcaption b{font-size:20px}}
+.statement{display:grid;gap:8px;padding:2px 0 4px}
+.statement .eyebrow{font-size:13px;font-weight:900;letter-spacing:1.4px;color:var(--accent)}
+.statement p{margin:0;font-size:23px;line-height:1.4;font-weight:800;letter-spacing:-.6px;color:var(--text);text-wrap:balance;max-width:34ch}
+.statement p em{font-style:normal;color:var(--accent)}
+@media (max-width:720px){.statement p{font-size:19px}}
+@media (max-width:980px){.hero{grid-template-columns:1fr;padding:30px 24px}.hero-title{font-size:28px}}
+@media (max-width:720px){.hero{padding:24px 18px;border-radius:12px}.hero-title{font-size:24px}}
+
+/* 게임판 그림 */
+.art{margin:0;display:grid;gap:10px}
+.art .board-art{display:block;width:100%;height:auto;border-radius:12px;max-width:100%}
+.art figcaption{font-size:13px;color:var(--muted);text-align:center}
+
+/* 서비스 구간 */
+.scope{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.sc{display:grid;place-items:center;min-height:54px;padding:8px 6px;border-radius:8px;background:var(--surface-3);color:var(--muted);font-size:13.5px;font-weight:700;line-height:1.35;text-align:center}
+.sc.in{background:var(--on-bg);border:1px solid var(--on-line);color:var(--on-text)}
+.scope-cap{padding-top:8px;border-top:3px solid var(--line-2);font-size:12.5px;font-weight:700;color:var(--muted);text-align:center}
+.scope-cap.in{grid-column:2 / -1;border-top-color:var(--accent);color:var(--text)}
+.scope-key{display:none;margin:8px 0 0;font-size:13px;color:var(--muted)}
+.scope-key i{display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--on-bg);border:1px solid var(--on-line);vertical-align:-1px;margin-right:6px}
+@media (max-width:760px){.scope{grid-template-columns:repeat(4,minmax(0,1fr))}.sc{font-size:12.5px}.scope-cap{display:none}.scope-key{display:block}}
+
+/* BI */
+.bi{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:16px;align-items:stretch}
+.bi-logo{display:grid;place-items:center;padding:28px;border-radius:12px;background:var(--nav)}
+.bi-logo img{width:100%;max-width:220px;height:auto}
+.bi-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;align-content:center}
+.bi-list li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);font-size:14px;line-height:1.6;color:var(--text-2)}
+.bi-list b{display:block;color:var(--text);font-size:15px}
+.bi-sw{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;font-size:20px;color:#fff}
+@media (max-width:760px){.bi{grid-template-columns:1fr}}
+
+/* 게임판 칸(단계) */
+.board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
+@media (max-width:1100px){.board{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:480px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{--c:var(--st-desk);display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid var(--line-2);border-radius:10px;background:var(--surface)}
+.tile-band{height:8px;background:var(--c)}
+.tile-in{display:grid;gap:4px;padding:10px 12px 12px}
+.tile-no{font-size:11.5px;font-weight:800;letter-spacing:.3px;color:var(--faint);font-variant-numeric:tabular-nums}
+.tile-name{font-size:15px;font-weight:800;color:var(--c)}
+.tile-desc{font-size:12.5px;line-height:1.5;color:var(--text-2)}
+.tile.start{background:var(--nav);border-color:var(--nav)}
+.tile.start .tile-band{background:var(--accent)}
+.tile.start .tile-no{color:var(--nav-name)}
+.tile.start .tile-name{color:var(--nav-text)}
+.tile.start .tile-desc{color:var(--nav-dim)}
+
+/* 단계 줄 */
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 4px}
+.stg{--c:var(--st-desk);display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:7px;border:1px solid color-mix(in srgb,var(--c) 45%,transparent);background:color-mix(in srgb,var(--c) 9%,var(--surface));color:var(--c);font-size:14px;font-weight:700;white-space:nowrap}
+.flow .arr{padding:0 1px;font-size:10px;color:var(--faint)}
+.flow .grp{display:inline-flex;flex-wrap:wrap;gap:4px;padding:3px;border:1px dashed var(--line-2);border-radius:10px}
+
+/* 손품조사 3요소 */
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 40px minmax(0,.95fr);gap:12px;align-items:stretch}
+.trio .arrow{display:grid;place-items:center;color:var(--accent);font-size:24px}
+.pillar{display:grid;gap:8px;align-content:start;padding:18px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2)}
+.pillar .q{font-size:12.5px;font-weight:800;color:var(--accent)}
+.pillar h4{margin:0;display:flex;align-items:center;gap:8px;font-size:17px;font-weight:900;letter-spacing:-.3px}
+.pillar p{margin:0;font-size:14px;line-height:1.65;color:var(--text-2)}
+.pillar ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.6;color:var(--text-2)}
+.pillar.out{background:var(--nav);border-color:var(--nav);color:var(--nav-text)}
+.pillar.out .q{color:var(--accent-soft)}
+.pillar.out p,.pillar.out ul{color:var(--nav-dim)}
+@media (max-width:1100px){.trio{grid-template-columns:repeat(3,minmax(0,1fr))}.trio .arrow{grid-column:1 / -1;transform:rotate(90deg);height:28px}.trio .pillar.out{grid-column:1 / -1}}
+@media (max-width:720px){.trio{grid-template-columns:1fr}}
+
+/* 화면 캡처 + 번호 설명 */
+.shot{margin:0;display:grid;gap:14px;min-width:0}
+.shot-frame{position:relative;overflow:hidden;border:1px solid var(--line-2);border-radius:12px;background:#fff;box-shadow:var(--shadow-card)}
+.shot-bar{display:flex;align-items:center;gap:6px;height:30px;padding:0 12px;background:#eef1f6;border-bottom:1px solid #dfe4ec}
+.shot-bar i{width:9px;height:9px;border-radius:50%;background:#d3d9e3}
+.shot-bar span{margin-left:8px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:#6b7280}
+.shot-img{position:relative}
+.shot-in{position:relative}
+.shot-swipe{display:none}
+@media (max-width:720px){.shot-img{overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}.shot-in{width:680px}.shot-swipe{display:block;margin:0;padding:6px 12px 8px;font-size:12px;color:var(--muted);border-top:1px solid var(--line-2);background:var(--surface-2)}}
+.shot-img img{display:block;width:100%;height:auto;filter:var(--shot-dim)}
+.shot-pin{position:absolute;display:grid;place-items:center;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:900;font-variant-numeric:tabular-nums;box-shadow:0 0 0 3px #fff,0 4px 12px rgba(0,0,0,.28);transition:transform .15s}
+.shot-pin.hot{transform:scale(1.3)}
+@media (max-width:720px){.shot-pin{width:20px;height:20px;margin:-10px 0 0 -10px;font-size:11px;box-shadow:0 0 0 2px #fff,0 3px 8px rgba(0,0,0,.25)}}
+.legend{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 24px}
+@media (max-width:760px){.legend{grid-template-columns:1fr}}
+.legend li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;padding:8px 8px;border-radius:8px;font-size:14px;line-height:1.6;color:var(--text-2)}
+.legend li.hot{background:var(--surface-2)}
+.legend .lg-t{display:block;color:var(--text);font-weight:800}
+.legend li div b{color:var(--text);font-weight:700}
+.pin{display:inline-grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:900;font-style:normal;line-height:1;font-variant-numeric:tabular-nums}
+
+/* 예시 화면(캡처가 없을 때) — 공통 화면 구성 */
+.mock{position:relative;min-width:0;padding:34px 14px 14px;border:1px solid var(--line-2);border-radius:12px;background:var(--bg)}
+.mock-tag{position:absolute;left:14px;top:10px;font-size:11.5px;font-weight:800;letter-spacing:.3px;color:var(--muted)}
+.mock-scroll{overflow-x:auto}
+.mk-app{min-width:820px;overflow:hidden;border:1px solid var(--line-2);border-radius:8px;background:var(--bg);font-size:12px}
+.mk-gnb{display:flex;align-items:center;gap:12px;height:46px;padding:0 14px;background:var(--nav);color:var(--nav-text)}
+.mk-gnb img{height:22px;width:auto}
+.mk-m{display:flex;align-items:center;gap:11px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.mk-m .on{padding-bottom:3px;border-bottom:2px solid var(--accent)}
+.mk-box{display:inline-grid;place-items:center;width:20px;height:20px;border:1px solid var(--nav-line);border-radius:5px;font-size:11px}
+.mk-r{display:flex;align-items:center;gap:10px;margin-left:auto;font-size:11px;color:var(--nav-dim);white-space:nowrap}
+.mk-sub{display:flex;align-items:center;gap:12px;height:36px;padding:0 14px;background:var(--surface);border-bottom:1px solid var(--subtab-line);font-weight:600;color:var(--text-2);white-space:nowrap}
+.mk-sub .where{font-weight:800;color:var(--text)}
+.mk-sub .on{color:var(--tab-on);text-decoration:underline 2px var(--accent);text-underline-offset:10px}
+.mk-crumb{margin-left:auto;font-size:11px;color:var(--muted)}
+.mk-body{display:grid;gap:10px;padding:12px 14px}
+.mk-tool{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--surface);border:1px solid var(--line-2);border-radius:8px}
+.mk-c{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:5px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text-2);font-size:11.5px;font-weight:500;white-space:nowrap}
+.mk-c.on{background:var(--on-bg);border-color:var(--on-line);color:var(--on-text)}
+.mk-search{flex:1;color:var(--faint)}
+.mk-ghost{height:58px;border-radius:8px;background:var(--surface);border:1px solid var(--card-line)}
+.mock .pin{width:18px;height:18px;font-size:10.5px;box-shadow:0 0 0 2px var(--surface)}
+
+/* 이용권 */
+.plans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding-top:8px}
+@media (max-width:980px){.plans{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:440px){.plans{grid-template-columns:1fr}}
+.plan{position:relative;display:grid;gap:6px;min-width:0;padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.plan.best{border-color:var(--on-line);background:var(--blue-soft);box-shadow:inset 0 0 0 1px var(--on-line)}
+.plan-flag{position:absolute;top:-10px;right:14px;padding:2px 9px;border-radius:999px;background:var(--accent);color:#fff;font-size:11.5px;font-weight:800}
+.plan-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.plan-h b{font-size:16px;font-weight:800}
+.plan-off{font-size:12.5px;font-weight:800;color:var(--danger)}
+.plan-off.base{color:var(--muted);font-weight:700}
+.plan-price{font-size:26px;font-weight:800;letter-spacing:-.6px;color:var(--text);font-variant-numeric:tabular-nums}
+.plan-price small{margin-left:2px;font-size:15px;font-weight:700}
+.plan-per{font-size:13.5px;font-weight:700;color:var(--on-text);font-variant-numeric:tabular-nums}
+.plan-base{font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+.perks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.perk{display:grid;gap:4px;justify-items:center;text-align:center;padding:18px 8px;border-radius:12px;background:var(--blue-soft);border:1px solid var(--head-line)}
+.perk strong{font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--on-text);font-variant-numeric:tabular-nums}
+.perk small{font-size:12.5px;color:var(--text-2)}
+
+/* 포인트 등급 */
+.tiers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:980px){.tiers{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:440px){.tiers{grid-template-columns:1fr}}
+.tier{--c:var(--tier-welcome);display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.tier-h{padding:14px 16px;background:color-mix(in srgb,var(--c) 11%,var(--surface));border-bottom:1px solid var(--line)}
+.tier-h b{display:flex;align-items:baseline;gap:8px;font-size:15px;font-weight:800;letter-spacing:.8px;color:var(--c)}
+.tier-h b span{font-size:12.5px;font-weight:700;letter-spacing:0;color:var(--text-2)}
+.tier-h small{display:block;margin-top:3px;font-size:13px;font-weight:700;color:var(--text)}
+.tier ul{list-style:none;margin:0;padding:6px 16px 10px}
+.tier li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--row-line);font-size:13px;color:var(--text-2)}
+.tier li:last-child{border-bottom:0}
+.tier li b{color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* 회원 비교 */
+.cmp th:not(:first-child),.cmp td:not(:first-child){text-align:center}
+.cmp td:first-child{white-space:normal;min-width:190px}
+.cmp .hl{background:color-mix(in srgb,var(--blue) 6%,transparent)}
+.cmp th.hl{color:var(--blue)}
+.yes{display:inline-flex;align-items:center;gap:4px;color:var(--ok);font-weight:700;white-space:nowrap}
+.no{display:inline-flex;align-items:center;gap:4px;color:var(--muted);font-weight:600;white-space:nowrap}
+
+/* FAQ */
+.faq-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.faq-cats{display:flex;flex-wrap:wrap;gap:6px}
+.faq-cats button{height:32px;padding:0 12px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text-2);font-size:13px;font-weight:600}
+.faq-cats button.on{background:var(--on-bg);border-color:var(--on-line);color:var(--on-text);font-weight:800}
+.faq-search{display:flex;align-items:center;gap:8px;width:min(320px,100%);height:38px;padding:0 12px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);color:var(--muted)}
+.faq-search:focus-within{border-color:var(--on-line);box-shadow:0 0 0 3px var(--blue-soft)}
+.faq-search input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:14px;color:var(--text);outline:none}
+.faq{display:grid;gap:8px}
+.faq details{border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+.faq details[open]{background:var(--surface);border-color:var(--line-2)}
+.faq summary{display:flex;align-items:center;gap:10px;padding:14px 16px;font-size:15px;font-weight:700;color:var(--text);cursor:pointer;list-style:none}
+.faq summary::-webkit-details-marker{display:none}
+.faq .q{flex:none;color:var(--blue);font-weight:800}
+.faq .cat{flex:none;font-size:11.5px;font-weight:700;color:var(--muted);padding:2px 7px;border-radius:4px;background:var(--surface-3)}
+.faq summary>.ic{margin-left:auto;color:var(--faint);transition:transform .2s}
+.faq details[open] summary>.ic{transform:rotate(180deg)}
+.faq .a{padding:0 16px 16px 38px;font-size:14.5px;line-height:1.75;color:var(--text-2)}
+.faq-empty{margin:0;padding:24px 16px;border:1px dashed var(--line-2);border-radius:12px;text-align:center;font-size:14.5px;color:var(--muted)}
+
+/* 문의 */
+.contact{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:720px){.contact{grid-template-columns:1fr}}
+.ct{display:grid;grid-template-columns:46px minmax(0,1fr);gap:2px 14px;align-items:center;padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.ct .card-ic{width:46px;height:46px;font-size:21px;grid-row:span 3;align-self:start}
+.ct small{font-size:12.5px;font-weight:700;color:var(--muted)}
+.ct strong{font-size:21px;font-weight:800;letter-spacing:-.3px;user-select:all;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.ct .row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+
+/* 영상 */
+.video{position:relative;overflow:hidden;border-radius:12px;background:var(--nav-deep);aspect-ratio:16/9;max-width:100%}
+.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.video-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:16px 18px;border-radius:12px;background:var(--nav);color:var(--nav-text);text-decoration:none}
+.video-card .play{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;font-size:18px}
+.video-card b{display:block;font-size:15px}
+.video-card small{color:var(--nav-dim);font-size:13px}
+
+/* 바닥 */
+.foot{background:var(--foot);color:var(--foot-text);font-size:13px;line-height:1.75}
+.foot .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px 32px;padding-block:28px 36px}
+.foot b{color:var(--foot-strong);font-weight:700}
+.foot .linkish{padding:0;border:0;background:none;color:var(--foot-strong);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.foot p{margin:0}
+
+/* 첫 화면 — 웹으로 보기 · 영상으로 보기 */
+.home{padding:28px 0 64px}
+.home-hero{position:relative;isolation:isolate;overflow:hidden;display:grid;gap:30px;padding:44px 40px 36px;border-radius:16px;background:var(--nav);color:var(--nav-text)}
+.home-hero::before{content:"";position:absolute;right:-120px;top:-160px;z-index:-1;width:520px;height:520px;border-radius:50%;background:var(--nav-2);opacity:.55}
+.home-head{display:grid;gap:12px;max-width:640px}
+.home-eyebrow{justify-self:start;display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.1);font-size:13px;font-weight:800;color:var(--nav-name);font-variant-numeric:tabular-nums}
+.home-title{margin:0;font-size:38px;line-height:1.24;font-weight:900;letter-spacing:-1.2px;text-wrap:balance}
+.home-head p{margin:0;font-size:16px;line-height:1.7;color:var(--nav-dim)}
+.pick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.pick-card{display:grid;grid-template-rows:auto 1fr;overflow:hidden;border-radius:14px;background:var(--surface);color:var(--text);text-decoration:none;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 8px 18px -12px rgba(0,0,0,.35);transition:transform .2s ease,box-shadow .2s ease}
+.pick-card:hover{transform:translateY(-4px);box-shadow:0 0 0 1px rgba(255,255,255,.1),0 14px 26px -14px rgba(0,0,0,.4)}
+.pick-card:focus-visible{outline:3px solid var(--accent-soft);outline-offset:3px}
+.pick-thumb{position:relative;aspect-ratio:16/9;overflow:hidden;background:var(--nav-deep)}
+.pick-thumb img{display:block;width:100%;height:100%;object-fit:cover;object-position:left top;transition:transform .5s ease}
+.pick-card:hover .pick-thumb img{transform:scale(1.03)}
+.pick-thumb.vid img{object-position:center;filter:brightness(.72)}
+.pick-thumb .big-play{position:absolute;left:50%;top:50%;display:grid;place-items:center;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;background:var(--accent);color:#fff;box-shadow:0 0 0 8px rgba(244,112,10,.25),0 12px 30px rgba(0,0,0,.45)}
+.pick-thumb .big-play .ic{width:32px;height:32px;margin-left:4px;fill:currentColor;stroke:none}
+.pick-thumb .stamp{position:absolute;left:14px;top:14px;display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;background:rgba(10,16,34,.72);color:#fff;font-size:12.5px;font-weight:800;backdrop-filter:blur(4px)}
+.pick-body{display:grid;gap:8px;align-content:start;padding:22px 24px 24px}
+.pick-body h3{display:flex;align-items:center;gap:10px;margin:0;font-size:22px;font-weight:900;letter-spacing:-.5px}
+.pick-body h3 .ic{color:var(--blue)}
+.pick-body p{margin:0;font-size:15px;line-height:1.7;color:var(--text-2)}
+.pick-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px;padding-top:14px;border-top:1px solid var(--line)}
+.pick-meta{font-size:13px;font-weight:700;color:var(--muted)}
+.pick-go{display:inline-flex;align-items:center;gap:4px;font-size:14.5px;font-weight:800;color:var(--blue)}
+.pick-card:hover .pick-go .ic{transform:translateX(3px)}
+.pick-go .ic{transition:transform .2s}
+.home-quick{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.home-quick b{margin-right:4px;font-size:13px;font-weight:700;color:var(--nav-dim)}
+.home-quick a{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:999px;background:var(--nav-2);color:var(--nav-text);font-size:13.5px;font-weight:700;text-decoration:none}
+.home-quick a:hover{background:var(--accent)}
+@media (max-width:860px){.pick{grid-template-columns:1fr}.home-hero{padding:32px 24px 28px}.home-title{font-size:30px}}
+@media (max-width:560px){.home{padding:16px 0 40px}.home-hero{padding:26px 18px 22px;border-radius:12px;gap:22px}.home-title{font-size:26px}.home-head p{font-size:15px}.pick-body{padding:18px 18px 20px}.pick-body h3{font-size:20px}}
+
+/* 웹 ↔ 영상 바꾸기 단추 */
+.secnav-row{display:flex;align-items:stretch;gap:12px}
+.secnav-row .secnav-in{flex:1;min-width:0}
+.secnav .to-mode{flex:none;align-self:center;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 14px 0 10px;border-radius:999px;background:var(--nav);color:var(--nav-text);font-size:13.5px;font-weight:800;text-decoration:none;white-space:nowrap}
+.secnav .to-mode::after{content:none}
+.to-mode .ic{width:16px;height:16px}
+.to-mode .pl{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--accent)}
+.to-mode .pl .ic{width:11px;height:11px;margin-left:1px;fill:#fff;stroke:none}
+.secnav .to-mode:hover{background:var(--nav-2);color:var(--nav-text)}
+.to-mode .short{display:none}
+@media (max-width:560px){.to-mode .long{display:none}.to-mode .short{display:inline}.secnav .to-mode{padding:0 12px 0 8px}}
+
+/* 영상으로 보기 */
+.vview{padding:28px 0 64px}
+.vv-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px;margin-bottom:18px}
+.vv-head > div{display:grid;gap:6px}
+.vv-head h2{display:flex;align-items:center;gap:10px;margin:0;font-size:26px;line-height:1.25;font-weight:800;letter-spacing:-.6px}
+.vv-head h2 .ic{color:var(--blue)}
+.vv-head p{margin:0;font-size:15px;color:var(--muted)}
+.vv-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+.player{position:relative;overflow:hidden;aspect-ratio:16/9;border-radius:14px;background:#0a1022;box-shadow:0 10px 24px -16px rgba(0,0,0,.3)}
+.player iframe,.player video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+.player > img{position:absolute;inset:-12px;width:calc(100% + 24px);height:calc(100% + 24px);object-fit:cover;filter:brightness(.36) saturate(.85) blur(4px)}
+.player-cover{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;padding:24px;text-align:center;color:#fff}
+.player-cover .stamp{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.14);font-size:13px;font-weight:800;color:var(--accent-soft)}
+.player-cover strong{font-size:24px;font-weight:900;letter-spacing:-.5px;text-wrap:balance}
+.player-cover p{max-width:44ch;margin:0;font-size:14.5px;line-height:1.7;color:#d5ddef;text-wrap:pretty}
+.btn-accent{display:inline-flex;align-items:center;gap:6px;height:42px;margin-top:6px;padding:0 18px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-size:15px;font-weight:800;text-decoration:none}
+.btn-accent:hover{filter:brightness(1.06)}
+.vv-info{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:12px;font-size:13px;color:var(--muted)}
+.vv-info b{color:var(--text-2);font-weight:700}
+.vv-toc{overflow:hidden;border:1px solid var(--card-line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow-card)}
+.vv-toc-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.vv-toc-h h3{display:flex;align-items:center;gap:8px;margin:0;font-size:16px;font-weight:800}
+.vv-toc-h h3 .ic{color:var(--blue)}
+.vv-toc-h small{font-size:12.5px;color:var(--muted)}
+.vv-toc ol{list-style:none;margin:0;padding:6px;display:grid;gap:2px;max-height:min(68vh,620px);overflow:auto}
+.vv-toc li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px;border-radius:10px}
+.vv-toc li.on{background:var(--blue-soft)}
+.toc-item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;min-width:0;padding:10px 6px 10px 10px;border:0;border-radius:10px;background:none;color:var(--text);text-align:left;font:inherit}
+button.toc-item:hover{background:var(--surface-2)}
+.toc-no{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--surface-3);font-size:12.5px;font-weight:800;color:var(--text-2);font-variant-numeric:tabular-nums}
+li.key .toc-no{background:var(--accent);color:#fff}
+.toc-txt{display:grid;gap:2px;min-width:0}
+.toc-txt b{display:flex;align-items:center;gap:6px;font-size:14.5px;font-weight:800}
+.toc-txt small{overflow:hidden;font-size:12.5px;line-height:1.5;color:var(--muted);text-overflow:ellipsis;white-space:nowrap}
+.toc-at{font-size:12.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.toc-at.tbd{color:var(--faint);font-weight:600}
+.toc-web{display:grid;place-items:center;width:32px;height:32px;margin-right:6px;border-radius:8px;color:var(--muted)}
+.toc-web:hover{background:var(--surface-2);color:var(--blue)}
+.toc-web .ic{width:17px;height:17px}
+@media (max-width:980px){.vv-grid{grid-template-columns:1fr}.vv-toc ol{max-height:none}}
+@media (max-width:560px){.vview{padding:16px 0 40px}.vv-head h2{font-size:22px}.player{border-radius:10px}.player-cover strong{font-size:19px}.player-cover p{font-size:13.5px}.player-cover p.more{display:none}}
+
+/* 버전 고르기 · 창 · 알림 */
+.ver-pop{position:absolute;top:calc(100% + 8px);right:0;z-index:60;width:290px;max-width:calc(100vw - 32px);padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);box-shadow:var(--shadow-pop)}
+.ver-pop h6{margin:6px 10px 4px;font-size:12px;font-weight:700;color:var(--muted)}
+.ver-opt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;width:100%;padding:10px;border:0;border-radius:8px;background:none;text-align:left}
+.ver-opt:hover{background:var(--surface-2)}
+.ver-opt.on{background:var(--blue-soft)}
+.ver-opt b{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+.ver-opt em{font-style:normal;font-size:11.5px;font-weight:800;color:var(--accent)}
+.ver-opt small{grid-column:1 / -1;font-size:12px;color:var(--muted)}
+.ver-log{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:38px;margin-top:4px;border:0;border-top:1px solid var(--line);border-radius:0 0 8px 8px;background:none;font-size:13px;font-weight:700;color:var(--blue)}
+.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:var(--scrim)}
+.modal-box{width:min(600px,100%);max-height:min(82vh,760px);overflow:auto;border-radius:14px;background:var(--surface);color:var(--text);box-shadow:var(--shadow-pop)}
+.modal-h{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--surface)}
+.modal-h h3{display:flex;align-items:center;gap:8px;margin:0;font-size:17px;font-weight:800}
+.modal-h h3 .ic{color:var(--blue)}
+.modal-h .icon-btn{color:var(--muted)}
+.modal-h .icon-btn:hover{background:var(--surface-2)}
+.rel{display:grid;gap:8px;padding:18px 20px;border-bottom:1px solid var(--row-line)}
+.rel:last-child{border-bottom:0}
+.rel-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.rel-h b{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
+.rel-h time{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rel-h .tag{background:var(--blue-soft);color:var(--blue)}
+.rel ul{margin:0;padding-left:18px;font-size:14px;line-height:1.7;color:var(--text-2)}
+.rel .mini{justify-self:start}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:90;transform:translateX(-50%);padding:10px 16px;border-radius:999px;background:var(--text);color:var(--surface);font-size:13.5px;font-weight:700;box-shadow:var(--shadow-pop);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<header class="gnb" id="gnb">
+  <div class="wrap gnb-in">
+    <a class="g-brand" href="#home" aria-label="이용가이드 첫 화면으로"><img id="logo" src="data:image/webp;base64,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" alt="MYTURN AUCTION" width="103" height="34"><span>이용가이드</span></a>
+    <div class="g-tools">
+      <button type="button" class="ver-btn" id="verBtn" aria-haspopup="true" aria-expanded="false" aria-controls="verPop"></button>
+      <div class="ver-pop" id="verPop" hidden></div>
+      <button type="button" class="icon-btn" id="themeBtn"></button>
+    </div>
+  </div>
+</header>
+<section class="home" id="home" hidden aria-labelledby="homeTitle"></section>
+<section class="vview" id="vview" hidden aria-labelledby="vTitle"></section>
+<nav class="secnav" id="secnav" aria-label="가이드 장"><div class="wrap secnav-row"><div class="secnav-in" id="secnavIn"></div><a class="to-mode" href="#video" data-mode="video"><span class="pl"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg></span><span class="long">영상으로 보기</span><span class="short">영상</span></a></div></nav>
+<div class="oldbar" id="oldbar" hidden></div>
+<main id="main"><div class="wrap layout"><aside class="side" id="side" aria-label="이 장의 목차"></aside><div class="content" id="content"></div></div></main>
+<footer class="foot" id="foot"></footer>
+<div class="modal" id="modal" hidden><div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle" id="modalBox"></div></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+'use strict';
+/* =====================================================================
+   마이턴옥션 이용가이드 — 한 장으로 이어지는 스크롤 문서
+   ---------------------------------------------------------------------
+   ● 연결 — 서비스 주소. 기존 웹에 붙일 때 바뀌면 여기만 고친다.
+   ● 도움말 연결용 자리표(앵커) — 페이지 설명마다 id="help-…" 를 붙였다.
+     앱 화면 열쇠와 같은 이름이라, 나중에 앱의 도움말 단추에서 WEB_GUIDE_URL + '#help-…' 로 바로 연결한다.
+     자리표 이름은 버전이 바뀌어도 바꾸지 않는다.
+   ● 버전 관리 — 맨 아래 GUIDE.release(...) 목록
+     1) 새 버전은 base(앞 버전)와 patch(c)로 바뀐 곳만 고친다. 나머지는 그대로 이어받는다.
+     2) 새로 생긴 항목에 since: '1.1.0' 을 붙이면 그 버전을 볼 때 NEW 표시가 붙는다.
+     3) 가장 높은 버전이 자동으로 '최신'. 이전 버전은 머리띠의 버전 단추에서 다시 볼 수 있다.
+     4) 자체 서버에 올리면 주소 뒤 ?v=1.0.0 으로 그 버전을 바로 연다.
+   ===================================================================== */
+const APP_ORIGIN = 'https://terryauction-6b374.web.app';
+const APP_URL = APP_ORIGIN + '/web';
+const PROMO_URL = APP_ORIGIN + '/myturn-promo/index.html?mode=hero';
+const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
+const IMG = 'img/';   /* 캡처 그림 폴더 — 가이드 파일 옆 img/ */
+
+/* ---------- 아이콘 ---------- */
+const IC = {
+  target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  sparkles:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+  layout:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
+  bookOpen:'<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
+  crown:'<path d="M3 18h18M4 7l4.5 4L12 5l3.5 6L20 7l-1.5 9h-13z"/>',
+  scale:'<path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/>',
+  help:'<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
+  headset:'<path d="M3 14v-2a9 9 0 0 1 18 0v2"/><path d="M21 15a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2zM3 15a2 2 0 0 0 2 2h1v-6H5a2 2 0 0 0-2 2z"/><path d="M18 17v1a3 3 0 0 1-3 3h-3"/>',
+  doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>',
+  pencil:'<path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+  layers:'<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+  pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+  route:'<circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/>',
+  chart:'<path d="M3 3v18h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/>',
+  percent:'<path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+  checkSq:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m8 12 3 3 5-6"/>',
+  won:'<circle cx="12" cy="12" r="9.5"/><path d="M7 8l2 8 3-6 3 6 2-8M6.5 11.5h11"/>',
+  building:'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+  bag:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>',
+  phone:'<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18h2"/>',
+  book:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  key:'<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>',
+  cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.7-9h1.8a4.5 4.5 0 1 1 0 9z"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+  moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>',
+  chevD:'<path d="m6 9 6 6 6-6"/>',
+  chevR:'<path d="m9 6 6 6-6 6"/>',
+  arrowR:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+  ext:'<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  lock:'<rect x="4" y="11" width="16" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+  alert:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  bulb:'<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>',
+  calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  archive:'<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/>',
+  mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+  call:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
+  history:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l4 2"/>',
+  gift:'<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+  coin:'<circle cx="12" cy="12" r="9.5"/><path d="M9.5 16.5v-9h3.2a2.6 2.6 0 0 1 0 5.2H9.5"/>',
+  dice:'<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor"/>',
+  play:'<path d="M8 5.5v13l10-6.5z"/>',
+  globe:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7"/>',
+  gavel:'<path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10"/><path d="m16 16 6-6M8 8l6-6M9 7l8 8M21 11l-8-8"/>',
+  wallet:'<path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><path d="M8 7h8M8 11h8M8 15h5"/>',
+  camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>',
+  trend:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+  message:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
+  folder:'<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/>',
+  home:'<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+  fingerprint:'<path d="M12 10a2 2 0 0 0-2 2c0 1.4-.2 2.8-.6 4M14 13.1c0 2.5-.3 4.9-.9 6.9M17.3 9.5A6 6 0 0 0 6 12c0 1-.1 2-.3 3M21 12c0 1-.1 2-.2 3M4 7.6A9 9 0 0 1 20.5 9"/>',
+};
+const I = (k) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${IC[k] || ''}</svg>`;
+
+/* ---------- 가이드 버전 관리 ---------- */
+const semver = (v) => v.split('.').map(Number);
+const cmpVer = (a, b) => { const x = semver(a), y = semver(b); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); } return 0; };
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const GUIDE = {
+  list: [],
+  release(def) {
+    let content;
+    if (def.content) content = def.content;
+    else {
+      const base = this.get(def.base);
+      if (!base) throw new Error(`base 버전 ${def.base} 을 먼저 등록해 주세요.`);
+      content = clone(base.content);
+      if (typeof def.patch === 'function') def.patch(content);
+    }
+    this.list.push({ v: def.v, date: def.date, title: def.title || '', notes: def.notes || [], content });
+    this.list.sort((a, b) => cmpVer(a.v, b.v));
+  },
+  get(v) { return this.list.find((r) => r.v === v); },
+  latest() { return this.list[this.list.length - 1]; },
+};
+
+/* =====================================================================
+   v1.0.0 — 2026.11.01 웹 서비스 화면 기준
+   shots: 캡처 그림(img/ 폴더). pins 는 그림 폭·높이에 대한 백분율 자리.
+   ===================================================================== */
+const V1 = {
+  hero: {
+    badge: '브랜드 이야기',
+    title: '“내 차례!”<br>그 한마디에<br><em>가슴 뛰던 날</em>',
+    text: '거실 바닥에 부루마블 판을 펼치고, 가족 · 친구들과 둘러앉아 부동산 부자를 꿈꾸던 어린 시절.<br>주사위를 꼭 쥐고 <b>‘내 차례!’</b>를 외치던 그 설렘, 기억하시나요?',
+    chips: [],
+    photo: 'hero-board.webp',
+    photoAlt: '마이턴옥션 게임판 위로 주사위가 굴러가는 장면',
+    story: '그때 꿈꾸던 내 땅, 내 집.<br>이제는 놀이가 아닌 경매로, 진짜 내 차례를 만들 시간입니다.',
+    call: '이제 마이턴하세요!',
+  },
+  shots: {
+    list: { src: 'shot-list.webp', w: 1600, h: 1052, url: 'terryauction-6b374.web.app/web#/', alt: '선정물건 · 물건카드 화면 — 도구 상자, 단계별 물건 수, 물건 카드와 수익률 분석' },
+    basic: { src: 'shot-basic.webp', w: 1600, h: 1052, url: 'terryauction-6b374.web.app/web#/item/a101', alt: '물건상세 · 물건정보 화면 — 사건 머리, 정보요약, 기본정보, 입지정보, 물건현황' },
+    register: { src: 'shot-register.webp', w: 1600, h: 610, url: 'terryauction-6b374.web.app/web#/register', alt: '물건등록 · 자동등록 화면 — AI 자동 분석, 구글 드라이브 연동, AI 자동 파싱' },
+    manual: { src: 'shot-manual.webp', w: 1600, h: 1082, url: 'terryauction-6b374.web.app/web#/register', alt: '물건등록 · 직접입력 화면 — 사건번호, 소재지, 매각기일 · 금액, 관계인, 물건, 메모' },
+  },
+  /* 첫 화면 — '웹으로 보기 · 영상으로 보기' 고르기 */
+  home: {
+    title: '마이턴옥션,<br>이렇게 씁니다.',
+    text: '편한 방법으로 보세요. 보는 중에도 위쪽 단추로 언제든 바꿀 수 있습니다.',
+    web: { title: '웹으로 보기', text: '화면마다 메뉴를 실제 화면과 번호 설명으로 안내합니다. 필요한 곳만 골라 읽기 좋습니다.', meta: '8개 장 · 화면 15곳', thumb: 'shot-list.webp' },
+    video: { title: '영상으로 보기', text: '처음부터 따라 하며 보는 사용법 영상입니다. 장마다 건너뛰어 볼 수 있습니다.' },
+    quick: [['손품조사', 'help-item-survey'], ['물건등록', 'help-register'], ['AI 키 입력', 'howto-aikey'], ['개인정보 설정', 'howto-profile'], ['멤버십', 'membership'], ['FAQ', 'faq']],
+  },
+  /* 영상으로 보기 — 영상이 생기면 src 만 채우면 된다.
+     src: 유튜브 주소(https://youtu.be/…) 또는 영상 파일 주소(video/guide-web.mp4 — 가이드 파일 옆 video/ 폴더)
+     at : 장이 시작하는 시각 '분:초'. 채우면 목차를 눌러 그 장면으로 건너뛴다. 비우면 '예정'으로 보인다.
+     aid: 웹으로 보기에서 같은 내용이 있는 자리(도움말 자리표와 같다) */
+  video: {
+    src: '', poster: 'hero-board.webp', captions: '', length: '', updated: '',
+    chapters: [
+      { id: 'start', title: '시작하며', desc: '마이턴옥션이 해 주는 일 한눈에', at: '', aid: 'goal' },
+      { id: 'layout', title: '화면 공통 구성', desc: '상단 메뉴 · 하위 탭 · 경로 읽는 법', at: '', aid: 'help-layout' },
+      { id: 'register', title: '물건등록', desc: 'PDF 자동등록과 직접입력', at: '', aid: 'help-register' },
+      { id: 'list', title: '선정물건', desc: '물건카드와 진행 단계 바꾸기', at: '', aid: 'help-list' },
+      { id: 'basic', title: '물건정보 · 권리분석', desc: '사건 정보 확인과 권리 체크', at: '', aid: 'help-item-basic' },
+      { id: 'survey', title: '손품조사', desc: '수요 · 개별성 · 시세로 손품결론 내기', at: '', aid: 'help-item-survey', key: true },
+      { id: 'profit', title: '수익분석', desc: 'A~D안 비교와 입찰가 확정', at: '', aid: 'help-item-profit' },
+      { id: 'field', title: '임장조사 · 임장경로', desc: '현장 체크리스트와 동선최적화', at: '', aid: 'help-trip' },
+      { id: 'postwin', title: '낙찰관리 · 자금관리', desc: '낙찰 이후 절차와 돈 · 세금 정리', at: '', aid: 'help-postwin' },
+      { id: 'setup', title: '설정', desc: '개인정보(사업자 · 주택수 · 매출액)와 AI 키', at: '', aid: 'howto-profile' },
+    ],
+  },
+  stages: [
+    { k: 'desk', label: '손품조사', c: '--st-desk', desc: '수요 · 개별성 · 시세를 손(인터넷)으로 먼저 조사' },
+    { k: 'plan', label: '임장예정', c: '--st-plan', desc: '임장경로에 자동으로 올라가 동선을 짭니다' },
+    { k: 'visited', label: '임장완료', c: '--st-visited', desc: '현장 사진 · 탐문 · 체크리스트를 남깁니다' },
+    { k: 'bid', label: '입찰산정', c: '--st-bid', desc: 'A~D안을 비교해 입찰가를 확정합니다' },
+    { k: 'running', label: '입찰진행', c: '--st-running', desc: '매각기일, 정한 안을 보고 입찰표를 씁니다' },
+    { k: 'won', label: '낙찰', c: '--st-won', group: '결과' },
+    { k: 'fail', label: '유찰', c: '--st-fail', group: '결과' },
+    { k: 'cancel', label: '취소', c: '--st-fail', group: '결과' },
+    { k: 'sold', label: '매도', c: '--st-sold', desc: '명도 · 수리 · 매도를 마치고 세후 수익 확정' },
+  ],
+  trio: {
+    parts: [
+      { q: '이 동네에 살 사람이 있나?', ic: 'users', title: '수요조사', html: '지역 거래량 · 총 세대수 · 매물수를 받아 매매수요 지표를 자동으로 계산합니다.', items: ['거래 회전율 · 매물 소화율', '매물 부담률 · 소진기간'] },
+      { q: '이 집만의 장단점은?', ic: 'fingerprint', title: '개별성', html: '같은 동네라도 집마다 값이 다릅니다. 입지 등수와 건물 · 호실의 특성을 따져 시세에 더하고 뺍니다(가감률).', items: ['입지 · 구역 내 등수', '연식 · 주차 · 엘리베이터 · 구조 · 뷰 · 일조 · 수리 상태'] },
+      { q: '얼마에 팔리나?', ic: 'won', title: '시세조사', html: '여러 출처의 가격을 한 표에 모아 시세 결론을 냅니다.', items: ['국토부 실거래가 · 조건분석', '네이버 매물 · 동일지번 매각물건 · 부동산 유선 상담'] },
+    ],
+    out: { q: '그래서 얼마에 팔 수 있나', ic: 'checkSq', title: '손품결론', html: '세 가지를 묶은 결론이 수익분석의 <b style="color:#fff">예상 매도가</b>로 넘어갑니다. 조회한 숫자와 근거가 그대로 남습니다.' },
+  },
+  /* 요금 — 1개월 기준가와 기간별 할인율(%). 화면의 금액 · 월 환산 · 하루 금액은 모두 여기서 계산한다.
+     글 안의 {base} {maxOff} {perDay} 는 계산값으로 바뀐다. */
+  pricing: { base: 99000, plans: [[1, 0], [3, 15], [6, 25], [12, 35]] },
+  tiers: [
+    { name: 'WELCOME', ko: '웰컴', c: '--tier-welcome', band: '회원가입 시 1,000P', rows: [['회원가입', '1,000P']] },
+    { name: 'SILVER', ko: '실버', c: '--tier-silver', band: '결제금액의 4~6% 적립', rows: [['첫 유료결제', '4%'], ['50만 ~ 100만원 미만', '5%'], ['100만 ~ 200만원 미만', '6%']] },
+    { name: 'GOLD', ko: '골드', c: '--tier-gold', band: '결제금액의 7~8% 적립', rows: [['200만 ~ 300만원 미만', '7%'], ['300만 ~ 400만원 미만', '8%']] },
+    { name: 'FAMILY', ko: '패밀리', c: '--tier-family', band: '결제금액의 9~10% 적립', rows: [['400만 ~ 500만원 미만', '9%'], ['500만원 이상', '10%']] },
+  ],
+  compare: {
+    cols: ['무료회원', '무료체험 (가입 후 3일)', '유료회원 (Plus)'],
+    rows: [
+      ['이용 조건', '회원가입', '가입 즉시 72시간<br>계정당 1회', '이용권 결제<br>1 · 3 · 6 · 12개월'],
+      ['요금', '무료', '무료', '월 {base}원<br>기간별 최대 {maxOff}% 할인'],
+      ['물건 직접입력', 'y', 'y', 'y'],
+      ['자동등록 (구글 드라이브 · PDF)', 'n', 'y', 'y'],
+      ['AI 자동 파싱 (Gemini)', 'n', 'y', 'y'],
+      ['선정물건 · 물건상세 · 손품조사', 'y', 'y', 'y'],
+      ['임장경로 · 낙찰관리 · 자금관리 · 시장분석', 'y', 'y', 'y'],
+      ['포인트 적립', '가입 1,000P', '가입 1,000P', '결제금액의 4~10%'],
+      ['적어 둔 물건과 사진', '보관', '보관', '보관'],
+    ],
+  },
+  contact: { phone: '02-456-1234', email: 'contact@myturn.com', address: '서울시 광진구 강변역로4길 68, 3층301호' },
+  faq: [
+    { cat: '서비스', q: '마이턴옥션은 경매 물건을 검색하는 사이트인가요?', a: '아니요. 물건 검색은 경매 정보 사이트에서 하고, 입찰하기로 고른 물건을 마이턴옥션에 올려 <b>선정 이후부터 매도까지</b> 관리합니다.' },
+    { cat: '서비스', q: '웹과 앱은 같은 데이터를 쓰나요?', a: '네. 같은 계정이면 선정물건과 임장경로가 웹과 앱에 똑같이 보입니다. 현장에서는 앱, 책상에서는 웹을 쓰면 됩니다.' },
+    { cat: '서비스', q: '모바일앱은 어디서 받나요?', a: 'Google Play와 App Store 출시를 준비하고 있습니다. 출시 소식은 커뮤니티 › 공지로 알려 드립니다.' },
+    { cat: '서비스', q: '마이턴옥션이라며 컨설팅 전화를 받았어요.', a: '마이턴옥션은 컨설팅 · 외부광고 전화를 하지 않고 개인정보를 다른 회사와 공유하지 않습니다. 본사를 사칭한 전화는 고객센터로 알려 주세요.' },
+    { cat: '회원·결제', q: '무료체험 중에 결제가 되나요?', a: '되지 않습니다. 가입 즉시 3일 무료이용권이 지급되고, 체험 기간에는 결제하지 않습니다. 계정당 1회만 쓸 수 있습니다.' },
+    { cat: '회원·결제', q: '무료체험이 끝나면 등록한 물건이 사라지나요?', a: '사라지지 않습니다. <b>마이페이지 › 결제하기</b>에서 이용 기간을 고르면 적어 둔 물건과 사진을 그대로 이어서 씁니다.' },
+    { cat: '회원·결제', q: '아이디나 비밀번호를 잊어버렸어요.', a: '회원 아이디는 가입할 때 적은 <b>이메일 주소</b>입니다. 로그인 창의 <b>아이디 찾기</b>로 가입 여부를 확인하고, <b>비밀번호 찾기</b>로 재설정 메일을 받으세요. 메일이 없으면 스팸함도 확인해 주세요.' },
+    { cat: '회원·결제', q: '카카오로 가입했는데 비밀번호를 바꿀 수 있나요?', a: '카카오로 가입한 계정은 비밀번호가 없습니다. 로그인할 때 <b>카카오로 시작하기</b>를 누르세요.' },
+    { cat: '회원·결제', q: '포인트는 어떻게 쓰나요?', a: '전자결제 금액의 4~10%가 적립되고 다음 결제 때 1P = 1원으로 씁니다. 현금 환불과 양도는 되지 않습니다. 자세한 기준은 <a href="#membership-points">멤버십 › 포인트</a>를 보세요.' },
+    { cat: '회원·결제', q: '환불은 어떻게 받나요?', a: '고객센터(전화 또는 메일)로 신청하면 이용 내역을 확인한 뒤 결제한 수단으로 돌려 드립니다. 남은 이용 기간에 대해서만 환불합니다. <a href="#membership-refund">환불정책</a>을 보세요.' },
+    { cat: '기능', q: '실수로 지운 물건을 되살릴 수 있나요?', a: '네. 선정물건 도구 상자 오른쪽의 <b>휴지통</b>에서 되살립니다.' },
+    { cat: '기능', q: '보관함은 무엇인가요?', a: '지금은 보지 않지만 지우기는 아까운 물건을 넣어 두는 곳입니다. 목록에서 빠지고, 보관함에서 다시 꺼낼 수 있습니다.' },
+    { cat: '기능', q: '물건 카드에 ‘갱신필요’가 보여요.', a: '매각기일이 지난 물건입니다. 결과(낙찰 · 유찰 · 취소)에 맞게 단계를 바꾸거나, 다음 매각기일 정보로 고쳐 주세요.' },
+    { cat: '기능', q: '단계를 바꾸면 무엇이 달라지나요?', a: '임장예정으로 바꾸면 임장경로에 올라가고, 낙찰로 바꾸면 낙찰관리 목록에 들어가 잔금 알림이 시작됩니다. 유찰 · 취소여도 그동안의 기록은 그대로 남습니다.' },
+    { cat: '기능', q: '수익률은 어떻게 계산되나요?', a: '<b>세후 순이익 ÷ 실투자금 × 100</b>입니다. 실투자금은 낙찰가 − 대출 + 필요경비입니다. 입찰가를 바꾸면 취득세 · 법무비도 따라서 다시 계산됩니다.' },
+    { cat: '기능', q: '세금 계산 결과를 그대로 신고에 써도 되나요?', a: '매매사업자(종합소득세) 기준의 <b>참고용 계산</b>입니다. 실제 신고 전에는 세무 전문가와 확인하세요.' },
+    { cat: '기능', q: '자금 기록을 엑셀로 받을 수 있나요?', a: '자금관리에서 기간을 고르고 <b>엑셀저장</b>을 누르면 CSV 파일로 받습니다. 세무사에게 바로 보낼 수 있습니다.' },
+    { cat: 'AI·설정', q: 'AI 키가 없어도 자동등록이 되나요?', a: '됩니다. PDF를 먼저 규칙으로 읽고, <b>못 읽은 칸만 AI가 채웁니다</b>. 키가 없거나 AI를 끄면 빈칸만 직접 채우면 됩니다.' },
+    { cat: 'AI·설정', q: 'Gemini API 키는 유료인가요?', a: 'Google AI Studio에서 무료로 발급받습니다. Gemini 2.5 Flash는 무료 티어로도 충분합니다. 사용량 · 요금 기준은 Google 정책을 따릅니다.' },
+    { cat: 'AI·설정', q: '등록한 API 키는 어디에 저장되나요?', a: '<b>내 계정에만</b> 저장되고 화면에서는 가려서 보입니다. <b>키지우기</b>로 언제든 지울 수 있습니다.' },
+    { cat: 'AI·설정', q: '세금 계산 기준은 어디서 바꾸나요?', a: '<b>마이페이지 › 내 정보 › 정보수정</b>의 ‘세금 계산 기준’에서 바꿉니다. <a href="#howto-profile">개인정보설정</a>을 보세요.' },
+  ],
+  sections: [
+    /* ============================================================ 01 서비스목표 */
+    { id: 'goal', label: '서비스목표', ic: 'target', title: '서비스 목표', hero: true, desc: '마이턴옥션이 무엇을 위해 만들어졌고, 어디를 향하는지 소개합니다.', subs: [
+      { id: 'intro', label: '서비스소개', title: '서비스 소개', ic: 'dice', blocks: [
+        { t: 'statement', eyebrow: '올인원 경매 분석 플랫폼', html: '경매, 물건만 고르세요.<br><em>마이턴옥션</em>이 다 해줍니다.' },
+        { t: 'p', html: '물건 등록부터 권리 · 손품 · 수익 분석, 임장, 낙찰 이후 관리까지 <b>마이턴옥션 하나로</b>. 체크리스트와 자동화로 시간은 줄이고, 현장 활용은 높입니다.' },
+        { t: 'chips', items: ['기본정보', '권리분석', ['손품+임장', 'key'], '입찰가 산정', '임장경로', '낙찰이후 관리', '자금관리'] },
+        { t: 'lead', html: '경매는 아직 <b>아날로그</b>입니다. 경매지 PDF, 엑셀, 시세 사이트, 지도, 계산기, 메모장, 사진첩까지 한 건에 열 개가 넘는 창을 오가며 손으로 모으고 계산합니다.' },
+        { t: 'p', html: '마이턴옥션은 이 일을 <b>사건카드 한 장</b>으로 모읍니다. 권리분석, 시세 · 수요, 현장 사진, 입찰가, 잔금, 세금까지 사건번호 하나에 쌓입니다.' },
+        { t: 'table', head: ['한 건을 하며 하는 일', '지금까지', '마이턴옥션'], rows: [
+          ['사건 자료 정리', 'PDF를 내려받아 옮겨 적기', '올리면 채워짐'],
+          ['시세 · 수요 조사', '여러 사이트를 돌며 찾기', '앱이 모아 계산'],
+          ['입찰가 산정', '엑셀 표 한 장', 'A~D안을 나란히 비교'],
+          ['보고서 만들기', '단계별 PPT 보고서', '만들 필요 없음'],
+          ['현장에서 보기 · 고치기', '파일을 열어 찾고, 돌아와서 다시', '탭 하나로 펴고 그 자리에서'],
+          ['낙찰 · 매도 뒤 기록', '흩어져 사라짐', '물건에 쌓임'],
+        ] },
+        { t: 'video' },
+        { t: 'note', tone: 'tip', title: '만든 이유', html: '낙찰부터 매도까지 7건을 직접 해 보니 조사 · 기록 · 관리가 모두 손일이었습니다. 법원에 한 번 가면 3~4건은 입찰하는데, 많은 물건을 보고 나면 잊힙니다. 현장에서 적고 꺼내 보려고 만든 앱이, 경매 한 건의 처음부터 끝까지를 담게 됐습니다.' },
+      ] },
+      { id: 'direction', label: '방향성', title: '서비스 방향성', ic: 'route', blocks: [
+        { t: 'quote', html: '경매의 처음부터 끝까지,<br><em>현장에서 마이턴옥션 하나로.</em>', small: '물건을 고르는 날부터 팔고 세금을 신고하는 날까지, 한 건의 모든 기록을 한곳에 남깁니다.' },
+        { t: 'cards', cols: 4, items: [
+          { no: '핵심 가치 1', title: '현장에서 바로', html: '조사한 내용을 현관 앞에서 펼쳐 보고 그 자리에서 고칩니다.' },
+          { no: '핵심 가치 2', title: '기록은 남는다', html: '적고 찍은 모든 것이 사건카드에 쌓여 잊히지 않습니다.' },
+          { no: '핵심 가치 3', title: '여러 건도 한 번에', html: '많은 물건을 동시에 조사하고 비교하고, 동선까지 묶습니다.' },
+          { no: '핵심 가치 4', title: '끝까지 관리', html: '낙찰 뒤 잔금 · 명도 · 매도 · 세금까지 꾸준히 챙깁니다.', tone: 'hot' },
+        ] },
+        { t: 'h4', text: '물건을 고른 뒤부터가 마이턴옥션의 자리입니다' },
+        { t: 'scope' },
+        { t: 'p', html: '물건 검색은 경매 정보 사이트에 맡기고, 마이턴옥션은 고른 물건을 <b>끝까지 진행</b>하는 데 집중합니다. 자료를 모으고 계산하는 번거로운 일은 앱이, 입찰가를 정하는 판단은 사람이 합니다.' },
+      ] },
+      { id: 'concept', label: '컨셉', title: '마이턴, 내 차례', ic: 'play', blocks: [
+        { t: 'lead', html: '‘마이턴(My Turn)’은 <b>내 차례</b>라는 뜻입니다. 부루마블에서 주사위를 굴려 땅을 사고 집을 짓던 것처럼, 경매도 내 차례가 오면 한 칸씩 나아가 부동산을 손에 넣습니다.' },
+        { t: 'p', html: '마이턴옥션은 <b>리치마블</b>의 올인원 경매 분석 플랫폼 브랜드입니다.' },
+        { t: 'bi' },
+        { t: 'h4', text: '물건 하나가 말 하나입니다' },
+        { t: 'p', html: '선정물건에 올린 물건은 모두 아래 칸 위에 놓입니다. 카드의 단계 단추를 누르면 말이 그 칸으로 옮겨 가고, 칸에 맞는 화면이 함께 움직입니다.' },
+        { t: 'board' },
+      ] },
+    ] },
+
+    /* ============================================================ 02 주요기능 */
+    { id: 'features', label: '주요기능', ic: 'sparkles', title: '주요 기능', desc: '번거로운 일은 앱이, 중요한 판단은 당신이. 다섯 가지 장점과 이를 만드는 기능입니다.', subs: [
+      { id: 'strengths', label: '다섯 가지 장점', title: '다섯 가지 장점', ic: 'sparkles', blocks: [
+        { t: 'cards', cols: 3, items: [
+          { no: '장점 01', ic: 'doc', title: '보고서가 사라집니다', html: 'PDF를 여러 개, 구글 드라이브 폴더째 넣으면 물건이 등록되고, 조사한 내용은 입력하는 대로 정리됩니다.', to: 'help-register' },
+          { no: '장점 02', ic: 'pin', title: '현장에서 바로 펼쳐 봅니다', html: '현관 앞에서 권리 · 점유를 확인하고, 손품조사와 다르면 체크리스트로 짚어 그 자리에서 고칩니다.', to: 'help-item-field' },
+          { no: '장점 03', ic: 'chart', title: '숫자에 근거가 생깁니다', html: '수요 · 개별성 · 시세를 한 화면에서 조사해 시세 결론과 매매수요 지표를 냅니다.', to: 'help-item-survey' },
+          { no: '장점 04', ic: 'route', title: '임장 동선, 버튼 하나로', html: '임장예정 물건을 담고 동선최적화를 누르면 가장 짧은 방문 순서가 잡힙니다.', to: 'help-trip' },
+          { no: '장점 05', ic: 'checkSq', title: '매도까지 하나의 체계로', html: '권리 체크리스트, 입찰가 시뮬레이션, 잔금 알림, 명도 · 수리 · 매도, 세후 수익까지 물건 하나에 쌓입니다.', to: 'help-postwin', tone: 'dark' },
+          { no: '한 줄 정리', ic: 'layers', title: '사건카드 한 장에 모든 것', html: '흩어져 있던 정보가 사건번호 하나로 묶여 카드에 쌓입니다. 단계가 바뀌어도 기록과 그 값을 쓴 이유가 남습니다.', to: 'help-list' },
+        ] },
+      ] },
+      { id: 'survey', label: '손품조사', key: true, title: '마이턴옥션의 핵심, 손품조사', tag: 'key', ic: 'chart', blocks: [
+        { t: 'lead', html: '손품조사는 현장에 가기 전 손(인터넷)으로 먼저 하는 조사입니다. 마이턴옥션은 <b>수요 · 개별성 · 시세</b> 세 가지를 한 화면에서 조사하고, 손품결론 하나로 묶습니다.' },
+        { t: 'trio' },
+        { t: 'note', tone: 'tip', title: '쉽게 말하면', html: '집을 사기 전 하는 건강검진입니다. 이 동네에 살 사람이 있는지(수요), 이 집만의 장단점은 무엇인지(개별성), 얼마에 팔리는지(시세)를 차례로 확인합니다.' },
+        { t: 'p', html: '매도가를 1,000만 원 높게 잡으면 수익률이 통째로 달라집니다. 손품조사는 그 숫자에 근거를 붙이는 일이고, 여러 사이트를 돌며 반나절 걸리던 조사를 한 화면에서 끝냅니다.' },
+      ] },
+      { id: 'all', label: '기능 한눈에', title: '기능 한눈에', ic: 'layers', blocks: [
+        { t: 'cards', cols: 3, items: [
+          { ic: 'upload', title: '물건등록', tag: 'plus', html: '경매 PDF · 구글 드라이브 폴더를 읽어 자동 등록. PDF 없이 직접입력도 됩니다.', to: 'help-register' },
+          { ic: 'layers', title: '선정물건', html: '물건마다 감정가 · 최저가 · 입찰가 · 단계 · 예상 수익률을 카드 한 장에.', to: 'help-list' },
+          { ic: 'building', title: '물건정보 · 권리분석', html: '건축물 · 입지 정보와 등기 · 임차인 권리관계를 한 화면에.', to: 'help-item-basic' },
+          { ic: 'percent', title: '수익분석', html: 'A~D안 입찰가 비교, 세후 수익과 돈이 나가는 순서.', to: 'help-item-profit' },
+          { ic: 'route', title: '임장경로 · 임장조사', html: '동선최적화로 방문 순서를 정하고, 현장 사진 · 탐문 · 체크리스트를 남깁니다.', to: 'help-trip' },
+          { ic: 'gavel', title: '낙찰관리', html: '낙찰 당일부터 사업자등록, 잔금, 명도, 인테리어, 매도 · 임대까지.', to: 'help-postwin' },
+          { ic: 'wallet', title: '자금관리 · 세금', html: '입출금 · 경비를 물건별로 적고 엑셀로 저장, 연간 세금 미리 보기.', to: 'help-finance' },
+          { ic: 'trend', title: '시장분석', html: '지역분석 · 손품분석 · 랭킹분석 · 경매사례로 시장 흐름을 봅니다.', to: 'help-market' },
+          { ic: 'bell', title: '알림', html: '잔금 기한 · 매각기일 · 취득세 신고일을 미리 알려 드립니다.', to: 'help-more' },
+        ] },
+      ] },
+    ] },
+
+    /* ============================================================ 03 페이지안내 */
+    { id: 'pages', label: '페이지안내', ic: 'layout', title: '페이지별 메뉴 설명', desc: '실제 화면을 보며 메뉴 하나하나를 설명합니다. 그림의 번호와 아래 설명의 번호가 같습니다. 개인정보는 가렸습니다.', subs: [] },
+
+    /* ============================================================ 04 사용방법 */
+    { id: 'howto', label: '사용방법', ic: 'bookOpen', title: '사용 방법', desc: '가입과 첫 설정을 순서대로 안내합니다.', subs: [
+      { id: 'signup', label: '회원가입', title: '회원가입', ic: 'user', blocks: [
+        { t: 'steps', items: [
+          { title: '회원가입 열기', html: '웹 주소로 들어오면 소개 영상 대문이 열립니다. 로그인 창 아래 <b>회원가입</b>을 누르거나, <b>카카오로 시작하기</b>로 바로 가입합니다.' },
+          { title: '기본 정보', html: '이름(실명), 아이디(메일 주소) → <b>중복확인</b>, 비밀번호(6~30자)를 적습니다.' },
+          { title: '연락처 · 추가 정보', html: '휴대폰, 시/도, 사업자 구분을 적습니다. 추천코드가 있으면 넣으세요. 코드에 따라 무료 이용 기간이 자동 적용됩니다.' },
+          { title: '약관 동의 후 가입하기', html: '[필수] 이용약관 · 개인정보 수집 및 이용, [선택] 알림톡/문자수신에 동의하고 <b>가입하기</b>를 누릅니다.' },
+        ] },
+        { t: 'perks' },
+        { t: 'note', tone: 'tip', html: '회원 아이디는 가입한 <b>이메일 주소</b>입니다. 잊었을 때는 로그인 창의 아이디 찾기 · 비밀번호 찾기를 쓰세요.' },
+      ] },
+      { id: 'profile', label: '개인정보설정', title: '개인정보 설정', ic: 'user', path: '마이페이지 › 내 정보 › 정보수정', route: '#/more', blocks: [
+        { t: 'steps', items: [
+          { title: '현재 비밀번호 입력', html: '본인 확인을 위해 현재 비밀번호를 넣어야 고칠 수 있습니다. 카카오 가입 계정은 비밀번호가 없어 바꿀 수 없습니다.' },
+          { title: '연락처 · 주소', html: '이메일과 메일 수신동의, 휴대폰과 알림톡/문자 수신동의, 주소를 고칩니다. 휴대폰은 <b>번호수정</b>을 먼저 눌러야 입력됩니다.' },
+          { title: '세금 계산 기준', html: '사업자 구분, 주택 보유수, 년 매출, 년 다른 소득금액을 적고 저장합니다. 세금분석이 이 값으로 계산합니다.' },
+        ] },
+        { t: 'table', head: ['세금 계산 기준', '무엇을 적나요', '어디에 쓰이나요'], rows: [
+          ['사업자 구분', '내 사업자 형태', '세금을 어떤 방식으로 계산할지 정합니다'],
+          ['주택 보유수', '지금 가진 주택 수', '주택 수에 따라 달라지는 세금 계산'],
+          ['년 매출', '올해 매도 매출 합계', '비워 두면 매도 기록으로 자동 계산(흐린 숫자)'],
+          ['년 다른 소득금액', '마이턴옥션 밖의 매출 − 경비', '종합소득세 구간을 정할 때 더합니다'],
+        ] },
+        { t: 'note', tone: 'tip', title: '왜 적어야 하나요?', html: '내비게이션의 출발지와 같습니다. 출발지가 틀리면 경로가 틀리듯, 이 값이 비어 있거나 다르면 세후 수익이 실제와 달라집니다.' },
+      ] },
+      { id: 'aikey', label: 'AI키입력', title: 'AI 키 입력 (Gemini API 키)', ic: 'key', path: '물건등록 › 자동등록 › AI 자동 분석', route: '#/register', blocks: [
+        { t: 'p', html: 'AI 자동 분석은 PDF에서 규칙으로 읽지 못한 칸을 구글 제미나이(Gemini)가 채우는 기능입니다. 내 Gemini API 키를 한 번 등록해 두면 됩니다.' },
+        { t: 'steps', items: [
+          { title: '키 발급', html: 'Google AI Studio에 구글 계정으로 로그인하고 ‘Create API key’를 눌러 키를 복사합니다.', go: [['Google AI Studio 열기', GEMINI_KEY_URL]] },
+          { title: '입력 창 열기', html: '<b>물건등록 › 자동등록</b>의 AI 자동 분석 줄에서 <b>키 등록</b>을 누르거나, <b>마이페이지 › AI 자동 분석 설정</b>을 엽니다.' },
+          { title: '붙여넣고 저장', html: '입력란 오른쪽 붙여넣기 단추로 키를 넣고 <b>확인 후 저장</b>을 누릅니다. 눈 아이콘으로 키를 보거나 가립니다.' },
+          { title: '켜고 끄기', html: 'AI 자동 분석 줄의 스위치로 켜고 끕니다. 지우려면 <b>키지우기</b>를 누릅니다.' },
+        ] },
+        { t: 'note', tone: 'tip', html: 'Gemini 2.5 Flash는 무료 티어로도 충분합니다. 키는 <b>내 계정에만</b> 저장됩니다. 키가 없어도 자동등록의 규칙 읽기와 직접입력은 그대로 쓸 수 있습니다.' },
+      ] },
+    ] },
+
+    /* ============================================================ 05 멤버십 */
+    { id: 'membership', label: '멤버십', ic: 'crown', title: '멤버십 안내', desc: '무료체험, 유료 이용권(Plus), 포인트와 환불 기준입니다.', subs: [
+      { id: 'trial', label: '무료체험', title: '3일 무료체험', ic: 'gift', blocks: [
+        { t: 'perks' },
+        { t: 'list', items: [
+          '가입 즉시 3일(72시간) 동안 <b>모든 기능</b>을 그대로 씁니다.',
+          '체험 중에는 <b>결제하지 않습니다</b>. 계정당 1회입니다.',
+          '끝난 뒤 <b>마이페이지 › 결제하기</b>에서 기간을 고르면 적어 둔 물건과 사진이 그대로 이어집니다.',
+        ] },
+      ] },
+      { id: 'plans', label: '이용권', title: '유료 이용권 (Plus) · 12개월이면 하루 {perDay}원꼴', ic: 'crown', path: '머리띠 결제하기 · 마이페이지 › 결제하기', route: '#/more', blocks: [
+        { t: 'plans' },
+        { t: 'p', html: '금액은 할인이 적용된 결제금액입니다. 신용카드 · 가상계좌로 결제하고, 보유 포인트로 뺄 수 있습니다. 결제 내역과 영수증은 <b>마이페이지 › 결제관리</b>에서 봅니다.' },
+      ] },
+      { id: 'points', label: '포인트', title: '포인트', ic: 'coin', blocks: [
+        { t: 'p', html: '전자결제 금액의 일부를 적립해 다음 결제 때 현금처럼 씁니다. <b>1P = 1원</b>. 누적 결제금액이 늘수록 적립률이 오릅니다.' },
+        { t: 'tiers' },
+        { t: 'table', head: ['추가 적립', '포인트'], rows: [
+          ['신규 회원가입', '1,000P'],
+          ['앱 설치 후 로그인', '5,000P (앱 출시 후)'],
+          ['정보 오류 · 물건 제보', '1건당 1,000P, 내용에 따라 최대 10,000P (월 최대 5만P)'],
+        ] },
+        { t: 'note', tone: 'warn', title: '알아 두세요', html: '1건당 최대 5만P, 적립 기준 결제금액은 최대 50만원입니다. 포인트로 낸 금액에는 적립되지 않습니다. 현금 환불 · 양도는 안 되고 회원탈퇴 시 소멸하며, 이용권 만료 후 1년간 재결제가 없으면 소멸합니다.' },
+      ] },
+      { id: 'refund', label: '환불정책', title: '환불정책', ic: 'receipt', blocks: [
+        { t: 'steps', items: [
+          { title: '환불 신청', html: '고객센터(전화 또는 메일)로 신청합니다. 연락처는 <a href="#contact">문의하기</a>에 있습니다.' },
+          { title: '이용 내역 확인', html: '회사가 이용 내역을 확인하고 환불 금액을 안내합니다.' },
+          { title: '환불', html: '결제한 수단으로 돌려 드립니다. 카드는 카드사 사정에 따라 며칠 걸릴 수 있습니다.' },
+        ] },
+        { t: 'list', items: [
+          '디지털 콘텐츠라 이용을 시작한 뒤에는 청약철회가 제한될 수 있습니다.',
+          '환불 금액은 이용약관 제13조(환불 규정)를 따르며, <b>남은 이용 기간</b>에 대해서만 환불합니다.',
+          '결제를 취소하면 위약 비율만큼 포인트가 차감됩니다.',
+        ] },
+      ] },
+    ] },
+
+    /* ============================================================ 06 회원비교 */
+    { id: 'compare', label: '회원비교', ic: 'scale', title: '무료회원과 유료회원', desc: '무엇이 같고 무엇이 다른지 한 표로 비교합니다.', subs: [
+      { id: 'table', label: '비교표', title: '회원별 이용 범위', ic: 'scale', blocks: [
+        { t: 'compare' },
+        { t: 'note', tone: 'info', html: '무료회원도 <b>직접입력</b>으로 물건을 올려 관리할 수 있습니다. PDF · 구글 드라이브를 읽어 오는 <b>자동등록</b>과 <b>AI 자동 파싱</b>은 Plus를 이용하는 동안 열립니다.' },
+      ] },
+      { id: 'when', label: 'Plus 추천', title: '이럴 때 Plus를 고르세요', ic: 'crown', blocks: [
+        { t: 'cards', cols: 3, items: [
+          { ic: 'folder', title: '물건이 많을 때', html: '여러 사건의 PDF를 받아 두는 분은 구글 드라이브 폴더를 등록해 두고 한꺼번에 올리는 편이 빠릅니다.' },
+          { ic: 'doc', title: '입력 실수를 줄일 때', html: '감정가 · 최저가 · 면적을 PDF에서 바로 읽어, 옮겨 적다 생기는 실수를 줄입니다.' },
+          { ic: 'calendar', title: '꾸준히 투자할 때', html: '12개월 이용권은 기준가보다 35% 저렴하고, 결제할수록 포인트 적립률이 오릅니다.' },
+        ] },
+      ] },
+    ] },
+
+    /* ============================================================ 07 FAQ */
+    { id: 'faq', label: 'FAQ', ic: 'help', title: '자주 묻는 질문', desc: '분류를 고르거나 검색해서 찾아보세요.', subs: [
+      { id: 'list', label: '질문 모음', title: '질문 모음', ic: 'help', blocks: [{ t: 'faq' }] },
+    ] },
+
+    /* ============================================================ 08 문의하기 */
+    { id: 'contact', label: '문의하기', ic: 'headset', title: '문의하기', desc: 'FAQ에서 답을 찾지 못했다면 아래로 연락해 주세요.', subs: [
+      { id: 'cs', label: '고객센터', title: '고객센터', ic: 'headset', blocks: [
+        { t: 'contact' },
+        { t: 'p', html: '가입한 이메일, 사건번호, 화면 위치(예: 선정물건 › 수익분석)와 캡처를 함께 보내 주시면 더 빨리 도와드립니다.' },
+      ] },
+      { id: 'report', label: '오류및제안', title: '오류 제보 · 기능 제안', ic: 'message', path: '커뮤니티 › 오류및제안', route: '#/community', blocks: [
+        { t: 'p', html: '오류를 찾았거나 바라는 기능이 있으면 <b>커뮤니티 › 오류및제안</b>에 남겨 주세요. 제보 1건당 1,000P(내용에 따라 최대 10,000P, 월 최대 5만P)가 적립됩니다.' },
+      ] },
+      { id: 'partner', label: '사업제휴', title: '사업제휴', ic: 'users', blocks: [
+        { t: 'p', html: '데이터 · 콘텐츠, 전문가(법무사 · 세무사 · 공인중개사 · 명도 · 인테리어), 광고 · 마케팅, 교육 · 강의 분야의 제안을 기다립니다. 회사명 · 담당자 연락처 · 제안 내용을 <b>contact@myturn.com</b>으로 보내 주세요.' },
+      ] },
+    ] },
+  ],
+};
+
+/* ---------- 03 페이지안내 — 화면별 메뉴 설명 (aid = 앱 도움말 단추가 연결할 자리표) ---------- */
+V1.sections.find((s) => s.id === 'pages').subs = [
+  { aid: 'help-layout', label: '화면 공통 구성', title: '화면 공통 구성', ic: 'layout', route: '#/', blocks: [
+    { t: 'p', html: '모든 화면이 같은 틀을 씁니다. 남색 상단 메뉴에서 큰 메뉴를, 그 아래 흰 줄에서 세부 화면(하위 탭)을 고릅니다.' },
+    { t: 'shot', key: 'layout', mock: 'layout', pins: [], legend: [
+      ['상단 메뉴', '물건등록부터 마이페이지까지 11개 메뉴. 지금 보는 메뉴 아래에 주황색 밑줄이 그어집니다.'],
+      ['메뉴 펼치기 ▼', '메뉴마다 하위 항목을 펼쳐 바로 이동합니다.'],
+      ['유틸 메뉴', '공지 · 결제하기 · 이용가이드 · 알림(종) · 밤낮 전환.'],
+      ['내 계정', '내 이름과 로그아웃.'],
+      ['하위 탭', '메뉴 안의 세부 화면. 맨 앞에 지금 메뉴 이름이 굵게 보입니다.'],
+      ['경로', '홈 › 메뉴 › 화면 순서로 지금 위치를 보여 줍니다.'],
+    ] },
+  ] },
+  { aid: 'help-register', label: '물건등록', title: '물건등록', ic: 'upload', path: '상단 메뉴 › 물건등록', route: '#/register', blocks: [
+    { t: 'p', html: '경매 물건을 선정물건에 올리는 곳입니다. PDF를 읽어 올리는 <b>자동등록</b>(Plus)과 손으로 적는 <b>직접입력</b>이 있습니다.' },
+    { t: 'shot', key: 'register', pins: [[10.6, 14.7], [3.0, 26.9], [3.0, 37.8], [3.0, 52.1]], legend: [
+      ['자동등록 · 직접입력 탭', '등록 방법을 고릅니다. 자동등록은 Plus 기능입니다.'],
+      ['AI 자동 분석', 'Gemini 키 등록 상태와 켜기/끄기 스위치. PDF에서 규칙으로 못 읽은 칸을 AI가 채웁니다.'],
+      ['구글 드라이브 연동', '폴더를 고르고 <b>폴더등록</b>(추가 · 수정) · <b>폴더스캔</b>(새 PDF 읽기) · <b>PDF등록</b>(파일 직접 올리기).'],
+      ['AI 자동 파싱', 'PDF · 이미지를 끌어다 놓으면 분석 결과가 정리됩니다. 신규 · 변경 · 오류 건수를 함께 보여 줍니다.'],
+    ] },
+    { t: 'table', head: ['파싱 결과', '뜻', '할 일'], rows: [
+      ['신규', '처음 보는 사건', '그대로 등록'],
+      ['변경', '매각기일 · 최저가 등이 바뀜', '확인 후 반영'],
+      ['오류', '파일을 읽지 못함', '파일 확인 후 다시 올리기'],
+    ] },
+    { t: 'h4', text: '직접입력' },
+    { t: 'shot', key: 'manual', pins: [[3.3, 18.0], [3.3, 29.1], [3.3, 40.1], [3.3, 51.1], [40.1, 93.9]], legend: [
+      ['사건번호 · 물건종류 <span class="req">*</span>', '사건번호, 관할법원, 물건종류(아파트 · 다세대 · 오피스텔 · 상가 · 토지 · 단독주택 · 기타), 유찰횟수.'],
+      ['소재지 <span class="req">*</span>', '주소를 적습니다.'],
+      ['매각기일 · 금액', '매각기일, 감정가, 최저가, 보증금(비우면 최저가의 10%).'],
+      ['관계인 · 물건 · 메모', '소유자 · 채무자, 면적 · 건축년도, 특이사항(유치권, 대항력 임차인 등).'],
+      ['물건등록하기', '* 표시 칸을 채우면 선정물건에 올라갑니다.'],
+    ] },
+    { t: 'note', tone: 'warn', html: '자동으로 들어온 값도 <b>최저가 · 보증금</b>은 입찰 전에 한 번 더 확인하세요. 틀리면 입찰 자체가 어긋납니다.' },
+  ] },
+  { aid: 'help-list', label: '선정물건', title: '선정물건 · 물건카드', ic: 'layers', path: '상단 메뉴 › 선정물건 › 물건카드', route: '#/', blocks: [
+    { t: 'p', html: '등록한 물건이 카드로 쌓이는 첫 화면입니다. 하위 탭의 물건정보~임장조사는 마지막으로 본 물건의 상세 화면으로 이어집니다.' },
+    { t: 'shot', key: 'list', pins: [[4.5, 14.2], [80.6, 14.2], [4.5, 18.1], [3.0, 25.9], [3.0, 35.5], [3.0, 41.2], [74.7, 25.5]], legend: [
+      ['도구 상자', '유형 · 법원으로 거르고, 날짜순 ⇄ 임장순 정렬, 날짜 고르기, 주소 · 사건번호 검색.'],
+      ['보관함 · 휴지통 · 고르기', '보관한 물건과 지운 물건을 열어 보고, 여러 물건을 한꺼번에 고릅니다.'],
+      ['단계별 물건 수', '단계 이름을 누르면 그 단계의 물건만 봅니다.'],
+      ['사건 정보 · 관심도', '사건번호 · 법원 · 매각기일과 별(관심도 1~3), 복사 · 보관 · 삭제.'],
+      ['감정가 · 최저가 · 입찰가', '최저가 옆 괄호는 몇 차 매각인지, 입찰가는 수익분석에서 확정한 금액입니다.'],
+      ['진행 단계', '눌러서 이 물건의 단계를 바꿉니다.'],
+      ['수익률 분석', '매도 예상가 기준 최종 수익률 · 순수익금 · 필요준비금.'],
+    ] },
+    { t: 'flow' },
+    { t: 'table', head: ['단계를 바꾸면', '자동으로 일어나는 일'], rows: [
+      ['임장예정', '임장경로에 올라갑니다.'],
+      ['임장완료', '임장경로에서 방문을 체크하면 자동으로 바뀝니다.'],
+      ['낙찰', '낙찰관리 목록에 들어가고 잔금 알림이 시작됩니다.'],
+      ['유찰 · 취소', '카드와 기록은 그대로. 다음 기일에 다시 입찰산정합니다.'],
+    ] },
+  ] },
+  { aid: 'help-item-basic', label: '물건정보', title: '물건상세 · 물건정보', ic: 'building', path: '선정물건 › 카드 누르기 › 물건정보', route: '#/', blocks: [
+    { t: 'p', html: '물건 카드를 누르면 상세 화면이 열립니다. 위쪽에는 사건번호 · 법원 · 매각기일(D-day) · 단계 · 주소가 늘 보이고, 하위 탭으로 내용을 바꿉니다.' },
+    { t: 'shot', key: 'basic', pins: [[4.0, 13.8], [3.0, 28.3], [3.0, 68.3], [50.4, 28.0]], legend: [
+      ['사건 머리', '사건번호 · 법원 · 매각기일 D-day · 진행 단계 · 주소.'],
+      ['정보요약', '관할법원 · 사용승인 · 면적 · 동호 · 층 · 용적률 · 세대수. <b>편집</b>으로 고칩니다.'],
+      ['기본정보', '소유자 · 채무자 · 채권자 · 차수 · 감정가 · 최저가 · 보증금.'],
+      ['건축물 · 입지 · 물건현황', '건축물정보, 인근 역세권 · 학교 · 주변환경, 공시가격.'],
+    ] },
+  ] },
+  { aid: 'help-item-rights', label: '권리분석', title: '물건상세 · 권리분석', ic: 'scale', path: '물건상세 › 권리분석', route: '#/', blocks: [
+    { t: 'p', html: '등기 권리와 임차인 현황을 모으고, AI 분석과 체크리스트로 놓치기 쉬운 권리를 짚습니다. 권리 판단은 사람의 몫입니다.' },
+    { t: 'shot', key: 'rights', pins: [], legend: [
+      ['AI 권리분석', 'AI 분석 요청 → 권리분석 진단 · 리스크 요약 · 결론 · 명도 난이도.'],
+      ['건물등기 · 임차인현황', '등록할 때 들어온 등기 권리와 임차인. 빠진 값은 직접 적습니다.'],
+      ['권리분석 · 정리', '말소기준 · 대항력 · 우선변제를 따져 인수 · 소멸을 정리합니다.'],
+    ] },
+  ] },
+  { aid: 'help-item-survey', label: '손품조사', key: true, title: '물건상세 · 손품조사', tag: 'key', ic: 'chart', path: '물건상세 › 손품조사', route: '#/', blocks: [
+    { t: 'p', html: '마이턴옥션의 핵심 화면입니다. <b>수요 · 개별성 · 시세</b>를 한 화면에서 조사해 손품결론을 냅니다. 결론은 수익분석의 예상 매도가로 넘어갑니다.' },
+    { t: 'shot', key: 'survey', pins: [], legend: [
+      ['본건사진 · 기타사진', '링크는 엔터, 이미지는 붙여넣기로 올립니다.'],
+      ['수요조사', '① 기초수치(총 거래건수 · 세대수 · 매물수) → ② 수요지표(회전율 · 소화율 · 부담률 · 소진기간)가 자동 계산됩니다.'],
+      ['시세조사', '실거래가 조사 · 조건분석, 네이버 매물, 동일지번 매각물건, 부동산 유선 상담을 한 표에 모아 시세 결론을 냅니다.'],
+      ['손품결론', '입지 · 개별성(구역 내 등수)과 시세를 묶어 결론을 내고, 수익분석으로 넘깁니다.'],
+    ] },
+    { t: 'note', tone: 'tip', html: '중개업체 관리에 적어 둔 업체는 부동산 유선 상담표의 상호 목록에 그대로 나타납니다. 상호를 고르면 전화번호도 따라 들어갑니다.' },
+  ] },
+  { aid: 'help-item-profit', label: '수익분석', title: '물건상세 · 수익분석', ic: 'percent', path: '물건상세 › 수익분석', route: '#/', blocks: [
+    { t: 'p', html: 'A~D안 입찰가를 나란히 비교하고 한 안을 확정합니다. 확정한 안의 입찰가가 물건 카드에 표시됩니다.' },
+    { t: 'shot', key: 'profit', pins: [], legend: [
+      ['A~D안', '보수적인 안부터 여기까지인 안까지 입찰가를 바꿔 가며 비교합니다.'],
+      ['산정표', '취득세 · 법무비 · 대출이자 · 중개수수료 · 사업소득세가 자동 계산되어 세후 순이익 · 수익률이 나옵니다.'],
+      ['돈이 나가는 순서', '입찰 당일 · 잔금일 · 명도 · 수리 때 필요한 돈을 날짜별로 묶어 보여 줍니다.'],
+    ] },
+    { t: 'table', head: ['자동 계산', '기준'], rows: [
+      ['취득세 · 법무비(채권)', '입찰가의 일정 비율. 입찰가가 바뀌면 다시 계산'],
+      ['중도상환 · 이자', '대출금 기준, 이자는 연이율의 3개월분'],
+      ['사업소득세 · 지방세', '매매사업자(종합소득세) 구간별 세율 · 누진공제, 지방세 10%'],
+      ['수익률', '세후 순이익 ÷ 실투자금(낙찰가 − 대출 + 필요경비) × 100'],
+    ] },
+  ] },
+  { aid: 'help-item-field', label: '임장조사', title: '물건상세 · 임장조사', ic: 'camera', path: '물건상세 › 임장조사', route: '#/', blocks: [
+    { t: 'p', html: '현장에서 쓰는 화면입니다. 손품조사를 펼쳐 놓고 현장과 다른 점을 바로 고칩니다. 사진은 갤러리가 아니라 그 물건에 저장됩니다.' },
+    { t: 'shot', key: 'field', pins: [], legend: [
+      ['현장사진', '찍은 사진이 이 물건에 바로 붙습니다.'],
+      ['현장조사', '입지 확인 → 건물 · 호실 개별성(연식 · 주차 · 엘리베이터 · 구조 · 뷰 · 일조 · 수리 상태) → 탐문 → 부동산 현장 상담.'],
+      ['체크리스트', '현장조사 · 수리상태 · 입찰자 현황을 하나씩 체크합니다.'],
+    ] },
+  ] },
+  { aid: 'help-trip', label: '임장경로', title: '임장경로', ic: 'route', path: '상단 메뉴 › 임장경로', route: '#/trip', blocks: [
+    { t: 'p', html: '임장예정 물건을 지도에 올리고 <b>동선최적화</b>로 가장 짧은 방문 순서를 정합니다. 앱에서 만든 경로를 웹에서도 그대로 씁니다.' },
+    { t: 'shot', key: 'trip', pins: [], legend: [
+      ['방문할 물건', '단계를 임장예정으로 바꾼 물건이 자동으로 올라옵니다.'],
+      ['출발지 · 동선최적화', '출발지를 정하고 동선최적화를 누르면 가장 짧은 순서가 잡힙니다.'],
+      ['지도', '방문 순서대로 번호가 찍힙니다.'],
+    ] },
+    { t: 'note', tone: 'tip', html: '다 둘러본 물건은 방문 체크를 하면 단계가 임장완료로 바뀝니다.' },
+  ] },
+  { aid: 'help-postwin', label: '낙찰관리', title: '낙찰관리', ic: 'gavel', path: '상단 메뉴 › 낙찰관리', route: '#/postwin', blocks: [
+    { t: 'p', html: '낙찰은 시작입니다. 낙찰 당일부터 사업자등록, 잔금 · 등기, 명도, 인테리어, 매도 · 임대까지 순서대로 챙깁니다.' },
+    { t: 'shot', key: 'postwin', pins: [], legend: [
+      ['하위 탭', '진행절차 · 절차상세 · 낙찰관리가이드.'],
+      ['진행절차', '낙찰 뒤 할 일을 순서대로. 안쪽 박스 탭에서 매물등록(매도 · 임대)과 사업경비(인테리어)를 관리합니다.'],
+      ['절차상세 · 가이드', '사건 열람, 명도 협상 원칙, 매매사업자 등록(홈택스 → 사업자 계좌 → 사업자 카드) 순서.'],
+    ] },
+    { t: 'note', tone: 'tip', title: '명도 협상 원칙', html: '빠른 명도를 위해 <b>잔금납부 전에</b> 협상을 시작하고, 마지노선은 잔금납부일까지로 잡습니다.' },
+  ] },
+  { aid: 'help-finance', label: '자금관리', title: '자금관리', ic: 'wallet', path: '상단 메뉴 › 자금관리', route: '#/finance', blocks: [
+    { t: 'p', html: '돈의 흐름을 물건별로 적고, 신고철에는 기간별로 걸러 엑셀로 받습니다.' },
+    { t: 'shot', key: 'finance', pins: [], legend: [
+      ['하위 탭', '자금입출금 · 필요경비(예정신고) · 사업경비(5월 종합소득세) · 세금신고.'],
+      ['기간 · 항목추가 · 엑셀저장', '이번달 · 올해 · 총기간 · 직접선택으로 거르고, 항목을 더하고, CSV로 저장합니다.'],
+      ['합계', '총 입금 · 총 출금 · 잔액.'],
+    ] },
+    { t: 'table', head: ['세금', '신고 · 납부'], rows: [
+      ['취득세', '취득일부터 60일 이내'],
+      ['종합소득세', '다음 해 5월 1일 ~ 31일, 같은 해 매도 건 합산'],
+      ['재산세', '7월(건물분) · 9월(토지분), 6월 1일 기준 보유'],
+      ['종합부동산세', '12월 1일 ~ 15일, 주택 공시가 합산 9억원 초과 시'],
+    ], note: '세금 화면의 금액은 참고용 계산입니다. 실제 신고는 세무 전문가와 확인하세요.' },
+  ] },
+  { aid: 'help-market', label: '시장분석', title: '시장분석', ic: 'trend', path: '상단 메뉴 › 시장분석', route: '#/market', blocks: [
+    { t: 'p', html: '물건 하나가 아니라 지역 시장의 흐름을 봅니다.' },
+    { t: 'shot', key: 'market', pins: [], legend: [
+      ['하위 탭', '지역분석 · 손품분석 · 랭킹분석 · 경매사례.'],
+      ['지역분석', '시 · 군 · 구와 동 단위 거래 흐름과 수요공급.'],
+      ['손품분석 · 랭킹 · 사례', '손품 지표를 지역 단위로 모아 보고, 순위로 비교하고, 지역 경매 사례를 봅니다.'],
+    ] },
+  ] },
+  { aid: 'help-community', label: '커뮤니티', title: '커뮤니티', ic: 'users', path: '상단 메뉴 › 커뮤니티', route: '#/community', blocks: [
+    { t: 'shot', key: 'community', pins: [], legend: [
+      ['공지', '공지사항 · 이벤트 · 업데이트 소식.'],
+      ['오류및제안', '오류 제보와 기능 제안. 제보하면 포인트가 적립됩니다.'],
+      ['FAQ', '자주 찾는 도움말. 자유게시판은 준비 중입니다.'],
+    ] },
+  ] },
+  { aid: 'help-more', label: '마이페이지', title: '마이페이지', ic: 'user', path: '상단 메뉴 › 마이페이지', route: '#/more', blocks: [
+    { t: 'p', html: '내 계정 · 이용권 · 설정을 모아 둔 곳입니다.' },
+    { t: 'shot', key: 'more', pins: [], legend: [
+      ['하위 탭', '내 정보 · 결제하기 · 포인트 · 고객센터. 알림은 머리띠의 종 아이콘으로 엽니다.'],
+      ['나의 선정물건', '선정물건 · 보관함 · 휴지통.'],
+      ['일정 · 업체 · AI', '입찰달력, 알림설정, 중개업체 · 인테리어 업체 관리, AI 자동 분석 설정.'],
+      ['결제 · 계정', '3일무료체험, 결제하기, 결제관리, 포인트내역, 정보수정, 회원탈퇴.'],
+    ] },
+  ] },
+  { aid: 'help-etc', label: '스토어 · 앱 · 매뉴얼', title: '스토어 · 모바일앱 · 매뉴얼', ic: 'bag', blocks: [
+    { t: 'cards', cols: 3, items: [
+      { ic: 'bag', title: '스토어', html: '전체 · 전자책 · 리포트. 경매 관련 자료를 고르고 구매합니다.' },
+      { ic: 'phone', title: '모바일앱', tag: 'soon', html: '앱 소개와 실제 앱 화면. Google Play · App Store 출시를 준비하고 있습니다.' },
+      { ic: 'book', title: '매뉴얼', tag: 'soon', html: '경매기초 · 경매절차를 물건선정부터 매도 · 세금까지 정리할 예정입니다.' },
+    ] },
+    { t: 'go', items: [['스토어', '#/store'], ['모바일앱', '#/mobile'], ['매뉴얼', '#/manual']] },
+  ] },
+];
+
+/* ---------- 버전 목록 ---------- */
+GUIDE.release({
+  v: '1.0.0', date: '2026-11-01', title: '첫 공개',
+  notes: ['이용가이드 첫 공개 — 첫 화면에서 웹으로 보기 · 영상으로 보기를 고릅니다', '웹으로 보기: 한 장으로 이어지는 스크롤 문서', '영상으로 보기: 영상 자리와 장별 목차(영상은 준비 중)', '서비스목표 · 주요기능 · 페이지안내 · 사용방법 · 멤버십 · 회원비교 · FAQ · 문의하기 8개 장', '페이지별 실제 화면과 번호 설명, 도움말 연결용 자리표(help-…)', '2026년 11월 1일 웹 서비스 화면 기준'],
+  content: V1,
+});
+/* 다음 버전 예시 — 바뀐 곳만 patch 에서 고친다
+GUIDE.release({
+  v: '1.1.0', date: '2026-12-01', base: '1.0.0', title: '앱 출시 반영',
+  notes: ['모바일앱 출시 안내 추가'],
+  patch(c) {
+    c.faq.push({ cat: '서비스', q: '앱은 어디서 받나요?', a: 'Google Play와 App Store에서 ‘마이턴옥션’을 검색하세요.', since: '1.1.0' });
+  },
+});
+*/
+/* 웹 사용법 영상이 나오면 — 영상 주소와 장별 시작 시각만 채운다
+GUIDE.release({
+  v: '1.0.1', date: '2026-12-01', base: '1.0.0', title: '사용법 영상 공개',
+  notes: ['영상으로 보기에 웹 사용법 영상을 올렸습니다'],
+  patch(c) {
+    c.video.src = 'https://youtu.be/영상아이디';   // 또는 'video/guide-web.mp4'
+    c.video.length = '12분 30초'; c.video.updated = '2026-12-01';
+    c.video.captions = '';                         // 자막 파일이 있으면 'video/guide-web.ko.vtt'
+    const at = { start: '0:00', layout: '0:45', register: '1:40', list: '3:10', basic: '4:20', survey: '5:30', profit: '7:50', field: '9:00', postwin: '10:15', setup: '11:30' };
+    c.video.chapters.forEach((ch) => { ch.at = at[ch.id] || ''; });
+  },
+});
+*/
+
+
+/* =====================================================================
+   화면 그리기
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n) => Number(n).toLocaleString('ko-KR');
+/* 요금 글자 자리표 — {base} 1개월 기준가, {maxOff} 최대 할인율, {perDay} 가장 긴 기간의 하루 금액(10원 단위 반올림) */
+const priceTok = (str) => {
+  if (typeof str !== 'string' || str.indexOf('{') < 0) return str;
+  const P = S.rel.content.pricing; const long = P.plans.reduce((a, b) => (b[0] > a[0] ? b : a));
+  const total = P.base * long[0] * (100 - long[1]) / 100; const perDay = Math.round(total / (long[0] * 365 / 12) / 10) * 10;
+  return str.replace(/\{base\}/g, fmt(P.base)).replace(/\{maxOff\}/g, String(Math.max(...P.plans.map((p) => p[1])))).replace(/\{perDay\}/g, fmt(perDay));
+};
+const dot = (d) => d.replace(/-/g, '.');
+const appHref = (r) => (r.startsWith('http') ? r : r.startsWith('#') ? APP_URL + r : APP_ORIGIN + r);
+const ext = (r, label, cls = 'mini') => `<a class="${cls}" href="${esc(appHref(r))}" target="_blank" rel="noopener">${esc(label)}${I('ext')}</a>`;
+const S = { rel: null, faqCat: '전체', lockSpy: 0, cur: '', curSub: '', mode: '', chapter: '' };
+const C = () => S.rel.content;
+const isNew = (x) => !!(x && x.since && x.since === S.rel.v);
+const NEW = (x) => (isNew(x) ? '<span class="tag new">NEW</span>' : '');
+const tagOf = (t) => (t === 'plus' ? '<span class="tag plus">Plus</span>' : t === 'soon' ? '<span class="tag soon">준비 중</span>' : t === 'key' ? '<span class="tag key">핵심</span>' : '');
+const subId = (sec, x) => x.aid || `${sec.id}-${x.id}`;
+const sameOrigin = () => { try { return location.origin === APP_ORIGIN; } catch (e) { return false; } };
+
+const card = (x) => `<article class="card${x.tone ? ' ' + x.tone : ''}">${x.no ? `<span class="card-no">${esc(x.no)}</span>` : ''}<h4 class="card-h">${x.ic ? `<span class="card-ic">${I(x.ic)}</span>` : ''}<span>${esc(x.title)}</span>${tagOf(x.tag)}${NEW(x)}</h4><p>${x.html}</p>${x.to ? `<a class="more" href="#${x.to}">화면 설명 보기${I('chevR')}</a>` : ''}</article>`;
+const chip = (x) => { const [t, tag] = Array.isArray(x) ? x : [x]; return `<span class="chip">${esc(t)}${tagOf(tag)}</span>`; };
+
+const B = {
+  lead: (b) => `<p class="lead">${b.html}</p>`,
+  p: (b) => `<p class="p">${b.html}</p>`,
+  h4: (b) => `<h4 class="bh">${esc(b.text)}${NEW(b)}</h4>`,
+  statement: (b) => `<div class="statement"><span class="eyebrow">${esc(b.eyebrow)}</span><p>${b.html}</p></div>`,
+  quote: (b) => `<p class="big-quote">${b.html}${b.small ? `<small>${b.small}</small>` : ''}</p>`,
+  list: (b) => `<ul class="list">${b.items.map((x) => `<li>${x}</li>`).join('')}</ul>`,
+  cards: (b) => `<div class="cards" style="--cols:${b.cols || 3}">${b.items.map(card).join('')}</div>`,
+  chips: (b) => `<div class="chips">${b.label ? `<span class="chips-label">${esc(b.label)}</span>` : ''}${b.items.map(chip).join('')}</div>`,
+  steps: (b) => `<ol class="steps">${b.items.map((s, i) => `<li class="step"><span class="step-n">${i + 1}</span><div class="step-b"><h4>${esc(s.title)}${NEW(s)}</h4><p>${s.html}</p>${s.go ? `<div class="go">${s.go.map((g) => ext(g[1], g[0])).join('')}</div>` : ''}</div></li>`).join('')}</ol>`,
+  table: (b) => `<div class="tbl"><table><thead><tr>${b.head.map((h) => `<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${b.rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${b.note ? `<p class="tbl-note">${b.note}</p>` : ''}`,
+  note: (b) => `<div class="note ${b.tone || 'info'}">${I(b.tone === 'tip' ? 'bulb' : b.tone === 'warn' ? 'alert' : 'info')}<div>${b.title ? `<b class="nt">${esc(b.title)}</b>` : ''}${b.html}</div></div>`,
+  go: (b) => `<div class="go">${b.items.map((g) => ext(g[1], g[0], 'open-app')).join('')}</div>`,
+  shot: (b) => shotHtml(b),
+  video: () => videoHtml(),
+  scope: () => scopeHtml(),
+  bi: () => biHtml(),
+  board: () => boardHtml(),
+  flow: () => flowHtml(),
+  trio: () => trioHtml(),
+  perks: () => `<div class="perks">${[['3일', '모든 기능 무료'], ['1,000P', '가입 축하 포인트'], ['무료', '경매교육 영상']].map(([a, b]) => `<div class="perk"><strong>${a}</strong><small>${b}</small></div>`).join('')}</div>`,
+  plans: () => plansHtml(),
+  tiers: () => tiersHtml(),
+  compare: () => compareHtml(),
+  faq: () => faqHtml(),
+  contact: () => contactHtml(),
+};
+
+
+const MOCK = {
+  layout: () => `<div class="mock"><span class="mock-tag">예시 화면</span><div class="mock-scroll"><div class="mk-app">
+    <div class="mk-gnb"><img src="${$('logo').getAttribute('src')}" alt=""><i class="pin">1</i><span class="mk-m"><span>물건등록</span><span class="on">선정물건</span><span>임장경로</span><span>낙찰관리</span><span>자금관리</span><span>시장분석</span><span>커뮤니티</span><span>…</span><span>마이페이지</span></span><i class="pin">2</i><span class="mk-box">▾</span>
+      <span class="mk-r"><i class="pin">3</i>공지 · 결제하기 · 이용가이드 ${I('bell')} ${I('moon')}<i class="pin">4</i><b style="color:var(--nav-text)">마이턴님</b> 로그아웃</span></div>
+    <div class="mk-sub"><i class="pin">5</i><span class="where">선정물건 ›</span><span class="on">물건카드</span><span>물건정보</span><span>권리분석</span><span>손품조사</span><span>수익분석</span><span>임장조사</span><span class="mk-crumb"><i class="pin">6</i> ${I('home') || ''} 홈 › 선정물건</span></div>
+    <div class="mk-body">
+      <div class="mk-tool"><span class="mk-c">전체 ▾</span><span class="mk-c">법원 ▾</span><span class="mk-c on">날짜순 ⇄</span><span class="mk-c">카드 ⇄</span><span class="mk-c">${I('calendar')} 2026.11.01</span><span class="mk-c mk-search">${I('search')} 주소 또는 사건번호 검색…</span><span class="mk-c">${I('archive')} ×2</span><span class="mk-c">☑</span></div>
+      <div class="mk-ghost"></div>
+    </div></div></div></div>`,
+};
+
+/* 화면 캡처 + 번호 — 번호 자리는 그림 폭·높이에 대한 백분율 [x, y] */
+function shotHtml(b) {
+  const s = C().shots[b.key];
+  const legend = b.legend ? `<ol class="legend">${b.legend.map((x, i) => `<li data-pin="${i}"><i class="pin">${i + 1}</i><div><strong class="lg-t">${x[0]}</strong>${x[1]}</div></li>`).join('')}</ol>` : '';
+  if (!s) return (b.legend || b.mock) ? `<figure class="shot" data-shot>${b.mock && MOCK[b.mock] ? MOCK[b.mock]() : ''}${legend}</figure>` : '';
+  const pins = (b.pins || []).map((p, i) => `<span class="shot-pin" style="left:${p[0]}%;top:${p[1]}%" data-pin="${i}" aria-hidden="true">${i + 1}</span>`).join('');
+  return `<figure class="shot" data-shot>
+    <div class="shot-frame"><div class="shot-bar"><i></i><i></i><i></i><span>${esc(s.url)}</span></div>
+      <div class="shot-img"><div class="shot-in"><img src="${IMG}${esc(s.src)}" width="${s.w}" height="${s.h}" alt="${esc(s.alt)}" loading="lazy">${pins}</div></div><p class="shot-swipe">옆으로 밀어서 화면 전체를 볼 수 있어요</p></div>
+    ${legend}
+  </figure>`;
+}
+
+function heroHtml() {
+  const h = C().hero;
+  return `<div class="hero">
+    <div class="hero-copy">
+      <span class="hero-badge">${esc(h.badge)}</span>
+      <h3 class="hero-title">${h.title}</h3>
+      <p>${h.text}</p>
+      ${h.chips && h.chips.length ? `<div class="hero-chips">${h.chips.map(([t, hot]) => `<span class="${hot ? 'hot' : ''}">${esc(t)}</span>`).join('')}</div>` : ''}
+    </div>
+    <figure class="hero-photo"><img src="${IMG}${esc(h.photo)}" width="1600" height="1000" alt="${esc(h.photoAlt)}"><figcaption><span>${h.story}</span><b>${esc(h.call)}</b></figcaption></figure>
+  </div>`;
+}
+
+function videoHtml() {
+  /* 우리 사이트에서도 영상을 페이지 안에 틀지 않는다 — 소리와 함께 저절로 도는 일이 없게 새 탭 카드로만 */
+  return `<a class="video-card" href="${PROMO_URL}" target="_blank" rel="noopener"><span class="play">${I('play')}</span><span><b>마이턴옥션 소개 영상 · 42초</b><small>경매는 아직 아날로그다 → 사건카드 한 장으로</small></span>${I('ext')}</a>`;
+}
+
+function scopeHtml() {
+  const cells = [['물건 검색', 0], ['물건 선정', 1], ['손품조사', 1], ['임장', 1], ['입찰', 1], ['낙찰', 1], ['명도 · 관리', 1], ['매도 · 세금', 1]];
+  return `<div><div class="scope">${cells.map(([t, inn]) => `<div class="sc ${inn ? 'in' : ''}">${t}</div>`).join('')}
+    <div class="scope-cap">경매 정보 사이트</div><div class="scope-cap in">마이턴옥션이 함께하는 구간</div></div>
+    <p class="scope-key"><i></i>파란 칸이 마이턴옥션이 함께하는 구간입니다.</p></div>`;
+}
+
+function biHtml() {
+  const L = $('logo').getAttribute('src');
+  return `<div class="bi"><div class="bi-logo"><img src="${L}" alt="마이턴옥션 BI"></div><ul class="bi-list">
+    <li><span class="bi-sw" style="background:var(--accent)">${I('dice')}</span><div><b>주사위</b>주사위를 굴려 한 칸씩 나아가는 ‘내 차례’를 담았습니다.</div></li>
+    <li><span class="bi-sw" style="background:var(--strong)">${I('play')}</span><div><b>삼각형</b>주사위 안의 삼각형은 ‘플레이’, 지금 시작한다는 뜻입니다.</div></li>
+    <li><span class="bi-sw" style="background:var(--nav-name)">${I('globe')}</span><div><b>파란 원</b>주사위 뒤의 파란 원은 ‘지구’, 내가 움직이는 넓은 판입니다.</div></li>
+  </ul></div>`;
+}
+
+function boardHtml() {
+  const st = C().stages; const main = st.filter((s) => !s.group);
+  const tiles = [{ name: '내 차례', desc: '물건을 선정물건에 올리면 말이 판 위에 놓입니다', start: true }];
+  main.forEach((s) => { if (s.k === 'sold') tiles.push({ name: '결과', desc: st.filter((x) => x.group).map((x) => x.label).join(' · '), c: '--st-won' }); tiles.push({ name: s.label, desc: s.desc, c: s.c }); });
+  let n = 0;
+  return `<div class="board">${tiles.map((t) => `<div class="tile${t.start ? ' start' : ''}" ${t.c ? `style="--c:var(${t.c})"` : ''}><div class="tile-band"></div><div class="tile-in"><span class="tile-no">${t.start ? 'START' : `${++n}칸`}</span><span class="tile-name">${esc(t.name)}</span><span class="tile-desc">${esc(t.desc)}</span></div></div>`).join('')}</div>`;
+}
+
+function flowHtml() {
+  const st = C().stages; const stg = (s) => `<span class="stg" style="--c:var(${s.c})">${esc(s.label)}</span>`;
+  const arr = '<span class="arr" aria-hidden="true">▶</span>'; const parts = []; let grp = [];
+  st.forEach((s) => { if (s.group) grp.push(s); else { if (grp.length) { parts.push(`<span class="grp">${grp.map(stg).join('')}</span>`); grp = []; } parts.push(stg(s)); } });
+  return `<div class="flow" aria-label="진행 단계">${parts.join(arr)}</div>`;
+}
+
+function trioHtml() {
+  const t = C().trio;
+  const pill = (x, cls = '') => `<div class="pillar ${cls}"><span class="q">${esc(x.q)}</span><h4>${I(x.ic)}${esc(x.title)}</h4><p>${x.html}</p>${x.items ? `<ul>${x.items.map((i) => `<li>${i}</li>`).join('')}</ul>` : ''}</div>`;
+  return `<div class="trio">${t.parts.map((x) => pill(x)).join('')}<div class="arrow" aria-hidden="true">${I('arrowR')}</div>${pill(t.out, 'out')}</div>`;
+}
+
+function plansHtml() {
+  const P = C().pricing; const max = Math.max(...P.plans.map((p) => p[1]));
+  return `<div class="plans">${P.plans.map(([m, off]) => {
+    const price = Math.round(P.base * m * (100 - off) / 100); const per = Math.round(price / m); const best = off === max && off > 0;
+    return `<article class="plan${best ? ' best' : ''}">${best ? '<span class="plan-flag">최대 할인</span>' : ''}<div class="plan-h"><b>${m}개월</b>${off ? `<span class="plan-off">${off}% 할인</span>` : '<span class="plan-off base">기준가</span>'}</div><div class="plan-price">${fmt(price)}<small>원</small></div><div class="plan-per">월 ${fmt(per)}원</div><div class="plan-base">${off ? `기준가 <s>${fmt(P.base * m)}원</s>` : '할인 없음'}</div></article>`;
+  }).join('')}</div>`;
+}
+
+const tiersHtml = () => `<div class="tiers">${C().tiers.map((t) => `<article class="tier" style="--c:var(${t.c})"><div class="tier-h"><b>${t.name}<span>${t.ko}</span></b><small>${esc(t.band)}</small></div><ul>${t.rows.map((r) => `<li><span>${esc(r[0])}</span><b>${esc(r[1])}</b></li>`).join('')}</ul></article>`).join('')}</div>`;
+
+function compareHtml() {
+  const K = C().compare; const last = K.cols.length - 1;
+  const cell = (v) => (v === 'y' ? `<span class="yes">${I('check')}이용 가능</span>` : v === 'n' ? `<span class="no">${I('lock')}잠김</span>` : priceTok(v));
+  return `<div class="tbl"><table class="cmp"><thead><tr><th scope="col">항목</th>${K.cols.map((c, i) => `<th scope="col" class="${i === last ? 'hl' : ''}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${K.rows.map((r) => `<tr><td>${r[0]}</td>${r.slice(1).map((v, i) => `<td class="${i === last ? 'hl' : ''}">${cell(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
+function faqHtml() {
+  const cats = ['전체', ...new Set(C().faq.map((f) => f.cat))];
+  return `<div class="faq-tools"><div class="faq-cats" role="group" aria-label="질문 분류">${cats.map((c) => `<button type="button" data-cat="${esc(c)}" class="${c === S.faqCat ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>
+    <label class="faq-search">${I('search')}<input id="faqQ" type="search" placeholder="질문 검색 (예: 환불, 키, 휴지통)" aria-label="질문 검색" autocomplete="off"></label></div>
+    <div class="faq" id="faqList">${C().faq.map((f) => `<details data-cat="${esc(f.cat)}"><summary><span class="q">Q</span><span>${esc(f.q)}</span><span class="cat">${esc(f.cat)}</span>${NEW(f)}${I('chevD')}</summary><div class="a">${f.a}</div></details>`).join('')}</div>
+    <p class="faq-empty" id="faqEmpty" hidden>찾는 질문이 없습니다. 아래 <a href="#contact">문의하기</a>로 알려 주세요.</p>`;
+}
+
+function contactHtml() {
+  const k = C().contact;
+  return `<div class="contact">
+    <div class="ct"><span class="card-ic">${I('call')}</span><small>고객센터 전화</small><strong>${esc(k.phone)}</strong><div class="row"><button type="button" class="mini" data-copy="${esc(k.phone)}">${I('copy')}번호 복사</button><a class="mini" href="tel:${esc(k.phone.replace(/-/g, ''))}">${I('call')}전화 걸기</a></div></div>
+    <div class="ct"><span class="card-ic">${I('mail')}</span><small>대표 메일</small><strong>${esc(k.email)}</strong><div class="row"><button type="button" class="mini" data-copy="${esc(k.email)}">${I('copy')}주소 복사</button><a class="mini" href="mailto:${esc(k.email)}">${I('mail')}메일 쓰기</a></div></div>
+  </div>`;
+}
+
+
+/* ---------- 첫 화면 — 웹으로 보기 · 영상으로 보기 ---------- */
+const V = () => C().video || { chapters: [] };
+const vReady = () => !!V().src;
+function renderHome() {
+  const h = C().home; const v = V(); const n = v.chapters.length;
+  const vMeta = vReady() ? [v.length, `${n}개 장`].filter(Boolean).join(' · ') : `${n}개 장 · 준비 중`;
+  $('home').innerHTML = `<div class="wrap"><div class="home-hero">
+    <div class="home-head"><span class="home-eyebrow">${I('bookOpen')}마이턴옥션 이용가이드 v${esc(S.rel.v)}</span><h1 class="home-title" id="homeTitle">${h.title}</h1><p>${esc(h.text)}</p></div>
+    <div class="pick">
+      <a class="pick-card" href="#web" data-mode="web"><div class="pick-thumb"><img src="${IMG}${esc(h.web.thumb)}" alt="" loading="lazy"><span class="stamp">실제 화면 · 번호 설명</span></div>
+        <div class="pick-body"><h3>${I('doc')}${esc(h.web.title)}</h3><p>${esc(h.web.text)}</p><div class="pick-foot"><span class="pick-meta">${esc(h.web.meta)}</span><span class="pick-go">웹 가이드 열기${I('arrowR')}</span></div></div></a>
+      <a class="pick-card" href="#video" data-mode="video"><div class="pick-thumb vid"><img src="${IMG}${esc(v.poster)}" alt="" loading="lazy"><span class="big-play">${I('play')}</span>${vReady() ? '' : '<span class="stamp">준비 중</span>'}</div>
+        <div class="pick-body"><h3>${I('play')}${esc(h.video.title)}</h3><p>${esc(h.video.text)}</p><div class="pick-foot"><span class="pick-meta">${esc(vMeta)}</span><span class="pick-go">${vReady() ? '영상 보기' : '목차 보기'}${I('arrowR')}</span></div></div></a>
+    </div>
+    <nav class="home-quick" aria-label="자주 찾는 곳"><b>자주 찾는 곳</b>${h.quick.map(([t, id]) => `<a href="#${esc(id)}">${esc(t)}</a>`).join('')}</nav>
+  </div></div>`;
+}
+
+/* ---------- 영상으로 보기 ---------- */
+const toSec = (at) => { if (!at) return -1; const p = String(at).split(':').map(Number); return p.some(isNaN) ? -1 : p.reduce((a, b) => a * 60 + b, 0); };
+const ytId = (u) => { const m = String(u).match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/); return m ? m[1] : ''; };
+const ytSrc = (id, start, auto) => `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&playsinline=1${start > 0 ? `&start=${start}` : ''}${auto ? '&autoplay=1' : ''}`;
+function playerHtml() {
+  const v = V();
+  if (!vReady()) return `<img src="${IMG}${esc(v.poster)}" alt=""><div class="player-cover"><span class="stamp">${I('play')}준비 중</span><strong>웹 사용법 영상을 만들고 있습니다</strong><p>영상이 올라오면 이 자리에서 바로 재생되고, 목차를 눌러 원하는 장면으로 건너뛸 수 있습니다.</p><p class="more">그동안 같은 내용을 웹으로 보기에서 실제 화면과 함께 볼 수 있어요.</p><a class="btn-accent" href="#web" data-mode="web">${I('doc')}웹으로 보기</a></div>`;
+  const id = ytId(v.src);
+  if (id) return `<iframe id="vFrame" src="${esc(ytSrc(id, 0, false))}" title="마이턴옥션 웹 사용법 영상" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen loading="lazy"></iframe>`;
+  return `<video id="vFile" controls playsinline preload="metadata" poster="${IMG}${esc(v.poster)}"><source src="${esc(v.src)}" type="${/\.webm($|\?)/i.test(v.src) ? 'video/webm' : 'video/mp4'}">${v.captions ? `<track kind="captions" srclang="ko" label="한국어" src="${esc(v.captions)}" default>` : ''}이 브라우저는 영상 재생을 지원하지 않습니다.</video>`;
+}
+function renderVideo() {
+  const v = V(); const ready = vReady();
+  const info = ready ? [v.length && `길이 <b>${esc(v.length)}</b>`, v.updated && `만든 날 <b>${esc(dot(v.updated))}</b>`, `기준 <b>웹 가이드 v${esc(S.rel.v)}</b>`].filter(Boolean).join('') : `<span>목차는 영상 구성 예정안입니다. 각 장의 ${I('doc')} 단추로 웹 가이드의 같은 자리를 바로 열 수 있습니다.</span>`;
+  $('vview').innerHTML = `<div class="wrap">
+    <header class="vv-head"><div><span class="sec-no">VIDEO</span><h2 id="vTitle">${I('play')}영상으로 보기</h2><p>웹 화면을 따라 하며 보는 사용법 영상입니다.</p></div><a class="mini" href="#web" data-mode="web">${I('doc')}웹으로 보기</a></header>
+    <div class="vv-grid">
+      <div><div class="player" id="player">${playerHtml()}</div><div class="vv-info">${info}</div></div>
+      <aside class="vv-toc" aria-labelledby="tocTitle"><div class="vv-toc-h"><h3 id="tocTitle">${I('layers')}영상 목차</h3><small>${v.chapters.length}개 장</small></div>
+        <ol>${v.chapters.map((c, i) => {
+          const sec = toSec(c.at); const can = ready && sec >= 0;
+          const inner = `<span class="toc-no">${String(i + 1).padStart(2, '0')}</span><span class="toc-txt"><b>${esc(c.title)}${c.key ? tagOf('key') : ''}</b><small>${esc(c.desc)}</small></span><span class="toc-at${can ? '' : ' tbd'}">${can ? esc(c.at) : '예정'}</span>`;
+          return `<li class="${c.key ? 'key' : ''}${S.chapter === c.id ? ' on' : ''}" data-ch="${esc(c.id)}">${can ? `<button type="button" class="toc-item" data-seek="${esc(c.id)}" aria-label="${esc(c.title)} 장면으로 건너뛰기 (${esc(c.at)})">${inner}</button>` : `<div class="toc-item">${inner}</div>`}<a class="toc-web" href="#${esc(c.aid)}" title="웹으로 보기에서 열기" aria-label="${esc(c.title)} — 웹으로 보기에서 열기">${I('doc')}</a></li>`;
+        }).join('')}</ol></aside>
+    </div></div>`;
+}
+function seekTo(id, auto) {
+  const c = V().chapters.find((x) => x.id === id); if (!c) return;
+  S.chapter = id; document.querySelectorAll('.vv-toc li').forEach((li) => li.classList.toggle('on', li.dataset.ch === id));
+  const sec = toSec(c.at); if (!vReady() || sec < 0) return;
+  const f = $('vFile'); const fr = $('vFrame');
+  if (f) { try { f.currentTime = sec; if (auto) { const pr = f.play(); if (pr && pr.catch) pr.catch(() => {}); } } catch (e) { /* 메타데이터 전 — 무시 */ } }
+  else if (fr) { const yid = ytId(V().src); if (yid) fr.src = ytSrc(yid, sec, auto); }
+  if (auto) $('player').scrollIntoView({ behavior: reduce() ? 'auto' : 'smooth', block: 'nearest' });
+}
+function stopVideo() {
+  const f = $('vFile'); if (f) { try { f.pause(); } catch (e) { /* 그만 */ } }
+  const fr = $('vFrame'); if (fr) { const yid = ytId(V().src); if (yid) fr.src = ytSrc(yid, 0, false); }
+}
+
+/* ---------- 보기 방식 (첫 화면 · 웹 · 영상) ---------- */
+function setMode(m) {
+  if (S.mode === m) return;
+  const was = S.mode; S.mode = m;
+  if (was === 'video') stopVideo();
+  $('home').hidden = m !== 'home'; $('vview').hidden = m !== 'video';
+  $('secnav').hidden = m !== 'web'; $('main').hidden = m !== 'web';
+  document.documentElement.dataset.mode = m;
+  if (m === 'home') renderHome();
+  if (m === 'video') renderVideo();
+  syncH();
+  if (m === 'web') { S.cur = ''; syncSpy(true); }
+}
+const MODES = ['home', 'web', 'video'];
+function route(h, instant) {
+  if (!h || h === 'home') { setMode('home'); window.scrollTo(0, 0); return; }
+  if (h === 'web') { setMode('web'); window.scrollTo(0, 0); return; }
+  if (h === 'video' || h.startsWith('video-')) { setMode('video'); window.scrollTo(0, 0); if (h.startsWith('video-')) seekTo(h.slice(6), false); return; }
+  if (document.getElementById(h) && $('main').contains(document.getElementById(h))) { setMode('web'); if (!goTo(h, instant)) window.scrollTo(0, 0); return; }
+  setMode('home'); window.scrollTo(0, 0);
+}
+
+/* ---------- 틀 ---------- */
+function renderNav() {
+  $('secnavIn').innerHTML = C().sections.map((s, i) => `<a href="#${s.id}" data-sec="${s.id}"><span class="no">${String(i + 1).padStart(2, '0')}</span>${esc(s.label)}</a>`).join('');
+  $('verBtn').innerHTML = `v${esc(S.rel.v)}${S.rel === GUIDE.latest() ? '' : ' (이전)'}${I('chevD')}`;
+  $('verBtn').setAttribute('aria-label', `가이드 버전 v${S.rel.v}, 다른 버전 보기`);
+}
+
+function renderSide() {
+  const sec = C().sections.find((s) => s.id === S.cur) || C().sections[0];
+  $('side').innerHTML = `<h6>${esc(sec.label)}</h6><ol>${sec.subs.map((x) => `<li><a href="#${subId(sec, x)}" data-sub="${subId(sec, x)}">${esc(x.label)}${x.key ? '<span class="star">★</span>' : ''}</a></li>`).join('')}</ol>`;
+}
+
+function renderContent() {
+  $('content').innerHTML = C().sections.map((sec, i) => {
+    const panels = sec.subs.map((x) => {
+      const id = subId(sec, x);
+      return `<section class="panel${x.key ? ' key' : ''}" id="${id}" data-sub="${id}" aria-labelledby="h-${id}"><div class="panel-head"><h3 id="h-${id}">${I(x.ic || sec.ic)}${esc(priceTok(x.title || x.label))}${tagOf(x.tag)}${NEW(x)}</h3>${x.path ? `<span class="path">${esc(x.path)}</span>` : ''}${x.route ? ext(x.route, '화면 열기', 'open-app') : ''}</div><div class="panel-body">${x.blocks.map((b) => (B[b.t] ? B[b.t](b) : '')).join('')}</div></section>`;
+    }).join('');
+    return `<section class="sec" id="${sec.id}" data-sec="${sec.id}" aria-labelledby="h-${sec.id}">
+      <header class="sec-head"><span class="sec-no">${String(i + 1).padStart(2, '0')}</span><h2 id="h-${sec.id}">${I(sec.ic)}${esc(sec.title)}</h2><p>${sec.desc}</p></header>
+      ${sec.hero ? heroHtml() : ''}${panels}</section>`;
+  }).join('');
+}
+
+function renderFoot() {
+  const k = C().contact; const L = GUIDE.latest();
+  $('foot').innerHTML = `<div class="wrap">
+    <div><p><b>마이턴옥션 이용가이드</b> v${esc(S.rel.v)} · ${dot(S.rel.date)} 기준</p><p>최신 버전 v${esc(L.v)} · <button type="button" class="linkish" data-act="log">업데이트 내역</button></p><p>마이턴옥션은 리치마블의 부동산 경매 브랜드입니다.</p></div>
+    <div><p>문의 ${esc(k.phone)} · 대표메일 ${esc(k.email)}</p><p>${esc(k.address)}</p><p>COPYRIGHT ⓒMyTurn. ALL RIGHTS RESERVED.</p></div>
+  </div>`;
+}
+
+function renderOldbar() {
+  const L = GUIDE.latest(); const bar = $('oldbar');
+  bar.hidden = S.rel === L;
+  if (!bar.hidden) bar.innerHTML = `<div class="wrap"><span>지금 <b>이전 버전 v${esc(S.rel.v)}</b>(${dot(S.rel.date)}) 가이드를 보고 있습니다. 최신은 v${esc(L.v)}(${dot(L.date)})입니다.</span><button type="button" data-act="latest">최신 버전 보기</button></div>`;
+}
+
+function renderVerPop() {
+  const L = GUIDE.latest();
+  $('verPop').innerHTML = `<h6>가이드 버전</h6>${GUIDE.list.slice().reverse().map((r) => `<button type="button" class="ver-opt${r === S.rel ? ' on' : ''}" data-ver="${esc(r.v)}"><b>v${esc(r.v)}</b>${r === L ? '<em>최신</em>' : '<span></span>'}<small>${dot(r.date)} · ${esc(r.title)}</small></button>`).join('')}<button type="button" class="ver-log" data-act="log">${I('history')}업데이트 내역 보기</button>`;
+}
+
+function render() {
+  renderNav(); renderContent(); renderFoot(); renderOldbar(); renderVerPop();
+  if (S.mode === 'home') renderHome();
+  if (S.mode === 'video') renderVideo();
+  S.cur = ''; if (S.mode === 'web') syncSpy(true);
+}
+
+/* ---------- 스크롤 위치 따라가기 ---------- */
+const reduce = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const navBottom = () => $('secnav').getBoundingClientRect().bottom;
+
+function setActive(secId, subIdv) {
+  if (secId !== S.cur) {
+    S.cur = secId; renderSide();
+    const nav = $('secnavIn'); let on = null;
+    nav.querySelectorAll('a').forEach((a) => { const hit = a.dataset.sec === secId; a.classList.toggle('on', hit); if (hit) { a.setAttribute('aria-current', 'true'); on = a; } else a.removeAttribute('aria-current'); });
+    if (on) { const l = on.offsetLeft - 24; if (l < nav.scrollLeft || on.offsetLeft + on.offsetWidth > nav.scrollLeft + nav.clientWidth) nav.scrollLeft = Math.max(0, l); }
+  }
+  S.curSub = subIdv || '';
+  $('side').querySelectorAll('a').forEach((a) => a.classList.toggle('on', a.dataset.sub === S.curSub));
+}
+
+function syncSpy(force) {
+  if (S.mode !== 'web') return;
+  if (!force && Date.now() < S.lockSpy) return;
+  const line = navBottom() + 40;
+  const secs = [...document.querySelectorAll('.sec')];
+  let cur = secs[0];
+  secs.forEach((s) => { if (s.getBoundingClientRect().top <= line) cur = s; });
+  if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) cur = secs[secs.length - 1];
+  if (!cur) return;
+  const panels = [...cur.querySelectorAll('.panel[data-sub]')];
+  let sub = panels[0];
+  panels.forEach((p) => { if (p.getBoundingClientRect().top <= line) sub = p; });
+  setActive(cur.dataset.sec, sub ? sub.dataset.sub : '');
+}
+
+function goTo(id, instant) {
+  const el = document.getElementById(id); if (!el) return false;
+  const sec = el.closest('.sec'); S.lockSpy = Date.now() + 800;
+  setActive(sec ? sec.dataset.sec : id, el.classList.contains('panel') ? id : '');
+  el.scrollIntoView({ behavior: instant || reduce() ? 'auto' : 'smooth', block: 'start' });
+  return true;
+}
+
+function fromHash(instant) {
+  let h = ''; try { h = decodeURIComponent(location.hash.slice(1)); } catch (e) { h = ''; }
+  route(h, instant);
+}
+
+/* ---------- 버전 · 창 · 테마 · 알림 ---------- */
+function setVersion(v) {
+  const r = GUIDE.get(v); if (!r || r === S.rel) return;
+  const keep = S.mode === 'web' ? (S.curSub || S.cur) : ''; S.rel = r; render();
+  if (keep) goTo(keep, true);
+  try { const u = new URL(location.href); if (r === GUIDE.latest()) u.searchParams.delete('v'); else u.searchParams.set('v', r.v); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (e) { /* 주소를 바꿀 수 없는 곳 — 화면만 바꾼다 */ }
+  toast(`v${r.v} 가이드를 엽니다.`);
+}
+function togglePop(open) { const pop = $('verPop'); const want = open == null ? pop.hidden : open; pop.hidden = !want; $('verBtn').setAttribute('aria-expanded', String(want)); }
+let lastFocus = null;
+function openLog() {
+  togglePop(false); lastFocus = document.activeElement; const L = GUIDE.latest();
+  $('modalBox').innerHTML = `<div class="modal-h"><h3 id="modalTitle">${I('history')}업데이트 내역</h3><button type="button" class="icon-btn" data-act="close" aria-label="닫기">${I('x')}</button></div>${GUIDE.list.slice().reverse().map((r) => `<section class="rel"><div class="rel-h"><b>v${esc(r.v)}</b>${r === L ? '<span class="tag">최신</span>' : ''}<time datetime="${esc(r.date)}">${dot(r.date)}</time></div><ul>${r.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>${r === S.rel ? '' : `<button type="button" class="mini" data-ver="${esc(r.v)}">이 버전 보기</button>`}</section>`).join('')}`;
+  $('modal').hidden = false; const c = $('modalBox').querySelector('[data-act="close"]'); if (c) c.focus();
+}
+function closeLog() { $('modal').hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); }
+const THEME_KEY = 'myturn.guide.theme';
+const isDark = () => document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+function paintTheme() { const d = isDark(); $('themeBtn').innerHTML = I(d ? 'sun' : 'moon'); $('themeBtn').setAttribute('aria-label', d ? '낮 화면으로 바꾸기' : '밤 화면으로 바꾸기'); }
+function toggleTheme() { const next = isDark() ? 'light' : 'dark'; document.documentElement.dataset.theme = next; try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* 저장 못 해도 화면은 바뀐다 */ } paintTheme(); }
+let toastT = 0;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 1800); }
+function copyText(text, btn) {
+  const done = () => toast('복사했습니다.');
+  const fallback = () => { const box = btn.closest('.ct'); const el = box && box.querySelector('strong'); if (el) { const r = document.createRange(); r.selectNodeContents(el); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); toast('선택했습니다. 복사해 쓰세요.'); } };
+  try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback(); } catch (e) { fallback(); }
+}
+function filterFaq() {
+  const q = (($('faqQ') || {}).value || '').trim().toLowerCase(); let n = 0;
+  document.querySelectorAll('#faqList details').forEach((d) => {
+    const hit = (S.faqCat === '전체' || d.dataset.cat === S.faqCat) && (!q || d.textContent.toLowerCase().includes(q));
+    d.hidden = !hit; if (hit) { n++; if (q) d.open = true; }
+  });
+  const e = $('faqEmpty'); if (e) e.hidden = n > 0;
+}
+
+/* ---------- 이벤트 ---------- */
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[href^="#"]');
+  if (a && !a.target) {
+    const id = decodeURIComponent(a.getAttribute('href').slice(1));
+    const el = id && document.getElementById(id);
+    if (MODES.includes(id) || id.startsWith('video-') || (el && $('main').contains(el))) {
+      e.preventDefault(); togglePop(false);
+      const modeJump = S.mode !== 'web' || MODES.includes(id) || id.startsWith('video-');
+      try { if (modeJump) history.pushState(null, '', `#${id}`); else history.replaceState(null, '', `#${id}`); } catch (err) { /* 주소를 못 바꿔도 화면은 바꾼다 */ }
+      if (modeJump) route(id, true); else goTo(id, false);
+      return;
+    }
+  }
+  const sk = e.target.closest('[data-seek]');
+  if (sk) { seekTo(sk.dataset.seek, true); try { history.replaceState(null, '', `#video-${sk.dataset.seek}`); } catch (err) { /* 그만 */ } return; }
+  const t = e.target.closest('[data-act],[data-ver],[data-copy],[data-cat]');
+  if (!t) { if (!e.target.closest('.g-tools')) togglePop(false); return; }
+  if (t.dataset.cat) { S.faqCat = t.dataset.cat; document.querySelectorAll('.faq-cats button').forEach((b) => b.classList.toggle('on', b.dataset.cat === S.faqCat)); filterFaq(); return; }
+  if (t.dataset.ver) { closeLog(); togglePop(false); setVersion(t.dataset.ver); return; }
+  if (t.dataset.copy) { copyText(t.dataset.copy, t); return; }
+  if (t.dataset.act === 'log') openLog();
+  else if (t.dataset.act === 'close') closeLog();
+  else if (t.dataset.act === 'latest') setVersion(GUIDE.latest().v);
+});
+/* 번호 설명에 올리면 그림의 같은 번호가 커진다 */
+const pinHot = (e, on) => { const li = e.target.closest('.legend li[data-pin]'); if (!li) return; const fig = li.closest('[data-shot]'); const pin = fig && fig.querySelector(`.shot-pin[data-pin="${li.dataset.pin}"]`); li.classList.toggle('hot', on); if (pin) pin.classList.toggle('hot', on); };
+document.addEventListener('mouseover', (e) => pinHot(e, true));
+document.addEventListener('mouseout', (e) => pinHot(e, false));
+$('verBtn').addEventListener('click', (e) => { e.stopPropagation(); togglePop(); });
+$('themeBtn').addEventListener('click', toggleTheme);
+$('modal').addEventListener('click', (e) => { if (e.target === $('modal')) closeLog(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (!$('modal').hidden) closeLog(); togglePop(false); } });
+document.addEventListener('input', (e) => { if (e.target.id === 'faqQ') filterFaq(); });
+window.addEventListener('hashchange', () => fromHash(false));
+window.addEventListener('popstate', () => fromHash(true));
+let spyRaf = 0;
+window.addEventListener('scroll', () => { if (spyRaf) return; spyRaf = requestAnimationFrame(() => { spyRaf = 0; syncSpy(false); }); }, { passive: true });
+try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintTheme); } catch (e) { /* 옛 브라우저 */ }
+const syncH = () => { document.documentElement.style.setProperty('--gnb-h', `${$('gnb').offsetHeight}px`); if (!$('secnav').hidden && $('secnav').offsetHeight) document.documentElement.style.setProperty('--nav-h', `${$('secnav').offsetHeight}px`); };
+try { new ResizeObserver(syncH).observe($('gnb')); } catch (e) { window.addEventListener('resize', syncH); }
+
+/* ---------- 시작 ---------- */
+try { const th = localStorage.getItem(THEME_KEY); if (th === 'dark' || th === 'light') document.documentElement.dataset.theme = th; } catch (e) { /* 저장소를 못 쓰면 기기 설정을 따른다 */ }
+let want = '';
+try { want = new URLSearchParams(location.search).get('v') || ''; } catch (e) { want = ''; }
+S.rel = GUIDE.get(want) || GUIDE.latest();
+paintTheme(); syncH(); render();
+fromHash(true);
+requestAnimationFrame(() => { if (S.mode === 'web') fromHash(true); });
+})();
+</script>
+
+</body></html>
