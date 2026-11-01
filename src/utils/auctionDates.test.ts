@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { balanceDueError, balanceDueOf, koreanYmd, stageBeforeSaleError, wonDateError } from './auctionDates';
+import { balanceDueError, balanceDueOf, koreanYmd, stageBeforeSaleError, wonDateError, wonDateWarning } from './auctionDates';
 
 describe('auctionDates', () => {
   it('koreanYmd — 26년 11월 10일', () => {
@@ -34,5 +34,9 @@ describe('auctionDates', () => {
     expect(stageBeforeSaleError(a, '낙찰', '2026-11-16')).toBe('');   // 스위치를 끈 지금은 막지 않는다
     expect(stageBeforeSaleError(a, '진행', '2026-11-16')).toBe('');
     expect(stageBeforeSaleError({}, '낙찰', '2026-11-16')).toBe('');
+  });
+  it('막지 않을 때 — 매각기일과 다른 낙찰일은 경고 글', () => {
+    expect(wonDateWarning({ eventDate: '2026-11-10' }, '2026-11-12')).toContain('26년 11월 12일로 적었습니다');
+    expect(wonDateWarning({ eventDate: '2026-11-10' }, '2026-11-10')).toBe('');
   });
 });

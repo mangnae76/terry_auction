@@ -40,6 +40,14 @@ export const wonDateError = (a: DateLike, value: string, on: boolean = STAGE_BEF
   return `입찰일(매각기일)은 ${koreanYmd(sale)}입니다. 낙찰일은 입찰일과 같은 날이어야 합니다.\n${koreanYmd(v)}은 입력할 수 없습니다.`;
 };
 
+/** 막지는 않을 때(스위치를 끈 시험 기간) — 매각기일과 다른 낙찰일을 적었으면 알릴 글, 같으면 빈 글 */
+export const wonDateWarning = (a: DateLike, value: string): string => {
+  const sale = ymdOf(a.eventDate);
+  const v = ymdOf(value);
+  if (!sale || !v || v === sale) return '';
+  return `입찰일(매각기일)은 ${koreanYmd(sale)}입니다. 낙찰일을 ${koreanYmd(v)}로 적었습니다.\n낙찰일은 보통 입찰일과 같은 날입니다 — 맞는지 확인해 주세요.`;
+};
+
 /** 잔금기한 — 적어 둔 날짜, 없으면 낙찰일(없으면 매각기일) + 45일 예정일 */
 export const balanceDueOf = (a: DateLike): { date: string; expected: boolean } => {
   const told = ymdOf(a.balanceDueDate);

@@ -33,7 +33,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import PhotoGrid from '../components/PhotoGrid.vue';
 import AppConfirm from '../components/AppConfirm.vue';
-import { BALANCE_DUE_DAYS, balanceDueError, balanceDueOf, stageBeforeSaleError, wonDateError } from '../utils/auctionDates';
+import { BALANCE_DUE_DAYS, balanceDueError, balanceDueOf, stageBeforeSaleError, wonDateError, wonDateWarning } from '../utils/auctionDates';
 import AgencyTable from '../components/AgencyTable.vue';
 import AgencyBookModal from '../components/AgencyBookModal.vue';
 import PhotoCountMark from '../components/PhotoCountMark.vue';
@@ -1655,6 +1655,9 @@ const setProfitDate = async (key: 'wonDate' | 'sellDate' | 'balanceDueDate', val
   }
   auction.value[key] = value;
   await store.saveAuction(auction.value);
+  // 막지 않는 시험 기간 — 매각기일과 다른 낙찰일은 적되 경고만 띄운다
+  const warn = key === 'wonDate' ? wonDateWarning(auction.value, value) : '';
+  if (warn) confirmBox.value = { title: '매각기일과 다른 날짜입니다', desc: warn, okLabel: '확인', skipKey: '', tone: 'calm', alertOnly: true, icon: 'warn', run: () => {} };
 };
 /** 잔금기한 — 적은 날짜, 없으면 낙찰일 + 45일 예정일 */
 const balanceDue = computed(() => (auction.value ? balanceDueOf(auction.value) : { date: '', expected: false }));
