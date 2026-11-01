@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { caseLabelOf } from '../utils/caseLabel';
 // 낙찰 이후 — 명도와 매도까지의 일을 모아 둘 자리.
 // 틀은 자금관리(.fin-shell)와 같은 짜임이다: 위는 붙박이(제목 + 탭 + 물건 카드),
 // 아래만 구른다. 카드는 물건상세의 권리분석과 같은 꼴 — 제목줄을 누르면 접힌다.
@@ -819,7 +820,7 @@ const toggleSection = (key: string) => {
         <article v-if="picked" class="pw-obj">
           <!-- 첫 줄: 사건번호 | 관할법원 · 경매계 · 전화 (정보요약에 적어 둔 값) -->
           <p class="top">
-            <span class="case lead">{{ picked.caseNumber }}</span>
+            <span class="case lead">{{ caseLabelOf(picked) }}</span>
             <i class="bar" />
             <span class="court">{{ courtInfoOf(picked).name || '–' }}</span>
             <span v-if="courtInfoOf(picked).dept" class="dept">{{ courtInfoOf(picked).dept }}</span>
@@ -866,7 +867,7 @@ const toggleSection = (key: string) => {
               @click="pickAuction(a.id)"
             >
               <p class="top">
-                <span class="case lead">{{ a.caseNumber }}</span>
+                <span class="case lead">{{ caseLabelOf(a) }}</span>
                 <i class="bar" />
                 <span class="court">{{ courtInfoOf(a).name }}</span>
                 <span v-if="courtInfoOf(a).dept" class="dept">{{ courtInfoOf(a).dept }}</span>

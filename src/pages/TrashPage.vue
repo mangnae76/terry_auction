@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { caseLabelOf } from '../utils/caseLabel';
 // 치워 둔 물건을 카드로 펼쳐 본다 — 길에 따라 휴지통(/trash)과 보관함(/archive) 둘로 선다.
 // 생김새가 같아 화면은 한 벌만 두고, 어느 선반을 보는지만 갈아 끼운다.
 // 목록 화면의 드롭다운은 주소 한 줄만 보여 줘서, 무엇을 치웠는지 알아보기 어려웠다.
@@ -182,7 +183,7 @@ const stageTone = (item: AuctionDetail) => (stageToneOf(item) === 'bidding' ? 'b
             <img :src="calendarDaysIcon" alt="" class="trs-meta-ico" />
             {{ item.eventDate || '입찰일 미정' }}
             <i>·</i>{{ shortCourt(item.courtName) }}
-            <i>·</i>{{ item.caseNumber }}
+            <i>·</i>{{ caseLabelOf(item) }}
           </span>
           <span :class="['trs-stage', `tone-${stageTone(item)}`]">{{ stageLabel(item) }}</span>
         </div>

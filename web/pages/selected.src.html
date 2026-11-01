@@ -6129,7 +6129,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const sum = { ...T.summarySeedOf(a), ...Object.fromEntries(Object.entries(a.basicSummary || {}).filter(([, v]) => v)) };
     const parts = T.addressParts(a.address || '', sum['sum.buildingName']);
     return {
-      id: a.id, date: a.eventDate || '', court: a.courtName || '', caseNo: a.caseNumber || '',
+      id: a.id, date: a.eventDate || '', court: a.courtName || '', caseNo: T.caseLabelOf ? T.caseLabelOf(a) : (a.caseNumber || ''),
       land: Number(a.landAreaM2) || 0, bldg: Number(a.buildingAreaM2) || 0, type: a.propertyType || '',
       addr: parts.before.trim(), bld: parts.name, unit: `${parts.mid}${parts.unit}`.trim(),
       apr: T.bidBaseValueOf(a), round: T.currentRoundLabelOf(a), min: T.currentMinBidOf(a), mine: (P.metrics && P.metrics.myBidValue) || 0,

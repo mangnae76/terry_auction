@@ -450,6 +450,8 @@ export interface AuctionDetail {
   directSellRows?: AgencyRow[];
   /** 보관함에 넣은 물건 — 버린 것이 아니라 잠시 내려놓은 것 */
   archived?: boolean;
+  /** 같은 사건이 선정물건에 있는데 휴지통에서 되살린 물건의 번호 — 화면에 '사건번호 (1)'로 (caseLabelOf) */
+  dupNo?: number;
   /** 시세조사(웹 손품분석)에서 고른 매매 · 전세와 거르기 — 브라우저가 아니라 물건에 남긴다 */
   marketPicks?: MarketPicks;
   /** 별표로 매긴 중요도 — 없으면 빈 별, 1~3을 돌아가며 매긴다 */

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { caseLabelOf } from '../utils/caseLabel';
 import { computed } from 'vue';
 import type { AuctionDetail, AuctionStatus } from '../types/auction';
 import { formatNumber } from '../utils/numberFormat';
@@ -62,7 +63,7 @@ const highestBidText = computed(() => {
         <span class="sep">·</span>
         <span>{{ item.courtName }}</span>
         <span class="sep">·</span>
-        <span>{{ item.caseNumber }}</span>
+        <span>{{ caseLabelOf(item) }}</span>
       </div>
       <div class="card-chips">
         <span v-if="item.auctionRound" class="card-chip">{{ item.auctionRound }}</span>

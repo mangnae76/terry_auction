@@ -1050,12 +1050,17 @@ export const useAuctionStore = defineStore('auction', () => {
   const restoreHiddenAuctions = async (ids?: string[]) => {
     const target = ids && ids.length > 0 ? new Set(ids) : null;
     const changed: AuctionDetail[] = [];
+    // 같은 사건번호가 이미 보이는 물건이면 번호를 붙여 되살린다 — '사건번호 (1)' · '(2)' (화면 표시는 caseLabelOf)
+    const shown = allAuctions.value.filter((x) => !x.hidden);
     allAuctions.value = allAuctions.value.map((item) => {
       if (!item.hidden) return item;
       if (target && !target.has(item.id)) return item;
       // 되살리기는 '치우기를 되돌린다'는 뜻이다 — 단계도, 적어 둔 것도 건드리지 않는다.
       // 전에는 손품조사로 되돌렸는데, 임장예정·입찰진행 진척이 소리 없이 사라져 더 성가셨다.
-      const next: AuctionDetail = { ...item, hidden: false };
+      const same = item.caseNumber ? shown.filter((x) => x.id !== item.id && x.caseNumber === item.caseNumber) : [];
+      const dupNo = same.length ? Math.max(0, ...same.map((x) => x.dupNo ?? 0)) + 1 : item.dupNo;
+      const next: AuctionDetail = { ...item, hidden: false, ...(dupNo ? { dupNo } : {}) };
+      shown.push(next);
       changed.push(next);
       return next;
     });
@@ -1069,7 +1074,8 @@ export const useAuctionStore = defineStore('auction', () => {
     }
 
     const imported = items.map((parsed) => {
-      const existing = allAuctions.value.find((auction) => auction.caseNumber === parsed.caseNumber);
+      // 휴지통 물건은 다른 물건으로 본다 — 거기에 덮어쓰면 휴지통에 남아 선정물건에 안 보였다
+      const existing = allAuctions.value.find((auction) => auction.caseNumber === parsed.caseNumber && !auction.hidden);
       const base = existing
         ? { ...createDraftAuction(), ...cloneAuction(existing), id: existing.id }
         : createDraftAuction();

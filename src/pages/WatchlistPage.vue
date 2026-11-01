@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { caseLabelOf } from '../utils/caseLabel';
 import { weekdayLabel } from '../stores/scheduleStore';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -732,7 +733,7 @@ watch(
                     <input type="checkbox" :checked="archivedPicked[item.id] === true" @click.stop="toggleArchivedPick(item.id)" />
                     <span class="wlp-hidden-texts">
                       <span class="case">
-                        {{ item.caseNumber }}
+                        {{ caseLabelOf(item) }}
                         <em :class="['wlp-hidden-tag', `tone-${stageTone(item)}`]">{{ stageLabel(item) }}</em>
                       </span>
                       <span class="addr"
@@ -785,7 +786,7 @@ watch(
                     <input type="checkbox" :checked="hiddenPicked[item.id] === true" @click.stop="toggleHiddenPick(item.id)" />
                     <span class="wlp-hidden-texts">
                       <span class="case">
-                        {{ item.caseNumber }}
+                        {{ caseLabelOf(item) }}
                         <em :class="['wlp-hidden-tag', `tone-${stageTone(item)}`]">{{ stageLabel(item) }}</em>
                       </span>
                       <span class="addr"
