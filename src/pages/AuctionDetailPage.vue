@@ -1657,7 +1657,7 @@ const setProfitDate = async (key: 'wonDate' | 'sellDate' | 'balanceDueDate', val
   const apply = async () => { target[key] = value; await store.saveAuction(target); };
   // 묻고 바꾼다 — 매각기일과 다른 날(막지 않는 시험 기간) · 추정 예정일이던 잔금기한은 확인을 눌러야 바뀐다. 취소하면 그대로
   const ask = key === 'wonDate'
-    ? { title: '매각기일과 다른 날짜입니다', desc: wonDateWarning(target, value) }
+    ? { title: '입찰일과 다른 날짜입니다', desc: wonDateWarning(target, value) }
     : key === 'balanceDueDate'
       ? { title: '잔금기한은 추정 예정일입니다', desc: balanceDueNotice(target, value) }
       : null;

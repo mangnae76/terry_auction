@@ -45,7 +45,7 @@ export const wonDateWarning = (a: DateLike, value: string): string => {
   const sale = ymdOf(a.eventDate);
   const v = ymdOf(value);
   if (!sale || !v || v === sale) return '';
-  return `입찰일(매각기일)은 ${koreanYmd(sale)}입니다. ${koreanYmd(v)}을 고르셨습니다.\n낙찰일은 보통 입찰일과 같은 날입니다. 확인을 누르면 ${koreanYmd(v)}로 바뀝니다.`;
+  return `입찰일은 ${koreanYmd(sale)}입니다.\n${koreanYmd(v)}을 고르셨습니다.\n낙찰일은 보통 입찰일과 같은 날입니다. 확인을 누르면 ${koreanYmd(v)}로 바뀝니다.`;
 };
 
 /** 잔금기한 칸이 아직 추정 예정일(낙찰일 + 45일)일 때 날짜를 고르면 묻는 글 — 적어 둔 기한이 있으면 빈 글. 확인을 눌러야 바뀐다 */
