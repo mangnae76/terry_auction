@@ -693,6 +693,9 @@ button { cursor: pointer; }
 .mk-sale .ag-cov-chip i { font-style: normal; color: var(--muted); }
 .mk-sale .ag-q-x { margin-left: 4px; padding: 0 2px; border: 0; background: none; color: var(--muted); font-size: 14px; line-height: 1; cursor: pointer; }
 .mk-sale .ag-q-add { display: inline-flex; gap: 6px; align-items: center; }
+.mk-sale .ag-q-tools .adm-f > small { display: none; }
+.mk-sale .ag-q-tools select.adm-input { width: 150px; height: 30px; font-size: 13px; }
+.mk-sale .ag-q-tools .ag-sep { width: 1px; height: 22px; margin: 0 6px; background: var(--line, #e5e7eb); }
 .mk-sale .ag-q-add input.adm-input { width: 220px; height: 30px; font-size: 13px; }
 .mk-sale .ag-q-add .ag-btn { height: 30px; padding: 0 12px; font-size: 13px; }
 .mk-sale .ag-bar { flex: 0 0 180px; height: 6px; border-radius: 3px; background: var(--line, #e3e8f0); overflow: hidden; }
@@ -5399,18 +5402,39 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     if (r.__reg === undefined) { const k = agRegionOf(r['소재지']); const t = k ? k.split(' ') : []; r.__reg = t.length >= 3 ? { sido: t[0], sgg: t.slice(1, -1).join(' '), dong: t[t.length - 1] } : null; }
     return r.__reg;
   };
-  const saleSidoName = (short) => SALE_SIDO.find((f) => AG_SIDO[f] === short) || short;
-  /* 고르는 칸 목록 — 모은 물건이 있는 지역만 */
-  function saleRegionOpts() {
-    const sidos = new Set(); const sggs = new Set(); const dongs = new Set();
-    AG.recs.forEach((r) => {
-      const g = agRegParts(r); if (!g) return;
-      sidos.add(g.sido);
-      if (g.sido === saleSeg.sido) sggs.add(g.sgg);
-      if (g.sido === saleSeg.sido && g.sgg === saleSeg.sgg) dongs.add(g.dong);
-    });
-    const ko = (a, b) => a.localeCompare(b, 'ko');
-    return { sido: [...sidos].sort(ko), sgg: [...sggs].sort(ko), dong: [...dongs].sort(ko) };
+  /* 지역 고르기 — 시도 · 시군구는 법정동 표(앱 지역분석과 같은 regionCodes), 읍면동은 그 시군구 최근 실거래의 동 + 모은 물건의 동.
+     위 검색 줄과 도우미 '동으로 추가'가 같이 쓴다 */
+  const SALE_SGG_ALIAS = { '인천 서구': ['서해구', '검단구'], '인천 중구': ['영종구', '제물포구'], '인천 동구': ['제물포구'] };   /* 2026 개편 전 주소 */
+  const regSidos = () => (CLOUD.T && CLOUD.T.SIDO_NAMES) || SALE_SIDO;
+  const regSggs = (sido) => (sido && CLOUD.T && CLOUD.T.districtsOf ? CLOUD.T.districtsOf(sido) : []);
+  const regLawd = (sido, sgg) => (regSggs(sido).find((d) => d.label === sgg) || {}).lawdCode || '';
+  /* 모은 물건의 동네 g 가 고른 시도 · 시군구 안인지 — 옛 '인천 서구' 주소는 서해구 · 검단구로 골라도 걸린다 */
+  const regIn = (g, sido, sgg) => !!g && AG_SIDO[sido] === g.sido && (!sgg || g.sgg === sgg || (SALE_SGG_ALIAS[`${g.sido} ${g.sgg}`] || []).includes(sgg));
+  const SALE_PTYPE = { 연립다세대: 'villa', 아파트: 'apt', 오피스텔: 'officetel' };
+  const DONG_PEEK = {};   /* '시군구코드|종류' → 동 이름들. null 이면 받는 중 */
+  const regPeekKey = (sido, sgg, kind) => `${regLawd(sido, sgg)}|${SALE_PTYPE[kind] || 'villa'}`;
+  function regDongs(sido, sgg, kind) {
+    if (!sgg) return [];
+    const key = regPeekKey(sido, sgg, kind); const lawd = regLawd(sido, sgg);
+    if (lawd && !(key in DONG_PEEK) && CLOUD.T && CLOUD.T.fetchDongTradeStats) {
+      DONG_PEEK[key] = null;
+      CLOUD.T.fetchDongTradeStats({ lawdCd5: lawd, propertyType: SALE_PTYPE[kind] || 'villa', months: 3 })
+        .then((r) => { DONG_PEEK[key] = ((r && r.rows) || []).map((x) => x.umdNm).filter(Boolean); })
+        .catch(() => { DONG_PEEK[key] = []; })
+        .then(() => { if (agSaleOpen()) renderMarket(); });
+    }
+    const set = new Set(DONG_PEEK[key] || []);
+    AG.recs.forEach((r) => { const g = agRegParts(r); if (regIn(g, sido, sgg)) set.add(g.dong); });
+    return [...set].sort((a, b) => a.localeCompare(b, 'ko'));
+  }
+  /* 세 칸 — st 는 {sido, sgg, dong}, act 는 바뀔 때 부를 data-act */
+  function regionSelects(st, act, kind) {
+    const one = (k, title, ph, list, dis) => `<label class="adm-f"><small>${title}</small><select class="adm-input narrow ${st[k] && list.includes(st[k]) ? '' : 'ph'}" data-act="${act}" data-k="${k}" ${dis ? 'disabled' : ''}><option value="">${ph}</option>${list.map((v) => `<option value="${esc(v)}" ${st[k] === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>`;
+    const dongs = regDongs(st.sido, st.sgg, kind);
+    const loading = st.sgg && DONG_PEEK[regPeekKey(st.sido, st.sgg, kind)] === null;
+    return one('sido', '시 · 도', '시도선택', regSidos(), false)
+      + one('sgg', '시 · 군 · 구', '시군구 선택', regSggs(st.sido).map((d) => d.label), !st.sido)
+      + one('dong', '읍 · 면 · 동', loading && !dongs.length ? '불러오는 중…' : '읍면동 선택', dongs, !st.sgg);
   }
   /* 종류 — 도우미가 적은 목록 종류('다세대주택')로. 종류가 없는 예전 물건은 어느 종류에나 */
   const SALE_KIND_RE = { 연립다세대: /다세대|연립|빌라|도시형/, 아파트: /아파트/, 오피스텔: /오피스텔/ };
@@ -5422,14 +5446,14 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const cut = saleCut(q.period); const re = SALE_KIND_RE[q.kind];
     AG.sr = AG.recs.filter((r) => {
       const g = agRegParts(r);
-      return g && g.sido === q.sido && (!q.sgg || g.sgg === q.sgg) && (!q.dong || g.dong === q.dong)
+      return regIn(g, q.sido, q.sgg) && (!q.dong || g.dong === q.dong)
         && (!r['종류'] || !re || re.test(String(r['종류'])))
         && (!cut || String(r['매각일'] || '').replace(/\./g, '-').slice(0, 10) >= cut);
     });
     AG.srOf = AG.recs; AG.srQ = q;
     return AG.sr;
   }
-  const saleWhere = (q) => [saleSidoName(q.sido), q.sgg, q.dong].filter(Boolean).join(' ') + ` · ${q.kind} · ${q.period}`;
+  const saleWhere = (q) => [q.sido, q.sgg, q.dong].filter(Boolean).join(' ') + ` · ${q.kind} · ${q.period}`;
   const SC_WAIT = '<div class="sc-wait">위에서 지역을 고르고 <b>조회</b>를 누르면 모은 매각물건이 나옵니다.</div>';
   /* 매각물건 표 — 칸은 auction-web 검색리스트(auction_gui.LIST_COLS)와 같게. rows 가 null 이면 빈 표(관리자가 아니거나 아직 없음) */
   const SC_COLS = ['사건번호', '매각년월일', '감정가', '최저입찰가', '매각가', '매각가율', '유찰회수', '전용㎡/평', '건축연월', '건축년차', '층', '주소'];
@@ -5504,7 +5528,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   }
   /* ===== 집 PC 수집 도우미(관리자만) — auction-web 과 같은 방식: 여기서 누르면 Firestore 로 명령 → 집 PC agent.py 가 로그인된 크롬으로 옥션원 · 탱크옥션 수집 → 관리자 계정 아래에만 저장 =====
      문서 모양 · 읽고 쓰기는 src/services/agentRemote.ts, 규칙은 firestore.rules isAgentOwner */
-  const AG = { on: false, uid: '', status: null, meta: null, recs: [], cov: [], queue: [], qDraft: '', sending: false, note: '', noteAt: 0, unsub: [], tick: null };
+  const AG = { on: false, uid: '', status: null, meta: null, recs: [], cov: [], queue: [], qDraft: '', reg: (() => { try { return { sido: '', sgg: '', dong: '', ...JSON.parse(localStorage.getItem('ta.web.agent.reg') || '{}') }; } catch (e) { return { sido: '', sgg: '', dong: '' }; } })(), sending: false, note: '', noteAt: 0, unsub: [], tick: null };
   const AG_SEL_KEY = 'ta.web.agent.sel';
   const AG_MONTHS = [[6, '6개월'], [12, '12개월'], [24, '24개월'], [36, '36개월'], [0, '전체']];
   /* 고른 사이트 · 기간은 이 브라우저에 남긴다(새로고침해도 그대로). '처음부터새로'는 한 번 쓰고 끈다.
@@ -5542,13 +5566,13 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const chip = online ? `<span class="ag-chip"><i></i>연결됨 · ${ago}초 전</span>` : '<span class="ag-chip off"><i></i>꺼짐</span>';
     const seg = (k, title, opts) => `<label class="adm-f"><small>${title}</small><div class="adm-seg">${opts.map(([v, t]) => `<button type="button" class="adm-seg-btn ${String(agSel[k]) === String(v) ? 'on' : ''}" data-act="ag-sel" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div></label>`;
     /* 대기열수집 — 도우미 2026.11.01-4 부터. 도는 동안은 단추를 켜 둔다 */
-    const qVerOk = !online || agVerAtLeast(s.version, [2026, 11, 1, 4]);
+    const qVerOk = !online || agVerAtLeast(s.version, [2026, 11, 1, 6]);
     const qRun = busy && (AG.lastSent === 'queue' || /^대기열/.test(String(s.message || '')));
     const btn = (name, label, on, cls = '') => `<button type="button" class="ag-btn ${cls}" data-act="ag-cmd" data-v="${name}" ${on ? '' : 'disabled'}>${label}</button>`;
     const free = !busy && !AG.sending;
     let msg = !online ? '집 PC 도우미가 꺼져 있습니다 — 집 PC에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다.'
       : (s.message || (ready ? '' : '①브라우저열기를 누르면 집 PC에 크롬이 열립니다.'));
-    if (!qVerOk && (AG.queue.length || agQueueCands().length)) msg = `대기열수집은 새 도우미(2026.11.01-4 이상)에서 됩니다 — 지금 ${s.version || '예전 버전'}. 집 PC 터미널에서 Ctrl+C 뒤 다시 켜 주세요.`;
+    if (!qVerOk && (AG.queue.length || agQueueCands().length)) msg = `대기열수집은 새 도우미(2026.11.01-6 이상)에서 됩니다 — 지금 ${s.version || '예전 버전'}. 집 PC 터미널에서 Ctrl+C 뒤 다시 켜 주세요.`;
     if (AG.note && Date.now() - AG.noteAt < 5000) msg = AG.note;
     const prog = busy && s.prog && s.prog.n > 0 ? `<span class="ag-bar"><b style="width:${Math.min(100, Math.round((s.prog.i / s.prog.n) * 100))}%"></b></span>` : '';
     const m = AG.meta;
@@ -5589,23 +5613,37 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   /* 선정물건 중 아직 안 모은 동네의 사건 — 동네 · 종류마다 하나, 대기열에 이미 있는 동네는 빼고 */
   function agQueueCands() {
     const covered = (reg, type) => AG.cov.some((c) => (c.region || c.key) === reg && (!c.kind || !type || agKind2(c.kind) === agKind2(type)));
-    const seen = new Set(AG.queue.map((q) => `${agRegionOf(q.addr)}|`));
+    const seen = new Set(AG.queue.filter((q) => q.addr).map((q) => `${agRegionOf(q.addr)}|`));
+    /* 동으로 올린 것 — 시도 줄임 + 동 이름으로 (옛 '서구' 주소와 새 '서해구' 표가 달라도 같은 동으로) */
+    const dongQ = new Set(AG.queue.filter((q) => q.dong).map((q) => { const t = q.dong.split(' '); return `${t[0]} ${t[t.length - 1]}`; }));
     const out = [];
     items.forEach((it) => {
       const reg = agRegionOf(it.addr); if (!it.caseNo || !reg || covered(reg, it.type)) return;
+      const t = reg.split(' ');
       const k = `${reg}|${agKind2(it.type)}`;
-      if (seen.has(k) || seen.has(`${reg}|`) || AG.queue.some((q) => q.case === it.caseNo)) return;
+      if (seen.has(k) || seen.has(`${reg}|`) || dongQ.has(`${t[0]} ${t[t.length - 1]}`) || AG.queue.some((q) => q.case === it.caseNo)) return;
       seen.add(k); out.push({ case: it.caseNo, addr: it.addr, at: Date.now() });
     });
     return out;
   }
   function agQueueHtml() {
-    const chips = AG.queue.map((q) => `<span class="ag-cov-chip">${esc(q.case)}${q.addr ? ` <i>${esc(agRegionOf(q.addr))}</i>` : ''}<button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(q.case)}" aria-label="빼기">×</button></span>`).join('');
+    const chips = AG.queue.map((q) => (q.dong
+      ? `<span class="ag-cov-chip">${esc(q.dong)} <i>동 전체</i><button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(q.dong)}" aria-label="빼기">×</button></span>`
+      : `<span class="ag-cov-chip">${esc(q.case)}${q.addr ? ` <i>${esc(agRegionOf(q.addr))}</i>` : ''}<button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(q.case)}" aria-label="빼기">×</button></span>`)).join('');
     const cands = agQueueCands().length;
     const hint = cands ? `<span class="ag-cov-none">선정물건 중 안 모은 동네 ${cands}곳은 대기열수집 때 함께 올라갑니다 (탱크옥션)</span>` : '';
-    return `<div class="ag-cov"><small>모을 물건${AG.queue.length ? ` ${AG.queue.length}건` : ''}</small>${chips}`
-      + `<span class="ag-q-add"><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span>${hint}</div>`;
+    return `<div class="ag-cov"><small>모을 물건${AG.queue.length ? ` ${AG.queue.length}건` : ''}</small>${chips || '<span class="ag-cov-none">비어 있습니다</span>'}${hint}</div>`
+      + `<div class="ag-cov ag-q-tools"><small>동으로 추가</small>${regionSelects(AG.reg, 'ag-reg', '연립다세대')}<button type="button" class="ag-btn" data-act="ag-q-dong" ${AG.reg.dong ? '' : 'disabled'}>동추가</button>`
+      + `<span class="ag-sep"></span><small>사건으로 추가</small><span class="ag-q-add"><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span></div>`;
   }
+  /* 동 하나를 대기열에 — 도우미가 탱크옥션 종합검색(그 동 · 매각전부)으로 끝까지 모은다 */
+  function agQueueDong() {
+    const r = AG.reg; if (!r.sido || !r.sgg || !r.dong) return;
+    const label = `${AG_SIDO[r.sido] || r.sido} ${r.sgg} ${r.dong}`;
+    if (AG.queue.some((q) => q.dong === label)) { AG.note = '이미 대기열에 있는 동입니다.'; AG.noteAt = Date.now(); agPaint(); return; }
+    void agQueueSave([...AG.queue, { case: '', dong: label, lawd: regLawd(r.sido, r.sgg), sgg: r.sgg, dongName: r.dong, at: Date.now() }], `대기열에 올렸습니다 — ${label}`);
+  }
+  const AG_REG_KEY = 'ta.web.agent.reg';
   async function agQueueSave(list, note) {
     try { await CLOUD.T.saveAgentQueue(AG.uid, list); if (note) { AG.note = note; AG.noteAt = Date.now(); } }
     catch (e) { AG.note = `대기열을 저장하지 못했습니다 — ${e && e.message ? e.message : '다시 해 주세요'}`; AG.noteAt = Date.now(); }
@@ -5617,7 +5655,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     if (AG.queue.some((q) => q.case === v)) { AG.note = '이미 대기열에 있는 사건입니다.'; AG.noteAt = Date.now(); agPaint(); return; }
     const it = items.find((x) => String(x.caseNo || '').replace(/\s+/g, '') === v);
     AG.qDraft = '';
-    void agQueueSave([...AG.queue, { case: v, addr: it ? it.addr : '', at: Date.now() }], `${v} 를 대기열에 올렸습니다.`);
+    void agQueueSave([...AG.queue, { case: v, addr: it ? it.addr : '', at: Date.now() }], `대기열에 올렸습니다 — ${v}`);
   }
   /* 'web-agent 2026.11.01-4' 가 [2026, 11, 1, 4] 이상인지 */
   const agVerAtLeast = (v, want) => {
@@ -5694,17 +5732,10 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   }
   function saleCaseHtml() {
     const seg = (k, title) => `<label class="adm-f"><small>${title}</small><div class="adm-seg">${SALE_SEG[k].map((v) => `<button type="button" class="adm-seg-btn ${saleSeg[k] === v ? 'on' : ''}" data-act="sale-seg" data-k="${k}" data-v="${v}">${v}</button>`).join('')}</div></label>`;
-    /* 관리자 — 모은 물건이 있는 지역만 고른다. 아니면 예전처럼 빈 칸 */
-    const ro = agIsAdmin() && AG.recs.length ? saleRegionOpts() : null;
-    const sel = (k, title, ph, opts) => {
-      const v = ro ? saleSeg[k] : '';
-      const list = opts || [];
-      return `<label class="adm-f"><small>${title}</small><select class="adm-input narrow ${v && list.some((o) => o[0] === v) ? '' : 'ph'}" ${ro ? `data-act="sale-q" data-k="${k}"` : ''} ${opts && list.length ? '' : 'disabled'}><option value="">${ph}</option>${list.map(([val, txt]) => `<option value="${esc(val)}" ${v === val ? 'selected' : ''}>${esc(txt)}</option>`).join('')}</select></label>`;
-    };
-    const sidoOpts = ro ? ro.sido.map((v) => [v, saleSidoName(v)]) : SALE_SIDO.map((v) => [v, v]);
+    const canGo = agIsAdmin() && AG.recs.length && saleSeg.sido && regSidos().includes(saleSeg.sido);
     const label = SALE_TABS.find((t) => t[0] === S.saleTab)[1];
     return `<div class="app-market mk-sale" data-k="dong" data-s="sale"><section class="adm-shell"><div class="adm-body">`
-      + `<div class="adm-bar">${sel('sido', '시 · 도', '시도선택', sidoOpts)}${sel('sgg', '시 · 군 · 구', '시군구 선택', ro ? ro.sgg.map((v) => [v, v]) : null)}${sel('dong', '읍 · 면 · 동', '읍면동 선택', ro ? ro.dong.map((v) => [v, v]) : null)}${seg('kind', '종류')}${seg('period', '기간')}<button type="button" class="adm-load" data-act="sale-go" ${ro && saleSeg.sido && ro.sido.includes(saleSeg.sido) ? '' : 'disabled'}>조회</button></div>`
+      + `<div class="adm-bar">${regionSelects(saleSeg, 'sale-q', saleSeg.kind)}${seg('kind', '종류')}${seg('period', '기간')}<button type="button" class="adm-load" data-act="sale-go" ${canGo ? '' : 'disabled'}>조회</button></div>`
       + `<div class="adm-tabs-top"><nav class="adm-view-tabs">${SALE_TABS.map(([k, t]) => `<button type="button" class="${S.saleTab === k ? 'on' : ''}" data-act="sale-tab" data-v="${k}">${t}</button>`).join('')}</nav><div id="admCrumbSlot" class="adm-crumb-slot"></div></div>`
       + `<div class="mk-sale-body">${agIsAdmin() && S.saleTab === 'near' ? agPanelHtml() : ''}${S.saleTab === 'near' ? saleCaseCard() : agIsAdmin() ? sameLotCard() : itCard('chart', label, itEmpty('준비 중인 화면입니다.'), true)}</div>`
       + `</div></section></div>`;
@@ -6389,7 +6420,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       case 'ag-fresh': agSel.fresh = !!t.checked; break;
       case 'ag-cmd': void agSend(t.dataset.v); break;
       case 'ag-q-add': agQueueAdd(); break;
-      case 'ag-q-del': void agQueueSave(AG.queue.filter((q) => q.case !== t.dataset.v)); break;
+      case 'ag-q-del': void agQueueSave(AG.queue.filter((q) => (q.dong || q.case) !== t.dataset.v)); break;
+      case 'ag-q-dong': agQueueDong(); break;
       case 'ag-stop': if (AG.on) { void CLOUD.T.sendAgentStop(AG.uid).then(() => { AG.note = '중지 요청을 보냈습니다 — 지금 페이지까지 저장합니다.'; AG.noteAt = Date.now(); agPaint(); }).catch(() => {}); } break;
       case 'go-trip': go('trip'); break;
       /* 펼침 메뉴의 항목(data-name)을 누르면 그 하위 탭으로 바로 연다 */
@@ -6603,6 +6635,13 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       if (k === 'sido') { saleSeg.sgg = ''; saleSeg.dong = ''; }
       if (k === 'sgg') saleSeg.dong = '';
       saleSave(); renderMarket(); return;
+    }
+    if (e.target.dataset && e.target.dataset.act === 'ag-reg') {
+      const k = e.target.dataset.k; AG.reg[k] = e.target.value;
+      if (k === 'sido') { AG.reg.sgg = ''; AG.reg.dong = ''; }
+      if (k === 'sgg') AG.reg.dong = '';
+      try { localStorage.setItem(AG_REG_KEY, JSON.stringify(AG.reg)); } catch (err) { /* 그만 */ }
+      agPaint(); return;
     }
     if (e.target.dataset && e.target.dataset.act === 'ag-lot') { agLotSel = e.target.value; try { localStorage.setItem(AG_LOT_KEY, agLotSel); } catch (err) { /* 그만 */ } agPaintTable(); return; }
     if (S.modal && S.modal.kind === 'register') readReg();

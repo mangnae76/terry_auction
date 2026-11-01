@@ -41,6 +41,9 @@ export {
   sendAgentCommand, sendAgentStop, agentHeartbeat, watchAgentStatus, watchAgentDatasetMeta, watchAgentCoverage, watchAgentQueue, saveAgentQueue, loadAgentDataset, agentOnline,
 } from '../../src/services/agentRemote';
 export { updateStamp, UPDATE_PREFIX } from '../../src/services/updateStamp';
+/* 시도 · 시군구 표(법정동 코드) · 시군구의 동 이름(최근 실거래) — 경매사례 지역 고르기 · 도우미 동 추가 */
+export { SIDO_NAMES, districtsOf } from '../../src/services/regionCodes';
+export { fetchDongTradeStats } from '../../src/services/publicDataApi';
 /* 대문의 가벼운 로그인 창이 '로그인'을 누를 때 쓴다 — 로그인 유지 방식 · 카카오 설정 여부 */
 export { setLoginPersistence } from '../../src/services/authRepository';
 export { isKakaoLoginConfigured } from '../../src/services/socialAuth';
