@@ -142,7 +142,10 @@ const webHead = computed(() => {
   const parts = addressParts(a.address || '', sum['sum.buildingName']);
   const meta = headMetaLineOf(a, new Date().getFullYear());
   const won = String(a.wonDate || '').trim();
-  const wonText = /^\d{4}[-./]\d{2}[-./]\d{2}/.test(won) ? won.slice(0, 10).replace(/-/g, '.') : won;
+  const wonText0 = /^\d{4}[-./]\d{2}[-./]\d{2}/.test(won) ? won.slice(0, 10).replace(/-/g, '.') : won;
+  // 낙찰일이 아직 오지 않은 날 — 기일 전에 낙찰로 바꾼 물건 (BUG-0004)
+  const today = new Date(); const ymd = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+  const wonText = /^\d{4}\.\d{2}\.\d{2}$/.test(wonText0) && wonText0 > ymd ? `${wonText0} (기일 전)` : wonText0;
   return {
     caseNo: a.caseNumber,
     court: courtInfoOf(a).name || '',

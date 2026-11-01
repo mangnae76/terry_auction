@@ -59,20 +59,24 @@ const todayYmd = (): string => {
  * (날짜만 남으면 세금신고가 판 적 없는 물건을 매도로 세어 버린다)
  */
 export const stageDates = (
-  item: Pick<AuctionDetail, 'wonDate' | 'sellDate'>,
+  item: Pick<AuctionDetail, 'wonDate' | 'sellDate'> & { eventDate?: string },
   stage: string,
 ): { wonDate: string; sellDate: string; note: string } => {
+  // 낙찰일 기본값 — 매각기일이 이미 지났으면 그날(그날 낙찰된 것), 아니면 오늘 (BUG-0004 · 0012)
+  const sale = String(item.eventDate ?? '').slice(0, 10);
+  const wonDefault = /^\d{4}-\d{2}-\d{2}$/.test(sale) && sale <= todayYmd() ? sale : todayYmd();
   const keepWon = stage === '낙찰' || stage === '매도';
   const wantSell = stage === '매도';
   // '낙찰'을 고를 때만 낙찰일을 오늘로 적는다.
   // '매도'에서는 적어 둔 낙찰일을 그대로 두되, 비어 있으면 비워 둔다 —
   // 판 날과 받은 날은 다른 날이라 지어내면 안 된다.
   const wonDate = keepWon
-    ? (item.wonDate || (stage === '낙찰' ? todayYmd() : ''))
+    ? (item.wonDate || (stage === '낙찰' ? wonDefault : ''))
     : '';
   const sellDate = wantSell ? (item.sellDate || todayYmd()) : '';
   const notes: string[] = [];
-  if (stage === '낙찰' && !item.wonDate) notes.push('낙찰일을 오늘로 적었습니다');
+  if (stage === '낙찰' && !item.wonDate) notes.push(wonDefault === sale ? '낙찰일을 매각기일로 적었습니다' : '낙찰일을 오늘로 적었습니다');
+  if (stage === '낙찰' && /^\d{4}-\d{2}-\d{2}$/.test(sale) && sale > todayYmd()) notes.push(`매각기일(${sale.slice(5)}) 전입니다 — 단계를 확인해 주세요`);
   if (!keepWon && item.wonDate) notes.push('낙찰일을 지웠습니다');
   if (wantSell && !item.sellDate) notes.push('매도일을 오늘로 적었습니다');
   if (!wantSell && item.sellDate) notes.push('매도일을 지웠습니다');

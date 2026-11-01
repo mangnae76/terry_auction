@@ -24,6 +24,7 @@ import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
 import { dongStatsFromRows, fetchDongTradeStats, tradeWindowOf, ymd8Of, type DongTradeDetailRow, type DongTradeStat } from '../services/publicDataApi';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
+import { buildingAgeOf } from '../utils/buildingAge';
 
 type Kind = 'villa' | 'apt' | 'officetel';
 const KINDS: Array<{ key: Kind; label: string }> = [
@@ -323,11 +324,8 @@ const dmResults = computed(() => {
   ];
 });
 const areaText = (n: number) => (n > 0 ? n.toFixed(1) : '-');
-/** 건축연수 — 올해에서 평균 건축연도를 뺀다 */
-const THIS_YEAR = new Date().getFullYear();
-const ageText = (buildYear: number) => (
-  buildYear > 1800 ? String(Math.max(0, THIS_YEAR - buildYear)) : '-'
-);
+/** 건축연수 — 햇수식 N년차(올해 − 평균 건축연도 + 1), 위 navStats.age 와 같은 셈 */
+const ageText = (buildYear: number) => (buildYear > 1800 ? String(buildingAgeOf(Math.round(buildYear))) : '-');
 const pct = (n: number) => (n > 0 ? `${n.toFixed(1)}%` : '-');
 /** 거래량을 연·월로 가른다 — 24개월을 받아도 1년치로 환산해 견준다 */
 /** 표의 거래 칸 — 웹은 총 거래건수(정상 + 직거래, 계약해제 제외), 분석 도구는 정상거래만(예전 그대로) */
@@ -346,13 +344,12 @@ const cntFrac = (n: number) => {
   const t = cntRound(n);
   return Number.isInteger(t) ? '' : `.${Math.round((t - Math.floor(t)) * 10)}`;
 };
-/** 소진기간 — 한 줄로 달 수와 해로 환산한 값 ('96개월 / 8년', '130개월 / 10.8년') */
-const clearHead = (n: number) => (n > 0 ? String(Math.round(n)) : '');
+/** 소진기간 — 한 줄로 달 수와 해로 환산한 값 ('97.5개월 / 8.1년'). 위 지표 카드와 같게 소수 한 자리 */
+const clearHead = (n: number) => (n > 0 ? n.toFixed(1) : '');
 /** 해 환산 — 칸 하나에 한 줄로 들어가게 '8년' · '10.8년' 처럼 소수 한 자리. 1년이 안 되면 적지 않는다 */
 const clearSub = (n: number) => {
-  const m = Math.round(n);
-  if (!(m >= 12)) return '';
-  const y = Math.round((m / 12) * 10) / 10;
+  if (!(n >= 12)) return '';
+  const y = Math.round((n / 12) * 10) / 10;   // 반올림하기 전 달 수로 — 98개월로 먼저 올리면 8.2년이 된다
   return Number.isInteger(y) ? `${y}년` : `${y.toFixed(1)}년`;
 };
 /** 20251015 → 2025년 10월 15일, 202510 → 2025년 10월 */
@@ -457,7 +454,7 @@ const load = async () => {
 /** 엑셀에서 열 수 있게 — 쉼표가 든 값은 따옴표로 감싼다 */
 const downloadCsv = () => {
   if (rows.value.length === 0) return;
-  const head = ['소속 구', '읍면동', '총세대수', '총매물수', `총거래량(최근 ${months.value}개월)`, '평균가', '회전율(%)', '매물소화율(%)', '매물부담율(%)', '매물소진기간(개월)', '평균전용(㎡)', '평균건축연수', '평균평당가', '직거래·해제'];
+  const head = ['소속 구', '읍면동', '총세대수', '총매물수', `총거래량(최근 ${months.value}개월)`, '평균가', '회전율(%)', '매물소화율(%)', '매물부담률(%)', '매물소진기간(개월)', '평균전용(㎡)', '평균건축연수', '평균평당가', '직거래·해제'];
   const body = rows.value.map((r) => [
     r.sigungu, r.umdNm,
     r.units || '', r.listings || '',
@@ -465,7 +462,7 @@ const downloadCsv = () => {
     r.turnover ? r.turnover.toFixed(1) : '',
     r.absorb ? r.absorb.toFixed(1) : '',
     r.burden ? r.burden.toFixed(1) : '',
-    r.clearMonths ? Math.round(r.clearMonths) : '',
+    r.clearMonths ? r.clearMonths.toFixed(1) : '',
     r.avgAreaM2 || '', ageText(r.avgBuildYear), r.avgUnitPrice || '', r.excludedCount || '',
   ]);
   const esc = (v: unknown) => {
@@ -640,7 +637,7 @@ const downloadCsv = () => {
               <th v-if="webEmbed">매물<br>소진기간</th>
               <th v-else>매물 소진기간</th>
               <th :class="{ turn: webEmbed }">회전율<small>(%)</small></th>
-              <th>매물 부담율<small>(%)</small></th>
+              <th>매물 부담률<small>(%)</small></th>
             </tr>
           </thead>
           <tbody>
@@ -683,7 +680,7 @@ const downloadCsv = () => {
       <!-- 웹은 표 밑 셈 설명을 뺀다(요약 칸의 ⓘ 말풍선에 같은 내용이 있다) -->
       <p v-if="!webEmbed && rows.length > 0" class="adm-foot">
         회전율 = 1년 거래량 ÷ 세대수 &nbsp;·&nbsp; 소화율 = 1년 거래량 ÷ 매물수 &nbsp;·&nbsp;
-        부담율 = 매물수 ÷ 세대수 &nbsp;·&nbsp; 소진기간 = 매물수 ÷ 월평균 거래량.
+        부담률 = 매물수 ÷ 세대수 &nbsp;·&nbsp; 소진기간 = 매물수 ÷ 월평균 거래량.
         총 세대수는 건축물대장에서 자동으로 채웁니다(연립·다세대 · 아파트는 세대수, 오피스텔은 호수). 파란 칸(총 매물수)은 손으로 적습니다 — 적어 두면 다음에도 남습니다.
       </p>
     </div>

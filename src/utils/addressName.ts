@@ -42,11 +42,28 @@ export const addressWithName = (address: string, name?: string | null): string =
 
 /** 보여 줄 주소를 세 토막으로 가른다 — 손으로 적어 둔 건물명만 따로 칠하려고.
  *  이름을 안 적었거나 주소에서 못 찾으면 before 에 주소를 통째로 담아 돌려준다. */
+/** 주소 안에 이미 적힌 건물명 — 지번 바로 뒤에서 동·층·호 앞까지 ('… 679-2, 부경캐슬 3층 304호' → '부경캐슬').
+ *  없으면 ''. 손으로 적은 건물명이 없는 물건도 같은 꼴(이름 파랗게 · 동호 따로)로 보이게 쓴다 (BUG-0011) */
+export const buildingNameOf = (address: string): string => {
+  const parts = String(address ?? '').split(/\s+/).filter(Boolean);
+  const bare = parts.map((t) => t.replace(/,$/, ''));
+  const last = lastLotIndex(bare);
+  if (last < 0) return '';
+  const out: string[] = [];
+  for (let i = last + 1; i < parts.length; i += 1) {
+    const t = bare[i];
+    if (!t || /^[([]/.test(t) || /^제?\d+동$/.test(t) || isUnitToken(t)) break;
+    out.push(t);
+    if (parts[i].endsWith(',')) break;
+  }
+  return out.join(' ');
+};
+
 export const addressNameParts = (
   address: string,
   name?: string | null,
 ): { before: string; name: string; after: string } => {
-  const nm = String(name ?? '').trim();
+  const nm = String(name ?? '').trim() || buildingNameOf(address);
   const full = addressWithName(address, nm);
   const at = nm ? full.indexOf(nm) : -1;
   if (at < 0) return { before: full, name: '', after: '' };

@@ -1365,6 +1365,8 @@ export const useAuctionStore = defineStore('auction', () => {
       // 입찰 단계를 벗어나면 '입찰진행' 표시도 함께 내린다.
       // 이 규칙을 화면마다 따로 두면 한쪽만 고쳐져 단계가 겹쳐 보인다 — 여기 한 곳에만 둔다.
       bidStatus: status === '입찰' ? current.bidStatus : '',
+      // 낙찰일 · 매도일도 같이 지운다 — 남으면 다시 입찰로 올렸을 때 지난 낙찰일이 수익분석에 되살아난다 (BUG-0012)
+      ...(status === '입찰' ? {} : { wonDate: '', sellDate: '' }),
       isInterested: status === '임장예정',
       isFieldTrip: status === '임장완료',
     });

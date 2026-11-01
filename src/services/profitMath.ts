@@ -61,3 +61,27 @@ export const taxChainOf = (
     afterTaxProfit: afterTaxProfitOf(taxable, incomeTax, localTax),
   };
 };
+
+/** 수익 요약에 쓰는 비용 칸 — 물건의 bidCost(또는 B~D안의 bidCost)와 같은 이름 */
+export interface PlanCostLike {
+  acquisitionTaxAmount?: number; legalCostAmount?: number; interestAmount?: number; midRepaymentAmount?: number;
+  brokerageAmount?: number; arrearsFee?: number; repairCost?: number; evictionCost?: number; advertisingCost?: number;
+  loanAmount?: number; incomeTaxRateManual?: number; incomeTaxDeduct?: number; localTaxRate?: number;
+}
+
+/** 수익 요약 — 물건 상세 수익분석(sc* 셈)과 같은 식. 웹 카드 · 목록이 이걸 써서 두 화면 숫자가 같게 한다 (BUG-0002)
+ *  필요경비 = 취득세 + 법무 + 이자 + 중도상환 + 중개 + 미납관리비 + 수리 + 명도 + 광고 (대출 제외)
+ *  실투자금 = 입찰가 − 대출 + 필요경비, 수익률 = 세후 순이익 ÷ 실투자금 */
+export const planSummaryOf = (bid: number, sale: number, c: PlanCostLike = {}) => {
+  const cost = (c.acquisitionTaxAmount ?? 0) + (c.legalCostAmount ?? 0) + (c.interestAmount ?? 0) + (c.midRepaymentAmount ?? 0)
+    + (c.brokerageAmount ?? 0) + (c.arrearsFee ?? 0) + (c.repairCost ?? 0) + (c.evictionCost ?? 0) + (c.advertisingCost ?? 0);
+  const gain = sale - bid - cost;
+  const ratePct = c.incomeTaxRateManual || taxRateOf(gain);
+  const deduct = c.incomeTaxDeduct || taxDeductOf(gain);
+  const incomeTax = incomeTaxOf(gain, ratePct, deduct);
+  const localTax = localTaxOf(incomeTax, c.localTaxRate ?? 10);
+  const after = afterTaxProfitOf(gain, incomeTax, localTax);
+  const loan = c.loanAmount ?? 0;
+  const net = bid - loan + cost;
+  return { bid, sale, loan, cost, gain, incomeTax, localTax, after, net, rate: net > 0 ? (after / net) * 100 : 0 };
+};

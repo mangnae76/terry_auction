@@ -16,13 +16,13 @@ export {
 // 기일내역에서 이번 회차 고르기
 export { pickCurrentRound } from '../../src/utils/auctionSchedule';
 // 수익분석에서 확정한 입찰안 — 목록 카드의 입찰가 · 매도가가 이 안의 값을 쓴다
-export { withConfirmedPlan, confirmedPlanOf } from '../../src/services/confirmedPlan';
+export { withConfirmedPlan, confirmedPlanOf, confirmedMarkOf } from '../../src/services/confirmedPlan';
 // 주소 → 지번 · 건물명 · 동층호 토막
 export { addressParts, addressWithName, hasBuildingName } from '../../src/utils/addressName';
 // 물건 종류 이름·배지 글자
 export { propTypeName, propTypeMark } from '../../src/utils/propertyType';
 // 수익 셈(세율 구간 · 누진공제 · 세후 순이익) — 입찰가산정과 같은 셈
-export { taxChainOf, taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf } from '../../src/services/profitMath';
+export { taxChainOf, taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf, planSummaryOf } from '../../src/services/profitMath';
 // 약관 글 — 바닥 링크 · 고객센터의 이용약관 · 개인정보처리방침 · 환불정책 창이 앱과 같은 글을 쓴다
 export { TERMS_CHAPTERS, TERMS_EFFECTIVE, PRIVACY_SECTIONS, PRIVACY_OFFICER, PRIVACY_CHILD, PRIVACY_EFFECTIVE } from '../../src/services/legalTerms';
 export { POINT_CAUTIONS } from '../../src/services/pointPolicy';
@@ -43,6 +43,8 @@ export {
 export { updateStamp, UPDATE_PREFIX } from '../../src/services/updateStamp';
 /* 시도 · 시군구 표(법정동 코드) · 시군구의 동 이름(최근 실거래) — 경매사례 지역 고르기 · 도우미 동 추가 */
 export { SIDO_NAMES, districtsOf } from '../../src/services/regionCodes';
+/* 건물 연차(햇수식 N년차) — 앱과 같은 셈 */
+export { buildingAgeOf, buildingAgeText } from '../../src/utils/buildingAge';
 export { fetchDongTradeStats } from '../../src/services/publicDataApi';
 /* 대문의 가벼운 로그인 창이 '로그인'을 누를 때 쓴다 — 로그인 유지 방식 · 카카오 설정 여부 */
 export { setLoginPersistence } from '../../src/services/authRepository';

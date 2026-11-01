@@ -24,7 +24,10 @@
   /* 두 단추 같은 모양 · 같은 높이 — 속이 비친 알약 테두리만(영상을 가리지 않게), 올리면 살짝 채운다 */
   .bar button {
     display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; width: 120px; padding: 0 10px; white-space: nowrap;
-    border-radius: 999px; border: 1.5px solid #fff; background: transparent; color: #fff;
+    border-radius: 999px; border: 1.5px solid #fff; background: rgba(11, 18, 38, .45); color: #fff;
+    /* 밝은 장면에서도 보이게 — 반투명 남색 바탕 + 살짝 흐림 + 글자 그림자 (BUG-0001) */
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .55); box-shadow: 0 1px 4px rgba(0, 0, 0, .35);
     font: inherit; font-size: 13px; font-weight: 700; line-height: 1; cursor: pointer; 
     transition: background .15s, border-color .15s;
   }
@@ -36,7 +39,7 @@
   .hint { position: fixed; top: calc(var(--edge-t) + 64px); right: calc(var(--edge-r) + 24px); z-index: 5; padding: 6px 12px; border-radius: 8px; background: rgba(11, 18, 38, .7); color: rgba(255, 255, 255, .85); font-size: 13px; font-weight: 600; pointer-events: none; }
   .hint[hidden] { display: none; }
   .bar button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-  .bar svg { width: 15px; height: 15px; }
+  .bar svg { width: 15px; height: 15px; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .5)); }
   /* 로그인 창 — 웹의 앱 로그인 창과 같은 틀 */
   /* 뒤 영상은 계속 돌되 뿌옇게 — 로그인 카드에 눈이 가게 */
   .veil { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(5, 10, 24, .45); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }

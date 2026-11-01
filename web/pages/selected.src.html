@@ -2886,6 +2886,10 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .price.mine:hover { border-color: #c9d8ff; }
 .price.mine strong { color: var(--mine-text); }
 .price.mine strong.none { color: var(--faint); font-size: 14px; font-weight: 600; }
+/* 최저가 미만 입찰가 — 무효 입찰이라 빨갛게 (BUG-0003) */
+.price.mine.low strong, .t-price.mine.low { color: #dc2626 !important; }
+.low-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: #fdecec; color: #dc2626; font-size: 12px; font-style: normal; font-weight: 700; line-height: 18px; vertical-align: middle; }
+.t-price.mine .low-tag { display: block; width: max-content; margin: 2px 0 0 auto; }
 .phases { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 10px; }
 .phase {
   position: relative; flex: 1 1 0; min-width: 0; height: 26px; border: 1.5px solid var(--pill-line); background: var(--surface); color: var(--pill-text);
@@ -3993,8 +3997,12 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   /* 수익률 분석 — 앱 수익 분석과 같은 셈(간이): 실투자금 = 입찰가 − 대출 + 비용, 세후 순이익 = 매도가 − 총투자금 − 세금, 세후 수익률 = 순이익 ÷ 실투자금.
      예시 화면이라 대출(입찰가 70%)·비용(입찰가 4.5% + 300만)·예상 매도가는 자리 잡기 값이다. 실제로는 물건상세 수익계산의 값을 그대로 읽는다 */
   const incomeTax = (g) => { if (!(g > 0)) return 0; const br = [[14e6, 0.06, 0], [50e6, 0.15, 1.26e6], [88e6, 0.24, 5.76e6], [150e6, 0.35, 15.44e6], [3e8, 0.38, 19.94e6], [5e8, 0.4, 25.94e6], [1e9, 0.42, 35.94e6], [Infinity, 0.45, 65.94e6]]; const [, r, d] = br.find(([lim]) => g <= lim); return Math.max(0, g * r - d); };
+  /* 입찰가가 그 회차 최저가보다 낮음 — 최저가 미만은 무효 입찰 (BUG-0003) */
+  const bidLow = (it) => it.mine > 0 && it.min > 0 && it.mine < it.min;
   const profitOf = (it) => {
     if (!(it.mine > 0)) return null;
+    if (it.profit) return it.profit;   /* 앱 물건 — 수익분석 탭과 같은 셈(planSummaryOf). 아래 간이 셈은 예시 물건 자리 잡기용 */
+    if (CLOUD.on) return null;         /* 매도가를 안 적은 앱 물건에 가짜 매도가로 수익률을 만들지 않는다 */
     const bid = it.mine;
     const loan = it.loan || Math.round((bid * 0.7) / 1e5) * 1e5;
     const cost = it.cost ?? Math.round((bid * 0.045 + 3e6) / 1e4) * 1e4;
@@ -4009,7 +4017,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const m = (cls, label, val, tipText) => `<div class="metric ${cls}"${tip(tipText, 'left')}><small>${label}</small>${val}</div>`;
     const money = (n) => `<strong class="num ${n < 0 ? 'neg' : ''}">${won(Math.abs(n)) ? `${n < 0 ? '−' : ''}${won(Math.abs(n))}` : '0'}<em>원</em></strong>`;
     return `<aside class="res ${past ? 'past' : ''}" data-act="go-profit" data-id="${it.id}" aria-label="${esc(it.caseNo)} 수익률 분석">
-      <div class="res-head"><b class="res-title">${I.trend}수익률 분석</b><span>${r ? `매도 예상 ${eok(r.sale)}` : '입찰가 산정 전'}</span></div>
+      <div class="res-head"><b class="res-title">${I.trend}수익률 분석</b><span>${r ? `${r.plan ? `${r.confirmed ? '확정 ' : ''}${r.plan}안 기준 · ` : ''}매도 예상 ${eok(r.sale)}` : (it.mine > 0 ? '매도가 입력 전' : '입찰가 산정 전')}</span></div>
       ${r ? [
         m('rate', '최종 수익률', `<strong class="num ${r.rate < 0 ? 'neg' : ''}">${r.rate.toFixed(1)}<em>%</em></strong>`, '세후 순이익 ÷ 필요준비금'),
         m('', '순수익금', money(r.after), '매도가 − 총투자금 − 세금'),
@@ -4028,7 +4036,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   function mainCardHtml(it) {
     const past = isPast(it) && !hasResult(it);
     const picked = S.picked.has(it.id);
-    const over = it.mine > 0 && it.min > 0 ? (it.mine / it.min - 1) * 100 : null;
+    const over = it.mine > 0 && it.min > 0 ? (it.mine / it.min - 1) * 100 : null;   /* 최저가보다 몇 % 위(아래면 음수) */
     return `<article class="card ${past ? 'past' : ''} ${S.pick ? 'pickmode' : ''} ${picked ? 'picked' : ''} ${S.menu && S.menu.id === it.id ? 'menu-open' : ''}" data-act="card" data-id="${it.id}" tabindex="0" aria-label="${esc(it.caseNo)} ${esc(addrText(it))}">
       ${past ? `<span class="ribbon" aria-hidden="true">${I.refresh}</span><span class="ribbon-hit" data-tip="입찰일이 지났습니다 · 갱신필요" data-tip-pos="left"></span>` : ''}
       <div class="c-top">
@@ -4045,7 +4053,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <div class="prices">
         <div class="price"${tip(eok(it.apr))}><small>감정가</small><strong class="num">${won(it.apr) || DASH}${it.apr ? '<em>원</em>' : ''}</strong></div>
         <div class="price"${tip(it.min && it.apr ? `${eok(it.min)} · 감정가의 ${pct(it.min, it.apr)}%` : '')}><small>최저가${it.round ? ` (${esc(it.round)})` : ''}</small><strong class="num">${won(it.min) || DASH}${it.min ? '<em>원</em>' : ''}</strong></div>
-        <div class="price mine"${tip(it.mine ? `${eok(it.mine)} · 최저가 +${over.toFixed(1)}%` : '')}><small>입찰가</small>${it.mine ? `<strong class="num">${won(it.mine)}<em>원</em></strong>` : '<strong class="none">산정 전</strong>'}</div>
+        <div class="price mine${bidLow(it) ? ' low' : ''}"${tip(it.mine ? `${eok(it.mine)} · 최저가 ${over >= 0 ? '+' : ''}${over.toFixed(1)}%${bidLow(it) ? ' — 최저가 미만은 무효 입찰입니다' : ''}` : '')}><small>입찰가${bidLow(it) ? '<em class="low-tag">최저가미만</em>' : ''}</small>${it.mine ? `<strong class="num">${won(it.mine)}<em>원</em></strong>` : '<strong class="none">산정 전</strong>'}</div>
       </div>
       ${phasesHtml(it)}
     </article>`;
@@ -4061,7 +4069,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <td class="t-addr" data-tip="${esc([it.addr, it.bld, it.unit].filter(Boolean).join(' '))}" data-tip-trunc><span class="type-mark">${esc(TYPE_NAME(it.type))}</span>${addrHtml(it)}</td>
       <td class="t-price r num"${tip(eok(it.apr))}>${won(it.apr) || DASH}</td>
       <td class="t-price r num"${tip(eok(it.min))}>${won(it.min) || DASH}<small>${esc(it.round)}${it.min && it.apr ? ` · ${pct(it.min, it.apr)}%` : ''}</small></td>
-      <td class="t-price r num mine">${it.mine ? won(it.mine) : `<span style="color:var(--faint)">${DASH}</span>`}</td>
+      <td class="t-price r num mine${bidLow(it) ? ' low' : ''}"${bidLow(it) ? tip('최저가 미만 — 무효 입찰입니다') : ''}>${it.mine ? won(it.mine) : `<span style="color:var(--faint)">${DASH}</span>`}${bidLow(it) ? '<small class="low-tag">최저가미만</small>' : ''}</td>
       <td><button type="button" class="phase ${tone}" data-act="stage-menu" data-id="${it.id}" aria-haspopup="menu">${esc(stageLabel(it))}<i class="caret">▾</i></button></td>
       <td><div class="row-acts">
         <button type="button" class="ibtn" data-act="copy" data-id="${it.id}" aria-label="주소복사"${tip('주소복사')}>${I.copy}</button>
@@ -5093,7 +5101,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const bid = it.mine; const gain = r.sale - bid - r.cost; const tax = Math.max(0, Math.round(incomeTax(gain))); const local = Math.round(tax * 0.1);
     const money = (n) => (n < 0 ? `<b class="num neg">−${won(-n)}</b>원` : wonCell(n) || '<b class="num">0</b>원');
     return itCard('calc', '수익분석', `<div class="it-cols">
-        <div><h3>입찰정보</h3>${itRows([['감정가', wonCell(it.apr)], [`최저가${it.round ? ` (${esc(it.round)})` : ''}`, wonCell(it.min)], ['입찰보증금', wonCell(Math.round(it.min * 0.1))], ['입찰가', wonCell(bid)], ['대출', wonCell(r.loan)]])}</div>
+        <div><h3>입찰정보</h3>${itRows([['감정가', wonCell(it.apr)], [`최저가${it.round ? ` (${esc(it.round)})` : ''}`, wonCell(it.min)], ['입찰보증금', wonCell(Math.round(it.min * 0.1))], ['입찰가', bidLow(it) ? `${wonCell(bid)} <em class="low-tag">최저가미만</em>` : wonCell(bid)], ['대출', wonCell(r.loan)]])}</div>
         <div><h3>비용</h3>${itRows([['총비용', wonCell(r.cost)]])}<p class="it-note">취득세·법무·이자·중개·명도 등을 합친 간이 값(입찰가의 4.5% + 300만원)입니다.</p></div>
         <div><h3>수익</h3>${itRows([['매도가', wonCell(r.sale)], ['총투자금', wonCell(bid + r.cost)], ['실투자금', money(r.net)], ['매매차익', money(gain)], ['사업소득세', money(tax)], ['지방소득세', money(local)], ['세후 순이익', money(r.after)], ['세후 수익률', `<b class="num ${r.rate < 0 ? 'neg' : 'pos'}">${r.rate.toFixed(1)}</b>%`]])}</div>
       </div>`, true) + taxTableHtml();
@@ -5568,7 +5576,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const by = agBuiltYear(r);
     const ym = String(r['건축연월'] || '').trim();
     const built = ym && ym !== 'nan' ? esc(ym) : (by ? String(by) : '-');
-    const age = by ? String(new Date().getFullYear() - by) : '-';
+    const age = by ? String(CLOUD.T && CLOUD.T.buildingAgeOf ? CLOUD.T.buildingAgeOf(by) : new Date().getFullYear() - by + 1) : '-';   /* 햇수식 N년차 — 앱과 같게 */
     const fl = r['층'] != null && r['층'] !== '' ? esc(String(r['층'])) : '-';
     const addr = esc(String(r['소재지'] || ''));
     const won = (v) => (Number(v) > 0 ? `<td class="n">${agWon(v)}</td>` : '<td>-</td>');
@@ -6081,22 +6089,26 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   function renderMy() { $('myContent').innerHTML = mySetHtml(); aiUnlock(S.aiPane, false); }
   /* AI 설정은 두 자리(자동등록 · 마이페이지)에서 보인다 — 바뀌면 지금 보는 쪽만 다시 그린다 */
   const rerenderAi = () => { if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'mypage') renderMy(); else if (S.route === 'register') renderRegister(); };
+  /* 화면이 바뀌면 맨 위로 — 앱 화면(Vue)이 늦게 붙어 높이가 바뀌어도 위에 있게 한 번 더 (BUG-0007) */
+  const toTop = () => { window.scrollTo(0, 0); requestAnimationFrame(() => window.scrollTo(0, 0)); setTimeout(() => window.scrollTo(0, 0), 250); };
   /* 화면 바꾸기 — #/ 선정물건, #/register 선정물건등록 (뒤로가기로 돌아온다) */
   function go(route, id) {
-    if (S.route === route && (route !== 'item' || S.itemId === id)) { window.scrollTo(0, 0); return; }
+    if (S.route === route && (route !== 'item' || S.itemId === id)) { toTop(); return; }
     S.route = route; S.pop = ''; S.menu = null;
     if (route === 'item') { S.itemId = id; S.lastItemId = id; S.itemTab = S.itemTabNext || 'basic'; S.itemTabNext = ''; }
-    render(); window.scrollTo(0, 0);
+    render(); toTop();
     writeHash(true);
   }
   window.addEventListener('popstate', () => {
     const h = readHash();
+    const moved = S.route !== h.route || (h.route === 'item' && S.itemId !== h.itemId);
     S.route = h.route;
     if (h.route === 'item') { S.itemId = h.itemId; S.lastItemId = h.itemId; S.itemTab = h.itemTab; }
     if (h.route === 'market') { S.marketTab = h.sub; if (h.saleTab) S.saleTab = h.saleTab; }
     if (h.route === 'manual') S.manualTab = h.sub;
     if (APP_PAGE_NAMES[h.route]) S.pageTab[h.route] = h.sub;
     S.pop = ''; S.menu = null; render();
+    if (moved) toTop();   /* 뒤로 · 앞으로 가기로 다른 화면이 되면 맨 위에서 */
     if (/^#\/more\/news/.test(location.hash)) writeHash(false);   /* 예전 공지 주소 — 커뮤니티 주소로 고쳐 적는다 */
   });
 
@@ -6125,6 +6137,10 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       archived: !!a.archived && !a.hidden, trashed: !!a.hidden,
       fromFolder: ((a.importMeta && a.importMeta.pdfFolderUrl) || '').match(/folders\/([\w-]+)/)?.[1] || '',
       sale: (P.bidCost && P.bidCost.salePrice) || P.expectedSaleValue || 0, loan: (P.bidCost && P.bidCost.loanAmount) || 0,
+      /* 수익 요약 — 물건 상세 수익분석과 같은 셈(실제 필요경비 · 대출 · 세율)으로. 어느 안 기준인지도 (BUG-0002) */
+      profit: T.planSummaryOf && (P.metrics && P.metrics.myBidValue) > 0 && (P.expectedSaleValue || (P.bidCost && P.bidCost.salePrice)) > 0
+        ? { ...T.planSummaryOf(P.metrics.myBidValue, P.expectedSaleValue || P.bidCost.salePrice, P.bidCost || {}), plan: 'ABCD'[T.confirmedPlanOf ? T.confirmedPlanOf(a) : 0] || 'A', confirmed: !!(T.confirmedMarkOf && T.confirmedMarkOf(a) >= 0) }
+        : null,
     };
   };
   /* 예시 물건을 앱 물건 모양으로 — 물건상세가 앱 셈 함수 하나로 그려지게 */
@@ -6471,7 +6487,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
         const route = 'market';
         const hit = (SUBTABS[route].find((x) => x[2] === t.dataset.name) || [])[0];
         if (hit) S.marketTab = hit;
-        if (S.route === route) { S.menu = null; writeHash(false); renderSubTabs(); renderMarket(); } else go(route);
+        if (S.route === route) { S.menu = null; writeHash(false); renderSubTabs(); renderMarket(); toTop(); } else go(route);
         break;
       }
       /* 예전 마이페이지 — 없앴다. 더보기 › 마이페이지 탭으로 */
@@ -6492,7 +6508,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
         const route = act.slice(3);
         const hit = (SUBTABS[route].find((x) => x[2] === t.dataset.name) || [])[0];
         if (hit) S.pageTab[route] = hit;
-        if (S.route === route) { S.menu = null; S.pop = ''; writeHash(false); render(); } else go(route);
+        if (S.route === route) { S.menu = null; S.pop = ''; writeHash(false); render(); toTop(); } else go(route);
         break;
       }
       case 'area-view': S.areaView = v; renderItem(); break;
@@ -6605,9 +6621,9 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
         rerenderAi(); toast('키를 지웠습니다.', 'info'); break;
       }
       case 'subtab': {
-        if (S.route === 'market') { S.marketTab = v; writeHash(false); renderSubTabs(); renderMarket(); break; }
+        if (S.route === 'market') { S.marketTab = v; writeHash(false); renderSubTabs(); renderMarket(); toTop(); break; }
         if (S.route === 'manual') { S.manualTab = v; writeHash(false); renderSubTabs(); renderInfo(); window.scrollTo(0, 0); break; }
-        if (APP_PAGE_NAMES[S.route]) { S.pageTab[S.route] = v; writeHash(false); renderSubTabs(); renderAppPage(); window.scrollTo(0, 0); break; }
+        if (APP_PAGE_NAMES[S.route]) { S.pageTab[S.route] = v; writeHash(false); renderSubTabs(); renderAppPage(); toTop(); break; }
         if (v === 'cards') { go('list'); break; }   /* 물건카드 — 선정물건으로 */
         if (S.route === 'list') {
           const id = (S.lastItemId && byId(S.lastItemId)) ? S.lastItemId : (visible()[0] || {}).id;
@@ -6617,7 +6633,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
         S.itemTab = v;
         /* 주소에도 남긴다 — 새로고침하면 이 탭으로 다시 연다 (뒤로가기 기록은 늘리지 않는다) */
         writeHash(false);
-        renderSubTabs(); renderItem(); window.scrollTo(0, 0); break;
+        renderSubTabs(); renderItem(); toTop(); break;
       }
       /* 등록 방법 탭 — 자동 등록(Plus·AI 파싱) · 직접 입력(손으로 적기) */
       case 'reg-mode': {

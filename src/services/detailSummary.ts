@@ -1,6 +1,7 @@
 // 물건상세 머리·정보요약·기본정보의 셈 — 앱 물건상세(AuctionDetailPage)에 있던 코드를 그대로 옮겨 왔다.
 // 앱 화면과 웹(web/)이 이 파일을 같이 쓴다. 한쪽만 고쳐지는 일이 없게 규칙은 여기 한곳에 둔다.
 import type { AuctionDetail, AuctionHistoryRow } from '../types/auction';
+import { buildingAgeText } from '../utils/buildingAge';
 import { pickCurrentRound } from '../utils/auctionSchedule';
 
 /** 소수점 두 자리에서 '자른다'(반올림하지 않는다). 자릿수는 항상 두 자리로 채워 줄을 맞춘다 */
@@ -35,7 +36,7 @@ export const headMetaLineOf = (
   const y = Number(ym?.[1] ?? 0);
   // 연도만 쓰면 같은 해 물건끼리 구분이 안 된다 — 월까지 적는다 ('2015-08')
   const head = ym?.[2] ? `${y}-${ym[2]}` : String(y);
-  const year = y && y >= 1800 ? `${head}(${Math.max(0, thisYear - y)}년차)` : '';
+  const year = y && y >= 1800 ? `${head}(${buildingAgeText(y, new Date(thisYear, 6, 1))})` : '';
   return [area, year].filter(Boolean).join(' · ');
 };
 
@@ -102,12 +103,7 @@ export const summaryAreaText = (raw: string) => {
   return `${trunc2(n)}㎡ / ${(n / 3.305785).toFixed(2)}평`;
 };
 
-export const summaryApprovalAgeOf = (approval: string) => {
-  const m = approval.match(/^(\d{4})/);
-  if (!m) return '';
-  const years = new Date().getFullYear() - Number(m[1]) + 1;
-  return years > 0 ? `${years}년차` : '';
-};
+export const summaryApprovalAgeOf = (approval: string) => (/^\d{4}/.test(approval) ? buildingAgeText(approval) : '');
 
 // 앞이 해당 물건의 층, 뒤가 그 동의 전체 층수
 export const summaryFloorPairOf = (cur: string, total: string) => {

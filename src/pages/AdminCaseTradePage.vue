@@ -1409,6 +1409,8 @@ const downloadCsv = () => {
             <small v-if="caseQuery.trim()">{{ caseFound.length.toLocaleString('ko-KR') }}건</small>
             <button v-if="caseQuery" type="button" aria-label="검색어 지우기" @click="caseQuery = ''">×</button>
           </div></template>
+          <!-- 웹은 위 머리줄(엑셀 단추)이 숨겨져 '엑셀로 내려받으세요' 안내만 남았다 — 리스트 머리에 단추를 둔다 (BUG-0006) -->
+          <button v-if="webEmbed" type="button" class="adm-csv list-csv" :disabled="tableRows.length === 0" @click="downloadCsv">엑셀 내려받기</button>
           <template v-if="webEmbed"><button type="button" class="list-fold" :aria-expanded="listOpen1" :aria-label="listOpen1 ? '실거래 리스트 접기' : '실거래 리스트 펼치기'" :title="listOpen1 ? '접기' : '펼치기'" @click="listOpen1 = !listOpen1"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" :class="{ up: listOpen1 }" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button></template>
         </div>
 
@@ -1667,6 +1669,11 @@ const downloadCsv = () => {
 .list-find { flex: 1 1 260px; max-width: 420px; margin-left: auto; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; color: #9ca3af; }
 .list-find:focus-within { border-color: #2b6df3; }
 .adm-sum .list-find ~ .list-fold { margin-left: 0; }
+/* 웹 리스트 머리의 엑셀 단추 (BUG-0006) */
+.adm-sum .list-csv { flex: none; align-self: center; height: 30px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; color: #374151; font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.adm-sum .list-csv:hover:not(:disabled) { border-color: #2b6df3; color: #2b6df3; }
+.adm-sum .list-csv:disabled { opacity: .5; cursor: default; }
+.adm-sum .list-find ~ .list-csv { margin-left: 0; }
 .list-find input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font-family: inherit; font-size: 14px; color: #111827; }
 .list-find input::placeholder { color: #9aa3b2; }
 .list-find input::-webkit-search-cancel-button { display: none; }

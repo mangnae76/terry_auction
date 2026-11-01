@@ -8,7 +8,7 @@ export type DemandMetric = 'turnover' | 'absorb' | 'burden' | 'clear';
 export const DEMAND_GRADE_RULES: Record<DemandMetric, { a: number; b: number; higher: boolean }> = {
   turnover: { a: 3, b: 1.5, higher: true },   // 연간 회전율(%) — A 3%↑ · B 1.5%↑
   absorb: { a: 180, b: 120, higher: true },   // 연간 매물 소화율(%) — A 180%↑ · B 120%↑
-  burden: { a: 3, b: 5, higher: false },      // 매물 부담율(%) — A 3%↓ · B 5%↓
+  burden: { a: 3, b: 5, higher: false },      // 매물 부담률(%) — A 3%↓ · B 5%↓
   clear: { a: 6, b: 12, higher: false },      // 매물 소진기간(개월) — A 6↓ · B 12↓
 };
 

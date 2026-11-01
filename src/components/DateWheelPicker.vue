@@ -9,6 +9,8 @@ const props = defineProps<{
   modelValue?: string;
   /** 일(日) 휠 없이 년·월만 고른다 */
   monthOnly?: boolean;
+  /** 값이 비었을 때 휠을 맞출 날짜 (없으면 오늘) — 예: 전입일 칸은 짝인 조사일에서 연다 */
+  defaultValue?: string;
 }>();
 
 const emit = defineEmits<{
@@ -55,12 +57,13 @@ const syncScrollPositions = async () => {
   scrollTo(dayEl.value, day.value - 1);
 };
 
-// 열릴 때 현재 값으로 휠을 맞춘다
+// 열릴 때 현재 값으로 휠을 맞춘다. 열린 채 고르는 칸이 바뀌어도(값이 바뀜) 다시 맞춘다 —
+// 앞 칸 날짜가 휠에 남아 다른 칸에 들어가던 것 막기
 watch(
-  () => props.open,
-  (isOpen) => {
+  () => [props.open, props.modelValue, props.defaultValue] as const,
+  ([isOpen]) => {
     if (!isOpen) return;
-    const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(props.modelValue ?? '');
+    const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(props.modelValue || props.defaultValue || '');
     if (m) {
       year.value = Number(m[1]);
       month.value = Number(m[2]);

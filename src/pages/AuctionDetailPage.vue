@@ -43,6 +43,7 @@ import { useAuctionStore } from '../stores/auctionStore';
 import {
   bidBaseValueOf, bidRoundsOf, currentRoundLabelOf, depositAmountOf, headMetaLineOf,
   roundToneOf, saleKindOf, summaryApprovalAgeOf, summaryAreaText, summaryFloorPairOf, summarySeedOf, trunc2,
+  currentMinBidOf,
 } from '../services/detailSummary';
 import { AUCTION_STATUS_LABELS, AUCTION_STATUS_ORDER, type AgencyRow, type AuctionDetail, type AuctionStatus, type BidCostAnalysis, type MarketSurveyRow } from '../types/auction';
 import { Browser } from '@capacitor/browser';
@@ -74,6 +75,7 @@ import {
   pdfNearbyFiltered500mOf, stationItems500mOf, stripDistanceFromName as stripDistanceFromNameOf,
 } from '../services/locationInfo';
 import { buildCashOutPlan } from '../services/cashOutPlan';
+import { buildingAgeOf, buildingAgeText } from '../utils/buildingAge';
 
 const props = defineProps<{
   mode?: 'create' | 'view' | 'edit';
@@ -1056,10 +1058,7 @@ const parseContractToDate = (s: string | undefined | null): Date | null => {
 // 사다리(10·15·20평…)로 고르게 했더니 칸이 너무 넓어 원하는 구간을 집을 수 없었다.
 const THIS_YEAR = new Date().getFullYear();
 /** '16년차' — 건축연도 아래에 연차를 같이 적는다 */
-const buildYearAge = (y: number | undefined | null) => {
-  if (!y || y < 1800) return '';
-  return `${Math.max(0, THIS_YEAR - y)}년차`;
-};
+const buildYearAge = (y: number | undefined | null) => buildingAgeText(y ?? 0);
 // 옵션 목록 (드롭다운용)
 
 // 컬럼별 체크박스 필터
@@ -1652,6 +1651,8 @@ const profitDateValue = computed<string>({
   get: () => {
     const key = profitDateTarget.value;
     if (!key || !auction.value) return '';
+    // 낙찰일이 비었으면 매각기일에서 휠을 연다 (BUG-0012)
+    if (key === 'wonDate') return auction.value.wonDate || auction.value.eventDate || '';
     return auction.value[key] ?? '';
   },
   set: (value) => {
@@ -1815,12 +1816,16 @@ watch(
     if (sonpumMode) {
       void Promise.resolve().then(() => fetchNearbyForAuction());
       // 손품결론 탭을 열 때 한 번 — 시세조사 조회와 길이 겹치지 않게 그때만 받는다
+      // 마지막에 손품결론을 보고 나갔으면 immediate 콜백이 watch() 가 끝나기 전에 돈다 —
+      // 그때 stop 은 아직 없어 'Cannot access before initialization' 이 났다 (BUG-0005). 끝난 뒤에 끊는다
       let concLoaded = false;
-      const stop = watch(() => sonpumTab?.value, (t) => {
+      let stop: (() => void) | undefined;
+      stop = watch(() => sonpumTab?.value, (t) => {
         if (t !== 'conc' || concLoaded) return;
-        concLoaded = true; stop();
+        concLoaded = true; stop?.();
         void (async () => { await fetchDeal12mCount(); await fetchDongUnits(); })();
       }, { immediate: true });
+      if (concLoaded) stop();
       return;
     }
     void (async () => {
@@ -2047,6 +2052,11 @@ const scCashOut = (sc: ProfitScenario) => buildCashOutPlan({
 });
 
 const scBid = (sc: ProfitScenario) => sc.bid.myBidValue || auction.value?.metrics.minimumBidValue || 0;
+/** 입찰가가 이번 회차 최저가보다 낮음 — 최저가 미만은 무효 입찰 (BUG-0003) */
+const scBelowMin = (sc: ProfitScenario) => {
+  const min = currentMinBidOf(auction.value);
+  return sc.bid.myBidValue > 0 && min > 0 && sc.bid.myBidValue < min;
+};
 /** 입찰가 비중 — 감정가 대비 내 입찰가 */
 const scBidPct = (sc: ProfitScenario) => (apprValue.value > 0 ? (scBid(sc) / apprValue.value) * 100 : 0);
 // 광고비의 3.3%는 원천징수라 떼서 세무서에 내는 돈 — 지출 총액은 그대로다
@@ -2754,12 +2764,7 @@ const indivParkingPerHome = computed(() => {
   if (!Number.isFinite(parking) || !Number.isFinite(units) || parking <= 0 || units <= 0) return '';
   return `${(parking / units).toFixed(1)}대`;
 });
-const indivAgeYears = computed(() => {
-  const m = indivValue('ind.age').match(/^(\d{4})/);
-  if (!m) return '';
-  const years = new Date().getFullYear() - Number(m[1]) + 1;
-  return years > 0 ? `${years}년차` : '';
-});
+const indivAgeYears = computed(() => (/^\d{4}/.test(indivValue('ind.age')) ? buildingAgeText(indivValue('ind.age')) : ''));
 
 // 세대수·층은 물건정보의 '정보요약'과 같은 값을 쓴다 (한쪽을 고치면 다른 쪽도 같이 바뀐다)
 const indivUnitsText = computed(() => {
@@ -4294,7 +4299,7 @@ const mktApprovalText = computed(() => mktApprovalAuto.value || '-');
 const mktApprovalAgeText = computed(() => {
   const r = pubYearRange.value;
   if (!r || !mktApprovalAuto.value) return mktApprovalText.value;
-  const age = (y: number) => Math.max(1, THIS_YEAR - y + 1);
+  const age = (y: number) => buildingAgeOf(y);
   const span = r.min === r.max ? `${age(r.min)}년차` : `${age(r.max)}~${age(r.min)}년차`;
   return `${mktApprovalAuto.value} / ${span}`;
 });
@@ -5348,6 +5353,22 @@ const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
 // 날짜 칸이 여러 개라 '지금 고르는 칸 id'를 들고 하나의 휠 선택기를 돌려 쓴다.
 // DateWheelPicker는 v-model을 쓰므로 rightsDocNotes와 이어 줄 중계 computed가 필요하다.
 const docDatePickerId = ref('');
+/** 날짜 짝 — 전입일은 짝 날짜보다 늦을 수 없다(현황조사 전입일 ≤ 조사일 · 세대열람 전입일 ≤ 발급일).
+ *  빈 전입일 칸은 짝 날짜에서 휠을 연다(오늘에서 열려 그대로 눌러 엉뚱한 날짜가 들어가던 것) */
+const DOC_DATE_LIMITS: Record<string, string> = {
+  'doc.surveyTenant.date': 'doc.survey.date',
+  'doc.residents.date': 'doc.residents.issueDate',
+};
+const docDateDefault = computed(() => {
+  const lim = DOC_DATE_LIMITS[docDatePickerId.value];
+  return lim ? auction.value?.rightsDocNotes?.[lim] ?? '' : '';
+});
+/** 짝 날짜보다 늦은 전입일 — 칸을 빨갛게 (둘 다 YYYY-MM-DD 라 글자 비교로 된다) */
+const docDateWarn = (id: string) => {
+  const lim = DOC_DATE_LIMITS[id];
+  const v = auction.value?.rightsDocNotes?.[id] ?? ''; const max = lim ? auction.value?.rightsDocNotes?.[lim] ?? '' : '';
+  return !!(v && max && v > max);
+};
 const docDateValue = computed({
   get: () => (docDatePickerId.value ? auction.value?.rightsDocNotes?.[docDatePickerId.value] ?? '' : ''),
   set: (value: string) => {
@@ -6614,7 +6635,7 @@ const goBack = () => router.back();
             <span v-if="webEmbed && !isCollapsed('profit')" class="adp-head-dates" @click.stop>
               <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
                 <em>낙찰일</em>
-                <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) }">{{ shortYmd(auction.wonDate) || '날짜입력' }}</span></span>
+                <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) }" :title="!shortYmd(auction.wonDate) && auction.eventDate ? '낙찰일을 적기 전에는 매각기일을 보여 줍니다' : undefined">{{ shortYmd(auction.wonDate) || shortYmd(auction.eventDate) || '날짜입력' }}</span></span>
               </button>
               <button type="button" class="adp-pd-item" @click="profitDateTarget = 'balanceDueDate'" title="법원이 통지한 대금지급기한 — 비우면 낙찰일+45일로 셈한다">
                 <em>잔금기한</em>
@@ -6638,7 +6659,7 @@ const goBack = () => router.back();
           <div v-if="!isCollapsed('profit') && !webEmbed" class="adp-profit-dates">
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
               <em>낙찰일</em>
-              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) }">{{ shortYmd(auction.wonDate) || '날짜입력' }}</span></span>
+              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) }" :title="!shortYmd(auction.wonDate) && auction.eventDate ? '낙찰일을 적기 전에는 매각기일을 보여 줍니다' : undefined">{{ shortYmd(auction.wonDate) || shortYmd(auction.eventDate) || '날짜입력' }}</span></span>
             </button>
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'balanceDueDate'" title="법원이 통지한 대금지급기한 — 비우면 낙찰일+45일로 셈한다">
               <em>잔금기한</em>
@@ -6740,7 +6761,7 @@ const goBack = () => router.back();
                   <span v-if="editingProfit" class="adp-pct-wrap"><input :value="pctShow(`scBidPctsc-${si}`, scBidPct(sc))" inputmode="decimal" class="adp-cell-input sm" @blur="pctDone()" @input="pctType(`scBidPctsc-${si}`, $event); scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><span class="adp-pct-suf">%</span></span><template v-else>{{ formatPct(scBidPct(sc)) }}</template>
                 </td>
                 <td class="r emph">
-                  <FormattedNumberInput v-if="editingProfit" v-model="sc.bid.myBidValue" class="adp-cell-input" live-group /><template v-else><strong>{{ formatMoney(scBid(sc)) }}</strong></template>
+                  <FormattedNumberInput v-if="editingProfit" v-model="sc.bid.myBidValue" class="adp-cell-input" live-group /><template v-else><strong>{{ formatMoney(scBid(sc)) }}</strong></template><small v-if="scBelowMin(sc)" class="adp-bid-low" title="최저가 미만은 무효 입찰입니다">최저가미만</small>
                 </td>
               </tr>
               <tr>
@@ -6966,7 +6987,7 @@ const goBack = () => router.back();
                   <div class="bx-row"><span class="bx-k">감정가</span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(apprValue) }}</b></span></div>
                   <div class="bx-row"><span class="bx-k">{{ auction.auctionRound ? `최저가(${auction.auctionRound})` : '최저가' }}</span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? ((auction.metrics.minimumBidValue / apprValue) * 100).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(auction.metrics.minimumBidValue) }}</b></span></div>
                   <div class="bx-row"><span class="bx-k">보증금</span><span class="bx-d">최저가의</span><span class="bx-p"><b class="bx-f pct ro">10.00</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(bidDeposit) }}</b></span></div>
-                  <div class="bx-row hi bid"><span class="bx-k"><label :for="`bida-bid-${si}`">입찰가</label></span><span class="bx-d">감정가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`bidPct-${si}`, scBidPct(sc))" inputmode="decimal" aria-label="입찰가 비중" @blur="pctDone()" @input="pctType(`bidPct-${si}`, $event); scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-bid-${si}`" v-model="sc.bid.myBidValue" class="bx-f amt big" live-group /></span></div>
+                  <div class="bx-row hi bid"><span class="bx-k"><label :for="`bida-bid-${si}`">입찰가</label></span><span class="bx-d">감정가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`bidPct-${si}`, scBidPct(sc))" inputmode="decimal" aria-label="입찰가 비중" @blur="pctDone()" @input="pctType(`bidPct-${si}`, $event); scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-bid-${si}`" v-model="sc.bid.myBidValue" class="bx-f amt big" live-group /><small v-if="scBelowMin(sc)" class="adp-bid-low" title="최저가 미만은 무효 입찰입니다">최저가미만</small></span></div>
                   <div v-if="apprValue > 0" class="bx-slide">
                     <input type="range" min="50" max="110" step="0.1" :value="Math.min(110, Math.max(50, scBidPct(sc)))" :aria-label="`${sc.label} 감정가 대비 입찰가`" @input="scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" />
                     <div class="lab"><span>50%</span><span v-if="auction.metrics.minimumBidValue > 0">최저가 {{ formatPct((auction.metrics.minimumBidValue / apprValue) * 100) }}</span><span>110%</span></div>
@@ -8109,7 +8130,8 @@ const goBack = () => router.back();
                           <button
                             v-else-if="c.kind === 'date'"
                             type="button"
-                            class="adp-rdoc-input adp-date-btn date"
+                            :class="['adp-rdoc-input', 'adp-date-btn', 'date', { warn: docDateWarn(c.id) }]"
+                            :title="docDateWarn(c.id) ? (c.id === 'doc.residents.date' ? '전입일이 발급일보다 늦습니다 — 날짜를 확인해 주세요' : '전입일이 조사일보다 늦습니다 — 날짜를 확인해 주세요') : undefined"
                             @click="docDatePickerId = c.id"
                           >
                             <span :class="{ ph: !rightsDocNote(c.id) }">{{ rightsDocNote(c.id) || c.placeholder }}</span>
@@ -9852,6 +9874,7 @@ const goBack = () => router.back();
     <DateWheelPicker
       v-model="docDateValue"
       :open="!!docDatePickerId"
+      :default-value="docDateDefault"
       @close="docDatePickerId = ''"
     />
 
@@ -11078,6 +11101,11 @@ tr.tone-take { background: #fff5f5; }
   padding: 6px 8px; font: inherit; font-size: 11.5px;
   color: #111827; background: #fff;
 }
+/* 짝 날짜보다 늦은 전입일 — 날짜를 빨갛게 */
+.adp-rdoc-input.adp-date-btn.warn { border-color: #f3a5a5; }
+/* 최저가 미만 입찰가 표시 (BUG-0003) */
+.adp-bid-low { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: #fdecec; color: #dc2626; font-size: 12px; font-weight: 700; line-height: 18px; white-space: nowrap; vertical-align: middle; }
+.adp-rdoc-input.adp-date-btn.warn > span:first-child { color: #dc2626; }
 .adp-rdoc-input.adp-date-btn {
   display: flex; align-items: center; justify-content: space-between; gap: 4px;
   cursor: pointer; text-align: left;
