@@ -103,6 +103,13 @@ export const summaryAreaText = (raw: string) => {
   return `${trunc2(n)}㎡ / ${(n / 3.305785).toFixed(2)}평`;
 };
 
+/** 건축물정보 전용 — '45.2㎡ (13.67평)'. 평을 적어 두지 않았으면(0) ㎡ 로 계산한다(정보요약과 같은 3.305785 · 둘째 자리) */
+export const exclusiveAreaText = (m2?: number, pyeong?: number) => {
+  const n = Number(m2) || 0;
+  const py = Number(pyeong) > 0 ? Number(pyeong) : n > 0 ? Number((n / 3.305785).toFixed(2)) : 0;
+  return `${n}㎡ (${py}평)`;
+};
+
 export const summaryApprovalAgeOf = (approval: string) => (/^\d{4}/.test(approval) ? buildingAgeText(approval) : '');
 
 // 앞이 해당 물건의 층, 뒤가 그 동의 전체 층수

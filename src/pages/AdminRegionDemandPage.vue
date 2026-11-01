@@ -10,9 +10,10 @@
 // 연립·다세대 값은 물건상세 손품조사와 같은 셈이다.
 // 손으로 적으면 그 값이 우선. 총 매물수는 공식 API 가 아니라 손으로 적는다.
 import { fetchDongUnitCount, peekDongUnitCount } from '../services/dongUnits';
+import { runLimited } from '../utils/runLimited';
 import { openNaverDongListing } from '../services/naverListing';
 import { dealCountTip, type TipRow } from '../services/tipRows';
-import { DEMAND_PLAIN, DEMAND_TOTAL_PLAIN, DEMAND_TOTAL_TIP, demandFitText, demandGradeOf, demandTip, demandTotalGrade } from '../services/demandGrade';
+import { DEMAND_PLAIN, DEMAND_TOTAL_PLAIN, DEMAND_TOTAL_TIP, demandFitText, demandGradeOf, demandTip, demandTotalGrade, tallyDongUnits } from '../services/demandGrade';
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
@@ -122,6 +123,8 @@ const setManual = (sigungu: string, umdNm: string, field: keyof Manual, raw: str
  *  0 = 받았는데 연립·다세대가 없음 · -1 = 못 받음(한도 · 오류) — 둘을 화면에서 가른다 */
 const autoUnits = ref<Record<string, number>>({});
 let unitsJob = 0;
+/** 건축물대장을 한꺼번에 몇 동까지 — 셋이면 한 곳씩 할 때보다 몇 배 빠르고, 다 던질 때처럼 429 가 몰리지 않는다(429 가 잦으면 줄인다) */
+const UNITS_LANES = 3;
 const fetchAutoUnits = async () => {
   const job = ++unitsJob;
   const k = kind.value;
@@ -132,18 +135,17 @@ const fetchAutoUnits = async () => {
   const hits: Record<string, number> = {};
   first.forEach((r, i) => { const v = peeked[i]; if (v !== undefined) hits[rowKey(r.sigungu, r.umdNm)] = v; });
   if (Object.keys(hits).length) autoUnits.value = { ...autoUnits.value, ...hits };
-  // 저장본이 없는 동만 건축물대장에 하나씩 차례로 묻는다
+  // 저장본이 없는 동만 건축물대장에 묻는다 — 한 곳씩 차례로 하면 동 27곳에 1분이 넘게 걸렸고(BUG-0016),
+  // 한꺼번에 다 던지면 429(잠깐 막힘)로 막힌다. UNITS_LANES 곳씩 겹쳐 받는다(동 안의 쪽은 여전히 한 장씩).
+  // 부르는 횟수는 그대로라 하루 한도와는 상관없다 — 한 번 받은 동은 30일 저장 · 이 창에서는 다시 부르지 않는다
   const targets = first.filter((r) => !(rowKey(r.sigungu, r.umdNm) in hits));
-  // 동은 한 곳씩 차례로(한꺼번에 부르면 429 로 막힌다) — 한 번 받은 동은 30일 저장
-  for (let i = 0; i < targets.length; i += 1) {
-    await Promise.all(targets.slice(i, i + 1).map(async (r) => {
-      const key = rowKey(r.sigungu, r.umdNm);
-      const value = await fetchDongUnitCount(`${sido.value} ${r.sigungu} ${r.umdNm}`, k);   // services/dongUnits — 거래랭킹과 같은 셈
-      if (job !== unitsJob) return;
-      autoUnits.value = { ...autoUnits.value, [key]: value };
-    }));
+  await runLimited(targets, UNITS_LANES, async (r) => {
+    const key = rowKey(r.sigungu, r.umdNm);
+    const value = await fetchDongUnitCount(`${sido.value} ${r.sigungu} ${r.umdNm}`, k);   // services/dongUnits — 거래랭킹과 같은 셈
     if (job !== unitsJob) return;
-  }
+    autoUnits.value = { ...autoUnits.value, [key]: value };
+  }, () => job !== unitsJob);
+  if (job !== unitsJob) return;
   // 못 받은 동(-1)은 잠깐 쉬었다 두 번 더 — 한꺼번에 몰려 429(잠깐 막힘)로 실패한 것이 대부분이다
   for (const waitMs of [4000, 10000]) {
     const failed = targets.filter((r) => autoUnits.value[rowKey(r.sigungu, r.umdNm)] === -1);
@@ -246,8 +248,11 @@ const won = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
 /** 웹 요약 줄 — 지금 보는 범위(예: 옹진군 전체 / 한 읍면동) 전체를 한 줄로 셈한다.
  *  지표는 표의 동별 식과 같다: 회전율 = 연 거래 ÷ 세대수, 소화율 = 연 거래 ÷ 매물수,
  *  부담률 = 매물수 ÷ 세대수, 소진기간 = 매물수 ÷ 월 거래 */
+/** 보고 있는 동들의 세대수 받기 상태 — 다 받기 전(받는 중 · 받기실패)의 합은 일부라 확정값처럼 쓰지 않는다(BUG-0014) */
+const unitsTally = computed(() => tallyDongUnits(rows.value.map((r) => autoUnits.value[rowKey(r.sigungu, r.umdNm)])));
 const navStats = computed(() => {
   const list = rows.value;
+  const tally = unitsTally.value;
   const count = list.reduce((sum, r) => sum + r.count, 0);
   const priced = list.filter((r) => r.avgPrice > 0);
   const priceN = priced.reduce((sum, r) => sum + r.count, 0);
@@ -255,7 +260,8 @@ const navStats = computed(() => {
   const aged = list.filter((r) => r.avgBuildYear > 0);
   const ageN = aged.reduce((sum, r) => sum + r.count, 0);
   const avgYear = ageN > 0 ? aged.reduce((sum, r) => sum + r.avgBuildYear * r.count, 0) / ageN : 0;
-  const units = list.reduce((sum, r) => sum + r.units, 0);
+  // 총 세대수는 모든 동을 받았을 때만 — 받는 중에 더한 값으로 회전율 · 부담률 · 등급을 매기면 숫자가 계속 바뀐다
+  const units = tally.ready ? tally.total : 0;
   const listings = list.reduce((sum, r) => sum + r.listings, 0);
   const deals = list.reduce((sum, r) => sum + dealOf(r), 0);   // 웹은 정상 + 직거래(표와 같은 셈)
   const monthly = deals / Math.max(1, months.value);
@@ -301,26 +307,37 @@ const dmInputs = computed(() => {
   const day = (x: string) => (x.length >= 6 ? [x.slice(0, 4), x.slice(4, 6), x.slice(6, 8)].filter(Boolean).join('-') : x);
   const n = (x: number) => (x > 0 ? x.toLocaleString('ko-KR') : '-');
   return [
-    { id: 'deal' as DmId, label: '총 거래건수', value: '', ym: { year: v.yearly, month: v.monthly },
+    { id: 'deal' as DmId, label: '총 거래건수', value: '', ym: { year: v.yearly, month: v.monthly }, note: '', wait: false,
       tip: dealCountTip({ normal: v.count, direct: directShown.value, cancel: cancelShown.value, months: months.value, from: day(period.value.from), to: day(period.value.to) }) },
-    { id: 'units' as DmId, label: '총 세대수', value: n(v.units), ym: null,
+    { id: 'units' as DmId, label: '총 세대수', value: unitsTally.value.ready ? n(v.units) : (unitsTally.value.pending ? '받는 중' : '-'), ym: null, note: unitsNote.value, wait: unitsTally.value.pending > 0,
       tip: [['출처', '건축HUB(건축물대장) · 자동 입력'], ['갱신', '30일 후 업데이트'], ['범위', `${dmArea.value} ${kindWhat.value}`], ['합산', '건물마다의 세대수를 모두 더한 값']] as TipRow[] },
     { id: 'listings' as DmId, label: '총 매물수', value: n(v.listings), ym: null,
+      note: '', wait: false,
       tip: [['입력', '아래 표 총 매물수 칸에 직접 입력'], ['합산', '동마다 적은 매물수를 모두 더한 값'], ['찾기', `네이버 부동산 · ${kindWhat.value} 매물 수`]] as TipRow[] },
   ];
 });
 /** 동 줄의 '네이버매물 ↗' — 그 동만 보기 지도로(services/naverListing) */
 const openDongListing = (r: Row) => openNaverDongListing([sido.value, r.sigungu, r.umdNm].filter(Boolean).join(' '), kind.value);
 const dmTotal = computed(() => demandTotalGrade(Object.values(navStats.value.grades)));
+/** 총 세대수 칸 밑 작은 글 — 받는 중이면 몇 곳 받았는지, 못 받은 동이 있으면 몇 곳인지(표에서 ↻ 로 다시 받는다) */
+const unitsNote = computed(() => {
+  const t = unitsTally.value;
+  if (t.pending > 0) return `${t.done.toLocaleString('ko-KR')}/${t.count.toLocaleString('ko-KR')}곳 받음`;
+  if (t.failed > 0) return `${t.failed.toLocaleString('ko-KR')}곳 받기실패 · 표에서 다시 받기`;
+  return '';
+});
 const dmResults = computed(() => {
   const v = navStats.value;
   const pct = (x: number) => (x > 0 ? `${x.toFixed(1)}%` : '-');
+  // 세대수를 다 받기 전 — 세대수가 드는 회전율 · 부담률은 '받는 중'(부담률은 매물수를 적었을 때만 뜻이 있다)
+  const waiting = unitsTally.value.pending > 0;
+  const unitsPct = (x: number, needsListings: boolean) => (waiting && (!needsListings || v.listings > 0) ? '받는 중' : pct(x));
   return [
     // 가장 중요한 지표(내놓으면 팔리나)를 맨 앞에, 짝(같은 뜻을 개월로)인 소진기간을 바로 옆에 — 소화율 → 소진기간 → 회전율 → 부담률
     { id: 'absorb' as DmId, label: '매물 소화율', value: pct(v.absorb), grade: v.grades.absorb, tip: demandTip('absorb', kindWhat.value), plain: DEMAND_PLAIN.absorb },
     { id: 'clear' as DmId, label: '매물 소진기간', value: v.clearMonths > 0 ? `${v.clearMonths.toFixed(1)}개월` : '-', grade: v.grades.clear, tip: demandTip('clear', kindWhat.value), plain: DEMAND_PLAIN.clear },
-    { id: 'turn' as DmId, label: '거래 회전율', value: pct(v.turnover), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value), plain: DEMAND_PLAIN.turnover },
-    { id: 'burden' as DmId, label: '매물 부담률', value: pct(v.burden), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value), plain: DEMAND_PLAIN.burden },
+    { id: 'turn' as DmId, label: '거래 회전율', value: unitsPct(v.turnover, false), grade: v.grades.turnover, tip: demandTip('turnover', kindWhat.value), plain: DEMAND_PLAIN.turnover },
+    { id: 'burden' as DmId, label: '매물 부담률', value: unitsPct(v.burden, true), grade: v.grades.burden, tip: demandTip('burden', kindWhat.value), plain: DEMAND_PLAIN.burden },
   ];
 });
 const areaText = (n: number) => (n > 0 ? n.toFixed(1) : '-');
@@ -570,19 +587,20 @@ const downloadCsv = () => {
         <div class="dm-row c3">
           <div v-for="c in dmInputs" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
             <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip></div>
-            <div class="dm-body"><b><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" /></b></div>
+            <!-- 총 세대수 — 동을 다 받기 전에는 '받는 중' + 받은 곳 수(일부 합을 확정값처럼 보이지 않게) -->
+            <div :class="['dm-body', { 'has-note': c.note }]"><b :class="{ wait: c.wait }"><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" /></b><small v-if="c.note" class="dm-note">{{ c.note }}</small></div>
           </div>
         </div>
         <p class="dm-block-head">② 수요지표</p>
         <div class="dm-row c5">
           <div v-for="c in dmResults" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
             <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip><em class="dm-plain">{{ c.plain }}</em></div>
-            <div class="dm-body"><b><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="nbar">|</em><span :class="['gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['fit', { bad: c.grade === 'C' }]">/ {{ demandFitText(c.grade) }}</span></template></b></div>
+            <div class="dm-body"><b :class="{ wait: c.value === '받는 중' }"><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="nbar">|</em><span :class="['gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['fit', { bad: c.grade === 'C' }]">/ {{ demandFitText(c.grade) }}</span></template></b></div>
           </div>
           <!-- 종합 — 손품조사 매매수요의 종합 칸과 같다(등급 동그라미 + 적합) -->
           <div class="dm-cell total">
             <div class="dm-head"><InfoTip :rows="DEMAND_TOTAL_TIP" align="end" under="box">종합</InfoTip><em class="dm-plain">{{ DEMAND_TOTAL_PLAIN }}</em></div>
-            <div class="dm-body"><b><template v-if="dmTotal !== '-'"><span :class="['gd', `g-${dmTotal}`]">{{ dmTotal }}</span><span :class="['fit', { bad: dmTotal === 'C' }]">{{ demandFitText(dmTotal) }}</span></template><template v-else>-</template></b></div>
+            <div class="dm-body"><b><template v-if="dmTotal !== '-'"><span :class="['gd', `g-${dmTotal}`]">{{ dmTotal }}</span><span :class="['fit', { bad: dmTotal === 'C' }]">{{ demandFitText(dmTotal) }}</span></template><span v-else-if="unitsTally.pending > 0" class="wait">받는 중</span><template v-else>-</template></b></div>
           </div>
         </div>
       </section>
@@ -600,14 +618,14 @@ const downloadCsv = () => {
           <span>정상 <b class="adm-sum-ex">{{ totalCount.toLocaleString('ko-KR') }}건</b></span>
           <span>직거래 <b class="adm-sum-ex">{{ directShown.toLocaleString('ko-KR') }}건</b></span>
           <span>해제 <b class="adm-sum-ex">{{ cancelShown.toLocaleString('ko-KR') }}건</b></span>
-          <span class="dim">(계약해제는 제외하고 셈)</span>
+          <span class="dim">(계약해제는 제외하고 계산)</span>
         </template>
         <template v-else>
           <span>거래 <b class="adm-sum-deal">{{ totalCount.toLocaleString('ko-KR') }}건</b></span>
           <template v-if="excludedShown > 0">
             <span>직거래 <b class="adm-sum-ex">{{ directShown.toLocaleString('ko-KR') }}건</b></span>
             <span>해제 <b class="adm-sum-ex">{{ cancelShown.toLocaleString('ko-KR') }}건</b></span>
-            <span class="dim">(직거래 · 해제는 제외하고 셈)</span>
+            <span class="dim">(직거래 · 해제는 제외하고 계산)</span>
           </template>
         </template>
       </div>
@@ -660,7 +678,9 @@ const downloadCsv = () => {
                 <em class="bar">|</em>
                 <span class="grp m"><em class="pre">월</em><i>{{ cntInt(monthlyOf(dealOf(r))) }}</i></span><b>{{ cntFrac(monthlyOf(dealOf(r))) }}</b>
               </td>
-              <td :class="['n', 'amt', { strong: !webEmbed }]"><span class="v">{{ won(r.avgPrice) }}</span></td>
+              <!-- 직거래뿐인 동 — 거래건수(정상 + 직거래)는 있는데 시세로 쓸 정상거래가 없다(지역별분석 표 · 동 사분면과 같은 규칙) -->
+              <td v-if="webEmbed && r.count === 0 && (r.directCount ?? 0) > 0" class="n amt direct-only" :title="`직거래 ${(r.directCount ?? 0).toLocaleString('ko-KR')}건뿐 — 평균가는 정상거래로만 계산합니다`">직거래만</td>
+              <td v-else :class="['n', 'amt', { strong: !webEmbed }]"><span class="v">{{ won(r.avgPrice) }}</span></td>
               <td class="n area"><span class="v">{{ areaText(r.avgAreaM2) }}</span></td>
               <td class="n age"><span class="v">{{ ageText(r.avgBuildYear) }}</span></td>
               <td class="n rate"><em v-if="r.absorb > 0" class="pre">연</em><span class="v">{{ pct(r.absorb) }}</span></td>
@@ -771,6 +791,10 @@ const downloadCsv = () => {
 .dm-plain { flex: 0 0 100%; margin-top: 2px; font-style: normal; font-size: 12px; color: #9ca3af; text-align: center; }
 .dm-body { display: flex; justify-content: center; align-items: center; padding: 14px 6px; }
 .dm-body b { font-size: 18px; font-weight: 800; color: #2b6df3; white-space: nowrap; display: inline-flex; align-items: center; }
+/* 세대수를 다 받기 전 — 확정값과 헷갈리지 않게 작고 흐린 '받는 중'(굵기 없음) */
+.dm-body .wait { font-size: 14px; font-weight: 400; color: #9ca3af; }
+.dm-body.has-note { flex-direction: column; gap: 3px; padding-top: 9px; padding-bottom: 9px; }
+.dm-note { font-size: 12px; font-weight: 400; color: #9ca3af; white-space: nowrap; }
 .dm-cell.lit { background: #fff5f5; border-color: #f6d5d5; }
 .dm-cell.lit .dm-head { background: #ffecec; border-bottom-color: #f6d5d5; }
 .dm-cell .nbar { font-style: normal; font-weight: 400; color: #c3c9d4; margin: 0 7px; }
@@ -865,6 +889,7 @@ const downloadCsv = () => {
 .adm-table td.units { text-align: right; color: #111827; font-weight: 600; }
 .adm-table td.units.miss { color: #b44545; font-weight: 500; }
 .adm-table td.units.wait { font-weight: 400; }   /* 웹 — 받는 중은 굵게 하지 않는다 */
+.adm-table td.direct-only { font-size: 12px; color: #9ca3af; cursor: help; }   /* 직거래만 — 평균가가 비는 까닭 */
 .adm-cell::placeholder { color: #aebbd6; font-weight: 400; }
 
 .adm-foot { margin: 14px 2px 0; font-size: 11.5px; line-height: 1.7; color: #9ca3af; }

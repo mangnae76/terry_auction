@@ -23,7 +23,7 @@ import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
 import FormattedNumberInput from '../components/FormattedNumberInput.vue';
 import { openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { useAuctionStore } from '../stores/auctionStore';
-import { updateStamp } from '../services/updateStamp';
+import { UPDATE_PREFIX, updateStamp } from '../services/updateStamp';
 import type { MarketPickRow, MarketPicks } from '../types/auction';
 import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
@@ -740,7 +740,7 @@ const realTipLines = computed(() => {
 const gapTipLines = computed(() => {
   const lines: string[] = [];
   if (jeonseGapSign.value) lines.push(jeonseGapSign.value.text);
-  lines.push('보증보험 전세가율은 공동주택가로 셈한 추정값입니다.');
+  lines.push('보증보험 전세가율은 공동주택가로 계산한 추정값입니다.');
   lines.push('실거래 전세가율과 벌어질수록 시장과 공시가의 차가 크다는 뜻입니다.');
   return lines;
 });
@@ -902,10 +902,10 @@ type ScreenSnap = {
   notice: string; ovSido: string; ovDistrictCode: string; ovDong: string; ovLot: string;
 };
 const screen = useScreenSnapshot<ScreenSnap>('adm.case.snapshot.v1');
-/** 손품분석은 화면 저장을 쓰지 않아 칩이 없었다 — 조회가 끝난 시각으로 같은 꼴(UPDATE : …, 초록)을 만든다 */
+/** 손품분석은 화면 저장을 쓰지 않아 칩이 없었다 — 조회가 끝난 시각으로 같은 꼴(UPDATE …, 초록)을 만든다 */
 const presetRunAt = ref(0);
 const screenChip = computed(() => (props.preset
-  ? (presetRunAt.value ? { tone: 'ok', text: `UPDATE : ${updateStamp(presetRunAt.value)}` } : null)
+  ? (presetRunAt.value ? { tone: 'ok', text: `${UPDATE_PREFIX}${updateStamp(presetRunAt.value)}` } : null)
   : screen.chip.value));
 let restoringScreen = false;
 const collectScreen = (): ScreenSnap => ({

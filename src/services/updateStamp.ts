@@ -1,9 +1,9 @@
 // 화면마다 'UPDATE : …' 을 제각각 찍지 않도록 한곳에서 만든다.
 //
-// 모양: UPDATE : 261006 PM 11:42
+// 모양: UPDATE 261006 PM 11:42
 //   - 날짜는 연·월·일 두 자리씩 붙여 쓴다 (261006)
 //   - 오전/오후를 AM·PM 으로 적고, 시각은 12시간제 두 자리
-export const UPDATE_PREFIX = 'UPDATE : ';
+export const UPDATE_PREFIX = 'UPDATE ';   // 쌍점 없이 한 칸(화면 문구 규칙)
 
 const p2 = (n: number) => String(n).padStart(2, '0');
 

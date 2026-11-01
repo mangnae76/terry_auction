@@ -239,7 +239,7 @@ const submit = async () => {
         </template>
 
         <button type="button" :class="['prf-submit', { web: webEmbed }]" :disabled="saving || loading" @click="submit">
-          {{ saving ? '저장하는 중…' : '내 정보 수정' }}
+          {{ saving ? '저장하는 중…' : '내정보수정' }}
         </button>
       </section>
     </div>

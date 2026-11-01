@@ -1032,7 +1032,7 @@ const onDropFiles = async (e: DragEvent) => {
           </ul>
 
           <div v-if="importRows.length > 0" class="pip-result-foot">
-            <span class="pip-update">UPDATE : {{ lastUpdate || '—' }}</span>
+            <span class="pip-update">UPDATE {{ lastUpdate || '—' }}</span>
           </div>
         </div>
       </section>

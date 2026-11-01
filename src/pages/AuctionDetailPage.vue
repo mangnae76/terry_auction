@@ -44,7 +44,7 @@ import { useAuctionStore } from '../stores/auctionStore';
 import {
   bidBaseValueOf, bidRoundsOf, currentRoundLabelOf, depositAmountOf, headMetaLineOf,
   roundToneOf, saleKindOf, summaryApprovalAgeOf, summaryAreaText, summaryFloorPairOf, summarySeedOf, trunc2,
-  currentMinBidOf,
+  currentMinBidOf, exclusiveAreaText,
 } from '../services/detailSummary';
 import { AUCTION_STATUS_LABELS, AUCTION_STATUS_ORDER, type AgencyRow, type AuctionDetail, type AuctionStatus, type BidCostAnalysis, type MarketSurveyRow } from '../types/auction';
 import { Browser } from '@capacitor/browser';
@@ -5384,7 +5384,7 @@ const RIGHTS_DOC_ITEMS: RightsDocItem[] = [
       ] },
     ],
   },
-  { id: 'doc.appraisal', label: '감정평가서', task: '감정평가요항표 : 4번 이용상태, 9번 공부와의 차이 확인', noNote: true },
+  { id: 'doc.appraisal', label: '감정평가서', task: '감정평가요항표 4번 이용상태, 9번 공부와의 차이 확인', noNote: true },
   { id: 'doc.ledger', label: '건축물대장', task: '용도확인, 위반건축물확인', noNote: true },
   { id: 'doc.delivery', label: '문건송달 내역', task: 'LH, HUG 경매속행신청서 확인 (우선매수)', inlineNote: true },
 ];
@@ -5527,12 +5527,12 @@ const toggleRightsCheck = async (id: string, checked: boolean) => {
 // 권리분석 테이블 6개 케이스.
 // summary는 선택 목록에 작게 붙는 요약, detail은 선택 후 아래에 크게 보여줄 설명이다.
 const RIGHTS_CASES = [
-  { id: '1', title: '권리분석 케이스1', summary: '특수물건 : 3자권리인수 있음, 가등기/가처분' },
-  { id: '2', title: '권리분석 케이스2', summary: '기본물건 : 3자권리인수 없음, 임차인 없음' },
-  { id: '3', title: '권리분석 케이스3', summary: '기본물건 : 3자권리인수 없음, 임차인 있음, 대항력 없음' },
-  { id: '4', title: '권리분석 케이스4', summary: '기본물건 : 임차인 있음, 대항력 없음, 우선변제' },
-  { id: '5', title: '권리분석 케이스5', summary: '대항력 물건 : 대항력 있음, 우선변제권 없음' },
-  { id: '6', title: '권리분석 케이스6', summary: '미배당인수 : 대항력 있음, 우선변제권 있음' },
+  { id: '1', title: '권리분석 케이스1', summary: '특수물건 3자권리인수 있음, 가등기/가처분' },
+  { id: '2', title: '권리분석 케이스2', summary: '기본물건 3자권리인수 없음, 임차인 없음' },
+  { id: '3', title: '권리분석 케이스3', summary: '기본물건 3자권리인수 없음, 임차인 있음, 대항력 없음' },
+  { id: '4', title: '권리분석 케이스4', summary: '기본물건 임차인 있음, 대항력 없음, 우선변제' },
+  { id: '5', title: '권리분석 케이스5', summary: '대항력 물건 대항력 있음, 우선변제권 없음' },
+  { id: '6', title: '권리분석 케이스6', summary: '미배당인수 대항력 있음, 우선변제권 있음' },
 ];
 
 const selectedRightsCase = computed(() =>
@@ -5835,8 +5835,7 @@ const tenantCards = computed(() => {
 
 // 붉은 배너 — PDF 상단 배지를 그대로 인용한다.
 // saleClassification = "토지·건물 일괄매각 임차권등기/공시가 1~2억/HUG 임차권 인수조건변경"
-// === 정보요약 카드 ===
-const editingSummary = ref(false);
+// === 정보요약 카드 — 보기만(값은 PDF · 건축물대장에서 온 물건 자료라 편집을 뺐다, 2026-11-02) ===
 const sumVal = (id: string) => auction.value?.basicSummary?.[id] ?? '';
 /** 적는 즉시 들어가고, 손을 멈추면 그때 서버에 적는다 — 저장을 놓쳐 사라지는 일이 없게 */
 const setSumVal = (id: string, value: string) => {
@@ -5844,12 +5843,6 @@ const setSumVal = (id: string, value: string) => {
   if (!auction.value.basicSummary) auction.value.basicSummary = {};
   auction.value.basicSummary[id] = value;
   persistSoon();
-};
-/** 완료 — 입력칸을 닫으면서 마지막으로 한 번 적는다 */
-const doneSummary = async () => {
-  if (!auction.value) return;
-  await store.saveAuction(auction.value);
-  editingSummary.value = false;
 };
 
 /** '66.11 / 20.00' — 단위는 항목 이름에 적고 값에는 숫자만 둔다 */
@@ -5878,28 +5871,17 @@ const tenantUsagePeriod = (raw: string) => {
 /** 전입·확정·배당을 한 줄로 — 없는 값은 빼고 쉼표로 잇는다 */
 /** 웹 — 전입·확정·배당을 늘 세 줄로. 없는 값은 '-' */
 const tenantDatesLines = (t: { moveIn?: string; fixed?: string; distribution?: string }) =>
-  [`전입: ${t.moveIn || '-'}`, `확정: ${t.fixed || '-'}`, `배당: ${t.distribution || '-'}`].join('\n');
+  [`전입 ${t.moveIn || '-'}`, `확정 ${t.fixed || '-'}`, `배당 ${t.distribution || '-'}`].join('\n');
 const tenantDatesText = (t: { moveIn?: string; fixed?: string; distribution?: string }, sep = ', ') =>
   [
-    t.moveIn ? `전입: ${t.moveIn}` : '',
-    t.fixed ? `확정: ${t.fixed}` : '',
-    t.distribution ? `배당: ${t.distribution}` : '',
+    t.moveIn ? `전입 ${t.moveIn}` : '',
+    t.fixed ? `확정 ${t.fixed}` : '',
+    t.distribution ? `배당 ${t.distribution}` : '',
   ].filter(Boolean).join(sep) || '-';
 
 // 동이 없는 빌라가 많다 — 그럴 때는 '-동'을 적지 않고 호수만 남긴다
 const summaryDongText = computed(() => (sumVal('sum.dong') ? `${sumVal('sum.dong')}동` : ''));
 const summaryHoText = computed(() => (sumVal('sum.ho') ? `${sumVal('sum.ho')}호` : '-호'));
-// 편집 중에도 전환한 단위로 보여 주고, 저장은 항상 ㎡로 되돌린다
-const summaryAreaInput = (id: string) => {
-  const n = Number(sumVal(id).replace(/[^\d.]/g, ''));
-  if (!Number.isFinite(n) || n <= 0) return '';
-  return String(n);
-};
-const setSummaryArea = (id: string, raw: string) => {
-  const n = Number(raw.replace(/[^\d.]/g, ''));
-  if (!Number.isFinite(n) || n <= 0) { setSumVal(id, ''); return; }
-  setSumVal(id, String(n));
-};
 // 앞이 해당 물건의 층, 뒤가 그 동의 전체 층수
 const summaryFloorPair = computed(() => summaryFloorPairOf(sumVal('sum.floorCurrent'), sumVal('sum.floorTotal')));
 /** 입찰가산정의 늘 드는 비용 — 손대지 않은 물건에만 기본값을 넣어 준다.
@@ -6126,58 +6108,41 @@ const goBack = () => router.back();
         <section class="adp-card">
           <header class="adp-card-head adp-survey-head" @click="toggleSection('summary')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>정보요약</h2>
-            <button v-if="!editingSummary" class="adp-edit-btn" type="button" @click.stop="editingSummary = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click.stop="doneSummary">완료</button>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('summary') }]" alt="" />
           </header>
           <dl v-if="!isCollapsed('summary')" class="adp-base-rows adp-sum-rows">
             <div class="adp-base-row">
               <dt>관할법원</dt>
               <dd>
-                <template v-if="editingSummary">
-                  <input class="adp-sum-input" :value="sumVal('sum.court')" placeholder="법원명" @input="setSumVal('sum.court', ($event.target as HTMLInputElement).value)" />
-                  <input class="adp-sum-input dept" :value="sumVal('sum.courtDept')" placeholder="경매○계" @input="setSumVal('sum.courtDept', ($event.target as HTMLInputElement).value)" />
-                  <input class="adp-sum-input tel" :value="sumVal('sum.courtPhone')" placeholder="연락처입력" @input="setSumVal('sum.courtPhone', ($event.target as HTMLInputElement).value)" />
-                </template>
-                <template v-else>
-                  {{ sumVal('sum.court') || '-' }}<span v-if="sumVal('sum.courtDept')" class="adp-sum-dept">{{ sumVal('sum.courtDept') }}</span><a
-                    v-if="sumVal('sum.courtPhone')"
-                    :href="canCallCourt ? `tel:${courtTelDigits}` : undefined"
-                    class="adp-tel"
-                    :title="canCallCourt ? '전화 걸기' : ''"
-                    @click.prevent="callCourt"
-                  >
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z" />
-                    </svg>{{ sumVal('sum.courtPhone') }}</a>
-                </template>
+                {{ sumVal('sum.court') || '-' }}<span v-if="sumVal('sum.courtDept')" class="adp-sum-dept">{{ sumVal('sum.courtDept') }}</span><a
+                  v-if="sumVal('sum.courtPhone')"
+                  :href="canCallCourt ? `tel:${courtTelDigits}` : undefined"
+                  class="adp-tel"
+                  :title="canCallCourt ? '전화 걸기' : ''"
+                  @click.prevent="callCourt"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z" />
+                  </svg>{{ sumVal('sum.courtPhone') }}</a>
               </dd>
             </div>
             <div class="adp-base-row">
               <dt>사용승인</dt>
               <dd>
-                <input v-if="editingSummary" class="adp-sum-input wide" :value="sumVal('sum.approval')" placeholder="YYYY-MM-DD" @input="setSumVal('sum.approval', ($event.target as HTMLInputElement).value)" />
-                <template v-else><span class="adp-sum-hi">{{ summaryApprovalDate }}<template v-if="summaryApprovalAge"> / {{ summaryApprovalAge }}</template></span></template>
+                <span class="adp-sum-hi">{{ summaryApprovalDate }}<template v-if="summaryApprovalAge"> / {{ summaryApprovalAge }}</template></span>
               </dd>
             </div>
             <div class="adp-base-row">
               <!-- 공급면적은 아파트만 — 다세대 등은 전용면적만 -->
               <dt>{{ isApartment ? '공급/전용면적(㎡/평)' : '전용면적(㎡/평)' }}</dt>
               <dd>
-                <span v-if="editingSummary" class="adp-sum-pair">
-                  <template v-if="isApartment"><input class="adp-sum-input" inputmode="decimal" :value="summaryAreaInput('sum.supplyArea')" placeholder="공급" @input="setSummaryArea('sum.supplyArea', ($event.target as HTMLInputElement).value)" />/</template>
-                  <input class="adp-sum-input" inputmode="decimal" :value="summaryAreaInput('sum.exclusiveArea')" placeholder="전용" @input="setSummaryArea('sum.exclusiveArea', ($event.target as HTMLInputElement).value)" />㎡
-                </span>
-                <template v-else><template v-if="isApartment">{{ summarySupplyArea }} / </template><span class="adp-sum-hi">{{ summaryExclusiveArea }}</span></template>
+                <template v-if="isApartment">{{ summarySupplyArea }} / </template><span class="adp-sum-hi">{{ summaryExclusiveArea }}</span>
               </dd>
             </div>
             <div class="adp-base-row">
               <dt>대지면적(㎡/평)</dt>
               <dd>
-                <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input wide" inputmode="decimal" :value="summaryAreaInput('sum.landArea')" placeholder="0" @input="setSummaryArea('sum.landArea', ($event.target as HTMLInputElement).value)" />㎡
-                </span>
-                <template v-else>{{ areaText(sumVal('sum.landArea')) }}</template>
+                {{ areaText(sumVal('sum.landArea')) }}
               </dd>
             </div>
             <!-- 주소에 건물명이 없는 물건만 — 손으로 적어 두면 상단 주소에 같이 선다.
@@ -6185,59 +6150,33 @@ const goBack = () => router.back();
             <div v-if="!addrHasBuildingName" class="adp-base-row">
               <dt>건물명</dt>
               <dd>
-                <input v-if="editingSummary" class="adp-sum-input wide" :value="sumVal('sum.buildingName')" placeholder="빌라명 입력" @input="setSumVal('sum.buildingName', ($event.target as HTMLInputElement).value)" />
-                <template v-else>
-                  <b v-if="sumVal('sum.buildingName')" class="adp-addr-name">{{ sumVal('sum.buildingName') }}</b>
-                  <template v-else>-</template>
-                </template>
+                <b v-if="sumVal('sum.buildingName')" class="adp-addr-name">{{ sumVal('sum.buildingName') }}</b>
+                <template v-else>-</template>
               </dd>
             </div>
             <div class="adp-base-row">
               <dt>동/호</dt>
               <dd>
-                <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.dong')" placeholder="동" @input="setSumVal('sum.dong', ($event.target as HTMLInputElement).value)" />동 /
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.ho')" placeholder="호" @input="setSumVal('sum.ho', ($event.target as HTMLInputElement).value)" />호
-                </span>
-                <template v-else><template v-if="summaryDongText"><span class="adp-sum-hi">{{ summaryDongText }}</span> / </template><span class="adp-sum-hi">{{ summaryHoText }}</span></template>
+                <template v-if="summaryDongText"><span class="adp-sum-hi">{{ summaryDongText }}</span> / </template><span class="adp-sum-hi">{{ summaryHoText }}</span>
               </dd>
             </div>
             <div class="adp-base-row">
               <dt>층</dt>
               <dd>
-                <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.floorCurrent')" placeholder="해당" @input="setSumVal('sum.floorCurrent', ($event.target as HTMLInputElement).value)" />층 /
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.floorTotal')" placeholder="전체" @input="setSumVal('sum.floorTotal', ($event.target as HTMLInputElement).value)" />층
-                </span>
-                <template v-else>{{ summaryFloorPair }}</template>
-              </dd>
-            </div>
-            <div class="adp-base-row">
-              <dt>용적률</dt>
-              <dd>
-                <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="decimal" :value="sumVal('sum.far')" placeholder="0" @input="setSumVal('sum.far', ($event.target as HTMLInputElement).value)" />%
-                </span>
-                <template v-else>{{ sumVal('sum.far') ? `${sumVal('sum.far')}%` : '-' }}</template>
+                {{ summaryFloorPair }}
               </dd>
             </div>
             <div class="adp-base-row">
               <dt>세대수</dt>
               <dd>
-                <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.units')" placeholder="0" @input="setSumVal('sum.units', ($event.target as HTMLInputElement).value)" />세대
-                </span>
-                <template v-else>{{ sumVal('sum.units') ? `${Number(sumVal('sum.units')).toLocaleString('ko-KR')}세대` : '-' }}</template>
+                {{ sumVal('sum.units') ? `${Number(sumVal('sum.units')).toLocaleString('ko-KR')}세대` : '-' }}
               </dd>
             </div>
             <!-- 해당면적 세대수는 같은 평형이 여러 세대인 아파트에서만 쓴다 -->
             <div v-if="isApartment" class="adp-base-row">
               <dt>해당면적 세대수</dt>
               <dd>
-                <span v-if="editingSummary" class="adp-sum-pair">
-                  <input class="adp-sum-input" inputmode="numeric" :value="sumVal('sum.areaUnits')" placeholder="0" @input="setSumVal('sum.areaUnits', ($event.target as HTMLInputElement).value)" />세대
-                </span>
-                <template v-else>{{ sumVal('sum.areaUnits') ? `${Number(sumVal('sum.areaUnits')).toLocaleString('ko-KR')}세대` : '-' }}</template>
+                {{ sumVal('sum.areaUnits') ? `${Number(sumVal('sum.areaUnits')).toLocaleString('ko-KR')}세대` : '-' }}
               </dd>
             </div>
           </dl>
@@ -6293,7 +6232,7 @@ const goBack = () => router.back();
                 전체
               </button>
               <button type="button" :class="['adp-trade-view-tab', { active: areaView === 'near' }]" @click="areaView = 'near'">
-                500M 미만
+                500M미만
               </button>
             </div>
             <div v-if="areaView === 'near'">
@@ -6451,11 +6390,11 @@ const goBack = () => router.back();
                   <span v-if="ag.zip" class="adp-agency-zip">[{{ ag.zip }}]</span> {{ ag.address }}
                 </p>
                 <p v-if="ag.phone || ag.fax" class="adp-agency-line">
-                  <a v-if="ag.phone" :href="`tel:${ag.phone.replace(/[^\d+]/g, '')}`" class="adp-agency-phone">전화: {{ ag.phone }}</a>
+                  <a v-if="ag.phone" :href="`tel:${ag.phone.replace(/[^\d+]/g, '')}`" class="adp-agency-phone">전화 {{ ag.phone }}</a>
                   <span v-if="ag.phone && ag.fax"> / </span>
-                  <span v-if="ag.fax">팩스: {{ ag.fax }}</span>
+                  <span v-if="ag.fax">팩스 {{ ag.fax }}</span>
                 </p>
-                <p v-if="ag.area" class="adp-agency-area">관할구역 : {{ ag.area }}</p>
+                <p v-if="ag.area" class="adp-agency-area">관할구역 {{ ag.area }}</p>
               </li>
             </ul>
             <p
@@ -6516,7 +6455,7 @@ const goBack = () => router.back();
                 </colgroup>
                 <tbody>
                   <tr><th>위치</th><td colspan="3">{{ auction?.buildingHeader?.locationDetail || fullAddress }}</td></tr>
-                  <tr><th>가구</th><td>{{ auction?.buildingHeader?.households || '-' }}</td><th>전용</th><td>{{ auction?.buildingAreaM2 || 0 }}㎡ ({{ auction?.buildingAreaPyeong || 0 }}평)</td></tr>
+                  <tr><th>가구</th><td>{{ auction?.buildingHeader?.households || '-' }}</td><th>전용</th><td>{{ exclusiveAreaText(auction?.buildingAreaM2, auction?.buildingAreaPyeong) }}</td></tr>
                   <tr><th>대지</th><td>{{ auction?.buildingHeader?.landAreaTotal || '-' }}</td><th>건폐율</th><td>{{ auction?.buildingHeader?.buildingCoverage || '-' }}</td></tr>
                   <tr><th>건축</th><td>{{ auction?.buildingHeader?.buildingAreaTotal || '-' }}</td><th>용적률</th><td>{{ auction?.buildingHeader?.floorAreaRatio || '-' }}</td></tr>
                   <tr><th>연면적</th><td>{{ auction?.buildingHeader?.totalFloorArea || '-' }}</td><th>주용도</th><td>{{ auction?.buildingHeader?.mainUse || auction?.propertyType || '-' }}</td></tr>
@@ -6547,7 +6486,7 @@ const goBack = () => router.back();
                     <th>주용도</th><td>{{ auction?.buildingHeader?.mainUse || auction?.propertyType || '-' }}</td>
                   </tr>
                   <tr>
-                    <th>전용면적</th><td>{{ auction?.buildingHeader?.unitExclusiveArea || (auction?.buildingAreaM2 ? `${auction.buildingAreaM2}㎡ (${auction.buildingAreaPyeong}평)` : '-') }}</td>
+                    <th>전용면적</th><td>{{ auction?.buildingHeader?.unitExclusiveArea || (auction?.buildingAreaM2 ? exclusiveAreaText(auction.buildingAreaM2, auction.buildingAreaPyeong) : '-') }}</td>
                     <th>공용면적</th><td>{{ auction?.buildingHeader?.unitCommonArea || '-' }}</td>
                   </tr>
                   <tr>
@@ -6576,7 +6515,7 @@ const goBack = () => router.back();
               </colgroup>
               <tbody>
                 <tr><th>위치</th><td colspan="3">{{ fullAddress }}</td></tr>
-                <tr><th>전용면적</th><td>{{ auction?.buildingAreaM2 || 0 }}㎡ ({{ auction?.buildingAreaPyeong || 0 }}평)</td><th>사용승인</th><td>{{ auction?.approvalDate || '-' }}</td></tr>
+                <tr><th>전용면적</th><td>{{ exclusiveAreaText(auction?.buildingAreaM2, auction?.buildingAreaPyeong) }}</td><th>사용승인</th><td>{{ auction?.approvalDate || '-' }}</td></tr>
                 <tr><th>구조</th><td colspan="3">{{ auction?.structureType || '-' }}</td></tr>
               </tbody>
             </table>
@@ -6605,8 +6544,8 @@ const goBack = () => router.back();
             <tbody>
               <tr><th rowspan="2">공시가격</th><td>{{ fullAddress }}</td></tr>
               <tr>
-                <td v-if="auction?.officialPriceValue">공동주택공시가 : {{ formatMoney(auction?.officialPriceValue) }}원</td>
-                <td v-else-if="auction?.officialPriceBand">공시가 구간 : {{ auction.officialPriceBand }} <span class="adp-na">(PDF에 공시가격 금액 없음)</span></td>
+                <td v-if="auction?.officialPriceValue">공동주택공시가 {{ formatMoney(auction?.officialPriceValue) }}원</td>
+                <td v-else-if="auction?.officialPriceBand">공시가 구간 {{ auction.officialPriceBand }} <span class="adp-na">(PDF에 공시가격 금액 없음)</span></td>
                 <td v-else class="adp-na">공시가격 정보 없음</td>
               </tr>
             </tbody>
@@ -7236,7 +7175,7 @@ const goBack = () => router.back();
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('casePrice')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17 9.5 10.5l4 4L21 7"/><path d="M15 7h6v6"/></svg>경매지번 실거래가</h2>
-            <span v-if="caseTradeUpdatedAt" class="adp-update-time">UPDATE : {{ caseTradeUpdatedAt }}</span>
+            <span v-if="caseTradeUpdatedAt" class="adp-update-time">UPDATE {{ caseTradeUpdatedAt }}</span>
             <button
               type="button"
               class="adp-refresh-btn"
@@ -7500,7 +7439,7 @@ const goBack = () => router.back();
                   <span class="adp-pub-result-title">
                     <strong>
                       검색리스트
-                      <small v-if="publicTradeUpdatedAt" class="adp-pub-update">UPDATE : {{ publicTradeUpdatedAt }}</small>
+                      <small v-if="publicTradeUpdatedAt" class="adp-pub-update">UPDATE {{ publicTradeUpdatedAt }}</small>
                     </strong>
                   </span>
                   <button type="button" class="adp-pub-toggle" @click="toggleTradeList">
@@ -7964,7 +7903,7 @@ const goBack = () => router.back();
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('registry') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('registry')">
-            <p v-if="registryClaimAmount > 0" class="adp-sub-note">(채권합계금액:{{ formatMoney(registryClaimAmount) }}원)</p>
+            <p v-if="registryClaimAmount > 0" class="adp-sub-note">(채권합계금액 {{ formatMoney(registryClaimAmount) }}원)</p>
             <!-- 웹 — 건물등기 PDF 표와 같은 꼴: 순서 · 접수일 · 권리종류 · 권리자 · 채권금액 · 비고 · 소멸 -->
             <table v-if="webEmbed && registryRows.length > 0" class="adp-table adp-reg-pdf">
               <colgroup>
@@ -8004,7 +7943,7 @@ const goBack = () => router.back();
               </tbody>
             </table>
             <p v-if="registryRows.some((r) => r.taken)" class="adp-base-note adp-reg-take-note">
-              <b>인수</b> = 말소기준({{ tenantBaseDate }})보다 앞서 낙찰자가 떠안는 권리 — 앱이 날짜로 셈한 값입니다. 등기부로 꼭 확인하세요.
+              <b>인수</b> = 말소기준({{ tenantBaseDate }})보다 앞서 낙찰자가 떠안는 권리 — 앱이 날짜로 계산한 값입니다. 등기부로 꼭 확인하세요.
             </p>
             <p v-else-if="registryRows.length === 0" class="adp-empty">건물등기 정보 없음</p>
             <p v-if="registryWarning" class="adp-warn-banner">{{ registryWarning }}</p>
@@ -8018,7 +7957,7 @@ const goBack = () => router.back();
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('tenant') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('tenant')">
-          <p class="adp-base-note adp-tn-base">말소기준 : <b class="adp-tn-date">{{ tenantBaseDate }}</b> · 배당종기 : <b class="adp-tn-date">{{ tenantDistDate }}</b> · 소액기준 : <b class="adp-tn-date">{{ tenantSmallDate }}</b></p>
+          <p class="adp-base-note adp-tn-base">말소기준 <b class="adp-tn-date">{{ tenantBaseDate }}</b> · 배당종기 <b class="adp-tn-date">{{ tenantDistDate }}</b> · 소액기준 <b class="adp-tn-date">{{ tenantSmallDate }}</b></p>
 
           <!-- 임차인이 여럿이면 한 사람씩 제 상자에 담는다 — 한 통에 이어 붙이면 어느 줄이 누구 것인지 헷갈린다 -->
           <div

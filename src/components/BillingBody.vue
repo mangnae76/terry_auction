@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 결제하기 — 이용 기간을 고르고 포인트를 쓴 뒤 결제한다.
 // 결제사 연동은 아직 붙이지 않았다. 고른 값과 셈은 여기서 다 끝내 두고,
-// '신청 및 결제하기'만 연동 때 바꿔 끼우면 된다.
+// '신청및결제하기'만 연동 때 바꿔 끼우면 된다.
 import { computed, ref } from 'vue';
 import AppToast from './AppToast.vue';
 import {
@@ -87,12 +87,12 @@ const submit = () => {
         <!-- 셈하기 -->
         <section class="bil-card sum">
           <div class="bil-row"><span class="lab">선택항목</span><span class="val"><em class="pill">{{ picked.label }} 1개</em></span></div>
-          <div class="bil-row"><span class="lab">내 포인트</span><span class="val point-val">{{ money(myPoint) }} point <small>(사용 후 : {{ money(restPoint) }} point)</small></span></div>
+          <div class="bil-row"><span class="lab">내 포인트</span><span class="val point-val">{{ money(myPoint) }} point <small>(사용 후 {{ money(restPoint) }} point)</small></span></div>
           <div class="bil-row">
             <span class="lab">포인트 사용</span>
             <span class="val point">
-              <input class="bil-input" inputmode="numeric" placeholder="1000P부터 사용가능" @input="onPointInput($event.target as HTMLInputElement)" />
-              <button type="button" class="bil-allbtn" @click="useAll">전액 사용</button>
+              <input class="bil-input" inputmode="numeric" placeholder="1,000P부터 사용가능" @input="onPointInput($event.target as HTMLInputElement)" />
+              <button type="button" class="bil-allbtn" @click="useAll">전액사용</button>
             </span>
           </div>
           <div class="bil-row"><span class="lab">상품금액</span><span class="val">{{ money(picked.price) }} 원</span></div>
@@ -108,10 +108,10 @@ const submit = () => {
   
         <p class="bil-fine">
           신용카드 결제는 부가가치세법 제33조에 따라 세금계산서를 발급하지 않으며,
-          카드매출전표로 증빙하시면 됩니다. (결제 후 : 마이페이지 → 결제관리 → 결제내역 → 해당 전표 확인)
+          카드매출전표로 증빙하시면 됩니다. (결제 후 마이페이지 → 결제관리 → 결제내역 → 해당 전표 확인)
         </p>
   
-        <button type="button" class="bil-submit" @click="submit">신청 및 결제하기</button>
+        <button type="button" class="bil-submit" @click="submit">신청및결제하기</button>
       </div>
     <AppToast :visible="!!toastText" :text="toastText" tone="info" />
   </div>

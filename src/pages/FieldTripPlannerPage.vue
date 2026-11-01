@@ -1777,7 +1777,7 @@ watch(() => authStore.uid, (newUid) => {
           @click="useCurrentLocationAsStart"
         >
           <span class="ftp-gps-icon">{{ locating ? '…' : '◎' }}</span>
-          <span class="ftp-fav-text">내 위치</span>
+          <span class="ftp-fav-text">내위치</span>
         </button>
         <button type="button" class="ftp-fav" aria-label="즐겨찾기" @click="showFavModal = true">
           <img :src="mapPinPlusIcon" alt="" class="ftp-fav-icon-img" />
@@ -1826,7 +1826,7 @@ watch(() => authStore.uid, (newUid) => {
         <img :src="mapPinIcon" alt="" />방문 <b>{{ stopCount || 0 }}</b>건
         <img :src="mapPinPlusIcon" alt="" />완료 <b>{{ visitedCount }}</b>건
         <!-- 언제 계산한 경로인지 — 같은 줄 오른쪽 끝에 붙인다 -->
-        <em class="ftp-update-when">UPDATE : {{ formatLastUpdate }}</em>
+        <em class="ftp-update-when">UPDATE {{ formatLastUpdate }}</em>
       </span>
     </div>
 

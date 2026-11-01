@@ -73,7 +73,7 @@ const openContact = (c: ContactWay) => {
                 :class="['sup-tag', f.tag === '회원·결제' ? 'pay' : (f.tag === '기타' ? 'etc' : 'info')]"
                 :aria-expanded="openQ === f.q"
                 @click="toggle(f.q)"
-              >{{ f.tag }} 도움말<i>{{ openQ === f.q ? '▴' : '▾' }}</i></button>
+              >{{ f.tag }}도움말<i>{{ openQ === f.q ? '▴' : '▾' }}</i></button>
               <button type="button" class="sup-q-head" @click="toggle(f.q)">
                 <em class="sup-qmark">Q</em>
                 <span class="sup-q-txt">{{ f.q }}</span>

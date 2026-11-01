@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, onMounted, ref, watch } from 'vue';
+import { inject, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { checkEmailTaken, friendlyAuthError, sendPasswordReset, setLoginPersistence } from '../services/authRepository';
@@ -114,6 +114,16 @@ onMounted(() => {
   else if (soloOpen === 'trial' || soloOpen === 'pay') info.value = soloOpen;
 });
 watch(info, (v) => { if (soloOpen && !v) void router.replace('/closed'); });
+/** Esc — 열린 안내 창(아이디 찾기 · 비밀번호 찾기 · 결제안내 · 무료체험)만 닫는다.
+ *  먼저 잡아(capture) 멈춰 두어, 웹에서 이 화면을 띄운 바깥 창(로그인 창)까지 함께 닫히지 않게 한다 */
+const onEsc = (e: KeyboardEvent) => {
+  if (e.key !== 'Escape' || !info.value) return;
+  e.preventDefault();
+  e.stopPropagation();
+  info.value = '';
+};
+onMounted(() => window.addEventListener('keydown', onEsc, true));
+onUnmounted(() => window.removeEventListener('keydown', onEsc, true));
 /** 무료체험 → 회원가입. 안내 창 하나만 띄운 경우엔 창을 먼저 닫으면 '/closed'(닫힘)가 먼저 가므로 닫지 않고 바로 넘어간다 */
 const goTrialSignup = () => {
   if (!soloOpen) info.value = '';
@@ -171,7 +181,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
 </script>
 
 <template>
-  <section class="lp-shell">
+  <section :class="['lp-shell', { 'lp-web': webEmbed }]">
     <div class="lp-card">
       <div class="lp-brand">
         <BrandLogo :size="60" />
@@ -531,4 +541,15 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
 .lp-social-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .lp-social-btn.kakao { background: #FEE500; color: #191919; }
 .lp-social-btn.naver { background: #03C75A; color: #fff; }
+
+/* 웹(대문 · 웹 로그인 창)만 — 글자 하한 12px. 앱 글자 크기는 그대로 둔다 */
+.lp-web .lp-sep span,
+.lp-web .lp-links i,
+.lp-web .lp-m-table th, .lp-web .lp-m-table td,
+.lp-web .lp-m-perks small,
+.lp-web .lp-steps .no, .lp-web .lp-steps small,
+.lp-web .lp-warnbar,
+.lp-web .lp-agree-chk, .lp-web .lp-agree-view,
+.lp-web .lp-privacy h5, .lp-web .lp-privacy p, .lp-web .lp-privacy dt, .lp-web .lp-privacy dd span,
+.lp-web .lp-m-note { font-size: 12px; }
 </style>

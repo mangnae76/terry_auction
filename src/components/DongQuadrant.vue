@@ -3,6 +3,7 @@
 // 구 평균 십자선으로 네 칸(활발 · 비쌈 / 활발 · 저렴 / 한산 · 비쌈 / 한산 · 저렴). 원을 누르면 그 동을 고른다(pick-dong).
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { DongTradeDetailRow } from '../services/publicDataApi';
+import { clampCircle, dongQuadrantModel, type QuadDong } from '../services/dongQuadrant';
 
 const props = defineProps<{ rows: DongTradeDetailRow[]; selected?: string }>();
 const emit = defineEmits<{ 'pick-dong': [string] }>();
@@ -13,20 +14,11 @@ const eok = (won: number) => (won >= EOK ? `${Number((won / EOK).toFixed(2))}억
 const QN: Record<number, string> = { 1: '활발 · 비쌈', 2: '활발 · 저렴', 3: '한산 · 비쌈', 4: '한산 · 저렴' };
 const sizeKey = ref<'avg' | 'n'>('avg');
 
-type Dong = { name: string; n: number; unit: number; avg: number; med: number; q: number; x: number; y: number; r: number; tx: number; ty: number };
+type Dong = QuadDong & { x: number; y: number; r: number; tx: number; ty: number };
+// 셈은 services/dongQuadrant 한 곳 — 위 요약 평 단가 · 동별 표와 같은 평균(정상거래 값), 건수는 정상 + 직거래
 const model = computed(() => {
-  const valid = props.rows.filter((r) => r.priceWon > 0 && r.pyeong > 0 && r.umdNm);
-  const units = valid.map((r) => r.priceWon / r.pyeong);
-  const guUnit = units.length ? units.reduce((a, v) => a + v, 0) / units.length : 0;
-  const by = new Map<string, DongTradeDetailRow[]>();
-  valid.forEach((r) => by.set(r.umdNm, [...(by.get(r.umdNm) ?? []), r]));
-  const dongs: Dong[] = [...by.entries()].map(([name, l]) => {
-    const ps = l.map((r) => r.priceWon).sort((a, b) => a - b);
-    return { name, n: l.length, unit: l.reduce((a, r) => a + r.priceWon / r.pyeong, 0) / l.length, avg: ps.reduce((a, v) => a + v, 0) / ps.length, med: ps[Math.floor(ps.length / 2)], q: 0, x: 0, y: 0, r: 0, tx: 0, ty: 0 };
-  });
-  const avgN = dongs.length ? valid.length / dongs.length : 0;
-  dongs.forEach((d) => { d.q = d.n >= avgN ? (d.unit >= guUnit ? 1 : 2) : (d.unit >= guUnit ? 3 : 4); });
-  return { dongs, guUnit, avgN };
+  const m = dongQuadrantModel(props.rows);
+  return { ...m, dongs: m.dongs.map((d): Dong => ({ ...d, x: 0, y: 0, r: 0, tx: 0, ty: 0 })) };
 });
 const insight = computed(() => {
   const { dongs, guUnit } = model.value; if (dongs.length < 2) return '';
@@ -41,6 +33,12 @@ const cv = ref<HTMLCanvasElement | null>(null);
 const tip = ref<{ x: number; y: number; lines: Array<[string, string]> } | null>(null);
 let W = 0; let H = 0; let t0 = 0; let raf = 0; let hover: Dong | null = null;
 const PAD = { l: 72, r: 30, t: 30, b: 50 };
+/** 0건 눈금을 세로축에서 조금 띄운다 — 거래가 적은 동의 원이 축 글자(눈금 · 이름)에 붙지 않게 */
+const XIN = 16;
+/** 원이 머무를 그림 칸 — 이 밖(축 글자 자리)으로는 원을 내보내지 않는다 */
+const plotBox = () => ({ l: PAD.l, r: W - PAD.r, t: PAD.t, b: H - PAD.b });
+/** 원 반지름 위에 이름을 다는 작은 원 — 이름 줄이 그림 칸 위로 나가지 않게 그만큼 더 띄운다 */
+const SMALL_R = 18;
 const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const dark = () => document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
 const PAL = () => (dark()
@@ -59,31 +57,39 @@ const scales = () => {
   const nMax = Math.max(1, ...dongs.map((d) => d.n)) * 1.12;
   const us = dongs.map((d) => d.unit).filter((v) => v > 0);
   const uLo = (Math.min(...us) || 1) * 0.85; const uHi = (Math.max(...us) || 2) * 1.35;
-  const sx = (n: number) => PAD.l + (n / nMax) * (W - PAD.l - PAD.r);
+  const sx = (n: number) => PAD.l + XIN + (n / nMax) * (W - PAD.l - PAD.r - XIN);
   // 평당가는 넓게 퍼져 있어 로그 눈금 — 아래쪽 동들이 한데 뭉치지 않게
   const sy = (u: number) => H - PAD.b - ((Math.log(Math.max(u, uLo)) - Math.log(uLo)) / (Math.log(uHi) - Math.log(uLo))) * (H - PAD.t - PAD.b);
   return { nMax, uLo, uHi, sx, sy };
 };
-/** 자리 정하기 — 원끼리 겹치면 살짝 밀어낸다(몇 번 되풀이) */
+/** 자리 정하기 — 원끼리 겹치면 살짝 밀어낸다(몇 번 되풀이). 밀려도 그림 칸 안에서만 움직인다 */
 const place = () => {
-  const { dongs } = model.value; const { sx, sy } = scales();
+  const { dongs } = model.value; const { sx, sy } = scales(); const box = plotBox();
   const key = sizeKey.value; const m = Math.max(1, ...dongs.map((d) => (key === 'avg' ? d.avg : d.n)));
-  dongs.forEach((d) => { d.tx = sx(d.n); d.ty = sy(d.unit); d.r = 10 + Math.sqrt((key === 'avg' ? d.avg : d.n) / m) * 32; });
+  // 큰 원일수록 많이 밀려 실제 값과 멀어진다 — 예전(10 + 32)보다 조금 작게
+  dongs.forEach((d) => { d.tx = sx(d.n); d.ty = sy(d.unit); d.r = 9 + Math.sqrt((key === 'avg' ? d.avg : d.n) / m) * 26; });
+  const keepIn = (d: Dong) => { const p = clampCircle(d.tx, d.ty, d.r, box, d.r > SMALL_R ? 0 : SMALL_R); d.tx = p.x; d.ty = p.y; };
+  dongs.forEach(keepIn);
   for (let it = 0; it < 40; it += 1) {
     for (let i = 0; i < dongs.length; i += 1) for (let j = i + 1; j < dongs.length; j += 1) {
       const a = dongs[i]; const b = dongs[j]; const dx = b.tx - a.tx; const dy = b.ty - a.ty; const dist = Math.hypot(dx, dy) || 0.01; const need = a.r + b.r + 2;
       if (dist < need) { const push = (need - dist) / 2; const ux = dx / dist; const uy = dy / dist; a.tx -= ux * push; a.ty -= uy * push; b.tx += ux * push; b.ty += uy * push; }
     }
+    dongs.forEach(keepIn);
   }
+};
+/** 모서리 설명 — 원을 다 그린 뒤 바탕색 테두리를 둘러 올린다(원에 덮이지 않게) */
+const cornerLabels = (c: CanvasRenderingContext2D, P: ReturnType<typeof PAL>) => {
+  c.font = '700 14px "Pretendard", sans-serif'; c.lineJoin = 'round'; c.lineWidth = 4; c.strokeStyle = P.card; c.fillStyle = P.faint;
+  const put = (text: string, x: number, y: number, align: CanvasTextAlign) => { c.textAlign = align; c.strokeText(text, x, y); c.fillText(text, x, y); };
+  put('활발 · 비쌈', W - PAD.r - 6, PAD.t + 16, 'right'); put('활발 · 저렴', W - PAD.r - 6, H - PAD.b - 10, 'right');
+  put('한산 · 비쌈', PAD.l + 8, PAD.t + 16, 'left'); put('한산 · 저렴', PAD.l + 8, H - PAD.b - 10, 'left');
 };
 function draw(now: number) {
   const c = cv.value?.getContext('2d'); if (!c || !W) return;
   const P = PAL(); const t = reduce ? 1e9 : now - t0; const { dongs, guUnit, avgN } = model.value; const { nMax, uLo, uHi, sx, sy } = scales();
   const cx0 = sx(avgN); const cy0 = sy(guUnit);
   c.clearRect(0, 0, W, H);
-  c.font = '700 14px "Pretendard", sans-serif'; c.fillStyle = P.faint;
-  c.textAlign = 'right'; c.fillText('활발 · 비쌈', W - PAD.r - 6, PAD.t + 16); c.fillText('활발 · 저렴', W - PAD.r - 6, H - PAD.b - 10);
-  c.textAlign = 'left'; c.fillText('한산 · 비쌈', PAD.l + 8, PAD.t + 16); c.fillText('한산 · 저렴', PAD.l + 8, H - PAD.b - 10);
   c.strokeStyle = P.grid; c.lineWidth = 1; c.font = '600 13px "Pretendard", sans-serif'; c.fillStyle = P.sub;
   [300, 500, 700, 1000, 1500, 2000, 3000, 5000, 7000, 10000].forEach((u) => { const won = u * 10000; if (won < uLo || won > uHi) return; const y = sy(won); c.beginPath(); c.moveTo(PAD.l, y + 0.5); c.lineTo(W - PAD.r, y + 0.5); c.stroke(); c.textAlign = 'right'; c.fillText(`${u.toLocaleString('ko-KR')}만`, PAD.l - 8, y + 4); });
   const stepN = [10, 20, 25, 50, 100, 200, 250, 500, 1000].find((s) => nMax / s <= 8) ?? 1000;
@@ -94,19 +100,34 @@ function draw(now: number) {
   c.beginPath(); c.moveTo(cx0 + 0.5, PAD.t); c.lineTo(cx0 + 0.5, H - PAD.b); c.moveTo(PAD.l, cy0 + 0.5); c.lineTo(W - PAD.r, cy0 + 0.5); c.stroke(); c.setLineDash([]);
   c.fillStyle = P.mark; c.font = '700 13px "Pretendard", sans-serif'; c.textAlign = 'left'; c.fillText(`평균 ${man(guUnit)} · 동당 ${Math.round(avgN).toLocaleString('ko-KR')}건`, cx0 + 6, PAD.t + 34);
   let busy = false;
+  // 원은 그림 칸 안에만 — 튀어 오르는 움직임(ease)으로 잠깐 커져도 세로축 눈금 · 가로축 글자를 덮지 않는다
+  c.save(); c.beginPath(); c.rect(PAD.l, 0, W - PAD.l, H - PAD.b); c.clip();
   [...dongs].sort((a, b) => b.r - a.r).forEach((d, i) => {
     const k = (t - i * 60) / 750; if (k < 1) busy = true;
     const go = Math.min(1, Math.max(0, k * 1.2)); const s = ease(k); const fade = Math.min(1, Math.max(0, k * 1.4));
     d.x = cx0 + (d.tx - cx0) * go; d.y = cy0 + (d.ty - cy0) * go;
     const r = d.r * s; if (r <= 0) return;
     const dim = props.selected && props.selected !== d.name;
+    // 겹침 피하기로 실제 자리에서 밀려난 원 — 실제 값 자리에 작은 점과 가는 선을 남겨 눈금을 잘못 읽지 않게
+    const rx = sx(d.n); const ry = sy(d.unit);
+    if (go >= 1 && Math.hypot(d.tx - rx, d.ty - ry) > d.r * 0.4) {
+      c.globalAlpha = (dim ? 0.3 : 0.75) * fade; c.strokeStyle = P.sub; c.lineWidth = 1; c.setLineDash([2, 3]);
+      c.beginPath(); c.moveTo(rx, ry); c.lineTo(d.x, d.y); c.stroke(); c.setLineDash([]);
+      c.fillStyle = P.ink; c.beginPath(); c.arc(rx, ry, 2.5, 0, Math.PI * 2); c.fill();
+    }
     c.globalAlpha = (dim ? 0.35 : 0.88) * fade; c.fillStyle = P.q[d.q]; c.beginPath(); c.arc(d.x, d.y, r, 0, Math.PI * 2); c.fill();
     c.globalAlpha = fade; c.strokeStyle = P.card; c.lineWidth = 2; c.stroke();
     c.textAlign = 'center'; c.font = `700 ${r > 22 ? 14 : 12}px "Pretendard", sans-serif`;
-    if (r > 18) { c.fillStyle = d.q <= 2 ? '#fff' : P.ink; c.fillText(d.name, d.x, d.y + 4); } else { c.fillStyle = P.ink; c.fillText(d.name, d.x, d.y - r - 5); }
+    if (r > SMALL_R) { c.fillStyle = d.q <= 2 ? '#fff' : P.ink; c.fillText(d.name, d.x, d.y + 4); } else {
+      // 원 위 이름이 그림 칸 밖으로 잘리지 않게 좌우를 당긴다
+      const hw = c.measureText(d.name).width / 2; const lx = Math.min(Math.max(d.x, PAD.l + hw + 2), W - PAD.r - hw - 2);
+      c.fillStyle = P.ink; c.fillText(d.name, lx, d.y - r - 5);
+    }
     c.globalAlpha = 1;
     if (hover === d || props.selected === d.name) { c.strokeStyle = P.ink; c.lineWidth = 2; c.beginPath(); c.arc(d.x, d.y, r + 3, 0, Math.PI * 2); c.stroke(); }
   });
+  c.restore();
+  cornerLabels(c, P);
   raf = busy ? requestAnimationFrame(draw) : 0;
 }
 const redraw = () => { if (!raf) raf = requestAnimationFrame(draw); };
@@ -140,14 +161,14 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); ro?.disconnect(); });
 <template>
   <section class="dq">
     <div class="dq-top">
-      <strong>동 사분면 <em>(원 = 동 · 정상 + 직거래)</em></strong>
+      <strong>동 사분면 <em>(원 = 동 · 거래건수는 정상 + 직거래 · 평당가는 정상거래)</em></strong>
       <div class="dq-seg" role="tablist" aria-label="원 크기">
         <button type="button" :class="{ on: sizeKey === 'avg' }" @click="pickSize('avg')">원 크기 평균가</button>
         <button type="button" :class="{ on: sizeKey === 'n' }" @click="pickSize('n')">원 크기 거래건수</button>
       </div>
     </div>
     <div class="dq-read">
-      <p><b>읽는법</b><span>원 하나가 동 하나입니다. <em>오른쪽일수록 거래가 활발하고, 위로 갈수록 평당가가 비쌉니다.</em> 빨간 십자선은 평균이라 네 칸으로 나뉩니다. 원에 마우스를 대면 그 동의 숫자가 뜨고, 누르면 그 동으로 좁힙니다.</span></p>
+      <p><b>읽는법</b><span>원 하나가 동 하나입니다. <em>오른쪽일수록 거래가 활발하고, 위로 갈수록 평당가가 비쌉니다.</em> 빨간 십자선은 평균이라 네 칸으로 나뉩니다(평당가 평균은 위 요약 평 단가와 같은 값). 직거래만 있는 동은 시세로 쓸 값이 없어 찍지 않습니다. 겹치지 않게 밀려난 원은 실제 자리에 작은 점을 남깁니다. 원에 마우스를 대면 그 동의 숫자가 뜨고, 누르면 그 동으로 좁힙니다.</span></p>
       <p v-if="insight"><b>한눈에</b><span v-html="insight" /></p>
     </div>
     <div class="dq-board">

@@ -27,9 +27,10 @@ describe('auctionDates', () => {
   });
   it('기일 전엔 낙찰 · 유찰 · 취소 · 매도를 고를 수 없다(당일은 된다)', () => {
     const a = { eventDate: '2026-11-17' };
-    expect(stageBeforeSaleError(a, '낙찰', '2026-11-16')).toContain('26년 11월 17일');
-    expect(stageBeforeSaleError(a, '매도', '2026-11-16')).not.toBe('');
-    expect(stageBeforeSaleError(a, '낙찰', '2026-11-17')).toBe('');
+    expect(stageBeforeSaleError(a, '낙찰', '2026-11-16', true)).toContain('26년 11월 17일');
+    expect(stageBeforeSaleError(a, '매도', '2026-11-16', true)).not.toBe('');
+    expect(stageBeforeSaleError(a, '낙찰', '2026-11-17', true)).toBe('');
+    expect(stageBeforeSaleError(a, '낙찰', '2026-11-16')).toBe('');   // 스위치를 끈 지금은 막지 않는다
     expect(stageBeforeSaleError(a, '진행', '2026-11-16')).toBe('');
     expect(stageBeforeSaleError({}, '낙찰', '2026-11-16')).toBe('');
   });

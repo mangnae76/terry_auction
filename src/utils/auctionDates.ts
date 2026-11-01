@@ -59,9 +59,13 @@ const todayYmd = (): string => {
 /** 입찰 기일이 지나야 고를 수 있는 단계 — 기일 전엔 결과(낙찰 · 유찰 · 취소)도 매도도 있을 수 없다 */
 export const AFTER_SALE_STAGES = ['낙찰', '유찰', '취소', '매도'];
 
+/** 기일 전 단계 막기 스위치 — 시험 기간이라 꺼 둔다(2026-11-02 사용자 요청: 기일 전에도 낙찰~매도를 고를 수 있게).
+ *  서비스 오픈 때 true 로(docs/서비스오픈목록.md) */
+export const STAGE_BEFORE_SALE_GUARD = false;
+
 /** 그 단계를 지금 고를 수 있는지 — 안 되면 알림 글, 되면 빈 글. 기일 당일은 고를 수 있다 */
-export const stageBeforeSaleError = (a: { eventDate?: string }, stage: string, today: string = todayYmd()): string => {
-  if (!AFTER_SALE_STAGES.includes(stage)) return '';
+export const stageBeforeSaleError = (a: { eventDate?: string }, stage: string, today: string = todayYmd(), on: boolean = STAGE_BEFORE_SALE_GUARD): string => {
+  if (!on || !AFTER_SALE_STAGES.includes(stage)) return '';
   const sale = ymdOf(a.eventDate);
   if (!sale || sale <= today) return '';
   return `입찰 기일이 되지 않아 선택할 수 없습니다. 이 물건의 입찰 기일은 ${koreanYmd(sale)}입니다.`;

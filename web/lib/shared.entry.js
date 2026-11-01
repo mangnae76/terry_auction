@@ -58,7 +58,7 @@ export { stageDates, bidStageOf, stageLabelOf } from '../../src/utils/stageLabel
 export { stageBeforeSaleError } from '../../src/utils/auctionDates';
 // 물건상세 정보요약·기본정보 — 앱 물건상세와 같은 셈
 export {
-  saleKindOf, headMetaLineOf, summarySeedOf, summaryAreaText, summaryApprovalAgeOf, summaryFloorPairOf,
+  saleKindOf, headMetaLineOf, summarySeedOf, summaryAreaText, summaryApprovalAgeOf, summaryFloorPairOf, exclusiveAreaText,
   bidBaseValueOf, currentMinBidOf, depositAmountOf, bidRoundsOf, roundToneOf, currentRoundLabelOf, trunc2,
 } from '../../src/services/detailSummary';
 /** 앱 저장소를 쓸 수 있게 Pinia 를 한 번 켠다 */

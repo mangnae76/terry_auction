@@ -3,7 +3,7 @@
 // 관리자가 올린 글이 있으면 그것을 쓰고, 아직 하나도 없으면 코드에 적어 둔
 // 기본 글(boardNews)을 보여 준다 — 화면이 비어 보이지 않게.
 import { computed, ref } from 'vue';
-import { EVENTS, EVENT_BANNERS, NOTICES, UPDATES, type NewsRow } from './boardNews';
+import { EVENTS, EVENT_BANNERS, NOTICES, UPDATES, periodEnded, type NewsRow } from './boardNews';
 import { markSeen, useSeen } from './boardSeen';
 import {
   isLive,
@@ -106,20 +106,22 @@ export const useBoardFeed = () => {
         ...of('banner').filter((p) => p.showBanner !== false),
         ...of('event').filter((p) => p.banner),
       ];
-      if (pool.length === 0) return EVENT_BANNERS;
-      return live(pool).map((p) => ({
+      // 기간이 끝난 배너는 내린다 — 이벤트가 닫힌 때(eventEndAt)나 적어 둔 기간 글의 끝날이 지났으면(기본 배너도 같다)
+      const open = <T extends { period: string }>(rows: T[]) => rows.filter((b) => !periodEnded(b.period, now.value));
+      if (pool.length === 0) return open(EVENT_BANNERS);
+      return open(live(pool).filter((p) => !(p.eventEndAt && p.eventEndAt < now.value)).map((p) => ({
         badge: p.badge || 'EVENT',
         title: titleOf(p),
         imageUrl: p.imageUrl,
         id: p.id,
         // 배너 칸에는 단축 글만 — 긴 본문은 이벤트 줄을 펼쳐야 보인다
         desc: p.desc || p.body || '',
-        cta: p.cta || '자세히 보기',
+        cta: (p.cta || '자세히보기').replace(/\s+/g, ''),   // 단추 이름은 붙여 쓴다(예전 글의 '자세히 보기'도)
         // 예약한 때가 있으면 그것을 그대로 보여 준다 — 손으로 적은 기간 글은 예약이 없을 때만
         // 손으로 적은 기간 글이 먼저, 없으면 이벤트가 열리는 때, 그것도 없으면 올리고 내리는 때.
         // 배너에는 날짜까지만 적는다 — 몇 시 몇 분은 상세 보기에서 본다
         period: p.period || dayRangeLabel(p.eventStartAt, p.eventEndAt) || dayRangeLabel(p.startAt, p.endAt),
-      }));
+      })));
     }),
   };
 };

@@ -52,7 +52,7 @@ const zoom = ref('');
         <h2 class="bp-h">{{ titleOf(post) }}</h2>
       </div>
       <p v-if="posted" class="bp-posted">{{ posted }}</p>
-      <p v-if="period" class="bp-period">기간 : {{ period }}</p>
+      <p v-if="period" class="bp-period">기간 {{ period }}</p>
 
       <img
         v-if="post.imageUrl"

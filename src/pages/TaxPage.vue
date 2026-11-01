@@ -194,7 +194,7 @@ const monthBuckets = computed(() => {
     buckets[m].push({
       kind: '양도세', tone: 'orange', when: '매도 완료',
       title: `사업소득 발생 — ${a.address}`,
-      note: `매도일: ${fmtDate(a.sellDate)} · 다음해 5월 종합소득세 신고`,
+      note: `매도일 ${fmtDate(a.sellDate)} · 다음해 5월 종합소득세 신고`,
     });
   });
 
@@ -207,7 +207,7 @@ const monthBuckets = computed(() => {
       kind: '취득세', tone: 'blue',
       when: `${due.getMonth() + 1}월 ${due.getDate()}일까지`,
       title: `취득세 신고·납부 — ${a.address}`,
-      note: `낙찰일: ${fmtDate(a.wonDate)} · 낙찰 후 60일 이내`,
+      note: `낙찰일 ${fmtDate(a.wonDate)} · 낙찰 후 60일 이내`,
     });
   });
 
@@ -347,13 +347,13 @@ const router = useRouter();
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="4" y="3" width="16" height="18" rx="2" /><path d="M12 7v10M14.5 9.5a2.5 2.5 0 0 0-5 .5c0 2 5 1.5 5 3.5a2.5 2.5 0 0 1-5 .5" />
         </svg>
-        소득세 현황
+        소득세현황
       </button>
       <button type="button" :class="['sub', { on: subTab === 'schedule' }]" @click="subTab = 'schedule'">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" />
         </svg>
-        신고 일정
+        신고일정
       </button>
       <button v-if="!props.webYear" type="button" :class="['sub', { on: subTab === 'guide' }]" @click="subTab = 'guide'">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -505,12 +505,12 @@ const router = useRouter();
         <div class="tax-gbox">
           <p class="g-t">사업소득금액 계산</p>
           <p class="g-b">사업소득금액 = 매도가 − 낙찰가 − 취득세 − 필요경비(수리비·이자·중개료 등)</p>
-          <p class="g-s">＊ 근거: 소득세법 제19조 제1항 제12호</p>
+          <p class="g-s">＊ 근거 소득세법 제19조 제1항 제12호</p>
         </div>
         <div class="tax-gbox">
           <p class="g-t">산출세액 계산</p>
           <p class="g-b">산출세액 = 사업소득금액 × 종합소득세 누진세율<br>지방소득세 = 산출세액 × 10%</p>
-          <p class="g-s">＊ 근거: 소득세법 제55조</p>
+          <p class="g-s">＊ 근거 소득세법 제55조</p>
         </div>
         <div class="tax-gbox info">
           <p class="g-t">ⓘ 연간 합산 과세 방식</p>

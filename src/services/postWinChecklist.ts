@@ -128,7 +128,7 @@ export const POST_WIN_DAY: CheckGroup[] = [
         label: '법원(종합민원실)',
         rows: [
           { id: 'pw.file.court', depth: 0, text: '재판기록 열람 및 USB 복제' },
-          { id: 'pw.file.docs', depth: 0, text: '준비서류 : 재판기록 열람복사신청서, 접수, 도장, 신청서, 수입인지' },
+          { id: 'pw.file.docs', depth: 0, text: '준비서류 재판기록 열람복사신청서, 접수, 도장, 신청서, 수입인지' },
         ],
       },
       {

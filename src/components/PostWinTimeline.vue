@@ -27,7 +27,7 @@ const todosOf = allTodosOf;
 const progOf = (t: StepTodo) => props.progress?.(t) ?? null;
 const isFull = (t: StepTodo) => { const p = progOf(t); return !!p && p[0] >= p[1]; };
 const goTitle = (t: StepTodo) => (t.page ? (t.page.tab === 'tax' ? '세금신고로 가기' : '자금관리로 가기')
-  : t.tab === 'repair' ? '인테리어로 가기' : t.tab === 'sell' ? '매도·임대로 가기' : t.group || t.tab === 'biz' ? '자세히 보기' : '');
+  : t.tab === 'repair' ? '인테리어로가기' : t.tab === 'sell' ? '매도·임대로가기' : t.group || t.tab === 'biz' ? '자세히보기' : '');
 
 /** 기본 절차 — 경매 낙찰 뒤 흔한 흐름(날짜는 대략). 명도 뒤 인테리어 · 매도까지 잇는다 */
 const DEFAULT_STEPS: Array<Omit<PostWinStep, 'id'>> = [

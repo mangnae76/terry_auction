@@ -367,8 +367,8 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
             <p :class="['ev-fail', { fresh: failText(it.a) === '신건' }]">{{ failText(it.a) }}</p>
             <p v-if="show.addr" class="ev-addr">{{ shownAddressOf(it.a) }}</p>
             <p class="ev-kind">{{ roundText(it.a) }}</p>
-            <p v-if="show.money" class="ev-price">감정: {{ money(it.a.metrics?.appraisalValue ?? 0) }}</p>
-            <p v-if="show.money" class="ev-price">최저: {{ money(it.a.metrics?.minimumBidValue ?? 0) }}</p>
+            <p v-if="show.money" class="ev-price">감정 {{ money(it.a.metrics?.appraisalValue ?? 0) }}</p>
+            <p v-if="show.money" class="ev-price">최저 {{ money(it.a.metrics?.minimumBidValue ?? 0) }}</p>
             <p v-if="show.cat" class="ev-area">
               <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />

@@ -76,3 +76,23 @@ export const DEMAND_PLAIN: Record<DemandMetric, string> = {
 };
 /** 종합 칸 쉬운 말 */
 export const DEMAND_TOTAL_PLAIN = '수요지표 4가지 합산';
+
+/** 동마다 받은 세대수를 더한 상태 — 값: 양수 · 0(없음) = 받음, -1 = 못 받음, undefined = 받는 중.
+ *  다 받기 전의 합은 '일부'라 총 세대수 · 회전율 · 부담률 · 등급을 확정값처럼 쓰면 안 된다(ready 일 때만) */
+export type UnitsTally = {
+  /** 받은 동의 합(못 받은 · 받는 중인 동은 빠진 값) */
+  total: number;
+  /** 동 수 · 받은 동 · 받는 중 · 못 받음 */
+  count: number; done: number; pending: number; failed: number;
+  /** 모든 동을 받았다 — 이때만 total 이 총 세대수다 */
+  ready: boolean;
+};
+export const tallyDongUnits = (values: Array<number | undefined>): UnitsTally => {
+  let total = 0; let done = 0; let pending = 0; let failed = 0;
+  values.forEach((v) => {
+    if (v === undefined) pending += 1;
+    else if (v < 0) failed += 1;
+    else { done += 1; total += v; }
+  });
+  return { total, count: values.length, done, pending, failed, ready: pending === 0 && failed === 0 };
+};

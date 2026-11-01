@@ -948,7 +948,7 @@ const exportExcel = () => {
               placeholder="0"
               @update:model-value="onItemTotalInput"
             />
-            <small class="hint">수량 × 단가로 저절로 셈합니다. 직접 고치면 그 값을 그대로 둡니다.</small>
+            <small class="hint">수량 × 단가로 저절로 계산합니다. 직접 고치면 그 값을 그대로 둡니다.</small>
           </label>
           <div class="row2">
             <label>구매처<input type="text" v-model="ipDraft.vendor" /></label>

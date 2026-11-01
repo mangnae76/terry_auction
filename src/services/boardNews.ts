@@ -43,10 +43,35 @@ export const EVENT_BANNERS: NewsBanner[] = [
     badge: 'EVENT',
     title: '첫 낙찰 축하 리워드',
     desc: '마이턴에서 분석한 물건으로 낙찰받으면 분석 리포트 3개월 무료',
-    cta: '자세히 보기',
+    cta: '자세히보기',
     period: '2026.10.01 ~ 10.31',
   },
 ];
+
+/**
+ * 기간 글의 끝날 — 'YYYY-MM-DD'. 못 읽거나 끝이 없으면('상시' · '… 부터') ''.
+ * '2026.10.01 ~ 10.31'(끝에 해가 없으면 시작 해, 달이 앞서면 다음 해) · '2026.12.20 ~ 2027.01.10' · '2026.10.31 까지'
+ */
+export const periodEndDay = (period?: string): string => {
+  const text = String(period ?? '');
+  const pad = (n: string | number) => String(n).padStart(2, '0');
+  const full = /(\d{4})\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{1,2})/;
+  const [head, tail] = text.includes('~') ? text.split('~', 2) : ['', /까지/.test(text) ? text : ''];
+  if (!tail) return '';
+  const f = tail.match(full);
+  if (f) return `${f[1]}-${pad(f[2])}-${pad(f[3])}`;
+  const s = head.match(full);
+  const md = tail.match(/(\d{1,2})\s*[.\-/]\s*(\d{1,2})/);
+  if (!s || !md) return '';
+  const year = Number(s[1]) + (Number(md[1]) < Number(s[2]) ? 1 : 0);
+  return `${year}-${pad(md[1])}-${pad(md[2])}`;
+};
+
+/** 기간이 끝난 글인가 — 끝날 다음 날부터 내린다. now 는 'YYYY-MM-DD…' (현지 시각) */
+export const periodEnded = (period: string | undefined, now: string): boolean => {
+  const end = periodEndDay(period);
+  return !!end && end < now.slice(0, 10);
+};
 
 export const NOTICES: NewsRow[] = [
   { tag: '', star: true, text: '서비스 이용약관 개정 안내 (시행 예정)' },

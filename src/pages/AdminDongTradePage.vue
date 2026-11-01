@@ -24,6 +24,7 @@ import BubbleMatrix from '../components/BubbleMatrix.vue';
 import TradeTimeline from '../components/TradeTimeline.vue';
 import { CHART_ICONS } from '../services/chartIcons';
 import DongQuadrant from '../components/DongQuadrant.vue';
+import { avgUnitPriceOf, medianOf, PYEONG_M2 } from '../services/dongQuadrant';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import { useColumnFilters, type ColumnDef } from '../composables/useColumnFilters';
 
@@ -252,13 +253,10 @@ const detailBuckets = computed<Bucket[]>(() => ({
   area: webEmbed && areaUnit.value === 'py' ? DETAIL_AREA_BUCKETS.map((b) => ({ ...b, label: b.alt ?? b.label })) : DETAIL_AREA_BUCKETS,
   age: DETAIL_AGE_BUCKETS, floor: DETAIL_FLOOR_BUCKETS,
 }[detailKind.value]));
-/** 층별 평균 평당가 — 전체 평균과 견줘 어느 층을 더 쳐주는지 (정상 + 직거래, 값이 있는 것만) */
+/** 층별 평균 평당가 — 전체 평균과 견줘 어느 층을 더 쳐주는지. 건수는 정상 + 직거래, 평당가는 정상거래만
+ *  (위 요약 평 단가 · 동 사분면 평균선과 같은 셈 — services/dongQuadrant) */
 const floorSummary = computed(() => {
-  const unitOf = (r: DongTradeDetailRow) => (r.priceWon > 0 && r.pyeong > 0 ? r.priceWon / r.pyeong : 0);
-  const avgUnit = (list: DongTradeDetailRow[]) => {
-    const us = list.map(unitOf).filter((v) => v > 0);
-    return us.length ? us.reduce((a, b) => a + b, 0) / us.length : 0;
-  };
+  const avgUnit = avgUnitPriceOf;
   const all = detailBase.value;
   const total = avgUnit(all);
   const cols = DETAIL_FLOOR_BUCKETS.map((b) => {
@@ -629,11 +627,8 @@ const avgPrice = computed(() => {
   if (list.length === 0) return 0;
   return Math.round(list.reduce((s, r) => s + r.priceWon, 0) / list.length);
 });
-const avgUnitPrice = computed(() => {
-  const list = normals.value.filter((r) => r.priceWon > 0 && r.pyeong > 0);
-  if (list.length === 0) return 0;
-  return Math.round(list.reduce((s, r) => s + r.priceWon / r.pyeong, 0) / list.length);
-});
+/** 평당가 평균 — 위 요약 평 단가 · 동 사분면 평균선과 같은 셈(services/dongQuadrant) */
+const avgUnitPrice = computed(() => Math.round(avgUnitPriceOf(normals.value)));
 
 // ===== 분포 =====
 type Bucket = { label: string; alt?: string; test: (r: DongTradeDetailRow) => boolean };
@@ -751,7 +746,7 @@ watch(dealMonth, () => { dealPage.value = 1; });
 
 // ===== 웹 — 시군구까지만 골랐을 때(읍면동 '전체') 검색리스트는 동별 요약 표 =====
 // 정상거래만 센다(검색조건의 기간 · 면적 · 연식 거르기를 거친 것). 거래가 없는 동도 0건으로 남긴다
-type DongSum = { name: string; count: number; avg: number; median: number; min: number; max: number; area: number; perM2: number };
+type DongSum = { name: string; count: number; avg: number; median: number; min: number; max: number; area: number; perM2: number; /** 정상거래 수 — 0 인데 건수가 있으면 직거래뿐 */ normals: number };
 const dongSums = computed<DongSum[]>(() => {
   const by = new Map<string, DongTradeDetailRow[]>();
   normals.value.forEach((r) => { if (r.umdNm) by.set(r.umdNm, [...(by.get(r.umdNm) ?? []), r]); });
@@ -760,18 +755,18 @@ const dongSums = computed<DongSum[]>(() => {
     const prices = list.map((r) => r.priceWon).filter((v) => v > 0).sort((a, b) => a - b);
     const n = prices.length;
     const areas = list.map((r) => r.areaM2).filter((v) => v > 0);
-    const perM2s = list.filter((r) => r.priceWon > 0 && r.areaM2 > 0).map((r) => r.priceWon / r.areaM2);
     const avgOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
     return {
       name,
       // 거래건수는 총 거래건수 셈과 같게 정상 + 직거래 (값들은 정상거래만으로)
       count: list.length + filtered.value.filter((r) => r.kind === '직거래' && r.umdNm === name).length,
       avg: avgOf(prices),
-      median: n ? (n % 2 ? prices[(n - 1) / 2] : (prices[n / 2 - 1] + prices[n / 2]) / 2) : 0,
+      median: medianOf(prices),
       min: n ? prices[0] : 0,
       max: n ? prices[n - 1] : 0,
       area: avgOf(areas),
-      perM2: avgOf(perM2s),
+      perM2: avgUnitPriceOf(list) / PYEONG_M2,   // 동 사분면 · 위 요약과 같은 셈
+      normals: list.length,
     };
   });
 });
@@ -816,7 +811,8 @@ const totalTip = computed(() => {
 const guNav = computed(() => {
   const prices = normals.value.map((r) => r.priceWon).filter((v) => v > 0);
   const areas = normals.value.map((r) => r.areaM2).filter((v) => v > 0);
-  const perM2s = normals.value.filter((r) => r.priceWon > 0 && r.areaM2 > 0).map((r) => r.priceWon / r.areaM2);
+  // 평 단가 — 동 사분면 평균선 · 동만 고른 평당가 평균과 같은 셈(services/dongQuadrant). ㎡ 단가는 ÷ 3.305785
+  const unit = avgUnitPriceOf(normals.value);
   const avgOf = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
   return [
     // 총 거래건수 — 받아 둔 12개월의 정상 + 직거래(계약해제는 없던 거래라 뺀다)를 연 | 월(월평균)로, 밑에 나눠 적는다
@@ -826,7 +822,7 @@ const guNav = computed(() => {
     { label: '최고가', value: eokMan(prices.length ? Math.max(...prices) : 0) },
     { label: '평균면적', value: areas.length ? areaText(avgOf(areas)) : '—' },
     // 랭킹지도 통계정보와 같은 꼴 — '평 783만 / ㎡ 237만'
-    { label: '평 단가 / ㎡ 단가', value: perM2s.length ? `평 ${Math.round((avgOf(perM2s) * 3.305785) / 10000).toLocaleString('ko-KR')}만 / ㎡ ${Math.round(avgOf(perM2s) / 10000).toLocaleString('ko-KR')}만` : '—' },
+    { label: '평 단가 / ㎡ 단가', value: unit > 0 ? `평 ${Math.round(unit / 10000).toLocaleString('ko-KR')}만 / ㎡ ${Math.round(unit / PYEONG_M2 / 10000).toLocaleString('ko-KR')}만` : '—' },
   ];
 });
 /** 읍면동을 고르면 위 요약 상자는 셋 — 거래상세 숫자(조건검색까지 거른 것)와 같은 값 */
@@ -1301,7 +1297,9 @@ const downloadCsv = () => {
               <tr v-for="d in (dong ? dongSumRows.filter((x) => x.name === dong) : dongSumRows)" :key="d.name">
                 <td class="c"><button type="button" class="adm-dong-link" :title="dong === d.name ? '다시 누르면 전체 동으로' : '이 동만 보기'" @click="dong = dong === d.name ? '' : d.name">{{ d.name }}</button></td>
                 <td class="r">{{ d.count.toLocaleString('ko-KR') }}건</td>
-                <td class="r strong">{{ eokMan(d.avg) }}</td>
+                <!-- 직거래뿐인 동 — 건수는 있는데 시세로 쓸 정상거래가 없다(동 사분면에도 찍지 않는다) -->
+                <td v-if="d.count > 0 && d.normals === 0" class="r dim" :title="`직거래 ${d.count.toLocaleString('ko-KR')}건뿐 — 가격 · 면적 · 단가는 정상거래로만 계산합니다`">직거래만</td>
+                <td v-else class="r strong">{{ eokMan(d.avg) }}</td>
                 <td class="r">{{ eokMan(d.median) }}</td>
                 <td class="r">{{ eokMan(d.min) }}</td>
                 <td class="r">{{ eokMan(d.max) }}</td>
@@ -1687,6 +1685,7 @@ const downloadCsv = () => {
 .adm-dongsum :is(th, td):last-child { padding-right: 32px; }
 .adm-dongsum .r { text-align: right; }
 .adm-dongsum td.strong { font-weight: 800; color: #111827; }
+.adm-dongsum td.dim { font-size: 12px; color: #9ca3af; cursor: help; }   /* 직거래만 — 값이 없는 까닭 */
 .adm-sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
 .adm-sort i { font-style: normal; font-size: 12px; color: #9ca3af; }
 .adm-sort i.on { color: #2f6b45; }

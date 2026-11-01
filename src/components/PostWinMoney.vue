@@ -373,7 +373,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
         <span v-else class="pwm-biz">
           사업자 구분 <b>{{ BIZ_LABEL[acctBiz] ?? '안 정함' }}</b>
           <!-- 바로가기 — 내 정보 수정으로 가서 고치고, 돌아오면 다시 읽어 계산한다 -->
-          <button type="button" class="pwm-bizgo" title="내 정보 수정에서 사업자 구분 바꾸기" @click="router.push('/profile')">내 정보<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></button>
+          <button type="button" class="pwm-bizgo" title="내 정보 수정에서 사업자 구분 바꾸기" @click="router.push('/profile')">내정보<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></button>
           <em v-if="!acctBiz">내 정보에서 사업자 구분을 정해 주세요 — 지금은 매매사업자 기준</em>
           <em v-else-if="acctBiz === 'corp' || acctBiz === 'corpBiz'">법인세 계산은 준비 중 — 지금은 매매사업자 기준</em>
         </span>
@@ -424,7 +424,7 @@ const effPct = computed(() => { const g = who.value === 'biz' ? gain.value : per
             <div><dt>세후 남는 돈</dt><dd :class="{ neg: person.afterTax < 0 }">{{ won(person.afterTax) }}</dd></div>
           </dl>
           <p class="pwm-memo" v-if="who === 'biz'">비교과세 — 조정대상지역 주택 · 비사업용 토지 등은 양도세 세율로 계산한 금액과 비교해 큰 쪽을 냅니다(소득세법 제64조). 매도 뒤 2개월 안에 매매차익 예정신고, 이듬해 5월 종합소득세로 합산합니다.</p>
-          <p class="pwm-memo" v-else>1주택 비과세 · 다주택 중과 · 장기보유특별공제는 셈하지 않은 대략 값입니다 — 세무사에게 확인하세요.</p>
+          <p class="pwm-memo" v-else>1주택 비과세 · 다주택 중과 · 장기보유특별공제는 계산하지 않은 대략 값입니다 — 세무사에게 확인하세요.</p>
         </article>
       </div>
       <!-- 최종 예상 순수익(명도비용 포함) — 두 시나리오를 상자 둘로 알려 준다(고르거나 확정하지 않는다). 명도비용은 명도분석 합계 그대로 -->

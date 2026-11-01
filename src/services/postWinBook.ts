@@ -74,7 +74,7 @@ const NOTE_CLEAR: Record<string, string[]> = {
  */
 const TEXT_FIX: Record<string, { from: string; to: string }> = {
   'ln.l6': {
-    from: '간단 셈 → 가계 대출의 추가 채권 부담은 대출금의 약 0.1% (1억당 약 10만 원)',
+    from: '간단 계산 → 가계 대출의 추가 채권 부담은 대출금의 약 0.1% (1억당 약 10만 원)',
     to: '간단계산 → 가계대출 추가채권 부담은 대출금의 약 0.1%(1억당 약 10만원)',
   },
   'bz.s1c': {
