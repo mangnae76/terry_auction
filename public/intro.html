@@ -203,8 +203,13 @@
     $q('qlEye').addEventListener('click', () => { const i = $q('qlPw'); i.type = i.type === 'password' ? 'text' : 'password'; });
     const showErr = (t) => { const e = $q('qlErr'); e.textContent = t || ''; e.hidden = !t; };
     const busy = (on) => { ['qlSubmit', 'qlKakao'].forEach((id) => { $q(id).disabled = on; }); $q('qlSubmit').textContent = on ? '로그인 중…' : '로그인'; };
+    // 로그인 준비 · 로그인이 끝나지 않으면 '로그인 중…'에서 영원히 멈춘다 — 브라우저 저장소(IndexedDB)가 다른 탭에
+    // 붙잡혀 있거나 엉킨 때다. 정해진 시간이 지나면 끊고 까닭과 할 일을 보여 준다
+    const STUCK = '로그인 준비가 멈췄습니다 — 이 사이트가 열린 다른 탭을 모두 닫고 크롬을 다시 켜 주세요. 그래도 같으면 주소창 왼쪽 아이콘 › 사이트 설정 › 데이터 삭제 후 다시 로그인해 주세요(서버 자료는 그대로입니다).';
+    const within = (p, ms) => Promise.race([p, new Promise((_, no) => { setTimeout(() => no(Object.assign(new Error('stuck'), { stuck: true })), ms); })]);
     const authNow = async () => {
-      try { return await ready; } catch (e) {
+      try { return await within(ready, 15000); } catch (e) {
+        if (e && e.stuck) throw e;
         if (!T) { T = await loadBundle(); T.startStores(); T.useAuthStore().initialize(); }
         const a = T.useAuthStore();
         if (!a.ready && a.waitUntilReady) await a.waitUntilReady();
@@ -217,12 +222,13 @@
       try {
         const auth = await authNow();
         writeLocal(KEEP_KEY, $q('qlKeep').checked ? '' : '0');
-        if (T.setLoginPersistence) await T.setLoginPersistence($q('qlKeep').checked);
-        const profile = await how(auth);
+        if (T.setLoginPersistence) await within(T.setLoginPersistence($q('qlKeep').checked), 15000);
+        const profile = await within(how(auth), 45000);
         if (!profile) return;
         if (T.isAllowedEmail && !T.isAllowedEmail(profile.email)) { await auth.logout(); showErr('이 계정은 사용 권한이 없습니다.'); return; }
         location.href = '/web?login=1';   // 로그인 끝 — 선정목록으로
       } catch (e) {
+        if (e && e.stuck) { console.warn('[대문 로그인] 시간 안에 끝나지 않음'); showErr(STUCK); return; }
         const a = T && T.useAuthStore ? T.useAuthStore() : null;
         showErr((a && a.error) || '로그인하지 못했습니다 — 다시 시도해 주세요.');
       } finally { busy(false); }
