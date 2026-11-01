@@ -25,6 +25,8 @@ const showRest = computed(() => props.only !== 'faq');
 /** 처음에는 여덟 개만 — 더 보고 싶으면 펼친다 */
 const FIRST = 8;
 const showAll = ref(false);
+/** 분류마다 꼬리표 색 — 서비스 · 기능은 파랑, 회원·결제는 주황, AI·설정은 회색 */
+const TAG_TONE: Record<FaqItem['tag'], string> = { 서비스: 'info', '회원·결제': 'pay', 기능: 'info', 'AI·설정': 'etc' };
 const faqs = computed<FaqItem[]>(() => (showAll.value ? SUPPORT_FAQ : SUPPORT_FAQ.slice(0, FIRST)));
 const rest = computed(() => Math.max(0, SUPPORT_FAQ.length - FIRST));
 
@@ -70,7 +72,7 @@ const openContact = (c: ContactWay) => {
               <!-- 꼬리표가 곧 단추다 — 누르면 그 자리에서 답이 펼쳐진다 -->
               <button
                 type="button"
-                :class="['sup-tag', f.tag === '회원·결제' ? 'pay' : (f.tag === '기타' ? 'etc' : 'info')]"
+                :class="['sup-tag', TAG_TONE[f.tag]]"
                 :aria-expanded="openQ === f.q"
                 @click="toggle(f.q)"
               >{{ f.tag }}도움말<i>{{ openQ === f.q ? '▴' : '▾' }}</i></button>
@@ -78,7 +80,9 @@ const openContact = (c: ContactWay) => {
                 <em class="sup-qmark">Q</em>
                 <span class="sup-q-txt">{{ f.q }}</span>
               </button>
-              <p v-if="openQ === f.q" class="sup-a">{{ f.a }}</p>
+              <!-- 답에는 굵게(<b>)만 들어 있다 — 글은 우리 것(services/supportFaq)이라 HTML 로 그린다 -->
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <p v-if="openQ === f.q" class="sup-a" v-html="f.a" />
             </li>
           </ul>
           <button v-if="!showAll && rest" type="button" class="sup-more" @click="showAll = true">

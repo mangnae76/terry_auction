@@ -78,3 +78,19 @@ ${body}</body>
 `;
 await writeFile(path.join(out, 'selected.html'), doc);
 console.log('web/site/selected.html · web/site/pdfparse.js 를 만들었습니다');
+
+// 이용가이드 FAQ — 앱의 FAQ 목록(src/services/supportFaq.ts, 커뮤니티 · 고객센터와 같은 것)을 faq.json 으로 뽑는다.
+// 가이드(public/guide/index.html)가 이 파일을 읽어 그린다. 앱 빌드 전에 돌면 public 에, 이미 빌드된 dist 가 있으면 거기에도 적는다
+const faqTmp = path.join(here, '.faq-tmp');
+await build({
+  configFile: false, root, publicDir: false, logLevel: 'warn',
+  build: { outDir: faqTmp, emptyOutDir: true, copyPublicDir: false, minify: false, lib: { entry: path.join(root, 'src/services/supportFaq.ts'), formats: ['es'], fileName: () => 'faq.mjs' } },
+});
+const { SUPPORT_FAQ } = await import(`${path.join(faqTmp, 'faq.mjs')}?t=${Date.now()}`);
+const faqJson = `${JSON.stringify(SUPPORT_FAQ.map(({ tag, q, a }) => ({ cat: tag, q, a })), null, 1)}\n`;
+await writeFile(path.join(root, 'public/guide/faq.json'), faqJson);
+await mkdir(path.join(root, 'dist/guide'), { recursive: true }).catch(() => {});
+await writeFile(path.join(root, 'dist/guide/faq.json'), faqJson).catch(() => {});
+const { rm } = await import('node:fs/promises');
+await rm(faqTmp, { recursive: true, force: true });
+console.log(`public/guide/faq.json 을 만들었습니다 (${SUPPORT_FAQ.length}개)`);
