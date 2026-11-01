@@ -1,12 +1,11 @@
-# 실거래 적재 — 매일 한국 시각 14:30 · 17:00(시험 중, 원래 01:00) 에 국토부 실거래를 받아 Firestore(cacheTradeMonth)에 적어 둔다.
+# 실거래 적재 — 매일 한국 시각 01:17 에 국토부 실거래를 받아 Firestore(cacheTradeMonth)에 적어 둔다.
 # 화면은 그 문서를 먼저 읽으므로 국토부를 덜 부르고 빨리 뜬다. 내용은 jobs/trade-nightly/run.mjs.
 # 비밀값(저장소 Settings › Secrets and variables › Actions): FIREBASE_SERVICE_ACCOUNT · DATA_GO_KR_KEY
 name: 새벽 실거래 적재
 
 on:
   schedule:
-    - cron: '30 5 * * *'   # UTC 05:30 = 한국 14:30 — 시험 삼아 낮에 두 번
-    - cron: '0 8 * * *'    # UTC 08:00 = 한국 17:00. 새벽 한 번으로 되돌리려면 '0 16 * * *'(한국 01:00) 하나만. GitHub 가 바쁘면 조금 늦게 시작한다
+    - cron: '17 16 * * *'  # UTC 16:17 = 한국 01:17. 정시(:00 · :30)는 GitHub 예약이 몰려 늦거나 빠지기 쉬워 비켜 잡았다
   workflow_dispatch:         # Actions 탭에서 손으로도 돌린다
     inputs:
       extra_targets:

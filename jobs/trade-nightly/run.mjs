@@ -1,4 +1,4 @@
-// 새벽 실거래 적재 — 매일 새벽 1시(한국)에 GitHub Actions 가 돌린다 (.github/workflows/trade-nightly.yml).
+// 새벽 실거래 적재 — 매일 새벽 1시 17분(한국)에 GitHub Actions 가 돌린다 (.github/workflows/trade-nightly.yml).
 //
 //  1) 대상: 지금까지 누군가 조회해서 DB(cacheTradeMonth)에 남은 지역 · 종류 전부 (+ EXTRA_TARGETS 로 손으로 더한 것)
 //  2) 최근 3달: 날마다 새로 받아 덮어쓴다 — 신고 기한 30일 · 계약해제가 늦게 붙어 계속 바뀐다
