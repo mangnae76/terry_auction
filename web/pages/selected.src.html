@@ -1676,6 +1676,10 @@ body > .fin-pop .fin-stage-card :is(small, span, b, em, strong, a, p, div) { fon
 .app-trip .ftp-fav-text { font-size: 13px !important; }
 /* 글자 하한 12 — 'UPDATE -' · 목록 머리(주소 · 상태) · 단계 꼬리표(입찰산정 · 탈락)가 9.5 ~ 10.5 였다(BUG-0035) */
 .app-trip :is(.ftp-update-when, .ftp-col-head .ftp-stop-addr, .ftp-col-state, .ftp-stage-tag) { font-size: 12px !important; }
+/* 글자를 12로 키우며 꼬리표 칸(58)이 모자라 '손품조사' 같은 네 글자가 잘렸다 — 웹에선 칸을 66으로, 안쪽 여백은 5로 */
+.app-trip :is(.ftp-stop.ftp-stop-queued, .ftp-stop.ftp-pending-row) { grid-template-columns: 22px minmax(0, 1fr) 66px 28px !important; }
+.app-trip .ftp-stage-tag { padding-left: 5px !important; padding-right: 5px !important; min-width: 66px !important; }
+.app-trip .ftp-col-state { min-width: 66px !important; }
 /* 지도 위 번호·화살표 — 앱은 이 모양을 전역 스타일(src/style.css)에 둔다.
    웹 묶음은 화면별 스타일(pdfparse.css)만 싣기 때문에 그대로는 번호가 보이지 않는다.
    Leaflet 이 divIcon 으로 직접 만드는 칸이라 화면별 스타일이 닿지도 않는다 — 여기 같이 적는다 */
