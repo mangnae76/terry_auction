@@ -4006,6 +4006,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   function renderContent() {
     const list = visible();
     const root = $('content');
+    /* 로그인 확인 중이거나, 로그인했지만 내 물건이 아직 안 왔다 */
+    if (CLOUD.on ? !CLOUD.synced : (EXPECT_IN && !S.authReady)) { root.innerHTML = '<div class="empty"><b>불러오는 중입니다…</b></div>'; return; }
     const note = CLOUD.on ? '' : S.denied
       ? '<div class="demo-note">이 계정은 마이턴옥션 사용 허가가 없습니다 — 허가된 계정으로 로그인해 주세요.</div>'
       : '<div class="demo-note">예시 물건입니다 — 로그인하면 앱과 같은 내 선정물건이 보입니다. <button type="button" class="mini edit" data-act="login-btn">로그인</button></div>';
@@ -5680,7 +5682,11 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
      로그인 전에는 예시 물건을 보여 주고, 로그인하면 앱과 같은 Firestore 물건으로 바꾼다.
      웹에서 바꾼 중요도·단계·보관·휴지통은 앱 저장소의 함수(saveAuction · archiveAuctions …)로 그대로 적는다 */
   const DEMO_ITEMS = items.slice();
-  const CLOUD = { on: false, T: null, auth: null, store: null, raw: new Map(), nearby: new Map(), nearbyBusy: '', geminiUid: null };
+  const CLOUD = { on: false, synced: false, T: null, auth: null, store: null, raw: new Map(), nearby: new Map(), nearbyBusy: '', geminiUid: null };
+  /* 로그인해 있던 사람(새로고침 · 다시 들어옴) — 확인이 끝날 때까지 예시 물건 · '로그인하면' 안내를 그리지 않는다.
+     안 그러면 이미 로그인했는데도 잠깐 예시 물건과 로그인 단추가 보였다 */
+  const EXPECT_IN = (() => { try { return localStorage.getItem('ta.web.in') === '1'; } catch (e) { return false; } })();
+  if (EXPECT_IN) items = [];
   /* 앱 물건(AuctionDetail) → 웹 카드 한 장. 값은 앱 셈 함수로 낸다 */
   const toWebItem = (a) => {
     const T = CLOUD.T;
@@ -5784,7 +5790,11 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       const ok = auth.isLoggedIn && T.isAllowedEmail(auth.email);
       S.loggedIn = auth.isLoggedIn; S.userName = auth.nickname || String(auth.email || '').split('@')[0];
       S.denied = auth.isLoggedIn && !ok;
-      if (ok && !CLOUD.on) { CLOUD.on = true; st.initializeStorage(); fromStore(); }
+      if (ok && !CLOUD.on) {
+        CLOUD.on = true; CLOUD.synced = false; st.initializeStorage(); fromStore();
+        /* 물건이 하나도 없는 계정이거나 서버가 답하지 않으면 기다리는 글만 남는다 — 4초 뒤엔 있는 대로 보여 준다 */
+        setTimeout(() => { if (CLOUD.on && !CLOUD.synced) { CLOUD.synced = true; render(); } }, 4000);
+      }
       /* Gemini 키 — 이 계정 것으로 갈아 끼운다(로그아웃이면 비운다) */
       const gUid = auth.isLoggedIn ? auth.uid : '';
       if (gUid !== CLOUD.geminiUid) {
@@ -5800,7 +5810,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
         if (!auth.isLoggedIn) openAppLogin();
       }
     }, { immediate: true });
-    T.watch(() => [st.auctions, st.archivedAuctions, st.hiddenAuctions], fromStore);
+    /* 물건이 실제로 와야 '왔다' — 구독을 열 때 저장소를 한 번 비우는 것까지 도착으로 세면 '물건이 없습니다'가 잠깐 보인다 */
+    T.watch(() => [st.auctions, st.archivedAuctions, st.hiddenAuctions], () => { if (st.auctions.length || st.archivedAuctions.length || st.hiddenAuctions.length) CLOUD.synced = true; fromStore(); });
     /* giveUp 은 일부러 남겨 둔다 — 로그인 여부를 끝내 알지 못해도 7초 뒤에는 화면을 보여 준다 */
   }
   const update = (id, patch) => { items = items.map((x) => (x.id === id ? { ...x, ...patch } : x)); if (CLOUD.on) cloudSave(id, patch); };
