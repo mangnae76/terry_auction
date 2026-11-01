@@ -1,7 +1,7 @@
 // AI 가 적어 준 답을 다듬는 자리 — 인수·말소를 앱이 다시 셈하는지 본다.
 // (AI 는 볼 때마다 판단이 달라져 개수가 0·1·2 로 흔들렸다. 날짜만 읽혔으면 규칙은 하나다)
 import { describe, it, expect } from 'vitest';
-import { normalizeRightsAi, readStreamText, type RightsAi } from './geminiRights';
+import { docMismatchOf, normalizeRightsAi, readStreamText, type RightsAi } from './geminiRights';
 
 const row = (rank: string, kind: string, date: string, status: string, holder = '아무개') =>
   ({ rank, kind, date, holder, amount: '', status, note: '' });
@@ -90,5 +90,21 @@ describe('답을 조금씩 받기(스트리밍)', () => {
   it('도중에 오류 조각이 오면 까닭을 알린다', async () => {
     await expect(readStreamText(sse([line('{'), 'data: {"error":{"message":"끊김"}}\n\n'])))
       .rejects.toThrow('끊김');
+  });
+});
+
+
+describe('서류가 이 물건 것인지 (docCheck)', () => {
+  it('불일치와 까닭이 다 오면 까닭을 돌려준다', () => {
+    const t = '{"docCheck":{"result":"불일치","reason":"매각물건명세서의 사건번호가 2025타경12345 라 이 물건 2026타경503385 와 다릅니다"},"baseRight":';
+    expect(docMismatchOf(t)).toContain('2025타경12345');
+  });
+  it('까닭이 아직 덜 왔거나 일치 · 확인불가면 null', () => {
+    expect(docMismatchOf('{"docCheck":{"result":"불일치","reason":"매각물건명세')).toBeNull();
+    expect(docMismatchOf('{"docCheck":{"result":"일치","reason":""},"baseRight":{')).toBeNull();
+    expect(docMismatchOf('{"docCheck":{"result":"확인불가","reason":"흐림"}')).toBeNull();
+  });
+  it('따옴표가 든 까닭도 읽는다', () => {
+    expect(docMismatchOf('{"docCheck":{"result":"불일치","reason":"등기부 소재지 \\"검암동 1-1\\" 이 다릅니다"}')).toBe('등기부 소재지 "검암동 1-1" 이 다릅니다');
   });
 });

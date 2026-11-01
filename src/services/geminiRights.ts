@@ -86,9 +86,20 @@ const rowItem = {
   required: ['rank', 'kind', 'holder', 'status', 'note'],
 };
 
+/** 서류가 이 물건 것인지 — 답의 맨 앞 칸. 다르면 앱이 받는 도중에 끊는다 */
+export const DOC_CHECK_RESULTS = ['일치', '불일치', '확인불가'] as const;
+
 const RESPONSE_SCHEMA = {
   type: 'OBJECT',
+  // 맨 앞에 서류 확인 — 스트리밍으로 받는 도중에 '불일치'를 보면 바로 멈추려고 순서를 못 박는다
+  propertyOrdering: ['docCheck', 'baseRight', 'rows', 'takeoverSummary', 'extinguishSummary', 'risk', 'evict', 'conclusion', 'missingDocs'],
   properties: {
+    docCheck: {
+      type: 'OBJECT',
+      properties: { result: { type: 'STRING', enum: [...DOC_CHECK_RESULTS] }, reason: str },
+      required: ['result', 'reason'],
+      propertyOrdering: ['result', 'reason'],
+    },
     baseRight: {
       type: 'OBJECT',
       properties: {
@@ -118,7 +129,7 @@ const RESPONSE_SCHEMA = {
     },
     missingDocs: { type: 'ARRAY', items: str },
   },
-  required: ['baseRight', 'rows', 'takeoverSummary', 'extinguishSummary', 'risk', 'evict', 'conclusion', 'missingDocs'],
+  required: ['docCheck', 'baseRight', 'rows', 'takeoverSummary', 'extinguishSummary', 'risk', 'evict', 'conclusion', 'missingDocs'],
 };
 
 /**
@@ -140,6 +151,16 @@ export const RIGHTS_PROMPT = [
   '',
   '첨부되는 서류 (없는 것도 있다):',
   ...Object.values(DOC_LABELS).map((v) => `- ${v}`),
+  '',
+  '0단계 — 분석하기 전에 서류가 이 물건 것인지부터 확인한다 (docCheck, 답의 맨 앞)',
+  '- 이 물건의 사건번호 · 소재지는 맨 아래 「이미 읽어 둔 값」의 사건번호 · 소재지다.',
+  '- 매각물건명세서 · 현황조사서처럼 사건번호가 적힌 서류는 사건번호를 견준다. 연도 · 타경 번호 · 물건번호(괄호 숫자)까지 같아야 같다.',
+  '- 등기부 · 전입세대열람처럼 사건번호가 없는 서류는 소재지(시군구 · 동 · 지번, 집합건물이면 동 · 호수)를 견준다.',
+  '  도로명과 지번처럼 적는 방식만 다르거나, 2026년 행정구역 개편으로 구 이름만 다른 것(서구 ↔ 서해구 등)은 같은 것으로 본다.',
+  '- 흐리거나 잘려서 못 읽으면 다르다고 하지 않는다. 그때 result 는 확인불가, 모두 같으면 일치.',
+  '- 한 서류라도 분명히 다른 사건 · 다른 집이면 result 를 불일치로 하고, reason 에 어느 서류에 무엇이 어떻게 적혀 있어 이 물건과 다른지 한 문장으로 쓴다.',
+  '  (예: 「매각물건명세서의 사건번호가 2025타경12345 라 이 물건 2026타경503385 와 다릅니다」)',
+  '- 불일치이면 거기서 멈춘다 — 분석하지 말고 나머지 칸은 모두 빈 글자 · 빈 배열로 두고, evict.level 은 보통, conclusion.verdict 는 주의, conclusion.text 에는 reason 을 그대로 적는다.',
   '',
   '무엇을 봐 달라는 것인가',
   '- 말소기준권리가 무엇이고 왜 그것인지.',
@@ -272,8 +293,8 @@ type StreamChunk = {
   candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>;
 };
 
-/** 조금씩 오는 답(SSE 'data: {…}' 줄들)을 읽어 글을 이어 붙인다. 조각이 올 때마다 onChunk 를 부른다 */
-export const readStreamText = async (res: Response, onChunk: () => void = () => {}): Promise<string> => {
+/** 조금씩 오는 답(SSE 'data: {…}' 줄들)을 읽어 글을 이어 붙인다. 조각이 올 때마다 onChunk 를 그때까지 받은 글과 함께 부른다 */
+export const readStreamText = async (res: Response, onChunk: (soFar: string) => void = () => {}): Promise<string> => {
   let out = '';
   const take = (line: string) => {
     if (!line.startsWith('data:')) return;
@@ -292,7 +313,6 @@ export const readStreamText = async (res: Response, onChunk: () => void = () => 
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    onChunk();
     buf += dec.decode(value, { stream: true });
     let i = buf.indexOf('\n');
     while (i >= 0) {
@@ -300,10 +320,21 @@ export const readStreamText = async (res: Response, onChunk: () => void = () => 
       buf = buf.slice(i + 1);
       i = buf.indexOf('\n');
     }
+    onChunk(out);
   }
   take((buf + dec.decode()).trim());
   return out;
 };
+
+/** 받는 도중의 글에서 서류 확인(docCheck)이 '불일치'로 끝까지 왔으면 그 까닭(없으면 ''), 아직이거나 일치면 null */
+export const docMismatchOf = (soFar: string): string | null => {
+  if (!/"result"\s*:\s*"불일치"/.test(soFar)) return null;
+  const m = /"reason"\s*:\s*"((?:[^"\\]|\\.)*)"/.exec(soFar);
+  if (!m) return null;   // 까닭이 다 올 때까지 조금 더 받는다
+  try { return JSON.parse(`"${m[1]}"`) as string; } catch { return m[1]; }
+};
+const mismatchMessage = (reason: string) =>
+  `분석을 멈췄습니다 — 올린 서류가 이 물건 것이 아닌 것 같습니다${reason ? `: ${reason}` : ''}. 사건번호 · 주소가 맞는 서류로 바꿔 다시 해 주세요.`;
 
 /** 서류를 Gemini 에 보내 권리분석을 받아 온다 */
 
@@ -345,18 +376,22 @@ export const askRightsAnalysis = async (
 
   let res: Response | null = null;
   let text = '';
+  let mismatch = '';
   // 혼잡(503)·잠깐 한도(429)는 잠시 뒤 다시 — 두 번까지 (geminiPdf 와 같은 규칙)
   let model = RIGHTS_MODEL;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if (signal?.aborted) throw new GeminiError('분석을 취소했습니다');
     // 시간 제한 — 소식 없이 오래 있거나, 전체가 너무 길거나, 사용자가 취소하면 끊는다
     const ctrl = new AbortController();
-    let why = '' as 'idle' | 'total' | '';
+    let why = '' as 'idle' | 'total' | 'mismatch' | '';
     let idle = setTimeout(() => { why = 'idle'; ctrl.abort(); }, RIGHTS_IDLE_MS);
     const total = setTimeout(() => { why = 'total'; ctrl.abort(); }, RIGHTS_TOTAL_MS);
-    const onChunk = () => {
+    const onChunk = (soFar: string) => {
       clearTimeout(idle);
       idle = setTimeout(() => { why = 'idle'; ctrl.abort(); }, RIGHTS_IDLE_MS);
+      // 서류가 이 물건 것이 아니라는 답이 보이면 끝까지 기다리지 않고 끊는다
+      const mis = docMismatchOf(soFar);
+      if (mis !== null) { mismatch = mis; why = 'mismatch'; ctrl.abort(); }
     };
     const onCancel = () => ctrl.abort();
     signal?.addEventListener('abort', onCancel);
@@ -375,6 +410,7 @@ export const askRightsAnalysis = async (
         errMsg = (Array.isArray(b) ? b[0]?.error?.message : b.error?.message) ?? '';
       }
     } catch (err) {
+      if (why === 'mismatch') throw new GeminiError(mismatchMessage(mismatch));
       if (err instanceof GeminiError) throw err;
       if (signal?.aborted) throw new GeminiError('분석을 취소했습니다');
       if (why === 'idle') throw new GeminiError(`AI 가 ${RIGHTS_IDLE_MS / 1000}초 동안 답이 없었습니다 — 잠시 뒤 다시 해 주세요`);
@@ -402,9 +438,12 @@ export const askRightsAnalysis = async (
   let raw: Partial<RightsAi>;
   try {
     raw = JSON.parse(text) as Partial<RightsAi>;
+    const dc = (raw as { docCheck?: { result?: string; reason?: string } }).docCheck;
+    if (dc?.result === '불일치') throw new GeminiError(mismatchMessage(String(dc.reason ?? '')));
     // eslint-disable-next-line no-console
     console.log('%c[AI 권리분석] 받은 답', 'color:#16a34a;font-weight:700', raw);
-  } catch {
+  } catch (err) {
+    if (err instanceof GeminiError) throw err;
     throw new GeminiError('AI 분석 실패 — 답을 읽지 못했습니다');
   }
   return normalizeRightsAi(raw, parts.map((p) => p.label));
