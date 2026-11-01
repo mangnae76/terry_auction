@@ -39,7 +39,7 @@ export const OPS_MENU: OpsGroup[] = [
     items: [
       { key: 'maintenance', label: '점검 모드', desc: '점검 중 안내를 띄우고 쓰기를 막는다', need: '점검 상태를 담을 자리 하나' },
       { key: 'plans', label: '요금제 관리', desc: '기준가와 기간별 할인율', need: '지금은 billingPlans.ts 에 적혀 있습니다' },
-      { key: 'points', label: '포인트 정책 관리', desc: '적립률·등급 기준·쓰는 단위', need: '지금은 pointPolicy.ts 에 적혀 있습니다' },
+      { key: 'points', label: '포인트 정책 관리', desc: '적립율·등급 기준·쓰는 단위', need: '지금은 pointPolicy.ts 에 적혀 있습니다' },
       { key: 'trial', label: '무료체험 관리', desc: '체험 일수와 안내 글', need: '지금은 trialInfo.ts 에 적혀 있습니다' },
       { key: 'faq', label: 'FAQ 관리', desc: '고객센터 도움말 묶음', need: '지금은 supportFaq.ts 에 적혀 있습니다' },
       { key: 'legal', label: '약관 관리', desc: '이용약관·개인정보처리방침 판 올리기', need: '지금은 legalTerms.ts 에 적혀 있습니다' },

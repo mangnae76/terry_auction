@@ -1375,6 +1375,18 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="more"] .pt-benefit small { font-size: 14px !important; }
 .app-page[data-k="more"] .pt-benefit strong { font-size: 20px !important; }
 .app-page[data-k="more"] .pt-benefit em { font-size: 14px !important; }
+/* 좁은 화면(휴대폰 폭) — 마이페이지 · 포인트 카드가 화면 밖으로 나가고 이름이 세로로 쪼개지던 것(BUG-0025).
+   이름 줄은 한 줄 통째로, 숫자 칸은 그 아래, 카드는 한 열 · 등급은 두 열 · 혜택은 한 열로 쌓는다 */
+@media (max-width: 640px) {
+  .app-page[data-k="more"] .mpc-sum { flex-wrap: wrap !important; height: auto !important; padding: 12px 14px !important; row-gap: 8px !important; }
+  .app-page[data-k="more"] .mpc-sum .mpc-who { flex: 1 0 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .app-page[data-k="more"] .mpc-cell { flex: 1 1 0; min-width: 0; padding: 6px 8px !important; }
+  .app-page[data-k="more"] .mpc-grid { grid-template-columns: minmax(0, 1fr) !important; padding: 0 14px 14px !important; }
+  .app-page[data-k="more"] .pt-body > section { padding: 16px 14px !important; }
+  .app-page[data-k="more"] .pt-body > section[data-sec="grade"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .app-page[data-k="more"] .pt-body > section[data-sec="benefit"] { grid-template-columns: minmax(0, 1fr) !important; }
+  .app-page[data-k="more"] :is(.pt-grade, .pt-card) { padding: 12px !important; min-width: 0; }
+}
 /* 고객센터 — 카드 폭을 위 박스와 같게, 문의 줄은 이름 옆에 설명 한 줄 */
 .app-page[data-k="more"] .sup-body { padding: 0 !important; gap: 12px !important; }
 .app-page[data-k="more"] .sup-body > .sup-app { order: -1; }   /* 앱 내려받기를 이용방법 및 안내 위로 */
