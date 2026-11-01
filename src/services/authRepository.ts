@@ -226,13 +226,33 @@ export interface SignupExtra {
   agreedAt: string;
 }
 
-export const saveSignupExtra = async (uid: string, extra: SignupExtra): Promise<void> => {
-  if (!uid || !firestore) return;
-  try {
-    await setDoc(doc(firestore, USERS_COLLECTION, uid), { ...extra }, { merge: true });
-  } catch (err) {
-    console.warn('[auth] 가입 추가정보 저장 실패:', err);
+/** 가입 정보를 마이페이지(내 정보 · AccountDetail)가 읽는 칸으로 옮긴다 — 이름 · 메일 앞뒤 · 휴대폰 세 칸 · 문자수신 · 사업자 구분 */
+export const signupAccountFields = (email: string, extra: SignupExtra): Partial<AccountDetail> => {
+  const [id = '', domain = ''] = email.trim().split('@');
+  const [p1 = '', p2 = '', p3 = ''] = extra.phone.split('-');
+  return {
+    nickname: extra.realName,
+    emailId: id, emailDomain: domain,
+    phone1: p1, phone2: p2, phone3: p3,
+    smsOptIn: extra.smsOptIn,
+    ...(extra.bizType ? { bizType: extra.bizType } : {}),
+  };
+};
+
+/** 가입 정보 저장 — 저장했으면 true. 한 번 실패하면 잠깐 뒤 한 번 더 해 본다(막 만든 계정의 토큰이 늦게 붙는 때) */
+export const saveSignupExtra = async (uid: string, email: string, extra: SignupExtra): Promise<boolean> => {
+  if (!uid || !firestore) return false;
+  const body = { ...extra, ...signupAccountFields(email, extra) };
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      await setDoc(doc(firestore, USERS_COLLECTION, uid), body, { merge: true });
+      return true;
+    } catch (err) {
+      console.warn('[auth] 가입 추가정보 저장 실패:', err);
+      if (i === 0) await new Promise((r) => setTimeout(r, 1500));
+    }
   }
+  return false;
 };
 
 /** 로그인 유지 — 켜면 브라우저(앱)를 닫아도 로그인이 남고, 끄면 창을 닫을 때 로그아웃된다.

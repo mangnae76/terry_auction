@@ -106,10 +106,12 @@ const onCheckId = async () => {
   }
 };
 
+/* 휴대폰 문자 인증 — 서비스 오픈 때 단추와 함께 연다(docs/서비스오픈목록.md)
 const onVerifyPhone = () => {
   notice.value = '문자 인증 — 준비 중입니다. 번호는 그대로 저장됩니다.';
   window.setTimeout(() => { notice.value = ''; }, 2200);
 };
+*/
 
 const onSubmit = async () => {
   if (submitting.value) return;
@@ -127,7 +129,8 @@ const onSubmit = async () => {
   submitting.value = true;
   try {
     await authStore.signup(mail, password.value, realName.value.trim());
-    await saveSignupExtra(authStore.uid, {
+    // 가입 정보는 users/{uid} 에 — 마이페이지(내 정보)가 읽는 칸 이름 그대로 함께 적는다
+    const saved = await saveSignupExtra(authStore.uid, mail, {
       realName: realName.value.trim(),
       phone: [phone1.value, phone2.value, phone3.value].filter(Boolean).join('-'),
       region: region.value,
@@ -137,6 +140,8 @@ const onSubmit = async () => {
       smsOptIn: agreeSms.value,
       agreedAt: new Date().toISOString(),
     });
+    // 계정은 이미 만들어졌다 — 정보만 못 적었으면 알리고 그대로 들어간다(마이페이지에서 다시 적을 수 있다)
+    if (!saved) window.alert('가입은 되었지만 연락처 등 가입 정보를 저장하지 못했습니다. 마이페이지 › 내 정보에서 다시 적어 주세요.');
     router.replace('/auctions/watchlist');
   } catch {
     /* 잘못된 까닭은 store.error 에 담긴다 */
@@ -195,7 +200,9 @@ const onSubmit = async () => {
           <input :value="phone1" class="su-input" inputmode="numeric" @input="onPhone('p1', $event.target as HTMLInputElement, 3)" />
           <input :value="phone2" class="su-input" inputmode="numeric" placeholder="0000" @input="onPhone('p2', $event.target as HTMLInputElement, 4)" />
           <input :value="phone3" class="su-input" inputmode="numeric" placeholder="0000" @input="onPhone('p3', $event.target as HTMLInputElement, 4)" />
+          <!-- 휴대폰 문자 인증 — 서비스 오픈 때 연다(docs/서비스오픈목록.md). 지금은 번호만 받아 저장한다
           <button type="button" class="su-sidebtn fill" @click="onVerifyPhone">인증요청</button>
+          -->
         </div>
 
         <span :class="['su-reqwrap', { req: webEmbed }]"><select v-model="region" class="su-input">

@@ -58,6 +58,16 @@ service cloud.firestore {
     // 사용자 프로필 — 본인 것만 읽고 쓸 수 있음
     match /users/{uid} {
       allow read, write: if isAllowedUser() && request.auth.uid == uid;
+      // 막 가입한 사람(허용 목록 밖)도 제 문서의 가입 정보 · 내 정보 칸만 읽고 적는다 — 서비스 이용 권한(isAllowedUser)과는 따로.
+      // 무료이용 · 포인트 같은 '받는 것'은 본인이 적을 수 없게 칸 목록에서 뺐다(서비스 오픈 때 서버가 준다 — docs/서비스오픈목록.md)
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly([
+          'uid', 'email', 'nickname', 'createdAt',
+          'realName', 'phone', 'region', 'joinPath', 'joinPathDetail', 'referralCode', 'smsOptIn', 'agreedAt',
+          'emailId', 'emailDomain', 'emailOptIn', 'phone1', 'phone2', 'phone3', 'address1', 'address2',
+          'bizType', 'houseCount', 'salesByYear', 'otherIncomeByYear'
+        ]);
 
       // ===== 집 PC 수집 도우미(관리자만) — 웹 시장분석 › 경매사례에서 명령, 집 PC agent.py 가 옥션원 · 탱크옥션 수집 =====
       // (auction-web 의 규칙을 그대로 옮기고, 허용 목록 대신 운영자 + 본인으로 막는다)
