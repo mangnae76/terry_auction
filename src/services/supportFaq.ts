@@ -1,6 +1,8 @@
 // 고객센터 — 도움말과 안내 글을 여기 한곳에 둔다. 화면(SupportPage)은 그리기만 한다.
 // 회사·서비스 이름은 모두 '마이턴 옥션'으로 적는다.
 
+import { MONTH_PRICE, PLANS } from './billingPlans';
+
 export type FaqTag = '정보이용' | '회원·결제' | '기타';
 
 export interface FaqItem {
@@ -39,7 +41,8 @@ export const SUPPORT_FAQ: FaqItem[] = [
   {
     tag: '회원·결제',
     q: '이용요금이 얼마인가요?',
-    a: '1개월 39,000원이 기준이고 기간을 길게 고를수록 할인이 붙습니다 (3개월 15%, 6개월 25%, 12개월 35%). 더보기 › 결제하기에서 기간을 고르면 실제 결제 금액이 바로 보입니다.',
+    // 금액 · 할인율은 결제하기와 같은 곳(billingPlans)에서 — 기준가를 바꾸면 이 글도 따라간다
+    a: `1개월 ${MONTH_PRICE.toLocaleString('ko-KR')}원이 기준이고 기간을 길게 고를수록 할인이 붙습니다 (${PLANS.filter((p) => !p.base).map((p) => `${p.label} ${p.off}%`).join(', ')}). 더보기 › 결제하기에서 기간을 고르면 실제 결제 금액이 바로 보입니다.`,
   },
   {
     tag: '회원·결제',

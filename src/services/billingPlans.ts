@@ -2,7 +2,7 @@
 // 결제 화면과 로그인 화면의 '결제안내'가 같은 값을 본다.
 
 /** 1개월 기준가 — 긴 기간은 여기에 할인율만 걸어 셈한다 (값은 여기 한 줄만 고치면 된다) */
-export const MONTH_PRICE = 39_000;
+export const MONTH_PRICE = 99_000;   // 2026-11-02 39,000 → 99,000 (기간별 금액 · 월 환산 · 할인액은 여기서 저절로 계산된다)
 
 export interface Plan {
   key: string;
