@@ -6,6 +6,7 @@ name: 새벽 실거래 적재
 on:
   schedule:
     - cron: '17 16 * * *'  # UTC 16:17 = 한국 01:17. 정시(:00 · :30)는 GitHub 예약이 몰려 늦거나 빠지기 쉬워 비켜 잡았다
+    - cron: '53 8 * * *'   # UTC 08:53 = 한국 17:53 — 오늘 예약이 도는지 보는 시험. 확인되면 지운다
   workflow_dispatch:         # Actions 탭에서 손으로도 돌린다
     inputs:
       extra_targets:
