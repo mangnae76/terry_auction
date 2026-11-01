@@ -2,6 +2,7 @@
 // auction-web(src/services/data.ts)과 같은 문서 모양을 쓴다 — 도우미 쪽 코드를 고치지 않고 그대로 붙이려고.
 //   users/{uid}/agent/control        웹 → 도우미 {cmd:{id,name,args,at}, stop:{id,at}, webSeenAt}
 //   users/{uid}/agent/status         도우미 → 웹 {at, ready, busy, enriching, prog, message, …}
+//   users/{uid}/agent/queue          웹 ↔ 도우미 모을 물건 대기열 {items: [{case, addr, at}]} (도우미가 끝난 사건을 뺀다)
 //   users/{uid}/agent/coverage       도우미 → 웹 모은 동네 {dongs: {'인천 서구 검암동': {at(ms), n, site, src, months}}}
 //   users/{uid}/datasets/main        {count, chunks, version, by, updatedAt}
 //   users/{uid}/datasets/main/chunks/{i}  {i, data: 레코드 JSON 글자, v}
@@ -9,7 +10,7 @@
 import { collection, doc, getDoc, getDocs, onSnapshot, serverTimestamp, setDoc, type Unsubscribe } from 'firebase/firestore';
 import { firestore } from './firebase';
 
-export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich';
+export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue';
 export type AgentCmdArgs = { site?: '옥션원' | '탱크옥션'; months?: 0 | 6 | 12 | 24 | 36; src?: 'near' | 'same'; fresh?: boolean };
 export type AgentStatus = {
   at?: { toMillis(): number } | null;
@@ -23,7 +24,9 @@ export type AgentStatus = {
   site?: string;
 };
 /** 모은 동네 하나 — at 은 마지막으로 모은 시각(ms), n 은 그때 그 동네 물건 수 */
-export type AgentCoverage = { at: number; n: number; site?: string; src?: string; months?: number };
+export type AgentCoverage = { at: number; n: number; region?: string; kind?: string; site?: string; src?: string; months?: number };
+/** 모을 물건 하나 — case 사건번호('2026타경503385'), addr 소재지, at 올린 시각(ms) */
+export type AgentQueueItem = { case: string; addr?: string; at: number };
 export type AgentDatasetMeta = { count: number; chunks: number; version: number; by?: string; updatedAt?: { toMillis(): number } | null };
 /** 도우미가 모은 매각물건 한 줄 — nearby_avg.py FIELDS 그대로(한글 이름) */
 export type SaleRecord = Record<string, string | number | null>;
@@ -34,6 +37,7 @@ const db = () => {
 };
 const controlRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'control');
 const statusRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'status');
+const queueRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'queue');
 const coverageRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'coverage');
 const metaRef = (uid: string) => doc(db(), 'users', uid, 'datasets', 'main');
 
@@ -58,6 +62,16 @@ export const watchAgentStatus = (uid: string, cb: (s: AgentStatus | null) => voi
   onSnapshot(statusRef(uid), (s) => cb(s.exists() ? (s.data() as AgentStatus) : null), err);
 export const watchAgentDatasetMeta = (uid: string, cb: (m: AgentDatasetMeta | null) => void, err: (e: Error) => void = () => {}): Unsubscribe =>
   onSnapshot(metaRef(uid), (s) => cb(s.exists() ? (s.data() as AgentDatasetMeta) : null), err);
+
+export const watchAgentQueue = (uid: string, cb: (items: AgentQueueItem[]) => void, err: (e: Error) => void = () => {}): Unsubscribe =>
+  onSnapshot(queueRef(uid), (s) => {
+    const items = (s.exists() ? (s.data() as { items?: unknown }).items : null);
+    cb(Array.isArray(items) ? items.filter((x): x is AgentQueueItem => !!x && typeof x === 'object' && typeof (x as AgentQueueItem).case === 'string') : []);
+  }, err);
+/** 대기열 통째로 다시 적기 (200건까지) */
+export const saveAgentQueue = async (uid: string, items: AgentQueueItem[]): Promise<void> => {
+  await setDoc(queueRef(uid), { items: items.slice(0, 200).map((x) => ({ case: x.case, addr: x.addr ?? '', at: x.at })) });
+};
 
 /** 모은 동네 — 최근에 모은 순 */
 export const watchAgentCoverage = (uid: string, cb: (list: Array<AgentCoverage & { key: string }>) => void, err: (e: Error) => void = () => {}): Unsubscribe =>

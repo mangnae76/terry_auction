@@ -91,6 +91,13 @@ service cloud.firestore {
           && (!('stop' in agentData()) || (agentData().stop is map && agentData().stop.keys().hasOnly(['id', 'at']) && agentData().stop.id is string && agentData().stop.id.size() <= 64))
           && (!('webSeenAt' in agentData()) || agentData().webSeenAt is timestamp);
       }
+      // 웹 ↔ 집 PC 모을 물건 대기열 {items: [{case, addr, at}]} — 웹이 올리고, 도우미가 끝난 사건을 뺀다
+      match /agent/queue {
+        allow get: if isAgentOwner(uid);
+        allow create, update: if isAgentOwner(uid)
+          && agentData().keys().hasOnly(['items'])
+          && agentData().items is list && agentData().items.size() <= 200;
+      }
       // 집 PC → 웹 모은 동네 {dongs: {'인천 서구 검암동': {at, n, site, src, months}}}
       match /agent/coverage {
         allow get: if isAgentOwner(uid);
@@ -115,7 +122,7 @@ service cloud.firestore {
     function validAgentCmd(c) {
       return c is map && c.keys().hasOnly(['id', 'name', 'args', 'at'])
         && c.id is string && c.id.size() <= 64
-        && c.name in ['open', 'screen', 'auto', 'enrich']
+        && c.name in ['open', 'screen', 'auto', 'enrich', 'queue']
         && c.args is map && c.args.keys().hasOnly(['site', 'months', 'src', 'fresh'])
         && (!('site' in c.args) || c.args.site in ['옥션원', '탱크옥션'])
         && (!('months' in c.args) || c.args.months in [0, 6, 12, 24, 36])
