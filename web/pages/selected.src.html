@@ -644,8 +644,9 @@ button { cursor: pointer; }
 .mk-sale .sc-box { padding: 12px 14px 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; }
 .mk-sale .sc-sub { margin: 0 0 10px; font-size: 15px; font-weight: 800; color: #111827; }
 .mk-sale .sc-table + .sc-sub { margin-top: 16px; }
+.mk-sale .sc-sub .sc-cnt { margin-left: 8px; font-size: 14px; font-weight: 700; color: var(--blue); }
 .mk-sale .sc-table { border: 1px solid #e8ecf3; border-radius: 8px; overflow: hidden; overflow-x: auto; }
-.mk-sale .sc-table table { width: 100%; min-width: 1450px; border-collapse: collapse; table-layout: fixed; }
+.mk-sale .sc-table table { width: 100%; min-width: 1400px; border-collapse: collapse; table-layout: fixed; }
 .mk-sale .sc-table :is(th, td) { white-space: nowrap; }
 .mk-sale .sc-table td.n { text-align: right; }
 .mk-sale .sc-table td.addr { overflow: hidden; text-overflow: ellipsis; }
@@ -5370,19 +5371,22 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   /* 인근 매각물건 분석 — 손품분석 시세분석에 있던 매각사례(동일지번 · 인근 매각물건 빈 표)를 여기로. 받는 곳을 붙이기 전까지 비워 둔다 */
   function saleCaseCard() {
     /* 칸은 auction-web 검색리스트(auction_gui.LIST_COLS)와 같게 */
-    const cols = ['사건번호', '매각년월일', '감정가', '최저입찰가', '매각가', '매각가율', '유찰회수', '응찰', '전용㎡/평', '건축연월', '건축년차', '층', '주소'];
-    const widths = [116, 96, 104, 104, 104, 74, 72, 52, 104, 76, 72, 44];   /* 주소는 남는 자리 전부 — 두 표의 칸이 같은 자리에 오게 */
+    const cols = ['사건번호', '매각년월일', '감정가', '최저입찰가', '매각가', '매각가율', '유찰회수', '전용㎡/평', '건축연월', '건축년차', '층', '주소'];
+    const widths = [116, 96, 104, 104, 104, 74, 72, 104, 76, 72, 44];   /* 주소는 남는 자리 전부 — 두 표의 칸이 같은 자리에 오게 */
     const head = `<colgroup>${widths.map((w) => `<col style="width:${w}px">`).join('')}<col></colgroup><thead><tr>${cols.map((c) => `<th${c === '주소' ? ' class="addr"' : ''}>${c}</th>`).join('')}</tr></thead>`;
     const blank = `<div class="sc-table"><table>${head}<tbody>${[1, 2, 3].map(() => `<tr>${cols.map(() => '<td>-</td>').join('')}</tr>`).join('')}</tbody></table></div>`;
     /* 관리자 — 집 PC 도우미가 모은 물건(출처 동일지번 · 인근)으로 채운다. 최근 매각부터 */
     const filled = (rows) => (rows.length ? `<div class="sc-table has"><table>${head}<tbody>${rows.map(agRowHtml).join('')}</tbody></table></div>` : blank);
     const mine = agIsAdmin() && AG.recs.length;
-    const sameT = mine ? filled(AG.recs.filter((r) => r['출처'] === '동일지번')) : blank;
-    const nearT = mine ? filled(AG.recs.filter((r) => r['출처'] !== '동일지번')) : blank;
+    const sameR = mine ? AG.recs.filter((r) => r['출처'] === '동일지번') : [];
+    const nearR = mine ? AG.recs.filter((r) => r['출처'] !== '동일지번') : [];
+    const sameT = mine ? filled(sameR) : blank;
+    const nearT = mine ? filled(nearR) : blank;
+    const cnt = (rows) => (mine ? `<span class="sc-cnt">${rows.length.toLocaleString('ko-KR')}건</span>` : '');
     const gavel = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>';
     return `<section class="sc-card"><div class="sc-head">${gavel}매각사례</div><div class="sc-box">`
-      + `<div class="sc-sub">동일지번 매각물건</div>${sameT}`
-      + `<div class="sc-sub">인근 매각물건 분석</div>${nearT}`
+      + `<div class="sc-sub">동일지번 매각물건${cnt(sameR)}</div>${sameT}`
+      + `<div class="sc-sub">인근 매각물건${cnt(nearR)}</div>${nearT}`
       + `</div></section>`;
   }
   /* ===== 집 PC 수집 도우미(관리자만) — auction-web 과 같은 방식: 여기서 누르면 Firestore 로 명령 → 집 PC agent.py 가 로그인된 크롬으로 옥션원 · 탱크옥션 수집 → 관리자 계정 아래에만 저장 =====
@@ -5415,7 +5419,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const fl = r['층'] != null && r['층'] !== '' ? esc(String(r['층'])) : '-';
     const addr = esc(String(r['소재지'] || ''));
     const won = (v) => (Number(v) > 0 ? `<td class="n">${agWon(v)}</td>` : '<td>-</td>');
-    return `<tr><td>${esc(String(r['사건번호'] || '-'))}</td><td>${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}<td>${rate}</td><td>${int(r['유찰회수'])}</td><td>${int(r['응찰자수'])}</td><td>${area}</td><td>${built}</td><td>${age}</td><td>${fl}</td><td class="addr" title="${addr}">${addr || '-'}</td></tr>`;
+    return `<tr><td>${esc(String(r['사건번호'] || '-'))}</td><td>${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}<td>${rate}</td><td>${int(r['유찰회수'])}</td><td>${area}</td><td>${built}</td><td>${age}</td><td>${fl}</td><td class="addr" title="${addr}">${addr || '-'}</td></tr>`;
   }
   function agPanelHtml() {
     const T = CLOUD.T; const s = AG.status;
