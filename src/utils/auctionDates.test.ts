@@ -9,11 +9,12 @@ describe('auctionDates', () => {
   });
   it('낙찰일은 매각기일과 같아야 한다', () => {
     const a = { eventDate: '2026-11-10' };
-    expect(wonDateError(a, '2026-11-10')).toBe('');
-    expect(wonDateError(a, '2026-11-09')).toContain('26년 11월 10일');
-    expect(wonDateError(a, '2026-11-21').split('\n')[1]).toBe('26년 11월 21일은 입력할 수 없습니다.');
-    expect(wonDateError(a, '2026-11-11')).not.toBe('');
-    expect(wonDateError({}, '2026-11-11')).toBe('');   // 매각기일을 모르면 막지 않는다
+    expect(wonDateError(a, '2026-11-10', true)).toBe('');
+    expect(wonDateError(a, '2026-11-09', true)).toContain('26년 11월 10일');
+    expect(wonDateError(a, '2026-11-21', true).split('\n')[1]).toBe('26년 11월 21일은 입력할 수 없습니다.');
+    expect(wonDateError(a, '2026-11-11', true)).not.toBe('');
+    expect(wonDateError(a, '2026-11-11')).toBe('');   // 스위치를 끈 지금은 막지 않는다
+    expect(wonDateError({}, '2026-11-11', true)).toBe('');   // 매각기일을 모르면 막지 않는다
   });
   it('잔금기한 — 적은 날짜가 먼저, 없으면 낙찰일 + 45일 예정', () => {
     expect(balanceDueOf({ balanceDueDate: '2026-12-20', wonDate: '2026-11-10' })).toEqual({ date: '2026-12-20', expected: false });

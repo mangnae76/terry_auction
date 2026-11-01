@@ -3,6 +3,10 @@
 // 잔금기한은 법원 통지서의 날짜가 먼저고, 비어 있으면 낙찰일(없으면 매각기일)에서 45일로 어림한 예정일을 보여 준다.
 import type { AuctionDetail } from '../types/auction';
 
+/** 날짜 막기 스위치 — 시험 기간이라 꺼 둔다(2026-11-02 사용자 요청). 끄면 기일 전에도 낙찰~매도를 고르고, 낙찰일도 매각기일과 다른 날로 적을 수 있다.
+ *  서비스 오픈 때 true 로(docs/서비스오픈목록.md) */
+export const STAGE_BEFORE_SALE_GUARD = false;
+
 /** 낙찰일에서 잔금기한까지 어림하는 날수 — 매각허가 · 확정 뒤 대금지급기한이 보통 이쯤 */
 export const BALANCE_DUE_DAYS = 45;
 
@@ -26,8 +30,10 @@ const plusDays = (ymd: string, n: number): string => {
   return `${t.getFullYear()}-${p2(t.getMonth() + 1)}-${p2(t.getDate())}`;
 };
 
-/** 낙찰일로 적을 수 있는지 — 안 되면 까닭 글, 되면 빈 글 */
-export const wonDateError = (a: DateLike, value: string): string => {
+/** 낙찰일로 적을 수 있는지 — 안 되면 까닭 글, 되면 빈 글.
+ *  시험 기간엔 아무 날이나 고를 수 있게 꺼 둔다(위 STAGE_BEFORE_SALE_GUARD 와 같은 스위치, 2026-11-02 사용자 요청) */
+export const wonDateError = (a: DateLike, value: string, on: boolean = STAGE_BEFORE_SALE_GUARD): string => {
+  if (!on) return '';
   const sale = ymdOf(a.eventDate);
   const v = ymdOf(value);
   if (!sale || !v || v === sale) return '';
@@ -59,9 +65,6 @@ const todayYmd = (): string => {
 /** 입찰 기일이 지나야 고를 수 있는 단계 — 기일 전엔 결과(낙찰 · 유찰 · 취소)도 매도도 있을 수 없다 */
 export const AFTER_SALE_STAGES = ['낙찰', '유찰', '취소', '매도'];
 
-/** 기일 전 단계 막기 스위치 — 시험 기간이라 꺼 둔다(2026-11-02 사용자 요청: 기일 전에도 낙찰~매도를 고를 수 있게).
- *  서비스 오픈 때 true 로(docs/서비스오픈목록.md) */
-export const STAGE_BEFORE_SALE_GUARD = false;
 
 /** 그 단계를 지금 고를 수 있는지 — 안 되면 알림 글, 되면 빈 글. 기일 당일은 고를 수 있다 */
 export const stageBeforeSaleError = (a: { eventDate?: string }, stage: string, today: string = todayYmd(), on: boolean = STAGE_BEFORE_SALE_GUARD): string => {
