@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // 입찰 캘린더 — 선정해 둔 물건의 입찰일을 달력에 펼쳐 본다.
+import { BALANCE_DUE_DAYS } from '../utils/auctionDates';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
@@ -73,7 +74,6 @@ type CalKind = 'bid' | 'won' | 'balance' | 'sell';
 type CalItem = { a: AuctionDetail; kind: CalKind };
 
 /** 잔금 기한을 적어 두지 않았으면 낙찰일 + 45일로 본다 (알림과 같은 셈) */
-const BALANCE_DUE_DAYS = 45;
 const addDays = (key: string, days: number) => {
   const [y, m, d] = key.split('-').map(Number);
   if (!y) return '';

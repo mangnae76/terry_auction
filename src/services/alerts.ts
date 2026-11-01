@@ -6,6 +6,7 @@
 //
 // 푸시(FCM)는 아직 붙이지 않았다. 지금은 앱을 열었을 때 보이는 알림이고,
 // 푸시를 붙일 때도 보낼 내용은 여기서 그대로 가져다 쓰면 된다.
+import { BALANCE_DUE_DAYS } from '../utils/auctionDates';
 import type { AuctionDetail } from '../types/auction';
 import type { InteriorExpenseRecord } from '../types/finance';
 import { shortAddr } from '../utils/address';
@@ -152,7 +153,6 @@ export const ddayText = (n: number | null): string => {
 };
 
 /** 낙찰일로부터 대금지급기한까지 — 법원 통지가 보통 이 언저리에 떨어진다 */
-const BALANCE_DUE_DAYS = 45;
 /** 취득일(잔금 납부일)부터 취득세 신고기한까지 */
 const ACQ_TAX_DAYS = 60;
 

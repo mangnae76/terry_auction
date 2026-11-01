@@ -30,7 +30,7 @@ const onOk = async () => {
         오늘 하루 보지 않기
       </label>
       <div class="acf-btns">
-        <button type="button" class="cancel" @click="emit('close')">취소</button>
+        <button v-if="!box.alertOnly" type="button" class="cancel" @click="emit('close')">취소</button>
         <button type="button" :class="['ok', { calm: box.tone === 'calm' }]" @click="onOk">{{ box.okLabel }}</button>
       </div>
     </div>

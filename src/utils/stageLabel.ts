@@ -62,9 +62,9 @@ export const stageDates = (
   item: Pick<AuctionDetail, 'wonDate' | 'sellDate'> & { eventDate?: string },
   stage: string,
 ): { wonDate: string; sellDate: string; note: string } => {
-  // 낙찰일 기본값 — 매각기일이 이미 지났으면 그날(그날 낙찰된 것), 아니면 오늘 (BUG-0004 · 0012)
+  // 낙찰일 기본값 — 매각기일 그날(낙찰일은 입찰한 날과 같다 · utils/auctionDates). 매각기일을 모를 때만 오늘 (BUG-0004 · 0012)
   const sale = String(item.eventDate ?? '').slice(0, 10);
-  const wonDefault = /^\d{4}-\d{2}-\d{2}$/.test(sale) && sale <= todayYmd() ? sale : todayYmd();
+  const wonDefault = /^\d{4}-\d{2}-\d{2}$/.test(sale) ? sale : todayYmd();
   const keepWon = stage === '낙찰' || stage === '매도';
   const wantSell = stage === '매도';
   // '낙찰'을 고를 때만 낙찰일을 오늘로 적는다.

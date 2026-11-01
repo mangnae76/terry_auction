@@ -9,6 +9,8 @@ export type ConfirmBox = {
   /** 단추 색 — 기본은 빨강(지우는 일). 'calm' 은 되돌릴 수 있는 일(보관 등) */
   tone?: 'danger' | 'calm';
   run: () => Promise<void> | void;
+  /** 알리기만 하는 창 — 취소 단추 없이 확인 하나(맞지 않는 날짜 등) */
+  alertOnly?: boolean;
 };
 
 /** 오늘 날짜 — 하루가 지나면 '보지 않기'가 저절로 풀린다 */
