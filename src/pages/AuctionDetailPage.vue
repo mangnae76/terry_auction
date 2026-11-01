@@ -2524,7 +2524,7 @@ const resetScenarioRates = (sc: ProfitScenario) => {
 
 // 웹은 늘 새화면 — 새화면/클래식 바꾸기 단추를 뺐다
 const webNew = computed(() => webEmbed);
-/** 확정한 안 — 동그라미를 누르면 그 안으로(확정은 하나). 웹 낙찰관리 · 세금분석 · 자금관리가 이 안 값을 쓴다 */
+/** 확정한 안 — 동그라미를 누르면 그 안으로(확정은 하나). 웹 낙찰이후 · 세금분석 · 자금관리가 이 안 값을 쓴다 */
 const confirmedIdx = computed(() => confirmedMarkOf(auction.value));   // -1 = 확정 안 함(처음엔 아무것도 체크돼 있지 않다)
 const confirmPlan = (ti: number) => {
   const a = auction.value; if (!a || !profitScenarios.value[ti]) return;

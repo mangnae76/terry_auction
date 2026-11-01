@@ -5,9 +5,7 @@ import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import AgencyBookPanel from '../components/AgencyBookPanel.vue';
-import { inject, ref } from 'vue';
-// 웹은 메뉴 이름이 '낙찰관리' 다
-const webEmbed = inject<boolean>('webEmbed', false);
+import { ref } from 'vue';
 
 const router = useRouter();
 const toastText = ref('');
@@ -26,7 +24,7 @@ const onSaved = (count: number) => {
 
     <p class="agb-note">
       여기 적어 둔 업체가 물건마다의 <b>부동산 유선 상담 · 현장 상담</b>과
-      {{ webEmbed ? '낙찰관리' : '낙찰이후' }}의 <b>중개 의뢰 현황</b> 상호 목록에 그대로 섭니다.
+      낙찰이후의 <b>중개 의뢰 현황</b> 상호 목록에 그대로 섭니다.
       상호를 고르면 전화번호도 따라 들어갑니다.
     </p>
 
