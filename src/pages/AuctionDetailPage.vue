@@ -2300,6 +2300,12 @@ const scSetBidByApprPct = (sc: ProfitScenario, raw: string | number) => {
 };
 /** 입찰가 슬라이더 — 최저가 아래로는 내려가지 않는다(최저가 미만은 무효 입찰). 바닥에 닿은 안(si)은 빨갛게 알린다 */
 const bidFloorHit = ref(-1);
+/** 슬라이더 왼쪽 끝 — 보통 50%, 최저가가 그보다 낮으면(3차 49% · 4차 34% 등) 최저가 비율까지 */
+const bidSlideMin = computed(() => {
+  const min = currentMinBidOf(auction.value);
+  const pct = apprValue.value > 0 && min > 0 ? (min / apprValue.value) * 100 : 50;
+  return Math.min(50, Math.floor(pct));
+});
 const scSlideBid = (sc: ProfitScenario, si: number, el: HTMLInputElement) => {
   const pct = parseFloat(el.value);
   if (!Number.isFinite(pct) || apprValue.value <= 0) return;
@@ -2307,7 +2313,7 @@ const scSlideBid = (sc: ProfitScenario, si: number, el: HTMLInputElement) => {
   const want = Math.round((apprValue.value * pct) / 100);
   if (min > 0 && want <= min) {
     sc.bid.myBidValue = min;
-    el.value = String(Math.min(110, Math.max(50, (min / apprValue.value) * 100)));   // 손잡이를 최저가 자리로 되돌린다
+    el.value = String(Math.min(110, Math.max(bidSlideMin.value, (min / apprValue.value) * 100)));   // 손잡이를 최저가 자리로 되돌린다
     bidFloorHit.value = si;
     return;
   }
@@ -7029,10 +7035,10 @@ const goBack = () => router.back();
                   <div class="bx-row hi bid"><span class="bx-k"><label :for="`bida-bid-${si}`">입찰가</label></span><span class="bx-d">감정가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`bidPct-${si}`, scBidPct(sc))" inputmode="decimal" aria-label="입찰가 비중" @blur="pctDone()" @input="pctType(`bidPct-${si}`, $event); scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-bid-${si}`" v-model="sc.bid.myBidValue" class="bx-f amt big" live-group /><small v-if="scBelowMin(sc)" class="adp-bid-low" title="최저가 미만은 무효 입찰입니다">최저가미만</small></span></div>
                   <!-- 최저가 아래로는 못 내린다 — 바닥에 닿거나(슬라이더) 칸에 최저가 미만을 적으면 빨갛게, 아래 글로 알린다 -->
                   <div v-if="apprValue > 0" :class="['bx-slide', { low: bidFloorHit === si || scBelowMin(sc) }]">
-                    <input type="range" min="50" max="110" step="0.1" :value="Math.min(110, Math.max(50, scBidPct(sc)))" :aria-label="`${sc.label} 감정가 대비 입찰가`" @input="scSlideBid(sc, si, $event.target as HTMLInputElement)" />
+                    <input type="range" :min="bidSlideMin" max="110" step="0.1" :value="Math.min(110, Math.max(bidSlideMin, scBidPct(sc)))" :aria-label="`${sc.label} 감정가 대비 입찰가`" @input="scSlideBid(sc, si, $event.target as HTMLInputElement)" />
                     <div v-if="scBelowMin(sc)" class="lab warn"><span>최저가미만 — 무효 입찰입니다</span></div>
                     <div v-else-if="bidFloorHit === si" class="lab warn"><span>최저가 미만으로는 내릴 수 없습니다</span></div>
-                    <div v-else class="lab"><span>50%</span><span v-if="auction.metrics.minimumBidValue > 0">최저가 {{ formatPct((auction.metrics.minimumBidValue / apprValue) * 100) }}</span><span>110%</span></div>
+                    <div v-else class="lab"><span>{{ bidSlideMin }}%</span><span v-if="auction.metrics.minimumBidValue > 0">최저가 {{ formatPct((auction.metrics.minimumBidValue / apprValue) * 100) }}</span><span>110%</span></div>
                   </div>
                   <div class="bx-row last"><span class="bx-k">대출(사업자)</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cLoan-${si}`, scPctOfBid(sc, sc.cost.loanAmount))" inputmode="decimal" aria-label="대출 비중" @blur="pctDone()" @input="pctType(`cLoan-${si}`, $event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.loanAmount" class="bx-f amt" live-group /></span></div>
                 </section>

@@ -3512,7 +3512,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   <div class="wrap">
     <div class="foot-in">
       <div class="f-brand"><img src="{{LOGO_WHITE}}" alt="MYTURN AUCTION"><span>마이턴</span></div>
-      <p class="f-info">대표 강정인 · 사업자번호 000-00-03787 · 통신판매신고 2026-서울광진-1320<br>주소 서울시 광진구 강변역로4길 68, 3층301호<br>문의 02-456-1234 · 대표메일 contact@myturn.com</p>
+      <p class="f-info">대표 강정인 · 사업자번호 000-00-03787 · 통신판매신고 2026-서울광진-1320<br>주소 서울시 광진구 강변역로4길 68, 3층301호<br>문의 02-456-1234 · 대표메일 contact@myturn.co.kr</p>
       <div class="f-copy">COPYRIGHT ⓒMyTurn. ALL RIGHTS RESERVED.</div>
       <!-- 오른쪽 묶음 — 이용약관 줄과 채널 아이콘 줄. 둘 다 1280 상자 안쪽 오른쪽 끝(사업제휴 · 인스타그램)에 세로로 맞춘다 -->
       <div class="f-right">
@@ -4706,7 +4706,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const SKIP_KEY = 'wlp.web.skip';
   const skipsToday = (k) => k && (store.get(SKIP_KEY, {})[k] === TODAY_YMD);
   /* 바닥 링크로 여는 글 — 저작권정책 · 사업제휴. 연락처는 바닥 띠(f-info)와 같은 값 */
-  const DOC_CONTACT = '<div class="doc-contact">위 이용 목적 밖으로 쓰시려면 아래로 문의해 주세요.<br><b>저작권 · 사업제휴 문의</b> 전화 02-456-1234 · 메일 contact@myturn.com</div>';
+  const DOC_CONTACT = '<div class="doc-contact">위 이용 목적 밖으로 쓰시려면 아래로 문의해 주세요.<br><b>저작권 · 사업제휴 문의</b> 전화 02-456-1234 · 메일 contact@myturn.co.kr</div>';
   /* 이용약관 · 개인정보처리방침 · 환불정책 — 글은 앱과 같은 것(services/legalTerms · pointPolicy) */
   const docList = (items, tag = 'ol') => (items && items.length ? `<${tag}>${items.map((x) => `<li>${esc(x).replace(/\n/g, '<br>')}</li>`).join('')}</${tag}>` : '');
   const docArticles = (arts) => arts.map((a) => `<h4>${esc(a.title)}</h4>${a.text ? `<p>${esc(a.text)}</p>` : ''}${docList(a.items)}`).join('');
@@ -4743,7 +4743,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <h3>5. 이용권 만료</h3>
       <p>환불은 남은 이용 기간에 대해서만 합니다. 이용 기간이 끝난 이용권은 환불 대상이 아닙니다.</p>
       <h3>6. 문의</h3>
-      <div class="doc-contact"><b>환불 문의</b> 전화 02-456-1234 · 메일 contact@myturn.com</div>
+      <div class="doc-contact"><b>환불 문의</b> 전화 02-456-1234 · 메일 contact@myturn.co.kr</div>
       <p class="doc-eff">이 환불정책은 이용약관과 같이 ${esc(L.TERMS_EFFECTIVE || '')}부터 시행합니다.</p>`;
   };
   const DOCS = {
@@ -4798,7 +4798,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
         <li>참고 자료(회사 소개서 등)가 있으면 함께 보내 주세요.</li>
       </ul>
       <p>보내 주신 제안은 검토한 뒤 담당자가 연락드립니다.</p>
-      <div class="doc-contact"><b>사업제휴 문의</b> 메일 <a href="mailto:contact@myturn.com">contact@myturn.com</a> · 전화 02-456-1234</div>` },
+      <div class="doc-contact"><b>사업제휴 문의</b> 메일 <a href="mailto:contact@myturn.co.kr">contact@myturn.co.kr</a> · 전화 02-456-1234</div>` },
   };
   window.addEventListener('myturn:doc', (e) => { if (DOCS[e.detail]) { S.pop = ''; S.modal = { kind: 'doc', v: e.detail }; renderModal(); } });   /* 고객센터 › 약관 및 정책 */
   /* 알림 창 제목 앞 빨간 삼각형 느낌표 — 앱 확인창(AppConfirm)의 'warn' 과 같은 그림 */
