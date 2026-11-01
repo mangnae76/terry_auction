@@ -644,7 +644,12 @@ button { cursor: pointer; }
 .mk-sale .sc-box { padding: 12px 14px 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; }
 .mk-sale .sc-sub { margin: 0 0 10px; font-size: 15px; font-weight: 800; color: #111827; }
 .mk-sale .sc-table + .sc-sub { margin-top: 16px; }
-.mk-sale .sc-sub .sc-cnt { margin-left: 8px; font-size: 14px; font-weight: 700; color: var(--blue); }
+.mk-sale :is(.sc-sub, .sc-head) .sc-cnt { margin-left: 8px; font-size: 14px; font-weight: 700; color: var(--blue); }
+.mk-sale .sc-sub .sc-lot-name { margin-left: 8px; font-size: 14px; font-weight: 600; color: var(--muted); }
+.mk-sale .sc-lot { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin: 0 0 12px; }
+.mk-sale .sc-lot .adm-f { display: flex; flex-direction: column; gap: 6px; }
+.mk-sale .sc-lot select.adm-input { width: 380px; max-width: 100%; height: 36px; font-size: 14px; }
+.mk-sale .sc-lot-sum { font-size: 14px; color: var(--muted); padding-bottom: 8px; }
 .mk-sale .sc-table { border: 1px solid #e8ecf3; border-radius: 8px; overflow: hidden; overflow-x: auto; }
 .mk-sale .sc-table table { width: 100%; min-width: 1400px; border-collapse: collapse; table-layout: fixed; }
 .mk-sale .sc-table :is(th, td) { white-space: nowrap; }
@@ -5368,26 +5373,72 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const SALE_SIDO = ['서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시', '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원특별자치도', '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도'];
   const SALE_SEG = { kind: ['연립다세대', '아파트', '오피스텔'], deal: ['매매', '전세'], period: ['3개월', '6개월', '12개월'] };
   const saleSeg = { kind: '연립다세대', deal: '매매', period: '12개월' };
-  /* 인근 매각물건 분석 — 손품분석 시세분석에 있던 매각사례(동일지번 · 인근 매각물건 빈 표)를 여기로. 받는 곳을 붙이기 전까지 비워 둔다 */
+  /* 매각물건 표 — 칸은 auction-web 검색리스트(auction_gui.LIST_COLS)와 같게. rows 가 null 이면 빈 표(관리자가 아니거나 아직 없음) */
+  const SC_COLS = ['사건번호', '매각년월일', '감정가', '최저입찰가', '매각가', '매각가율', '유찰회수', '전용㎡/평', '건축연월', '건축년차', '층', '주소'];
+  const SC_WIDTHS = [116, 96, 104, 104, 104, 74, 72, 104, 76, 72, 44];   /* 주소는 남는 자리 전부 — 표끼리 칸이 같은 자리에 오게 */
+  function saleTable(rows) {
+    const head = `<colgroup>${SC_WIDTHS.map((w) => `<col style="width:${w}px">`).join('')}<col></colgroup><thead><tr>${SC_COLS.map((c) => `<th${c === '주소' ? ' class="addr"' : ''}>${c}</th>`).join('')}</tr></thead>`;
+    if (rows && rows.length) return `<div class="sc-table has"><table>${head}<tbody>${rows.map(agRowHtml).join('')}</tbody></table></div>`;
+    return `<div class="sc-table"><table>${head}<tbody>${[1, 2, 3].map(() => `<tr>${SC_COLS.map(() => '<td>-</td>').join('')}</tr>`).join('')}</tbody></table></div>`;
+  }
+  const SC_GAVEL = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>';
+  const scCnt = (n) => `<span class="sc-cnt">${n.toLocaleString('ko-KR')}건</span>`;
+  /* 인근 탭 — 동일지번(고른 지번) · 인근(모은 것 전부). 관리자만 도우미가 모은 물건으로 채운다. 최근 매각부터 */
   function saleCaseCard() {
-    /* 칸은 auction-web 검색리스트(auction_gui.LIST_COLS)와 같게 */
-    const cols = ['사건번호', '매각년월일', '감정가', '최저입찰가', '매각가', '매각가율', '유찰회수', '전용㎡/평', '건축연월', '건축년차', '층', '주소'];
-    const widths = [116, 96, 104, 104, 104, 74, 72, 104, 76, 72, 44];   /* 주소는 남는 자리 전부 — 두 표의 칸이 같은 자리에 오게 */
-    const head = `<colgroup>${widths.map((w) => `<col style="width:${w}px">`).join('')}<col></colgroup><thead><tr>${cols.map((c) => `<th${c === '주소' ? ' class="addr"' : ''}>${c}</th>`).join('')}</tr></thead>`;
-    const blank = `<div class="sc-table"><table>${head}<tbody>${[1, 2, 3].map(() => `<tr>${cols.map(() => '<td>-</td>').join('')}</tr>`).join('')}</tbody></table></div>`;
-    /* 관리자 — 집 PC 도우미가 모은 물건(출처 동일지번 · 인근)으로 채운다. 최근 매각부터 */
-    const filled = (rows) => (rows.length ? `<div class="sc-table has"><table>${head}<tbody>${rows.map(agRowHtml).join('')}</tbody></table></div>` : blank);
     const mine = agIsAdmin() && AG.recs.length;
-    const sameR = mine ? AG.recs.filter((r) => r['출처'] === '동일지번') : [];
-    const nearR = mine ? AG.recs.filter((r) => r['출처'] !== '동일지번') : [];
-    const sameT = mine ? filled(sameR) : blank;
-    const nearT = mine ? filled(nearR) : blank;
-    const cnt = (rows) => (mine ? `<span class="sc-cnt">${rows.length.toLocaleString('ko-KR')}건</span>` : '');
-    const gavel = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>';
-    return `<section class="sc-card"><div class="sc-head">${gavel}매각사례</div><div class="sc-box">`
-      + `<div class="sc-sub">동일지번 매각물건${cnt(sameR)}</div>${sameT}`
-      + `<div class="sc-sub">인근 매각물건${cnt(nearR)}</div>${nearT}`
+    const lot = mine ? agLotPick() : null;
+    const lotName = lot ? `<span class="sc-lot-name">${esc(lot.key)}${lot.name ? ` ${esc(lot.name)}` : ''}</span>` : '';
+    return `<section class="sc-card"><div class="sc-head">${SC_GAVEL}매각사례</div><div class="sc-box">`
+      + `<div class="sc-sub">동일지번 매각물건${lotName}${mine ? scCnt(lot ? lot.rows.length : 0) : ''}</div>${saleTable(lot ? lot.rows : null)}`
+      + `<div class="sc-sub">인근 매각물건${mine ? scCnt(AG.recs.length) : ''}</div>${saleTable(mine ? AG.recs : null)}`
       + `</div></section>`;
+  }
+  /* 동일지번 — 따로 긁지 않는다. 인근 목록에 같은 지번 물건이 이미 들어 있어(거리 0) 소재지의 '동 + 지번'으로 묶어 고른다.
+     auction-web PC 프로그램 동일지번 탭과 같은 방식: [동일지번매각물건]에서 따로 모은 것 + 인근 데이터 중 지번이 같은 것 */
+  const AG_LOT_RE = /[가-힣][가-힣0-9]*(?:동|읍|면|가|리)\s+(?:산\s*)?\d+(?:-\d+)?/;
+  const agLotOf = (addr) => { const m = AG_LOT_RE.exec(String(addr || '')); return m ? m[0].replace(/산\s*/, '산 ').replace(/\s+/g, ' ') : ''; };
+  /* 건물 이름 — '… 678-8, 106동 …(검암동,프리스틴)' → '프리스틴', '… 679-2, 부경캐슬 3층' → '부경캐슬' (auction_gui.building_name) */
+  const agBldOf = (addr) => {
+    const s = String(addr || '');
+    const m = /\(\s*[^,()]+,\s*([^,()]+?)\s*\)/.exec(s) || /(?:동|읍|면|가|리)\s+(?:산\s*)?\d+(?:-\d+)?\s*,?\s*([^\s,[(]+)/.exec(s);
+    const n = m ? m[1].trim() : '';
+    return /^(지하|제)?\d+(층|호|동)?$|^\d+층|^제\d/.test(n) ? '' : n;
+  };
+  const AG_LOT_KEY = 'ta.web.agent.lot';
+  let agLotSel = (() => { try { return localStorage.getItem(AG_LOT_KEY) || ''; } catch (e) { return ''; } })();
+  /* 지번 묶음 — 건수 많은 순. 모은 물건이 바뀔 때만 다시 묶는다 */
+  function agLots() {
+    if (AG.lotsOf === AG.recs) return AG.lots;
+    const m = new Map();
+    AG.recs.forEach((r) => {
+      const key = agLotOf(r['소재지']); if (!key) return;
+      const g = m.get(key) || { key, rows: [], own: 0, names: new Map() };
+      g.rows.push(r);
+      if (r['출처'] === '동일지번') g.own += 1;
+      const b = agBldOf(r['소재지']); if (b) g.names.set(b, (g.names.get(b) || 0) + 1);
+      m.set(key, g);
+    });
+    AG.lots = [...m.values()].map((g) => ({ key: g.key, rows: g.rows, own: g.own, name: ([...g.names.entries()].sort((a, b) => b[1] - a[1])[0] || [''])[0] }))
+      .sort((a, b) => b.rows.length - a.rows.length || a.key.localeCompare(b.key, 'ko'));
+    AG.lotsOf = AG.recs;
+    return AG.lots;
+  }
+  /* 고른 지번 — 없으면 동일지번으로 따로 모은 지번, 그것도 없으면 건수 많은 지번 */
+  function agLotPick() {
+    const lots = agLots();
+    return lots.find((l) => l.key === agLotSel) || lots.slice().sort((a, b) => b.own - a.own)[0] || null;
+  }
+  /* 동일지번 탭 — 지번 고르기 + 그 지번의 매각물건 */
+  function sameLotCard() {
+    const lots = agLots(); const cur = agLotPick();
+    const opts = lots.map((l) => `<option value="${esc(l.key)}" ${cur && l.key === cur.key ? 'selected' : ''}>${esc(l.key)}${l.name ? ` ${esc(l.name)}` : ''} · ${l.rows.length.toLocaleString('ko-KR')}건${l.own ? ' · 동일지번수집' : ''}</option>`).join('');
+    const rates = cur ? cur.rows.map((r) => Number(r['매각가율'])).filter((v) => v > 0) : [];
+    const avg = rates.length ? `${((rates.reduce((a, b) => a + b, 0) / rates.length) * 100).toFixed(1)}%` : '-';
+    const sum = cur ? `<span class="sc-lot-sum">따로 모은 동일지번 ${cur.own.toLocaleString('ko-KR')}건 · 인근 데이터 ${(cur.rows.length - cur.own).toLocaleString('ko-KR')}건 · 평균 매각가율 ${avg}</span>` : '';
+    const pick = lots.length
+      ? `<div class="sc-lot"><label class="adm-f"><small>지번 (${lots.length.toLocaleString('ko-KR')}곳 · 건수 많은 순)</small><select class="adm-input" data-act="ag-lot">${opts}</select></label>${sum}</div>`
+      : '<div class="sc-lot"><span class="sc-lot-sum">모은 매각물건이 없습니다 — 인근 탭의 도우미로 인근매각물건을 먼저 모아 주세요.</span></div>';
+    return `<section class="sc-card"><div class="sc-head">${SC_GAVEL}동일지번 매각물건${cur ? scCnt(cur.rows.length) : ''}</div><div class="sc-box">${pick}${saleTable(cur ? cur.rows : null)}</div></section>`;
   }
   /* ===== 집 PC 수집 도우미(관리자만) — auction-web 과 같은 방식: 여기서 누르면 Firestore 로 명령 → 집 PC agent.py 가 로그인된 크롬으로 옥션원 · 탱크옥션 수집 → 관리자 계정 아래에만 저장 =====
      문서 모양 · 읽고 쓰기는 src/services/agentRemote.ts, 규칙은 firestore.rules isAgentOwner */
@@ -5446,7 +5497,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   }
   /* 도우미 카드만 다시 — 상태가 바뀔 때마다 화면 전체를 다시 그리지 않는다 */
   function agPaint() { const el = $('agPanel'); if (el && agSaleOpen()) el.outerHTML = agPanelHtml(); }
-  function agPaintTable() { const el = document.querySelector('.mk-sale .sc-card'); if (el && agSaleOpen()) el.outerHTML = saleCaseCard(); }
+  function agPaintTable() { const el = document.querySelector('.mk-sale .sc-card'); if (el && agSaleOpen()) el.outerHTML = S.saleTab === 'same' ? sameLotCard() : saleCaseCard(); }
   async function agLoadRecs() {
     try {
       const { recs, meta } = await CLOUD.T.loadAgentDataset(AG.uid);
@@ -5504,7 +5555,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     return `<div class="app-market mk-sale" data-k="dong" data-s="sale"><section class="adm-shell"><div class="adm-body">`
       + `<div class="adm-bar">${sel('시 · 도', '시도선택', SALE_SIDO)}${sel('시 · 군 · 구', '시군구 선택')}${sel('읍 · 면 · 동', '읍면동 선택')}${seg('kind', '종류')}${seg('deal', '거래')}${seg('period', '기간')}<button type="button" class="adm-load" disabled>조회</button></div>`
       + `<div class="adm-tabs-top"><nav class="adm-view-tabs">${SALE_TABS.map(([k, t]) => `<button type="button" class="${S.saleTab === k ? 'on' : ''}" data-act="sale-tab" data-v="${k}">${t}</button>`).join('')}</nav><div id="admCrumbSlot" class="adm-crumb-slot"></div></div>`
-      + `<div class="mk-sale-body">${agIsAdmin() && S.saleTab === 'near' ? agPanelHtml() : ''}${S.saleTab === 'near' ? saleCaseCard() : itCard('chart', label, itEmpty('준비 중인 화면입니다.'), true)}</div>`
+      + `<div class="mk-sale-body">${agIsAdmin() && S.saleTab === 'near' ? agPanelHtml() : ''}${S.saleTab === 'near' ? saleCaseCard() : agIsAdmin() ? sameLotCard() : itCard('chart', label, itEmpty('준비 중인 화면입니다.'), true)}</div>`
       + `</div></section></div>`;
   }
   /* 손품분석 머리 카드 — 고른 물건(앱 화면이 'son.pick' 에 적고 son:pick 으로 알린다) */
@@ -6392,6 +6443,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   document.addEventListener('change', (e) => {
     if (e.target.id === 'pdfInput') { const fs = [...(e.target.files || [])]; e.target.value = ''; parseFiles(fs); return; }
     if (e.target.id === 'regFile' && e.target.files && e.target.files[0]) { S.modal.file = e.target.files[0].name; renderModal(); return; }
+    if (e.target.dataset && e.target.dataset.act === 'ag-lot') { agLotSel = e.target.value; try { localStorage.setItem(AG_LOT_KEY, agLotSel); } catch (err) { /* 그만 */ } agPaintTable(); return; }
     if (S.modal && S.modal.kind === 'register') readReg();
   });
   document.addEventListener('keydown', (e) => {
