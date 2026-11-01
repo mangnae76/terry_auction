@@ -16,7 +16,7 @@ on:
       backfill_budget:
         description: '지난 달 채우기 최대 호출 수'
         required: false
-        default: '6000'
+        default: '1500'
 
 concurrency:
   group: trade-nightly
@@ -42,4 +42,4 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
           EXTRA_TARGETS: ${{ inputs.extra_targets || vars.TRADE_EXTRA_TARGETS || '' }}
-          BACKFILL_BUDGET: ${{ inputs.backfill_budget || '6000' }}
+          BACKFILL_BUDGET: ${{ inputs.backfill_budget || '1500' }}

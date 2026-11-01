@@ -1,7 +1,7 @@
 // 새벽 실거래 적재 — 매일 새벽 1시 17분(한국)에 GitHub Actions 가 돌린다 (.github/workflows/trade-nightly.yml).
 //
-//  1) 대상: ALWAYS_SIDO(기본 인천 · 경기)의 모든 시군구 × 모든 종류
-//          + 지금까지 누군가 조회해서 DB(cacheTradeMonth)에 남은 지역 · 종류 (+ EXTRA_TARGETS 로 손으로 더한 것)
+//  1) 대상: 지금까지 누군가 조회해서 DB(cacheTradeMonth)에 남은 지역 · 종류 (+ EXTRA_TARGETS 로 손으로 더한 것)
+//          (+ ALWAYS_SIDO 를 주면 그 시도의 모든 시군구 × 모든 종류 — 기본은 비움. 인천 · 경기 전체는 저장량 때문에 보류, 2026-11-01)
 //     지역 표(src/services/regionCodes.ts)에 없는 코드는 건너뛴다 — 개편 전 옛 코드(인천 중구 28110 등)는 0건만 와서
 //  2) 이미 있는 건 다시 받지 않는다 — 달이 끝나고 60일 지난 뒤에 받아 둔 달은 '확정'(rtms.mjs monthFinalAt)
 //  3) 아직 바뀌는 달(끝난 지 60일 안 된 달 · 대략 최근 3달): 날마다 새로 받아 덮어쓴다 — 신고 기한 30일 · 늦은 계약해제
@@ -12,7 +12,7 @@
 //  FIREBASE_SERVICE_ACCOUNT  서비스 계정 JSON (GitHub 비밀값)
 //  DATA_GO_KR_KEY            공공데이터포털 서비스키 (GitHub 비밀값)
 //  EXTRA_TARGETS             손으로 더할 지역 — '28260:villa,11200:apt' (종류 apt · villa · officetel · single · commercial)
-//  ALWAYS_SIDO               늘 받을 시도 — 기본 '인천광역시,경기도' (그 시도의 지역 표 시군구 × 모든 종류)
+//  ALWAYS_SIDO               늘 받을 시도 — 예 '인천광역시,경기도' (그 시도의 지역 표 시군구 × 모든 종류). 기본은 비움
 //  BACKFILL_BUDGET           하룻밤 지난 달 채우기에 쓸 최대 호출 수 (기본 1500)
 //  DRY_RUN=1                 DB 없이 EXTRA_TARGETS 의 아직 바뀌는 달만 받아 건수만 찍는다 (시험용)
 import { readFileSync } from 'node:fs';
@@ -25,7 +25,7 @@ const CONCURRENCY = 4;
 const DRY = process.env.DRY_RUN === '1';
 const serviceKey = process.env.DATA_GO_KR_KEY ?? '';
 const budget = Number(process.env.BACKFILL_BUDGET ?? 1500) || 0;
-const alwaysSido = (process.env.ALWAYS_SIDO ?? '인천광역시,경기도').split(',').map((s) => s.trim()).filter(Boolean);
+const alwaysSido = (process.env.ALWAYS_SIDO ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const table = regionTable(readFileSync(new URL('../../src/services/regionCodes.ts', import.meta.url), 'utf8'));
 const knownCodes = new Set(Object.values(table).flat());
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
