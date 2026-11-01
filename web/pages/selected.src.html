@@ -5455,13 +5455,13 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const AG = { on: false, uid: '', status: null, meta: null, recs: [], cov: [], queue: [], qDraft: '', sending: false, note: '', noteAt: 0, unsub: [], tick: null };
   const AG_SEL_KEY = 'ta.web.agent.sel';
   const AG_MONTHS = [[6, '6개월'], [12, '12개월'], [24, '24개월'], [36, '36개월'], [0, '전체']];
-  /* 고른 사이트 · 수집대상 · 기간은 이 브라우저에 남긴다(새로고침해도 그대로). '처음부터새로'는 한 번 쓰고 끈다.
-     카드는 인근 탭에만 둔다. 동일지번을 고른 채 인근 목록을 모으면 도우미가 지번이 섞인 걸 보고 저장하지 않는다 */
+  /* 고른 사이트 · 기간은 이 브라우저에 남긴다(새로고침해도 그대로). '처음부터새로'는 한 번 쓰고 끈다.
+     수집대상은 늘 인근 — 동일지번 물건은 인근 목록에 이미 들어 있어 동일지번 탭이 지번으로 골라 보여 준다(따로 모으지 않음) */
   const agSel = (() => {
-    const d = { site: '옥션원', src: 'near', months: 24 };
+    const d = { site: '옥션원', months: 24 };
     try { const v = JSON.parse(localStorage.getItem(AG_SEL_KEY) || '{}'); return { ...d, ...v, fresh: false }; } catch (e) { return { ...d, fresh: false }; }
   })();
-  const agSaveSel = () => { try { localStorage.setItem(AG_SEL_KEY, JSON.stringify({ site: agSel.site, src: agSel.src, months: agSel.months })); } catch (e) { /* 그만 */ } };
+  const agSaveSel = () => { try { localStorage.setItem(AG_SEL_KEY, JSON.stringify({ site: agSel.site, months: agSel.months })); } catch (e) { /* 그만 */ } };
   const agIsAdmin = () => !!(CLOUD.on && CLOUD.T && CLOUD.T.isAdminEmail && CLOUD.auth && CLOUD.T.isAdminEmail(CLOUD.auth.email));
   const agSaleOpen = () => S.route === 'market' && S.marketTab === 'sale';
   const agDate = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || '')); return m ? `${m[1]}.${m[2]}.${m[3]}` : (v ? esc(String(v)) : '-'); };
@@ -5499,7 +5499,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const meta = m ? `저장 ${Number(m.count || 0).toLocaleString('ko-KR')}건${m.updatedAt && m.updatedAt.toMillis && T.updateStamp ? ` · ${T.UPDATE_PREFIX}${T.updateStamp(m.updatedAt.toMillis())}` : ''}` : '저장 0건';
     return `<section class="ag-card" id="agPanel">`
       + `<div class="ag-head"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>집 PC 수집 도우미<span class="ag-admin">관리자</span>${chip}<span class="ag-ver">${online && s.version ? esc(s.version) : ''}</span></div>`
-      + `<div class="ag-row">${seg('site', '사이트', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('src', '수집대상', [['near', '인근'], ['same', '동일지번']])}${seg('months', '수집기간', AG_MONTHS)}`
+      + `<div class="ag-row">${seg('site', '사이트', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('months', '수집기간', AG_MONTHS)}`
       + `<label class="ag-chk"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>`
       + `<div class="ag-row">${btn('open', '①브라우저열기', online && free)}${btn('screen', '②화면수집', ready && free)}${btn('auto', '자동수집', ready && free, 'pri')}${btn('queue', '대기열수집', ready && free && (AG.queue.length > 0 || agQueueCands().length > 0))}<span class="ag-sep"></span>${btn('enrich', '건축연도채우기', ready && free)}<button type="button" class="ag-btn stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`
       + agCovHtml() + agQueueHtml()
@@ -5617,7 +5617,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const run = async () => {
       AG.sending = true; agPaint();
       try {
-        await CLOUD.T.sendAgentCommand(AG.uid, name, { site: agSel.site, months: Number(agSel.months), src: agSel.src === 'same' ? 'same' : 'near', fresh: collect ? !!agSel.fresh : false });
+        await CLOUD.T.sendAgentCommand(AG.uid, name, { site: agSel.site, months: Number(agSel.months), src: 'near', fresh: collect ? !!agSel.fresh : false });
         if (collect) agSel.fresh = false;
         AG.note = '명령을 보냈습니다 — 집 PC에서 처리하는 중입니다.';
       } catch (e) { AG.note = `명령을 보내지 못했습니다 — ${e && e.message ? e.message : '다시 해 주세요'}`; }
