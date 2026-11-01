@@ -7023,8 +7023,8 @@ const goBack = () => router.back();
               <div class="bida-col">
                 <section class="bida-card">
                   <h3 class="bida-h">입찰정보</h3>
-                  <div class="bx-row"><span class="bx-k">감정가<small v-if="firstRoundDate" class="bx-kd">신건 {{ firstRoundDate }}</small></span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(apprValue) }}</b></span></div>
-                  <div class="bx-row"><span class="bx-k">{{ auction.auctionRound ? `최저가(${auction.auctionRound})` : '최저가' }}<small v-if="curRoundDate" class="bx-kd">{{ curRoundStatus }} {{ curRoundDate }}</small></span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? ((auction.metrics.minimumBidValue / apprValue) * 100).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(auction.metrics.minimumBidValue) }}</b></span></div>
+                  <div class="bx-row"><span class="bx-k"><span class="bx-kl">감정가</span><small v-if="firstRoundDate" class="bx-kd">신건 {{ firstRoundDate }}</small></span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(apprValue) }}</b></span></div>
+                  <div class="bx-row"><span class="bx-k"><span class="bx-kl">{{ auction.auctionRound ? `최저가(${auction.auctionRound})` : '최저가' }}</span><small v-if="curRoundDate" class="bx-kd">{{ curRoundStatus }} {{ curRoundDate }}</small></span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? ((auction.metrics.minimumBidValue / apprValue) * 100).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(auction.metrics.minimumBidValue) }}</b></span></div>
                   <div class="bx-row"><span class="bx-k">보증금</span><span class="bx-d">최저가의</span><span class="bx-p"><b class="bx-f pct ro">10.00</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(bidDeposit) }}</b></span></div>
                   <div class="bx-row hi bid"><span class="bx-k"><label :for="`bida-bid-${si}`">입찰가</label></span><span class="bx-d">감정가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`bidPct-${si}`, scBidPct(sc))" inputmode="decimal" aria-label="입찰가 비중" @blur="pctDone()" @input="pctType(`bidPct-${si}`, $event); scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-bid-${si}`" v-model="sc.bid.myBidValue" class="bx-f amt big" live-group /><small v-if="scBelowMin(sc)" class="adp-bid-low" title="최저가 미만은 무효 입찰입니다">최저가미만</small></span></div>
                   <!-- 최저가 아래로는 못 내린다 — 바닥에 닿거나(슬라이더) 칸에 최저가 미만을 적으면 빨갛게, 아래 글로 알린다 -->
@@ -13206,6 +13206,7 @@ select.adp-pub-input option { text-align: center; }
 .bx-d { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-size: 12px; color: #9aa3b2; }
 .bx-p { display: inline-flex; align-items: center; gap: 3px; justify-self: end; white-space: nowrap; }
 .bx-row.wide { grid-template-columns: auto minmax(0, 1fr) 162px 132px; }
+.bx-k .bx-kl { display: inline-block; min-width: 5.6em; }   /* 감정가 · 최저가(N차) 이름 폭을 같게 — 신건 · 진행 날짜가 한 세로줄에서 시작한다 */
 .bx-k .bx-kd { margin-left: 8px; font-size: 12px; font-weight: 400; color: #6b7280; }   /* 감정가 · 최저가 줄의 기일(신건 · 진행) */
 .bx-p i { font-style: normal; font-size: 12px; color: #6b7280; }
 .bx-minus { font-style: normal; margin: 0; color: #6b7280; }
