@@ -33,7 +33,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import PhotoGrid from '../components/PhotoGrid.vue';
 import AppConfirm from '../components/AppConfirm.vue';
-import { BALANCE_DUE_DAYS, balanceDueError, balanceDueOf, wonDateError } from '../utils/auctionDates';
+import { BALANCE_DUE_DAYS, balanceDueError, balanceDueOf, stageBeforeSaleError, wonDateError } from '../utils/auctionDates';
 import AgencyTable from '../components/AgencyTable.vue';
 import AgencyBookModal from '../components/AgencyBookModal.vue';
 import PhotoCountMark from '../components/PhotoCountMark.vue';
@@ -205,6 +205,9 @@ const pickStage = async (key: string) => {
   if (!target) return;
   if (key.startsWith('bid:')) {
     const value = key.slice(4);
+    // 입찰 기일 전엔 낙찰 · 유찰 · 취소 · 매도를 고를 수 없다(utils/auctionDates)
+    const early = stageBeforeSaleError(target, value);
+    if (early) { confirmBox.value = { title: '선택할 수 없습니다', desc: early, okLabel: '확인', skipKey: '', tone: 'calm', alertOnly: true, icon: 'warn', run: () => {} }; return; }
     const label = BID_STAGES.find((b) => b.value === value)?.label ?? value;
     // 낙찰일·매도일은 단계를 따라간다 — 앞으로 가면 적고, 뒤로 물러서면 지운다.
     // 규칙은 utils/stageLabel 한곳에 있다 (선정물건 카드도 같은 것을 쓴다)
@@ -1647,7 +1650,7 @@ const setProfitDate = async (key: 'wonDate' | 'sellDate' | 'balanceDueDate', val
   // 맞지 않는 날짜는 적지 않는다 — 낙찰일은 매각기일 그날, 잔금기한은 낙찰일 뒤 (utils/auctionDates)
   const err = key === 'wonDate' ? wonDateError(auction.value, value) : key === 'balanceDueDate' ? balanceDueError(auction.value, value) : '';
   if (err) {
-    confirmBox.value = { title: '맞지 않는 날짜입니다', desc: err, okLabel: '확인', skipKey: '', tone: 'calm', alertOnly: true, run: () => {} };
+    confirmBox.value = { title: '맞지 않는 날짜입니다', desc: err, okLabel: '확인', skipKey: '', tone: 'calm', alertOnly: true, icon: 'warn', run: () => {} };
     return;
   }
   auction.value[key] = value;
@@ -2294,6 +2297,22 @@ const scSetBidByApprPct = (sc: ProfitScenario, raw: string | number) => {
   const pct = typeof raw === 'number' ? raw : parseFloat(raw);
   if (!Number.isFinite(pct)) return;
   sc.bid.myBidValue = Math.round((apprValue.value * pct) / 100);
+};
+/** 입찰가 슬라이더 — 최저가 아래로는 내려가지 않는다(최저가 미만은 무효 입찰). 바닥에 닿은 안(si)은 빨갛게 알린다 */
+const bidFloorHit = ref(-1);
+const scSlideBid = (sc: ProfitScenario, si: number, el: HTMLInputElement) => {
+  const pct = parseFloat(el.value);
+  if (!Number.isFinite(pct) || apprValue.value <= 0) return;
+  const min = currentMinBidOf(auction.value);
+  const want = Math.round((apprValue.value * pct) / 100);
+  if (min > 0 && want <= min) {
+    sc.bid.myBidValue = min;
+    el.value = String(Math.min(110, Math.max(50, (min / apprValue.value) * 100)));   // 손잡이를 최저가 자리로 되돌린다
+    bidFloorHit.value = si;
+    return;
+  }
+  sc.bid.myBidValue = want;
+  if (bidFloorHit.value === si) bidFloorHit.value = -1;
 };
 
 // 취득세 — 기본 1.10%. 입찰가가 바뀌면 이 비율로 다시 계산하고,
@@ -5704,6 +5723,12 @@ const setRightsCase = async (id: string) => {
 const bidRounds = computed(() => bidRoundsOf(auction.value));
 
 const roundTone = roundToneOf;
+/** 수익분석 입찰정보 — 물건정보 기일내역의 날짜를 글자로(고친 적 없는 고정 날짜라 상자로 두지 않는다).
+ *  감정가 줄은 신건(1차) 기일, 최저가 줄은 이번 회차 기일 — 입찰일이 곧 낙찰일이 되는 날이다 */
+const firstRoundDate = computed(() => bidRounds.value[0]?.date ?? '');
+const curRound = computed(() => bidRounds.value.find((r) => r.current));
+const curRoundDate = computed(() => curRound.value?.date ?? '');
+const curRoundStatus = computed(() => curRound.value?.status || '진행');
 
 // 차수 배지 — '신건'(비율로 추정한 값) 대신 기일내역상 진행 중인 회차를 쓴다
 const currentRoundLabel = computed(() => currentRoundLabelOf(auction.value));
@@ -6998,13 +7023,16 @@ const goBack = () => router.back();
               <div class="bida-col">
                 <section class="bida-card">
                   <h3 class="bida-h">입찰정보</h3>
-                  <div class="bx-row"><span class="bx-k">감정가</span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(apprValue) }}</b></span></div>
-                  <div class="bx-row"><span class="bx-k">{{ auction.auctionRound ? `최저가(${auction.auctionRound})` : '최저가' }}</span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? ((auction.metrics.minimumBidValue / apprValue) * 100).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(auction.metrics.minimumBidValue) }}</b></span></div>
+                  <div class="bx-row"><span class="bx-k">감정가<small v-if="firstRoundDate" class="bx-kd">신건 {{ firstRoundDate }}</small></span><span class="bx-d"></span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(apprValue) }}</b></span></div>
+                  <div class="bx-row"><span class="bx-k">{{ auction.auctionRound ? `최저가(${auction.auctionRound})` : '최저가' }}<small v-if="curRoundDate" class="bx-kd">{{ curRoundStatus }} {{ curRoundDate }}</small></span><span class="bx-d">감정가 대비</span><span class="bx-p"><b class="bx-f pct ro">{{ apprValue > 0 ? ((auction.metrics.minimumBidValue / apprValue) * 100).toFixed(2) : '-' }}</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(auction.metrics.minimumBidValue) }}</b></span></div>
                   <div class="bx-row"><span class="bx-k">보증금</span><span class="bx-d">최저가의</span><span class="bx-p"><b class="bx-f pct ro">10.00</b><i>%</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(bidDeposit) }}</b></span></div>
-                  <div class="bx-row hi bid"><span class="bx-k"><label :for="`bida-bid-${si}`">입찰가</label><!-- 낙찰일을 여기서도 바로 보고 고친다 — 적기 전엔 매각기일, 머리의 낙찰일 칸과 같은 값 --><button type="button" class="adp-pd-item bx-date" :title="!shortYmd(auction.wonDate) && auction.eventDate ? '낙찰일을 적기 전에는 매각기일을 보여 줍니다' : undefined" @click="profitDateTarget = 'wonDate'"><em>{{ shortYmd(auction.wonDate) || !auction.eventDate ? '낙찰일' : '매각기일' }}</em><span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) && !shortYmd(auction.eventDate) }">{{ shortYmd(auction.wonDate) || shortYmd(auction.eventDate) || '날짜입력' }}</span></span></button></span><span class="bx-d">감정가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`bidPct-${si}`, scBidPct(sc))" inputmode="decimal" aria-label="입찰가 비중" @blur="pctDone()" @input="pctType(`bidPct-${si}`, $event); scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-bid-${si}`" v-model="sc.bid.myBidValue" class="bx-f amt big" live-group /><small v-if="scBelowMin(sc)" class="adp-bid-low" title="최저가 미만은 무효 입찰입니다">최저가미만</small></span></div>
-                  <div v-if="apprValue > 0" class="bx-slide">
-                    <input type="range" min="50" max="110" step="0.1" :value="Math.min(110, Math.max(50, scBidPct(sc)))" :aria-label="`${sc.label} 감정가 대비 입찰가`" @input="scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" />
-                    <div class="lab"><span>50%</span><span v-if="auction.metrics.minimumBidValue > 0">최저가 {{ formatPct((auction.metrics.minimumBidValue / apprValue) * 100) }}</span><span>110%</span></div>
+                  <div class="bx-row hi bid"><span class="bx-k"><label :for="`bida-bid-${si}`">입찰가</label></span><span class="bx-d">감정가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`bidPct-${si}`, scBidPct(sc))" inputmode="decimal" aria-label="입찰가 비중" @blur="pctDone()" @input="pctType(`bidPct-${si}`, $event); scSetBidByApprPct(sc, ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput :id="`bida-bid-${si}`" v-model="sc.bid.myBidValue" class="bx-f amt big" live-group /><small v-if="scBelowMin(sc)" class="adp-bid-low" title="최저가 미만은 무효 입찰입니다">최저가미만</small></span></div>
+                  <!-- 최저가 아래로는 못 내린다 — 바닥에 닿거나(슬라이더) 칸에 최저가 미만을 적으면 빨갛게, 아래 글로 알린다 -->
+                  <div v-if="apprValue > 0" :class="['bx-slide', { low: bidFloorHit === si || scBelowMin(sc) }]">
+                    <input type="range" min="50" max="110" step="0.1" :value="Math.min(110, Math.max(50, scBidPct(sc)))" :aria-label="`${sc.label} 감정가 대비 입찰가`" @input="scSlideBid(sc, si, $event.target as HTMLInputElement)" />
+                    <div v-if="scBelowMin(sc)" class="lab warn"><span>최저가미만 — 무효 입찰입니다. 최저가 {{ formatMoney(currentMinBidOf(auction)) }} 이상으로 적어 주세요</span></div>
+                    <div v-else-if="bidFloorHit === si" class="lab warn"><span>최저가 미만으로는 내릴 수 없습니다 — 최저가 {{ formatMoney(currentMinBidOf(auction)) }}</span></div>
+                    <div v-else class="lab"><span>50%</span><span v-if="auction.metrics.minimumBidValue > 0">최저가 {{ formatPct((auction.metrics.minimumBidValue / apprValue) * 100) }}</span><span>110%</span></div>
                   </div>
                   <div class="bx-row last"><span class="bx-k">대출(사업자)</span><span class="bx-d">입찰가 대비</span><span class="bx-p"><input class="bx-f pct" :value="pctShow(`cLoan-${si}`, scPctOfBid(sc, sc.cost.loanAmount))" inputmode="decimal" aria-label="대출 비중" @blur="pctDone()" @input="pctType(`cLoan-${si}`, $event); scSetAmountByPct(sc, 'loanAmount', ($event.target as HTMLInputElement).value)" /><i>%</i></span><span class="bx-a"><FormattedNumberInput v-model="sc.cost.loanAmount" class="bx-f amt" live-group /></span></div>
                 </section>
@@ -13169,7 +13197,7 @@ select.adp-pub-input option { text-align: center; }
   .bida-grid { grid-template-columns: 1fr; }
 }
 /* 입찰정보 · 수익 · 비용 줄 — 클래식 표처럼 항목 | 설명(오른쪽 맞춤) | 비중 | 금액 네 칸. 고치는 칸은 모두 같은 상자, 보기만 하는 값은 상자 없이 같은 자리.
-   비중 칸은 금액 칸에 붙여(오른쪽 맞춤 · 84) 설명이 넓게 쓴다 — 입찰가 줄에 낙찰일이 들어간다. 세율 − 공제 줄만 넓게(.wide) */
+   비중 칸은 금액 칸에 붙여(오른쪽 맞춤 · 84) 설명이 넓게 쓴다 — 감정가 · 최저가 줄 이름 옆에 기일이 들어간다. 세율 − 공제 줄만 넓게(.wide) */
 .bx-row { display: grid; grid-template-columns: auto minmax(0, 1fr) 84px 132px; align-items: center; column-gap: 10px; min-height: 44px; border-bottom: 1px solid #f0f2f7; font-size: 14px; color: #111827; }
 .bx-row.last { border-bottom: 0; }
 .bx-k { white-space: nowrap; color: #374151; }
@@ -13178,8 +13206,7 @@ select.adp-pub-input option { text-align: center; }
 .bx-d { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-size: 12px; color: #9aa3b2; }
 .bx-p { display: inline-flex; align-items: center; gap: 3px; justify-self: end; white-space: nowrap; }
 .bx-row.wide { grid-template-columns: auto minmax(0, 1fr) 162px 132px; }
-.bx-k .bx-date { display: inline-flex; vertical-align: middle; margin-left: 8px; cursor: pointer; }
-.bx-row.hi .bx-k .bx-date em { font-weight: 500; color: #6b7280; }
+.bx-k .bx-kd { margin-left: 8px; font-size: 12px; font-weight: 400; color: #6b7280; }   /* 감정가 · 최저가 줄의 기일(신건 · 진행) */
 .bx-p i { font-style: normal; font-size: 12px; color: #6b7280; }
 .bx-minus { font-style: normal; margin: 0; color: #6b7280; }
 .bx-a { min-width: 0; text-align: right; }
@@ -13201,6 +13228,8 @@ select.adp-pub-input option { text-align: center; }
 .bx-slide { box-sizing: border-box; height: 88px; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 0; border-bottom: 1px solid #f0f2f7; }   /* 줄 두 칸(44 × 2) — 아래 줄들이 한 칸 격자에 그대로 놓인다 */
 .bx-slide input[type='range'] { width: 100%; margin: 0; accent-color: #2b6df3; cursor: pointer; }
 .bx-slide.sale input[type='range'] { accent-color: #c2410c; }
+.bx-slide.low input[type='range'] { accent-color: #d64545; }   /* 최저가 바닥 · 최저가 미만 */
+.bx-slide .lab.warn { justify-content: center; color: #d64545; font-weight: 600; }
 .bx-slide .lab { display: flex; justify-content: space-between; margin-top: 0; font-size: 12px; color: #6b7280; }
 .bx-row.net { border-bottom: 1px solid #f0f2f7; }   /* 세후 순이익도 흰 바탕 한 줄 — 수익률 칩만 붙인다 */
 .bx-row.net .bx-k { font-weight: 800; }

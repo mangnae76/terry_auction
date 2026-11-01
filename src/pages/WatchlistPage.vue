@@ -12,6 +12,7 @@ import AppMobileHeader from '../components/AppMobileHeader.vue';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
+import { stageBeforeSaleError } from '../utils/auctionDates';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import { addressParts } from '../utils/addressName';
 import { bidStageOf as bidStageShared, hasBidResult as hasBidResultShared, stageDates, stageLabelOf, stageToneOf, BID_STAGE_LABELS } from '../utils/stageLabel';
@@ -526,6 +527,9 @@ const pickBidStage = async (item: AuctionDetail, value: string, evt: MouseEvent)
   evt.stopPropagation();
   bidMenuId.value = '';
   if (bidStageOf(item) === value) return;
+  // 입찰 기일 전엔 낙찰 · 유찰 · 취소 · 매도를 고를 수 없다(utils/auctionDates)
+  const early = stageBeforeSaleError(item, value);
+  if (early) { confirmBox.value = { title: '선택할 수 없습니다', desc: early, okLabel: '확인', skipKey: '', tone: 'calm', alertOnly: true, icon: 'warn', run: () => {} }; return; }
   const dates = stageDates(item, value);
   await store.saveAuction({
     ...item, status: '입찰', bidStatus: value,

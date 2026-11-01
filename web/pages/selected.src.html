@@ -4774,6 +4774,15 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <div class="doc-contact"><b>사업제휴 문의</b> 메일 <a href="mailto:contact@myturn.com">contact@myturn.com</a> · 전화 02-456-1234</div>` },
   };
   window.addEventListener('myturn:doc', (e) => { if (DOCS[e.detail]) { S.pop = ''; S.modal = { kind: 'doc', v: e.detail }; renderModal(); } });   /* 고객센터 › 약관 및 정책 */
+  /* 알림 창 제목 앞 빨간 삼각형 느낌표 — 앱 확인창(AppConfirm)의 'warn' 과 같은 그림 */
+  const WARN_ICON = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M10.3 3.9 1.8 18.5A2 2 0 0 0 3.5 21.5h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" fill="#d64545"/><path d="M12 9v5" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.4" r="1.25" fill="#fff"/></svg>';
+  /* 입찰 기일 전엔 낙찰 · 유찰 · 취소 · 매도를 못 고른다(앱과 같은 규칙 utils/auctionDates) — 막혔으면 알림 창을 띄우고 true */
+  function stageBlocked(it, bid) {
+    const T = CLOUD.T; const msg = T && T.stageBeforeSaleError ? T.stageBeforeSaleError({ eventDate: it.date }, bid, TODAY_YMD) : '';
+    if (!msg) return false;
+    S.menu = null; S.modal = { kind: 'confirm', title: '선택할 수 없습니다', desc: msg, okLabel: '확인', tone: 'calm', skipKey: '', alertOnly: true, icon: 'warn', run: () => {} }; render(); renderModal();
+    return true;
+  }
   function askConfirm(box) { if (skipsToday(box.skipKey)) { box.run(); return; } S.modal = { kind: 'confirm', ...box }; renderModal(); }
   /* 키 칸 속내용 — 창(팝업)과 마이페이지가 같은 것을 쓴다 */
   const aiKeyBody = (m) => `
@@ -4896,9 +4905,9 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     }
     if (m.kind === 'confirm') {
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dlgT">
-        <h2 id="dlgT">${esc(m.title)}</h2>${m.desc ? `<p>${esc(m.desc)}</p>` : ''}
+        <h2 id="dlgT">${m.icon === 'warn' ? WARN_ICON : ''}${esc(m.title)}</h2>${m.desc ? `<p style="white-space:pre-line">${esc(m.desc)}</p>` : ''}
         ${m.skipKey ? '<label class="skip"><input type="checkbox" class="ck" id="skipToday"> 오늘 하루 보지 않기</label>' : ''}
-        <div class="btns"><button type="button" class="btn" data-act="modal-close">취소</button><button type="button" class="btn ${m.tone === 'calm' ? 'primary' : 'danger'}" data-act="modal-ok" id="dlgOk">${esc(m.okLabel)}</button></div></div></div>`;
+        <div class="btns">${m.alertOnly ? '' : '<button type="button" class="btn" data-act="modal-close">취소</button>'}<button type="button" class="btn ${m.tone === 'calm' ? 'primary' : 'danger'}" data-act="modal-ok" id="dlgOk">${esc(m.okLabel)}</button></div></div></div>`;
       setTimeout(() => { const ok = $('dlgOk'); if (ok) ok.focus(); }, 20);
       return;
     }
@@ -6423,6 +6432,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       case 'bid-set': {
         e.stopPropagation();
         if (bidOf(it) === v) break;
+        if (stageBlocked(it, v)) break;
         update(id, { status: '입찰', bid: v }); render(); break;
       }
       case 'bid-result': {
@@ -6439,13 +6449,14 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       case 'pick-bid': {
         S.menu = null;
         if (bidOf(it) === v && v) { render(); break; }
+        if (stageBlocked(it, v)) break;
         update(id, { status: '입찰', bid: v }); render();
         const w = v ? BID_LABEL[v] : '입찰산정'; toast(`'${w}'${ro(w)} 바꿨습니다.`); break;
       }
       case 'pick-stage': {
         S.menu = null;
         let w;
-        if (v.startsWith('r-')) { w = BID_LABEL[v.slice(2)]; update(id, { status: '입찰', bid: v.slice(2) }); }
+        if (v.startsWith('r-')) { if (stageBlocked(it, v.slice(2))) break; w = BID_LABEL[v.slice(2)]; update(id, { status: '입찰', bid: v.slice(2) }); }
         else if (v === 'running') { w = '입찰진행'; update(id, { status: '입찰', bid: '진행' }); }
         else { const p = PHASES.find((x) => x.key === v); w = p.label; update(id, { status: p.status, bid: '' }); }
         render(); toast(`'${w}'${ro(w)} 바꿨습니다.`); break;

@@ -22,7 +22,7 @@ const onOk = async () => {
   <div v-if="box" class="acf-wrap">
     <div class="acf-backdrop" @click="emit('close')" />
     <div class="acf-box" role="dialog" aria-modal="true">
-      <p class="acf-title">{{ box.title }}</p>
+      <p class="acf-title"><svg v-if="box.icon === 'warn'" class="acf-warn" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M10.3 3.9 1.8 18.5A2 2 0 0 0 3.5 21.5h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" fill="#d64545" /><path d="M12 9v5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" /><circle cx="12" cy="17.4" r="1.25" fill="#fff" /></svg>{{ box.title }}</p>
       <!-- 설명이 없으면 줄을 내지 않는다 — 뻔한 말을 적지 않기 위해 -->
       <p v-if="box.desc" class="acf-desc">{{ box.desc }}</p>
       <label v-if="box.skipKey" class="acf-skip">
@@ -45,8 +45,9 @@ const onOk = async () => {
   background: #fff; border-radius: 14px; padding: 18px 18px 14px;
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
 }
-.acf-title { margin: 0 0 6px; font-size: 15px; font-weight: 800; color: #111827; }
-.acf-desc { margin: 0 0 14px; font-size: 12.5px; font-weight: 400; color: #6b7280; line-height: 1.45; }
+.acf-title { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-size: 15px; font-weight: 800; color: #111827; }
+.acf-warn { flex: none; }
+.acf-desc { margin: 0 0 14px; font-size: 12.5px; font-weight: 400; color: #6b7280; line-height: 1.45; white-space: pre-line; }   /* 줄바꿈(\n)을 그대로 — 까닭 줄 · 못 적는 날짜 줄 */
 .acf-skip {
   display: flex; align-items: center; gap: 7px;
   font-size: 12.5px; color: #4b5563; cursor: pointer; user-select: none;

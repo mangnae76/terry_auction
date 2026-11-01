@@ -54,6 +54,8 @@ export { fetchDongTradeStats } from '../../src/services/publicDataApi';
 export { setLoginPersistence } from '../../src/services/authRepository';
 export { isKakaoLoginConfigured } from '../../src/services/socialAuth';
 export { stageDates, bidStageOf, stageLabelOf } from '../../src/utils/stageLabel';
+// 입찰 기일 전엔 낙찰 · 유찰 · 취소 · 매도를 못 고른다 — 앱과 같은 규칙
+export { stageBeforeSaleError } from '../../src/utils/auctionDates';
 // 물건상세 정보요약·기본정보 — 앱 물건상세와 같은 셈
 export {
   saleKindOf, headMetaLineOf, summarySeedOf, summaryAreaText, summaryApprovalAgeOf, summaryFloorPairOf,

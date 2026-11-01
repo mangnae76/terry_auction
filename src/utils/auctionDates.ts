@@ -31,7 +31,7 @@ export const wonDateError = (a: DateLike, value: string): string => {
   const sale = ymdOf(a.eventDate);
   const v = ymdOf(value);
   if (!sale || !v || v === sale) return '';
-  return `입찰일(매각기일)은 ${koreanYmd(sale)}입니다. 낙찰일은 입찰일과 같은 날이어야 합니다 — ${koreanYmd(v)}로는 적을 수 없습니다.`;
+  return `입찰일(매각기일)은 ${koreanYmd(sale)}입니다. 낙찰일은 입찰일과 같은 날이어야 합니다.\n${koreanYmd(v)}은 입력할 수 없습니다.`;
 };
 
 /** 잔금기한 — 적어 둔 날짜, 없으면 낙찰일(없으면 매각기일) + 45일 예정일 */
@@ -47,5 +47,22 @@ export const balanceDueError = (a: DateLike, value: string): string => {
   const base = ymdOf(a.wonDate) || ymdOf(a.eventDate);
   const v = ymdOf(value);
   if (!base || !v || v > base) return '';
-  return `${ymdOf(a.wonDate) ? '낙찰일' : '입찰일(매각기일)'}은 ${koreanYmd(base)}입니다. 잔금기한은 그 뒤여야 합니다 — ${koreanYmd(v)}로는 적을 수 없습니다.`;
+  return `${ymdOf(a.wonDate) ? '낙찰일' : '입찰일(매각기일)'}은 ${koreanYmd(base)}입니다. 잔금기한은 그 뒤여야 합니다.\n${koreanYmd(v)}은 입력할 수 없습니다.`;
+};
+
+const todayYmd = (): string => {
+  const d = new Date();
+  const p2 = (x: number) => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+};
+
+/** 입찰 기일이 지나야 고를 수 있는 단계 — 기일 전엔 결과(낙찰 · 유찰 · 취소)도 매도도 있을 수 없다 */
+export const AFTER_SALE_STAGES = ['낙찰', '유찰', '취소', '매도'];
+
+/** 그 단계를 지금 고를 수 있는지 — 안 되면 알림 글, 되면 빈 글. 기일 당일은 고를 수 있다 */
+export const stageBeforeSaleError = (a: { eventDate?: string }, stage: string, today: string = todayYmd()): string => {
+  if (!AFTER_SALE_STAGES.includes(stage)) return '';
+  const sale = ymdOf(a.eventDate);
+  if (!sale || sale <= today) return '';
+  return `입찰 기일이 되지 않아 선택할 수 없습니다. 이 물건의 입찰 기일은 ${koreanYmd(sale)}입니다.`;
 };

@@ -11,6 +11,8 @@ export type ConfirmBox = {
   run: () => Promise<void> | void;
   /** 알리기만 하는 창 — 취소 단추 없이 확인 하나(맞지 않는 날짜 등) */
   alertOnly?: boolean;
+  /** 제목 앞 아이콘 — 'warn' 은 빨간 삼각형 느낌표(맞지 않는 날짜 · 고를 수 없는 단계) */
+  icon?: 'warn';
 };
 
 /** 오늘 날짜 — 하루가 지나면 '보지 않기'가 저절로 풀린다 */
