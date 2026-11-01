@@ -4121,6 +4121,13 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   }
   const fitCourtsSoon = () => requestAnimationFrame(fitCourts);
 
+  /* 떠 있는 메뉴(단계 · 결과)만 열고 닫는다 — 화면 전체를 다시 그리면 사건 카드 · 탭 줄이 새로 그려져
+     그 높이에 붙는 수익분석 고정 막대가 다시 자리를 잡으며 흔들리고, 그 사이 스크롤이 생기면 또 닫고 그리며 되풀이됐다 */
+  function syncMenu() {
+    document.querySelectorAll('.card.menu-open').forEach((c) => c.classList.remove('menu-open'));
+    if (S.menu) { const c = document.querySelector(`.card[data-id="${CSS.escape(S.menu.id)}"]`); if (c) c.classList.add('menu-open'); }
+    renderFloat();
+  }
   function renderFloat() {
     const root = $('floatRoot');
     const it = S.menu ? items.find((x) => x.id === S.menu.id) : null;
@@ -6350,7 +6357,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   document.addEventListener('click', (e) => {
     const t = e.target.closest('[data-act]');
     if (S.pop && !e.target.closest(`[data-pop="${S.pop}"], .g-pop`)) { S.pop = ''; S.binPicked = new Set(); S.calMonth = null; render(); }
-    if (S.menu && !e.target.closest('.float-menu') && !(t && ['bid-result', 'stage-menu', 'result-menu'].includes(t.dataset.act))) { S.menu = null; render(); }
+    if (S.menu && !e.target.closest('.float-menu') && !(t && ['bid-result', 'stage-menu', 'result-menu'].includes(t.dataset.act))) { S.menu = null; syncMenu(); }
     if (!t) return;
     const act = t.dataset.act; const id = t.dataset.id; const v = t.dataset.v; const it = id ? byId(id) : null;
     if (t.tagName === 'A') e.preventDefault();
@@ -6437,14 +6444,14 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       }
       case 'bid-result': {
         e.stopPropagation();
-        if (S.menu && S.menu.id === id) { S.menu = null; render(); break; }
-        const r = t.getBoundingClientRect(); S.pop = ''; S.menu = { id, kind: 'bid', x: r.right, y: r.bottom, top: r.top }; render(); break;
+        if (S.menu && S.menu.id === id) { S.menu = null; syncMenu(); break; }
+        const r = t.getBoundingClientRect(); const hadPop = !!S.pop; S.pop = ''; S.menu = { id, kind: 'bid', x: r.right, y: r.bottom, top: r.top }; if (hadPop) render(); else syncMenu(); break;
       }
 
       case 'stage-menu': {
         e.stopPropagation();
-        if (S.menu && S.menu.id === id) { S.menu = null; render(); break; }
-        const r = t.getBoundingClientRect(); S.pop = ''; S.menu = { id, kind: 'stage', x: r.left + 172, y: r.bottom, top: r.top }; render(); break;
+        if (S.menu && S.menu.id === id) { S.menu = null; syncMenu(); break; }
+        const r = t.getBoundingClientRect(); const hadPop = !!S.pop; S.pop = ''; S.menu = { id, kind: 'stage', x: r.left + 172, y: r.bottom, top: r.top }; if (hadPop) render(); else syncMenu(); break;
       }
       case 'pick-bid': {
         S.menu = null;
@@ -6855,8 +6862,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   window.addEventListener('scroll', markStuck, { passive: true });
   window.addEventListener('scroll', syncStickTop, { passive: true });
   window.addEventListener('resize', markStuck);
-  window.addEventListener('scroll', () => { if (S.menu) { S.menu = null; render(); } }, { passive: true });
-  window.addEventListener('resize', () => { fitCourts(); if (S.menu) { S.menu = null; render(); } });
+  window.addEventListener('scroll', () => { if (S.menu) { S.menu = null; syncMenu(); } }, { passive: true });
+  window.addEventListener('resize', () => { fitCourts(); if (S.menu) { S.menu = null; syncMenu(); } });
   try { document.fonts && document.fonts.ready.then(fitCourts); } catch { /* 글꼴 대기 없이도 된다 */ }
   try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderHeader); } catch { /* 옛 브라우저 */ }
 
