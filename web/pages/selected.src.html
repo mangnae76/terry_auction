@@ -644,8 +644,12 @@ button { cursor: pointer; }
 .mk-sale .sc-box { padding: 12px 14px 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; }
 .mk-sale .sc-sub { margin: 0 0 10px; font-size: 15px; font-weight: 800; color: #111827; }
 .mk-sale .sc-table + .sc-sub { margin-top: 16px; }
-.mk-sale .sc-table { border: 1px solid #e8ecf3; border-radius: 8px; overflow: hidden; }
-.mk-sale .sc-table table { width: 100%; border-collapse: collapse; }
+.mk-sale .sc-table { border: 1px solid #e8ecf3; border-radius: 8px; overflow: hidden; overflow-x: auto; }
+.mk-sale .sc-table table { width: 100%; min-width: 1450px; border-collapse: collapse; table-layout: fixed; }
+.mk-sale .sc-table :is(th, td) { white-space: nowrap; }
+.mk-sale .sc-table td.n { text-align: right; }
+.mk-sale .sc-table td.addr { overflow: hidden; text-overflow: ellipsis; }
+.mk-sale .sc-table .addr { text-align: left; }
 .mk-sale .sc-table th { padding: 12px 8px; background: #f7f9fc; font-size: 14px; font-weight: 700; color: #374151; text-align: center; border-bottom: 1px solid #eef1f6; }
 .mk-sale .sc-table td { padding: 12px 8px; font-size: 14px; color: #9ca3af; text-align: center; border-top: 1px solid #eef1f6; }
 /* 모은 물건이 있으면 진한 글 · 길면 표 안에서 넘긴다(머리줄은 붙어 있게) */
@@ -5365,8 +5369,10 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const saleSeg = { kind: '연립다세대', deal: '매매', period: '12개월' };
   /* 인근 매각물건 분석 — 손품분석 시세분석에 있던 매각사례(동일지번 · 인근 매각물건 빈 표)를 여기로. 받는 곳을 붙이기 전까지 비워 둔다 */
   function saleCaseCard() {
-    const cols = ['사건번호', '매각기일', '감정가', '매각가', '매각가율', '전용(㎡/평)', '층', '비고'];
-    const head = `<thead><tr>${cols.map((c) => `<th>${c}</th>`).join('')}</tr></thead>`;
+    /* 칸은 auction-web 검색리스트(auction_gui.LIST_COLS)와 같게 */
+    const cols = ['사건번호', '매각년월일', '감정가', '최저입찰가', '매각가', '매각가율', '유찰회수', '응찰', '전용㎡/평', '건축연월', '건축년차', '층', '주소'];
+    const widths = [116, 96, 104, 104, 104, 74, 72, 52, 104, 76, 72, 44];   /* 주소는 남는 자리 전부 — 두 표의 칸이 같은 자리에 오게 */
+    const head = `<colgroup>${widths.map((w) => `<col style="width:${w}px">`).join('')}<col></colgroup><thead><tr>${cols.map((c) => `<th${c === '주소' ? ' class="addr"' : ''}>${c}</th>`).join('')}</tr></thead>`;
     const blank = `<div class="sc-table"><table>${head}<tbody>${[1, 2, 3].map(() => `<tr>${cols.map(() => '<td>-</td>').join('')}</tr>`).join('')}</tbody></table></div>`;
     /* 관리자 — 집 PC 도우미가 모은 물건(출처 동일지번 · 인근)으로 채운다. 최근 매각부터 */
     const filled = (rows) => (rows.length ? `<div class="sc-table has"><table>${head}<tbody>${rows.map(agRowHtml).join('')}</tbody></table></div>` : blank);
@@ -5395,13 +5401,21 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const agSaleOpen = () => S.route === 'market' && S.marketTab === 'sale';
   const agDate = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || '')); return m ? `${m[1]}.${m[2]}.${m[3]}` : (v ? esc(String(v)) : '-'); };
   const agWon = (v) => (Number(v) > 0 ? Math.round(Number(v)).toLocaleString('ko-KR') : '-');
+  /* 건축연도 — 연도가 비면 건축연월('2010.06') 앞 네 자리 */
+  const agBuiltYear = (r) => { const y = Number(r['건축연도']); if (y > 1900) return y; const m = /^(\d{4})/.exec(String(r['건축연월'] || '')); return m ? Number(m[1]) : 0; };
   function agRowHtml(r) {
     const m2 = Number(r['전용면적']);
-    const area = m2 > 0 ? `${m2.toFixed(1)} / ${(m2 / 3.305785).toFixed(1)}` : '-';
+    const area = m2 > 0 ? `${m2.toFixed(2)} / ${(m2 / 3.305785).toFixed(1)}` : '-';
     const rate = Number(r['매각가율']) > 0 ? `${(Number(r['매각가율']) * 100).toFixed(1)}%` : '-';
-    const note = [Number(r['유찰회수']) > 0 ? `유찰 ${Number(r['유찰회수'])}회` : '', Number(r['응찰자수']) > 0 ? `응찰 ${Number(r['응찰자수'])}명` : ''].filter(Boolean).join(' · ') || '-';
+    const int = (v) => (v != null && v !== '' && Number.isFinite(Number(v)) ? String(Math.round(Number(v))) : '-');
+    const by = agBuiltYear(r);
+    const ym = String(r['건축연월'] || '').trim();
+    const built = ym && ym !== 'nan' ? esc(ym) : (by ? String(by) : '-');
+    const age = by ? String(new Date().getFullYear() - by) : '-';
     const fl = r['층'] != null && r['층'] !== '' ? esc(String(r['층'])) : '-';
-    return `<tr title="${esc(String(r['소재지'] || ''))}"><td>${esc(String(r['사건번호'] || '-'))}</td><td>${agDate(r['매각일'])}</td><td>${agWon(r['감정가'])}</td><td>${agWon(r['매각가'])}</td><td>${rate}</td><td>${area}</td><td>${fl}</td><td>${note}</td></tr>`;
+    const addr = esc(String(r['소재지'] || ''));
+    const won = (v) => (Number(v) > 0 ? `<td class="n">${agWon(v)}</td>` : '<td>-</td>');
+    return `<tr><td>${esc(String(r['사건번호'] || '-'))}</td><td>${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}<td>${rate}</td><td>${int(r['유찰회수'])}</td><td>${int(r['응찰자수'])}</td><td>${area}</td><td>${built}</td><td>${age}</td><td>${fl}</td><td class="addr" title="${addr}">${addr || '-'}</td></tr>`;
   }
   function agPanelHtml() {
     const T = CLOUD.T; const s = AG.status;
