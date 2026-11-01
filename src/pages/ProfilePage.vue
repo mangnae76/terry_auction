@@ -130,7 +130,8 @@ const submit = async () => {
       <section class="prf-card">
         <h2 class="prf-h1">내 정보 수정</h2>
         <p class="prf-sub">{{ webEmbed ? '비밀번호 · 연락처 · 세금 계산 기준을 수정합니다.' : '비밀번호·연락처·주소 등 개인정보를 수정합니다.' }}</p>
-        <p class="prf-warn">🔒 본인 확인을 위해 현재 비밀번호를 입력해야 정보수정이 가능합니다.</p>
+        <!-- 현재 비밀번호는 비밀번호를 바꿀 때만 본인 확인에 쓴다(연락처 · 세금 기준은 그냥 저장). 카카오 · 네이버 계정은 비밀번호가 없어 내지 않는다 -->
+        <p v-if="canChangePw" class="prf-warn">🔒 비밀번호를 바꿀 때만 현재 비밀번호를 입력해 주세요.</p>
 
         <!-- 누구로 들어와 있는지 -->
         <div class="prf-who">
