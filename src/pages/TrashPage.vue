@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { shownAddressOf } from '../utils/addressName';
 import { caseLabelOf } from '../utils/caseLabel';
 // 치워 둔 물건을 카드로 펼쳐 본다 — 길에 따라 휴지통(/trash)과 보관함(/archive) 둘로 선다.
 // 생김새가 같아 화면은 한 벌만 두고, 어느 선반을 보는지만 갈아 끼운다.
@@ -189,7 +190,7 @@ const stageTone = (item: AuctionDetail) => (stageToneOf(item) === 'bidding' ? 'b
         </div>
 
         <h3 class="trs-addr">
-          <span v-if="propTypeMark(item.propertyType)" class="trs-type-mark">{{ propTypeMark(item.propertyType) }}</span>{{ item.address }}
+          <span v-if="propTypeMark(item.propertyType)" class="trs-type-mark">{{ propTypeMark(item.propertyType) }}</span>{{ shownAddressOf(item) }}
         </h3>
 
         <div class="trs-price-row">

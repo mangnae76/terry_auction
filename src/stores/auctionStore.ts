@@ -1,3 +1,4 @@
+import { BUILDING_NAME_AUTO_KEY, fillMissingBuildingNames } from '../services/buildingNameFill';
 import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 import { searchAuctionsFromPublicData } from '../services/publicDataApi';
@@ -916,6 +917,21 @@ export const useAuctionStore = defineStore('auction', () => {
     allAuctions.value.unshift(normalized);
   };
 
+  // 주소에 건물명이 없는 물건 — 건축물대장 건물명으로 정보요약 건물명 칸을 채운다(사용자가 적은 값은 그대로).
+  // 물건이 올 때마다 부르지만 물건마다 한 번만 찾아본다(services/buildingNameFill)
+  let nameFillTimer = 0;
+  const scheduleNameFill = () => {
+    if (typeof window === 'undefined') return;
+    window.clearTimeout(nameFillTimer);
+    nameFillTimer = window.setTimeout(() => {
+      void fillMissingBuildingNames(auctions.value, async (id, name) => {
+        const cur = allAuctions.value.find((x) => x.id === id);
+        if (!cur || String(cur.basicSummary?.['sum.buildingName'] ?? '').trim()) return;   // 그 사이 사용자가 적었다
+        cur.basicSummary = { ...(cur.basicSummary ?? {}), ...(name ? { 'sum.buildingName': name } : {}), [BUILDING_NAME_AUTO_KEY]: name ? 'bld' : 'none' };
+        await saveAuction(cur);
+      });
+    }, 2500);
+  };
   const resubscribeForUid = (uid: string) => {
     if (unsubscribeRealtime) {
       unsubscribeRealtime();
@@ -931,6 +947,7 @@ export const useAuctionStore = defineStore('auction', () => {
       uid,
       (rows) => {
         allAuctions.value = rows.map((row) => normalizeFlags(row));
+        scheduleNameFill();
         if (import.meta.env.DEV) {
           // 세는 일도 개발 중에만 — 자료가 많으면 동기화마다 도는 자리였다
           const dbRows = rows.filter((r) => !r.id.startsWith('onbid-'));

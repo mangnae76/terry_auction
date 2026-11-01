@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // 입찰 캘린더 — 선정해 둔 물건의 입찰일을 달력에 펼쳐 본다.
+import { shownAddressOf } from '../utils/addressName';
 import { BALANCE_DUE_DAYS } from '../utils/auctionDates';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -364,7 +365,7 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
             <p v-if="show.star && (it.a.priority ?? 0) > 0" class="ev-star">{{ '★'.repeat(it.a.priority ?? 0) }}</p>
             <p class="ev-case">{{ caseShort(it.a) }}</p>
             <p :class="['ev-fail', { fresh: failText(it.a) === '신건' }]">{{ failText(it.a) }}</p>
-            <p v-if="show.addr" class="ev-addr">{{ it.a.address }}</p>
+            <p v-if="show.addr" class="ev-addr">{{ shownAddressOf(it.a) }}</p>
             <p class="ev-kind">{{ roundText(it.a) }}</p>
             <p v-if="show.money" class="ev-price">감정: {{ money(it.a.metrics?.appraisalValue ?? 0) }}</p>
             <p v-if="show.money" class="ev-price">최저: {{ money(it.a.metrics?.minimumBidValue ?? 0) }}</p>
@@ -412,7 +413,7 @@ const goDetail = (id: string) => router.push(`/auctions/${id}`);
                 <em v-if="show.star && (it.a.priority ?? 0) > 0" class="star">{{ '★'.repeat(it.a.priority ?? 0) }}</em>
                 {{ it.a.caseNumber || '사건번호 없음' }}<em class="fail">{{ failText(it.a) }}</em>
               </b>
-              <small v-if="show.addr">{{ it.a.address || '주소 없음' }}</small>
+              <small v-if="show.addr">{{ shownAddressOf(it.a) || '주소 없음' }}</small>
               <small v-if="show.cat" class="cat">{{ areaTag(it.a) }}</small>
               <small v-if="show.money" class="won">감정 {{ money(it.a.metrics?.appraisalValue ?? 0) }} · 최저 {{ money(it.a.metrics?.minimumBidValue ?? 0) }}</small>
             </span>

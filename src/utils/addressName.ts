@@ -40,6 +40,12 @@ export const addressWithName = (address: string, name?: string | null): string =
   return [...parts.slice(0, last + 1), nm, ...parts.slice(last + 1)].join(' ');
 };
 
+/** 물건 주소를 화면에 보여 줄 꼴 — 주소에 건물명이 없으면 건물명 칸(sum.buildingName)을 지번 뒤에 끼운다.
+ *  그 칸은 사용자가 적었거나, 적지 않았으면 건축물대장 건물명으로 저절로 채워진다(services/buildingNameFill).
+ *  임장경로 · 입찰달력 · 휴지통 등 주소를 글로 보여 주는 화면은 모두 이것 하나로 */
+export const shownAddressOf = (a?: { address?: string | null; basicSummary?: Record<string, string> | null } | null): string =>
+  addressWithName(a?.address ?? '', a?.basicSummary?.['sum.buildingName']);
+
 /** 보여 줄 주소를 세 토막으로 가른다 — 손으로 적어 둔 건물명만 따로 칠하려고.
  *  이름을 안 적었거나 주소에서 못 찾으면 before 에 주소를 통째로 담아 돌려준다. */
 /** 주소 안에 이미 적힌 건물명 — 지번 바로 뒤에서 동·층·호 앞까지 ('… 679-2, 부경캐슬 3층 304호' → '부경캐슬').

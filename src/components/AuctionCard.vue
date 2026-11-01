@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { shownAddressOf } from '../utils/addressName';
 import { caseLabelOf } from '../utils/caseLabel';
 import { computed } from 'vue';
 import type { AuctionDetail, AuctionStatus } from '../types/auction';
@@ -82,7 +83,7 @@ const highestBidText = computed(() => {
       </div>
     </div>
 
-    <h3>{{ item.address }}</h3>
+    <h3>{{ shownAddressOf(item) }}</h3>
 
     <div class="value-row">
       <div>

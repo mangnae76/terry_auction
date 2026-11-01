@@ -1,4 +1,4 @@
-// 물건 한 채의 건축물대장(표제부) 사실 — 주차대수 · 승강기 수. 개별성 분석의 주차수 · 엘베를 PDF에 없을 때 채운다.
+// 물건 한 채의 건축물대장(표제부) 사실 — 주차대수 · 승강기 수 · 건물명. 개별성 분석의 주차수 · 엘베를 PDF에 없을 때 채운다.
 // 필지마다 30일 저장(cacheBldFacts) — 건물은 잘 바뀌지 않고, 건축물대장 하루 한도를 아낀다.
 import { cachedEntryOrStale, cacheKey, CACHE_TTL } from './marketCache';
 import { fetchBuildingFacts, type BuildingFacts } from './publicDataApi';
@@ -9,7 +9,8 @@ export const getBuildingFacts = async (address: string): Promise<BuildingFacts |
   try {
     const region = await resolveRegionFromAddress(address);
     if (!region?.bCode10 || !region.jibun) return null;
-    const got = await cachedEntryOrStale('cacheBldFacts', cacheKey(region.bCode10, region.jibun), CACHE_TTL.units,
+    // 'n' — 건물명(name)을 담기 시작한 판. 예전 저장값에는 이름이 없어 열쇠를 바꿔 새로 받는다
+    const got = await cachedEntryOrStale('cacheBldFacts', cacheKey(region.bCode10, region.jibun, 'n'), CACHE_TTL.units,
       () => fetchBuildingFacts(region.bCode10, region.jibun), (v) => v !== null, 365 * 24 * 60 * 60 * 1000);
     return got.value ?? null;
   } catch {

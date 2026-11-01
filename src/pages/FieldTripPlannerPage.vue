@@ -9,7 +9,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router';
 import { saveFieldTripPlan } from '../services/auctionRepository';
 import { buildOptimizedRoute, parseAddressLines, reverseGeocode, straightDistanceKm, type GeoPoint } from '../services/routeOptimizer';
-import { addressWithName } from '../utils/addressName';
+import { shownAddressOf } from '../utils/addressName';
 import { fetchRouteForPath, type RouteLeg, type RouteMode } from '../services/roadRouting';
 import { apiPath } from '../services/apiBase';
 import { useAuctionStore } from '../stores/auctionStore';
@@ -170,17 +170,17 @@ const stageTagByKey = computed(() => {
   return map;
 });
 const stageTagOf = (address: string) => stageTagByKey.value[addrKey(address)] ?? null;
-/** 보여 줄 주소 — PDF 주소에 건물명이 빠졌으면 적어 둔 건물명(sum.buildingName)을 지번 뒤에 끼운다.
- *  선정물건 카드 · 물건상세와 같은 함수(addressWithName)라 'DS리치빌' 같은 이름이 경로 줄에도 똑같이 보인다 */
-const nameByKey = computed(() => {
-  const map: Record<string, string> = {};
-  everyAuction.value.forEach((item) => {
-    const nm = String(item.basicSummary?.['sum.buildingName'] ?? '').trim();
-    if (nm) map[addrKey(item.address ?? '')] = nm;
-  });
+/** 보여 줄 주소 — PDF 주소에 건물명이 빠졌으면 건물명 칸(사용자가 적었거나 건축물대장에서 저절로 채운 값)을 지번 뒤에 끼운다.
+ *  공통 함수(shownAddressOf)라 'DS리치빌' 같은 이름이 선정물건 카드 · 물건상세와 똑같이 경로 줄에도 보인다 */
+const itemByKey = computed(() => {
+  const map: Record<string, AuctionDetail> = {};
+  everyAuction.value.forEach((item) => { map[addrKey(item.address ?? '')] = item; });
   return map;
 });
-const shownAddr = (address: string) => addressWithName(address, nameByKey.value[addrKey(address)]);
+const shownAddr = (address: string) => {
+  const item = itemByKey.value[addrKey(address)];
+  return item ? shownAddressOf({ address, basicSummary: item.basicSummary }) : address;
+};
 
 /** 치운 물건 중 경로에 올라 있던 것 — 휴지통·보관함으로 보낸 임장예정·임장완료.
  *  경로에서는 내려가지만 목록에서까지 사라지면 '어디 갔지?' 가 된다. 자리는 남겨 둔다. */
