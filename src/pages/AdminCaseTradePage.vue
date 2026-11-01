@@ -29,6 +29,7 @@ import AppToast from '../components/AppToast.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import { useAuthStore } from '../stores/authStore';
+import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 import {
   addSnapshot, listSnapshots, removeSnapshot, updateSnapshot, type CaseSnapshot,
 } from '../services/adminSnapshots';
@@ -178,7 +179,7 @@ const run = async () => {
     if (!res.price) {
       notice.value = notice.value || '공동주택가 자료가 없습니다 — 공동주택이 아니거나 아직 고시 전입니다.';
     }
-    if (!props.preset) loadLocalAsk();
+    if (!props.preset) void loadLocalAsk();
     if (props.preset) {
       restorePresetPicks(); restorePicksFromAuction(); presetRunAt.value = Date.now();
       // 조회가 끝나면 한 번 적는다 — 고르지 않고 열어만 봐도 ③ 평균 · 보증보험이 물건에 남아 손품결론이 읽는다
@@ -525,19 +526,46 @@ const askOf = (sim: boolean): AskPick | null => {
   }
   return best ? { ...best, count } : null;
 };
-// ===== 시장분석 ④ 호가분석 — 물건이 없어 주소마다 이 브라우저에 적어 둔다(네이버 등에서 본 가장 낮은 호가 몇 줄) =====
+// ===== 시장분석 ④ 호가분석 — 물건이 없어 주소마다 계정(userPrefs.caseTradeAsk)에 적어 둔다(네이버 등에서 본 가장 낮은 호가 몇 줄) =====
+// 예전에는 이 브라우저(localStorage)에만 적었다 — 계정에 없는 주소면 그 값을 읽어 한 번 옮겨 담는다
 type AskLocalRow = { ask: string; area: string; addr: string; note: string };
 type AskGroupKey = 'case' | 'sim';
 const ASK_GROUPS: { key: AskGroupKey; label: string }[] = [{ key: 'case', label: '경매빌라 호가매물' }, { key: 'sim', label: '유사빌라 호가매물' }];
 const blankAsk = (): AskLocalRow => ({ ask: '', area: '', addr: '', note: '' });
 const localAsk = ref<Record<AskGroupKey, AskLocalRow[]>>({ case: [blankAsk()], sim: [blankAsk()] });
 const askLocalKey = () => `caseTrade.ask.${kind.value}.${lastRunAddress.value.replace(/\s+/g, '')}`;
-const loadLocalAsk = () => {
-  let v: Record<AskGroupKey, AskLocalRow[]> | null = null;
-  try { v = JSON.parse(localStorage.getItem(askLocalKey()) || 'null'); } catch { v = null; }
-  localAsk.value = v && Array.isArray(v.case) && Array.isArray(v.sim) ? v : { case: [blankAsk()], sim: [blankAsk()] };
+/** 계정 문서의 맵 열쇠 — 점 · 빗금은 필드 경로로 읽히지 않게 바꾼다 */
+const askCloudKey = () => `${kind.value}|${lastRunAddress.value.replace(/\s+/g, '')}`.replace(/[./]/g, '_');
+let askCloud: Promise<Record<string, { case: unknown[]; sim: unknown[] }>> | null = null;
+let askCloudUid = '';
+const askCloudAll = () => {
+  if (!askCloud || askCloudUid !== auth.uid) { askCloudUid = auth.uid; askCloud = (auth.uid ? loadUserPrefs(auth.uid) : Promise.resolve(null)).then((p) => ({ ...(p?.caseTradeAsk ?? {}) })); }
+  return askCloud;
 };
-watch(localAsk, (v) => { if (props.preset || !lastRunAddress.value) return; try { localStorage.setItem(askLocalKey(), JSON.stringify(v)); } catch { /* 기억만 못 한다 */ } }, { deep: true });
+let askLoading = false;
+let askTimer = 0;
+const loadLocalAsk = async () => {
+  const lk = askLocalKey(); const ck = askCloudKey();
+  askLoading = true;
+  const all = await askCloudAll();
+  let v = all[ck] as Record<AskGroupKey, AskLocalRow[]> | undefined | null;
+  const fromLocal = !v;
+  if (fromLocal) { try { v = JSON.parse(localStorage.getItem(lk) || 'null'); } catch { v = null; } }
+  if (askCloudKey() !== ck) { askLoading = false; return; }   // 기다리는 사이 다른 주소를 조회했다
+  localAsk.value = v && Array.isArray(v.case) && Array.isArray(v.sim) ? v : { case: [blankAsk()], sim: [blankAsk()] };
+  void nextTick(() => { askLoading = false; if (fromLocal && v) saveAsk(); });
+};
+const saveAsk = () => {
+  if (props.preset || !lastRunAddress.value || !auth.uid) return;
+  const lk = askLocalKey(); const ck = askCloudKey(); const uid = auth.uid;
+  const v = JSON.parse(JSON.stringify(localAsk.value)) as { case: unknown[]; sim: unknown[] };
+  window.clearTimeout(askTimer);
+  askTimer = window.setTimeout(() => {
+    void askCloudAll().then((all) => { all[ck] = v; });
+    void saveUserPrefs(uid, { caseTradeAsk: { [ck]: v } }).then((ok) => { if (ok) { try { localStorage.removeItem(lk); } catch { /* 그만 */ } } });
+  }, 800);
+};
+watch(localAsk, () => { if (!askLoading) saveAsk(); }, { deep: true });
 const askDigits = (v: string) => Number(String(v ?? '').replace(/[^\d]/g, '')) || 0;
 const askAreaOf = (g: AskGroupKey, r: AskLocalRow) => Number(String(r.area ?? '').replace(/[^\d.]/g, '')) || (g === 'case' ? baseArea.value : 0);
 const askUnitOf = (g: AskGroupKey, r: AskLocalRow) => { const p = askDigits(r.ask); const a = askAreaOf(g, r); return p > 0 && a > 0 ? Math.round(p / (a / PYEONG)) : 0; };
@@ -904,15 +932,32 @@ const saveScreen = () => {
 watch([rows, price, pickedSale, pickedJeonse, areaFilter, yearFilter, tab, rateText, restoredSale, restoredJeonse, mode, simSale, simJeonse, simF, condF], saveScreen, { deep: true });
 // 손품분석 — 고른 줄 · 거르기를 물건마다 기억한다. 화면을 다시 띄워도(탭 오가기 · 웹 다시 그리기) 다시 조회한 뒤 되살린다
 type PresetPicks = { modeView?: Record<CaseMode, ModeView>; areaFilter?: string; yearFilter?: string; mode: CaseMode; tab: typeof tab.value; simF: TradeRange; condF: TradeRange; simSale: string; simJeonse: string; pickedSale: string; pickedJeonse: string };
+// 물건 문서(sonView)에 남긴다 — 예전에 이 브라우저(localStorage)에만 적은 값은 물건에 없을 때 읽어 한 번 옮겨 담는다
 const presetKey = () => (props.preset ? `son.case.${props.preset.kind}.${props.preset.address}` : '');
+let sonTimer = 0;
+let lastSonJson = '';
 const savePresetPicks = () => {
   if (!props.preset || loading.value || !rows.value.length && !dongRows.value.length) return;
   const v: PresetPicks = { modeView: modeView.value, areaFilter: areaFilter.value, yearFilter: yearFilter.value, mode: mode.value, tab: tab.value, simF: simF.value, condF: condF.value, simSale: simSale.value, simJeonse: simJeonse.value, pickedSale: pickedSale.value, pickedJeonse: pickedJeonse.value };
-  try { localStorage.setItem(presetKey(), JSON.stringify(v)); } catch { /* 기억만 못 한다 */ }
+  const id = props.preset.id; const lk = presetKey();
+  if (!id) { try { localStorage.setItem(lk, JSON.stringify(v)); } catch { /* 기억만 못 한다 */ } return; }   // 물건이 없는 조회
+  const json = JSON.stringify(v);
+  if (json === lastSonJson) return;
+  window.clearTimeout(sonTimer);
+  sonTimer = window.setTimeout(() => {
+    const a = auctionStore.auctions.find((x) => x.id === id);
+    if (!a) return;
+    lastSonJson = json;
+    auctionStore.saveAuction({ ...a, sonView: JSON.parse(json) as Record<string, unknown> })
+      .then(() => { try { localStorage.removeItem(lk); } catch { /* 그만 */ } })
+      .catch(() => { lastSonJson = ''; });
+  }, 800);
 };
 const restorePresetPicks = () => {
-  let v: PresetPicks | null = null;
-  try { v = JSON.parse(localStorage.getItem(presetKey()) || 'null'); } catch { v = null; }
+  const id = props.preset?.id;
+  let v = (id ? auctionStore.auctions.find((x) => x.id === id)?.sonView : undefined) as PresetPicks | undefined | null;
+  if (v) lastSonJson = JSON.stringify(v);
+  else { try { v = JSON.parse(localStorage.getItem(presetKey()) || 'null'); } catch { v = null; } }
   if (!v) return;
   // 알약 · 표 탭은 물건과 상관없는 기억(readView)을 따른다 — 여기서는 그 물건의 면적 · 연도 · 거르기 · 고른 줄만
   if (v.modeView) { modeView.value[MODES[0]].areaFilter = v.modeView[MODES[0]]?.areaFilter ?? ''; modeView.value[MODES[0]].yearFilter = v.modeView[MODES[0]]?.yearFilter ?? ''; modeView.value[MODES[1]].areaFilter = v.modeView[MODES[1]]?.areaFilter ?? ''; modeView.value[MODES[1]].yearFilter = v.modeView[MODES[1]]?.yearFilter ?? ''; }

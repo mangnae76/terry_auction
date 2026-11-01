@@ -29,6 +29,12 @@ export interface UserPrefs {
   postWinLoanEdited?: boolean;
   // 낙찰이후 · 서식 — 사용자가 고쳐 저장한 서식 글({사건번호} 같은 자리표 포함). 빈 글이면 기본 서식
   postWinForms?: Record<string, string>;
+  /** 낙찰이후 · 서식 — 낙찰자 이름 · 연락처(물건마다 같은 값) */
+  postWinFormMe?: { winner?: string; phone?: string };
+  /** 시장분석 · 호가분석 — 주소마다 적어 둔 호가 매물 줄 (종류.주소 열쇠) */
+  caseTradeAsk?: Record<string, { case: unknown[]; sim: unknown[] }>;
+  /** 웹 물건등록 — 마지막 결과 목록(줄 · 알림 · 마지막 시각 · 드라이브에 없는 물건 · 접힘). 앱 목록과 꼴이 달라 따로 둔다 */
+  webImportList?: Record<string, unknown>;
   // 낙찰이후 · 명도 표 (postWinEvict.ts)
   postWinEvict?: unknown[];
   postWinEvictVersion?: number;
@@ -71,12 +77,15 @@ export const loadUserPrefs = async (uid: string): Promise<UserPrefs | null> => {
 const stripUndefined = <T>(value: T): T =>
   JSON.parse(JSON.stringify(value, (_k, v) => (v === undefined ? null : v))) as T;
 
-export const saveUserPrefs = async (uid: string, partial: Partial<UserPrefs>): Promise<void> => {
-  if (!uid || !ready()) return;
+/** 저장했으면 true — 실패해도 던지지 않는다(브라우저에 남은 옛 값을 지울지 이것으로 정한다) */
+export const saveUserPrefs = async (uid: string, partial: Partial<UserPrefs>): Promise<boolean> => {
+  if (!uid || !ready()) return false;
   try {
     await setDoc(doc(firestore!, COLLECTION, uid), stripUndefined(partial), { merge: true });
+    return true;
   } catch (err) {
     // Firestore 규칙 미배포 시 거부될 수 있음 — 경고만 (저장 실패해도 앱은 계속 동작)
     console.warn('[userPrefs] save 실패 (Firestore 규칙 확인):', err);
+    return false;
   }
 };

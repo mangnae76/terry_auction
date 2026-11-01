@@ -13,6 +13,8 @@ export { listDrivePdfFiles, parseDrivePdfFile, downloadDrivePdfBytes } from '../
 export {
   getGeminiKey, setGeminiKey, clearGeminiKey, isGeminiOn, setGeminiOn, loadGeminiPrefs, testGeminiKey, fillWithGemini, AI_FIELD_LABELS,
 } from '../../src/services/geminiPdf';
+// 계정 설정(userPrefs) — 물건등록 폴더 즐겨찾기 · 고른 폴더(앱과 같은 칸) · 마지막 결과 목록(webImportList)
+export { loadUserPrefs, saveUserPrefs } from '../../src/services/userPrefsRepository';
 // 기일내역에서 이번 회차 고르기
 export { pickCurrentRound } from '../../src/utils/auctionSchedule';
 // 수익분석에서 확정한 입찰안 — 목록 카드의 입찰가 · 매도가가 이 안의 값을 쓴다

@@ -444,6 +444,18 @@ export interface AuctionDetail {
   postWinFlow?: PostWinFlow;
   /** 낙찰이후 · 서식 — 이 물건에서 편집해 저장한 문서 글(서식 열쇠 → 글). 빈 글이면 기본 서식 */
   postWinDocs?: Record<string, string>;
+  /** 낙찰이후 · 서식 — 이 물건에서 적은 들어갈 값(점유자 · 기한 · 집행일 · 이사일 · 금액 등). 낙찰자 이름 · 연락처는 계정(userPrefs)에 */
+  postWinFormVals?: Record<string, string>;
+  /** 낙찰이후 · 명도분석 · 세금분석 — 고친 칸 · 보유기간 · AI 까닭(칸 열쇠 · 까닭 줄) · 요약 */
+  postWinMoney?: {
+    ev?: Record<string, unknown>;
+    who?: 'biz' | 'person';
+    term?: string;
+    aiNotes?: Array<{ key: string; note: string }>;
+    aiSummary?: string;
+  };
+  /** 손품분석 — 이 물건에서 고른 면적 · 연도 거르기와 고른 줄 열쇠(다시 조회한 뒤 되살린다) */
+  sonView?: Record<string, unknown>;
   /** 낙찰이후 · 매도·임대 — 중개 의뢰 현황 */
   sellAgencyRows?: AgencyRow[];
   /** 낙찰이후 · 매도·임대 — 직거래 */

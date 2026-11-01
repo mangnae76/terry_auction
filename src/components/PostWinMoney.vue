@@ -4,8 +4,8 @@
 // 세금분석은 필요경비 · 사업경비 장부의 값(실제로 적지 않은 줄은 입찰가산정 A안)을 쓴다.
 // 명도협의 · 강제집행 단추를 누르면 명도분석 금액이 사업경비 명도비로 들어간다.
 // 매도가는 매도일이 적히면 확정 매도가다(같은 칸). 고치려면 입찰가산정으로 간다.
-// 고른 값은 이 브라우저에 물건마다 기억한다. 세금 셈은 입찰가산정과 같은 profitMath.
-import { computed, inject, onMounted, ref, watch } from 'vue';
+// 고른 값은 물건 자료(postWinMoney)에 남긴다. 세금 셈은 입찰가산정과 같은 profitMath.
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { withConfirmedPlan, confirmedMarkOf } from '../services/confirmedPlan';
 import { useRouter } from 'vue-router';
 import { useAuctionStore } from '../stores/auctionStore';
@@ -26,8 +26,14 @@ const webEmbed = inject<boolean>('webEmbed', false);
 const planned = <T extends AuctionDetail | null | undefined>(a: T): T => (webEmbed ? withConfirmedPlan(a) : a) as T;
 const A = computed(() => planned(props.auction));
 
+// 예전에는 이 브라우저(localStorage)에만 적었다 — 물건 자료에 없으면 그 값을 읽어 한 번 옮겨 담는다
 const key = () => `pw.money.${props.auction?.id ?? ''}`;
-const read = (): Record<string, unknown> => { try { return JSON.parse(localStorage.getItem(key()) || '{}') || {}; } catch { return {}; } };
+const readLocal = (): Record<string, unknown> => { try { return JSON.parse(localStorage.getItem(key()) || '{}') || {}; } catch { return {}; } };
+const read = (): Record<string, unknown> => {
+  const s = props.auction?.postWinMoney;
+  if (!s) return readLocal();
+  return { ...s, aiNotes: Object.fromEntries((s.aiNotes ?? []).map((n) => [n.key, n.note])) };
+};
 const won = (n: number) => `${Math.round(n || 0).toLocaleString('ko-KR')}원`;
 const man = (n: number) => `${Math.round((n || 0) / 10_000).toLocaleString('ko-KR')}만원`;
 
@@ -41,8 +47,8 @@ const seedEvict = (): EvictInput => {
   };
 };
 // 예전 셈(노무비 평당 · 이사비 한 덩어리)으로 기억된 값은 버리고 새 기준으로 — 칸이 바뀌었다
-const savedEv = (read().ev as Record<string, unknown> | undefined);
-const ev = ref<EvictInput>({ ...seedEvict(), ...(savedEv && !('laborPerPyeong' in savedEv) ? savedEv : {}) });
+const evOf = (r: Record<string, unknown>): EvictInput => { const sv = r.ev as Record<string, unknown> | undefined; return { ...seedEvict(), ...(sv && !('laborPerPyeong' in sv) ? sv : {}) }; };
+const ev = ref<EvictInput>(evOf(read()));
 const who = ref<'biz' | 'person'>((read().who as 'biz' | 'person') || 'biz');
 // 물건에서 따로 고르지 않았으면 내 정보의 사업자 구분을 따른다
 const auth = useAuthStore();
@@ -68,9 +74,38 @@ const term = ref<HoldTerm>((read().term as HoldTerm) || 'lt1');
 /** AI 명도 — 고친 칸마다 까닭 · 한두 문장 요약(이 브라우저에 물건마다 기억) */
 const aiNotes = ref<Record<string, string>>((read().aiNotes as Record<string, string>) ?? {});
 const aiSummary = ref(String(read().aiSummary ?? ''));
-watch([ev, who, term, aiNotes, aiSummary], () => {
-  try { localStorage.setItem(key(), JSON.stringify({ ev: ev.value, who: who.value, term: term.value, aiNotes: aiNotes.value, aiSummary: aiSummary.value })); } catch { /* 그만 */ }
-}, { deep: true });
+// 물건 자료에 — 칸을 고칠 때마다 물건 문서 전체를 쓰지 않게 잠깐 모았다가.
+// AI 까닭은 줄로 적는다(맵이면 합치기 저장에서 지운 칸의 까닭이 남는다)
+let applying = false;
+let saveTimer = 0;
+const writeMoney = () => {
+  saveTimer = 0;
+  const au = props.auction;
+  if (!au) return;
+  const lk = key();
+  au.postWinMoney = {
+    ev: { ...ev.value }, who: who.value, term: term.value, aiSummary: aiSummary.value,
+    aiNotes: Object.entries(aiNotes.value).map(([k, note]) => ({ key: k, note })),
+  };
+  store.saveAuction(au).then(() => { try { localStorage.removeItem(lk); } catch { /* 그만 */ } }).catch(() => { /* 다음 고침에 다시 적는다 */ });
+};
+const saveMoney = () => { window.clearTimeout(saveTimer); saveTimer = window.setTimeout(writeMoney, 800); };
+watch([ev, who, term, aiNotes, aiSummary], () => { if (!applying) saveMoney(); }, { deep: true });
+/** 물건이 늦게 오거나 바뀌면 그 물건의 값으로 — 브라우저에만 있던 값이면 옮겨 담는다 */
+watch(() => props.auction?.id, (id, old) => {
+  if (!id || id === old) return;
+  applying = true;
+  const r = read();
+  ev.value = evOf(r);
+  if (!webEmbed && r.who) who.value = r.who as 'biz' | 'person';
+  term.value = (r.term as HoldTerm) || 'lt1';
+  aiNotes.value = (r.aiNotes as Record<string, string>) ?? {};
+  aiSummary.value = String(r.aiSummary ?? '');
+  void Promise.resolve().then(() => { applying = false; });
+  if (!props.auction?.postWinMoney && Object.keys(readLocal()).length) saveMoney();
+});
+onMounted(() => { if (props.auction && !props.auction.postWinMoney && Object.keys(readLocal()).length) saveMoney(); });
+onBeforeUnmount(() => { if (saveTimer) { window.clearTimeout(saveTimer); writeMoney(); } });
 const reset = () => { ev.value = seedEvict(); aiNotes.value = {}; aiSummary.value = ''; };
 
 // === AI로 채우기 — 권리분석 AI 결과 · 현장조사 · 물건 정보를 보내 계산에 쓴 값을 고친다(계산은 그대로 정해진 식) ===

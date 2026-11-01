@@ -4172,7 +4172,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const PAID = (() => { try { return localStorage.getItem('myturn.plan') !== 'free'; } catch (e) { return true; } })();
 
   const R = {
-    favs: store.get('wlp.web.favs', DEMO_FOLDERS), sel: store.get('wlp.web.favSel', null),
+    /* 폴더 즐겨찾기 · 고른 폴더는 계정(userPrefs, 앱과 같은 칸) — 로그인 전(예시 화면)에만 예시 폴더 */
+    favs: DEMO_FOLDERS.slice(), sel: null,
     mode: (() => { try { return localStorage.getItem('wlp.web.regMode') === 'manual' ? 'manual' : 'auto'; } catch (e) { return 'auto'; } })(),
     rows: [], loading: false, loadingLabel: '', banner: '', last: '', collapsed: false, missing: [], scanned: [],
     /* AI 파싱 — 앱(geminiPdf)과 같은 자리에서 읽는다. 쓰기·확인은 TAPdf 로 한다 */
@@ -4183,26 +4184,66 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
      (상자 둘을 쓰던 때는 상자마다 따로 두었다 — 지금은 하나로 합쳤다) */
   const LIST_KEYS = ['rows', 'banner', 'last', 'missing', 'collapsed'];
   /* 결과 목록은 새로고침해도 남는다 — 앱이 마지막 목록을 계정에 적어 두고 다시 여는 것과 같게.
-     이 브라우저에 사람(로그인 계정)마다 따로 적는다. 화면에 쓰는 값만 두고 등록용 원본(x)은 뺀다 */
-  const regKey = () => { let uid = ''; try { uid = (CLOUD.auth && CLOUD.auth.isLoggedIn && CLOUD.auth.uid) || ''; } catch (e) { /* 앱 연결 전 */ } return `wlp.web.regLists.${uid || 'guest'}`; };
+     계정(userPrefs.webImportList)에 적는다 — 앱 목록(pdfImportLastRows)과 줄 꼴이 달라 칸은 따로. 화면에 쓰는 값만 두고 등록용 원본(x)은 뺀다.
+     예전에는 이 브라우저(localStorage wlp.web.regLists.{uid})에만 적었다 — 계정에 없으면 그 값을 한 번 옮겨 담는다 */
+  const regKey = () => { let uid = ''; try { uid = (CLOUD.auth && CLOUD.auth.isLoggedIn && CLOUD.auth.uid) || ''; } catch (e) { /* 앱 연결 전 */ } return uid || 'guest'; };
+  const regLocalKey = (uid) => `wlp.web.regLists.${uid}`;
+  const regBlank = () => ({ rows: [], banner: '', last: '', missing: [], collapsed: false });
   let regLoadedKey = '';
+  let regLastJson = '';
+  let regTimer = 0;
   const saveRegLists = () => {
-    if (!regLoadedKey || regLoadedKey !== regKey()) return;
+    const uid = regLoadedKey;
+    if (!uid || uid === 'guest' || uid !== regKey() || !CLOUD.T) return;
     const cur = Object.fromEntries(LIST_KEYS.map((k) => [k, R[k]]));
-    store.set(regLoadedKey, { list: { ...cur, rows: (cur.rows || []).map(({ x, ...r }) => r) } });
+    const json = JSON.stringify({ ...cur, rows: (cur.rows || []).map(({ x, ...r }) => r) });
+    if (json === regLastJson) return;
+    clearTimeout(regTimer);
+    regTimer = setTimeout(() => {
+      regLastJson = json;
+      CLOUD.T.saveUserPrefs(uid, { webImportList: { list: JSON.parse(json) } })
+        .then((ok) => { if (!ok) { regLastJson = ''; return; } try { localStorage.removeItem(regLocalKey(uid)); } catch (e) { /* 그만 */ } });
+    }, 800);
   };
   const loadRegLists = () => {
     const key = regKey();
     if (key === regLoadedKey) return;
-    const saved = store.get(key, null) || {};
+    if (key !== 'guest' && (!CLOUD.regPrefs || CLOUD.regPrefs.uid !== key)) return;   /* 계정 자료가 아직 — 받아 오면 다시 그린다 */
+    const cloud = key === 'guest' ? null : CLOUD.regPrefs.list;
+    const local = key === 'guest' ? null : store.get(regLocalKey(key), null);
     /* 예전에 상자마다 따로 적어 두던 것({drive, ai})도 읽어 준다 */
-    const cur = saved.list || saved.ai || saved.drive || { rows: [], banner: '', last: '', missing: [], collapsed: false };
-    LIST_KEYS.forEach((k) => { R[k] = cur[k] ?? (k === 'rows' || k === 'missing' ? [] : k === 'collapsed' ? false : ''); });
+    const cur = cloud || (local && (local.list || local.ai || local.drive)) || regBlank();
+    LIST_KEYS.forEach((k) => { R[k] = cur[k] ?? regBlank()[k]; });
     regLoadedKey = key;
+    regLastJson = cloud ? JSON.stringify({ ...cur, rows: (cur.rows || []).map(({ x, ...r }) => r) }) : '';
   };
-  if (!Array.isArray(R.favs)) R.favs = DEMO_FOLDERS.slice();
+  /* 로그인한 계정의 폴더 · 결과 목록을 받아 온다. 이 브라우저에만 있던 폴더는 계정 것과 합쳐 한 번 옮겨 담는다 */
+  const DEMO_FIDS = new Set(DEMO_FOLDERS.map((f) => folderIdOf(f.url)));
+  const loadRegPrefs = (uid) => {
+    LIST_KEYS.forEach((k) => { R[k] = regBlank()[k]; }); R.favs = []; R.sel = []; regLoadedKey = '';
+    CLOUD.T.loadUserPrefs(uid).then((p) => {
+      if (CLOUD.prefsUid !== uid) return;
+      p = p || {};
+      const cloudFavs = Array.isArray(p.pdfImportFolderFavorites)
+        ? p.pdfImportFolderFavorites.map((f) => (typeof f === 'string' ? { name: '', url: f } : { name: (f && f.name) || '', url: (f && f.url) || '' })).filter((f) => f.url)
+        : [];
+      const localFavs = (store.get('wlp.web.favs', []) || []).filter((f) => f && f.url && !DEMO_FIDS.has(folderIdOf(f.url)));
+      const have = new Set(cloudFavs.map((f) => folderIdOf(f.url)));
+      const extra = localFavs.filter((f) => !have.has(folderIdOf(f.url)));
+      const cloudSel = Array.isArray(p.pdfImportSelectedFolders) ? p.pdfImportSelectedFolders.filter((u) => typeof u === 'string' && u) : null;
+      const localSel = (store.get('wlp.web.favSel', []) || []).filter((u) => extra.some((f) => f.url === u));
+      R.favs = [...cloudFavs, ...extra];
+      R.sel = [...(cloudSel || (R.favs.length ? [R.favs[0].url] : [])), ...localSel];
+      const dropLocalFavs = () => { try { localStorage.removeItem('wlp.web.favs'); localStorage.removeItem('wlp.web.favSel'); } catch (e) { /* 그만 */ } };
+      if (extra.length) saveFavs().then((done) => { if (done) dropLocalFavs(); }); else dropLocalFavs();
+      CLOUD.regPrefs = { uid, list: (p.webImportList && p.webImportList.list) || null };
+      if (S.route === 'register' || (S.modal && S.modal.kind === 'fav')) { if (S.modal && S.modal.kind === 'fav') renderModal(); render(); }
+    }).catch(() => { /* 못 받으면 빈 목록 그대로 — 다시 들어오면 또 받는다 */ });
+  };
   if (!Array.isArray(R.sel)) R.sel = R.favs.length ? [R.favs[0].url] : [];
-  const saveFavs = () => { store.set('wlp.web.favs', R.favs); store.set('wlp.web.favSel', R.sel); };
+  const saveFavs = () => (CLOUD.prefsUid && CLOUD.T
+    ? CLOUD.T.saveUserPrefs(CLOUD.prefsUid, { pdfImportFolderFavorites: R.favs, pdfImportSelectedFolders: R.sel }).then((ok) => { if (!ok) toast('폴더를 저장하지 못했습니다 — 잠시 뒤 다시 해 주세요.', 'info'); return ok; })
+    : Promise.resolve(false));
   const existingOf = (caseNo) => items.find((x) => x.caseNo === caseNo && !x.trashed);
   const classify = (p) => (existingOf(p.caseNo) ? '변경' : '신규');
   const AI_TEXT = (ai) => (ai ? `${ai.filled && ai.filled.length ? `<p class="ai">AI가 채움 · ${esc(ai.filled.join(', '))} <em>— 확인해 주세요</em></p>` : ''}${ai.rejected && ai.rejected.length ? `<p class="ai gray">PDF에서 근거를 못 찾아 버림 · ${esc(ai.rejected.join(', '))}</p>` : ''}${ai.error ? `<p class="ai err">${esc(ai.error)}</p>` : ''}` : '');
@@ -6119,7 +6160,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
      로그인 전에는 예시 물건을 보여 주고, 로그인하면 앱과 같은 Firestore 물건으로 바꾼다.
      웹에서 바꾼 중요도·단계·보관·휴지통은 앱 저장소의 함수(saveAuction · archiveAuctions …)로 그대로 적는다 */
   const DEMO_ITEMS = items.slice();
-  const CLOUD = { on: false, synced: false, T: null, auth: null, store: null, raw: new Map(), nearby: new Map(), nearbyBusy: '', geminiUid: null };
+  const CLOUD = { on: false, synced: false, T: null, auth: null, store: null, raw: new Map(), nearby: new Map(), nearbyBusy: '', geminiUid: null, prefsUid: null, regPrefs: null };
   /* 로그인해 있던 사람(새로고침 · 다시 들어옴) — 확인이 끝날 때까지 예시 물건 · '로그인하면' 안내를 그리지 않는다.
      안 그러면 이미 로그인했는데도 잠깐 예시 물건과 로그인 단추가 보였다 */
   const EXPECT_IN = (() => { try { return localStorage.getItem('ta.web.in') === '1'; } catch (e) { return false; } })();
@@ -6249,6 +6290,12 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       if (gUid !== CLOUD.geminiUid) {
         CLOUD.geminiUid = gUid; R.aiKey = ''; R.aiOn = false;
         T.loadGeminiPrefs(gUid).then((g) => { if (CLOUD.geminiUid !== gUid) return; R.aiKey = g.key; R.aiOn = g.on; rerenderAi(); }).catch(() => {});
+      }
+      /* 물건등록 폴더 · 마지막 결과 목록 — 이 계정 것으로(계정 설정에서) */
+      const pUid = ok ? auth.uid : '';
+      if (pUid !== CLOUD.prefsUid) {
+        CLOUD.prefsUid = pUid; CLOUD.regPrefs = null;
+        if (pUid) loadRegPrefs(pUid); else { R.favs = DEMO_FOLDERS.slice(); R.sel = [R.favs[0].url]; regLoadedKey = ''; }
       }
       if (!ok && CLOUD.on) { CLOUD.on = false; CLOUD.raw = new Map(); items = DEMO_ITEMS.slice(); }
       render();

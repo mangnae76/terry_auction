@@ -1,22 +1,25 @@
 <script setup lang="ts">
 // 낙찰이후 · 서식 창(웹) — 위쪽 '들어갈 값'을 채운 문서를 보여 주고, [편집]으로 글을 고쳐 [저장]하면 이 물건의 문서로 남는다.
 // [초기화]는 들어갈 값(사건 카드에서 다시)과 글(기본 서식)을 함께 처음으로 돌린다. 저장 · 인쇄처럼 결과를 내는 단추는 파란색.
-// 사건번호 · 법원 · 주소는 사건 카드에서 가져온다. 낙찰자 이름 · 연락처는 이 브라우저에, 나머지 값은 물건마다 기억한다.
+// 사건번호 · 법원 · 주소는 사건 카드에서 가져온다. 낙찰자 이름 · 연락처는 계정(userPrefs)에, 나머지 값은 물건 자료에 남긴다.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { AuctionDetail } from '../types/auction';
 import { FORMS, FORM_TAB, TOKENS, defaultTemplate, fillTemplate, tokensIn, type FormCtx, type FormKey } from '../services/postWinForms';
 import { courtInfoOf } from '../utils/auctionSummary';
 import { useAuctionStore } from '../stores/auctionStore';
+import { useAuthStore } from '../stores/authStore';
+import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 
 const props = defineProps<{ auction: AuctionDetail | null; keys: FormKey[]; start?: FormKey }>();
 const emit = defineEmits<{ (e: 'close'): void }>();
 const store = useAuctionStore();
 
 // ===== 들어갈 값 =====
+// 예전에는 이 브라우저(localStorage)에만 적었다 — 다른 기기 · 브라우저에서 비어 보였다. 남은 값은 처음 한 번 옮겨 담는다
 const ME_KEY = 'pw.forms.me';
 const itemKey = () => `pw.forms.item.${props.auction?.id ?? ''}`;
-const read = (k: string): Record<string, string> => { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch { return {}; } };
-const write = (k: string, val: Record<string, string>) => { try { localStorage.setItem(k, JSON.stringify(val)); } catch { /* 그만 */ } };
+const readLocal = (k: string): Record<string, string> => { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch { return {}; } };
+const dropLocal = (k: string) => { try { localStorage.removeItem(k); } catch { /* 그만 */ } };
 const todayText = () => { const d = new Date(); return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`; };
 /** 사건 카드에서 오는 처음 값 */
 const fresh = (): FormCtx => { const a = props.auction; return {
@@ -35,15 +38,48 @@ const fresh = (): FormCtx => { const a = props.auction; return {
 }; };
 /** 기억해 둔 값 중 빈 칸은 버린다 — 빈 값이 사건 카드 값을 덮어쓰지 않게 */
 const filled = (o: Record<string, string>) => Object.fromEntries(Object.entries(o).filter(([, x]) => String(x ?? '').trim()));
-const load = (): FormCtx => ({ ...fresh(), ...filled(read(itemKey())), ...filled(read(ME_KEY)) });
+const auth = useAuthStore();
+/** 낙찰자 이름 · 연락처 — 계정에서 받아 오기 전엔 예전 브라우저 값 */
+const me = ref<Record<string, string>>(readLocal(ME_KEY));
+const itemSaved = () => props.auction?.postWinFormVals ?? readLocal(itemKey());
+const load = (): FormCtx => ({ ...fresh(), ...filled(itemSaved()), ...filled(me.value) });
 const vals = ref<FormCtx>(load());
+let applying = false;
+const apply = () => { applying = true; vals.value = load(); void Promise.resolve().then(() => { applying = false; }); };
 // 새로고침 뒤 창이 먼저 열리고 물건이 늦게 오면 그때 다시 채운다
-watch(() => props.auction?.id, (id, old) => { if (id && id !== old) vals.value = load(); });
+watch(() => props.auction?.id, (id, old) => { if (id && id !== old) { apply(); if (!props.auction?.postWinFormVals && Object.keys(readLocal(itemKey())).length) saveItem(); } });
+onMounted(async () => {
+  const uid = auth.uid;
+  const p = uid ? await loadUserPrefs(uid) : null;
+  if (p?.postWinFormMe) me.value = { winner: p.postWinFormMe.winner ?? '', phone: p.postWinFormMe.phone ?? '' };
+  else if (uid && Object.keys(filled(me.value)).length) { if (await saveUserPrefs(uid, { postWinFormMe: me.value })) dropLocal(ME_KEY); }
+  apply();
+  if (props.auction && !props.auction.postWinFormVals && Object.keys(readLocal(itemKey())).length) saveItem();
+});
+let meTimer = 0;
+let itemTimer = 0;
+/** 이 물건의 값 — 칸을 고칠 때마다 물건 문서 전체를 쓰지 않게 잠깐 모았다가 */
+const writeItem = () => {
+  itemTimer = 0;
+  const au = props.auction;
+  if (!au) return;
+  const { winner: _w, phone: _p, today: _t, ...rest } = vals.value;
+  const key = itemKey();
+  au.postWinFormVals = rest as unknown as Record<string, string>;
+  store.saveAuction(au).then(() => dropLocal(key)).catch(() => flash('값을 저장하지 못했습니다 — 잠시 뒤 다시 적어 주세요'));
+};
+const writeMe = () => { meTimer = 0; if (auth.uid) void saveUserPrefs(auth.uid, { postWinFormMe: me.value }).then((ok) => { if (ok) dropLocal(ME_KEY); }); };
+function saveItem() { window.clearTimeout(itemTimer); itemTimer = window.setTimeout(writeItem, 800); }
 watch(vals, (x) => {
-  write(ME_KEY, { winner: x.winner, phone: x.phone });
-  const { winner: _w, phone: _p, today: _t, ...rest } = x;
-  write(itemKey(), rest as unknown as Record<string, string>);
+  if (applying) return;
+  if (x.winner !== (me.value.winner ?? '') || x.phone !== (me.value.phone ?? '')) {
+    me.value = { winner: x.winner, phone: x.phone };
+    window.clearTimeout(meTimer); meTimer = window.setTimeout(writeMe, 800);
+  }
+  saveItem();
 }, { deep: true });
+// 창을 바로 닫아도 적던 값은 남긴다
+onBeforeUnmount(() => { if (itemTimer) { window.clearTimeout(itemTimer); writeItem(); } if (meTimer) { window.clearTimeout(meTimer); writeMe(); } });
 
 // ===== 탭(내용증명 1 · 2 · 3차처럼 여럿일 때) — 새로고침 뒤에도 그대로 =====
 const CUR_SS = 'pw.form.cur';
