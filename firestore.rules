@@ -4,14 +4,17 @@ service cloud.firestore {
     // 이 앱을 쓸 수 있는 계정 — 여기 없는 메일로 로그인하면 아무것도 읽지 못한다.
     // src/services/accessControl.ts의 ALLOWED_EMAILS와 같이 맞춰야 한다.
     // 소셜 로그인은 Worker가 발급하는 custom token의 email 클레임이 여기로 들어온다.
+    // 모든 가입자에게 연다(2026-11-02) — 로그인했으면 누구나. 개인 자료는 아래 컬렉션마다 uid 로 따로 막는다.
+    // 다시 3계정만 쓰게 하려면 아래 주석의 허용 목록 줄로 되돌리고, 앱 accessControl.ts 의 OPEN_TO_ALL 도 false 로.
     function isAllowedUser() {
-      return request.auth != null
-        && request.auth.token.email is string
-        && request.auth.token.email.lower() in [
-          'dark_0417@nate.com',
-          'mangnae760723@gmail.com',
-          'hansun440@gmail.com'
-        ];
+      return request.auth != null;
+      // return request.auth != null
+      //   && request.auth.token.email is string
+      //   && request.auth.token.email.lower() in [
+      //     'dark_0417@nate.com',
+      //     'mangnae760723@gmail.com',
+      //     'hansun440@gmail.com'
+      //   ];
     }
 
     // 운영자 — 공지·이벤트 글을 올릴 수 있는 계정.
@@ -58,7 +61,7 @@ service cloud.firestore {
     // 사용자 프로필 — 본인 것만 읽고 쓸 수 있음
     match /users/{uid} {
       allow read, write: if isAllowedUser() && request.auth.uid == uid;
-      // 막 가입한 사람(허용 목록 밖)도 제 문서의 가입 정보 · 내 정보 칸만 읽고 적는다 — 서비스 이용 권한(isAllowedUser)과는 따로.
+      // 허용 목록으로 다시 닫았을 때 — 막 가입한 사람도 제 문서의 가입 정보 · 내 정보 칸만 읽고 적는다(지금은 위 줄이 모두에게 열려 있다).
       // 무료이용 · 포인트 같은 '받는 것'은 본인이 적을 수 없게 칸 목록에서 뺐다(서비스 오픈 때 서버가 준다 — docs/서비스오픈목록.md)
       allow get: if request.auth != null && request.auth.uid == uid;
       allow create, update: if request.auth != null && request.auth.uid == uid

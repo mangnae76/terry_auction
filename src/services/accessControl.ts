@@ -2,6 +2,7 @@
 //
 // 화면 차단(라우터 가드)은 눈가림일 뿐이고, 진짜 차단은 firestore.rules가 한다.
 // 여기 목록을 고치면 firestore.rules의 isAllowedUser()도 같이 고치고 다시 배포해야 한다.
+// 지금은 OPEN_TO_ALL 로 모두에게 열려 있어 이 목록은 쓰지 않는다(되돌릴 때를 위해 남긴다).
 export const ALLOWED_EMAILS = [
   'dark_0417@nate.com',
   'mangnae760723@gmail.com',
@@ -12,7 +13,12 @@ export const ALLOWED_EMAILS = [
 export const ADMIN_EMAILS = ['dark_0417@nate.com', 'mangnae760723@gmail.com'];
 export const isAdminEmail = (email?: string | null): boolean => !!email && ADMIN_EMAILS.includes(email.toLowerCase());
 
+/** 모든 가입자에게 연다(2026-11-02 사용자 요청 '다 열어줘'). 다시 3계정만 쓰게 하려면 false 로 두고,
+ *  firestore.rules 의 isAllowedUser() 도 허용 목록 줄로 되돌려 함께 배포한다 */
+export const OPEN_TO_ALL = true;
+
 export const isAllowedEmail = (email?: string | null): boolean => {
+  if (OPEN_TO_ALL) return true;   // 로그인한 사람이면 누구나(카카오처럼 메일이 없는 계정도)
   const normalized = (email ?? '').trim().toLowerCase();
   return normalized.length > 0 && ALLOWED_EMAILS.includes(normalized);
 };
