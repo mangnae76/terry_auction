@@ -204,7 +204,9 @@ export const loadAccountDetail = async (uid: string): Promise<AccountDetail> => 
 
 export const saveAccountDetail = async (uid: string, detail: AccountDetail): Promise<void> => {
   assertReady();
-  await setDoc(doc(firestore!, USERS_COLLECTION, uid), { ...detail }, { merge: true });
+  // 칸마다 통째로 바꾼다(mergeFields) — merge 로 적으면 해마다 매출 같은 맵에서 지운 해가 DB 에 그대로 남았다.
+  // 여기 없는 칸(가입 정보 · 만든 때 등)은 건드리지 않는다
+  await setDoc(doc(firestore!, USERS_COLLECTION, uid), { ...detail }, { mergeFields: Object.keys(detail) });
 };
 
 /** 가입할 때 같이 받는 것들 — users/{uid} 에 함께 담는다 */
