@@ -2,8 +2,16 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { cacheKey as appCacheKey } from '../../src/services/marketCache';
-import { PATHS, QuotaError, cacheKey, docId, fetchMonth, parseDocId, regionTable, typeLabelOf, ymdAgo } from './rtms.mjs';
+import { PATHS, QuotaError, cacheKey, docId, fetchMonth, monthFinalAt, parseDocId, regionTable, typeLabelOf, ymdAgo } from './rtms.mjs';
 import { REGION_GROUPS } from '../../src/services/regionCodes';
+
+describe('확정된 달', () => {
+  it('달이 끝나고(한국 다음 달 1일 0시) 60일 뒤가 확정', () => {
+    // 2026년 9월 → 한국 2026-10-01 00:00 = UTC 2026-09-30 15:00, 거기에 60일
+    expect(new Date(monthFinalAt('202609')).toISOString()).toBe('2026-11-29T15:00:00.000Z');
+    expect(new Date(monthFinalAt('202612')).toISOString()).toBe('2027-03-01T15:00:00.000Z');
+  });
+});
 
 describe('지역 표', () => {
   it('regionCodes.ts 글자를 읽은 결과가 앱 REGION_GROUPS 와 같다', () => {

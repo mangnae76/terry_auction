@@ -55,6 +55,15 @@ export const typeLabelOf = (path) => {
   return path;
 };
 
+/** 확정 — 그 달이 끝나고(한국 시각 다음 달 1일 0시) 60일 지난 때(ms).
+ *  실거래는 계약 30일 안에 신고되고 계약해제가 늦게 붙어, 그때까지는 그 달 자료가 바뀐다.
+ *  그 뒤에 받아 둔 달은 다시 받지 않는다 */
+export const FINAL_AFTER_DAYS = 60;
+export const monthFinalAt = (ymd) => {
+  const y = Number(String(ymd).slice(0, 4)); const m = Number(String(ymd).slice(4, 6));
+  return Date.UTC(y, m, 1) - 9 * 3600 * 1000 + FINAL_AFTER_DAYS * 24 * 3600 * 1000;
+};
+
 /** 한국 시각 기준 n 달 전의 'YYYYMM' (0 = 이번 달) */
 export const ymdAgo = (n, now = Date.now()) => {
   const k = new Date(now + 9 * 3600 * 1000);

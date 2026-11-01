@@ -3,8 +3,9 @@
 //  1) 대상: ALWAYS_SIDO(기본 인천 · 경기)의 모든 시군구 × 모든 종류
 //          + 지금까지 누군가 조회해서 DB(cacheTradeMonth)에 남은 지역 · 종류 (+ EXTRA_TARGETS 로 손으로 더한 것)
 //     지역 표(src/services/regionCodes.ts)에 없는 코드는 건너뛴다 — 개편 전 옛 코드(인천 중구 28110 등)는 0건만 와서
-//  2) 최근 3달: 날마다 새로 받아 덮어쓴다 — 신고 기한 30일 · 계약해제가 늦게 붙어 계속 바뀐다
-//  3) 그 전 달(4년치까지): 없거나 1년 가까이 된 달만 받는다 — 하룻밤 BACKFILL_BUDGET 번까지, 최근 달부터
+//  2) 이미 있는 건 다시 받지 않는다 — 달이 끝나고 60일 지난 뒤에 받아 둔 달은 '확정'(rtms.mjs monthFinalAt)
+//  3) 아직 바뀌는 달(끝난 지 60일 안 된 달 · 대략 최근 3달): 날마다 새로 받아 덮어쓴다 — 신고 기한 30일 · 늦은 계약해제
+//  4) 지난 달(4년치까지): 없거나 확정 전에 받아 둔 달만 — 하룻밤 BACKFILL_BUDGET 번까지, 최근 달부터
 //  화면은 이 문서를 먼저 읽으므로, 여기서 채워 둔 달은 국토부를 부르지 않는다.
 //
 // 환경변수
@@ -13,13 +14,11 @@
 //  EXTRA_TARGETS             손으로 더할 지역 — '28260:villa,11200:apt' (종류 apt · villa · officetel · single · commercial)
 //  ALWAYS_SIDO               늘 받을 시도 — 기본 '인천광역시,경기도' (그 시도의 지역 표 시군구 × 모든 종류)
 //  BACKFILL_BUDGET           하룻밤 지난 달 채우기에 쓸 최대 호출 수 (기본 1500)
-//  DRY_RUN=1                 DB 없이 EXTRA_TARGETS 의 최근 3달만 받아 건수만 찍는다 (시험용)
+//  DRY_RUN=1                 DB 없이 EXTRA_TARGETS 의 아직 바뀌는 달만 받아 건수만 찍는다 (시험용)
 import { readFileSync } from 'node:fs';
-import { COLLECTION, KIND_PATHS, PATHS, QuotaError, docId, fetchMonth, parseDocId, regionTable, ymdAgo } from './rtms.mjs';
+import { COLLECTION, KIND_PATHS, PATHS, QuotaError, docId, fetchMonth, monthFinalAt, parseDocId, regionTable, ymdAgo } from './rtms.mjs';
 
-const RECENT_MONTHS = 3;          // 0 · 1 · 2 달 전 — 화면이 하루만 믿는 달(publicDataApi.ts monthCacheTtl)
 const HISTORY_MONTHS = 49;        // 손품조사 4년치 = 4년 전 그달부터 이번 달까지
-const REFILL_AGE_MS = 330 * 24 * 3600 * 1000; // 지난 달은 화면이 1년 믿는다 — 그 전에 새로
 const MAX_DOC_BYTES = 1_000_000;  // Firestore 문서 한도(1MiB) 안쪽
 const CONCURRENCY = 4;
 
@@ -104,27 +103,29 @@ const main = async () => {
     }
   };
 
-  // 1) 최근 3달 — 모두 새로
-  const recent = [];
-  for (let age = 0; age < RECENT_MONTHS; age += 1) for (const t of list) recent.push(() => one(t, ymdAgo(age)));
-  await pool(recent, CONCURRENCY);
-  log(`최근 ${RECENT_MONTHS}달 끝 — 호출 ${stat.calls}`);
+  // 달마다 — 확정된 달은 건너뛰고, 아직 바뀌는 달은 모두 새로, 지난 달은 비었거나 확정 전에 받은 것만
+  const now = Date.now();
+  const live = []; const older = []; let done = 0;
+  for (let age = 0; age < HISTORY_MONTHS; age += 1) {
+    const ymd = ymdAgo(age); const finalAt = monthFinalAt(ymd);
+    for (const t of list) {
+      const at = saved.get(docId(t.lawdCd5, t.path, ymd));
+      if (at && at >= finalAt) { done += 1; continue; }        // 확정 뒤에 받아 둠 — 다시 받지 않는다
+      if (finalAt > now) live.push([t, ymd]);                  // 아직 바뀌는 달
+      else older.push([t, ymd]);                               // 지난 달 — 없거나 확정 전에 받아 둔 것
+    }
+  }
+  log(`확정이라 건너뜀 ${done.toLocaleString()} · 아직 바뀌는 달 ${live.length.toLocaleString()} · 채울 지난 달 ${older.length.toLocaleString()}`);
 
-  // 2) 지난 달 — 없거나 오래된 것만, 최근 달부터, 정한 호출 수까지
+  // 1) 아직 바뀌는 달 — 모두 새로
+  await pool(live.map(([t, ymd]) => () => one(t, ymd)), CONCURRENCY);
+  log(`아직 바뀌는 달 끝 — 호출 ${stat.calls}`);
+
+  // 2) 지난 달 — 최근 달부터, 정한 호출 수까지
   if (!DRY && budget > 0) {
     const start = stat.calls;
-    const older = [];
-    const now = Date.now();
-    for (let age = RECENT_MONTHS; age < HISTORY_MONTHS; age += 1) {
-      for (const t of list) {
-        const ymd = ymdAgo(age);
-        const at = saved.get(docId(t.lawdCd5, t.path, ymd));
-        if (at && now - at < REFILL_AGE_MS) continue;
-        older.push(() => (stat.calls - start >= budget ? undefined : one(t, ymd)));
-      }
-    }
-    log(`채울 지난 달 ${older.length}개 (오늘 최대 호출 ${budget})`);
-    await pool(older, CONCURRENCY);
+    await pool(older.map(([t, ymd]) => () => (stat.calls - start >= budget ? undefined : one(t, ymd))), CONCURRENCY);
+    log(`지난 달 채우기 끝 (오늘 최대 호출 ${budget})`);
   }
 
   log(`끝 — 저장 ${stat.written} · 0건 ${stat.empty} · 너무 커서 못 담음 ${stat.tooBig} · 실패 ${stat.failed} · 한도 · 미신청 ${stat.quota} · 국토부 호출 ${stat.calls}`);
