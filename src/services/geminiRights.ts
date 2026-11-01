@@ -285,10 +285,10 @@ const wait = (ms: number) => new Promise((done) => { setTimeout(done, ms); });
 /** 답은 조금씩 받는다(스트리밍). 한꺼번에 받으면 서류가 많을 때 2분을 넘겨 끊겼다.
  *  - 소식 없이 기다리는 최대 시간: AI 가 서류를 읽고 생각하는 동안은 아무것도 안 오니 넉넉히
  *  - 처음부터 끝까지 기다리는 최대 시간: 그래도 끝이 안 나면 끊고 까닭을 알린다 (대기 화면이 영원히 돌지 않게) */
-const RIGHTS_IDLE_MS = 120_000;
+const RIGHTS_IDLE_MS = 300_000;   // 5분 — 생각이 길어도 기다린다(사용자 요청 2026-11-01)
 /** 생각 토큰 상한 — gemini-flash 는 0 ~ 24,576 */
 const RIGHTS_THINK_BUDGET = 8192;
-const RIGHTS_TOTAL_MS = 300_000;
+const RIGHTS_TOTAL_MS = 600_000;  // 10분 — 답 없음 5분보다 넉넉하게
 
 type StreamChunk = {
   error?: { message?: string };
@@ -471,7 +471,7 @@ export const askRightsAnalysis = async (
       if (why === 'mismatch') throw new GeminiError(mismatchMessage(mismatch));
       if (err instanceof GeminiError) throw err;
       if (signal?.aborted) throw new GeminiError('분석을 취소했습니다');
-      if (why === 'idle') throw new GeminiError(`AI 가 ${RIGHTS_IDLE_MS / 1000}초 동안 답이 없었습니다 — 잠시 뒤 다시 해 주세요`);
+      if (why === 'idle') throw new GeminiError(`AI 가 ${RIGHTS_IDLE_MS / 60_000}분 동안 답이 없었습니다 — 잠시 뒤 다시 해 주세요`);
       if (why === 'total') throw new GeminiError(`AI 분석이 ${RIGHTS_TOTAL_MS / 60_000}분 안에 끝나지 않았습니다 — 서류를 줄여 다시 해 주세요`);
       throw new GeminiError(`AI 서버에 닿지 못했습니다 — 인터넷 연결을 확인해 주세요 (${err instanceof Error ? err.message : ''})`);
     } finally {
