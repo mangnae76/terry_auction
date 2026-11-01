@@ -2958,6 +2958,7 @@ table.list { width: 100%; border-collapse: collapse; min-width: 1150px; }
 .list .stars { margin: 0; }
 
 .empty { display: grid; place-items: center; text-align: center; gap: 6px; padding: 72px 20px; background: var(--surface); border: 1px dashed var(--line-2); border-radius: 10px; color: var(--text-2); }
+.empty .slow-acts { display: inline-flex; gap: 8px; margin-top: 10px; }
 .empty b { font-size: 16px; color: var(--text); }
 .empty button { margin-top: 10px; height: 34px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--surface); font-size: 13px; font-weight: 700; }
 .empty button:hover { border-color: var(--blue); color: var(--blue); }
@@ -4083,6 +4084,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const list = visible();
     const root = $('content');
     /* 로그인 확인 중이거나, 로그인했지만 내 물건이 아직 안 왔다 */
+    if (CLOUD.slow && !CLOUD.on) { root.innerHTML = slowHtml(); return; }
     if (CLOUD.on ? !CLOUD.synced : (EXPECT_IN && !S.authReady)) { root.innerHTML = '<div class="empty"><b>불러오는 중입니다…</b></div>'; return; }
     const note = CLOUD.on ? '' : S.denied
       ? '<div class="demo-note">이 계정은 마이턴옥션 사용 허가가 없습니다 — 허가된 계정으로 로그인해 주세요.</div>'
@@ -6200,9 +6202,12 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   }
   let loginAsked = false;
   { const t = document.getElementById('promoTestLink'); if (t && /^(127\.0\.0\.1|localhost)$/.test(location.hostname)) t.hidden = false; }
+  /* 로그인 확인이 7초 넘게 안 끝남 — 같은 사이트의 예전 탭이 브라우저 저장소를 붙잡고 있거나 망이 막힌 때. 까닭과 할 일을 보여 준다 */
+  const slowHtml = () => `<div class="empty"><b>로그인 확인이 늦어지고 있습니다</b><span>이 사이트가 열린 <b>다른 탭을 모두 닫고</b> 아래 단추로 새로고침해 주세요. 그래도 같으면 인터넷 연결을 확인하거나 다시 로그인해 주세요.</span>
+    <span class="slow-acts"><button type="button" class="btn primary" data-act="slow-reload">새로고침</button> <button type="button" class="btn" data-act="slow-relogin">다시로그인</button></span></div>`;
   async function startCloud() {
-    /* 앱 자료에 끝내 붙지 못하면 영원히 기다리는 모양만 남는다 — 그때는 7초 뒤에 보여 준다 */
-    const giveUp = setTimeout(() => { if (!S.authReady) { S.authReady = true; render(); } }, 7000);
+    /* 앱 자료에 끝내 붙지 못하면 영원히 기다리는 모양만 남는다 — 그때는 7초 뒤에 까닭과 할 일을 보여 준다 */
+    const giveUp = setTimeout(() => { if (!S.authReady) { S.authReady = true; CLOUD.slow = true; console.warn('[웹 시작] 7초 안에 로그인 확인이 끝나지 않았습니다'); render(); } }, 7000);
     let T = null; try { T = await loadParser(); } catch (e) { clearTimeout(giveUp); S.authReady = true; render(); return; }
     if (!T || !T.useAuthStore) { clearTimeout(giveUp); S.authReady = true; render(); return; }
     /* 어디서 오래 걸리는지 — 새로고침부터 몇 초에 묶음 · 로그인 · 내 물건이 왔는지 콘솔에 한 번씩 */
@@ -6230,7 +6235,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       try { if (auth.isLoggedIn) localStorage.setItem('ta.web.in', '1'); else localStorage.removeItem('ta.web.in'); } catch (e) { /* 그만 */ }
       if (!auth.isLoggedIn && (wasIn || !/[?&]login=1\b/.test(location.search))) { location.replace(wasIn ? '/intro.html?login=1' : '/intro.html'); return; }   /* 로그아웃이면 로그인 창부터 */
       wasIn = auth.isLoggedIn;
-      S.authReady = true;
+      S.authReady = true; CLOUD.slow = false;
       const ok = auth.isLoggedIn && T.isAllowedEmail(auth.email);
       S.loggedIn = auth.isLoggedIn; S.userName = auth.nickname || String(auth.email || '').split('@')[0];
       S.denied = auth.isLoggedIn && !ok;
@@ -6478,6 +6483,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       case 'ag-q-del': void agQueueSave(AG.queue.filter((q) => agQid(q) !== t.dataset.v)); break;
       case 'ag-reg-kind': AG.reg.kind = t.dataset.v; try { localStorage.setItem(AG_REG_KEY, JSON.stringify(AG.reg)); } catch (err) { /* 그만 */ } agPaint(); break;
       case 'ag-q-dong': agQueueDong(); break;
+      case 'slow-reload': location.reload(); break;
+      case 'slow-relogin': try { localStorage.removeItem('ta.web.in'); } catch (err) { /* 그만 */ } location.replace('/intro.html?login=1'); break;
       case 'ag-fold': AG.fold = !AG.fold; try { localStorage.setItem('ta.web.agent.fold', AG.fold ? '1' : '0'); } catch (err) { /* 그만 */ } agPaint(); break;
       case 'ag-cov-open': AG.covOpen = !AG.covOpen; agPaint(); if (AG.covOpen) { const i = $('agCovQ'); if (i) i.focus(); } break;
       case 'ag-stop': if (AG.on) { void CLOUD.T.sendAgentStop(AG.uid).then(() => { AG.note = '중지 요청을 보냈습니다 — 지금 페이지까지 저장합니다.'; AG.noteAt = Date.now(); agPaint(); }).catch(() => {}); } break;
