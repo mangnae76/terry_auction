@@ -1,6 +1,7 @@
 // 새벽 실거래 적재 — 매일 새벽 1시 17분(한국)에 GitHub Actions 가 돌린다 (.github/workflows/trade-nightly.yml).
 //
 //  1) 대상: 지금까지 누군가 조회해서 DB(cacheTradeMonth)에 남은 지역 · 종류 (+ EXTRA_TARGETS 로 손으로 더한 것)
+//          + ALWAYS_LAWD 시군구(기본 안산 상록 · 단원, 인천 서해 · 미추홀 · 부평) × 모든 종류 — 늘 받는다
 //          (+ ALWAYS_SIDO 를 주면 그 시도의 모든 시군구 × 모든 종류 — 기본은 비움. 인천 · 경기 전체는 저장량 때문에 보류, 2026-11-01)
 //     지역 표(src/services/regionCodes.ts)에 없는 코드는 건너뛴다 — 개편 전 옛 코드(인천 중구 28110 등)는 0건만 와서
 //  2) 이미 있는 건 다시 받지 않는다 — 달이 끝나고 60일 지난 뒤에 받아 둔 달은 '확정'(rtms.mjs monthFinalAt)
@@ -12,6 +13,7 @@
 //  FIREBASE_SERVICE_ACCOUNT  서비스 계정 JSON (GitHub 비밀값)
 //  DATA_GO_KR_KEY            공공데이터포털 서비스키 (GitHub 비밀값)
 //  EXTRA_TARGETS             손으로 더할 지역 — '28260:villa,11200:apt' (종류 apt · villa · officetel · single · commercial)
+//  ALWAYS_LAWD               늘 받을 시군구 5자리 — 기본 '41271,41273,28275,28177,28237' (안산은 구 코드로만 거래가 온다)
 //  ALWAYS_SIDO               늘 받을 시도 — 예 '인천광역시,경기도' (그 시도의 지역 표 시군구 × 모든 종류). 기본은 비움
 //  BACKFILL_BUDGET           하룻밤 지난 달 채우기에 쓸 최대 호출 수 (기본 1500)
 //  DRY_RUN=1                 DB 없이 EXTRA_TARGETS 의 아직 바뀌는 달만 받아 건수만 찍는다 (시험용)
@@ -25,6 +27,7 @@ const CONCURRENCY = 4;
 const DRY = process.env.DRY_RUN === '1';
 const serviceKey = process.env.DATA_GO_KR_KEY ?? '';
 const budget = Number(process.env.BACKFILL_BUDGET ?? 1500) || 0;
+const alwaysLawd = (process.env.ALWAYS_LAWD ?? '41271,41273,28275,28177,28237').split(',').map((s) => s.trim()).filter((s) => /^\d{5}$/.test(s));
 const alwaysSido = (process.env.ALWAYS_SIDO ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const table = regionTable(readFileSync(new URL('../../src/services/regionCodes.ts', import.meta.url), 'utf8'));
 const knownCodes = new Set(Object.values(table).flat());
@@ -66,6 +69,7 @@ const main = async () => {
   const targets = new Map();
   const add = (t) => targets.set(`${t.lawdCd5}|${t.path}`, t);
   for (const sido of alwaysSido) for (const lawdCd5 of table[sido] ?? []) for (const path of Object.values(PATHS)) add({ lawdCd5, path });
+  for (const lawdCd5 of alwaysLawd) for (const path of Object.values(PATHS)) add({ lawdCd5, path });
   let stale = 0;
   for (const id of saved.keys()) { const p = parseDocId(id); if (!p) continue; if (knownCodes.has(p.lawdCd5)) add(p); else stale += 1; }
   if (stale) log(`지역 표에 없는 옛 코드 문서 ${stale.toLocaleString()}개는 건너뜀`);
