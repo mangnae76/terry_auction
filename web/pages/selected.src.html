@@ -807,6 +807,14 @@ button { cursor: pointer; }
 .mk-scaffold .mk-row .adm-crumb-slot { margin-left: auto; }
 /* 매각사례 — 지역분석 고르는 줄과 같은 모양(앱 화면의 scoped 값을 그대로 옮겼다 · 웹 덮어쓰기는 .app-market 규칙이 그대로 받는다) */
 .mk-sale .adm-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; padding: 16px 18px; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; }
+/* 경매사례 조건 줄 — 조회 단추가 박스 밖으로 넘치던 것(BUG-0020): 단추는 글자 폭만, 그래도 모자라면 다음 줄로 */
+.app-market.mk-sale .adm-bar { flex-wrap: nowrap !important; }
+@media (max-width: 1240px) { .app-market.mk-sale .adm-bar { flex-wrap: wrap !important; row-gap: 6px !important; } }
+.app-market.mk-sale .adm-bar .adm-load { flex: none; }
+/* 지역 세 칸(150 고정)이 남은 폭에 맞춰 줄어든다 — 1440 화면에서 48px 모자라 조회 단추가 박스 밖으로 나갔다 */
+.app-market.mk-sale .adm-bar > .adm-f:has(> select) { width: auto !important; flex: 1 1 150px; min-width: 112px; max-width: 150px; }
+.app-market.mk-sale .adm-bar > .adm-f > select.adm-input { width: 100% !important; min-width: 0; }
+.mk-sale .sc-table td.sc-empty { padding: 28px 8px; text-align: center; color: var(--muted); }
 .mk-sale .adm-f { display: flex; flex-direction: column; gap: 6px; }
 .mk-sale .adm-f small { display: flex; align-items: baseline; gap: 4px; font-size: 11px; font-weight: 700; color: #6b7280; }
 .mk-sale .adm-input { box-sizing: border-box; width: 240px; height: 36px; padding: 0 11px; border: 1px solid #dde3ee; border-radius: 9px; background: #fff; font-family: inherit; font-size: 13.5px; color: #111827; }
@@ -5543,7 +5551,9 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   function saleTable(rows) {
     const head = `<colgroup>${SC_WIDTHS.map((w) => `<col style="width:${w}px">`).join('')}<col></colgroup><thead><tr>${SC_COLS.map((c) => `<th${c === '주소' ? ' class="addr"' : ''}>${c}</th>`).join('')}</tr></thead>`;
     if (rows && rows.length) return `<div class="sc-table has"><table>${head}<tbody>${rows.map(agRowHtml).join('')}</tbody></table></div>`;
-    return `<div class="sc-table"><table>${head}<tbody>${[1, 2, 3].map(() => `<tr>${SC_COLS.map(() => '<td>-</td>').join('')}</tr>`).join('')}</tbody></table></div>`;
+    /* 빈 표 — '-' 로 채운 자리표시 줄 대신 안내 한 줄(BUG-0020). 조회 전 · 결과 없음을 나눠 적는다 */
+    const empty = rows ? '조건에 맞는 매각물건이 없습니다.' : '조회하면 여기에 매각물건이 나옵니다.';
+    return `<div class="sc-table"><table>${head}<tbody><tr><td class="sc-empty" colspan="${SC_COLS.length}">${empty}</td></tr></tbody></table></div>`;
   }
   const SC_GAVEL = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 13-7.5 7.5a2.1 2.1 0 0 1-3-3L11 10" /><path d="m16 16 6-6" /><path d="m8 8 6-6" /><path d="m9 7 8 8" /><path d="m21 11-8-8" /></svg>';
   const scCnt = (n) => `<span class="sc-cnt">${n.toLocaleString('ko-KR')}건</span>`;
