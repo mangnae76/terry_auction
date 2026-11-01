@@ -1845,7 +1845,6 @@ watch(() => authStore.uid, (newUid) => {
               ><path d="M12 5v14M5 12h14" /></svg></span>
               <span
                 class="ftp-stop-addr"
-                :title="row.address"
                 @click="toggleAddrBubble(`q${row.id}`, row.address, $event)"
                 @mouseenter="hoverAddrBubble(`q${row.id}`, row.address, $event)"
                 @mouseleave="leaveAddrBubble()"
@@ -1961,7 +1960,6 @@ watch(() => authStore.uid, (newUid) => {
               ><path d="M12 5v14M5 12h14" /></svg></span>
               <span
                 class="ftp-stop-addr"
-                :title="row.address"
                 @click="toggleAddrBubble(`q${row.id}`, row.address, $event)"
                 @mouseenter="hoverAddrBubble(`q${row.id}`, row.address, $event)"
                 @mouseleave="leaveAddrBubble()"
@@ -2012,7 +2010,6 @@ watch(() => authStore.uid, (newUid) => {
             <span class="ftp-stop-badge tone-pending">·</span>
             <span
               class="ftp-stop-addr"
-              :title="row.address"
               @click="toggleAddrBubble(`p${row.id}`, row.address, $event)"
               @mouseenter="hoverAddrBubble(`p${row.id}`, row.address, $event)"
               @mouseleave="leaveAddrBubble()"
