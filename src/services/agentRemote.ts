@@ -7,7 +7,7 @@
 //   users/{uid}/datasets/main        {count, chunks, version, by, updatedAt}
 //   users/{uid}/datasets/main/chunks/{i}  {i, data: 레코드 JSON 글자, v}
 // 읽고 쓰기는 운영자 본인만(firestore.rules isAgentOwner). 앱 화면은 쓰지 않는다.
-import { collection, doc, getDoc, getDocs, onSnapshot, serverTimestamp, setDoc, type Unsubscribe } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocFromServer, getDocs, onSnapshot, serverTimestamp, setDoc, type Unsubscribe } from 'firebase/firestore';
 import { firestore } from './firebase';
 
 export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue';
@@ -53,9 +53,19 @@ export const sendAgentCommand = async (uid: string, name: AgentCmdName, args: Ag
 export const sendAgentStop = async (uid: string): Promise<void> => {
   await setDoc(controlRef(uid), { stop: { id: crypto.randomUUID(), at: serverTimestamp() }, webSeenAt: serverTimestamp() }, { merge: true });
 };
-/** 웹이 보고 있다고 알린다 — 도우미가 명령을 3초마다 확인한다(안 보면 30초마다) */
-export const agentHeartbeat = async (uid: string): Promise<void> => {
+/** 웹이 보고 있다고 알린다 — 도우미가 명령을 3초마다 확인한다(안 보면 30초마다).
+ *  돌려주는 값 = 서버 시계 − 이 컴퓨터 시계(ms). 컴퓨터 시계가 틀려도 '연결됨'을 맞게 재려고(못 재면 0) */
+export const agentHeartbeat = async (uid: string): Promise<number> => {
+  const t0 = Date.now();
   await setDoc(controlRef(uid), { webSeenAt: serverTimestamp() }, { merge: true });
+  try {
+    const s = await getDocFromServer(controlRef(uid));
+    const at = (s.data() as { webSeenAt?: { toMillis(): number } } | undefined)?.webSeenAt;
+    const t1 = Date.now();
+    return at && typeof at.toMillis === 'function' ? at.toMillis() - Math.round((t0 + t1) / 2) : 0;
+  } catch {
+    return 0;
+  }
 };
 
 export const watchAgentStatus = (uid: string, cb: (s: AgentStatus | null) => void, err: (e: Error) => void = () => {}): Unsubscribe =>

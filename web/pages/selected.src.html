@@ -5561,9 +5561,10 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   }
   function agPanelHtml() {
     const T = CLOUD.T; const s = AG.status;
-    const online = !!(T && T.agentOnline && T.agentOnline(s));
+    const now = Date.now() + (AG.skew || 0);   /* 서버 시계 기준 — 이 컴퓨터 시계가 틀려도 */
+    const online = !!(T && T.agentOnline && T.agentOnline(s, now));
     const busy = online && !!s.busy; const ready = online && !!s.ready;
-    const ago = online ? Math.max(0, Math.round((Date.now() - s.at.toMillis()) / 1000)) : 0;
+    const ago = online ? Math.max(0, Math.round((now - s.at.toMillis()) / 1000)) : 0;
     const chip = online ? `<span class="ag-chip"><i></i>연결됨 · ${ago}초 전</span>` : '<span class="ag-chip off"><i></i>꺼짐</span>';
     const seg = (k, title, opts) => `<label class="adm-f"><small>${title}</small><div class="adm-seg">${opts.map(([v, t]) => `<button type="button" class="adm-seg-btn ${String(agSel[k]) === String(v) ? 'on' : ''}" data-act="ag-sel" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div></label>`;
     /* 대기열수집 — 도우미 2026.11.01-4 부터. 도는 동안은 단추를 켜 둔다 */
@@ -5702,11 +5703,13 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     AG.tick = setInterval(() => {
       if (!agSaleOpen() || document.visibilityState !== 'visible') return;
       agPaint();   // 'N초 전' · 연결 상태
-      if (Date.now() - beat > 60000) { beat = Date.now(); void T.agentHeartbeat(uid).catch(() => {}); }
+      if (Date.now() - beat > 60000) { beat = Date.now(); void T.agentHeartbeat(uid).then(agSkew).catch(() => {}); }
     }, 5000);
-    beat = Date.now(); void T.agentHeartbeat(uid).catch(() => {});
+    beat = Date.now(); void T.agentHeartbeat(uid).then(agSkew).catch(() => {});
     } catch (e) { AG.note = '도우미에 붙지 못했습니다 — 새로고침해 주세요.'; AG.noteAt = Date.now(); }   /* 화면은 그대로 그린다 */
   }
+  /* 서버 시계 − 이 컴퓨터 시계. 0 이면(못 잼) 그대로 둔다 */
+  function agSkew(ms) { if (typeof ms === 'number' && ms) { AG.skew = ms; agPaint(); } }
   function agStop() {
     AG.unsub.forEach((u) => { try { u(); } catch (e) { /* 그만 */ } });
     AG.unsub = []; if (AG.tick) clearInterval(AG.tick); AG.tick = null; AG.on = false;
