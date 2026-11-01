@@ -58,6 +58,62 @@ service cloud.firestore {
     // 사용자 프로필 — 본인 것만 읽고 쓸 수 있음
     match /users/{uid} {
       allow read, write: if isAllowedUser() && request.auth.uid == uid;
+
+      // ===== 집 PC 수집 도우미(관리자만) — 웹 시장분석 › 경매사례에서 명령, 집 PC agent.py 가 옥션원 · 탱크옥션 수집 =====
+      // (auction-web 의 규칙을 그대로 옮기고, 허용 목록 대신 운영자 + 본인으로 막는다)
+      // 수집한 매각물건 — 요약 1개 + JSON 조각 여러 개
+      match /datasets/{ds} {
+        allow get, delete: if isAgentOwner(uid);
+        allow create, update: if isAgentOwner(uid) && ds == 'main'
+          && agentData().keys().hasOnly(['count', 'chunks', 'version', 'by', 'updatedAt'])
+          && agentData().count is int && agentData().count >= 0 && agentData().count <= 20000
+          && agentData().chunks is int && agentData().chunks >= 1 && agentData().chunks <= 400
+          && agentData().version is int
+          && agentData().version == (resource == null ? 0 : resource.data.version) + 1
+          && agentData().by in ['web', 'agent']
+          && agentData().updatedAt == request.time;
+
+        match /chunks/{chunk} {
+          allow read, delete: if isAgentOwner(uid);
+          allow create, update: if isAgentOwner(uid) && ds == 'main'
+            && agentData().keys().hasOnly(['i', 'data', 'v'])
+            && agentData().i is int && agentData().i >= 0 && agentData().i < 400 && chunk == string(agentData().i)
+            && agentData().data is string && agentData().data.size() <= 900000
+            && agentData().v is int;
+        }
+      }
+      // 웹 → 집 PC 명령 (정해진 명령 · 사이트 · 기간만)
+      match /agent/control {
+        allow get: if isAgentOwner(uid);
+        allow create, update: if isAgentOwner(uid)
+          && agentData().keys().hasOnly(['cmd', 'stop', 'webSeenAt'])
+          && (!('cmd' in agentData()) || validAgentCmd(agentData().cmd))
+          && (!('stop' in agentData()) || (agentData().stop is map && agentData().stop.keys().hasOnly(['id', 'at']) && agentData().stop.id is string && agentData().stop.id.size() <= 64))
+          && (!('webSeenAt' in agentData()) || agentData().webSeenAt is timestamp);
+      }
+      // 집 PC → 웹 상태
+      match /agent/status {
+        allow get: if isAgentOwner(uid);
+        allow create, update: if isAgentOwner(uid)
+          && agentData().keys().hasOnly(['at', 'version', 'ready', 'busy', 'enriching', 'prog', 'message', 'lastCmd', 'site'])
+          && (!('message' in agentData()) || (agentData().message is string && agentData().message.size() <= 2000));
+      }
+    }
+    function isAgentOwner(uid) {
+      return isAdmin() && request.auth.uid == uid;
+    }
+    function agentData() {
+      return request.resource.data;
+    }
+    function validAgentCmd(c) {
+      return c is map && c.keys().hasOnly(['id', 'name', 'args', 'at'])
+        && c.id is string && c.id.size() <= 64
+        && c.name in ['open', 'screen', 'auto', 'enrich']
+        && c.args is map && c.args.keys().hasOnly(['site', 'months', 'src', 'fresh'])
+        && (!('site' in c.args) || c.args.site in ['옥션원', '탱크옥션'])
+        && (!('months' in c.args) || c.args.months in [0, 6, 12, 24, 36])
+        && (!('src' in c.args) || c.args.src in ['near', 'same'])
+        && (!('fresh' in c.args) || c.args.fresh is bool);
     }
 
     // 사용자별 앱 설정·임장경로 draft·즐겨찾기 등
