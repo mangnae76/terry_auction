@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { balanceDueError, balanceDueOf, koreanYmd, stageBeforeSaleError, wonDateError, wonDateWarning } from './auctionDates';
+import { balanceDueError, balanceDueOf, koreanYmd, stageBeforeSaleError, wonDateError, wonDateWarning, balanceDueNotice } from './auctionDates';
 
 describe('auctionDates', () => {
   it('koreanYmd — 26년 11월 10일', () => {
@@ -36,7 +36,11 @@ describe('auctionDates', () => {
     expect(stageBeforeSaleError({}, '낙찰', '2026-11-16')).toBe('');
   });
   it('막지 않을 때 — 매각기일과 다른 낙찰일은 경고 글', () => {
-    expect(wonDateWarning({ eventDate: '2026-11-10' }, '2026-11-12')).toContain('26년 11월 12일로 적었습니다');
+    expect(wonDateWarning({ eventDate: '2026-11-10' }, '2026-11-12')).toContain('확인을 누르면 26년 11월 12일로 바뀝니다');
     expect(wonDateWarning({ eventDate: '2026-11-10' }, '2026-11-10')).toBe('');
+  });
+  it('잔금기한이 추정 예정일일 때만 묻는다', () => {
+    expect(balanceDueNotice({ wonDate: '2026-11-10' }, '2026-12-20')).toContain('26년 12월 25일은');
+    expect(balanceDueNotice({ wonDate: '2026-11-10', balanceDueDate: '2026-12-18' }, '2026-12-20')).toBe('');
   });
 });

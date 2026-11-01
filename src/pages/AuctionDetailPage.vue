@@ -33,7 +33,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import PhotoGrid from '../components/PhotoGrid.vue';
 import AppConfirm from '../components/AppConfirm.vue';
-import { BALANCE_DUE_DAYS, balanceDueError, balanceDueOf, stageBeforeSaleError, wonDateError, wonDateWarning } from '../utils/auctionDates';
+import { BALANCE_DUE_DAYS, balanceDueError, balanceDueOf, stageBeforeSaleError, wonDateError, wonDateWarning, balanceDueNotice } from '../utils/auctionDates';
 import AgencyTable from '../components/AgencyTable.vue';
 import AgencyBookModal from '../components/AgencyBookModal.vue';
 import PhotoCountMark from '../components/PhotoCountMark.vue';
@@ -1653,11 +1653,19 @@ const setProfitDate = async (key: 'wonDate' | 'sellDate' | 'balanceDueDate', val
     confirmBox.value = { title: '맞지 않는 날짜입니다', desc: err, okLabel: '확인', skipKey: '', tone: 'calm', alertOnly: true, icon: 'warn', run: () => {} };
     return;
   }
-  auction.value[key] = value;
-  await store.saveAuction(auction.value);
-  // 막지 않는 시험 기간 — 매각기일과 다른 낙찰일은 적되 경고만 띄운다
-  const warn = key === 'wonDate' ? wonDateWarning(auction.value, value) : '';
-  if (warn) confirmBox.value = { title: '매각기일과 다른 날짜입니다', desc: warn, okLabel: '확인', skipKey: '', tone: 'calm', alertOnly: true, icon: 'warn', run: () => {} };
+  const target = auction.value;
+  const apply = async () => { target[key] = value; await store.saveAuction(target); };
+  // 묻고 바꾼다 — 매각기일과 다른 날(막지 않는 시험 기간) · 추정 예정일이던 잔금기한은 확인을 눌러야 바뀐다. 취소하면 그대로
+  const ask = key === 'wonDate'
+    ? { title: '매각기일과 다른 날짜입니다', desc: wonDateWarning(target, value) }
+    : key === 'balanceDueDate'
+      ? { title: '잔금기한은 추정 예정일입니다', desc: balanceDueNotice(target, value) }
+      : null;
+  if (ask?.desc) {
+    confirmBox.value = { title: ask.title, desc: ask.desc, okLabel: '확인', skipKey: '', tone: 'calm', icon: 'warn', run: apply };
+    return;
+  }
+  await apply();
 };
 /** 잔금기한 — 적은 날짜, 없으면 낙찰일 + 45일 예정일 */
 const balanceDue = computed(() => (auction.value ? balanceDueOf(auction.value) : { date: '', expected: false }));

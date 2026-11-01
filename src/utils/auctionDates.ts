@@ -40,12 +40,20 @@ export const wonDateError = (a: DateLike, value: string, on: boolean = STAGE_BEF
   return `입찰일(매각기일)은 ${koreanYmd(sale)}입니다. 낙찰일은 입찰일과 같은 날이어야 합니다.\n${koreanYmd(v)}은 입력할 수 없습니다.`;
 };
 
-/** 막지는 않을 때(스위치를 끈 시험 기간) — 매각기일과 다른 낙찰일을 적었으면 알릴 글, 같으면 빈 글 */
+/** 막지는 않을 때(스위치를 끈 시험 기간) — 매각기일과 다른 날을 고르면 묻는 글, 같으면 빈 글. 확인을 눌러야 바뀐다 */
 export const wonDateWarning = (a: DateLike, value: string): string => {
   const sale = ymdOf(a.eventDate);
   const v = ymdOf(value);
   if (!sale || !v || v === sale) return '';
-  return `입찰일(매각기일)은 ${koreanYmd(sale)}입니다. 낙찰일을 ${koreanYmd(v)}로 적었습니다.\n낙찰일은 보통 입찰일과 같은 날입니다 — 맞는지 확인해 주세요.`;
+  return `입찰일(매각기일)은 ${koreanYmd(sale)}입니다. ${koreanYmd(v)}을 고르셨습니다.\n낙찰일은 보통 입찰일과 같은 날입니다. 확인을 누르면 ${koreanYmd(v)}로 바뀝니다.`;
+};
+
+/** 잔금기한 칸이 아직 추정 예정일(낙찰일 + 45일)일 때 날짜를 고르면 묻는 글 — 적어 둔 기한이 있으면 빈 글. 확인을 눌러야 바뀐다 */
+export const balanceDueNotice = (a: DateLike, value: string): string => {
+  const cur = balanceDueOf(a);
+  const v = ymdOf(value);
+  if (!cur.expected || !v) return '';
+  return `지금 보이는 ${koreanYmd(cur.date)}은 낙찰일(없으면 매각기일)에서 ${BALANCE_DUE_DAYS}일로 어림한 추정 예정일입니다.\n법원이 통지한 대금지급기한이 맞으면 확인을 눌러 ${koreanYmd(v)}로 적습니다.`;
 };
 
 /** 잔금기한 — 적어 둔 날짜, 없으면 낙찰일(없으면 매각기일) + 45일 예정일 */
