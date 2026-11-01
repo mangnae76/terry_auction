@@ -6,10 +6,13 @@
 -->
 <title>마이턴옥션 선정물건</title>
 <script>
-  /* 대문 — 로그인 안 한 채 /web 에 오면 대문(/intro.html, 로그인 창이 바로 뜬다)으로.
-     대문에서 로그인하고 넘어온 길(?login=1)만 그대로 둔다 */
+  /* 대문 보내기 스위치 — 꺼 둔다(2026-11-02). 로그인 안 한 채 /web 에 와도, 로그아웃해도 메인 페이지(선정물건)에 머물고
+     머리에 '로그인 · 회원가입'이 뜬다. 켜면(true) 예전처럼 로그인 안 한 사람을 대문(/intro.html)으로 보낸다.
+     로그아웃 상태의 메인 페이지를 따로 만들게 되면 여기서 고른다 */
+  window.TA_INTRO_GATE = false;
   (function () {
     try {
+      if (!window.TA_INTRO_GATE) return;
       if (/[?&]login=1\b/.test(location.search)) return;
       if (localStorage.getItem('ta.web.in') === '1') return;   // 로그인해 있다(새로고침 · 다시 들어옴) — 대문 없이
       location.replace('/intro.html');
@@ -6417,13 +6420,13 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       items = all.map((a) => { try { return toWebItem(a); } catch (e) { return null; } }).filter(Boolean);
       render();
     };
-    let wasIn = false;   // 로그인해 있다가 로그아웃되면(어느 화면의 로그아웃이든) 대문으로 돌아간다
+    let wasIn = false;   // 대문 보내기(TA_INTRO_GATE)를 켰을 때 — 로그인해 있다가 로그아웃되면 대문으로 돌아간다
     T.watch(() => [auth.ready, auth.uid, auth.email], () => {
       if (!auth.ready) return;
       if (!timing.auth) { timing.auth = true; console.log(`[웹 시작] 로그인 확인 ${at()} (${auth.isLoggedIn ? '로그인됨' : '로그인 안 됨'})`); }
       // 로그인 표시 — 새로고침해도 대문으로 보내지 않게(맨 위 대문 스크립트가 본다)
       try { if (auth.isLoggedIn) localStorage.setItem('ta.web.in', '1'); else localStorage.removeItem('ta.web.in'); } catch (e) { /* 그만 */ }
-      if (!auth.isLoggedIn && (wasIn || !/[?&]login=1\b/.test(location.search))) { location.replace(wasIn ? '/intro.html?login=1' : '/intro.html'); return; }   /* 로그아웃이면 로그인 창부터 */
+      if (window.TA_INTRO_GATE && !auth.isLoggedIn && (wasIn || !/[?&]login=1\b/.test(location.search))) { location.replace(wasIn ? '/intro.html?login=1' : '/intro.html'); return; }   /* 로그아웃이면 로그인 창부터 */
       wasIn = auth.isLoggedIn;
       S.authReady = true; CLOUD.slow = false;
       const ok = auth.isLoggedIn && T.isAllowedEmail(auth.email);
@@ -6540,7 +6543,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
           .catch(() => { m.busy = false; m.msg = CLOUD.auth.error || '로그인하지 못했습니다.'; if (S.modal === m) renderModal(); });
         break;
       }
-      case 'logout': S.pop = ''; if (CLOUD.auth) CLOUD.auth.logout().then(() => location.replace('/intro.html?login=1')); else { location.replace('/intro.html?login=1'); } break;   /* 로그아웃 → 대문(흐린 영상 위 로그인 창부터) */
+      case 'logout': S.pop = ''; if (CLOUD.auth) CLOUD.auth.logout().then(() => { go('list'); toast('로그아웃했습니다.'); }); break;   /* 로그아웃 → 메인 페이지(선정물건)에 머문다 — 머리는 '로그인 · 회원가입'으로 */
       case 'pop': S.menu = null; S.binPicked = new Set(); S.calMonth = null; S.pop = S.pop === t.dataset.id ? '' : t.dataset.id; render(); break;
       case 'close-pop': closeLayers(); render(); break;
       case 'set-type': S.type = v; S.pop = ''; render(); break;
@@ -6702,7 +6705,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       case 'ag-reg-kind': AG.reg.kind = t.dataset.v; try { localStorage.setItem(AG_REG_KEY, JSON.stringify(AG.reg)); } catch (err) { /* 그만 */ } agPaint(); break;
       case 'ag-q-dong': agQueueDong(); break;
       case 'slow-reload': location.reload(); break;
-      case 'slow-relogin': try { localStorage.removeItem('ta.web.in'); } catch (err) { /* 그만 */ } location.replace('/intro.html?login=1'); break;
+      case 'slow-relogin': try { localStorage.removeItem('ta.web.in'); } catch (err) { /* 그만 */ } location.replace('/web?login=1'); break;   /* 새로 열고 로그인 창부터 */
       case 'ag-fold': AG.fold = !AG.fold; try { localStorage.setItem('ta.web.agent.fold', AG.fold ? '1' : '0'); } catch (err) { /* 그만 */ } agPaint(); break;
       case 'ag-cov-open': AG.covOpen = !AG.covOpen; agPaint(); if (AG.covOpen) { const i = $('agCovQ'); if (i) i.focus(); } break;
       case 'ag-stop': if (AG.on) { void CLOUD.T.sendAgentStop(AG.uid).then(() => { AG.note = '중지 요청을 보냈습니다 — 지금 페이지까지 저장합니다.'; AG.noteAt = Date.now(); agPaint(); }).catch(() => {}); } break;
