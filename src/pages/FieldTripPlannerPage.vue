@@ -9,6 +9,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router';
 import { saveFieldTripPlan } from '../services/auctionRepository';
 import { buildOptimizedRoute, parseAddressLines, reverseGeocode, straightDistanceKm, type GeoPoint } from '../services/routeOptimizer';
+import { addressWithName } from '../utils/addressName';
 import { fetchRouteForPath, type RouteLeg, type RouteMode } from '../services/roadRouting';
 import { apiPath } from '../services/apiBase';
 import { useAuctionStore } from '../stores/auctionStore';
@@ -169,6 +170,17 @@ const stageTagByKey = computed(() => {
   return map;
 });
 const stageTagOf = (address: string) => stageTagByKey.value[addrKey(address)] ?? null;
+/** 보여 줄 주소 — PDF 주소에 건물명이 빠졌으면 적어 둔 건물명(sum.buildingName)을 지번 뒤에 끼운다.
+ *  선정물건 카드 · 물건상세와 같은 함수(addressWithName)라 'DS리치빌' 같은 이름이 경로 줄에도 똑같이 보인다 */
+const nameByKey = computed(() => {
+  const map: Record<string, string> = {};
+  everyAuction.value.forEach((item) => {
+    const nm = String(item.basicSummary?.['sum.buildingName'] ?? '').trim();
+    if (nm) map[addrKey(item.address ?? '')] = nm;
+  });
+  return map;
+});
+const shownAddr = (address: string) => addressWithName(address, nameByKey.value[addrKey(address)]);
 
 /** 치운 물건 중 경로에 올라 있던 것 — 휴지통·보관함으로 보낸 임장예정·임장완료.
  *  경로에서는 내려가지만 목록에서까지 사라지면 '어디 갔지?' 가 된다. 자리는 남겨 둔다. */
@@ -1837,7 +1849,7 @@ watch(() => authStore.uid, (newUid) => {
                 @click="toggleAddrBubble(`q${row.id}`, row.address, $event)"
                 @mouseenter="hoverAddrBubble(`q${row.id}`, row.address, $event)"
                 @mouseleave="leaveAddrBubble()"
-              >{{ row.address }}</span>
+              >{{ shownAddr(row.address) }}</span>
               <span v-if="loading" class="ftp-stage-tag tone-queued calc">계산중</span>
               <span v-else-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못해 순번을 매기지 못했습니다">주소실패</span>
               <span
@@ -1886,7 +1898,7 @@ watch(() => authStore.uid, (newUid) => {
               @click="toggleAddrBubble(`s${idx}`, stop.address, $event)"
               @mouseenter="hoverAddrBubble(`s${idx}`, stop.address, $event)"
               @mouseleave="leaveAddrBubble()"
-            >{{ stop.address }}</span>
+            >{{ shownAddr(stop.address) }}</span>
             <button
               v-if="stop.kind === 'stop'"
               type="button"
@@ -1953,7 +1965,7 @@ watch(() => authStore.uid, (newUid) => {
                 @click="toggleAddrBubble(`q${row.id}`, row.address, $event)"
                 @mouseenter="hoverAddrBubble(`q${row.id}`, row.address, $event)"
                 @mouseleave="leaveAddrBubble()"
-              >{{ row.address }}</span>
+              >{{ shownAddr(row.address) }}</span>
               <span v-if="loading" class="ftp-stage-tag tone-queued calc">계산중</span>
               <span v-else-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못해 순번을 매기지 못했습니다">주소실패</span>
               <span
@@ -2004,7 +2016,7 @@ watch(() => authStore.uid, (newUid) => {
               @click="toggleAddrBubble(`p${row.id}`, row.address, $event)"
               @mouseenter="hoverAddrBubble(`p${row.id}`, row.address, $event)"
               @mouseleave="leaveAddrBubble()"
-            >{{ row.address }}</span>
+            >{{ shownAddr(row.address) }}</span>
             <span v-if="row.failed" class="ftp-stage-tag is-failed" title="주소에서 좌표를 찾지 못했습니다">주소실패</span>
             <span v-else :class="['ftp-stage-tag', `tone-${row.tone}`]" :title="row.hint">{{ row.label }}</span>
             <!-- 경로에 담기 — 단계가 무엇이든 다시 올릴 수 있다.
