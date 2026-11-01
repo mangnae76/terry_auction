@@ -2,6 +2,7 @@
 // auction-web(src/services/data.ts)과 같은 문서 모양을 쓴다 — 도우미 쪽 코드를 고치지 않고 그대로 붙이려고.
 //   users/{uid}/agent/control        웹 → 도우미 {cmd:{id,name,args,at}, stop:{id,at}, webSeenAt}
 //   users/{uid}/agent/status         도우미 → 웹 {at, ready, busy, enriching, prog, message, …}
+//   users/{uid}/agent/coverage       도우미 → 웹 모은 동네 {dongs: {'인천 서구 검암동': {at(ms), n, site, src, months}}}
 //   users/{uid}/datasets/main        {count, chunks, version, by, updatedAt}
 //   users/{uid}/datasets/main/chunks/{i}  {i, data: 레코드 JSON 글자, v}
 // 읽고 쓰기는 운영자 본인만(firestore.rules isAgentOwner). 앱 화면은 쓰지 않는다.
@@ -21,6 +22,8 @@ export type AgentStatus = {
   lastCmd?: string;
   site?: string;
 };
+/** 모은 동네 하나 — at 은 마지막으로 모은 시각(ms), n 은 그때 그 동네 물건 수 */
+export type AgentCoverage = { at: number; n: number; site?: string; src?: string; months?: number };
 export type AgentDatasetMeta = { count: number; chunks: number; version: number; by?: string; updatedAt?: { toMillis(): number } | null };
 /** 도우미가 모은 매각물건 한 줄 — nearby_avg.py FIELDS 그대로(한글 이름) */
 export type SaleRecord = Record<string, string | number | null>;
@@ -31,6 +34,7 @@ const db = () => {
 };
 const controlRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'control');
 const statusRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'status');
+const coverageRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'coverage');
 const metaRef = (uid: string) => doc(db(), 'users', uid, 'datasets', 'main');
 
 /** 도우미가 마지막 소식을 보낸 지 90초 안이면 연결됨 (도우미는 40초마다 알린다) */
@@ -54,6 +58,13 @@ export const watchAgentStatus = (uid: string, cb: (s: AgentStatus | null) => voi
   onSnapshot(statusRef(uid), (s) => cb(s.exists() ? (s.data() as AgentStatus) : null), err);
 export const watchAgentDatasetMeta = (uid: string, cb: (m: AgentDatasetMeta | null) => void, err: (e: Error) => void = () => {}): Unsubscribe =>
   onSnapshot(metaRef(uid), (s) => cb(s.exists() ? (s.data() as AgentDatasetMeta) : null), err);
+
+/** 모은 동네 — 최근에 모은 순 */
+export const watchAgentCoverage = (uid: string, cb: (list: Array<AgentCoverage & { key: string }>) => void, err: (e: Error) => void = () => {}): Unsubscribe =>
+  onSnapshot(coverageRef(uid), (s) => {
+    const dongs = (s.exists() ? (s.data() as { dongs?: Record<string, AgentCoverage> }).dongs : null) ?? {};
+    cb(Object.entries(dongs).map(([key, v]) => ({ key, ...v })).sort((a, b) => (b.at || 0) - (a.at || 0)));
+  }, err);
 
 /** JSON 조각 하나 → 레코드들 (깨진 조각은 건너뛴다) */
 export const parseSaleChunk = (text: unknown): SaleRecord[] => {

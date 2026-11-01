@@ -38,7 +38,7 @@ export { useAuctionStore } from '../../src/stores/auctionStore';
 export { isAllowedEmail, isAdminEmail } from '../../src/services/accessControl';
 /* 집 PC 수집 도우미(관리자만) — 시장분석 › 경매사례에서 명령 · 상태 · 모은 매각물건 */
 export {
-  sendAgentCommand, sendAgentStop, agentHeartbeat, watchAgentStatus, watchAgentDatasetMeta, loadAgentDataset, agentOnline,
+  sendAgentCommand, sendAgentStop, agentHeartbeat, watchAgentStatus, watchAgentDatasetMeta, watchAgentCoverage, loadAgentDataset, agentOnline,
 } from '../../src/services/agentRemote';
 export { updateStamp, UPDATE_PREFIX } from '../../src/services/updateStamp';
 /* 대문의 가벼운 로그인 창이 '로그인'을 누를 때 쓴다 — 로그인 유지 방식 · 카카오 설정 여부 */

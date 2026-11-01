@@ -682,6 +682,11 @@ button { cursor: pointer; }
 .mk-sale .ag-sep { width: 1px; height: 22px; align-self: center; background: var(--line, #e3e8f0); }
 .mk-sale .ag-msg { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 10px 14px; border-radius: 10px; background: var(--surface-2, #f4f7fc); font-size: 14px; color: var(--text); }
 .mk-sale .ag-msg.off { color: var(--muted); }
+.mk-sale .ag-cov { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.mk-sale .ag-cov small { font-size: 13px; color: var(--muted); margin-right: 4px; }
+.mk-sale .ag-cov-chip { padding: 4px 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 999px; font-size: 13px; color: var(--text); }
+.mk-sale .ag-cov-chip b { font-weight: 700; color: var(--blue); }
+.mk-sale .ag-cov-none { font-size: 13px; color: var(--muted); }
 .mk-sale .ag-bar { flex: 0 0 180px; height: 6px; border-radius: 3px; background: var(--line, #e3e8f0); overflow: hidden; }
 .mk-sale .ag-bar b { display: block; height: 100%; background: #2b6df3; }
 .mk-sale .ag-meta { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; }
@@ -5442,7 +5447,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   }
   /* ===== 집 PC 수집 도우미(관리자만) — auction-web 과 같은 방식: 여기서 누르면 Firestore 로 명령 → 집 PC agent.py 가 로그인된 크롬으로 옥션원 · 탱크옥션 수집 → 관리자 계정 아래에만 저장 =====
      문서 모양 · 읽고 쓰기는 src/services/agentRemote.ts, 규칙은 firestore.rules isAgentOwner */
-  const AG = { on: false, uid: '', status: null, meta: null, recs: [], sending: false, note: '', noteAt: 0, unsub: [], tick: null };
+  const AG = { on: false, uid: '', status: null, meta: null, recs: [], cov: [], sending: false, note: '', noteAt: 0, unsub: [], tick: null };
   const AG_SEL_KEY = 'ta.web.agent.sel';
   const AG_MONTHS = [[6, '6개월'], [12, '12개월'], [24, '24개월'], [36, '36개월'], [0, '전체']];
   /* 고른 사이트 · 수집대상 · 기간은 이 브라우저에 남긴다(새로고침해도 그대로). '처음부터새로'는 한 번 쓰고 끈다.
@@ -5492,8 +5497,15 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       + `<div class="ag-row">${seg('site', '사이트', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('src', '수집대상', [['near', '인근'], ['same', '동일지번']])}${seg('months', '수집기간', AG_MONTHS)}`
       + `<label class="ag-chk"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>`
       + `<div class="ag-row">${btn('open', '①브라우저열기', online && free)}${btn('screen', '②화면수집', ready && free)}${btn('auto', '자동수집', ready && free, 'pri')}<span class="ag-sep"></span>${btn('enrich', '건축연도채우기', ready && free)}<button type="button" class="ag-btn stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`
+      + agCovHtml()
       + `<div class="ag-msg${online ? '' : ' off'}" role="status" aria-live="polite"><span>${esc(msg || '대기 중입니다.')}</span>${prog}<span class="ag-meta">${meta}</span></div>`
       + `</section>`;
+  }
+  /* 모은 동네 — 도우미가 인근매각물건을 모을 때마다 동네 · 물건 수 · 날짜를 적는다(agent/coverage). 이미 모은 동네는 다시 모을 때 새로 나온 것만 더한다 */
+  function agCovHtml() {
+    const d = (ms) => { const t = new Date(ms); return `${String(t.getMonth() + 1).padStart(2, '0')}.${String(t.getDate()).padStart(2, '0')}`; };
+    const chips = AG.cov.map((c) => `<span class="ag-cov-chip" title="${esc(c.site || '')} · 수집기간 ${c.months ? `${c.months}개월` : '전체'}">${esc(c.key)} <b>${Number(c.n || 0).toLocaleString('ko-KR')}건</b> · ${d(c.at)} 수집</span>`).join('');
+    return `<div class="ag-cov"><small>모은 동네${AG.cov.length ? ` ${AG.cov.length}곳` : ''}</small>${chips || '<span class="ag-cov-none">아직 없습니다 — 인근매각물건을 모으면 여기 동네별로 남습니다.</span>'}</div>`;
   }
   /* 도우미 카드만 다시 — 상태가 바뀔 때마다 화면 전체를 다시 그리지 않는다 */
   function agPaint() { const el = $('agPanel'); if (el && agSaleOpen()) el.outerHTML = agPanelHtml(); }
@@ -5516,6 +5528,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     Object.assign(AG, { on: true, uid, status: null, meta: null, recs: [] });
     try {
     AG.unsub.push(T.watchAgentStatus(uid, (st) => { AG.status = st; agPaint(); }, () => { AG.note = '도우미 상태를 읽지 못했습니다 — 관리자 계정인지 확인해 주세요.'; AG.noteAt = Date.now(); agPaint(); }));
+    if (T.watchAgentCoverage) AG.unsub.push(T.watchAgentCoverage(uid, (list) => { AG.cov = list; agPaint(); }, () => {}));
     AG.unsub.push(T.watchAgentDatasetMeta(uid, (m) => { if (!m) { AG.meta = null; AG.recs = []; agPaint(); agPaintTable(); return; } if (!AG.meta || m.version !== AG.meta.version) { AG.meta = m; void agLoadRecs(); } }, () => {}));
     let beat = 0;
     AG.tick = setInterval(() => {

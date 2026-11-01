@@ -91,6 +91,13 @@ service cloud.firestore {
           && (!('stop' in agentData()) || (agentData().stop is map && agentData().stop.keys().hasOnly(['id', 'at']) && agentData().stop.id is string && agentData().stop.id.size() <= 64))
           && (!('webSeenAt' in agentData()) || agentData().webSeenAt is timestamp);
       }
+      // 집 PC → 웹 모은 동네 {dongs: {'인천 서구 검암동': {at, n, site, src, months}}}
+      match /agent/coverage {
+        allow get: if isAgentOwner(uid);
+        allow create, update: if isAgentOwner(uid)
+          && agentData().keys().hasOnly(['dongs'])
+          && agentData().dongs is map && agentData().dongs.size() <= 3000;
+      }
       // 집 PC → 웹 상태
       match /agent/status {
         allow get: if isAgentOwner(uid);
