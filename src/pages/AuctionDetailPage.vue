@@ -6629,7 +6629,7 @@ const goBack = () => router.back();
             <!-- 웹은 날짜를 머리(자동계산 오른쪽)로 올린다 — 따로 있던 날짜 줄을 걷어 아래가 위로 붙는다 -->
             <span v-if="webEmbed && !isCollapsed('profit')" class="adp-head-dates" @click.stop>
               <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
-                <em>매각기일</em>
+                <em>입찰일</em>
                 <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) }" :title="!shortYmd(auction.wonDate) && auction.eventDate ? '낙찰일을 적기 전에는 매각기일을 보여 줍니다' : undefined">{{ shortYmd(auction.wonDate) || shortYmd(auction.eventDate) || '날짜입력' }}</span></span>
               </button>
               <button type="button" class="adp-pd-item" @click="profitDateTarget = 'balanceDueDate'" :title="balanceDue.expected ? `낙찰일(없으면 매각기일) + ${BALANCE_DUE_DAYS}일로 어림한 예정일입니다 — 법원 통지서의 대금지급기한을 고르면 그 날짜로 바뀝니다` : '법원이 통지한 대금지급기한'">
@@ -6653,7 +6653,7 @@ const goBack = () => router.back();
           </header>
           <div v-if="!isCollapsed('profit') && !webEmbed" class="adp-profit-dates">
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
-              <em>매각기일</em>
+              <em>입찰일</em>
               <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) }" :title="!shortYmd(auction.wonDate) && auction.eventDate ? '낙찰일을 적기 전에는 매각기일을 보여 줍니다' : undefined">{{ shortYmd(auction.wonDate) || shortYmd(auction.eventDate) || '날짜입력' }}</span></span>
             </button>
             <button type="button" class="adp-pd-item" @click="profitDateTarget = 'balanceDueDate'" :title="balanceDue.expected ? `낙찰일(없으면 매각기일) + ${BALANCE_DUE_DAYS}일로 어림한 예정일입니다 — 법원 통지서의 대금지급기한을 고르면 그 날짜로 바뀝니다` : '법원이 통지한 대금지급기한'">
