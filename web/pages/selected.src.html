@@ -5766,6 +5766,10 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const giveUp = setTimeout(() => { if (!S.authReady) { S.authReady = true; render(); } }, 7000);
     let T = null; try { T = await loadParser(); } catch (e) { clearTimeout(giveUp); S.authReady = true; render(); return; }
     if (!T || !T.useAuthStore) { clearTimeout(giveUp); S.authReady = true; render(); return; }
+    /* 어디서 오래 걸리는지 — 새로고침부터 몇 초에 묶음 · 로그인 · 내 물건이 왔는지 콘솔에 한 번씩 */
+    const at = () => `${(performance.now() / 1000).toFixed(1)}초`;
+    const timing = { auth: false, items: false };
+    console.log(`[웹 시작] 묶음 준비 ${at()}`);
     T.startStores();
     const auth = T.useAuthStore(); const st = T.useAuctionStore();
     Object.assign(CLOUD, { T, auth, store: st });
@@ -5782,6 +5786,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     let wasIn = false;   // 로그인해 있다가 로그아웃되면(어느 화면의 로그아웃이든) 대문으로 돌아간다
     T.watch(() => [auth.ready, auth.uid, auth.email], () => {
       if (!auth.ready) return;
+      if (!timing.auth) { timing.auth = true; console.log(`[웹 시작] 로그인 확인 ${at()} (${auth.isLoggedIn ? '로그인됨' : '로그인 안 됨'})`); }
       // 로그인 표시 — 새로고침해도 대문으로 보내지 않게(맨 위 대문 스크립트가 본다)
       try { if (auth.isLoggedIn) localStorage.setItem('ta.web.in', '1'); else localStorage.removeItem('ta.web.in'); } catch (e) { /* 그만 */ }
       if (!auth.isLoggedIn && (wasIn || !/[?&]login=1\b/.test(location.search))) { location.replace(wasIn ? '/intro.html?login=1' : '/intro.html'); return; }   /* 로그아웃이면 로그인 창부터 */
@@ -5811,7 +5816,12 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       }
     }, { immediate: true });
     /* 물건이 실제로 와야 '왔다' — 구독을 열 때 저장소를 한 번 비우는 것까지 도착으로 세면 '물건이 없습니다'가 잠깐 보인다 */
-    T.watch(() => [st.auctions, st.archivedAuctions, st.hiddenAuctions], () => { if (st.auctions.length || st.archivedAuctions.length || st.hiddenAuctions.length) CLOUD.synced = true; fromStore(); });
+    T.watch(() => [st.auctions, st.archivedAuctions, st.hiddenAuctions], () => {
+      const n = st.auctions.length + st.archivedAuctions.length + st.hiddenAuctions.length;
+      if (n) CLOUD.synced = true;
+      if (n && !timing.items) { timing.items = true; console.log(`[웹 시작] 내 물건 ${n.toLocaleString('ko-KR')}건 도착 ${at()}`); }
+      fromStore();
+    });
     /* giveUp 은 일부러 남겨 둔다 — 로그인 여부를 끝내 알지 못해도 7초 뒤에는 화면을 보여 준다 */
   }
   const update = (id, patch) => { items = items.map((x) => (x.id === id ? { ...x, ...patch } : x)); if (CLOUD.on) cloudSave(id, patch); };
