@@ -2,7 +2,16 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { cacheKey as appCacheKey } from '../../src/services/marketCache';
-import { PATHS, QuotaError, cacheKey, docId, fetchMonth, parseDocId, typeLabelOf, ymdAgo } from './rtms.mjs';
+import { PATHS, QuotaError, cacheKey, docId, fetchMonth, parseDocId, regionTable, typeLabelOf, ymdAgo } from './rtms.mjs';
+import { REGION_GROUPS } from '../../src/services/regionCodes';
+
+describe('지역 표', () => {
+  it('regionCodes.ts 글자를 읽은 결과가 앱 REGION_GROUPS 와 같다', () => {
+    const t = regionTable(readFileSync(new URL('../../src/services/regionCodes.ts', import.meta.url), 'utf8'));
+    for (const g of REGION_GROUPS) expect(t[g.sido]).toEqual(g.districts.map((d) => d.lawdCode));
+    expect(Object.keys(t)).toHaveLength(REGION_GROUPS.length);
+  });
+});
 
 describe('화면과 같은 이름 · 주소', () => {
   it('문서 이름이 앱 cacheKey 와 같다', () => {

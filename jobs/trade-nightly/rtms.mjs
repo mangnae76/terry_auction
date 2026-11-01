@@ -25,6 +25,15 @@ export const KIND_PATHS = {
 
 export const COLLECTION = 'cacheTradeMonth';
 
+/** 지역 표(src/services/regionCodes.ts 글자) → { 시도: [시군구 5자리 …] }. 화면과 같은 표를 읽어 둘이 어긋나지 않게 */
+export const regionTable = (src) => {
+  const out = {};
+  for (const m of String(src).matchAll(/sido: '([^']+)',\s*districts: \[([\s\S]*?)\]/g)) {
+    out[m[1]] = [...m[2].matchAll(/lawdCode: '(\d{5})'/g)].map((x) => x[1]);
+  }
+  return out;
+};
+
 /** marketCache.ts 의 cacheKey 와 같다 */
 export const cacheKey = (...parts) =>
   parts.map((p) => String(p).replace(/\s+/g, '').replace(/[/\\.#$[\]]/g, '-')).join('_');

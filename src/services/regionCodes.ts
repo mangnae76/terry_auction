@@ -57,7 +57,9 @@ export const REGION_GROUPS: RegionGroup[] = [
   {
     sido: '인천광역시',
     districts: [
-      { label: '중구', lawdCode: '28110' }, { label: '동구', lawdCode: '28140' },
+      // 2026년 인천 중구 · 동구가 제물포구 · 영종구로 바뀌었다. 옛 코드(28110 · 28140)로는 실거래가 0건 —
+      // 2026-11-01 국토부 실거래 API로 새 코드에 거래가 오는 것을 확인했다.
+      { label: '제물포구', lawdCode: '28125' }, { label: '영종구', lawdCode: '28155' },
       { label: '미추홀구', lawdCode: '28177' }, { label: '연수구', lawdCode: '28185' },
       { label: '남동구', lawdCode: '28200' }, { label: '부평구', lawdCode: '28237' },
       { label: '계양구', lawdCode: '28245' },
@@ -98,18 +100,30 @@ export const REGION_GROUPS: RegionGroup[] = [
   {
     sido: '경기도',
     districts: [
-      { label: '수원시', lawdCode: '41110' }, { label: '성남시', lawdCode: '41130' },
-      { label: '의정부시', lawdCode: '41150' }, { label: '안양시', lawdCode: '41170' },
-      { label: '부천시', lawdCode: '41190' }, { label: '광명시', lawdCode: '41210' },
+      // 구가 있는 시는 구 코드로 — 국토부 실거래는 시 코드(수원시 41110 등)로 부르면 0건이다.
+      // 화성시는 2026년 만세 · 효행 · 병점 · 동탄구로 나뉘었다. 모두 2026-11-01 국토부 API로 거래가 오는 것을 확인했다.
+      { label: '수원시 장안구', lawdCode: '41111' }, { label: '수원시 권선구', lawdCode: '41113' },
+      { label: '수원시 팔달구', lawdCode: '41115' }, { label: '수원시 영통구', lawdCode: '41117' },
+      { label: '성남시 수정구', lawdCode: '41131' }, { label: '성남시 중원구', lawdCode: '41133' },
+      { label: '성남시 분당구', lawdCode: '41135' },
+      { label: '의정부시', lawdCode: '41150' },
+      { label: '안양시 만안구', lawdCode: '41171' }, { label: '안양시 동안구', lawdCode: '41173' },
+      { label: '부천시 원미구', lawdCode: '41192' }, { label: '부천시 소사구', lawdCode: '41194' },
+      { label: '부천시 오정구', lawdCode: '41196' }, { label: '광명시', lawdCode: '41210' },
       { label: '평택시', lawdCode: '41220' }, { label: '동두천시', lawdCode: '41250' },
-      { label: '안산시', lawdCode: '41270' }, { label: '고양시', lawdCode: '41280' },
+      { label: '안산시 상록구', lawdCode: '41271' }, { label: '안산시 단원구', lawdCode: '41273' },
+      { label: '고양시 덕양구', lawdCode: '41281' }, { label: '고양시 일산동구', lawdCode: '41285' },
+      { label: '고양시 일산서구', lawdCode: '41287' },
       { label: '과천시', lawdCode: '41290' }, { label: '구리시', lawdCode: '41310' },
       { label: '남양주시', lawdCode: '41360' }, { label: '오산시', lawdCode: '41370' },
       { label: '시흥시', lawdCode: '41390' }, { label: '군포시', lawdCode: '41410' },
       { label: '의왕시', lawdCode: '41430' }, { label: '하남시', lawdCode: '41450' },
-      { label: '용인시', lawdCode: '41460' }, { label: '파주시', lawdCode: '41480' },
+      { label: '용인시 처인구', lawdCode: '41461' }, { label: '용인시 기흥구', lawdCode: '41463' },
+      { label: '용인시 수지구', lawdCode: '41465' }, { label: '파주시', lawdCode: '41480' },
       { label: '이천시', lawdCode: '41500' }, { label: '안성시', lawdCode: '41550' },
-      { label: '김포시', lawdCode: '41570' }, { label: '화성시', lawdCode: '41590' },
+      { label: '김포시', lawdCode: '41570' },
+      { label: '화성시 만세구', lawdCode: '41591' }, { label: '화성시 효행구', lawdCode: '41593' },
+      { label: '화성시 병점구', lawdCode: '41595' }, { label: '화성시 동탄구', lawdCode: '41597' },
       { label: '광주시', lawdCode: '41610' }, { label: '양주시', lawdCode: '41630' },
       { label: '포천시', lawdCode: '41650' }, { label: '여주시', lawdCode: '41670' },
       { label: '연천군', lawdCode: '41800' }, { label: '가평군', lawdCode: '41820' },

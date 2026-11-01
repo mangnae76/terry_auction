@@ -1,6 +1,8 @@
 // 새벽 실거래 적재 — 매일 새벽 1시 17분(한국)에 GitHub Actions 가 돌린다 (.github/workflows/trade-nightly.yml).
 //
-//  1) 대상: 지금까지 누군가 조회해서 DB(cacheTradeMonth)에 남은 지역 · 종류 전부 (+ EXTRA_TARGETS 로 손으로 더한 것)
+//  1) 대상: ALWAYS_SIDO(기본 인천 · 경기)의 모든 시군구 × 모든 종류
+//          + 지금까지 누군가 조회해서 DB(cacheTradeMonth)에 남은 지역 · 종류 (+ EXTRA_TARGETS 로 손으로 더한 것)
+//     지역 표(src/services/regionCodes.ts)에 없는 코드는 건너뛴다 — 개편 전 옛 코드(인천 중구 28110 등)는 0건만 와서
 //  2) 최근 3달: 날마다 새로 받아 덮어쓴다 — 신고 기한 30일 · 계약해제가 늦게 붙어 계속 바뀐다
 //  3) 그 전 달(4년치까지): 없거나 1년 가까이 된 달만 받는다 — 하룻밤 BACKFILL_BUDGET 번까지, 최근 달부터
 //  화면은 이 문서를 먼저 읽으므로, 여기서 채워 둔 달은 국토부를 부르지 않는다.
@@ -9,9 +11,11 @@
 //  FIREBASE_SERVICE_ACCOUNT  서비스 계정 JSON (GitHub 비밀값)
 //  DATA_GO_KR_KEY            공공데이터포털 서비스키 (GitHub 비밀값)
 //  EXTRA_TARGETS             손으로 더할 지역 — '28260:villa,11200:apt' (종류 apt · villa · officetel · single · commercial)
+//  ALWAYS_SIDO               늘 받을 시도 — 기본 '인천광역시,경기도' (그 시도의 지역 표 시군구 × 모든 종류)
 //  BACKFILL_BUDGET           하룻밤 지난 달 채우기에 쓸 최대 호출 수 (기본 1500)
 //  DRY_RUN=1                 DB 없이 EXTRA_TARGETS 의 최근 3달만 받아 건수만 찍는다 (시험용)
-import { COLLECTION, KIND_PATHS, QuotaError, docId, fetchMonth, parseDocId, ymdAgo } from './rtms.mjs';
+import { readFileSync } from 'node:fs';
+import { COLLECTION, KIND_PATHS, PATHS, QuotaError, docId, fetchMonth, parseDocId, regionTable, ymdAgo } from './rtms.mjs';
 
 const RECENT_MONTHS = 3;          // 0 · 1 · 2 달 전 — 화면이 하루만 믿는 달(publicDataApi.ts monthCacheTtl)
 const HISTORY_MONTHS = 49;        // 손품조사 4년치 = 4년 전 그달부터 이번 달까지
@@ -22,6 +26,9 @@ const CONCURRENCY = 4;
 const DRY = process.env.DRY_RUN === '1';
 const serviceKey = process.env.DATA_GO_KR_KEY ?? '';
 const budget = Number(process.env.BACKFILL_BUDGET ?? 1500) || 0;
+const alwaysSido = (process.env.ALWAYS_SIDO ?? '인천광역시,경기도').split(',').map((s) => s.trim()).filter(Boolean);
+const table = regionTable(readFileSync(new URL('../../src/services/regionCodes.ts', import.meta.url), 'utf8'));
+const knownCodes = new Set(Object.values(table).flat());
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
 if (!serviceKey) { console.error('DATA_GO_KR_KEY 가 없습니다'); process.exit(1); }
@@ -59,7 +66,10 @@ const main = async () => {
   // 대상 지역 · 종류
   const targets = new Map();
   const add = (t) => targets.set(`${t.lawdCd5}|${t.path}`, t);
-  for (const id of saved.keys()) { const p = parseDocId(id); if (p) add(p); }
+  for (const sido of alwaysSido) for (const lawdCd5 of table[sido] ?? []) for (const path of Object.values(PATHS)) add({ lawdCd5, path });
+  let stale = 0;
+  for (const id of saved.keys()) { const p = parseDocId(id); if (!p) continue; if (knownCodes.has(p.lawdCd5)) add(p); else stale += 1; }
+  if (stale) log(`지역 표에 없는 옛 코드 문서 ${stale.toLocaleString()}개는 건너뜀`);
   extraTargets().forEach(add);
   const list = [...targets.values()];
   log(`대상 ${list.length}개 (지역 × 종류)`);
