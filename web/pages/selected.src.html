@@ -675,6 +675,20 @@ button { cursor: pointer; }
 .mk-sale .ag-chip.off { background: #f1f3f7; color: #6b7280; }
 .mk-sale .ag-chip.off i { background: #9ca3af; }
 .mk-sale .ag-ver { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--muted); }
+.mk-sale .ag-fold { display: inline-flex; align-items: center; gap: 4px; height: 28px; margin-left: 10px; padding: 0 10px; border: 1px solid var(--line-2, #cfd8e6); border-radius: 8px; background: var(--surface); color: var(--text-2, #4b5563); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.mk-sale .ag-card.folded .ag-msg { margin-top: 10px; }
+.mk-sale .ag-cov-sum { font-size: 13px; color: var(--text); }
+.mk-sale .ag-cov-sum b { font-weight: 700; color: var(--blue); }
+.mk-sale .ag-link { border: 0; background: none; padding: 0 2px; font: inherit; font-size: 13px; font-weight: 600; color: var(--blue); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.mk-sale .ag-cov-list { margin-top: 8px; padding: 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 8px; }
+.mk-sale .ag-cov-list input.adm-input { width: 240px; height: 30px; font-size: 13px; margin-bottom: 8px; }
+.mk-sale .ag-cov-wrap { max-height: 240px; overflow: auto; border: 1px solid var(--line, #e5e7eb); border-radius: 8px; }
+.mk-sale .ag-cov-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mk-sale .ag-cov-wrap th { position: sticky; top: 0; padding: 7px 10px; background: var(--surface-2, #f7f9fc); font-weight: 700; color: var(--text-2, #374151); text-align: center; border-bottom: 1px solid var(--line, #e5e7eb); }
+.mk-sale .ag-cov-wrap td { padding: 7px 10px; text-align: center; color: var(--text); border-top: 1px solid var(--line, #eef1f6); white-space: nowrap; }
+.mk-sale .ag-cov-wrap :is(th, td).l { text-align: left; }
+.mk-sale .ag-cov-wrap td.n { text-align: right; }
+.mk-sale .ag-cov-wrap td.none { color: var(--muted); }
 .mk-sale .ag-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 12px; }
 .mk-sale .ag-chk { display: inline-flex; align-items: center; gap: 6px; height: 32px; font-size: 13px; color: var(--muted); cursor: pointer; }
 .mk-sale .ag-btn { height: 32px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line-2, #cfd8e6); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
@@ -5529,7 +5543,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   }
   /* ===== 집 PC 수집 도우미(관리자만) — auction-web 과 같은 방식: 여기서 누르면 Firestore 로 명령 → 집 PC agent.py 가 로그인된 크롬으로 옥션원 · 탱크옥션 수집 → 관리자 계정 아래에만 저장 =====
      문서 모양 · 읽고 쓰기는 src/services/agentRemote.ts, 규칙은 firestore.rules isAgentOwner */
-  const AG = { on: false, uid: '', status: null, meta: null, recs: [], cov: [], queue: [], qDraft: '', reg: (() => { const d = { sido: '', sgg: '', dong: '', kind: '연립다세대' }; try { const v = { ...d, ...JSON.parse(localStorage.getItem('ta.web.agent.reg') || '{}') }; if (!['연립다세대', '아파트', '오피스텔'].includes(v.kind)) v.kind = d.kind; return v; } catch (e) { return d; } })(), sending: false, note: '', noteAt: 0, unsub: [], tick: null };
+  const AG = { on: false, uid: '', status: null, meta: null, recs: [], cov: [], queue: [], qDraft: '', covOpen: false, covQ: '',
+    fold: (() => { try { return localStorage.getItem('ta.web.agent.fold') === '1'; } catch (e) { return false; } })(), reg: (() => { const d = { sido: '', sgg: '', dong: '', kind: '연립다세대' }; try { const v = { ...d, ...JSON.parse(localStorage.getItem('ta.web.agent.reg') || '{}') }; if (!['연립다세대', '아파트', '오피스텔'].includes(v.kind)) v.kind = d.kind; return v; } catch (e) { return d; } })(), sending: false, note: '', noteAt: 0, unsub: [], tick: null };
   const AG_SEL_KEY = 'ta.web.agent.sel';
   const AG_MONTHS = [[6, '6개월'], [12, '12개월'], [24, '24개월'], [36, '36개월'], [0, '전체']];
   /* 고른 사이트 · 기간은 이 브라우저에 남긴다(새로고침해도 그대로). '처음부터새로'는 한 번 쓰고 끈다.
@@ -5579,20 +5594,37 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const prog = busy && s.prog && s.prog.n > 0 ? `<span class="ag-bar"><b style="width:${Math.min(100, Math.round((s.prog.i / s.prog.n) * 100))}%"></b></span>` : '';
     const m = AG.meta;
     const meta = m ? `저장 ${Number(m.count || 0).toLocaleString('ko-KR')}건${m.updatedAt && m.updatedAt.toMillis && T.updateStamp ? ` · ${T.UPDATE_PREFIX}${T.updateStamp(m.updatedAt.toMillis())}` : ''}` : '저장 0건';
-    return `<section class="ag-card" id="agPanel">`
-      + `<div class="ag-head"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>집 PC 수집 도우미<span class="ag-admin">관리자</span>${chip}<span class="ag-ver">${online && s.version ? esc(s.version) : ''}</span></div>`
+    const fold = `<button type="button" class="ag-fold" data-act="ag-fold" aria-expanded="${AG.fold ? 'false' : 'true'}">${AG.fold ? '펼치기' : '접기'}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${AG.fold ? 'm6 9 6 6 6-6' : 'm18 15-6-6-6 6'}"/></svg></button>`;
+    const head = `<div class="ag-head"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>집 PC 수집 도우미<span class="ag-admin">관리자</span>${chip}<span class="ag-ver">${online && s.version ? esc(s.version) : ''}</span>${fold}</div>`;
+    const msgLine = `<div class="ag-msg${online ? '' : ' off'}" role="status" aria-live="polite"><span>${esc(msg || '대기 중입니다.')}</span>${prog}<span class="ag-meta">${meta}</span></div>`;
+    /* 접으면 머리 + 안내 한 줄만 (진행은 계속 보이게) */
+    if (AG.fold) return `<section class="ag-card folded" id="agPanel">${head}${msgLine}</section>`;
+    return `<section class="ag-card" id="agPanel">${head}`
       + `<div class="ag-row">${seg('site', '사이트', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('months', '수집기간', AG_MONTHS)}`
       + `<label class="ag-chk"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>`
       + `<div class="ag-row">${btn('open', '①브라우저열기', online && free)}${btn('screen', '②화면수집', ready && free)}${btn('auto', '자동수집', ready && free, 'pri')}${qRun ? `<button type="button" class="ag-btn pri run" disabled>대기열수집중</button>` : btn('queue', '대기열수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}<span class="ag-sep"></span>${btn('enrich', '건축연도채우기', ready && free)}<button type="button" class="ag-btn stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`
-      + agCovHtml() + agQueueHtml()
-      + `<div class="ag-msg${online ? '' : ' off'}" role="status" aria-live="polite"><span>${esc(msg || '대기 중입니다.')}</span>${prog}<span class="ag-meta">${meta}</span></div>`
+      + agCovHtml() + agQueueHtml() + msgLine
       + `</section>`;
   }
   /* 모은 동네 — 도우미가 인근매각물건을 모을 때마다 동네 · 물건 수 · 날짜를 적는다(agent/coverage). 이미 모은 동네는 다시 모을 때 새로 나온 것만 더한다 */
+  /* 모은 동네 — 요약 한 줄 + [목록보기]로 펼치는 표(찾기 · 최근 순). 동네가 많아져도 카드가 길어지지 않게 */
+  const agMD = (ms) => { const t = new Date(ms); return `${String(t.getMonth() + 1).padStart(2, '0')}.${String(t.getDate()).padStart(2, '0')}`; };
+  function agCovRows() {
+    const q = String(AG.covQ || '').replace(/\s+/g, '');
+    const list = AG.cov.filter((c) => !q || String(c.key || '').replace(/\s+/g, '').includes(q));
+    if (!list.length) return `<tr><td colspan="5" class="none">${q ? '찾는 동네가 없습니다' : '아직 없습니다'}</td></tr>`;
+    return list.map((c) => `<tr><td class="l">${esc(c.region || c.key)}</td><td>${esc(c.kind || '-')}</td><td class="n">${Number(c.n || 0).toLocaleString('ko-KR')}</td><td>${agMD(c.at)}</td><td>${esc(c.site || '-')}</td></tr>`).join('');
+  }
   function agCovHtml() {
-    const d = (ms) => { const t = new Date(ms); return `${String(t.getMonth() + 1).padStart(2, '0')}.${String(t.getDate()).padStart(2, '0')}`; };
-    const chips = AG.cov.map((c) => `<span class="ag-cov-chip" title="${esc(c.site || '')} · 수집기간 ${c.months ? `${c.months}개월` : '전체'}">${esc(c.key)} <b>${Number(c.n || 0).toLocaleString('ko-KR')}건</b> · ${d(c.at)} 수집</span>`).join('');
-    return `<div class="ag-cov"><small>모은 동네${AG.cov.length ? ` ${AG.cov.length}곳` : ''}</small>${chips || '<span class="ag-cov-none">아직 없습니다 — 인근매각물건을 모으면 여기 동네별로 남습니다.</span>'}</div>`;
+    if (!AG.cov.length) return '<div class="ag-cov"><small>모은 동네</small><span class="ag-cov-none">아직 없습니다 — 인근매각물건을 모으면 여기 동네별로 남습니다.</span></div>';
+    const total = AG.cov.reduce((a, c) => a + Number(c.n || 0), 0);
+    const sum = `<span class="ag-cov-sum"><b>${AG.cov.length.toLocaleString('ko-KR')}곳</b> · 총 ${total.toLocaleString('ko-KR')}건 · 최근 ${agMD(AG.cov[0].at)} 수집</span>`;
+    const btn = `<button type="button" class="ag-link" data-act="ag-cov-open">${AG.covOpen ? '목록접기' : '목록보기'}</button>`;
+    const list = AG.covOpen
+      ? `<div class="ag-cov-list"><input type="text" class="adm-input" id="agCovQ" placeholder="동네 찾기 예 검암동" value="${esc(AG.covQ || '')}">`
+        + `<div class="ag-cov-wrap"><table><thead><tr><th class="l">동네</th><th>종류</th><th>물건</th><th>수집일</th><th>사이트</th></tr></thead><tbody id="agCovBody">${agCovRows()}</tbody></table></div></div>`
+      : '';
+    return `<div class="ag-cov"><small>모은 동네</small>${sum}${btn}</div>${list}`;
   }
   /* 모을 물건 대기열 — 도우미가 사건마다 탱크옥션 검색 → 상세 → 인근매각사례를 끝까지 모으고 대기열에서 뺀다(agent/queue).
      [대기열수집]을 누르면 선정물건 중 아직 안 모은 동네(종류까지 같은)의 사건을 동네마다 하나씩 먼저 올린다 */
@@ -5673,9 +5705,9 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   function agPaint() {
     const el = $('agPanel'); if (!el || !agSaleOpen()) return;
     /* 사건번호 입력칸 — 다시 그려도 쓰던 글자 · 커서는 그대로 */
-    const qi = $('agQIn'); const qf = qi && document.activeElement === qi; const qs = qf ? qi.selectionStart : 0;
+    const act = document.activeElement; const fid = act && (act.id === 'agQIn' || act.id === 'agCovQ') ? act.id : ''; const qs = fid ? act.selectionStart : 0;
     el.outerHTML = agPanelHtml();
-    const ni = $('agQIn'); if (ni && qf) { ni.focus(); try { ni.setSelectionRange(qs, qs); } catch (e) { /* 그만 */ } }
+    const ni = fid && $(fid); if (ni) { ni.focus(); try { ni.setSelectionRange(qs, qs); } catch (e) { /* 그만 */ } }
   }
   function agPaintTable() { const el = document.querySelector('.mk-sale .sc-card'); if (el && agSaleOpen()) el.outerHTML = S.saleTab === 'same' ? sameLotCard() : saleCaseCard(); }
   async function agLoadRecs() {
@@ -6430,6 +6462,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       case 'ag-q-del': void agQueueSave(AG.queue.filter((q) => agQid(q) !== t.dataset.v)); break;
       case 'ag-reg-kind': AG.reg.kind = t.dataset.v; try { localStorage.setItem(AG_REG_KEY, JSON.stringify(AG.reg)); } catch (err) { /* 그만 */ } agPaint(); break;
       case 'ag-q-dong': agQueueDong(); break;
+      case 'ag-fold': AG.fold = !AG.fold; try { localStorage.setItem('ta.web.agent.fold', AG.fold ? '1' : '0'); } catch (err) { /* 그만 */ } agPaint(); break;
+      case 'ag-cov-open': AG.covOpen = !AG.covOpen; agPaint(); if (AG.covOpen) { const i = $('agCovQ'); if (i) i.focus(); } break;
       case 'ag-stop': if (AG.on) { void CLOUD.T.sendAgentStop(AG.uid).then(() => { AG.note = '중지 요청을 보냈습니다 — 지금 페이지까지 저장합니다.'; AG.noteAt = Date.now(); agPaint(); }).catch(() => {}); } break;
       case 'go-trip': go('trip'); break;
       /* 펼침 메뉴의 항목(data-name)을 누르면 그 하위 탭으로 바로 연다 */
@@ -6633,6 +6667,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   document.addEventListener('input', (e) => {
     if (e.target.id === 'q') { S.q = e.target.value; renderToolbar(); renderContent(); return; }
     if (e.target.id === 'agQIn') { AG.qDraft = e.target.value; return; }
+    if (e.target.id === 'agCovQ') { AG.covQ = e.target.value; const tb = $('agCovBody'); if (tb) tb.innerHTML = agCovRows(); return; }
     if (S.modal && S.modal.kind === 'register') readReg();
   });
   document.addEventListener('change', (e) => {
