@@ -26,7 +26,7 @@ export type AgentStatus = {
 /** 모은 동네 하나 — at 은 마지막으로 모은 시각(ms), n 은 그때 그 동네 물건 수 */
 export type AgentCoverage = { at: number; n: number; region?: string; kind?: string; site?: string; src?: string; months?: number };
 /** 모을 물건 하나 — 사건(case 사건번호 · addr 소재지) 또는 동(dong '인천 서해구 검암동' · lawd 시군구 5자리 · sgg · dongName), at 올린 시각(ms) */
-export type AgentQueueItem = { case: string; addr?: string; dong?: string; lawd?: string; sgg?: string; dongName?: string; at: number };
+export type AgentQueueItem = { case: string; addr?: string; dong?: string; lawd?: string; sgg?: string; dongName?: string; kind?: string; at: number };
 export type AgentDatasetMeta = { count: number; chunks: number; version: number; by?: string; updatedAt?: { toMillis(): number } | null };
 /** 도우미가 모은 매각물건 한 줄 — nearby_avg.py FIELDS 그대로(한글 이름) */
 export type SaleRecord = Record<string, string | number | null>;
@@ -71,7 +71,7 @@ export const watchAgentQueue = (uid: string, cb: (items: AgentQueueItem[]) => vo
 /** 대기열 통째로 다시 적기 (200건까지) */
 export const saveAgentQueue = async (uid: string, items: AgentQueueItem[]): Promise<void> => {
   await setDoc(queueRef(uid), { items: items.slice(0, 200).map((x) => (x.dong
-    ? { case: '', dong: x.dong, lawd: x.lawd ?? '', sgg: x.sgg ?? '', dongName: x.dongName ?? '', at: x.at }
+    ? { case: '', dong: x.dong, lawd: x.lawd ?? '', sgg: x.sgg ?? '', dongName: x.dongName ?? '', kind: x.kind ?? '', at: x.at }
     : { case: x.case, addr: x.addr ?? '', at: x.at })) });
 };
 

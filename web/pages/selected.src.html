@@ -695,6 +695,7 @@ button { cursor: pointer; }
 .mk-sale .ag-q-add { display: inline-flex; gap: 6px; align-items: center; }
 .mk-sale .ag-q-tools .adm-f > small { display: none; }
 .mk-sale .ag-q-tools select.adm-input { width: 150px; height: 30px; font-size: 13px; }
+.mk-sale .ag-q-tools .adm-seg .adm-seg-btn { height: 26px; padding: 0 10px; font-size: 13px; }
 .mk-sale .ag-q-tools .ag-sep { width: 1px; height: 22px; margin: 0 6px; background: var(--line, #e5e7eb); }
 .mk-sale .ag-q-add input.adm-input { width: 220px; height: 30px; font-size: 13px; }
 .mk-sale .ag-q-add .ag-btn { height: 30px; padding: 0 12px; font-size: 13px; }
@@ -5528,7 +5529,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   }
   /* ===== 집 PC 수집 도우미(관리자만) — auction-web 과 같은 방식: 여기서 누르면 Firestore 로 명령 → 집 PC agent.py 가 로그인된 크롬으로 옥션원 · 탱크옥션 수집 → 관리자 계정 아래에만 저장 =====
      문서 모양 · 읽고 쓰기는 src/services/agentRemote.ts, 규칙은 firestore.rules isAgentOwner */
-  const AG = { on: false, uid: '', status: null, meta: null, recs: [], cov: [], queue: [], qDraft: '', reg: (() => { try { return { sido: '', sgg: '', dong: '', ...JSON.parse(localStorage.getItem('ta.web.agent.reg') || '{}') }; } catch (e) { return { sido: '', sgg: '', dong: '' }; } })(), sending: false, note: '', noteAt: 0, unsub: [], tick: null };
+  const AG = { on: false, uid: '', status: null, meta: null, recs: [], cov: [], queue: [], qDraft: '', reg: (() => { const d = { sido: '', sgg: '', dong: '', kind: '연립다세대' }; try { const v = { ...d, ...JSON.parse(localStorage.getItem('ta.web.agent.reg') || '{}') }; if (!['연립다세대', '아파트', '오피스텔'].includes(v.kind)) v.kind = d.kind; return v; } catch (e) { return d; } })(), sending: false, note: '', noteAt: 0, unsub: [], tick: null };
   const AG_SEL_KEY = 'ta.web.agent.sel';
   const AG_MONTHS = [[6, '6개월'], [12, '12개월'], [24, '24개월'], [36, '36개월'], [0, '전체']];
   /* 고른 사이트 · 기간은 이 브라우저에 남긴다(새로고침해도 그대로). '처음부터새로'는 한 번 쓰고 끈다.
@@ -5566,13 +5567,13 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const chip = online ? `<span class="ag-chip"><i></i>연결됨 · ${ago}초 전</span>` : '<span class="ag-chip off"><i></i>꺼짐</span>';
     const seg = (k, title, opts) => `<label class="adm-f"><small>${title}</small><div class="adm-seg">${opts.map(([v, t]) => `<button type="button" class="adm-seg-btn ${String(agSel[k]) === String(v) ? 'on' : ''}" data-act="ag-sel" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div></label>`;
     /* 대기열수집 — 도우미 2026.11.01-4 부터. 도는 동안은 단추를 켜 둔다 */
-    const qVerOk = !online || agVerAtLeast(s.version, [2026, 11, 1, 6]);
+    const qVerOk = !online || agVerAtLeast(s.version, [2026, 11, 1, 7]);
     const qRun = busy && (AG.lastSent === 'queue' || /^대기열/.test(String(s.message || '')));
     const btn = (name, label, on, cls = '') => `<button type="button" class="ag-btn ${cls}" data-act="ag-cmd" data-v="${name}" ${on ? '' : 'disabled'}>${label}</button>`;
     const free = !busy && !AG.sending;
     let msg = !online ? '집 PC 도우미가 꺼져 있습니다 — 집 PC에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다.'
       : (s.message || (ready ? '' : '①브라우저열기를 누르면 집 PC에 크롬이 열립니다.'));
-    if (!qVerOk && (AG.queue.length || agQueueCands().length)) msg = `대기열수집은 새 도우미(2026.11.01-6 이상)에서 됩니다 — 지금 ${s.version || '예전 버전'}. 집 PC 터미널에서 Ctrl+C 뒤 다시 켜 주세요.`;
+    if (!qVerOk && (AG.queue.length || agQueueCands().length)) msg = `대기열수집은 새 도우미(2026.11.01-7 이상)에서 됩니다 — 지금 ${s.version || '예전 버전'}. 집 PC 터미널에서 Ctrl+C 뒤 다시 켜 주세요.`;
     if (AG.note && Date.now() - AG.noteAt < 5000) msg = AG.note;
     const prog = busy && s.prog && s.prog.n > 0 ? `<span class="ag-bar"><b style="width:${Math.min(100, Math.round((s.prog.i / s.prog.n) * 100))}%"></b></span>` : '';
     const m = AG.meta;
@@ -5609,10 +5610,12 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     if (!dong) { const m = /\(([가-힣][가-힣0-9]*(?:동|읍|면|가|리))[,\s)]/.exec(s); dong = m ? m[1] : ''; }
     return dong ? [AG_SIDO[sgg[0]] || sgg[0], ...sgg.slice(1), dong].join(' ') : '';
   }
-  const agKind2 = (v) => String(v || '').slice(0, 2);
+  /* 종류 묶음 — 연립 · 다세대 · 도시형(빌라)은 하나로. '다세대' · '다세대주택' · '연립다세대' 모두 villa */
+  const agKindGroup = (v) => { const t = String(v || ''); return /다세대|연립|빌라|도시형/.test(t) ? 'villa' : /아파트/.test(t) ? 'apt' : /오피스텔/.test(t) ? 'offi' : t.slice(0, 2); };
+  const agQid = (q) => (q.dong ? `${q.dong} ${q.kind || ''}`.trim() : q.case);   /* 도우미가 끝난 것을 뺄 때 쓰는 이름과 같게 */
   /* 선정물건 중 아직 안 모은 동네의 사건 — 동네 · 종류마다 하나, 대기열에 이미 있는 동네는 빼고 */
   function agQueueCands() {
-    const covered = (reg, type) => AG.cov.some((c) => (c.region || c.key) === reg && (!c.kind || !type || agKind2(c.kind) === agKind2(type)));
+    const covered = (reg, type) => AG.cov.some((c) => (c.region || c.key) === reg && (!c.kind || !type || agKindGroup(c.kind) === agKindGroup(type)));
     const seen = new Set(AG.queue.filter((q) => q.addr).map((q) => `${agRegionOf(q.addr)}|`));
     /* 동으로 올린 것 — 시도 줄임 + 동 이름으로 (옛 '서구' 주소와 새 '서해구' 표가 달라도 같은 동으로) */
     const dongQ = new Set(AG.queue.filter((q) => q.dong).map((q) => { const t = q.dong.split(' '); return `${t[0]} ${t[t.length - 1]}`; }));
@@ -5620,7 +5623,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     items.forEach((it) => {
       const reg = agRegionOf(it.addr); if (!it.caseNo || !reg || covered(reg, it.type)) return;
       const t = reg.split(' ');
-      const k = `${reg}|${agKind2(it.type)}`;
+      const k = `${reg}|${agKindGroup(it.type)}`;
       if (seen.has(k) || seen.has(`${reg}|`) || dongQ.has(`${t[0]} ${t[t.length - 1]}`) || AG.queue.some((q) => q.case === it.caseNo)) return;
       seen.add(k); out.push({ case: it.caseNo, addr: it.addr, at: Date.now() });
     });
@@ -5628,20 +5631,21 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   }
   function agQueueHtml() {
     const chips = AG.queue.map((q) => (q.dong
-      ? `<span class="ag-cov-chip">${esc(q.dong)} <i>동 전체</i><button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(q.dong)}" aria-label="빼기">×</button></span>`
+      ? `<span class="ag-cov-chip">${esc(q.dong)} <i>${esc(q.kind || '동 전체')}</i><button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(agQid(q))}" aria-label="빼기">×</button></span>`
       : `<span class="ag-cov-chip">${esc(q.case)}${q.addr ? ` <i>${esc(agRegionOf(q.addr))}</i>` : ''}<button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(q.case)}" aria-label="빼기">×</button></span>`)).join('');
     const cands = agQueueCands().length;
     const hint = cands ? `<span class="ag-cov-none">선정물건 중 안 모은 동네 ${cands}곳은 대기열수집 때 함께 올라갑니다 (탱크옥션)</span>` : '';
     return `<div class="ag-cov"><small>모을 물건${AG.queue.length ? ` ${AG.queue.length}건` : ''}</small>${chips || '<span class="ag-cov-none">비어 있습니다</span>'}${hint}</div>`
-      + `<div class="ag-cov ag-q-tools"><small>동으로 추가</small>${regionSelects(AG.reg, 'ag-reg', '연립다세대')}<button type="button" class="ag-btn" data-act="ag-q-dong" ${AG.reg.dong ? '' : 'disabled'}>동추가</button>`
+      + `<div class="ag-cov ag-q-tools"><small>동으로 추가</small>${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}<div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-dong" ${AG.reg.dong ? '' : 'disabled'}>동추가</button>`
       + `<span class="ag-sep"></span><small>사건으로 추가</small><span class="ag-q-add"><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span></div>`;
   }
   /* 동 하나를 대기열에 — 도우미가 탱크옥션 종합검색(그 동 · 매각전부)으로 끝까지 모은다 */
   function agQueueDong() {
     const r = AG.reg; if (!r.sido || !r.sgg || !r.dong) return;
     const label = `${AG_SIDO[r.sido] || r.sido} ${r.sgg} ${r.dong}`;
-    if (AG.queue.some((q) => q.dong === label)) { AG.note = '이미 대기열에 있는 동입니다.'; AG.noteAt = Date.now(); agPaint(); return; }
-    void agQueueSave([...AG.queue, { case: '', dong: label, lawd: regLawd(r.sido, r.sgg), sgg: r.sgg, dongName: r.dong, at: Date.now() }], `대기열에 올렸습니다 — ${label}`);
+    const item = { case: '', dong: label, lawd: regLawd(r.sido, r.sgg), sgg: r.sgg, dongName: r.dong, kind: r.kind, at: Date.now() };
+    if (AG.queue.some((q) => agQid(q) === agQid(item))) { AG.note = '이미 대기열에 있는 동 · 종류입니다.'; AG.noteAt = Date.now(); agPaint(); return; }
+    void agQueueSave([...AG.queue, item], `대기열에 올렸습니다 — ${agQid(item)}`);
   }
   const AG_REG_KEY = 'ta.web.agent.reg';
   async function agQueueSave(list, note) {
@@ -6420,7 +6424,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       case 'ag-fresh': agSel.fresh = !!t.checked; break;
       case 'ag-cmd': void agSend(t.dataset.v); break;
       case 'ag-q-add': agQueueAdd(); break;
-      case 'ag-q-del': void agQueueSave(AG.queue.filter((q) => (q.dong || q.case) !== t.dataset.v)); break;
+      case 'ag-q-del': void agQueueSave(AG.queue.filter((q) => agQid(q) !== t.dataset.v)); break;
+      case 'ag-reg-kind': AG.reg.kind = t.dataset.v; try { localStorage.setItem(AG_REG_KEY, JSON.stringify(AG.reg)); } catch (err) { /* 그만 */ } agPaint(); break;
       case 'ag-q-dong': agQueueDong(); break;
       case 'ag-stop': if (AG.on) { void CLOUD.T.sendAgentStop(AG.uid).then(() => { AG.note = '중지 요청을 보냈습니다 — 지금 페이지까지 저장합니다.'; AG.noteAt = Date.now(); agPaint(); }).catch(() => {}); } break;
       case 'go-trip': go('trip'); break;
