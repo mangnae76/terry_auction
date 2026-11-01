@@ -5188,7 +5188,10 @@ const requestRightsAi = async () => {
         : 'AI 키가 없습니다 — 더보기 > AI 자동 분석에서 등록해 주세요.';
       return;
     }
+    const t0 = performance.now();
     const parts = await withTimeout(collectDocParts(), 45_000, [] as RightsDocPart[]);
+    // eslint-disable-next-line no-console
+    console.log(`[AI 권리분석] 서류 준비 ${((performance.now() - t0) / 1000).toFixed(1)}초 — ${parts.map((x) => `${x.label} ${(x.base64.length * 0.75 / 1024 / 1024).toFixed(1)}MB`).join(' · ') || '없음'}`);
     if (rightsAiAbort.signal.aborted) { rightsAiErr.value = '분석을 취소했습니다.'; return; }
     if (parts.length === 0) {
       rightsAiErr.value = '분석할 서류가 없습니다 — 위 칸에 서류를 올려 주세요.';

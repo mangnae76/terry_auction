@@ -286,22 +286,48 @@ const wait = (ms: number) => new Promise((done) => { setTimeout(done, ms); });
  *  - 소식 없이 기다리는 최대 시간: AI 가 서류를 읽고 생각하는 동안은 아무것도 안 오니 넉넉히
  *  - 처음부터 끝까지 기다리는 최대 시간: 그래도 끝이 안 나면 끊고 까닭을 알린다 (대기 화면이 영원히 돌지 않게) */
 const RIGHTS_IDLE_MS = 120_000;
+/** 생각 토큰 상한 — gemini-flash 는 0 ~ 24,576 */
+const RIGHTS_THINK_BUDGET = 8192;
 const RIGHTS_TOTAL_MS = 300_000;
 
 type StreamChunk = {
   error?: { message?: string };
   candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>;
+  usageMetadata?: { promptTokenCount?: number; thoughtsTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number };
 };
 
+/** 어디서 오래 걸리는지 보려고 받는 동안 센다 — 첫 조각 · 첫 생각 · 첫 답 글이 몇 ms 에 왔는지, 생각 · 답 글자 수, 토큰 수 */
+export type StreamStats = {
+  start: number; firstByte?: number; firstThought?: number; firstText?: number;
+  chunks: number; thoughtChars: number; textChars: number; lastThought: string;
+  usage?: StreamChunk['usageMetadata'];
+};
+export const newStreamStats = (): StreamStats => ({ start: performance.now(), chunks: 0, thoughtChars: 0, textChars: 0, lastThought: '' });
+
 /** 조금씩 오는 답(SSE 'data: {…}' 줄들)을 읽어 글을 이어 붙인다. 조각이 올 때마다 onChunk 를 그때까지 받은 글과 함께 부른다 */
-export const readStreamText = async (res: Response, onChunk: (soFar: string) => void = () => {}): Promise<string> => {
+export const readStreamText = async (res: Response, onChunk: (soFar: string) => void = () => {}, st?: StreamStats): Promise<string> => {
   let out = '';
   const take = (line: string) => {
     if (!line.startsWith('data:')) return;
     let j: StreamChunk;
     try { j = JSON.parse(line.slice(5).trim()) as StreamChunk; } catch { return; }
     if (j.error) throw new GeminiError(`AI 분석 실패 — ${j.error.message || '오류'}`);
-    for (const p of j.candidates?.[0]?.content?.parts ?? []) if (!p.thought) out += p.text ?? '';
+    if (j.usageMetadata && st) st.usage = j.usageMetadata;
+    for (const p of j.candidates?.[0]?.content?.parts ?? []) {
+      if (p.thought) {
+        if (st) {
+          const t = p.text ?? '';
+          if (st.firstThought === undefined) st.firstThought = performance.now() - st.start;
+          st.thoughtChars += t.length;
+          st.lastThought = t.trim().split('\n')[0].slice(0, 80);
+          // eslint-disable-next-line no-console
+          console.log(`%c[AI 권리분석] 생각 중 ${((performance.now() - st.start) / 1000).toFixed(1)}초 — ${st.lastThought}`, 'color:#8b5cf6');
+        }
+        continue;
+      }
+      out += p.text ?? '';
+      if (st && p.text) { if (st.firstText === undefined) st.firstText = performance.now() - st.start; st.textChars += p.text.length; }
+    }
   };
   if (!res.body) { // 조금씩 읽기를 못 하는 환경 — 다 받은 뒤 한 번에
     (await res.text()).split('\n').forEach((l) => take(l.trim()));
@@ -313,6 +339,7 @@ export const readStreamText = async (res: Response, onChunk: (soFar: string) => 
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
+    if (st) { st.chunks += 1; if (st.firstByte === undefined) st.firstByte = performance.now() - st.start; }
     buf += dec.decode(value, { stream: true });
     let i = buf.indexOf('\n');
     while (i >= 0) {
@@ -324,6 +351,29 @@ export const readStreamText = async (res: Response, onChunk: (soFar: string) => 
   }
   take((buf + dec.decode()).trim());
   return out;
+};
+
+/** 한 번 요청이 끝날 때 — 어느 구간이 오래 걸렸는지 표로 */
+const logStreamStats = (st: StreamStats, why: string) => {
+  const sec = (ms?: number) => (ms === undefined ? '-' : `${(ms / 1000).toFixed(1)}초`);
+  const u = st.usage ?? {};
+  // eslint-disable-next-line no-console
+  console.log(`%c[AI 권리분석] 걸린 시간${why ? ` (끊김: ${why === 'idle' ? '답 없음' : why === 'total' ? '전체 시간 초과' : why === 'mismatch' ? '서류 불일치' : why})` : ''}`, 'color:#16a34a;font-weight:700');
+  // eslint-disable-next-line no-console
+  console.table({
+    '전체': sec(performance.now() - st.start),
+    '첫 조각까지 (서버가 읽기 시작)': sec(st.firstByte),
+    '첫 생각까지': sec(st.firstThought),
+    '첫 답 글까지 (생각 끝)': sec(st.firstText),
+    '생각한 시간': st.firstThought !== undefined && st.firstText !== undefined ? sec(st.firstText - st.firstThought) : '-',
+    '답 쓰는 시간': st.firstText !== undefined ? sec(performance.now() - st.start - st.firstText) : '-',
+    '조각 수': st.chunks,
+    '생각 요약 글자': st.thoughtChars,
+    '답 글자': st.textChars,
+    '읽은 토큰 (서류+글)': u.promptTokenCount ?? '-',
+    '생각 토큰': u.thoughtsTokenCount ?? '-',
+    '답 토큰': u.candidatesTokenCount ?? '-',
+  });
 };
 
 /** 받는 도중의 글에서 서류 확인(docCheck)이 '불일치'로 끝까지 왔으면 그 까닭(없으면 ''), 아직이거나 일치면 null */
@@ -355,6 +405,9 @@ export const askRightsAnalysis = async (
   const generationConfig = {
     // topK 1 — 늘 가장 그럴듯한 쪽만 고르게 해서 볼 때마다 답이 달라지는 것을 줄인다
     temperature: 0, topK: 1, responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA,
+    // 생각하는 동안에도 요약을 조금씩 보내게 — 안 보내면 생각이 2분을 넘을 때 '답이 없다'로 끊겼다.
+    // 생각 양은 상한을 둔다 — 정해 두지 않으면 서류가 클 때 몇 분씩 생각한다 (권리분석은 규칙대로 가르는 일이라 이만하면 된다)
+    thinkingConfig: { includeThoughts: true, thinkingBudget: RIGHTS_THINK_BUDGET },
   };
   const payload = JSON.stringify({
     contents: [{
@@ -396,6 +449,9 @@ export const askRightsAnalysis = async (
     const onCancel = () => ctrl.abort();
     signal?.addEventListener('abort', onCancel);
     let errMsg = '';
+    const st = newStreamStats();
+    // eslint-disable-next-line no-console
+    console.log(`%c[AI 권리분석] ${attempt + 1}번째 요청 — ${model} · 생각 상한 ${RIGHTS_THINK_BUDGET.toLocaleString('ko-KR')} 토큰`, 'color:#2563eb;font-weight:700');
     try {
       res = await fetch(`${GEMINI_API}/models/${model}:streamGenerateContent?alt=sse`, {
         method: 'POST',
@@ -403,7 +459,9 @@ export const askRightsAnalysis = async (
         body: payload,
         signal: ctrl.signal,
       });
-      if (res.ok) text = await readStreamText(res, onChunk);
+      // eslint-disable-next-line no-console
+      console.log(`[AI 권리분석] 서버가 받음(응답 ${res.status}) ${((performance.now() - st.start) / 1000).toFixed(1)}초 — 서류를 올리는 데 걸린 시간 포함`);
+      if (res.ok) text = await readStreamText(res, onChunk, st);
       else {
         // 실패 답은 한 덩어리 JSON 이다 (배열로 싸여 올 때도 있다)
         const b = await res.json().catch(() => ({})) as { error?: { message?: string } } | Array<{ error?: { message?: string } }>;
@@ -420,6 +478,7 @@ export const askRightsAnalysis = async (
       clearTimeout(idle);
       clearTimeout(total);
       signal?.removeEventListener('abort', onCancel);
+      logStreamStats(st, why);
     }
     if (res.ok) break;
     // 그 이름의 모델이 없으면 PDF 읽기와 같은 모델로 한 번 더 — 기능이 멎지 않게
