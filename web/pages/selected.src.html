@@ -679,6 +679,7 @@ button { cursor: pointer; }
 .mk-sale .ag-btn.pri { background: #2b6df3; border-color: #2b6df3; color: #fff; }
 .mk-sale .ag-btn.stop { border-color: #f3b4b4; color: #dc2626; }
 .mk-sale .ag-btn:disabled { opacity: .45; cursor: default; }
+.mk-sale .ag-btn.run:disabled { opacity: 1; background: #2b6df3; border-color: #2b6df3; color: #fff; }
 .mk-sale .ag-sep { width: 1px; height: 22px; align-self: center; background: var(--line, #e3e8f0); }
 .mk-sale .ag-msg { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 10px 14px; border-radius: 10px; background: var(--surface-2, #f4f7fc); font-size: 14px; color: var(--text); }
 .mk-sale .ag-msg.off { color: var(--muted); }
@@ -5489,10 +5490,14 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const ago = online ? Math.max(0, Math.round((Date.now() - s.at.toMillis()) / 1000)) : 0;
     const chip = online ? `<span class="ag-chip"><i></i>연결됨 · ${ago}초 전</span>` : '<span class="ag-chip off"><i></i>꺼짐</span>';
     const seg = (k, title, opts) => `<label class="adm-f"><small>${title}</small><div class="adm-seg">${opts.map(([v, t]) => `<button type="button" class="adm-seg-btn ${String(agSel[k]) === String(v) ? 'on' : ''}" data-act="ag-sel" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div></label>`;
+    /* 대기열수집 — 도우미 2026.11.01-4 부터. 도는 동안은 단추를 켜 둔다 */
+    const qVerOk = !online || agVerAtLeast(s.version, [2026, 11, 1, 4]);
+    const qRun = busy && (AG.lastSent === 'queue' || /^대기열/.test(String(s.message || '')));
     const btn = (name, label, on, cls = '') => `<button type="button" class="ag-btn ${cls}" data-act="ag-cmd" data-v="${name}" ${on ? '' : 'disabled'}>${label}</button>`;
     const free = !busy && !AG.sending;
     let msg = !online ? '집 PC 도우미가 꺼져 있습니다 — 집 PC에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다.'
       : (s.message || (ready ? '' : '①브라우저열기를 누르면 집 PC에 크롬이 열립니다.'));
+    if (!qVerOk && (AG.queue.length || agQueueCands().length)) msg = `대기열수집은 새 도우미(2026.11.01-4 이상)에서 됩니다 — 지금 ${s.version || '예전 버전'}. 집 PC 터미널에서 Ctrl+C 뒤 다시 켜 주세요.`;
     if (AG.note && Date.now() - AG.noteAt < 5000) msg = AG.note;
     const prog = busy && s.prog && s.prog.n > 0 ? `<span class="ag-bar"><b style="width:${Math.min(100, Math.round((s.prog.i / s.prog.n) * 100))}%"></b></span>` : '';
     const m = AG.meta;
@@ -5501,7 +5506,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       + `<div class="ag-head"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>집 PC 수집 도우미<span class="ag-admin">관리자</span>${chip}<span class="ag-ver">${online && s.version ? esc(s.version) : ''}</span></div>`
       + `<div class="ag-row">${seg('site', '사이트', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('months', '수집기간', AG_MONTHS)}`
       + `<label class="ag-chk"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>`
-      + `<div class="ag-row">${btn('open', '①브라우저열기', online && free)}${btn('screen', '②화면수집', ready && free)}${btn('auto', '자동수집', ready && free, 'pri')}${btn('queue', '대기열수집', ready && free && (AG.queue.length > 0 || agQueueCands().length > 0))}<span class="ag-sep"></span>${btn('enrich', '건축연도채우기', ready && free)}<button type="button" class="ag-btn stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`
+      + `<div class="ag-row">${btn('open', '①브라우저열기', online && free)}${btn('screen', '②화면수집', ready && free)}${btn('auto', '자동수집', ready && free, 'pri')}${qRun ? `<button type="button" class="ag-btn pri run" disabled>대기열수집중</button>` : btn('queue', '대기열수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}<span class="ag-sep"></span>${btn('enrich', '건축연도채우기', ready && free)}<button type="button" class="ag-btn stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`
       + agCovHtml() + agQueueHtml()
       + `<div class="ag-msg${online ? '' : ' off'}" role="status" aria-live="polite"><span>${esc(msg || '대기 중입니다.')}</span>${prog}<span class="ag-meta">${meta}</span></div>`
       + `</section>`;
@@ -5563,6 +5568,13 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     AG.qDraft = '';
     void agQueueSave([...AG.queue, { case: v, addr: it ? it.addr : '', at: Date.now() }], `${v} 를 대기열에 올렸습니다.`);
   }
+  /* 'web-agent 2026.11.01-4' 가 [2026, 11, 1, 4] 이상인지 */
+  const agVerAtLeast = (v, want) => {
+    const m = /(\d{4})\.(\d{1,2})\.(\d{1,2})-(\d+)/.exec(String(v || '')); if (!m) return false;
+    const have = m.slice(1).map(Number);
+    for (let i = 0; i < 4; i += 1) if (have[i] !== want[i]) return have[i] > want[i];
+    return true;
+  };
   /* 도우미 카드만 다시 — 상태가 바뀔 때마다 화면 전체를 다시 그리지 않는다 */
   function agPaint() {
     const el = $('agPanel'); if (!el || !agSaleOpen()) return;
@@ -5615,7 +5627,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       if (add.length) { try { await CLOUD.T.saveAgentQueue(AG.uid, [...AG.queue, ...add]); } catch (e) { AG.note = '대기열을 저장하지 못했습니다 — 다시 해 주세요.'; AG.noteAt = Date.now(); agPaint(); return; } }
     }
     const run = async () => {
-      AG.sending = true; agPaint();
+      AG.sending = true; AG.lastSent = name; agPaint();
       try {
         await CLOUD.T.sendAgentCommand(AG.uid, name, { site: agSel.site, months: Number(agSel.months), src: 'near', fresh: collect ? !!agSel.fresh : false });
         if (collect) agSel.fresh = false;
