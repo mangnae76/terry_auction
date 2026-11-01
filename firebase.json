@@ -11,6 +11,13 @@
       "promo-test.html",
       "web/test.html"
     ],
+    "redirects": [
+      {
+        "source": "/guide",
+        "destination": "/guide/",
+        "type": 301
+      }
+    ],
     "rewrites": [
       {
         "source": "/web",
