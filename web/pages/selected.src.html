@@ -484,25 +484,25 @@ button { cursor: pointer; }
 /* 전세가 비율 칸 — 크게 */
 .adm-case-in .case12 .adm-rate-input { width: 52px; height: 26px; font-size: 14px; border-radius: 6px; padding: 0 6px; }
 .adm-case-in .case12 small em:has(.adm-rate-input) { font-size: 14px; display: inline-flex; align-items: center; gap: 2px; }
-/* 손품분석 머리 카드 — 선정물건 손품조사 머리와 같은 꼴. 전체 접기 단추는 물건 화면에만 */
-/* 손품분석 탭 줄 — 지역분석 탭 줄과 같은 꼴이되 위 고르는 줄이 없어 붙박지 않는다 */
+/* 물건분석 머리 카드 — 선정물건 손품조사 머리와 같은 꼴. 전체 접기 단추는 물건 화면에만 */
+/* 물건분석 탭 줄 — 지역분석 탭 줄과 같은 꼴이되 위 고르는 줄이 없어 붙박지 않는다 */
 .app-market[data-s="son"] .adm-tabs-top { position: relative !important; top: auto !important; margin-top: 4px !important; }
 #marketView:has(#sonShell:not([hidden])) #crumbSlotMarket { display: none; }   /* 경로는 탭 줄 오른쪽으로 갔다 — 빈 줄을 남기지 않는다 */
 /* 입지/개별성 — 제목 · ① · ② 를 상자 하나로 묶는다(손품조사의 단락 상자 그대로) */
-/* 손품분석 줄 맞춤 — 흰 카드는 머리 카드와 같은 시작 · 끝선(바깥 여백 0), 카드 안 제목 · 내용은 머리 카드 안 회색 칸과 같은 안쪽 선(25px) */
+/* 물건분석 줄 맞춤 — 흰 카드는 머리 카드와 같은 시작 · 끝선(바깥 여백 0), 카드 안 제목 · 내용은 머리 카드 안 회색 칸과 같은 안쪽 선(25px) */
 .app-market[data-s="son"] .son-detail :is(.adp-shell, .adp-body) { padding-left: 0 !important; padding-right: 0 !important; }
 .app-market[data-s="son"] .son-detail .adp-card { margin-left: 0 !important; margin-right: 0 !important; padding-left: 0 !important; padding-right: 0 !important; }
 .app-market[data-s="son"] .son-detail .adp-card > .adp-card-head { padding-left: 16px !important; padding-right: 16px !important; }
 .app-market[data-s="son"] .son-detail .adp-card > :not(header) { margin-left: 0 !important; margin-right: 0 !important; padding-left: 16px !important; padding-right: 16px !important; }
-/* 손품분석 동/지역 표 — 칸 색칠 · 색 세로줄은 빼고, 머리글 글자색만: 세대수 · 매물수 진한 파랑, 회전율 빨강 */
+/* 물건분석 동/지역 표 — 칸 색칠 · 색 세로줄은 빼고, 머리글 글자색만: 세대수 · 매물수 진한 파랑, 회전율 빨강 */
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table :is(th, td) { background: var(--surface) !important; border-left-color: #eef1f6 !important; border-right-color: #eef1f6 !important; box-shadow: none !important; }
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th { background: #f7f9fc !important; color: #374151 !important; }
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th.in, :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th.in small { color: #1e3a8a !important; }   /* 세대수 · 매물수(네이버 매물수) — 검정에 가까운 파랑 */
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table td.nm { color: #1e3a8a !important; }   /* 동 이름(검암동)도 같은 파랑 */
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th.turn, :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table thead th.turn small { color: #7f1d1d !important; }   /* 회전율만 — 검정에 가까운 빨강 */
-/* 손품분석 수요조사 — 수요분석 상자(제목 · 기초수치 · 수요지표)와 동/지역 표를 흰 바탕 + 얇은 테두리 상자 하나로 묶는다.
+/* 물건분석 수요조사 — 수요분석 상자(제목 · 기초수치 · 수요지표)와 동/지역 표를 흰 바탕 + 얇은 테두리 상자 하나로 묶는다.
    둘 사이 가르는 선은 상자 안쪽 폭에서 양끝을 조금 줄여 긋는다 */
-/* 지역분석 수요분석 흰 카드 — 손품분석의 물건 상세 카드(.adp-card)와 같은 바탕 · 테두리, 안쪽 25 */
+/* 지역분석 수요분석 흰 카드 — 물건분석의 물건 상세 카드(.adp-card)와 같은 바탕 · 테두리, 안쪽 25 */
 /* 수요분석 동/지역 표 — 거래건수(연 · 월) 칸만 넓게(빡빡했다). 나머지 칸은 고르게 */
 :is(.app-market[data-s="son"] .son-demand, .app-market .dm-card) .adm-table.even colgroup col:nth-child(4) { width: 132px; }
 .app-market .dm-card { box-sizing: border-box; margin-top: 12px; padding: 12px 15px; background: var(--surface); border: 1px solid var(--card-line); border-radius: 14px; }
@@ -517,12 +517,12 @@ button { cursor: pointer; }
 /* 입지/개별성 상자 안쪽 여백도 수요분석 상자와 같은 18 — 두 상자의 제목 · 표 시작선이 칼같이 맞게 */
 .app-market[data-s="son"] .adp-dm-body > :is(.adp-dm-head.sec2, .adp-dm-block, .adp-dm-block.boxed) { padding-left: 14px !important; padding-right: 14px !important; }
 .app-market[data-s="son"] .adp-dm-body > .adp-dm-head.sec2 { padding-top: 16px !important; }
-/* 손품분석 시세조사 — 수요분석과 같은 선: 흰 카드는 머리 카드 양끝(160~1440), 안쪽 상자는 25 들어가(185~1415), 상자 안 여백 18 */
-/* 시세조사 카드(손품분석 · 지역분석) — 수요분석과 같은 선: 상자 176~1424(카드 안쪽 15 + 테두리 1), 상자 안쪽 14, 아래 16 */
+/* 물건분석 시세조사 — 수요분석과 같은 선: 흰 카드는 머리 카드 양끝(160~1440), 안쪽 상자는 25 들어가(185~1415), 상자 안 여백 18 */
+/* 시세조사 카드(물건분석 · 지역분석) — 수요분석과 같은 선: 상자 176~1424(카드 안쪽 15 + 테두리 1), 상자 안쪽 14, 아래 16 */
 .adm-case-in .adm-case-card { padding-left: 15px !important; padding-right: 15px !important; padding-bottom: 16px !important; }
 .adm-case-in :is(.adm-case-block, .adm-case-tail) { padding-left: 14px !important; padding-right: 14px !important; }
 .adm-case-in .adm-sise-head { padding-left: 0 !important; padding-right: 0 !important; }
-/* 손품분석 시세조사 세로 간격 — 수요분석 카드와 같게: 카드 위 끝 → 제목 15, 제목 → 첫 상자 16 */
+/* 물건분석 시세조사 세로 간격 — 수요분석 카드와 같게: 카드 위 끝 → 제목 15, 제목 → 첫 상자 16 */
 .adm-case-in .adm-sise-head { padding-top: 10px !important; padding-bottom: 0 !important; }
 /* 시세분석 접기 — 제목 줄 오른쪽 끝 꺾쇠. 접으면 제목 줄만 */
 .adm-case-in .adm-sise-head .sise-chip { margin-left: auto; margin-right: 8px; }
@@ -725,7 +725,7 @@ button { cursor: pointer; }
 /* 선정물건 손품조사 — 경로가 화면 안 탭 줄로 갔으니 빈 경로 줄은 숨긴다(시장분석 손품조사와 같은 모양) */
 #itemView:has(#itemContent .item-son) #crumbSlotItem { display: none; }
 #itemView:has(#itemContent .item-son) #itemHead .ih-fold { visibility: hidden; pointer-events: none; }   /* 전체 접기는 옛 손품조사 카드용 — 단추만 감추고 자리는 남겨 사건 카드 높이가 다른 탭(권리분석 등)과 같게(탭 바꿀 때 흔들림 없음) */
-/* ===== 다크 모드 — 시장분석(지역분석 · 손품분석 · 경매사례)에서 이번에 만든 화면. 흰 상자 · 검정 글을 테마 변수로 ===== */
+/* ===== 다크 모드 — 시장분석(지역분석 · 물건분석 · 경매사례)에서 이번에 만든 화면. 흰 상자 · 검정 글을 테마 변수로 ===== */
 /* 바탕 — 안쪽 상자 · 표 · 거르기 칸은 카드 바탕을 그대로(흰 상자가 떠 있지 않게), 선은 어두운 선 */
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market[data-s="son"] .son-detail, .mk-sale) :is(.adm-case-block, .adm-case-tail, .adm-table-wrap, .adm-trf, .adm-sel-row, .adm-kpi, .list-find, .sc-box, .sc-table, .adp-mkt-block, .adp-sub-block, .adp-table-wrap, .adp-mkt-cells, .adm-supply, .adm-nav.dm, .dm-row > *) { background: transparent !important; border-color: var(--card-line) !important; }
 :root[data-theme="dark"] :is(.app-market .dm-card, .mk-sale .sc-card, .adm-case-in .adm-case-card, #sonNaverSlot .adp-card, #sonConcSlot .adp-card, .app-market[data-s="son"] .son-detail .adp-card) { background: var(--surface) !important; border-color: var(--card-line) !important; }
@@ -832,7 +832,7 @@ button { cursor: pointer; }
 .mk-sale .adm-load:disabled { background: #aeb8ca; cursor: default; }
 .mk-sale .adm-tabs-top { position: relative; display: flex; align-items: center; gap: 12px; }
 .mk-sale .adm-tabs-top .adm-crumb-slot { margin-left: auto; }
-/* 지역분석 · 손품분석 · 랭킹분석 탭 줄은 상자보다 양쪽 2px 좁다 — 경로만 2px 밖으로 내어 다른 화면처럼 상자 끝에서 24px 안 */
+/* 지역분석 · 물건분석 · 랭킹분석 탭 줄은 상자보다 양쪽 2px 좁다 — 경로만 2px 밖으로 내어 다른 화면처럼 상자 끝에서 24px 안 */
 .app-market:is([data-k="dong"], [data-k="case"]):not(.mk-sale) .adm-tabs-top .adm-crumb-slot { margin-right: -2px; }
 /* 박스 탭 이름이 길어(동일지번 매각물건 분석) 116 칸에 안 들어간다 — 이 두 탭만 글자 폭에 맞춘다 */
 .app-market.mk-sale[data-k][data-s] .adm-tabs-top .adm-view-tabs > button { flex: 0 0 auto !important; width: auto !important; min-width: 116px !important; padding: 0 18px !important; }
@@ -2429,7 +2429,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .rg-missing ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; color: #6b5a3a; line-height: 1.6; }
 /* 폴더 등록·AI 키 창 */
 .dialog.fav-dlg { width: min(880px, 100%); padding: 0; overflow: hidden; }
-/* ===== 시장분석 세로 줄이기(10-31, 웹만) — 지역별분석 ~ 거래상세 · 손품분석. 위아래 여백 약 30% ↓, 같은 종류는 같은 값 ===== */
+/* ===== 시장분석 세로 줄이기(10-31, 웹만) — 지역별분석 ~ 거래상세 · 물건분석. 위아래 여백 약 30% ↓, 같은 종류는 같은 값 ===== */
 .app-market .adm-gunav { margin: 12px 0 10px !important; padding: 10px 14px 12px !important; }
 .app-market .adm-gunav-box { padding: 10px 4px !important; gap: 5px !important; }
 .app-market .adm-sum { margin: 10px 2px 8px !important; }
@@ -3601,7 +3601,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   </div>
   <!-- 시장분석 — 하위 탭 '수요공급' 안에 분석 도구의 '실거래 분석' 화면을 그대로 띄운다 -->
   <div id="marketView" hidden>
-    <!-- 손품분석 — 선정물건 물건상세와 같은 틀: 넓은 띠(.toolbar-shell) 위에 사건 머리 카드, 위에 붙박이 -->
+    <!-- 물건분석 — 선정물건 물건상세와 같은 틀: 넓은 띠(.toolbar-shell) 위에 사건 머리 카드, 위에 붙박이 -->
     <div class="toolbar-shell item-shell" id="sonShell" hidden>
       <div class="wrap"><div class="toolbar item-head" id="sonHead"></div></div>
     </div>
@@ -3926,7 +3926,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     ['m2', [['임장동선', 'go-trip'], ['방문기록', 'mega-list'], ['체크리스트', 'mega-item']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['가이드', 'go-postwin', '낙찰이후가이드']]],
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
-    ['m3', [['지역분석', 'go-market'], ['손품분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
+    ['m3', [['지역분석', 'go-market'], ['물건분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
     ['m4', [['공지', 'go-community'], ['오류및제안', 'go-community'], ['FAQ', 'go-community'], ['자유게시판', '']]],
     ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store']]],
     ['m4a', [['앱소개', 'go-mobile']]],
@@ -5095,7 +5095,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const SUBTABS = {
     /* 물건상세 — 앱 AuctionDetailPage 의 TABS 다섯 칸에서 앱 '손품+현장'을 손품조사 · 임장조사 둘로 나눴다(웹만) */
     /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
-    market: [['dong', '', '지역분석'], ['son', '', '손품분석'], ['rank', '', '랭킹분석'], ['sale', '', '경매사례']],
+    market: [['dong', '', '지역분석'], ['son', '', '물건분석'], ['rank', '', '랭킹분석'], ['sale', '', '경매사례']],
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
@@ -5984,7 +5984,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       + `<div class="mk-sale-body">${agIsAdmin() && S.saleTab === 'near' ? agPanelHtml() : ''}${S.saleTab === 'near' ? saleCaseCard() : agIsAdmin() ? sameLotCard() : itCard('chart', label, itEmpty('준비 중인 화면입니다.'), true)}</div>`
       + `</div></section></div>`;
   }
-  /* 손품분석 머리 카드 — 고른 물건(앱 화면이 'son.pick' 에 적고 son:pick 으로 알린다) */
+  /* 물건분석 머리 카드 — 고른 물건(앱 화면이 'son.pick' 에 적고 son:pick 으로 알린다) */
   function renderSonHead() {
     const el = $('sonHead'); const shell = $('sonShell'); if (!el || !shell) return;
     let id = ''; try { id = localStorage.getItem('son.pick') || ''; } catch (e) { /* 그만 */ }
@@ -6019,7 +6019,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const ds = key === 'son' ? 'sonq' : key;
     if (marketUnmount && box.querySelector(`.app-market[data-k="${dk}"][data-s="${ds}"]`)) { renderSonHead(); return; }
     closeAppMarket();
-    /* 손품분석 — 위는 선정물건 손품조사와 똑같은 물건 머리 카드(itemHeadHtml), 아래가 앱 화면(수요분석 · 시세조사) */
+    /* 물건분석 — 위는 선정물건 손품조사와 똑같은 물건 머리 카드(itemHeadHtml), 아래가 앱 화면(수요분석 · 시세조사) */
     box.innerHTML = `<div class="app-market" data-k="${dk}" data-s="${ds}" id="appMarketMount"></div>`;
     renderSonHead();
     /* 붙이는 도중 다시 그려 두 번 붙으면 화면에 남은 쪽만 잡는다 (낙찰이후 탭이 안 바뀌던 것과 같은 까닭) */
@@ -6175,7 +6175,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     const it = byId(S.itemId);
     if (!it) { $('itemHead').innerHTML = '<div class="ih-top"><button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button><h1 class="ih-title">물건을 찾을 수 없습니다</h1></div>'; $('itemContent').innerHTML = ''; return; }
     $('itemHead').innerHTML = itemHeadHtml(it);
-    try { localStorage.setItem('son.pick', it.id); } catch (e) { /* 그만 */ } /* 손품분석은 마지막으로 연 물건을 본다 */
+    try { localStorage.setItem('son.pick', it.id); } catch (e) { /* 그만 */ } /* 물건분석은 마지막으로 연 물건을 본다 */
     /* 손품조사 탭 — 시장분석 › 손품조사와 같은 화면(같은 부품)을 이 물건으로 띄운다. 옛 손품조사 틀(물건상세 카드들)은 웹에서 쓰지 않는다 */
     if (S.itemTab === 'verify') { S.itemTab = 'survey'; renderSubTabs(); syncCrumb(); }   /* 가격정보 탭은 뺐다 */
     if (/\/verify$/.test(location.hash)) writeHash(false);   /* 옛 주소(…/verify)는 손품조사 주소로 바꿔 둔다 */

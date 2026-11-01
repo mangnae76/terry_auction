@@ -157,7 +157,7 @@ const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭
 const tellTab = () => {
   if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
-  window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: [props.rankMode ? '랭킹분석' : props.sonMode ? '손품분석' : '지역분석', label] } }));
+  window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: [props.rankMode ? '랭킹분석' : props.sonMode ? '물건분석' : '지역분석', label] } }));
 };
 watch([listView, dong], tellTab);
 onMounted(tellTab);
