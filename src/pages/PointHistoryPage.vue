@@ -55,7 +55,7 @@ const money = (n: number) => n.toLocaleString('ko-KR');
         </div>
         <div class="ph-cell on">
           <small>내 포인트</small>
-          <strong class="point">{{ money(myPoint) }} P</strong>
+          <strong class="point">{{ money(myPoint) }}P</strong>
         </div>
         <div class="ph-cell">
           <small>현재까지 적립율</small>
@@ -95,7 +95,7 @@ const money = (n: number) => n.toLocaleString('ko-KR');
               <td>{{ r.kind }}</td>
               <td class="num">{{ r.paid === null ? '–' : money(r.paid) }}</td>
               <td :class="['num', r.point < 0 ? 'minus' : 'plus']">
-                {{ r.point > 0 ? '+' : '' }}{{ money(r.point) }} P
+                {{ r.point > 0 ? '+' : '' }}{{ money(r.point) }}P
               </td>
               <td class="date">{{ r.date }}</td>
             </tr>

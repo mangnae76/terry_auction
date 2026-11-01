@@ -57,7 +57,7 @@ const grade = POINT_GRADES[0];
 const myPoint = 0;
 /** 누르면 그 화면으로 간다 */
 const USER_FACTS = [
-  { label: '보유포인트', value: `${myPoint.toLocaleString('ko-KR')} P`, path: '/point-history', tone: 'blue' },
+  { label: '보유포인트', value: `${myPoint.toLocaleString('ko-KR')}P`, path: '/point-history', tone: 'blue' },
   { label: '결제내역', value: `${PLAN_REST_DAYS}일`, path: '/payments', tone: 'orange' },
 ];
 const goFact = (path: string) => {

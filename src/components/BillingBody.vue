@@ -87,7 +87,7 @@ const submit = () => {
         <!-- 셈하기 -->
         <section class="bil-card sum">
           <div class="bil-row"><span class="lab">선택항목</span><span class="val"><em class="pill">{{ picked.label }} 1개</em></span></div>
-          <div class="bil-row"><span class="lab">내 포인트</span><span class="val point-val">{{ money(myPoint) }} point <small>(사용 후 {{ money(restPoint) }} point)</small></span></div>
+          <div class="bil-row"><span class="lab">내 포인트</span><span class="val point-val">{{ money(myPoint) }}P <small>(사용 후 {{ money(restPoint) }}P)</small></span></div>
           <div class="bil-row">
             <span class="lab">포인트 사용</span>
             <span class="val point">
@@ -95,8 +95,8 @@ const submit = () => {
               <button type="button" class="bil-allbtn" @click="useAll">전액사용</button>
             </span>
           </div>
-          <div class="bil-row"><span class="lab">상품금액</span><span class="val">{{ money(picked.price) }} 원</span></div>
-          <div class="bil-row total"><span class="lab">총 결제금액</span><span class="val">{{ money(total) }} 원</span></div>
+          <div class="bil-row"><span class="lab">상품금액</span><span class="val">{{ money(picked.price) }}원</span></div>
+          <div class="bil-row total"><span class="lab">총 결제금액</span><span class="val">{{ money(total) }}원</span></div>
           <div class="bil-row">
             <span class="lab">결제방법</span>
             <span class="val ways">
