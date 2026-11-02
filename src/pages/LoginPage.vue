@@ -12,7 +12,7 @@ import {
   PLANS,
   TRIAL_DAYS,
   WELCOME_POINT,
-  SHOW_WELCOME_POINT,
+  POINTS_OPEN,
   perMonth,
 } from '../services/billingPlans';
 
@@ -299,7 +299,8 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
                 </tr>
               </tbody>
             </table>
-            <p class="lp-m-note">포인트 보유 시 포인트 결제가 가능합니다.</p>
+            <!-- 포인트 결제 안내 — 포인트를 붙일 때까지 숨긴다(POINTS_OPEN) -->
+            <p v-if="POINTS_OPEN" class="lp-m-note">포인트 보유 시 포인트 결제가 가능합니다.</p>
           </template>
 
           <template v-else-if="info === 'findId' || info === 'findPw'">
@@ -319,7 +320,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
             <!-- 가입하면 바로 받는 것 -->
             <div class="lp-m-perks">
               <span><b>{{ TRIAL_DAYS }}일</b><small>무료이용</small></span>
-              <span v-if="SHOW_WELCOME_POINT"><b>{{ won(WELCOME_POINT) }}p</b><small>축하포인트</small></span>
+              <span v-if="POINTS_OPEN"><b>{{ won(WELCOME_POINT) }}p</b><small>축하포인트</small></span>
               <span><b>무료</b><small>경매교육 영상</small></span>
             </div>
 

@@ -15,7 +15,7 @@ import {
   TERMS_EFFECTIVE,
 } from '../services/legalTerms';
 import markImg from '../assets/icones/log/LOGO_MARK.png';
-import { SHOW_WELCOME_POINT, TRIAL_DAYS, WELCOME_POINT } from '../services/billingPlans';
+import { POINTS_OPEN, TRIAL_DAYS, WELCOME_POINT } from '../services/billingPlans';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -23,11 +23,11 @@ const authStore = useAuthStore();
 // 로그인 화면에서 난 안내를 들고 들어오지 않는다 (두 화면이 같은 자리를 쓴다)
 onMounted(() => { authStore.error = ''; });
 
-/** 가입하면 바로 받는 것 — 카드. 축하포인트는 실제로 주기 전까지 숨기고(SHOW_WELCOME_POINT) 번호는 보이는 차례로 다시 매긴다 */
+/** 가입하면 바로 받는 것 — 카드. 축하포인트는 실제로 주기 전까지 숨기고(POINTS_OPEN) 번호는 보이는 차례로 다시 매긴다 */
 const PERKS = [
   { big: `${TRIAL_DAYS}일`, small: '무료이용' },
-  ...(SHOW_WELCOME_POINT ? [{ big: `${WELCOME_POINT.toLocaleString('ko-KR')}p`, small: '축하포인트' }] : []),
-  { big: '무료', small: '경매교육\n동영상 강의' },
+  ...(POINTS_OPEN ? [{ big: `${WELCOME_POINT.toLocaleString('ko-KR')}p`, small: '축하포인트' }] : []),
+  { big: '무료', small: '경매교육 동영상' },
 ].map((p, i) => ({ ...p, no: String(i + 1).padStart(2, '0') }));
 
 const SIDO = [
@@ -163,13 +163,13 @@ const onSubmit = async () => {
       </button>
       <h1 class="su-title"><img :src="markImg" alt="" class="su-mark" />회원가입</h1>
       <p class="su-note">
-        마이턴 옥션은 컨설팅·외부광고 등의 전화를 하지 않으며 개인정보를 타사와 공유하지 않습니다.
+        마이턴옥션은 컨설팅·외부광고 등의 전화를 하지 않으며 개인정보를 타사와 공유하지 않습니다.
         본사를 사칭한 전화를 받으시면 고객센터로 알려 주세요.
       </p>
 
-      <p class="su-perk-line">가입 즉시 <b>{{ TRIAL_DAYS }}일 무료이용권</b> + <b>무료 교육영상</b><template v-if="SHOW_WELCOME_POINT"> + <b>{{ WELCOME_POINT.toLocaleString('ko-KR') }}P</b></template> 지급</p>
+      <p class="su-perk-line">가입 즉시 <b>{{ TRIAL_DAYS }}일 무료이용권</b> + <b>무료 교육영상</b><template v-if="POINTS_OPEN"> + <b>{{ WELCOME_POINT.toLocaleString('ko-KR') }}P</b></template> 지급</p>
       <div class="su-perks">
-        <div v-for="(p, i) in PERKS" :key="p.no" :class="['su-perk', { on: i === (SHOW_WELCOME_POINT ? 1 : 0) }]">
+        <div v-for="(p, i) in PERKS" :key="p.no" :class="['su-perk', { on: i === (POINTS_OPEN ? 1 : 0) }]">
           <span class="no">{{ p.no }}</span>
           <strong>{{ p.big }}</strong>
           <small>{{ p.small }}</small>
@@ -363,20 +363,23 @@ const onSubmit = async () => {
   font-size: 11.5px; color: #3c4a6b; word-break: keep-all;
 }
 .su-perk-line b { color: #1f3a72; font-weight: 800; }
-.su-perks { display: flex; gap: 6px; margin-top: 10px; }
+/* 혜택 상자 — 번호 · 큰 글 · 설명을 한 줄에 눕혀 낮게(세로로 쌓던 상자가 길어 줄였다, 2026-11-02) */
+.su-perks { display: flex; gap: 6px; margin-top: 8px; }
 .su-perk {
   flex: 1 1 0; min-width: 0; border: 1px solid #e3e8f4; border-radius: 10px;
-  background: #f7f9ff; padding: 12px 4px 11px; text-align: center;
+  background: #f7f9ff; padding: 8px 10px; text-align: left;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
 }
-.su-perk.on { background: #2a3f8f; border-color: #2a3f8f; transform: translateY(-4px); }
+.su-perk.on { background: #2a3f8f; border-color: #2a3f8f; }
 .su-perk .no {
   display: inline-flex; align-items: center; justify-content: center;
   width: 22px; height: 22px; border-radius: 50%;
   background: #2a3f8f; color: #fff; font-size: 10px; font-weight: 800;
 }
 .su-perk.on .no { background: #fff; color: #2a3f8f; }
-.su-perk strong { display: block; margin-top: 6px; font-size: 15px; font-weight: 800; color: #1f3a72; }
-.su-perk small { display: block; margin-top: 2px; font-size: 10px; color: #6b7280; white-space: pre-line; line-height: 1.4; }
+.su-perk .no { flex: none; }
+.su-perk strong { display: block; font-size: 15px; font-weight: 800; color: #1f3a72; white-space: nowrap; }
+.su-perk small { display: block; font-size: 12px; color: #6b7280; line-height: 1.35; word-break: keep-all; }
 .su-perk.on strong, .su-perk.on small { color: #fff; }
 
 /* 입력 */

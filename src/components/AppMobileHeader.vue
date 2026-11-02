@@ -9,7 +9,7 @@ import { useAuthStore } from '../stores/authStore';
 import { MY_PAGE_ITEMS, type MyPageItem } from '../services/myPageMenu';
 import { useAlertBadge } from '../services/alertBadge';
 import { POINT_GRADES } from '../services/pointPolicy';
-import { PLAN_REST_DAYS } from '../services/billingPlans';
+import { PLAN_REST_DAYS, POINTS_OPEN } from '../services/billingPlans';
 import { useHeaderInfo } from '../services/headerInfo';
 
 const authStore = useAuthStore();
@@ -55,9 +55,9 @@ const SHOW_PAY = true;
 /** 회원 등급·포인트 — 적립과 결제를 붙이기 전이라 첫 등급에서 시작한다 */
 const grade = POINT_GRADES[0];
 const myPoint = 0;
-/** 누르면 그 화면으로 간다 */
+/** 누르면 그 화면으로 간다. 보유포인트 줄은 포인트를 붙일 때까지 뺀다(POINTS_OPEN, 지우지 않음) */
 const USER_FACTS = [
-  { label: '보유포인트', value: `${myPoint.toLocaleString('ko-KR')}P`, path: '/point-history', tone: 'blue' },
+  ...(POINTS_OPEN ? [{ label: '보유포인트', value: `${myPoint.toLocaleString('ko-KR')}P`, path: '/point-history', tone: 'blue' }] : []),
   { label: '결제내역', value: `${PLAN_REST_DAYS}일`, path: '/payments', tone: 'orange' },
 ];
 const goFact = (path: string) => {
@@ -162,7 +162,8 @@ const onLogout = async () => {
           <li class="amh-user-menu-head">마이턴 회원정보</li>
           <li class="amh-user-menu-info">
             <span class="amh-um-name">
-              <span :class="['amh-um-badge', grade.tone]">{{ grade.name.slice(0, 1) }}</span>
+              <!-- 등급 배지 — 등급은 포인트(결제 누계)로 정해져 같이 숨긴다(POINTS_OPEN) -->
+              <span v-if="POINTS_OPEN" :class="['amh-um-badge', grade.tone]">{{ grade.name.slice(0, 1) }}</span>
               <strong>{{ displayNickname }} 님</strong>
               <em class="amh-um-id">({{ loginId }})</em>
             </span>

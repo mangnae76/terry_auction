@@ -11,6 +11,7 @@ import PointsBody from '../components/PointsBody.vue';
 import NewsBody from '../components/NewsBody.vue';
 import SupportBody from '../components/SupportBody.vue';
 import { useAuthStore } from '../stores/authStore';
+import { POINTS_OPEN } from '../services/billingPlans';
 
 const router = useRouter();
 const route = useRoute();
@@ -39,14 +40,16 @@ const onAuthPill = async () => {
 };
 
 /** 더보기는 한 화면이다 — 탭을 누르면 그 내용이 아래에 펼쳐진다 */
-const TABS = [
+const ALL_TABS = [
   { key: 'mypage', label: '마이페이지' },
   { key: 'billing', label: '결제하기' },
   { key: 'points', label: '포인트' },
   { key: 'news', label: '공지' },
   { key: 'support', label: '고객센터' },
 ] as const;
-type TabKey = (typeof TABS)[number]['key'];
+type TabKey = (typeof ALL_TABS)[number]['key'];
+/** '포인트' 탭은 포인트를 붙일 때까지 뺀다(POINTS_OPEN, 지우지 않음) — 주소로 ?tab=points 가 와도 열리지 않는다 */
+const TABS = ALL_TABS.filter((t) => POINTS_OPEN || t.key !== 'points');
 const tab = ref<TabKey>('mypage');
 
 /** 고른 탭을 주소에 적어 둔다 — 다른 화면에 갔다 돌아와도 보던 탭이 그대로 열린다.

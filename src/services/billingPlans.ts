@@ -49,5 +49,8 @@ export const isFreeMember = (): boolean => {
 /** 가입하면 바로 받는 것 — 회원가입 화면의 혜택 카드와 같은 내용 */
 export const TRIAL_DAYS = 3;
 export const WELCOME_POINT = 1_000;
-/** 가입 축하 포인트를 화면에 보일지 — 포인트를 실제로 주기 전까지 숨긴다(2026-11-02, 지우지 않음). 서비스 오픈 때 true 로(docs/서비스오픈목록.md 3) */
-export const SHOW_WELCOME_POINT = false;
+/** 포인트 스위치 하나 — 포인트를 실제로 붙이는 서비스 오픈 때 true.
+ *  저장하는 곳이 없어 보유 0 · 내역 빈 목록이라, 그때까지 포인트에 닿는 화면은 모두 숨긴다(2026-11-02, 지우지 않음).
+ *  가입 축하포인트 · 무료체험 안내 · 마이페이지 등급/누적 포인트 · 머리글 보유포인트 · 결제 포인트 사용 · FAQ · 더보기 포인트 탭이 이것을 본다.
+ *  웹 껍데기(web/pages/selected.src.html)의 SHOW_POINTS · 이용가이드(public/guide/index.html)의 POINTS_OPEN 도 이 값과 같게 둔다(docs/서비스오픈목록.md 3-1) */
+export const POINTS_OPEN = false;

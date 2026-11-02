@@ -377,7 +377,7 @@ main{flex:1;padding-block:24px 64px}
 .plan-price small{margin-left:2px;font-size:15px;font-weight:700}
 .plan-per{font-size:13.5px;font-weight:700;color:var(--on-text);font-variant-numeric:tabular-nums}
 .plan-base{font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums}
-.perks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.perks{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px}   /* 혜택 수만큼 똑같이 나눈다(포인트를 숨기면 둘) */
 .perk{display:grid;gap:4px;justify-items:center;text-align:center;padding:18px 8px;border-radius:12px;background:var(--blue-soft);border:1px solid var(--head-line)}
 .perk strong{font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--on-text);font-variant-numeric:tabular-nums}
 .perk small{font-size:12.5px;color:var(--text-2)}
@@ -607,6 +607,10 @@ const APP_URL = APP_ORIGIN + '/web';
 const PROMO_URL = APP_ORIGIN + '/myturn-promo/index.html?mode=hero';
 const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
 const IMG = 'img/';   /* 캡처 그림 폴더 — 가이드 파일 옆 img/ */
+/* 포인트 스위치 — 포인트를 실제로 붙이는 서비스 오픈 때 true. 그때까지 멤버십의 포인트 장(등급표 · 추가 적립표),
+   회원비교의 포인트 줄, 무료체험 혜택의 1,000P, 포인트를 말하는 글은 빼거나 포인트 없는 글로 보인다(지우지 않음, 2026-11-02).
+   앱 src/services/billingPlans.ts 의 POINTS_OPEN · 웹 SHOW_POINTS 와 반드시 같은 값으로 둔다(docs/서비스오픈목록.md 3-1) */
+const POINTS_OPEN = false;
 
 /* ---------- 아이콘 ---------- */
 const IC = {
@@ -783,7 +787,7 @@ const V1 = {
       ['AI 자동 파싱 (Gemini)', 'n', 'y', 'y'],
       ['선정물건 · 물건상세 · 손품조사', 'y', 'y', 'y'],
       ['임장경로 · 낙찰이후 · 자금관리 · 시장분석', 'y', 'y', 'y'],
-      ['포인트 적립', '가입 1,000P', '가입 1,000P', '결제금액의 4~10%'],
+      ...(POINTS_OPEN ? [['포인트 적립', '가입 1,000P', '가입 1,000P', '결제금액의 4~10%']] : []),
       ['적어 둔 물건과 사진', '보관', '보관', '보관'],
     ],
   },
@@ -907,7 +911,7 @@ const V1 = {
     ] },
 
     /* ============================================================ 05 멤버십 */
-    { id: 'membership', label: '멤버십', ic: 'crown', title: '멤버십 안내', desc: '무료체험, 유료 이용권(Plus), 포인트와 환불 기준입니다.', subs: [
+    { id: 'membership', label: '멤버십', ic: 'crown', title: '멤버십 안내', desc: POINTS_OPEN ? '무료체험, 유료 이용권(Plus), 포인트와 환불 기준입니다.' : '무료체험, 유료 이용권(Plus)과 환불 기준입니다.', subs: [
       { id: 'trial', label: '무료체험', title: '3일 무료체험', ic: 'gift', blocks: [
         { t: 'perks' },
         { t: 'list', items: [
@@ -918,9 +922,10 @@ const V1 = {
       ] },
       { id: 'plans', label: '이용권', title: '유료 이용권 (Plus) · 12개월이면 하루 {perDay}원꼴', ic: 'crown', path: '머리띠 결제하기 · 마이페이지 › 결제하기', route: '#/more', blocks: [
         { t: 'plans' },
-        { t: 'p', html: '금액은 할인이 적용된 결제금액입니다. 신용카드 · 가상계좌로 결제하고, 보유 포인트로 뺄 수 있습니다. 결제 내역과 영수증은 <b>마이페이지 › 결제관리</b>에서 봅니다.' },
+        { t: 'p', html: `금액은 할인이 적용된 결제금액입니다. 신용카드 · 가상계좌로 결제${POINTS_OPEN ? '하고, 보유 포인트로 뺄 수 있습니다' : '합니다'}. 결제 내역과 영수증은 <b>마이페이지 › 결제관리</b>에서 봅니다.` },
       ] },
-      { id: 'points', label: '포인트', title: '포인트', ic: 'coin', blocks: [
+      /* 포인트 장 — POINTS_OPEN 일 때만 목차 · 본문에 선다(아래 '포인트 장 거르기'에서 뺀다) */
+      { id: 'points', label: '포인트', title: '포인트', ic: 'coin', points: true, blocks: [
         { t: 'p', html: '전자결제 금액의 일부를 적립해 다음 결제 때 현금처럼 씁니다. <b>1P = 1원</b>. 누적 결제금액이 늘수록 적립율이 오릅니다.' },
         { t: 'tiers' },
         { t: 'table', head: ['추가 적립', '포인트'], rows: [
@@ -939,7 +944,7 @@ const V1 = {
         { t: 'list', items: [
           '디지털 콘텐츠라 이용을 시작한 뒤에는 청약철회가 제한될 수 있습니다.',
           '환불 금액은 이용약관 제13조(환불 규정)를 따르며, <b>남은 이용 기간</b>에 대해서만 환불합니다.',
-          '결제를 취소하면 위약 비율만큼 포인트가 차감됩니다.',
+          ...(POINTS_OPEN ? ['결제를 취소하면 위약 비율만큼 포인트가 차감됩니다.'] : []),
         ] },
       ] },
     ] },
@@ -954,7 +959,7 @@ const V1 = {
         { t: 'cards', cols: 3, items: [
           { ic: 'folder', title: '물건이 많을 때', html: '여러 사건의 PDF를 받아 두는 분은 구글 드라이브 폴더를 등록해 두고 한꺼번에 올리는 편이 빠릅니다.' },
           { ic: 'doc', title: '입력 실수를 줄일 때', html: '감정가 · 최저가 · 면적을 PDF에서 바로 읽어, 옮겨 적다 생기는 실수를 줄입니다.' },
-          { ic: 'calendar', title: '꾸준히 투자할 때', html: '12개월 이용권은 기준가보다 35% 저렴하고, 결제할수록 포인트 적립율이 오릅니다.' },
+          { ic: 'calendar', title: '꾸준히 투자할 때', html: POINTS_OPEN ? '12개월 이용권은 기준가보다 35% 저렴하고, 결제할수록 포인트 적립율이 오릅니다.' : '12개월 이용권은 기준가보다 35% 저렴합니다.' },
         ] },
       ] },
     ] },
@@ -971,7 +976,7 @@ const V1 = {
         { t: 'p', html: '가입한 이메일, 사건번호, 화면 위치(예: 선정물건 › 수익분석)와 캡처를 함께 보내 주시면 더 빨리 도와드립니다.' },
       ] },
       { id: 'report', label: '오류및제안', title: '오류 제보 · 기능 제안', ic: 'message', path: '커뮤니티 › 오류및제안', route: '#/community', blocks: [
-        { t: 'p', html: '오류를 찾았거나 바라는 기능이 있으면 <b>커뮤니티 › 오류및제안</b>에 남겨 주세요. 제보 1건당 1,000P(내용에 따라 최대 10,000P, 월 최대 5만P)가 적립됩니다.' },
+        { t: 'p', html: `오류를 찾았거나 바라는 기능이 있으면 <b>커뮤니티 › 오류및제안</b>에 남겨 주세요.${POINTS_OPEN ? ' 제보 1건당 1,000P(내용에 따라 최대 10,000P, 월 최대 5만P)가 적립됩니다.' : ''}` },
       ] },
       { id: 'partner', label: '사업제휴', title: '사업제휴', ic: 'users', blocks: [
         { t: 'p', html: '데이터 · 콘텐츠, 전문가(법무사 · 세무사 · 공인중개사 · 명도 · 인테리어), 광고 · 마케팅, 교육 · 강의 분야의 제안을 기다립니다. 회사명 · 담당자 연락처 · 제안 내용을 <b>contact@myturn.co.kr</b>으로 보내 주세요.' },
@@ -1127,17 +1132,17 @@ V1.sections.find((s) => s.id === 'pages').subs = [
   { aid: 'help-community', label: '커뮤니티', title: '커뮤니티', ic: 'users', path: '상단 메뉴 › 커뮤니티', route: '#/community', blocks: [
     { t: 'shot', key: 'community', pins: [], legend: [
       ['공지', '공지사항 · 이벤트 · 업데이트 소식.'],
-      ['오류및제안', '오류 제보와 기능 제안. 제보하면 포인트가 적립됩니다.'],
+      ['오류및제안', POINTS_OPEN ? '오류 제보와 기능 제안. 제보하면 포인트가 적립됩니다.' : '오류 제보와 기능 제안.'],
       ['FAQ', '자주 찾는 도움말. 자유게시판은 준비 중입니다.'],
     ] },
   ] },
   { aid: 'help-more', label: '마이페이지', title: '마이페이지', ic: 'user', path: '상단 메뉴 › 마이페이지', route: '#/more', blocks: [
     { t: 'p', html: '내 계정 · 이용권 · 설정을 모아 둔 곳입니다.' },
     { t: 'shot', key: 'more', pins: [], legend: [
-      ['하위 탭', '내 정보 · 결제하기 · 포인트 · 고객센터. 알림은 머리띠의 종 아이콘으로 엽니다.'],
+      ['하위 탭', `내 정보 · 결제하기${POINTS_OPEN ? ' · 포인트' : ''} · 고객센터. 알림은 머리띠의 종 아이콘으로 엽니다.`],
       ['나의 선정물건', '선정물건 · 보관함 · 휴지통.'],
       ['일정 · 업체 · AI', '입찰달력, 알림설정, 중개업체 · 인테리어 업체 관리, AI 자동 분석 설정.'],
-      ['결제 · 계정', '3일무료체험, 결제하기, 결제관리, 포인트내역, 정보수정, 회원탈퇴.'],
+      ['결제 · 계정', `3일무료체험, 결제하기, 결제관리${POINTS_OPEN ? ', 포인트내역' : ''}, 정보수정, 회원탈퇴.`],
     ] },
   ] },
   { aid: 'help-etc', label: '스토어 · 앱 · 매뉴얼', title: '스토어 · 모바일앱 · 매뉴얼', ic: 'bag', blocks: [
@@ -1149,6 +1154,9 @@ V1.sections.find((s) => s.id === 'pages').subs = [
     { t: 'go', items: [['스토어', '#/store'], ['모바일앱', '#/mobile'], ['매뉴얼', '#/manual']] },
   ] },
 ];
+
+/* ---------- 포인트 장 거르기 — POINTS_OPEN 이 아니면 points: true 인 장을 목차 · 본문 · 검색에서 뺀다 ---------- */
+if (!POINTS_OPEN) V1.sections.forEach((sec) => { sec.subs = sec.subs.filter((sub) => !sub.points); });
 
 /* ---------- 버전 목록 ---------- */
 GUIDE.release({
@@ -1227,7 +1235,7 @@ const B = {
   board: () => boardHtml(),
   flow: () => flowHtml(),
   trio: () => trioHtml(),
-  perks: () => `<div class="perks">${[['3일', '모든 기능 무료'], ['1,000P', '가입 축하 포인트'], ['무료', '경매교육 영상']].map(([a, b]) => `<div class="perk"><strong>${a}</strong><small>${b}</small></div>`).join('')}</div>`,
+  perks: () => `<div class="perks">${[['3일', '모든 기능 무료'], ...(POINTS_OPEN ? [['1,000P', '가입 축하 포인트']] : []), ['무료', '경매교육 영상']].map(([a, b]) => `<div class="perk"><strong>${a}</strong><small>${b}</small></div>`).join('')}</div>`,
   plans: () => plansHtml(),
   tiers: () => tiersHtml(),
   compare: () => compareHtml(),

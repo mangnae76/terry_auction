@@ -7,6 +7,7 @@ import BrandLogo from '../components/BrandLogo.vue';
 import DateTimeField from '../components/DateTimeField.vue';
 import { useAuthStore } from '../stores/authStore';
 import { OPS_MENU, opsItem } from '../services/adminMenu';
+import { POINTS_OPEN, TRIAL_DAYS } from '../services/billingPlans';
 import {
   newBoardId,
   removeBoardPost,
@@ -229,17 +230,26 @@ const seedBanners = async () => {
     {
       title: '가을맞이 3개월 35% 할인',
       desc: '기간을 길게 고를수록 더 깎입니다',
-      body: '12개월을 고르면 35%, 6개월 25%, 3개월 15% 깎입니다. 포인트가 있으면 깎인 금액에서 또 뺄 수 있습니다.',
+      body: `12개월을 고르면 35%, 6개월 25%, 3개월 15% 깎입니다.${POINTS_OPEN ? ' 포인트가 있으면 깎인 금액에서 또 뺄 수 있습니다.' : ''}`,
       badge: 'SALE',
       period: '2026.10.01 ~ 10.31',
     },
-    {
-      title: '친구 부르면 2,000P',
-      desc: '친구와 나, 둘 다 받습니다',
-      body: '친구가 가입을 마치면 두 분 모두에게 2,000P 를 드립니다. 포인트는 결제할 때 바로 쓸 수 있습니다.',
-      badge: 'POINT',
-      period: '상시',
-    },
+    // 포인트 배너는 포인트를 붙일 때까지 무료체험 배너로 바꿔 넣는다(POINTS_OPEN) — 두 장이어야 굴러가는 모양이 보인다
+    POINTS_OPEN
+      ? {
+        title: '친구 부르면 2,000P',
+        desc: '친구와 나, 둘 다 받습니다',
+        body: '친구가 가입을 마치면 두 분 모두에게 2,000P 를 드립니다. 포인트는 결제할 때 바로 쓸 수 있습니다.',
+        badge: 'POINT',
+        period: '상시',
+      }
+      : {
+        title: `가입하면 ${TRIAL_DAYS}일 무료`,
+        desc: '모든 기능을 먼저 써 보세요',
+        body: `회원가입을 하시면 ${TRIAL_DAYS}일 무료이용권이 바로 지급됩니다. 체험 기간에는 결제하지 않습니다.`,
+        badge: 'FREE',
+        period: '상시',
+      },
   ];
   try {
     for (let i = 0; i < samples.length; i += 1) {

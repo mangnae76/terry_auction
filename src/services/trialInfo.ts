@@ -1,12 +1,12 @@
 // 무료체험 안내 — 로그인 화면의 안내 창과 무료체험 안내 페이지가 같이 쓴다.
-import { SHOW_WELCOME_POINT, TRIAL_DAYS, WELCOME_POINT } from './billingPlans';
+import { POINTS_OPEN, TRIAL_DAYS, WELCOME_POINT } from './billingPlans';
 
 export { TRIAL_DAYS, WELCOME_POINT };
 
 /** 가입하면 바로 받는 것 — 회원가입 화면의 카드와 같은 내용 */
 export const TRIAL_PERKS: Array<{ big: string; small: string }> = [
   { big: `${TRIAL_DAYS}일`, small: '무료이용' },
-  ...(SHOW_WELCOME_POINT ? [{ big: `${WELCOME_POINT.toLocaleString('ko-KR')}p`, small: '축하포인트' }] : []),
+  ...(POINTS_OPEN ? [{ big: `${WELCOME_POINT.toLocaleString('ko-KR')}p`, small: '축하포인트' }] : []),
   { big: '무료', small: '경매교육 영상' },
 ];
 

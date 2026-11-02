@@ -185,7 +185,7 @@ button { cursor: pointer; }
 /* 메뉴 여덟 — 예전 마이페이지를 빼고 더보기를 '마이페이지'로 이름을 바꾸며 간격을 고르게 다시 잡았다(글자 폭 + 같은 틈) */
 /* 메뉴 전부(아래 펼침 칸도 같은 자리) 두 글자만큼 왼쪽으로 — --menu-shift. 좁은 창(1,416 아래)에선 로고에 붙지 않게 덜 옮긴다 */
 .m0 { left: calc(13.75% - var(--menu-shift)); } .m1 { left: calc(22.00% - var(--menu-shift)); } .m2 { left: calc(29.39% - var(--menu-shift)); } .m3c { left: calc(36.79% - var(--menu-shift)); } .m3f { left: calc(44.18% - var(--menu-shift)); }
-.m3 { left: calc(51.57% - var(--menu-shift)); } .m4s { left: calc(62% - var(--menu-shift)); } .m4a { left: calc(64% - var(--menu-shift)); } .m5 { left: calc(73.75% - var(--menu-shift)); } /* 자금관리를 낙찰이후 오른쪽 위 메뉴로 꺼내 한 칸 늘었다 — +물건등록(글이 길다) 다음만 조금 넓게, 나머지는 7.39% 고르게 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 */
+.m3 { left: calc(51.57% - var(--menu-shift)); } .m4s { left: calc(62% - var(--menu-shift)); } .m5 { left: calc(73.75% - var(--menu-shift)); } /* 자금관리를 낙찰이후 오른쪽 위 메뉴로 꺼내 한 칸 늘었다 — +물건등록(글이 길다) 다음만 조금 넓게, 나머지는 7.39% 고르게 · 매뉴얼(준비 중)은 커뮤니티 오른쪽 */
 .g-icons { position: absolute; left: 79.1%; top: 3px; display: flex; gap: 6px; }
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: var(--nav-text) !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
@@ -3495,7 +3495,6 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <a class="g-menu m3f" href="#/finance" data-act="go-finance" id="navFinance">자금관리</a>
       <a class="g-menu m3" href="#/market" data-act="go-market" id="navMarket">시장분석</a>
       <a class="g-menu m4s" href="#/store" data-act="go-store" id="navStore">스토어</a>
-      <a class="g-menu m4a" href="#/mobile" data-act="go-mobile" id="navMobile">모바일앱</a>
       <a class="g-menu m5" href="#/more" data-act="go-more" id="navMore">마이페이지</a>
       <!-- 메뉴 줄 오른쪽 끝 — [펼치기 ▼] 이름 ▼ · 로그아웃 (10-31 위 줄에서 내렸다) -->
       <div class="g-right">
@@ -3714,7 +3713,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const starSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2.6 15 9 22 9.8 17 14.5 18.3 21.4 12 18 5.7 21.4 7 14.5 2 9.8 9 9"/></svg>';
 
   /* 포인트 · 회원등급 보이기 스위치 — 포인트를 붙이기 전이라 웹에선 숨긴다(지우지 않음, 2026-11-02).
-     하위 탭 '포인트' · 펼침 메뉴 · 이름 메뉴의 보유포인트 · 등급 배지 · 포인트 단추를 함께 연다(docs/서비스오픈목록.md 3-1) */
+     하위 탭 '포인트'(주소 #/more/points 포함) · 펼침 메뉴 · 이름 메뉴의 보유포인트 · 등급 배지 · 포인트 단추를 함께 연다(docs/서비스오픈목록.md 3-1).
+     앱 스위치 src/services/billingPlans.ts 의 POINTS_OPEN 과 반드시 같은 값으로 둔다 — 웹 껍데기는 그 값을 바로 읽지 못해 따로 적는다 */
   const SHOW_POINTS = false;
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
@@ -3801,7 +3801,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     market: ['dong', 'son', 'rank', 'sale'], /* 랭킹분석 = 랭킹지도 · 거래랭킹(지역분석 화면을 랭킹 탭만으로) · 매각사례 = 인근 · 동일지번 매각물건 분석(안 박스 탭 S.saleTab) · 거래랭킹은 지역분석 › 랭킹지도 탭으로, 경매지번 분석은 지역분석 › 경매지번 탭으로 */
     postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'interior', 'tax'],
-    more: ['mypage', 'alerts', 'billing', 'points', 'support'],   /* 공지는 커뮤니티로 옮겼다 */
+    more: ['mypage', 'alerts', 'billing', ...(SHOW_POINTS ? ['points'] : []), 'support'],   /* 공지는 커뮤니티로 옮겼다 · 포인트는 SHOW_POINTS 일 때만(옛 주소 #/more/points 는 내정보로) */
     community: ['notice', 'suggest'],   /* 위 메뉴에서 커뮤니티를 뺐다(2026-11-02) — 머리 오른쪽 위 '공지'로 들어온다. FAQ 는 이용가이드로 */
     manual: ['basic', 'process'],   /* 매뉴얼 — 경매기초 · 경매절차 */   /* 공지(공지사항 · 이벤트 · 업데이트) · FAQ(자주 찾는 도움말) — 마이페이지 공지 · 고객센터에서 옮겼다(웹) */
   };
@@ -3816,6 +3816,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     if (head === 'community' && m[2] === 'faq') return { route: 'community', sub: 'notice' }; /* FAQ 탭을 뺐다 — 예전 주소는 공지로(FAQ 는 이용가이드) */
     if (head === 'community' && m[2] === 'issue') return { route: 'community', sub: 'suggest' }; /* 잠깐 있던 '오류및제한' 주소 — 오류및제안 게시판으로 */
     if (head === 'more' && m[2] === 'news') return { route: 'community', sub: 'notice' }; /* 예전 마이페이지 › 공지 — 커뮤니티로 옮겼다 */
+    if (head === 'mobile') return { route: 'store', storeTab: 'mobile' }; /* 모바일앱은 스토어 안 탭으로 옮겼다(2026-11-02) */
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
     if (head === 'postwin' && m[2] === 'sell') { try { sessionStorage.setItem('pw.flow.sub', 'sell'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '매도·임대' — 진행절차 안 매물등록 박스 탭 */
@@ -3850,6 +3851,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     itemId: H0.itemId || '',
     /* 보고 있던 하위 탭도 주소에 적어 둔다 — 새로고침해도 그 자리에 그대로 선다 */
     itemTab: H0.itemTab || 'basic',
+    storeTab: H0.storeTab || '', /* 스토어 탭 — 비면 이 브라우저에 남긴 탭(아래 storeTab 시작값) */
   };
   /** 지금 화면 → 주소 */
   const hashOf = () => (S.route === 'item' ? itemHash(S.itemId, S.itemTab)
@@ -3929,8 +3931,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['가이드', 'go-postwin', '낙찰이후가이드']]],
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m3', [['지역분석', 'go-market'], ['물건분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
-    ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store']]],
-    ['m4a', [['앱소개', 'go-mobile']]],
+    ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store'], ['모바일앱', 'go-store']]],
     ['m5', [['내정보', 'go-more'], ['알림', 'go-more'], ['결제하기', 'go-more'], ...(SHOW_POINTS ? [['포인트', 'go-more']] : []), ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
   /* 지금 보고 있는 자리 — 펼칠 때마다 다시 그려 표시가 어긋나지 않게 한다 */
@@ -3988,7 +3989,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     { const t = $('navMarket'); if (t) { t.classList.toggle('on', S.route === 'market'); if (S.route === 'market') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 자금관리는 마이페이지 아래 — 자금관리 화면에서도 마이페이지에 불이 들어온다 */
     [['navPostwin', ['postwin']], ['navFinance', ['finance']], ['navMore', ['more']]].forEach(([id, rs]) => { const t = $(id); if (t) { const on = rs.includes(S.route); t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
-    [['navStore', 'store'], ['navMobile', 'mobile']].forEach(([id, r]) => { const t = $(id); if (t) { const on = S.route === r; t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
+    [['navStore', 'store']].forEach(([id, r]) => { const t = $(id); if (t) { const on = S.route === r; t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
     { const t = $('navMy'); if (t) { t.classList.toggle('on', S.route === 'mypage'); if (S.route === 'mypage') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 물건상세(선정물건 안)에 들어가도 선정물건 메뉴 밑줄은 그대로 */
     const nav = $('navWatch'); const inList = S.route === 'list' || S.route === 'item'; nav.classList.toggle('on', inList); if (inList) nav.setAttribute('aria-current', 'page'); else nav.removeAttribute('aria-current');
@@ -4851,7 +4852,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       + `<h3>부칙</h3><p>이 개인정보 처리방침은 ${esc(L.PRIVACY_EFFECTIVE)}부터 시행합니다.</p>`;
   };
   /* 환불정책 — 마이턴옥션 유료 이용권. 환불 금액 규칙은 이용약관 제13조 글을 그대로 가져온다(약관과 어긋나지 않게).
-     포인트 줄은 포인트 주의사항에서 환불 · 결제취소 줄만 */
+     포인트 줄은 포인트 주의사항에서 환불 · 결제취소 줄만 — 포인트를 붙이기 전엔 숨긴다(SHOW_POINTS) */
   const refundBody = () => {
     const L = window.TAPdf || {};
     const art = (L.TERMS_CHAPTERS || []).flatMap((c) => c.articles).find((a) => /환불 규정/.test(a.title));
@@ -4864,10 +4865,10 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       <p>이용약관 ${esc(art.title)}에 따릅니다.</p>${docList(art.items)}
       <h3>3. 환불 절차</h3>
       <ol><li>고객센터(전화 또는 메일)로 환불 신청</li><li>회사가 이용 내역 확인</li><li>환불 금액을 안내한 뒤 결제한 수단으로 돌려 드림(카드는 카드사 사정에 따라 며칠 걸릴 수 있습니다)</li></ol>
-      <h3>4. 포인트</h3>${docList(pts, 'ul')}
-      <h3>5. 이용권 만료</h3>
+      ${SHOW_POINTS ? `<h3>4. 포인트</h3>${docList(pts, 'ul')}` : ''}
+      <h3>${SHOW_POINTS ? 5 : 4}. 이용권 만료</h3>
       <p>환불은 남은 이용 기간에 대해서만 합니다. 이용 기간이 끝난 이용권은 환불 대상이 아닙니다.</p>
-      <h3>6. 문의</h3>
+      <h3>${SHOW_POINTS ? 6 : 5}. 문의</h3>
       <div class="doc-contact"><b>환불 문의</b> 전화 02-456-1234 · 메일 contact@myturn.co.kr</div>
       <p class="doc-eff">이 환불정책은 이용약관과 같이 ${esc(L.TERMS_EFFECTIVE || '')}부터 시행합니다.</p>`;
   };
@@ -6210,7 +6211,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
      스토어는 아직 파는 상품이 없다 — 표지 카드는 자리표시(준비중)이고 가격 · 구매는 막아 둔다. 상품이 정해지면 STORE_ITEMS 만 바꾼다.
      모바일앱 소개는 우리 앱에 실제로 있는 기능만 적는다(숫자 · 남의 글을 지어내지 않는다) */
   if (!S.storeTab) S.storeTab = store.get('wlp.web.storeTab', 'all');
-  const STORE_TABS = [['all', '전체'], ['ebook', '전자책'], ['report', '리포트']];
+  const STORE_TABS = [['all', '전체'], ['ebook', '전자책'], ['report', '리포트'], ['mobile', '모바일앱']];   /* 모바일앱 — 위 메뉴에 따로 있던 화면을 탭으로 옮겼다 */
   const STORE_ITEMS = [
     { kind: 'ebook', tone: 'navy', tag: '기초', cover: ['경매', '첫걸음'], sub: '사건 보는 법부터 입찰까지', title: '경매 첫걸음', desc: '처음 경매를 시작하는 분을 위한 입문서' },
     { kind: 'ebook', tone: 'blue', tag: '필수', cover: ['권리분석', '핵심 정리'], sub: '말소기준권리와 인수 권리', title: '권리분석 핵심 정리', desc: '입찰 전에 꼭 확인할 권리관계' },
@@ -6225,7 +6226,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       + `<div class="st-body"><h3><em>[${esc(x.tag)}]</em> ${esc(x.title)}</h3><p>${esc(x.desc)}</p><span class="st-soon">가격미정</span><button type="button" class="st-buy" data-act="store-buy" data-v="${STORE_ITEMS.indexOf(x)}">구매하기</button></div></article>`;
     return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>스토어</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트를 준비하고 있습니다.</p></div>`
       + `<nav class="st-tabs" role="tablist">${STORE_TABS.map(([k, t]) => `<button type="button" role="tab" class="${S.storeTab === k ? 'on' : ''}" aria-selected="${S.storeTab === k}" data-act="store-tab" data-v="${k}">${t}</button>`).join('')}</nav>`
-      + `<div class="st-grid">${list.map(card).join('')}</div></section>`;
+      + (S.storeTab === 'mobile' ? `<div class="st-mobile">${mobileHtml()}</div></section>` : `<div class="st-grid">${list.map(card).join('')}</div></section>`);
   };
   const MOBILE_FEATS = [
     ['doc', 'PDF 자동등록', '매각물건명세서 · 감정평가서 PDF를 올리면 사건번호 · 주소 · 감정가를 채웁니다'],
@@ -6237,6 +6238,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     ['won', '자금관리', '자금입출금 · 필요경비 · 사업경비를 물건별로 기록합니다'],
     ['apt', '시장분석', '지역분석 · 랭킹분석 · 경매사례로 시장 흐름을 봅니다'],
   ];
+  /* 모바일앱 — 스토어 › 모바일앱 탭 안에 들어가는 몸통(바깥 상자 · 머리는 스토어 것을 쓴다) */
   const mobileHtml = () => {
     /* 실제 앱 캡처(대문 소개 영상에 쓴 것) — public/myturn-promo/shots */
     const SHOT = (f) => `/myturn-promo/shots/${f}`;
@@ -6245,14 +6247,14 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       + `<div class="mb-dots">${MOBILE_SLIDES.map(([, t], i) => `<button type="button" class="${i === 0 ? 'on' : ''}" data-act="mobile-slide" data-v="${i}" aria-label="${t} 화면 보기"></button>`).join('')}</div></div>`;
     /* 아래 — 실제 앱 화면 4장. 그림은 자르지 않는다(틀이 캡처 비율을 따른다) */
     const shots = APP_SHOTS.map(([f, t, d]) => `<figure class="mb-app"><div class="mb-app-frame"><img src="${SHOT(f)}" alt="마이턴옥션 앱 ${t} 화면" loading="lazy"></div><figcaption><b>${t}</b><small>${d}</small></figcaption></figure>`).join('');
-    return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18h2"/></svg>마이턴옥션 모바일앱</h2><p>현장에서도 경매 분석을 이어 가세요. PC와 모바일을 함께 쓰면 더 편합니다.</p></div>`
+    return ''
       + `<div class="mb-hero"><div class="mb-copy"><span class="mb-badge">실전 경매 임장앱</span><h3>손품부터 낙찰 이후까지,<br><em>한 앱에서</em></h3>`
       + `<p>물건 등록부터 임장 동선, 권리 · 수익 분석, 낙찰 뒤 명도 · 세금까지 현장에서 필요한 것을 하나의 앱으로 봅니다. 3일 무료체험으로 먼저 써 보세요.</p>`
       + `<div class="mb-stores"><button type="button" data-act="soon" data-name="Google Play">Google Play</button><button type="button" data-act="soon" data-name="App Store">App Store</button></div>`
       + `<small class="mb-note">앱 출시 준비 중 · 지금은 웹에서 같은 기능을 쓸 수 있습니다</small></div>${phone}</div>`
       + `<div class="mb-feats">${MOBILE_FEATS.map(([ic, t, d]) => `<article class="mb-feat"><h4>${secIc(ic)}${t}</h4><p>${d}</p></article>`).join('')}</div>`
       + `<h3 class="mb-shots-title">실제 앱 화면</h3><div class="mb-apps">${shots}</div>`
-      + `<div class="mb-more"><button type="button" data-act="mobile-more">자세한정보보기<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></div></section>`;
+      + `<div class="mb-more"><button type="button" data-act="mobile-more">자세한정보보기<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></div>`;
   };
   /* 휴대폰 안에서 넘어가는 실제 앱 캡처(public/myturn-promo/shots) · 아래 웹 캡처 4장 */
   const MOBILE_SLIDES = [['53eb5d72dbedcf14716dc675474e1f72.png', '선정물건'], ['f538ce26245556b86f18e8e3bec69984.png', '물건정보'], ['74c80b031850a5a3008625a222d77b0e.png', '권리분석'],
@@ -6270,8 +6272,8 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   /* 3초마다 다음 장 — 움직임 줄이기를 켠 사람에게는 멈춰 둔다. 다른 화면으로 가면 멈춘다 */
   const startSlides = () => {
     clearInterval(mobileTimer); mobileTimer = 0;
-    if (S.route !== 'mobile' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    mobileTimer = setInterval(() => { const box = document.querySelector('#infoContent .mb-view'); if (!box || S.route !== 'mobile') { clearInterval(mobileTimer); mobileTimer = 0; return; } showSlide(Number(box.dataset.k || 0) + 1); }, 3000);
+    if (!(S.route === 'store' && S.storeTab === 'mobile') || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    mobileTimer = setInterval(() => { const box = document.querySelector('#infoContent .mb-view'); if (!box || !(S.route === 'store' && S.storeTab === 'mobile')) { clearInterval(mobileTimer); mobileTimer = 0; return; } showSlide(Number(box.dataset.k || 0) + 1); }, 3000);
   };
   /* 모바일앱 자세한정보보기 — 앱 랜딩 페이지(나중에 만든다). 주소가 정해지면 여기만 적는다. 비어 있으면 '준비 중' */
   const MOBILE_LANDING_URL = '';
@@ -6303,6 +6305,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     if (h.route === 'item') { S.itemId = h.itemId; S.lastItemId = h.itemId; S.itemTab = h.itemTab; }
     if (h.route === 'market') { S.marketTab = h.sub; if (h.saleTab) S.saleTab = h.saleTab; }
     if (h.route === 'manual') S.manualTab = h.sub;
+    if (h.storeTab) S.storeTab = h.storeTab;
     if (APP_PAGE_NAMES[h.route]) S.pageTab[h.route] = h.sub;
     S.pop = ''; S.menu = null; render();
     if (moved) toTop();   /* 뒤로 · 앞으로 가기로 다른 화면이 되면 맨 위에서 */
@@ -6724,9 +6727,9 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       case 'go-mypage': S.menu = null; S.pageTab.more = 'mypage'; if (S.route === 'more') { writeHash(false); renderSubTabs(); renderAppPage(); } else go('more'); break;
       /* 낙찰이후 · 자금관리 · 더보기 — 펼침 메뉴의 항목(data-name)이면 그 하위 탭으로 연다 */
       /* 스토어 — 펼침 칸의 전체 · 전자책 · 리포트는 그 탭으로 */
-      case 'go-store': { const k = { 전체: 'all', 전자책: 'ebook', 리포트: 'report' }[t.dataset.name]; if (k) { S.storeTab = k; store.set('wlp.web.storeTab', k); } S.menu = null; S.pop = ''; if (S.route === 'store') render(); else go('store'); } break;
+      case 'go-store': { const k = { 전체: 'all', 전자책: 'ebook', 리포트: 'report', 모바일앱: 'mobile' }[t.dataset.name]; if (k) { S.storeTab = k; store.set('wlp.web.storeTab', k); } S.menu = null; S.pop = ''; if (S.route === 'store') render(); else go('store'); } break;
       case 'go-manual': { const k = { 경매기초: 'basic', 경매절차: 'process' }[t.dataset.name]; if (k) S.manualTab = k; S.menu = null; S.pop = ''; if (S.route === 'manual') { writeHash(false); render(); } else go('manual'); } break;
-      case 'go-mobile': S.menu = null; S.pop = ''; if (S.route === 'mobile') render(); else go('mobile'); break;
+      case 'go-mobile': S.menu = null; S.pop = ''; S.storeTab = 'mobile'; store.set('wlp.web.storeTab', 'mobile'); if (S.route === 'store') renderInfo(); else go('store'); break;   /* 모바일앱은 스토어 안 탭 */
       case 'web-guide': if (WEB_GUIDE_URL) window.open(WEB_GUIDE_URL, '_blank', 'noopener'); else toast('‘이용가이드’는 준비 중입니다.', 'info'); break;   /* 하던 화면은 그대로 두고 새 탭 */
       case 'mobile-slide': showSlide(Number(v) || 0); startSlides(); break;
       case 'mobile-more': if (MOBILE_LANDING_URL) location.href = MOBILE_LANDING_URL; else toast('‘앱 소개 페이지’는 준비 중입니다.', 'info'); break;

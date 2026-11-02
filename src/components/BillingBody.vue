@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// 결제하기 — 이용 기간을 고르고 포인트를 쓴 뒤 결제한다.
+// 결제하기 — 이용 기간을 고르고 (포인트를 붙이면 포인트를 쓴 뒤) 결제한다.
+// 포인트 두 줄(내 포인트 · 포인트 사용)은 서비스 오픈 때까지 숨긴다(POINTS_OPEN). 쓴 포인트가 0 이라 총 결제금액은 상품금액 그대로다.
 // 결제사 연동은 아직 붙이지 않았다. 고른 값과 셈은 여기서 다 끝내 두고,
 // '신청및결제하기'만 연동 때 바꿔 끼우면 된다.
 import { computed, ref } from 'vue';
@@ -10,6 +11,7 @@ import {
   OFF_LABELS as offLabels,
   OFF_TEXT as offText,
   PLANS,
+  POINTS_OPEN,
   perMonth,
   type Plan,
 } from '../services/billingPlans';
@@ -87,8 +89,9 @@ const submit = () => {
         <!-- 셈하기 -->
         <section class="bil-card sum">
           <div class="bil-row"><span class="lab">선택항목</span><span class="val"><em class="pill">{{ picked.label }} 1개</em></span></div>
-          <div class="bil-row"><span class="lab">내 포인트</span><span class="val point-val">{{ money(myPoint) }}P <small>(사용 후 {{ money(restPoint) }}P)</small></span></div>
-          <div class="bil-row">
+          <!-- 포인트 두 줄 — 포인트를 붙일 때까지 숨긴다(POINTS_OPEN, 지우지 않음) -->
+          <div v-if="POINTS_OPEN" class="bil-row"><span class="lab">내 포인트</span><span class="val point-val">{{ money(myPoint) }}P <small>(사용 후 {{ money(restPoint) }}P)</small></span></div>
+          <div v-if="POINTS_OPEN" class="bil-row">
             <span class="lab">포인트 사용</span>
             <span class="val point">
               <input class="bil-input" inputmode="numeric" placeholder="1,000P부터 사용가능" @input="onPointInput($event.target as HTMLInputElement)" />

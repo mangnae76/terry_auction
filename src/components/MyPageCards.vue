@@ -8,7 +8,7 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { propTypeName } from '../utils/propertyType';
 import { POINT_GRADES } from '../services/pointPolicy';
-import { PLAN_REST_DAYS, isFreeMember } from '../services/billingPlans';
+import { PLAN_REST_DAYS, POINTS_OPEN, isFreeMember } from '../services/billingPlans';
 
 const router = useRouter();
 const store = useAuctionStore();
@@ -42,8 +42,7 @@ const typeTally = computed(() => {
 /** 등급·포인트 — 쌓는 길을 아직 붙이지 않아 첫 등급과 0 으로 보인다 */
 const grade = POINT_GRADES[0];
 const myPoint = 0;
-/** 회원등급 · 누적 포인트 칸 · 계정관리 '포인트내역' 카드 — 웹은 숨겨 둔다(지우지 않음). 포인트를 붙이는 서비스 오픈 때 true 로(docs/서비스오픈목록.md 3-1) */
-const SHOW_GRADE_POINT = false;
+/* 회원등급 · 누적 포인트 칸 · 계정관리 '포인트내역' 카드 — 앱 · 웹 모두 POINTS_OPEN 하나로 숨긴다(지우지 않음, docs/서비스오픈목록.md 3-1) */
 /** 무료 회원이면 결제내역 칸에 남은 날 대신 '무료회원' */
 const freeMember = isFreeMember();
 /** 아이디 — 메일 주소는 통째로 보이지 않게 앞쪽만 적는다 */
@@ -94,10 +93,10 @@ const ACCOUNT_CARDS_BASE: Card[] = [
   { icon: '🅿️', title: '포인트내역', desc: '적립·사용 내역', path: '/point-history' },
   { icon: '🙍', title: '정보수정', desc: '닉네임·개인정보', path: '/profile' },
   { icon: '🚪', title: '회원탈퇴', desc: '계정·자료 삭제', path: '/withdraw' },
-];
+].filter((c) => POINTS_OPEN || c.path !== '/point-history');   // 포인트내역은 포인트를 붙일 때까지 뺀다
 /** 웹 — 중요한 차례로, 두 칸씩 비슷한 것끼리 짝지어 놓는다(왼쪽 | 오른쪽)
  *  내 계정(정보수정 | AI 설정) → 결제(결제하기 | 결제관리) → 혜택(포인트내역 | 3일무료체험) → 회원탈퇴는 맨 끝 */
-const WEB_ACCOUNT_ORDER = ['정보수정', 'AI 자동 분석 설정', '결제하기', '결제관리', ...(SHOW_GRADE_POINT ? ['포인트내역'] : []), '3일무료체험', '회원탈퇴'];
+const WEB_ACCOUNT_ORDER = ['정보수정', 'AI 자동 분석 설정', '결제하기', '결제관리', ...(POINTS_OPEN ? ['포인트내역'] : []), '3일무료체험', '회원탈퇴'];
 const ACCOUNT_CARDS = webEmbed
   ? WEB_ACCOUNT_ORDER.map((t) => [...ACCOUNT_CARDS_BASE, ...WEB_AI_CARDS].find((c) => c.title === t)).filter((c): c is Card => !!c)
   : ACCOUNT_CARDS_BASE;
@@ -123,12 +122,12 @@ const go = (c: Card) => {
         <span class="mpc-chip">나의선정물건</span>
         <span class="mpc-val">{{ (auctionCount + publicSaleCount).toLocaleString('ko-KR') }}<small>건</small></span>
       </button>
-      <!-- 회원등급 · 누적 포인트 — 웹은 서비스 오픈 때까지 숨긴다(SHOW_GRADE_POINT) -->
-      <button v-if="!webEmbed || SHOW_GRADE_POINT" type="button" class="mpc-cell" @click="router.push({ path: '/points', query: { tab: 'grade' } })">
+      <!-- 회원등급 · 누적 포인트 — 앱 · 웹 모두 서비스 오픈 때까지 숨긴다(POINTS_OPEN) -->
+      <button v-if="POINTS_OPEN" type="button" class="mpc-cell" @click="router.push({ path: '/points', query: { tab: 'grade' } })">
         <span class="mpc-chip">{{ grade.name }} 회원</span>
         <span :class="['mpc-badge', grade.tone]">{{ grade.name.slice(0, 1) }}</span>
       </button>
-      <button v-if="!webEmbed || SHOW_GRADE_POINT" type="button" class="mpc-cell" @click="router.push('/point-history')">
+      <button v-if="POINTS_OPEN" type="button" class="mpc-cell" @click="router.push('/point-history')">
         <span class="mpc-chip">누적 포인트</span>
         <span class="mpc-val">{{ myPoint.toLocaleString('ko-KR') }} <small>P</small></span>
       </button>
@@ -182,10 +181,11 @@ const go = (c: Card) => {
 .mpc-h2 em { font-style: normal; color: #4a5bb5; margin-right: 4px; }
 .mpc-h2 + .mpc-grid { margin-bottom: 18px; }
 
-/* 내 자리 세 칸 — 칸 전체가 단추다. 이름표는 테두리에 걸쳐 앉는다 */
+/* 내 자리 칸 — 칸 전체가 단추다. 이름표는 테두리에 걸쳐 앉는다.
+   칸 수는 보이는 만큼 똑같이 나눈다(포인트 두 칸을 숨기면 결제내역 한 칸이 통째로) */
 .mpc-sum {
   position: relative;
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0 8px;
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; margin: 10px 0 8px;
   background: #fafbfe; border: 1px solid #e8ebf1; border-radius: 12px; padding: 16px 8px 10px;
 }
 .mpc-who {
