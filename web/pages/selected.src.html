@@ -2883,6 +2883,8 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .c-meta { display: flex; align-items: center; gap: 16px; min-width: 0; flex: 1 1 auto; white-space: nowrap; padding-left: 1px; }
 .c-date { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 400; color: var(--text); flex: 0 0 auto; letter-spacing: 0; }
 .c-date svg { width: 14px; height: 14px; color: var(--muted); flex: 0 0 auto; }
+.c-date .c-dday { font-style: normal; font-weight: 700; color: var(--blue); }   /* 매각기일 D-day — 물건상세 머리와 같은 꼴 */
+.card.past .c-date .c-dday { color: var(--past-text); font-weight: 600; }
 .card.past .c-date svg { color: var(--past-text); }
 .c-court { font-size: 13px; font-weight: 500; color: var(--text-2); flex: 0 3 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .c-case, .c-court { display: inline-flex; align-items: center; gap: 5px; }
@@ -4197,7 +4199,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
       ${past ? `<span class="ribbon" aria-hidden="true">${I.refresh}</span><span class="ribbon-hit" data-tip="입찰일이 지났습니다 · 갱신필요" data-tip-pos="left"></span>` : ''}
       <div class="c-top">
         ${S.pick ? `<input type="checkbox" class="ck pick-ck" data-act="pick-one" data-id="${it.id}" ${picked ? 'checked' : ''} aria-label="${esc(it.caseNo)} 고르기">` : ''}
-        <div class="c-meta"><span class="c-case num">${I.hash}${hl(it.caseNo)}</span><span class="c-court" title="${esc(it.court || DASH)}">${I.court}<span class="full">${orDash(hl(it.court))}</span><span class="short">${orDash(hl(shortCourt(it.court)))}</span></span><span class="c-date num"${tip(it.date ? `매각기일 ${ddayText(it.date)}${past ? ' · 지났습니다' : ''}` : '매각기일을 적지 않았습니다', 'left')}>${I.cal}${it.date ? `${it.date}${dowText(it.date)}` : DASH}</span></div>
+        <div class="c-meta"><span class="c-case num">${I.hash}${hl(it.caseNo)}</span><span class="c-court" title="${esc(it.court || DASH)}">${I.court}<span class="full">${orDash(hl(it.court))}</span><span class="short">${orDash(hl(shortCourt(it.court)))}</span></span><span class="c-date num"${tip(it.date ? `매각기일 ${ddayText(it.date)}${past ? ' · 지났습니다' : ''}` : '매각기일을 적지 않았습니다', 'left')}>${I.cal}${it.date ? `${it.date}${dowText(it.date)}<em class="c-dday">${ddayText(it.date)}</em>` : DASH}</span></div>
         <div class="c-acts">
           ${starsHtml(it)}
           <button type="button" class="ibtn" data-act="copy" data-id="${it.id}" aria-label="주소복사"${tip('주소복사')}>${I.copy}</button>
