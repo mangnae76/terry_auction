@@ -40,6 +40,12 @@ export const perMonth = (p: Plan) => Math.round(p.price / p.months);
  *  만료일을 저장하기 시작하면 그 날짜로 셈해 이 값을 버린다. */
 export const PLAN_REST_DAYS = 999;
 
+/** 무료 회원인가 — 결제를 붙이기 전까지 쓰는 임시 기준(웹 PAID 와 같다): 이 브라우저의 myturn.plan 이 'free' 이면 무료.
+ *  결제 연동 뒤에는 계정의 이용권 끝나는 날로 셈해 이 함수만 바꾼다(docs/서비스오픈목록.md 4) */
+export const isFreeMember = (): boolean => {
+  try { return localStorage.getItem('myturn.plan') === 'free'; } catch { return false; }
+};
+
 /** 가입하면 바로 받는 것 — 회원가입 화면의 혜택 카드와 같은 내용 */
 export const TRIAL_DAYS = 3;
 export const WELCOME_POINT = 1_000;

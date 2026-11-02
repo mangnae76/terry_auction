@@ -8,7 +8,7 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { propTypeName } from '../utils/propertyType';
 import { POINT_GRADES } from '../services/pointPolicy';
-import { PLAN_REST_DAYS } from '../services/billingPlans';
+import { PLAN_REST_DAYS, isFreeMember } from '../services/billingPlans';
 
 const router = useRouter();
 const store = useAuctionStore();
@@ -44,6 +44,8 @@ const grade = POINT_GRADES[0];
 const myPoint = 0;
 /** 회원등급 · 누적 포인트 칸 — 웹은 숨겨 둔다(지우지 않음). 포인트를 붙이는 서비스 오픈 때 true 로(docs/서비스오픈목록.md 3-1) */
 const SHOW_GRADE_POINT = false;
+/** 무료 회원이면 결제내역 칸에 남은 날 대신 '무료회원' */
+const freeMember = isFreeMember();
 /** 아이디 — 메일 주소는 통째로 보이지 않게 앞쪽만 적는다 */
 const auth = useAuthStore();
 const loginId = computed(() => (auth.email ?? '').split('@')[0] || '-');
@@ -118,7 +120,7 @@ const go = (c: Card) => {
       <span class="mpc-who">{{ auth.nickname || '게스트' }} 님<em>( {{ loginId }} )</em></span>
       <!-- 웹 — 나의 선정물건은 이름 바로 옆 칸으로(아래 카드 묶음에서는 뺀다) -->
       <button v-if="webEmbed" type="button" class="mpc-cell" @click="go(PICK_CARDS[0])">
-        <span class="mpc-chip">나의 선정물건</span>
+        <span class="mpc-chip">나의선정물건</span>
         <span class="mpc-val">{{ (auctionCount + publicSaleCount).toLocaleString('ko-KR') }}<small>건</small></span>
       </button>
       <!-- 회원등급 · 누적 포인트 — 웹은 서비스 오픈 때까지 숨긴다(SHOW_GRADE_POINT) -->
@@ -131,8 +133,8 @@ const go = (c: Card) => {
         <span class="mpc-val">{{ myPoint.toLocaleString('ko-KR') }} <small>P</small></span>
       </button>
       <button type="button" class="mpc-cell" @click="router.push('/payments')">
-        <span class="mpc-chip">결제 내역</span>
-        <span class="mpc-val">{{ PLAN_REST_DAYS }}일</span>
+        <span class="mpc-chip">결제내역</span>
+        <span class="mpc-val">{{ freeMember ? '무료회원' : `${PLAN_REST_DAYS}일` }}</span>
       </button>
     </div>
 
