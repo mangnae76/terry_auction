@@ -3806,7 +3806,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   /* ===== 주소 한 곳 — 어느 화면 · 어느 하위 탭을 보는지 주소(#/…)에 적고, 새로고침 · 뒤로가기 때 거기서 되살린다.
      화면마다 따로 적지 않는다: 새 화면 · 새 하위 탭이 생기면 아래 두 표(SUB_TAB_KEYS · readHash/hashOf)에만 더한다 ===== */
   const SUB_TAB_KEYS = {
-    market: ['dong', 'son', 'rank', 'sale'], /* 랭킹분석 = 랭킹지도 · 거래랭킹(지역분석 화면을 랭킹 탭만으로) · 매각사례 = 인근 · 동일지번 매각물건 분석(안 박스 탭 S.saleTab) · 거래랭킹은 지역분석 › 랭킹지도 탭으로, 경매지번 분석은 지역분석 › 경매지번 탭으로 */
+    market: ['dong', 'rank', 'son', 'sale'], /* 랭킹분석 = 랭킹지도 · 거래랭킹(지역분석 화면을 랭킹 탭만으로) · 매각사례 = 인근 · 동일지번 매각물건 분석(안 박스 탭 S.saleTab) · 거래랭킹은 지역분석 › 랭킹지도 탭으로, 경매지번 분석은 지역분석 › 경매지번 탭으로 */
     postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'interior', 'tax'],
     more: ['mypage', 'alerts', 'billing', ...(SHOW_POINTS ? ['points'] : []), 'support'],   /* 공지는 커뮤니티로 옮겼다 · 포인트는 SHOW_POINTS 일 때만(옛 주소 #/more/points 는 내정보로) */
@@ -3938,7 +3938,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     ['m2', [['임장동선', 'go-trip'], ['방문기록', 'mega-list'], ['체크리스트', 'mega-item']]],
     ['m3c', [['진행절차', 'go-postwin'], ['절차상세', 'go-postwin'], ['가이드', 'go-postwin', '낙찰이후가이드']]],
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
-    ['m3', [['지역분석', 'go-market'], ['물건분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
+    ['m3', [['지역분석', 'go-market'], ['랭킹분석', 'go-market'], ['물건분석', 'go-market'], ['경매사례', 'go-market']]],
     ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store'], ['모바일앱', 'go-store']]],
     ['m5', [['내정보', 'go-more'], ['알림', 'go-more'], ['결제하기', 'go-more'], ...(SHOW_POINTS ? [['포인트', 'go-more']] : []), ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
@@ -5106,7 +5106,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   const SUBTABS = {
     /* 물건상세 — 앱 AuctionDetailPage 의 TABS 다섯 칸에서 앱 '손품+현장'을 손품조사 · 임장조사 둘로 나눴다(웹만) */
     /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
-    market: [['dong', '', '지역분석'], ['son', '', '물건분석'], ['rank', '', '랭킹분석'], ['sale', '', '경매사례', 'admin']],   /* 경매사례는 운영자만(집 PC 수집 도우미가 모은 자료) */
+    market: [['dong', '', '지역분석'], ['rank', '', '랭킹분석'], ['son', '', '물건분석'], ['sale', '', '경매사례', 'admin']],   /* 경매사례는 운영자만(집 PC 수집 도우미가 모은 자료) */
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
