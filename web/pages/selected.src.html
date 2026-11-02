@@ -282,13 +282,13 @@ button { cursor: pointer; }
 .g-right { position: absolute; right: 0; top: 26px; height: 26px; display: flex; align-items: center; gap: 18px; }   /* 메뉴 줄과 같은 높이 */
 .gnb .g-right :is(.g-box, .g-box[data-tip], .g-user) { position: relative; left: auto; top: auto; }
 .gnb .g-right .g-user { height: 26px; }
-.g-right .g-login, .g-right .g-out, .g-right .g-join { height: 26px; font-size: 12px; font-weight: 600; }
-.g-right .g-login .pic { width: 16px; height: 26px; color: rgba(255, 255, 255, 0.78); }
-.g-right .g-login .pic svg { width: 13px; height: 13px; }
+.g-right .g-login, .g-right .g-out, .g-right .g-join { height: 26px; font-size: var(--menu-fs); font-weight: 600; }   /* 위 메뉴(모바일앱 등)와 같은 글자 크기 */
+.g-right .g-login .pic { width: 20px; height: 26px; color: rgba(255, 255, 255, 0.78); }
+.g-right .g-login .pic svg { width: 16px; height: 16px; }
 .g-right .g-login .txt { min-width: 0; }
 .g-right .g-arrow { height: 26px; margin-left: 3px; }
 .g-right .g-arrow i { top: 1px; border-left-width: 4px; border-right-width: 4px; border-top-width: 6px; }
-.g-right .g-out, .g-right .g-join { margin-left: 12px; font-weight: 400; color: rgba(255, 255, 255, 0.78) !important; }   /* 공지 · 결제하기와 같은 굵기 · 색 — 이름만 진하게 */
+.g-right .g-out, .g-right .g-join { margin-left: 16px; font-weight: 400; color: rgba(255, 255, 255, 0.78) !important; }   /* 공지 · 결제하기와 같은 굵기 · 색 — 이름만 진하게 */
 .g-right .g-pop.user { top: 30px; }
 /* 하위 탭 줄 — 참고 시안처럼 흰 띠, 아래 #D8E0EE 선으로 단을 나눈다. 밑줄은 ::after 막대(테두리는 둥근 모서리로 U자가 된다) */
 /* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
