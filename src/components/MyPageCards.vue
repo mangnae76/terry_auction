@@ -42,7 +42,7 @@ const typeTally = computed(() => {
 /** 등급·포인트 — 쌓는 길을 아직 붙이지 않아 첫 등급과 0 으로 보인다 */
 const grade = POINT_GRADES[0];
 const myPoint = 0;
-/** 회원등급 · 누적 포인트 칸 — 웹은 숨겨 둔다(지우지 않음). 포인트를 붙이는 서비스 오픈 때 true 로(docs/서비스오픈목록.md 3-1) */
+/** 회원등급 · 누적 포인트 칸 · 계정관리 '포인트내역' 카드 — 웹은 숨겨 둔다(지우지 않음). 포인트를 붙이는 서비스 오픈 때 true 로(docs/서비스오픈목록.md 3-1) */
 const SHOW_GRADE_POINT = false;
 /** 무료 회원이면 결제내역 칸에 남은 날 대신 '무료회원' */
 const freeMember = isFreeMember();
@@ -97,7 +97,7 @@ const ACCOUNT_CARDS_BASE: Card[] = [
 ];
 /** 웹 — 중요한 차례로, 두 칸씩 비슷한 것끼리 짝지어 놓는다(왼쪽 | 오른쪽)
  *  내 계정(정보수정 | AI 설정) → 결제(결제하기 | 결제관리) → 혜택(포인트내역 | 3일무료체험) → 회원탈퇴는 맨 끝 */
-const WEB_ACCOUNT_ORDER = ['정보수정', 'AI 자동 분석 설정', '결제하기', '결제관리', '포인트내역', '3일무료체험', '회원탈퇴'];
+const WEB_ACCOUNT_ORDER = ['정보수정', 'AI 자동 분석 설정', '결제하기', '결제관리', ...(SHOW_GRADE_POINT ? ['포인트내역'] : []), '3일무료체험', '회원탈퇴'];
 const ACCOUNT_CARDS = webEmbed
   ? WEB_ACCOUNT_ORDER.map((t) => [...ACCOUNT_CARDS_BASE, ...WEB_AI_CARDS].find((c) => c.title === t)).filter((c): c is Card => !!c)
   : ACCOUNT_CARDS_BASE;

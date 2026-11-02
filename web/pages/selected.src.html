@@ -288,7 +288,7 @@ button { cursor: pointer; }
 .g-right .g-login .txt { min-width: 0; }
 .g-right .g-arrow { height: 26px; margin-left: 3px; }
 .g-right .g-arrow i { top: 1px; border-left-width: 4px; border-right-width: 4px; border-top-width: 6px; }
-.g-right .g-out, .g-right .g-join { margin-left: 16px; font-weight: 400; color: rgba(255, 255, 255, 0.78) !important; }   /* 공지 · 결제하기와 같은 굵기 · 색 — 이름만 진하게 */
+.g-right .g-out, .g-right .g-join { margin-left: 16px; font-weight: 600; color: var(--nav-text) !important; }   /* 위 메뉴(모바일앱 등)와 같은 굵기 · 색 */   /* 공지 · 결제하기와 같은 굵기 · 색 — 이름만 진하게 */
 .g-right .g-pop.user { top: 30px; }
 /* 하위 탭 줄 — 참고 시안처럼 흰 띠, 아래 #D8E0EE 선으로 단을 나눈다. 밑줄은 ::after 막대(테두리는 둥근 모서리로 U자가 된다) */
 /* 상위 메뉴 글자 18 · 하위 탭 글자 16 — 창이 좁아지면 @media 에서 이 두 값만 줄인다(최소 14).
@@ -3713,6 +3713,9 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
   };
   const starSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2.6 15 9 22 9.8 17 14.5 18.3 21.4 12 18 5.7 21.4 7 14.5 2 9.8 9 9"/></svg>';
 
+  /* 포인트 · 회원등급 보이기 스위치 — 포인트를 붙이기 전이라 웹에선 숨긴다(지우지 않음, 2026-11-02).
+     하위 탭 '포인트' · 펼침 메뉴 · 이름 메뉴의 보유포인트 · 등급 배지 · 포인트 단추를 함께 연다(docs/서비스오픈목록.md 3-1) */
+  const SHOW_POINTS = false;
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* 저장 못 해도 화면은 그대로 */ } },
@@ -3928,7 +3931,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     ['m3', [['지역분석', 'go-market'], ['물건분석', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
     ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store']]],
     ['m4a', [['앱소개', 'go-mobile']]],
-    ['m5', [['내정보', 'go-more'], ['알림', 'go-more'], ['결제하기', 'go-more'], ['포인트', 'go-more'], ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
+    ['m5', [['내정보', 'go-more'], ['알림', 'go-more'], ['결제하기', 'go-more'], ...(SHOW_POINTS ? [['포인트', 'go-more']] : []), ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
   /* 지금 보고 있는 자리 — 펼칠 때마다 다시 그려 표시가 어긋나지 않게 한다 */
   const megaHere = () => {
@@ -4005,16 +4008,16 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     $('userPop').innerHTML = S.pop !== 'user' ? '' : S.loggedIn ? `<div class="um" role="menu" aria-label="마이턴 회원정보">
       <div class="um-head">마이턴 회원정보</div>
       <div class="um-info">
-        <span class="um-name"><span class="um-badge" title="WELCOME 등급">W</span><strong>${esc(S.userName || '회원')} 님</strong><em class="um-id">${CLOUD.auth && CLOUD.auth.email ? `(${esc(CLOUD.auth.email)})` : ''}</em></span>
+        <span class="um-name">${SHOW_POINTS ? '<span class="um-badge" title="WELCOME 등급">W</span>' : ''}<strong>${esc(S.userName || '회원')} 님</strong><em class="um-id">${CLOUD.auth && CLOUD.auth.email ? `(${esc(CLOUD.auth.email)})` : ''}</em></span>
         <dl class="um-facts">
-          <dt><button type="button" class="um-link" data-act="soon" data-name="보유포인트">보유포인트<i>›</i></button></dt><dd class="blue num">0P</dd>
+          ${SHOW_POINTS ? '<dt><button type="button" class="um-link" data-act="soon" data-name="보유포인트">보유포인트<i>›</i></button></dt><dd class="blue num">0P</dd>' : ''}
           <dt><button type="button" class="um-link" data-act="soon" data-name="결제내역">결제내역<i>›</i></button></dt><dd class="orange num">999일</dd>
         </dl>
       </div>
       <!-- 마이페이지 하위 탭으로 바로 — 내 정보 · 결제하기 · 포인트 · 공지 · 고객센터 -->
       <button type="button" class="um-btn" role="menuitem" data-act="go-more" data-name="내정보">내정보</button>
       <button type="button" class="um-btn" role="menuitem" data-act="go-more" data-name="결제하기">결제하기</button>
-      <button type="button" class="um-btn" role="menuitem" data-act="go-more" data-name="포인트">포인트</button>
+      ${SHOW_POINTS ? '<button type="button" class="um-btn" role="menuitem" data-act="go-more" data-name="포인트">포인트</button>' : ''}
             <button type="button" class="um-btn" role="menuitem" data-act="go-more" data-name="고객센터">고객센터</button>
       <div class="um-sep"><button type="button" class="um-btn out" role="menuitem" data-act="logout">로그아웃</button></div>
     </div>`
@@ -5096,7 +5099,7 @@ body:has(#marketView:not([hidden]) .tsp-in-dong) :is(.foot, .foot-note) { displa
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
-    more: [['mypage', '', '내정보'], ['alerts', '', '알림', 'hide'], ['billing', '', '결제하기'], ['points', '', '포인트'], ['support', '', '고객센터']],
+    more: [['mypage', '', '내정보'], ['alerts', '', '알림', 'hide'], ['billing', '', '결제하기'], ['points', '', '포인트', SHOW_POINTS ? '' : 'hide'], ['support', '', '고객센터']],
     community: [['notice', '', '공지'], ['suggest', '', '오류및제안']],   /* FAQ 는 이용가이드(/guide/)에 — 같은 목록(supportFaq) */
     manual: [['basic', '', '경매기초'], ['process', '', '경매절차']],
     /* 가격정보는 뺐다 — 시세는 손품조사(시세분석 · 손품결론), 인근 매각사례는 손품결론 아래로 옮겼다(웹). 옛 주소(…/verify)는 손품조사로 */
