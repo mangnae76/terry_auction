@@ -739,7 +739,8 @@ onMounted(async () => {
           </header>
           <div v-if="webEmbed" :id="filterSlotId" class="tsp-filter-slot" />
           <div v-if="webEmbed" class="tsp-web-picked">
-            <strong class="tsp-picked-title">{{ pickedPlaceText }}<SnapChip :chip="embed ? (chip ?? null) : snap.chip.value" /></strong>
+            <!-- 저장 칩(UPDATE)은 아래 거래랭킹 상자 밑 오른쪽으로 옮겼다 -->
+            <strong class="tsp-picked-title">{{ pickedPlaceText }}</strong>
             <small v-if="periodText || kindLabel">{{ [periodText, kindLabel, dealKindLabel, rows.length > 0 ? `집계 동 ${selectedRegion ? 1 : rows.length.toLocaleString('ko-KR')}곳` : ''].filter(Boolean).join(' · ') }}</small>
           </div>
           <header v-if="!webEmbed" class="tsp-panel-head">
@@ -807,6 +808,8 @@ onMounted(async () => {
                 </div>
               </li>
             </TransitionGroup>
+            <!-- 웹 — 저장 칩(UPDATE)은 거래랭킹 상자 아래 오른쪽 끝 -->
+            <div v-if="webEmbed" class="tsp-rank-foot"><SnapChip :chip="embed ? (chip ?? null) : snap.chip.value" /></div>
           </section>
         </aside>
       </section>
@@ -983,6 +986,7 @@ onMounted(async () => {
 }
 .tsp-stat-grid > div { background: #fff; padding: 9px 10px; min-width: 0; }
 .tsp-picked-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.tsp-rank-foot { display: flex; justify-content: flex-end; margin-top: 8px; }
 /* '평 817만 / ㎡ 247만' — 평 · ㎡ 는 작은 회색 머리글자 */
 .tsp-unit-pre { font-style: normal; font-size: 0.8em; font-weight: 600; color: #6b7280; margin-right: 3px; }
 /* 웹 — 단위는 UnitText 와 같은 12px · 700 · 회색 */

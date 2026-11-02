@@ -3368,6 +3368,9 @@ span.cal-day.has { cursor: help; }
 .app-market .tsp-in-dong .tsp-stat .itip-bubble { left: 0 !important; transform: none !important; min-width: 0 !important; width: max-content; max-width: 360px; white-space: normal !important; }
 /* 통계정보 네 칸 — 말풍선이 칸 묶음 밖으로 나와야 해서 묶음의 overflow 를 풀고, 둥근 모서리는 칸마다 준다 */
 .app-market .tsp-in-dong .tsp-stat-grid { overflow: visible !important; }
+/* 거래랭킹 1 ~ 5등도 통계정보처럼 테두리 상자 안에(빈 안내 줄도 같은 상자) */
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-rank :is(.tsp-rank-list, .tsp-empty) { border: 1px solid #e8ecf3; border-radius: 10px; background: #fff; padding: 4px 6px; margin: 0; }
+:is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-rank .tsp-empty { padding: 14px 10px; }
 .app-market .tsp-in-dong .tsp-stat-grid > div:nth-child(1) { border-top-left-radius: 9px; }
 .app-market .tsp-in-dong .tsp-stat-grid > div:nth-child(2) { border-top-right-radius: 9px; }
 .app-market .tsp-in-dong .tsp-stat-grid > div:nth-child(3) { border-bottom-left-radius: 9px; }
