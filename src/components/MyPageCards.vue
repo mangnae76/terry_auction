@@ -42,6 +42,8 @@ const typeTally = computed(() => {
 /** 등급·포인트 — 쌓는 길을 아직 붙이지 않아 첫 등급과 0 으로 보인다 */
 const grade = POINT_GRADES[0];
 const myPoint = 0;
+/** 회원등급 · 누적 포인트 칸 — 웹은 숨겨 둔다(지우지 않음). 포인트를 붙이는 서비스 오픈 때 true 로(docs/서비스오픈목록.md 3-1) */
+const SHOW_GRADE_POINT = false;
 /** 아이디 — 메일 주소는 통째로 보이지 않게 앞쪽만 적는다 */
 const auth = useAuthStore();
 const loginId = computed(() => (auth.email ?? '').split('@')[0] || '-');
@@ -114,11 +116,12 @@ const go = (c: Card) => {
     <!-- 내 자리 한눈에 — 누르면 그 화면으로 간다 -->
     <div class="mpc-sum">
       <span class="mpc-who">{{ auth.nickname || '게스트' }} 님<em>( {{ loginId }} )</em></span>
-      <button type="button" class="mpc-cell" @click="router.push({ path: '/points', query: { tab: 'grade' } })">
+      <!-- 회원등급 · 누적 포인트 — 웹은 서비스 오픈 때까지 숨긴다(SHOW_GRADE_POINT) -->
+      <button v-if="!webEmbed || SHOW_GRADE_POINT" type="button" class="mpc-cell" @click="router.push({ path: '/points', query: { tab: 'grade' } })">
         <span class="mpc-chip">{{ grade.name }} 회원</span>
         <span :class="['mpc-badge', grade.tone]">{{ grade.name.slice(0, 1) }}</span>
       </button>
-      <button type="button" class="mpc-cell" @click="router.push('/point-history')">
+      <button v-if="!webEmbed || SHOW_GRADE_POINT" type="button" class="mpc-cell" @click="router.push('/point-history')">
         <span class="mpc-chip">누적 포인트</span>
         <span class="mpc-val">{{ myPoint.toLocaleString('ko-KR') }} <small>P</small></span>
       </button>
