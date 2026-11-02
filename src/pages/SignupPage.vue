@@ -15,6 +15,7 @@ import {
   TERMS_EFFECTIVE,
 } from '../services/legalTerms';
 import markImg from '../assets/icones/log/LOGO_MARK.png';
+import { SHOW_WELCOME_POINT, TRIAL_DAYS, WELCOME_POINT } from '../services/billingPlans';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -22,12 +23,12 @@ const authStore = useAuthStore();
 // 로그인 화면에서 난 안내를 들고 들어오지 않는다 (두 화면이 같은 자리를 쓴다)
 onMounted(() => { authStore.error = ''; });
 
-/** 가입하면 바로 받는 것 — 카드 세 장 */
+/** 가입하면 바로 받는 것 — 카드. 축하포인트는 실제로 주기 전까지 숨기고(SHOW_WELCOME_POINT) 번호는 보이는 차례로 다시 매긴다 */
 const PERKS = [
-  { no: '01', big: '3일', small: '무료이용' },
-  { no: '02', big: '1,000p', small: '축하포인트' },
-  { no: '03', big: '무료', small: '경매교육\n동영상 강의' },
-];
+  { big: `${TRIAL_DAYS}일`, small: '무료이용' },
+  ...(SHOW_WELCOME_POINT ? [{ big: `${WELCOME_POINT.toLocaleString('ko-KR')}p`, small: '축하포인트' }] : []),
+  { big: '무료', small: '경매교육\n동영상 강의' },
+].map((p, i) => ({ ...p, no: String(i + 1).padStart(2, '0') }));
 
 const SIDO = [
   '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
@@ -166,9 +167,9 @@ const onSubmit = async () => {
         본사를 사칭한 전화를 받으시면 고객센터로 알려 주세요.
       </p>
 
-      <p class="su-perk-line">가입 즉시 <b>3일 무료이용권</b> + <b>무료 교육영상</b> + <b>1,000P</b> 지급</p>
+      <p class="su-perk-line">가입 즉시 <b>{{ TRIAL_DAYS }}일 무료이용권</b> + <b>무료 교육영상</b><template v-if="SHOW_WELCOME_POINT"> + <b>{{ WELCOME_POINT.toLocaleString('ko-KR') }}P</b></template> 지급</p>
       <div class="su-perks">
-        <div v-for="(p, i) in PERKS" :key="p.no" :class="['su-perk', { on: i === 1 }]">
+        <div v-for="(p, i) in PERKS" :key="p.no" :class="['su-perk', { on: i === (SHOW_WELCOME_POINT ? 1 : 0) }]">
           <span class="no">{{ p.no }}</span>
           <strong>{{ p.big }}</strong>
           <small>{{ p.small }}</small>

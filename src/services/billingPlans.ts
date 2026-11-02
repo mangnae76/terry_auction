@@ -49,3 +49,5 @@ export const isFreeMember = (): boolean => {
 /** 가입하면 바로 받는 것 — 회원가입 화면의 혜택 카드와 같은 내용 */
 export const TRIAL_DAYS = 3;
 export const WELCOME_POINT = 1_000;
+/** 가입 축하 포인트를 화면에 보일지 — 포인트를 실제로 주기 전까지 숨긴다(2026-11-02, 지우지 않음). 서비스 오픈 때 true 로(docs/서비스오픈목록.md 3) */
+export const SHOW_WELCOME_POINT = false;
