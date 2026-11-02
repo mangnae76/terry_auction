@@ -1314,7 +1314,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="more"] .mpc-sum .mpc-who { position: static !important; margin-right: auto; padding: 0 !important; border: 0 !important; background: none !important; font-size: 16px !important; font-weight: 800; color: var(--text) !important; }
 .app-page[data-k="more"] .mpc-who em { font-size: 14px !important; }
 .app-page[data-k="more"] .mpc-cell { flex-direction: row !important; gap: 10px !important; padding: 8px 20px !important; }
-.app-page[data-k="more"] .mpc-cell + .mpc-cell { border-left: 1px solid var(--card-line) !important; border-radius: 0 !important; }
+.app-page[data-k="more"] .mpc-cell + .mpc-cell { border-left: 0 !important; border-radius: 0 !important; position: relative; }
+/* 칸 사이 막대 — 나의 선정물건 | 결제 내역을 나눠 보이게(옅은 테두리선은 잘 안 보였다) */
+.app-page[data-k="more"] .mpc-cell + .mpc-cell::before { content: ''; position: absolute; left: 0; top: 50%; width: 1px; height: 28px; transform: translateY(-50%); background: var(--line-2); }
 .app-page[data-k="more"] .mpc-chip { font-size: 13px !important; padding: 4px 10px !important; }
 .app-page[data-k="more"] .mpc-badge { width: 28px !important; height: 28px !important; font-size: 14px !important; }
 .app-page[data-k="more"] .mpc-val { font-size: 16px !important; }

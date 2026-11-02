@@ -116,6 +116,11 @@ const go = (c: Card) => {
     <!-- 내 자리 한눈에 — 누르면 그 화면으로 간다 -->
     <div class="mpc-sum">
       <span class="mpc-who">{{ auth.nickname || '게스트' }} 님<em>( {{ loginId }} )</em></span>
+      <!-- 웹 — 나의 선정물건은 이름 바로 옆 칸으로(아래 카드 묶음에서는 뺀다) -->
+      <button v-if="webEmbed" type="button" class="mpc-cell" @click="go(PICK_CARDS[0])">
+        <span class="mpc-chip">나의 선정물건</span>
+        <span class="mpc-val">{{ (auctionCount + publicSaleCount).toLocaleString('ko-KR') }}<small>건</small></span>
+      </button>
       <!-- 회원등급 · 누적 포인트 — 웹은 서비스 오픈 때까지 숨긴다(SHOW_GRADE_POINT) -->
       <button v-if="!webEmbed || SHOW_GRADE_POINT" type="button" class="mpc-cell" @click="router.push({ path: '/points', query: { tab: 'grade' } })">
         <span class="mpc-chip">{{ grade.name }} 회원</span>
@@ -134,7 +139,7 @@ const go = (c: Card) => {
     <h2 class="mpc-h2">선정물건</h2>
     <div class="mpc-grid">
       <button
-        v-for="c in PICK_CARDS"
+        v-for="c in (webEmbed ? PICK_CARDS.filter((x) => !x.lead) : PICK_CARDS)"
         :key="c.title"
         type="button"
         :class="['mpc-card', { lead: c.lead }]"
