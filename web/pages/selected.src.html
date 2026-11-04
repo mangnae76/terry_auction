@@ -2828,7 +2828,9 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 /* 한 줄 — [D-12 매각기일 26.11.17 (화)] [사건번호 법원 동네] | [2차 최저가 70% 진행 금액]. 넘치면 동네만 줄이고, 그래도 모자라면 회차 묶음만 아랫줄로 */
 .hm-sched .hm-when { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 /* 칸을 고정해 줄마다 세로로 맞춘다 — 왼쪽 [D-day 44 · 칩 · 날짜] · 가운데 사건(남는 폭, 넘치면 동네만 …) · 오른쪽 회차 묶음 268(막대 자리도 고정) */
-.hm-sched button { grid-template-columns: auto minmax(0, 1fr) 268px !important; }
+.hm-sched button { grid-template-columns: auto minmax(0, 1fr) 268px 14px !important; }
+.hm-sched .hm-go { color: var(--faint, #9ca3af); }   /* 누르면 그 물건 기본정보로 — 끝에 작은 꺾쇠 */
+.hm-sched button:hover .hm-go { color: var(--text); }
 .hm-sched .hm-when .kd { min-width: 52px; text-align: center; box-sizing: border-box; }
 .hm-sched .hm-when time { min-width: 86px; }
 .hm-sched .hm-rd { display: grid !important; grid-template-columns: 66px 44px 40px minmax(0, 1fr); align-items: center; column-gap: 6px; margin-top: 0 !important; padding-left: 12px; border-left: 1px solid var(--line-2); }   /* 동네와 회차 사이 세로 막대 — 늘 같은 자리 */
@@ -7085,7 +7087,7 @@ span.cal-day.has { cursor: help; }
     const cont = hmContHtml();
     const sched = hmSchedule(5);
     const schedHtml = sched.length
-      ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="hm-when"><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span><time>${r.d.slice(2).replace(/-/g, '.')} (${hmWk(r.d)})</time></span><span class="hm-tx"><span class="ln"><b class="cs">${esc(hmCase(r.a))}</b><small>${esc(r.a.courtName || '')}</small><b>${esc(hmPlace(r.a))}</b></span></span>${(r.kind === 'bid' && hmRound(r.a)) || '<span class="hm-rd none"></span>'}</button></li>`).join('')}</ul>`
+      ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="hm-when"><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span><time>${r.d.slice(2).replace(/-/g, '.')} (${hmWk(r.d)})</time></span><span class="hm-tx"><span class="ln"><b class="cs">${esc(hmCase(r.a))}</b><small>${esc(r.a.courtName || '')}</small><b>${esc(hmPlace(r.a))}</b></span></span>${(r.kind === 'bid' && hmRound(r.a)) || '<span class="hm-rd none"></span>'}<svg class="hm-go" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>`).join('')}</ul>`
       : `<div class="hm-empty">${HM_SVG(HM_IC.cal)}<div><b>등록된 일정이 없습니다</b><small>물건을 등록하면 매각기일 · 낙찰일 · 잔금기한 · 매도일이 여기에 표시됩니다.</small></div><button type="button" data-act="hm-register">물건 등록하기 →</button></div>`;
     const notices = HM.notices.slice(0, 4);
     const recent = hmRecent(4);
