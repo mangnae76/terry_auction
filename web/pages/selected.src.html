@@ -2849,6 +2849,13 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 /* 핵심은 왼쪽 D-day · 날짜 — 나머지(사건 · 동네 · 회차 · 칩 · 금액)는 굵기 없이, 금액은 검정 · '원' 끝자리로 오른쪽 정렬 */
 .hm-sched .hm-tx .ln b, .hm-sched .hm-rd .lb, .hm-sched .hm-rd .it-chip, .hm-sched .hm-rd .amt { font-weight: 400 !important; }
 .hm-sched .hm-rd .amt, .hm-sched .hm-rd .amt.now { color: var(--text) !important; text-align: right; }
+/* 글자 크기 한 가지(13) · 간격 한 가지(8) — 칩 글자만 12. 칸 폭을 줄여 주소가 최대한 보이게(2026-11-05) */
+.hm-sched button { column-gap: 8px !important; padding: 10px 12px !important; grid-template-columns: auto minmax(0, 1fr) 264px 16px !important; }
+.hm-sched :is(.dd, time, .hm-tx .ln b, .hm-tx .ln small, .hm-rd .lb, .hm-rd .amt) { font-size: 13px !important; }
+.hm-sched .hm-when, .hm-sched .hm-tx .ln { gap: 8px !important; }
+.hm-sched .dd { min-width: 40px !important; }
+.hm-sched .hm-when time { min-width: 82px !important; }
+.hm-sched .hm-rd { grid-template-columns: 62px 40px 36px minmax(0, 1fr) !important; column-gap: 8px !important; padding-left: 8px !important; }
 .hm-sched time .kd { justify-self: auto; }   /* 그 날짜가 무엇인지 — 달력 범례와 같은 색 칩(매각기일 · 낙찰일 · 잔금기한 · 매도일)을 날짜 앞에 */
 .hm-empty { display: flex; align-items: center; gap: 14px; padding: 18px 20px; border: 1px dashed var(--line-2); border-radius: 12px; background: var(--surface-2); }
 .hm-empty svg { flex: 0 0 auto; width: 30px; height: 30px; color: var(--faint); }
