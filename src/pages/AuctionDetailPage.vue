@@ -33,7 +33,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import PhotoGrid from '../components/PhotoGrid.vue';
 import AppConfirm from '../components/AppConfirm.vue';
-import { BALANCE_DUE_DAYS, balanceDueError, balanceDueOf, stageBeforeSaleError, wonDateError, wonDateWarning, balanceDueNotice } from '../utils/auctionDates';
+import { BALANCE_DUE_DAYS, balanceDueError, balanceDueOf, stageBeforeSaleError, wonDateError, wonDateWarning, balanceDueNotice, ymdOf } from '../utils/auctionDates';
 import AgencyTable from '../components/AgencyTable.vue';
 import AgencyBookModal from '../components/AgencyBookModal.vue';
 import PhotoCountMark from '../components/PhotoCountMark.vue';
@@ -63,7 +63,7 @@ import { VWORLD_KEY_EXPIRES } from '../services/vworldApi';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
 import { addressParts, hasBuildingName, isUnitToken } from '../utils/addressName';
-import { stageDates } from '../utils/stageLabel';
+import { stageDates, bidStageOf } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePdf, deleteSitePhoto, isPdfEntry, isPdfFile, isPhotoId, loadSitePdf, loadSitePhoto, pdfNameOf, saveSitePdf, saveSitePhoto } from '../services/sitePhotoRepository';
 import { getGeminiKey, isGeminiOn, loadGeminiPrefs, GeminiError } from '../services/geminiPdf';
@@ -1654,7 +1654,9 @@ const setProfitDate = async (key: 'wonDate' | 'sellDate' | 'balanceDueDate', val
     return;
   }
   const target = auction.value;
-  const apply = async () => { target[key] = value; await store.saveAuction(target); };
+  // 낙찰 전 물건에서 입찰일을 매각기일과 같은 날로 고르면 적어 둔 값을 비운다 — 입찰일은 곧 매각기일(칸은 매각기일을 보여 주고, 일정에도 '낙찰일'이 따로 서지 않는다)
+  const sameAsSale = key === 'wonDate' && !!ymdOf(value) && ymdOf(value) === ymdOf(target.eventDate) && !['낙찰', '매도'].includes(bidStageOf(target));
+  const apply = async () => { target[key] = sameAsSale ? '' : value; await store.saveAuction(target); };
   // 묻고 바꾼다 — 매각기일과 다른 날(막지 않는 시험 기간) · 추정 예정일이던 잔금기한은 확인을 눌러야 바뀐다. 취소하면 그대로
   const ask = key === 'wonDate'
     ? { title: '입찰일과 다른 날짜입니다', desc: wonDateWarning(target, value) }

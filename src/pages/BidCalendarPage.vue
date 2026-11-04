@@ -93,7 +93,7 @@ const byDate = computed(() => {
     put(dateKeyOf(a.eventDate), a, 'bid');
     // 낙찰일 · 잔금기한은 낙찰 · 매도 단계일 때만(수익분석 칸에 적은 계산용 날짜가 낙찰 전에 뜨지 않게)
     const won = dateKeyOf(shownWonDate(a));
-    put(won, a, 'won');
+    if (won !== dateKeyOf(a.eventDate)) put(won, a, 'won');   // 매각기일과 같은 날이면 그날은 매각기일 하나만(입찰일이 곧 매각기일)
     // 잔금 기한은 적어 둔 값이 먼저, 없으면 낙찰일에서 계산한다
     put(dateKeyOf(shownBalanceDueDate(a)) || (won ? addDays(won, BALANCE_DUE_DAYS) : ''), a, 'balance');
     put(dateKeyOf(a.sellDate), a, 'sell');
