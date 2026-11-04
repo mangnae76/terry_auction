@@ -246,6 +246,8 @@ const resetDefault = () => {
         진행절차
       </h2>
       <span v-if="auction?.caseNumber" class="pwt-cap">경매 <b>{{ auction.caseNumber }}</b> 사건을 기록 관리합니다</span>
+      <!-- 잔금 납부 기한부터 아래는 법원 · 상대방 · 공사 사정에 따라 바뀐다 — 예상 일정임을 제목 옆에 알린다(날짜는 연필로 고친다) -->
+      <span v-if="auction" class="pwt-cap pwt-est">잔금 납부 기한부터는 예상 일정입니다. 상황에 맞게 날짜를 바꿔 쓰세요.</span>
       <button v-if="auction" type="button" :class="['pwt-btn', 'deal', { on: !!flow.endedAt }]" @click="endByDeal">{{ flow.endedAt ? `명도협의종결 (${flow.endedAt}) — 되돌리기` : '명도협의종결' }}</button>
       <button v-if="auction" type="button" class="pwt-btn" @click="resetDefault">초기화</button>
     </header>
@@ -341,6 +343,8 @@ const resetDefault = () => {
 .pwt-head { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid #eef1f6; }
 .pwt-cap { font-size: 14px; color: #6b7280; }
 .pwt-cap b { color: #111827; font-weight: 700; }
+.pwt-cap.pwt-est::before { content: '·'; margin: 0 6px 0 0; color: #c0c6d2; }   /* 사건 글과 같은 줄 — 가운뎃점으로 잇는다 */
+.pwt-cap.pwt-est:first-of-type::before { content: none; }
 .pwt-head > button:first-of-type { margin-left: auto; }
 .pwt-head h2 { margin: 0 12px 0 0; display: inline-flex; align-items: center; gap: 6px; font-size: var(--title-fs, 16px); font-weight: 800; color: #111827; }
 .pwt-btn { height: 34px; padding: 0 14px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; font-weight: 700; color: #374151; cursor: pointer; }
