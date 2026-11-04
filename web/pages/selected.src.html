@@ -2808,7 +2808,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-sched .kd { justify-self: start; padding: 2px 8px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-size: 11px; font-weight: 800; }
 .hm-sched .kd.p { background: #fff3e8; color: #c2570a; } .hm-sched .kd.w { background: #e8f7ee; color: #15803d; } .hm-sched .kd.d { background: #e6f6f4; color: #0f766e; }
 .hm-sched b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 700; }
-.hm-sched small { font-size: 11.5px; color: var(--muted); }
+.hm-sched small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--muted); }   /* 법원 · 이번 회차(3차 최저가 49% · 금액) — 넘치면 말줄임 */
 .hm-sched time { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .hm-empty { display: flex; align-items: center; gap: 14px; padding: 18px 20px; border: 1px dashed var(--line-2); border-radius: 12px; background: var(--surface-2); }
 .hm-empty svg { flex: 0 0 auto; width: 30px; height: 30px; color: var(--faint); }
@@ -6923,6 +6923,14 @@ span.cal-day.has { cursor: help; }
   const hmToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const hmCase = (a) => (CLOUD.T && CLOUD.T.caseLabelOf ? CLOUD.T.caseLabelOf(a) : a.caseNumber) || '';
   const hmPlace = (a) => String(a.address || '').split(' ').slice(-3).join(' ');
+  /* 이번 회차 한 줄 — 물건상세 입찰정보와 같은 셈(기일내역의 진행 회차, bidRoundsOf): '3차 최저가 49% · 119,700,000원' */
+  const hmRound = (a) => {
+    const T = CLOUD.T; const rows = T && T.bidRoundsOf ? T.bidRoundsOf(a) : [];
+    const cur = rows.find((x) => x.current) || rows[rows.length - 1];
+    if (!cur) return '';
+    const head = `${cur.label}${cur.rate ? ` ${cur.rate}` : ''}`;
+    return cur.price > 0 ? `${head} · ${cur.price.toLocaleString('ko-KR')}원` : head;
+  };
   /** 최근 분석 — 물건마다 저장할 때 남긴 editLog 를 모아 새것부터 */
   const HM_FLOW = { 진행절차: 'steps', 명도분석: 'evict', 세금분석: 'tax', 필요경비: 'need', 사업경비: 'biz', 매물등록: 'sell' };   /* 낙찰이후 › 진행절차 안 탭(PostWinPage FLOW_SUBS) */
   const HM_FIN = { 자금입출금: 'cashFlow', 필요경비: 'businessExpense', 사업경비: 'interior', 세금신고: 'tax' };
@@ -7043,7 +7051,7 @@ span.cal-day.has { cursor: help; }
     const cont = hmContHtml();
     const sched = hmSchedule(5);
     const schedHtml = sched.length
-      ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span><span><b>${esc(hmCase(r.a))} · ${esc(hmPlace(r.a))}</b><small>${esc(r.a.courtName || '')}</small></span><time>${r.d.slice(5).replace('-', '.')} (${hmWk(r.d)})</time></button></li>`).join('')}</ul>`
+      ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span><span><b>${esc(hmCase(r.a))} · ${esc(hmPlace(r.a))}</b><small>${esc([r.a.courtName || '', r.kind === 'bid' ? hmRound(r.a) : ''].filter(Boolean).join(' · '))}</small></span><time>${r.d.slice(2).replace(/-/g, '.')} (${hmWk(r.d)})</time></button></li>`).join('')}</ul>`
       : `<div class="hm-empty">${HM_SVG(HM_IC.cal)}<div><b>등록된 일정이 없습니다</b><small>물건을 등록하면 매각기일 · 낙찰일 · 잔금기한 · 매도일이 여기에 표시됩니다.</small></div><button type="button" data-act="hm-register">물건 등록하기 →</button></div>`;
     const notices = HM.notices.slice(0, 4);
     const recent = hmRecent(4);
