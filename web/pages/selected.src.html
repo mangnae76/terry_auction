@@ -6953,8 +6953,11 @@ span.cal-day.has { cursor: help; }
     const dueDays = (CLOUD.T && CLOUD.T.BALANCE_DUE_DAYS) || 45;
     CLOUD.raw.forEach((a) => {
       if (a.hidden || a.archived) return;
-      const won = k(a.wonDate);
-      [['bid', k(a.eventDate)], ['won', won], ['balance', k(a.balanceDueDate) || (ok(won) ? plus(won, dueDays) : '')], ['sell', k(a.sellDate)]]
+      /* 낙찰일 · 잔금기한은 낙찰 · 매도 단계일 때만(공통 규칙 shownWonDate) — 수익분석 입찰일 칸에 적은 값이 낙찰 전에 '낙찰일'로 뜨지 않게 */
+      const T = CLOUD.T;
+      const won = k(T && T.shownWonDate ? T.shownWonDate(a) : a.wonDate);
+      const due = k(T && T.shownBalanceDueDate ? T.shownBalanceDueDate(a) : a.balanceDueDate);
+      [['bid', k(a.eventDate)], ['won', won], ['balance', due || (ok(won) ? plus(won, dueDays) : '')], ['sell', k(a.sellDate)]]
         .forEach(([kind, d]) => { if (ok(d)) out.push({ d, kind, a }); });
     });
     return out;

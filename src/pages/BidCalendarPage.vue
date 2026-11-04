@@ -8,7 +8,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { isPhotoId, loadSitePhoto } from '../services/sitePhotoRepository';
 import type { AuctionDetail } from '../types/auction';
-import { stageLabelOf, stageToneOf } from '../utils/stageLabel';
+import { stageLabelOf, stageToneOf, shownWonDate, shownBalanceDueDate } from '../utils/stageLabel';
 
 const store = useAuctionStore();
 const router = useRouter();
@@ -91,10 +91,11 @@ const byDate = computed(() => {
   };
   store.auctions.forEach((a) => {
     put(dateKeyOf(a.eventDate), a, 'bid');
-    const won = dateKeyOf(a.wonDate);
+    // 낙찰일 · 잔금기한은 낙찰 · 매도 단계일 때만(수익분석 칸에 적은 계산용 날짜가 낙찰 전에 뜨지 않게)
+    const won = dateKeyOf(shownWonDate(a));
     put(won, a, 'won');
-    // 잔금 기한은 적어 둔 값이 먼저, 없으면 낙찰일에서 셈한다
-    put(dateKeyOf(a.balanceDueDate) || (won ? addDays(won, BALANCE_DUE_DAYS) : ''), a, 'balance');
+    // 잔금 기한은 적어 둔 값이 먼저, 없으면 낙찰일에서 계산한다
+    put(dateKeyOf(shownBalanceDueDate(a)) || (won ? addDays(won, BALANCE_DUE_DAYS) : ''), a, 'balance');
     put(dateKeyOf(a.sellDate), a, 'sell');
   });
   return map;

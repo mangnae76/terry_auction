@@ -22,6 +22,11 @@ export const bidStageOf = (item: AuctionDetail): string => {
   return raw && BID_STAGE_LABELS[raw] ? raw : '';
 };
 
+/** 일정(홈 다가오는 일정 · 입찰 캘린더)에 보일 낙찰일 · 잔금기한 — 낙찰 · 매도 단계일 때만.
+ *  그 전에 적힌 값(수익분석 머리의 입찰일 · 잔금 칸은 계산용으로 이 칸에 적는다)은 일정에 띄우지 않는다. 값은 지우지 않는다 */
+export const shownWonDate = (item: AuctionDetail): string => (['낙찰', '매도'].includes(bidStageOf(item)) ? String(item.wonDate ?? '') : '');
+export const shownBalanceDueDate = (item: AuctionDetail): string => (['낙찰', '매도'].includes(bidStageOf(item)) ? String(item.balanceDueDate ?? '') : '');
+
 /** 결과(낙찰·유찰·취소·매도)가 난 물건인가 */
 export const hasBidResult = (item: AuctionDetail): boolean => BID_RESULTS.includes(bidStageOf(item));
 
