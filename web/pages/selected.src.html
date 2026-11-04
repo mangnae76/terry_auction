@@ -2809,7 +2809,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-sched .kd.p { background: #fff3e8; color: #c2570a; } .hm-sched .kd.w { background: #e8f7ee; color: #15803d; } .hm-sched .kd.d { background: #e6f6f4; color: #0f766e; }
 .hm-sched b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 700; }
 .hm-sched small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--muted); }
-/* 첫 줄 — 사건 · 동네 오른쪽에 법원을 같은 줄로 */
+/* 첫 줄 — 법원 · 사건 · 동네를 한 줄로(법원이 맨 앞) */
 .hm-sched .hm-tx { min-width: 0; }
 .hm-sched .hm-tx .ln { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .hm-sched .hm-tx .ln b { flex: 0 1 auto; min-width: 0; }
@@ -7064,7 +7064,7 @@ span.cal-day.has { cursor: help; }
     const cont = hmContHtml();
     const sched = hmSchedule(5);
     const schedHtml = sched.length
-      ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span><span class="hm-tx"><span class="ln"><b>${esc(hmCase(r.a))} · ${esc(hmPlace(r.a))}</b><small>${esc(r.a.courtName || '')}</small></span>${r.kind === 'bid' ? hmRound(r.a, r.d) : ''}</span><time>${r.d.slice(2).replace(/-/g, '.')} (${hmWk(r.d)})</time></button></li>`).join('')}</ul>`
+      ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span><span class="hm-tx"><span class="ln"><small>${esc(r.a.courtName || '')}</small><b>${esc(hmCase(r.a))} · ${esc(hmPlace(r.a))}</b></span>${r.kind === 'bid' ? hmRound(r.a, r.d) : ''}</span><time>${r.d.slice(2).replace(/-/g, '.')} (${hmWk(r.d)})</time></button></li>`).join('')}</ul>`
       : `<div class="hm-empty">${HM_SVG(HM_IC.cal)}<div><b>등록된 일정이 없습니다</b><small>물건을 등록하면 매각기일 · 낙찰일 · 잔금기한 · 매도일이 여기에 표시됩니다.</small></div><button type="button" data-act="hm-register">물건 등록하기 →</button></div>`;
     const notices = HM.notices.slice(0, 4);
     const recent = hmRecent(4);
