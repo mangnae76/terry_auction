@@ -14,6 +14,7 @@ import {
   upsertAuctionBatch,
 } from '../services/auctionRepository';
 import { useAuthStore } from './authStore';
+import { stageLabelOf } from '../utils/stageLabel';
 
 const createNearBidRow = (): NearBidRow => ({
   saleInfo: '',
@@ -1382,7 +1383,7 @@ export const useAuctionStore = defineStore('auction', () => {
     if (!current) {
       return;
     }
-    await saveAuction({
+    const next: AuctionDetail = {
       ...current,
       status,
       // 입찰 단계를 벗어나면 '입찰진행' 표시도 함께 내린다.
@@ -1392,7 +1393,11 @@ export const useAuctionStore = defineStore('auction', () => {
       ...(status === '입찰' ? {} : { wonDate: '', sellDate: '' }),
       isInterested: status === '임장예정',
       isFieldTrip: status === '임장완료',
-    });
+    };
+    // 최근 작성에 '단계 낙찰 → 임장예정' 처럼 남긴다 — 어느 화면에서 바꿨든 같은 줄
+    // 단계 이름이 그대로면(화면이 먼저 바꿔 저장한 뒤 딸림 규칙만 맞추는 저장) 기록을 남기지 않는다 — 앞 줄을 '임장예정 → 임장예정'으로 덮지 않게
+    const from = stageLabelOf(current); const to = stageLabelOf(next);
+    await saveAuction(next, from === to ? { silent: true } : { where: '단계', note: `${from} → ${to}` });
   };
 
   const createNewAuction = () => createDraftAuction();

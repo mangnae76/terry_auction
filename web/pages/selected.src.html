@@ -6949,7 +6949,13 @@ span.cal-day.has { cursor: help; }
   const HM_TAB = { 물건정보: 'basic', 권리분석: 'rights', '손품+현장': 'survey', 손품조사: 'survey', 수요분석: 'survey', 가격분석: 'survey', 시세분석: 'survey', 손품결론: 'survey', 가격정보: 'verify', 수익분석: 'profit', 입찰가산정: 'profit' };   /* 손품조사 안 탭(수요분석 · 시세분석, 예전 이름 가격분석)도 손품조사 탭으로 */
   const hmToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const hmCase = (a) => (CLOUD.T && CLOUD.T.caseLabelOf ? CLOUD.T.caseLabelOf(a) : a.caseNumber) || '';
-  const hmPlace = (a) => String(a.address || '').split(' ').slice(-3).join(' ');
+  /* 동네부터 — 주소에 건물명이 없으면 건물명 칸을 끼운 주소(앱과 같은 shownAddressOf)에서 읍 · 면 · 동부터 끝까지 */
+  const hmPlace = (a) => {
+    const T = CLOUD.T; const full = T && T.shownAddressOf ? T.shownAddressOf(a) : String(a.address || '');
+    const p = full.split(/\s+/).filter(Boolean);
+    const i = p.findIndex((t) => /[동읍면리가]$/.test(t) && !/^\d/.test(t));
+    return (i >= 0 ? p.slice(i) : p.slice(-3)).join(' ');
+  };
   /* 이번 회차 한 줄 — 기본정보 회차 줄을 그대로(같은 셈 bidRoundsOf · 같은 칩): '3차 최저가 [49%] [진행] 2026-11-17  119,700,000원' */
   /* 회차 줄 — 이름 · 비율 · 결과 칩 · 금액. 날짜는 오른쪽 끝 '매각기일 26.11.17 (화)' 한 곳에만 */
   const hmRound = (a) => {
@@ -6964,8 +6970,9 @@ span.cal-day.has { cursor: help; }
   const HM_FLOW = { 진행절차: 'steps', 명도분석: 'evict', 세금분석: 'tax', 필요경비: 'need', 사업경비: 'biz', 매물등록: 'sell' };   /* 낙찰이후 › 진행절차 안 탭(PostWinPage FLOW_SUBS) */
   const HM_FIN = { 자금입출금: 'cashFlow', 필요경비: 'businessExpense', 사업경비: 'interior', 세금신고: 'tax' };
   /** 기록 한 줄 → 꼬리표 · 가는 곳. 경매 진행 단계(물건상세 탭 · 임장경로 · 낙찰이후)만 — 시장분석(손품조사 등)에서 남긴 줄은 뺀다 */
-  const hmWhere = (where) => {
+  const hmWhere = (where, what = '') => {
     const w = String(where || '').replace(/입찰가산정/g, '수익분석');
+    if (w === '단계') return { tag: what ? `단계 ${what}` : '단계', nav: { act: 'hm-item', tab: 'basic' } };   /* 고정카드 · 선정물건 카드에서 단계를 바꾼 줄 */
     const m = w.match(/^물건상세 › (.+)$/);
     if (m) return { tag: m[1], nav: { act: 'hm-item', tab: HM_TAB[m[1]] || 'basic' } };
     if (/^임장경로/.test(w)) return { tag: '임장경로', nav: { act: 'hm-go', v: 'trip' } };
@@ -6978,7 +6985,7 @@ span.cal-day.has { cursor: help; }
   };
   const hmRecent = (n) => {
     const out = [];
-    CLOUD.raw.forEach((a) => { if (a.hidden) return; (a.editLog || []).forEach((e) => { const k = hmWhere(e.where); if (k) out.push({ ...e, ...k, id: a.id, cn: hmCase(a), place: hmPlace(a) }); }); });
+    CLOUD.raw.forEach((a) => { if (a.hidden) return; (a.editLog || []).forEach((e) => { const k = hmWhere(e.where, e.what); if (k) out.push({ ...e, ...k, id: a.id, cn: hmCase(a), place: hmPlace(a) }); }); });
     return out.sort((x, y) => y.at - x.at).slice(0, n);
   };
   /* 날짜 — 마이페이지 입찰 캘린더(BidCalendarPage)와 같은 기준: 매각기일 · 낙찰일 · 잔금기한(적어 둔 값, 없으면 낙찰일 + 45일) · 매도일.
@@ -7219,7 +7226,8 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     if ('status' in patch || 'bid' in patch) {
       if ((patch.status || a.status) === '입찰') {
         const b = patch.bid || ''; const d = T.stageDates(a, b);
-        return run(st.saveAuction({ ...a, status: '입찰', bidStatus: b, wonDate: d.wonDate, sellDate: d.sellDate }));
+        const next = { ...a, status: '입찰', bidStatus: b, wonDate: d.wonDate, sellDate: d.sellDate };
+        return run(st.saveAuction(next, { where: '단계', note: `${T.stageLabelOf(a)} → ${T.stageLabelOf(next)}` }));
       }
       return run(st.setStatus(id, patch.status));
     }

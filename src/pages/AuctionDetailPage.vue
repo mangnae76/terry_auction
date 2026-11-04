@@ -63,7 +63,7 @@ import { VWORLD_KEY_EXPIRES } from '../services/vworldApi';
 import { lookupAddress, priceUnitText } from '../services/addressLookup';
 import { updateStamp } from '../services/updateStamp';
 import { addressParts, hasBuildingName, isUnitToken } from '../utils/addressName';
-import { stageDates, bidStageOf } from '../utils/stageLabel';
+import { stageDates, bidStageOf, stageLabelOf } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePdf, deleteSitePhoto, isPdfEntry, isPdfFile, isPhotoId, loadSitePdf, loadSitePhoto, pdfNameOf, saveSitePdf, saveSitePhoto } from '../services/sitePhotoRepository';
 import { getGeminiKey, isGeminiOn, loadGeminiPrefs, GeminiError } from '../services/geminiPdf';
@@ -212,11 +212,12 @@ const pickStage = async (key: string) => {
     // 낙찰일·매도일은 단계를 따라간다 — 앞으로 가면 적고, 뒤로 물러서면 지운다.
     // 규칙은 utils/stageLabel 한곳에 있다 (선정물건 카드도 같은 것을 쓴다)
     const dates = stageDates(target, value);
+    const from = stageLabelOf(target);
     target.status = '입찰';
     target.bidStatus = value;
     target.wonDate = dates.wonDate;
     target.sellDate = dates.sellDate;
-    await store.saveAuction(target);
+    await store.saveAuction(target, { where: '단계', note: `${from} → ${stageLabelOf(target)}` });
     flashToast(`단계를 '${label}'으로 바꿨습니다.${dates.note ? ` · ${dates.note}` : ''}`, 'success');
     return;
   }
@@ -226,22 +227,24 @@ const pickStage = async (key: string) => {
   // setStatus 는 '입찰' 안에서는 입찰상태를 건드리지 않아 그대로 머물기 때문이다.
   if (st === '입찰' && bidStage.value) {
     const dates = stageDates(target, '');
+    const from = stageLabelOf(target);
     target.status = '입찰';
     target.bidStatus = '';
     target.wonDate = dates.wonDate;
     target.sellDate = dates.sellDate;
-    await store.saveAuction(target);
+    await store.saveAuction(target, { where: '단계', note: `${from} → ${stageLabelOf(target)}` });
     flashToast(`단계를 '입찰산정'으로 바꿨습니다.${dates.note ? ` · ${dates.note}` : ''}`, 'success');
     return;
   }
   // 입찰 단계를 벗어나면 낙찰일·매도일도 함께 내린다.
   // 화면이 들고 있는 그 물건을 고쳐 저장한 뒤 단계를 바꾼다 — 사본을 저장하면
   // 화면 쪽에 남은 옛 날짜가 뒤늦게 되살아난다
+  const from = stageLabelOf(target);
   target.wonDate = '';
   target.sellDate = '';
   target.status = st;
   target.bidStatus = '';
-  await store.saveAuction(target);
+  await store.saveAuction(target, { where: '단계', note: `${from} → ${stageLabelOf(target)}` });
   // 관심·임장 표시 같은 딸림 규칙은 스토어가 맡는다 (화면 사본과 값이 같아 덮어쓰지 않는다)
   await store.setStatus(target.id, st);
   flashToast(`단계를 '${AUCTION_STATUS_LABELS[st]}'으로 바꿨습니다.`, 'success');
