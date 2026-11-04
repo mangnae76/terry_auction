@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 손품조사 › 가격분석 — 선정물건 둘레(반경) · 비슷한 조건(유사도)의 실거래로 「실거래가 예상」을 낸다.
+// 손품조사 › 시세분석 — 선정물건 둘레(반경) · 비슷한 조건(유사도)의 실거래로 「실거래가 예상」을 낸다.
 // 위→아래: ⓪ 조회 줄 → Ⓐ 실거래가 예상 띠 → Ⓑ 지도 · 조건 줄 · 유사물건 표 → Ⓒ 시세종합 → Ⓓ 호가 입력.
 // 셈은 services/priceAnalysis.ts, 이 화면은 자료를 모으고 그린다. 고른 조건 · 결과는 물건(marketPicks)에 남아 손품결론이 읽는다.
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref, shallowRef, markRaw } from 'vue';
@@ -26,7 +26,8 @@ import type { TipRow } from '../services/tipRows';
 import { useAuctionStore } from '../stores/auctionStore';
 
 /** loose — 시장분석 › 시세예측처럼 선정물건이 아닌 검색 주소로 볼 때. 적어 둘 물건이 없어 저장 · 임장경로 넣기는 감추고 '선정물건'은 '검색주소'로 */
-const props = defineProps<{ auction: AuctionDetail; kind: CasePropertyType; loose?: boolean }>();
+/** months — 기간을 바깥 줄(시세예측 주소 줄)이 고를 때. 이 화면의 기간 · 조회는 감춘다 */
+const props = defineProps<{ auction: AuctionDetail; kind: CasePropertyType; loose?: boolean; months?: number }>();
 const meName = computed(() => (props.loose ? '검색주소' : '선정물건'));
 const store = useAuctionStore();
 
@@ -41,7 +42,7 @@ type Kind = typeof KINDS[number];
 // ===== 남겨 둔 조건(물건 문서) — 다시 열면 그대로 =====
 const saved = (): PriceView | undefined => store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.price;
 const sv = saved();
-const months = ref<number>(sv?.months && (PERIODS as readonly number[]).includes(sv.months) ? sv.months : 12);
+const months = ref<number>(props.months ?? (sv?.months && (PERIODS as readonly number[]).includes(sv.months) ? sv.months : 12));
 const loadedMonths = ref(months.value);
 const radius = ref<number>(sv?.radius ?? 500);
 const kindF = ref<Kind>(sv?.kind ?? '매매');
@@ -363,7 +364,7 @@ const saveNow = async (manual?: unknown) => {
     const picked = !!manual || (lastChoices !== null && choices !== lastChoices);
     lastChoices = choices;
     await store.saveAuction({ ...a, marketPicks: { ...b, savedAt: at } }, picked
-      ? { where: '손품조사 › 가격분석', note: b.price?.estSale ? `실거래가 예상 ${eok(b.price.estSale)}` : '가격분석 저장' }
+      ? { where: '손품조사 › 시세분석', note: b.price?.estSale ? `실거래가 예상 ${eok(b.price.estSale)}` : '시세분석 저장' }
       : { silent: true });
     lastJson = json; savedAt.value = at;
   } catch {
@@ -439,7 +440,7 @@ const saveCompare = async () => {
     };
   });
   const m = mySpot.value;
-  await store.saveAuction({ ...a, fieldCompare: { savedAt: Date.now(), items, ...(m ? { origin: { lat: m.lat, lng: m.lng, address: props.auction.address } } : {}) } }, { where: '손품조사 › 가격분석', note: `임장 비교 물건 ${items.length}곳 넣음` });
+  await store.saveAuction({ ...a, fieldCompare: { savedAt: Date.now(), items, ...(m ? { origin: { lat: m.lat, lng: m.lng, address: props.auction.address } } : {}) } }, { where: '손품조사 › 시세분석', note: `임장 비교 물건 ${items.length}곳 넣음` });
   addOpen.value = false;
   addMsg.value = ['임장예정', '임장완료'].includes(a.status) ? '' : '임장예정 물건만 임장경로에 나옵니다 — 선정물건에서 임장예정으로 바꿔 주세요';
 };
@@ -548,17 +549,19 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 
 <template>
   <div class="pa-wrap">
-  <section class="pa pa-card" aria-label="가격분석">
+  <section class="pa pa-card" aria-label="시세분석">
     <!-- Ⓐ 결론 — 제목 줄에 조회(지역은 물건 카드에서 온다, 기간만 고른다) -->
     <div class="zone">
       <div class="zone-h"><span class="pa-tag">결론</span><h3>이 물건 실거래가 예상</h3>
         <span class="bar-desc">{{ regionText || '지역 확인 중' }} · {{ KIND_LABEL[kind] }} 실거래</span>
         <span class="pa-load-r">
           <span v-if="progress.total && progress.done < progress.total" class="prog">위치 찾는 중 {{ progress.done }} / {{ progress.total }}</span>
+          <template v-if="!props.months">
           <span class="pa-seg pa-out" role="radiogroup" aria-label="조회기간">
             <button v-for="m in PERIODS" :key="m" type="button" role="radio" :class="{ on: months === m }" :aria-checked="months === m" @click="months = m">{{ periodText(m) }}</button>
           </span>
           <button type="button" :class="['pa-load', { dirty }]" :disabled="loading" @click="run">{{ loading ? '조회 중…' : '조회' }}</button>
+          </template>
         </span>
       </div>
       <p v-if="errorMsg" class="pa-err">{{ errorMsg }}</p>

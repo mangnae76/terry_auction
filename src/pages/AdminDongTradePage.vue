@@ -19,6 +19,7 @@ import InfoTip from '../components/InfoTip.vue';
 import AdminRegionDemandPage from './AdminRegionDemandPage.vue';
 import TradeStatsPage from './TradeStatsPage.vue';
 import SonpumPricePage from './SonpumPricePage.vue';
+import { PERIODS as PRICE_PERIODS, periodText } from '../services/priceAnalysis';
 import type { AuctionDetail } from '../types/auction';
 import DotStackChart, { type DotView } from '../components/DotStackChart.vue';
 import BubbleMatrix from '../components/BubbleMatrix.vue';
@@ -110,19 +111,20 @@ const listQuery = ref('');
 /** 웹 시장분석 › 랭킹분석 — 같은 화면을 랭킹 탭(랭킹지도 · 거래랭킹)만으로 띄운다.
  *  시장분석 › 손품조사(sonMode) — 같은 화면을 수요분석 · 시세분석 탭만으로(검색창은 지역분석과 똑같다). 지역분석은 그 넷을 뺀 탭 */
 const props = defineProps<{ rankMode?: boolean; sonMode?: boolean }>();
-// 시세예측 › 가격분석 — 위 고르는 줄 자리에 전체 주소 · 종류 · 조회, 아래는 손품조사 가격분석(지도 · 유사물건 · 예상 가격)을 그 주소로.
+// 시세예측 › 시세분석 — 위 고르는 줄 자리에 전체 주소 · 종류 · 조회, 아래는 손품조사 시세분석(지도 · 유사물건 · 예상 가격)을 그 주소로.
 // 마지막 조회는 이 브라우저에 남겨 새로고침해도 그대로
 const PRICE_Q_KEY = 'son.market.priceQ';
-const priceQ = ref<{ address: string; kind: Kind } | null>((() => { try { return JSON.parse(localStorage.getItem(PRICE_Q_KEY) || 'null'); } catch { return null; } })());
+const priceQ = ref<{ address: string; kind: Kind; months?: number; at?: number } | null>((() => { try { return JSON.parse(localStorage.getItem(PRICE_Q_KEY) || 'null'); } catch { return null; } })());
 const priceAddr = ref(priceQ.value?.address ?? '');
 const priceKind = ref<Kind>(priceQ.value?.kind ?? 'villa');
+const priceMonths = ref<number>(priceQ.value?.months ?? 12);
 const runPrice = () => {
   const address = priceAddr.value.trim();
   if (!address) return;
-  priceQ.value = { address, kind: priceKind.value };
+  priceQ.value = { address, kind: priceKind.value, months: priceMonths.value, at: Date.now() };   // at — 같은 조건도 조회를 누르면 다시 받는다
   try { localStorage.setItem(PRICE_Q_KEY, JSON.stringify(priceQ.value)); } catch { /* 그만 */ }
 };
-const priceAuction = computed(() => (priceQ.value ? ({ id: `market-price:${priceQ.value.kind}:${priceQ.value.address}`, address: priceQ.value.address } as AuctionDetail) : null));
+const priceAuction = computed(() => (priceQ.value ? ({ id: `market-price:${priceQ.value.kind}:${priceQ.value.address}:${priceQ.value.months ?? 12}:${priceQ.value.at ?? 0}`, address: priceQ.value.address } as AuctionDetail) : null));
 const listView = ref<'map' | 'top' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case'>(props.rankMode ? 'map' : props.sonMode ? 'supply' : 'table');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
 const mapRun = ref(0);
@@ -167,7 +169,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 실거래분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '가격분석' };
+const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '시세분석' };
 const tellTab = () => {
   if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
@@ -927,7 +929,7 @@ const downloadCsv = () => {
       <!-- 지역 -->
       <!-- 경매지번 탭에서는 이 줄 대신 경매지번의 주소 줄이 이 자리(admTopBarSlot)에 온다 -->
       <div id="admTopBarSlot" class="app-market adm-topbar-slot" data-k="case">
-        <div v-if="webEmbed && props.sonMode && listView === 'case'" class="adm-bar">
+        <div v-if="webEmbed && props.sonMode && listView === 'case'" class="adm-bar son-price-bar">
           <label class="adm-f grow">
             <small>주소 입력 <em>시·도부터 지번·호수까지</em></small>
             <input v-model="priceAddr" class="adm-input wide" placeholder="예) 인천광역시 서구 검암동 670-4 203호" @keyup.enter="runPrice" />
@@ -936,6 +938,12 @@ const downloadCsv = () => {
             <small>종류</small>
             <div class="adm-seg">
               <button v-for="k in KINDS" :key="k.key" type="button" :class="['adm-seg-btn', { on: priceKind === k.key }]" @click="priceKind = k.key">{{ k.label }}</button>
+            </div>
+          </label>
+          <label class="adm-f">
+            <small>기간</small>
+            <div class="adm-seg">
+              <button v-for="m in PRICE_PERIODS" :key="m" type="button" :class="['adm-seg-btn', { on: priceMonths === m }]" @click="priceMonths = m">{{ periodText(m) }}</button>
             </div>
           </label>
           <button type="button" class="adm-load" :disabled="!priceAddr.trim()" @click="runPrice">조회</button>
@@ -1001,7 +1009,7 @@ const downloadCsv = () => {
         <nav v-else-if="all.length > 0 || listView === 'case'" class="adm-view-tabs" role="tablist">
               <button v-if="props.sonMode" type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
               <!-- 경매지번 — 시장분석 › 경매지번 분석 화면을 그대로(주소 줄 · 종류 · 기간 · 내비 · 표 · 저장). 주소 줄은 위 고르는 줄 자리에 -->
-              <button v-if="props.sonMode" type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">가격분석</button>
+              <button v-if="props.sonMode" type="button" role="tab" :aria-selected="listView === 'case'" :class="{ on: listView === 'case' }" @click="listView = 'case'">시세분석</button>
               <template v-if="!props.sonMode">
               <button type="button" role="tab" :aria-selected="listView === 'table'" :class="{ on: listView === 'table' }" @click="listView = 'table'">지역별분석</button>
               <button type="button" role="tab" :aria-selected="listView === 'dist'" :class="{ on: listView === 'dist' }" @click="onDistTab">유형분포<span class="adm-view-kind" :title="distChart === 'dots' ? '점 쌓기 — 한 번 더 누르면 막대' : distChart === 'bar' ? '막대 — 한 번 더 누르면 도넛' : '도넛 — 한 번 더 누르면 점 쌓기'" :aria-label="distChart === 'dots' ? '점 쌓기' : distChart === 'bar' ? '막대' : '도넛'">
@@ -1024,8 +1032,8 @@ const downloadCsv = () => {
         :chip="snapChip"
         @pick-dong="(d: string) => { dong = d; }"
       />
-      <!-- 가격분석 — 선정물건 손품조사의 가격분석(지도 · 유사물건 · 예상 가격)을 위 주소 줄로 찾은 주소에. 선정물건에 없는 주소도 본다 -->
-      <div v-if="webEmbed && listView === 'case'" class="son-price"><SonpumPricePage v-if="priceAuction && priceQ" :key="priceAuction.id" :auction="priceAuction" :kind="priceQ.kind" loose /><p v-else class="son-msg">위 칸에 전체 주소를 넣고 종류를 고른 뒤 조회를 누르세요.</p></div>
+      <!-- 시세분석 — 선정물건 손품조사의 시세분석(지도 · 유사물건 · 예상 가격)을 위 주소 줄로 찾은 주소에. 선정물건에 없는 주소도 본다 -->
+      <div v-if="webEmbed && listView === 'case'" class="son-price"><SonpumPricePage v-if="priceAuction && priceQ" :key="priceAuction.id" :auction="priceAuction" :kind="priceQ.kind" :months="priceQ.months ?? 12" loose /><p v-else class="son-msg">위 칸에 전체 주소를 넣고 종류를 고른 뒤 조회를 누르세요.</p></div>
       <template v-if="all.length > 0 && listView !== 'map' && listView !== 'case'">
         <!-- 웹 — 위 요약 상자 틀은 하나. 읍면동을 고르면 안의 상자만 셋(총 거래건수 · 실거래가 평균 · 평당가 평균)으로 -->
         <section v-if="webEmbed && listView !== 'supply'" class="adm-gunav">
@@ -1720,6 +1728,13 @@ const downloadCsv = () => {
 .adm-sort i.on { color: #2f6b45; }
 .adm-dong-link { border: 0; background: none; padding: 0; font: inherit; font-weight: 700; color: #111827; cursor: pointer; }
 .adm-dong-link:hover { color: #2b6df3; text-decoration: underline; }
-/* 시세예측 › 가격분석 — 아직 조회 전 안내 */
-.son-msg { margin: 16px 0 0; padding: 40px 16px; text-align: center; font-size: 14px; color: #6b7280; background: var(--surface, #fff); border: 1px solid var(--card-line, #e5e7eb); border-radius: 12px; }
+/* 시세예측 › 시세분석 — 상자 위치는 수요분석 흰 카드(.dm-card, 탭 줄에서 12)와 같게 */
+.son-price { margin-top: 12px; }
+/* 주소 줄 — 주소 칸이 남는 폭을 다 쓰고, 종류 · 기간 · 조회는 제 폭만큼 12 간격으로 */
+.son-price-bar { flex-wrap: nowrap !important; gap: 12px !important; }
+.son-price-bar > .adm-f.grow { flex: 1 1 auto !important; min-width: 0; }
+.son-price-bar > .adm-f.grow > .adm-input { width: 100% !important; max-width: none !important; box-sizing: border-box; }
+.son-price-bar > .adm-f:not(.grow), .son-price-bar > .adm-load { flex: none !important; }
+/* 시세예측 › 시세분석 — 아직 조회 전 안내 */
+.son-msg { margin: 0; padding: 40px 16px; text-align: center; font-size: 14px; color: #6b7280; background: var(--surface, #fff); border: 1px solid var(--card-line, #e5e7eb); border-radius: 12px; }
 </style>

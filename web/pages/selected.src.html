@@ -6814,7 +6814,7 @@ span.cal-day.has { cursor: help; }
     ['doc', 'PDF 자동등록', '매각물건명세서 · 감정평가서 PDF를 올리면 사건번호 · 주소 · 감정가를 채웁니다'],
     ['pin', '임장경로', '선정물건을 지도에 올리고 방문 순서를 동선최적화로 정리합니다'],
     ['scale', '권리분석', '등기 · 임차인 권리관계를 물건마다 정리합니다'],
-    ['chart', '손품조사', '수요분석 · 가격분석으로 현장 가기 전에 살펴봅니다'],
+    ['chart', '손품조사', '수요분석 · 시세분석으로 현장 가기 전에 살펴봅니다'],
     ['pct', '수익분석', 'A~D안 입찰가를 비교하고 확정한 안으로 세후 수익을 계산합니다'],
     ['check', '낙찰이후', '진행절차 · 명도분석 · 세금분석을 낙찰 뒤 순서대로'],
     ['won', '자금관리', '자금입출금 · 필요경비 · 사업경비를 물건별로 기록합니다'],
@@ -6899,7 +6899,7 @@ span.cal-day.has { cursor: help; }
     ['아파트', '전국', 32440, -2.7, 4.77, 0.2], ['', '서울', 3150, -8.5, 11.57, 2.8], ['', '수도권', 12634, -2.8, 5.4, 0.2],
     ['연립/다세대', '전국', 6350, -0.8, 2.66, 0.5], ['', '서울', 2350, -6.2, 4.18, 3.6], ['', '수도권', 2689, 2.8, 2.04, 0.6],
   ];
-  const HM_TAB = { 물건정보: 'basic', 권리분석: 'rights', '손품+현장': 'survey', 손품조사: 'survey', 수요분석: 'survey', 가격분석: 'survey', 손품결론: 'survey', 가격정보: 'verify', 수익분석: 'profit', 입찰가산정: 'profit' };   /* 손품조사 안 탭(수요분석 · 가격분석)도 손품조사 탭으로 */
+  const HM_TAB = { 물건정보: 'basic', 권리분석: 'rights', '손품+현장': 'survey', 손품조사: 'survey', 수요분석: 'survey', 가격분석: 'survey', 시세분석: 'survey', 손품결론: 'survey', 가격정보: 'verify', 수익분석: 'profit', 입찰가산정: 'profit' };   /* 손품조사 안 탭(수요분석 · 시세분석, 예전 이름 가격분석)도 손품조사 탭으로 */
   const hmToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const hmCase = (a) => (CLOUD.T && CLOUD.T.caseLabelOf ? CLOUD.T.caseLabelOf(a) : a.caseNumber) || '';
   const hmPlace = (a) => String(a.address || '').split(' ').slice(-3).join(' ');
