@@ -32,8 +32,8 @@
   --shadow-card:0 1px 3px rgba(15,23,42,.06);
   --shadow-hover:0 10px 24px -10px rgba(33,51,102,.28),0 2px 6px rgba(15,23,42,.06);
   --shadow-pop:0 14px 36px -10px rgba(15,23,42,.3),0 3px 10px rgba(15,23,42,.08);
-  --font:"Pretendard","Noto Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
-  --gnb-h:57px;--nav-h:46px;
+  --font:"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --gnb-h:64px;--nav-h:46px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0f141f;--surface:#182031;--surface-2:#1d2638;--surface-3:#232d42;
@@ -80,22 +80,25 @@
 
 /* ---------- 바탕 ---------- */
 *,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable}
 body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:break-word}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:50;background:var(--nav)}
 a{color:inherit}
 button{font:inherit;color:inherit;cursor:pointer}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
 .ic{width:1em;height:1em;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.125em}
-.wrap{width:100%;max-width:1344px;margin:0 auto;padding-left:max(32px,env(safe-area-inset-left,0px));padding-right:max(32px,env(safe-area-inset-right,0px))}
+.wrap{width:100%;max-width:1240px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+/* 폭 · 여백은 대문(.ld-wrap)과 같게 — 머리띠 로고가 대문 · 절차 · 앱 소개와 같은 자리에 선다(2026-11-03) */
 @media (max-width:720px){.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 
 /* ---------- 머리띠 ---------- */
 .gnb{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:var(--nav);color:var(--nav-text)}
-.gnb-in{display:flex;align-items:center;justify-content:space-between;gap:16px;height:57px}
+.gnb-in{display:flex;align-items:center;justify-content:space-between;gap:16px;height:64px}
 .g-brand{display:flex;align-items:center;gap:12px;min-width:0;text-decoration:none}
-.g-brand img{display:block;height:34px;width:auto}
+.g-brand img{display:block;height:34px;width:auto;transition:transform .4s cubic-bezier(.2,.9,.3,1.4)}
+/* 로고 — 웹 머리띠(.g-logo)와 같은 움직임: 올리면 살짝 기울며 커진다 */
+.g-brand:hover img{transform:rotate(-4deg) scale(1.04)}
 .g-brand span{font-size:15px;font-weight:700;color:var(--nav-name);padding-left:12px;border-left:1px solid var(--nav-line);white-space:nowrap;letter-spacing:-.2px}
 .g-tools{position:relative;display:flex;align-items:center;gap:6px;flex:none}
 .ver-btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px 0 12px;border-radius:999px;border:1px solid var(--nav-line);background:transparent;color:var(--nav-text);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -344,16 +347,18 @@ main{flex:1;padding-block:24px 64px}
 .mock-tag{position:absolute;left:14px;top:10px;font-size:11.5px;font-weight:800;letter-spacing:.3px;color:var(--muted)}
 .mock-scroll{overflow-x:auto}
 .mk-app{min-width:820px;overflow:hidden;border:1px solid var(--line-2);border-radius:8px;background:var(--bg);font-size:12px}
-.mk-gnb{display:flex;align-items:center;gap:12px;height:46px;padding:0 14px;background:var(--nav);color:var(--nav-text)}
+.mk-gnb{display:flex;align-items:center;gap:8px;height:46px;padding:0 14px;background:var(--nav);color:var(--nav-text)}
 .mk-gnb img{height:22px;width:auto}
-.mk-m{display:flex;align-items:center;gap:11px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.mk-m{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;white-space:nowrap}
 .mk-m .on{padding-bottom:3px;border-bottom:2px solid var(--accent)}
 .mk-box{display:inline-grid;place-items:center;width:20px;height:20px;border:1px solid var(--nav-line);border-radius:5px;font-size:11px}
-.mk-r{display:flex;align-items:center;gap:10px;margin-left:auto;font-size:11px;color:var(--nav-dim);white-space:nowrap}
+.mk-r{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:10.5px;color:var(--nav-dim);white-space:nowrap}
 .mk-sub{display:flex;align-items:center;gap:12px;height:36px;padding:0 14px;background:var(--surface);border-bottom:1px solid var(--subtab-line);font-weight:600;color:var(--text-2);white-space:nowrap}
 .mk-sub .where{font-weight:800;color:var(--text)}
 .mk-sub .on{color:var(--tab-on);text-decoration:underline 2px var(--accent);text-underline-offset:10px}
-.mk-crumb{margin-left:auto;font-size:11px;color:var(--muted)}
+.mk-crumb{display:inline-flex;align-items:center;gap:4px;margin-right:14px;font-size:11px;color:var(--muted)}
+.mk-m>i{font-style:normal;color:var(--nav-dim);font-size:11px}
+.mk-div{width:1px;height:14px;background:var(--nav-line)}
 .mk-body{display:grid;gap:10px;padding:12px 14px}
 .mk-tool{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--surface);border:1px solid var(--line-2);border-radius:8px}
 .mk-c{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:5px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text-2);font-size:11.5px;font-weight:500;white-space:nowrap}
@@ -436,6 +441,19 @@ main{flex:1;padding-block:24px 64px}
 /* 영상 */
 .video{position:relative;overflow:hidden;border-radius:12px;background:var(--nav-deep);aspect-ratio:16/9;max-width:100%}
 .video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.video-box{margin:0;border-radius:12px;overflow:hidden;background:var(--nav)}
+.video-frame{position:relative;aspect-ratio:16/9;background:#0b1220}
+.video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+.video-frame:fullscreen{background:#000}
+.video-frame:-webkit-full-screen{background:#000}
+.video-box figcaption{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 16px;color:var(--nav-text)}
+.video-box .play{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff}
+.video-box .vt b{display:block;font-size:15px}
+.video-box .vt small{color:var(--nav-dim);font-size:13px}
+.video-full{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:1px solid rgba(255,255,255,.35);border-radius:8px;background:transparent;color:var(--nav-text);font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.video-full:hover{background:rgba(255,255,255,.12)}
+.video-full .ic{width:16px;height:16px}
+@media (max-width:560px){.video-box figcaption{grid-template-columns:minmax(0,1fr) auto}.video-box .play{display:none}}
 .video-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:16px 18px;border-radius:12px;background:var(--nav);color:var(--nav-text);text-decoration:none}
 .video-card .play{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;font-size:18px}
 .video-card b{display:block;font-size:15px}
@@ -562,14 +580,21 @@ li.key .toc-no{background:var(--accent);color:#fff}
 .rel-h .tag{background:var(--blue-soft);color:var(--blue)}
 .rel ul{margin:0;padding-left:18px;font-size:14px;line-height:1.7;color:var(--text-2)}
 .rel .mini{justify-self:start}
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:90;transform:translateX(-50%);padding:10px 16px;border-radius:999px;background:var(--text);color:var(--surface);font-size:13.5px;font-weight:700;box-shadow:var(--shadow-pop);white-space:nowrap}
+/* 보기 방식 탭 — 머리 가운데. 고른 쪽만 진하게(html[data-mode]) */
+.mode-tabs{display:inline-flex;gap:4px;padding:3px;border-radius:999px;background:rgba(255,255,255,.12);margin:0 auto}
+.mode-tabs a{height:32px;display:inline-flex;align-items:center;padding:0 16px;border-radius:999px;font-size:13.5px;font-weight:700;color:rgba(255,255,255,.75);text-decoration:none;white-space:nowrap}
+html[data-mode="web"] .mode-tabs a[data-tab="web"],html[data-mode="video"] .mode-tabs a[data-tab="video"]{background:#fff;color:#1f3a72}
+.secnav .to-mode{display:none!important}   /* 머리 탭이 대신한다 */
+@media (max-width:560px){.mode-tabs a{padding:0 10px;font-size:12.5px}}
+.toast{position:fixed;left:50%;top: 50%;z-index:90;transform: translate(-50%, -50%);padding:10px 16px;border-radius:999px;background:var(--text);color:var(--surface);font-size:13.5px;font-weight:700;box-shadow:var(--shadow-pop);white-space:nowrap}
 </style>
 </head>
 <body>
 
 <header class="gnb" id="gnb">
   <div class="wrap gnb-in">
-    <a class="g-brand" href="#home" aria-label="이용가이드 첫 화면으로"><img id="logo" src="data:image/webp;base64,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" alt="MYTURN AUCTION" width="103" height="34"><span>이용가이드</span></a>
+    <a class="g-brand" href="#web" aria-label="이용가이드 처음으로"><img id="logo" src="/myturn-promo/media/logo_white.png" alt="MYTURN AUCTION" width="103" height="34"><span>이용가이드</span></a>
+    <nav class="mode-tabs" aria-label="보기 방식"><a href="#web" data-tab="web">웹페이지 보기</a><a href="#video" data-tab="video">영상으로 보기</a></nav>
     <div class="g-tools">
       <button type="button" class="ver-btn" id="verBtn" aria-haspopup="true" aria-expanded="false" aria-controls="verPop"></button>
       <div class="ver-pop" id="verPop" hidden></div>
@@ -605,6 +630,8 @@ li.key .toc-no{background:var(--accent);color:#fff}
 const APP_ORIGIN = 'https://terryauction-6b374.web.app';
 const APP_URL = APP_ORIGIN + '/web';
 const PROMO_URL = APP_ORIGIN + '/myturn-promo/index.html?mode=hero';
+/* 이용가이드에 붙이는 소개 영상 — 재생 전 화면(썸네일 · ▶ 소개 영상 보기)부터. 누르기 전엔 소리도 재생도 없다 */
+const PROMO_PLAY_URL = APP_ORIGIN + '/myturn-promo/index.html';
 const GEMINI_KEY_URL = 'https://aistudio.google.com/apikey';
 const IMG = 'img/';   /* 캡처 그림 폴더 — 가이드 파일 옆 img/ */
 /* 포인트 스위치 — 포인트를 실제로 붙이는 서비스 오픈 때 true. 그때까지 멤버십의 포인트 장(등급표 · 추가 적립표),
@@ -663,6 +690,7 @@ const IC = {
   coin:'<circle cx="12" cy="12" r="9.5"/><path d="M9.5 16.5v-9h3.2a2.6 2.6 0 0 1 0 5.2H9.5"/>',
   dice:'<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor"/>',
   play:'<path d="M8 5.5v13l10-6.5z"/>',
+  full:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
   globe:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/>',
   shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
   flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7"/>',
@@ -702,7 +730,7 @@ const GUIDE = {
 };
 
 /* =====================================================================
-   v1.0.0 — 2026.11.01 웹 서비스 화면 기준
+   v1.1.0 — 2026.11.03 웹 서비스 화면 기준(그림 · 메뉴 이름 · 화면 구성을 지금 웹에 맞춤)
    shots: 캡처 그림(img/ 폴더). pins 는 그림 폭·높이에 대한 백분율 자리.
    ===================================================================== */
 const V1 = {
@@ -717,16 +745,17 @@ const V1 = {
     call: '이제 마이턴하세요!',
   },
   shots: {
-    list: { src: 'shot-list.webp', w: 1600, h: 1052, url: 'terryauction-6b374.web.app/web#/', alt: '선정물건 · 물건카드 화면 — 도구 상자, 단계별 물건 수, 물건 카드와 수익률 분석' },
-    basic: { src: 'shot-basic.webp', w: 1600, h: 1052, url: 'terryauction-6b374.web.app/web#/item/a101', alt: '물건상세 · 물건정보 화면 — 사건 머리, 정보요약, 기본정보, 입지정보, 물건현황' },
-    register: { src: 'shot-register.webp?v=2', w: 1600, h: 610, url: 'terryauction-6b374.web.app/web#/register', alt: '물건등록 · 자동등록 화면 — AI 자동 분석, 구글 드라이브 연동, AI 자동 파싱' },
-    manual: { src: 'shot-manual.webp?v=2', w: 1600, h: 1082, url: 'terryauction-6b374.web.app/web#/register', alt: '물건등록 · 직접입력 화면 — 사건번호, 소재지, 매각기일 · 금액, 관계인, 물건, 메모' },
+    home: { src: 'shot-home.webp?v=3', w: 1600, h: 1758, url: 'terryauction-6b374.web.app/web#/', alt: '로그인 후 대문 — 다음 할 일, 나의 경매 일정, 공지사항, 최근 분석 내역, 투자 지표 · 실거래 동향' },
+    list: { src: 'shot-list.webp?v=3', w: 1600, h: 1052, url: 'terryauction-6b374.web.app/web#/list', alt: '선정물건 · 물건카드 화면 — 도구 상자, 단계별 물건 수, 물건 카드와 수익률 분석' },
+    basic: { src: 'shot-basic.webp?v=3', w: 1600, h: 1052, url: 'terryauction-6b374.web.app/web#/item/…', alt: '물건상세 · 물건정보 화면 — 사건 머리, 정보요약, 기본정보, 입지정보, 물건현황' },
+    register: { src: 'shot-register.webp?v=3', w: 1600, h: 715, url: 'terryauction-6b374.web.app/web#/register', alt: '물건등록 화면 — 자동등록(AI 자동 분석 · 구글 드라이브 연동), 직접입력, AI 자동 파싱' },
+    manual: { src: 'shot-manual.webp?v=3', w: 1600, h: 1233, url: 'terryauction-6b374.web.app/web#/register', alt: '물건등록 › 직접입력을 펼친 화면 — 사건번호, 소재지, 매각기일 · 금액, 관계인, 물건, 메모' },
   },
   /* 첫 화면 — '웹으로 보기 · 영상으로 보기' 고르기 */
   home: {
     title: '마이턴옥션,<br>이렇게 씁니다.',
     text: '편한 방법으로 보세요. 보는 중에도 위쪽 단추로 언제든 바꿀 수 있습니다.',
-    web: { title: '웹으로 보기', text: '화면마다 메뉴를 실제 화면과 번호 설명으로 안내합니다. 필요한 곳만 골라 읽기 좋습니다.', meta: '8개 장 · 화면 15곳', thumb: 'shot-list.webp' },
+    web: { title: '웹으로 보기', text: '화면마다 메뉴를 실제 화면과 번호 설명으로 안내합니다. 필요한 곳만 골라 읽기 좋습니다.', meta: '8개 장 · 화면 16곳', thumb: 'shot-list.webp' },
     video: { title: '영상으로 보기', text: '처음부터 따라 하며 보는 사용법 영상입니다. 장마다 건너뛰어 볼 수 있습니다.' },
     quick: [['손품조사', 'help-item-survey'], ['물건등록', 'help-register'], ['AI 키 입력', 'howto-aikey'], ['개인정보 설정', 'howto-profile'], ['멤버십', 'membership'], ['FAQ', 'faq']],
   },
@@ -778,7 +807,7 @@ const V1 = {
     { name: 'FAMILY', ko: '패밀리', c: '--tier-family', band: '결제금액의 9~10% 적립', rows: [['400만 ~ 500만원 미만', '9%'], ['500만원 이상', '10%']] },
   ],
   compare: {
-    cols: ['무료회원', '무료체험 (가입 후 3일)', '유료회원 (Plus)'],
+    cols: ['무료회원', '무료체험 (가입 후 3일)', '프로 회원 (PRO)'],
     rows: [
       ['이용 조건', '회원가입', '가입 즉시 72시간<br>계정당 1회', '이용권 결제<br>1 · 3 · 6 · 12개월'],
       ['요금', '무료', '무료', '월 {base}원<br>기간별 최대 {maxOff}% 할인'],
@@ -798,8 +827,8 @@ const V1 = {
     /* ============================================================ 01 서비스목표 */
     { id: 'goal', label: '서비스목표', ic: 'target', title: '서비스 목표', hero: true, desc: '마이턴옥션이 무엇을 위해 만들어졌고, 어디를 향하는지 소개합니다.', subs: [
       { id: 'intro', label: '서비스소개', title: '서비스 소개', ic: 'dice', blocks: [
-        { t: 'statement', eyebrow: '올인원 경매 분석 플랫폼', html: '경매, 물건만 고르세요.<br><em>마이턴옥션</em>이 다 해줍니다.' },
-        { t: 'p', html: '물건 등록부터 권리 · 손품 · 수익 분석, 임장, 낙찰 이후 관리까지 <b>마이턴옥션 하나로</b>. 체크리스트와 자동화로 시간은 줄이고, 현장 활용은 높입니다.' },
+        { t: 'statement', eyebrow: 'AI 경매 분석 플랫폼', html: '경매, 물건만 고르세요.<br><em>마이턴옥션</em>이 다 해줍니다.' },
+        { t: 'p', html: '물건 등록부터 권리 · 손품 · 수익 분석, 임장, 낙찰 이후 관리까지 <b>마이턴옥션 하나로</b>.<br><b>AI와 자동화</b>로 시간은 줄이고, 데이터 기반으로 안전한 경매가 가능합니다.<br><b style="color:var(--accent)">이제 감으로 하지 마세요.</b>' },
         { t: 'chips', items: ['기본정보', '권리분석', ['손품+임장', 'key'], '입찰가 산정', '임장경로', '낙찰이후 관리', '자금관리'] },
         { t: 'lead', html: '경매는 아직 <b>아날로그</b>입니다. 경매지 PDF, 엑셀, 시세 사이트, 지도, 계산기, 메모장, 사진첩까지 한 건에 열 개가 넘는 창을 오가며 손으로 모으고 계산합니다.' },
         { t: 'p', html: '마이턴옥션은 이 일을 <b>사건카드 한 장</b>으로 모읍니다. 권리분석, 시세 · 수요, 현장 사진, 입찰가, 잔금, 세금까지 사건번호 하나에 쌓입니다.' },
@@ -863,7 +892,7 @@ const V1 = {
           { ic: 'route', title: '임장경로 · 임장조사', html: '동선최적화로 방문 순서를 정하고, 현장 사진 · 탐문 · 체크리스트를 남깁니다.', to: 'help-trip' },
           { ic: 'gavel', title: '낙찰이후', html: '낙찰 당일부터 사업자등록, 잔금, 명도, 인테리어, 매도 · 임대까지.', to: 'help-postwin' },
           { ic: 'wallet', title: '자금관리 · 세금', html: '입출금 · 경비를 물건별로 적고 엑셀로 저장, 연간 세금 미리 보기.', to: 'help-finance' },
-          { ic: 'trend', title: '시장분석', html: '지역분석 · 랭킹분석 · 물건분석으로 시장 흐름을 봅니다.', to: 'help-market' },
+          { ic: 'trend', title: '시장분석 툴', html: '실거래분석 · 랭킹분석 · 물건분석으로 시장 흐름을 봅니다.', to: 'help-market' },
           { ic: 'bell', title: '알림', html: '잔금 기한 · 매각기일 · 취득세 신고일을 미리 알려 드립니다.', to: 'help-more' },
         ] },
       ] },
@@ -876,9 +905,9 @@ const V1 = {
     { id: 'howto', label: '사용방법', ic: 'bookOpen', title: '사용 방법', desc: '가입과 첫 설정을 순서대로 안내합니다.', subs: [
       { id: 'signup', label: '회원가입', title: '회원가입', ic: 'user', blocks: [
         { t: 'steps', items: [
-          { title: '회원가입 열기', html: '웹 주소로 들어오면 소개 영상 대문이 열립니다. 로그인 창 아래 <b>회원가입</b>을 누르거나, <b>카카오로 시작하기</b>로 바로 가입합니다.' },
-          { title: '기본 정보', html: '이름(실명), 아이디(메일 주소) → <b>중복확인</b>, 비밀번호(6~30자)를 적습니다.' },
-          { title: '연락처 · 추가 정보', html: '휴대폰, 시/도, 사업자 구분을 적습니다. 추천코드가 있으면 넣으세요. 코드에 따라 무료 이용 기간이 자동 적용됩니다.' },
+          { title: '회원가입 열기', html: '첫 화면(대문) 오른쪽 위 <b>회원가입</b>을 누르거나, 로그인 창 아래 회원가입 · <b>카카오로 시작하기</b>로 가입합니다.' },
+          { title: '기본 정보', html: '이름(실명), 아이디(메일 주소) → <b>중복확인</b>, 비밀번호(6~30자)와 비밀번호 재확인을 적습니다.' },
+          { title: '연락처 · 추가 정보', html: '휴대폰, 주소(<b>주소 검색</b>으로 찾고 상세 주소 입력), 사업자 구분을 적습니다. 추천코드가 있으면 넣으세요 — 코드에 따라 무료 이용 기간이 자동 적용됩니다. 가입경로(검색 · 학원 · 카페 · 유튜브 · 기타)를 고릅니다.' },
           { title: '약관 동의 후 가입하기', html: '[필수] 이용약관 · 개인정보 수집 및 이용, [선택] 알림톡/문자수신에 동의하고 <b>가입하기</b>를 누릅니다.' },
         ] },
         { t: 'perks' },
@@ -911,7 +940,7 @@ const V1 = {
     ] },
 
     /* ============================================================ 05 멤버십 */
-    { id: 'membership', label: '멤버십', ic: 'crown', title: '멤버십 안내', desc: POINTS_OPEN ? '무료체험, 유료 이용권(Plus), 포인트와 환불 기준입니다.' : '무료체험, 유료 이용권(Plus)과 환불 기준입니다.', subs: [
+    { id: 'membership', label: '멤버십', ic: 'crown', title: '멤버십 안내', desc: POINTS_OPEN ? '무료체험, 프로 이용권, 포인트와 환불 기준입니다.' : '무료체험, 프로 이용권과 환불 기준입니다.', subs: [
       { id: 'trial', label: '무료체험', title: '3일 무료체험', ic: 'gift', blocks: [
         { t: 'perks' },
         { t: 'list', items: [
@@ -920,7 +949,7 @@ const V1 = {
           '끝난 뒤 <b>마이페이지 › 결제하기</b>에서 기간을 고르면 적어 둔 물건과 사진이 그대로 이어집니다.',
         ] },
       ] },
-      { id: 'plans', label: '이용권', title: '유료 이용권 (Plus) · 12개월이면 하루 {perDay}원꼴', ic: 'crown', path: '머리띠 결제하기 · 마이페이지 › 결제하기', route: '#/more', blocks: [
+      { id: 'plans', label: '이용권', title: '프로 이용권 · 12개월이면 하루 {perDay}원꼴', ic: 'crown', path: '머리띠 결제하기 · 마이페이지 › 결제하기', route: '#/more', blocks: [
         { t: 'plans' },
         { t: 'p', html: `금액은 할인이 적용된 결제금액입니다. 신용카드 · 가상계좌로 결제${POINTS_OPEN ? '하고, 보유 포인트로 뺄 수 있습니다' : '합니다'}. 결제 내역과 영수증은 <b>마이페이지 › 결제관리</b>에서 봅니다.` },
       ] },
@@ -950,12 +979,12 @@ const V1 = {
     ] },
 
     /* ============================================================ 06 회원비교 */
-    { id: 'compare', label: '회원비교', ic: 'scale', title: '무료회원과 유료회원', desc: '무엇이 같고 무엇이 다른지 한 표로 비교합니다.', subs: [
+    { id: 'compare', label: '회원비교', ic: 'scale', title: '무료회원과 프로 회원', desc: '무엇이 같고 무엇이 다른지 한 표로 비교합니다.', subs: [
       { id: 'table', label: '비교표', title: '회원별 이용 범위', ic: 'scale', blocks: [
         { t: 'compare' },
-        { t: 'note', tone: 'info', html: '무료회원도 <b>직접입력</b>으로 물건을 올려 관리할 수 있습니다. PDF · 구글 드라이브를 읽어 오는 <b>자동등록</b>과 <b>AI 자동 파싱</b>은 Plus를 이용하는 동안 열립니다.' },
+        { t: 'note', tone: 'info', html: '무료회원도 <b>직접입력</b>으로 물건을 올려 관리할 수 있습니다. PDF · 구글 드라이브를 읽어 오는 <b>자동등록</b>과 <b>AI 자동 파싱</b>은 프로 회원으로 이용하는 동안 열립니다.' },
       ] },
-      { id: 'when', label: 'Plus 추천', title: '이럴 때 Plus를 고르세요', ic: 'crown', blocks: [
+      { id: 'when', label: '프로 추천', title: '이럴 때 프로를 고르세요', ic: 'crown', blocks: [
         { t: 'cards', cols: 3, items: [
           { ic: 'folder', title: '물건이 많을 때', html: '여러 사건의 PDF를 받아 두는 분은 구글 드라이브 폴더를 등록해 두고 한꺼번에 올리는 편이 빠릅니다.' },
           { ic: 'doc', title: '입력 실수를 줄일 때', html: '감정가 · 최저가 · 면적을 PDF에서 바로 읽어, 옮겨 적다 생기는 실수를 줄입니다.' },
@@ -975,7 +1004,7 @@ const V1 = {
         { t: 'contact' },
         { t: 'p', html: '가입한 이메일, 사건번호, 화면 위치(예: 선정물건 › 수익분석)와 캡처를 함께 보내 주시면 더 빨리 도와드립니다.' },
       ] },
-      { id: 'report', label: '오류및제안', title: '오류 제보 · 기능 제안', ic: 'message', path: '커뮤니티 › 오류및제안', route: '#/community', blocks: [
+      { id: 'report', label: '오류및제안', title: '오류 제보 · 기능 제안', ic: 'message', path: '머리띠 공지 › 오류및제안', route: '#/community', blocks: [
         { t: 'p', html: `오류를 찾았거나 바라는 기능이 있으면 <b>커뮤니티 › 오류및제안</b>에 남겨 주세요.${POINTS_OPEN ? ' 제보 1건당 1,000P(내용에 따라 최대 10,000P, 월 최대 5만P)가 적립됩니다.' : ''}` },
       ] },
       { id: 'partner', label: '사업제휴', title: '사업제휴', ic: 'users', blocks: [
@@ -988,23 +1017,39 @@ const V1 = {
 /* ---------- 03 페이지안내 — 화면별 메뉴 설명 (aid = 앱 도움말 단추가 연결할 자리표) ---------- */
 V1.sections.find((s) => s.id === 'pages').subs = [
   { aid: 'help-layout', label: '화면 공통 구성', title: '화면 공통 구성', ic: 'layout', route: '#/', blocks: [
-    { t: 'p', html: '모든 화면이 같은 틀을 씁니다. 남색 상단 메뉴에서 큰 메뉴를, 그 아래 흰 줄에서 세부 화면(하위 탭)을 고릅니다.' },
+    { t: 'p', html: '모든 화면이 같은 틀을 씁니다. 남색 머리띠에서 큰 메뉴를, 그 아래 흰 띠에서 지금 위치(경로)와 세부 화면(하위 탭)을 고릅니다.' },
     { t: 'shot', key: 'layout', mock: 'layout', pins: [], legend: [
-      ['상단 메뉴', '물건등록부터 마이페이지까지 11개 메뉴. 지금 보는 메뉴 아래에 주황색 밑줄이 그어집니다.'],
-      ['메뉴 펼치기 ▼', '메뉴마다 하위 항목을 펼쳐 바로 이동합니다.'],
-      ['유틸 메뉴', '공지 · 결제하기 · 이용가이드 · 알림(종) · 밤낮 전환.'],
-      ['내 계정', '내 이름과 로그아웃.'],
-      ['하위 탭', '메뉴 안의 세부 화면. 맨 앞에 지금 메뉴 이름이 굵게 보입니다.'],
-      ['경로', '홈 › 메뉴 › 화면 순서로 지금 위치를 보여 줍니다.'],
+      ['상단 메뉴', '왼쪽은 경매 진행 순서대로 <b>물건등록 › 선정물건 › 임장경로 › 낙찰이후 › 자금관리</b>, 세로선 오른쪽은 언제든 꺼내 쓰는 <b>시장분석 툴 · 스토어 · 마이페이지</b>. 지금 보는 메뉴 아래에 주황 밑줄이 그어집니다.'],
+      ['메뉴 펼치기 ▼', '모든 메뉴의 하위 항목을 한 번에 펼쳐 바로 이동합니다.'],
+      ['바로가기', '공지 · 결제하기 · 이용가이드 · 알림(종) · 밤낮 화면 전환.'],
+      ['내 계정', '내 이름 ▼(회원정보 메뉴)과 로그아웃. 로그아웃하면 첫 화면(대문)으로 돌아갑니다.'],
+      ['경로', '흰 띠 왼쪽에 「홈 › 메뉴 › 화면」 순서로 지금 위치를 보여 줍니다. 앞 칸을 누르면 그 화면으로 갑니다.'],
+      ['하위 탭', '메뉴 안의 세부 화면. 고른 탭은 파란 글자 · 밑줄로 보입니다. 하위 탭이 없는 메뉴(물건등록 · 임장경로)는 흰 띠에 경로만 있습니다.'],
     ] },
+    { t: 'note', tone: 'tip', html: '로고나 경로의 <b>홈</b>을 누르면 로그인 후 대문으로 갑니다. 보던 화면과 하위 탭은 주소에 남아, 새로고침해도 그 화면이 다시 열립니다.' },
+  ] },
+  { aid: 'help-home', label: '로그인 후 대문', title: '로그인 후 대문(홈)', ic: 'home', path: '로고 · 경로의 홈', route: '#/', blocks: [
+    { t: 'p', html: '로그인하면 처음 보는 화면입니다. 마지막으로 분석한 물건의 다음 할 일과 내 경매 일정을 한눈에 봅니다.' },
+    { t: 'shot', key: 'home', pins: [[7, 6.8], [7, 14.2], [7, 32.4], [30.2, 32.4], [7, 54.1], [50.5, 54.1], [7, 81.4], [50.5, 81.4]], legend: [
+      ['마이턴 앱 띠', '앱 소개 보기 · 다운받기.'],
+      ['다음 할 일', '마지막으로 분석한 물건의 단계를 보고 할 일을 한 줄로 안내합니다. 아래 점 줄(손품조사 · 수익분석 · 임장 · 입찰 · 낙찰이후)이 지금 어디쯤인지 보여 주고, 단추가 그 화면으로 바로 보냅니다.'],
+      ['나의 경매 일정 · 달력', '매각기일 · 낙찰일 · 잔금기한 · 매도일이 날짜에 점으로 찍힙니다. <b>전체보기</b>는 마이페이지 › 입찰 캘린더로 갑니다.'],
+      ['다가오는 일정', '가까운 일정부터 D-day와 사건 · 건물을 보여 줍니다. 누르면 그 물건으로 갑니다.'],
+      ['공지사항', '서비스 공지 · 점검 · 안내. 전체보기는 공지 화면으로 갑니다.'],
+      ['최근 분석 내역', '마지막으로 손댄 물건과 화면(예: 수익분석). 누르면 그 화면으로 바로 이어서 봅니다.'],
+      ['부동산 투자 지표', '전국 · 서울 매매 · 전세 지수. 지금은 예시 값입니다(한국부동산원 연결 준비 중).'],
+      ['실거래 동향', '유형 · 지역별 월 거래량 · 평균가 흐름. 지금은 예시 값입니다(국토부 실거래가 연결 준비 중).'],
+    ] },
+    { t: 'note', tone: 'tip', title: '다음 할 일의 순서', html: '손품조사로 입지 · 시세를 본 뒤 <b>대략 수익</b>을 보고 임장을 정하고, 임장을 다녀와 <b>임장 결과로 입찰가를 확정</b>합니다.' },
   ] },
   { aid: 'help-register', label: '물건등록', title: '물건등록', ic: 'upload', path: '상단 메뉴 › 물건등록', route: '#/register', blocks: [
-    { t: 'p', html: '경매 물건을 선정물건에 올리는 곳입니다. PDF를 읽어 올리는 <b>자동등록</b>(Plus)과 손으로 적는 <b>직접입력</b>이 있습니다.' },
-    { t: 'shot', key: 'register', pins: [[10.6, 14.7], [3.0, 26.9], [3.0, 37.8], [3.0, 52.1]], legend: [
-      ['자동등록 · 직접입력 탭', '등록 방법을 고릅니다.'],
+    { t: 'p', html: '경매 물건을 선정물건에 올리는 곳입니다. 한 페이지에 위에서부터 <b>자동등록</b>(PRO) · <b>직접입력</b> · <b>AI 자동 파싱</b> 결과가 있습니다.' },
+    { t: 'shot', key: 'register', pins: [[7, 17.3], [7, 24.6], [7, 31.8], [7, 50.9], [7, 80.3]], legend: [
+      ['자동등록 PRO', 'PDF를 읽어 AI가 사건 카드로 정리합니다. 프로 회원이 씁니다(무료 회원에게는 「프로 회원이면 쓸 수 있습니다 · 결제하기」가 보입니다).'],
       ['AI 자동 분석', 'Gemini 키 등록 상태와 켜기/끄기 스위치. PDF에서 규칙으로 못 읽은 칸을 AI가 채웁니다.'],
       ['구글 드라이브 연동', '폴더를 고르고 <b>폴더등록</b>(추가 · 수정) · <b>폴더스캔</b>(새 PDF 읽기) · <b>PDF등록</b>(파일 직접 올리기).'],
-      ['AI 자동 파싱', 'PDF · 이미지를 끌어다 놓으면 분석 결과가 정리됩니다. 신규 · 변경 · 오류 건수를 함께 보여 줍니다.'],
+      ['직접입력', 'PDF 없이 손으로 적어 올립니다. 제목 줄의 <b>펼쳐서 적기</b>를 누르면 칸이 열립니다(무료 회원은 처음부터 펼쳐져 있습니다).'],
+      ['AI 자동 파싱', 'PDF · 이미지를 끌어다 놓으면 분석 결과가 정리됩니다. 총 등록물건 · 신규 · 변경 · 오류 건수를 함께 보여 줍니다.'],
     ] },
     { t: 'table', head: ['파싱 결과', '뜻', '할 일'], rows: [
       ['신규', '처음 보는 사건', '그대로 등록'],
@@ -1012,18 +1057,18 @@ V1.sections.find((s) => s.id === 'pages').subs = [
       ['오류', '파일을 읽지 못함', '파일 확인 후 다시 올리기'],
     ] },
     { t: 'h4', text: '직접입력' },
-    { t: 'shot', key: 'manual', pins: [[3.3, 18.0], [3.3, 29.1], [3.3, 40.1], [3.3, 51.1], [40.1, 93.9]], legend: [
-      ['사건번호 · 물건종류 <span class="req">*</span>', '사건번호, 관할법원, 물건종류(아파트 · 다세대 · 오피스텔 · 상가 · 토지 · 단독주택 · 기타), 유찰횟수.'],
+    { t: 'shot', key: 'manual', pins: [[7, 36.6], [7, 45], [7, 53.5], [7, 61.9], [42.4, 94.7]], legend: [
+      ['사건번호 <span class="req">*</span>', '사건번호, 관할법원, 물건종류(아파트 · 다세대·연립 · 오피스텔 · 상가 · 토지 · 단독주택 · 기타), 유찰횟수.'],
       ['소재지 <span class="req">*</span>', '주소를 적습니다.'],
-      ['매각기일 · 금액', '매각기일, 감정가, 최저가, 보증금(비우면 최저가의 10%).'],
-      ['관계인 · 물건 · 메모', '소유자 · 채무자, 면적 · 건축년도, 특이사항(유치권, 대항력 임차인 등).'],
+      ['매각기일 · 금액', '매각기일, 감정가, 최저가, 보증금(비우면 최저가의 10%). 금액은 적는 대로 세 자리마다 쉼표가 붙습니다.'],
+      ['관계인 · 물건 · 메모', '소유자 · 채무자, 건물 · 토지면적과 건축년도, 특이사항(유치권, 대항력 임차인 등).'],
       ['물건등록하기', '* 표시 칸을 채우면 선정물건에 올라갑니다.'],
     ] },
     { t: 'note', tone: 'warn', html: '자동으로 들어온 값도 <b>최저가 · 보증금</b>은 입찰 전에 한 번 더 확인하세요. 틀리면 입찰 자체가 어긋납니다.' },
   ] },
   { aid: 'help-list', label: '선정물건', title: '선정물건 · 물건카드', ic: 'layers', path: '상단 메뉴 › 선정물건 › 물건카드', route: '#/', blocks: [
     { t: 'p', html: '등록한 물건이 카드로 쌓이는 첫 화면입니다. 하위 탭의 물건정보~임장조사는 마지막으로 본 물건의 상세 화면으로 이어집니다.' },
-    { t: 'shot', key: 'list', pins: [[4.5, 14.2], [80.6, 14.2], [4.5, 18.1], [3.0, 25.9], [3.0, 35.5], [3.0, 41.2], [74.7, 25.5]], legend: [
+    { t: 'shot', key: 'list', pins: [[7, 10.9], [76.7, 12.4], [7, 16.5], [7, 22.6], [7, 30.8], [7, 35.9], [71.2, 29.4]], legend: [
       ['도구 상자', '유형 · 법원으로 거르고, 날짜순 ⇄ 임장순 정렬, 날짜 고르기, 주소 · 사건번호 검색.'],
       ['보관함 · 휴지통 · 고르기', '보관한 물건과 지운 물건을 열어 보고, 여러 물건을 한꺼번에 고릅니다.'],
       ['단계별 물건 수', '단계 이름을 누르면 그 단계의 물건만 봅니다.'],
@@ -1041,8 +1086,8 @@ V1.sections.find((s) => s.id === 'pages').subs = [
     ] },
   ] },
   { aid: 'help-item-basic', label: '물건정보', title: '물건상세 · 물건정보', ic: 'building', path: '선정물건 › 카드 누르기 › 물건정보', route: '#/', blocks: [
-    { t: 'p', html: '물건 카드를 누르면 상세 화면이 열립니다. 위쪽에는 사건번호 · 법원 · 매각기일(D-day) · 단계 · 주소가 늘 보이고, 하위 탭으로 내용을 바꿉니다.' },
-    { t: 'shot', key: 'basic', pins: [[4.0, 13.8], [3.0, 28.3], [3.0, 68.3], [50.4, 28.0]], legend: [
+    { t: 'p', html: '물건 카드를 누르면 상세 화면이 열립니다. 위쪽 사건 머리에 사건번호 · 법원 · 매각기일(D-day) · 단계 · 주소가 늘 보이고, 하위 탭(물건정보 · 권리분석 · 손품조사 · 수익분석 · 임장조사)으로 내용을 바꿉니다. 경로는 「홈 › 선정물건 › 탭 이름」으로 보입니다.' },
+    { t: 'shot', key: 'basic', pins: [[7, 15.2], [7, 24.5], [7, 55.5], [7, 87.7]], legend: [
       ['사건 머리', '사건번호 · 법원 · 매각기일 D-day · 진행 단계 · 주소.'],
       ['정보요약', '관할법원 · 사용승인 · 면적 · 동호 · 층 · 용적률 · 세대수. <b>편집</b>으로 고칩니다.'],
       ['기본정보', '소유자 · 채무자 · 채권자 · 차수 · 감정가 · 최저가 · 보증금.'],
@@ -1068,7 +1113,8 @@ V1.sections.find((s) => s.id === 'pages').subs = [
     { t: 'note', tone: 'tip', html: '중개업체 관리에 적어 둔 업체는 부동산 유선 상담표의 상호 목록에 그대로 나타납니다. 상호를 고르면 전화번호도 따라 들어갑니다.' },
   ] },
   { aid: 'help-item-profit', label: '수익분석', title: '물건상세 · 수익분석', ic: 'percent', path: '물건상세 › 수익분석', route: '#/', blocks: [
-    { t: 'p', html: 'A~D안 입찰가를 나란히 비교하고 한 안을 확정합니다. 확정한 안의 입찰가가 물건 카드에 표시됩니다.' },
+    { t: 'p', html: 'A~D안 입찰가를 나란히 비교하고 한 안을 확정합니다. 확정한 안의 입찰가가 물건 카드에 표시됩니다. 제목 옆 표시로 지금 값이 <b>임장 전 · 대략</b>인지 <b>임장 반영</b>(임장완료 · 입찰 · 낙찰)인지 구분합니다.' },
+    { t: 'note', tone: 'tip', title: '수익분석은 두 번', html: '손품조사 뒤 <b>대략 수익</b>을 보고 임장을 갈지 정하고, 임장을 다녀와 임장조사 결과로 <b>다시 고쳐 입찰가를 확정</b>합니다.' },
     { t: 'shot', key: 'profit', pins: [], legend: [
       ['A~D안', '보수적인 안부터 여기까지인 안까지 입찰가를 바꿔 가며 비교합니다.'],
       ['산정표', '취득세 · 법무비 · 대출이자 · 중개수수료 · 사업소득세가 자동 계산되어 세후 순이익 · 수익률이 나옵니다.'],
@@ -1088,6 +1134,7 @@ V1.sections.find((s) => s.id === 'pages').subs = [
       ['현장조사', '입지 확인 → 건물 · 호실 개별성(연식 · 주차 · 엘리베이터 · 구조 · 뷰 · 일조 · 수리 상태) → 탐문 → 부동산 현장 상담.'],
       ['체크리스트', '현장조사 · 수리상태 · 입찰자 현황을 하나씩 체크합니다.'],
     ] },
+    { t: 'note', tone: 'tip', html: '다 적었으면 맨 아래 <b>임장 결과로 수익분석 다시 보기 →</b>로 수익분석에 넘어가 입찰가를 확정합니다.' },
   ] },
   { aid: 'help-trip', label: '임장경로', title: '임장경로', ic: 'route', path: '상단 메뉴 › 임장경로', route: '#/trip', blocks: [
     { t: 'p', html: '임장예정 물건을 지도에 올리고 <b>동선최적화</b>로 가장 짧은 방문 순서를 정합니다. 앱에서 만든 경로를 웹에서도 그대로 씁니다.' },
@@ -1096,7 +1143,7 @@ V1.sections.find((s) => s.id === 'pages').subs = [
       ['출발지 · 동선최적화', '출발지를 정하고 동선최적화를 누르면 가장 짧은 순서가 잡힙니다.'],
       ['지도', '방문 순서대로 번호가 찍힙니다.'],
     ] },
-    { t: 'note', tone: 'tip', html: '다 둘러본 물건은 방문 체크를 하면 단계가 임장완료로 바뀝니다.' },
+    { t: 'note', tone: 'tip', html: '다 둘러본 물건은 방문 체크를 하면 단계가 임장완료로 바뀝니다. 정류장 줄의 돋보기(<b>임장조사 열기</b>)를 누르면 그 물건의 임장조사로 바로 갑니다.' },
   ] },
   { aid: 'help-postwin', label: '낙찰이후', title: '낙찰이후', ic: 'gavel', path: '상단 메뉴 › 낙찰이후', route: '#/postwin', blocks: [
     { t: 'p', html: '낙찰은 시작입니다. 낙찰 당일부터 사업자등록, 잔금 · 등기, 명도, 인테리어, 매도 · 임대까지 순서대로 챙깁니다.' },
@@ -1121,27 +1168,28 @@ V1.sections.find((s) => s.id === 'pages').subs = [
       ['종합부동산세', '12월 1일 ~ 15일, 주택 공시가 합산 9억원 초과 시'],
     ], note: '세금 화면의 금액은 참고용 계산입니다. 실제 신고는 세무 전문가와 확인하세요.' },
   ] },
-  { aid: 'help-market', label: '시장분석', title: '시장분석', ic: 'trend', path: '상단 메뉴 › 시장분석', route: '#/market', blocks: [
-    { t: 'p', html: '물건 하나가 아니라 지역 시장의 흐름을 봅니다.' },
+  { aid: 'help-market', label: '시장분석 툴', title: '시장분석 툴', ic: 'trend', path: '상단 메뉴 › 시장분석 툴', route: '#/market', blocks: [
+    { t: 'p', html: '물건 하나가 아니라 지역 시장의 흐름을 봅니다. 하위 탭은 <b>실거래분석 · 랭킹분석 · 물건분석</b>입니다.' },
     { t: 'shot', key: 'market', pins: [], legend: [
-      ['하위 탭', '지역분석 · 랭킹분석 · 물건분석.'],
-      ['지역분석', '시 · 군 · 구와 동 단위 거래 흐름과 수요공급.'],
-      ['물건분석 · 랭킹 · 사례', '손품 지표를 지역 단위로 모아 보고, 순위로 비교하고, 지역 경매 사례를 봅니다.'],
+      ['실거래분석', '시 · 도 → 시 · 군 · 구 → 읍 · 면 · 동과 종류 · 매매/전세 · 기간을 골라 <b>조회</b>합니다. 동별 거래 흐름과 수요공급을 보고, 조회 결과는 남아 있어 다시 열어도 그대로입니다.'],
+      ['랭킹분석', '<b>랭킹지도</b>(동별 거래량 순위를 지도 위에) · <b>거래랭킹</b>(전년 같은 기간과 비교). 지도 오른쪽 도구 막대로 로드뷰 · 지적편집도 · 거리 · 면적 · 반경 재기 · 장소 검색 · 학교 표시 · 인쇄를 씁니다.'],
+      ['물건분석', '주소로 물건을 찾아 <b>수요분석</b>과 <b>가격분석</b>(지도 · 유사물건 · 예상 가격)을 봅니다. 선정물건 › 손품조사와 같은 화면입니다.'],
     ] },
   ] },
-  { aid: 'help-community', label: '커뮤니티', title: '커뮤니티', ic: 'users', path: '상단 메뉴 › 커뮤니티', route: '#/community', blocks: [
+  { aid: 'help-community', label: '공지 · 오류제보', title: '공지 · 오류및제안', ic: 'users', path: '머리띠 오른쪽 위 공지', route: '#/community', blocks: [
     { t: 'shot', key: 'community', pins: [], legend: [
       ['공지', '공지사항 · 이벤트 · 업데이트 소식.'],
       ['오류및제안', POINTS_OPEN ? '오류 제보와 기능 제안. 제보하면 포인트가 적립됩니다.' : '오류 제보와 기능 제안.'],
-      ['FAQ', '자주 찾는 도움말. 자유게시판은 준비 중입니다.'],
     ] },
+    { t: 'note', tone: 'tip', html: '자주 묻는 질문(FAQ)은 이 이용가이드의 FAQ 장에 모아 두었습니다.' },
   ] },
   { aid: 'help-more', label: '마이페이지', title: '마이페이지', ic: 'user', path: '상단 메뉴 › 마이페이지', route: '#/more', blocks: [
     { t: 'p', html: '내 계정 · 이용권 · 설정을 모아 둔 곳입니다.' },
     { t: 'shot', key: 'more', pins: [], legend: [
-      ['하위 탭', `내 정보 · 결제하기${POINTS_OPEN ? ' · 포인트' : ''} · 고객센터. 알림은 머리띠의 종 아이콘으로 엽니다.`],
-      ['나의 선정물건', '선정물건 · 보관함 · 휴지통.'],
-      ['일정 · 업체 · AI', '입찰달력, 알림설정, 중개업체 · 인테리어 업체 관리, AI 자동 분석 설정.'],
+      ['하위 탭', `내정보 · 결제하기 · 입찰 캘린더${POINTS_OPEN ? ' · 포인트' : ''}. 알림은 머리띠의 종 아이콘으로, 고객센터는 맨 아래 바닥 띠(환불정책 옆)에서 엽니다.`],
+      ['내정보 첫 줄', '이름 · 아이디, <b>나의선정물건</b> 건수, <b>최근작성</b>(마지막으로 손댄 물건 · 화면 — 「이어서 ›」로 그 자리로), 결제내역.'],
+      ['입찰 캘린더', '매각기일 · 낙찰일 · 잔금기한 · 매도일을 달력으로 봅니다. 로그인 후 대문의 「나의 경매 일정」 전체보기도 여기로 옵니다.'],
+      ['업체 · AI', '알림설정, 중개업체 · 인테리어 업체 관리, AI 자동 분석 설정.'],
       ['결제 · 계정', `3일무료체험, 결제하기, 결제관리${POINTS_OPEN ? ', 포인트내역' : ''}, 정보수정, 회원탈퇴.`],
     ] },
   ] },
@@ -1160,8 +1208,8 @@ if (!POINTS_OPEN) V1.sections.forEach((sec) => { sec.subs = sec.subs.filter((sub
 
 /* ---------- 버전 목록 ---------- */
 GUIDE.release({
-  v: '1.0.0', date: '2026-11-01', title: '첫 공개',
-  notes: ['이용가이드 첫 공개 — 첫 화면에서 웹으로 보기 · 영상으로 보기를 고릅니다', '웹으로 보기: 한 장으로 이어지는 스크롤 문서', '영상으로 보기: 영상 자리와 장별 목차(영상은 준비 중)', '서비스목표 · 주요기능 · 페이지안내 · 사용방법 · 멤버십 · 회원비교 · FAQ · 문의하기 8개 장', '페이지별 실제 화면과 번호 설명, 도움말 연결용 자리표(help-…)', '2026년 11월 1일 웹 서비스 화면 기준'],
+  v: '1.1.0', date: '2026-11-03', title: '웹 화면 갱신',
+  notes: ['2026년 11월 3일 웹 화면 기준으로 그림 · 메뉴 이름 · 화면 구성을 맞췄습니다', '화면 공통 구성: 메뉴 두 묶음(경매 진행 › / 시장분석 툴 · 스토어 · 마이페이지), 흰 띠 왼쪽 경로', '로그인 후 대문(홈) 안내 추가', '물건등록: 자동등록(PRO) · 직접입력 · AI 자동 파싱 한 페이지', '수익분석 「임장 전 · 대략 / 임장 반영」, 임장조사 → 수익분석 다시 보기, 임장경로 「임장조사 열기」', '시장분석 툴(랭킹지도 지도 도구), 공지 · 오류및제안, 마이페이지(입찰 캘린더) 갱신', '이용가이드 첫 공개 — 첫 화면에서 웹으로 보기 · 영상으로 보기를 고릅니다', '웹으로 보기: 한 장으로 이어지는 스크롤 문서', '영상으로 보기: 영상 자리와 장별 목차(영상은 준비 중)', '서비스목표 · 주요기능 · 페이지안내 · 사용방법 · 멤버십 · 회원비교 · FAQ · 문의하기 8개 장', '페이지별 실제 화면과 번호 설명, 도움말 연결용 자리표(help-…)', '2026년 11월 1일 웹 서비스 화면 기준'],
   content: V1,
 });
 /* 다음 버전 예시 — 바뀐 곳만 patch 에서 고친다
@@ -1208,7 +1256,7 @@ const S = { rel: null, faqCat: '전체', lockSpy: 0, cur: '', curSub: '', mode: 
 const C = () => S.rel.content;
 const isNew = (x) => !!(x && x.since && x.since === S.rel.v);
 const NEW = (x) => (isNew(x) ? '<span class="tag new">NEW</span>' : '');
-const tagOf = (t) => (t === 'plus' ? '<span class="tag plus">Plus</span>' : t === 'soon' ? '<span class="tag soon">준비 중</span>' : t === 'key' ? '<span class="tag key">핵심</span>' : '');
+const tagOf = (t) => (t === 'plus' ? '<span class="tag plus">PRO</span>' : t === 'soon' ? '<span class="tag soon">준비 중</span>' : t === 'key' ? '<span class="tag key">핵심</span>' : '');
 const subId = (sec, x) => x.aid || `${sec.id}-${x.id}`;
 const sameOrigin = () => { try { return location.origin === APP_ORIGIN; } catch (e) { return false; } };
 
@@ -1235,7 +1283,7 @@ const B = {
   board: () => boardHtml(),
   flow: () => flowHtml(),
   trio: () => trioHtml(),
-  perks: () => `<div class="perks">${[['3일', '모든 기능 무료'], ...(POINTS_OPEN ? [['1,000P', '가입 축하 포인트']] : []), ['무료', '경매교육 영상']].map(([a, b]) => `<div class="perk"><strong>${a}</strong><small>${b}</small></div>`).join('')}</div>`,
+  perks: () => `<div class="perks">${[['3일', '모든 기능 무료'], ...(POINTS_OPEN ? [['1,000P', '가입 축하 포인트']] : []), ['무료', '경매교육 영상'], ['무료', '경매교육 전자책']].map(([a, b]) => `<div class="perk"><strong>${a}</strong><small>${b}</small></div>`).join('')}</div>`,
   plans: () => plansHtml(),
   tiers: () => tiersHtml(),
   compare: () => compareHtml(),
@@ -1246,9 +1294,9 @@ const B = {
 
 const MOCK = {
   layout: () => `<div class="mock"><span class="mock-tag">예시 화면</span><div class="mock-scroll"><div class="mk-app">
-    <div class="mk-gnb"><img src="${$('logo').getAttribute('src')}" alt=""><i class="pin">1</i><span class="mk-m"><span>물건등록</span><span class="on">선정물건</span><span>임장경로</span><span>낙찰이후</span><span>자금관리</span><span>시장분석</span><span>커뮤니티</span><span>…</span><span>마이페이지</span></span><i class="pin">2</i><span class="mk-box">▾</span>
-      <span class="mk-r"><i class="pin">3</i>공지 · 결제하기 · 이용가이드 ${I('bell')} ${I('moon')}<i class="pin">4</i><b style="color:var(--nav-text)">마이턴님</b> 로그아웃</span></div>
-    <div class="mk-sub"><i class="pin">5</i><span class="where">선정물건 ›</span><span class="on">물건카드</span><span>물건정보</span><span>권리분석</span><span>손품조사</span><span>수익분석</span><span>임장조사</span><span class="mk-crumb"><i class="pin">6</i> ${I('home') || ''} 홈 › 선정물건</span></div>
+    <div class="mk-gnb"><img src="${$('logo').getAttribute('src')}" alt=""><i class="pin">1</i><span class="mk-m"><span>물건등록</span><i>›</i><span class="on">선정물건</span><i>›</i><span>임장경로</span><i>›</i><span>낙찰이후</span><i>›</i><span>자금관리</span><span class="mk-div"></span><span>시장분석 툴</span><span>스토어</span><span>마이페이지</span></span><i class="pin">2</i><span class="mk-box">▾</span>
+      <span class="mk-r"><i class="pin">3</i>공지 · 결제하기 · 이용가이드 ${I('bell')} ${I('moon')}<i class="pin">4</i><b style="color:var(--nav-text)">마이턴 님 ▾</b> 로그아웃</span></div>
+    <div class="mk-sub"><span class="mk-crumb"><i class="pin">5</i> ${I('home') || ''} 홈 › 선정물건 › 물건카드</span><i class="pin">6</i><span class="on">물건카드</span><span>물건정보</span><span>권리분석</span><span>손품조사</span><span>수익분석</span><span>임장조사</span></div>
     <div class="mk-body">
       <div class="mk-tool"><span class="mk-c">전체 ▾</span><span class="mk-c">법원 ▾</span><span class="mk-c on">날짜순 ⇄</span><span class="mk-c">카드 ⇄</span><span class="mk-c">${I('calendar')} 2026.11.01</span><span class="mk-c mk-search">${I('search')} 주소 또는 사건번호 검색…</span><span class="mk-c">${I('archive')} ×2</span><span class="mk-c">☑</span></div>
       <div class="mk-ghost"></div>
@@ -1282,8 +1330,11 @@ function heroHtml() {
 }
 
 function videoHtml() {
-  /* 우리 사이트에서도 영상을 페이지 안에 틀지 않는다 — 소리와 함께 저절로 도는 일이 없게 새 탭 카드로만 */
-  return `<a class="video-card" href="${PROMO_URL}" target="_blank" rel="noopener"><span class="play">${I('play')}</span><span><b>마이턴옥션 소개 영상 · 42초</b><small>경매는 아직 아날로그다 → 사건카드 한 장으로</small></span>${I('ext')}</a>`;
+  /* 소개 영상을 페이지 안에 붙인다(2026-11-03) — 재생 전 화면(썸네일 · ▶)으로 서 있고, 눌러야 소리와 함께 재생된다(저절로 돌지 않는다).
+     [전체 화면]은 영상 틀을 화면 가득. 지금 영상은 앱 소개 영상을 임시로 쓴다 — 웹 소개 영상으로 바꿀 것(docs/서비스오픈목록.md 7) */
+  return `<figure class="video-box"><div class="video-frame" id="promoFrame"><iframe src="${PROMO_PLAY_URL}" title="마이턴옥션 소개 영상" loading="lazy" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`
+    + `<figcaption><span class="play">${I('play')}</span><span class="vt"><b>마이턴옥션 소개 영상 · 42초</b><small>경매는 아직 아날로그다 → 사건카드 한 장으로</small></span>`
+    + `<button type="button" class="video-full" data-act="video-full">${I('full')}전체 화면</button></figcaption></figure>`;
 }
 
 function scopeHtml() {
@@ -1429,11 +1480,12 @@ function setMode(m) {
 }
 const MODES = ['home', 'web', 'video'];
 function route(h, instant) {
-  if (!h || h === 'home') { setMode('home'); window.scrollTo(0, 0); return; }
+  // 들어오면 바로 웹 페이지 — 고르는 첫 화면은 건너뛴다(예전 #home 주소도 웹으로)
+  if (!h || h === 'home') { setMode('web'); window.scrollTo(0, 0); return; }
   if (h === 'web') { setMode('web'); window.scrollTo(0, 0); return; }
   if (h === 'video' || h.startsWith('video-')) { setMode('video'); window.scrollTo(0, 0); if (h.startsWith('video-')) seekTo(h.slice(6), false); return; }
   if (document.getElementById(h) && $('main').contains(document.getElementById(h))) { setMode('web'); if (!goTo(h, instant)) window.scrollTo(0, 0); return; }
-  setMode('home'); window.scrollTo(0, 0);
+  setMode('web'); window.scrollTo(0, 0);
 }
 
 /* ---------- 틀 ---------- */
@@ -1567,6 +1619,13 @@ function filterFaq() {
 
 /* ---------- 이벤트 ---------- */
 document.addEventListener('click', (e) => {
+  /* 소개 영상 전체 화면 — 틀째 화면 가득. 못 하는 기기(아이폰 사파리 등)는 영상 화면을 새 창으로 */
+  if (e.target.closest('[data-act="video-full"]')) {
+    const f = $('promoFrame'); const go = f && (f.requestFullscreen || f.webkitRequestFullscreen);
+    if (go) { try { const r = go.call(f); if (r && r.catch) r.catch(() => window.open(PROMO_PLAY_URL, '_blank', 'noopener')); } catch (err) { window.open(PROMO_PLAY_URL, '_blank', 'noopener'); } }
+    else window.open(PROMO_PLAY_URL, '_blank', 'noopener');
+    return;
+  }
   const a = e.target.closest('a[href^="#"]');
   if (a && !a.target) {
     const id = decodeURIComponent(a.getAttribute('href').slice(1));
@@ -1613,12 +1672,35 @@ let want = '';
 try { want = new URLSearchParams(location.search).get('v') || ''; } catch (e) { want = ''; }
 S.rel = GUIDE.get(want) || GUIDE.latest();
 /* FAQ — 커뮤니티 · 고객센터와 같은 목록(faq.json, 웹 빌드 때 앱 FAQ 에서 뽑는다). 받은 뒤 그린다 — 못 받으면 빈 목록으로 그리고 문의하기 안내가 뜬다 */
-const start = () => { paintTheme(); syncH(); render(); fromHash(true); requestAnimationFrame(() => { if (S.mode === 'web') fromHash(true); }); };
+/* 새로고침해도 본문이 사라졌다 나타나지 않게(2026-11-03) — 예전엔 faq.json 을 받은 뒤에야 본문 전체를 그려, 받는 동안 화면이 비었다.
+   이제 본문은 바로 그린다. FAQ 는 지난번 받아 둔 목록(이 브라우저)으로 먼저 채우고, 새 목록이 다르면 그때 다시 그린다(보던 자리는 그대로).
+   보던 스크롤 자리도 이 탭이 열려 있는 동안 남겼다가 되살린다 */
+const FAQ_KEY = 'guide.faq'; const POS_KEY = 'guide.pos';
+const setFaq = (list) => { if (Array.isArray(list)) GUIDE.list.forEach((rel) => { rel.content.faq = list.map((f) => ({ ...f })); }); };
+let faqSeen = '';
+try { faqSeen = localStorage.getItem(FAQ_KEY) || ''; if (faqSeen) setFaq(JSON.parse(faqSeen)); } catch (e) { faqSeen = ''; }
+try { history.scrollRestoration = 'manual'; } catch (e) { /* 그만 */ }
+addEventListener('pagehide', () => { try { sessionStorage.setItem(POS_KEY, JSON.stringify({ hash: location.hash, y: Math.round(window.scrollY) })); } catch (e) { /* 그만 */ } });
+const start = () => {
+  paintTheme(); syncH(); render(); fromHash(true);
+  let pos = null; try { pos = JSON.parse(sessionStorage.getItem(POS_KEY) || 'null'); } catch (e) { pos = null; }
+  requestAnimationFrame(() => {
+    if (S.mode === 'web') fromHash(true);
+    if (pos && pos.hash === location.hash && pos.y > 0) window.scrollTo(0, pos.y);   /* 새로고침 — 보던 자리 그대로 */
+  });
+};
+start();
 fetch('faq.json', { cache: 'no-cache' })
-  .then((r) => (r.ok ? r.json() : []))
-  .then((list) => { if (Array.isArray(list)) GUIDE.list.forEach((rel) => { rel.content.faq = list.map((f) => ({ ...f })); }); })
-  .catch(() => {})
-  .finally(start);
+  .then((r) => (r.ok ? r.text() : ''))
+  .then((txt) => {
+    if (!txt || txt === faqSeen) return;   /* 그대로면 다시 그리지 않는다 */
+    let list; try { list = JSON.parse(txt); } catch (e) { return; }
+    if (!Array.isArray(list)) return;
+    try { localStorage.setItem(FAQ_KEY, txt); } catch (e) { /* 그만 */ }
+    setFaq(list);
+    const y = window.scrollY; render(); window.scrollTo(0, y);   /* FAQ 만 바뀌어도 보던 자리는 그대로 */
+  })
+  .catch(() => {});
 })();
 </script>
 
