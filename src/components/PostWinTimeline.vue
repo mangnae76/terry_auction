@@ -398,15 +398,6 @@ const resetDefault = () => {
 .pwt-row.dragging .pwt-chk { outline: 2px solid #2b6df3; outline-offset: 2px; }
 .pwt-row :is(input, button, select) { cursor: pointer; }
 .pwt-row input:not([type=checkbox]) { cursor: text; user-select: text; }
-/* 웹 — 이름 · 설명은 왼쪽, 날짜는 오른쪽 끝에 같은 폭으로(기준 글 · 날짜 · D-day 칸 폭이 줄마다 같아 들쭉날쭉하지 않다) */
-.pwt.web .pwt-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 16px; align-items: center; }
-.pwt.web .pwt-name { grid-column: 1; grid-row: 1; }
-.pwt.web .pwt-meta { grid-column: 2; grid-row: 1 / span 2; margin: 0; display: grid; grid-template-columns: auto 92px 56px; column-gap: 10px; align-items: baseline; justify-items: end; font-variant-numeric: tabular-nums; }
-.pwt.web .pwt-meta .pwt-base { grid-column: 1; grid-row: 1; }
-.pwt.web .pwt-meta b { grid-column: 2; grid-row: 1; }
-.pwt.web .pwt-meta .pwt-dday { grid-column: 3; grid-row: 1; }
-.pwt.web .pwt-note { grid-column: 1; grid-row: 2; }
-.pwt.web .pwt-edit { grid-column: 1 / -1; }
 .pwt-edit, .pwt-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .pwt-add { margin-top: 16px; padding: 14px; border: 1px dashed #d5dbe6; border-radius: 10px; background: #fafbfd; }
 .pwt-add-lab { font-size: 14px; font-weight: 800; color: #374151; }
