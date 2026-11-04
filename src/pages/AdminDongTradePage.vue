@@ -18,8 +18,7 @@ import YmCount from '../components/YmCount.vue';
 import InfoTip from '../components/InfoTip.vue';
 import AdminRegionDemandPage from './AdminRegionDemandPage.vue';
 import TradeStatsPage from './TradeStatsPage.vue';
-import SonpumPricePage from './SonpumPricePage.vue';
-import { useAuctionStore } from '../stores/auctionStore';
+import AdminCaseTradePage from './AdminCaseTradePage.vue';
 import DotStackChart, { type DotView } from '../components/DotStackChart.vue';
 import BubbleMatrix from '../components/BubbleMatrix.vue';
 import TradeTimeline from '../components/TradeTimeline.vue';
@@ -110,17 +109,6 @@ const listQuery = ref('');
 /** 웹 시장분석 › 랭킹분석 — 같은 화면을 랭킹 탭(랭킹지도 · 거래랭킹)만으로 띄운다.
  *  시장분석 › 손품조사(sonMode) — 같은 화면을 수요분석 · 시세분석 탭만으로(검색창은 지역분석과 똑같다). 지역분석은 그 넷을 뺀 탭 */
 const props = defineProps<{ rankMode?: boolean; sonMode?: boolean }>();
-const auctionStoreForSon = useAuctionStore();
-// 물건분석 › 가격분석 — 머리 카드에 고른 물건(선정물건에서 마지막으로 연 물건, 'son.pick'). 바뀌면 웹이 son:pick 으로 알린다
-const sonPickId = ref((() => { try { return localStorage.getItem('son.pick') ?? ''; } catch { return ''; } })());
-const onSonPick = (e: Event) => { sonPickId.value = String((e as CustomEvent).detail ?? ''); };
-if (typeof window !== 'undefined') window.addEventListener('son:pick', onSonPick);
-onBeforeUnmount(() => window.removeEventListener('son:pick', onSonPick));
-const sonAuction = computed(() => {
-  const list = [...auctionStoreForSon.auctions].filter((a) => !a.hidden).sort((a, b) => String(b.eventDate || '').localeCompare(String(a.eventDate || '')));
-  return list.find((a) => a.id === sonPickId.value) ?? list[0] ?? null;
-});
-const sonKind = computed(() => { const t = sonAuction.value?.propertyType ?? ''; return /아파트/.test(t) ? 'apt' : /오피스텔/.test(t) ? 'officetel' : 'villa'; });
 const listView = ref<'map' | 'top' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case'>(props.rankMode ? 'map' : props.sonMode ? 'supply' : 'table');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
 const mapRun = ref(0);
@@ -1008,8 +996,8 @@ const downloadCsv = () => {
         :chip="snapChip"
         @pick-dong="(d: string) => { dong = d; }"
       />
-      <!-- 가격분석 — 선정물건 손품조사의 가격분석 그대로(2026-11-02). 물건은 위 머리 카드의 고른 물건('son.pick') -->
-      <div v-if="webEmbed && listView === 'case'" class="son-price"><SonpumPricePage v-if="sonAuction" :key="sonAuction.id" :auction="sonAuction" :kind="sonKind" /><p v-else class="son-msg">선정물건이 없습니다. 물건을 등록하면 가격분석을 볼 수 있습니다.</p></div>
+      <!-- 가격분석 — 경매지번 분석 화면 그대로: 전체 주소 · 종류 · 조회 줄은 위 고르는 줄 자리(#admTopBarSlot)로. 선정물건이 없어도 주소만으로 찾는다 -->
+      <div v-if="webEmbed && listView === 'case'" class="adm-case-in app-market" data-k="case"><AdminCaseTradePage in-dong /></div>
       <template v-if="all.length > 0 && listView !== 'map' && listView !== 'case'">
         <!-- 웹 — 위 요약 상자 틀은 하나. 읍면동을 고르면 안의 상자만 셋(총 거래건수 · 실거래가 평균 · 평당가 평균)으로 -->
         <section v-if="webEmbed && listView !== 'supply'" class="adm-gunav">
