@@ -2836,6 +2836,9 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-sched .hm-rd .lb { margin-right: 0; white-space: nowrap; }
 .hm-sched .hm-rd .it-chip { display: block; width: 100%; box-sizing: border-box; text-align: center; padding: 1px 0; }
 .hm-sched .hm-rd .amt { margin-left: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 핵심은 왼쪽 D-day · 날짜 — 나머지(사건 · 동네 · 회차 · 칩 · 금액)는 굵기 없이, 금액은 검정 · '원' 끝자리로 오른쪽 정렬 */
+.hm-sched .hm-tx .ln b, .hm-sched .hm-rd .lb, .hm-sched .hm-rd .it-chip, .hm-sched .hm-rd .amt { font-weight: 400 !important; }
+.hm-sched .hm-rd .amt, .hm-sched .hm-rd .amt.now { color: var(--text) !important; text-align: right; }
 .hm-sched time .kd { justify-self: auto; }   /* 그 날짜가 무엇인지 — 달력 범례와 같은 색 칩(매각기일 · 낙찰일 · 잔금기한 · 매도일)을 날짜 앞에 */
 .hm-empty { display: flex; align-items: center; gap: 14px; padding: 18px 20px; border: 1px dashed var(--line-2); border-radius: 12px; background: var(--surface-2); }
 .hm-empty svg { flex: 0 0 auto; width: 30px; height: 30px; color: var(--faint); }
@@ -6950,12 +6953,7 @@ span.cal-day.has { cursor: help; }
   const hmToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const hmCase = (a) => (CLOUD.T && CLOUD.T.caseLabelOf ? CLOUD.T.caseLabelOf(a) : a.caseNumber) || '';
   /* 동네부터 — 주소에 건물명이 없으면 건물명 칸을 끼운 주소(앱과 같은 shownAddressOf)에서 읍 · 면 · 동부터 끝까지 */
-  const hmPlace = (a) => {
-    const T = CLOUD.T; const full = T && T.shownAddressOf ? T.shownAddressOf(a) : String(a.address || '');
-    const p = full.split(/\s+/).filter(Boolean);
-    const i = p.findIndex((t) => /[동읍면리가]$/.test(t) && !/^\d/.test(t));
-    return (i >= 0 ? p.slice(i) : p.slice(-3)).join(' ');
-  };
+  const hmPlace = (a) => (CLOUD.T && CLOUD.T.shownPlaceOf ? CLOUD.T.shownPlaceOf(a) : String(a.address || '').split(' ').slice(-3).join(' '));
   /* 이번 회차 한 줄 — 기본정보 회차 줄을 그대로(같은 셈 bidRoundsOf · 같은 칩): '3차 최저가 [49%] [진행] 2026-11-17  119,700,000원' */
   /* 회차 줄 — 이름 · 비율 · 결과 칩 · 금액. 날짜는 오른쪽 끝 '매각기일 26.11.17 (화)' 한 곳에만 */
   const hmRound = (a) => {

@@ -10,6 +10,7 @@ import { BALANCE_DUE_DAYS } from '../utils/auctionDates';
 import type { AuctionDetail } from '../types/auction';
 import type { InteriorExpenseRecord } from '../types/finance';
 import { shortAddr } from '../utils/address';
+import { shownAddressOf } from '../utils/addressName';
 import { shortCase } from '../utils/auctionSummary';
 import { bidStageOf, hasBidResult } from '../utils/stageLabel';
 
@@ -156,10 +157,10 @@ export const ddayText = (n: number | null): string => {
 /** 취득일(잔금 납부일)부터 취득세 신고기한까지 */
 const ACQ_TAX_DAYS = 60;
 
-const label = (a: AuctionDetail) => shortCase(a) || shortAddr(a.address) || '물건';
+const label = (a: AuctionDetail) => shortCase(a) || shortAddr(shownAddressOf(a)) || '물건';
 /** 제목 아래에 붙일 주소 — 제목이 이미 주소면 겹쳐 적지 않는다 */
 const where = (a: AuctionDetail) => {
-  const addr = shortAddr(a.address);
+  const addr = shortAddr(shownAddressOf(a));   // 건물명이 없던 주소엔 건물명 칸을 끼워서
   return addr && addr !== label(a) ? addr : '';
 };
 

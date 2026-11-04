@@ -46,6 +46,14 @@ export const addressWithName = (address: string, name?: string | null): string =
 export const shownAddressOf = (a?: { address?: string | null; basicSummary?: Record<string, string> | null } | null): string =>
   addressWithName(a?.address ?? '', a?.basicSummary?.['sum.buildingName']);
 
+/** 짧은 주소 — 건물명을 끼운 주소(shownAddressOf)에서 읍 · 면 · 동부터 끝까지('검암동 597-4 DS리치빌 2층 203호').
+ *  홈 일정 · 최근 분석 · 마이페이지 최근 작성처럼 한 줄에 물건을 적는 곳이 같이 쓴다 */
+export const shownPlaceOf = (a?: { address?: string | null; basicSummary?: Record<string, string> | null } | null): string => {
+  const p = shownAddressOf(a).split(/\s+/).filter(Boolean);
+  const i = p.findIndex((t) => /[동읍면리가]$/.test(t) && !/^\d/.test(t));
+  return (i >= 0 ? p.slice(i) : p.slice(-3)).join(' ');
+};
+
 /** 보여 줄 주소를 세 토막으로 가른다 — 손으로 적어 둔 건물명만 따로 칠하려고.
  *  이름을 안 적었거나 주소에서 못 찾으면 before 에 주소를 통째로 담아 돌려준다. */
 /** 주소 안에 이미 적힌 건물명 — 지번 바로 뒤에서 동·층·호 앞까지 ('… 679-2, 부경캐슬 3층 304호' → '부경캐슬').
