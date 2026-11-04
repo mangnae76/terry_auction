@@ -2809,6 +2809,11 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-sched .kd.p { background: #fff3e8; color: #c2570a; } .hm-sched .kd.w { background: #e8f7ee; color: #15803d; } .hm-sched .kd.d { background: #e6f6f4; color: #0f766e; }
 .hm-sched b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 700; }
 .hm-sched small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--muted); }
+/* 첫 줄 — 사건 · 동네 오른쪽에 법원을 같은 줄로 */
+.hm-sched .hm-tx { min-width: 0; }
+.hm-sched .hm-tx .ln { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.hm-sched .hm-tx .ln b { flex: 0 1 auto; min-width: 0; }
+.hm-sched .hm-tx .ln small { flex: none; }
 /* 매각기일 줄의 이번 회차 — 기본정보 회차 줄(이름 · 비율 칩 · 결과 칩 · 날짜 · 금액)을 한 줄로, 카드에 맞게 작게 */
 .hm-sched .hm-rd { display: flex; align-items: center; gap: 4px; margin-top: 4px; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 12px; }
 .hm-sched .hm-rd .lb { font-weight: 700; color: var(--text); margin-right: 2px; }
@@ -6931,12 +6936,13 @@ span.cal-day.has { cursor: help; }
   const hmCase = (a) => (CLOUD.T && CLOUD.T.caseLabelOf ? CLOUD.T.caseLabelOf(a) : a.caseNumber) || '';
   const hmPlace = (a) => String(a.address || '').split(' ').slice(-3).join(' ');
   /* 이번 회차 한 줄 — 기본정보 회차 줄을 그대로(같은 셈 bidRoundsOf · 같은 칩): '3차 최저가 [49%] [진행] 2026-11-17  119,700,000원' */
-  const hmRound = (a) => {
+  /* d — 이 줄의 일정 날짜(오른쪽 끝). 회차 날짜가 같으면 두 번 쓰지 않고, 다를 때만(기일내역과 매각기일이 어긋남) 요일까지 적는다 */
+  const hmRound = (a, d = '') => {
     const T = CLOUD.T; const rows = T && T.bidRoundsOf ? T.bidRoundsOf(a) : [];
     const r = rows.find((x) => x.current) || rows[rows.length - 1];
     if (!r) return '';
     const tone = T.roundToneOf ? T.roundToneOf(r.status) : '';
-    return `<span class="hm-rd"><span class="lb">${esc(r.label)}</span>${r.rate ? `<span class="it-chip pct">${esc(r.rate)}</span>` : ''}${r.status ? `<span class="it-chip ${tone}">${esc(r.status)}</span>` : ''}${r.date ? `<span class="it-date ${tone === 'st-now' ? 'now' : ''}">${esc(r.date)}</span>` : ''}${r.price > 0 ? `<span class="amt ${r.current ? 'now' : ''}">${r.price.toLocaleString('ko-KR')}원</span>` : ''}</span>`;
+    return `<span class="hm-rd"><span class="lb">${esc(r.label)}</span>${r.rate ? `<span class="it-chip pct">${esc(r.rate)}</span>` : ''}${r.status ? `<span class="it-chip ${tone}">${esc(r.status)}</span>` : ''}${r.date && r.date.slice(0, 10) !== d ? `<span class="it-date ${tone === 'st-now' ? 'now' : ''}">${esc(r.date.slice(2, 10).replace(/-/g, '.'))} (${hmWk(r.date.slice(0, 10))})</span>` : ''}${r.price > 0 ? `<span class="amt ${r.current ? 'now' : ''}">${r.price.toLocaleString('ko-KR')}원</span>` : ''}</span>`;
   };
   /** 최근 분석 — 물건마다 저장할 때 남긴 editLog 를 모아 새것부터 */
   const HM_FLOW = { 진행절차: 'steps', 명도분석: 'evict', 세금분석: 'tax', 필요경비: 'need', 사업경비: 'biz', 매물등록: 'sell' };   /* 낙찰이후 › 진행절차 안 탭(PostWinPage FLOW_SUBS) */
@@ -7058,7 +7064,7 @@ span.cal-day.has { cursor: help; }
     const cont = hmContHtml();
     const sched = hmSchedule(5);
     const schedHtml = sched.length
-      ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span><span><b>${esc(hmCase(r.a))} · ${esc(hmPlace(r.a))}</b><small>${esc(r.a.courtName || '')}</small>${r.kind === 'bid' ? hmRound(r.a) : ''}</span><time>${r.d.slice(2).replace(/-/g, '.')} (${hmWk(r.d)})</time></button></li>`).join('')}</ul>`
+      ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span><span class="hm-tx"><span class="ln"><b>${esc(hmCase(r.a))} · ${esc(hmPlace(r.a))}</b><small>${esc(r.a.courtName || '')}</small></span>${r.kind === 'bid' ? hmRound(r.a, r.d) : ''}</span><time>${r.d.slice(2).replace(/-/g, '.')} (${hmWk(r.d)})</time></button></li>`).join('')}</ul>`
       : `<div class="hm-empty">${HM_SVG(HM_IC.cal)}<div><b>등록된 일정이 없습니다</b><small>물건을 등록하면 매각기일 · 낙찰일 · 잔금기한 · 매도일이 여기에 표시됩니다.</small></div><button type="button" data-act="hm-register">물건 등록하기 →</button></div>`;
     const notices = HM.notices.slice(0, 4);
     const recent = hmRecent(4);
