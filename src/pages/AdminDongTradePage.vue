@@ -169,7 +169,7 @@ const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭
 const tellTab = () => {
   if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
-  window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: [props.rankMode ? '랭킹분석' : props.sonMode ? '물건분석' : '실거래분석', label] } }));
+  window.dispatchEvent(new CustomEvent('adm:tab', { detail: { trail: [props.rankMode ? '랭킹분석' : props.sonMode ? '시세예측' : '실거래분석', label] } }));
 };
 watch([listView, dong], tellTab);
 onMounted(tellTab);
