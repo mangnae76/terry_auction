@@ -2136,7 +2136,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .app-detail .adp-pd-box { width: 132px !important; height: var(--ctl-h); padding: 0 10px !important; gap: 6px !important; }
 /* 입찰가산정 머리 줄 날짜(낙찰일 · 잔금기한 · 매도일) — 한 단계 크게 */
 .app-detail .adp-head-dates .adp-pd-item > em, .app-detail .adp-head-dates .adp-pd-box span { font-size: 15px !important; }
-.app-detail .adp-head-dates .adp-pd-box { width: 140px !important; height: 36px; }
+.app-detail .adp-head-dates .adp-pd-box { width: 116px !important; height: 36px; padding: 0 10px !important; }   /* 날짜 '26-11-10' 이 들어갈 만큼만(140 → 116) */
 /* 입찰일이 틀립니다 — 머리 줄 날짜에 맞춰 한 단계 크게, 굵게 하지 않는다 */
 .app-detail .adp-head-dates .adp-pd-warn { font-size: 14px !important; font-weight: 400 !important; gap: 5px; }
 .app-detail .adp-head-dates .adp-pd-warn svg { width: 15px; height: 15px; }
@@ -2146,14 +2146,14 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .app-detail .adp-profit-head .adp-head-plans .bida-plans { gap: 8px; }
 @media (max-width: 1500px) {
   .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates { gap: 10px !important; margin-left: 6px !important; }
-  .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-box { width: 122px !important; padding: 0 8px !important; }
+  .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-box { width: 108px !important; padding: 0 8px !important; }
   .app-detail .adp-head-plans .bida-plan-name { padding: 0 10px 0 4px; }
   .app-detail .adp-head-plans .bida-plan.add .bida-plan-name { padding-left: 10px; }
   .app-detail .adp-head-plans .bida-okname { padding: 0 8px 0 6px; }
 }
 @media (max-width: 1360px) {
   .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-item > em, .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-box span { font-size: 14px !important; }
-  .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-box { width: 112px !important; padding: 0 6px !important; gap: 4px !important; }
+  .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-box { width: 100px !important; padding: 0 6px !important; gap: 4px !important; }
   .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-item { gap: 5px !important; }
   .app-detail .adp-head-plans .bida-plan-name { height: 32px; padding: 0 8px 0 2px; font-size: 13px; }
   .app-detail .adp-head-plans .bida-plan.add .bida-plan-name { padding-left: 8px; }
