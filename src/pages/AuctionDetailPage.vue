@@ -6623,7 +6623,7 @@ const goBack = () => router.back();
               <svg class="adp-profit-ico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 17 9.5 10.5l4 4L21 7" /><path d="M15 7h6v6" />
               </svg>
-              예상수익분석
+              수익분석
             </h2>
             <span :class="['adp-auto-chip', { 'web-solo': webEmbed }]">✦ 자동계산</span>
             <!-- 웹은 날짜를 머리(자동계산 오른쪽)로 올린다 — 따로 있던 날짜 줄을 걷어 아래가 위로 붙는다 -->
@@ -6641,6 +6641,8 @@ const goBack = () => router.back();
                 <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.sellDate) }">{{ shortYmd(auction.sellDate) || '날짜입력' }}</span></span>
               </button>
             </span>
+            <!-- 웹 새화면 — 안 고르기(A~D안) · 초기화를 머리 줄 오른쪽 끝으로(아래 .bida-plans 가 여기로 옮겨 온다). 머리 줄은 늘 한 줄 -->
+            <span v-if="webNew && !isCollapsed('profit')" id="adpPlansSlot" class="adp-head-plans" @click.stop />
             <!-- 새화면은 안 고르기 줄(＋B안…)로 늘리므로 표 −/＋ 를 뺀다. 클래식은 늘릴 곳이 이것뿐이라 남긴다 -->
             <span v-if="webEmbed && !webNew && !isCollapsed('profit')" class="adp-mkt-step adp-head-step" @click.stop>
               <span class="lab">표</span>
@@ -6919,6 +6921,7 @@ const goBack = () => router.back();
           <!-- ===== 웹 입찰가산정(A안) — 위 요약 카드 넷, 아래 입찰정보 · 수익 | 비용 목록, 맨 아래 돈이 나가는 순서. 칸은 늘 열려 있고 손을 멈추면 저장 ===== -->
           <div v-if="webNew && !isCollapsed('profit') && si === selectedPlan" :id="`profit-tbl-${si}`" class="bida">
             <!-- 안 고르기 — 있는 안은 고르고, 바로 다음 빈 칸은 눌러서 안을 하나 더 만든다. 초기화 · 삭제는 같은 줄 오른쪽 -->
+            <Teleport defer to="#adpPlansSlot">
             <div class="bida-plans">
               <div class="bida-seg" role="tablist">
                 <!-- 안마다 체크 상자(왼쪽 · 누르면 그 안으로 확정 · 하나만) + 이름(누르면 그 안을 본다) -->
@@ -6950,6 +6953,7 @@ const goBack = () => router.back();
                 
               </span>
             </div>
+            </Teleport>
 
             <!-- 왼쪽 입찰정보 · 비용 · 수익과 줄을 맞춰 돈이 나가는 순서를 나눈다 — 오른쪽은 세로 선으로 이어진 타임라인
                  (입찰정보 ↔ 1 입찰 당일, 비용 ↔ 2 잔금 납부일, 수익 ↔ 3 명도·수리 · 합계 · 그 다음). 빈 자리는 선이 이어 준다 -->
@@ -13120,6 +13124,10 @@ select.adp-pub-input option { text-align: center; }
 .adp-profit-head:has(.adp-head-dates) { justify-content: flex-start; }   /* 웹 — 오른쪽 단추가 빠져 칩 · 날짜가 양끝으로 벌어지지 않게 제목 옆에 모은다 */
 .adp-head-dates { display: inline-flex; align-items: center; gap: 14px; margin-left: 10px; }
 .adp-head-dates .adp-pd-item { cursor: pointer; }
+/* 웹 — 안 고르기(A~D안) · 초기화는 머리 줄 오른쪽 끝. 머리 줄은 줄바꿈 없이 한 줄 */
+.adp-profit-head:has(.adp-head-plans) { flex-wrap: nowrap; white-space: nowrap; }
+.adp-head-plans { margin-left: auto; display: inline-flex; align-items: center; flex: none; }
+.adp-head-plans .bida-acts { margin-left: 0; }
 .adp-head-step { margin-right: 8px; }
 /* (새화면/클래식 바꾸기 단추는 뺐다) */
 .adp-view-seg { display: inline-flex; gap: 3px; padding: 3px; margin-right: 6px; border-radius: 9px; background: #e3e8f1; }

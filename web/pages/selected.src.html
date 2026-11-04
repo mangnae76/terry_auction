@@ -2130,7 +2130,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
   .adp-agency-range .lab, .adp-agency-fld.note-fld > .lab, .adp-agency-range .sep, .adp-agency-range .unit, .adp-agency-trigger, .adp-agency-trigger .txt) { font-weight: 400 !important; }
 /* 웹 임장조사 — 현장조사 · 현장 상담 · 체크리스트도 손품조사와 같은 세로 여유 */
 .app-detail.tab-field .adp-fs-row { padding-top: 5px !important; padding-bottom: 5px !important; }   /* 10-31 세로 줄임 8 → 5 */
-/* 웹 입찰가산정 — 예상수익분석의 낙찰일 · 잔금일 · 매도일: 칸 사이를 띄우고 날짜 칸을 가로로 넉넉히(80 → 132) */
+/* 웹 입찰가산정 — 수익분석의 낙찰일 · 잔금일 · 매도일: 칸 사이를 띄우고 날짜 칸을 가로로 넉넉히(80 → 132) */
 .app-detail .adp-profit-dates { gap: 18px !important; }
 .app-detail .adp-pd-item { gap: 8px !important; margin-right: 0 !important; }
 .app-detail .adp-pd-box { width: 132px !important; height: var(--ctl-h); padding: 0 10px !important; gap: 6px !important; }
@@ -2141,6 +2141,24 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .app-detail .adp-head-dates .adp-pd-warn { font-size: 14px !important; font-weight: 400 !important; gap: 5px; }
 .app-detail .adp-head-dates .adp-pd-warn svg { width: 15px; height: 15px; }
 .app-detail .adp-head-dates .adp-pd-cal { width: 15px; height: 15px; }
+/* 수익분석 머리 줄 — 제목 · 자동계산 · 날짜 셋 · 안 고르기(A~D안) · 초기화가 늘 한 줄. 폭이 모자라면 날짜 칸 · 간격 · 안 이름 여백을 줄인다 */
+.app-detail .adp-profit-head:has(.adp-head-plans) { flex-wrap: nowrap !important; }
+.app-detail .adp-profit-head .adp-head-plans .bida-plans { gap: 8px; }
+@media (max-width: 1500px) {
+  .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates { gap: 10px !important; margin-left: 6px !important; }
+  .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-box { width: 122px !important; padding: 0 8px !important; }
+  .app-detail .adp-head-plans .bida-plan-name { padding: 0 10px 0 4px; }
+  .app-detail .adp-head-plans .bida-plan.add .bida-plan-name { padding-left: 10px; }
+  .app-detail .adp-head-plans .bida-okname { padding: 0 8px 0 6px; }
+}
+@media (max-width: 1360px) {
+  .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-item > em, .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-box span { font-size: 14px !important; }
+  .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-box { width: 112px !important; padding: 0 6px !important; gap: 4px !important; }
+  .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-item { gap: 5px !important; }
+  .app-detail .adp-head-plans .bida-plan-name { height: 32px; padding: 0 8px 0 2px; font-size: 13px; }
+  .app-detail .adp-head-plans .bida-plan.add .bida-plan-name { padding-left: 8px; }
+  .app-detail .adp-head-plans .adp-pd-reset { padding: 0 8px !important; }
+}
 /* 비고 칸은 높이를 키워 적기 편하게 (24 → 40) */
 .app-detail .adp-profit-note { height: 40px !important; padding: 0 12px !important; }
 /* 웹 임장조사 — '입찰자 현황조사 · 비고' 줄도 탐문 줄과 같은 칸(이름 112 · 입력 · 오른쪽 240)에 맞춘다 */
