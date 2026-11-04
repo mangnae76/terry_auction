@@ -398,6 +398,8 @@ const resetDefault = () => {
 .pwt-row.dragging .pwt-chk { outline: 2px solid #2b6df3; outline-offset: 2px; }
 .pwt-row :is(input, button, select) { cursor: pointer; }
 .pwt-row input:not([type=checkbox]) { cursor: text; user-select: text; }
+/* 웹 — 날짜 · D-day 는 이름 아래 제자리, 기준 글('낙찰일 +7일')만 오른쪽 끝에 붙여 줄마다 세로로 맞춘다 */
+.pwt.web .pwt-meta .pwt-base { margin-left: auto; text-align: right; }
 .pwt-edit, .pwt-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .pwt-add { margin-top: 16px; padding: 14px; border: 1px dashed #d5dbe6; border-radius: 10px; background: #fafbfd; }
 .pwt-add-lab { font-size: 14px; font-weight: 800; color: #374151; }
