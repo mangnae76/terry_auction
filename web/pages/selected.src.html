@@ -2802,9 +2802,9 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-cal-k i { display: inline-block; flex: 0 0 10px; width: 10px; height: 10px; box-sizing: border-box; border: 1.5px solid #f4700a; border-radius: 50%; }
 @media (max-width: 900px) { .hm-sch { grid-template-columns: minmax(0, 1fr); } }
 .hm-sched { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.hm-sched button { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border: 1px solid var(--card-line); border-radius: 11px; background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
+.hm-sched button { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border: 1px solid var(--card-line); border-radius: 11px; background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
 .hm-sched button:hover { border-color: var(--line-2); }
-.hm-sched .dd { min-width: 48px; text-align: right; font-size: 13px; font-weight: 800; color: #f4700a; font-variant-numeric: tabular-nums; }
+.hm-sched .dd { min-width: 44px; font-size: 13px; font-weight: 800; color: #f4700a; font-variant-numeric: tabular-nums; }
 .hm-sched .kd { justify-self: start; padding: 2px 8px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-size: 12px; font-weight: 800; }
 .hm-sched .kd.p { background: #fff3e8; color: #c2570a; } .hm-sched .kd.w { background: #e8f7ee; color: #15803d; } .hm-sched .kd.d { background: #e6f6f4; color: #0f766e; }
 .hm-sched b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 700; }
@@ -2823,7 +2823,10 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-sched .hm-rd .amt { margin-left: 6px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
 .hm-sched .hm-rd .amt.now { color: #2563eb; }
 .hm-sched time { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.hm-sched time { display: inline-flex; align-items: center; gap: 6px; }
+.hm-sched time { display: block; }
+/* 왼쪽 — 이 목록의 핵심(언제 무슨 일): 윗줄 D-day · 칩, 아랫줄 날짜. 폭이 일정해 줄마다 세로로 맞는다 */
+.hm-sched .hm-when { display: flex; flex-direction: column; gap: 4px; padding-right: 14px; border-right: 1px solid var(--card-line); }
+.hm-sched .hm-when .r1 { display: flex; align-items: center; gap: 6px; }
 .hm-sched time .kd { justify-self: auto; }   /* 그 날짜가 무엇인지 — 달력 범례와 같은 색 칩(매각기일 · 낙찰일 · 잔금기한 · 매도일)을 날짜 앞에 */
 .hm-empty { display: flex; align-items: center; gap: 14px; padding: 18px 20px; border: 1px dashed var(--line-2); border-radius: 12px; background: var(--surface-2); }
 .hm-empty svg { flex: 0 0 auto; width: 30px; height: 30px; color: var(--faint); }
@@ -7067,7 +7070,7 @@ span.cal-day.has { cursor: help; }
     const cont = hmContHtml();
     const sched = hmSchedule(5);
     const schedHtml = sched.length
-      ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="hm-tx"><span class="ln"><b class="cs">${esc(hmCase(r.a))}</b><small>${esc(r.a.courtName || '')}</small><b>${esc(hmPlace(r.a))}</b></span>${r.kind === 'bid' ? hmRound(r.a) : ''}</span><time><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span>${r.d.slice(2).replace(/-/g, '.')} (${hmWk(r.d)})</time></button></li>`).join('')}</ul>`
+      ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="hm-when"><span class="r1"><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span></span><time>${r.d.slice(2).replace(/-/g, '.')} (${hmWk(r.d)})</time></span><span class="hm-tx"><span class="ln"><b class="cs">${esc(hmCase(r.a))}</b><small>${esc(r.a.courtName || '')}</small><b>${esc(hmPlace(r.a))}</b></span>${r.kind === 'bid' ? hmRound(r.a) : ''}</span></button></li>`).join('')}</ul>`
       : `<div class="hm-empty">${HM_SVG(HM_IC.cal)}<div><b>등록된 일정이 없습니다</b><small>물건을 등록하면 매각기일 · 낙찰일 · 잔금기한 · 매도일이 여기에 표시됩니다.</small></div><button type="button" data-act="hm-register">물건 등록하기 →</button></div>`;
     const notices = HM.notices.slice(0, 4);
     const recent = hmRecent(4);
