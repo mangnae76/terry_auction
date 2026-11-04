@@ -2784,7 +2784,16 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-cal { padding: 12px 14px; border: 1px solid var(--card-line); border-radius: 12px; background: var(--surface); }
 .hm-cal-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .hm-cal-h b { font-size: 13.5px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
-.hm-cal-h button { width: 28px; height: 28px; border: 1px solid var(--line-2); border-radius: 7px; background: var(--surface); color: var(--text-2); font-size: 16px; line-height: 1; cursor: pointer; }
+.hm-cal-h .nav { display: inline-flex; align-items: center; gap: 10px; }
+.hm-cal-h .hm-cal-all { width: auto; height: auto; padding: 0; border: 0; background: none; font-size: 13px; font-weight: 700; color: var(--text-2); }   /* 큰 달력(마이페이지 › 입찰 캘린더)으로 */
+.hm-cal-h .hm-cal-all:hover { color: var(--text); }
+.hm-cal-g .d[data-act] { cursor: pointer; }
+.hm-cal-g .d[data-act]:hover { box-shadow: inset 0 0 0 1px var(--line-2); }
+.hm-cal-g .d.sel { box-shadow: inset 0 0 0 1.5px var(--blue) !important; }   /* 고른 날 */
+.hm-day-h { display: flex; align-items: center; justify-content: space-between; margin: 0 0 8px; font-size: 13px; }
+.hm-day-h b { font-weight: 700; color: var(--text); }
+.hm-day-h button { border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); padding: 2px 10px; font-size: 12px; color: var(--text-2); cursor: pointer; }
+.hm-cal-h button:not(.hm-cal-all) { width: 28px; height: 28px; border: 1px solid var(--line-2); border-radius: 7px; background: var(--surface); color: var(--text-2); font-size: 16px; line-height: 1; cursor: pointer; }
 .hm-cal-g { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; text-align: center; }
 .hm-cal-g .w { padding: 4px 0; font-size: 11px; font-weight: 700; color: var(--muted); }
 .hm-cal-g .d { position: relative; display: grid; justify-items: center; align-content: start; height: 36px; padding-top: 4px; border-radius: 8px; font-size: 12.5px; color: var(--text); font-variant-numeric: tabular-nums; }
@@ -7033,10 +7042,12 @@ span.cal-day.has { cursor: help; }
       const key = `${y}-${pad(m + 1)}-${pad(d)}`; const k = mark[key]; const wd = (start + d - 1) % 7;
       const kinds = k ? Object.keys(HM_KIND).filter((x) => k[x]) : [];
       const tipTxt = kinds.map((x) => `${HM_KIND[x][0]} ${k[x]}건`).join(' · ');
-      cells += `<span class="d ${wd === 0 ? 'sun' : wd === 6 ? 'sat' : ''} ${key === TODAY_YMD ? 'today' : ''}" ${tipTxt ? `title="${tipTxt}"` : ''}><i>${d}</i>${kinds.length ? `<em>${kinds.map((x) => `<b class="${HM_KIND[x][1]}"></b>`).join('')}</em>` : ''}</span>`;
+      /* 일정 있는 날은 누르면 오른쪽 목록이 그날만 — 다시 누르면 풀린다 */
+      const pick = kinds.length ? ` role="button" tabindex="0" data-act="hm-cal-day" data-v="${key}"` : '';
+      cells += `<span class="d ${wd === 0 ? 'sun' : wd === 6 ? 'sat' : ''} ${key === TODAY_YMD ? 'today' : ''} ${S.homeDay === key ? 'sel' : ''}" ${tipTxt ? `title="${tipTxt}"` : ''}${pick}><i>${d}</i>${kinds.length ? `<em>${kinds.map((x) => `<b class="${HM_KIND[x][1]}"></b>`).join('')}</em>` : ''}</span>`;
     }
     for (let i = start + days; i < 42; i += 1) cells += '<span class="d"></span>';   /* 늘 6줄 — 달마다 높이가 바뀌지 않게(범례 자리 고정) */
-    return `<div class="hm-cal"><div class="hm-cal-h"><button type="button" data-act="hm-cal-move" data-v="-1" aria-label="이전 달">‹</button><b>${y}년 ${m + 1}월</b><button type="button" data-act="hm-cal-move" data-v="1" aria-label="다음 달">›</button></div>`
+    return `<div class="hm-cal"><div class="hm-cal-h"><span class="nav"><button type="button" data-act="hm-cal-move" data-v="-1" aria-label="이전 달">‹</button><b>${y}년 ${m + 1}월</b><button type="button" data-act="hm-cal-move" data-v="1" aria-label="다음 달">›</button></span><button type="button" class="hm-cal-all" data-act="hm-cal">전체보기 →</button></div>`
       + `<div class="hm-cal-g">${cells}</div><div class="hm-cal-k">${Object.values(HM_KIND).map(([t, c]) => `<span><b class="${c}"></b>${t}</span>`).join('')}<span><i></i>오늘</span></div></div>`;
   };
   /* ===== 맨 위 띠 — 다음 할 일(2026-11-03). 마지막으로 분석했거나 분석 중인 물건 한 건만 본다.
@@ -7084,16 +7095,18 @@ span.cal-day.has { cursor: help; }
     const pct = (v) => `<em class="${v < 0 ? 'dn' : ''}">${v < 0 ? '▼' : '▲'} ${Math.abs(v).toFixed(2)}</em>`;
     const ch = (v) => `<span class="hm-ch ${v < 0 ? 'dn' : 'up'}">${v > 0 ? '+' : ''}${v.toFixed(1)}%</span>`;
     const cont = hmContHtml();
-    const sched = hmSchedule(5);
-    const schedHtml = sched.length
+    const day = S.homeDay || '';
+    const sched = day ? hmDates().filter((x) => x.d === day) : hmSchedule(5);
+    const dayHead = day ? `<div class="hm-day-h"><b>${Number(day.slice(5, 7))}월 ${Number(day.slice(8, 10))}일 (${hmWk(day)}) 일정 ${sched.length}건</b><button type="button" data-act="hm-cal-day" data-v="">전체</button></div>` : '';
+    const schedHtml = dayHead + (sched.length
       ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="hm-when"><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span><time>${r.d.slice(2).replace(/-/g, '.')} (${hmWk(r.d)})</time></span><span class="hm-tx"><span class="ln"><b class="cs">${esc(hmCase(r.a))}</b><small>${esc(r.a.courtName || '')}</small><b>${esc(hmPlace(r.a))}</b></span></span>${(r.kind === 'bid' && hmRound(r.a)) || '<span class="hm-rd none"></span>'}<span class="hm-go">${HM_SVG(HM_IC.chev).replace('<svg', '<svg width="16" height="16"')}</span></button></li>`).join('')}</ul>`
-      : `<div class="hm-empty">${HM_SVG(HM_IC.cal)}<div><b>등록된 일정이 없습니다</b><small>물건을 등록하면 매각기일 · 낙찰일 · 잔금기한 · 매도일이 여기에 표시됩니다.</small></div><button type="button" data-act="hm-register">물건 등록하기 →</button></div>`;
+      : `<div class="hm-empty">${HM_SVG(HM_IC.cal)}<div><b>등록된 일정이 없습니다</b><small>물건을 등록하면 매각기일 · 낙찰일 · 잔금기한 · 매도일이 여기에 표시됩니다.</small></div><button type="button" data-act="hm-register">물건 등록하기 →</button></div>`);
     const notices = HM.notices.slice(0, 4);
     const recent = hmRecent(4);
     return ''
       + `<section class="hm-card hm-app"><span class="ico">${HM_SVG(HM_IC.phone).replace('<svg', '<svg width="28" height="28"')}</span><div class="tx"><div class="eb"><span class="tag">실전 경매 노트 앱</span><span class="soon">웹서비스 · 모바일앱 출시 예정</span></div><b>경매의 처음부터 끝까지, <em>현장에서 마이턴옥션 하나로.</em></b><p>물건을 고르는 날부터 팔고 세금을 신고하는 날까지, 한 건의 모든 기록을 한 곳에 남깁니다.</p></div><nav><button type="button" class="o" data-act="go-mobile">마이턴 앱 알아보기</button><button type="button" class="w" data-act="go-mobile">마이턴 앱 다운받기</button></nav></section>`
       + cont
-      + `<section class="hm-card"><div class="hm-h"><h2>${HM_SVG(HM_IC.cal)}나의 경매 일정</h2><button type="button" class="hm-more" data-act="hm-cal">전체보기 →</button></div><div class="hm-sch">${hmCalHtml()}<div class="hm-sch-list">${schedHtml}</div></div></section>`
+      + `<section class="hm-card"><div class="hm-h"><h2>${HM_SVG(HM_IC.cal)}나의 경매 일정</h2></div><div class="hm-sch">${hmCalHtml()}<div class="hm-sch-list">${schedHtml}</div></div></section>`
       + `<div class="hm-two even">`
       + `<section class="hm-card"><div class="hm-h"><h2>${HM_SVG(HM_IC.bell)}공지사항</h2><button type="button" class="hm-more" data-act="hm-notice">전체보기 →</button></div>`
       + (notices.length ? `<ul class="hm-list">${notices.map((n) => hmRow('bell', 'n', 'hm-notice', '', n.text, `${n.star ? '<i>고정</i>' : n.tag ? `<i>${esc(n.tag)}</i>` : ''}${esc(String(n.postedAt || '').slice(0, 10))}`)).join('')}</ul>` : '<p class="hm-none">공지사항이 없습니다.</p>')
@@ -7546,6 +7559,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'hm-item': S.itemTabNext = t.dataset.tab || 'basic'; go('item', t.dataset.v); break;
       case 'hm-register': go('register'); break;
       case 'hm-go': { const r = t.dataset.v; const sub = t.dataset.sub; if (t.dataset.flow) { try { sessionStorage.setItem('pw.flow.sub', t.dataset.flow); } catch (e) { /* 그만 */ } } if (sub && S.pageTab[r] !== undefined) { S.pageTab[r] = sub; S.tabForce = true; } if (S.route === r) { writeHash(false); render(); } else go(r); break; }
+      case 'hm-cal-day': S.homeDay = v && S.homeDay !== v ? v : ''; renderHome(); break;
       case 'hm-cal-move': { const b = S.homeCal || new Date(TODAY); S.homeCal = new Date(b.getFullYear(), b.getMonth() + Number(v), 1); renderHome(); break; }
       /* 입찰 캘린더(마이페이지 › 자세히 · 목록으로) — 홈 '전체보기' · 전체 메뉴. 선정물건 도구 줄의 '입찰일 요약'(입찰일만 간단히)과 다른 화면 */
       case 'hm-cal': case 'mega-cal': S.menu = null; S.pop = ''; S.pageTab.more = 'calendar'; S.tabForce = true; if (S.route === 'more') { writeHash(false); render(); } else go('more'); break;
