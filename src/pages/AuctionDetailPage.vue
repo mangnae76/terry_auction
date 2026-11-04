@@ -6625,7 +6625,7 @@ const goBack = () => router.back();
               </svg>
               수익분석
             </h2>
-            <span :class="['adp-auto-chip', { 'web-solo': webEmbed }]">✦ 자동계산</span>
+            <span :class="['adp-auto-chip', { 'web-solo': webEmbed }]">✦ 자동</span>
             <!-- 웹은 날짜를 머리(자동계산 오른쪽)로 올린다 — 따로 있던 날짜 줄을 걷어 아래가 위로 붙는다 -->
             <span v-if="webEmbed && !isCollapsed('profit')" class="adp-head-dates" @click.stop>
               <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
