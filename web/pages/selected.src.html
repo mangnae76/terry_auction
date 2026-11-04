@@ -2825,8 +2825,11 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-sched time { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hm-sched time { display: block; }
 /* 왼쪽 — 이 목록의 핵심(언제 무슨 일): 윗줄 D-day · 칩, 아랫줄 날짜. 폭이 일정해 줄마다 세로로 맞는다 */
-.hm-sched .hm-when { display: flex; flex-direction: column; gap: 4px; padding-right: 14px; border-right: 1px solid var(--card-line); }
-.hm-sched .hm-when .r1 { display: flex; align-items: center; gap: 6px; }
+/* 한 줄 — [D-12 매각기일 26.11.17 (화)] [사건번호 법원 동네] | [2차 최저가 70% 진행 금액]. 넘치면 동네만 줄이고, 그래도 모자라면 회차 묶음만 아랫줄로 */
+.hm-sched .hm-when { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.hm-sched .hm-tx { display: flex; flex-wrap: wrap; align-items: center; column-gap: 10px; row-gap: 4px; }
+.hm-sched .hm-tx .ln { flex: 1 1 180px; }
+.hm-sched .hm-tx .hm-rd { flex: none; margin-top: 0; padding-left: 10px; border-left: 1px solid var(--line-2); }   /* 동네와 회차 사이 세로 막대 */
 .hm-sched time .kd { justify-self: auto; }   /* 그 날짜가 무엇인지 — 달력 범례와 같은 색 칩(매각기일 · 낙찰일 · 잔금기한 · 매도일)을 날짜 앞에 */
 .hm-empty { display: flex; align-items: center; gap: 14px; padding: 18px 20px; border: 1px dashed var(--line-2); border-radius: 12px; background: var(--surface-2); }
 .hm-empty svg { flex: 0 0 auto; width: 30px; height: 30px; color: var(--faint); }
@@ -7070,7 +7073,7 @@ span.cal-day.has { cursor: help; }
     const cont = hmContHtml();
     const sched = hmSchedule(5);
     const schedHtml = sched.length
-      ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="hm-when"><span class="r1"><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span></span><time>${r.d.slice(2).replace(/-/g, '.')} (${hmWk(r.d)})</time></span><span class="hm-tx"><span class="ln"><b class="cs">${esc(hmCase(r.a))}</b><small>${esc(r.a.courtName || '')}</small><b>${esc(hmPlace(r.a))}</b></span>${r.kind === 'bid' ? hmRound(r.a) : ''}</span></button></li>`).join('')}</ul>`
+      ? `<ul class="hm-sched">${sched.map((r) => `<li><button type="button" data-act="hm-item" data-v="${esc(r.a.id)}" data-tab="basic"><span class="hm-when"><span class="dd">${hmDday(r.d)}</span><span class="kd ${HM_KIND[r.kind][1]}">${HM_KIND[r.kind][0]}</span><time>${r.d.slice(2).replace(/-/g, '.')} (${hmWk(r.d)})</time></span><span class="hm-tx"><span class="ln"><b class="cs">${esc(hmCase(r.a))}</b><small>${esc(r.a.courtName || '')}</small><b>${esc(hmPlace(r.a))}</b></span>${r.kind === 'bid' ? hmRound(r.a) : ''}</span></button></li>`).join('')}</ul>`
       : `<div class="hm-empty">${HM_SVG(HM_IC.cal)}<div><b>등록된 일정이 없습니다</b><small>물건을 등록하면 매각기일 · 낙찰일 · 잔금기한 · 매도일이 여기에 표시됩니다.</small></div><button type="button" data-act="hm-register">물건 등록하기 →</button></div>`;
     const notices = HM.notices.slice(0, 4);
     const recent = hmRecent(4);
