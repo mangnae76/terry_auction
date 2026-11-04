@@ -2776,7 +2776,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 /* 나의 경매 일정 — 왼쪽 입찰 캘린더 · 오른쪽 다가오는 일정 */
 .hm-sch { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; align-items: stretch; }   /* 왼쪽 달력 · 오른쪽 목록 같은 높이 — 아래 끝을 맞춘다 */
 .hm-sch-list { display: flex; flex-direction: column; }
-.hm-sch-list .hm-sched { flex: 1 1 auto; grid-auto-rows: 1fr; }   /* 줄을 고르게 늘여 맨 아래 줄이 달력 아래 끝에 닿는다 */
+.hm-sch-list .hm-sched { flex: none; grid-auto-rows: auto; align-content: start; }   /* 줄은 제 높이로 위에서부터 — 한두 개일 때 늘여 가운데 두지 않는다(2026-11-05) */
 .hm-sch-list .hm-sched li { display: flex; }
 .hm-sch-list .hm-sched li > button { flex: 1 1 auto; }
 .hm-sch-list .hm-empty { flex: 1 1 auto; }
