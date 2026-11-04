@@ -2785,8 +2785,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-cal-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .hm-cal-h b { font-size: 13.5px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
 .hm-cal-h .nav { display: inline-flex; align-items: center; gap: 10px; }
-.hm-cal-h .hm-cal-all { width: auto; height: auto; padding: 0; border: 0; background: none; font-size: 13px; font-weight: 700; color: var(--text-2); }   /* 큰 달력(마이페이지 › 입찰 캘린더)으로 */
-.hm-cal-h .hm-cal-all:hover { color: var(--text); }
+/* 큰 달력(마이페이지 › 입찰 캘린더)으로 — 다른 카드의 전체보기와 같은 상자(.hm-more) */
 .hm-cal-g .d[data-act] { cursor: pointer; }
 .hm-cal-g .d[data-act]:hover { box-shadow: inset 0 0 0 1px var(--line-2); }
 .hm-cal-g .d.sel { box-shadow: inset 0 0 0 1.5px var(--blue) !important; }   /* 고른 날 */
@@ -7054,7 +7053,7 @@ span.cal-day.has { cursor: help; }
       cells += `<span class="d ${wd === 0 ? 'sun' : wd === 6 ? 'sat' : ''} ${key === TODAY_YMD ? 'today' : ''} ${S.homeDay === key ? 'sel' : ''}" ${tipTxt ? `title="${tipTxt}"` : ''}${pick}><i>${d}</i>${kinds.length ? `<em>${kinds.map((x) => `<b class="${HM_KIND[x][1]}"></b>`).join('')}</em>` : ''}</span>`;
     }
     for (let i = start + days; i < 42; i += 1) cells += '<span class="d"></span>';   /* 늘 6줄 — 달마다 높이가 바뀌지 않게(범례 자리 고정) */
-    return `<div class="hm-cal"><div class="hm-cal-h"><span class="nav"><button type="button" data-act="hm-cal-move" data-v="-1" aria-label="이전 달">‹</button><b>${y}년 ${m + 1}월</b><button type="button" data-act="hm-cal-move" data-v="1" aria-label="다음 달">›</button></span><button type="button" class="hm-cal-all" data-act="hm-cal">전체보기 →</button></div>`
+    return `<div class="hm-cal"><div class="hm-cal-h"><span class="nav"><button type="button" data-act="hm-cal-move" data-v="-1" aria-label="이전 달">‹</button><b>${y}년 ${m + 1}월</b><button type="button" data-act="hm-cal-move" data-v="1" aria-label="다음 달">›</button></span><button type="button" class="hm-more hm-cal-all" data-act="hm-cal">전체보기 →</button></div>`
       + `<div class="hm-cal-g">${cells}</div><div class="hm-cal-k">${Object.values(HM_KIND).map(([t, c]) => `<span><b class="${c}"></b>${t}</span>`).join('')}<span><i></i>오늘</span></div></div>`;
   };
   /* ===== 맨 위 띠 — 다음 할 일(2026-11-03). 마지막으로 분석했거나 분석 중인 물건 한 건만 본다.
