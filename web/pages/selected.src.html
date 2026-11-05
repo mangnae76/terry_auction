@@ -95,12 +95,12 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f141f; --band: #131a28; --row-line: #232d42; --subtab-line: #2a3650; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
-    --line: #2a3449; --line-2: #34405a; --tb-line: #34405a; --card-line: #253046;
+    --bg: #0f141f; --band: #131a28; --row-line: #232d42; --subtab-line: #232e45; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
+    --line: #232c3f; --line-2: #2a3449; --tb-line: #2a3449; --card-line: #1f2839;   /* 밤 선 — 한 단계 어둡게(2026-11-06, 너무 밝았다) */
     --text: #cfd6e2; --text-2: #a9b2c2; --muted: #8b95a8; --faint: #6e788c;
     --nav: #172449; --nav-name: #50c3fc; --nav-text: #cdd5e3; --foot-link: #c3cad6; --chip-gray: #3a4660;
     --blue: #5b8cff; --blue-soft: rgba(91, 140, 255, 0.14); --cta-hover: #6a91f5;
-    --pill-line: #3a4660; --pill-text: #9aa4b8;
+    --pill-line: #2f3a51; --pill-text: #9aa4b8;
     --on-line: #7d93f5; --on-bg: rgba(107, 133, 240, 0.22); --on-text: #b5c3ff;
     --hot-bg: rgba(239, 107, 107, 0.18); --hot-text: #ff9a9a;
     --closed-bg: #232d42;
@@ -118,12 +118,12 @@
 }
 :root[data-theme="dark"] {
   --bg: #0f141f; --band: #131a28; --surface: #182031; --surface-2: #1d2638; --surface-3: #232d42;
-  --line: #2a3449; --line-2: #34405a; --tb-line: #34405a; --card-line: #253046;
-  --row-line: #232d42; --subtab-line: #2a3650;   /* 밤낮 단추로 켰을 때도 탭 줄 선이 밤 색이게(빠져 있어 낮 색 흰 선이 나왔다) */
+  --line: #232c3f; --line-2: #2a3449; --tb-line: #2a3449; --card-line: #1f2839;   /* 밤 선 — 한 단계 어둡게(2026-11-06) */
+  --row-line: #232d42; --subtab-line: #232e45;   /* 밤낮 단추로 켰을 때도 탭 줄 선이 밤 색이게(빠져 있어 낮 색 흰 선이 나왔다) */
   --text: #cfd6e2; --text-2: #a9b2c2; --muted: #8b95a8; --faint: #6e788c;
   --nav: #172449; --nav-name: #50c3fc; --nav-text: #cdd5e3; --foot-link: #c3cad6; --chip-gray: #3a4660;
   --blue: #5b8cff; --blue-soft: rgba(91, 140, 255, 0.14); --cta-hover: #6a91f5;
-  --pill-line: #3a4660; --pill-text: #9aa4b8;
+  --pill-line: #2f3a51; --pill-text: #9aa4b8;
   --on-line: #7d93f5; --on-bg: rgba(107, 133, 240, 0.22); --on-text: #b5c3ff;
   --hot-bg: rgba(239, 107, 107, 0.18); --hot-text: #ff9a9a;
   --closed-bg: #232d42;
@@ -370,8 +370,8 @@ button { cursor: pointer; }
 /* 지역분석 다섯 탭 — 요약 상자(내비게이션) 아래에 구분선 하나, 아래 내용과 나눈다 */
 .app-market[data-k="dong"] :is(.adm-gunav, .adm-nav) { position: relative; overflow: visible; margin-bottom: 25px !important; }
 .app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -13px; height: 1px; background: #cfd6e2; pointer-events: none; }
-:root[data-theme="dark"] .app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { background: rgba(255, 255, 255, .28); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { background: rgba(255, 255, 255, .28); } }
+:root[data-theme="dark"] .app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { background: rgba(255, 255, 255, .14); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .app-market[data-k="dong"] :is(.adm-gunav, .adm-nav)::after { background: rgba(255, 255, 255, .14); } }
 /* 경매지번 공동주택가 및 실거래가 — 지역분석과 같은 틀. 위 제목 상자(.adm-top)는 감추고, 그 단추(저장 · 저장 목록 · 엑셀)는 아래 줄로 옮겼다 */
 .app-market[data-k="case"] .adm-top { display: none !important; }
 /* 고르는 줄의 칸 이름(주소 입력 · 종류 · 실거래 기간)과 제목 줄 아래 안내 칩 · 직접 입력은 웹에서 뺀다 — 지역분석 고르는 줄처럼 칸만 */
@@ -790,6 +790,13 @@ button { cursor: pointer; }
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(input, select, textarea, .adm-input, .trf-in, .trf-m, .adp-mkt-input, .adp-agency-trigger, .adm-ghost, .list-fold, .sise-fold, .adm-copy, .son-map-go, .son-addr-copy) { background: var(--surface-2) !important; color: var(--text) !important; border-color: var(--line-2) !important; }
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) :is(input, textarea)::placeholder { color: var(--faint) !important; }
 :root[data-theme="dark"] #sonAskSlot .adp-mkt-cells .adp-mkt-input { background: transparent !important; }
+/* 지도 위 글(핀 이름표 · 범례 · 전체화면 단추)은 밤에도 까맣게 — 지도 바탕은 밤에도 밝아 흰 · 회색 글이 안 보였다(2026-11-06). 손품조사 시세분석 · 경매사례 둘 다 */
+:root[data-theme="dark"] :is(.sx-map, .pa .map) :is(.pa-pin .lbl, .pa-pin .lbl b, .legend, .legend span, .fs-btn, .map-title b) { color: #18213a !important; }
+:root[data-theme="dark"] :is(.sx-map, .pa .map) .pa-pin.me b { color: #e03e3e !important; }
+/* 경매사례 지도 전체화면 — 왼쪽 떠 있는 흰 상자는 밤에도 낮 색 그대로(흰 바탕에 까만 글) */
+:root[data-theme="dark"] .sx-fs { --surface: #fff; --band: #f3f5f9; --line: #e3e8f0; --card-line: #e8ecf3; --muted: #5f6b82; --faint: #98a2b5; --text: #18213a; --blue-soft: #eaf1ff; --blue: #2563eb; }
+/* 경매사례 표 첫 줄(경매물건) — 밤에는 옅은 붉은 기만 */
+:root[data-theme="dark"] .sx-tbl tr.me td { background: rgba(224, 62, 62, .1); box-shadow: inset 0 -2px 0 rgba(224, 62, 62, .35); }
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .trf-m.on { background: var(--blue-soft) !important; color: var(--on-text) !important; border-color: var(--on-line) !important; }
 :root[data-theme="dark"] .adm-case-in .tool-tabs { --boxtab-on: var(--surface); }
 :root[data-theme="dark"] .adm-case-in .tool-bar { border-bottom-color: var(--boxtab-line); }
@@ -1090,6 +1097,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-q { width: 280px; max-width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; }
 .sx-tbl { overflow-x: auto; margin: 0 16px 16px; border: 1px solid var(--line); border-radius: 8px; }   /* 표 네 모서리 8(모든 표 같게) */
 .sx-tbl tbody tr:last-child td { border-bottom: 0; }
+.sx-tbl .kind-me { display: inline-block; background: #e03e3e; color: #fff; font-size: 12px; padding: 1px 6px; border-radius: 3px; }   /* 첫 줄 경매물건 — 시세분석 첫 줄 .kind.me 처럼 빨간 칩(글자는 웹 하한 12) */
 .sx-ptag { font-size: 13px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 5px; padding: 3px 8px; }   /* '근거' 칩 — 손품조사 시세분석 .pa-tag 와 같은 꼴 */
 /* 지도 — 손품조사 시세분석 지도와 같은 꼴(핀 · 반경 원 · 이름표) */
 .sx-mapcard { padding: 14px 16px 16px; }
@@ -4067,8 +4075,8 @@ html, body { overflow-x: clip; }
    쓰는 곳: 시장분석 지역분석 탭(.adm-view-tabs) · 낙찰이후 장 탭(.pw-chaptabs) · 권리분석 결과 탭(.rr-tabs).
    고른 탭의 바탕은 흰색(--surface)으로 통일(2026-11-05 — 바탕색과 같게 하던 것을 바꿨다. 고른 탭이 더 또렷하게) */
 :root { --boxtab-line: #a9b4c6; --boxtab-off: #d8dee8; --boxtab-off-hover: #ccd4e0; }
-:root[data-theme="dark"] { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; } }
+:root[data-theme="dark"] { --boxtab-line: rgba(255, 255, 255, .14); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --boxtab-line: rgba(255, 255, 255, .14); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; } }
 .app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-tabs { --boxtab-on: var(--surface); }
 .app-page[data-k="finance"] .kind-chips { margin: 4px 16px 10px !important; border-bottom: 1px solid var(--boxtab-line); } /* 세금 틀(.tax-shell)이 좌우 -16 이라 16 을 돌려준다 — 위 상자들과 끝선 맞춤 */
 :is(.app-market .adm-view-tabs, .pw-chaptabs, .rr-tabs, .cm-tabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-header .fin-tabs) { display: flex !important; align-items: flex-end !important; gap: 4px !important; padding-left: 0 !important; }
@@ -6915,7 +6923,7 @@ span.cal-day.has { cursor: help; }
     const fm = /(\d+)\s*층/.exec(it.unit || ''); const fl = fm ? `${fm[1]}층` : '-';
     const full = [it.addr, it.bld, it.unit].filter(Boolean).join(' '); const addr = esc(sxShortAddr(full));
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
-    return `<tr class="me"><td class="num">${esc(it.caseNo)}</td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}<td>-</td><td>-</td><td class="num">${esc(it.round || '-')}</td><td>-</td>`
+    return `<tr class="me"><td class="num"><span class="kind-me">${esc(it.caseNo)}</span></td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}<td>-</td><td>-</td><td class="num">${esc(it.round || '-')}</td><td>-</td>`
       + `${sxAreaCell(m2)}${sxElevCell(it.addr)}<td class="num">${built}</td><td class="num">${age}</td><td class="num">-</td><td class="num">${fl}</td><td class="l" title="${esc(full)}"><div class="sx-addr"><span class="addr">${addr || '-'}</span><span class="chips"><span class="same eq">경매물건</span><span class="same">경매지번</span></span></div></td></tr>`;
   }
   function sxListHtml(rows) {
