@@ -1238,6 +1238,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rr-base span { font-size: 13px; color: var(--text-2); }
 .rr-note, .rr-txt { margin: 10px 0 0; font-size: 12px; line-height: 1.7; color: var(--muted); word-break: keep-all; }
 .rr-txt { font-size: 13px; color: var(--text-2); }
+/* 말소기준권리 아래 줄 — 이름은 칩(근거 · 배당요구종기), 글은 그 옆 */
+.rr-lab { display: flex; align-items: flex-start; gap: 8px; color: var(--text-2); }
+.rr-lab .rr-tag { flex: none; min-width: 84px; justify-content: center; margin-top: 1px; font-weight: 700; }   /* 칩 폭을 같게 — 옆 글이 한 줄로 선다 */
 .rr-docs { padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--nav-orange) 32%, var(--surface)); border-radius: 12px; background: color-mix(in srgb, var(--nav-orange) 7%, var(--surface)); }
 .rr-docs b { font-size: 13px; font-weight: 700; color: #c2410c; }
 .rr-docs p { margin: 4px 0 0; font-size: 13px; line-height: 1.7; color: var(--text-2); word-break: keep-all; }
@@ -7046,7 +7049,7 @@ span.cal-day.has { cursor: help; }
         </div>
         <section class="rr-card"><h4>말소기준권리</h4><p class="rr-sub">낙찰되면 이 권리와 그 아래 권리는 원칙적으로 모두 지워집니다.</p>
           <div class="rr-base"><b>${base.kind ? `${esc(rtD(base.date))} · ${esc(base.kind)}` : '찾지 못했습니다'}</b><span>${base.holder ? `${esc(base.holder)}${baseRow && baseRow.amount ? ` · ${esc(baseRow.amount)}` : ''}` : '권리자 · 금액은 등기사항전부증명서에서 확인'}</span></div>
-          ${base.kind ? `<p class="rr-note">근거 ${esc(rtEvidence(base, noReg))}</p>` : ''}${ai.claimDeadline ? `<p class="rr-note">배당요구종기 ${esc(rtD(ai.claimDeadline))}</p>` : ''}</section>
+          ${base.kind ? `<p class="rr-note rr-lab"><span class="rr-tag">근거</span><span>${esc(rtEvidence(base, noReg))}</span></p>` : ''}${ai.claimDeadline ? `<p class="rr-note rr-lab"><span class="rr-tag">배당요구종기</span><span class="num">${esc(rtD(ai.claimDeadline))}</span></p>` : ''}</section>
         ${ev.level ? `<section class="rr-card"><h4>명도 난이도<span class="rr-tag ${ev.level === '쉬움' ? 'ok' : ev.level === '높음' ? 'bad' : 'warn'}">${esc(ev.level)}</span></h4>${ev.reason ? `<p class="rr-txt">${esc(ev.reason)}</p>` : ''}${ev.advice ? `<p class="rr-txt">${esc(ev.advice)}</p>` : ''}</section>` : ''}
         <div class="rr-docs"><b>분석에 쓴 서류 ${esc(used.join(' · ') || '-')}</b>${noReg ? '<p>등기사항전부증명서 없이 분석한 결과입니다. 말소기준권리의 권리자 · 금액과 그보다 앞선 권리는 등기부로 꼭 확인해 주세요.</p>' : ''}${ai.missingDocs && ai.missingDocs.length ? `<p>따로 떼어 확인하면 좋은 서류 — ${esc(ai.missingDocs.join(' · '))}</p>` : ''}</div>`;
     }
