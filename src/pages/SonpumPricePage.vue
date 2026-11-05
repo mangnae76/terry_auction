@@ -565,9 +565,10 @@ const evenCols = () => {
     if (colsKey === `fixed|${cw}` && t.querySelector('colgroup')) return;
     colsKey = `fixed|${cw}`;
     t.querySelector('colgroup')?.remove();
-    const W: Record<string, number> = { date: 92, won: 120, perPy: 100, pub: 126, gap: 126, area: 86, elev: 64, year: 64, dist: 64, floor: 52 };
+    // 주소 칸에 자리를 더 주려고 다른 칸은 조금씩 좁게
+    const W: Record<string, number> = { date: 86, won: 112, perPy: 92, pub: 116, gap: 116, area: 80, elev: 56, year: 58, dist: 58, floor: 46 };
     const ths = [...t.querySelectorAll('thead th')] as HTMLElement[];
-    const base = (el: HTMLElement) => (el.classList.contains('ck-th') ? 44 : el.classList.contains('acts-th') ? 112 : el.dataset.k ? W[el.dataset.k] ?? 0 : 58);
+    const base = (el: HTMLElement) => (el.classList.contains('ck-th') ? 40 : el.classList.contains('acts-th') ? 100 : el.dataset.k ? W[el.dataset.k] ?? 0 : 52);
     const fixedSum = ths.reduce((a, el) => a + base(el), 0);
     const ADDR_MIN = 170;
     const k = Math.min(1, Math.max(0.6, (cw - ADDR_MIN) / fixedSum));
@@ -1192,6 +1193,11 @@ td.two small.neg { color: var(--red); }
 .ev.u { color: var(--todo); }
 .pa-addr { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
 .chips { display: inline-flex; gap: 4px; }
+/* 웹 — 한 줄은 많아야 두 줄: 주소는 첫 줄 한 줄(넘치면 …), 칩(경매지번 · 같은면적 · 현장 …)은 둘째 줄 한 줄 */
+.pa-list table.even td.l:has(.pa-addr) { white-space: nowrap; }
+.pa-list .pa-addr { min-width: 0; max-width: 100%; }
+.pa-list table:has(.ck-th) .pa-addr > .addr { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pa-list table:has(.ck-th) .pa-addr > .chips { max-width: 100%; white-space: nowrap; overflow: hidden; flex-wrap: nowrap; }
 .addr .no { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-right: 6px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: #2b4fd8; color: #fff; font-size: 11px; font-weight: 800; font-style: normal; vertical-align: 1px; }   /* 지도 점 번호와 같다 */
 .same { font-size: 8.5px; line-height: 1.35; color: var(--red); border: 1px solid var(--red); border-radius: 3px; padding: 0 3px; }
 .same.eq { color: #fff; background: var(--red); }
