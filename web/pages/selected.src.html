@@ -723,11 +723,10 @@ button { cursor: pointer; }
 .mk-sale .ag-cov-list { margin-top: 8px; padding: 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 8px; }
 .mk-sale .ag-cov-list input.adm-input { width: 240px; height: 30px; font-size: 13px; margin-bottom: 8px; }
 .mk-sale .ag-cov-wrap { max-height: 240px; overflow: auto; border: 1px solid var(--line, #e5e7eb); border-radius: 8px; }
-.mk-sale .ag-cov-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mk-sale .ag-cov-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }   /* 다섯 칸(동네 · 종류 · 물건 · 수집일 · 사이트) 같은 너비 · 모두 가운데(2026-11-06) */
+.mk-sale .ag-cov-wrap th { width: 20%; }
 .mk-sale .ag-cov-wrap th { position: sticky; top: 0; padding: 7px 10px; background: var(--surface-2, #f7f9fc); font-weight: 700; color: var(--text-2, #374151); text-align: center; border-bottom: 1px solid var(--line, #e5e7eb); }
-.mk-sale .ag-cov-wrap td { padding: 7px 10px; text-align: center; color: var(--text); border-top: 1px solid var(--line, #eef1f6); white-space: nowrap; }
-.mk-sale .ag-cov-wrap :is(th, td).l { text-align: left; }
-.mk-sale .ag-cov-wrap td.n { text-align: right; }
+.mk-sale .ag-cov-wrap td { padding: 7px 10px; text-align: center; color: var(--text); border-top: 1px solid var(--line, #eef1f6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mk-sale .ag-cov-wrap td.none { color: var(--muted); }
 .mk-sale .ag-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-top: 12px; }
 .mk-sale .ag-chk { display: inline-flex; align-items: center; gap: 6px; height: 32px; font-size: 13px; color: var(--muted); cursor: pointer; }
@@ -741,15 +740,15 @@ button { cursor: pointer; }
 .mk-sale .ag-msg.off { color: var(--muted); }
 .mk-sale .ag-cov { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .mk-sale .ag-cov small { font-size: 13px; color: var(--muted); margin-right: 4px; }
-.mk-sale .ag-qline { margin-top: 12px; }   /* 읍면동으로 수집 · 사건번호로 수집 · 종류 + 추가 — 세 묶음 한 줄(2026-11-06) */
+.mk-sale .ag-qline { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }   /* 읍면동으로 수집 · 사건번호로 수집 · 종류 + 추가 — 세 묶음 한 줄(2026-11-06) */
 .mk-sale .ag-q-line { gap: 12px; margin-top: 0; }
-.mk-sale .ag-qgrp { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.mk-sale .ag-qgrp { display: inline-flex; align-items: center; gap: 8px; }   /* 묶음마다 테두리 없이 — 바깥 상자 하나(알약까지)로 */
 .mk-sale .ag-qgrp > small { margin-right: 0; white-space: nowrap; }
 .mk-sale .ag-q-tools.ag-q-line select.adm-input { width: 120px; }
 .mk-sale .ag-q-line #agQIn { width: 200px; height: 30px; font-size: 13px; }
 .mk-sale .ag-qkind { display: inline-flex; align-items: center; gap: 8px; }
 .mk-sale .ag-qline > .ag-cov + .ag-cov { margin-top: 8px; }
-.mk-sale .ag-qline > .ag-cov:not(.ag-q-tools) { padding-left: 106px; }   /* 알약 줄은 인천광역시 칸 왼쪽 끝부터(테두리 1 + 안쪽 10 + 이름 약 87 + 사이 8) */
+.mk-sale .ag-qline > .ag-cov:not(.ag-q-tools) { padding-left: 95px; }   /* 알약 줄은 인천광역시 칸 왼쪽 끝부터(이름 약 87 + 사이 8) */
 .mk-sale .ag-cov-chip { padding: 4px 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 999px; font-size: 13px; color: var(--text); }
 .mk-sale .ag-cov-chip b { font-weight: 700; color: var(--blue); }
 .mk-sale .ag-cov-none { font-size: 13px; color: var(--muted); }
