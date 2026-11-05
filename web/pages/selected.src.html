@@ -2673,6 +2673,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 /* 조작 상자·직접입력 상자 — 둘 다 안내 상자 아래에 선다 */
 .rg-results.manual { padding-bottom: 16px; }
 .rg-results.auto-box { display: flex; flex-direction: column; gap: 8px; padding-bottom: 16px; }
+.auto-box .rg-inbox { display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 12px; border: 1px solid var(--line-2); border-radius: 8px; }   /* AI 자동 분석 · 구글 드라이브 연동 묶음 */
 /* 상자 사이는 어디서나 12px — 안내 · 알림 · 조작 · 파싱 · 직접입력 어느 차례로 와도 같게 */
 .reg-content > * + * { margin-top: 12px; }
 /* 단 사이 가름선 — 상자 좌우 여백 끝까지 긋는다 */
@@ -5486,6 +5487,8 @@ span.cal-day.has { cursor: help; }
       <div class="rg-results auto-box ${PAID ? '' : 'locked'}">
       <!-- 제목은 상자 안 맨 위 — AI 자동 파싱 상자와 같은 짜임 -->
       <div class="rg-head rg-boxhead"><h2>${I.spark}자동등록<span class="plan-tag plus">PRO</span></h2></div>
+      <!-- AI 자동 분석 · 구글 드라이브 연동을 선 상자 하나로 묶는다 -->
+      <div class="rg-inbox">
       <!-- ① 어떻게 읽을까 — 규칙으로 못 읽은 칸을 AI 가 채운다 -->
       <div class="rg-row1 rg-ai">
         <span class="rg-title tip-below" data-tip="PDF에서 규칙으로 못 읽은 칸을 AI가 채워 줍니다" data-tip-pos="left">${I.key}AI 자동 분석</span>
@@ -5508,6 +5511,7 @@ span.cal-day.has { cursor: help; }
         <button type="button" class="rg-btn scan" data-act="scan" ${R.loading ? 'disabled' : ''}>${I.search}폴더스캔${R.sel.length ? ` (${R.sel.length})` : ''}</button>
         <button type="button" class="rg-btn pdf" data-act="pdf-pick" ${R.loading ? 'disabled' : ''}>${I.files}PDF등록</button>
         </div>
+      </div>
       </div>
       </div>`;
     const rowHtmlR = (r) => `<li class="rg-item ${r.status}" ${r.status === 'ready' ? `data-act="rg-open" data-v="${esc(r.p.caseNo)}" tabindex="0"` : ''}>
