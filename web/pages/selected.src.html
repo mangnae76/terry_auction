@@ -1261,7 +1261,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 @keyframes rt-spin { to { transform: rotate(360deg); } }
 /* 분석 결과 — 탭 셋 · 카드들(상자 없이 왼쪽 칸에 카드가 쌓인다) */
 .rt-res { display: grid; gap: 12px; min-width: 0; }
-.cm-tabs { --boxtab-on: var(--bg); position: relative; height: 34px; margin: 0 0 12px; box-sizing: border-box; }
+.cm-tabs { --boxtab-on: var(--surface); position: relative; height: 34px; margin: 0 0 12px; box-sizing: border-box; }
 .cm-tabs::after { content: ""; position: absolute; left: calc(50% - 50vw); bottom: 0; width: 100vw; height: 1px; background: var(--boxtab-line); z-index: 3; pointer-events: none; }   /* 밑선은 화면 끝에서 끝까지 — 낙찰이후 장 탭과 같게 */   /* 커뮤니티 박스형 탭 — 고른 탭 바탕은 페이지 바탕과 같게 */
 .rr-tabs { --boxtab-on: var(--surface); position: relative; height: 34px; box-sizing: border-box; }   /* 손품조사 수요분석 · 시세분석 탭 줄과 같은 높이 34 */
 /* 탭 밑선 — 오른쪽 서류 올리기 상자 끝까지(왼쪽 칸 + 사이 12 + 오른쪽 칸 380) */
@@ -3891,11 +3891,11 @@ html, body { overflow-x: clip; }
    탭 줄 밑에 진한 선 한 줄, 안 고른 탭은 옅은 상자, 고른 탭은 위로 4px 올라온 흰(바탕색) 상자 — 위 두 모서리만 둥글고 밑선을 덮어 아래 내용과 이어진다.
    2단(하위 탭 줄 · 물건등록 탭)은 밑줄 탭 그대로 두고, 3단(내용 바로 위)만 이 꼴 — 둘 다 박스면 겹쳐 보인다.
    쓰는 곳: 시장분석 지역분석 탭(.adm-view-tabs) · 낙찰이후 장 탭(.pw-chaptabs) · 권리분석 결과 탭(.rr-tabs).
-   고른 탭의 바탕은 그 아래 내용의 바탕과 같아야 한다 — 줄마다 --boxtab-on 으로 정한다 */
+   고른 탭의 바탕은 흰색(--surface)으로 통일(2026-11-05 — 바탕색과 같게 하던 것을 바꿨다. 고른 탭이 더 또렷하게) */
 :root { --boxtab-line: #a9b4c6; --boxtab-off: #d8dee8; --boxtab-off-hover: #ccd4e0; }
 :root[data-theme="dark"] { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; } }
-.app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-tabs { --boxtab-on: var(--bg); }
+.app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-tabs { --boxtab-on: var(--surface); }
 .app-page[data-k="finance"] .kind-chips { margin: 4px 16px 10px !important; border-bottom: 1px solid var(--boxtab-line); } /* 세금 틀(.tax-shell)이 좌우 -16 이라 16 을 돌려준다 — 위 상자들과 끝선 맞춤 */
 :is(.app-market .adm-view-tabs, .pw-chaptabs, .rr-tabs, .cm-tabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-header .fin-tabs) { display: flex !important; align-items: flex-end !important; gap: 4px !important; padding-left: 0 !important; }
 :is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .rr-tabs > button, .cm-tabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab) {
