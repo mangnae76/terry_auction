@@ -1183,8 +1183,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .pa .list-tools::before { content: "근거"; order: -2; flex: none; font-size: 13px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 5px; padding: 3px 8px; }
 .pa .list-tools::after { content: "유사물건"; order: -1; flex: none; margin-left: -2px; margin-right: 4px; font-size: 15px; font-weight: 800; color: var(--text); }
 /* 표 머리 거르기 — 거른 칸은 파란 네모 대신 파란 체크(✓)만. 위 '필터 적용 중 … 모두 지우기' 줄은 뺀다(푸는 건 ✓ 눌러 '전체 선택') */
-/* 공시지가 알림 — 노란 상자를 빼고 '유사물건' 바로 오른쪽 같은 줄에 글로만 */
-.pa .list-tools .warn-box { flex: 0 1 auto !important; background: none !important; border: 0 !important; padding: 0 !important; align-items: center !important; font-size: 13px !important; color: var(--muted) !important; }
+/* 공시지가 알림 — 노란 상자를 빼고 '유사물건'과 같은 줄, 표 오른쪽 끝에 맞춰 글로만 */
+.pa .list-tools .warn-box { margin-left: auto !important; justify-content: flex-end; text-align: right; flex: 0 1 auto !important; background: none !important; border: 0 !important; padding: 0 !important; align-items: center !important; font-size: 13px !important; color: var(--muted) !important; }
 .pa .list-tools .warn-box svg { margin-top: 0 !important; }
 .pa th .fv.act { font-size: 0 !important; background: none !important; color: var(--blue) !important; }
 .pa th .fv.act::before { content: "✓"; font-size: 13px; font-weight: 800; }
