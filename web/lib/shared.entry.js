@@ -284,7 +284,7 @@ const CommunityPage = {
   },
 };
 /** 게시판(웹만) — 오류및제안 · 가입인사 · 사용후기. 같은 게시판 틀(SuggestBoard)에 board 만 다르다(2026-11-05) */
-const BOARD_KEYS = ['suggest', 'greet', 'review'];
+const BOARD_KEYS = ['suggest', 'review'];
 const BoardPage = {
   setup() {
     const route = useRoute();
