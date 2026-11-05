@@ -6639,7 +6639,7 @@ span.cal-day.has { cursor: help; }
     if (!view.length) { toast('내보낼 물건이 없습니다.', 'info'); return; }
     try {
       const st = sxStats(rows); const a = saleApplied;
-      const cond = `물건종류 ${a.kind || '전체'} · 지역 ${[a.sido, a.sgg, a.dong].filter(Boolean).join(' ')} · 기간 최근 ${a.period} ${saleSpan(a.period)} · 면적 ${a.amin || ''}~${a.amax || ''}㎡ · 건축년도 ${a.ymin || ''}~${a.ymax || ''} · 검색어 ${SX.q || '-'} · 저장 ${new Date().toLocaleString('ko-KR')}`;
+      const cond = `물건종류 ${a.kind || '전체'} · 지역 ${[a.sido, a.sgg, a.dong].filter(Boolean).join(' ')} · 매각기간 최근 ${a.period} ${saleSpan(a.period)} · 면적 ${a.amin || ''}~${a.amax || ''}㎡ · 건축년도 ${a.ymin || ''}~${a.ymax || ''} · 검색어 ${SX.q || '-'} · 저장 ${new Date().toLocaleString('ko-KR')}`;
       const blob = await T.exportSaleNear({ condition: cond, my: sxParseWon(SX.my) || null, rows: T.prepareSaleRows(view.map(sxPlain)),
         stats: { 평균감정가: st.appr, 매각건수: st.n, 평균매각가: st.sold, 중앙값매각가: st.soldMed, 평균율: st.avg, 중앙값율: st.med, 최저율: st.lo, 최고율: st.hi, 전체율: st.all } });
       sxDownload(blob, `조건검색결과_${sxYmd()}.xlsx`); toast('엑셀 파일을 내려받았습니다.');
@@ -7029,7 +7029,7 @@ span.cal-day.has { cursor: help; }
       + sel('dong', '읍면동', loading && !dongs.length ? '불러오는 중…' : '읍면동 전체', dongs, !saleSeg.sgg)
       + `<label class="sx-f" aria-label="물건종류"><select data-act="sale-q" data-k="kind" class="${saleSeg.kind ? '' : 'ph'}"><option value="">물건종류 전체</option>${SALE_SEG.kind.map((v) => `<option ${saleSeg.kind === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>`
       + '</div>'
-      + `<div class="sx-f">기간<div class="sx-seg" role="group">${SALE_SEG.period.map((v) => `<button type="button" class="${saleSeg.period === v ? 'on' : ''}" data-act="sale-seg" data-k="period" data-v="${v}">${v}</button>`).join('')}</div></div>`
+      + `<div class="sx-f">매각기간<div class="sx-seg" role="group">${SALE_SEG.period.map((v) => `<button type="button" class="${saleSeg.period === v ? 'on' : ''}" data-act="sale-seg" data-k="period" data-v="${v}">${v}</button>`).join('')}</div></div>`
       + `<div class="sx-f">면적(㎡)${pair('sxAmin', 'sxAmax', '최소', '최대', 'decimal')}</div>`
       + `<div class="sx-f">건축년도${pair('sxYmin', 'sxYmax', '부터', '까지', 'numeric')}</div>`
       + `<div class="sx-fbtns"><button type="button" class="sx-btn" data-act="sale-go" ${canGo ? '' : 'disabled'}>검색</button><button type="button" class="sx-btn ghost" data-act="sx-save">저장</button><button type="button" class="sx-btn ghost" data-act="sx-reset">초기화</button></div>`
