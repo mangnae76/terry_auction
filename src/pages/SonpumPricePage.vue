@@ -1014,10 +1014,10 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .conds:has(> .elev-pick) > .acts-r { grid-column: 5; grid-row: 2; }
 .conds:has(> .elev-pick) > .acts-r .save-btn { flex: 1; width: auto; }
 .conds > .floor-pick .pa-seg { width: auto; }
-/* 웹 기본 화면 위 줄 다섯 — 상자 폭을 칸 폭에 꽉 맞춰 모두 같게, 이름 칸(반경 · 거래 · 기준 · 엘베 · 층)도 같은 폭 28 → 고르기 상자 시작점이 같다 */
-.conds:has(> .elev-pick) > .pa-lab { display: grid !important; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; width: 100%; box-sizing: border-box; }
+/* 웹 기본 화면 위 줄 다섯 — 상자 폭을 칸 폭에 꽉 맞춰 모두 같게, 이름 칸(반경 · 거래 · 기준 · 엘베 · 층)도 같은 폭 → 고르기 상자 시작점이 같다 */
+.conds:has(> .elev-pick) > .pa-lab { display: grid !important; grid-template-columns: 46px minmax(0, 1fr); gap: 6px; width: 100%; box-sizing: border-box; padding-left: 10px !important; padding-right: 8px !important; }   /* 이름 칸 46 — '기준 ⓘ'까지 들어가게 */
 .conds:has(> .elev-pick) > .pa-lab .pa-seg { width: 100% !important; }
-.conds:has(> .elev-pick) > .pa-lab .pa-seg button { flex: 1 1 0; min-width: 0; padding: 0 2px; }
+.conds:has(> .elev-pick) > .pa-lab .pa-seg button { flex: 1 1 0; min-width: 0; padding: 0 2px; font-size: 13px; }
 .conds > .elev-pick .pa-seg { width: auto; }
 /* 아래 거르기 상자엔 면적 · 건축 · 층만 — 층 상자를 넓게 */
 .simrow.has-elev .simB { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .7fr); }
