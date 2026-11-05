@@ -1597,16 +1597,28 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .ih-pdf { box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid #c7d7f7; border-radius: 8px; font-size: 14px; font-weight: 700; color: var(--text-2) !important; text-decoration: none; }
 .ih-pdf svg { width: 14px; height: 14px; }
 /* 경매사례 고정카드 — 카드교체 단추 · 선정물건 목록 */
-.ih-swap { box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 12px; border: 1px solid var(--nav); border-radius: 8px; background: var(--nav); color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
-.ih-swap .caret { font-style: normal; font-size: 10px; opacity: .8; }
-.sx-fix-stage { display: inline-flex; align-items: center; cursor: default; }
-.sx-fix-apr { font-size: 13px; color: var(--muted); white-space: nowrap; }
-.sx-fix-apr b { margin-left: 4px; font-size: 15px; font-weight: 800; color: var(--text); }
-.sx-cardlist { position: absolute; right: 16px; top: 42px; z-index: 40; width: min(600px, calc(100% - 32px)); max-height: 360px; overflow: auto; margin: 0; padding: 6px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(20, 30, 60, .14); }
-.sx-cardlist li { display: grid; grid-template-columns: 150px minmax(0, 1fr) 110px; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 6px; font-size: 14px; cursor: pointer; }
-.sx-cardlist li:hover, .sx-cardlist li.on { background: var(--blue-soft); }
-.sx-cardlist li span:nth-child(2) { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sx-cardlist li span:last-child { text-align: right; }
+.sx-pickanchor { position: relative; display: inline-flex; }
+.sx-pickbtn { cursor: pointer; background: var(--surface); font: inherit; font-size: 14px; font-weight: 700; }   /* 낙찰목록 단추(.pw-pickbtn)와 같은 꼴 */
+.sx-pickbtn img { width: 12px; height: 12px; margin-left: 2px; transition: transform .2s; }
+.sx-pickbtn img.up { transform: rotate(180deg); }
+.sx-x { font-style: normal; font-size: .75em; font-weight: 700; opacity: .6; margin: 0 1px 0 3px; }
+.sx-objlist { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; width: 560px; max-width: calc(100vw - 32px); max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 6px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 10px 24px rgba(17, 24, 39, .16); text-align: left; }
+.sx-obj { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 7px 9px 8px; cursor: pointer; }
+.sx-obj:hover { background: var(--surface-3, #f5f7fb); }
+.sx-obj.on { border-color: var(--blue); background: var(--blue-soft); }
+.sx-obj p { margin: 0; display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 12.5px; }
+.sx-obj .addrline { margin-top: 4px; }
+.sx-obj .lead { flex: 0 0 110px; min-width: 0; }
+.sx-obj .bar { flex: 0 0 auto; width: 1px; height: 11px; background: var(--line); margin: 0 1px; }
+.sx-obj .case { font-weight: 600; color: var(--blue); white-space: nowrap; }
+.sx-obj .court { font-weight: 500; color: var(--text-2, var(--text)); white-space: nowrap; }
+.sx-obj .apr { margin-left: auto; color: var(--muted); white-space: nowrap; }
+.sx-obj .apr b { font-weight: 700; color: var(--text); }
+.sx-obj .pd { display: inline-flex; align-items: baseline; gap: 5px; }
+.sx-obj .pd em { font-style: normal; font-weight: 500; color: var(--text); }
+.sx-obj .pd b { font-weight: 500; color: var(--text); white-space: nowrap; }
+.sx-obj .addr { min-width: 0; font-weight: 600; color: var(--text-2, var(--text)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-obj .addr b { color: var(--blue); }
 .ih-stage { box-sizing: border-box; height: 28px; padding: 0 12px; border-radius: 8px; /* 알약 대신 PDF 단추와 같은 둥근 네모 · 같은 높이 */ border: 1.5px solid #6b85f0; background: #dce5ff; color: #3850c2; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; }
 .ih-stage.hot { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; }
 .ih-stage.off { border-color: #c4c9d4; background: #eef0f4; color: #6b7280; }
@@ -7036,9 +7048,13 @@ span.cal-day.has { cursor: help; }
   function saleCardHtml() {
     const picks = salePicks(); if (!picks.length) return '';
     const it = picks.find((x) => x.id === saleItemId) || null;
-    const btn = `<button type="button" class="ih-swap" data-act="sale-card-menu" aria-haspopup="listbox" aria-expanded="${saleCardOpen}">물건카드교체<i class="caret">▾</i></button>`;
-    const list = saleCardOpen ? `<ul class="sx-cardlist" role="listbox" aria-label="선정물건">${picks.map((x) => `<li role="option" aria-selected="${x.id === saleItemId}" class="${x.id === saleItemId ? 'on' : ''}" data-act="sale-card-pick" data-id="${esc(x.id)}"><b class="num">${esc(x.caseNo)}</b><span>${esc(agRegionOf(x.addr) || x.addr)}${x.bld ? ` · ${esc(x.bld)}` : ''}</span><span class="num">${x.apr > 0 ? sxWon(x.apr) : '-'}</span></li>`).join('')}</ul>` : '';
-    if (!it) return `<div class="ih-top"><span class="ih-court">물건카드교체에서 선정물건을 고르면 그 감정가가 아래 '내 물건 감정가'에 들어갑니다.</span><span class="ih-right">${btn}</span></div>${list}`;
+    /* 낙찰이후 진행절차의 '낙찰목록'과 같은 꼴 — 단추(이름 ×N ▾) 아래로 두 줄 카드 목록(사건번호 | 법원 / 매각기일 | 주소 빌라) */
+    const btn = `<button type="button" class="ih-pdf sx-pickbtn" data-act="sale-card-menu" aria-haspopup="listbox" aria-expanded="${saleCardOpen}">물건카드교체 <i class="sx-x">×</i>${picks.length}<img src="${CHEV_PNG}" class="${saleCardOpen ? 'up' : ''}" alt=""></button>`;
+    const ymd = (d) => (d ? dotDate(d).slice(2) : '–');
+    const list = saleCardOpen ? `<div class="sx-objlist" role="listbox" aria-label="선정물건">${picks.map((x) => `<article role="option" aria-selected="${x.id === saleItemId}" class="sx-obj ${x.id === saleItemId ? 'on' : ''}" data-act="sale-card-pick" data-id="${esc(x.id)}">`
+      + `<p class="top"><span class="case lead">${esc(x.caseNo)}</span><i class="bar"></i><span class="court">${esc(x.court || '–')}</span><span class="apr">감정가 <b class="num">${x.apr > 0 ? sxWon(x.apr) : '–'}</b></span></p>`
+      + `<p class="addrline"><span class="pd lead"><em>매각기일</em><b>${ymd(x.date)}</b></span><i class="bar"></i><span class="addr">${esc(x.addr)}${x.bld ? ` <b>${esc(x.bld)}</b>` : ''}</span></p></article>`).join('')}</div>` : '';
+    if (!it) return `<div class="ih-top"><span class="ih-court">물건카드교체에서 선정물건을 고르면 그 감정가가 아래 '내 물건 감정가'에 들어갑니다.</span><span class="ih-right sx-pickanchor">${btn}${list}</span></div>`;
     const a = detailOf(it); const T = CLOUD.T;
     const kind = TYPE_NAME(it.type) || '다세대';
     const sale = (T ? T.saleKindOf(a) : '토건일괄매각').replace('토건일괄매각', '토지건물 일괄매각');
@@ -7049,13 +7065,13 @@ span.cal-day.has { cursor: help; }
       <div class="ih-top">
         <h2 class="ih-title"><span class="ih-tag">경매</span><span class="num">${esc(it.caseNo)}</span></h2>
         <span class="ih-court">${esc(it.court || DASH)} · 매각기일 <span class="num">${it.date ? `${dotDate(it.date)}${dowText(it.date)}` : DASH}</span> <em>${it.date ? ddayText(it.date) : ''}</em></span>
-        <span class="ih-right"><span class="ih-stage sx-fix-stage">${esc(stage)}</span><span class="sx-fix-apr">감정가 <b class="num">${it.apr > 0 ? `${Number(it.apr).toLocaleString('ko-KR')}원` : DASH}</b></span>${btn}</span>
+        <span class="ih-right"><span class="ih-stage sx-fix-stage">${esc(stage)}</span><span class="sx-fix-apr">감정가 <b class="num">${it.apr > 0 ? `${Number(it.apr).toLocaleString('ko-KR')}원` : DASH}</b></span><span class="sx-pickanchor">${btn}${list}</span></span>
       </div>
       <div class="ih-prop">
         <span class="ih-kind">${esc(kind)}</span>
         <span class="ih-line"><span class="ih-sale">${esc(sale)}${metaText ? ` · ${esc(metaText)}` : ''}</span></span>
         <p class="ih-addr">${esc(it.addr)}${it.bld ? ` <b>${esc(it.bld)}</b>` : ''}${it.unit ? ` <b>${esc(it.unit)}</b>` : ''}</p>
-      </div>${list}`;
+      </div>`;
   }
   function salePickCard(id) {
     const it = salePicks().find((x) => x.id === id); saleCardOpen = false;
