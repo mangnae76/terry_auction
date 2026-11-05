@@ -6724,10 +6724,10 @@ span.cal-day.has { cursor: help; }
     const seg = (k, opts) => `<div class="sx-seg sm" role="group">${opts.map(([v, t]) => `<button type="button" class="${String(agSel[k]) === String(v) ? 'on' : ''}" data-act="ag-sel" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div>`;
     /* 대기열수집 — 도우미 2026.11.01-7 부터. 도는 동안은 단추를 켜 둔다 */
     const qVerOk = !online || agVerAtLeast(s.version, [2026, 11, 1, 7]);
-    const qRun = busy && (AG.lastSent === 'queue' || /^대기열/.test(String(s.message || '')));
+    const qRun = busy && (AG.lastSent === 'queue' || /^(대기열|읍면동) /.test(String(s.message || '')));
     const free = !busy && !AG.sending;
     let msg = !online ? '' : (s.message || (ready ? '' : '① 브라우저 열기를 누르면 My agent가 켜진 컴퓨터에 크롬이 열립니다.'));
-    if (!qVerOk && (AG.queue.length || agQueueCands().length)) msg = `대기열수집은 새 도우미(2026.11.01-7 이상)에서 됩니다 — 지금 ${s.version || '예전 버전'}. My agent 창에서 Ctrl+C 뒤 다시 켜 주세요.`;
+    if (!qVerOk && (AG.queue.length || agQueueCands().length)) msg = `읍면동 수집은 새 도우미(2026.11.01-7 이상)에서 됩니다 — 지금 ${s.version || '예전 버전'}. My agent 창에서 Ctrl+C 뒤 다시 켜 주세요.`;
     if (AG.note && Date.now() - AG.noteAt < 5000) msg = AG.note;
     const step = (n, name, label, on) => {
       const done = name === 'open' && ready; const cur = busy && AG.lastSent === name;
@@ -6749,11 +6749,11 @@ span.cal-day.has { cursor: help; }
     /* 맨 위 주황 막대 안내(다른 화면과 같은 .rg-lead) — 첫 줄은 도우미가 지금 하는 말, 둘째 줄은 쓰는 순서 */
     const say = online ? (msg || '대기 중입니다.') : 'My agent가 꺼져 있습니다. 수집할 컴퓨터에서 agent.py 를 켜 주세요.';
     const lead = `<div class="rg-lead sx-lead" role="status" aria-live="polite"><p class="l1">${esc(say)}</p>`
-      + '<p class="l2">① 브라우저 열기 → ② 화면만 · 대기열 · 끝 페이지까지 자동 수집 중 하나 → ③ 건축연도 채우기 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
+      + '<p class="l2">① 브라우저 열기 → ② 읍면동 · 끝 페이지까지 자동 · 화면만 수집 중 하나 → ③ 건축연도 채우기 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
     return `<div class="sx-top" id="agPanel">${lead}<section class="sx-card sx-collect" aria-label="경매 인근 매각물건 분석">${titlebar}`
       /* 첫 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③. 처음부터새로는 아래 상태 줄 왼쪽(2026-11-06) */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('months', AG_MONTHS)}</div>`
-      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(2, 'queue', qRun ? '대기열 수집 중' : '대기열 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(2, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(2, 'screen', '화면만 수집', ready && free)}</span>${step(3, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>${prog}</div></div></div>`
+      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(2, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(2, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(2, 'screen', '화면만 수집', ready && free)}</span>${step(3, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>${prog}</div></div></div>`
       + (AG.fold ? `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"></span><span class="sx-meta">${meta}</span>${manage}</div>` : '')   /* 접었을 때만 — 펼치면 저장 · 접기는 수집데이터 줄에 */
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
       + (AG.fold ? '' : `<div class="sx-manage">${agQueueHtml()}${agCovHtml(metaCnt, `<span class="sx-qtail">${metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : ''}${manage}</span>`)}</div>`)
@@ -6847,7 +6847,7 @@ span.cal-day.has { cursor: help; }
     const dongChips = AG.queue.filter((q) => q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.dong)} <i>${esc(q.kind || '동 전체')}</i><button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(agQid(q))}" aria-label="빼기">×</button></span>`).join('');
     const caseChips = AG.queue.filter((q) => !q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.case)}${q.addr ? ` <i>${esc(agRegionOf(q.addr))}</i>` : ''}<button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(q.case)}" aria-label="빼기">×</button></span>`).join('');
     const cands = agQueueCands().length;
-    const hint = cands ? `<span class="ag-cov-none">선정물건 중 안 모은 동네 ${cands}곳은 대기열수집 때 함께 올라갑니다 (탱크옥션)</span>` : '';
+    const hint = cands ? `<span class="ag-cov-none">선정물건 중 안 모은 동네 ${cands}곳은 읍면동 수집 때 함께 올라갑니다 (탱크옥션)</span>` : '';
     return `<div class="ag-cov ag-q-tools">${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}<div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-dong" ${AG.reg.dong ? '' : 'disabled'}>추가</button>${tail}</div>`
       + (dongChips || hint ? `<div class="ag-cov">${dongChips}${hint}</div>` : '')
       + (!AG_CASE_ADD ? '' : `<div class="ag-cov ag-q-tools"><span class="ag-q-add"><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span></div>`)
@@ -6933,9 +6933,9 @@ span.cal-day.has { cursor: help; }
     if (!AG.on || AG.sending) return;
     const collect = name === 'screen' || name === 'auto';
     if (name === 'queue') {
-      if (agSel.site !== '탱크옥션') { AG.note = '대기열수집은 지금 탱크옥션만 됩니다 — 사이트를 탱크옥션으로 골라 주세요.'; AG.noteAt = Date.now(); agPaint(); return; }
+      if (agSel.site !== '탱크옥션') { AG.note = '읍면동 수집은 지금 탱크옥션만 됩니다 — 사이트를 탱크옥션으로 골라 주세요.'; AG.noteAt = Date.now(); agPaint(); return; }
       const add = agQueueCands();
-      if (add.length) { try { await CLOUD.T.saveAgentQueue(AG.uid, [...AG.queue, ...add]); } catch (e) { AG.note = '대기열을 저장하지 못했습니다 — 다시 해 주세요.'; AG.noteAt = Date.now(); agPaint(); return; } }
+      if (add.length) { try { await CLOUD.T.saveAgentQueue(AG.uid, [...AG.queue, ...add]); } catch (e) { AG.note = '읍면동 수집 목록을 저장하지 못했습니다 — 다시 해 주세요.'; AG.noteAt = Date.now(); agPaint(); return; } }
     }
     const run = async () => {
       AG.sending = true; AG.lastSent = name; agPaint();
