@@ -7588,7 +7588,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
 
   const byId = (id) => items.find((x) => x.id === id);
   /* ===== 저장 표시 — 물건상세 탭 줄 오른쪽(경로 왼쪽)에 하나만. '저장 중… → 저장됨 · 방금'(마이페이지와 같은 시간 말).
-     이 창에서 아직 저장하지 않았으면 그 물건의 마지막 저장 시각(updatedAt)을 보인다 ===== */
+     이 창에서 아직 저장하지 않았으면 그 물건의 마지막 작성 기록(editLog — 물건 기록엔 따로 저장 시각 칸이 없다)을 보인다 ===== */
   const SV = { id: '', state: '', at: 0 };
   function paintSaveMark() {
     const el = $('saveMark'); if (!el) return;
@@ -7599,7 +7599,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     if (id && SV.id === id && SV.state === 'ing') { txt = '저장 중…'; cls = 'ing'; }
     else if (id && SV.id === id && SV.state === 'err') { txt = '저장하지 못했습니다'; cls = 'err'; }
     else if (id && SV.id === id && SV.state === 'ok') txt = `저장됨 · ${ago(SV.at)}`;
-    else if (a && a.updatedAt && ago(a.updatedAt)) txt = `저장됨 · ${ago(a.updatedAt)}`;
+    else if (a) { const last = Math.max(0, ...(a.editLog || []).map((e) => Number(e.at) || 0)); if (last) txt = `저장됨 · ${ago(last)}`; }   /* 마지막 작성 기록(마이페이지 '최근 작성'과 같은 값) */
     el.hidden = !txt; el.textContent = txt; el.className = `save-mark ${cls}`;
   }
   setInterval(paintSaveMark, 30000);   /* '방금 → 1분 전'처럼 시간이 흐르게 */
