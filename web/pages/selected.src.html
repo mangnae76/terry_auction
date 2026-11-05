@@ -3231,9 +3231,6 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .filter-pop .col + .col { border-left: 1px solid var(--line); padding-left: 6px; }
 
 .pop.cal-hm { width: 300px; padding: 0; border: 0; border-radius: 12px; }   /* 홈 달력(.hm-cal)이 테두리 · 안쪽 여백을 가진다 */
-.date-x { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-left: -4px; padding: 0; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); color: var(--muted); cursor: pointer; }
-.date-x:hover { color: var(--text); border-color: var(--text-2); }
-.date-x svg { width: 12px; height: 12px; }
 .cal { width: 326px; padding: 16px 20px 16px; } /* 안쪽 여백 넉넉히 — 요일 · 날짜 · 안내가 상자 끝에 붙지 않게 */
 .cal-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px; }
 .cal-head b { font-size: var(--title-fs); } /* 달력 글자 — 제목 16 · 요일 15 · 날짜 · 안내 14 */
@@ -4352,7 +4349,7 @@ span.cal-day.has { cursor: help; }
   const passesCommon = (it) => {
     if (S.type) { const t = PROPERTY_TYPES.find((x) => x.v === S.type); if (t && !t.re.test(it.type)) return false; }
     if (S.court && it.court !== S.court) return false;
-    if (S.date && it.date !== S.date) return false;
+    if (S.date && !calDayIds().has(it.id)) return false;   /* 달력에서 고른 날 — 그날 일정(매각기일 · 낙찰일 · 잔금기한 · 매도일)이 있는 물건 */
     if (S.q) { const q = S.q.replace(/\s+/g, '').toLowerCase(); if (!`${it.caseNo}${it.addr}${it.bld}${it.unit}${it.court}`.replace(/\s+/g, '').toLowerCase().includes(q)) return false; }
     return true;
   };
@@ -4569,7 +4566,7 @@ span.cal-day.has { cursor: help; }
     /* 달력으로 고른 날 — 칩 · 모두 지우기 대신 '10월 27일 입찰 1건 / 입찰 없음' 한 줄(푸는 건 달력에서 그 날을 다시 누른다) */
     const nShown = visible().length;
     const [, dm, dd] = (S.date || '').split('-').map(Number);
-    const dateLine = S.date ? `<span class="n">${dm}월 ${dd}일 ${nShown ? `입찰 <b class="num">${nShown}</b>건` : '입찰 없음'}</span><button type="button" class="date-x" data-act="clear-filter" data-v="date" aria-label="고른 날 풀기"${tip('날짜풀기')}>${I.x}</button>` : '';
+    const dateLine = S.date ? `<span class="n">${dm}월 ${dd}일 (${hmWk(S.date)}) ${nShown ? `일정 <b class="num">${nShown}</b>건` : '일정 없음'}</span><button type="button" class="reset" data-act="set-date" data-v="">전체</button>` : '';
     /* 달력이 열려 있으면 이 줄 자리를 늘 잡아 둔다 — 날짜를 골랐다 풀 때 아래 목록이 덜컹이지 않게 */
     $('chips').classList.remove('keep');
     $('chips').innerHTML = (S.date || chips.length)
@@ -4605,12 +4602,17 @@ span.cal-day.has { cursor: help; }
     return `<div class="hm-cal"><div class="hm-cal-h"><span class="nav"><button type="button" data-act="${o.moveAct}" data-v="-1" aria-label="이전 달">‹</button><b>${y}년 ${m + 1}월</b><button type="button" data-act="${o.moveAct}" data-v="1" aria-label="다음 달">›</button></span><button type="button" class="hm-more hm-cal-all" data-act="${o.allAct}">전체보기 →</button></div>`
       + `<div class="hm-cal-g">${cells}</div><div class="hm-cal-k">${Object.values(o.kinds).map(([t, c]) => `<span><b class="${c}"></b>${t}</span>`).join('')}<span><i></i>오늘</span></div></div>`;
   }
-  /* 선정물건 '입찰일 요약' — 홈 달력과 같은 모양 · 같은 동작. 점은 입찰일(매각기일)만, 날짜를 누르면 카드가 그날만.
-     홈과 달리 바깥을 눌러도 풀리지 않는다(창을 닫아도 남는다) — 푸는 건 그 날을 다시 누르거나 위 줄의 ✕ */
+  /* 선정물건 '입찰일 요약' — 홈 달력과 모양 · 점(매각기일 · 낙찰일 · 잔금기한 · 매도일) · 동작이 같다(2026-11-05 하나로).
+     날짜를 누르면 카드가 그날 일정 있는 물건만, 날짜 말고 어디든 누르면 풀린다 */
+  const calIdsOn = (d) => new Set(hmDates().filter((x) => x.d === d).map((x) => x.a.id));
+  let calMemo = { k: '', at: 0, ids: new Set() };
+  const calDayIds = () => { const now = Date.now(); if (calMemo.k !== S.date || now - calMemo.at > 300) calMemo = { k: S.date, at: now, ids: calIdsOn(S.date) }; return calMemo.ids; };
   function calendarHtml() {
-    const mark = {}; live().forEach((it) => { if (it.date) { mark[it.date] = mark[it.date] || {}; mark[it.date].bid = (mark[it.date].bid || 0) + 1; } });
+    const ids = new Set(live().map((it) => it.id));
+    const mark = {};
+    hmDates().forEach((x) => { if (!ids.has(x.a.id)) return; mark[x.d] = mark[x.d] || {}; mark[x.d][x.kind] = (mark[x.d][x.kind] || 0) + 1; });
     const base = S.calMonth || (S.date ? parseYmd(S.date) : new Date(TODAY));
-    return `<div class="pop cal-hm ${S.calPatch ? 'no-anim' : ''}" role="dialog" aria-label="입찰일 요약">${calBoxHtml({ base, mark, kinds: { bid: ['매각기일', 's'] }, sel: S.date, dayAct: 'set-date', moveAct: 'cal-move', allAct: 'hm-cal' })}</div>`;
+    return `<div class="pop cal-hm ${S.calPatch ? 'no-anim' : ''}" role="dialog" aria-label="입찰일 요약">${calBoxHtml({ base, mark, kinds: HM_KIND, sel: S.date, dayAct: 'set-date', moveAct: 'cal-move', allAct: 'hm-cal' })}</div>`;
   }
 
   function binHtml(kind, list) {
@@ -7410,6 +7412,8 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
 
   document.addEventListener('click', (e) => {
     const t = e.target.closest('[data-act]');
+    /* 선정물건 달력도 홈과 같다 — 날짜를 골라 둔 채 날짜 말고 어디든 누르면 푼다(목록 다시 전체). 누른 단추는 제 일을 그대로 한다 */
+    if (S.date && !(t && t.dataset.act === 'set-date')) { S.date = ''; queueMicrotask(() => { S.calPatch = true; render(); S.calPatch = false; }); }
     if (S.pop && !e.target.closest(`[data-pop="${S.pop}"], .g-pop`)) { S.pop = ''; S.binPicked = new Set(); S.calMonth = null; render(); }
     if (S.menu && !e.target.closest('.float-menu') && !(t && ['bid-result', 'stage-menu', 'result-menu'].includes(t.dataset.act))) { S.menu = null; syncMenu(); }
     /* 홈 달력에서 날짜를 골라 둔 채 날짜 말고 어디든 누르면 고른 것을 푼다(목록 다시 전체). 누른 단추는 제 일을 그대로 한다 */
