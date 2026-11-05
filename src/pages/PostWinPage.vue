@@ -136,6 +136,8 @@ const telHref = (phone: string) => {
 /** '2025-10-17' → '25. 10. 17' (자금관리 카드와 같은 꼴) */
 /** 웹 — 선정목록 물건상세의 고정 카드(경매 사건번호 · 법원 · 날짜 / 종류 · 매각구분 · 면적 / 주소)와 같은 꼴로 낙찰 물건을 보인다 */
 const webEmbed = inject<boolean>('webEmbed', false);
+// 웹 — 예전 가이드 › 낙찰당일 주소는 가이드 첫 장(명도)으로
+if (webEmbed) watch(activeTab, (t) => { if (t === 'gwin') activeTab.value = 'gevict'; }, { immediate: true });
 const webHead = computed(() => {
   const a = picked.value;
   if (!a) return null;
@@ -345,8 +347,28 @@ const todoCards = (t: StepTodo, key: string, sup = ''): CheckGroup[] => {
   return [main, ...extra].filter((g): g is CheckGroup => !!g);
 };
 /** 절차상세 장 — 단계 차례대로 [단계 머리 + 큰일 카드들] */
+// 웹 1차 방문 카드 — 가이드 낙찰당일 장을 빼면서 그 내용을 여기로 모았다.
+// '만났을 때 협상내용' 아래 집수리 · 매각불허가 준비(서식 단추), '못 만났을 때 메모 남기기' 아래 탐문 · 내용증명 발송. 따로 있던 탐문 카드는 겹쳐서 뺀다
+const VISIT_MEET_ROWS = ['pw.visit.in1', 'pw.visit.in3'];
+const VISIT_MISS_ROWS = ['pw.visit.c2', 'pw.visit.c3', 'pw.visit.c4', 'pw.visit.c5'];
+const detailTodo = (t: StepTodo): StepTodo | null => {
+  if (t.group !== 'visit' || !t.rows) return t;
+  if (t.rows.includes('pw.visit.c1')) {
+    return { ...t, section: ['협상내용', '내부확인', '폐문부재연락부재'], rows: [...t.rows, ...VISIT_MEET_ROWS, ...VISIT_MISS_ROWS], cardNote: '빠른 명도를 위해 잔금납부 전 협상을 진행한다.' };
+  }
+  return t.rows.every((id) => VISIT_MISS_ROWS.slice(0, 3).includes(id)) ? null : t;
+};
+/** 내부확인 줄은 바로 위 칸('만났을 때 협상내용') 끝에 붙인다 */
+const meetMerge = (g: CheckGroup): CheckGroup => {
+  const i = g.sections.findIndex((sec) => normLabel(sec.label ?? '') === '내부확인');
+  if (i < 1) return g;
+  const secs = [...g.sections];
+  const [inner] = secs.splice(i, 1);
+  secs[i - 1] = { ...secs[i - 1], rows: [...secs[i - 1].rows, ...inner.rows] };
+  return { ...g, sections: secs };
+};
 const detailCards = (chap: string): CheckGroup[] => (DETAIL_STEPS[chap] ?? []).flatMap((sk) => (STEP_TODOS[sk] ?? [])
-  .flatMap((t, i) => (t.group ? todoCards(t, `card.${sk}.${i}`, STEP_TITLE[sk] ?? sk) : [])));
+  .flatMap((t, i) => { const d = detailTodo(t); return d?.group ? todoCards(d, `card.${sk}.${i}`, STEP_TITLE[sk] ?? sk).map(meetMerge) : []; }));
 const popNarrowed = computed(() => !!popTodo.value && !popFull.value && !!(popTodo.value.section || popTodo.value.rows || popTodo.value.branch != null));
 // (전체 보기는 일부만 잘라 띄운 카드에서만 — 상자 하나 통째인 카드는 이미 전체다)
 /** 갈래 그림은 줄 이름표가 갈래 차례에 묶여 있어 빼지 않고 가린다 — 그 갈래 · 그 번호만 보인다 */
@@ -408,8 +430,10 @@ const dayGroups = computed<CheckGroup[]>(() => {
 /** 표가 있는 탭인가 */
 const hasTable = computed(() => viewTab.value in BOOK_OF || !!DETAIL_OF[activeTab.value] || (webEmbed && !!DETAIL_STEPS[activeTab.value]));
 /** 웹 — 절차상세 · 가이드 안의 장 단추(경로 오른쪽) */
-const DETAIL_CHAPS: Array<[TabKey, string]> = [['win', '낙찰당일'], ['dpre', '잔금전'], ['balance', '잔금·등기'], ['evict', '명도'], ['drepair', '인테리어'], ['dsell', '매도'], ['dtax', '세금']];
-const GUIDE_CHAPS: Array<[TabKey, string]> = [['gwin', '낙찰당일'], ['gdeny', '매각불허가'], ['gevict', '명도'], ['biz', '사업자등록'], ['gtax', '세금']];
+const DETAIL_CHAPS: Array<[TabKey, string]> = [['win', '낙찰당일'], ['gdeny', '매각불허가'], ['dpre', '잔금전'], ['balance', '잔금·등기'], ['evict', '명도'], ['drepair', '인테리어'], ['dsell', '매도'], ['dtax', '세금']];
+// 낙찰당일 장(gwin)은 뺐다 — 절차별체크리스트 낙찰당일과 겹쳐서, 남는 내용은 1차 방문 카드로 모았다. 매각불허가는 체크리스트 낙찰당일 오른쪽으로
+const GUIDE_CHAPS: Array<[TabKey, string]> = [ ['gevict', '명도'], ['biz', '사업자등록'], ['gtax', '세금']];
+const isGuideChap = computed(() => !editing.value && GUIDE_CHAPS.some(([k]) => k === activeTab.value));
 const chaps = computed(() => {
   if (!webEmbed) return [];
   if (DETAIL_CHAPS.some(([k]) => k === activeTab.value)) return DETAIL_CHAPS;
@@ -812,6 +836,8 @@ const toggleSection = (key: string) => {
       </div>
       <!-- 웹 — 경로(홈 › 낙찰이후 › 탭)는 카드 아래 이 자리로 옮겨 온다 -->
       <!-- 명도 탭은 경로 오른쪽에 '명도 가이드' 단추 하나 — 누르면 명도절차 · 명도 협상 방법을 한 팝업에 -->
+      <!-- 웹 가이드 — '낙찰 후 진행 순서'가 여기로 옮겨 온다(사건 카드 아래 · 장 탭 위). 경로는 그 아래 장 탭 줄에 그대로 -->
+      <div v-if="webEmbed" class="pw-flowslot" />
       <div v-if="webEmbed" class="pw-crumbrow">
         <div class="pw-crumb" data-crumb-slot />
       </div>
@@ -884,25 +910,10 @@ const toggleSection = (key: string) => {
     </div>
 
     <div :key="activeTab" :class="['pw-body', `tab-${popOpen ? popView : viewTab}`, { app: !webEmbed }]">
-      <!-- 웹 — 절차상세 · 가이드의 장 탭(박스형, 내용 바로 위) -->
-      <nav v-if="chaps.length && !editing" class="pw-chaptabs" role="tablist">
-        <button
-          v-for="[k, label] in chaps"
-          :key="k"
-          type="button"
-          role="tab"
-          :aria-selected="activeTab === k"
-          :class="{ on: activeTab === k }"
-          @click="activeTab = k"
-        >{{ label }}</button>
-      </nav>
-      <!-- 웹 — 물건이 없을 때 알림은 탭 줄 아래(탭은 사건 카드 바로 밑, 손품조사와 같은 자리) -->
-      <p v-if="webEmbed && checkable && !picked && activeTab !== 'flow'" class="pw-nopick">
-        낙찰 물건이 없으면 체크할 수 없습니다 — 선정물건에서 단계를 <b>낙찰</b>로 바꿔 주세요.
-      </p>
       <!-- 낙찰당일 — '낙찰 후 진행 순서'를 탭 맨 위 상자로 펼쳐 둔다 (앱 · 웹) -->
-      <!-- 웹은 가이드 › 낙찰당일 장에 둔다 -->
-      <section v-if="activeTab === (webEmbed ? 'gwin' : 'win')" :class="['pw-card', 'pw-flowcard', { web: webEmbed }]">
+      <!-- 웹은 가이드 장 탭(낙찰당일 · 매각불허가 …) 위에 — 어느 장을 봐도 늘 -->
+      <Teleport defer to=".pw-flowslot" :disabled="!webEmbed">
+      <section v-if="webEmbed ? isGuideChap : activeTab === 'win'" :class="['pw-card', 'pw-flowcard', { web: webEmbed }]">
         <!-- 늘 펼쳐 둔다 — 접기 단추 없음 -->
         <header class="pw-card-head pw-flowcard-head">
           <h2>
@@ -920,6 +931,23 @@ const toggleSection = (key: string) => {
           >{{ st.name }}<span class="pw-flow-tip" role="tooltip">{{ st.note }}</span></span>
         </div>
       </section>
+      </Teleport>
+      <!-- 웹 — 절차상세 · 가이드의 장 탭(박스형, 내용 바로 위) -->
+      <nav v-if="chaps.length && !editing" class="pw-chaptabs" role="tablist">
+        <button
+          v-for="[k, label] in chaps"
+          :key="k"
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === k"
+          :class="{ on: activeTab === k }"
+          @click="activeTab = k"
+        >{{ label }}</button>
+      </nav>
+      <!-- 웹 — 물건이 없을 때 알림은 탭 줄 아래(탭은 사건 카드 바로 밑, 손품조사와 같은 자리) -->
+      <p v-if="webEmbed && checkable && !picked && activeTab !== 'flow'" class="pw-nopick">
+        낙찰 물건이 없으면 체크할 수 없습니다 — 선정물건에서 단계를 <b>낙찰</b>로 바꿔 주세요.
+      </p>
       <!-- 웹 진행절차 — 박스 탭 셋: 진행절차(일정 · 해야 할 일) · 명도분석(비용 · 리스크) · 세금분석 -->
       <nav v-if="activeTab === 'flow'" class="pw-chaptabs" role="tablist">
         <button v-for="[k, label] in FLOW_SUBS" :key="k" type="button" role="tab" :aria-selected="flowSub === k" :class="{ on: flowSub === k }" @click="flowSub = k">{{ label }}</button>

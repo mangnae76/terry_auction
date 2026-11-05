@@ -1876,6 +1876,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 띠는 좌우 끝까지 — clip-path 를 쓰면 아래로 펼치는 낙찰목록까지 잘리니 뒤판(::before)으로 깐다 */
 .app-page[data-k="postwin"] .pw-webhead::before { content: ''; position: absolute; inset: 0 calc(50% - 50vw); z-index: -1; background: var(--band); }
 .app-page[data-k="postwin"] .pw-crumbrow { order: -1; }
+/* 가이드 '낙찰 후 진행 순서' — 사건 카드와 장 탭 사이(장마다 늘). 비면 자리 없음 */
+.app-page[data-k="postwin"] .pw-flowslot { order: -1; }
+.app-page[data-k="postwin"] .pw-flowslot > .pw-flowcard { margin: 10px 0 0; }
 .app-page[data-k="postwin"] .pw-objwrap > .pw-obj, .app-page[data-k="postwin"] .pw-objctrl, .app-page[data-k="postwin"] .pw-page-title { display: none !important; }
 .app-page[data-k="postwin"] .pw-objwrap { display: none !important; }
 /* 낙찰이후 글자 크기 — 큰 제목 18 · 카드 제목 16 · 중제목(표 왼쪽 이름 · 칩 · 단계 이름) 15 · 나머지 글은 모두 14 이상 */
@@ -4492,7 +4495,7 @@ span.cal-day.has { cursor: help; }
      화면마다 따로 적지 않는다: 새 화면 · 새 하위 탭이 생기면 아래 두 표(SUB_TAB_KEYS · readHash/hashOf)에만 더한다 ===== */
   const SUB_TAB_KEYS = {
     market: ['dong', 'rank', 'son', 'sale'], /* 랭킹분석 = 랭킹지도 · 거래랭킹(지역분석 화면을 랭킹 탭만으로) · 매각사례 = 인근 · 동일지번 매각물건 분석(안 박스 탭 S.saleTab) · 거래랭킹은 지역분석 › 랭킹지도 탭으로, 경매지번 분석은 지역분석 › 경매지번 탭으로 */
-    postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
+    postwin: ['flow', 'win', 'gdeny', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'interior', 'tax'],
     more: ['mypage', 'alerts', 'billing', ...(SHOW_POINTS ? ['points'] : []), 'support', 'calendar'],   /* calendar — 마이페이지 › 입찰 캘린더(앱 화면 /bid-calendar) */   /* 공지는 커뮤니티로 옮겼다 · 포인트는 SHOW_POINTS 일 때만(옛 주소 #/more/points 는 내정보로) */
     community: ['notice'],   /* 오류및제안은 게시판으로 옮겼다(2026-11-05) */
@@ -4513,6 +4516,7 @@ span.cal-day.has { cursor: help; }
     if (head === 'mobile') return { route: 'store', storeTab: 'mobile' }; /* 모바일앱은 스토어 안 탭으로 옮겼다(2026-11-02) */
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
+    if (head === 'postwin' && m[2] === 'gwin') return { route: 'postwin', sub: 'gevict' }; /* 가이드 › 낙찰당일 장을 뺐다 — 가이드 첫 장(명도)으로 */
     if (head === 'postwin' && m[2] === 'sell') { try { sessionStorage.setItem('pw.flow.sub', 'sell'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '매도·임대' — 진행절차 안 매물등록 박스 탭 */
     if (head === 'postwin' && m[2] === 'repair') { try { sessionStorage.setItem('pw.flow.sub', 'biz'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '인테리어' 하위 탭 — 진행절차 안 사업경비 박스 탭으로 */
     if (head === 'finance' && (m[2] === 'fuelMeal' || m[2] === 'itemPurchase')) return { route: 'finance', sub: 'interior' }; /* 예전 유류&식대 · 물품구매 — 사업경비에 함께 보인다 */
@@ -5745,7 +5749,7 @@ span.cal-day.has { cursor: help; }
     /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
     market: [['dong', '', '실거래분석'], ['son', '', '시세예측'], ['rank', '', '랭킹분석'], ['sale', '', '경매사례', 'admin']],   /* 경매사례는 운영자만(집 PC 수집 도우미가 모은 자료) */
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
-    postwin: [['flow', '', '진행절차'], ['win', '', '절차별체크리스트'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
+    postwin: [['flow', '', '진행절차'], ['win', '', '절차별체크리스트'], ['gevict', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
     more: [['mypage', '', '내정보'], ['alerts', '', '알림', 'hide'], ['billing', '', '결제하기'], ['calendar', '', '입찰 캘린더'], ['points', '', '포인트', SHOW_POINTS ? '' : 'hide'], ['support', '', '고객센터', 'hide']],   /* 입찰 캘린더 — 결제하기 옆. 고객센터는 탭에서 빼고 바닥 링크(환불정책 옆)로(2026-11-03) */
     community: [['notice', '', '공지']],
@@ -6248,8 +6252,8 @@ span.cal-day.has { cursor: help; }
   });
   /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
   /* 낙찰이후 — 장 열쇠는 제 하위 탭(절차상세 · 가이드)에 불이 들어오고, 경로에는 '절차상세 › 명도'처럼 장 이름이 붙는다 */
-  const SUB_PARENT = { postwin: { dpre: 'win', evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win', gevict: 'gwin', gdeny: 'gwin', biz: 'gwin', gtax: 'gwin' } };
-  const SUB_CHAP = { postwin: { win: '낙찰당일', dpre: '잔금전', evict: '명도', balance: '잔금·등기', drepair: '인테리어', dsell: '매도', dtax: '세금', gwin: '낙찰당일', gdeny: '매각불허가', gtax: '세금', gevict: '명도', biz: '사업자등록' } };
+  const SUB_PARENT = { postwin: { dpre: 'win', evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win', gdeny: 'win', biz: 'gevict', gtax: 'gevict' } };   /* 매각불허가는 절차별체크리스트(낙찰당일 오른쪽), 가이드 첫 장은 명도(낙찰당일 장은 뺐다) */
+  const SUB_CHAP = { postwin: { win: '낙찰당일', dpre: '잔금전', evict: '명도', balance: '잔금·등기', drepair: '인테리어', dsell: '매도', dtax: '세금', gdeny: '매각불허가', gtax: '세금', gevict: '명도', biz: '사업자등록' } };
   const subParent = (route, key) => (SUB_PARENT[route] || {})[key] || key;
   const subLabel = (route, key) => ((SUBTABS[route] || []).find((t) => t[0] === subParent(route, key)) || [])[2] || '';
   const subChap = (route, key) => (SUB_CHAP[route] || {})[key] || '';
