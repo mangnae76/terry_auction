@@ -922,7 +922,9 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-conn.on { background: var(--nav); color: #fff; }
 .sx-info { display: inline-grid; place-items: center; margin-left: 2px; color: var(--muted); cursor: help; }
 .sx-info:hover, .sx-info:focus-visible { color: var(--blue); }
-.sx-conn.on i { background: var(--sx-ok); box-shadow: 0 0 0 3px rgba(47, 158, 99, .25); }
+.sx-conn.on i { background: #3dff7a; box-shadow: 0 0 6px 2px rgba(61, 255, 122, .75), 0 0 0 3px rgba(61, 255, 122, .22); animation: sx-live 2s ease-in-out infinite; }   /* 켜진 불 — 밝은 녹색 + 빛 번짐, 천천히 숨쉬기 */
+@keyframes sx-live { 50% { box-shadow: 0 0 10px 4px rgba(61, 255, 122, .55), 0 0 0 4px rgba(61, 255, 122, .12); } }
+@media (prefers-reduced-motion: reduce) { .sx-conn.on i { animation: none; } }
 .sx-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .sx-seg button { height: 34px; padding: 0 10px; border: 0; border-radius: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .sx-seg button + button { border-left: 1px solid var(--line); }
