@@ -3,11 +3,13 @@
 //   users/{uid}/agent/control        웹 → 도우미 {cmd:{id,name,args,at}, stop:{id,at}, webSeenAt}
 //   users/{uid}/agent/status         도우미 → 웹 {at, ready, busy, enriching, prog, message, …}
 //   users/{uid}/agent/queue          웹 ↔ 도우미 모을 물건 대기열 {items: [{case, addr, at}]} (도우미가 끝난 사건을 뺀다)
-//   users/{uid}/agent/coverage       도우미 → 웹 모은 동네 {dongs: {'인천 서구 검암동': {at(ms), n, site, src, months}}}
-//   users/{uid}/datasets/main        {count, chunks, version, by, updatedAt}
-//   users/{uid}/datasets/main/chunks/{i}  {i, data: 레코드 JSON 글자, v}
-// 읽고 쓰기는 운영자 본인만(firestore.rules isAgentOwner). 앱 화면은 쓰지 않는다.
-import { collection, doc, getDoc, getDocFromServer, getDocs, onSnapshot, serverTimestamp, setDoc, type Unsubscribe } from 'firebase/firestore';
+// ── 공용 자료 — 관리자 누구든 쌓으면 다 같이 쓴다(계정마다 쌓지 않는다. GitHub Actions 로 쌓는 자료와 같은 공용 자료)
+//   saleData/coverage                도우미 → 웹 모은 동네 {dongs: {'인천 서구 검암동': {at(ms), n, site, src, months}}}
+//   saleData/main                    {count, chunks, version, by, updatedAt}
+//   saleData/main/chunks/{i}         {i, data: 레코드 JSON 글자, v}
+// 공용 자료는 관리자 누구나 쓰고 로그인한 모두가 읽는다. 명령 · 상태 · 대기열은 각자 집 PC 라 운영자 본인만(firestore.rules).
+// 예전에는 모은 자료도 users/{uid}/datasets · agent/coverage 에 계정마다 쌓였다 — migrateLegacyAgentData 가 한 번 옮긴다.
+import { collection, doc, getDoc, getDocFromServer, getDocs, onSnapshot, runTransaction, serverTimestamp, setDoc, type Unsubscribe } from 'firebase/firestore';
 import { firestore } from './firebase';
 
 export type AgentCmdName = 'open' | 'screen' | 'auto' | 'enrich' | 'queue';
@@ -35,11 +37,18 @@ const db = () => {
   if (!firestore) throw new Error('Firestore 가 준비되지 않았습니다.');
   return firestore;
 };
-const controlRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'control');
-const statusRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'status');
-const queueRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'queue');
-const coverageRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'coverage');
-const metaRef = (uid: string) => doc(db(), 'users', uid, 'datasets', 'main');
+// 상태 · 명령 · 대기열도 공용 — 관리자 누구로 로그인해도 같은 집 PC 도우미를 본다(2026-11-05). uid 는 받기만 한다
+const controlRef = (_uid?: string) => doc(db(), 'saleData', 'agentControl');
+const statusRef = (_uid?: string) => doc(db(), 'saleData', 'agentStatus');
+const queueRef = (_uid?: string) => doc(db(), 'saleData', 'agentQueue');
+const legacyQueueRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'queue');
+// 공용 자료 — uid 는 받기만 하고 쓰지 않는다(부르는 쪽 모양을 그대로 두려고)
+const coverageRef = (_uid?: string) => doc(db(), 'saleData', 'coverage');
+const metaRef = (_uid?: string) => doc(db(), 'saleData', 'main');
+const chunksCol = () => collection(db(), 'saleData', 'main', 'chunks');
+// 예전 자리(계정마다) — 옮겨 담을 때만 읽는다
+const legacyMetaRef = (uid: string) => doc(db(), 'users', uid, 'datasets', 'main');
+const legacyCoverageRef = (uid: string) => doc(db(), 'users', uid, 'agent', 'coverage');
 
 /** 도우미가 마지막 소식을 보낸 지 90초 안이면 연결됨 (도우미는 40초마다 알린다) */
 export const AGENT_ONLINE_MS = 90_000;
@@ -108,9 +117,82 @@ export const loadAgentDataset = async (uid: string): Promise<{ recs: SaleRecord[
   const m = await getDoc(metaRef(uid));
   if (!m.exists()) return { recs: [], meta: null };
   const meta = m.data() as AgentDatasetMeta;
-  const snaps = await getDocs(collection(db(), 'users', uid, 'datasets', 'main', 'chunks'));
+  const snaps = await getDocs(chunksCol());
   const parts = snaps.docs.map((d) => d.data() as { i?: number; data?: string })
     .filter((d) => typeof d.i === 'number' && d.i < meta.chunks)
     .sort((a, b) => (a.i ?? 0) - (b.i ?? 0));
   return { recs: parts.flatMap((p) => parseSaleChunk(p.data)), meta };
+};
+
+/** 레코드를 700KB 이하 JSON 조각으로 — Firestore 문서 1MB 제한(auction-web splitChunks 와 같다) */
+const splitSaleChunks = (recs: SaleRecord[], limit = 700_000): string[] => {
+  const out: string[] = [];
+  let cur: string[] = [];
+  let size = 2;
+  for (const r of recs) {
+    const t = JSON.stringify(r);
+    const bytes = new TextEncoder().encode(t).length + 1;
+    if (cur.length && size + bytes > limit) { out.push(`[${cur.join(',')}]`); cur = []; size = 2; }
+    cur.push(t); size += bytes;
+  }
+  if (cur.length || !out.length) out.push(`[${cur.join(',')}]`);
+  return out;
+};
+
+/** 웹(파일 불러오기)에서 공용 매각물건 자료를 통째로 저장 — 그 사이 집 PC 수집 등으로 바뀌었으면(expectVersion 이 다르면) 저장하지 않는다.
+ *  auction-web saveDataset 과 같은 모양(by: 'web'). 저장한 새 버전을 돌려준다 */
+export const saveSaleDataset = async (recs: SaleRecord[], expectVersion: number | null): Promise<number> => {
+  if (recs.length > 20_000) throw new Error('한 번에 20,000건까지 저장할 수 있습니다.');
+  const chunks = splitSaleChunks(recs);
+  if (chunks.length > 400) throw new Error('자료가 너무 큽니다.');
+  return runTransaction(db(), async (tx) => {
+    const cur = await tx.get(metaRef());
+    const curMeta = cur.exists() ? (cur.data() as AgentDatasetMeta) : null;
+    const curVersion = curMeta?.version ?? 0;
+    if (expectVersion !== null && curVersion !== expectVersion) throw new Error('그 사이 집 PC 수집 등으로 자료가 바뀌었습니다 — 다시 불러온 뒤 해 주세요.');
+    const version = curVersion + 1;
+    chunks.forEach((data, i) => tx.set(doc(chunksCol(), String(i)), { i, data, v: version }));
+    for (let i = chunks.length; i < (curMeta?.chunks ?? 0); i += 1) tx.delete(doc(chunksCol(), String(i)));
+    tx.set(metaRef(), { count: recs.length, chunks: chunks.length, version, by: 'web', updatedAt: serverTimestamp() });
+    return version;
+  });
+};
+
+/** 예전에 이 계정 아래(users/{uid}) 쌓인 모은 물건 · 모은 동네를 공용 자리(saleData)로 한 번 옮긴다.
+ *  공용 자리에 이미 있으면 건드리지 않는다. 옮겼으면 true. 예전 자리는 그 계정 본인만 읽을 수 있어, 쌓은 계정으로 열 때 옮겨진다 */
+export const migrateLegacyAgentData = async (uid: string): Promise<boolean> => {
+  if (!uid) return false;
+  let moved = false;
+  try {
+    const [shared, legacy] = await Promise.all([getDoc(metaRef()), getDoc(legacyMetaRef(uid)).catch(() => null)]);
+    if (!shared.exists() && legacy?.exists()) {
+      const meta = legacy.data() as AgentDatasetMeta;
+      const snaps = await getDocs(collection(db(), 'users', uid, 'datasets', 'main', 'chunks'));
+      const parts = snaps.docs.map((d) => d.data() as { i?: number; data?: string; v?: number })
+        .filter((d) => typeof d.i === 'number' && d.i < meta.chunks && typeof d.data === 'string');
+      if (parts.length) {
+        // 조각을 먼저, 요약을 나중에 — 요약이 보이는 순간 조각이 다 있게
+        for (const p of parts) await setDoc(doc(chunksCol(), String(p.i)), { i: p.i, data: p.data, v: 1 });
+        await setDoc(metaRef(), { count: meta.count, chunks: meta.chunks, version: 1, by: 'web', updatedAt: serverTimestamp() });
+        moved = true;
+      }
+    }
+  } catch (e) {
+    console.warn('[saleData] 모은 물건 옮기기 실패', e);
+  }
+  try {
+    const [shared, legacy] = await Promise.all([getDoc(coverageRef()), getDoc(legacyCoverageRef(uid)).catch(() => null)]);
+    const dongs = legacy?.exists() ? (legacy.data() as { dongs?: Record<string, unknown> }).dongs : null;
+    if (!shared.exists() && dongs && Object.keys(dongs).length) { await setDoc(coverageRef(), { dongs }); moved = true; }
+  } catch (e) {
+    console.warn('[saleData] 모은 동네 옮기기 실패', e);
+  }
+  try {
+    const [shared, legacy] = await Promise.all([getDoc(queueRef()), getDoc(legacyQueueRef(uid)).catch(() => null)]);
+    const items = legacy?.exists() ? (legacy.data() as { items?: unknown }).items : null;
+    if (!shared.exists() && Array.isArray(items) && items.length) { await setDoc(queueRef(), { items: items.slice(0, 200) }); moved = true; }
+  } catch (e) {
+    console.warn('[saleData] 대기열 옮기기 실패', e);
+  }
+  return moved;
 };
