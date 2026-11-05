@@ -5291,7 +5291,7 @@ span.cal-day.has { cursor: help; }
       <h2 class="rg-sec">${I.spark}자동등록<span class="plan-tag plus">PRO</span></h2>
       ${autoBox}
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
-      <h2 class="rg-sec" id="rgSecManual">${I.pencil}직접입력<small>PDF가 없는 물건은 손으로 적어 선정물건에 올립니다</small></h2>
+      <h2 class="rg-sec" id="rgSecManual">${I.pencil}직접입력</h2>
       <!-- 직접입력 — 제목 줄을 누르면 칸이 펼쳐진다 -->
       <section class="rg-results manual ${mnOpen ? '' : 'folded'}">
         <div class="rg-head mn-fold" role="button" tabindex="0" data-act="mn-toggle" aria-expanded="${mnOpen}">
