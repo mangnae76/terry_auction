@@ -6738,7 +6738,7 @@ span.cal-day.has { cursor: help; }
     if (AG.note && Date.now() - AG.noteAt < 5000) msg = AG.note;
     const step = (n, name, label, on) => {
       const done = name === 'open' && ready; const cur = busy && AG.lastSent === name;
-      return `<button type="button" class="sx-step${done ? ' done' : ''}${cur ? ' now' : ''}" data-act="ag-cmd" data-v="${name}" ${on ? '' : 'disabled'}><b>${done ? '✓' : n}</b>${label}</button>`;
+      return `<button type="button" class="sx-step${done ? ' done' : ''}${cur ? ' now' : ''}" data-act="ag-cmd" data-v="${name}" ${on ? '' : 'disabled'}>${n || done ? `<b>${done ? '✓' : n}</b>` : ''}${label}</button>`;   /* n 이 0 이면 번호 동그라미 없이(②③ 뺌 2026-11-06) */
     };
     const pr = busy && s.prog && s.prog.n > 0 ? s.prog : null;
     const prog = `<div class="sx-prog"><span class="sx-bar"><b style="width:${pr ? Math.min(100, Math.round((pr.i / pr.n) * 100)) : 0}%"></b></span>${pr ? `<span class="num">${Number(pr.i).toLocaleString('ko-KR')} / ${Number(pr.n).toLocaleString('ko-KR')}쪽</span>` : `<span>${busy ? '수집하는 중' : '대기 중'}</span>`}<button type="button" class="sx-stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`;
@@ -6756,11 +6756,11 @@ span.cal-day.has { cursor: help; }
     /* 맨 위 주황 막대 안내(다른 화면과 같은 .rg-lead) — 첫 줄은 도우미가 지금 하는 말, 둘째 줄은 쓰는 순서 */
     const say = online ? (msg || '대기 중입니다.') : 'My agent가 꺼져 있습니다. 수집할 컴퓨터에서 agent.py 를 켜 주세요.';
     const lead = `<div class="rg-lead sx-lead" role="status" aria-live="polite"><p class="l1">${esc(say)}</p>`
-      + '<p class="l2">① 브라우저 열기 → ② 읍면동 · 끝 페이지까지 자동 · 화면만 수집 중 하나 → ③ 건축연도 채우기 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
+      + '<p class="l2">① 브라우저 열기 → 읍면동 · 끝 페이지까지 자동 · 화면만 수집 중 하나 → 건축연도 채우기 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
     return `<div class="sx-top" id="agPanel">${lead}<section class="sx-card sx-collect" aria-label="경매 인근 매각물건 분석">${titlebar}`
       /* 첫 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③. 처음부터새로는 아래 상태 줄 왼쪽(2026-11-06) */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('months', AG_MONTHS)}</div>`
-      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(2, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(2, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(2, 'screen', '화면만 수집', ready && free)}</span>${step(3, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>${prog}</div></div></div>`
+      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(0, 'screen', '화면만 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>${prog}</div></div></div>`
       + (AG.fold ? `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"></span><span class="sx-meta">${meta}</span>${manage}</div>` : '')   /* 접었을 때만 — 펼치면 저장 · 접기는 수집데이터 줄에 */
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
       + (AG.fold ? '' : `<div class="sx-manage">${agQueueHtml()}${agCovHtml(metaCnt, `<span class="sx-qtail">${metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : ''}${manage}</span>`)}</div>`)
