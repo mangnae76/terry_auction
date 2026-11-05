@@ -947,7 +947,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa.fs .dl .dn { flex: 0 0 32px; }
 .pa.fs .simB > .pa-lab, .pa.fs .simrow > .elev-pick { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 8px; width: 100%; }
 .pa.fs .simrow.has-elev .simB .pa-lab .pa-seg, .pa.fs .elev-pick .pa-seg { width: 100%; }
-.pa.fs .acts-r { justify-content: stretch; }
+.pa.fs .acts-r { justify-content: stretch; order: 99; }   /* 전체화면 — 초기화 · 저장은 조건(반경 · 거래 · 기준 · 유사도/직접범위) 다 고른 뒤 맨 아래 */
 .pa.fs .acts-r .save-btn { flex: 1; width: auto; min-height: 44px; }
 .kindF button { font-weight: 700 !important; }
 .kindF button[data-k="매매"] { background: #eef2ff; color: var(--navy); }
