@@ -744,7 +744,8 @@ button { cursor: pointer; }
 .mk-sale .ag-qbox { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
 .mk-sale .ag-qbox > .ag-cov:first-child { margin-top: 0; }
 .mk-sale .ag-qbox > .ag-cov + .ag-cov { margin-top: 8px; }
-.mk-sale .ag-qbox .ag-q-tools > small { min-width: 96px; }   /* 두 상자의 이름 너비를 같게 — 칸이 같은 줄에서 시작 */
+.mk-sale .ag-qbox .ag-q-tools > small { min-width: 96px; }
+.mk-sale .ag-qbox .ag-q-add input.adm-input { width: calc(3 * 150px + 2 * 8px); max-width: 100%; }   /* 사건번호 칸 오른쪽 끝 = 위 동 칸 오른쪽 끝(시도 · 시군구 · 동 150 + 사이 8 두 번) */   /* 두 상자의 이름 너비를 같게 — 칸이 같은 줄에서 시작 */
 .mk-sale .ag-cov-chip { padding: 4px 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 999px; font-size: 13px; color: var(--text); }
 .mk-sale .ag-cov-chip b { font-weight: 700; color: var(--blue); }
 .mk-sale .ag-cov-none { font-size: 13px; color: var(--muted); }
