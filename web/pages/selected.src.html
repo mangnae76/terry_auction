@@ -6650,7 +6650,7 @@ span.cal-day.has { cursor: help; }
       desc: `지금 공용 매각물건 자료(${have.toLocaleString('ko-KR')}건)에 어떻게 넣을까요?\n· 추가 — 같은 사건(사건번호 · 매각일 · 매각가)은 건너뛰고 새 물건만 더합니다.\n· 통째로 바꾸기 — 지금 자료를 모두 지우고 이 파일로 바꿉니다.`,
       run: () => { void sxCommit(f.name, recs, 'merge'); },
       alt: { label: '통째로 바꾸기', run: () => askConfirm({ title: '지금 자료를 모두 지울까요?', icon: 'warn', okLabel: '통째로 바꾸기', skipKey: '',
-        desc: `모아 둔 ${have.toLocaleString('ko-KR')}건을 지우고 ${f.name} 의 ${n}건으로 바꿉니다.\n모든 관리자가 함께 쓰는 자료라 되돌릴 수 없습니다 — 먼저 [데이터 백업]을 받아 두기를 권합니다.`,
+        desc: `모아 둔 ${have.toLocaleString('ko-KR')}건을 지우고 ${f.name} 의 ${n}건으로 바꿉니다.\n모든 관리자가 함께 쓰는 자료라 되돌릴 수 없습니다 — 먼저 [데이터백업]을 받아 두기를 권합니다.`,
         run: () => { void sxCommit(f.name, recs, 'replace'); } }) } });
   }
   async function sxCommit(name, recs, mode) {
@@ -6777,10 +6777,10 @@ span.cal-day.has { cursor: help; }
     const metaUpd = m && m.updatedAt && m.updatedAt.toMillis && T.updateStamp ? `${T.UPDATE_PREFIX}${T.updateStamp(m.updatedAt.toMillis())}` : '';
     const meta = metaCnt + (metaUpd ? ` · ${metaUpd}` : '');
     const manage = `<button type="button" class="sx-manage-btn" data-act="ag-fold" aria-expanded="${AG.fold ? 'false' : 'true'}">수집 관리<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${AG.fold ? 'm6 9 6 6 6-6' : 'm18 15-6-6-6 6'}"/></svg></button>`;
-    /* 제목 줄 — 제목 · PC 연결 칩 · 오른쪽 끝 파일 불러오기 · 데이터 백업 · 엑셀다운로드(PC 프로그램과 같은 양식) */
+    /* 제목 줄 — 제목 · PC 연결 칩 · 오른쪽 끝 데이터로드 · 데이터백업 · 엑셀다운로드(PC 프로그램과 같은 양식) */
     const titlebar = `<div class="sx-titlebar"><h2>경매 인근 매각물건 분석</h2>${conn}<span class="sx-grow"></span>`
-      + `<button type="button" class="sx-tbtn" data-act="sx-import" ${busy || AG.io ? 'disabled' : ''}>${AG.io ? '저장하는 중…' : '파일 불러오기'}</button>`
-      + `<button type="button" class="sx-tbtn" data-act="sx-backup" ${AG.recs.length ? '' : 'disabled'}>데이터 백업</button>`
+      + `<button type="button" class="sx-tbtn" data-act="sx-import" ${busy || AG.io ? 'disabled' : ''}>${AG.io ? '저장하는 중…' : '데이터로드'}</button>`
+      + `<button type="button" class="sx-tbtn" data-act="sx-backup" ${AG.recs.length ? '' : 'disabled'}>데이터백업</button>`
       + `<button type="button" class="sx-tbtn solid" data-act="sx-excel">엑셀다운로드</button></div>`;
     /* 제목 줄도 수집 박스 안 맨 위 — 옵션 줄(사이트 · 기간 …)보다 위(2026-11-03) */
     /* 맨 위 주황 막대 안내(다른 화면과 같은 .rg-lead) — 첫 줄은 도우미가 지금 하는 말, 둘째 줄은 쓰는 순서 */
