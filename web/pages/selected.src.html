@@ -1172,6 +1172,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .list-lead { padding-top: 10px; }
 .list-lead + .content { padding-top: 16px; }
 .it-lead { margin-bottom: 16px; }
+.it-lead:has(+ .rt-top) { margin-bottom: 28px; }   /* 권리분석 — 안내와 아래 '권리분석 결과' 제목 사이를 넉넉히 */
+.rt-title { margin: 0 0 10px; font-size: 16px; font-weight: 800; color: var(--text); }
 /* 권리분석 위 두 칸 — 왼쪽 알 수 있는 것 · 오른쪽 서류 올리기(2026-11-05). 앱 'AI 분석 요청' 카드는 감추고 이 칸이 대신한다 */
 .app-detail.tab-rights .adp-card:has(.adp-docs) { display: none !important; }
 .rt-top { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 12px; align-items: start; margin-bottom: 12px; }
@@ -6860,6 +6862,7 @@ span.cal-day.has { cursor: help; }
   ];
   const RT = { busy: false, msg: '' };
   const rtTopHtml = () => `<div class="rt-top">
+      <div class="rt-left"><h2 class="rt-title">권리분석 결과</h2>
       <section class="rt-card rt-know">
         <h3>이 도구로 알 수 있는 것</h3>
         <ol>
@@ -6868,7 +6871,7 @@ span.cal-day.has { cursor: help; }
           <li><b>다른 인수 권리</b><span>지분 매각, 대지권, 유치권처럼 서류에 적힌 주의 사항을 골라 드립니다.</span></li>
         </ol>
         <div class="rt-not"><b>이 도구가 하지 않는 것</b><p>입찰 여부를 대신 정하지 않습니다. 유치권 · 법정지상권 · 지분 매각 같은 특수한 조건이 보이면 해결 방법을 안내하지 않고, 전문가 검토가 필요하다고 알려 드립니다. 서류가 모자라 판단하지 못한 것은 더 떼어 볼 서류로 알려 드립니다.</p></div>
-      </section>
+      </section></div>
       <aside class="rt-card rt-up" id="rtUp"><h3>서류 올리기</h3><p class="rt-wait">불러오는 중입니다…</p></aside>
     </div>`;
   const rtDocsOf = (el) => [...el.querySelectorAll('.adp-docs .adp-doc')];
