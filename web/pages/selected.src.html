@@ -1173,6 +1173,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
    늦게 알려 오는 등) 하위 탭 자리가 따라 밀리지 않는다 — 탭이 좌우로 흔들리던 까닭(2026-11-03) */
 .subtabs > .wrap > .sub-crumb-left { flex: 0 0 0; width: 0; margin-right: -16px; overflow: visible; white-space: nowrap; position: relative; z-index: 1; }
 .crumb-slot { padding-top: 2px; }
+.list-lead { padding-top: 10px; }
+.list-lead + .content { padding-top: 16px; }
 .crumb-slot + .content { padding-top: 6px; }
 /* 경로가 하위 탭 줄로 가 빈 자리 — 머리(띠 · 하위 탭 · 3단 띠) 아래 본문까지 틈은 모든 화면 12.
    3단 띠(시장분석 고르는 줄)가 본문 맨 위에 오는 화면은 띠 안 위 틈 6 */
@@ -4066,6 +4068,8 @@ span.cal-day.has { cursor: help; }
       <span id="crumbCur" class="crumb-trail"><strong aria-current="page">선정물건</strong></span>
     </nav>
   </div>
+  <!-- 카드 위 안내 — 물건등록 안내와 같은 꼴(왼쪽 주황 막대, 상자 없이) -->
+  <div class="wrap list-lead"><div class="rg-lead"><p class="l1">카드를 선택하면 상세 내용 확인이 가능합니다.</p></div></div>
   <div class="wrap content" id="content"></div>
   </div>
   <!-- 선정물건등록 — 앱 PdfImportPage 와 같은 짜임: 구글드라이브 연동 · AI 자동 분석 · 폴더스캔 · PDF등록 → 파싱결과 -->
