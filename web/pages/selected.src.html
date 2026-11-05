@@ -1059,6 +1059,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-chart { display: block; width: 100%; height: auto; }
 .sx-chart .grid { stroke: var(--card-line); }
 .sx-chart .ax { fill: var(--muted); font-size: 12px; }
+.sx-chart .cnt { fill: var(--text); font-size: 12px; font-weight: 700; }
 .sx-chart .axt { fill: var(--text-2, var(--muted)); font-size: 12.5px; font-weight: 600; }
 .sx-chart .bar { fill: var(--sx-bar); }
 .sx-chart .over { fill: var(--sx-accent); opacity: .55; }
@@ -6586,7 +6587,7 @@ span.cal-day.has { cursor: help; }
   }
   /* 매각가율 분포 — 5% 구간 막대, 100% 이상은 강조색. 평균(실선) · 중앙값(점선) */
   function sxChart(st) {
-    const W = 920; const H = 236; const L = 48; const Rr = 10; const T = 26; const B = 48; const step = 0.05;   /* 위 26 — 평균 · 중앙값 % 글 자리, 왼쪽 48 · 아래 48 — 축 이름 자리 */   /* 결과 칸 폭(약 920)과 같게 — 글자가 커지거나 작아지지 않게 */
+    const W = 920; const H = 250; const L = 48; const Rr = 10; const T = 40; const B = 48; const step = 0.05;   /* 위 26 — 평균 · 중앙값 % 글 자리, 왼쪽 48 · 아래 48 — 축 이름 자리 */   /* 결과 칸 폭(약 920)과 같게 — 글자가 커지거나 작아지지 않게 */
     const rates = st.rates;
     const lo = Math.max(0.3, Math.min(0.6, Math.floor(Math.min(...rates, 0.6) * 20) / 20));
     const hi = Math.min(1.6, Math.max(1.25, Math.ceil(Math.max(...rates, 1.25) * 20) / 20));
@@ -6602,6 +6603,8 @@ span.cal-day.has { cursor: help; }
     /* 축 이름 — 가로는 매각가율(매각가 ÷ 감정가), 세로는 그 구간에 든 건수 */
     g += `<text class="axt" x="${(L + W - Rr) / 2}" y="${H - 6}" text-anchor="middle">매각가율(매각가 ÷ 감정가) · 5% 구간</text>`;
     g += `<text class="axt" transform="translate(14 ${(T + H - B) / 2}) rotate(-90)" text-anchor="middle">건수</text>`;
+    /* 막대 위에 그 구간 건수 */
+    bins.forEach((b) => { if (b.n) g += `<text class="cnt" x="${(x(b.x0) + x(b.x0 + step)) / 2}" y="${y(b.n) - 5}" text-anchor="middle">${b.n}</text>`; });
     if (st.avg != null) g += `<line class="avg" x1="${x(st.avg)}" x2="${x(st.avg)}" y1="${T}" y2="${y(0)}"/>`;
     if (st.med != null) g += `<line class="med" x1="${x(st.med)}" x2="${x(st.med)}" y1="${T}" y2="${y(0)}"/>`;
     /* 두 선 꼭대기에 정확한 % — 왼쪽에 있는 선은 글을 왼쪽으로, 오른쪽 선은 오른쪽으로 펼쳐 겹치지 않게 */
@@ -6610,7 +6613,7 @@ span.cal-day.has { cursor: help; }
     tags.forEach(([k, name, v]) => {
       const xv = x(v); let side = tags.length === 2 ? (k === left ? 'end' : 'start') : (xv > W - 120 ? 'end' : 'start');
       if (side === 'end' && xv < 110) side = 'start'; if (side === 'start' && xv > W - 110) side = 'end';   /* 그림 밖으로 잘리지 않게 */
-      g += `<text class="tag ${k}" x="${side === 'end' ? xv - 4 : xv + 4}" y="${T - 9}" text-anchor="${side}">${name} ${sxPct(v)}</text>`;
+      g += `<text class="tag ${k}" x="${side === 'end' ? xv - 4 : xv + 4}" y="${T - 24}" text-anchor="${side}">${name} ${sxPct(v)}</text>`;
     });
     return `<svg class="sx-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="매각가율 구간별 건수">${g}</svg>`;
   }
@@ -6723,7 +6726,7 @@ span.cal-day.has { cursor: help; }
       ['전체 매각가율', sxPct(st.all)], ['평균 응찰자수', st.bids != null ? `${st.bids.toFixed(1)}명` : '-']]
       .map(([k, v, key]) => `<div class="m${key ? ' key' : ''}"><span class="k">${k}</span><span class="v num">${v}</span></div>`).join('');
     const dist = st.rates.length
-      ? `<section class="sx-card sx-dist" aria-label="매각가율 분포"><div class="sx-dist-h"><h3 class="sx-sec">매각가율 분포</h3><div class="sx-legend"><span>평균</span><span class="med">중앙값</span><span class="over">100% 이상</span></div></div>${sxChart(st)}</section>`
+      ? `<section class="sx-card sx-dist" aria-label="매각가율 분포"><div class="sx-dist-h"><h3 class="sx-sec">매각가율 분포 · ${st.rates.length.toLocaleString('ko-KR')}건</h3><div class="sx-legend"><span>평균</span><span class="med">중앙값</span><span class="over">100% 이상</span></div></div>${sxChart(st)}</section>`
       : '';
     return `<div class="sx-results" id="sxResults">${hero}<section class="sx-card" aria-label="지표결과"><div class="sx-metrics">${metrics}</div></section>${dist}<section class="sx-card sx-list" aria-label="검색리스트">${sxListHtml(rows)}</section></div>`;
   }
