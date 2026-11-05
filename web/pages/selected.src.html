@@ -1143,6 +1143,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .save-mark { flex: none; margin-left: auto; padding-right: 12px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .save-mark.ing { color: var(--blue); } .save-mark.err { color: #dc2626; }
 .save-mark[hidden] { display: none; }
+.reg-tabbar .save-mark { align-self: center; position: relative; z-index: 1; }
+.reg-tabbar .save-mark:not([hidden]) + .sub-crumb { margin-left: 0; }   /* 물건등록 띠 — 표시가 경로 바로 왼쪽에 붙게 */
 .reg-tabbar .sub-crumb { position: relative; z-index: 1; margin-left: auto; align-self: center; }   /* 탭 줄 흰 바탕(::before) 위로 */
 .sub-crumb > .crumbs { height: var(--tab-h); padding: 0 2px 0 0 !important; justify-content: flex-end; }
 .sub-crumb:empty { display: none; }
@@ -5395,6 +5397,7 @@ span.cal-day.has { cursor: help; }
     const tabbar = `
       <div class="reg-tabbar">
         <div class="sub-crumb-left" id="regCrumbLeft"></div>
+        <span class="save-mark" id="saveMarkReg" role="status" aria-live="polite" hidden></span>
         <div class="sub-crumb" id="regCrumbSlot"></div>
       </div>`;
     /* 다시 그리면 직접입력 칸이 비워지므로(폴더 고르기 · 스캔 진행 때마다 다시 그린다) 적던 글자 · 커서를 잡아 두었다 되살린다 */
@@ -5406,6 +5409,7 @@ span.cal-day.has { cursor: help; }
     /* 직접입력 — 처음엔 접어 둔다. 자동등록이 잠긴 무료 회원에게는 펼쳐 둔다 */
     const mnOpen = R.mnOpen == null ? !PAID : R.mnOpen;
     $('regBox').innerHTML = tabbar;
+    paintSaveMark();
     { const sl = $('regCrumbLeft'); if (sl && CRUMBS) sl.appendChild(CRUMBS); }   /* 경로는 탭 줄 맨 앞(흰 띠 왼쪽) — '홈 › 물건등록'까지만 */
     /* 경로(홈 › …)는 다른 화면처럼 탭 줄 오른쪽 끝 — 탭 줄을 새로 그릴 때마다 다시 붙인다 */
     alignSubTabs();   /* 탭 줄을 '물건등록' 아래에서 시작 */
@@ -7591,16 +7595,16 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
      물건 하나를 연 탭은 그 물건만, 물건카드(목록)는 이 창에서 마지막으로 저장된 물건을 사건번호와 함께.
      이 창에서 저장이 일어나기 전에는 숨긴다 — 물건 기록엔 저장 시각 칸이 없고, 작성 기록(editLog)은 같은 화면을
      되풀이해 고치면 시각을 새로 찍지 않아 '2시간 전'처럼 틀리게 보였다(진짜 저장 시각은 앱 저장소를 고칠 때 넣는다) ===== */
-  const SV = { id: '', state: '', at: 0 };
+  const SV = { id: '', state: '', at: 0, label: '' };   /* id 'import' — 물건등록이 새 물건을 넣은 저장(label 은 사건번호 · N건) */
   function paintSaveMark() {
-    const el = $('saveMark'); if (!el) return;
-    const inItem = S.route === 'item'; const inList = S.route === 'list';
-    const mine = SV.id && SV.state && ((inItem && SV.id === S.itemId) || inList);
+    const inItem = S.route === 'item'; const inList = S.route === 'list'; const inReg = S.route === 'register';
+    const el = $(inReg ? 'saveMarkReg' : 'saveMark'); if (!el) return;
+    const mine = SV.id && SV.state && ((inItem && SV.id === S.itemId) || inList || inReg);
     let txt = ''; let cls = '';
     if (mine) {
       const ago = (t) => (CLOUD.T && CLOUD.T.agoText ? CLOUD.T.agoText(t) : '');
-      const it = inList ? items.find((x) => x.id === SV.id) : null;
-      const tail = it && it.caseNo ? ` · ${it.caseNo}` : '';
+      const it = SV.id !== 'import' && !inItem ? items.find((x) => x.id === SV.id) : null;
+      const tail = SV.id === 'import' ? (SV.label ? ` · ${SV.label}` : '') : it && it.caseNo ? ` · ${it.caseNo}` : '';
       if (SV.state === 'ing') { txt = `저장 중…${tail}`; cls = 'ing'; }
       else if (SV.state === 'err') { txt = `저장하지 못했습니다${tail}`; cls = 'err'; }
       else txt = `저장됨 · ${ago(SV.at)}${tail}`;
@@ -7716,6 +7720,13 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       const id = a && a.id; if (id) { SV.id = id; SV.state = 'ing'; paintSaveMark(); }
       try { const r = await save(a, ...rest); if (id) { SV.state = 'ok'; SV.at = Date.now(); paintSaveMark(); } return r; }
       catch (e) { if (id) { SV.state = 'err'; paintSaveMark(); } throw e; }
+    }; }
+    /* 물건등록(PDF · 드라이브)이 새 물건을 넣는 저장 — 따로 부르는 함수라 같이 감싼다 */
+    if (st.importParsedPdfAuctions) { const imp = st.importParsedPdfAuctions; st.importParsedPdfAuctions = async (list, ...rest) => {
+      const arr = Array.isArray(list) ? list : []; const first = arr[0] || {};
+      Object.assign(SV, { id: 'import', state: 'ing', label: arr.length > 1 ? `${arr.length}건` : (first.caseNumber || '') }); paintSaveMark();
+      try { const r = await imp(list, ...rest); SV.state = 'ok'; SV.at = Date.now(); paintSaveMark(); return r; }
+      catch (e) { SV.state = 'err'; paintSaveMark(); throw e; }
     }; }
     auth.initialize();
     /* 새 공지 · 이벤트 · 업데이트 — 앱 공지 탭과 같은 셈으로 '공지' 옆 점 */
