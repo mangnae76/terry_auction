@@ -964,6 +964,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-msg { flex-wrap: wrap; }
 .sx-msg.off { color: var(--muted); }
 .sx-meta { color: var(--muted); white-space: nowrap; }
+.sx-qtail { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; font-size: 13.5px; }
 .sx-manage-btn { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .sx-manage { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--card-line); }
 /* 본문 — 왼쪽 검색조건 · 오른쪽 결과 */
@@ -6741,8 +6742,9 @@ span.cal-day.has { cursor: help; }
       /* 첫 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③. 처음부터새로는 아래 상태 줄 왼쪽(2026-11-06) */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('months', AG_MONTHS)}</div>`
       + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<span class="sx-step2">${step(2, 'screen', '화면만 수집', ready && free)}${step(2, 'queue', qRun ? '대기열 수집 중' : '대기열 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(2, 'auto', '끝 페이지까지 자동 수집', ready && free)}</span>${step(3, 'enrich', '건축연도 채우기', ready && free)}</div>${prog}</div>`
-      + `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"><label class="sx-chk"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></span><span class="sx-meta">${meta}</span>${manage}</div>`   /* 도우미 말은 맨 위 안내로 옮겼다 */
-      + (AG.fold ? '' : `<div class="sx-manage">${agCovHtml()}${agQueueHtml()}</div>`)
+      + `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"><label class="sx-chk"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></span>${AG.fold ? `<span class="sx-meta">${meta}</span>${manage}` : ''}</div>`   /* 도우미 말은 맨 위 안내로 옮겼다 */
+      /* 수집 관리를 펼치면 저장 건수 · 업데이트 · 접기 단추는 주소 고르는 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
+      + (AG.fold ? '' : `<div class="sx-manage">${agCovHtml()}${agQueueHtml(`<span class="sx-qtail"><span class="sx-meta">${meta}</span>${manage}</span>`)}</div>`)
       + `</section></div>`;
   }
   /* 모은 동네 — 도우미가 인근매각물건을 모을 때마다 동네 · 물건 수 · 날짜를 적는다(agent/coverage). 이미 모은 동네는 다시 모을 때 새로 나온 것만 더한다 */
@@ -6828,13 +6830,13 @@ span.cal-day.has { cursor: help; }
     return out;
   }
   const AG_CASE_ADD = false;   /* 사건번호로 추가하는 칸 — 지금은 숨김(2026-11-06). 이미 올린 사건 알약은 그대로 보인다 */
-  function agQueueHtml() {
+  function agQueueHtml(tail = '') {
     /* 동 알약은 동 고르는 줄 아래, 사건 알약은 사건번호 줄 아래 */
     const dongChips = AG.queue.filter((q) => q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.dong)} <i>${esc(q.kind || '동 전체')}</i><button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(agQid(q))}" aria-label="빼기">×</button></span>`).join('');
     const caseChips = AG.queue.filter((q) => !q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.case)}${q.addr ? ` <i>${esc(agRegionOf(q.addr))}</i>` : ''}<button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(q.case)}" aria-label="빼기">×</button></span>`).join('');
     const cands = agQueueCands().length;
     const hint = cands ? `<span class="ag-cov-none">선정물건 중 안 모은 동네 ${cands}곳은 대기열수집 때 함께 올라갑니다 (탱크옥션)</span>` : '';
-    return `<div class="ag-cov ag-q-tools">${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}<div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-dong" ${AG.reg.dong ? '' : 'disabled'}>추가</button></div>`
+    return `<div class="ag-cov ag-q-tools">${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}<div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-dong" ${AG.reg.dong ? '' : 'disabled'}>추가</button>${tail}</div>`
       + (dongChips || hint ? `<div class="ag-cov">${dongChips}${hint}</div>` : '')
       + (!AG_CASE_ADD ? '' : `<div class="ag-cov ag-q-tools"><span class="ag-q-add"><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span></div>`)
       + (caseChips ? `<div class="ag-cov">${caseChips}</div>` : '');
