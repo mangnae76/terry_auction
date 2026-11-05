@@ -168,6 +168,10 @@ button { cursor: pointer; }
 .g-logo { position: absolute; left: -0.47%; top: 10px; display: block; }
 .g-logo img { display: block; height: 36px; width: auto; transition: transform .4s cubic-bezier(.2, .9, .3, 1.4); }
 .g-logo:hover img { transform: rotate(-4deg) scale(1.04); }
+/* 홈 단추 — 로고 바로 오른쪽(로고 폭 109 + 틈 10), 로고 높이 가운데. 누르면 홈(2026-11-05) */
+.gnb .g-home { position: absolute; left: calc(-0.47% + 119px); top: 14px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; color: rgba(255, 255, 255, .78); transition: background .15s, color .15s; }
+.gnb .g-home:hover, .gnb .g-home.on { color: #fff; background: rgba(255, 255, 255, .12); }
+.g-home svg { width: 20px; height: 20px; display: block; }
 .g-menu {
   position: absolute; top: 26px; height: 26px; display: inline-flex; align-items: center;
   font-size: var(--menu-fs); font-weight: 600; letter-spacing: -0.3px; white-space: nowrap;
@@ -3559,8 +3563,9 @@ html, body { overflow-x: clip; }
   .gnb-in { display: flex; align-items: flex-end; gap: 14px; padding-bottom: 7px; box-sizing: border-box; }
   .gnb .g-right { gap: 12px; }
   .gnb .g-right .g-box { order: 0; }   /* 묶음 안에서도 펼치기 상자가 이름 앞 */   /* 메뉴 줄은 아래에 — 위 작은 줄(공지 ~ 밤낮)과 겹치지 않게 */
-  .gnb-in > .g-logo { align-self: center; }
-  .gnb .g-logo, .gnb .g-menu, .gnb .g-icons, .gnb .g-box, .gnb .g-box[data-tip], .gnb .g-user { position: relative; left: auto; top: auto; }
+  .gnb-in > .g-logo, .gnb-in > .g-home { align-self: center; }
+  .gnb .g-home { margin-left: -6px; }
+  .gnb .g-logo, .gnb .g-home, .gnb .g-menu, .gnb .g-icons, .gnb .g-box, .gnb .g-box[data-tip], .gnb .g-user { position: relative; left: auto; top: auto; }
   :root { --menu-fs: 14.5px; --tab-fs: 14px; --tab-px: 14px; }
   .g-menu::after { bottom: -7px; }   /* 띠 바닥(57)에 붙는다 — 메뉴 줄 아래 여백 7 */
   .g-menu.m4 { margin-left: auto; }
@@ -3844,6 +3849,7 @@ span.cal-day.has { cursor: help; }
   .gnb .g-menu { display: none; }
   .gnb-in > .g-logo { order: 0; align-self: center; }
   .g-logo img { height: 28px; }
+  .gnb .g-home { order: 0; margin-left: -4px; width: 26px; height: 26px; }
   .g-util { position: static; order: 1; margin-left: auto; gap: 2px; }
   .g-util .u-link { padding: 0 6px; font-size: 0; gap: 0; }   /* 바로가기는 아이콘만 — 이름은 말풍선 대신 aria 로 */
   .g-util .u-link svg { width: 16px; height: 16px; }
@@ -3936,6 +3942,7 @@ span.cal-day.has { cursor: help; }
   <div class="wrap">
     <div class="gnb-in">
       <a class="g-logo" href="#/" data-act="go-home" aria-label="마이턴옥션 홈"><img src="{{LOGO_WHITE}}" alt="MYTURN AUCTION"></a>
+      <a class="g-home" id="navHome" href="#/" data-act="go-home" aria-label="홈" data-tip="홈" data-tip-pos="below"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9"/></svg></a>
       <a class="g-menu m0" href="#/register" data-act="go-register" id="navReg">물건등록</a>
       <a class="g-menu m1" href="#/list" data-act="go-list" id="navWatch">선정물건</a>
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
@@ -4456,6 +4463,7 @@ span.cal-day.has { cursor: help; }
   { const gr = document.querySelector('.gnb-in > .g-right'); if (gr && window.ResizeObserver) new ResizeObserver(() => layoutMenu()).observe(gr); }
   function renderHeader() {
     $('navReg').classList.toggle('on', S.route === 'register');
+    { const t = $('navHome'); if (t) { t.classList.toggle('on', S.route === 'home'); if (S.route === 'home') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     { const t = $('navMarket'); if (t) { t.classList.toggle('on', S.route === 'market'); if (S.route === 'market') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 자금관리는 마이페이지 아래 — 자금관리 화면에서도 마이페이지에 불이 들어온다 */
