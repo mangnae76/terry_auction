@@ -699,7 +699,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <svg v-if="undoSnap" class="undo-ic" viewBox="0 0 24 24" aria-hidden="true"><circle class="trk" cx="12" cy="12" r="10" /><circle class="run" cx="12" cy="12" r="10" /><path d="M9.2 9.6a3.6 3.6 0 1 1-.6 4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><path d="M8.4 7.4v2.8h2.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
             <template v-else>초기화</template>
           </button>
-          <button v-if="!loose" type="button" :class="['save-btn', saving ? 'saving' : webDirty ? 'dirty' : 'saved']" aria-live="polite" @click="saveNow">
+          <button v-if="!loose" type="button" :class="['save-btn', saving ? 'saving' : webDirty ? 'dirty' : 'saved', { two: webEmbed }]" aria-live="polite" @click="saveNow">
             <template v-if="saving">저장 중…</template><template v-else-if="webDirty">저장</template><template v-else>{{ webEmbed ? '저장완료' : '✓ 저장됨' }}<small v-if="stamp">{{ stamp }}</small></template>
           </button>
         </span>
@@ -962,6 +962,9 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 @keyframes undoRun { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 62.83; } }
 .save-btn { width: 176px; padding: 0 14px; border: 0; background: #1f3a72; color: #fff; font-weight: 700; }
 .save-btn small { margin-left: 6px; font-size: 12px; font-weight: 400; color: var(--sub); }
+/* 웹 — '저장완료' 아래 줄에 저장 시각(작게) */
+.save-btn.two { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.2; }
+.save-btn.two small { margin-left: 0; font-size: 11px; }
 .save-btn.saved { background: #fff; color: var(--ok); border: 1px solid #cfe9d8; font-weight: 600; }
 .save-btn.saving { background: #fff; color: var(--sub); border: 1px solid #dde3ee; font-weight: 400; }
 .simrow { grid-column: 1 / -1; display: grid; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 12px 18px; }
