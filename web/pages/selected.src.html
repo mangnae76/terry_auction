@@ -6732,7 +6732,9 @@ span.cal-day.has { cursor: help; }
     const pr = busy && s.prog && s.prog.n > 0 ? s.prog : null;
     const prog = `<div class="sx-prog">${pr ? `<span class="num">${Number(pr.i).toLocaleString('ko-KR')} / ${Number(pr.n).toLocaleString('ko-KR')}쪽</span><span class="sx-bar"><b style="width:${Math.min(100, Math.round((pr.i / pr.n) * 100))}%"></b></span>` : `<span>${busy ? '수집하는 중' : '대기 중'}</span>`}<button type="button" class="sx-stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`;
     const m = AG.meta;
-    const meta = m ? `저장 총 ${Number(m.count || 0).toLocaleString('ko-KR')}건${m.updatedAt && m.updatedAt.toMillis && T.updateStamp ? ` · ${T.UPDATE_PREFIX}${T.updateStamp(m.updatedAt.toMillis())}` : ''}` : '저장 총 0건';
+    const metaCnt = `저장 총 ${Number((m && m.count) || 0).toLocaleString('ko-KR')}건`;
+    const metaUpd = m && m.updatedAt && m.updatedAt.toMillis && T.updateStamp ? `${T.UPDATE_PREFIX}${T.updateStamp(m.updatedAt.toMillis())}` : '';
+    const meta = metaCnt + (metaUpd ? ` · ${metaUpd}` : '');
     const manage = `<button type="button" class="sx-manage-btn" data-act="ag-fold" aria-expanded="${AG.fold ? 'false' : 'true'}">수집 관리<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${AG.fold ? 'm6 9 6 6 6-6' : 'm18 15-6-6-6 6'}"/></svg></button>`;
     /* 제목 줄 — 제목 · PC 연결 칩 · 오른쪽 끝 파일 불러오기 · 데이터 백업 · 엑셀다운로드(PC 프로그램과 같은 양식) */
     const titlebar = `<div class="sx-titlebar"><h2>경매 인근 매각물건 분석</h2>${conn}<span class="sx-grow"></span>`
@@ -6750,7 +6752,7 @@ span.cal-day.has { cursor: help; }
       + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<span class="sx-step2">${step(2, 'queue', qRun ? '대기열 수집 중' : '대기열 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(2, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(2, 'screen', '화면만 수집', ready && free)}</span>${step(3, 'enrich', '건축연도 채우기', ready && free)}</div>${prog}</div>`
       + `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"><label class="sx-chk"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></span>${AG.fold ? `<span class="sx-meta">${meta}</span>${manage}` : ''}</div>`   /* 도우미 말은 맨 위 안내로 옮겼다 */
       /* 수집 관리를 펼치면 저장 건수 · 업데이트 · 접기 단추는 주소 고르는 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
-      + (AG.fold ? '' : `<div class="sx-manage">${agQueueHtml(`<span class="sx-qtail">${manage}</span>`)}${agCovHtml(`<span class="sx-meta ag-cov-meta">${meta}</span>`)}</div>`)
+      + (AG.fold ? '' : `<div class="sx-manage">${agQueueHtml(`<span class="sx-qtail">${manage}</span>`)}${agCovHtml(metaCnt, metaUpd ? `<span class="sx-meta ag-cov-meta">${metaUpd}</span>` : '')}</div>`)
       + `</section></div>`;
   }
   /* 모은 동네 — 도우미가 인근매각물건을 모을 때마다 동네 · 물건 수 · 날짜를 적는다(agent/coverage). 이미 모은 동네는 다시 모을 때 새로 나온 것만 더한다 */
@@ -6786,12 +6788,12 @@ span.cal-day.has { cursor: help; }
     if (!list.length) return `<tr><td colspan="5" class="none">${q ? '찾는 동네가 없습니다' : '아직 없습니다'}</td></tr>`;
     return list.map((c) => `<tr><td class="l">${esc(c.region)}</td><td>${esc(c.kind)}</td><td class="n">${c.n.toLocaleString('ko-KR')}</td><td>${c.at ? agMD(c.at) : '-'}</td><td>${esc(c.site || '-')}</td></tr>`).join('');
   }
-  function agCovHtml(metaHtml = '') {
+  function agCovHtml(cnt = '', metaHtml = '') {
     const rows = agCovView();
     if (!rows.length) return `<div class="ag-cov"><small>읍면동 낙찰사례 수집데이터</small><span class="ag-cov-none">아직 없습니다 — 인근매각물건을 모으면 여기 동네별로 남습니다.</span>${metaHtml}</div>`;
     const places = new Set(rows.map((c) => c.region)).size;
-    /* 총 건수 · 날짜는 오른쪽 끝 '저장 총 N건 · 업데이트'가 맡는다(2026-11-06) */
-    const sum = `<span class="ag-cov-sum"><b>${places.toLocaleString('ko-KR')}곳</b></span>`;
+    /* 몇 곳 · 저장 총 N건을 파랑으로 나란히, 바로 옆 목록보기 — 업데이트 시각은 오른쪽 끝(2026-11-06) */
+    const sum = `<span class="ag-cov-sum"><b>${places.toLocaleString('ko-KR')}곳</b> · <b>${esc(cnt)}</b></span>`;
     const btn = `<button type="button" class="ag-link" data-act="ag-cov-open" aria-expanded="${AG.covOpen ? 'true' : 'false'}">${AG.covOpen ? '목록접기' : '목록보기'}<svg class="ag-tri" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="${AG.covOpen ? 'M1 7.5 5 2.5 9 7.5Z' : 'M1 2.5 5 7.5 9 2.5Z'}" fill="currentColor"/></svg></button>`;
     const list = AG.covOpen
       ? `<div class="ag-cov-list"><input type="text" class="adm-input" id="agCovQ" placeholder="동네 찾기 예 검암동" value="${esc(AG.covQ || '')}">`
