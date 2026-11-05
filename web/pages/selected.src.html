@@ -4506,8 +4506,8 @@ span.cal-day.has { cursor: help; }
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
   const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지', community: '공지', board: '게시판', manual: '매뉴얼' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지. 커뮤니티는 메뉴에서 빼고 '공지'로 부른다 */
-  /* 공지 · 게시판 · 매뉴얼 — 위 하위 탭 줄 대신 본문 맨 위 박스 탭(사건 카드 없이). 매뉴얼도 게시판처럼 */
-  const BOXTAB_PAGES = ['community', 'board', 'manual'];
+  /* 공지 · 게시판 — 위 하위 탭 줄 대신 본문 맨 위 박스 탭. 매뉴얼은 시장분석 · 마이페이지처럼 하위 탭 줄(흰 띠)에 */
+  const BOXTAB_PAGES = ['community', 'board'];
   const PLAIN_ROUTES = ['register', 'trip', 'store', 'mobile'];
   /** 주소 → { route, itemId, itemTab, sub } */
   const readHash = (h = location.hash) => {
@@ -4691,7 +4691,7 @@ span.cal-day.has { cursor: help; }
     { const t = $('navTrip'); if (t) { t.classList.toggle('on', S.route === 'trip'); if (S.route === 'trip') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     { const t = $('navMarket'); if (t) { t.classList.toggle('on', S.route === 'market'); if (S.route === 'market') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 자금관리는 마이페이지 아래 — 자금관리 화면에서도 마이페이지에 불이 들어온다 */
-    [['navPostwin', ['postwin']], ['navFinance', ['finance']], ['navMore', ['more']]].forEach(([id, rs]) => { const t = $(id); if (t) { const on = rs.includes(S.route); t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
+    [['navPostwin', ['postwin']], ['navFinance', ['finance']], ['navManual', ['manual']], ['navMore', ['more']]].forEach(([id, rs]) => { const t = $(id); if (t) { const on = rs.includes(S.route); t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
     [['navStore', 'store']].forEach(([id, r]) => { const t = $(id); if (t) { const on = S.route === r; t.classList.toggle('on', on); if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } });
     { const t = $('navMy'); if (t) { t.classList.toggle('on', S.route === 'mypage'); if (S.route === 'mypage') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); } }
     /* 물건상세(선정물건 안)에 들어가도 선정물건 메뉴 밑줄은 그대로 */
@@ -5769,7 +5769,7 @@ span.cal-day.has { cursor: help; }
   const whereTag = () => '';
   /* 하위 탭 줄을 고른 위 메뉴 글자 아래에서 시작(2026-11-03) — 메뉴를 옮기면 하위 탭도 그 아래로 따라간다.
      칸이 모자라면(오른쪽 끝 메뉴 · 탭이 많을 때) 경로 칸과 겹치지 않을 만큼만 왼쪽으로 당긴다. 위 메뉴가 숨는 좁은 화면은 왼쪽 그대로 */
-  const SUB_MENU_OF = { list: 'navWatch', item: 'navWatch', market: 'navMarket', postwin: 'navPostwin', finance: 'navFinance', more: 'navMore' };
+  const SUB_MENU_OF = { list: 'navWatch', item: 'navWatch', market: 'navMarket', postwin: 'navPostwin', finance: 'navFinance', manual: 'navManual', more: 'navMore' };
   function alignSubTabs() {
     /* 물건등록 — 탭 줄(자동등록 · 직접입력)이 하위 탭 줄 대신 화면 안에 따로 그려진다. 같은 규칙으로 '물건등록' 아래에서 시작 */
     const reg = S.route === 'register' ? document.querySelector('#regBox .reg-tabbar') : null;
