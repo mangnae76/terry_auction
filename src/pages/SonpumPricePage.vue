@@ -973,7 +973,11 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 /* 층 '전체'는 엘베 '전체'와 같은 폭(세 칸 중 하나), '같은 층'이 나머지를 넓게 */
 .pa.fs .simrow > .floor-pick .pa-seg button:first-child { flex: 0 0 calc((100% - 8px) / 3); }
 .pa.fs .acts-r { justify-content: stretch; order: 99; }
-.pa.fs .conds > .acts-r { justify-self: stretch; }   /* 전체화면 — 초기화 · 저장은 조건(반경 · 거래 · 기준 · 유사도/직접범위) 다 고른 뒤 맨 아래 */
+.pa.fs .conds > .acts-r { justify-self: stretch; }
+/* 전체화면 왼쪽 칸은 좁다 — '기준 ⓘ' 말풍선을 칸 왼쪽에 붙이고 글은 칸 폭 안에서 줄바꿈(가운데로 펼치면 화면 왼쪽 밖으로 나갔다) */
+.pa.fs .conds :deep(.itip-bubble) { left: 0 !important; right: auto !important; transform: none !important; white-space: normal; width: 300px; max-width: calc(100vw - 40px); grid-template-columns: max-content minmax(0, 1fr); z-index: 700; }
+.pa.fs .conds :deep(.itip-bubble)::before { left: 24px; transform: none; }
+.pa.fs .conds :deep(.itip-bubble) span { white-space: normal; word-break: keep-all; }   /* 전체화면 — 초기화 · 저장은 조건(반경 · 거래 · 기준 · 유사도/직접범위) 다 고른 뒤 맨 아래 */
 .pa.fs .acts-r .save-btn { flex: 1; width: auto; min-height: 44px; }
 .kindF button { font-weight: 700 !important; }
 .kindF button[data-k="매매"] { background: #eef2ff; color: var(--navy); }
