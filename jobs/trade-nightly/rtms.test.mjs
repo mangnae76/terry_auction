@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { cacheKey as appCacheKey } from '../../src/services/marketCache';
 import { PATHS, QuotaError, cacheKey, docId, fetchMonth, monthFinalAt, parseDocId, regionTable, typeLabelOf, ymdAgo } from './rtms.mjs';
+import { addLandingDoc, newLandingCount } from './rtms.mjs';
 import { REGION_GROUPS } from '../../src/services/regionCodes';
 
 describe('확정된 달', () => {
@@ -76,3 +77,17 @@ describe('한 달치 받기', () => {
       .rejects.toBeInstanceOf(QuotaError);
   });
 });
+
+describe('대문 숫자 셈', () => {
+  it('줄은 모두 더하고, 단지는 여러 달 · 매매/전월세에 나와도 하나로', () => {
+    const acc = newLandingCount();
+    addLandingDoc(acc, docId('28275', PATHS.aptTrade, '202609'), [{ umdNm: '검암동', jibun: '650-3' }, { umdNm: '검암동', jibun: '651' }]);
+    addLandingDoc(acc, docId('28275', PATHS.aptTrade, '202610'), [{ umdNm: '검암동', jibun: '650-3' }]);
+    addLandingDoc(acc, docId('28275', PATHS.aptRent, '202610'), [{ umdNm: '검암동', jibun: '650-3' }]);
+    addLandingDoc(acc, docId('41271', PATHS.singleTrade, '202610'), [{ umdNm: '사동', jibun: '1' }]);
+    expect(acc.trades).toBe(5);
+    expect(acc.complexKeys.size).toBe(2);   // 단독은 단지로 세지 않는다
+    expect(acc.lawds.size).toBe(2);
+  });
+});
+

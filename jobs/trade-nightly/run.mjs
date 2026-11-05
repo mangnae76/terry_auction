@@ -17,14 +17,19 @@
 //  ALWAYS_SIDO               늘 받을 시도 — 예 '인천광역시,경기도' (그 시도의 지역 표 시군구 × 모든 종류). 기본은 비움
 //  BACKFILL_BUDGET           하룻밤 지난 달 채우기에 쓸 최대 호출 수 (기본 1500)
 //  DRY_RUN=1                 DB 없이 EXTRA_TARGETS 의 아직 바뀌는 달만 받아 건수만 찍는다 (시험용)
+//  COUNT_ONLY=1              국토부는 부르지 않고 대문 숫자만 다시 센다 (Actions 에서 손으로)
+//
+// 끝나면 DB 전체(사용자 조회분 + 새벽 적재분 — 같은 지역 · 같은 달은 문서 한 장이라 겹치지 않는다)를 세어
+// 대문(로그인 전) 숫자 한 장 publicStats/landing 에 적는다 — '전국 실거래 데이터' · '분석 가능한 단지'
 import { readFileSync } from 'node:fs';
-import { COLLECTION, KIND_PATHS, PATHS, QuotaError, docId, fetchMonth, monthFinalAt, parseDocId, regionTable, ymdAgo } from './rtms.mjs';
+import { COLLECTION, KIND_PATHS, PATHS, QuotaError, addLandingDoc, docId, fetchMonth, monthFinalAt, newLandingCount, parseDocId, regionTable, ymdAgo } from './rtms.mjs';
 
 const HISTORY_MONTHS = 49;        // 손품조사 4년치 = 4년 전 그달부터 이번 달까지
 const MAX_DOC_BYTES = 1_000_000;  // Firestore 문서 한도(1MiB) 안쪽
 const CONCURRENCY = 4;
 
 const DRY = process.env.DRY_RUN === '1';
+const COUNT_ONLY = process.env.COUNT_ONLY === '1';
 const serviceKey = process.env.DATA_GO_KR_KEY ?? '';
 const budget = Number(process.env.BACKFILL_BUDGET ?? 1500) || 0;
 const alwaysLawd = (process.env.ALWAYS_LAWD ?? '41271,41273,28275,28177,28237').split(',').map((s) => s.trim()).filter((s) => /^\d{5}$/.test(s));
@@ -33,7 +38,24 @@ const table = regionTable(readFileSync(new URL('../../src/services/regionCodes.t
 const knownCodes = new Set(Object.values(table).flat());
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
-if (!serviceKey) { console.error('DATA_GO_KR_KEY 가 없습니다'); process.exit(1); }
+if (!serviceKey && !COUNT_ONLY) { console.error('DATA_GO_KR_KEY 가 없습니다'); process.exit(1); }
+
+/** 대문 숫자 — DB 의 달 문서를 100장씩 읽어 센다(한꺼번에 다 올리면 메모리가 모자랄 수 있다) */
+const writeLandingStats = async (db, fs) => {
+  const acc = newLandingCount();
+  let last = null; let docs = 0;
+  for (;;) {
+    let q = db.collection(COLLECTION).select('payload').orderBy(fs.FieldPath.documentId()).limit(100);
+    if (last) q = q.startAfter(last);
+    const snap = await q.get();
+    if (snap.empty) break;
+    snap.docs.forEach((d) => { const pl = d.get('payload'); addLandingDoc(acc, d.id, pl && pl.rows); docs += 1; });
+    last = snap.docs[snap.docs.length - 1];
+  }
+  const out = { trades: acc.trades, complexes: acc.complexKeys.size, districts: acc.lawds.size, docs, at: Date.now(), source: 'nightly' };
+  await db.collection('publicStats').doc('landing').set(out);
+  log(`대문 숫자 — 실거래 ${out.trades.toLocaleString()}건 · 단지 ${out.complexes.toLocaleString()}곳 · 시군구 ${out.districts} · 문서 ${docs.toLocaleString()}장`);
+};
 
 /** 'lawd:kind,…' → [{ lawdCd5, path }] */
 const extraTargets = () => (process.env.EXTRA_TARGETS ?? '').split(',').map((s) => s.trim()).filter(Boolean).flatMap((s) => {
@@ -60,6 +82,7 @@ const main = async () => {
     const fs = await import('firebase-admin/firestore');
     initializeApp({ credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT ?? '{}')) });
     db = fs.getFirestore(); FieldValue = fs.FieldValue;
+    if (COUNT_ONLY) { await writeLandingStats(db, fs); return; }
     const snap = await db.collection(COLLECTION).select('savedAt').get();
     snap.docs.forEach((d) => saved.set(d.id, Number(d.get('savedAt')) || 0));
     log(`DB 에 있는 달 문서 ${saved.size.toLocaleString()}개`);
@@ -132,6 +155,7 @@ const main = async () => {
     log(`지난 달 채우기 끝 (오늘 최대 호출 ${budget})`);
   }
 
+  if (!DRY) { try { await writeLandingStats(db, await import('firebase-admin/firestore')); } catch (err) { log(`대문 숫자 못 적음 — ${err instanceof Error ? err.message : err}`); } }
   log(`끝 — 저장 ${stat.written} · 0건 ${stat.empty} · 너무 커서 못 담음 ${stat.tooBig} · 실패 ${stat.failed} · 한도 · 미신청 ${stat.quota} · 국토부 호출 ${stat.calls}`);
   failures.forEach((f) => log(`실패 ${f}`));
   // 하나도 못 받았으면 실패로 끝내 GitHub 가 알리게 한다

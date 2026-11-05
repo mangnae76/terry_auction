@@ -131,3 +131,22 @@ export const fetchMonth = async ({ path, lawdCd5, ymd, serviceKey, fetchImpl = f
   }
   return { result: { rows: raw.map((r) => ({ ...r, __typeLabel: typeLabel })), typeLabel }, calls };
 };
+
+/** 대문 숫자 셈 — 문서(지역 × 종류 × 달)마다 불러 더한다. 같은 지역 · 같은 달은 문서 한 장이라 겹치지 않는다.
+ *  trades: 모든 줄(매매 + 전월세, 모든 종류) · complexes: 아파트 · 빌라 · 오피스텔에서 '시군구 · 동 · 지번(없으면 이름)'이 다른 건물
+ *  (여러 달 · 매매/전월세에 같은 단지가 나와도 하나로 센다) · districts: 시군구 수 */
+const COMPLEX_PATHS = new Set([PATHS.aptTrade, PATHS.aptRent, PATHS.offiTrade, PATHS.offiRent, PATHS.villaTrade, PATHS.villaRent]);
+export const newLandingCount = () => ({ trades: 0, complexKeys: new Set(), lawds: new Set() });
+export const addLandingDoc = (acc, id, rows) => {
+  const p = parseDocId(id); if (!p || !Array.isArray(rows)) return acc;
+  acc.trades += rows.length;
+  if (rows.length) acc.lawds.add(p.lawdCd5);
+  if (COMPLEX_PATHS.has(p.path)) {
+    for (const r of rows) {
+      const where = String(r.jibun || r.aptNm || r.offiNm || r.mhouseNm || '').trim();
+      if (where) acc.complexKeys.add(`${p.lawdCd5}|${String(r.umdNm || '').trim()}|${where}`);
+    }
+  }
+  return acc;
+};
+

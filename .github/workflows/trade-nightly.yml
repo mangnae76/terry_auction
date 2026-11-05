@@ -16,6 +16,11 @@ on:
         description: '지난 달 채우기 최대 호출 수'
         required: false
         default: '1500'
+      count_only:
+        description: '국토부는 부르지 않고 대문 숫자만 다시 세기'
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: trade-nightly
@@ -42,3 +47,4 @@ jobs:
           DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
           EXTRA_TARGETS: ${{ inputs.extra_targets || vars.TRADE_EXTRA_TARGETS || '' }}
           BACKFILL_BUDGET: ${{ inputs.backfill_budget || '1500' }}
+          COUNT_ONLY: ${{ inputs.count_only && '1' || '' }}
