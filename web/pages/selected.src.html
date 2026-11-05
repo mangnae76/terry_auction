@@ -6809,7 +6809,7 @@ span.cal-day.has { cursor: help; }
     const cands = agQueueCands().length;
     const hint = cands ? `<span class="ag-cov-none">선정물건 중 안 모은 동네 ${cands}곳은 대기열수집 때 함께 올라갑니다 (탱크옥션)</span>` : '';
     return `<div class="ag-cov"><small>모을 물건${AG.queue.length ? ` ${AG.queue.length}건` : ''}</small>${chips || '<span class="ag-cov-none">비어 있습니다</span>'}${hint}</div>`
-      + `<div class="ag-cov ag-q-tools"><small>동으로 추가</small>${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}<div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-dong" ${AG.reg.dong ? '' : 'disabled'}>동추가</button>`
+      + `<div class="ag-cov ag-q-tools">${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}<div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-dong" ${AG.reg.dong ? '' : 'disabled'}>추가</button>`
       + `<span class="ag-sep"></span><small>사건으로 추가</small><span class="ag-q-add"><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span></div>`;
   }
   /* 동 하나를 대기열에 — 도우미가 탱크옥션 종합검색(그 동 · 매각전부)으로 끝까지 모은다 */
