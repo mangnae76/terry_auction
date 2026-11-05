@@ -6715,7 +6715,7 @@ span.cal-day.has { cursor: help; }
     const conds = [`최근 ${q.period} ${saleSpan(q.period)}`, (sxNum(q.amin) || sxNum(q.amax)) ? `면적 ${q.amin || ''}~${q.amax || ''}㎡` : '', (sxNum(q.ymin) || sxNum(q.ymax)) ? `건축 ${q.ymin || ''}~${q.ymax || ''}년` : '', `${st.n.toLocaleString('ko-KR')}건 기준`].filter(Boolean).join(' · ');
     const where = [q.sgg, q.dong].filter(Boolean).join(' ') || q.sido;
     const hero = `<section class="sx-card sx-hero" aria-label="분석결과"><div class="sx-where"><h2>${esc(where)} · ${esc(q.kind || '전체')}</h2><span>${esc(conds)}</span></div>`
-      + `<div class="sx-my"><label for="sxMy">내 물건 감정가</label><input id="sxMy" class="num" inputmode="numeric" autocomplete="off" placeholder="예: 235,000,000 또는 2억3500만" value="${esc(SX.my || '')}"><small>적으면 오른쪽 예상 입찰가가 바로 바뀝니다</small></div>`
+      + `<div class="sx-my"><label for="sxMy">내 물건 감정가</label><input id="sxMy" class="num" inputmode="numeric" autocomplete="off" placeholder="예: 235,000,000 또는 2억3500만" value="${esc(SX.my || '')}"><small>사건 고정카드에서 자동으로 입력합니다</small></div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각가율</span>${sxBidHtml('A', st.avg)}</div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 중앙값 매각가율</span>${sxBidHtml('B', st.med)}</div></section>`;
     const metrics = [['매각건수', `${st.n.toLocaleString('ko-KR')}건`], ['평균 감정가', sxWon(st.appr)], ['평균 매각가', sxWon(st.sold)], ['중앙값 매각가', sxWon(st.soldMed)],
