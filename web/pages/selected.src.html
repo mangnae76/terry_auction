@@ -1219,7 +1219,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .it-lead:has(+ .rt-wrap) { margin-bottom: 28px; }   /* 권리분석 — 안내와 아래 '권리분석 결과' 제목 사이를 넉넉히 */
 /* 권리분석 결과 ~ 서류 올리기를 흰 상자 하나에 */
 .rt-wrap { margin-bottom: 12px; padding: 20px; border: 1px solid var(--card-line); border-radius: 12px; background: var(--surface); }
-.rt-title { margin: 0 0 14px; font-size: 16px; line-height: 24px; font-weight: 800; color: var(--text); }   /* 줄 높이를 정수로 — 아래 탭 밑선이 반 픽셀에 걸려 두껍게(흐리게) 보이지 않게 */
+.rt-title { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 16px; line-height: 24px; font-weight: 800; color: var(--text); }
+.rt-title svg { width: 18px; height: 18px; color: var(--blue); flex: none; }   /* AI 아이콘 — 물건등록 '자동등록'과 같은 ✦ */   /* 줄 높이를 정수로 — 아래 탭 밑선이 반 픽셀에 걸려 두껍게(흐리게) 보이지 않게 */
 /* 권리분석 위 두 칸 — 왼쪽 알 수 있는 것 · 오른쪽 서류 올리기(2026-11-05). 앱 'AI 분석 요청' 카드는 감추고 이 칸이 대신한다 */
 .app-detail.tab-rights .adp-card:has(.adp-docs) { display: none !important; }
 .rt-top { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 12px; align-items: start; }
@@ -7129,7 +7130,7 @@ span.cal-day.has { cursor: help; }
         <div class="rt-tip"><b>잠깐, 알고 가세요</b><p>말소기준권리는 '낙찰되면 이 권리부터 아래는 지워지는 선'입니다. 이 권리보다 먼저 전입한 세입자가 있는지가 가장 중요합니다.</p></div>`;
   };
   /* 제목은 두 상자 위 한 줄 — 왼쪽 · 오른쪽 상자 윗변을 맞춘다 */
-  const rtTopHtml = () => `<section class="rt-wrap"><h2 class="rt-title" id="rtTitle">${RTS.on ? '올린 서류를 읽고 있습니다' : '권리분석 결과'}</h2><div class="rt-top">
+  const rtTopHtml = () => `<section class="rt-wrap"><h2 class="rt-title">${I.spark}<span id="rtTitle">${RTS.on ? '올린 서류를 읽고 있습니다' : '권리분석 결과'}</span></h2><div class="rt-top">
       <section class="${!RTS.on && rtAiOf() ? 'rt-res' : 'rt-card rt-know'}" id="rtKnow">${rtKnowHtml()}</section>
       <aside class="rt-card rt-up" id="rtUp"><h3>서류 올리기</h3><p class="rt-wait">불러오는 중입니다…</p></aside>
     </div></section>`;
