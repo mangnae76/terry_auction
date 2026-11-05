@@ -2471,6 +2471,11 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .rg-sec svg { width: 18px; height: 18px; color: var(--blue); }
 .rg-sec small { font-size: 13px; font-weight: 500; color: var(--muted); }
 .reg-content > * + .rg-sec { margin-top: 26px; }
+/* 물건등록 맨 위 안내 — 상자 없이 바탕에 바로(2026-11-05) */
+.rg-lead h2 { margin: 0 0 14px; font-size: 18px; font-weight: 800; color: #c0612b; }
+.rg-lead p { margin: 0; padding-left: 6px; word-break: keep-all; }
+.rg-lead .l1 { font-size: 16px; font-weight: 700; line-height: 1.5; color: var(--text); }
+.rg-lead .l2 { margin-top: 2px; font-size: 14px; line-height: 1.5; color: var(--muted); }
 .reg-content > .rg-sec + * { margin-top: 10px; }
 /* 직접입력 제목 줄 — 눌러서 접고 편다 */
 .rg-results.manual .mn-fold { cursor: pointer; user-select: none; }
@@ -5268,6 +5273,11 @@ span.cal-day.has { cursor: help; }
     // 다음에 다시 그릴 때 '목록이 이미 펼쳐져 있었는지' 를 알아야 애니메이션을 끌 수 있다
     R.popShown = S.pop === 'folders';
     $('regContent').innerHTML = `
+      <div class="rg-lead">
+        <h2>물건등록</h2>
+        <p class="l1">경매지에서 PDF를 다운 받아 등록하세요. 경매지의 기본정보를 분석하여 파싱 후 정리해 드립니다.</p>
+        <p class="l2">구글드라이브를 연결 하면 대량의 파일을 한번에 등록 할 수 있습니다.</p>
+      </div>
       <h2 class="rg-sec">${I.spark}자동등록<span class="plan-tag plus">PRO</span><small>PDF를 읽어 AI가 사건 카드로 정리합니다</small></h2>
       ${autoBox}
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
