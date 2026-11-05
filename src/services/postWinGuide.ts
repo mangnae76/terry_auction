@@ -1,5 +1,8 @@
 // 낙찰이후 · 가이드(웹) — 체크할 일이 아니라 읽어 두는 글. 코드에 둔 기본 글이다.
-import type { CheckGroup } from './postWinChecklist';
+import type { CheckGroup, CheckRow } from './postWinChecklist';
+import {
+  FIELD_CHECKLIST, FIELD_EXTERIOR_CHECKS, FIELD_INTERIOR_CHECKS, FIELD_MANAGE_CHECKS, FIELD_SAFETY_CHECKS, FIELD_COMFORT_CHECKS,
+} from './fieldChecklist';
 
 export const GUIDE_DENY: CheckGroup[] = [
   {
@@ -150,3 +153,34 @@ const PLAIN_TONE: Record<string, string> = {
 };
 export const plainTone = (g: CheckGroup): CheckGroup =>
   JSON.parse(JSON.stringify(g), (_k, v) => (typeof v === 'string' && PLAIN_TONE[v.trim()] ? PLAIN_TONE[v.trim()] : v)) as CheckGroup;
+
+/** 매뉴얼 › 낙찰이후 › 체크리스트 — 임장조사 현장 체크리스트를 읽어 두는 글로(물건마다 체크는 하지 않는다) */
+const descRows = (list: Array<{ id: string; desc: string }>): CheckRow[] => list.map((x) => ({ id: `gf.${x.id}`, depth: 0, text: x.desc }));
+export const GUIDE_FIELD_CHECK: CheckGroup[] = [
+  {
+    key: 'gf.base',
+    title: '현장 체크리스트',
+    note: '임장 갈 때 보는 항목 — 입지 · 부동산 · 경매 물건 순서',
+    noCheck: true,
+    sections: FIELD_CHECKLIST.map((x) => ({ label: x.label, rows: [{ id: `gf.${x.id}`, depth: 0, text: x.desc }] })),
+  },
+  {
+    key: 'gf.building',
+    title: '건물 상태',
+    noCheck: true,
+    sections: [
+      { label: '건물외부상태', rows: descRows(FIELD_EXTERIOR_CHECKS) },
+      { label: '건물내부상태', rows: descRows(FIELD_INTERIOR_CHECKS) },
+      { label: '건물관리 운영', rows: descRows(FIELD_MANAGE_CHECKS) },
+    ],
+  },
+  {
+    key: 'gf.living',
+    title: '주거환경',
+    noCheck: true,
+    sections: [
+      { label: '안전과 주거환경', rows: descRows(FIELD_SAFETY_CHECKS) },
+      { label: '쾌적과 편의', rows: descRows(FIELD_COMFORT_CHECKS) },
+    ],
+  },
+];

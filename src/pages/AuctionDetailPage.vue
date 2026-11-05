@@ -24,6 +24,10 @@ const rememberPlaceRows = (id: string, rows: PlaceRow[]) => {
 
 <script setup lang="ts">
 import { confirmedMarkOf } from '../services/confirmedPlan';
+// 현장 체크리스트 항목 — 웹 매뉴얼 › 낙찰이후 › 체크리스트와 같이 쓴다
+import {
+  FIELD_CHECKLIST, FIELD_EXTERIOR_CHECKS, FIELD_INTERIOR_CHECKS, FIELD_MANAGE_CHECKS, FIELD_SAFETY_CHECKS, FIELD_COMFORT_CHECKS,
+} from '../services/fieldChecklist';
 import { getBuildingFacts } from '../services/buildingFacts';
 import { DEMAND_PLAIN, DEMAND_TOTAL_PLAIN } from '../services/demandGrade';
 import { openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
@@ -3177,105 +3181,6 @@ const FIELD_SECTIONS: Array<{ title: string; special?: 'report'; items: FieldRow
       },
     ],
   },
-];
-// 현장 체크리스트 — 항목명과 확인할 내용
-const FIELD_CHECKLIST: Array<{ id: string; label: string; desc: string }> = [
-  { id: 'cl.location', label: '입지', desc: '일자리, 교통, 유치원, 초교, 학원가, 인프라, 공원 등' },
-  { id: 'cl.age', label: '연령대', desc: '주 연령층, 자녀 비율(인터뷰)' },
-  { id: 'cl.school', label: '학교/학원', desc: '이용 초교 및 학원가 위치' },
-  { id: 'cl.middle', label: '중학교', desc: '배정 방식, 초교 연계 여부' },
-  { id: 'cl.stay', label: '거주 지속성', desc: '초~고교 장기 거주 성향' },
-  { id: 'cl.price', label: '시세(부동산)', desc: '타입·동·층·수리별 시세' },
-  { id: 'cl.demand', label: '매수 수요(부동산)', desc: '대기 수요 및 처분 가능 급매가' },
-  { id: 'cl.room', label: '호실 상태(부동산)', desc: '수리 상태 및 히스토리' },
-  { id: 'cl.season', label: '수요 시기(부동산)', desc: '매매 수요 증가 시기 파악' },
-  { id: 'cl.individual', label: '개별조건', desc: '연식, 경사, 복도/계단식, 난방, 타입' },
-  { id: 'cl.floor', label: '층수', desc: '뷰, 사생활 침해, 1·2층, 탑층 등' },
-  { id: 'cl.dong', label: '동', desc: '뷰, 남향, 단지 내 위치, 주차 연결 등' },
-  { id: 'cl.repair', label: '수리상태(경매)', desc: '샤시, 문, 도어락 등' },
-  { id: 'cl.maintFee', label: '미납관리비(경매)', desc: '우편함, 관리사무소 파악' },
-  { id: 'cl.occupant', label: '점유자(경매)', desc: '우편함, 관리사무소 거주자 파악' },
-  { id: 'cl.parking', label: '주차장', desc: '경비원·주민 인터뷰' },
-];
-// 건물외부상태 — 항목명 없이 확인 내용만 체크한다
-const FIELD_EXTERIOR_CHECKS: Array<{ id: string; desc: string }> = [
-  { id: 'cx.alley', desc: '집 앞 골목까지 사람, 차에대한 불편함 상태' },
-  { id: 'cx.entrance', desc: '최초 출입구(비번확인), 공용계단 상태' },
-  { id: 'cx.mailbox', desc: '우편물과 우편함 상태' },
-  { id: 'cx.cctv', desc: '주 출입구의 CCTV 보안시설 상태' },
-  { id: 'cx.elevator', desc: '엘베여부, 엘베대수 및 상태' },
-  { id: 'cx.parking', desc: '세대별주차대수, 주차상태, 시간대별 주차공간 상태' },
-  { id: 'cx.water', desc: '수도계량기위치, 개별상태, 지역관할기관번호 확인' },
-  { id: 'cx.power', desc: '전기계량기위치, 개별상태, 지역관할기관번호 확인' },
-  { id: 'cx.gas', desc: '가스계량기위치, 개별상태, 지역관할기관번호 확인' },
-  { id: 'cx.roof', desc: '옥상상태, 옥상 바닥상태(탑층, 빌라 경우)' },
-  { id: 'cx.piloti', desc: '필로티 구조' },
-];
-// 건물내부상태
-const FIELD_INTERIOR_CHECKS: Array<{ id: string; desc: string }> = [
-  { id: 'ci.position', desc: '구조적 위치, 지하창고여부' },
-  { id: 'ci.leak', desc: '각방, 거실, 발코니 등 내부전체 누수, 곰팡이, 결로 상태' },
-  { id: 'ci.neighborLeak', desc: '윗집, 아랫집에 대한 누수 여부 상태' },
-  { id: 'ci.wall', desc: '각방, 거실, 발코니 등 내부전체 벽, 바닥, 천장 상태' },
-  { id: 'ci.paper', desc: '각방, 거실, 발코니 등 내부전체 도배, 장판 상태' },
-  { id: 'ci.window', desc: '각방, 거실, 발코니 등 내부전체 창틀, 창호, 잠금장치, 코킹 상태' },
-  { id: 'ci.light', desc: '각방, 거실, 발코니 등 내부전체 전등, 스위치 상태' },
-  { id: 'ci.door', desc: '문짝문들, 현관문 상태' },
-  { id: 'ci.noise', desc: '윗집, 아랫집 층간소음 및 발생 상태' },
-  { id: 'ci.lock', desc: '현관문 잠금장치, 키폰 상태' },
-  { id: 'ci.bath', desc: '화장실 바닥, 천장, 도기, 수납장, 타일, 냄새, 물 수압, 배수 상태' },
-  { id: 'ci.sink', desc: '싱크대 상부장·하부장, 환기창, 냄새, 내부, 물 수압, 배수 상태' },
-  { id: 'ci.gasRange', desc: '가스렌지연결, 전기인덕션 설치 및 작동 상태' },
-  { id: 'ci.balcony', desc: '발코니 크기, 겨울동파여부, 물 수압 상태' },
-  { id: 'ci.boiler', desc: '보일러 작동, 스위치 상태' },
-  { id: 'ci.pipe', desc: '수도배관, 보일러배관 교체여부 상태' },
-];
-// 건물관리 운영
-const FIELD_MANAGE_CHECKS: Array<{ id: string; desc: string }> = [
-  { id: 'cm.office', desc: '관리사무소여부, 경비실여부, 전화번호 확보 상태, 동대표연락처' },
-  { id: 'cm.fee', desc: '계절별 공과금, 관리비 요금수준 상태' },
-  { id: 'cm.split', desc: '공과금과 관리비 분리상태' },
-  { id: 'cm.arrears', desc: '공과금, 관리비 미납상태' },
-  { id: 'cm.parking', desc: '시간대별 주차공간 지정, 시간 추가공간 상태' },
-  { id: 'cm.trash', desc: '쓰레기 분리수거장 위치, 상태, 분리수거 날짜여부' },
-  { id: 'cm.food', desc: '음식물 쓰레기 수거장 위치, 상태, 수거 날짜 여부' },
-  { id: 'cm.resale', desc: '사용후 다시 집을 내놓았을때 팔릴 수 있을 것인가?' },
-  { id: 'cm.etc', desc: '기타, 다른 장점, 문제, 특이사항, 최종 결론' },
-];
-// 안전과 주거환경
-const FIELD_SAFETY_CHECKS: Array<{ id: string; desc: string }> = [
-  { id: 'cs.jeonseRate', desc: '전세가율이 높은 지역인가?' },
-  { id: 'cs.profit', desc: '수익률과 환금성이 있는가?' },
-  { id: 'cs.region', desc: '서울, 경기 지역인가?' },
-  { id: 'cs.industry', desc: '산업단지인가?' },
-  { id: 'cs.station', desc: '역세권인가? 더블역세권?' },
-  { id: 'cs.loan', desc: '대출이 많이 나오는 집인가?' },
-  { id: 'cs.edu', desc: '집근처 자녀교육 가능시설? (어린이집, 유치원, 학교)' },
-  { id: 'cs.mart', desc: '집근처 마트, 시장 쇼핑 가능 시설 있는가?' },
-  { id: 'cs.infra', desc: '주변편의시설 병원, 대형마트 등?' },
-  { id: 'cs.parking', desc: '주차장은 있는가? 실내인가? 실외인가?' },
-  { id: 'cs.parkingArea', desc: '주차가능 면적은 세대수와 비교해 충분한가?' },
-  { id: 'cs.hate', desc: '집 근처 혐오시설은 있는가? (쓰레기장, 고물상, 공장, 변전소 등)' },
-  { id: 'cs.remote', desc: '외지거나 인적이 드물지 않은가?' },
-  { id: 'cs.window', desc: '저층일 경우 방범창?' },
-];
-// 쾌적과 편의
-const FIELD_COMFORT_CHECKS: Array<{ id: string; desc: string }> = [
-  { id: 'cf.aging', desc: '건물전체 노후도' },
-  { id: 'cf.view2', desc: '내부 위치마다 뷰, 채광 상태, 환기(창문형태) 외풍' },
-  { id: 'cf.viewDir', desc: '전망(층/방향)' },
-  { id: 'cf.fee', desc: '관리비' },
-  { id: 'cf.screen', desc: '방충망, 샤시 여부' },
-  { id: 'cf.heating', desc: '난방시설 노후도? 가스? 기름? LPG?' },
-  { id: 'cf.leak', desc: '천장이나 벽 누수, 곰팡이, 결로 확인' },
-  { id: 'cf.drain', desc: '싱크대, 화장실 배수, 수압' },
-  { id: 'cf.laundry', desc: '세탁기 공간, 빨래 널 공간' },
-  { id: 'cf.fridge', desc: '냉장고 공간' },
-  { id: 'cf.kitchen', desc: '주방형태' },
-  { id: 'cf.noise', desc: '층간 벽간소음' },
-  { id: 'cf.storage', desc: '다용도실, 창고 공간, 수납공간' },
-  { id: 'cf.option', desc: '옵션(살림)' },
-  { id: 'cf.roomSize', desc: '가구를 놓을 수 있는 방 크기 (장/침대 등)' },
 ];
 const setExtraNote = (key: string, value: string) => {
   setFieldVal(`fs.${key}.note`, value);

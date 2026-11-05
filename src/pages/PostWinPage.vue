@@ -35,13 +35,13 @@ import { FORM_BTN, FORMS_OF_ROW, type FormKey } from '../services/postWinForms';
 import { utilityLine } from '../services/utilityContacts';
 import { DETAIL_STEPS, STEP_TITLE, STEP_TODOS, type StepTodo } from '../services/postWinTodos';
 import { DETAIL_REPAIR, DETAIL_SELL, DETAIL_TAX } from '../services/postWinDetail';
-import { GUIDE_DENY, GUIDE_EVICT_DOCS, plainTone } from '../services/postWinGuide';
+import { GUIDE_DENY, GUIDE_EVICT_DOCS, GUIDE_FIELD_CHECK, plainTone } from '../services/postWinGuide';
 /** 웹 절차상세 · 인테리어 · 매도 · 세금 장 — 코드에 둔 체크리스트(고쳐 저장하는 표가 아니다) */
-const DETAIL_OF: Partial<Record<string, CheckGroup[]>> = { drepair: DETAIL_REPAIR, dsell: DETAIL_SELL, dtax: DETAIL_TAX, gdeny: GUIDE_DENY };
+const DETAIL_OF: Partial<Record<string, CheckGroup[]>> = { drepair: DETAIL_REPAIR, dsell: DETAIL_SELL, dtax: DETAIL_TAX, gdeny: GUIDE_DENY, gcheck: GUIDE_FIELD_CHECK };
 
 // 낙찰당일 탭을 다시 맨 왼쪽에 — '낙찰 후 진행 순서' 상자와 낙찰당일 묶음(경매사건 열람 · 명도협상 원칙 · 유선연락 첫통화)
 // 웹은 절차진행 · 절차상세(win · evict · balance 장) · 가이드(gwin · gevict · biz 장) · 인테리어 · 매도·임대 — 장 열쇠가 곧 하위 탭 열쇠다
-type TabKey = 'win' | 'dpre' | 'gdeny' | 'gtax' | 'flow' | 'biz' | 'balance' | 'evict' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'repair' | 'sell';
+type TabKey = 'win' | 'dpre' | 'gdeny' | 'gtax' | 'gcheck' | 'flow' | 'biz' | 'balance' | 'evict' | 'drepair' | 'dsell' | 'dtax' | 'gwin' | 'gevict' | 'repair' | 'sell';
 const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
   { key: 'win', label: '낙찰당일', desc: '낙찰가·경쟁 상황, 영수증과 서류 챙기기' },
   { key: 'flow', label: '진행절차', desc: '낙찰일부터 명도까지 단계별 일정' },   // 웹만(앱 탭 줄에는 안 보인다)
@@ -53,7 +53,7 @@ const TABS: Array<{ key: TabKey; label: string; desc: string }> = [
 ];
 const route = useRoute();
 const router = useRouter();
-const TAB_KEYS: TabKey[] = ['win', 'dpre', 'gdeny', 'gtax', 'flow', 'evict', 'biz', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gevict', 'repair', 'sell'];
+const TAB_KEYS: TabKey[] = ['win', 'dpre', 'gdeny', 'gtax', 'gcheck', 'flow', 'evict', 'biz', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gevict', 'repair', 'sell'];
 /** 주소에 적힌 탭으로 연다 — '뒤로' 왔을 때 보던 자리를 지킨다 */
 const initialTab = (): TabKey => {
   const wanted = String(route.query.tab ?? '');
@@ -435,7 +435,7 @@ const hasTable = computed(() => viewTab.value in BOOK_OF || !!DETAIL_OF[activeTa
 const DETAIL_CHAPS: Array<[TabKey, string]> = [['win', '낙찰당일'], ['dpre', '잔금전'], ['balance', '잔금·등기'], ['evict', '명도'], ['drepair', '인테리어'], ['dsell', '매도'], ['dtax', '세금']];
 // 낙찰당일 장(gwin)은 뺐다 — 절차별체크리스트 낙찰당일과 겹쳐서, 남는 내용은 1차 방문 카드로 모았다
 // 매각불허가 · 명도 · 사업자등록 · 세금은 웹 매뉴얼 › 낙찰이후로 옮겼다 — 이 장들은 매뉴얼에서만 연다
-const GUIDE_CHAPS: Array<[TabKey, string]> = [['gdeny', '매각불허가'], ['gevict', '명도'], ['biz', '사업자등록'], ['gtax', '세금']];
+const GUIDE_CHAPS: Array<[TabKey, string]> = [['gdeny', '매각불허가'], ['gevict', '명도'], ['biz', '사업자등록'], ['gtax', '세금'], ['gcheck', '체크리스트']];   // 체크리스트 — 임장조사 현장 체크리스트(웹은 임장조사에서 뺐다)
 const isGuideChap = computed(() => !editing.value && GUIDE_CHAPS.some(([k]) => k === activeTab.value));
 const chaps = computed(() => {
   if (!webEmbed) return [];

@@ -4511,7 +4511,7 @@ span.cal-day.has { cursor: help; }
     more: ['mypage', 'alerts', 'billing', ...(SHOW_POINTS ? ['points'] : []), 'support', 'calendar'],   /* calendar — 마이페이지 › 입찰 캘린더(앱 화면 /bid-calendar) */   /* 공지는 커뮤니티로 옮겼다 · 포인트는 SHOW_POINTS 일 때만(옛 주소 #/more/points 는 내정보로) */
     community: ['notice'],   /* 오류및제안은 게시판으로 옮겼다(2026-11-05) */
     board: ['suggest', 'review'],   /* 게시판 — 오류및제안 · 사용후기(머리 오른쪽 위 '공지' 옆 '게시판'). 가입인사는 뺐다 */   /* 위 메뉴에서 커뮤니티를 뺐다(2026-11-02) — 머리 오른쪽 위 '공지'로 들어온다. FAQ 는 이용가이드로 */
-    manual: ['gdeny', 'gevict', 'biz', 'gtax'],   /* 매뉴얼 — 하위 탭 경매기초 · 물건고르기는 준비 중이라 잠가 두었다(주소 없음) · 낙찰이후(gdeny 매각불허가 · gevict 명도 · biz 사업자등록 · gtax 세금 장). 처음 열면 낙찰이후 */
+    manual: ['gdeny', 'gevict', 'biz', 'gtax', 'gcheck'],   /* 매뉴얼 — 하위 탭 경매기초 · 물건고르기는 준비 중이라 잠가 두었다(주소 없음) · 낙찰이후(gdeny 매각불허가 · gevict 명도 · biz 사업자등록 · gtax 세금 장). 처음 열면 낙찰이후 */
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
   const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지', community: '공지', board: '게시판', manual: '매뉴얼' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지. 커뮤니티는 메뉴에서 빼고 '공지'로 부른다 */
@@ -6007,7 +6007,6 @@ span.cal-day.has { cursor: help; }
       itCard('check', '손품결론', itEmpty()),
       itCard('pin', '현장조사', itEmpty()),
       itCard('cam', '현장사진', itEmpty()),
-      itCard('check', '체크리스트', itEmpty()),
     ].join('');
     if (tab === 'verify') return [
       itCard('scale', '경매사례', itEmpty()),
@@ -6202,7 +6201,9 @@ span.cal-day.has { cursor: help; }
     });
   }
   /* 앱 '손품+현장' 카드 가운데 현장에서 쓰는 것 — 웹은 이것만 임장조사 탭으로, 나머지는 손품조사 탭으로 */
-  const FIELD_CARDS = ['현장조사', '현장사진', '체크리스트'];
+  const FIELD_CARDS = ['현장조사', '현장사진'];
+  /* 웹에서 감추는 앱 카드 — 현장 체크리스트는 매뉴얼 › 낙찰이후 › 체크리스트로 옮겼다 */
+  const HIDDEN_CARDS = ['체크리스트'];
   function layoutAppCols(el, tab) {
     if (tab === 'profit') layoutProfit(el);
     const L = WEB_LAYOUT[tab]; const body = el.querySelector('.adp-body'); if (!body) return;
@@ -6210,7 +6211,8 @@ span.cal-day.has { cursor: help; }
     if (tab === 'survey' || tab === 'field') {
       [...body.children].filter((c) => c.classList.contains('adp-card')).forEach((c) => {
         const isField = FIELD_CARDS.some((n) => cardTitle(c).startsWith(n));
-        c.style.display = (tab === 'field') === isField ? '' : 'none';
+        const hidden = HIDDEN_CARDS.some((n) => cardTitle(c).startsWith(n));
+        c.style.display = !hidden && (tab === 'field') === isField ? '' : 'none';
       });
     }
     const cards = [...body.children].filter((c) => c.classList.contains('adp-card') && c.style.display !== 'none');
@@ -6288,8 +6290,8 @@ span.cal-day.has { cursor: help; }
   });
   /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
   /* 낙찰이후 — 장 열쇠는 제 하위 탭(절차상세 · 가이드)에 불이 들어오고, 경로에는 '절차상세 › 명도'처럼 장 이름이 붙는다 */
-  const SUB_PARENT = { postwin: { dpre: 'win', evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win' }, manual: { gevict: 'gdeny', biz: 'gdeny', gtax: 'gdeny' } };   /* 매각불허가 · 명도 · 사업자등록 · 세금 가이드는 매뉴얼 › 낙찰이후로 */
-  const SUB_CHAP = { postwin: { win: '낙찰당일', dpre: '잔금전', evict: '명도', balance: '잔금·등기', drepair: '인테리어', dsell: '매도', dtax: '세금' }, manual: { gdeny: '매각불허가', gevict: '명도', biz: '사업자등록', gtax: '세금' } };
+  const SUB_PARENT = { postwin: { dpre: 'win', evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win' }, manual: { gevict: 'gdeny', biz: 'gdeny', gtax: 'gdeny', gcheck: 'gdeny' } };   /* 매각불허가 · 명도 · 사업자등록 · 세금 가이드는 매뉴얼 › 낙찰이후로 */
+  const SUB_CHAP = { postwin: { win: '낙찰당일', dpre: '잔금전', evict: '명도', balance: '잔금·등기', drepair: '인테리어', dsell: '매도', dtax: '세금' }, manual: { gdeny: '매각불허가', gevict: '명도', biz: '사업자등록', gtax: '세금', gcheck: '체크리스트' } };
   const subParent = (route, key) => (SUB_PARENT[route] || {})[key] || key;
   const subLabel = (route, key) => ((SUBTABS[route] || []).find((t) => t[0] === subParent(route, key)) || [])[2] || '';
   const subChap = (route, key) => (SUB_CHAP[route] || {})[key] || '';
