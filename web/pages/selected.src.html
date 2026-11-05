@@ -6907,7 +6907,7 @@ span.cal-day.has { cursor: help; }
       ${errs.map((t) => `<p class="rt-err">${esc(t)}</p>`).join('')}
       ${busy ? '<p class="rt-more">서류를 읽고 있습니다 — 서류가 많으면 2~3분 걸립니다.</p>' : missing ? `<p class="rt-more">${esc(missing)}</p>` : ''}
       <button type="button" class="rt-go" data-act="rt-start" ${can ? '' : 'disabled'}>${busy ? '분석 중…' : done ? '다시 분석하기' : '권리분석 시작하기'}</button>
-      ${spec.has ? '' : '<p class="rt-cap">매각물건명세서를 올리면 분석을 시작할 수 있습니다.</p>'}`;
+      <p class="rt-cap">서류를 올리면 분석을 시작할 수 있습니다.</p>`;
     if (up.dataset.h !== html) { up.innerHTML = html; up.dataset.h = html; }
   }
   const rtWait = (ok, ms) => new Promise((done) => { const t0 = Date.now(); const tick = () => { if (ok() || Date.now() - t0 > ms) done(); else setTimeout(tick, 120); }; tick(); });
