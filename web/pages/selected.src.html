@@ -904,6 +904,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-grow { flex: 1 1 auto; }
 /* 수집 띠 */
 .sx-top { display: grid; gap: 10px; }
+.sx-top > .sx-lead { margin: 4px 0 6px; }   /* 경매사례 맨 위 주황 막대 안내 */
 .sx-titlebar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--card-line); }
 .sx-titlebar h2 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -.02em; color: var(--text); }
 .sx-tbtn { height: 34px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
@@ -6718,12 +6719,16 @@ span.cal-day.has { cursor: help; }
       + `<button type="button" class="sx-tbtn" data-act="sx-backup" ${AG.recs.length ? '' : 'disabled'}>데이터 백업</button>`
       + `<button type="button" class="sx-tbtn solid" data-act="sx-excel">엑셀다운로드</button></div>`;
     /* 제목 줄도 수집 박스 안 맨 위 — 옵션 줄(사이트 · 기간 …)보다 위(2026-11-03) */
-    return `<div class="sx-top" id="agPanel"><section class="sx-card sx-collect" aria-label="경매 인근 매각물건 분석">${titlebar}`
+    /* 맨 위 주황 막대 안내(다른 화면과 같은 .rg-lead) — 첫 줄은 도우미가 지금 하는 말, 둘째 줄은 쓰는 순서 */
+    const say = online ? (msg || '대기 중입니다.') : 'My agent가 꺼져 있습니다. 집 PC에서 agent.py 를 켜 주세요.';
+    const lead = `<div class="rg-lead sx-lead" role="status" aria-live="polite"><p class="l1">${esc(say)}</p>`
+      + '<p class="l2">① 브라우저 열기 → ② 끝 페이지까지 자동 수집 → ③ 건축연도 채우기 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
+    return `<div class="sx-top" id="agPanel">${lead}<section class="sx-card sx-collect" aria-label="경매 인근 매각물건 분석">${titlebar}`
       /* 첫 줄 — 사이트 · 기간 · 처음부터새로 바로 오른쪽에 ① ~ 대기열 수집을 한 줄로(2026-11-03). 연결 상태 · 진행 · 중지는 둘째 줄(상태 줄) */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('months', AG_MONTHS)}<label class="sx-chk"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>`
       + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}${step(2, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(3, 'enrich', '건축연도 채우기', ready && free)}`
       + `${sub('screen', '화면만 수집', ready && free)}${qRun ? '<button type="button" class="sx-sub run" disabled>대기열 수집 중</button>' : sub('queue', '대기열 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}</div>${prog}</div>`
-      + `<div class="sx-msg${online ? '' : ' off'}" role="status" aria-live="polite"><span class="sx-say">${esc(msg || (online ? '대기 중입니다.' : ''))}</span><span class="sx-meta">${meta}</span>${manage}</div>`
+      + `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"></span><span class="sx-meta">${meta}</span>${manage}</div>`   /* 도우미 말은 맨 위 안내로 옮겼다 */
       + (AG.fold ? '' : `<div class="sx-manage">${agCovHtml()}${agQueueHtml()}</div>`)
       + `</section></div>`;
   }
