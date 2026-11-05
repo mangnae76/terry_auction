@@ -1201,8 +1201,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rt-file { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 .rt-name { min-width: 0; flex: 1; padding: 0; border: 0; background: none; text-align: left; font-size: 13px; color: var(--blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 .rt-name:hover { text-decoration: underline; }
-.rt-x { flex: none; display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface); color: var(--muted); cursor: pointer; }
-.rt-x svg { width: 12px; height: 12px; }
+.rt-x { flex: none; display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: rgba(17, 24, 39, .65); color: #fff; cursor: pointer; }   /* 앱 서류 칸 빼기(.adp-doc-x)와 같은 동그라미 X */
+.rt-x:hover { background: rgba(17, 24, 39, .85); }
+.rt-x svg { width: 11px; height: 11px; }
 .rt-drop { margin-top: 12px; display: grid; justify-items: center; gap: 6px; padding: 22px 12px; border: 1.5px dashed var(--line-2); border-radius: 10px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; }
 .rt-drop svg { width: 20px; height: 20px; color: var(--muted); }
 .rt-drop b { font-size: 14px; font-weight: 700; color: var(--text); }
