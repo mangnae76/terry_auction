@@ -2674,6 +2674,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .rg-lead { position: relative; padding-left: 15px; }
 .rg-lead::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--nav-orange); }
 .reg-content > .rg-lead + .rg-sec { margin-top: 32px; }
+.reg-content > * + .rg-lead { margin-top: 32px; }   /* 자동등록 상자 → 직접입력 안내 사이도 넉넉히 */
 .rg-lead p { margin: 0; word-break: keep-all; }   /* 제목 · 두 줄 · 아래 자동등록 제목 왼쪽 선을 하나로 */
 .rg-lead .l1 { font-size: 16px; font-weight: 700; line-height: 1.5; color: var(--text); }
 .rg-lead .l2 { margin-top: 2px; font-size: 14px; line-height: 1.5; color: var(--muted); }
@@ -5491,6 +5492,10 @@ span.cal-day.has { cursor: help; }
       <h2 class="rg-sec">${I.spark}자동등록<span class="plan-tag plus">PRO</span></h2>
       ${autoBox}
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
+      <div class="rg-lead">
+        <p class="l1">무료 회원은 직접 입력하세요.</p>
+        <p class="l2">적은 내용은 선정물건에 카드로 등록됩니다. 사건번호 · 소재지만 적어도 되고, 매각기일 · 금액까지 적으면 카드에 입찰일과 최저가가 함께 보입니다.</p>
+      </div>
       <h2 class="rg-sec" id="rgSecManual">${I.pencil}직접입력</h2>
       <!-- 직접입력 — 제목 줄을 누르면 칸이 펼쳐진다 -->
       <section class="rg-results manual ${mnOpen ? '' : 'folded'}">
