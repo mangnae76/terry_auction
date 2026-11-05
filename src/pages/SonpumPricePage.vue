@@ -700,7 +700,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <template v-else>초기화</template>
           </button>
           <button v-if="!loose" type="button" :class="['save-btn', saving ? 'saving' : webDirty ? 'dirty' : 'saved']" aria-live="polite" @click="saveNow">
-            <template v-if="saving">저장 중…</template><template v-else-if="webDirty">저장</template><template v-else>✓ 저장됨<small v-if="stamp">{{ stamp }}</small></template>
+            <template v-if="saving">저장 중…</template><template v-else-if="webDirty">저장</template><template v-else>{{ webEmbed ? '저장완료' : '✓ 저장됨' }}<small v-if="stamp">{{ stamp }}</small></template>
           </button>
         </span>
         <div :class="['simrow', { 'has-elev': webEmbed }]">
