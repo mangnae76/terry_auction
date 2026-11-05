@@ -593,7 +593,6 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         </span>
         <button type="button" :class="['pa-load', { dirty }]" :disabled="loading" @click="run">{{ loading ? '조회 중…' : '조회' }}</button>
         </template>
-        <span class="fs-hint">Esc 누르면 닫힘</span>
       </span>
     </div>
     <!-- Ⓐ 결론 — 제목 줄에 조회(지역은 물건 카드에서 온다, 기간만 고른다) -->
