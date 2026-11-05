@@ -1008,7 +1008,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-manage { display: grid; gap: 8px; }   /* 위 수집 줄 상자와 사이 가르는 선 없이(2026-11-06) */
 /* 본문 — 왼쪽 검색조건 · 오른쪽 결과 */
 .sx-main { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 16px; align-items: start; }
-.sx-filters { padding: 16px; display: grid; gap: 14px; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 12px); }
+.sx-filters { padding: 16px; display: grid; gap: 14px; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px) + 12px); }   /* 위 붙박이 고정카드 아래에 붙는다 */
 .sx-f { display: grid; gap: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .sx-f select, .sx-pair input { width: 100%; min-width: 0; height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 500; }
 .sx-f select.ph { color: var(--faint); }
@@ -1597,7 +1597,6 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .ih-pdf { box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid #c7d7f7; border-radius: 8px; font-size: 14px; font-weight: 700; color: var(--text-2) !important; text-decoration: none; }
 .ih-pdf svg { width: 14px; height: 14px; }
 /* 경매사례 고정카드 — 카드교체 단추 · 선정물건 목록 */
-.sx-fixcard { border-radius: 12px; }
 .ih-swap { box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 12px; border: 1px solid var(--nav); border-radius: 8px; background: var(--nav); color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .ih-swap .caret { font-style: normal; font-size: 10px; opacity: .8; }
 .sx-fix-stage { display: inline-flex; align-items: center; cursor: default; }
@@ -7028,7 +7027,8 @@ span.cal-day.has { cursor: help; }
     }
     await run();
   }
-  /* ===== 고정카드 — 경매사례 맨 위에 손품조사와 같은 사건 카드. [카드교체]로 선정물건을 고르면 그 감정가가 '내 물건 감정가'에 들어간다(2026-11-06) ===== */
+  /* ===== 고정카드 — 경매사례 맨 위에 선정물건 물건상세(권리분석 등)와 같은 짜임: 하위 탭 아래 넓은 띠(#sonShell .toolbar-shell) 위에 붙박이 사건 카드(#sonHead).
+     [카드교체]로 선정물건을 고르면 그 감정가가 '내 물건 감정가'에 들어간다(2026-11-06) ===== */
   const SALE_ITEM_KEY = 'ta.web.sale.item';
   let saleItemId = (() => { try { return localStorage.getItem(SALE_ITEM_KEY) || ''; } catch (e) { return ''; } })();
   let saleCardOpen = false;
@@ -7038,14 +7038,14 @@ span.cal-day.has { cursor: help; }
     const it = picks.find((x) => x.id === saleItemId) || null;
     const btn = `<button type="button" class="ih-swap" data-act="sale-card-menu" aria-haspopup="listbox" aria-expanded="${saleCardOpen}">카드교체<i class="caret">▾</i></button>`;
     const list = saleCardOpen ? `<ul class="sx-cardlist" role="listbox" aria-label="선정물건">${picks.map((x) => `<li role="option" aria-selected="${x.id === saleItemId}" class="${x.id === saleItemId ? 'on' : ''}" data-act="sale-card-pick" data-id="${esc(x.id)}"><b class="num">${esc(x.caseNo)}</b><span>${esc(agRegionOf(x.addr) || x.addr)}${x.type ? ` · ${esc(TYPE_NAME(x.type) || x.type)}` : ''}</span><span class="num">${x.apr > 0 ? sxWon(x.apr) : '-'}</span></li>`).join('')}</ul>` : '';
-    if (!it) return `<div class="toolbar item-head sx-fixcard"><div class="ih-top"><span class="ih-court">카드교체에서 선정물건을 고르면 그 감정가가 아래 '내 물건 감정가'에 들어갑니다.</span><span class="ih-right">${btn}</span></div>${list}</div>`;
+    if (!it) return `<div class="ih-top"><span class="ih-court">카드교체에서 선정물건을 고르면 그 감정가가 아래 '내 물건 감정가'에 들어갑니다.</span><span class="ih-right">${btn}</span></div>${list}`;
     const a = detailOf(it); const T = CLOUD.T;
     const kind = TYPE_NAME(it.type) || '다세대';
     const sale = (T ? T.saleKindOf(a) : '토건일괄매각').replace('토건일괄매각', '토지건물 일괄매각');
     const meta = T ? T.headMetaLineOf(a, new Date().getFullYear()) : '';
     const metaText = meta ? (/㎡/.test(meta) ? `건물 ${meta}` : meta) : '';
     const stage = T && CLOUD.raw.has(it.id) ? T.stageLabelOf(a) : stageLabel(it);
-    return `<div class="toolbar item-head sx-fixcard">
+    return `
       <div class="ih-top">
         <h2 class="ih-title"><span class="ih-tag">경매</span><span class="num">${esc(it.caseNo)}</span></h2>
         <span class="ih-court">${esc(it.court || DASH)} · 매각기일 <span class="num">${it.date ? `${dotDate(it.date)}${dowText(it.date)}` : DASH}</span> <em>${it.date ? ddayText(it.date) : ''}</em></span>
@@ -7055,7 +7055,7 @@ span.cal-day.has { cursor: help; }
         <span class="ih-kind">${esc(kind)}</span>
         <span class="ih-line"><span class="ih-sale">${esc(sale)}${metaText ? ` · ${esc(metaText)}` : ''}</span></span>
         <p class="ih-addr">${esc(it.addr)}${it.bld ? ` <b>${esc(it.bld)}</b>` : ''}${it.unit ? ` <b>${esc(it.unit)}</b>` : ''}</p>
-      </div>${list}</div>`;
+      </div>${list}`;
   }
   function salePickCard(id) {
     const it = salePicks().find((x) => x.id === id); saleCardOpen = false;
@@ -7092,11 +7092,15 @@ span.cal-day.has { cursor: help; }
       + `<div class="sx-fbtns"><button type="button" class="sx-btn" data-act="sale-go" ${canGo ? '' : 'disabled'}>검색</button><button type="button" class="sx-btn ghost" data-act="sx-save">저장</button><button type="button" class="sx-btn ghost" data-act="sx-reset">초기화</button></div>`
       + (why ? `<p class="sx-why">${esc(why)}</p>` : '')
       + `</aside>`;
-    return `<div class="app-market mk-sale sx" data-k="sale" data-s="sale"><input type="file" id="sxFile" accept=".xlsx" hidden>${agIsAdmin() ? saleCardHtml() + agPanelHtml() : ''}<div class="sx-main">${filters}${sxResultsHtml()}</div></div>`;
+    return `<div class="app-market mk-sale sx" data-k="sale" data-s="sale"><input type="file" id="sxFile" accept=".xlsx" hidden>${agIsAdmin() ? agPanelHtml() : ''}<div class="sx-main">${filters}${sxResultsHtml()}</div></div>`;
   }
   /* 물건분석 머리 카드 — 고른 물건(앱 화면이 'son.pick' 에 적고 son:pick 으로 알린다) */
   function renderSonHead() {
     const el = $('sonHead'); const shell = $('sonShell'); if (!el || !shell) return;
+    /* 경매사례 — 같은 틀에 고정카드(카드교체) */
+    const saleCard = S.route === 'market' && S.marketTab === 'sale' && agIsAdmin();
+    el.classList.toggle('sx-fixcard', saleCard);
+    if (saleCard) { const h = saleCardHtml(); shell.hidden = !h; el.innerHTML = h; return; }
     let id = ''; try { id = localStorage.getItem('son.pick') || ''; } catch (e) { /* 그만 */ }
     const on = false;   /* 시장분석 손품조사는 이제 사건 카드 없이 주소 검색(지역분석과 같은 검색창) — 머리 카드는 선정물건 손품조사에만 */
     const it = on && id ? byId(id) : null;
@@ -8128,7 +8132,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     if (S.menu && !e.target.closest('.float-menu') && !(t && ['bid-result', 'stage-menu', 'result-menu'].includes(t.dataset.act))) { S.menu = null; syncMenu(); }
     /* 홈 달력에서 날짜를 골라 둔 채 날짜 말고 어디든 누르면 고른 것을 푼다(목록 다시 전체). 누른 단추는 제 일을 그대로 한다 */
     if (S.homeDay && !(t && t.dataset.act === 'hm-cal-day')) { S.homeDay = ''; if (S.route === 'home' && !t) { renderHome(); return; } }
-    if (saleCardOpen && !e.target.closest('.sx-fixcard')) { saleCardOpen = false; if (S.route === 'market') renderMarket(); }   /* 카드교체 목록 — 바깥을 누르면 닫는다 */
+    if (saleCardOpen && !e.target.closest('.sx-fixcard')) { saleCardOpen = false; renderSonHead(); }   /* 카드교체 목록 — 바깥을 누르면 닫는다 */
     if (!t) return;
     const act = t.dataset.act; const id = t.dataset.id; const v = t.dataset.v; const it = id ? byId(id) : null;
     if (t.tagName === 'A') e.preventDefault();
@@ -8356,7 +8360,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         renderMarket(); toast('면적 · 건축년도 · 기간을 처음대로 돌렸습니다.', 'info'); break;
       }
       case 'sx-import': { const f = $('sxFile'); if (f) f.click(); break; }
-      case 'sale-card-menu': saleCardOpen = !saleCardOpen; renderMarket(); break;
+      case 'sale-card-menu': saleCardOpen = !saleCardOpen; renderSonHead(); break;
       case 'sale-card-pick': salePickCard(id); break;
       case 'sx-backup': void sxBackup(); break;
       case 'sx-excel': void sxExcel(); break;
