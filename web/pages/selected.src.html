@@ -7098,7 +7098,7 @@ span.cal-day.has { cursor: help; }
     const spec = rows[0];
     const docBox = (r) => `<div class="rt-doc ${r.has ? 'has' : ''}">
         <div class="rt-doc-h"><b>${r.name}${r.has ? ` <small>${r.pdf ? 'PDF' : '사진'}</small>` : ' (PDF)'}</b>${r.has ? '<span class="rt-tag ok">올림</span>' : ''}${r.need ? '<span class="rt-tag need rt-must">필수</span>' : ''}</div>
-        ${r.need ? '<p>법원경매정보, 유료 경매지 → 무료로 내려받은 PDF를 그대로 올려 주세요. 말소기준권리 날짜, 세입자 신고 내용, 인수되는 권리, 비고란이 모두 이 서류에 있습니다.</p>' : ''}
+        ${r.need ? '<p>법원경매정보, 유료 경매지 → 무료로 내려받은 PDF를 그대로 올려 주세요.</p>' : ''}
         ${r.has ? `<div class="rt-file"><button type="button" class="rt-name" data-act="rt-open" data-v="${r.i}" title="열기">${esc(r.file)}</button><button type="button" class="rt-x" data-act="rt-del" data-v="${r.i}" aria-label="${r.name} 지우기">${I.x}</button></div>` : ''}
         ${r.err ? `<p class="rt-err">${esc(r.err)}</p>` : ''}
       </div>`;
