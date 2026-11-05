@@ -1174,6 +1174,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .it-lead { margin-bottom: 16px; }
 /* 권리분석 (직접확인) 표 — 분홍 · 파랑 왼쪽 이름 칸. 앱은 칸 700 + 안 strong 'bolder'라 900 가까이 진했다 → 웹은 600 */
 .app-detail.tab-rights :is(.adp-rcheck-label, .adp-rcheck-label strong) { font-weight: 600 !important; }
+/* 권리분석 탭의 글 적는 칸(권리분석 정리 · 직접확인 비고 등) — 웹 공통 입력 16 대신 둘레 글과 같은 14 */
+.app-detail.tab-rights :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select) { font-size: 14px !important; }
 /* 같은 표 오른쪽 칸 — 날짜 · 고르기는 14인데 글 적는 칸만 웹 공통 입력 16을 받아 컸다(세대주 입력 · 문건송달 비고). 한 줄 안 글자를 14 하나로 */
 .app-detail.tab-rights .adp-rdoc-survey :is(input.adp-rdoc-input, .adp-date-btn, .adp-date-btn span, .adp-agency-trigger .txt, .adp-rdoc-label, .adp-rdoc-task) { font-size: 14px !important; }
 .it-lead:has(+ .rt-wrap) { margin-bottom: 28px; }   /* 권리분석 — 안내와 아래 '권리분석 결과' 제목 사이를 넉넉히 */
