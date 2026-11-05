@@ -1103,6 +1103,10 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-tbl :is(th.ck-th, td.ck-td) { width: 1%; padding-left: 10px; padding-right: 4px; }   /* 제외 체크 칸 — 시세분석 표와 같은 자리(맨 앞) */
 .sx-tbl th.ck-th { cursor: default; }
 .sx-tbl td.ck-td input { width: 16px; height: 16px; margin: 0; accent-color: var(--blue); cursor: pointer; vertical-align: middle; }
+.sx-tbl tbody tr[data-act="sx-row"] { cursor: pointer; }
+.sx-tbl tbody tr[data-act="sx-row"]:hover td { background: var(--surface-2, #f6f8fc); }
+.sx-tbl tbody tr.focus td { background: var(--blue-soft) !important; }   /* 지도와 같이 고른 지번 */
+.sx-tbl tbody tr.focus td:first-child { box-shadow: inset 3px 0 0 var(--blue); }
 .sx-tbl tr.off td:not(.ck-td) { opacity: .45; text-decoration: line-through; }   /* 제외한 줄 — 흐리게 · 줄 긋기 */
 .sx-map .pa-pin.off .dot { background: #b8bfcc; }
 .sx-map .pa-pin.off .lbl { opacity: .55; text-decoration: line-through; }
@@ -6736,7 +6740,7 @@ span.cal-day.has { cursor: help; }
       const on = SXG.focus === g.k;
       const sub = [g.range, g.dist != null ? `${g.dist.toLocaleString('ko-KR')}m` : ''].filter(Boolean).join(' · ');
       const off = g.list.every((r) => sxIsOff(r));   /* 그 건물 매각을 다 '제외'하면 핀도 회색(시세분석과 같게) */
-      mv.pin(g.p, { className: `pa-pin${on ? ' on' : ''}${off ? ' off' : ''}`, html: html(`<b>${esc(g.name)} ${g.list.length}건</b>${sub ? `<br>${sub}` : ''}`, String(g.no)), onClick: () => { SXG.focus = on ? '' : g.k; sxDrawMap(); }, z: on ? 50 : 1 });
+      mv.pin(g.p, { className: `pa-pin${on ? ' on' : ''}${off ? ' off' : ''}`, html: html(`<b>${esc(g.name)} ${g.list.length}건</b>${sub ? `<br>${sub}` : ''}`, String(g.no)), onClick: () => { SXG.focus = on ? '' : g.k; sxDrawMap(); sxPaintList(); }, z: on ? 50 : 1 });
     });
     if (meSpot) mv.pin(meSpot, { className: 'pa-pin me', html: html(`<b>${esc((me && me.bld) || '경매물건')}</b>${same ? `<br><b>같은건물 ${same}건</b>` : ''}`), z: 1000 });
     if (SXG.tools) SXG.tools.setNear(meSpot || null);
@@ -6945,8 +6949,9 @@ span.cal-day.has { cursor: help; }
     const fl = r['층'] != null && r['층'] !== '' ? `${esc(String(r['층']))}층` : '-';
     const full = String(r['소재지'] || ''); const addr = esc(sxShortAddr(full));
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
-    const off = sxIsOff(r); const rk = sxRowKey(r);
-    return `<tr class="${[same ? 'lot' : '', off ? 'off' : ''].filter(Boolean).join(' ')}"><td class="ck-td"><input type="checkbox" data-act="sx-drop" data-v="${esc(rk)}" ${off ? 'checked' : ''} aria-label="${esc(String(r['사건번호'] || ''))} 제외"></td><td class="num">${esc(String(r['사건번호'] || '-'))}</td><td class="num">${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}${won(sxPerPy(r))}`
+    const off = sxIsOff(r); const rk = sxRowKey(r); const lk = sxLotKey(r['소재지']);
+    /* 줄을 누르면 지도의 그 지번 점을 고른다(다시 누르면 풀림) — 지도에서 점을 눌러도 이 줄들이 같이 골라진다 */
+    return `<tr class="${[same ? 'lot' : '', off ? 'off' : '', lk && SXG.focus === lk ? 'focus' : ''].filter(Boolean).join(' ')}" data-act="sx-row" data-v="${esc(lk)}"><td class="ck-td"><input type="checkbox" data-act="sx-drop" data-v="${esc(rk)}" ${off ? 'checked' : ''} aria-label="${esc(String(r['사건번호'] || ''))} 제외"></td><td class="num">${esc(String(r['사건번호'] || '-'))}</td><td class="num">${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}${won(sxPerPy(r))}`
       + `<td>${rate}</td><td class="num">${int(r['유찰회수'], '회')}</td><td class="num">${int(r['응찰자수'], '명')}</td>`
       + `${sxAreaCell(m2)}${sxElevCell(full)}<td class="num">${built}</td><td class="num">${age}</td>${sxDistCell(full)}<td class="num">${fl}</td><td class="l" title="${esc(full)}"><div class="sx-addr"><span class="addr">${addr || '-'}</span>${same ? '<span class="chips"><span class="same">경매지번</span></span>' : ''}</div></td></tr>`;
   }
@@ -8750,8 +8755,9 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       }
       case 'sx-import': { const f = $('sxFile'); if (f) f.click(); break; }
       case 'sx-drop': sxToggleDrop(v); agPaintTable(); break;
+      case 'sx-row': { if (!v) break; SXG.focus = SXG.focus === v ? '' : v; const p = SXG.spots[v]; if (SXG.focus && p && SXG.mv) SXG.mv.focus(p, 16); sxDrawMap(); sxPaintList(); break; }
       case 'sxm-fs': sxSetFs(!SXG.fs); break;
-      case 'sxm-go': { const g = SXG.groups.find((x) => x.k === v); SXG.focus = SXG.focus === v ? '' : v; if (g && SXG.focus && SXG.mv) SXG.mv.focus(g.p, 16); sxDrawMap(); break; }
+      case 'sxm-go': { const g = SXG.groups.find((x) => x.k === v); SXG.focus = SXG.focus === v ? '' : v; if (g && SXG.focus && SXG.mv) SXG.mv.focus(g.p, 16); sxDrawMap(); sxPaintList(); break; }
       case 'sxm-set': { const k = t.dataset.k; SXM[k] = k === 'radius' ? Number(v) : v; try { localStorage.setItem(SXM_KEY, JSON.stringify(SXM)); } catch (err) { /* 그만 */ } if ($('sxResults')) agPaintTable(); else sxDrawMap(); break; }
       case 'sale-card-menu': saleCardOpen = !saleCardOpen; repaintCardHead(); break;
       case 'item-card-pick': saleCardOpen = false; if (id && id !== S.itemId) { S.itemTabNext = S.itemTab; go('item', id); } else repaintCardHead(); break;
