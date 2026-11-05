@@ -639,6 +639,14 @@ button { cursor: pointer; }
 .app-detail .son-lowcase .adp-mkt-cells .cell > strong.adp-mkt-addr2 { display: block; padding-right: 72px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
 .app-detail .son-lowcase .son-row-links { position: absolute; right: 8px; bottom: auto !important; top: calc(50% + 12px); transform: translateY(-50%); display: inline-flex; gap: 4px; }
 .app-detail .son-lowcase .son-addr-field { padding-right: 64px; }
+/* 네 칸(매매호가 · 평당가 · 전용면적 · 주소)과 비고 — 값 상자를 모두 높이 40 · 위아래 6 · 좌우 8 로 같게, 한 줄 가운데 */
+.app-detail .son-lowcase .adp-mkt-cells .cell { display: flex !important; flex-direction: column; justify-content: flex-start; }
+.app-detail .son-lowcase .adp-mkt-cells .cell > :not(small):not(.son-row-links) { box-sizing: border-box; height: 40px !important; min-height: 40px; margin: 6px 8px !important; }
+.app-detail .son-lowcase .adp-mkt-cells .cell > strong:not(.adp-mkt-addr2) { display: flex !important; align-items: center; justify-content: center; }
+.app-detail .son-lowcase .adp-mkt-cells .cell > strong.adp-mkt-addr2 { line-height: 40px; }
+.app-detail .son-lowcase :is(.adp-mkt-unit, .son-addr-field) { display: flex !important; align-items: center; gap: 6px; }
+.app-detail .son-lowcase :is(.adp-mkt-unit, .son-addr-field) .adp-mkt-input { flex: 1; min-width: 0; height: 40px !important; margin: 0 !important; }
+.app-detail .son-lowcase .son-row-links { top: auto !important; bottom: 15px !important; transform: none !important; }
 #sonAskSlot .adp-mkt-cells .cell > strong.son-auto.son-auto-empty { color: #9aa3b2 !important; }   /* 호가 · 면적을 적기 전 — 안내 글과 같은 회색 */
 #sonAskSlot .son-addr-field { display: flex; align-items: center; gap: 8px; width: 100%; height: 40px; }
 #sonAskSlot .son-addr-field .adp-mkt-input { flex: 1; min-width: 0; }

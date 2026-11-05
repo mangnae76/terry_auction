@@ -9208,7 +9208,7 @@ const goBack = () => router.back();
                   </div>
                   <div class="cell">
                     <small>주소</small>
-                    <span v-if="editingSurvey.listing" class="son-addr-field"><em v-if="!g.sim && subjectBuildingName" class="son-addr-head" :title="subjectBuildingName">{{ subjectBuildingName }}</em><input class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="!g.sim ? (subjectHasDong ? '동층호 입력' : '층호 입력') : '빌라명 · 층 · 호 입력'" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" /></span>
+                    <span v-if="editingSurvey.listing" class="son-addr-field"><em v-if="!g.sim && subjectBuildingName && !webEmbed" class="son-addr-head" :title="subjectBuildingName">{{ subjectBuildingName }}</em><input class="adp-mkt-input" :value="mktVal(lowKeyG(g.sim, i - 1, 'addr'))" :placeholder="webEmbed ? '빌라명 1동 1층 101호' : !g.sim ? (subjectHasDong ? '동층호 입력' : '층호 입력') : '빌라명 · 층 · 호 입력'" @input="setMktVal(lowKeyG(g.sim, i - 1, 'addr'), ($event.target as HTMLInputElement).value)" /></span>
                     <strong v-else :class="['adp-mkt-area1', 'adp-mkt-addr2', { typed: lowAddrTypedG(g.sim, i - 1) }]">{{ lowAddrTextG(g.sim, i - 1) }}</strong>
                     <span class="son-row-links">
                       <button type="button" class="son-map-go planet" aria-label="부동산플래닛" title="부동산플래닛에서 이 줄 주소 보기 — 동 · 지번을 복사해 둡니다" @click.stop="openAskMap(g.sim, 'planet', i - 1)">P</button>
