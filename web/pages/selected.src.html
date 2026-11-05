@@ -5987,7 +5987,7 @@ span.cal-day.has { cursor: help; }
       ];
       const right = [
         locationCardHtml(it, a),
-        statusCardHtml(a),
+        statusCardHtml(it, a),
         ...(isApt && a.aptComplexInfo ? [aptCardHtml(a)] : []),
         ...(isApt && a.arrearsInfo ? [arrearsCardHtml(a)] : []),
       ];
@@ -6102,11 +6102,36 @@ span.cal-day.has { cursor: help; }
     out = out.replace(/<td([^>]*)>([^<]+)<\/td>/g, (m, attr, txt) => `<td${attr} title="${txt}">${txt}</td>`);
     return itCard('bld', '건축물정보', out);
   }
-  function statusCardHtml(a) {
+  /* 물건현황 공시가격 — PDF 금액이 먼저. 없으면 PDF 표기(공시가 1~2억) / 공동주택가격(손품조사 시세분석과 같은 브이월드 조회) */
+  function statusCardHtml(it, a) {
     const full = a.address || a.roadAddress || '';
-    const price = a.officialPriceValue ? `공동주택공시가 ${Number(a.officialPriceValue).toLocaleString('ko-KR')}원`
-      : a.officialPriceBand ? `공시가 구간 ${esc(a.officialPriceBand)} <span class="it-na">(PDF에 공시가격 금액 없음)</span>` : '<span class="it-na">공시가격 정보 없음</span>';
+    let price;
+    if (a.officialPriceValue) price = `공동주택공시가 ${Number(a.officialPriceValue).toLocaleString('ko-KR')}원 <span class="it-na">(PDF)</span>`;
+    else {
+      /* 표기가 없을 때 남는 '1억 미만'은 물건을 만들 때 넣는 기본값이라 PDF 값으로 보이지 않는다 — '1억 이상'은 PDF 에서만 온다 */
+      const note = a.officialPriceNote || (a.officialPriceBand === '1억 이상' ? '공시가 1억 이상' : '');
+      const pdfPart = note ? `${esc(note)} <span class="it-na">(PDF)</span>` : '<span class="it-na">PDF에 공시가격 없음</span>';
+      const pub = CLOUD.pubPrice.get(it.id);
+      if (!pub && CLOUD.T && CLOUD.T.lookupAddress && full) fetchPubFor(it.id);
+      const pubPart = !pub || pub.busy ? '<span class="it-na">공동주택가격 조회 중…</span>'
+        : pub.price ? `공동주택가격 ${Number(pub.price).toLocaleString('ko-KR')}원 <span class="it-na">(${pub.year ? `${esc(pub.year)}년 · ` : ''}시세분석)</span>`
+          : '<span class="it-na">공동주택가격 못 찾음</span>';
+      price = `${pdfPart} / ${pubPart}`;
+    }
     return itCard('status', '물건현황', `<table class="it-kv cols2"><tbody><tr><th rowspan="2">공시가격</th><td>${esc(full)}</td></tr><tr><td>${price}</td></tr></tbody></table>`);
+  }
+  /* 공동주택가격 — 물건마다 한 번(창을 열어 둔 동안). 호실 단위 캐시는 브이월드 쪽에 있다 */
+  async function fetchPubFor(id) {
+    const it = byId(id); if (!it || CLOUD.pubPrice.has(id)) return;
+    const a = detailOf(it);
+    CLOUD.pubPrice.set(id, { busy: true });
+    let got = { price: 0, year: '' };
+    try {
+      const hit = await CLOUD.T.lookupAddress(a.address || a.roadAddress, { withPrice: true });
+      if (hit && hit.price && hit.price.price) got = { price: hit.price.price, year: hit.price.year || '' };
+    } catch (e) { console.error('[PubPrice]', e); }
+    CLOUD.pubPrice.set(id, got);
+    if (S.route === 'item' && S.itemId === id) renderItem();
   }
   function aptCardHtml(a) {
     const c = a.aptComplexInfo; const v = (x) => esc(x || '-');
@@ -7691,7 +7716,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
      로그인 전에는 예시 물건을 보여 주고, 로그인하면 앱과 같은 Firestore 물건으로 바꾼다.
      웹에서 바꾼 중요도·단계·보관·휴지통은 앱 저장소의 함수(saveAuction · archiveAuctions …)로 그대로 적는다 */
   const DEMO_ITEMS = items.slice();
-  const CLOUD = { on: false, synced: false, T: null, auth: null, store: null, raw: new Map(), nearby: new Map(), nearbyBusy: '', geminiUid: null, prefsUid: null, regPrefs: null };
+  const CLOUD = { on: false, synced: false, T: null, auth: null, store: null, raw: new Map(), nearby: new Map(), nearbyBusy: '', pubPrice: new Map(), geminiUid: null, prefsUid: null, regPrefs: null };
   /* 로그인해 있던 사람(새로고침 · 다시 들어옴) — 확인이 끝날 때까지 예시 물건 · '로그인하면' 안내를 그리지 않는다.
      안 그러면 이미 로그인했는데도 잠깐 예시 물건과 로그인 단추가 보였다 */
   const EXPECT_IN = (() => { try { return localStorage.getItem('ta.web.in') === '1'; } catch (e) { return false; } })();

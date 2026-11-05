@@ -36,6 +36,8 @@ export interface ParsedPdfAuction {
   depositValue: number;
   officialPriceValue: number;
   officialPriceBand: '1억 미만' | '1억 이상' | '';
+  /** 매각구분 배지의 공시가 표기 그대로('공시가 1~2억') — 금액 줄이 없는 최신 양식에서 보여 준다 */
+  officialPriceNote: string;
   buildingAreaM2: number;
   buildingAreaPyeong: number;
   landAreaM2: number;
@@ -478,6 +480,11 @@ const parsePdfNearbyEnv = (text: string) => {
 // 구 양식은 '인근역세권 / 인근역 …', 최신 양식은 '도시철도' 아래 한 줄에 노선·거리가 나열된다.
 // 최신 양식의 매각구분 배지에 "공시가 1~2억" / "공시가 1억이하"처럼 공시가 구간이 들어 있다.
 // (공시가격 섹션 자체가 빠진 PDF에서도 구간만은 알 수 있다)
+/** 매각구분 배지의 공시가 표기 그대로 — '공시가 1~2억' */
+const parseOfficialPriceNote = (text: string): string => {
+  const band = firstMatch(text, [/공시가\s*([\d~억이하상만원\s]+?)(?:\/|HUG|$|\n)/]);
+  return band ? `공시가 ${band.replace(/\s+/g, '')}` : '';
+};
 const parseOfficialPriceBand = (text: string): '1억 미만' | '1억 이상' | '' => {
   const band = firstMatch(text, [/공시가\s*([\d~억이하상만원\s]+?)(?:\/|HUG|$|\n)/]);
   if (!band) return '';
@@ -1504,6 +1511,7 @@ export const parseAuctionPdfText = (
     depositValue,
     officialPriceValue,
     officialPriceBand: parseOfficialPriceBand(text),
+    officialPriceNote: parseOfficialPriceNote(text),
     buildingAreaM2,
     buildingAreaPyeong,
     landAreaM2,

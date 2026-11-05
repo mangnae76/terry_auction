@@ -1236,6 +1236,7 @@ export const useAuctionStore = defineStore('auction', () => {
         occupancyRows,
         officialPriceBand,
         officialPriceValue: parsed.officialPriceValue || base.officialPriceValue,
+        officialPriceNote: parsed.officialPriceNote || base.officialPriceNote || '',
         ownerName: parsed.ownerName || base.ownerName,
         debtorName: parsed.debtorName || base.debtorName,
         takeoverContent: parsed.takeoverContent,

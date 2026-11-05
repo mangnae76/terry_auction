@@ -504,6 +504,8 @@ export interface AuctionDetail {
   occupancyRows: OccupancyInfoRow[];
   officialPriceBand: '1억 미만' | '1억 이상';
   officialPriceValue: number;
+  /** PDF 매각구분 배지의 공시가 표기 그대로('공시가 1~2억'). 예전 물건엔 없다 */
+  officialPriceNote?: string;
   ownerName: string;
   debtorName: string;
   ownerDebtorStatus: '점유자O' | '알수없음';
