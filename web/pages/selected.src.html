@@ -975,6 +975,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-f { display: grid; gap: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .sx-f select, .sx-pair input { width: 100%; min-width: 0; height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 500; }
 .sx-f select.ph { color: var(--faint); }
+.sx-f select.ph:not(:disabled) { color: var(--text); }   /* 고를 수 있는 칸은 '시도 선택'도 까만 글 — 흐리면 잠긴 칸처럼 보인다 */
 .sx-f select:disabled { background: var(--band); }
 .sx-f .sx-seg { grid-auto-columns: 1fr; }
 .sx-fgroup { display: grid; gap: 8px; }   /* 지역 · 물건종류 네 칸은 이름표 없이 촘촘히 */
