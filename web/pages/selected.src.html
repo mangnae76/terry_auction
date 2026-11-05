@@ -2674,7 +2674,9 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .rg-lead { position: relative; padding-left: 15px; }
 .rg-lead::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--nav-orange); }
 .reg-content > .rg-lead + .rg-sec { margin-top: 32px; }
-.reg-content > * + .rg-lead { margin-top: 32px; }   /* 자동등록 상자 → 직접입력 안내 사이도 넉넉히 */
+.reg-content > * + .rg-lead { margin-top: 32px; }
+.rg-div { height: 0; margin: 28px 0 0; border: 0; border-top: 1px solid var(--line-2); }
+.reg-content > .rg-div + * { margin-top: 28px; }   /* 자동등록 상자 → 직접입력 안내 사이도 넉넉히 */
 .rg-lead p { margin: 0; word-break: keep-all; }   /* 제목 · 두 줄 · 아래 자동등록 제목 왼쪽 선을 하나로 */
 .rg-lead .l1 { font-size: 16px; font-weight: 700; line-height: 1.5; color: var(--text); }
 .rg-lead .l2 { margin-top: 2px; font-size: 14px; line-height: 1.5; color: var(--muted); }
@@ -5537,6 +5539,8 @@ span.cal-day.has { cursor: help; }
           <button type="button" class="rg-btn add" data-act="manual-add">${I.plus}물건등록하기</button>
         </div>
       </section>
+      <!-- 직접입력 상자와 아래 AI 자동 파싱(올린 결과) 사이를 가르는 선 -->
+      <hr class="rg-div" aria-hidden="true">
       <section class="rg-results" id="rgDrop" aria-label="${PC.title}">
         <div class="rg-head"><h2>${PC.ic}${PC.title}</h2><span class="rg-sub">${PC.tip}</span>
           <span class="rg-stats"><span>총 등록물건<b class="num">${n.all}</b>개</span><span class="n-new">신규<b class="num">${n.nw}</b></span><span class="n-chg">변경<b class="num">${n.ch}</b></span><span class="n-err">오류<b class="num">${n.er}</b></span>${R.rows.length ? `<button type="button" class="rg-clear-btn" data-act="rg-clear" aria-label="목록 비우기" data-tip="목록 비우기" data-tip-pos="below">${I.trash}</button>` : ''}</span>
