@@ -721,7 +721,7 @@ button { cursor: pointer; }
 .mk-sale .ag-link .ag-tri { margin-left: 4px; vertical-align: 0; }
 .mk-sale .ag-link { border: 0; background: none; padding: 0 2px; font: inherit; font-size: 13px; font-weight: 600; color: var(--blue); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .mk-sale .ag-cov-list { margin-top: 8px; }
-.mk-sale .ag-covbox { margin-top: 4px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }   /* 읍면동 낙찰사례 수집데이터 이름 줄 + 표 — 위 수집 상자와 같은 테두리 · 라운드 */
+.mk-sale .ag-covbox { margin-top: 0; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }   /* 읍면동 낙찰사례 수집데이터 이름 줄 + 표 — 위 수집 상자와 같은 테두리 · 라운드 */
 .mk-sale .ag-covbox > .ag-cov:first-child { margin-top: 0; }
 .mk-sale .ag-covbox small.ag-covttl { font-size: 16px; font-weight: 800; letter-spacing: -.02em; color: var(--text); margin-right: 6px; }   /* 제목 크기 = 위 '경매 인근 매각물건 분석' */
 .mk-sale .ag-covbox .ag-cov-sum { font-size: 14px; }   /* 3곳 · 저장 총 N건도 같은 크기 */   /* 바깥 상자 없이 표 테두리만 — 표 오른쪽 끝 = 윗줄 목록보기 끝 */
@@ -744,7 +744,7 @@ button { cursor: pointer; }
 .mk-sale .ag-msg.off { color: var(--muted); }
 .mk-sale .ag-cov { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .mk-sale .ag-cov small { font-size: 13px; color: var(--muted); margin-right: 4px; }
-.mk-sale .ag-qline { margin-top: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }   /* 읍면동으로 수집 · 사건번호로 수집 · 종류 + 추가 — 세 묶음 한 줄(2026-11-06) */
+.mk-sale .ag-qline { margin-top: 0; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }   /* 읍면동으로 수집 · 사건번호로 수집 · 종류 + 추가 — 세 묶음 한 줄(2026-11-06) */
 .mk-sale .ag-q-line { gap: 12px; margin-top: 0; flex-wrap: nowrap; }   /* 왼쪽 끝 ~ 추가 오른쪽 끝 = 위 옥션원 ~ 처음부터새로 줄과 같은 폭(테두리 1 + 안쪽 8) — 칸이 늘어나 채운다 */
 .mk-sale .ag-qgrp { display: inline-flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }   /* 묶음마다 테두리 없이 — 바깥 상자 하나(알약까지)로 */
 .mk-sale .ag-qgrp > small { margin-right: 0; white-space: nowrap; }
@@ -916,7 +916,7 @@ button { cursor: pointer; }
 /* 잠금은 html.mk-map-lock 클래스로(syncMapLock) — html:has(…) 로 두면 지도 타일이 붙고 떨어질 때마다 문서 전체 스타일을 다시 셈해 무거웠다(2026-11-03) */
 html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior: none; }
 /* ===== 시장분석 › 경매사례 = 인근 매각물건 분석 (시안 A, 2026-11-03) — 위 수집 띠 · 왼쪽 검색조건 · 오른쪽 결과 ===== */
-.sx { --sx-accent: var(--hot-text); --sx-tint: var(--hot-bg); --sx-bar: #9db8d4; --sx-ok: #2f9e63; display: grid; gap: 14px; padding-bottom: 56px; }
+.sx { --sx-accent: var(--hot-text); --sx-tint: var(--hot-bg); --sx-bar: #9db8d4; --sx-ok: #2f9e63; display: grid; gap: 12px; padding-bottom: 56px; }   /* 경매사례 간격 — 상자 사이는 어디서나 12, 상자 안쪽은 16(2026-11-06 통일) */
 :root[data-theme="dark"] .sx { --sx-bar: #3d5f86; --sx-ok: #5bd394; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sx { --sx-bar: #3d5f86; --sx-ok: #5bd394; } }
 .sx .num { font-variant-numeric: tabular-nums; }
@@ -924,8 +924,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-sec { margin: 0; font-size: 14px; font-weight: 800; color: var(--text); }
 .sx-grow { flex: 1 1 auto; }
 /* 수집 띠 */
-.sx-top { display: grid; gap: 10px; }
-.sx-top > .sx-lead { margin: 4px 0 6px; }   /* 경매사례 맨 위 주황 막대 안내 */
+.sx-top { display: grid; gap: 12px; }
+.sx-top > .sx-lead { margin: 0; }   /* 경매사례 맨 위 주황 막대 안내 */
 .sx-titlebar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--card-line); }
 .sx-titlebar h2 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -.02em; color: var(--text); }
 .sx-tbtn { height: 34px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
@@ -933,13 +933,13 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-tbtn:disabled { opacity: .5; cursor: default; }
 .sx-tbtn.solid { background: var(--nav); border-color: var(--nav); color: #fff; }
 .sx-tbtn.solid:hover { background: #2b4078; color: #fff; }
-.sx-collect { padding: 12px 16px; display: grid; gap: 10px; }
+.sx-collect { padding: 16px; display: grid; gap: 12px; }
 .sx-collect-row { display: flex; align-items: center; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; }   /* 옥션원 ~ 처음부터새로를 바깥 테두리 하나로 */
 .sx-vsep { width: 1px; height: 22px; background: var(--line); }
 .sx-src { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .sx-conn { display: inline-flex; align-items: center; gap: 4px; height: 16px; padding: 0 7px; line-height: 16px; border-radius: 999px; background: var(--band); color: var(--muted); font-size: 12px; font-weight: 400; white-space: nowrap; }   /* 굵기 없이 */
 .sx-conn i { width: 5px; height: 5px; border-radius: 50%; background: var(--faint); }
-.sx-verline { margin: 0 2px -6px 0; text-align: right; font-size: 12px; font-weight: 400; color: var(--muted); }   /* 판 번호 — 연결 알약에서 빼 엑셀다운로드 위, 오른쪽 끝 맞춤(2026-11-06) */
+.sx-verline { margin: 0 2px -8px 0; text-align: right; font-size: 12px; font-weight: 400; color: var(--muted); }   /* 판 번호 — 연결 알약에서 빼 엑셀다운로드 위, 오른쪽 끝 맞춤(2026-11-06) */
 /* 꺼진 불 — 불 꺼진 전구처럼 짙은 회색 구슬(안쪽 그늘 · 흐린 하이라이트), 빛 없음 */
 .sx-conn.off i { width: 5px; height: 5px; background: radial-gradient(circle at 34% 30%, #d5d9e0 0 10%, #9aa3b0 35%, #6b7482 70%, #4f5763 100%); box-shadow: inset 0 -1px 2px rgba(0, 0, 0, .35); }
 /* 막 꺼질 때 — 녹색 빛이 한 번 깜빡이다 사그라든다(1.6초). --off-d 로 다시 그려도 이어서 */
@@ -1012,9 +1012,9 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-meta { color: var(--muted); white-space: nowrap; }
 .mk-sale .ag-cov-meta { margin-left: auto; font-size: 13.5px; }
 .sx-qtail { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; font-size: 13.5px; }
-.sx-manage { display: grid; gap: 8px; }   /* 위 수집 줄 상자와 사이 가르는 선 없이(2026-11-06) */
+.sx-manage { display: grid; gap: 12px; }   /* 위 수집 줄 상자와 사이 가르는 선 없이(2026-11-06) */
 /* 본문 — 왼쪽 검색조건 · 오른쪽 결과 */
-.sx-main { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 16px; align-items: start; }
+.sx-main { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 12px; align-items: start; }
 .sx-filters { padding: 16px; display: grid; gap: 14px; position: sticky; top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--item-shell-h, 0px) + 12px); }   /* 위 붙박이 고정카드 아래에 붙는다 */
 .sx-f { display: grid; gap: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .sx-f select, .sx-pair input { width: 100%; min-width: 0; height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 500; }
@@ -1031,11 +1031,11 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-btn:disabled { background: var(--line); color: var(--faint); cursor: default; }
 .sx-btn.ghost { background: var(--surface); color: var(--text); border: 1px solid var(--line); font-weight: 600; }
 .sx-why { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.6; }
-.sx-results { display: grid; gap: 14px; min-width: 0; }
+.sx-results { display: grid; gap: 12px; min-width: 0; }
 /* 넓은 화면 — 왼쪽 검색조건은 오른쪽 예상 입찰가 · 지표 · 매각가율 분포 세 줄 높이만큼(아래 끝 = 분포 상자 아래 끝),
    검색리스트는 그 아래 줄에 왼쪽 끝부터 꽉 채운다(2026-11-06). 결과 묶음(#sxResults)은 껍데기만 풀어 칸들이 바로 이 격자에 선다 */
 @media (min-width: 901px) {
-  .sx-main { row-gap: 14px; }
+  .sx-main { row-gap: 12px; }
   .sx-main > .sx-results { display: contents; }
   .sx-main > .sx-filters { grid-column: 1; grid-row: 1 / span 3; align-self: stretch; align-content: start; position: static; }
   .sx-main > .sx-results > * { grid-column: 2; min-width: 0; }
@@ -1045,7 +1045,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-wait { padding: 40px 24px; display: grid; gap: 8px; justify-items: center; text-align: center; color: var(--muted); font-size: 14px; }
 .sx-wait > b { color: var(--text); font-size: 16px; }
 /* 분석결과 — 감정가를 적으면 예상 입찰가 두 칸이 바로 바뀐다 */
-.sx-hero { padding: 18px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.sx-hero { padding: 16px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
 .sx-where { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .sx-where h2 { margin: 0; font-size: 18px; font-weight: 800; text-wrap: balance; }
 .sx-where span { font-size: 13px; color: var(--muted); }
@@ -1071,7 +1071,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-metrics .v { font-size: 17px; font-weight: 700; color: var(--text); }
 .sx-metrics .m.key .v { color: var(--sx-accent); }
 /* 매각가율 분포 */
-.sx-dist { padding: 16px 18px; display: grid; gap: 8px; }
+.sx-dist { padding: 16px; display: grid; gap: 8px; }
 .sx-dist-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .sx-legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); }
 .sx-legend span::before { content: ""; display: inline-block; width: 14px; margin-right: 6px; vertical-align: middle; border-top: 2px solid var(--sx-accent); }
@@ -1090,8 +1090,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-chart .tag.avg { fill: var(--sx-accent); }
 .sx-chart .tag.med { fill: var(--text); }
 /* 검색리스트 */
-.sx-list { padding-top: 14px; overflow: hidden; }
-.sx-list-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 0 16px 10px; }
+.sx-list { padding-top: 16px; overflow: hidden; }
+.sx-list-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 0 16px 12px; }
 .sx-count { font-size: 13px; color: var(--muted); }
 .sx-count b { color: var(--text); }
 .sx-q { width: 280px; max-width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; }
@@ -1106,8 +1106,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-tbl .kind-me { display: inline-block; background: #e03e3e; color: #fff; font-size: 12px; padding: 1px 6px; border-radius: 3px; }   /* 첫 줄 경매물건 — 시세분석 첫 줄 .kind.me 처럼 빨간 칩(글자는 웹 하한 12) */
 .sx-ptag { font-size: 13px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 5px; padding: 3px 8px; }   /* '근거' 칩 — 손품조사 시세분석 .pa-tag 와 같은 꼴 */
 /* 지도 — 손품조사 시세분석 지도와 같은 꼴(핀 · 반경 원 · 이름표) */
-.sx-mapcard { padding: 14px 16px 16px; }
-.sx-map-h { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.sx-mapcard { padding: 16px; }
+.sx-map-h { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
 .sx-mlab { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .sx-mseg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .sx-mseg button { height: 30px; padding: 0 12px; border: 0; border-radius: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
