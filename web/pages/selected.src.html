@@ -936,7 +936,14 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-step.now { border-color: var(--blue); background: var(--surface); font-weight: 800; }
 .sx-step.now b { background: var(--blue); color: #fff; }
 .sx-step:disabled, .sx-sub:disabled { opacity: .5; cursor: default; }
-.sx-step:not(:disabled):hover { border-color: var(--blue); }
+/* 누를 수 있는 단계는 파랑으로 또렷하게 — 회색 상자는 누를 수 없을 때만(2026-11-05) */
+.sx-step:not(:disabled) { border-color: #b9cbf5; background: var(--blue-soft); color: var(--blue); }
+.sx-step:not(:disabled) b { background: var(--blue); color: #fff; }
+.sx-step:not(:disabled):hover { border-color: var(--blue); background: #dce7ff; }
+:root[data-theme="dark"] .sx-step:not(:disabled) { border-color: rgba(120, 160, 255, .45); background: rgba(80, 130, 255, .14); }
+:root[data-theme="dark"] .sx-step:not(:disabled):hover { background: rgba(80, 130, 255, .24); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .sx-step:not(:disabled) { border-color: rgba(120, 160, 255, .45); background: rgba(80, 130, 255, .14); } :root:not([data-theme="light"]) .sx-step:not(:disabled):hover { background: rgba(80, 130, 255, .24); } }
+.sx-step.done:not(:disabled) b { background: var(--sx-ok); }
 .sx-sub { height: 34px; padding: 0 10px; border: 0; background: none; color: var(--blue); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .sx-sub.run { color: var(--muted); }
 .sx-prog { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 13px; color: var(--muted); white-space: nowrap; }
