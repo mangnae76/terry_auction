@@ -1294,6 +1294,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rt-doc-h { display: flex; align-items: center; gap: 6px; }   /* 칩은 서류 이름(PDF) 바로 옆 — X 위 오른쪽 끝으로 밀지 않는다 */
 .rt-doc-h b { font-size: 14px; font-weight: 700; color: var(--text); }
 .rt-doc-h b small { font-size: 12px; font-weight: 500; color: var(--muted); }
+.rt-must { margin-left: auto; }   /* 필수 칩은 오른쪽 끝 — 올림 칩은 PDF 바로 옆 */
 .rt-tag { padding: 2px 7px; border-radius: 5px; font-size: 12px; background: var(--surface-3); color: var(--muted); white-space: nowrap; }
 .rt-tag.need { background: color-mix(in srgb, var(--nav-orange) 15%, var(--surface)); color: #c2410c; }
 .rt-tag.ok { background: color-mix(in srgb, #15803d 15%, var(--surface)); color: #15803d; }
@@ -7091,7 +7092,7 @@ span.cal-day.has { cursor: help; }
     const used = ((card.querySelector('.adp-ai-used') || {}).textContent || '').trim();
     const spec = rows[0];
     const docBox = (r) => `<div class="rt-doc ${r.has ? 'has' : ''}">
-        <div class="rt-doc-h"><b>${r.name}${r.has ? ` <small>${r.pdf ? 'PDF' : '사진'}</small>` : ' (PDF)'}</b><span class="rt-tag ${r.has ? 'ok' : r.need ? 'need' : ''}">${r.has ? '올림' : r.need ? '필수' : '선택'}</span></div>
+        <div class="rt-doc-h"><b>${r.name}${r.has ? ` <small>${r.pdf ? 'PDF' : '사진'}</small>` : ' (PDF)'}</b>${r.has ? '<span class="rt-tag ok">올림</span>' : ''}${r.need ? '<span class="rt-tag need rt-must">필수</span>' : ''}</div>
         ${r.has ? `<div class="rt-file"><button type="button" class="rt-name" data-act="rt-open" data-v="${r.i}" title="열기">${esc(r.file)}</button><button type="button" class="rt-x" data-act="rt-del" data-v="${r.i}" aria-label="${r.name} 지우기">${I.x}</button></div>`
           : '<p>법원경매정보 → 물건 상세 화면에서 무료로 내려받은 PDF를 그대로 올려 주세요. 말소기준권리 날짜, 세입자 신고 내용, 인수되는 권리, 비고란이 모두 이 서류에 있습니다.</p>'}
         ${r.err ? `<p class="rt-err">${esc(r.err)}</p>` : ''}
