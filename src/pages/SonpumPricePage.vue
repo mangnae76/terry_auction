@@ -1035,6 +1035,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .conds:has(> .elev-pick) > .simrow { grid-column: 1 / 5; grid-row: 2; }
 .conds:has(> .elev-pick) > .acts-r { grid-column: 5; grid-row: 2; }
 .conds:has(> .elev-pick) > .acts-r .save-btn { flex: 1; width: auto; }
+.conds:has(> .elev-pick) > .acts-r { justify-self: stretch; }
+.conds:has(> .elev-pick) > .acts-r .reset-btn:only-child { flex: 1; width: auto; }   /* 시세예측(저장 없음) — 초기화가 칸을 꽉 채워 위 '층' 상자 오른쪽 끝과 맞는다 */
 .conds > .floor-pick .pa-seg { width: auto; }
 /* 웹 기본 화면 위 줄 다섯 — 상자 폭을 칸 폭에 꽉 맞춰 모두 같게, 이름 칸(반경 · 거래 · 기준 · 엘베 · 층)도 같은 폭 → 고르기 상자 시작점이 같다 */
 .conds:has(> .elev-pick) > .pa-lab { display: grid !important; grid-template-columns: 46px minmax(0, 1fr); gap: 6px; width: 100%; box-sizing: border-box; padding-left: 10px !important; padding-right: 8px !important; }   /* 이름 칸 46 — '기준 ⓘ'까지 들어가게 */
