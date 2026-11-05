@@ -1045,7 +1045,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-wait { padding: 40px 24px; display: grid; gap: 8px; justify-items: center; text-align: center; color: var(--muted); font-size: 14px; }
 .sx-wait > b { color: var(--text); font-size: 16px; }
 /* 분석결과 — 감정가를 적으면 예상 입찰가 두 칸이 바로 바뀐다 */
-.sx-hero { padding: 16px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.sx-hero { padding: 16px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
 .sx-where { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .sx-where h2 { margin: 0; font-size: 18px; font-weight: 800; text-wrap: balance; }
 .sx-where span { font-size: 13px; color: var(--muted); }
@@ -6848,6 +6848,7 @@ span.cal-day.has { cursor: help; }
       n: rows.length, rates, sold: sxMean(sold), soldMed: sxMed(sold), appr: sxMean(both.map((r) => Number(r['감정가']))),
       avg: sxMean(rates), med: sxMed(rates), lo: rates.length ? Math.min(...rates) : null, hi: rates.length ? Math.max(...rates) : null,
       all: both.length ? sum('매각가') / sum('감정가') : null, bids: sxMean(bids),
+      py: sxMean(rows.map((r) => sxPerPy(r)).filter((v) => v > 0)),   /* 평균 매각평당가 — 시세분석 평균 평당가와 같은 셈 */
     };
     SX.statsOf = rows0; SX.statsDrop = sxDropVer;
     return SX.stats;
@@ -6874,6 +6875,14 @@ span.cal-day.has { cursor: help; }
     /* 금액은 일의 자리까지 빨갛게 — 왼쪽 경매물건 감정가 칸과 같은 크기 · 같은 줄(2026-11-06) */
     return `<span class="sx-vrow"><span class="v num" id="sxBid${k}">${ok ? `${Math.round(my * rate).toLocaleString('ko-KR')}원` : '-'}</span>${ok ? `<button type="button" class="sx-copy" data-act="sx-bid-copy" data-v="${Math.round(my * rate)}" aria-label="예상 입찰가 복사"${tip('일의 자리까지 복사')}>${I.copy}</button>` : ''}</span>`
       + `<span class="r" id="sxBid${k}r">${rate != null ? `감정가 × ${sxPct(rate)}` : ''}${!ok && rate != null ? ' · 감정가를 입력하세요' : ''}</span>`;
+  }
+  /* 넷째 칸 — 시세분석 매도가 예상과 같은 셈: 평균 매각평당가 × 경매물건 전용 평(고정카드의 전용면적) */
+  function sxPyBidHtml(py) {
+    const me = sxMe(); const m2 = me ? Number(me.bldg) : 0; const myPy = m2 > 0 ? m2 / 3.305785 : 0;
+    const ok = py > 0 && myPy > 0; const v = ok ? Math.round(py * myPy) : 0;
+    const note = !py ? '매각평당가를 낼 매각사례가 없습니다' : !me ? '물건카드교체로 경매물건을 고르세요' : !(myPy > 0) ? '경매물건 전용면적이 없습니다' : `평당 ${agWon(py)} × ${myPy.toFixed(1)}평`;
+    return `<span class="sx-vrow"><span class="v num">${ok ? `${v.toLocaleString('ko-KR')}원` : '-'}</span>${ok ? `<button type="button" class="sx-copy" data-act="sx-bid-copy" data-v="${v}" aria-label="예상 입찰가 복사"${tip('일의 자리까지 복사')}>${I.copy}</button>` : ''}</span>`
+      + `<span class="r">${esc(note)}</span>`;
   }
   function sxPaintBids() {
     const rows = sxRows(); if (!rows) return;
@@ -7081,7 +7090,8 @@ span.cal-day.has { cursor: help; }
     const hero = `<section class="sx-card sx-hero" aria-label="분석결과"><div class="sx-where"><h2>${esc(where)} · ${esc(q.kind || '전체')}</h2><span>${esc(conds)}</span></div>`
       + `<div class="sx-my"><label for="sxMy">경매물건 감정가</label><input id="sxMy" class="num" inputmode="numeric" autocomplete="off" placeholder="예: 235,000,000 또는 2억3500만" value="${esc(SX.my || '')}"><small>사건 고정카드에서 자동으로 입력합니다</small></div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각가율</span>${sxBidHtml('A', st.avg)}</div>`
-      + `<div class="sx-bid"><span class="k">예상 입찰가 · 중앙값 매각가율</span>${sxBidHtml('B', st.med)}</div></section>`;
+      + `<div class="sx-bid"><span class="k">예상 입찰가 · 중앙값 매각가율</span>${sxBidHtml('B', st.med)}</div>`
+      + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각평당가</span>${sxPyBidHtml(st.py)}</div></section>`;
     const metrics = [['매각건수', `${st.n.toLocaleString('ko-KR')}건`], ['평균 감정가', sxWon(st.appr)], ['평균 매각가', sxWon(st.sold)], ['중앙값 매각가', sxWon(st.soldMed)],
       ['평균 매각가율', sxPct(st.avg), 1], ['중앙값 매각가율', sxPct(st.med), 1], ['최저 매각가율', sxPct(st.lo)], ['최고 매각가율', sxPct(st.hi)],
       ['전체 매각가율', sxPct(st.all)], ['평균 응찰자수', st.bids != null ? `${st.bids.toFixed(1)}명` : '-']]
