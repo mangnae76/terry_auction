@@ -689,7 +689,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         </button>
         <p v-if="!fsList.length" class="none">지도에 유사물건이 없습니다.</p>
       </div>
-      <div class="conds">
+      <div :class="['conds', { web: webEmbed }]">
         <span class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경">
           <button v-for="r in RADII" :key="r" type="button" role="radio" :class="{ on: radius === r }" :aria-checked="radius === r" @click="radius = r">{{ radText(r) }}</button>
         </span></span>
@@ -955,7 +955,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .conds > .pa-lab .pa-seg { flex: 1; min-width: 0; display: flex; gap: 2px; }
 .conds > .pa-lab .pa-seg button { flex: 1 1 0; min-width: 0; padding: 0; text-align: center; }
 /* 칸이 좁으면 이름(반경 · 거래 · 기준)을 빼고 고르기만 — 전체화면 오른쪽 칸 · 좁은 창 */
-.conds { container-type: inline-size; }
+.conds.web { container-type: inline-size; position: relative; z-index: 5; }   /* 웹만 — 말풍선이 아래 상자(목록 · 표)에 가리지 않게 위로 */
+.conds.web > .pa-lab { position: relative; }   /* '기준 ⓘ' 말풍선은 그 칸 바로 아래에 */
 @container (max-width: 760px) {
   .conds > .pa-lab { font-size: 0; gap: 0; }
   .conds:has(> .elev-pick) > .pa-lab { grid-template-columns: 0 minmax(0, 1fr); gap: 0; }
