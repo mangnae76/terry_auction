@@ -7092,9 +7092,10 @@ span.cal-day.has { cursor: help; }
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각가율</span>${sxBidHtml('A', st.avg)}</div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 중앙값 매각가율</span>${sxBidHtml('B', st.med)}</div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각평당가</span>${sxPyBidHtml(st.py)}</div></section>`;
-    const metrics = [['매각건수', `${st.n.toLocaleString('ko-KR')}건`], ['평균 감정가', sxWon(st.appr)], ['평균 매각가', sxWon(st.sold)], ['중앙값 매각가', sxWon(st.soldMed)],
-      ['평균 매각가율', sxPct(st.avg), 1], ['중앙값 매각가율', sxPct(st.med), 1], ['최저 매각가율', sxPct(st.lo)], ['최고 매각가율', sxPct(st.hi)],
-      ['전체 매각가율', sxPct(st.all)], ['평균 응찰자수', st.bids != null ? `${st.bids.toFixed(1)}명` : '-']]
+    /* 지표 배치(2026-11-06) — 위 줄은 건수 · 금액, 아래 줄은 매각가율. 세로로 짝을 맞춘다:
+       감정가 ↔ 전체 매각가율(총 매각가 ÷ 총 감정가) · 평균 매각가 ↔ 평균 매각가율 · 중앙값 매각가 ↔ 중앙값 매각가율, 양 끝은 최저 · 최고 매각가율 */
+    const metrics = [['매각건수', `${st.n.toLocaleString('ko-KR')}건`], ['평균 감정가', sxWon(st.appr)], ['평균 매각가', sxWon(st.sold)], ['중앙값 매각가', sxWon(st.soldMed)], ['평균 응찰자수', st.bids != null ? `${st.bids.toFixed(1)}명` : '-'],
+      ['최저 매각가율', sxPct(st.lo)], ['전체 매각가율', sxPct(st.all)], ['평균 매각가율', sxPct(st.avg), 1], ['중앙값 매각가율', sxPct(st.med), 1], ['최고 매각가율', sxPct(st.hi)]]
       .map(([k, v, key]) => `<div class="m${key ? ' key' : ''}"><span class="k">${k}</span><span class="v num">${v}</span></div>`).join('');
     const dist = st.rates.length
       ? `<section class="sx-card sx-dist" aria-label="매각가율 분포"><div class="sx-dist-h"><h3 class="sx-sec">매각가율 분포 · ${st.rates.length.toLocaleString('ko-KR')}건</h3><div class="sx-legend"><span>평균</span><span class="med">중앙값</span><span class="over">100% 이상</span></div></div>${sxChart(st)}</section>`
