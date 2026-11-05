@@ -922,7 +922,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-tbtn.solid { background: var(--nav); border-color: var(--nav); color: #fff; }
 .sx-tbtn.solid:hover { background: #2b4078; color: #fff; }
 .sx-collect { padding: 12px 16px; display: grid; gap: 10px; }
-.sx-collect-row { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }   /* 옥션원 ~ 처음부터새로를 오른쪽 끝(엑셀다운로드 끝)에 맞춤 */
+.sx-collect-row { display: flex; align-items: center; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; }   /* 옥션원 ~ 처음부터새로를 바깥 테두리 하나로 */
 .sx-vsep { width: 1px; height: 22px; background: var(--line); }
 .sx-src { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .sx-conn { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border-radius: 999px; background: var(--band); color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
@@ -982,6 +982,14 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-stepcol { display: grid; gap: 8px; min-width: 0; }   /* 윗줄 ② · ③ · 처음부터새로, 아랫줄 진행 막대(같은 너비) */
 .sx-steprow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .sx-chkbox { height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; }
+/* 옥션원 ~ 처음부터새로 — 한 줄 가득(왼쪽 끝 ~ 엑셀다운로드 오른쪽 끝), 상자 크기 고르게(2026-11-06).
+   묶음 껍데기는 풀고(display: contents) 단추 하나 = 한 몫. 사이트 두 칸 · 기간 세 칸은 그 칸 수만큼 몫을 받는다 */
+.sx-collect-row :is(.sx-src, .sx-steps, .sx-stepcol, .sx-steprow, .sx-step2) { display: contents; }
+.sx-collect-row .sx-seg[data-n="2"] { flex: 2 1 0; }
+.sx-collect-row .sx-seg[data-n="3"] { flex: 3 1 0; }
+.sx-collect-row .sx-seg button { height: 34px; font-size: 13.5px; }
+.sx-collect-row :is(.sx-step, .sx-chkbox) { flex: 1 1 0; justify-content: center; }
+.sx-collect-row .sx-vsep { flex: none; margin: 0 4px; }
 .sx-bar { flex: 1 1 auto; min-width: 96px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .sx-bar b { display: block; height: 100%; background: var(--blue); transition: width .3s; }
 .sx-stop { height: 30px; padding: 0 12px; border: 1px solid var(--sx-accent); border-radius: 8px; background: none; color: var(--sx-accent); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
@@ -6750,7 +6758,7 @@ span.cal-day.has { cursor: help; }
     const offFx = !online && offMs < 1600 ? ` going-off" style="--off-d:-${offMs}ms` : '';
     const conn = online ? `<span class="sx-conn on"><i></i>My agent Connecting · ${ago}초 전${s.version ? ` · <span class="sx-ver">${esc(agVer(s.version))}</span>` : ''}</span>`
       : `<span class="sx-conn off${offFx}"><i></i>My agent Disconnected<span class="sx-info" tabindex="0" data-tip="컴퓨터에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다" data-tip-pos="left" aria-label="컴퓨터에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span></span>`;
-    const seg = (k, opts) => `<div class="sx-seg sm" role="group">${opts.map(([v, t]) => `<button type="button" class="${String(agSel[k]) === String(v) ? 'on' : ''}" data-act="ag-sel" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div>`;
+    const seg = (k, opts) => `<div class="sx-seg sm" data-n="${opts.length}" role="group">${opts.map(([v, t]) => `<button type="button" class="${String(agSel[k]) === String(v) ? 'on' : ''}" data-act="ag-sel" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div>`;
     /* 대기열수집 — 도우미 2026.11.01-7 부터. 도는 동안은 단추를 켜 둔다 */
     const qVerOk = !online || agVerAtLeast(s.version, [2026, 11, 1, 7]);
     const qRun = busy && (AG.lastSent === 'queue' || /^(대기열|읍면동) /.test(String(s.message || '')));
@@ -6880,7 +6888,7 @@ span.cal-day.has { cursor: help; }
     /* 한 줄에 세 묶음 — [읍면동으로 수집 · 시도 · 시군구 · 동] [사건번호로 수집 · 사건번호] [종류 · 추가](2026-11-06). 종류는 둘이 같이 쓴다.
        추가는 고른 동 · 넣은 사건번호를 한 번에 올린다. 알약(동 · 사건)은 그 아래 한 줄로 */
     const line = `<div class="ag-cov ag-q-tools ag-q-line"><span class="ag-qgrp"><small>읍면동으로 수집</small>${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}</span>`
-      + (AG_CASE_ADD ? `<span class="ag-qgrp"><small>사건번호로 수집</small><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"></span>` : '')
+      + (AG_CASE_ADD ? `<span class="sx-vsep" aria-hidden="true"></span><span class="ag-qgrp"><small>사건번호로 수집</small><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"></span>` : '')
       + `<span class="ag-qkind"><div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span>${tail}</div>`;
     const chips = dongChips + caseChips;
     return `<div class="ag-qline">${line}${chips || hint ? `<div class="ag-cov">${chips}${hint}</div>` : ''}</div>`;
