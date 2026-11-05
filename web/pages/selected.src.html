@@ -975,6 +975,10 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-f select.ph { color: var(--faint); }
 .sx-f select:disabled { background: var(--band); }
 .sx-f .sx-seg { grid-auto-columns: 1fr; }
+.sx-fgroup { display: grid; gap: 8px; }   /* 지역 · 물건종류 네 칸은 이름표 없이 촘촘히 */
+.sx-inl { position: relative; }
+.sx-inl > span { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 13px; font-weight: 500; color: var(--faint); pointer-events: none; }
+.sx-inl select { padding-left: 74px; }
 .sx-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; align-items: center; color: var(--muted); font-weight: 500; }
 .sx-fbtns { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; }
 .sx-btn { height: 40px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--blue); color: #fff; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
@@ -6744,7 +6748,7 @@ span.cal-day.has { cursor: help; }
       + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<span class="sx-step2">${step(2, 'screen', '화면만 수집', ready && free)}${step(2, 'queue', qRun ? '대기열 수집 중' : '대기열 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(2, 'auto', '끝 페이지까지 자동 수집', ready && free)}</span>${step(3, 'enrich', '건축연도 채우기', ready && free)}</div>${prog}</div>`
       + `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"><label class="sx-chk"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></span>${AG.fold ? `<span class="sx-meta">${meta}</span>${manage}` : ''}</div>`   /* 도우미 말은 맨 위 안내로 옮겼다 */
       /* 수집 관리를 펼치면 저장 건수 · 업데이트 · 접기 단추는 주소 고르는 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
-      + (AG.fold ? '' : `<div class="sx-manage">${agCovHtml()}${agQueueHtml(`<span class="sx-qtail"><span class="sx-meta">${meta}</span>${manage}</span>`)}</div>`)
+      + (AG.fold ? '' : `<div class="sx-manage">${agQueueHtml(`<span class="sx-qtail"><span class="sx-meta">${meta}</span>${manage}</span>`)}${agCovHtml()}</div>`)
       + `</section></div>`;
   }
   /* 모은 동네 — 도우미가 인근매각물건을 모을 때마다 동네 · 물건 수 · 날짜를 적는다(agent/coverage). 이미 모은 동네는 다시 모을 때 새로 나온 것만 더한다 */
@@ -6782,7 +6786,7 @@ span.cal-day.has { cursor: help; }
   }
   function agCovHtml() {
     const rows = agCovView();
-    if (!rows.length) return '<div class="ag-cov"><small>모은 동네</small><span class="ag-cov-none">아직 없습니다 — 인근매각물건을 모으면 여기 동네별로 남습니다.</span></div>';
+    if (!rows.length) return '<div class="ag-cov"><small>읍면동 낙찰사례 수집데이터</small><span class="ag-cov-none">아직 없습니다 — 인근매각물건을 모으면 여기 동네별로 남습니다.</span></div>';
     const places = new Set(rows.map((c) => c.region)).size;
     const last = Math.max(0, ...rows.map((c) => c.at));
     const sum = `<span class="ag-cov-sum"><b>${places.toLocaleString('ko-KR')}곳</b> · 총 ${AG.recs.length.toLocaleString('ko-KR')}건${last ? ` · 최근 ${agMD(last)} 수집` : ''}</span>`;
@@ -6791,7 +6795,7 @@ span.cal-day.has { cursor: help; }
       ? `<div class="ag-cov-list"><input type="text" class="adm-input" id="agCovQ" placeholder="동네 찾기 예 검암동" value="${esc(AG.covQ || '')}">`
         + `<div class="ag-cov-wrap"><table><thead><tr><th class="l">동네</th><th>종류</th><th>물건</th><th>수집일</th><th>사이트</th></tr></thead><tbody id="agCovBody">${agCovRows()}</tbody></table></div></div>`
       : '';
-    return `<div class="ag-cov"><small>모은 동네</small>${sum}${btn}</div>${list}`;
+    return `<div class="ag-cov"><small>읍면동 낙찰사례 수집데이터</small>${sum}${btn}</div>${list}`;
   }
   /* 모을 물건 대기열 — 도우미가 사건마다 탱크옥션 검색 → 상세 → 인근매각사례를 끝까지 모으고 대기열에서 뺀다(agent/queue).
      [대기열수집]을 누르면 선정물건 중 아직 안 모은 동네(종류까지 같은)의 사건을 동네마다 하나씩 먼저 올린다 */
@@ -6947,15 +6951,18 @@ span.cal-day.has { cursor: help; }
       : !AG.recs.length ? '공용 매각물건 자료가 아직 없습니다 — 관리자 누구든 My agent로 모으면 모두 함께 검색합니다.'
       : !saleSeg.sido ? '시 · 도를 골라 주세요.'
       : `${saleSeg.sido}는 아직 모은 자료가 없습니다 — 모은 곳: ${regSidos().join(' · ') || '없음'}`;
-    const sel = (k, title, ph, list, dis) => `<label class="sx-f">${title}<select data-act="sale-q" data-k="${k}" class="${saleSeg[k] && list.includes(saleSeg[k]) ? '' : 'ph'}" ${dis ? 'disabled' : ''}><option value="">${ph}</option>${list.map((v) => `<option value="${esc(v)}" ${saleSeg[k] === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>`;
+    /* 지역 칸은 이름표 없이 상자 안 글(시도 선택 …)만 — 이름은 읽어 주기용 aria-label 로만(2026-11-06) */
+    const sel = (k, title, ph, list, dis) => `<label class="sx-f" aria-label="${title}"><select data-act="sale-q" data-k="${k}" class="${saleSeg[k] && list.includes(saleSeg[k]) ? '' : 'ph'}" ${dis ? 'disabled' : ''}><option value="">${ph}</option>${list.map((v) => `<option value="${esc(v)}" ${saleSeg[k] === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select></label>`;
     const dongs = regDongs(saleSeg.sido, saleSeg.sgg, saleSeg.kind);
     const loading = saleSeg.sgg && DONG_PEEK[regPeekKey(saleSeg.sido, saleSeg.sgg, saleSeg.kind)] === null;
     const pair = (a, b, pa, pb, mode) => `<div class="sx-pair"><input id="${a}" inputmode="${mode}" placeholder="${pa}" value="${esc(SX[a === 'sxAmin' ? 'amin' : a === 'sxYmin' ? 'ymin' : ''] || '')}"><span>~</span><input id="${b}" inputmode="${mode}" placeholder="${pb}" value="${esc(SX[b === 'sxAmax' ? 'amax' : b === 'sxYmax' ? 'ymax' : ''] || '')}"></div>`;
     const filters = `<aside class="sx-card sx-filters" aria-label="검색조건"><h2 class="sx-sec">검색조건</h2>`
-      + sel('sido', '시 · 도', '시도 선택', regSidos(), false)
-      + sel('sgg', '시 · 군 · 구', '시군구 선택', regSggs(saleSeg.sido).map((d) => d.label), !saleSeg.sido)
-      + sel('dong', '읍 · 면 · 동', loading && !dongs.length ? '불러오는 중…' : '읍면동 전체', dongs, !saleSeg.sgg)
-      + `<label class="sx-f">물건종류<select data-act="sale-q" data-k="kind">${SALE_SEG.kind.map((v) => `<option ${saleSeg.kind === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>`
+      + '<div class="sx-fgroup">'
+      + sel('sido', '시도', '시도 선택', regSidos(), false)
+      + sel('sgg', '시군구', '시군구 선택', regSggs(saleSeg.sido).map((d) => d.label), !saleSeg.sido)
+      + sel('dong', '읍면동', loading && !dongs.length ? '불러오는 중…' : '읍면동 전체', dongs, !saleSeg.sgg)
+      + `<label class="sx-f sx-inl"><span>물건종류</span><select data-act="sale-q" data-k="kind">${SALE_SEG.kind.map((v) => `<option ${saleSeg.kind === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>`
+      + '</div>'
       + `<div class="sx-f">기간<div class="sx-seg" role="group">${SALE_SEG.period.map((v) => `<button type="button" class="${saleSeg.period === v ? 'on' : ''}" data-act="sale-seg" data-k="period" data-v="${v}">${v}</button>`).join('')}</div></div>`
       + `<div class="sx-f">면적(㎡)${pair('sxAmin', 'sxAmax', '최소', '최대', 'decimal')}</div>`
       + `<div class="sx-f">건축년도${pair('sxYmin', 'sxYmax', '부터', '까지', 'numeric')}</div>`
