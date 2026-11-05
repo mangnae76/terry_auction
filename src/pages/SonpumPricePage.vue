@@ -981,6 +981,15 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .simA, .simB { height: 44px; min-width: 0; }   /* 두 방식 같은 높이 — 바꿀 때 덜컹이지 않게 */
 /* 웹 — 거르기 상자 오른쪽 끝에 엘베. 막대(유사도 · 면적 · 건축)는 그만큼 줄어든다 */
 .simrow.has-elev { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 28px; align-items: center; }
+/* 웹 — 면적 · 건축 A안: 값은 이름 줄 오른쪽 끝(한 줄), 막대는 그 아래 칸 폭 전체. 유사도 칸과 높이를 같게(바꿀 때 덜컹이지 않게) */
+.simrow.has-elev :is(.simA, .simB) { height: 62px; }
+.simrow.has-elev .simB .dl { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "dn val" "bar bar"; align-items: center; gap: 0 8px; }
+.simrow.has-elev .simB .dl > .dn { grid-area: dn; }
+.simrow.has-elev .simB .dl > b { grid-area: val; min-width: 0; text-align: right; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.simrow.has-elev .simB .dl > b small { display: inline; margin-left: 6px; font-size: 12px; }
+.simrow.has-elev .simB .dl > .dual { grid-area: bar; min-width: 0; margin-top: 12px; }
+/* 전체화면 — 면적 · 건축 · 층 · 엘베를 세로로 쌓으므로 높이는 내용대로 */
+.pa.fs .simrow.has-elev :is(.simA, .simB) { height: auto; }
 .simrow.has-elev .simB .pa-lab .pa-seg, .elev-pick .pa-seg { width: 186px; }   /* 웹 — 층 · 엘베 고르기 상자 크기를 같게 */
 .simrow.has-elev .simB .pa-lab .pa-seg button, .elev-pick .pa-seg button { flex: 1 1 0; min-width: 0; padding: 0 4px; }
 .elev-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #6b7280; white-space: nowrap; }
