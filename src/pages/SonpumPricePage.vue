@@ -585,17 +585,21 @@ if (sonTab) watch(sonTab, (t) => { if (t === 'price') void nextTick(evenCols); }
 const onResize = () => { evenCols(); };
 onMounted(() => { window.addEventListener('resize', onResize); void run(); });
 // ===== 웹 — 지도 전체화면(C안, 2026-11-05): 왼쪽 지도 · 오른쪽 고정 칸(결론 · 조건 · 유사물건 목록). 이 상자를 body 로 옮겨 화면을 채운다 =====
-const fs = ref(false);
+/* 전체화면은 새로고침 · 다른 물건에서도 그대로(고른 보기는 남긴다) — 닫기를 눌러야 풀린다 */
+const FS_KEY = 'son.price.fs';
+const fs = ref(webEmbed && (() => { try { return localStorage.getItem(FS_KEY) === '1'; } catch { return false; } })());
 const fsList = computed(() => [...mapGroups.value].sort((a, b) => (orderOf.value[a.jibun] ?? 999) - (orderOf.value[b.jibun] ?? 999)));
 const fsGo = (g: { jibun: string; spot: { lat: number; lng: number } }) => { focus.value = focus.value === g.jibun ? '' : g.jibun; if (focus.value && mv) mv.focus(g.spot, 16); };
 const onFsKey = (e: KeyboardEvent) => { if (e.key === 'Escape') fs.value = false; };
 watch(fs, async (on) => {
+  if (!webEmbed) return;
+  try { if (on) localStorage.setItem(FS_KEY, '1'); else localStorage.removeItem(FS_KEY); } catch { /* 이 창에서만 */ }
   document.documentElement.style.overflow = on ? 'hidden' : '';
   if (on) window.addEventListener('keydown', onFsKey); else window.removeEventListener('keydown', onFsKey);
   await nextTick();
   // 칸 크기가 바뀌었으니 지도를 다시 재고, 반경이 다 보이게
   [0, 120, 400].forEach((ms) => window.setTimeout(() => { mv?.relayout(); const m = mySpot.value; if (mv && m && !focus.value) mv.fitRadius(m, radius.value); }, ms));
-});
+}, { immediate: true });
 onBeforeUnmount(() => { window.removeEventListener('keydown', onFsKey); if (fs.value) document.documentElement.style.overflow = ''; });
 onBeforeUnmount(() => { window.removeEventListener('resize', onResize); runId += 1; mv?.destroy(); mv = null; window.clearTimeout(saveTimer); window.clearTimeout(undoTimer); });
 watch(() => props.auction.id, () => { spots.value = {}; units.value = {}; elevs.value = {}; mySpot.value = null; void run(); });
