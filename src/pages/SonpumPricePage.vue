@@ -1058,7 +1058,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa.fs :is(.est, .conds, .fs-list) { margin-left: 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
 .pa.fs .est { grid-column: 1; grid-row: 2; padding: 14px; }
 .pa.fs .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.pa.fs .tile { padding: 9px 8px; background: var(--soft); box-shadow: none; }
+.pa.fs .tile { padding: 9px 8px; }
+.pa.fs .tile:not(.key) { background: var(--soft); box-shadow: none; }   /* 실거래가 예상 칸은 원래 초록 그대로 */
 .pa.fs .tile.key { grid-column: 1 / -1; }
 /* 실거래가 예상만 지금 크기, 나머지 여섯 칸(중간값 ~ 유사 거래건수)은 낮고 작게 — 아래 조건 · 목록이 위로 붙는다 */
 .pa.fs .tile:not(.key) { padding: 6px 8px; gap: 2px; }
