@@ -1055,6 +1055,12 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa.fs .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .pa.fs .tile { padding: 9px 8px; background: var(--soft); box-shadow: none; }
 .pa.fs .tile.key { grid-column: 1 / -1; }
+/* 실거래가 예상만 지금 크기, 나머지 여섯 칸(중간값 ~ 유사 거래건수)은 낮고 작게 — 아래 조건 · 목록이 위로 붙는다 */
+.pa.fs .tile:not(.key) { padding: 6px 8px; gap: 2px; }
+.pa.fs .tile:not(.key) .k { font-size: 12px; }
+.pa.fs .tile:not(.key) .v { font-size: 13.5px; }
+.pa.fs .est { padding: 12px; }
+.pa.fs .tiles { gap: 6px; }
 .pa.fs .conds { grid-column: 1; grid-row: 3; padding: 12px 14px; }
 .pa.fs .fs-list { grid-column: 1; grid-row: 4; margin-bottom: 12px; min-height: 0; overflow-y: auto; padding: 10px 10px 14px; display: grid; gap: 6px; align-content: start; }
 .fs-lh { padding: 0 4px; font-size: 13px; font-weight: 800; color: var(--fg); }
