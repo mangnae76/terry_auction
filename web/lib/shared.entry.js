@@ -76,6 +76,10 @@ export {
 } from '../../src/services/locationInfo';
 export { fetchNearbyEnvironment } from '../../src/services/kakaoNearby';
 export { geocodeAddress } from '../../src/services/routeOptimizer';
+/* 경매사례 지도 — 손품조사 시세분석과 같은 지도 · 거리 · 엘베(건축물대장) */
+export { createMapView } from '../../src/services/mapView';
+export { distM } from '../../src/services/priceAnalysis';
+export { getBuildingFacts } from '../../src/services/buildingFacts';
 // 매각기일 요일 — 앱 일정 저장소의 weekdayLabel 그대로
 export { weekdayLabel } from '../../src/stores/scheduleStore';
 

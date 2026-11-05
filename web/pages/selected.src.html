@@ -1032,7 +1032,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
   .sx-main > .sx-results { display: contents; }
   .sx-main > .sx-filters { grid-column: 1; grid-row: 1 / span 3; align-self: stretch; align-content: start; position: static; }
   .sx-main > .sx-results > * { grid-column: 2; min-width: 0; }
-  .sx-main > .sx-results > .sx-list { grid-column: 1 / -1; grid-row: 4; }
+  .sx-main > .sx-results > .sx-mapcard { grid-column: 1 / -1; grid-row: 4; }
+  .sx-main > .sx-results > .sx-list { grid-column: 1 / -1; grid-row: 5; }
 }
 .sx-wait { padding: 40px 24px; display: grid; gap: 8px; justify-items: center; text-align: center; color: var(--muted); font-size: 14px; }
 .sx-wait > b { color: var(--text); font-size: 16px; }
@@ -1089,6 +1090,27 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-q { width: 280px; max-width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; }
 .sx-tbl { overflow-x: auto; margin: 0 16px 16px; border: 1px solid var(--line); border-radius: 8px; }   /* 표 네 모서리 8(모든 표 같게) */
 .sx-tbl tbody tr:last-child td { border-bottom: 0; }
+/* 지도 — 손품조사 시세분석 지도와 같은 꼴(핀 · 반경 원 · 이름표) */
+.sx-mapcard { padding: 14px 16px 16px; }
+.sx-map-h { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.sx-mlab { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.sx-mseg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.sx-mseg button { height: 30px; padding: 0 12px; border: 0; border-radius: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.sx-mseg button + button { border-left: 1px solid var(--line); }
+.sx-mseg button.on { background: var(--blue-soft); color: var(--blue); font-weight: 800; }
+.sx-mapmsg { font-size: 12px; color: var(--muted); }
+.sx-mapslot { position: relative; height: 440px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.sx-map { width: 100%; height: 100%; }
+.sx-maplegend { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.sx-maplegend span { display: inline-flex; align-items: center; gap: 5px; }
+.sx-maplegend i { width: 10px; height: 10px; border-radius: 50%; background: #2b4fd8; display: inline-block; }
+.sx-maplegend i.me { background: #e03e3e; }
+.sx-map .pa-pin { position: relative; }
+.sx-map .pa-pin .dot { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .3); }
+.sx-map .pa-pin.me .dot { background: #e03e3e; }
+.sx-map .pa-pin .lbl { position: absolute; left: 0; top: 12px; transform: translateX(-50%); font-size: 12px; line-height: 1.3; text-align: center; color: #18213a; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; white-space: nowrap; pointer-events: none; }
+.sx-map .pa-pin b { font-weight: 700; }
+.sx-map .pa-pin.me b { color: #e03e3e; }
 .sx-tbl td.area { line-height: 1.3; }   /* 전용 — ㎡ 위 · 평 아래 두 줄 */
 .sx-tbl td.area small { display: block; font-size: 12px; color: var(--muted); }
 .sx-tbl td.l { max-width: 300px; }   /* 주소는 동부터 — 넘치면 … (전체 주소는 마우스를 올리면) */
@@ -6559,16 +6581,123 @@ span.cal-day.has { cursor: help; }
   if (saleApplied) ['amin', 'amax', 'ymin', 'ymax'].forEach((k) => { if (!SX[k] && saleApplied[k]) SX[k] = saleApplied[k]; });
   const sxNum = (v) => { const x = parseFloat(String(v || '').replace(/[^\d.]/g, '')); return Number.isFinite(x) && x > 0 ? x : 0; };
   /* 지역 · 종류 · 기간으로 거른 것에서 면적 · 건축년도로 한 번 더 — 조건을 걸었는데 값이 없는 물건은 뺀다 */
+  /* ===== 지도 — 손품조사 시세분석과 같은 기능(2026-11-06): 내 물건(고정카드) 둘레 반경 원 · 매각물건 지번마다 점 · 반경 · 엘베 · 층 거르기.
+     거른 결과로 예상 입찰가 · 지표 · 분포 · 표가 함께 바뀐다. 지번 위치 · 엘베는 이 브라우저에 남겨 다시 찾지 않는다 ===== */
+  const SXM_KEY = 'ta.web.sale.map'; const SXM_RADII = [100, 300, 500, 1000];
+  const SXM = { radius: 500, elev: '', floor: '', ...(() => { try { return JSON.parse(localStorage.getItem(SXM_KEY) || '{}') || {}; } catch (e) { return {}; } })() };
+  if (!SXM_RADII.includes(Number(SXM.radius))) SXM.radius = 500;
+  const SXM_SPOT_KEY = 'ta.web.sale.spots'; const SXM_ELEV_KEY = 'ta.web.sale.elevs';
+  const sxmRead = (k) => { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } };
+  const SXG = { spots: sxmRead(SXM_SPOT_KEY), elevs: sxmRead(SXM_ELEV_KEY), busy: false, again: false, phase: '', done: 0, total: 0, mv: null, mvP: null, host: null, ver: 0, fitKey: '' };
+  const sxmSave = () => { try { localStorage.setItem(SXM_SPOT_KEY, JSON.stringify(SXG.spots)); localStorage.setItem(SXM_ELEV_KEY, JSON.stringify(SXG.elevs)); } catch (e) { /* 그만 */ } };
+  /* '인천광역시 서구 검암동 678-8, 3층302호' → '인천광역시 서구 검암동 678-8' (지번까지) */
+  const sxLotAddr = (addr) => { const s = String(addr || ''); const m = AG_LOT_RE.exec(s); return m ? s.slice(0, m.index + m[0].length).replace(/,/g, ' ').replace(/\s+/g, ' ').trim() : ''; };
+  const sxLotKey = (addr) => sxLotAddr(addr).replace(/\s+/g, '');
+  const sxMe = () => (saleItemId ? salePicks().find((x) => x.id === saleItemId) || null : null);
+  const sxMeFloor = (it) => { const u = String((it && it.unit) || ''); const f = /(\d+)\s*층/.exec(u); if (f) return Number(f[1]); const h = /(\d{3,4})\s*호/.exec(u); return h ? Math.floor(Number(h[1]) / 100) : 0; };
+  const sxLimit = async (list, n, fn) => { let i = 0; await Promise.all(Array.from({ length: Math.min(n, list.length) }, async () => { while (i < list.length) { const x = list[i]; i += 1; await fn(x); } })); };
+  const sxMapMsgText = () => (SXG.total ? `${SXG.phase === 'elev' ? '엘베 확인 중' : '위치 찾는 중'} ${SXG.done.toLocaleString('ko-KR')} / ${SXG.total.toLocaleString('ko-KR')}`
+    : (!sxMe() ? '물건카드교체로 내 물건을 고르면 반경으로 거릅니다' : ''));
+  const sxMapStatus = () => { const el = $('sxMapMsg'); if (el) el.textContent = sxMapMsgText(); };
+  /* 위치 · 엘베를 다 받으면(또는 10곳마다) 결과를 다시 그린다 */
+  const sxGeoFlush = () => { sxmSave(); SXG.ver += 1; if (agSaleOpen() && $('sxResults')) { agPaintTable(); } };
+  async function sxGeoRun() {
+    const T = CLOUD.T; if (!T || !T.geocodeAddress) return;
+    if (SXG.busy) { SXG.again = true; return; }
+    const base = saleRows(); if (!base) return;
+    const me = sxMe(); const lots = new Map();
+    if (me) { const a = sxLotAddr(me.addr); if (a) lots.set(a.replace(/\s+/g, ''), a); }
+    base.forEach((r) => { const a = sxLotAddr(r['소재지']); if (a) lots.set(a.replace(/\s+/g, ''), a); });
+    const miss = [...lots].filter(([k]) => !(k in SXG.spots));
+    const meSpot0 = me ? SXG.spots[sxLotKey(me.addr)] : null;
+    const nearOf = (ms) => (ms && T.getBuildingFacts && T.distM ? [...lots].filter(([k]) => !(k in SXG.elevs) && SXG.spots[k] && T.distM(ms, SXG.spots[k]) <= 1000) : []);
+    if (!miss.length && !nearOf(meSpot0).length) return;
+    SXG.busy = true;
+    try {
+      if (miss.length) {
+        Object.assign(SXG, { phase: 'spot', done: 0, total: miss.length }); sxMapStatus();
+        let n = 0;
+        await sxLimit(miss, 6, async ([k, a]) => {
+          const p = await T.geocodeAddress(a, { quick: true }).catch(() => null);
+          SXG.spots[k] = p ? { lat: p.lat, lng: p.lng } : null; SXG.done += 1; sxMapStatus();
+          n += 1; if (n % 10 === 0) sxGeoFlush();
+        });
+        sxGeoFlush();
+      }
+      /* 엘베 — 건축물대장 한도를 아끼려고 내 물건에서 1km 안 지번만(시세분석과 같게) */
+      const near = nearOf(me ? SXG.spots[sxLotKey(me.addr)] : null);
+      if (near.length) {
+        Object.assign(SXG, { phase: 'elev', done: 0, total: near.length }); sxMapStatus();
+        await sxLimit(near, 3, async ([k, a]) => { const f = await T.getBuildingFacts(a).catch(() => null); SXG.elevs[k] = f ? f.elevator : null; SXG.done += 1; sxMapStatus(); });
+        sxGeoFlush();
+      }
+    } finally {
+      Object.assign(SXG, { busy: false, phase: '', done: 0, total: 0 }); sxMapStatus();
+    }
+    if (SXG.again) { SXG.again = false; void sxGeoRun(); }
+  }
+  function sxDrawMap() {
+    const mv = SXG.mv; if (!mv) return;
+    mv.clear();
+    const rows = sxRows() || []; const me = sxMe(); const meSpot = me ? SXG.spots[sxLotKey(me.addr)] : null; const meLot = me ? agLotOf(me.addr) : '';
+    const groups = new Map(); let same = 0;
+    rows.forEach((r) => {
+      if (meLot && agLotOf(r['소재지']) === meLot) { same += 1; return; }
+      const k = sxLotKey(r['소재지']); const p = SXG.spots[k]; if (!p) return;
+      const g = groups.get(k) || { p, list: [], name: agBldOf(r['소재지']) || agLotOf(r['소재지']) };
+      g.list.push(r); groups.set(k, g);
+    });
+    if (meSpot) mv.circle(meSpot, SXM.radius, { color: '#2b4fd8', weight: 1.6, dash: true, fillOpacity: 0.06 });
+    const html = (label) => `<i class="dot"></i><span class="lbl">${label}</span>`;
+    groups.forEach((g) => {
+      const pr = g.list.map((r) => Number(r['매각가'])).filter((v) => v > 0); const lo = Math.min(...pr); const hi = Math.max(...pr);
+      const range = pr.length ? (lo === hi ? agWon(lo) : `${agWon(lo)}~${agWon(hi)}`) : '';
+      const d = meSpot ? CLOUD.T.distM(meSpot, g.p) : null;
+      const sub = [range, d != null ? `${d.toLocaleString('ko-KR')}m` : ''].filter(Boolean).join(' · ');
+      mv.pin(g.p, { className: 'pa-pin', html: html(`<b>${esc(g.name)} ${g.list.length}건</b>${sub ? `<br>${sub}` : ''}`), z: 1 });
+    });
+    if (meSpot) mv.pin(meSpot, { className: 'pa-pin me', html: html(`<b>${esc((me && me.bld) || '내 물건')}</b>${same ? `<br>같은 건물 ${same}건` : ''}`), z: 1000 });
+    /* 내 물건 · 반경이 바뀔 때만 다시 맞춘다(지도를 옮겨 둔 것을 함부로 되돌리지 않게) */
+    const fk = `${saleItemId}|${SXM.radius}|${meSpot ? `${meSpot.lat},${meSpot.lng}` : groups.size ? 'pts' : ''}`;
+    if (fk !== SXG.fitKey) {
+      SXG.fitKey = fk;
+      if (meSpot) mv.fitRadius(meSpot, SXM.radius);
+      else { const pts = [...groups.values()].map((g) => g.p); if (pts.length) mv.fitPoints(pts, 40, 16, false); }
+    }
+  }
+  /* 결과를 다시 그릴 때마다 — 지도는 한 번만 만들어 두고 새 자리(#sxMapSlot)로 옮겨 붙인다 */
+  function sxMountMap() {
+    const slot = $('sxMapSlot'); if (!slot) return;
+    if (!SXG.host) { SXG.host = document.createElement('div'); SXG.host.className = 'sx-map'; }
+    slot.appendChild(SXG.host);
+    const T = CLOUD.T;
+    if (!SXG.mv && !SXG.mvP && T && T.createMapView) {
+      SXG.mvP = T.createMapView(SXG.host, { zoom: 15, zoomControl: 'topright' })
+        .then((mv) => { SXG.mv = mv; SXG.mvP = null; SXG.fitKey = ''; sxDrawMap(); })
+        .catch(() => { SXG.mvP = null; });
+    }
+    if (SXG.mv) { SXG.mv.relayout(); sxDrawMap(); }
+    void sxGeoRun();
+  }
   function sxRows() {
     const base = saleRows(); if (!base) return null;
     const q = saleApplied;
-    if (SX.rowsOf === base && SX.rowsQ === q) return SX.rows;
+    const mk = `${SXG.ver}|${SXM.radius}|${SXM.elev}|${SXM.floor}|${saleItemId}`;
+    if (SX.rowsOf === base && SX.rowsQ === q && SX.rowsM === mk) return SX.rows;
     const amin = sxNum(q.amin); const amax = sxNum(q.amax); const ymin = sxNum(q.ymin); const ymax = sxNum(q.ymax);
+    /* 지도 거르기 — 손품조사 시세분석과 같은 규칙: 같은 건물(경매지번)은 늘 넣고, 위치 · 엘베를 아직 모르는 물건은 거르지 않는다 */
+    const me = sxMe(); const meSpot = me ? SXG.spots[sxLotKey(me.addr)] : null; const meLot = me ? agLotOf(me.addr) : ''; const myFloor = sxMeFloor(me);
     SX.rows = base.filter((r) => {
       const a = Number(r['전용면적']) || 0; const y = agBuiltYear(r);
-      return !(amin && !(a >= amin)) && !(amax && !(a > 0 && a <= amax)) && !(ymin && !(y >= ymin)) && !(ymax && !(y > 0 && y <= ymax));
+      if ((amin && !(a >= amin)) || (amax && !(a > 0 && a <= amax)) || (ymin && !(y >= ymin)) || (ymax && !(y > 0 && y <= ymax))) return false;
+      if (meLot && agLotOf(r['소재지']) === meLot) return true;
+      const k = sxLotKey(r['소재지']);
+      if (meSpot && k in SXG.spots) { const p = SXG.spots[k]; if (!p || CLOUD.T.distM(meSpot, p) > SXM.radius) return false; }
+      if (SXM.floor === '0' && myFloor && Number(r['층']) && Number(r['층']) !== myFloor) return false;
+      if (SXM.elev) { const e = SXG.elevs[k]; if (e != null && (SXM.elev === 'yes' ? !(e > 0) : e !== 0)) return false; }
+      return true;
     });
-    SX.rowsOf = base; SX.rowsQ = q; SX.stats = null;
+    SX.rowsOf = base; SX.rowsQ = q; SX.rowsM = mk; SX.stats = null;
     return SX.rows;
   }
   const sxMean = (a) => (a.length ? a.reduce((t, x) => t + x, 0) / a.length : null);
@@ -6764,6 +6893,16 @@ span.cal-day.has { cursor: help; }
     AG.io = false; agPaint();   /* 새 자료는 요약 문서 감시(watchAgentDatasetMeta)가 버전이 바뀐 것을 보고 다시 읽는다 */
   }
   /* 결과 쪽 전체 — 검색 전 · 결과 없음 · 결과 */
+  function sxMapCardHtml() {
+    const seg = (k, opts) => `<span class="sx-mseg" role="radiogroup">${opts.map(([v, t]) => `<button type="button" role="radio" class="${String(SXM[k]) === String(v) ? 'on' : ''}" aria-checked="${String(SXM[k]) === String(v)}" data-act="sxm-set" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</span>`;
+    return `<section class="sx-card sx-mapcard" aria-label="지도"><div class="sx-map-h"><h3 class="sx-sec">지도</h3>`
+      + `<span class="sx-mlab">반경${seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span>`
+      + `<span class="sx-mlab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span>`
+      + `<span class="sx-mlab">층${seg('floor', [['', '전체'], ['0', '같은층']])}</span>`
+      + `<span class="sx-grow"></span><span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span></div>`
+      + `<div class="sx-mapslot" id="sxMapSlot"></div>`
+      + `<div class="sx-maplegend"><span><i class="me"></i>내 물건</span><span><i></i>매각물건(지번마다)</span></div></section>`;
+  }
   function sxResultsHtml() {
     const rows = agIsAdmin() && AG.recs.length ? sxRows() : null;
     if (!rows) {
@@ -6783,7 +6922,7 @@ span.cal-day.has { cursor: help; }
     const dist = st.rates.length
       ? `<section class="sx-card sx-dist" aria-label="매각가율 분포"><div class="sx-dist-h"><h3 class="sx-sec">매각가율 분포 · ${st.rates.length.toLocaleString('ko-KR')}건</h3><div class="sx-legend"><span>평균</span><span class="med">중앙값</span><span class="over">100% 이상</span></div></div>${sxChart(st)}</section>`
       : '';
-    return `<div class="sx-results" id="sxResults">${hero}<section class="sx-card" aria-label="지표결과"><div class="sx-metrics">${metrics}</div></section>${dist}<section class="sx-card sx-list" aria-label="경매 인근 유사 매각물건">${sxListHtml(rows)}</section></div>`;
+    return `<div class="sx-results" id="sxResults">${hero}<section class="sx-card" aria-label="지표결과"><div class="sx-metrics">${metrics}</div></section>${dist}${sxMapCardHtml()}<section class="sx-card sx-list" aria-label="경매 인근 유사 매각물건">${sxListHtml(rows)}</section></div>`;
   }
   /* 동일지번 — 따로 긁지 않는다. 인근 목록에 같은 지번 물건이 이미 들어 있어(거리 0) 소재지의 '동 + 지번'으로 묶어 고른다.
      auction-web PC 프로그램 동일지번 탭과 같은 방식: [동일지번매각물건]에서 따로 모은 것 + 인근 데이터 중 지번이 같은 것 */
@@ -7035,7 +7174,7 @@ span.cal-day.has { cursor: help; }
     el.outerHTML = agPanelHtml();
     const ni = fid && $(fid); if (ni) { ni.focus(); try { ni.setSelectionRange(qs, qs); } catch (e) { /* 그만 */ } }
   }
-  function agPaintTable() { const el = $('sxResults'); if (el && agSaleOpen()) el.outerHTML = sxResultsHtml(); }
+  function agPaintTable() { const el = $('sxResults'); if (el && agSaleOpen()) { el.outerHTML = sxResultsHtml(); sxMountMap(); } }
   async function agLoadRecs() {
     try {
       const { recs, meta } = await CLOUD.T.loadAgentDataset(AG.uid);
@@ -7183,7 +7322,7 @@ span.cal-day.has { cursor: help; }
     const T = CLOUD.T;
     /* 경매사례는 운영자만 — 로그인 확인이 끝났는데 운영자가 아니면 지역분석으로(주소로 바로 들어와도) */
     if (key === 'sale' && S.authReady && !agIsAdmin()) { S.marketTab = 'dong'; writeHash(false); renderSubTabs(); renderMarket(); return; }
-    if (key === 'sale') { closeAppMarket(); agStart(); box.innerHTML = agIsAdmin() ? saleCaseHtml() : itCard('chart', '경매사례', itEmpty('불러오는 중입니다…'), true); return; }
+    if (key === 'sale') { closeAppMarket(); agStart(); box.innerHTML = agIsAdmin() ? saleCaseHtml() : itCard('chart', '경매사례', itEmpty('불러오는 중입니다…'), true); sxMountMap(); return; }
     if (!CLOUD.on || !T || !T.hasAppAdminScreen || !T.hasAppAdminScreen(key)) {
       closeAppMarket();
       const msg = !CLOUD.on ? (S.authReady ? '로그인하면 볼 수 있습니다.' : '불러오는 중입니다…') : '준비 중인 화면입니다.';
@@ -8419,6 +8558,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         renderMarket(); toast('면적 · 건축년도 · 기간을 처음대로 돌렸습니다.', 'info'); break;
       }
       case 'sx-import': { const f = $('sxFile'); if (f) f.click(); break; }
+      case 'sxm-set': { const k = t.dataset.k; SXM[k] = k === 'radius' ? Number(v) : v; try { localStorage.setItem(SXM_KEY, JSON.stringify(SXM)); } catch (err) { /* 그만 */ } agPaintTable(); break; }
       case 'sale-card-menu': saleCardOpen = !saleCardOpen; renderSonHead(); break;
       case 'sale-card-pick': salePickCard(id); break;
       case 'sx-backup': void sxBackup(); break;
