@@ -8221,13 +8221,24 @@ const goBack = () => router.back();
                 </tr>
               </tbody>
             </table>
+            <!-- 웹 — 권리분석 정리를 이 카드 맨 아래로 합친다(따로 있던 정리 카드는 웹에서 그리지 않는다) -->
+            <div v-if="webEmbed" class="adp-rconc-body in-check">
+              <p class="adp-rconc-h">권리분석 정리</p>
+              <textarea
+                class="adp-rconc-note"
+                rows="4"
+                placeholder="비고"
+                :value="rightsDocNote(RIGHTS_CONC_ID)"
+                @input="setRightsDocNote(RIGHTS_CONC_ID, ($event.target as HTMLTextAreaElement).value)"
+              />
+            </div>
           </div>
         </section>
 
         <!-- 권리분석 정리 — 위의 표들을 보고 내린 판단을 한곳에 적어 둔다.
              표에 칸을 늘리는 대신 따로 둔 까닭은, 어느 한 항목이 아니라
              전부를 보고 쓰는 글이기 때문이다. -->
-        <section class="adp-card">
+        <section v-if="!webEmbed" class="adp-card">
           <header class="adp-card-head" @click="toggleSection('rightsConc')">
             <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 7-7" /><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" /></svg>권리분석 정리</h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('rightsConc') }]" alt="" />
