@@ -698,6 +698,12 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <button type="button" role="radio" :class="{ on: simMode === 'sim' }" :aria-checked="simMode === 'sim'" @click="setSimMode('sim')">유사도</button>
           <button type="button" role="radio" :class="{ on: simMode === 'range' }" :aria-checked="simMode === 'range'" @click="setSimMode('range')">직접범위</button>
         </span></span>
+        <!-- 웹 기본 화면 — 엘베는 위 줄 기준 옆(전체화면에선 아래 거르기 상자 안) -->
+        <span v-if="webEmbed && !fs" class="pa-lab elev-pick">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베">
+          <button type="button" role="radio" :class="{ on: !elevPick }" :aria-checked="!elevPick" @click="elevPick = null">전체</button>
+          <button type="button" role="radio" :class="{ on: elevPick === 'yes' }" :aria-checked="elevPick === 'yes'" @click="elevPick = 'yes'">있음</button>
+          <button type="button" role="radio" :class="{ on: elevPick === 'no' }" :aria-checked="elevPick === 'no'" @click="elevPick = 'no'">없음</button>
+        </span></span>
         <span class="acts-r">
           <button type="button" :class="['reset-btn', { undo: undoSnap }]" :aria-label="undoSnap ? '되돌리기' : '초기화'" :title="undoSnap ? '되돌리기 — 5초 안에 누르면 바로 전으로' : '반경 · 거래 · 유사도 · 값 거르기를 처음 값으로'" @click="reset">
             <svg v-if="undoSnap" class="undo-ic" viewBox="0 0 24 24" aria-hidden="true"><circle class="trk" cx="12" cy="12" r="10" /><circle class="run" cx="12" cy="12" r="10" /><path d="M9.2 9.6a3.6 3.6 0 1 1-.6 4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><path d="M8.4 7.4v2.8h2.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
@@ -736,7 +742,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             </span></span>
           </div>
           <!-- 웹 — 엘베(전체 · 있음 · 없음) — 층처럼 거르기 상자 안, 유사도 · 직접범위 둘 다 -->
-          <span v-if="webEmbed" class="pa-lab elev-pick">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베">
+          <span v-if="webEmbed && fs" class="pa-lab elev-pick">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베">
             <button type="button" role="radio" :class="{ on: !elevPick }" :aria-checked="!elevPick" @click="elevPick = null">전체</button>
             <button type="button" role="radio" :class="{ on: elevPick === 'yes' }" :aria-checked="elevPick === 'yes'" @click="elevPick = 'yes'">있음</button>
             <button type="button" role="radio" :class="{ on: elevPick === 'no' }" :aria-checked="elevPick === 'no'" @click="elevPick = 'no'">없음</button>
@@ -984,7 +990,11 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .simrow { grid-column: 1 / -1; display: grid; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 12px 18px; }
 .simA, .simB { height: 44px; min-width: 0; }   /* 두 방식 같은 높이 — 바꿀 때 덜컹이지 않게 */
 /* 웹 — 거르기 상자 오른쪽 끝에 엘베. 막대(유사도 · 면적 · 건축)는 그만큼 줄어든다 */
-.simrow.has-elev { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 28px; align-items: center; }
+.simrow.has-elev { grid-template-columns: minmax(0, 1fr); gap: 10px 28px; align-items: center; }
+/* 웹 기본 화면 — 위 줄 넷(반경 · 거래 · 기준 · 엘베), 그 아래 거르기 상자, 맨 아래 오른쪽 초기화 · 저장(세팅 다 하고 저장) */
+.conds:has(> .elev-pick) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.conds:has(> .elev-pick) > .acts-r { grid-column: 1 / -1; justify-self: end; order: 99; }
+.conds > .elev-pick .pa-seg { width: auto; }
 /* 웹 — 면적 · 건축 A안: 값은 이름 줄 오른쪽 끝(한 줄), 막대는 그 아래 칸 폭 전체. 유사도 칸과 높이를 같게(바꿀 때 덜컹이지 않게) */
 .simrow.has-elev :is(.simA, .simB) { height: 62px; }
 .simrow.has-elev .simB .dl { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "dn val" "bar bar"; align-items: center; gap: 0 8px; }
