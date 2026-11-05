@@ -1144,8 +1144,14 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-fs .fs-list .none { margin: 0; padding: 12px; font-size: 13px; color: var(--muted); text-align: center; }
 .sx-tbl td.area { line-height: 1.3; }   /* 전용 — ㎡ 위 · 평 아래 두 줄 */
 .sx-tbl td.area small { display: block; font-size: 12px; color: var(--muted); }
+.sx-tbl .ev { font-size: 12px; border-radius: 4px; padding: 1px 6px; white-space: nowrap; }   /* 엘베 — 시세분석 표와 같은 칩 */
+.sx-tbl .ev.two { display: inline-block; text-align: center; line-height: 1.3; padding: 2px 7px; }
+.sx-tbl .ev.o { background: #e7f6ed; color: #1f7a4a; font-weight: 600; }
+.sx-tbl .ev.x { background: #fdecec; color: #dc2626; }
+.sx-tbl .ev.u { color: var(--faint); }
 .sx-tbl td.l { max-width: 300px; }   /* 주소는 동부터 — 넘치면 … (전체 주소는 마우스를 올리면) */
-.sx-tbl tr.me td { background: var(--blue-soft); font-weight: 700; }   /* 맨 위 내 물건(고정카드) */
+.sx-tbl tr.me td { background: var(--blue-soft); }   /* 맨 위 내 물건(고정카드) */
+.sx-tbl tbody td, .sx-tbl tbody td * { font-weight: 400 !important; }   /* 머리글 말고는 굵기 없이(2026-11-06) */
 .sx-tbl tr.lot td { background: color-mix(in srgb, var(--blue-soft) 45%, transparent); }   /* 같은 지번 매각 */
 .sx-addr { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }   /* 주소 아래 칩 — 손품조사 시세분석 표와 같은 꼴 */
 .sx-addr .addr { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
@@ -6856,9 +6862,9 @@ span.cal-day.has { cursor: help; }
   }
   /* 검색리스트 — 칸 이름을 누르면 그 칸으로 정렬(다시 누르면 반대로) */
   const SX_COLS = [['사건번호', '사건번호'], ['매각년월일', '매각일'], ['감정가', '감정가'], ['최저입찰가', '최저가'], ['매각가', '매각가'], ['매각가율', '매각가율'],
-    ['유찰', '유찰회수'], ['응찰', '응찰자수'], ['전용㎡/평', '전용면적'], ['건축연월', '건축연도'], ['년차', '년차'], ['층', '층'], ['주소', '소재지']];
+    ['유찰', '유찰회수'], ['응찰', '응찰자수'], ['전용㎡/평', '전용면적'], ['엘베', '엘베'], ['건축연월', '건축연도'], ['년차', '년차'], ['거리', '거리'], ['층', '층'], ['주소', '소재지']];
   const SX_NUMK = new Set(['감정가', '최저가', '매각가', '매각가율', '유찰회수', '응찰자수', '전용면적', '층']);
-  const sxVal = (r, k) => (k === '건축연도' ? agBuiltYear(r) : k === '년차' ? -agBuiltYear(r) : SX_NUMK.has(k) ? Number(r[k]) || 0 : String(r[k] || ''));
+  const sxVal = (r, k) => (k === '거리' ? -(sxDistM(r['소재지']) ?? 1e9) : k === '엘베' ? (() => { const e = SXG.elevs[sxLotKey(r['소재지'])]; return e == null ? -1 : e; })() : k === '건축연도' ? agBuiltYear(r) : k === '년차' ? -agBuiltYear(r) : SX_NUMK.has(k) ? Number(r[k]) || 0 : String(r[k] || ''));
   function sxRowHtml(r, lot = '') {
     const m2 = Number(r['전용면적']);
     const same = lot && agLotOf(r['소재지']) === lot;   /* 고정카드 물건과 같은 지번(같은 건물) 매각 */
@@ -6873,7 +6879,7 @@ span.cal-day.has { cursor: help; }
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
     return `<tr${same ? ' class="lot"' : ''}><td class="num">${esc(String(r['사건번호'] || '-'))}</td><td class="num">${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}`
       + `<td>${rate}</td><td class="num">${int(r['유찰회수'], '회')}</td><td class="num">${int(r['응찰자수'], '명')}</td>`
-      + `${sxAreaCell(m2)}<td class="num">${built}</td><td class="num">${age}</td><td class="num">${fl}</td><td class="l" title="${esc(full)}"><div class="sx-addr"><span class="addr">${addr || '-'}</span>${same ? '<span class="chips"><span class="same">경매지번</span></span>' : ''}</div></td></tr>`;
+      + `${sxAreaCell(m2)}${sxElevCell(full)}<td class="num">${built}</td><td class="num">${age}</td>${sxDistCell(full)}<td class="num">${fl}</td><td class="l" title="${esc(full)}"><div class="sx-addr"><span class="addr">${addr || '-'}</span>${same ? '<span class="chips"><span class="same">경매지번</span></span>' : ''}</div></td></tr>`;
   }
   /* 표 주소 — 시도 · 시군구는 빼고 동(읍면)부터. 동을 못 찾으면 앞의 시도 · 시군구 낱말만 덜어 낸다 */
   const sxShortAddr = (addr) => {
@@ -6882,6 +6888,20 @@ span.cal-day.has { cursor: help; }
     if (i >= 0) return t.slice(i).join(' ');
     let k = 0; while (k < t.length - 1 && k < 3 && /(특별시|광역시|특별자치시|특별자치도|도|시|구|군)$/.test(t[k])) k += 1;
     return t.slice(k).join(' ');
+  };
+  /* 거리 — 내 물건(고정카드)에서 그 지번까지 m(시세분석 거리 칸과 같다). 같은 건물은 0m, 위치를 모르면 '-' */
+  const sxDistM = (addr) => {
+    const me = sxMe(); if (!me || !CLOUD.T || !CLOUD.T.distM) return null;
+    if (agLotOf(addr) && agLotOf(addr) === agLotOf(me.addr)) return 0;
+    const a = SXG.spots[sxLotKey(me.addr)]; const b = SXG.spots[sxLotKey(addr)];
+    return a && b ? CLOUD.T.distM(a, b) : null;
+  };
+  const sxDistCell = (addr) => { const d = sxDistM(addr); return `<td class="num">${d == null ? '-' : `${d.toLocaleString('ko-KR')}m`}</td>`; };
+  /* 엘베 — 건축물대장 승강기 수(손품조사 시세분석 표와 같은 꼴). 아직 모르면 '-'(조회 중 · 대장 없음 · 1km 밖) */
+  const sxElevCell = (addr) => {
+    const e = SXG.elevs[sxLotKey(addr)];
+    if (e == null) return `<td><span class="ev u" title="${e === null ? '건축물대장을 찾지 못했습니다' : '내 물건에서 1km 안 지번만 조회합니다'}">-</span></td>`;
+    return e > 0 ? `<td><span class="ev o two">${e}대<br>있음</span></td>` : '<td><span class="ev x">없음</span></td>';
   };
   /* 전용 — 두 줄(㎡ 위, 평 아래) */
   const sxAreaCell = (m2) => (m2 > 0 ? `<td class="num area">${m2.toFixed(2)}㎡<small>${(m2 / 3.305785).toFixed(1)}평</small></td>` : '<td>-</td>');
@@ -6895,7 +6915,7 @@ span.cal-day.has { cursor: help; }
     const full = [it.addr, it.bld, it.unit].filter(Boolean).join(' '); const addr = esc(sxShortAddr(full));
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
     return `<tr class="me"><td class="num">${esc(it.caseNo)}</td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}<td>-</td><td>-</td><td class="num">${esc(it.round || '-')}</td><td>-</td>`
-      + `${sxAreaCell(m2)}<td class="num">${built}</td><td class="num">${age}</td><td class="num">${fl}</td><td class="l" title="${esc(full)}"><div class="sx-addr"><span class="addr">${addr || '-'}</span><span class="chips"><span class="same eq">내 물건</span><span class="same">경매지번</span></span></div></td></tr>`;
+      + `${sxAreaCell(m2)}${sxElevCell(it.addr)}<td class="num">${built}</td><td class="num">${age}</td><td class="num">-</td><td class="num">${fl}</td><td class="l" title="${esc(full)}"><div class="sx-addr"><span class="addr">${addr || '-'}</span><span class="chips"><span class="same eq">내 물건</span><span class="same">경매지번</span></span></div></td></tr>`;
   }
   function sxListHtml(rows) {
     const q = String(SX.q || '').replace(/\s+/g, '');
