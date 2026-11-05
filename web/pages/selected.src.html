@@ -1171,6 +1171,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .crumb-slot { padding-top: 2px; }
 .list-lead { padding-top: 10px; }
 .list-lead + .content { padding-top: 16px; }
+.it-lead { margin-bottom: 16px; }
 .crumb-slot + .content { padding-top: 6px; }
 /* 경로가 하위 탭 줄로 가 빈 자리 — 머리(띠 · 하위 탭 · 3단 띠) 아래 본문까지 틈은 모든 화면 12.
    3단 띠(시장분석 고르는 줄)가 본문 맨 위에 오는 화면은 띠 안 위 틈 6 */
@@ -6802,6 +6803,9 @@ span.cal-day.has { cursor: help; }
     const nudges = [60, 300, 900].map((ms) => setTimeout(() => window.dispatchEvent(new Event('resize')), ms));
     tripUnmount = () => { nudges.forEach(clearTimeout); stop(); };
   }
+  const ITEM_LEAD = {
+    rights: ['매각물건명세서 PDF 하나로, 낙찰 후 떠안을 돈이 있는지 정리해 드립니다.', '경매가 처음이어도 괜찮습니다. 기준선, 세입자, 주의할 항목을 쉬운 말로 보여 드립니다.'],
+  };
   function renderAppDetailTab(it, tab) {
     const box = $('itemContent');
     if (!CLOUD.on || !CLOUD.raw.has(it.id)) {
@@ -6813,7 +6817,9 @@ span.cal-day.has { cursor: help; }
     if (detailKey === key && box.querySelector('.app-detail')) return;
     closeAppDetail();
     /* 임장조사 아래 — 다녀온 뒤 할 일(임장 결과로 수익분석 다시 보기). 앱 화면 안의 같은 단추는 웹에서 감춘다(웹 탭이 따라 바뀌게) */
-    box.innerHTML = `<div class="app-detail tab-${tab}" id="appDetailMount"></div>${tab === 'field' ? '<div class="fld-next"><button type="button" data-act="subtab" data-v="profit">임장 결과로 수익분석 다시 보기 →</button></div>' : ''}`;
+    /* 탭 맨 위 안내 — 물건등록 · 선정물건과 같은 꼴(왼쪽 주황 막대, 상자 없이) */
+    const lead = ITEM_LEAD[tab] ? `<div class="rg-lead it-lead">${ITEM_LEAD[tab].map((t, i) => `<p class="l${i + 1}">${t}</p>`).join('')}</div>` : '';
+    box.innerHTML = `${lead}<div class="app-detail tab-${tab}" id="appDetailMount"></div>${tab === 'field' ? '<div class="fld-next"><button type="button" data-act="subtab" data-v="profit">임장 결과로 수익분석 다시 보기 →</button></div>' : ''}`;
     detailKey = key;
     const el = $('appDetailMount');
     /* 임장조사는 앱 '손품+현장' 화면을 띄우고 현장 카드만 남긴다 (layoutAppCols 의 FIELD_CARDS) */
