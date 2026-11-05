@@ -281,6 +281,13 @@ const view = computed(() => {
   return stats.value ? { ...stats.value, capped: false } : null;
 });
 // 띠 첫 칸 ⓘ — 셈하는 법 · 계산 조건(예전 띠 아래 두 줄)
+/* 웹 — '기준' ⓘ: 유사도와 직접범위가 어떻게 이어지는지(따로 움직이고, 직접범위는 들어갈 때 유사도 범위에서 시작) */
+const modeTip: TipRow[] = [
+  ['유사도', '면적 · 건축 · 층을 % 하나로 한꺼번에 정합니다'],
+  ['직접범위', '누르는 순간의 유사도 범위에서 시작해, 면적 · 건축 막대로 더 좁히거나 넓힙니다'],
+  ['따로 움직임', '직접범위 막대를 움직여도 유사도 %는 그대로이고, 유사도 %를 바꿔도 막대는 그대로입니다'],
+  ['주의', '유사도로 돌아갔다가 다시 직접범위를 누르면 그때의 유사도 범위로 다시 시작합니다(손으로 맞춘 값이 바뀝니다)'],
+];
 const estTip = computed<TipRow[]>(() => [
   ['공식', `${kindF.value} ${kindF.value === '월세' ? '평균 평당 월세' : '평균 평당가'} ${view.value ? vPy(view.value.avgPy) : '-'} × 이 물건 전용 ${myPy.value.toFixed(2)}평`],
   ['중간·최저·최고', `거래마다 ${myPy.value.toFixed(2)}평으로 바꾼 값`],
@@ -683,7 +690,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <span class="pa-lab">거래<span class="pa-seg kindF" role="radiogroup" aria-label="거래 종류">
           <button v-for="k in KINDS" :key="k" type="button" role="radio" :data-k="k" :class="{ on: kindF === k }" :aria-checked="kindF === k" @click="kindF = k">{{ k }} {{ kindCount(k) }}</button>
         </span></span>
-        <span class="pa-lab">기준<span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식">
+        <span class="pa-lab"><InfoTip v-if="webEmbed" :rows="modeTip" under="box">기준</InfoTip><template v-else>기준</template><span class="pa-seg pa-out" role="radiogroup" aria-label="유사 조건 방식">
           <button type="button" role="radio" :class="{ on: simMode === 'sim' }" :aria-checked="simMode === 'sim'" @click="setSimMode('sim')">유사도</button>
           <button type="button" role="radio" :class="{ on: simMode === 'range' }" :aria-checked="simMode === 'range'" @click="setSimMode('range')">직접범위</button>
         </span></span>
