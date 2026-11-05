@@ -1205,7 +1205,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .it-lead:has(+ .rt-wrap) { margin-bottom: 28px; }   /* 권리분석 — 안내와 아래 '권리분석 결과' 제목 사이를 넉넉히 */
 /* 권리분석 결과 ~ 서류 올리기를 흰 상자 하나에 */
 .rt-wrap { margin-bottom: 12px; padding: 20px; border: 1px solid var(--card-line); border-radius: 12px; background: var(--surface); }
-.rt-title { margin: 0 0 14px; font-size: 16px; font-weight: 800; color: var(--text); }
+.rt-title { margin: 0 0 14px; font-size: 16px; line-height: 24px; font-weight: 800; color: var(--text); }   /* 줄 높이를 정수로 — 아래 탭 밑선이 반 픽셀에 걸려 두껍게(흐리게) 보이지 않게 */
 /* 권리분석 위 두 칸 — 왼쪽 알 수 있는 것 · 오른쪽 서류 올리기(2026-11-05). 앱 'AI 분석 요청' 카드는 감추고 이 칸이 대신한다 */
 .app-detail.tab-rights .adp-card:has(.adp-docs) { display: none !important; }
 .rt-top { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 12px; align-items: start; }
@@ -1244,7 +1244,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 @keyframes rt-spin { to { transform: rotate(360deg); } }
 /* 분석 결과 — 탭 셋 · 카드들(상자 없이 왼쪽 칸에 카드가 쌓인다) */
 .rt-res { display: grid; gap: 12px; min-width: 0; }
-.rr-tabs { --boxtab-on: var(--surface); position: relative; }
+.rr-tabs { --boxtab-on: var(--surface); position: relative; height: 34px; box-sizing: border-box; }   /* 손품조사 수요분석 · 시세분석 탭 줄과 같은 높이 34 */
 /* 탭 밑선 — 오른쪽 서류 올리기 상자 끝까지(왼쪽 칸 + 사이 12 + 오른쪽 칸 380) */
 .rr-tabs::after { content: ""; position: absolute; left: 0; bottom: 0; width: calc(100% + 12px + 380px); height: 1px; background: var(--boxtab-line); z-index: 3; pointer-events: none; }
 @media (max-width: 899px) { .rr-tabs::after { width: 100%; } }   /* 박스형 탭 공통 모듈 — 고른 탭 바탕은 흰 상자와 같게 */
