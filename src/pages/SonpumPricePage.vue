@@ -202,9 +202,8 @@ const allRows = computed<PriceRow[]>(() => periodRows.value.map((r, i) => {
     perPy: py > 0 ? (group === '월세' ? (r.monthly ?? 0) : r.price) / py : 0,
   };
 }));
-/* 웹 — 엘베 있음 · 없음(고른 것을 다시 누르면 풀림). 유사도 · 직접범위 어느 쪽이든 같이 건다. 엘베를 아직 모르는 거래는 거르지 않는다 */
+/* 웹 — 엘베 전체 · 있음 · 없음. 유사도 · 직접범위 어느 쪽이든 같이 건다. 엘베를 아직 모르는 거래 · 같은 건물 거래는 거르지 않는다 */
 const elevPick = ref<'yes' | 'no' | null>(sv?.elev ?? null);
-const pickElev = (v: 'yes' | 'no') => { elevPick.value = elevPick.value === v ? null : v; };
 const cond = computed<PriceCond>(() => {
   const base = simMode.value === 'sim' ? simCond(sim.value, me.value) : rangeCond.value;
   return elevPick.value ? { ...base, elev: elevPick.value } : base;
@@ -725,10 +724,11 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }">같은 층</button>
             </span></span>
           </div>
-          <!-- 웹 — 엘베(있음 · 없음, 다시 누르면 풀림) — 층처럼 거르기 상자 안, 유사도 · 직접범위 둘 다 -->
-          <span v-if="webEmbed" class="pa-lab elev-pick">엘베<span class="pa-seg pa-out" role="group" aria-label="엘베">
-            <button type="button" :class="{ on: elevPick === 'yes' }" :aria-pressed="elevPick === 'yes'" @click="pickElev('yes')">있음</button>
-            <button type="button" :class="{ on: elevPick === 'no' }" :aria-pressed="elevPick === 'no'" @click="pickElev('no')">없음</button>
+          <!-- 웹 — 엘베(전체 · 있음 · 없음) — 층처럼 거르기 상자 안, 유사도 · 직접범위 둘 다 -->
+          <span v-if="webEmbed" class="pa-lab elev-pick">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베">
+            <button type="button" role="radio" :class="{ on: !elevPick }" :aria-checked="!elevPick" @click="elevPick = null">전체</button>
+            <button type="button" role="radio" :class="{ on: elevPick === 'yes' }" :aria-checked="elevPick === 'yes'" @click="elevPick = 'yes'">있음</button>
+            <button type="button" role="radio" :class="{ on: elevPick === 'no' }" :aria-checked="elevPick === 'no'" @click="elevPick = 'no'">없음</button>
           </span></span>
         </div>
       </div>
