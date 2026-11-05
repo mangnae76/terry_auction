@@ -6634,7 +6634,7 @@ span.cal-day.has { cursor: help; }
   const sxMeFloor = (it) => { const u = String((it && it.unit) || ''); const f = /(\d+)\s*층/.exec(u); if (f) return Number(f[1]); const h = /(\d{3,4})\s*호/.exec(u); return h ? Math.floor(Number(h[1]) / 100) : 0; };
   const sxLimit = async (list, n, fn) => { let i = 0; await Promise.all(Array.from({ length: Math.min(n, list.length) }, async () => { while (i < list.length) { const x = list[i]; i += 1; await fn(x); } })); };
   const sxMapMsgText = () => (SXG.total ? `${SXG.phase === 'elev' ? '엘베 확인 중' : '위치 찾는 중'} ${SXG.done.toLocaleString('ko-KR')} / ${SXG.total.toLocaleString('ko-KR')}`
-    : (!sxMe() ? '물건카드교체로 내 물건을 고르면 반경으로 거릅니다' : ''));
+    : (!sxMe() ? '물건카드교체로 경매물건을 고르면 반경으로 거릅니다' : ''));
   const sxMapStatus = () => { ['sxMapMsg', 'sxFsMsg'].forEach((id) => { const el = $(id); if (el) el.textContent = sxMapMsgText(); }); };
   /* 위치 · 엘베를 다 받으면(또는 10곳마다) 결과를 다시 그린다 */
   const sxGeoFlush = () => { sxmSave(); SXG.ver += 1; if (agSaleOpen() && $('sxResults')) { agPaintTable(); } };
@@ -6698,7 +6698,7 @@ span.cal-day.has { cursor: help; }
       const sub = [g.range, g.dist != null ? `${g.dist.toLocaleString('ko-KR')}m` : ''].filter(Boolean).join(' · ');
       mv.pin(g.p, { className: `pa-pin${on ? ' on' : ''}`, html: html(`<b>${esc(g.name)} ${g.list.length}건</b>${sub ? `<br>${sub}` : ''}`, String(g.no)), onClick: () => { SXG.focus = on ? '' : g.k; sxDrawMap(); }, z: on ? 50 : 1 });
     });
-    if (meSpot) mv.pin(meSpot, { className: 'pa-pin me', html: html(`<b>${esc((me && me.bld) || '내 물건')}</b>${same ? `<br>같은 건물 ${same}건` : ''}`), z: 1000 });
+    if (meSpot) mv.pin(meSpot, { className: 'pa-pin me', html: html(`<b>${esc((me && me.bld) || '경매물건')}</b>${same ? `<br>같은 건물 ${same}건` : ''}`), z: 1000 });
     if (SXG.tools) SXG.tools.setNear(meSpot || null);
     /* 내 물건 · 반경이 바뀔 때만 다시 맞춘다(지도를 옮겨 둔 것을 함부로 되돌리지 않게) */
     const fk = `${saleItemId}|${SXM.radius}|${meSpot ? `${meSpot.lat},${meSpot.lng}` : groups.length ? 'pts' : ''}`;
@@ -6746,7 +6746,7 @@ span.cal-day.has { cursor: help; }
       SXG.host = document.createElement('div'); SXG.host.className = 'sx-map';
       SXG.host.innerHTML = '<div class="sx-map-in"></div><div class="sx-map-tools"></div>'
         + '<button type="button" class="fs-btn" data-act="sxm-fs" aria-label="지도 전체화면으로 보기"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>전체화면</button>'
-        + '<div class="legend"><span><i style="background:#e03e3e"></i>내 물건</span><span><i style="background:#2b4fd8"></i>매각물건</span></div>';
+        + '<div class="legend"><span><i style="background:#e03e3e"></i>경매물건</span><span><i style="background:#2b4fd8"></i>매각물건</span></div>';
     }
     if (SXG.fs) { if (!$('sxFs')) sxSetFs(true); } else if (slot) slot.appendChild(SXG.host);
     const T = CLOUD.T;
@@ -6900,7 +6900,7 @@ span.cal-day.has { cursor: help; }
   /* 엘베 — 건축물대장 승강기 수(손품조사 시세분석 표와 같은 꼴). 아직 모르면 '-'(조회 중 · 대장 없음 · 1km 밖) */
   const sxElevCell = (addr) => {
     const e = SXG.elevs[sxLotKey(addr)];
-    if (e == null) return `<td><span class="ev u" title="${e === null ? '건축물대장을 찾지 못했습니다' : '내 물건에서 1km 안 지번만 조회합니다'}">-</span></td>`;
+    if (e == null) return `<td><span class="ev u" title="${e === null ? '건축물대장을 찾지 못했습니다' : '경매물건에서 1km 안 지번만 조회합니다'}">-</span></td>`;
     return e > 0 ? `<td><span class="ev o two">${e}대<br>있음</span></td>` : '<td><span class="ev x">없음</span></td>';
   };
   /* 전용 — 두 줄(㎡ 위, 평 아래) */
@@ -6915,7 +6915,7 @@ span.cal-day.has { cursor: help; }
     const full = [it.addr, it.bld, it.unit].filter(Boolean).join(' '); const addr = esc(sxShortAddr(full));
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
     return `<tr class="me"><td class="num">${esc(it.caseNo)}</td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}<td>-</td><td>-</td><td class="num">${esc(it.round || '-')}</td><td>-</td>`
-      + `${sxAreaCell(m2)}${sxElevCell(it.addr)}<td class="num">${built}</td><td class="num">${age}</td><td class="num">-</td><td class="num">${fl}</td><td class="l" title="${esc(full)}"><div class="sx-addr"><span class="addr">${addr || '-'}</span><span class="chips"><span class="same eq">내 물건</span><span class="same">경매지번</span></span></div></td></tr>`;
+      + `${sxAreaCell(m2)}${sxElevCell(it.addr)}<td class="num">${built}</td><td class="num">${age}</td><td class="num">-</td><td class="num">${fl}</td><td class="l" title="${esc(full)}"><div class="sx-addr"><span class="addr">${addr || '-'}</span><span class="chips"><span class="same eq">경매물건</span><span class="same">경매지번</span></span></div></td></tr>`;
   }
   function sxListHtml(rows) {
     const q = String(SX.q || '').replace(/\s+/g, '');
@@ -7009,7 +7009,7 @@ span.cal-day.has { cursor: help; }
     const conds = [`최근 ${q.period} ${saleSpan(q.period)}`, (sxNum(q.amin) || sxNum(q.amax)) ? `면적 ${q.amin || ''}~${q.amax || ''}㎡` : '', (sxNum(q.ymin) || sxNum(q.ymax)) ? `건축 ${q.ymin || ''}~${q.ymax || ''}년` : '', `${st.n.toLocaleString('ko-KR')}건 기준`].filter(Boolean).join(' · ');
     const where = [q.sgg, q.dong].filter(Boolean).join(' ') || q.sido;
     const hero = `<section class="sx-card sx-hero" aria-label="분석결과"><div class="sx-where"><h2>${esc(where)} · ${esc(q.kind || '전체')}</h2><span>${esc(conds)}</span></div>`
-      + `<div class="sx-my"><label for="sxMy">내 물건 감정가</label><input id="sxMy" class="num" inputmode="numeric" autocomplete="off" placeholder="예: 235,000,000 또는 2억3500만" value="${esc(SX.my || '')}"><small>사건 고정카드에서 자동으로 입력합니다</small></div>`
+      + `<div class="sx-my"><label for="sxMy">경매물건 감정가</label><input id="sxMy" class="num" inputmode="numeric" autocomplete="off" placeholder="예: 235,000,000 또는 2억3500만" value="${esc(SX.my || '')}"><small>사건 고정카드에서 자동으로 입력합니다</small></div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각가율</span>${sxBidHtml('A', st.avg)}</div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 중앙값 매각가율</span>${sxBidHtml('B', st.med)}</div></section>`;
     const metrics = [['매각건수', `${st.n.toLocaleString('ko-KR')}건`], ['평균 감정가', sxWon(st.appr)], ['평균 매각가', sxWon(st.sold)], ['중앙값 매각가', sxWon(st.soldMed)],
@@ -7348,7 +7348,7 @@ span.cal-day.has { cursor: help; }
     const list = saleCardOpen ? `<div class="sx-objlist" role="listbox" aria-label="선정물건">${picks.map((x) => `<article role="option" aria-selected="${x.id === saleItemId}" class="sx-obj ${x.id === saleItemId ? 'on' : ''}" data-act="sale-card-pick" data-id="${esc(x.id)}">`
       + `<p class="top"><span class="case lead">${esc(x.caseNo)}</span><i class="bar"></i><span class="court">${esc(x.court || '–')}</span><span class="apr">감정가 <b class="num">${x.apr > 0 ? sxWon(x.apr) : '–'}</b></span></p>`
       + `<p class="addrline"><span class="pd lead"><em>매각기일</em><b>${ymd(x.date)}</b></span><i class="bar"></i><span class="addr">${esc(x.addr)}${x.bld ? ` <b>${esc(x.bld)}</b>` : ''}</span></p></article>`).join('')}</div>` : '';
-    if (!it) return `<div class="ih-top"><span class="ih-court">물건카드교체에서 선정물건을 고르면 그 감정가가 아래 '내 물건 감정가'에 들어갑니다.</span><span class="ih-right sx-pickanchor">${btn}${list}</span></div>`;
+    if (!it) return `<div class="ih-top"><span class="ih-court">물건카드교체에서 선정물건을 고르면 그 감정가가 아래 '경매물건 감정가'에 들어갑니다.</span><span class="ih-right sx-pickanchor">${btn}${list}</span></div>`;
     /* 카드는 선정물건 물건정보의 고정카드 그대로(같은 함수) — 오른쪽 끝에 물건카드교체만 더한다 */
     return itemHeadHtml(it, `<span class="sx-pickanchor">${btn}${list}</span>`);
   }
@@ -7358,7 +7358,7 @@ span.cal-day.has { cursor: help; }
     saleItemId = id; try { localStorage.setItem(SALE_ITEM_KEY, id); } catch (e) { /* 그만 */ }
     if (it.apr > 0) SX.my = Number(it.apr).toLocaleString('ko-KR');
     renderMarket();
-    toast(it.apr > 0 ? `${it.caseNo} 감정가 ${Number(it.apr).toLocaleString('ko-KR')}원을 내 물건 감정가에 넣었습니다.` : `${it.caseNo} — 감정가가 없어 내 물건 감정가는 그대로 둡니다.`, 'info');
+    toast(it.apr > 0 ? `${it.caseNo} 감정가 ${Number(it.apr).toLocaleString('ko-KR')}원을 경매물건 감정가에 넣었습니다.` : `${it.caseNo} — 감정가가 없어 경매물건 감정가는 그대로 둡니다.`, 'info');
   }
   function saleCaseHtml() {
     /* 고른 카드가 있는데 감정가 칸이 비었으면 그 감정가로(새로고침 뒤에도 카드와 칸이 맞게) */
