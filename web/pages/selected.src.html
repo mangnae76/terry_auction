@@ -7036,9 +7036,9 @@ span.cal-day.has { cursor: help; }
   function saleCardHtml() {
     const picks = salePicks(); if (!picks.length) return '';
     const it = picks.find((x) => x.id === saleItemId) || null;
-    const btn = `<button type="button" class="ih-swap" data-act="sale-card-menu" aria-haspopup="listbox" aria-expanded="${saleCardOpen}">카드교체<i class="caret">▾</i></button>`;
-    const list = saleCardOpen ? `<ul class="sx-cardlist" role="listbox" aria-label="선정물건">${picks.map((x) => `<li role="option" aria-selected="${x.id === saleItemId}" class="${x.id === saleItemId ? 'on' : ''}" data-act="sale-card-pick" data-id="${esc(x.id)}"><b class="num">${esc(x.caseNo)}</b><span>${esc(agRegionOf(x.addr) || x.addr)}${x.type ? ` · ${esc(TYPE_NAME(x.type) || x.type)}` : ''}</span><span class="num">${x.apr > 0 ? sxWon(x.apr) : '-'}</span></li>`).join('')}</ul>` : '';
-    if (!it) return `<div class="ih-top"><span class="ih-court">카드교체에서 선정물건을 고르면 그 감정가가 아래 '내 물건 감정가'에 들어갑니다.</span><span class="ih-right">${btn}</span></div>${list}`;
+    const btn = `<button type="button" class="ih-swap" data-act="sale-card-menu" aria-haspopup="listbox" aria-expanded="${saleCardOpen}">물건카드교체<i class="caret">▾</i></button>`;
+    const list = saleCardOpen ? `<ul class="sx-cardlist" role="listbox" aria-label="선정물건">${picks.map((x) => `<li role="option" aria-selected="${x.id === saleItemId}" class="${x.id === saleItemId ? 'on' : ''}" data-act="sale-card-pick" data-id="${esc(x.id)}"><b class="num">${esc(x.caseNo)}</b><span>${esc(agRegionOf(x.addr) || x.addr)}${x.bld ? ` · ${esc(x.bld)}` : ''}</span><span class="num">${x.apr > 0 ? sxWon(x.apr) : '-'}</span></li>`).join('')}</ul>` : '';
+    if (!it) return `<div class="ih-top"><span class="ih-court">물건카드교체에서 선정물건을 고르면 그 감정가가 아래 '내 물건 감정가'에 들어갑니다.</span><span class="ih-right">${btn}</span></div>${list}`;
     const a = detailOf(it); const T = CLOUD.T;
     const kind = TYPE_NAME(it.type) || '다세대';
     const sale = (T ? T.saleKindOf(a) : '토건일괄매각').replace('토건일괄매각', '토지건물 일괄매각');
