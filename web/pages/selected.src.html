@@ -1208,7 +1208,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rt-drop .ic { font-size: 32px; line-height: 1; filter: grayscale(1); opacity: .55; transition: filter .15s, opacity .15s; }   /* 물건등록 올리는 칸(.rg-empty .ic)과 같은 폴더 — 평소 회색, 올리면 원래 색 */
 .rt-drop:hover .ic, .rt-drop.over .ic { filter: none; opacity: 1; }
 .rt-drop b { font-size: 14px; font-weight: 700; color: var(--text); }
-.rt-drop span { font-size: 12px; color: var(--muted); }
+.rt-drop span:not(.ic) { font-size: 12px; line-height: 1.6; color: var(--muted); }
 .rt-drop:hover, .rt-drop.over { border-color: var(--blue); background: var(--blue-soft); }
 .rt-drop.busy { pointer-events: none; opacity: .7; }
 .rt-more { margin: 10px 0 0; font-size: 12px; line-height: 1.6; color: var(--muted); word-break: keep-all; }
@@ -6899,7 +6899,7 @@ span.cal-day.has { cursor: help; }
       <div class="rt-docs">${docBox(spec)}${others.filter((r) => r.has || r.err).map(docBox).join('')}</div>
       <label class="rt-drop ${RT.busy ? 'busy' : ''}" for="rtFile">
         <span class="ic" aria-hidden="true">📂</span>
-        <b>${RT.busy ? '올리는 중…' : 'PDF 파일 선택하기'}</b><span>또는 파일을 이 칸으로 끌어다 놓아 주세요 · 여러 개를 한꺼번에</span>
+        <b>${RT.busy ? '올리는 중…' : 'PDF 파일 선택하기'}</b><span>또는 파일을 이 칸으로 끌어다 넣어 주세요.<br>여러 개를 한 번에 올릴 수도 있습니다.</span>
         <input type="file" id="rtFile" accept="application/pdf,image/*" multiple hidden>
       </label>
       ${left.length ? `<p class="rt-more">함께 올리면 더 정확해집니다 — ${left.map((r) => r.name).join(' · ')}</p>` : ''}
