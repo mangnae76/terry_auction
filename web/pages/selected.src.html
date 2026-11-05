@@ -1053,15 +1053,16 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-my label { font-size: 13px; font-weight: 700; color: var(--muted); }
 .sx-my input { width: 100%; min-width: 0; height: 48px; padding: 0 12px; border: 2px solid var(--sx-accent); border-radius: 10px; background: var(--sx-tint); color: var(--text); font: inherit; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .sx-my small { font-size: 12px; color: var(--muted); }
-.sx-bid { display: grid; gap: 2px; align-content: start; padding-left: 18px; border-left: 1px solid var(--line); }
+.sx-bid { display: grid; gap: 6px; align-content: start; padding-left: 18px; border-left: 1px solid var(--line); }
 .sx-bid .k { font-size: 13px; font-weight: 700; color: var(--muted); }
-.sx-bid .v { font-size: 28px; font-weight: 800; color: var(--sx-accent); letter-spacing: -.02em; line-height: 1.25; }
+.sx-bid .v { font-size: 20px; font-weight: 800; color: var(--sx-accent); font-variant-numeric: tabular-nums; line-height: 1.2; }   /* 왼쪽 감정가 칸 글(20)과 같은 크기 */
+.sx-bid .sx-vrow { height: 48px; }   /* 감정가 입력칸 높이(48)와 같은 줄 */
 .sx-bid .w { font-size: 13px; color: var(--muted); }
 .sx-vrow { display: flex; align-items: center; gap: 6px; }
 .sx-copy { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--muted); cursor: pointer; }
 .sx-copy:hover { border-color: var(--blue); color: var(--blue); }
 .sx-copy svg { width: 15px; height: 15px; }
-.sx-bid .r { font-size: 13px; color: var(--text); }
+.sx-bid .r { font-size: 12px; color: var(--muted); }   /* 감정가 칸 아래 안내(12)와 같은 줄 */
 /* 지표결과 */
 .sx-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .sx-metrics .m { display: grid; gap: 2px; padding: 12px 14px; border-right: 1px solid var(--card-line); border-bottom: 1px solid var(--card-line); }
@@ -6870,9 +6871,9 @@ span.cal-day.has { cursor: help; }
   function sxBidHtml(k, rate) {
     const my = sxParseWon(SX.my); const ok = my > 0 && rate != null;
     /* 금액 옆 복사 — 일의 자리까지(반올림 원 단위, 숫자만) */
-    return `<span class="sx-vrow"><span class="v num" id="sxBid${k}">${ok ? sxWon(my * rate) : '-'}</span>${ok ? `<button type="button" class="sx-copy" data-act="sx-bid-copy" data-v="${Math.round(my * rate)}" aria-label="예상 입찰가 복사"${tip('일의 자리까지 복사')}>${I.copy}</button>` : ''}</span>`
-      + `<span class="w num" id="sxBid${k}w">${ok ? `${Math.round(my * rate).toLocaleString('ko-KR')}원` : '감정가를 입력하세요'}</span>`
-      + `<span class="r" id="sxBid${k}r">${rate != null ? `감정가 × ${sxPct(rate)}` : ''}</span>`;
+    /* 금액은 일의 자리까지 빨갛게 — 왼쪽 경매물건 감정가 칸과 같은 크기 · 같은 줄(2026-11-06) */
+    return `<span class="sx-vrow"><span class="v num" id="sxBid${k}">${ok ? `${Math.round(my * rate).toLocaleString('ko-KR')}원` : '-'}</span>${ok ? `<button type="button" class="sx-copy" data-act="sx-bid-copy" data-v="${Math.round(my * rate)}" aria-label="예상 입찰가 복사"${tip('일의 자리까지 복사')}>${I.copy}</button>` : ''}</span>`
+      + `<span class="r" id="sxBid${k}r">${rate != null ? `감정가 × ${sxPct(rate)}` : ''}${!ok && rate != null ? ' · 감정가를 입력하세요' : ''}</span>`;
   }
   function sxPaintBids() {
     const rows = sxRows(); if (!rows) return;
