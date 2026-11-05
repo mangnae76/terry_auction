@@ -720,7 +720,7 @@ button { cursor: pointer; }
 .mk-sale .ag-cov-sum b { font-weight: 700; color: var(--blue); }
 .mk-sale .ag-link .ag-tri { margin-left: 4px; vertical-align: 0; }
 .mk-sale .ag-link { border: 0; background: none; padding: 0 2px; font: inherit; font-size: 13px; font-weight: 600; color: var(--blue); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
-.mk-sale .ag-cov-list { margin-top: 8px; padding: 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 8px; }
+.mk-sale .ag-cov-list { margin-top: 8px; }   /* 바깥 상자 없이 표 테두리만 — 표 오른쪽 끝 = 윗줄 목록보기 끝 */
 .mk-sale .ag-cov input.ag-cov-find { width: 240px; height: 30px; font-size: 13px; }
 .mk-sale .ag-cov-wrap { max-height: 240px; overflow: auto; border: 1px solid var(--line, #e5e7eb); border-radius: 8px; }
 .mk-sale .ag-cov-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }   /* 다섯 칸(동네 · 종류 · 물건 · 수집일 · 사이트) 같은 너비 · 모두 가운데(2026-11-06) */
@@ -6791,7 +6791,7 @@ span.cal-day.has { cursor: help; }
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}<span class="sx-vsep" aria-hidden="true"></span>${seg('months', AG_MONTHS)}</div>`
       + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div></div></div></div>`
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
-      + `<div class="sx-manage">${agQueueHtml()}${agCovHtml(metaCnt, metaUpd ? `<span class="sx-qtail"><span class="sx-meta">${metaUpd}</span></span>` : '')}</div>`
+      + `<div class="sx-manage">${agQueueHtml()}${agCovHtml(metaCnt, metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : '')}</div>`
       + `</section></div>`;
   }
   /* 모은 동네 — 도우미가 인근매각물건을 모을 때마다 동네 · 물건 수 · 날짜를 적는다(agent/coverage). 이미 모은 동네는 다시 모을 때 새로 나온 것만 더한다 */
@@ -6829,7 +6829,7 @@ span.cal-day.has { cursor: help; }
   }
   function agCovHtml(cnt = '', metaHtml = '') {
     const rows = agCovView();
-    if (!rows.length) return `<div class="ag-cov"><small>읍면동 낙찰사례 수집데이터</small><span class="ag-cov-none">아직 없습니다 — 인근매각물건을 모으면 여기 동네별로 남습니다.</span>${metaHtml}</div>`;
+    if (!rows.length) return `<div class="ag-cov"><small>읍면동 낙찰사례 수집데이터</small><span class="ag-cov-none">아직 없습니다 — 인근매각물건을 모으면 여기 동네별로 남습니다.</span><span class="sx-qtail">${metaHtml}</span></div>`;
     const places = new Set(rows.map((c) => c.region)).size;
     /* 몇 곳 · 저장 총 N건을 파랑으로 나란히, 바로 옆 목록보기 — 업데이트 시각은 오른쪽 끝(2026-11-06) */
     const sum = `<span class="ag-cov-sum"><b>${places.toLocaleString('ko-KR')}곳</b> · <b>${esc(cnt)}</b></span>`;
@@ -6840,7 +6840,8 @@ span.cal-day.has { cursor: help; }
       : '';
     /* 목록을 펴면 동네 찾기 칸이 이름 바로 오른쪽에(2026-11-06) */
     const find = AG.covOpen ? `<input type="text" class="adm-input ag-cov-find" id="agCovQ" placeholder="동네 찾기 예 검암동" value="${esc(AG.covQ || '')}">` : '';
-    return `<div class="ag-cov"><small>읍면동 낙찰사례 수집데이터</small>${find}${sum}${btn}${metaHtml}</div>${list}`;
+    /* 업데이트 시각 · 목록보기는 오른쪽 끝 — 목록보기 끝 = 아래 표 오른쪽 끝 */
+    return `<div class="ag-cov"><small>읍면동 낙찰사례 수집데이터</small>${find}${sum}<span class="sx-qtail">${metaHtml}${btn}</span></div>${list}`;
   }
   /* 모을 물건 대기열 — 도우미가 사건마다 탱크옥션 검색 → 상세 → 인근매각사례를 끝까지 모으고 대기열에서 뺀다(agent/queue).
      [대기열수집]을 누르면 선정물건 중 아직 안 모은 동네(종류까지 같은)의 사건을 동네마다 하나씩 먼저 올린다 */
