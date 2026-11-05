@@ -1139,6 +1139,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 
 /* 경로(홈 › …) — 모든 화면 하위 탭 줄 오른쪽 끝 한 곳(10-31, 따로 있던 경로 줄을 없앰) */
 .sub-crumb { flex: none; }
+/* 저장 표시 — 탭 줄 오른쪽, 경로 왼쪽. 작은 회색(실거래가 UPDATE · AI 분석 시각과 같은 꼴) */
+.save-mark { flex: none; margin-left: auto; padding-right: 12px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.save-mark.ing { color: var(--blue); } .save-mark.err { color: #dc2626; }
+.save-mark[hidden] { display: none; }
 .reg-tabbar .sub-crumb { position: relative; z-index: 1; margin-left: auto; align-self: center; }   /* 탭 줄 흰 바탕(::before) 위로 */
 .sub-crumb > .crumbs { height: var(--tab-h); padding: 0 2px 0 0 !important; justify-content: flex-end; }
 .sub-crumb:empty { display: none; }
@@ -4187,7 +4191,7 @@ span.cal-day.has { cursor: help; }
 
 <main>
   <!-- 하위 탭 — 하위 탭이 있는 화면에서만 머리띠 아래 한 단 더 선다(없으면 숨기고 필터 상자가 머리띠에 바로 붙는다) -->
-  <nav class="subtabs" id="subTabs" hidden aria-label="하위 메뉴"><span class="sub-caret" id="subCaret" hidden aria-hidden="true"></span><div class="wrap"><div class="sub-crumb-left" id="subCrumbLeft"></div><div class="subtabs-in" id="subTabsIn" role="tablist"></div><div class="sub-crumb" id="subCrumbSlot"></div></div></nav>
+  <nav class="subtabs" id="subTabs" hidden aria-label="하위 메뉴"><span class="sub-caret" id="subCaret" hidden aria-hidden="true"></span><div class="wrap"><div class="sub-crumb-left" id="subCrumbLeft"></div><div class="subtabs-in" id="subTabsIn" role="tablist"></div><span class="save-mark" id="saveMark" role="status" aria-live="polite" hidden></span><div class="sub-crumb" id="subCrumbSlot"></div></div></nav>
   <div id="listView" hidden>   <!-- 처음엔 감춘다 — 첫 그림(render)이 주소에 맞는 화면만 연다. 열어 두면 새로고침 때 선정물건 틀이 잠깐 보였다(2026-11-03) -->
   <div class="toolbar-shell" id="toolbarShell">
     <div class="wrap">
@@ -5759,6 +5763,7 @@ span.cal-day.has { cursor: help; }
     /* 'hide' 탭(마이페이지 › 알림)은 평소엔 줄에 세우지 않는다(종 아이콘 · 내 정보 카드로 들어간다).
        그 화면을 보는 동안만 제자리(내 정보 옆)에 세워 밑줄을 준다 — 경로(마이페이지 › 알림)와 탭 불이 어긋나지 않게(BUG-0030) */
     const curOn = cur;
+    paintSaveMark();
     $('subTabsIn').innerHTML = tabs ? whereTag() + tabs.filter((x) => (x[3] !== 'hide' || x[0] === cur) && (x[3] !== 'admin' || agIsAdmin())).map(([k, ic, t]) => `<button type="button" class="subtab ${curOn === k ? 'on' : ''}" role="tab" aria-selected="${curOn === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
     if (tabs) syncStickTop();
     alignSubTabs();
@@ -7582,6 +7587,22 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
   });
 
   const byId = (id) => items.find((x) => x.id === id);
+  /* ===== 저장 표시 — 물건상세 탭 줄 오른쪽(경로 왼쪽)에 하나만. '저장 중… → 저장됨 · 방금'(마이페이지와 같은 시간 말).
+     이 창에서 아직 저장하지 않았으면 그 물건의 마지막 저장 시각(updatedAt)을 보인다 ===== */
+  const SV = { id: '', state: '', at: 0 };
+  function paintSaveMark() {
+    const el = $('saveMark'); if (!el) return;
+    const id = S.route === 'item' ? S.itemId : '';
+    const a = id && CLOUD.raw && CLOUD.raw.get(id);
+    const ago = (t) => (CLOUD.T && CLOUD.T.agoText ? CLOUD.T.agoText(t) : '');
+    let txt = ''; let cls = '';
+    if (id && SV.id === id && SV.state === 'ing') { txt = '저장 중…'; cls = 'ing'; }
+    else if (id && SV.id === id && SV.state === 'err') { txt = '저장하지 못했습니다'; cls = 'err'; }
+    else if (id && SV.id === id && SV.state === 'ok') txt = `저장됨 · ${ago(SV.at)}`;
+    else if (a && a.updatedAt && ago(a.updatedAt)) txt = `저장됨 · ${ago(a.updatedAt)}`;
+    el.hidden = !txt; el.textContent = txt; el.className = `save-mark ${cls}`;
+  }
+  setInterval(paintSaveMark, 30000);   /* '방금 → 1분 전'처럼 시간이 흐르게 */
   /* ===== 앱 자료 연결 — 앱의 로그인·물건 저장소(authStore · auctionStore)를 그대로 쓴다 =====
      로그인 전에는 예시 물건을 보여 주고, 로그인하면 앱과 같은 Firestore 물건으로 바꾼다.
      웹에서 바꾼 중요도·단계·보관·휴지통은 앱 저장소의 함수(saveAuction · archiveAuctions …)로 그대로 적는다 */
@@ -7685,6 +7706,12 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     T.startStores();
     const auth = T.useAuthStore(); const st = T.useAuctionStore();
     Object.assign(CLOUD, { T, auth, store: st });
+    /* 저장 표시 — 앱 화면들이 부르는 저장(store.saveAuction)을 감싸 시작 · 끝을 안다(웹만, 저장 동작은 그대로) */
+    { const save = st.saveAuction; st.saveAuction = async (a, ...rest) => {
+      const id = a && a.id; if (id) { SV.id = id; SV.state = 'ing'; paintSaveMark(); }
+      try { const r = await save(a, ...rest); if (id) { SV.state = 'ok'; SV.at = Date.now(); paintSaveMark(); } return r; }
+      catch (e) { if (id) { SV.state = 'err'; paintSaveMark(); } throw e; }
+    }; }
     auth.initialize();
     /* 새 공지 · 이벤트 · 업데이트 — 앱 공지 탭과 같은 셈으로 '공지' 옆 점 */
     if (T.useBoardFeed) { try { const feed = T.useBoardFeed(); T.watch(() => feed.notices.value, (v) => { HM.notices = Array.isArray(v) ? v : []; if (S.route === 'home') renderHome(); }, { immediate: true }); } catch (e) { /* 홈 공지만 비어 보인다 */ } }

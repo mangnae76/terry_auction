@@ -43,6 +43,7 @@ export {
   sendAgentCommand, sendAgentStop, agentHeartbeat, watchAgentStatus, watchAgentDatasetMeta, watchAgentCoverage, watchAgentQueue, saveAgentQueue, loadAgentDataset, agentOnline,
 } from '../../src/services/agentRemote';
 export { updateStamp, UPDATE_PREFIX } from '../../src/services/updateStamp';
+export { agoText } from '../../src/utils/agoText';   /* '방금 · ○분 전' — 웹 물건상세 저장 표시 */
 /* 시도 · 시군구 표(법정동 코드) · 시군구의 동 이름(최근 실거래) — 경매사례 지역 고르기 · 도우미 동 추가 */
 export { SIDO_NAMES, districtsOf } from '../../src/services/regionCodes';
 /* 건물 연차(햇수식 N년차) — 앱과 같은 셈 */
