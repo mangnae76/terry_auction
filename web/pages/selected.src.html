@@ -7012,7 +7012,7 @@ span.cal-day.has { cursor: help; }
       const take = rows.filter((r) => r.status === '인수');
       const sums = take.map((r) => rtWon(r.amount));
       const sumTxt = take.length && sums.every((n) => n != null) ? `${sums.reduce((a, b) => a + b, 0).toLocaleString('ko-KR')}원` : take.length ? '금액 일부 미상' : '0원';
-      body = `<section class="rr-card"><h4>지워지는 권리와 떠안는 권리</h4><p class="rr-sub">말소기준권리와 서류에 적힌 권리를 한 줄씩 — 인수는 낙찰자가 떠안고, 소멸은 낙찰되면 지워집니다</p>
+      body = `<section class="rr-card"><h4>지워지는 권리와 떠안는 권리</h4><p class="rr-sub">매각물건명세서 기준, 말소기준권리와 '매각으로 소멸되지 않는 권리' 칸</p>
           ${rows.length ? `<div class="rr-rows">${rows.map((r) => `<div class="rr-row ${r.status === '인수' ? 'take' : 'gone'} ${isBase(r) ? 'base' : ''}">
             <div class="t"><b>${esc(r.kind)}</b>${isBase(r) ? '<span class="rr-tag base">말소기준권리</span>' : ''}<span class="rr-tag ${r.status === '인수' ? 'take' : 'gone'}">${esc(r.status)}</span></div>
             <div class="d">${[rtD(r.date), r.holder, r.rank].filter(Boolean).map(esc).join(' · ')}</div>
