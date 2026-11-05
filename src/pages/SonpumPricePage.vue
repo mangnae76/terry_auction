@@ -1106,7 +1106,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 700; color: #111827; cursor: pointer; }
 .fs-btn:hover { color: var(--blue); }
 /* ===== 전체화면(C안) — 왼쪽 340 고정 칸(결론 → 조건 → 유사물건 목록) · 오른쪽 지도. 거래 랭킹처럼 목록이 왼쪽(2026-11-05) ===== */
-.pa.fs { position: fixed; inset: 0; z-index: 3000; margin: 0; border-radius: 0; padding: 0; gap: 12px; background: #e7ebf1;
+.pa.fs { position: fixed; inset: 0; z-index: 3000; margin: 0; border-radius: 0; padding: 0; gap: 12px; background: #e7ebf1; overflow: hidden;
   display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: 52px auto auto minmax(0, 1fr); }
 .pa.fs > .zone { display: contents; }
 .pa.fs .fs-top { grid-column: 1 / -1; grid-row: 1; display: flex; align-items: center; gap: 12px; padding: 0 14px; background: #213366; color: #fff; }
@@ -1122,12 +1122,14 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa.fs .fs-top .pa-load { background: #fff; color: #213366; }
 .pa.fs .fs-top .pa-load:hover { background: #e8edf8; }
 .fs-hint { font-size: 12px; color: rgba(255, 255, 255, .6); white-space: nowrap; }
-.pa.fs .map { grid-column: 2; grid-row: 2 / -1; margin: 0 12px 12px 0; border: 1px solid var(--line); border-radius: 12px; min-height: 0; }
+/* 임장경로처럼 — 지도가 위 띠 아래를 꽉 채우고, 왼쪽 상자들은 그 위에 떠 있다 */
+.pa.fs .map { grid-column: 1 / -1; grid-row: 2 / -1; margin-top: -12px; border: 0; border-radius: 0; min-height: 0; z-index: 0; }
+.pa.fs .map .legend { left: 364px; }   /* 범례는 떠 있는 왼쪽 상자 옆으로 */
 .pa.fs .map-in { height: 100%; }
 /* 오른쪽 칸 — 결론(등수 칸 둘 줄) · 조건 · 목록 */
 .pa.fs .zone-h, .pa.fs .pa-err { display: none; }
 /* 왼쪽 칸 — 거래 랭킹처럼 회색 바탕 위 흰 상자(모서리 12)를 쌓고, 위 띠와 떨어뜨린다 */
-.pa.fs :is(.est, .conds, .fs-list) { margin-left: 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+.pa.fs :is(.est, .conds, .fs-list) { position: relative; z-index: 2; margin-left: 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 20px rgba(17, 24, 39, .14); }
 .pa.fs .est { grid-column: 1; grid-row: 2; padding: 14px; }
 .pa.fs .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .pa.fs .tile { padding: 9px 8px; }
