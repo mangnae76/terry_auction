@@ -7595,20 +7595,28 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
      물건 하나를 연 탭은 그 물건만, 물건카드(목록)는 이 창에서 마지막으로 저장된 물건을 사건번호와 함께.
      이 창에서 저장이 일어나기 전에는 숨긴다 — 물건 기록엔 저장 시각 칸이 없고, 작성 기록(editLog)은 같은 화면을
      되풀이해 고치면 시각을 새로 찍지 않아 '2시간 전'처럼 틀리게 보였다(진짜 저장 시각은 앱 저장소를 고칠 때 넣는다) ===== */
-  const SV = { id: '', state: '', at: 0, label: '' };   /* id 'import' — 물건등록이 새 물건을 넣은 저장(label 은 사건번호 · N건) */
+  const SV = { id: '', state: '', at: 0, label: '' };   /* id 'import' — 물건등록이 새 물건을 넣은 저장 */
+  /* 새로고침 뒤에도 '몇 분 전'을 보이게 — 이 브라우저에 물건별 마지막 저장 시각을 남긴다(물건 기록엔 저장 시각 칸이 없다).
+     '*' 는 어느 물건이든 마지막 저장. 휴대폰 앱에서 저장한 것은 여기 안 남는다 */
+  const SAVE_KEY = 'ta.web.savedAt';
+  const savedAtMap = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') || {}; } catch (e) { return {}; } };
+  const rememberSave = (id, at) => {
+    try {
+      const m = savedAtMap(); m['*'] = at; if (id && id !== 'import') m[id] = at;
+      const keep = Object.entries(m).sort((x, y) => y[1] - x[1]).slice(0, 300);   /* 너무 길어지지 않게 최근 300개만 */
+      localStorage.setItem(SAVE_KEY, JSON.stringify(Object.fromEntries(keep)));
+    } catch (e) { /* 이 창에서만 보인다 */ }
+  };
   function paintSaveMark() {
     const inItem = S.route === 'item'; const inList = S.route === 'list'; const inReg = S.route === 'register';
     const el = $(inReg ? 'saveMarkReg' : 'saveMark'); if (!el) return;
-    const mine = SV.id && SV.state && ((inItem && SV.id === S.itemId) || inList || inReg);
+    const ago = (t) => (CLOUD.T && CLOUD.T.agoText ? CLOUD.T.agoText(t) : '');
+    /* 지금 저장 중 · 실패 — 물건 하나를 연 탭은 그 물건만, 물건카드 · 물건등록은 어느 물건이든 */
+    const live = SV.id && SV.state && ((inItem && SV.id === S.itemId) || inList || inReg);
     let txt = ''; let cls = '';
-    if (mine) {
-      const ago = (t) => (CLOUD.T && CLOUD.T.agoText ? CLOUD.T.agoText(t) : '');
-      const it = SV.id !== 'import' && !inItem ? items.find((x) => x.id === SV.id) : null;
-      const tail = SV.id === 'import' ? (SV.label ? ` · ${SV.label}` : '') : it && it.caseNo ? ` · ${it.caseNo}` : '';
-      if (SV.state === 'ing') { txt = `저장 중…${tail}`; cls = 'ing'; }
-      else if (SV.state === 'err') { txt = `저장하지 못했습니다${tail}`; cls = 'err'; }
-      else txt = `저장됨 · ${ago(SV.at)}${tail}`;
-    }
+    if (live && SV.state === 'ing') { txt = '저장 중…'; cls = 'ing'; }
+    else if (live && SV.state === 'err') { txt = '저장하지 못했습니다'; cls = 'err'; }
+    else if (inItem || inList || inReg) { const at = savedAtMap()[inItem ? S.itemId : '*']; if (at && ago(at)) txt = `저장됨 · ${ago(at)}`; }
     el.hidden = !txt; el.textContent = txt; el.className = `save-mark ${cls}`;
   }
   setInterval(paintSaveMark, 30000);   /* '방금 → 1분 전'처럼 시간이 흐르게 */
@@ -7718,14 +7726,14 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     /* 저장 표시 — 앱 화면들이 부르는 저장(store.saveAuction)을 감싸 시작 · 끝을 안다(웹만, 저장 동작은 그대로) */
     { const save = st.saveAuction; st.saveAuction = async (a, ...rest) => {
       const id = a && a.id; if (id) { SV.id = id; SV.state = 'ing'; paintSaveMark(); }
-      try { const r = await save(a, ...rest); if (id) { SV.state = 'ok'; SV.at = Date.now(); paintSaveMark(); } return r; }
+      try { const r = await save(a, ...rest); if (id) { SV.state = 'ok'; SV.at = Date.now(); rememberSave(id, SV.at); paintSaveMark(); } return r; }
       catch (e) { if (id) { SV.state = 'err'; paintSaveMark(); } throw e; }
     }; }
     /* 물건등록(PDF · 드라이브)이 새 물건을 넣는 저장 — 따로 부르는 함수라 같이 감싼다 */
     if (st.importParsedPdfAuctions) { const imp = st.importParsedPdfAuctions; st.importParsedPdfAuctions = async (list, ...rest) => {
       const arr = Array.isArray(list) ? list : []; const first = arr[0] || {};
       Object.assign(SV, { id: 'import', state: 'ing', label: arr.length > 1 ? `${arr.length}건` : (first.caseNumber || '') }); paintSaveMark();
-      try { const r = await imp(list, ...rest); SV.state = 'ok'; SV.at = Date.now(); paintSaveMark(); return r; }
+      try { const r = await imp(list, ...rest); SV.state = 'ok'; SV.at = Date.now(); rememberSave('import', SV.at); (Array.isArray(r) ? r : []).forEach((x) => x && x.id && rememberSave(x.id, SV.at)); paintSaveMark(); return r; }
       catch (e) { SV.state = 'err'; paintSaveMark(); throw e; }
     }; }
     auth.initialize();
