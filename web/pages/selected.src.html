@@ -8500,6 +8500,8 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     dep.dataset.auto = '1';
   });
 
+  /* 물건카드교체 목록 — 단추 · 목록 바깥 어디든 누르면 닫는다(지도처럼 누름을 삼키는 곳도 잡게 먼저 받는다) */
+  document.addEventListener('pointerdown', (e) => { if (saleCardOpen && !e.target.closest('.sx-pickanchor')) { saleCardOpen = false; renderSonHead(); } }, true);
   document.addEventListener('click', (e) => {
     const t = e.target.closest('[data-act]');
     /* 선정물건 달력도 홈과 같다 — 날짜를 골라 둔 채 날짜 말고 어디든 누르면 푼다(목록 다시 전체). 누른 단추는 제 일을 그대로 한다 */
@@ -8508,7 +8510,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     if (S.menu && !e.target.closest('.float-menu') && !(t && ['bid-result', 'stage-menu', 'result-menu'].includes(t.dataset.act))) { S.menu = null; syncMenu(); }
     /* 홈 달력에서 날짜를 골라 둔 채 날짜 말고 어디든 누르면 고른 것을 푼다(목록 다시 전체). 누른 단추는 제 일을 그대로 한다 */
     if (S.homeDay && !(t && t.dataset.act === 'hm-cal-day')) { S.homeDay = ''; if (S.route === 'home' && !t) { renderHome(); return; } }
-    if (saleCardOpen && !e.target.closest('.sx-fixcard')) { saleCardOpen = false; renderSonHead(); }   /* 카드교체 목록 — 바깥을 누르면 닫는다 */
     if (!t) return;
     const act = t.dataset.act; const id = t.dataset.id; const v = t.dataset.v; const it = id ? byId(id) : null;
     if (t.tagName === 'A') e.preventDefault();
