@@ -969,6 +969,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa.fs .simB > .pa-lab, .pa.fs .simrow > :is(.elev-pick, .floor-pick) { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 8px; width: 100%; }
 .pa.fs .simrow.has-elev .simB .pa-lab .pa-seg, .pa.fs .simrow > :is(.elev-pick, .floor-pick) .pa-seg { width: 100% !important; }
 .pa.fs .simrow > :is(.elev-pick, .floor-pick) .pa-seg button { flex: 1 1 0; min-width: 0; padding: 0 4px; }
+/* 층 '전체'는 엘베 '전체'와 같은 폭(세 칸 중 하나), '같은 층'이 나머지를 넓게 */
+.pa.fs .simrow > .floor-pick .pa-seg button:first-child { flex: 0 0 calc((100% - 8px) / 3); }
 .pa.fs .acts-r { justify-content: stretch; order: 99; }
 .pa.fs .conds > .acts-r { justify-self: stretch; }   /* 전체화면 — 초기화 · 저장은 조건(반경 · 거래 · 기준 · 유사도/직접범위) 다 고른 뒤 맨 아래 */
 .pa.fs .acts-r .save-btn { flex: 1; width: auto; min-height: 44px; }
