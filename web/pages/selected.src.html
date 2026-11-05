@@ -1259,6 +1259,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 @keyframes rt-spin { to { transform: rotate(360deg); } }
 /* 분석 결과 — 탭 셋 · 카드들(상자 없이 왼쪽 칸에 카드가 쌓인다) */
 .rt-res { display: grid; gap: 12px; min-width: 0; }
+.cm-tabs { --boxtab-on: var(--bg); height: 34px; margin: 0 0 12px; border-bottom: 1px solid var(--boxtab-line); box-sizing: content-box; }   /* 커뮤니티 박스형 탭 — 고른 탭 바탕은 페이지 바탕과 같게 */
 .rr-tabs { --boxtab-on: var(--surface); position: relative; height: 34px; box-sizing: border-box; }   /* 손품조사 수요분석 · 시세분석 탭 줄과 같은 높이 34 */
 /* 탭 밑선 — 오른쪽 서류 올리기 상자 끝까지(왼쪽 칸 + 사이 12 + 오른쪽 칸 380) */
 .rr-tabs::after { content: ""; position: absolute; left: 0; bottom: 0; width: calc(100% + 12px + 380px); height: 1px; background: var(--boxtab-line); z-index: 3; pointer-events: none; }
@@ -3879,8 +3880,8 @@ html, body { overflow-x: clip; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --boxtab-line: rgba(255, 255, 255, .26); --boxtab-off: #1b2333; --boxtab-off-hover: #222c40; } }
 .app-market .adm-view-tabs, .pw-chaptabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-tabs { --boxtab-on: var(--bg); }
 .app-page[data-k="finance"] .kind-chips { margin: 4px 16px 10px !important; border-bottom: 1px solid var(--boxtab-line); } /* 세금 틀(.tax-shell)이 좌우 -16 이라 16 을 돌려준다 — 위 상자들과 끝선 맞춤 */
-:is(.app-market .adm-view-tabs, .pw-chaptabs, .rr-tabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-header .fin-tabs) { display: flex !important; align-items: flex-end !important; gap: 4px !important; padding-left: 0 !important; }
-:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .rr-tabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab) {
+:is(.app-market .adm-view-tabs, .pw-chaptabs, .rr-tabs, .cm-tabs, .app-page[data-k="finance"] .kind-chips, .app-page[data-k="finance"] .fin-header .fin-tabs) { display: flex !important; align-items: flex-end !important; gap: 4px !important; padding-left: 0 !important; }
+:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .rr-tabs > button, .cm-tabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab) {
   position: relative; align-self: flex-end !important; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   /* 글자 길이와 상관없이 어느 페이지나 같은 폭 — 가장 긴 이름(매각불허가 · 유형분포+아이콘)이 들어가는 폭 */
   flex: 0 0 116px !important; width: 116px !important; min-width: 116px !important; box-sizing: border-box !important;
@@ -3889,12 +3890,12 @@ html, body { overflow-x: clip; }
   background: var(--boxtab-off) !important; color: var(--muted) !important; font-size: 14px !important; font-weight: 600 !important; white-space: nowrap;
   transition: background .12s, color .12s;
 }
-:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .rr-tabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab):hover { background: var(--boxtab-off-hover) !important; color: var(--text) !important; }
-:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .rr-tabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab):is(.on, .active) {
+:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .rr-tabs > button, .cm-tabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab):hover { background: var(--boxtab-off-hover) !important; color: var(--text) !important; }
+:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .rr-tabs > button, .cm-tabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab):is(.on, .active) {
   z-index: 2; height: 34px !important; margin-bottom: 0 !important;
   border-color: var(--boxtab-line) !important; background: var(--boxtab-on) !important; color: var(--blue) !important; font-weight: 800 !important;
 }
-:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .rr-tabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab)::after { display: none !important; }
+:is(.app-market .adm-view-tabs > button, .pw-chaptabs > button, .rr-tabs > button, .cm-tabs > button, .app-page[data-k="finance"] .kind-chips > button, .app-page[data-k="finance"] .fin-tabs > .fin-tab)::after { display: none !important; }
 /* 탭 줄 밑선은 진하게 */
 .app-market:is([data-k="dong"], [data-k="case"]) .adm-tabs-top::after { background: var(--boxtab-line) !important; z-index: 3; }
 /* 낙찰이후 — 탭을 눌러도 내용이 떠오르지 않게(장면 이동이 아니다 · 진행절차처럼 바로 바뀐다) */
@@ -5807,7 +5808,8 @@ span.cal-day.has { cursor: help; }
   function renderSubTabs() {
     syncCrumb();
     /* 자금관리는 마이페이지 아래 — 위 탭 줄은 마이페이지 그대로(자금관리에 불), 자금관리 다섯 탭은 화면 안 박스 탭(3단) */
-    const tabs = SUBTABS[S.route]; const bar = $('subTabs');
+    /* 커뮤니티(공지 · 오류및제안)는 위 메뉴가 머리 오른쪽 끝 '공지'라 하위 탭이 경로와 겹쳤다 — 위 띠 대신 본문 맨 위 박스형 탭으로(2026-11-05) */
+    const tabs = S.route === 'community' ? null : SUBTABS[S.route]; const bar = $('subTabs');
     bar.hidden = !tabs; document.body.classList.toggle('has-subtabs', !!tabs);
     const cur = S.route === 'list' ? 'cards' : S.route === 'market' ? S.marketTab : S.route === 'manual' ? S.manualTab : APP_PAGE_NAMES[S.route] ? subParent(S.route, S.pageTab[S.route]) : S.itemTab;
     /* 'hide' 탭(마이페이지 › 알림)은 평소엔 줄에 세우지 않는다(종 아이콘 · 내 정보 카드로 들어간다).
@@ -6948,9 +6950,12 @@ span.cal-day.has { cursor: help; }
      이 신호는 화면을 그리기 전에 오므로 여기서 고치면 작은 글자가 보이지 않는다 */
   new MutationObserver(() => { if (S.route === 'more') bumpMin14(); })
     .observe(document.getElementById('appPageContent') || document.body, { childList: true, subtree: true, characterData: true });
+  /* 커뮤니티 — 본문 맨 위 박스형 탭(낙찰이후 장 탭과 같은 공통 모듈) */
+  const cmTabsHtml = () => `<nav class="cm-tabs" id="cmTabs" role="tablist" aria-label="커뮤니티">${SUBTABS.community.map(([k, , t]) => `<button type="button" role="tab" class="${S.pageTab.community === k ? 'on' : ''}" aria-selected="${S.pageTab.community === k}" data-act="subtab" data-v="${k}">${t}</button>`).join('')}</nav>`;
   function renderAppPage() {
     const box = $('appPageContent');
     const key = S.route; const tab = S.pageTab[key];
+    { const old = $('cmTabs'); if (key === 'community') { if (old) old.outerHTML = cmTabsHtml(); } else if (old) old.remove(); }
     const T = CLOUD.T;
     if (!CLOUD.on || !T || !T.mountAppPage) {
       closeAppPage();
@@ -6967,7 +6972,7 @@ span.cal-day.has { cursor: help; }
       return;
     }
     closeAppPage();
-    box.innerHTML = `<div class="app-page" data-k="${key}" id="appPageMount"></div>`;
+    box.innerHTML = `${key === 'community' ? cmTabsHtml() : ''}<div class="app-page" data-k="${key}" id="appPageMount"></div>`;
     pageKey = key; pageTabSent = tab; S.tabForce = false;
     /* 붙이는 도중에 화면을 다시 그리면(hashchange 등) 이 함수가 한 번 더 돌아 새 칸에 또 붙는다.
        그때 바깥 호출이 끝나며 pageUnmount 를 '화면에서 떨어진 옛 앱'으로 덮어쓰면, 하위 탭 신호가
