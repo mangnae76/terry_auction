@@ -1182,6 +1182,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .pa .list-tools { align-items: center !important; }
 .pa .list-tools::before { content: "근거"; order: -2; flex: none; font-size: 13px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 5px; padding: 3px 8px; }
 .pa .list-tools::after { content: "유사물건"; order: -1; flex: none; margin-left: -2px; margin-right: 4px; font-size: 15px; font-weight: 800; color: var(--text); }
+/* 표 머리 거르기 — 거른 칸은 파란 네모 대신 파란 체크(✓)만. 위 '필터 적용 중 … 모두 지우기' 줄은 뺀다(푸는 건 ✓ 눌러 '전체 선택') */
+.pa th .fv.act { font-size: 0 !important; background: none !important; color: var(--blue) !important; }
+.pa th .fv.act::before { content: "✓"; font-size: 13px; font-weight: 800; }
+.pa .list-tools .pa-fchip { display: none !important; }
 .list-lead + .content { padding-top: 16px; }
 .it-lead { margin-bottom: 16px; }
 /* 권리분석 (직접확인) 표 — 분홍 · 파랑 왼쪽 이름 칸. 앱은 칸 700 + 안 strong 'bolder'라 900 가까이 진했다 → 웹은 600 */
