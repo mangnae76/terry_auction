@@ -741,6 +741,10 @@ button { cursor: pointer; }
 .mk-sale .ag-msg.off { color: var(--muted); }
 .mk-sale .ag-cov { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .mk-sale .ag-cov small { font-size: 13px; color: var(--muted); margin-right: 4px; }
+.mk-sale .ag-qbox { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.mk-sale .ag-qbox > .ag-cov:first-child { margin-top: 0; }
+.mk-sale .ag-qbox > .ag-cov + .ag-cov { margin-top: 8px; }
+.mk-sale .ag-qbox .ag-q-tools > small { min-width: 96px; }   /* 두 상자의 이름 너비를 같게 — 칸이 같은 줄에서 시작 */
 .mk-sale .ag-cov-chip { padding: 4px 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 999px; font-size: 13px; color: var(--text); }
 .mk-sale .ag-cov-chip b { font-weight: 700; color: var(--blue); }
 .mk-sale .ag-cov-none { font-size: 13px; color: var(--muted); }
@@ -6848,10 +6852,13 @@ span.cal-day.has { cursor: help; }
     const caseChips = AG.queue.filter((q) => !q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.case)}${q.addr ? ` <i>${esc(agRegionOf(q.addr))}</i>` : ''}<button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(q.case)}" aria-label="빼기">×</button></span>`).join('');
     const cands = agQueueCands().length;
     const hint = cands ? `<span class="ag-cov-none">선정물건 중 안 모은 동네 ${cands}곳은 읍면동 수집 때 함께 올라갑니다 (탱크옥션)</span>` : '';
-    return `<div class="ag-cov ag-q-tools">${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}<div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-dong" ${AG.reg.dong ? '' : 'disabled'}>추가</button>${tail}</div>`
-      + (dongChips || hint ? `<div class="ag-cov">${dongChips}${hint}</div>` : '')
-      + (!AG_CASE_ADD ? '' : `<div class="ag-cov ag-q-tools"><span class="ag-q-add"><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span></div>`)
-      + (caseChips ? `<div class="ag-cov">${caseChips}</div>` : '');
+    /* 읍면동으로 수집 · 사건번호로 수집을 각각 테두리 상자로(2026-11-06) — 상자 안에 고르는 줄과 그 알약 */
+    const dongBox = `<div class="ag-qbox"><div class="ag-cov ag-q-tools"><small>읍면동으로 수집</small>${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}<div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-dong" ${AG.reg.dong ? '' : 'disabled'}>추가</button>${tail}</div>`
+      + (dongChips || hint ? `<div class="ag-cov">${dongChips}${hint}</div>` : '') + '</div>';
+    const caseBox = !AG_CASE_ADD && !caseChips ? '' : '<div class="ag-qbox">'
+      + (!AG_CASE_ADD ? '' : `<div class="ag-cov ag-q-tools"><small>사건번호로 수집</small><span class="ag-q-add"><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span></div>`)
+      + (caseChips ? `<div class="ag-cov">${caseChips}</div>` : '') + '</div>';
+    return dongBox + caseBox;
   }
   /* 동 하나를 대기열에 — 도우미가 탱크옥션 종합검색(그 동 · 매각전부)으로 끝까지 모은다 */
   function agQueueDong() {
