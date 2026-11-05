@@ -6749,16 +6749,42 @@ span.cal-day.has { cursor: help; }
   /* 모은 동네 — 도우미가 인근매각물건을 모을 때마다 동네 · 물건 수 · 날짜를 적는다(agent/coverage). 이미 모은 동네는 다시 모을 때 새로 나온 것만 더한다 */
   /* 모은 동네 — 요약 한 줄 + [목록보기]로 펼치는 표(찾기 · 최근 순). 동네가 많아져도 카드가 길어지지 않게 */
   const agMD = (ms) => { const t = new Date(ms); return `${String(t.getMonth() + 1).padStart(2, '0')}.${String(t.getDate()).padStart(2, '0')}`; };
+  /* 표의 물건 수는 도우미가 적어 둔 수(n)가 아니라 지금 저장된 물건을 동네 · 종류로 직접 센다 — 그래서 합이 늘 '저장 N건'과 같다.
+     수집일 · 사이트만 도우미 기록(agent/coverage)에서 가져온다. 2026 개편으로 '서해구'로 적힌 주소는 예전 '서구' 동네와 한 줄로 */
+  const AG_KIND_NAME = { villa: '연립다세대', apt: '아파트', offi: '오피스텔' };
+  const agSggOld = (sido, sgg) => { const hit = Object.keys(SALE_SGG_ALIAS).find((k) => k.startsWith(`${sido} `) && SALE_SGG_ALIAS[k].includes(sgg)); return hit ? hit.slice(sido.length + 1) : sgg; };
+  function agCovView() {
+    if (AG.cvOf === AG.recs && AG.cvCov === AG.cov) return AG.cv;
+    const map = new Map();
+    AG.recs.forEach((r) => {
+      const g = agRegParts(r);
+      const region = g ? `${g.sido} ${agSggOld(g.sido, g.sgg)} ${g.dong}` : '동 미상';
+      const kg = agKindGroup(r['종류']);
+      const key = `${region}|${kg}`;
+      const row = map.get(key) || { region, kind: AG_KIND_NAME[kg] || r['종류'] || '-', kg, n: 0, at: 0, site: '' };
+      row.n += 1; map.set(key, row);
+    });
+    const rows = [...map.values()];
+    rows.forEach((row) => {
+      AG.cov.filter((c) => (c.region || c.key) === row.region && (!c.kind || agKindGroup(c.kind) === row.kg))
+        .forEach((c) => { if ((c.at || 0) > row.at) { row.at = c.at || 0; row.site = c.site || ''; } });
+    });
+    rows.sort((a, b) => (b.at - a.at) || (b.n - a.n));
+    AG.cv = rows; AG.cvOf = AG.recs; AG.cvCov = AG.cov;
+    return rows;
+  }
   function agCovRows() {
     const q = String(AG.covQ || '').replace(/\s+/g, '');
-    const list = AG.cov.filter((c) => !q || String(c.key || '').replace(/\s+/g, '').includes(q));
+    const list = agCovView().filter((c) => !q || c.region.replace(/\s+/g, '').includes(q));
     if (!list.length) return `<tr><td colspan="5" class="none">${q ? '찾는 동네가 없습니다' : '아직 없습니다'}</td></tr>`;
-    return list.map((c) => `<tr><td class="l">${esc(c.region || c.key)}</td><td>${esc(c.kind || '-')}</td><td class="n">${Number(c.n || 0).toLocaleString('ko-KR')}</td><td>${agMD(c.at)}</td><td>${esc(c.site || '-')}</td></tr>`).join('');
+    return list.map((c) => `<tr><td class="l">${esc(c.region)}</td><td>${esc(c.kind)}</td><td class="n">${c.n.toLocaleString('ko-KR')}</td><td>${c.at ? agMD(c.at) : '-'}</td><td>${esc(c.site || '-')}</td></tr>`).join('');
   }
   function agCovHtml() {
-    if (!AG.cov.length) return '<div class="ag-cov"><small>모은 동네</small><span class="ag-cov-none">아직 없습니다 — 인근매각물건을 모으면 여기 동네별로 남습니다.</span></div>';
-    const total = AG.cov.reduce((a, c) => a + Number(c.n || 0), 0);
-    const sum = `<span class="ag-cov-sum"><b>${AG.cov.length.toLocaleString('ko-KR')}곳</b> · 총 ${total.toLocaleString('ko-KR')}건 · 최근 ${agMD(AG.cov[0].at)} 수집</span>`;
+    const rows = agCovView();
+    if (!rows.length) return '<div class="ag-cov"><small>모은 동네</small><span class="ag-cov-none">아직 없습니다 — 인근매각물건을 모으면 여기 동네별로 남습니다.</span></div>';
+    const places = new Set(rows.map((c) => c.region)).size;
+    const last = Math.max(0, ...rows.map((c) => c.at));
+    const sum = `<span class="ag-cov-sum"><b>${places.toLocaleString('ko-KR')}곳</b> · 총 ${AG.recs.length.toLocaleString('ko-KR')}건${last ? ` · 최근 ${agMD(last)} 수집` : ''}</span>`;
     const btn = `<button type="button" class="ag-link" data-act="ag-cov-open">${AG.covOpen ? '목록접기' : '목록보기'}</button>`;
     const list = AG.covOpen
       ? `<div class="ag-cov-list"><input type="text" class="adm-input" id="agCovQ" placeholder="동네 찾기 예 검암동" value="${esc(AG.covQ || '')}">`
