@@ -7014,6 +7014,23 @@ span.cal-day.has { cursor: help; }
     }
     await run();
   }
+  /* 선정물건 하나 → 검색조건 채우기. 옛 '인천 서구' 주소는 새 구(서해구 등) 중 첫째로 */
+  function sxPickItem(id) {
+    SX.pick = id; const it = items.find((x) => x.id === id);
+    if (!it) { renderMarket(); return; }
+    const t = String(it.addr || '').replace(/,/g, ' ').split(/\s+/).filter(Boolean);
+    const sidos = regSidos(); const full = Object.keys(AG_SIDO);
+    const sido = sidos.includes(t[0]) ? t[0] : (full.find((k) => AG_SIDO[k] === t[0] && sidos.includes(k)) || '');
+    const g = agRegParts({ 소재지: it.addr }) || {};
+    const sggs = regSggs(sido).map((d) => d.label);
+    let sgg = g.sgg && sggs.includes(g.sgg) ? g.sgg : '';
+    if (!sgg && g.sgg) { const alias = SALE_SGG_ALIAS[`${AG_SIDO[sido] || sido} ${g.sgg}`] || []; sgg = alias.find((a) => sggs.includes(a)) || ''; }
+    const kind = Object.keys(SALE_KIND_RE).find((k) => SALE_KIND_RE[k].test(String(it.type || ''))) || '';
+    Object.assign(saleSeg, { sido, sgg, dong: sgg ? (g.dong || '') : '', kind }); saleSave();
+    if (it.apr > 0) SX.my = Number(it.apr).toLocaleString('ko-KR');
+    renderMarket();
+    toast(`${it.caseNo} 조건을 채웠습니다 — 검색을 누르세요.`, 'info');
+  }
   function saleCaseHtml() {
     const canGo = agIsAdmin() && AG.recs.length && saleSeg.sido && regSidos().includes(saleSeg.sido);
     /* 검색이 꺼진 까닭 — 검색은 집 PC 도우미가 모아 둔 매각물건 안에서 찾는다(모은 게 없으면 찾을 것이 없다) */
@@ -7026,7 +7043,10 @@ span.cal-day.has { cursor: help; }
     const dongs = regDongs(saleSeg.sido, saleSeg.sgg, saleSeg.kind);
     const loading = saleSeg.sgg && DONG_PEEK[regPeekKey(saleSeg.sido, saleSeg.sgg, saleSeg.kind)] === null;
     const pair = (a, b, pa, pb, mode) => `<div class="sx-pair"><input id="${a}" inputmode="${mode}" placeholder="${pa}" value="${esc(SX[a === 'sxAmin' ? 'amin' : a === 'sxYmin' ? 'ymin' : ''] || '')}"><span>~</span><input id="${b}" inputmode="${mode}" placeholder="${pb}" value="${esc(SX[b === 'sxAmax' ? 'amax' : b === 'sxYmax' ? 'ymax' : ''] || '')}"></div>`;
-    const filters = `<aside class="sx-card sx-filters" aria-label="검색조건"><h2 class="sx-sec">검색조건</h2>`
+    /* 선정물건에서 고르기 — 고르면 지역 · 물건종류 · 내 물건 감정가를 그 물건으로 채운다(2026-11-06) */
+    const picks = items.filter((it) => !it.trashed && !it.archived);
+    const pickSel = picks.length ? `<label class="sx-f" aria-label="선정물건"><select data-act="sx-pick" class="${SX.pick && picks.some((it) => it.id === SX.pick) ? '' : 'ph'}"><option value="">선정물건에서 고르기</option>${picks.map((it) => `<option value="${esc(it.id)}" ${SX.pick === it.id ? 'selected' : ''}>${esc(it.caseNo)} · ${esc(agRegionOf(it.addr) || it.addr)}${it.type ? ` · ${esc(it.type)}` : ''}</option>`).join('')}</select></label>` : '';
+    const filters = `<aside class="sx-card sx-filters" aria-label="검색조건"><h2 class="sx-sec">검색조건</h2>${pickSel}`
       + '<div class="sx-fgroup">'
       + sel('sido', '시도', '시도 선택', regSidos(), false)
       + sel('sgg', '시군구', '시군구 선택', regSggs(saleSeg.sido).map((d) => d.label), !saleSeg.sido)
@@ -8506,6 +8526,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     if (e.target.id === 'pdfInput') { const fs = [...(e.target.files || [])]; e.target.value = ''; parseFiles(fs); return; }
     if (e.target.id === 'regFile' && e.target.files && e.target.files[0]) { S.modal.file = e.target.files[0].name; renderModal(); return; }
     if (e.target.id === 'sxFile') { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) void sxReadFile(f); return; }
+    if (e.target.dataset && e.target.dataset.act === 'sx-pick') { sxPickItem(e.target.value); return; }
     if (e.target.dataset && e.target.dataset.act === 'sale-q') {
       const k = e.target.dataset.k; saleSeg[k] = e.target.value;
       if (k === 'sido') { saleSeg.sgg = ''; saleSeg.dong = ''; }
