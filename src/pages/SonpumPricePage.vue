@@ -559,9 +559,22 @@ const evenCols = () => {
   const t = tableEl.value;
   if (!t || !t.parentElement?.clientWidth) return;
   if (webEmbed) {
-    const key = `${t.parentElement.clientWidth}|${kindF.value}|${fetchedAt.value}|${listRows.value.length ? 1 : 0}`;
-    if (key === colsKey && t.querySelector('colgroup')) return;
-    colsKey = key;
+    // 웹 — 칸 폭을 고정값으로(매매 · 전세 · 월세 · 조건을 바꿔도 칸 자리가 같다). 주소만 남는 폭을 다 쓴다
+    if (colsKey === 'fixed' && t.querySelector('colgroup')) return;
+    colsKey = 'fixed';
+    t.querySelector('colgroup')?.remove();
+    const W: Record<string, number> = { date: 92, won: 120, perPy: 100, pub: 126, gap: 126, area: 86, elev: 64, year: 64, dist: 64, floor: 52 };
+    const cg = document.createElement('colgroup');
+    [...t.querySelectorAll('thead th')].forEach((th) => {
+      const el = th as HTMLElement; const c = document.createElement('col');
+      const w = el.classList.contains('ck-th') ? 44 : el.classList.contains('acts-th') ? 112 : el.dataset.k ? W[el.dataset.k] : 58;
+      if (w) c.style.width = `${w}px`;
+      cg.appendChild(c);
+    });
+    t.insertBefore(cg, t.firstChild);
+    t.style.tableLayout = 'fixed';
+    t.style.minWidth = '1320px';   // 좁은 창에선 표만 옆으로 밀어 본다(칸이 찌그러지지 않게)
+    return;
   }
   t.querySelector('colgroup')?.remove();
   t.style.tableLayout = 'auto';
