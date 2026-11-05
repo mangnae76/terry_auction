@@ -928,6 +928,18 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-conn { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border-radius: 999px; background: var(--band); color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
 .sx-conn i { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
 .sx-conn .sx-ver { font-weight: 400; }   /* 판 번호는 굵기 없이 */
+/* 꺼진 불 — 불 꺼진 전구처럼 짙은 회색 구슬(안쪽 그늘 · 흐린 하이라이트), 빛 없음 */
+.sx-conn.off i { width: 9px; height: 9px; background: radial-gradient(circle at 34% 30%, #d5d9e0 0 10%, #9aa3b0 35%, #6b7482 70%, #4f5763 100%); box-shadow: inset 0 -1px 2px rgba(0, 0, 0, .35); }
+/* 막 꺼질 때 — 녹색 빛이 한 번 깜빡이다 사그라든다(1.6초). --off-d 로 다시 그려도 이어서 */
+.sx-conn.off.going-off i { animation: sx-off 1.6s ease-out var(--off-d, 0ms) 1 both; }
+@keyframes sx-off {
+  0% { background: radial-gradient(circle at 34% 30%, #fff 0 12%, #b6ffcf 26%, #3dff7a 55%, #16b84c 100%); box-shadow: 0 0 4px 1px rgba(61, 255, 122, .9), 0 0 10px 2px rgba(61, 255, 122, .4); }
+  12% { box-shadow: 0 0 1px 0 rgba(61, 255, 122, .3); }
+  22% { box-shadow: 0 0 5px 1px rgba(61, 255, 122, .8), 0 0 9px 2px rgba(61, 255, 122, .3); }
+  40% { background: radial-gradient(circle at 34% 30%, #e8fff0 0 10%, #7fd9a0 35%, #3c8f5d 70%, #2d5e40 100%); box-shadow: 0 0 2px 0 rgba(61, 255, 122, .3); }
+  100% { background: radial-gradient(circle at 34% 30%, #d5d9e0 0 10%, #9aa3b0 35%, #6b7482 70%, #4f5763 100%); box-shadow: inset 0 -1px 2px rgba(0, 0, 0, .35); }
+}
+@media (prefers-reduced-motion: reduce) { .sx-conn.off.going-off i { animation: none; } }
 .sx-conn.on { background: var(--nav); color: #fff; }
 .sx-info { display: inline-grid; place-items: center; margin-left: 2px; color: var(--muted); cursor: help; }
 .sx-info:hover, .sx-info:focus-visible { color: var(--blue); }
@@ -965,7 +977,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-sub { height: 34px; padding: 0 10px; border: 0; background: none; color: var(--blue); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .sx-sub.run { color: var(--muted); }
 .sx-prog { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); white-space: nowrap; }
-.sx-prog-wide { margin-top: 12px; }   /* 수집 관리를 펼치면 진행 막대는 수집 줄 아래 · 수집데이터 위로(2026-11-06), 접으면 단추 아래 */
+.sx-prog-wide { margin-top: 12px; }   /* 진행 막대는 늘 수집 줄 아래 — 펼치면 읍면동 · 사건 수집 상자와 수집데이터 사이, 접으면 그 자리 그대로(2026-11-06) */
+.sx-collect > .sx-prog-wide { margin-top: 0; }   /* 접었을 때는 상자 줄 사이(10)만 */
 .sx-stepcol { display: grid; gap: 8px; min-width: 0; }   /* 윗줄 ② · ③ · 처음부터새로, 아랫줄 진행 막대(같은 너비) */
 .sx-steprow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .sx-chkbox { height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; }
@@ -6730,8 +6743,13 @@ span.cal-day.has { cursor: help; }
     const busy = online && !!s.busy; const ready = online && !!s.ready;
     const ago = online ? Math.max(0, Math.round((now - s.at.toMillis()) / 1000)) : 0;
     /* 꺼졌을 때 설명은 ⓘ 말풍선으로 — 상태 줄에 긴 문장을 늘어놓지 않는다(2026-11-03) */
+    /* 켜져 있다 꺼지면 1.6초 동안 '불 꺼지는' 효과 — 1초마다 다시 그려도 이어지게 지난 시간만큼 앞당겨 튼다 */
+    if (AG.wasOn && !online) AG.offAt = now;
+    AG.wasOn = online;
+    const offMs = AG.offAt ? now - AG.offAt : 1e9;
+    const offFx = !online && offMs < 1600 ? ` going-off" style="--off-d:-${offMs}ms` : '';
     const conn = online ? `<span class="sx-conn on"><i></i>My agent Connecting · ${ago}초 전${s.version ? ` · <span class="sx-ver">${esc(agVer(s.version))}</span>` : ''}</span>`
-      : '<span class="sx-conn"><i></i>My agent Disconnected<span class="sx-info" tabindex="0" data-tip="컴퓨터에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다" data-tip-pos="left" aria-label="컴퓨터에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span></span>';
+      : `<span class="sx-conn off${offFx}"><i></i>My agent Disconnected<span class="sx-info" tabindex="0" data-tip="컴퓨터에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다" data-tip-pos="left" aria-label="컴퓨터에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span></span>`;
     const seg = (k, opts) => `<div class="sx-seg sm" role="group">${opts.map(([v, t]) => `<button type="button" class="${String(agSel[k]) === String(v) ? 'on' : ''}" data-act="ag-sel" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div>`;
     /* 대기열수집 — 도우미 2026.11.01-7 부터. 도는 동안은 단추를 켜 둔다 */
     const qVerOk = !online || agVerAtLeast(s.version, [2026, 11, 1, 7]);
@@ -6764,7 +6782,8 @@ span.cal-day.has { cursor: help; }
     return `<div class="sx-top" id="agPanel">${lead}<section class="sx-card sx-collect" aria-label="경매 인근 매각물건 분석">${titlebar}`
       /* 첫 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③. 처음부터새로는 아래 상태 줄 왼쪽(2026-11-06) */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('months', AG_MONTHS)}</div>`
-      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>${AG.fold ? prog : ''}</div></div></div>`
+      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div></div></div></div>`
+      + (AG.fold ? `<div class="sx-prog-wide">${prog}</div>` : '')   /* 접어도 진행 막대는 수집 줄 아래 같은 자리 */
       + (AG.fold ? `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"></span><span class="sx-meta">${meta}</span>${manage}</div>` : '')   /* 접었을 때만 — 펼치면 저장 · 접기는 수집데이터 줄에 */
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
       + (AG.fold ? '' : `<div class="sx-manage">${agQueueHtml()}<div class="sx-prog-wide">${prog}</div>${agCovHtml(metaCnt, `<span class="sx-qtail">${metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : ''}${manage}</span>`)}</div>`)
