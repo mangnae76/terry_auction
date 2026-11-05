@@ -380,7 +380,7 @@ const saveNow = async (manual?: unknown) => {
     await store.saveAuction({ ...a, marketPicks: { ...b, savedAt: at } }, picked
       ? { where: '손품조사 › 시세분석', note: b.price?.estSale ? `실거래가 예상 ${eok(b.price.estSale)}` : '시세분석 저장' }
       : { silent: true });
-    lastJson = json; savedAt.value = at;
+    lastJson = json; savedJson.value = json; savedAt.value = at;
   } catch {
     /* 못 적으면 다음 바뀜 때 다시 */
   } finally {
@@ -389,7 +389,11 @@ const saveNow = async (manual?: unknown) => {
 };
 // 내용이 실제로 바뀔 때만 0.8초 뒤 적는다 — 「저장 중」은 실제로 쓰는 동안만 뜬다
 const bodyKey = computed(() => stable(body.value));
+/* 웹 — 저절로 적지 않는다. 바꾼 뒤 '저장'을 눌러야 적는다(누르기 전 새로고침이면 사라진다). 앱은 그대로 0.8초 뒤 자동 */
+const savedJson = ref(lastJson);
+const webDirty = computed(() => webEmbed && !!res.value && bodyKey.value !== savedJson.value);
 const saveSoon = () => {
+  if (webEmbed) return;
   if (!res.value || loading.value || enriching.value || bodyKey.value === lastJson) return;
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => { void saveNow(); }, 800);
@@ -631,8 +635,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <svg v-if="undoSnap" class="undo-ic" viewBox="0 0 24 24" aria-hidden="true"><circle class="trk" cx="12" cy="12" r="10" /><circle class="run" cx="12" cy="12" r="10" /><path d="M9.2 9.6a3.6 3.6 0 1 1-.6 4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><path d="M8.4 7.4v2.8h2.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
             <template v-else>초기화</template>
           </button>
-          <button v-if="!loose" type="button" :class="['save-btn', saving ? 'saving' : 'saved']" aria-live="polite" @click="saveNow">
-            <template v-if="saving">저장 중…</template><template v-else>✓ 저장됨<small v-if="stamp">{{ stamp }}</small></template>
+          <button v-if="!loose" type="button" :class="['save-btn', saving ? 'saving' : webDirty ? 'dirty' : 'saved']" aria-live="polite" @click="saveNow">
+            <template v-if="saving">저장 중…</template><template v-else-if="webDirty">저장</template><template v-else>✓ 저장됨<small v-if="stamp">{{ stamp }}</small></template>
           </button>
         </span>
         <div class="simrow">
