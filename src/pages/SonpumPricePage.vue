@@ -558,6 +558,19 @@ if (sonTab) watch(sonTab, (t) => { if (t === 'price') void nextTick(evenCols); }
 
 const onResize = () => { evenCols(); };
 onMounted(() => { window.addEventListener('resize', onResize); void run(); });
+// ===== 웹 — 지도 전체화면(C안, 2026-11-05): 왼쪽 지도 · 오른쪽 고정 칸(결론 · 조건 · 유사물건 목록). 이 상자를 body 로 옮겨 화면을 채운다 =====
+const fs = ref(false);
+const fsList = computed(() => [...mapGroups.value].sort((a, b) => (orderOf.value[a.jibun] ?? 999) - (orderOf.value[b.jibun] ?? 999)));
+const fsGo = (g: { jibun: string; spot: { lat: number; lng: number } }) => { focus.value = focus.value === g.jibun ? '' : g.jibun; if (focus.value && mv) mv.focus(g.spot, 16); };
+const onFsKey = (e: KeyboardEvent) => { if (e.key === 'Escape') fs.value = false; };
+watch(fs, async (on) => {
+  document.documentElement.style.overflow = on ? 'hidden' : '';
+  if (on) window.addEventListener('keydown', onFsKey); else window.removeEventListener('keydown', onFsKey);
+  await nextTick();
+  // 칸 크기가 바뀌었으니 지도를 다시 재고, 반경이 다 보이게
+  [0, 120, 400].forEach((ms) => window.setTimeout(() => { mv?.relayout(); const m = mySpot.value; if (mv && m && !focus.value) mv.fitRadius(m, radius.value); }, ms));
+});
+onBeforeUnmount(() => { window.removeEventListener('keydown', onFsKey); if (fs.value) document.documentElement.style.overflow = ''; });
 onBeforeUnmount(() => { window.removeEventListener('resize', onResize); runId += 1; mv?.destroy(); mv = null; window.clearTimeout(saveTimer); window.clearTimeout(undoTimer); });
 watch(() => props.auction.id, () => { spots.value = {}; units.value = {}; elevs.value = {}; mySpot.value = null; void run(); });
 
@@ -567,7 +580,22 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 
 <template>
   <div class="pa-wrap">
-  <section class="pa pa-card" aria-label="시세분석">
+  <Teleport to="body" :disabled="!fs">
+  <section :class="['pa', 'pa-card', { fs }]" aria-label="시세분석">
+    <!-- 전체화면 위 띠 — 닫기 · 사건 · 조회기간 · 조회 -->
+    <div v-if="fs" class="fs-top">
+      <button type="button" class="fs-x" @click="fs = false"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>전체화면 닫기</button>
+      <b class="fs-t">시세분석<small>{{ [props.auction.caseNumber, regionText].filter(Boolean).join(' · ') }}</small></b>
+      <span class="fs-r">
+        <template v-if="!props.months">
+        <span class="pa-seg pa-out" role="radiogroup" aria-label="조회기간">
+          <button v-for="m in PERIODS" :key="m" type="button" role="radio" :class="{ on: months === m }" :aria-checked="months === m" @click="months = m">{{ periodText(m) }}</button>
+        </span>
+        <button type="button" :class="['pa-load', { dirty }]" :disabled="loading" @click="run">{{ loading ? '조회 중…' : '조회' }}</button>
+        </template>
+        <span class="fs-hint">Esc 누르면 닫힘</span>
+      </span>
+    </div>
     <!-- Ⓐ 결론 — 제목 줄에 조회(지역은 물건 카드에서 온다, 기간만 고른다) -->
     <div class="zone">
       <div class="zone-h"><span class="pa-tag">결론</span><h3>이 물건 실거래가 예상</h3>
@@ -602,6 +630,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <div class="map">
         <div ref="mapEl" class="map-in" />
         <KakaoMapTools v-if="kTools" :k="kTools.k" :map="kTools.map" />
+        <button v-if="webEmbed && !fs" type="button" class="fs-btn" aria-label="지도 전체화면으로 보기" @click="fs = true"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>전체화면</button>
         <!-- 근거 제목은 지도 왼쪽 위에 — 따로 줄을 두지 않아 지도를 위로 더 보인다 -->
         <div class="map-title"><span class="pa-tag">근거</span><b>유사물건</b></div>
         <div v-if="addOpen && !loose" class="add-pop" role="dialog" aria-label="임장경로에 비교 물건 넣기">
@@ -619,6 +648,16 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <p v-if="!mySpot && !loading && res" class="map-msg">{{ meName }} 위치를 찾지 못했습니다</p>
       </div>
 
+      <!-- 전체화면 오른쪽 칸 맨 아래 — 유사물건 목록(지도 번호 순). 누르면 그 핀으로 -->
+      <div v-if="fs" class="fs-list">
+        <b class="fs-lh">유사물건 {{ fsList.length }}곳</b>
+        <button v-for="g in fsList" :key="g.jibun" type="button" :class="['fs-it', { on: focus === g.jibun }]" @click="fsGo(g)">
+          <i class="n">{{ orderOf[g.jibun] ?? '' }}</i>
+          <span class="nm">{{ g.name }}<small>{{ g.list.length }}건 · {{ Math.round(g.dist) }}m</small></span>
+          <span class="pr pa-num">{{ g.range }}</span>
+        </button>
+        <p v-if="!fsList.length" class="none">지도에 유사물건이 없습니다.</p>
+      </div>
       <div class="conds">
         <span class="pa-lab">반경<span class="pa-seg pa-out" role="radiogroup" aria-label="반경">
           <button v-for="r in RADII" :key="r" type="button" role="radio" :class="{ on: radius === r }" :aria-checked="radius === r" @click="radius = r">{{ radText(r) }}</button>
@@ -764,6 +803,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 
     <ColumnFilterPanel :ctl="colFilter" />
   </section>
+  </Teleport>
 
   <!-- 입력 — 호가는 따로 흰 상자(손품조사에서만 — 시장분석 물건분석엔 호가를 옮겨 그릴 물건상세가 없다). 손품조사의 네이버 매물조사(호가)를 여기로 옮겨 그린다(AuctionDetailPage 가 #sonAskSlot 으로 보낸다) -->
   <section v-if="sonAskReady" class="pa pa-card" aria-label="호가 입력">
@@ -928,6 +968,47 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa-list table.even td.l { white-space: normal; word-break: keep-all; }   /* 주소는 낱말 단위로 줄바꿈 */
 .pa-list th[data-k] .hk { cursor: pointer; user-select: none; }
 .pa-list th[aria-sort] .hk { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+/* 지도 전체화면 단추(웹) — 지도 왼쪽 위 */
+.fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 700; color: #111827; cursor: pointer; }
+.fs-btn:hover { color: var(--blue); }
+/* ===== 전체화면(C안) — 왼쪽 지도 · 오른쪽 340 고정 칸(결론 → 조건 → 유사물건 목록) ===== */
+.pa.fs { position: fixed; inset: 0; z-index: 3000; margin: 0; border-radius: 0; padding: 0; gap: 0; background: #fff;
+  display: grid; grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: 52px auto auto minmax(0, 1fr); }
+.pa.fs > .zone { display: contents; }
+.pa.fs .fs-top { grid-column: 1 / -1; grid-row: 1; display: flex; align-items: center; gap: 12px; padding: 0 14px; background: #213366; color: #fff; }
+.fs-x { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, .35); border-radius: 8px; background: transparent; color: #fff; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.fs-t { font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.fs-t small { margin-left: 8px; font-size: 12px; font-weight: 500; color: rgba(255, 255, 255, .72); }
+.fs-r { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.fs-hint { font-size: 12px; color: rgba(255, 255, 255, .6); white-space: nowrap; }
+.pa.fs .map { grid-column: 1; grid-row: 2 / -1; border: 0; border-radius: 0; min-height: 0; }
+.pa.fs .map-in { height: 100%; }
+/* 오른쪽 칸 — 결론(등수 칸 둘 줄) · 조건 · 목록 */
+.pa.fs .zone-h, .pa.fs .pa-err { display: none; }
+.pa.fs .est { grid-column: 2; grid-row: 2; border-radius: 0; padding: 14px; border-left: 1px solid var(--line); }
+.pa.fs .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.pa.fs .tile { padding: 9px 8px; }
+.pa.fs .tile.key { grid-column: 1 / -1; }
+.pa.fs .conds { grid-column: 2; grid-row: 3; padding: 12px 14px; border-left: 1px solid var(--line); border-top: 1px solid var(--line); }
+.pa.fs .fs-list { grid-column: 2; grid-row: 4; min-height: 0; overflow-y: auto; padding: 10px 10px 14px; border-left: 1px solid var(--line); border-top: 1px solid var(--line); display: grid; gap: 6px; align-content: start; }
+.fs-lh { padding: 0 4px; font-size: 13px; font-weight: 800; color: var(--fg); }
+.fs-it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--soft); font: inherit; text-align: left; cursor: pointer; }
+.fs-it:hover { border-color: #c7d0e2; }
+.fs-it.on { border-color: var(--blue); background: var(--blue-tint); }
+.fs-it .n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #2b4fd8; color: #fff; font-size: 11px; font-weight: 800; font-style: normal; }
+.fs-it .nm { display: grid; min-width: 0; font-size: 13px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fs-it .nm small { font-size: 12px; font-weight: 400; color: var(--sub); }
+.fs-it .pr { font-size: 12.5px; font-weight: 800; color: var(--fg); white-space: nowrap; }
+.fs-list .none { margin: 0; padding: 12px; font-size: 13px; color: var(--sub); text-align: center; }
+/* 전체화면에선 표 · 알림 · 지도 위 단추(임장경로 추가)는 감춘다 — 닫으면 그대로 */
+.pa.fs :is(.list-tools, .pa-list, .list-foot, .add-btn, .add-pop, .add-msg) { display: none !important; }
+@media (max-width: 760px) {
+  .pa.fs { grid-template-columns: minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr) auto auto 220px; overflow: auto; }
+  .pa.fs .map { grid-row: 2; grid-column: 1; min-height: 55vh; }
+  .pa.fs :is(.est, .conds, .fs-list) { grid-column: 1; border-left: 0; }
+  .pa.fs .est { grid-row: 3; } .pa.fs .conds { grid-row: 4; } .pa.fs .fs-list { grid-row: 5; }
+  .pa.fs .fs-hint { display: none; }
+}
 .ck-th, .ck-td { width: 44px; text-align: center !important; }
 .ck-td input { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; }
 tr.off td:not(.ck-td) { opacity: .42; text-decoration: line-through; }
