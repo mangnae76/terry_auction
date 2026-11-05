@@ -986,9 +986,9 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 /* 지도 전체화면 단추(웹) — 지도 왼쪽 위 */
 .fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 700; color: #111827; cursor: pointer; }
 .fs-btn:hover { color: var(--blue); }
-/* ===== 전체화면(C안) — 왼쪽 지도 · 오른쪽 340 고정 칸(결론 → 조건 → 유사물건 목록) ===== */
+/* ===== 전체화면(C안) — 왼쪽 340 고정 칸(결론 → 조건 → 유사물건 목록) · 오른쪽 지도. 거래 랭킹처럼 목록이 왼쪽(2026-11-05) ===== */
 .pa.fs { position: fixed; inset: 0; z-index: 3000; margin: 0; border-radius: 0; padding: 0; gap: 0; background: #fff;
-  display: grid; grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: 52px auto auto minmax(0, 1fr); }
+  display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: 52px auto auto minmax(0, 1fr); }
 .pa.fs > .zone { display: contents; }
 .pa.fs .fs-top { grid-column: 1 / -1; grid-row: 1; display: flex; align-items: center; gap: 12px; padding: 0 14px; background: #213366; color: #fff; }
 .fs-x { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, .35); border-radius: 8px; background: transparent; color: #fff; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
@@ -996,16 +996,16 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .fs-t small { margin-left: 8px; font-size: 12px; font-weight: 500; color: rgba(255, 255, 255, .72); }
 .fs-r { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .fs-hint { font-size: 12px; color: rgba(255, 255, 255, .6); white-space: nowrap; }
-.pa.fs .map { grid-column: 1; grid-row: 2 / -1; border: 0; border-radius: 0; min-height: 0; }
+.pa.fs .map { grid-column: 2; grid-row: 2 / -1; border: 0; border-radius: 0; min-height: 0; }
 .pa.fs .map-in { height: 100%; }
 /* 오른쪽 칸 — 결론(등수 칸 둘 줄) · 조건 · 목록 */
 .pa.fs .zone-h, .pa.fs .pa-err { display: none; }
-.pa.fs .est { grid-column: 2; grid-row: 2; border-radius: 0; padding: 14px; border-left: 1px solid var(--line); }
+.pa.fs .est { grid-column: 1; grid-row: 2; border-radius: 0; padding: 14px; border-right: 1px solid var(--line); }
 .pa.fs .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .pa.fs .tile { padding: 9px 8px; }
 .pa.fs .tile.key { grid-column: 1 / -1; }
-.pa.fs .conds { grid-column: 2; grid-row: 3; padding: 12px 14px; border-left: 1px solid var(--line); border-top: 1px solid var(--line); }
-.pa.fs .fs-list { grid-column: 2; grid-row: 4; min-height: 0; overflow-y: auto; padding: 10px 10px 14px; border-left: 1px solid var(--line); border-top: 1px solid var(--line); display: grid; gap: 6px; align-content: start; }
+.pa.fs .conds { grid-column: 1; grid-row: 3; padding: 12px 14px; border-right: 1px solid var(--line); border-top: 1px solid var(--line); }
+.pa.fs .fs-list { grid-column: 1; grid-row: 4; min-height: 0; overflow-y: auto; padding: 10px 10px 14px; border-right: 1px solid var(--line); border-top: 1px solid var(--line); display: grid; gap: 6px; align-content: start; }
 .fs-lh { padding: 0 4px; font-size: 13px; font-weight: 800; color: var(--fg); }
 .fs-it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--soft); font: inherit; text-align: left; cursor: pointer; }
 .fs-it:hover { border-color: #c7d0e2; }
@@ -1020,7 +1020,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 @media (max-width: 760px) {
   .pa.fs { grid-template-columns: minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr) auto auto 220px; overflow: auto; }
   .pa.fs .map { grid-row: 2; grid-column: 1; min-height: 55vh; }
-  .pa.fs :is(.est, .conds, .fs-list) { grid-column: 1; border-left: 0; }
+  .pa.fs :is(.est, .conds, .fs-list) { grid-column: 1; border-right: 0; }
   .pa.fs .est { grid-row: 3; } .pa.fs .conds { grid-row: 4; } .pa.fs .fs-list { grid-row: 5; }
   .pa.fs .fs-hint { display: none; }
 }
