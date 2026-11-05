@@ -386,6 +386,21 @@ export const docMismatchOf = (soFar: string): string | null => {
 const mismatchMessage = (reason: string) =>
   `분석을 멈췄습니다 — 올린 서류가 이 물건 것이 아닌 것 같습니다${reason ? `: ${reason}` : ''}. 사건번호 · 주소가 맞는 서류로 바꿔 다시 해 주세요.`;
 
+/** 지금 어디까지 왔는지 — 화면이 단계 목록을 그리게 알린다(웹 권리분석 '올린 서류를 읽고 있습니다').
+ *  답은 propertyOrdering 순서로 오므로, 받는 도중 글에서 마지막으로 나온 칸 이름이 곧 지금 쓰는 단계다 */
+export type RightsStage = 'send' | 'read' | 'docCheck' | 'baseRight' | 'rows' | 'takeoverSummary' | 'extinguishSummary' | 'risk' | 'evict' | 'conclusion' | 'missingDocs';
+export const RIGHTS_STAGE_EVENT = 'ta:rights-stage';
+const tellStage = (stage: RightsStage) => {
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(RIGHTS_STAGE_EVENT, { detail: { stage } }));
+};
+const FIELD_RE = /"(docCheck|baseRight|rows|takeoverSummary|extinguishSummary|risk|evict|conclusion|missingDocs)"\s*:/g;
+/** 받는 도중 글에서 마지막으로 열린 칸 */
+export const lastFieldOf = (soFar: string): RightsStage | null => {
+  let last: RightsStage | null = null;
+  for (const m of soFar.matchAll(FIELD_RE)) last = m[1] as RightsStage;
+  return last;
+};
+
 /** 서류를 Gemini 에 보내 권리분석을 받아 온다 */
 
 export const askRightsAnalysis = async (
@@ -439,7 +454,10 @@ export const askRightsAnalysis = async (
     let why = '' as 'idle' | 'total' | 'mismatch' | '';
     let idle = setTimeout(() => { why = 'idle'; ctrl.abort(); }, RIGHTS_IDLE_MS);
     const total = setTimeout(() => { why = 'total'; ctrl.abort(); }, RIGHTS_TOTAL_MS);
+    let stage: RightsStage | null = null;
     const onChunk = (soFar: string) => {
+      const f = lastFieldOf(soFar);
+      if (f && f !== stage) { stage = f; tellStage(f); }
       clearTimeout(idle);
       idle = setTimeout(() => { why = 'idle'; ctrl.abort(); }, RIGHTS_IDLE_MS);
       // 서류가 이 물건 것이 아니라는 답이 보이면 끝까지 기다리지 않고 끊는다
@@ -452,6 +470,7 @@ export const askRightsAnalysis = async (
     const st = newStreamStats();
     // eslint-disable-next-line no-console
     console.log(`%c[AI 권리분석] ${attempt + 1}번째 요청 — ${model} · 생각 상한 ${RIGHTS_THINK_BUDGET.toLocaleString('ko-KR')} 토큰`, 'color:#2563eb;font-weight:700');
+    tellStage('send');
     try {
       res = await fetch(`${GEMINI_API}/models/${model}:streamGenerateContent?alt=sse`, {
         method: 'POST',
@@ -461,7 +480,7 @@ export const askRightsAnalysis = async (
       });
       // eslint-disable-next-line no-console
       console.log(`[AI 권리분석] 서버가 받음(응답 ${res.status}) ${((performance.now() - st.start) / 1000).toFixed(1)}초 — 서류를 올리는 데 걸린 시간 포함`);
-      if (res.ok) text = await readStreamText(res, onChunk, st);
+      if (res.ok) { tellStage('read'); text = await readStreamText(res, onChunk, st); }
       else {
         // 실패 답은 한 덩어리 JSON 이다 (배열로 싸여 올 때도 있다)
         const b = await res.json().catch(() => ({})) as { error?: { message?: string } } | Array<{ error?: { message?: string } }>;
