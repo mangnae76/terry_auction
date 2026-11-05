@@ -1596,6 +1596,18 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .ih-right .ibtn svg { width: 20px; height: 20px; } /* 고정 카드 보관함·휴지통 — 목록 카드(17)보다 15% 크게 */
 .ih-pdf { box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid #c7d7f7; border-radius: 8px; font-size: 14px; font-weight: 700; color: var(--text-2) !important; text-decoration: none; }
 .ih-pdf svg { width: 14px; height: 14px; }
+/* 경매사례 고정카드 — 카드교체 단추 · 선정물건 목록 */
+.sx-fixcard { border-radius: 12px; }
+.ih-swap { box-sizing: border-box; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 12px; border: 1px solid var(--nav); border-radius: 8px; background: var(--nav); color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.ih-swap .caret { font-style: normal; font-size: 10px; opacity: .8; }
+.sx-fix-stage { display: inline-flex; align-items: center; cursor: default; }
+.sx-fix-apr { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.sx-fix-apr b { margin-left: 4px; font-size: 15px; font-weight: 800; color: var(--text); }
+.sx-cardlist { position: absolute; right: 16px; top: 42px; z-index: 40; width: min(600px, calc(100% - 32px)); max-height: 360px; overflow: auto; margin: 0; padding: 6px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(20, 30, 60, .14); }
+.sx-cardlist li { display: grid; grid-template-columns: 150px minmax(0, 1fr) 110px; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+.sx-cardlist li:hover, .sx-cardlist li.on { background: var(--blue-soft); }
+.sx-cardlist li span:nth-child(2) { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sx-cardlist li span:last-child { text-align: right; }
 .ih-stage { box-sizing: border-box; height: 28px; padding: 0 12px; border-radius: 8px; /* 알약 대신 PDF 단추와 같은 둥근 네모 · 같은 높이 */ border: 1.5px solid #6b85f0; background: #dce5ff; color: #3850c2; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; }
 .ih-stage.hot { border-color: #ef6b6b; background: #ffdede; color: #c22e2e; }
 .ih-stage.off { border-color: #c4c9d4; background: #eef0f4; color: #6b7280; }
@@ -6796,7 +6808,7 @@ span.cal-day.has { cursor: help; }
     /* 수집 관리 접기 단추는 없앴다(2026-11-06) — 읍면동 · 사건 수집 상자와 수집데이터는 늘 펼쳐 둔다 */
     /* 제목 줄 — 제목 · PC 연결 칩 · 오른쪽 끝 데이터로드 · 데이터백업 · 엑셀다운로드(PC 프로그램과 같은 양식) */
     /* 진행 막대 · 중지는 연결 알약 바로 오른쪽 — 남는 폭을 채운다(2026-11-06) */
-    const titlebar = `<div class="sx-titlebar"><h2>경매 인근 매각물건 분석</h2>${conn}<div class="sx-tprog">${prog}</div>`
+    const titlebar = `<div class="sx-titlebar"><h2>경매 인근 매각물건 분석</h2>${conn}<div class="sx-tprog">${prog}</div><span class="sx-vsep" aria-hidden="true"></span>`
       + `<button type="button" class="sx-tbtn" data-act="sx-import" ${busy || AG.io ? 'disabled' : ''}>${AG.io ? '저장하는 중…' : '데이터로드'}</button>`
       + `<button type="button" class="sx-tbtn" data-act="sx-backup" ${AG.recs.length ? '' : 'disabled'}>데이터백업</button>`
       + `<button type="button" class="sx-tbtn solid" data-act="sx-excel">엑셀다운로드</button></div>`;
@@ -7016,7 +7028,46 @@ span.cal-day.has { cursor: help; }
     }
     await run();
   }
+  /* ===== 고정카드 — 경매사례 맨 위에 손품조사와 같은 사건 카드. [카드교체]로 선정물건을 고르면 그 감정가가 '내 물건 감정가'에 들어간다(2026-11-06) ===== */
+  const SALE_ITEM_KEY = 'ta.web.sale.item';
+  let saleItemId = (() => { try { return localStorage.getItem(SALE_ITEM_KEY) || ''; } catch (e) { return ''; } })();
+  let saleCardOpen = false;
+  const salePicks = () => items.filter((x) => !x.trashed && !x.archived);
+  function saleCardHtml() {
+    const picks = salePicks(); if (!picks.length) return '';
+    const it = picks.find((x) => x.id === saleItemId) || null;
+    const btn = `<button type="button" class="ih-swap" data-act="sale-card-menu" aria-haspopup="listbox" aria-expanded="${saleCardOpen}">카드교체<i class="caret">▾</i></button>`;
+    const list = saleCardOpen ? `<ul class="sx-cardlist" role="listbox" aria-label="선정물건">${picks.map((x) => `<li role="option" aria-selected="${x.id === saleItemId}" class="${x.id === saleItemId ? 'on' : ''}" data-act="sale-card-pick" data-id="${esc(x.id)}"><b class="num">${esc(x.caseNo)}</b><span>${esc(agRegionOf(x.addr) || x.addr)}${x.type ? ` · ${esc(TYPE_NAME(x.type) || x.type)}` : ''}</span><span class="num">${x.apr > 0 ? sxWon(x.apr) : '-'}</span></li>`).join('')}</ul>` : '';
+    if (!it) return `<div class="toolbar item-head sx-fixcard"><div class="ih-top"><span class="ih-court">카드교체에서 선정물건을 고르면 그 감정가가 아래 '내 물건 감정가'에 들어갑니다.</span><span class="ih-right">${btn}</span></div>${list}</div>`;
+    const a = detailOf(it); const T = CLOUD.T;
+    const kind = TYPE_NAME(it.type) || '다세대';
+    const sale = (T ? T.saleKindOf(a) : '토건일괄매각').replace('토건일괄매각', '토지건물 일괄매각');
+    const meta = T ? T.headMetaLineOf(a, new Date().getFullYear()) : '';
+    const metaText = meta ? (/㎡/.test(meta) ? `건물 ${meta}` : meta) : '';
+    const stage = T && CLOUD.raw.has(it.id) ? T.stageLabelOf(a) : stageLabel(it);
+    return `<div class="toolbar item-head sx-fixcard">
+      <div class="ih-top">
+        <h2 class="ih-title"><span class="ih-tag">경매</span><span class="num">${esc(it.caseNo)}</span></h2>
+        <span class="ih-court">${esc(it.court || DASH)} · 매각기일 <span class="num">${it.date ? `${dotDate(it.date)}${dowText(it.date)}` : DASH}</span> <em>${it.date ? ddayText(it.date) : ''}</em></span>
+        <span class="ih-right"><span class="ih-stage sx-fix-stage">${esc(stage)}</span><span class="sx-fix-apr">감정가 <b class="num">${it.apr > 0 ? `${Number(it.apr).toLocaleString('ko-KR')}원` : DASH}</b></span>${btn}</span>
+      </div>
+      <div class="ih-prop">
+        <span class="ih-kind">${esc(kind)}</span>
+        <span class="ih-line"><span class="ih-sale">${esc(sale)}${metaText ? ` · ${esc(metaText)}` : ''}</span></span>
+        <p class="ih-addr">${esc(it.addr)}${it.bld ? ` <b>${esc(it.bld)}</b>` : ''}${it.unit ? ` <b>${esc(it.unit)}</b>` : ''}</p>
+      </div>${list}</div>`;
+  }
+  function salePickCard(id) {
+    const it = salePicks().find((x) => x.id === id); saleCardOpen = false;
+    if (!it) { renderMarket(); return; }
+    saleItemId = id; try { localStorage.setItem(SALE_ITEM_KEY, id); } catch (e) { /* 그만 */ }
+    if (it.apr > 0) SX.my = Number(it.apr).toLocaleString('ko-KR');
+    renderMarket();
+    toast(it.apr > 0 ? `${it.caseNo} 감정가 ${Number(it.apr).toLocaleString('ko-KR')}원을 내 물건 감정가에 넣었습니다.` : `${it.caseNo} — 감정가가 없어 내 물건 감정가는 그대로 둡니다.`, 'info');
+  }
   function saleCaseHtml() {
+    /* 고른 카드가 있는데 감정가 칸이 비었으면 그 감정가로(새로고침 뒤에도 카드와 칸이 맞게) */
+    { const it = saleItemId && salePicks().find((x) => x.id === saleItemId); if (it && it.apr > 0 && !sxParseWon(SX.my)) SX.my = Number(it.apr).toLocaleString('ko-KR'); }
     const canGo = agIsAdmin() && AG.recs.length && saleSeg.sido && regSidos().includes(saleSeg.sido);
     /* 검색이 꺼진 까닭 — 검색은 집 PC 도우미가 모아 둔 매각물건 안에서 찾는다(모은 게 없으면 찾을 것이 없다) */
     const why = canGo ? '' : !agIsAdmin() ? '경매사례는 운영자 계정에서 쓸 수 있습니다.'
@@ -7041,7 +7092,7 @@ span.cal-day.has { cursor: help; }
       + `<div class="sx-fbtns"><button type="button" class="sx-btn" data-act="sale-go" ${canGo ? '' : 'disabled'}>검색</button><button type="button" class="sx-btn ghost" data-act="sx-save">저장</button><button type="button" class="sx-btn ghost" data-act="sx-reset">초기화</button></div>`
       + (why ? `<p class="sx-why">${esc(why)}</p>` : '')
       + `</aside>`;
-    return `<div class="app-market mk-sale sx" data-k="sale" data-s="sale"><input type="file" id="sxFile" accept=".xlsx" hidden>${agIsAdmin() ? agPanelHtml() : ''}<div class="sx-main">${filters}${sxResultsHtml()}</div></div>`;
+    return `<div class="app-market mk-sale sx" data-k="sale" data-s="sale"><input type="file" id="sxFile" accept=".xlsx" hidden>${agIsAdmin() ? saleCardHtml() + agPanelHtml() : ''}<div class="sx-main">${filters}${sxResultsHtml()}</div></div>`;
   }
   /* 물건분석 머리 카드 — 고른 물건(앱 화면이 'son.pick' 에 적고 son:pick 으로 알린다) */
   function renderSonHead() {
@@ -8077,6 +8128,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     if (S.menu && !e.target.closest('.float-menu') && !(t && ['bid-result', 'stage-menu', 'result-menu'].includes(t.dataset.act))) { S.menu = null; syncMenu(); }
     /* 홈 달력에서 날짜를 골라 둔 채 날짜 말고 어디든 누르면 고른 것을 푼다(목록 다시 전체). 누른 단추는 제 일을 그대로 한다 */
     if (S.homeDay && !(t && t.dataset.act === 'hm-cal-day')) { S.homeDay = ''; if (S.route === 'home' && !t) { renderHome(); return; } }
+    if (saleCardOpen && !e.target.closest('.sx-fixcard')) { saleCardOpen = false; if (S.route === 'market') renderMarket(); }   /* 카드교체 목록 — 바깥을 누르면 닫는다 */
     if (!t) return;
     const act = t.dataset.act; const id = t.dataset.id; const v = t.dataset.v; const it = id ? byId(id) : null;
     if (t.tagName === 'A') e.preventDefault();
@@ -8304,6 +8356,8 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         renderMarket(); toast('면적 · 건축년도 · 기간을 처음대로 돌렸습니다.', 'info'); break;
       }
       case 'sx-import': { const f = $('sxFile'); if (f) f.click(); break; }
+      case 'sale-card-menu': saleCardOpen = !saleCardOpen; renderMarket(); break;
+      case 'sale-card-pick': salePickCard(id); break;
       case 'sx-backup': void sxBackup(); break;
       case 'sx-excel': void sxExcel(); break;
       /* 검색리스트 칸 이름 — 그 칸으로 정렬, 같은 칸을 다시 누르면 반대로 */
