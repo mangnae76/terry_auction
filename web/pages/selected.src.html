@@ -200,7 +200,7 @@ button { cursor: pointer; }
 .g-menu.tool { gap: 5px; color: #c3cde6; font-weight: 500; }
 .g-menu.tool svg { flex: 0 0 auto; width: 15px; height: 15px; }
 .g-menu.tool:hover, .g-menu.tool.on { color: #fff; }
-.g-menu.tool::after { left: calc(15px + 5px - 9px); }   /* 막대는 아이콘 말고 글자 양옆 9px — 다른 메뉴 · 하위 탭과 같은 길이 규칙 */
+.g-menu.tool::after { left: 50%; right: auto; width: 92px; margin-left: -46px; }   /* 도구(시장분석 ~ 마이페이지) 막대는 글자 수와 상관없이 같은 길이 — 아이콘 포함 메뉴 가운데에 92px(가장 긴 마이페이지 폭). 사이 틈이 좁아 더 길면 옆 막대와 붙는다 */
 .g-ico { position: relative; width: 24px; height: 24px; border: 0; background: transparent; padding: 0; display: grid; place-items: center; color: var(--nav-text) !important; border-radius: 6px; transition: color .15s, background .15s; }
 .g-ico:hover { background: rgba(255, 255, 255, 0.14); }
 .g-ico svg { width: 17px; height: 17px; }
