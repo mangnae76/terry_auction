@@ -205,7 +205,9 @@ const allRows = computed<PriceRow[]>(() => periodRows.value.map((r, i) => {
 /* 웹 — 엘베 전체 · 있음 · 없음. 유사도 · 직접범위 어느 쪽이든 같이 건다. 엘베를 아직 모르는 거래 · 같은 건물 거래는 거르지 않는다 */
 const elevPick = ref<'yes' | 'no' | null>(sv?.elev ?? null);
 const cond = computed<PriceCond>(() => {
-  const base = simMode.value === 'sim' ? simCond(sim.value, me.value) : rangeCond.value;
+  let base = simMode.value === 'sim' ? simCond(sim.value, me.value) : rangeCond.value;
+  // 웹 — 층은 위 줄에 있어 유사도에서도 고른다: '같은 층'이면 유사도에서도 같은 층만('전체'면 유사도 규칙대로)
+  if (webEmbed && simMode.value === 'sim' && rangeCond.value.floor === 0) base = { ...base, floor: 0 };
   return elevPick.value ? { ...base, elev: elevPick.value } : base;
 });
 const candidates = computed(() => inRange(allRows.value, radius.value, cond.value, me.value.floor));
@@ -704,6 +706,11 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <button type="button" role="radio" :class="{ on: elevPick === 'yes' }" :aria-checked="elevPick === 'yes'" @click="elevPick = 'yes'">있음</button>
           <button type="button" role="radio" :class="{ on: elevPick === 'no' }" :aria-checked="elevPick === 'no'" @click="elevPick = 'no'">없음</button>
         </span></span>
+        <!-- 웹 기본 화면 — 층은 엘베 옆(유사도에서도 '같은 층'이면 같은 층만) -->
+        <span v-if="webEmbed && !fs" class="pa-lab floor-pick">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층">
+          <button type="button" role="radio" :class="{ on: rangeCond.floor === null }" :aria-checked="rangeCond.floor === null" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
+          <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }">같은 층</button>
+        </span></span>
         <span class="acts-r">
           <button type="button" :class="['reset-btn', { undo: undoSnap }]" :aria-label="undoSnap ? '되돌리기' : '초기화'" :title="undoSnap ? '되돌리기 — 5초 안에 누르면 바로 전으로' : '반경 · 거래 · 유사도 · 값 거르기를 처음 값으로'" @click="reset">
             <svg v-if="undoSnap" class="undo-ic" viewBox="0 0 24 24" aria-hidden="true"><circle class="trk" cx="12" cy="12" r="10" /><circle class="run" cx="12" cy="12" r="10" /><path d="M9.2 9.6a3.6 3.6 0 1 1-.6 4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><path d="M8.4 7.4v2.8h2.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
@@ -736,7 +743,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               </div>
               <b>{{ rangeCond.yMin }}~{{ rangeCond.yMax }}년<small>{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></b>
             </div>
-            <span class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층">
+            <span v-if="!webEmbed || fs" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층">
               <button type="button" role="radio" :class="{ on: rangeCond.floor === null }" :aria-checked="rangeCond.floor === null" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
               <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }">같은 층</button>
             </span></span>
@@ -993,8 +1000,12 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 /* 웹 — 거르기 상자 오른쪽 끝에 엘베. 막대(유사도 · 면적 · 건축)는 그만큼 줄어든다 */
 .simrow.has-elev { grid-template-columns: minmax(0, 1fr); gap: 10px 28px; align-items: center; }
 /* 웹 기본 화면 — 위 줄 넷(반경 · 거래 · 기준 · 엘베), 그 아래 거르기 상자, 맨 아래 오른쪽 초기화 · 저장(세팅 다 하고 저장) */
-.conds:has(> .elev-pick) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.conds:has(> .elev-pick) > .acts-r { grid-column: 1 / -1; justify-self: end; order: 99; }
+.conds:has(> .elev-pick) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* 위 줄 다섯(반경 · 거래 · 기준 · 엘베 · 층), 아래 줄은 거르기 상자(넷 칸) + 그 오른쪽 초기화 · 저장(예전 층 자리) */
+.conds:has(> .elev-pick) > .simrow { grid-column: 1 / 5; grid-row: 2; }
+.conds:has(> .elev-pick) > .acts-r { grid-column: 5; grid-row: 2; }
+.conds:has(> .elev-pick) > .acts-r .save-btn { flex: 1; width: auto; }
+.conds > .floor-pick .pa-seg { width: auto; }
 .conds > .elev-pick .pa-seg { width: auto; }
 /* 아래 거르기 상자엔 면적 · 건축 · 층만 — 층 상자를 넓게 */
 .simrow.has-elev .simB { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .7fr); }
