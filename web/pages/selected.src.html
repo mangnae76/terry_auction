@@ -6451,7 +6451,9 @@ span.cal-day.has { cursor: help; }
   }
   /* 종류 — 도우미가 적은 목록 종류('다세대주택')로. 종류가 없는 예전 물건은 어느 종류에나 */
   const SALE_KIND_RE = { 연립다세대: /다세대|연립|빌라|도시형/, 아파트: /아파트/, 오피스텔: /오피스텔/ };
-  const saleCut = (p) => { const n = parseInt(p, 10); if (!n) return ''; const d = new Date(); d.setMonth(d.getMonth() - n); return d.toISOString().slice(0, 10); };
+  /* '최근 12개월' 옆 괄호 — 실제 거르는 날 범위(saleCut 날 ~ 오늘). 예 (2025.11.06 ~ 2026.11.06) */
+  const saleSpan = (p) => { const c = saleCut(p); if (!c) return ''; const t = new Date(); const d = (n) => String(n).padStart(2, '0'); return `(${c.replace(/-/g, '.')} ~ ${t.getFullYear()}.${d(t.getMonth() + 1)}.${d(t.getDate())})`; };
+  const saleCut = (p) => { const n = parseInt(p, 10); if (!n) return ''; const d = new Date(); d.setMonth(d.getMonth() - n); const z = (v) => String(v).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; };   /* 이 컴퓨터 날짜로(UTC 로 하면 아침 9시 전엔 하루 앞) */
   /* 조회한 조건에 맞는 물건 — 조회 전이면 null. 같은 조건 · 같은 데이터면 다시 거르지 않는다 */
   function saleRows() {
     const q = saleApplied; if (!q) return null;
@@ -6604,7 +6606,7 @@ span.cal-day.has { cursor: help; }
     if (!view.length) { toast('내보낼 물건이 없습니다.', 'info'); return; }
     try {
       const st = sxStats(rows); const a = saleApplied;
-      const cond = `물건종류 ${a.kind || '전체'} · 지역 ${[a.sido, a.sgg, a.dong].filter(Boolean).join(' ')} · 기간 최근 ${a.period} · 면적 ${a.amin || ''}~${a.amax || ''}㎡ · 건축년도 ${a.ymin || ''}~${a.ymax || ''} · 검색어 ${SX.q || '-'} · 저장 ${new Date().toLocaleString('ko-KR')}`;
+      const cond = `물건종류 ${a.kind || '전체'} · 지역 ${[a.sido, a.sgg, a.dong].filter(Boolean).join(' ')} · 기간 최근 ${a.period} ${saleSpan(a.period)} · 면적 ${a.amin || ''}~${a.amax || ''}㎡ · 건축년도 ${a.ymin || ''}~${a.ymax || ''} · 검색어 ${SX.q || '-'} · 저장 ${new Date().toLocaleString('ko-KR')}`;
       const blob = await T.exportSaleNear({ condition: cond, my: sxParseWon(SX.my) || null, rows: T.prepareSaleRows(view.map(sxPlain)),
         stats: { 평균감정가: st.appr, 매각건수: st.n, 평균매각가: st.sold, 중앙값매각가: st.soldMed, 평균율: st.avg, 중앙값율: st.med, 최저율: st.lo, 최고율: st.hi, 전체율: st.all } });
       sxDownload(blob, `조건검색결과_${sxYmd()}.xlsx`); toast('엑셀 파일을 내려받았습니다.');
@@ -6648,7 +6650,7 @@ span.cal-day.has { cursor: help; }
       return `<div class="sx-results" id="sxResults"><section class="sx-card sx-wait"><b>인근 매각물건 분석</b><span>왼쪽에서 지역 · 종류 · 기간을 고르고 <b>검색</b>을 누르면 모은 매각물건으로 예상 입찰가 · 지표 · 매각가율 분포를 보여 줍니다.</span></section></div>`;
     }
     const q = saleApplied; const st = sxStats(rows);
-    const conds = [`최근 ${q.period}`, (sxNum(q.amin) || sxNum(q.amax)) ? `면적 ${q.amin || ''}~${q.amax || ''}㎡` : '', (sxNum(q.ymin) || sxNum(q.ymax)) ? `건축 ${q.ymin || ''}~${q.ymax || ''}년` : '', `${st.n.toLocaleString('ko-KR')}건 기준`].filter(Boolean).join(' · ');
+    const conds = [`최근 ${q.period} ${saleSpan(q.period)}`, (sxNum(q.amin) || sxNum(q.amax)) ? `면적 ${q.amin || ''}~${q.amax || ''}㎡` : '', (sxNum(q.ymin) || sxNum(q.ymax)) ? `건축 ${q.ymin || ''}~${q.ymax || ''}년` : '', `${st.n.toLocaleString('ko-KR')}건 기준`].filter(Boolean).join(' · ');
     const where = [q.sgg, q.dong].filter(Boolean).join(' ') || q.sido;
     const hero = `<section class="sx-card sx-hero" aria-label="분석결과"><div class="sx-where"><h2>${esc(where)} · ${esc(q.kind || '전체')}</h2><span>${esc(conds)}</span></div>`
       + `<div class="sx-my"><label for="sxMy">내 물건 감정가</label><input id="sxMy" class="num" inputmode="numeric" autocomplete="off" placeholder="예: 235,000,000 또는 2억3500만" value="${esc(SX.my || '')}"><small>적으면 오른쪽 예상 입찰가가 바로 바뀝니다</small></div>`
