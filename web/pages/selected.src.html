@@ -1057,6 +1057,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-chart { display: block; width: 100%; height: auto; }
 .sx-chart .grid { stroke: var(--card-line); }
 .sx-chart .ax { fill: var(--muted); font-size: 12px; }
+.sx-chart .axt { fill: var(--text-2, var(--muted)); font-size: 12.5px; font-weight: 600; }
 .sx-chart .bar { fill: var(--sx-bar); }
 .sx-chart .over { fill: var(--sx-accent); opacity: .55; }
 .sx-chart .avg { stroke: var(--sx-accent); stroke-width: 2; }
@@ -6560,7 +6561,7 @@ span.cal-day.has { cursor: help; }
   }
   /* 매각가율 분포 — 5% 구간 막대, 100% 이상은 강조색. 평균(실선) · 중앙값(점선) */
   function sxChart(st) {
-    const W = 920; const H = 216; const L = 30; const Rr = 10; const T = 26; const B = 28; const step = 0.05;   /* 위 26 — 평균 · 중앙값 % 글 자리 */   /* 결과 칸 폭(약 920)과 같게 — 글자가 커지거나 작아지지 않게 */
+    const W = 920; const H = 236; const L = 48; const Rr = 10; const T = 26; const B = 48; const step = 0.05;   /* 위 26 — 평균 · 중앙값 % 글 자리, 왼쪽 48 · 아래 48 — 축 이름 자리 */   /* 결과 칸 폭(약 920)과 같게 — 글자가 커지거나 작아지지 않게 */
     const rates = st.rates;
     const lo = Math.max(0.3, Math.min(0.6, Math.floor(Math.min(...rates, 0.6) * 20) / 20));
     const hi = Math.min(1.6, Math.max(1.25, Math.ceil(Math.max(...rates, 1.25) * 20) / 20));
@@ -6572,7 +6573,10 @@ span.cal-day.has { cursor: help; }
     const tick = Math.max(1, Math.ceil(maxN / 4));
     for (let n = 0; n <= maxN; n += tick) g += `<line class="grid" x1="${L}" x2="${W - Rr}" y1="${y(n)}" y2="${y(n)}"/><text class="ax" x="${L - 6}" y="${y(n) + 4}" text-anchor="end">${n}</text>`;
     bins.forEach((b) => { if (b.n) g += `<rect class="${b.x0 >= 1 - 1e-9 ? 'over' : 'bar'}" x="${x(b.x0) + 2}" y="${y(b.n)}" width="${Math.max(1, x(b.x0 + step) - x(b.x0) - 4)}" height="${y(0) - y(b.n)}" rx="2"><title>${Math.round(b.x0 * 100)}~${Math.round((b.x0 + step) * 100)}% · ${b.n}건</title></rect>`; });
-    for (let v = Math.ceil(lo * 10) / 10; v <= hi + 1e-9; v += 0.1) g += `<text class="ax" x="${x(v)}" y="${H - 8}" text-anchor="middle">${Math.round(v * 100)}%</text>`;
+    for (let v = Math.ceil(lo * 10) / 10; v <= hi + 1e-9; v += 0.1) g += `<text class="ax" x="${x(v)}" y="${H - 28}" text-anchor="middle">${Math.round(v * 100)}%</text>`;
+    /* 축 이름 — 가로는 매각가율(매각가 ÷ 감정가), 세로는 그 구간에 든 건수 */
+    g += `<text class="axt" x="${(L + W - Rr) / 2}" y="${H - 6}" text-anchor="middle">매각가율(매각가 ÷ 감정가) · 5% 구간</text>`;
+    g += `<text class="axt" transform="translate(14 ${(T + H - B) / 2}) rotate(-90)" text-anchor="middle">건수</text>`;
     if (st.avg != null) g += `<line class="avg" x1="${x(st.avg)}" x2="${x(st.avg)}" y1="${T}" y2="${y(0)}"/>`;
     if (st.med != null) g += `<line class="med" x1="${x(st.med)}" x2="${x(st.med)}" y1="${T}" y2="${y(0)}"/>`;
     /* 두 선 꼭대기에 정확한 % — 왼쪽에 있는 선은 글을 왼쪽으로, 오른쪽 선은 오른쪽으로 펼쳐 겹치지 않게 */
