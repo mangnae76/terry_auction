@@ -1049,6 +1049,10 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-bid .k { font-size: 13px; font-weight: 700; color: var(--muted); }
 .sx-bid .v { font-size: 28px; font-weight: 800; color: var(--sx-accent); letter-spacing: -.02em; line-height: 1.25; }
 .sx-bid .w { font-size: 13px; color: var(--muted); }
+.sx-vrow { display: flex; align-items: center; gap: 6px; }
+.sx-copy { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--muted); cursor: pointer; }
+.sx-copy:hover { border-color: var(--blue); color: var(--blue); }
+.sx-copy svg { width: 15px; height: 15px; }
 .sx-bid .r { font-size: 13px; color: var(--text); }
 /* 지표결과 */
 .sx-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -6590,14 +6594,15 @@ span.cal-day.has { cursor: help; }
   /* 예상 입찰가 두 칸 — 감정가를 적을 때마다 이 두 칸만 다시 쓴다(화면 전체를 다시 그리지 않는다) */
   function sxBidHtml(k, rate) {
     const my = sxParseWon(SX.my); const ok = my > 0 && rate != null;
-    return `<span class="v num" id="sxBid${k}">${ok ? sxWon(my * rate) : '-'}</span>`
+    /* 금액 옆 복사 — 일의 자리까지(반올림 원 단위, 숫자만) */
+    return `<span class="sx-vrow"><span class="v num" id="sxBid${k}">${ok ? sxWon(my * rate) : '-'}</span>${ok ? `<button type="button" class="sx-copy" data-act="sx-bid-copy" data-v="${Math.round(my * rate)}" aria-label="예상 입찰가 복사"${tip('일의 자리까지 복사')}>${I.copy}</button>` : ''}</span>`
       + `<span class="w num" id="sxBid${k}w">${ok ? `${Math.round(my * rate).toLocaleString('ko-KR')}원` : '감정가를 입력하세요'}</span>`
       + `<span class="r" id="sxBid${k}r">${rate != null ? `감정가 × ${sxPct(rate)}` : ''}</span>`;
   }
   function sxPaintBids() {
     const rows = sxRows(); if (!rows) return;
     const st = sxStats(rows);
-    [['A', st.avg], ['B', st.med]].forEach(([k, r]) => { const el = $(`sxBid${k}`); if (el) el.parentElement.innerHTML = `<span class="k">${k === 'A' ? '예상 입찰가 · 평균 매각가율' : '예상 입찰가 · 중앙값 매각가율'}</span>${sxBidHtml(k, r)}`; });
+    [['A', st.avg], ['B', st.med]].forEach(([k, r]) => { const el = $(`sxBid${k}`); const box = el && el.closest('.sx-bid'); if (box) box.innerHTML = `<span class="k">${k === 'A' ? '예상 입찰가 · 평균 매각가율' : '예상 입찰가 · 중앙값 매각가율'}</span>${sxBidHtml(k, r)}`; });
   }
   /* 매각가율 분포 — 5% 구간 막대, 100% 이상은 강조색. 평균(실선) · 중앙값(점선) */
   function sxChart(st) {
@@ -8103,8 +8108,8 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     /* giveUp 은 일부러 남겨 둔다 — 로그인 여부를 끝내 알지 못해도 7초 뒤에는 화면을 보여 준다 */
   }
   const update = (id, patch) => { items = items.map((x) => (x.id === id ? { ...x, ...patch } : x)); if (CLOUD.on) cloudSave(id, patch); };
-  function copyText(text) {
-    const done = () => toast('주소가 복사되었습니다.');
+  function copyText(text, msg = '주소가 복사되었습니다.') {
+    const done = () => toast(msg);
     const fail = () => {
       try { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand && document.execCommand('copy'); ta.remove(); if (ok) done(); else toast('복사에 실패했습니다.', 'error'); } catch { toast('복사에 실패했습니다.', 'error'); }
     };
@@ -8429,6 +8434,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'kakao-near': fetchNearbyFor(id || S.itemId); break;
       case 'go-profit': S.itemTabNext = 'profit'; go('item', id); break;
       case 'item-copy': copyText(addrText(it)); break;
+      case 'sx-bid-copy': copyText(String(v), `${Number(v).toLocaleString('ko-KR')}원을 복사했습니다.`); break;
       case 'fold-all': toggleFoldAll(); break;
       case 'fav-open': S.pop = ''; render(); S.modal = favModal(-1); renderModal(); break;
       case 'fav-edit-open': e.stopPropagation(); S.pop = ''; render(); S.modal = favModal(Number(v)); renderModal(); break;
