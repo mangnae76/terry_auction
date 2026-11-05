@@ -2533,6 +2533,11 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .it-vtabs button { height: 28px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; font-size: 14px; font-weight: 700; color: var(--muted); }
 .it-vtabs button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12); }
 .it-area + .it-area { margin-top: 12px; }
+/* 입지정보 — PDF 에서 읽은 것만 모은 하얀 상자(카카오 목록은 상자 밖 아래) */
+.it-pdfbox { background: var(--surface); border: 1px solid var(--card-line); border-radius: 8px; padding: 10px 12px 12px; }
+.it-pdfbox-h { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+.it-pdfbox-tag { padding: 1px 6px; border-radius: 4px; background: #fee2e2; color: #b91c1c; font-size: 12px; font-weight: 700; }
+.it-kakao { margin-top: 14px; }
 .it-area-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 6px; }   /* 제목 왼쪽 · 알약 오른쪽 끝(표 상자 끝선) */
 .it-area-h h3 { margin: 0 !important; }
 .it-area-h .it-vtabs { margin: 0; }
@@ -6025,39 +6030,33 @@ span.cal-day.has { cursor: help; }
   const NA = '<span class="it-na">-</span>';
   function locationCardHtml(it, a) {
     const T = CLOUD.T; const env = CLOUD.nearby.get(it.id) || null; const busy = CLOUD.nearbyBusy === it.id;
-    const view = S.areaView || 'all'; const nv = S.nearbyView || 'pdf';
+    const view = S.areaView || 'all';
     const tabs = `<div class="it-vtabs"><button type="button" class="${view === 'all' ? 'on' : ''}" data-act="area-view" data-v="all">전체</button><button type="button" class="${view === 'near' ? 'on' : ''}" data-act="area-view" data-v="near">500M미만</button></div>`;
     const list = (arr, fmt) => (arr.length ? arr.map(fmt).join('') : NA);
     const block = (h, body, right = '') => `<div class="it-area"><div class="it-area-h"><h3>${h}</h3>${right}</div>${body}</div>`;
     /* 표가 아닌 줄(조회 중 · 없음 · 다시시도)도 표와 같은 테두리 상자에 — 주변환경 칸 모양을 하나로 */
     const boxLine = (html) => kvTable([`<tr><td class="it-boxline">${html}</td></tr>`], 1);
-    let body;
-    if (view === 'near') {
-      const st = T.stationItems500mOf(a); const edu = T.eduInfoFiltered500mOf(a); const near = T.pdfNearbyFiltered500mOf(a, env);
-      body = block('인근역세권', kvTable([`<tr><th>지하철(${st.length})</th><td class="grid2">${list(st, (p) => placeLink(p.name, `${p.name}(${p.distance})`))}</td></tr>`]))
-        + block('교육환경', kvTable([['초등학교', edu.elementary], ['중학교', edu.middle], ['고등학교', edu.high]].map(([k, arr]) => `<tr><th>${k}(${arr.length})</th><td class="grid">${list(arr, (x) => placeLink(x))}</td></tr>`)))
-        + block('주변환경', near.length ? kvTable(near.map((g) => `<tr><th>${g.label}(${g.total})</th><td class="grid2">${g.items.map((p) => placeLink(p.name, `${p.name}(${p.distance})`)).join('')}</td></tr>`))
-          : busy ? boxLine('지도에서 조회 중…') : boxLine(`500m 이내 주변환경 정보 없음 <button type="button" class="it-fetch" data-act="kakao-near" data-id="${it.id}">지도에서불러오기</button>`));
-    } else {
-      const edu = T.eduInfoOf(a); const pdf = T.pdfNearbyDisplayOf(a); const ag = a.adminAgencyItems || [];
-      const kakao = T.nearbyDisplayOf(env);
-      const ntabs = `<div class="it-vtabs"><button type="button" class="${nv === 'pdf' ? 'on' : ''}" data-act="nearby-view" data-v="pdf">주변환경</button><button type="button" class="${nv === 'kakao' ? 'on' : ''}" data-act="nearby-view" data-v="kakao" data-id="${it.id}">카카오목록검색</button></div>`;
-      let near;
-      if (nv === 'pdf') {
-        /* 행정기관도 같은 표의 한 줄로 — 따로 떨어진 목록이 표 밖에 붙어 모양이 갈렸다 */
-        const rows = pdf.map((g) => `<tr><th>${g.label}(${g.total})</th><td class="grid2">${list(g.items, (p) => placeLink(p.name, `${p.name}(${p.distance})`))}</td></tr>`);
-        if (ag.length) rows.push(`<tr><th>행정기관(${ag.length})</th><td>${`<ul class="it-agency">${ag.map((x) => `<li><p>${placeLink(x.name, x.name)}${x.type ? ` <span class="it-sub">(${esc(x.type)})</span>` : ''}</p>${x.address ? `<p class="it-sub">${x.zip ? `[${esc(x.zip)}] ` : ''}${esc(x.address)}</p>` : ''}${x.phone || x.fax ? `<p class="it-sub">${x.phone ? `전화 ${esc(x.phone)}` : ''}${x.phone && x.fax ? ' / ' : ''}${x.fax ? `팩스 ${esc(x.fax)}` : ''}</p>` : ''}${x.area ? `<p class="it-sub">관할구역 ${esc(x.area)}</p>` : ''}</li>`).join('')}</ul>`}</td></tr>`);
-        near = rows.length ? kvTable(rows) : ''
-          || boxLine('PDF 주변환경 정보 없음');
-      } else {
-        near = busy ? boxLine('지도에서 조회 중…')
-          : !env ? boxLine(`카카오 지도 검색 결과를 불러오지 못했습니다. <button type="button" class="it-fetch" data-act="kakao-near" data-id="${it.id}">다시시도</button>`)
-          : kakao.length ? kvTable(kakao.map((g) => `<tr><th>${g.label}(${g.total})</th><td class="grid2">${list(g.items, (p) => placeLink(p.name, `${p.name}(${p.distance})`))}</td></tr>`)) : boxLine('카카오 검색 결과 없음');
-      }
-      body = block('인근역세권', kvTable([`<tr><th>인근역</th><td>${a.nearbyStation ? placeLink(a.nearbyStation) : NA}</td></tr>`]))
-        + block('교육환경', kvTable([['초등학교', edu.elementary], ['중학교', edu.middle], ['고등학교', edu.high]].map(([k, arr]) => `<tr><th>${k}(${arr.length})</th><td class="grid">${list(arr, (x) => placeLink(x))}</td></tr>`)))
-        + block('주변환경', near, ntabs);
-    }
+    /* PDF 에서 읽은 것(인근역세권 · 교육환경 · 주변환경 · 행정기관)은 하얀 상자 하나로 모으고, 카카오 목록은 상자 밖 아래에 따로.
+       전체 · 500M미만 알약은 둘 다에 걸린다(500M미만 — 적힌 거리가 500m 이하만) */
+    const near = view === 'near';
+    const placeRows = (groups) => groups.map((g) => `<tr><th>${g.label}(${g.total})</th><td class="grid2">${list(g.items, (p) => placeLink(p.name, `${p.name}(${p.distance})`))}</td></tr>`);
+    const edu = near ? T.eduInfoFiltered500mOf(a) : T.eduInfoOf(a);
+    const stationBlock = near
+      ? (() => { const st = T.stationItems500mOf(a); return kvTable([`<tr><th>지하철(${st.length})</th><td class="grid2">${list(st, (p) => placeLink(p.name, `${p.name}(${p.distance})`))}</td></tr>`]); })()
+      : kvTable([`<tr><th>인근역</th><td>${a.nearbyStation ? placeLink(a.nearbyStation) : NA}</td></tr>`]);
+    const ag = near ? [] : (a.adminAgencyItems || []);   /* 행정기관은 거리가 없어 500M미만에선 뺀다 */
+    const pdfRows = placeRows(near ? T.pdfNearbyFiltered500mOf(a, null) : T.pdfNearbyDisplayOf(a));
+    if (ag.length) pdfRows.push(`<tr><th>행정기관(${ag.length})</th><td>${`<ul class="it-agency">${ag.map((x) => `<li><p>${placeLink(x.name, x.name)}${x.type ? ` <span class="it-sub">(${esc(x.type)})</span>` : ''}</p>${x.address ? `<p class="it-sub">${x.zip ? `[${esc(x.zip)}] ` : ''}${esc(x.address)}</p>` : ''}${x.phone || x.fax ? `<p class="it-sub">${x.phone ? `전화 ${esc(x.phone)}` : ''}${x.phone && x.fax ? ' / ' : ''}${x.fax ? `팩스 ${esc(x.fax)}` : ''}</p>` : ''}${x.area ? `<p class="it-sub">관할구역 ${esc(x.area)}</p>` : ''}</li>`).join('')}</ul>`}</td></tr>`);
+    const pdfBox = `<div class="it-pdfbox"><p class="it-pdfbox-h"><span class="it-pdfbox-tag">PDF</span>경매정보지 PDF에서 읽은 정보입니다</p>`
+      + block('인근역세권', stationBlock)
+      + block('교육환경', kvTable([['초등학교', edu.elementary], ['중학교', edu.middle], ['고등학교', edu.high]].map(([k, arr]) => `<tr><th>${k}(${arr.length})</th><td class="grid">${list(arr, (x) => placeLink(x))}</td></tr>`)))
+      + block('주변환경', pdfRows.length ? kvTable(pdfRows) : boxLine(near ? '500m 이내 PDF 주변환경 정보 없음' : 'PDF 주변환경 정보 없음'))
+      + '</div>';
+    const kakao = near ? T.pdfNearbyFiltered500mOf(null, env) : T.nearbyDisplayOf(env);
+    const kakaoBody = busy ? boxLine('카카오 지도에서 조회 중…')
+      : !env ? boxLine(`카카오 지도에서 물건 주변을 찾습니다. <button type="button" class="it-fetch" data-act="kakao-near" data-id="${it.id}">불러오기</button>`)
+      : kakao.length ? kvTable(placeRows(kakao)) : boxLine(near ? '500m 이내 카카오 검색 결과 없음' : '카카오 검색 결과 없음');
+    const body = pdfBox + `<div class="it-kakao">${block('카카오목록검색', kakaoBody)}</div>`;
     return itCard('pin', '입지정보', body, false, tabs);   /* 알약은 머리 오른쪽 끝 — 아래 표 상자 오른쪽 끝선에 맞는다 */
   }
   function buildingCardHtml(a) {
