@@ -136,10 +136,10 @@ const telHref = (phone: string) => {
 /** '2025-10-17' → '25. 10. 17' (자금관리 카드와 같은 꼴) */
 /** 웹 — 선정목록 물건상세의 고정 카드(경매 사건번호 · 법원 · 날짜 / 종류 · 매각구분 · 면적 / 주소)와 같은 꼴로 낙찰 물건을 보인다 */
 const webEmbed = inject<boolean>('webEmbed', false);
-/** 웹 매뉴얼(/manual) — 가이드 장(명도 · 사업자등록 · 세금)만. 사건과 상관없어 사건 카드 · 경로 · 장 탭 없이(장 탭은 웹 박스 탭) */
+/** 웹 매뉴얼(/manual) › 낙찰이후 — 가이드 장(매각불허가 · 명도 · 사업자등록 · 세금)만. 사건과 상관없어 사건 카드 · 경로 없이, 장 탭은 그대로 */
 const manualMode = webEmbed && route.path === '/manual';
-// 웹 — 예전 가이드 › 낙찰당일 주소는 가이드 첫 장(명도)으로
-if (webEmbed) watch(activeTab, (t) => { if (t === 'gwin') activeTab.value = 'gevict'; }, { immediate: true });
+// 웹 — 예전 가이드 › 낙찰당일 주소는 가이드 첫 장(매각불허가)으로
+if (webEmbed) watch(activeTab, (t) => { if (t === 'gwin') activeTab.value = 'gdeny'; }, { immediate: true });
 const webHead = computed(() => {
   const a = picked.value;
   if (!a) return null;
@@ -432,13 +432,14 @@ const dayGroups = computed<CheckGroup[]>(() => {
 /** 표가 있는 탭인가 */
 const hasTable = computed(() => viewTab.value in BOOK_OF || !!DETAIL_OF[activeTab.value] || (webEmbed && !!DETAIL_STEPS[activeTab.value]));
 /** 웹 — 절차상세 · 가이드 안의 장 단추(경로 오른쪽) */
-const DETAIL_CHAPS: Array<[TabKey, string]> = [['win', '낙찰당일'], ['gdeny', '매각불허가'], ['dpre', '잔금전'], ['balance', '잔금·등기'], ['evict', '명도'], ['drepair', '인테리어'], ['dsell', '매도'], ['dtax', '세금']];
-// 낙찰당일 장(gwin)은 뺐다 — 절차별체크리스트 낙찰당일과 겹쳐서, 남는 내용은 1차 방문 카드로 모았다. 매각불허가는 체크리스트 낙찰당일 오른쪽으로
-// 명도 · 사업자등록 · 세금은 웹 매뉴얼 화면으로 옮겼다 — 이 장들은 매뉴얼에서만 연다
-const GUIDE_CHAPS: Array<[TabKey, string]> = [['gevict', '명도'], ['biz', '사업자등록'], ['gtax', '세금']];
+const DETAIL_CHAPS: Array<[TabKey, string]> = [['win', '낙찰당일'], ['dpre', '잔금전'], ['balance', '잔금·등기'], ['evict', '명도'], ['drepair', '인테리어'], ['dsell', '매도'], ['dtax', '세금']];
+// 낙찰당일 장(gwin)은 뺐다 — 절차별체크리스트 낙찰당일과 겹쳐서, 남는 내용은 1차 방문 카드로 모았다
+// 매각불허가 · 명도 · 사업자등록 · 세금은 웹 매뉴얼 › 낙찰이후로 옮겼다 — 이 장들은 매뉴얼에서만 연다
+const GUIDE_CHAPS: Array<[TabKey, string]> = [['gdeny', '매각불허가'], ['gevict', '명도'], ['biz', '사업자등록'], ['gtax', '세금']];
 const isGuideChap = computed(() => !editing.value && GUIDE_CHAPS.some(([k]) => k === activeTab.value));
 const chaps = computed(() => {
-  if (!webEmbed || manualMode) return [];
+  if (!webEmbed) return [];
+  if (manualMode) return GUIDE_CHAPS;   // 매뉴얼 › 낙찰이후 — 명도 · 사업자등록 · 세금 장 탭
   if (DETAIL_CHAPS.some(([k]) => k === activeTab.value)) return DETAIL_CHAPS;
   if (GUIDE_CHAPS.some(([k]) => k === activeTab.value)) return GUIDE_CHAPS;
   return [];

@@ -1880,6 +1880,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 가이드 '낙찰 후 진행 순서' — 사건 카드와 장 탭 사이(장마다 늘). 비면 자리 없음 */
 .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flowslot { order: -1; }
 .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-flowslot > .pw-flowcard { margin: 10px 0 0; }
+.app-page[data-k="manual"] .pw-flowslot > .pw-flowcard { margin: 12px 0 6px; }   /* 매뉴얼 — 흰 띠 아래 12, 장 탭(명도 · 사업자등록 · 세금)과 12 */
 .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-objwrap > .pw-obj, .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-objctrl, .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-page-title { display: none !important; }
 .app-page:is([data-k="postwin"], [data-k="manual"]) .pw-objwrap { display: none !important; }
 /* 낙찰이후 글자 크기 — 큰 제목 18 · 카드 제목 16 · 중제목(표 왼쪽 이름 · 칩 · 단계 이름) 15 · 나머지 글은 모두 14 이상 */
@@ -4497,12 +4498,12 @@ span.cal-day.has { cursor: help; }
      화면마다 따로 적지 않는다: 새 화면 · 새 하위 탭이 생기면 아래 두 표(SUB_TAB_KEYS · readHash/hashOf)에만 더한다 ===== */
   const SUB_TAB_KEYS = {
     market: ['dong', 'rank', 'son', 'sale'], /* 랭킹분석 = 랭킹지도 · 거래랭킹(지역분석 화면을 랭킹 탭만으로) · 매각사례 = 인근 · 동일지번 매각물건 분석(안 박스 탭 S.saleTab) · 거래랭킹은 지역분석 › 랭킹지도 탭으로, 경매지번 분석은 지역분석 › 경매지번 탭으로 */
-    postwin: ['flow', 'win', 'gdeny', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
+    postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'interior', 'tax'],
     more: ['mypage', 'alerts', 'billing', ...(SHOW_POINTS ? ['points'] : []), 'support', 'calendar'],   /* calendar — 마이페이지 › 입찰 캘린더(앱 화면 /bid-calendar) */   /* 공지는 커뮤니티로 옮겼다 · 포인트는 SHOW_POINTS 일 때만(옛 주소 #/more/points 는 내정보로) */
     community: ['notice'],   /* 오류및제안은 게시판으로 옮겼다(2026-11-05) */
     board: ['suggest', 'review'],   /* 게시판 — 오류및제안 · 사용후기(머리 오른쪽 위 '공지' 옆 '게시판'). 가입인사는 뺐다 */   /* 위 메뉴에서 커뮤니티를 뺐다(2026-11-02) — 머리 오른쪽 위 '공지'로 들어온다. FAQ 는 이용가이드로 */
-    manual: ['gevict', 'biz', 'gtax'],   /* 매뉴얼 — 명도 · 사업자등록 · 세금(예전 낙찰이후 › 가이드 장, 사건과 상관없어 게시판처럼 따로) */
+    manual: ['gdeny', 'gevict', 'biz', 'gtax', 'basic', 'pick'],   /* 매뉴얼 — 하위 탭 경매기초(basic) · 물건고르기(pick) — 둘은 준비 중 · 낙찰이후(gdeny 매각불허가 · gevict 명도 · biz 사업자등록 · gtax 세금 장). 처음 열면 낙찰이후 */
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
   const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지', community: '공지', board: '게시판', manual: '매뉴얼' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지. 커뮤니티는 메뉴에서 빼고 '공지'로 부른다 */
@@ -4520,7 +4521,7 @@ span.cal-day.has { cursor: help; }
     if (head === 'mobile') return { route: 'store', storeTab: 'mobile' }; /* 모바일앱은 스토어 안 탭으로 옮겼다(2026-11-02) */
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
     if (head === 'market' && m[2] === 'region') return { route: 'market', sub: 'dong' }; /* 예전 '수요공급' 주소 — 지역분석 안 탭으로 합쳤다 */
-    if (head === 'postwin' && ['gwin', 'gevict', 'biz', 'gtax'].includes(m[2])) return { route: 'manual', sub: m[2] === 'gwin' ? 'gevict' : m[2] }; /* 낙찰이후 › 가이드 — 매뉴얼로 옮겼다(낙찰당일 장은 뺐다) */
+    if (head === 'postwin' && ['gwin', 'gdeny', 'gevict', 'biz', 'gtax'].includes(m[2])) return { route: 'manual', sub: m[2] === 'gwin' ? 'gdeny' : m[2] }; /* 낙찰이후 › 가이드 · 매각불허가 — 매뉴얼 › 낙찰이후로 옮겼다(낙찰당일 장은 뺐다) */
     if (head === 'postwin' && m[2] === 'sell') { try { sessionStorage.setItem('pw.flow.sub', 'sell'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '매도·임대' — 진행절차 안 매물등록 박스 탭 */
     if (head === 'postwin' && m[2] === 'repair') { try { sessionStorage.setItem('pw.flow.sub', 'biz'); } catch (e) { /* 그만 */ } return { route: 'postwin', sub: 'flow' }; } /* 예전 '인테리어' 하위 탭 — 진행절차 안 사업경비 박스 탭으로 */
     if (head === 'finance' && (m[2] === 'fuelMeal' || m[2] === 'itemPurchase')) return { route: 'finance', sub: 'interior' }; /* 예전 유류&식대 · 물품구매 — 사업경비에 함께 보인다 */
@@ -4633,7 +4634,7 @@ span.cal-day.has { cursor: help; }
     ['m3c', [['진행절차', 'go-postwin'], ['절차별체크리스트', 'go-postwin']]],   /* 가이드는 매뉴얼로 옮겼다 */
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m3', [['실거래분석', 'go-market'], ['시세예측', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
-    ['m3m', [['명도', 'go-manual'], ['사업자등록', 'go-manual'], ['세금', 'go-manual']]],
+    ['m3m', [['경매기초', 'go-manual'], ['물건고르기', 'go-manual'], ['낙찰이후', 'go-manual']]],
     ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store'], ['모바일앱', 'go-store']]],
     ['m5', [['내정보', 'go-more'], ['알림', 'go-more'], ['결제하기', 'go-more'], ...(SHOW_POINTS ? [['포인트', 'go-more']] : []), ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
@@ -5757,7 +5758,7 @@ span.cal-day.has { cursor: help; }
     more: [['mypage', '', '내정보'], ['alerts', '', '알림', 'hide'], ['billing', '', '결제하기'], ['calendar', '', '입찰 캘린더'], ['points', '', '포인트', SHOW_POINTS ? '' : 'hide'], ['support', '', '고객센터', 'hide']],   /* 입찰 캘린더 — 결제하기 옆. 고객센터는 탭에서 빼고 바닥 링크(환불정책 옆)로(2026-11-03) */
     community: [['notice', '', '공지']],
     board: [['suggest', '', '오류및제안'], ['review', '', '사용후기']],   /* FAQ 는 이용가이드(/guide/)에 — 같은 목록(supportFaq) */
-    manual: [['gevict', '', '명도'], ['biz', '', '사업자등록'], ['gtax', '', '세금']],
+    manual: [['basic', '', '경매기초'], ['pick', '', '물건고르기'], ['gdeny', '', '낙찰이후']],
     /* 가격정보는 뺐다 — 시세는 손품조사(시세분석 · 손품결론), 인근 매각사례는 손품결론 아래로 옮겼다(웹). 옛 주소(…/verify)는 손품조사로 */
     item: [['cards', '', '물건카드'], ['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['profit', '', '수익분석'], ['field', '', '임장조사']],
   };
@@ -6255,8 +6256,8 @@ span.cal-day.has { cursor: help; }
   });
   /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
   /* 낙찰이후 — 장 열쇠는 제 하위 탭(절차상세 · 가이드)에 불이 들어오고, 경로에는 '절차상세 › 명도'처럼 장 이름이 붙는다 */
-  const SUB_PARENT = { postwin: { dpre: 'win', evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win', gdeny: 'win' } };   /* 매각불허가는 절차별체크리스트(낙찰당일 오른쪽). 가이드(명도 · 사업자등록 · 세금)는 매뉴얼로 */
-  const SUB_CHAP = { postwin: { win: '낙찰당일', dpre: '잔금전', evict: '명도', balance: '잔금·등기', drepair: '인테리어', dsell: '매도', dtax: '세금', gdeny: '매각불허가' } };
+  const SUB_PARENT = { postwin: { dpre: 'win', evict: 'win', balance: 'win', drepair: 'win', dsell: 'win', dtax: 'win' }, manual: { gevict: 'gdeny', biz: 'gdeny', gtax: 'gdeny' } };   /* 매각불허가 · 명도 · 사업자등록 · 세금 가이드는 매뉴얼 › 낙찰이후로 */
+  const SUB_CHAP = { postwin: { win: '낙찰당일', dpre: '잔금전', evict: '명도', balance: '잔금·등기', drepair: '인테리어', dsell: '매도', dtax: '세금' }, manual: { gdeny: '매각불허가', gevict: '명도', biz: '사업자등록', gtax: '세금' } };
   const subParent = (route, key) => (SUB_PARENT[route] || {})[key] || key;
   const subLabel = (route, key) => ((SUBTABS[route] || []).find((t) => t[0] === subParent(route, key)) || [])[2] || '';
   const subChap = (route, key) => (SUB_CHAP[route] || {})[key] || '';
@@ -6966,6 +6967,11 @@ span.cal-day.has { cursor: help; }
     const box = $('appPageContent');
     const key = S.route; const tab = S.pageTab[key];
     { const old = $('cmTabs'); if (BOXTAB_PAGES.includes(key)) { if (old) old.outerHTML = cmTabsHtml(key); } else if (old) old.remove(); }
+    if (key === 'manual' && (tab === 'basic' || tab === 'pick')) {   /* 매뉴얼 › 경매기초 · 물건고르기 — 아직 비워 둔다 */
+      closeAppPage();
+      box.innerHTML = `<div class="empty"><b>${tab === 'basic' ? '경매기초' : '물건고르기'} 매뉴얼은 준비 중입니다</b><span>낙찰이후 탭에서 매각불허가 · 명도 · 사업자등록 · 세금 가이드를 볼 수 있습니다.</span></div>`;
+      return;
+    }
     const T = CLOUD.T;
     if (!CLOUD.on || !T || !T.mountAppPage) {
       closeAppPage();
