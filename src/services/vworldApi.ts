@@ -4,6 +4,7 @@
 // 인증키도 query 로 받기 때문에 그대로 쓰면 키가 화면에 노출된다. 둘 다 워커가 처리한다.
 import { apiPath } from './apiBase';
 import { cacheKey, readCache, writeCache } from './marketCache';
+import { browserCacheGet, browserCachePut } from './browserCache';
 
 const VWORLD_BASE = apiPath('/api-vworld');
 /** 브이월드 인증키 만료일 — 지나면 공시가격이 들어오지 않는다.
@@ -64,6 +65,37 @@ const callOnce = async (pnu: string): Promise<PriceRow[]> => {
   if (!res.ok) return [];
   const json = (await res.json()) as { apartHousingPrices?: { field?: PriceRow[] } };
   return json.apartHousingPrices?.field ?? [];
+};
+
+/** 한 지번의 호실 한 줄 — 가장 늦은 기준연도 값 */
+export interface ApartUnit { dong: string; ho: string; areaM2: number; price: number; year: string }
+
+/**
+ * 한 지번의 호실 목록(호실마다 가장 늦은 공시가격) — 가격분석 표가 거래마다 같은 층 · 같은 면적 호실을 찾는다.
+ * 이 브라우저에 한 해 동안 둔다(공시가격은 해마다 한 번 나온다).
+ */
+export const fetchApartUnits = async (bCode10: string, lotText: string): Promise<ApartUnit[]> => {
+  const pnu = buildPnu(bCode10, lotText);
+  if (!pnu) return [];
+  const key = `aptUnits_${pnu}`;
+  const hit = await browserCacheGet<ApartUnit[]>(key, PRICE_TTL);
+  if (hit) return hit;
+  let rows = await callOnce(pnu);
+  if (rows.length === 0) {
+    const legacy = LEGACY_LD_CODES[bCode10];
+    if (legacy) rows = await callOnce(buildPnu(legacy, lotText));
+  }
+  const best = new Map<string, PriceRow>();
+  rows.filter((r) => num(r.pblntfPc) > 0).forEach((r) => {
+    const k = `${r.dongNm ?? ''}|${r.hoNm ?? ''}`;
+    const was = best.get(k);
+    if (!was || (r.stdrYear ?? '') > (was.stdrYear ?? '')) best.set(k, r);
+  });
+  const out = [...best.values()].map((r) => ({
+    dong: String(r.dongNm ?? ''), ho: String(r.hoNm ?? ''), areaM2: num(r.prvuseAr), price: num(r.pblntfPc), year: String(r.stdrYear ?? ''),
+  }));
+  void browserCachePut(key, out);
+  return out;
 };
 
 /**
