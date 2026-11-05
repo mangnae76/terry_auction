@@ -6689,8 +6689,8 @@ span.cal-day.has { cursor: help; }
     const busy = online && !!s.busy; const ready = online && !!s.ready;
     const ago = online ? Math.max(0, Math.round((now - s.at.toMillis()) / 1000)) : 0;
     /* 꺼졌을 때 설명은 ⓘ 말풍선으로 — 상태 줄에 긴 문장을 늘어놓지 않는다(2026-11-03) */
-    const conn = online ? `<span class="sx-conn on"><i></i>마이에이전트 Connecting · ${ago}초 전${s.version ? ` · ${esc(String(s.version).replace(/^web-agent\s*/, ''))}` : ''}</span>`   /* 판 이름 'web-agent' 는 빼고 날짜-번호만 */
-      : '<span class="sx-conn"><i></i>마이에이전트 Disconnected<span class="sx-info" tabindex="0" data-tip="PC에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다" data-tip-pos="left" aria-label="PC에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span></span>';
+    const conn = online ? `<span class="sx-conn on"><i></i>My agent Connecting · ${ago}초 전${s.version ? ` · ${esc(String(s.version).replace(/^web-agent\s*/, ''))}` : ''}</span>`   /* 판 이름 'web-agent' 는 빼고 날짜-번호만 */
+      : '<span class="sx-conn"><i></i>My agent Disconnected<span class="sx-info" tabindex="0" data-tip="PC에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다" data-tip-pos="left" aria-label="PC에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span></span>';
     const seg = (k, opts) => `<div class="sx-seg sm" role="group">${opts.map(([v, t]) => `<button type="button" class="${String(agSel[k]) === String(v) ? 'on' : ''}" data-act="ag-sel" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div>`;
     /* 대기열수집 — 도우미 2026.11.01-7 부터. 도는 동안은 단추를 켜 둔다 */
     const qVerOk = !online || agVerAtLeast(s.version, [2026, 11, 1, 7]);
