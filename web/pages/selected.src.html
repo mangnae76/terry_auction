@@ -740,12 +740,13 @@ button { cursor: pointer; }
 .mk-sale .ag-msg.off { color: var(--muted); }
 .mk-sale .ag-cov { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .mk-sale .ag-cov small { font-size: 13px; color: var(--muted); margin-right: 4px; }
-.mk-sale .ag-qline { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }   /* 읍면동으로 수집 · 사건번호로 수집 · 종류 + 추가 — 세 묶음 한 줄(2026-11-06) */
-.mk-sale .ag-q-line { gap: 12px; margin-top: 0; }
-.mk-sale .ag-qgrp { display: inline-flex; align-items: center; gap: 8px; }   /* 묶음마다 테두리 없이 — 바깥 상자 하나(알약까지)로 */
+.mk-sale .ag-qline { margin-top: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }   /* 읍면동으로 수집 · 사건번호로 수집 · 종류 + 추가 — 세 묶음 한 줄(2026-11-06) */
+.mk-sale .ag-q-line { gap: 12px; margin-top: 0; flex-wrap: nowrap; }   /* 왼쪽 끝 ~ 추가 오른쪽 끝 = 위 옥션원 ~ 처음부터새로 줄과 같은 폭(테두리 1 + 안쪽 8) — 칸이 늘어나 채운다 */
+.mk-sale .ag-qgrp { display: inline-flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }   /* 묶음마다 테두리 없이 — 바깥 상자 하나(알약까지)로 */
 .mk-sale .ag-qgrp > small { margin-right: 0; white-space: nowrap; }
-.mk-sale .ag-q-tools.ag-q-line select.adm-input { width: 120px; }
-.mk-sale .ag-q-line #agQIn { width: 200px; height: 30px; font-size: 13px; }
+.mk-sale .ag-q-tools.ag-q-line .adm-f { flex: 1 1 0; min-width: 0; }
+.mk-sale .ag-q-tools.ag-q-line select.adm-input { width: 100%; min-width: 100px; }
+.mk-sale .ag-q-line #agQIn { flex: 1 1 auto; width: auto; min-width: 180px; height: 30px; font-size: 13px; }
 .mk-sale .ag-qkind { display: inline-flex; align-items: center; gap: 8px; }
 .mk-sale .ag-qline > .ag-cov + .ag-cov { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }   /* 고르는 줄과 추가된 알약 사이 가르는 선 */
 .mk-sale .ag-qline > .ag-cov:not(.ag-q-tools) { padding-left: 95px; }   /* 알약 줄은 인천광역시 칸 왼쪽 끝부터(이름 약 87 + 사이 8) */
@@ -991,7 +992,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-collect-row .sx-vsep { flex: none; margin: 0 4px; }
 .sx-bar { flex: 1 1 auto; min-width: 96px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .sx-bar b { display: block; height: 100%; background: var(--blue); transition: width .3s; }
-.sx-stop { height: 30px; padding: 0 12px; border: 1px solid var(--sx-accent); border-radius: 8px; background: none; color: var(--sx-accent); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.sx-stop { height: 34px; padding: 0 14px; border: 1px solid var(--sx-accent); border-radius: 8px; background: none; color: var(--sx-accent); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }   /* 높이 · 글자 = 데이터로드 단추(.sx-tbtn) */
 .sx-stop:disabled { border-color: var(--line); color: var(--faint); cursor: default; }
 .sx-msg { display: flex; align-items: center; gap: 12px; padding-top: 10px; border-top: 1px solid var(--card-line); font-size: 13.5px; color: var(--text); }
 .sx-msg .sx-say { flex: 1 1 auto; min-width: 0; }
