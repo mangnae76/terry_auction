@@ -721,7 +721,7 @@ button { cursor: pointer; }
 .mk-sale .ag-link .ag-tri { margin-left: 4px; vertical-align: 0; }
 .mk-sale .ag-link { border: 0; background: none; padding: 0 2px; font: inherit; font-size: 13px; font-weight: 600; color: var(--blue); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .mk-sale .ag-cov-list { margin-top: 8px; padding: 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 8px; }
-.mk-sale .ag-cov-list input.adm-input { width: 240px; height: 30px; font-size: 13px; margin-bottom: 8px; }
+.mk-sale .ag-cov input.ag-cov-find { width: 240px; height: 30px; font-size: 13px; }
 .mk-sale .ag-cov-wrap { max-height: 240px; overflow: auto; border: 1px solid var(--line, #e5e7eb); border-radius: 8px; }
 .mk-sale .ag-cov-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }   /* 다섯 칸(동네 · 종류 · 물건 · 수집일 · 사이트) 같은 너비 · 모두 가운데(2026-11-06) */
 .mk-sale .ag-cov-wrap th { width: 20%; }
@@ -6835,10 +6835,12 @@ span.cal-day.has { cursor: help; }
     const sum = `<span class="ag-cov-sum"><b>${places.toLocaleString('ko-KR')}곳</b> · <b>${esc(cnt)}</b></span>`;
     const btn = `<button type="button" class="ag-link" data-act="ag-cov-open" aria-expanded="${AG.covOpen ? 'true' : 'false'}">${AG.covOpen ? '목록접기' : '목록보기'}<svg class="ag-tri" viewBox="0 0 10 10" width="9" height="9" aria-hidden="true"><path d="${AG.covOpen ? 'M1 7.5 5 2.5 9 7.5Z' : 'M1 2.5 5 7.5 9 2.5Z'}" fill="currentColor"/></svg></button>`;
     const list = AG.covOpen
-      ? `<div class="ag-cov-list"><input type="text" class="adm-input" id="agCovQ" placeholder="동네 찾기 예 검암동" value="${esc(AG.covQ || '')}">`
+      ? `<div class="ag-cov-list">`
         + `<div class="ag-cov-wrap"><table><thead><tr><th class="l">동네</th><th>종류</th><th>물건</th><th>수집일</th><th>사이트</th></tr></thead><tbody id="agCovBody">${agCovRows()}</tbody></table></div></div>`
       : '';
-    return `<div class="ag-cov"><small>읍면동 낙찰사례 수집데이터</small>${sum}${btn}${metaHtml}</div>${list}`;
+    /* 목록을 펴면 동네 찾기 칸이 이름 바로 오른쪽에(2026-11-06) */
+    const find = AG.covOpen ? `<input type="text" class="adm-input ag-cov-find" id="agCovQ" placeholder="동네 찾기 예 검암동" value="${esc(AG.covQ || '')}">` : '';
+    return `<div class="ag-cov"><small>읍면동 낙찰사례 수집데이터</small>${find}${sum}${btn}${metaHtml}</div>${list}`;
   }
   /* 모을 물건 대기열 — 도우미가 사건마다 탱크옥션 검색 → 상세 → 인근매각사례를 끝까지 모으고 대기열에서 뺀다(agent/queue).
      [대기열수집]을 누르면 선정물건 중 아직 안 모은 동네(종류까지 같은)의 사건을 동네마다 하나씩 먼저 올린다 */
