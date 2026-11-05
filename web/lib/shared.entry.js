@@ -80,6 +80,14 @@ export { geocodeAddress } from '../../src/services/routeOptimizer';
 export { createMapView } from '../../src/services/mapView';
 export { distM } from '../../src/services/priceAnalysis';
 export { getBuildingFacts } from '../../src/services/buildingFacts';
+/* 경매사례 지도 오른쪽 도구 막대 — 손품조사 시세분석과 같은 KakaoMapTools(로드뷰 · 지적도 · 재기 · 주변 생활시설 …)를 웹 칸에 띄운다 */
+import { reactive as vueReactive } from 'vue';
+import KakaoMapTools from '../../src/components/KakaoMapTools.vue';
+export const mountKakaoTools = (el, k, map, near) => {
+  const st = vueReactive({ near: near || null });
+  const app = createApp({ render: () => h(KakaoMapTools, { k, map, near: st.near }) });
+  app.mount(el);
+  return { setNear: (p) => { st.near = p || null; }, unmount: () => app.unmount() };
 // 매각기일 요일 — 앱 일정 저장소의 weekdayLabel 그대로
 export { weekdayLabel } from '../../src/stores/scheduleStore';
 

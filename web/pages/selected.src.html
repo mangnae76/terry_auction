@@ -1099,18 +1099,49 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-mseg button + button { border-left: 1px solid var(--line); }
 .sx-mseg button.on { background: var(--blue-soft); color: var(--blue); font-weight: 800; }
 .sx-mapmsg { font-size: 12px; color: var(--muted); }
-.sx-mapslot { position: relative; height: 440px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.sx-map { width: 100%; height: 100%; }
-.sx-maplegend { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--muted); }
-.sx-maplegend span { display: inline-flex; align-items: center; gap: 5px; }
-.sx-maplegend i { width: 10px; height: 10px; border-radius: 50%; background: #2b4fd8; display: inline-block; }
-.sx-maplegend i.me { background: #e03e3e; }
+.sx-mapslot { min-height: 620px; }
+/* 지도 상자 — 시세분석 .map 과 같은 꼴(높이 620 · 모서리 10 · 안 z-index 가둠) */
+.sx-map { position: relative; z-index: 0; isolation: isolate; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--band); }
+.sx-map-in { height: 620px; }
+.sx-map .legend { position: absolute; left: 10px; bottom: 10px; z-index: 500; background: rgba(255, 255, 255, .94); border-radius: 8px; padding: 6px 10px; font-size: 12px; color: #18213a; display: flex; gap: 10px; }
+.sx-map .legend span { display: inline-flex; align-items: center; gap: 5px; }
+.sx-map .legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.sx-map .fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 700; color: #18213a; cursor: pointer; }
+.sx-map .fs-btn:hover { color: var(--blue); }
+.sx-map.in-fs .fs-btn { display: none; }
 .sx-map .pa-pin { position: relative; }
-.sx-map .pa-pin .dot { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .3); }
-.sx-map .pa-pin.me .dot { background: #e03e3e; }
-.sx-map .pa-pin .lbl { position: absolute; left: 0; top: 12px; transform: translateX(-50%); font-size: 12px; line-height: 1.3; text-align: center; color: #18213a; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; white-space: nowrap; pointer-events: none; }
+.sx-map .pa-pin .dot { position: absolute; left: -12px; top: -12px; width: 24px; height: 24px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .3); cursor: pointer; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 800; font-style: normal; line-height: 1; }
+.sx-map .pa-pin.on .dot { left: -15px; top: -15px; width: 30px; height: 30px; font-size: 14px; }
+.sx-map .pa-pin.me .dot { left: -9px; top: -9px; width: 18px; height: 18px; background: #e03e3e; cursor: default; }
+.sx-map .pa-pin .lbl { position: absolute; left: 0; top: 15px; transform: translateX(-50%); font-size: 12px; line-height: 1.3; text-align: center; color: #18213a; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; white-space: nowrap; pointer-events: none; }
 .sx-map .pa-pin b { font-weight: 700; }
 .sx-map .pa-pin.me b { color: #e03e3e; }
+/* 전체화면 — 시세분석 C안: 위 남색 띠 52 · 지도가 그 아래를 꽉 채우고 왼쪽 340 칸(조건 · 목록)이 떠 있다 */
+.sx-fs { position: fixed; inset: 0; z-index: 3000; display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: 52px auto minmax(0, 1fr); gap: 12px; background: #e7ebf1; overflow: hidden; }
+.sx-fs > .fs-pane { display: contents; }
+.sx-fs .fs-top { grid-column: 1 / -1; grid-row: 1; display: flex; align-items: center; gap: 12px; padding: 0 14px; background: #213366; color: #fff; }
+.sx-fs .fs-x { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, .35); border-radius: 8px; background: transparent; color: #fff; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.sx-fs .fs-t { font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sx-fs .fs-t small { margin-left: 8px; font-size: 12px; font-weight: 500; color: rgba(255, 255, 255, .72); }
+.sx-fs .fs-msg { margin-left: auto; color: rgba(255, 255, 255, .72); }
+.sx-fs > .fs-map { grid-column: 1 / -1; grid-row: 2 / -1; margin-top: -12px; min-height: 0; z-index: 0; }
+.sx-fs .sx-map { height: 100%; border: 0; border-radius: 0; }
+.sx-fs .sx-map-in { height: 100%; }
+.sx-fs .sx-map .legend { left: 364px; }
+.sx-fs :is(.fs-conds, .fs-list) { position: relative; z-index: 2; margin-left: 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 20px rgba(17, 24, 39, .14); }
+.sx-fs .fs-conds { grid-column: 1; grid-row: 2; padding: 12px 14px; display: grid; gap: 8px; }
+.sx-fs .fs-conds .sx-mlab { display: grid; grid-template-columns: 32px minmax(0, 1fr); }
+.sx-fs .fs-conds .sx-mseg { width: 100%; } .sx-fs .fs-conds .sx-mseg button { flex: 1 1 0; min-width: 0; padding: 0 4px; }
+.sx-fs .fs-list { grid-column: 1; grid-row: 3; margin-bottom: 12px; min-height: 0; overflow-y: auto; padding: 10px 10px 14px; display: grid; gap: 6px; align-content: start; }
+.sx-fs .fs-lh { padding: 0 4px; font-size: 13px; font-weight: 800; color: #18213a; }
+.sx-fs .fs-it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--band); font: inherit; text-align: left; cursor: pointer; }
+.sx-fs .fs-it:hover { border-color: #c7d0e2; }
+.sx-fs .fs-it.on { border-color: var(--blue); background: var(--blue-soft); }
+.sx-fs .fs-it .n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #2b4fd8; color: #fff; font-size: 12px; font-weight: 800; font-style: normal; }
+.sx-fs .fs-it .nm { display: grid; min-width: 0; font-size: 13px; font-weight: 700; color: #18213a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-fs .fs-it .nm small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.sx-fs .fs-it .pr { font-size: 12.5px; font-weight: 800; color: #18213a; white-space: nowrap; }
+.sx-fs .fs-list .none { margin: 0; padding: 12px; font-size: 13px; color: var(--muted); text-align: center; }
 .sx-tbl td.area { line-height: 1.3; }   /* 전용 — ㎡ 위 · 평 아래 두 줄 */
 .sx-tbl td.area small { display: block; font-size: 12px; color: var(--muted); }
 .sx-tbl td.l { max-width: 300px; }   /* 주소는 동부터 — 넘치면 … (전체 주소는 마우스를 올리면) */
@@ -6588,7 +6619,7 @@ span.cal-day.has { cursor: help; }
   if (!SXM_RADII.includes(Number(SXM.radius))) SXM.radius = 500;
   const SXM_SPOT_KEY = 'ta.web.sale.spots'; const SXM_ELEV_KEY = 'ta.web.sale.elevs';
   const sxmRead = (k) => { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } };
-  const SXG = { spots: sxmRead(SXM_SPOT_KEY), elevs: sxmRead(SXM_ELEV_KEY), busy: false, again: false, phase: '', done: 0, total: 0, mv: null, mvP: null, host: null, ver: 0, fitKey: '' };
+  const SXG = { spots: sxmRead(SXM_SPOT_KEY), elevs: sxmRead(SXM_ELEV_KEY), busy: false, again: false, phase: '', done: 0, total: 0, mv: null, mvP: null, host: null, ver: 0, fitKey: '', focus: '', tools: null, fs: (() => { try { return localStorage.getItem('ta.web.sale.fs') === '1'; } catch (e) { return false; } })(), groups: [] };
   const sxmSave = () => { try { localStorage.setItem(SXM_SPOT_KEY, JSON.stringify(SXG.spots)); localStorage.setItem(SXM_ELEV_KEY, JSON.stringify(SXG.elevs)); } catch (e) { /* 그만 */ } };
   /* '인천광역시 서구 검암동 678-8, 3층302호' → '인천광역시 서구 검암동 678-8' (지번까지) */
   const sxLotAddr = (addr) => { const s = String(addr || ''); const m = AG_LOT_RE.exec(s); return m ? s.slice(0, m.index + m[0].length).replace(/,/g, ' ').replace(/\s+/g, ' ').trim() : ''; };
@@ -6598,7 +6629,7 @@ span.cal-day.has { cursor: help; }
   const sxLimit = async (list, n, fn) => { let i = 0; await Promise.all(Array.from({ length: Math.min(n, list.length) }, async () => { while (i < list.length) { const x = list[i]; i += 1; await fn(x); } })); };
   const sxMapMsgText = () => (SXG.total ? `${SXG.phase === 'elev' ? '엘베 확인 중' : '위치 찾는 중'} ${SXG.done.toLocaleString('ko-KR')} / ${SXG.total.toLocaleString('ko-KR')}`
     : (!sxMe() ? '물건카드교체로 내 물건을 고르면 반경으로 거릅니다' : ''));
-  const sxMapStatus = () => { const el = $('sxMapMsg'); if (el) el.textContent = sxMapMsgText(); };
+  const sxMapStatus = () => { ['sxMapMsg', 'sxFsMsg'].forEach((id) => { const el = $(id); if (el) el.textContent = sxMapMsgText(); }); };
   /* 위치 · 엘베를 다 받으면(또는 10곳마다) 결과를 다시 그린다 */
   const sxGeoFlush = () => { sxmSave(); SXG.ver += 1; if (agSaleOpen() && $('sxResults')) { agPaintTable(); } };
   async function sxGeoRun() {
@@ -6640,40 +6671,87 @@ span.cal-day.has { cursor: help; }
     const mv = SXG.mv; if (!mv) return;
     mv.clear();
     const rows = sxRows() || []; const me = sxMe(); const meSpot = me ? SXG.spots[sxLotKey(me.addr)] : null; const meLot = me ? agLotOf(me.addr) : '';
-    const groups = new Map(); let same = 0;
+    const by = new Map(); let same = 0;
     rows.forEach((r) => {
       if (meLot && agLotOf(r['소재지']) === meLot) { same += 1; return; }
       const k = sxLotKey(r['소재지']); const p = SXG.spots[k]; if (!p) return;
-      const g = groups.get(k) || { p, list: [], name: agBldOf(r['소재지']) || agLotOf(r['소재지']) };
-      g.list.push(r); groups.set(k, g);
+      const g = by.get(k) || { k, p, list: [], name: agBldOf(r['소재지']) || agLotOf(r['소재지']) };
+      g.list.push(r); by.set(k, g);
     });
-    if (meSpot) mv.circle(meSpot, SXM.radius, { color: '#2b4fd8', weight: 1.6, dash: true, fillOpacity: 0.06 });
-    const html = (label) => `<i class="dot"></i><span class="lbl">${label}</span>`;
-    groups.forEach((g) => {
+    /* 번호 — 내 물건에서 가까운 순(시세분석 임장 순서 번호와 같은 자리) */
+    const groups = [...by.values()].map((g) => {
       const pr = g.list.map((r) => Number(r['매각가'])).filter((v) => v > 0); const lo = Math.min(...pr); const hi = Math.max(...pr);
-      const range = pr.length ? (lo === hi ? agWon(lo) : `${agWon(lo)}~${agWon(hi)}`) : '';
-      const d = meSpot ? CLOUD.T.distM(meSpot, g.p) : null;
-      const sub = [range, d != null ? `${d.toLocaleString('ko-KR')}m` : ''].filter(Boolean).join(' · ');
-      mv.pin(g.p, { className: 'pa-pin', html: html(`<b>${esc(g.name)} ${g.list.length}건</b>${sub ? `<br>${sub}` : ''}`), z: 1 });
+      return { ...g, dist: meSpot ? CLOUD.T.distM(meSpot, g.p) : null, range: pr.length ? (lo === hi ? agWon(lo) : `${agWon(lo)}~${agWon(hi)}`) : '' };
+    }).sort((x, y) => (x.dist ?? 1e12) - (y.dist ?? 1e12)).map((g, i) => ({ ...g, no: i + 1 }));
+    SXG.groups = groups;
+    if (meSpot) mv.circle(meSpot, SXM.radius, { color: '#2b4fd8', weight: 1.6, dash: true, fillOpacity: 0.06 });
+    /* 점과 이름표를 한 표식으로 — 줌할 때 이름표가 점과 함께 움직인다(시세분석과 같게) */
+    const html = (label, no = '') => `<i class="dot">${no}</i><span class="lbl">${label}</span>`;
+    groups.forEach((g) => {
+      const on = SXG.focus === g.k;
+      const sub = [g.range, g.dist != null ? `${g.dist.toLocaleString('ko-KR')}m` : ''].filter(Boolean).join(' · ');
+      mv.pin(g.p, { className: `pa-pin${on ? ' on' : ''}`, html: html(`<b>${esc(g.name)} ${g.list.length}건</b>${sub ? `<br>${sub}` : ''}`, String(g.no)), onClick: () => { SXG.focus = on ? '' : g.k; sxDrawMap(); }, z: on ? 50 : 1 });
     });
     if (meSpot) mv.pin(meSpot, { className: 'pa-pin me', html: html(`<b>${esc((me && me.bld) || '내 물건')}</b>${same ? `<br>같은 건물 ${same}건` : ''}`), z: 1000 });
+    if (SXG.tools) SXG.tools.setNear(meSpot || null);
     /* 내 물건 · 반경이 바뀔 때만 다시 맞춘다(지도를 옮겨 둔 것을 함부로 되돌리지 않게) */
-    const fk = `${saleItemId}|${SXM.radius}|${meSpot ? `${meSpot.lat},${meSpot.lng}` : groups.size ? 'pts' : ''}`;
+    const fk = `${saleItemId}|${SXM.radius}|${meSpot ? `${meSpot.lat},${meSpot.lng}` : groups.length ? 'pts' : ''}`;
     if (fk !== SXG.fitKey) {
       SXG.fitKey = fk;
       if (meSpot) mv.fitRadius(meSpot, SXM.radius);
-      else { const pts = [...groups.values()].map((g) => g.p); if (pts.length) mv.fitPoints(pts, 40, 16, false); }
+      else { const pts = groups.map((g) => g.p); if (pts.length) mv.fitPoints(pts, 40, 16, false); }
     }
+    sxFsPaint();
   }
+  /* ===== 전체화면 — 시세분석 C안과 같은 짜임: 위 남색 띠(닫기 · 이름) · 지도가 화면을 채우고 왼쪽에 떠 있는 상자(조건 · 매각물건 목록) ===== */
+  function sxFsPanelHtml() {
+    const me = sxMe(); const q = saleApplied || {};
+    const seg = (k, opts) => `<span class="sx-mseg" role="radiogroup">${opts.map(([v, t]) => `<button type="button" role="radio" class="${String(SXM[k]) === String(v) ? 'on' : ''}" aria-checked="${String(SXM[k]) === String(v)}" data-act="sxm-set" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</span>`;
+    const list = SXG.groups.map((g) => `<button type="button" class="fs-it ${SXG.focus === g.k ? 'on' : ''}" data-act="sxm-go" data-v="${esc(g.k)}"><i class="n">${g.no}</i><span class="nm">${esc(g.name)}<small>${g.list.length}건${g.dist != null ? ` · ${g.dist.toLocaleString('ko-KR')}m` : ''}</small></span><span class="pr num">${g.range}</span></button>`).join('');
+    return `<div class="fs-top"><button type="button" class="fs-x" data-act="sxm-fs"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>닫기</button>`
+      + `<b class="fs-t">경매 인근 유사 매각물건<small>${esc([me && me.caseNo, [q.sido, q.sgg, q.dong].filter(Boolean).join(' ')].filter(Boolean).join(' · '))}</small></b><span class="sx-mapmsg fs-msg" id="sxFsMsg">${esc(sxMapMsgText())}</span></div>`
+      + `<div class="fs-conds"><span class="sx-mlab">반경${seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span><span class="sx-mlab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span><span class="sx-mlab">층${seg('floor', [['', '전체'], ['0', '같은층']])}</span></div>`
+      + `<div class="fs-list"><b class="fs-lh">매각물건 ${SXG.groups.length.toLocaleString('ko-KR')}곳</b>${list || '<p class="none">지도에 매각물건이 없습니다.</p>'}</div>`;
+  }
+  function sxFsPaint() { const ov = $('sxFs'); if (!ov) return; const pane = ov.querySelector('.fs-pane'); if (pane) pane.innerHTML = sxFsPanelHtml(); }
+  function sxSetFs(on) {
+    SXG.fs = !!on; try { if (on) localStorage.setItem('ta.web.sale.fs', '1'); else localStorage.removeItem('ta.web.sale.fs'); } catch (e) { /* 그만 */ }
+    let ov = $('sxFs');
+    if (on) {
+      if (!ov) { ov = document.createElement('div'); ov.id = 'sxFs'; ov.className = 'sx-fs app-market mk-sale sx'; ov.innerHTML = '<div class="fs-pane"></div><div class="fs-map"></div>'; document.body.appendChild(ov); }
+      if (SXG.host) ov.querySelector('.fs-map').appendChild(SXG.host);
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      if (ov) ov.remove();
+      document.documentElement.style.overflow = '';
+      const slot = $('sxMapSlot'); if (slot && SXG.host) slot.appendChild(SXG.host);
+    }
+    if (SXG.host) SXG.host.classList.toggle('in-fs', !!on);
+    sxFsPaint();
+    /* 칸 크기가 바뀌었으니 지도를 다시 재고, 반경이 다 보이게(시세분석과 같게 세 번) */
+    [0, 120, 400].forEach((ms) => window.setTimeout(() => { const mv = SXG.mv; if (!mv) return; mv.relayout(); const me = sxMe(); const p = me ? SXG.spots[sxLotKey(me.addr)] : null; if (p && !SXG.focus) mv.fitRadius(p, SXM.radius); }, ms));
+  }
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && SXG.fs) sxSetFs(false); });
   /* 결과를 다시 그릴 때마다 — 지도는 한 번만 만들어 두고 새 자리(#sxMapSlot)로 옮겨 붙인다 */
   function sxMountMap() {
-    const slot = $('sxMapSlot'); if (!slot) return;
-    if (!SXG.host) { SXG.host = document.createElement('div'); SXG.host.className = 'sx-map'; }
-    slot.appendChild(SXG.host);
+    const slot = $('sxMapSlot');
+    if (!slot && !SXG.fs) return;
+    if (!SXG.host) {
+      SXG.host = document.createElement('div'); SXG.host.className = 'sx-map';
+      SXG.host.innerHTML = '<div class="sx-map-in"></div><div class="sx-map-tools"></div>'
+        + '<button type="button" class="fs-btn" data-act="sxm-fs" aria-label="지도 전체화면으로 보기"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>전체화면</button>'
+        + '<div class="legend"><span><i style="background:#e03e3e"></i>내 물건</span><span><i style="background:#2b4fd8"></i>매각물건</span></div>';
+    }
+    if (SXG.fs) { if (!$('sxFs')) sxSetFs(true); } else if (slot) slot.appendChild(SXG.host);
     const T = CLOUD.T;
     if (!SXG.mv && !SXG.mvP && T && T.createMapView) {
-      SXG.mvP = T.createMapView(SXG.host, { zoom: 15, zoomControl: 'topright' })
-        .then((mv) => { SXG.mv = mv; SXG.mvP = null; SXG.fitKey = ''; sxDrawMap(); })
+      SXG.mvP = T.createMapView(SXG.host.querySelector('.sx-map-in'), { zoomControl: 'topright', kakaoTools: true, leaflet: { scrollWheelZoom: true, wheelPxPerZoomLevel: 120, zoomSnap: 0.25 } })
+        .then((mv) => {
+          SXG.mv = mv; SXG.mvP = null; SXG.fitKey = '';
+          /* 카카오맵이면 오른쪽 도구 막대(로드뷰 · 지적도 · 재기 · 주변 생활시설 …) — 시세분석과 같은 부품 */
+          if (mv.native && T.mountKakaoTools) { try { const me = sxMe(); SXG.tools = T.mountKakaoTools(SXG.host.querySelector('.sx-map-tools'), mv.native.k, mv.native.map, me ? SXG.spots[sxLotKey(me.addr)] : null); } catch (e) { /* 도구 없이 지도만 */ } }
+          sxDrawMap();
+        })
         .catch(() => { SXG.mvP = null; });
     }
     if (SXG.mv) { SXG.mv.relayout(); sxDrawMap(); }
@@ -6900,8 +6978,7 @@ span.cal-day.has { cursor: help; }
       + `<span class="sx-mlab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span>`
       + `<span class="sx-mlab">층${seg('floor', [['', '전체'], ['0', '같은층']])}</span>`
       + `<span class="sx-grow"></span><span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span></div>`
-      + `<div class="sx-mapslot" id="sxMapSlot"></div>`
-      + `<div class="sx-maplegend"><span><i class="me"></i>내 물건</span><span><i></i>매각물건(지번마다)</span></div></section>`;
+      + `<div class="sx-mapslot" id="sxMapSlot"></div></section>`;
   }
   function sxResultsHtml() {
     const rows = agIsAdmin() && AG.recs.length ? sxRows() : null;
@@ -7016,7 +7093,7 @@ span.cal-day.has { cursor: help; }
     /* 수집 관리 접기 단추는 없앴다(2026-11-06) — 읍면동 · 사건 수집 상자와 수집데이터는 늘 펼쳐 둔다 */
     /* 제목 줄 — 제목 · PC 연결 칩 · 오른쪽 끝 데이터로드 · 데이터백업 · 엑셀다운로드(PC 프로그램과 같은 양식) */
     /* 진행 막대 · 중지는 연결 알약 바로 오른쪽 — 남는 폭을 채운다(2026-11-06) */
-    const titlebar = `<div class="sx-titlebar"><h2>경매 인근 매각물건 수집</h2>${conn}<div class="sx-tprog">${prog}</div><span class="sx-vsep" aria-hidden="true"></span>`
+    const titlebar = `<div class="sx-titlebar"><h2>인근매각사례 수집</h2>${conn}<div class="sx-tprog">${prog}</div><span class="sx-vsep" aria-hidden="true"></span>`
       + `<button type="button" class="sx-tbtn" data-act="sx-import" ${busy || AG.io ? 'disabled' : ''}>${AG.io ? '저장하는 중…' : '데이터로드'}</button>`
       + `<button type="button" class="sx-tbtn" data-act="sx-backup" ${AG.recs.length ? '' : 'disabled'}>데이터백업</button>`
       + `<button type="button" class="sx-tbtn solid" data-act="sx-excel">엑셀다운로드</button></div>`;
@@ -7025,7 +7102,7 @@ span.cal-day.has { cursor: help; }
     const say = online ? (msg || '대기 중입니다.') : 'MyAgent가 꺼져 있습니다. 수집할 컴퓨터에서 agent.py 를 켜 주세요.';
     const lead = `<div class="rg-lead sx-lead" role="status" aria-live="polite"><p class="l1">${esc(say)}</p>`
       + '<p class="l2">① 브라우저 열기 → 읍면동 · 끝 페이지까지 자동 · 현재 화면 수집 중 하나 → 건축연도 채우기 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
-    return `<div class="sx-top" id="agPanel">${lead}${online && s.version ? `<div class="sx-verline">MyAgent ${esc(agVer(s.version))}</div>` : ''}<section class="sx-card sx-collect" aria-label="경매 인근 매각물건 수집">${titlebar}`
+    return `<div class="sx-top" id="agPanel">${lead}${online && s.version ? `<div class="sx-verline">MyAgent ${esc(agVer(s.version))}</div>` : ''}<section class="sx-card sx-collect" aria-label="인근매각사례 수집">${titlebar}`
       /* 첫 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③. 처음부터새로는 아래 상태 줄 왼쪽(2026-11-06) */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}<span class="sx-vsep" aria-hidden="true"></span>${seg('months', AG_MONTHS)}</div>`
       + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div></div></div></div>`
@@ -8558,7 +8635,9 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         renderMarket(); toast('면적 · 건축년도 · 기간을 처음대로 돌렸습니다.', 'info'); break;
       }
       case 'sx-import': { const f = $('sxFile'); if (f) f.click(); break; }
-      case 'sxm-set': { const k = t.dataset.k; SXM[k] = k === 'radius' ? Number(v) : v; try { localStorage.setItem(SXM_KEY, JSON.stringify(SXM)); } catch (err) { /* 그만 */ } agPaintTable(); break; }
+      case 'sxm-fs': sxSetFs(!SXG.fs); break;
+      case 'sxm-go': { const g = SXG.groups.find((x) => x.k === v); SXG.focus = SXG.focus === v ? '' : v; if (g && SXG.focus && SXG.mv) SXG.mv.focus(g.p, 16); sxDrawMap(); break; }
+      case 'sxm-set': { const k = t.dataset.k; SXM[k] = k === 'radius' ? Number(v) : v; try { localStorage.setItem(SXM_KEY, JSON.stringify(SXM)); } catch (err) { /* 그만 */ } if ($('sxResults')) agPaintTable(); else sxDrawMap(); break; }
       case 'sale-card-menu': saleCardOpen = !saleCardOpen; renderSonHead(); break;
       case 'sale-card-pick': salePickCard(id); break;
       case 'sx-backup': void sxBackup(); break;
