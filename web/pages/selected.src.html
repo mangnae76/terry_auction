@@ -633,6 +633,10 @@ button { cursor: pointer; }
 #sonAskSlot .adp-mkt-cells .cell:has(.son-row-links) { position: relative; }
 #sonAskSlot .son-row-links { position: absolute; right: 8px; bottom: 5px; display: inline-flex; gap: 4px; }   /* 주소 칸 오른쪽 끝 — 줄마다 P · N */
 #sonAskSlot .son-addr-field { padding-right: 64px; }
+/* 경매빌라 · 유사빌라 호가매물 — 주소 칸을 넓히고(매매호가 · 평당가 · 면적은 좁게) 주소는 한 줄로. 플래닛 · 네이버 단추는 주소 칸 오른쪽 끝(2026-11-05) */
+#sonAskSlot .adp-mkt-cells.c4 { grid-template-columns: minmax(0, .9fr) minmax(0, .75fr) minmax(0, .75fr) minmax(0, 2.4fr) !important; }
+#sonAskSlot .adp-mkt-cells .cell > strong.adp-mkt-addr2 { display: block; padding-right: 72px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+#sonAskSlot .son-row-links { bottom: auto !important; top: calc(50% + 12px); transform: translateY(-50%); }
 #sonAskSlot .adp-mkt-cells .cell > strong.son-auto.son-auto-empty { color: #9aa3b2 !important; }   /* 호가 · 면적을 적기 전 — 안내 글과 같은 회색 */
 #sonAskSlot .son-addr-field { display: flex; align-items: center; gap: 8px; width: 100%; height: 40px; }
 #sonAskSlot .son-addr-field .adp-mkt-input { flex: 1; min-width: 0; }
