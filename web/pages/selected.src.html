@@ -7091,7 +7091,7 @@ span.cal-day.has { cursor: help; }
       <div class="rt-docs">${docBox(spec)}${others.filter((r) => r.has || r.err).map(docBox).join('')}</div>
       <label class="rt-drop ${RT.busy ? 'busy' : ''}" for="rtFile">
         <span class="ic" aria-hidden="true">📂</span>
-        <b>${RT.busy ? '올리는 중…' : 'PDF 파일 선택하기'}</b><span>또는 여러 파일을 이 칸에 끌어다 놓을 수 있습니다.</span>
+        <b>${RT.busy ? '올리는 중…' : 'PDF 파일 선택하기'}</b><span>또는 파일을 이 칸에 끌어다 놓아 주세요.</span>
         <input type="file" id="rtFile" accept="application/pdf,image/*" multiple hidden>
       </label>
       <p class="rt-more">함께 올리면 더 정확해집니다 — 매각물건명세서 · 건물등기 · 현황조사서 · 세대열람</p>
