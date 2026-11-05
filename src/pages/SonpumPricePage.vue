@@ -516,7 +516,7 @@ const drawMap = () => {
       z: on ? 50 : 1,
     });
   });
-  mv.pin(m, { className: 'pa-pin me', html: html(`<b>${meName.value}</b>${sameCount.value ? `<br>같은 건물 ${sameCount.value}건` : ''}`), z: 1000 });
+  mv.pin(m, { className: 'pa-pin me', html: html(`<b>${meName.value}</b>${sameCount.value ? `<br>${webEmbed ? `<b>같은건물 ${sameCount.value}건</b>` : `같은 건물 ${sameCount.value}건`}` : ''}`)   /* 웹 — '같은건물' 붙여 쓰고 굵게 */, z: 1000 });
 };
 const fitMap = () => {
   const m = mySpot.value;

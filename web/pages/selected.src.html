@@ -6738,7 +6738,7 @@ span.cal-day.has { cursor: help; }
       const off = g.list.every((r) => sxIsOff(r));   /* 그 건물 매각을 다 '제외'하면 핀도 회색(시세분석과 같게) */
       mv.pin(g.p, { className: `pa-pin${on ? ' on' : ''}${off ? ' off' : ''}`, html: html(`<b>${esc(g.name)} ${g.list.length}건</b>${sub ? `<br>${sub}` : ''}`, String(g.no)), onClick: () => { SXG.focus = on ? '' : g.k; sxDrawMap(); }, z: on ? 50 : 1 });
     });
-    if (meSpot) mv.pin(meSpot, { className: 'pa-pin me', html: html(`<b>${esc((me && me.bld) || '경매물건')}</b>${same ? `<br>같은 건물 ${same}건` : ''}`), z: 1000 });
+    if (meSpot) mv.pin(meSpot, { className: 'pa-pin me', html: html(`<b>${esc((me && me.bld) || '경매물건')}</b>${same ? `<br><b>같은건물 ${same}건</b>` : ''}`), z: 1000 });
     if (SXG.tools) SXG.tools.setNear(meSpot || null);
     /* 내 물건 · 반경이 바뀔 때만 다시 맞춘다(지도를 옮겨 둔 것을 함부로 되돌리지 않게) */
     const fk = `${saleItemId}|${SXM.radius}|${meSpot ? `${meSpot.lat},${meSpot.lng}` : groups.length ? 'pts' : ''}`;
