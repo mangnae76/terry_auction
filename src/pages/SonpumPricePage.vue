@@ -560,20 +560,23 @@ const evenCols = () => {
   if (!t || !t.parentElement?.clientWidth) return;
   if (webEmbed) {
     // 웹 — 칸 폭을 고정값으로(매매 · 전세 · 월세 · 조건을 바꿔도 칸 자리가 같다). 주소만 남는 폭을 다 쓴다
-    if (colsKey === 'fixed' && t.querySelector('colgroup')) return;
-    colsKey = 'fixed';
+    // 표 상자 폭이 바뀔 때만 다시 — 고정 폭을 상자 폭에 맞춰 같은 비율로 줄인다(시장분석처럼 상자가 좁아도 밖으로 튀어나가지 않게)
+    const cw = t.parentElement.clientWidth;
+    if (colsKey === `fixed|${cw}` && t.querySelector('colgroup')) return;
+    colsKey = `fixed|${cw}`;
     t.querySelector('colgroup')?.remove();
     const W: Record<string, number> = { date: 92, won: 120, perPy: 100, pub: 126, gap: 126, area: 86, elev: 64, year: 64, dist: 64, floor: 52 };
+    const ths = [...t.querySelectorAll('thead th')] as HTMLElement[];
+    const base = (el: HTMLElement) => (el.classList.contains('ck-th') ? 44 : el.classList.contains('acts-th') ? 112 : el.dataset.k ? W[el.dataset.k] ?? 0 : 58);
+    const fixedSum = ths.reduce((a, el) => a + base(el), 0);
+    const ADDR_MIN = 170;
+    const k = Math.min(1, Math.max(0.6, (cw - ADDR_MIN) / fixedSum));
+    t.classList.toggle('tight', k < 1);   // 줄였으면 칸 안 여백도 줄인다
     const cg = document.createElement('colgroup');
-    [...t.querySelectorAll('thead th')].forEach((th) => {
-      const el = th as HTMLElement; const c = document.createElement('col');
-      const w = el.classList.contains('ck-th') ? 44 : el.classList.contains('acts-th') ? 112 : el.dataset.k ? W[el.dataset.k] : 58;
-      if (w) c.style.width = `${w}px`;
-      cg.appendChild(c);
-    });
+    ths.forEach((el) => { const c = document.createElement('col'); const w = base(el); if (w) c.style.width = `${Math.floor(w * k)}px`; cg.appendChild(c); });
     t.insertBefore(cg, t.firstChild);
     t.style.tableLayout = 'fixed';
-    t.style.minWidth = '1320px';   // 좁은 창에선 표만 옆으로 밀어 본다(칸이 찌그러지지 않게)
+    t.style.minWidth = '';
     return;
   }
   t.querySelector('colgroup')?.remove();
