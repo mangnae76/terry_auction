@@ -16,8 +16,13 @@ import { firestore, firestoreDisabledReason } from './firebase';
 
 const POSTS = 'suggestPosts';
 
+/** 게시판 종류(웹 게시판 탭) — 같은 suggestPosts 에 board 칸으로 가른다(예전 글은 칸이 없어 오류및제안) */
+export type BoardKey = 'suggest' | 'greet' | 'review';
+export const boardOf = (p: { board?: BoardKey }): BoardKey => p.board ?? 'suggest';
+
 export interface SuggestPost {
   id: string;
+  board?: BoardKey;
   title: string;
   body: string;
   authorUid: string;
@@ -50,7 +55,7 @@ export const subscribeSuggestPosts = (onRows: (rows: SuggestPost[]) => void, onE
   );
 };
 
-export const createSuggestPost = async (p: Pick<SuggestPost, 'title' | 'body' | 'authorUid' | 'authorName'>): Promise<string> => {
+export const createSuggestPost = async (p: Pick<SuggestPost, 'title' | 'body' | 'authorUid' | 'authorName' | 'board'>): Promise<string> => {
   if (!firestore) throw new Error(firestoreDisabledReason || '저장소에 연결하지 못했습니다.');
   const ref = await addDoc(collection(firestore, POSTS), { ...p, createdAt: nowIso(), views: 0, commentCount: 0 });
   return ref.id;

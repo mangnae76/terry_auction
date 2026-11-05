@@ -1393,7 +1393,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 #itemContent .app-detail.tab-field :is(.adp-fs-input, .adp-fs-multi, .adp-fs-unit, .adp-mkt-input) { height: var(--ctl-h) !important; min-height: 0 !important; }
 /* 손품결론 — 표 줄 위아래 */
 #itemContent .son-conc .adp-conc-table :is(th, td) { padding-top: 7px !important; padding-bottom: 7px !important; }
-#appPageContent:has(.app-page:is([data-k="more"], [data-k="community"])) { padding-top: 12px; }
+#appPageContent:has(.app-page:is([data-k="more"], [data-k="community"], [data-k="board"])) { padding-top: 12px; }
 /* 경로를 카드 아래로 옮겨 간 빈 자리는 2px 도 남기지 않는다 — 남으면 낙찰이후 고정 카드가 붙을 때 2px 튄다 */
 #crumbSlotAppPage:empty { display: none; }
 .u-link { text-decoration: none; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; font-size: 13px; color: var(--text-2); white-space: nowrap; transition: background .15s, color .15s; }
@@ -4189,6 +4189,7 @@ span.cal-day.has { cursor: help; }
       <!-- 시험 — 소개 영상 대문. 아직 공개 전이라 이 컴퓨터(localhost)에서만 보인다 (확정되면 빼거나 자리를 옮긴다) -->
       <a class="u-link" href="/promo-test.html" id="promoTestLink" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="m10 9.5 5 2.5-5 2.5z"/></svg>대문 시험</a>
       <button type="button" class="u-link" data-act="go-community" data-name="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>공지<span class="u-dot" id="noticeDot" hidden></span></button>
+      <button type="button" class="u-link" data-act="go-board" data-name="오류및제안"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>게시판</button>
       <button type="button" class="u-link pay" data-act="go-more" data-name="결제하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>결제하기</button>
       <!-- 웹 이용가이드 — public/guide/index.html(/guide/)을 새 탭으로 연다. 주소는 WEB_GUIDE_URL 한곳 -->
       <button type="button" class="u-link" data-act="web-guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5M9 8h7M9 12h5"/></svg>이용가이드</button>
@@ -4494,11 +4495,12 @@ span.cal-day.has { cursor: help; }
     postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'gwin', 'gdeny', 'gevict', 'biz', 'gtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'interior', 'tax'],
     more: ['mypage', 'alerts', 'billing', ...(SHOW_POINTS ? ['points'] : []), 'support', 'calendar'],   /* calendar — 마이페이지 › 입찰 캘린더(앱 화면 /bid-calendar) */   /* 공지는 커뮤니티로 옮겼다 · 포인트는 SHOW_POINTS 일 때만(옛 주소 #/more/points 는 내정보로) */
-    community: ['notice', 'suggest'],   /* 위 메뉴에서 커뮤니티를 뺐다(2026-11-02) — 머리 오른쪽 위 '공지'로 들어온다. FAQ 는 이용가이드로 */
+    community: ['notice'],   /* 오류및제안은 게시판으로 옮겼다(2026-11-05) */
+    board: ['suggest', 'greet', 'review'],   /* 게시판 — 오류및제안 · 가입인사 · 사용후기(머리 오른쪽 위 '공지' 옆 '게시판') */   /* 위 메뉴에서 커뮤니티를 뺐다(2026-11-02) — 머리 오른쪽 위 '공지'로 들어온다. FAQ 는 이용가이드로 */
     manual: ['basic', 'process'],   /* 매뉴얼 — 경매기초 · 경매절차 */   /* 공지(공지사항 · 이벤트 · 업데이트) · FAQ(자주 찾는 도움말) — 마이페이지 공지 · 고객센터에서 옮겼다(웹) */
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
-  const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지', community: '공지' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지. 커뮤니티는 메뉴에서 빼고 '공지'로 부른다 */
+  const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지', community: '공지', board: '게시판' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지. 커뮤니티는 메뉴에서 빼고 '공지'로 부른다 */
   const PLAIN_ROUTES = ['register', 'trip', 'store', 'mobile'];
   /** 주소 → { route, itemId, itemTab, sub } */
   const readHash = (h = location.hash) => {
@@ -4506,7 +4508,7 @@ span.cal-day.has { cursor: help; }
     const head = m[1] || '';
     if (head === 'item' && m[2]) return { route: 'item', itemId: m[2], itemTab: m[3] === 'verify' ? 'survey' : ITEM_TABS.includes(m[3]) ? m[3] : 'basic' };
     if (head === 'community' && m[2] === 'faq') return { route: 'community', sub: 'notice' }; /* FAQ 탭을 뺐다 — 예전 주소는 공지로(FAQ 는 이용가이드) */
-    if (head === 'community' && m[2] === 'issue') return { route: 'community', sub: 'suggest' }; /* 잠깐 있던 '오류및제한' 주소 — 오류및제안 게시판으로 */
+    if (head === 'community' && (m[2] === 'issue' || m[2] === 'suggest')) return { route: 'board', sub: 'suggest' }; /* 예전 공지 › 오류및제안 주소 — 게시판으로 옮겼다 */
     if (head === 'more' && m[2] === 'news') return { route: 'community', sub: 'notice' }; /* 예전 마이페이지 › 공지 — 커뮤니티로 옮겼다 */
     if (head === 'mobile') return { route: 'store', storeTab: 'mobile' }; /* 모바일앱은 스토어 안 탭으로 옮겼다(2026-11-02) */
     if (head === 'mypage') return { route: 'more', sub: 'mypage' }; /* 예전 마이페이지 주소 — 더보기로 */
@@ -5746,7 +5748,8 @@ span.cal-day.has { cursor: help; }
     postwin: [['flow', '', '진행절차'], ['win', '', '절차상세'], ['gwin', '', '낙찰이후가이드']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
     more: [['mypage', '', '내정보'], ['alerts', '', '알림', 'hide'], ['billing', '', '결제하기'], ['calendar', '', '입찰 캘린더'], ['points', '', '포인트', SHOW_POINTS ? '' : 'hide'], ['support', '', '고객센터', 'hide']],   /* 입찰 캘린더 — 결제하기 옆. 고객센터는 탭에서 빼고 바닥 링크(환불정책 옆)로(2026-11-03) */
-    community: [['notice', '', '공지'], ['suggest', '', '오류및제안']],   /* FAQ 는 이용가이드(/guide/)에 — 같은 목록(supportFaq) */
+    community: [['notice', '', '공지']],
+    board: [['suggest', '', '오류및제안'], ['greet', '', '가입인사'], ['review', '', '사용후기']],   /* FAQ 는 이용가이드(/guide/)에 — 같은 목록(supportFaq) */
     manual: [['basic', '', '경매기초'], ['process', '', '경매절차']],
     /* 가격정보는 뺐다 — 시세는 손품조사(시세분석 · 손품결론), 인근 매각사례는 손품결론 아래로 옮겼다(웹). 옛 주소(…/verify)는 손품조사로 */
     item: [['cards', '', '물건카드'], ['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['profit', '', '수익분석'], ['field', '', '임장조사']],
@@ -5809,7 +5812,7 @@ span.cal-day.has { cursor: help; }
     syncCrumb();
     /* 자금관리는 마이페이지 아래 — 위 탭 줄은 마이페이지 그대로(자금관리에 불), 자금관리 다섯 탭은 화면 안 박스 탭(3단) */
     /* 커뮤니티(공지 · 오류및제안)는 위 메뉴가 머리 오른쪽 끝 '공지'라 하위 탭이 경로와 겹쳤다 — 위 띠 대신 본문 맨 위 박스형 탭으로(2026-11-05) */
-    const tabs = S.route === 'community' ? null : SUBTABS[S.route]; const bar = $('subTabs');
+    const tabs = (S.route === 'community' || S.route === 'board') ? null : SUBTABS[S.route]; const bar = $('subTabs');
     bar.hidden = !tabs; document.body.classList.toggle('has-subtabs', !!tabs);
     const cur = S.route === 'list' ? 'cards' : S.route === 'market' ? S.marketTab : S.route === 'manual' ? S.manualTab : APP_PAGE_NAMES[S.route] ? subParent(S.route, S.pageTab[S.route]) : S.itemTab;
     /* 'hide' 탭(마이페이지 › 알림)은 평소엔 줄에 세우지 않는다(종 아이콘 · 내 정보 카드로 들어간다).
@@ -6951,11 +6954,13 @@ span.cal-day.has { cursor: help; }
   new MutationObserver(() => { if (S.route === 'more') bumpMin14(); })
     .observe(document.getElementById('appPageContent') || document.body, { childList: true, subtree: true, characterData: true });
   /* 커뮤니티 — 본문 맨 위 박스형 탭(낙찰이후 장 탭과 같은 공통 모듈) */
-  const cmTabsHtml = () => `<nav class="cm-tabs" id="cmTabs" role="tablist" aria-label="커뮤니티">${SUBTABS.community.map(([k, , t]) => `<button type="button" role="tab" class="${S.pageTab.community === k ? 'on' : ''}" aria-selected="${S.pageTab.community === k}" data-act="subtab" data-v="${k}">${t}</button>`).join('')}</nav>`;
+  /* 공지 · 게시판 — 본문 맨 위 박스형 탭(탭이 하나뿐인 공지는 탭 줄 없이) */
+  const BOXTAB_PAGES = ['community', 'board'];
+  const cmTabsHtml = (key) => (SUBTABS[key].length < 2 ? '' : `<nav class="cm-tabs" id="cmTabs" role="tablist" aria-label="${APP_PAGE_NAMES[key]}">${SUBTABS[key].map(([k, , t]) => `<button type="button" role="tab" class="${S.pageTab[key] === k ? 'on' : ''}" aria-selected="${S.pageTab[key] === k}" data-act="subtab" data-v="${k}">${t}</button>`).join('')}</nav>`);
   function renderAppPage() {
     const box = $('appPageContent');
     const key = S.route; const tab = S.pageTab[key];
-    { const old = $('cmTabs'); if (key === 'community') { if (old) old.outerHTML = cmTabsHtml(); } else if (old) old.remove(); }
+    { const old = $('cmTabs'); if (BOXTAB_PAGES.includes(key)) { if (old) old.outerHTML = cmTabsHtml(key); } else if (old) old.remove(); }
     const T = CLOUD.T;
     if (!CLOUD.on || !T || !T.mountAppPage) {
       closeAppPage();
@@ -6972,7 +6977,7 @@ span.cal-day.has { cursor: help; }
       return;
     }
     closeAppPage();
-    box.innerHTML = `${key === 'community' ? cmTabsHtml() : ''}<div class="app-page" data-k="${key}" id="appPageMount"></div>`;
+    box.innerHTML = `${BOXTAB_PAGES.includes(key) ? cmTabsHtml(key) : ''}<div class="app-page" data-k="${key}" id="appPageMount"></div>`;
     pageKey = key; pageTabSent = tab; S.tabForce = false;
     /* 붙이는 도중에 화면을 다시 그리면(hashchange 등) 이 함수가 한 번 더 돌아 새 칸에 또 붙는다.
        그때 바깥 호출이 끝나며 pageUnmount 를 '화면에서 떨어진 옛 앱'으로 덮어쓰면, 하위 탭 신호가
@@ -8161,7 +8166,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'buy-agree': if (S.modal && S.modal.kind === 'buy') { S.modal.agree = t.checked; const b = $('buyPay'); if (b) b.disabled = !t.checked; } break;
       case 'buy-pay': toast('결제는 준비 중입니다 — 결제 연동이 끝나면 열립니다.', 'info'); break;
       case 'store-tab': S.storeTab = v; store.set('wlp.web.storeTab2', v); renderInfo(); break;
-      case 'go-postwin': case 'go-finance': case 'go-more': case 'go-community': {
+      case 'go-postwin': case 'go-finance': case 'go-more': case 'go-community': case 'go-board': {
         const route = act.slice(3);
         const hit = (SUBTABS[route].find((x) => x[2] === t.dataset.name) || [])[0];
         if (hit) S.pageTab[route] = hit;

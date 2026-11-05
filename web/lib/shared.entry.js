@@ -283,13 +283,22 @@ const CommunityPage = {
       : [h(EventBanner, { onOpen: openEvent }), h(NewsBody)]);
   },
 };
-const APP_PAGES = { postwin: '/post-win', finance: '/finance', more: '/more', community: '/community' };
+/** 게시판(웹만) — 오류및제안 · 가입인사 · 사용후기. 같은 게시판 틀(SuggestBoard)에 board 만 다르다(2026-11-05) */
+const BOARD_KEYS = ['suggest', 'greet', 'review'];
+const BoardPage = {
+  setup() {
+    const route = useRoute();
+    return () => { const b = BOARD_KEYS.includes(String(route.query.tab)) ? String(route.query.tab) : 'suggest'; return h('div', { class: 'community-shell' }, [h(SuggestBoard, { key: b, board: b })]); };
+  },
+};
+const APP_PAGES = { postwin: '/post-win', finance: '/finance', more: '/more', community: '/community', board: '/board' };
 const APP_PAGE_ROUTES = [
   { path: '/post-win', component: PostWinPage },
   { path: '/finance', component: FinancePage },
   { path: '/tax', redirect: { path: '/finance', query: { tab: 'tax' } } },
   { path: '/more', component: MorePage },
   { path: '/community', component: CommunityPage },
+  { path: '/board', component: BoardPage },
   { path: '/trash', component: () => import('../../src/pages/TrashPage.vue') },
   { path: '/archive', component: () => import('../../src/pages/TrashPage.vue') },
   { path: '/bid-calendar', component: () => import('../../src/pages/BidCalendarPage.vue') },

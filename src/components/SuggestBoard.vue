@@ -14,9 +14,19 @@ import {
   subscribeSuggestComments,
   subscribeSuggestPosts,
   updateSuggestPost,
+  boardOf,
+  type BoardKey,
   type SuggestComment,
   type SuggestPost,
 } from '../services/suggestBoard';
+
+/** 어느 게시판인지 — 오류및제안(기본) · 가입인사 · 사용후기. 같은 틀에 글만 갈라 보인다 */
+const props = withDefaults(defineProps<{ board?: BoardKey }>(), { board: 'suggest' });
+const WRITE_HINT: Record<BoardKey, string> = {
+  suggest: '오류는 어느 화면에서 무엇을 했을 때 생겼는지, 제안은 무엇이 있으면 좋을지 적어 주세요.',
+  greet: '반갑습니다! 어떻게 마이턴옥션을 알게 되었는지, 경매는 얼마나 해 보셨는지 편하게 인사 남겨 주세요.',
+  review: '써 보니 어땠는지 적어 주세요. 도움이 된 화면, 아쉬웠던 점, 낙찰 · 매도 경험도 좋습니다.',
+};
 
 const auth = useAuthStore();
 const isAdmin = computed(() => isAdminEmail(auth.email));
@@ -24,7 +34,7 @@ const myName = computed(() => (auth.nickname || auth.email.split('@')[0] || '회
 
 const posts = ref<SuggestPost[]>([]);
 const err = ref('');
-const stop = subscribeSuggestPosts((rows) => { posts.value = rows; err.value = ''; }, (m) => { err.value = /permission/i.test(m) ? '로그인하면 게시판 글을 볼 수 있습니다.' : `글을 불러오지 못했습니다 — ${m}`; });
+const stop = subscribeSuggestPosts((rows) => { posts.value = rows.filter((p) => boardOf(p) === props.board); err.value = ''; }, (m) => { err.value = /permission/i.test(m) ? '로그인하면 게시판 글을 볼 수 있습니다.' : `글을 불러오지 못했습니다 — ${m}`; });
 onUnmounted(stop);
 
 /* ───── 목록 · 찾기 ───── */
@@ -88,7 +98,7 @@ const save = async () => {
   busy.value = true;
   try {
     if (editId.value) { await updateSuggestPost(editId.value, { title, body }); readId.value = editId.value; view.value = 'read'; }
-    else { const id = await createSuggestPost({ title, body, authorUid: auth.uid, authorName: myName.value }); readId.value = id; view.value = 'read'; }
+    else { const id = await createSuggestPost({ title, body, authorUid: auth.uid, authorName: myName.value, board: props.board }); readId.value = id; view.value = 'read'; }
     err.value = '';
   } catch (e) {
     err.value = `저장하지 못했습니다 — ${(e as Error).message}`;
@@ -191,7 +201,7 @@ const whoOf = (x: { authorName: string; admin?: boolean }) => (x.admin ? '운영
     <template v-else-if="view === 'write'">
       <div class="sgb-write">
         <input v-model="draftTitle" class="sgb-input" maxlength="80" placeholder="제목 입력" />
-        <textarea v-model="draftBody" class="sgb-text" placeholder="오류는 어느 화면에서 무엇을 했을 때 생겼는지, 제안은 무엇이 있으면 좋을지 적어 주세요." />
+        <textarea v-model="draftBody" class="sgb-text" :placeholder="WRITE_HINT[props.board]" />
       </div>
       <div class="sgb-foot">
         <button type="button" class="sgb-btn line" @click="view = editId ? 'read' : 'list'">취소</button>
