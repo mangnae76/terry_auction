@@ -136,6 +136,8 @@ const telHref = (phone: string) => {
 /** '2025-10-17' → '25. 10. 17' (자금관리 카드와 같은 꼴) */
 /** 웹 — 선정목록 물건상세의 고정 카드(경매 사건번호 · 법원 · 날짜 / 종류 · 매각구분 · 면적 / 주소)와 같은 꼴로 낙찰 물건을 보인다 */
 const webEmbed = inject<boolean>('webEmbed', false);
+/** 웹 매뉴얼(/manual) — 가이드 장(명도 · 사업자등록 · 세금)만. 사건과 상관없어 사건 카드 · 경로 · 장 탭 없이(장 탭은 웹 박스 탭) */
+const manualMode = webEmbed && route.path === '/manual';
 // 웹 — 예전 가이드 › 낙찰당일 주소는 가이드 첫 장(명도)으로
 if (webEmbed) watch(activeTab, (t) => { if (t === 'gwin') activeTab.value = 'gevict'; }, { immediate: true });
 const webHead = computed(() => {
@@ -432,10 +434,11 @@ const hasTable = computed(() => viewTab.value in BOOK_OF || !!DETAIL_OF[activeTa
 /** 웹 — 절차상세 · 가이드 안의 장 단추(경로 오른쪽) */
 const DETAIL_CHAPS: Array<[TabKey, string]> = [['win', '낙찰당일'], ['gdeny', '매각불허가'], ['dpre', '잔금전'], ['balance', '잔금·등기'], ['evict', '명도'], ['drepair', '인테리어'], ['dsell', '매도'], ['dtax', '세금']];
 // 낙찰당일 장(gwin)은 뺐다 — 절차별체크리스트 낙찰당일과 겹쳐서, 남는 내용은 1차 방문 카드로 모았다. 매각불허가는 체크리스트 낙찰당일 오른쪽으로
-const GUIDE_CHAPS: Array<[TabKey, string]> = [ ['gevict', '명도'], ['biz', '사업자등록'], ['gtax', '세금']];
+// 명도 · 사업자등록 · 세금은 웹 매뉴얼 화면으로 옮겼다 — 이 장들은 매뉴얼에서만 연다
+const GUIDE_CHAPS: Array<[TabKey, string]> = [['gevict', '명도'], ['biz', '사업자등록'], ['gtax', '세금']];
 const isGuideChap = computed(() => !editing.value && GUIDE_CHAPS.some(([k]) => k === activeTab.value));
 const chaps = computed(() => {
-  if (!webEmbed) return [];
+  if (!webEmbed || manualMode) return [];
   if (DETAIL_CHAPS.some(([k]) => k === activeTab.value)) return DETAIL_CHAPS;
   if (GUIDE_CHAPS.some(([k]) => k === activeTab.value)) return GUIDE_CHAPS;
   return [];
@@ -813,7 +816,7 @@ const toggleSection = (key: string) => {
       </header>
 
       <!-- 웹 — 선정목록 물건상세의 고정 카드와 같은 꼴(웹 공통 .item-head · .ih-* 모양). 낙찰목록은 오른쪽 위 -->
-      <div v-if="webEmbed" class="pw-webhead">
+      <div v-if="webEmbed && !manualMode" class="pw-webhead">
         <div class="toolbar item-head">
           <div class="ih-top">
             <h1 class="ih-title"><template v-if="webHead"><span class="ih-tag">경매</span><span class="num">{{ webHead.caseNo }}</span></template><template v-else>낙찰한 물건이 없습니다</template></h1>
@@ -838,7 +841,7 @@ const toggleSection = (key: string) => {
       <!-- 명도 탭은 경로 오른쪽에 '명도 가이드' 단추 하나 — 누르면 명도절차 · 명도 협상 방법을 한 팝업에 -->
       <!-- 웹 가이드 — '낙찰 후 진행 순서'가 여기로 옮겨 온다(사건 카드 아래 · 장 탭 위). 경로는 그 아래 장 탭 줄에 그대로 -->
       <div v-if="webEmbed" class="pw-flowslot" />
-      <div v-if="webEmbed" class="pw-crumbrow">
+      <div v-if="webEmbed && !manualMode" class="pw-crumbrow">
         <div class="pw-crumb" data-crumb-slot />
       </div>
       <!-- 어느 물건의 일인지 — 탭 밑에 카드로 붙박아 둔다. 누르면 목록이 펼쳐진다 -->
