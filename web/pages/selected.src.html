@@ -7587,19 +7587,24 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
   });
 
   const byId = (id) => items.find((x) => x.id === id);
-  /* ===== 저장 표시 — 물건상세 탭 줄 오른쪽(경로 왼쪽)에 하나만. '저장 중… → 저장됨 · 방금'(마이페이지와 같은 시간 말).
-     이 창에서 아직 저장하지 않았으면 그 물건의 마지막 작성 기록(editLog — 물건 기록엔 따로 저장 시각 칸이 없다)을 보인다 ===== */
+  /* ===== 저장 표시 — 탭 줄 오른쪽(경로 왼쪽)에 하나만. '저장 중… → 저장됨 · 방금'(마이페이지와 같은 시간 말).
+     물건 하나를 연 탭은 그 물건만, 물건카드(목록)는 이 창에서 마지막으로 저장된 물건을 사건번호와 함께.
+     이 창에서 저장이 일어나기 전에는 숨긴다 — 물건 기록엔 저장 시각 칸이 없고, 작성 기록(editLog)은 같은 화면을
+     되풀이해 고치면 시각을 새로 찍지 않아 '2시간 전'처럼 틀리게 보였다(진짜 저장 시각은 앱 저장소를 고칠 때 넣는다) ===== */
   const SV = { id: '', state: '', at: 0 };
   function paintSaveMark() {
     const el = $('saveMark'); if (!el) return;
-    const id = S.route === 'item' ? S.itemId : '';
-    const a = id && CLOUD.raw && CLOUD.raw.get(id);
-    const ago = (t) => (CLOUD.T && CLOUD.T.agoText ? CLOUD.T.agoText(t) : '');
+    const inItem = S.route === 'item'; const inList = S.route === 'list';
+    const mine = SV.id && SV.state && ((inItem && SV.id === S.itemId) || inList);
     let txt = ''; let cls = '';
-    if (id && SV.id === id && SV.state === 'ing') { txt = '저장 중…'; cls = 'ing'; }
-    else if (id && SV.id === id && SV.state === 'err') { txt = '저장하지 못했습니다'; cls = 'err'; }
-    else if (id && SV.id === id && SV.state === 'ok') txt = `저장됨 · ${ago(SV.at)}`;
-    else if (a) { const last = Math.max(0, ...(a.editLog || []).map((e) => Number(e.at) || 0)); if (last) txt = `저장됨 · ${ago(last)}`; }   /* 마지막 작성 기록(마이페이지 '최근 작성'과 같은 값) */
+    if (mine) {
+      const ago = (t) => (CLOUD.T && CLOUD.T.agoText ? CLOUD.T.agoText(t) : '');
+      const it = inList ? items.find((x) => x.id === SV.id) : null;
+      const tail = it && it.caseNo ? ` · ${it.caseNo}` : '';
+      if (SV.state === 'ing') { txt = `저장 중…${tail}`; cls = 'ing'; }
+      else if (SV.state === 'err') { txt = `저장하지 못했습니다${tail}`; cls = 'err'; }
+      else txt = `저장됨 · ${ago(SV.at)}${tail}`;
+    }
     el.hidden = !txt; el.textContent = txt; el.className = `save-mark ${cls}`;
   }
   setInterval(paintSaveMark, 30000);   /* '방금 → 1분 전'처럼 시간이 흐르게 */
