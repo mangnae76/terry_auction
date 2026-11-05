@@ -2315,7 +2315,10 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .app-detail .bida-kpi .lab :is(.bida-ok, .adp-field-mark) { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 5px; font-size: 12px; font-weight: 800; line-height: 1.5; vertical-align: 1px; }   /* '확정'과 같은 모서리 둥근 상자 · 같은 크기(알약 아님) */
 /* 수익분석 머리 줄 — 제목 · 자동계산 · 날짜 셋 · 안 고르기(A~D안) · 초기화가 늘 한 줄. 폭이 모자라면 날짜 칸 · 간격 · 안 이름 여백을 줄인다 */
 .app-detail .adp-profit-head:has(.adp-head-plans) { flex-wrap: nowrap !important; }
-.app-detail .adp-profit-head .adp-head-plans .bida-plans { gap: 8px; }
+.app-detail .adp-profit-head .adp-head-plans .bida-plans { gap: 8px; align-items: stretch; }
+/* 초기화 — A~D안 상자(바깥 상자)와 같은 높이 · 같은 둥근 모서리. 폭이 줄어 안 상자 높이가 바뀌어도 따라간다 */
+.app-detail .adp-head-plans .bida-acts { display: flex; align-self: stretch; }
+.app-detail .adp-head-plans .bida-acts .adp-pd-reset { height: auto !important; min-height: 0 !important; align-self: stretch; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px !important; border-radius: 10px !important; }
 @media (max-width: 1500px) {
   .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates { gap: 10px !important; margin-left: 6px !important; }
   .app-detail .adp-profit-head:has(.adp-head-plans) .adp-head-dates .adp-pd-box { width: 108px !important; padding: 0 8px !important; }
@@ -7197,7 +7200,7 @@ span.cal-day.has { cursor: help; }
     /* 탭 맨 위 안내 — 물건등록 · 선정물건과 같은 꼴(왼쪽 주황 막대, 상자 없이) */
     if (tab === 'rights') { if (RT.id !== it.id) { RT.fresh = false; RT.msg = ''; } RT.id = it.id; }
     const lead = ITEM_LEAD[tab] ? `<div class="rg-lead it-lead">${ITEM_LEAD[tab].map((t, i) => `<p class="l${i + 1}">${t}</p>`).join('')}</div>` : '';
-    box.innerHTML = `${lead}${tab === 'rights' ? rtTopHtml() : ''}<div class="app-detail tab-${tab}" id="appDetailMount"></div>${tab === 'field' ? '<div class="fld-next"><button type="button" data-act="subtab" data-v="profit">임장 결과로 수익분석 다시 보기 →</button></div>' : ''}`;
+    box.innerHTML = `${lead}${tab === 'rights' ? rtTopHtml() : ''}<div class="app-detail tab-${tab}" id="appDetailMount"></div>${tab === 'field' ? '<div class="fld-next"><button type="button" data-act="subtab" data-v="profit">임장조사 후 수익분석 다시쓰기 →</button></div>' : ''}`;
     detailKey = key;
     const el = $('appDetailMount');
     /* 임장조사는 앱 '손품+현장' 화면을 띄우고 현장 카드만 남긴다 (layoutAppCols 의 FIELD_CARDS) */
