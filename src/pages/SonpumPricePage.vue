@@ -1030,7 +1030,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 /* 웹 — 거르기 상자 오른쪽 끝에 엘베. 막대(유사도 · 면적 · 건축)는 그만큼 줄어든다 */
 .simrow.has-elev { grid-template-columns: minmax(0, 1fr); gap: 10px 28px; align-items: center; }
 /* 웹 기본 화면 — 위 줄 넷(반경 · 거래 · 기준 · 엘베), 그 아래 거르기 상자, 맨 아래 오른쪽 초기화 · 저장(세팅 다 하고 저장) */
-.conds:has(> .elev-pick) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.conds:has(> .elev-pick) { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, .95fr); }   /* 반경은 단추가 넷(100m · 300m · 500m · 1km)이라 넓게 — 'm'이 잘리지 않게 */
 /* 위 줄 다섯(반경 · 거래 · 기준 · 엘베 · 층), 아래 줄은 거르기 상자(넷 칸) + 그 오른쪽 초기화 · 저장(예전 층 자리) */
 .conds:has(> .elev-pick) > .simrow { grid-column: 1 / 5; grid-row: 2; }
 .conds:has(> .elev-pick) > .acts-r { grid-column: 5; grid-row: 2; }
