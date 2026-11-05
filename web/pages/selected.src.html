@@ -6751,8 +6751,8 @@ span.cal-day.has { cursor: help; }
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('months', AG_MONTHS)}</div>`
       + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<span class="sx-step2">${step(2, 'queue', qRun ? '대기열 수집 중' : '대기열 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(2, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(2, 'screen', '화면만 수집', ready && free)}</span>${step(3, 'enrich', '건축연도 채우기', ready && free)}</div>${prog}</div>`
       + `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"><label class="sx-chk"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></span>${AG.fold ? `<span class="sx-meta">${meta}</span>${manage}` : ''}</div>`   /* 도우미 말은 맨 위 안내로 옮겼다 */
-      /* 수집 관리를 펼치면 저장 건수 · 업데이트 · 접기 단추는 주소 고르는 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
-      + (AG.fold ? '' : `<div class="sx-manage">${agQueueHtml(`<span class="sx-qtail">${manage}</span>`)}${agCovHtml(metaCnt, metaUpd ? `<span class="sx-meta ag-cov-meta">${metaUpd}</span>` : '')}</div>`)
+      /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
+      + (AG.fold ? '' : `<div class="sx-manage">${agQueueHtml()}${agCovHtml(metaCnt, `<span class="sx-qtail">${metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : ''}${manage}</span>`)}</div>`)
       + `</section></div>`;
   }
   /* 모은 동네 — 도우미가 인근매각물건을 모을 때마다 동네 · 물건 수 · 날짜를 적는다(agent/coverage). 이미 모은 동네는 다시 모을 때 새로 나온 것만 더한다 */
