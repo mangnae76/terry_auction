@@ -976,12 +976,11 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-f select, .sx-pair input { width: 100%; min-width: 0; height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 500; }
 .sx-f select.ph { color: var(--faint); }
 .sx-f select.ph:not(:disabled) { color: var(--text); }   /* 고를 수 있는 칸은 '시도 선택'도 까만 글 — 흐리면 잠긴 칸처럼 보인다 */
+.sx-f select[data-k="kind"].ph { color: var(--faint); }   /* 물건종류 전체만 회색 */
+.sx-f select option { color: var(--text); }   /* 펼친 목록 안 옵션은 늘 까맣게 */
 .sx-f select:disabled { background: var(--band); }
 .sx-f .sx-seg { grid-auto-columns: 1fr; }
 .sx-fgroup { display: grid; gap: 8px; }   /* 지역 · 물건종류 네 칸은 이름표 없이 촘촘히 */
-.sx-inl { position: relative; }
-.sx-inl > span { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 13px; font-weight: 500; color: var(--faint); pointer-events: none; }
-.sx-inl select { padding-left: 74px; }
 .sx-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 6px; align-items: center; color: var(--muted); font-weight: 500; }
 .sx-fbtns { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; }
 .sx-btn { height: 40px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--blue); color: #fff; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
@@ -6393,8 +6392,8 @@ span.cal-day.has { cursor: help; }
   /* 고른 지역 · 종류 · 기간은 이 브라우저에 남긴다. 표는 [조회]를 눌러야 나온다(처음엔 비움) */
   const SALE_Q_KEY = 'ta.web.sale.q';
   const saleSeg = (() => {
-    const d = { kind: '연립다세대', period: '12개월', sido: '', sgg: '', dong: '' };
-    try { const v = { ...d, ...JSON.parse(localStorage.getItem(SALE_Q_KEY) || '{}') }; if (!SALE_SEG.period.includes(v.period)) v.period = d.period; if (!SALE_SEG.kind.includes(v.kind)) v.kind = d.kind; return v; } catch (e) { return d; }
+    const d = { kind: '', period: '12개월', sido: '', sgg: '', dong: '' };   /* 물건종류 '' = 전체 */
+    try { const v = { ...d, ...JSON.parse(localStorage.getItem(SALE_Q_KEY) || '{}') }; if (!SALE_SEG.period.includes(v.period)) v.period = d.period; if (v.kind && !SALE_SEG.kind.includes(v.kind)) v.kind = d.kind; return v; } catch (e) { return d; }
   })();
   const saleSave = () => { try { localStorage.setItem(SALE_Q_KEY, JSON.stringify(saleSeg)); } catch (e) { /* 그만 */ } };
   let saleApplied = null;   /* [조회]를 누른 때의 조건 — 이것으로 표를 채운다 */
@@ -6592,7 +6591,7 @@ span.cal-day.has { cursor: help; }
     if (!view.length) { toast('내보낼 물건이 없습니다.', 'info'); return; }
     try {
       const st = sxStats(rows); const a = saleApplied;
-      const cond = `물건종류 ${a.kind} · 지역 ${[a.sido, a.sgg, a.dong].filter(Boolean).join(' ')} · 기간 최근 ${a.period} · 면적 ${a.amin || ''}~${a.amax || ''}㎡ · 건축년도 ${a.ymin || ''}~${a.ymax || ''} · 검색어 ${SX.q || '-'} · 저장 ${new Date().toLocaleString('ko-KR')}`;
+      const cond = `물건종류 ${a.kind || '전체'} · 지역 ${[a.sido, a.sgg, a.dong].filter(Boolean).join(' ')} · 기간 최근 ${a.period} · 면적 ${a.amin || ''}~${a.amax || ''}㎡ · 건축년도 ${a.ymin || ''}~${a.ymax || ''} · 검색어 ${SX.q || '-'} · 저장 ${new Date().toLocaleString('ko-KR')}`;
       const blob = await T.exportSaleNear({ condition: cond, my: sxParseWon(SX.my) || null, rows: T.prepareSaleRows(view.map(sxPlain)),
         stats: { 평균감정가: st.appr, 매각건수: st.n, 평균매각가: st.sold, 중앙값매각가: st.soldMed, 평균율: st.avg, 중앙값율: st.med, 최저율: st.lo, 최고율: st.hi, 전체율: st.all } });
       sxDownload(blob, `조건검색결과_${sxYmd()}.xlsx`); toast('엑셀 파일을 내려받았습니다.');
@@ -6638,7 +6637,7 @@ span.cal-day.has { cursor: help; }
     const q = saleApplied; const st = sxStats(rows);
     const conds = [`최근 ${q.period}`, (sxNum(q.amin) || sxNum(q.amax)) ? `면적 ${q.amin || ''}~${q.amax || ''}㎡` : '', (sxNum(q.ymin) || sxNum(q.ymax)) ? `건축 ${q.ymin || ''}~${q.ymax || ''}년` : '', `${st.n.toLocaleString('ko-KR')}건 기준`].filter(Boolean).join(' · ');
     const where = [q.sgg, q.dong].filter(Boolean).join(' ') || q.sido;
-    const hero = `<section class="sx-card sx-hero" aria-label="분석결과"><div class="sx-where"><h2>${esc(where)} · ${esc(q.kind)}</h2><span>${esc(conds)}</span></div>`
+    const hero = `<section class="sx-card sx-hero" aria-label="분석결과"><div class="sx-where"><h2>${esc(where)} · ${esc(q.kind || '전체')}</h2><span>${esc(conds)}</span></div>`
       + `<div class="sx-my"><label for="sxMy">내 물건 감정가</label><input id="sxMy" class="num" inputmode="numeric" autocomplete="off" placeholder="예: 235,000,000 또는 2억3500만" value="${esc(SX.my || '')}"><small>적으면 오른쪽 예상 입찰가가 바로 바뀝니다</small></div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각가율</span>${sxBidHtml('A', st.avg)}</div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 중앙값 매각가율</span>${sxBidHtml('B', st.med)}</div></section>`;
@@ -6966,7 +6965,7 @@ span.cal-day.has { cursor: help; }
       + sel('sido', '시도', '시도 선택', regSidos(), false)
       + sel('sgg', '시군구', '시군구 선택', regSggs(saleSeg.sido).map((d) => d.label), !saleSeg.sido)
       + sel('dong', '읍면동', loading && !dongs.length ? '불러오는 중…' : '읍면동 전체', dongs, !saleSeg.sgg)
-      + `<label class="sx-f sx-inl"><span>물건종류</span><select data-act="sale-q" data-k="kind">${SALE_SEG.kind.map((v) => `<option ${saleSeg.kind === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>`
+      + `<label class="sx-f" aria-label="물건종류"><select data-act="sale-q" data-k="kind" class="${saleSeg.kind ? '' : 'ph'}"><option value="">물건종류 전체</option>${SALE_SEG.kind.map((v) => `<option ${saleSeg.kind === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>`
       + '</div>'
       + `<div class="sx-f">기간<div class="sx-seg" role="group">${SALE_SEG.period.map((v) => `<button type="button" class="${saleSeg.period === v ? 'on' : ''}" data-act="sale-seg" data-k="period" data-v="${v}">${v}</button>`).join('')}</div></div>`
       + `<div class="sx-f">면적(㎡)${pair('sxAmin', 'sxAmax', '최소', '최대', 'decimal')}</div>`
