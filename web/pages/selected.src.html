@@ -1001,7 +1001,6 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-meta { color: var(--muted); white-space: nowrap; }
 .mk-sale .ag-cov-meta { margin-left: auto; font-size: 13.5px; }
 .sx-qtail { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; font-size: 13.5px; }
-.sx-manage-btn { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .sx-manage { display: grid; gap: 8px; }   /* 위 수집 줄 상자와 사이 가르는 선 없이(2026-11-06) */
 /* 본문 — 왼쪽 검색조건 · 오른쪽 결과 */
 .sx-main { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 16px; align-items: start; }
@@ -6724,7 +6723,7 @@ span.cal-day.has { cursor: help; }
   /* ===== 집 PC 수집 도우미(관리자만) — auction-web 과 같은 방식: 여기서 누르면 Firestore 로 명령 → 집 PC agent.py 가 로그인된 크롬으로 옥션원 · 탱크옥션 수집 → 관리자 계정 아래에만 저장 =====
      문서 모양 · 읽고 쓰기는 src/services/agentRemote.ts, 규칙은 firestore.rules isAgentOwner */
   const AG = { on: false, uid: '', status: null, meta: null, recs: [], cov: [], queue: [], qDraft: '', covOpen: false, covQ: '',
-    fold: (() => { try { return localStorage.getItem('ta.web.agent.fold') !== '0'; } catch (e) { return true; } })(),   /* 수집 관리는 처음엔 접어 둔다(시안 A) */ reg: (() => { const d = { sido: '', sgg: '', dong: '', kind: '연립다세대' }; try { const v = { ...d, ...JSON.parse(localStorage.getItem('ta.web.agent.reg') || '{}') }; if (!['연립다세대', '아파트', '오피스텔'].includes(v.kind)) v.kind = d.kind; return v; } catch (e) { return d; } })(), sending: false, note: '', noteAt: 0, unsub: [], tick: null };
+    reg: (() => { const d = { sido: '', sgg: '', dong: '', kind: '연립다세대' }; try { const v = { ...d, ...JSON.parse(localStorage.getItem('ta.web.agent.reg') || '{}') }; if (!['연립다세대', '아파트', '오피스텔'].includes(v.kind)) v.kind = d.kind; return v; } catch (e) { return d; } })(), sending: false, note: '', noteAt: 0, unsub: [], tick: null };
   const AG_SEL_KEY = 'ta.web.agent.sel';
   const AG_MONTHS = [[6, '6개월'], [12, '12개월'], [24, '24개월']];   /* 수집은 24개월까지(2026-11-03 — 36개월 · 전체는 뺐다) */
   /* 고른 사이트 · 기간은 이 브라우저에 남긴다(새로고침해도 그대로). '처음부터새로'는 한 번 쓰고 끈다.
@@ -6775,8 +6774,7 @@ span.cal-day.has { cursor: help; }
     const m = AG.meta;
     const metaCnt = `저장 총 ${Number((m && m.count) || 0).toLocaleString('ko-KR')}건`;
     const metaUpd = m && m.updatedAt && m.updatedAt.toMillis && T.updateStamp ? `${T.UPDATE_PREFIX}${T.updateStamp(m.updatedAt.toMillis())}` : '';
-    const meta = metaCnt + (metaUpd ? ` · ${metaUpd}` : '');
-    const manage = `<button type="button" class="sx-manage-btn" data-act="ag-fold" aria-expanded="${AG.fold ? 'false' : 'true'}">수집 관리<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${AG.fold ? 'm6 9 6 6 6-6' : 'm18 15-6-6-6 6'}"/></svg></button>`;
+    /* 수집 관리 접기 단추는 없앴다(2026-11-06) — 읍면동 · 사건 수집 상자와 수집데이터는 늘 펼쳐 둔다 */
     /* 제목 줄 — 제목 · PC 연결 칩 · 오른쪽 끝 데이터로드 · 데이터백업 · 엑셀다운로드(PC 프로그램과 같은 양식) */
     /* 진행 막대 · 중지는 연결 알약 바로 오른쪽 — 남는 폭을 채운다(2026-11-06) */
     const titlebar = `<div class="sx-titlebar"><h2>경매 인근 매각물건 분석</h2>${conn}<div class="sx-tprog">${prog}</div>`
@@ -6792,9 +6790,8 @@ span.cal-day.has { cursor: help; }
       /* 첫 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③. 처음부터새로는 아래 상태 줄 왼쪽(2026-11-06) */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}<span class="sx-vsep" aria-hidden="true"></span>${seg('months', AG_MONTHS)}</div>`
       + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div></div></div></div>`
-      + (AG.fold ? `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"></span><span class="sx-meta">${meta}</span>${manage}</div>` : '')   /* 접었을 때만 — 펼치면 저장 · 접기는 수집데이터 줄에 */
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
-      + (AG.fold ? '' : `<div class="sx-manage">${agQueueHtml()}${agCovHtml(metaCnt, `<span class="sx-qtail">${metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : ''}${manage}</span>`)}</div>`)
+      + `<div class="sx-manage">${agQueueHtml()}${agCovHtml(metaCnt, metaUpd ? `<span class="sx-qtail"><span class="sx-meta">${metaUpd}</span></span>` : '')}</div>`
       + `</section></div>`;
   }
   /* 모은 동네 — 도우미가 인근매각물건을 모을 때마다 동네 · 물건 수 · 날짜를 적는다(agent/coverage). 이미 모은 동네는 다시 모을 때 새로 나온 것만 더한다 */
@@ -7039,7 +7036,6 @@ span.cal-day.has { cursor: help; }
     S.layout = store.get('wlp.web.layout', S.layout); S.sort = store.get('wlp.web.sort', S.sort);
     if (S.storeTab) S.storeTab = store.get('wlp.web.storeTab2', S.storeTab);
     try { R.mode = localStorage.getItem('wlp.web.regMode') === 'manual' ? 'manual' : 'auto'; } catch (e) { /* 그만 */ }
-    try { AG.fold = localStorage.getItem('ta.web.agent.fold') === '1'; } catch (e) { /* 그만 */ }
     render();
   });
   function renderMarket() {
@@ -8298,7 +8294,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'ag-reg-kind': AG.reg.kind = t.dataset.v; try { localStorage.setItem(AG_REG_KEY, JSON.stringify(AG.reg)); } catch (err) { /* 그만 */ } agPaint(); break;
       case 'slow-reload': location.reload(); break;
       case 'slow-relogin': try { localStorage.removeItem('ta.web.in'); } catch (err) { /* 그만 */ } location.replace('/web?login=1'); break;   /* 새로 열고 로그인 창부터 */
-      case 'ag-fold': AG.fold = !AG.fold; try { localStorage.setItem('ta.web.agent.fold', AG.fold ? '1' : '0'); } catch (err) { /* 그만 */ } agPaint(); break;
       case 'ag-cov-open': AG.covOpen = !AG.covOpen; agPaint(); if (AG.covOpen) { const i = $('agCovQ'); if (i) i.focus(); } break;
       case 'ag-stop': if (AG.on) { void CLOUD.T.sendAgentStop(AG.uid).then(() => { AG.note = '중지 요청을 보냈습니다 — 지금 페이지까지 저장합니다.'; AG.noteAt = Date.now(); agPaint(); }).catch(() => {}); } break;
       case 'go-trip': go('trip'); break;
