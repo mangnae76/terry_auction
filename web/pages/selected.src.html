@@ -1202,11 +1202,85 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rt-steps li.done i { background: #16a34a; }
 .rt-steps li.done em { color: #15803d; }
 .rt-steps li.on { color: var(--text); font-weight: 700; }
-.rt-steps li.on i { background: #fdf0e6; }
+.rt-steps li.on i { background: color-mix(in srgb, var(--nav-orange) 15%, var(--surface)); }
 .rt-steps li.on i::after { content: ""; width: 11px; height: 11px; border: 2px solid var(--nav-orange); border-right-color: transparent; border-radius: 50%; animation: rt-spin .8s linear infinite; }
 .rt-steps li.on em { color: #c2410c; font-weight: 700; }
 @keyframes rt-spin { to { transform: rotate(360deg); } }
-.rt-tip { margin-top: 18px; padding: 14px 16px; border: 1px solid #cfe3f7; border-radius: 8px; background: #eef6fd; }
+/* 분석 결과 — 탭 셋 · 카드들(상자 없이 왼쪽 칸에 카드가 쌓인다) */
+.rt-res { display: grid; gap: 12px; min-width: 0; }
+.rr-tabs { position: relative; display: flex; gap: 22px; padding: 0 4px; border-bottom: 1px solid var(--line); }
+.rr-tabs button { position: relative; height: 40px; padding: 0; border: 0; background: none; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.rr-tabs button.on { color: var(--text); font-weight: 800; }
+.rr-tabs button.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--text); }   /* 밑줄은 ::after 막대로 */
+.rr-card { padding: 18px 20px; border: 1px solid var(--card-line); border-radius: 12px; background: var(--surface); min-width: 0; }
+.rr-card h4 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 800; color: var(--text); }
+.rr-sub { margin: 4px 0 12px; font-size: 12px; color: var(--muted); word-break: keep-all; }
+.rr-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 5px; font-size: 12px; font-weight: 700; white-space: nowrap; background: var(--surface-3); color: var(--text-2); }
+.rr-tag svg { width: 12px; height: 12px; }
+.rr-tag.ok, .rr-tag.gone { background: color-mix(in srgb, #0f766e 15%, var(--surface)); color: #0f766e; }
+.rr-tag.warn, .rr-tag.base { background: color-mix(in srgb, var(--nav-orange) 15%, var(--surface)); color: #c2410c; }
+.rr-tag.bad, .rr-tag.take { background: color-mix(in srgb, #be123c 13%, var(--surface)); color: #be123c; }
+.rr-head { border-top: 3px solid var(--nav-orange); }
+.rr-head.ok { border-top-color: #0f766e; } .rr-head.bad { border-top-color: #be123c; }
+.rr-head h4 { margin-top: 12px; font-size: 16px; }
+.rr-head p { margin: 8px 0 0; font-size: 13px; line-height: 1.7; color: var(--text-2); word-break: keep-all; }
+.rr-head .rr-con { color: var(--muted); }
+.rr-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rr-kpi { display: grid; gap: 4px; padding: 16px 18px; border: 1px solid var(--card-line); border-radius: 12px; background: var(--surface); }
+.rr-kpi span { font-size: 12px; font-weight: 700; color: var(--text-2); }
+.rr-kpi b { font-size: 22px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.rr-kpi small { font-size: 12px; color: var(--muted); }
+.rr-base { display: grid; gap: 6px; padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--nav-orange) 32%, var(--surface)); border-radius: 10px; background: color-mix(in srgb, var(--nav-orange) 7%, var(--surface)); }
+.rr-base b { font-size: 15px; font-weight: 800; color: var(--text); }
+.rr-base span { font-size: 13px; color: var(--text-2); }
+.rr-note, .rr-txt { margin: 10px 0 0; font-size: 12px; line-height: 1.7; color: var(--muted); word-break: keep-all; }
+.rr-txt { font-size: 13px; color: var(--text-2); }
+.rr-docs { padding: 14px 16px; border: 1px solid color-mix(in srgb, var(--nav-orange) 32%, var(--surface)); border-radius: 12px; background: color-mix(in srgb, var(--nav-orange) 7%, var(--surface)); }
+.rr-docs b { font-size: 13px; font-weight: 700; color: #c2410c; }
+.rr-docs p { margin: 4px 0 0; font-size: 13px; line-height: 1.7; color: var(--text-2); word-break: keep-all; }
+.rr-again { margin: 0; padding: 14px; border-radius: 8px; background: var(--surface-2); font-size: 13px; color: var(--muted); text-align: center; }
+.rr-rows { display: grid; gap: 8px; }
+.rr-row { padding: 12px 14px; border: 1px solid var(--card-line); border-radius: 10px; background: var(--surface-2); }
+.rr-row.base { border-color: color-mix(in srgb, var(--nav-orange) 32%, var(--surface)); background: color-mix(in srgb, var(--nav-orange) 7%, var(--surface)); }
+.rr-row .t { display: flex; align-items: center; gap: 6px; }
+.rr-row .t b { font-size: 14px; font-weight: 700; color: var(--text); margin-right: auto; }
+.rr-row .d { margin-top: 4px; font-size: 12px; color: var(--muted); }
+.rr-row .a { margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.rr-row p { margin: 4px 0 0; font-size: 12px; line-height: 1.6; color: var(--muted); word-break: keep-all; }
+.rr-sumline { display: flex; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 2px solid var(--text); font-size: 14px; }
+.rr-sumline .v { margin-left: auto; color: #c2410c; font-variant-numeric: tabular-nums; }
+.rr-ten { margin-top: 10px; padding: 16px; border: 1px solid var(--card-line); border-radius: 10px; }
+.rr-ten .h { display: flex; align-items: center; gap: 8px; }
+.rr-ten .h b { margin-right: auto; font-size: 15px; font-weight: 800; color: var(--text); }
+.rr-ten .meta { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+.rr-ten .g { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; margin: 12px 0 0; }
+.rr-ten .g div { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-top: 1px solid var(--row-line); font-size: 13px; }
+.rr-ten .g dt { color: var(--text-2); } .rr-ten .g dd { margin: 0; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.rr-ten .pay { display: flex; align-items: center; padding: 12px 0; border-top: 2px solid var(--text); font-size: 14px; }
+.rr-ten .pay .v { margin-left: auto; color: #c2410c; font-size: 15px; font-variant-numeric: tabular-nums; }
+.rr-ten .cap { margin: 6px 0 8px; font-size: 12px; color: var(--muted); }
+.rr-tbl { overflow-x: auto; }
+.rr-tbl table { width: 100%; font-size: 12px; white-space: nowrap; }
+.rr-tbl td.num, .rr-tbl th:nth-child(5) { text-align: right; }
+.rr-why { margin-top: 12px; padding: 14px 16px; border: 1px solid color-mix(in srgb, #2b6df3 25%, var(--surface)); border-radius: 8px; background: color-mix(in srgb, #2b6df3 7%, var(--surface)); }
+.rr-why b { font-size: 13px; font-weight: 700; color: #1d6fb8; }
+.rr-why p { margin: 4px 0 0; font-size: 13px; line-height: 1.7; color: var(--text-2); word-break: keep-all; }
+.rr-gray { margin-top: 12px; padding: 14px 16px; border-radius: 8px; background: var(--surface-3); }
+.rr-gray b { font-size: 13px; font-weight: 700; color: var(--text); }
+.rr-gray p, .rr-gray li { margin: 4px 0 0; font-size: 13px; line-height: 1.7; color: var(--text-2); word-break: keep-all; }
+.rr-gray ul { margin: 0; padding-left: 18px; }
+.rr-checks { list-style: none; margin: 0; padding: 0; }
+.rr-checks li { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-top: 1px solid var(--row-line); }
+.rr-checks li:first-child { border-top: 0; }
+.rr-checks li i { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: color-mix(in srgb, #0f766e 15%, var(--surface)); color: #0f766e; }
+.rr-checks li.warn i { background: color-mix(in srgb, var(--nav-orange) 15%, var(--surface)); color: #c2410c; } .rr-checks li.bad i { background: color-mix(in srgb, #be123c 13%, var(--surface)); color: #be123c; }
+.rr-checks li i svg { width: 13px; height: 13px; }
+.rr-checks li div { flex: 1; min-width: 0; }
+.rr-checks li b { font-size: 14px; font-weight: 500; color: var(--text-2); }
+.rr-checks li.warn b, .rr-checks li.bad b { font-weight: 700; color: var(--text); }
+.rr-checks li p { margin: 2px 0 0; font-size: 12px; line-height: 1.6; color: var(--muted); word-break: keep-all; }
+@media (max-width: 640px) { .rr-kpis { grid-template-columns: minmax(0, 1fr); } .rr-ten .g { grid-template-columns: minmax(0, 1fr); } }
+.rt-tip { margin-top: 18px; padding: 14px 16px; border: 1px solid color-mix(in srgb, #2b6df3 25%, var(--surface)); border-radius: 8px; background: color-mix(in srgb, #2b6df3 7%, var(--surface)); }
 .rt-tip b { display: block; margin-bottom: 4px; font-size: 14px; font-weight: 700; color: #1d6fb8; }
 .rt-tip p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--text-2); word-break: keep-all; }
 .rt-up h3 { padding-bottom: 12px; border-bottom: 1px solid var(--line); }
@@ -1217,8 +1291,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rt-doc-h b { font-size: 14px; font-weight: 700; color: var(--text); }
 .rt-doc-h b small { font-size: 12px; font-weight: 500; color: var(--muted); }
 .rt-tag { padding: 2px 7px; border-radius: 5px; font-size: 12px; background: var(--surface-3); color: var(--muted); white-space: nowrap; }
-.rt-tag.need { background: #fdf0e6; color: #c2410c; }
-.rt-tag.ok { background: #e8f6ee; color: #15803d; }
+.rt-tag.need { background: color-mix(in srgb, var(--nav-orange) 15%, var(--surface)); color: #c2410c; }
+.rt-tag.ok { background: color-mix(in srgb, #15803d 15%, var(--surface)); color: #15803d; }
 .rt-doc p { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--muted); word-break: keep-all; }
 .rt-file { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 .rt-name { min-width: 0; flex: 1; padding: 0; border: 0; background: none; text-align: left; font-size: 13px; color: var(--blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
@@ -6880,7 +6954,7 @@ span.cal-day.has { cursor: help; }
     { i: 2, k: 'survey', name: '현황조사서', re: /현황/ },
     { i: 3, k: 'household', name: '전입세대확인서', re: /전입|세대/ },
   ];
-  const RT = { busy: false, msg: '' };
+  const RT = { busy: false, msg: '', id: '' };
   /* 알 수 있는 것 셋 — 분석하는 동안엔 같은 번호 목록에 진행 상태가 붙는다(덮개 창 없이).
      단계는 꾸미지 않는다: AI 답이 정해진 순서(docCheck → baseRight → rows … → risk)로 오므로
      공통 코드(geminiRights)가 받는 도중 '지금 쓰는 칸'을 'ta:rights-stage' 로 알려 주면 그 칸의 번호를 켠다 */
@@ -6893,14 +6967,83 @@ span.cal-day.has { cursor: help; }
   const RT_STEPS = [
     ['서류 글자 읽기', ['collect', 'send', 'read']],
     ['이 물건 서류인지 확인', ['docCheck']],
-    ['말소기준권리 정리', ['baseRight']],
+    ['말소기준권리 정리', ['baseRight', 'claimDeadline']],
     ['표를 칸별로 나누기', ['rows']],
-    ['세입자 대항력 계산', ['takeoverSummary', 'extinguishSummary']],
-    ['주의할 항목 점검', ['risk', 'evict', 'conclusion', 'missingDocs']],
+    ['세입자 대항력 계산', ['tenants', 'takeoverSummary', 'extinguishSummary']],
+    ['주의할 항목 점검', ['risk', 'checks', 'evict', 'conclusion', 'headline', 'compare', 'remarks', 'missingDocs']],
   ];
   const RTS = { on: false, stage: '' };
+  /* ===== 분석 결과 — 왼쪽 상자 자리에 탭 셋(요약 · 권리·세입자 · 확인할일). 물건의 rightsAi 를 그대로 읽는다(2026-11-05) =====
+     예전에 받은 분석(세입자 · 확인할 일 칸이 없던 때)은 그 칸 자리에 '다시 분석하면 채워집니다'를 둔다 */
+  const RT_TABS = [['sum', '요약'], ['rights', '권리·세입자'], ['todo', '확인할일']];
+  const RT_TAB_KEY = 'ta.web.rightsTab';
+  let rtTab = (() => { try { return localStorage.getItem(RT_TAB_KEY) || 'sum'; } catch (e) { return 'sum'; } })();   /* 고른 탭은 다른 물건 · 새로고침에도 그대로 */
+  const rtD = (d) => String(d || '').slice(0, 10).replace(/-/g, '.');
+  const rtWon = (v) => { const n = Number(String(v || '').replace(/[^\d]/g, '')); return Number.isFinite(n) && /\d/.test(String(v || '')) ? n : null; };
+  const RT_AGAIN = (what) => `<p class="rr-again">다시 분석하면 ${what}이 채워집니다.</p>`;
+  const rtTone = (st) => (st === '서류상 해당 없음' ? 'ok' : st === '전문가 검토' ? 'bad' : 'warn');
+  const RT_IC = { ok: I.check, warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>' };
+  function rtResultHtml(ai) {
+    const base = ai.baseRight || {}; const rows = ai.rows || []; const ten = ai.tenants; const checks = ai.checks;
+    const isBase = (r) => base.kind && r.kind === base.kind && String(r.date).slice(0, 10) === String(base.date).slice(0, 10);
+    const baseRow = rows.find(isBase);
+    const verdict = (ai.conclusion && ai.conclusion.verdict) || '주의';
+    const tone = verdict === '입찰 추천' ? 'ok' : verdict === '비추천' ? 'bad' : 'warn';
+    const opp = ten ? ten.filter((t) => t.opposable === '대항력 있음').length : 0;
+    const used = ai.usedDocs || [];
+    const noReg = !used.some((u) => /등기/.test(u));
+    const tabs = `<div class="rr-tabs" role="tablist">${RT_TABS.map(([k, t]) => `<button type="button" role="tab" aria-selected="${rtTab === k}" class="${rtTab === k ? 'on' : ''}" data-act="rt-tab" data-v="${k}">${t}</button>`).join('')}</div>`;
+    let body = '';
+    if (rtTab === 'rights') {
+      const take = rows.filter((r) => r.status === '인수');
+      const sums = take.map((r) => rtWon(r.amount));
+      const sumTxt = take.length && sums.every((n) => n != null) ? `${sums.reduce((a, b) => a + b, 0).toLocaleString('ko-KR')}원` : take.length ? '금액 일부 미상' : '0원';
+      body = `<section class="rr-card"><h4>지워지는 권리와 떠안는 권리</h4><p class="rr-sub">말소기준권리와 서류에 적힌 권리를 한 줄씩 — 인수는 낙찰자가 떠안고, 소멸은 낙찰되면 지워집니다</p>
+          ${rows.length ? `<div class="rr-rows">${rows.map((r) => `<div class="rr-row ${r.status === '인수' ? 'take' : 'gone'} ${isBase(r) ? 'base' : ''}">
+            <div class="t"><b>${esc(r.kind)}</b>${isBase(r) ? '<span class="rr-tag base">말소기준권리</span>' : ''}<span class="rr-tag ${r.status === '인수' ? 'take' : 'gone'}">${esc(r.status)}</span></div>
+            <div class="d">${[rtD(r.date), r.holder, r.rank].filter(Boolean).map(esc).join(' · ')}</div>
+            <div class="a">${esc(r.amount || '금액 미상')}</div>${r.note ? `<p>${esc(r.note)}</p>` : ''}</div>`).join('')}</div>` : '<p class="rr-again">서류에서 읽은 권리가 없습니다.</p>'}
+          <div class="rr-sumline"><b>낙찰자가 떠안는 권리</b><b class="v">${take.length}건 · ${sumTxt}</b></div></section>
+        <section class="rr-card"><h4>세입자 확인</h4><p class="rr-sub">매각물건명세서의 점유자 표 기준 · 점유자 성명 칸 하나가 한 명입니다</p>
+          ${!ten ? RT_AGAIN('세입자 카드') : !ten.length ? '<p class="rr-again">점유자 표에 세입자가 없습니다.</p>' : ten.map((t) => `<div class="rr-ten">
+            <div class="h"><b>${esc(t.name)}</b><span class="rr-tag ${t.opposable === '대항력 있음' ? 'take' : t.opposable === '대항력 없음' ? 'gone' : 'warn'}">${esc(t.opposable)}</span></div>
+            ${[t.part, t.kind, t.source].filter(Boolean).length ? `<p class="meta">${[t.part, t.kind, t.source].filter(Boolean).map(esc).join(' · ')}</p>` : ''}
+            <dl class="g"><div><dt>전입일</dt><dd>${esc(rtD(t.moveIn) || '-')}</dd></div><div><dt>확정일자</dt><dd>${esc(rtD(t.fixed) || '-')}</dd></div><div><dt>배당요구</dt><dd>${esc(t.claim || '-')}</dd></div><div><dt>보증금</dt><dd>${esc(t.deposit || '-')}</dd></div></dl>
+            <div class="pay"><b>내가 물어줄 수 있는 돈</b><b class="v">${esc(t.payBack || '-')}</b></div>
+            ${t.lines && t.lines.length ? `<p class="cap">정보출처별 내용 (서류 표의 줄 그대로 · 위 숫자는 이 줄들로 계산)</p><div class="rr-tbl"><table class="it-table"><thead><tr><th>정보출처</th><th>점유부분</th><th>점유의 권원</th><th>임대차기간</th><th>보증금</th><th>차임</th><th>전입일</th><th>확정일자</th><th>배당요구</th></tr></thead><tbody>${t.lines.map((l) => `<tr><td><b>${esc(l.src)}</b></td><td>${esc(l.part || '—')}</td><td>${esc(l.kind || '—')}</td><td>${esc(l.period || '—')}</td><td class="num">${esc(l.deposit || '—')}</td><td>${esc(l.rent || '—')}</td><td class="num">${esc(rtD(l.moveIn) || '—')}</td><td class="num">${esc(rtD(l.fixed) || '—')}</td><td>${esc(l.claim || '—')}</td></tr>`).join('')}</tbody></table></div>` : ''}
+            ${t.why ? `<div class="rr-why"><b>왜 그런가요?</b><p>${esc(t.why)}</p></div>` : ''}</div>`).join('')}
+          ${ai.compare ? `<div class="rr-gray"><b>서류 칸끼리 비교</b><p>${esc(ai.compare)}</p></div>` : ''}
+          ${ai.remarks ? `<div class="rr-gray"><b>비고란 원문</b><p>${esc(ai.remarks)}</p></div>` : ''}</section>`;
+    } else if (rtTab === 'todo') {
+      const risks = (ai.risk && ai.risk.items) || [];
+      body = `<section class="rr-card"><h4>주의 항목 점검</h4><p class="rr-sub">올린 서류에서 찾은 내용 기준입니다. 서류에 없다고 문제가 없다는 뜻은 아닙니다.</p>
+          ${!checks || !checks.length ? RT_AGAIN('확인할 일 여섯 가지') : `<ul class="rr-checks">${checks.map((c) => { const k = rtTone(c.status); return `<li class="${k}"><i aria-hidden="true">${k === 'ok' ? RT_IC.ok : RT_IC.warn}</i><div><b>${esc(c.item)}</b><p>${esc(c.text)}</p></div><span class="rr-tag ${k}">${esc(c.status)}</span></li>`; }).join('')}</ul>`}
+          ${risks.length ? `<div class="rr-gray"><b>그 밖에 걸리는 것</b><ul>${risks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}</section>`;
+    } else {
+      const need = checks ? checks.filter((c) => c.status === '확인 필요').length : null;
+      const expert = checks ? checks.filter((c) => c.status === '전문가 검토').length : null;
+      const ev = ai.evict || {};
+      body = `<section class="rr-card rr-head ${tone}"><span class="rr-tag ${tone}">${RT_IC.warn}${esc(verdict)}</span>
+          <h4>${esc(ai.headline || (ai.conclusion && ai.conclusion.text) || '권리분석을 마쳤습니다.')}</h4>
+          <p>${base.kind ? `말소기준권리는 ${esc(rtD(base.date))} ${esc(base.kind)}입니다.` : '말소기준권리를 서류에서 찾지 못했습니다.'}${ten ? ` 세입자 ${ten.length}명 중 대항력 있음 ${opp}명입니다.` : ''}</p>
+          ${ai.headline && ai.conclusion && ai.conclusion.text ? `<p class="rr-con">${esc(ai.conclusion.text)}</p>` : ''}</section>
+        <div class="rr-kpis">
+          <div class="rr-kpi"><span>확인 필요</span><b>${need == null ? '-' : `${need}건`}</b><small>점검 항목 중 '확인 필요' 개수</small></div>
+          <div class="rr-kpi"><span>전문가 검토</span><b>${expert == null ? '-' : `${expert}건`}</b><small>특수 조건 · 위험 항목</small></div>
+          <div class="rr-kpi"><span>세입자</span><b>${ten ? `${ten.length}명` : '-'}</b><small>${ten ? `대항력 있음 ${opp}명` : '다시 분석하면 채워집니다'}</small></div>
+        </div>
+        <section class="rr-card"><h4>말소기준권리</h4><p class="rr-sub">낙찰되면 이 권리와 그 아래 권리는 원칙적으로 모두 지워집니다.</p>
+          <div class="rr-base"><b>${base.kind ? `${esc(rtD(base.date))} · ${esc(base.kind)}` : '찾지 못했습니다'}</b><span>${base.holder ? `${esc(base.holder)}${baseRow && baseRow.amount ? ` · ${esc(baseRow.amount)}` : ''}` : '권리자 · 금액은 등기사항전부증명서에서 확인'}</span></div>
+          ${base.evidence ? `<p class="rr-note">근거 ${esc(base.evidence)}</p>` : ''}${ai.claimDeadline ? `<p class="rr-note">배당요구종기 ${esc(rtD(ai.claimDeadline))}</p>` : ''}</section>
+        ${ev.level ? `<section class="rr-card"><h4>명도 난이도<span class="rr-tag ${ev.level === '쉬움' ? 'ok' : ev.level === '높음' ? 'bad' : 'warn'}">${esc(ev.level)}</span></h4>${ev.reason ? `<p class="rr-txt">${esc(ev.reason)}</p>` : ''}${ev.advice ? `<p class="rr-txt">${esc(ev.advice)}</p>` : ''}</section>` : ''}
+        <div class="rr-docs"><b>분석에 쓴 서류 ${esc(used.join(' · ') || '-')}</b>${noReg ? '<p>등기사항전부증명서 없이 분석한 결과입니다. 말소기준권리의 권리자 · 금액과 그보다 앞선 권리는 등기부로 꼭 확인해 주세요.</p>' : ''}${ai.missingDocs && ai.missingDocs.length ? `<p>이 서류까지 올리면 더 정확해집니다 — ${esc(ai.missingDocs.join(' · '))}</p>` : ''}</div>`;
+    }
+    return tabs + body;
+  }
   const RT_NOT = '<div class="rt-not"><b>이 도구가 하지 않는 것</b><p>입찰 여부를 대신 정하지 않습니다. 유치권 · 법정지상권 · 지분 매각 같은 특수한 조건이 보이면 해결 방법을 안내하지 않고, 전문가 검토가 필요하다고 알려 드립니다. 서류가 모자라 판단하지 못한 것은 더 떼어 볼 서류로 알려 드립니다.</p></div>';
+  const rtAiOf = () => { const a = RT.id && CLOUD.raw.get(RT.id); return a && a.rightsAi && a.rightsAi.baseRight ? a.rightsAi : null; };
   const rtKnowHtml = () => {
+    if (!RTS.on && rtAiOf()) return rtResultHtml(rtAiOf());
     if (!RTS.on) return `<h3>이 도구로 알 수 있는 것</h3><ol>${RT_ITEMS.map(([t, d]) => `<li><b>${t}</b><span>${d}</span></li>`).join('')}</ol>${RT_NOT}`;
     const at = Math.max(0, RT_STEPS.findIndex(([, ks]) => ks.includes(RTS.stage)));
     return `<ul class="rt-steps">${RT_STEPS.map(([t], i) => { const c = i < at ? 'done' : i === at ? 'on' : 'wait'; return `<li class="${c}"><i aria-hidden="true">${c === 'done' ? I.check : ''}</i><span>${t}</span><em>${c === 'done' ? '완료' : c === 'on' ? '진행 중' : '대기'}</em></li>`; }).join('')}</ul>
@@ -6908,7 +7051,7 @@ span.cal-day.has { cursor: help; }
   };
   /* 제목은 두 상자 위 한 줄 — 왼쪽 · 오른쪽 상자 윗변을 맞춘다 */
   const rtTopHtml = () => `<h2 class="rt-title" id="rtTitle">${RTS.on ? '올린 서류를 읽고 있습니다' : '권리분석 결과'}</h2><div class="rt-top">
-      <section class="rt-card rt-know" id="rtKnow">${rtKnowHtml()}</section>
+      <section class="${!RTS.on && rtAiOf() ? 'rt-res' : 'rt-card rt-know'}" id="rtKnow">${rtKnowHtml()}</section>
       <aside class="rt-card rt-up" id="rtUp"><h3>서류 올리기</h3><p class="rt-wait">불러오는 중입니다…</p></aside>
     </div>`;
   const rtDocsOf = (el) => [...el.querySelectorAll('.adp-docs .adp-doc')];
@@ -6928,7 +7071,9 @@ span.cal-day.has { cursor: help; }
     { const t = $('rtTitle'); const tx = RTS.on ? '올린 서류를 읽고 있습니다' : '권리분석 결과'; if (t && t.textContent !== tx) t.textContent = tx; }
     /* 걸린 초 — 앱 덮개 창(웹에선 감춤)의 'N초'를 읽어 오른쪽 안내에 */
     const sec = busy ? Number((/(\d+)초/.exec((el.querySelector('.adp-ai-wait-card') || {}).textContent || '') || [])[1] || 0) : 0;
-    { const k = $('rtKnow'); const h = rtKnowHtml(); if (k && k.dataset.h !== h) { k.innerHTML = h; k.dataset.h = h; } }
+    { const k = $('rtKnow'); const h = rtKnowHtml(); if (k && k.dataset.h !== h) { k.innerHTML = h; k.dataset.h = h; } if (k) k.className = !RTS.on && rtAiOf() ? 'rt-res' : 'rt-card rt-know'; }
+    /* 앱의 예전 AI 결과 카드 넷 — 왼쪽 결과 탭이 대신한다(웹에서만 감춘다) */
+    el.querySelectorAll('.adp-body > .adp-card').forEach((c) => { const t = ((c.querySelector('.adp-card-head h2') || {}).textContent || '').trim(); if (/^AI (권리분석 진단|리스크 분석 요약|권리분석 결론|명도 난이도 분석)/.test(t) && c.style.display !== 'none') c.style.display = 'none'; });
     const errs = [...card.querySelectorAll('.adp-plan-err')].filter((p) => !p.closest('.adp-doc')).map((p) => p.textContent.trim());
     const missing = ((card.querySelector('.adp-ai-missing') || {}).textContent || '').trim();
     const used = ((card.querySelector('.adp-ai-used') || {}).textContent || '').trim();
@@ -7001,6 +7146,7 @@ span.cal-day.has { cursor: help; }
     closeAppDetail();
     /* 임장조사 아래 — 다녀온 뒤 할 일(임장 결과로 수익분석 다시 보기). 앱 화면 안의 같은 단추는 웹에서 감춘다(웹 탭이 따라 바뀌게) */
     /* 탭 맨 위 안내 — 물건등록 · 선정물건과 같은 꼴(왼쪽 주황 막대, 상자 없이) */
+    if (tab === 'rights') RT.id = it.id;
     const lead = ITEM_LEAD[tab] ? `<div class="rg-lead it-lead">${ITEM_LEAD[tab].map((t, i) => `<p class="l${i + 1}">${t}</p>`).join('')}</div>` : '';
     box.innerHTML = `${lead}${tab === 'rights' ? rtTopHtml() : ''}<div class="app-detail tab-${tab}" id="appDetailMount"></div>${tab === 'field' ? '<div class="fld-next"><button type="button" data-act="subtab" data-v="profit">임장 결과로 수익분석 다시 보기 →</button></div>' : ''}`;
     detailKey = key;
@@ -7662,6 +7808,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       /* 권리분석 › 서류 올리기 — 앱 카드의 같은 칸 단추를 대신 누른다 */
       case 'rt-open': { const b = $('appDetailMount') && rtDocsOf($('appDetailMount'))[Number(v)]; const h = b && b.querySelector('.adp-doc-box.has'); const img = h && h.querySelector('img'); if (img || h) (img || h).click(); break; }
       case 'rt-del': { const b = $('appDetailMount') && rtDocsOf($('appDetailMount'))[Number(v)]; const x = b && b.querySelector('.adp-doc-x'); RT.msg = ''; if (x) x.click(); break; }
+      case 'rt-tab': { rtTab = v; try { localStorage.setItem(RT_TAB_KEY, v); } catch (er) { /* 이 창에서만 */ } const el = $('appDetailMount'); if (el) rtPaint(el); break; }
       case 'rt-cancel': { const c = document.querySelector('#appDetailMount .adp-ai-wait-cancel'); if (c) c.click(); break; }
       case 'rt-start': { const el = $('appDetailMount'); const h = el && el.querySelector('.adp-ai-head'); if (h && !h.disabled) { RTS.stage = 'collect'; h.click(); } break; }
       case 'set-type': S.type = v; S.pop = ''; render(); break;

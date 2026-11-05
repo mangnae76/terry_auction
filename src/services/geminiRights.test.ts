@@ -1,7 +1,7 @@
 // AI 가 적어 준 답을 다듬는 자리 — 인수·말소를 앱이 다시 셈하는지 본다.
 // (AI 는 볼 때마다 판단이 달라져 개수가 0·1·2 로 흔들렸다. 날짜만 읽혔으면 규칙은 하나다)
 import { describe, it, expect } from 'vitest';
-import { docMismatchOf, normalizeRightsAi, readStreamText, type RightsAi } from './geminiRights';
+import { docMismatchOf, lastFieldOf, normalizeRightsAi, readStreamText, RIGHTS_CHECK_ITEMS, type RightsAi } from './geminiRights';
 
 const row = (rank: string, kind: string, date: string, status: string, holder = '아무개') =>
   ({ rank, kind, date, holder, amount: '', status, note: '' });
@@ -106,5 +106,27 @@ describe('서류가 이 물건 것인지 (docCheck)', () => {
   });
   it('따옴표가 든 까닭도 읽는다', () => {
     expect(docMismatchOf('{"docCheck":{"result":"불일치","reason":"등기부 소재지 \\"검암동 1-1\\" 이 다릅니다"}')).toBe('등기부 소재지 "검암동 1-1" 이 다릅니다');
+  });
+});
+
+describe('웹 결과 탭 칸(세입자 · 확인할 일 · 진행 단계)', () => {
+  it('확인할 일은 여섯 항목을 늘 같은 순서로 — 빠진 것은 확인 필요', () => {
+    const ai = normalizeRightsAi({ ...RAW, checks: [{ item: '토지별도등기', status: '서류상 해당 없음', text: '표제부에 없음' }] } as unknown as Partial<RightsAi>);
+    expect(ai.checks?.map((c) => c.item)).toEqual([...RIGHTS_CHECK_ITEMS]);
+    expect(ai.checks?.[1].status).toBe('서류상 해당 없음');
+    expect(ai.checks?.[0].status).toBe('확인 필요');
+  });
+  it('예전 답(칸 없음)은 빈 목록 — 화면이 다시 분석을 권한다', () => {
+    const ai = normalizeRightsAi(RAW);
+    expect(ai.checks).toEqual([]);
+    expect(ai.tenants).toEqual([]);
+  });
+  it('세입자 대항력은 정해진 말만 — 아니면 확인 필요', () => {
+    const ai = normalizeRightsAi({ ...RAW, tenants: [{ name: '박○○', opposable: '있음', payBack: '0원', why: '', lines: [] }] } as unknown as Partial<RightsAi>);
+    expect(ai.tenants?.[0].opposable).toBe('확인 필요');
+  });
+  it('받는 도중 마지막으로 열린 칸을 찾는다', () => {
+    expect(lastFieldOf('{"docCheck":{"result":"일치"},"baseRight":{"kind":"근저당권"},"rows":[{"kind"')).toBe('rows');
+    expect(lastFieldOf('{"doc')).toBeNull();
   });
 });

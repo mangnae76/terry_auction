@@ -44,6 +44,25 @@ export type RightsAiRow = {
   note: string;
 };
 
+/** 세입자 한 명 — 매각물건명세서 점유자 표의 성명 칸 하나(웹 권리분석 › 권리·세입자) */
+export type RightsAiTenantLine = { src: string; part: string; kind: string; period: string; deposit: string; rent: string; moveIn: string; fixed: string; claim: string };
+export type RightsAiTenant = {
+  name: string; part: string; kind: string; source: string;
+  moveIn: string; fixed: string; claim: string; deposit: string;
+  /** 낙찰자가 물어줄 수 있는 돈 */
+  payBack: string;
+  opposable: string;
+  /** 왜 그렇게 봤는지 */
+  why: string;
+  /** 정보출처별 줄 — 서류 표의 줄 그대로 */
+  lines: RightsAiTenantLine[];
+};
+/** 확인할 일 여섯 — 이 순서로 늘 하나씩 */
+export const RIGHTS_CHECK_ITEMS = ['대지권 등기', '토지별도등기', '위반건축물 표시', '공용 관리비 체납', '유치권·법정지상권·지분 매각', '선순위 가처분·가등기'] as const;
+export const RIGHTS_CHECK_STATUS = ['서류상 해당 없음', '확인 필요', '전문가 검토'] as const;
+export const TENANT_OPPOSABLE = ['대항력 있음', '대항력 없음', '확인 필요'] as const;
+export type RightsAiCheck = { item: string; status: string; text: string };
+
 export type RightsAi = {
   /** 말소기준권리 — 어떤 권리가, 언제, 누구 것으로 기준이 되었나 */
   baseRight: { kind: string; date: string; holder: string; rank: string; evidence: string };
@@ -64,6 +83,17 @@ export type RightsAi = {
   /** 언제 받은 분석인지 · 무엇을 보고 했는지 */
   askedAt: string;
   usedDocs: string[];
+  /* 2026-11-05 더함(웹 결과 탭) — 예전에 받은 분석에는 없다 */
+  /** 맨 위 한 줄 제목 */
+  headline?: string;
+  /** 배당요구종기 */
+  claimDeadline?: string;
+  tenants?: RightsAiTenant[];
+  checks?: RightsAiCheck[];
+  /** 서류 칸끼리 비교 */
+  compare?: string;
+  /** 매각물건명세서 비고란 원문 */
+  remarks?: string;
 };
 
 /** 서류 칸 이름 — 화면의 다섯 칸과 같은 말을 쓴다 */
@@ -92,7 +122,7 @@ export const DOC_CHECK_RESULTS = ['일치', '불일치', '확인불가'] as cons
 const RESPONSE_SCHEMA = {
   type: 'OBJECT',
   // 맨 앞에 서류 확인 — 스트리밍으로 받는 도중에 '불일치'를 보면 바로 멈추려고 순서를 못 박는다
-  propertyOrdering: ['docCheck', 'baseRight', 'rows', 'takeoverSummary', 'extinguishSummary', 'risk', 'evict', 'conclusion', 'missingDocs'],
+  propertyOrdering: ['docCheck', 'baseRight', 'claimDeadline', 'rows', 'tenants', 'takeoverSummary', 'extinguishSummary', 'risk', 'checks', 'evict', 'conclusion', 'headline', 'compare', 'remarks', 'missingDocs'],
   properties: {
     docCheck: {
       type: 'OBJECT',
@@ -107,7 +137,34 @@ const RESPONSE_SCHEMA = {
       },
       required: ['kind', 'date', 'holder', 'rank', 'evidence'],
     },
+    claimDeadline: str,
     rows: { type: 'ARRAY', items: rowItem },
+    tenants: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          name: str, part: str, kind: str, source: str, moveIn: str, fixed: str, claim: str, deposit: str, payBack: str,
+          opposable: { type: 'STRING', enum: [...TENANT_OPPOSABLE] }, why: str,
+          lines: {
+            type: 'ARRAY',
+            items: { type: 'OBJECT', properties: { src: str, part: str, kind: str, period: str, deposit: str, rent: str, moveIn: str, fixed: str, claim: str }, required: ['src'] },
+          },
+        },
+        required: ['name', 'opposable', 'payBack', 'why', 'lines'],
+      },
+    },
+    checks: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: { item: { type: 'STRING', enum: [...RIGHTS_CHECK_ITEMS] }, status: { type: 'STRING', enum: [...RIGHTS_CHECK_STATUS] }, text: str },
+        required: ['item', 'status', 'text'],
+      },
+    },
+    headline: str,
+    compare: str,
+    remarks: str,
     takeoverSummary: str,
     extinguishSummary: str,
     risk: {
@@ -129,7 +186,7 @@ const RESPONSE_SCHEMA = {
     },
     missingDocs: { type: 'ARRAY', items: str },
   },
-  required: ['docCheck', 'baseRight', 'rows', 'takeoverSummary', 'extinguishSummary', 'risk', 'evict', 'conclusion', 'missingDocs'],
+  required: ['docCheck', 'baseRight', 'claimDeadline', 'rows', 'tenants', 'takeoverSummary', 'extinguishSummary', 'risk', 'checks', 'evict', 'conclusion', 'headline', 'compare', 'remarks', 'missingDocs'],
 };
 
 /**
@@ -251,6 +308,33 @@ export const RIGHTS_PROMPT = [
   '- risk.items 에는 매각물건명세서의 특별매각조건, 농지취득자격증명, 법정지상권·유치권 신고,',
   '  전차인·실거주자, 미납 관리비, 송달 안 된 이해관계인처럼 걸리는 것을 한 줄씩 적는다.',
   '- 걸리는 것이 없으면 빈 배열로 둔다. 억지로 만들지 않는다.',
+  '',
+  '배당요구종기 (claimDeadline)',
+  '- 매각물건명세서의 배당요구종기를 YYYY-MM-DD 로. 없으면 빈 글자.',
+  '',
+  '세입자 카드 (tenants) — 매각물건명세서의 점유자 표 기준. 점유자 성명 칸 하나가 한 명이다',
+  '- 같은 사람이 정보출처(현황조사 · 권리신고 등)마다 여러 줄로 나오면 한 명으로 묶고, 그 줄들은 lines 에 서류 표의 줄 그대로 옮긴다.',
+  '  lines 의 칸: src 정보출처, part 점유부분, kind 점유의 권원, period 임대차기간, deposit 보증금, rent 차임(없으면 "없음"), moveIn 전입일, fixed 확정일자, claim 배당요구(일자 또는 "없음"). 비었으면 빈 글자.',
+  '- name: 성명 그대로(가린 이름이면 "박○○" 그대로). part: 점유부분(전부 · 일부 · 2층 등). kind: "주거 임차인" 처럼. source: 정보출처를 가운뎃점으로 — "현황조사 · 권리신고".',
+  '- moveIn · fixed: YYYY-MM-DD (lines 가운데 가장 확실한 값). claim: 배당요구를 했으면 "함", 안 했으면 "안 함", 알 수 없으면 빈 글자. deposit: "150,000,000원".',
+  '- opposable: 전입일이 말소기준권리 날짜보다 빠르면 대항력 있음, 늦으면 대항력 없음, 전입일을 모르면 확인 필요.',
+  '- payBack: 낙찰자가 물어줄 수 있는 돈. 대항력이 없으면 "0원". 대항력이 있고 배당요구를 안 했으면 보증금 전액.',
+  '  대항력이 있고 배당요구를 했으면 배당에서 다 못 받을 수 있으니 보증금 전액을 적고 why 에 배당 결과를 확인하라고 쓴다.',
+  '- why: 왜 그렇게 봤는지 두세 문장 — 전입일과 말소기준권리 날짜를 견주고, 배당요구 여부로 무엇을 떠안는지. 날짜는 2020.03.02 꼴로.',
+  '- 점유자가 없거나 소유자 · 채무자만 살면 빈 배열.',
+  '',
+  '확인할 일 (checks) — 아래 여섯을 이 순서로 하나씩 꼭 적는다',
+  `  ${RIGHTS_CHECK_ITEMS.join(' / ')}`,
+  '- status: 올린 서류로 문제 없음이 확인되면 서류상 해당 없음. 올린 서류로 알 수 없거나 걸리는 것이 있으면 확인 필요.',
+  '  유치권 · 법정지상권 · 지분 매각처럼 특수한 조건이 실제로 보이면 전문가 검토.',
+  '- text: 무엇을 보고 그렇게 봤는지 한 줄. 확인 필요면 어디서 무엇을 보면 되는지 — 예: 등기사항전부증명서 표제부에 \'토지별도등기 있음\' 이 있는지.',
+  '  관리비 체납은 서류에 없으면 확인 필요로 두고 관리사무소에 물어보라고 적는다. 위반건축물은 건축물대장(정부24)을 보라고 적는다.',
+  '',
+  '맨 위 한 줄 · 비교 · 원문',
+  '- headline: 사용자가 가장 먼저 알아야 할 것을 한 문장으로(35자 안팎). 예: "말소기준권리보다 먼저 전입한 세입자가 있어 보증금을 떠안을 수 있습니다."',
+  '- compare: 서류 칸끼리 비교 — 매각물건명세서의 \'매각으로 소멸되지 않는 권리\' · \'지상권 개요\' 칸과 비고, 등기부 · 현황조사서가 서로 맞는지. 빈 칸은 비었다고. 두세 문장.',
+  '- remarks: 매각물건명세서 비고란의 글을 고치지 말고 그대로. 없으면 빈 글자.',
+  '- 이 칸들에서 \'기준선\' 이라는 말은 쓰지 않는다. 늘 \'말소기준권리\' 라고 쓴다.',
   '',
   '결론',
   '- verdict 는 입찰 추천 / 주의 / 비추천 가운데 하나만 고른다.',
@@ -388,12 +472,12 @@ const mismatchMessage = (reason: string) =>
 
 /** 지금 어디까지 왔는지 — 화면이 단계 목록을 그리게 알린다(웹 권리분석 '올린 서류를 읽고 있습니다').
  *  답은 propertyOrdering 순서로 오므로, 받는 도중 글에서 마지막으로 나온 칸 이름이 곧 지금 쓰는 단계다 */
-export type RightsStage = 'send' | 'read' | 'docCheck' | 'baseRight' | 'rows' | 'takeoverSummary' | 'extinguishSummary' | 'risk' | 'evict' | 'conclusion' | 'missingDocs';
+export type RightsStage = 'send' | 'read' | 'docCheck' | 'baseRight' | 'claimDeadline' | 'rows' | 'tenants' | 'takeoverSummary' | 'extinguishSummary' | 'risk' | 'checks' | 'evict' | 'conclusion' | 'headline' | 'compare' | 'remarks' | 'missingDocs';
 export const RIGHTS_STAGE_EVENT = 'ta:rights-stage';
 const tellStage = (stage: RightsStage) => {
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(RIGHTS_STAGE_EVENT, { detail: { stage } }));
 };
-const FIELD_RE = /"(docCheck|baseRight|rows|takeoverSummary|extinguishSummary|risk|evict|conclusion|missingDocs)"\s*:/g;
+const FIELD_RE = /"(docCheck|baseRight|claimDeadline|rows|tenants|takeoverSummary|extinguishSummary|risk|checks|evict|conclusion|headline|compare|remarks|missingDocs)"\s*:/g;
 /** 받는 도중 글에서 마지막으로 열린 칸 */
 export const lastFieldOf = (soFar: string): RightsStage | null => {
   let last: RightsStage | null = null;
@@ -610,5 +694,25 @@ export const normalizeRightsAi = (raw: Partial<RightsAi>, usedDocs: string[] = [
     missingDocs: (Array.isArray(raw.missingDocs) ? raw.missingDocs : []).map(text).filter(Boolean),
     askedAt: new Date().toISOString(),
     usedDocs,
+    headline: text(raw.headline),
+    claimDeadline: text(raw.claimDeadline),
+    tenants: (Array.isArray(raw.tenants) ? raw.tenants : []).map((t) => ({
+      name: text(t?.name), part: text(t?.part), kind: text(t?.kind), source: text(t?.source),
+      moveIn: text(t?.moveIn), fixed: text(t?.fixed), claim: text(t?.claim), deposit: text(t?.deposit), payBack: text(t?.payBack),
+      opposable: TENANT_OPPOSABLE.includes(text(t?.opposable) as typeof TENANT_OPPOSABLE[number]) ? text(t?.opposable) : '확인 필요',
+      why: text(t?.why),
+      lines: (Array.isArray(t?.lines) ? t.lines : []).map((l) => ({
+        src: text(l?.src), part: text(l?.part), kind: text(l?.kind), period: text(l?.period), deposit: text(l?.deposit),
+        rent: text(l?.rent), moveIn: text(l?.moveIn), fixed: text(l?.fixed), claim: text(l?.claim),
+      })),
+    })).filter((t) => t.name),
+    /* 여섯 항목을 늘 같은 순서로 — AI 가 빠뜨린 항목은 '확인 필요'로 채운다 */
+    checks: Array.isArray(raw.checks) ? RIGHTS_CHECK_ITEMS.map((item) => {
+      const c = raw.checks!.find((x) => text(x?.item) === item);
+      const status = RIGHTS_CHECK_STATUS.includes(text(c?.status) as typeof RIGHTS_CHECK_STATUS[number]) ? text(c?.status) : '확인 필요';
+      return { item, status, text: text(c?.text) || '올린 서류로는 알 수 없습니다.' };
+    }) : [],
+    compare: text(raw.compare),
+    remarks: text(raw.remarks),
   };
 };
