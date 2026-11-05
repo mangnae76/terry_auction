@@ -14,6 +14,9 @@ import { GEMINI_API, GEMINI_MODEL, GeminiError } from './geminiPdf';
  *  (작은 모델은 선순위 임차권 + 확약서 같은 경계에서 볼 때마다 답이 뒤집혔다)
  *  이 이름을 못 알아들으면(404) 아래에서 한 번 PDF 와 같은 모델로 다시 해 본다. */
 export const RIGHTS_MODEL = 'gemini-flash-latest';
+/** 붐빔(503) · 잠깐 한도(429) · 모델 없음(404)이면 같은 모델로 기다리지 않고 다음 모델로 바로 넘긴다(2026-11-05 —
+ *  gemini-flash-latest 가 계속 붐벼 세 번 다 실패했다). 한도는 모델마다 따로라 429 도 넘기면 풀릴 때가 많다 */
+export const RIGHTS_MODELS = [RIGHTS_MODEL, 'gemini-2.5-flash', GEMINI_MODEL];
 import { BASE_RIGHT_KINDS, normalizeYmd } from './registryAnalysis';
 
 /** 명도 난이도 — 이 넷 가운데 하나 */
@@ -530,8 +533,9 @@ export const askRightsAnalysis = async (
   let text = '';
   let mismatch = '';
   // 혼잡(503)·잠깐 한도(429)는 잠시 뒤 다시 — 두 번까지 (geminiPdf 와 같은 규칙)
-  let model = RIGHTS_MODEL;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  let model = RIGHTS_MODELS[0];
+  for (let attempt = 0; attempt < RIGHTS_MODELS.length; attempt += 1) {
+    model = RIGHTS_MODELS[attempt];
     if (signal?.aborted) throw new GeminiError('분석을 취소했습니다');
     // 시간 제한 — 소식 없이 오래 있거나, 전체가 너무 길거나, 사용자가 취소하면 끊는다
     const ctrl = new AbortController();
@@ -585,12 +589,13 @@ export const askRightsAnalysis = async (
     }
     if (res.ok) break;
     // 그 이름의 모델이 없으면 PDF 읽기와 같은 모델로 한 번 더 — 기능이 멎지 않게
-    if (res.status === 404 && model !== GEMINI_MODEL) { model = GEMINI_MODEL; continue; }
-    if (res.status !== 503 && res.status !== 429) {
+    if (res.status !== 503 && res.status !== 429 && res.status !== 404) {
       const reason = res.status === 403 || res.status === 401 ? '키를 확인해 주세요' : errMsg || `오류 ${res.status}`;
       throw new GeminiError(`AI 분석 실패 — ${reason}`);
     }
-    if (attempt < 2) await wait(attempt === 0 ? 3000 : 8000);
+    // eslint-disable-next-line no-console
+    console.log(`%c[AI 권리분석] ${model} ${res.status === 404 ? '없음' : res.status === 429 ? '한도' : '붐빔'}(${res.status}) — 다음 모델로`, 'color:#c2410c;font-weight:700');
+    if (attempt < RIGHTS_MODELS.length - 1) await wait(1000);
   }
   if (!res) throw new GeminiError('AI 분석 실패');
   if (!res.ok) {
