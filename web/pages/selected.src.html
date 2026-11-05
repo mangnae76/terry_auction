@@ -1176,6 +1176,12 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .subtabs > .wrap > .sub-crumb-left { flex: 0 0 0; width: 0; margin-right: -16px; overflow: visible; white-space: nowrap; position: relative; z-index: 1; }
 .crumb-slot { padding-top: 2px; }
 .list-lead { padding-top: 10px; }
+/* 시세분석 — '근거 · 유사물건' 제목을 지도 위에서 빼고 아래 노란 알림(공시지가 기준) 왼쪽에(웹만 · 앱 파일은 그대로).
+   제목이 그 아래 유사물건 표의 이름이 된다. 칩 '근거'(::before) + 굵은 '유사물건'(::after)을 줄 맨 앞으로 */
+.pa .map .map-title { display: none !important; }
+.pa .list-tools { align-items: center !important; }
+.pa .list-tools::before { content: "근거"; order: -2; flex: none; font-size: 13px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 5px; padding: 3px 8px; }
+.pa .list-tools::after { content: "유사물건"; order: -1; flex: none; margin-left: -2px; margin-right: 4px; font-size: 15px; font-weight: 800; color: var(--text); }
 .list-lead + .content { padding-top: 16px; }
 .it-lead { margin-bottom: 16px; }
 /* 권리분석 (직접확인) 표 — 분홍 · 파랑 왼쪽 이름 칸. 앱은 칸 700 + 안 strong 'bolder'라 900 가까이 진했다 → 웹은 600 */
