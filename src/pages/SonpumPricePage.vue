@@ -965,6 +965,10 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 /* 웹 — '저장완료' 아래 줄에 저장 시각(작게) */
 .save-btn.two { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.2; }
 .save-btn.two small { margin-left: 0; font-size: 11px; }
+/* 웹 — 마우스를 올리면 바뀐다(조회 단추와 같은 진한 남색 · 저장완료는 테두리만 진하게) */
+.save-btn.two { transition: background .15s, border-color .15s; }
+.save-btn.two.dirty:hover { background: #16305f; }
+.save-btn.two.saved:hover { border-color: #8fceaa; background: #f4fbf6; }
 .save-btn.saved { background: #fff; color: var(--ok); border: 1px solid #cfe9d8; font-weight: 600; }
 .save-btn.saving { background: #fff; color: var(--sub); border: 1px solid #dde3ee; font-weight: 400; }
 .simrow { grid-column: 1 / -1; display: grid; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 12px 18px; }
