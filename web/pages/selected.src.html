@@ -6829,7 +6829,7 @@ span.cal-day.has { cursor: help; }
     });
     return out;
   }
-  const AG_CASE_ADD = false;   /* 사건번호로 추가하는 칸 — 지금은 숨김(2026-11-06). 이미 올린 사건 알약은 그대로 보인다 */
+  const AG_CASE_ADD = true;   /* 사건번호로 추가하는 칸 — 11-06 잠깐 숨겼다가 다시 켬. false 면 칸만 숨고 이미 올린 사건 알약은 그대로 보인다 */
   function agQueueHtml(tail = '') {
     /* 동 알약은 동 고르는 줄 아래, 사건 알약은 사건번호 줄 아래 */
     const dongChips = AG.queue.filter((q) => q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.dong)} <i>${esc(q.kind || '동 전체')}</i><button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(agQid(q))}" aria-label="빼기">×</button></span>`).join('');
