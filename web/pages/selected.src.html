@@ -741,12 +741,15 @@ button { cursor: pointer; }
 .mk-sale .ag-msg.off { color: var(--muted); }
 .mk-sale .ag-cov { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
 .mk-sale .ag-cov small { font-size: 13px; color: var(--muted); margin-right: 4px; }
-.mk-sale .ag-qbox { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
-.mk-sale .ag-qbox > .ag-cov:first-child { margin-top: 0; }
-.mk-sale .ag-qbox > .ag-cov + .ag-cov { margin-top: 8px; }
-.mk-sale .ag-qbox .ag-q-tools > small { min-width: 96px; }
-.mk-sale .ag-qbox > .ag-cov:not(.ag-q-tools) { padding-left: 108px; }   /* 알약 줄은 인천광역시 칸 왼쪽 끝부터(이름 96 + 여백 4 + 사이 8) */
-.mk-sale .ag-qbox .ag-q-add input.adm-input { width: calc(3 * 150px + 2 * 8px); max-width: 100%; }   /* 사건번호 칸 오른쪽 끝 = 위 동 칸 오른쪽 끝(시도 · 시군구 · 동 150 + 사이 8 두 번) */   /* 두 상자의 이름 너비를 같게 — 칸이 같은 줄에서 시작 */
+.mk-sale .ag-qline { margin-top: 12px; }   /* 읍면동으로 수집 · 사건번호로 수집 · 종류 + 추가 — 세 묶음 한 줄(2026-11-06) */
+.mk-sale .ag-q-line { gap: 12px; margin-top: 0; }
+.mk-sale .ag-qgrp { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.mk-sale .ag-qgrp > small { margin-right: 0; white-space: nowrap; }
+.mk-sale .ag-q-tools.ag-q-line select.adm-input { width: 120px; }
+.mk-sale .ag-q-line #agQIn { width: 200px; height: 30px; font-size: 13px; }
+.mk-sale .ag-qkind { display: inline-flex; align-items: center; gap: 8px; }
+.mk-sale .ag-qline > .ag-cov + .ag-cov { margin-top: 8px; }
+.mk-sale .ag-qline > .ag-cov:not(.ag-q-tools) { padding-left: 106px; }   /* 알약 줄은 인천광역시 칸 왼쪽 끝부터(테두리 1 + 안쪽 10 + 이름 약 87 + 사이 8) */
 .mk-sale .ag-cov-chip { padding: 4px 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 999px; font-size: 13px; color: var(--text); }
 .mk-sale .ag-cov-chip b { font-weight: 700; color: var(--blue); }
 .mk-sale .ag-cov-none { font-size: 13px; color: var(--muted); }
@@ -963,6 +966,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-sub { height: 34px; padding: 0 10px; border: 0; background: none; color: var(--blue); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .sx-sub.run { color: var(--muted); }
 .sx-prog { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.sx-prog-wide { margin-top: 12px; }   /* 수집 관리를 펼치면 진행 막대는 수집 줄 아래 · 수집데이터 위로(2026-11-06), 접으면 단추 아래 */
 .sx-stepcol { display: grid; gap: 8px; min-width: 0; }   /* 윗줄 ② · ③ · 처음부터새로, 아랫줄 진행 막대(같은 너비) */
 .sx-steprow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .sx-chkbox { height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; }
@@ -6698,8 +6702,7 @@ span.cal-day.has { cursor: help; }
   /* ===== 집 PC 수집 도우미(관리자만) — auction-web 과 같은 방식: 여기서 누르면 Firestore 로 명령 → 집 PC agent.py 가 로그인된 크롬으로 옥션원 · 탱크옥션 수집 → 관리자 계정 아래에만 저장 =====
      문서 모양 · 읽고 쓰기는 src/services/agentRemote.ts, 규칙은 firestore.rules isAgentOwner */
   const AG = { on: false, uid: '', status: null, meta: null, recs: [], cov: [], queue: [], qDraft: '', covOpen: false, covQ: '',
-    fold: (() => { try { return localStorage.getItem('ta.web.agent.fold') !== '0'; } catch (e) { return true; } })(),   /* 수집 관리는 처음엔 접어 둔다(시안 A) */ reg: (() => { const d = { sido: '', sgg: '', dong: '', kind: '연립다세대' }; try { const v = { ...d, ...JSON.parse(localStorage.getItem('ta.web.agent.reg') || '{}') }; if (!['연립다세대', '아파트', '오피스텔'].includes(v.kind)) v.kind = d.kind; return v; } catch (e) { return d; } })(), caseKind: (() => { try { const v = localStorage.getItem('ta.web.agent.caseKind') || ''; return ['연립다세대', '아파트', '오피스텔'].includes(v) ? v : ''; } catch (e) { return ''; } })(),   /* 사건번호로 수집 종류 — '' = 사건 종류 그대로 */
-    sending: false, note: '', noteAt: 0, unsub: [], tick: null };
+    fold: (() => { try { return localStorage.getItem('ta.web.agent.fold') !== '0'; } catch (e) { return true; } })(),   /* 수집 관리는 처음엔 접어 둔다(시안 A) */ reg: (() => { const d = { sido: '', sgg: '', dong: '', kind: '연립다세대' }; try { const v = { ...d, ...JSON.parse(localStorage.getItem('ta.web.agent.reg') || '{}') }; if (!['연립다세대', '아파트', '오피스텔'].includes(v.kind)) v.kind = d.kind; return v; } catch (e) { return d; } })(), sending: false, note: '', noteAt: 0, unsub: [], tick: null };
   const AG_SEL_KEY = 'ta.web.agent.sel';
   const AG_MONTHS = [[6, '6개월'], [12, '12개월'], [24, '24개월']];   /* 수집은 24개월까지(2026-11-03 — 36개월 · 전체는 뺐다) */
   /* 고른 사이트 · 기간은 이 브라우저에 남긴다(새로고침해도 그대로). '처음부터새로'는 한 번 쓰고 끈다.
@@ -6760,10 +6763,10 @@ span.cal-day.has { cursor: help; }
     return `<div class="sx-top" id="agPanel">${lead}<section class="sx-card sx-collect" aria-label="경매 인근 매각물건 분석">${titlebar}`
       /* 첫 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③. 처음부터새로는 아래 상태 줄 왼쪽(2026-11-06) */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('months', AG_MONTHS)}</div>`
-      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(0, 'screen', '화면만 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>${prog}</div></div></div>`
+      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(0, 'screen', '화면만 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>${AG.fold ? prog : ''}</div></div></div>`
       + (AG.fold ? `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"></span><span class="sx-meta">${meta}</span>${manage}</div>` : '')   /* 접었을 때만 — 펼치면 저장 · 접기는 수집데이터 줄에 */
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
-      + (AG.fold ? '' : `<div class="sx-manage">${agQueueHtml()}${agCovHtml(metaCnt, `<span class="sx-qtail">${metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : ''}${manage}</span>`)}</div>`)
+      + (AG.fold ? '' : `<div class="sx-manage">${agQueueHtml()}<div class="sx-prog-wide">${prog}</div>${agCovHtml(metaCnt, `<span class="sx-qtail">${metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : ''}${manage}</span>`)}</div>`)
       + `</section></div>`;
   }
   /* 모은 동네 — 도우미가 인근매각물건을 모을 때마다 동네 · 물건 수 · 날짜를 적는다(agent/coverage). 이미 모은 동네는 다시 모을 때 새로 나온 것만 더한다 */
@@ -6850,26 +6853,23 @@ span.cal-day.has { cursor: help; }
   }
   const AG_CASE_ADD = true;   /* 사건번호로 추가하는 칸 — 11-06 잠깐 숨겼다가 다시 켬. false 면 칸만 숨고 이미 올린 사건 알약은 그대로 보인다 */
   function agQueueHtml(tail = '') {
-    /* 동 알약은 동 고르는 줄 아래, 사건 알약은 사건번호 줄 아래 */
     const dongChips = AG.queue.filter((q) => q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.dong)} <i>${esc(q.kind || '동 전체')}</i><button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(agQid(q))}" aria-label="빼기">×</button></span>`).join('');
     const caseChips = AG.queue.filter((q) => !q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.case)}${q.addr || q.kind ? ` <i>${esc([q.addr ? agRegionOf(q.addr) : '', q.kind || ''].filter(Boolean).join(' · '))}</i>` : ''}<button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(q.case)}" aria-label="빼기">×</button></span>`).join('');
     const cands = agQueueCands().length;
     const hint = cands ? `<span class="ag-cov-none">선정물건 중 안 모은 동네 ${cands}곳은 읍면동 수집 때 함께 올라갑니다 (탱크옥션)</span>` : '';
-    /* 읍면동으로 수집 · 사건번호로 수집을 각각 테두리 상자로(2026-11-06) — 상자 안에 고르는 줄과 그 알약 */
-    const dongBox = `<div class="ag-qbox"><div class="ag-cov ag-q-tools"><small>읍면동으로 수집</small>${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}<div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-dong" ${AG.reg.dong ? '' : 'disabled'}>추가</button>${tail}</div>`
-      + (dongChips || hint ? `<div class="ag-cov">${dongChips}${hint}</div>` : '') + '</div>';
-    const caseBox = !AG_CASE_ADD && !caseChips ? '' : '<div class="ag-qbox">'
-      + (!AG_CASE_ADD ? '' : `<div class="ag-cov ag-q-tools"><small>사건번호로 수집</small><span class="ag-q-add"><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"></span><div class="adm-seg" title="고른 종류일 때만 모읍니다 — 다시 누르면 풀림(사건 종류 그대로)">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.caseKind === v ? 'on' : ''}" data-act="ag-case-kind" data-v="${v}" aria-pressed="${AG.caseKind === v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></div>`)
-      + (caseChips ? `<div class="ag-cov">${caseChips}</div>` : '') + '</div>';
-    return dongBox + caseBox;
+    /* 한 줄에 세 묶음 — [읍면동으로 수집 · 시도 · 시군구 · 동] [사건번호로 수집 · 사건번호] [종류 · 추가](2026-11-06). 종류는 둘이 같이 쓴다.
+       추가는 고른 동 · 넣은 사건번호를 한 번에 올린다. 알약(동 · 사건)은 그 아래 한 줄로 */
+    const line = `<div class="ag-cov ag-q-tools ag-q-line"><span class="ag-qgrp"><small>읍면동으로 수집</small>${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}</span>`
+      + (AG_CASE_ADD ? `<span class="ag-qgrp"><small>사건번호로 수집</small><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"></span>` : '')
+      + `<span class="ag-qkind"><div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span>${tail}</div>`;
+    const chips = dongChips + caseChips;
+    return `<div class="ag-qline">${line}${chips || hint ? `<div class="ag-cov">${chips}${hint}</div>` : ''}</div>`;
   }
-  /* 동 하나를 대기열에 — 도우미가 탱크옥션 종합검색(그 동 · 매각전부)으로 끝까지 모은다 */
-  function agQueueDong() {
-    const r = AG.reg; if (!r.sido || !r.sgg || !r.dong) return;
+  /* 고른 동 하나 — 도우미가 탱크옥션 종합검색(그 동 · 매각전부 · 종류)으로 끝까지 모은다 */
+  function agDongItem() {
+    const r = AG.reg; if (!r.sido || !r.sgg || !r.dong) return null;
     const label = `${AG_SIDO[r.sido] || r.sido} ${r.sgg} ${r.dong}`;
-    const item = { case: '', dong: label, lawd: regLawd(r.sido, r.sgg), sgg: r.sgg, dongName: r.dong, kind: r.kind, at: Date.now() };
-    if (AG.queue.some((q) => agQid(q) === agQid(item))) { AG.note = '이미 대기열에 있는 동 · 종류입니다.'; AG.noteAt = Date.now(); agPaint(); return; }
-    void agQueueSave([...AG.queue, item], `대기열에 올렸습니다 — ${agQid(item)}`);
+    return { case: '', dong: label, lawd: regLawd(r.sido, r.sgg), sgg: r.sgg, dongName: r.dong, kind: r.kind, at: Date.now() };
   }
   const AG_REG_KEY = 'ta.web.agent.reg';
   async function agQueueSave(list, note) {
@@ -6877,13 +6877,20 @@ span.cal-day.has { cursor: help; }
     catch (e) { AG.note = `대기열을 저장하지 못했습니다 — ${e && e.message ? e.message : '다시 해 주세요'}`; AG.noteAt = Date.now(); }
     agPaint();
   }
+  /* [추가] — 고른 동과 넣은 사건번호를 한 번에 올린다(같은 종류). 사건은 그 사건 종류가 고른 종류와 다르면 도우미가 건너뛴다 */
   function agQueueAdd() {
+    const add = []; const notes = []; const say = (t) => { AG.note = t; AG.noteAt = Date.now(); agPaint(); };
+    const dong = agDongItem();
+    if (dong) { if (AG.queue.some((q) => agQid(q) === agQid(dong))) notes.push('이미 있는 동 · 종류'); else add.push(dong); }
     const v = String(($('agQIn') || {}).value || AG.qDraft || '').replace(/\s+/g, '');
-    if (!/^\d{4}\D*\d+/.test(v)) { AG.note = '사건번호를 2026타경503385 꼴로 넣어 주세요.'; AG.noteAt = Date.now(); agPaint(); return; }
-    if (AG.queue.some((q) => q.case === v)) { AG.note = '이미 대기열에 있는 사건입니다.'; AG.noteAt = Date.now(); agPaint(); return; }
-    const it = items.find((x) => String(x.caseNo || '').replace(/\s+/g, '') === v);
-    AG.qDraft = '';
-    void agQueueSave([...AG.queue, { case: v, addr: it ? it.addr : '', kind: AG.caseKind, at: Date.now() }], `수집 목록에 올렸습니다 — ${v}${AG.caseKind ? ` · ${AG.caseKind}` : ''}`);
+    if (v) {
+      if (!/^\d{4}\D*\d+/.test(v)) { say('사건번호를 2026타경503385 꼴로 넣어 주세요.'); return; }
+      if (AG.queue.some((q) => q.case === v)) notes.push('이미 있는 사건');
+      else { const it = items.find((x) => String(x.caseNo || '').replace(/\s+/g, '') === v); add.push({ case: v, addr: it ? it.addr : '', kind: AG.reg.kind, at: Date.now() }); }
+    }
+    if (!add.length) { say(notes.length ? `${notes.join(' · ')}입니다.` : '동을 고르거나 사건번호를 넣어 주세요.'); return; }
+    if (v) AG.qDraft = '';
+    void agQueueSave([...AG.queue, ...add], `수집 목록에 올렸습니다 — ${add.map(agQid).join(' · ')}${add.some((x) => !x.dong) ? ` (${AG.reg.kind})` : ''}`);
   }
   /* 'web-agent 2026.11.01-4' 가 [2026, 11, 1, 4] 이상인지 */
   const agVerAtLeast = (v, want) => {
@@ -8261,8 +8268,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'ag-q-add': agQueueAdd(); break;
       case 'ag-q-del': void agQueueSave(AG.queue.filter((q) => agQid(q) !== t.dataset.v)); break;
       case 'ag-reg-kind': AG.reg.kind = t.dataset.v; try { localStorage.setItem(AG_REG_KEY, JSON.stringify(AG.reg)); } catch (err) { /* 그만 */ } agPaint(); break;
-      case 'ag-q-dong': agQueueDong(); break;
-      case 'ag-case-kind': AG.caseKind = AG.caseKind === t.dataset.v ? '' : t.dataset.v; try { localStorage.setItem('ta.web.agent.caseKind', AG.caseKind); } catch (err) { /* 그만 */ } agPaint(); break;
       case 'slow-reload': location.reload(); break;
       case 'slow-relogin': try { localStorage.removeItem('ta.web.in'); } catch (err) { /* 그만 */ } location.replace('/web?login=1'); break;   /* 새로 열고 로그인 창부터 */
       case 'ag-fold': AG.fold = !AG.fold; try { localStorage.setItem('ta.web.agent.fold', AG.fold ? '1' : '0'); } catch (err) { /* 그만 */ } agPaint(); break;
