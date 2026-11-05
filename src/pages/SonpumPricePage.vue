@@ -942,6 +942,11 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa.fs .conds { grid-template-columns: minmax(0, 1fr); }
 .pa.fs .simrow.has-elev, .pa.fs .simB { grid-template-columns: minmax(0, 1fr); }
 .pa.fs .simB { height: auto; }
+/* 전체화면 — 층 · 엘베를 면적 · 건축 줄과 같은 틀로: 이름 칸 32 · 사이 8, 고르기 상자는 시작점이 같고 끝은 '2020년' 값 끝과 맞춘다 */
+.pa.fs .simB { gap: 10px; }
+.pa.fs .dl .dn { flex: 0 0 32px; }
+.pa.fs .simB > .pa-lab, .pa.fs .simrow > .elev-pick { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 8px; width: 100%; }
+.pa.fs .simrow.has-elev .simB .pa-lab .pa-seg, .pa.fs .elev-pick .pa-seg { width: 100%; }
 .pa.fs .acts-r { justify-content: stretch; }
 .pa.fs .acts-r .save-btn { flex: 1; width: auto; min-height: 44px; }
 .kindF button { font-weight: 700 !important; }
