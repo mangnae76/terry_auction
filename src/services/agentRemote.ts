@@ -91,7 +91,7 @@ export const watchAgentQueue = (uid: string, cb: (items: AgentQueueItem[]) => vo
 export const saveAgentQueue = async (uid: string, items: AgentQueueItem[]): Promise<void> => {
   await setDoc(queueRef(uid), { items: items.slice(0, 200).map((x) => (x.dong
     ? { case: '', dong: x.dong, lawd: x.lawd ?? '', sgg: x.sgg ?? '', dongName: x.dongName ?? '', kind: x.kind ?? '', at: x.at }
-    : { case: x.case, addr: x.addr ?? '', at: x.at })) });
+    : { case: x.case, addr: x.addr ?? '', kind: x.kind ?? '', at: x.at })) });   // 사건도 종류(고르면) — 도우미가 사건 종류와 다르면 건너뛴다
 };
 
 /** 모은 동네 — 최근에 모은 순 */
