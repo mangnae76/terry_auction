@@ -226,21 +226,34 @@ const COLS: Array<ColumnDef<PriceRow>> = [
 ];
 const colFilter = useColumnFilters<PriceRow>(kindRows, COLS);
 if (sv?.keep) colFilter.picked.value = { ...colFilter.picked.value, ...sv.keep };
-const passKeep = (r: PriceRow) => COLS.every((c) => { const k = colFilter.picked.value[c.key] ?? []; return !k.length || k.includes(c.text(r)); });
+// 웹 — 머리글 ▾ 거르기 대신 줄마다 체크(풀면 실거래가 예상 · 평균 · 건수에서 빠지고 표엔 흐리게 남는다) · 머리글은 오름 · 내림 정렬(2026-11-05). 앱은 그대로
+const webEmbed = inject<boolean>('webEmbed', false);
+/** 줄 열쇠 — 다시 불러와도 같은 줄이 같은 열쇠(순번 id 는 불러올 때마다 바뀐다) */
+const rowKey = (r: PriceRow) => [r.group, r.contractDate, r.jibun, r.price, r.floorNo, Math.round(r.areaM2 * 100)].join('|');
+const dropped = ref<string[]>(Array.isArray(sv?.drop) ? [...sv.drop] : []);
+const isOff = (r: PriceRow) => webEmbed && dropped.value.includes(rowKey(r));
+const toggleDrop = (r: PriceRow) => { const k = rowKey(r); dropped.value = dropped.value.includes(k) ? dropped.value.filter((x) => x !== k) : [...dropped.value, k]; };
+const passKeep = (r: PriceRow) => (webEmbed ? !isOff(r) : COLS.every((c) => { const k = colFilter.picked.value[c.key] ?? []; return !k.length || k.includes(c.text(r)); }));
 const keptNames = computed(() => COLS.filter((c) => colFilter.isActive(c.key)).map((c) => c.label));
 const sortK = ref('');
+const sortDir = ref<'desc' | 'asc'>('desc');
 const SORT_VAL: Record<string, (r: PriceRow) => number | string> = {
   date: (r) => r.contractDate, won: (r) => r.price, perPy: (r) => r.perPy, pub: (r) => r.pub, gap: (r) => (r.pub ? r.price - r.pub * HUG_RATE : -Infinity),
   area: (r) => r.areaM2, elev: (r) => r.elev ?? -1, year: (r) => r.buildYear ?? 0, dist: (r) => r.dist ?? 0, floor: (r) => r.floorNo, name: (r) => r.name,
 };
 // 늘 높은 값이 위로, 다시 누르면 원래 순서
-const sortBy = (k: string) => { sortK.value = sortK.value === k ? '' : k; };
+const sortBy = (k: string) => {
+  // 웹 — 같은 머리글을 다시 누르면 내림 ↔ 오름
+  if (webEmbed) { if (sortK.value === k) sortDir.value = sortDir.value === 'desc' ? 'asc' : 'desc'; else { sortK.value = k; sortDir.value = 'desc'; } return; }
+  sortK.value = sortK.value === k ? '' : k;
+};
 const shownRows = computed(() => {
-  const list = colFilter.rows.value;
+  const list = webEmbed ? kindRows.value : colFilter.rows.value;
   const f = SORT_VAL[sortK.value];
+  const dir = webEmbed && sortDir.value === 'asc' ? -1 : 1;
   // 기본 순서 — 같은 건물 → 임장 순서(지도 번호) → 최근 거래
   if (!f) return [...list].sort((a, b) => (Number(b.same) - Number(a.same)) || ((orderOf.value[a.jibun] ?? 999) - (orderOf.value[b.jibun] ?? 999)) || b.contractDate.localeCompare(a.contractDate));
-  return [...list].sort((a, b) => { const x = f(a); const y = f(b); return typeof x === 'string' ? String(y).localeCompare(x) : (y as number) - x; });
+  return [...list].sort((a, b) => { const x = f(a); const y = f(b); return dir * (typeof x === 'string' ? String(y).localeCompare(x) : (y as number) - x); });
 });
 const MORE_AT = 10;
 const showAll = ref(false);
@@ -299,16 +312,16 @@ const setRange = (k: keyof PriceCond, v: number) => {
 const fillStyle = (lo: number, hi: number, min: number, max: number) => ({ left: `${((lo - min) / (max - min)) * 100}%`, right: `${100 - ((hi - min) / (max - min)) * 100}%` });
 const baseLeft = (v: number, min: number, max: number) => `${Math.min(100, Math.max(0, ((v - min) / (max - min)) * 100))}%`;
 
-type Snap = { radius: number; kindF: Kind; simMode: 'sim' | 'range'; sim: number; rangeCond: PriceCond; keep: Record<string, string[]> };
-const snapNow = (): Snap => ({ radius: radius.value, kindF: kindF.value, simMode: simMode.value, sim: sim.value, rangeCond: { ...rangeCond.value }, keep: JSON.parse(JSON.stringify(colFilter.picked.value)) });
-const restore = (s: Snap) => { radius.value = s.radius; kindF.value = s.kindF; simMode.value = s.simMode; sim.value = s.sim; rangeCond.value = s.rangeCond; colFilter.picked.value = s.keep; };
+type Snap = { radius: number; kindF: Kind; simMode: 'sim' | 'range'; sim: number; rangeCond: PriceCond; keep: Record<string, string[]>; drop: string[] };
+const snapNow = (): Snap => ({ radius: radius.value, kindF: kindF.value, simMode: simMode.value, sim: sim.value, rangeCond: { ...rangeCond.value }, keep: JSON.parse(JSON.stringify(colFilter.picked.value)), drop: [...dropped.value] });
+const restore = (s: Snap) => { radius.value = s.radius; kindF.value = s.kindF; simMode.value = s.simMode; sim.value = s.sim; rangeCond.value = s.rangeCond; colFilter.picked.value = s.keep; dropped.value = s.drop; };
 const undoSnap = ref<Snap | null>(null);
 let undoTimer = 0;
 const reset = () => {
   window.clearTimeout(undoTimer);
   if (undoSnap.value) { restore(undoSnap.value); undoSnap.value = null; return; }
   undoSnap.value = snapNow();
-  radius.value = 500; kindF.value = '매매'; simMode.value = 'sim'; sim.value = 80; colFilter.clearAll(); sortK.value = '';
+  radius.value = 500; kindF.value = '매매'; simMode.value = 'sim'; sim.value = 80; colFilter.clearAll(); dropped.value = []; sortK.value = '';
   undoTimer = window.setTimeout(() => { undoSnap.value = null; }, 5000);
 };
 const widen = (w: 'r' | 's' | 'p') => {
@@ -329,6 +342,7 @@ const body = computed((): Omit<MarketPicks, 'savedAt'> => {
   const view: PriceView = {
     months: loadedMonths.value, radius: radius.value, kind: kindF.value, simMode: simMode.value, sim: sim.value, cond: { ...rangeCond.value },
     keep: Object.fromEntries(Object.entries(colFilter.picked.value).filter(([, v]) => v.length)), typedPub: typedPub.value,
+    ...(dropped.value.length ? { drop: [...dropped.value] } : {}),
     estSale: s?.est ?? 0, estJeonse: Math.round(j?.est ?? 0), estPerPy: s?.avgPy ?? 0, estCount: s?.n ?? 0,
   };
   return {
@@ -348,7 +362,7 @@ let lastJson = (() => { const mp = store.auctions.find((x) => x.id === props.auc
 let saveTimer = 0;
 // 사용자가 고른 값(기간 · 반경 · 거래 · 유사도 · 직접범위 · 값 거르기 · 공시가)만 — 이것이 바뀐 저장만 '최근 작성'에 남긴다.
 // 자료가 새로 들어와 셈만 달라진 자동 저장은 조용히(silent) 적는다
-const choicesOf = (v?: PriceView) => (v ? stable({ months: v.months, radius: v.radius, kind: v.kind, simMode: v.simMode, sim: v.sim, cond: v.cond, keep: v.keep, typedPub: v.typedPub }) : '');
+const choicesOf = (v?: PriceView) => (v ? stable({ months: v.months, radius: v.radius, kind: v.kind, simMode: v.simMode, sim: v.sim, cond: v.cond, keep: v.keep, typedPub: v.typedPub, drop: v.drop ?? [] }) : '');
 let lastChoices: string | null = (() => { const v = store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.price; return v ? choicesOf(v) : null; })();
 /** manual — 저장 단추로 부르면 위치를 받는 중이어도 바로 적는다 */
 const saveNow = async (manual?: unknown) => {
@@ -392,7 +406,7 @@ let mvP: Promise<void> | null = null;
 const kTools = shallowRef<{ k: unknown; map: unknown } | null>(null);
 const mapGroups = computed(() => {
   const by = new Map<string, PriceRow[]>();
-  colFilter.rows.value.filter((r) => !r.same && spots.value[r.jibun]).forEach((r) => { by.set(r.jibun, [...(by.get(r.jibun) ?? []), r]); });
+  (webEmbed ? kindRows.value : colFilter.rows.value).filter((r) => !r.same && spots.value[r.jibun]).forEach((r) => { by.set(r.jibun, [...(by.get(r.jibun) ?? []), r]); });
   return [...by.entries()].map(([jibun, list]) => {
     const prices = list.map((r) => r.price);
     const lo = Math.min(...prices); const hi = Math.max(...prices);
@@ -664,16 +678,19 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <div class="pa-list">
         <div class="tbl-wrap"><table ref="tableEl" class="even">
           <thead><tr>
+            <th v-if="webEmbed" class="ck-th" title="체크를 풀면 실거래가 예상 · 평균 · 건수에서 빠집니다">반영</th>
             <th>구분</th>
-            <th v-for="c in COLS" :key="c.key" :data-k="c.key" :aria-sort="sortK === c.key ? 'descending' : undefined" :class="{ hl: ['won', 'perPy', 'pub', 'gap'].includes(c.key) }">
+            <th v-for="c in COLS" :key="c.key" :data-k="c.key" :aria-sort="sortK === c.key ? (webEmbed && sortDir === 'asc' ? 'ascending' : 'descending') : undefined" :class="{ hl: ['won', 'perPy', 'pub', 'gap'].includes(c.key) }">
               <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? '공시가 / 매매가율' : c.key === 'gap' ? '전세 / 갭' : c.label }}</span>
-              <button type="button" :class="['fv', { act: colFilter.isActive(c.key) }]" :aria-label="`${c.label} 값 거르기`" @click.stop="colFilter.open(c.key, $event)">▾</button>
+              <i v-if="webEmbed" :class="['sdir', { on: sortK === c.key }]" aria-hidden="true" @click="sortBy(c.key)">{{ sortK === c.key && sortDir === 'asc' ? '▲' : '▼' }}</i>
+              <button v-else type="button" :class="['fv', { act: colFilter.isActive(c.key) }]" :aria-label="`${c.label} 값 거르기`" @click.stop="colFilter.open(c.key, $event)">▾</button>
             </th>
             <th class="acts-th"><span class="sr">바로가기</span></th>
           </tr></thead>
           <tbody>
             <!-- 맨 위 고정 — 선정물건. 거래가 아니라 견줄 기준이라 실거래가 예상을 적는다 -->
             <tr class="mine">
+              <td v-if="webEmbed" class="ck-td" />
               <td><span class="kind me">{{ meName }}</span></td>
               <td class="r"><span class="est-lab">{{ kindF }} 예상</span></td>
               <td v-if="kindF === '월세'" class="r pa-num two">{{ view ? n0(view.est) : '-' }}<small>월세</small></td>
@@ -696,7 +713,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <button type="button" :class="['ab', { ok: okKey === 'mineC' }]" title="주소 복사" aria-label="주소 복사" @click="copy(props.auction.address, 'mineC')"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg></button>
               </span></td>
             </tr>
-            <tr v-for="r in listRows" :key="r.id" :class="{ on: focus && focus === r.jibun }" @click="focus = focus === r.jibun ? '' : r.jibun">
+            <tr v-for="r in listRows" :key="r.id" :class="{ on: focus && focus === r.jibun, off: isOff(r) }" @click="focus = focus === r.jibun ? '' : r.jibun">
+              <td v-if="webEmbed" class="ck-td" @click.stop><input type="checkbox" :checked="!isOff(r)" :aria-label="`${r.contractDate} ${r.name || r.jibun} 평균에 반영`" @change="toggleDrop(r)" /></td>
               <td><span :class="['kind', r.group === '전세' ? 'j' : r.group === '월세' ? 'm' : '']">{{ r.group }}</span></td>
               <td class="pa-num">{{ r.contractDate }}</td>
               <template v-if="r.group === '월세'">
@@ -726,7 +744,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
                 <button type="button" :class="['ab', { ok: okKey === `${r.id}C` }]" title="주소 복사" aria-label="주소 복사" @click="copy(fullAddr(r), `${r.id}C`)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg></button>
               </span></td>
             </tr>
-            <tr v-if="!shownRows.length && res && !loading" class="nohover"><td colspan="14" class="pa-empty">반경 {{ radText(radius) }} 안에 조건에 맞는 거래가 없습니다. 조건을 넓혀 보세요.
+            <tr v-if="!shownRows.length && res && !loading" class="nohover"><td :colspan="webEmbed ? 15 : 14" class="pa-empty">반경 {{ radText(radius) }} 안에 조건에 맞는 거래가 없습니다. 조건을 넓혀 보세요.
               <div class="btns">
                 <button v-if="radius < RADII[RADII.length - 1]" type="button" @click="widen('r')">반경 {{ radText(RADII.find((v) => v > radius) ?? 1000) }}로</button>
                 <button type="button" @click="widen('s')">유사도 낮추기</button>
@@ -906,6 +924,11 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa-list table.even td.l { white-space: normal; word-break: keep-all; }   /* 주소는 낱말 단위로 줄바꿈 */
 .pa-list th[data-k] .hk { cursor: pointer; user-select: none; }
 .pa-list th[aria-sort] .hk { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+.ck-th, .ck-td { width: 44px; text-align: center !important; }
+.ck-td input { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; }
+tr.off td:not(.ck-td) { opacity: .42; text-decoration: line-through; }
+.sdir { margin-left: 3px; font-style: normal; font-size: 10px; color: #c3c9d4; cursor: pointer; }
+.sdir.on { color: var(--blue); }
 .fv { border: 0; background: none; color: #b3bac6; font-size: 11px; padding: 0 2px; margin-left: 2px; cursor: pointer; }
 .fv:hover { color: var(--blue); }
 .fv.act { color: #fff; background: var(--blue); border-radius: 4px; }
