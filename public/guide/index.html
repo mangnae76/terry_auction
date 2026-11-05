@@ -1271,6 +1271,15 @@ GUIDE.release({
     const mr = tb && tb.rows.find((r) => r[0] === '지도 번호');
     if (mr) mr[1] = '동그라미 숫자는 임장 순서(이 물건에서 가까운 곳부터 차례로)입니다. 거래 건수는 이름표의 ○건이고, 선정물건 빨간 핀 아래 <b>같은건물 N건</b>은 같은 건물 거래 수입니다. 밤 화면에서도 지도 글씨는 까맣게 보입니다.';
 
+    /* 그림 — 2026-11-06 로그인 화면으로 새로 찍음(소유자 · 채무자 · 채권자 이름은 ○○○로 가림). 이전 버전은 예전 그림 그대로 */
+    c.shots.basic = { ...c.shots.basic, src: 'shot-basic-120.webp', w: 1600, h: 1052, alt: '물건상세 · 물건정보 화면 — 사건 카드(물건카드교체), 정보요약, 기본정보, 입지정보(PDF 정보 상자)' };
+    c.shots.register = { ...c.shots.register, src: 'shot-register-120.webp', w: 1600, h: 715, alt: '물건등록 화면 — 자동등록(AI 자동 분석 · 구글 드라이브 연동 묶음 상자), 직접입력, AI 자동 파싱' };
+    c.shots.manual = { ...c.shots.manual, src: 'shot-manual-120.webp', w: 1600, h: 1233 };
+    const shotOf = (aid, key) => page(aid).blocks.find((b) => b.t === 'shot' && b.key === key);
+    shotOf('help-item-basic', 'basic').pins = [[7, 12.1], [7, 28.2], [7, 59.3], [49, 28.9]];
+    shotOf('help-register', 'register').pins = [[7, 28.7], [7, 35.1], [7, 43.2], [7, 75.9], [7, 92.3]];
+    shotOf('help-register', 'manual').pins = [[7, 36.4], [7, 44.8], [7, 53.2], [7, 61.7], [42.1, 94.4]];
+
     /* 매뉴얼 — 준비 중이 아니라 상단 메뉴 */
     const etc = page('help-etc');
     const cards = etc.blocks.find((b) => b.t === 'cards');
