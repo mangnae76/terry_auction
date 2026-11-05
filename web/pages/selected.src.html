@@ -1172,6 +1172,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .list-lead { padding-top: 10px; }
 .list-lead + .content { padding-top: 16px; }
 .it-lead { margin-bottom: 16px; }
+/* 권리분석 (직접확인) 표 — 분홍 · 파랑 왼쪽 이름 칸. 앱은 칸 700 + 안 strong 'bolder'라 900 가까이 진했다 → 웹은 600 */
+.app-detail.tab-rights :is(.adp-rcheck-label, .adp-rcheck-label strong) { font-weight: 600 !important; }
 .it-lead:has(+ .rt-wrap) { margin-bottom: 28px; }   /* 권리분석 — 안내와 아래 '권리분석 결과' 제목 사이를 넉넉히 */
 /* 권리분석 결과 ~ 서류 올리기를 흰 상자 하나에 */
 .rt-wrap { margin-bottom: 12px; padding: 20px; border: 1px solid var(--card-line); border-radius: 12px; background: var(--surface); }
