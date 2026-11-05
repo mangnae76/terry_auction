@@ -539,9 +539,16 @@ const askSlotRef = (el: unknown) => { if (sonAskReady) sonAskReady.value = !!el;
 
 // ===== 표 칸 간격 — 칸마다 내용 폭을 잰 뒤 남는 폭을 칸 수로 똑같이 나눠 더한다(모자라면 주소만 줄바꿈) =====
 const tableEl = ref<HTMLTableElement | null>(null);
+/* 웹 — 칸 폭은 창 폭 · 거래 종류 · 새 조회 때만 다시 잰다. 유사도 ↔ 직접범위 · 반경 · 제외처럼 줄만 바뀔 때마다 재면 칸이 좌우로 '딸깍' 움직였다 */
+let colsKey = '';
 const evenCols = () => {
   const t = tableEl.value;
   if (!t || !t.parentElement?.clientWidth) return;
+  if (webEmbed) {
+    const key = `${t.parentElement.clientWidth}|${kindF.value}|${fetchedAt.value}|${listRows.value.length ? 1 : 0}`;
+    if (key === colsKey && t.querySelector('colgroup')) return;
+    colsKey = key;
+  }
   t.querySelector('colgroup')?.remove();
   t.style.tableLayout = 'auto';
   const ths = [...t.querySelectorAll('thead th')] as HTMLElement[];
