@@ -4231,9 +4231,10 @@ span.cal-day.has { cursor: help; }
       var start = items[0].getBoundingClientRect().left - x0 - fs * 1.5;
       var end = (right ? right.getBoundingClientRect().left : box.getBoundingClientRect().left) - x0;
       var widths = items.map(function (e) { return e.getBoundingClientRect().width; });
-      var gap = (end - start - widths.reduce(function (a, b) { return a + b; }, 0)) / items.length;
-      if (gap > 8) {
-        var x = start; var rules = items.map(function (e, i) { var cls = [].slice.call(e.classList).filter(function (c) { return /^m\d/.test(c); })[0]; var r = '.gnb-in > .g-menu.' + cls + ', .g-mega-in > .g-col.' + cls + ' { left: ' + Math.round(x) + 'px; }'; x += widths[i] + gap; return r; });
+      var wt = items.map(function (e, i) { return e.classList.contains('tool') && items[i + 1] && items[i + 1].classList.contains('tool') ? 0.6 : 1; });   /* 아이콘 붙은 도구 사이는 0.6 배 — layoutMenu 와 같게 */
+      var gap = (end - start - widths.reduce(function (a, b) { return a + b; }, 0)) / wt.reduce(function (a, b) { return a + b; }, 0);
+      if (gap * 0.6 > 8) {
+        var x = start; var rules = items.map(function (e, i) { var cls = [].slice.call(e.classList).filter(function (c) { return /^m\d/.test(c); })[0]; var r = '.gnb-in > .g-menu.' + cls + ', .g-mega-in > .g-col.' + cls + ' { left: ' + Math.round(x) + 'px; }'; x += widths[i] + gap * wt[i]; return r; });
         var st = document.createElement('style'); st.id = 'menuEarly'; st.textContent = rules.join('\n'); document.head.appendChild(st);
       }
     }
@@ -4659,6 +4660,7 @@ span.cal-day.has { cursor: help; }
      줄이 겹쳐 흐르는 좁은 화면(메뉴가 absolute 가 아닐 때)에선 하지 않는다 */
   const menuStyle = document.createElement('style');
   document.head.appendChild(menuStyle);
+  const TOOL_GAP = 0.6;
   function layoutMenu() {
     menuStyle.textContent = '';
     { const early = document.getElementById('menuEarly'); if (early) early.remove(); }   /* 머리띠 바로 뒤에서 먼저 잰 것 — 같은 기준(CSS 자리)에서 다시 재야 같은 값이 나온다(한 번에 바뀌어 화면엔 움직임이 없다) */
@@ -4673,13 +4675,15 @@ span.cal-day.has { cursor: help; }
     const right = document.querySelector('.gnb-in > .g-right');
     const end = (right ? right.getBoundingClientRect().left : box.getBoundingClientRect().left) - x0;
     const widths = items.map((e) => e.getBoundingClientRect().width);
-    const gap = (end - start - widths.reduce((a, b) => a + b, 0)) / items.length;
-    if (!(gap > 8)) return;
+    /* 아이콘 붙은 도구(시장분석 ~ 마이페이지) 사이는 0.6 배 — 아이콘 때문에 넓어 보여 좁히고, 그만큼 경매 진행 묶음(물건등록 ~ 자금관리)이 넓어진다 */
+    const wt = items.map((e, i) => (e.classList.contains('tool') && items[i + 1]?.classList.contains('tool') ? TOOL_GAP : 1));
+    const gap = (end - start - widths.reduce((a, b) => a + b, 0)) / wt.reduce((a, b) => a + b, 0);
+    if (!(gap * TOOL_GAP > 8)) return;
     let x = start;
     const rules = items.map((e, i) => {
       const cls = [...e.classList].find((c) => /^m\d/.test(c));
       const r = `.gnb-in > .g-menu.${cls}, .g-mega-in > .g-col.${cls} { left: ${Math.round(x)}px; }`;
-      x += widths[i] + gap;
+      x += widths[i] + gap * wt[i];
       return r;
     });
     menuStyle.textContent = rules.join('\n');
