@@ -495,8 +495,10 @@ const drawMap = () => {
   const html = (label: string, no = '') => `<i class="dot">${no}</i><span class="lbl">${label}</span>`;
   mapGroups.value.forEach((g) => {
     const on = focus.value === g.jibun;
+    // 웹 — 그 건물 거래를 표에서 다 '제외'하면 핀도 회색(평균에서 빠졌다는 표시)
+    const off = webEmbed && g.list.every((r) => isOff(r));
     mv!.pin(g.spot, {
-      className: `pa-pin${on ? ' on' : ''}`,
+      className: `pa-pin${on ? ' on' : ''}${off ? ' off' : ''}`,
       html: html(`<b>${esc(g.name)} ${g.list.length}건</b><br>${g.range} · ${g.dist}m`, String(orderOf.value[g.jibun] ?? '')),
       onClick: () => { focus.value = on ? '' : g.jibun; },
       z: on ? 50 : 1,
@@ -520,7 +522,7 @@ const ensureMap = async () => {
 watch(mySpot, () => { void ensureMap(); });
 watch(radius, fitMap);
 // 점 · 원이 실제로 바뀔 때만 다시 그린다 — 공시가 · 엘베가 들어올 때마다 지도를 통째로 다시 그리지 않게
-const mapKey = computed(() => `${radius.value}|${focus.value}|${sameCount.value}|${mySpot.value?.lat}|${mapGroups.value.map((g) => `${g.jibun}:${g.list.length}:${g.range}:${orderOf.value[g.jibun] ?? ''}`).join(',')}`);
+const mapKey = computed(() => `${dropped.value.join('~')}|${radius.value}|${focus.value}|${sameCount.value}|${mySpot.value?.lat}|${mapGroups.value.map((g) => `${g.jibun}:${g.list.length}:${g.range}:${orderOf.value[g.jibun] ?? ''}`).join(',')}`);
 watch(mapKey, drawMap);
 // 숨은 탭에서 처음 그려지면 크기를 모른다 — 보일 때 다시 잰다
 const sonTab = inject<Ref<string> | null>('sonpumTab', null);
@@ -664,7 +666,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <!-- 전체화면 오른쪽 칸 맨 아래 — 유사물건 목록(지도 번호 순). 누르면 그 핀으로 -->
       <div v-if="fs" class="fs-list">
         <b class="fs-lh">유사물건 {{ fsList.length }}곳</b>
-        <button v-for="g in fsList" :key="g.jibun" type="button" :class="['fs-it', { on: focus === g.jibun }]" @click="fsGo(g)">
+        <button v-for="g in fsList" :key="g.jibun" type="button" :class="['fs-it', { on: focus === g.jibun, off: g.list.every((r) => isOff(r)) }]" @click="fsGo(g)">
           <i class="n">{{ orderOf[g.jibun] ?? '' }}</i>
           <span class="nm">{{ g.name }}<small>{{ g.list.length }}건 · {{ Math.round(g.dist) }}m</small></span>
           <span class="pr pa-num">{{ g.range }}</span>
@@ -907,6 +909,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .map :deep(.pa-pin) { position: relative; }
 .map :deep(.pa-pin .dot) { position: absolute; left: -12px; top: -12px; width: 24px; height: 24px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .3); cursor: pointer; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 800; font-style: normal; line-height: 1; }   /* 안에 임장 순서 번호 */
 .map :deep(.pa-pin.on .dot) { left: -15px; top: -15px; width: 30px; height: 30px; font-size: 14px; }
+.map :deep(.pa-pin.off .dot) { background: #b8bfcc; }   /* 그 건물 거래를 다 제외 — 회색 */
+.map :deep(.pa-pin.off .lbl) { opacity: .55; text-decoration: line-through; }
 .map :deep(.pa-pin.me .dot) { left: -9px; top: -9px; width: 18px; height: 18px; background: #e03e3e; cursor: default; }
 .map :deep(.pa-pin .lbl) { position: absolute; left: 0; top: 15px; transform: translateX(-50%); font-size: 12px; line-height: 1.3; text-align: center; color: var(--fg); text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; white-space: nowrap; pointer-events: none; }
 .map :deep(.pa-pin b) { font-weight: 700; }
@@ -1027,6 +1031,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .fs-it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--soft); font: inherit; text-align: left; cursor: pointer; }
 .fs-it:hover { border-color: #c7d0e2; }
 .fs-it.on { border-color: var(--blue); background: var(--blue-tint); }
+.fs-it.off { opacity: .5; } .fs-it.off .nm { text-decoration: line-through; } .fs-it.off .n { background: #b8bfcc; }
 .fs-it .n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #2b4fd8; color: #fff; font-size: 11px; font-weight: 800; font-style: normal; }
 .fs-it .nm { display: grid; min-width: 0; font-size: 13px; font-weight: 700; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fs-it .nm small { font-size: 12px; font-weight: 400; color: var(--sub); }
