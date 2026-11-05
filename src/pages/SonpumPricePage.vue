@@ -202,7 +202,13 @@ const allRows = computed<PriceRow[]>(() => periodRows.value.map((r, i) => {
     perPy: py > 0 ? (group === '월세' ? (r.monthly ?? 0) : r.price) / py : 0,
   };
 }));
-const cond = computed<PriceCond>(() => (simMode.value === 'sim' ? simCond(sim.value, me.value) : rangeCond.value));
+/* 웹 — 엘베 있음 · 없음(고른 것을 다시 누르면 풀림). 유사도 · 직접범위 어느 쪽이든 같이 건다. 엘베를 아직 모르는 거래는 거르지 않는다 */
+const elevPick = ref<'yes' | 'no' | null>(sv?.elev ?? null);
+const pickElev = (v: 'yes' | 'no') => { elevPick.value = elevPick.value === v ? null : v; };
+const cond = computed<PriceCond>(() => {
+  const base = simMode.value === 'sim' ? simCond(sim.value, me.value) : rangeCond.value;
+  return elevPick.value ? { ...base, elev: elevPick.value } : base;
+});
 const candidates = computed(() => inRange(allRows.value, radius.value, cond.value, me.value.floor));
 const kindRows = computed(() => candidates.value.filter((r) => r.group === kindF.value));
 const kindCount = (k: Kind) => candidates.value.filter((r) => r.group === k).length;
@@ -312,16 +318,16 @@ const setRange = (k: keyof PriceCond, v: number) => {
 const fillStyle = (lo: number, hi: number, min: number, max: number) => ({ left: `${((lo - min) / (max - min)) * 100}%`, right: `${100 - ((hi - min) / (max - min)) * 100}%` });
 const baseLeft = (v: number, min: number, max: number) => `${Math.min(100, Math.max(0, ((v - min) / (max - min)) * 100))}%`;
 
-type Snap = { radius: number; kindF: Kind; simMode: 'sim' | 'range'; sim: number; rangeCond: PriceCond; keep: Record<string, string[]>; drop: string[] };
-const snapNow = (): Snap => ({ radius: radius.value, kindF: kindF.value, simMode: simMode.value, sim: sim.value, rangeCond: { ...rangeCond.value }, keep: JSON.parse(JSON.stringify(colFilter.picked.value)), drop: [...dropped.value] });
-const restore = (s: Snap) => { radius.value = s.radius; kindF.value = s.kindF; simMode.value = s.simMode; sim.value = s.sim; rangeCond.value = s.rangeCond; colFilter.picked.value = s.keep; dropped.value = s.drop; };
+type Snap = { radius: number; kindF: Kind; simMode: 'sim' | 'range'; sim: number; rangeCond: PriceCond; keep: Record<string, string[]>; drop: string[]; elev: 'yes' | 'no' | null };
+const snapNow = (): Snap => ({ radius: radius.value, kindF: kindF.value, simMode: simMode.value, sim: sim.value, rangeCond: { ...rangeCond.value }, keep: JSON.parse(JSON.stringify(colFilter.picked.value)), drop: [...dropped.value], elev: elevPick.value });
+const restore = (s: Snap) => { radius.value = s.radius; kindF.value = s.kindF; simMode.value = s.simMode; sim.value = s.sim; rangeCond.value = s.rangeCond; colFilter.picked.value = s.keep; dropped.value = s.drop; elevPick.value = s.elev; };
 const undoSnap = ref<Snap | null>(null);
 let undoTimer = 0;
 const reset = () => {
   window.clearTimeout(undoTimer);
   if (undoSnap.value) { restore(undoSnap.value); undoSnap.value = null; return; }
   undoSnap.value = snapNow();
-  radius.value = 500; kindF.value = '매매'; simMode.value = 'sim'; sim.value = 80; colFilter.clearAll(); dropped.value = []; sortK.value = '';
+  radius.value = 500; kindF.value = '매매'; simMode.value = 'sim'; sim.value = 80; colFilter.clearAll(); dropped.value = []; elevPick.value = null; sortK.value = '';
   undoTimer = window.setTimeout(() => { undoSnap.value = null; }, 5000);
 };
 const widen = (w: 'r' | 's' | 'p') => {
@@ -343,6 +349,7 @@ const body = computed((): Omit<MarketPicks, 'savedAt'> => {
     months: loadedMonths.value, radius: radius.value, kind: kindF.value, simMode: simMode.value, sim: sim.value, cond: { ...rangeCond.value },
     keep: Object.fromEntries(Object.entries(colFilter.picked.value).filter(([, v]) => v.length)), typedPub: typedPub.value,
     ...(dropped.value.length ? { drop: [...dropped.value] } : {}),
+    ...(elevPick.value ? { elev: elevPick.value } : {}),
     estSale: s?.est ?? 0, estJeonse: Math.round(j?.est ?? 0), estPerPy: s?.avgPy ?? 0, estCount: s?.n ?? 0,
   };
   return {
@@ -362,7 +369,7 @@ let lastJson = (() => { const mp = store.auctions.find((x) => x.id === props.auc
 let saveTimer = 0;
 // 사용자가 고른 값(기간 · 반경 · 거래 · 유사도 · 직접범위 · 값 거르기 · 공시가)만 — 이것이 바뀐 저장만 '최근 작성'에 남긴다.
 // 자료가 새로 들어와 셈만 달라진 자동 저장은 조용히(silent) 적는다
-const choicesOf = (v?: PriceView) => (v ? stable({ months: v.months, radius: v.radius, kind: v.kind, simMode: v.simMode, sim: v.sim, cond: v.cond, keep: v.keep, typedPub: v.typedPub, drop: v.drop ?? [] }) : '');
+const choicesOf = (v?: PriceView) => (v ? stable({ months: v.months, radius: v.radius, kind: v.kind, simMode: v.simMode, sim: v.sim, cond: v.cond, keep: v.keep, typedPub: v.typedPub, drop: v.drop ?? [], elev: v.elev ?? null }) : '');
 let lastChoices: string | null = (() => { const v = store.auctions.find((x) => x.id === props.auction.id)?.marketPicks?.price; return v ? choicesOf(v) : null; })();
 /** manual — 저장 단추로 부르면 위치를 받는 중이어도 바로 적는다 */
 const saveNow = async (manual?: unknown) => {
@@ -677,7 +684,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <template v-if="saving">저장 중…</template><template v-else-if="webDirty">저장</template><template v-else>✓ 저장됨<small v-if="stamp">{{ stamp }}</small></template>
           </button>
         </span>
-        <div class="simrow">
+        <div :class="['simrow', { 'has-elev': webEmbed }]">
           <div v-if="simMode === 'sim'" class="simA">
             <label for="paSim" class="simlab"><span>유사도 기준 <b>{{ sim }}%</b></span><span>{{ simDefText(sim) }}</span></label>
             <input id="paSim" v-model.number="sim" type="range" min="60" max="95" step="5">
@@ -704,13 +711,12 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <button type="button" role="radio" :class="{ on: rangeCond.floor === null }" :aria-checked="rangeCond.floor === null" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
               <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }">같은 층</button>
             </span></span>
-            <!-- 웹 — 엘베 있음 · 없음(엘베를 아직 모르는 거래는 거르지 않는다) -->
-            <span v-if="webEmbed" class="pa-lab">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베">
-              <button type="button" role="radio" :class="{ on: !rangeCond.elev }" :aria-checked="!rangeCond.elev" @click="rangeCond = { ...rangeCond, elev: null }">전체</button>
-              <button type="button" role="radio" :class="{ on: rangeCond.elev === 'yes' }" :aria-checked="rangeCond.elev === 'yes'" @click="rangeCond = { ...rangeCond, elev: 'yes' }">있음</button>
-              <button type="button" role="radio" :class="{ on: rangeCond.elev === 'no' }" :aria-checked="rangeCond.elev === 'no'" @click="rangeCond = { ...rangeCond, elev: 'no' }">없음</button>
-            </span></span>
           </div>
+          <!-- 웹 — 엘베(있음 · 없음, 다시 누르면 풀림) — 층처럼 거르기 상자 안, 유사도 · 직접범위 둘 다 -->
+          <span v-if="webEmbed" class="pa-lab elev-pick">엘베<span class="pa-seg pa-out" role="group" aria-label="엘베">
+            <button type="button" :class="{ on: elevPick === 'yes' }" :aria-pressed="elevPick === 'yes'" @click="pickElev('yes')">있음</button>
+            <button type="button" :class="{ on: elevPick === 'no' }" :aria-pressed="elevPick === 'no'" @click="pickElev('no')">없음</button>
+          </span></span>
         </div>
       </div>
 
@@ -912,6 +918,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
   .conds > .pa-lab .pa-seg button { font-size: 13px; }
 }
 .pa.fs .conds { grid-template-columns: minmax(0, 1fr); }
+.pa.fs .simrow.has-elev, .pa.fs .simB { grid-template-columns: minmax(0, 1fr); }
+.pa.fs .simB { height: auto; }
 .pa.fs .acts-r { justify-content: stretch; }
 .pa.fs .acts-r .save-btn { flex: 1; width: auto; }
 .kindF button { font-weight: 700 !important; }
@@ -936,6 +944,9 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .save-btn.saving { background: #fff; color: var(--sub); border: 1px solid #dde3ee; font-weight: 400; }
 .simrow { grid-column: 1 / -1; display: grid; background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 12px 18px; }
 .simA, .simB { height: 44px; min-width: 0; }   /* 두 방식 같은 높이 — 바꿀 때 덜컹이지 않게 */
+/* 웹 — 거르기 상자 오른쪽 끝에 엘베. 막대(유사도 · 면적 · 건축)는 그만큼 줄어든다 */
+.simrow.has-elev { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 28px; align-items: center; }
+.elev-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #6b7280; white-space: nowrap; }
 .simA { display: grid; grid-template-columns: minmax(0, 1fr); align-content: center; gap: 1px; }
 .simlab { display: flex; gap: 10px; align-items: baseline; font-size: 12.5px; line-height: 1.2; color: var(--fg); white-space: nowrap; overflow: hidden; }
 .simlab b { color: var(--blue); }
