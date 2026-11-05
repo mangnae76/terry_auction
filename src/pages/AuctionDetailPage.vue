@@ -6854,7 +6854,7 @@ const goBack = () => router.back();
                   >{{ profitScenarios[ti] ? `${label}안` : `＋ ${label}안` }}</button>
                 </div>
                 <!-- 상자 끝 — 지금 확정한 안 -->
-                <span v-if="confirmedIdx >= 0" class="bida-okname">{{ PROFIT_NAV_LABELS[confirmedIdx] }}안 확정</span>
+                <span :class="['bida-okname', { none: confirmedIdx < 0 }]">{{ confirmedIdx >= 0 ? `${PROFIT_NAV_LABELS[confirmedIdx]}안 확정` : '확정필요' }}</span>
               </div>
               <span class="bida-acts">
                 <button type="button" class="adp-pd-reset" title="이 안의 대출·취득세·법무비 비중을 기본값으로" @click.stop="resetScenarioRates(sc)">
@@ -13181,7 +13181,8 @@ select.adp-pub-input option { text-align: center; }
 .bida-ck.on i { border-color: #1f7a4a; background: #1f7a4a; }
 .bida-ck.on i svg { opacity: 1; }
 .bida-ck input:focus-visible + i { box-shadow: 0 0 0 3px rgba(31, 122, 74, .25); }
-.bida-okname { padding: 0 12px 0 10px; font-size: 13px; font-weight: 800; color: #1f7a4a; white-space: nowrap; }
+.bida-okname { min-width: 4.6em; padding: 0 12px 0 10px; font-size: 13px; font-weight: 800; color: #1f7a4a; white-space: nowrap; text-align: center; }   /* 확정 전에도 자리를 지켜 상자 폭이 바뀌지 않게 */
+.bida-okname.none { color: #98a2b3; font-weight: 600; }
 .bida-ok { margin-left: 6px; padding: 1px 6px; border-radius: 5px; background: #1f7a4a; font-size: 11px; font-weight: 800; color: #fff; vertical-align: 1px; }
 .bida-acts { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
 /* 돈이 나가는 순서(새화면) */
