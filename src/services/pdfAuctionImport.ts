@@ -243,7 +243,8 @@ const pickPrimaryAddress = (lines: string[]) => {
   return candidate?.trim() ?? '';
 };
 
-const buildLineText = async (bytes: Uint8Array) => {
+/** PDF 글자를 줄 단위로 — 웹 권리분석이 올리기 전에 사건번호 · 서류 종류를 보는 데도 쓴다 */
+export const buildLineText = async (bytes: Uint8Array) => {
   // pdf.js 는 넘겨받은 바이트를 작업자(worker)로 옮기며 원본을 비워 버린다.
   // 사본을 넘겨 원본을 지킨다 — 같은 PDF 를 AI 읽기에 다시 보내야 한다.
   const pdf = await getDocument({ data: bytes.slice() }).promise;

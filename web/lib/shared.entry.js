@@ -6,7 +6,7 @@ import * as pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs';
 globalThis.pdfjsWorker = pdfjsWorker;
 
 // PDF 읽기 — 앱 선정물건등록(PdfImportPage)과 같은 규칙
-export { parsePdfBytes, parseAuctionPdfText } from '../../src/services/pdfAuctionImport';
+export { parsePdfBytes, parseAuctionPdfText, buildLineText } from '../../src/services/pdfAuctionImport';
 // 구글드라이브 폴더 읽기 — claude.ai 바깥(우리 주소)에서 열렸을 때 앱과 같은 워커로 읽는다
 export { listDrivePdfFiles, parseDrivePdfFile, downloadDrivePdfBytes } from '../../src/services/pdfAuctionImport';
 // AI 자동 파싱 — 앱과 같은 Gemini 키 보관 · 키 확인 · 빈칸 채우기 (키는 로그인 계정마다 userPrefs/{uid}.geminiKey)

@@ -7103,10 +7103,20 @@ span.cal-day.has { cursor: help; }
     if (up.dataset.h !== html) { up.innerHTML = html; up.dataset.h = html; }
   }
   const rtWait = (ok, ms) => new Promise((done) => { const t0 = Date.now(); const tick = () => { if (ok() || Date.now() - t0 > ms) done(); else setTimeout(tick, 120); }; tick(); });
-  /* 파일 이름으로 서류를 가른다 — 모르면 빈 칸 차례(명세서 → 등기 → 현황 → 세대) */
-  const rtKindOf = (name, docs, taken) => {
+  /* PDF 글자 — 올리기 전에 사건번호 · 서류 종류를 본다(물건등록과 같은 pdf.js). 스캔본처럼 글자가 없으면 '' */
+  const rtPdfText = async (f) => {
+    if (!(f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) || !window.TAPdf || !window.TAPdf.buildLineText) return '';
+    try { return await Promise.race([window.TAPdf.buildLineText(new Uint8Array(await f.arrayBuffer())), new Promise((ok) => setTimeout(() => ok(''), 15000))]) || ''; } catch (e) { return ''; }
+  };
+  const rtCaseKeys = (t) => [...String(t || '').matchAll(/(\d{4})\s*타\s*경\s*(\d+)/g)].map((m) => `${m[1]}타경${Number(m[2])}`);
+  /* 서류 첫머리의 이름으로 종류를 가른다(띄어 쓴 '매 각 물 건 명 세 서'도) */
+  const RT_TEXT_KIND = [['saleSpec', /매각물건명세서/], ['survey', /현황조사/], ['household', /전입세대/], ['registry', /등기사항(전부|일부)?증명서|등기부등본/]];
+  /* 파일 이름 → (없으면) 서류 글자 → 그래도 모르면 빈 칸 차례(명세서 → 등기 → 현황 → 세대) */
+  const rtKindOf = (name, docs, taken, text) => {
     const n = String(name || '').normalize('NFC');
     const hit = RT_DOCS.find((d) => d.re.test(n)); if (hit) return hit;
+    const head = String(text || '').replace(/\s+/g, '').slice(0, 500);
+    const byText = RT_TEXT_KIND.find(([, re]) => re.test(head)); if (byText) return RT_DOCS.find((d) => d.k === byText[0]);
     return RT_DOCS.find((d) => !taken.has(d.i) && !docs[d.i].querySelector('.adp-doc-box.has')) || null;
   };
   async function rtUpload(files) {
@@ -7115,10 +7125,15 @@ span.cal-day.has { cursor: help; }
     RT.msg = list.length < files.length ? 'PDF 또는 사진(PNG · JPG) 파일만 올릴 수 있습니다.' : '';
     if (!list.length) { rtPaint(el); return; }
     RT.busy = true; rtPaint(el);
-    const taken = new Set(); const skipped = [];
+    const taken = new Set(); const skipped = []; const wrong = [];
+    const a = RT.id && CLOUD.raw.get(RT.id); const own = rtCaseKeys(a && (a.caseNumber || a.caseNo))[0] || '';
     for (const f of list) {
       const docs = rtDocsOf(el); if (docs.length < 4) break;
-      const d = rtKindOf(f.name, docs, taken);
+      /* 사건번호가 적힌 서류(명세서 · 현황조사서)인데 이 물건 번호가 하나도 없으면 — AI 에 보내기 전에 바로 알린다 */
+      const text = await rtPdfText(f);
+      const keys = [...new Set(rtCaseKeys(text))];
+      if (own && keys.length && !keys.includes(own)) { wrong.push(`${f.name} (파일 ${keys[0]} · 이 물건 ${own})`); RT.msg = `사건번호가 맞지 않는 파일입니다 — ${wrong.join(', ')}`; rtPaint(el); continue; }
+      const d = rtKindOf(f.name, docs, taken, text);
       if (!d) { skipped.push(f.name); continue; }
       taken.add(d.i);
       const box = () => rtDocsOf(el)[d.i];
@@ -7129,7 +7144,7 @@ span.cal-day.has { cursor: help; }
       await rtWait(() => box().querySelector('.adp-doc-box.has') || box().querySelector('.adp-plan-err'), 60000);
     }
     RT.busy = false;
-    if (skipped.length) RT.msg = `어떤 서류인지 알 수 없어 넣지 못했습니다 — ${skipped.join(', ')} (파일 이름에 서류 이름을 넣어 주세요)`;
+    RT.msg = [wrong.length ? `사건번호가 맞지 않는 파일입니다 — ${wrong.join(', ')}` : '', skipped.length ? `어떤 서류인지 알 수 없어 넣지 못했습니다 — ${skipped.join(', ')} (파일 이름에 서류 이름을 넣어 주세요)` : ''].filter(Boolean).join(' / ') || RT.msg;
     rtPaint(el);
   }
   const ITEM_LEAD = {
