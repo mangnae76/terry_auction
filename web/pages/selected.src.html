@@ -1165,6 +1165,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--text-2); white-space: nowrap; transition: color .15s; }
 .subtab svg { width: 16px; height: 16px; }
 .subtab:hover { color: var(--text); }
+.subtab.soon, .subtab.soon:hover { color: var(--muted); cursor: default; gap: 4px; }   /* 준비 중 — 잠금 아이콘, 눌러도 옮기지 않는다 */
+.subtab.soon svg { width: 12px; height: 12px; }
 .subtab.on { color: var(--nav); font-weight: 600; }   /* 10-31 메인 · 하위 탭 모두 600 — 고른 탭은 색 · 주황 밑줄로 */   /* 시안 C — 고른 탭은 남색 글자 + 위 메뉴와 같은 주황 밑줄 */
 :root[data-theme="dark"] .subtab.on { color: var(--text); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .subtab.on { color: var(--text); } }
@@ -4503,7 +4505,7 @@ span.cal-day.has { cursor: help; }
     more: ['mypage', 'alerts', 'billing', ...(SHOW_POINTS ? ['points'] : []), 'support', 'calendar'],   /* calendar — 마이페이지 › 입찰 캘린더(앱 화면 /bid-calendar) */   /* 공지는 커뮤니티로 옮겼다 · 포인트는 SHOW_POINTS 일 때만(옛 주소 #/more/points 는 내정보로) */
     community: ['notice'],   /* 오류및제안은 게시판으로 옮겼다(2026-11-05) */
     board: ['suggest', 'review'],   /* 게시판 — 오류및제안 · 사용후기(머리 오른쪽 위 '공지' 옆 '게시판'). 가입인사는 뺐다 */   /* 위 메뉴에서 커뮤니티를 뺐다(2026-11-02) — 머리 오른쪽 위 '공지'로 들어온다. FAQ 는 이용가이드로 */
-    manual: ['gdeny', 'gevict', 'biz', 'gtax', 'basic', 'pick'],   /* 매뉴얼 — 하위 탭 경매기초(basic) · 물건고르기(pick) — 둘은 준비 중 · 낙찰이후(gdeny 매각불허가 · gevict 명도 · biz 사업자등록 · gtax 세금 장). 처음 열면 낙찰이후 */
+    manual: ['gdeny', 'gevict', 'biz', 'gtax'],   /* 매뉴얼 — 하위 탭 경매기초 · 물건고르기는 준비 중이라 잠가 두었다(주소 없음) · 낙찰이후(gdeny 매각불허가 · gevict 명도 · biz 사업자등록 · gtax 세금 장). 처음 열면 낙찰이후 */
   };
   /* 앱 화면을 그대로 띄우는 메뉴 — 열쇠 → 이름 (mountAppPage 의 열쇠와 같다) */
   const APP_PAGE_NAMES = { postwin: '낙찰이후', finance: '자금관리', more: '마이페이지', community: '공지', board: '게시판', manual: '매뉴얼' }; /* 앱 '더보기' 화면 — 웹 이름은 마이페이지. 커뮤니티는 메뉴에서 빼고 '공지'로 부른다 */
@@ -4634,7 +4636,7 @@ span.cal-day.has { cursor: help; }
     ['m3c', [['진행절차', 'go-postwin'], ['절차별체크리스트', 'go-postwin']]],   /* 가이드는 매뉴얼로 옮겼다 */
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
     ['m3', [['실거래분석', 'go-market'], ['시세예측', 'go-market'], ['랭킹분석', 'go-market'], ['경매사례', 'go-market']]],
-    ['m3m', [['경매기초', 'go-manual'], ['물건고르기', 'go-manual'], ['낙찰이후', 'go-manual']]],
+    ['m3m', [['경매기초'], ['물건고르기'], ['낙찰이후', 'go-manual']]],   /* 경매기초 · 물건고르기는 준비 중 */
     ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store'], ['모바일앱', 'go-store']]],
     ['m5', [['내정보', 'go-more'], ['알림', 'go-more'], ['결제하기', 'go-more'], ...(SHOW_POINTS ? [['포인트', 'go-more']] : []), ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
   ];
@@ -5758,7 +5760,7 @@ span.cal-day.has { cursor: help; }
     more: [['mypage', '', '내정보'], ['alerts', '', '알림', 'hide'], ['billing', '', '결제하기'], ['calendar', '', '입찰 캘린더'], ['points', '', '포인트', SHOW_POINTS ? '' : 'hide'], ['support', '', '고객센터', 'hide']],   /* 입찰 캘린더 — 결제하기 옆. 고객센터는 탭에서 빼고 바닥 링크(환불정책 옆)로(2026-11-03) */
     community: [['notice', '', '공지']],
     board: [['suggest', '', '오류및제안'], ['review', '', '사용후기']],   /* FAQ 는 이용가이드(/guide/)에 — 같은 목록(supportFaq) */
-    manual: [['basic', '', '경매기초'], ['pick', '', '물건고르기'], ['gdeny', '', '낙찰이후']],
+    manual: [['basic', '', '경매기초', 'soon'], ['pick', '', '물건고르기', 'soon'], ['gdeny', '', '낙찰이후']],   /* 'soon' — 준비 중, 누르면 알림만(잠금) */
     /* 가격정보는 뺐다 — 시세는 손품조사(시세분석 · 손품결론), 인근 매각사례는 손품결론 아래로 옮겼다(웹). 옛 주소(…/verify)는 손품조사로 */
     item: [['cards', '', '물건카드'], ['basic', '', '물건정보'], ['rights', '', '권리분석'], ['survey', '', '손품조사'], ['profit', '', '수익분석'], ['field', '', '임장조사']],
   };
@@ -5827,7 +5829,9 @@ span.cal-day.has { cursor: help; }
        그 화면을 보는 동안만 제자리(내 정보 옆)에 세워 밑줄을 준다 — 경로(마이페이지 › 알림)와 탭 불이 어긋나지 않게(BUG-0030) */
     const curOn = cur;
     paintSaveMark();
-    $('subTabsIn').innerHTML = tabs ? whereTag() + tabs.filter((x) => (x[3] !== 'hide' || x[0] === cur) && (x[3] !== 'admin' || agIsAdmin())).map(([k, ic, t]) => `<button type="button" class="subtab ${curOn === k ? 'on' : ''}" role="tab" aria-selected="${curOn === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`).join('') : '';
+    $('subTabsIn').innerHTML = tabs ? whereTag() + tabs.filter((x) => (x[3] !== 'hide' || x[0] === cur) && (x[3] !== 'admin' || agIsAdmin())).map(([k, ic, t, flag]) => (flag === 'soon'
+      ? `<button type="button" class="subtab soon" role="tab" aria-disabled="true" data-act="soon" data-name="${t}" data-tip="준비 중">${t}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></button>`
+      : `<button type="button" class="subtab ${curOn === k ? 'on' : ''}" role="tab" aria-selected="${curOn === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`)).join('') : '';
     if (tabs) syncStickTop();
     alignSubTabs();
     syncMapLock();
@@ -6967,11 +6971,6 @@ span.cal-day.has { cursor: help; }
     const box = $('appPageContent');
     const key = S.route; const tab = S.pageTab[key];
     { const old = $('cmTabs'); if (BOXTAB_PAGES.includes(key)) { if (old) old.outerHTML = cmTabsHtml(key); } else if (old) old.remove(); }
-    if (key === 'manual' && (tab === 'basic' || tab === 'pick')) {   /* 매뉴얼 › 경매기초 · 물건고르기 — 아직 비워 둔다 */
-      closeAppPage();
-      box.innerHTML = `<div class="empty"><b>${tab === 'basic' ? '경매기초' : '물건고르기'} 매뉴얼은 준비 중입니다</b><span>낙찰이후 탭에서 매각불허가 · 명도 · 사업자등록 · 세금 가이드를 볼 수 있습니다.</span></div>`;
-      return;
-    }
     const T = CLOUD.T;
     if (!CLOUD.on || !T || !T.mountAppPage) {
       closeAppPage();
