@@ -2678,6 +2678,8 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .reg-content > * + .rg-lead { margin-top: 32px; }
 /* 손품조사 시세분석 아래 경매빌라 · 유사빌라 호가매물 — 제목마다 '참고' 칩 하나(호가는 실거래가 아니라 참고값) */
 .app-detail .son-lowcase .adp-mkt-block-head .t::after { content: "참고"; display: inline-flex; align-items: center; height: 20px; margin-left: 8px; padding: 0 7px; border-radius: 5px; background: var(--surface-3); color: var(--text-2); font-size: 12px; font-weight: 700; vertical-align: 1px; }
+/* 시세분석 표 — 조건을 바꿔 줄 수가 달라져도 아래가 들썩이지 않게 표 자리 높이를 10줄만큼 잡아 둔다 */
+.pa .pa-list .tbl-wrap { min-height: 520px; }
 .rg-div { height: 0; margin: 28px 0 0; border: 0; border-top: 1px solid var(--line-2); }
 .reg-content > .rg-div + * { margin-top: 28px; }   /* 자동등록 상자 → 직접입력 안내 사이도 넉넉히 */
 .rg-lead p { margin: 0; word-break: keep-all; }   /* 제목 · 두 줄 · 아래 자동등록 제목 왼쪽 선을 하나로 */
