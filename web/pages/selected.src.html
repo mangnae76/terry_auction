@@ -1216,7 +1216,10 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 @keyframes rt-spin { to { transform: rotate(360deg); } }
 /* 분석 결과 — 탭 셋 · 카드들(상자 없이 왼쪽 칸에 카드가 쌓인다) */
 .rt-res { display: grid; gap: 12px; min-width: 0; }
-.rr-tabs { --boxtab-on: var(--surface); border-bottom: 1px solid var(--boxtab-line); }   /* 박스형 탭 공통 모듈 — 고른 탭 바탕은 흰 상자와 같게 */
+.rr-tabs { --boxtab-on: var(--surface); position: relative; }
+/* 탭 밑선 — 오른쪽 서류 올리기 상자 끝까지(왼쪽 칸 + 사이 12 + 오른쪽 칸 380) */
+.rr-tabs::after { content: ""; position: absolute; left: 0; bottom: 0; width: calc(100% + 12px + 380px); height: 1px; background: var(--boxtab-line); z-index: 3; pointer-events: none; }
+@media (max-width: 899px) { .rr-tabs::after { width: 100%; } }   /* 박스형 탭 공통 모듈 — 고른 탭 바탕은 흰 상자와 같게 */
 .rr-card { padding: 18px 20px; border: 1px solid var(--card-line); border-radius: 12px; background: var(--surface); min-width: 0; }
 .rr-card h4 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; font-weight: 800; color: var(--text); }
 .rr-sub { margin: 4px 0 12px; font-size: 12px; color: var(--muted); word-break: keep-all; }
