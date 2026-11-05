@@ -226,7 +226,7 @@ const COLS: Array<ColumnDef<PriceRow>> = [
 ];
 const colFilter = useColumnFilters<PriceRow>(kindRows, COLS);
 if (sv?.keep) colFilter.picked.value = { ...colFilter.picked.value, ...sv.keep };
-// 웹 — 머리글 ▾ 거르기 대신 줄마다 체크(풀면 실거래가 예상 · 평균 · 건수에서 빠지고 표엔 흐리게 남는다) · 머리글은 오름 · 내림 정렬(2026-11-05). 앱은 그대로
+// 웹 — 머리글 ▾ 거르기 대신 줄마다 '제외' 체크(처음엔 비어 있다 · 체크하면 실거래가 예상 · 평균 · 건수에서 빠지고 표엔 흐리게 남는다) · 머리글은 오름 · 내림 정렬(2026-11-05). 앱은 그대로
 const webEmbed = inject<boolean>('webEmbed', false);
 /** 줄 열쇠 — 다시 불러와도 같은 줄이 같은 열쇠(순번 id 는 불러올 때마다 바뀐다) */
 const rowKey = (r: PriceRow) => [r.group, r.contractDate, r.jibun, r.price, r.floorNo, Math.round(r.areaM2 * 100)].join('|');
@@ -678,7 +678,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <div class="pa-list">
         <div class="tbl-wrap"><table ref="tableEl" class="even">
           <thead><tr>
-            <th v-if="webEmbed" class="ck-th" title="체크를 풀면 실거래가 예상 · 평균 · 건수에서 빠집니다">반영</th>
+            <th v-if="webEmbed" class="ck-th" title="체크하면 실거래가 예상 · 평균 · 건수에서 빠집니다">제외</th>
             <th>구분</th>
             <th v-for="c in COLS" :key="c.key" :data-k="c.key" :aria-sort="sortK === c.key ? (webEmbed && sortDir === 'asc' ? 'ascending' : 'descending') : undefined" :class="{ hl: ['won', 'perPy', 'pub', 'gap'].includes(c.key) }">
               <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? '공시가 / 매매가율' : c.key === 'gap' ? '전세 / 갭' : c.label }}</span>
@@ -714,7 +714,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               </span></td>
             </tr>
             <tr v-for="r in listRows" :key="r.id" :class="{ on: focus && focus === r.jibun, off: isOff(r) }" @click="focus = focus === r.jibun ? '' : r.jibun">
-              <td v-if="webEmbed" class="ck-td" @click.stop><input type="checkbox" :checked="!isOff(r)" :aria-label="`${r.contractDate} ${r.name || r.jibun} 평균에 반영`" @change="toggleDrop(r)" /></td>
+              <td v-if="webEmbed" class="ck-td" @click.stop><input type="checkbox" :checked="isOff(r)" :aria-label="`${r.contractDate} ${r.name || r.jibun} 평균에서 빼기`" @change="toggleDrop(r)" /></td>
               <td><span :class="['kind', r.group === '전세' ? 'j' : r.group === '월세' ? 'm' : '']">{{ r.group }}</span></td>
               <td class="pa-num">{{ r.contractDate }}</td>
               <template v-if="r.group === '월세'">
