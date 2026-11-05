@@ -474,12 +474,12 @@ const fieldChips = (jibun: string) => {
   const c = savedCompare.value?.items.find((x) => x.jibun === jibun)?.check;
   if (!c) return [] as { t: string; k: string }[];
   const out: { t: string; k: string }[] = [];
-  if (c.vs) out.push({ t: `현장 ${c.vs}`, k: c.vs === '우세' ? 'g' : c.vs === '열세' ? 'r' : 'm' });
+  if (c.vs) out.push({ t: `현장${c.vs}`, k: c.vs === '우세' ? 'g' : c.vs === '열세' ? 'r' : 'm' });
   const grade = (v: string) => (v === '상' || v === '중상' ? 'g' : v === '하' ? 'r' : 'm');
-  if (c.loc) out.push({ t: `입지 ${c.loc}`, k: grade(c.loc) });
-  if (c.villa) out.push({ t: `빌라 ${c.villa}`, k: grade(c.villa) });
-  if (c.look === '나쁨') out.push({ t: '외관 나쁨', k: 'r' });
-  if (c.park === '부족') out.push({ t: '주차 부족', k: 'r' });
+  if (c.loc) out.push({ t: `입지${c.loc}`, k: grade(c.loc) });
+  if (c.villa) out.push({ t: `빌라${c.villa}`, k: grade(c.villa) });
+  if (c.look === '나쁨') out.push({ t: '외관나쁨', k: 'r' });
+  if (c.park === '부족') out.push({ t: '주차부족', k: 'r' });
   if (c.memo) out.push({ t: '메모', k: 'm' });
   return out;
 };
