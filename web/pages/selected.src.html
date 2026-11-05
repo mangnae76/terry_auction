@@ -6827,6 +6827,7 @@ span.cal-day.has { cursor: help; }
     });
     return out;
   }
+  const AG_CASE_ADD = false;   /* 사건번호로 추가하는 칸 — 지금은 숨김(2026-11-06). 이미 올린 사건 알약은 그대로 보인다 */
   function agQueueHtml() {
     /* 동 알약은 동 고르는 줄 아래, 사건 알약은 사건번호 줄 아래 */
     const dongChips = AG.queue.filter((q) => q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.dong)} <i>${esc(q.kind || '동 전체')}</i><button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(agQid(q))}" aria-label="빼기">×</button></span>`).join('');
@@ -6835,7 +6836,7 @@ span.cal-day.has { cursor: help; }
     const hint = cands ? `<span class="ag-cov-none">선정물건 중 안 모은 동네 ${cands}곳은 대기열수집 때 함께 올라갑니다 (탱크옥션)</span>` : '';
     return `<div class="ag-cov ag-q-tools">${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}<div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-dong" ${AG.reg.dong ? '' : 'disabled'}>추가</button></div>`
       + (dongChips || hint ? `<div class="ag-cov">${dongChips}${hint}</div>` : '')
-      + `<div class="ag-cov ag-q-tools"><span class="ag-q-add"><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span></div>`
+      + (!AG_CASE_ADD ? '' : `<div class="ag-cov ag-q-tools"><span class="ag-q-add"><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span></div>`)
       + (caseChips ? `<div class="ag-cov">${caseChips}</div>` : '');
   }
   /* 동 하나를 대기열에 — 도우미가 탱크옥션 종합검색(그 동 · 매각전부)으로 끝까지 모은다 */
