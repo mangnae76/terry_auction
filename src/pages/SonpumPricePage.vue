@@ -629,7 +629,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
     </div>
     <!-- Ⓐ 결론 — 제목 줄에 조회(지역은 물건 카드에서 온다, 기간만 고른다) -->
     <div class="zone">
-      <div class="zone-h"><span class="pa-tag">결론</span><h3>이 물건 실거래가 예상</h3>
+      <div class="zone-h"><span class="pa-tag">결론</span><h3>{{ webEmbed ? '이 물건 매도가 예상' : '이 물건 실거래가 예상' }}</h3>
         <span class="bar-desc">{{ regionText || '지역 확인 중' }} · {{ KIND_LABEL[kind] }} 실거래</span>
         <span class="pa-load-r">
           <span v-if="progress.total && progress.done < progress.total" class="prog">위치 찾는 중 {{ progress.done }} / {{ progress.total }}</span>
@@ -644,7 +644,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <p v-if="errorMsg" class="pa-err">{{ errorMsg }}</p>
       <div class="est">
         <div class="tiles">
-          <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">실거래가 예상({{ kindF }})</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><span v-if="view?.capped" class="cap">보증보험 한도 적용</span></div>
+          <div class="tile key"><span class="k"><InfoTip :rows="estTip" under="box">{{ webEmbed ? '매도가 예상' : '실거래가 예상' }}({{ kindF }})</InfoTip></span><span class="v pa-num">{{ view ? vfmt(view.est) : '-' }}</span><span v-if="view?.capped" class="cap">보증보험 한도 적용</span></div>
           <div class="tile"><span class="k">중간값</span><span class="v pa-num">{{ view ? vfmt(view.med) : '-' }}</span></div>
           <div class="tile"><span class="k">최저가</span><span class="v pa-num">{{ view ? vfmt(view.min) : '-' }}</span></div>
           <div class="tile"><span class="k">최고가</span><span class="v pa-num">{{ view ? vfmt(view.max) : '-' }}</span></div>
@@ -773,7 +773,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       <div class="pa-list">
         <div class="tbl-wrap"><table ref="tableEl" class="even">
           <thead><tr>
-            <th v-if="webEmbed" class="ck-th" title="체크하면 실거래가 예상 · 평균 · 건수에서 빠집니다">제외</th>
+            <th v-if="webEmbed" class="ck-th" title="체크하면 매도가 예상 · 평균 · 건수에서 빠집니다">제외</th>
             <th>구분</th>
             <th v-for="c in COLS" :key="c.key" :data-k="c.key" :aria-sort="sortK === c.key ? (webEmbed && sortDir === 'asc' ? 'ascending' : 'descending') : undefined" :class="{ hl: ['won', 'perPy', 'pub', 'gap'].includes(c.key) }">
               <span class="hk" :title="c.key === 'gap' ? '전세 = 공시가 × 126%(보증보험 한도)' : undefined" @click="sortBy(c.key)">{{ c.key === 'pub' ? '공시가 / 매매가율' : c.key === 'gap' ? '전세 / 갭' : c.label }}</span>
