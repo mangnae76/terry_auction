@@ -1109,7 +1109,6 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-ptag { font-size: 13px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 5px; padding: 3px 8px; }   /* '근거' 칩 — 손품조사 시세분석 .pa-tag 와 같은 꼴 */
 /* 지도 — 손품조사 시세분석 지도와 같은 꼴(핀 · 반경 원 · 이름표) */
 .sx-mapcard { padding: 16px; }
-.sx-map-h { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
 .sx-mlab { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .sx-mseg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .sx-mseg button { height: 30px; padding: 0 12px; border: 0; border-radius: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
@@ -1117,6 +1116,14 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-mseg button.on { background: var(--blue-soft); color: var(--blue); font-weight: 800; }
 .sx-mapmsg { font-size: 12px; color: var(--muted); }
 .sx-mapslot { min-height: 620px; }
+/* 지도 아래 거르기 — 시세분석 .conds 와 같은 꼴: 회색 띠 · 흰 칸(이름 + 고르기) · 고른 것은 흰 바탕 파란 테 */
+.sx-conds { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1.05fr) minmax(0, .95fr) auto; gap: 10px 12px; align-items: center; margin-top: 12px; background: var(--band); border-radius: 10px; padding: 10px 12px; }
+.sx-plab { display: grid; grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 6px; padding: 4px 8px 4px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.sx-pseg { display: flex; gap: 2px; width: 100%; background: var(--surface-2, #f3f5f9); border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
+.sx-pseg button { flex: 1 1 0; min-width: 0; height: 26px; padding: 0 2px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 400; cursor: pointer; white-space: nowrap; }
+.sx-pseg button.on { background: var(--surface); color: var(--blue); font-weight: 700; box-shadow: inset 0 0 0 1px var(--blue); }
+.sx-conds .sx-mapmsg { justify-self: end; }
+@media (max-width: 900px) { .sx-conds { grid-template-columns: minmax(0, 1fr); } }
 /* 지도 상자 — 시세분석 .map 과 같은 꼴(높이 620 · 모서리 10 · 안 z-index 가둠) */
 .sx-map { position: relative; z-index: 0; isolation: isolate; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--band); }
 .sx-map-in { height: 620px; }
@@ -7018,14 +7025,14 @@ span.cal-day.has { cursor: help; }
     AG.io = false; agPaint();   /* 새 자료는 요약 문서 감시(watchAgentDatasetMeta)가 버전이 바뀐 것을 보고 다시 읽는다 */
   }
   /* 결과 쪽 전체 — 검색 전 · 결과 없음 · 결과 */
+  /* 지도 칸 — 손품조사 시세분석과 같은 짜임: 지도가 위, 그 아래 회색 띠에 흰 칸(반경 · 엘베 · 층) */
   function sxMapCardHtml() {
-    const seg = (k, opts) => `<span class="sx-mseg" role="radiogroup">${opts.map(([v, t]) => `<button type="button" role="radio" class="${String(SXM[k]) === String(v) ? 'on' : ''}" aria-checked="${String(SXM[k]) === String(v)}" data-act="sxm-set" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</span>`;
-    return `<section class="sx-card sx-mapcard" aria-label="지도"><div class="sx-map-h"><h3 class="sx-sec">지도</h3>`
-      + `<span class="sx-mlab">반경${seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span>`
-      + `<span class="sx-mlab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span>`
-      + `<span class="sx-mlab">층${seg('floor', [['', '전체'], ['0', '같은층']])}</span>`
-      + `<span class="sx-grow"></span><span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span></div>`
-      + `<div class="sx-mapslot" id="sxMapSlot"></div></section>`;
+    const seg = (k, opts) => `<span class="sx-pseg" role="radiogroup">${opts.map(([v, t]) => `<button type="button" role="radio" class="${String(SXM[k]) === String(v) ? 'on' : ''}" aria-checked="${String(SXM[k]) === String(v)}" data-act="sxm-set" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</span>`;
+    return `<section class="sx-card sx-mapcard" aria-label="지도"><div class="sx-mapslot" id="sxMapSlot"></div>`
+      + `<div class="sx-conds"><span class="sx-plab rad">반경${seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span>`
+      + `<span class="sx-plab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span>`
+      + `<span class="sx-plab">층${seg('floor', [['', '전체'], ['0', '같은층']])}</span>`
+      + `<span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span></div></section>`;
   }
   function sxResultsHtml() {
     const rows = agIsAdmin() && AG.recs.length ? sxRows() : null;
