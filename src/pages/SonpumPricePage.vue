@@ -943,7 +943,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .pa.fs .simrow.has-elev, .pa.fs .simB { grid-template-columns: minmax(0, 1fr); }
 .pa.fs .simB { height: auto; }
 .pa.fs .acts-r { justify-content: stretch; }
-.pa.fs .acts-r .save-btn { flex: 1; width: auto; }
+.pa.fs .acts-r .save-btn { flex: 1; width: auto; min-height: 44px; }
 .kindF button { font-weight: 700 !important; }
 .kindF button[data-k="매매"] { background: #eef2ff; color: var(--navy); }
 .kindF button[data-k="전세"] { background: #fdf3e1; color: var(--amber); }
@@ -964,7 +964,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .save-btn small { margin-left: 6px; font-size: 12px; font-weight: 400; color: var(--sub); }
 /* 웹 — '저장완료' 아래 줄에 저장 시각(작게) */
 .save-btn.two { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.2; }
-.save-btn.two small { margin-left: 0; font-size: 11px; }
+.save-btn.two { min-height: 44px; font-size: 14px; }
+.save-btn.two small { margin-left: 0; font-size: 12px; }
 /* 웹 — 마우스를 올리면 바뀐다(조회 단추와 같은 진한 남색 · 저장완료는 테두리만 진하게) */
 .save-btn.two { transition: background .15s, border-color .15s; }
 .save-btn.two.dirty:hover { background: #16305f; }
@@ -975,6 +976,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .simA, .simB { height: 44px; min-width: 0; }   /* 두 방식 같은 높이 — 바꿀 때 덜컹이지 않게 */
 /* 웹 — 거르기 상자 오른쪽 끝에 엘베. 막대(유사도 · 면적 · 건축)는 그만큼 줄어든다 */
 .simrow.has-elev { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 28px; align-items: center; }
+.simrow.has-elev .simB .pa-lab .pa-seg, .elev-pick .pa-seg { width: 186px; }   /* 웹 — 층 · 엘베 고르기 상자 크기를 같게 */
+.simrow.has-elev .simB .pa-lab .pa-seg button, .elev-pick .pa-seg button { flex: 1 1 0; min-width: 0; padding: 0 4px; }
 .elev-pick { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #6b7280; white-space: nowrap; }
 .simA { display: grid; grid-template-columns: minmax(0, 1fr); align-content: center; gap: 1px; }
 .simlab { display: flex; gap: 10px; align-items: baseline; font-size: 12.5px; line-height: 1.2; color: var(--fg); white-space: nowrap; overflow: hidden; }
@@ -1026,25 +1029,34 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .fs-btn { position: absolute; left: 10px; top: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(17, 24, 39, .18); font: inherit; font-size: 12.5px; font-weight: 700; color: #111827; cursor: pointer; }
 .fs-btn:hover { color: var(--blue); }
 /* ===== 전체화면(C안) — 왼쪽 340 고정 칸(결론 → 조건 → 유사물건 목록) · 오른쪽 지도. 거래 랭킹처럼 목록이 왼쪽(2026-11-05) ===== */
-.pa.fs { position: fixed; inset: 0; z-index: 3000; margin: 0; border-radius: 0; padding: 0; gap: 0; background: #fff;
+.pa.fs { position: fixed; inset: 0; z-index: 3000; margin: 0; border-radius: 0; padding: 0; gap: 12px; background: #e7ebf1;
   display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: 52px auto auto minmax(0, 1fr); }
 .pa.fs > .zone { display: contents; }
 .pa.fs .fs-top { grid-column: 1 / -1; grid-row: 1; display: flex; align-items: center; gap: 12px; padding: 0 14px; background: #213366; color: #fff; }
 .fs-x { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, .35); border-radius: 8px; background: transparent; color: #fff; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
 .fs-t { font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .fs-t small { margin-left: 8px; font-size: 12px; font-weight: 500; color: rgba(255, 255, 255, .72); }
-.fs-r { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.fs-r { display: flex; align-items: center; gap: 8px; margin-left: 4px; }   /* 조회기간 · 조회는 사건 · 지역 바로 옆 */
+/* 남색 띠 위 고르기 — 옅은 흰 바탕에 흰 글, 고른 것은 흰 바탕 남색 글 · 조회는 흰 단추 */
+.pa.fs .fs-top .pa-seg { background: rgba(255, 255, 255, .12); }
+.pa.fs .fs-top .pa-seg button { color: rgba(255, 255, 255, .78); }
+.pa.fs .fs-top .pa-seg button:hover { color: #fff; }
+.pa.fs .fs-top .pa-seg.pa-out button.on { background: #fff; color: #213366; box-shadow: none; }
+.pa.fs .fs-top .pa-load { background: #fff; color: #213366; }
+.pa.fs .fs-top .pa-load:hover { background: #e8edf8; }
 .fs-hint { font-size: 12px; color: rgba(255, 255, 255, .6); white-space: nowrap; }
-.pa.fs .map { grid-column: 2; grid-row: 2 / -1; border: 0; border-radius: 0; min-height: 0; }
+.pa.fs .map { grid-column: 2; grid-row: 2 / -1; margin: 0 12px 12px 0; border: 1px solid var(--line); border-radius: 12px; min-height: 0; }
 .pa.fs .map-in { height: 100%; }
 /* 오른쪽 칸 — 결론(등수 칸 둘 줄) · 조건 · 목록 */
 .pa.fs .zone-h, .pa.fs .pa-err { display: none; }
-.pa.fs .est { grid-column: 1; grid-row: 2; border-radius: 0; padding: 14px; border-right: 1px solid var(--line); }
+/* 왼쪽 칸 — 거래 랭킹처럼 회색 바탕 위 흰 상자(모서리 12)를 쌓고, 위 띠와 떨어뜨린다 */
+.pa.fs :is(.est, .conds, .fs-list) { margin-left: 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+.pa.fs .est { grid-column: 1; grid-row: 2; padding: 14px; }
 .pa.fs .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.pa.fs .tile { padding: 9px 8px; }
+.pa.fs .tile { padding: 9px 8px; background: var(--soft); box-shadow: none; }
 .pa.fs .tile.key { grid-column: 1 / -1; }
-.pa.fs .conds { grid-column: 1; grid-row: 3; padding: 12px 14px; border-right: 1px solid var(--line); border-top: 1px solid var(--line); }
-.pa.fs .fs-list { grid-column: 1; grid-row: 4; min-height: 0; overflow-y: auto; padding: 10px 10px 14px; border-right: 1px solid var(--line); border-top: 1px solid var(--line); display: grid; gap: 6px; align-content: start; }
+.pa.fs .conds { grid-column: 1; grid-row: 3; padding: 12px 14px; }
+.pa.fs .fs-list { grid-column: 1; grid-row: 4; margin-bottom: 12px; min-height: 0; overflow-y: auto; padding: 10px 10px 14px; display: grid; gap: 6px; align-content: start; }
 .fs-lh { padding: 0 4px; font-size: 13px; font-weight: 800; color: var(--fg); }
 .fs-it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--soft); font: inherit; text-align: left; cursor: pointer; }
 .fs-it:hover { border-color: #c7d0e2; }
