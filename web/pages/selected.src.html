@@ -937,7 +937,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-seg button.on { background: var(--blue-soft); color: var(--blue); font-weight: 800; }
 .sx-seg.sm button { height: 30px; font-size: 13px; }
 .sx-chk { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); white-space: nowrap; }
-.sx-steps { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.sx-steps { display: flex; align-items: flex-start; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.sx-steps > .sx-step { margin-top: 4px; }   /* ①을 ② 상자 안 단추와 같은 높이로 */
 .sx-step2 { display: inline-flex; align-items: center; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 10px; }   /* ② 수집 세 가지를 한 상자로 */
 .sx-step { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--band); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .sx-step b { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--line); color: var(--muted); font-size: 12px; font-weight: 800; }
@@ -955,8 +956,11 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-step.done:not(:disabled) b { background: var(--sx-ok); }
 .sx-sub { height: 34px; padding: 0 10px; border: 0; background: none; color: var(--blue); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .sx-sub.run { color: var(--muted); }
-.sx-prog { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 13px; color: var(--muted); white-space: nowrap; }
-.sx-bar { width: 96px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.sx-prog { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.sx-stepcol { display: grid; gap: 8px; min-width: 0; }   /* 윗줄 ② · ③ · 처음부터새로, 아랫줄 진행 막대(같은 너비) */
+.sx-steprow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sx-chkbox { height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; }
+.sx-bar { flex: 1 1 auto; min-width: 96px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .sx-bar b { display: block; height: 100%; background: var(--blue); transition: width .3s; }
 .sx-stop { height: 30px; padding: 0 12px; border: 1px solid var(--sx-accent); border-radius: 8px; background: none; color: var(--sx-accent); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .sx-stop:disabled { border-color: var(--line); color: var(--faint); cursor: default; }
@@ -6730,7 +6734,7 @@ span.cal-day.has { cursor: help; }
       return `<button type="button" class="sx-step${done ? ' done' : ''}${cur ? ' now' : ''}" data-act="ag-cmd" data-v="${name}" ${on ? '' : 'disabled'}><b>${done ? '✓' : n}</b>${label}</button>`;
     };
     const pr = busy && s.prog && s.prog.n > 0 ? s.prog : null;
-    const prog = `<div class="sx-prog">${pr ? `<span class="num">${Number(pr.i).toLocaleString('ko-KR')} / ${Number(pr.n).toLocaleString('ko-KR')}쪽</span><span class="sx-bar"><b style="width:${Math.min(100, Math.round((pr.i / pr.n) * 100))}%"></b></span>` : `<span>${busy ? '수집하는 중' : '대기 중'}</span>`}<button type="button" class="sx-stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`;
+    const prog = `<div class="sx-prog"><span class="sx-bar"><b style="width:${pr ? Math.min(100, Math.round((pr.i / pr.n) * 100)) : 0}%"></b></span>${pr ? `<span class="num">${Number(pr.i).toLocaleString('ko-KR')} / ${Number(pr.n).toLocaleString('ko-KR')}쪽</span>` : `<span>${busy ? '수집하는 중' : '대기 중'}</span>`}<button type="button" class="sx-stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`;
     const m = AG.meta;
     const metaCnt = `저장 총 ${Number((m && m.count) || 0).toLocaleString('ko-KR')}건`;
     const metaUpd = m && m.updatedAt && m.updatedAt.toMillis && T.updateStamp ? `${T.UPDATE_PREFIX}${T.updateStamp(m.updatedAt.toMillis())}` : '';
@@ -6749,8 +6753,8 @@ span.cal-day.has { cursor: help; }
     return `<div class="sx-top" id="agPanel">${lead}<section class="sx-card sx-collect" aria-label="경매 인근 매각물건 분석">${titlebar}`
       /* 첫 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③. 처음부터새로는 아래 상태 줄 왼쪽(2026-11-06) */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}${seg('months', AG_MONTHS)}</div>`
-      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<span class="sx-step2">${step(2, 'queue', qRun ? '대기열 수집 중' : '대기열 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(2, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(2, 'screen', '화면만 수집', ready && free)}</span>${step(3, 'enrich', '건축연도 채우기', ready && free)}</div>${prog}</div>`
-      + `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"><label class="sx-chk"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></span>${AG.fold ? `<span class="sx-meta">${meta}</span>${manage}` : ''}</div>`   /* 도우미 말은 맨 위 안내로 옮겼다 */
+      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(2, 'queue', qRun ? '대기열 수집 중' : '대기열 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(2, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(2, 'screen', '화면만 수집', ready && free)}</span>${step(3, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div>${prog}</div></div></div>`
+      + (AG.fold ? `<div class="sx-msg${online ? '' : ' off'}"><span class="sx-say"></span><span class="sx-meta">${meta}</span>${manage}</div>` : '')   /* 접었을 때만 — 펼치면 저장 · 접기는 수집데이터 줄에 */
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
       + (AG.fold ? '' : `<div class="sx-manage">${agQueueHtml()}${agCovHtml(metaCnt, `<span class="sx-qtail">${metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : ''}${manage}</span>`)}</div>`)
       + `</section></div>`;
