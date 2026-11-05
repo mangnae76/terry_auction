@@ -497,9 +497,13 @@ const drawMap = () => {
     const on = focus.value === g.jibun;
     // 웹 — 그 건물 거래를 표에서 다 '제외'하면 핀도 회색(평균에서 빠졌다는 표시)
     const off = webEmbed && g.list.every((r) => isOff(r));
+    // 건수 · 가격대는 제외하지 않은 거래만(다 제외했으면 원래 값을 회색으로)
+    const live = webEmbed && !off ? g.list.filter((r) => !isOff(r)) : g.list;
+    const lp = live.map((r) => r.price); const lo = Math.min(...lp); const hi = Math.max(...lp);
+    const range = lo === hi ? eok(lo) : `${(lo / 1e8).toFixed(2)}~${eok(hi)}`;
     mv!.pin(g.spot, {
       className: `pa-pin${on ? ' on' : ''}${off ? ' off' : ''}`,
-      html: html(`<b>${esc(g.name)} ${g.list.length}건</b><br>${g.range} · ${g.dist}m`, String(orderOf.value[g.jibun] ?? '')),
+      html: html(`<b>${esc(g.name)} ${live.length}건</b><br>${range} · ${g.dist}m`, String(orderOf.value[g.jibun] ?? '')),
       onClick: () => { focus.value = on ? '' : g.jibun; },
       z: on ? 50 : 1,
     });
@@ -668,7 +672,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         <b class="fs-lh">유사물건 {{ fsList.length }}곳</b>
         <button v-for="g in fsList" :key="g.jibun" type="button" :class="['fs-it', { on: focus === g.jibun, off: g.list.every((r) => isOff(r)) }]" @click="fsGo(g)">
           <i class="n">{{ orderOf[g.jibun] ?? '' }}</i>
-          <span class="nm">{{ g.name }}<small>{{ g.list.length }}건 · {{ Math.round(g.dist) }}m</small></span>
+          <span class="nm">{{ g.name }}<small>{{ g.list.filter((r) => !isOff(r)).length || g.list.length }}건 · {{ Math.round(g.dist) }}m</small></span>
           <span class="pr pa-num">{{ g.range }}</span>
         </button>
         <p v-if="!fsList.length" class="none">지도에 유사물건이 없습니다.</p>
