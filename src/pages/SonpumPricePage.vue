@@ -705,6 +705,12 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <button type="button" role="radio" :class="{ on: rangeCond.floor === null }" :aria-checked="rangeCond.floor === null" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
               <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }">같은 층</button>
             </span></span>
+            <!-- 웹 — 엘베 있음 · 없음(엘베를 아직 모르는 거래는 거르지 않는다) -->
+            <span v-if="webEmbed" class="pa-lab">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베">
+              <button type="button" role="radio" :class="{ on: !rangeCond.elev }" :aria-checked="!rangeCond.elev" @click="rangeCond = { ...rangeCond, elev: null }">전체</button>
+              <button type="button" role="radio" :class="{ on: rangeCond.elev === 'yes' }" :aria-checked="rangeCond.elev === 'yes'" @click="rangeCond = { ...rangeCond, elev: 'yes' }">있음</button>
+              <button type="button" role="radio" :class="{ on: rangeCond.elev === 'no' }" :aria-checked="rangeCond.elev === 'no'" @click="rangeCond = { ...rangeCond, elev: 'no' }">없음</button>
+            </span></span>
           </div>
         </div>
       </div>
@@ -900,6 +906,15 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .conds > .pa-lab { background: #fff; border: 1px solid #dde3ee; border-radius: 8px; padding: 4px 12px; }
 .conds > .pa-lab .pa-seg { flex: 1; min-width: 0; display: flex; gap: 2px; }
 .conds > .pa-lab .pa-seg button { flex: 1 1 0; min-width: 0; padding: 0; text-align: center; }
+/* 칸이 좁으면 이름(반경 · 거래 · 기준)을 빼고 고르기만 — 전체화면 오른쪽 칸 · 좁은 창 */
+.conds { container-type: inline-size; }
+@container (max-width: 760px) {
+  .conds > .pa-lab { font-size: 0; gap: 0; }
+  .conds > .pa-lab .pa-seg button { font-size: 13px; }
+}
+.pa.fs .conds { grid-template-columns: minmax(0, 1fr); }
+.pa.fs .acts-r { justify-content: stretch; }
+.pa.fs .acts-r .save-btn { flex: 1; width: auto; }
 .kindF button { font-weight: 700 !important; }
 .kindF button[data-k="매매"] { background: #eef2ff; color: var(--navy); }
 .kindF button[data-k="전세"] { background: #fdf3e1; color: var(--amber); }
