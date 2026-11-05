@@ -1106,6 +1106,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-tbl tr.off td:not(.ck-td) { opacity: .45; text-decoration: line-through; }   /* 제외한 줄 — 흐리게 · 줄 긋기 */
 .sx-map .pa-pin.off .dot { background: #b8bfcc; }
 .sx-map .pa-pin.off .lbl { opacity: .55; text-decoration: line-through; }
+.sx-tbl td.me-case { line-height: 1.3; }   /* 첫 줄 — 빨간 경매물건 칩 위, 사건번호 아래 두 줄 */
+.sx-tbl td.me-case .cno { display: block; margin-top: 3px; }
 .sx-tbl .kind-me { display: inline-block; background: #e03e3e; color: #fff; font-size: 12px; padding: 1px 6px; border-radius: 3px; }   /* 첫 줄 경매물건 — 시세분석 첫 줄 .kind.me 처럼 빨간 칩(글자는 웹 하한 12) */
 .sx-ptag { font-size: 13px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 5px; padding: 3px 8px; }   /* '근거' 칩 — 손품조사 시세분석 .pa-tag 와 같은 꼴 */
 /* 지도 — 손품조사 시세분석 지도와 같은 꼴(핀 · 반경 원 · 이름표) */
@@ -6981,7 +6983,7 @@ span.cal-day.has { cursor: help; }
     const fm = /(\d+)\s*층/.exec(it.unit || ''); const fl = fm ? `${fm[1]}층` : '-';
     const full = [it.addr, it.bld, it.unit].filter(Boolean).join(' '); const addr = esc(sxShortAddr(full));
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
-    return `<tr class="me"><td class="ck-td"></td><td class="num"><span class="kind-me">경매물건</span></td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}<td>-</td><td>-</td><td>-</td><td class="num">${esc(it.round || '-')}</td><td>-</td>`
+    return `<tr class="me"><td class="ck-td"></td><td class="num me-case"><span class="kind-me">경매물건</span><span class="cno">${esc(it.caseNo)}</span></td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}<td>-</td><td>-</td><td>-</td><td class="num">${esc(it.round || '-')}</td><td>-</td>`
       + `${sxAreaCell(m2)}${sxElevCell(it.addr)}<td class="num">${built}</td><td class="num">${age}</td><td class="num">-</td><td class="num">${fl}</td><td class="l" title="${esc(full)}"><div class="sx-addr"><span class="addr">${addr || '-'}</span><span class="chips"><span class="same">경매지번</span></span></div></td></tr>`;
   }
   function sxListHtml(rows) {
