@@ -1176,8 +1176,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-tbl table { width: 100%; min-width: 0; border-collapse: collapse; font-size: 13px; }
 .sx-tbl th { padding: 9px 6px; background: var(--band); color: var(--muted); font-size: 12.5px; font-weight: 700; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--line); cursor: pointer; user-select: none; }
 .sx-tbl th:hover { color: var(--text); }
-.sx-tbl th[aria-sort="ascending"]::after { content: " ▲"; color: var(--blue); }
-.sx-tbl th[aria-sort="descending"]::after { content: " ▼"; color: var(--blue); }
+.sx-tbl th .sdir { margin-left: 3px; font-style: normal; font-size: 10px; color: #c3c9d4; }   /* 정렬 삼각형 — 시세분석 표처럼 칸마다 회색 ▼, 지금 정렬한 칸은 진한 회색 ▲/▼ */
+.sx-tbl th .sdir.on { color: #6b7486; }
 .sx-tbl td { padding: 8px 6px; border-bottom: 1px solid var(--card-line); text-align: center; white-space: nowrap; color: var(--text); }
 .sx-tbl td.r { text-align: right; }
 .sx-tbl td.l { text-align: left; max-width: 360px; overflow: hidden; text-overflow: ellipsis; }
@@ -6946,7 +6946,7 @@ span.cal-day.has { cursor: help; }
     const q = String(SX.q || '').replace(/\s+/g, '');
     const view = (q ? rows.filter((r) => `${r['소재지'] || ''}${r['사건번호'] || ''}`.replace(/\s+/g, '').includes(q)) : rows.slice())
       .sort((a, b) => { const x = sxVal(a, SX.sort); const y = sxVal(b, SX.sort); const c = typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'ko'); return SX.desc ? -c : c; });
-    const head = '<th scope="col" class="ck-th" title="체크하면 예상 입찰가 · 평균 · 건수에서 빠집니다">제외</th>' + SX_COLS.map(([h, k]) => `<th scope="col" data-act="sx-sort" data-v="${k}"${k === SX.sort ? ` aria-sort="${SX.desc ? 'descending' : 'ascending'}"` : ''}>${h}</th>`).join('');
+    const head = '<th scope="col" class="ck-th" title="체크하면 예상 입찰가 · 평균 · 건수에서 빠집니다">제외</th>' + SX_COLS.map(([h, k]) => `<th scope="col" data-act="sx-sort" data-v="${k}"${k === SX.sort ? ` aria-sort="${SX.desc ? 'descending' : 'ascending'}"` : ''}>${h}<i class="sdir${k === SX.sort ? ' on' : ''}" aria-hidden="true">${k === SX.sort && !SX.desc ? '▲' : '▼'}</i></th>`).join('');
     const me = saleItemId ? salePicks().find((x) => x.id === saleItemId) : null;
     const lot = me ? agLotOf(me.addr) : '';
     const body = (me ? sxMeRowHtml(me) : '') + (view.length ? view.map((r) => sxRowHtml(r, lot)).join('')
