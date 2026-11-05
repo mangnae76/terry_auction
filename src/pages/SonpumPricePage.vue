@@ -698,8 +698,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <button type="button" role="radio" :class="{ on: simMode === 'sim' }" :aria-checked="simMode === 'sim'" @click="setSimMode('sim')">유사도</button>
           <button type="button" role="radio" :class="{ on: simMode === 'range' }" :aria-checked="simMode === 'range'" @click="setSimMode('range')">직접범위</button>
         </span></span>
-        <!-- 웹 — 엘베는 기준 옆(유사도 · 직접범위 둘 다에 걸린다). 기본 화면 · 전체화면 같은 자리 -->
-        <span v-if="webEmbed" class="pa-lab elev-pick">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베">
+        <!-- 웹 기본 화면 — 엘베는 기준 옆(전체화면에선 아래 거르기 상자 안 층 밑) -->
+        <span v-if="webEmbed && !fs" class="pa-lab elev-pick">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베">
           <button type="button" role="radio" :class="{ on: !elevPick }" :aria-checked="!elevPick" @click="elevPick = null">전체</button>
           <button type="button" role="radio" :class="{ on: elevPick === 'yes' }" :aria-checked="elevPick === 'yes'" @click="elevPick = 'yes'">있음</button>
           <button type="button" role="radio" :class="{ on: elevPick === 'no' }" :aria-checked="elevPick === 'no'" @click="elevPick = 'no'">없음</button>
@@ -741,6 +741,12 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }">같은 층</button>
             </span></span>
           </div>
+          <!-- 전체화면 — 엘베는 거르기 상자 안 층 밑(면적 · 건축 · 층과 같은 틀) -->
+          <span v-if="webEmbed && fs" class="pa-lab elev-pick">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베">
+            <button type="button" role="radio" :class="{ on: !elevPick }" :aria-checked="!elevPick" @click="elevPick = null">전체</button>
+            <button type="button" role="radio" :class="{ on: elevPick === 'yes' }" :aria-checked="elevPick === 'yes'" @click="elevPick = 'yes'">있음</button>
+            <button type="button" role="radio" :class="{ on: elevPick === 'no' }" :aria-checked="elevPick === 'no'" @click="elevPick = 'no'">없음</button>
+          </span></span>
         </div>
       </div>
 
@@ -949,8 +955,8 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 /* 전체화면 — 층 · 엘베를 면적 · 건축 줄과 같은 틀로: 이름 칸 32 · 사이 8, 고르기 상자는 시작점이 같고 끝은 '2020년' 값 끝과 맞춘다 */
 .pa.fs .simB { gap: 10px; }
 .pa.fs .dl .dn { flex: 0 0 32px; }
-.pa.fs .simB > .pa-lab { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 8px; width: 100%; }
-.pa.fs .simrow.has-elev .simB .pa-lab .pa-seg { width: 100% !important; }
+.pa.fs .simB > .pa-lab, .pa.fs .simrow > .elev-pick { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 8px; width: 100%; }
+.pa.fs .simrow.has-elev .simB .pa-lab .pa-seg, .pa.fs .simrow > .elev-pick .pa-seg { width: 100% !important; }
 .pa.fs .acts-r { justify-content: stretch; order: 99; }
 .pa.fs .conds > .acts-r { justify-self: stretch; }   /* 전체화면 — 초기화 · 저장은 조건(반경 · 거래 · 기준 · 유사도/직접범위) 다 고른 뒤 맨 아래 */
 .pa.fs .acts-r .save-btn { flex: 1; width: auto; min-height: 44px; }
