@@ -7919,7 +7919,7 @@ const goBack = () => router.back();
         <!-- 임차인현황 -->
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('registry')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M4 17h16"/></svg>건물등기</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M4 17h16"/></svg>건물등기<template v-if="webEmbed"> (직접확인)</template></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('registry') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('registry')">
@@ -7973,7 +7973,7 @@ const goBack = () => router.back();
 
         <section class="adp-card">
           <header class="adp-card-head" @click="toggleSection('tenant')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>임차인현황</h2>
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>임차인현황<template v-if="webEmbed"> (직접확인)</template></h2>
             <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('tenant') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('tenant')">
