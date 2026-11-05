@@ -6889,7 +6889,7 @@ span.cal-day.has { cursor: help; }
        추가는 고른 동 · 넣은 사건번호를 한 번에 올린다. 알약(동 · 사건)은 그 아래 한 줄로 */
     const line = `<div class="ag-cov ag-q-tools ag-q-line"><span class="ag-qgrp"><small>읍면동으로 수집</small>${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}</span>`
       + (AG_CASE_ADD ? `<span class="sx-vsep" aria-hidden="true"></span><span class="ag-qgrp"><small>사건번호로 수집</small><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"></span>` : '')
-      + `<span class="ag-qkind"><div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span>${tail}</div>`;
+      + `<span class="sx-vsep" aria-hidden="true"></span><span class="ag-qkind"><div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span>${tail}</div>`;
     const chips = dongChips + caseChips;
     return `<div class="ag-qline">${line}${chips || hint ? `<div class="ag-cov">${chips}${hint}</div>` : ''}</div>`;
   }
