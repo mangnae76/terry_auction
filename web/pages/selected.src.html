@@ -6986,6 +6986,15 @@ span.cal-day.has { cursor: help; }
   const RT_AGAIN = (what) => `<p class="rr-again">다시 분석하면 ${what}이 채워집니다.</p>`;
   const rtTone = (st) => (st === '서류상 해당 없음' ? 'ok' : st === '전문가 검토' ? 'bad' : 'warn');
   const RT_IC = { ok: I.check, warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>' };
+  /* 근거 한 줄 — '매각물건명세서의 최선순위 설정(날짜 종류) 기준.' 꼴로. AI 가 사건번호만 적은 예전 답도 이 꼴로 세우고 그 번호는 뒤에 붙인다.
+     등기부 없이 분석했으면 '등기사항전부증명서로 권리자와 금액을 확인해 주세요.' */
+  const rtEvidence = (base, noReg) => {
+    const ev = String(base.evidence || '').trim();
+    let line = /매각물건명세서|등기/.test(ev) && ev.length > 20 ? ev
+      : `매각물건명세서의 '최선순위 설정'(${rtD(base.date)} ${base.kind}${ev ? `, ${ev}` : ''}) 기준.`;
+    if (noReg && !/등기사항전부증명서로/.test(line)) line += ' 등기사항전부증명서로 권리자와 금액을 확인해 주세요.';
+    return line;
+  };
   function rtResultHtml(ai) {
     const base = ai.baseRight || {}; const rows = ai.rows || []; const ten = ai.tenants; const checks = ai.checks;
     const isBase = (r) => base.kind && r.kind === base.kind && String(r.date).slice(0, 10) === String(base.date).slice(0, 10);
@@ -7037,7 +7046,7 @@ span.cal-day.has { cursor: help; }
         </div>
         <section class="rr-card"><h4>말소기준권리</h4><p class="rr-sub">낙찰되면 이 권리와 그 아래 권리는 원칙적으로 모두 지워집니다.</p>
           <div class="rr-base"><b>${base.kind ? `${esc(rtD(base.date))} · ${esc(base.kind)}` : '찾지 못했습니다'}</b><span>${base.holder ? `${esc(base.holder)}${baseRow && baseRow.amount ? ` · ${esc(baseRow.amount)}` : ''}` : '권리자 · 금액은 등기사항전부증명서에서 확인'}</span></div>
-          ${base.evidence ? `<p class="rr-note">근거 ${esc(base.evidence)}</p>` : ''}${ai.claimDeadline ? `<p class="rr-note">배당요구종기 ${esc(rtD(ai.claimDeadline))}</p>` : ''}</section>
+          ${base.kind ? `<p class="rr-note">근거 ${esc(rtEvidence(base, noReg))}</p>` : ''}${ai.claimDeadline ? `<p class="rr-note">배당요구종기 ${esc(rtD(ai.claimDeadline))}</p>` : ''}</section>
         ${ev.level ? `<section class="rr-card"><h4>명도 난이도<span class="rr-tag ${ev.level === '쉬움' ? 'ok' : ev.level === '높음' ? 'bad' : 'warn'}">${esc(ev.level)}</span></h4>${ev.reason ? `<p class="rr-txt">${esc(ev.reason)}</p>` : ''}${ev.advice ? `<p class="rr-txt">${esc(ev.advice)}</p>` : ''}</section>` : ''}
         <div class="rr-docs"><b>분석에 쓴 서류 ${esc(used.join(' · ') || '-')}</b>${noReg ? '<p>등기사항전부증명서 없이 분석한 결과입니다. 말소기준권리의 권리자 · 금액과 그보다 앞선 권리는 등기부로 꼭 확인해 주세요.</p>' : ''}${ai.missingDocs && ai.missingDocs.length ? `<p>따로 떼어 확인하면 좋은 서류 — ${esc(ai.missingDocs.join(' · '))}</p>` : ''}</div>`;
     }
