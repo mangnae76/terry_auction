@@ -1329,6 +1329,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .rt-err { margin: 8px 0 0; font-size: 12px; line-height: 1.6; color: #dc2626; word-break: keep-all; }
 .rt-go { width: 100%; height: 44px; margin-top: 14px; border: 0; border-radius: 8px; background: var(--cta); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; }
 .rt-go:hover:not(:disabled) { background: var(--cta-hover); }
+.rt-go.done { background: var(--surface-3); color: var(--text-2); }   /* 분석 완료 — 회색. 누르면 다시 할지 묻는다(앱과 같다) */
+.rt-go.done:hover:not(:disabled) { background: var(--line); }
 .rt-go:disabled { background: var(--surface-3); color: var(--faint); cursor: not-allowed; }
 .rt-cap { margin: 8px 0 0; text-align: center; font-size: 12px; color: var(--muted); }
 .crumb-slot + .content { padding-top: 6px; }
@@ -6972,7 +6974,7 @@ span.cal-day.has { cursor: help; }
     { i: 2, k: 'survey', name: '현황조사서', re: /현황/ },
     { i: 3, k: 'household', name: '전입세대확인서', re: /전입|세대/ },
   ];
-  const RT = { busy: false, msg: '', id: '' };
+  const RT = { busy: false, msg: '', id: '', fresh: false };   /* fresh — 결과가 있는데 명세서를 새로 올려 아직 분석 전(단추를 다시 '시작하기'로) */
   /* 알 수 있는 것 셋 — 분석하는 동안엔 같은 번호 목록에 진행 상태가 붙는다(덮개 창 없이).
      단계는 꾸미지 않는다: AI 답이 정해진 순서(docCheck → baseRight → rows … → risk)로 오므로
      공통 코드(geminiRights)가 받는 도중 '지금 쓰는 칸'을 'ta:rights-stage' 로 알려 주면 그 칸의 번호를 켠다 */
@@ -7093,7 +7095,7 @@ span.cal-day.has { cursor: help; }
     });
     const head = card.querySelector('.adp-ai-head'); const busy = !!(head && head.disabled); const done = !!(head && head.classList.contains('done'));
     /* 왼쪽 상자 — 분석하는 동안만 단계 목록 */
-    if (busy && !RTS.on) { RTS.on = true; RTS.stage = RTS.stage || 'collect'; }
+    if (busy && !RTS.on) { RTS.on = true; RTS.stage = RTS.stage || 'collect'; RT.fresh = false; }
     if (!busy && RTS.on) { RTS.on = false; RTS.stage = ''; }
     { const t = $('rtTitle'); const tx = RTS.on ? '올린 서류를 읽고 있습니다' : '권리분석 결과'; if (t && t.textContent !== tx) t.textContent = tx; }
     /* 걸린 초 — 앱 덮개 창(웹에선 감춤)의 'N초'를 읽어 오른쪽 안내에 */
@@ -7122,7 +7124,7 @@ span.cal-day.has { cursor: help; }
       ${RT.msg ? `<p class="rt-err">${esc(RT.msg)}</p>` : ''}
       ${errs.map((t) => `<p class="rt-err">${esc(t)}</p>`).join('')}
       ${busy ? `<p class="rt-more">서류가 많으면 2~3분 걸립니다${sec ? ` · ${sec}초` : ''}<button type="button" class="rt-cancel" data-act="rt-cancel">취소</button></p>` : ''}
-      <button type="button" class="rt-go" data-act="rt-start" ${can ? '' : 'disabled'}>${busy ? '분석 중…' : done ? '다시 분석하기' : '권리분석 시작하기'}</button>
+      <button type="button" class="rt-go ${done && !RT.fresh && !busy ? 'done' : ''}" data-act="rt-start" ${can ? '' : 'disabled'} ${done && !RT.fresh && !busy ? 'title="누르면 다시 분석할지 묻습니다"' : ''}>${busy ? '분석 중…' : done && !RT.fresh ? '분석 완료' : '권리분석 시작하기'}</button>
       <p class="rt-cap">서류를 올리면 분석을 시작할 수 있습니다.</p>`;
     if (up.dataset.h !== html) { up.innerHTML = html; up.dataset.h = html; }
   }
@@ -7163,6 +7165,7 @@ span.cal-day.has { cursor: help; }
       const dt = new DataTransfer(); dt.items.add(f);
       drop.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
       await rtWait(() => box().querySelector('.adp-doc-box.has') || box().querySelector('.adp-plan-err'), 60000);
+      if (box().querySelector('.adp-doc-box.has')) RT.fresh = true;
     }
     RT.busy = false;
     RT.msg = [wrong.length ? `사건번호가 맞지 않는 파일입니다 — ${wrong.join(', ')}` : '', skipped.length ? `매각물건명세서만 올릴 수 있습니다 — ${skipped.join(', ')}` : ''].filter(Boolean).join(' / ') || RT.msg;
@@ -7183,7 +7186,7 @@ span.cal-day.has { cursor: help; }
     closeAppDetail();
     /* 임장조사 아래 — 다녀온 뒤 할 일(임장 결과로 수익분석 다시 보기). 앱 화면 안의 같은 단추는 웹에서 감춘다(웹 탭이 따라 바뀌게) */
     /* 탭 맨 위 안내 — 물건등록 · 선정물건과 같은 꼴(왼쪽 주황 막대, 상자 없이) */
-    if (tab === 'rights') RT.id = it.id;
+    if (tab === 'rights') { if (RT.id !== it.id) { RT.fresh = false; RT.msg = ''; } RT.id = it.id; }
     const lead = ITEM_LEAD[tab] ? `<div class="rg-lead it-lead">${ITEM_LEAD[tab].map((t, i) => `<p class="l${i + 1}">${t}</p>`).join('')}</div>` : '';
     box.innerHTML = `${lead}${tab === 'rights' ? rtTopHtml() : ''}<div class="app-detail tab-${tab}" id="appDetailMount"></div>${tab === 'field' ? '<div class="fld-next"><button type="button" data-act="subtab" data-v="profit">임장 결과로 수익분석 다시 보기 →</button></div>' : ''}`;
     detailKey = key;
