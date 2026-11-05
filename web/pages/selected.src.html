@@ -6041,7 +6041,7 @@ span.cal-day.has { cursor: help; }
     } else {
       const edu = T.eduInfoOf(a); const pdf = T.pdfNearbyDisplayOf(a); const ag = a.adminAgencyItems || [];
       const kakao = T.nearbyDisplayOf(env);
-      const ntabs = `<div class="it-vtabs"><button type="button" class="${nv === 'pdf' ? 'on' : ''}" data-act="nearby-view" data-v="pdf">주변환경</button><button type="button" class="${nv === 'kakao' ? 'on' : ''}" data-act="nearby-view" data-v="kakao" data-id="${it.id}">목록검색</button></div>`;
+      const ntabs = `<div class="it-vtabs"><button type="button" class="${nv === 'pdf' ? 'on' : ''}" data-act="nearby-view" data-v="pdf">주변환경</button><button type="button" class="${nv === 'kakao' ? 'on' : ''}" data-act="nearby-view" data-v="kakao" data-id="${it.id}">카카오목록검색</button></div>`;
       let near;
       if (nv === 'pdf') {
         /* 행정기관도 같은 표의 한 줄로 — 따로 떨어진 목록이 표 밖에 붙어 모양이 갈렸다 */
