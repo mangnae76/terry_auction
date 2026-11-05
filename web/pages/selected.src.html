@@ -1087,7 +1087,13 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-count { font-size: 13px; color: var(--muted); }
 .sx-count b { color: var(--text); }
 .sx-q { width: 280px; max-width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; }
-.sx-tbl { overflow-x: auto; border-top: 1px solid var(--line); }
+.sx-tbl { overflow-x: auto; margin: 0 16px 16px; border: 1px solid var(--line); border-radius: 8px; }   /* 표 네 모서리 8(모든 표 같게) */
+.sx-tbl tbody tr:last-child td { border-bottom: 0; }
+.sx-tbl tr.me td { background: var(--blue-soft); font-weight: 700; }   /* 맨 위 내 물건(고정카드) */
+.sx-tbl tr.lot td { background: color-mix(in srgb, var(--blue-soft) 45%, transparent); }   /* 같은 지번 매각 */
+.sx-tag { display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 4px; font-size: 11.5px; font-weight: 700; vertical-align: 1px; }
+.sx-tag.me { background: var(--blue); color: #fff; }
+.sx-tag.lot { background: var(--surface); color: var(--blue); border: 1px solid var(--blue); }
 .sx-tbl table { width: 100%; min-width: 1120px; border-collapse: collapse; font-size: 13px; }
 .sx-tbl th { padding: 9px 8px; background: var(--band); color: var(--muted); font-size: 12.5px; font-weight: 700; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--line); cursor: pointer; user-select: none; }
 .sx-tbl th:hover { color: var(--text); }
@@ -6641,8 +6647,9 @@ span.cal-day.has { cursor: help; }
     ['유찰', '유찰회수'], ['응찰', '응찰자수'], ['전용㎡/평', '전용면적'], ['건축연월', '건축연도'], ['년차', '년차'], ['층', '층'], ['주소', '소재지']];
   const SX_NUMK = new Set(['감정가', '최저가', '매각가', '매각가율', '유찰회수', '응찰자수', '전용면적', '층']);
   const sxVal = (r, k) => (k === '건축연도' ? agBuiltYear(r) : k === '년차' ? -agBuiltYear(r) : SX_NUMK.has(k) ? Number(r[k]) || 0 : String(r[k] || ''));
-  function sxRowHtml(r) {
+  function sxRowHtml(r, lot = '') {
     const m2 = Number(r['전용면적']);
+    const same = lot && agLotOf(r['소재지']) === lot;   /* 고정카드 물건과 같은 지번(같은 건물) 매각 */
     const rateV = Number(r['매각가율']);
     const rate = rateV > 0 ? `<span class="sx-rate ${rateV >= 1 ? 'hi' : rateV < 0.75 ? 'lo' : ''}">${(rateV * 100).toFixed(1)}%</span>` : '-';
     const int = (v, u) => (v != null && v !== '' && Number.isFinite(Number(v)) ? `${Math.round(Number(v))}${u}` : '-');
@@ -6652,8 +6659,20 @@ span.cal-day.has { cursor: help; }
     const fl = r['층'] != null && r['층'] !== '' ? `${esc(String(r['층']))}층` : '-';
     const addr = esc(String(r['소재지'] || ''));
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
-    return `<tr><td class="num">${esc(String(r['사건번호'] || '-'))}</td><td class="num">${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}`
+    return `<tr${same ? ' class="lot"' : ''}><td class="num">${same ? '<span class="sx-tag lot">경매지번</span>' : ''}${esc(String(r['사건번호'] || '-'))}</td><td class="num">${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}`
       + `<td>${rate}</td><td class="num">${int(r['유찰회수'], '회')}</td><td class="num">${int(r['응찰자수'], '명')}</td>`
+      + `<td class="num">${m2 > 0 ? `${m2.toFixed(2)} / ${(m2 / 3.305785).toFixed(1)}` : '-'}</td><td class="num">${built}</td><td class="num">${age}</td><td class="num">${fl}</td><td class="l" title="${addr}">${addr || '-'}</td></tr>`;
+  }
+  /* 검색리스트 맨 위 '내 물건' — 사건 고정카드의 물건(매각 전이라 매각가 · 매각가율 · 응찰은 비움) */
+  function sxMeRowHtml(it) {
+    const a = detailOf(it); const m2 = Number(it.bldg);
+    const ym = String(a.approvalDate || '').replace(/[^\d]/g, '').slice(0, 6); const by = Number(ym.slice(0, 4)) || 0;
+    const built = ym.length >= 6 ? `${ym.slice(0, 4)}.${ym.slice(4, 6)}` : (by ? String(by) : '-');
+    const age = by ? `${CLOUD.T && CLOUD.T.buildingAgeOf ? CLOUD.T.buildingAgeOf(by) : new Date().getFullYear() - by + 1}년` : '-';
+    const fm = /(\d+)\s*층/.exec(it.unit || ''); const fl = fm ? `${fm[1]}층` : '-';
+    const addr = esc([it.addr, it.bld, it.unit].filter(Boolean).join(' '));
+    const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
+    return `<tr class="me"><td class="num"><span class="sx-tag me">내 물건</span>${esc(it.caseNo)}</td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}<td>-</td><td>-</td><td class="num">${esc(it.round || '-')}</td><td>-</td>`
       + `<td class="num">${m2 > 0 ? `${m2.toFixed(2)} / ${(m2 / 3.305785).toFixed(1)}` : '-'}</td><td class="num">${built}</td><td class="num">${age}</td><td class="num">${fl}</td><td class="l" title="${addr}">${addr || '-'}</td></tr>`;
   }
   function sxListHtml(rows) {
@@ -6661,10 +6680,12 @@ span.cal-day.has { cursor: help; }
     const view = (q ? rows.filter((r) => `${r['소재지'] || ''}${r['사건번호'] || ''}`.replace(/\s+/g, '').includes(q)) : rows.slice())
       .sort((a, b) => { const x = sxVal(a, SX.sort); const y = sxVal(b, SX.sort); const c = typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'ko'); return SX.desc ? -c : c; });
     const head = SX_COLS.map(([h, k]) => `<th scope="col" data-act="sx-sort" data-v="${k}"${k === SX.sort ? ` aria-sort="${SX.desc ? 'descending' : 'ascending'}"` : ''}>${h}</th>`).join('');
-    const body = view.length ? view.map(sxRowHtml).join('')
-      : `<tr><td colspan="${SX_COLS.length}" class="sx-empty">${q ? '찾는 주소 · 사건번호가 없습니다.' : '조건에 맞는 매각물건이 없습니다. 기간을 늘리거나 면적 · 건축년도 조건을 비워 보세요.'}</td></tr>`;
-    return `<div id="sxList"><div class="sx-list-h"><h3 class="sx-sec">검색리스트</h3><span class="sx-count"><b class="num">${view.length.toLocaleString('ko-KR')}</b>건${q ? ` · 전체 ${rows.length.toLocaleString('ko-KR')}건 중` : ''}</span>`
-      + `<span class="sx-grow"></span><input type="search" class="sx-q" id="sxQ" placeholder="주소 · 사건번호 검색" autocomplete="off" aria-label="검색리스트에서 찾기" value="${esc(SX.q || '')}"></div>`
+    const me = saleItemId ? salePicks().find((x) => x.id === saleItemId) : null;
+    const lot = me ? agLotOf(me.addr) : '';
+    const body = (me ? sxMeRowHtml(me) : '') + (view.length ? view.map((r) => sxRowHtml(r, lot)).join('')
+      : `<tr><td colspan="${SX_COLS.length}" class="sx-empty">${q ? '찾는 주소 · 사건번호가 없습니다.' : '조건에 맞는 매각물건이 없습니다. 기간을 늘리거나 면적 · 건축년도 조건을 비워 보세요.'}</td></tr>`);
+    return `<div id="sxList"><div class="sx-list-h"><h3 class="sx-sec">경매 인근 유사 매각물건</h3><span class="sx-count"><b class="num">${view.length.toLocaleString('ko-KR')}</b>건${q ? ` · 전체 ${rows.length.toLocaleString('ko-KR')}건 중` : ''}</span>`
+      + `<span class="sx-grow"></span><input type="search" class="sx-q" id="sxQ" placeholder="주소 · 사건번호 검색" autocomplete="off" aria-label="경매 인근 유사 매각물건에서 찾기" value="${esc(SX.q || '')}"></div>`
       + `<div class="sx-tbl"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></div>`;
   }
   function sxPaintList() {
@@ -6683,7 +6704,7 @@ span.cal-day.has { cursor: help; }
   /* 엑셀다운로드 — 지금 검색리스트(찾기 · 정렬 그대로) + 조건 · 지표 · 예상 입찰가 */
   async function sxExcel() {
     const T = CLOUD.T; const rows = sxRows();
-    if (!rows) { toast('먼저 왼쪽에서 검색해 주세요 — 검색리스트를 엑셀로 내려받습니다.', 'info'); return; }
+    if (!rows) { toast('먼저 왼쪽에서 검색해 주세요 — 경매 인근 유사 매각물건 표를 엑셀로 내려받습니다.', 'info'); return; }
     const q = String(SX.q || '').replace(/\s+/g, '');
     const view = (q ? rows.filter((r) => `${r['소재지'] || ''}${r['사건번호'] || ''}`.replace(/\s+/g, '').includes(q)) : rows.slice())
       .sort((a, b) => { const x = sxVal(a, SX.sort); const y = sxVal(b, SX.sort); const c = typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'ko'); return SX.desc ? -c : c; });
@@ -6747,7 +6768,7 @@ span.cal-day.has { cursor: help; }
     const dist = st.rates.length
       ? `<section class="sx-card sx-dist" aria-label="매각가율 분포"><div class="sx-dist-h"><h3 class="sx-sec">매각가율 분포 · ${st.rates.length.toLocaleString('ko-KR')}건</h3><div class="sx-legend"><span>평균</span><span class="med">중앙값</span><span class="over">100% 이상</span></div></div>${sxChart(st)}</section>`
       : '';
-    return `<div class="sx-results" id="sxResults">${hero}<section class="sx-card" aria-label="지표결과"><div class="sx-metrics">${metrics}</div></section>${dist}<section class="sx-card sx-list" aria-label="검색리스트">${sxListHtml(rows)}</section></div>`;
+    return `<div class="sx-results" id="sxResults">${hero}<section class="sx-card" aria-label="지표결과"><div class="sx-metrics">${metrics}</div></section>${dist}<section class="sx-card sx-list" aria-label="경매 인근 유사 매각물건">${sxListHtml(rows)}</section></div>`;
   }
   /* 동일지번 — 따로 긁지 않는다. 인근 목록에 같은 지번 물건이 이미 들어 있어(거리 0) 소재지의 '동 + 지번'으로 묶어 고른다.
      auction-web PC 프로그램 동일지번 탭과 같은 방식: [동일지번매각물건]에서 따로 모은 것 + 인근 데이터 중 지번이 같은 것 */
