@@ -6827,7 +6827,7 @@ span.cal-day.has { cursor: help; }
     const q = String(AG.covQ || '').replace(/\s+/g, '');
     const list = agCovView().filter((c) => !q || c.region.replace(/\s+/g, '').includes(q));
     if (!list.length) return `<tr><td colspan="5" class="none">${q ? '찾는 동네가 없습니다' : '아직 없습니다'}</td></tr>`;
-    return list.map((c) => `<tr><td class="l">${esc(c.region)}</td><td>${esc(c.kind)}</td><td class="n">${c.n.toLocaleString('ko-KR')}</td><td>${c.at ? agMD(c.at) : '-'}</td><td>${esc(c.site || '-')}</td></tr>`).join('');
+    return list.map((c) => `<tr><td class="l">${esc(c.region)}</td><td>${esc(c.kind)}</td><td class="n">${c.n.toLocaleString('ko-KR')}</td><td>${c.at ? (CLOUD.T && CLOUD.T.updateStamp ? CLOUD.T.updateStamp(c.at) : agMD(c.at)) : '-'}</td><td>${esc(c.site || '-')}</td></tr>`).join('');
   }
   function agCovHtml(cnt = '', metaHtml = '') {
     const rows = agCovView();
