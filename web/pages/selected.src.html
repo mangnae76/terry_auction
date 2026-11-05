@@ -1097,6 +1097,12 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-q { width: 280px; max-width: 100%; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; }
 .sx-tbl { overflow-x: auto; margin: 0 16px 16px; border: 1px solid var(--line); border-radius: 8px; }   /* 표 네 모서리 8(모든 표 같게) */
 .sx-tbl tbody tr:last-child td { border-bottom: 0; }
+.sx-tbl :is(th.ck-th, td.ck-td) { width: 1%; padding-left: 10px; padding-right: 4px; }   /* 제외 체크 칸 — 시세분석 표와 같은 자리(맨 앞) */
+.sx-tbl th.ck-th { cursor: default; }
+.sx-tbl td.ck-td input { width: 16px; height: 16px; margin: 0; accent-color: var(--blue); cursor: pointer; vertical-align: middle; }
+.sx-tbl tr.off td:not(.ck-td) { opacity: .45; text-decoration: line-through; }   /* 제외한 줄 — 흐리게 · 줄 긋기 */
+.sx-map .pa-pin.off .dot { background: #b8bfcc; }
+.sx-map .pa-pin.off .lbl { opacity: .55; text-decoration: line-through; }
 .sx-tbl .kind-me { display: inline-block; background: #e03e3e; color: #fff; font-size: 12px; padding: 1px 6px; border-radius: 3px; }   /* 첫 줄 경매물건 — 시세분석 첫 줄 .kind.me 처럼 빨간 칩(글자는 웹 하한 12) */
 .sx-ptag { font-size: 13px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 5px; padding: 3px 8px; }   /* '근거' 칩 — 손품조사 시세분석 .pa-tag 와 같은 꼴 */
 /* 지도 — 손품조사 시세분석 지도와 같은 꼴(핀 · 반경 원 · 이름표) */
@@ -6705,7 +6711,8 @@ span.cal-day.has { cursor: help; }
     groups.forEach((g) => {
       const on = SXG.focus === g.k;
       const sub = [g.range, g.dist != null ? `${g.dist.toLocaleString('ko-KR')}m` : ''].filter(Boolean).join(' · ');
-      mv.pin(g.p, { className: `pa-pin${on ? ' on' : ''}`, html: html(`<b>${esc(g.name)} ${g.list.length}건</b>${sub ? `<br>${sub}` : ''}`, String(g.no)), onClick: () => { SXG.focus = on ? '' : g.k; sxDrawMap(); }, z: on ? 50 : 1 });
+      const off = g.list.every((r) => sxIsOff(r));   /* 그 건물 매각을 다 '제외'하면 핀도 회색(시세분석과 같게) */
+      mv.pin(g.p, { className: `pa-pin${on ? ' on' : ''}${off ? ' off' : ''}`, html: html(`<b>${esc(g.name)} ${g.list.length}건</b>${sub ? `<br>${sub}` : ''}`, String(g.no)), onClick: () => { SXG.focus = on ? '' : g.k; sxDrawMap(); }, z: on ? 50 : 1 });
     });
     if (meSpot) mv.pin(meSpot, { className: 'pa-pin me', html: html(`<b>${esc((me && me.bld) || '경매물건')}</b>${same ? `<br>같은 건물 ${same}건` : ''}`), z: 1000 });
     if (SXG.tools) SXG.tools.setNear(meSpot || null);
@@ -6795,8 +6802,16 @@ span.cal-day.has { cursor: help; }
   }
   const sxMean = (a) => (a.length ? a.reduce((t, x) => t + x, 0) / a.length : null);
   const sxMed = (a) => { if (!a.length) return null; const v = [...a].sort((x, y) => x - y); const h = v.length >> 1; return v.length % 2 ? v[h] : (v[h - 1] + v[h]) / 2; };
-  function sxStats(rows) {
-    if (SX.stats && SX.statsOf === rows) return SX.stats;
+  /* 제외 — 손품조사 시세분석 표의 '제외' 체크와 같다: 체크한 줄은 예상 입찰가 · 지표 · 분포 · 건수에서 빠진다(표 · 지도에는 흐리게 남는다). 이 브라우저에 남긴다 */
+  const SX_DROP_KEY = 'ta.web.sale.drop';
+  const sxDrop = (() => { try { return new Set(JSON.parse(localStorage.getItem(SX_DROP_KEY) || '[]')); } catch (e) { return new Set(); } })();
+  let sxDropVer = 0;
+  const sxRowKey = (r) => `${r['사건번호'] || ''}|${r['매각일'] || ''}`;
+  const sxIsOff = (r) => sxDrop.has(sxRowKey(r));
+  const sxToggleDrop = (k) => { if (sxDrop.has(k)) sxDrop.delete(k); else sxDrop.add(k); sxDropVer += 1; try { localStorage.setItem(SX_DROP_KEY, JSON.stringify([...sxDrop].slice(-2000))); } catch (e) { /* 그만 */ } };
+  function sxStats(rows0) {
+    if (SX.stats && SX.statsOf === rows0 && SX.statsDrop === sxDropVer) return SX.stats;
+    const rows = rows0.filter((r) => !sxIsOff(r));
     const pos = (k) => rows.map((r) => Number(r[k])).filter((v) => v > 0);
     const rates = pos('매각가율'); const sold = pos('매각가'); const bids = pos('응찰자수');
     const both = rows.filter((r) => Number(r['감정가']) > 0 && Number(r['매각가']) > 0);
@@ -6806,7 +6821,7 @@ span.cal-day.has { cursor: help; }
       avg: sxMean(rates), med: sxMed(rates), lo: rates.length ? Math.min(...rates) : null, hi: rates.length ? Math.max(...rates) : null,
       all: both.length ? sum('매각가') / sum('감정가') : null, bids: sxMean(bids),
     };
-    SX.statsOf = rows;
+    SX.statsOf = rows0; SX.statsDrop = sxDropVer;
     return SX.stats;
   }
   /* 2억 3,500만 꼴 */
@@ -6886,7 +6901,8 @@ span.cal-day.has { cursor: help; }
     const fl = r['층'] != null && r['층'] !== '' ? `${esc(String(r['층']))}층` : '-';
     const full = String(r['소재지'] || ''); const addr = esc(sxShortAddr(full));
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
-    return `<tr${same ? ' class="lot"' : ''}><td class="num">${esc(String(r['사건번호'] || '-'))}</td><td class="num">${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}`
+    const off = sxIsOff(r); const rk = sxRowKey(r);
+    return `<tr class="${[same ? 'lot' : '', off ? 'off' : ''].filter(Boolean).join(' ')}"><td class="ck-td"><input type="checkbox" data-act="sx-drop" data-v="${esc(rk)}" ${off ? 'checked' : ''} aria-label="${esc(String(r['사건번호'] || ''))} 제외"></td><td class="num">${esc(String(r['사건번호'] || '-'))}</td><td class="num">${agDate(r['매각일'])}</td>${won(r['감정가'])}${won(r['최저가'])}${won(r['매각가'])}`
       + `<td>${rate}</td><td class="num">${int(r['유찰회수'], '회')}</td><td class="num">${int(r['응찰자수'], '명')}</td>`
       + `${sxAreaCell(m2)}${sxElevCell(full)}<td class="num">${built}</td><td class="num">${age}</td>${sxDistCell(full)}<td class="num">${fl}</td><td class="l" title="${esc(full)}"><div class="sx-addr"><span class="addr">${addr || '-'}</span>${same ? '<span class="chips"><span class="same">경매지번</span></span>' : ''}</div></td></tr>`;
   }
@@ -6923,18 +6939,18 @@ span.cal-day.has { cursor: help; }
     const fm = /(\d+)\s*층/.exec(it.unit || ''); const fl = fm ? `${fm[1]}층` : '-';
     const full = [it.addr, it.bld, it.unit].filter(Boolean).join(' '); const addr = esc(sxShortAddr(full));
     const won = (v) => (Number(v) > 0 ? `<td class="r num">${agWon(v)}</td>` : '<td>-</td>');
-    return `<tr class="me"><td class="num"><span class="kind-me">경매물건</span></td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}<td>-</td><td>-</td><td class="num">${esc(it.round || '-')}</td><td>-</td>`
+    return `<tr class="me"><td class="ck-td"></td><td class="num"><span class="kind-me">경매물건</span></td><td class="num">${it.date ? dotDate(it.date) : '-'}</td>${won(it.apr)}${won(it.min)}<td>-</td><td>-</td><td class="num">${esc(it.round || '-')}</td><td>-</td>`
       + `${sxAreaCell(m2)}${sxElevCell(it.addr)}<td class="num">${built}</td><td class="num">${age}</td><td class="num">-</td><td class="num">${fl}</td><td class="l" title="${esc(full)}"><div class="sx-addr"><span class="addr">${addr || '-'}</span><span class="chips"><span class="same">경매지번</span></span></div></td></tr>`;
   }
   function sxListHtml(rows) {
     const q = String(SX.q || '').replace(/\s+/g, '');
     const view = (q ? rows.filter((r) => `${r['소재지'] || ''}${r['사건번호'] || ''}`.replace(/\s+/g, '').includes(q)) : rows.slice())
       .sort((a, b) => { const x = sxVal(a, SX.sort); const y = sxVal(b, SX.sort); const c = typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'ko'); return SX.desc ? -c : c; });
-    const head = SX_COLS.map(([h, k]) => `<th scope="col" data-act="sx-sort" data-v="${k}"${k === SX.sort ? ` aria-sort="${SX.desc ? 'descending' : 'ascending'}"` : ''}>${h}</th>`).join('');
+    const head = '<th scope="col" class="ck-th" title="체크하면 예상 입찰가 · 평균 · 건수에서 빠집니다">제외</th>' + SX_COLS.map(([h, k]) => `<th scope="col" data-act="sx-sort" data-v="${k}"${k === SX.sort ? ` aria-sort="${SX.desc ? 'descending' : 'ascending'}"` : ''}>${h}</th>`).join('');
     const me = saleItemId ? salePicks().find((x) => x.id === saleItemId) : null;
     const lot = me ? agLotOf(me.addr) : '';
     const body = (me ? sxMeRowHtml(me) : '') + (view.length ? view.map((r) => sxRowHtml(r, lot)).join('')
-      : `<tr><td colspan="${SX_COLS.length}" class="sx-empty">${q ? '찾는 주소 · 사건번호가 없습니다.' : '조건에 맞는 매각물건이 없습니다. 기간을 늘리거나 면적 · 건축년도 조건을 비워 보세요.'}</td></tr>`);
+      : `<tr><td colspan="${SX_COLS.length + 1}" class="sx-empty">${q ? '찾는 주소 · 사건번호가 없습니다.' : '조건에 맞는 매각물건이 없습니다. 기간을 늘리거나 면적 · 건축년도 조건을 비워 보세요.'}</td></tr>`);
     return `<div id="sxList"><div class="sx-list-h"><span class="sx-ptag">근거</span><h3 class="sx-sec">인근 유사 매각사례</h3><span class="sx-count"><b class="num">${view.length.toLocaleString('ko-KR')}</b>건${q ? ` · 전체 ${rows.length.toLocaleString('ko-KR')}건 중` : ''}</span>`
       + `<span class="sx-grow"></span><input type="search" class="sx-q" id="sxQ" placeholder="주소 · 사건번호 검색" autocomplete="off" aria-label="인근 유사 매각사례에서 찾기" value="${esc(SX.q || '')}"></div>`
       + `<div class="sx-tbl"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></div>`;
@@ -8664,6 +8680,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         renderMarket(); toast('면적 · 건축년도 · 기간을 처음대로 돌렸습니다.', 'info'); break;
       }
       case 'sx-import': { const f = $('sxFile'); if (f) f.click(); break; }
+      case 'sx-drop': sxToggleDrop(v); agPaintTable(); break;
       case 'sxm-fs': sxSetFs(!SXG.fs); break;
       case 'sxm-go': { const g = SXG.groups.find((x) => x.k === v); SXG.focus = SXG.focus === v ? '' : v; if (g && SXG.focus && SXG.mv) SXG.mv.focus(g.p, 16); sxDrawMap(); break; }
       case 'sxm-set': { const k = t.dataset.k; SXM[k] = k === 'radius' ? Number(v) : v; try { localStorage.setItem(SXM_KEY, JSON.stringify(SXM)); } catch (err) { /* 그만 */ } if ($('sxResults')) agPaintTable(); else sxDrawMap(); break; }
