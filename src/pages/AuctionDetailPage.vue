@@ -8632,8 +8632,8 @@ const goBack = () => router.back();
               </tbody>
             </table>
             </div>
-            <!-- 평균 · 적용가는 두 표 아래 한 줄로 -->
-            <table class="adp-table adp-ind-table adp-ind-foot">
+            <!-- 평균 · 적용가는 두 표 아래 한 줄로 — 웹은 뺐다(2026-11-06) -->
+            <table v-if="!webEmbed" class="adp-table adp-ind-table adp-ind-foot">
               <colgroup>
                 <col style="width: 96px" /><col /><col style="width: 68px" />
               </colgroup>
