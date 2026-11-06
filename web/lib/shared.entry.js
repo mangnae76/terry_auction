@@ -74,7 +74,8 @@ export {
 /** 앱 저장소를 쓸 수 있게 Pinia 를 한 번 켠다 */
 import { setDraftCostDefaults } from '../../src/stores/auctionStore';
 // 웹에서 새로 만드는 물건은 명도비 0원으로 시작한다 — 명도비는 낙찰관리 명도분석에서 계산해 세금분석에 넣는다(앱은 그대로 100만원)
-export const startStores = () => { setActivePinia(createPinia()); setDraftCostDefaults({ evictionCost: 0 }); };
+export const startStores = () => { setActivePinia(createPinia()); setDraftCostDefaults({ evictionCost: 0 }); enableEditDetail(); };   /* enableEditDetail — 최근 분석에 고친 칸 이름까지(웹만) */
+import { enableEditDetail } from '../../src/services/editFieldLabels';
 // 물건상세 입지정보 — 앱 물건상세와 같은 셈 · 카카오 주변환경 조회(앱과 같은 함수)
 export {
   eduInfoOf, eduInfoFiltered500mOf, nearbyDisplayOf, pdfNearbyDisplayOf, pdfNearbyFiltered500mOf,

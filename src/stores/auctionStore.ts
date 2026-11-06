@@ -15,6 +15,8 @@ import {
 } from '../services/auctionRepository';
 import { useAuthStore } from './authStore';
 import { stageLabelOf } from '../utils/stageLabel';
+import { startUiPrefSync } from '../services/uiPrefSync';
+import { changedLabels, editDetailOn } from '../services/editFieldLabels';
 
 const createNearBidRow = (): NearBidRow => ({
   saleInfo: '',
@@ -929,11 +931,13 @@ export const useAuctionStore = defineStore('auction', () => {
         const cur = allAuctions.value.find((x) => x.id === id);
         if (!cur || String(cur.basicSummary?.['sum.buildingName'] ?? '').trim()) return;   // 그 사이 사용자가 적었다
         cur.basicSummary = { ...(cur.basicSummary ?? {}), ...(name ? { 'sum.buildingName': name } : {}), [BUILDING_NAME_AUTO_KEY]: name ? 'bld' : 'none' };
-        await saveAuction(cur);
+        await saveAuction(cur, { silent: true });
       });
     }, 2500);
   };
   const resubscribeForUid = (uid: string) => {
+    // 화면 설정(정렬 · 읽음 표시 · 마지막 물건 …)을 내 설정 DB 와 맞춘다 — 웹 · 앱 같이
+    void startUiPrefSync(uid);
     if (unsubscribeRealtime) {
       unsubscribeRealtime();
       unsubscribeRealtime = null;
@@ -946,8 +950,11 @@ export const useAuctionStore = defineStore('auction', () => {
     if (!uid) return; // 로그아웃 상태에서는 구독 안 함
     unsubscribeRealtime = subscribeAuctionList(
       uid,
-      (rows) => {
+      (rows, changedIds) => {
         allAuctions.value = rows.map((row) => normalizeFlags(row));
+        // 서버에 있는 값 — 바뀐 물건만 지금 떠 둔다(화면이 안쪽 칸을 고치기 전에). 저장할 때 이것과 같으면 쓰지 않는다
+        const changed = new Set(changedIds ?? []);
+        allAuctions.value.forEach((a) => { if (changed.has(a.id)) lastWritten.set(a.id, fieldsOf(a)); });
         scheduleNameFill();
         if (import.meta.env.DEV) {
           // 세는 일도 개발 중에만 — 자료가 많으면 동기화마다 도는 자리였다
@@ -983,15 +990,103 @@ export const useAuctionStore = defineStore('auction', () => {
     syncReady.value = false;
   };
 
-  const saveAuction = async (auction: AuctionDetail) => {
+  // 최근 작성 — 지금 어느 화면에서 고치는지(물건상세가 탭을 바꿀 때 적는다). 저장할 때 물건의 editLog 맨 앞에 한 줄
+  let editWhere = '';
+  const setEditWhere = (where: string) => { editWhere = where; };
+  const EDIT_MERGE_MS = 5 * 60 * 1000;   // 같은 화면에서 5분 안에 또 저장하면 한 줄로 합친다(자동 저장이 줄을 늘리지 않게)
+  const logEdit = (auction: AuctionDetail, where: string, what?: string, items: string[] = []) => {
+    const now = Date.now();
+    const log = [...(auction.editLog ?? [])];
+    // 고친 칸 이름(웹) — 맨 위 줄에 이미 다 있으면 새로 쓸 것이 없다
+    const sameItems = items.every((x) => (log[0]?.items ?? []).includes(x));
+    // 맨 위(가장 최근) 줄과 화면 · 내용이 같으면 아무것도 바꾸지 않는다 — 시각도 그대로(물건마다).
+    // 같은 저장이 되풀이돼도 '방금'으로 다시 찍히거나 마이페이지 최근 작성이 깜빡이지 않게
+    if (log[0] && log[0].where === where && (log[0].what ?? '') === (what ?? log[0].what ?? '') && sameItems) return;
+    // 같은 화면 줄이 5분 안에 있으면(맨 위가 아니어도) 그 줄을 맨 위로 올리며 고친다 —
+    // 두 화면이 번갈아 저장해도(손품조사 ↔ 가격분석) 줄이 번갈아 쌓이지 않게
+    const i = log.findIndex((e) => e.where === where && now - e.at < EDIT_MERGE_MS);
+    const was = i >= 0 ? log.splice(i, 1)[0] : null;
+    const w = what ?? was?.what;
+    // 5분 안 같은 화면 줄과 합칠 때 고친 칸 이름도 합친다(최근 것 먼저, 열두 개까지)
+    const its = [...new Set([...items, ...(was?.items ?? [])])].slice(0, 12);
+    log.unshift({ at: now, where, ...(w ? { what: w } : {}), ...(its.length ? { items: its } : {}) });
+    auction.editLog = log.slice(0, 5);
+  };
+  // ===== 같은 내용 다시 쓰기 막기 · 반복 저장 기록 =====
+  // 화면이 물건을 불러온 그대로(바뀐 칸 없이) 또 저장하면 서버에 쓰지 않는다 — '불러옴 → 저장 → 다시 불러옴' 고리가
+  // 쉬지 않고 Firestore 에 쓰던 일(손품조사 탭 깜빡임)을 끊는다. 최근 작성(editLog)은 내용으로 치지 않는다.
+  // 그래도 한 물건이 10초에 5번 넘게 바뀌어 저장되면 어느 화면 · 어느 칸인지 콘솔에 남긴다(원인 찾기).
+  const sortedJson = (v: unknown): string => {
+    if (v === undefined || v === null) return 'null';
+    if (Array.isArray(v)) return `[${v.map(sortedJson).join(',')}]`;
+    if (typeof v === 'object') return `{${Object.keys(v as object).sort().filter((k) => (v as Record<string, unknown>)[k] != null).map((k) => `${JSON.stringify(k)}:${sortedJson((v as Record<string, unknown>)[k])}`).join(',')}}`;
+    return JSON.stringify(v);
+  };
+  // 물건마다 '서버에 있는 값'(동기화로 내려온 값 · 내가 마지막으로 쓴 값) — 같으면 다시 쓰지 않는다
+  const lastWritten = new Map<string, Record<string, string>>();
+  const saveTimes = new Map<string, number[]>();
+  const fieldsOf = (a: AuctionDetail): Record<string, string> => Object.fromEntries(
+    Object.entries(a).filter(([k]) => k !== 'editLog').map(([k, v]) => [k, sortedJson(v)]),
+  );
+  const changedFields = (id: string, now: Record<string, string>): string[] => {
+    const was = lastWritten.get(id);
+    if (!was) return ['(처음)'];
+    return [...new Set([...Object.keys(was), ...Object.keys(now)])].filter((k) => (was[k] ?? 'null') !== (now[k] ?? 'null'));
+  };
+
+  /** opts.where · note — 최근 작성에 남길 화면 · 내용. silent — 사람이 고친 게 아닌 자동 채움은 남기지 않는다 */
+  const saveAuction = async (auction: AuctionDetail, opts: { where?: string; note?: string; silent?: boolean } = {}) => {
+    const where = opts.where || editWhere;
     const authStore = useAuthStore();
     // 로그인된 사용자 uid 강제 부여 (이전 데이터/draft 자동 마이그레이션)
     if (authStore.uid) auction.uid = authStore.uid;
+    const fields = fieldsOf(auction);
+    const changed = changedFields(auction.id, fields);
+    if (!changed.length) { saveAuctionToLocal(auction); return; }   // 서버 값과 같다 — 다시 쓰지 않는다(같은 메뉴를 같은 값으로 또 저장해도 패스)
+    const now = Date.now();
+    const times = [...(saveTimes.get(auction.id) ?? []).filter((t) => now - t < 10000), now];
+    saveTimes.set(auction.id, times);
+    if (times.length >= 5) {
+      // 바뀐 칸마다 처음 달라지는 자리 앞뒤 글자 — 무엇이 왔다 갔다 하는지 보인다
+      const was = lastWritten.get(auction.id) ?? {};
+      const diff = changed.filter((k) => k !== '(처음)').slice(0, 4).map((k) => {
+        const a = was[k] ?? 'null'; const b = fields[k] ?? 'null';
+        let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i += 1;
+        return { 칸: k, 전: a.slice(Math.max(0, i - 60), i + 120), 후: b.slice(Math.max(0, i - 60), i + 120) };
+      });
+      console.warn('[저장 반복]', auction.id, { where: where || '(화면 모름)', note: opts.note, changed, count10s: times.length, diff }, new Error('저장 부른 곳').stack);
+    }
+    // 웹 — 무엇을 고쳤는지 칸 이름까지(앱은 꺼져 있어 빈 목록). 단계처럼 글(note)이 따로 오는 줄은 그 글만
+    const items = editDetailOn() && !opts.note && !opts.silent ? changedLabels(changed, lastWritten.get(auction.id) ?? {}, fields) : [];
+    lastWritten.set(auction.id, fields);
+    if (!opts.silent && where) logEdit(auction, where, opts.note, items);
     saveAuctionToLocal(auction);
     if (!isFirestoreAvailable()) {
       return;
     }
-    await upsertAuction(auction);
+    try {
+      await upsertAuction(auction);
+    } catch (err) {
+      lastWritten.delete(auction.id);   // 못 썼다 — 다음 저장은 같은 내용이어도 다시 쓴다
+      throw err;
+    }
+  };
+
+  /** 물건 문서 밖(필요경비 · 사업경비 · 자금입출금 장부 등)에서 고친 것도 그 물건의 최근 작성(editLog)에 남긴다.
+   *  where 가 없으면 지금 화면(setEditWhere). 줄이 그대로면(같은 화면 5분 안) 쓰지 않는다 */
+  const noteEdit = async (auctionId: string | null | undefined, where?: string, note?: string) => {
+    const w = where || editWhere;
+    if (!auctionId || !w) return;
+    const a = allAuctions.value.find((x) => x.id === auctionId);
+    if (!a) return;
+    const before = JSON.stringify(a.editLog ?? []);
+    const next: AuctionDetail = { ...a, editLog: [...(a.editLog ?? [])] };
+    logEdit(next, w, note);
+    if (JSON.stringify(next.editLog ?? []) === before) return;
+    allAuctions.value = allAuctions.value.map((x) => (x.id === auctionId ? next : x));
+    saveAuctionToLocal(next);
+    if (!isFirestoreAvailable()) return;
+    try { await upsertAuction(next); } catch { /* 기록 한 줄만 못 남긴다 */ }
   };
 
   /**
@@ -1461,6 +1556,8 @@ export const useAuctionStore = defineStore('auction', () => {
     resetListFilters,
     getById,
     saveAuction,
+    setEditWhere,
+    noteEdit,
     deleteAuction,
     purgeAuctions,
     hideAuctions,

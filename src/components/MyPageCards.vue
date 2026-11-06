@@ -114,7 +114,7 @@ const recentLive = computed(() => store.auctions
   .flatMap((a) => (a.editLog ?? []).filter((e) => STAGE_WHERE.test(String(e.where ?? ''))).map((e) => {
     const where = String(e.where ?? '').replace(/입찰가산정/g, '수익분석');
     // 꼬리표 칩 · 설명 — 웹 홈 최근 분석과 같은 글('단계' + '낙찰 → 임장예정 변경', '수익분석' + '내용수정')
-    return { ...e, where, tag: editLogTag(where), desc: editLogDesc(where, e.what), id: a.id, cn: a.caseNumber || '', place: shownPlaceOf(a) };
+    return { ...e, where, tag: editLogTag(where), desc: editLogDesc(where, e.what, e.items), id: a.id, cn: a.caseNumber || '', place: shownPlaceOf(a) };
   }))
   .sort((x, y) => y.at - x.at)
   .slice(0, 3)

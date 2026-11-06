@@ -418,7 +418,58 @@ export interface MarketPicks {
   condJeonseAvg: number;
   pubPrice: number;
   hugJeonse: number;
+  /** 손품조사 › 가격분석(반경 · 유사도) — 고른 조건과 실거래가 예상. 없으면 옛 시세분석에서 저장한 값 */
+  price?: PriceView;
   savedAt: number;
+}
+export interface EditLogEntry { at: number; where: string; what?: string; /** 고친 칸 이름(웹만 남긴다 — editFieldLabels) */ items?: string[] }
+
+/** 임장 비교 물건 한 곳 — 가격분석에서 번호 붙은 유사물건(그 건물 주소로 간다) */
+export interface CompareItem {
+  /** 가격분석 지도 번호(현장에서 가까운 순) */
+  no: number;
+  jibun: string;
+  name: string;
+  /** 길찾기에 쓰는 지번 주소 — '인천 서구 검암동 650-3 골든캐슬' */
+  address: string;
+  lat: number;
+  lng: number;
+  /** 선정물건에서 m */
+  dist: number;
+  /** '2.30억' · '2.03~2.24억' */
+  priceText: string;
+  areaM2: number;
+  buildYear: number;
+  /** 승강기 수 — 대장 조회 실패면 null */
+  elev: number | null;
+  trades: { date: string; floor: number; areaM2: number; price: number }[];
+  /** 현장 체크 — 고른 것만 */
+  check?: { loc?: string; villa?: string; look?: string; park?: string; lift?: string; vs?: string; memo?: string; at?: number };
+}
+/** origin — 선정물건(경매물건) 자리. 1번 비교 물건 길찾기의 출발지 */
+export interface FieldCompare { savedAt: number; items: CompareItem[]; origin?: { lat: number; lng: number; address: string } }
+
+/** 가격분석 조건 · 결과 — 다시 열면 이 조건 그대로 */
+export interface PriceView {
+  months: number;
+  radius: number;
+  kind: '매매' | '전세' | '월세';
+  simMode: 'sim' | 'range';
+  sim: number;
+  cond: { mMin: number; mMax: number; yMin: number; yMax: number; floor: number | null };
+  /** 머리글 ▾ 거르기 — 칸마다 남긴 값(빈 칸은 거르지 않음) */
+  keep: Record<string, string[]>;
+  /** 공시가를 못 찾아 직접 적은 값 */
+  typedPub: number;
+  /** 웹 — 체크를 풀어 실거래가 예상 · 평균에서 뺀 줄(줄 열쇠: 구분|계약일|지번|금액|층|면적×100) */
+  drop?: string[];
+  /** 웹 — 엘베 있음 · 없음 거르기 */
+  elev?: 'yes' | 'no' | null;
+  /** 실거래가 예상(매매 · 전세)과 평균 평당가 · 유사 매매 건수 */
+  estSale: number;
+  estJeonse: number;
+  estPerPy: number;
+  estCount: number;
 }
 
 export interface AuctionDetail {
@@ -466,6 +517,10 @@ export interface AuctionDetail {
   dupNo?: number;
   /** 시세조사(웹 손품분석)에서 고른 매매 · 전세와 거르기 — 브라우저가 아니라 물건에 남긴다 */
   marketPicks?: MarketPicks;
+  /** 최근 작성 — 저장할 때마다 「언제 · 어느 화면 · 무엇」 한 줄(최근 5개, 새것이 앞). 마이페이지 내정보가 모아 보여 준다 */
+  editLog?: EditLogEntry[];
+  /** 임장 비교 물건 — 가격분석에서 넣고, 임장경로 현장 카드에서 체크한다 */
+  fieldCompare?: FieldCompare;
   /** 별표로 매긴 중요도 — 없으면 빈 별, 1~3을 돌아가며 매긴다 */
   priority?: number;
   /** 입찰 상태 — 입찰대기 / 입찰포기 / 입찰진행. status(관심·임장·입찰·낙찰·탈락)와는 별개 */

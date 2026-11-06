@@ -8128,11 +8128,11 @@ span.cal-day.has { cursor: help; }
   const HM_FIN = { 자금입출금: 'cashFlow', 필요경비: 'businessExpense', 사업경비: 'interior', 세금신고: 'tax' };
   /** 기록 한 줄 → 꼬리표 · 가는 곳. 경매 진행 단계(물건상세 탭 · 임장경로 · 낙찰이후)만 — 시장분석(손품조사 등)에서 남긴 줄은 뺀다 */
   /* 꼬리표 칩 · 설명은 마이페이지 최근 작성과 같은 글(editLogTag · editLogDesc) — 단계 줄은 칩 '단계' + '낙찰 → 임장예정 변경' */
-  const hmWhere = (where, what = '') => {
+  const hmWhere = (where, what = '', items = []) => {
     const w = String(where || '').replace(/입찰가산정/g, '수익분석');
     const T = CLOUD.T || {};
     const tagOf = () => (T.editLogTag ? T.editLogTag(w) : w);
-    const desc = T.editLogDesc ? T.editLogDesc(w, what) : what;
+    const desc = T.editLogDesc ? T.editLogDesc(w, what, items) : what;
     if (w === '단계') return { tag: tagOf(), desc, grp: '단계', nav: { act: 'hm-item', tab: 'basic' } };   /* 고정카드 · 선정물건 카드에서 단계를 바꾼 줄 */
     const m = w.match(/^물건상세 › (.+)$/);
     if (m) return { tag: tagOf(), desc, grp: '물건상세', nav: { act: 'hm-item', tab: HM_TAB[m[1]] || 'basic' } };
@@ -8151,7 +8151,7 @@ span.cal-day.has { cursor: help; }
   };
   const hmRecent = (n) => {
     const out = [];
-    CLOUD.raw.forEach((a) => { if (a.hidden) return; (a.editLog || []).forEach((e) => { const k = hmWhere(e.where, e.what); if (k) out.push({ ...e, ...k, id: a.id, cn: hmCase(a), place: hmPlace(a) }); }); });
+    CLOUD.raw.forEach((a) => { if (a.hidden) return; (a.editLog || []).forEach((e) => { const k = hmWhere(e.where, e.what, e.items); if (k) out.push({ ...e, ...k, id: a.id, cn: hmCase(a), place: hmPlace(a) }); }); });
     return out.sort((x, y) => y.at - x.at).slice(0, n);
   };
   /* 날짜 — 마이페이지 입찰 캘린더(BidCalendarPage)와 같은 기준: 매각기일 · 낙찰일 · 잔금기한(적어 둔 값, 없으면 낙찰일 + 45일) · 매도일.
