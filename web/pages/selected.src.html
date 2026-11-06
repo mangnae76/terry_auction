@@ -6,6 +6,8 @@
 -->
 <title>마이턴옥션 선정물건</title>
 <script>
+  /* 로그인해 있던 탭 — 앱 화면 모양(pdfparse.css)을 맨 앞에서 미리 받기만 한다(붙이는 자리는 그대로). 새로고침 덮개가 기다리는 틈을 줄인다(2026-11-06) */
+  try { if (localStorage.getItem('ta.web.in') === '1') { var pl = document.createElement('link'); pl.rel = 'preload'; pl.as = 'style'; pl.href = (/\/web$/.test(location.pathname) ? '/web/' : '') + 'pdfparse.css'; document.head.appendChild(pl); } } catch (e) {}
   /* 대문 보내기 스위치 — 꺼 둔다(2026-11-02). 로그인 안 한 채 /web 에 와도, 로그아웃해도 메인 페이지(선정물건)에 머물고
      머리에 '로그인 · 회원가입'이 뜬다. 켜면(true) 예전처럼 로그인 안 한 사람을 대문(/intro.html)으로 보낸다.
      로그아웃 상태의 메인 페이지를 따로 만들게 되면 여기서 고른다 */
