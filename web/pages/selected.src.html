@@ -3336,7 +3336,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-list small i { font-style: normal; margin-right: 6px; padding: 1px 6px; border-radius: 4px; background: var(--blue-soft); color: var(--blue); font-weight: 700; }
 .hm-list .chev { flex: 0 0 auto; color: var(--faint); }
 .adp-rank-hint { color: var(--muted) !important; }   /* 입지등수 안내글 — 밤 화면에서도 읽히게 웹 회색 */
-.snap-cover { position: absolute; left: 0; right: 0; z-index: 30; background: var(--bg); pointer-events: none; }   /* 새로고침 덮개 — 보던 화면 그림(누를 수 없음), 진짜 화면이 다 그려지면 걷는다 */
+.snap-cover { position: absolute; left: 0; right: 0; z-index: 35; background: var(--bg); pointer-events: none; }   /* 새로고침 덮개 — 보던 화면 그림(누를 수 없음), 진짜 화면이 다 그려지면 걷는다 */
 /* 최근 분석 한 줄 — 첫 줄 사건 · 주소 … 오른쪽 끝 날짜, 둘째 줄 꼬리표 칩 + 설명(홈 · 전체보기 창 같은 꼴) */
 .hm-recent .t1 { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .hm-recent .t1 b { flex: 1 1 auto; min-width: 0; }
@@ -4593,6 +4593,23 @@ span.cal-day.has { cursor: help; }
   </div>
   <button type="button" class="fab" id="fab" data-act="register" data-tip="끌어서 옮길 수 있어요 · 오른쪽 클릭하면 제자리" data-tip-pos="left"><span class="plus">+</span>선정물건등록</button>
 </main>
+<script>
+  /* 새로고침(F5) 덮개 — 떠 둔 화면을 <main> 이 읽히자마자 같은 자리 · 같은 스크롤로 깐다. 걷는 일은 아래 큰 스크립트가(2026-11-06) */
+  (function () {
+    try {
+      var s = JSON.parse(sessionStorage.getItem('ta.web.snap') || 'null');
+      if (!s || s.hash !== location.hash || localStorage.getItem('ta.web.in') !== '1') return;
+      var m = document.querySelector('main'); if (!m) return;
+      var c = document.createElement('div');
+      c.className = 'snap-cover ' + (s.cls || ''); c.setAttribute('aria-hidden', 'true'); c.inert = true;
+      c.style.top = (m.getBoundingClientRect().top + window.scrollY) + 'px';
+      c.innerHTML = s.html; m.after(c);
+      try { history.scrollRestoration = 'manual'; } catch (e) {}
+      window.scrollTo(0, s.y || 0);
+      window.__taSnap = s;
+    } catch (e) {}
+  })();
+</script>
 
 <!-- 유의사항 — 모든 화면 맨 아래(바닥 띠 바로 위) 공통 한 줄 -->
 <div class="foot-note" role="note"><div class="wrap"><p><b>※ 유의사항</b> 제공되는 정보는 참고용이며, 사실과 다를 수 있습니다. 투자의 책임은 본인에게 있으며, 입찰 전 반드시 공부열람 및 현장조사를 하시기 바랍니다.</p></div></div>
@@ -8012,7 +8029,7 @@ span.cal-day.has { cursor: help; }
     const key = `${it.id}:son`;
     if (detailKey === key && box.querySelector('.item-son')) return;
     closeAppDetail();
-    box.innerHTML = '<div class="app-market item-son" data-k="dong" data-s="son" id="itemSonMount"></div>';
+    box.innerHTML = `${ITEM_LEAD.survey ? `<div class="rg-lead it-lead">${ITEM_LEAD.survey.map((t, i) => `<p class="l${i + 1}">${t}</p>`).join('')}</div>` : ''}<div class="app-market item-son" data-k="dong" data-s="son" id="itemSonMount"></div>`;   /* 손품조사도 다른 탭처럼 위에 안내 한 줄 */
     detailKey = key;
     const stop = CLOUD.T.mountAppAdmin($('itemSonMount'), 'sonItem');
     detailUnmount = () => { parkItemCrumbs(); stop(); };
@@ -8405,30 +8422,29 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     } catch (e) { /* 못 떠 두면 예전처럼 */ }
   });
   (() => {
-    let snap = null;
-    try { snap = JSON.parse(sessionStorage.getItem(SNAP_KEY) || 'null'); sessionStorage.removeItem(SNAP_KEY); } catch (e) { snap = null; }
-    let wasIn = false; try { wasIn = localStorage.getItem('ta.web.in') === '1'; } catch (e) { /* 모름 */ }
-    if (!snap || snap.hash !== location.hash || !wasIn) return;   /* 로그인해 있던 탭 · 같은 주소일 때만 */
-    const m = document.querySelector('main'); if (!m) return;
-    const cover = document.createElement('div');
-    cover.className = `snap-cover ${snap.cls || ''}`; cover.setAttribute('aria-hidden', 'true'); cover.inert = true;
-    cover.style.top = `${m.getBoundingClientRect().top + window.scrollY}px`;
-    cover.innerHTML = snap.html;
-    m.after(cover);
-    try { history.scrollRestoration = 'manual'; } catch (e) { /* 그만 */ }
-    window.scrollTo(0, snap.y || 0);
+    const snap = window.__taSnap; const cover = document.querySelector('.snap-cover');
+    try { sessionStorage.removeItem(SNAP_KEY); } catch (e) { /* 그만 */ }
+    if (!snap || !cover) { if (cover) cover.remove(); return; }
+    const m = document.querySelector('main');
+    let lastMut = Date.now();
+    const mo = new MutationObserver(() => { lastMut = Date.now(); });
+    mo.observe(m, { childList: true, subtree: true, characterData: true });
     const t0 = Date.now(); let readyAt = 0;
+    const done = () => {
+      mo.disconnect();
+      const y = window.scrollY;
+      cover.style.transition = 'opacity .14s'; cover.style.opacity = '0';
+      setTimeout(() => { cover.remove(); window.scrollTo(0, y); }, 150);
+    };
     const tick = () => {
       const ready = S.authReady && (!CLOUD.on || CLOUD.synced) && (S.route !== 'item' || !!byId(S.itemId));
       if (ready && !readyAt) readyAt = Date.now();
-      /* 진짜 화면이 덮개만큼 자랐거나(앱 화면이 붙었다) 준비된 뒤 1.5초 · 처음부터 8초가 지나면 걷는다 */
+      /* 진짜 화면이 덮개만큼 자랐고(앱 화면이 붙었다) 0.45초 동안 바뀌는 것이 없으면 — 늦어도 처음부터 10초면 걷는다 */
       const grown = readyAt && m.scrollHeight >= Math.min(cover.scrollHeight, (snap.y || 0) + window.innerHeight) - 40;
-      if ((readyAt && (grown && Date.now() - readyAt > 350 || Date.now() - readyAt > 1500)) || Date.now() - t0 > 8000) {
-        const y = window.scrollY; cover.remove(); window.scrollTo(0, y); return;
-      }
-      setTimeout(tick, 120);
+      if ((grown && Date.now() - lastMut > 450 && Date.now() - readyAt > 300) || Date.now() - t0 > 10000) { done(); return; }
+      setTimeout(tick, 100);
     };
-    setTimeout(tick, 120);
+    setTimeout(tick, 100);
   })();
   /* ===== 뒤로 가기 — 주소에 없는 박스 탭(경매사례 인근 · 동일지번, 진행절차 안 명도분석 · 세금분석, 손품조사 수요 · 시세분석 …)도 한 칸씩.
      탭(role=tab)을 사람이 눌러 고른 탭이 바뀌면 지금 기록에는 '바꾸기 전', 새 기록에는 '바꾼 뒤'를 적는다.
