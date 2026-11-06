@@ -195,7 +195,8 @@ const go = (c: Card) => {
     </div>
 
     <template v-if="webEmbed && recent.length">
-      <h2 class="mpc-h2">최근 작성</h2>
+      <!-- 전체보기 — 웹이 홈 '최근 분석 내역'과 같은 창(날짜 묶음 · 구분 칩)을 띄운다 -->
+      <div class="mpc-h2row"><h2 class="mpc-h2">최근 작성</h2><button type="button" class="mpc-more" @click="router.push('/web-recent')">전체보기 →</button></div>
       <div class="mpc-grid mpc-recent-list">
         <button v-for="r in recent" :key="r.key" type="button" class="mpc-card mpc-rrow" @click="openRecent(r)">
           <span class="mpc-rt">
@@ -250,7 +251,10 @@ const go = (c: Card) => {
 <style scoped>
 .mpc-h2 { margin: 0 2px 8px; font-size: 14px; font-weight: 800; color: #111827; }
 .mpc-h2 em { font-style: normal; color: #4a5bb5; margin-right: 4px; }
-.mpc-h2 + .mpc-grid { margin-bottom: 18px; }
+.mpc-h2 + .mpc-grid, .mpc-h2row + .mpc-grid { margin-bottom: 18px; }
+.mpc-h2row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.mpc-h2row .mpc-h2 { margin-bottom: 0; }
+.mpc-more { height: 28px; padding: 0 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; color: #111827; font-size: 12px; font-weight: 700; cursor: pointer; }
 
 /* 내 자리 칸 — 칸 전체가 단추다. 이름표는 테두리에 걸쳐 앉는다.
    칸 수는 보이는 만큼 똑같이 나눈다(포인트 두 칸을 숨기면 결제내역 한 칸이 통째로) */

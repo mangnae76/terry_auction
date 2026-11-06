@@ -1924,6 +1924,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-page[data-k="more"] .mpc-val { font-size: 16px !important; }
 .app-page[data-k="more"] .mpc-val small { font-size: 13px !important; }
 .app-page[data-k="more"] .mpc-h2 { margin: 0 !important; padding: 20px 24px 12px; background: var(--surface); border: 1px solid var(--card-line); border-bottom: 0; border-radius: 14px 14px 0 0; font-size: var(--title-fs) !important; color: var(--text) !important; }
+.app-page[data-k="more"] .mpc-h2row { margin: 0 !important; padding: 20px 24px 12px; background: var(--surface); border: 1px solid var(--card-line); border-bottom: 0; border-radius: 14px 14px 0 0; }   /* 최근 작성 — 제목 + 전체보기가 카드 머리(제목만 있는 칸과 같은 자리) */
+.app-page[data-k="more"] .mpc-h2row .mpc-h2 { padding: 0; border: 0; border-radius: 0; background: none; }
+.app-page[data-k="more"] .mpc-more { height: 28px; padding: 0 11px; border: 1px solid var(--line-2); border-radius: 7px; background: var(--surface); color: var(--text-2); font-size: 12px; font-weight: 700; white-space: nowrap; }   /* 홈 '전체보기 →'(hm-more)와 같은 단추 */
 .app-page[data-k="more"] .mpc-grid { margin: 0 0 12px !important; padding: 0 24px 20px; background: var(--surface); border: 1px solid var(--card-line); border-top: 0; border-radius: 0 0 14px 14px; gap: 8px !important; }
 .app-page[data-k="more"] .mpc-card { height: 56px; box-sizing: border-box; padding: 0 36px 0 12px !important; align-items: center !important; border: 1px solid var(--card-line) !important; border-radius: 10px !important; background: var(--surface) !important; }
 .app-page[data-k="more"] .mpc-card:hover { background: var(--surface-2) !important; }
@@ -3330,12 +3333,12 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-recent .t1 b { flex: 1 1 auto; min-width: 0; }
 .hm-recent .t1 time { flex: 0 0 auto; white-space: nowrap; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .hm-recent small { display: block; margin-top: 3px; font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dialog.rc-dlg { width: min(720px, calc(100vw - 32px)); max-height: min(760px, calc(100vh - 64px)); display: flex; flex-direction: column; }
+.dialog.rc-dlg { width: min(720px, calc(100vw - 32px)); height: min(720px, calc(100vh - 64px)); max-height: none; display: flex; flex-direction: column; }   /* 크기 고정 — 칩을 바꿔도 창이 늘었다 줄었다 하지 않는다. 목록만 안에서 스크롤 */
 .rc-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 20px 12px; }
 .rc-chips button { height: 30px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text-2); font-size: 13px; cursor: pointer; }
 .rc-chips button.on { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); font-weight: 700; }
 .rc-chips .rc-n { margin-left: auto; font-size: 13px; color: var(--muted); }
-.rc-body { flex: 1 1 auto; overflow-y: auto; padding: 0 20px 16px; border-top: 1px solid var(--card-line); }
+.rc-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 20px 16px; border-top: 1px solid var(--card-line); }
 .rc-day { margin: 14px 0 2px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .hm-none { margin: 0; padding: 22px 8px; text-align: center; font-size: 12.5px; color: var(--muted); }
 @media (max-width: 900px) { .hm-two, .hm-two.even { grid-template-columns: minmax(0, 1fr); } .hm-app { flex-wrap: wrap; } .hm-app nav { width: 100%; } .hm-sched button { grid-template-columns: 56px 66px minmax(0, 1fr); } .hm-sched time { display: none; } }
@@ -5872,26 +5875,37 @@ span.cal-day.has { cursor: help; }
   /* 최근 분석 전체보기 창 — 거르는 칩(고른 칩은 이 브라우저에 남긴다) */
   const RC_FILTER_KEY = 'ta.web.recent.filter';
   const RC_FILTERS = ['전체', '단계', '물건상세', '임장경로', '낙찰이후', '자금관리'];
+  const rcFilter = () => { let f = '전체'; try { f = localStorage.getItem(RC_FILTER_KEY) || '전체'; } catch (err) { /* 전체 */ } return RC_FILTERS.includes(f) ? f : '전체'; };
+  /** 창은 그대로 두고 칩 · 건수 · 목록만 바꾼다 — 칩을 누를 때 창을 새로 그리면 깜빡이고 크기가 바뀌었다(2026-11-06) */
+  function rcFill() {
+    const dlg = document.querySelector('#modalRoot .rc-dlg'); if (!dlg) return;
+    const f = rcFilter();
+    const all = hmRecent(100);
+    const rows = f === '전체' ? all : all.filter((r) => r.grp === f);
+    const dayOf = (at) => { const d = new Date(at); const t = new Date(TODAY); const k = (x) => x.toDateString();
+      if (k(d) === k(t)) return '오늘'; t.setDate(t.getDate() - 1); if (k(d) === k(t)) return '어제';
+      return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${'일월화수목금토'[d.getDay()]})`; };
+    const timeOf = (at) => String(hmStamp(at)).split(' ').slice(1).join(' ');
+    let body = ''; let day = '';
+    rows.forEach((r) => { const d = dayOf(r.at); if (d !== day) { body += `${day ? '</ul>' : ''}<h3 class="rc-day">${esc(d)}</h3><ul class="hm-list hm-recent">`; day = d; } body += hmRecentRow(r, timeOf(r.at)); });
+    if (day) body += '</ul>';
+    dlg.querySelectorAll('.rc-chips button').forEach((b) => b.classList.toggle('on', b.dataset.v === f));
+    dlg.querySelector('.rc-n').textContent = `${rows.length.toLocaleString('ko-KR')}건`;
+    const box = dlg.querySelector('.rc-body');
+    box.innerHTML = body || '<p class="hm-none">이 구분의 기록이 없습니다.</p>';
+    box.scrollTop = 0;
+  }
   function renderModal() {
     const root = $('modalRoot'); const m = S.modal;
     if (!m) { root.innerHTML = ''; return; }
     if (m.kind === 'recent') {
       /* 최근 분석 전체보기 — 새것부터 100줄, 날짜로 묶고 줄에는 시각만. 위 칩으로 거른다(고른 칩은 남긴다) */
-      let f = '전체'; try { f = localStorage.getItem(RC_FILTER_KEY) || '전체'; } catch (err) { /* 전체 */ }
-      if (!RC_FILTERS.includes(f)) f = '전체';
-      const all = hmRecent(100);
-      const rows = f === '전체' ? all : all.filter((r) => r.grp === f);
-      const dayOf = (at) => { const d = new Date(at); const t = new Date(TODAY); const k = (x) => x.toDateString();
-        if (k(d) === k(t)) return '오늘'; t.setDate(t.getDate() - 1); if (k(d) === k(t)) return '어제';
-        return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${'일월화수목금토'[d.getDay()]})`; };
-      const timeOf = (at) => String(hmStamp(at)).split(' ').slice(1).join(' ');
-      let body = ''; let day = '';
-      rows.forEach((r) => { const d = dayOf(r.at); if (d !== day) { body += `${day ? '</ul>' : ''}<h3 class="rc-day">${esc(d)}</h3><ul class="hm-list hm-recent">`; day = d; } body += hmRecentRow(r, timeOf(r.at)); });
-      if (day) body += '</ul>';
+      const f = rcFilter();
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog rc-dlg" role="dialog" aria-modal="true" aria-labelledby="rcT">
         <div class="reg-head"><h2 id="rcT">최근 분석 내역</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
-        <div class="rc-chips">${RC_FILTERS.map((k) => `<button type="button" class="${k === f ? 'on' : ''}" data-act="rc-filter" data-v="${k}">${k}</button>`).join('')}<span class="rc-n">${rows.length.toLocaleString('ko-KR')}건</span></div>
-        <div class="rc-body">${body || '<p class="hm-none">이 구분의 기록이 없습니다.</p>'}</div></div></div>`;
+        <div class="rc-chips">${RC_FILTERS.map((k) => `<button type="button" class="${k === f ? 'on' : ''}" data-act="rc-filter" data-v="${k}">${k}</button>`).join('')}<span class="rc-n"></span></div>
+        <div class="rc-body"></div></div></div>`;
+      rcFill();
       return;
     }
     if (m.kind === 'fav') {
@@ -7654,6 +7668,7 @@ span.cal-day.has { cursor: help; }
         if (to === 'item') { if (!byId(a)) { toast('선정물건에서 그 물건을 찾지 못했습니다.', 'info'); return; } S.itemTabNext = b === 'verify' ? 'survey' : ITEM_TABS.includes(b) ? b : 'basic'; go('item', a); return; }
         if (to === 'login') { openAppLogin(); return; }
         if (to === 'ai') { S.modal = { kind: 'aiset' }; renderModal(); return; }   /* AI 설정 창 */
+        if (to === 'recent') { S.modal = { kind: 'recent' }; renderModal(); return; }   /* 마이페이지 최근 작성 › 전체보기 — 홈 최근 분석과 같은 창 */
         if (APP_PAGE_NAMES[to]) { S.tabForce = true; if (SUB_TAB_KEYS[to].includes(a)) S.pageTab[to] = a; go(to); return; }
         go(to);
       },
@@ -8746,7 +8761,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'hm-cal': case 'mega-cal': S.menu = null; S.pop = ''; S.pageTab.more = 'calendar'; S.tabForce = true; if (S.route === 'more') { writeHash(false); render(); } else go('more'); break;
       case 'hm-notice': S.pageTab.community = 'notice'; go('community'); break;
       case 'hm-recent-all': S.modal = { kind: 'recent' }; renderModal(); break;   /* 전체보기 — 마이페이지(세 줄)로 가지 않고 창에 최근 100줄 */
-      case 'rc-filter': try { localStorage.setItem(RC_FILTER_KEY, v); } catch (err) { /* 이 창에서만 */ } renderModal(); break;
+      case 'rc-filter': try { localStorage.setItem(RC_FILTER_KEY, v); } catch (err) { /* 이 창에서만 */ } rcFill(); break;
       case 'crumb': { const f = crumbGo[Number(v)]; if (f) f(); break; }   /* 경로 칸 — 그 단계 화면으로 */
       /* 직접 입력 — PDF 로 읽은 줄과 같은 길(importParsedPdfAuctions)로 올린다.
          빈 파싱값을 하나 떠서 적은 칸만 덮어쓰면, 신규·갱신 규칙이 PDF 와 똑같이 돈다 */

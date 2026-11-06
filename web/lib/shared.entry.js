@@ -359,6 +359,7 @@ export const mountAppPage = (el, key, tab, hooks = {}) => {
     if (p === '/' || p.startsWith('/auctions')) { nav('list'); return false; }
     if (p === '/field-trip') { nav('trip'); return false; }
     if (p === '/web-ai') { nav('ai'); return false; }   // 더보기 › 계정관리의 AI 설정 카드 — 웹이 설정 창을 띄운다
+    if (p === '/web-recent') { nav('recent'); return false; }   // 마이페이지 최근 작성 › 전체보기 — 웹이 홈과 같은 최근 분석 창을 띄운다
     if (p === '/trade-stats') { nav('market'); return false; }
     if (p === '/more' && to.query && to.query.tab === 'news') { nav('community', 'notice'); return false; }   /* 공지는 커뮤니티로 옮겼다(웹) */
     /* 낙찰이후 · 자금관리 · 더보기 사이를 오가면 웹 메뉴로 옮긴다(띄운 화면이 아니면) */
