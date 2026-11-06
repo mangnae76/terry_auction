@@ -2906,7 +2906,10 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 /* 물건등록 맨 위 안내 — 상자 없이 바탕에 바로(2026-11-05) */
 /* 안내와 아래 묶음(자동등록 · 직접입력)을 가른다 — 왼쪽에 주황 세로 막대 하나(두 줄을 잇는다) · 아래 간격 32 */
 .rg-lead { position: relative; padding-left: 15px; }
-.rg-lead::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--nav-orange); }
+.rg-lead::before { content: ""; position: absolute; left: 0; top: 2px; width: 3px; height: 20px; border-radius: 2px; background: var(--nav-orange); }   /* 막대는 줄 수와 상관없이 첫 줄 높이 하나(3 × 20) — 두 줄 안내만 길어 달라 보였다(2026-11-06) */
+.page-lead-slot:empty { display: none; }
+.page-lead-slot { padding-top: 16px; }
+.page-lead-slot .it-lead { margin-bottom: 0; }
 .reg-content > .rg-lead + .rg-sec { margin-top: 32px; }
 /* 자동등록 · 직접입력 제목은 상자 안으로(2026-11-05) — 안내 → 상자 20 */
 .reg-content > .rg-lead + .rg-results { margin-top: 20px; }
@@ -4554,6 +4557,7 @@ span.cal-day.has { cursor: help; }
   <!-- 임장경로 — 앱 FieldTripPlannerPage 를 그대로 띄운다 -->
   <div id="tripView" hidden>
     <div class="wrap crumb-slot" id="crumbSlotTrip"></div>
+    <div class="wrap page-lead-slot" id="leadTrip"></div>
     <div class="wrap content trip-content" id="tripContent"></div>
   </div>
   <!-- 시장분석 — 하위 탭 '수요공급' 안에 분석 도구의 '실거래 분석' 화면을 그대로 띄운다 -->
@@ -4563,11 +4567,13 @@ span.cal-day.has { cursor: help; }
       <div class="wrap"><div class="toolbar item-head" id="sonHead"></div></div>
     </div>
     <div class="wrap crumb-slot" id="crumbSlotMarket"></div>
+    <div class="wrap page-lead-slot" id="leadMarket"></div>
     <div class="wrap content market-content" id="marketContent"></div>
   </div>
   <!-- 낙찰이후 · 자금관리 · 더보기 — 앱 화면을 그대로 띄운다(하위 탭은 머리띠 아래 웹 탭) -->
   <div id="appPageView" hidden>
     <div class="wrap crumb-slot" id="crumbSlotAppPage"></div>
+    <div class="wrap page-lead-slot" id="leadAppPage"></div>
     <div class="wrap content apppage-content" id="appPageContent"></div>
   </div>
   <!-- 홈 — 로그인 후 대문(로그인하면 맨 먼저 보는 화면, 주소 #/). 로고 · 위치줄 '홈'이 여기로 온다 -->
@@ -4577,6 +4583,7 @@ span.cal-day.has { cursor: help; }
   <!-- 스토어 · 모바일앱 — 웹 안내 화면(큰 흰 상자에 제목까지) -->
   <div id="infoView" hidden>
     <div class="wrap crumb-slot" id="crumbSlotInfo"></div>
+    <div class="wrap page-lead-slot" id="leadInfo"></div>
     <div class="wrap content info-content" id="infoContent"></div>
   </div>
   <!-- 마이페이지 — 지금은 AI 자동 분석 설정만. 설정 방식은 물건등록에 있던 것과 같다 -->
@@ -6125,6 +6132,7 @@ span.cal-day.has { cursor: help; }
     if (tabs) syncStickTop();
     alignSubTabs();
     syncMapLock();
+    try { paintPageLead(); } catch (e) { /* 처음 그릴 때는 아직 표가 정의 전 — 다음 그림에서 */ }
   }
   /* 지도가 화면을 채우는 판(랭킹지도)이 떠 있는 동안만 페이지 스크롤을 잠근다 */
   function syncMapLock() {
@@ -7930,7 +7938,41 @@ span.cal-day.has { cursor: help; }
   const ITEM_LEAD = {
     basic: ['물건의 기본적인 정보들이 입력되었습니다.'],   /* 아래 작은 안내 줄은 뺐다(2026-11-05) */
     rights: ['매각물건명세서 PDF 하나로, 낙찰 후 떠안을 돈이 있는지 정리해 드립니다.', '경매가 처음이어도 괜찮습니다. 말소기준권리, 세입자, 주의할 항목을 쉬운 말로 보여 드립니다.'],
+    survey: ['수요분석 · 시세분석으로 이 동네의 매매 수요와 같은 건물 · 인근 시세를 확인합니다.'],
+    profit: ['입찰가 · 비용 · 세금을 넣어 A~D안별 세후 순이익을 계산하고 확정안을 고릅니다.'],
+    field: ['현장에서 확인한 내용과 현장사진을 남깁니다.'],
   };
+  /* ===== 화면 안내 한 줄 — 물건상세 밖의 화면 · 탭(시장분석 · 낙찰이후 · 마이페이지 · 매뉴얼 · 공지 · 게시판 · 스토어 · 임장경로).
+     모두 같은 꼴(rg-lead — 주황 막대 3 × 20 · 글 16 굵게). 자금관리 네 탭 · 낙찰이후 진행절차는 앱 화면 안(FinancePage · PostWinPage)에 같은 꼴로 있다.
+     문구는 이 표 한곳에서만 고친다(2026-11-06) ===== */
+  const PAGE_LEAD = {
+    trip: '임장 갈 물건을 골라 동선을 짜고, 순서대로 현장을 돌며 기록합니다.',
+    'market:dong': '지역을 골라 실거래 거래량 · 가격을 동네별 · 유형별로 확인합니다.',
+    'market:son': '선정물건을 골라 수요분석 · 시세분석으로 매도가를 예상합니다.',
+    'market:rank': '거래가 많은 지역의 순위를 지도와 표로 확인합니다.',
+    'postwin:win': '입찰 기일부터 낙찰 · 잔금 · 명도까지 단계별로 해야 할 일을 체크합니다.',
+    'more:mypage': '최근 작성한 물건과 계정 · 결제 · 설정을 한곳에서 관리합니다.',
+    'more:alerts': '놓치면 안 되는 기일 · 내가 정한 일정 · 세금 일정을 알려 드립니다.',
+    'more:billing': '이용권을 고르고 결제합니다.',
+    'more:support': '이용방법 안내 · 1:1 문의 · 약관을 확인합니다.',
+    'more:calendar': '매각기일 · 낙찰일 · 잔금기한 · 매도일을 달력에서 한눈에 봅니다.',
+    'manual:gdeny': '낙찰 뒤 매각불허가를 신청해야 하는 경우와 방법을 정리했습니다.',
+    'manual:gevict': '명도 절차 · 협상 방법 · 리스크와 서류 차이를 정리했습니다.',
+    'manual:biz': '매매사업자 등록부터 사업자 계좌 · 카드 준비까지 순서대로 정리했습니다.',
+    'manual:gtax': '매매사업자 과세 구조 · 세율 · 비인정 경비 · 신고 일정을 정리했습니다.',
+    'manual:gcheck': '현장에서 건물 상태와 주거환경을 확인할 체크리스트입니다.',
+    'community:notice': '서비스 공지와 업데이트 소식을 확인합니다.',
+    'board:suggest': '쓰다가 찾은 오류나 바라는 기능을 남겨 주세요.',
+    'board:review': '써 보신 소감을 남겨 주세요.',
+    store: '경매 전자책과 지역 · 임장 리포트를 고릅니다.',
+  };
+  const leadLine = (t) => (t ? `<div class="rg-lead it-lead"><p class="l1">${esc(t)}</p></div>` : '');
+  function paintPageLead() {
+    const r = S.route;
+    const key = r === 'market' ? `market:${S.marketTab}` : APP_PAGE_NAMES[r] ? `${r}:${S.pageTab[r]}` : r;
+    const slot = r === 'trip' ? 'leadTrip' : r === 'market' ? 'leadMarket' : APP_PAGE_NAMES[r] ? 'leadAppPage' : r === 'store' ? 'leadInfo' : '';
+    ['leadTrip', 'leadMarket', 'leadAppPage', 'leadInfo'].forEach((id) => { const el = $(id); if (!el) return; const h = id === slot ? leadLine(PAGE_LEAD[key]) : ''; if (el.innerHTML !== h) el.innerHTML = h; });
+  }
   function renderAppDetailTab(it, tab) {
     const box = $('itemContent');
     if (!CLOUD.on || !CLOUD.raw.has(it.id)) {
