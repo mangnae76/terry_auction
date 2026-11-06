@@ -7896,13 +7896,13 @@ span.cal-day.has { cursor: help; }
       /* 사건번호가 이 물건과 다르면 — 저장 · AI 보내기 전에 바로 알린다 */
       const text = await rtPdfText(f);
       const keys = [...new Set(rtCaseKeys(text))];
-      if (own && keys.length && !keys.includes(own)) { wrong.push(`${f.name} (파일 ${keys[0]} · 이 물건 ${own})`); continue; }
+      if (own && keys.length && !keys.includes(own)) { wrong.push(keys[0]); continue; }
       /* 다른 서류(등기부 · 현황조사서 · 전입세대)로 보이면 받지 않는다 — 파일 이름 · 첫머리 글로 본다 */
       const head = String(text || '').replace(/\s+/g, '').slice(0, 500);
       const byText = RT_TEXT_KIND.find(([, re]) => re.test(head));
       const byName = RT_DOCS.find((d) => d.re.test(String(f.name || '').normalize('NFC')));
       const other = (byText && byText[0] !== 'saleSpec') ? byText[0] : (!byText && byName && byName.k !== 'saleSpec') ? byName.k : '';
-      if (other) { skipped.push(`${f.name} (${RT_DOCS.find((d) => d.k === other).name}로 보입니다)`); continue; }
+      if (other) { skipped.push(RT_DOCS.find((d) => d.k === other).name); continue; }
       const box = () => rtDocsOf(el)[spec.i];
       if (box().querySelector('.adp-doc-box.has')) { box().querySelector('.adp-doc-x').click(); await rtWait(() => !box().querySelector('.adp-doc-box.has'), 15000); }
       const drop = box().querySelector('.adp-doc-box:not(.has)'); if (!drop) continue;
@@ -7912,7 +7912,9 @@ span.cal-day.has { cursor: help; }
       if (box().querySelector('.adp-doc-box.has')) RT.fresh = true;
     }
     RT.busy = false;
-    RT.msg = [wrong.length ? `사건번호가 맞지 않는 파일입니다 — ${wrong.join(', ')}` : '', skipped.length ? `매각물건명세서만 올릴 수 있습니다 — ${skipped.join(', ')}` : ''].filter(Boolean).join(' / ') || RT.msg;
+    /* 알림은 사실만 짧게 — 올린 파일의 사건번호 · 이 물건의 사건번호 · 할 일(2026-11-06, 파일 이름까지 늘어놓아 길기만 했다) */
+    RT.msg = [wrong.length ? `올린 파일은 ${wrong[0]} 사건입니다. 이 물건의 사건번호는 ${own}입니다. 같은 사건번호의 매각물건명세서를 올려 주세요.` : '',
+      skipped.length ? `올린 파일은 ${skipped[0]}로 보입니다. 매각물건명세서를 올려 주세요.` : ''].filter(Boolean).join(' ') || RT.msg;
     rtPaint(el);
   }
   const ITEM_LEAD = {
