@@ -105,6 +105,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .icon-btn{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:8px;border:0;background:transparent;color:var(--nav-text);font-size:18px}
 .ver-btn:hover,.icon-btn:hover{background:rgba(255,255,255,.1)}
 @media (max-width:560px){.g-brand img{height:28px}.g-brand span{font-size:14px}}
+@media (max-width:560px){.ver-btn .old{display:none}}   /* 폰 — '(이전)'까지 쓰면 머리가 옆으로 밀린다. 이전 버전임은 아래 띠(oldbar)가 알려 준다 */
 
 /* ---------- 장(章) 줄 ---------- */
 .secnav{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--gnb-h));z-index:30;background:var(--surface);border-bottom:1px solid var(--subtab-line);box-shadow:0 1px 0 rgba(15,23,42,.03)}
@@ -1566,7 +1567,7 @@ function route(h, instant) {
 /* ---------- 틀 ---------- */
 function renderNav() {
   $('secnavIn').innerHTML = C().sections.map((s, i) => `<a href="#${s.id}" data-sec="${s.id}"><span class="no">${String(i + 1).padStart(2, '0')}</span>${esc(s.label)}</a>`).join('');
-  $('verBtn').innerHTML = `v${esc(S.rel.v)}${S.rel === GUIDE.latest() ? '' : ' (이전)'}${I('chevD')}`;
+  $('verBtn').innerHTML = `v${esc(S.rel.v)}${S.rel === GUIDE.latest() ? '' : '<span class="old"> (이전)</span>'}${I('chevD')}`;
   $('verBtn').setAttribute('aria-label', `가이드 버전 v${S.rel.v}, 다른 버전 보기`);
 }
 

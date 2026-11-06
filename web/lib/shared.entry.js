@@ -27,9 +27,11 @@ export { propTypeName, propTypeMark } from '../../src/utils/propertyType';
 export { taxChainOf, taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxProfitOf, planSummaryOf } from '../../src/services/profitMath';
 // 약관 글 — 바닥 링크 · 고객센터의 이용약관 · 개인정보처리방침 · 환불정책 창이 앱과 같은 글을 쓴다
 export { TERMS_CHAPTERS, TERMS_EFFECTIVE, PRIVACY_SECTIONS, PRIVACY_OFFICER, PRIVACY_CHILD, PRIVACY_EFFECTIVE } from '../../src/services/legalTerms';
+/* 약관 · 정책 창 글 — 대문(intro.html)과 웹이 같이 쓴다 */
+export { legalDoc } from '../../src/services/legalDocs';
 export { POINT_CAUTIONS } from '../../src/services/pointPolicy';
 // 새 공지 · 이벤트 · 업데이트가 있는지(앱 공지 탭의 빨간 점과 같은 셈) — 머리띠 '공지' 옆 점
-export { useBoardNew } from '../../src/services/boardFeed';
+export { useBoardNew, useBoardFeed } from '../../src/services/boardFeed';   /* useBoardFeed — 웹 홈 공지사항 */
 
 // === 앱 자료 연결 — 앱이 쓰는 로그인·물건 저장소(Pinia)를 그대로 쓴다 ===
 // 웹(/web)은 앱과 같은 주소라, 같은 브라우저에서 앱에 로그인해 두었으면 그 로그인이 그대로 이어진다.
@@ -40,10 +42,14 @@ export { useAuctionStore } from '../../src/stores/auctionStore';
 export { isAllowedEmail, isAdminEmail } from '../../src/services/accessControl';
 /* 집 PC 수집 도우미(관리자만) — 시장분석 › 경매사례에서 명령 · 상태 · 모은 매각물건 */
 export {
-  sendAgentCommand, sendAgentStop, agentHeartbeat, watchAgentStatus, watchAgentDatasetMeta, watchAgentCoverage, watchAgentQueue, saveAgentQueue, loadAgentDataset, agentOnline,
+  sendAgentCommand, sendAgentStop, agentHeartbeat, watchAgentStatus, watchAgentDatasetMeta, watchAgentCoverage, watchAgentQueue, saveAgentQueue, loadAgentDataset, agentOnline, migrateLegacyAgentData, saveSaleDataset,
 } from '../../src/services/agentRemote';
+/* 경매사례 — 엑셀 불러오기 · 백업 · 엑셀다운로드(PC 프로그램과 같은 양식). exceljs 는 단추를 누를 때 /vendor/ 에서 불러온다 */
+export { readWorkbook as readSaleWorkbook, exportNear as exportSaleNear, exportData as exportSaleData } from '../../src/services/saleExcel';
+export { mergeRecords as mergeSaleRecords, prepare as prepareSaleRows, normalizeRecords as normalizeSaleRecords } from '../../src/services/saleAnalysis';
 export { updateStamp, UPDATE_PREFIX } from '../../src/services/updateStamp';
-export { agoText } from '../../src/utils/agoText';
+export { agoText } from '../../src/utils/agoText';   /* '방금 · ○분 전' — 웹 물건상세 저장 표시 */
+export { editLogTag, editLogDesc } from '../../src/services/editLogText';   /* 최근 분석 · 최근 작성 한 줄 — 꼬리표 칩 · 설명(마이페이지와 같은 글) */
 /* 주소 → 공동주택 공시가격 — 웹 물건현황(PDF에 금액이 없을 때). 손품조사 시세분석과 같은 조회 */
 export { lookupAddress } from '../../src/services/addressLookup';   /* '방금 · ○분 전' — 웹 물건상세 저장 표시 */
 /* 시도 · 시군구 표(법정동 코드) · 시군구의 동 이름(최근 실거래) — 경매사례 지역 고르기 · 도우미 동 추가 */
@@ -59,7 +65,7 @@ export { isKakaoLoginConfigured } from '../../src/services/socialAuth';
 export { stageDates, bidStageOf, stageLabelOf, shownWonDate, shownBalanceDueDate } from '../../src/utils/stageLabel';
 export { shownAddressOf, shownPlaceOf } from '../../src/utils/addressName';   /* 홈 일정 · 최근 분석 — 주소에 건물명 끼우기(앱과 같은 규칙) */
 // 입찰 기일 전엔 낙찰 · 유찰 · 취소 · 매도를 못 고른다 — 앱과 같은 규칙
-export { stageBeforeSaleError } from '../../src/utils/auctionDates';
+export { stageBeforeSaleError, BALANCE_DUE_DAYS } from '../../src/utils/auctionDates';   /* BALANCE_DUE_DAYS — 웹 홈 일정(잔금기한 = 낙찰일 + 45일) */
 // 물건상세 정보요약·기본정보 — 앱 물건상세와 같은 셈
 export {
   saleKindOf, headMetaLineOf, summarySeedOf, summaryAreaText, summaryApprovalAgeOf, summaryFloorPairOf, exclusiveAreaText,
@@ -88,6 +94,7 @@ export const mountKakaoTools = (el, k, map, near) => {
   const app = createApp({ render: () => h(KakaoMapTools, { k, map, near: st.near }) });
   app.mount(el);
   return { setNear: (p) => { st.near = p || null; }, unmount: () => app.unmount() };
+};
 // 매각기일 요일 — 앱 일정 저장소의 weekdayLabel 그대로
 export { weekdayLabel } from '../../src/stores/scheduleStore';
 
@@ -278,7 +285,6 @@ import FinancePage from '../../src/pages/FinancePage.vue';
 import MorePage from '../../src/pages/MorePage.vue';
 import NewsBody from '../../src/components/NewsBody.vue';
 import SupportBody from '../../src/components/SupportBody.vue';
-import EventBanner from '../../src/components/EventBanner.vue';
 import SuggestBoard from '../../src/components/SuggestBoard.vue';
 import { useRoute, useRouter } from 'vue-router';
 /** 커뮤니티(웹만) — 공지(이벤트 배너 + 공지사항 · 이벤트 · 업데이트, 예전 마이페이지 › 공지) · 오류및제안(회원 게시판) · FAQ(자주 찾는 도움말, 예전 고객센터 맨 위) */
@@ -286,15 +292,10 @@ const CommunityPage = {
   setup() {
     const route = useRoute();
     const router = useRouter();
-    /* 배너를 누르면 — 글이 있으면 그 글, 없으면 아래 이벤트 묶음으로(앱 더보기와 같다) */
-    const openEvent = (id) => {
-      if (id) { void router.push(`/post/${id}`); return; }
-      document.querySelector('.community-shell [data-sec="event"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
     return () => h('div', { class: 'community-shell' }, route.query.tab === 'faq'
       ? [h(SupportBody, { only: 'faq' })]
       : route.query.tab === 'suggest' ? [h(SuggestBoard)]
-      : [h(EventBanner, { onOpen: openEvent }), h(NewsBody)]);
+      : [h(NewsBody, { noticeOnly: true })]);   /* 이벤트 배너(포인트 이벤트) · 이벤트 · 업데이트는 서비스 시작 뒤로(2026-11-02) — 공지사항만 */
   },
 };
 /** 게시판(웹만) — 오류및제안 · 가입인사 · 사용후기. 같은 게시판 틀(SuggestBoard)에 board 만 다르다(2026-11-05) */
@@ -336,8 +337,8 @@ const APP_PAGE_ROUTES = [
 const PAGE_OF_PATH = Object.fromEntries(Object.entries(APP_PAGES).map(([k, p]) => [p, k]));
 export const hasAppPage = (key) => !!APP_PAGES[key];
 /** el 안에 앱 화면(key)을 tab 탭으로 띄운다. 돌려주는 함수로 걷고, .setTab(tab) 으로 탭만 바꾼다 */
-/** 하위 탭이 따로 쪽(경로)인 것 — 마이페이지 › 알림은 앱의 알림 화면(/notifications)을 그대로 띄운다 */
-const TAB_PATHS = { more: { alerts: '/notifications' } };
+/** 하위 탭이 따로 쪽(경로)인 것 — 마이페이지 › 알림은 앱의 알림 화면(/notifications), 입찰 캘린더는 앱의 /bid-calendar 를 그대로 띄운다 */
+const TAB_PATHS = { more: { alerts: '/notifications', calendar: '/bid-calendar' } };
 export const mountAppPage = (el, key, tab, hooks = {}) => {
   const home = APP_PAGES[key];
   const tabPaths = TAB_PATHS[key] || {};

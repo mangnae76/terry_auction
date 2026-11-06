@@ -1,14 +1,17 @@
 <script setup lang="ts">
 // 마이페이지 메뉴 카드 — MYPAGE 화면과 더보기가 같은 것을 쓴다.
 // 건수는 실제 물건 자료에서 센다.
-import { computed, inject, ref } from 'vue';
+import { computed, inject, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AppToast from './AppToast.vue';
 import { useAuctionStore } from '../stores/auctionStore';
 import { useAuthStore } from '../stores/authStore';
 import { propTypeName } from '../utils/propertyType';
+import { shownPlaceOf } from '../utils/addressName';
 import { POINT_GRADES } from '../services/pointPolicy';
 import { PLAN_REST_DAYS, POINTS_OPEN, isFreeMember } from '../services/billingPlans';
+import { updateStamp } from '../services/updateStamp';
+import { editLogDesc, editLogTag } from '../services/editLogText';
 
 const router = useRouter();
 const store = useAuctionStore();
@@ -74,12 +77,12 @@ const PICK_CARDS = computed<Card[]>(() => [
   { icon: '🔔', title: '알림설정', desc: '기한·일정 알림', path: '/notifications' },
   { icon: '🏢', title: '중개업체 관리', desc: '상호·연락처 관리', path: '/agencies' },
   {
-    icon: '📅', title: '입찰달력',
+    icon: '📅', title: '입찰 캘린더',
     path: '/bid-calendar',
     tally: `오늘 ${bidToday.value}건 · 이달 ${bidMonth.value}건`,
   },
   { icon: '🛠️', title: '인테리어 업체', desc: '견적·업체 비딩 관리', path: '/interior-vendors' },
-]);
+].filter((c) => !(webEmbed && c.path === '/bid-calendar')));   // 웹은 입찰 캘린더가 마이페이지 탭(결제하기 옆)에 따로 있다 — 기타 설정 카드에선 뺀다
 
 /** 웹 — AI 설정(자동 분석 켜고 끄기 · 제미나이 키 등록 한 창)을 계정관리에 둔다. 누르면 웹이 설정 창을 띄운다. 앱에는 없다 */
 const webEmbed = inject<boolean>('webEmbed', false);
@@ -100,6 +103,51 @@ const WEB_ACCOUNT_ORDER = ['정보수정', 'AI 자동 분석 설정', '결제하
 const ACCOUNT_CARDS = webEmbed
   ? WEB_ACCOUNT_ORDER.map((t) => [...ACCOUNT_CARDS_BASE, ...WEB_AI_CARDS].find((c) => c.title === t)).filter((c): c is Card => !!c)
   : ACCOUNT_CARDS_BASE;
+
+// ===== 최근 작성 — 물건마다 남긴 editLog(저장할 때 한 줄)를 모아 새것부터 세 줄. 맨 위 요약 줄엔 한 건 =====
+// 경매 진행 단계(물건상세 탭 · 임장경로 · 낙찰이후)에서 남긴 줄만 — 시장분석(손품조사 등)에서 남긴 줄은 뺀다
+const STAGE_WHERE = /^(단계$|물건상세 › |임장경로|낙찰이후|자금관리 › )/;   // 단계 — 고정카드 · 선정물건 카드에서 단계를 바꾼 줄(웹 홈 최근 분석과 같게)
+const FLOW_OF: Record<string, string> = { 진행절차: 'steps', 명도분석: 'evict', 세금분석: 'tax', 필요경비: 'need', 사업경비: 'biz', 매물등록: 'sell' };
+const FIN_OF: Record<string, string> = { 자금입출금: 'cashFlow', 필요경비: 'businessExpense', 사업경비: 'interior', 세금신고: 'tax' };
+const recentLive = computed(() => store.auctions
+  .filter((a) => !a.hidden)
+  .flatMap((a) => (a.editLog ?? []).filter((e) => STAGE_WHERE.test(String(e.where ?? ''))).map((e) => {
+    const where = String(e.where ?? '').replace(/입찰가산정/g, '수익분석');
+    // 꼬리표 칩 · 설명 — 웹 홈 최근 분석과 같은 글('단계' + '낙찰 → 임장예정 변경', '수익분석' + '내용수정')
+    return { ...e, where, tag: editLogTag(where), desc: editLogDesc(where, e.what), id: a.id, cn: a.caseNumber || '', place: shownPlaceOf(a) };
+  }))
+  .sort((x, y) => y.at - x.at)
+  .slice(0, 3)
+  // 줄 이름표 — 물건 · 화면(같은 둘이 또 있으면 순번). 시각을 넣으면 시각이 바뀔 때마다 줄을 새로 만들어 깜빡였다
+  .map((r, i, all) => ({ ...r, key: `${r.id}|${r.where}|${all.slice(0, i).filter((x) => x.id === r.id && x.where === r.where).length}` })));
+// 최근 작성은 화면을 열 때 한 번만 — 저장할 때마다 바뀌어 다시 그리면 깜빡이고, 카드로 들어간 화면이 흔들렸다.
+// 물건 목록이 처음 들어온 순간의 줄을 붙잡아 두고, 새 줄은 다시 들어올 때(새로고침 · 화면 다시 열기) 보인다
+const recent = ref<typeof recentLive.value>([]);
+let recentTaken = false;
+watch(() => store.auctions.length, () => {
+  if (recentTaken || !store.auctions.length) return;
+  recentTaken = true;
+  recent.value = recentLive.value;
+}, { immediate: true });
+const agoText = (at: number) => {
+  const m = Math.floor((Date.now() - at) / 60000);
+  if (m < 1) return '방금';
+  if (m < 60) return `${m}분 전`;
+  if (m < 24 * 60 && new Date(at).toDateString() === new Date().toDateString()) return `${Math.floor(m / 60)}시간 전`;
+  return updateStamp(at);
+};
+/** 그 물건의 그 화면으로 — 물건상세 탭 이름 → 탭 열쇠, 손품조사 · 임장경로 기록은 손품+현장 탭 */
+const TAB_OF: Record<string, string> = { 물건정보: 'basic', 권리분석: 'rights', '손품+현장': 'survey', 손품조사: 'survey', 수요분석: 'survey', 가격분석: 'survey', 시세분석: 'survey', 손품결론: 'survey', 가격정보: 'verify', 수익분석: 'profit', 입찰가산정: 'profit' };
+const openRecent = (r: { id: string; where: string }) => {
+  if (r.where.startsWith('임장경로')) { router.push('/field-trip'); return; }
+  if (r.where.startsWith('낙찰이후')) {   // 낙찰이후 — 진행절차 안 그 탭(진행절차 ~ 매물등록)까지
+    try { sessionStorage.setItem('pw.flow.sub', FLOW_OF[r.where.split(' › ')[1] ?? ''] ?? 'steps'); } catch { /* 그만 */ }
+    router.push({ path: '/post-win', query: { tab: 'flow' } }); return;
+  }
+  if (r.where.startsWith('자금관리')) { router.push({ path: '/finance', query: { tab: FIN_OF[r.where.split(' › ')[1] ?? ''] ?? 'cashFlow' } }); return; }
+  const tab = TAB_OF[r.where.split(' › ').pop() ?? ''] ?? 'basic';
+  router.push({ path: `/auctions/${r.id}`, query: { tab } });
+};
 
 const toastText = ref('');
 const go = (c: Card) => {
@@ -131,13 +179,49 @@ const go = (c: Card) => {
         <span class="mpc-chip">누적 포인트</span>
         <span class="mpc-val">{{ myPoint.toLocaleString('ko-KR') }} <small>P</small></span>
       </button>
+      <!-- 웹 — 최근 작성: 마지막으로 손댄 물건 · 화면 · 내용, 누르면 그 자리로 -->
+      <button v-if="webEmbed && recent.length" type="button" class="mpc-cell mpc-recent" :title="`${recent[0].tag} · ${recent[0].desc}`" @click="openRecent(recent[0])">
+        <span class="mpc-chip">최근작성</span>
+        <span class="mpc-rec">
+          <b>{{ recent[0].cn }} · {{ recent[0].place }}</b>
+          <small><i class="mpc-tag">{{ recent[0].tag }}</i>{{ recent[0].desc }} · {{ agoText(recent[0].at) }}</small>
+        </span>
+        <i class="mpc-go2">이어서 ›</i>
+      </button>
       <button type="button" class="mpc-cell" @click="router.push('/payments')">
         <span class="mpc-chip">결제내역</span>
         <span class="mpc-val">{{ freeMember ? '무료회원' : `${PLAN_REST_DAYS}일` }}</span>
       </button>
     </div>
 
-    <h2 class="mpc-h2">선정물건</h2>
+    <template v-if="webEmbed && recent.length">
+      <h2 class="mpc-h2">최근 작성</h2>
+      <div class="mpc-grid mpc-recent-list">
+        <button v-for="r in recent" :key="r.key" type="button" class="mpc-card mpc-rrow" @click="openRecent(r)">
+          <span class="mpc-rt">
+            <span class="mpc-t1"><span class="mpc-what"><b>{{ r.cn }}</b>{{ r.place }}</span><span class="mpc-when">{{ agoText(r.at) }}</span></span>
+            <span class="mpc-t2"><i class="mpc-tag">{{ r.tag }}</i>{{ r.desc }}</span>
+          </span>
+          <i class="mpc-go">›</i>
+        </button>
+      </div>
+    </template>
+
+    <h2 class="mpc-h2">계정관리</h2>
+
+    <div class="mpc-grid">
+      <button v-for="c in ACCOUNT_CARDS" :key="c.title" type="button" class="mpc-card" @click="go(c)">
+        <span class="mpc-ico">{{ c.icon }}</span>
+        <span class="mpc-txt">
+          <strong>{{ c.title }}</strong>
+          <small v-if="c.desc">{{ c.desc }}</small>
+        </span>
+        <i class="mpc-go">›</i>
+      </button>
+    </div>
+
+    <!-- 기타 설정 — 예전 「선정물건」 묶음(보관함 · 휴지통 · 알림설정 …). 계정관리 아래로 -->
+    <h2 class="mpc-h2">기타 설정</h2>
     <div class="mpc-grid">
       <button
         v-for="c in (webEmbed ? PICK_CARDS.filter((x) => !x.lead) : PICK_CARDS)"
@@ -154,19 +238,6 @@ const go = (c: Card) => {
             <em v-if="c.tally" class="mpc-tally">{{ c.tally }}</em>
             <i v-for="t in c.tallies" :key="t" class="mpc-type">{{ t }}</i>
           </span>
-        </span>
-        <i class="mpc-go">›</i>
-      </button>
-    </div>
-
-    <h2 class="mpc-h2">계정관리</h2>
-
-    <div class="mpc-grid">
-      <button v-for="c in ACCOUNT_CARDS" :key="c.title" type="button" class="mpc-card" @click="go(c)">
-        <span class="mpc-ico">{{ c.icon }}</span>
-        <span class="mpc-txt">
-          <strong>{{ c.title }}</strong>
-          <small v-if="c.desc">{{ c.desc }}</small>
         </span>
         <i class="mpc-go">›</i>
       </button>
@@ -213,6 +284,24 @@ const go = (c: Card) => {
 .mpc-badge.gold { background: #e8bb3d; }
 .mpc-badge.family { background: #7b6ad4; }
 .mpc-val { font-size: 16px; font-weight: 800; color: #e8622a; }
+/* 최근 작성 칸 — 건수 · 결제내역 숫자(오렌지)와 달리 글 두 줄. 남는 폭을 다 쓴다 */
+.mpc-recent { flex: 1 1 auto !important; min-width: 0; justify-content: flex-start !important; }
+.mpc-rec { display: grid; gap: 2px; min-width: 0; text-align: left; }
+.mpc-rec b { font-size: 14px; font-weight: 800; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mpc-rec small { font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 이어서 › — 칸 오른쪽 끝으로, 주소와는 최소 16px 띄운다(붙어 보였다 2026-11-03) */
+.mpc-go2 { flex: 0 0 auto; margin-left: auto; padding-left: 16px; font-style: normal; font-size: 13px; font-weight: 700; color: #2b6df3; white-space: nowrap; }
+/* 아래 최근 작성 세 줄 — 한 줄에 하나(두 칸으로 나누지 않는다) */
+.mpc-recent-list { grid-template-columns: minmax(0, 1fr) !important; }
+.mpc-rrow { display: grid !important; grid-template-columns: minmax(0, 1fr) 14px; align-items: center; gap: 10px; text-align: left; }
+/* 한 줄 — 첫 줄 사건 · 주소 … 오른쪽 끝 언제, 둘째 줄 꼬리표 칩 + 설명(웹 홈 최근 분석과 같은 꼴, 2026-11-06) */
+.mpc-rt { display: grid; gap: 3px; min-width: 0; }
+.mpc-t1 { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.mpc-when { flex: 0 0 auto; margin-left: auto; font-size: 12.5px; color: #6b7280; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mpc-what { min-width: 0; font-size: 13.5px; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mpc-what b { margin-right: 6px; }
+.mpc-t2 { min-width: 0; font-size: 12px; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mpc-tag { font-style: normal; margin-right: 6px; padding: 1px 6px; border-radius: 4px; background: #eef2ff; color: #2b4fd8; font-size: 12px; font-weight: 700; }
 .mpc-val small { font-size: 11px; color: #6b7280; font-weight: 700; }
 
 .mpc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }

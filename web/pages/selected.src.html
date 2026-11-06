@@ -1112,7 +1112,9 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-map .pa-pin.off .lbl { opacity: .55; text-decoration: line-through; }
 .sx-tbl td.me-case { line-height: 1.3; }   /* 첫 줄 — 빨간 경매물건 칩 위, 사건번호 아래 두 줄 */
 .sx-tbl td.me-case .cno { display: block; margin-top: 3px; }
-.sx-tbl .kind-me { display: inline-block; background: #e03e3e; color: #fff; font-size: 12px; padding: 1px 6px; border-radius: 3px; }   /* 첫 줄 경매물건 — 시세분석 첫 줄 .kind.me 처럼 빨간 칩(글자는 웹 하한 12) */
+.sx-tbl .kind-me { display: inline-block; background: #e03e3e; color: #fff; font-size: 8.5px; padding: 1px 4px; border-radius: 3px; }   /* 첫 줄 경매물건 — 시세분석 첫 줄 .kind.me 처럼 빨간 칩. 칩은 웹 하한 12 의 예외 — 경매물건 · 경매지번 · 같은면적 칩은 8.5 로 같게(2026-11-06) */
+/* 손품조사 시세분석 표의 경매물건 칩(앱 9) — 웹은 경매지번 · 같은면적 칩과 같은 8.5 */
+.kind.me { font-size: 8.5px !important; }
 .sx-ptag { font-size: 13px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 5px; padding: 3px 8px; }   /* '근거' 칩 — 손품조사 시세분석 .pa-tag 와 같은 꼴 */
 /* 지도 — 손품조사 시세분석 지도와 같은 꼴(핀 · 반경 원 · 이름표) */
 .sx-mapcard { padding: 16px; }
@@ -1194,7 +1196,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-addr { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }   /* 주소 아래 칩 — 손품조사 시세분석 표와 같은 꼴 */
 .sx-addr .addr { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .sx-addr .chips { display: inline-flex; gap: 4px; }
-.sx-addr .same { font-size: 12px; font-weight: 500; line-height: 1.35; color: var(--red, #dc2626); border: 1px solid var(--red, #dc2626); border-radius: 3px; padding: 0 3px; }
+.sx-addr .same { font-size: 8.5px; font-weight: 500; line-height: 1.35; color: var(--red, #dc2626); border: 1px solid var(--red, #dc2626); border-radius: 3px; padding: 0 3px; }
 .sx-addr .same.eq { color: #fff; background: var(--red, #dc2626); }
 .sx-tbl table { width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; font-size: 13px; }
 .sx-tbl th { padding: 9px 6px; background: var(--band); color: var(--muted); font-size: 12.5px; font-weight: 700; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--line); cursor: pointer; user-select: none; }
@@ -3323,6 +3325,18 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-list small { font-size: 11.5px; color: var(--muted); }
 .hm-list small i { font-style: normal; margin-right: 6px; padding: 1px 6px; border-radius: 4px; background: var(--blue-soft); color: var(--blue); font-weight: 700; }
 .hm-list .chev { flex: 0 0 auto; color: var(--faint); }
+/* 최근 분석 한 줄 — 첫 줄 사건 · 주소 … 오른쪽 끝 날짜, 둘째 줄 꼬리표 칩 + 설명(홈 · 전체보기 창 같은 꼴) */
+.hm-recent .t1 { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.hm-recent .t1 b { flex: 1 1 auto; min-width: 0; }
+.hm-recent .t1 time { flex: 0 0 auto; white-space: nowrap; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hm-recent small { display: block; margin-top: 3px; font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dialog.rc-dlg { width: min(720px, calc(100vw - 32px)); max-height: min(760px, calc(100vh - 64px)); display: flex; flex-direction: column; }
+.rc-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 20px 12px; }
+.rc-chips button { height: 30px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text-2); font-size: 13px; cursor: pointer; }
+.rc-chips button.on { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); font-weight: 700; }
+.rc-chips .rc-n { margin-left: auto; font-size: 13px; color: var(--muted); }
+.rc-body { flex: 1 1 auto; overflow-y: auto; padding: 0 20px 16px; border-top: 1px solid var(--card-line); }
+.rc-day { margin: 14px 0 2px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .hm-none { margin: 0; padding: 22px 8px; text-align: center; font-size: 12.5px; color: var(--muted); }
 @media (max-width: 900px) { .hm-two, .hm-two.even { grid-template-columns: minmax(0, 1fr); } .hm-app { flex-wrap: wrap; } .hm-app nav { width: 100%; } .hm-sched button { grid-template-columns: 56px 66px minmax(0, 1fr); } .hm-sched time { display: none; } }
 .mb-hero { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 40px; align-items: start; max-width: 1120px; margin: 0 auto; padding: 30px 12px 26px; }
@@ -5855,9 +5869,31 @@ span.cal-day.has { cursor: help; }
   /* 키 칸을 어디에 그리고 있나 — 창이 떠 있으면 창, 아니면 마이페이지의 상자 */
   const aiCtx = () => ((S.modal && S.modal.kind === 'ai') ? S.modal : S.aiPane);
   const aiRedraw = () => { if (S.modal && S.modal.kind === 'ai') renderModal(); else rerenderAi(); };
+  /* 최근 분석 전체보기 창 — 거르는 칩(고른 칩은 이 브라우저에 남긴다) */
+  const RC_FILTER_KEY = 'ta.web.recent.filter';
+  const RC_FILTERS = ['전체', '단계', '물건상세', '임장경로', '낙찰이후', '자금관리'];
   function renderModal() {
     const root = $('modalRoot'); const m = S.modal;
     if (!m) { root.innerHTML = ''; return; }
+    if (m.kind === 'recent') {
+      /* 최근 분석 전체보기 — 새것부터 100줄, 날짜로 묶고 줄에는 시각만. 위 칩으로 거른다(고른 칩은 남긴다) */
+      let f = '전체'; try { f = localStorage.getItem(RC_FILTER_KEY) || '전체'; } catch (err) { /* 전체 */ }
+      if (!RC_FILTERS.includes(f)) f = '전체';
+      const all = hmRecent(100);
+      const rows = f === '전체' ? all : all.filter((r) => r.grp === f);
+      const dayOf = (at) => { const d = new Date(at); const t = new Date(TODAY); const k = (x) => x.toDateString();
+        if (k(d) === k(t)) return '오늘'; t.setDate(t.getDate() - 1); if (k(d) === k(t)) return '어제';
+        return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${'일월화수목금토'[d.getDay()]})`; };
+      const timeOf = (at) => String(hmStamp(at)).split(' ').slice(1).join(' ');
+      let body = ''; let day = '';
+      rows.forEach((r) => { const d = dayOf(r.at); if (d !== day) { body += `${day ? '</ul>' : ''}<h3 class="rc-day">${esc(d)}</h3><ul class="hm-list hm-recent">`; day = d; } body += hmRecentRow(r, timeOf(r.at)); });
+      if (day) body += '</ul>';
+      root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog rc-dlg" role="dialog" aria-modal="true" aria-labelledby="rcT">
+        <div class="reg-head"><h2 id="rcT">최근 분석 내역</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
+        <div class="rc-chips">${RC_FILTERS.map((k) => `<button type="button" class="${k === f ? 'on' : ''}" data-act="rc-filter" data-v="${k}">${k}</button>`).join('')}<span class="rc-n">${rows.length.toLocaleString('ko-KR')}건</span></div>
+        <div class="rc-body">${body || '<p class="hm-none">이 구분의 기록이 없습니다.</p>'}</div></div></div>`;
+      return;
+    }
     if (m.kind === 'fav') {
       /* 목록은 R.favs 그대로 — 고친 것은 바로 반영된다. 아래 '저장'은 없다 */
       const ck = (f) => `<input type="checkbox" class="ck" data-act="fav-sel" data-v="${esc(f.url)}" ${R.sel.includes(f.url) ? 'checked' : ''} aria-label="사용 중인 폴더">`;
@@ -8076,18 +8112,27 @@ span.cal-day.has { cursor: help; }
   const HM_FLOW = { 진행절차: 'steps', 명도분석: 'evict', 세금분석: 'tax', 필요경비: 'need', 사업경비: 'biz', 매물등록: 'sell' };   /* 낙찰이후 › 진행절차 안 탭(PostWinPage FLOW_SUBS) */
   const HM_FIN = { 자금입출금: 'cashFlow', 필요경비: 'businessExpense', 사업경비: 'interior', 세금신고: 'tax' };
   /** 기록 한 줄 → 꼬리표 · 가는 곳. 경매 진행 단계(물건상세 탭 · 임장경로 · 낙찰이후)만 — 시장분석(손품조사 등)에서 남긴 줄은 뺀다 */
+  /* 꼬리표 칩 · 설명은 마이페이지 최근 작성과 같은 글(editLogTag · editLogDesc) — 단계 줄은 칩 '단계' + '낙찰 → 임장예정 변경' */
   const hmWhere = (where, what = '') => {
     const w = String(where || '').replace(/입찰가산정/g, '수익분석');
-    if (w === '단계') return { tag: what ? `단계 ${what}` : '단계', nav: { act: 'hm-item', tab: 'basic' } };   /* 고정카드 · 선정물건 카드에서 단계를 바꾼 줄 */
+    const T = CLOUD.T || {};
+    const tagOf = () => (T.editLogTag ? T.editLogTag(w) : w);
+    const desc = T.editLogDesc ? T.editLogDesc(w, what) : what;
+    if (w === '단계') return { tag: tagOf(), desc, grp: '단계', nav: { act: 'hm-item', tab: 'basic' } };   /* 고정카드 · 선정물건 카드에서 단계를 바꾼 줄 */
     const m = w.match(/^물건상세 › (.+)$/);
-    if (m) return { tag: m[1], nav: { act: 'hm-item', tab: HM_TAB[m[1]] || 'basic' } };
-    if (/^임장경로/.test(w)) return { tag: '임장경로', nav: { act: 'hm-go', v: 'trip' } };
+    if (m) return { tag: tagOf(), desc, grp: '물건상세', nav: { act: 'hm-item', tab: HM_TAB[m[1]] || 'basic' } };
+    if (/^임장경로/.test(w)) return { tag: tagOf(), desc, grp: '임장경로', nav: { act: 'hm-go', v: 'trip' } };
     /* 낙찰이후 — 진행절차 안 탭(진행절차 ~ 매물등록)까지. 자금관리 — 네 탭(자금입출금 ~ 세금신고) */
     const pw = w.match(/^낙찰이후(?: › (.+))?$/);
-    if (pw) { const t = pw[1] || '진행절차'; const f = HM_FLOW[t]; return f ? { tag: `낙찰이후 · ${t}`, nav: { act: 'hm-go', v: 'postwin', sub: 'flow', flow: f } } : null; }
+    if (pw) { const t = pw[1] || '진행절차'; const f = HM_FLOW[t]; return f ? { tag: tagOf(), desc, grp: '낙찰이후', nav: { act: 'hm-go', v: 'postwin', sub: 'flow', flow: f } } : null; }
     const fin = w.match(/^자금관리 › (.+)$/);
-    if (fin && HM_FIN[fin[1]]) return { tag: `자금관리 · ${fin[1]}`, nav: { act: 'hm-go', v: 'finance', sub: HM_FIN[fin[1]] } };
+    if (fin && HM_FIN[fin[1]]) return { tag: tagOf(), desc, grp: '자금관리', nav: { act: 'hm-go', v: 'finance', sub: HM_FIN[fin[1]] } };
     return null;
+  };
+  /** 최근 분석 한 줄 — 첫 줄 사건 · 주소 … 오른쪽 끝 날짜, 둘째 줄 꼬리표 칩 + 설명. 홈 목록 · 전체보기 창이 같이 쓴다(창은 날짜 묶음이라 시각만) */
+  const hmRecentRow = (r, when) => {
+    const attrs = r.nav.act === 'hm-item' ? `data-v="${esc(r.id)}" data-tab="${r.nav.tab}"` : `data-v="${r.nav.v}"${r.nav.sub ? ` data-sub="${r.nav.sub}"` : ''}${r.nav.flow ? ` data-flow="${r.nav.flow}"` : ''}`;
+    return `<li><button type="button" data-act="${r.nav.act}" ${attrs}><span class="ic">${HM_SVG(HM_IC.bld)}</span><span class="t"><span class="t1"><b>${esc(`${r.cn} · ${r.place}`)}</b><time>${esc(when)}</time></span><small><i>${esc(r.tag)}</i>${esc(r.desc || '')}</small></span><span class="chev">${HM_SVG(HM_IC.chev).replace('<svg', '<svg width="16" height="16"')}</span></button></li>`;
   };
   const hmRecent = (n) => {
     const out = [];
@@ -8195,7 +8240,7 @@ span.cal-day.has { cursor: help; }
       + (notices.length ? `<ul class="hm-list">${notices.map((n) => hmRow('bell', 'n', 'hm-notice', '', n.text, `${n.star ? '<i>고정</i>' : n.tag ? `<i>${esc(n.tag)}</i>` : ''}${esc(String(n.postedAt || '').slice(0, 10))}`)).join('')}</ul>` : '<p class="hm-none">공지사항이 없습니다.</p>')
       + `</section>`
       + `<section class="hm-card"><div class="hm-h"><h2>${HM_SVG(HM_IC.clock)}최근 분석 내역</h2><button type="button" class="hm-more" data-act="hm-recent-all">전체보기 →</button></div>`
-      + (recent.length ? `<ul class="hm-list">${recent.map((r) => hmRow('bld', '', r.nav.act, r.nav.act === 'hm-item' ? `data-v="${esc(r.id)}" data-tab="${r.nav.tab}"` : `data-v="${r.nav.v}"${r.nav.sub ? ` data-sub="${r.nav.sub}"` : ''}${r.nav.flow ? ` data-flow="${r.nav.flow}"` : ''}`, `${r.cn} · ${r.place}`, `<i>${esc(r.tag)}</i>${esc(hmStamp(r.at))}`)).join('')}</ul>` : '<p class="hm-none">아직 분석한 물건이 없습니다. 물건을 등록하고 분석을 시작해 보세요.</p>')
+      + (recent.length ? `<ul class="hm-list hm-recent">${recent.map((r) => hmRecentRow(r, hmStamp(r.at))).join('')}</ul>` : '<p class="hm-none">아직 분석한 물건이 없습니다. 물건을 등록하고 분석을 시작해 보세요.</p>')
       + `</section>`
       + `</div>`
       /* 부동산 투자 지표 · 실거래 동향 — 공지사항 · 최근 분석 내역 아래, 반반 폭(2026-11-03) */
@@ -8692,15 +8737,16 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'go-list': go('list'); break;
       case 'go-home': go('home'); break;
       /* 홈 — 물건 · 일정 · 최근 분석 줄은 그 물건의 그 탭, 전체보기는 각 화면으로 */
-      case 'hm-item': S.itemTabNext = t.dataset.tab || 'basic'; go('item', t.dataset.v); break;
+      case 'hm-item': if (S.modal && S.modal.kind === 'recent') { S.modal = null; renderModal(); } S.itemTabNext = t.dataset.tab || 'basic'; go('item', t.dataset.v); break;
       case 'hm-register': go('register'); break;
-      case 'hm-go': { const r = t.dataset.v; const sub = t.dataset.sub; if (t.dataset.flow) { try { sessionStorage.setItem('pw.flow.sub', t.dataset.flow); } catch (e) { /* 그만 */ } } if (sub && S.pageTab[r] !== undefined) { S.pageTab[r] = sub; S.tabForce = true; } if (S.route === r) { writeHash(false); render(); } else go(r); break; }
+      case 'hm-go': { if (S.modal && S.modal.kind === 'recent') { S.modal = null; renderModal(); } const r = t.dataset.v; const sub = t.dataset.sub; if (t.dataset.flow) { try { sessionStorage.setItem('pw.flow.sub', t.dataset.flow); } catch (e) { /* 그만 */ } } if (sub && S.pageTab[r] !== undefined) { S.pageTab[r] = sub; S.tabForce = true; } if (S.route === r) { writeHash(false); render(); } else go(r); break; }
       case 'hm-cal-day': S.homeDay = v && S.homeDay !== v ? v : ''; renderHome(); break;
       case 'hm-cal-move': { const b = S.homeCal || new Date(TODAY); S.homeCal = new Date(b.getFullYear(), b.getMonth() + Number(v), 1); renderHome(); break; }
       /* 입찰 캘린더(마이페이지 › 자세히 · 목록으로) — 홈 '전체보기' · 전체 메뉴. 선정물건 도구 줄의 '입찰일 요약'(입찰일만 간단히)과 다른 화면 */
       case 'hm-cal': case 'mega-cal': S.menu = null; S.pop = ''; S.pageTab.more = 'calendar'; S.tabForce = true; if (S.route === 'more') { writeHash(false); render(); } else go('more'); break;
       case 'hm-notice': S.pageTab.community = 'notice'; go('community'); break;
-      case 'hm-recent-all': S.pageTab.more = 'mypage'; go('more'); break;
+      case 'hm-recent-all': S.modal = { kind: 'recent' }; renderModal(); break;   /* 전체보기 — 마이페이지(세 줄)로 가지 않고 창에 최근 100줄 */
+      case 'rc-filter': try { localStorage.setItem(RC_FILTER_KEY, v); } catch (err) { /* 이 창에서만 */ } renderModal(); break;
       case 'crumb': { const f = crumbGo[Number(v)]; if (f) f(); break; }   /* 경로 칸 — 그 단계 화면으로 */
       /* 직접 입력 — PDF 로 읽은 줄과 같은 길(importParsedPdfAuctions)로 올린다.
          빈 파싱값을 하나 떠서 적은 칸만 덮어쓰면, 신규·갱신 규칙이 PDF 와 똑같이 돈다 */

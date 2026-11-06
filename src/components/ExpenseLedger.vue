@@ -12,7 +12,6 @@ const planned = <T extends Parameters<typeof withConfirmedPlan>[0]>(a: T): T => 
 import { useFinanceStore } from '../stores/financeStore';
 import { useInteriorStore } from '../stores/interiorStore';
 import { BOOK_HINT, BOOK_NAME, groupsOf, ledgerRows, planAmountsOf, planRowsOf, withPlan, type Book, type LedgerRow } from '../services/expenseBook';
-import { cleanupLegacyOnce } from '../services/legacyCleanup';
 import { shortAddr } from '../utils/address';
 import FormattedNumberInput from './FormattedNumberInput.vue';
 import AppConfirm from './AppConfirm.vue';
@@ -34,7 +33,6 @@ const finance = useFinanceStore();
 const interior = useInteriorStore();
 finance.initialize();
 interior.initialize();
-cleanupLegacyOnce();
 
 const many = computed(() => props.auctionId === null);
 /** A안 기본 줄을 깔 물건 — 낙찰이후는 그 물건, 자금관리는 낙찰한 물건 전부 */
