@@ -4411,6 +4411,11 @@ span.cal-day.has { cursor: help; }
   .mk-sale .adm-seg { display: flex; flex-wrap: wrap; }
 }
 </style>
+<script>
+  /* 로그인해 있던 탭 — 앱 화면 모양(pdfparse.css)을 머리띠보다 먼저 바로 싣는다. 실릴 때까지 아래 그림을 미뤄 새로고침 덮개가 빈 틀 없이 바로 보인다.
+     웹 글(위 <style>)보다 뒤에 두어 같은 힘이면 앱 모양이 이기는 순서는 예전과 같다(2026-11-06) */
+  try { if (localStorage.getItem('ta.web.in') === '1') document.write('<link rel="stylesheet" data-tapdf="1" href="' + (/\/web$/.test(location.pathname) ? '/web/' : '') + 'pdfparse.css">'); } catch (e) {}
+</script>
 
 <header class="gnb">
   <div class="wrap">
