@@ -2116,12 +2116,32 @@ const scTotalCosts = (sc: ProfitScenario) => {
 const scSale = (sc: ProfitScenario) => sc.sale.expectedSaleValue ?? 0;
 /** 예비 매도가 — 적어 두기만 하는 값이다. 어떤 계산에도 쓰지 않는다 */
 /** 매도가 옆 자유 입력칸. 예전에 숫자 칸이던 때의 0 은 빈칸으로 본다 */
+/** 입금가 메모 — 숫자만이면 천 단위 쉼표(웹 숫자 규칙). 글자를 섞어 적은 메모는 그대로 */
+const altGroup = (v: string) => (/^[\d,]+$/.test(v) ? v.replace(/,/g, '').replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') : v);
 const scSaleAlt = (sc: ProfitScenario) => {
   // 예전에 숫자 칸이던 때 저장된 0 도 들어올 수 있어 문자로 맞춰 본다
   const v = String(sc.sale.expectedSaleValue2 ?? '');
-  return v === '0' ? '' : v;
+  if (v === '0') return '';
+  return webEmbed ? altGroup(v) : v;
 };
 const scSetSaleAlt = (sc: ProfitScenario, value: string) => { sc.sale.expectedSaleValue2 = value; };
+/** 웹 — 적는 중에도 쉼표를 끼우고, 커서는 '왼쪽 숫자 몇 개' 자리로 되돌린다(FormattedNumberInput 과 같은 방식) */
+const scTypeSaleAlt = (sc: ProfitScenario, ev: Event) => {
+  const el = ev.target as HTMLInputElement;
+  let v = el.value;
+  if (webEmbed && /^[\d,]*$/.test(v)) {
+    const left = v.slice(0, el.selectionStart ?? v.length).replace(/\D/g, '').length;
+    const g = altGroup(v);
+    if (g !== v) {
+      el.value = g;
+      let i = 0; let seen = 0;
+      while (i < g.length && seen < left) { if (/\d/.test(g[i])) seen += 1; i += 1; }
+      el.setSelectionRange(i, i);
+    }
+    v = g;
+  }
+  scSetSaleAlt(sc, v);
+};
 const scGain = (sc: ProfitScenario) => scSale(sc) - scBid(sc) - scTotalCosts(sc);
 const scLocalTaxRate = (sc: ProfitScenario) => sc.cost?.localTaxRate ?? 10;
 
@@ -6750,7 +6770,7 @@ const goBack = () => router.back();
                     <input type="range" min="60" max="150" step="0.1" :value="Math.min(150, Math.max(60, scSalePct(sc)))" :aria-label="`${sc.label} 감정가 대비 예상 매도가`" @input="scSetSaleByApprPct(sc, ($event.target as HTMLInputElement).value)" />
                     <div class="lab"><span>60%</span><span>감정가 100%</span><span>150%</span></div>
                   </div>
-                  <div class="bx-row"><span class="bx-k"><label :for="`bida-alt-${si}`">입금가</label></span><span class="bx-d">계산에 안 들어가는 메모</span><span class="bx-p"></span><span class="bx-a"><input :id="`bida-alt-${si}`" :value="scSaleAlt(sc)" class="bx-f amt" @input="scSetSaleAlt(sc, ($event.target as HTMLInputElement).value)" /></span></div>
+                  <div class="bx-row"><span class="bx-k"><label :for="`bida-alt-${si}`">입금가</label></span><span class="bx-d">계산에 안 들어가는 메모</span><span class="bx-p"></span><span class="bx-a"><input :id="`bida-alt-${si}`" :value="scSaleAlt(sc)" class="bx-f amt" @input="scTypeSaleAlt(sc, $event)" /></span></div>
                   <div class="bx-row"><span class="bx-k">총투자금</span><span class="bx-d">입찰가 + 비용</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTotalInvest(sc)) }}</b></span></div>
                   <div class="bx-row"><span class="bx-k">사업소득금액</span><span class="bx-d">매도가 − 입찰가 − 비용</span><span class="bx-p"></span><span class="bx-a"><b class="bx-f ro" :class="{ neg: scGain(sc) < 0 }">{{ formatMoney(scGain(sc)) }}</b></span></div>
                   <div class="bx-row wide"><span class="bx-k">사업소득세</span><span class="bx-d">세율 − 누진공제</span><span class="bx-p"><input class="bx-f pct rate" :value="scTaxRate(sc)" inputmode="decimal" aria-label="사업소득세율" @input="limitPct($event); scSetTaxRate(sc, ($event.target as HTMLInputElement).value)" /><i>%</i><em class="bx-minus">−</em><input class="bx-f ded" :value="Math.round(scTaxDeduct(sc) / 10000)" inputmode="decimal" aria-label="누진공제(만원)" @input="scSetTaxDeduct(sc, ($event.target as HTMLInputElement).value)" /><i>만</i></span><span class="bx-a"><b class="bx-f ro">{{ formatMoney(scTransferTax(sc)) }}</b></span></div>
