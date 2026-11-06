@@ -103,7 +103,9 @@ const agreeAll = computed({
 
 /** 아이디(메일)를 고치면 중복확인은 다시 받아야 한다 */
 const idChecked = ref<'' | 'free' | 'taken'>('');
-watch(email, () => { idChecked.value = ''; });
+// 웹 — 중복확인 결과는 아이디 칸 바로 아래에, 아이디를 고칠 때까지 남긴다(아래쪽에 잠깐 떴다 사라져 못 보고 지나쳤다 2026-11-06)
+const idNotice = ref<{ tone: 'ok' | 'bad' | 'unk'; text: string } | null>(null);
+watch(email, () => { idChecked.value = ''; idNotice.value = null; });
 
 const PHONE_BOX = { p1: phone1, p2: phone2, p3: phone3 };
 const onPhone = (key: keyof typeof PHONE_BOX, el: HTMLInputElement, max: number) => {
@@ -128,6 +130,7 @@ const notice = ref('');
 const onCheckId = async () => {
   const mail = email.value.trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+    if (webEmbed) { idNotice.value = { tone: 'bad', text: '아이디는 메일 주소 꼴로 적어 주세요.' }; return; }
     authStore.error = '아이디는 메일 주소 꼴로 적어 주세요.';
     return;
   }
@@ -137,14 +140,17 @@ const onCheckId = async () => {
     const r = await checkEmailTaken(mail);
     if (r === 'taken') {
       idChecked.value = 'taken';
-      notice.value = '이미 쓰고 있는 아이디입니다.';
+      if (webEmbed) idNotice.value = { tone: 'bad', text: '이미 쓰고 있는 아이디입니다. 다른 메일 주소를 적어 주세요.' };
+      else notice.value = '이미 쓰고 있는 아이디입니다.';
     } else {
       idChecked.value = 'free';
-      notice.value = r === 'free' ? '쓸 수 있는 아이디입니다.' : '쓸 수 있어 보입니다 — 마지막 확인은 가입할 때 합니다.';
+      const text = r === 'free' ? '쓸 수 있는 아이디입니다.' : '쓸 수 있어 보입니다 — 마지막 확인은 가입할 때 합니다.';
+      if (webEmbed) idNotice.value = { tone: r === 'free' ? 'ok' : 'unk', text };
+      else notice.value = text;
     }
   } finally {
     checking.value = false;
-    window.setTimeout(() => { notice.value = ''; }, 2600);
+    if (!webEmbed) window.setTimeout(() => { notice.value = ''; }, 2600);
   }
 };
 
@@ -220,6 +226,7 @@ const onSubmit = async () => {
           </span>
           <button type="button" class="su-sidebtn" :disabled="checking" @click="onCheckId">중복확인</button>
         </div>
+        <p v-if="webEmbed && idNotice" :class="['su-idmsg', idNotice.tone]" role="status">{{ idNotice.text }}</p>
 
         <span :class="['su-lockwrap', { req: webEmbed }]">
           <input v-model="password" type="password" class="su-input" placeholder="영문,숫자 특수문자 일부허용 (6~30자)" autocomplete="new-password" />
@@ -573,6 +580,11 @@ const onSubmit = async () => {
 @media (min-width: 720px) { .su-modal-body .su-doc-table table { font-size: 13px; } }
 
 .su-msg { margin: 2px 0 0; font-size: 11.5px; color: #2a3f8f; }
+/* 웹 — 아이디 칸 바로 아래 중복확인 결과(쓸 수 있음 초록 · 이미 있음 빨강 · 확인 못 함 파랑) */
+.su-idmsg { margin: -2px 2px 2px; font-size: 12px; line-height: 1.4; word-break: keep-all; }
+.su-idmsg.ok { color: #15803d; }
+.su-idmsg.bad { color: #c62828; }
+.su-idmsg.unk { color: #2a3f8f; }
 .su-err { margin: 2px 0 0; font-size: 11.5px; color: #c62828; word-break: keep-all; }
 .su-submit {
   margin-top: 4px; width: 100%; height: 42px;
