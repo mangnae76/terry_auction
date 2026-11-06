@@ -18,7 +18,7 @@ const TOP: Record<string, string> = {
   officialPriceBand: '공시가격', officialPriceValue: '공시가격', officialPriceNote: '공시가격',
   ownerName: '소유자', debtorName: '채무자', ownerDebtorStatus: '소유자점유', takeoverContent: '인수사항', delinquentCharges: '체납관리비',
   mailStatus: '우편송달', occupancyStatus: '점유여부', oppositionStatus: '대항력',
-  expectedSaleValue: '예상매도가', expectedProfitRate: '예상수익률', confirmedPlan: '확정안',
+  expectedSaleValue: '예상매도가', expectedSaleValue2: '입금가', expectedProfitRate: '예상수익률', confirmedPlan: '확정안',
   excelAnalysis: '시세분석', marketDemand: '손품조사', surveyForm: '임장체크', fieldCompare: '임장비교',
   sitePhotos: '현장사진', floorPlanUrl: '평면도', floorPlanUrls: '평면도', exteriorUrls: '외관사진', extraPhotos: '사진',
   rankPhotoUrls: '순위사진', tradePhotoUrls: '실거래사진', listPhotoUrls: '목록사진',
@@ -50,7 +50,7 @@ const SUB: Record<string, Record<string, string>> = {
   },
   rights: { baseDate: '말소기준일', totalClaimAmount: '청구금액', items: '권리목록', checklist: '권리체크' },
 };
-const PLAN = { myBidValue: '입찰가', expectedSaleValue: '예상매도가' } as Record<string, string>;
+const PLAN = { myBidValue: '입찰가', expectedSaleValue: '예상매도가', expectedSaleValue2: '입금가' } as Record<string, string>;
 
 const parse = (s: string | undefined): unknown => { try { return JSON.parse(s ?? 'null'); } catch { return null; } };
 const obj = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {});

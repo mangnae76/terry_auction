@@ -6328,7 +6328,7 @@ span.cal-day.has { cursor: help; }
     const ag = near ? [] : (a.adminAgencyItems || []);   /* 행정기관은 거리가 없어 500M미만에선 뺀다 */
     const pdfRows = placeRows(near ? T.pdfNearbyFiltered500mOf(a, null) : T.pdfNearbyDisplayOf(a));
     if (ag.length) pdfRows.push(`<tr><th>행정기관(${ag.length})</th><td>${`<ul class="it-agency">${ag.map((x) => `<li><p>${placeLink(x.name, x.name)}${x.type ? ` <span class="it-sub">(${esc(x.type)})</span>` : ''}</p>${x.address ? `<p class="it-sub">${x.zip ? `[${esc(x.zip)}] ` : ''}${esc(x.address)}</p>` : ''}${x.phone || x.fax ? `<p class="it-sub">${x.phone ? `전화 ${esc(x.phone)}` : ''}${x.phone && x.fax ? ' / ' : ''}${x.fax ? `팩스 ${esc(x.fax)}` : ''}</p>` : ''}${x.area ? `<p class="it-sub">관할구역 ${esc(x.area)}</p>` : ''}</li>`).join('')}</ul>`}</td></tr>`);
-    const pdfBox = `<div class="it-pdfbox"><p class="it-pdfbox-h"><span class="it-pdfbox-tag">PDF</span>경매정보지 PDF에서 읽은 정보입니다</p>`
+    const pdfBox = `<div class="it-pdfbox">`   /* 머리 줄('PDF' 칩 · '경매정보지 PDF에서 읽은 정보입니다')은 뺐다(2026-11-06) — 상자만 */
       + block('인근역세권', stationBlock)
       + block('교육환경', kvTable([['초등학교', edu.elementary], ['중학교', edu.middle], ['고등학교', edu.high]].map(([k, arr]) => `<tr><th>${k}(${arr.length})</th><td class="grid">${list(arr, (x) => placeLink(x))}</td></tr>`)))
       + block('주변환경', pdfRows.length ? kvTable(pdfRows) : boxLine(near ? '500m 이내 PDF 주변환경 정보 없음' : 'PDF 주변환경 정보 없음'))
