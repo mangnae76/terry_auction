@@ -293,6 +293,18 @@ export const checkEmailTaken = async (email: string): Promise<'taken' | 'free' |
   }
 };
 
+/** 웹 회원가입 중복확인 — Firebase '이메일 열거 보호'를 껐다(2026-11-06). 이제 빈 목록은 '없는 메일'이라 free 로 본다.
+ *  조회 자체가 실패하면 unknown. 앱은 예전 checkEmailTaken 그대로 */
+export const checkEmailFree = async (email: string): Promise<'taken' | 'free' | 'unknown'> => {
+  assertReady();
+  try {
+    const methods = await fetchSignInMethodsForEmail(auth!, email.trim());
+    return methods.length > 0 ? 'taken' : 'free';
+  } catch {
+    return 'unknown';
+  }
+};
+
 /** 비밀번호로 들어온 계정인지 — 카카오·네이버로 들어오면 비밀번호가 없다 */
 export const hasPasswordLogin = (): boolean =>
   !!auth?.currentUser?.providerData?.some((p) => p.providerId === 'password');

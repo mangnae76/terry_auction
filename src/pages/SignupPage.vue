@@ -4,7 +4,7 @@
 import { computed, inject, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
-import { BIZ_TYPES, checkEmailTaken, saveSignupExtra, type BizType } from '../services/authRepository';
+import { BIZ_TYPES, checkEmailFree, checkEmailTaken, saveSignupExtra, type BizType } from '../services/authRepository';
 import {
   PRIVACY_CHILD,
   PRIVACY_EFFECTIVE,
@@ -137,7 +137,7 @@ const onCheckId = async () => {
   checking.value = true;
   authStore.error = '';
   try {
-    const r = await checkEmailTaken(mail);
+    const r = await (webEmbed ? checkEmailFree : checkEmailTaken)(mail);   // 웹 — 열거 보호를 꺼서 빈 결과는 '쓸 수 있음'
     if (r === 'taken') {
       idChecked.value = 'taken';
       if (webEmbed) idNotice.value = { tone: 'bad', text: '이미 쓰고 있는 아이디입니다. 다른 메일 주소를 적어 주세요.' };
