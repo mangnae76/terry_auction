@@ -8447,9 +8447,12 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     const tick = () => {
       const ready = S.authReady && (!CLOUD.on || CLOUD.synced) && (S.route !== 'item' || !!byId(S.itemId));
       if (ready && !readyAt) readyAt = Date.now();
-      /* 진짜 화면이 덮개만큼 자랐고(앱 화면이 붙었다) 0.45초 동안 바뀌는 것이 없으면 — 늦어도 처음부터 10초면 걷는다 */
+      /* 진짜 화면이 덮개만큼 자랐고(앱 화면이 붙었다) 0.7초 동안 바뀌는 것이 없으면 — 늦어도 처음부터 10초면 걷는다 */
       const grown = readyAt && m.scrollHeight >= Math.min(cover.scrollHeight, (snap.y || 0) + window.innerHeight) - 40;
-      if ((grown && Date.now() - lastMut > 450 && Date.now() - readyAt > 300) || Date.now() - t0 > 10000) { done(); return; }
+      /* 화면 속 그림(지도 조각 · 사진)이 다 읽혔을 때 — 지도가 비어 보이던 것 */
+      const imgs = grown ? [...m.querySelectorAll('img')].filter((i) => i.offsetParent) : [];
+      const painted = imgs.every((i) => i.complete);
+      if ((grown && painted && Date.now() - lastMut > 700 && Date.now() - readyAt > 300) || Date.now() - t0 > 10000) { done(); return; }
       setTimeout(tick, 100);
     };
     setTimeout(tick, 100);
