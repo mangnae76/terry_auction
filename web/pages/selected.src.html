@@ -7,6 +7,16 @@
 <title>마이턴옥션 선정물건</title>
 <script>
   /* 로그인해 있던 탭 — 앱 화면 모양(pdfparse.css)을 맨 앞에서 미리 받기만 한다(붙이는 자리는 그대로). 새로고침 덮개가 기다리는 틈을 줄인다(2026-11-06) */
+  /* 새로고침 — 덮개(보던 화면)가 준비될 때까지 새 페이지를 숨긴다. 그 사이 브라우저는 이전 화면을 그대로 둔다(그림 붙잡기).
+     덮개가 보이면 바로 풀고, 늦어도 1.2초면 푼다(2026-11-06) */
+  try {
+    var sn = JSON.parse(sessionStorage.getItem('ta.web.snap') || 'null');
+    if (sn && sn.hash === location.hash && localStorage.getItem('ta.web.in') === '1') {
+      document.documentElement.classList.add('snap-hold');
+      var hs = document.createElement('style'); hs.textContent = 'html.snap-hold body { visibility: hidden; }'; document.head.appendChild(hs);
+      setTimeout(function () { document.documentElement.classList.remove('snap-hold'); }, 1200);
+    }
+  } catch (e) {}
   try { if (localStorage.getItem('ta.web.in') === '1') { var pl = document.createElement('link'); pl.rel = 'preload'; pl.as = 'style'; pl.href = (/\/web$/.test(location.pathname) ? '/web/' : '') + 'pdfparse.css'; document.head.appendChild(pl); } } catch (e) {}
   /* 대문 보내기 스위치 — 꺼 둔다(2026-11-02). 로그인 안 한 채 /web 에 와도, 로그아웃해도 메인 페이지(선정물건)에 머물고
      머리에 '로그인 · 회원가입'이 뜬다. 켜면(true) 예전처럼 로그인 안 한 사람을 대문(/intro.html)으로 보낸다.
@@ -4599,25 +4609,25 @@ span.cal-day.has { cursor: help; }
   /* 새로고침(F5) 덮개 — 떠 둔 화면을 <main> 이 읽히자마자 같은 자리 · 같은 스크롤로 깐다. 걷는 일은 아래 큰 스크립트가(2026-11-06) */
   (function () {
     try {
-      if (localStorage.getItem('ta.web.in') !== '1') return;
+      if (localStorage.getItem('ta.web.in') !== '1') { document.documentElement.classList.remove('snap-hold'); return; }
       /* 앱 화면(표 · 카드)의 모양 pdfparse.css 를 지금 붙인다 — 앱 코드를 부를 때 붙이면 덮개 속 표가 모양 없이 글자로만 보였다.
          같은 표시(data-tapdf)라 앱 코드가 또 붙이지 않는다 */
       var link = document.querySelector('link[data-tapdf]');
       if (!link) { link = document.createElement('link'); link.rel = 'stylesheet'; link.href = (/\/web$/.test(location.pathname) ? '/web/' : '') + 'pdfparse.css'; link.setAttribute('data-tapdf', '1'); document.head.appendChild(link); }
       var s = JSON.parse(sessionStorage.getItem('ta.web.snap') || 'null');
-      if (!s || s.hash !== location.hash) return;
-      var m = document.querySelector('main'); if (!m) return;
+      if (!s || s.hash !== location.hash) { document.documentElement.classList.remove('snap-hold'); return; }
+      var m = document.querySelector('main'); if (!m) { document.documentElement.classList.remove('snap-hold'); return; }
       var c = document.createElement('div');
       c.className = 'snap-cover ' + (s.cls || ''); c.setAttribute('aria-hidden', 'true'); c.inert = true;
       /* 모양이 실리기 전에는 보이지 않게 — 실리면(대개 캐시라 바로) 보인다. 늦어도 0.8초면 보인다 */
-      var show = function () { c.style.visibility = ''; };
-      if (!link.sheet) { c.style.visibility = 'hidden'; link.addEventListener('load', show); link.addEventListener('error', show); setTimeout(show, 800); }
+      var show = function () { c.style.visibility = ''; document.documentElement.classList.remove('snap-hold'); };
+      if (!link.sheet) { c.style.visibility = 'hidden'; link.addEventListener('load', show); link.addEventListener('error', show); setTimeout(show, 800); } else show();
       c.style.top = (m.getBoundingClientRect().top + window.scrollY) + 'px';
       c.innerHTML = s.html; m.after(c);
       try { history.scrollRestoration = 'manual'; } catch (e) {}
       window.scrollTo(0, s.y || 0);
       window.__taSnap = s;
-    } catch (e) {}
+    } catch (e) { document.documentElement.classList.remove('snap-hold'); }
   })();
 </script>
 
