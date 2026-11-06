@@ -95,7 +95,7 @@ const GROUPS: Group[] = [
     tone: 'green',
     tools: [
       {
-        title: '경매 입찰가산정',
+        title: '경매 수익분석',
         desc: '비용과 세금을 넣어 입찰가와 세후 순이익을 맞춰 본다.',
         path: '',
         icon: 'bid',
@@ -318,7 +318,7 @@ const openTool = (tool: Tool) => {
 .adm-card.soon { background: #fcfcfd; }
 
 .adm-toast {
-  position: fixed; left: 50%; bottom: 36px; transform: translateX(-50%);
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
   margin: 0; padding: 11px 18px; border-radius: 10px; z-index: 50;
   background: rgba(17, 24, 39, 0.92); color: #fff;
   font-size: 13px; font-weight: 600; box-shadow: 0 10px 28px rgba(15, 23, 42, 0.28);

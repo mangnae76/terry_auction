@@ -1,12 +1,16 @@
 <script setup lang="ts">
 // 회원탈퇴 — 마이페이지의 '회원탈퇴'에서 들어온다.
-// 지우기 전에 무엇이 사라지는지 먼저 알린다. 실제 삭제 처리는 아직 붙이지 않았다.
-import { computed, ref } from 'vue';
+// 지우기 전에 무엇이 사라지는지 먼저 알린다. 누르면 탈퇴 신청을 DB(withdrawRequests)에 남기고,
+// 운영자가 확인해 지운다(되돌릴 수 없는 일이라 화면이 바로 지우지 않는다). 처리 전에는 신청을 취소할 수 있다.
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
+import { useAuthStore } from '../stores/authStore';
+import { cancelWithdraw, loadWithdrawRequest, requestWithdraw, type WithdrawRequest } from '../services/withdrawRepository';
 
 const router = useRouter();
+const auth = useAuthStore();
 
 const KEEP_NOTES = [
   '가입된 회원정보와 결제내역 정보가 삭제됩니다.',
@@ -34,10 +38,32 @@ const toast = (text: string) => {
   window.setTimeout(() => { toastText.value = ''; }, 2600);
 };
 
-const onWithdraw = () => {
+// 이미 낸 신청 — 있으면 신청 상태와 취소 단추를 보인다
+const req = ref<WithdrawRequest | null>(null);
+const reason = ref('');
+const busy = ref(false);
+onMounted(async () => { try { req.value = await loadWithdrawRequest(auth.uid); } catch { /* 못 읽어도 신청은 할 수 있다 */ } });
+const fmt = (t: number) => { const d = new Date(t); const p = (n: number) => String(n).padStart(2, '0'); return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+
+const onWithdraw = async () => {
   if (!canGo.value) { toast('안내 내용에 동의해 주세요.'); return; }
-  // 되돌릴 수 없는 처리라 손으로 붙이기 전까지는 고객센터로 보낸다
-  toast('탈퇴 처리는 준비 중입니다. 고객센터로 알려 주시면 바로 처리해 드립니다.');
+  if (!auth.uid) { toast('로그인한 뒤 신청할 수 있습니다.'); return; }
+  busy.value = true;
+  try {
+    await requestWithdraw({ uid: auth.uid, email: auth.email, nickname: auth.nickname, reason: reason.value.trim() });
+    req.value = await loadWithdrawRequest(auth.uid);
+    toast('탈퇴 신청을 접수했습니다. 운영자가 확인한 뒤 처리해 드립니다.');
+  } catch {
+    toast('신청을 저장하지 못했습니다 — 잠시 뒤 다시 해 주세요.');
+  } finally {
+    busy.value = false;
+  }
+};
+const onCancel = async () => {
+  busy.value = true;
+  try { await cancelWithdraw(auth.uid); req.value = null; agree.value = false; toast('탈퇴 신청을 취소했습니다.'); }
+  catch { toast('취소하지 못했습니다 — 잠시 뒤 다시 해 주세요.'); }
+  finally { busy.value = false; }
 };
 </script>
 
@@ -74,6 +100,19 @@ const onWithdraw = () => {
         <button type="button" class="wd-help-link" @click="router.push('/support')">고객센터 바로가기 ›</button>
       </p>
 
+      <!-- 이미 신청했으면 — 접수 상태와 취소 -->
+      <div v-if="req" class="wd-done">
+        <b>{{ req.status === 'done' ? '탈퇴 처리가 끝났습니다' : '탈퇴 신청이 접수되어 있습니다' }}</b>
+        <span>신청 {{ fmt(req.requestedAt) }} · 운영자가 확인한 뒤 처리합니다{{ req.reason ? ` · 사유: ${req.reason}` : '' }}</span>
+        <button v-if="req.status !== 'done'" type="button" class="wd-cancel" :disabled="busy" @click="onCancel">신청 취소</button>
+      </div>
+
+      <template v-else>
+      <label class="wd-reason">
+        <span>탈퇴 사유 <small>(선택)</small></span>
+        <textarea v-model="reason" rows="2" maxlength="500" placeholder="불편했던 점을 남겨 주시면 서비스 개선에 반영하겠습니다." />
+      </label>
+
       <label class="wd-agree">
         <input v-model="agree" type="checkbox" />
         전화번호 보관 및 탈퇴안내 내용에 동의합니다.
@@ -83,9 +122,10 @@ const onWithdraw = () => {
         ☞ 회원님께서는 현재 이용기간이 남아 있습니다.<br />고객센터로 연락주세요.
       </p>
 
-      <button type="button" :class="['wd-go', { on: canGo }]" :disabled="!canGo" @click="onWithdraw">
-        회원탈퇴
+      <button type="button" :class="['wd-go', { on: canGo }]" :disabled="!canGo || busy" @click="onWithdraw">
+        {{ busy ? '접수 중…' : '회원탈퇴 신청' }}
       </button>
+      </template>
     </div>
 
     <AppToast :visible="!!toastText" :text="toastText" />
@@ -138,6 +178,13 @@ const onWithdraw = () => {
   font-size: 12px; font-weight: 700; color: #374151; cursor: pointer;
 }
 .wd-agree input { width: 15px; height: 15px; accent-color: #2a3f8f; }
+.wd-reason { display: grid; gap: 6px; margin-top: 12px; font-size: 12px; font-weight: 700; color: #374151; }
+.wd-reason small { font-weight: 500; color: #8a93a4; }
+.wd-reason textarea { box-sizing: border-box; width: 100%; border: 1px solid #d5dbe6; border-radius: 8px; padding: 9px 11px; font-family: inherit; font-size: 12.5px; line-height: 1.6; resize: vertical; }
+.wd-done { margin-top: 12px; display: grid; gap: 6px; padding: 14px 13px; border: 1px solid #f3c7c7; border-radius: 10px; background: #fff7f7; }
+.wd-done b { font-size: 13.5px; color: #c62828; }
+.wd-done span { font-size: 12px; line-height: 1.7; color: #4b5563; word-break: keep-all; }
+.wd-cancel { justify-self: start; height: 34px; padding: 0 14px; border: 1px solid #d5dbe6; border-radius: 8px; background: #fff; font-family: inherit; font-size: 12.5px; font-weight: 800; color: #1f3a72; cursor: pointer; }
 
 .wd-warn {
   margin: 10px 0 0; padding: 12px; text-align: center;

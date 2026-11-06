@@ -53,7 +53,8 @@ export const getFirestoreWarning = () => firestoreDisabledReason;
 
 export const subscribeAuctionList = (
   uid: string,
-  onData: (items: AuctionDetail[]) => void,
+  /** changedIds — 이번에 새로 오거나 바뀐 물건(처음에는 전부). 저장소가 '서버에 있는 값'을 그 물건만 떠 둔다 */
+  onData: (items: AuctionDetail[], changedIds?: string[]) => void,
   onError: (error: string) => void,
 ): Unsubscribe => {
   if (!firestore) {
@@ -73,7 +74,7 @@ export const subscribeAuctionList = (
         .map((item) => toAuction(item.id, item.data()))
         .filter((item): item is AuctionDetail => item !== null);
       rows.sort((a, b) => b.eventDate.localeCompare(a.eventDate));
-      onData(rows);
+      onData(rows, snapshot.docChanges().filter((c) => c.type !== 'removed').map((c) => c.doc.id));
     },
     (error) => {
       onError(`Firestore 동기화 실패: ${error.message}`);

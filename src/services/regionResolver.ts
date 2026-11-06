@@ -27,23 +27,33 @@ export interface ResolvedRegion {
 type CacheEntry = ResolvedRegion & { savedAt?: number };
 type CacheShape = Record<string, CacheEntry>;
 
+// 한 번만 읽어 메모리에 두고, 쓰기는 모았다가 한 번에 — 건마다 목록 전체를 읽고 쓰면 많이 찾을 때 화면이 멈칫거린다
+let memCache: CacheShape | null = null;
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
 const readCache = (): CacheShape => {
+  if (memCache) return memCache;
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? (JSON.parse(raw) as CacheShape) : {};
+    memCache = raw ? (JSON.parse(raw) as CacheShape) : {};
   } catch {
-    return {};
+    memCache = {};
   }
+  return memCache;
 };
 
 const writeCache = (next: CacheShape) => {
-  try {
-    localStorage.removeItem('region-resolver-cache-v1');
-    localStorage.removeItem('region-resolver-cache-v2');
-    localStorage.setItem(CACHE_KEY, JSON.stringify(next));
-  } catch {
-    /* ignore quota */
-  }
+  memCache = next;
+  if (saveTimer) return;
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    try {
+      localStorage.removeItem('region-resolver-cache-v1');
+      localStorage.removeItem('region-resolver-cache-v2');
+      localStorage.setItem(CACHE_KEY, JSON.stringify(memCache ?? {}));
+    } catch {
+      /* ignore quota */
+    }
+  }, 1000);
 };
 
 const normalizeQuery = (address: string) => address.replace(/\s+/g, ' ').trim();

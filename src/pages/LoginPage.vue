@@ -7,11 +7,9 @@ import { isKakaoLoginConfigured, isNaverLoginConfigured } from '../services/soci
 import { isAllowedEmail } from '../services/accessControl';
 import BrandLogo from '../components/BrandLogo.vue';
 import { TRIAL_PRIVACY_INTRO, TRIAL_PRIVACY_ROWS } from '../services/legalTerms';
-import { TRIAL_NOTE, TRIAL_STEPS } from '../services/trialInfo';
 import {
   PLANS,
   TRIAL_DAYS,
-  WELCOME_POINT,
   POINTS_OPEN,
   perMonth,
 } from '../services/billingPlans';
@@ -32,7 +30,6 @@ onMounted(() => {
 });
 
 const trialAgree = ref(false);
-const trialDetail = ref(false);
 
 /** 가입 전 안내 창 — '' 이면 닫힘 */
 const info = ref<'' | 'pay' | 'trial' | 'findId' | 'findPw'>('');
@@ -273,7 +270,7 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
 
     <!-- 결제안내 · 무료체험 안내 창 -->
     <div v-if="info" class="lp-modal" @click.self="info = ''">
-      <div class="lp-modal-box">
+      <div :class="['lp-modal-box', { 'lp-modal-box--wide': info === 'trial' }]">
         <header class="lp-modal-head">
           <strong>{{ info === 'pay' ? '결제안내' : info === 'findId' ? '아이디 찾기' : info === 'findPw' ? '비밀번호 찾기' : `${TRIAL_DAYS}일 무료체험 안내` }}</strong>
           <button type="button" class="lp-modal-x" aria-label="닫기" @click="info = ''">
@@ -317,34 +314,8 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
           </template>
 
           <template v-else>
-            <!-- 가입하면 바로 받는 것 -->
-            <div class="lp-m-perks">
-              <span><b>{{ TRIAL_DAYS }}일</b><small>무료이용</small></span>
-              <span v-if="POINTS_OPEN"><b>{{ won(WELCOME_POINT) }}p</b><small>축하포인트</small></span>
-              <span><b>무료</b><small>경매교육 영상</small></span>
-            </div>
-
-            <h4 class="lp-m-sub">📌 무료체험 이용안내</h4>
-            <ol class="lp-steps">
-              <li v-for="(st, i) in TRIAL_STEPS" :key="i">
-                <span class="no">{{ i + 1 }}</span>
-                <small v-html="st" />
-              </li>
-            </ol>
-            <p class="lp-warnbar">{{ TRIAL_NOTE }}</p>
-
-            <!-- 개인정보 수집 및 이용 동의 -->
-            <div class="lp-agree">
-              <label class="lp-agree-chk">
-                <input v-model="trialAgree" type="checkbox" />
-                [ 무료체험 ] 개인정보 수집 및 이용 동의
-              </label>
-              <button type="button" class="lp-agree-view" @click="trialDetail = !trialDetail">
-                {{ trialDetail ? '접기' : '내용보기' }}
-              </button>
-            </div>
-
-            <div v-if="trialDetail" class="lp-privacy">
+            <!-- 무료체험 — 개인정보 수집 및 이용 동의만(혜택 · 이용안내는 회원가입 카드에 이미 있다). 내용을 펼쳐 둔 채로 넓게 -->
+            <div class="lp-privacy">
               <h5>[무료체험] 개인정보 수집 및 이용안내</h5>
               <p v-for="(t, i) in TRIAL_PRIVACY_INTRO" :key="i">{{ t }}</p>
               <dl>
@@ -353,6 +324,12 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
                   <dd><span v-for="(b, i) in row.body" :key="i">{{ b }}</span></dd>
                 </template>
               </dl>
+            </div>
+            <div class="lp-agree">
+              <label class="lp-agree-chk">
+                <input v-model="trialAgree" type="checkbox" />
+                [ 무료체험 ] 개인정보 수집 및 이용 동의
+              </label>
             </div>
 
             <button
@@ -443,6 +420,14 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
   width: 100%; max-width: 360px; max-height: 76vh; box-sizing: border-box;
   background: #fff; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden;
 }
+/* 무료체험 동의 창 — 넓게(동의 내용을 펼쳐 둔다) */
+.lp-modal-box--wide { max-width: 780px; max-height: 84vh; }
+.lp-modal-box--wide .lp-privacy { margin-top: 0; padding: 14px 18px; }
+.lp-modal-box--wide .lp-privacy dl { display: grid; grid-template-columns: 190px minmax(0, 1fr); }
+.lp-modal-box--wide .lp-privacy h5 { font-size: 14px; }
+.lp-modal-box--wide .lp-privacy p, .lp-modal-box--wide .lp-privacy dt, .lp-modal-box--wide .lp-privacy dd span, .lp-modal-box--wide .lp-agree-chk { font-size: 13px; }
+.lp-modal-box--wide .lp-privacy dt, .lp-modal-box--wide .lp-privacy dd { padding: 8px 0; border-top: 1px solid #e8edf7; margin: 0; }
+.lp-modal-box--wide .lp-agree { margin-top: 14px; }
 .lp-modal-head {
   display: flex; align-items: center; gap: 8px;
   padding: 12px 12px 10px; border-bottom: 1px solid #eef1f6;
@@ -465,33 +450,8 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
 .lp-m-table td b { color: #111827; font-weight: 800; }
 /* 돈은 오른쪽 끝을 맞춘다 — 자릿수가 달라도 일의 자리가 한 줄에 선다 */
 .lp-m-table .num { text-align: right; padding-right: 8px; font-variant-numeric: tabular-nums; }
-/* 가입 혜택 — 회원가입 화면의 카드와 같은 내용 */
-.lp-m-perks { display: flex; gap: 6px; }
-.lp-m-perks span {
-  flex: 1 1 0; min-width: 0; border: 1px solid #e3e8f4; border-radius: 10px;
-  background: #f7f9ff; padding: 10px 4px 9px; text-align: center;
-  display: flex; flex-direction: column; gap: 2px;
-}
-.lp-m-perks b { font-size: 14px; font-weight: 800; color: #1f3a72; }
-.lp-m-perks small { font-size: 10px; color: #6b7280; word-break: keep-all; }
-.lp-m-sub { margin: 14px 0 8px; font-size: 12.5px; font-weight: 800; color: #111827; }
 
 /* 1 → 2 → 3 */
-.lp-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.lp-steps li { position: relative; display: flex; align-items: flex-start; gap: 8px; padding-bottom: 6px; }
-.lp-steps li:not(:last-child)::before {
-  content: ''; position: absolute; left: 9.5px; top: 22px; bottom: 0; width: 1px; background: #dbe3f7;
-}
-.lp-steps .no {
-  flex: none; width: 20px; height: 20px; border-radius: 50%; background: #2a3f8f; color: #fff;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;
-}
-.lp-steps small { flex: 1 1 auto; font-size: 11.5px; line-height: 1.6; color: #374151; word-break: keep-all; }
-.lp-steps small :deep(b) { color: #1f3a72; font-weight: 700; }
-.lp-warnbar {
-  margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid #e8a33d; background: #fff8ec;
-  font-size: 11px; line-height: 1.7; color: #8a6418; word-break: keep-all;
-}
 
 /* 동의 */
 .lp-agree { margin-top: 12px; display: flex; align-items: center; gap: 8px; }
@@ -548,9 +508,6 @@ const onSocialLogin = async (provider: 'kakao' | 'naver') => {
 .lp-web .lp-sep span,
 .lp-web .lp-links i,
 .lp-web .lp-m-table th, .lp-web .lp-m-table td,
-.lp-web .lp-m-perks small,
-.lp-web .lp-steps .no, .lp-web .lp-steps small,
-.lp-web .lp-warnbar,
 .lp-web .lp-agree-chk, .lp-web .lp-agree-view,
 .lp-web .lp-privacy h5, .lp-web .lp-privacy p, .lp-web .lp-privacy dt, .lp-web .lp-privacy dd span,
 .lp-web .lp-m-note { font-size: 12px; }

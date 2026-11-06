@@ -5,9 +5,9 @@ import InfoTip from '../components/InfoTip.vue';
 import UnitText from '../components/UnitText.vue';
 import YmCount from '../components/YmCount.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
-import { addBaseTiles } from '../services/mapTiles';
-import L from 'leaflet';
-import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
+import { createMapView, type LatLng, type MapView, type PinHandle } from '../services/mapView';
+import { computed, inject, markRaw, nextTick, onMounted, ref, shallowRef, watch } from 'vue';
+import KakaoMapTools from '../components/KakaoMapTools.vue';
 import { useRouter } from 'vue-router';
 import {
   fetchTradeVolumeStats,
@@ -82,9 +82,10 @@ const peeking = ref(false);
 const dongOptions = computed(() => (rows.value.length > 0 ? rows.value.map((r) => r.region) : peekDongs.value));
 const geocodedCoords = ref<Map<string, { lat: number; lng: number }>>(new Map());
 
-let leafletMap: L.Map | null = null;
-let markerLayer: L.LayerGroup | null = null;
-const markerByRegion = new Map<string, L.Marker>();
+// 지도 — 카카오맵(못 열면 브이월드). services/mapView 한 벌로 그린다
+let mv: MapView | null = null;
+let mvP: Promise<void> | null = null;
+const markerByRegion = new Map<string, { pin: PinHandle; at: LatLng }>();
 
 const ALL_DISTRICTS: DistrictOption = { label: '전체', lawdCode: 'ALL' };
 
@@ -290,69 +291,97 @@ const makePin = (row: RankedRow) => {
   const color = isLightBadge(row.rank) ? '#1e293b' : '#fff';
   const top = row.rank <= TOP_N ? ' top' : '';
   const value = pinValue(row);
-  return L.divIcon({
-    className: 'trade-map-marker-wrap',
-    html: `<div class="trade-map-pin${top}" style="background:${deep};color:${color}">`
-      + `<i>${row.rank}</i><b>${row.region}</b><span>${value}</span></div>`,
-    iconSize: [112, 26],
-    iconAnchor: [56, 13],
-  });
+  return `<div class="trade-map-pin${top}" style="background:${deep};color:${color}">`
+    + `<i>${row.rank}</i><b>${row.region}</b><span>${value}</span></div>`;
 };
 
 const markerRadius = (count: number) => 8 + Math.sqrt(Math.max(count, 0)) * 2;
 
+/* 지난번에 담은 범위 — 다시 열 때 처음부터 그 범위로 연다. 넓은 기본 화면(줌 11)으로 띄웠다가 동들에 맞춰 확대하면
+   '크게 → 툭 줌인'으로 튀고, 지도 조각도 두 번 받아 느렸다(2026-11-03) */
+const FIT_KEY = 'tsp.lastFit';
+const loadLastFit = (): LatLng[] | null => {
+  try { const v = JSON.parse(sessionStorage.getItem(FIT_KEY) || 'null'); return Array.isArray(v) && v.length === 2 ? v : null; } catch { return null; }
+};
+const saveLastFit = (pts: LatLng[]) => {
+  const lats = pts.map((p) => p.lat); const lngs = pts.map((p) => p.lng);
+  try { sessionStorage.setItem(FIT_KEY, JSON.stringify([{ lat: Math.min(...lats), lng: Math.min(...lngs) }, { lat: Math.max(...lats), lng: Math.max(...lngs) }])); } catch { /* 그만 */ }
+};
+/** 지도는 다 그려진 뒤에만 보인다 — 칸 크기 다시 재기 → 동들 범위 맞추기 → 그 범위 지도 조각 다 받기 → 알약까지 올린 뒤 한 번에.
+    (지난 범위로 먼저 보여 주면 이번 범위로 다시 맞출 때 툭 튀었다.) 5초가 지나도 덜 되면 그냥 보인다 */
+const mapReady = ref(false);
+const kTools = shallowRef<{ k: unknown; map: unknown } | null>(null);
+let firstFit = true;
+const revealMap = () => { mapReady.value = true; };
 const ensureMap = async () => {
   await nextTick();
-  if (leafletMap) return;
-  const container = document.getElementById('trade-map');
-  if (!container) return;
-  // 확대·축소 단추는 오른쪽으로 — 왼쪽은 통계 판이 덮는다
-  // 웹은 확대 단계를 잘게(0.25) — 동들을 다 담되 한 단계씩 뚝 멀어지지 않게
-  leafletMap = L.map('trade-map', { zoomControl: false, zoomSnap: webEmbed ? 0.25 : 1 }).setView([37.48, 126.68], 11);
-  L.control.zoom({ position: 'topright' }).addTo(leafletMap);
-  addBaseTiles(leafletMap);
-  markerLayer = L.layerGroup().addTo(leafletMap);
+  if (!mvP) {
+    const container = document.getElementById('trade-map');
+    if (!container) return;
+    const last = loadLastFit();   // 감춘 채 지난 범위로 먼저 가 둔다 — 같은 곳이면 그 조각을 다시 받지 않는다
+    window.setTimeout(revealMap, 5000);   // 자료가 끝내 안 오면 — 빈 지도라도 보인다
+    // 확대·축소 단추는 오른쪽으로 — 왼쪽은 통계 판이 덮는다
+    // 웹은 확대 단계를 잘게(0.25) — 동들을 다 담되 한 단계씩 뚝 멀어지지 않게(브이월드일 때)
+    // 카카오맵이면 물건분석 가격분석과 같은 지도 도구 막대(로드뷰 · 지적도 · 재기 · 검색 · 학교 · 인쇄)를 붙인다(2026-11-03)
+    mvP = createMapView(container, { center: { lat: 37.48, lng: 126.68 }, zoom: 11, zoomControl: 'topright', kakaoTools: true, leaflet: { zoomSnap: webEmbed ? 0.25 : 1 } })
+      .then((v) => { mv = v; if (v.native) kTools.value = markRaw(v.native); if (last) v.fitPoints(last, webEmbed ? 12 : 40, 14, false); });
+  }
+  await mvP;
 };
 
 const drawMap = async () => {
   await ensureMap();
-  if (!leafletMap || !markerLayer) return;
-  markerLayer.clearLayers();
+  const v = mv;
+  if (!v) return;
+  v.clear();
   markerByRegion.clear();
 
-  const plotted: L.LatLngTuple[] = [];
+  const plotted: LatLng[] = [];
   // 지도에는 받아 온 동을 모두 찍는다 — 다섯 줄은 왼쪽 목록에서만 추린다
   allRankedRows.value.forEach((row) => {
     if (row.lat == null || row.lng == null) return;
+    const at = { lat: row.lat, lng: row.lng };
     const [cFrom, cTo] = paletteColors(row.rank);
-    const circle = L.circleMarker([row.lat, row.lng], {
-      radius: markerRadius(row.count),
-      color: cTo,
-      fillColor: cFrom,
-      fillOpacity: 0.35,
-      weight: 2,
+    // 거래가 많을수록 큰 동그라미 — 테두리 진하게, 속은 옅게
+    const r = markerRadius(row.count);
+    v.pin(at, {
+      className: 'trade-map-ring',
+      html: `<i style="position:absolute;inset:0;border-radius:50%;border:2px solid ${cTo}"></i><i style="position:absolute;inset:2px;border-radius:50%;background:${cFrom};opacity:.35"></i>`,
+      size: [r * 2, r * 2],
+      interactive: false,
     });
-    markerLayer!.addLayer(circle);
 
     // 말풍선은 띄우지 않는다 — 누르면 왼쪽 판이 그 동 것으로 바뀐다
-    const pin = L.marker([row.lat, row.lng], { icon: makePin(row) }).on('click', () => {
-      selectedRegion.value = selectedRegion.value === row.region ? null : row.region;
+    const pin = v.pin(at, {
+      className: 'trade-map-marker-wrap',
+      html: makePin(row),
+      size: [112, 26],
+      z: 10,
+      onClick: () => { selectedRegion.value = selectedRegion.value === row.region ? null : row.region; },
     });
-    markerLayer!.addLayer(pin);
-    markerByRegion.set(row.region, pin);
-    plotted.push([row.lat, row.lng]);
+    markerByRegion.set(row.region, { pin, at });
+    plotted.push(at);
   });
 
   if (plotted.length > 0) {
-    // 웹 — 동들을 꽉 차게(여백 줄임) 담는다. 확대 단계가 잘아(zoomSnap 0.25) 필요 이상 멀어지지 않는다
-    leafletMap.fitBounds(L.latLngBounds(plotted), { padding: webEmbed ? [12, 12] : [40, 40], maxZoom: 14 });
-  }
+    // 웹 — 동들을 꽉 차게(여백 줄임) 담는다. 처음 한 번은 움직임 없이 바로(감춰 둔 채 맞추고 보인다)
+    const first = firstFit; firstFit = false;
+    if (first) v.relayout();   // 감춰 둔 사이 칸 크기가 정해졌다 — 처음 잰 크기로 맞추면 나중에 다시 재며 밀렸다
+    v.fitPoints(plotted, webEmbed ? 12 : 40, 14, first ? false : undefined);
+    saveLastFit(plotted);
+    if (first && !mapReady.value) {
+      // 알약은 위에서 다 올렸다 — 이 범위의 지도 조각을 다 받으면 한 번에 보인다(조각이 하나씩 차오르는 모습을 보이지 않는다)
+      markSelectedPin();
+      await Promise.race([v.tilesReady(), new Promise((r) => window.setTimeout(r, 2500))]);
+      revealMap();
+    }
+  } else if (!mapReady.value && rows.value.length === 0) revealMap();   // 거래가 없으면 빈 지도 — 좌표를 찾는 중이면 계속 감춘다
   markSelectedPin();
 };
 
 // 값만 바꿔 그린다 — 지도 위치 · 확대는 그대로
 watch(pinMetric, () => {
-  allRankedRows.value.forEach((row) => { markerByRegion.get(row.region)?.setIcon(makePin(row)); });
+  allRankedRows.value.forEach((row) => { markerByRegion.get(row.region)?.pin.setHtml(makePin(row)); });
   markSelectedPin();
 });
 /** 웹 — 고른 알약은 커지며 파란 테두리가 퍼지고 맨 앞으로, 나머지 알약은 흐리게 */
@@ -360,11 +389,11 @@ const markSelectedPin = () => {
   if (!webEmbed) return;
   const sel = selectedRegion.value;
   markerByRegion.forEach((m, region) => {
-    const el = m.getElement()?.querySelector('.trade-map-pin');
+    const el = m.pin.el()?.querySelector('.trade-map-pin');
     if (!el) return;
     el.classList.toggle('sel', region === sel);
     el.classList.toggle('dim', !!sel && region !== sel);
-    m.setZIndexOffset(region === sel ? 1000 : 0);
+    m.pin.setZ(region === sel ? 1000 : 10);
   });
 };
 watch(selectedRegion, () => { void nextTick(markSelectedPin); });
@@ -372,29 +401,27 @@ watch(selectedRegion, () => { void nextTick(markSelectedPin); });
 const focusRegion = (region: string) => {
   selectedRegion.value = region;
   const marker = markerByRegion.get(region);
-  if (!marker || !leafletMap) return;
-  const latlng = marker.getLatLng();
-  leafletMap.setView(latlng, Math.max(leafletMap.getZoom(), 13), { animate: true });
+  if (!marker || !mv) return;
+  mv.focus(marker.at, 13);
 };
 
 const regionGeocodeQuery = new Map<string, string>();
 
+/* 동 좌표를 한꺼번에 찾고 지도는 한 번만 다시 그린다 — 동 하나 찾을 때마다 다시 그리고 범위를 다시 맞춰
+   지도가 여러 번 툭툭 움직였다(2026-11-03). 찾아 둔 좌표는 기억해 두어(geocodeAddress) 다시 들어오면 바로 나온다 */
 const geocodeRegions = async () => {
-  const next = new Map(geocodedCoords.value);
-  for (const row of rows.value) {
-    if (next.has(row.region)) continue;
-    const query = regionGeocodeQuery.get(row.region) ?? row.region;
+  const todo = rows.value.filter((row) => !geocodedCoords.value.has(row.region));
+  if (!todo.length) return;
+  const found = await runWithConcurrency(todo, 6, async (row) => {
     try {
-      const point = await geocodeAddress(query);
-      if (point) {
-        next.set(row.region, { lat: point.lat, lng: point.lng });
-        geocodedCoords.value = new Map(next);
-        void drawMap();
-      }
-    } catch {
-      // ignore individual failures
-    }
-  }
+      const point = await geocodeAddress(regionGeocodeQuery.get(row.region) ?? row.region);
+      return point ? { region: row.region, at: { lat: point.lat, lng: point.lng } } : null;
+    } catch { return null; }   // 하나 못 찾아도 나머지는 그린다
+  });
+  const next = new Map(geocodedCoords.value);
+  found.forEach((f) => { if (f) next.set(f.region, f.at); });
+  geocodedCoords.value = next;
+  await drawMap();
 };
 
 const runWithConcurrency = async <T, R>(
@@ -729,7 +756,9 @@ onMounted(async () => {
 
       <!-- 지도를 바탕에 깔고, 통계와 랭킹은 그 위 왼쪽 판에 얹는다 -->
       <section class="tsp-stage">
-        <div id="trade-map" class="tsp-map" />
+        <!-- 감추기는 style 로 — class 를 묶으면 Vue 가 Leaflet 이 붙인 class(leaflet-container …)를 지운다 -->
+        <div id="trade-map" class="tsp-map" :style="{ opacity: mapReady ? 1 : 0 }" />
+        <KakaoMapTools v-if="kTools && mapReady" :k="kTools.k" :map="kTools.map" />
 
         <aside class="tsp-panel">
           <!-- 웹 판 — 제목·안내 → 고르는 칸 → 고른 결과 → 통계 정보 → 동별 랭킹 (사이마다 가름선) -->
@@ -997,6 +1026,8 @@ onMounted(async () => {
 .tsp-rank .tsp-rank-list { padding: 0; }
 .tsp-rank .tsp-empty { margin: 0; padding: 18px 0; text-align: center; font-size: 12px; color: #9ca3af; }
 /* 지도 표시 — 등수·동 이름·평균가를 한 알약에 담는다 */
+/* 첫 범위를 맞추기 전 — 넓은 기본 화면이 보였다가 툭 확대되지 않게 감춰 두고, 맞추면 살짝 나타난다 */
+.tsp-map { transition: opacity .18s ease; }
 :global(.trade-map-pin) {
   display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
   padding: 3px 9px 3px 3px; border-radius: 999px; border: 2px solid #fff;

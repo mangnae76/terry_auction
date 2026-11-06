@@ -1,4 +1,5 @@
 import { handleSocialLogin } from './socialLogin';
+import { handleNews } from './news';
 
 export interface Env {
   KAKAO_REST_API_KEY?: string;
@@ -252,6 +253,7 @@ export default {
     if (url.pathname === '/api-drive-download') return handleDriveDownload(request, env);
     if (url.pathname === '/api-kakao-login') return handleSocialLogin(request, env, cors, 'kakao');
     if (url.pathname === '/api-naver-login') return handleSocialLogin(request, env, cors, 'naver');
+    if (url.pathname === '/api-news') return handleNews(env, cors);   // 대문 부동산 뉴스
 
     const route = ROUTES.find((r) => url.pathname === r.prefix || url.pathname.startsWith(`${r.prefix}/`));
     if (route) return handleProxy(request, env, route);

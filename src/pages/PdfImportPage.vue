@@ -671,7 +671,7 @@ const fileTitle = (row: ImportPreviewRow) => {
 /** 뒤로가기 — 물건 목록에서 들어온 화면이다 */
 const router = useRouter();
 
-// === 탭 — 웹(/web)과 같은 짜임. 자동등록(Plus · 폴더·PDF 를 가져와 AI 가 읽는 한 절차) / 직접입력(손으로 적기) ===
+// === 탭 — 웹(/web)과 같은 짜임. 자동등록(PRO · 폴더·PDF 를 가져와 AI 가 읽는 한 절차) / 직접입력(손으로 적기) ===
 // 예전 값('drive'·'ai')은 모두 자동등록으로 본다 — 상자 둘을 탭처럼 쓰던 때의 값이다
 type ImportTab = 'auto' | 'manual';
 const IMPORT_TABS: Array<{ key: ImportTab; label: string; plus: boolean }> = [
@@ -704,9 +704,23 @@ const decOf = (v: string) => Number(String(v).replace(/[^\d.]/g, '')) || 0;
 watch(() => mn.value.min, (v) => {
   if (!depAuto.value) return;
   const n = numOf(v);
-  mn.value.dep = n > 0 ? String(Math.round(n / 10)) : '';
+  mn.value.dep = n > 0 ? Math.round(n / 10).toLocaleString('ko-KR') : '';
 });
-const onDepInput = () => { depAuto.value = false; };
+/** 금액 칸(감정가 · 최저가 · 보증금)은 적는 동안 세 자리마다 콤마 — 커서는 앞에 있던 숫자 개수 뒤에 그대로 둔다 */
+const onMoneyInput = (e: Event, key: 'appr' | 'min' | 'dep') => {
+  const t = e.target as HTMLInputElement;
+  const v = t.value; const at = t.selectionStart ?? v.length;
+  const before = v.slice(0, at).replace(/[^\d]/g, '').length;
+  const d = v.replace(/[^\d]/g, '').replace(/^0+(?=\d)/, '');
+  const f = d ? Number(d).toLocaleString('ko-KR') : '';
+  mn.value[key] = f;
+  if (f !== v) {
+    t.value = f;
+    let pos = 0; for (let k = 0; pos < f.length && k < before; pos++) if (/\d/.test(f[pos])) k++;
+    try { t.setSelectionRange(pos, pos); } catch { /* 그만 */ }
+  }
+  if (key === 'dep') depAuto.value = false;
+};
 const addManual = async () => {
   const caseNo = mn.value.caseNo.trim();
   if (!caseNo) { showToast('사건번호를 적어 주세요.'); return; }
@@ -808,7 +822,7 @@ const onDropFiles = async (e: DragEvent) => {
           :aria-selected="importTab === tab.key"
           :class="['pip-tab', { active: importTab === tab.key }]"
           @click="importTab = tab.key"
-        >{{ tab.label }}<span v-if="tab.plus" class="pip-plus">Plus</span></button>
+        >{{ tab.label }}<span v-if="tab.plus" class="pip-plus">PRO</span></button>
       </nav>
     </div>
 
@@ -924,10 +938,10 @@ const onDropFiles = async (e: DragEvent) => {
         <p class="pip-mn-cap">매각기일 · 금액</p>
         <input v-model="mn.date" class="pip-mn-in" type="date" aria-label="매각기일" />
         <div class="pip-mn-two">
-          <input v-model="mn.appr" class="pip-mn-in" inputmode="numeric" placeholder="감정가 (원)" aria-label="감정가" />
-          <input v-model="mn.min" class="pip-mn-in" inputmode="numeric" placeholder="최저가 (원)" aria-label="최저가" />
+          <input :value="mn.appr" class="pip-mn-in" inputmode="numeric" placeholder="감정가 (원)" aria-label="감정가" @input="onMoneyInput($event, 'appr')" />
+          <input :value="mn.min" class="pip-mn-in" inputmode="numeric" placeholder="최저가 (원)" aria-label="최저가" @input="onMoneyInput($event, 'min')" />
         </div>
-        <input v-model="mn.dep" class="pip-mn-in" inputmode="numeric" placeholder="보증금 (최저가의 10%)" aria-label="보증금" @input="onDepInput" />
+        <input :value="mn.dep" class="pip-mn-in" inputmode="numeric" placeholder="보증금 (최저가의 10%)" aria-label="보증금" @input="onMoneyInput($event, 'dep')" />
 
         <p class="pip-mn-cap">관계인</p>
         <div class="pip-mn-two">
@@ -1451,8 +1465,8 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-fav-dropdown-del:hover { color: #ef4444; }
 
 .pip-toast {
-  position: fixed; left: 50%; bottom: 96px;
-  transform: translateX(-50%);
+  position: fixed; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
   background: rgba(17, 24, 39, 0.92); color: #fff;
   padding: 11px 18px; border-radius: 999px;
   font-size: 13px; font-weight: 700;
@@ -1503,7 +1517,7 @@ const onDropFiles = async (e: DragEvent) => {
 .pip-aibox-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .pip-aibox-row .pip-section-title { margin-right: 2px; }
 .pip-aibox-key { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
-/* Plus 딱지 — 탭에만 단다 */
+/* PRO 딱지 — 탭에만 단다 (2026-11-03 Plus → PRO, 모양은 그대로) */
 .pip-plus {
   display: inline-block; margin-left: 5px; padding: 1px 7px; border-radius: 999px; vertical-align: 1px;
   background: #eda134; color: #fff; font-size: 11px; font-weight: 800; line-height: 1.5; letter-spacing: -0.1px;

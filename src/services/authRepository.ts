@@ -16,7 +16,7 @@ import {
   type Unsubscribe,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocFromCache, setDoc } from 'firebase/firestore';
 import { auth, firestore, firestoreDisabledReason } from './firebase';
 import {
   loginWithKakao as kakaoOAuthFlow,
@@ -218,6 +218,9 @@ export interface SignupExtra {
   realName: string;
   phone: string;
   region: string;
+  /** 주소(검색으로 고른 도로명 · 지번) · 상세주소 — 내 정보의 주소 · 상세주소 칸으로 간다 */
+  address1?: string;
+  address2?: string;
   joinPath: string;
   joinPathDetail: string;
   /** 추천코드 — 웹 회원가입에서만 받는다(없으면 빈 칸) */
@@ -238,6 +241,8 @@ export const signupAccountFields = (email: string, extra: SignupExtra): Partial<
     phone1: p1, phone2: p2, phone3: p3,
     smsOptIn: extra.smsOptIn,
     ...(extra.bizType ? { bizType: extra.bizType } : {}),
+    ...(extra.address1 ? { address1: extra.address1 } : {}),
+    ...(extra.address2 ? { address2: extra.address2 } : {}),
   };
 };
 
@@ -328,10 +333,24 @@ export const onAuthChange = (
       cb(null);
       return;
     }
+    // 기기에 남은 회원 정보가 있으면 그것으로 먼저 알린다 — 서버에서 다시 받는 동안(0.1~0.3초) 웹 · 앱 화면이 '로그인 확인 중'으로 기다렸다(2026-11-03).
+    // 서버 값은 이어서 받아, 바뀌었을 때만 다시 알린다
+    let early: UserProfile | null = null;
+    if (firestore) {
+      try {
+        const snap = await getDocFromCache(doc(firestore, USERS_COLLECTION, user.uid));
+        if (snap.exists()) {
+          const data = snap.data() as Partial<UserProfile>;
+          early = { uid: user.uid, email: user.email ?? data.email ?? '', nickname: data.nickname ?? user.displayName ?? '', createdAt: data.createdAt ?? '' };
+          cb(early);
+        }
+      } catch { /* 기기에 없다 — 서버에서 받는다 */ }
+    }
     try {
       const profile = await loadProfile(user);
-      cb(profile);
+      if (!early || early.nickname !== profile.nickname || early.email !== profile.email) cb(profile);
     } catch {
+      if (early) return;   // 기기 것으로 이미 알렸다 — 서버를 못 읽었다고 이름을 기본값으로 바꾸지 않는다
       cb({
         uid: user.uid,
         email: user.email ?? '',

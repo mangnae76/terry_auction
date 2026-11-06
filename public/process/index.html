@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>경매 진행 절차 · 마이턴옥션</title>
+<meta name="description" content="법원 경매 절차 9단계와, 입찰자가 직접 챙길 일(입찰 · 대금납부)을 나눠 보여 줍니다.">
+<link rel="icon" href="/favicon.svg">
+<!-- 글꼴 — 대문 · 웹과 같은 Noto Sans KR -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap">
+<style>
+/* 경매 진행 절차 — 대문 「경매 진행 절차 보기」가 여는 페이지. 마이턴옥션 웹과 같은 흰 카드 한 장 — 위에 탭 두 개(법원 · 입찰자), 안에서 흐름이 저절로 한 번씩 움직이고 아래 설명 줄이 따라 바뀐다 */
+:root{
+  --bg:#f5f7fb;--card:#ffffff;--soft:#f8fafc;--tint:#eef3ff;
+  --line:#e5e9f2;--line2:#d5dbe6;
+  --ink:#111827;--sub:#4b5563;--muted:#6b7280;--faint:#9aa3b2;
+  --navy:#213366;--blue:#2b6df3;--orange:#f4700a;--orange-soft:#fff3e8;
+  --path:#213366;--loop:#f4700a;
+  --font:"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable}   /* 탭마다 길이가 달라 스크롤바가 생겼다 없어지며 화면이 옆으로 흔들리지 않게 — 자리를 늘 비워 둔다 */
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;word-break:keep-all;-webkit-font-smoothing:antialiased}
+.page{flex:1;width:100%;max-width:1240px;margin:0 auto;padding-block:36px 56px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+
+/* 머리 */
+.head{display:grid;justify-items:center;gap:8px;text-align:center}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:1.6px;color:var(--blue)}
+.head h1{margin:0;font-size:28px;line-height:1.3;font-weight:900;letter-spacing:-.8px;color:var(--ink);text-wrap:balance}
+.head p{margin:0;max-width:60ch;font-size:14.5px;color:var(--muted)}
+.tabs{display:inline-flex;gap:4px;margin-top:10px;padding:4px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+.tabs button{height:36px;padding:0 18px;border:0;border-radius:9px;background:transparent;font-size:14px;font-weight:700;color:var(--sub)}
+.tabs button[aria-selected="true"]{background:var(--navy);color:#fff}
+
+/* 판 */
+.board{margin-top:22px;padding:26px 28px 18px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:0 6px 20px rgba(17,24,39,.06)}
+.board-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.board-h h2{margin:0;font-size:17px;font-weight:800;letter-spacing:-.3px}
+.board-h h2 small{margin-left:8px;font-size:12.5px;font-weight:500;color:var(--muted)}
+.ctl{display:flex;gap:6px}
+.ctl button{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--line2);background:var(--card);font-size:12.5px;font-weight:700;color:var(--navy)}
+.ctl button:hover{border-color:var(--navy)}
+.cap{display:flex;align-items:flex-start;gap:12px;margin-top:20px;padding:12px 16px;border-radius:10px;background:var(--soft);border:1px solid var(--line);min-height:62px}
+.cap b{flex:0 0 auto;display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;background:var(--navy);color:#fff;font-size:11.5px;font-weight:800;margin-top:1px}
+.cap b.loop{background:var(--orange)}
+.cap span{font-size:14px;line-height:1.6;color:var(--sub)}
+.cap span strong{color:var(--ink)}
+.legend{display:flex;justify-content:center;gap:18px;margin-top:12px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:22px;height:0;border-top:2px solid var(--path);vertical-align:middle;margin-right:6px}
+.legend i.l{border-top:2px dashed var(--loop)}
+.legend i.k{width:12px;height:12px;border:2px solid var(--orange);border-radius:4px;background:var(--orange-soft)}
+
+/* ① 법원 경매 절차 */
+.stage{position:relative}
+.cs-grid{position:relative;z-index:2;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));column-gap:44px;row-gap:66px}
+.st{display:flex;align-items:stretch;min-height:76px;border:1px solid var(--line2);border-radius:12px;background:var(--card);overflow:hidden;transition:border-color .35s,box-shadow .35s,transform .35s;text-align:left;padding:0}
+.st .no{flex:0 0 62px;display:grid;place-content:center;justify-items:center;background:var(--soft);color:var(--faint);transition:background .35s,color .35s}
+.st .no small{font-size:9.5px;font-weight:800;letter-spacing:.8px}
+.st .no strong{font-size:24px;line-height:1;font-weight:900;font-variant-numeric:tabular-nums}
+.st .tt{display:grid;align-content:center;gap:2px;padding:10px 14px;min-width:0}
+.st .tt b{font-size:14.5px;line-height:1.35;font-weight:800;color:var(--muted);transition:color .35s;text-wrap:balance}
+.st .tt em{font-style:normal;font-size:11.5px;color:var(--faint)}
+.st.on{border-color:var(--navy)}
+.st.on .no{background:var(--tint);color:var(--navy)}
+.st.on .tt b{color:var(--ink)}
+.st.now{box-shadow:0 0 0 4px color-mix(in srgb,var(--orange) 22%,transparent);border-color:var(--orange);transform:translateY(-2px)}
+.st.now .no{background:var(--orange);color:#fff}
+.st:nth-child(1){grid-column:1/3}.st:nth-child(2){grid-column:3/5}.st:nth-child(3){grid-column:5/7}
+.st:nth-child(4){grid-column:3/5}
+.st:nth-child(5){grid-column:1/3}.st:nth-child(6){grid-column:3/5}.st:nth-child(7){grid-column:5/7}
+.st:nth-child(8){grid-column:2/4}.st:nth-child(9){grid-column:4/6}
+.wire{position:absolute;inset:0;z-index:1;width:100%;height:100%;overflow:visible;pointer-events:none}
+.wire .base{fill:none;stroke:var(--line2);stroke-width:2}
+.wire .main{fill:none;stroke:var(--path);stroke-width:2.5;stroke-linejoin:round}
+.wire .lp{fill:none;stroke:var(--loop);stroke-width:2;stroke-dasharray:6 5}
+.wire .dot{fill:var(--orange)}
+.wire .ldot{fill:var(--loop)}
+.chipz{position:absolute;inset:0;z-index:3;pointer-events:none}
+.lchip{position:absolute;transform:translate(-50%,-50%) scale(.6);opacity:0;padding:2px 10px;border-radius:999px;border:1px solid var(--loop);background:var(--card);color:var(--loop);font-size:11.5px;font-weight:800;white-space:nowrap;transition:opacity .3s,transform .3s}
+.lchip.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.loops-m{display:none}
+
+/* 단계별 정의와 설명 */
+.gloss{margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}
+.gloss h3{margin:0 0 12px;font-size:16px;font-weight:800;letter-spacing:-.3px}
+.gloss h4{margin:18px 0 10px;font-size:14px;font-weight:800;color:var(--loop)}
+.gl-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.gl{display:grid;align-content:start;gap:6px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card);cursor:pointer;transition:border-color .3s,box-shadow .3s,background .3s}
+.gl:hover{border-color:var(--line2)}
+.gl-h{display:flex;align-items:baseline;gap:8px}
+.gl-h em{flex:0 0 auto;font-style:normal;font-size:12px;font-weight:900;color:var(--blue);font-variant-numeric:tabular-nums}
+.gl-h b{font-size:14px;line-height:1.4;font-weight:800;color:var(--ink)}
+.gl dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 8px;font-size:12.5px;line-height:1.6}
+.gl dt{display:inline-flex;align-items:center;height:19px;padding:0 6px;border-radius:4px;background:var(--soft);color:var(--muted);font-size:10.5px;font-weight:800;margin-top:1px}
+.gl dt.d{background:var(--tint);color:var(--navy)}
+.gl dd{margin:0;color:var(--sub)}
+.gl dd.d{color:var(--ink);font-weight:500}
+.gl.now{border-color:var(--orange);box-shadow:0 0 0 3px color-mix(in srgb,var(--orange) 16%,transparent)}
+.loop .gl{border-style:dashed;border-color:color-mix(in srgb,var(--loop) 45%,var(--line))}
+.loop .gl-h em{color:var(--loop)}
+.loop .gl.now{border-style:solid;border-color:var(--loop);background:var(--orange-soft)}
+.gl-note{margin:14px 0 0;font-size:12px;color:var(--faint)}
+
+/* ② 입찰자 경매 절차 */
+.bd{position:relative}
+.bd-grid{position:relative;display:grid;grid-template-columns:62px repeat(8,minmax(0,1fr));column-gap:8px;row-gap:10px}
+.lane{display:grid;place-items:center;border-radius:10px;font-size:12px;font-weight:800;color:var(--muted);background:var(--soft);writing-mode:vertical-rl;letter-spacing:2px}
+.lane.me{background:var(--orange-soft);color:var(--orange)}
+.lane.t{writing-mode:horizontal-tb;letter-spacing:0;background:none;font-size:11px;color:var(--faint)}
+.tm{display:grid;place-items:center;height:30px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:11.5px;font-weight:700;color:var(--faint);text-align:center;line-height:1.2;transition:all .35s;position:relative;z-index:2}
+.cell{position:relative;z-index:2;display:grid;align-content:start;gap:3px;min-height:92px;padding:11px 11px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);transition:border-color .35s,background .35s,box-shadow .35s,opacity .35s;opacity:.55}
+.cell b{font-size:13.5px;line-height:1.35;font-weight:800;color:var(--ink)}
+.cell small{font-size:11.5px;line-height:1.45;color:var(--muted)}
+.cell .nt{margin-top:4px;padding-top:6px;border-top:1px dashed var(--line2);font-size:11px;line-height:1.45;color:var(--loop)}
+.cell.empty{background:transparent;border-style:dashed;opacity:.35}
+.cell .badge{justify-self:start;white-space:nowrap;display:inline-flex;align-items:center;height:19px;padding:0 7px;border-radius:999px;font-size:10.5px;font-weight:800;margin-bottom:2px}
+.cell.key .badge{background:var(--orange);color:#fff}
+.cell.profit .badge{background:var(--tint);color:var(--blue)}
+.cell.on{opacity:1;border-color:var(--line2)}
+.cell.court.on{border-color:var(--navy)}
+.cell.key.on{border-color:var(--orange);background:var(--orange-soft)}
+.cell.key.now{box-shadow:0 0 0 0 color-mix(in srgb,var(--orange) 45%,transparent);animation:ring 1.2s ease-out 2}
+.cell.profit.on{border-color:var(--blue);background:var(--tint)}
+@keyframes ring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--orange) 45%,transparent)}100%{box-shadow:0 0 0 14px transparent}}
+.tm.on{border-color:var(--navy);color:var(--navy);background:color-mix(in srgb,var(--blue) 12%,var(--card))}
+.tm.key.on{border-color:var(--orange);color:#fff;background:var(--orange)}
+.cursor{position:absolute;z-index:1;top:0;bottom:0;width:4px;margin-left:-2px;border-radius:2px;background:linear-gradient(var(--orange),color-mix(in srgb,var(--orange) 10%,transparent));opacity:0;transition:left .55s cubic-bezier(.5,0,.2,1),opacity .3s;pointer-events:none}
+.cursor.on{opacity:.9}
+.track{position:absolute;z-index:1;height:2px;background:var(--line2);pointer-events:none}
+.track i{display:block;height:100%;width:0;background:var(--orange);transition:width .55s cubic-bezier(.5,0,.2,1)}
+.sum{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:20px;padding:14px 18px;border-radius:12px;border:1px solid var(--line);background:var(--soft);transition:border-color .4s,background .4s}
+.sum.on{border-color:var(--orange);background:var(--orange-soft)}
+.sum .two{display:flex;gap:6px;flex:0 0 auto}
+.sum .two span{display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:8px;background:var(--orange);color:#fff;font-size:13.5px;font-weight:800}
+.sum p{margin:0;flex:1 1 300px;min-width:0;font-size:14px;line-height:1.6;color:var(--sub)}
+.sum p strong{color:var(--ink)}
+.sum p em{font-style:normal;font-weight:800;color:var(--blue)}
+
+/* 좁은 화면 */
+@media (max-width:860px){
+  .board{padding:20px 16px 14px}
+  .cs-grid{grid-template-columns:minmax(0,1fr);row-gap:10px}
+  .st:nth-child(n){grid-column:auto}
+  .wire,.chipz{display:none}
+  .loops-m{display:grid;gap:6px;margin-top:12px}
+  .loops-m div{display:flex;gap:8px;align-items:flex-start;padding:9px 12px;border:1px dashed var(--loop);border-radius:10px;font-size:12.5px;color:var(--sub)}
+  .loops-m b{flex:0 0 auto;color:var(--loop);font-weight:800}
+  .bd-grid{grid-template-columns:minmax(0,1fr)}
+  .gl-grid{grid-template-columns:minmax(0,1fr)}
+  .cell{min-height:0}
+  .cell::before{font-size:10.5px;font-weight:800;color:var(--faint)}
+  .cell.court::before{content:'법원'}
+  .cell.me::before{content:'입찰자';color:var(--orange)}
+  .tm{margin-top:8px}
+  .head h1{font-size:23px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+.top{position:sticky;top:0;z-index:5;background:var(--navy)}
+.top-in{display:flex;align-items:center;gap:12px;max-width:1240px;height:64px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.top img{display:block;height:34px;width:auto}
+/* 로고 — 웹 머리띠(.g-logo)와 같은 움직임: 올리면 살짝 기울며 커진다 */
+.top-in > a img{transition:transform .4s cubic-bezier(.2,.9,.3,1.4)}
+.top-in > a:hover img{transform:rotate(-4deg) scale(1.04)}
+.top nav{margin-left:auto;display:flex;gap:8px}
+.top nav a{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:8px;border:1px solid rgba(255,255,255,.35);color:#fff;font-size:13.5px;font-weight:700;text-decoration:none}
+.top nav a:hover{background:rgba(255,255,255,.1)}
+.top nav a.fill{background:var(--orange);border-color:var(--orange)}
+.top nav a.fill:hover{filter:brightness(1.06);background:var(--orange)}
+.foot{background:#252a39;color:#9aa1b2;font-size:11px;text-align:center;padding:16px}
+
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a href="/intro.html" data-home aria-label="마이턴옥션 처음으로"><img src="/myturn-promo/media/logo_white.png" alt="MYTURN AUCTION"></a>
+    <nav><a href="/guide/">이용가이드</a></nav>
+  </div>
+</header>
+<main class="page">
+  <header class="head">
+    <span class="eyebrow">AUCTION PROCESS</span>
+    <h1>부동산 경매 진행 절차</h1>
+    <p>법원이 진행하는 순서와, 그 안에서 입찰자가 직접 챙길 일을 나눠 봅니다.</p>
+    <div class="tabs" role="tablist" aria-label="절차 보기">
+      <button type="button" role="tab" id="tabCourt" aria-controls="pCourt" aria-selected="true">법원 경매 절차</button>
+      <button type="button" role="tab" id="tabBid" aria-controls="pBid" aria-selected="false">입찰자 경매 절차</button>
+    </div>
+  </header>
+
+  <!-- ① 법원 경매 절차 -->
+  <section class="board" id="pCourt" role="tabpanel" aria-labelledby="tabCourt">
+    <div class="board-h">
+      <h2>법원 경매 절차<small>경매신청부터 배당까지 9단계</small></h2>
+      <div class="ctl"><button type="button" data-replay="court">↻ 다시 보기</button></div>
+    </div>
+    <div class="stage" id="cStage">
+      <svg class="wire" id="cWire" aria-hidden="true"></svg>
+      <div class="cs-grid" id="cGrid"></div>
+      <div class="chipz" id="cChips"></div>
+    </div>
+    <div class="loops-m" id="cLoopsM"></div>
+    <div class="cap" id="cCap" aria-live="polite"></div>
+    <div class="legend"><span><i></i>기본 진행</span><span><i class="l"></i>다시 매각(04로)</span></div>
+    <!-- 단계별 정의와 설명 — 위 흐름이 지나가는 단계는 여기서도 같이 켜진다 -->
+    <div class="gloss">
+      <h3>단계별 정의와 설명</h3>
+      <ol class="gl-grid" id="cGloss"></ol>
+      <h4>다시 매각하는 경우</h4>
+      <ul class="gl-grid loop" id="cGlossL"></ul>
+      <p class="gl-note">민사집행법 · 민사집행규칙 기준의 일반적인 순서입니다. 기간과 보증금은 법원과 사건마다 다를 수 있으니 매각물건명세서와 법원 공고를 확인하세요.</p>
+    </div>
+  </section>
+
+  <!-- ② 입찰자 경매 절차 -->
+  <section class="board" id="pBid" role="tabpanel" aria-labelledby="tabBid" hidden>
+    <div class="board-h">
+      <h2>입찰자 경매 절차<small>입찰자가 신경 쓸 부분에 집중</small></h2>
+      <div class="ctl"><button type="button" data-replay="bid">↻ 다시 보기</button></div>
+    </div>
+    <div class="bd" id="bStage">
+      <div class="track" id="bTrack"><i></i></div>
+      <div class="cursor" id="bCursor"></div>
+      <div class="bd-grid" id="bGrid"></div>
+    </div>
+    <div class="sum" id="bSum">
+      <div class="two"><span>① 입찰</span><span>② 대금납부</span></div>
+      <p><strong>입찰자가 직접 챙길 일은 입찰과 대금납부, 두 가지입니다.</strong> 나머지는 법원이 진행합니다. 실제로 수익이 갈리는 단계는 그 전에 하는 <em>물건분석</em>입니다.</p>
+    </div>
+    <div class="legend"><span><i class="k"></i>입찰자가 할 일</span><span><i></i>법원이 진행</span></div>
+  </section>
+</main>
+<footer class="foot">COPYRIGHT ⓒMyTurn. ALL RIGHTS RESERVED.</footer>
+
+<script>
+// 홈 — 로그인해 있으면 웹으로, 아니면 대문으로 바로 간다(/web 을 거치면 웹이 한 번 떴다가 대문으로 넘어가며 깜빡인다)
+try { if (localStorage.getItem('ta.web.in') === '1') document.querySelectorAll('[data-home]').forEach((a) => { a.href = '/web'; }); } catch (e) { /* 대문 그대로 */ }
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const narrow = matchMedia('(max-width: 860px)');
+  const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
+  const NS = 'http://www.w3.org/2000/svg';
+  const svgEl = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+
+  /* ---------- 데이터 ---------- */
+  const COURT = [
+    { t: '경매신청 및 경매개시결정', s: '채권자 신청 · 압류', d: '채권자가 경매를 신청하면 법원이 <strong>경매개시결정</strong>을 하고, 등기부에 기입등기를 해 부동산을 압류합니다.', def: "채권자의 신청을 받아 법원이 경매를 시작하겠다고 정하는 결정입니다.", exp: "법원은 부동산을 압류하고 등기부에 경매개시결정 기입등기를 하도록 촉탁합니다. 이 등기 뒤에 소유자가 팔거나 담보를 잡혀도 경매를 막지 못합니다." },
+    { t: '배당요구의 종기 결정 및 공고', s: '배당 신청 마감일', d: '채권자들이 배당을 요구할 수 있는 <strong>마감일(배당요구종기)</strong>을 첫 매각기일 전으로 정해 공고합니다.', def: "채권자가 매각대금에서 배당을 받겠다고 신청할 수 있는 마지막 날을 정하는 절차입니다.", exp: "첫 매각기일 전으로 정해 공고합니다. 임차인 등 배당요구가 필요한 사람은 이날까지 신청해야 배당을 받을 수 있어, 입찰자는 임차인의 배당요구 여부를 꼭 봐야 합니다." },
+    { t: '매각의 준비', s: '현황조사 · 감정평가', d: '집행관 현황조사와 감정평가를 거쳐 <strong>최저매각가격</strong>을 정하고 매각물건명세서를 만듭니다.', def: "매각에 필요한 부동산 정보를 조사하고 최저매각가격을 정하는 단계입니다.", exp: "집행관이 점유 · 임대차 관계를 조사하고 감정인이 감정평가를 합니다. 법원은 감정가를 바탕으로 최저매각가격을 정하고, 매각물건명세서 · 현황조사서 · 감정평가서를 매각기일 1주 전부터 누구나 볼 수 있게 둡니다." },
+    { t: '매각방법의 지정 · 공고 · 통지', s: '매각기일 14일 전 공고', d: '매각기일과 장소를 정해 <strong>기일 14일 전까지 공고</strong>하고 이해관계인에게 알립니다. 다시 매각할 때도 여기서 다시 시작합니다.', def: "언제 · 어디서 · 어떤 방법으로 팔지 정해 알리는 절차입니다.", exp: "매각기일과 매각결정기일을 정해 매각기일 14일 전까지 공고하고 이해관계인에게 통지합니다. 대부분 법정에서 입찰표를 내는 기일입찰로 진행합니다. 유찰 · 불허가 · 미납이 되면 이 단계부터 다시 진행합니다." },
+    { t: '매각의 실시', s: '입찰 · 개찰', d: '매각기일에 입찰과 개찰을 해 <strong>최고가매수신고인</strong>을 정합니다.', def: "매각기일에 입찰을 받아 최고가매수신고인을 정하는 절차입니다.", exp: "입찰자는 입찰표와 함께 보통 최저매각가격의 10%를 보증금으로 냅니다. 가장 높은 값을 쓴 사람이 최고가매수신고인이 되고, 떨어진 사람의 보증금은 그 자리에서 돌려줍니다." },
+    { t: '매각결정 절차', s: '허가 7일 · 확정 7일', d: '매각기일 7일 뒤 <strong>매각허가 여부</strong>를 결정하고, 다시 7일 안에 즉시항고가 없으면 확정됩니다.', def: "법원이 매각 절차에 잘못이 없는지 살펴 매각을 허가할지 정하는 절차입니다.", exp: "매각기일로부터 1주 안에 매각결정기일을 열어 허가 또는 불허가를 결정합니다. 결정 뒤 1주 안에 즉시항고가 없으면 확정됩니다." },
+    { t: '매각대금 납부', s: '확정 후 1개월 이내', d: '법원이 정한 <strong>대금지급기한</strong>(보통 확정 후 1개월 이내)까지 잔금을 내면 소유권을 취득합니다.', def: "매수인이 법원이 정한 기한까지 매각대금 잔액을 내는 절차입니다.", exp: "매각허가결정이 확정되면 법원이 1개월 안의 대금지급기한을 정해 알립니다. 보증금을 뺀 잔금을 내면 등기 전이라도 그때 소유권을 취득합니다." },
+    { t: '소유권이전등기 촉탁 · 인도명령', s: '등기 · 인도', d: '법원이 <strong>소유권이전등기를 촉탁</strong>하고, 매수인은 대금을 낸 뒤 6개월 안에 인도명령을 신청할 수 있습니다.', def: "대금을 낸 매수인 앞으로 등기를 옮기고, 점유자에게서 부동산을 넘겨받게 하는 절차입니다.", exp: "매수인이 등기 서류와 세금을 내면 법원이 소유권이전등기와 소멸하는 권리의 말소등기를 촉탁합니다. 점유자가 비우지 않으면 대금 납부 후 6개월 안에 인도명령을 신청할 수 있습니다." },
+    { t: '배당절차', s: '채권자에게 분배', d: '배당기일에 매각대금을 <strong>채권자 순위에 따라</strong> 나눠 주고 사건이 끝납니다.', def: "매각대금을 권리 순위에 따라 채권자에게 나눠 주는 절차입니다.", exp: "법원은 배당기일에 배당표를 확정하고 순위대로 나눠 줍니다. 배당표에 이의가 있으면 배당이의 소송으로 다툽니다. 배당이 끝나면 경매 사건이 마무리됩니다." },
+  ];
+  const LOOPS = [
+    { from: 4, label: '유찰 → 신경매', d: '아무도 입찰하지 않으면 <strong>최저매각가격을 20~30% 낮춰</strong> 다음 기일에 다시 매각합니다.', def: "매각기일에 입찰자가 아무도 없어 팔리지 않은 경우입니다.", exp: "보통 최저매각가격을 20~30% 낮춰 새 매각기일을 정합니다(신경매). 유찰이 거듭될수록 최저가가 내려갑니다." },
+    { from: 5, label: '불허가 → 신경매', d: '법원이 매각을 <strong>허가하지 않으면</strong> 새 매각기일을 정해 다시 매각합니다.', def: "법원이 매각을 허가하지 않는 결정입니다.", exp: "절차에 잘못이 있거나 불허가 사유가 있을 때 내립니다. 최저매각가격은 그대로 두고 새 매각기일을 정합니다." },
+    { from: 6, label: '미납 → 재경매', d: '매수인이 기한 안에 <strong>대금을 내지 않으면</strong> 입찰보증금을 몰수하고 재경매합니다.', def: "매수인이 대금지급기한까지 대금을 내지 않아 다시 하는 경매입니다.", exp: "전 매수인의 보증금은 돌려주지 않고 배당할 돈에 넣습니다. 종전 최저가로 다시 매각하고, 전 매수인은 참가할 수 없습니다. 법원이 보증금을 20~30%로 올리는 경우가 많습니다." },
+  ];
+  const BID = [
+    { tm: '시작', court: ['경매신청 · 개시결정', '등기부에 압류 기록'], me: null },
+    { tm: '준비 기간', court: ['현황조사 · 감정평가', '배당요구종기 공고'], me: ['물건 검색', '관심 물건 고르기'] },
+    { tm: '기일 14일 전', court: ['매각기일 공고', '매각물건명세서 열람'], me: ['물건분석', '권리분석 · 시세 · 임장'], profit: true },
+    { tm: '매각기일', court: ['입찰 · 개찰', '최고가매수신고인 결정'], me: ['입찰', '입찰표 · 보증금(최저가의 10%)'], key: true, note: '유찰되면 최저가가 20~30% 낮아져 다음 기일에 다시 입찰' },
+    { tm: '+7일', court: ['매각허가결정', '허가 · 불허가'], me: ['결과 확인', '허가되면 잔금 준비'] },
+    { tm: '+14일', court: ['매각허가 확정', '즉시항고 기간 7일'], me: ['잔금 대출 준비', '경락잔금대출 신청'] },
+    { tm: '확정 후 1개월 내', court: ['대금지급기한 지정', '기한 안에 납부'], me: ['대금납부', '잔금을 내면 소유권 취득'], key: true, note: '미납하면 보증금 몰수 · 재경매' },
+    { tm: '납부 후', court: ['소유권이전등기 · 배당', '법원이 등기 촉탁'], me: ['명도 · 인도', '인도명령 신청(6개월 이내)'] },
+  ];
+
+  /* ---------- ① 법원 ---------- */
+  const cGrid = $('cGrid'), cWire = $('cWire'), cChips = $('cChips'), cCap = $('cCap');
+  cGrid.innerHTML = COURT.map((c, i) =>
+    `<button type="button" class="st" data-i="${i}"><span class="no"><small>STEP</small><strong>${String(i + 1).padStart(2, '0')}</strong></span><span class="tt"><b>${c.t}</b><em>${c.s}</em></span></button>`).join('');
+  $('cLoopsM').innerHTML = LOOPS.map((l) => `<div><b>${l.label}</b><span>${l.d.replace(/<\/?strong>/g, '')} 04단계로 돌아갑니다.</span></div>`).join('');
+  const cards = [...cGrid.children];
+  const glItem = (no, title, it) => `<li class="gl" tabindex="0"><div class="gl-h"><em>${no}</em><b>${title}</b></div><dl><dt class="d">정의</dt><dd class="d">${it.def}</dd><dt>설명</dt><dd>${it.exp}</dd></dl></li>`;
+  $('cGloss').innerHTML = COURT.map((c, i) => glItem(`STEP ${String(i + 1).padStart(2, '0')}`, c.t, c)).join('');
+  $('cGlossL').innerHTML = LOOPS.map((l) => glItem('04로', l.label, l)).join('');
+  const gls = [...$('cGloss').children], glsL = [...$('cGlossL').children];
+  const glNow = (el) => { [...gls, ...glsL].forEach((g) => g.classList.toggle('now', g === el)); };
+  const capC0 = (i) => { cCap.innerHTML = `<b>STEP ${String(i + 1).padStart(2, '0')}</b><span>${COURT[i].d}</span>`; };
+  const capC = (i) => { capC0(i); glNow(gls[i]); };
+  const capL = (k) => { glNow(glsL[k]); cCap.innerHTML = `<b class="loop">${LOOPS[k].label}</b><span>${LOOPS[k].d} 그러면 <strong>04단계</strong>부터 다시 진행합니다.</span>`; };
+
+  let geo = null;
+  const rel = (el, s) => { const r = el.getBoundingClientRect(); return { l: r.left - s.left, t: r.top - s.top, r: r.right - s.left, b: r.bottom - s.top, cx: (r.left + r.right) / 2 - s.left, cy: (r.top + r.bottom) / 2 - s.top, w: r.width, h: r.height }; };
+  const lenOf = (pts) => pts.reduce((a, p, i) => (i ? a + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) : 0), 0);
+  const at = (pts, d) => {
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i]; const L = Math.hypot(x1 - x0, y1 - y0);
+      if (d <= L) return [x0 + (x1 - x0) * (d / L), y0 + (y1 - y0) * (d / L)];
+      d -= L;
+    }
+    return pts[pts.length - 1];
+  };
+  const dOf = (pts) => pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+
+  const layout = () => {
+    const s = $('cStage').getBoundingClientRect();
+    const R = cards.map((c) => rel(c, s));
+    const gA = (R[2].b + R[3].t) / 2, gB1 = R[3].b + 20, gB2 = R[4].t - 20, gC = (R[6].b + R[7].t) / 2;
+    const C = (i) => [R[i].cx, R[i].cy];
+    const pts = [C(0), C(1), C(2), [R[2].cx, gA], [R[3].cx, gA], C(3), [R[3].cx, gB1], [R[4].cx, gB1], C(4), C(5), C(6), [R[6].cx, gC], [R[7].cx, gC], C(7), C(8)];
+    // 카드마다 점이 닿는(가장자리) 거리 — 지나는 점 번호
+    const hit = [0, 1, 2, 5, 8, 9, 10, 13, 14];
+    const marks = hit.map((pi, ci) => {
+      if (pi === 0) return 0;
+      const before = lenOf(pts.slice(0, pi + 1));
+      const [px, py] = pts[pi - 1], [qx, qy] = pts[pi];
+      return before - (Math.abs(qx - px) > Math.abs(qy - py) ? R[ci].w / 2 : R[ci].h / 2);
+    });
+    const rx = R[3].r + 28;
+    const loops = LOOPS.map((l) => {
+      const dx = R[l.from].cx + Math.min(64, R[l.from].w / 3);
+      return { pts: [[dx, R[l.from].t], [dx, gB2], [rx, gB2], [rx, R[3].cy], [R[3].r + 1, R[3].cy]], chip: [dx, gB2] };
+    });
+    cWire.innerHTML = '';
+    const defs = svgEl('defs', {});
+    const mk = svgEl('marker', { id: 'arL', viewBox: '0 0 10 10', refX: '8', refY: '5', markerWidth: '7', markerHeight: '7', orient: 'auto-start-reverse' });
+    mk.appendChild(svgEl('path', { d: 'M0 0L10 5L0 10z', fill: 'var(--loop)' }));
+    defs.appendChild(mk);
+    cWire.appendChild(defs);
+    cWire.appendChild(svgEl('path', { class: 'base', d: dOf(pts) }));
+    const total = lenOf(pts);
+    const main = svgEl('path', { class: 'main', d: dOf(pts), 'stroke-dasharray': total, 'stroke-dashoffset': total });
+    cWire.appendChild(main);
+    const lps = loops.map((lp, k) => {
+      const L = lenOf(lp.pts);
+      const m = svgEl('mask', { id: `lm${k}`, maskUnits: 'userSpaceOnUse' });
+      const mp = svgEl('path', { d: dOf(lp.pts), fill: 'none', stroke: '#fff', 'stroke-width': '8', 'stroke-dasharray': L, 'stroke-dashoffset': L });
+      m.appendChild(mp); defs.appendChild(m);
+      const p = svgEl('path', { class: 'lp', d: dOf(lp.pts), mask: `url(#lm${k})`, 'marker-end': 'url(#arL)' });
+      p.style.opacity = '0';
+      cWire.appendChild(p);
+      return { ...lp, L, mp, p };
+    });
+    const dot = svgEl('circle', { class: 'dot', r: '6', cx: pts[0][0], cy: pts[0][1] }); dot.style.opacity = '0';
+    const ldot = svgEl('circle', { class: 'ldot', r: '5' }); ldot.style.opacity = '0';
+    cWire.append(dot, ldot);
+    cChips.innerHTML = LOOPS.map((l, k) => `<span class="lchip" style="left:${loops[k].chip[0]}px;top:${loops[k].chip[1]}px">${l.label}</span>`).join('');
+    geo = { pts, total, marks, main, dot, ldot, lps, chips: [...cChips.children] };
+  };
+
+  const tween = (ms, fn, run) => new Promise((ok) => {
+    const t0 = performance.now();
+    const step = (now) => {
+      if (run.stop) return ok(false);
+      const k = Math.min(1, (now - t0) / ms); fn(k);
+      if (k < 1) requestAnimationFrame(step); else ok(true);
+    };
+    requestAnimationFrame(step);
+  });
+  const ease = (k) => (k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
+
+  const courtRest = () => {   // 다 보인 상태 — 움직임을 끄면 이 모습
+    cards.forEach((c) => { c.classList.add('on'); c.classList.remove('now'); });
+    if (geo) {
+      geo.main.setAttribute('stroke-dashoffset', 0); geo.dot.style.opacity = '0'; geo.ldot.style.opacity = '0';
+      geo.lps.forEach((l) => { l.p.style.opacity = '1'; l.mp.setAttribute('stroke-dashoffset', 0); });
+      geo.chips.forEach((c) => c.classList.add('on'));
+    }
+    capC(0);
+  };
+  let cRun = { stop: true };
+  const playCourt = async () => {
+    cRun.stop = true; const run = cRun = { stop: false };
+    if (reduce) return courtRest();
+    if (narrow.matches) {   // 좁은 화면 — 선 없이 카드만 차례로
+      cards.forEach((c) => c.classList.remove('on', 'now'));
+      for (let i = 0; i < cards.length; i++) {
+        if (run.stop) return;
+        cards.forEach((c) => c.classList.remove('now')); cards[i].classList.add('on', 'now'); capC(i);
+        await wait(1100);
+      }
+      cards.forEach((c) => c.classList.remove('now')); await wait(2600);
+      if (!run.stop) playCourt();
+      return;
+    }
+    layout();
+    const g = geo;
+    cards.forEach((c) => c.classList.remove('on', 'now'));
+    g.chips.forEach((c) => c.classList.remove('on'));
+    g.dot.style.opacity = '1';
+    let lit = -1;
+    const ok = await tween(g.total / .33, (k) => {
+      const d = g.total * k;
+      g.main.setAttribute('stroke-dashoffset', g.total - d);
+      const [x, y] = at(g.pts, d); g.dot.setAttribute('cx', x); g.dot.setAttribute('cy', y);
+      while (lit + 1 < g.marks.length && d >= g.marks[lit + 1]) {
+        lit += 1; cards.forEach((c) => c.classList.remove('now')); cards[lit].classList.add('on', 'now'); capC(lit);
+      }
+    }, run);
+    if (!ok) return;
+    g.dot.style.opacity = '0';
+    await wait(900); if (run.stop) return;
+    cards[8].classList.remove('now');
+    for (let k = 0; k < g.lps.length; k++) {
+      const l = g.lps[k];
+      cards.forEach((c) => c.classList.remove('now')); cards[LOOPS[k].from].classList.add('now');
+      capL(k); g.chips[k].classList.add('on'); l.p.style.opacity = '1'; g.ldot.style.opacity = '1';
+      const fine = await tween(1300, (t) => {
+        const e = ease(t); l.mp.setAttribute('stroke-dashoffset', l.L * (1 - e));
+        const [x, y] = at(l.pts, l.L * e); g.ldot.setAttribute('cx', x); g.ldot.setAttribute('cy', y);
+      }, run);
+      if (!fine) return;
+      cards[LOOPS[k].from].classList.remove('now'); cards[3].classList.add('now');
+      await wait(900); if (run.stop) return;
+      cards[3].classList.remove('now');
+    }
+    g.ldot.style.opacity = '0';
+    await wait(3200);
+    if (!run.stop) playCourt();
+  };
+  const pick = (i) => { cRun.stop = true; courtRest(); cards.forEach((x) => x.classList.remove('now')); cards[i].classList.add('now'); capC(i); };
+  gls.forEach((g, i) => { g.addEventListener('click', () => pick(i)); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(i); } }); });
+  glsL.forEach((g, k) => g.addEventListener('click', () => { cRun.stop = true; courtRest(); cards.forEach((x) => x.classList.remove('now')); cards[LOOPS[k].from].classList.add('now'); capL(k); }));
+  cards.forEach((c) => c.addEventListener('click', () => {   // 카드를 누르면 멈추고 그 설명
+    cRun.stop = true; courtRest(); cards.forEach((x) => x.classList.remove('now')); c.classList.add('now'); capC(+c.dataset.i);
+  }));
+
+  /* ---------- ② 입찰자 ---------- */
+  const bGrid = $('bGrid');
+  let bCells = [];
+  const buildBid = () => {
+    const wide = !narrow.matches;
+    const cell = (kind, it, i) => {
+      if (kind === 'me' && !it.me) return `<div class="cell me empty" data-c="${i}"><small>법원 진행만</small></div>`;
+      const [b, s] = kind === 'me' ? it.me : it.court;
+      const cls = ['cell', kind, kind === 'me' && it.key ? 'key' : '', kind === 'me' && it.profit ? 'profit' : ''].join(' ');
+      const badge = kind === 'me' && it.key ? '<span class="badge">입찰자가 할 일</span>' : kind === 'me' && it.profit ? '<span class="badge">수익이 갈리는 단계</span>' : '';
+      const note = kind === 'me' && it.note ? `<span class="nt">${it.note}</span>` : '';
+      return `<div class="${cls}" data-c="${i}">${badge}<b>${b}</b><small>${s}</small>${note}</div>`;
+    };
+    const pos = (r, c) => (wide ? ` style="grid-row:${r};grid-column:${c}"` : '');
+    let h = '';
+    if (wide) {
+      h += `<div class="lane t"${pos(1, 1)}>시점</div><div class="lane"${pos(2, 1)}>법원</div><div class="lane me"${pos(3, 1)}>입찰자</div>`;
+      BID.forEach((it, i) => {
+        h += `<div class="tm${it.key ? ' key' : ''}" data-c="${i}"${pos(1, i + 2)}>${it.tm}</div>`;
+        h += cell('court', it, i).replace('<div ', `<div${pos(2, i + 2)} `);
+        h += cell('me', it, i).replace('<div ', `<div${pos(3, i + 2)} `);
+      });
+    } else {
+      BID.forEach((it, i) => { h += `<div class="tm${it.key ? ' key' : ''}" data-c="${i}">${it.tm}</div>${cell('court', it, i)}${cell('me', it, i)}`; });
+    }
+    bGrid.innerHTML = h;
+    bCells = BID.map((_, i) => [...bGrid.querySelectorAll(`[data-c="${i}"]`)]);
+  };
+  const bCursor = $('bCursor'), bTrack = $('bTrack'), bSum = $('bSum');
+  const colX = (i) => { const s = $('bStage').getBoundingClientRect(); const r = bCells[i][0].getBoundingClientRect(); return r.left + r.width / 2 - s.left; };
+  const placeTrack = () => {
+    if (narrow.matches) { bTrack.hidden = true; bCursor.hidden = true; return; }
+    bTrack.hidden = false; bCursor.hidden = false;
+    const s = $('bStage').getBoundingClientRect(), t = bCells[0][0].getBoundingClientRect();
+    const x0 = colX(0), x1 = colX(BID.length - 1);
+    Object.assign(bTrack.style, { left: `${x0}px`, width: `${x1 - x0}px`, top: `${t.top + t.height / 2 - s.top - 1}px` });
+  };
+  const bidRest = () => {
+    bCells.flat().forEach((e) => { e.classList.add('on'); e.classList.remove('now'); });
+    bSum.classList.add('on'); bCursor.classList.remove('on'); bTrack.firstElementChild.style.width = '100%';
+  };
+  let bRun = { stop: true };
+  const playBid = async () => {
+    bRun.stop = true; const run = bRun = { stop: false };
+    buildBid(); placeTrack();
+    if (reduce) return bidRest();
+    bSum.classList.remove('on'); bTrack.firstElementChild.style.width = '0';
+    bCursor.style.transition = 'none'; bCursor.style.left = `${colX(0)}px`; void bCursor.offsetWidth; bCursor.style.transition = '';
+    bCursor.classList.add('on');
+    for (let i = 0; i < BID.length; i++) {
+      if (run.stop) return;
+      bCursor.style.left = `${colX(i)}px`;
+      bTrack.firstElementChild.style.width = `${(i / (BID.length - 1)) * 100}%`;
+      await wait(380); if (run.stop) return;
+      bCells.flat().forEach((e) => e.classList.remove('now'));
+      bCells[i].forEach((e) => e.classList.add('on', 'now'));
+      await wait(BID[i].key ? 1900 : BID[i].profit ? 1500 : 850);
+    }
+    bCursor.classList.remove('on');
+    bSum.classList.add('on');
+    await wait(4200);
+    if (!run.stop) playBid();
+  };
+
+  /* ---------- 탭 · 다시 보기 ---------- */
+  const tabs = { court: [$('tabCourt'), $('pCourt'), playCourt], bid: [$('tabBid'), $('pBid'), playBid] };
+  const show = (key) => {
+    Object.entries(tabs).forEach(([k, [tab, panel]]) => { tab.setAttribute('aria-selected', String(k === key)); panel.hidden = k !== key; });
+    cRun.stop = true; bRun.stop = true;
+    tabs[key][2]();
+    try { history.replaceState(null, '', `#${key}`); } catch (e) { /* 주소만 못 바꾼다 */ }
+  };
+  $('tabCourt').addEventListener('click', () => show('court'));
+  $('tabBid').addEventListener('click', () => show('bid'));
+  document.querySelectorAll('[data-replay]').forEach((b) => b.addEventListener('click', () => show(b.dataset.replay)));
+  let rz = 0;
+  const again = () => { clearTimeout(rz); rz = setTimeout(() => show($('pBid').hidden ? 'court' : 'bid'), 200); };
+  addEventListener('resize', again);
+  narrow.addEventListener('change', again);
+
+  // 처음 그림 — 움직이기 전에도 다 보이게 깔아 두고 시작
+  buildBid();
+  layout(); courtRest(); bidRest();
+  const start = location.hash === '#bid' ? 'bid' : 'court';
+  /* 주소의 탭(#bid)으로 처음부터 — 새로고침하면 법원 탭이 잠깐 보였다가 바뀌었다(2026-11-03) */
+  Object.entries(tabs).forEach(([k, [tab, panel]]) => { tab.setAttribute('aria-selected', String(k === start)); panel.hidden = k !== start; });
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => setTimeout(() => show(start), 400));
+})();
+</script>
+
+</body>
+</html>

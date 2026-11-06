@@ -10,7 +10,7 @@ import { REGION_GROUPS } from '../services/regionCodes';
 import { fetchDongTradeDetails, tradeWindowOf, type DongTradeDetailRow } from '../services/publicDataApi';
 import type { CasePropertyType } from '../services/caseTradeAnalysis';
 import AdminRegionDemandPage from './AdminRegionDemandPage.vue';
-import AdminCaseTradePage from './AdminCaseTradePage.vue';
+import SonpumPricePage from './SonpumPricePage.vue';
 import AuctionDetailPage from './AuctionDetailPage.vue';
 
 // 손품조사 화면을 손품분석 모드로 — 본건사진 · 입지/개별성만, 그 사이에 아래 수요분석을 끼운다
@@ -31,10 +31,11 @@ const auction = computed<AuctionDetail | null>(() => list.value.find((a) => a.id
 watch(pickId, (v) => { writeLS(PICK_KEY, v); window.dispatchEvent(new CustomEvent('son:pick', { detail: v })); });
 // 고른 물건이 목록에 없으면(처음 · 지운 물건) 맨 앞 물건으로 — 고르는 칸이 비어 보이지 않게
 watch(list, (l) => { if (l.length && !l.some((a) => a.id === pickId.value)) pickId.value = l[0].id; }, { immediate: true });
-type SonTab = 'demand' | 'price' | 'conc';
-const TAB_LABEL: Record<SonTab, string> = { demand: '수요분석', price: '시세분석', conc: '손품결론' };
+// 손품결론 탭은 뺐다(2026-11-02) — 결론은 가격분석의 실거래가 예상, 인근 매각사례는 물건정보 탭
+type SonTab = 'demand' | 'price';
+const TAB_LABEL: Record<SonTab, string> = { demand: '수요분석', price: '시세분석' };
 const savedTab = readLS(TAB_KEY);
-const tab = ref<SonTab>(savedTab === 'price' || savedTab === 'conc' ? savedTab : 'demand');
+const tab = ref<SonTab>(savedTab === 'price' ? 'price' : 'demand');
 // 손품조사 화면이 지금 탭을 알게 — 손품결론 탭을 열 때만 결론 값을 받는다
 provide('sonpumTab', tab);
 // 시세분석 ④ 호가분석 자리(#sonAskSlot)가 생겼는지 — 손품조사 화면이 네이버 매물조사를 거기로 옮길지 정한다
@@ -102,7 +103,6 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
         <nav class="adm-view-tabs" role="tablist">
           <button type="button" role="tab" :class="{ on: tab === 'demand' }" :aria-selected="tab === 'demand'" @click="tab = 'demand'">수요분석</button>
           <button type="button" role="tab" :class="{ on: tab === 'price' }" :aria-selected="tab === 'price'" @click="tab = 'price'">시세분석</button>
-          <button type="button" role="tab" :class="{ on: tab === 'conc' }" :aria-selected="tab === 'conc'" @click="tab = 'conc'">손품결론</button>
         </nav>
         <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
@@ -121,13 +121,11 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
         </AuctionDetailPage>
       </div>
       <!-- 시세조사는 한 번 열면 띄워 둔다 — 탭을 오가도 다시 조회하지 않고 고른 줄 · 거르기가 그대로 남는다 -->
-      <div v-if="casePreset && (tab === 'price' || priceSeen)" v-show="tab === 'price'" class="adm-case-in app-market son-price" data-k="case">
-        <AdminCaseTradePage in-dong :preset="casePreset" />
+      <div v-if="casePreset && (tab === 'price' || priceSeen)" v-show="tab === 'price'" class="son-price">
+        <SonpumPricePage :auction="auction" :kind="casePreset.kind" />
       </div>
       <!-- 네이버 매물조사 — 선정물건 손품조사의 그 단락(물건 값 그대로, 고치면 물건에 저장). 위 손품조사 화면이 여기로 옮겨 그린다 -->
       <div v-show="tab === 'price'" id="sonNaverSlot" class="app-detail tab-survey son-detail son-naver" />
-      <!-- 손품결론 — 선정물건 손품조사의 손품결론 카드 그대로(위 손품조사 화면이 여기로 옮겨 그린다) -->
-      <div v-show="tab === 'conc'" id="sonConcSlot" class="app-detail tab-survey son-detail son-conc" />
     </template>
   </section>
 </template>
@@ -138,4 +136,5 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
 .adm-crumb-slot { align-self: center; }
 .son-empty, .son-msg { margin: 0; padding: 24px; border: 1px dashed #dde3ee; border-radius: 12px; background: #fff; color: #6b7280; font-size: 14px; text-align: center; }
 .son-tabbar { position: relative; display: flex !important; align-items: flex-end; gap: 12px; }
+/* 시세분석 상자 위치는 수요분석 첫 상자(본건사진)와 같다 — 둘 다 탭 줄에서 .son 줄 간격(10)만큼. 따로 띄우지 않는다(2026-11-04) */
 </style>

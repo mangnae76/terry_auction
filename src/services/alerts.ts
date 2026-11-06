@@ -54,6 +54,8 @@ export interface AlertDef {
   desc: string;
   /** 설정이 없을 때의 값 */
   on: boolean;
+  /** 서비스 시작 뒤로 미룬 알림 — 설정 화면에 안 보이고 울리지도 않는다(2026-11-02, docs/추가기능.txt) */
+  later?: true;
 }
 
 export const ALERT_GROUPS: Array<{ title: string; note: string }> = [
@@ -62,7 +64,7 @@ export const ALERT_GROUPS: Array<{ title: string; note: string }> = [
   { title: '세금 달력', note: '해마다 같은 날 돌아오는 신고·납부.' },
 ];
 
-export const ALERT_DEFS: AlertDef[] = [
+const ALL_ALERT_DEFS: AlertDef[] = [
   {
     key: 'balanceDue', group: '놓치면 손해', on: true,
     name: '잔금 납부 기한',
@@ -79,17 +81,17 @@ export const ALERT_DEFS: AlertDef[] = [
     desc: '잔금 납부일부터 60일 안에 신고해야 한다. 기한 30일·7일 전에 알린다.',
   },
   {
-    key: 'photoQuota', group: '놓치면 손해', on: true,
+    key: 'photoQuota', group: '놓치면 손해', on: true, later: true,
     name: '사진 용량',
     desc: '한도를 넘으면 오래된 사진이 자동으로 지워진다. 80%를 넘으면 미리 알린다.',
   },
   {
-    key: 'interior', group: '내가 정한 일정', on: true,
+    key: 'interior', group: '내가 정한 일정', on: true, later: true,
     name: '인테리어 공정',
     desc: '시작 예정일 하루 전과, 완료 예정일이 지났는데 아직 완료가 아닐 때 알린다.',
   },
   {
-    key: 'bidding', group: '내가 정한 일정', on: true,
+    key: 'bidding', group: '내가 정한 일정', on: true, later: true,
     name: '업체 비딩 회신',
     desc: '견적을 적어 두지 않은 업체가 사흘 넘게 비어 있으면 알린다.',
   },
@@ -110,6 +112,10 @@ export const ALERT_DEFS: AlertDef[] = [
   },
 ];
 
+/** 지금 쓰는 알림 — 미룬 것(later)은 뺀다 */
+export const ALERT_DEFS: AlertDef[] = ALL_ALERT_DEFS.filter((d) => !d.later);
+const LATER = new Set(ALL_ALERT_DEFS.filter((d) => d.later).map((d) => d.key));
+
 export const defaultAlertPrefs = (): Record<string, boolean> => {
   const out: Record<string, boolean> = {};
   for (const d of ALERT_DEFS) out[d.key] = d.on;
@@ -118,6 +124,7 @@ export const defaultAlertPrefs = (): Record<string, boolean> => {
 
 /** 설정에 없는 종류는 기본값을 따른다 */
 export const alertOn = (prefs: Record<string, boolean> | undefined, key: AlertKey): boolean => {
+  if (LATER.has(key)) return false;   // 미룬 알림은 예전에 켜 둔 사람도 울리지 않는다
   const v = prefs?.[key];
   if (typeof v === 'boolean') return v;
   return ALERT_DEFS.find((d) => d.key === key)?.on ?? true;

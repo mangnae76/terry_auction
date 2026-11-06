@@ -10,7 +10,7 @@ export const ALLOWED_EMAILS = [
 ];
 
 /** 운영자 — firestore.rules 의 isAdmin 과 같이 맞춘다(게시판 글 지우기 · 운영자 표시) */
-export const ADMIN_EMAILS = ['dark_0417@nate.com', 'mangnae760723@gmail.com'];
+export const ADMIN_EMAILS = ['dark_0417@nate.com', 'mangnae760723@gmail.com', 'hansun440@gmail.com'];   // hansun440 — 2026-11-02 운영자로 추가
 export const isAdminEmail = (email?: string | null): boolean => !!email && ADMIN_EMAILS.includes(email.toLowerCase());
 
 /** 모든 가입자에게 연다(2026-11-02 사용자 요청 '다 열어줘'). 다시 3계정만 쓰게 하려면 false 로 두고,

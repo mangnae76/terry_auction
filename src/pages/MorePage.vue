@@ -332,7 +332,7 @@ onMounted(() => {
 
 <style>
 .more-toast {
-  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%);
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
   z-index: 9999; margin: 0;
   background: #111827; color: #fff; border-radius: 999px;
   padding: 9px 16px; font-size: 12px; font-weight: 700;

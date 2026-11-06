@@ -829,7 +829,7 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
 .adb-save:disabled { background: #9aa6c4; cursor: default; }
 
 .adb-toast {
-  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 70;
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 70;
   margin: 0; padding: 10px 16px; border-radius: 999px;
   background: rgba(17, 24, 39, .92); color: #fff; font-size: 12.5px;
 }

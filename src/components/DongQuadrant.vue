@@ -80,7 +80,7 @@ const place = () => {
 };
 /** 모서리 설명 — 원을 다 그린 뒤 바탕색 테두리를 둘러 올린다(원에 덮이지 않게) */
 const cornerLabels = (c: CanvasRenderingContext2D, P: ReturnType<typeof PAL>) => {
-  c.font = '700 14px "Pretendard", sans-serif'; c.lineJoin = 'round'; c.lineWidth = 4; c.strokeStyle = P.card; c.fillStyle = P.faint;
+  c.font = '700 14px "Noto Sans KR", sans-serif'; c.lineJoin = 'round'; c.lineWidth = 4; c.strokeStyle = P.card; c.fillStyle = P.faint;
   const put = (text: string, x: number, y: number, align: CanvasTextAlign) => { c.textAlign = align; c.strokeText(text, x, y); c.fillText(text, x, y); };
   put('활발 · 비쌈', W - PAD.r - 6, PAD.t + 16, 'right'); put('활발 · 저렴', W - PAD.r - 6, H - PAD.b - 10, 'right');
   put('한산 · 비쌈', PAD.l + 8, PAD.t + 16, 'left'); put('한산 · 저렴', PAD.l + 8, H - PAD.b - 10, 'left');
@@ -90,15 +90,15 @@ function draw(now: number) {
   const P = PAL(); const t = reduce ? 1e9 : now - t0; const { dongs, guUnit, avgN } = model.value; const { nMax, uLo, uHi, sx, sy } = scales();
   const cx0 = sx(avgN); const cy0 = sy(guUnit);
   c.clearRect(0, 0, W, H);
-  c.strokeStyle = P.grid; c.lineWidth = 1; c.font = '600 13px "Pretendard", sans-serif'; c.fillStyle = P.sub;
+  c.strokeStyle = P.grid; c.lineWidth = 1; c.font = '600 13px "Noto Sans KR", sans-serif'; c.fillStyle = P.sub;
   [300, 500, 700, 1000, 1500, 2000, 3000, 5000, 7000, 10000].forEach((u) => { const won = u * 10000; if (won < uLo || won > uHi) return; const y = sy(won); c.beginPath(); c.moveTo(PAD.l, y + 0.5); c.lineTo(W - PAD.r, y + 0.5); c.stroke(); c.textAlign = 'right'; c.fillText(`${u.toLocaleString('ko-KR')}만`, PAD.l - 8, y + 4); });
   const stepN = [10, 20, 25, 50, 100, 200, 250, 500, 1000].find((s) => nMax / s <= 8) ?? 1000;
   for (let n = 0; n <= nMax; n += stepN) { c.textAlign = 'center'; c.fillText(`${n.toLocaleString('ko-KR')}건`, sx(n), H - PAD.b + 18); }
-  c.font = '600 13px "Pretendard", sans-serif'; c.fillText('거래건수 →', (PAD.l + W - PAD.r) / 2, H - 10);
+  c.font = '600 13px "Noto Sans KR", sans-serif'; c.fillText('거래건수 →', (PAD.l + W - PAD.r) / 2, H - 10);
   c.save(); c.translate(16, (PAD.t + H - PAD.b) / 2); c.rotate(-Math.PI / 2); c.fillText('평균 평당가 →', 0, 0); c.restore();
   c.strokeStyle = P.mark; c.setLineDash([5, 5]); c.lineWidth = 1.2;
   c.beginPath(); c.moveTo(cx0 + 0.5, PAD.t); c.lineTo(cx0 + 0.5, H - PAD.b); c.moveTo(PAD.l, cy0 + 0.5); c.lineTo(W - PAD.r, cy0 + 0.5); c.stroke(); c.setLineDash([]);
-  c.fillStyle = P.mark; c.font = '700 13px "Pretendard", sans-serif'; c.textAlign = 'left'; c.fillText(`평균 ${man(guUnit)} · 동당 ${Math.round(avgN).toLocaleString('ko-KR')}건`, cx0 + 6, PAD.t + 34);
+  c.fillStyle = P.mark; c.font = '700 13px "Noto Sans KR", sans-serif'; c.textAlign = 'left'; c.fillText(`평균 ${man(guUnit)} · 동당 ${Math.round(avgN).toLocaleString('ko-KR')}건`, cx0 + 6, PAD.t + 34);
   let busy = false;
   // 원은 그림 칸 안에만 — 튀어 오르는 움직임(ease)으로 잠깐 커져도 세로축 눈금 · 가로축 글자를 덮지 않는다
   c.save(); c.beginPath(); c.rect(PAD.l, 0, W - PAD.l, H - PAD.b); c.clip();
@@ -117,7 +117,7 @@ function draw(now: number) {
     }
     c.globalAlpha = (dim ? 0.35 : 0.88) * fade; c.fillStyle = P.q[d.q]; c.beginPath(); c.arc(d.x, d.y, r, 0, Math.PI * 2); c.fill();
     c.globalAlpha = fade; c.strokeStyle = P.card; c.lineWidth = 2; c.stroke();
-    c.textAlign = 'center'; c.font = `700 ${r > 22 ? 14 : 12}px "Pretendard", sans-serif`;
+    c.textAlign = 'center'; c.font = `700 ${r > 22 ? 14 : 12}px "Noto Sans KR", sans-serif`;
     if (r > SMALL_R) { c.fillStyle = d.q <= 2 ? '#fff' : P.ink; c.fillText(d.name, d.x, d.y + 4); } else {
       // 원 위 이름이 그림 칸 밖으로 잘리지 않게 좌우를 당긴다
       const hw = c.measureText(d.name).width / 2; const lx = Math.min(Math.max(d.x, PAD.l + hw + 2), W - PAD.r - hw - 2);

@@ -41,6 +41,12 @@
   .mtp.playing .cover { opacity: 0; pointer-events: none; }
   .mtp.playing:hover .bar, .mtp.paused .bar, .mtp.playing:hover .snd, .mtp.paused .snd { opacity: 1; }
   .mtp.loading .big span::after { content: ' · 불러오는 중'; font-weight: 700; opacity: .8; }
+  /* 재생 전 — 화면 한가운데 큰 ▶ (영상인 줄 바로 알게, 2026-11-03). 누르면 어디를 눌러도 재생되므로 그림만 */
+  .mtp .mid { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .mtp .mid i { width: max(56px, 9cqw); aspect-ratio: 1; border-radius: 50%; background: rgba(240, 121, 0, .94); box-shadow: 0 .8cqw 2.6cqw rgba(0, 0, 0, .35), 0 0 0 max(4px, .5cqw) rgba(255, 255, 255, .35); display: grid; place-items: center; transition: transform .15s; }
+  .mtp .mid i svg { width: 40%; margin-left: 8%; fill: #fff; }
+  .mtp:hover .mid i, .mtp:focus-visible .mid i { transform: scale(1.07); }
+  .mtp.started .mid, .mtp.hero .mid { display: none; }
   /* 대문 모드(?mode=hero) — 바로 재생 · 계속 되풀이. 썸네일 · 재생 단추 · 진행 막대 · 소리 단추는 감추고(소리는 바깥 대문이 켜고 끈다) */
   .mtp.hero .poster, .mtp.hero .cover, .mtp.hero .bar, .mtp.hero .snd { display: none !important; }
   .mtp.hero { cursor: default; }
@@ -50,6 +56,7 @@
 <div class="mtp loading" id="mtp" role="button" tabindex="0" aria-label="마이턴 옥션 소개 영상 재생">
   <canvas id="cv" width="1920" height="1080"></canvas>
   <div class="poster" style="background-image:url('media/poster.jpg')"></div>
+  <div class="mid" aria-hidden="true"><i><svg viewBox="0 0 24 24"><path d="M6 3.8v16.4a1 1 0 0 0 1.5.86l13.2-8.2a1 1 0 0 0 0-1.72L7.5 2.94A1 1 0 0 0 6 3.8z"/></svg></i></div>
   <div class="cover"><div class="big"><i><svg viewBox="0 0 24 24"><path d="M6 3.8v16.4a1 1 0 0 0 1.5.86l13.2-8.2a1 1 0 0 0 0-1.72L7.5 2.94A1 1 0 0 0 6 3.8z"/></svg></i><span>소개 영상 보기 · 42초</span></div></div>
   <div class="bar"><b></b></div>
   <button class="snd" type="button" aria-label="소리 끄기/켜기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path class="w" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/><path class="x" d="m22 9-6 6m0-6 6 6" style="display:none"/></svg></button>

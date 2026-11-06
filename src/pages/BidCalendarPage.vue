@@ -6,6 +6,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import { useAuctionStore } from '../stores/auctionStore';
+import { useAuthStore } from '../stores/authStore';
+import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 import { isPhotoId, loadSitePhoto } from '../services/sitePhotoRepository';
 import type { AuctionDetail } from '../types/auction';
 import { stageLabelOf, stageToneOf, shownWonDate, shownBalanceDueDate } from '../utils/stageLabel';
@@ -275,9 +277,17 @@ const loadShow = (): Record<ShowKeys, boolean> => {
   }
 };
 const show = ref(loadShow());
+// 보일 항목은 내 설정(DB userPrefs.calendarShow)에도 남긴다 — 다른 기기 · 앱에서도 같게. 브라우저 값은 먼저 그리는 데만 쓴다
+const authStore = useAuthStore();
+onMounted(async () => {
+  if (!authStore.uid) return;
+  const saved = (await loadUserPrefs(authStore.uid).catch(() => null))?.calendarShow;
+  if (saved) show.value = { ...show.value, ...(saved as Partial<Record<ShowKeys, boolean>>), money: true };
+});
 const toggleShow = (key: ShowKeys) => {
   show.value = { ...show.value, [key]: !show.value[key] };
   try { localStorage.setItem(SHOW_KEY, JSON.stringify(show.value)); } catch { /* 못 적어도 그만 */ }
+  if (authStore.uid) void saveUserPrefs(authStore.uid, { calendarShow: show.value });
 };
 
 /** 달력으로 볼지 목록으로 볼지 — 달력은 한눈에, 목록은 날짜 차례로 훑기 좋다 */

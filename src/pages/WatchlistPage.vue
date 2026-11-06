@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { caseLabelOf } from '../utils/caseLabel';
 import { weekdayLabel } from '../stores/scheduleStore';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { propTypeMark } from '../utils/propertyType';
 import { useAuctionStore } from '../stores/auctionStore';
@@ -74,7 +74,11 @@ const readSortMode = (): 'reg' | 'route' => {
   }
 };
 const sortMode = ref<'reg' | 'route'>(readSortMode());
-// 다른 화면에 갔다 와도 고른 정렬이 유지되게 기기에 적어 둔다
+// 로그인 뒤 내 설정 DB 값이 들어오면 다시 읽는다(다른 기기에서 고른 정렬) — services/uiPrefSync
+const onUiPrefs = () => { const m = readSortMode(); if (m !== sortMode.value) sortMode.value = m; };
+window.addEventListener('ui-prefs:loaded', onUiPrefs);
+onBeforeUnmount(() => window.removeEventListener('ui-prefs:loaded', onUiPrefs));
+// 다른 화면에 갔다 와도 고른 정렬이 유지되게 기기에 적고, 내 설정 DB 에도 맞춘다
 watch(sortMode, (mode) => {
   try { localStorage.setItem(SORT_MODE_KEY, mode); } catch { /* 저장 못 해도 화면은 그대로 동작한다 */ }
 });

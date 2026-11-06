@@ -3,7 +3,7 @@ import { caseLabelOf } from '../utils/caseLabel';
 // 낙찰 이후 — 명도와 매도까지의 일을 모아 둘 자리.
 // 틀은 자금관리(.fin-shell)와 같은 짜임이다: 위는 붙박이(제목 + 탭 + 물건 카드),
 // 아래만 구른다. 카드는 물건상세의 권리분석과 같은 꼴 — 제목줄을 누르면 접힌다.
-import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { shortAddr } from '../utils/address';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
@@ -82,6 +82,7 @@ const current = () => TABS.find((t) => t.key === activeTab.value) ?? TABS[0];
 watch(activeTab, () => { editing.value = false; draft.value = []; });
 
 const store = useAuctionStore();
+
 const auth = useAuthStore();
 const dayBook = usePostWinBook('day');
 const bizBook = usePostWinBook('biz');
@@ -276,6 +277,10 @@ const flowSub = ref<FlowSub>((() => {
   } catch { return 'steps'; }
 })());
 watch(flowSub, (v) => { try { sessionStorage.setItem('pw.flow.sub', v); } catch { /* 그만 */ } });
+// 최근 분석 기록 — 진행절차 안 탭(진행절차 · 명도분석 · 세금분석 · 필요경비 · 사업경비 · 매물등록)에서 고친 것만 '낙찰이후 › 탭'으로 남긴다.
+// 상세 장 · 가이드 장은 경매 진행 단계가 아니라 남기지 않는다
+watch([activeTab, flowSub], ([t, f]) => { store.setEditWhere(t === 'flow' ? `낙찰이후 › ${FLOW_SUBS.find(([k]) => k === f)?.[1] ?? '진행절차'}` : ''); }, { immediate: true });
+onBeforeUnmount(() => store.setEditWhere(''));
 /** 처음 보일 서식 — 내용증명 2차 카드에서 열면 2차부터 */
 const formStart = ref<FormKey | ''>('');
 const cardFormOf = new Map<string, string>();

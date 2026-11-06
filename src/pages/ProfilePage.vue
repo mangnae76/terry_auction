@@ -175,16 +175,12 @@ const submit = async () => {
           <div class="prf-mail">
             <input v-model="form.emailId" class="prf-input" placeholder="이메일" />
             <span class="at">@</span>
+            <!-- 직접입력일 때만 같은 줄에 도메인 칸 — 아래 따로 있던 「예: naver.com」 상자는 뺐다(2026-11-02) -->
+            <input v-if="domainPick === '직접입력'" v-model="form.emailDomain" class="prf-input" placeholder="도메인" aria-label="이메일 도메인" />
             <select v-model="domainPick" class="prf-input sel">
               <option v-for="d in MAIL_DOMAINS" :key="d" :value="d">{{ d }}</option>
             </select>
           </div>
-          <input
-            v-model="form.emailDomain"
-            class="prf-input mt"
-            :disabled="domainPick !== '직접입력'"
-            placeholder="예: naver.com"
-          />
         </div>
 
         <!-- 휴대폰 -->

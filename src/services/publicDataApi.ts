@@ -608,7 +608,22 @@ export interface TradeVolumeStatsParams extends AuctionSearchParams {
   dateTo?: string;
 }
 
-export const fetchTradeVolumeStats = async (params: TradeVolumeStatsParams): Promise<TradeVolumeStatsResult> => {
+/* 같은 조건으로 받은 거래 랭킹은 30분 동안 다시 받지 않는다 — 웹은 시장분석 탭을 오갈 때마다 화면을 새로 붙여
+   이미 받은 자료를 매번 다시 불러 기다리게 했다(2026-11-03). 같은 조건 요청이 겹치면 하나만 보낸다.
+   오류 · 경고가 섞인 결과는 남기지 않는다(다시 들어오면 새로 받아 본다) */
+const TRADE_STATS_TTL = 30 * 60 * 1000;
+const tradeStatsMemo = new Map<string, { at: number; p: Promise<TradeVolumeStatsResult> }>();
+export const fetchTradeVolumeStats = (params: TradeVolumeStatsParams): Promise<TradeVolumeStatsResult> => {
+  const key = JSON.stringify(params);
+  const hit = tradeStatsMemo.get(key);
+  if (hit && Date.now() - hit.at < TRADE_STATS_TTL) return hit.p;
+  const p = fetchTradeVolumeStatsLive(params);
+  tradeStatsMemo.set(key, { at: Date.now(), p });
+  p.then((r) => { if (r.warning || (r.errors && r.errors.length)) tradeStatsMemo.delete(key); }, () => tradeStatsMemo.delete(key));
+  return p;
+};
+
+const fetchTradeVolumeStatsLive = async (params: TradeVolumeStatsParams): Promise<TradeVolumeStatsResult> => {
   if (!ENABLE_LIVE_API || !HAS_DATA_KEY) {
     return {
       rows: [],

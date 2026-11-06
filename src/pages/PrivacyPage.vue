@@ -6,6 +6,8 @@ import {
   PRIVACY_CHILD,
   PRIVACY_EFFECTIVE,
   PRIVACY_OFFICER,
+  PRIVACY_OFFICER_TITLE,
+  PRIVACY_CHILD_TITLE,
   PRIVACY_SECTIONS,
 } from '../services/legalTerms';
 
@@ -29,14 +31,21 @@ const router = useRouter();
           <ol v-else-if="b.kind === 'ol'" class="tms-items paren">
             <li v-for="(it, k) in b.items" :key="k">{{ it }}</li>
           </ol>
-          <ul v-else class="tms-items dash">
+          <ul v-else-if="b.kind === 'ul'" class="tms-items dash">
             <li v-for="(it, k) in b.items" :key="k">{{ it }}</li>
           </ul>
+          <div v-else-if="b.kind === 'table'" class="tms-table-wrap">
+            <table class="tms-table">
+              <thead><tr><th v-for="h in b.head" :key="h">{{ h }}</th></tr></thead>
+              <tbody><tr v-for="(r, ri) in b.rows" :key="ri"><td v-for="(c, ci) in r" :key="ci">{{ c }}</td></tr></tbody>
+            </table>
+          </div>
+          <p v-else-if="b.kind === 'note'" class="tms-note">{{ b.text }}</p>
         </template>
       </section>
 
       <section class="tms-card">
-        <h2 class="tms-chapter">개인정보 관리책임자</h2>
+        <h2 class="tms-chapter">{{ PRIVACY_OFFICER_TITLE }}</h2>
         <dl class="tms-officer">
           <template v-for="row in PRIVACY_OFFICER" :key="row.label">
             <dt>{{ row.label }}</dt>
@@ -46,7 +55,7 @@ const router = useRouter();
       </section>
 
       <section class="tms-card">
-        <h2 class="tms-chapter">아동의 개인정보보호</h2>
+        <h2 class="tms-chapter">{{ PRIVACY_CHILD_TITLE }}</h2>
         <p class="tms-text">{{ PRIVACY_CHILD }}</p>
       </section>
 
@@ -87,4 +96,10 @@ const router = useRouter();
 .tms-officer { margin: 0; display: grid; grid-template-columns: 72px 1fr; row-gap: 4px; column-gap: 8px; }
 .tms-officer dt { font-size: 12px; font-weight: 700; color: #6b7280; }
 .tms-officer dd { margin: 0; font-size: 12px; color: #374151; word-break: break-all; }
+.tms-table-wrap { overflow-x: auto; margin: 6px 0; }
+.tms-table { width: 100%; border-collapse: collapse; font-size: 12px; line-height: 1.6; }
+.tms-table th, .tms-table td { border: 1px solid #e5e9f2; padding: 6px 8px; text-align: left; vertical-align: top; word-break: keep-all; }
+.tms-table th { background: #f5f7fb; font-weight: 700; color: #111827; }
+.tms-note { margin: 4px 0 0; font-size: 11.5px; line-height: 1.6; color: #6b7280; word-break: keep-all; }
+.tms-items li { white-space: pre-line; }
 </style>

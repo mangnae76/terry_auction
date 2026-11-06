@@ -4,7 +4,7 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Pretendard', 'Noto Sans KR', sans-serif;
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;   /* 기본 글꼴 Noto Sans KR(2026-11-03) — index.html 이 구글 글꼴에서 받는다 */
   background: var(--bg-primary);
   color: var(--text-primary);
   font-size: 13px;

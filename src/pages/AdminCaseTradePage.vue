@@ -15,7 +15,7 @@ import { useScreenSnapshot } from '../composables/useScreenSnapshot';
 import SnapChip from '../components/SnapChip.vue';
 import { useRouter } from 'vue-router';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
-import { analyzeAddress, matchRange, pickCaseTrade, type CasePropertyType, type CaseTradeRow, type TradeRange } from '../services/caseTradeAnalysis';
+import { analyzeAddress, floorOfHo, matchRange, pickCaseTrade, type CasePropertyType, type CaseTradeRow, type TradeRange } from '../services/caseTradeAnalysis';
 import TradeRangeFilter from '../components/TradeRangeFilter.vue';
 import { tradeWindowOf } from '../services/publicDataApi';
 import { priceUnitText, shortPlaceName } from '../services/addressLookup';
@@ -459,9 +459,11 @@ const clearPicks = () => { pickNone(); };
 const isPicked = (r: CaseTradeRow) => rowKey(r) === pickedSale.value || rowKey(r) === pickedJeonse.value;
 
 /** 기준 매매 — 표에서 고른 줄만. 고르기 전에는 비어 있다 */
-/** 경매물건 자동 판단 — 그 건물에서 이 호실과 같은 평형, 없으면 가장 가까운 평형의 최근 거래 */
-const autoSale = computed(() => pickCaseTrade(rows.value, ['매매', '직거래'], baseArea.value));
-const autoJeonse = computed(() => pickCaseTrade(rows.value, ['전세'], baseArea.value));
+/** 경매물건 자동 판단 — 그 건물에서 이 호실과 같은 평형, 없으면 가장 가까운 평형의 최근 거래.
+ *  웹은 같은 평형 · 같은 층(호수에서 셈)을 맨 앞에 둔다. 앱은 아직 층을 보지 않는다 */
+const caseFloor = computed(() => (webEmbed ? floorOfHo(ho.value) : 0));
+const autoSale = computed(() => pickCaseTrade(rows.value, ['매매', '직거래'], baseArea.value, caseFloor.value));
+const autoJeonse = computed(() => pickCaseTrade(rows.value, ['전세'], baseArea.value, caseFloor.value));
 const recentSale = computed(() => {
   if (webEmbed && mode.value === MODES[1]) return dongRows.value.find((r) => rowKey(r) === simSale.value) ?? null;
   return rows.value.find((r) => rowKey(r) === pickedSale.value) ?? restoredSale.value ?? (webEmbed ? autoSale.value : null);
@@ -1295,7 +1297,8 @@ const downloadCsv = () => {
                 <!-- ⑤ 보증보험 전세가 — 경매물건 공동주택가 × 126%. 전세가율/갭은 있는 매매가(① → ② → ③ 평균)와 견준다 -->
                 <tr :class="['res-hug', { has: jeonsePrice > 0 }]">
                   <td class="res-name"><i class="res-dot" /><InfoTip :rows="hugTip">{{ preset ? '⑤' : '④' }} 보증보험 전세가</InfoTip></td>
-                  <td class="n res-amt"><template v-if="jeonsePrice > 0">{{ won(jeonsePrice) }}</template><span v-else class="res-empty">데이터 없음</span></td>
+                  <!-- 금액 아래에 근거인 공동주택가를 작게 — 이 값 × 126% 가 위 금액이다 -->
+                  <td class="n res-amt"><template v-if="jeonsePrice > 0">{{ won(jeonsePrice) }}<span v-if="pubValue > 0" class="res-sub">공동주택가 {{ won(pubValue) }}</span></template><span v-else class="res-empty">데이터 없음</span></td>
                   <td class="n">{{ won(hugPerPyeong) }}</td>
                   <td class="n res-pair">{{ hugBase ? `${pct(jeonsePrice, hugBase.price)} / ${Math.round(hugBase.price - jeonsePrice).toLocaleString('ko-KR')}` : '-' }}</td>
                   <td class="n">-</td>

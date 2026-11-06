@@ -52,3 +52,6 @@ docs/*.pdf
 
 # 웹 빌드 결과 — node web/build.mjs 로 언제든 다시 만든다
 web/site/
+
+# Cloudflare wrangler 임시 폴더
+worker/.wrangler/

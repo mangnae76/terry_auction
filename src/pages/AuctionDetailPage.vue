@@ -29,7 +29,7 @@ import {
   FIELD_CHECKLIST, FIELD_EXTERIOR_CHECKS, FIELD_INTERIOR_CHECKS, FIELD_MANAGE_CHECKS, FIELD_SAFETY_CHECKS, FIELD_COMFORT_CHECKS,
 } from '../services/fieldChecklist';
 import { getBuildingFacts } from '../services/buildingFacts';
-import { DEMAND_PLAIN, DEMAND_TOTAL_PLAIN } from '../services/demandGrade';
+import { DEMAND_PLAIN } from '../services/demandGrade';
 import { openNaverDongListing, openNaverListing, openNaverSpot, openPlanetSpot } from '../services/naverListing';
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -37,7 +37,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppToast from '../components/AppToast.vue';
 import PhotoGrid from '../components/PhotoGrid.vue';
 import AppConfirm from '../components/AppConfirm.vue';
-import { BALANCE_DUE_DAYS, balanceDueError, balanceDueOf, stageBeforeSaleError, wonDateError, wonDateWarning, balanceDueNotice, ymdOf } from '../utils/auctionDates';
+import { balanceDueError, balanceDueOf, stageBeforeSaleError, wonDateError, wonDateWarning, balanceDueNotice, ymdOf } from '../utils/auctionDates';
 import AgencyTable from '../components/AgencyTable.vue';
 import AgencyBookModal from '../components/AgencyBookModal.vue';
 import PhotoCountMark from '../components/PhotoCountMark.vue';
@@ -104,11 +104,14 @@ type TabKey = 'basic' | 'rights' | 'profit' | 'verify' | 'survey';
 const TAB_KEYS: TabKey[] = ['basic', 'rights', 'profit', 'verify', 'survey'];
 // 다른 화면에서 ?tab=survey 로 들어오면 그 탭을 바로 연다
 const initialTab = (): TabKey => {
-  const wanted = String(route.query.tab ?? '');
+  const asked = String(route.query.tab ?? '');
+  const wanted = asked === 'field' ? 'survey' : asked;   // 임장경로 '임장조사 열기' — 앱은 손품+현장 탭에 현장 카드가 있다
   if (sonpumMode) return 'survey';
   return (TAB_KEYS as string[]).includes(wanted) ? (wanted as TabKey) : 'basic';
 };
 const activeTab = ref<TabKey>(initialTab());
+/** 임장을 다녀왔는지 — 임장완료 · 입찰 · 낙찰이면 수익분석이 임장 결과를 반영한 것으로 본다 */
+const fieldDone = computed(() => ['임장완료', '입찰', '낙찰'].includes(String(auction.value?.status ?? '')));
 // 보던 탭을 주소에 적어 둔다 — 다른 화면에 갔다 '뒤로' 와도 그 자리로 돌아온다
 watch(activeTab, (tab) => {
   if (sonpumMode || String(route.query.tab ?? '') === tab) return;
@@ -121,8 +124,11 @@ const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'rights', label: '권리분석' },
   { key: 'survey', label: '손품+현장' },
   { key: 'verify', label: '가격정보' },
-  { key: 'profit', label: '입찰가산정' },
+  { key: 'profit', label: '수익분석' },   // 이름은 수익분석으로 통일(2026-11-03) — '입찰가산정'은 쓰지 않는다
 ];
+// 최근 작성 — 지금 고치는 화면 이름(마이페이지 내정보 「최근 작성」에 남는다)
+watch(activeTab, (t) => { store.setEditWhere(sonpumMode ? '손품조사' : `물건상세 › ${TABS.find((x) => x.key === t)?.label ?? ''}`); }, { immediate: true });
+onBeforeUnmount(() => store.setEditWhere(''));
 
 const auction = computed<AuctionDetail | null>(() => {
   if (!props.id) return null;
@@ -1676,8 +1682,6 @@ const setProfitDate = async (key: 'wonDate' | 'sellDate' | 'balanceDueDate', val
   }
   await apply();
 };
-/** 잔금기한 — 적은 날짜, 없으면 낙찰일 + 45일 예정일 */
-const balanceDue = computed(() => (auction.value ? balanceDueOf(auction.value) : { date: '', expected: false }));
 const profitDateTarget = ref<'' | 'wonDate' | 'sellDate' | 'balanceDueDate'>('');
 const profitDateValue = computed<string>({
   get: () => {
@@ -2595,9 +2599,13 @@ onMounted(() => { window.addEventListener('resize', onBidaResize); watchBida(); 
 onBeforeUnmount(() => { window.removeEventListener('resize', onBidaResize); if (bidaRaf) cancelAnimationFrame(bidaRaf); bidaRo?.disconnect(); });
 /* 새화면은 칸이 늘 열려 있다. 값이 실제로 바뀌었을 때만 손을 멈추면 적는다(물건을 읽은 것만으로는 적지 않는다) */
 let profitJson = '';
+const profitKey = () => (webNew.value && auction.value ? JSON.stringify([auction.value.metrics?.myBidValue, auction.value.expectedSaleValue, auction.value.expectedSaleValue2, auction.value.bidCost, auction.value.bidScenarios]) : '');
 watch(() => auction.value?.id, () => { profitJson = ''; });
+// 물건이 통째로 새 객체가 되면(서버에서 내려옴 · 저장 뒤 정리) 기준만 지금 값으로 — 아래 감시보다 먼저 돈다.
+// 내려온 값을 또 저장해 다른 창과 서로 주고받던 고리를 끊는다. 이 화면에서 칸을 고칠 때(같은 객체)만 저장된다
+watch(() => auction.value, () => { if (profitJson) profitJson = profitKey(); });
 watch(
-  () => (webNew.value && auction.value ? JSON.stringify([auction.value.metrics?.myBidValue, auction.value.expectedSaleValue, auction.value.expectedSaleValue2, auction.value.bidCost, auction.value.bidScenarios]) : ''),
+  profitKey,
   (json) => {
     if (!json) { profitJson = ''; return; }
     if (!profitJson) { profitJson = json; return; }
@@ -2906,9 +2914,9 @@ const indivRateTotal = computed(() => {
   return sum;
 });
 const indivAdjustedPrice = computed(() => {
-  // 손품조사(웹)는 옛 가격정보 조건분석 평균을 받지 않는다 — 손품결론 시세결론 평균(없으면 시세분석 ③ 평균 매매가)이 기준
+  // 손품조사(웹)는 가격분석의 실거래가 예상(매매)이 기준 — 손품결론은 뺐다(2026-11-02). 옛 물건은 시세분석 ③ 평균
   const base = sonpumMode
-    ? (sonConcMean.value.price || auction.value?.marketPicks?.condSaleAvg || 0)
+    ? (auction.value?.marketPicks?.price?.estSale || auction.value?.marketPicks?.condSaleAvg || 0)
     : mktSaleAvgValue.value;
   if (base <= 0) return '-';
   return Math.round(base * (1 + indivRateTotal.value / 100)).toLocaleString('ko-KR');
@@ -3018,16 +3026,17 @@ watch(() => auction.value?.id, async (id) => {
   let changed = false;
   if (!/^\d+$/.test(v['ind.parking'] ?? '') && facts.parking > 0) { v['ind.parking'] = String(facts.parking); changed = true; }
   if (!v['ind.elevator']) { v['ind.elevator'] = facts.elevator > 0 ? 'O' : 'X'; changed = true; }
-  if (changed) persistSoon();
+  if (changed) void persistSurvey({ silent: true });   // 건축물대장 자동 채움 — 최근 작성에 남기지 않는다
 }, { immediate: true });
 
 // 카드마다·단락마다 따로 여닫는다. deal = 급매가의 1.실거래가 조사,
 // listing = 2.저렴매물조사 (예전에는 둘이 location 하나를 같이 썼다)
 // 손품분석 ④ 호가분석은 편집 단추 없이 칸이 늘 열려 있다(적으면 손을 멈출 때 저장)
 const editingSurvey = ref({ field: false, deal: false, listing: sonpumMode, individuality: false, realUser: false, demand: false });
-const persistSurvey = async () => {
+/** silent — 사람이 고친 게 아닌 자동 채움(주차 · 엘베, 경매지번 실거래가)은 '최근 작성'에 남기지 않는다 */
+const persistSurvey = async (opts: { silent?: boolean } = {}) => {
   if (!auction.value) return;
-  await store.saveAuction(auction.value);
+  await store.saveAuction(auction.value, opts.silent ? { silent: true } : {});
 };
 /** 글자를 칠 때마다 저장하면 한 글자에 한 번씩 서버로 간다.
  *  값은 바로 화면에 반영하고(저장은 메모리에 이미 끝나 있다), 손을 멈추면 그때 한 번 적는다.
@@ -3044,13 +3053,17 @@ onBeforeUnmount(() => { if (saveTimer) { clearTimeout(saveTimer); void persistSu
 // 값이 실제로 바뀌었을 때만 — 저장하면 물건이 새 객체로 바뀌어 '바뀌었다'고 또 저장하는 고리가 생겼다(손품조사 ④ 칸은 늘 열려 있다)
 let surveyJson = '';
 watch(() => auction.value?.id, () => { surveyJson = ''; });   // 다른 물건으로 바뀌면 처음부터(그 물건을 읽은 것만으로 저장하지 않게)
+// 서버에서 새 물건이 내려오면(다른 창 · 다른 화면이 저장) surveyForm 이 통째로 새 객체가 된다 — 그때는 기준만 바꾸고 저장하지 않는다.
+// 이 화면에서 칸을 고쳐 같은 객체 안이 바뀔 때만 저장한다. (예전에는 내려온 값도 '바뀌었다'며 다시 저장해,
+// 손품조사를 연 창이 둘이면 서로 받아 다시 쓰는 고리가 1초마다 돌았다 — 탭 깜빡임 · 최근 작성 '방금')
 watch(
   () => auction.value?.surveyForm,
-  (sf) => {
+  (sf, prev) => {
     const json = JSON.stringify(sf ?? null);
     if (json === surveyJson) return;
     const first = !surveyJson;
     surveyJson = json;
+    if (sf !== prev) return;   // 새로 내려온 물건 — 저장하지 않는다
     if (!first && Object.values(editingSurvey.value).some(Boolean)) persistSoon();
   },
   { deep: true, immediate: true },
@@ -3730,50 +3743,7 @@ const parseDigits = (v: string) => {
   return Number.isFinite(n) ? n : 0;
 };
 
-// === 거래율 카드 자동 계산 ===
-const dealMonthlyComputed = computed(() => {
-  const yearly = parseDigits(surveyForm.value.yearlyDeals);
-  if (yearly <= 0) return '-';
-  return (yearly / 12).toFixed(2);
-});
-const dealRateComputed = computed(() => {
-  const yearly = parseDigits(surveyForm.value.yearlyDeals);
-  const total = parseDigits(surveyForm.value.totalUnits);
-  if (yearly <= 0 || total <= 0) return '-';
-  return `${((yearly / total) * 100).toFixed(0)}%`;
-});
-// 거래율 기준선 — 서울 7%, 지방 4%. 기준을 넘으면 적정 거래율로 본다.
-const DEAL_REGION_THRESHOLDS: Record<string, number> = { 서울: 7, 지방: 4 };
-const setDealRegion = async (region: string) => {
-  surveyForm.value.dealRegion = surveyForm.value.dealRegion === region ? '' : region;
-  await persistSurvey();
-};
-// 선택한 지역 기준(서울 7% / 지방 4%) 이상이면 적합
-const dealRateOk = computed(() => {
-  const th = DEAL_REGION_THRESHOLDS[surveyForm.value.dealRegion ?? ''];
-  if (!th) return null;
-  const yearly = parseDigits(surveyForm.value.yearlyDeals);
-  const total = parseDigits(surveyForm.value.totalUnits);
-  if (yearly <= 0 || total <= 0) return null;
-  return (yearly / total) * 100 >= th;
-});
-const dealRateJudge = computed(() => {
-  if (dealRateOk.value === null) return '';
-  return dealRateOk.value ? '적합' : '부적합';
-});
 
-// === 매물적체 카드 자동 계산 ===
-const listingTargetComputed = computed(() => {
-  const units = parseDigits(surveyForm.value.listingUnits);
-  if (units <= 0) return '-';
-  return Math.round(units * 0.05).toLocaleString('ko-KR');
-});
-const listingBacklogComputed = computed(() => {
-  const count = parseDigits(surveyForm.value.listingCount);
-  const units = parseDigits(surveyForm.value.listingUnits);
-  if (count <= 0 || units <= 0) return '-';
-  return `${((count / units) * 100).toFixed(0)}%`;
-});
 
 // === 입지조사 4개 항목 — 물건정보 탭의 입지 데이터에서 500m 이내 자동 집계 ===
 const eduInfoFiltered500m = computed(() => eduInfoFiltered500mOf(auction.value));
@@ -3786,11 +3756,6 @@ const pdfNearbyFiltered500m = computed(() => pdfNearbyFiltered500mOf(auction.val
 
 // === 시세조사 및 급매가 조사 표 ===
 const AGENCY_ROW_MIN = 1;
-// 금액 칸 — 값이 없으면 '-'
-const mktNumText = (raw: string | undefined) => {
-  const n = parseDigits(raw ?? '');
-  return n > 0 ? Math.round(n).toLocaleString('ko-KR') : '-';
-};
 // === 시세조사 및 급매가 조사 — 항목값은 id별로 저장한다 ===
 const mktVal = (id: string) => surveyForm.value.mktValues?.[id] ?? '';
 const setMktVal = (id: string, value: string | number) => {
@@ -3922,7 +3887,7 @@ watch(
     // 전세 줄 전용면적도 이 호실의 면적을 쓴다 — 거래마다 면적이 달라도 집은 하나다
     if (v['mkt.d.area']) put('mkt.d.jArea', v['mkt.d.area']);
     else if (jeonse && Number(jeonse.areaM2) > 0) put('mkt.d.jArea', String(Number(jeonse.areaM2)));
-    if (changed) void persistSurvey();
+    if (changed) void persistSurvey({ silent: true });   // 실거래 표 자동 채움 — 최근 작성에 남기지 않는다
   },
   { immediate: true },
 );
@@ -4047,39 +4012,6 @@ const lowAddrTyped = (index: number) => !!mktVal(lowKey(index, 'addr')).trim();
  *  저장 자리는 알약과 같다(경매 mkt.c.* · 유사 mkt.c.sim.*). 유사 줄 수는 따로 센다(없으면 예전 공용 줄 수) */
 /** 주소 앞 건물 이름 — 위 물건 카드 주소의 건물 이름 그대로('더라이프주건축물'). 동 · 층 · 호는 줄마다 손으로 */
 const subjectBuildingName = computed(() => subjectBuildingLabel.value.trim());
-/** 손품분석 손품결론 · 시세 결론 — 시세분석에서 고른 값(물건의 marketPicks)과 ④ 호가매물(가장 낮은 호가)의 평당가 · 가격, 그 평균.
- *  줄 이름은 시세종합과 같다. 체크를 풀면 평균에서 뺀다(물건에 남는다) */
-type SonConcLine = { key: string; label: string; unit: number; price: number };
-const askMin = (sim: boolean) => {
-  let best: { price: number; unit: number } | null = null;
-  for (let i = 0; i < lowRowCountG(sim); i += 1) {
-    const price = parseDigits(mktVal(lowKeyG(sim, i, 'saleAsk')));
-    if (!price) continue;
-    const unit = parseDigits(mktVal(lowKeyG(sim, i, 'unit'))) || lowUnitAutoG(sim, i);
-    if (!best || price < best.price) best = { price, unit };
-  }
-  return best;
-};
-const perPyOf = (price: number, m2: number) => (price > 0 && m2 > 0 ? Math.round(price / (m2 / PYEONG_TO_M2)) : 0);
-const sonConcLines = computed<SonConcLine[]>(() => {
-  const mp = auction.value?.marketPicks;
-  const ca = askMin(false); const sa = askMin(true);
-  return [
-    { key: 'caseSale', label: '경매지번 매매가', unit: perPyOf(mp?.caseSale?.price ?? 0, mp?.caseSale?.areaM2 ?? 0), price: mp?.caseSale?.price ?? 0 },
-    { key: 'simSale', label: '유사 매매가', unit: perPyOf(mp?.simSale?.price ?? 0, mp?.simSale?.areaM2 ?? 0), price: mp?.simSale?.price ?? 0 },
-    { key: 'condSale', label: '평균 매매가', unit: mp?.condSalePerPy ?? 0, price: mp?.condSaleAvg ?? 0 },
-    { key: 'askCase', label: '경매빌라 호가매물', unit: ca?.unit ?? 0, price: ca?.price ?? 0 },
-    { key: 'askSim', label: '유사빌라 호가매물', unit: sa?.unit ?? 0, price: sa?.price ?? 0 },
-  ];
-});
-const sonConcOff = (key: string) => mktVal(`son.conc.off.${key}`) === '1';
-const toggleSonConc = (key: string) => { setMktVal(`son.conc.off.${key}`, sonConcOff(key) ? '' : '1'); persistSoon(); };
-const sonConcMean = computed(() => {
-  const on = sonConcLines.value.filter((l) => !sonConcOff(l.key));
-  const avg = (xs: number[]) => { const v = xs.filter((x) => x > 0); return v.length ? Math.round(v.reduce((t, x) => t + x, 0) / v.length) : 0; };
-  return { unit: avg(on.map((l) => l.unit)), price: avg(on.map((l) => l.price)) };
-});
-const wonText = (n: number) => (n > 0 ? n.toLocaleString('ko-KR') : '-');
 /** 인근 매각사례 — 값이 하나라도 있는 줄만(빈 줄만 있으면 '데이터 없음') */
 const nearBidRowsFilled = computed(() => nearBidRows.value.filter((r) => [r.saleInfo, r.appraisal, r.minimum, r.winning, r.rate, r.expectedWinning].some((v) => String(v ?? '').trim())));
 const LOW_GROUPS = [{ sim: false, label: '경매빌라 호가매물' }, { sim: true, label: '유사빌라 호가매물' }];
@@ -4476,69 +4408,11 @@ watch(
 
 /** 시세 및 급매가 결론 표 — 칸 5개 × 줄 3개(면적 / 평당가 / 가격).
  *  지금은 모두 손으로 적는다. 자동으로 채울 칸은 나중에 지정해 이 표에만 손대면 된다. */
-type ConcCol = { key: string; label: string; note?: string; tone?: 'red' };
-type ConcRow = { key: string; label: string; money: boolean; suffix?: string };
 // 왼쪽부터 '이 물건 자체 → 비슷한 물건 → 동네 평균 → 시장에 나온 값 → 결론' 순으로
 // 읽히게 세운다. 칸이 여섯이라 글자는 아래 .adp-conc-table 에서 줄여 뒀다.
 // 한 표에 여섯 칸을 욱여넣으니 글자가 뭉개졌다 — 성격이 다른 둘로 가른다.
 // '시세 결론'은 값을 모아 견주는 표, '급매가 결론'은 그걸 보고 적는 표.
 const CONC_MEAN_SRC = ['case', 'sim', 'avg', 'low', 'lowSim'];
-const MKT_CONC_COLS: ConcCol[] = [
-  { key: 'case', label: '경매지번\n실거래가' },
-  { key: 'sim', label: '유사물건\n실거래가' },
-  { key: 'avg', label: '실거래가\n조건분석 평균' },
-  { key: 'low', label: '경매빌라\n매물호가' },
-  { key: 'lowSim', label: '유사빌라\n매물호가' },
-  { key: 'mean', label: '평균' },
-];
-// 칸이 셋뿐이라 폭이 넉넉하다 — 이름을 한 줄로 쓴다
-const MKT_URGENT_COLS: ConcCol[] = [
-  { key: 'lot', label: '동일지번 매각물건' },
-  { key: 'near', label: '인근 매각 평균' },
-  { key: 'urgent', label: '급매가', tone: 'red' },
-];
-/** 두 표는 생김새가 같다 — 마크업을 한 벌만 두고 제목과 칸만 갈아 끼운다.
- *  vertical 이면 표를 눕힌다 — 출처가 줄로 내려오고 면적·평당가·가격이 머리에 선다.
- *  시세 결론은 출처가 여섯이라 가로로 세우면 한 칸이 너무 좁아 글자가 뭉개졌다. */
-type ConcTable = {
-  title: string; cols: ConcCol[]; note: boolean; boldPrice: boolean; vertical?: boolean;
-};
-const CONC_TABLES: ConcTable[] = [
-  // boldPrice — 값을 모아 견주는 표라 '가격' 칸이 한눈에 들어와야 한다
-  { title: '시세 결론', cols: MKT_CONC_COLS, note: false, boldPrice: true, vertical: true },
-  { title: '급매가 결론', cols: MKT_URGENT_COLS, note: true, boldPrice: false, vertical: true },
-];
-// 면적 칸은 표에서 뺐다 — 값은 그대로 남아 평당가 자동계산에 쓰인다.
-// (면적은 바로 위 실거래 조사·매물조사 표에 이미 적혀 있어 두 번 읽을 까닭이 없다)
-const MKT_CONC_ROWS: ConcRow[] = [
-  { key: 'unit', label: '평당가', money: true },
-  { key: 'price', label: '가격', money: true },
-];
-/** 예전부터 쓰던 칸은 그 필드를 그대로 쓴다 — 저장해 둔 값이 날아가지 않게 */
-/** 표의 머리줄에 설 것들 — 눕힌 표에서는 면적·평당가·가격이 머리다 */
-const concHeads = (t: ConcTable): ConcCol[] => {
-  if (!t.vertical) return t.cols;
-  // 손품조사(웹 시장분석) — 조사가격을 왼쪽, 평당가를 오른쪽 끝(시세결론과 같은 순서)
-  if (sonpumMode) return [{ key: 'price', label: '조사가격' }, { key: 'unit', label: '평당가' }];
-  return MKT_CONC_ROWS.map((r) => ({ key: r.key, label: r.label }));
-};
-/** 표 제목 — 손품조사에선 붙여 쓴다(시세결론 · 급매가결론) */
-const concTitle = (t: ConcTable) => (sonpumMode ? t.title.replace(/\s+/g, '') : t.title);
-/** 표의 줄로 내려올 것들 — 눕힌 표에서는 출처(경매지번 실거래가 …)가 줄이다 */
-const concLines = (t: ConcTable): ConcCol[] =>
-  (t.vertical ? t.cols : MKT_CONC_ROWS.map((r) => ({ key: r.key, label: r.label })));
-/** 한 줄에 들어갈 칸들 — 방향이 달라도 '어느 출처의 어느 값'인지는 같다 */
-const concCells = (t: ConcTable, line: ConcCol) =>
-  concHeads(t).map((head) => {
-    const colKey = t.vertical ? line.key : head.key;
-    const rowKey = t.vertical ? head.key : line.key;
-    return {
-      col: t.cols.find((c) => c.key === colKey) as ConcCol,
-      row: MKT_CONC_ROWS.find((r) => r.key === rowKey) as ConcRow,
-    };
-  });
-/** 눕힌 표의 줄 이름은 한 줄로 — 머리줄처럼 두 줄로 꺾을 자리가 없다 */
-const concLineLabel = (label: string) => label.replace(/\n/g, ' ');
 
 const MKT_CONC_LEGACY: Record<string, string> = {
   'avg.price': 'mktConcAvg',
@@ -4622,13 +4496,6 @@ const concMeanOff = (col: string): boolean => {
   const sf = surveyForm.value as unknown as Record<string, unknown>;
   return (sf?.mktConcValues as Record<string, string> | undefined)?.[`${CONC_OFF}${col}`] === '1';
 };
-const toggleConcMean = async (col: string) => {
-  const sf = surveyForm.value as unknown as Record<string, unknown>;
-  if (!sf) return;
-  const cur = (sf.mktConcValues as Record<string, string> | undefined) ?? {};
-  sf.mktConcValues = { ...cur, [`${CONC_OFF}${col}`]: concMeanOff(col) ? '' : '1' };
-  await persistSurvey();
-};
 const concFix = (col: string, row: string): string => {
   const sf = surveyForm.value as unknown as Record<string, unknown>;
   return (sf?.mktConcValues as Record<string, string> | undefined)?.[`${CONC_FIX}${col}.${row}`] ?? '';
@@ -4643,78 +4510,19 @@ const concOwn = (col: string, row: string): string => {
     : (sf.mktConcValues as Record<string, string> | undefined)?.[`${col}.${row}`] ?? '';
 };
 const concVal = (col: string, row: string): string => concOwn(col, row) || concFix(col, row) || concAuto(col, row);
-/** 손으로 적은 값인가 — 적은 값은 파랗게 보여 준다 */
-const concTyped = (col: string, row: string): boolean => !!concOwn(col, row) || !!concFix(col, row);
-/** 그 칸을 손으로 적을 수 있나.
- *  조건분석 평균의 면적만 뺀다 — 한 값이 아니라 걸러 낸 범위라 한 칸에 적을 수가 없다. */
-const concEditable = (col: string, row = '') => (
-  editingSurvey.value.realUser && !(col === 'avg' && (row === 'area' || row === 'areaM2'))
-);
-const setConcVal = (col: string, row: string, value: string) => {
-  const sf = surveyForm.value as unknown as Record<string, unknown>;
-  const cur = (sf.mktConcValues as Record<string, string> | undefined) ?? {};
-  if (!CONC_MANUAL_COLS.includes(col)) {
-    sf.mktConcValues = { ...cur, [`${CONC_FIX}${col}.${row}`]: value };
-    return;
-  }
-  const legacy = MKT_CONC_LEGACY[`${col}.${row}`];
-  if (legacy) { sf[legacy] = value; return; }
-  sf.mktConcValues = { ...cur, [`${col}.${row}`]: value };
-};
-/** 보기 모드 글자 — 면적은 적은 그대로, 돈은 천 단위 쉼표 */
-const concText = (col: string, row: ConcRow) => {
-  const raw = concVal(col, row.key);
-  if (!raw) return '-';
-  return row.money ? mktNumText(raw) : raw;
-};
 const concNum = (col: string, row: string) => Number(concVal(col, row).replace(/[^\d.]/g, '')) || 0;
-/** 면적은 ㎡ 와 평 둘 다 담는다 — 한쪽을 적으면 다른 쪽이 따라 바뀐다 */
-const setConcArea = (col: string, unit: 'm2' | 'py', raw: string) => {
-  const n = Number(String(raw).replace(/[^\d.]/g, '')) || 0;
-  if (unit === 'm2') {
-    setConcVal(col, 'areaM2', raw);
-    setConcVal(col, 'area', n > 0 ? (n / PYEONG_TO_M2).toFixed(2) : '');
-  } else {
-    setConcVal(col, 'area', raw);
-    setConcVal(col, 'areaM2', n > 0 ? (n * PYEONG_TO_M2).toFixed(2) : '');
-  }
-};
 // 한쪽만 저장돼 있던 예전 자료도 보이게 서로에게서 끌어온다
 const concAreaPy = (col: string) => concNum(col, 'area') || concNum(col, 'areaM2') / PYEONG_TO_M2;
-const concAreaM2 = (col: string) => concNum(col, 'areaM2') || concNum(col, 'area') * PYEONG_TO_M2;
-/** 한 칸짜리 면적 글자 — '52.23 / 15.80평' */
-const concAreaOne = (m2: number) => (m2 > 0 ? `${m2.toFixed(2)} / ${(m2 / PYEONG_TO_M2).toFixed(2)}평` : '');
-const concAreaText = (col: string) => {
-  // 조건분석 평균은 한 거래가 아니라 걸러 낸 묶음이다 — ③ 과 같은 범위로 적어야 뜻이 맞는다
-  if (col === 'avg') {
-    const lo = concAreaOne(mktAreaStartM2.value);
-    const hi = concAreaOne(mktAreaEndM2.value);
-    return lo && hi ? `${lo} ~\n${hi}` : (lo || hi || '-');
-  }
-  const m2 = concAreaM2(col);
-  // 나머지 칸은 한 줄 — 글자는 .adp-conc-area 에서 줄여 맞춘다
-  return m2 > 0 ? `${m2.toFixed(2)} / ${concAreaPy(col).toFixed(2)}평` : '-';
-};
 /** 가격 = 평당가 × 면적(평). 손으로 적은 값이 있으면 그 값이 이긴다 */
 const concPriceAuto = (col: string) => {
   const unit = parseDigits(concVal(col, 'unit'));
   const py = concAreaPy(col);
   return unit > 0 && py > 0 ? Math.round(unit * py) : 0;
 };
-const concPriceHint = (col: string) => {
-  const auto = concPriceAuto(col);
-  return auto > 0 ? auto.toLocaleString('ko-KR') : '가격';
-};
 /** 그 칸에 실제로 서는 가격 — 손으로 적은 값이 있으면 그 값, 없으면 평당가 × 면적 */
 const concPriceValue = (col: string) => {
   const manual = parseDigits(concVal(col, 'price'));
   return manual > 0 ? manual : concPriceAuto(col);
-};
-const concPriceText = (col: string) => {
-  const manual = concVal(col, 'price');
-  if (manual) return mktNumText(manual);
-  const auto = concPriceAuto(col);
-  return auto > 0 ? auto.toLocaleString('ko-KR') : '-';
 };
 // 부동산 정보 — 최소 3줄은 항상 보이게 채워 둔다 (computed 안에서 고치면 순환이 생겨 watch로 뺀다)
 const emptyAgencyRow = (): AgencyRow => ({ name: '', phone: '', info: '', monthly: '', jeonse: '', real: '', urgent: '', note: '' });
@@ -5827,7 +5635,7 @@ watch(
     const a = auction.value;
     if (!a) return;
     // 늘 드는 비용(수리·명도·광고)을 아직 안 적었으면 기본값으로 채워 둔다
-    if (seedBidCost(a)) void store.saveAuction(a);
+    if (seedBidCost(a)) void store.saveAuction(a, { silent: true });
     if (!a.basicSummary) a.basicSummary = {};
     const v = a.basicSummary;
     // 정보요약 빈 칸 채우기 규칙은 services/detailSummary 에 있다 (웹과 같이 쓴다)
@@ -6521,6 +6329,34 @@ const goBack = () => router.back();
             </tbody>
           </table>
         </section>
+        <!-- 인근 매각사례 — PDF 분석 자료(물건 등록 때 읽은 인근 매각 통계). 손품결론에서 옮겨 왔다(2026-11-02) -->
+        <section class="adp-card">
+          <header class="adp-card-head" @click="toggleSection('nearBid')">
+            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18" /><path d="M7 15l4-4 3 3 5-6" /></svg>인근 매각사례 <span class="adp-head-note">{{ auction?.address?.split(' ').slice(0, 3).join(' ') || '' }} {{ auction?.propertyType || '' }}</span></h2>
+            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('nearBid') }]" alt="" />
+          </header>
+          <div v-if="!isCollapsed('nearBid')" class="adp-near-body">
+            <table v-if="nearBidRowsFilled.length > 0" class="adp-table adp-cases-table">
+              <thead>
+                <tr>
+                  <th class="c">구분</th>
+                  <th class="c">평균감정가<br>평균매각가</th>
+                  <th class="c">입찰인원<br>매각가율</th>
+                  <th class="c">예상매각가</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(r, i) in nearBidRowsFilled" :key="i">
+                  <td class="c">{{ r.saleInfo }}</td>
+                  <td class="c pre"><span>{{ r.appraisal }}</span><span v-if="r.minimum" class="adp-line2">{{ r.minimum }}</span></td>
+                  <td class="c pre"><span>{{ r.winning }}</span><span v-if="r.rate" class="adp-line2 b-blue">{{ r.rate }}</span></td>
+                  <td class="c"><strong>{{ r.expectedWinning }}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+            <p v-else class="adp-empty">매각사례 데이터 없음 — 물건 등록 때 읽은 PDF 에 인근 매각 통계가 없습니다</p>
+          </div>
+        </section>
       </template>
 
       <template v-if="activeTab === 'profit' && auction">
@@ -6536,20 +6372,15 @@ const goBack = () => router.back();
               수익분석
             </h2>
             <span :class="['adp-auto-chip', { 'web-solo': webEmbed }]">✦ 자동계산</span>
+            <!-- 몇 번째 수익분석인지 — 임장 전엔 대략, 임장완료 · 입찰 · 낙찰이면 임장 결과를 반영한 값(2026-11-03) -->
+            <span v-if="!webNew" :class="['adp-field-mark', { on: fieldDone }]" :title="fieldDone ? '임장을 다녀온 뒤의 수익분석입니다' : '임장 전 대략 계산입니다 — 임장을 다녀와 다시 고쳐 입찰가를 확정하세요'">{{ fieldDone ? '임장 반영' : '임장 전 · 대략' }}</span>
             <!-- 웹은 날짜를 머리(자동계산 오른쪽)로 올린다 — 따로 있던 날짜 줄을 걷어 아래가 위로 붙는다 -->
             <span v-if="webEmbed && !isCollapsed('profit')" class="adp-head-dates" @click.stop>
-              <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
+              <!-- 수익분석은 숫자만 본다 — 입찰일(= 매각기일)은 보여 주기만. 낙찰은 고정카드 단계, 잔금 · 매도 날짜는 낙찰이후 › 진행절차에서(2026-11-04) -->
+              <span class="adp-pd-item ro" title="매각기일 — 물건정보의 날짜입니다">
                 <em>입찰일</em>
-                <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) }" :title="!shortYmd(auction.wonDate) && auction.eventDate ? '낙찰일을 적기 전에는 매각기일을 보여 줍니다' : undefined">{{ shortYmd(auction.wonDate) || shortYmd(auction.eventDate) || '날짜입력' }}</span></span>
-              </button>
-              <button type="button" class="adp-pd-item" @click="profitDateTarget = 'balanceDueDate'" :title="balanceDue.expected ? `낙찰일(없으면 매각기일) + ${BALANCE_DUE_DAYS}일로 어림한 예정일입니다 — 법원 통지서의 대금지급기한을 고르면 그 날짜로 바뀝니다` : '법원이 통지한 대금지급기한'">
-                <em>{{ balanceDue.expected ? '잔금예정' : '잔금기한' }}</em>
-                <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !balanceDue.date, exp: balanceDue.expected }">{{ shortYmd(balanceDue.date) || '날짜입력' }}</span></span>
-              </button>
-              <button type="button" class="adp-pd-item" @click="profitDateTarget = 'sellDate'">
-                <em>매도일</em>
-                <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.sellDate) }">{{ shortYmd(auction.sellDate) || '날짜입력' }}</span></span>
-              </button>
+                <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ shortYmd(auction.eventDate) || '-' }}</span></span>
+              </span>
             </span>
             <!-- 웹 새화면 — 안 고르기(A~D안) · 초기화를 머리 줄 오른쪽 끝으로(아래 .bida-plans 가 여기로 옮겨 온다). 머리 줄은 늘 한 줄 -->
             <span v-if="webNew && !isCollapsed('profit')" id="adpPlansSlot" class="adp-head-plans" @click.stop />
@@ -6564,18 +6395,11 @@ const goBack = () => router.back();
             <img v-if="!webEmbed" :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('profit') }]" alt="" />
           </header>
           <div v-if="!isCollapsed('profit') && !webEmbed" class="adp-profit-dates">
-            <button type="button" class="adp-pd-item" @click="profitDateTarget = 'wonDate'">
+            <!-- 수익분석은 숫자만 본다 — 입찰일(= 매각기일)은 보여 주기만. 낙찰은 고정카드 단계, 잔금 · 매도 날짜는 낙찰이후 › 진행절차에서(2026-11-04) -->
+            <span class="adp-pd-item ro" title="매각기일 — 물건정보의 날짜입니다">
               <em>입찰일</em>
-              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.wonDate) }" :title="!shortYmd(auction.wonDate) && auction.eventDate ? '낙찰일을 적기 전에는 매각기일을 보여 줍니다' : undefined">{{ shortYmd(auction.wonDate) || shortYmd(auction.eventDate) || '날짜입력' }}</span></span>
-            </button>
-            <button type="button" class="adp-pd-item" @click="profitDateTarget = 'balanceDueDate'" :title="balanceDue.expected ? `낙찰일(없으면 매각기일) + ${BALANCE_DUE_DAYS}일로 어림한 예정일입니다 — 법원 통지서의 대금지급기한을 고르면 그 날짜로 바뀝니다` : '법원이 통지한 대금지급기한'">
-              <em>{{ balanceDue.expected ? '잔금예정' : '잔금기한' }}</em>
-              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !balanceDue.date, exp: balanceDue.expected }">{{ shortYmd(balanceDue.date) || '날짜입력' }}</span></span>
-            </button>
-            <button type="button" class="adp-pd-item" @click="profitDateTarget = 'sellDate'">
-              <em>매도일</em>
-              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span :class="{ ph: !shortYmd(auction.sellDate) }">{{ shortYmd(auction.sellDate) || '날짜입력' }}</span></span>
-            </button>
+              <span class="adp-pd-box"><svg class="adp-pd-cal" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M8 3v4M16 3v4M3 10h18" /></svg><span>{{ shortYmd(auction.eventDate) || '-' }}</span></span>
+            </span>
             <!-- 표 스텝퍼와 별은 한 묶음 — 자리가 모자라 줄이 내려가도 둘이 같이 내려간다 -->
             <span class="adp-pd-tail">
             <span class="adp-mkt-step">
@@ -6884,7 +6708,7 @@ const goBack = () => router.back();
                 <span class="sub">대출 {{ cashMoney(sc.cost.loanAmount ?? 0) }}({{ formatPct(scPctOfBid(sc, sc.cost.loanAmount)) }}) 제외</span>
               </div>
               <div class="bida-kpi navy">
-                <span class="lab">{{ sc.label }} 세후 순이익<span v-if="si === confirmedIdx" class="bida-ok">확정</span></span>
+                <span class="lab">{{ sc.label }} 세후 순이익<span v-if="si === confirmedIdx" class="bida-ok">확정</span><span :class="['adp-field-mark', { on: fieldDone }]" :title="fieldDone ? '임장을 다녀온 뒤의 수익분석입니다' : '임장 전 대략 계산입니다 — 임장을 다녀와 다시 고쳐 입찰가를 확정하세요'">{{ fieldDone ? '임장 반영' : '임장 전 · 대략' }}</span></span>
                 <strong :class="{ neg: scAfterTaxProfit(sc) < 0 }">{{ formatMoney(scAfterTaxProfit(sc)) }}<small>원</small></strong>
                 <span :class="['sub', 'rate', { neg: scAfterTaxRate(sc) < 0 }]">수익률 {{ formatPct(scAfterTaxRate(sc)) }}</span>
               </div>
@@ -8328,7 +8152,8 @@ const goBack = () => router.back();
                 </div>
               </div>
               <div class="adp-dm-rowwrap">
-              <div :class="['adp-mkt-cells', 'c4', 'adp-dm-table', 'dm-result', { 'has-total': webEmbed }]">
+              <!-- 웹 종합 칸은 뺐다(2026-11-02) — 지표 4칸만. 앱은 위 머리 줄의 종합(adp-dm-total)을 그대로 쓴다 -->
+              <div :class="['adp-mkt-cells', 'c4', 'adp-dm-table', 'dm-result']">
                 <div :class="['cell split calc', { lit: dmLit('absorb') }]" @mouseenter="dmLitEnter('absorb')" @mouseleave="dmLitLeave()" @click="dmLitTap('absorb')">
                   <div class="cell-head">
                     <small>매물 소화율</small>
@@ -8428,28 +8253,6 @@ const goBack = () => router.back();
                   <div class="cell-grade">
                     <strong :class="['adp-dm-grade', `g-${levelTone(dmBurdenGrade)}`]">{{ dmBurdenGrade }}</strong>
                     <span v-if="dmBurdenGrade !== '-'" :class="['adp-dm-fit', { bad: dmBurdenGrade === 'C' }]">/ {{ dmFitText(dmBurdenGrade) }}</span>
-                  </div>
-                </div>
-                <div v-if="webEmbed" class="cell split calc dm-total-cell">
-                  <div class="cell-head">
-                    <small>종합</small>
-                    <button
-                      type="button"
-                      class="adp-dm-info"
-                      aria-label="설명"
-                      @mouseenter="tipEnter('total')"
-                      @mouseleave="tipLeave()"
-                      @click.stop="dmTip = dmTip === 'total' ? '' : 'total'"
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" />
-                      </svg>
-                    </button>
-                    <em v-if="webEmbed" class="adp-dm-plain">{{ DEMAND_TOTAL_PLAIN }}</em>
-                  </div>
-                  <div class="cell-total">
-                    <strong :class="['adp-dm-grade', `g-${levelTone(dmTotalGrade)}`]">{{ dmTotalGrade }}</strong>
-                    <span v-if="dmTotalGrade !== '-'" :class="['adp-dm-fit', { bad: dmTotalGrade === 'C' }]">{{ dmFitText(dmTotalGrade) }}</span>
                   </div>
                 </div>
               </div>
@@ -9175,7 +8978,8 @@ const goBack = () => router.back();
             </div>
 
             </template>
-            <!-- 4. 부동산 유선 상담 — 한 업체를 두 줄로 나눠 가로 스크롤 없이 담는다(손품분석은 3번) -->
+            <!-- 4. 부동산 유선 상담 — 한 업체를 두 줄로 나눠 가로 스크롤 없이 담는다. 손품조사(웹)에서는 뺐다(2026-11-02) -->
+            <template v-if="!sonpumMode">
             <div class="adp-dm-head sec2">
               <strong class="adp-dm-title"><template v-if="sonpumMode"><svg class="son-h-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z" /></svg>부동산 유선상담</template><template v-else>4. 부동산 유선 상담</template></strong>
               <button type="button" class="adp-mkt-addrow agency-book" title="중개업체 관리" @click="agencyBookOpen = true">＋ 업체</button>
@@ -9188,228 +8992,11 @@ const goBack = () => router.back();
             <div class="adp-sub-block noline">
               <AgencyTable :rows="agencyRows" :min-rows="AGENCY_ROW_MIN" :hide-note="sonpumMode" @change="persistSoon" @remove="removeAgencyRow" />
             </div>
+            </template>
           </div>
         </section>
         </Teleport>
-        <!-- 손품결론 — 손품분석에서는 시세조사 옆 손품결론 탭(#sonConcSlot)으로 옮겨 보인다 -->
-        <Teleport defer to="#sonConcSlot" :disabled="!sonpumMode">
-        <!-- 손품결론 — 매매수요조사(등수·거래율·적체)와 급매가 결론을 한 카드로 모은다 -->
-        <section class="adp-card adp-conc-card">
-          <header class="adp-card-head adp-survey-head" @click="toggleSection('realUser')">
-            <h2><svg class="adp-h2-ico" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><path d="m9 11 3 3L22 4"/></svg><span class="adp-head-red">손품결론</span></h2>
-            <button v-if="!editingSurvey.realUser" class="adp-edit-btn" type="button" @click.stop="editingSurvey.realUser = true"><svg class="adp-edit-ico" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>편집</button>
-            <button v-else class="adp-edit-btn save" type="button" @click.stop="saveSurveyAndClose('realUser')">완료</button>
-            <img :src="chevronDownIcon" :class="['adp-chev', { up: isCollapsed('realUser') }]" alt="" />
-          </header>
-          <div v-if="sonpumMode || !isCollapsed('realUser')">
-            <!-- 거래율 — 아실 거래량 기준이라 아파트일 때만 쓴다 -->
-            <div v-if="isApartment" class="adp-sub-block">
-              <div class="adp-sub-head">
-                <h3>
-                  해당경매 물건지 거래율
-                  <span class="adp-survey-note-inline">아실 &gt; 평형 (타입) &gt; 거래량 확인</span>
-                  <span class="adp-region-pills below">
-                    <button
-                      v-for="reg in ['서울', '지방']"
-                      :key="reg"
-                      type="button"
-                      :class="['adp-region-pill', { on: surveyForm.dealRegion === reg }]"
-                      @click="setDealRegion(reg)"
-                    >{{ reg }} {{ reg === '서울' ? '7%' : '4%' }}</button>
-                  </span>
-                </h3>
-              </div>
-              <div class="adp-deal-grid">
-            <div class="cell">
-              <small>세대수</small>
-              <input v-if="editingSurvey.realUser" v-model="surveyForm.totalUnits" type="number" class="adp-survey-input" />
-              <strong v-else>{{ surveyForm.totalUnits ? Number(surveyForm.totalUnits).toLocaleString('ko-KR') : '-' }}</strong>
-            </div>
-            <div class="cell">
-              <small>연 거래건수</small>
-              <input v-if="editingSurvey.realUser" v-model="surveyForm.yearlyDeals" type="number" class="adp-survey-input" />
-              <strong v-else>{{ surveyForm.yearlyDeals ? Number(surveyForm.yearlyDeals).toLocaleString('ko-KR') : '-' }}</strong>
-            </div>
-            <div class="cell">
-              <small>월 거래건수</small>
-              <strong>{{ dealMonthlyComputed }}</strong>
-            </div>
-            <div class="cell">
-              <small>거래율</small>
-              <span class="adp-deal-rate-row">
-                <strong :class="['hi-blue', { low: dealRateOk === false }]">{{ dealRateComputed }}</strong>
-                <span v-if="dealRateJudge" :class="['adp-deal-judge', { bad: dealRateOk === false }]">{{ dealRateJudge }}</span>
-              </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- 매물적체 — 아파트일 때만 -->
-            <div v-if="isApartment" class="adp-sub-block">
-              <div class="adp-sub-head">
-                <h3>해당경매 물건지 매물적체율 <span class="adp-survey-note-inline">5% 초과시 과다</span></h3>
-              </div>
-              <div class="adp-deal-grid">
-            <div class="cell">
-              <small>세대수</small>
-              <input v-if="editingSurvey.realUser" v-model="surveyForm.listingUnits" type="number" class="adp-survey-input" />
-              <strong v-else>{{ surveyForm.listingUnits ? Number(surveyForm.listingUnits).toLocaleString('ko-KR') : '-' }}</strong>
-            </div>
-            <div class="cell">
-              <small>매물수</small>
-              <input v-if="editingSurvey.realUser" v-model="surveyForm.listingCount" type="number" class="adp-survey-input" />
-              <strong v-else>{{ surveyForm.listingCount ? Number(surveyForm.listingCount).toLocaleString('ko-KR') : '-' }}</strong>
-            </div>
-            <div class="cell">
-              <small>적정매물</small>
-              <strong>{{ listingTargetComputed }}</strong>
-            </div>
-            <div class="cell">
-              <small>적체율</small>
-              <strong class="hi-blue">{{ listingBacklogComputed }}</strong>
-                </div>
-              </div>
-              <!-- 거래율·매물적체 묶음의 비고 — 구분선 위, 같은 블록 안에 둔다 -->
-              <div class="adp-photo-note">
-                <input v-model="surveyForm.saleDemandNote" class="adp-fs-input" placeholder="비고" @input="persistSoon" />
-              </div>
-            </div>
-
-            <!-- 시세 결론 / 급매가 결론 — 생김새가 같아 한 벌로 그린다 -->
-            <!-- 손품분석 시세 결론 — 시세분석에서 고른 값 · 호가매물의 평당가 · 가격과 평균(줄 이름은 시세종합과 같다) -->
-            <div v-if="sonpumMode" class="adp-sub-block son-conc-block">
-              <div class="adp-sub-head"><h3>시세결론</h3></div>
-              <table class="adp-table adp-mkt-table fit adp-dm-tbl adp-conc-table bold-price conc-vert">
-                <thead><tr><th class="adp-conc-corner">구분</th><th>조사가격</th><th>평당가</th></tr></thead>
-                <tbody>
-                  <tr v-for="l in sonConcLines" :key="l.key">
-                    <th :class="['adp-conc-side', { off: sonConcOff(l.key) }]"><label class="adp-conc-pick inline"><input type="checkbox" :checked="!sonConcOff(l.key)" @change="toggleSonConc(l.key)" /></label>{{ l.label }}</th>
-                    <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.price) }}</span></td>
-                    <td :class="['num', { off: sonConcOff(l.key) }]"><span class="adp-conc-v">{{ wonText(l.unit) }}</span></td>
-                  </tr>
-                  <tr>
-                    <th class="adp-conc-side mid big">평균</th>
-                    <td class="num mean"><span class="adp-conc-v">{{ wonText(sonConcMean.price) }}</span></td>
-                    <td class="num mean"><span class="adp-conc-v">{{ wonText(sonConcMean.unit) }}</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div v-for="t in (sonpumMode ? CONC_TABLES.filter((x) => x.title !== '시세 결론') : CONC_TABLES)" :key="t.title" class="adp-sub-block">
-              <div class="adp-sub-head">
-                <h3>{{ concTitle(t) }}<span v-if="t.boldPrice" class="adp-note-wrap"><button type="button" class="adp-note-btn" aria-label="설명" @mouseenter="noteEnter('concMean', $event)" @mouseleave="noteLeave()" @click.stop="toggleNote('concMean', $event)"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.6v.6" /></svg></button><span v-if="noteTip === 'concMean'" class="adp-note-bubble" :style="noteStyle" @click.stop="noteTip = ''">체크를 풀면 평균값에서 제외</span></span></h3>
-              </div>
-              <table :class="['adp-table', 'adp-mkt-table', 'fit', 'adp-dm-tbl', 'adp-conc-table', { 'bold-price': t.boldPrice, 'conc-urgent': t.note, 'conc-vert': t.vertical }]">
-                <thead>
-                  <tr>
-                    <!-- 눕힌 표는 왼쪽 첫 칸이 줄 이름 자리다 -->
-                    <th v-if="t.vertical" class="adp-conc-corner">구분</th>
-                    <th v-for="h in concHeads(t)" :key="h.key" :class="[h.tone, { off: concMeanOff(h.key) }]">
-                      <!-- 체크를 풀면 그 칸은 평균에서 빠진다. 값은 그대로 남는다 -->
-                      <label v-if="CONC_MEAN_SRC.includes(h.key)" class="adp-conc-pick">
-                        <input type="checkbox" :checked="!concMeanOff(h.key)" @change="toggleConcMean(h.key)" />
-                      </label>
-                      {{ h.label }}<small v-if="h.note">{{ h.note }}</small>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="l in concLines(t)" :key="l.key">
-                    <th
-                      v-if="t.vertical"
-                      :class="['adp-conc-side', l.tone, {
-                        off: concMeanOff(l.key),
-                        mid: l.key === 'mean' || t.note,
-                        big: l.key === 'mean' || l.key === 'urgent',
-                      }]"
-                    >
-                      <label v-if="CONC_MEAN_SRC.includes(l.key)" class="adp-conc-pick inline">
-                        <input type="checkbox" :checked="!concMeanOff(l.key)" @change="toggleConcMean(l.key)" />
-                      </label>{{ concLineLabel(l.label) }}
-                    </th>
-                    <td
-                      v-for="cell in concCells(t, l)"
-                      :key="`${cell.col.key}-${cell.row.key}`"
-                      :class="['num', { mean: cell.col.key === 'mean', off: concMeanOff(cell.col.key), area: cell.row.key === 'area' }]"
-                    >
-                      <!-- 면적 — ㎡ 와 평을 같이 적는다. 한쪽만 적어도 나머지가 따라온다 -->
-                      <template v-if="cell.row.key === 'area'">
-                        <template v-if="concEditable(cell.col.key, 'area')">
-                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(cell.col.key, 'areaM2')" placeholder="0" @input="setConcArea(cell.col.key, 'm2', ($event.target as HTMLInputElement).value)" />㎡</span>
-                          <span class="adp-conc-unit"><input class="adp-mkt-input" inputmode="decimal" :value="concVal(cell.col.key, 'area')" placeholder="0" @input="setConcArea(cell.col.key, 'py', ($event.target as HTMLInputElement).value)" />평</span>
-                        </template>
-                        <span v-else :class="['adp-conc-v', 'adp-conc-area', { typed: concTyped(cell.col.key, 'areaM2') || concTyped(cell.col.key, 'area') }]">{{ concAreaText(cell.col.key) }}</span>
-                      </template>
-                      <!-- 가격 — 평당가 × 면적(평). 손으로 적으면 그 값이 이긴다 -->
-                      <template v-else-if="cell.row.key === 'price'">
-                        <FormattedNumberInput
-                          v-if="concEditable(cell.col.key)"
-                          :model-value="concVal(cell.col.key, 'price')"
-                          mode="string"
-                          class="adp-mkt-input"
-                          :placeholder="concPriceHint(cell.col.key)"
-                          @update:model-value="setConcVal(cell.col.key, 'price', String($event ?? ''))"
-                        />
-                        <span v-else :class="['adp-conc-v', 'hi', { red: cell.col.tone === 'red', typed: concTyped(cell.col.key, 'price') }]">{{ concPriceText(cell.col.key) }}</span>
-                      </template>
-                      <!-- 평단가 -->
-                      <template v-else>
-                        <FormattedNumberInput
-                          v-if="concEditable(cell.col.key)"
-                          :model-value="concVal(cell.col.key, cell.row.key)"
-                          mode="string"
-                          class="adp-mkt-input"
-                          :placeholder="cell.row.label"
-                          @update:model-value="setConcVal(cell.col.key, cell.row.key, String($event ?? ''))"
-                        />
-                        <span v-else :class="['adp-conc-v', { typed: concTyped(cell.col.key, cell.row.key) }]">
-                          {{ concText(cell.col.key, cell.row) }}<small v-if="cell.row.suffix && concVal(cell.col.key, cell.row.key)">{{ cell.row.suffix }}</small>
-                        </span>
-                      </template>
-                    </td>
-                  </tr>
-                  <!-- 비고는 급매가 결론 표에만 — 결론을 적는 자리다 -->
-                  <tr v-if="t.note">
-                    <td class="adp-conc-note" :colspan="concHeads(t).length + (t.vertical ? 1 : 0)">
-                      <input
-                        v-if="editingSurvey.realUser"
-                        class="adp-mkt-input"
-                        placeholder="비고"
-                        :value="fieldVal('fs.urgentSale.note')"
-                        @input="setExtraNote('urgentSale', ($event.target as HTMLInputElement).value)"
-                      />
-                      <span v-else :class="{ filled: !!fieldVal('fs.urgentSale.note') }">{{ fieldVal('fs.urgentSale.note') || '비고' }}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <!-- 인근 매각사례 — PDF 분석 자료(물건 등록 때 읽은 인근 매각 통계). 웹은 가격정보 탭을 빼서 여기서 본다 -->
-            <div v-if="sonpumMode" class="adp-sub-block son-near-block">
-              <div class="adp-sub-head"><h3>인근매각사례 <span class="adp-head-note">{{ auction?.address?.split(' ').slice(0, 3).join(' ') || '' }} {{ auction?.propertyType || '' }}</span></h3></div>
-              <table v-if="nearBidRowsFilled.length > 0" class="adp-table adp-cases-table">
-                <thead>
-                  <tr>
-                    <th class="c">구분</th>
-                    <th class="c">평균감정가<br>평균매각가</th>
-                    <th class="c">입찰인원<br>매각가율</th>
-                    <th class="c">예상매각가</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(r, i) in nearBidRowsFilled" :key="i">
-                    <td class="c">{{ r.saleInfo }}</td>
-                    <td class="c pre"><span>{{ r.appraisal }}</span><span v-if="r.minimum" class="adp-line2">{{ r.minimum }}</span></td>
-                    <td class="c pre"><span>{{ r.winning }}</span><span v-if="r.rate" class="adp-line2 b-blue">{{ r.rate }}</span></td>
-                    <td class="c"><strong>{{ r.expectedWinning }}</strong></td>
-                  </tr>
-                </tbody>
-              </table>
-              <p v-else class="adp-empty">매각사례 데이터 없음 — 물건 등록 때 읽은 PDF 에 인근 매각 통계가 없습니다</p>
-            </div>
-          </div>
-        </section>
-        </Teleport>
+        <!-- 손품결론 카드는 뺐다(2026-11-02) — 실거래가 예상은 손품조사 › 가격분석, 인근 매각사례는 물건정보 탭 -->
         <template v-if="!sonpumMode">
 
         <section class="adp-card">
@@ -9757,6 +9344,8 @@ const goBack = () => router.back();
 
 
         </template>
+        <!-- 임장을 다녀온 뒤 할 일 — 임장 결과로 수익분석을 다시 본다(손품 → 대략 수익 → 임장 → 수익 확정, 2026-11-03). 웹은 임장조사 탭 아래 제 단추를 쓴다 -->
+        <button type="button" class="adp-field-next" @click="activeTab = 'profit'">임장 결과로 수익분석 다시 보기 →</button>
       </template>
     </div>
 
@@ -10680,6 +10269,9 @@ tr.tone-take { background: #fff5f5; }
 .adp-profit-head { gap: 6px; cursor: pointer; }
 .adp-profit-head h2 { display: inline-flex; align-items: center; gap: 5px; }
 .adp-profit-ico { color: #2a5fbf; flex: 0 0 auto; }
+.adp-field-mark { flex: 0 0 auto; border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 700; white-space: nowrap; background: #fff4e5; color: #b45309; }
+.adp-field-mark.on { background: #e8f6ee; color: #15803d; }
+.adp-field-next { display: block; margin: 4px 0 8px auto; height: 36px; padding: 0 14px; border: 1px solid #c9d4ea; border-radius: 10px; background: #fff; color: #2b6df3; font-size: 13px; font-weight: 800; cursor: pointer; }
 .adp-auto-chip {
   flex: 0 0 auto;
   background: #f1f3f7; color: #4b5563;
@@ -10743,6 +10335,10 @@ tr.tone-take { background: #fff5f5; }
 /* 잔금 예정일 — 어림한 날짜라 파란 글로 적은 날짜와 나눈다 */
 .adp-pd-box span.exp { color: #2b6df3; }
 .adp-pd-cal { color: #9ca3af; flex: 0 0 auto; }
+/* 입찰일이 매각기일과 다를 때 — 입찰일 칸 테두리를 빨갛게, 매도일 칸 오른쪽에 안내 글(굵게 하지 않는다) */
+.adp-pd-item.bad .adp-pd-box { border-color: #dc2626; }
+.adp-pd-warn { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; font-size: 12px; font-weight: 400; color: #dc2626; white-space: nowrap; }
+.adp-pd-warn svg { flex: 0 0 auto; }
 /* 비중을 기본값으로 — 날짜 옆에 작게 */
 .adp-pd-reset {
   display: inline-flex; align-items: center; gap: 3px;
@@ -11659,8 +11255,6 @@ tr.tone-take { background: #fff5f5; }
 .adp-mkt-cells.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .adp-mkt-cells.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
 /* 웹 지표결과 — 오른쪽에 '종합' 칸을 하나 더 */
-.adp-mkt-cells.c4.has-total { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.dm-total-cell .cell-total { flex: 1 1 auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .adp-mkt-cells.c4 .cell small { letter-spacing: -0.4px; }
 /* 이름 칸과 값 칸을 선으로 가른다 — 이름 칸 전체가 설명을 띄우는 영역 */
 .adp-mkt-cells .cell.split { padding: 0; gap: 0; overflow: hidden; }
@@ -13045,6 +12639,7 @@ select.adp-pub-input option { text-align: center; }
 .adp-profit-head:has(.adp-head-dates) { justify-content: flex-start; }   /* 웹 — 오른쪽 단추가 빠져 칩 · 날짜가 양끝으로 벌어지지 않게 제목 옆에 모은다 */
 .adp-head-dates { display: inline-flex; align-items: center; gap: 14px; margin-left: 10px; }
 .adp-head-dates .adp-pd-item { cursor: pointer; }
+.adp-pd-item.ro, .adp-pd-item.ro .adp-pd-box { cursor: default; }   /* 입찰일 — 보여 주기만 */
 /* 웹 — 안 고르기(A~D안) · 초기화는 머리 줄 오른쪽 끝. 머리 줄은 줄바꿈 없이 한 줄 */
 .adp-profit-head:has(.adp-head-plans) { flex-wrap: nowrap; white-space: nowrap; }
 .adp-head-plans { margin-left: auto; display: inline-flex; align-items: center; flex: none; }

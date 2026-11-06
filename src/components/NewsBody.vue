@@ -8,6 +8,8 @@ import { useBoardFeed, useBoardNew } from '../services/boardFeed';
 
 /** 관리자가 올린 글 — 아직 없으면 코드의 기본 글을 쓴다 */
 const { events: EVENTS, notices: NOTICES, updates: UPDATES } = useBoardFeed();
+/** noticeOnly — 웹 공지는 공지사항만(이벤트 · 업데이트는 서비스 시작 뒤로 미뤘다, 2026-11-02) */
+defineProps<{ noticeOnly?: boolean }>();
 
 const router = useRouter();
 
@@ -34,7 +36,7 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
 
 <template>
   <div class="nws-wrap">
-    <section class="nws-card" data-sec="event">
+    <section v-if="!noticeOnly" class="nws-card" data-sec="event">
       <h3 class="nws-h">이벤트<i v-if="eventNew" class="dot" /></h3>
       <template v-for="(e, i) in EVENTS" :key="`e${i}`">
         <button type="button" class="nws-row" @click="openEvent(`e${i}`, e)">
@@ -68,7 +70,7 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
       </template>
     </section>
 
-    <section class="nws-card" data-sec="update">
+    <section v-if="!noticeOnly" class="nws-card" data-sec="update">
       <h3 class="nws-h">업데이트<i v-if="updateNew" class="dot" /></h3>
       <template v-for="(u, i) in UPDATES" :key="`u${i}`">
         <button type="button" class="nws-row" @click="toggleRow(`u${i}`, u)">

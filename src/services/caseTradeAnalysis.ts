@@ -12,6 +12,7 @@ import { browserCacheGet, browserCachePut } from './browserCache';
 import { lookupAddress, type AddressParts } from './addressLookup';
 import type { ResolvedRegion } from './regionResolver';
 import type { ApartPrice } from './vworldApi';
+import { noteDistrictStats } from './landingStats';
 
 export type CasePropertyType = 'villa' | 'apt' | 'officetel';
 
@@ -30,6 +31,8 @@ export interface CaseTradeRow {
   jibun: string;
   /** 건축년도 — 유사물건을 연식으로 거를 때 쓴다(국토부 자료에 없으면 비어 있다) */
   buildYear?: number;
+  /** 월세 (원) — 월세 줄만 */
+  monthly?: number;
 }
 
 export interface CaseTradeResult {
@@ -60,11 +63,14 @@ const loadDistrict = async (lawdCd5: string, propertyType: CasePropertyType, yea
   const key = cacheKey(lawdCd5, propertyType, `y${years}`);
   type Payload = Awaited<ReturnType<typeof fetchPlaceHistory>>;
   // ① 이 브라우저 → ② DB(조각으로 나눠 둔 것, 다른 기기 · 다른 사람이 받아 둔 것) → ③ 국토부에서 새로(194번쯤). 하루 지나면 새로
+  // 대문 숫자(모아 둔 실거래 · 단지) — 불러온 시군구를 하루 한 번 집계에 더한다(services/landingStats)
+  const statKey = cacheKey(lawdCd5, propertyType);
   const local = await browserCacheGet<Payload>(`place_${key}`, CACHE_TTL.place);
-  if (local) return local;
+  if (local) { void noteDistrictStats(statKey, local); return local; }
   const shared = await readChunkedCache<Payload>('cachePlaceHistoryV2', key, CACHE_TTL.place);
-  if (shared) { void browserCachePut(`place_${key}`, shared); return shared; }
+  if (shared) { void browserCachePut(`place_${key}`, shared); void noteDistrictStats(statKey, shared); return shared; }
   const fresh = await fetchPlaceHistory({ lawdCd5, propertyType, years });
+  if (fresh.missedMonths === 0) void noteDistrictStats(statKey, fresh);
   // 몇 달을 못 받았으면 남기지 않는다 — 덜 받은 값이 하루 동안 굳는다
   if (fresh.missedMonths === 0) {
     void browserCachePut(`place_${key}`, fresh);
@@ -91,16 +97,26 @@ export const matchRange = (r: CaseTradeRow, f: TradeRange): boolean => {
   return true;
 };
 
+/** 호수 → 층 — '402' 는 4층, '1203' 은 12층. 세 자리 · 네 자리 숫자가 아니면 0(모름) */
+export const floorOfHo = (ho: string): number => (/^\d{3,4}$/.test(ho) ? Math.floor(Number(ho) / 100) : 0);
+
 /**
  * 경매지번 실거래가 — 그 건물 거래 중 이 호실과 면적이 가장 가까운 것, 같으면 가장 최근.
  * 같은 평형이 있으면 그것이, 없으면 평수가 조금 다른 같은 건물 거래가 선다(정의: 같은 건물 같은 평형 → 비슷한 평형).
+ * 층(baseFloor)을 주면 같은 평형 · 같은 층이 맨 앞이다 — 웹 손품조사만 넘긴다.
  * 이 호실 면적을 모르면 가장 최근 거래.
  */
-export const pickCaseTrade = (rows: CaseTradeRow[], kinds: Array<CaseTradeRow['kind']>, baseAreaM2: number): CaseTradeRow | null => {
+export const pickCaseTrade = (rows: CaseTradeRow[], kinds: Array<CaseTradeRow['kind']>, baseAreaM2: number, baseFloor = 0): CaseTradeRow | null => {
   const list = rows.filter((r) => kinds.includes(r.kind) && r.price > 0);
   if (list.length === 0) return null;
   // 0.05㎡ 안쪽은 같은 평형으로 본다(신고 면적 소수 끝자리 차이)
   const gap = (r: CaseTradeRow) => (baseAreaM2 > 0 && r.areaM2 > 0 ? Math.max(0, Math.abs(r.areaM2 - baseAreaM2) - 0.05) : 0);
+  const latest = (a: CaseTradeRow[]) => a.reduce((best, r) => (r.contractDate > best.contractDate ? r : best));
+  // 1순위 — 같은 평형에 같은 층. 실거래 자료엔 호수가 없어 같은 층 같은 평형 옆집일 수도 있다
+  if (baseFloor && baseAreaM2 > 0) {
+    const same = list.filter((r) => r.areaM2 > 0 && gap(r) === 0 && Number(r.floor) === baseFloor);
+    if (same.length) return latest(same);
+  }
   return list.reduce((best, r) => {
     const d = gap(r) - gap(best);
     if (d < 0) return r;
@@ -133,6 +149,7 @@ const toRows = (data: Awaited<ReturnType<typeof fetchPlaceHistory>>): CaseTradeR
       ? `보 ${won(r.deposit * 10000)} / 월 ${won(r.monthlyRent * 10000)}`
       : `보 ${won(r.deposit * 10000)}`,
     price: r.deposit * 10000,
+    ...(r.monthlyRent > 0 ? { monthly: r.monthlyRent * 10000 } : {}),
     areaM2: r.areaM2,
     floor: r.floor,
     umdNm: r.umdNm,

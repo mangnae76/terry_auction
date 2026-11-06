@@ -13,7 +13,7 @@ import { fetchDongUnitCount, peekDongUnitCount } from '../services/dongUnits';
 import { runLimited } from '../utils/runLimited';
 import { openNaverDongListing } from '../services/naverListing';
 import { dealCountTip, type TipRow } from '../services/tipRows';
-import { DEMAND_PLAIN, DEMAND_TOTAL_PLAIN, DEMAND_TOTAL_TIP, demandFitText, demandGradeOf, demandTip, demandTotalGrade, tallyDongUnits } from '../services/demandGrade';
+import { DEMAND_PLAIN, demandFitText, demandGradeOf, demandTip, tallyDongUnits } from '../services/demandGrade';
 import InfoTip from '../components/InfoTip.vue';
 import SnapChip from '../components/SnapChip.vue';
 import { useScreenSnapshot } from '../composables/useScreenSnapshot';
@@ -301,6 +301,9 @@ const DM_LIT_LINKS: Record<DmId, DmId[]> = {
 };
 const dmLitKey = ref<DmId | ''>('');
 const dmLit = (id: DmId) => (dmLitKey.value ? DM_LIT_LINKS[dmLitKey.value].includes(id) : false);
+/** 요약 상자 총 매물수 칸에서 바로 적을 동 — 보는 동이 하나일 때만(여럿이면 합계라 어느 동 값인지 정할 수 없어 보기만).
+ *  아래 표 칸과 같은 자리(manual)에 적으므로 어느 쪽에 먼저 적어도 두 칸이 늘 같은 값이다 */
+const listingRow = computed(() => (rows.value.length === 1 ? rows.value[0] : null));
 const dmInputs = computed(() => {
   const v = navStats.value;
   // 20251030 → 2025-10-30 (말풍선은 2025.10.30 꼴)
@@ -313,12 +316,13 @@ const dmInputs = computed(() => {
       tip: [['출처', '건축HUB(건축물대장) · 자동 입력'], ['갱신', '30일 후 업데이트'], ['범위', `${dmArea.value} ${kindWhat.value}`], ['합산', '건물마다의 세대수를 모두 더한 값']] as TipRow[] },
     { id: 'listings' as DmId, label: '총 매물수', value: n(v.listings), ym: null,
       note: '', wait: false,
-      tip: [['입력', '아래 표 총 매물수 칸에 직접 입력'], ['합산', '동마다 적은 매물수를 모두 더한 값'], ['찾기', `네이버 부동산 · ${kindWhat.value} 매물 수`]] as TipRow[] },
+      tip: (listingRow.value
+        ? [['입력', '이 칸이나 아래 표 총 매물수 칸에 직접 입력 — 한쪽에 적으면 다른 쪽도 같은 값'], ['찾기', `네이버매물 ↗ — 네이버 부동산 · ${kindWhat.value} 매물 수`]]
+        : [['입력', '아래 표 총 매물수 칸에 직접 입력'], ['합산', '동마다 적은 매물수를 모두 더한 값'], ['찾기', `네이버 부동산 · ${kindWhat.value} 매물 수`]]) as TipRow[] },
   ];
 });
 /** 동 줄의 '네이버매물 ↗' — 그 동만 보기 지도로(services/naverListing) */
 const openDongListing = (r: Row) => openNaverDongListing([sido.value, r.sigungu, r.umdNm].filter(Boolean).join(' '), kind.value);
-const dmTotal = computed(() => demandTotalGrade(Object.values(navStats.value.grades)));
 /** 총 세대수 칸 밑 작은 글 — 받는 중이면 몇 곳 받았는지, 못 받은 동이 있으면 몇 곳인지(표에서 ↻ 로 다시 받는다) */
 const unitsNote = computed(() => {
   const t = unitsTally.value;
@@ -588,19 +592,26 @@ const downloadCsv = () => {
           <div v-for="c in dmInputs" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
             <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip></div>
             <!-- 총 세대수 — 동을 다 받기 전에는 '받는 중' + 받은 곳 수(일부 합을 확정값처럼 보이지 않게) -->
-            <div :class="['dm-body', { 'has-note': c.note }]"><b :class="{ wait: c.wait }"><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" /></b><small v-if="c.note" class="dm-note">{{ c.note }}</small></div>
+            <!-- 총 매물수 — 보는 동이 하나면 여기서도 적는다(아래 표와 같은 값) · 옆에 표와 같은 네이버매물 ↗ -->
+            <div v-if="c.id === 'listings' && listingRow" class="dm-body">
+              <input
+                class="dm-input"
+                inputmode="numeric"
+                placeholder="입력"
+                :aria-label="`${listingRow.umdNm} 총 매물수`"
+                :value="listingRow.listings ? listingRow.listings.toLocaleString('ko-KR') : ''"
+                @input="setManual(listingRow.sigungu, listingRow.umdNm, 'listings', ($event.target as HTMLInputElement).value)"
+              />
+              <button type="button" class="nv-btn" :title="`${listingRow.umdNm}만 보기 — 네이버 부동산 매매 매물`" @click="openDongListing(listingRow)">네이버매물<svg viewBox="0 0 12 12" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5.5V8" /><path d="M9.5 2.5 2.5 9.5" /></svg></button>
+            </div>
+            <div v-else :class="['dm-body', { 'has-note': c.note }]"><b :class="{ wait: c.wait }"><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" /></b><small v-if="c.note" class="dm-note">{{ c.note }}</small></div>
           </div>
         </div>
         <p class="dm-block-head">② 수요지표</p>
-        <div class="dm-row c5">
+        <div class="dm-row c4">
           <div v-for="c in dmResults" :key="c.id" :class="['dm-cell', { lit: dmLit(c.id) }]" @mouseenter="dmLitKey = c.id" @mouseleave="dmLitKey = ''">
             <div class="dm-head"><InfoTip :rows="c.tip" under="box">{{ c.label }}</InfoTip><em class="dm-plain">{{ c.plain }}</em></div>
             <div class="dm-body"><b :class="{ wait: c.value === '받는 중' }"><UnitText :text="c.value" /><template v-if="c.grade !== '-'"><em class="nbar">|</em><span :class="['gd', `g-${c.grade}`]">{{ c.grade }}</span><span :class="['fit', { bad: c.grade === 'C' }]">/ {{ demandFitText(c.grade) }}</span></template></b></div>
-          </div>
-          <!-- 종합 — 손품조사 매매수요의 종합 칸과 같다(등급 동그라미 + 적합) -->
-          <div class="dm-cell total">
-            <div class="dm-head"><InfoTip :rows="DEMAND_TOTAL_TIP" align="end" under="box">종합</InfoTip><em class="dm-plain">{{ DEMAND_TOTAL_PLAIN }}</em></div>
-            <div class="dm-body"><b><template v-if="dmTotal !== '-'"><span :class="['gd', `g-${dmTotal}`]">{{ dmTotal }}</span><span :class="['fit', { bad: dmTotal === 'C' }]">{{ demandFitText(dmTotal) }}</span></template><span v-else-if="unitsTally.pending > 0" class="wait">받는 중</span><template v-else>-</template></b></div>
           </div>
         </div>
       </section>
@@ -782,8 +793,7 @@ const downloadCsv = () => {
 .dm-row.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; }
 /* 두 줄 제목 — 앱 매매수요의 ① 기초수치 · ② 수요지표와 같은 이름 */
 .dm-block-head { margin: 0 0 8px 2px; font-size: 14px; font-weight: 700; color: #111827; }
-.dm-row.c5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.dm-cell.total .fit { margin-left: 6px; }
+.dm-row.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }   /* 종합 칸은 뺐다(2026-11-02) — 지표 4칸 */
 /* 칸 — 앱 매매수요 칸처럼 위 이름 띠(회색) + 아래 값(흰색). 이어진 칸은 빨갛게(앱 .lit 와 같은 색) */
 .dm-cell { position: relative; min-width: 0; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; overflow: visible; transition: background .12s, border-color .12s; }
 .dm-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; padding: 8px 6px; border-bottom: 1px solid #e3e8f0; border-radius: 8px 8px 0 0; background: #f3f6fb; font-size: 14px; color: #6b7280; white-space: nowrap; }
@@ -794,6 +804,9 @@ const downloadCsv = () => {
 /* 세대수를 다 받기 전 — 확정값과 헷갈리지 않게 작고 흐린 '받는 중'(굵기 없음) */
 .dm-body .wait { font-size: 14px; font-weight: 400; color: #9ca3af; }
 .dm-body.has-note { flex-direction: column; gap: 3px; padding-top: 9px; padding-bottom: 9px; }
+.dm-input { width: 110px; height: 34px; box-sizing: border-box; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; padding: 0 10px; text-align: right; font-family: inherit; font-size: 18px; font-weight: 800; color: #2b6df3; }
+.dm-input:focus { outline: none; border-color: #2b6df3; }
+.dm-input::placeholder { color: #aebbd6; font-size: 14px; font-weight: 400; }
 .dm-note { font-size: 12px; font-weight: 400; color: #9ca3af; white-space: nowrap; }
 .dm-cell.lit { background: #fff5f5; border-color: #f6d5d5; }
 .dm-cell.lit .dm-head { background: #ffecec; border-bottom-color: #f6d5d5; }

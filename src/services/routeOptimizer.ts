@@ -220,24 +220,32 @@ const createAddressVariants = (address: string) => {
   return [...variants].filter((item) => item.length > 0);
 };
 
+// 저장해 둔 좌표는 한 번만 읽어 메모리에 두고, 쓰기는 모았다가 한 번에 — 수백 건을 찾을 때 건마다
+// 목록 전체를 읽고 다시 쓰면(JSON 통째로) 화면이 멈칫거린다(가격분석은 동 하나에 지번 수백 개)
+let geoMem: Record<string, GeoPoint> | null = null;
+let geoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 const loadGeocodeCache = () => {
+  if (geoMem) return geoMem;
   try {
     const raw = localStorage.getItem(GEOCODE_CACHE_KEY);
-    if (!raw) {
-      return {} as Record<string, GeoPoint>;
-    }
-    return JSON.parse(raw) as Record<string, GeoPoint>;
+    geoMem = raw ? (JSON.parse(raw) as Record<string, GeoPoint>) : {};
   } catch {
-    return {} as Record<string, GeoPoint>;
+    geoMem = {};
   }
+  return geoMem;
 };
 
 const saveGeocodeCache = (cache: Record<string, GeoPoint>) => {
-  try {
-    localStorage.setItem(GEOCODE_CACHE_KEY, JSON.stringify(cache));
-  } catch {
-    // Ignore quota/storage errors.
-  }
+  geoMem = cache;
+  if (geoSaveTimer) return;
+  geoSaveTimer = setTimeout(() => {
+    geoSaveTimer = null;
+    try {
+      localStorage.setItem(GEOCODE_CACHE_KEY, JSON.stringify(geoMem ?? {}));
+    } catch {
+      // Ignore quota/storage errors.
+    }
+  }, 1000);
 };
 
 const getCachedGeoPoint = (address: string) => {
@@ -366,7 +374,8 @@ const geocodeByNominatim = async (query: string): Promise<GeoPoint | null> => {
   };
 };
 
-export const geocodeAddress = async (address: string): Promise<GeoPoint | null> => {
+/** quick — 카카오만 묻는다(못 찾아도 느린 예비 지도 Nominatim 으로 넘어가지 않는다). 한꺼번에 많이 찾을 때 */
+export const geocodeAddress = async (address: string, opts: { quick?: boolean } = {}): Promise<GeoPoint | null> => {
   const cached = getCachedGeoPoint(address);
   if (cached) {
     return { ...cached, address };
@@ -381,6 +390,7 @@ export const geocodeAddress = async (address: string): Promise<GeoPoint | null> 
       return normalized;
     }
 
+    if (opts.quick) continue;
     const osmPoint = await geocodeByNominatim(query);
     if (osmPoint) {
       const normalized = { ...osmPoint, address };

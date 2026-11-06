@@ -7,7 +7,7 @@ import { useAuctionStore } from '../stores/auctionStore';
 import { withConfirmedPlan } from '../services/confirmedPlan';
 // 웹은 입찰가산정 탭 이름이 '수익분석' 이고, 수익분석에서 '확정' 한 안의 값을 쓴다(앱은 그대로 A안)
 const webEmbedLedger = inject<boolean>('webEmbed', false);
-const planSrc = webEmbedLedger ? '수익분석 확정안' : '입찰가산정A';
+const planSrc = webEmbedLedger ? '수익분석 확정안' : '수익분석 A안';
 const planned = <T extends Parameters<typeof withConfirmedPlan>[0]>(a: T): T => (webEmbedLedger ? withConfirmedPlan(a) : a) as T;
 import { useFinanceStore } from '../stores/financeStore';
 import { useInteriorStore } from '../stores/interiorStore';
@@ -168,6 +168,7 @@ const save = async () => {
         quantity: isItem.value ? Number(d.qty || 0) : 0, unitPrice: isItem.value ? Number(d.unit || 0) : 0,
       });
     }
+    void auctions.noteEdit(d.auctionId);   // 최근 분석 기록 — 지금 화면(낙찰이후 · 자금관리의 그 탭) 이름으로
     open.value = false;
   } catch (e) {
     alert(e instanceof Error ? e.message : '저장 실패');

@@ -4,6 +4,10 @@ import { firestore, firestoreDisabledReason } from './firebase';
 // 사용자별 앱 설정·캐시 — 디바이스를 옮겨도 따라오는 개인 데이터.
 // (디바이스 단위 캐시인 테마/지오코드 캐시 등은 그대로 localStorage 사용)
 export interface UserPrefs {
+  /** 화면 설정(정렬 · 보기 · 읽음 표시 · 마지막 물건 …) — services/uiPrefSync 가 localStorage 와 맞춘다 */
+  ui?: Record<string, string>;
+  /** 입찰달력 · 칸에 보일 항목(소재지 · 분류 · 중요도) — 기기마다 같게 */
+  calendarShow?: Record<string, boolean>;
   // 늘 도는 중개업소 — 상담표의 상호 드롭다운과 '중개업소 관리' 화면이 같이 쓴다
   agencies?: Array<{ id: string; name: string; phone: string; rating?: string }>;
   // 관리자 도구 · 수요공급 분석에서 손으로 적는 세대수·매물수 (지역|종류|읍면동 열쇠)

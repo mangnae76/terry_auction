@@ -176,6 +176,10 @@ const activeTab = ref<FinanceTabKey>(((t) => (webEmbed && (t === 'fuelMeal' || t
 /** 웹 필터 줄의 다섯 탭 — 앱은 아래 머리의 탭 줄 그대로 */
 /** 웹 — 필요경비(예정신고) · 사업경비(5월 종합소득세) 두 장부 */
 const WEB_TABS: Array<[FinanceTabKey, string]> = [['cashFlow', '자금입출금'], ['businessExpense', '필요경비'], ['interior', '사업경비'], ['tax', '세금신고']];
+// 최근 분석 기록 — 자금관리에서 고친 것은 '자금관리 › 탭'(유류&식대 · 물품구매는 사업경비)으로 남긴다
+const FIN_WHERE: Record<string, string> = { cashFlow: '자금입출금', businessExpense: '필요경비', interior: '사업경비', fuelMeal: '사업경비', itemPurchase: '사업경비', tax: '세금신고' };
+watch(activeTab, (t) => { auctionStore.setEditWhere(`자금관리 › ${FIN_WHERE[t] ?? '자금입출금'}`); }, { immediate: true });
+onUnmounted(() => auctionStore.setEditWhere(''));
 /** 웹 장부 표 — 위 필터 줄의 엑셀 · 항목추가가 이 표로 간다 */
 const ledgerRef = ref<InstanceType<typeof ExpenseLedger> | null>(null);
 const onWeb = (t: FinanceTabKey) => webEmbed && (t === 'businessExpense' || t === 'interior');
@@ -463,6 +467,9 @@ const onSave = async () => {
       ipDraft.value.auctionLabel = a ? (villaName(a.address) || a.caseNumber) : '';
       await finance.saveItemPurchase(ipDraft.value);
     }
+    const aid = modalKind.value === 'cashFlow' ? (cfDraft.value as { auctionId?: string }).auctionId
+      : modalKind.value === 'businessExpense' ? beDraft.value.auctionId : modalKind.value === 'itemPurchase' ? ipDraft.value.auctionId : '';
+    void auctionStore.noteEdit(aid);
     closeModal();
   } catch (e) {
     alert(e instanceof Error ? e.message : '저장 실패');

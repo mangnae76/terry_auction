@@ -5,15 +5,286 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>마이턴옥션</title>
 <!-- 로그인 창은 웹과 같은 앱 로그인 화면(LoginPage)을 그대로 띄운다 — 웹 묶음(pdfparse)을 누를 때 불러온다 -->
-<link rel="stylesheet" href="/web/pdfparse.css">
+<link rel="stylesheet" href="/web/pdfparse.css" media="print" onload="this.media='all'">   <!-- 로그인 · 회원가입 창(앱 화면)용 530KB — 대문을 먼저 그리고 뒤에서 받는다(대문 전체 규칙은 없다) -->
+<!-- 글꼴 — 웹(로그인 뒤 화면)과 같은 Noto Sans KR. 대문 제목이 900 굵기를 써서 900 까지 받는다 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap">
 <style>
   /* 대문 — 남색 바탕 위에 로그인 창이 바로 뜬다(소개 영상 · 사운드 · 로그인 단추는 2026-11-01 걷었다) */
-  :root { --navy: #0B1226; --blue: #2b6df3; }
+  /* 색은 웹(선정물건 머리띠 · 이용가이드)과 같은 값 — 남색 #213366 · 주황 #f4700a · 파랑 #2b6df3 */
+  :root { --navy: #213366; --brand: #213366; --brand-hover: #14213d; --blue: #2b6df3; --orange: #f4700a; --ink: #111827; --sub: #6b7280; --line: #e5e9f2; --soft: #f5f7fb; --tint: #eef3ff; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; }
-  body { background: var(--navy); font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; overflow: hidden; }
+  html, body { margin: 0; }
+  html { scrollbar-gutter: stable; }   /* 스크롤바 자리를 늘 비워 둔다 — 화면이 길어 스크롤바가 없어져도 로고가 절차 · 앱 소개 · 이용가이드와 같은 자리 */
+  /* 화면이 페이지보다 길 때(세로 1440 모니터 등) — 남는 높이는 본문이 갖고 푸터는 늘 화면 맨 아래에 붙는다(푸터 아래 빈 공간 · 흰 줄 없음) */
+  body { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+  body > main { flex: 1 0 auto; min-width: 0; }
+  body { background: #fff; color: var(--ink); font-family: "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; -webkit-text-size-adjust: 100%; -webkit-font-smoothing: antialiased; }   /* 웹(selected)의 --font 와 같은 줄 */
+  button, input, select, textarea { font-family: inherit; }
+  .num { font-variant-numeric: tabular-nums; }
+  /* ===== 대문 — 머리 · 절차 띠 · 첫 화면(문구 · 숫자 · 흐름도) · 모바일 띠 ===== */
+  .ld-wrap { max-width: 1240px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+  .ld-head { position: sticky; top: 0; z-index: 5; background: var(--navy); }
+  .ld-head .ld-wrap { display: flex; align-items: center; gap: 12px; height: 64px; }
+  .ld-head img { height: 34px; width: auto; display: block; }
+  /* 로고 — 웹 머리띠(.g-logo)와 같은 움직임: 올리면 살짝 기울며 커진다 */
+  .ld-head .ld-logo { display: block; height: auto; padding: 0; border-radius: 0; }   /* 머리띠 단추 모양(.ld-head a)은 받지 않는다 */
+  .ld-logo img { transition: transform .4s cubic-bezier(.2, .9, .3, 1.4); }
+  .ld-logo:hover img { transform: rotate(-4deg) scale(1.04); }
+  .ld-head nav { margin-left: auto; display: flex; gap: 8px; }
+  .ld-head button, .ld-head a { height: 36px; padding: 0 16px; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; text-decoration: none; }
+  .ld-ghost { border: 1px solid rgba(255,255,255,.28); background: transparent; color: #fff; }
+  .ld-ghost:hover { border-color: #fff; }
+  .ld-fill { border: 1px solid var(--orange); background: var(--orange); color: #fff; }
+  .ld-head nav button { box-sizing: border-box; width: 92px; justify-content: center; padding: 0; }   /* 로그인 · 회원가입 단추 같은 크기 */
+  .ld-left { align-self: stretch; display: flex; flex-direction: column; min-width: 0; }   /* 오른쪽 진행 단계 상자와 같은 높이 — 「경매가 처음이신가요?」 아래 끝이 상자 아래 끝에 맞는다 */
+  .ld-left > .sp { flex: 1 1 0; min-height: 22px; }   /* 숫자 줄 위 · 아래 여백 — 남는 높이를 똑같이 나눈다 */
+  .ld-left > .ld-stats { margin-top: 0; padding-block: 0; border-block: 0; }   /* 위아래 선은 따로(.ln) 두고 간격을 똑같이 나눈다 */
+  .ld-left > .ln { display: block; flex: 0 0 auto; height: 1px; background: var(--line); }
+  .ld-left > .ld-badge { align-self: flex-start; }   /* 배지는 글자 폭만큼(세로 줄 안에서 늘어나지 않게) */
+  .ld-strip { margin-top: 0; }
+  .ld-strip .box { display: flex; align-items: center; gap: 16px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: 0 6px 20px rgba(17,24,39,.06); }
+  .ld-strip .ico { width: 52px; height: 52px; border-radius: 12px; background: var(--tint); color: var(--brand); display: grid; place-items: center; flex: 0 0 auto; }
+  .ld-strip .box > .tx { flex: 1 1 auto; min-width: 0; }
+  .ld-strip .hd { display: flex; align-items: flex-end; gap: 14px; margin-top: 4px; }   /* 제목은 한 줄로 · 단추는 설명 줄 오른쪽 끝 */
+  .ld-strip .hd small { margin-top: 0; flex: 1 1 auto; min-width: 0; }
+  .ld-strip b { display: block; white-space: nowrap; font-size: 15px; line-height: 1.35; font-weight: 800; color: var(--navy); word-break: keep-all; }   /* 글자 크기는 위 앱 홍보 띠와 같게 */
+  .ld-strip small { display: block; margin-top: 4px; font-size: 12px; color: var(--sub); line-height: 1.45; word-break: keep-all; }
+  .ld-strip .go { margin-left: auto; flex: 0 0 auto; height: 30px; padding: 0 12px; border-radius: 7px; border: 1px solid #d5dbe6; background: #fff; color: var(--brand); font-size: 12.5px; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap; }   /* 로그인 전 화면의 보조 단추는 흰색 */
+  .ld-strip .go:hover, .ld-cta .s:hover { border-color: var(--brand); }
+  .ld-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .88fr); gap: 48px; align-items: start; padding-block: 28px 40px; }   /* 앱 띠는 맨 위로 옮겼다(2026-11-03) — 위는 띠와의 간격, 아래는 푸터까지 */   /* 24px 위로 — 왼쪽 글과 오른쪽 상자를 같이 올린다 */   /* 왼쪽 글 맨 위(AI 경매 분석 플랫폼)를 오른쪽 진행 단계 상자 위와 맞춘다 */
+  .ld-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 12.5px; font-weight: 600; color: #374151; background: #fff; }
+  .ld-badge i { width: 8px; height: 8px; border-radius: 50%; background: #22a55a; box-shadow: 0 0 0 3px #dcf3e5; }
+  .ld-right { display: grid; gap: 12px; justify-items: start; min-width: 0; }   /* 배지는 진행 단계 상자 위, 왼쪽 끝 맞춤 */
+  .ld-right .ld-steps { width: 100%; box-sizing: border-box; }
+  .ld-badge-l { margin-top: 25px; margin-bottom: 18px; }   /* 오른쪽 상자 안 「AI 경매 분석 플랫폼」(테두리 1 + 안쪽 여백 24)과 같은 줄 */
+  .ld-badge-in { margin-bottom: 12px; }   /* 진행 단계 상자 안 맨 위 */   /* 왼쪽 알약 — 오른쪽 「AI 경매 분석 플랫폼」과 같은 높이에서 시작 */
+  .ld-hero h1 { margin: 0 0 18px; font-size: clamp(26px, 3.1vw, 44px); line-height: 1.18; font-weight: 900; letter-spacing: -0.02em; text-wrap: balance; color: var(--navy); }
+  .ld-hero h1 em { font-style: normal; color: var(--orange); }
+  .ld-hl { color: #1fa8f0; font-weight: 800; }   /* 사건카드 한 장 — 우리 형광 하늘색(머리띠 이름 #50c3fc 계열, 흰 바탕에서 읽히게 한 단계 진하게) */
+  .ld-lead b { color: var(--ink); font-weight: 800; }
+  .ld-lead b.ld-or { color: var(--orange); }
+  .ld-lead b.ld-hl { color: #1fa8f0; }
+  /* 소개서 1쪽의 기능 알약 줄 — 손품+임장이 핵심(주황) */
+  .ld-feat { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .ld-feat li { height: 32px; padding: 0 11px; border-radius: 999px; background: var(--navy); color: #fff; font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; white-space: nowrap; }
+  .ld-feat li.key { background: var(--orange); }
+  .ld-lead { margin: 0; font-size: 16px; line-height: 1.75; color: #4b5563; max-width: 34em; }
+  .ld-cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 28px; }
+  .ld-cta .p, .ld-cta .s { width: 117px; justify-content: center; box-sizing: border-box; }   /* 두 단추 같은 크기 — 156×44 에서 4분의 1 줄였다(2026-11-03) */
+  .ld-cta .p { height: 33px; padding: 0 10px; border: 0; border-radius: 7px; background: var(--brand); color: #fff; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+  .ld-cta .p:hover { background: var(--brand-hover); }
+  .ld-cta .s { height: 33px; padding: 0 10px; border: 1px solid #c9d2e0; border-radius: 7px; background: #fff !important; color: var(--navy); font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; box-shadow: 0 2px 6px rgba(17,24,39,.10); }   /* 흰 단추가 바탕에 묻혀 투명해 보이지 않게 — 테두리 · 그림자 */
+  .ld-stats { margin-top: 32px; padding-block: 24px; border-block: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  .ld-stats small { display: block; font-size: 13px; color: var(--sub); }
+  .ld-stats b { display: block; margin: 8px 0 6px; font-size: clamp(22px, 2.4vw, 30px); font-weight: 900; color: var(--navy); white-space: nowrap; font-variant-numeric: tabular-nums; }   /* 또르륵 올라가는 동안 숫자 폭이 흔들리지 않게 */
+  .ld-stats b span { font-size: 15px; font-weight: 700; margin-left: 2px; color: var(--ink); }   /* 단위(건 · 곳 · +)는 검정 */
+  .ld-stats em { font-style: normal; font-size: 12px; color: #9aa3b2; }
+  .ld-stats #ldTools { color: var(--orange); }   /* 분석 및 활용 도구 숫자는 마이턴옥션 글자와 같은 주황(2026-11-03) */
+  /* 오른쪽 — 우리 진행 단계(세로 줄). AI 가 하는 단계는 주황 AI 표시 */
+  .ld-steps { border: 1px solid var(--line); border-radius: 20px; background: var(--soft); padding: 20px 22px; }   /* 상자 · 안쪽 글자를 20% 남짓 줄였다(2026-11-03) */
+  .ld-steps-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }   /* 제목 오른쪽에 설명 한 줄 */
+  .ld-steps-h b { display: block; font-size: 16px; font-weight: 900; color: var(--navy); }
+  .ld-steps-h small { display: block; font-size: 12px; color: var(--sub); }
+  .ld-steps-h small b { display: inline; font-size: inherit; color: #1fa8f0; }   /* 「사건카드 한 장」 강조는 줄 안에서 */
+  .ld-steps ol { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 0; position: relative; }
+  .ld-steps li { position: relative; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; padding: 5px 0; }
+  .ld-steps li::before { content: ''; position: absolute; left: 15px; top: 0; bottom: 0; width: 2px; background: #dbe2ef; }
+  .ld-steps li:first-child::before { top: 50%; } .ld-steps li:last-child::before { bottom: 50%; }
+  .ld-steps li > i { position: relative; z-index: 1; align-self: center; width: 32px; height: 32px; border-radius: 50%; background: #fff; border: 2px solid var(--navy); color: var(--navy); font-style: normal; font-size: 11px; font-weight: 800; display: grid; place-items: center; }
+  .ld-steps li > div { background: #fff; border: 1px solid var(--line); border-radius: 11px; padding: 8px 14px; min-width: 0; }
+  .ld-steps li b { display: block; font-size: 14.5px; font-weight: 800; color: var(--ink); }
+  .ld-steps li b em { font-style: normal; font-size: 10.5px; font-weight: 800; color: #fff; background: var(--orange); border-radius: 4px; padding: 1px 5px; margin-left: 4px; vertical-align: 2px; }
+  .ld-steps li span { display: block; margin-top: 2px; font-size: 12px; color: var(--sub); word-break: keep-all; }   /* 길면 낱말 단위로 줄을 바꾼다 */
+  /* 움직임 — 「지금 단계」가 01 → 09 로 내려가며 그 칸을 밝힌다. 지나온 줄은 남색으로 채운다 */
+  .ld-steps-fill { position: absolute; left: 15px; top: 21px; width: 2px; height: 0; background: var(--navy); z-index: 0; transition: height .6s cubic-bezier(.4,0,.2,1); }
+  .ld-steps-dot { position: absolute; left: 7px; top: 16px; width: 18px; height: 18px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 0 6px rgba(244,112,10,.18); z-index: 2; transform: translateY(0); transition: transform .6s cubic-bezier(.4,0,.2,1); pointer-events: none; }
+  .ld-steps li > div, .ld-steps li > i { transition: border-color .35s, box-shadow .35s, transform .35s, background .35s, color .35s; }
+  .ld-steps li.done > i { background: var(--navy); color: #fff; }
+  .ld-steps li.on > i { opacity: 0; transition: opacity .12s .55s; }   /* 흰 번호 원은 주황 원이 도착한 뒤(0.55초)에 사라진다 — 먼저 비지 않게 */
+  .ld-steps li.on > div { border-color: var(--orange); box-shadow: 0 8px 22px rgba(244,112,10,.2); transform: translateX(6px) scale(1.03); }
+  .ld-steps li.on b { color: var(--orange); }
+  /* 지금 단계 상자 — 빛이 한 번 훑고 지나가는 반사(리플렉션) */
+  .ld-steps li > div { position: relative; overflow: hidden; }
+  .ld-steps li.on > div::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, rgba(80,195,252,.30) 50%, transparent 70%); transform: translateX(-100%); animation: ldShine 1.1s ease-in-out .5s 1 forwards; pointer-events: none; }
+  @keyframes ldShine { to { transform: translateX(100%); } }
+  @media (prefers-reduced-motion: reduce) { .ld-steps-fill, .ld-steps-dot, .ld-steps li > div { transition: none; } .ld-steps li.on > div::after { animation: none; display: none; } }
+  /* 오른쪽 상자 첫 장면 — 소개서 11쪽(사건카드 하나에 모든 것). 항목이 카드로 빨려 들어가고, 카드가 제목 옆 작은 카드로 날아가 앉으면 진행 단계가 펼쳐진다.
+     cs- 로 이름을 묶는다(사이트 공통 이름과 겹치지 않게). 움직임 줄이기를 켠 사람에겐 장면 없이 단계만 */
+  .ld-steps { position: relative; overflow: hidden; }   /* 비스듬한 카드가 상자 밖(좁은 화면에선 화면 밖)으로 넘치지 않게 */
+  .ld-steps-h { align-items: center; }
+  .cs-mini { width: 46px; height: 30px; border-radius: 5px; background: #fff; border: 1px solid #d5dbe6; border-top: 4px solid var(--orange); box-shadow: 0 3px 0 #cfd6e6, 0 6px 14px rgba(33,51,102,.14); position: relative; flex: 0 0 auto; padding: 0; cursor: pointer; transition: visibility 0s .85s; }
+  .cs-mini::before { content: ''; position: absolute; left: 6px; right: 12px; top: 6px; height: 3px; border-radius: 2px; background: var(--navy); }
+  .cs-mini::after { content: ''; position: absolute; left: 6px; right: 6px; bottom: 6px; height: 4px; border-radius: 2px; background: repeating-linear-gradient(90deg, var(--navy) 0 6px, transparent 6px 8px); opacity: .8; }
+  .cs-mini:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+  .ld-steps .ld-badge-in, .ld-steps-h { transition: opacity .5s; }
+  .ld-steps li { transition: opacity .45s, transform .55s cubic-bezier(.2,.8,.2,1); }
+  .ld-steps.s1 .ld-badge-in, .ld-steps.s1 .ld-steps-h, .ld-steps.s1 li, .ld-steps.s1 .ld-steps-dot, .ld-steps.s1 .ld-steps-fill { opacity: 0; }
+  .ld-steps.s1 li { transform: translateY(-16px); }
+  .ld-steps.s1 .cs-mini { visibility: hidden; transition: none; }
+  .cs { position: absolute; inset: -1px; border-radius: 20px; overflow: hidden; z-index: 3; color: #fff; padding: 34px 30px; background: radial-gradient(60% 40% at 50% 58%, rgba(229,166,106,.22), transparent 70%), linear-gradient(160deg, #24386f, #1a2a57); transition: opacity .7s ease; }
+  .ld-steps:not(.s1) .cs { opacity: 0; pointer-events: none; }
+  .cs-eye { margin: 0; font-size: 14px; font-weight: 700; color: #e5a66a; letter-spacing: .04em; }
+  .cs-h { margin: 8px 0 0; font-size: clamp(22px, 2.3vw, 31px); line-height: 1.3; font-weight: 900; letter-spacing: -0.02em; text-wrap: balance; color: #fff; }
+  .cs-h em { font-style: normal; color: #e5a66a; }
+  .cs-eye, .cs-h { position: relative; z-index: 2; opacity: 0; transform: translateY(10px); transition: opacity .6s, transform .6s; }   /* 날아오는 알약은 제목 아래로 지나간다 */
+  .cs.t-in .cs-eye, .cs.t-in .cs-h { opacity: 1; transform: none; }
+  .cs.t-in .cs-h { transition-delay: .12s; }
+  .cs-wire { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent 120px, #000 190px); mask-image: linear-gradient(to bottom, transparent 0, transparent 120px, #000 190px); }   /* 제목 위로는 선이 지나가지 않게 위쪽을 흐린다 */
+  .cs-wire path { fill: none; stroke: #e5a66a; stroke-width: 1.4; stroke-dasharray: 2 5; stroke-linecap: round; opacity: 0; transition: opacity .5s; }
+  .cs-wire path.on { opacity: .8; animation: csFlow .5s linear infinite; }   /* 점이 카드 쪽으로 빠르게 흐른다 */
+    @keyframes csFlow { to { stroke-dashoffset: -14; } }
+  .cs-pill { position: absolute; left: var(--x); top: var(--y); transform: translate(-50%, -50%); opacity: 0; white-space: nowrap; padding: 8px 15px; border-radius: 999px; background: #2c3f86; border: 1px solid #4a5fae; font-size: 14px; font-weight: 800; color: #fff; box-shadow: 0 6px 16px rgba(0,0,0,.18); will-change: transform, opacity; }   /* 움직임은 스크립트가 — 선을 타고 먼 곳에서 카드까지 멈추지 않고 들어간다 */
+  .cs-card { position: absolute; left: 50%; top: 58%; width: 300px; height: 178px; margin: -89px 0 0 -150px; z-index: 4; border-radius: 14px; background: #fff; color: var(--ink); border-top: 7px solid var(--orange); padding: 14px 18px; box-sizing: border-box; box-shadow: 0 9px 0 #c9d1e6, 0 26px 50px rgba(5,10,30,.45); pointer-events: none;
+    transform: translate(0, 30px) perspective(1000px) rotateX(52deg) rotateZ(-26deg) scale(.92); opacity: 0; transition: transform .8s cubic-bezier(.2,.8,.2,1), opacity .5s, box-shadow .6s; }
+  .cs-card.up { opacity: 1; transform: translate(0, 0) perspective(1000px) rotateX(52deg) rotateZ(-26deg) scale(1); }
+  .cs-card.glow { box-shadow: 0 9px 0 #c9d1e6, 0 0 0 4px rgba(229,166,106,.5), 0 26px 60px rgba(229,166,106,.45); }
+  .cs-card.fly { transition: transform .9s cubic-bezier(.65,0,.25,1), opacity .25s .8s, box-shadow .5s; transform: translate(var(--fx), var(--fy)) perspective(1000px) rotateX(0deg) rotateZ(0deg) scale(var(--fs)); box-shadow: 0 9px 0 #c9d1e6, 0 10px 20px rgba(33,51,102,.2); }
+  .cs-card.gone { opacity: 0; }
+  .cs-tag { position: absolute; right: 14px; top: 12px; background: var(--orange); color: #fff; font-size: 11px; font-weight: 800; border-radius: 999px; padding: 3px 9px; }
+  .cs-no { font-size: 19px; font-weight: 900; letter-spacing: -0.01em; color: var(--navy); }
+  .cs-ad { margin-top: 2px; font-size: 11.5px; color: var(--sub); }
+  .cs-rows { margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; border-top: 1px solid #edf0f6; padding-top: 9px; }
+  .cs-rows span { font-size: 10px; color: #9aa3b2; }
+  .cs-rows i { display: block; margin-top: 4px; height: 7px; border-radius: 4px; background: #d6ddef; }
+  .cs-rows i.me { background: #e5a66a; }
+  .cs-chips { margin-top: 11px; display: flex; gap: 5px; flex-wrap: wrap; }
+  .cs-chips span { font-size: 10px; font-weight: 800; border-radius: 999px; padding: 3px 8px; background: #e7ebf4; color: #9aa3b2; transition: background .3s, color .3s, transform .3s; }
+  .cs-chips span.on { background: var(--navy); color: #fff; transform: scale(1.08); }
+  @media (max-width: 560px) {
+    .cs { padding: 26px 20px; }
+    .cs-pill { font-size: 12px; padding: 6px 11px; }
+    .cs-card { width: 240px; height: 150px; margin: -75px 0 0 -120px; padding: 11px 14px; }
+    .cs-no { font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .cs, .cs-card { display: none; } }
+  /* (옛 흐름도 규칙 — 쓰지 않음) */
+  .ld-flow { position: relative; border: 1px solid var(--line); border-radius: 20px; background: var(--soft); background-image: radial-gradient(#dfe5f0 1px, transparent 1px); background-size: 18px 18px; padding: 26px; min-height: 420px; }
+  .ld-flow svg.wire { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .ld-flow .wire path { fill: none; stroke: #9aa8c4; stroke-width: 1.4; stroke-dasharray: 4 5; vector-effect: non-scaling-stroke; animation: ldDash 1.6s linear infinite; }
+  @keyframes ldDash { to { stroke-dashoffset: -18; } }
+  @media (prefers-reduced-motion: reduce) { .ld-flow .wire path { animation: none; } }
+  .ld-step { position: absolute; width: 39%; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(17,24,39,.05); }
+  .ld-step small { display: block; font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #9aa3b2; }
+  .ld-step b { display: block; margin-top: 8px; font-size: 15px; font-weight: 800; }
+  .ld-step span { display: block; margin-top: 3px; font-size: 12px; color: var(--sub); }
+  .ld-step.on { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(43,109,243,.12); }
+  .ld-step.on small, .ld-step.on b { color: var(--blue); }
+  .ld-now { position: absolute; right: 22px; top: 22px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  .ld-now small { display: block; font-size: 11.5px; color: var(--sub); }
+  .ld-now b { display: block; margin-top: 4px; font-size: 16px; color: var(--orange); }
+  .ld-app { margin-top: 20px; }   /* 맨 위 — 머리 바로 아래 */
+  /* 분석 도구 창 */
+  .tools-veil { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 20px; background: rgba(20, 33, 61, .55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  .tools-veil[hidden] { display: none; }
+  /* 약관 · 정책 창 — 웹(selected)의 doc-dlg 와 같은 넓이 · 글 모양 */
+  .doc-veil { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 20px; background: rgba(20, 33, 61, .55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  .doc-veil[hidden] { display: none; }
+  .doc-dlg { width: min(1040px, 100%); max-height: calc(100vh - 40px); display: flex; flex-direction: column; background: #fff; border-radius: 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, .35); overflow: hidden; }
+  .doc-head { display: flex; align-items: center; gap: 10px; padding: 18px 22px 14px 28px; border-bottom: 1px solid var(--line); }
+  .doc-head h2 { margin: 0; font-size: 19px; font-weight: 800; color: var(--ink); }
+  .doc-x { margin-left: auto; width: 32px; height: 32px; border: 1px solid #e3e8f0; border-radius: 8px; background: #fff; color: #4b5563; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+  .doc-x:hover { color: var(--ink); border-color: #c9d2e0; }
+  .doc-body { overflow-y: auto; padding: 8px 28px 26px; font-size: 14px; line-height: 1.75; color: #374151; }
+  .doc-body h3 { margin: 22px 0 6px; font-size: 16px; font-weight: 800; color: var(--ink); }
+  .doc-body h4 { margin: 14px 0 4px; font-size: 14px; font-weight: 700; color: var(--ink); }
+  .doc-body p { margin: 0; }
+  .doc-body ul { margin: 0; padding-left: 20px; }
+  .doc-body ul ul { margin-top: 2px; }
+  .doc-body ol { margin: 0; padding-left: 22px; }
+  .doc-body .doc-dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+  .doc-body .doc-dl dt { font-weight: 700; color: var(--ink); }
+  .doc-body .doc-dl dd { margin: 0; }
+  .doc-scope, .doc-lead { margin-top: 12px !important; }
+  .doc-scope b { margin-right: 8px; }
+  .doc-contact { margin-top: 26px; padding: 16px 18px; border-radius: 10px; background: var(--soft); text-align: center; font-size: 14px; line-height: 1.8; }
+  .doc-contact b { margin-right: 8px; }
+  .doc-body h3 + .doc-contact { margin-top: 6px; }
+  .doc-eff { margin-top: 16px !important; font-size: 13px; color: var(--sub); }
+  .doc-table-wrap { overflow-x: auto; margin: 8px 0; }
+  .doc-table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.6; }
+  .doc-table th, .doc-table td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; word-break: keep-all; }
+  .doc-table th { background: var(--soft); font-weight: 700; color: var(--ink); }
+  .doc-note { margin-top: 6px !important; font-size: 12.5px; color: var(--sub); }
+  .ld-toast { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 40; background: rgba(17, 24, 39, .9); color: #fff; padding: 10px 18px; border-radius: 999px; font-size: 14px; }
+  .ld-toast[hidden] { display: none; }
+  .tools-pop { position: relative; width: min(1120px, 100%); max-height: calc(100vh - 40px); overflow: auto; background: #fff; border-radius: 20px; box-shadow: 0 30px 80px rgba(0,0,0,.35); padding: 28px 30px 30px; animation: toolsIn .35s cubic-bezier(.2,.9,.3,1.1); }
+  @keyframes toolsIn { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
+  .tools-pop .ql-close { top: 16px; right: 16px; }
+  .tools-head { margin-bottom: 18px; }
+  .tools-tag { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; font-weight: 700; letter-spacing: .12em; color: var(--orange); }
+  .tools-head h2 { margin: 6px 0 6px; font-size: 26px; font-weight: 900; color: var(--navy); }
+  .tools-head h2 b { color: var(--orange); }
+  .tools-head p { margin: 0; font-size: 14px; color: var(--sub); }
+  .ai-k { font-size: 10.5px; font-weight: 800; color: #fff; background: var(--orange); border-radius: 4px; padding: 1px 5px; }
+  .ld-tg { opacity: 0; transform: translateY(12px); animation: tgIn .45s cubic-bezier(.2,.9,.3,1) forwards; }
+  @keyframes tgIn { to { opacity: 1; transform: none; } }
+  .ld-tg li.ai { border-color: #f6c79f; background: #fff7f0; color: #9a4a0c; }
+  .tools-head p .ai-c { color: #9a4a0c; background: #fff7f0; border: 1px solid #f6c79f; border-radius: 4px; padding: 0 5px; font-weight: 700; }
+  /* 묶음 제목 오른쪽 끝 AI 칩 — 그 묶음에 AI 도구가 있다. 칸은 AI 면 주황, 손으로 하는 것은 회색(2026-11-03) */
+  .ld-tg h3 .ai-chip { margin-left: auto; align-self: center; font-style: normal; font-size: 10.5px; font-weight: 800; color: #fff; background: var(--orange); border-radius: 4px; padding: 1px 6px; line-height: 1.4; }
+  .tools-pop.ready .ld-tg { opacity: 1; transform: none; }   /* 떠오르기가 멈춰도(배터리 절약 등) 결국 보이게 */
+  @media (prefers-reduced-motion: reduce) { .tools-pop, .ld-tg { animation: none; opacity: 1; transform: none; } }
+  /* 분석 도구 전체 — 단계별 묶음 */
+  .ld-tools { padding: 8px 0 48px; scroll-margin-top: 80px; }
+  .ld-tools h2 { margin: 0; font-size: 26px; font-weight: 900; color: var(--navy); }
+  .ld-tools h2 span { color: var(--orange); }
+  .ld-tools-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 1100px) { .ld-tools-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .ld-tools-grid { grid-template-columns: minmax(0, 1fr); } }
+  .ld-tg { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: #fff; display: grid; gap: 8px; align-content: start; }
+  .ld-tg h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--navy); display: flex; align-items: baseline; gap: 6px; }
+  .ld-tg h3 small { font-size: 12px; font-weight: 700; color: var(--orange); }
+  .ld-tg ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .ld-tg li { font-size: 12.5px; font-weight: 600; color: #374151; background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; }
+  .ld-tools-link { color: var(--blue); text-decoration: none; font-weight: 700; }
+  .ld-app .box { display: flex; align-items: center; gap: 18px; padding: 18px 22px; border: 1px solid var(--line); border-radius: 16px; background: #fff; color: var(--ink); box-shadow: 0 6px 20px rgba(17,24,39,.06); }   /* 「경매가 처음이신가요?」 상자와 같은 모양(흰 바탕 · 회색 테두리) */
+  .ld-app .ico { width: 52px; height: 52px; border-radius: 12px; background: var(--tint); color: var(--brand); display: grid; place-items: center; flex: 0 0 auto; }   /* 휴대폰 아이콘 — 흐름도 아이콘과 같은 크기 */
+  @media (max-width: 920px) { .ld-app .box { flex-wrap: wrap; } }
+  .ld-app-copy { min-width: 0; flex: 1 1 auto; }
+  .ld-app-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }   /* 세 줄 — 칩 · 출시 예정 / 제목 / 설명 */
+  .ld-app-tag { flex: 0 0 auto; font-size: 10.5px; font-weight: 800; line-height: 1.5; color: #fff; background: var(--orange); border-radius: 999px; padding: 1px 9px; }
+  .ld-app h2 { margin: 0; font-size: 15px; line-height: 1.35; font-weight: 800; color: var(--navy); }
+  .ld-app h2 em { font-style: normal; color: var(--orange); }   /* 흰 바탕 — 큰 제목 「마이턴 옥션」과 같은 주황 */
+  .ld-app p { margin: 2px 0 0; font-size: 12px; line-height: 1.45; color: var(--sub); }
+  .ld-app-soon { font-size: 11px; font-weight: 500; color: #9aa3b2; white-space: nowrap; }
+  .ld-app nav { margin-left: auto; display: flex; gap: 8px; flex: 0 0 auto; }
+  .ld-app nav a { height: 30px; padding: 0 12px; border-radius: 7px; font-size: 12.5px; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap; }
+  .ld-app nav a.w { background: var(--navy); color: #fff; transition: background .15s; }
+  .ld-app nav a.w:hover { background: var(--brand-hover); }   /* 「무료로 시작하기」와 같은 오버 */
+  .ld-app nav a.o { border: 1px solid #c9d2e0; color: var(--navy); background: #fff; }
+  .ld-app nav a.o:hover { border-color: var(--navy); }
+  /* 바닥 띠 — 웹 바닥(.foot)과 같은 값 */
+  .foot { background: #252a39; color: #9aa1b2; }
+  .foot-in { position: relative; padding-block: 16px; }   /* 푸터를 얇게(2026-11-03) — 위아래 16, 저작권 줄은 오른쪽 아래로 올려 따로 줄을 쓰지 않는다 */
+  .f-brand { display: flex; align-items: center; gap: 10px; margin: 0 0 8px 3px; }
+  .f-brand img { height: 32px; width: auto; display: block; }
+  .f-brand span { color: #c8cdd8; font-size: 14px; padding-left: 9px; border-left: 1px solid #5d6476; line-height: 1; }
+  .f-info { margin: 0 0 0 3px; font-size: 11px; line-height: 1.5; }   /* 정보 · 저작권 11, 링크 12, 로고 옆 마이턴옥션 14 (2026-11-03) */
+  .f-copy { margin-top: 10px; text-align: center; font-size: 11px; letter-spacing: .2px; white-space: nowrap; }   /* 맨 아래 가운데 한 줄 */
+  .f-right { position: absolute; right: max(20px, env(safe-area-inset-right, 0px)); top: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+  .f-links { display: flex; gap: 28px; height: 32px; align-items: center; }   /* 로고(32) 줄과 가운데를 맞춘다 */
+  .f-links a { color: #fff; text-decoration: none; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .f-links a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .f-social { display: flex; align-items: center; gap: 10px; height: 36px; }
+  .f-social a { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,.22); color: #c8cdd8; text-decoration: none; }
+  .f-social a:hover { color: #fff; border-color: rgba(255,255,255,.5); }
+  .f-social svg { width: 18px; height: 18px; }
+  @media (max-width: 920px) { .f-right { position: static; align-items: flex-start; margin-top: 16px; } .f-links { flex-wrap: wrap; gap: 10px 18px; height: auto; } .f-copy { position: static; transform: none; margin-top: 16px; white-space: normal; } }
+  @media (max-width: 920px) {
+    .ld-hero { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-block: 36px 44px; }
+    .ld-flow { min-height: 400px; }
+    .ld-strip .box, .ld-app .box { flex-wrap: wrap; }
+    .ld-strip .go, .ld-app nav { margin-left: 0; }
+  }
+  @media (max-width: 520px) { .ld-stats { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .ld-step { width: 46%; } }
   /* 로그인 창 — 웹의 앱 로그인 창과 같은 틀 */
-  .veil { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(5, 10, 24, .45); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .veil { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: rgba(20, 33, 61, .38); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+  /* 로그인 카드 닫기 — 회원가입 카드(.su-close)와 같은 네모 단추, 카드 안 오른쪽 위 */
+  .ql-card { position: relative; }
+  .ql-close { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border: 1px solid #e3e8f0; border-radius: 6px; background: #fff; color: #4b5563; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 0; }
+  .ql-close:hover { color: #111827; border-color: #c9d2e0; }
   .veil[hidden] { display: none; }
   /* 로그인 — 웹의 로그인 창과 같게 하얀 카드만(앱 로그인 화면의 파란 바탕 · 스크롤 틀은 걷어낸다) */
   .modal { position: relative; width: min(366px, calc(100% - 32px)); }
@@ -32,16 +303,16 @@
   .ql-eye { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; font-size: 14px; opacity: .55; }
   .ql-eye:hover { opacity: 1; background: #f3f4f6; }
   .ql-err { margin: 0; font-size: 12px; color: #dc2626; }
-  .ql-submit { width: 100%; height: 44px; border: 0; border-radius: 10px; background: #1f3a72; color: #fff; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
+  .ql-submit { width: 100%; height: 44px; border: 0; border-radius: 10px; background: #213366; color: #fff; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
   .ql-submit:disabled { background: #9ca3af; cursor: wait; }
-  .ql-submit.ghost { margin-top: -4px; background: #fff; color: #1f3a72; border: 1px solid #c7d0e4; }
+  .ql-submit.ghost { margin-top: -4px; background: #fff; color: #213366; border: 1px solid #c7d0e4; }
   .ql-sep { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #9ca3af; }
   .ql-sep::before, .ql-sep::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
   .ql-social { width: 100%; height: 44px; border: 0; border-radius: 10px; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
   .ql-social.kakao { background: #fee500; color: #191919; }
   .ql-opts { display: flex; justify-content: space-evenly; margin-top: 2px; }
   .ql-opts label { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #4b5563; cursor: pointer; }
-  .ql-opts input { width: 15px; height: 15px; margin: 0; accent-color: #1f3a72; }
+  .ql-opts input { width: 15px; height: 15px; margin: 0; accent-color: #213366; }
   .ql-links { margin: 0; display: flex; justify-content: space-between; align-items: center; white-space: nowrap; padding: 0 2px; }
   .ql-links button { border: 0; background: transparent; padding: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; color: #9ca3af; }
   .ql-links button:hover { color: #4b5563; text-decoration: underline; }
@@ -55,6 +326,7 @@
   #loginMount[hidden], #signupMount[hidden] { display: none !important; }
   /* 회원가입 카드 — 앱의 파란 바탕 · 화면 높이는 걷어내고 카드만, 길면 창 안에서 굴린다 */
   .modal.wide { width: min(440px, calc(100% - 32px)); }
+  .modal.trial { width: min(780px, calc(100% - 32px)); }   /* 무료체험 — 개인정보 동의 내용을 넓게 펼친다 */
   #signupMount { max-height: calc(100vh - 48px); overflow-y: auto; border-radius: 14px; }
   #signupMount .su-shell { min-height: 0 !important; background: none !important; padding: 0 !important; display: block !important; }
   #signupMount .su-card { max-width: none !important; box-shadow: 0 24px 60px rgba(0, 0, 0, .35); }
@@ -62,11 +334,143 @@
 </style>
 </head>
 <body>
-  <!-- 대문 — 소개 영상(시험)은 2026-11-01 걷었다. 들어오면 로그인 창이 바로 뜬다 -->
-  <div class="veil" id="veil">
+  <!-- ===== 대문 — 로그인 전 화면. 로그인 창은 이 위에 뜨고, 닫으면 대문을 그대로 본다 ===== -->
+  <header class="ld-head">
+    <div class="ld-wrap">
+      <a class="ld-logo" href="/intro.html" aria-label="마이턴옥션 처음으로"><img src="/myturn-promo/media/logo_white.png" alt="MYTURN AUCTION" onerror="this.src='/myturn-promo/media/logo_gray.png'" /></a>
+      <nav><button type="button" class="ld-ghost" data-ld="login">로그인</button><button type="button" class="ld-fill" data-ld="signup">회원가입</button></nav>
+    </div>
+  </header>
+  <main>
+    <!-- 앱 홍보 띠 — 맨 위(진행 단계 상자 위). 흰 바탕 · 파란 테두리, 왼쪽에 앱 화면을 담은 휴대폰(아래는 상자 끝에서 잘려 올라와 보인다) -->
+    <section class="ld-wrap ld-app" aria-labelledby="appTitle">
+      <div class="box">
+        <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M10.5 18.5h3"/><path d="M9 7h6M9 10h6M9 13h3.5" stroke="#f4700a"/></svg></span>
+        <div class="ld-app-copy">
+          <div class="ld-app-eyebrow"><span class="ld-app-tag">실전 경매 노트 앱</span><small class="ld-app-soon">웹서비스 · 모바일앱 출시 예정</small></div>
+          <h2 id="appTitle">경매의 처음부터 끝까지, <em>현장에서 마이턴옥션 하나로.</em></h2>
+          <p>물건을 고르는 날부터 팔고 세금을 신고하는 날까지, 한 건의 모든 기록을 한 곳에 남깁니다.</p>
+        </div>
+        <nav><a class="o" href="#" data-soon="모바일앱 소개 페이지">마이턴 앱 알아보기</a><a class="w" href="/app/" target="_blank" rel="noopener">마이턴 앱 다운받기</a></nav>
+      </div>
+    </section>
+
+    <section class="ld-wrap ld-hero" aria-label="마이턴옥션 소개">
+      <div class="ld-left">
+        <span class="ld-badge ld-badge-l"><i></i><span>실전 경매 플랫폼</span></span>
+        <h1>경매, 물건만 고르세요.<br><em>마이턴 옥션</em>이 다 해줍니다.</h1>
+        <p class="ld-lead">경매 실무! 처음부터 끝까지, <b>마이턴 옥션 하나로</b> 해결합니다.<br><b class="ld-or">AI와 자동화</b>로 시간은 줄이고 데이터 기반으로 안전한 경매가 가능합니다.</p>
+        <div class="ld-cta"><button type="button" class="p" data-ld="signup">무료로 시작하기</button><a class="s" href="/guide/" target="_blank" rel="noopener">이용가이드 →</a></div>
+        <!-- 숫자 줄 — 「무료로 시작하기」 · 위 선 · 숫자 · 아래 선 · 「경매가 처음이신가요?」 사이 네 간격을 똑같이(sp) -->
+        <i class="sp" aria-hidden="true"></i><i class="ln" aria-hidden="true"></i><i class="sp" aria-hidden="true"></i>
+        <div class="ld-stats">
+          <div><small>전국 실거래 데이터</small><b class="num" id="ldTrades">집계 중</b><em>국토부 실거래가 누적</em></div>
+          <div><small>분석 가능한 단지</small><b class="num" id="ldPlaces">집계 중</b><em>연립·다세대·아파트·오피스텔</em></div>
+          <div><small>분석 및 활용 도구</small><b class="num" id="ldTools">-</b><em><a href="#tools" class="ld-tools-link" id="ldToolsOpen">전체 보기 →</a></em></div>
+        </div>
+        <i class="sp" aria-hidden="true"></i><i class="ln" aria-hidden="true"></i>
+        <i class="sp" aria-hidden="true"></i>
+        <!-- 「경매가 처음이신가요?」 — 왼쪽 단 맨 아래, 아래 끝을 오른쪽 진행 단계 상자 아래 끝과 맞춘다 -->
+        <div class="ld-strip">
+          <div class="box">
+            <span class="ico"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><!-- 흐름도 — 단계 상자가 화살표로 이어진다 -->
+              <rect x="2.5" y="3" width="7" height="5.5" rx="1.4"/><rect x="14.5" y="3" width="7" height="5.5" rx="1.4"/><rect x="8.5" y="15.5" width="7" height="5.5" rx="1.4" fill="#f4700a" stroke="#f4700a"/>
+              <path d="M9.5 5.75h4.2M12.2 4.3l1.5 1.45-1.5 1.45"/><path d="M18 8.5v3.2H12v3.2M10.6 13.5 12 14.9l1.4-1.4"/>
+            </svg></span>
+            <div class="tx"><b>경매가 처음이신가요? 경매 진행 흐름을 한눈에</b><div class="hd"><small>물건 검색부터 입찰 · 낙찰 · 잔금 · 명도 · 매도 · 세금 신고까지 단계별로 무엇을 해야 하는지 순서대로 정리했습니다.</small><a class="go" href="/process/">경매 진행 절차 보기 →</a></div></div>
+          </div>
+        </div>
+        <!-- 경매가 처음이신가요 — 왼쪽 단 숫자 아래 카드(예전에는 머리 바로 밑 가로 띠) -->
+      </div>
+      <div class="ld-right">
+      <div class="ld-steps s1" id="ldStepsBox" aria-label="마이턴옥션으로 하는 경매 순서">
+        <span class="ld-badge ld-badge-in"><i></i>AI 경매 분석 플랫폼</span>
+        <div class="ld-steps-h"><button type="button" class="cs-mini" id="csMini" title="사건카드 장면 다시 보기" aria-label="사건카드 장면 다시 보기"></button><b>마이턴옥션 진행 단계</b><small><b class="ld-hl">사건카드 한 장</b>에 담긴 모든 정보를 따라 경매를 단계별로 진행합니다</small></div>
+        <ol id="ldSteps"><span class="ld-steps-fill" id="ldStepsFill" aria-hidden="true"></span><span class="ld-steps-dot" id="ldStepsDot" aria-hidden="true"></span><li><i class="num">01</i><div><b>물건등록 <em>AI</em></b><span>분석하여 물건등록 · 물건정보 · 권리관리 정보를 등록합니다</span></div></li><li><i class="num">02</i><div><b>선정물건</b><span>사건카드 등록 · 사건카드 단계관리 · 입찰달력 등 선정물건을 관리합니다</span></div></li><li><i class="num">03</i><div><b>물건정보 <em>AI</em></b><span>건축물대장 · 입지정보(반경 500m) 등을 정리합니다</span></div></li><li><i class="num">04</i><div><b>권리분석 <em>AI</em></b><span>권리분석 · 권리 체크리스트 · 집행관 현황조사</span></div></li><li><i class="num">05</i><div><b>손품조사 <em>AI</em></b><span>수요지표 4종 · 기초수치 3종 · 입지·물건 개별성 · 시세분석(실거래가 예상) · 임장비교 경로설정</span></div></li><li><i class="num">06</i><div><b>임장 <em>AI</em></b><span>동선최적화 · 임장 물건 비교 · 임장 물건 추가 기능</span></div></li><li><i class="num">07</i><div><b>수익분석 <em>AI</em></b><span>수익분석 · 입찰가 비교 · 지출 순서</span></div></li><li><i class="num">08</i><div><b>낙찰이후 <em>AI</em></b><span>진행절차 · 절차별 할 일 · 필요, 사업경비 · 매물등록</span></div></li><li><i class="num">09</i><div><b>자금관리 <em>AI</em></b><span>자금입출금 통합 · 필요경비 · 사업경비 · 세금신고</span></div></li></ol>
+        <!-- 첫 장면 — 사건카드 하나에 모든 것(소개서 11쪽 문구 그대로) -->
+        <div class="cs" id="cs" aria-hidden="true">
+          <p class="cs-eye">물건 카드 한 장</p>
+          <p class="cs-h">사건카드 하나에, <em>모든 것</em>이 담깁니다</p>
+          <svg class="cs-wire" id="csWire"></svg>
+          <span class="cs-pill" style="--x:17%;--y:30%">권리분석</span>
+          <span class="cs-pill" style="--x:40%;--y:25%">실거래가</span>
+          <span class="cs-pill" style="--x:63%;--y:25%">매매수요</span>
+          <span class="cs-pill" style="--x:85%;--y:31%">잔금 알림</span>
+          <span class="cs-pill" style="--x:27%;--y:39%">현장 사진</span>
+          <span class="cs-pill" style="--x:72%;--y:39%">입찰가 시뮬레이션</span>
+          <span class="cs-pill" style="--x:15%;--y:49%">임차인 현황</span>
+          <span class="cs-pill" style="--x:85%;--y:49%">명도·수리·매도</span>
+          <span class="cs-pill" style="--x:20%;--y:78%">탐문 메모</span>
+          <span class="cs-pill" style="--x:80%;--y:78%">세후 수익</span>
+        </div>
+        <div class="cs-card" id="csCard" aria-hidden="true">
+          <span class="cs-tag">임장완료</span>
+          <div class="cs-no">2025타경 ○○○○</div>
+          <div class="cs-ad">서울 ○○구 ○○동 · 아파트</div>
+          <div class="cs-rows"><span>감정가<i></i></span><span>최저가<i></i></span><span>내 입찰가<i class="me"></i></span></div>
+          <div class="cs-chips"><span>권리 ✓</span><span>시세 ✓</span><span>임장 ✓</span><span>입찰가 ✓</span><span>세금 ✓</span></div>
+        </div>
+      </div>
+      </div>
+    </section>
+
+
+
+
+
+
+  </main>
+  <!-- 바닥 띠 — 웹(선정물건) 바닥과 같은 내용 · 모양. 약관은 /web 의 그 창으로 연다(?doc=…) -->
+  <footer class="foot">
+    <div class="ld-wrap foot-in">
+      <div class="f-brand"><img src="/myturn-promo/media/logo_white.png" alt="MYTURN AUCTION"><span>마이턴옥션</span></div>
+      <p class="f-info">상호 리치마블 · 서비스명 마이턴옥션 · 대표 강정인<br>사업자번호 000-00-03787 · 통신판매신고 2026-서울광진-1320<br>주소 서울시 광진구 강변역로4길 68, 3층301호<br>문의 02-456-1234 · 대표메일 contact@myturn.co.kr</p>
+      <div class="f-copy">COPYRIGHT ⓒMyTurn. ALL RIGHTS RESERVED.</div>
+      <div class="f-right">
+        <div class="f-links">
+          <a href="#" data-soon="회사소개">회사소개</a>
+          <a href="#" data-doc="terms">이용약관</a>
+          <a href="#" data-doc="copyright">저작권정책</a>
+          <a href="#" data-doc="privacy">개인정보처리방침</a>
+          <a href="#" data-doc="refund">환불정책</a>
+          <a href="#" data-doc="partner">사업제휴</a>
+        </div>
+        <div class="f-social">
+        <a href="#" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/></svg></a>
+        <a href="https://cafe.naver.com/answerrichmarble" target="_blank" rel="noopener" aria-label="네이버 카페"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5v2M12 3.5v2"/></svg></a>
+        <a href="https://blog.naver.com/goldenboy2024" target="_blank" rel="noopener" aria-label="네이버 블로그"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H10l-4 3v-3H4z"/><path d="M9 8v5M9 10.5h1.6a1.25 1.25 0 0 1 0 2.5H9M14 9.5v3.5"/></svg></a>
+        <a href="#" aria-label="인스타그램"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 분석 도구 전체 — 「전체 보기」로 띄우는 창. 단계 묶음이 차례로 떠오른다(움직임 줄이기면 그냥 보인다) -->
+  <!-- 약관 · 정책 창 — 웹과 같은 글(services/legalDocs) · 같은 넓은 창. 대문 안에서 바로 연다(예전에는 웹으로 넘어갔다가 튕겨 잠깐 보이고 사라졌다) -->
+  <div class="doc-veil" id="docVeil" hidden>
+    <div class="doc-dlg" role="dialog" aria-modal="true" aria-labelledby="docT">
+      <div class="doc-head"><h2 id="docT"></h2><button type="button" class="doc-x" id="docX" aria-label="닫기"><svg viewBox="0 0 14 14" width="13" height="13" aria-hidden="true"><path d="M1.5 1.5 12.5 12.5M12.5 1.5 1.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg></button></div>
+      <div class="doc-body" id="docBody"></div>
+    </div>
+  </div>
+  <div class="ld-toast" id="ldToast" role="status" aria-live="polite" hidden></div>
+  <div class="tools-veil" id="toolsVeil" hidden>
+    <section class="tools-pop" role="dialog" aria-modal="true" aria-labelledby="toolsTitle">
+      <button type="button" class="ql-close" id="toolsClose" aria-label="닫기"><svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M1.5 1.5 12.5 12.5M12.5 1.5 1.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg></button>
+      <div class="tools-head">
+        <span class="tools-tag">MYTURN TOOLKIT</span>
+        <h2 id="toolsTitle">분석 및 활용 도구 <b class="num" id="ldToolsN"></b></h2>
+        <p>물건을 등록하는 날부터 팔고 세금을 신고하는 날까지, 단계마다 쓰는 도구입니다. <span class="ai-k">AI</span> 묶음의 <b class="ai-c">주황 칸</b>은 AI 도구, 회색 칸은 직접 하는 도구입니다.</p>
+      </div>
+      <div class="ld-tools-grid" id="ldToolsGrid"></div>
+    </section>
+  </div>
+  <!-- 로그인 창 — 들어올 때는 닫혀 있다(2026-11-03). 오른쪽 위 로그인 · 회원가입 · 무료로 시작하기로 열고, ✕ · 바깥 · Esc 로 닫는다 -->
+  <div class="veil" id="veil" hidden>
     <div class="modal" role="dialog" aria-modal="true" aria-label="로그인">
       <!-- 가벼운 로그인 창 — 누르면 바로 뜬다(앱 로그인 화면과 같은 모양). 무거운 로그인 묶음은 '로그인'을 누를 때 쓴다 -->
       <form class="ql-card" id="quickLogin" autocomplete="on">
+        <button type="button" class="ql-close" id="veilX" aria-label="닫기"><svg viewBox="0 0 14 14" width="12" height="12" aria-hidden="true"><path d="M1.5 1.5 12.5 12.5M12.5 1.5 1.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg></button>
         <div class="ql-brand"><img src="/myturn-promo/media/logo_gray.png" alt="MYTURN AUCTION" /></div>
         <label class="ql-field"><span>회원 아이디</span><input id="qlId" type="email" autocomplete="email" placeholder="example@email.com" required /></label>
         <label class="ql-field"><span>비밀번호</span>
@@ -176,19 +580,20 @@
     const backToLogin = () => {
       dropPanel();
       $q('loginMount').hidden = true; $q('signupMount').hidden = true;
-      modalBox.classList.remove('wide', 'panel'); quick.hidden = false;
+      modalBox.classList.remove('wide', 'panel', 'trial'); quick.hidden = false;
     };
-    /** 회원가입 카드 */
-    const showSignup = async () => {
+    /** 회원가입 카드 — fromLanding: 대문 단추(무료로 시작하기 · 회원가입)로 열었으면 닫을 때 로그인 카드로 돌아가지 않고 창째 닫는다 */
+    const showSignup = async (fromLanding = false) => {
       dropPanel();
       quick.hidden = true; $q('loginMount').hidden = true;
       const el = $q('signupMount'); el.hidden = false; el.innerHTML = '<p class="wait">회원가입 화면을 불러오는 중입니다…</p>';
-      modalBox.classList.add('wide', 'panel');
+      modalBox.classList.remove('trial'); modalBox.classList.add('wide', 'panel');
       try {
         await authNow();
         el.innerHTML = '';
         panelUnmount = T.mountAppSignup(el, (what) => {
           if (what === 'ok') { location.href = '/web?login=1'; return; }
+          if (fromLanding) { backToLogin(); closeVeil(); return; }
           backToLogin();
         });
       } catch (e) { el.innerHTML = '<p class="wait">회원가입 화면을 불러오지 못했습니다 — 새로고침 뒤 다시 눌러 주세요.</p>'; }
@@ -198,7 +603,7 @@
       dropPanel();
       quick.hidden = true; $q('signupMount').hidden = true;
       const el = $q('loginMount'); el.hidden = false; el.innerHTML = '<p class="wait">불러오는 중입니다…</p>';
-      modalBox.classList.remove('wide'); modalBox.classList.add('panel');
+      modalBox.classList.remove('wide'); modalBox.classList.add('panel'); modalBox.classList.toggle('trial', open === 'trial');
       try {
         await authNow();
         el.innerHTML = '';
@@ -211,8 +616,223 @@
     };
     quick.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => { void showPanel(b.dataset.open); }));
     $q('qlSignup').addEventListener('click', () => { void showSignup(); });
-    // 들어오자마자 로그인 창 — 닫을 곳이 없으니 닫기 단추 · 바깥 누르기 · Esc 는 두지 않는다
-    setTimeout(() => { ($q('qlId').value ? $q('qlPw') : $q('qlId')).focus(); }, 0);
+    // 로그인 창 — 대문의 로그인 · 회원가입 · 무료로 시작하기로 연다. 닫으면(✕ · 바깥 · Esc) 대문을 본다
+    const openLogin = () => { backToLogin(); veil.hidden = false; setTimeout(() => { ($q('qlId').value ? $q('qlPw') : $q('qlId')).focus(); }, 0); };
+    const closeVeil = () => { veil.hidden = true; };
+    $q('veilX').addEventListener('click', closeVeil);
+    veil.addEventListener('click', (e) => { if (e.target === veil) closeVeil(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !veil.hidden) closeVeil(); });
+    document.querySelectorAll('[data-ld]').forEach((b) => b.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (b.dataset.ld === 'signup') { veil.hidden = false; void showSignup(true); } else openLogin();
+    }));
+    // 들어올 때는 창을 띄우지 않는다 — 새로고침해도, 웹에서 로그아웃하고 와도(2026-11-03: 로그아웃 뒤에도 대문 그대로). 예전 주소(?login=1)는 지우기만 한다
+    if (/[?&]login=1\b/.test(location.search)) {
+      try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { /* 주소만 못 지운다 */ }
+    }
+
+    // 숫자 또르륵 — 지금 보이는 값(처음엔 0)에서 목표까지 1.4초, 끝으로 갈수록 천천히. 움직임 줄이기를 켠 사람은 바로 그 숫자
+    function ldCount(el, to, unit) {
+      if (!el || !(to > 0)) return;
+      const fmt = (v) => `${Math.round(v).toLocaleString('ko-KR')}<span>${unit}</span>`;
+      const from = el.__v || 0; el.__v = to;
+      if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { el.innerHTML = fmt(to); return; }
+      cancelAnimationFrame(el.__raf);
+      const t0 = performance.now(); const D = 1400;
+      const step = (now) => { const k = Math.max(0, Math.min(1, (now - t0) / D));   /* 첫 화면 시각이 시작 시각보다 살짝 앞서면 음수(-71건)가 보였다 — 0 아래로 내려가지 않게 */ const e = 1 - Math.pow(1 - k, 3); el.innerHTML = fmt(from + (to - from) * e); if (k < 1) el.__raf = requestAnimationFrame(step); };
+      el.__raf = requestAnimationFrame(step);
+      clearTimeout(el.__end); el.__end = setTimeout(() => { cancelAnimationFrame(el.__raf); el.innerHTML = fmt(el.__v); }, D + 200);   // 화면 그리기가 멈춰도(숨은 탭 등) 끝 숫자에 선다
+    }
+
+    // 분석 도구 — 메뉴 · 탭 · 지표 단위로 실제 있는 것(같은 도구는 한 번만 — 입찰달력은 선정물건에). 개수는 이 목록을 센다
+    const TOOL_GROUPS = [
+      ['물건등록', ['AI 물건 분석 · 정리', 'PDF 자동등록', '구글드라이브 폴더 등록', '직접입력']],
+      ['선정물건', ['사건카드 · 단계관리', '입찰일 요약']],
+      ['물건정보', ['AI 정보요약', 'AI 건축물대장 조회', 'AI 입지정보(반경 500m)', 'AI 인근 매각사례']],
+      ['권리분석', ['AI 권리분석', '권리 체크리스트', '집행관 현황조사 체크리스트']],
+      ['손품조사', ['AI 수요분석(총 거래건수 · 총 세대수)', 'AI 매물 소화율', 'AI 매물 소진기간', 'AI 거래 회전율', 'AI 매물 부담률', 'AI 입지 분석', '개별성 분석', 'AI 시세분석 · 실거래가 예상', 'AI 유사물건 지도', 'AI 공시가 · 전세가율 · 갭', '네이버 호가조사']],   // 손품조사 — 개별성 분석 · 네이버 호가조사만 수동, 나머지는 AI(2026-11-03),
+      ['임장', ['임장조사 체크리스트', 'AI 임장경로 · 동선 최적화', '탐문 기록', 'AI 임장비교 물건', '부동산 현장상담']],
+      ['수익분석', ['AI A~D안 입찰가 비교', 'AI 세후 수익분석']],
+      ['낙찰이후', ['AI 진행절차', 'AI 명도분석', 'AI 세금분석', '매물등록(매도 · 임대)']],
+      ['자금관리', ['자금입출금', '필요경비', '사업경비', 'AI 세금신고']],
+      ['시장분석', ['AI 지역별분석', 'AI 유형분포', 'AI 상세분포', 'AI 거래상세', 'AI 랭킹지도', 'AI 거래랭킹', 'AI 시세예측', 'AI 경매사례']],
+      ['내정보', ['AI 알림설정', '중개업체 관리', '인테리어 업체 관리']],
+    ];
+    const toolCount = TOOL_GROUPS.reduce((t, [, xs]) => t + xs.length, 0);
+    ldCount($q('ldTools'), toolCount, '+');   // 숫자 칸은 「49+」(또르륵 올라간다) — 창 제목은 정확한 개수
+    $q('ldToolsN').textContent = `${toolCount}개`;
+    // 묶음마다 조금씩 늦게 떠오른다. AI 로 시작하는 도구는 주황 칸, 그런 도구가 있는 묶음은 제목 오른쪽 끝에 AI 칩
+    $q('ldToolsGrid').innerHTML = TOOL_GROUPS.map(([g, xs], i) => `<div class="ld-tg" style="animation-delay:${80 + i * 55}ms"><h3>${g}<small>${xs.length}</small>${xs.some((x) => /^AI /.test(x)) ? '<em class="ai-chip">AI</em>' : ''}</h3><ul>${xs.map((x) => (/^AI /.test(x) ? `<li class="ai">${x.slice(3)}</li>` : `<li>${x}</li>`)).join('')}</ul></div>`).join('');
+    const toolsVeil = $q('toolsVeil');
+    const openTools = (e) => { if (e) e.preventDefault(); toolsVeil.hidden = false; const pop = toolsVeil.querySelector('.tools-pop'); pop.classList.remove('ready'); const g = $q('ldToolsGrid'); g.innerHTML = g.innerHTML; setTimeout(() => pop.classList.add('ready'), 1400); $q('toolsClose').focus(); };   // 다시 그려 떠오르기를 매번 처음부터
+    const closeTools = () => { toolsVeil.hidden = true; };
+    $q('ldToolsOpen').addEventListener('click', openTools);
+    $q('toolsClose').addEventListener('click', closeTools);
+    toolsVeil.addEventListener('click', (e) => { if (e.target === toolsVeil) closeTools(); });
+
+    // 푸터 약관 · 정책 — 대문 안에서 넓은 창으로(글은 웹과 같은 공통 파일 · 묶음을 받아 읽는다). 회사소개는 준비 중
+    const docVeil = document.getElementById('docVeil');
+    const closeDoc = () => { docVeil.hidden = true; };
+    const openDoc = async (key) => {
+      document.getElementById('docT').textContent = '';
+      document.getElementById('docBody').innerHTML = '<p style="padding:30px 0;text-align:center;color:#6b7280">불러오는 중입니다…</p>';
+      docVeil.hidden = false;
+      try {
+        const L = await loadBundle();
+        const d = L.legalDoc ? L.legalDoc(key) : null;
+        if (!d) throw new Error('no doc');
+        document.getElementById('docT').textContent = d.title;
+        document.getElementById('docBody').innerHTML = d.html;
+        document.getElementById('docBody').scrollTop = 0;
+      } catch (e) {
+        document.getElementById('docBody').innerHTML = '<p style="padding:30px 0;text-align:center;color:#6b7280">글을 불러오지 못했습니다 — 새로고침 뒤 다시 열어 주세요.</p>';
+      }
+    };
+    let toastTimer = 0;
+    const toast = (t) => { const el = document.getElementById('ldToast'); el.textContent = t; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 1800); };
+    document.querySelectorAll('[data-doc]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); void openDoc(a.dataset.doc); }));
+    document.querySelectorAll('[data-soon]').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); toast(`${a.dataset.soon}는 준비 중입니다.`); }));
+    document.getElementById('docX').addEventListener('click', closeDoc);
+    docVeil.addEventListener('click', (e) => { if (e.target === docVeil) closeDoc(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !docVeil.hidden) closeDoc(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !toolsVeil.hidden) closeTools(); });
+
+
+    // 오른쪽 상자 — 첫 장면(사건카드 하나에 모든 것) 뒤에 진행 단계. 단계는 1.8초마다 다음으로(마지막 뒤엔 처음부터).
+    // 움직임 줄이기를 켠 사람에겐 장면 없이 첫 단계에 멈춰 둔다. 제목 옆 작은 카드를 누르면 장면을 다시 본다
+    (() => {
+      const ol = $q('ldSteps'); if (!ol) return;
+      const box = $q('ldStepsBox'); const cs = $q('cs'); const card = $q('csCard'); const wire = $q('csWire'); const mini = $q('csMini');
+      const pills = [...cs.querySelectorAll('.cs-pill')]; const chips = [...card.querySelectorAll('.cs-chips span')];
+      const items = [...ol.querySelectorAll('li')]; const fill = $q('ldStepsFill'); const dot = $q('ldStepsDot');
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let k = 0; let cycle = 0; let timers = [];
+      const show = () => {
+        items.forEach((li, i) => { li.classList.toggle('on', i === k); li.classList.toggle('done', i < k); });
+        const c = items[k].querySelector('i'); const top = items[k].offsetTop + c.offsetTop + c.offsetHeight / 2;   // 줄(li) 안 동그라미의 가운데 — ol 기준
+        dot.style.transform = `translate(0, ${top - 25}px)`; fill.style.height = `${Math.max(0, top - 21)}px`;   // 점(위 16 · 높이 18) 가운데 25, 줄 시작 21
+      };
+      const startCycle = (fromCard) => {
+        clearInterval(cycle); k = 0;
+        if (fromCard) {   // 주황 점은 카드에서 출발해 01 로 빠르게 떨어진다
+          const o = ol.getBoundingClientRect(); const m = mini.getBoundingClientRect();
+          dot.style.transition = 'none';
+          dot.style.transform = `translate(${m.left + m.width / 2 - o.left - 16}px, ${m.top + m.height / 2 - o.top - 25}px) scale(.6)`;
+          void dot.offsetWidth;
+          dot.style.transition = 'transform .45s cubic-bezier(.55,0,.85,.35)';
+          setTimeout(() => { dot.style.transition = ''; }, 500);
+        }
+        dot.style.opacity = ''; show();
+        if (!reduce) cycle = setInterval(() => {
+          if (document.hidden) return;
+          // 사건카드 장면은 처음 한 번만 — 09 다음에는 카드로 돌아가지 않고 01 부터 단계만 다시 돈다(2026-11-03)
+          k = (k + 1) % items.length; show();
+        }, 2800);   // 한 단계 2.8초 — 1.8초는 읽기에 빠르다(2026-11-03)
+      };
+      // 항목 → 카드 가운데 점선. 카드 자리는 상자 가운데 · 위에서 58%
+      // 항목 하나의 길 — 상자 밖 먼 곳(f) → 제자리(p) → 카드 가운데(c). 카드 자리는 상자 가운데 · 위에서 58%
+      let lanes = [];
+      const drawWire = () => {
+        const w = cs.clientWidth; const h = cs.clientHeight; const cx = w / 2; const cy = h * .58;
+        wire.setAttribute('viewBox', `0 0 ${w} ${h}`);
+        lanes = pills.map((p) => {
+          const px = p.offsetLeft; const py = p.offsetTop;   // left/top 이 가운데(translate -50%)
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');   // SVG 이름공간으로 만들어야 그려진다
+          return { p, path, px, py, fx: cx + (px - cx) * 3.2, fy: cy + (py - cy) * 3.2, cx, cy };
+        });
+        wire.replaceChildren(...lanes.map((l) => l.path));
+      };
+      // 선을 타고 들어가기 — 먼 곳에서 카드까지 멈추거나 느려지지 않고 한 번에 쭉(갈수록 빨라지며 빨려 든다).
+      // 선은 알약 앞쪽(카드까지)만 남아 알약과 같이 줄어든다. 카드에 닿으면 선도 사라진다
+      const along = (t) => t * (.35 + .65 * t);
+      let raf = 0;
+      const runLanes = (t0, gap, dur, onArrive, onDone) => {
+        cancelAnimationFrame(raf);
+        const done = new Set();
+        const tick = (now) => {
+          lanes.forEach((l, i) => {
+            const t = (now - t0 - i * gap) / dur;
+            if (t < 0 || done.has(i)) return;
+            if (t >= 1) {
+              done.add(i); l.p.style.opacity = '0'; l.path.removeAttribute('d'); l.path.classList.remove('on'); onArrive(i); return;
+            }
+            const d = along(t);
+            const x = l.fx + (l.cx - l.fx) * d; const y = l.fy + (l.cy - l.fy) * d;
+            const sc = 1.6 - 1.3 * along(t);   // 멀리서 크게 → 카드에 닿을 땐 작게
+            l.p.style.transform = `translate(calc(-50% + ${x - l.px}px), calc(-50% + ${y - l.py}px)) scale(${sc.toFixed(3)})`;
+            l.p.style.filter = t < .25 ? `blur(${(4 * (1 - t / .25)).toFixed(1)}px)` : 'none';
+            l.p.style.opacity = String(t < .1 ? t / .1 : t > .92 ? (1 - t) / .08 : 1);
+            l.path.setAttribute('d', `M${x} ${y} L${l.cx} ${l.cy}`); l.path.classList.add('on');
+          });
+          if (done.size < lanes.length) raf = requestAnimationFrame(tick); else onDone();
+        };
+        raf = requestAnimationFrame(tick);
+      };
+      const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+      const play = (fromLoop) => {
+        timers.forEach(clearTimeout); timers = []; clearInterval(cycle); cancelAnimationFrame(raf);
+        items.forEach((li) => { li.classList.remove('on', 'done'); li.style.transitionDelay = ''; });
+        if (reduce) { box.classList.remove('s1'); startCycle(); return; }
+        if (fromLoop) {   // 작은 카드 자리에 카드를 그대로 다시 띄운 뒤, 가운데로 돌아가며 비스듬히 눕는다
+          card.style.transition = 'none'; card.className = 'cs-card up fly'; void card.offsetWidth; card.style.transition = '';
+          box.classList.add('s1'); cs.classList.remove('t-in');
+          requestAnimationFrame(() => { card.className = 'cs-card up'; });
+        } else {
+          box.classList.add('s1'); cs.classList.remove('t-in'); card.className = 'cs-card';
+        }
+        dot.style.opacity = '0'; fill.style.height = '0px';   // 주황 점 · 남색 줄은 카드에서 출발할 때 다시 보인다
+        pills.forEach((p) => { p.style.opacity = '0'; p.style.transform = ''; p.style.filter = ''; }); chips.forEach((c) => c.classList.remove('on'));
+        drawWire();
+        at(80, () => cs.classList.add('t-in'));
+        if (!fromLoop) at(300, () => card.classList.add('up'));
+        // 카드가 제목 옆 작은 카드 자리로 — 기울기 전 자리(offset)로 잰다(비스듬한 모양은 원근 때문에 중심이 어긋난다)
+        const flyToTitle = () => {
+          const b = box.getBoundingClientRect(); const m = mini.getBoundingClientRect();
+          const cx = b.left + card.offsetLeft + card.offsetWidth / 2; const cy = b.top + card.offsetTop + card.offsetHeight / 2;
+          card.style.setProperty('--fx', `${m.left + m.width / 2 - cx}px`);
+          card.style.setProperty('--fy', `${m.top + m.height / 2 - cy}px`);
+          card.style.setProperty('--fs', (m.width / card.offsetWidth).toFixed(3));
+          card.classList.remove('glow'); card.classList.add('fly');
+          items.forEach((li, i) => (li.style.transitionDelay = `${.55 + i * .1}s`));
+          box.classList.remove('s1');
+          at(850, () => card.classList.add('gone'));
+          at(2000, () => { items.forEach((li) => (li.style.transitionDelay = '')); startCycle(true); });
+        };
+        // 상자 밖 먼 곳에서 항목이 선을 타고 시간차로 하나씩 — 멈추지 않고 카드까지 들어간다.
+        // 두 개 들어갈 때마다 카드의 표시(권리 · 시세 · 임장 · 입찰가 · 세금)가 하나씩 켜진다. 마지막이 닿은 뒤에 카드가 날아간다
+        at(650, () => runLanes(performance.now(), 110, 1000, (i) => {
+          card.classList.add('glow');
+          if (i % 2 === 1) chips[(i - 1) / 2]?.classList.add('on');
+        }, () => at(350, flyToTitle)));
+      };
+      mini.addEventListener('click', () => play());
+      window.addEventListener('resize', () => { if (box.classList.contains('s1')) drawWire(); else show(); });
+      play();
+      // 처음 들어오면 로그인 창이 덮고 있다 — 그 창을 처음 닫을 때 장면을 한 번 더 보여 준다
+      if (!veil.hidden) {
+        const mo = new MutationObserver(() => { if (veil.hidden) { mo.disconnect(); play(); } });
+        mo.observe(veil, { attributes: true, attributeFilter: ['hidden'] });
+      }
+    })();
+
+    // 대문 숫자 — 로그인한 사람이 실거래를 불러올 때마다 모이는 집계 한 장(publicStats/landing).
+    // 새로고침마다 '집계 중' → 숫자로 바뀌어 보였다(2026-11-03) — 지난번 숫자를 이 브라우저에 남겨 두고 들어오자마자 그 숫자까지 또르륵 올리고,
+    // 서버 값이 다르면 거기서 이어 올린다. 못 읽으면 남겨 둔 숫자 그대로(처음 온 사람은 '집계 중')
+    const LD_KEY = 'ld.stats';
+    const ldSaved = (() => { try { return JSON.parse(localStorage.getItem(LD_KEY) || 'null') || {}; } catch (e) { return {}; } })();
+    if (ldSaved.trades > 0) ldCount($q('ldTrades'), ldSaved.trades, '건');
+    if (ldSaved.complexes > 0) ldCount($q('ldPlaces'), ldSaved.complexes, '곳');
+    fetch('https://firestore.googleapis.com/v1/projects/terryauction-6b374/databases/(default)/documents/publicStats/landing')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const f = d && d.fields; if (!f) return;
+        const n = (k) => Number((f[k] && (f[k].integerValue ?? f[k].doubleValue)) || 0);
+        const trades = n('trades'); const complexes = n('complexes');
+        if (trades > 0 && trades !== ldSaved.trades) ldCount($q('ldTrades'), trades, '건');
+        if (complexes > 0 && complexes !== ldSaved.complexes) ldCount($q('ldPlaces'), complexes, '곳');
+        try { localStorage.setItem(LD_KEY, JSON.stringify({ trades: trades || ldSaved.trades || 0, complexes: complexes || ldSaved.complexes || 0 })); } catch (e) { /* 그만 */ }
+      })
+      .catch(() => { /* 남겨 둔 숫자 · 집계 중 그대로 */ });
   </script>
 </body>
 </html>

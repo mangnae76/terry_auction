@@ -3,8 +3,7 @@ import { Browser } from '@capacitor/browser';
 import { Clipboard } from '@capacitor/clipboard';
 import { Capacitor } from '@capacitor/core';
 import { currentRouteJob, trackRouteJob } from '../services/routeJob';
-import L from 'leaflet';
-import { addBaseTiles } from '../services/mapTiles';
+import { createMapView, type LatLng, type MapView, type PinOpts } from '../services/mapView';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { saveFieldTripPlan } from '../services/auctionRepository';
@@ -21,6 +20,7 @@ import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import AppConfirm from '../components/AppConfirm.vue';
 import { skipsToday, type ConfirmBox } from '../services/confirmBox';
 import AppToast from '../components/AppToast.vue';
+import FieldCompareSheet from '../components/FieldCompareSheet.vue';
 import mapPinIcon from '../assets/icones/mappin (1).png';
 import flagIcon from '../assets/icones/flag (1).png';
 import mapPinPlusIcon from '../assets/icones/map-pin-plus (1).png';
@@ -75,6 +75,19 @@ const auctionByAddress = (address: string) => {
   if (!key) return undefined;
   return store.auctions.find((item) => addrKey(item.address) === key);
 };
+/** 현장 기록 — 그 물건에 넣어 둔 비교 물건 수 · 본 수(가격분석 「임장경로에 추가」). 없으면 null */
+const compareOf = (address: string) => {
+  const items = auctionByAddress(address)?.fieldCompare?.items ?? [];
+  return items.length ? { total: items.length, done: items.filter((x) => x.check?.at).length } : null;
+};
+const compareId = ref('');
+// 현장 카드 길찾기 — 위에서 고른 네비 · 이동수단 그대로(구간 네비와 같은 길)
+const compareNav = (start: { lat: number; lng: number; address: string }, end: { lat: number; lng: number; address: string }) => {
+  const { scheme, webUrl } = buildLegLaunch({ ...start, kind: 'stop' }, { ...end, kind: 'stop' });
+  launchNativeScheme(scheme, webUrl);
+};
+const navLabel = computed(() => (selectedNav.value === 'tmap' ? '티맵' : selectedNav.value === 'kakao' ? '카카오' : '네이버'));
+const openCompare = (address: string) => { compareId.value = auctionByAddress(address)?.id ?? ''; };
 /** 방문 여부는 '물건의 단계'가 기준이다. 선정물건에서 임장완료로 바꿔도 여기 바로 반영된다.
  *  선정물건에 없는 주소(직접 적은 주소)만 경로가 들고 있는 기록(visitedStops)으로 판단한다. */
 const isVisited = (address: string) => {
@@ -398,9 +411,9 @@ const onStopDragEnd = async () => {
   await refreshRouteAfterReorder();
 };
 
-let map: L.Map | null = null;
-let routeLayer: L.Polyline | null = null;
-let markerLayer: L.LayerGroup | null = null;
+// 지도 — 카카오맵(못 열면 브이월드). services/mapView 한 벌로 그린다
+let mv: MapView | null = null;
+let mvP: Promise<void> | null = null;
 
 // webFallback이 null이면 해당 서비스에 쓸 만한 웹 길찾기가 없다는 뜻이다.
 const launchNativeScheme = (scheme: string, webFallback: string | null) => {
@@ -690,7 +703,7 @@ const goDetailByAddress = (address: string) => {
     showToast('연결된 물건을 찾지 못했습니다.', 'info');
     return;
   }
-  router.push({ path: `/auctions/${id}`, query: { tab: 'survey' } });
+  router.push({ path: `/auctions/${id}`, query: { tab: 'field' } });   // 임장조사 열기 — 앱은 손품+현장 탭, 웹은 임장조사 탭
 };
 
 const toggleVisited = async (address: string) => {
@@ -714,38 +727,36 @@ const toggleVisited = async (address: string) => {
 
 // 지도가 손가락을 가로채면 목록으로 되돌아가는 스크롤이 막힌다.
 // 그래서 평소엔 잠가 두고, 한 번 눌렀을 때만 이동·확대가 되게 한다.
-const mapActive = ref(false);
+// 손가락으로만 쓰는 화면(휴대폰)만 잠근다 — 마우스(컴퓨터)는 늘 끌기 · 휠 확대가 된다
+// (예전에는 목록을 스크롤할 때마다 다시 잠갔는데, 컴퓨터에는 '눌러서 풀기'가 없어 한 번 잠기면 지도가 안 움직였다)
+const touchOnly = typeof window !== 'undefined' && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+const mapActive = ref(!touchOnly);
 // 잠겨 있어도 두 손가락 확대와 더블탭 확대는 그대로 쓴다.
 // 한 손가락 끌기(지도 이동)만 막아 두면 지도 위에서도 페이지가 스크롤된다.
 const lockMap = () => {
+  if (!touchOnly) return;
   mapActive.value = false;
-  if (!map) return;
-  map.dragging.disable();
-  map.scrollWheelZoom.disable();
-  map.touchZoom.enable();
-  map.doubleClickZoom.enable();
+  mv?.setLocked(true);
 };
 const unlockMap = () => {
   mapActive.value = true;
-  if (!map) return;
-  map.dragging.enable();
-  map.touchZoom.enable();
-  map.scrollWheelZoom.enable();
-  map.doubleClickZoom.enable();
+  mv?.setLocked(false);
 };
 const ensureMap = async () => {
   await nextTick();
-  if (map) {
-    return;
+  if (!mvP) {
+    const el = document.getElementById('trip-map');
+    if (!el) return;
+    // 웹은 왼쪽을 경로설정 판이 덮어서 확대 단추를 오른쪽 위에 둔다
+    const onWeb = !!el.closest('.app-trip');
+    mvP = createMapView(el, { center: { lat: 37.545, lng: 126.675 }, zoom: 12, zoomControl: onWeb ? 'topright' : 'topleft' }).then((v) => {
+      mv = v;
+      // 손가락으로 쓰는 화면만 처음에 잠근다(목록 스크롤이 지도에 막히지 않게) — 마우스(웹)는 처음부터 끌기 · 휠 확대가 다 된다
+      if (touchOnly) { lockMap(); v.onClick(unlockMap); } else unlockMap();
+      observeMapSize();
+    });
   }
-  map = L.map('trip-map', {
-    zoomControl: true,
-  }).setView([37.545, 126.675], 12);
-  addBaseTiles(map);
-  markerLayer = L.layerGroup().addTo(map);
-  lockMap();
-  map.on('click', unlockMap);
-  observeMapSize();
+  await mvP;
 };
 
 // 지도 칸 크기가 바뀔 때마다 타일을 다시 채운다.
@@ -760,7 +771,7 @@ const observeMapSize = () => {
     if (mapResizeRaf) cancelAnimationFrame(mapResizeRaf);
     mapResizeRaf = requestAnimationFrame(() => {
       mapResizeRaf = 0;
-      map?.invalidateSize({ animate: false });
+      mv?.relayout();
     });
   });
   mapResizeObserver.observe(el);
@@ -771,23 +782,17 @@ onBeforeUnmount(() => {
   mapResizeObserver = null;
 });
 
-const makeBadgeIcon = (label: string, kind: 'start' | 'stop' | 'end', done = false) => {
+const badgePin = (label: string, kind: 'start' | 'stop' | 'end', done = false): Pick<PinOpts, 'className' | 'html' | 'size'> => {
   const cls = `trip-marker-badge tone-${kind}${done ? ' done' : ''}`;
-  return L.divIcon({
-    className: 'trip-marker',
-    html: `<div class="${cls}"><span>${label}</span></div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-  });
+  return { className: 'trip-marker', html: `<div class="${cls}"><span>${label}</span></div>`, size: [32, 32] };
 };
 
-const makeArrowIcon = (angleDeg: number) =>
-  L.divIcon({
-    className: 'trip-arrow',
-    html: `<div class="trip-arrow-icon" style="transform:rotate(${angleDeg}deg)"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-  });
+const arrowPin = (angleDeg: number): PinOpts => ({
+  className: 'trip-arrow',
+  html: `<div class="trip-arrow-icon" style="transform:rotate(${angleDeg}deg)"></div>`,
+  size: [14, 14],
+  interactive: false,
+});
 
 /** 번호 말풍선에 적을 글 — 좌표 대신 '앞 지점에서 얼마나 · 출발부터 얼마나'.
     도로 경로를 받아 두었으면 그 값을, 아직 없으면 직선거리와 평균속도로 어림한다 */
@@ -815,28 +820,20 @@ const legSummary = (idx: number): string => {
 
 const drawRouteMap = async () => {
   await ensureMap();
-  if (!map || !markerLayer) {
+  const v = mv;
+  if (!v) {
     return;
   }
-  markerLayer.clearLayers();
-  if (routeLayer) {
-    map.removeLayer(routeLayer);
-    routeLayer = null;
-  }
+  v.clear();
   if (fullPath.value.length === 0) {
     return;
   }
 
   const hasRoadGeometry = roadGeometry.value.length > 1;
-  const latlngs: L.LatLngTuple[] = hasRoadGeometry
-    ? (roadGeometry.value as L.LatLngTuple[])
-    : fullPath.value.map((point) => [point.lat, point.lng] as L.LatLngTuple);
-  routeLayer = L.polyline(latlngs, {
-    color: '#2563eb',
-    weight: hasRoadGeometry ? 5 : 4,
-    opacity: 0.85,
-    dashArray: hasRoadGeometry ? '0' : '6 6',
-  }).addTo(map);
+  const line: LatLng[] = hasRoadGeometry
+    ? roadGeometry.value.map(([lat, lng]) => ({ lat, lng }))
+    : fullPath.value.map((point) => ({ lat: point.lat, lng: point.lng }));
+  v.line(line, { color: '#2563eb', weight: hasRoadGeometry ? 5 : 4, opacity: 0.85, dash: !hasRoadGeometry });
 
   // Directional arrows: between stops for straight lines,
   // or along each road leg for road geometry.
@@ -847,27 +844,15 @@ const drawRouteMap = async () => {
       const a = leg.geometry[Math.max(midIdx - 1, 0)];
       const b = leg.geometry[midIdx];
       const angleDeg = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
-      const arrow = L.marker([b[0], b[1]], {
-        icon: makeArrowIcon(angleDeg),
-        interactive: false,
-        keyboard: false,
-      });
-      markerLayer!.addLayer(arrow);
+      v.pin({ lat: b[0], lng: b[1] }, arrowPin(angleDeg));
     });
   } else {
     for (let i = 0; i < fullPath.value.length - 1; i += 1) {
       const a = fullPath.value[i];
       const b = fullPath.value[i + 1];
-      const midLat = (a.lat + b.lat) / 2;
-      const midLng = (a.lng + b.lng) / 2;
       const angleDeg =
         (Math.atan2(b.lng - a.lng, b.lat - a.lat) * 180) / Math.PI;
-      const arrow = L.marker([midLat, midLng], {
-        icon: makeArrowIcon(angleDeg),
-        interactive: false,
-        keyboard: false,
-      });
-      markerLayer.addLayer(arrow);
+      v.pin({ lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 }, arrowPin(angleDeg));
     }
   }
 
@@ -885,18 +870,16 @@ const drawRouteMap = async () => {
       label = String(stopOrdinal(idx));
       kind = 'stop';
     }
-    const marker = L.marker([point.lat, point.lng], {
-      icon: makeBadgeIcon(label, kind, kind === 'stop' && isVisited(point.address)),
-    }).bindPopup(
-      `<b class="tp-addr">${label}. ${point.address}</b><span class="tp-info">${legSummary(idx)}</span>`,
+    v.pin({ lat: point.lat, lng: point.lng }, {
+      ...badgePin(label, kind, kind === 'stop' && isVisited(point.address)),
+      z: 10,
       /* 주소가 길어도 잘리지 않게 — 글에 맞춰 좌우로 눕힌다 (줄바꿈은 CSS 에서 막는다) */
-      { maxWidth: 680, minWidth: 0, className: 'trip-pop' },
-    );
-    markerLayer?.addLayer(marker);
+      popup: { html: `<b class="tp-addr">${label}. ${point.address}</b><span class="tp-info">${legSummary(idx)}</span>`, className: 'trip-pop' },
+    });
   });
 
   // 끌고 있는 동안 화면이 튀지 않게 확대/이동은 놓은 뒤에만 맞춘다
-  if (dragFromIdx.value === null) map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+  if (dragFromIdx.value === null) v.fitPoints(line, 40);
 };
 
 watch(fullPath, () => {
@@ -1903,8 +1886,8 @@ watch(() => authStore.uid, (newUid) => {
               type="button"
               class="ftp-stop-icon"
               :disabled="!auctionIdByAddress(stop.address)"
-              aria-label="물건상세"
-              title="물건상세 보기"
+              aria-label="임장조사 열기"
+              title="임장조사 열기"
               @click="goDetailByAddress(stop.address)"
             >
               <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -1947,6 +1930,13 @@ watch(() => authStore.uid, (newUid) => {
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
             <span v-if="stop.kind !== 'stop'" class="ftp-stop-icon ftp-stop-spacer" aria-hidden="true" />
           </article>
+          <!-- 현장 기록 — 가격분석에서 비교 물건을 넣은 물건만. 누르면 비교 물건 목록 → 현장 카드 -->
+          <button
+            v-if="stop.kind === 'stop' && compareOf(stop.address)"
+            type="button"
+            class="ftp-cmp-btn"
+            @click="openCompare(stop.address)"
+          ><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8" /><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" /></svg>현장 기록 · 비교 물건 {{ compareOf(stop.address)!.total }}곳 <em>({{ compareOf(stop.address)!.done }}/{{ compareOf(stop.address)!.total }})</em> ›</button>
           </template>
 
         </template>
@@ -2043,6 +2033,7 @@ watch(() => authStore.uid, (newUid) => {
     <AppMobileBottomNav active="field-trip" />
 
     <AppToast :visible="toastVisible" :text="toastText" :tone="toastTone" />
+    <FieldCompareSheet v-if="compareId" :auction-id="compareId" :navigate="compareNav" :nav-name="navLabel" @close="compareId = ''" />
 
     <div v-if="showFavModal" class="ftp-fav-modal" @click.self="showFavModal = false">
       <div class="ftp-fav-modal-card">
@@ -2767,6 +2758,10 @@ watch(() => authStore.uid, (newUid) => {
    (줄 안에 두었을 때는 뒷줄에 깔리고, 목록의 스크롤 칸에 잘렸다) */
 
 .ftp-stop.kind-start { background: #e6f8ee; }
+/* 현장 기록 — 비교 물건을 넣은 정류장 바로 밑. 번호 아래로 들여 쓴다 */
+.ftp-cmp-btn { display: inline-flex; align-items: center; gap: 6px; margin: -2px 0 8px 32px; height: 30px; padding: 0 12px; border: 1px solid #2b6df3; border-radius: 999px; background: #fff; color: #2b6df3; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.ftp-cmp-btn em { font-style: normal; font-weight: 400; color: #6b7280; }
+.ftp-cmp-btn:active { opacity: .6; }
 .ftp-stop.kind-end { background: #fff3e0; }
 .ftp-stop.visited .ftp-stop-addr { text-decoration: line-through; color: #9ca3af; }
 .ftp-stop-badge {
