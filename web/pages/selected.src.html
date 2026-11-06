@@ -3340,11 +3340,12 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-recent .t1 time { flex: 0 0 auto; white-space: nowrap; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .hm-recent small { display: block; margin-top: 3px; font-size: 12px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dialog.rc-dlg { width: min(720px, calc(100vw - 32px)); height: min(720px, calc(100vh - 64px)); max-height: none; display: flex; flex-direction: column; }   /* 크기 고정 — 칩을 바꿔도 창이 늘었다 줄었다 하지 않는다. 목록만 안에서 스크롤 */
-.rc-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 20px 12px; }
+.dialog.rc-dlg > .reg-head { padding-bottom: 14px; border-bottom: 1px solid var(--card-line); }   /* 제목 아래 구분선 */
+.rc-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 12px 20px; }
 .rc-chips button { height: 30px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text-2); font-size: 13px; cursor: pointer; }
 .rc-chips button.on { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); font-weight: 700; }
 .rc-chips .rc-n { margin-left: auto; font-size: 13px; color: var(--muted); }
-.rc-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 20px 16px; border-top: 1px solid var(--card-line); }
+.rc-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 20px 16px; }
 .rc-day { margin: 14px 0 2px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .hm-none { margin: 0; padding: 22px 8px; text-align: center; font-size: 12.5px; color: var(--muted); }
 @media (max-width: 900px) { .hm-two, .hm-two.even { grid-template-columns: minmax(0, 1fr); } .hm-app { flex-wrap: wrap; } .hm-app nav { width: 100%; } .hm-sched button { grid-template-columns: 56px 66px minmax(0, 1fr); } .hm-sched time { display: none; } }
@@ -3975,6 +3976,10 @@ html, body { overflow-x: clip; }
 .reg-head .x { width: 30px; height: 30px; border: 0; background: transparent; border-radius: 6px; color: var(--muted); display: grid; place-items: center; }
 .reg-head .x:hover { background: var(--surface-3); color: var(--text); }
 .reg-head .x svg { width: 16px; height: 16px; }
+/* ===== 창 닫기(X) — 모든 창 같은 꼴(회원가입 창의 네모 테두리 X: 28 · 테두리 · 모서리 6 · 아이콘 12). 창마다 따로 꾸미지 않는다(2026-11-06) ===== */
+:is(.reg-head .x, .buy-head .x, .app-login-x) { width: 28px !important; height: 28px !important; margin: 0 !important; padding: 0 !important; border: 1px solid var(--line) !important; border-radius: 6px !important; background: var(--surface) !important; color: var(--text-2) !important; display: inline-grid !important; place-items: center; cursor: pointer; }
+:is(.reg-head .x, .buy-head .x, .app-login-x):hover { background: var(--surface-2) !important; color: var(--text) !important; }
+:is(.reg-head .x, .buy-head .x, .app-login-x) svg { width: 12px !important; height: 12px !important; }
 .reg-tabs { display: flex; gap: 2px; padding: 12px 20px 0; border-bottom: 1px solid var(--line); }
 .reg-tabs button { position: relative; height: 38px; padding: 0 10px; border: 0; background: transparent; font-size: 13.5px; font-weight: 700; color: var(--faint); }
 .reg-tabs button:hover { color: var(--text); }
