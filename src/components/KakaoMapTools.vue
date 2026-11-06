@@ -256,6 +256,8 @@ const NEAR_KINDS: NearKind[] = [
   { key: 'conv', group: 'infra', label: '편의점', ic: '🏪', color: '#16a34a', code: 'CS2' },
   { key: 'park', group: 'infra', label: '공원', ic: '🌳', color: '#15803d', word: '공원' },
   { key: 'public', group: 'infra', label: '관공서', ic: '🏛', color: '#6b7280', code: 'PO3' },
+  /* 부동산 — 카카오 업종 분류 '중개업소'(공인중개사무소). 주변 창이 있는 지도(손품조사 시세분석 · 경매사례)에만 보인다(2026-11-06) */
+  { key: 'realtor', group: 'infra', label: '부동산', ic: '🏠', color: '#0d9488', code: 'AG2' },
 ];
 const kindsOf = (g: NearKind['group']) => NEAR_KINDS.filter((x) => x.group === g);
 /** 찾는 거리 — 카카오 장소 검색은 20km 까지 되지만 걸어서 볼 생활권만 고른다 */
