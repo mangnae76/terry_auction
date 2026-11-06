@@ -3328,6 +3328,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .hm-list small { font-size: 11.5px; color: var(--muted); }
 .hm-list small i { font-style: normal; margin-right: 6px; padding: 1px 6px; border-radius: 4px; background: var(--blue-soft); color: var(--blue); font-weight: 700; }
 .hm-list .chev { flex: 0 0 auto; color: var(--faint); }
+.snap-cover { position: absolute; left: 0; right: 0; z-index: 30; background: var(--bg); pointer-events: none; }   /* 새로고침 덮개 — 보던 화면 그림(누를 수 없음), 진짜 화면이 다 그려지면 걷는다 */
 /* 최근 분석 한 줄 — 첫 줄 사건 · 주소 … 오른쪽 끝 날짜, 둘째 줄 꼬리표 칩 + 설명(홈 · 전체보기 창 같은 꼴) */
 .hm-recent .t1 { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .hm-recent .t1 b { flex: 1 1 auto; min-width: 0; }
@@ -7964,6 +7965,8 @@ span.cal-day.has { cursor: help; }
   }
   function renderItem() {
     const it = byId(S.itemId);
+    /* 새로고침(F5) 직후 — 물건이 아직 안 왔다. '찾을 수 없습니다'를 먼저 띄우지 않고 목록과 같은 기준으로 기다린다(2026-11-06) */
+    if (!it && (CLOUD.on ? !CLOUD.synced : (EXPECT_IN && !S.authReady))) { $('itemHead').innerHTML = ''; $('itemContent').innerHTML = '<div class="empty"><b>불러오는 중입니다…</b></div>'; return; }
     if (!it) { $('itemHead').innerHTML = '<div class="ih-top"><button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button><h1 class="ih-title">물건을 찾을 수 없습니다</h1></div>'; $('itemContent').innerHTML = ''; return; }
     $('itemHead').innerHTML = itemHeadHtml(it);
     try { localStorage.setItem('son.pick', it.id); } catch (e) { /* 그만 */ } /* 물건분석은 마지막으로 연 물건을 본다 */
@@ -8334,6 +8337,45 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     if (/^#\/more\/news/.test(location.hash)) writeHash(false);   /* 예전 공지 주소 — 커뮤니티 주소로 고쳐 적는다 */
     if (bx) bxApply(bx);   /* 그 화면에서 고른 박스 탭까지 — 화면이 다 붙은 뒤에 */
   });
+  /* ===== 새로고침(F5) — 보던 화면을 그대로. 떠나는 순간 화면(<main>)을 이 탭(sessionStorage)에 떠 두고, 다시 열면 같은 자리 ·
+     같은 스크롤로 먼저 덮어 보여 준다. 로그인 확인 · 물건 도착 · 앱 화면 붙이기가 끝나면 걷는다(누를 수는 없는 그림).
+     '물건을 찾을 수 없습니다' · '불러오는 중'이 잠깐 보이던 것(2026-11-06) ===== */
+  const SNAP_KEY = 'ta.web.snap';
+  window.addEventListener('pagehide', () => {
+    try {
+      if (!S.loggedIn) { sessionStorage.removeItem(SNAP_KEY); return; }
+      const m = document.querySelector('main'); if (!m) return;
+      const html = m.innerHTML.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<iframe[\s\S]*?<\/iframe>/gi, '');
+      if (html.length > 3000000) { sessionStorage.removeItem(SNAP_KEY); return; }   /* 너무 크면 떠 두지 않는다 */
+      sessionStorage.setItem(SNAP_KEY, JSON.stringify({ hash: location.hash, y: window.scrollY, cls: m.className, html }));
+    } catch (e) { /* 못 떠 두면 예전처럼 */ }
+  });
+  (() => {
+    let snap = null;
+    try { snap = JSON.parse(sessionStorage.getItem(SNAP_KEY) || 'null'); sessionStorage.removeItem(SNAP_KEY); } catch (e) { snap = null; }
+    let wasIn = false; try { wasIn = localStorage.getItem('ta.web.in') === '1'; } catch (e) { /* 모름 */ }
+    if (!snap || snap.hash !== location.hash || !wasIn) return;   /* 로그인해 있던 탭 · 같은 주소일 때만 */
+    const m = document.querySelector('main'); if (!m) return;
+    const cover = document.createElement('div');
+    cover.className = `snap-cover ${snap.cls || ''}`; cover.setAttribute('aria-hidden', 'true'); cover.inert = true;
+    cover.style.top = `${m.getBoundingClientRect().top + window.scrollY}px`;
+    cover.innerHTML = snap.html;
+    m.after(cover);
+    try { history.scrollRestoration = 'manual'; } catch (e) { /* 그만 */ }
+    window.scrollTo(0, snap.y || 0);
+    const t0 = Date.now(); let readyAt = 0;
+    const tick = () => {
+      const ready = S.authReady && (!CLOUD.on || CLOUD.synced) && (S.route !== 'item' || !!byId(S.itemId));
+      if (ready && !readyAt) readyAt = Date.now();
+      /* 진짜 화면이 덮개만큼 자랐거나(앱 화면이 붙었다) 준비된 뒤 1.5초 · 처음부터 8초가 지나면 걷는다 */
+      const grown = readyAt && m.scrollHeight >= Math.min(cover.scrollHeight, (snap.y || 0) + window.innerHeight) - 40;
+      if ((readyAt && (grown && Date.now() - readyAt > 350 || Date.now() - readyAt > 1500)) || Date.now() - t0 > 8000) {
+        const y = window.scrollY; cover.remove(); window.scrollTo(0, y); return;
+      }
+      setTimeout(tick, 120);
+    };
+    setTimeout(tick, 120);
+  })();
   /* ===== 뒤로 가기 — 주소에 없는 박스 탭(경매사례 인근 · 동일지번, 진행절차 안 명도분석 · 세금분석, 손품조사 수요 · 시세분석 …)도 한 칸씩.
      탭(role=tab)을 사람이 눌러 고른 탭이 바뀌면 지금 기록에는 '바꾸기 전', 새 기록에는 '바꾼 뒤'를 적는다.
      뒤로 · 앞으로 가기가 그 기록에 오면 적힌 탭을 다시 눌러 준다. 탭 줄은 화면 안 순서(몇 번째 탭 줄 · 몇 번째 탭)로 찾는다.
