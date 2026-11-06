@@ -4292,7 +4292,7 @@ span.cal-day.has { cursor: help; }
 .snap-chip { height: 22px !important; padding: 0 8px !important; font-size: 12px !important; font-weight: 400 !important; }
 
 /* 지역분석 › 지도 탭(예전 거래랭킹) — 고르는 칸 · 제목은 지역분석 것을 쓰니 감추고, 지도는 탭 줄 아래부터 화면 끝까지 */
-.app-market .tsp-in-dong { --dongmap-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + 6px + var(--bar-h, 46px) + 12px + 34px); }   /* 탭 줄(.adm-tabs-top) 붙는 자리 + 탭 높이 — 6px 아래에서 시작해 밑선 아래로 회색 바탕이 비쳤다(2026-11-03) */
+.app-market .tsp-in-dong { --dongmap-top: calc(var(--stick-top) + var(--gnb-h) + var(--subtab-h) + var(--lead-h, 0px) + 6px + var(--bar-h, 46px) + 12px + 34px); }   /* --lead-h 는 위 한 줄 안내 높이(paintPageLead) — 빼먹으면 탭 줄이 왼쪽 판 머리를 덮었다(2026-11-06) */   /* 탭 줄(.adm-tabs-top) 붙는 자리 + 탭 높이 — 6px 아래에서 시작해 밑선 아래로 회색 바탕이 비쳤다(2026-11-03) */
 .app-market .tsp-in-dong :is(.tsp-filter-slot, .tsp-web-head small) { display: none !important; } /* 제목(지역별 랭킹지도)만 남긴다 */
 .app-market .tsp-in-dong .tsp-stage { top: var(--dongmap-top) !important; }
 /* 지도가 다 그려지기 전(감춰 둔 동안) 빈 자리는 웹 바탕색 — 흰 바탕이 눈부셨다(2026-11-03) */
@@ -8009,6 +8009,8 @@ span.cal-day.has { cursor: help; }
     const key = r === 'market' ? `market:${S.marketTab}` : APP_PAGE_NAMES[r] ? `${r}:${S.pageTab[r]}` : r;
     const slot = r === 'trip' ? 'leadTrip' : r === 'market' ? 'leadMarket' : APP_PAGE_NAMES[r] ? 'leadAppPage' : r === 'store' ? 'leadInfo' : '';
     ['leadTrip', 'leadMarket', 'leadAppPage', 'leadInfo'].forEach((id) => { const el = $(id); if (!el) return; const h = id === slot ? leadLine(PAGE_LEAD[key]) : ''; if (el.innerHTML !== h) el.innerHTML = h; });
+    /* 지도가 화면에 고정된 판(랭킹지도)은 안내 높이만큼 내려 놓는다 */
+    const ls = slot && $(slot); document.documentElement.style.setProperty('--lead-h', `${ls && ls.innerHTML ? ls.offsetHeight : 0}px`);
   }
   function renderAppDetailTab(it, tab) {
     const box = $('itemContent');
