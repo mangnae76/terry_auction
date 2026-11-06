@@ -4597,11 +4597,19 @@ span.cal-day.has { cursor: help; }
   /* 새로고침(F5) 덮개 — 떠 둔 화면을 <main> 이 읽히자마자 같은 자리 · 같은 스크롤로 깐다. 걷는 일은 아래 큰 스크립트가(2026-11-06) */
   (function () {
     try {
+      if (localStorage.getItem('ta.web.in') !== '1') return;
+      /* 앱 화면(표 · 카드)의 모양 pdfparse.css 를 지금 붙인다 — 앱 코드를 부를 때 붙이면 덮개 속 표가 모양 없이 글자로만 보였다.
+         같은 표시(data-tapdf)라 앱 코드가 또 붙이지 않는다 */
+      var link = document.querySelector('link[data-tapdf]');
+      if (!link) { link = document.createElement('link'); link.rel = 'stylesheet'; link.href = (/\/web$/.test(location.pathname) ? '/web/' : '') + 'pdfparse.css'; link.setAttribute('data-tapdf', '1'); document.head.appendChild(link); }
       var s = JSON.parse(sessionStorage.getItem('ta.web.snap') || 'null');
-      if (!s || s.hash !== location.hash || localStorage.getItem('ta.web.in') !== '1') return;
+      if (!s || s.hash !== location.hash) return;
       var m = document.querySelector('main'); if (!m) return;
       var c = document.createElement('div');
       c.className = 'snap-cover ' + (s.cls || ''); c.setAttribute('aria-hidden', 'true'); c.inert = true;
+      /* 모양이 실리기 전에는 보이지 않게 — 실리면(대개 캐시라 바로) 보인다. 늦어도 0.8초면 보인다 */
+      var show = function () { c.style.visibility = ''; };
+      if (!link.sheet) { c.style.visibility = 'hidden'; link.addEventListener('load', show); link.addEventListener('error', show); setTimeout(show, 800); }
       c.style.top = (m.getBoundingClientRect().top + window.scrollY) + 'px';
       c.innerHTML = s.html; m.after(c);
       try { history.scrollRestoration = 'manual'; } catch (e) {}
