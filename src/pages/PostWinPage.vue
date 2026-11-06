@@ -268,6 +268,15 @@ const formKeys = ref<FormKey[] | null>(null);
 // 필요경비 · 사업경비는 자금관리의 같은 이름 탭과 같은 기록이다
 // 매물등록(예전 매도·임대 탭) — 어느 중개사에 얼마에 내놨는지의 기록. 세금 셈과는 따로지만 흐름의 끝이라 맨 뒤에
 type FlowSub = 'steps' | 'evict' | 'need' | 'biz' | 'tax' | 'sell';
+/** 웹 — 진행절차 박스 탭마다 상자 위 한 줄 안내(주황 막대 · 물건상세 안내와 같은 rg-lead 꼴, 2026-11-06) */
+const FLOW_LEAD: Record<FlowSub, string> = {
+  steps: '낙찰부터 잔금 · 명도 · 매도까지 단계별 일정과 해야 할 일을 확인합니다.',
+  evict: '점유자 상황에 따라 명도 비용과 위험을 계산합니다.',
+  tax: '매도가와 비용으로 양도세 · 사업소득세를 미리 계산합니다.',
+  need: '팔 때 예정신고에서 빼는 취득비용 · 자본적지출 · 양도비용을 적습니다.',
+  biz: '5월 종합소득세에서 빼는 수리 · 명도 · 이자 · 관리비 등을 적습니다.',
+  sell: '매도 · 임대로 내놓을 중개사무소와 직거래 내용을 정리합니다.',
+};
 const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['tax', '세금분석'], ['need', '필요경비'], ['biz', '사업경비'], ['sell', '매물등록']];   // 필요경비 · 사업경비는 세금분석 오른쪽
 const flowSub = ref<FlowSub>((() => {
   try {
@@ -961,6 +970,7 @@ const toggleSection = (key: string) => {
       <nav v-if="activeTab === 'flow'" class="pw-chaptabs" role="tablist">
         <button v-for="[k, label] in FLOW_SUBS" :key="k" type="button" role="tab" :aria-selected="flowSub === k" :class="{ on: flowSub === k }" @click="flowSub = k">{{ label }}</button>
       </nav>
+      <div v-if="webEmbed && activeTab === 'flow'" class="rg-lead it-lead pw-lead"><p class="l1">{{ FLOW_LEAD[flowSub] }}</p></div>
       <!-- 웹 — 물건이 없을 때 알림은 탭 줄 아래(탭은 사건 카드 바로 밑, 손품조사와 같은 자리) -->
       <p v-if="webEmbed && checkable && !picked && activeTab === 'flow'" class="pw-nopick">
         낙찰 물건이 없으면 체크할 수 없습니다 — 선정물건에서 단계를 <b>낙찰</b>로 바꿔 주세요.
