@@ -4802,7 +4802,7 @@ span.cal-day.has { cursor: help; }
     : S.route === 'market' && S.marketTab === 'sale' ? `#/market/sale/${S.saleTab}`
     : SUB_TAB_KEYS[S.route] ? `#/${S.route}/${S.route === 'market' ? S.marketTab : S.pageTab[S.route]}`
       : S.route === 'home' ? '#/' : `#/${S.route}`);
-  /** 주소에 적는다 — 화면을 옮길 때는 push(뒤로가기로 돌아온다), 하위 탭만 바꿀 때는 replace */
+  /** 주소에 적는다 — 화면 · 하위 탭을 사람이 바꾸면 push(뒤로 가기로 바로 전 탭), 옛 주소 고치기 · 권한 때문에 돌리기 같은 자동 이동은 replace */
   const writeHash = (push) => { try { const h = hashOf(); if (location.hash !== h) history[push ? 'pushState' : 'replaceState'](null, '', h); } catch (e) { /* 주소 표시만 못 바꾼다 */ } };
 
   const live = () => items.filter((it) => !it.archived && !it.trashed);
@@ -6580,12 +6580,12 @@ span.cal-day.has { cursor: help; }
   let crumbGo = [];
   function crumbSteps() {
     const r = S.route;
-    const first = (route) => () => { S.tabForce = true; if (APP_PAGE_NAMES[route]) S.pageTab[route] = SUB_TAB_KEYS[route][0]; if (route === 'market') S.marketTab = SUB_TAB_KEYS.market[0]; if (S.route === route) { writeHash(false); render(); } else go(route); };
+    const first = (route) => () => { S.tabForce = true; if (APP_PAGE_NAMES[route]) S.pageTab[route] = SUB_TAB_KEYS[route][0]; if (route === 'market') S.marketTab = SUB_TAB_KEYS.market[0]; if (S.route === route) { writeHash(true); render(); } else go(route); };
     if (APP_PAGE_NAMES[r]) {
       const k = S.pageTab[r]; const ch = subChap(r, k);
       if (!ch) return [[APP_PAGE_NAMES[r], first(r)], [subLabel(r, k)]];
       const top = subParent(r, k);
-      return [[APP_PAGE_NAMES[r], first(r)], [subLabel(r, k), () => { S.tabForce = true; S.pageTab[r] = top; writeHash(false); renderSubTabs(); renderAppPage(); }], [ch]];
+      return [[APP_PAGE_NAMES[r], first(r)], [subLabel(r, k), () => { S.tabForce = true; S.pageTab[r] = top; writeHash(true); renderSubTabs(); renderAppPage(); }], [ch]];
     }
     if (r === 'register') return [['물건등록']];   /* 자동등록 · 직접입력은 바로 옆 탭에 보이니 경로엔 적지 않는다(흰 띠 왼쪽에 들어가게) */
     if (r === 'home') return [];
@@ -6594,7 +6594,7 @@ span.cal-day.has { cursor: help; }
       const steps = marketTrail().split(' › ');
       return steps.map((t, i) => (i === steps.length - 1 ? [t]
         : i === 0 ? [t, first('market')]
-          : [t, () => { if (!['sale', 'rank', 'son'].includes(S.marketTab)) S.marketTab = 'dong'; writeHash(false); render(); }]));
+          : [t, () => { if (!['sale', 'rank', 'son'].includes(S.marketTab)) S.marketTab = 'dong'; writeHash(true); render(); }]));
     }
     if (r === 'mypage') return [['마이페이지']];
     if (r === 'store') return [['스토어']];
@@ -7662,7 +7662,7 @@ span.cal-day.has { cursor: help; }
     const mountEl = $('appPageMount');
     const stop = T.mountAppPage(mountEl, key, tab, {
       /* 앱 화면이 제 탭을 바꾸면 웹 하위 탭도 따라간다 */
-      onTab: (t) => { if (S.route !== key || !SUB_TAB_KEYS[key].includes(t) || S.pageTab[key] === t) return; S.pageTab[key] = t; writeHash(false); renderSubTabs(); },
+      onTab: (t) => { if (S.route !== key || !SUB_TAB_KEYS[key].includes(t) || S.pageTab[key] === t) return; S.pageTab[key] = t; writeHash(true); renderSubTabs(); },
       /* 앱 화면이 웹 메뉴 쪽 길을 부르면 웹이 받는다 */
       onNav: (to, a, b) => {
         if (to === 'item') { if (!byId(a)) { toast('선정물건에서 그 물건을 찾지 못했습니다.', 'info'); return; } S.itemTabNext = b === 'verify' ? 'survey' : ITEM_TABS.includes(b) ? b : 'basic'; go('item', a); return; }
@@ -8318,7 +8318,10 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     render(); toTop();
     writeHash(true);
   }
-  window.addEventListener('popstate', () => {
+  window.addEventListener('popstate', (ev) => {
+    const bx = ev.state && ev.state.bx;
+    /* 주소가 그대로면(박스 탭 기록) 화면은 그대로 두고 박스 탭만 되돌린다 — 다시 그리면 깜빡이고 펼친 것이 접힌다 */
+    if (location.hash === hashOf()) { if (bx) bxApply(bx); return; }
     const h = readHash();
     const moved = S.route !== h.route || (h.route === 'item' && S.itemId !== h.itemId);
     S.route = h.route;
@@ -8329,7 +8332,44 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     S.pop = ''; S.menu = null; render();
     if (moved) toTop();   /* 뒤로 · 앞으로 가기로 다른 화면이 되면 맨 위에서 */
     if (/^#\/more\/news/.test(location.hash)) writeHash(false);   /* 예전 공지 주소 — 커뮤니티 주소로 고쳐 적는다 */
+    if (bx) bxApply(bx);   /* 그 화면에서 고른 박스 탭까지 — 화면이 다 붙은 뒤에 */
   });
+  /* ===== 뒤로 가기 — 주소에 없는 박스 탭(경매사례 인근 · 동일지번, 진행절차 안 명도분석 · 세금분석, 손품조사 수요 · 시세분석 …)도 한 칸씩.
+     탭(role=tab)을 사람이 눌러 고른 탭이 바뀌면 지금 기록에는 '바꾸기 전', 새 기록에는 '바꾼 뒤'를 적는다.
+     뒤로 · 앞으로 가기가 그 기록에 오면 적힌 탭을 다시 눌러 준다. 탭 줄은 화면 안 순서(몇 번째 탭 줄 · 몇 번째 탭)로 찾는다.
+     주소가 바뀌는 탭(위 하위 탭 · 앱 화면 탭)은 주소 기록이 맡는다 — 여기서는 건너뛴다 ===== */
+  let bxRestoring = false;
+  const BX_SKIP = '[data-act="subtab"], [data-act="set-stage"]';
+  const bxLists = () => { const out = []; document.querySelectorAll('main [role="tab"]').forEach((b) => { if (b.matches(BX_SKIP) || b.closest('#modalRoot')) return; const l = b.closest('[role="tablist"]') || b.parentElement; if (l && !out.includes(l)) out.push(l); }); return out; };
+  const bxTabs = (l) => [...l.querySelectorAll('[role="tab"]')].filter((b) => (b.closest('[role="tablist"]') || b.parentElement) === l);
+  const bxOn = (l) => bxTabs(l).findIndex((b) => b.getAttribute('aria-selected') === 'true' || b.classList.contains('on') || b.classList.contains('active'));
+  function bxApply(bx, tries = 0) {
+    const lists = bxLists(); let left = 0;
+    Object.entries(bx).forEach(([li, ti]) => {
+      const l = lists[Number(li)]; const b = l && bxTabs(l)[ti];
+      if (!b) { left += 1; return; }
+      if (bxOn(l) !== ti) { bxRestoring = true; b.click(); bxRestoring = false; }
+    });
+    if (left && tries < 12) setTimeout(() => bxApply(bx, tries + 1), 200);   /* 앱 화면이 아직 붙는 중 — 잠깐 뒤 다시 */
+  }
+  document.addEventListener('click', (e) => {
+    if (bxRestoring) return;
+    const b = e.target.closest && e.target.closest('[role="tab"]');
+    if (!b || b.matches(BX_SKIP) || b.closest('#modalRoot') || !b.closest('main') || b.getAttribute('aria-disabled') === 'true') return;
+    const lists = bxLists(); const l = b.closest('[role="tablist"]') || b.parentElement; const li = lists.indexOf(l);
+    if (li < 0) return;
+    const from = bxOn(l); const hash = location.hash;
+    setTimeout(() => {
+      if (location.hash !== hash) return;   /* 주소가 바뀌는 탭 — 주소 기록이 맡았다 */
+      const l2 = bxLists()[li]; const to = l2 ? bxOn(l2) : -1;
+      if (to < 0 || to === from) return;
+      const cur = (history.state && history.state.bx) || {};
+      try {
+        if (from >= 0) history.replaceState({ ...(history.state || {}), bx: { ...cur, [li]: from } }, '', location.href);
+        history.pushState({ bx: { ...cur, [li]: to } }, '', location.href);
+      } catch (err) { /* 기록만 못 남긴다 */ }
+    }, 160);
+  }, true);
 
   const byId = (id) => items.find((x) => x.id === id);
   /* ===== 저장 표시 — 탭 줄 오른쪽(경로 왼쪽)에 하나만. '저장 중… → 저장됨 · 방금'(마이페이지와 같은 시간 말).
@@ -8609,7 +8649,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         const id = (S.lastItemId && byId(S.lastItemId)) ? S.lastItemId : (visible()[0] || {}).id;
         S.pop = ''; S.menu = null;
         if (!id) { render(); toast('물건이 없습니다 — 먼저 물건을 등록해 주세요.', 'info'); break; }
-        if (S.route === 'item' && S.itemId === id) { S.itemTab = tab; writeHash(false); render(); toTop(); break; }
+        if (S.route === 'item' && S.itemId === id) { S.itemTab = tab; writeHash(true); render(); toTop(); break; }
         S.itemTabNext = tab; go('item', id); break;
       }
       case 'theme': {
@@ -8754,11 +8794,11 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       /* 홈 — 물건 · 일정 · 최근 분석 줄은 그 물건의 그 탭, 전체보기는 각 화면으로 */
       case 'hm-item': if (S.modal && S.modal.kind === 'recent') { S.modal = null; renderModal(); } S.itemTabNext = t.dataset.tab || 'basic'; go('item', t.dataset.v); break;
       case 'hm-register': go('register'); break;
-      case 'hm-go': { if (S.modal && S.modal.kind === 'recent') { S.modal = null; renderModal(); } const r = t.dataset.v; const sub = t.dataset.sub; if (t.dataset.flow) { try { sessionStorage.setItem('pw.flow.sub', t.dataset.flow); } catch (e) { /* 그만 */ } } if (sub && S.pageTab[r] !== undefined) { S.pageTab[r] = sub; S.tabForce = true; } if (S.route === r) { writeHash(false); render(); } else go(r); break; }
+      case 'hm-go': { if (S.modal && S.modal.kind === 'recent') { S.modal = null; renderModal(); } const r = t.dataset.v; const sub = t.dataset.sub; if (t.dataset.flow) { try { sessionStorage.setItem('pw.flow.sub', t.dataset.flow); } catch (e) { /* 그만 */ } } if (sub && S.pageTab[r] !== undefined) { S.pageTab[r] = sub; S.tabForce = true; } if (S.route === r) { writeHash(true); render(); } else go(r); break; }
       case 'hm-cal-day': S.homeDay = v && S.homeDay !== v ? v : ''; renderHome(); break;
       case 'hm-cal-move': { const b = S.homeCal || new Date(TODAY); S.homeCal = new Date(b.getFullYear(), b.getMonth() + Number(v), 1); renderHome(); break; }
       /* 입찰 캘린더(마이페이지 › 자세히 · 목록으로) — 홈 '전체보기' · 전체 메뉴. 선정물건 도구 줄의 '입찰일 요약'(입찰일만 간단히)과 다른 화면 */
-      case 'hm-cal': case 'mega-cal': S.menu = null; S.pop = ''; S.pageTab.more = 'calendar'; S.tabForce = true; if (S.route === 'more') { writeHash(false); render(); } else go('more'); break;
+      case 'hm-cal': case 'mega-cal': S.menu = null; S.pop = ''; S.pageTab.more = 'calendar'; S.tabForce = true; if (S.route === 'more') { writeHash(true); render(); } else go('more'); break;
       case 'hm-notice': S.pageTab.community = 'notice'; go('community'); break;
       case 'hm-recent-all': S.modal = { kind: 'recent' }; renderModal(); break;   /* 전체보기 — 마이페이지(세 줄)로 가지 않고 창에 최근 100줄 */
       case 'rc-filter': try { localStorage.setItem(RC_FILTER_KEY, v); } catch (err) { /* 이 창에서만 */ } rcFill(); break;
@@ -8843,11 +8883,11 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         const route = 'market';
         const hit = (SUBTABS[route].find((x) => x[2] === t.dataset.name) || [])[0];
         if (hit) S.marketTab = hit;
-        if (S.route === route) { S.menu = null; writeHash(false); renderSubTabs(); renderMarket(); toTop(); } else go(route);
+        if (S.route === route) { S.menu = null; writeHash(true); renderSubTabs(); renderMarket(); toTop(); } else go(route);
         break;
       }
       /* 예전 마이페이지 — 없앴다. 더보기 › 마이페이지 탭으로 */
-      case 'go-mypage': S.menu = null; S.pageTab.more = 'mypage'; if (S.route === 'more') { writeHash(false); renderSubTabs(); renderAppPage(); } else go('more'); break;
+      case 'go-mypage': S.menu = null; S.pageTab.more = 'mypage'; if (S.route === 'more') { writeHash(true); renderSubTabs(); renderAppPage(); } else go('more'); break;
       /* 낙찰이후 · 자금관리 · 더보기 — 펼침 메뉴의 항목(data-name)이면 그 하위 탭으로 연다 */
       /* 스토어 — 펼침 칸의 전체 · 전자책 · 리포트는 그 탭으로 */
       case 'go-store': { const k = { 전체: 'all', 전자책: 'ebook', 리포트: 'report', 모바일앱: 'mobile' }[t.dataset.name]; if (k) { S.storeTab = k; store.set('wlp.web.storeTab2', k); } S.menu = null; S.pop = ''; if (S.route === 'store') render(); else go('store'); } break;
@@ -8864,7 +8904,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         const hit = (SUBTABS[route].find((x) => x[2] === t.dataset.name) || [])[0];
         if (hit) S.pageTab[route] = hit;
         S.tabForce = true;   /* 메뉴로 옮겼다 — 카드 화면에 들어가 있어도 그 탭으로 */
-        if (S.route === route) { S.menu = null; S.pop = ''; writeHash(false); render(); toTop(); } else go(route);
+        if (S.route === route) { S.menu = null; S.pop = ''; writeHash(true); render(); toTop(); } else go(route);
         break;
       }
       case 'area-view': S.areaView = v; renderItem(); break;
@@ -8960,8 +9000,8 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         rerenderAi(); toast('키를 지웠습니다.', 'info'); break;
       }
       case 'subtab': {
-        if (S.route === 'market') { S.marketTab = v; writeHash(false); renderSubTabs(); renderMarket(); toTop(); break; }
-        if (APP_PAGE_NAMES[S.route]) { S.tabForce = true; S.pageTab[S.route] = v; writeHash(false); renderSubTabs(); renderAppPage(); toTop(); break; }
+        if (S.route === 'market') { S.marketTab = v; writeHash(true); renderSubTabs(); renderMarket(); toTop(); break; }
+        if (APP_PAGE_NAMES[S.route]) { S.tabForce = true; S.pageTab[S.route] = v; writeHash(true); renderSubTabs(); renderAppPage(); toTop(); break; }
         if (v === 'cards') { go('list'); break; }   /* 물건카드 — 선정물건 목록으로 */
         if (S.route === 'list') {
           const id = (S.lastItemId && byId(S.lastItemId)) ? S.lastItemId : (visible()[0] || {}).id;
@@ -8969,8 +9009,8 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
           S.itemTabNext = v; go('item', id); break;
         }
         S.itemTab = v;
-        /* 주소에도 남긴다 — 새로고침하면 이 탭으로 다시 연다 (뒤로가기 기록은 늘리지 않는다) */
-        writeHash(false);
+        /* 주소에도 남긴다 — 새로고침하면 이 탭으로 다시 연다. 뒤로 가기는 바로 전 탭으로(2026-11-06 — 예전엔 기록을 늘리지 않아 물건상세 앞 화면으로 건너뛰었다) */
+        writeHash(true);
         renderSubTabs(); renderItem(); toTop(); break;
       }
       /* 등록 방법 탭 — 자동 등록(PRO·AI 파싱) · 직접 입력(손으로 적기) */
