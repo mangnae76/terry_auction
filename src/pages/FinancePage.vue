@@ -178,13 +178,6 @@ const activeTab = ref<FinanceTabKey>(((t) => (webEmbed && (t === 'fuelMeal' || t
 /** 웹 — 필요경비(예정신고) · 사업경비(5월 종합소득세) 두 장부 */
 const WEB_TABS: Array<[FinanceTabKey, string]> = [['cashFlow', '자금입출금'], ['businessExpense', '필요경비'], ['interior', '사업경비'], ['tax', '세금신고']];
 // 최근 분석 기록 — 자금관리에서 고친 것은 '자금관리 › 탭'(유류&식대 · 물품구매는 사업경비)으로 남긴다
-/** 웹 — 탭마다 상자 위 한 줄 안내(주황 막대 · 물건상세 안내와 같은 rg-lead 꼴, 2026-11-06) */
-const FIN_LEAD: Record<string, string> = {
-  cashFlow: '물건별로 들어오고 나간 돈을 적으면 총 입금 · 총 출금 · 잔액을 계산합니다.',
-  businessExpense: '팔 때 예정신고에서 빼는 취득비용 · 자본적지출 · 양도비용을 물건별로 적습니다.',
-  interior: '5월 종합소득세에서 빼는 수리 · 명도 · 이자 · 관리비 · 유류 · 물품 비용을 적습니다.',
-  tax: '당해년도 매매 수익과 경비로 낼 세금을 계산하고 신고 · 납부 일정을 확인합니다.',
-};
 const FIN_WHERE: Record<string, string> = { cashFlow: '자금입출금', businessExpense: '필요경비', interior: '사업경비', fuelMeal: '사업경비', itemPurchase: '사업경비', tax: '세금신고' };
 watch(activeTab, (t) => { auctionStore.setEditWhere(`자금관리 › ${FIN_WHERE[t] ?? '자금입출금'}`); }, { immediate: true });
 onUnmounted(() => auctionStore.setEditWhere(''));
@@ -667,7 +660,6 @@ const exportExcel = () => {
     </div>
     </div>
 
-    <div v-if="webEmbed && FIN_LEAD[activeTab]" class="rg-lead it-lead fin-lead"><p class="l1">{{ FIN_LEAD[activeTab] }}</p></div>
     <div class="fin-body">
     <!-- 웹 — 흰 상자 첫 줄: 왼쪽 탭 이름(자금입출금 · 세금신고), 오른쪽 낙찰목록 · 매도목록. 필요경비 · 사업경비는 합계 줄 오른쪽에 선다 -->
     <div v-if="webEmbed" class="fin-boxhead">

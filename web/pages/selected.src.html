@@ -1448,7 +1448,6 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .it-lead { margin-bottom: 16px; }
 /* 진행절차(낙찰이후) · 자금관리 탭 안내 — 아래 박스까지 16(물건정보 · 선정물건과 같게). 진행절차는 줄 사이 간격 12가, 자금관리는 박스 위 여백 12가 더해져 28이었다(2026-11-07) */
 .pw-lead { margin-bottom: 4px; }
-.app-page[data-k="finance"] .fin-shell .fin-lead + .fin-body { margin-top: 0 !important; }
 /* 권리분석 (직접확인) 표 — 분홍 · 파랑 왼쪽 이름 칸. 앱은 칸 700 + 안 strong 'bolder'라 900 가까이 진했다 → 웹은 600 */
 .app-detail.tab-rights :is(.adp-rcheck-label, .adp-rcheck-label strong) { font-weight: 600 !important; }
 /* 권리분석(직접확인) 맨 아래로 합친 '권리분석 정리' — 표 아래 작은 제목 + 적는 칸 */
@@ -8140,16 +8139,11 @@ span.cal-day.has { cursor: help; }
   const ITEM_LEAD = {
     basic: ['물건의 기본적인 정보들이 입력되었습니다.'],   /* 아래 작은 안내 줄은 뺐다(2026-11-05) */
     rights: ['매각물건명세서 PDF 하나로, 낙찰 후 떠안을 돈이 있는지 정리해 드립니다.', '경매가 처음이어도 괜찮습니다. 말소기준권리, 세입자, 주의할 항목을 쉬운 말로 보여 드립니다.'],
-    survey: ['수요분석 · 시세분석으로 이 동네의 매매 수요와 같은 건물 · 인근 시세를 확인합니다.'],
-    profit: ['입찰가 · 비용 · 세금을 넣어 A~D안별 세후 순이익을 계산하고 확정안을 고릅니다.'],
-    field: ['현장에서 확인한 내용과 현장사진을 남깁니다.'],
   };
   /* ===== 화면 안내 한 줄 — 임장경로 · 낙찰이후 절차별체크리스트에만(시장분석 · 매뉴얼 · 스토어 · 마이페이지 · 게시판 · 공지는 뺐다, 2026-11-07).
      모두 같은 꼴(rg-lead — 주황 막대 3 × 20 · 글 16 굵게). 자금관리 네 탭 · 낙찰이후 진행절차는 앱 화면 안(FinancePage · PostWinPage)에 같은 꼴로 있다.
      박스 탭이 있는 화면은 탭 아래에(LEAD_IN). 문구는 이 표 한곳에서만 고친다 ===== */
   const PAGE_LEAD = {
-    trip: '임장 갈 물건을 골라 동선을 짜고, 순서대로 현장을 돌며 기록합니다.',
-    'postwin:win': '입찰 기일부터 낙찰 · 잔금 · 명도까지 단계별로 해야 할 일을 체크합니다.',
   };
   /* 박스 탭 아래에 두는 화면 */
   const LEAD_IN = { postwin: ['.pw-chaptabs'] };
