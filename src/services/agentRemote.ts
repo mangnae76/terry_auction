@@ -24,6 +24,8 @@ export type AgentStatus = {
   message?: string;
   lastCmd?: string;
   site?: string;
+  /** 지금 받는 곳(읍면동 · 사건) — 도우미 2026.11.08-2 부터 */
+  target?: string;
 };
 /** 모은 동네 하나 — at 은 마지막으로 모은 시각(ms), n 은 그때 그 동네 물건 수 */
 export type AgentCoverage = { at: number; n: number; region?: string; kind?: string; site?: string; src?: string; months?: number };

@@ -1019,7 +1019,9 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-sub { height: 34px; padding: 0 10px; border: 0; background: none; color: var(--blue); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .sx-sub.run { color: var(--muted); }
 .sx-prog { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); white-space: nowrap; }
-.sx-tprog { flex: 1 1 200px; min-width: 0; margin-right: 0; }   /* 중지 오른쪽 끝 = 아래 줄 추가 단추 오른쪽 끝(둘 다 세로 막대 앞 12, 2026-11-08) */   /* 제목 줄 연결 알약 옆 진행 막대 — 남는 폭만큼 */
+.sx-tprog { flex: 1 1 200px; min-width: 0; margin-right: 0; display: grid; gap: 2px; }
+.sx-target { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* 진행 막대 위 — 지금 받는 곳 */
+.sx-target b { color: var(--blue); font-weight: 700; }   /* 중지 오른쪽 끝 = 아래 줄 추가 단추 오른쪽 끝(둘 다 세로 막대 앞 12, 2026-11-08) */   /* 제목 줄 연결 알약 옆 진행 막대 — 남는 폭만큼 */
 .sx-stepcol { display: grid; gap: 8px; min-width: 0; }   /* 윗줄 ② · ③ · 처음부터새로, 아랫줄 진행 막대(같은 너비) */
 .sx-steprow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .sx-chkbox { height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; }
@@ -7658,14 +7660,18 @@ span.cal-day.has { cursor: help; }
     const qRun = busy && (AG.lastSent === 'queue' || /^(대기열|읍면동) /.test(String(s.message || '')));
     const free = !busy && !AG.sending;
     let msg = !online ? '' : (s.message || (ready ? '' : '① 브라우저 열기를 누르면 MyAgent가 켜진 컴퓨터에 크롬이 열립니다.'));
-    if (!qVerOk && (AG.queue.length || agQueueCands().length)) msg = `읍면동 수집은 새 도우미(2026.11.01-7 이상)에서 됩니다 — 지금 ${s.version || '예전 버전'}. MyAgent 창에서 Ctrl+C 뒤 다시 켜 주세요.`;
+    if (!qVerOk && AG.queue.length) msg = `읍면동 수집은 새 도우미(2026.11.01-7 이상)에서 됩니다 — 지금 ${s.version || '예전 버전'}. MyAgent 창에서 Ctrl+C 뒤 다시 켜 주세요.`;
     if (AG.note && Date.now() - AG.noteAt < 5000) msg = AG.note;
     const step = (n, name, label, on) => {
       const done = name === 'open' && ready; const cur = busy && AG.lastSent === name;
       return `<button type="button" class="sx-step${done ? ' done' : ''}${cur ? ' now' : ''}" data-act="ag-cmd" data-v="${name}" ${on ? '' : 'disabled'}>${n || done ? `<b>${done ? '✓' : n}</b>` : ''}${label}</button>`;   /* n 이 0 이면 번호 동그라미 없이(②③ 뺌 2026-11-06) */
     };
     const pr = busy && s.prog && s.prog.n > 0 ? s.prog : null;
-    const prog = `<div class="sx-prog"><span class="sx-bar"><b style="width:${pr ? Math.min(100, Math.round((pr.i / pr.n) * 100)) : 0}%"></b></span>${pr ? `<span class="num">${Number(pr.i).toLocaleString('ko-KR')} / ${Number(pr.n).toLocaleString('ko-KR')}페이지</span>` : `<span>${busy ? '수집하는 중' : '대기 중'}</span>`}<button type="button" class="sx-stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`;
+    /* 진행 — 수집 중이면 '데이터 수집 중', 숫자는 읍면동 수집이면 곳 수 · 건축연도 채우기면 건 수(페이지 수가 아니다). 막대 위에는 지금 받는 곳(2026-11-08) */
+    const doing = !busy ? '대기 중' : s.lastCmd === 'enrich' ? '건축연도 채우는 중' : '데이터 수집 중';
+    const unit = s.lastCmd === 'queue' ? '곳' : s.lastCmd === 'enrich' ? '건' : '';
+    const target = busy && s.target ? String(s.target) : '';
+    const prog = `${target ? `<div class="sx-target">수집 중인 곳 <b>${esc(target)}</b></div>` : ''}<div class="sx-prog"><span class="sx-bar"><b style="width:${pr ? Math.min(100, Math.round((pr.i / pr.n) * 100)) : 0}%"></b></span><span>${doing}</span>${pr ? `<span class="num">${Number(pr.i).toLocaleString('ko-KR')} / ${Number(pr.n).toLocaleString('ko-KR')}${unit}</span>` : ''}<button type="button" class="sx-stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`;
     const m = AG.meta;
     const metaCnt = `저장 총 ${Number((m && m.count) || 0).toLocaleString('ko-KR')}건`;
     const metaUpd = m && m.updatedAt && m.updatedAt.toMillis && T.updateStamp ? `${T.UPDATE_PREFIX}${T.updateStamp(m.updatedAt.toMillis())}` : '';
@@ -7685,7 +7691,7 @@ span.cal-day.has { cursor: help; }
       + `<div class="sx-manage">${agQueueHtml()}</div>`
       /* 그다음 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③ */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}<span class="sx-vsep" aria-hidden="true"></span>${seg('months', AG_MONTHS)}</div>`
-      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}</div></div></div></div>`
+      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || !!agDongItem()))}${step(0, 'auto', '끝 페이지까지 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}</div></div></div></div>`
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
       + `<div class="sx-manage">${agCovHtml(metaCnt, metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : '')}</div>`
       + `</section></div>`;
@@ -7760,21 +7766,6 @@ span.cal-day.has { cursor: help; }
   const agKindGroup = (v) => { const t = String(v || ''); return /다세대|연립|빌라|도시형/.test(t) ? 'villa' : /아파트/.test(t) ? 'apt' : /오피스텔/.test(t) ? 'offi' : t.slice(0, 2); };
   const agQid = (q) => (q.dong ? `${q.dong} ${q.kind || ''}`.trim() : q.case);   /* 도우미가 끝난 것을 뺄 때 쓰는 이름과 같게 */
   /* 선정물건 중 아직 안 모은 동네의 사건 — 동네 · 종류마다 하나, 대기열에 이미 있는 동네는 빼고 */
-  function agQueueCands() {
-    const covered = (reg, type) => AG.cov.some((c) => (c.region || c.key) === reg && (!c.kind || !type || agKindGroup(c.kind) === agKindGroup(type)));
-    const seen = new Set(AG.queue.filter((q) => q.addr).map((q) => `${agRegionOf(q.addr)}|`));
-    /* 동으로 올린 것 — 시도 줄임 + 동 이름으로 (옛 '서구' 주소와 새 '서해구' 표가 달라도 같은 동으로) */
-    const dongQ = new Set(AG.queue.filter((q) => q.dong).map((q) => { const t = q.dong.split(' '); return `${t[0]} ${t[t.length - 1]}`; }));
-    const out = [];
-    items.forEach((it) => {
-      const reg = agRegionOf(it.addr); if (!it.caseNo || !reg || covered(reg, it.type)) return;
-      const t = reg.split(' ');
-      const k = `${reg}|${agKindGroup(it.type)}`;
-      if (seen.has(k) || seen.has(`${reg}|`) || dongQ.has(`${t[0]} ${t[t.length - 1]}`) || AG.queue.some((q) => q.case === it.caseNo)) return;
-      seen.add(k); out.push({ case: it.caseNo, addr: it.addr, at: Date.now() });
-    });
-    return out;
-  }
   const AG_CASE_ADD = true;   /* 사건번호로 추가하는 칸 — 11-06 잠깐 숨겼다가 다시 켬. false 면 칸만 숨고 이미 올린 사건 알약은 그대로 보인다 */
   /* 추가 — 사건번호 칸 바로 옆(2026-11-07). 고른 동 · 넣은 사건번호를 한 번에 올린다 */
   const AG_ADD_BTN = '<button type="button" class="ag-btn ag-add-main" data-act="ag-q-add">추가</button>';
@@ -7885,7 +7876,8 @@ span.cal-day.has { cursor: help; }
     const collect = name === 'screen' || name === 'auto';
     if (name === 'queue') {
       if (agSel.site !== '탱크옥션') { AG.note = '읍면동 수집은 지금 탱크옥션만 됩니다 — 사이트를 탱크옥션으로 골라 주세요.'; AG.noteAt = Date.now(); agPaint(); return; }
-      const add = agQueueCands();
+      /* 물건목록 물건의 동네를 저절로 더하던 것은 뺐다(2026-11-08 — 고르지 않은 검암동이 붙었다). 대신 위 칸에서 고른 동을 추가를 안 눌렀어도 올린다 */
+      const pick = agDongItem(); const add = pick && !AG.queue.some((q) => agQid(q) === agQid(pick)) ? [pick] : [];
       if (add.length) { try { await CLOUD.T.saveAgentQueue(AG.uid, [...AG.queue, ...add]); } catch (e) { AG.note = '읍면동 수집 목록을 저장하지 못했습니다 — 다시 해 주세요.'; AG.noteAt = Date.now(); agPaint(); return; } }
     }
     const run = async () => {
