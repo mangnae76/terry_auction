@@ -1249,7 +1249,7 @@ const downloadCsv = () => {
               <!-- 한 줄로 — 이름 · 주소(동 지번) · 연식 · ㎡ / 평 · 엘베, 칸마다 세로 정렬. 주소 복사는 오른쪽 N · P 옆 아이콘(시세분석 표와 같은 꼴, 2026-11-08) -->
               <span class="nm"><b>{{ b.name || '이름 없음' }}</b></span>
               <span class="ad">{{ b.umd }} {{ b.jibun }}</span>
-              <span class="yr">{{ b.year ? `${b.year}년` : '-' }}</span>
+              <span class="yr">{{ b.year ? `${b.year}년 / ${thisYear - b.year + 1}년차` : '-' }}</span>
               <span class="ar">{{ b.aMin ? (b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}평` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}~${(b.aMax / 3.3058).toFixed(1)}평`) : '-' }}</span>
               <span class="evc"><em v-if="elevText(b.id)" :class="['ev', elevCls(b.id)]">{{ elevText(b.id) }}</em></span>
               <span class="bar"><i :style="{ width: `${Math.max(4, (b.n / (bldRank[0]?.n || 1)) * 100)}%` }" /></span>
@@ -1611,7 +1611,7 @@ const downloadCsv = () => {
 .adm-bld > header strong { font-size: 16px; font-weight: 800; color: #111827; }
 .adm-bld > header small { font-size: 13px; color: #6b7280; }
 .adm-bld-list { list-style: none; margin: 0; padding: 0; display: grid; }
-.adm-bld-row { display: grid; grid-template-columns: 30px minmax(0, 1.4fr) minmax(0, 1fr) 56px 170px 70px minmax(50px, .4fr) 56px 112px 104px 80px 98px; align-items: center; gap: 12px; padding: 8px 4px; border-top: 1px solid #eef1f6; font-size: 13.5px; color: #111827; }
+.adm-bld-row { display: grid; grid-template-columns: 30px minmax(0, 1.5fr) minmax(0, 1fr) 112px 170px 44px minmax(48px, .5fr) 56px 104px 84px 74px 96px; align-items: center; column-gap: 20px; row-gap: 0; padding: 8px 4px; border-top: 1px solid #eef1f6; font-size: 13.5px; color: #111827; }
 .adm-bld-row:first-child { border-top: 0; }
 .adm-bld-row .no { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: #eef1f6; color: #4b5563; font-size: 12px; font-weight: 800; }
 .adm-bld-row .no.top { background: #2b6df3; color: #fff; }
@@ -1633,7 +1633,7 @@ const downloadCsv = () => {
 .adm-bld-row .nm .ev, .adm-bld-row .evc .ev { margin-left: 0; padding: 1px 6px; border-radius: 5px; font-style: normal; font-size: 12px; font-weight: 700; vertical-align: 1px; }
 .adm-bld-row .ev.y { background: #e8f6ee; color: #15803d; } .adm-bld-row .ev.n { background: #fdeeee; color: #dc2626; } .adm-bld-row .ev.u { background: #f3f5f9; color: #6b7280; }
 .adm-bld-row { cursor: pointer; } .adm-bld-row:hover { background: #f7f9fc; }
-.adm-bld-row .go { display: inline-flex; align-items: center; gap: 4px; color: #9ca3af; }
+.adm-bld-row .go { display: inline-flex; align-items: center; justify-content: center; gap: 4px; color: #9ca3af; }
 .adm-bld-row:hover .go .arw { color: #2b6df3; }
 .adm-bld .ab { width: 22px; height: 22px; border: 1px solid #dde3ee; border-radius: 5px; background: #fff; color: #6b7280; display: inline-grid; place-items: center; font-size: 11px; font-weight: 800; cursor: pointer; padding: 0; }
 .adm-bld .ab.p { color: #2f6be0; } .adm-bld .ab.n { color: #03a94d; } .adm-bld .ab:hover { border-color: #2b6df3; }
