@@ -1168,6 +1168,12 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-simtxt { font-size: 13px; color: var(--muted); }
 /* 직접범위 막대 — 손품조사 시세분석 웹(.dl.one · .dual · .tvg)과 같은 꼴 · 같은 치수 */
 .sx-rgrow { padding: 8px 10px; }
+/* 유사도 · 직접범위 상자 같은 크기(66 = 안 48 + 위아래 8 + 테두리) — 바꿀 때 덜컹이지 않게. 유사도는 글 · 막대 · 눈금을 48 안에(손품조사 .simA 와 같은 짜임, 2026-11-07) */
+.sx-simrow { box-sizing: border-box; height: 66px; padding: 8px 10px; align-content: center; }
+.sx-simrow:not(.sx-rgrow) { gap: 2px; }
+.sx-simrow:not(.sx-rgrow) .sx-simlab { font-size: 13px; line-height: 1.2; white-space: nowrap; overflow: hidden; }
+.sx-simrow:not(.sx-rgrow) input[type="range"] { height: 14px; margin: 0; }
+.sx-simrow:not(.sx-rgrow) .sx-ticks { line-height: 1; padding: 0 2px; }
 .sx-rg { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 32px; }
 .sx-dl { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 0 12px; min-width: 0; height: 48px; }
 .sx-dl > .dn { display: grid; justify-items: center; gap: 2px; font-size: 14px; font-weight: 800; color: var(--text); }
