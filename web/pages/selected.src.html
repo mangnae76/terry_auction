@@ -770,9 +770,9 @@ button { cursor: pointer; }
 .mk-sale .ag-q-line > .ag-qgrp:first-child { flex: 0 0 auto; }   /* 읍면동 칸 셋은 120 씩으로 줄이고, 남는 폭은 사건번호 칸이 쓴다(2026-11-07) */
 .mk-sale .ag-q-line > .ag-qgrp:first-child .adm-f { flex: 0 0 120px; width: 120px; }
 .mk-sale .ag-q-line > .ag-qgrp:first-child select.adm-input { min-width: 0; }
-.mk-sale .ag-qkind .ag-add-main { min-width: 96px; height: 32px; font-size: 15px; font-weight: 700; box-shadow: 0 2px 6px rgba(43, 109, 243, .28); }   /* 추가 — 이 줄의 주요 단추: 파랑 · 크게 */
+.mk-sale .ag-qkind .ag-add-main { min-width: 96px; height: 32px; font-size: 14px; font-weight: 700; background: var(--blue-soft); border-color: #9fb8f5; color: var(--blue); }   /* 추가 — 크기는 그대로, 색은 옅은 파랑(진한 파랑 · 그림자가 너무 강했다, 2026-11-07) */
 .mk-sale .ag-q-line :is(select.adm-input, #agQIn) { height: 32px !important; }   /* 이 줄 칸 높이를 모두 32(종류 칸 · 추가와 같게, 2026-11-07) */
-.mk-sale .ag-qkind .ag-add-main:hover { background: #1f5ad6; border-color: #1f5ad6; }
+.mk-sale .ag-qkind .ag-add-main:hover { border-color: var(--blue); }
 .mk-sale .ag-qline > .ag-cov + .ag-cov { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }   /* 고르는 줄과 추가된 알약 사이 가르는 선 */
 .mk-sale .ag-qline > .ag-cov:not(.ag-q-tools) { padding-left: 95px; }   /* 알약 줄은 인천광역시 칸 왼쪽 끝부터(이름 약 87 + 사이 8) */
 .mk-sale .ag-cov-chip { padding: 4px 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 999px; font-size: 13px; color: var(--text); }
@@ -7630,7 +7630,7 @@ span.cal-day.has { cursor: help; }
       /* 먼저 고르는 것 — 읍면동 · 사건번호 수집 상자를 맨 위로(옥션원 줄보다 위, 2026-11-07) */
       + `<div class="sx-manage">${agQueueHtml()}</div>`
       /* 그다음 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③ */
-      + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}<span class="sx-vsep" aria-hidden="true"></span>${seg('months', AG_MONTHS)}</div>`
+      + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}</div>`
       + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}</div></div></div></div>`
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
       + `<div class="sx-manage">${agCovHtml(metaCnt, metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : '')}</div>`
@@ -7731,7 +7731,9 @@ span.cal-day.has { cursor: help; }
        추가는 고른 동 · 넣은 사건번호를 한 번에 올린다. 알약(동 · 사건)은 그 아래 한 줄로 */
     const line = `<div class="ag-cov ag-q-tools ag-q-line"><span class="ag-qgrp"><small>읍면동으로 수집</small>${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}</span>`
       + (AG_CASE_ADD ? `<span class="sx-vsep" aria-hidden="true"></span><span class="ag-qgrp"><small>사건번호로 수집</small><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"></span>` : '')
-      + `<span class="sx-vsep" aria-hidden="true"></span><span class="ag-qkind"><div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn pri ag-add-main" data-act="ag-q-add">추가</button></span>${tail}</div>`;
+      + `<span class="sx-vsep" aria-hidden="true"></span><span class="ag-qkind"><div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div>`
+      /* 개월수 — 수집 줄(옥션원 옆)에서 종류 옆으로(2026-11-07) */
+      + `<div class="adm-seg ag-months">${AG_MONTHS.map(([m, t]) => `<button type="button" class="adm-seg-btn ${Number(agSel.months) === m ? 'on' : ''}" data-act="ag-sel" data-k="months" data-v="${m}">${t}</button>`).join('')}</div><button type="button" class="ag-btn ag-add-main" data-act="ag-q-add">추가</button></span>${tail}</div>`;
     const chips = dongChips + caseChips;
     return `<div class="ag-qline">${line}${chips || hint ? `<div class="ag-cov">${chips}${hint}</div>` : ''}</div>`;
   }
