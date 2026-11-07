@@ -7501,7 +7501,9 @@ span.cal-day.has { cursor: help; }
     /* 물건카드를 고른 때만 '근거 · 인근 유사 매각사례'(맨 윗줄 경매물건). 지역으로 직접 조회하면 '경기도 수원시 권선구 세류동 매각사례'(2026-11-08) */
     const qa = saleApplied || {};
     /* 물건으로 — '근거 · 인근 유사 매각사례'. 지역으로 — '인천광역시 서해구 매각사례'(기준물건을 고르면 앞에 근거 칩), 2026-11-08 */
-    const regionName = `${esc([qa.sido, qa.sgg, qa.dong].filter(Boolean).join(' ') || '지역')} 매각사례`;
+    /* 동까지 — 읍면동을 골랐으면 그 동, 기준물건을 골랐으면 그 물건 동(2026-11-08) */
+    const meDong = me ? (String(me.addr || '').split(/\s+/).find((t) => /^[가-힣0-9]+(동|읍|면|가)$/.test(t)) || '') : '';
+    const regionName = `${esc([qa.sido, qa.sgg, qa.dong || meDong].filter(Boolean).join(' ') || '지역')} 매각사례`;
     const listHead = me && !me.__ref ? '<span class="sx-ptag">근거</span><h3 class="sx-sec">인근 유사 매각사례</h3>'
       : `${me ? '<span class="sx-ptag">근거</span>' : ''}<h3 class="sx-sec">${regionName}</h3>`;
     return `<div id="sxList"><div class="sx-list-h">${listHead}<span class="sx-count"><b class="num">${view.length.toLocaleString('ko-KR')}</b>건${q ? ` · 전체 ${rows.length.toLocaleString('ko-KR')}건 중` : ''}</span>`
