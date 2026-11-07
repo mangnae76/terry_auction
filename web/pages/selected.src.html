@@ -1743,6 +1743,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .sx-pickbtn { cursor: pointer; background: var(--surface); font: inherit; font-size: 14px; font-weight: 700; }   /* 낙찰목록 단추(.pw-pickbtn)와 같은 꼴 */
 .sx-pickbtn img { width: 12px; height: 12px; margin-left: 2px; transition: transform .2s; }
 .sx-pickbtn img.up { transform: rotate(180deg); }
+.sx-pickbtn { transition: border-color .15s; }
+.sx-pickbtn:hover, .sx-pickbtn[aria-expanded="true"] { border-color: var(--blue); }   /* 물건카드 — 마우스를 올리면(열려 있는 동안도) 파란 테두리(2026-11-07) */
 .sx-x { font-style: normal; font-size: .75em; font-weight: 700; opacity: .6; margin: 0 1px 0 3px; }
 .sx-objlist { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; width: 560px; max-width: calc(100vw - 32px); max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 6px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 10px 24px rgba(17, 24, 39, .16); text-align: left; }
 .sx-obj { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 7px 9px 8px; cursor: pointer; }
@@ -6257,14 +6259,13 @@ span.cal-day.has { cursor: help; }
     const metaText = meta ? (/㎡/.test(meta) ? `건물 ${meta}` : meta) : '';
     const stage = T && CLOUD.raw.has(it.id) ? T.stageLabelOf(a) : stageLabel(it);
     const hot = stage === '입찰진행'; const done = stage === '낙찰' || stage === '매도'; const off = stage === '유찰' || /취소/.test(stage);
-    const pdfId = a.importMeta && a.importMeta.pdfFileId;
+    /* 고정카드의 PDF 단추는 뺐다(2026-11-07) */
     return `
       <div class="ih-top">
         <button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"${tip('선정물건으로')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button>
         <h1 class="ih-title"><span class="ih-tag">경매</span><span class="num">${esc(it.caseNo)}</span></h1>
         <span class="ih-court">${esc(it.court || DASH)} · 매각기일 <span class="num">${it.date ? `${dotDate(it.date)}${dowText(it.date)}` : DASH}</span> <em>${it.date ? ddayText(it.date) : ''}</em></span>
         <span class="ih-right">
-          ${pdfId ? `<a class="ih-pdf" href="https://drive.google.com/file/d/${esc(pdfId)}/view" target="_blank" rel="noopener">${I.pdf}PDF</a>` : ''}
           <button type="button" class="ih-stage ${hot ? 'hot' : ''} ${done ? 'done' : ''} ${off ? 'off' : ''}" data-act="stage-menu" data-id="${it.id}" aria-haspopup="menu"${tip('단계 바꾸기')}>${esc(stage)}<i class="caret">▾</i></button>${pick}
           <button type="button" class="ibtn" data-act="archive" data-id="${it.id}" aria-label="보관함에 넣기"${tip('보관함에 넣기')}>${I.box}</button>
           <button type="button" class="ibtn del" data-act="delete" data-id="${it.id}" aria-label="휴지통으로 보내기"${tip('휴지통으로 보내기', 'right')}>${I.trash}</button>
@@ -6789,7 +6790,7 @@ span.cal-day.has { cursor: help; }
   const sxMeFloor = (it) => { const u = String((it && it.unit) || ''); const f = /(\d+)\s*층/.exec(u); if (f) return Number(f[1]); const h = /(\d{3,4})\s*호/.exec(u); return h ? Math.floor(Number(h[1]) / 100) : 0; };
   const sxLimit = async (list, n, fn) => { let i = 0; await Promise.all(Array.from({ length: Math.min(n, list.length) }, async () => { while (i < list.length) { const x = list[i]; i += 1; await fn(x); } })); };
   const sxMapMsgText = () => (SXG.total ? `${SXG.phase === 'elev' ? '엘베 확인 중' : '위치 찾는 중'} ${SXG.done.toLocaleString('ko-KR')} / ${SXG.total.toLocaleString('ko-KR')}`
-    : (!sxMe() ? '물건카드교체로 경매물건을 고르면 반경으로 거릅니다' : ''));
+    : (!sxMe() ? '물건카드로 경매물건을 고르면 반경으로 거릅니다' : ''));
   const sxMapStatus = () => { ['sxMapMsg', 'sxFsMsg'].forEach((id) => { const el = $(id); if (el) el.textContent = sxMapMsgText(); }); };
   /* 위치 · 엘베를 다 받으면(또는 10곳마다) 결과를 다시 그린다 */
   const sxGeoFlush = () => { sxmSave(); SXG.ver += 1; if (agSaleOpen() && $('sxResults')) { agPaintTable(); } };
@@ -6999,7 +7000,7 @@ span.cal-day.has { cursor: help; }
   function sxPyBidHtml(py) {
     const me = sxMe(); const m2 = me ? Number(me.bldg) : 0; const myPy = m2 > 0 ? m2 / 3.305785 : 0;
     const ok = py > 0 && myPy > 0; const v = ok ? Math.round(py * myPy) : 0;
-    const note = !py ? '매각평당가를 낼 매각사례가 없습니다' : !me ? '물건카드교체로 경매물건을 고르세요' : !(myPy > 0) ? '경매물건 전용면적이 없습니다' : `평당 ${agWon(py)} × ${myPy.toFixed(1)}평`;
+    const note = !py ? '매각평당가를 낼 매각사례가 없습니다' : !me ? '물건카드로 경매물건을 고르세요' : !(myPy > 0) ? '경매물건 전용면적이 없습니다' : `평당 ${agWon(py)} × ${myPy.toFixed(1)}평`;
     return `<span class="sx-vrow"><span class="v num">${ok ? `${v.toLocaleString('ko-KR')}원` : '-'}</span>${ok ? `<button type="button" class="sx-copy" data-act="sx-bid-copy" data-v="${v}" aria-label="예상 입찰가 복사"${tip('일의 자리까지 복사')}>${I.copy}</button>` : ''}</span>`
       + `<span class="r">${esc(note)}</span>`;
   }
@@ -7185,7 +7186,7 @@ span.cal-day.has { cursor: help; }
     }
     const T = CLOUD.T; const subj = sxMeSubject(sxMe());
     const def = T && T.simDefText ? T.simDefText(Number(SXM.sim)) : '';
-    const note = !subj ? '물건카드교체로 경매물건을 고르면 그 물건 둘레로 거릅니다' : !(subj.areaM2 > 0) ? '경매물건 전용면적이 없어 유사도로 거르지 못합니다' : `경매물건 ${subj.areaM2.toFixed(2)}㎡${subj.year ? ` · ${subj.year}년` : ''}${subj.floor ? ` · ${subj.floor}층` : ''} 기준`;
+    const note = !subj ? '물건카드로 경매물건을 고르면 그 물건 둘레로 거릅니다' : !(subj.areaM2 > 0) ? '경매물건 전용면적이 없어 유사도로 거르지 못합니다' : `경매물건 ${subj.areaM2.toFixed(2)}㎡${subj.year ? ` · ${subj.year}년` : ''}${subj.floor ? ` · ${subj.floor}층` : ''} 기준`;
     return `<div class="sx-simrow"><label for="sxSim" class="sx-simlab"><span>유사도 기준 <b id="sxSimV">${SXM.sim}%</b></span><span id="sxSimD">${esc(def)}</span><small>${esc(note)}</small></label>`
       + `<input id="sxSim" type="range" min="60" max="95" step="5" value="${SXM.sim}"><div class="sx-ticks" aria-hidden="true">${[60, 65, 70, 75, 80, 85, 90, 95].map((v) => `<span>${v}%</span>`).join('')}</div></div>`;
   }
@@ -7543,7 +7544,7 @@ span.cal-day.has { cursor: help; }
   /* 물건카드교체 단추 + 목록 — 낙찰이후 '낙찰목록'과 같은 꼴. mode 'sale' 은 경매사례(고르면 감정가), 'item' 은 선정물건 물건상세(고르면 그 물건으로, 보던 탭 그대로) */
   function cardPickHtml(mode, curId) {
     const picks = salePicks(); if (!picks.length) return '';
-    const btn = `<button type="button" class="ih-pdf sx-pickbtn" data-act="sale-card-menu" aria-haspopup="listbox" aria-expanded="${saleCardOpen}">물건카드교체 <i class="sx-x">×</i>${picks.length}<img src="${CHEV_PNG}" class="${saleCardOpen ? 'up' : ''}" alt=""></button>`;
+    const btn = `<button type="button" class="ih-pdf sx-pickbtn" data-act="sale-card-menu" aria-haspopup="listbox" aria-expanded="${saleCardOpen}">물건카드 <i class="sx-x">×</i>${picks.length}<img src="${CHEV_PNG}" class="${saleCardOpen ? 'up' : ''}" alt=""></button>`;
     const ymd = (d) => (d ? dotDate(d).slice(2) : '–');
     const list = saleCardOpen ? `<div class="sx-objlist" role="listbox" aria-label="선정물건">${picks.map((x) => `<article role="option" aria-selected="${x.id === curId}" class="sx-obj ${x.id === curId ? 'on' : ''}" data-act="${mode === 'item' ? 'item-card-pick' : 'sale-card-pick'}" data-id="${esc(x.id)}">`
       + `<p class="top"><span class="case lead">${esc(x.caseNo)}</span><i class="bar"></i><span class="court">${esc(x.court || '–')}</span><span class="apr">감정가 <b class="num">${x.apr > 0 ? sxWon(x.apr) : '–'}</b></span></p>`
@@ -7558,7 +7559,7 @@ span.cal-day.has { cursor: help; }
   function saleCardHtml() {
     const picks = salePicks(); if (!picks.length) return '';
     const it = picks.find((x) => x.id === saleItemId) || null;
-    if (!it) return `<div class="ih-top"><span class="ih-court">물건카드교체에서 선정물건을 고르면 그 감정가가 아래 '경매물건 감정가'에 들어갑니다.</span><span class="ih-right">${cardPickHtml('sale', saleItemId)}</span></div>`;
+    if (!it) return `<div class="ih-top"><span class="ih-court">물건카드에서 선정물건을 고르면 그 감정가가 아래 '경매물건 감정가'에 들어갑니다.</span><span class="ih-right">${cardPickHtml('sale', saleItemId)}</span></div>`;
     /* 카드는 선정물건 물건정보의 고정카드 그대로(같은 함수) — 단계 단추 바로 오른쪽에 물건카드교체 */
     return itemHeadHtml(it, cardPickHtml('sale', saleItemId));
   }
