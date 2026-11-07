@@ -533,7 +533,7 @@ const rankByDong = computed<RankRow[]>(() => {
 });
 /** 웹 랭킹분석 › 건물랭킹 — 조회한 기간 · 종류의 실거래를 건물(동 + 지번)로 묶어 많이 팔린 순(2026-11-08).
  *  이름은 비거나 표기가 달라 지번으로 묶고 이름은 가장 많이 쓰인 것으로 보인다. 읍면동을 고르면 그 동만, 계약해제는 뺀다 */
-type BldRow = { id: string; name: string; umd: string; jibun: string; n: number; avg: number; perPy: number; last: string; aMin: number; aMax: number; year: number };
+type BldRow = { id: string; name: string; umd: string; jibun: string; addr: string; n: number; avg: number; perPy: number; last: string; aMin: number; aMax: number; year: number };
 /** 건물랭킹 자료 — 24개월까지 고를 수 있어 거래랭킹이 받는 24개월 자료(rankRows)를 쓴다. 아직 못 받았으면 조회한 자료(12개월) */
 const bldSrc = computed<DongTradeDetailRow[]>(() => (rankRows.value.length ? rankRows.value : all.value));
 const bldRank = computed<BldRow[]>(() => {
@@ -552,7 +552,10 @@ const bldRank = computed<BldRow[]>(() => {
     const pyRows = priced.filter((r) => r.pyeong > 0);
     const perPy = pyRows.length ? pyRows.reduce((t, r) => t + r.priceWon / r.pyeong, 0) / pyRows.length : 0;
     const areas = l.map((r) => r.areaM2).filter((a) => a > 0);
-    return { id, name, umd: l[0].umdNm, jibun: l[0].jibun, n: l.length, avg, perPy, last: l.map((r) => r.contractDate).sort().slice(-1)[0] ?? '',
+    /* 주소 — 시도 · 시군구까지(거래랭킹 자료는 줄마다 시도 · 시군구가 붙어 있다, 아니면 지금 고른 지역) */
+    const f = l[0] as DongTradeDetailRow & { sido?: string; gu?: string };
+    const addr = [f.sido || sido.value, f.gu || district.value?.label || '', l[0].umdNm, l[0].jibun].filter(Boolean).join(' ');
+    return { id, name, umd: l[0].umdNm, jibun: l[0].jibun, addr, n: l.length, avg, perPy, last: l.map((r) => r.contractDate).sort().slice(-1)[0] ?? '',
       aMin: areas.length ? Math.min(...areas) : 0, aMax: areas.length ? Math.max(...areas) : 0, year: l.find((r) => r.buildYear > 0)?.buildYear ?? 0 };
   });
   return out.sort((a, b) => (b.n - a.n) || b.last.localeCompare(a.last)).slice(0, 30);
@@ -564,6 +567,12 @@ const bldTotal = computed(() => {
 /** 위 기간 단추 — 건물랭킹에서만 24개월까지. 다른 탭으로 가면 12개월로 돌린다(그 탭 자료는 12개월까지) */
 const WEB_PERIODS = computed(() => (props.rankMode && listView.value === 'bld' ? [...WEB_PERIODS_BASE, 24] : WEB_PERIODS_BASE));
 watch(listView, (v) => { if (v !== 'bld' && periodMonths.value > 12) applyPeriod(12); });
+/** 주소 복사 — 누르면 '복사됨'이 1.5초 보인다 */
+const bldCopied = ref('');
+const copyBldAddr = async (b: BldRow) => {
+  try { await navigator.clipboard.writeText(b.addr); } catch { const ta = document.createElement('textarea'); ta.value = b.addr; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 그만 */ } ta.remove(); }
+  bldCopied.value = b.id; window.setTimeout(() => { if (bldCopied.value === b.id) bldCopied.value = ''; }, 1500);
+};
 const bldWon = (w: number) => { if (!(w > 0)) return '-'; const e = Math.floor(w / 1e8); const mm = Math.round((w % 1e8) / 1e4); return e ? `${e}억${mm ? ` ${mm.toLocaleString('ko-KR')}만` : ''}` : `${mm.toLocaleString('ko-KR')}만`; };
 /** 세 목록(왼쪽부터) — 거래량(많은 순) · 급증(증가율 높은 순) · 급감(감소율 큰 순). 전년이 없던 동은 증감을 매기지 않는다 */
 const rankLists = computed(() => {
@@ -1185,7 +1194,7 @@ const downloadCsv = () => {
           <ol v-else class="adm-bld-list">
             <li v-for="(b, i) in bldRank" :key="b.id" class="adm-bld-row" :style="{ '--i': i }">
               <span :class="['no', { top: i < 3 }]">{{ i + 1 }}</span>
-              <span class="nm"><b>{{ b.name || '이름 없음' }}</b><small>{{ b.umd }} {{ b.jibun }}<template v-if="b.year"> · {{ b.year }}년</template><template v-if="b.aMin"> · {{ b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}평` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}~${(b.aMax / 3.3058).toFixed(1)}평` }}</template></small></span>
+              <span class="nm"><b>{{ b.name || '이름 없음' }}</b><small><button type="button" :class="['cp', { done: bldCopied === b.id }]" :title="b.addr" :aria-label="`${b.addr} 주소 복사`" @click.stop="copyBldAddr(b)">{{ bldCopied === b.id ? '복사됨' : '주소복사' }}</button>{{ b.umd }} {{ b.jibun }}<template v-if="b.year"> · {{ b.year }}년</template><template v-if="b.aMin"> · {{ b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}평` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}~${(b.aMax / 3.3058).toFixed(1)}평` }}</template></small></span>
               <span class="bar"><i :style="{ width: `${Math.max(4, (b.n / (bldRank[0]?.n || 1)) * 100)}%` }" /></span>
               <span class="cnt"><b>{{ b.n.toLocaleString('ko-KR') }}</b>건</span>
               <span class="mny"><small>평균</small>{{ bldWon(b.avg) }}</span>
@@ -1518,6 +1527,9 @@ const downloadCsv = () => {
 .adm-bld-row .no.top { background: #2b6df3; color: #fff; }
 .adm-bld-row .nm { display: grid; min-width: 0; } .adm-bld-row .nm b { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .adm-bld-row .nm small { font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adm-bld-row .nm .cp { height: 20px; margin-right: 6px; padding: 0 6px; border: 1px solid #dde3ee; border-radius: 5px; background: #fff; color: #4b5563; font: inherit; font-size: 12px; cursor: pointer; vertical-align: middle; }
+.adm-bld-row .nm .cp:hover { border-color: #2b6df3; color: #2b6df3; }
+.adm-bld-row .nm .cp.done { border-color: #16a34a; color: #16a34a; }
 .adm-bld-row .bar { height: 10px; border-radius: 5px; background: #eef1f6; overflow: hidden; } .adm-bld-row .bar i { display: block; height: 100%; border-radius: 5px; background: #2b6df3; }
 .adm-bld-row .cnt { text-align: right; color: #6b7280; } .adm-bld-row .cnt b { font-size: 15px; color: #111827; margin-right: 2px; }
 .adm-bld-row .mny, .adm-bld-row .dt { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; } .adm-bld-row :is(.mny, .dt) small { font-size: 12px; color: #9ca3af; margin-right: 6px; }
