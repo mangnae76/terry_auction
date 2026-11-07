@@ -4415,7 +4415,7 @@ span.cal-day.has { cursor: help; }
 :is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) .tsp-stage { background: var(--bg) !important; }
 /* 지도 칸 자체도 — 지도 조각이 다 차기 전 빈 곳이 흰색(카카오 기본)으로 번쩍였다 */
 :is(.app-market[data-k="ranking"], .app-market .tsp-in-dong) :is(.tsp-map, .tsp-map > div) { background-color: var(--bg) !important; }
-.app-market .tsp-in-dong .tsp-panel { top: calc(var(--dongmap-top) + 18px) !important; width: 430px !important; } /* 고르는 칸이 빠져 좁게(546 → 364) → 지역 이름 옆 저장 칩 · 평/㎡ 단가가 한 줄에 들어가게 430 */
+.app-market .tsp-in-dong .tsp-panel { top: calc(var(--dongmap-top) + 12px) !important; bottom: 12px !important; width: 430px !important; } /* 고르는 칸이 빠져 좁게(546 → 364) → 지역 이름 옆 저장 칩 · 평/㎡ 단가가 한 줄에 들어가게 430 */
 /* 총 거래건수 ⓘ 말풍선 — 판 왼쪽에 붙은 칸이라 가운데 정렬이면 왼쪽이 잘린다. 칸 왼쪽에서 펼친다 */
 .app-market .tsp-in-dong .tsp-stat .itip-bubble { left: 0 !important; transform: none !important; min-width: 0 !important; width: max-content; max-width: 360px; white-space: normal !important; }
 /* 통계정보 네 칸 — 말풍선이 칸 묶음 밖으로 나와야 해서 묶음의 overflow 를 풀고, 둥근 모서리는 칸마다 준다 */
@@ -4437,7 +4437,23 @@ span.cal-day.has { cursor: help; }
 /* 지도 값 회색 판 — 판 칸마다 주는 위 여백(14)이 이 판에도 붙어 단추가 아래로 쏠렸다. 사방 4 로 */
 .app-market .tsp-in-dong .tsp-metric { padding: 4px !important; }
 /* 결과 줄(지역 · 최근 12개월 …) → 탭 → 구분선 사이를 같은 16 으로 (패널 줄 사이 12 에 4 를 더한다) */
-.app-market .tsp-in-dong .tsp-web-picked { margin-bottom: 4px; }
+/* 랭킹지도 왼쪽 판 — 1440 화면에서도 1 ~ 5등이 보이게 칸 사이를 좁힌다(2026-11-07). 그래도 넘치면 판 전체가 아니라
+   거래랭킹 상자 안에서만 스크롤 — 판 네 모서리가 늘 둥글게 남는다(판이 통째로 밀리면 위 모서리가 잘려 뾰족해 보였다) */
+.app-market .tsp-in-dong .tsp-panel { overflow: hidden !important; gap: 8px !important; padding: 14px 14px 12px !important; }
+.app-market .tsp-in-dong .tsp-panel > * { flex-shrink: 0; }
+.app-market .tsp-in-dong .tsp-panel > * + * { padding-top: 10px; }
+.app-market .tsp-in-dong .tsp-panel h3 { margin-bottom: 6px; }
+.app-market .tsp-in-dong .tsp-metric { margin-bottom: 0 !important; }
+.app-market .tsp-in-dong .tsp-metric button { height: 30px !important; }
+.app-market .tsp-in-dong .tsp-stat-grid > div { padding: 7px 10px; }
+.app-market .tsp-in-dong .tsp-panel > .tsp-rank { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.app-market .tsp-in-dong .tsp-rank .tsp-rank-list { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #cfd6e2 transparent; }
+.app-market .tsp-in-dong .tsp-rank .tsp-rank-list::-webkit-scrollbar { width: 6px; }
+.app-market .tsp-in-dong .tsp-rank .tsp-rank-list::-webkit-scrollbar-thumb { background: #cfd6e2; border-radius: 3px; }
+.app-market .tsp-in-dong .tsp-rank .tsp-rank-list::-webkit-scrollbar-track { margin: 8px 0; }   /* 막대가 둥근 모서리 안쪽에서 */
+.app-market .tsp-in-dong .tsp-rank-row { padding: 7px 12px; }
+.app-market .tsp-in-dong .tsp-rank-main { gap: 2px; }
+.app-market .tsp-in-dong .tsp-rank-foot { margin-top: 6px; }
 .app-market .tsp-in-dong .tsp-metric { margin-bottom: 4px !important; }
 /* 지도 값 단추 — 글자를 단추 정가운데에(전역 button 여백 때문에 아래로 처졌다) */
 .app-market .tsp-in-dong .tsp-metric button { display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; line-height: 1 !important; }
