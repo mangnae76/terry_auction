@@ -547,7 +547,7 @@ const bldNoNew = ref((() => { try { return localStorage.getItem(BLD_NEW_KEY) ===
 watch(bldNoNew, (v) => { try { localStorage.setItem(BLD_NEW_KEY, v ? '1' : '0'); } catch { /* 그만 */ } });
 const bldRank = computed<BldRow[]>(() => {
   const m = new Map<string, DongTradeDetailRow[]>();
-  const newFrom = thisYear - 1;   // 올해 · 지난해 준공 = 신축
+  const newFrom = new Date().getFullYear() - 1;   // 올해 · 지난해 준공 = 신축(thisYear 는 아래에서 선언돼 여기서 쓰면 처음 그릴 때 멈췄다)
   bldSrc.value.forEach((r) => {
     if (r.kind === '계약해제' || !r.jibun || !inWindow(r)) return;
     if (bldNoNew.value && r.buildYear >= newFrom) return;
@@ -591,7 +591,7 @@ const bldView = computed<BldRow[]>(() => {
   return [...bldRank.value].sort((a, b) => { const x = val(a); const y = val(b); const c = typeof x === 'string' ? x.localeCompare(String(y), 'ko') : x - (y as number); return desc ? -c : c; });
 });
 const bldTotal = computed(() => {
-  const ids = new Set<string>(); bldSrc.value.forEach((r) => { if (r.kind !== '계약해제' && r.jibun && inWindow(r) && (!dong.value || r.umdNm === dong.value) && !(bldNoNew.value && r.buildYear >= thisYear - 1)) ids.add(`${r.umdNm}|${r.jibun}`); });
+  const ids = new Set<string>(); bldSrc.value.forEach((r) => { if (r.kind !== '계약해제' && r.jibun && inWindow(r) && (!dong.value || r.umdNm === dong.value) && !(bldNoNew.value && r.buildYear >= new Date().getFullYear() - 1)) ids.add(`${r.umdNm}|${r.jibun}`); });
   return ids.size;
 });
 /** 위 기간 단추 — 건물랭킹에서만 24개월까지. 다른 탭으로 가면 12개월로 돌린다(그 탭 자료는 12개월까지) */
