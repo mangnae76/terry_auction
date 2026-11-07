@@ -770,7 +770,7 @@ button { cursor: pointer; }
 .mk-sale .ag-q-line > .ag-qgrp:first-child { flex: 0 0 auto; }   /* 읍면동 칸 셋은 120 씩으로 줄이고, 남는 폭은 사건번호 칸이 쓴다(2026-11-07) */
 .mk-sale .ag-q-line > .ag-qgrp:first-child .adm-f { flex: 0 0 120px; width: 120px; }
 .mk-sale .ag-q-line > .ag-qgrp:first-child select.adm-input { min-width: 0; }
-.mk-sale .ag-q-line .ag-add-main { flex: 0 0 auto; min-width: 96px; height: 32px; font-size: 14px; font-weight: 700; background: var(--blue-soft); border-color: #9fb8f5; color: var(--blue); }   /* 추가 — 크기는 그대로, 색은 옅은 파랑(진한 파랑 · 그림자가 너무 강했다, 2026-11-07) */
+.mk-sale .ag-q-line .ag-add-main { flex: 0 0 auto; min-width: 96px; height: 32px; border-radius: 9px; font-size: 14px; font-weight: 700; background: var(--blue-soft); border-color: #9fb8f5; color: var(--blue); }   /* 추가 — 크기는 그대로, 색은 옅은 파랑(진한 파랑 · 그림자가 너무 강했다, 2026-11-07) */
 .mk-sale .ag-q-line :is(select.adm-input, #agQIn) { height: 32px !important; }   /* 이 줄 칸 높이를 모두 32(종류 칸 · 추가와 같게, 2026-11-07) */
 .mk-sale .ag-q-line .ag-add-main:hover { border-color: var(--blue); }
 .mk-sale .ag-qline > .ag-cov + .ag-cov { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }   /* 고르는 줄과 추가된 알약 사이 가르는 선 */
@@ -7728,7 +7728,7 @@ span.cal-day.has { cursor: help; }
     const dongChips = AG.queue.filter((q) => q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.dong)} <i>${esc(q.kind || '동 전체')}</i><button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(agQid(q))}" aria-label="빼기">×</button></span>`).join('');
     const caseChips = AG.queue.filter((q) => !q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.case)}${q.addr || q.kind ? ` <i>${esc([q.addr ? agRegionOf(q.addr) : '', q.kind || ''].filter(Boolean).join(' · '))}</i>` : ''}<button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(q.case)}" aria-label="빼기">×</button></span>`).join('');
     const cands = agQueueCands().length;
-    const hint = cands ? `<span class="ag-cov-none">선정물건 중 안 모은 동네 ${cands}곳은 읍면동 수집 때 함께 올라갑니다 (탱크옥션)</span>` : '';
+    const hint = '';   /* '선정물건 중 안 모은 동네 ○곳은 …' 안내는 뺐다(2026-11-07 — 뜻이 잘 안 읽혔다). 수집은 예전처럼 같이 올라간다 */
     /* 한 줄에 세 묶음 — [읍면동으로 수집 · 시도 · 시군구 · 동] [사건번호로 수집 · 사건번호] [종류 · 추가](2026-11-06). 종류는 둘이 같이 쓴다.
        추가는 고른 동 · 넣은 사건번호를 한 번에 올린다. 알약(동 · 사건)은 그 아래 한 줄로 */
     const line = `<div class="ag-cov ag-q-tools ag-q-line"><span class="ag-qgrp"><small>읍면동으로 수집</small>${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}</span>`
