@@ -7388,12 +7388,6 @@ span.cal-day.has { cursor: help; }
       sxDownload(blob, `조건검색결과_${sxYmd()}.xlsx`); toast('엑셀 파일을 내려받았습니다.');
     } catch (e) { toast(userMsg(e, '엑셀을 만들지 못했습니다. 다시 해 주세요.'), 'info'); }
   }
-  /* 데이터 백업 — 모은 매각물건 전체(다시 불러올 수 있는 양식) */
-  async function sxBackup() {
-    if (!AG.recs.length) { toast('백업할 자료가 없습니다.', 'info'); return; }
-    try { sxDownload(await CLOUD.T.exportSaleData(AG.recs.map(sxPlain)), `매각물건_전체데이터_${sxYmd()}.xlsx`); toast(`${AG.recs.length.toLocaleString('ko-KR')}건을 백업 파일로 내려받았습니다.`); }
-    catch (e) { toast(userMsg(e, '백업 파일을 만들지 못했습니다. 다시 해 주세요.'), 'info'); }
-  }
   /* 파일 불러오기 — 읽고 나서 '추가' 또는 '통째로 바꾸기'를 묻는다. 통째로 바꾸기는 한 번 더 묻는다(관리자 모두가 같이 쓰는 자료) */
   async function sxReadFile(f) {
     let recs;
@@ -7405,7 +7399,7 @@ span.cal-day.has { cursor: help; }
       desc: `지금 공용 매각물건 자료(${have.toLocaleString('ko-KR')}건)에 어떻게 넣을까요?\n· 추가 — 같은 사건(사건번호 · 매각일 · 매각가)은 건너뛰고 새 물건만 더합니다.\n· 통째로 바꾸기 — 지금 자료를 모두 지우고 이 파일로 바꿉니다.`,
       run: () => { void sxCommit(f.name, recs, 'merge'); },
       alt: { label: '통째로 바꾸기', run: () => askConfirm({ title: '지금 자료를 모두 지울까요?', icon: 'warn', okLabel: '통째로 바꾸기', skipKey: '',
-        desc: `모아 둔 ${have.toLocaleString('ko-KR')}건을 지우고 ${f.name} 의 ${n}건으로 바꿉니다.\n모든 관리자가 함께 쓰는 자료라 되돌릴 수 없습니다 — 먼저 [데이터백업]을 받아 두기를 권합니다.`,
+        desc: `모아 둔 ${have.toLocaleString('ko-KR')}건을 지우고 ${f.name} 의 ${n}건으로 바꿉니다.\n모든 관리자가 함께 쓰는 자료라 되돌릴 수 없습니다.`,
         run: () => { void sxCommit(f.name, recs, 'replace'); } }) } });
   }
   async function sxCommit(name, recs, mode) {
@@ -7619,11 +7613,10 @@ span.cal-day.has { cursor: help; }
     const metaCnt = `저장 총 ${Number((m && m.count) || 0).toLocaleString('ko-KR')}건`;
     const metaUpd = m && m.updatedAt && m.updatedAt.toMillis && T.updateStamp ? `${T.UPDATE_PREFIX}${T.updateStamp(m.updatedAt.toMillis())}` : '';
     /* 수집 관리 접기 단추는 없앴다(2026-11-06) — 읍면동 · 사건 수집 상자와 수집데이터는 늘 펼쳐 둔다 */
-    /* 제목 줄 — 제목 · PC 연결 칩 · 오른쪽 끝 데이터로드 · 데이터백업 · 엑셀다운로드(PC 프로그램과 같은 양식) */
+    /* 제목 줄 — 제목 · PC 연결 칩 · 오른쪽 끝 데이터로드 · 엑셀다운로드(PC 프로그램과 같은 양식). 데이터백업 단추는 뺐다(2026-11-07) */
     /* 진행 막대 · 중지는 연결 알약 바로 오른쪽 — 남는 폭을 채운다(2026-11-06) */
     const titlebar = `<div class="sx-titlebar"><h2>인근매각사례 수집</h2>${conn}<div class="sx-tprog">${prog}</div><span class="sx-vsep" aria-hidden="true"></span>`
       + `<button type="button" class="sx-tbtn" data-act="sx-import" ${busy || AG.io ? 'disabled' : ''}>${AG.io ? '저장하는 중…' : '데이터로드'}</button>`
-      + `<button type="button" class="sx-tbtn" data-act="sx-backup" ${AG.recs.length ? '' : 'disabled'}>데이터백업</button>`
       + `<button type="button" class="sx-tbtn solid" data-act="sx-excel">엑셀다운로드</button></div>`;
     /* 제목 줄도 수집 박스 안 맨 위 — 옵션 줄(사이트 · 기간 …)보다 위(2026-11-03) */
     /* 맨 위 주황 막대 안내(다른 화면과 같은 .rg-lead) — 첫 줄은 도우미가 지금 하는 말, 둘째 줄은 쓰는 순서 */
@@ -9354,7 +9347,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'sale-card-menu': saleCardOpen = !saleCardOpen; repaintCardHead(); break;
       case 'item-card-pick': saleCardOpen = false; if (id && id !== S.itemId) { S.itemTabNext = S.itemTab; go('item', id); } else repaintCardHead(); break;
       case 'sale-card-pick': salePickCard(id); break;
-      case 'sx-backup': void sxBackup(); break;
       case 'sx-excel': void sxExcel(); break;
       /* 검색리스트 칸 이름 — 그 칸으로 정렬, 같은 칸을 다시 누르면 반대로 */
       case 'sx-sort': { const k = t.dataset.v; SX.desc = k === SX.sort ? !SX.desc : true; SX.sort = k; const rows = sxRows(); const el = $('sxList'); if (rows && el) el.outerHTML = sxListHtml(rows); break; }
