@@ -764,6 +764,11 @@ button { cursor: pointer; }
 .mk-sale .ag-q-tools.ag-q-line select.adm-input { width: 100%; min-width: 100px; }
 .mk-sale .ag-q-line #agQIn { flex: 1 1 auto; width: auto; min-width: 180px; height: 30px; font-size: 13px; }
 .mk-sale .ag-qkind { display: inline-flex; align-items: center; gap: 8px; }
+.mk-sale .ag-q-line > .ag-qgrp:first-child { flex: 0 0 auto; }   /* 읍면동 칸 셋은 120 씩으로 줄이고, 남는 폭은 사건번호 칸이 쓴다(2026-11-07) */
+.mk-sale .ag-q-line > .ag-qgrp:first-child .adm-f { flex: 0 0 120px; width: 120px; }
+.mk-sale .ag-q-line > .ag-qgrp:first-child select.adm-input { min-width: 0; }
+.mk-sale .ag-qkind .ag-add-main { min-width: 96px; height: 34px; font-size: 15px; font-weight: 700; box-shadow: 0 2px 6px rgba(43, 109, 243, .28); }   /* 추가 — 이 줄의 주요 단추: 파랑 · 크게 */
+.mk-sale .ag-qkind .ag-add-main:hover { background: #1f5ad6; border-color: #1f5ad6; }
 .mk-sale .ag-qline > .ag-cov + .ag-cov { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }   /* 고르는 줄과 추가된 알약 사이 가르는 선 */
 .mk-sale .ag-qline > .ag-cov:not(.ag-q-tools) { padding-left: 95px; }   /* 알약 줄은 인천광역시 칸 왼쪽 끝부터(이름 약 87 + 사이 8) */
 .mk-sale .ag-cov-chip { padding: 4px 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 999px; font-size: 13px; color: var(--text); }
@@ -1410,6 +1415,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .pa .list-tools .pa-fchip { display: none !important; }
 .list-lead + .content { padding-top: 16px; }
 .it-lead { margin-bottom: 16px; }
+/* 진행절차(낙찰이후) · 자금관리 탭 안내 — 아래 박스까지 16(물건정보 · 선정물건과 같게). 진행절차는 줄 사이 간격 12가, 자금관리는 박스 위 여백 12가 더해져 28이었다(2026-11-07) */
+.pw-lead { margin-bottom: 4px; }
+.app-page[data-k="finance"] .fin-shell .fin-lead + .fin-body { margin-top: 0 !important; }
 /* 권리분석 (직접확인) 표 — 분홍 · 파랑 왼쪽 이름 칸. 앱은 칸 700 + 안 strong 'bolder'라 900 가까이 진했다 → 웹은 600 */
 .app-detail.tab-rights :is(.adp-rcheck-label, .adp-rcheck-label strong) { font-weight: 600 !important; }
 /* 권리분석(직접확인) 맨 아래로 합친 '권리분석 정리' — 표 아래 작은 제목 + 적는 칸 */
@@ -7323,11 +7331,11 @@ span.cal-day.has { cursor: help; }
     /* 맨 위 주황 막대 안내(다른 화면과 같은 .rg-lead) — 첫 줄은 도우미가 지금 하는 말, 둘째 줄은 쓰는 순서 */
     const say = online ? (msg || '대기 중입니다.') : 'MyAgent가 꺼져 있습니다. 수집할 컴퓨터에서 agent.py 를 켜 주세요.';
     const lead = `<div class="rg-lead sx-lead" role="status" aria-live="polite"><p class="l1">${esc(say)}</p>`
-      + '<p class="l2">① 브라우저 열기 → 읍면동 · 끝 페이지까지 자동 · 현재 화면 수집 중 하나 → 건축연도 채우기 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
+      + '<p class="l2">① 브라우저 열기 → 읍면동 · 끝 페이지까지 · 현재 화면 수집 중 하나 → 건축연도 채우기 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
     return `<div class="sx-top" id="agPanel">${lead}${online && s.version ? `<div class="sx-verline">MyAgent ${esc(agVer(s.version))}</div>` : ''}<section class="sx-card sx-collect" aria-label="인근매각사례 수집">${titlebar}`
       /* 첫 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③. 처음부터새로는 아래 상태 줄 왼쪽(2026-11-06) */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}<span class="sx-vsep" aria-hidden="true"></span>${seg('months', AG_MONTHS)}</div>`
-      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 자동 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div></div></div></div>`
+      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div></div></div></div>`
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
       + `<div class="sx-manage">${agQueueHtml()}${agCovHtml(metaCnt, metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : '')}</div>`
       + `</section></div>`;
@@ -7427,7 +7435,7 @@ span.cal-day.has { cursor: help; }
        추가는 고른 동 · 넣은 사건번호를 한 번에 올린다. 알약(동 · 사건)은 그 아래 한 줄로 */
     const line = `<div class="ag-cov ag-q-tools ag-q-line"><span class="ag-qgrp"><small>읍면동으로 수집</small>${regionSelects(AG.reg, 'ag-reg', AG.reg.kind)}</span>`
       + (AG_CASE_ADD ? `<span class="sx-vsep" aria-hidden="true"></span><span class="ag-qgrp"><small>사건번호로 수집</small><input type="text" class="adm-input" id="agQIn" placeholder="사건번호 예 2026타경503385" maxlength="30" value="${esc(AG.qDraft)}"></span>` : '')
-      + `<span class="sx-vsep" aria-hidden="true"></span><span class="ag-qkind"><div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn" data-act="ag-q-add">추가</button></span>${tail}</div>`;
+      + `<span class="sx-vsep" aria-hidden="true"></span><span class="ag-qkind"><div class="adm-seg">${SALE_SEG.kind.map((v) => `<button type="button" class="adm-seg-btn ${AG.reg.kind === v ? 'on' : ''}" data-act="ag-reg-kind" data-v="${v}">${v}</button>`).join('')}</div><button type="button" class="ag-btn pri ag-add-main" data-act="ag-q-add">추가</button></span>${tail}</div>`;
     const chips = dongChips + caseChips;
     return `<div class="ag-qline">${line}${chips || hint ? `<div class="ag-cov">${chips}${hint}</div>` : ''}</div>`;
   }
