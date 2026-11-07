@@ -7727,7 +7727,6 @@ span.cal-day.has { cursor: help; }
   function agQueueHtml(tail = '') {
     const dongChips = AG.queue.filter((q) => q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.dong)} <i>${esc(q.kind || '동 전체')}</i><button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(agQid(q))}" aria-label="빼기">×</button></span>`).join('');
     const caseChips = AG.queue.filter((q) => !q.dong).map((q) => `<span class="ag-cov-chip">${esc(q.case)}${q.addr || q.kind ? ` <i>${esc([q.addr ? agRegionOf(q.addr) : '', q.kind || ''].filter(Boolean).join(' · '))}</i>` : ''}<button type="button" class="ag-q-x" data-act="ag-q-del" data-v="${esc(q.case)}" aria-label="빼기">×</button></span>`).join('');
-    const cands = agQueueCands().length;
     const hint = '';   /* '선정물건 중 안 모은 동네 ○곳은 …' 안내는 뺐다(2026-11-07 — 뜻이 잘 안 읽혔다). 수집은 예전처럼 같이 올라간다 */
     /* 한 줄에 세 묶음 — [읍면동으로 수집 · 시도 · 시군구 · 동] [사건번호로 수집 · 사건번호] [종류 · 추가](2026-11-06). 종류는 둘이 같이 쓴다.
        추가는 고른 동 · 넣은 사건번호를 한 번에 올린다. 알약(동 · 사건)은 그 아래 한 줄로 */
