@@ -5943,7 +5943,7 @@ span.cal-day.has { cursor: help; }
       </div>
       <!-- ② 어디서 가져올까 — 제목 옆으로 네 칸 한 줄. 위 단과는 선으로 가른다 -->
       <div class="rg-row1 rg-sep rg-drive">
-        <span class="rg-title tip-below" data-tip="구글 드라이브 폴더나 PDF 파일을 읽어 선정물건에 올립니다" data-tip-pos="left">${I.cloud}구글 드라이브 연동</span>
+        <span class="rg-title tip-below" data-tip="구글 드라이브 폴더나 PDF 파일을 읽어 물건목록에 올립니다" data-tip-pos="left">${I.cloud}구글 드라이브 연동</span>
         ${PAID ? '<div class="rg-acts">' : '<span class="lock-note">프로 회원이면 쓸 수 있습니다<button type="button" class="mini edit" data-act="soon" data-name="결제하기">결제하기</button></span><div class="rg-acts">'}
         <!-- 등록해 둔 폴더를 펼쳐 고른다. 고치고 지우는 일은 폴더등록 창이 맡는다 -->
         <div class="rg-folder pop-root" data-pop="folders">
@@ -5966,7 +5966,7 @@ span.cal-day.has { cursor: help; }
         <span class="badge s-${r.rowStatus}">${r.rowStatus}</span>
       </li>`;
     /* 결과 상자 — 읽어 온 목록. 이름은 하나다 */
-    const PC = { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서(PDF · 이미지)를 올리면 AI가 선정물건에 분석 정리합니다', drop: '파일을 드래그하거나 박스를 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
+    const PC = { title: 'AI 자동 파싱', ic: I.spark, tip: '경매 문서(PDF · 이미지)를 올리면 AI가 물건목록에 분석 정리합니다', drop: '파일을 드래그하거나 박스를 클릭하여 업로드하면 <br>여기에 미리보기가 표시됩니다.' };
     // 다음에 다시 그릴 때 '목록이 이미 펼쳐져 있었는지' 를 알아야 애니메이션을 끌 수 있다
     R.popShown = S.pop === 'folders';
     $('regContent').innerHTML = `
@@ -5978,7 +5978,7 @@ span.cal-day.has { cursor: help; }
       ${R.loading || R.banner ? `<div class="rg-banner" role="status">${R.loading ? '<span class="rg-dot"></span><span class="rg-dot"></span><span class="rg-dot"></span>' : ''}<span>${esc(R.loading ? `${R.loadingLabel}…` : R.banner)}</span>${!R.loading && R.permBtn ? '<button type="button" class="mini edit" data-act="drive-perms" style="margin-left:auto">권한열기</button>' : ''}</div>` : ''}
       <div class="rg-lead">
         <p class="l1">무료 회원은 직접 입력하세요.</p>
-        <p class="l2">입력 내용은 선정물건에 카드로 등록됩니다. 사건번호 · 소재지만 적어도 되고, 매각기일 · 금액까지 적으면 카드에 입찰일과 최저가가 함께 보입니다.</p>
+        <p class="l2">입력 내용은 물건목록에 카드로 등록됩니다. 사건번호 · 소재지만 적어도 되고, 매각기일 · 금액까지 적으면 카드에 입찰일과 최저가가 함께 보입니다.</p>
       </div>
       <!-- 직접입력 — 제목은 상자 안. 제목 줄을 누르면 칸이 펼쳐진다 -->
       <section class="rg-results manual ${mnOpen ? '' : 'folded'}" id="rgSecManual">
@@ -9149,7 +9149,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
           .then(() => {
             ['mnCase', 'mnCourt', 'mnType', 'mnRound', 'mnAddr', 'mnDate', 'mnAppr', 'mnMin', 'mnDep',
               'mnBld', 'mnLand', 'mnYear', 'mnOwner', 'mnDebtor', 'mnNote'].forEach((id) => { $(id).value = ''; });
-            toast(`${caseNo} 을 선정물건에 올렸습니다.`);
+            toast(`${caseNo} 을 물건목록에 올렸습니다.`);
           })
           .catch((err) => { console.error('[직접입력] 등록 실패', err); toast(userMsg(err, '적지 못했습니다. 다시 해 주세요.'), 'info'); });
         break;
@@ -9331,7 +9331,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       }
       case 'rg-collapse': R.collapsed = !R.collapsed; renderRegister(); break;
       /* 목록 비우기 — 한 번 묻는다. 읽어 온 줄만 지우고 등록한 선정물건은 그대로다 */
-      case 'rg-clear': askConfirm({ title: '목록을 비울까요?', desc: '읽어 온 목록만 지웁니다. 이미 등록한 선정물건은 그대로 남습니다.', okLabel: '비우기', skipKey: '', run: () => { R.rows = []; R.banner = ''; R.missing = []; renderRegister(); toast('목록을 비웠습니다.'); } }); break;
+      case 'rg-clear': askConfirm({ title: '목록을 비울까요?', desc: '읽어 온 목록만 지웁니다. 이미 등록한 물건은 물건목록에 그대로 남습니다.', okLabel: '비우기', skipKey: '', run: () => { R.rows = []; R.banner = ''; R.missing = []; renderRegister(); toast('목록을 비웠습니다.'); } }); break;
       case 'missing-trash': { const ids = R.missing.map((m) => m.id); ids.forEach((x) => update(x, { trashed: true })); R.missing = []; render(); toast(`${ids.length}건을 휴지통으로 보냈습니다.`); break; }
       case 'reg-tab': readReg(); S.modal.tab = v; S.modal.err = ''; renderModal(); break;
       case 'reg-submit': submitRegister(); break;

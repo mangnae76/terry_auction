@@ -861,7 +861,7 @@ const V1 = {
         { t: 'p', html: '마이턴옥션은 <b>리치마블</b>의 올인원 경매 분석 플랫폼 브랜드입니다.' },
         { t: 'bi' },
         { t: 'h4', text: '물건 하나가 말 하나입니다' },
-        { t: 'p', html: '선정물건에 올린 물건은 모두 아래 칸 위에 놓입니다. 카드의 단계 단추를 누르면 말이 그 칸으로 옮겨 가고, 칸에 맞는 화면이 함께 움직입니다.' },
+        { t: 'p', html: '물건목록에 올린 물건은 모두 아래 칸 위에 놓입니다. 카드의 단계 단추를 누르면 말이 그 칸으로 옮겨 가고, 칸에 맞는 화면이 함께 움직입니다.' },
         { t: 'board' },
       ] },
     ] },
@@ -1044,7 +1044,7 @@ V1.sections.find((s) => s.id === 'pages').subs = [
     { t: 'note', tone: 'tip', title: '다음 할 일의 순서', html: '손품조사로 입지 · 시세를 본 뒤 <b>대략 수익</b>을 보고 임장을 정하고, 임장을 다녀와 <b>임장 결과로 입찰가를 확정</b>합니다.' },
   ] },
   { aid: 'help-register', label: '물건등록', title: '물건등록', ic: 'upload', path: '상단 메뉴 › 물건등록', route: '#/register', blocks: [
-    { t: 'p', html: '경매 물건을 선정물건에 올리는 곳입니다. 한 페이지에 위에서부터 <b>자동등록</b>(PRO) · <b>직접입력</b> · <b>AI 자동 파싱</b> 결과가 있습니다.' },
+    { t: 'p', html: '경매 물건을 물건목록에 올리는 곳입니다. 한 페이지에 위에서부터 <b>자동등록</b>(PRO) · <b>직접입력</b> · <b>AI 자동 파싱</b> 결과가 있습니다.' },
     { t: 'shot', key: 'register', pins: [[7, 17.3], [7, 24.6], [7, 31.8], [7, 50.9], [7, 80.3]], legend: [
       ['자동등록 PRO', 'PDF를 읽어 AI가 사건 카드로 정리합니다. 프로 회원이 씁니다(무료 회원에게는 「프로 회원이면 쓸 수 있습니다 · 결제하기」가 보입니다).'],
       ['AI 자동 분석', 'Gemini 키 등록 상태와 켜기/끄기 스위치. PDF에서 규칙으로 못 읽은 칸을 AI가 채웁니다.'],
@@ -1063,7 +1063,7 @@ V1.sections.find((s) => s.id === 'pages').subs = [
       ['소재지 <span class="req">*</span>', '주소를 적습니다.'],
       ['매각기일 · 금액', '매각기일, 감정가, 최저가, 보증금(비우면 최저가의 10%). 금액은 적는 대로 세 자리마다 쉼표가 붙습니다.'],
       ['관계인 · 물건 · 메모', '소유자 · 채무자, 건물 · 토지면적과 건축년도, 특이사항(유치권, 대항력 임차인 등).'],
-      ['물건등록하기', '* 표시 칸을 채우면 선정물건에 올라갑니다.'],
+      ['물건등록하기', '* 표시 칸을 채우면 물건목록에 올라갑니다.'],
     ] },
     { t: 'note', tone: 'warn', html: '자동으로 들어온 값도 <b>최저가 · 보증금</b>은 입찰 전에 한 번 더 확인하세요. 틀리면 입찰 자체가 어긋납니다.' },
   ] },
@@ -1431,7 +1431,7 @@ function biHtml() {
 
 function boardHtml() {
   const st = C().stages; const main = st.filter((s) => !s.group);
-  const tiles = [{ name: '내 차례', desc: '물건을 선정물건에 올리면 말이 판 위에 놓입니다', start: true }];
+  const tiles = [{ name: '내 차례', desc: '물건을 물건목록에 올리면 말이 판 위에 놓입니다', start: true }];
   main.forEach((s) => { if (s.k === 'sold') tiles.push({ name: '결과', desc: st.filter((x) => x.group).map((x) => x.label).join(' · '), c: '--st-won' }); tiles.push({ name: s.label, desc: s.desc, c: s.c }); });
   let n = 0;
   return `<div class="board">${tiles.map((t) => `<div class="tile${t.start ? ' start' : ''}" ${t.c ? `style="--c:var(${t.c})"` : ''}><div class="tile-band"></div><div class="tile-in"><span class="tile-no">${t.start ? 'START' : `${++n}칸`}</span><span class="tile-name">${esc(t.name)}</span><span class="tile-desc">${esc(t.desc)}</span></div></div>`).join('')}</div>`;
