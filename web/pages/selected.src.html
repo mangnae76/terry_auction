@@ -827,6 +827,7 @@ button { cursor: pointer; }
 :root[data-theme="dark"] .sx-fs { --surface: #fff; --band: #f3f5f9; --line: #e3e8f0; --card-line: #e8ecf3; --muted: #5f6b82; --faint: #98a2b5; --text: #18213a; --blue-soft: #eaf1ff; --blue: #2563eb; }
 /* 경매사례 표 첫 줄(경매물건) — 밤에는 옅은 붉은 기만 */
 :root[data-theme="dark"] .sx-tbl tr.me td { background: rgba(224, 62, 62, .1); box-shadow: inset 0 -2px 0 rgba(224, 62, 62, .35); }
+:root[data-theme="dark"] .sx-tbl tbody tr.me td, :root[data-theme="dark"] .sx-tbl tbody tr.me td:first-child { background: rgba(224, 62, 62, .1) !important; box-shadow: inset 0 -2px 0 rgba(224, 62, 62, .35) !important; }
 :root[data-theme="dark"] :is(.adm-case-in, #sonNaverSlot, #sonConcSlot, #sonAskSlot, .app-market .dm-card, .app-market .son-demand, .app-market:is([data-s="son"], [data-s="sonq"]) .son-detail, .mk-sale) .trf-m.on { background: var(--blue-soft) !important; color: var(--on-text) !important; border-color: var(--on-line) !important; }
 :root[data-theme="dark"] .adm-case-in .tool-tabs { --boxtab-on: var(--surface); }
 :root[data-theme="dark"] .adm-case-in .tool-bar { border-bottom-color: var(--boxtab-line); }
@@ -1355,7 +1356,9 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-tbl td.l { overflow: hidden; }   /* 주소는 동부터 — 넘치면 … (전체 주소는 마우스를 올리면) */
 .sx-tbl tr.me td { background: #fff5f5; box-shadow: inset 0 -2px 0 #f3c9c9; }   /* 맨 위 내 물건(고정카드) — 손품조사 시세분석 표 첫 줄(tr.mine)과 같은 색 */
 .sx-tbl tbody td, .sx-tbl tbody td * { font-weight: 400 !important; }   /* 머리글 말고는 굵기 없이(2026-11-06) */
-.sx-tbl tr.lot td { background: color-mix(in srgb, var(--blue-soft) 45%, transparent); }   /* 같은 지번 매각 */
+.sx-tbl tr.lot td { background: color-mix(in srgb, var(--blue-soft) 45%, transparent); }
+/* 맨 윗줄 기준물건(경매물건) — 같은 지번 · 지도에서 고른 지번 스타일이 덮어 바탕이 파래지고 첫 칸 빨간 밑줄이 끊겼다(2026-11-08). 늘 빨간 줄로 */
+.sx-tbl tbody tr.me td, .sx-tbl tbody tr.me td:first-child { background: #fff5f5 !important; box-shadow: inset 0 -2px 0 #f3c9c9 !important; }   /* 같은 지번 매각 */
 .sx-addr { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }   /* 주소 아래 칩 — 손품조사 시세분석 표와 같은 꼴 */
 .sx-addr .addr { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .sx-addr .chips { display: inline-flex; gap: 4px; }
@@ -7478,7 +7481,7 @@ span.cal-day.has { cursor: help; }
   const sxAreaCell = (m2) => (m2 > 0 ? `<td class="num area">${m2.toFixed(2)}㎡<small>${(m2 / 3.305785).toFixed(1)}평</small></td>` : '<td>-</td>');
   /* 검색리스트 맨 위 '내 물건' — 사건 고정카드의 물건(매각 전이라 매각가 · 매각가율 · 응찰은 비움) */
   function sxMeRowHtml(it) {
-    if (it.__ref) return sxRowHtml(it.__ref).replace('<tr class="', '<tr class="me ');   /* 지역으로에서 고른 기준 매각물건 — 맨 윗줄 */
+    if (it.__ref) return sxRowHtml(it.__ref).replace(/<tr class="[^"]*"/, '<tr class="me"');   /* 같은 지번 · 고른 지번 표시는 빼고 기준물건 빨간 줄만 */   /* 지역으로에서 고른 기준 매각물건 — 맨 윗줄 */
     const a = detailOf(it); const m2 = Number(it.bldg);
     const ym = String(a.approvalDate || '').replace(/[^\d]/g, '').slice(0, 6); const by = Number(ym.slice(0, 4)) || 0;
     const built = ym.length >= 6 ? `${ym.slice(0, 4)}.${ym.slice(4, 6)}` : (by ? String(by) : '-');
