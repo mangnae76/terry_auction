@@ -3120,8 +3120,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .rg-list { list-style: none; margin: 8px 0 0; padding: 0; }
 .rg-item { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto 64px; align-items: center; gap: 12px; padding: 11px 10px; border-radius: 8px; border-bottom: 1px solid var(--surface-3); transition: background .12s; }
 .rg-item:last-child { border-bottom: 0; }
-.rg-item.ready { cursor: pointer; }
-.rg-item:hover { background: var(--surface-2); }
+/* 읽어 온 줄은 누르지 않는다 — 선정물건 목록으로 보내면 검색어가 바뀌고, 보관함 물건은 '조건에 맞는 물건이 없습니다'가 떴다(2026-11-07) */
 .rg-ic { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; background: #fef2f2; color: #ef4444; }
 .rg-ic.drive { background: #ecfdf5; color: #0f9d58; }
 .rg-ic svg { width: 18px; height: 18px; }
@@ -5848,7 +5847,7 @@ span.cal-day.has { cursor: help; }
       </div>
       </div>
       </div>`;
-    const rowHtmlR = (r) => `<li class="rg-item ${r.status}" ${r.status === 'ready' ? `data-act="rg-open" data-v="${esc(r.p.caseNo)}" tabindex="0"` : ''}>
+    const rowHtmlR = (r) => `<li class="rg-item ${r.status}">
         <span class="rg-ic ${r.src === 'drive' ? 'drive' : ''}" aria-hidden="true"${tip(r.src === 'drive' ? '구글드라이브에서 읽음' : '직접 올린 PDF')}>${r.src === 'drive' ? I.cloud : I.pdf}</span>
         <div class="rg-text"><strong>${esc(r.file)}</strong>${r.status === 'ready' ? `<p>${esc(addrText(r.p) || '주소 미확인')}</p>${r.note || ''}${AI_TEXT(r.ai)}` : `<p class="err">${esc(r.err)}</p>`}</div>
         <span class="rg-meta num">${r.status === 'ready' ? `${esc(r.p.caseNo)}<i>·</i>${esc(r.p.court)}<i>·</i>매각기일 ${dotDate(r.p.date)}` : '—'}</span>
@@ -9211,7 +9210,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'rg-collapse': R.collapsed = !R.collapsed; renderRegister(); break;
       /* 목록 비우기 — 한 번 묻는다. 읽어 온 줄만 지우고 등록한 선정물건은 그대로다 */
       case 'rg-clear': askConfirm({ title: '목록을 비울까요?', desc: '읽어 온 목록만 지웁니다. 이미 등록한 선정물건은 그대로 남습니다.', okLabel: '비우기', skipKey: '', run: () => { R.rows = []; R.banner = ''; R.missing = []; renderRegister(); toast('목록을 비웠습니다.'); } }); break;
-      case 'rg-open': S.q = v; $('q').value = v; S.stage = 'all'; S.type = ''; S.court = ''; S.date = ''; go('list'); break;
       case 'missing-trash': { const ids = R.missing.map((m) => m.id); ids.forEach((x) => update(x, { trashed: true })); R.missing = []; render(); toast(`${ids.length}건을 휴지통으로 보냈습니다.`); break; }
       case 'reg-tab': readReg(); S.modal.tab = v; S.modal.err = ''; renderModal(); break;
       case 'reg-submit': submitRegister(); break;
@@ -9288,7 +9286,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     if (e.key === 'Enter' && e.target.id === 'favUrl') { e.preventDefault(); document.querySelector('[data-act="fav-add"]').click(); }
     if (e.key === 'Enter' && e.target.id === 'favEditUrl') { e.preventDefault(); document.querySelector('[data-act="fav-save"]').click(); }
     if (e.key === 'Enter' && e.target.id === 'aiKeyIn') { e.preventDefault(); document.querySelector('[data-act="ai-save"]').click(); }
-    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.rg-item.ready')) { e.preventDefault(); e.target.click(); }
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card, tr[data-act="card"]')) { e.preventDefault(); e.target.click(); }
   });
   /* 말풍선 자리 — 어느 화면·어느 자리든, 위쪽에 붙어 있는 틀(머리띠 · 하위 탭 줄 · 필터/고정 카드)에 가리면 아래로 띄운다.
