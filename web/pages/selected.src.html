@@ -1177,6 +1177,21 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-map .fs-btn:hover { color: var(--blue); }
 .sx-map.in-fs .fs-btn { display: none; }
 .sx-map .pa-pin { position: relative; }
+/* 지도 핀 — 작은 점 + '주변' 시설과 같은 흰 상자, 맨 앞에 번호(손품조사 시세분석 · 경매사례 같은 꼴, 2026-11-07) */
+:is(.sx-map, .pa .map) .pa-pin { position: relative; }
+:is(.sx-map, .pa .map) .pa-pin .pin-dot { position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .35); }
+:is(.sx-map, .pa .map) .pa-pin .pin-box { position: absolute; left: 0; top: 10px; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px 3px; background: #fff; border: 1.5px solid #2b4fd8; border-radius: 6px; box-shadow: 0 1px 4px rgba(17, 24, 39, .18); white-space: nowrap; font-size: 12px; line-height: 1.3; color: #18213a; text-align: left; cursor: pointer; }
+:is(.sx-map, .pa .map) .pa-pin .pin-box .no { flex: none; display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 4px; box-sizing: border-box; border-radius: 10px; background: #2b4fd8; color: #fff; font-style: normal; font-size: 12px; font-weight: 800; }
+:is(.sx-map, .pa .map) .pa-pin .pin-box .tx { color: #6b7280; }
+:is(.sx-map, .pa .map) .pa-pin .pin-box .tx b { font-weight: 700; color: #18213a; }
+:is(.sx-map, .pa .map) .pa-pin.on .pin-box { border-width: 2px; background: #eef3ff; }
+:is(.sx-map, .pa .map) .pa-pin.on .pin-dot { width: 16px; height: 16px; left: -8px; top: -8px; }
+:is(.sx-map, .pa .map) .pa-pin.off :is(.pin-dot, .pin-box .no) { background: #b8bfcc; }
+:is(.sx-map, .pa .map) .pa-pin.off .pin-box { border-color: #b8bfcc; opacity: .7; }
+:is(.sx-map, .pa .map) .pa-pin.off .pin-box .tx { text-decoration: line-through; }
+:is(.sx-map, .pa .map) .pa-pin.me .pin-dot { background: #e03e3e; width: 14px; height: 14px; left: -7px; top: -7px; }
+:is(.sx-map, .pa .map) .pa-pin.me .pin-box { border-color: #e03e3e; padding-left: 8px; cursor: default; }
+:is(.sx-map, .pa .map) .pa-pin.me .pin-box .tx, :is(.sx-map, .pa .map) .pa-pin.me .pin-box .tx b { color: #e03e3e; }
 .sx-map .pa-pin .dot { position: absolute; left: -12px; top: -12px; width: 24px; height: 24px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .3); cursor: pointer; display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 800; font-style: normal; line-height: 1; }
 .sx-map .pa-pin.on .dot { left: -15px; top: -15px; width: 30px; height: 30px; font-size: 14px; }
 .sx-map .pa-pin.me .dot { left: -9px; top: -9px; width: 18px; height: 18px; background: #e03e3e; cursor: default; }
@@ -6894,7 +6909,7 @@ span.cal-day.has { cursor: help; }
     SXG.groups = groups;
     if (meSpot) mv.circle(meSpot, SXM.radius, { color: '#2b4fd8', weight: 1.6, dash: true, fillOpacity: 0.06 });
     /* 점과 이름표를 한 표식으로 — 줌할 때 이름표가 점과 함께 움직인다(시세분석과 같게) */
-    const html = (label, no = '') => `<i class="dot">${no}</i><span class="lbl">${label}</span>`;
+    const html = (label, no = '') => `<i class="pin-dot"></i><span class="pin-box">${no ? `<em class="no">${no}</em>` : ''}<span class="tx">${label}</span></span>`;   /* 손품조사 시세분석 지도와 같은 상자 꼴 */
     groups.forEach((g) => {
       const on = SXG.focus === g.k;
       const sub = [g.range, g.dist != null ? `${g.dist.toLocaleString('ko-KR')}m` : ''].filter(Boolean).join(' · ');
