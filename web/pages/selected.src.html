@@ -1153,12 +1153,29 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-mapmsg { font-size: 12px; color: var(--muted); }
 .sx-mapslot { min-height: 620px; }
 /* 지도 아래 거르기 — 시세분석 .conds 와 같은 꼴: 회색 띠 · 흰 칸(이름 + 고르기) · 고른 것은 흰 바탕 파란 테 */
-.sx-conds { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1.05fr) minmax(0, 1.05fr) minmax(0, .95fr) auto; gap: 10px 12px; align-items: center; margin-top: 12px; background: var(--band); border-radius: 10px; padding: 10px 12px; }
+.sx-conds { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .9fr) minmax(0, .95fr); gap: 10px 12px; align-items: center; margin-top: 12px; background: var(--band); border-radius: 10px; padding: 10px 12px; }
 .sx-plab { display: grid; grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 6px; padding: 4px 8px 4px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 700; color: var(--muted); white-space: nowrap; }
 .sx-pseg { display: flex; gap: 2px; width: 100%; background: var(--surface-2, #f3f5f9); border-radius: 6px; padding: 3px; height: 32px; box-sizing: border-box; align-items: center; }
 .sx-pseg button { flex: 1 1 0; min-width: 0; height: 26px; padding: 0 2px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 400; cursor: pointer; white-space: nowrap; }
 .sx-pseg button.on { background: var(--surface); color: var(--blue); font-weight: 700; box-shadow: inset 0 0 0 1px var(--blue); }
-.sx-conds .sx-mapmsg { justify-self: end; }
+.sx-conds .sx-mapmsg { grid-column: 1 / -1; order: 2; justify-self: end; }   /* 칸 다섯(반경 · 매각기간 · 기준 · 엘베 · 층)은 한 줄, 안내는 맨 아래 오른쪽 */
+.sx-conds .sx-mapmsg:empty { display: none; }
+.sx-conds > .sx-simrow { grid-column: 1 / 5; grid-row: 2; }   /* 손품조사 시세분석과 같은 짜임 — 아래 줄은 거르기 상자(넷 칸) + 오른쪽 초기화 · 저장 */
+.sx-conds > .sx-acts { grid-column: 5; grid-row: 2; display: flex; gap: 8px; align-self: stretch; }
+.sx-acts button { box-sizing: border-box; border-radius: 8px; font: inherit; font-size: 14px; cursor: pointer; white-space: nowrap; }
+.sx-acts .sx-reset { width: 66px; flex: 0 0 auto; padding: 0; border: 1px solid #dde3ee; background: var(--surface); color: #374151; }
+.sx-acts .sx-reset:hover { border-color: var(--blue); color: var(--blue); }
+.sx-acts .sx-reset.undo { border-color: #d97706; color: #d97706; background: #fffaf0; display: inline-flex; align-items: center; justify-content: center; }
+.sx-acts .undo-ic { width: 24px; height: 24px; display: block; }
+.sx-acts .undo-ic .trk { fill: none; stroke: #f6dfb3; stroke-width: 2.5; }
+.sx-acts .undo-ic .run { fill: none; stroke: #d97706; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 62.83; transform: rotate(-90deg); transform-origin: 12px 12px; animation: sxUndoRun 5s linear forwards; }
+@keyframes sxUndoRun { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 62.83; } }
+.sx-acts .sx-save { flex: 1; min-width: 0; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.2; padding: 0 10px; border: 0; background: #1f3a72; color: #fff; font-weight: 700; transition: background .15s, border-color .15s; }
+.sx-acts .sx-save.dirty:hover { background: #16305f; }
+.sx-acts .sx-save.saved { background: var(--surface); color: #16a34a; border: 1px solid #cfe9d8; font-weight: 600; }
+.sx-acts .sx-save.saved:hover { border-color: #8fceaa; background: #f4fbf6; }
+.sx-acts .sx-save small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.sx-plab.per { grid-template-columns: 60px minmax(0, 1fr); }
 .sx-simrow { grid-column: 1 / -1; display: grid; gap: 6px; padding: 8px 12px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }   /* 기준 아래 줄 — 시세분석 .simrow 와 같은 자리 */
 .sx-simlab { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 .sx-simlab b { color: var(--blue); font-weight: 800; }
@@ -7451,10 +7468,43 @@ span.cal-day.has { cursor: help; }
     const seg = (k, opts) => `<span class="sx-pseg" role="radiogroup">${opts.map(([v, t]) => `<button type="button" role="radio" class="${String(SXM[k]) === String(v) ? 'on' : ''}" aria-checked="${String(SXM[k]) === String(v)}" data-act="sxm-set" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</span>`;
     return `<section class="sx-card sx-mapcard" aria-label="지도"><div class="sx-mapslot" id="sxMapSlot"></div>`
       + `<div class="sx-conds"><span class="sx-plab rad">반경${seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span>`
+      /* 매각기간 — 왼쪽 검색조건에서 이 줄 반경 옆으로(2026-11-07). 누르면 바로 다시 계산(검색을 다시 누르지 않는다) */
+      + `<span class="sx-plab per">매각기간<span class="sx-pseg" role="radiogroup">${SALE_SEG.period.map((v) => { const on = ((saleApplied && saleApplied.period) || saleSeg.period) === v; return `<button type="button" role="radio" class="${on ? 'on' : ''}" aria-checked="${on}" data-act="sx-period" data-v="${v}">${v}</button>`; }).join('')}</span></span>`
       + `<span class="sx-plab">기준${seg('basis', [['sim', '유사도'], ['range', '직접범위']])}</span>`
       + `<span class="sx-plab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span>`
       + `<span class="sx-plab">층${seg('floor', [['', '전체'], ['0', '같은층']])}</span>`
-      + `<span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span>${sxSimRowHtml()}</div></section>`;
+      + `<span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span>${sxSimRowHtml()}${sxActsHtml()}</div></section>`;
+  }
+  /* ===== 초기화 · 저장 — 손품조사 시세분석과 같은 꼴 · 같은 자리(거르기 상자 오른쪽, 위 '층' 칸 아래, 2026-11-07).
+     초기화는 반경 · 매각기간 · 기준 · 엘베 · 층 · 유사도 · 직접범위를 처음 값으로(5초 안에 다시 누르면 되돌리기),
+     저장은 지금 조건을 이 브라우저에 남긴다(다음에 열 때 이 조건으로). 저장한 뒤 바뀌면 다시 '저장' ===== */
+  const SXM_SAVED_KEY = 'ta.web.sale.mapSaved';
+  let sxSaved = (() => { try { return JSON.parse(localStorage.getItem(SXM_SAVED_KEY) || 'null'); } catch (e) { return null; } })();
+  let sxUndo = null; let sxUndoTimer = 0;
+  const sxSnapNow = () => ({ radius: SXM.radius, elev: SXM.elev, floor: SXM.floor, basis: SXM.basis, sim: SXM.sim, rc: { ...SXM.rc }, period: (saleApplied && saleApplied.period) || saleSeg.period });
+  const sxSnapRestore = (o) => {
+    Object.assign(SXM, { radius: o.radius, elev: o.elev, floor: o.floor, basis: o.basis, sim: o.sim, rc: { ...o.rc } }); sxSaveM();
+    saleSeg.period = o.period; saleSave(); if (saleApplied) saleApply({ ...saleApplied, period: o.period });
+  };
+  function sxActsHtml() {
+    const dirty = !sxSaved || JSON.stringify(sxSaved.snap) !== JSON.stringify(sxSnapNow());
+    const T = CLOUD.T; const stamp = sxSaved && sxSaved.at && T && T.updateStamp ? T.updateStamp(sxSaved.at) : '';
+    const undoIc = '<svg class="undo-ic" viewBox="0 0 24 24" aria-hidden="true"><circle class="trk" cx="12" cy="12" r="10"/><circle class="run" cx="12" cy="12" r="10"/><path d="M9.2 9.6a3.6 3.6 0 1 1-.6 4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8.4 7.4v2.8h2.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    return `<span class="sx-acts"><button type="button" class="sx-reset${sxUndo ? ' undo' : ''}" data-act="sx-mreset" aria-label="${sxUndo ? '되돌리기' : '초기화'}">${sxUndo ? undoIc : '초기화'}</button>`
+      + `<button type="button" class="sx-save ${dirty ? 'dirty' : 'saved'}" data-act="sx-msave" aria-live="polite">${dirty ? '저장' : `저장완료${stamp ? `<small>${esc(stamp)}</small>` : ''}`}</button></span>`;
+  }
+  function sxMapReset() {
+    clearTimeout(sxUndoTimer);
+    if (sxUndo) { sxSnapRestore(sxUndo); sxUndo = null; agPaintTable(); return; }
+    sxUndo = sxSnapNow();
+    sxSnapRestore({ radius: 500, elev: '', floor: '', basis: 'range', sim: 80, rc: { mMin: SX_AREA[0], mMax: SX_AREA[1], yMin: SX_YEAR[0], yMax: SX_YEAR[1] }, period: '12개월' });
+    agPaintTable();
+    sxUndoTimer = setTimeout(() => { sxUndo = null; const b = document.querySelector('.sx-reset.undo'); if (b) { b.classList.remove('undo'); b.setAttribute('aria-label', '초기화'); b.textContent = '초기화'; } }, 5000);
+  }
+  function sxMapSave() {
+    sxSaved = { snap: sxSnapNow(), at: Date.now() };
+    try { localStorage.setItem(SXM_SAVED_KEY, JSON.stringify(sxSaved)); } catch (e) { /* 그만 */ }
+    const el = document.querySelector('.sx-acts'); if (el) el.outerHTML = sxActsHtml();
   }
   function sxResultsHtml() {
     const rows = agIsAdmin() && AG.recs.length ? sxRows() : null;
@@ -7848,7 +7898,6 @@ span.cal-day.has { cursor: help; }
       + sel('dong', '읍면동', loading && !dongs.length ? '불러오는 중…' : '읍면동 전체', dongs, !saleSeg.sgg)
       + `<label class="sx-f" aria-label="물건종류"><select data-act="sale-q" data-k="kind" class="${saleSeg.kind ? '' : 'ph'}"><option value="">물건종류 전체</option>${SALE_SEG.kind.map((v) => `<option ${saleSeg.kind === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>`
       + '</div>'
-      + `<div class="sx-f">매각기간<div class="sx-seg" role="group">${SALE_SEG.period.map((v) => `<button type="button" class="${saleSeg.period === v ? 'on' : ''}" data-act="sale-seg" data-k="period" data-v="${v}">${v}</button>`).join('')}</div></div>`
       + `<div class="sx-f">면적(㎡)${pair('sxAmin', 'sxAmax', '최소', '최대', 'decimal')}</div>`
       + `<div class="sx-f">건축년도${pair('sxYmin', 'sxYmax', '부터', '까지', 'numeric')}</div>`
       + `<div class="sx-fbtns"><button type="button" class="sx-btn" data-act="sale-go" ${canGo ? '' : 'disabled'}>검색</button><button type="button" class="sx-btn ghost" data-act="sx-save">저장</button><button type="button" class="sx-btn ghost" data-act="sx-reset">초기화</button></div>`
@@ -9285,6 +9334,9 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         break;
       } catch (err) { console.error('[직접입력] 등록 실패', err); toast(userMsg(err, '적지 못했습니다. 다시 해 주세요.'), 'info'); break; }
       case 'sale-seg': saleSeg[t.dataset.k] = t.dataset.v; saleSave(); renderMarket(); break;
+      case 'sx-mreset': sxMapReset(); break;
+      case 'sx-msave': sxMapSave(); break;
+      case 'sx-period': saleSeg.period = v; saleSave(); if (saleApplied) saleApply({ ...saleApplied, period: v }); renderMarket(); break;   /* 지도 아래 줄 매각기간 — 바로 다시 계산 */
       /* 검색 — 지역 · 종류 · 기간에 면적 · 건축년도까지 이때 적용 */
       case 'sale-go': saleApply({ ...saleSeg, amin: SX.amin, amax: SX.amax, ymin: SX.ymin, ymax: SX.ymax }); renderMarket(); break;
       case 'sx-save': try { localStorage.setItem(SX_KEY, JSON.stringify({ amin: SX.amin, amax: SX.amax, ymin: SX.ymin, ymax: SX.ymax, my: SX.my, sort: SX.sort, desc: SX.desc })); } catch (err) { /* 그만 */ } saleSave(); if (saleApplied) saleApply(saleApplied); toast('검색 조건을 저장했습니다 — 다음에 열어도 그대로입니다.'); break;
