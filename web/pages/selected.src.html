@@ -5319,22 +5319,20 @@ span.cal-day.has { cursor: help; }
       const t = at[name] || (e && e.at) || 0;
       const k = done[name] ? 'done' : (part[name] || t) ? 'doing' : 'none';
       if (k === 'done') n += 1;
-      const desc = e && T.editLogDesc ? T.editLogDesc(e.where, e.what, e.items) : '';
-      const tipText = `${name} ${S_TXT[k]}${t ? ` · ${md(t)}` : ''}${desc ? ` · ${desc}` : ''}`;
-      return `<button type="button" class="prg-row ${k}" data-act="prg-go" data-id="${it.id}" data-v="${key}"${tip(tipText, 'left')}><i aria-hidden="true"></i><b>${name}</b><span class="s">${S_TXT[k]}</span><span class="d num">${t ? md(t) : '-'}</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>`;
+      return `<button type="button" class="prg-row ${k}" data-act="prg-go" data-id="${it.id}" data-v="${key}"><i aria-hidden="true"></i><b>${name}</b><span class="s">${S_TXT[k]}</span><span class="d num">${t ? md(t) : '-'}</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>`;
     }).join('');
     return `<aside class="prg" aria-label="${esc(it.caseNo)} 분석 진행"><div class="prg-head"><b class="prg-title">${PRG_IC}분석 진행</b><span><b class="num">${n}</b> / 5 완료</span></div>${rows}</aside>`;
   }
   function resultHtml(it, past) {
     const r = profitOf(it);
-    const m = (cls, label, val, tipText) => `<div class="metric ${cls}"${tip(tipText, 'left')}><small>${label}</small>${val}</div>`;
+    const m = (cls, label, val) => `<div class="metric ${cls}"><small>${label}</small>${val}</div>`;
     const money = (n) => `<strong class="num ${n < 0 ? 'neg' : ''}">${won(Math.abs(n)) ? `${n < 0 ? '−' : ''}${won(Math.abs(n))}` : '0'}<em>원</em></strong>`;
     return `<aside class="res ${past ? 'past' : ''}" data-act="go-profit" data-id="${it.id}" aria-label="${esc(it.caseNo)} 수익률 분석">
-      <div class="res-head"><b class="res-title">${I.trend}수익률 분석</b><span${r ? tip(`${r.plan ? `${r.confirmed ? '확정 ' : ''}${r.plan}안 기준 · ` : ''}매도 예상 ${eok(r.sale)}`, 'left') : ''}>${r ? (r.plan ? `${r.confirmed ? '확정 ' : ''}${r.plan}안` : '') : (it.mine > 0 ? '매도가 입력 전' : '입찰가 산정 전')}</span></div>
+      <div class="res-head"><b class="res-title">${I.trend}수익률 분석</b><span>${r ? (r.plan ? `${r.confirmed ? '확정 ' : ''}${r.plan}안` : '') : (it.mine > 0 ? '매도가 입력 전' : '입찰가 산정 전')}</span></div>
       ${r ? [
-        m('rate', '최종 수익률', `<strong class="num ${r.rate < 0 ? 'neg' : ''}">${r.rate.toFixed(1)}<em>%</em></strong>`, '세후 순이익 ÷ 필요준비금'),
-        m('', '순수익금', money(r.after), '매도가 − 총투자금 − 세금'),
-        m('', '필요준비금', money(r.net), '입찰가 − 대출 + 비용'),
+        m('rate', '최종 수익률', `<strong class="num ${r.rate < 0 ? 'neg' : ''}">${r.rate.toFixed(1)}<em>%</em></strong>`),
+        m('', '순수익금', money(r.after)),
+        m('', '필요준비금', money(r.net)),
       ].join('') : ['최종 수익률', '순수익금', '필요준비금'].map((l) => `<div class="metric blank"><small>${l}</small><strong class="none">산정 전</strong></div>`).join('')}
     </aside>`;
   }
@@ -5346,15 +5344,15 @@ span.cal-day.has { cursor: help; }
   function cardHtml(it) {
     return `<div class="card-row">${mainCardHtml(it)}<div class="card-side">${progressHtml(it)}${resultHtml(it, isPast(it) && !hasResult(it))}</div></div>`;   /* 분석 진행 · 수익률 분석은 흰 상자 하나에 테두리 상자 둘 */
   }
+  /* 카드 툴팁은 글자 없는 아이콘 단추(주소복사 · 보관함 · 휴지통) · 갱신필요 표시에만 — 보이는 숫자 · 글을 되풀이하는 툴팁은 뺐다(2026-11-07) */
   function mainCardHtml(it) {
     const past = isPast(it) && !hasResult(it);
     const picked = S.picked.has(it.id);
-    const over = it.mine > 0 && it.min > 0 ? (it.mine / it.min - 1) * 100 : null;   /* 최저가보다 몇 % 위(아래면 음수) */
     return `<article class="card ${past ? 'past' : ''} ${S.pick ? 'pickmode' : ''} ${picked ? 'picked' : ''} ${S.menu && S.menu.id === it.id ? 'menu-open' : ''}" data-act="card" data-id="${it.id}" tabindex="0" aria-label="${esc(it.caseNo)} ${esc(addrText(it))}">
       ${past ? `<span class="ribbon" aria-hidden="true">${I.refresh}</span><span class="ribbon-hit" data-tip="입찰일이 지났습니다 · 갱신필요" data-tip-pos="left"></span>` : ''}
       <div class="c-top">
         ${S.pick ? `<input type="checkbox" class="ck pick-ck" data-act="pick-one" data-id="${it.id}" ${picked ? 'checked' : ''} aria-label="${esc(it.caseNo)} 고르기">` : ''}
-        <div class="c-meta"><span class="c-case num">${I.hash}${hl(it.caseNo)}</span><span class="c-court" title="${esc(it.court || DASH)}">${I.court}<span class="full">${orDash(hl(it.court))}</span><span class="short">${orDash(hl(shortCourt(it.court)))}</span></span><span class="c-date num"${tip(it.date ? `매각기일 ${ddayText(it.date)}${past ? ' · 지났습니다' : ''}` : '매각기일을 적지 않았습니다', 'left')}>${I.cal}${it.date ? `${it.date}${dowText(it.date)}<em class="c-dday">${ddayText(it.date)}</em>` : DASH}</span></div>
+        <div class="c-meta"><span class="c-case num">${I.hash}${hl(it.caseNo)}</span><span class="c-court">${I.court}<span class="full">${orDash(hl(it.court))}</span><span class="short">${orDash(hl(shortCourt(it.court)))}</span></span><span class="c-date num">${I.cal}${it.date ? `${it.date}${dowText(it.date)}<em class="c-dday">${ddayText(it.date)}</em>` : DASH}</span></div>
         <div class="c-acts">
           ${starsHtml(it)}
           <button type="button" class="ibtn" data-act="copy" data-id="${it.id}" aria-label="주소복사"${tip('주소복사')}>${I.copy}</button>
@@ -5362,11 +5360,11 @@ span.cal-day.has { cursor: help; }
           <button type="button" class="ibtn del" data-act="delete" data-id="${it.id}" aria-label="휴지통으로 보내기"${tip('휴지통으로 보내기', 'right')}>${I.trash}</button>
         </div>
       </div>
-      <div class="addr-row"${tip([addrText(it).length > 30 ? addrText(it) : '', it.status === '임장완료' ? '임장 다녀옴' : ''].filter(Boolean).join(' · '), 'left')}><h3 class="c-addr"><span class="type-mark">${esc(TYPE_NAME(it.type))}</span><span class="a-text ${it.status === '임장완료' ? 'done' : ''}">${addrHtml(it)}</span>${areaHtml(it)}</h3></div>
+      <div class="addr-row"><h3 class="c-addr"><span class="type-mark">${esc(TYPE_NAME(it.type))}</span><span class="a-text ${it.status === '임장완료' ? 'done' : ''}">${addrHtml(it)}</span>${areaHtml(it)}</h3></div>
       <div class="prices">
-        <div class="price"${tip(eok(it.apr))}><small>감정가</small><strong class="num">${won(it.apr) || DASH}${it.apr ? '<em>원</em>' : ''}</strong></div>
-        <div class="price"${tip(it.min && it.apr ? `${eok(it.min)} · 감정가의 ${pct(it.min, it.apr)}%` : '')}><small>최저가${it.round ? ` (${esc(it.round)})` : ''}</small><strong class="num">${won(it.min) || DASH}${it.min ? '<em>원</em>' : ''}</strong></div>
-        <div class="price mine${bidLow(it) ? ' low' : ''}"${tip(it.mine ? `${eok(it.mine)} · 최저가 ${over >= 0 ? '+' : ''}${over.toFixed(1)}%${bidLow(it) ? ' — 최저가 미만은 무효 입찰입니다' : ''}` : '')}><small>입찰가${bidLow(it) ? '<em class="low-tag">최저가미만</em>' : ''}</small>${it.mine ? `<strong class="num">${won(it.mine)}<em>원</em></strong>` : '<strong class="none">산정 전</strong>'}</div>
+        <div class="price"><small>감정가</small><strong class="num">${won(it.apr) || DASH}${it.apr ? '<em>원</em>' : ''}</strong></div>
+        <div class="price"><small>최저가${it.round ? ` (${esc(it.round)})` : ''}</small><strong class="num">${won(it.min) || DASH}${it.min ? '<em>원</em>' : ''}</strong></div>
+        <div class="price mine${bidLow(it) ? ' low' : ''}"><small>입찰가${bidLow(it) ? '<em class="low-tag">최저가미만</em>' : ''}</small>${it.mine ? `<strong class="num">${won(it.mine)}<em>원</em></strong>` : '<strong class="none">산정 전</strong>'}</div>
       </div>
       ${phasesHtml(it)}
     </article>`;
