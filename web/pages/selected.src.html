@@ -3829,6 +3829,8 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .grid .divider b { color: var(--text); font-size: 14px; }
 .grid .divider i { flex: 1; height: 1px; background: #d3d6dc; }
 /* 한 줄 = 물건 카드 + 분석 진행 + 수익률 분석 카드 */
+.card-row .c-addr { font-size: 14.5px; }   /* 옆 상자가 들어가 카드가 좁아졌다 — 주소 16 → 14.5, 면적 앞 틈 16 → 10(잘리는 주소 11건 중 3 → 1, 2026-11-07) */
+.card-row .c-addr .a-area { padding-left: 10px; }
 /* 분석 진행 · 수익률 분석 — 흰 상자 하나(카드와 같은 꼴)에 담고, 안에서 테두리 상자 둘로 나눈다(2026-11-07) */
 .card-side { flex: 0 0 auto; display: flex; gap: 10px; padding: 10px; box-sizing: border-box; background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); }
 .card-side > :is(.prg, .res) { flex: 0 0 246px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: none; }
@@ -4993,7 +4995,9 @@ span.cal-day.has { cursor: help; }
     return i < 0 ? safe : `${safe.slice(0, i)}<mark>${safe.slice(i, i + qq.length)}</mark>${safe.slice(i + qq.length)}`;
   };
   /* 건물 이름만 파랑, 동·층·호는 주소와 같은 검정 */
-  const addrHtml = (it) => `${hl(it.addr)}${it.bld ? ` <b>${hl(it.bld)}</b>` : ''}${it.unit ? ` <span class="unit">${hl(it.unit)}</span>` : ''}`;
+  /* 카드 · 목록 주소 — 호수 앞 층은 뺀다('5층501호' → '501호', 2026-11-07). 호가 없는 층('1층')은 그대로 */
+  const unitShort = (u) => String(u || '').replace(/(?:지하\s*)?\d+\s*층\s*(?=[A-Za-z]?\d+\s*호)/g, '');
+  const addrHtml = (it) => `${hl(it.addr)}${it.bld ? ` <b>${hl(it.bld)}</b>` : ''}${it.unit ? ` <span class="unit">${hl(unitShort(it.unit))}</span>` : ''}`;
   /* 앱 utils/auctionSummary.shortCourt — '인천지방법원'→'인천법원', '… 부천지원'→'부천법원' */
   const shortCourt = (raw) => { const name = String(raw || '').trim(); const br = name.match(/([가-힣]+)\s*지원\s*$/); if (br) return `${br[1]}법원`; const m = name.match(/^(.*?)(?:지방|가정|행정|회생)?법원/); return m && m[1] ? `${m[1]}법원` : name; };
   /* 토지·건물 면적 — ㎡ 와 평을 같이 적는다 */
