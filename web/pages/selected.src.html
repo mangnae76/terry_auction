@@ -7626,7 +7626,7 @@ span.cal-day.has { cursor: help; }
     return `<div class="sx-top" id="agPanel">${lead}${online && s.version ? `<div class="sx-verline">MyAgent ${esc(agVer(s.version))}</div>` : ''}<section class="sx-card sx-collect" aria-label="인근매각사례 수집">${titlebar}`
       /* 첫 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③. 처음부터새로는 아래 상태 줄 왼쪽(2026-11-06) */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}<span class="sx-vsep" aria-hidden="true"></span>${seg('months', AG_MONTHS)}</div>`
-      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}<label class="sx-chk sx-chkbox"><input type="checkbox" data-act="ag-fresh" ${agSel.fresh ? 'checked' : ''}>처음부터새로</label></div></div></div></div>`
+      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}</div></div></div></div>`
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
       + `<div class="sx-manage">${agQueueHtml()}${agCovHtml(metaCnt, metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : '')}</div>`
       + `</section></div>`;
@@ -9351,7 +9351,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       /* 검색리스트 칸 이름 — 그 칸으로 정렬, 같은 칸을 다시 누르면 반대로 */
       case 'sx-sort': { const k = t.dataset.v; SX.desc = k === SX.sort ? !SX.desc : true; SX.sort = k; const rows = sxRows(); const el = $('sxList'); if (rows && el) el.outerHTML = sxListHtml(rows); break; }
       case 'ag-sel': agSel[t.dataset.k] = t.dataset.k === 'months' ? Number(t.dataset.v) : t.dataset.v; agSaveSel(); agPaint(); break;
-      case 'ag-fresh': agSel.fresh = !!t.checked; break;
       case 'ag-cmd': void agSend(t.dataset.v); break;
       case 'ag-q-add': agQueueAdd(); break;
       case 'ag-q-del': void agQueueSave(AG.queue.filter((q) => agQid(q) !== t.dataset.v)); break;
