@@ -7627,11 +7627,13 @@ span.cal-day.has { cursor: help; }
     const lead = `<div class="rg-lead sx-lead" role="status" aria-live="polite"><p class="l1">${esc(say)}</p>`
       + '<p class="l2">① 브라우저 열기 → 읍면동 · 끝 페이지까지 · 현재 화면 수집 중 하나 → 건축연도 채우기 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
     return `<div class="sx-top" id="agPanel">${lead}${online && s.version ? `<div class="sx-verline">MyAgent ${esc(agVer(s.version))}</div>` : ''}<section class="sx-card sx-collect" aria-label="인근매각사례 수집">${titlebar}`
-      /* 첫 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③. 처음부터새로는 아래 상태 줄 왼쪽(2026-11-06) */
+      /* 먼저 고르는 것 — 읍면동 · 사건번호 수집 상자를 맨 위로(옥션원 줄보다 위, 2026-11-07) */
+      + `<div class="sx-manage">${agQueueHtml()}</div>`
+      /* 그다음 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③ */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}<span class="sx-vsep" aria-hidden="true"></span>${seg('months', AG_MONTHS)}</div>`
       + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || agQueueCands().length > 0))}${step(0, 'auto', '끝 페이지까지 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}</div></div></div></div>`
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
-      + `<div class="sx-manage">${agQueueHtml()}${agCovHtml(metaCnt, metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : '')}</div>`
+      + `<div class="sx-manage">${agCovHtml(metaCnt, metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : '')}</div>`
       + `</section></div>`;
   }
   /* 모은 동네 — 도우미가 인근매각물건을 모을 때마다 동네 · 물건 수 · 날짜를 적는다(agent/coverage). 이미 모은 동네는 다시 모을 때 새로 나온 것만 더한다 */
