@@ -7063,13 +7063,13 @@ span.cal-day.has { cursor: help; }
   /* 새로고침 뒤 — 남겨 둔 검색의 면적 · 건축년도가 칸에도 보이게(저장을 안 눌렀어도 결과와 칸이 맞게) */
   /* 면적 · 건축년도 입력칸은 뺐다(2026-11-07) — 예전에 남은 값이 보이지 않게 걸리지 않도록 비운다 */
   ['amin', 'amax', 'ymin', 'ymax'].forEach((k) => { SX[k] = ''; if (saleApplied) saleApplied[k] = ''; });
-  /* 기본값을 반경 100m · 매각기간 3개월 · 엘베 있음으로 바꿨다(2026-11-08) — 처음 결과가 적고 가깝게. 예전에 남은 값도 한 번만 새 기본값으로 */
+  /* 기본값 — 반경 100m · 매각기간 3개월 · 기준 직접범위 · 엘베 있음 · 층 같은층(2026-11-08). 처음 결과를 적고 가볍게. 예전에 남은 값도 한 번만 새 기본값으로 */
   try {
-    if (localStorage.getItem('ta.web.sale.defV') !== '2') {
-      SXM.radius = 100; SXM.elev = 'yes'; localStorage.setItem(SXM_KEY, JSON.stringify(SXM));
+    if (localStorage.getItem('ta.web.sale.defV') !== '3') {
+      Object.assign(SXM, { radius: 100, elev: 'yes', basis: 'range', floor: '0' }); localStorage.setItem(SXM_KEY, JSON.stringify(SXM));
       saleSeg.period = '3개월'; localStorage.setItem(SALE_Q_KEY, JSON.stringify(saleSeg));
       if (saleApplied) { saleApplied.period = '3개월'; localStorage.setItem(SALE_APPLIED_KEY, JSON.stringify(saleApplied)); }
-      localStorage.setItem('ta.web.sale.defV', '2');
+      localStorage.setItem('ta.web.sale.defV', '3');
     }
   } catch (e) { /* 그만 */ }
   const sxNum = (v) => { const x = parseFloat(String(v || '').replace(/[^\d.]/g, '')); return Number.isFinite(x) && x > 0 ? x : 0; };
@@ -7077,7 +7077,7 @@ span.cal-day.has { cursor: help; }
   /* ===== 지도 — 손품조사 시세분석과 같은 기능(2026-11-06): 내 물건(고정카드) 둘레 반경 원 · 매각물건 지번마다 점 · 반경 · 엘베 · 층 거르기.
      거른 결과로 예상 입찰가 · 지표 · 분포 · 표가 함께 바뀐다. 지번 위치 · 엘베는 이 브라우저에 남겨 다시 찾지 않는다 ===== */
   const SXM_KEY = 'ta.web.sale.map'; const SXM_RADII = [100, 300, 500, 1000];
-  const SXM = { radius: 100, elev: 'yes', floor: '', basis: 'range', sim: 80, ...(() => { try { return JSON.parse(localStorage.getItem(SXM_KEY) || '{}') || {}; } catch (e) { return {}; } })() };
+  const SXM = { radius: 100, elev: 'yes', floor: '0', basis: 'range', sim: 80, ...(() => { try { return JSON.parse(localStorage.getItem(SXM_KEY) || '{}') || {}; } catch (e) { return {}; } })() };
   if (!SXM_RADII.includes(Number(SXM.radius))) SXM.radius = 100;
   if (!['range', 'sim'].includes(SXM.basis)) SXM.basis = 'range';
   if (![60, 65, 70, 75, 80, 85, 90, 95].includes(Number(SXM.sim))) SXM.sim = 80;
@@ -7592,7 +7592,7 @@ span.cal-day.has { cursor: help; }
     clearTimeout(sxUndoTimer);
     if (sxUndo) { sxSnapRestore(sxUndo); sxUndo = null; agPaintTable(); return; }
     sxUndo = sxSnapNow();
-    sxSnapRestore({ radius: 100, elev: 'yes', floor: '', basis: 'range', sim: 80, rc: { mMin: SX_AREA[0], mMax: SX_AREA[1], yMin: SX_YEAR[0], yMax: SX_YEAR[1] }, period: '3개월' });
+    sxSnapRestore({ radius: 100, elev: 'yes', floor: '0', basis: 'range', sim: 80, rc: { mMin: SX_AREA[0], mMax: SX_AREA[1], yMin: SX_YEAR[0], yMax: SX_YEAR[1] }, period: '3개월' });
     agPaintTable();
     sxUndoTimer = setTimeout(() => { sxUndo = null; const b = document.querySelector('.sx-reset.undo'); if (b) { b.classList.remove('undo'); b.setAttribute('aria-label', '초기화'); b.textContent = '초기화'; } }, 5000);
   }
