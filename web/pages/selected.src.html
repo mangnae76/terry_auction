@@ -7864,18 +7864,29 @@ span.cal-day.has { cursor: help; }
     sonSaleFor = it.id;
     saleItemId = it.id; try { localStorage.setItem(SALE_ITEM_KEY, it.id); } catch (e) { /* 그만 */ }
     if (it.apr > 0) SX.my = Number(it.apr).toLocaleString('ko-KR');
-    const addr = String(it.addr || ''); const t0 = addr.split(/\s+/)[0] || '';
+    const addr = String(it.addr || ''); const kind = /아파트/.test(it.type) ? '아파트' : /오피스텔/.test(it.type) ? '오피스텔' : '연립다세대';
+    const go = (sido, sgg) => {
+      if (sonSaleFor !== it.id) return;
+      Object.assign(saleSeg, { sido, sgg, dong: '', kind }); saleSave();
+      saleApply({ ...saleSeg, amin: SX.amin, amax: SX.amax, ymin: SX.ymin, ymax: SX.ymax });   /* 시군구 전체에서 — 지도 반경(기본 500m)이 이 물건 둘레로 좁힌다 */
+      paintSonSale();
+    };
+    /* 주소 글자로 먼저, 안 맞으면(구가 나뉘거나 바뀐 곳 — 인천 서구 → 서해구 등) 주소 → 시군구 코드로 */
+    const t0 = addr.split(/\s+/)[0] || '';
     const sido = regSidos().find((s) => s === t0 || (t0.length >= 2 && s.startsWith(t0.slice(0, 2)))) || '';
-    const sgg = sido ? regSggs(sido).map((d) => d.label).filter((l) => addr.includes(l)).sort((a, b) => b.length - a.length)[0] || '' : '';
-    if (!sido || !sgg) return;   /* 주소에서 지역을 못 찾으면 왼쪽 칸에서 고른다 */
-    const kind = /아파트/.test(it.type) ? '아파트' : /오피스텔/.test(it.type) ? '오피스텔' : '연립다세대';
-    Object.assign(saleSeg, { sido, sgg, dong: '', kind }); saleSave();
-    saleApply({ ...saleSeg, amin: SX.amin, amax: SX.amax, ymin: SX.ymin, ymax: SX.ymax });   /* 반경(기본 500m)으로 이 물건 둘레만 */
+    const sgg = sido ? regSggs(sido).map((d) => d.label).filter((l) => new RegExp(`(^|\\s)${l}(\\s|$)`).test(addr)).sort((a, b) => b.length - a.length)[0] || '' : '';
+    if (sido && sgg) { go(sido, sgg); return; }
+    const T = CLOUD.T; if (!T || !T.resolveRegionFromAddress || !T.REGION_GROUPS) return;
+    T.resolveRegionFromAddress(addr).then((r) => {
+      const g = r && T.REGION_GROUPS.find((x) => x.districts.some((d) => d.lawdCode === r.lawdCd5));
+      if (g) go(g.sido, g.districts.find((d) => d.lawdCode === r.lawdCd5).label);
+    }).catch(() => { /* 못 찾으면 왼쪽 칸에서 고른다 */ });
   }
   function paintSonSale() {
     const slot = $('sonSaleSlot'); const it = byId(S.itemId);
     if (!slot || !sonSaleOn || !it || !agIsAdmin()) return;
-    agStart(); sonSalePrep(it);
+    agStart();
+    if (sonSaleFor !== it.id) { sonSalePrep(it); if (!$('sonSaleSlot')) return; }
     slot.innerHTML = saleCaseHtml(true); sxMountMap();
   }
   /* 물건분석 머리 카드 — 고른 물건(앱 화면이 'son.pick' 에 적고 son:pick 으로 알린다) */
