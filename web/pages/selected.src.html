@@ -1401,6 +1401,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .subtab:hover { color: var(--text); }
 .subtab.soon, .subtab.soon:hover { color: var(--muted); cursor: default; gap: 4px; }   /* 준비 중 — 잠금 아이콘, 눌러도 옮기지 않는다 */
 .subtab.soon svg { width: 12px; height: 12px; }
+.subtab.soon .soon-in { display: inline-flex; align-items: center; gap: 4px; }   /* 말풍선은 안쪽 글에 — 탭의 ::after 는 밑줄 막대라 말풍선이 막대 꼴로 깨졌다(2026-11-07) */
+.subtab.soon::after { display: none; }   /* 준비 중 탭은 밑줄 막대 없이 */
 .subtab.on { color: var(--nav); font-weight: 600; }   /* 10-31 메인 · 하위 탭 모두 600 — 고른 탭은 색 · 주황 밑줄로 */   /* 시안 C — 고른 탭은 남색 글자 + 위 메뉴와 같은 주황 밑줄 */
 :root[data-theme="dark"] .subtab.on { color: var(--text); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .subtab.on { color: var(--text); } }
@@ -6330,7 +6332,7 @@ span.cal-day.has { cursor: help; }
     const curOn = cur;
     paintSaveMark();
     $('subTabsIn').innerHTML = tabs ? whereTag() + tabs.filter((x) => (x[3] !== 'hide' || x[0] === cur) && (x[3] !== 'admin' || agIsAdmin())).map(([k, ic, t, flag]) => (flag === 'soon'
-      ? `<button type="button" class="subtab soon" role="tab" aria-disabled="true" data-act="soon" data-name="${t}" data-tip="준비 중">${t}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></button>`
+      ? `<button type="button" class="subtab soon" role="tab" aria-disabled="true" data-act="soon" data-name="${t}"><span class="soon-in" data-tip="준비 중">${t}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></button>`
       : `<button type="button" class="subtab ${curOn === k ? 'on' : ''}" role="tab" aria-selected="${curOn === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`)).join('') : '';
     if (tabs) syncStickTop();
     alignSubTabs();
@@ -8144,20 +8146,15 @@ span.cal-day.has { cursor: help; }
     profit: ['입찰가 · 비용 · 세금을 넣어 A~D안별 세후 순이익을 계산하고 확정안을 고릅니다.'],
     field: ['현장에서 확인한 내용과 현장사진을 남깁니다.'],
   };
-  /* ===== 화면 안내 한 줄 — 임장경로 · 낙찰이후 절차별체크리스트 · 매뉴얼에만(시장분석 · 스토어 · 마이페이지 · 게시판 · 공지는 뺐다, 2026-11-07).
+  /* ===== 화면 안내 한 줄 — 임장경로 · 낙찰이후 절차별체크리스트에만(시장분석 · 매뉴얼 · 스토어 · 마이페이지 · 게시판 · 공지는 뺐다, 2026-11-07).
      모두 같은 꼴(rg-lead — 주황 막대 3 × 20 · 글 16 굵게). 자금관리 네 탭 · 낙찰이후 진행절차는 앱 화면 안(FinancePage · PostWinPage)에 같은 꼴로 있다.
      박스 탭이 있는 화면은 탭 아래에(LEAD_IN). 문구는 이 표 한곳에서만 고친다 ===== */
   const PAGE_LEAD = {
     trip: '임장 갈 물건을 골라 동선을 짜고, 순서대로 현장을 돌며 기록합니다.',
     'postwin:win': '입찰 기일부터 낙찰 · 잔금 · 명도까지 단계별로 해야 할 일을 체크합니다.',
-    'manual:gdeny': '낙찰 뒤 매각불허가를 신청해야 하는 경우와 방법을 정리했습니다.',
-    'manual:gevict': '명도 절차 · 협상 방법 · 리스크와 서류 차이를 정리했습니다.',
-    'manual:biz': '매매사업자 등록부터 사업자 계좌 · 카드 준비까지 순서대로 정리했습니다.',
-    'manual:gtax': '매매사업자 과세 구조 · 세율 · 비인정 경비 · 신고 일정을 정리했습니다.',
-    'manual:gcheck': '현장에서 건물 상태와 주거환경을 확인할 체크리스트입니다.',
   };
   /* 박스 탭 아래에 두는 화면 */
-  const LEAD_IN = { postwin: ['.pw-chaptabs'], manual: ['.pw-chaptabs'] };
+  const LEAD_IN = { postwin: ['.pw-chaptabs'] };
   const leadLine = (t) => (t ? `<div class="rg-lead it-lead"><p class="l1">${esc(t)}</p></div>` : '');
   const shown = (e) => !!e && e.getClientRects().length > 0;
   function paintPageLead() {
