@@ -7143,7 +7143,7 @@ span.cal-day.has { cursor: help; }
   /* 기준 매각물건 고르기 · 풀기 — 감정가 칸은 그 물건 감정가로 */
   function sxSetRef(r) {
     sxRef = r || null; sxRefMemo = null; SXG.focus = '';
-    if (r && Number(r['감정가']) > 0) SX.my = Number(r['감정가']).toLocaleString('ko-KR');
+    SX.my = r && Number(r['감정가']) > 0 ? Number(r['감정가']).toLocaleString('ko-KR') : '';
     renderMarket();
   }
   /* 실제로 쓰는 기준 — 기준 물건이 없으면(지역으로) 유사도는 잠그고 늘 직접범위(2026-11-08) */
@@ -7194,6 +7194,8 @@ span.cal-day.has { cursor: help; }
     if (SXG.again) { SXG.again = false; void sxGeoRun(); }
   }
   function sxDrawMap() {
+    /* 범례 — 물건으로는 '경매물건', 지역으로에서 고른 것은 '기준물건', 고르기 전엔 빨간 점 없이(2026-11-08 — 골라진 물건이 있는 것처럼 보였다) */
+    if (SXG.host) { const lm = SXG.host.querySelector('.lg-me'); const meNow = sxMe(); if (lm) { lm.hidden = !meNow; const t = lm.querySelector('.lg-me-t'); if (t) t.textContent = meNow && meNow.__ref ? '기준물건' : '경매물건'; } }
     const mv = SXG.mv; if (!mv) return;
     mv.clear();
     const rows = sxRows() || []; const me = sxMe(); const meSpot = me ? SXG.spots[sxLotKey(me.addr)] : null; const meLot = me ? agLotOf(me.addr) : '';
@@ -7223,7 +7225,7 @@ span.cal-day.has { cursor: help; }
         SXG.focus = on ? '' : g.k; sxDrawMap(); sxPaintList();
       }, z: on ? 50 : 1 });
     });
-    if (meSpot) mv.pin(meSpot, { className: 'pa-pin me', html: html(`<b>${esc((me && me.bld) || '경매물건')}</b>${same ? `<br><b>같은건물 ${same}건</b>` : ''}`), z: 1000 });
+    if (meSpot) mv.pin(meSpot, { className: 'pa-pin me', html: html(`<b>${esc(me && me.__ref ? `기준물건 ${me.caseNo}` : ((me && me.bld) || '경매물건'))}</b>${same ? `<br><b>같은건물 ${same}건</b>` : ''}`), z: 1000 });
     if (SXG.tools) SXG.tools.setNear(meSpot || null);
     /* 내 물건 · 반경이 바뀔 때만 다시 맞춘다(지도를 옮겨 둔 것을 함부로 되돌리지 않게) */
     const fk = `${saleItemId}|${sxRef ? sxRowKey(sxRef) : ''}|${SXM.radius}|${meSpot ? `${meSpot.lat},${meSpot.lng}` : groups.length ? 'pts' : ''}`;
@@ -7271,7 +7273,7 @@ span.cal-day.has { cursor: help; }
       SXG.host = document.createElement('div'); SXG.host.className = 'sx-map';
       SXG.host.innerHTML = '<div class="sx-map-in"></div><div class="sx-map-tools"></div>'
         + '<button type="button" class="fs-btn" data-act="sxm-fs" aria-label="지도 전체화면으로 보기"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>전체화면</button>'
-        + '<div class="legend"><span><i style="background:#e03e3e"></i>경매물건</span><span><i style="background:#2b4fd8"></i>매각물건</span></div>';
+        + '<div class="legend"><span class="lg-me"><i style="background:#e03e3e"></i><b class="lg-me-t">경매물건</b></span><span><i style="background:#2b4fd8"></i>매각물건</span></div>';
     }
     if (SXG.fs) { if (!$('sxFs')) sxSetFs(true); } else if (slot) slot.appendChild(SXG.host);
     const T = CLOUD.T;
@@ -7599,14 +7601,16 @@ span.cal-day.has { cursor: help; }
   /* 지도 칸 — 손품조사 시세분석과 같은 짜임: 지도가 위, 그 아래 회색 띠에 흰 칸(반경 · 엘베 · 층) */
   function sxMapCardHtml() {
     const seg = (k, opts) => `<span class="sx-pseg" role="radiogroup">${opts.map(([v, t]) => `<button type="button" role="radio" class="${String(SXM[k]) === String(v) ? 'on' : ''}" aria-checked="${String(SXM[k]) === String(v)}" data-act="sxm-set" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</span>`;
+    const segLock = (k, opts) => `<span class="sx-pseg" role="radiogroup" aria-disabled="true" data-tip="표나 지도에서 기준물건을 고르면 쓸 수 있습니다">${opts.map(([v, t]) => `<button type="button" role="radio" disabled class="${String(SXM[k]) === String(v) ? 'on' : ''}" aria-checked="${String(SXM[k]) === String(v)}">${t}</button>`).join('')}</span>`;
     return `<section class="sx-card sx-mapcard" aria-label="지도"><div class="sx-mapslot" id="sxMapSlot"></div>${saleBandHtml()}`
-      + `<div class="sx-conds"><span class="sx-plab rad">반경${seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span>`   /* 지역으로 — 기준 물건을 고르면 그 둘레로 걸린다 */
+      /* 지역으로 · 기준물건 고르기 전 — 반경 · 층은 기본값을 보이되 잠근다(기준이 없어 걸리지 않는다). 고르면 다섯 칸 모두 쓴다(2026-11-08) */
+      + `<div class="sx-conds"><span class="sx-plab rad${sxMe() ? '' : ' off'}">반경${sxMe() ? seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']]) : segLock('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span>`
       /* 매각기간 — 왼쪽 검색조건에서 이 줄 반경 옆으로(2026-11-07). 누르면 바로 다시 계산(검색을 다시 누르지 않는다) */
       + `<span class="sx-plab per">매각기간<span class="sx-pseg" role="radiogroup">${SALE_SEG.period.map((v) => { const on = ((saleApplied && saleApplied.period) || saleSeg.period) === v; return `<button type="button" role="radio" class="${on ? 'on' : ''}" aria-checked="${on}" data-act="sx-period" data-v="${v}">${v}</button>`; }).join('')}</span></span>`
       + `<span class="sx-plab">기준${sxMe() ? seg('basis', [['sim', '유사도'], ['range', '직접범위']])
         : '<span class="sx-pseg" role="radiogroup"><button type="button" role="radio" disabled aria-disabled="true" class="sx-lock" data-tip="지역으로 조회할 때는 기준 물건이 없어 유사도를 쓰지 않습니다">유사도</button><button type="button" role="radio" class="on" aria-checked="true">직접범위</button></span>'}</span>`
       + `<span class="sx-plab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span>`
-      + `<span class="sx-plab">층${seg('floor', [['', '전체'], ['0', '같은층']])}</span>`
+      + `<span class="sx-plab${sxMe() ? '' : ' off'}">층${sxMe() ? seg('floor', [['', '전체'], ['0', '같은층']]) : segLock('floor', [['', '전체'], ['0', '같은층']])}</span>`
       + `<span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span>${sxSimRowHtml()}${sxActsHtml()}</div></section>`;
   }
   /* ===== 초기화 · 저장 — 손품조사 시세분석과 같은 꼴 · 같은 자리(거르기 상자 오른쪽, 위 '층' 칸 아래, 2026-11-07).
@@ -7664,7 +7668,7 @@ span.cal-day.has { cursor: help; }
     const where = me ? ([q.sgg, q.dong || meDong].filter(Boolean).join(' ') || q.sido) : [q.sido, q.sgg, q.dong].filter(Boolean).join(' ');
     const radTx = me ? `${me.caseNo} 둘레 ${SXM.radius >= 1000 ? `${SXM.radius / 1000}km` : `${SXM.radius}m`}` : '지역 전체';
     const hero = `<section class="sx-card sx-hero" aria-label="분석결과"><div class="sx-where"><h2>${esc(where)} · ${esc(q.kind || '전체')}${S.route === 'market' && saleMode === 'region' && sxRef ? '<button type="button" class="sx-refx" data-act="sx-ref-clear">기준 해제 ×</button>' : ''}</h2><span>${esc([radTx, conds].filter(Boolean).join(' · '))}</span></div>`
-      + `<div class="sx-my"><label for="sxMy">경매물건 감정가</label><input id="sxMy" class="num" inputmode="numeric" autocomplete="off" placeholder="예: 235,000,000 또는 2억3500만" value="${esc(SX.my || '')}"><small>사건 고정카드에서 자동으로 입력합니다</small></div>`
+      + `<div class="sx-my"><label for="sxMy">${me && me.__ref ? '기준물건 감정가' : !me && S.route === 'market' && saleMode === 'region' ? '감정가' : '경매물건 감정가'}</label><input id="sxMy" class="num" inputmode="numeric" autocomplete="off" placeholder="예: 235,000,000 또는 2억3500만" value="${esc(SX.my || '')}"><small>${me && me.__ref ? '표 · 지도에서 고른 기준물건의 감정가입니다' : me ? '사건 고정카드에서 자동으로 입력합니다' : '직접 넣거나, 표 · 지도에서 기준물건을 고르면 들어갑니다'}</small></div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각가율</span>${sxBidHtml('A', st.avg)}</div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 중앙값 매각가율</span>${sxBidHtml('B', st.med)}</div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각평당가</span>${sxPyBidHtml(st.py)}</div></section>`;
@@ -9550,7 +9554,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
           /* 조회하면 아래 거르기 줄은 늘 기본값으로 — 반경 100m · 매각기간 3개월 · 직접범위 · 엘베 있음 · 같은층(2026-11-08) */
           saleSeg.period = '3개월'; saleSave();
           Object.assign(SXM, { radius: 100, elev: 'yes', basis: 'range', floor: '0' }); sxSaveM();
-          saleApply({ ...saleSeg, amin: '', amax: '', ymin: '', ymax: '' }); sxRef = null; sxRefMemo = null;   /* 새로 조회하면 기준 매각물건은 풀린다 */
+          saleApply({ ...saleSeg, amin: '', amax: '', ymin: '', ymax: '' }); sxRef = null; sxRefMemo = null; SX.my = '';   /* 새로 조회하면 기준물건 · 그 감정가는 풀린다 */
           setTimeout(renderMarket, Math.max(0, 400 - (Date.now() - t0)));   /* 너무 빨라도 '조회 중'이 한 번은 보이게(0.4초) */
         }, 30));
         break;
@@ -9559,7 +9563,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         saleMode = v === 'region' ? 'region' : 'item'; saleCardOpen = false; sxRef = null; sxRefMemo = null;
         try { localStorage.setItem(SALE_MODE_KEY, saleMode); } catch (err) { /* 그만 */ }
         /* 지역으로는 반경 없이 지역 전체라 자료가 많다 — 들어갈 때 매각기간을 3개월로 시작(2026-11-08, 길면 화면이 버벅였다) */
-        if (saleMode === 'region') { saleSeg.period = '3개월'; saleSave(); if (saleApplied) saleApply({ ...saleApplied, period: '3개월' }); }
+        if (saleMode === 'region') { saleSeg.period = '3개월'; saleSave(); if (saleApplied) saleApply({ ...saleApplied, period: '3개월' }); SX.my = ''; }   /* 감정가 칸 — 물건으로에서 고른 물건 값이 남아 골라진 것처럼 보였다 */
         const it = saleMode === 'item' && sxMe();
         if (it) saleRegionOf(it, (r) => { if (r && saleMode === 'item' && saleItemId === it.id) { saleGoRegion(r); renderMarket(); } });
         renderMarket(); break;
