@@ -16,6 +16,7 @@ import {
 import { useAuthStore } from './authStore';
 import { stageLabelOf } from '../utils/stageLabel';
 import { startUiPrefSync } from '../services/uiPrefSync';
+import { mergeReimport } from '../services/pdfReimport';
 import { changedLabels, editDetailOn } from '../services/editFieldLabels';
 
 const createNearBidRow = (): NearBidRow => ({
@@ -1281,7 +1282,7 @@ export const useAuctionStore = defineStore('auction', () => {
         };
       }
 
-      return normalizeFlags({
+      const full = normalizeFlags({
         ...base,
         id: existing?.id ?? base.id,
         eventDate: parsed.eventDate || base.eventDate,
@@ -1413,6 +1414,8 @@ export const useAuctionStore = defineStore('auction', () => {
         arrearsInfo: parsed.arrearsInfo ?? base.arrearsInfo,
         locationSummary: parsed.locationSummary ?? base.locationSummary,
       });
+      // 이미 있는 물건 — 사용자가 정리한 내용은 그대로, 회차 · 최저가 · 매각기일만 바꾸고 빈 칸만 채운다(2026-11-07)
+      return existing ? mergeReimport(existing, full) : full;
     });
 
     // 로그인 사용자 uid를 모든 import 결과에 부여 (없으면 Firestore 규칙에 의해 저장 거부됨)
