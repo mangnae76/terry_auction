@@ -3865,8 +3865,10 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .prg-title svg { width: 18px; height: 18px; color: var(--blue); flex: 0 0 auto; }
 .prg-head > span { font-size: 14px; font-weight: 400; color: var(--muted); }
 .prg-head > span b { color: var(--blue); font-weight: 800; }
-.prg-row { flex: 1 1 0; display: grid; grid-template-columns: 4px minmax(0, 1fr) auto auto; align-items: center; gap: 6px; min-height: 24px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: var(--price-bg); font: inherit; font-size: 13px; color: var(--text); text-align: left; cursor: pointer; }
-.prg-row:hover { border-color: var(--line); }
+.prg-row { flex: 1 1 0; display: grid; grid-template-columns: 4px minmax(0, 1fr) auto auto 10px; align-items: center; gap: 6px; min-height: 24px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: var(--price-bg); font: inherit; font-size: 13px; color: var(--text); text-align: left; cursor: pointer; }
+.prg-row:hover { border-color: var(--blue); }   /* 누르면 그 탭으로 — 파란 테두리로 또렷하게(2026-11-07) */
+.prg-row .go { width: 10px; height: 10px; color: var(--faint); }   /* 오른쪽 화살표 — 눌러서 넘어간다는 표시 */
+.prg-row:hover .go { color: var(--blue); }
 .prg-row i { width: 4px; height: 4px; border-radius: 50%; background: #c8cdd5; }   /* 상태 점 8 → 4(2026-11-07) */
 .prg-row.done i { background: #16a34a; }
 .prg-row.doing i { background: var(--blue); box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue) 20%, transparent); }
@@ -5319,7 +5321,7 @@ span.cal-day.has { cursor: help; }
       if (k === 'done') n += 1;
       const desc = e && T.editLogDesc ? T.editLogDesc(e.where, e.what, e.items) : '';
       const tipText = `${name} ${S_TXT[k]}${t ? ` · ${md(t)}` : ''}${desc ? ` · ${desc}` : ''}`;
-      return `<button type="button" class="prg-row ${k}" data-act="prg-go" data-id="${it.id}" data-v="${key}"${tip(tipText, 'left')}><i aria-hidden="true"></i><b>${name}</b><span class="s">${S_TXT[k]}</span><span class="d num">${t ? md(t) : '-'}</span></button>`;
+      return `<button type="button" class="prg-row ${k}" data-act="prg-go" data-id="${it.id}" data-v="${key}"${tip(tipText, 'left')}><i aria-hidden="true"></i><b>${name}</b><span class="s">${S_TXT[k]}</span><span class="d num">${t ? md(t) : '-'}</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>`;
     }).join('');
     return `<aside class="prg" aria-label="${esc(it.caseNo)} 분석 진행"><div class="prg-head"><b class="prg-title">${PRG_IC}분석 진행</b><span><b class="num">${n}</b> / 5 완료</span></div>${rows}</aside>`;
   }
