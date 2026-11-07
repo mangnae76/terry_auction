@@ -1969,6 +1969,9 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 /* 내 정보 — 이름 · 등급 · 포인트 · 결제 한 줄 카드, 선정물건 · 계정관리는 제목을 품은 카드 */
 .app-page[data-k="more"] .mpc { display: block !important; }
 .app-page[data-k="more"] .mpc-sum { position: static !important; display: flex !important; align-items: center; gap: 0 !important; height: 72px; box-sizing: border-box; margin: 0 0 12px !important; padding: 0 24px !important; }
+/* 요약 줄 칸 — 마우스를 올려도 바탕을 깔지 않는다(다크 모드에서 남색 띠로 보였다, 2026-11-07). 최근작성은 대신 물건 글자가 파랗게 */
+.app-page[data-k="more"] .mpc-sum .mpc-cell, .app-page[data-k="more"] .mpc-sum .mpc-cell:hover { background: transparent !important; }
+.app-page[data-k="more"] .mpc-sum .mpc-cell:hover .mpc-rec b { color: var(--blue) !important; }
 .app-page[data-k="more"] .mpc-sum .mpc-who { position: static !important; margin-right: auto; padding: 0 !important; border: 0 !important; background: none !important; font-size: 16px !important; font-weight: 800; color: var(--text) !important; }
 .app-page[data-k="more"] .mpc-who em { font-size: 14px !important; }
 .app-page[data-k="more"] .mpc-cell { flex-direction: row !important; gap: 10px !important; padding: 8px 20px !important; }
