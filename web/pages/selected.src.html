@@ -1166,6 +1166,24 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-simrow input[type="range"] { width: 100%; accent-color: var(--blue); }
 .sx-ticks { display: flex; justify-content: space-between; font-size: 12px; color: var(--faint); }
 .sx-simtxt { font-size: 13px; color: var(--muted); }
+/* 직접범위 막대 — 손품조사 시세분석 웹(.dl.one · .dual · .tvg)과 같은 꼴 · 같은 치수 */
+.sx-rgrow { padding: 8px 10px; }
+.sx-rg { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 32px; }
+.sx-dl { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 0 12px; min-width: 0; height: 48px; }
+.sx-dl > .dn { display: grid; justify-items: center; gap: 2px; font-size: 14px; font-weight: 800; color: var(--text); }
+.sx-dl > .dn small { font-size: 12px; font-weight: 400; color: var(--muted); white-space: nowrap; }
+.sx-dual { position: relative; min-width: 80px; height: 24px; margin-top: 14px; }
+.sx-dual .track { position: absolute; left: 8px; right: 8px; top: 50%; height: 4px; transform: translateY(-50%); background: #dde3ee; border-radius: 2px; }
+.sx-dual .fill { position: absolute; top: 0; bottom: 0; background: var(--blue); border-radius: 2px; }
+.sx-dual .base { position: absolute; top: -5px; width: 2px; height: 14px; background: var(--red, #dc2626); transform: translateX(-1px); }
+.sx-dual .tvg { position: absolute; bottom: 12px; transform: translateX(-50%); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; width: 140px; font-size: 13px; line-height: 1; font-weight: 800; color: var(--blue); white-space: nowrap; pointer-events: none; }
+.sx-dual .tvg i { font-style: normal; }
+.sx-dual .tvg i:first-child { text-align: right; }
+.sx-dual .tvg i.me { color: var(--red, #dc2626); }
+.sx-dual input[type="range"] { position: absolute; inset: 0; width: 100%; margin: 0; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; accent-color: auto; }
+.sx-dual input[type="range"]::-webkit-slider-runnable-track { background: none; }
+.sx-dual input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; background: var(--blue); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(17, 24, 39, .3); cursor: grab; }
+.sx-dual input[type="range"]::-moz-range-thumb { pointer-events: auto; width: 14px; height: 14px; border-radius: 50%; background: var(--blue); border: 2px solid #fff; cursor: grab; }
 @media (max-width: 900px) { .sx-conds { grid-template-columns: minmax(0, 1fr); } }
 /* 지도 상자 — 시세분석 .map 과 같은 꼴(높이 620 · 모서리 10 · 안 z-index 가둠) */
 .sx-map { position: relative; z-index: 0; isolation: isolate; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--band); }
@@ -6952,6 +6970,26 @@ span.cal-day.has { cursor: help; }
   if (!SXM_RADII.includes(Number(SXM.radius))) SXM.radius = 500;
   if (!['range', 'sim'].includes(SXM.basis)) SXM.basis = 'range';
   if (![60, 65, 70, 75, 80, 85, 90, 95].includes(Number(SXM.sim))) SXM.sim = 80;
+  /* 직접범위 막대 — 손품조사 시세분석과 같은 꼴(면적 20~150㎡ · 건축 1980~올해, 빨간 줄 = 경매물건, 범위는 늘 빨간 줄을 품는다, 2026-11-07) */
+  const SX_AREA = [20, 150]; const SX_YEAR = [1980, new Date().getFullYear()];
+  const sxRcOk = (c) => c && ['mMin', 'mMax', 'yMin', 'yMax'].every((k) => Number.isFinite(Number(c[k])));
+  if (!sxRcOk(SXM.rc)) SXM.rc = { mMin: SX_AREA[0], mMax: SX_AREA[1], yMin: SX_YEAR[0], yMax: SX_YEAR[1] };
+  const sxSaveM = () => { try { localStorage.setItem(SXM_KEY, JSON.stringify(SXM)); } catch (e) { /* 그만 */ } };
+  /* 막대 범위를 경매물건(빨간 줄)을 품게 · 최소 ≤ 최대로 */
+  function sxRcFix(c, subj) {
+    const r = { mMin: Number(c.mMin), mMax: Number(c.mMax), yMin: Number(c.yMin), yMax: Number(c.yMax) };
+    if (r.mMin > r.mMax) r.mMin = r.mMax;
+    if (r.yMin > r.yMax) r.yMin = r.yMax;
+    if (subj && subj.areaM2 > 0) { r.mMin = Math.min(r.mMin, Math.floor(subj.areaM2)); r.mMax = Math.max(r.mMax, Math.ceil(subj.areaM2)); }
+    if (subj && subj.year > 0) { r.yMin = Math.min(r.yMin, subj.year); r.yMax = Math.max(r.yMax, subj.year); }
+    return r;
+  }
+  /* 직접범위로 들어갈 때 — 지금 유사도 범위에서 시작(손품조사와 같다). 경매물건이 없으면 지금 막대 그대로 */
+  function sxRcFromSim() {
+    const subj = sxMeSubject(sxMe()); const T = CLOUD.T;
+    const sc = subj && subj.areaM2 > 0 && T && T.simCond ? T.simCond(Number(SXM.sim), subj) : null;
+    if (sc) SXM.rc = sxRcFix({ mMin: Math.max(SX_AREA[0], Math.floor(sc.mMin)), mMax: Math.min(SX_AREA[1], Math.ceil(sc.mMax)), yMin: Math.max(SX_YEAR[0], sc.yMin || SX_YEAR[0]), yMax: Math.min(SX_YEAR[1], sc.yMax || SX_YEAR[1]) }, subj);
+  }
   /* 경매물건 — 유사도 기준의 가운데(전용 ㎡ · 사용승인 연도 · 층) */
   const sxMeSubject = (it) => { if (!it) return null; const a = detailOf(it); const y = Number(String(a.approvalDate || '').replace(/[^\d]/g, '').slice(0, 4)) || 0; return { areaM2: Number(it.bldg) || 0, year: y, floor: sxMeFloor(it) }; };
   const SXM_SPOT_KEY = 'ta.web.sale.spots'; const SXM_ELEV_KEY = 'ta.web.sale.elevs';
@@ -7098,7 +7136,8 @@ span.cal-day.has { cursor: help; }
   function sxRows() {
     const base = saleRows(); if (!base) return null;
     const q = saleApplied;
-    const mk = `${SXG.ver}|${SXM.radius}|${SXM.elev}|${SXM.floor}|${SXM.basis}|${SXM.sim}|${saleItemId}`;
+    const rc = SXM.rc;
+    const mk = `${SXG.ver}|${SXM.radius}|${SXM.elev}|${SXM.floor}|${SXM.basis}|${SXM.sim}|${rc.mMin}-${rc.mMax}-${rc.yMin}-${rc.yMax}|${saleItemId}`;
     if (SX.rowsOf === base && SX.rowsQ === q && SX.rowsM === mk) return SX.rows;
     const amin = sxNum(q.amin); const amax = sxNum(q.amax); const ymin = sxNum(q.ymin); const ymax = sxNum(q.ymax);
     /* 지도 거르기 — 손품조사 시세분석과 같은 규칙: 같은 건물(경매지번)은 늘 넣고, 위치 · 엘베를 아직 모르는 물건은 거르지 않는다 */
@@ -7113,7 +7152,12 @@ span.cal-day.has { cursor: help; }
         if (!(a >= sc.mMin && a <= sc.mMax)) return false;
         if (subj.year && y && !(y >= sc.yMin && y <= sc.yMax)) return false;
         if (sc.floor !== null && myFloor && Number(r['층']) && Math.abs(Number(r['층']) - myFloor) > sc.floor) return false;
-      } else if ((amin && !(a >= amin)) || (amax && !(a > 0 && a <= amax)) || (ymin && !(y >= ymin)) || (ymax && !(y > 0 && y <= ymax))) return false;
+      } else if (SXM.basis === 'range') {
+        /* 직접범위 막대 — 끝까지 연 쪽(20 · 150㎡ / 1980 · 올해)은 그 밖도 넣는다 */
+        if (a > 0 && ((rc.mMin > SX_AREA[0] && a < rc.mMin) || (rc.mMax < SX_AREA[1] && a > rc.mMax))) return false;
+        if (y > 0 && ((rc.yMin > SX_YEAR[0] && y < rc.yMin) || (rc.yMax < SX_YEAR[1] && y > rc.yMax))) return false;
+        if ((amin && !(a >= amin)) || (amax && !(a > 0 && a <= amax)) || (ymin && !(y >= ymin)) || (ymax && !(y > 0 && y <= ymax))) return false;   /* 왼쪽 검색조건 칸도 그대로 건다 */
+      }
       const k = sxLotKey(r['소재지']);
       if (meSpot && k in SXG.spots) { const p = SXG.spots[k]; if (!p || CLOUD.T.distM(meSpot, p) > SXM.radius) return false; }
       if (SXM.floor === '0' && myFloor && Number(r['층']) && Number(r['층']) !== myFloor) return false;
@@ -7355,15 +7399,46 @@ span.cal-day.has { cursor: help; }
   /* 결과 쪽 전체 — 검색 전 · 결과 없음 · 결과 */
   /* 기준 아래 줄 — 유사도면 막대(60~95%, 시세분석과 같은 표), 직접범위면 왼쪽 칸 안내 */
   function sxSimRowHtml() {
-    if (SXM.basis !== 'sim') {
-      const q = saleApplied || {}; const a = [q.amin, q.amax].some(Boolean) ? `면적 ${q.amin || ''}~${q.amax || ''}㎡` : '면적 전체'; const y = [q.ymin, q.ymax].some(Boolean) ? `건축 ${q.ymin || ''}~${q.ymax || ''}년` : '건축 전체';
-      return `<div class="sx-simrow"><span class="sx-simtxt">직접범위 — 왼쪽 검색조건의 면적 · 건축년도로 거릅니다 (${esc(a)} · ${esc(y)})</span></div>`;
-    }
+    if (SXM.basis !== 'sim') return `<div class="sx-simrow sx-rgrow">${sxRangeHtml()}</div>`;
     const T = CLOUD.T; const subj = sxMeSubject(sxMe());
     const def = T && T.simDefText ? T.simDefText(Number(SXM.sim)) : '';
     const note = !subj ? '물건카드로 경매물건을 고르면 그 물건 둘레로 거릅니다' : !(subj.areaM2 > 0) ? '경매물건 전용면적이 없어 유사도로 거르지 못합니다' : `경매물건 ${subj.areaM2.toFixed(2)}㎡${subj.year ? ` · ${subj.year}년` : ''}${subj.floor ? ` · ${subj.floor}층` : ''} 기준`;
     return `<div class="sx-simrow"><label for="sxSim" class="sx-simlab"><span>유사도 기준 <b id="sxSimV">${SXM.sim}%</b></span><span id="sxSimD">${esc(def)}</span><small>${esc(note)}</small></label>`
       + `<input id="sxSim" type="range" min="60" max="95" step="5" value="${SXM.sim}"><div class="sx-ticks" aria-hidden="true">${[60, 65, 70, 75, 80, 85, 90, 95].map((v) => `<span>${v}%</span>`).join('')}</div></div>`;
+  }
+  /* 직접범위 막대 둘(면적 · 건축) — 손품조사 시세분석 웹과 같은 꼴: 왼쪽 이름(아래 평 · 연차), 막대 위 숫자 셋(최소 · 빨간 경매물건 · 최대)은 빨간 줄 자리에 고정 */
+  const sxPos = (v, [lo, hi]) => `${Math.min(100, Math.max(0, ((v - lo) / (hi - lo)) * 100))}%`;
+  function sxRangeBits() {
+    const subj = sxMeSubject(sxMe()); const rc = SXM.rc; const yNow = SX_YEAR[1];
+    const ma = subj && subj.areaM2 > 0 ? subj.areaM2 : 0; const my = subj && subj.year > 0 ? subj.year : 0;
+    return {
+      m: { lo: rc.mMin, hi: rc.mMax, b: SX_AREA, me: ma, meTx: ma ? ma.toFixed(2) : '', sub: `${(rc.mMin / 3.3058).toFixed(1)}~${(rc.mMax / 3.3058).toFixed(1)}평` },
+      y: { lo: rc.yMin, hi: rc.yMax, b: SX_YEAR, me: my, meTx: my ? String(my) : '', sub: `${yNow - rc.yMax + 1}~${yNow - rc.yMin + 1}년차` },
+    };
+  }
+  function sxRangeHtml() {
+    const B = sxRangeBits();
+    const one = (k, name, minK, maxK, unit) => {
+      const o = B[k]; const at = o.me ? sxPos(o.me, o.b) : sxPos((o.lo + o.hi) / 2, o.b);
+      return `<div class="sx-dl"><span class="dn">${name}<small id="sxRgSub-${k}" class="num">${o.sub}</small></span><div class="sx-dual">`
+        + `<div class="track"><i class="fill" id="sxRgFill-${k}" style="left:${sxPos(o.lo, o.b)};right:calc(100% - ${sxPos(o.hi, o.b)})"></i>${o.me ? `<i class="base" style="left:${at}"></i>` : ''}`
+        + `<span class="tvg num ${k}" style="left:${at}"><i id="sxRgLo-${k}">${o.lo}</i><i class="me">${o.meTx}</i><i id="sxRgHi-${k}">${o.hi}</i></span></div>`
+        + `<input type="range" data-rk="${minK}" min="${o.b[0]}" max="${o.b[1]}" step="1" value="${o.lo}" aria-label="${name} 최소(${unit})">`
+        + `<input type="range" data-rk="${maxK}" min="${o.b[0]}" max="${o.b[1]}" step="1" value="${o.hi}" aria-label="${name} 최대(${unit})"></div></div>`;
+    };
+    return `<div class="sx-rg">${one('m', '면적 ㎡', 'mMin', 'mMax', '㎡')}${one('y', '건축', 'yMin', 'yMax', '년')}</div>`;
+  }
+  /* 막대를 끄는 동안 — 다시 그리지 않고 숫자 · 파란 칸만 고친다(놓으면 표 · 지도를 다시 계산) */
+  function sxRangeInput(el) {
+    const k = el.dataset.rk; const subj = sxMeSubject(sxMe());
+    SXM.rc = sxRcFix({ ...SXM.rc, [k]: Number(el.value) }, subj);
+    if (String(SXM.rc[k]) !== el.value) el.value = String(SXM.rc[k]);
+    const B = sxRangeBits();
+    ['m', 'y'].forEach((g) => {
+      const o = B[g]; const f = $(`sxRgFill-${g}`); if (f) { f.style.left = sxPos(o.lo, o.b); f.style.right = `calc(100% - ${sxPos(o.hi, o.b)})`; }
+      const lo = $(`sxRgLo-${g}`); if (lo) lo.textContent = o.lo; const hi = $(`sxRgHi-${g}`); if (hi) hi.textContent = o.hi;
+      const sb = $(`sxRgSub-${g}`); if (sb) sb.textContent = o.sub;
+    });
   }
   /* 지도 칸 — 손품조사 시세분석과 같은 짜임: 지도가 위, 그 아래 회색 띠에 흰 칸(반경 · 엘베 · 층) */
   function sxMapCardHtml() {
@@ -9183,7 +9258,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'sx-row': { if (!v) break; SXG.focus = SXG.focus === v ? '' : v; const p = SXG.spots[v]; if (SXG.focus && p && SXG.mv) SXG.mv.focus(p, 16); sxDrawMap(); sxPaintList(); break; }
       case 'sxm-fs': sxSetFs(!SXG.fs); break;
       case 'sxm-go': { const g = SXG.groups.find((x) => x.k === v); SXG.focus = SXG.focus === v ? '' : v; if (g && SXG.focus && SXG.mv) SXG.mv.focus(g.p, 16); sxDrawMap(); sxPaintList(); break; }
-      case 'sxm-set': { const k = t.dataset.k; SXM[k] = k === 'radius' ? Number(v) : v; try { localStorage.setItem(SXM_KEY, JSON.stringify(SXM)); } catch (err) { /* 그만 */ } if ($('sxResults')) agPaintTable(); else sxDrawMap(); break; }
+      case 'sxm-set': { const k = t.dataset.k; if (k === 'basis' && v === 'range' && SXM.basis !== 'range') sxRcFromSim(); SXM[k] = k === 'radius' ? Number(v) : v; sxSaveM(); if ($('sxResults')) agPaintTable(); else sxDrawMap(); break; }
       case 'sale-card-menu': saleCardOpen = !saleCardOpen; repaintCardHead(); break;
       case 'item-card-pick': saleCardOpen = false; if (id && id !== S.itemId) { S.itemTabNext = S.itemTab; go('item', id); } else repaintCardHead(); break;
       case 'sale-card-pick': salePickCard(id); break;
@@ -9384,6 +9459,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
   document.addEventListener('input', (e) => {
     if (e.target.id === 'q') { S.q = e.target.value; renderToolbar(); renderContent(); return; }
     if (e.target.id === 'agQIn') { AG.qDraft = e.target.value; return; }
+    if (e.target.dataset && e.target.dataset.rk) { sxRangeInput(e.target); return; }
     if (e.target.id === 'sxSim') { SXM.sim = Number(e.target.value); const v = $('sxSimV'); if (v) v.textContent = `${SXM.sim}%`; const d = $('sxSimD'); if (d && CLOUD.T && CLOUD.T.simDefText) d.textContent = CLOUD.T.simDefText(SXM.sim); return; }
     if (e.target.id === 'agCovQ') { AG.covQ = e.target.value; const tb = $('agCovBody'); if (tb) tb.innerHTML = agCovRows(); return; }
     if (S.modal && S.modal.kind === 'register') readReg();
@@ -9392,7 +9468,8 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     if (e.target.id === 'pdfInput') { const fs = [...(e.target.files || [])]; e.target.value = ''; parseFiles(fs); return; }
     if (e.target.id === 'regFile' && e.target.files && e.target.files[0]) { S.modal.file = e.target.files[0].name; renderModal(); return; }
     if (e.target.id === 'sxFile') { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) void sxReadFile(f); return; }
-    if (e.target.id === 'sxSim') { SXM.sim = Number(e.target.value); try { localStorage.setItem(SXM_KEY, JSON.stringify(SXM)); } catch (err) { /* 그만 */ } agPaintTable(); return; }
+    if (e.target.id === 'sxSim') { SXM.sim = Number(e.target.value); sxSaveM(); agPaintTable(); return; }
+    if (e.target.dataset && e.target.dataset.rk) { sxRangeInput(e.target); sxSaveM(); agPaintTable(); return; }
     if (e.target.dataset && e.target.dataset.act === 'sale-q') {
       const k = e.target.dataset.k; saleSeg[k] = e.target.value;
       if (k === 'sido') { saleSeg.sgg = ''; saleSeg.dong = ''; }
