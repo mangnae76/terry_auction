@@ -3921,7 +3921,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .c-date .c-dday { font-style: normal; font-weight: 700; color: var(--blue); }   /* 매각기일 D-day — 물건상세 머리와 같은 꼴 */
 .card.past .c-date .c-dday { color: var(--past-text); font-weight: 600; }
 .card.past .c-date svg { color: var(--past-text); }
-.c-court { font-size: 13px; font-weight: 500; color: var(--text-2); flex: 0 3 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.c-court { font-size: 13px; font-weight: 500; color: var(--text-2); flex: 0 0 auto; width: 92px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* 칸 폭 고정 — '인천지방법원'(아이콘 포함 91)이 다 들어가는 폭. 화면 폭 · 불러오는 동안 늘었다 줄었다 하지 않게(2026-11-07). 더 긴 이름은 줄인 이름 */
 .c-case, .c-court { display: inline-flex; align-items: center; gap: 5px; }
 .c-case svg, .c-court svg { width: 14px; height: 14px; color: var(--muted); flex: 0 0 auto; }
 .c-court .full, .c-court .short { overflow: hidden; text-overflow: ellipsis; }
