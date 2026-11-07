@@ -1407,9 +1407,9 @@ function heroHtml() {
 
 function videoHtml() {
   /* 소개 영상을 페이지 안에 붙인다(2026-11-03) — 재생 전 화면(썸네일 · ▶)으로 서 있고, 눌러야 소리와 함께 재생된다(저절로 돌지 않는다).
-     [전체 화면]은 영상 틀을 화면 가득. 지금 영상은 앱 소개 영상을 임시로 쓴다 — 웹 소개 영상으로 바꿀 것(docs/서비스오픈목록.md 7) */
+     [전체 화면]은 영상 틀을 화면 가득. 영상은 플랫폼 소개 영상 최종본(261106, 46초)으로 바꿨다(2026-11-07) */
   return `<figure class="video-box"><div class="video-frame" id="promoFrame"><iframe src="${PROMO_PLAY_URL}" title="마이턴옥션 소개 영상" loading="lazy" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`
-    + `<figcaption><span class="play">${I('play')}</span><span class="vt"><b>마이턴옥션 소개 영상 · 42초</b><small>경매는 아직 아날로그다 → 사건카드 한 장으로</small></span>`
+    + `<figcaption><span class="play">${I('play')}</span><span class="vt"><b>마이턴옥션 소개 영상 · 46초</b><small>물건등록부터 손품조사 · 임장 · 수익분석 · 낙찰 이후까지</small></span>`
     + `<button type="button" class="video-full" data-act="video-full">${I('full')}전체 화면</button></figcaption></figure>`;
 }
 
