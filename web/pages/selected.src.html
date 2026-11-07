@@ -3834,6 +3834,9 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .card-side > :is(.prg, .res) { flex: 0 0 246px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: none; }
 .card-side > .res:hover { transform: none; box-shadow: none; }
 .card-side :is(.prg-head, .res-head) { min-height: 24px; }   /* 묶음 안 — 머리를 낮춰 줄 높이가 카드(207)를 넘지 않게 */
+.card-side > .prg { gap: 3px; }
+.card-side .prg-row { min-height: 22px; }
+.card-side .metric { min-height: 36px; }   /* 묶음 안 내용이 늘 카드 높이보다 낮게 — 줄 높이는 물건 카드가 정한다(예전 207) */
 .card-row .phase { font-size: 12px; padding: 0 2px; }   /* 분석 진행 상자가 들어가 카드가 좁아졌다 — 단계 단추 글자 14 → 12 */
 .card-row .phases { gap: 2px; }
 .card-row .prices { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.25fr); gap: 8px; }   /* 카드가 좁아져 '최저가미만' 칩이 붙은 입찰가 끝자리가 잘렸다 — 감정가 칸 몫을 입찰가에 */
