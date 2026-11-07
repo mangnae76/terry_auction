@@ -3713,7 +3713,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .step-sep { flex: 0 0 auto; width: 1.5px; height: 14px; border-radius: 1px; background: var(--line-2); margin: 0 4px; }
 /* 수익률 분석 카드가 옆에 설 때 — 단계 띠 오른쪽 끝을 물건 카드의 알약 끝(카드 오른쪽 안쪽)에 맞춘다.
    300(수익률 분석) + 12(틈) + 카드 오른쪽 안쪽 여백 − 24(상자 안쪽 여백) − 1(테두리) */
-@media (min-width: 1340px) { .tb-row2 { padding-right: calc(511px + var(--list-pad-r)); } }   /* 옆 흰 상자(524) + 틈 12 − 25 — 단계 띠 끝을 물건 카드 안쪽 끝에 맞춘다(2026-11-07) */
+@media (min-width: 1340px) { .tb-row2 { padding-right: calc(507px + var(--list-pad-r)); } }   /* 옆 흰 상자(520) + 틈 12 − 25 — 단계 띠 끝을 물건 카드 안쪽 끝에 맞춘다(2026-11-07) */
 
 .chips-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 10px 2px 0; }
 .chips-row:empty { display: none; }
@@ -3831,14 +3831,28 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 /* 한 줄 = 물건 카드 + 분석 진행 + 수익률 분석 카드 */
 .card-row .c-addr { font-size: 14.5px; }   /* 옆 상자가 들어가 카드가 좁아졌다 — 주소 16 → 14.5, 면적 앞 틈 16 → 10(잘리는 주소 11건 중 3 → 1, 2026-11-07) */
 .card-row .c-addr .a-area { padding-left: 10px; }
+/* 카드 줄 세로폭 줄이기(201 → 약 175, 2026-11-07) — 여백 · 칸 높이를 낮추고 금액 16 → 15 · 이름 13 → 12 */
+.card-row .card { gap: 8px; padding-top: 14px; padding-bottom: 13px; }
+.card-row .c-top { min-height: 28px; }
+.card-row .prices { margin-top: 4px; }
+.card-row .price { padding: 7px 8px 6px; }
+.card-row .price small { font-size: 12px; }
+.card-row .price strong { font-size: 15px; }
+.card-row .price strong em { font-size: 12px; }
+.card-row .phases { margin-top: 6px; }
+.card-row .phase { height: 24px; }
+/* 옆 묶음 — 줄 · 칸을 낮추고 글자 1px 작게, 내용이 카드 높이 안에 들어가게 */
+.card-side > .prg { gap: 2px; }
+.card-side .prg-row { min-height: 20px; font-size: 12px; }
+.card-side > .res { gap: 5px; }
+.card-side .metric { min-height: 32px; }
+.card-side .metric small { font-size: 12px; }
+.card-side .metric strong { font-size: 15px; }
 /* 분석 진행 · 수익률 분석 — 흰 상자 하나(카드와 같은 꼴)에 담고, 안에서 테두리 상자 둘로 나눈다(2026-11-07) */
-.card-side { flex: 0 0 auto; display: flex; gap: 10px; padding: 10px; box-sizing: border-box; background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); }
-.card-side > :is(.prg, .res) { flex: 0 0 246px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: none; }
+.card-side { flex: 0 0 auto; display: flex; gap: 8px; padding: 8px; box-sizing: border-box; background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); }
+.card-side > :is(.prg, .res) { flex: 0 0 247px; padding: 7px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: none; }
 .card-side > .res:hover { transform: none; box-shadow: none; }
-.card-side :is(.prg-head, .res-head) { min-height: 24px; }   /* 묶음 안 — 머리를 낮춰 줄 높이가 카드(207)를 넘지 않게 */
-.card-side > .prg { gap: 3px; }
-.card-side .prg-row { min-height: 22px; }
-.card-side .metric { min-height: 36px; }   /* 묶음 안 내용이 늘 카드 높이보다 낮게 — 줄 높이는 물건 카드가 정한다(예전 207) */
+.card-side :is(.prg-head, .res-head) { min-height: 22px; font-size: 14px; }   /* 묶음 안 — 머리를 낮춰 줄 높이가 카드를 넘지 않게 */
 .card-row .phase { font-size: 12px; padding: 0 2px; }   /* 분석 진행 상자가 들어가 카드가 좁아졌다 — 단계 단추 글자 14 → 12 */
 .card-row .phases { gap: 2px; }
 .card-row .prices { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.25fr); gap: 8px; }   /* 카드가 좁아져 '최저가미만' 칩이 붙은 입찰가 끝자리가 잘렸다 — 감정가 칸 몫을 입찰가에 */
