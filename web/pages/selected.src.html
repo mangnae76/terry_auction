@@ -7825,14 +7825,23 @@ span.cal-day.has { cursor: help; }
     return true;
   };
   /* 도우미 카드만 다시 — 상태가 바뀔 때마다 화면 전체를 다시 그리지 않는다 */
-  function agPaint() {
+  /* 펼쳐 둔 고르기 칸(select)이 있는 상자는 저절로 다시 그리지 않는다 — 5초마다 · 엘베 확인마다 상자를 통째로 다시 그려
+     펼친 목록이 닫혔다(2026-11-08). 칸에서 빠져나가면(blur) 그때 한 번 그린다. 사용자가 고른 직후(change)는 force 로 바로 그린다 */
+  function sxHoldPick(box, again) {
+    const a = document.activeElement;
+    if (!box || !a || a.tagName !== 'SELECT' || !box.contains(a)) return false;
+    if (!a.sxAgain) { a.sxAgain = true; a.addEventListener('blur', () => { a.sxAgain = false; again(); }, { once: true }); }
+    return true;
+  }
+  function agPaint(force = false) {
     const el = $('agPanel'); if (!el || !agSaleOpen()) return;
+    if (!force && sxHoldPick(el, () => agPaint())) return;
     /* 사건번호 입력칸 — 다시 그려도 쓰던 글자 · 커서는 그대로 */
     const act = document.activeElement; const fid = act && (act.id === 'agQIn' || act.id === 'agCovQ') ? act.id : ''; const qs = fid ? act.selectionStart : 0;
     el.outerHTML = agPanelHtml();
     const ni = fid && $(fid); if (ni) { ni.focus(); try { ni.setSelectionRange(qs, qs); } catch (e) { /* 그만 */ } }
   }
-  function agPaintTable() { const el = $('sxResults'); if (el && agSaleOpen()) { el.outerHTML = sxResultsHtml(); sxMountMap(); } }
+  function agPaintTable(force = false) { const el = $('sxResults'); if (el && agSaleOpen()) { if (!force && sxHoldPick(el, () => agPaintTable())) return; el.outerHTML = sxResultsHtml(); sxMountMap(); } }
   async function agLoadRecs() {
     try {
       const { recs, meta } = await CLOUD.T.loadAgentDataset(AG.uid);
@@ -7840,7 +7849,7 @@ span.cal-day.has { cursor: help; }
       AG.recs = recs.slice().sort((a, b) => String(b['매각일'] || '').localeCompare(String(a['매각일'] || '')));
       AG.meta = meta;
     } catch (e) { AG.recs = []; }
-    if (agSaleOpen()) renderMarket(); else { agPaint(); agPaintTable(); }   /* 고르는 칸(지역 목록)도 새 데이터로 */
+    if (agSaleOpen()) { const box = S.route === 'item' ? $('sonSaleSlot') : $('marketContent'); if (!sxHoldPick(box, () => renderMarket())) renderMarket(); } else { agPaint(); agPaintTable(); }   /* 고르는 칸(지역 목록)도 새 데이터로 — 펼친 목록이 있으면 닫은 뒤에 */
   }
   /* 관리자로 경매사례를 처음 열 때 붙는다 — 상태 · 모은 물건을 지켜보고, 보고 있는 동안 1분마다 '보고 있다'를 알려 도우미가 3초마다 명령을 확인하게 */
   function agStart() {
@@ -9644,9 +9653,9 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       if (k === 'sido') { AG.reg.sgg = ''; AG.reg.dong = ''; }
       if (k === 'sgg') AG.reg.dong = '';
       try { localStorage.setItem(AG_REG_KEY, JSON.stringify(AG.reg)); } catch (err) { /* 그만 */ }
-      agPaint(); return;
+      agPaint(true); return;
     }
-    if (e.target.dataset && e.target.dataset.act === 'ag-lot') { agLotSel = e.target.value; try { localStorage.setItem(AG_LOT_KEY, agLotSel); } catch (err) { /* 그만 */ } agPaintTable(); return; }
+    if (e.target.dataset && e.target.dataset.act === 'ag-lot') { agLotSel = e.target.value; try { localStorage.setItem(AG_LOT_KEY, agLotSel); } catch (err) { /* 그만 */ } agPaintTable(true); return; }
     if (S.modal && S.modal.kind === 'register') readReg();
   });
   document.addEventListener('keydown', (e) => {
