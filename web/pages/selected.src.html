@@ -352,7 +352,7 @@ button { cursor: pointer; }
 .app-market .adm-bar .adm-load:not(:disabled):hover { background: #2b6df3 !important; box-shadow: 0 2px 8px rgba(43, 109, 243, .35); }
 .app-market .adm-bar .adm-load:disabled:has(.adm-dots) { background: #2b6df3 !important; color: #fff; cursor: progress; }
 /* 랭킹분석 — 건물랭킹에서 기간 단추가 넷(24개월)이 되며 조회가 줄 밖으로 밀렸다. 지역 칸을 조금 줄인다 */
-.app-market[data-s="rank"] .adm-bar select.adm-input.narrow { width: 132px !important; }
+.app-market[data-s="rank"][data-k="dong"] .adm-bar:has(.adm-seg > button:nth-child(4)) select.adm-input.narrow { width: 132px !important; }   /* 기간 단추가 넷일 때만(건물랭킹) */
 .app-market .adm-bar .adm-seg { height: 32px; box-sizing: border-box; border-radius: 6px !important; align-items: center; }
 .app-market .adm-bar .adm-seg-btn { font-size: 14px !important; height: 26px; padding: 0 13px !important; display: inline-flex; align-items: center; }   /* 칸 32 안에(위아래 3) */
 .app-market .adm-bar .adm-f > small { font-size: 14px !important; }
