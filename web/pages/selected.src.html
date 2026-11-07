@@ -3129,6 +3129,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .rg-text strong { display: block; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rg-text p { margin: 2px 0 0; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rg-text p.err { color: #ef4444; }
+.rg-text p.same { white-space: normal; font-size: 13px; color: #c2410c; }   /* 보관함 · 휴지통에 같은 사건 — 주황 글로 한 줄(길면 줄바꿈) */
 .rg-text p.ai { font-size: 14px; font-weight: 700; color: #2b6df3; }
 .rg-text p.ai em { font-style: normal; font-weight: 400; color: var(--muted); }
 .rg-text p.ai.gray { color: var(--faint); font-weight: 400; }
@@ -5443,6 +5444,23 @@ span.cal-day.has { cursor: help; }
     : Promise.resolve(false));
   const existingOf = (caseNo) => items.find((x) => x.caseNo === caseNo && !x.trashed);
   const classify = (p) => (existingOf(p.caseNo) ? '변경' : '신규');
+  /* 같은 사건이 보관함 · 휴지통에 있으면 알린다(2026-11-07). 보관함 물건은 새 PDF 값으로 고쳐지므로 무엇이 바뀌는지까지,
+     휴지통 물건은 건드리지 않고 새로 등록한다. 휴지통에서 꺼낼 때 같은 사건이 있으면 꺼낸 쪽에 (1)이 붙는다(앱 저장소 dupNo) */
+  const caseBase = (c) => String(c || '').replace(/ \(\d+\)$/, '');
+  const sameNote = (p) => {
+    const mine = items.filter((x) => caseBase(x.caseNo) === p.caseNo);
+    if (mine.some((x) => !x.trashed && !x.archived)) return '';
+    const arc = mine.find((x) => x.archived && !x.trashed);
+    if (arc) {
+      const ch = [];
+      if (String(arc.round || '') !== String(p.round || '')) ch.push(`회차 ${arc.round || DASH} → ${p.round || DASH}`);
+      if ((Number(arc.min) || 0) !== (Number(p.min) || 0)) ch.push(`최저가 ${arc.min ? `${won(arc.min)}원` : DASH} → ${p.min ? `${won(p.min)}원` : DASH}`);
+      if (String(arc.date || '') !== String(p.date || '')) ch.push(`매각기일 ${arc.date ? dotDate(arc.date) : DASH} → ${p.date ? dotDate(p.date) : DASH}`);
+      return `<p class="same">보관함에 같은 사건번호가 있습니다. ${ch.length ? `보관함 물건이 새 PDF 값으로 바뀝니다 — ${esc(ch.join(' · '))}` : '보관함 물건을 새 PDF 값으로 다시 적습니다(회차 · 최저가 · 매각기일은 같음).'}</p>`;
+    }
+    if (mine.some((x) => x.trashed)) return '<p class="same">휴지통에 같은 사건번호가 있습니다. 휴지통 물건은 그대로 두고 새로 등록합니다.</p>';
+    return '';
+  };
   const AI_TEXT = (ai) => (ai ? `${ai.filled && ai.filled.length ? `<p class="ai">AI가 채움 · ${esc(ai.filled.join(', '))} <em>— 확인해 주세요</em></p>` : ''}${ai.rejected && ai.rejected.length ? `<p class="ai gray">PDF에서 근거를 못 찾아 버림 · ${esc(ai.rejected.join(', '))}</p>` : ''}${ai.error ? `<p class="ai err">${esc(ai.error)}</p>` : ''}` : '');
   const mergeRows = (rows, rescanned = []) => {
     const drop = new Set(rescanned);
@@ -5475,7 +5493,7 @@ span.cal-day.has { cursor: help; }
   };
   const toRow = (f, src, folderId) => (f.err
     ? { key: `${src}-${f.file}`, file: f.file, src, folderId, status: 'error', rowStatus: '오류', err: f.err }
-    : { key: `${src}-${f.file}`, file: f.file, src, folderId, status: 'ready', rowStatus: classify(f.p), p: f.p, ai: R.aiOn && R.aiKey ? f.ai : null });
+    : { key: `${src}-${f.file}`, file: f.file, src, folderId, status: 'ready', rowStatus: classify(f.p), note: sameNote(f.p), p: f.p, ai: R.aiOn && R.aiKey ? f.ai : null });
   /* ---------- 진짜 읽기 ----------
      PDF 읽기: 앱(PdfImportPage)이 쓰는 규칙 파서 그대로 — pdfparse.js (pdf.js 포함) 를 처음 쓸 때 불러온다.
      드라이브 읽기: claude.ai 아티팩트 안에서는 바깥 주소로 직접 나갈 수 없어서 보는 사람의 claude.ai
@@ -5523,7 +5541,7 @@ span.cal-day.has { cursor: help; }
     const p = { caseNo: x.caseNumber, court: x.courtName || '법원 미확인', type: x.propertyType || '', addr: sp.addr, bld: sp.bld, unit: sp.unit,
       apr: x.appraisalValue || 0, round: (cur && cur.round) || x.auctionRound || '신건', min: x.minimumBidValue || 0, date: x.eventDate || TODAY_YMD,
       land: x.landAreaM2 || 0, bldg: x.buildingAreaM2 || 0 };
-    return { key, file, src, folderId, status: 'ready', rowStatus: classify(p), p, ai, x };
+    return { key, file, src, folderId, status: 'ready', rowStatus: classify(p), note: sameNote(p), p, ai, x };
   };
 
   /* --- Google Drive 연결 (claude.ai 커넥터) --- */
@@ -5822,7 +5840,7 @@ span.cal-day.has { cursor: help; }
       </div>`;
     const rowHtmlR = (r) => `<li class="rg-item ${r.status}" ${r.status === 'ready' ? `data-act="rg-open" data-v="${esc(r.p.caseNo)}" tabindex="0"` : ''}>
         <span class="rg-ic ${r.src === 'drive' ? 'drive' : ''}" aria-hidden="true"${tip(r.src === 'drive' ? '구글드라이브에서 읽음' : '직접 올린 PDF')}>${r.src === 'drive' ? I.cloud : I.pdf}</span>
-        <div class="rg-text"><strong>${esc(r.file)}</strong>${r.status === 'ready' ? `<p>${esc(addrText(r.p) || '주소 미확인')}</p>${AI_TEXT(r.ai)}` : `<p class="err">${esc(r.err)}</p>`}</div>
+        <div class="rg-text"><strong>${esc(r.file)}</strong>${r.status === 'ready' ? `<p>${esc(addrText(r.p) || '주소 미확인')}</p>${r.note || ''}${AI_TEXT(r.ai)}` : `<p class="err">${esc(r.err)}</p>`}</div>
         <span class="rg-meta num">${r.status === 'ready' ? `${esc(r.p.caseNo)}<i>·</i>${esc(r.p.court)}<i>·</i>매각기일 ${dotDate(r.p.date)}` : '—'}</span>
         <span class="badge s-${r.rowStatus}">${r.rowStatus}</span>
       </li>`;
