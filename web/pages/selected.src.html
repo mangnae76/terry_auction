@@ -7555,7 +7555,7 @@ span.cal-day.has { cursor: help; }
       const inPeriod = (saleRows() || []).length;
       const me = sxMe();
       const msg = !all ? `${place} · ${q.kind || '전체'}로 모은 매각물건이 없습니다. 위 데이터수집에서 이 동네를 먼저 모아 주세요.`
-        : !inPeriod ? `${place}에 모은 ${all.toLocaleString('ko-KR')}건이 모두 최근 ${q.period} 밖이거나 매각일이 비어 있습니다. 매각기간을 늘려 보세요.`
+        : !inPeriod ? `${place}에 모은 ${all.toLocaleString('ko-KR')}건이 모두 최근 ${q.period} 밖이거나 매각일이 비어 있습니다.${q.period === SALE_SEG.period[SALE_SEG.period.length - 1] ? '' : ' 매각기간을 늘려 보세요.'}`
         : me ? `최근 ${q.period} ${inPeriod.toLocaleString('ko-KR')}건이 있지만, 물건카드 물건(${me.caseNo}) 둘레 반경 ${SXM.radius >= 1000 ? `${SXM.radius / 1000}km` : `${SXM.radius}m`} · 직접범위 · 엘베 · 층 조건에 맞는 물건이 없습니다.`
         : `최근 ${q.period} ${inPeriod.toLocaleString('ko-KR')}건이 있지만, 아래 직접범위 · 엘베 · 층 조건에 맞는 물건이 없습니다.`;
       return `<div class="sx-results" id="sxResults"><section class="sx-card sx-wait"><b>${esc(place)} · ${esc(q.kind || '전체')} — 0건</b><span>${esc(msg)}</span></section>${sxMapCardHtml()}</div>`;
