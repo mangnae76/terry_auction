@@ -1020,7 +1020,7 @@ V1.sections.find((s) => s.id === 'pages').subs = [
   { aid: 'help-layout', label: '화면 공통 구성', title: '화면 공통 구성', ic: 'layout', route: '#/', blocks: [
     { t: 'p', html: '모든 화면이 같은 틀을 씁니다. 남색 머리띠에서 큰 메뉴를, 그 아래 흰 띠에서 지금 위치(경로)와 세부 화면(하위 탭)을 고릅니다.' },
     { t: 'shot', key: 'layout', mock: 'layout', pins: [], legend: [
-      ['상단 메뉴', '왼쪽은 경매 진행 순서대로 <b>물건등록 › 물건목록 › 임장경로 › 낙찰이후 › 자금관리</b>, 세로선 오른쪽은 언제든 꺼내 쓰는 <b>시장분석 · 매뉴얼 · 스토어 · 마이페이지</b>. 지금 보는 메뉴 아래에 주황 밑줄이 그어집니다.'],
+      ['상단 메뉴', '왼쪽은 경매 진행 순서대로 <b>물건등록 › 물건목록 › 임장경로 › 낙찰이후 › 자금관리</b>, 세로선 오른쪽은 언제든 꺼내 쓰는 <b>시장분석 · 매뉴얼 · 콘텐츠 · 마이페이지</b>. 지금 보는 메뉴 아래에 주황 밑줄이 그어집니다.'],
       ['메뉴 펼치기 ▼', '모든 메뉴의 하위 항목을 한 번에 펼쳐 바로 이동합니다.'],
       ['바로가기', '공지 · 결제하기 · 이용가이드 · 알림(종) · 밤낮 화면 전환.'],
       ['내 계정', '내 이름 ▼(회원정보 메뉴)과 로그아웃. 로그아웃하면 첫 화면(대문)으로 돌아갑니다.'],
@@ -1207,13 +1207,13 @@ V1.sections.find((s) => s.id === 'pages').subs = [
       ['결제 · 계정', `3일무료체험, 결제하기, 결제관리${POINTS_OPEN ? ', 포인트내역' : ''}, 정보수정, 회원탈퇴.`],
     ] },
   ] },
-  { aid: 'help-etc', label: '스토어 · 앱 · 매뉴얼', title: '스토어 · 모바일앱 · 매뉴얼', ic: 'bag', blocks: [
+  { aid: 'help-etc', label: '콘텐츠 · 앱 · 매뉴얼', title: '콘텐츠 · 모바일앱 · 매뉴얼', ic: 'bag', blocks: [
     { t: 'cards', cols: 3, items: [
-      { ic: 'bag', title: '스토어', html: '전체 · 전자책 · 리포트. 경매 관련 자료를 고르고 구매합니다.' },
+      { ic: 'bag', title: '콘텐츠', html: '전체 · 전자책 · 리포트. 경매 관련 자료를 고르고 구매합니다.' },
       { ic: 'phone', title: '모바일앱', tag: 'soon', html: '앱 소개와 실제 앱 화면. Google Play · App Store 출시를 준비하고 있습니다.' },
       { ic: 'book', title: '매뉴얼', tag: 'soon', html: '경매기초 · 경매절차를 물건선정부터 매도 · 세금까지 정리할 예정입니다.' },
     ] },
-    { t: 'go', items: [['스토어', '#/store'], ['모바일앱', '#/mobile'], ['매뉴얼', '#/manual']] },
+    { t: 'go', items: [['콘텐츠', '#/store'], ['모바일앱', '#/mobile'], ['매뉴얼', '#/manual']] },
   ] },
 ];
 
@@ -1370,7 +1370,7 @@ const B = {
 
 const MOCK = {
   layout: () => `<div class="mock"><span class="mock-tag">예시 화면</span><div class="mock-scroll"><div class="mk-app">
-    <div class="mk-gnb"><img src="${$('logo').getAttribute('src')}" alt=""><i class="pin">1</i><span class="mk-m"><span>물건등록</span><i>›</i><span class="on">물건목록</span><i>›</i><span>임장경로</span><i>›</i><span>낙찰이후</span><i>›</i><span>자금관리</span><span class="mk-div"></span><span>시장분석</span><span>매뉴얼</span><span>스토어</span><span>마이페이지</span></span><i class="pin">2</i><span class="mk-box">▾</span>
+    <div class="mk-gnb"><img src="${$('logo').getAttribute('src')}" alt=""><i class="pin">1</i><span class="mk-m"><span>물건등록</span><i>›</i><span class="on">물건목록</span><i>›</i><span>임장경로</span><i>›</i><span>낙찰이후</span><i>›</i><span>자금관리</span><span class="mk-div"></span><span>시장분석</span><span>매뉴얼</span><span>콘텐츠</span><span>마이페이지</span></span><i class="pin">2</i><span class="mk-box">▾</span>
       <span class="mk-r"><i class="pin">3</i>공지 · 결제하기 · 이용가이드 ${I('bell')} ${I('moon')}<i class="pin">4</i><b style="color:var(--nav-text)">마이턴 님 ▾</b> 로그아웃</span></div>
     <div class="mk-sub"><span class="mk-crumb"><i class="pin">5</i> ${I('home') || ''} 홈 › 물건목록 › 물건카드</span><i class="pin">6</i><span class="on">물건카드</span><span>물건정보</span><span>권리분석</span><span>손품조사</span><span>수익분석</span><span>임장조사</span></div>
     <div class="mk-body">

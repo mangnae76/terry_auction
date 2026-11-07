@@ -4595,7 +4595,7 @@ span.cal-day.has { cursor: help; }
       <span class="g-arr" aria-hidden="true">›</span><span class="g-arr" aria-hidden="true">›</span><span class="g-arr" aria-hidden="true">›</span><span class="g-arr" aria-hidden="true">›</span><span class="g-div" aria-hidden="true"></span>
       <a class="g-menu m3 tool" href="#/market" data-act="go-market" id="navMarket"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>시장분석</a>
       <a class="g-menu m3m tool" href="#/manual" data-act="go-manual" id="navManual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg>매뉴얼</a>
-      <a class="g-menu m4s tool" href="#/store" data-act="go-store" id="navStore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>스토어</a>
+      <a class="g-menu m4s tool" href="#/store" data-act="go-store" id="navStore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>콘텐츠</a>
       <a class="g-menu m5 tool" href="#/more" data-act="go-more" id="navMore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>마이페이지</a>
       <!-- 메뉴 줄 오른쪽 끝 — [펼치기 ▼] 이름 ▼ · 로그아웃 (10-31 위 줄에서 내렸다) -->
       <div class="g-right">
@@ -6395,7 +6395,7 @@ span.cal-day.has { cursor: help; }
     /* 늘 본문 위 한 자리(왼쪽)에만 — 화면 안 탭 줄 칸(#admCrumbSlot 등)으로 옮겼다 돌아오면 다시 그릴 때마다 한 줄씩 덜컹거렸다 */
     { const nav = CRUMBS; const slot = SUBTABS[S.route] ? $('subCrumbLeft') : reg ? ($('regCrumbLeft') || $('crumbSlotReg')) : $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : info ? 'crumbSlotInfo' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
-    document.title = home ? '마이턴옥션' : info ? `마이턴옥션 ${S.route === 'store' ? '스토어' : '모바일앱'}` : page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? '마이턴옥션 시장분석' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 물건목록';
+    document.title = home ? '마이턴옥션' : info ? `마이턴옥션 ${S.route === 'store' ? '콘텐츠' : '모바일앱'}` : page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? '마이턴옥션 시장분석' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 물건목록';
     if (!item) closeAppDetail();
     if (!trip) closeAppTrip();
     if (!market) closeAppMarket();
@@ -6859,7 +6859,7 @@ span.cal-day.has { cursor: help; }
           : [t, () => { if (!['sale', 'rank', 'son'].includes(S.marketTab)) S.marketTab = 'dong'; writeHash(true); render(); }]));
     }
     if (r === 'mypage') return [['마이페이지']];
-    if (r === 'store') return [['스토어']];
+    if (r === 'store') return [['콘텐츠']];
     if (r === 'mobile') return [['모바일앱']];
     if (r === 'item') {
       /* 홈 › 선정물건 › 하위 탭 — 사건번호는 바로 아래 사건 카드에 있고, 손품조사 안 탭(수요분석 · 시세분석 · 손품결론)은
@@ -8407,7 +8407,7 @@ span.cal-day.has { cursor: help; }
     const list = STORE_ITEMS.filter((x) => S.storeTab === 'all' || x.kind === S.storeTab);
     const card = (x) => `<article class="st-card"><div class="st-cover ${x.tone}"><span class="st-kind">${x.kind === 'ebook' ? '전자책' : '리포트'}</span><strong>${x.cover.map(esc).join('<br>')}</strong><small>${esc(x.sub)}</small></div>`
       + `<div class="st-body"><h3><em>[${esc(x.tag)}]</em> ${esc(x.title)}</h3><p>${esc(x.desc)}</p><span class="st-soon">가격미정</span><button type="button" class="st-buy" data-act="store-buy" data-v="${STORE_ITEMS.indexOf(x)}">구매하기</button></div></article>`;
-    return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>스토어</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트를 준비하고 있습니다.</p></div>`
+    return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>콘텐츠</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트를 준비하고 있습니다.</p></div>`
       + `<nav class="st-tabs" role="tablist">${STORE_TABS.map(([k, t]) => `<button type="button" role="tab" class="${S.storeTab === k ? 'on' : ''}" aria-selected="${S.storeTab === k}" data-act="store-tab" data-v="${k}">${t}</button>`).join('')}</nav>`
       + (S.storeTab === 'mobile' ? `<div class="st-mobile">${mobileHtml()}</div></section>` : `<div class="st-grid">${list.map(card).join('')}</div></section>`);
   };
