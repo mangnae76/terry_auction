@@ -1074,6 +1074,29 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-why { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.6; }
 .sx-results { display: grid; gap: 12px; min-width: 0; }
 .sx-main.nofilt { grid-template-columns: minmax(0, 1fr); }
+/* 경매사례 맨 위 조회 띠 — [물건으로 | 지역으로] + 고른 쪽 칸(2026-11-08) */
+#sonHead.sx-fixcard { display: grid; gap: 10px; }
+.sx-topband { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sx-topband .sx-f { flex: 1 1 0; min-width: 120px; }
+.sx-topband .sx-f select { height: 36px; }
+.sx-topband .sx-kind { flex: 0 0 auto; }
+.sx-topband .sx-kind button { height: 36px; padding: 0 14px; }
+.sx-topband .sx-go { flex: 0 0 120px; height: 36px; }
+.sx-topband .sx-go:disabled { opacity: .5; cursor: default; }
+.sx-topband .sx-band-why { flex-basis: 100%; margin: 0 2px; }
+.sx-mode { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex: 0 0 auto; }
+.sx-mode button { height: 36px; padding: 0 14px; border: 0; background: var(--surface); color: var(--muted); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.sx-mode button + button { border-left: 1px solid var(--line); }
+.sx-mode button.on { background: var(--nav); color: #fff; }
+.sx-pickanchor.wide { flex: 1 1 auto; min-width: 0; position: relative; }
+.sx-pickwide { width: 100%; height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border: 1px solid #9fb8f5; border-radius: 8px; background: var(--blue-soft); color: var(--text); font: inherit; font-size: 14px; text-align: left; cursor: pointer; overflow: hidden; white-space: nowrap; }
+.sx-pickwide b { color: var(--blue); font-weight: 800; flex: 0 0 auto; }
+.sx-pickwide span { color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sx-pickwide i { margin-left: auto; font-style: normal; font-weight: 700; color: var(--text-2, var(--muted)); flex: 0 0 auto; }
+.sx-pickwide img { width: 10px; height: 10px; flex: 0 0 auto; } .sx-pickwide img.up { transform: rotate(180deg); }
+.sx-topcard { border-top: 1px solid var(--line); padding-top: 10px; }
+.sx-plab.off { opacity: .5; }
+.sx-offtx { font-size: 12.5px; font-weight: 400; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 검색 띠 — 고정카드 아래 한 줄(시도 · 시군구 · 읍면동 · 물건종류 · 조회), 2026-11-07 */
 .sx-band { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }   /* 아래 상자와 사이는 .sx 줄 간격(12) */
 .sx-band .sx-f { flex: 1 1 0; min-width: 120px; }
@@ -6941,7 +6964,7 @@ span.cal-day.has { cursor: help; }
   /* 고른 지역 · 종류 · 기간은 이 브라우저에 남긴다. 표는 [조회]를 눌러야 나온다(처음엔 비움) */
   const SALE_Q_KEY = 'ta.web.sale.q';
   const saleSeg = (() => {
-    const d = { kind: '', period: '12개월', sido: '', sgg: '', dong: '' };   /* 물건종류 '' = 전체 */
+    const d = { kind: '', period: '3개월', sido: '', sgg: '', dong: '' };   /* 물건종류 '' = 전체. 매각기간 기본 3개월(2026-11-08) */
     try { const v = { ...d, ...JSON.parse(localStorage.getItem(SALE_Q_KEY) || '{}') }; if (!SALE_SEG.period.includes(v.period)) v.period = d.period; if (v.kind && !SALE_SEG.kind.includes(v.kind)) v.kind = d.kind; return v; } catch (e) { return d; }
   })();
   const saleSave = () => { try { localStorage.setItem(SALE_Q_KEY, JSON.stringify(saleSeg)); } catch (e) { /* 그만 */ } };
@@ -7028,13 +7051,22 @@ span.cal-day.has { cursor: help; }
   /* 새로고침 뒤 — 남겨 둔 검색의 면적 · 건축년도가 칸에도 보이게(저장을 안 눌렀어도 결과와 칸이 맞게) */
   /* 면적 · 건축년도 입력칸은 뺐다(2026-11-07) — 예전에 남은 값이 보이지 않게 걸리지 않도록 비운다 */
   ['amin', 'amax', 'ymin', 'ymax'].forEach((k) => { SX[k] = ''; if (saleApplied) saleApplied[k] = ''; });
+  /* 기본값을 반경 100m · 매각기간 3개월 · 엘베 있음으로 바꿨다(2026-11-08) — 처음 결과가 적고 가깝게. 예전에 남은 값도 한 번만 새 기본값으로 */
+  try {
+    if (localStorage.getItem('ta.web.sale.defV') !== '2') {
+      SXM.radius = 100; SXM.elev = 'yes'; localStorage.setItem(SXM_KEY, JSON.stringify(SXM));
+      saleSeg.period = '3개월'; localStorage.setItem(SALE_Q_KEY, JSON.stringify(saleSeg));
+      if (saleApplied) { saleApplied.period = '3개월'; localStorage.setItem(SALE_APPLIED_KEY, JSON.stringify(saleApplied)); }
+      localStorage.setItem('ta.web.sale.defV', '2');
+    }
+  } catch (e) { /* 그만 */ }
   const sxNum = (v) => { const x = parseFloat(String(v || '').replace(/[^\d.]/g, '')); return Number.isFinite(x) && x > 0 ? x : 0; };
   /* 지역 · 종류 · 기간으로 거른 것에서 면적 · 건축년도로 한 번 더 — 조건을 걸었는데 값이 없는 물건은 뺀다 */
   /* ===== 지도 — 손품조사 시세분석과 같은 기능(2026-11-06): 내 물건(고정카드) 둘레 반경 원 · 매각물건 지번마다 점 · 반경 · 엘베 · 층 거르기.
      거른 결과로 예상 입찰가 · 지표 · 분포 · 표가 함께 바뀐다. 지번 위치 · 엘베는 이 브라우저에 남겨 다시 찾지 않는다 ===== */
   const SXM_KEY = 'ta.web.sale.map'; const SXM_RADII = [100, 300, 500, 1000];
-  const SXM = { radius: 500, elev: '', floor: '', basis: 'range', sim: 80, ...(() => { try { return JSON.parse(localStorage.getItem(SXM_KEY) || '{}') || {}; } catch (e) { return {}; } })() };
-  if (!SXM_RADII.includes(Number(SXM.radius))) SXM.radius = 500;
+  const SXM = { radius: 100, elev: 'yes', floor: '', basis: 'range', sim: 80, ...(() => { try { return JSON.parse(localStorage.getItem(SXM_KEY) || '{}') || {}; } catch (e) { return {}; } })() };
+  if (!SXM_RADII.includes(Number(SXM.radius))) SXM.radius = 100;
   if (!['range', 'sim'].includes(SXM.basis)) SXM.basis = 'range';
   if (![60, 65, 70, 75, 80, 85, 90, 95].includes(Number(SXM.sim))) SXM.sim = 80;
   /* 직접범위 막대 — 손품조사 시세분석과 같은 꼴(면적 20~150㎡ · 건축 1980~올해, 빨간 줄 = 경매물건, 범위는 늘 빨간 줄을 품는다, 2026-11-07) */
@@ -7066,14 +7098,20 @@ span.cal-day.has { cursor: help; }
   /* '인천광역시 서구 검암동 678-8, 3층302호' → '인천광역시 서구 검암동 678-8' (지번까지) */
   const sxLotAddr = (addr) => { const s = String(addr || ''); const m = AG_LOT_RE.exec(s); return m ? s.slice(0, m.index + m[0].length).replace(/,/g, ' ').replace(/\s+/g, ' ').trim() : ''; };
   const sxLotKey = (addr) => sxLotAddr(addr).replace(/\s+/g, '');
-  const sxMe = () => (saleItemId ? salePicks().find((x) => x.id === saleItemId) || null : null);
+  /* 조회 기준 — 시장분석 경매사례는 '물건으로'(물건카드) 또는 '지역으로'(시도 · 시군구 · 읍면동) 중 하나만(2026-11-08). 물건상세 손품조사 › 경매사례는 늘 물건 */
+  const SALE_MODE_KEY = 'ta.web.sale.mode';
+  let saleMode = (() => { try { return localStorage.getItem(SALE_MODE_KEY) === 'region' ? 'region' : 'item'; } catch (e) { return 'item'; } })();
+  const sxMe = () => ((S.route === 'item' || saleMode === 'item') && saleItemId ? salePicks().find((x) => x.id === saleItemId) || null : null);
   const sxMeFloor = (it) => { const u = String((it && it.unit) || ''); const f = /(\d+)\s*층/.exec(u); if (f) return Number(f[1]); const h = /(\d{3,4})\s*호/.exec(u); return h ? Math.floor(Number(h[1]) / 100) : 0; };
   const sxLimit = async (list, n, fn) => { let i = 0; await Promise.all(Array.from({ length: Math.min(n, list.length) }, async () => { while (i < list.length) { const x = list[i]; i += 1; await fn(x); } })); };
   const sxMapMsgText = () => (SXG.total ? `${SXG.phase === 'elev' ? '엘베 확인 중' : '위치 찾는 중'} ${SXG.done.toLocaleString('ko-KR')} / ${SXG.total.toLocaleString('ko-KR')}`
     : (!sxMe() ? '물건카드로 경매물건을 고르면 반경으로 거릅니다' : ''));
   const sxMapStatus = () => { ['sxMapMsg', 'sxFsMsg'].forEach((id) => { const el = $(id); if (el) el.textContent = sxMapMsgText(); }); };
   /* 위치 · 엘베를 다 받으면(또는 10곳마다) 결과를 다시 그린다 */
-  const sxGeoFlush = () => { sxmSave(); SXG.ver += 1; if (agSaleOpen() && $('sxResults')) { agPaintTable(); } };
+  /* 위치를 찾는 동안 결과 칸을 너무 자주 다시 그리면(10건마다 표 수백 줄 · 지도 핀 전부) 화면이 멈췄다 — 1.5초에 한 번만(2026-11-08) */
+  let sxGeoT = 0; let sxGeoLast = 0;
+  const sxGeoFlushNow = () => { sxGeoT = 0; sxGeoLast = Date.now(); sxmSave(); SXG.ver += 1; if (agSaleOpen() && $('sxResults')) { agPaintTable(); } };
+  const sxGeoFlush = () => { if (sxGeoT) return; const wait = Math.max(0, 1500 - (Date.now() - sxGeoLast)); sxGeoT = setTimeout(sxGeoFlushNow, wait); };
   async function sxGeoRun() {
     const T = CLOUD.T; if (!T || !T.geocodeAddress) return;
     if (SXG.busy) { SXG.again = true; return; }
@@ -7395,7 +7433,7 @@ span.cal-day.has { cursor: help; }
     const view = (q ? rows.filter((r) => `${r['소재지'] || ''}${r['사건번호'] || ''}`.replace(/\s+/g, '').includes(q)) : rows.slice())
       .sort((a, b) => { const x = sxVal(a, SX.sort); const y = sxVal(b, SX.sort); const c = typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'ko'); return SX.desc ? -c : c; });
     const head = '<th scope="col" class="ck-th" title="체크하면 예상 입찰가 · 평균 · 건수에서 빠집니다">제외</th>' + SX_COLS.map(([h, k]) => `<th scope="col" data-act="sx-sort" data-v="${k}"${k === SX.sort ? ` aria-sort="${SX.desc ? 'descending' : 'ascending'}"` : ''}>${h}<i class="sdir${k === SX.sort ? ' on' : ''}" aria-hidden="true">${k === SX.sort && !SX.desc ? '▲' : '▼'}</i></th>`).join('');
-    const me = saleItemId ? salePicks().find((x) => x.id === saleItemId) : null;
+    const me = sxMe();
     const lot = me ? agLotOf(me.addr) : '';
     const body = (me ? sxMeRowHtml(me) : '') + (view.length ? view.map((r) => sxRowHtml(r, lot)).join('')
       : `<tr><td colspan="${SX_COLS.length + 1}" class="sx-empty">${q ? '찾는 주소 · 사건번호가 없습니다.' : '조건에 맞는 매각물건이 없습니다. 기간을 늘리거나 면적 · 건축년도 조건을 비워 보세요.'}</td></tr>`);
@@ -7509,12 +7547,12 @@ span.cal-day.has { cursor: help; }
   function sxMapCardHtml() {
     const seg = (k, opts) => `<span class="sx-pseg" role="radiogroup">${opts.map(([v, t]) => `<button type="button" role="radio" class="${String(SXM[k]) === String(v) ? 'on' : ''}" aria-checked="${String(SXM[k]) === String(v)}" data-act="sxm-set" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</span>`;
     return `<section class="sx-card sx-mapcard" aria-label="지도"><div class="sx-mapslot" id="sxMapSlot"></div>${saleBandHtml()}`
-      + `<div class="sx-conds"><span class="sx-plab rad">반경${seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span>`
+      + `<div class="sx-conds"><span class="sx-plab rad${sxMe() ? '' : ' off'}">반경${sxMe() ? seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']]) : '<span class="sx-offtx">물건으로일 때</span>'}</span>`
       /* 매각기간 — 왼쪽 검색조건에서 이 줄 반경 옆으로(2026-11-07). 누르면 바로 다시 계산(검색을 다시 누르지 않는다) */
       + `<span class="sx-plab per">매각기간<span class="sx-pseg" role="radiogroup">${SALE_SEG.period.map((v) => { const on = ((saleApplied && saleApplied.period) || saleSeg.period) === v; return `<button type="button" role="radio" class="${on ? 'on' : ''}" aria-checked="${on}" data-act="sx-period" data-v="${v}">${v}</button>`; }).join('')}</span></span>`
       + `<span class="sx-plab">기준${seg('basis', [['sim', '유사도'], ['range', '직접범위']])}</span>`
       + `<span class="sx-plab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span>`
-      + `<span class="sx-plab">층${seg('floor', [['', '전체'], ['0', '같은층']])}</span>`
+      + `<span class="sx-plab${sxMe() ? '' : ' off'}">층${sxMe() ? seg('floor', [['', '전체'], ['0', '같은층']]) : '<span class="sx-offtx">물건으로일 때</span>'}</span>`
       + `<span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span>${sxSimRowHtml()}${sxActsHtml()}</div></section>`;
   }
   /* ===== 초기화 · 저장 — 손품조사 시세분석과 같은 꼴 · 같은 자리(거르기 상자 오른쪽, 위 '층' 칸 아래, 2026-11-07).
@@ -7539,7 +7577,7 @@ span.cal-day.has { cursor: help; }
     clearTimeout(sxUndoTimer);
     if (sxUndo) { sxSnapRestore(sxUndo); sxUndo = null; agPaintTable(); return; }
     sxUndo = sxSnapNow();
-    sxSnapRestore({ radius: 500, elev: '', floor: '', basis: 'range', sim: 80, rc: { mMin: SX_AREA[0], mMax: SX_AREA[1], yMin: SX_YEAR[0], yMax: SX_YEAR[1] }, period: '12개월' });
+    sxSnapRestore({ radius: 100, elev: 'yes', floor: '', basis: 'range', sim: 80, rc: { mMin: SX_AREA[0], mMax: SX_AREA[1], yMin: SX_YEAR[0], yMax: SX_YEAR[1] }, period: '3개월' });
     agPaintTable();
     sxUndoTimer = setTimeout(() => { sxUndo = null; const b = document.querySelector('.sx-reset.undo'); if (b) { b.classList.remove('undo'); b.setAttribute('aria-label', '초기화'); b.textContent = '초기화'; } }, 5000);
   }
@@ -7569,8 +7607,8 @@ span.cal-day.has { cursor: help; }
     const conds = [`최근 ${q.period} ${saleSpan(q.period)}`, (sxNum(q.amin) || sxNum(q.amax)) ? `면적 ${q.amin || ''}~${q.amax || ''}㎡` : '', (sxNum(q.ymin) || sxNum(q.ymax)) ? `건축 ${q.ymin || ''}~${q.ymax || ''}년` : '', `${st.n.toLocaleString('ko-KR')}건 기준`].filter(Boolean).join(' · ');
     /* 경매물건을 고르면(손품조사 › 경매사례는 늘) 그 물건 동까지 적고, 실제 거르는 범위인 반경도 함께 — '서해구 검암동 · 반경 500m'(2026-11-07) */
     const me = sxMe(); const meDong = me ? (String(me.addr || '').split(/\s+/).find((t) => /^[가-힣0-9]+(동|읍|면|가)$/.test(t)) || '') : '';
-    const where = [q.sgg, q.dong || meDong].filter(Boolean).join(' ') || q.sido;
-    const radTx = me ? `반경 ${SXM.radius >= 1000 ? `${SXM.radius / 1000}km` : `${SXM.radius}m`}` : '';
+    const where = me ? ([q.sgg, q.dong || meDong].filter(Boolean).join(' ') || q.sido) : [q.sido, q.sgg, q.dong].filter(Boolean).join(' ');
+    const radTx = me ? `${me.caseNo} 둘레 ${SXM.radius >= 1000 ? `${SXM.radius / 1000}km` : `${SXM.radius}m`}` : '지역 전체';
     const hero = `<section class="sx-card sx-hero" aria-label="분석결과"><div class="sx-where"><h2>${esc(where)} · ${esc(q.kind || '전체')}</h2><span>${esc([radTx, conds].filter(Boolean).join(' · '))}</span></div>`
       + `<div class="sx-my"><label for="sxMy">경매물건 감정가</label><input id="sxMy" class="num" inputmode="numeric" autocomplete="off" placeholder="예: 235,000,000 또는 2억3500만" value="${esc(SX.my || '')}"><small>사건 고정카드에서 자동으로 입력합니다</small></div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각가율</span>${sxBidHtml('A', st.avg)}</div>`
@@ -7845,7 +7883,7 @@ span.cal-day.has { cursor: help; }
       AG.recs = recs.slice().sort((a, b) => String(b['매각일'] || '').localeCompare(String(a['매각일'] || '')));
       AG.meta = meta;
     } catch (e) { AG.recs = []; }
-    if (agSaleOpen()) { const box = S.route === 'item' ? $('sonSaleSlot') : $('marketContent'); if (!sxHoldPick(box, () => renderMarket())) renderMarket(); } else { agPaint(); agPaintTable(); }   /* 고르는 칸(지역 목록)도 새 데이터로 — 펼친 목록이 있으면 닫은 뒤에 */
+    if (agSaleOpen()) { const box = S.route === 'item' ? $('sonSaleSlot') : $('marketView'); if (!sxHoldPick(box, () => renderMarket())) renderMarket(); } else { agPaint(); agPaintTable(); }   /* 고르는 칸(지역 목록)도 새 데이터로 — 펼친 목록이 있으면 닫은 뒤에 */
   }
   /* 관리자로 경매사례를 처음 열 때 붙는다 — 상태 · 모은 물건을 지켜보고, 보고 있는 동안 1분마다 '보고 있다'를 알려 도우미가 3초마다 명령을 확인하게 */
   function agStart() {
@@ -7907,19 +7945,35 @@ span.cal-day.has { cursor: help; }
   let saleCardOpen = false;
   const salePicks = () => items.filter((x) => !x.trashed && !x.archived);
   /* 물건카드교체 단추 + 목록 — 낙찰이후 '낙찰목록'과 같은 꼴. mode 'sale' 은 경매사례(고르면 감정가), 'item' 은 선정물건 물건상세(고르면 그 물건으로, 보던 탭 그대로) */
-  function cardPickHtml(mode, curId) {
+  function cardPickHtml(mode, curId, wide = false) {
     const picks = salePicks(); if (!picks.length) return '';
-    const btn = `<button type="button" class="ih-pdf sx-pickbtn" data-act="sale-card-menu" aria-haspopup="listbox" aria-expanded="${saleCardOpen}">물건카드 <i class="sx-x">×</i>${picks.length}<img src="${CHEV_PNG}" class="${saleCardOpen ? 'up' : ''}" alt=""></button>`;
+    /* wide — 경매사례 조회 띠 안 넓은 고르기 칸: 고른 물건 사건번호 · 주소 · 종류 · 감정가, 오른쪽 끝 물건카드 N ▾ */
+    const cur = wide ? picks.find((x) => x.id === curId) : null;
+    const btn = wide
+      ? `<button type="button" class="sx-pickwide" data-act="sale-card-menu" aria-haspopup="listbox" aria-expanded="${saleCardOpen}">${cur ? `<b>${esc(cur.caseNo)}</b><span>${esc([cur.addr, cur.bld].filter(Boolean).join(' '))} · ${esc(TYPE_NAME(cur.type))}${cur.apr > 0 ? ` · 감정가 ${sxWon(cur.apr)}` : ''}</span>` : '<span>물건카드에서 물건을 고르세요</span>'}<i>물건카드 ${picks.length}</i><img src="${CHEV_PNG}" class="${saleCardOpen ? 'up' : ''}" alt=""></button>`
+      : `<button type="button" class="ih-pdf sx-pickbtn" data-act="sale-card-menu" aria-haspopup="listbox" aria-expanded="${saleCardOpen}">물건카드 <i class="sx-x">×</i>${picks.length}<img src="${CHEV_PNG}" class="${saleCardOpen ? 'up' : ''}" alt=""></button>`;
     const ymd = (d) => (d ? dotDate(d).slice(2) : '–');
     const list = saleCardOpen ? `<div class="sx-objlist" role="listbox" aria-label="선정물건">${picks.map((x) => `<article role="option" aria-selected="${x.id === curId}" class="sx-obj ${x.id === curId ? 'on' : ''}" data-act="${mode === 'item' ? 'item-card-pick' : 'sale-card-pick'}" data-id="${esc(x.id)}">`
       + `<p class="top"><span class="case lead">${esc(x.caseNo)}</span><i class="bar"></i><span class="court">${esc(x.court || '–')}</span><span class="apr">감정가 <b class="num">${x.apr > 0 ? sxWon(x.apr) : '–'}</b></span></p>`
       + `<p class="addrline"><span class="pd lead"><em>매각기일</em><b>${ymd(x.date)}</b></span><i class="bar"></i><span class="addr">${esc(x.addr)}${x.bld ? ` <b>${esc(x.bld)}</b>` : ''}</span></p></article>`).join('')}</div>` : '';
-    return `<span class="sx-pickanchor">${btn}${list}</span>`;
+    return `<span class="sx-pickanchor${wide ? ' wide' : ''}">${btn}${list}</span>`;
   }
   /* 열고 닫을 때 — 지금 보이는 사건 카드만 다시 그린다 */
   function repaintCardHead() {
     if (S.route === 'market') { renderSonHead(); return; }
     if (S.route === 'item') { const it = byId(S.itemId); const el = $('itemHead'); if (it && el) el.innerHTML = itemHeadHtml(it); }
+  }
+  /* 시장분석 경매사례 맨 위 — 조회 띠(물건으로 / 지역으로) + 물건으로일 때 그 아래 고정카드(2026-11-08) */
+  function saleTopHtml() {
+    const picks = salePicks();
+    const mode = `<span class="sx-mode" role="group" aria-label="조회 기준">${[['item', '물건으로'], ['region', '지역으로']].map(([v, t]) => `<button type="button" class="${saleMode === v ? 'on' : ''}" aria-pressed="${saleMode === v}" data-act="sale-mode" data-v="${v}">${t}</button>`).join('')}</span><span class="sx-vsep" aria-hidden="true"></span>`;
+    if (saleMode === 'item') {
+      const it = sxMe();
+      const band = `<div class="sx-topband">${mode}${picks.length ? cardPickHtml('sale', saleItemId, true) : '<span class="sx-why">물건목록에 물건이 없습니다 — 지역으로 조회해 주세요.</span>'}</div>`;
+      return band + (it ? `<div class="sx-topcard">${itemHeadHtml(it)}</div>` : '');
+    }
+    const T = saleTopRegionHtml();
+    return `<div class="sx-topband">${mode}${T}</div>`;
   }
   function saleCardHtml() {
     const picks = salePicks(); if (!picks.length) return '';
@@ -7932,6 +7986,7 @@ span.cal-day.has { cursor: help; }
     const it = salePicks().find((x) => x.id === id); saleCardOpen = false;
     if (!it) { renderMarket(); return; }
     saleItemId = id; try { localStorage.setItem(SALE_ITEM_KEY, id); } catch (e) { /* 그만 */ }
+    saleMode = 'item'; try { localStorage.setItem(SALE_MODE_KEY, 'item'); } catch (e) { /* 그만 */ }
     if (it.apr > 0) SX.my = Number(it.apr).toLocaleString('ko-KR');
     renderMarket();
     /* 고른 물건 동네로 바로 조회 — 검색 띠의 지역 · 종류가 그 물건으로 채워진다(2026-11-07) */
@@ -7939,8 +7994,14 @@ span.cal-day.has { cursor: help; }
     toast(it.apr > 0 ? `${it.caseNo} 감정가 ${Number(it.apr).toLocaleString('ko-KR')}원을 경매물건 감정가에 넣었습니다.` : `${it.caseNo} — 감정가가 없어 경매물건 감정가는 그대로 둡니다.`, 'info');
   }
   /* 경매사례 검색 띠(시도 · 시군구 · 읍면동 · 물건종류 · 조회) — 지도 칸 안 반경 줄 위, 결과가 없을 때는 기다림 상자 안 */
+  /* 지역으로 — 시도 · 시군구 · 읍면동 · 물건종류 · 조회(모은 자료가 있는 곳만) */
+  const saleTopRegionHtml = () => saleBandInner();
   function saleBandHtml() {
-    if (S.route === 'item' && !sonSaleFail) return '';   /* 손품조사 › 경매사례는 물건 주소로 자동 — 지역을 못 찾은 물건만 띠를 보인다 */
+    if (S.route !== 'item' || !sonSaleFail) return '';   /* 시장분석은 맨 위 조회 띠(saleTopHtml), 손품조사는 지역을 못 찾은 물건만 */
+    return `<section class="sx-card sx-band" aria-label="검색조건">${saleBandInner()}</section><p class="sx-why sx-band-why">물건 주소에서 지역을 찾지 못했습니다. 지역을 골라 조회해 주세요.</p>`;
+  }
+  /* 지역 고르기 칸 묶음 — 시도 · 시군구 · 읍면동(모은 자료가 있는 곳만) · 물건종류 · 조회 · 조회가 꺼진 까닭 */
+  function saleBandInner() {
     const canGo = agIsAdmin() && AG.recs.length && saleSeg.sido && saleHave().sidos.includes(saleSeg.sido);
     /* 검색이 꺼진 까닭 — 검색은 집 PC 도우미가 모아 둔 매각물건 안에서 찾는다(모은 게 없으면 찾을 것이 없다) */
     const why = canGo ? '' : !agIsAdmin() ? '경매사례는 운영자 계정에서 쓸 수 있습니다.'
@@ -7952,18 +8013,16 @@ span.cal-day.has { cursor: help; }
     /* 검색 띠 한 줄 — 지도 아래 반경 · 매각기간 줄 바로 위(2026-11-08, 처음엔 고정카드 바로 아래였다). 예전 왼쪽 세로 상자(면적 · 건축년도 · 매각기간 · 저장 · 초기화)는 뺐다:
        면적 · 건축은 지도 아래 직접범위 막대, 매각기간 · 저장 · 초기화는 지도 아래 줄이 맡는다 */
     const kinds = [['', '전체'], ...SALE_SEG.kind.map((v) => [v, v])];
-    const band = `<section class="sx-card sx-band" aria-label="검색조건">`
-      + sel('sido', '시도', '시도 선택', saleHave().sidos, false)
+    return sel('sido', '시도', '시도 선택', saleHave().sidos, false)
       + sel('sgg', '시군구', '시군구 선택', saleHave().sggs[saleSeg.sido] || [], !saleSeg.sido)
       + sel('dong', '읍면동', '읍면동 전체', saleHaveDongs(saleSeg.sido, saleSeg.sgg), !saleSeg.sgg)
       + `<div class="sx-seg sx-kind" role="group" aria-label="물건종류">${kinds.map(([v, t]) => `<button type="button" class="${(saleSeg.kind || '') === v ? 'on' : ''}" data-act="sale-seg" data-k="kind" data-v="${v}">${t}</button>`).join('')}</div>`
       + `<button type="button" class="sx-btn sx-go" data-act="sale-go" ${canGo ? '' : 'disabled'}>조회</button>`
-      + `</section>${why ? `<p class="sx-why sx-band-why">${esc(why)}</p>` : ''}`;
-    return band + (S.route === 'item' ? '<p class="sx-why sx-band-why">물건 주소에서 지역을 찾지 못했습니다. 지역을 골라 조회해 주세요.</p>' : '');
+      + (why ? `<span class="sx-why sx-band-why">${esc(why)}</span>` : '');
   }
   function saleCaseHtml(inItem = false) {
     /* 고른 카드가 있는데 감정가 칸이 비었으면 그 감정가로(새로고침 뒤에도 카드와 칸이 맞게) */
-    { const it = saleItemId && salePicks().find((x) => x.id === saleItemId); if (it && it.apr > 0 && !sxParseWon(SX.my)) SX.my = Number(it.apr).toLocaleString('ko-KR'); }
+    { const it = sxMe(); if (it && it.apr > 0 && !sxParseWon(SX.my)) SX.my = Number(it.apr).toLocaleString('ko-KR'); }
     return `<div class="app-market mk-sale sx" data-k="sale" data-s="sale"><input type="file" id="sxFile" accept=".xlsx" hidden>${agIsAdmin() && !inItem ? agPanelHtml() : ''}<div class="sx-main nofilt">${sxResultsHtml()}</div></div>`;
   }
   /* ===== 물건상세 › 손품조사 › 경매사례 탭(운영자) — 시장분석 › 경매사례 화면을 이 물건으로(2026-11-07).
@@ -8009,7 +8068,7 @@ span.cal-day.has { cursor: help; }
     /* 경매사례 — 같은 틀에 고정카드(카드교체) */
     const saleCard = S.route === 'market' && S.marketTab === 'sale' && agIsAdmin();
     el.classList.toggle('sx-fixcard', saleCard);
-    if (saleCard) { const h = saleCardHtml(); shell.hidden = !h; el.innerHTML = h; return; }
+    if (saleCard) { el.innerHTML = saleTopHtml(); shell.hidden = false; return; }   /* 조회 띠(+ 물건으로일 때 고정카드) */
     let id = ''; try { id = localStorage.getItem('son.pick') || ''; } catch (e) { /* 그만 */ }
     const on = false;   /* 시장분석 손품조사는 이제 사건 카드 없이 주소 검색(지역분석과 같은 검색창) — 머리 카드는 선정물건 손품조사에만 */
     const it = on && id ? byId(id) : null;
@@ -9404,21 +9463,13 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'sx-msave': sxMapSave(); break;
       case 'sx-period': saleSeg.period = v; saleSave(); if (saleApplied) saleApply({ ...saleApplied, period: v }); renderMarket(); break;   /* 지도 아래 줄 매각기간 — 바로 다시 계산 */
       /* 검색 — 지역 · 종류 · 기간에 면적 · 건축년도까지 이때 적용 */
-      case 'sale-go': {
-        saleApply({ ...saleSeg, amin: '', amax: '', ymin: '', ymax: '' }); renderMarket();   /* 면적 · 건축은 지도 아래 막대가 맡는다 */
-        /* 고른 물건카드와 다른 지역을 조회하면 카드 선택을 푼다 — 반경이 그 물건 둘레로 걸려 늘 0건이 됐다(2026-11-08) */
-        const it = S.route === 'market' && saleItemId && salePicks().find((x) => x.id === saleItemId);
-        if (it) {
-          const want = { sido: saleSeg.sido, sgg: saleSeg.sgg };
-          saleRegionOf(it, (r) => {
-            /* 카드 주소로 지역을 못 찾았으면(r 없음) 시도 글자만으로 견준다 */
-            const same = r ? (r.sido === want.sido && r.sgg === want.sgg) : String(it.addr || '').startsWith(String(want.sido || '').slice(0, 2));
-            if (saleItemId !== it.id || same) return;
-            saleItemId = ''; try { localStorage.removeItem(SALE_ITEM_KEY); } catch (err) { /* 그만 */ }
-            renderMarket(); toast(`물건카드(${it.caseNo})는 다른 지역이라 선택을 풀고 ${[want.sido, want.sgg].filter(Boolean).join(' ')}로 조회했습니다.`, 'info');
-          });
-        }
-        break;
+      case 'sale-go': saleApply({ ...saleSeg, amin: '', amax: '', ymin: '', ymax: '' }); renderMarket(); break;   /* 지역으로 조회 — 면적 · 건축은 지도 아래 막대가 맡는다 */
+      case 'sale-mode': {   /* 조회 기준 바꾸기 — 물건으로 / 지역으로(2026-11-08) */
+        saleMode = v === 'region' ? 'region' : 'item'; saleCardOpen = false;
+        try { localStorage.setItem(SALE_MODE_KEY, saleMode); } catch (err) { /* 그만 */ }
+        const it = saleMode === 'item' && sxMe();
+        if (it) saleRegionOf(it, (r) => { if (r && saleMode === 'item' && saleItemId === it.id) { saleGoRegion(r); renderMarket(); } });
+        renderMarket(); break;
       }
       case 'sx-save': try { localStorage.setItem(SX_KEY, JSON.stringify({ amin: SX.amin, amax: SX.amax, ymin: SX.ymin, ymax: SX.ymax, my: SX.my, sort: SX.sort, desc: SX.desc })); } catch (err) { /* 그만 */ } saleSave(); if (saleApplied) saleApply(saleApplied); toast('검색 조건을 저장했습니다 — 다음에 열어도 그대로입니다.'); break;
       case 'sx-reset': {
