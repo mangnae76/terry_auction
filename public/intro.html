@@ -331,6 +331,8 @@
   #signupMount .su-shell { min-height: 0 !important; background: none !important; padding: 0 !important; display: block !important; }
   #signupMount .su-card { max-width: none !important; box-shadow: 0 24px 60px rgba(0, 0, 0, .35); }
   .modal .wait { margin: 0; padding: 60px 0; border-radius: 16px; background: #fff; text-align: center; color: #6b7280; font-size: 15px; }
+/* 엣지 — 비밀번호 칸에 브라우저가 붙이는 '보기' 눈 단추를 숨긴다(우리 눈 단추와 둘이 나왔다, 2026-11-07) */
+input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
 </style>
 </head>
 <body>

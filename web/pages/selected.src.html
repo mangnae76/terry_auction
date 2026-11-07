@@ -1375,6 +1375,8 @@ html.mk-map-lock :is(.foot, .foot-note) { display: none; }
 :root { --gnb-h: 57px; --subtab-h: 43px; --stick-top: env(safe-area-inset-top, 0px); }
 /* 세로 스크롤바 자리는 늘 잡아 둔다 — 랭킹지도처럼 스크롤을 잠그는 화면으로 오갈 때 스크롤바가 생겼다 없어지며 화면 전체가 좌우로 움직였다(2026-11-03) */
 html { scrollbar-gutter: stable; }
+/* 엣지 — 비밀번호 칸에 브라우저가 붙이는 '보기' 눈 단추를 숨긴다(우리 눈 단추와 둘이 나왔다, 2026-11-07) */
+input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
 .gnb { position: sticky; top: var(--stick-top); }
 .subtabs { top: calc(var(--stick-top) + var(--gnb-h)); }
 .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h)); }
@@ -3809,6 +3811,11 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .ck:hover { border-color: var(--blue); }
 .ck:checked { background: var(--blue); border-color: var(--blue); }
 .ck:checked::after { content: ""; width: 8px; height: 4px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) translate(1px, -1px); }
+/* 앱 펼침 목록(점유관계 · 전입 등재 · 개별성 등)의 고른 항목 '✓' — 웹 공통 .ck 상자가 씌워져 V 글자가 아래로 처졌다.
+   글자는 숨기고 체크된 칸과 같은 그림(파란 바탕 · 흰 V 가운데)으로(2026-11-07) */
+.adp-agency-option .ck { margin: 0 !important; font-size: 0 !important; line-height: 0 !important; background: var(--blue) !important; border-color: var(--blue) !important; cursor: inherit; }
+.app-detail .adp-agency-options { display: grid; gap: 2px; }   /* 고른 줄이 붙어 있어도 줄마다 따로 보이게(파란 바탕끼리 한 덩어리로 합쳐 보였다) */
+.adp-agency-option .ck::after { content: ""; width: 8px; height: 4px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) translate(1px, -1px); }
 
 /* ================= 카드 — 앱 .wlp-card 를 웹 크기로 ================= */
 .content { padding-block: 11px 72px; min-height: 520px; }
