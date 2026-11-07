@@ -1224,7 +1224,10 @@ const downloadCsv = () => {
           <ol v-else class="adm-bld-list">
             <li v-for="(b, i) in bldRank" :key="b.id" class="adm-bld-row" :style="{ '--i': i }" role="button" tabindex="0" :aria-label="`${b.name || b.addr} 거래 ${b.n}건 보기`" @click="bldOpen = b" @keydown.enter="bldOpen = b">
               <span :class="['no', { top: i < 3 }]">{{ i + 1 }}</span>
-              <span class="nm"><b>{{ b.name || '이름 없음' }}<em v-if="elevText(b.id)" :class="['ev', elevCls(b.id)]">{{ elevText(b.id) }}</em></b><small><button type="button" :class="['cp', { done: bldCopied === b.id }]" :title="b.addr" :aria-label="`${b.addr} 주소 복사`" @click.stop="copyBldAddr(b)">{{ bldCopied === b.id ? '복사됨' : '주소복사' }}</button>{{ b.umd }} {{ b.jibun }}<template v-if="b.year"> · {{ b.year }}년</template><template v-if="b.aMin"> · {{ b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}평` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}~${(b.aMax / 3.3058).toFixed(1)}평` }}</template></small></span>
+              <span class="nm"><b>{{ b.name || '이름 없음' }}</b><small><button type="button" :class="['cp', { done: bldCopied === b.id }]" :title="`${b.addr} — 누르면 복사`" :aria-label="`${b.addr} 주소 복사`" @click.stop="copyBldAddr(b)"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></svg>{{ bldCopied === b.id ? '복사됨' : '주소' }}</button>{{ b.umd }} {{ b.jibun }}<template v-if="b.year"> · {{ b.year }}년</template></small></span>
+              <!-- 면적(㎡ / 평) · 엘베는 칸을 따로 두어 세로로 줄을 맞춘다(2026-11-08) -->
+              <span class="ar">{{ b.aMin ? (b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}평` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}~${(b.aMax / 3.3058).toFixed(1)}평`) : '-' }}</span>
+              <span class="evc"><em v-if="elevText(b.id)" :class="['ev', elevCls(b.id)]">{{ elevText(b.id) }}</em></span>
               <span class="bar"><i :style="{ width: `${Math.max(4, (b.n / (bldRank[0]?.n || 1)) * 100)}%` }" /></span>
               <span class="cnt"><b>{{ b.n.toLocaleString('ko-KR') }}</b>건</span>
               <span class="mny"><small>평균</small>{{ bldWon(b.avg) }}</span>
@@ -1579,17 +1582,19 @@ const downloadCsv = () => {
 .adm-bld > header strong { font-size: 16px; font-weight: 800; color: #111827; }
 .adm-bld > header small { font-size: 13px; color: #6b7280; }
 .adm-bld-list { list-style: none; margin: 0; padding: 0; display: grid; }
-.adm-bld-row { display: grid; grid-template-columns: 30px minmax(0, 1.6fr) minmax(0, 1.1fr) 64px 120px 110px 84px 72px; align-items: center; gap: 12px; padding: 8px 4px; border-top: 1px solid #eef1f6; font-size: 13.5px; color: #111827; }
+.adm-bld-row { display: grid; grid-template-columns: 30px minmax(0, 1.5fr) 190px 76px minmax(60px, .5fr) 64px 120px 110px 84px 72px; align-items: center; gap: 12px; padding: 8px 4px; border-top: 1px solid #eef1f6; font-size: 13.5px; color: #111827; }
 .adm-bld-row:first-child { border-top: 0; }
 .adm-bld-row .no { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: #eef1f6; color: #4b5563; font-size: 12px; font-weight: 800; }
 .adm-bld-row .no.top { background: #2b6df3; color: #fff; }
 .adm-bld-row .nm { display: grid; min-width: 0; } .adm-bld-row .nm b { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .adm-bld-row .nm small { font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.adm-bld-row .nm .cp { height: 20px; margin-right: 6px; padding: 0 6px; border: 1px solid #dde3ee; border-radius: 5px; background: #fff; color: #4b5563; font: inherit; font-size: 12px; cursor: pointer; vertical-align: middle; }
+.adm-bld-row .nm .cp { display: inline-flex; align-items: center; gap: 3px; height: 18px; margin-right: 6px; padding: 0 7px; border: 1px solid #c9d6f5; border-radius: 999px; background: #eef3ff; color: #2b6df3; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; vertical-align: 1px; }   /* 고정카드 '주소' 알약과 같은 꼴 — 작게 */
 .adm-bld-row .nm .cp:hover { border-color: #2b6df3; color: #2b6df3; }
 .adm-bld-row .nm .cp.done { border-color: #16a34a; color: #16a34a; }
-.adm-bld-row .nm .ev { margin-left: 8px; padding: 1px 6px; border-radius: 5px; font-style: normal; font-size: 12px; font-weight: 700; vertical-align: 1px; }
-.adm-bld-row .nm .ev.y { background: #e8f6ee; color: #15803d; } .adm-bld-row .nm .ev.n { background: #fdeeee; color: #dc2626; } .adm-bld-row .nm .ev.u { background: #f3f5f9; color: #6b7280; }
+.adm-bld-row .ar { font-size: 12.5px; color: #374151; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.adm-bld-row .evc { display: flex; } .adm-bld-row .evc .ev { margin-left: 0; }
+.adm-bld-row .nm .ev, .adm-bld-row .evc .ev { margin-left: 0; padding: 1px 6px; border-radius: 5px; font-style: normal; font-size: 12px; font-weight: 700; vertical-align: 1px; }
+.adm-bld-row .ev.y { background: #e8f6ee; color: #15803d; } .adm-bld-row .ev.n { background: #fdeeee; color: #dc2626; } .adm-bld-row .ev.u { background: #f3f5f9; color: #6b7280; }
 .adm-bld-row { cursor: pointer; } .adm-bld-row:hover { background: #f7f9fc; }
 .adm-bld-row .go { display: inline-flex; align-items: center; gap: 4px; color: #9ca3af; }
 .adm-bld-row:hover .go .arw { color: #2b6df3; }
@@ -1607,10 +1612,10 @@ const downloadCsv = () => {
 .adm-bld-pop table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 .adm-bld-pop th { position: sticky; top: 0; background: #f7f9fc; color: #374151; font-weight: 700; padding: 8px 10px; text-align: center; border-bottom: 1px solid #e5e7eb; }
 .adm-bld-pop td { padding: 8px 10px; text-align: center; border-bottom: 1px solid #eef1f6; color: #111827; white-space: nowrap; } .adm-bld-pop td.r { text-align: right; }
-.adm-bld-row .bar { height: 10px; border-radius: 5px; background: #eef1f6; overflow: hidden; } .adm-bld-row .bar i { display: block; height: 100%; border-radius: 5px; background: #2b6df3; }
+.adm-bld-row .bar { height: 6px; border-radius: 5px; background: #eef1f6; overflow: hidden; } .adm-bld-row .bar i { display: block; height: 100%; border-radius: 5px; background: #2b6df3; }
 .adm-bld-row .cnt { text-align: right; color: #6b7280; } .adm-bld-row .cnt b { font-size: 15px; color: #111827; margin-right: 2px; }
 .adm-bld-row .mny, .adm-bld-row .dt { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; } .adm-bld-row :is(.mny, .dt) small { font-size: 12px; color: #9ca3af; margin-right: 6px; }
-@media (max-width: 900px) { .adm-bld-row { grid-template-columns: 26px minmax(0, 1fr) 56px; } .adm-bld-row :is(.bar, .mny, .dt) { display: none; } }
+@media (max-width: 900px) { .adm-bld-row { grid-template-columns: 26px minmax(0, 1fr) 56px; } .adm-bld-row :is(.ar, .evc, .bar, .mny, .dt, .go) { display: none; } }
 .adm-rank3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: stretch; } /* 세 카드 높이 · 아래 끝선 같게(안내 줄이 접혀도) */
 .adm-rank3 > .adm-msg { grid-column: 1 / -1; }
 .adm-rank-card { background: #fff; border: 1px solid #e3e8f0; border-radius: 8px; padding: 16px 18px 8px; min-width: 0; }
