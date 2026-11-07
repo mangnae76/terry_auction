@@ -1182,7 +1182,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-acts .undo-ic .run { fill: none; stroke: #d97706; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 62.83; transform: rotate(-90deg); transform-origin: 12px 12px; animation: sxUndoRun 5s linear forwards; }
 @keyframes sxUndoRun { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 62.83; } }
 .sx-acts .sx-save { flex: 1; min-width: 0; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.2; padding: 0 10px; border: 0; background: #1f3a72; color: #fff; font-weight: 700; transition: background .15s, border-color .15s; }
-.sx-acts .sx-save.dirty:hover { background: #16305f; }
+.sx-acts .sx-save.dirty { background: var(--blue); box-shadow: 0 2px 6px rgba(43, 109, 243, .28); }   /* 경매사례 저장 — 파랑으로 강조(2026-11-07) */
+.sx-acts .sx-save.dirty:hover { background: #1f5ad6; }
 .sx-acts .sx-save.saved { background: var(--surface); color: #16a34a; border: 1px solid #cfe9d8; font-weight: 600; }
 .sx-acts .sx-save.saved:hover { border-color: #8fceaa; background: #f4fbf6; }
 .sx-acts .sx-save small { font-size: 12px; font-weight: 400; color: var(--muted); }
