@@ -1177,10 +1177,10 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-map .fs-btn:hover { color: var(--blue); }
 .sx-map.in-fs .fs-btn { display: none; }
 .sx-map .pa-pin { position: relative; }
-/* 지도 핀 — 작은 점 + '주변' 시설과 같은 흰 상자, 맨 앞에 번호(손품조사 시세분석 · 경매사례 같은 꼴, 2026-11-07) */
+/* 지도 핀 — 작은 점 + 그 오른쪽에 '주변' 시설과 같은 흰 상자, 맨 앞에 번호(손품조사 시세분석 · 경매사례 같은 꼴, 2026-11-07) */
 :is(.sx-map, .pa .map) .pa-pin { position: relative; }
 :is(.sx-map, .pa .map) .pa-pin .pin-dot { position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; border-radius: 50%; background: #2b4fd8; border: 2px solid #fff; box-sizing: border-box; box-shadow: 0 1px 3px rgba(17, 24, 39, .35); }
-:is(.sx-map, .pa .map) .pa-pin .pin-box { position: absolute; left: 0; top: 10px; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px 3px; background: #fff; border: 1.5px solid #2b4fd8; border-radius: 6px; box-shadow: 0 1px 4px rgba(17, 24, 39, .18); white-space: nowrap; font-size: 12px; line-height: 1.3; color: #18213a; text-align: left; cursor: pointer; }
+:is(.sx-map, .pa .map) .pa-pin .pin-box { position: absolute; left: 10px; top: 0; transform: translateY(-50%); display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px 3px; background: #fff; border: 1.5px solid #2b4fd8; border-radius: 6px; box-shadow: 0 1px 4px rgba(17, 24, 39, .18); white-space: nowrap; font-size: 12px; line-height: 1.3; color: #18213a; text-align: left; cursor: pointer; }
 :is(.sx-map, .pa .map) .pa-pin .pin-box .no { flex: none; display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 4px; box-sizing: border-box; border-radius: 10px; background: #2b4fd8; color: #fff; font-style: normal; font-size: 12px; font-weight: 800; }
 :is(.sx-map, .pa .map) .pa-pin .pin-box .tx { color: #6b7280; }
 :is(.sx-map, .pa .map) .pa-pin .pin-box .tx b { font-weight: 700; color: #18213a; }
