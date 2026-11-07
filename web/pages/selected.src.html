@@ -7145,6 +7145,13 @@ span.cal-day.has { cursor: help; }
     sxRef = r || null; sxRefMemo = null; SXG.focus = '';
     SX.my = r && Number(r['감정가']) > 0 ? Number(r['감정가']).toLocaleString('ko-KR') : '';
     renderMarket();
+    /* 고르면 표를 맨 위(빨간 기준물건 줄)로 — 표가 화면 위로 지나갔으면 표 머리가 보이게 */
+    if (r) requestAnimationFrame(() => {
+      const tb = document.querySelector('#sxList .sx-tbl'); if (!tb) return;
+      let sc = tb.parentElement; while (sc && sc !== document.body && !(sc.scrollHeight > sc.clientHeight + 2 && /auto|scroll/.test(getComputedStyle(sc).overflowY))) sc = sc.parentElement;
+      if (sc && sc !== document.body) sc.scrollTop = 0;
+      const h = document.getElementById('sxList'); if (h && h.getBoundingClientRect().top < 0) h.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    });
   }
   /* 실제로 쓰는 기준 — 기준 물건이 없으면(지역으로) 유사도는 잠그고 늘 직접범위(2026-11-08) */
   const sxBasis = () => (sxMe() ? SXM.basis : 'range');
@@ -7488,7 +7495,8 @@ span.cal-day.has { cursor: help; }
     const head = '<th scope="col" class="ck-th" title="체크하면 예상 입찰가 · 평균 · 건수에서 빠집니다">제외</th>' + SX_COLS.map(([h, k]) => `<th scope="col" data-act="sx-sort" data-v="${k}"${k === SX.sort ? ` aria-sort="${SX.desc ? 'descending' : 'ascending'}"` : ''}>${h}<i class="sdir${k === SX.sort ? ' on' : ''}" aria-hidden="true">${k === SX.sort && !SX.desc ? '▲' : '▼'}</i></th>`).join('');
     const me = sxMe();
     const lot = me ? agLotOf(me.addr) : '';
-    const body = (me ? sxMeRowHtml(me) : '') + (view.length ? view.map((r) => sxRowHtml(r, lot)).join('')
+    /* 지역으로에서 고른 기준물건은 맨 윗줄 빨간 줄로만 — 아래 목록에서는 뺀다(2026-11-08) */
+    const body = (me ? sxMeRowHtml(me) : '') + (view.length ? view.filter((r) => !(me && me.__ref === r)).map((r) => sxRowHtml(r, lot)).join('')
       : `<tr><td colspan="${SX_COLS.length + 1}" class="sx-empty">${q ? '찾는 주소 · 사건번호가 없습니다.' : '조건에 맞는 매각물건이 없습니다. 기간을 늘리거나 면적 · 건축년도 조건을 비워 보세요.'}</td></tr>`);
     /* 물건카드를 고른 때만 '근거 · 인근 유사 매각사례'(맨 윗줄 경매물건). 지역으로 직접 조회하면 '경기도 수원시 권선구 세류동 매각사례'(2026-11-08) */
     const qa = saleApplied || {};
