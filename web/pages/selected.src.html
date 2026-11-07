@@ -7594,13 +7594,13 @@ span.cal-day.has { cursor: help; }
   function sxMapCardHtml() {
     const seg = (k, opts) => `<span class="sx-pseg" role="radiogroup">${opts.map(([v, t]) => `<button type="button" role="radio" class="${String(SXM[k]) === String(v) ? 'on' : ''}" aria-checked="${String(SXM[k]) === String(v)}" data-act="sxm-set" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</span>`;
     return `<section class="sx-card sx-mapcard" aria-label="지도"><div class="sx-mapslot" id="sxMapSlot"></div>${saleBandHtml()}`
-      + `<div class="sx-conds"><span class="sx-plab rad${sxMe() ? '' : ' off'}">반경${sxMe() ? seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']]) : '<span class="sx-offtx">물건으로일 때</span>'}</span>`
+      + `<div class="sx-conds"><span class="sx-plab rad">반경${seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']])}</span>`   /* 지역으로 — 기준 물건을 고르면 그 둘레로 걸린다 */
       /* 매각기간 — 왼쪽 검색조건에서 이 줄 반경 옆으로(2026-11-07). 누르면 바로 다시 계산(검색을 다시 누르지 않는다) */
       + `<span class="sx-plab per">매각기간<span class="sx-pseg" role="radiogroup">${SALE_SEG.period.map((v) => { const on = ((saleApplied && saleApplied.period) || saleSeg.period) === v; return `<button type="button" role="radio" class="${on ? 'on' : ''}" aria-checked="${on}" data-act="sx-period" data-v="${v}">${v}</button>`; }).join('')}</span></span>`
       + `<span class="sx-plab">기준${sxMe() ? seg('basis', [['sim', '유사도'], ['range', '직접범위']])
         : '<span class="sx-pseg" role="radiogroup"><button type="button" role="radio" disabled aria-disabled="true" class="sx-lock" data-tip="지역으로 조회할 때는 기준 물건이 없어 유사도를 쓰지 않습니다">유사도</button><button type="button" role="radio" class="on" aria-checked="true">직접범위</button></span>'}</span>`
       + `<span class="sx-plab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span>`
-      + `<span class="sx-plab${sxMe() ? '' : ' off'}">층${sxMe() ? seg('floor', [['', '전체'], ['0', '같은층']]) : '<span class="sx-offtx">물건으로일 때</span>'}</span>`
+      + `<span class="sx-plab">층${seg('floor', [['', '전체'], ['0', '같은층']])}</span>`
       + `<span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span>${sxSimRowHtml()}${sxActsHtml()}</div></section>`;
   }
   /* ===== 초기화 · 저장 — 손품조사 시세분석과 같은 꼴 · 같은 자리(거르기 상자 오른쪽, 위 '층' 칸 아래, 2026-11-07).
@@ -9532,8 +9532,9 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
         t.classList.add('busy'); t.disabled = true; t.innerHTML = '조회 중<span class="sx-dots" aria-hidden="true"><i></i><i></i><i></i></span>';
         const t0 = Date.now();
         requestAnimationFrame(() => setTimeout(() => {
-          const fresh = !saleApplied || saleApplied.sido !== saleSeg.sido || saleApplied.sgg !== saleSeg.sgg || saleApplied.dong !== saleSeg.dong;
-          if (fresh) { saleSeg.period = '3개월'; saleSave(); }
+          /* 조회하면 아래 거르기 줄은 늘 기본값으로 — 반경 100m · 매각기간 3개월 · 직접범위 · 엘베 있음 · 같은층(2026-11-08) */
+          saleSeg.period = '3개월'; saleSave();
+          Object.assign(SXM, { radius: 100, elev: 'yes', basis: 'range', floor: '0' }); sxSaveM();
           saleApply({ ...saleSeg, amin: '', amax: '', ymin: '', ymax: '' }); sxRef = null; sxRefMemo = null;   /* 새로 조회하면 기준 매각물건은 풀린다 */
           setTimeout(renderMarket, Math.max(0, 400 - (Date.now() - t0)));   /* 너무 빨라도 '조회 중'이 한 번은 보이게(0.4초) */
         }, 30));
