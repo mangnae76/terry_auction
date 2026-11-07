@@ -1096,7 +1096,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-pickwide img { width: 10px; height: 10px; flex: 0 0 auto; } .sx-pickwide img.up { transform: rotate(180deg); }
 .sx-topcard { border-top: 1px solid var(--line); padding-top: 10px; }
 /* 물건으로 — 고른 물건 한 줄(넘치면 주소부터 줄임표) */
-.sx-itemline { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2, #f7f9fc); font-size: 13.5px; color: var(--text); white-space: nowrap; overflow: hidden; }
+.sx-itemline { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2, #f7f9fc); font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; }
 .sx-itemline.none { color: var(--muted); }
 .sx-itemline > * { flex: 0 0 auto; }
 .sx-itemline .cn { color: var(--blue); font-weight: 800; }
@@ -7991,12 +7991,12 @@ span.cal-day.has { cursor: help; }
       if (it) {
         const y = Number(String(detailOf(it).approvalDate || '').replace(/[^\d]/g, '').slice(0, 4)) || 0;
         const age = y ? `${new Date().getFullYear() - y + 1}년차` : '';
-        const area = it.bldg > 0 ? `건물 ${Number(it.bldg).toFixed(2)}㎡ / ${(it.bldg / 3.3058).toFixed(1)}평` : '';
+        const area = it.bldg > 0 ? `${Number(it.bldg).toFixed(2)}㎡ / ${(it.bldg / 3.3058).toFixed(1)}평` : '';   /* 건물(전용) 면적 */
         const money = [it.apr > 0 ? `감정가 <b class="num">${sxWon(it.apr)}</b>` : '', it.min > 0 ? `최저가 <b class="num">${sxWon(it.min)}</b>` : ''].filter(Boolean).join(' · ');
         const parts = [money, area ? esc(area) : '', age].filter(Boolean).map((x) => `<span>${x}</span>`).join('<i class="bar" aria-hidden="true"></i>');
         /* 매각기일 · D-day — 사건번호 바로 옆(2026-11-08) */
         const day = it.date ? `<span class="dt num">${dotDate(it.date).slice(2)}${dowText(it.date)} <em>${ddayText(it.date)}</em></span>` : '';   /* 26.11.19 (목) D-11 — 한 줄에 들어가게 짧게 */
-        line = `<span class="sx-itemline"><b class="cn">${esc(it.caseNo)}</b>${day}<i class="bar" aria-hidden="true"></i><span class="ad">${esc([it.addr, it.bld, it.unit].filter(Boolean).join(' '))}</span>${parts ? `<i class="bar" aria-hidden="true"></i>${parts}` : ''}</span>`;
+        line = `<span class="sx-itemline"><b class="cn">${esc(it.caseNo)}</b>${day}<i class="bar" aria-hidden="true"></i><span class="ad" title="${esc([it.addr, it.bld, it.unit].filter(Boolean).join(' '))}">${esc([String(it.addr || '').replace(/^\S+(특별시|광역시|특별자치시|특별자치도|도)\s+/, ''), it.bld, it.unit].filter(Boolean).join(' '))}</span>${parts ? `<i class="bar" aria-hidden="true"></i>${parts}` : ''}</span>`;
       }
       return `<div class="sx-topband one">${mode}${line}${cardPickHtml('sale', saleItemId)}</div>`;
     }
