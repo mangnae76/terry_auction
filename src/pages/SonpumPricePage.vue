@@ -325,10 +325,26 @@ const setRange = (k: keyof PriceCond, v: number) => {
 };
 const fillStyle = (lo: number, hi: number, min: number, max: number) => ({ left: `${((lo - min) / (max - min)) * 100}%`, right: `${100 - ((hi - min) / (max - min)) * 100}%` });
 const baseLeft = (v: number, min: number, max: number) => `${Math.min(100, Math.max(0, ((v - min) / (max - min)) * 100))}%`;
-/** 웹 직접범위 — 동그라미 위 범위값. 둘이 가까우면(막대의 18% 안) 가운데 하나로 '45~55' */
-const thumbTags = (lo: number, hi: number, min: number, max: number) => {
-  const p = (v: number) => Math.min(100, Math.max(0, ((v - min) / (max - min)) * 100));
-  return p(hi) - p(lo) < 18 ? [{ left: `${(p(lo) + p(hi)) / 2}%`, text: lo === hi ? `${lo}` : `${lo}~${hi}` }] : [{ left: `${p(lo)}%`, text: `${lo}` }, { left: `${p(hi)}%`, text: `${hi}` }];
+/** 웹 직접범위 — 막대 위 한 줄: 파란 범위값(동그라미 위) · 빨간 내 물건 값. 글자 크기 · 아랫선이 같다.
+ *  막대 폭(px)을 재서 숫자끼리 겹치면 옆으로 비켜 세우고, 파란 둘이 겹치면 '45~55' 하나로(2026-11-07) */
+const trackW = ref<Record<string, number>>({});
+const trackRO = typeof ResizeObserver !== 'undefined'
+  ? new ResizeObserver((es) => { es.forEach((e) => { const k = (e.target as HTMLElement).dataset.k; if (k) trackW.value = { ...trackW.value, [k]: e.contentRect.width }; }); })
+  : null;
+const watchTrack = (k: string) => (el: unknown) => { if (el instanceof HTMLElement && el.dataset.k !== k) { el.dataset.k = k; trackRO?.observe(el); } };
+onBeforeUnmount(() => trackRO?.disconnect());
+type RTag = { left: string; text: string; me: boolean };
+const rangeTags = (k: string, lo: number, hi: number, mine: number, mineText: string, min: number, max: number): RTag[] => {
+  const W = trackW.value[k] || 300; const GAP = 6;
+  const x = (v: number) => Math.min(1, Math.max(0, (v - min) / (max - min))) * W;
+  const wOf = (t: string) => t.length * 7.4 + 2;
+  const blue = x(hi) - x(lo) < (wOf(`${lo}`) + wOf(`${hi}`)) / 2 + GAP
+    ? [{ c: (x(lo) + x(hi)) / 2, text: lo === hi ? `${lo}` : `${lo}~${hi}`, me: false }]
+    : [{ c: x(lo), text: `${lo}`, me: false }, { c: x(hi), text: `${hi}`, me: false }];
+  const all = [...blue, { c: x(mine), text: mineText, me: true }].sort((a, b) => a.c - b.c).map((t) => ({ ...t, w: wOf(t.text), l: 0 }));
+  all.forEach((t, n) => { t.l = Math.max(t.c - t.w / 2, n ? all[n - 1].l + all[n - 1].w + GAP : -8); });
+  for (let n = all.length - 1; n >= 0; n -= 1) { const cap = n === all.length - 1 ? W + 8 : all[n + 1].l - GAP; if (all[n].l + all[n].w > cap) all[n].l = cap - all[n].w; }
+  return all.map((t) => ({ left: `${t.l}px`, text: t.text, me: t.me }));
 };
 
 type Snap = { radius: number; kindF: Kind; simMode: 'sim' | 'range'; sim: number; rangeCond: PriceCond; keep: Record<string, string[]>; drop: string[]; elev: 'yes' | 'no' | null };
@@ -753,7 +769,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
           <div v-else class="simB">
             <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">{{ webEmbed && !fs ? '면적 ㎡' : '면적' }}<small v-if="webEmbed && !fs" class="pa-num">{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></span>
               <div class="dual">
-                <div class="track"><i class="fill" :style="fillStyle(rangeCond.mMin, rangeCond.mMax, AREA_MIN, AREA_MAX)" /><i class="base" :data-label="webEmbed && !fs ? me.areaM2.toFixed(2) : `${me.areaM2.toFixed(2)}㎡`" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }" /><template v-if="webEmbed && !fs"><i v-for="t in thumbTags(rangeCond.mMin, rangeCond.mMax, AREA_MIN, AREA_MAX)" :key="t.left" class="tv pa-num" :style="{ left: t.left }">{{ t.text }}</i></template></div>
+                <div :ref="webEmbed && !fs ? watchTrack('m') : undefined" class="track"><i class="fill" :style="fillStyle(rangeCond.mMin, rangeCond.mMax, AREA_MIN, AREA_MAX)" /><i class="base" :data-label="webEmbed && !fs ? '' : `${me.areaM2.toFixed(2)}㎡`" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }" /><template v-if="webEmbed && !fs"><i v-for="t in rangeTags('m', rangeCond.mMin, rangeCond.mMax, me.areaM2, me.areaM2.toFixed(2), AREA_MIN, AREA_MAX)" :key="t.text + t.me" :class="['tv', 'pa-num', { me: t.me }]" :style="{ left: t.left }">{{ t.text }}</i></template></div>
                 <input type="range" :min="AREA_MIN" :max="AREA_MAX" step="1" :value="rangeCond.mMin" aria-label="면적 최소(㎡)" @input="setRange('mMin', Number(($event.target as HTMLInputElement).value))">
                 <input type="range" :min="AREA_MIN" :max="AREA_MAX" step="1" :value="rangeCond.mMax" aria-label="면적 최대(㎡)" @input="setRange('mMax', Number(($event.target as HTMLInputElement).value))">
               </div>
@@ -761,7 +777,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             </div>
             <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">건축<small v-if="webEmbed && !fs" class="pa-num">{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></span>
               <div class="dual">
-                <div class="track"><i class="fill" :style="fillStyle(rangeCond.yMin, rangeCond.yMax, YEAR_MIN, yearMax)" /><i class="base" :data-label="`${me.year}`" :style="{ left: baseLeft(me.year, YEAR_MIN, yearMax) }" /><template v-if="webEmbed && !fs"><i v-for="t in thumbTags(rangeCond.yMin, rangeCond.yMax, YEAR_MIN, yearMax)" :key="t.left" class="tv pa-num" :style="{ left: t.left }">{{ t.text }}</i></template></div>
+                <div :ref="webEmbed && !fs ? watchTrack('y') : undefined" class="track"><i class="fill" :style="fillStyle(rangeCond.yMin, rangeCond.yMax, YEAR_MIN, yearMax)" /><i class="base" :data-label="webEmbed && !fs ? '' : `${me.year}년`" :style="{ left: baseLeft(me.year, YEAR_MIN, yearMax) }" /><template v-if="webEmbed && !fs"><i v-for="t in rangeTags('y', rangeCond.yMin, rangeCond.yMax, me.year, `${me.year}`, YEAR_MIN, yearMax)" :key="t.text + t.me" :class="['tv', 'pa-num', { me: t.me }]" :style="{ left: t.left }">{{ t.text }}</i></template></div>
                 <input type="range" :min="YEAR_MIN" :max="yearMax" step="1" :value="rangeCond.yMin" aria-label="건축 최소(년)" @input="setRange('yMin', Number(($event.target as HTMLInputElement).value))">
                 <input type="range" :min="YEAR_MIN" :max="yearMax" step="1" :value="rangeCond.yMax" aria-label="건축 최대(년)" @input="setRange('yMax', Number(($event.target as HTMLInputElement).value))">
               </div>
@@ -1067,8 +1083,9 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .simrow.has-elev .simB .dl.one > .dn { display: grid; justify-items: center; gap: 2px; font-size: 14px; font-weight: 800; color: var(--fg); }
 .simrow.has-elev .simB .dl.one > .dn small { font-size: 12px; font-weight: 400; color: var(--sub); white-space: nowrap; }
 .simrow.has-elev .simB .dl.one > .dual { margin-top: 0; }
-.dl.one .dual .tv { position: absolute; bottom: 12px; transform: translateX(-50%); font-style: normal; font-size: 13px; font-weight: 800; color: var(--blue); white-space: nowrap; pointer-events: none; }
-.dl.one .dual .base::before { font-size: 12px; bottom: auto; top: 16px; }   /* 빨간 내 물건 값은 막대 아래 — 위 파란 범위값과 겹치지 않게 */
+.dl.one .dual .tv { position: absolute; bottom: 12px; font-style: normal; font-size: 13px; line-height: 1; font-weight: 800; color: var(--blue); white-space: nowrap; pointer-events: none; }   /* 왼쪽 끝을 px 로 받는다(rangeTags) */
+.dl.one .dual .tv.me { color: var(--red); z-index: 1; }   /* 빨간 내 물건 값 — 파란 범위값과 같은 크기 · 같은 아랫선 */
+.dl.one .dual .base::before { display: none; }   /* 빨간 값은 위 한 줄(.tv.me)로 그린다 */
 /* 웹 직접범위 — 아래 상자가 위 줄 칸(반경 · 거래 · 기준 · 엘베)을 그대로 따른다: 면적은 '반경' 글자, 건축은 '기준' 글자와 같은 세로줄(2026-11-07) */
 .conds:has(> .elev-pick) > .simrow:has(.dl.one) { grid-template-columns: subgrid; padding-left: 10px; padding-right: 10px; column-gap: inherit; }
 .simrow.has-elev .simB:has(> .dl.one) { grid-column: 1 / -1; grid-template-columns: subgrid; column-gap: inherit; }
