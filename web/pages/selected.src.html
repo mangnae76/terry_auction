@@ -1435,7 +1435,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .app-detail.tab-rights :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select) { font-size: 14px !important; }
 /* 같은 표 오른쪽 칸 — 날짜 · 고르기는 14인데 글 적는 칸만 웹 공통 입력 16을 받아 컸다(세대주 입력 · 문건송달 비고). 한 줄 안 글자를 14 하나로 */
 .app-detail.tab-rights .adp-rdoc-survey :is(input.adp-rdoc-input, .adp-date-btn, .adp-date-btn span, .adp-agency-trigger .txt, .adp-rdoc-label, .adp-rdoc-task) { font-size: 14px !important; }
-.it-lead:has(+ .rt-wrap) { margin-bottom: 28px; }   /* 권리분석 — 안내와 아래 '권리분석 결과' 제목 사이를 넉넉히 */
+/* 권리분석 안내 아래도 다른 화면과 같은 16(예전 28은 뺐다, 2026-11-07) */
 /* 권리분석 결과 ~ 서류 올리기를 흰 상자 하나에 */
 .rt-wrap { margin-bottom: 12px; padding: 20px; border: 1px solid var(--card-line); border-radius: 12px; background: var(--surface); }
 .rt-title { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 16px; line-height: 24px; font-weight: 800; color: var(--text); }
