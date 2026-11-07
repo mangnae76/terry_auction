@@ -1096,6 +1096,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-pickwide img { width: 10px; height: 10px; flex: 0 0 auto; } .sx-pickwide img.up { transform: rotate(180deg); }
 .sx-topcard { border-top: 1px solid var(--line); padding-top: 10px; }
 .sx-plab.off { opacity: .5; }
+.sx-pseg button.sx-lock { opacity: .4; cursor: not-allowed; }   /* 지역으로 — 유사도 잠금 */
 .sx-offtx { font-size: 12.5px; font-weight: 400; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 검색 띠 — 고정카드 아래 한 줄(시도 · 시군구 · 읍면동 · 물건종류 · 조회), 2026-11-07 */
 .sx-band { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }   /* 아래 상자와 사이는 .sx 줄 간격(12) */
@@ -7102,6 +7103,8 @@ span.cal-day.has { cursor: help; }
   const SALE_MODE_KEY = 'ta.web.sale.mode';
   let saleMode = (() => { try { return localStorage.getItem(SALE_MODE_KEY) === 'region' ? 'region' : 'item'; } catch (e) { return 'item'; } })();
   const sxMe = () => ((S.route === 'item' || saleMode === 'item') && saleItemId ? salePicks().find((x) => x.id === saleItemId) || null : null);
+  /* 실제로 쓰는 기준 — 기준 물건이 없으면(지역으로) 유사도는 잠그고 늘 직접범위(2026-11-08) */
+  const sxBasis = () => (sxMe() ? SXM.basis : 'range');
   const sxMeFloor = (it) => { const u = String((it && it.unit) || ''); const f = /(\d+)\s*층/.exec(u); if (f) return Number(f[1]); const h = /(\d{3,4})\s*호/.exec(u); return h ? Math.floor(Number(h[1]) / 100) : 0; };
   const sxLimit = async (list, n, fn) => { let i = 0; await Promise.all(Array.from({ length: Math.min(n, list.length) }, async () => { while (i < list.length) { const x = list[i]; i += 1; await fn(x); } })); };
   const sxMapMsgText = () => (SXG.total ? `${SXG.phase === 'elev' ? '엘베 확인 중' : '위치 찾는 중'} ${SXG.done.toLocaleString('ko-KR')} / ${SXG.total.toLocaleString('ko-KR')}`
@@ -7242,13 +7245,13 @@ span.cal-day.has { cursor: help; }
     const base = saleRows(); if (!base) return null;
     const q = saleApplied;
     const rc = SXM.rc;
-    const mk = `${SXG.ver}|${SXM.radius}|${SXM.elev}|${SXM.floor}|${SXM.basis}|${SXM.sim}|${rc.mMin}-${rc.mMax}-${rc.yMin}-${rc.yMax}|${saleItemId}`;
+    const mk = `${SXG.ver}|${SXM.radius}|${SXM.elev}|${SXM.floor}|${sxBasis()}|${SXM.sim}|${rc.mMin}-${rc.mMax}-${rc.yMin}-${rc.yMax}|${saleItemId}`;
     if (SX.rowsOf === base && SX.rowsQ === q && SX.rowsM === mk) return SX.rows;
     const amin = sxNum(q.amin); const amax = sxNum(q.amax); const ymin = sxNum(q.ymin); const ymax = sxNum(q.ymax);
     /* 지도 거르기 — 손품조사 시세분석과 같은 규칙: 같은 건물(경매지번)은 늘 넣고, 위치 · 엘베를 아직 모르는 물건은 거르지 않는다 */
     const me = sxMe(); const meSpot = me ? SXG.spots[sxLotKey(me.addr)] : null; const meLot = me ? agLotOf(me.addr) : ''; const myFloor = sxMeFloor(me);
     /* 기준 — 직접범위(왼쪽 면적 · 건축년도 칸) · 유사도(경매물건 둘레 면적 ± · 건축 ± · 층, 시세분석과 같은 표) */
-    const subj = SXM.basis === 'sim' ? sxMeSubject(me) : null;
+    const subj = sxBasis() === 'sim' ? sxMeSubject(me) : null;
     const sc = subj && subj.areaM2 > 0 && CLOUD.T && CLOUD.T.simCond ? CLOUD.T.simCond(Number(SXM.sim), subj) : null;
     SX.rows = base.filter((r) => {
       const a = Number(r['전용면적']) || 0; const y = agBuiltYear(r);
@@ -7257,7 +7260,7 @@ span.cal-day.has { cursor: help; }
         if (!(a >= sc.mMin && a <= sc.mMax)) return false;
         if (subj.year && y && !(y >= sc.yMin && y <= sc.yMax)) return false;
         if (sc.floor !== null && myFloor && Number(r['층']) && Math.abs(Number(r['층']) - myFloor) > sc.floor) return false;
-      } else if (SXM.basis === 'range') {
+      } else if (sxBasis() === 'range') {
         /* 직접범위 막대 — 끝까지 연 쪽(20 · 150㎡ / 1980 · 올해)은 그 밖도 넣는다 */
         if (a > 0 && ((rc.mMin > SX_AREA[0] && a < rc.mMin) || (rc.mMax < SX_AREA[1] && a > rc.mMax))) return false;
         if (y > 0 && ((rc.yMin > SX_YEAR[0] && y < rc.yMin) || (rc.yMax < SX_YEAR[1] && y > rc.yMax))) return false;
@@ -7502,7 +7505,7 @@ span.cal-day.has { cursor: help; }
   /* 결과 쪽 전체 — 검색 전 · 결과 없음 · 결과 */
   /* 기준 아래 줄 — 유사도면 막대(60~95%, 시세분석과 같은 표), 직접범위면 왼쪽 칸 안내 */
   function sxSimRowHtml() {
-    if (SXM.basis !== 'sim') return `<div class="sx-simrow sx-rgrow">${sxRangeHtml()}</div>`;
+    if (sxBasis() !== 'sim') return `<div class="sx-simrow sx-rgrow">${sxRangeHtml()}</div>`;
     const T = CLOUD.T; const subj = sxMeSubject(sxMe());
     const def = T && T.simDefText ? T.simDefText(Number(SXM.sim)) : '';
     const note = !subj ? '물건카드로 경매물건을 고르면 그 물건 둘레로 거릅니다' : !(subj.areaM2 > 0) ? '경매물건 전용면적이 없어 유사도로 거르지 못합니다' : `경매물건 ${subj.areaM2.toFixed(2)}㎡${subj.year ? ` · ${subj.year}년` : ''}${subj.floor ? ` · ${subj.floor}층` : ''} 기준`;
@@ -7550,7 +7553,8 @@ span.cal-day.has { cursor: help; }
       + `<div class="sx-conds"><span class="sx-plab rad${sxMe() ? '' : ' off'}">반경${sxMe() ? seg('radius', [[100, '100m'], [300, '300m'], [500, '500m'], [1000, '1km']]) : '<span class="sx-offtx">물건으로일 때</span>'}</span>`
       /* 매각기간 — 왼쪽 검색조건에서 이 줄 반경 옆으로(2026-11-07). 누르면 바로 다시 계산(검색을 다시 누르지 않는다) */
       + `<span class="sx-plab per">매각기간<span class="sx-pseg" role="radiogroup">${SALE_SEG.period.map((v) => { const on = ((saleApplied && saleApplied.period) || saleSeg.period) === v; return `<button type="button" role="radio" class="${on ? 'on' : ''}" aria-checked="${on}" data-act="sx-period" data-v="${v}">${v}</button>`; }).join('')}</span></span>`
-      + `<span class="sx-plab">기준${seg('basis', [['sim', '유사도'], ['range', '직접범위']])}</span>`
+      + `<span class="sx-plab">기준${sxMe() ? seg('basis', [['sim', '유사도'], ['range', '직접범위']])
+        : '<span class="sx-pseg" role="radiogroup"><button type="button" role="radio" disabled aria-disabled="true" class="sx-lock" data-tip="지역으로 조회할 때는 기준 물건이 없어 유사도를 쓰지 않습니다">유사도</button><button type="button" role="radio" class="on" aria-checked="true">직접범위</button></span>'}</span>`
       + `<span class="sx-plab">엘베${seg('elev', [['', '전체'], ['yes', '있음'], ['no', '없음']])}</span>`
       + `<span class="sx-plab${sxMe() ? '' : ' off'}">층${sxMe() ? seg('floor', [['', '전체'], ['0', '같은층']]) : '<span class="sx-offtx">물건으로일 때</span>'}</span>`
       + `<span class="sx-mapmsg" id="sxMapMsg">${esc(sxMapMsgText())}</span>${sxSimRowHtml()}${sxActsHtml()}</div></section>`;
