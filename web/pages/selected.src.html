@@ -7401,9 +7401,9 @@ span.cal-day.has { cursor: help; }
       : `<tr><td colspan="${SX_COLS.length + 1}" class="sx-empty">${q ? '찾는 주소 · 사건번호가 없습니다.' : '조건에 맞는 매각물건이 없습니다. 기간을 늘리거나 면적 · 건축년도 조건을 비워 보세요.'}</td></tr>`);
     /* 물건카드를 고른 때만 '근거 · 인근 유사 매각사례'(맨 윗줄 경매물건). 지역으로 직접 조회하면 '경기도 수원시 권선구 세류동 매각사례'(2026-11-08) */
     const qa = saleApplied || {};
-    const head = me ? '<span class="sx-ptag">근거</span><h3 class="sx-sec">인근 유사 매각사례</h3>'
+    const listHead = me ? '<span class="sx-ptag">근거</span><h3 class="sx-sec">인근 유사 매각사례</h3>'
       : `<h3 class="sx-sec">${esc([qa.sido, qa.sgg, qa.dong].filter(Boolean).join(' ') || '지역')} 매각사례</h3>`;
-    return `<div id="sxList"><div class="sx-list-h">${head}<span class="sx-count"><b class="num">${view.length.toLocaleString('ko-KR')}</b>건${q ? ` · 전체 ${rows.length.toLocaleString('ko-KR')}건 중` : ''}</span>`
+    return `<div id="sxList"><div class="sx-list-h">${listHead}<span class="sx-count"><b class="num">${view.length.toLocaleString('ko-KR')}</b>건${q ? ` · 전체 ${rows.length.toLocaleString('ko-KR')}건 중` : ''}</span>`
       + `<span class="sx-grow"></span><label class="sx-qbox"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" class="sx-q" id="sxQ" placeholder="주소 · 사건번호 검색" autocomplete="off" aria-label="인근 유사 매각사례에서 찾기" value="${esc(SX.q || '')}"></label></div>`
       + `<div class="sx-tbl"><table><colgroup>${SX_COL_W.map((w) => (w ? `<col style="width:${w}px">` : '<col>')).join('')}</colgroup><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></div>`;
   }
