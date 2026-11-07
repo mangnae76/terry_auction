@@ -325,6 +325,11 @@ const setRange = (k: keyof PriceCond, v: number) => {
 };
 const fillStyle = (lo: number, hi: number, min: number, max: number) => ({ left: `${((lo - min) / (max - min)) * 100}%`, right: `${100 - ((hi - min) / (max - min)) * 100}%` });
 const baseLeft = (v: number, min: number, max: number) => `${Math.min(100, Math.max(0, ((v - min) / (max - min)) * 100))}%`;
+/** 웹 직접범위 — 동그라미 위 범위값. 둘이 가까우면(막대의 18% 안) 가운데 하나로 '45~55' */
+const thumbTags = (lo: number, hi: number, min: number, max: number) => {
+  const p = (v: number) => Math.min(100, Math.max(0, ((v - min) / (max - min)) * 100));
+  return p(hi) - p(lo) < 18 ? [{ left: `${(p(lo) + p(hi)) / 2}%`, text: lo === hi ? `${lo}` : `${lo}~${hi}` }] : [{ left: `${p(lo)}%`, text: `${lo}` }, { left: `${p(hi)}%`, text: `${hi}` }];
+};
 
 type Snap = { radius: number; kindF: Kind; simMode: 'sim' | 'range'; sim: number; rangeCond: PriceCond; keep: Record<string, string[]>; drop: string[]; elev: 'yes' | 'no' | null };
 const snapNow = (): Snap => ({ radius: radius.value, kindF: kindF.value, simMode: simMode.value, sim: sim.value, rangeCond: { ...rangeCond.value }, keep: JSON.parse(JSON.stringify(colFilter.picked.value)), drop: [...dropped.value], elev: elevPick.value });
@@ -746,23 +751,21 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <div class="ticks" aria-hidden="true"><span v-for="s in SIM_STEPS" :key="s">{{ s }}%</span></div>
           </div>
           <div v-else class="simB">
-            <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">면적</span><span v-if="webEmbed && !fs" class="ev pa-num">{{ rangeCond.mMin }}㎡</span>
+            <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">{{ webEmbed && !fs ? '면적 ㎡' : '면적' }}<small v-if="webEmbed && !fs" class="pa-num">{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></span>
               <div class="dual">
-                <div class="track"><i class="fill" :style="fillStyle(rangeCond.mMin, rangeCond.mMax, AREA_MIN, AREA_MAX)" /><i class="base" :data-label="`${me.areaM2.toFixed(2)}㎡`" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }" /></div>
+                <div class="track"><i class="fill" :style="fillStyle(rangeCond.mMin, rangeCond.mMax, AREA_MIN, AREA_MAX)" /><i class="base" :data-label="webEmbed && !fs ? me.areaM2.toFixed(2) : `${me.areaM2.toFixed(2)}㎡`" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }" /><template v-if="webEmbed && !fs"><i v-for="t in thumbTags(rangeCond.mMin, rangeCond.mMax, AREA_MIN, AREA_MAX)" :key="t.left" class="tv pa-num" :style="{ left: t.left }">{{ t.text }}</i></template></div>
                 <input type="range" :min="AREA_MIN" :max="AREA_MAX" step="1" :value="rangeCond.mMin" aria-label="면적 최소(㎡)" @input="setRange('mMin', Number(($event.target as HTMLInputElement).value))">
                 <input type="range" :min="AREA_MIN" :max="AREA_MAX" step="1" :value="rangeCond.mMax" aria-label="면적 최대(㎡)" @input="setRange('mMax', Number(($event.target as HTMLInputElement).value))">
               </div>
-              <template v-if="webEmbed && !fs"><span class="ev pa-num">{{ rangeCond.mMax }}㎡</span><b class="pa-num">{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</b></template>
-              <b v-else>{{ rangeCond.mMin }}~{{ rangeCond.mMax }}㎡<small>{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></b>
+              <b v-if="!(webEmbed && !fs)">{{ rangeCond.mMin }}~{{ rangeCond.mMax }}㎡<small>{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></b>
             </div>
-            <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">건축</span><span v-if="webEmbed && !fs" class="ev pa-num">{{ rangeCond.yMin }}년</span>
+            <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">건축<small v-if="webEmbed && !fs" class="pa-num">{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></span>
               <div class="dual">
-                <div class="track"><i class="fill" :style="fillStyle(rangeCond.yMin, rangeCond.yMax, YEAR_MIN, yearMax)" /><i class="base" :data-label="`${me.year}년`" :style="{ left: baseLeft(me.year, YEAR_MIN, yearMax) }" /></div>
+                <div class="track"><i class="fill" :style="fillStyle(rangeCond.yMin, rangeCond.yMax, YEAR_MIN, yearMax)" /><i class="base" :data-label="`${me.year}`" :style="{ left: baseLeft(me.year, YEAR_MIN, yearMax) }" /><template v-if="webEmbed && !fs"><i v-for="t in thumbTags(rangeCond.yMin, rangeCond.yMax, YEAR_MIN, yearMax)" :key="t.left" class="tv pa-num" :style="{ left: t.left }">{{ t.text }}</i></template></div>
                 <input type="range" :min="YEAR_MIN" :max="yearMax" step="1" :value="rangeCond.yMin" aria-label="건축 최소(년)" @input="setRange('yMin', Number(($event.target as HTMLInputElement).value))">
                 <input type="range" :min="YEAR_MIN" :max="yearMax" step="1" :value="rangeCond.yMax" aria-label="건축 최대(년)" @input="setRange('yMax', Number(($event.target as HTMLInputElement).value))">
               </div>
-              <template v-if="webEmbed && !fs"><span class="ev pa-num">{{ rangeCond.yMax }}년</span><b class="pa-num">{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</b></template>
-              <b v-else>{{ rangeCond.yMin }}~{{ rangeCond.yMax }}년<small>{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></b>
+              <b v-if="!(webEmbed && !fs)">{{ rangeCond.yMin }}~{{ rangeCond.yMax }}년<small>{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></b>
             </div>
             <span v-if="!webEmbed" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층">
               <button type="button" role="radio" :class="{ on: rangeCond.floor === null }" :aria-checked="rangeCond.floor === null" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
@@ -1059,12 +1062,19 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .simrow.has-elev .simB .dl > b { grid-area: val; min-width: 0; text-align: right; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .simrow.has-elev .simB .dl > b small { display: inline; margin-left: 6px; font-size: 12px; }
 .simrow.has-elev .simB .dl > .dual { grid-area: bar; min-width: 0; margin-top: 12px; }
-.simrow.has-elev .simB .dl.one { grid-template-columns: auto auto minmax(0, 1fr) auto auto; grid-template-areas: none; gap: 0 8px; }   /* 웹 — 한 줄: 이름 · 작은 값 · 막대(빨간 내 물건) · 큰 값 · 평/연차(2026-11-07) */
-.simrow.has-elev .simB .dl.one > :is(.dn, .ev, .dual, b) { grid-area: auto; }
-.simrow.has-elev .simB:has(> .dl.one) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 40px; }   /* 웹엔 층이 이 상자 밖이라 두 칸이 반씩 */
-.simrow.has-elev .simB .dl.one > .dual { margin-top: 14px; }
-.simrow.has-elev .simB .dl.one > .ev { font-size: 13px; font-weight: 700; color: var(--blue); }
-.simrow.has-elev .simB .dl.one > b { min-width: 72px; font-size: 13px; color: var(--fg); font-weight: 700; }
+.simrow.has-elev .simB .dl.one { grid-template-columns: 64px minmax(0, 1fr); grid-template-areas: none; gap: 0 12px; }   /* 웹 — 왼쪽 이름(아래 평 · 연차 범위) · 오른쪽 막대. 범위값은 동그라미 위에 붙어 따라간다(2026-11-07) */
+.simrow.has-elev .simB .dl.one > :is(.dn, .dual) { grid-area: auto; }
+.simrow.has-elev .simB .dl.one > .dn { display: grid; justify-items: center; gap: 2px; font-size: 14px; font-weight: 800; color: var(--fg); }
+.simrow.has-elev .simB .dl.one > .dn small { font-size: 12px; font-weight: 400; color: var(--sub); white-space: nowrap; }
+.simrow.has-elev .simB .dl.one > .dual { margin-top: 0; }
+.dl.one .dual .tv { position: absolute; bottom: 12px; transform: translateX(-50%); font-style: normal; font-size: 13px; font-weight: 800; color: var(--blue); white-space: nowrap; pointer-events: none; }
+.dl.one .dual .base::before { font-size: 12px; bottom: auto; top: 16px; }   /* 빨간 내 물건 값은 막대 아래 — 위 파란 범위값과 겹치지 않게 */
+/* 웹 직접범위 — 아래 상자가 위 줄 칸(반경 · 거래 · 기준 · 엘베)을 그대로 따른다: 면적은 '반경' 글자, 건축은 '기준' 글자와 같은 세로줄(2026-11-07) */
+.conds:has(> .elev-pick) > .simrow:has(.dl.one) { grid-template-columns: subgrid; padding-left: 10px; padding-right: 10px; column-gap: inherit; }
+.simrow.has-elev .simB:has(> .dl.one) { grid-column: 1 / -1; grid-template-columns: subgrid; column-gap: inherit; }
+.simrow.has-elev .simB > .dl.one:first-child { grid-column: 1 / 3; }
+.simrow.has-elev .simB > .dl.one + .dl.one { grid-column: 3 / 5; padding-left: 11px; }
+.simrow.has-elev .simB .dl.one > .dn { justify-items: start; }
 /* 전체화면 — 면적 · 건축 · 층 · 엘베를 세로로 쌓으므로 높이는 내용대로 */
 .pa.fs .simrow.has-elev :is(.simA, .simB) { height: auto; }
 .simrow.has-elev .simB .pa-lab .pa-seg, .elev-pick .pa-seg { width: 186px; }   /* 웹 — 층 · 엘베 고르기 상자 크기를 같게 */
