@@ -10,6 +10,8 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import { REGION_GROUPS, districtsOf, type DistrictOption } from '../services/regionCodes';
 import { fetchDongTradeDetails, fetchDongTradeStats, tradeWindowOf, type DongTradeDetailRow } from '../services/publicDataApi';
+import { openNaverSpot, openPlanetSpot } from '../services/naverListing';
+import { getBuildingFacts } from '../services/buildingFacts';
 import { loadUserPrefs, saveUserPrefs } from '../services/userPrefsRepository';
 import ColumnFilterPanel from '../components/ColumnFilterPanel.vue';
 import AppToast from '../components/AppToast.vue';
@@ -533,7 +535,7 @@ const rankByDong = computed<RankRow[]>(() => {
 });
 /** 웹 랭킹분석 › 건물랭킹 — 조회한 기간 · 종류의 실거래를 건물(동 + 지번)로 묶어 많이 팔린 순(2026-11-08).
  *  이름은 비거나 표기가 달라 지번으로 묶고 이름은 가장 많이 쓰인 것으로 보인다. 읍면동을 고르면 그 동만, 계약해제는 뺀다 */
-type BldRow = { id: string; name: string; umd: string; jibun: string; addr: string; n: number; avg: number; perPy: number; last: string; aMin: number; aMax: number; year: number };
+type BldRow = { id: string; name: string; umd: string; jibun: string; addr: string; deals: DongTradeDetailRow[]; n: number; avg: number; perPy: number; last: string; aMin: number; aMax: number; year: number };
 /** 건물랭킹 자료 — 24개월까지 고를 수 있어 거래랭킹이 받는 24개월 자료(rankRows)를 쓴다. 아직 못 받았으면 조회한 자료(12개월) */
 const bldSrc = computed<DongTradeDetailRow[]>(() => (rankRows.value.length ? rankRows.value : all.value));
 const bldRank = computed<BldRow[]>(() => {
@@ -555,7 +557,8 @@ const bldRank = computed<BldRow[]>(() => {
     /* 주소 — 시도 · 시군구까지(거래랭킹 자료는 줄마다 시도 · 시군구가 붙어 있다, 아니면 지금 고른 지역) */
     const f = l[0] as DongTradeDetailRow & { sido?: string; gu?: string };
     const addr = [f.sido || sido.value, f.gu || district.value?.label || '', l[0].umdNm, l[0].jibun].filter(Boolean).join(' ');
-    return { id, name, umd: l[0].umdNm, jibun: l[0].jibun, addr, n: l.length, avg, perPy, last: l.map((r) => r.contractDate).sort().slice(-1)[0] ?? '',
+    const deals = [...l].sort((a, b) => b.contractDate.localeCompare(a.contractDate));
+    return { id, name, umd: l[0].umdNm, jibun: l[0].jibun, addr, deals, n: l.length, avg, perPy, last: l.map((r) => r.contractDate).sort().slice(-1)[0] ?? '',
       aMin: areas.length ? Math.min(...areas) : 0, aMax: areas.length ? Math.max(...areas) : 0, year: l.find((r) => r.buildYear > 0)?.buildYear ?? 0 };
   });
   return out.sort((a, b) => (b.n - a.n) || b.last.localeCompare(a.last)).slice(0, 30);
@@ -573,6 +576,33 @@ const copyBldAddr = async (b: BldRow) => {
   try { await navigator.clipboard.writeText(b.addr); } catch { const ta = document.createElement('textarea'); ta.value = b.addr; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch { /* 그만 */ } ta.remove(); }
   bldCopied.value = b.id; window.setTimeout(() => { if (bldCopied.value === b.id) bldCopied.value = ''; }, 1500);
 };
+/** 건물마다 엘베 — 건축물대장(30일 저장)에서. 순위가 바뀌면 새로 오른 건물만 3곳씩 찾는다. undefined 찾는 중 · null 모름 · 숫자 승강기 수 */
+const bldElev = ref<Record<string, number | null>>({});
+let bldElevRun = 0;
+watch([bldRank, listView], async ([list]) => {   // 건물랭킹 탭을 열 때도
+  if (!webEmbed || listView.value !== 'bld') return;
+  const run = ++bldElevRun;
+  const todo = list.filter((b) => !(b.id in bldElev.value));
+  for (let i = 0; i < todo.length; i += 3) {
+    const part = todo.slice(i, i + 3);
+    const got = await Promise.all(part.map((b) => getBuildingFacts(b.addr).catch(() => null)));
+    if (run !== bldElevRun) return;
+    const next = { ...bldElev.value };
+    part.forEach((b, k) => { const f = got[k]; next[b.id] = f && typeof f.elevator === 'number' ? f.elevator : null; });
+    bldElev.value = next;
+  }
+}, { immediate: true });
+const elevText = (id: string) => { const e = bldElev.value[id]; return e === undefined ? '' : e === null ? '엘베 모름' : e > 0 ? `엘베 있음` : '엘베 없음'; };
+const elevCls = (id: string) => { const e = bldElev.value[id]; return e === undefined ? '' : e === null ? 'u' : e > 0 ? 'y' : 'n'; };
+/** 건물 거래 목록 팝업 — 줄 · 화살표를 누르면 그 건물의 거래를 최근 순으로(계약일 · 층 · 전용 ㎡/평 · 거래가 · 평당가 · 구분) */
+const bldOpen = ref<BldRow | null>(null);
+const bldKindName = computed(() => (kind.value === 'apt' ? 'apt' : kind.value === 'officetel' ? 'officetel' : 'villa') as 'apt' | 'officetel' | 'villa');
+const bldNaver = (b: BldRow) => { void openNaverSpot(`${b.addr}${b.name ? ` ${b.name}` : ''}`, bldKindName.value); };
+const bldPlanetOk = ref('');
+const bldPlanet = (b: BldRow) => { void openPlanetSpot(`${b.umd} ${b.jibun}`).then(() => { bldPlanetOk.value = b.id; window.setTimeout(() => { if (bldPlanetOk.value === b.id) bldPlanetOk.value = ''; }, 900); }); };
+const onBldKey = (e: KeyboardEvent) => { if (e.key === 'Escape') bldOpen.value = null; };
+watch(bldOpen, (v) => { if (v) window.addEventListener('keydown', onBldKey); else window.removeEventListener('keydown', onBldKey); });
+onBeforeUnmount(() => window.removeEventListener('keydown', onBldKey));
 const bldWon = (w: number) => { if (!(w > 0)) return '-'; const e = Math.floor(w / 1e8); const mm = Math.round((w % 1e8) / 1e4); return e ? `${e}억${mm ? ` ${mm.toLocaleString('ko-KR')}만` : ''}` : `${mm.toLocaleString('ko-KR')}만`; };
 /** 세 목록(왼쪽부터) — 거래량(많은 순) · 급증(증가율 높은 순) · 급감(감소율 큰 순). 전년이 없던 동은 증감을 매기지 않는다 */
 const rankLists = computed(() => {
@@ -1192,16 +1222,44 @@ const downloadCsv = () => {
           <p v-if="rankLoading && periodMonths > 12" class="adm-msg">24개월 거래를 받는 중입니다…</p>
           <p v-else-if="!bldRank.length" class="adm-msg">이 조건으로 팔린 건물이 없습니다.</p>
           <ol v-else class="adm-bld-list">
-            <li v-for="(b, i) in bldRank" :key="b.id" class="adm-bld-row" :style="{ '--i': i }">
+            <li v-for="(b, i) in bldRank" :key="b.id" class="adm-bld-row" :style="{ '--i': i }" role="button" tabindex="0" :aria-label="`${b.name || b.addr} 거래 ${b.n}건 보기`" @click="bldOpen = b" @keydown.enter="bldOpen = b">
               <span :class="['no', { top: i < 3 }]">{{ i + 1 }}</span>
-              <span class="nm"><b>{{ b.name || '이름 없음' }}</b><small><button type="button" :class="['cp', { done: bldCopied === b.id }]" :title="b.addr" :aria-label="`${b.addr} 주소 복사`" @click.stop="copyBldAddr(b)">{{ bldCopied === b.id ? '복사됨' : '주소복사' }}</button>{{ b.umd }} {{ b.jibun }}<template v-if="b.year"> · {{ b.year }}년</template><template v-if="b.aMin"> · {{ b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}평` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}~${(b.aMax / 3.3058).toFixed(1)}평` }}</template></small></span>
+              <span class="nm"><b>{{ b.name || '이름 없음' }}<em v-if="elevText(b.id)" :class="['ev', elevCls(b.id)]">{{ elevText(b.id) }}</em></b><small><button type="button" :class="['cp', { done: bldCopied === b.id }]" :title="b.addr" :aria-label="`${b.addr} 주소 복사`" @click.stop="copyBldAddr(b)">{{ bldCopied === b.id ? '복사됨' : '주소복사' }}</button>{{ b.umd }} {{ b.jibun }}<template v-if="b.year"> · {{ b.year }}년</template><template v-if="b.aMin"> · {{ b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}평` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}~${(b.aMax / 3.3058).toFixed(1)}평` }}</template></small></span>
               <span class="bar"><i :style="{ width: `${Math.max(4, (b.n / (bldRank[0]?.n || 1)) * 100)}%` }" /></span>
               <span class="cnt"><b>{{ b.n.toLocaleString('ko-KR') }}</b>건</span>
               <span class="mny"><small>평균</small>{{ bldWon(b.avg) }}</span>
               <span class="mny"><small>평당</small>{{ bldWon(b.perPy) }}</span>
               <span class="dt"><small>최근</small>{{ b.last.slice(2) }}</span>
+              <span class="go">
+                <button type="button" class="ab n" title="네이버 부동산에서 이 건물 보기" aria-label="네이버 부동산에서 보기" @click.stop="bldNaver(b)">N</button>
+                <button type="button" :class="['ab p', { ok: bldPlanetOk === b.id }]" :title="`부동산플래닛에서 보기 — 「${b.umd} ${b.jibun}」를 복사해 두고 지도를 엽니다`" aria-label="부동산플래닛에서 보기" @click.stop="bldPlanet(b)">P</button>
+                <svg class="arw" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+              </span>
             </li>
           </ol>
+          <!-- 건물 거래 목록 팝업 -->
+          <div v-if="bldOpen" class="adm-bld-pop" role="dialog" aria-modal="true" :aria-label="`${bldOpen.name || bldOpen.addr} 거래 목록`" @click.self="bldOpen = null">
+            <div class="box">
+              <header>
+                <div class="t"><strong>{{ bldOpen.name || '이름 없음' }}</strong><small>{{ bldOpen.addr }}<template v-if="bldOpen.year"> · {{ bldOpen.year }}년</template><template v-if="elevText(bldOpen.id)"> · {{ elevText(bldOpen.id) }}</template> · 최근 {{ periodMonths }}개월 {{ bldOpen.n.toLocaleString('ko-KR') }}건</small></div>
+                <button type="button" class="x" aria-label="닫기" @click="bldOpen = null">×</button>
+              </header>
+              <div class="sum"><span>평균 <b>{{ bldWon(bldOpen.avg) }}</b></span><span>평당 <b>{{ bldWon(bldOpen.perPy) }}</b></span><span>최근 <b>{{ bldOpen.last }}</b></span></div>
+              <div class="tbl"><table>
+                <thead><tr><th>계약일</th><th>층</th><th>전용</th><th>거래가</th><th>평당가</th><th>구분</th></tr></thead>
+                <tbody>
+                  <tr v-for="(d, k) in bldOpen.deals" :key="k">
+                    <td>{{ d.contractDate }}</td>
+                    <td>{{ d.floor ? `${d.floor}층` : '-' }}</td>
+                    <td>{{ d.areaM2 ? `${d.areaM2.toFixed(2)}㎡ / ${(d.areaM2 / 3.3058).toFixed(1)}평` : '-' }}</td>
+                    <td class="r">{{ d.priceWon > 0 ? `${d.priceWon.toLocaleString('ko-KR')}원` : '-' }}</td>
+                    <td class="r">{{ d.priceWon > 0 && d.pyeong > 0 ? bldWon(d.priceWon / d.pyeong) : '-' }}</td>
+                    <td>{{ d.kind === '직거래' ? '직거래' : '중개' }}</td>
+                  </tr>
+                </tbody>
+              </table></div>
+            </div>
+          </div>
         </section>
         <!-- 랭킹분석 › 거래랭킹 — 세 목록(급증 · 급감 · 거래량) 나란히. 1년 = 조회일 기준 12개월, 전년 = 그 앞 12개월 -->
         <div v-else-if="webEmbed && listView === 'top'" class="adm-rank3">
@@ -1521,7 +1579,7 @@ const downloadCsv = () => {
 .adm-bld > header strong { font-size: 16px; font-weight: 800; color: #111827; }
 .adm-bld > header small { font-size: 13px; color: #6b7280; }
 .adm-bld-list { list-style: none; margin: 0; padding: 0; display: grid; }
-.adm-bld-row { display: grid; grid-template-columns: 30px minmax(0, 1.6fr) minmax(0, 1.2fr) 64px 120px 110px 84px; align-items: center; gap: 12px; padding: 8px 4px; border-top: 1px solid #eef1f6; font-size: 13.5px; color: #111827; }
+.adm-bld-row { display: grid; grid-template-columns: 30px minmax(0, 1.6fr) minmax(0, 1.1fr) 64px 120px 110px 84px 72px; align-items: center; gap: 12px; padding: 8px 4px; border-top: 1px solid #eef1f6; font-size: 13.5px; color: #111827; }
 .adm-bld-row:first-child { border-top: 0; }
 .adm-bld-row .no { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: #eef1f6; color: #4b5563; font-size: 12px; font-weight: 800; }
 .adm-bld-row .no.top { background: #2b6df3; color: #fff; }
@@ -1530,6 +1588,25 @@ const downloadCsv = () => {
 .adm-bld-row .nm .cp { height: 20px; margin-right: 6px; padding: 0 6px; border: 1px solid #dde3ee; border-radius: 5px; background: #fff; color: #4b5563; font: inherit; font-size: 12px; cursor: pointer; vertical-align: middle; }
 .adm-bld-row .nm .cp:hover { border-color: #2b6df3; color: #2b6df3; }
 .adm-bld-row .nm .cp.done { border-color: #16a34a; color: #16a34a; }
+.adm-bld-row .nm .ev { margin-left: 8px; padding: 1px 6px; border-radius: 5px; font-style: normal; font-size: 12px; font-weight: 700; vertical-align: 1px; }
+.adm-bld-row .nm .ev.y { background: #e8f6ee; color: #15803d; } .adm-bld-row .nm .ev.n { background: #fdeeee; color: #dc2626; } .adm-bld-row .nm .ev.u { background: #f3f5f9; color: #6b7280; }
+.adm-bld-row { cursor: pointer; } .adm-bld-row:hover { background: #f7f9fc; }
+.adm-bld-row .go { display: inline-flex; align-items: center; gap: 4px; color: #9ca3af; }
+.adm-bld-row:hover .go .arw { color: #2b6df3; }
+.adm-bld .ab { width: 22px; height: 22px; border: 1px solid #dde3ee; border-radius: 5px; background: #fff; display: inline-grid; place-items: center; font-size: 11px; font-weight: 800; cursor: pointer; padding: 0; }
+.adm-bld .ab.p { color: #2f6be0; } .adm-bld .ab.n { color: #03a94d; } .adm-bld .ab:hover { border-color: #2b6df3; }
+.adm-bld .ab.ok { background: #e8f6ee; border-color: #16a34a; color: #16a34a; }
+.adm-bld-pop { position: fixed; inset: 0; z-index: 1000; background: rgba(15, 23, 42, .45); display: grid; place-items: center; padding: 24px 16px; }
+.adm-bld-pop .box { width: min(860px, 100%); max-height: min(80vh, 760px); display: flex; flex-direction: column; background: #fff; border-radius: 12px; box-shadow: 0 20px 50px rgba(15, 23, 42, .25); overflow: hidden; }
+.adm-bld-pop header { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px 10px; border-bottom: 1px solid #eef1f6; }
+.adm-bld-pop header .t { display: grid; gap: 2px; min-width: 0; flex: 1; } .adm-bld-pop header strong { font-size: 17px; font-weight: 800; color: #111827; }
+.adm-bld-pop header small { font-size: 13px; color: #6b7280; }
+.adm-bld-pop .x { width: 30px; height: 30px; border: 0; border-radius: 6px; background: #f3f5f9; color: #4b5563; font-size: 18px; cursor: pointer; }
+.adm-bld-pop .sum { display: flex; gap: 18px; padding: 10px 18px; font-size: 13px; color: #6b7280; } .adm-bld-pop .sum b { color: #111827; margin-left: 4px; }
+.adm-bld-pop .tbl { overflow: auto; padding: 0 18px 16px; }
+.adm-bld-pop table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.adm-bld-pop th { position: sticky; top: 0; background: #f7f9fc; color: #374151; font-weight: 700; padding: 8px 10px; text-align: center; border-bottom: 1px solid #e5e7eb; }
+.adm-bld-pop td { padding: 8px 10px; text-align: center; border-bottom: 1px solid #eef1f6; color: #111827; white-space: nowrap; } .adm-bld-pop td.r { text-align: right; }
 .adm-bld-row .bar { height: 10px; border-radius: 5px; background: #eef1f6; overflow: hidden; } .adm-bld-row .bar i { display: block; height: 100%; border-radius: 5px; background: #2b6df3; }
 .adm-bld-row .cnt { text-align: right; color: #6b7280; } .adm-bld-row .cnt b { font-size: 15px; color: #111827; margin-right: 2px; }
 .adm-bld-row .mny, .adm-bld-row .dt { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; } .adm-bld-row :is(.mny, .dt) small { font-size: 12px; color: #9ca3af; margin-right: 6px; }
