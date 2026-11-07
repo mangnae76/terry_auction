@@ -3776,7 +3776,11 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .bin-item:hover { background: var(--surface-3); }
 .bin-item.picked { background: var(--blue-soft); }
 .bin-item .case { font-weight: 700; font-size: 14px; display: flex; gap: 6px; align-items: center; }
-.bin-item .addr { font-size: 14px; color: var(--text-2); }
+.bin-item .addr { font-size: 13px; color: var(--text-2); }
+/* 보관함 · 휴지통 — 창을 넓히고(360 → 460) 주소를 13으로, 한 줄에(넘치면 … ) 2026-11-07 */
+.pop.bin { width: 460px; max-width: calc(100vw - 32px); box-sizing: border-box; }
+.bin-item > span { flex: 1 1 auto; min-width: 0; }
+.bin-item .addr { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bin-empty { padding: 24px 14px; text-align: center; color: var(--faint); font-size: 14px; border-top: 1px solid var(--line); }
 .tag { display: inline-flex; align-items: center; height: 18px; padding: 0 7px; border-radius: 9px; font-size: 14px; font-weight: 700; background: var(--surface-3); color: var(--text-2); }
 .tag.hot { background: var(--hot-bg); color: var(--hot-text); }
