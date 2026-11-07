@@ -1024,7 +1024,10 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-collect-row .sx-step { flex: 0 0 122px; min-width: 0; padding: 0 6px; gap: 6px; }   /* 브라우저 열기 ~ 건축연도 채우기 다섯은 같은 폭 122(가장 긴 '끝 페이지까지 수집'이 딱 들어가는 폭) — 남는 폭은 사이트 · 개월수 · 처음부터새로가 나눈다(2026-11-07) */
 .sx-collect-row .sx-seg[data-n="2"] { flex: 0 0 auto; }   /* 옥션원 · 탱크옥션은 제 폭 그대로 — 줄어드는 몫은 개월수 칸만 */
 .sx-collect-row .sx-seg[data-n="3"] { min-width: 0; }
-.sx-collect-row .sx-seg[data-n="3"] { min-width: 168px; }   /* 개월수 — 6 · 12 · 24개월 글자가 다 보이는 데까지만 줄어든다 */
+.sx-collect-row .sx-seg[data-n="3"] { min-width: 168px; }
+/* 처음부터새로를 뺀 자리(2026-11-07) — 개월수 칸은 예전 폭(300) 그대로, 남는 폭은 단계 단추 다섯이 고르게 나눠 커진다 */
+.sx-collect-row .sx-seg[data-n="3"] { flex: 0 1 300px; }
+.sx-collect-row .sx-step { flex: 1 1 122px; }   /* 개월수 — 6 · 12 · 24개월 글자가 다 보이는 데까지만 줄어든다 */
 .sx-collect-row .sx-seg[data-n="3"] button { padding: 0 4px; }
 @media (max-width: 1359.98px) { .sx-collect-row .sx-chkbox { padding: 0 8px; } }
 .sx-collect-row .sx-vsep { flex: none; margin: 0 4px; }
