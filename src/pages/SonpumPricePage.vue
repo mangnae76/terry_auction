@@ -739,7 +739,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
         </span></span>
         <!-- 웹 기본 화면 — 층은 엘베 옆(유사도에서도 '같은 층'이면 같은 층만) -->
         <span v-if="webEmbed && !fs" class="pa-lab floor-pick">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층">
-          <button type="button" role="radio" :class="{ on: rangeCond.floor === null }" :aria-checked="rangeCond.floor === null" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
+          <button type="button" role="radio" :class="{ on: rangeCond.floor !== 0 }" :aria-checked="rangeCond.floor !== 0" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
           <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }">같은 층</button>
         </span></span>
         <span class="acts-r">
@@ -775,13 +775,13 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
               <b v-if="!(webEmbed && !fs)">{{ rangeCond.yMin }}~{{ rangeCond.yMax }}년<small>{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></b>
             </div>
             <span v-if="!webEmbed" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층">
-              <button type="button" role="radio" :class="{ on: rangeCond.floor === null }" :aria-checked="rangeCond.floor === null" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
+              <button type="button" role="radio" :class="{ on: rangeCond.floor !== 0 }" :aria-checked="rangeCond.floor !== 0" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
               <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }">같은 층</button>
             </span></span>
           </div>
           <!-- 전체화면 — 거르기 상자 안, 유사도 · 직접범위 어느 쪽이든 층 → 엘베 순서(면적 · 건축과 같은 틀) -->
           <span v-if="webEmbed && fs" class="pa-lab floor-pick">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층">
-            <button type="button" role="radio" :class="{ on: rangeCond.floor === null }" :aria-checked="rangeCond.floor === null" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
+            <button type="button" role="radio" :class="{ on: rangeCond.floor !== 0 }" :aria-checked="rangeCond.floor !== 0" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
             <button type="button" role="radio" :class="{ on: rangeCond.floor === 0 }" :aria-checked="rangeCond.floor === 0" @click="rangeCond = { ...rangeCond, floor: 0 }">같은 층</button>
           </span></span>
           <span v-if="webEmbed && fs" class="pa-lab elev-pick">엘베<span class="pa-seg pa-out" role="radiogroup" aria-label="엘베">
@@ -1082,11 +1082,9 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .dl.one .dual .tvg i:first-child { text-align: right; }
 .dl.one .dual .tvg i.me { color: var(--red); }
 .dl.one .dual .base::before { display: none; }   /* 빨간 값은 위 한 줄(.tv.me)로 그린다 */
-/* 웹 직접범위 — 아래 상자가 위 줄 칸(반경 · 거래 · 기준 · 엘베)을 그대로 따른다: 면적은 '반경' 글자, 건축은 '기준' 글자와 같은 세로줄(2026-11-07) */
-.conds:has(> .elev-pick) > .simrow:has(.dl.one) { grid-template-columns: subgrid; padding-left: 10px; padding-right: 10px; column-gap: inherit; }
-.simrow.has-elev .simB:has(> .dl.one) { grid-column: 1 / -1; grid-template-columns: subgrid; column-gap: inherit; }
-.simrow.has-elev .simB > .dl.one:first-child { grid-column: 1 / 3; }
-.simrow.has-elev .simB > .dl.one + .dl.one { grid-column: 3 / 5; padding-left: 11px; }
+/* 웹 직접범위 — 면적 · 건축이 상자를 반씩(막대 길이가 같게, 2026-11-07). '면적' 글자는 위 '반경' 글자와 같은 세로줄(안쪽 여백 10 + 테두리 1) */
+.conds:has(> .elev-pick) > .simrow { padding-left: 10px; padding-right: 10px; }   /* 유사도 · 직접범위 둘 다 */
+.simrow.has-elev .simB:has(> .dl.one) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 32px; }
 .simrow.has-elev .simB .dl.one > .dn { justify-items: start; }
 /* 전체화면 — 면적 · 건축 · 층 · 엘베를 세로로 쌓으므로 높이는 내용대로 */
 .pa.fs .simrow.has-elev :is(.simA, .simB) { height: auto; }
