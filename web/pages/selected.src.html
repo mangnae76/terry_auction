@@ -7311,7 +7311,8 @@ span.cal-day.has { cursor: help; }
     const sc = subj && subj.areaM2 > 0 && CLOUD.T && CLOUD.T.simCond ? CLOUD.T.simCond(Number(SXM.sim), subj) : null;
     SX.rows = base.filter((r) => {
       const a = Number(r['전용면적']) || 0; const y = agBuiltYear(r);
-      if (meLot && agLotOf(r['소재지']) === meLot) return true;
+      /* 같은 건물(같은 지번)은 반경 · 면적 · 건축과 상관없이 넣되, 층은 건다 — 같은층을 골라도 같은 건물 다른 층이 남아 층 옵션이 안 먹는 것처럼 보였다(2026-11-08) */
+      if (meLot && agLotOf(r['소재지']) === meLot) return !(SXM.floor === '0' && myFloor && Number(r['층']) && Number(r['층']) !== myFloor);
       if (sc) {
         if (!(a >= sc.mMin && a <= sc.mMax)) return false;
         if (subj.year && y && !(y >= sc.yMin && y <= sc.yMax)) return false;
