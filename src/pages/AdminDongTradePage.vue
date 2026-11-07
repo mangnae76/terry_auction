@@ -538,7 +538,7 @@ const rankByDong = computed<RankRow[]>(() => {
 });
 /** 웹 랭킹분석 › 건물랭킹 — 조회한 기간 · 종류의 실거래를 건물(동 + 지번)로 묶어 많이 팔린 순(2026-11-08).
  *  이름은 비거나 표기가 달라 지번으로 묶고 이름은 가장 많이 쓰인 것으로 보인다. 읍면동을 고르면 그 동만, 계약해제는 뺀다 */
-type BldRow = { id: string; name: string; umd: string; jibun: string; addr: string; deals: DongTradeDetailRow[]; n: number; avg: number; perPy: number; last: string; aMin: number; aMax: number; year: number };
+type BldRow = { rank?: number; id: string; name: string; umd: string; jibun: string; addr: string; deals: DongTradeDetailRow[]; n: number; avg: number; perPy: number; last: string; aMin: number; aMax: number; year: number };
 /** 건물랭킹 자료 — 24개월까지 고를 수 있어 거래랭킹이 받는 24개월 자료(rankRows)를 쓴다. 아직 못 받았으면 조회한 자료(12개월) */
 const bldSrc = computed<DongTradeDetailRow[]>(() => (rankRows.value.length ? rankRows.value : all.value));
 const bldRank = computed<BldRow[]>(() => {
@@ -564,7 +564,18 @@ const bldRank = computed<BldRow[]>(() => {
     return { id, name, umd: l[0].umdNm, jibun: l[0].jibun, addr, deals, n: l.length, avg, perPy, last: l.map((r) => r.contractDate).sort().slice(-1)[0] ?? '',
       aMin: areas.length ? Math.min(...areas) : 0, aMax: areas.length ? Math.max(...areas) : 0, year: l.find((r) => r.buildYear > 0)?.buildYear ?? 0 };
   });
-  return out.sort((a, b) => (b.n - a.n) || b.last.localeCompare(a.last)).slice(0, 30);
+  return out.sort((a, b) => (b.n - a.n) || b.last.localeCompare(a.last)).slice(0, 30).map((b, i) => ({ ...b, rank: i + 1 }));
+});
+/** 머리글 정렬 — 누르면 내림차순 ▼ → 오름차순 ▲(2026-11-08). 순위 숫자는 많이 팔린 순 그대로 */
+type BldSortKey = 'rank' | 'name' | 'addr' | 'year' | 'area' | 'elev' | 'n' | 'avg' | 'perPy' | 'last';
+const bldSort = ref<{ k: BldSortKey; desc: boolean }>({ k: 'rank', desc: false });
+const bldSortBy = (k: BldSortKey) => { bldSort.value = bldSort.value.k === k ? { k, desc: !bldSort.value.desc } : { k, desc: !['rank', 'name', 'addr'].includes(k) }; };
+const bldArrow = (k: BldSortKey) => (bldSort.value.k === k ? (bldSort.value.desc ? '▼' : '▲') : '▼');
+const bldView = computed<BldRow[]>(() => {
+  const { k, desc } = bldSort.value;
+  const val = (b: BldRow): number | string => (k === 'rank' ? b.rank ?? 0 : k === 'name' ? b.name : k === 'addr' ? `${b.umd} ${b.jibun}` : k === 'year' ? b.year
+    : k === 'area' ? b.aMin : k === 'elev' ? (bldElev.value[b.id] ?? -1) : k === 'n' ? b.n : k === 'avg' ? b.avg : k === 'perPy' ? b.perPy : b.last);
+  return [...bldRank.value].sort((a, b) => { const x = val(a); const y = val(b); const c = typeof x === 'string' ? x.localeCompare(String(y), 'ko') : x - (y as number); return desc ? -c : c; });
 });
 const bldTotal = computed(() => {
   const ids = new Set<string>(); bldSrc.value.forEach((r) => { if (r.kind !== '계약해제' && r.jibun && inWindow(r) && (!dong.value || r.umdNm === dong.value)) ids.add(`${r.umdNm}|${r.jibun}`); });
@@ -893,7 +904,8 @@ const eokMan = (v: number) => {
 // 웹 — 시군구까지만 골랐을 때 위 요약은 시군구 전체 한 줄(기간은 아래 검색조건에서 고른다)
 // ===== 총 거래건수 = 정상 + 직거래 (계약해제 제외) — 앱 · 웹 모든 '총 거래건수' 가 같은 셈 =====
 /** 고른 기간(조회일 기준 3 · 6 · 12개월)에 든 거래 — 동 · 면적 · 연식 거르기 전. 요약 상자 · 수요분석이 이것으로 센다 */
-const windowRows = computed(() => all.value.filter(inWindow));
+/* 건물랭킹 24개월 — 위 요약 상자도 24개월 자료(rankRows)로 센다(조회 자료는 12개월까지라, 2026-11-08) */
+const windowRows = computed(() => (props.rankMode && listView.value === 'bld' && periodMonths.value > 12 && rankRows.value.length ? rankRows.value : all.value).filter(inWindow));
 /** 총 거래건수의 범위 — 읍면동을 고르면 그 동만(수요분석과 같게) */
 const windowScoped = computed(() => (dong.value ? windowRows.value.filter((r) => r.umdNm === dong.value) : windowRows.value));
 const kindCount = (k: DongTradeDetailRow['kind'], rows = windowScoped.value) => rows.filter((r) => r.kind === k).length;
@@ -1118,8 +1130,7 @@ const downloadCsv = () => {
       <div v-if="webEmbed && listView === 'case'" class="son-price"><SonpumPricePage v-if="priceAuction && priceQ" :key="priceAuction.id" :auction="priceAuction" :kind="priceQ.kind" :months="priceQ.months ?? 12" loose /><p v-else class="son-msg">위 칸에 전체 주소를 넣고 종류를 고른 뒤 조회를 누르세요.</p></div>
       <template v-if="all.length > 0 && listView !== 'map' && listView !== 'case'">
         <!-- 웹 — 위 요약 상자 틀은 하나. 읍면동을 고르면 안의 상자만 셋(총 거래건수 · 실거래가 평균 · 평당가 평균)으로 -->
-        <!-- 건물랭킹 24개월 — 위 요약 상자는 12개월 자료라 숨긴다(숫자가 기간과 안 맞는다) -->
-        <section v-if="webEmbed && listView !== 'supply' && !(listView === 'bld' && periodMonths > 12)" class="adm-gunav">
+        <section v-if="webEmbed && listView !== 'supply'" class="adm-gunav">
           <div class="adm-gunav-head">
             <strong>{{ loadedLabel }}<template v-if="dong">{{ ` · ${dong}` }}</template><template v-if="loadedDeal === 'jeonse'">{{ ' 전세' }}</template></strong>
             <SnapChip :chip="snapChip" />
@@ -1228,12 +1239,13 @@ const downloadCsv = () => {
           <header><strong>건물랭킹</strong><small>{{ loadedLabel }}<template v-if="dong">{{ ` ${dong}` }}</template> · 최근 {{ periodMonths }}개월 · 많이 팔린 순 · 건물 {{ bldTotal.toLocaleString('ko-KR') }}곳 중 {{ bldRank.length }}곳</small></header>
           <p v-if="rankLoading && periodMonths > 12" class="adm-msg">24개월 거래를 받는 중입니다…</p>
           <p v-else-if="!bldRank.length" class="adm-msg">이 조건으로 팔린 건물이 없습니다.</p>
-          <div v-if="bldRank.length" class="adm-bld-row adm-bld-head" aria-hidden="true">
-            <span>순위</span><span>건물명</span><span>주소</span><span>연식</span><span>전용 ㎡ / 평</span><span>엘베</span><span>거래</span><span class="r">건수</span><span class="r">평균가</span><span class="r">평당가</span><span class="r">최근 거래</span><span class="c">바로가기</span>
+          <div v-if="bldRank.length" class="adm-bld-row adm-bld-head">
+            <button v-for="h in ([['rank', '순위', ''], ['name', '건물명', ''], ['addr', '주소', ''], ['year', '연식', ''], ['area', '전용 ㎡ / 평', ''], ['elev', '엘베', ''], ['n', '거래', ''], ['n', '건수', 'r'], ['avg', '평균가', 'r'], ['perPy', '평당가', 'r'], ['last', '최근 거래', 'r']] as Array<[BldSortKey, string, string]>)" :key="h[1]" type="button" :class="['sh', h[2], { on: bldSort.k === h[0] && h[1] !== '거래' }]" @click="bldSortBy(h[0])">{{ h[1] }}<i v-if="h[1] !== '거래'">{{ bldArrow(h[0]) }}</i></button>
+            <span class="c">바로가기</span>
           </div>
           <ol v-if="bldRank.length" class="adm-bld-list">
-            <li v-for="(b, i) in bldRank" :key="b.id" class="adm-bld-row" :style="{ '--i': i }" role="button" tabindex="0" :aria-label="`${b.name || b.addr} 거래 ${b.n}건 보기`" @click="bldOpen = b" @keydown.enter="bldOpen = b">
-              <span :class="['no', { top: i < 3 }]">{{ i + 1 }}</span>
+            <li v-for="(b, i) in bldView" :key="b.id" class="adm-bld-row" :style="{ '--i': i }" role="button" tabindex="0" :aria-label="`${b.name || b.addr} 거래 ${b.n}건 보기`" @click="bldOpen = b" @keydown.enter="bldOpen = b">
+              <span :class="['no', { top: (b.rank ?? 99) <= 3 }]">{{ b.rank }}</span>
               <!-- 한 줄로 — 이름 · 주소(동 지번) · 연식 · ㎡ / 평 · 엘베, 칸마다 세로 정렬. 주소 복사는 오른쪽 N · P 옆 아이콘(시세분석 표와 같은 꼴, 2026-11-08) -->
               <span class="nm"><b>{{ b.name || '이름 없음' }}</b></span>
               <span class="ad">{{ b.umd }} {{ b.jibun }}</span>
@@ -1613,7 +1625,11 @@ const downloadCsv = () => {
 .adm-bld-row .ar { font-size: 12.5px; color: #374151; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .adm-bld-row .evc { display: flex; } .adm-bld-row .evc .ev { margin-left: 0; }
 .adm-bld-head { cursor: default !important; padding-top: 6px; padding-bottom: 6px; background: #f7f9fc; border-radius: 6px; font-size: 12px; font-weight: 700; color: #6b7280; }
-.adm-bld-head:hover { background: #f7f9fc !important; } .adm-bld-head .r { text-align: right; } .adm-bld-head .c { text-align: center; }
+.adm-bld-head:hover { background: #f7f9fc !important; } .adm-bld-head .r { text-align: right; justify-content: flex-end; } .adm-bld-head .c { text-align: center; }
+.adm-bld-head .sh { display: inline-flex; align-items: center; gap: 3px; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; white-space: nowrap; }
+.adm-bld-head .sh i { font-style: normal; font-size: 10px; color: #c3cad6; }
+.adm-bld-head .sh.on { color: #111827; } .adm-bld-head .sh.on i { color: #2b6df3; }
+.adm-bld-head .sh:hover { color: #2b6df3; }
 .adm-bld-row .nm .ev, .adm-bld-row .evc .ev { margin-left: 0; padding: 1px 6px; border-radius: 5px; font-style: normal; font-size: 12px; font-weight: 700; vertical-align: 1px; }
 .adm-bld-row .ev.y { background: #e8f6ee; color: #15803d; } .adm-bld-row .ev.n { background: #fdeeee; color: #dc2626; } .adm-bld-row .ev.u { background: #f3f5f9; color: #6b7280; }
 .adm-bld-row { cursor: pointer; } .adm-bld-row:hover { background: #f7f9fc; }
