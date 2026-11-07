@@ -3860,7 +3860,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .card-row .prices { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.25fr); gap: 8px; }   /* 카드가 좁아져 '최저가미만' 칩이 붙은 입찰가 끝자리가 잘렸다 — 감정가 칸 몫을 입찰가에 */
 .prg { flex: 0 0 255px; display: flex; flex-direction: column; gap: 4px; padding: 16px var(--list-pad-r) 15px; min-width: 0; box-sizing: border-box;
   background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); }
-.prg-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-height: 30px; padding: 0 2px; font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; }
+.prg-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; padding: 0 2px; font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; }
 .prg-title { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
 .prg-title svg { width: 18px; height: 18px; color: var(--blue); flex: 0 0 auto; }
 .prg-head > span { font-size: 14px; font-weight: 400; color: var(--muted); }
@@ -5319,7 +5319,7 @@ span.cal-day.has { cursor: help; }
       if (k === 'done') n += 1;
       return `<button type="button" class="prg-row ${k}" data-act="prg-go" data-id="${it.id}" data-v="${key}"><i aria-hidden="true"></i><b>${name}</b><span class="s">${S_TXT[k]}</span><span class="d num">${t ? md(t) : '-'}</span><svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>`;
     }).join('');
-    return `<aside class="prg" aria-label="${esc(it.caseNo)} 분석 진행"><div class="prg-head"><b class="prg-title">${PRG_IC}분석 진행</b><span><b class="num">${n}</b> / 5 완료</span></div>${rows}</aside>`;
+    return `<aside class="prg" aria-label="${esc(it.caseNo)} 분석 진행"><div class="prg-head"><b class="prg-title">${PRG_IC}분석 진행</b><span class="num"><b>${n}</b> / 5</span></div>${rows}</aside>`;
   }
   function resultHtml(it, past) {
     const r = profitOf(it);
