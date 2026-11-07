@@ -582,8 +582,9 @@ const bldTotal = computed(() => {
   return ids.size;
 });
 /** 위 기간 단추 — 건물랭킹에서만 24개월까지. 다른 탭으로 가면 12개월로 돌린다(그 탭 자료는 12개월까지) */
-/* 랭킹분석은 세 탭(랭킹지도 · 거래랭킹 · 건물랭킹) 모두 24개월까지(2026-11-08) */
-const WEB_PERIODS = computed(() => (props.rankMode ? [...WEB_PERIODS_BASE, 24] : WEB_PERIODS_BASE));
+/* 랭킹분석 — 랭킹지도 · 건물랭킹은 24개월까지. 거래랭킹은 '최근 1년 대 전년'이라 기간이 뜻이 없어 24개월은 뺀다(2026-11-08) */
+const WEB_PERIODS = computed(() => (props.rankMode && listView.value !== 'top' ? [...WEB_PERIODS_BASE, 24] : WEB_PERIODS_BASE));
+watch(listView, (v) => { if (props.rankMode && v === 'top' && periodMonths.value > 12) applyPeriod(12); });
 /* 랭킹분석 기간은 이 브라우저에 남겨 새로고침해도 그대로(24개월은 건물랭킹에서만, 2026-11-08) */
 const RANK_PERIOD_KEY = 'adm.rank.period';
 watch(periodMonths, (m) => { if (props.rankMode && webEmbed) { try { localStorage.setItem(RANK_PERIOD_KEY, String(m)); } catch { /* 그만 */ } } });
