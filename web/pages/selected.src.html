@@ -7126,7 +7126,7 @@ span.cal-day.has { cursor: help; }
   const sxMeFloor = (it) => { const u = String((it && it.unit) || ''); const f = /(\d+)\s*층/.exec(u); if (f) return Number(f[1]); const h = /(\d{3,4})\s*호/.exec(u); return h ? Math.floor(Number(h[1]) / 100) : 0; };
   const sxLimit = async (list, n, fn) => { let i = 0; await Promise.all(Array.from({ length: Math.min(n, list.length) }, async () => { while (i < list.length) { const x = list[i]; i += 1; await fn(x); } })); };
   const sxMapMsgText = () => (SXG.total ? `${SXG.phase === 'elev' ? '엘베 확인 중' : '위치 찾는 중'} ${SXG.done.toLocaleString('ko-KR')} / ${SXG.total.toLocaleString('ko-KR')}`
-    : (!sxMe() ? '물건카드로 경매물건을 고르면 반경으로 거릅니다' : ''));
+    : '');   /* 진행 중일 때만 — '물건카드로 경매물건을 고르면 반경으로 거릅니다' 안내는 뺐다(2026-11-08) */
   const sxMapStatus = () => { ['sxMapMsg', 'sxFsMsg'].forEach((id) => { const el = $(id); if (el) el.textContent = sxMapMsgText(); }); };
   /* 위치 · 엘베를 다 받으면(또는 10곳마다) 결과를 다시 그린다 */
   /* 위치를 찾는 동안 결과 칸을 너무 자주 다시 그리면(10건마다 표 수백 줄 · 지도 핀 전부) 화면이 멈췄다 — 1.5초에 한 번만(2026-11-08) */
