@@ -7950,12 +7950,23 @@ span.cal-day.has { cursor: help; }
     const ni = fid && $(fid); if (ni) { ni.focus(); try { ni.setSelectionRange(qs, qs); } catch (e) { /* 그만 */ } }
   }
   function agPaintTable(force = false) { const el = $('sxResults'); if (el && agSaleOpen()) { if (!force && sxHoldPick(el, () => agPaintTable())) return; el.outerHTML = sxResultsHtml(); sxMountMap(); } }
+  /* 모은 매각물건 — 이 브라우저(IndexedDB)에 판 번호와 함께 떠 둔다(2026-11-08). 새로고침마다 서버에서 조각 문서를 다 받고 나서야
+     결과 · 지도가 그려져 오래 하얗게 있었다. 판 번호가 같으면 떠 둔 것을 바로 쓰고, 바뀌었을 때만 새로 받는다 */
+  const saleIdb = () => new Promise((ok) => { try { const r = indexedDB.open('ta-web', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); } catch (e) { ok(null); } });
+  const saleCacheGet = async () => { const db = await saleIdb(); if (!db) return null; return new Promise((ok) => { try { const q = db.transaction('kv').objectStore('kv').get('saleRecs'); q.onsuccess = () => ok(q.result || null); q.onerror = () => ok(null); } catch (e) { ok(null); } }); };
+  const saleCachePut = async (v) => { const db = await saleIdb(); if (!db) return; try { db.transaction('kv', 'readwrite').objectStore('kv').put(v, 'saleRecs'); } catch (e) { /* 그만 */ } };
+  const saleMetaLite = (m) => (m ? { version: Number(m.version) || 0, count: Number(m.count) || 0, chunks: Number(m.chunks) || 0, by: m.by || '', at: m.updatedAt && m.updatedAt.toMillis ? m.updatedAt.toMillis() : 0 } : null);
+  const saleMetaOf = (c) => (c ? { ...c, updatedAt: c.at ? { toMillis: () => c.at } : null } : null);
+  function agAfterData() {
+    if (agSaleOpen()) { const box = S.route === 'item' ? $('sonSaleSlot') : $('marketView'); if (!sxHoldPick(box, () => renderMarket())) renderMarket(); } else { agPaint(); agPaintTable(); }
+  }
   async function agLoadRecs() {
     try {
       const { recs, meta } = await CLOUD.T.loadAgentDataset(AG.uid);
       /* 최근 매각부터 */
       AG.recs = recs.slice().sort((a, b) => String(b['매각일'] || '').localeCompare(String(a['매각일'] || '')));
       AG.meta = meta;
+      if (meta) void saleCachePut({ meta: saleMetaLite(meta), recs: AG.recs });
     } catch (e) { AG.recs = []; }
     if (agSaleOpen()) { const box = S.route === 'item' ? $('sonSaleSlot') : $('marketView'); if (!sxHoldPick(box, () => renderMarket())) renderMarket(); } else { agPaint(); agPaintTable(); }   /* 고르는 칸(지역 목록)도 새 데이터로 — 펼친 목록이 있으면 닫은 뒤에 */
   }
@@ -7972,7 +7983,16 @@ span.cal-day.has { cursor: help; }
     AG.unsub.push(T.watchAgentStatus(uid, (st) => { AG.status = st; agPaint(); }, () => { AG.note = '도우미 상태를 읽지 못했습니다 — 관리자 계정인지 확인해 주세요.'; AG.noteAt = Date.now(); agPaint(); }));
     if (T.watchAgentQueue) AG.unsub.push(T.watchAgentQueue(uid, (list) => { AG.queue = list; agPaint(); }, () => {}));
     if (T.watchAgentCoverage) AG.unsub.push(T.watchAgentCoverage(uid, (list) => { AG.cov = list; agPaint(); }, () => {}));
-    AG.unsub.push(T.watchAgentDatasetMeta(uid, (m) => { if (!m) { AG.meta = null; AG.recs = []; agPaint(); agPaintTable(); return; } if (!AG.meta || m.version !== AG.meta.version) { AG.meta = m; void agLoadRecs(); } }, () => {}));
+    /* 떠 둔 자료가 있으면 먼저 그것으로 바로 그린다 — 판 번호 확인은 아래 감시가 */
+    void saleCacheGet().then((c) => { if (!c || !AG.on || AG.uid !== uid || AG.recs.length || !Array.isArray(c.recs)) return; AG.recs = c.recs; AG.meta = saleMetaOf(c.meta); agAfterData(); });
+    AG.unsub.push(T.watchAgentDatasetMeta(uid, (m) => {
+      if (!m) { AG.meta = null; AG.recs = []; agPaint(); agPaintTable(); return; }
+      if (AG.meta && Number(m.version) === Number(AG.meta.version) && AG.recs.length) { AG.meta = m; return; }   /* 같은 판 — 다시 받지 않는다 */
+      void saleCacheGet().then((c) => {
+        if (c && c.meta && Number(c.meta.version) === Number(m.version) && Array.isArray(c.recs)) { const fresh = !AG.recs.length; AG.recs = c.recs; AG.meta = m; if (fresh) agAfterData(); else agPaint(); return; }
+        AG.meta = m; void agLoadRecs();
+      });
+    }, () => {}));
     let beat = 0;
     AG.tick = setInterval(() => {
       if (!agSaleOpen() || document.visibilityState !== 'visible') return;
