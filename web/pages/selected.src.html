@@ -2970,6 +2970,9 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .page-lead-slot:empty { display: none; }
 .page-lead-slot { padding-top: 16px; }
 .page-lead-slot .it-lead { margin-bottom: 0; }
+.lead-in:not(.pw-lead) { margin: 16px 0; }   /* 시장분석 — 박스 탭 아래 16 · 아래 상자까지 16 */
+.lead-in.in-panel { margin: 0 0 12px; }   /* 랭킹지도 — 왼쪽 판 맨 위 */
+.tsp-panel:has(> .lead-in) .tsp-web-head small { display: none; }   /* 판 제목 밑 같은 뜻 안내는 겹쳐서 감춘다 */
 .reg-content > .rg-lead + .rg-sec { margin-top: 32px; }
 /* 자동등록 · 직접입력 제목은 상자 안으로(2026-11-05) — 안내 → 상자 20 */
 .reg-content > .rg-lead + .rg-results { margin-top: 20px; }
@@ -3863,11 +3866,11 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .prg-title svg { width: 18px; height: 18px; color: var(--blue); flex: 0 0 auto; }
 .prg-head > span { font-size: 14px; font-weight: 400; color: var(--muted); }
 .prg-head > span b { color: var(--blue); font-weight: 800; }
-.prg-row { flex: 1 1 0; display: grid; grid-template-columns: 8px minmax(0, 1fr) auto auto; align-items: center; gap: 6px; min-height: 24px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: var(--price-bg); font: inherit; font-size: 13px; color: var(--text); text-align: left; cursor: pointer; }
+.prg-row { flex: 1 1 0; display: grid; grid-template-columns: 4px minmax(0, 1fr) auto auto; align-items: center; gap: 6px; min-height: 24px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: var(--price-bg); font: inherit; font-size: 13px; color: var(--text); text-align: left; cursor: pointer; }
 .prg-row:hover { border-color: var(--line); }
-.prg-row i { width: 8px; height: 8px; border-radius: 50%; background: #c8cdd5; }
+.prg-row i { width: 4px; height: 4px; border-radius: 50%; background: #c8cdd5; }   /* 상태 점 8 → 4(2026-11-07) */
 .prg-row.done i { background: #16a34a; }
-.prg-row.doing i { background: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 20%, transparent); }
+.prg-row.doing i { background: var(--blue); box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue) 20%, transparent); }
 .prg-row b { font-weight: 400; }   /* 단계 이름(물건정보~임장조사)은 굵기 없이 */
 .prg-row.none b { font-weight: 400; color: var(--faint); }
 .prg-row .s { font-size: 12px; color: var(--muted); }
@@ -8144,38 +8147,51 @@ span.cal-day.has { cursor: help; }
     profit: ['입찰가 · 비용 · 세금을 넣어 A~D안별 세후 순이익을 계산하고 확정안을 고릅니다.'],
     field: ['현장에서 확인한 내용과 현장사진을 남깁니다.'],
   };
-  /* ===== 화면 안내 한 줄 — 물건상세 밖의 화면 · 탭(시장분석 · 낙찰이후 · 마이페이지 · 매뉴얼 · 공지 · 게시판 · 스토어 · 임장경로).
-     모두 같은 꼴(rg-lead — 주황 막대 3 × 20 · 글 16 굵게). 자금관리 네 탭 · 낙찰이후 진행절차 · 절차별체크리스트(장 탭 아래)는 앱 화면 안(FinancePage · PostWinPage)에 같은 꼴로 있다.
-     문구는 이 표 한곳에서만 고친다(2026-11-06) ===== */
+  /* ===== 화면 안내 한 줄 — 임장경로 · 시장분석 · 낙찰이후 절차별체크리스트 · 매뉴얼에만(스토어 · 마이페이지 · 게시판 · 공지는 뺐다, 2026-11-07).
+     모두 같은 꼴(rg-lead — 주황 막대 3 × 20 · 글 16 굵게). 자금관리 네 탭 · 낙찰이후 진행절차는 앱 화면 안(FinancePage · PostWinPage)에 같은 꼴로 있다.
+     박스 탭이 있는 화면은 탭 아래에(LEAD_IN), 랭킹지도는 지도 왼쪽 판 맨 위에. 문구는 이 표 한곳에서만 고친다 ===== */
   const PAGE_LEAD = {
     trip: '임장 갈 물건을 골라 동선을 짜고, 순서대로 현장을 돌며 기록합니다.',
     'market:dong': '지역을 골라 실거래 거래량 · 가격을 동네별 · 유형별로 확인합니다.',
     'market:son': '선정물건을 골라 수요분석 · 시세분석으로 매도가를 예상합니다.',
     'market:rank': '거래가 많은 지역의 순위를 지도와 표로 확인합니다.',
-    'more:mypage': '최근 작성한 물건과 계정 · 결제 · 설정을 한곳에서 관리합니다.',
-    'more:alerts': '놓치면 안 되는 기일 · 내가 정한 일정 · 세금 일정을 알려 드립니다.',
-    'more:billing': '이용권을 고르고 결제합니다.',
-    'more:support': '이용방법 안내 · 1:1 문의 · 약관을 확인합니다.',
-    'more:calendar': '매각기일 · 낙찰일 · 잔금기한 · 매도일을 달력에서 한눈에 봅니다.',
+    'postwin:win': '입찰 기일부터 낙찰 · 잔금 · 명도까지 단계별로 해야 할 일을 체크합니다.',
     'manual:gdeny': '낙찰 뒤 매각불허가를 신청해야 하는 경우와 방법을 정리했습니다.',
     'manual:gevict': '명도 절차 · 협상 방법 · 리스크와 서류 차이를 정리했습니다.',
     'manual:biz': '매매사업자 등록부터 사업자 계좌 · 카드 준비까지 순서대로 정리했습니다.',
     'manual:gtax': '매매사업자 과세 구조 · 세율 · 비인정 경비 · 신고 일정을 정리했습니다.',
     'manual:gcheck': '현장에서 건물 상태와 주거환경을 확인할 체크리스트입니다.',
-    'community:notice': '서비스 공지와 업데이트 소식을 확인합니다.',
-    'board:suggest': '쓰다가 찾은 오류나 바라는 기능을 남겨 주세요.',
-    'board:review': '써 보신 소감을 남겨 주세요.',
-    store: '경매 전자책과 지역 · 임장 리포트를 고릅니다.',
   };
+  /* 박스 탭 아래에 두는 화면 — 앞에서부터 보이는 것 하나에. 랭킹지도 판(.tsp-panel)은 판 맨 위 */
+  const LEAD_IN = { market: ['.tsp-panel', '.adm-tabs-top'], postwin: ['.pw-chaptabs'], manual: ['.pw-chaptabs'] };
   const leadLine = (t) => (t ? `<div class="rg-lead it-lead"><p class="l1">${esc(t)}</p></div>` : '');
+  const shown = (e) => !!e && e.getClientRects().length > 0;
   function paintPageLead() {
     const r = S.route;
     const key = r === 'market' ? `market:${S.marketTab}` : APP_PAGE_NAMES[r] ? `${r}:${S.pageTab[r]}` : r;
     const slot = r === 'trip' ? 'leadTrip' : r === 'market' ? 'leadMarket' : APP_PAGE_NAMES[r] ? 'leadAppPage' : r === 'store' ? 'leadInfo' : '';
-    ['leadTrip', 'leadMarket', 'leadAppPage', 'leadInfo'].forEach((id) => { const el = $(id); if (!el) return; const h = id === slot ? leadLine(PAGE_LEAD[key]) : ''; if (el.innerHTML !== h) el.innerHTML = h; });
-    /* 지도가 화면에 고정된 판(랭킹지도)은 안내 높이만큼 내려 놓는다 */
-    const ls = slot && $(slot); document.documentElement.style.setProperty('--lead-h', `${ls && ls.innerHTML ? ls.offsetHeight : 0}px`);
+    const text = PAGE_LEAD[key] || '';
+    const inside = !!LEAD_IN[r];
+    ['leadTrip', 'leadMarket', 'leadAppPage', 'leadInfo'].forEach((id) => { const el = $(id); if (!el) return; const h = id === slot && !inside ? leadLine(text) : ''; if (el.innerHTML !== h) el.innerHTML = h; });
+    placeLeadIn(inside ? text : '');
+    /* 지도가 화면에 고정된 판(랭킹지도)은 위 안내 높이만큼 내려 놓는다 — 탭 아래로 옮긴 화면은 0 */
+    const ls = slot && !inside && $(slot); document.documentElement.style.setProperty('--lead-h', `${ls && ls.innerHTML ? ls.offsetHeight : 0}px`);
   }
+  /* 앱 화면이 탭을 다시 그리면 안내가 떨어져 나가므로, 그릴 때마다 제자리를 다시 찾는다 */
+  function placeLeadIn(text) {
+    const old = document.getElementById('leadIn');
+    const box = S.route === 'market' ? $('marketContent') : $('appPageContent');
+    const anchor = text && box && (LEAD_IN[S.route] || []).map((q) => [...box.querySelectorAll(q)].find(shown)).find(Boolean);
+    if (!anchor) { if (old) old.remove(); return; }
+    const inPanel = anchor.matches('.tsp-panel');
+    const el = old || Object.assign(document.createElement('div'), { id: 'leadIn' });
+    el.className = `rg-lead it-lead lead-in${inPanel ? ' in-panel' : ''}${anchor.matches('.pw-chaptabs') ? ' pw-lead' : ''}`;
+    if (el.textContent !== text) el.innerHTML = `<p class="l1">${esc(text)}</p>`;
+    if (inPanel ? anchor.firstElementChild !== el : anchor.nextElementSibling !== el) { if (inPanel) anchor.prepend(el); else anchor.after(el); }
+  }
+  let leadRaf = 0;
+  const leadMo = new MutationObserver(() => { if (leadRaf || !LEAD_IN[S.route]) return; leadRaf = requestAnimationFrame(() => { leadRaf = 0; try { paintPageLead(); } catch (e) { /* 그만 */ } }); });
+  ['marketContent', 'appPageContent'].forEach((id) => { const el = $(id); if (el) leadMo.observe(el, { childList: true, subtree: true }); });
   function renderAppDetailTab(it, tab) {
     const box = $('itemContent');
     if (!CLOUD.on || !CLOUD.raw.has(it.id)) {
