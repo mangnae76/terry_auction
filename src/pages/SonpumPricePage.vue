@@ -432,6 +432,8 @@ const mapGroups = computed(() => {
     return { jibun, list, spot: spots.value[jibun]!, name: list[0].name || jibun, range: lo === hi ? eok(lo) : `${(lo / 1e8).toFixed(2)}~${eok(hi)}`, dist: list[0].dist ?? 0 };
   });
 });
+/** 웹 표 머리 '근거 유사물건' 옆 — 표에 든 지번 수 · 거래 수(거르기 · 거래 종류 그대로) */
+const listPlaces = computed(() => new Set(shownRows.value.map((r) => r.jibun)).size);
 // 임장 순서 — 현장(선정물건)에서 출발해 가까운 곳부터 도는 동선. 지도 점 · 표 주소 앞 번호가 같다
 const orderOf = computed(() => {
   const m = mySpot.value;
@@ -779,6 +781,7 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
       </div>
 
       <div class="list-tools">
+        <span v-if="webEmbed" class="lt-count pa-num">{{ listPlaces }}곳 · {{ shownRows.length }}건</span>
         <div class="warn-box" role="note">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" /><path d="M12 9v4M12 17h.01" /></svg>
           <span v-if="pubMissing && !typedPub">이 물건은 <b>공시지가가 없어</b> 매매가율·전세가·갭이 자동 계산되지 않습니다. 경매물건 행(맨 위 빨간색)의 <b>공시가 칸</b>에 숫자를 직접 입력하면 추정치가 계산됩니다. <span class="ref">(전세가율 1.26 단순 적용)</span></span>

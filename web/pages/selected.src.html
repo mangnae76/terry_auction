@@ -735,7 +735,7 @@ button { cursor: pointer; }
 .mk-sale .ag-cov-list { margin-top: 8px; }
 .mk-sale .ag-covbox { margin-top: 0; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }   /* 읍면동 낙찰사례 수집데이터 이름 줄 + 표 — 위 수집 상자와 같은 테두리 · 라운드 */
 .mk-sale .ag-covbox > .ag-cov:first-child { margin-top: 0; }
-.mk-sale .ag-covbox small.ag-covttl { font-size: 16px; font-weight: 800; letter-spacing: -.02em; color: var(--text); margin-right: 6px; }   /* 제목 크기 = 위 '경매 인근 매각물건 분석' */
+.mk-sale .ag-covbox small.ag-covttl { font-size: 14px; font-weight: 700; letter-spacing: -.02em; color: var(--text); margin-right: 6px; }   /* 덜 중요한 목록이라 제목보다 작게 14(2026-11-07) */
 .mk-sale .ag-covbox .ag-cov-sum { font-size: 14px; }   /* 3곳 · 저장 총 N건도 같은 크기 */   /* 바깥 상자 없이 표 테두리만 — 표 오른쪽 끝 = 윗줄 목록보기 끝 */
 .mk-sale .ag-cov input.ag-cov-find { width: 240px; height: 30px; font-size: 13px; }
 .mk-sale .ag-cov-wrap { max-height: 240px; overflow: auto; border: 1px solid var(--line, #e5e7eb); border-radius: 8px; }
@@ -767,7 +767,8 @@ button { cursor: pointer; }
 .mk-sale .ag-q-line > .ag-qgrp:first-child { flex: 0 0 auto; }   /* 읍면동 칸 셋은 120 씩으로 줄이고, 남는 폭은 사건번호 칸이 쓴다(2026-11-07) */
 .mk-sale .ag-q-line > .ag-qgrp:first-child .adm-f { flex: 0 0 120px; width: 120px; }
 .mk-sale .ag-q-line > .ag-qgrp:first-child select.adm-input { min-width: 0; }
-.mk-sale .ag-qkind .ag-add-main { min-width: 96px; height: 34px; font-size: 15px; font-weight: 700; box-shadow: 0 2px 6px rgba(43, 109, 243, .28); }   /* 추가 — 이 줄의 주요 단추: 파랑 · 크게 */
+.mk-sale .ag-qkind .ag-add-main { min-width: 96px; height: 32px; font-size: 15px; font-weight: 700; box-shadow: 0 2px 6px rgba(43, 109, 243, .28); }   /* 추가 — 이 줄의 주요 단추: 파랑 · 크게 */
+.mk-sale .ag-q-line :is(select.adm-input, #agQIn) { height: 32px !important; }   /* 이 줄 칸 높이를 모두 32(종류 칸 · 추가와 같게, 2026-11-07) */
 .mk-sale .ag-qkind .ag-add-main:hover { background: #1f5ad6; border-color: #1f5ad6; }
 .mk-sale .ag-qline > .ag-cov + .ag-cov { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }   /* 고르는 줄과 추가된 알약 사이 가르는 선 */
 .mk-sale .ag-qline > .ag-cov:not(.ag-q-tools) { padding-left: 95px; }   /* 알약 줄은 인천광역시 칸 왼쪽 끝부터(이름 약 87 + 사이 8) */
@@ -1017,6 +1018,12 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-collect-row .sx-seg[data-n="3"] { flex: 3 1 0; }
 .sx-collect-row .sx-seg button { height: 34px; font-size: 13.5px; }
 .sx-collect-row :is(.sx-step, .sx-chkbox) { flex: 1 1 0; justify-content: center; }
+.sx-collect-row .sx-step { flex: 0 0 122px; min-width: 0; padding: 0 6px; gap: 6px; }   /* 브라우저 열기 ~ 건축연도 채우기 다섯은 같은 폭 122(가장 긴 '끝 페이지까지 수집'이 딱 들어가는 폭) — 남는 폭은 사이트 · 개월수 · 처음부터새로가 나눈다(2026-11-07) */
+.sx-collect-row .sx-seg[data-n="2"] { flex: 0 0 auto; }   /* 옥션원 · 탱크옥션은 제 폭 그대로 — 줄어드는 몫은 개월수 칸만 */
+.sx-collect-row .sx-seg[data-n="3"] { min-width: 0; }
+.sx-collect-row .sx-seg[data-n="3"] { min-width: 168px; }   /* 개월수 — 6 · 12 · 24개월 글자가 다 보이는 데까지만 줄어든다 */
+.sx-collect-row .sx-seg[data-n="3"] button { padding: 0 4px; }
+@media (max-width: 1359.98px) { .sx-collect-row .sx-chkbox { padding: 0 8px; } }
 .sx-collect-row .sx-vsep { flex: none; margin: 0 4px; }
 .sx-bar { flex: 1 1 auto; min-width: 96px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .sx-bar b { display: block; height: 100%; background: var(--blue); transition: width .3s; }
@@ -1404,6 +1411,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .pa .list-tools { align-items: center !important; }
 .pa .list-tools::before { content: "근거"; order: -2; flex: none; font-size: 13px; font-weight: 700; color: var(--blue); background: var(--blue-soft); border-radius: 5px; padding: 3px 8px; }
 .pa .list-tools::after { content: "유사물건"; order: -1; flex: none; margin-left: -2px; margin-right: 4px; font-size: 15px; font-weight: 800; color: var(--text); }
+.pa .list-tools .lt-count { flex: none; margin-right: 8px; font-size: 14px; font-weight: 700; color: var(--blue); }   /* '근거 유사물건' 옆 — 표의 몇 곳 · 몇 건(2026-11-07) */
 /* 표 머리 거르기 — 거른 칸은 파란 네모 대신 파란 체크(✓)만. 위 '필터 적용 중 … 모두 지우기' 줄은 뺀다(푸는 건 ✓ 눌러 '전체 선택') */
 /* 공시지가 알림 — 노란 상자를 빼고 '유사물건'과 같은 줄, 표 오른쪽 끝에 맞춰 글로만 */
 .pa .list-tools .warn-box { margin-left: auto !important; justify-content: flex-end; text-align: right; flex: 0 1 auto !important; background: none !important; border: 0 !important; padding: 0 !important; align-items: center !important; font-size: 13px !important; color: var(--muted) !important; }
