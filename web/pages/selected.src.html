@@ -6819,7 +6819,7 @@ span.cal-day.has { cursor: help; }
   window.addEventListener('adm:tab', (e) => {
     marketInner = (e.detail && e.detail.trail) || null; syncMapLock(); setTimeout(syncMapLock, 300);
     if (S.route === 'market') syncCrumb();
-    if (S.route === 'item') { const t = (e.detail && e.detail.trail) || []; itemInner = S.itemTab === 'survey' ? (t[t.length - 1] || '') : ''; syncCrumb(); sonSaleOn = S.itemTab === 'survey' && itemInner === '경매사례'; if (sonSaleOn) paintSonSale(); }
+    if (S.route === 'item') { const t = (e.detail && e.detail.trail) || []; itemInner = S.itemTab === 'survey' ? (t[t.length - 1] || '') : ''; syncCrumb(); sonSaleOn = S.itemTab === 'survey' && itemInner === '경매사례'; if (sonSaleOn) requestAnimationFrame(paintSonSale); }   /* 탭 그림이 끝난 뒤에 */
   });
   /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
   /* 낙찰이후 — 장 열쇠는 제 하위 탭(절차상세 · 가이드)에 불이 들어오고, 경로에는 '절차상세 › 명도'처럼 장 이름이 붙는다 */
