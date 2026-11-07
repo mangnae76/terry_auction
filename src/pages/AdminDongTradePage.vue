@@ -467,6 +467,9 @@ onMounted(async () => {
     await nextTick();
     restoring = false;
   }
+  if (props.rankMode && webEmbed) {
+    try { const m = Number(localStorage.getItem(RANK_PERIOD_KEY)); if ([3, 6, 12].includes(m) || (m === 24 && listView.value === 'bld')) applyPeriod(m); } catch { /* 그만 */ }
+  }
   prefsLoaded.value = true;
   await restoreSnapshot(); // 마지막으로 본 자료가 있으면 그게 우선
 });
@@ -570,6 +573,9 @@ const bldTotal = computed(() => {
 /** 위 기간 단추 — 건물랭킹에서만 24개월까지. 다른 탭으로 가면 12개월로 돌린다(그 탭 자료는 12개월까지) */
 const WEB_PERIODS = computed(() => (props.rankMode && listView.value === 'bld' ? [...WEB_PERIODS_BASE, 24] : WEB_PERIODS_BASE));
 watch(listView, (v) => { if (v !== 'bld' && periodMonths.value > 12) applyPeriod(12); });
+/* 랭킹분석 기간은 이 브라우저에 남겨 새로고침해도 그대로(24개월은 건물랭킹에서만, 2026-11-08) */
+const RANK_PERIOD_KEY = 'adm.rank.period';
+watch(periodMonths, (m) => { if (props.rankMode && webEmbed) { try { localStorage.setItem(RANK_PERIOD_KEY, String(m)); } catch { /* 그만 */ } } });
 /** 주소 복사 — 누르면 '복사됨'이 1.5초 보인다 */
 const bldCopied = ref('');
 const copyBldAddr = async (b: BldRow) => {
@@ -592,7 +598,7 @@ watch([bldRank, listView], async ([list]) => {   // 건물랭킹 탭을 열 때�
     bldElev.value = next;
   }
 }, { immediate: true });
-const elevText = (id: string) => { const e = bldElev.value[id]; return e === undefined ? '' : e === null ? '엘베모름' : e > 0 ? '엘베있음' : '엘베없음'; };
+const elevText = (id: string) => { const e = bldElev.value[id]; return e === undefined ? '' : e === null ? '모름' : e > 0 ? '있음' : '없음'; };   // 머리글 '엘베' 아래라 짧게
 const elevCls = (id: string) => { const e = bldElev.value[id]; return e === undefined ? '' : e === null ? 'u' : e > 0 ? 'y' : 'n'; };
 /** 건물 거래 목록 팝업 — 줄 · 화살표를 누르면 그 건물의 거래를 최근 순으로(계약일 · 층 · 전용 ㎡/평 · 거래가 · 평당가 · 구분) */
 const bldOpen = ref<BldRow | null>(null);
@@ -1067,7 +1073,8 @@ const downloadCsv = () => {
         </label>
         <!-- 웹 — 엑셀 내려받기는 뺐다 (매매 · 전세 · 기간이 들어오며 고르는 줄이 좁아서) -->
         <button type="button" class="adm-load" :disabled="loading || !district" @click="load">
-          {{ loading ? '불러오는 중…' : (webEmbed ? '조회' : '데이터 로드') }}
+          <template v-if="loading && webEmbed">조회 중<span class="adm-dots" aria-hidden="true"><i /><i /><i /></span></template>
+          <template v-else>{{ loading ? '불러오는 중…' : (webEmbed ? '조회' : '데이터 로드') }}</template>
         </button>
       </div>
 
@@ -1221,7 +1228,10 @@ const downloadCsv = () => {
           <header><strong>건물랭킹</strong><small>{{ loadedLabel }}<template v-if="dong">{{ ` ${dong}` }}</template> · 최근 {{ periodMonths }}개월 · 많이 팔린 순 · 건물 {{ bldTotal.toLocaleString('ko-KR') }}곳 중 {{ bldRank.length }}곳</small></header>
           <p v-if="rankLoading && periodMonths > 12" class="adm-msg">24개월 거래를 받는 중입니다…</p>
           <p v-else-if="!bldRank.length" class="adm-msg">이 조건으로 팔린 건물이 없습니다.</p>
-          <ol v-else class="adm-bld-list">
+          <div v-if="bldRank.length" class="adm-bld-row adm-bld-head" aria-hidden="true">
+            <span>순위</span><span>건물명</span><span>주소</span><span>연식</span><span>전용 ㎡ / 평</span><span>엘베</span><span>거래</span><span class="r">건수</span><span class="r">평균가</span><span class="r">평당가</span><span class="r">최근 거래</span><span class="c">바로가기</span>
+          </div>
+          <ol v-if="bldRank.length" class="adm-bld-list">
             <li v-for="(b, i) in bldRank" :key="b.id" class="adm-bld-row" :style="{ '--i': i }" role="button" tabindex="0" :aria-label="`${b.name || b.addr} 거래 ${b.n}건 보기`" @click="bldOpen = b" @keydown.enter="bldOpen = b">
               <span :class="['no', { top: i < 3 }]">{{ i + 1 }}</span>
               <!-- 한 줄로 — 이름 · 주소(동 지번) · 연식 · ㎡ / 평 · 엘베, 칸마다 세로 정렬. 주소 복사는 오른쪽 N · P 옆 아이콘(시세분석 표와 같은 꼴, 2026-11-08) -->
@@ -1232,9 +1242,9 @@ const downloadCsv = () => {
               <span class="evc"><em v-if="elevText(b.id)" :class="['ev', elevCls(b.id)]">{{ elevText(b.id) }}</em></span>
               <span class="bar"><i :style="{ width: `${Math.max(4, (b.n / (bldRank[0]?.n || 1)) * 100)}%` }" /></span>
               <span class="cnt"><b>{{ b.n.toLocaleString('ko-KR') }}</b>건</span>
-              <span class="mny"><small>평균</small>{{ bldWon(b.avg) }}</span>
-              <span class="mny"><small>평당</small>{{ bldWon(b.perPy) }}</span>
-              <span class="dt"><small>최근</small>{{ b.last.slice(2) }}</span>
+              <span class="mny">{{ bldWon(b.avg) }}</span>
+              <span class="mny">{{ bldWon(b.perPy) }}</span>
+              <span class="dt">{{ b.last.slice(2) }}</span>
               <span class="go">
                 <button type="button" class="ab n" title="네이버 부동산에서 이 건물 보기" aria-label="네이버 부동산에서 보기" @click.stop="bldNaver(b)">N</button>
                 <button type="button" :class="['ab p', { ok: bldPlanetOk === b.id }]" :title="`부동산플래닛에서 보기 — 「${b.umd} ${b.jibun}」를 복사해 두고 지도를 엽니다`" aria-label="부동산플래닛에서 보기" @click.stop="bldPlanet(b)">P</button>
@@ -1572,6 +1582,10 @@ const downloadCsv = () => {
 .adm-seg-btn.on { background: #fff; color: #1f3a72; box-shadow: 0 1px 3px rgba(17,24,39,0.1); }
 .adm-load { margin-left: auto; height: 36px; padding: 0 20px; border: none; border-radius: 9px; background: #1f3a72; color: #fff; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
 .adm-load:hover { background: #16305f; }
+.adm-dots { display: inline-flex; gap: 3px; margin-left: 4px; vertical-align: middle; }
+.adm-dots i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; animation: admDot 1s infinite ease-in-out; }
+.adm-dots i:nth-child(2) { animation-delay: .15s; } .adm-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes admDot { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
 .adm-load:disabled { background: #aeb8ca; cursor: default; }
 .adm-ghost { border: 1px solid #dde3ee; background: #fff; border-radius: 9px; height: 36px; padding: 0 16px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: #374151; cursor: pointer; }
 .adm-ghost:hover { border-color: #b9cdf7; color: #2b6df3; }
@@ -1598,6 +1612,8 @@ const downloadCsv = () => {
 .adm-bld-row .nm .cp.done { border-color: #16a34a; color: #16a34a; }
 .adm-bld-row .ar { font-size: 12.5px; color: #374151; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .adm-bld-row .evc { display: flex; } .adm-bld-row .evc .ev { margin-left: 0; }
+.adm-bld-head { cursor: default !important; padding-top: 6px; padding-bottom: 6px; background: #f7f9fc; border-radius: 6px; font-size: 12px; font-weight: 700; color: #6b7280; }
+.adm-bld-head:hover { background: #f7f9fc !important; } .adm-bld-head .r { text-align: right; } .adm-bld-head .c { text-align: center; }
 .adm-bld-row .nm .ev, .adm-bld-row .evc .ev { margin-left: 0; padding: 1px 6px; border-radius: 5px; font-style: normal; font-size: 12px; font-weight: 700; vertical-align: 1px; }
 .adm-bld-row .ev.y { background: #e8f6ee; color: #15803d; } .adm-bld-row .ev.n { background: #fdeeee; color: #dc2626; } .adm-bld-row .ev.u { background: #f3f5f9; color: #6b7280; }
 .adm-bld-row { cursor: pointer; } .adm-bld-row:hover { background: #f7f9fc; }
