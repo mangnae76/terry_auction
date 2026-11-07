@@ -1689,7 +1689,7 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .chip svg { width: 15px; height: 15px; flex: 0 0 auto; }
 .chip .gt { width: 10px; height: 10px; opacity: .7; margin-left: 4px; }
 /* 앱 .wlp-filter-btn — 펼침 삼각형(▼), 고른 칸만 파랗게 */
-.chip.dd { padding-right: 11px; min-width: 104px; }
+.chip.dd { padding-right: 11px; width: 150px; }   /* 유형 · 법원 칸 폭 고정 — 굵게 쓴 '다세대·연립' · '인천지방법원'이 다 들어가는 폭. 골라도 늘었다 줄었다 하지 않게(2026-11-07) */
 .chip.dd .txt { min-width: 0; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
 .chip.dd .tri { flex: 0 0 auto; margin-left: auto; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid var(--muted); transition: transform .15s; }
 .chip.dd .txt { margin-right: 10px; }
@@ -5169,7 +5169,7 @@ span.cal-day.has { cursor: help; }
     const type = PROPERTY_TYPES.find((t) => t.v === S.type) || PROPERTY_TYPES[0];
     $('tbType').innerHTML = `<button type="button" class="chip dd ${S.type ? 'on' : ''}" data-act="pop" data-id="type" aria-expanded="${S.pop === 'type'}" aria-label="유형 고르기">${type.icon}<span class="txt">${esc(type.label)}</span><i class="tri"></i></button>
       ${S.pop === 'type' ? `<div class="pop" role="menu" aria-label="유형">${PROPERTY_TYPES.map((t) => `<button type="button" class="opt ${S.type === t.v ? 'on' : ''}" data-act="set-type" data-v="${esc(t.v)}">${t.icon}${esc(t.label)}<span class="r">${live().filter((it) => !t.re || t.re.test(it.type)).length}</span></button>`).join('')}</div>` : ''}`;
-    $('tbCourt').innerHTML = `<button type="button" class="chip dd ${S.court ? 'on' : ''}" data-act="pop" data-id="court" aria-expanded="${S.pop === 'court'}" aria-label="법원 고르기"${tip(S.court && S.court !== shortCourt(S.court) ? S.court : '')}>${I.court}<span class="txt">${S.court ? esc(shortCourt(S.court)) : '법원'}</span><i class="tri"></i></button>
+    $('tbCourt').innerHTML = `<button type="button" class="chip dd ${S.court ? 'on' : ''}" data-act="pop" data-id="court" aria-expanded="${S.pop === 'court'}" aria-label="법원 고르기">${I.court}<span class="txt">${S.court ? esc(S.court.length <= 6 ? S.court : shortCourt(S.court)) : '법원'}</span><i class="tri"></i></button>
       ${S.pop === 'court' ? `<div class="pop" role="menu" aria-label="법원" style="min-width:230px"><button type="button" class="opt ${!S.court ? 'on' : ''}" data-act="set-court" data-v="">${I.court}법원전체<span class="r">${live().length}</span></button>${courts().map((ct) => `<button type="button" class="opt ${S.court === ct ? 'on' : ''}" data-act="set-court" data-v="${esc(ct)}">${esc(ct)}<span class="r">${live().filter((it) => it.court === ct).length}</span></button>`).join('')}</div>` : ''}`;
     $('tbSort').innerHTML = `<button type="button" class="sort-btn ${S.sort === 'route' ? 'on' : ''}" data-act="toggle-sort" aria-label="${S.sort === 'route' ? '정렬: 임장순. 누르면 날짜순으로 바뀝니다' : '정렬: 날짜순. 누르면 임장순으로 바뀝니다'}"${tip(S.sort === 'route' ? '임장순 (누르면 날짜순)' : '날짜순 (누르면 임장순)')}>${S.sort === 'route' ? I.sortRoute : I.sortDate}${S.sort === 'route' ? '임장순' : '날짜순'}${SWAP}</button>
       <button type="button" class="sort-btn layout ${S.layout === 'list' ? 'on' : ''}" data-act="toggle-layout" aria-pressed="${S.layout === 'list'}" aria-label="${S.layout === 'list' ? '보기: 목록. 누르면 카드로 바뀝니다' : '보기: 카드. 누르면 목록으로 바뀝니다'}"${tip(S.layout === 'list' ? '목록 (누르면 카드)' : '카드 (누르면 목록)')}>${S.layout === 'list' ? I.list : I.grid}${S.layout === 'list' ? '목록' : '카드'}${SWAP}</button>`;
@@ -5193,19 +5193,14 @@ span.cal-day.has { cursor: help; }
       <div class="pop-root" data-pop="trash"><button type="button" class="cnt-btn" data-act="pop" data-id="trash" aria-expanded="${S.pop === 'trash'}"${tip(`휴지통 ${trashed.length}건`)}>${I.trash}<em>×</em><span class="num">${trashed.length}</span></button>${S.pop === 'trash' ? binHtml('trash', trashed) : ''}</div>
       <button type="button" class="pick-btn ${S.pick ? 'on' : ''}" data-act="toggle-pick" aria-pressed="${S.pick}" aria-label="골라서 정리"${tip('골라서 정리', 'right')}>${I.pick}</button>`;
 
-    const chips = [];
-    if (S.type) chips.push(['type', type.label]);
-    if (S.court) chips.push(['court', S.court]);
-    if (S.q) chips.push(['q', `“${S.q}”`]);
     /* 달력으로 고른 날 — 칩 · 모두 지우기 대신 '10월 27일 입찰 1건 / 입찰 없음' 한 줄(푸는 건 달력에서 그 날을 다시 누른다) */
     const nShown = visible().length;
     const [, dm, dd] = (S.date || '').split('-').map(Number);
     const dateLine = S.date ? `<span class="n">${dm}월 ${dd}일 (${hmWk(S.date)}) ${nShown ? `일정 <b class="num">${nShown}</b>건` : '일정 없음'}</span><button type="button" class="reset" data-act="set-date" data-v="">전체</button>` : '';
     /* 달력이 열려 있으면 이 줄 자리를 늘 잡아 둔다 — 날짜를 골랐다 풀 때 아래 목록이 덜컹이지 않게 */
     $('chips').classList.remove('keep');
-    $('chips').innerHTML = (S.date || chips.length)
-      ? `${S.date ? dateLine : `<span class="n"><b class="num">${nShown}</b>건</span>`}${chips.map(([k, l]) => `<span class="f-chip">${esc(l)}<button type="button" data-act="clear-filter" data-v="${k}" aria-label="${esc(l)} 빼기">${I.x}</button></span>`).join('')}${chips.length ? '<button type="button" class="reset" data-act="reset-filters">모두지우기</button>' : ''}`
-      : '';
+    /* 유형 · 법원 · 검색으로 거른 결과 줄(○건 · 고른 값 알약 · 모두 지우기)은 뺐다(2026-11-07) — 고른 값은 위 칸에 이미 보인다. 달력으로 고른 날 줄만 */
+    $('chips').innerHTML = dateLine;
 
     const pb = $('pickbar');
     pb.hidden = !S.pick;
@@ -9008,7 +9003,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'set-date': S.date = v && S.date !== v ? v : ''; S.calPatch = true; renderToolbar(); renderContent(); S.calPatch = false; break;
       case 'toggle-sort': S.sort = S.sort === 'route' ? 'reg' : 'route'; store.set('wlp.web.sort', S.sort); render(); break;
       case 'clear-q': S.q = ''; $('q').value = ''; $('q').focus(); render(); break;
-      case 'clear-filter': if (v === 'q') { S.q = ''; $('q').value = ''; } else S[v] = ''; render(); break;
       case 'reset-filters': S.type = ''; S.court = ''; S.date = ''; S.q = ''; $('q').value = ''; render(); break;
       case 'reset-all': S.type = ''; S.court = ''; S.date = ''; S.q = ''; S.stage = 'all'; $('q').value = ''; render(); break;
       case 'toggle-pick': S.pick = !S.pick; S.picked = new Set(); render(); break;
