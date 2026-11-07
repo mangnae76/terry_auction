@@ -468,7 +468,7 @@ onMounted(async () => {
     restoring = false;
   }
   if (props.rankMode && webEmbed) {
-    try { const m = Number(localStorage.getItem(RANK_PERIOD_KEY)); if ([3, 6, 12].includes(m) || (m === 24 && listView.value === 'bld')) applyPeriod(m); } catch { /* 그만 */ }
+    try { const m = Number(localStorage.getItem(RANK_PERIOD_KEY)); if ([3, 6, 12, 24].includes(m)) applyPeriod(m); } catch { /* 그만 */ }
   }
   prefsLoaded.value = true;
   await restoreSnapshot(); // 마지막으로 본 자료가 있으면 그게 우선
@@ -497,7 +497,7 @@ let rankKey = '';
 const loadRank = async () => {
   const q = lastQuery.value;
   const scope = rankScope.value;
-  if (!props.rankMode || (listView.value !== 'top' && listView.value !== 'bld') || !q || !scope) return;   // 건물랭킹도 24개월 자료를 쓴다
+  if (!props.rankMode || !q || !scope || !(listView.value === 'top' || listView.value === 'bld' || periodMonths.value > 12)) return;   // 건물랭킹 · 24개월 요약도 24개월 자료를 쓴다
   const key = `${scope.parts.map((x) => x.lawd).join(',')}|${q.kind}|${q.deal}|${asOf.value}`;
   if (key === rankKey) return;
   rankKey = key; rankLoading.value = true; rankErr.value = '';
@@ -515,7 +515,7 @@ const loadRank = async () => {
     if (errs.size) rankErr.value = [...errs].join(' · ');
   } catch (e) { rankErr.value = userMessage(e, '전년 자료를 받지 못했습니다'); } finally { if (key === rankKey) rankLoading.value = false; }
 };
-watch([listView, lastQuery, asOf], () => { void loadRank(); });
+watch([listView, lastQuery, asOf, periodMonths], () => { void loadRank(); });
 /** 거래랭킹 탭 — 읍면동 칸을 뺀다 */
 const noDongPick = computed(() => !!props.rankMode && listView.value === 'top');
 const RANK_MIN = 5;
@@ -582,8 +582,8 @@ const bldTotal = computed(() => {
   return ids.size;
 });
 /** 위 기간 단추 — 건물랭킹에서만 24개월까지. 다른 탭으로 가면 12개월로 돌린다(그 탭 자료는 12개월까지) */
-const WEB_PERIODS = computed(() => (props.rankMode && listView.value === 'bld' ? [...WEB_PERIODS_BASE, 24] : WEB_PERIODS_BASE));
-watch(listView, (v) => { if (v !== 'bld' && periodMonths.value > 12) applyPeriod(12); });
+/* 랭킹분석은 세 탭(랭킹지도 · 거래랭킹 · 건물랭킹) 모두 24개월까지(2026-11-08) */
+const WEB_PERIODS = computed(() => (props.rankMode ? [...WEB_PERIODS_BASE, 24] : WEB_PERIODS_BASE));
 /* 랭킹분석 기간은 이 브라우저에 남겨 새로고침해도 그대로(24개월은 건물랭킹에서만, 2026-11-08) */
 const RANK_PERIOD_KEY = 'adm.rank.period';
 watch(periodMonths, (m) => { if (props.rankMode && webEmbed) { try { localStorage.setItem(RANK_PERIOD_KEY, String(m)); } catch { /* 그만 */ } } });
@@ -905,7 +905,7 @@ const eokMan = (v: number) => {
 // ===== 총 거래건수 = 정상 + 직거래 (계약해제 제외) — 앱 · 웹 모든 '총 거래건수' 가 같은 셈 =====
 /** 고른 기간(조회일 기준 3 · 6 · 12개월)에 든 거래 — 동 · 면적 · 연식 거르기 전. 요약 상자 · 수요분석이 이것으로 센다 */
 /* 건물랭킹 24개월 — 위 요약 상자도 24개월 자료(rankRows)로 센다(조회 자료는 12개월까지라, 2026-11-08) */
-const windowRows = computed(() => (props.rankMode && listView.value === 'bld' && periodMonths.value > 12 && rankRows.value.length ? rankRows.value : all.value).filter(inWindow));
+const windowRows = computed(() => (props.rankMode && periodMonths.value > 12 && rankRows.value.length ? rankRows.value : all.value).filter(inWindow));
 /** 총 거래건수의 범위 — 읍면동을 고르면 그 동만(수요분석과 같게) */
 const windowScoped = computed(() => (dong.value ? windowRows.value.filter((r) => r.umdNm === dong.value) : windowRows.value));
 const kindCount = (k: DongTradeDetailRow['kind'], rows = windowScoped.value) => rows.filter((r) => r.kind === k).length;
@@ -1137,7 +1137,7 @@ const downloadCsv = () => {
           </div>
           <!-- 상자는 줄 폭을 꽉 채워 고르게(상자 수가 여섯이든 셋이든) -->
           <div class="adm-gunav-row">
-            <div v-for="c in navBoxes" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :rows="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b :class="'tone' in c ? `t-${c.tone}` : ''"><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" /><UnitText v-else :text="c.value" :suffix="'suffix' in c ? c.suffix : undefined" /></b></div>
+            <div v-for="c in navBoxes" :key="c.label" class="adm-gunav-box"><small><InfoTip v-if="c.tip" :rows="c.tip">{{ c.label }}</InfoTip><template v-else>{{ c.label }}</template></small><b :class="'tone' in c ? `t-${c.tone}` : ''"><YmCount v-if="c.ym" :year="c.ym.year" :month="c.ym.month" :lead="periodMonths === 24 ? '2년' : undefined" :lead-n="periodMonths === 24 ? yearTotal : undefined" /><UnitText v-else :text="c.value" :suffix="'suffix' in c ? c.suffix : undefined" /></b></div>
           </div>
         </section>
         <div v-else-if="!webEmbed" class="adm-sum">
