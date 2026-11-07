@@ -2,7 +2,7 @@
 // auction-web(src/services/data.ts)과 같은 문서 모양을 쓴다 — 도우미 쪽 코드를 고치지 않고 그대로 붙이려고.
 //   users/{uid}/agent/control        웹 → 도우미 {cmd:{id,name,args,at}, stop:{id,at}, webSeenAt}
 //   users/{uid}/agent/status         도우미 → 웹 {at, ready, busy, enriching, prog, message, …}
-//   users/{uid}/agent/queue          웹 ↔ 도우미 모을 물건 대기열 {items: [{case, addr, at}]} (도우미가 끝난 사건을 뺀다)
+//   users/{uid}/agent/queue          웹 ↔ 도우미 모을 물건 대기열 {items: [{case, addr, at}]} (2026-11-08부터 도우미가 빼지 않는다 — 웹에서 × 로 뺄 때까지 남는다)
 // ── 공용 자료 — 관리자 누구든 쌓으면 다 같이 쓴다(계정마다 쌓지 않는다. GitHub Actions 로 쌓는 자료와 같은 공용 자료)
 //   saleData/coverage                도우미 → 웹 모은 동네 {dongs: {'인천 서구 검암동': {at(ms), n, site, src, months}}}
 //   saleData/main                    {count, chunks, version, by, updatedAt}
