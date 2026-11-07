@@ -3713,7 +3713,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .step-sep { flex: 0 0 auto; width: 1.5px; height: 14px; border-radius: 1px; background: var(--line-2); margin: 0 4px; }
 /* 수익률 분석 카드가 옆에 설 때 — 단계 띠 오른쪽 끝을 물건 카드의 알약 끝(카드 오른쪽 안쪽)에 맞춘다.
    300(수익률 분석) + 12(틈) + 카드 오른쪽 안쪽 여백 − 24(상자 안쪽 여백) − 1(테두리) */
-@media (min-width: 1340px) { .tb-row2 { padding-right: calc(287px + var(--list-pad-r)); } }
+@media (min-width: 1340px) { .tb-row2 { padding-right: calc(511px + var(--list-pad-r)); } }   /* 옆 흰 상자(524) + 틈 12 − 25 — 단계 띠 끝을 물건 카드 안쪽 끝에 맞춘다(2026-11-07) */
 
 .chips-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 10px 2px 0; }
 .chips-row:empty { display: none; }
@@ -3829,10 +3829,15 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .grid .divider b { color: var(--text); font-size: 14px; }
 .grid .divider i { flex: 1; height: 1px; background: #d3d6dc; }
 /* 한 줄 = 물건 카드 + 분석 진행 + 수익률 분석 카드 */
+/* 분석 진행 · 수익률 분석 — 흰 상자 하나(카드와 같은 꼴)에 담고, 안에서 테두리 상자 둘로 나눈다(2026-11-07) */
+.card-side { flex: 0 0 auto; display: flex; gap: 10px; padding: 10px; box-sizing: border-box; background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); }
+.card-side > :is(.prg, .res) { flex: 0 0 246px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: none; }
+.card-side > .res:hover { transform: none; box-shadow: none; }
+.card-side :is(.prg-head, .res-head) { min-height: 24px; }   /* 묶음 안 — 머리를 낮춰 줄 높이가 카드(207)를 넘지 않게 */
 .card-row .phase { font-size: 12px; padding: 0 2px; }   /* 분석 진행 상자가 들어가 카드가 좁아졌다 — 단계 단추 글자 14 → 12 */
 .card-row .phases { gap: 2px; }
 .card-row .prices { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.25fr); gap: 8px; }   /* 카드가 좁아져 '최저가미만' 칩이 붙은 입찰가 끝자리가 잘렸다 — 감정가 칸 몫을 입찰가에 */
-.prg { flex: 0 0 210px; display: flex; flex-direction: column; gap: 4px; padding: 16px var(--list-pad-r) 15px; min-width: 0; box-sizing: border-box;
+.prg { flex: 0 0 255px; display: flex; flex-direction: column; gap: 4px; padding: 16px var(--list-pad-r) 15px; min-width: 0; box-sizing: border-box;
   background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); }
 .prg-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-height: 30px; padding: 0 2px; font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; }
 .prg-title { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
@@ -4163,6 +4168,8 @@ html, body { overflow-x: clip; }
   .res { flex: none; flex-direction: row; flex-wrap: wrap; align-items: stretch; padding: 10px 12px; }
   .res-head { flex: 1 1 100%; min-height: 0; }
   .metric { min-height: 40px; }
+  .card-side { flex-direction: column; }
+  .card-side > :is(.prg, .res) { flex: none; }
   .prg { flex: none; flex-direction: row; flex-wrap: wrap; padding: 10px 12px; }   /* 분석 진행도 카드 아래 가로로 — 다섯 줄이 한 줄에 */
   .prg-head { flex: 1 1 100%; min-height: 0; }
   .prg-row { flex: 1 1 150px; min-height: 30px; }
@@ -5297,7 +5304,7 @@ span.cal-day.has { cursor: help; }
     const m = (cls, label, val, tipText) => `<div class="metric ${cls}"${tip(tipText, 'left')}><small>${label}</small>${val}</div>`;
     const money = (n) => `<strong class="num ${n < 0 ? 'neg' : ''}">${won(Math.abs(n)) ? `${n < 0 ? '−' : ''}${won(Math.abs(n))}` : '0'}<em>원</em></strong>`;
     return `<aside class="res ${past ? 'past' : ''}" data-act="go-profit" data-id="${it.id}" aria-label="${esc(it.caseNo)} 수익률 분석">
-      <div class="res-head"><b class="res-title">${I.trend}수익률 분석</b><span>${r ? `${r.plan ? `${r.confirmed ? '확정 ' : ''}${r.plan}안 기준 · ` : ''}매도 예상 ${eok(r.sale)}` : (it.mine > 0 ? '매도가 입력 전' : '입찰가 산정 전')}</span></div>
+      <div class="res-head"><b class="res-title">${I.trend}수익률 분석</b><span${r ? tip(`${r.plan ? `${r.confirmed ? '확정 ' : ''}${r.plan}안 기준 · ` : ''}매도 예상 ${eok(r.sale)}`, 'left') : ''}>${r ? (r.plan ? `${r.confirmed ? '확정 ' : ''}${r.plan}안` : '') : (it.mine > 0 ? '매도가 입력 전' : '입찰가 산정 전')}</span></div>
       ${r ? [
         m('rate', '최종 수익률', `<strong class="num ${r.rate < 0 ? 'neg' : ''}">${r.rate.toFixed(1)}<em>%</em></strong>`, '세후 순이익 ÷ 필요준비금'),
         m('', '순수익금', money(r.after), '매도가 − 총투자금 − 세금'),
@@ -5311,7 +5318,7 @@ span.cal-day.has { cursor: help; }
   const DASH = '-';
   const orDash = (v) => (String(v ?? '').trim() ? v : DASH);
   function cardHtml(it) {
-    return `<div class="card-row">${mainCardHtml(it)}${progressHtml(it)}${resultHtml(it, isPast(it) && !hasResult(it))}</div>`;
+    return `<div class="card-row">${mainCardHtml(it)}<div class="card-side">${progressHtml(it)}${resultHtml(it, isPast(it) && !hasResult(it))}</div></div>`;   /* 분석 진행 · 수익률 분석은 흰 상자 하나에 테두리 상자 둘 */
   }
   function mainCardHtml(it) {
     const past = isPast(it) && !hasResult(it);
