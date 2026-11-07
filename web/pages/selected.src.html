@@ -7500,8 +7500,10 @@ span.cal-day.has { cursor: help; }
       : `<tr><td colspan="${SX_COLS.length + 1}" class="sx-empty">${q ? '찾는 주소 · 사건번호가 없습니다.' : '조건에 맞는 매각물건이 없습니다. 기간을 늘리거나 면적 · 건축년도 조건을 비워 보세요.'}</td></tr>`);
     /* 물건카드를 고른 때만 '근거 · 인근 유사 매각사례'(맨 윗줄 경매물건). 지역으로 직접 조회하면 '경기도 수원시 권선구 세류동 매각사례'(2026-11-08) */
     const qa = saleApplied || {};
-    const listHead = me ? '<span class="sx-ptag">근거</span><h3 class="sx-sec">인근 유사 매각사례</h3>'
-      : `<h3 class="sx-sec">${esc([qa.sido, qa.sgg, qa.dong].filter(Boolean).join(' ') || '지역')} 매각사례</h3>`;
+    /* 물건으로 — '근거 · 인근 유사 매각사례'. 지역으로 — '인천광역시 서해구 매각사례'(기준물건을 고르면 앞에 근거 칩), 2026-11-08 */
+    const regionName = `${esc([qa.sido, qa.sgg, qa.dong].filter(Boolean).join(' ') || '지역')} 매각사례`;
+    const listHead = me && !me.__ref ? '<span class="sx-ptag">근거</span><h3 class="sx-sec">인근 유사 매각사례</h3>'
+      : `${me ? '<span class="sx-ptag">근거</span>' : ''}<h3 class="sx-sec">${regionName}</h3>`;
     return `<div id="sxList"><div class="sx-list-h">${listHead}<span class="sx-count"><b class="num">${view.length.toLocaleString('ko-KR')}</b>건${q ? ` · 전체 ${rows.length.toLocaleString('ko-KR')}건 중` : ''}</span>`
       /* 지역으로 · 기준 고르기 전 — 건수 옆에 세로 막대와 안내(2026-11-08) */
       + (S.route === 'market' && saleMode === 'region' && !sxRef ? '<i class="sx-lsep" aria-hidden="true"></i><span class="sx-pickhint">기준을 선택하세요 — 표의 줄이나 지도 핀을 누르면 그 물건을 기준으로 비슷한 사례를 찾습니다</span>' : '')
