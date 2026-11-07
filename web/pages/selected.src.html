@@ -5269,10 +5269,10 @@ span.cal-day.has { cursor: help; }
     const b = bidOf(it);
     const pills = PHASES.map((p) => {
       const on = p.key === 'bid' ? it.status === '입찰' && !b : it.status === p.status;
-      return `<button type="button" class="phase ${on ? 'on' : ''}" data-act="phase" data-id="${it.id}" data-v="${p.key}"${tip(on ? '지금단계' : `${p.label} 단계로`)}>${p.label}</button>`;
+      return `<button type="button" class="phase ${on ? 'on' : ''}" data-act="phase" data-id="${it.id}" data-v="${p.key}">${p.label}</button>`;
     });
     /* 입찰진행 ▶ 낙찰 ▶ 유찰 ▶ 취소 ▶ 매도 — 한 칸씩, 누르면 바로 그 단계 */
-    AFTER.forEach((a, i) => pills.push(`<button type="button" class="phase ${b === a.bid ? a.tone : ''}" data-act="bid-set" data-id="${it.id}" data-v="${a.bid}"${tip(b === a.bid ? '지금단계' : `${a.label} 단계로`, i > 2 ? 'right' : '')}>${a.label}</button>`));
+    AFTER.forEach((a, i) => pills.push(`<button type="button" class="phase ${b === a.bid ? a.tone : ''}" data-act="bid-set" data-id="${it.id}" data-v="${a.bid}">${a.label}</button>`));
     /* 사이 표시 — 흐름은 ▶, 낙찰·유찰·취소 사이(6·7번째 앞)는 점 */
     return `<div class="phases">${pills.map((h, i) => (i === 0 ? '' : i === 6 || i === 7 ? '<span class="phase-dot" aria-hidden="true"></span>' : '<span class="phase-arrow" aria-hidden="true">▶</span>') + h).join('')}</div>`;
   }
@@ -5344,7 +5344,7 @@ span.cal-day.has { cursor: help; }
   function cardHtml(it) {
     return `<div class="card-row">${mainCardHtml(it)}<div class="card-side">${progressHtml(it)}${resultHtml(it, isPast(it) && !hasResult(it))}</div></div>`;   /* 분석 진행 · 수익률 분석은 흰 상자 하나에 테두리 상자 둘 */
   }
-  /* 카드 툴팁은 글자 없는 아이콘 단추(주소복사 · 보관함 · 휴지통) · 갱신필요 표시에만 — 보이는 숫자 · 글을 되풀이하는 툴팁은 뺐다(2026-11-07) */
+  /* 카드 툴팁은 글자 없는 아이콘 단추(별 · 주소복사 · 보관함 · 휴지통) · 갱신필요 표시에만 — 단계 단추도 글자라 뺐다 — 보이는 숫자 · 글을 되풀이하는 툴팁은 뺐다(2026-11-07) */
   function mainCardHtml(it) {
     const past = isPast(it) && !hasResult(it);
     const picked = S.picked.has(it.id);
