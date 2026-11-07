@@ -1375,6 +1375,7 @@ html.mk-map-lock :is(.foot, .foot-note) { display: none; }
 :root { --gnb-h: 57px; --subtab-h: 43px; --stick-top: env(safe-area-inset-top, 0px); }
 /* 세로 스크롤바 자리는 늘 잡아 둔다 — 랭킹지도처럼 스크롤을 잠그는 화면으로 오갈 때 스크롤바가 생겼다 없어지며 화면 전체가 좌우로 움직였다(2026-11-03) */
 html { scrollbar-gutter: stable; }
+html.ta-leaving body { visibility: hidden; }   /* 로그아웃 중 — 대문으로 갈 때까지 화면을 가린다 */
 /* 엣지 — 비밀번호 칸에 브라우저가 붙이는 '보기' 눈 단추를 숨긴다(우리 눈 단추와 둘이 나왔다, 2026-11-07) */
 input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none; }
 .gnb { position: sticky; top: var(--stick-top); }
@@ -8894,7 +8895,14 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
           .catch(() => { m.busy = false; m.msg = CLOUD.auth.error || '로그인하지 못했습니다.'; if (S.modal === m) renderModal(); });
         break;
       }
-      case 'logout': S.pop = ''; if (CLOUD.auth) CLOUD.auth.logout().then(() => { go('list'); toast('로그아웃했습니다.'); }); break;   /* 로그아웃 → 메인 페이지(선정물건)에 머문다 — 머리는 '로그인 · 회원가입'으로 */
+      case 'logout': {   /* 로그아웃 → 대문으로 바로(2026-11-07). 누르는 즉시 화면을 가려 빈 선정물건 목록 · 알림이 보이지 않게 */
+        S.pop = '';
+        if (!CLOUD.auth) break;
+        document.documentElement.classList.add('ta-leaving');
+        CLOUD.auth.logout().then(() => { try { localStorage.removeItem('ta.web.in'); sessionStorage.removeItem('ta.web.snap'); } catch (err) { /* 그만 */ } location.replace('/intro.html'); })
+          .catch((err) => { document.documentElement.classList.remove('ta-leaving'); toast(userMsg(err, '로그아웃하지 못했습니다. 다시 해 주세요.'), 'info'); });
+        break;
+      }
       case 'pop': S.menu = null; S.binPicked = new Set(); S.calMonth = null; S.pop = S.pop === t.dataset.id ? '' : t.dataset.id; render(); break;
       case 'close-pop': closeLayers(); render(); break;
       /* 권리분석 › 서류 올리기 — 앱 카드의 같은 칸 단추를 대신 누른다 */

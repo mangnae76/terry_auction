@@ -683,7 +683,7 @@ watch(importTab, (t) => { try { localStorage.setItem(TAB_STORE, t); } catch { /*
 /** 결과 상자 — 이름은 하나다 (웹 /web 과 같은 글) */
 const parseCopy = {
   title: 'AI 자동 파싱',
-  sub: '경매 문서(PDF · 이미지)를 올리면 AI가 선정목록에 분석 정리합니다',
+  sub: '경매 문서(PDF · 이미지)를 올리면 AI가 물건목록에 분석 정리합니다',
   drop: ['파일을 드래그하거나 박스를 클릭하여 업로드하면', '여기에 미리보기가 표시됩니다.'],
 } as const;
 
@@ -748,7 +748,7 @@ const addManual = async () => {
   };
     await store.importParsedPdfAuctions([parsed]);
     mn.value = blankManual(); depAuto.value = true;
-    showToast(`${caseNo} 을 선정목록에 올렸습니다.`);
+    showToast(`${caseNo} 을 물건목록에 올렸습니다.`);
   } catch (e) {
     console.error('[직접입력] 등록 실패', e);
     showToast(`적지 못했습니다 — ${(e as Error)?.message || '까닭을 알 수 없습니다'}`, 3600);
