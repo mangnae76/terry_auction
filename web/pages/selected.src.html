@@ -4879,6 +4879,8 @@ span.cal-day.has { cursor: help; }
       if (!link.sheet) { c.style.visibility = 'hidden'; link.addEventListener('load', show); link.addEventListener('error', show); setTimeout(show, 800); } else show();
       c.style.top = (m.getBoundingClientRect().top + window.scrollY) + 'px';
       c.innerHTML = s.html; m.after(c);
+      /* 덮개 속 칸들의 id 를 지운다 — 진짜 화면과 같은 id(지도 자리 · 결과 칸)가 둘이 되면 그리기가 엉뚱한 쪽을 집었다(2026-11-08) */
+      Array.prototype.forEach.call(c.querySelectorAll('[id]'), function (e) { e.removeAttribute('id'); });
       try { history.scrollRestoration = 'manual'; } catch (e) {}
       window.scrollTo(0, s.y || 0);
       window.__taSnap = s;
@@ -7747,7 +7749,8 @@ span.cal-day.has { cursor: help; }
     const offMs = AG.offAt ? now - AG.offAt : 1e9;
     const offFx = !online && offMs < 1600 ? ` going-off" style="--off-d:-${offMs}ms` : '';
     /* 판 번호는 연결 알약 바로 오른쪽('ver.26.11.08-2', MyAgent 글자 없이) — 패널 위 따로 줄에서 옮겼다(2026-11-08) */
-    const conn = online ? `<span class="sx-conn on"><i></i>MyAgent Connecting · ${ago}초 전</span>${s.version ? `<span class="sx-ver">${esc(agVer(s.version))}</span>` : ''}`
+    AG.lastOnline = online;
+    const conn = online ? `<span class="sx-conn on"><i></i>MyAgent Connecting · <span class="sx-ago">${ago}</span>초 전</span>${s.version ? `<span class="sx-ver">${esc(agVer(s.version))}</span>` : ''}`
       : `<span class="sx-conn off${offFx}"><i></i>MyAgent Disconnected<span class="sx-info" tabindex="0" data-tip="컴퓨터에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다" data-tip-pos="left" aria-label="컴퓨터에서 agent.py 를 켜 두면 여기서 수집을 시킬 수 있습니다"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></span></span>`;
     const seg = (k, opts) => `<div class="sx-seg sm" data-n="${opts.length}" role="group">${opts.map(([v, t]) => `<button type="button" class="${String(agSel[k]) === String(v) ? 'on' : ''}" data-act="ag-sel" data-k="${k}" data-v="${v}">${t}</button>`).join('')}</div>`;
     /* 대기열수집 — 도우미 2026.11.01-7 부터. 도는 동안은 단추를 켜 둔다 */
@@ -7956,7 +7959,12 @@ span.cal-day.has { cursor: help; }
     let beat = 0;
     AG.tick = setInterval(() => {
       if (!agSaleOpen() || document.visibilityState !== 'visible') return;
-      agPaint();   // 'N초 전' · 연결 상태
+      /* 5초마다 상자를 통째로 다시 그리던 것 — 연결 상태가 그대로면 'N초 전' 숫자만 고친다(2026-11-08, 펼친 목록 닫힘 · 버벅임) */
+      const now = Date.now() + (AG.skew || 0); const s0 = AG.status;
+      const online = !!(T && T.agentOnline && T.agentOnline(s0, now));
+      const sec = document.querySelector('#agPanel .sx-ago');
+      if (online === AG.lastOnline && online && sec && s0 && s0.at && s0.at.toMillis) sec.textContent = String(Math.max(0, Math.round((now - s0.at.toMillis()) / 1000)));
+      else agPaint();
       if (Date.now() - beat > 60000) { beat = Date.now(); void T.agentHeartbeat(uid).then(agSkew).catch(() => {}); }
     }, 5000);
     beat = Date.now(); void T.agentHeartbeat(uid).then(agSkew).catch(() => {});
@@ -8973,7 +8981,10 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     try {
       if (!S.loggedIn) { sessionStorage.removeItem(SNAP_KEY); return; }
       const m = document.querySelector('main'); if (!m) return;
-      const html = m.innerHTML.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<iframe[\s\S]*?<\/iframe>/gi, '');
+      /* 지도는 떠 두지 않는다 — 덮개 속 옛 지도가 새 지도와 함께 두 개로 보였고(2026-11-08) 떠 두는 양도 컸다. 지도 칸은 빈 자리(같은 높이)만 남긴다 */
+      const cl = m.cloneNode(true);
+      cl.querySelectorAll('.sx-map, .kmap-box, .leaflet-container, .map-wrap .map, .pa .map, #trade-map, #trip-map').forEach((e) => { e.innerHTML = ''; });
+      const html = cl.innerHTML.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<iframe[\s\S]*?<\/iframe>/gi, '');
       if (html.length > 3000000) { sessionStorage.removeItem(SNAP_KEY); return; }   /* 너무 크면 떠 두지 않는다 */
       sessionStorage.setItem(SNAP_KEY, JSON.stringify({ hash: location.hash, y: window.scrollY, cls: m.className, html }));
     } catch (e) { /* 못 떠 두면 예전처럼 */ }
