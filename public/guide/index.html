@@ -747,7 +747,7 @@ const V1 = {
   },
   shots: {
     home: { src: 'shot-home.webp?v=3', w: 1600, h: 1758, url: 'terryauction-6b374.web.app/web#/', alt: '로그인 후 대문 — 다음 할 일, 나의 경매 일정, 공지사항, 최근 분석 내역, 투자 지표 · 실거래 동향' },
-    list: { src: 'shot-list.webp?v=3', w: 1600, h: 1052, url: 'terryauction-6b374.web.app/web#/list', alt: '선정물건 · 물건카드 화면 — 도구 상자, 단계별 물건 수, 물건 카드와 수익률 분석' },
+    list: { src: 'shot-list.webp?v=3', w: 1600, h: 1052, url: 'terryauction-6b374.web.app/web#/list', alt: '물건목록 · 물건카드 화면 — 도구 상자, 단계별 물건 수, 물건 카드와 수익률 분석' },
     basic: { src: 'shot-basic.webp?v=3', w: 1600, h: 1052, url: 'terryauction-6b374.web.app/web#/item/…', alt: '물건상세 · 물건정보 화면 — 사건 머리, 정보요약, 기본정보, 입지정보, 물건현황' },
     register: { src: 'shot-register.webp?v=3', w: 1600, h: 715, url: 'terryauction-6b374.web.app/web#/register', alt: '물건등록 화면 — 자동등록(AI 자동 분석 · 구글 드라이브 연동), 직접입력, AI 자동 파싱' },
     manual: { src: 'shot-manual.webp?v=3', w: 1600, h: 1233, url: 'terryauction-6b374.web.app/web#/register', alt: '물건등록 › 직접입력을 펼친 화면 — 사건번호, 소재지, 매각기일 · 금액, 관계인, 물건, 메모' },
@@ -770,7 +770,7 @@ const V1 = {
       { id: 'start', title: '시작하며', desc: '마이턴옥션이 해 주는 일 한눈에', at: '', aid: 'goal' },
       { id: 'layout', title: '화면 공통 구성', desc: '상단 메뉴 · 하위 탭 · 경로 읽는 법', at: '', aid: 'help-layout' },
       { id: 'register', title: '물건등록', desc: 'PDF 자동등록과 직접입력', at: '', aid: 'help-register' },
-      { id: 'list', title: '선정물건', desc: '물건카드와 진행 단계 바꾸기', at: '', aid: 'help-list' },
+      { id: 'list', title: '물건목록', desc: '물건카드와 진행 단계 바꾸기', at: '', aid: 'help-list' },
       { id: 'basic', title: '물건정보 · 권리분석', desc: '사건 정보 확인과 권리 체크', at: '', aid: 'help-item-basic' },
       { id: 'survey', title: '손품조사', desc: '수요 · 개별성 · 시세로 손품결론 내기', at: '', aid: 'help-item-survey', key: true },
       { id: 'profit', title: '수익분석', desc: 'A~D안 비교와 입찰가 확정', at: '', aid: 'help-item-profit' },
@@ -815,7 +815,7 @@ const V1 = {
       ['물건 직접입력', 'y', 'y', 'y'],
       ['자동등록 (구글 드라이브 · PDF)', 'n', 'y', 'y'],
       ['AI 자동 파싱 (Gemini)', 'n', 'y', 'y'],
-      ['선정물건 · 물건상세 · 손품조사', 'y', 'y', 'y'],
+      ['물건목록 · 물건상세 · 손품조사', 'y', 'y', 'y'],
       ['임장경로 · 낙찰이후 · 자금관리 · 시장분석', 'y', 'y', 'y'],
       ...(POINTS_OPEN ? [['포인트 적립', '가입 1,000P', '가입 1,000P', '결제금액의 4~10%']] : []),
       ['적어 둔 물건과 사진', '보관', '보관', '보관'],
@@ -887,7 +887,7 @@ const V1 = {
       { id: 'all', label: '기능 한눈에', title: '기능 한눈에', ic: 'layers', blocks: [
         { t: 'cards', cols: 3, items: [
           { ic: 'upload', title: '물건등록', html: '경매 PDF · 구글 드라이브 폴더를 읽어 자동 등록. PDF 없이 직접입력도 됩니다.', to: 'help-register' },
-          { ic: 'layers', title: '선정물건', html: '물건마다 감정가 · 최저가 · 입찰가 · 단계 · 예상 수익률을 카드 한 장에.', to: 'help-list' },
+          { ic: 'layers', title: '물건목록', html: '물건마다 감정가 · 최저가 · 입찰가 · 단계 · 예상 수익률을 카드 한 장에.', to: 'help-list' },
           { ic: 'building', title: '물건정보 · 권리분석', html: '건축물 · 입지 정보와 등기 · 임차인 권리관계를 한 화면에.', to: 'help-item-basic' },
           { ic: 'percent', title: '수익분석', html: 'A~D안 입찰가 비교, 세후 수익과 돈이 나가는 순서.', to: 'help-item-profit' },
           { ic: 'route', title: '임장경로 · 임장조사', html: '동선최적화로 방문 순서를 정하고, 현장 사진 · 탐문 · 체크리스트를 남깁니다.', to: 'help-trip' },
@@ -1003,7 +1003,7 @@ const V1 = {
     { id: 'contact', label: '문의하기', ic: 'headset', title: '문의하기', desc: 'FAQ에서 답을 찾지 못했다면 아래로 연락해 주세요.', subs: [
       { id: 'cs', label: '고객센터', title: '고객센터', ic: 'headset', blocks: [
         { t: 'contact' },
-        { t: 'p', html: '가입한 이메일, 사건번호, 화면 위치(예: 선정물건 › 수익분석)와 캡처를 함께 보내 주시면 더 빨리 도와드립니다.' },
+        { t: 'p', html: '가입한 이메일, 사건번호, 화면 위치(예: 물건목록 › 수익분석)와 캡처를 함께 보내 주시면 더 빨리 도와드립니다.' },
       ] },
       { id: 'report', label: '오류및제안', title: '오류 제보 · 기능 제안', ic: 'message', path: '머리띠 게시판 › 오류및제안', route: '#/board', blocks: [
         { t: 'p', html: `오류를 찾았거나 바라는 기능이 있으면 <b>게시판 › 오류및제안</b>에 남겨 주세요.${POINTS_OPEN ? ' 제보 1건당 1,000P(내용에 따라 최대 10,000P, 월 최대 5만P)가 적립됩니다.' : ''}` },
@@ -1020,7 +1020,7 @@ V1.sections.find((s) => s.id === 'pages').subs = [
   { aid: 'help-layout', label: '화면 공통 구성', title: '화면 공통 구성', ic: 'layout', route: '#/', blocks: [
     { t: 'p', html: '모든 화면이 같은 틀을 씁니다. 남색 머리띠에서 큰 메뉴를, 그 아래 흰 띠에서 지금 위치(경로)와 세부 화면(하위 탭)을 고릅니다.' },
     { t: 'shot', key: 'layout', mock: 'layout', pins: [], legend: [
-      ['상단 메뉴', '왼쪽은 경매 진행 순서대로 <b>물건등록 › 선정물건 › 임장경로 › 낙찰이후 › 자금관리</b>, 세로선 오른쪽은 언제든 꺼내 쓰는 <b>시장분석 · 매뉴얼 · 스토어 · 마이페이지</b>. 지금 보는 메뉴 아래에 주황 밑줄이 그어집니다.'],
+      ['상단 메뉴', '왼쪽은 경매 진행 순서대로 <b>물건등록 › 물건목록 › 임장경로 › 낙찰이후 › 자금관리</b>, 세로선 오른쪽은 언제든 꺼내 쓰는 <b>시장분석 · 매뉴얼 · 스토어 · 마이페이지</b>. 지금 보는 메뉴 아래에 주황 밑줄이 그어집니다.'],
       ['메뉴 펼치기 ▼', '모든 메뉴의 하위 항목을 한 번에 펼쳐 바로 이동합니다.'],
       ['바로가기', '공지 · 결제하기 · 이용가이드 · 알림(종) · 밤낮 화면 전환.'],
       ['내 계정', '내 이름 ▼(회원정보 메뉴)과 로그아웃. 로그아웃하면 첫 화면(대문)으로 돌아갑니다.'],
@@ -1067,7 +1067,7 @@ V1.sections.find((s) => s.id === 'pages').subs = [
     ] },
     { t: 'note', tone: 'warn', html: '자동으로 들어온 값도 <b>최저가 · 보증금</b>은 입찰 전에 한 번 더 확인하세요. 틀리면 입찰 자체가 어긋납니다.' },
   ] },
-  { aid: 'help-list', label: '선정물건', title: '선정물건 · 물건카드', ic: 'layers', path: '상단 메뉴 › 선정물건 › 물건카드', route: '#/', blocks: [
+  { aid: 'help-list', label: '물건목록', title: '물건목록 · 물건카드', ic: 'layers', path: '상단 메뉴 › 물건목록 › 물건카드', route: '#/', blocks: [
     { t: 'p', html: '등록한 물건이 카드로 쌓이는 첫 화면입니다. 하위 탭의 물건정보~임장조사는 마지막으로 본 물건의 상세 화면으로 이어집니다.' },
     { t: 'shot', key: 'list', pins: [[7, 10.9], [76.7, 12.4], [7, 16.5], [7, 22.6], [7, 30.8], [7, 35.9], [71.2, 29.4]], legend: [
       ['도구 상자', '유형 · 법원으로 거르고, 날짜순 ⇄ 임장순 정렬, 주소 · 사건번호 검색. <b>입찰일 달력</b>은 홈 달력과 같아서, 점 있는 날을 누르면 그날 일정 있는 물건만 카드로 보이고 다른 곳을 누르면 다시 전체입니다.'],
@@ -1086,8 +1086,8 @@ V1.sections.find((s) => s.id === 'pages').subs = [
       ['유찰 · 취소', '카드와 기록은 그대로. 다음 기일에 다시 입찰산정합니다.'],
     ] },
   ] },
-  { aid: 'help-item-basic', label: '물건정보', title: '물건상세 · 물건정보', ic: 'building', path: '선정물건 › 카드 누르기 › 물건정보', route: '#/', blocks: [
-    { t: 'p', html: '물건 카드를 누르면 상세 화면이 열립니다. 위쪽 사건 머리에 사건번호 · 법원 · 매각기일(D-day) · 단계 · 주소가 늘 보이고, 하위 탭(물건정보 · 권리분석 · 손품조사 · 수익분석 · 임장조사)으로 내용을 바꿉니다. 경로는 「홈 › 선정물건 › 탭 이름」으로 보입니다. 탭 줄 오른쪽 끝에는 <b>저장됨 · 방금</b>처럼 마지막 저장 시각이 보입니다(고치는 동안은 저장 중…).' },
+  { aid: 'help-item-basic', label: '물건정보', title: '물건상세 · 물건정보', ic: 'building', path: '물건목록 › 카드 누르기 › 물건정보', route: '#/', blocks: [
+    { t: 'p', html: '물건 카드를 누르면 상세 화면이 열립니다. 위쪽 사건 머리에 사건번호 · 법원 · 매각기일(D-day) · 단계 · 주소가 늘 보이고, 하위 탭(물건정보 · 권리분석 · 손품조사 · 수익분석 · 임장조사)으로 내용을 바꿉니다. 경로는 「홈 › 물건목록 › 탭 이름」으로 보입니다. 탭 줄 오른쪽 끝에는 <b>저장됨 · 방금</b>처럼 마지막 저장 시각이 보입니다(고치는 동안은 저장 중…).' },
     { t: 'shot', key: 'basic', pins: [[7, 15.2], [7, 24.5], [7, 55.5], [7, 87.7]], legend: [
       ['사건 머리', '사건번호 · 법원 · 매각기일 D-day · 진행 단계 · 주소.'],
       ['정보요약', '관할법원 · 사용승인 · 면적 · 동호 · 층 · 용적률 · 세대수. <b>편집</b>으로 고칩니다.'],
@@ -1185,7 +1185,7 @@ V1.sections.find((s) => s.id === 'pages').subs = [
     { t: 'p', html: '물건 하나가 아니라 지역 시장의 흐름을 봅니다. 하위 탭은 <b>실거래분석 · 시세예측 · 랭킹분석</b>입니다.' },
     { t: 'shot', key: 'market', pins: [], legend: [
       ['실거래분석', '시 · 도 → 시 · 군 · 구 → 읍 · 면 · 동과 종류 · 매매/전세 · 기간을 골라 <b>조회</b>합니다. 동별 거래 흐름과 수요공급을 보고, 조회 결과는 남아 있어 다시 열어도 그대로입니다.'],
-      ['시세예측', '<b>수요분석</b>은 실거래분석처럼 시 · 도 → 시 · 군 · 구 → 읍 · 면 · 동을 골라 조회합니다. <b>시세분석</b>은 전체 주소(시 · 도부터 지번 · 호수까지)를 붙여 넣고 종류를 골라 <b>조회</b>하면, 선정물건 › 손품조사의 시세분석처럼 지도 · 유사물건 · 매도가 예상을 봅니다(정렬 · 제외 · 지도 전체화면도 같음). 선정물건에 없는 주소도 찾을 수 있고, 여기서 고른 조건은 저장하지 않습니다.'],
+      ['시세예측', '<b>수요분석</b>은 실거래분석처럼 시 · 도 → 시 · 군 · 구 → 읍 · 면 · 동을 골라 조회합니다. <b>시세분석</b>은 전체 주소(시 · 도부터 지번 · 호수까지)를 붙여 넣고 종류를 골라 <b>조회</b>하면, 물건목록 › 손품조사의 시세분석처럼 지도 · 유사물건 · 매도가 예상을 봅니다(정렬 · 제외 · 지도 전체화면도 같음). 선정물건에 없는 주소도 찾을 수 있고, 여기서 고른 조건은 저장하지 않습니다.'],
       ['랭킹분석', '<b>랭킹지도</b>(동별 거래량 순위를 지도 위에) · <b>거래랭킹</b>(전년 같은 기간과 비교). 지도 오른쪽 도구 막대로 로드뷰 · 지적편집도 · 거리 · 면적 · 반경 재기 · 장소 검색 · 학교 표시 · 인쇄를 씁니다.'],
     ] },
   ] },
@@ -1245,7 +1245,7 @@ GUIDE.release({
 
     /* 물건정보 — 사건 머리 · 왼쪽 칸 순서 · 입지정보 · 물건현황 */
     const basic = page('help-item-basic');
-    basic.blocks[0].html = '물건 카드를 누르면 상세 화면이 열립니다. 위쪽 사건 카드(고정 카드)에 사건번호 · 법원 · 매각기일(D-day) · 단계 · 주소가 늘 보이고, 하위 탭(물건정보 · 권리분석 · 손품조사 · 수익분석 · 임장조사)으로 내용을 바꿉니다. 단계 단추 바로 오른쪽 <b>물건카드</b>를 누르면 물건목록이 펼쳐지고, 고른 물건의 같은 탭으로 바로 넘어갑니다. 경로는 「홈 › 선정물건 › 탭 이름」으로 보입니다. 탭 줄 오른쪽 끝에는 <b>저장됨 · 방금</b>처럼 마지막 저장 시각이 보입니다(고치는 동안은 저장 중…).';
+    basic.blocks[0].html = '물건 카드를 누르면 상세 화면이 열립니다. 위쪽 사건 카드(고정 카드)에 사건번호 · 법원 · 매각기일(D-day) · 단계 · 주소가 늘 보이고, 하위 탭(물건정보 · 권리분석 · 손품조사 · 수익분석 · 임장조사)으로 내용을 바꿉니다. 단계 단추 바로 오른쪽 <b>물건카드</b>를 누르면 물건목록이 펼쳐지고, 고른 물건의 같은 탭으로 바로 넘어갑니다. 경로는 「홈 › 물건목록 › 탭 이름」으로 보입니다. 탭 줄 오른쪽 끝에는 <b>저장됨 · 방금</b>처럼 마지막 저장 시각이 보입니다(고치는 동안은 저장 중…).';
     setRow('help-item-basic', '사건 머리', '사건번호 · 법원 · 매각기일 D-day · 진행 단계 · 주소. 단계 오른쪽 <b>물건카드 ×N ▾</b>로 다른 물건으로 바꿉니다(사건번호 · 법원 · 감정가 / 매각기일 · 주소 두 줄 목록, 바깥을 누르면 닫힘).');
     setRow('help-item-basic', '건축물 · 입지 · 물건현황', '왼쪽 칸은 위에서부터 정보요약 · 기본정보 · 물건현황 · 건축물정보. <b>입지정보</b>는 전체 · 500m를 고르고, PDF에서 읽은 인근역세권 · 교육환경 · 주변환경 · 행정기관은 흰 상자 하나에 모읍니다. 그 아래 <b>카카오목록검색</b>은 <b>불러오기</b>를 눌러 둘레 시설을 찾습니다. <b>물건현황</b>은 PDF에 공동주택가격이 없으면 손품조사 시세분석에서 찾은 값을 「/ 공동주택가격 N원 (연도 · 시세분석)」으로 이어 적습니다.');
 
@@ -1370,9 +1370,9 @@ const B = {
 
 const MOCK = {
   layout: () => `<div class="mock"><span class="mock-tag">예시 화면</span><div class="mock-scroll"><div class="mk-app">
-    <div class="mk-gnb"><img src="${$('logo').getAttribute('src')}" alt=""><i class="pin">1</i><span class="mk-m"><span>물건등록</span><i>›</i><span class="on">선정물건</span><i>›</i><span>임장경로</span><i>›</i><span>낙찰이후</span><i>›</i><span>자금관리</span><span class="mk-div"></span><span>시장분석</span><span>매뉴얼</span><span>스토어</span><span>마이페이지</span></span><i class="pin">2</i><span class="mk-box">▾</span>
+    <div class="mk-gnb"><img src="${$('logo').getAttribute('src')}" alt=""><i class="pin">1</i><span class="mk-m"><span>물건등록</span><i>›</i><span class="on">물건목록</span><i>›</i><span>임장경로</span><i>›</i><span>낙찰이후</span><i>›</i><span>자금관리</span><span class="mk-div"></span><span>시장분석</span><span>매뉴얼</span><span>스토어</span><span>마이페이지</span></span><i class="pin">2</i><span class="mk-box">▾</span>
       <span class="mk-r"><i class="pin">3</i>공지 · 결제하기 · 이용가이드 ${I('bell')} ${I('moon')}<i class="pin">4</i><b style="color:var(--nav-text)">마이턴 님 ▾</b> 로그아웃</span></div>
-    <div class="mk-sub"><span class="mk-crumb"><i class="pin">5</i> ${I('home') || ''} 홈 › 선정물건 › 물건카드</span><i class="pin">6</i><span class="on">물건카드</span><span>물건정보</span><span>권리분석</span><span>손품조사</span><span>수익분석</span><span>임장조사</span></div>
+    <div class="mk-sub"><span class="mk-crumb"><i class="pin">5</i> ${I('home') || ''} 홈 › 물건목록 › 물건카드</span><i class="pin">6</i><span class="on">물건카드</span><span>물건정보</span><span>권리분석</span><span>손품조사</span><span>수익분석</span><span>임장조사</span></div>
     <div class="mk-body">
       <div class="mk-tool"><span class="mk-c">전체 ▾</span><span class="mk-c">법원 ▾</span><span class="mk-c on">날짜순 ⇄</span><span class="mk-c">카드 ⇄</span><span class="mk-c">${I('calendar')} 2026.11.01</span><span class="mk-c mk-search">${I('search')} 주소 또는 사건번호 검색…</span><span class="mk-c">${I('archive')} ×2</span><span class="mk-c">☑</span></div>
       <div class="mk-ghost"></div>

@@ -4,7 +4,7 @@
   - PDF 읽기 등 앱 로직은 web/lib/shared.entry.js 가 앱 src/ 를 그대로 가져다 묶은 pdfparse.js 로 쓴다
   - 빌드: 저장소 맨 위에서 node web/build.mjs  →  web/site/selected.html, web/site/pdfparse.js
 -->
-<title>마이턴옥션 선정물건</title>
+<title>마이턴옥션 물건목록</title>
 <script>
   /* 로그인해 있던 탭 — 앱 화면 모양(pdfparse.css)을 맨 앞에서 미리 받기만 한다(붙이는 자리는 그대로). 새로고침 덮개가 기다리는 틈을 줄인다(2026-11-06) */
   /* 새로고침 — 덮개(보던 화면)가 준비될 때까지 새 페이지를 숨긴다. 그 사이 브라우저는 이전 화면을 그대로 둔다(그림 붙잡기).
@@ -1706,11 +1706,11 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .seg button.on { background: var(--surface); color: var(--text); font-weight: 700; border-color: var(--line-2); }
 .seg button svg { width: 13px; height: 13px; }
 .search {
-  display: inline-flex; align-items: center; gap: 7px; height: 32px; width: 340px; padding: 0 10px; border-radius: 6px;
+  display: inline-flex; align-items: center; gap: 7px; height: 32px; width: 330px; padding: 0 10px; border-radius: 6px;
   border: 1px solid var(--line-2); background: var(--surface); transition: border-color .15s, box-shadow .15s, width .2s;
 }
 .search:hover { border-color: #b8c1d1; }
-.search:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); width: 400px; }
+.search:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); width: 380px; }   /* 눌러서 넓어져도 한 줄 — 330 → 380(유형 · 법원 칸 150 고정에 맞춤, 2026-11-07) */
 .search svg { width: 15px; height: 15px; color: var(--faint); flex: 0 0 auto; }
 .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 13px; }
 .search input::placeholder { color: var(--faint); }
@@ -4177,6 +4177,9 @@ html, body { overflow-x: clip; }
   .f-copy { transform: none; bottom: auto; justify-self: center; margin-top: 26px; order: 10; white-space: normal; text-align: center; }
 }
 /* 두 줄 카드가 좁아지는 폭 — 앱처럼 법원을 줄여 쓰고 글자를 한 단계 내린다 */
+@media (max-width: 1300px) {
+  .search { width: 250px; } .search:focus-within { width: 300px; }   /* 1280 화면 — 넓어져도 한 줄 */
+}
 @media (max-width: 1240px) {
   .search, .search:focus-within { width: 280px; }
 }
@@ -4543,7 +4546,7 @@ span.cal-day.has { cursor: help; }
     <div class="gnb-in">
       <a class="g-logo" href="#/" data-act="go-home" aria-label="마이턴옥션 홈"><img src="{{LOGO_WHITE}}" alt="MYTURN AUCTION"></a>
       <a class="g-menu m0" href="#/register" data-act="go-register" id="navReg">물건등록</a>
-      <a class="g-menu m1" href="#/list" data-act="go-list" id="navWatch">선정물건</a>
+      <a class="g-menu m1" href="#/list" data-act="go-list" id="navWatch">물건목록</a>
       <a class="g-menu m2" href="#/trip" data-act="go-trip" id="navTrip">임장경로</a>
       <a class="g-menu m3c" href="#/postwin" data-act="go-postwin" id="navPostwin">낙찰이후</a>
       <a class="g-menu m3f" href="#/finance" data-act="go-finance" id="navFinance">자금관리</a>
@@ -4652,7 +4655,7 @@ span.cal-day.has { cursor: help; }
     <nav class="crumbs" aria-label="현재 위치">
       <a href="#/" data-act="go-home" class="crumb-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1Z"/></svg>홈</a>
       <span class="crumb-sep" aria-hidden="true">›</span>
-      <span id="crumbCur" class="crumb-trail"><strong aria-current="page">선정물건</strong></span>
+      <span id="crumbCur" class="crumb-trail"><strong aria-current="page">물건목록</strong></span>
     </nav>
   </div>
   <!-- 카드 위 안내 — 물건등록 안내와 같은 꼴(왼쪽 주황 막대, 상자 없이) -->
@@ -5040,7 +5043,7 @@ span.cal-day.has { cursor: help; }
   const MEGA = [
     ['m0', [['자동등록', 'mega-auto'], ['직접입력', 'mega-manual']]],   /* 입찰달력은 선정물건 칸에만(2026-11-02 물건등록 칸에서 삭제) */
     /* 입찰달력 · 보관함 · 휴지통은 선정물건 도구 줄의 그 펼침을, 수익분석은 물건상세 수익분석 탭을 연다(mega-list · mega-item) */
-    ['m1', [['선정물건', 'go-list'], ['입찰 캘린더', 'mega-cal'], ['수익분석', 'mega-item']]],   /* 보관함 · 휴지통은 선정물건 도구 줄에서(2026-11-02 펼침에서 삭제) */
+    ['m1', [['물건목록', 'go-list'], ['입찰 캘린더', 'mega-cal'], ['수익분석', 'mega-item']]],   /* 보관함 · 휴지통은 선정물건 도구 줄에서(2026-11-02 펼침에서 삭제) */
     /* 임장경로 아래 칸은 비운다(2026-11-02 — 임장동선 · 방문기록 · 체크리스트 삭제). 임장경로는 위 메뉴로 바로 연다 */
     ['m2', []],
     ['m3c', [['진행절차', 'go-postwin'], ['절차별체크리스트', 'go-postwin']]],   /* 가이드는 매뉴얼로 옮겼다 */
@@ -6351,7 +6354,7 @@ span.cal-day.has { cursor: help; }
     /* 늘 본문 위 한 자리(왼쪽)에만 — 화면 안 탭 줄 칸(#admCrumbSlot 등)으로 옮겼다 돌아오면 다시 그릴 때마다 한 줄씩 덜컹거렸다 */
     { const nav = CRUMBS; const slot = SUBTABS[S.route] ? $('subCrumbLeft') : reg ? ($('regCrumbLeft') || $('crumbSlotReg')) : $(page ? 'crumbSlotAppPage' : reg ? 'crumbSlotReg' : trip ? 'crumbSlotTrip' : market ? 'crumbSlotMarket' : my ? 'crumbSlotMy' : item ? 'crumbSlotItem' : info ? 'crumbSlotInfo' : 'crumbSlotList'); if (nav && slot && nav.parentNode !== slot) slot.appendChild(nav); }
     renderSubTabs();
-    document.title = home ? '마이턴옥션' : info ? `마이턴옥션 ${S.route === 'store' ? '스토어' : '모바일앱'}` : page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? '마이턴옥션 시장분석' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 선정물건';
+    document.title = home ? '마이턴옥션' : info ? `마이턴옥션 ${S.route === 'store' ? '스토어' : '모바일앱'}` : page ? `마이턴옥션 ${APP_PAGE_NAMES[S.route]}` : reg ? '마이턴옥션 선정물건등록' : trip ? '마이턴옥션 임장경로' : market ? '마이턴옥션 시장분석' : my ? '마이턴옥션 마이페이지' : item ? `마이턴옥션 ${cur ? cur.caseNo : '물건상세'}` : '마이턴옥션 물건목록';
     if (!item) closeAppDetail();
     if (!trip) closeAppTrip();
     if (!market) closeAppMarket();
@@ -6417,7 +6420,7 @@ span.cal-day.has { cursor: help; }
     /* 고정카드의 PDF 단추는 뺐다(2026-11-07) */
     return `
       <div class="ih-top">
-        <button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"${tip('선정물건으로')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button>
+        <button type="button" class="ih-back" data-act="go-list" aria-label="뒤로"${tip('물건목록으로')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg></button>
         <h1 class="ih-title"><span class="ih-tag">경매</span><span class="num">${esc(it.caseNo)}</span></h1>
         <span class="ih-court">${esc(it.court || DASH)} · 매각기일 <span class="num">${it.date ? `${dotDate(it.date)}${dowText(it.date)}` : DASH}</span> <em>${it.date ? ddayText(it.date) : ''}</em></span>
         <span class="ih-right">
@@ -6791,8 +6794,8 @@ span.cal-day.has { cursor: help; }
     if (r === 'trip') return '임장경로';
     if (r === 'market') return marketTrail();
     if (r === 'mypage') return '마이페이지';
-    if (r === 'item') return `선정물건 › ${subLabel('item', S.itemTab)}`;
-    return '선정물건 › 물건카드';
+    if (r === 'item') return `물건목록 › ${subLabel('item', S.itemTab)}`;
+    return '물건목록 › 물건카드';
   }
   /* 경로 칸마다 누르면 갈 곳 — 맨 끝(지금 화면)만 검정 글자, 앞 칸은 회색 링크 */
   let crumbGo = [];
@@ -6820,9 +6823,9 @@ span.cal-day.has { cursor: help; }
     if (r === 'item') {
       /* 홈 › 선정물건 › 하위 탭 — 사건번호는 바로 아래 사건 카드에 있고, 손품조사 안 탭(수요분석 · 시세분석 · 손품결론)은
          화면 안 탭 줄에 보이니 적지 않는다. 짧아야 흰 띠 왼쪽에 늘 들어간다(2026-11-03) */
-      return [['선정물건', () => go('list')], [subLabel('item', S.itemTab)]];
+      return [['물건목록', () => go('list')], [subLabel('item', S.itemTab)]];
     }
-    return [['선정물건', () => go('list')], ['물건카드']];   /* 목록 — 낙찰이후 › 진행절차처럼 고른 하위 탭까지 */
+    return [['물건목록', () => go('list')], ['물건카드']];   /* 목록 — 낙찰이후 › 진행절차처럼 고른 하위 탭까지 */
   }
   function syncCrumb() {
     const el = $('crumbCur'); if (!el) return;
@@ -7883,7 +7886,7 @@ span.cal-day.has { cursor: help; }
       onTab: (t) => { if (S.route !== key || !SUB_TAB_KEYS[key].includes(t) || S.pageTab[key] === t) return; S.pageTab[key] = t; writeHash(true); renderSubTabs(); },
       /* 앱 화면이 웹 메뉴 쪽 길을 부르면 웹이 받는다 */
       onNav: (to, a, b) => {
-        if (to === 'item') { if (!byId(a)) { toast('선정물건에서 그 물건을 찾지 못했습니다.', 'info'); return; } S.itemTabNext = b === 'verify' ? 'survey' : ITEM_TABS.includes(b) ? b : 'basic'; go('item', a); return; }
+        if (to === 'item') { if (!byId(a)) { toast('물건목록에서 그 물건을 찾지 못했습니다.', 'info'); return; } S.itemTabNext = b === 'verify' ? 'survey' : ITEM_TABS.includes(b) ? b : 'basic'; go('item', a); return; }
         if (to === 'login') { openAppLogin(); return; }
         if (to === 'ai') { S.modal = { kind: 'aiset' }; renderModal(); return; }   /* AI 설정 창 */
         if (to === 'recent') { S.modal = { kind: 'recent' }; renderModal(); return; }   /* 마이페이지 최근 작성 › 전체보기 — 홈 최근 분석과 같은 창 */
@@ -7912,7 +7915,7 @@ span.cal-day.has { cursor: help; }
     box.innerHTML = '<div class="app-trip" id="appTripMount"></div>';
     /* 줄의 '물건상세 보기'는 앱 라우터로 가지 못한다 — 웹 물건상세로 받아 넘긴다 */
     const stop = CLOUD.T.mountAppFieldTrip($('appTripMount'), (id, tab) => {
-      if (!byId(id)) { toast('선정물건에서 그 물건을 찾지 못했습니다.', 'info'); return; }
+      if (!byId(id)) { toast('물건목록에서 그 물건을 찾지 못했습니다.', 'info'); return; }
       S.itemTabNext = tab === 'field' ? 'field' : tab === 'survey' ? 'survey' : 'basic';   /* 정류장 '임장조사 열기' → 임장조사 탭 */
       /* 화면 바꾸기는 앱 라우터의 길막음이 끝난 뒤에 — 그 안에서 바로 걷어내면
          앱이 제 길을 정리하는 중에 틀이 사라져 지도가 어정쩡하게 남는다 */
