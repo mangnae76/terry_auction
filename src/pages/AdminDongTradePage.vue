@@ -94,7 +94,7 @@ const loadedLabel = ref('');
 
 // ===== 검색조건 =====
 const PERIODS = [1, 3, 6, 12];
-const WEB_PERIODS = [3, 6, 12]; // 웹은 위 고르는 줄에서 — 1개월은 뺀다
+const WEB_PERIODS_BASE = [3, 6, 12]; // 웹은 위 고르는 줄에서 — 1개월은 뺀다
 /** 웹 — 매매 / 전세 (전세는 전월세 자료에서 월세 없는 것, 값은 보증금). 바꾸면 '조회' 로 다시 받는다 */
 const DEAL_KINDS = [{ key: 'sale', label: '매매' }, { key: 'jeonse', label: '전세' }] as const;
 const dealKind = ref<'sale' | 'jeonse'>('sale');
@@ -492,7 +492,7 @@ let rankKey = '';
 const loadRank = async () => {
   const q = lastQuery.value;
   const scope = rankScope.value;
-  if (!props.rankMode || listView.value !== 'top' || !q || !scope) return;
+  if (!props.rankMode || (listView.value !== 'top' && listView.value !== 'bld') || !q || !scope) return;   // 건물랭킹도 24개월 자료를 쓴다
   const key = `${scope.parts.map((x) => x.lawd).join(',')}|${q.kind}|${q.deal}|${asOf.value}`;
   if (key === rankKey) return;
   rankKey = key; rankLoading.value = true; rankErr.value = '';
@@ -534,9 +534,11 @@ const rankByDong = computed<RankRow[]>(() => {
 /** 웹 랭킹분석 › 건물랭킹 — 조회한 기간 · 종류의 실거래를 건물(동 + 지번)로 묶어 많이 팔린 순(2026-11-08).
  *  이름은 비거나 표기가 달라 지번으로 묶고 이름은 가장 많이 쓰인 것으로 보인다. 읍면동을 고르면 그 동만, 계약해제는 뺀다 */
 type BldRow = { id: string; name: string; umd: string; jibun: string; n: number; avg: number; perPy: number; last: string; aMin: number; aMax: number; year: number };
+/** 건물랭킹 자료 — 24개월까지 고를 수 있어 거래랭킹이 받는 24개월 자료(rankRows)를 쓴다. 아직 못 받았으면 조회한 자료(12개월) */
+const bldSrc = computed<DongTradeDetailRow[]>(() => (rankRows.value.length ? rankRows.value : all.value));
 const bldRank = computed<BldRow[]>(() => {
   const m = new Map<string, DongTradeDetailRow[]>();
-  all.value.forEach((r) => {
+  bldSrc.value.forEach((r) => {
     if (r.kind === '계약해제' || !r.jibun || !inWindow(r)) return;
     if (dong.value && r.umdNm !== dong.value) return;
     const id = `${r.umdNm}|${r.jibun}`;
@@ -556,9 +558,12 @@ const bldRank = computed<BldRow[]>(() => {
   return out.sort((a, b) => (b.n - a.n) || b.last.localeCompare(a.last)).slice(0, 30);
 });
 const bldTotal = computed(() => {
-  const ids = new Set<string>(); all.value.forEach((r) => { if (r.kind !== '계약해제' && r.jibun && inWindow(r) && (!dong.value || r.umdNm === dong.value)) ids.add(`${r.umdNm}|${r.jibun}`); });
+  const ids = new Set<string>(); bldSrc.value.forEach((r) => { if (r.kind !== '계약해제' && r.jibun && inWindow(r) && (!dong.value || r.umdNm === dong.value)) ids.add(`${r.umdNm}|${r.jibun}`); });
   return ids.size;
 });
+/** 위 기간 단추 — 건물랭킹에서만 24개월까지. 다른 탭으로 가면 12개월로 돌린다(그 탭 자료는 12개월까지) */
+const WEB_PERIODS = computed(() => (props.rankMode && listView.value === 'bld' ? [...WEB_PERIODS_BASE, 24] : WEB_PERIODS_BASE));
+watch(listView, (v) => { if (v !== 'bld' && periodMonths.value > 12) applyPeriod(12); });
 const bldWon = (w: number) => { if (!(w > 0)) return '-'; const e = Math.floor(w / 1e8); const mm = Math.round((w % 1e8) / 1e4); return e ? `${e}억${mm ? ` ${mm.toLocaleString('ko-KR')}만` : ''}` : `${mm.toLocaleString('ko-KR')}만`; };
 /** 세 목록(왼쪽부터) — 거래량(많은 순) · 급증(증가율 높은 순) · 급감(감소율 큰 순). 전년이 없던 동은 증감을 매기지 않는다 */
 const rankLists = computed(() => {
@@ -1067,7 +1072,8 @@ const downloadCsv = () => {
       <div v-if="webEmbed && listView === 'case'" class="son-price"><SonpumPricePage v-if="priceAuction && priceQ" :key="priceAuction.id" :auction="priceAuction" :kind="priceQ.kind" :months="priceQ.months ?? 12" loose /><p v-else class="son-msg">위 칸에 전체 주소를 넣고 종류를 고른 뒤 조회를 누르세요.</p></div>
       <template v-if="all.length > 0 && listView !== 'map' && listView !== 'case'">
         <!-- 웹 — 위 요약 상자 틀은 하나. 읍면동을 고르면 안의 상자만 셋(총 거래건수 · 실거래가 평균 · 평당가 평균)으로 -->
-        <section v-if="webEmbed && listView !== 'supply'" class="adm-gunav">
+        <!-- 건물랭킹 24개월 — 위 요약 상자는 12개월 자료라 숨긴다(숫자가 기간과 안 맞는다) -->
+        <section v-if="webEmbed && listView !== 'supply' && !(listView === 'bld' && periodMonths > 12)" class="adm-gunav">
           <div class="adm-gunav-head">
             <strong>{{ loadedLabel }}<template v-if="dong">{{ ` · ${dong}` }}</template><template v-if="loadedDeal === 'jeonse'">{{ ' 전세' }}</template></strong>
             <SnapChip :chip="snapChip" />
@@ -1174,7 +1180,8 @@ const downloadCsv = () => {
         <!-- 랭킹분석 › 건물랭킹 — 많이 팔린 건물 순위(막대 · 건수 · 평균가 · 평당가 · 최근 거래) -->
         <section v-else-if="webEmbed && listView === 'bld'" class="adm-bld">
           <header><strong>건물랭킹</strong><small>{{ loadedLabel }}<template v-if="dong">{{ ` ${dong}` }}</template> · 최근 {{ periodMonths }}개월 · 많이 팔린 순 · 건물 {{ bldTotal.toLocaleString('ko-KR') }}곳 중 {{ bldRank.length }}곳</small></header>
-          <p v-if="!bldRank.length" class="adm-msg">이 조건으로 팔린 건물이 없습니다.</p>
+          <p v-if="rankLoading && periodMonths > 12" class="adm-msg">24개월 거래를 받는 중입니다…</p>
+          <p v-else-if="!bldRank.length" class="adm-msg">이 조건으로 팔린 건물이 없습니다.</p>
           <ol v-else class="adm-bld-list">
             <li v-for="(b, i) in bldRank" :key="b.id" class="adm-bld-row" :style="{ '--i': i }">
               <span :class="['no', { top: i < 3 }]">{{ i + 1 }}</span>
