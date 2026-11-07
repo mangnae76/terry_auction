@@ -7548,6 +7548,18 @@ span.cal-day.has { cursor: help; }
       return `<div class="sx-results" id="sxResults">${saleBandHtml() ? `<section class="sx-card sx-bandcard">${saleBandHtml()}</section>` : ''}<section class="sx-card sx-wait"><b>인근 매각물건 분석</b><span>${S.route === 'item' && !sonSaleFail ? '이 물건 지역의 모은 매각물건을 불러오는 중입니다…' : '위에서 지역 · 종류를 고르고 <b>조회</b>를 누르면(또는 물건카드에서 물건을 고르면) 모은 매각물건으로 예상 입찰가 · 지표 · 매각가율 분포를 보여 줍니다.'}</span></section></div>`;
     }
     const q = saleApplied; const st = sxStats(rows);
+    /* 0건 — 조회는 됐는데 아무것도 안 나오면 눌리지 않은 것처럼 보였다(2026-11-08). 왜 0건인지 적고, 조건을 바꿀 수 있게 지도 칸(검색 띠 · 아래 줄)은 그대로 */
+    if (!st.n) {
+      const re = SALE_KIND_RE[q.kind]; const place = [q.sgg, q.dong].filter(Boolean).join(' ') || q.sido;
+      const all = AG.recs.filter((r) => { const g = agRegParts(r); return regIn(g, q.sido, q.sgg) && (!q.dong || g.dong === q.dong) && (!r['종류'] || !re || re.test(String(r['종류']))); }).length;
+      const inPeriod = (saleRows() || []).length;
+      const me = sxMe();
+      const msg = !all ? `${place} · ${q.kind || '전체'}로 모은 매각물건이 없습니다. 위 데이터수집에서 이 동네를 먼저 모아 주세요.`
+        : !inPeriod ? `${place}에 모은 ${all.toLocaleString('ko-KR')}건이 모두 최근 ${q.period} 밖이거나 매각일이 비어 있습니다. 매각기간을 늘려 보세요.`
+        : me ? `최근 ${q.period} ${inPeriod.toLocaleString('ko-KR')}건이 있지만, 물건카드 물건(${me.caseNo}) 둘레 반경 ${SXM.radius >= 1000 ? `${SXM.radius / 1000}km` : `${SXM.radius}m`} · 직접범위 · 엘베 · 층 조건에 맞는 물건이 없습니다.`
+        : `최근 ${q.period} ${inPeriod.toLocaleString('ko-KR')}건이 있지만, 아래 직접범위 · 엘베 · 층 조건에 맞는 물건이 없습니다.`;
+      return `<div class="sx-results" id="sxResults"><section class="sx-card sx-wait"><b>${esc(place)} · ${esc(q.kind || '전체')} — 0건</b><span>${esc(msg)}</span></section>${sxMapCardHtml()}</div>`;
+    }
     const conds = [`최근 ${q.period} ${saleSpan(q.period)}`, (sxNum(q.amin) || sxNum(q.amax)) ? `면적 ${q.amin || ''}~${q.amax || ''}㎡` : '', (sxNum(q.ymin) || sxNum(q.ymax)) ? `건축 ${q.ymin || ''}~${q.ymax || ''}년` : '', `${st.n.toLocaleString('ko-KR')}건 기준`].filter(Boolean).join(' · ');
     /* 경매물건을 고르면(손품조사 › 경매사례는 늘) 그 물건 동까지 적고, 실제 거르는 범위인 반경도 함께 — '서해구 검암동 · 반경 500m'(2026-11-07) */
     const me = sxMe(); const meDong = me ? (String(me.addr || '').split(/\s+/).find((t) => /^[가-힣0-9]+(동|읍|면|가)$/.test(t)) || '') : '';
@@ -9386,7 +9398,20 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'sx-msave': sxMapSave(); break;
       case 'sx-period': saleSeg.period = v; saleSave(); if (saleApplied) saleApply({ ...saleApplied, period: v }); renderMarket(); break;   /* 지도 아래 줄 매각기간 — 바로 다시 계산 */
       /* 검색 — 지역 · 종류 · 기간에 면적 · 건축년도까지 이때 적용 */
-      case 'sale-go': saleApply({ ...saleSeg, amin: '', amax: '', ymin: '', ymax: '' }); renderMarket(); break;   /* 면적 · 건축은 지도 아래 막대가 맡는다 */
+      case 'sale-go': {
+        saleApply({ ...saleSeg, amin: '', amax: '', ymin: '', ymax: '' }); renderMarket();   /* 면적 · 건축은 지도 아래 막대가 맡는다 */
+        /* 고른 물건카드와 다른 지역을 조회하면 카드 선택을 푼다 — 반경이 그 물건 둘레로 걸려 늘 0건이 됐다(2026-11-08) */
+        const it = S.route === 'market' && saleItemId && salePicks().find((x) => x.id === saleItemId);
+        if (it) {
+          const want = { sido: saleSeg.sido, sgg: saleSeg.sgg };
+          saleRegionOf(it, (r) => {
+            if (!r || saleItemId !== it.id || (r.sido === want.sido && r.sgg === want.sgg)) return;
+            saleItemId = ''; try { localStorage.removeItem(SALE_ITEM_KEY); } catch (err) { /* 그만 */ }
+            renderMarket(); toast(`물건카드(${it.caseNo})는 다른 지역이라 선택을 풀고 ${[want.sido, want.sgg].filter(Boolean).join(' ')}로 조회했습니다.`, 'info');
+          });
+        }
+        break;
+      }
       case 'sx-save': try { localStorage.setItem(SX_KEY, JSON.stringify({ amin: SX.amin, amax: SX.amax, ymin: SX.ymin, ymax: SX.ymax, my: SX.my, sort: SX.sort, desc: SX.desc })); } catch (err) { /* 그만 */ } saleSave(); if (saleApplied) saleApply(saleApplied); toast('검색 조건을 저장했습니다 — 다음에 열어도 그대로입니다.'); break;
       case 'sx-reset': {
         Object.assign(SX, { amin: '', amax: '', ymin: '', ymax: '', q: '' }); saleSeg.period = '12개월'; saleSave();
