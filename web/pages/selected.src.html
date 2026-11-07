@@ -1105,6 +1105,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-itemline .bar { width: 1px; height: 14px; background: var(--line); }
 .sx-itemline .dt { color: var(--text-2, var(--muted)); } .sx-itemline .dt em { font-style: normal; font-weight: 800; color: var(--blue); }
 .sx-topband .sx-pickanchor { flex: 0 0 auto; position: relative; }
+.sx-topband.one { flex-wrap: nowrap; }   /* 물건으로 — 한 줄에. 넘치면 주소만 줄임표 */
 .sx-plab.off { opacity: .5; }
 .sx-pseg button.sx-lock { opacity: .4; cursor: not-allowed; }   /* 지역으로 — 유사도 잠금 */
 .sx-offtx { font-size: 12.5px; font-weight: 400; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -7994,10 +7995,10 @@ span.cal-day.has { cursor: help; }
         const money = [it.apr > 0 ? `감정가 <b class="num">${sxWon(it.apr)}</b>` : '', it.min > 0 ? `최저가 <b class="num">${sxWon(it.min)}</b>` : ''].filter(Boolean).join(' · ');
         const parts = [money, area ? esc(area) : '', age].filter(Boolean).map((x) => `<span>${x}</span>`).join('<i class="bar" aria-hidden="true"></i>');
         /* 매각기일 · D-day — 사건번호 바로 옆(2026-11-08) */
-        const day = it.date ? `<span class="dt num">매각기일 ${dotDate(it.date)}${dowText(it.date)} <em>${ddayText(it.date)}</em></span>` : '';
+        const day = it.date ? `<span class="dt num">${dotDate(it.date).slice(2)}${dowText(it.date)} <em>${ddayText(it.date)}</em></span>` : '';   /* 26.11.19 (목) D-11 — 한 줄에 들어가게 짧게 */
         line = `<span class="sx-itemline"><b class="cn">${esc(it.caseNo)}</b>${day}<i class="bar" aria-hidden="true"></i><span class="ad">${esc([it.addr, it.bld, it.unit].filter(Boolean).join(' '))}</span>${parts ? `<i class="bar" aria-hidden="true"></i>${parts}` : ''}</span>`;
       }
-      return `<div class="sx-topband">${mode}${line}${cardPickHtml('sale', saleItemId)}</div>`;
+      return `<div class="sx-topband one">${mode}${line}${cardPickHtml('sale', saleItemId)}</div>`;
     }
     const T = saleTopRegionHtml();
     return `<div class="sx-topband">${mode}${T}</div>`;
