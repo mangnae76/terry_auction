@@ -1196,6 +1196,8 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-list-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 0 16px 12px; }
 .sx-count { font-size: 13px; color: var(--muted); }
 .sx-count b { color: var(--text); }
+.sx-lsep { width: 1px; height: 14px; background: var(--line); flex: 0 0 auto; }
+.sx-pickhint { font-size: 13px; font-weight: 700; color: var(--blue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .sx-qbox { position: relative; flex: 0 0 340px; max-width: 100%; display: block; }   /* 주소 · 사건번호 검색 — 넓게(글이 잘리지 않게) · 안에 돋보기 */
 .sx-qbox svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
 .sx-q { width: 100%; max-width: 100%; height: 36px; padding: 0 10px 0 34px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; }
@@ -7489,6 +7491,8 @@ span.cal-day.has { cursor: help; }
     const listHead = me ? '<span class="sx-ptag">근거</span><h3 class="sx-sec">인근 유사 매각사례</h3>'
       : `<h3 class="sx-sec">${esc([qa.sido, qa.sgg, qa.dong].filter(Boolean).join(' ') || '지역')} 매각사례</h3>`;
     return `<div id="sxList"><div class="sx-list-h">${listHead}<span class="sx-count"><b class="num">${view.length.toLocaleString('ko-KR')}</b>건${q ? ` · 전체 ${rows.length.toLocaleString('ko-KR')}건 중` : ''}</span>`
+      /* 지역으로 · 기준 고르기 전 — 건수 옆에 세로 막대와 안내(2026-11-08) */
+      + (S.route === 'market' && saleMode === 'region' && !sxRef ? '<i class="sx-lsep" aria-hidden="true"></i><span class="sx-pickhint">기준을 선택하세요 — 표의 줄이나 지도 핀을 누르면 그 물건을 기준으로 비슷한 사례를 찾습니다</span>' : '')
       + `<span class="sx-grow"></span><label class="sx-qbox"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" class="sx-q" id="sxQ" placeholder="주소 · 사건번호 검색" autocomplete="off" aria-label="인근 유사 매각사례에서 찾기" value="${esc(SX.q || '')}"></label></div>`
       + `<div class="sx-tbl"><table><colgroup>${SX_COL_W.map((w) => (w ? `<col style="width:${w}px">` : '<col>')).join('')}</colgroup><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></div>`;
   }
@@ -7657,7 +7661,7 @@ span.cal-day.has { cursor: help; }
     const me = sxMe(); const meDong = me ? (String(me.addr || '').split(/\s+/).find((t) => /^[가-힣0-9]+(동|읍|면|가)$/.test(t)) || '') : '';
     const where = me ? ([q.sgg, q.dong || meDong].filter(Boolean).join(' ') || q.sido) : [q.sido, q.sgg, q.dong].filter(Boolean).join(' ');
     const radTx = me ? `${me.caseNo} 둘레 ${SXM.radius >= 1000 ? `${SXM.radius / 1000}km` : `${SXM.radius}m`}` : '지역 전체';
-    const hero = `<section class="sx-card sx-hero" aria-label="분석결과"><div class="sx-where"><h2>${esc(where)} · ${esc(q.kind || '전체')}${S.route === 'market' && saleMode === 'region' && sxRef ? '<button type="button" class="sx-refx" data-act="sx-ref-clear">기준 해제 ×</button>' : ''}</h2><span>${esc([radTx, conds].filter(Boolean).join(' · '))}${S.route === 'market' && saleMode === 'region' && !sxRef ? ' · 표의 줄이나 지도 핀을 누르면 그 물건을 기준으로 비슷한 사례를 찾습니다' : ''}</span></div>`
+    const hero = `<section class="sx-card sx-hero" aria-label="분석결과"><div class="sx-where"><h2>${esc(where)} · ${esc(q.kind || '전체')}${S.route === 'market' && saleMode === 'region' && sxRef ? '<button type="button" class="sx-refx" data-act="sx-ref-clear">기준 해제 ×</button>' : ''}</h2><span>${esc([radTx, conds].filter(Boolean).join(' · '))}</span></div>`
       + `<div class="sx-my"><label for="sxMy">경매물건 감정가</label><input id="sxMy" class="num" inputmode="numeric" autocomplete="off" placeholder="예: 235,000,000 또는 2억3500만" value="${esc(SX.my || '')}"><small>사건 고정카드에서 자동으로 입력합니다</small></div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 평균 매각가율</span>${sxBidHtml('A', st.avg)}</div>`
       + `<div class="sx-bid"><span class="k">예상 입찰가 · 중앙값 매각가율</span>${sxBidHtml('B', st.med)}</div>`
