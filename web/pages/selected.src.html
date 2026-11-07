@@ -1095,6 +1095,15 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-pickwide i { margin-left: auto; font-style: normal; font-weight: 700; color: var(--text-2, var(--muted)); flex: 0 0 auto; }
 .sx-pickwide img { width: 10px; height: 10px; flex: 0 0 auto; } .sx-pickwide img.up { transform: rotate(180deg); }
 .sx-topcard { border-top: 1px solid var(--line); padding-top: 10px; }
+/* 물건으로 — 고른 물건 한 줄(넘치면 주소부터 줄임표) */
+.sx-itemline { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2, #f7f9fc); font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; }
+.sx-itemline.none { color: var(--muted); }
+.sx-itemline > * { flex: 0 0 auto; }
+.sx-itemline .cn { color: var(--blue); font-weight: 800; }
+.sx-itemline .ad { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sx-itemline b.num { font-weight: 800; }
+.sx-itemline .bar { width: 1px; height: 14px; background: var(--line); }
+.sx-topband .sx-pickanchor { flex: 0 0 auto; position: relative; }
 .sx-plab.off { opacity: .5; }
 .sx-pseg button.sx-lock { opacity: .4; cursor: not-allowed; }   /* 지역으로 — 유사도 잠금 */
 .sx-offtx { font-size: 12.5px; font-weight: 400; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -7973,9 +7982,19 @@ span.cal-day.has { cursor: help; }
     const picks = salePicks();
     const mode = `<span class="sx-mode" role="group" aria-label="조회 기준">${[['item', '물건으로'], ['region', '지역으로']].map(([v, t]) => `<button type="button" class="${saleMode === v ? 'on' : ''}" aria-pressed="${saleMode === v}" data-act="sale-mode" data-v="${v}">${t}</button>`).join('')}</span><span class="sx-vsep" aria-hidden="true"></span>`;
     if (saleMode === 'item') {
+      /* 물건으로 — 고른 물건을 한 줄로(사건번호 · 주소 동호수까지 | 감정가 · 최저가 | 건물 ㎡ / 평 | 연차), 물건카드 고르기는 오른쪽 따로 단추(2026-11-08). 아래 고정카드는 뺐다 */
       const it = sxMe();
-      const band = `<div class="sx-topband">${mode}${picks.length ? cardPickHtml('sale', saleItemId, true) : '<span class="sx-why">물건목록에 물건이 없습니다 — 지역으로 조회해 주세요.</span>'}</div>`;
-      return band + (it ? `<div class="sx-topcard">${itemHeadHtml(it)}</div>` : '');
+      if (!picks.length) return `<div class="sx-topband">${mode}<span class="sx-why">물건목록에 물건이 없습니다 — 지역으로 조회해 주세요.</span></div>`;
+      let line = '<span class="sx-itemline none">물건카드에서 물건을 고르세요</span>';
+      if (it) {
+        const y = Number(String(detailOf(it).approvalDate || '').replace(/[^\d]/g, '').slice(0, 4)) || 0;
+        const age = y ? `${new Date().getFullYear() - y + 1}년차` : '';
+        const area = it.bldg > 0 ? `건물 ${Number(it.bldg).toFixed(2)}㎡ / ${(it.bldg / 3.3058).toFixed(1)}평` : '';
+        const money = [it.apr > 0 ? `감정가 <b class="num">${sxWon(it.apr)}</b>` : '', it.min > 0 ? `최저가 <b class="num">${sxWon(it.min)}</b>` : ''].filter(Boolean).join(' · ');
+        const parts = [money, area ? esc(area) : '', age].filter(Boolean).map((x) => `<span>${x}</span>`).join('<i class="bar" aria-hidden="true"></i>');
+        line = `<span class="sx-itemline"><b class="cn">${esc(it.caseNo)}</b><span class="ad">${esc([it.addr, it.bld, it.unit].filter(Boolean).join(' '))}</span>${parts ? `<i class="bar" aria-hidden="true"></i>${parts}` : ''}</span>`;
+      }
+      return `<div class="sx-topband">${mode}${line}${cardPickHtml('sale', saleItemId)}</div>`;
     }
     const T = saleTopRegionHtml();
     return `<div class="sx-topband">${mode}${T}</div>`;
