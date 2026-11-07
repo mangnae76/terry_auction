@@ -736,7 +736,7 @@ const realTipLines = computed(() => {
   if (r) lines.push(`${r.contractDate} 전세 ${won(r.price)}`);
   if (realRatioSign.value) lines.push(realRatioSign.value.text);
   if (pairGapNote.value) lines.push(pairGapNote.value);
-  if (lines.length === 0) lines.push('견줄 전세 거래가 없습니다.');
+  if (lines.length === 0) lines.push('비교할 전세 거래가 없습니다.');
   return lines;
 });
 const gapTipLines = computed(() => {

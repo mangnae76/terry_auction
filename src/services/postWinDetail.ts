@@ -29,7 +29,7 @@ export const DETAIL_REPAIR: CheckGroup[] = [
   {
     key: 'ri.bid',
     title: '업체 비딩 · 계약',
-    note: '같은 범위로 견적을 받아야 값을 견줄 수 있다',
+    note: '같은 범위로 견적을 받아야 값을 비교할 수 있다',
     webOnly: true,
     sections: [
       {
