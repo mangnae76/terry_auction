@@ -7265,7 +7265,7 @@ span.cal-day.has { cursor: help; }
   }
   /* 매각가율 분포 — 5% 구간 막대, 100% 이상은 강조색. 평균(실선) · 중앙값(점선) */
   function sxChart(st) {
-    const W = 920; const H = 250; const L = 48; const Rr = 10; const T = 40; const B = 48; const step = 0.05;   /* 위 26 — 평균 · 중앙값 % 글 자리, 왼쪽 48 · 아래 48 — 축 이름 자리 */   /* 결과 칸 폭(약 920)과 같게 — 글자가 커지거나 작아지지 않게 */
+    const W = S.route === 'item' ? 1240 : 920; const H = 250; const L = 48;   /* 손품조사 › 경매사례는 결과가 가로 전체라 그림 폭을 넓혀 높이는 시장분석과 같게(약 250, 2026-11-07) */ const Rr = 10; const T = 40; const B = 48; const step = 0.05;   /* 위 26 — 평균 · 중앙값 % 글 자리, 왼쪽 48 · 아래 48 — 축 이름 자리 */   /* 결과 칸 폭(약 920)과 같게 — 글자가 커지거나 작아지지 않게 */
     const rates = st.rates;
     const lo = Math.max(0.3, Math.min(0.6, Math.floor(Math.min(...rates, 0.6) * 20) / 20));
     const hi = Math.min(1.6, Math.max(1.25, Math.ceil(Math.max(...rates, 1.25) * 20) / 20));
