@@ -6819,7 +6819,7 @@ span.cal-day.has { cursor: help; }
   window.addEventListener('adm:tab', (e) => {
     marketInner = (e.detail && e.detail.trail) || null; syncMapLock(); setTimeout(syncMapLock, 300);
     if (S.route === 'market') syncCrumb();
-    if (S.route === 'item') { const t = (e.detail && e.detail.trail) || []; itemInner = S.itemTab === 'survey' ? (t[t.length - 1] || '') : ''; syncCrumb(); }
+    if (S.route === 'item') { const t = (e.detail && e.detail.trail) || []; itemInner = S.itemTab === 'survey' ? (t[t.length - 1] || '') : ''; syncCrumb(); sonSaleOn = S.itemTab === 'survey' && itemInner === '경매사례'; if (sonSaleOn) paintSonSale(); }
   });
   /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
   /* 낙찰이후 — 장 열쇠는 제 하위 탭(절차상세 · 가이드)에 불이 들어오고, 경로에는 '절차상세 › 명도'처럼 장 이름이 붙는다 */
@@ -7528,7 +7528,7 @@ span.cal-day.has { cursor: help; }
   })();
   const agSaveSel = () => { try { localStorage.setItem(AG_SEL_KEY, JSON.stringify({ site: agSel.site, months: agSel.months })); } catch (e) { /* 그만 */ } };
   const agIsAdmin = () => !!(CLOUD.on && CLOUD.T && CLOUD.T.isAdminEmail && CLOUD.auth && CLOUD.T.isAdminEmail(CLOUD.auth.email));
-  const agSaleOpen = () => S.route === 'market' && S.marketTab === 'sale';
+  const agSaleOpen = () => (S.route === 'market' && S.marketTab === 'sale') || (S.route === 'item' && S.itemTab === 'survey' && sonSaleOn && !!$('sonSaleSlot'));
   const agDate = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || '')); return m ? `${m[1]}.${m[2]}.${m[3]}` : (v ? esc(String(v)) : '-'); };
   const agWon = (v) => (Number(v) > 0 ? Math.round(Number(v)).toLocaleString('ko-KR') : '-');
   /* 건축연도 — 연도가 비면 건축연월('2010.06') 앞 네 자리 */
@@ -7827,7 +7827,7 @@ span.cal-day.has { cursor: help; }
     renderMarket();
     toast(it.apr > 0 ? `${it.caseNo} 감정가 ${Number(it.apr).toLocaleString('ko-KR')}원을 경매물건 감정가에 넣었습니다.` : `${it.caseNo} — 감정가가 없어 경매물건 감정가는 그대로 둡니다.`, 'info');
   }
-  function saleCaseHtml() {
+  function saleCaseHtml(inItem = false) {
     /* 고른 카드가 있는데 감정가 칸이 비었으면 그 감정가로(새로고침 뒤에도 카드와 칸이 맞게) */
     { const it = saleItemId && salePicks().find((x) => x.id === saleItemId); if (it && it.apr > 0 && !sxParseWon(SX.my)) SX.my = Number(it.apr).toLocaleString('ko-KR'); }
     const canGo = agIsAdmin() && AG.recs.length && saleSeg.sido && regSidos().includes(saleSeg.sido);
@@ -7854,7 +7854,29 @@ span.cal-day.has { cursor: help; }
       + `<div class="sx-fbtns"><button type="button" class="sx-btn" data-act="sale-go" ${canGo ? '' : 'disabled'}>검색</button><button type="button" class="sx-btn ghost" data-act="sx-save">저장</button><button type="button" class="sx-btn ghost" data-act="sx-reset">초기화</button></div>`
       + (why ? `<p class="sx-why">${esc(why)}</p>` : '')
       + `</aside>`;
-    return `<div class="app-market mk-sale sx" data-k="sale" data-s="sale"><input type="file" id="sxFile" accept=".xlsx" hidden>${agIsAdmin() ? agPanelHtml() : ''}<div class="sx-main">${filters}${sxResultsHtml()}</div></div>`;
+    return `<div class="app-market mk-sale sx" data-k="sale" data-s="sale"><input type="file" id="sxFile" accept=".xlsx" hidden>${agIsAdmin() && !inItem ? agPanelHtml() : ''}<div class="sx-main">${filters}${sxResultsHtml()}</div></div>`;
+  }
+  /* ===== 물건상세 › 손품조사 › 경매사례 탭(운영자) — 시장분석 › 경매사례 화면을 이 물건으로(2026-11-07).
+     경매물건 = 이 물건(감정가 · 빨간 줄), 지역 · 종류는 물건 주소에서 골라 바로 검색. 고른 조건은 시장분석 경매사례와 같이 쓴다 ===== */
+  let sonSaleOn = false; let sonSaleFor = '';
+  function sonSalePrep(it) {
+    if (sonSaleFor === it.id) return;
+    sonSaleFor = it.id;
+    saleItemId = it.id; try { localStorage.setItem(SALE_ITEM_KEY, it.id); } catch (e) { /* 그만 */ }
+    if (it.apr > 0) SX.my = Number(it.apr).toLocaleString('ko-KR');
+    const addr = String(it.addr || ''); const t0 = addr.split(/\s+/)[0] || '';
+    const sido = regSidos().find((s) => s === t0 || (t0.length >= 2 && s.startsWith(t0.slice(0, 2)))) || '';
+    const sgg = sido ? regSggs(sido).map((d) => d.label).filter((l) => addr.includes(l)).sort((a, b) => b.length - a.length)[0] || '' : '';
+    if (!sido || !sgg) return;   /* 주소에서 지역을 못 찾으면 왼쪽 칸에서 고른다 */
+    const kind = /아파트/.test(it.type) ? '아파트' : /오피스텔/.test(it.type) ? '오피스텔' : '연립다세대';
+    Object.assign(saleSeg, { sido, sgg, dong: '', kind }); saleSave();
+    saleApply({ ...saleSeg, amin: SX.amin, amax: SX.amax, ymin: SX.ymin, ymax: SX.ymax });   /* 반경(기본 500m)으로 이 물건 둘레만 */
+  }
+  function paintSonSale() {
+    const slot = $('sonSaleSlot'); const it = byId(S.itemId);
+    if (!slot || !sonSaleOn || !it || !agIsAdmin()) return;
+    agStart(); sonSalePrep(it);
+    slot.innerHTML = saleCaseHtml(true); sxMountMap();
   }
   /* 물건분석 머리 카드 — 고른 물건(앱 화면이 'son.pick' 에 적고 son:pick 으로 알린다) */
   function renderSonHead() {
@@ -7878,6 +7900,7 @@ span.cal-day.has { cursor: help; }
     render();
   });
   function renderMarket() {
+    if (S.route === 'item') { paintSonSale(); return; }   /* 경매사례 단추 · 칸이 부르는 다시 그리기 — 물건상세 손품조사 › 경매사례 탭이면 그 자리에 */
     renderSonHead();
     syncCrumb();
     const box = $('marketContent');
@@ -8314,7 +8337,7 @@ span.cal-day.has { cursor: help; }
     closeAppDetail();
     box.innerHTML = `${ITEM_LEAD.survey ? `<div class="rg-lead it-lead">${ITEM_LEAD.survey.map((t, i) => `<p class="l${i + 1}">${t}</p>`).join('')}</div>` : ''}<div class="app-market item-son" data-k="dong" data-s="son" id="itemSonMount"></div>`;   /* 손품조사도 다른 탭처럼 위에 안내 한 줄 */
     detailKey = key;
-    const stop = CLOUD.T.mountAppAdmin($('itemSonMount'), 'sonItem');
+    const stop = CLOUD.T.mountAppAdmin($('itemSonMount'), 'sonItem', { sonSaleTab: agIsAdmin() });   /* 운영자면 시세분석 오른쪽에 경매사례 탭 */
     detailUnmount = () => { parkItemCrumbs(); stop(); };
   }
   function renderItem() {

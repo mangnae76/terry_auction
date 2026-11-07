@@ -225,7 +225,7 @@ const ADMIN_SCREENS = {
   sonItem: ['/admin/sonpum', SonpumAnalysisPage],
 };
 export const hasAppAdminScreen = (key) => !!ADMIN_SCREENS[key];
-export const mountAppAdmin = (el, key) => {
+export const mountAppAdmin = (el, key, provides = {}) => {
   const [path, component, props] = ADMIN_SCREENS[key];
   const Empty = { render: () => null };
   const router = createRouter({
@@ -236,6 +236,7 @@ export const mountAppAdmin = (el, key) => {
   app.use(getActivePinia());
   app.use(router);
   app.provide('webEmbed', true);
+  Object.entries(provides).forEach(([k, v]) => app.provide(k, v));   /* 화면마다 웹이 따로 건네는 값(손품조사 경매사례 탭 등) */
   void router.push(path);
   app.mount(el);
   return () => app.unmount();

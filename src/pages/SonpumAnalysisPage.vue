@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 시장분석 › 손품분석 — 물건 하나를 골라(경매 카드) 그 물건 기준으로 수요분석 · 시세조사를 본다.
 // 위 검색 줄은 없다: 주소 · 동 · 종류는 고른 물건에서 나온다. 여기서 다듬어 물건 상세의 손품조사로 옮길 화면이다.
-import { computed, provide, ref, watch } from 'vue';
+import { computed, inject, provide, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useAuctionStore } from '../stores/auctionStore';
 import type { AuctionDetail } from '../types/auction';
@@ -32,10 +32,12 @@ watch(pickId, (v) => { writeLS(PICK_KEY, v); window.dispatchEvent(new CustomEven
 // 고른 물건이 목록에 없으면(처음 · 지운 물건) 맨 앞 물건으로 — 고르는 칸이 비어 보이지 않게
 watch(list, (l) => { if (l.length && !l.some((a) => a.id === pickId.value)) pickId.value = l[0].id; }, { immediate: true });
 // 손품결론 탭은 뺐다(2026-11-02) — 결론은 가격분석의 실거래가 예상, 인근 매각사례는 물건정보 탭
-type SonTab = 'demand' | 'price';
-const TAB_LABEL: Record<SonTab, string> = { demand: '수요분석', price: '시세분석' };
+// 웹 운영자 — 시세분석 오른쪽 '경매사례' 탭(시장분석 › 경매사례 화면을 이 물건으로, 웹이 #sonSaleSlot 에 그린다, 2026-11-07)
+const saleOn = inject<boolean>('sonSaleTab', false);
+type SonTab = 'demand' | 'price' | 'sale';
+const TAB_LABEL: Record<SonTab, string> = { demand: '수요분석', price: '시세분석', sale: '경매사례' };
 const savedTab = readLS(TAB_KEY);
-const tab = ref<SonTab>(savedTab === 'price' ? 'price' : 'demand');
+const tab = ref<SonTab>(savedTab === 'price' ? 'price' : savedTab === 'sale' && saleOn ? 'sale' : 'demand');
 // 손품조사 화면이 지금 탭을 알게 — 손품결론 탭을 열 때만 결론 값을 받는다
 provide('sonpumTab', tab);
 // 시세분석 ④ 호가분석 자리(#sonAskSlot)가 생겼는지 — 손품조사 화면이 네이버 매물조사를 거기로 옮길지 정한다
@@ -103,6 +105,7 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
         <nav class="adm-view-tabs" role="tablist">
           <button type="button" role="tab" :class="{ on: tab === 'demand' }" :aria-selected="tab === 'demand'" @click="tab = 'demand'">수요분석</button>
           <button type="button" role="tab" :class="{ on: tab === 'price' }" :aria-selected="tab === 'price'" @click="tab = 'price'">시세분석</button>
+          <button v-if="saleOn" type="button" role="tab" :class="{ on: tab === 'sale' }" :aria-selected="tab === 'sale'" @click="tab = 'sale'">경매사례</button>
         </nav>
         <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>
@@ -126,6 +129,8 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
       </div>
       <!-- 네이버 매물조사 — 선정물건 손품조사의 그 단락(물건 값 그대로, 고치면 물건에 저장). 위 손품조사 화면이 여기로 옮겨 그린다 -->
       <div v-show="tab === 'price'" id="sonNaverSlot" class="app-detail tab-survey son-detail son-naver" />
+      <!-- 경매사례 — 웹이 시장분석 › 경매사례 화면을 이 자리에 그린다(운영자만) -->
+      <div v-if="saleOn" v-show="tab === 'sale'" id="sonSaleSlot" class="son-sale" />
     </template>
   </section>
 </template>
