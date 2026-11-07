@@ -1070,14 +1070,14 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-results { display: grid; gap: 12px; min-width: 0; }
 .sx-main.nofilt { grid-template-columns: minmax(0, 1fr); }
 /* 검색 띠 — 고정카드 아래 한 줄(시도 · 시군구 · 읍면동 · 물건종류 · 조회), 2026-11-07 */
-.sx-band { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 12px; }
+.sx-band { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }   /* 아래 상자와 사이는 .sx 줄 간격(12) */
 .sx-band .sx-f { flex: 1 1 0; min-width: 120px; }
 .sx-band .sx-f select { height: 36px; }
 .sx-band .sx-kind { flex: 0 0 auto; }
 .sx-band .sx-kind button { height: 36px; padding: 0 14px; }
 .sx-band .sx-go { flex: 0 0 120px; height: 36px; }
 .sx-band .sx-go:disabled { opacity: .5; cursor: default; }
-.sx-band-why { margin: -4px 4px 12px; }
+.sx-band-why { margin: -6px 4px 0; }   /* 조회가 꺼진 까닭 — 띠 바로 아래 작게 */
 @media (max-width: 900px) { .sx-band { flex-wrap: wrap; } .sx-band .sx-go { flex-basis: 100%; } }   /* 손품조사 › 경매사례 — 왼쪽 검색조건 없이 결과가 가로 전체 */
 /* 넓은 화면 — 왼쪽 검색조건은 오른쪽 예상 입찰가 · 지표 · 매각가율 분포 세 줄 높이만큼(아래 끝 = 분포 상자 아래 끝),
    검색리스트는 그 아래 줄에 왼쪽 끝부터 꽉 채운다(2026-11-06). 결과 묶음(#sxResults)은 껍데기만 풀어 칸들이 바로 이 격자에 선다 */
@@ -7641,7 +7641,7 @@ span.cal-day.has { cursor: help; }
     /* 수집 관리 접기 단추는 없앴다(2026-11-06) — 읍면동 · 사건 수집 상자와 수집데이터는 늘 펼쳐 둔다 */
     /* 제목 줄 — 제목 · PC 연결 칩 · 오른쪽 끝 데이터로드 · 엑셀다운로드(PC 프로그램과 같은 양식). 데이터백업 단추는 뺐다(2026-11-07) */
     /* 진행 막대 · 중지는 연결 알약 바로 오른쪽 — 남는 폭을 채운다(2026-11-06) */
-    const titlebar = `<div class="sx-titlebar"><h2>인근매각사례 수집</h2>${conn}<div class="sx-tprog">${prog}</div><span class="sx-vsep" aria-hidden="true"></span>`
+    const titlebar = `<div class="sx-titlebar"><h2>인근매각사례 데이터수집</h2>${conn}<div class="sx-tprog">${prog}</div><span class="sx-vsep" aria-hidden="true"></span>`
       + `<button type="button" class="sx-tbtn" data-act="sx-import" ${busy || AG.io ? 'disabled' : ''}>${AG.io ? '저장하는 중…' : '데이터로드'}</button>`
       + `<button type="button" class="sx-tbtn solid" data-act="sx-excel">엑셀다운로드</button></div>`;
     /* 제목 줄도 수집 박스 안 맨 위 — 옵션 줄(사이트 · 기간 …)보다 위(2026-11-03) */
@@ -7649,7 +7649,7 @@ span.cal-day.has { cursor: help; }
     const say = online ? (msg || '대기 중입니다.') : 'MyAgent가 꺼져 있습니다. 수집할 컴퓨터에서 agent.py 를 켜 주세요.';
     const lead = `<div class="rg-lead sx-lead" role="status" aria-live="polite"><p class="l1">${esc(say)}</p>`
       + '<p class="l2">① 브라우저 열기 → 읍면동 · 끝 페이지까지 · 현재 화면 수집 중 하나 → 건축연도 채우기 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
-    return `<div class="sx-top" id="agPanel">${lead}${online && s.version ? `<div class="sx-verline">MyAgent ${esc(agVer(s.version))}</div>` : ''}<section class="sx-card sx-collect" aria-label="인근매각사례 수집">${titlebar}`
+    return `<div class="sx-top" id="agPanel">${lead}${online && s.version ? `<div class="sx-verline">MyAgent ${esc(agVer(s.version))}</div>` : ''}<section class="sx-card sx-collect" aria-label="인근매각사례 데이터수집">${titlebar}`
       /* 먼저 고르는 것 — 읍면동 · 사건번호 수집 상자를 맨 위로(옥션원 줄보다 위, 2026-11-07) */
       + `<div class="sx-manage">${agQueueHtml()}</div>`
       /* 그다음 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③ */
