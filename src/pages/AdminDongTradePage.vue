@@ -1185,7 +1185,7 @@ const downloadCsv = () => {
           <ol v-else class="adm-bld-list">
             <li v-for="(b, i) in bldRank" :key="b.id" class="adm-bld-row" :style="{ '--i': i }">
               <span :class="['no', { top: i < 3 }]">{{ i + 1 }}</span>
-              <span class="nm"><b>{{ b.name || '이름 없음' }}</b><small>{{ b.umd }} {{ b.jibun }}<template v-if="b.year"> · {{ b.year }}년</template><template v-if="b.aMin"> · {{ b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡` }}</template></small></span>
+              <span class="nm"><b>{{ b.name || '이름 없음' }}</b><small>{{ b.umd }} {{ b.jibun }}<template v-if="b.year"> · {{ b.year }}년</template><template v-if="b.aMin"> · {{ b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}평` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}~${(b.aMax / 3.3058).toFixed(1)}평` }}</template></small></span>
               <span class="bar"><i :style="{ width: `${Math.max(4, (b.n / (bldRank[0]?.n || 1)) * 100)}%` }" /></span>
               <span class="cnt"><b>{{ b.n.toLocaleString('ko-KR') }}</b>건</span>
               <span class="mny"><small>평균</small>{{ bldWon(b.avg) }}</span>
