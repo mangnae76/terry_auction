@@ -277,6 +277,8 @@ const FLOW_LEAD: Record<FlowSub, string> = {
   biz: '5월 종합소득세에서 빼는 수리 · 명도 · 이자 · 관리비 등을 적습니다.',
   sell: '매도 · 임대로 내놓을 중개사무소와 직거래 내용을 정리합니다.',
 };
+/** 웹 — 절차별체크리스트 장 탭 아래 한 줄 안내(진행절차와 같은 자리 · 같은 꼴, 2026-11-07 — 위 사건 카드 위에 있던 것을 탭 아래로) */
+const WIN_LEAD = '입찰 기일부터 낙찰 · 잔금 · 명도까지 단계별로 해야 할 일을 체크합니다.';
 const FLOW_SUBS: Array<[FlowSub, string]> = [['steps', '진행절차'], ['evict', '명도분석'], ['tax', '세금분석'], ['need', '필요경비'], ['biz', '사업경비'], ['sell', '매물등록']];   // 필요경비 · 사업경비는 세금분석 오른쪽
 const flowSub = ref<FlowSub>((() => {
   try {
@@ -962,6 +964,7 @@ const toggleSection = (key: string) => {
           @click="activeTab = k"
         >{{ label }}</button>
       </nav>
+      <div v-if="webEmbed && !editing && chaps === DETAIL_CHAPS" class="rg-lead it-lead pw-lead"><p class="l1">{{ WIN_LEAD }}</p></div>
       <!-- 웹 — 물건이 없을 때 알림은 탭 줄 아래(탭은 사건 카드 바로 밑, 손품조사와 같은 자리) -->
       <p v-if="webEmbed && checkable && !picked && activeTab !== 'flow'" class="pw-nopick">
         낙찰 물건이 없으면 체크할 수 없습니다 — 선정물건에서 단계를 <b>낙찰</b>로 바꿔 주세요.
