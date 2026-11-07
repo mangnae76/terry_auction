@@ -7965,6 +7965,23 @@ span.cal-day.has { cursor: help; }
   const saleCachePut = async (v) => { const db = await saleIdb(); if (!db) return; try { db.transaction('kv', 'readwrite').objectStore('kv').put(v, 'saleRecs'); } catch (e) { /* 그만 */ } };
   const saleMetaLite = (m) => (m ? { version: Number(m.version) || 0, count: Number(m.count) || 0, chunks: Number(m.chunks) || 0, by: m.by || '', at: m.updatedAt && m.updatedAt.toMillis ? m.updatedAt.toMillis() : 0 } : null);
   const saleMetaOf = (c) => (c ? { ...c, updatedAt: c.at ? { toMillis: () => c.at } : null } : null);
+  /* 지번 → { 경매 매각 건수, 평균 매각가율 } — 이미 받은 자료, 없으면 이 브라우저에 떠 둔 것, 그래도 없으면 서버에서 */
+  async function saleCaseIndex() {
+    if (!agIsAdmin()) return null;
+    let recs = AG.recs.length ? AG.recs : null;
+    if (!recs) { const c = await saleCacheGet(); recs = c && Array.isArray(c.recs) ? c.recs : null; }
+    if (!recs) { try { recs = (await CLOUD.T.loadAgentDataset(CLOUD.auth.uid)).recs; } catch (e) { recs = null; } }
+    if (!recs) return null;
+    const m = new Map();
+    recs.forEach((r) => {
+      const lot = agLotOf(r['소재지']); if (!lot) return;
+      const e = m.get(lot) || { n: 0, sum: 0, k: 0 }; e.n += 1;
+      const v = Number(r['매각가율']); if (v > 0) { e.sum += v; e.k += 1; }
+      m.set(lot, e);
+    });
+    const out = new Map(); m.forEach((e, k) => out.set(k, { n: e.n, rate: e.k ? e.sum / e.k : 0 }));
+    return out;
+  }
   function agAfterData() {
     if (agSaleOpen()) { const box = S.route === 'item' ? $('sonSaleSlot') : $('marketView'); if (!sxHoldPick(box, () => renderMarket())) renderMarket(); } else { agPaint(); agPaintTable(); }
   }
@@ -8236,7 +8253,8 @@ span.cal-day.has { cursor: help; }
     renderSonHead();
     /* 붙이는 도중 다시 그려 두 번 붙으면 화면에 남은 쪽만 잡는다 (낙찰이후 탭이 안 바뀌던 것과 같은 까닭) */
     const mountEl = $('appMarketMount');
-    const stop = T.mountAppAdmin(mountEl, key);
+    /* 랭킹분석 건물랭킹 — 운영자면 모아 둔 경매 매각물건을 지번별(건수 · 평균 매각가율)로 넘겨 '경매' 칸을 채운다(2026-11-08) */
+    const stop = T.mountAppAdmin(mountEl, key, key === 'rank' && agIsAdmin() ? { saleCaseIndex } : {});
     [0, 300, 1200].forEach((t) => setTimeout(syncMapLock, t));   /* 앱 화면이 붙는 대로 지도 판이 있는지 다시 본다 */
     if (!document.contains(mountEl)) { try { stop(); } catch (e) { /* 그만 */ } return; }
     marketUnmount = stop;

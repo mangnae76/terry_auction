@@ -1122,7 +1122,7 @@ export const fetchDongUnits = async (bCode10: string): Promise<DongUnits> => don
 
 /** 한 필지(지번)의 건축물대장 표제부 — 주차대수 · 승강기 수. 개별성 분석의 주차수 · 엘베를 PDF에 없을 때 채운다.
  *  jibun = '670-4' · '12' · '산 12-3'. 건물이 여럿이면 더한다. 못 찾으면 null(그때는 손으로) */
-export type BuildingFacts = { parking: number; elevator: number; /** 건물명(bldNm) — 주소에 이름이 없을 때 화면에 끼운다. 없으면 '' */ name?: string };
+export type BuildingFacts = { parking: number; elevator: number; /** 세대수(표제부 hhldCnt 합) — 웹 건물랭킹 회전율, 2026-11-08 */ households?: number; /** 건물명(bldNm) — 주소에 이름이 없을 때 화면에 끼운다. 없으면 '' */ name?: string };
 /** 표제부 줄들에서 건물명 하나 — 주거용(공동주택 · 다세대 · 연립 · 아파트 · 오피스텔) 줄을 먼저, 가장 많이 나온 이름 */
 export const buildingNameFromRows = (rows: Record<string, unknown>[]): string => {
   const live = /공동주택|다세대|연립|아파트|오피스텔|주택/;
@@ -1151,12 +1151,13 @@ export const fetchBuildingFacts = async (bCode10: string, jibun: string): Promis
   if (!/^0+$/.test(code)) throw new Error(`건축물대장 조회 실패(${code})`);
   const rows = asArray(json?.response?.body?.items?.item) as Record<string, unknown>[];
   if (rows.length === 0) return null;
-  let parking = 0; let elevator = 0;
+  let parking = 0; let elevator = 0; let households = 0;
   rows.forEach((r) => {
     parking += cnt(r.indrMechUtcnt) + cnt(r.oudrMechUtcnt) + cnt(r.indrAutoUtcnt) + cnt(r.oudrAutoUtcnt);
     elevator += cnt(r.rideUseElvtCnt) + cnt(r.emgenUseElvtCnt);
+    households += cnt(r.hhldCnt);
   });
-  return { parking, elevator, name: buildingNameFromRows(rows) };
+  return { parking, elevator, households, name: buildingNameFromRows(rows) };
 };
 /** 그 동의 연립·다세대 세대수(물건상세 매매수요) */
 export const fetchDongHouseholds = async (bCode10: string): Promise<number> => (await fetchDongUnits(bCode10)).villa;
