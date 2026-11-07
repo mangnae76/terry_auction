@@ -773,6 +773,12 @@ button { cursor: pointer; }
 .mk-sale .ag-q-line .ag-add-main { flex: 0 0 auto; min-width: 96px; height: 32px; border-radius: 9px; font-size: 14px; font-weight: 700; background: var(--blue-soft); border-color: #9fb8f5; color: var(--blue); }   /* 추가 — 크기는 그대로, 색은 옅은 파랑(진한 파랑 · 그림자가 너무 강했다, 2026-11-07) */
 .mk-sale .ag-q-line :is(select.adm-input, #agQIn) { height: 32px !important; }   /* 이 줄 칸 높이를 모두 32(종류 칸 · 추가와 같게, 2026-11-07) */
 .mk-sale .ag-q-line .ag-add-main:hover { border-color: var(--blue); }
+/* 제목 줄 데이터로드 · 엑셀다운로드 ↔ 아래 종류 칸(연립다세대 · 아파트 · 오피스텔) 세로줄 맞춤(2026-11-07):
+   두 단추 106 + 사이 12 = 224 = 종류 칸 폭, 오른쪽 끝은 아래 줄 상자 안쪽(테두리 1 + 안쪽 8 = 9)과 같게 → 앞 세로 막대도 같은 x. 높이는 종류 칸과 같은 32 */
+.mk-sale .ag-q-line .ag-qkind .adm-seg { width: 224px; box-sizing: border-box; }
+.mk-sale .ag-q-line .ag-qkind .adm-seg-btn { flex: 1 1 0; padding-left: 0; padding-right: 0; }
+.mk-sale .sx-titlebar .sx-tbtn { width: 106px; height: 32px; padding: 0; flex: 0 0 auto; }
+.mk-sale .sx-titlebar .sx-tbtn:last-child { margin-right: 9px; }
 .mk-sale .ag-qline > .ag-cov + .ag-cov { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }   /* 고르는 줄과 추가된 알약 사이 가르는 선 */
 .mk-sale .ag-qline > .ag-cov:not(.ag-q-tools) { padding-left: 95px; }   /* 알약 줄은 인천광역시 칸 왼쪽 끝부터(이름 약 87 + 사이 8) */
 .mk-sale .ag-cov-chip { padding: 4px 10px; border: 1px solid var(--line, #e5e7eb); border-radius: 999px; font-size: 13px; color: var(--text); }
