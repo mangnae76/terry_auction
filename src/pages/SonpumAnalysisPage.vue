@@ -35,7 +35,7 @@ watch(list, (l) => { if (l.length && !l.some((a) => a.id === pickId.value)) pick
 // 웹 운영자 — 시세분석 오른쪽 '경매사례' 탭(시장분석 › 경매사례 화면을 이 물건으로, 웹이 #sonSaleSlot 에 그린다, 2026-11-07)
 const saleOn = inject<boolean>('sonSaleTab', false);
 type SonTab = 'demand' | 'price' | 'sale';
-const TAB_LABEL: Record<SonTab, string> = { demand: '수요분석', price: '시세분석', sale: '매각가분석' };   // 예전 이름 경매사례(2026-11-08)
+const TAB_LABEL: Record<SonTab, string> = { demand: '수요분석', price: '시세분석', sale: '매각분석' };   // 예전 이름 경매사례(2026-11-08)
 const savedTab = readLS(TAB_KEY);
 const tab = ref<SonTab>(savedTab === 'price' ? 'price' : savedTab === 'sale' && saleOn ? 'sale' : 'demand');
 // 손품조사 화면이 지금 탭을 알게 — 손품결론 탭을 열 때만 결론 값을 받는다
@@ -105,7 +105,7 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
         <nav class="adm-view-tabs" role="tablist">
           <button type="button" role="tab" :class="{ on: tab === 'demand' }" :aria-selected="tab === 'demand'" @click="tab = 'demand'">수요분석</button>
           <button type="button" role="tab" :class="{ on: tab === 'price' }" :aria-selected="tab === 'price'" @click="tab = 'price'">시세분석</button>
-          <button v-if="saleOn" type="button" role="tab" :class="{ on: tab === 'sale' }" :aria-selected="tab === 'sale'" @click="tab = 'sale'">매각가분석</button>
+          <button v-if="saleOn" type="button" role="tab" :class="{ on: tab === 'sale' }" :aria-selected="tab === 'sale'" @click="tab = 'sale'">매각분석</button>
         </nav>
         <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>

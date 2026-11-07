@@ -5188,7 +5188,7 @@ span.cal-day.has { cursor: help; }
     ['m2', []],
     ['m3c', [['진행절차', 'go-postwin'], ['절차별체크리스트', 'go-postwin']]],   /* 가이드는 매뉴얼로 옮겼다 */
     ['m3f', [['자금입출금', 'go-finance'], ['필요경비', 'go-finance'], ['사업경비', 'go-finance'], ['세금신고', 'go-finance']]],
-    ['m3', [['실거래분석', 'go-market'], ['시세예측', 'go-market'], ['랭킹분석', 'go-market'], ['매각가분석', 'go-market']]],   /* 경매사례 → 매각가분석(2026-11-08) */
+    ['m3', [['실거래분석', 'go-market'], ['시세예측', 'go-market'], ['랭킹분석', 'go-market'], ['매각분석', 'go-market']]],   /* 경매사례 → 매각분석(2026-11-08) */
     ['m3m', [['경매기초'], ['물건고르기'], ['낙찰이후', 'go-manual']]],   /* 경매기초 · 물건고르기는 준비 중 */
     ['m4s', [['전체', 'go-store'], ['전자책', 'go-store'], ['리포트', 'go-store'], ['모바일앱', 'go-store']]],
     ['m5', [['내정보', 'go-more'], ['알림', 'go-more'], ['결제하기', 'go-more'], ...(SHOW_POINTS ? [['포인트', 'go-more']] : []), ['고객센터', 'go-more']]],   /* 자금관리는 마이페이지 아래 */
@@ -5300,7 +5300,7 @@ span.cal-day.has { cursor: help; }
       /* 칸 머리(위 메뉴 이름) — 휴대폰 폭에선 위 메뉴 줄을 접으므로 칸마다 이름을 단다(넓은 화면에선 감춘다) */
       const headOf = (cls) => { const m = document.querySelector(`.gnb .g-menu.${cls}`); return m ? `<b class="g-col-h">${esc(m.textContent.trim())}</b>` : ''; };
       /* 운영자만 보는 칸(경매사례)은 운영자가 아니면 뺀다 */
-      const megaItems = (cls, items) => items.filter(([t]) => !(cls === 'm3' && t === '매각가분석' && !agIsAdmin()));
+      const megaItems = (cls, items) => items.filter(([t]) => !(cls === 'm3' && t === '매각분석' && !agIsAdmin()));
       $('gMegaIn').innerHTML = MEGA.map(([cls, items]) => `<nav class="g-col ${cls}">${headOf(cls)}${megaItems(cls, items).map(([t, act, name]) => `<a href="#" class="${act && act === here ? 'on' : ''}" data-act="${act || 'soon'}" data-name="${esc(name || t)}">${esc(t)}</a>`).join('')}</nav>`).join('');
     }
   }
@@ -6393,7 +6393,7 @@ span.cal-day.has { cursor: help; }
   const SUBTABS = {
     /* 물건상세 — 앱 AuctionDetailPage 의 TABS 다섯 칸에서 앱 '손품+현장'을 손품조사 · 임장조사 둘로 나눴다(웹만) */
     /* 시장분석 · 낙찰가율분석 — 분석 도구의 화면을 하위 탭으로 (mountAppAdmin 의 열쇠와 같다) */
-    market: [['dong', '', '실거래분석'], ['son', '', '시세예측'], ['rank', '', '랭킹분석'], ['sale', '', '매각가분석', 'admin']],   /* 경매사례는 운영자만(집 PC 수집 도우미가 모은 자료) */
+    market: [['dong', '', '실거래분석'], ['son', '', '시세예측'], ['rank', '', '랭킹분석'], ['sale', '', '매각분석', 'admin']],   /* 경매사례는 운영자만(집 PC 수집 도우미가 모은 자료) */
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차별체크리스트']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
@@ -6918,7 +6918,7 @@ span.cal-day.has { cursor: help; }
   window.addEventListener('adm:tab', (e) => {
     marketInner = (e.detail && e.detail.trail) || null; syncMapLock(); setTimeout(syncMapLock, 300);
     if (S.route === 'market') syncCrumb();
-    if (S.route === 'item') { const t = (e.detail && e.detail.trail) || []; itemInner = S.itemTab === 'survey' ? (t[t.length - 1] || '') : ''; syncCrumb(); sonSaleOn = S.itemTab === 'survey' && itemInner === '매각가분석'; if (sonSaleOn) requestAnimationFrame(paintSonSale); }   /* 탭 그림이 끝난 뒤에 */
+    if (S.route === 'item') { const t = (e.detail && e.detail.trail) || []; itemInner = S.itemTab === 'survey' ? (t[t.length - 1] || '') : ''; syncCrumb(); sonSaleOn = S.itemTab === 'survey' && itemInner === '매각분석'; if (sonSaleOn) requestAnimationFrame(paintSonSale); }   /* 탭 그림이 끝난 뒤에 */
   });
   /* ===== 경로 표시 한 곳 — 어느 화면이든 '홈 › 메뉴 › 하위 탭(› 그 안 탭)' 까지. 하위 탭을 바꾸면 renderSubTabs 가 다시 부른다 ===== */
   /* 낙찰이후 — 장 열쇠는 제 하위 탭(절차상세 · 가이드)에 불이 들어오고, 경로에는 '절차상세 › 명도'처럼 장 이름이 붙는다 */
@@ -8078,7 +8078,7 @@ span.cal-day.has { cursor: help; }
   function saleBandInner() {
     const canGo = agIsAdmin() && AG.recs.length && saleSeg.sido && saleHave().sidos.includes(saleSeg.sido);
     /* 검색이 꺼진 까닭 — 검색은 집 PC 도우미가 모아 둔 매각물건 안에서 찾는다(모은 게 없으면 찾을 것이 없다) */
-    const why = canGo ? '' : !agIsAdmin() ? '매각가분석은 운영자 계정에서 쓸 수 있습니다.'
+    const why = canGo ? '' : !agIsAdmin() ? '매각분석은 운영자 계정에서 쓸 수 있습니다.'
       : !AG.recs.length ? '공용 매각물건 자료가 아직 없습니다 — 관리자 누구든 MyAgent로 모으면 모두 함께 검색합니다.'
       : !saleSeg.sido ? '시 · 도를 골라 주세요.'
       : `${saleSeg.sido}는 아직 모은 자료가 없습니다 — 모은 곳: ${saleHave().sidos.join(' · ') || '없음'}`;
@@ -8168,7 +8168,7 @@ span.cal-day.has { cursor: help; }
     /* 경매사례는 운영자만 — 로그인 확인이 끝났는데 운영자가 아니면 지역분석으로(주소로 바로 들어와도) */
     if (key === 'sale' && S.authReady && !agIsAdmin()) { S.marketTab = 'dong'; writeHash(false); renderSubTabs(); renderMarket(); return; }
     if (key === 'sale') { const ss = $('sonSaleSlot'); if (ss) ss.innerHTML = '';   /* 숨은 물건상세 경매사례 그림을 비운다 — 지도 자리(#sxMapSlot) · 결과(#sxResults)가 둘이 되면 지도가 숨은 쪽으로 옮겨 붙었다(2026-11-08) */
-      closeAppMarket(); agStart(); box.innerHTML = agIsAdmin() ? saleCaseHtml() : itCard('chart', '매각가분석', itEmpty('불러오는 중입니다…'), true); sxMountMap(); return; }
+      closeAppMarket(); agStart(); box.innerHTML = agIsAdmin() ? saleCaseHtml() : itCard('chart', '매각분석', itEmpty('불러오는 중입니다…'), true); sxMountMap(); return; }
     if (!CLOUD.on || !T || !T.hasAppAdminScreen || !T.hasAppAdminScreen(key)) {
       closeAppMarket();
       const msg = !CLOUD.on ? (S.authReady ? '로그인하면 볼 수 있습니다.' : '불러오는 중입니다…') : '준비 중인 화면입니다.';
