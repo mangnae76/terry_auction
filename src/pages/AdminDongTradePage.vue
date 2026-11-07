@@ -126,7 +126,7 @@ const runPrice = () => {
   try { localStorage.setItem(PRICE_Q_KEY, JSON.stringify(priceQ.value)); } catch { /* 그만 */ }
 };
 const priceAuction = computed(() => (priceQ.value ? ({ id: `market-price:${priceQ.value.kind}:${priceQ.value.address}:${priceQ.value.months ?? 12}:${priceQ.value.at ?? 0}`, address: priceQ.value.address } as AuctionDetail) : null));
-const listView = ref<'map' | 'top' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case'>(props.rankMode ? 'map' : props.sonMode ? 'supply' : 'table');
+const listView = ref<'map' | 'top' | 'bld' | 'supply' | 'table' | 'dist' | 'detail' | 'deals' | 'case'>(props.rankMode ? 'map' : props.sonMode ? 'supply' : 'table');
 // 웹 — 맨 앞 '지도' 탭(예전 시장분석 › 거래랭킹). 조회할 때마다 mapRun 이 늘어 지도도 같은 조건으로 받는다
 const mapRun = ref(0);
 const mapEmbed = computed(() => ({
@@ -142,7 +142,7 @@ const mapEmbed = computed(() => ({
 }));
 // 웹 — 보던 안 탭을 이 브라우저에 남겨 새로고침해도 그 탭으로(지역분석 · 랭킹분석 따로). 아래 예전 주소 표시가 있으면 그쪽이 이긴다
 const VIEW_KEY = `adm.view.${props.rankMode ? 'rank' : props.sonMode ? 'son' : 'dong'}`;
-const VIEWS_OF_MODE: string[] = props.rankMode ? ['map', 'top'] : props.sonMode ? ['supply', 'case'] : ['table', 'dist', 'detail', 'deals'];
+const VIEWS_OF_MODE: string[] = props.rankMode ? ['map', 'top', 'bld'] : props.sonMode ? ['supply', 'case'] : ['table', 'dist', 'detail', 'deals'];
 if (webEmbed) {
   // 유사매물 탭은 뺐다 — 유사물건 찾기는 시세조사 안에서. 그 탭에 있던 사람은 시세조사로
   try { const raw = localStorage.getItem(VIEW_KEY); const v = raw === 'sim' ? 'case' : raw; if (v && VIEWS_OF_MODE.includes(v)) listView.value = v as typeof listView.value; } catch { /* 그만 */ }
@@ -170,7 +170,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => { barObserver?.disconnect(); });
 // 웹 경로 표시에 지금 탭 이름을 알린다 — '홈 › 시장분석 › 실거래분석 › 수요공급'
-const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '시세분석' };
+const TAB_LABEL: Record<string, string> = { map: '랭킹지도', top: '거래랭킹', bld: '건물랭킹', supply: '수요분석', table: '지역별분석', dist: '유형분포', detail: '상세분포', deals: '거래상세', case: '시세분석' };
 const tellTab = () => {
   if (!webEmbed) return;
   const label = TAB_LABEL[listView.value];
@@ -531,6 +531,35 @@ const rankByDong = computed<RankRow[]>(() => {
   });
   return [...m.values()].map((v) => ({ ...v, pct: v.prev > 0 ? ((v.cur - v.prev) / v.prev) * 100 : null }));
 });
+/** 웹 랭킹분석 › 건물랭킹 — 조회한 기간 · 종류의 실거래를 건물(동 + 지번)로 묶어 많이 팔린 순(2026-11-08).
+ *  이름은 비거나 표기가 달라 지번으로 묶고 이름은 가장 많이 쓰인 것으로 보인다. 읍면동을 고르면 그 동만, 계약해제는 뺀다 */
+type BldRow = { id: string; name: string; umd: string; jibun: string; n: number; avg: number; perPy: number; last: string; aMin: number; aMax: number; year: number };
+const bldRank = computed<BldRow[]>(() => {
+  const m = new Map<string, DongTradeDetailRow[]>();
+  all.value.forEach((r) => {
+    if (r.kind === '계약해제' || !r.jibun || !inWindow(r)) return;
+    if (dong.value && r.umdNm !== dong.value) return;
+    const id = `${r.umdNm}|${r.jibun}`;
+    const l = m.get(id); if (l) l.push(r); else m.set(id, [r]);
+  });
+  const out = [...m.entries()].map(([id, l]) => {
+    const names = new Map<string, number>(); l.forEach((r) => { const t = (r.name || '').trim(); if (t) names.set(t, (names.get(t) ?? 0) + 1); });
+    const name = [...names.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+    const priced = l.filter((r) => r.priceWon > 0);
+    const avg = priced.length ? priced.reduce((t, r) => t + r.priceWon, 0) / priced.length : 0;
+    const pyRows = priced.filter((r) => r.pyeong > 0);
+    const perPy = pyRows.length ? pyRows.reduce((t, r) => t + r.priceWon / r.pyeong, 0) / pyRows.length : 0;
+    const areas = l.map((r) => r.areaM2).filter((a) => a > 0);
+    return { id, name, umd: l[0].umdNm, jibun: l[0].jibun, n: l.length, avg, perPy, last: l.map((r) => r.contractDate).sort().slice(-1)[0] ?? '',
+      aMin: areas.length ? Math.min(...areas) : 0, aMax: areas.length ? Math.max(...areas) : 0, year: l.find((r) => r.buildYear > 0)?.buildYear ?? 0 };
+  });
+  return out.sort((a, b) => (b.n - a.n) || b.last.localeCompare(a.last)).slice(0, 30);
+});
+const bldTotal = computed(() => {
+  const ids = new Set<string>(); all.value.forEach((r) => { if (r.kind !== '계약해제' && r.jibun && inWindow(r) && (!dong.value || r.umdNm === dong.value)) ids.add(`${r.umdNm}|${r.jibun}`); });
+  return ids.size;
+});
+const bldWon = (w: number) => { if (!(w > 0)) return '-'; const e = Math.floor(w / 1e8); const mm = Math.round((w % 1e8) / 1e4); return e ? `${e}억${mm ? ` ${mm.toLocaleString('ko-KR')}만` : ''}` : `${mm.toLocaleString('ko-KR')}만`; };
 /** 세 목록(왼쪽부터) — 거래량(많은 순) · 급증(증가율 높은 순) · 급감(감소율 큰 순). 전년이 없던 동은 증감을 매기지 않는다 */
 const rankLists = computed(() => {
   const list = rankByDong.value;
@@ -1006,6 +1035,7 @@ const downloadCsv = () => {
         <nav v-if="props.rankMode" class="adm-view-tabs" role="tablist">
               <button type="button" role="tab" :aria-selected="listView === 'map'" :class="{ on: listView === 'map' }" @click="listView = 'map'">랭킹지도</button>
               <button type="button" role="tab" :aria-selected="listView === 'top'" :class="{ on: listView === 'top' }" @click="listView = 'top'">거래랭킹</button>
+              <button type="button" role="tab" :aria-selected="listView === 'bld'" :class="{ on: listView === 'bld' }" @click="listView = 'bld'">건물랭킹</button>
             </nav>
         <nav v-else-if="all.length > 0 || listView === 'case'" class="adm-view-tabs" role="tablist">
               <button v-if="props.sonMode" type="button" role="tab" :aria-selected="listView === 'supply'" :class="{ on: listView === 'supply' }" @click="listView = 'supply'">수요분석</button>
@@ -1141,6 +1171,22 @@ const downloadCsv = () => {
           <AdminRegionDemandPage :embed="supplyEmbed" :chip="snapChip" class="adm-supply" />
         </div>
         <template v-if="webEmbed && listView === 'supply'" />
+        <!-- 랭킹분석 › 건물랭킹 — 많이 팔린 건물 순위(막대 · 건수 · 평균가 · 평당가 · 최근 거래) -->
+        <section v-else-if="webEmbed && listView === 'bld'" class="adm-bld">
+          <header><strong>건물랭킹</strong><small>{{ loadedLabel }}<template v-if="dong">{{ ` ${dong}` }}</template> · 최근 {{ periodMonths }}개월 · 많이 팔린 순 · 건물 {{ bldTotal.toLocaleString('ko-KR') }}곳 중 {{ bldRank.length }}곳</small></header>
+          <p v-if="!bldRank.length" class="adm-msg">이 조건으로 팔린 건물이 없습니다.</p>
+          <ol v-else class="adm-bld-list">
+            <li v-for="(b, i) in bldRank" :key="b.id" class="adm-bld-row" :style="{ '--i': i }">
+              <span :class="['no', { top: i < 3 }]">{{ i + 1 }}</span>
+              <span class="nm"><b>{{ b.name || '이름 없음' }}</b><small>{{ b.umd }} {{ b.jibun }}<template v-if="b.year"> · {{ b.year }}년</template><template v-if="b.aMin"> · {{ b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡` }}</template></small></span>
+              <span class="bar"><i :style="{ width: `${Math.max(4, (b.n / (bldRank[0]?.n || 1)) * 100)}%` }" /></span>
+              <span class="cnt"><b>{{ b.n.toLocaleString('ko-KR') }}</b>건</span>
+              <span class="mny"><small>평균</small>{{ bldWon(b.avg) }}</span>
+              <span class="mny"><small>평당</small>{{ bldWon(b.perPy) }}</span>
+              <span class="dt"><small>최근</small>{{ b.last.slice(2) }}</span>
+            </li>
+          </ol>
+        </section>
         <!-- 랭킹분석 › 거래랭킹 — 세 목록(급증 · 급감 · 거래량) 나란히. 1년 = 조회일 기준 12개월, 전년 = 그 앞 12개월 -->
         <div v-else-if="webEmbed && listView === 'top'" class="adm-rank3">
           <p v-if="rankLoading" class="adm-msg">전년 같은 기간 거래를 받는 중입니다…</p>
@@ -1454,6 +1500,21 @@ const downloadCsv = () => {
 .adm-msg.err { background: #fef2f2; color: #b91c1c; }
 .adm-msg.warn { background: #fffbeb; color: #92400e; }
 
+.adm-bld { background: #fff; border: 1px solid #e3e8f0; border-radius: 8px; padding: 16px 18px; display: grid; gap: 10px; }
+.adm-bld > header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.adm-bld > header strong { font-size: 16px; font-weight: 800; color: #111827; }
+.adm-bld > header small { font-size: 13px; color: #6b7280; }
+.adm-bld-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.adm-bld-row { display: grid; grid-template-columns: 30px minmax(0, 1.6fr) minmax(0, 1.2fr) 64px 120px 110px 84px; align-items: center; gap: 12px; padding: 8px 4px; border-top: 1px solid #eef1f6; font-size: 13.5px; color: #111827; }
+.adm-bld-row:first-child { border-top: 0; }
+.adm-bld-row .no { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: #eef1f6; color: #4b5563; font-size: 12px; font-weight: 800; }
+.adm-bld-row .no.top { background: #2b6df3; color: #fff; }
+.adm-bld-row .nm { display: grid; min-width: 0; } .adm-bld-row .nm b { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adm-bld-row .nm small { font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adm-bld-row .bar { height: 10px; border-radius: 5px; background: #eef1f6; overflow: hidden; } .adm-bld-row .bar i { display: block; height: 100%; border-radius: 5px; background: #2b6df3; }
+.adm-bld-row .cnt { text-align: right; color: #6b7280; } .adm-bld-row .cnt b { font-size: 15px; color: #111827; margin-right: 2px; }
+.adm-bld-row .mny, .adm-bld-row .dt { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; } .adm-bld-row :is(.mny, .dt) small { font-size: 12px; color: #9ca3af; margin-right: 6px; }
+@media (max-width: 900px) { .adm-bld-row { grid-template-columns: 26px minmax(0, 1fr) 56px; } .adm-bld-row :is(.bar, .mny, .dt) { display: none; } }
 .adm-rank3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: stretch; } /* 세 카드 높이 · 아래 끝선 같게(안내 줄이 접혀도) */
 .adm-rank3 > .adm-msg { grid-column: 1 / -1; }
 .adm-rank-card { background: #fff; border: 1px solid #e3e8f0; border-radius: 8px; padding: 16px 18px 8px; min-width: 0; }
