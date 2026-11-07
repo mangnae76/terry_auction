@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import BrandLogo from './BrandLogo.vue';
@@ -101,7 +102,7 @@ const onLogout = async () => {
     await authStore.logout();
     router.replace('/login');
   } catch (e) {
-    alert(`로그아웃 실패: ${e instanceof Error ? e.message : ''}`);
+    alert(userMessage(e, '로그아웃하지 못했습니다. 다시 해 주세요.'));
   }
 };
 </script>

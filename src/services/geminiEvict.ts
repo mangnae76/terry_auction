@@ -6,6 +6,7 @@
 //  1) 넘겨준 사실(권리분석 AI 결과 · 물건 정보)에 근거가 있는 칸만 고치게 하고
 //  2) 근거가 없는 칸은 손대지 말라고 하며
 //  3) 고친 칸마다 근거(reason)를 한 줄로 적게 한다.
+import { aiErrorText } from './userMessage';
 import { GEMINI_API, GEMINI_MODEL, GeminiError } from './geminiPdf';
 import { RIGHTS_MODEL } from './geminiRights';
 import type { EvictInput } from './postWinMoney';
@@ -83,7 +84,7 @@ export const askEvictAi = async (key: string, facts: string, current: EvictInput
       body = await res.json().catch(() => ({})) as Body;
     } catch (err) {
       if (signal?.aborted) throw new GeminiError('취소했습니다');
-      throw new GeminiError(`AI 서버에 닿지 못했습니다 — 인터넷 연결을 확인해 주세요 (${err instanceof Error ? err.message : ''})`);
+      console.warn('[AI 명도] 연결 실패', err); throw new GeminiError('AI 서버에 닿지 못했습니다 — 인터넷 연결을 확인해 주세요');
     }
     if (res.status === 404 && model !== GEMINI_MODEL) { model = GEMINI_MODEL; continue; }
     if (res.status !== 503 && res.status !== 429) break;
@@ -92,7 +93,7 @@ export const askEvictAi = async (key: string, facts: string, current: EvictInput
   if (!res || !res.ok) {
     const st = res?.status ?? 0;
     const why = st === 403 || st === 401 ? '키를 확인해 주세요' : st === 429 ? '사용 한도에 걸렸습니다'
-      : st === 503 ? 'Gemini 서버가 붐빕니다. 잠시 뒤 다시 해 주세요' : body.error?.message || `오류 ${st}`;
+      : aiErrorText(body.error?.message, st);
     throw new GeminiError(`AI 명도 실패 — ${why}`);
   }
   const out = body.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';

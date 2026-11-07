@@ -77,7 +77,7 @@ export const subscribeAuctionList = (
       onData(rows, snapshot.docChanges().filter((c) => c.type !== 'removed').map((c) => c.doc.id));
     },
     (error) => {
-      onError(`Firestore 동기화 실패: ${error.message}`);
+      console.warn('[auctions] 동기화 실패', error); onError('자료를 맞추지 못했습니다. 새로고침해 주세요.');
     },
   );
 };

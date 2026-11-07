@@ -1,3 +1,4 @@
+import { userMessage } from '../services/userMessage';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { fetchCourtOffices, fetchWeekSchedule } from '../services/courtAuctionApi';
@@ -153,8 +154,7 @@ export const useScheduleStore = defineStore('schedule', () => {
       weekCache.value = { ...weekCache.value, [key]: week };
       saveCacheMap(weekCache.value);
     } catch (err: unknown) {
-      const e = err as { message?: string };
-      error.value = e?.message || '법원 경매 정보를 불러오지 못했습니다.';
+      error.value = userMessage(err, '법원 경매 정보를 불러오지 못했습니다.');
     } finally {
       loading.value = false;
     }

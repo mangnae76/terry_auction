@@ -9,6 +9,7 @@
 //  2) 그 글이나 값이 실제 PDF 글자 안에 있는지 확인해, 없으면 버린다
 //  3) 규칙이 이미 읽은 칸은 건드리지 않는다 (빈칸만 채운다)
 //  4) 채운 칸은 이름을 남겨 화면에 'AI' 로 표시할 수 있게 한다
+import { aiErrorText } from './userMessage';
 import type { ParsedPdfAuction } from './pdfAuctionImport';
 import { loadUserPrefs, saveUserPrefs } from './userPrefsRepository';
 
@@ -73,7 +74,7 @@ export const testGeminiKey = async (key: string): Promise<{ ok: boolean; message
     const res = await fetch(`${API}/models?pageSize=1`, { headers: { 'x-goog-api-key': key.trim() } });
     if (res.ok) return { ok: true, message: '키가 확인됐습니다' };
     const body = await res.json().catch(() => ({})) as { error?: { message?: string } };
-    return { ok: false, message: body.error?.message || `확인 실패 (${res.status})` };
+    return { ok: false, message: aiErrorText(body.error?.message, res.status) };
   } catch {
     return { ok: false, message: '인터넷 연결을 확인해 주세요' };
   }
@@ -238,9 +239,8 @@ const askGemini = async (key: string, bytes: Uint8Array): Promise<AiRaw> => {
   if (!res.ok) {
     const why = res.status === 403 || res.status === 401 ? '키를 확인해 주세요'
       : res.status === 429 ? '사용 한도에 걸렸습니다'
-      : res.status === 503 ? 'Gemini 서버가 붐빕니다. 잠시 뒤 다시 해 주세요'
-      : `오류 ${res.status}`;
-    throw new GeminiError(`AI 읽기 실패 — ${why}${body.error?.message ? ` (${body.error.message.slice(0, 80)})` : ''}`);
+      : aiErrorText(body.error?.message, res.status);
+    throw new GeminiError(`AI 읽기 실패 — ${why}`);
   }
   const text = body.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
   try {

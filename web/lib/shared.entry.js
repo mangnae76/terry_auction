@@ -49,7 +49,8 @@ export { readWorkbook as readSaleWorkbook, exportNear as exportSaleNear, exportD
 export { mergeRecords as mergeSaleRecords, prepare as prepareSaleRows, normalizeRecords as normalizeSaleRecords } from '../../src/services/saleAnalysis';
 export { updateStamp, UPDATE_PREFIX } from '../../src/services/updateStamp';
 export { agoText } from '../../src/utils/agoText';   /* '방금 · ○분 전' — 웹 물건상세 저장 표시 */
-export { editLogTag, editLogDesc } from '../../src/services/editLogText';   /* 최근 분석 · 최근 작성 한 줄 — 꼬리표 칩 · 설명(마이페이지와 같은 글) */
+export { editLogTag, editLogDesc } from '../../src/services/editLogText';
+export { userMessage, aiErrorText } from '../../src/services/userMessage';   /* 화면 오류 문장 — 오류 원문(영어 · 코드)은 내보내지 않는다(앱과 같은 모듈) */   /* 최근 분석 · 최근 작성 한 줄 — 꼬리표 칩 · 설명(마이페이지와 같은 글) */
 /* 주소 → 공동주택 공시가격 — 웹 물건현황(PDF에 금액이 없을 때). 손품조사 시세분석과 같은 조회 */
 export { lookupAddress } from '../../src/services/addressLookup';   /* '방금 · ○분 전' — 웹 물건상세 저장 표시 */
 /* 시도 · 시군구 표(법정동 코드) · 시군구의 동 이름(최근 실거래) — 경매사례 지역 고르기 · 도우미 동 추가 */

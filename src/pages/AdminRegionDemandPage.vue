@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 // 실거래 분석 (시군구) — 관리자 도구. 첫 화면의 '실거래 분석' 카드가 여기로 온다.
 //
 // 시군구 하나를 고르면 그 안의 읍면동을 한 줄씩 늘어놓고, 읍면동마다
@@ -466,7 +467,7 @@ const load = async () => {
       void snap.save({ sido: sido.value, districtCode: districtCode.value, dongFilter: dongFilter.value, kind: kind.value, dealKind: dealKind.value, months: months.value, stats: stats.value, period: period.value, loadedLabel: loadedLabel.value });
     }
   } catch (err) {
-    errorMsg.value = err instanceof Error ? err.message : String(err);
+    errorMsg.value = userMessage(err);
   } finally {
     loading.value = false;
   }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 import { Browser } from '@capacitor/browser';
 import { Clipboard } from '@capacitor/clipboard';
 import { Capacitor } from '@capacitor/core';
@@ -930,7 +931,7 @@ const refreshRouteAfterReorder = async () => {
     await drawRouteMap();
     message.value = `바꾼 순서로 물건 ${orderedStops.value.length}곳을 다시 계산했습니다.`;
   } catch (error) {
-    message.value = error instanceof Error ? `실도로 경로 실패: ${error.message}` : '실도로 경로 실패';
+    message.value = userMessage(error, '실도로 경로를 찾지 못했습니다. 잠시 뒤 다시 해 주세요.');
   } finally {
     loading.value = false;
     roadProgress.value = null;
@@ -1081,7 +1082,7 @@ const runOptimizeInner = async () => {
       }
     }
   } catch (error) {
-    message.value = error instanceof Error ? error.message : '동선 계산 중 오류가 발생했습니다.';
+    message.value = userMessage(error, '동선 계산 중 오류가 발생했습니다.');
   } finally {
     loading.value = false;
     // 동선 계산 결과를 세션 캐시에 저장 → 다른 메뉴 갔다 와도 복원
@@ -1290,7 +1291,7 @@ const savePlan = async (options: { silent?: boolean } = {}) => {
     }
     cacheCurrentPlanLocally();
   } catch (error) {
-    const msg = error instanceof Error ? error.message : '경로 저장에 실패했습니다.';
+    const msg = userMessage(error, '경로 저장에 실패했습니다.');
     console.error('[FieldTrip] saveFieldTripPlan failed:', error);
     // 자동 저장이라도 실패는 알려야 한다. 조용히 넘기면 저장된 줄 알고 잃는다.
     saveMessage.value = `경로 저장 실패: ${msg}`;
@@ -1348,7 +1349,7 @@ const useCurrentLocationAsStart = async () => {
     } else if (code === 3) {
       showToast('위치를 가져오지 못했습니다. 잠시 후 다시 시도해 주세요.', 'error');
     } else {
-      showToast(error instanceof Error ? error.message : '현재 위치를 가져오지 못했습니다.', 'error');
+      showToast(userMessage(error, '현재 위치를 가져오지 못했습니다.'), 'error');
     }
   } finally {
     locating.value = false;

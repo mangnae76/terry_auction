@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 // 경매지번 공동주택가 및 실거래가 (관리자 도구).
 //
 // 주소 한 줄이면 끝난다 — 주소에 국토부 열쇠(법정동코드 앞 5자리)와
@@ -186,7 +187,7 @@ const run = async () => {
       void nextTick(() => nextTick(() => savePicksToAuction()));
     }
   } catch (err) {
-    errorMsg.value = err instanceof Error ? err.message : String(err);
+    errorMsg.value = userMessage(err);
   } finally {
     loading.value = false;
   }
@@ -835,7 +836,7 @@ const loadSnapList = async () => {
     snapList.value = await listSnapshots(auth.uid);
   } catch (err) {
     // 까닭을 창에 남긴다 — 잠깐 떴다 사라지면 무엇이 잘못됐는지 알 수가 없다
-    snapErr.value = err instanceof Error ? err.message : String(err);
+    snapErr.value = userMessage(err);
     console.warn('[adminSnapshots] 목록 실패:', err);
   } finally {
     snapBusy.value = false;
@@ -862,7 +863,7 @@ const saveSnap = async (overwrite = false) => {
     }
     if (snapOpen.value) await loadSnapList();
   } catch (err) {
-    flash(err instanceof Error ? err.message : String(err), 'error');
+    flash(userMessage(err), 'error');
   } finally {
     snapBusy.value = false;
   }
@@ -1090,7 +1091,7 @@ const deleteSnap = async (snap: CaseSnapshot) => {
     await loadSnapList();
     flash('지웠습니다.');
   } catch (err) {
-    flash(err instanceof Error ? err.message : String(err), 'error');
+    flash(userMessage(err), 'error');
   } finally {
     snapBusy.value = false;
   }

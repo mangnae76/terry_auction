@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 // 실거래가 조건 분석 (해당 읍면동) — 관리자 도구.
 //
 // 시군구 12개월치를 한 번 받아 두고, 읍면동·기간·면적·연식은 받아 둔 줄
@@ -507,7 +508,7 @@ const loadRank = async () => {
     }
     rankRows.value = all;
     if (errs.size) rankErr.value = [...errs].join(' · ');
-  } catch (e) { rankErr.value = e instanceof Error ? e.message : '전년 자료를 받지 못했습니다'; } finally { if (key === rankKey) rankLoading.value = false; }
+  } catch (e) { rankErr.value = userMessage(e, '전년 자료를 받지 못했습니다'); } finally { if (key === rankKey) rankLoading.value = false; }
 };
 watch([listView, lastQuery, asOf], () => { void loadRank(); });
 /** 거래랭킹 탭 — 읍면동 칸을 뺀다 */
@@ -579,7 +580,7 @@ const load = async () => {
     if (res.rows.length === 0 && !res.error) notice.value = '그 기간에 거래가 없습니다.';
     if (res.rows.length > 0) { saveSnapshot(); supplyToken.value += 1; }
   } catch (err) {
-    errorMsg.value = err instanceof Error ? err.message : String(err);
+    errorMsg.value = userMessage(err);
   } finally {
     loading.value = false;
   }

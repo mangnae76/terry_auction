@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 import { dealCountTip } from '../services/tipRows';
 import SnapChip from '../components/SnapChip.vue';
 import InfoTip from '../components/InfoTip.vue';
@@ -510,7 +511,7 @@ const loadStats = async () => {
 
     perDistrict.forEach((entry) => {
       if ('error' in entry && entry.error) {
-        const msg = entry.error instanceof Error ? entry.error.message : String(entry.error);
+        const msg = userMessage(entry.error);
         warnings.push(`${entry.target.district.label}: ${msg}`);
         return;
       }
@@ -518,7 +519,7 @@ const loadStats = async () => {
       aggregateCount += result.totalCount;
       result.sources.forEach((s) => sourceSet.add(s));
       if (result.errors && result.errors.length > 0) {
-        const errMsgs = result.errors.map((e) => `${e.source}(${e.message})`).join(', ');
+        const errMsgs = result.errors.map((e) => `${e.source}(${userMessage(e, '받지 못함')})`).join(', ');
         warnings.push(`${target.district.label}: ${errMsgs}`);
       } else if (result.warning) {
         warnings.push(`${target.district.label}: ${result.warning}`);
@@ -589,7 +590,7 @@ const loadStats = async () => {
     rows.value = [];
     totalCount.value = 0;
     sourceSummary.value = '';
-    message.value = error instanceof Error ? error.message : '실거래 통계를 불러오지 못했습니다.';
+    message.value = userMessage(error, '실거래 통계를 불러오지 못했습니다.');
   } finally {
     loading.value = false;
     progress.value = null;

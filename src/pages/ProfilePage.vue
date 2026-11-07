@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 // 내 정보 수정 — 비밀번호·연락처·주소를 고친다.
 // 더보기의 '정보 수정' 알약과 마이페이지의 '내 정보 수정'에서 들어온다.
 import { computed, inject, onMounted, ref, watch } from 'vue';
@@ -111,7 +112,7 @@ const submit = async () => {
     phoneLocked.value = true;
     toast(wantsPw ? '비밀번호와 정보를 고쳤습니다.' : '정보를 고쳤습니다.');
   } catch (e) {
-    toast(e instanceof Error ? e.message : '저장하지 못했습니다.', 'error');
+    toast(userMessage(e, '저장하지 못했습니다.'), 'error');
   } finally {
     saving.value = false;
   }

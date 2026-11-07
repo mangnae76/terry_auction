@@ -6,6 +6,7 @@
 //
 // 화면이 아니라 여기에 둔 까닭: 분석 도구가 앱과 갈라져도 이 함수는 그대로
 // 따라간다. Vue·스토어·물건 객체를 모르고, 주소를 받아 값을 돌려줄 뿐이다.
+import { userMessage } from './userMessage';
 import { fetchPlaceHistory } from './publicDataApi';
 import { cacheKey, readChunkedCache, writeChunkedCache, CACHE_TTL } from './marketCache';
 import { browserCacheGet, browserCachePut } from './browserCache';
@@ -224,6 +225,6 @@ export const analyzeAddress = async (
       missedMonths: data.missedMonths,
     };
   } catch (err) {
-    return { ...empty, error: err instanceof Error ? err.message : String(err) };
+    return { ...empty, error: userMessage(err) };
   }
 };

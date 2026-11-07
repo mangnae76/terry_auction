@@ -1,6 +1,6 @@
 // AI 가 적어 준 답을 다듬는 자리 — 인수·말소를 앱이 다시 셈하는지 본다.
 // (AI 는 볼 때마다 판단이 달라져 개수가 0·1·2 로 흔들렸다. 날짜만 읽혔으면 규칙은 하나다)
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { docMismatchOf, lastFieldOf, normalizeRightsAi, readStreamText, RIGHTS_CHECK_ITEMS, type RightsAi } from './geminiRights';
 
 const row = (rank: string, kind: string, date: string, status: string, holder = '아무개') =>
@@ -87,9 +87,11 @@ describe('답을 조금씩 받기(스트리밍)', () => {
     expect(n).toBe(3);
   });
 
-  it('도중에 오류 조각이 오면 까닭을 알린다', async () => {
-    await expect(readStreamText(sse([line('{'), 'data: {"error":{"message":"끊김"}}\n\n'])))
-      .rejects.toThrow('끊김');
+  it('도중에 오류 조각이 오면 알리되, 서버 오류 원문은 화면 문장에 넣지 않는다', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await expect(readStreamText(sse([line('{'), 'data: {"error":{"message":"The model is overloaded."}}\n\n'])))
+      .rejects.toThrow('AI 분석 실패 — AI 서버가 붐빕니다. 잠시 뒤 다시 해 주세요.');
+    warn.mockRestore();
   });
 });
 

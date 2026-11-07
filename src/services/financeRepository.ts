@@ -64,7 +64,7 @@ const subscribeGeneric = <T extends { id: string; uid: string }>(
       });
       onData(rows);
     },
-    (err) => onError(`Firestore 동기화 실패: ${err.message}`),
+    (err) => { console.warn('[finance] 동기화 실패', err); onError('자료를 맞추지 못했습니다. 새로고침해 주세요.'); },
   );
 };
 

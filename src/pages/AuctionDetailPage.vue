@@ -1,6 +1,7 @@
 <script lang="ts">
 // 단지 전체 실거래 메모 — 목록↔상세를 오갈 때마다 다시 거르지 않게 모듈에 둔다.
 // <script setup> 안에 두면 컴포넌트가 새로 뜰 때마다 비워져서 매번 '조회중…'이 보였다.
+import { aiErrorText, userMessage } from '../services/userMessage';
 export type PlaceRow = {
   kind: '매매' | '직거래' | '전세' | '월세';
   contractDate: string;
@@ -70,7 +71,7 @@ import { addressParts, hasBuildingName, isUnitToken } from '../utils/addressName
 import { stageDates, bidStageOf, stageLabelOf } from '../utils/stageLabel';
 import { useAuthStore } from '../stores/authStore';
 import { deleteSitePdf, deleteSitePhoto, isPdfEntry, isPdfFile, isPhotoId, loadSitePdf, loadSitePhoto, pdfNameOf, saveSitePdf, saveSitePhoto } from '../services/sitePhotoRepository';
-import { getGeminiKey, isGeminiOn, loadGeminiPrefs, GeminiError } from '../services/geminiPdf';
+import { getGeminiKey, isGeminiOn, loadGeminiPrefs } from '../services/geminiPdf';
 import { askRightsAnalysis, DOC_LABELS, type RightsAi, type RightsDocPart } from '../services/geminiRights';
 import { buildRightsFacts } from '../services/rightsFacts';
 import { fetchNearbyEnvironment, type NearbyEnvironment } from '../services/kakaoNearby';
@@ -564,7 +565,7 @@ const addImageFile = async (file: File, target: PhotoTarget) => {
       auction.value.extraPhotos[key] = [photoId, ...(auction.value.extraPhotos[key] ?? [])];
       await store.saveAuction(auction.value);
     } catch (err) {
-      extraErr.value = { ...extraErr.value, [key]: err instanceof Error ? err.message : '이미지 붙여넣기에 실패했습니다.' };
+      extraErr.value = { ...extraErr.value, [key]: userMessage(err, '이미지 붙여넣기에 실패했습니다.') };
     }
     return;
   }
@@ -593,7 +594,7 @@ const addImageFile = async (file: File, target: PhotoTarget) => {
     }
     await store.saveAuction(auction.value);
   } catch (err) {
-    errRef.value = err instanceof Error ? err.message : '이미지 붙여넣기에 실패했습니다.';
+    errRef.value = userMessage(err, '이미지 붙여넣기에 실패했습니다.');
   }
 };
 
@@ -776,7 +777,7 @@ const addPhotos = async (files: File[]) => {
       photoError.value = `저장공간이 가득 차 오래된 사진 ${evictedIds.length}장을 삭제했습니다.`;
     }
   } catch (e) {
-    photoError.value = e instanceof Error ? e.message : '사진 업로드 실패';
+    photoError.value = userMessage(e, '사진 업로드 실패');
   } finally {
     photoUploading.value = false;
   }
@@ -1573,7 +1574,7 @@ const fetchPublicTradeRows = async (opts?: { months?: number; keepFilters?: bool
     const aborted = err instanceof DOMException && err.name === 'AbortError';
     publicTradeWarning.value = aborted
       ? '국토부 응답이 없어 끊었습니다 — 잠시 뒤 다시 조회해 주세요.'
-      : `조회에 실패했습니다 — ${err instanceof Error ? err.message : '알 수 없는 오류'}`;
+      : userMessage(err, '조회하지 못했습니다. 잠시 뒤 다시 해 주세요.');
   } finally {
     fetchingPublicTrade.value = false;
   }
@@ -4988,11 +4989,10 @@ const requestRightsAi = async () => {
     /* 저장은 뒤에서 — 망이 느리면 서버가 받았다고 답할 때까지 한참 걸려,
        그동안 대기 화면이 계속 돌며 멈춘 것처럼 보였다. 결과는 이미 화면에 섰다. */
     void store.saveAuction(target).catch((err) => {
-      flashToast(`분석 결과를 저장하지 못했습니다 — ${err instanceof Error ? err.message : '다시 해 주세요'}`, 'error');
+      flashToast(`분석 결과를 저장하지 못했습니다 — ${userMessage(err, '다시 해 주세요')}`, 'error');
     });
   } catch (err) {
-    rightsAiErr.value = err instanceof GeminiError ? err.message
-      : `AI 분석 실패 — ${err instanceof Error ? err.message : '알 수 없는 오류'}`;
+    rightsAiErr.value = userMessage(err, aiErrorText(err instanceof Error ? err.message : ''));   // 오류 원문(영어)은 화면에 내보내지 않는다
   } finally {
     if (rightsAiTick) clearInterval(rightsAiTick);
     rightsAiTick = null;
@@ -5022,7 +5022,7 @@ const openDocPdf = async (entry: string) => {
     if (win) win.location.href = url; else window.open(url, '_blank');
   } catch (err) {
     win?.close();
-    flashToast(err instanceof Error ? err.message : 'PDF를 열지 못했습니다.', 'error');
+    flashToast(userMessage(err, 'PDF를 열지 못했습니다.'), 'error');
   } finally {
     docPdfBusy.value = '';
   }

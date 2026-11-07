@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 // 물건별 비용 장부(웹) — 필요경비 · 사업경비 한 갈래의 표 + 적기 창.
 // 낙찰이후 진행절차(물건 하나)와 자금관리(모든 물건)가 같이 쓴다 — 저장 자리가 같아 어느 쪽에서 적어도 양쪽에 보인다.
 // 분류는 services/expenseBook. 물품구매는 수량 × 단가로 비용을 셈한다.
@@ -171,7 +172,7 @@ const save = async () => {
     void auctions.noteEdit(d.auctionId);   // 최근 분석 기록 — 지금 화면(낙찰이후 · 자금관리의 그 탭) 이름으로
     open.value = false;
   } catch (e) {
-    alert(e instanceof Error ? e.message : '저장 실패');
+    alert(userMessage(e, '저장 실패'));
   } finally { busy.value = false; }
 };
 // 확인창은 앱 전체가 같은 것(AppConfirm) — 자금관리 지우기와 같은 '오늘 다시 묻지 않기'

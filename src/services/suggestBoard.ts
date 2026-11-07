@@ -51,7 +51,7 @@ export const subscribeSuggestPosts = (onRows: (rows: SuggestPost[]) => void, onE
   return onSnapshot(
     query(collection(firestore, POSTS), orderBy('createdAt', 'desc')),
     (snap) => onRows(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<SuggestPost, 'id'>) }))),
-    (err) => onError(err.message),
+    (err) => { console.warn('[suggest] 동기화 실패', err); onError('글을 불러오지 못했습니다. 새로고침해 주세요.'); },
   );
 };
 

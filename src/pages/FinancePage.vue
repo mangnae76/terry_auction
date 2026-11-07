@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 // 자금관리 — 4개 탭. 모든 데이터는 Firestore에 사용자별로 저장됨.
 // 탭: 사업계좌 자금입출금 / 사업지출내역 / 유류비 & 식대지출 / 물품구매 지출상세
 
@@ -479,7 +480,7 @@ const onSave = async () => {
     void auctionStore.noteEdit(aid);
     closeModal();
   } catch (e) {
-    alert(e instanceof Error ? e.message : '저장 실패');
+    alert(userMessage(e, '저장 실패'));
   }
 };
 
@@ -512,7 +513,7 @@ const runDelete = async () => {
     }
     closeModal();
   } catch (e) {
-    alert(e instanceof Error ? e.message : '삭제 실패');
+    alert(userMessage(e, '삭제 실패'));
   }
 };
 

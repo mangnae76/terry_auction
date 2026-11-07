@@ -8,6 +8,7 @@
 //  1) 값마다 '어느 서류의 어느 글에서 봤는지'(evidence)를 같이 내게 하고
 //  2) 못 찾은 칸은 비워 두게 하며(빈칸을 메우라고 시키지 않는다)
 //  3) 어떤 서류가 없어서 판단이 모자랐는지(missingDocs)를 따로 적게 한다.
+import { aiErrorText } from './userMessage';
 import { GEMINI_API, GEMINI_MODEL, GeminiError } from './geminiPdf';
 
 /** 권리분석은 PDF 칸 채우기보다 어려운 판단이다 — 더 큰 모델을 쓴다.
@@ -402,7 +403,7 @@ export const readStreamText = async (res: Response, onChunk: (soFar: string) => 
     if (!line.startsWith('data:')) return;
     let j: StreamChunk;
     try { j = JSON.parse(line.slice(5).trim()) as StreamChunk; } catch { return; }
-    if (j.error) throw new GeminiError(`AI 분석 실패 — ${j.error.message || '오류'}`);
+    if (j.error) throw new GeminiError(`AI 분석 실패 — ${aiErrorText(j.error.message)}`);
     if (j.usageMetadata && st) st.usage = j.usageMetadata;
     for (const p of j.candidates?.[0]?.content?.parts ?? []) {
       if (p.thought) {
@@ -584,7 +585,7 @@ export const askRightsAnalysis = async (
       if (signal?.aborted) throw new GeminiError('분석을 취소했습니다');
       if (why === 'idle') throw new GeminiError(`AI 가 ${RIGHTS_IDLE_MS / 60_000}분 동안 답이 없었습니다 — 잠시 뒤 다시 해 주세요`);
       if (why === 'total') throw new GeminiError(`AI 분석이 ${RIGHTS_TOTAL_MS / 60_000}분 안에 끝나지 않았습니다 — 서류를 줄여 다시 해 주세요`);
-      throw new GeminiError(`AI 서버에 닿지 못했습니다 — 인터넷 연결을 확인해 주세요 (${err instanceof Error ? err.message : ''})`);
+      console.warn('[AI 권리분석] 연결 실패', err); throw new GeminiError('AI 서버에 닿지 못했습니다 — 인터넷 연결을 확인해 주세요');
     } finally {
       clearTimeout(idle);
       clearTimeout(total);
@@ -594,7 +595,7 @@ export const askRightsAnalysis = async (
     if (res.ok) break;
     // 그 이름의 모델이 없으면 PDF 읽기와 같은 모델로 한 번 더 — 기능이 멎지 않게
     if (res.status !== 503 && res.status !== 429 && res.status !== 404) {
-      const reason = res.status === 403 || res.status === 401 ? '키를 확인해 주세요' : errMsg || `오류 ${res.status}`;
+      const reason = aiErrorText(errMsg, res.status);
       throw new GeminiError(`AI 분석 실패 — ${reason}`);
     }
     // eslint-disable-next-line no-console
@@ -603,7 +604,7 @@ export const askRightsAnalysis = async (
   }
   if (!res) throw new GeminiError('AI 분석 실패');
   if (!res.ok) {
-    throw new GeminiError(`AI 분석 실패 — ${res.status === 429 ? '사용 한도에 걸렸습니다' : 'Gemini 서버가 붐빕니다. 잠시 뒤 다시 해 주세요'}`);
+    throw new GeminiError(`AI 분석 실패 — ${res.status === 429 ? '사용 한도에 걸렸습니다' : 'AI 서버가 붐빕니다. 잠시 뒤 다시 해 주세요'}`);
   }
   if (!text.trim()) throw new GeminiError('AI 분석 실패 — 답이 비어 있습니다');
   let raw: Partial<RightsAi>;

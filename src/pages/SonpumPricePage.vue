@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 // 손품조사 › 시세분석 — 선정물건 둘레(반경) · 비슷한 조건(유사도)의 실거래로 「실거래가 예상」을 낸다.
 // 위→아래: ⓪ 조회 줄 → Ⓐ 실거래가 예상 띠 → Ⓑ 지도 · 조건 줄 · 유사물건 표 → Ⓒ 시세종합 → Ⓓ 호가 입력.
 // 셈은 services/priceAnalysis.ts, 이 화면은 자료를 모으고 그린다. 고른 조건 · 결과는 물건(marketPicks)에 남아 손품결론이 읽는다.
@@ -69,7 +70,7 @@ const run = async () => {
     if (!rangeCond.value.mMax) rangeCond.value = simCond(sim.value, me.value);
     void enrich(id);
   } catch (err) {
-    errorMsg.value = err instanceof Error ? err.message : String(err);
+    errorMsg.value = userMessage(err);
   } finally {
     if (id === runId) loading.value = false;
   }

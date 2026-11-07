@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 import { useRouter } from 'vue-router';
 import { Capacitor } from '@capacitor/core';
 import { Browser } from '@capacitor/browser';
@@ -124,7 +125,7 @@ const saveAiKey = async () => {
     await setGeminiKey(authStore.uid, key);
   } catch (err) {
     aiKeyOk.value = false;
-    aiKeyMsg.value = err instanceof Error ? err.message : '키를 저장하지 못했습니다';
+    aiKeyMsg.value = userMessage(err, '키를 저장하지 못했습니다');
     return;
   }
   aiKey.value = key;
@@ -160,7 +161,7 @@ const readPdf = async (
     const r = await fillWithGemini(bytes, parsed, aiKey.value);
     return { parsed: r.parsed, aiFilled: r.filled, aiRejected: r.rejected };
   } catch (e) {
-    return { parsed, aiError: e instanceof Error ? e.message : 'AI 읽기 실패' };
+    return { parsed, aiError: userMessage(e, 'AI 읽기 실패') };
   }
 };
 
@@ -441,7 +442,7 @@ const parseFiles = async (files: File[]) => {
           sourceName: file.name,
           status: 'error',
           rowStatus: 'error',
-          error: error instanceof Error ? error.message : 'PDF 해석 중 오류가 발생했습니다.',
+          error: userMessage(error, 'PDF 해석 중 오류가 발생했습니다.'),
           sourceType: 'file',
         });
       }
@@ -506,7 +507,7 @@ const scanDriveFolder = async () => {
             sourceName: file.name,
             status: 'error',
             rowStatus: 'error',
-            error: error instanceof Error ? error.message : 'Drive PDF 해석 중 오류가 발생했습니다.',
+            error: userMessage(error, 'Drive PDF 해석 중 오류가 발생했습니다.'),
             sourceType: 'drive',
             folderId: folderIdOf(target),
           });
@@ -525,10 +526,7 @@ const scanDriveFolder = async () => {
     banner.value = `${formatTime()} 구글드라이브${folderPart} 스캔 완료 (${rows.length}개)`
       + (skippedHidden.value > 0 ? ` · 휴지통 ${skippedHidden.value}건 제외` : '');
   } catch (error) {
-    banner.value =
-      error instanceof Error
-        ? error.message
-        : 'Google Drive 폴더를 읽지 못했습니다. PDF 파일 직접 선택을 사용해 주세요.';
+    banner.value = userMessage(error, 'Google Drive 폴더를 읽지 못했습니다. PDF 파일 직접 선택을 사용해 주세요.');
   } finally {
     loading.value = false;
     loadingLabel.value = '';

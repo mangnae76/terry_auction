@@ -5505,6 +5505,8 @@ span.cal-day.has { cursor: help; }
   };
   /* 읽어 온 물건은 로그인한 계정에 적는다 — 로그인 전에는 적을 곳이 없어
      예시 목록에만 쌓이고 새로고침하면 사라진다. 그래서 앱 물건등록과 같이 먼저 로그인을 받는다 */
+  /* 오류 → 화면 문장 — 앱과 같은 모듈(userMessage). 오류 원문(영어 · 코드)은 콘솔에만 */
+  const userMsg = (e, fb) => { try { return window.TAPdf && TAPdf.userMessage ? TAPdf.userMessage(e, fb) : fb; } catch (x) { return fb; } };
   const needLogin = (what) => {
     if (CLOUD.on) return false;
     toast(`로그인해야 ${what}을 쓸 수 있습니다 — 읽어 온 물건을 적어 둘 곳이 필요합니다.`, 'info');
@@ -5519,7 +5521,7 @@ span.cal-day.has { cursor: help; }
       /* 앱 물건등록과 같은 함수 — 이미 있는 사건은 회차 · 최저가 · 매각기일만 바꾸고 정리해 둔 내용은 그대로(빈 칸만 채움) */
       const ready = rows.filter((r) => r.status === 'ready' && r.x);
       const parsed = ready.map((r) => r.x);
-      if (parsed.length) CLOUD.store.importParsedPdfAuctions(parsed).catch((err) => toast(`앱 자료에 적지 못했습니다 — ${(err && err.message) || ''}`, 'info'));
+      if (parsed.length) CLOUD.store.importParsedPdfAuctions(parsed).catch((err) => toast(userMsg(err, '앱 자료에 적지 못했습니다. 다시 해 주세요.'), 'info'));
       return;
     }
     rows.filter((r) => r.status === 'ready').forEach((r) => {
@@ -5568,7 +5570,7 @@ span.cal-day.has { cursor: help; }
       const r = await T.fillWithGemini(bytes, parsed, R.aiKey);
       return { parsed: r.parsed, ai: { filled: labels(r.filled), rejected: labels(r.rejected) } };
     } catch (e) {
-      return { parsed, ai: { error: (e && e.message) || 'AI 읽기 실패' } };
+      return { parsed, ai: { error: userMsg(e, 'AI 읽기를 하지 못했습니다. 잠시 뒤 다시 해 주세요.') } };
     }
   };
   const fromParsed = (T, x, file, src, folderId, key, ai = null) => {
@@ -5604,13 +5606,14 @@ span.cal-day.has { cursor: help; }
     if (c === 'not_in_manifest') return '이 페이지의 Google Drive 사용이 꺼져 있습니다 — 페이지 권한에서 Google Drive 를 켜 주세요.';
     if (c === 'blocked_by_policy') return '조직 정책으로 Google Drive 사용이 막혀 있습니다.';
     if (c === 'server_unavailable' || c === 'rate_limited') return 'Google Drive 가 잠시 응답하지 않습니다 — 조금 뒤 다시 스캔해 주세요.';
-    if (c === 'tool_error') return `Google Drive 가 거절했습니다 — ${String(e.message || '').replace(/\s+/g, ' ').slice(0, 120) || '폴더 주소와 공유 설정을 확인해 주세요.'}`;
+    if (c === 'tool_error') { console.warn('[drive] 거절', e); return 'Google Drive 가 거절했습니다 — 폴더 주소와 공유 설정을 확인해 주세요.'; }
     if (c === 'empty') return VIA_WORKER
       ? '폴더 안에서 PDF 파일을 찾지 못했습니다 — 폴더 공유가 \'링크가 있는 모든 사용자\'인지 확인해 주세요.'
       : '폴더 안에서 PDF 파일을 찾지 못했습니다 — 이 Google 계정으로 열리는 폴더인지 확인해 주세요.';
     if (c === 'net') return '연결 서버에 닿지 못했습니다 — 인터넷 연결을 확인하고 다시 스캔해 주세요.';
-    if (c === 'worker') return `Google Drive 를 읽지 못했습니다 — ${String(e.message || '').slice(0, 120)}`;
-    return `Google Drive 를 읽지 못했습니다${c ? ` (${c})` : ''}.`;
+    if (c === 'worker') return userMsg(e, 'Google Drive 를 읽지 못했습니다 — 잠시 뒤 다시 스캔해 주세요.');
+    if (c) console.warn('[drive] 읽기 실패', c, e);
+    return 'Google Drive 를 읽지 못했습니다 — 잠시 뒤 다시 스캔해 주세요.';
   };
   const AUTHZ = ['no_mcp', 'server_not_connected', 'server_not_found', 'selection_required', 'needs_reauth', 'approval_required', 'consent_required', 'denied', 'not_in_manifest', 'blocked_by_policy', 'not_granted', 'capability_disabled', 'capability_removed'];
   let mcpP = null;
@@ -7215,19 +7218,19 @@ span.cal-day.has { cursor: help; }
       const blob = await T.exportSaleNear({ condition: cond, my: sxParseWon(SX.my) || null, rows: T.prepareSaleRows(view.map(sxPlain)),
         stats: { 평균감정가: st.appr, 매각건수: st.n, 평균매각가: st.sold, 중앙값매각가: st.soldMed, 평균율: st.avg, 중앙값율: st.med, 최저율: st.lo, 최고율: st.hi, 전체율: st.all } });
       sxDownload(blob, `조건검색결과_${sxYmd()}.xlsx`); toast('엑셀 파일을 내려받았습니다.');
-    } catch (e) { toast(`엑셀을 만들지 못했습니다 — ${e && e.message ? e.message : '다시 해 주세요'}`, 'info'); }
+    } catch (e) { toast(userMsg(e, '엑셀을 만들지 못했습니다. 다시 해 주세요.'), 'info'); }
   }
   /* 데이터 백업 — 모은 매각물건 전체(다시 불러올 수 있는 양식) */
   async function sxBackup() {
     if (!AG.recs.length) { toast('백업할 자료가 없습니다.', 'info'); return; }
     try { sxDownload(await CLOUD.T.exportSaleData(AG.recs.map(sxPlain)), `매각물건_전체데이터_${sxYmd()}.xlsx`); toast(`${AG.recs.length.toLocaleString('ko-KR')}건을 백업 파일로 내려받았습니다.`); }
-    catch (e) { toast(`백업 파일을 만들지 못했습니다 — ${e && e.message ? e.message : '다시 해 주세요'}`, 'info'); }
+    catch (e) { toast(userMsg(e, '백업 파일을 만들지 못했습니다. 다시 해 주세요.'), 'info'); }
   }
   /* 파일 불러오기 — 읽고 나서 '추가' 또는 '통째로 바꾸기'를 묻는다. 통째로 바꾸기는 한 번 더 묻는다(관리자 모두가 같이 쓰는 자료) */
   async function sxReadFile(f) {
     let recs;
     try { recs = await CLOUD.T.readSaleWorkbook(await f.arrayBuffer()); }
-    catch (e) { toast(`불러오지 못했습니다 — ${e && e.message ? e.message : '엑셀 파일인지 확인해 주세요'}`, 'info'); return; }
+    catch (e) { toast(userMsg(e, '불러오지 못했습니다. 엑셀 파일인지 확인해 주세요.'), 'info'); return; }
     if (!recs.length) { toast('읽은 물건이 없습니다 — 이 프로그램이나 PC 프로그램이 저장한 엑셀인지 확인해 주세요.', 'info'); return; }
     const have = AG.recs.length; const n = recs.length.toLocaleString('ko-KR');
     askConfirm({ title: `${f.name} — ${n}건을 읽었습니다`, tone: 'calm', okLabel: '추가', skipKey: '',
@@ -7245,7 +7248,7 @@ span.cal-day.has { cursor: help; }
     try {
       await T.saveSaleDataset(next, AG.meta ? Number(AG.meta.version) || 0 : 0);
       toast(`${name}: ${mode === 'merge' ? `새로 ${added.toLocaleString('ko-KR')}건 추가` : '전체 바꿈'} → 전체 ${next.length.toLocaleString('ko-KR')}건 (저장됨)`);
-    } catch (e) { toast(`저장하지 못했습니다 — ${e && e.message ? e.message : '다시 해 주세요'}`, 'info'); }
+    } catch (e) { toast(userMsg(e, '저장하지 못했습니다. 다시 해 주세요.'), 'info'); }
     AG.io = false; agPaint();   /* 새 자료는 요약 문서 감시(watchAgentDatasetMeta)가 버전이 바뀐 것을 보고 다시 읽는다 */
   }
   /* 결과 쪽 전체 — 검색 전 · 결과 없음 · 결과 */
@@ -7511,7 +7514,7 @@ span.cal-day.has { cursor: help; }
   const AG_REG_KEY = 'ta.web.agent.reg';
   async function agQueueSave(list, note) {
     try { await CLOUD.T.saveAgentQueue(AG.uid, list); if (note) { AG.note = note; AG.noteAt = Date.now(); } }
-    catch (e) { AG.note = `대기열을 저장하지 못했습니다 — ${e && e.message ? e.message : '다시 해 주세요'}`; AG.noteAt = Date.now(); }
+    catch (e) { AG.note = userMsg(e, '대기열을 저장하지 못했습니다. 다시 해 주세요.'); AG.noteAt = Date.now(); }
     agPaint();
   }
   /* [추가] — 고른 동과 넣은 사건번호를 한 번에 올린다(같은 종류). 사건은 그 사건 종류가 고른 종류와 다르면 도우미가 건너뛴다 */
@@ -7597,7 +7600,7 @@ span.cal-day.has { cursor: help; }
         await CLOUD.T.sendAgentCommand(AG.uid, name, { site: agSel.site, months: Number(agSel.months), src: 'near', fresh: collect ? !!agSel.fresh : false });
         if (collect) agSel.fresh = false;
         AG.note = '명령을 보냈습니다 — MyAgent가 처리하는 중입니다.';
-      } catch (e) { AG.note = `명령을 보내지 못했습니다 — ${e && e.message ? e.message : '다시 해 주세요'}`; }
+      } catch (e) { AG.note = userMsg(e, '명령을 보내지 못했습니다. 다시 해 주세요.'); }
       AG.noteAt = Date.now(); AG.sending = false; agPaint();
     };
     if (collect && agSel.fresh) {
@@ -8658,7 +8661,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
   function cloudSave(id, patch) {
     const st = CLOUD.store; const a = CLOUD.raw.get(id); const T = CLOUD.T;
     if (!st || !a) return;
-    const run = (pr) => Promise.resolve(pr).catch((err) => toast(`앱 자료에 적지 못했습니다 — ${(err && err.message) || '다시 해 주세요'}`, 'info'));
+    const run = (pr) => Promise.resolve(pr).catch((err) => toast(userMsg(err, '앱 자료에 적지 못했습니다. 다시 해 주세요.'), 'info'));
     if ('trashed' in patch) return run(patch.trashed ? st.hideAuctions([id]) : st.restoreHiddenAuctions([id]));
     if ('archived' in patch) return run(st.archiveAuctions([id], !!patch.archived));
     if ('status' in patch || 'bid' in patch) {
@@ -9057,9 +9060,9 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
               'mnBld', 'mnLand', 'mnYear', 'mnOwner', 'mnDebtor', 'mnNote'].forEach((id) => { $(id).value = ''; });
             toast(`${caseNo} 을 선정물건에 올렸습니다.`);
           })
-          .catch((err) => { console.error('[직접입력] 등록 실패', err); toast(`적지 못했습니다 — ${(err && err.message) || '까닭을 알 수 없습니다'}`, 'info'); });
+          .catch((err) => { console.error('[직접입력] 등록 실패', err); toast(userMsg(err, '적지 못했습니다. 다시 해 주세요.'), 'info'); });
         break;
-      } catch (err) { console.error('[직접입력] 등록 실패', err); toast(`적지 못했습니다 — ${(err && err.message) || '까닭을 알 수 없습니다'}`, 'info'); break; }
+      } catch (err) { console.error('[직접입력] 등록 실패', err); toast(userMsg(err, '적지 못했습니다. 다시 해 주세요.'), 'info'); break; }
       case 'sale-seg': saleSeg[t.dataset.k] = t.dataset.v; saleSave(); renderMarket(); break;
       /* 검색 — 지역 · 종류 · 기간에 면적 · 건축년도까지 이때 적용 */
       case 'sale-go': saleApply({ ...saleSeg, amin: SX.amin, amax: SX.amax, ymin: SX.ymin, ymax: SX.ymax }); renderMarket(); break;
@@ -9199,7 +9202,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
           if (aiCtx() !== m) return; /* 확인하는 사이 자리를 옮겼다 */
           m.checking = false; m.ok = r.ok; m.msg = r.message;
           if (!r.ok) { aiRedraw(); return; }
-          try { await T.setGeminiKey((CLOUD.auth && CLOUD.auth.isLoggedIn && CLOUD.auth.uid) || '', key); } catch (err) { m.ok = false; m.msg = (err && err.message) || '키를 저장하지 못했습니다'; aiRedraw(); return; }
+          try { await T.setGeminiKey((CLOUD.auth && CLOUD.auth.isLoggedIn && CLOUD.auth.uid) || '', key); } catch (err) { m.ok = false; m.msg = userMsg(err, '키를 저장하지 못했습니다'); aiRedraw(); return; }
           R.aiKey = key; R.aiOn = true;
           m.draft = undefined; m.msg = ''; m.ok = false;
           if (S.modal && S.modal.kind === 'ai') { S.modal = null; renderModal(); }

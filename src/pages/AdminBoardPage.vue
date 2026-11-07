@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 // 운영 — 이벤트·공지사항·업데이트 올리기.
 // 여기서 저장하면 앱의 더보기 › 공지 탭에 바로 나간다.
 import { computed, onMounted, onUnmounted, ref } from 'vue';
@@ -166,7 +167,7 @@ const reason = (e: unknown, fallback: string) => {
   if (/permission|insufficient/i.test(m)) {
     return `이 계정(${auth.email || '로그인 안 됨'})에는 올릴 권한이 없습니다 — 운영자 계정으로 들어와 주세요.`;
   }
-  return m || fallback;
+  return userMessage(e, fallback);
 };
 
 /**

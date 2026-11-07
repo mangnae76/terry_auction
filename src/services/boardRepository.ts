@@ -263,7 +263,7 @@ export const subscribeBoardPosts = (
       rows.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       onData(rows);
     },
-    (err) => onError(`글 동기화 실패: ${err.message}`),
+    (err) => { console.warn('[board] 동기화 실패', err); onError('글을 불러오지 못했습니다. 새로고침해 주세요.'); },
   );
 };
 

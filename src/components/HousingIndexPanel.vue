@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 // KB 주택가격지수 — 한국은행 ECOS 에서 받아 꺾은선으로 그린다.
 // 그림은 선 세 가닥뿐이라 라이브러리를 들이지 않고 SVG 로 직접 그린다.
 import { computed, onMounted, ref, watch } from 'vue';
@@ -23,7 +24,7 @@ const load = async () => {
     data.value = await fetchHousingPriceIndex(kind.value, 18);
   } catch (error) {
     data.value = null;
-    errorMsg.value = error instanceof Error ? error.message : '지수를 불러오지 못했습니다.';
+    errorMsg.value = userMessage(error, '지수를 불러오지 못했습니다.');
   } finally {
     loading.value = false;
   }

@@ -1,3 +1,4 @@
+import { userMessage } from '../services/userMessage';
 import { BUILDING_NAME_AUTO_KEY, fillMissingBuildingNames } from '../services/buildingNameFill';
 import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
@@ -1147,7 +1148,7 @@ export const useAuctionStore = defineStore('auction', () => {
         removed.push(id);
       } catch (err) {
         const reason = (err as { code?: string })?.code
-          ?? (err instanceof Error ? err.message : String(err));
+          ?? (userMessage(err));
         console.warn('[auctions] 완전삭제 실패:', id, err);
         failed.push({ id, reason });
       }

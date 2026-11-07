@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 // 낙찰이후 · 진행절차 옆 박스 탭(웹) — 명도분석(협의 · 강제집행 비용 비교) / 세금분석(A안 기준 차익 · 예상 세금).
 // 명도분석 기본값은 물건 값(대출 · 면적)에서, 없으면 대략의 시세. 칸마다 고쳐 쓴다.
 // 세금분석은 필요경비 · 사업경비 장부의 값(실제로 적지 않은 줄은 입찰가산정 A안)을 쓴다.
@@ -151,7 +152,7 @@ const aiFill = async () => {
     aiSummary.value = res.summary || (res.changes.length ? '' : '근거가 있는 칸이 없어 바꾼 값이 없습니다.');
     evEdit.value = true;
   } catch (e) {
-    aiErr.value = e instanceof Error ? e.message : 'AI 명도 실패';
+    aiErr.value = userMessage(e, 'AI 명도 실패');
   } finally { aiBusy.value = false; }
 };
 

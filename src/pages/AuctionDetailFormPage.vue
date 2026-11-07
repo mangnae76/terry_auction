@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userMessage } from '../services/userMessage';
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuctionStore } from '../stores/auctionStore';
@@ -488,7 +489,7 @@ const autoFetchMarketPrices = async () => {
 
     marketFetchNote.value = `${region.sigungu} ${region.dong} · ${parts.join(' / ')}`;
   } catch (error) {
-    marketFetchNote.value = error instanceof Error ? error.message : String(error);
+    marketFetchNote.value = userMessage(error);
   } finally {
     fetchingMarket.value = false;
   }
