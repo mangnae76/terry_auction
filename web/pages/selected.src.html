@@ -5272,6 +5272,7 @@ span.cal-day.has { cursor: help; }
   /* 분석 진행 — 물건 카드와 수익률 분석 사이(2026-11-07). 탭마다 완료 · 진행중 · 전 + 마지막으로 고친 날(물건의 tabAt, 없으면 최근 작성 기록).
      완료 — 물건정보: 정보요약 · 건축물대장, 권리분석: AI 권리분석 결과, 손품조사: 시세분석 저장(marketPicks), 수익분석: 확정안, 임장조사: 현장사진 + 임장체크.
      손댄 기록이 있거나 일부만 채웠으면 진행중. 줄을 누르면 그 탭으로 */
+  const PRG_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M4 12h16M4 18h7"/><circle cx="18" cy="6" r="2"/><circle cx="14" cy="18" r="2"/></svg>';   /* 시안 아이콘 — 단계 줄 */
   const PRG_STEPS = [['basic', '물건정보'], ['rights', '권리분석'], ['survey', '손품조사'], ['profit', '수익분석'], ['field', '임장조사']];
   function progressHtml(it) {
     const a = CLOUD.raw && CLOUD.raw.get(it.id); const T = CLOUD.T || {};
@@ -5297,7 +5298,7 @@ span.cal-day.has { cursor: help; }
       const tipText = `${name} ${S_TXT[k]}${t ? ` · ${md(t)}` : ''}${desc ? ` · ${desc}` : ''}`;
       return `<button type="button" class="prg-row ${k}" data-act="prg-go" data-id="${it.id}" data-v="${key}"${tip(tipText, 'left')}><i aria-hidden="true"></i><b>${name}</b><span class="s">${S_TXT[k]}</span><span class="d num">${t ? md(t) : '-'}</span></button>`;
     }).join('');
-    return `<aside class="prg" aria-label="${esc(it.caseNo)} 분석 진행"><div class="prg-head"><b class="prg-title">${I.trend}분석 진행</b><span><b class="num">${n}</b> / 5 완료</span></div>${rows}</aside>`;
+    return `<aside class="prg" aria-label="${esc(it.caseNo)} 분석 진행"><div class="prg-head"><b class="prg-title">${PRG_IC}분석 진행</b><span><b class="num">${n}</b> / 5 완료</span></div>${rows}</aside>`;
   }
   function resultHtml(it, past) {
     const r = profitOf(it);
