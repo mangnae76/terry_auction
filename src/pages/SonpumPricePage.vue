@@ -746,21 +746,23 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
             <div class="ticks" aria-hidden="true"><span v-for="s in SIM_STEPS" :key="s">{{ s }}%</span></div>
           </div>
           <div v-else class="simB">
-            <div class="dl"><span class="dn">면적</span>
+            <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">면적</span><span v-if="webEmbed && !fs" class="ev pa-num">{{ rangeCond.mMin }}㎡</span>
               <div class="dual">
                 <div class="track"><i class="fill" :style="fillStyle(rangeCond.mMin, rangeCond.mMax, AREA_MIN, AREA_MAX)" /><i class="base" :data-label="`${me.areaM2.toFixed(2)}㎡`" :style="{ left: baseLeft(me.areaM2, AREA_MIN, AREA_MAX) }" /></div>
                 <input type="range" :min="AREA_MIN" :max="AREA_MAX" step="1" :value="rangeCond.mMin" aria-label="면적 최소(㎡)" @input="setRange('mMin', Number(($event.target as HTMLInputElement).value))">
                 <input type="range" :min="AREA_MIN" :max="AREA_MAX" step="1" :value="rangeCond.mMax" aria-label="면적 최대(㎡)" @input="setRange('mMax', Number(($event.target as HTMLInputElement).value))">
               </div>
-              <b>{{ rangeCond.mMin }}~{{ rangeCond.mMax }}㎡<small>{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></b>
+              <template v-if="webEmbed && !fs"><span class="ev pa-num">{{ rangeCond.mMax }}㎡</span><b class="pa-num">{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</b></template>
+              <b v-else>{{ rangeCond.mMin }}~{{ rangeCond.mMax }}㎡<small>{{ (rangeCond.mMin / PY).toFixed(1) }}~{{ (rangeCond.mMax / PY).toFixed(1) }}평</small></b>
             </div>
-            <div class="dl"><span class="dn">건축</span>
+            <div :class="['dl', { one: webEmbed && !fs }]"><span class="dn">건축</span><span v-if="webEmbed && !fs" class="ev pa-num">{{ rangeCond.yMin }}년</span>
               <div class="dual">
                 <div class="track"><i class="fill" :style="fillStyle(rangeCond.yMin, rangeCond.yMax, YEAR_MIN, yearMax)" /><i class="base" :data-label="`${me.year}년`" :style="{ left: baseLeft(me.year, YEAR_MIN, yearMax) }" /></div>
                 <input type="range" :min="YEAR_MIN" :max="yearMax" step="1" :value="rangeCond.yMin" aria-label="건축 최소(년)" @input="setRange('yMin', Number(($event.target as HTMLInputElement).value))">
                 <input type="range" :min="YEAR_MIN" :max="yearMax" step="1" :value="rangeCond.yMax" aria-label="건축 최대(년)" @input="setRange('yMax', Number(($event.target as HTMLInputElement).value))">
               </div>
-              <b>{{ rangeCond.yMin }}~{{ rangeCond.yMax }}년<small>{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></b>
+              <template v-if="webEmbed && !fs"><span class="ev pa-num">{{ rangeCond.yMax }}년</span><b class="pa-num">{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</b></template>
+              <b v-else>{{ rangeCond.yMin }}~{{ rangeCond.yMax }}년<small>{{ yearMax - rangeCond.yMax + 1 }}~{{ yearMax - rangeCond.yMin + 1 }}년차</small></b>
             </div>
             <span v-if="!webEmbed" class="pa-lab">층<span class="pa-seg pa-out" role="radiogroup" aria-label="층">
               <button type="button" role="radio" :class="{ on: rangeCond.floor === null }" :aria-checked="rangeCond.floor === null" @click="rangeCond = { ...rangeCond, floor: null }">전체</button>
@@ -1057,6 +1059,12 @@ const stamp = computed(() => (savedAt.value ? updateStamp(savedAt.value) : ''));
 .simrow.has-elev .simB .dl > b { grid-area: val; min-width: 0; text-align: right; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .simrow.has-elev .simB .dl > b small { display: inline; margin-left: 6px; font-size: 12px; }
 .simrow.has-elev .simB .dl > .dual { grid-area: bar; min-width: 0; margin-top: 12px; }
+.simrow.has-elev .simB .dl.one { grid-template-columns: auto auto minmax(0, 1fr) auto auto; grid-template-areas: none; gap: 0 8px; }   /* 웹 — 한 줄: 이름 · 작은 값 · 막대(빨간 내 물건) · 큰 값 · 평/연차(2026-11-07) */
+.simrow.has-elev .simB .dl.one > :is(.dn, .ev, .dual, b) { grid-area: auto; }
+.simrow.has-elev .simB:has(> .dl.one) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 40px; }   /* 웹엔 층이 이 상자 밖이라 두 칸이 반씩 */
+.simrow.has-elev .simB .dl.one > .dual { margin-top: 14px; }
+.simrow.has-elev .simB .dl.one > .ev { font-size: 13px; font-weight: 700; color: var(--blue); }
+.simrow.has-elev .simB .dl.one > b { min-width: 72px; font-size: 13px; color: var(--fg); font-weight: 700; }
 /* 전체화면 — 면적 · 건축 · 층 · 엘베를 세로로 쌓으므로 높이는 내용대로 */
 .pa.fs .simrow.has-elev :is(.simA, .simB) { height: auto; }
 .simrow.has-elev .simB .pa-lab .pa-seg, .elev-pick .pa-seg { width: 186px; }   /* 웹 — 층 · 엘베 고르기 상자 크기를 같게 */
