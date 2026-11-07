@@ -32,7 +32,7 @@ const TOP: Record<string, string> = {
   sellAgencyRows: '매도중개', directSellRows: '직거래', marketPicks: '시장분석', aiNotes: 'AI메모', aiSummary: 'AI요약',
 };
 /** 사람이 고친 게 아닌 칸 — 이름을 남기지 않는다 */
-const SKIP = new Set(['(처음)', 'id', 'uid', 'editLog', 'hidden', 'archived', 'dupNo', 'isInterested', 'isFieldTrip', 'importMeta', 'sonView']);
+const SKIP = new Set(['(처음)', 'id', 'uid', 'editLog', 'tabAt', 'hidden', 'archived', 'dupNo', 'isInterested', 'isFieldTrip', 'importMeta', 'sonView']);
 const COST: Record<string, string> = {
   bidRate: '입찰가율', loanRate: '대출비율', loanAmount: '대출금', interestAmount: '대출이자',
   acquisitionTaxRate: '취득세', acquisitionTaxAmount: '취득세', legalCostRate: '법무비', legalCostAmount: '법무비',

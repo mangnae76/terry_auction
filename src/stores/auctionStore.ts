@@ -19,6 +19,7 @@ import { stageLabelOf } from '../utils/stageLabel';
 import { startUiPrefSync } from '../services/uiPrefSync';
 import { mergeReimport } from '../services/pdfReimport';
 import { changedLabels, editDetailOn } from '../services/editFieldLabels';
+import { editLogTag } from '../services/editLogText';
 
 const createNearBidRow = (): NearBidRow => ({
   saleInfo: '',
@@ -998,6 +999,9 @@ export const useAuctionStore = defineStore('auction', () => {
   const EDIT_MERGE_MS = 5 * 60 * 1000;   // 같은 화면에서 5분 안에 또 저장하면 한 줄로 합친다(자동 저장이 줄을 늘리지 않게)
   const logEdit = (auction: AuctionDetail, where: string, what?: string, items: string[] = []) => {
     const now = Date.now();
+    // 탭마다 마지막으로 고친 시각 — editLog 는 다섯 줄만 남아 오래된 탭 날짜가 사라진다(2026-11-07, 웹 '분석 진행' 상자)
+    const tag = editLogTag(where);
+    if (tag) auction.tabAt = { ...(auction.tabAt ?? {}), [tag]: now };
     const log = [...(auction.editLog ?? [])];
     // 고친 칸 이름(웹) — 맨 위 줄에 이미 다 있으면 새로 쓸 것이 없다
     const sameItems = items.every((x) => (log[0]?.items ?? []).includes(x));
@@ -1028,7 +1032,7 @@ export const useAuctionStore = defineStore('auction', () => {
   const lastWritten = new Map<string, Record<string, string>>();
   const saveTimes = new Map<string, number[]>();
   const fieldsOf = (a: AuctionDetail): Record<string, string> => Object.fromEntries(
-    Object.entries(a).filter(([k]) => k !== 'editLog').map(([k, v]) => [k, sortedJson(v)]),
+    Object.entries(a).filter(([k]) => k !== 'editLog' && k !== 'tabAt').map(([k, v]) => [k, sortedJson(v)]),
   );
   const changedFields = (id: string, now: Record<string, string>): string[] => {
     const was = lastWritten.get(id);

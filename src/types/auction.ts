@@ -519,6 +519,8 @@ export interface AuctionDetail {
   marketPicks?: MarketPicks;
   /** 최근 작성 — 저장할 때마다 「언제 · 어느 화면 · 무엇」 한 줄(최근 5개, 새것이 앞). 마이페이지 내정보가 모아 보여 준다 */
   editLog?: EditLogEntry[];
+  /** 탭마다 마지막으로 고친 시각(ms) — '물건정보' · '권리분석' · '손품조사' · '수익분석' · '임장조사' 등 editLogTag 이름. 웹 선정물건 카드 '분석 진행' 상자 */
+  tabAt?: Record<string, number>;
   /** 임장 비교 물건 — 가격분석에서 넣고, 임장경로 현장 카드에서 체크한다 */
   fieldCompare?: FieldCompare;
   /** 별표로 매긴 중요도 — 없으면 빈 별, 1~3을 돌아가며 매긴다 */

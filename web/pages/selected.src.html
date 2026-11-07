@@ -3828,7 +3828,28 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .grid .divider { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin: 14px 2px 2px; color: var(--muted); font-size: 13px; }
 .grid .divider b { color: var(--text); font-size: 14px; }
 .grid .divider i { flex: 1; height: 1px; background: #d3d6dc; }
-/* 한 줄 = 물건 카드 + 오른쪽 수익률 분석 카드 */
+/* 한 줄 = 물건 카드 + 분석 진행 + 수익률 분석 카드 */
+.card-row .phase { font-size: 12px; padding: 0 2px; }   /* 분석 진행 상자가 들어가 카드가 좁아졌다 — 단계 단추 글자 14 → 12 */
+.card-row .phases { gap: 2px; }
+.card-row .prices { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.25fr); gap: 8px; }   /* 카드가 좁아져 '최저가미만' 칩이 붙은 입찰가 끝자리가 잘렸다 — 감정가 칸 몫을 입찰가에 */
+.prg { flex: 0 0 210px; display: flex; flex-direction: column; gap: 4px; padding: 16px var(--list-pad-r) 15px; min-width: 0; box-sizing: border-box;
+  background: var(--surface); border: 1px solid var(--card-line); border-radius: 10px; box-shadow: var(--shadow-card); }
+.prg-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-height: 30px; padding: 0 2px; font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; }
+.prg-title { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
+.prg-title svg { width: 18px; height: 18px; color: var(--blue); flex: 0 0 auto; }
+.prg-head > span { font-size: 14px; font-weight: 400; color: var(--muted); }
+.prg-head > span b { color: var(--blue); font-weight: 800; }
+.prg-row { flex: 1 1 0; display: grid; grid-template-columns: 8px minmax(0, 1fr) auto auto; align-items: center; gap: 6px; min-height: 24px; padding: 0 8px; border: 1px solid transparent; border-radius: 6px; background: var(--price-bg); font: inherit; font-size: 13px; color: var(--text); text-align: left; cursor: pointer; }
+.prg-row:hover { border-color: var(--line); }
+.prg-row i { width: 8px; height: 8px; border-radius: 50%; background: #c8cdd5; }
+.prg-row.done i { background: #16a34a; }
+.prg-row.doing i { background: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 20%, transparent); }
+.prg-row b { font-weight: 600; }
+.prg-row.none b { font-weight: 400; color: var(--faint); }
+.prg-row .s { font-size: 12px; color: var(--muted); }
+.prg-row.done .s { color: #15803d; }
+.prg-row.doing .s { color: var(--blue); }
+.prg-row .d { min-width: 34px; font-size: 12px; color: var(--muted); text-align: right; }
 .card-row { display: flex; gap: 12px; align-items: stretch; min-width: 0; }
 .card-row > .card { flex: 1 1 auto; }
 .res {
@@ -4142,6 +4163,9 @@ html, body { overflow-x: clip; }
   .res { flex: none; flex-direction: row; flex-wrap: wrap; align-items: stretch; padding: 10px 12px; }
   .res-head { flex: 1 1 100%; min-height: 0; }
   .metric { min-height: 40px; }
+  .prg { flex: none; flex-direction: row; flex-wrap: wrap; padding: 10px 12px; }   /* 분석 진행도 카드 아래 가로로 — 다섯 줄이 한 줄에 */
+  .prg-head { flex: 1 1 100%; min-height: 0; }
+  .prg-row { flex: 1 1 150px; min-height: 30px; }
 }
 @media (max-width: 980px) {
   .gnb-in { flex-wrap: wrap; height: auto; padding-block: 12px; row-gap: 8px; column-gap: 16px; }
@@ -5238,6 +5262,36 @@ span.cal-day.has { cursor: help; }
     const net = bid - loan + cost;
     return { sale, loan, cost, after: Math.round(after / 1000) * 1000, net, rate: net > 0 ? (after / net) * 100 : 0 };
   };
+  /* 분석 진행 — 물건 카드와 수익률 분석 사이(2026-11-07). 탭마다 완료 · 진행중 · 전 + 마지막으로 고친 날(물건의 tabAt, 없으면 최근 작성 기록).
+     완료 — 물건정보: 정보요약 · 건축물대장, 권리분석: AI 권리분석 결과, 손품조사: 시세분석 저장(marketPicks), 수익분석: 확정안, 임장조사: 현장사진 + 임장체크.
+     손댄 기록이 있거나 일부만 채웠으면 진행중. 줄을 누르면 그 탭으로 */
+  const PRG_STEPS = [['basic', '물건정보'], ['rights', '권리분석'], ['survey', '손품조사'], ['profit', '수익분석'], ['field', '임장조사']];
+  function progressHtml(it) {
+    const a = CLOUD.raw && CLOUD.raw.get(it.id); const T = CLOUD.T || {};
+    const has = (v) => v != null && v !== '' && v !== 0 && !(Array.isArray(v) && !v.length) && !(typeof v === 'object' && !Array.isArray(v) && !Object.keys(v).length);
+    const log = (a && a.editLog) || []; const at = (a && a.tabAt) || {};
+    const tagOf = (w) => (T.editLogTag ? T.editLogTag(w) : String(w || ''));
+    const done = a ? {
+      물건정보: has(a.basicSummary) || has(a.buildingHeader), 권리분석: has(a.rightsAi), 손품조사: has(a.marketPicks),
+      수익분석: !!(T.confirmedMarkOf && T.confirmedMarkOf(a) >= 0), 임장조사: has(a.sitePhotos) && has(a.surveyForm),
+    } : {};
+    const part = a ? {
+      물건정보: has(a.address), 권리분석: has(a.rightsDocUrls) || has(a.rightsChecks), 손품조사: false, 수익분석: false, 임장조사: has(a.sitePhotos) || has(a.surveyForm),
+    } : {};
+    const md = (t) => { const d = new Date(t); return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`; };
+    const S_TXT = { done: '완료', doing: '진행중', none: '전' };
+    let n = 0;
+    const rows = PRG_STEPS.map(([key, name]) => {
+      const e = log.find((l) => tagOf(l.where) === name);
+      const t = at[name] || (e && e.at) || 0;
+      const k = done[name] ? 'done' : (part[name] || t) ? 'doing' : 'none';
+      if (k === 'done') n += 1;
+      const desc = e && T.editLogDesc ? T.editLogDesc(e.where, e.what, e.items) : '';
+      const tipText = `${name} ${S_TXT[k]}${t ? ` · ${md(t)}` : ''}${desc ? ` · ${desc}` : ''}`;
+      return `<button type="button" class="prg-row ${k}" data-act="prg-go" data-id="${it.id}" data-v="${key}"${tip(tipText, 'left')}><i aria-hidden="true"></i><b>${name}</b><span class="s">${S_TXT[k]}</span><span class="d num">${t ? md(t) : '-'}</span></button>`;
+    }).join('');
+    return `<aside class="prg" aria-label="${esc(it.caseNo)} 분석 진행"><div class="prg-head"><b class="prg-title">${I.trend}분석 진행</b><span><b class="num">${n}</b> / 5 완료</span></div>${rows}</aside>`;
+  }
   function resultHtml(it, past) {
     const r = profitOf(it);
     const m = (cls, label, val, tipText) => `<div class="metric ${cls}"${tip(tipText, 'left')}><small>${label}</small>${val}</div>`;
@@ -5257,7 +5311,7 @@ span.cal-day.has { cursor: help; }
   const DASH = '-';
   const orDash = (v) => (String(v ?? '').trim() ? v : DASH);
   function cardHtml(it) {
-    return `<div class="card-row">${mainCardHtml(it)}${resultHtml(it, isPast(it) && !hasResult(it))}</div>`;
+    return `<div class="card-row">${mainCardHtml(it)}${progressHtml(it)}${resultHtml(it, isPast(it) && !hasResult(it))}</div>`;
   }
   function mainCardHtml(it) {
     const past = isPast(it) && !hasResult(it);
@@ -8936,6 +8990,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
           run: () => { ids.forEach((x) => update(x, { trashed: true })); S.picked = new Set(); S.pick = false; render(); toast(`${ids.length}건을 휴지통으로 옮겼습니다.`); } });
         break;
       }
+      case 'prg-go': e.stopPropagation(); S.itemTabNext = v; go('item', id); break;   /* 분석 진행 줄 — 그 탭으로 */
       case 'card':
         if (e.target.closest('button, input')) break;
         if (S.pick) { if (S.picked.has(id)) S.picked.delete(id); else S.picked.add(id); render(); break; }
