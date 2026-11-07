@@ -1224,8 +1224,8 @@ const downloadCsv = () => {
           <ol v-else class="adm-bld-list">
             <li v-for="(b, i) in bldRank" :key="b.id" class="adm-bld-row" :style="{ '--i': i }" role="button" tabindex="0" :aria-label="`${b.name || b.addr} 거래 ${b.n}건 보기`" @click="bldOpen = b" @keydown.enter="bldOpen = b">
               <span :class="['no', { top: i < 3 }]">{{ i + 1 }}</span>
-              <!-- 한 줄로 — [주소 알약] 이름 · 주소(동 지번) · 연식 · ㎡ / 평 · 엘베, 칸마다 세로 정렬(2026-11-08) -->
-              <span class="nm"><button type="button" :class="['cp', { done: bldCopied === b.id }]" :title="`${b.addr} — 누르면 복사`" :aria-label="`${b.addr} 주소 복사`" @click.stop="copyBldAddr(b)"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></svg>{{ bldCopied === b.id ? '복사됨' : '주소' }}</button><b>{{ b.name || '이름 없음' }}</b></span>
+              <!-- 한 줄로 — 이름 · 주소(동 지번) · 연식 · ㎡ / 평 · 엘베, 칸마다 세로 정렬. 주소 복사는 오른쪽 N · P 옆 아이콘(시세분석 표와 같은 꼴, 2026-11-08) -->
+              <span class="nm"><b>{{ b.name || '이름 없음' }}</b></span>
               <span class="ad">{{ b.umd }} {{ b.jibun }}</span>
               <span class="yr">{{ b.year ? `${b.year}년` : '-' }}</span>
               <span class="ar">{{ b.aMin ? (b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}평` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}~${(b.aMax / 3.3058).toFixed(1)}평`) : '-' }}</span>
@@ -1238,6 +1238,7 @@ const downloadCsv = () => {
               <span class="go">
                 <button type="button" class="ab n" title="네이버 부동산에서 이 건물 보기" aria-label="네이버 부동산에서 보기" @click.stop="bldNaver(b)">N</button>
                 <button type="button" :class="['ab p', { ok: bldPlanetOk === b.id }]" :title="`부동산플래닛에서 보기 — 「${b.umd} ${b.jibun}」를 복사해 두고 지도를 엽니다`" aria-label="부동산플래닛에서 보기" @click.stop="bldPlanet(b)">P</button>
+                <button type="button" :class="['ab', { ok: bldCopied === b.id }]" :title="`주소 복사 — ${b.addr}`" aria-label="주소 복사" @click.stop="copyBldAddr(b)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg></button>
                 <svg class="arw" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
               </span>
             </li>
@@ -1584,7 +1585,7 @@ const downloadCsv = () => {
 .adm-bld > header strong { font-size: 16px; font-weight: 800; color: #111827; }
 .adm-bld > header small { font-size: 13px; color: #6b7280; }
 .adm-bld-list { list-style: none; margin: 0; padding: 0; display: grid; }
-.adm-bld-row { display: grid; grid-template-columns: 30px minmax(0, 1.4fr) minmax(0, 1fr) 56px 170px 70px minmax(50px, .4fr) 56px 112px 104px 80px 72px; align-items: center; gap: 12px; padding: 8px 4px; border-top: 1px solid #eef1f6; font-size: 13.5px; color: #111827; }
+.adm-bld-row { display: grid; grid-template-columns: 30px minmax(0, 1.4fr) minmax(0, 1fr) 56px 170px 70px minmax(50px, .4fr) 56px 112px 104px 80px 98px; align-items: center; gap: 12px; padding: 8px 4px; border-top: 1px solid #eef1f6; font-size: 13.5px; color: #111827; }
 .adm-bld-row:first-child { border-top: 0; }
 .adm-bld-row .no { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: #eef1f6; color: #4b5563; font-size: 12px; font-weight: 800; }
 .adm-bld-row .no.top { background: #2b6df3; color: #fff; }
@@ -1602,7 +1603,7 @@ const downloadCsv = () => {
 .adm-bld-row { cursor: pointer; } .adm-bld-row:hover { background: #f7f9fc; }
 .adm-bld-row .go { display: inline-flex; align-items: center; gap: 4px; color: #9ca3af; }
 .adm-bld-row:hover .go .arw { color: #2b6df3; }
-.adm-bld .ab { width: 22px; height: 22px; border: 1px solid #dde3ee; border-radius: 5px; background: #fff; display: inline-grid; place-items: center; font-size: 11px; font-weight: 800; cursor: pointer; padding: 0; }
+.adm-bld .ab { width: 22px; height: 22px; border: 1px solid #dde3ee; border-radius: 5px; background: #fff; color: #6b7280; display: inline-grid; place-items: center; font-size: 11px; font-weight: 800; cursor: pointer; padding: 0; }
 .adm-bld .ab.p { color: #2f6be0; } .adm-bld .ab.n { color: #03a94d; } .adm-bld .ab:hover { border-color: #2b6df3; }
 .adm-bld .ab.ok { background: #e8f6ee; border-color: #16a34a; color: #16a34a; }
 .adm-bld-pop { position: fixed; inset: 0; z-index: 1000; background: rgba(15, 23, 42, .45); display: grid; place-items: center; padding: 24px 16px; }
