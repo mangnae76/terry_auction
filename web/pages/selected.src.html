@@ -7710,10 +7710,11 @@ span.cal-day.has { cursor: help; }
     };
     const pr = busy && s.prog && s.prog.n > 0 ? s.prog : null;
     /* 진행 — 수집 중이면 '데이터 수집 중', 숫자는 읍면동 수집이면 곳 수 · 건축연도 채우기면 건 수(페이지 수가 아니다). 막대 위에는 지금 받는 곳(2026-11-08) */
-    const enr = !!s.enriching || s.lastCmd === 'enrich';   /* 수집 끝에 건축연도 채우기가 이어 돌 때도(enriching) */
+    const st0 = s || {};   /* 도우미 상태를 아직 못 받았으면 빈 값 — s.enriching 을 바로 읽다 화면이 멈췄다(2026-11-08) */
+    const enr = !!st0.enriching || st0.lastCmd === 'enrich';   /* 수집 끝에 건축연도 채우기가 이어 돌 때도(enriching) */
     const doing = !busy ? '대기 중' : enr ? '건축연도 채우는 중' : '데이터 수집 중';
-    const unit = enr ? '곳' : s.lastCmd === 'queue' ? '곳' : '';   /* 건축연도는 건물 수, 읍면동 수집은 동네 수 */
-    const target = busy && s.target ? String(s.target) : '';
+    const unit = enr ? '곳' : st0.lastCmd === 'queue' ? '곳' : '';   /* 건축연도는 건물 수, 읍면동 수집은 동네 수 */
+    const target = busy && st0.target ? String(st0.target) : '';
     const prog = `${target ? `<div class="sx-target">수집 중인 곳 <b>${esc(target)}</b></div>` : ''}<div class="sx-prog"><span class="sx-bar"><b style="width:${pr ? Math.min(100, Math.round((pr.i / pr.n) * 100)) : 0}%"></b></span><span>${doing}</span>${pr ? `<span class="num">${Number(pr.i).toLocaleString('ko-KR')} / ${Number(pr.n).toLocaleString('ko-KR')}${unit}</span>` : ''}<button type="button" class="sx-stop" data-act="ag-stop" ${busy ? '' : 'disabled'}>중지</button></div>`;
     const m = AG.meta;
     const metaCnt = `저장 총 ${Number((m && m.count) || 0).toLocaleString('ko-KR')}건`;
