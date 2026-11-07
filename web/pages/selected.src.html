@@ -9464,10 +9464,16 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'sx-msave': sxMapSave(); break;
       case 'sx-period': saleSeg.period = v; saleSave(); if (saleApplied) saleApply({ ...saleApplied, period: v }); renderMarket(); break;   /* 지도 아래 줄 매각기간 — 바로 다시 계산 */
       /* 검색 — 지역 · 종류 · 기간에 면적 · 건축년도까지 이때 적용 */
-      case 'sale-go': saleApply({ ...saleSeg, amin: '', amax: '', ymin: '', ymax: '' }); renderMarket(); break;   /* 지역으로 조회 — 면적 · 건축은 지도 아래 막대가 맡는다 */
+      case 'sale-go': {   /* 지역으로 조회 — 면적 · 건축은 지도 아래 막대가 맡는다. 다른 지역으로 새로 조회하면 매각기간은 3개월부터 */
+        const fresh = !saleApplied || saleApplied.sido !== saleSeg.sido || saleApplied.sgg !== saleSeg.sgg || saleApplied.dong !== saleSeg.dong;
+        if (fresh) { saleSeg.period = '3개월'; saleSave(); }
+        saleApply({ ...saleSeg, amin: '', amax: '', ymin: '', ymax: '' }); renderMarket(); break;
+      }
       case 'sale-mode': {   /* 조회 기준 바꾸기 — 물건으로 / 지역으로(2026-11-08) */
         saleMode = v === 'region' ? 'region' : 'item'; saleCardOpen = false;
         try { localStorage.setItem(SALE_MODE_KEY, saleMode); } catch (err) { /* 그만 */ }
+        /* 지역으로는 반경 없이 지역 전체라 자료가 많다 — 들어갈 때 매각기간을 3개월로 시작(2026-11-08, 길면 화면이 버벅였다) */
+        if (saleMode === 'region') { saleSeg.period = '3개월'; saleSave(); if (saleApplied) saleApply({ ...saleApplied, period: '3개월' }); }
         const it = saleMode === 'item' && sxMe();
         if (it) saleRegionOf(it, (r) => { if (r && saleMode === 'item' && saleItemId === it.id) { saleGoRegion(r); renderMarket(); } });
         renderMarket(); break;
