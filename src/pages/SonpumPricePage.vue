@@ -211,7 +211,12 @@ const cond = computed<PriceCond>(() => {
   if (webEmbed && simMode.value === 'sim' && rangeCond.value.floor === 0) base = { ...base, floor: 0 };
   return elevPick.value ? { ...base, elev: elevPick.value } : base;
 });
-const candidates = computed(() => inRange(allRows.value, radius.value, cond.value, me.value.floor));
+const candidates = computed(() => {
+  const list = inRange(allRows.value, radius.value, cond.value, me.value.floor);
+  // 웹 — '같은 층'이면 같은 건물 거래에도 층을 건다. 같은 건물은 늘 넣는 규칙이 앞서 5층 · 3층이 섞여 층이 안 먹는 것처럼 보였다(2026-11-08)
+  if (!webEmbed || rangeCond.value.floor !== 0 || !me.value.floor) return list;
+  return list.filter((r) => !r.same || !r.floorNo || r.floorNo === me.value.floor);
+});
 const kindRows = computed(() => candidates.value.filter((r) => r.group === kindF.value));
 const kindCount = (k: Kind) => candidates.value.filter((r) => r.group === k).length;
 
