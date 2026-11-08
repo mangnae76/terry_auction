@@ -567,8 +567,8 @@ const bldRank = computed<BldRow[]>(() => {
     const f = l[0] as DongTradeDetailRow & { sido?: string; gu?: string };
     const addr = [f.sido || sido.value, f.gu || district.value?.label || '', l[0].umdNm, l[0].jibun].filter(Boolean).join(' ');
     const deals = [...l].sort((a, b) => b.contractDate.localeCompare(a.contractDate));
-    /* 직거래 비율 · 가격 흐름(최근 3건 평당가 평균 ÷ 전체 평당가 평균 − 1) */
-    const direct = l.filter((r) => r.kind === '직거래').length / l.length;
+    /* 직거래 건수 · 가격 흐름(최근 3건 평당가 평균 ÷ 전체 평당가 평균 − 1) */
+    const direct = l.filter((r) => r.kind === '직거래').length;
     const py = (r: DongTradeDetailRow) => (r.priceWon > 0 && r.pyeong > 0 ? r.priceWon / r.pyeong : 0);
     const pys = deals.map(py).filter((v) => v > 0);
     const recent = pys.slice(0, 3); const avgAll = pys.length ? pys.reduce((t, v) => t + v, 0) / pys.length : 0;
@@ -1292,13 +1292,15 @@ const downloadCsv = () => {
               <!-- 한 줄로 — 이름 · 주소(동 지번) · 연식 · ㎡ / 평 · 엘베, 칸마다 세로 정렬. 주소 복사는 오른쪽 N · P 옆 아이콘(시세분석 표와 같은 꼴, 2026-11-08) -->
               <span class="nm"><b>{{ b.name || '이름 없음' }}</b></span>
               <span class="ad">{{ b.umd }} {{ b.jibun }}</span>
-              <span class="yr">{{ b.year ? `${b.year}년 / ${thisYear - b.year + 1}년차` : '-' }}</span>
-              <span class="ar">{{ b.aMin ? (b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}평` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡ / ${(b.aMin / 3.3058).toFixed(1)}~${(b.aMax / 3.3058).toFixed(1)}평`) : '-' }}</span>
+              <!-- 연식 — 두 줄로: 위 준공 해, 아래 작게 년차 -->
+              <span class="num2 yr"><b>{{ b.year ? `${b.year}년` : '-' }}</b><small v-if="b.year">{{ thisYear - b.year + 1 }}년차</small></span>
+              <!-- 전용 — 건수 · 평균가 칸처럼 두 줄로: 위 ㎡, 아래 작게 평 -->
+              <span class="num2 ar"><b>{{ b.aMin ? (b.aMin === b.aMax ? `${b.aMin.toFixed(1)}㎡` : `${b.aMin.toFixed(1)}~${b.aMax.toFixed(1)}㎡`) : '-' }}</b><small v-if="b.aMin">{{ b.aMin === b.aMax ? `${(b.aMin / 3.3058).toFixed(1)}평` : `${(b.aMin / 3.3058).toFixed(1)}~${(b.aMax / 3.3058).toFixed(1)}평` }}</small></span>
               <span class="evc"><em v-if="elevText(b.id)" :class="['ev', elevCls(b.id)]">{{ elevText(b.id) }}</em></span>
               <!-- 회전율 = 거래 ÷ 세대수(건축물대장), 아래 작게 세대수 -->
               <span class="num2"><b>{{ bldHh[b.id] ? pct(b.n / bldHh[b.id]) : '-' }}</b><small>{{ bldHh[b.id] ? `${bldHh[b.id].toLocaleString('ko-KR')}세대` : '' }}</small></span>
-              <!-- 건수, 아래 작게 직거래 비율 -->
-              <span class="num2"><b>{{ b.n.toLocaleString('ko-KR') }}건</b><small :class="{ warn: b.direct >= 0.5 }">직거래 {{ pct(b.direct) }}</small></span>
+              <!-- 건수, 아래 작게 직거래 건수(절반 넘으면 빨갛게) -->
+              <span class="num2"><b>{{ b.n.toLocaleString('ko-KR') }}건</b><small :class="{ warn: b.direct * 2 >= b.n }">직거래 {{ b.direct.toLocaleString('ko-KR') }}건</small></span>
               <!-- 평균가, 아래 작게 가격 흐름(최근 3건 평당가 ÷ 전체) -->
               <span class="num2"><b>{{ bldWon(b.avg) }}</b><small v-if="b.trend !== null" :class="b.trend >= 0.03 ? 'up' : b.trend <= -0.03 ? 'down' : ''">{{ b.trend >= 0.03 ? '▲' : b.trend <= -0.03 ? '▼' : '' }} 최근 {{ b.trend >= 0 ? '+' : '' }}{{ (b.trend * 100).toFixed(1) }}%</small></span>
               <span class="num2"><b>{{ bldWon(b.perPy) }}</b></span>
@@ -1676,6 +1678,8 @@ const downloadCsv = () => {
 .adm-bld.sale .adm-bld-row { --bld-cols: 26px minmax(0, 1.3fr) minmax(0, .9fr) 104px 156px 36px 58px 70px 100px 64px 56px 74px 64px 74px; }
 .adm-bld-row .num2 { display: grid; justify-items: end; line-height: 1.25; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .adm-bld-row .num2 b { font-weight: 700; } .adm-bld-row .num2 small { font-size: 11.5px; color: #9ca3af; }
+/* 연식 · 전용도 건수 칸과 같은 두 줄 꼴 */
+.adm-bld-row .num2:is(.yr, .ar) { font-size: inherit; color: inherit; }
 .adm-bld-row .num2 small.warn { color: #d97706; } .adm-bld-row .num2 small.up { color: #dc2626; } .adm-bld-row .num2 small.down { color: #2b6df3; }
 .adm-bld > header .nonew { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #374151; cursor: pointer; }
 .adm-bld > header .nonew input { width: 14px; height: 14px; accent-color: #2b6df3; }
