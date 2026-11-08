@@ -259,8 +259,9 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
 
         <div class="ebm-foot">
           <div class="ebm-chks">
-            <label class="ebm-chk" title="받기는 회원가입 후 로그인한 회원만 할 수 있습니다"><input type="checkbox" checked disabled />로그인한 회원만 받기</label>
             <label class="ebm-chk"><input v-model="publishNow" type="checkbox" />바로공개</label>
+            <!-- 받기는 늘 로그인한 회원만 — 파일 조각 읽기 규칙 · 받은 기록(회원 아이디)이 로그인을 요구한다 -->
+            <p class="ebm-note">받기는 회원가입 후 로그인한 회원만 할 수 있습니다.</p>
           </div>
           <div class="ebm-btns">
             <button v-if="editing" type="button" class="ebm-btn" :disabled="saving" @click="reset">취소</button>
@@ -370,10 +371,10 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
 .ebm-bar b { position: relative; display: block; text-align: center; line-height: 22px; font-size: 12px; color: #fff; mix-blend-mode: difference; }
 
 .ebm-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 4px; }
-.ebm-chks { display: flex; gap: 18px; flex-wrap: wrap; }
+.ebm-chks { display: flex; align-items: center; gap: 8px 18px; flex-wrap: wrap; }
 .ebm-chk { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--e-text); cursor: pointer; }
 .ebm-chk input { width: 16px; height: 16px; margin: 0; accent-color: var(--e-blue); }
-.ebm-chk:has(input:disabled) { cursor: default; color: var(--e-muted); }
+.ebm-note { margin: 0; font-size: 12px; color: var(--e-muted); }
 .ebm-btns { display: flex; gap: 8px; margin-left: auto; }
 .ebm-btn { height: 38px; padding: 0 18px; border: 1px solid var(--e-line); border-radius: 8px; background: var(--e-bg); color: var(--e-text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .ebm-btn:hover:not(:disabled) { border-color: var(--e-blue); color: var(--e-blue); }
