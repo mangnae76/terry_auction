@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 이벤트 상세 — 목록에서 제목 줄을 누르면 들어오는 화면.
 // 글은 운영에서 올린 것(boardPosts)을 그대로 보여 준다.
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import ImageLightbox from './../components/ImageLightbox.vue';
@@ -36,11 +36,14 @@ const posted = computed(() => {
 const tag = computed(() => (post.value ? tagAt(post.value, boardNow.value) : ''));
 
 const zoom = ref('');
+/** 웹 — 앱 머리(뒤로 · 더보기 › 공지 경로)는 빼고 웹 글자 규칙(최소 12 · 제목 크게)으로 그린다(2026-11-08) */
+const web = inject('webEmbed', false);
 </script>
 
 <template>
-  <section class="bp-shell">
-    <header class="bp-header">
+  <section :class="['bp-shell', { web }]">
+    <button v-if="web" type="button" class="bp-list" @click="router.back()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg>목록으로</button>
+    <header v-else class="bp-header">
       <button type="button" class="bp-back" aria-label="뒤로" @click="router.back()"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg></button>
       <h1 class="bp-title">{{ kindName }}</h1>
       <span class="bp-crumb">더보기 › 공지 › {{ kindName }}</span>
@@ -68,7 +71,7 @@ const zoom = ref('');
     <p v-else class="bp-gone">글을 찾지 못했습니다. 내려간 글일 수 있습니다.</p>
 
     <ImageLightbox v-if="zoom" :src="zoom" @close="zoom = ''" />
-    <AppMobileBottomNav active="more" />
+    <AppMobileBottomNav v-if="!web" active="more" />
   </section>
 </template>
 
@@ -97,4 +100,18 @@ const zoom = ref('');
 .bp-img { width: 100%; border-radius: 10px; margin-bottom: 12px; cursor: zoom-in; }
 .bp-body { margin: 0; font-size: 12.5px; line-height: 1.8; color: #374151; white-space: pre-wrap; word-break: keep-all; }
 .bp-gone { margin: 24px 14px; font-size: 12.5px; color: #9ca3af; }
+
+/* 웹 — 공지 화면과 같은 흰 카드 하나, 글자는 웹 규칙(최소 12 · 제목 크게 · 본문 15) */
+.bp-shell.web { min-height: 0; background: transparent; padding-bottom: 24px; }
+.bp-list { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 10px; padding: 6px 10px 6px 6px; border: 0; border-radius: 8px; background: transparent; color: #4b5563; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.bp-list:hover { background: #eef3ff; color: #2b6df3; }
+.web .bp-card { margin: 0; padding: 28px 32px 32px; border-radius: 12px; }
+.web .bp-top { gap: 10px; }
+.web .bp-tag { padding: 4px 10px; border-radius: 6px; font-size: 13px; }
+.web .bp-h { font-size: 22px; line-height: 1.4; }
+.web .bp-posted { margin-top: 10px; font-size: 13px; }
+.web .bp-period { margin: 8px 0 20px; padding-bottom: 18px; border-bottom: 1px solid #eef1f6; font-size: 15px; }
+.web .bp-img { max-width: 760px; display: block; margin: 0 0 18px; }
+.web .bp-body { font-size: 15px; line-height: 1.85; }
+.web.bp-shell .bp-gone { margin: 24px 0; font-size: 14px; }
 </style>

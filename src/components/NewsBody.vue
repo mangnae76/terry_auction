@@ -38,7 +38,7 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
 </script>
 
 <template>
-  <div class="nws-wrap">
+  <div :class="['nws-wrap', { web }]">
     <section v-if="!noticeOnly" class="nws-card" data-sec="event">
       <h3 class="nws-h">이벤트<i v-if="eventNew" class="dot" /></h3>
       <template v-for="(e, i) in EVENTS" :key="`e${i}`">
@@ -64,7 +64,8 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
         <span v-if="n.star" class="star">✦</span><span v-else class="tag">{{ n.tag }}</span>
           <span class="txt">{{ n.text }}</span>
           <span v-if="n.postedShort" class="when">{{ n.postedShort }}</span>
-          <i v-if="n.body || n.imageUrl" class="chev">{{ openRow === `n${i}` ? '▴' : '▾' }}</i>
+          <i v-if="(n.body || n.imageUrl) && web" :class="['chev', { up: openRow === `n${i}` }]" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg></i>
+          <i v-else-if="n.body || n.imageUrl" class="chev">{{ openRow === `n${i}` ? '▴' : '▾' }}</i>
         </button>
         <div v-if="openRow === `n${i}`" class="nws-open">
           <img v-if="n.imageUrl" :src="n.imageUrl" alt="" @click="zoom = n.imageUrl" />
@@ -132,6 +133,23 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
   margin: 0; font-size: 11.5px; line-height: 1.75; color: #4b5563;
   white-space: pre-line; word-break: keep-all;
 }
+
+/* 웹 — 글자 규칙(최소 12 · 카드 제목 16 · 줄 제목 15) 과 잘 보이는 펼침 화살표(2026-11-08) */
+.web .nws-card { padding: 18px 20px; }
+.web .nws-h { margin-bottom: 8px; font-size: 16px; }
+.web .nws-row { gap: 10px; padding: 12px 4px; }
+.web .nws-row:hover { background: #f7f9fc; }
+.web .nws-row .tag { min-width: 40px; padding: 3px 8px; font-size: 12px; }
+.web .nws-row .star { font-size: 14px; }
+.web .nws-row .txt { font-size: 15px; font-weight: 600; color: #111827; }
+.web .nws-row .when { font-size: 13px; color: #6b7280; }
+.web .nws-row .chev { width: 26px; height: 26px; display: inline-grid; place-items: center; border-radius: 7px; background: #f1f3f8; color: #4b5563; }
+.web .nws-row .chev svg { transition: transform .2s ease; } .web .nws-row .chev.up svg { transform: rotate(180deg); }
+.web .nws-row:hover .chev { background: #eef3ff; color: #2b6df3; }
+.web .nws-empty { font-size: 14px; }
+.web .nws-open { padding: 6px 4px 16px 54px; }
+.web .nws-open p { font-size: 14px; color: #374151; }
+.web .nws-open .posted { font-size: 13px; }
 
 /* 포인트 — 안내 화면과 같은 파란 상자 */
 .nws-blue { background: #4a7bd8; border-radius: 10px; padding: 14px 13px; color: #fff; }
