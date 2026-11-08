@@ -1039,7 +1039,7 @@ html.mk-map-lock, html.mk-map-lock body { overflow: hidden; overscroll-behavior:
 .sx-collect-row .sx-seg[data-n="3"] { flex: 3 1 0; }
 .sx-collect-row .sx-seg button { height: 34px; font-size: 13.5px; }
 .sx-collect-row :is(.sx-step, .sx-chkbox) { flex: 1 1 0; justify-content: center; }
-.sx-collect-row .sx-step { flex: 0 0 122px; min-width: 0; padding: 0 6px; gap: 6px; }   /* 브라우저 열기 ~ 건축연도 채우기 다섯은 같은 폭 122(가장 긴 '끝 페이지까지 수집'이 딱 들어가는 폭) — 남는 폭은 사이트 · 개월수 · 처음부터새로가 나눈다(2026-11-07) */
+.sx-collect-row .sx-step { flex: 0 0 122px; min-width: 0; padding: 0 6px; gap: 6px; }   /* 브라우저 열기 ~ 빈칸채우기 다섯은 같은 폭 122(가장 긴 '끝 페이지까지 수집'이 딱 들어가는 폭) — 남는 폭은 사이트 · 개월수 · 처음부터새로가 나눈다(2026-11-07) */
 .sx-collect-row .sx-seg[data-n="2"] { flex: 0 0 auto; }   /* 옥션원 · 탱크옥션은 제 폭 그대로 — 줄어드는 몫은 개월수 칸만 */
 .sx-collect-row .sx-seg[data-n="3"] { min-width: 0; }
 .sx-collect-row .sx-seg[data-n="3"] { min-width: 168px; }
@@ -7781,7 +7781,7 @@ span.cal-day.has { cursor: help; }
   const agWon = (v) => (Number(v) > 0 ? Math.round(Number(v)).toLocaleString('ko-KR') : '-');
   /* 건축연도 — 연도가 비면 건축연월('2010.06') 앞 네 자리 */
   const agBuiltYear = (r) => { const y = Number(r['건축연도']); if (y > 1900) return y; const m = /^(\d{4})/.exec(String(r['건축연월'] || '')); return m ? Number(m[1]) : 0; };
-  /* 사이트에서 수집 — 시안 A의 수집 띠: [사이트 · 기간 · 처음부터새로] [① 브라우저 열기 ② 끝 페이지까지 자동 수집 ③ 건축연도 채우기] [진행 · 중지].
+  /* 사이트에서 수집 — 시안 A의 수집 띠: [사이트 · 기간 · 처음부터새로] [① 브라우저 열기 ② 끝 페이지까지 자동 수집 ③ 빈칸채우기(건축연도 · 응찰)] [진행 · 중지].
      둘째 줄은 도우미 안내 · 저장 건수 · [수집 관리](모은 동네 · 모을 물건 대기열 · 동/사건으로 추가 — 예전 기능 그대로) */
   /* 도우미 판 — 'web-agent 2026.11.01-8' → 'ver.26.11.01-8' (굵기 없이) */
   const agVer = (v) => { const m = /(\d{4})\.(\d{2})\.(\d{2})(-\d+)?/.exec(String(v)); return m ? `ver.${m[1].slice(2)}.${m[2]}.${m[3]}${m[4] || ''}` : String(v).replace(/^web-agent\s*/, ''); };
@@ -7809,14 +7809,14 @@ span.cal-day.has { cursor: help; }
     let msg = !online ? '' : (s.message || (ready ? '' : '① 브라우저 열기를 누르면 MyAgent가 켜진 컴퓨터에 크롬이 열립니다.'));
     if (!qVerOk && AG.queue.length) msg = `읍면동 수집은 새 도우미(2026.11.01-7 이상)에서 됩니다 — 지금 ${s.version || '예전 버전'}. MyAgent 창에서 Ctrl+C 뒤 다시 켜 주세요.`;
     if (AG.note && Date.now() - AG.noteAt < 5000) msg = AG.note;
-    const step = (n, name, label, on) => {
+    const step = (n, name, label, on, tip = '') => {
       const done = name === 'open' && ready; const cur = busy && AG.lastSent === name;
-      return `<button type="button" class="sx-step${done ? ' done' : ''}${cur ? ' now' : ''}" data-act="ag-cmd" data-v="${name}" ${on ? '' : 'disabled'}>${n || done ? `<b>${done ? '✓' : n}</b>` : ''}${label}</button>`;   /* n 이 0 이면 번호 동그라미 없이(②③ 뺌 2026-11-06) */
+      return `<button type="button" class="sx-step${done ? ' done' : ''}${cur ? ' now' : ''}" data-act="ag-cmd" data-v="${name}" ${on ? '' : 'disabled'}${tip ? ` data-tip="${esc(tip)}" data-tip-pos="right"` : ''}>${n || done ? `<b>${done ? '✓' : n}</b>` : ''}${label}</button>`;   /* n 이 0 이면 번호 동그라미 없이(②③ 뺌 2026-11-06) */
     };
     const pr = busy && s.prog && s.prog.n > 0 ? s.prog : null;
-    /* 진행 — 수집 중이면 '데이터 수집 중', 숫자는 읍면동 수집이면 곳 수 · 건축연도 채우기면 건 수(페이지 수가 아니다). 막대 위에는 지금 받는 곳(2026-11-08) */
+    /* 진행 — 수집 중이면 '데이터 수집 중', 숫자는 읍면동 수집이면 곳 수 · 빈칸채우기면 건 수(페이지 수가 아니다). 막대 위에는 지금 받는 곳(2026-11-08) */
     const st0 = s || {};   /* 도우미 상태를 아직 못 받았으면 빈 값 — s.enriching 을 바로 읽다 화면이 멈췄다(2026-11-08) */
-    const enr = !!st0.enriching || st0.lastCmd === 'enrich';   /* 수집 끝에 건축연도 채우기가 이어 돌 때도(enriching) */
+    const enr = !!st0.enriching || st0.lastCmd === 'enrich';   /* 수집 끝에 빈칸채우기가 이어 돌 때도(enriching) */
     const doing = !busy ? '대기 중' : enr ? '건축연도 채우는 중' : '데이터 수집 중';
     const unit = enr ? '곳' : st0.lastCmd === 'queue' ? '곳' : '';   /* 건축연도는 건물 수, 읍면동 수집은 동네 수 */
     const target = busy && st0.target ? String(st0.target) : '';
@@ -7834,13 +7834,13 @@ span.cal-day.has { cursor: help; }
     /* 맨 위 주황 막대 안내(다른 화면과 같은 .rg-lead) — 첫 줄은 도우미가 지금 하는 말, 둘째 줄은 쓰는 순서 */
     const say = online ? (msg || '대기 중입니다.') : 'MyAgent가 꺼져 있습니다. 수집할 컴퓨터에서 agent.py 를 켜 주세요.';
     const lead = `<div class="rg-lead sx-lead" role="status" aria-live="polite"><p class="l1">${esc(say)}</p>`
-      + '<p class="l2">① 브라우저 열기 → 읍면동 · 끝 페이지까지 · 현재 화면 수집 중 하나 → 건축연도 채우기(응찰자수도 함께) 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
+      + '<p class="l2">① 브라우저 열기 → 읍면동 · 끝 페이지까지 · 현재 화면 수집 중 하나를 누르면, 건축연도 · 응찰자수까지 채워 아래 검색에 바로 쓰입니다. 빈칸채우기는 채우기가 끊겼을 때만 누르면 됩니다.</p></div>';
     return `<div class="sx-top" id="agPanel">${lead}<section class="sx-card sx-collect" aria-label="인근매각사례 데이터수집">${titlebar}`
       /* 먼저 고르는 것 — 읍면동 · 사건번호 수집 상자를 맨 위로(옥션원 줄보다 위, 2026-11-07) */
       + `<div class="sx-manage">${agQueueHtml()}</div>`
       /* 그다음 줄 — 사이트 · 기간 오른쪽에 ① · ②(화면만 · 대기열 · 자동 수집 한 상자) · ③ */
       + `<div class="sx-collect-row"><div class="sx-src">${seg('site', [['옥션원', '옥션원'], ['탱크옥션', '탱크옥션']])}<span class="sx-vsep" aria-hidden="true"></span>${seg('months', AG_MONTHS)}</div>`
-      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || !!agDongItem()))}${step(0, 'auto', '끝 페이지까지 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '건축연도 채우기', ready && free)}</div></div></div></div>`
+      + `<span class="sx-vsep" aria-hidden="true"></span><div class="sx-steps">${step(1, 'open', '브라우저 열기', online && free)}<div class="sx-stepcol"><div class="sx-steprow"><span class="sx-step2">${step(0, 'queue', qRun ? '읍면동 수집 중' : '읍면동 수집', ready && free && qVerOk && (AG.queue.length > 0 || !!agDongItem()))}${step(0, 'auto', '끝 페이지까지 수집', ready && free)}${step(0, 'screen', '현재 화면 수집', ready && free)}</span>${step(0, 'enrich', '빈칸채우기', ready && free, '건축연도 · 응찰자수 등 빈 칸 채우기 — 수집 끝에 저절로 돌아 끊겼을 때만 누릅니다')}</div></div></div></div>`
       /* 수집 관리를 펼치면 업데이트 · 접기 단추는 수집데이터 줄 오른쪽 끝으로(2026-11-06), 접으면 이 줄에 */
       + `<div class="sx-manage">${agCovHtml(metaCnt, metaUpd ? `<span class="sx-meta">${metaUpd}</span>` : '')}</div>`
       + `</section></div>`;
