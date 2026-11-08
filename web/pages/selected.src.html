@@ -3335,7 +3335,9 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .st-tabs button { position: relative; height: 40px; padding: 0 2px; border: 0; background: transparent; font-size: 15px; font-weight: 600; color: var(--text-2); cursor: pointer; }
 .st-tabs button.on { color: var(--text); font-weight: 800; }
 .st-tabs button.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--nav-orange); }
-.st-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.st-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }   /* 한 줄에 4개 — 좁으면 3 · 2 */
+@media (max-width: 1180px) { .st-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.st-grid .st-cover strong { font-size: 22px; }
 .st-card { display: flex; flex-direction: column; border: 1px solid var(--card-line); border-radius: 12px; overflow: hidden; background: var(--surface); }
 .st-cover { position: relative; height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; color: #fff; }
 .st-cover.navy { background: #26345c; } .st-cover.blue { background: #2f5aa8; } .st-cover.green { background: #3f8a5a; }
