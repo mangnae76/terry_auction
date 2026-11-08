@@ -104,7 +104,7 @@ const save = async (publish: boolean) => {
   saving.value = true;
   progress.value = 0;
   try {
-    await saveEbook({ ...d, link, title: d.title.trim(), desc: d.desc.trim(), price: paid.value ? d.price : 0, published: publish }, { pdf: pdf.value, cover: cover.value }, (r) => { progress.value = r; });
+    await saveEbook({ ...d, link, title: d.title.trim(), desc: d.desc.trim(), price: paid.value ? d.price : 0, published: publish }, { pdf: link ? null : pdf.value, cover: cover.value }, (r) => { progress.value = r; });
     flash(publish ? '올렸습니다. 콘텐츠 › 전자책에 바로 나갑니다.' : '작성 중으로 담아 두었습니다. 회원에게는 아직 보이지 않습니다.');
     close();
   } catch (e) {
