@@ -1683,6 +1683,12 @@ const downloadCsv = () => {
 .adm-bld-head .sh i { font-style: normal; font-size: 10px; color: #c3cad6; }
 .adm-bld-head .sh.on { color: #111827; } .adm-bld-head .sh.on i { color: #2b6df3; }
 .adm-bld-head .sh:hover { color: #2b6df3; }
+/* 머리글 · 칸 정렬 — 건물명만 왼쪽, 나머지는 머리글과 내용 모두 가운데(2026-11-08) */
+.adm-bld-head > * { justify-self: center; text-align: center; }
+.adm-bld-head > .sh:nth-child(2) { justify-self: start; }
+.adm-bld-list .adm-bld-row > :not(.nm) { justify-self: center; text-align: center; }
+.adm-bld-list .adm-bld-row .num2 { justify-items: center; }
+.adm-bld-list .adm-bld-row .evc { justify-content: center; }
 .adm-bld-row .nm .ev, .adm-bld-row .evc .ev { margin-left: 0; padding: 1px 6px; border-radius: 5px; font-style: normal; font-size: 12px; font-weight: 700; vertical-align: 1px; }
 .adm-bld-row .ev.y { background: #e8f6ee; color: #15803d; } .adm-bld-row .ev.n { background: #fdeeee; color: #dc2626; } .adm-bld-row .ev.u { background: #f3f5f9; color: #6b7280; }
 .adm-bld-row { cursor: pointer; } .adm-bld-row:hover { background: #f7f9fc; }
