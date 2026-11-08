@@ -1,4 +1,4 @@
-// 전자책 — 운영자가 올리고(콘텐츠 › 관리), 회원이 무료로 받는다(콘텐츠 › 전자책 · 마이페이지 › 받은콘텐츠).
+// 전자책 — 운영자가 올리고(콘텐츠 › 관리), 회원이 무료로 받는다(콘텐츠 › 전자책 · 콘텐츠 › 내콘텐츠).
 //
 // 책 한 권 = Firestore 'ebooks' 글 하나(표지는 줄인 그림을 글 안에) + 책 파일은 구글드라이브 링크(link), 또는 Storage 파일(ebooks/{id}/…).
 // 받기는 회원가입 · 로그인한 회원만 — 받을 때마다 'ebookReceipts/{uid}_{책}' 에 남기고, 처음 받을 때만 받은 수를 1 올린다.
@@ -196,7 +196,7 @@ export const receiveEbook = async (book: Pick<Ebook, 'id' | 'title' | 'filePath'
   return getDownloadURL(storageRef(storage, book.filePath));
 };
 
-/** 내가 받은 책 — 마이페이지 › 받은콘텐츠 */
+/** 내가 받은 책 — 콘텐츠 › 내콘텐츠 */
 export const subscribeMyReceipts = (onData: (rows: EbookReceipt[]) => void, onError: (msg: string) => void): Unsubscribe => {
   const uid = auth?.currentUser?.uid;
   if (!firestore || !uid) { onData([]); return () => undefined; }

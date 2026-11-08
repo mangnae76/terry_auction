@@ -251,7 +251,15 @@ export const mountEbookManage = (el) => {
   app.mount(el);
   return () => app.unmount();
 };
-export { subscribeEbooks, receiveEbook } from '../../src/services/ebookRepository';
+/* 콘텐츠 › 내콘텐츠 — 내가 받은 책(마이페이지 › 받은콘텐츠와 같은 화면) */
+import MyContentsPage from '../../src/pages/MyContentsPage.vue';
+export const mountMyContents = (el) => {
+  const app = createApp(MyContentsPage);
+  app.provide('webEmbed', true);
+  app.mount(el);
+  return () => app.unmount();
+};
+export { subscribeEbooks, receiveEbook, subscribeMyReceipts } from '../../src/services/ebookRepository';
 
 export const mountAppFieldTrip = (el, onDetail) => {
   const Empty = { render: () => null };

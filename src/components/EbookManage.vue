@@ -131,7 +131,7 @@ const confirmBox = ref<ConfirmBox | null>(null);
 const askRemove = (b: Ebook) => {
   confirmBox.value = {
     title: `'${b.title}' 를 지울까요?`,
-    desc: '책 파일과 표지도 함께 지워집니다. 이미 받은 회원의 받은콘텐츠에서도 다시 받을 수 없게 됩니다.',
+    desc: '책 파일과 표지도 함께 지워집니다. 이미 받은 회원의 내콘텐츠에서도 다시 받을 수 없게 됩니다.',
     okLabel: '지우기',
     skipKey: '',
     run: async () => { try { await removeEbook(b); flash('지웠습니다.'); } catch (e) { flash(userMessage(e, '지우지 못했습니다.')); } },
