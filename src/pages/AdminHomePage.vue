@@ -8,6 +8,7 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import BrandLogo from '../components/BrandLogo.vue';
+import AdminTopTabs from '../components/AdminTopTabs.vue';
 
 type Tool = {
   title: string;
@@ -43,11 +44,10 @@ const openTool = (tool: Tool) => {
       <div class="adm-top-in">
         <div class="adm-brand">
           <BrandLogo :size="36" tone="white" />
-          <small class="adm-brand-tag">관리자 도구</small>
         </div>
+        <!-- 관리자 도구 · 운영 · 플랫폼 — 탭으로(예전 오른쪽 단추 둘) -->
+        <AdminTopTabs />
         <nav class="adm-top-nav">
-          <a class="adm-top-link" href="/web">플랫폼</a>
-          <button type="button" class="adm-top-link ops" @click="router.push('/admin/board')">운영</button>
           <span class="adm-who">{{ who }}</span>
         </nav>
       </div>

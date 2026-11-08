@@ -5,6 +5,7 @@ import { userMessage } from '../services/userMessage';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import BrandLogo from '../components/BrandLogo.vue';
+import AdminTopTabs from '../components/AdminTopTabs.vue';
 import DateTimeField from '../components/DateTimeField.vue';
 import { useAuthStore } from '../stores/authStore';
 import { OPS_MENU, opsItem } from '../services/adminMenu';
@@ -317,8 +318,8 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         </button>
         <div class="adm-brand">
           <BrandLogo :size="36" tone="white" />
-          <small class="adm-brand-tag">운영</small>
         </div>
+        <AdminTopTabs />
         <nav class="adm-top-nav">
           <button type="button" class="adm-top-link" @click="router.push('/more')">앱에서 보기</button>
           <span class="adm-who">{{ who }}</span>
