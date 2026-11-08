@@ -92,6 +92,8 @@ service cloud.firestore {
     // 사용자 프로필 — 본인 것만 읽고 쓸 수 있음
     match /users/{uid} {
       allow read, write: if isAllowedUser() && request.auth.uid == uid;
+      // 운영 › 회원 관리 — 운영자는 회원 목록을 읽기만 한다(고치지 않는다)
+      allow read: if isAdmin();
       // 허용 목록으로 다시 닫았을 때 — 막 가입한 사람도 제 문서의 가입 정보 · 내 정보 칸만 읽고 적는다(지금은 위 줄이 모두에게 열려 있다).
       // 무료이용 · 포인트 같은 '받는 것'은 본인이 적을 수 없게 칸 목록에서 뺐다(서비스 오픈 때 서버가 준다 — docs/서비스오픈목록.md)
       allow get: if request.auth != null && request.auth.uid == uid;

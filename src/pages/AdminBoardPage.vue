@@ -8,6 +8,8 @@ import AdminTopTabs from '../components/AdminTopTabs.vue';
 import AdminInquiryBox from '../components/AdminInquiryBox.vue';
 import AdminSiteConfigBox from '../components/AdminSiteConfigBox.vue';
 import AdminAccessBox from '../components/AdminAccessBox.vue';
+import AdminMembersBox from '../components/AdminMembersBox.vue';
+import AdminLeaveBox from '../components/AdminLeaveBox.vue';
 import DateTimeField from '../components/DateTimeField.vue';
 import { useAuthStore } from '../stores/authStore';
 import { OPS_MENU, opsItem } from '../services/adminMenu';
@@ -363,6 +365,9 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
       <AdminSiteConfigBox v-else-if="menu === 'maintenance' || menu === 'popup'" :key="menu" :mode="menu" />
       <!-- 접근 권한 관리 — 운영자 계정(DB adminConfig/main) -->
       <AdminAccessBox v-else-if="menu === 'access'" />
+      <!-- 회원 관리 · 탈퇴 처리 — DB users · withdrawRequests(운영자 읽기) -->
+      <AdminMembersBox v-else-if="menu === 'members'" />
+      <AdminLeaveBox v-else-if="menu === 'leave'" />
 
       <!-- 아직 만들지 않은 칸 -->
       <section v-else-if="!menuKind" class="adb-card ops-soon">
