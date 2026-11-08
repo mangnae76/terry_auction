@@ -1,15 +1,14 @@
 <script setup lang="ts">
-// 관리자 화면 머리 탭 — 관리자 도구(/admin) · 운영(/admin/board) · 플랫폼(웹 /web). 관리자 도구 · 운영 두 화면이 같이 쓴다(2026-11-08)
+// 관리자 화면 머리 탭 — 운영(/admin/board) · 플랫폼(웹 /web). 관리자 도구 탭은 뺐다 — /admin 은 운영으로 간다(2026-11-08)
 import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
 const router = useRouter();
 const TABS: Array<{ key: string; label: string; to: string; ext?: boolean }> = [
-  { key: 'home', label: '관리자 도구', to: '/admin' },
   { key: 'board', label: '운영', to: '/admin/board' },
   { key: 'web', label: '플랫폼', to: '/web', ext: true },
 ];
-const on = (t: { key: string; to: string }) => (t.key === 'board' ? route.path.startsWith('/admin/board') : t.key === 'home' ? route.path === '/admin' : false);
+const on = (t: { key: string; to: string }) => (t.key === 'board' ? route.path.startsWith('/admin/board') : false);
 const go = (t: { to: string; ext?: boolean }) => { if (t.ext) window.location.href = t.to; else void router.push(t.to); };
 </script>
 

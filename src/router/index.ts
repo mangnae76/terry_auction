@@ -197,10 +197,10 @@ const router = createRouter({
       component: () => import('../pages/AgencyBookPage.vue'),
     },
     {
-      // 관리자 도구 — 웹에서만 쓰는 화면이라 앱 메뉴에는 올리지 않는다
+      // 관리자 도구 — 탭을 빼고 운영으로 바로 간다(2026-11-08). 웹에서만 쓰는 화면이라 앱 메뉴에는 올리지 않는다
       path: '/admin',
       name: 'admin',
-      component: () => import('../pages/AdminHomePage.vue'),
+      redirect: '/admin/board',
     },
     {
       // KB 주택가격지수 — 분석 도구의 '부동산 시장정보' 묶음

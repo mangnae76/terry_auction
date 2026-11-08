@@ -313,9 +313,6 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
   <section class="adm-shell">
     <header class="adm-top">
       <div class="adm-top-in">
-        <button type="button" class="adm-back" aria-label="뒤로" @click="router.push('/admin')">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7" /></svg>
-        </button>
         <div class="adm-brand">
           <BrandLogo :size="36" tone="white" />
         </div>

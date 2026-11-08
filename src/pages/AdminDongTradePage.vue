@@ -1660,7 +1660,7 @@ const downloadCsv = () => {
 .adm-bld > header strong { font-size: 16px; font-weight: 800; color: #111827; }
 .adm-bld > header small { font-size: 13px; color: #6b7280; }
 .adm-bld-list { list-style: none; margin: 0; padding: 0; display: grid; }
-.adm-bld-row { display: grid; grid-template-columns: var(--bld-cols, 26px minmax(0, 1.3fr) minmax(0, .9fr) 104px 156px 36px 58px 70px 100px 64px 56px 64px 74px); align-items: center; column-gap: 12px; row-gap: 0; padding: 8px 4px; border-top: 1px solid #eef1f6; font-size: 13.5px; color: #111827; }
+.adm-bld-row { display: grid; grid-template-columns: var(--bld-cols, 36px minmax(0, 1fr) 88px 48px 90px 36px 50px 64px 88px 56px 60px 64px 74px); align-items: center; column-gap: 18px; row-gap: 0; padding: 8px 4px; border-top: 1px solid #eef1f6; font-size: 13.5px; color: #111827; }
 .adm-bld-row:first-child { border-top: 0; }
 .adm-bld-row .no { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: #eef1f6; color: #4b5563; font-size: 12px; font-weight: 800; }
 .adm-bld-row .no.top { background: #2b6df3; color: #fff; }
@@ -1675,7 +1675,8 @@ const downloadCsv = () => {
 .adm-bld-row .evc { display: flex; } .adm-bld-row .evc .ev { margin-left: 0; }
 .adm-bld-head { cursor: default !important; padding-top: 6px; padding-bottom: 6px; background: #f7f9fc; border-radius: 6px; font-size: 12px; font-weight: 700; color: #6b7280; }
 .adm-bld-head:hover { background: #f7f9fc !important; } .adm-bld-head .r { text-align: right; justify-content: flex-end; } .adm-bld-head .c { text-align: center; }
-.adm-bld.sale .adm-bld-row { --bld-cols: 26px minmax(0, 1.3fr) minmax(0, .9fr) 104px 156px 36px 58px 70px 100px 64px 56px 74px 64px 74px; }
+/* 칸 너비는 머리글 · 내용 중 넓은 쪽에 맞추고 칸 사이는 18px 로 고르게 — 남는 자리는 건물명이 받는다 */
+.adm-bld.sale .adm-bld-row { --bld-cols: 36px minmax(0, 1fr) 88px 48px 90px 36px 50px 64px 88px 56px 60px 80px 64px 74px; }
 .adm-bld-row .num2 { display: grid; justify-items: end; line-height: 1.25; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .adm-bld-row .num2 b { font-weight: 700; } .adm-bld-row .num2 small { font-size: 11.5px; color: #9ca3af; }
 /* 연식 · 전용도 건수 칸과 같은 두 줄 꼴 */
