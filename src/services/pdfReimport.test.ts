@@ -46,3 +46,30 @@ describe('mergeReimport — 같은 사건 PDF 다시 올리기', () => {
     expect(m.isFieldTrip).toBe(true);
   });
 });
+
+describe('mergeReimport — 지난번 읽기가 실패한 물건(주소 자리에 파일 이름)', () => {
+  const old = A({
+    id: 'y', caseNumber: '2026타경503385', status: '손품', archived: false, hidden: false, isFieldTrip: false,
+    eventDate: '2026-11-08', auctionRound: '3차', auctionHistory: [], address: '2026타경503385_프리스틴', auctionKind: '임의', ownerName: '',
+    courtPhone: '032-718-5560', metrics: { appraisalValue: 171000000, minimumBidValue: 83790000, myBidValue: 90000000, bidRate: 49, depositValue: 0 },
+    fieldSurvey: { surveyMemo: '내 메모', occupantNote: '' },
+  });
+  const full = A({
+    id: 'y', caseNumber: '2026타경503385', status: '손품', archived: false, hidden: false, isFieldTrip: false,
+    eventDate: '2026-11-19', auctionRound: '3차', auctionHistory: [{ round: '3차' }], address: '인천광역시 서구 검암동 678-8', auctionKind: '강제', ownerName: '김소유',
+    courtPhone: '032-860-1619', metrics: { appraisalValue: 171000000, minimumBidValue: 83790000, myBidValue: 83790000, bidRate: 49, depositValue: 8379000 },
+    fieldSurvey: { surveyMemo: '', occupantNote: '' },
+  });
+  const m = mergeReimport(old, full);
+  it('새 PDF 값이 앞선다', () => {
+    expect(m.address).toBe('인천광역시 서구 검암동 678-8');
+    expect(m.auctionKind).toBe('강제');
+    expect(m.ownerName).toBe('김소유');
+    expect((m as unknown as { courtPhone: string }).courtPhone).toBe('032-860-1619');
+    expect(m.metrics.depositValue).toBe(8379000);
+  });
+  it('사용자가 적은 칸은 남는다', () => {
+    expect(m.fieldSurvey.surveyMemo).toBe('내 메모');
+    expect(m.metrics.myBidValue).toBe(90000000);
+  });
+});
