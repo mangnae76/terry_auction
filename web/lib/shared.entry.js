@@ -269,7 +269,7 @@ export const mountMyContents = (el) => {
   app.mount(el);
   return () => app.unmount();
 };
-export { subscribeEbooks, downloadEbook, subscribeMyReceipts } from '../../src/services/ebookRepository';
+export { subscribeEbooks, downloadEbook, subscribeMyReceipts, ebookSummary, ebookBodyHtml } from '../../src/services/ebookRepository';
 
 export const mountAppFieldTrip = (el, onDetail) => {
   const Empty = { render: () => null };

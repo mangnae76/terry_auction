@@ -32,6 +32,9 @@ export const EBOOK_MAX_MB = 50;
 export type Ebook = {
   id: string;
   title: string;
+  /** 한줄설명 — 카드 제목 아래 한 줄 */
+  summary: string;
+  /** 내용 — 자세히보기 창에 나간다. 줄바꿈 · 빈 줄은 그대로, **굵게** 만 쓴다(1,000자까지) */
   desc: string;
   /** 꼬리표 — 기초 · 필수 · 실전 … (카드 제목 앞 [ ]) */
   tag: string;
@@ -65,9 +68,21 @@ export type EbookReceipt = { id: string; uid: string; ebookId: string; title: st
 export const newEbookId = (): string => `eb${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 export const emptyEbook = (): Ebook => ({
-  id: '', title: '', desc: '', tag: '', kind: 'ebook', price: 0, coverUrl: '', coverPath: '', link: '', filePath: '', fileName: '', fileSize: 0, fileParts: 0,
+  id: '', title: '', summary: '', desc: '', tag: '', kind: 'ebook', price: 0, coverUrl: '', coverPath: '', link: '', filePath: '', fileName: '', fileSize: 0, fileParts: 0,
   published: false, order: Date.now(), downloads: 0, createdAt: '', updatedAt: '',
 });
+
+/** 내용 글자 수 한도 */
+export const EBOOK_DESC_MAX = 1000;
+
+/** 카드에 나갈 한 줄 — 한줄설명이 없던 예전 책은 내용 첫 줄 */
+export const ebookSummary = (b: Pick<Ebook, 'summary' | 'desc'>): string =>
+  (b.summary || '').trim() || (b.desc || '').split('\n').map((l) => l.replace(/\*\*/g, '').trim()).find(Boolean) || '';
+
+/** 내용 → HTML — 글은 그대로 막고(escape), **굵게** 만 살린다. 줄바꿈 · 빈 줄은 보이는 쪽이 white-space: pre-line 으로 */
+export const ebookBodyHtml = (text: string): string =>
+  (text || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string)
+    .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>');
 
 /** 유료인가 — 값이 1원 이상 */
 export const isPaidEbook = (b: Pick<Ebook, 'price'>): boolean => (Number(b.price) || 0) > 0;
