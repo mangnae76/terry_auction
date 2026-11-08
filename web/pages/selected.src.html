@@ -3349,6 +3349,10 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .st-soon { align-self: flex-start; padding: 1px 8px; border-radius: 4px; background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 700; }
 .st-buy { margin-top: auto; height: 40px; border: 1px solid var(--blue); border-radius: 8px; background: var(--surface); color: var(--blue); font-size: 14px; font-weight: 700; cursor: pointer; }
 .st-buy:hover { background: var(--blue-soft); }
+.st-cover.img { background: #26345c; } .st-cover.img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }   /* 운영자가 올린 표지 그림 */
+.st-free { align-self: flex-start; padding: 1px 8px; border-radius: 4px; background: #e8f6ee; color: #15803d; font-size: 12px; font-weight: 800; }
+.st-buy:disabled { opacity: .55; cursor: default; }
+.st-manage { min-height: 200px; }
 /* ===== 홈 — 로그인 후 대문(2026-11-03). 배치를 먼저 세우고 내용은 하나씩 바꿔 간다 ===== */
 .home-content { display: grid; gap: 18px; padding-top: 18px; padding-bottom: 44px; }
 .hm-card { min-width: 0; padding: 20px 22px; border: 1px solid var(--card-line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-card); }
@@ -5066,7 +5070,7 @@ span.cal-day.has { cursor: help; }
     market: ['dong', 'rank', 'son', 'sale'], /* 랭킹분석 = 랭킹지도 · 거래랭킹(지역분석 화면을 랭킹 탭만으로) · 매각사례 = 인근 · 동일지번 매각물건 분석(안 박스 탭 S.saleTab) · 거래랭킹은 지역분석 › 랭킹지도 탭으로, 경매지번 분석은 지역분석 › 경매지번 탭으로 */
     postwin: ['flow', 'win', 'dpre', 'evict', 'balance', 'drepair', 'dsell', 'dtax', 'repair', 'sell'], /* 절차상세 장(win · evict · balance) · 가이드 장(gwin · gevict · biz) */
     finance: ['cashFlow', 'businessExpense', 'fuelMeal', 'itemPurchase', 'interior', 'tax'],
-    more: ['mypage', 'alerts', 'billing', ...(SHOW_POINTS ? ['points'] : []), 'support', 'calendar'],   /* calendar — 마이페이지 › 입찰 캘린더(앱 화면 /bid-calendar) */   /* 공지는 커뮤니티로 옮겼다 · 포인트는 SHOW_POINTS 일 때만(옛 주소 #/more/points 는 내정보로) */
+    more: ['mypage', 'alerts', 'billing', ...(SHOW_POINTS ? ['points'] : []), 'support', 'calendar', 'contents'],   /* contents — 마이페이지 › 받은콘텐츠(전자책, /my-contents) */   /* calendar — 마이페이지 › 입찰 캘린더(앱 화면 /bid-calendar) */   /* 공지는 커뮤니티로 옮겼다 · 포인트는 SHOW_POINTS 일 때만(옛 주소 #/more/points 는 내정보로) */
     community: ['notice'],   /* 오류및제안은 게시판으로 옮겼다(2026-11-05) */
     board: ['suggest', 'review'],   /* 게시판 — 오류및제안 · 사용후기(머리 오른쪽 위 '공지' 옆 '게시판'). 가입인사는 뺐다 */   /* 위 메뉴에서 커뮤니티를 뺐다(2026-11-02) — 머리 오른쪽 위 '공지'로 들어온다. FAQ 는 이용가이드로 */
     manual: ['gdeny', 'gevict', 'biz', 'gtax', 'gcheck'],   /* 매뉴얼 — 하위 탭 경매기초 · 물건고르기는 준비 중이라 잠가 두었다(주소 없음) · 낙찰이후(gdeny 매각불허가 · gevict 명도 · biz 사업자등록 · gtax 세금 장). 처음 열면 낙찰이후 */
@@ -6412,7 +6416,7 @@ span.cal-day.has { cursor: help; }
     /* 낙찰이후 · 자금관리 · 더보기 — 앱 화면의 탭 그대로(열쇠도 앱 것) */
     postwin: [['flow', '', '진행절차'], ['win', '', '절차별체크리스트']],   /* 인테리어(사업경비) · 매물등록(예전 매도·임대)은 진행절차 안 박스 탭 */
     finance: [['cashFlow', '', '자금입출금'], ['businessExpense', '', '필요경비'], ['interior', '', '사업경비'], ['tax', '', '세금신고']],   /* 필요경비 = 예정신고 · 사업경비 = 5월 종합소득세(예전 유류&식대 · 물품구매 · 인테리어 포함) */
-    more: [['mypage', '', '내정보'], ['alerts', '', '알림', 'hide'], ['billing', '', '결제하기'], ['calendar', '', '입찰 캘린더'], ['points', '', '포인트', SHOW_POINTS ? '' : 'hide'], ['support', '', '고객센터', 'hide']],   /* 입찰 캘린더 — 결제하기 옆. 고객센터는 탭에서 빼고 바닥 링크(환불정책 옆)로(2026-11-03) */
+    more: [['mypage', '', '내정보'], ['alerts', '', '알림', 'hide'], ['billing', '', '결제하기'], ['calendar', '', '입찰 캘린더'], ['contents', '', '받은콘텐츠'], ['points', '', '포인트', SHOW_POINTS ? '' : 'hide'], ['support', '', '고객센터', 'hide']],   /* 입찰 캘린더 — 결제하기 옆. 고객센터는 탭에서 빼고 바닥 링크(환불정책 옆)로(2026-11-03) */
     community: [['notice', '', '공지']],
     board: [['suggest', '', '오류및제안'], ['review', '', '사용후기']],   /* FAQ 는 이용가이드(/guide/)에 — 같은 목록(supportFaq) */
     manual: [['basic', '', '경매기초', 'soon'], ['pick', '', '물건고르기', 'soon'], ['gdeny', '', '낙찰이후']],   /* 'soon' — 준비 중, 누르면 알림만(잠금) */
@@ -8712,7 +8716,10 @@ span.cal-day.has { cursor: help; }
      스토어는 아직 파는 상품이 없다 — 표지 카드는 자리표시(준비중)이고 가격 · 구매는 막아 둔다. 상품이 정해지면 STORE_ITEMS 만 바꾼다.
      모바일앱 소개는 우리 앱에 실제로 있는 기능만 적는다(숫자 · 남의 글을 지어내지 않는다) */
   if (!S.storeTab) S.storeTab = store.get('wlp.web.storeTab2', 'mobile');   /* 기본은 모바일앱(2026-11-02) */
-  const STORE_TABS = [['all', '전체'], ['ebook', '전자책'], ['report', '리포트'], ['mobile', '모바일앱']];   /* 모바일앱 — 위 메뉴에 따로 있던 화면을 탭으로 옮겼다 */
+  const STORE_TABS = [['all', '전체'], ['ebook', '전자책'], ['report', '리포트'], ['mobile', '모바일앱'], ['manage', '관리', 'admin']];   /* 관리 — 운영자만(전자책 올리고 내리기, EbookManage) */
+  /* 운영자가 올린 전자책(DB) — 무료로받기 카드. subscribeEbooks 가 채운다(올린 책만) */
+  const EB = { list: [] };
+  let ebmStop = null;   /* 관리 탭에 띄운 앱 화면 — 다시 그리기 전에 걷는다 */   /* 모바일앱 — 위 메뉴에 따로 있던 화면을 탭으로 옮겼다 */
   const STORE_ITEMS = [
     { kind: 'ebook', tone: 'navy', tag: '기초', cover: ['경매', '첫걸음'], sub: '사건 보는 법부터 입찰까지', title: '경매 첫걸음', desc: '처음 경매를 시작하는 분을 위한 입문서' },
     { kind: 'ebook', tone: 'blue', tag: '필수', cover: ['권리분석', '핵심 정리'], sub: '말소기준권리와 인수 권리', title: '권리분석 핵심 정리', desc: '입찰 전에 꼭 확인할 권리관계' },
@@ -8722,12 +8729,20 @@ span.cal-day.has { cursor: help; }
     { kind: 'report', tone: 'green', tag: '리포트', cover: ['임장', '체크리스트'], sub: '현장에서 바로 쓰는 점검표', title: '임장 체크리스트', desc: '현장조사 항목을 빠짐없이' },
   ];
   const storeHtml = () => {
-    const list = STORE_ITEMS.filter((x) => S.storeTab === 'all' || x.kind === S.storeTab);
+    const adm = (() => { try { return agIsAdmin(); } catch (e) { return false; } })();
+    const tab = S.storeTab === 'manage' && !adm ? 'all' : S.storeTab;   /* 관리 탭은 운영자만 — 아니면 전체로 */
+    const list = STORE_ITEMS.filter((x) => tab === 'all' || x.kind === tab);
+    const ebooks = tab === 'all' || tab === 'ebook' ? EB.list : [];
+    /* 운영자가 올린 책 — 표지 그림이 있으면 그것, 없으면 남색 표지에 제목 */
+    const ebCard = (b) => `<article class="st-card">${b.coverUrl ? `<div class="st-cover img"><img src="${esc(b.coverUrl)}" alt="" loading="lazy"><span class="st-kind">전자책</span></div>` : `<div class="st-cover navy"><span class="st-kind">전자책</span><strong>${esc(b.title)}</strong></div>`}`
+      + `<div class="st-body"><h3>${b.tag ? `<em>[${esc(b.tag)}]</em> ` : ''}${esc(b.title)}</h3><p>${esc(b.desc || '')}</p><span class="st-free">무료</span><button type="button" class="st-buy" data-act="ebook-get" data-v="${esc(b.id)}">무료로받기</button></div></article>`;
     const card = (x) => `<article class="st-card"><div class="st-cover ${x.tone}"><span class="st-kind">${x.kind === 'ebook' ? '전자책' : '리포트'}</span><strong>${x.cover.map(esc).join('<br>')}</strong><small>${esc(x.sub)}</small></div>`
       + `<div class="st-body"><h3><em>[${esc(x.tag)}]</em> ${esc(x.title)}</h3><p>${esc(x.desc)}</p><span class="st-soon">가격미정</span><button type="button" class="st-buy" data-act="store-buy" data-v="${STORE_ITEMS.indexOf(x)}">구매하기</button></div></article>`;
     return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>콘텐츠</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트를 준비하고 있습니다.</p></div>`
-      + `<nav class="st-tabs" role="tablist">${STORE_TABS.map(([k, t]) => `<button type="button" role="tab" class="${S.storeTab === k ? 'on' : ''}" aria-selected="${S.storeTab === k}" data-act="store-tab" data-v="${k}">${t}</button>`).join('')}</nav>`
-      + (S.storeTab === 'mobile' ? `<div class="st-mobile">${mobileHtml()}</div></section>` : `<div class="st-grid">${list.map(card).join('')}</div></section>`);
+      + `<nav class="st-tabs" role="tablist">${STORE_TABS.filter(([, , f]) => f !== 'admin' || adm).map(([k, t, f]) => `<button type="button" role="tab" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}" data-act="store-tab" data-v="${k}">${t}${f === 'admin' ? '<span class="adm-chip">운영</span>' : ''}</button>`).join('')}</nav>`
+      + (tab === 'mobile' ? `<div class="st-mobile">${mobileHtml()}</div></section>`
+        : tab === 'manage' ? `<div class="st-manage" id="ebmMount"></div></section>`
+        : `<div class="st-grid">${ebooks.map(ebCard).join('')}${list.map(card).join('')}</div></section>`);
   };
   /* 핵심 가치 — 서비스 목표 장(소개서)과 같은 네 가지. 앱 소개 페이지(public/app/index.html VALUES)와 같이 고친다 */
   const MOBILE_VALUES = [['현장에서 바로', '조사한 내용을 현관 앞에서 펼쳐 보고 그 자리에서 고칩니다'], ['기록은 남는다', '적고 찍은 모든 것이 사건카드에 쌓여 잊히지 않습니다'],
@@ -9012,7 +9027,11 @@ span.cal-day.has { cursor: help; }
   /* 머리띠 폭이 바뀔 때도(내용이 길어져 세로 스크롤바가 생기면 폭이 줄어 메뉴가 옆으로 움직인다 — 창 크기 바뀜 신호는 오지 않는다) */
   if (window.ResizeObserver) { const ro = new ResizeObserver(() => placeNavMarks()); ['navReg', 'navWatch', 'navTrip', 'navPostwin', 'navFinance', 'navMarket'].forEach((id) => { const e = document.getElementById(id); if (e) ro.observe(e); }); const gi = document.querySelector('.gnb-in'); if (gi) ro.observe(gi); }
   setTimeout(placeNavMarks, 0); setTimeout(placeNavMarks, 800);
-  function renderInfo() { $('infoContent').innerHTML = S.route === 'store' ? storeHtml() : mobileHtml(); startSlides(); }
+  function renderInfo() {
+    if (ebmStop) { try { ebmStop(); } catch (e) { /* 이미 걷혔다 */ } ebmStop = null; }
+    $('infoContent').innerHTML = S.route === 'store' ? storeHtml() : mobileHtml(); startSlides();
+    const m = $('ebmMount'); if (m && CLOUD.T && CLOUD.T.mountEbookManage) ebmStop = CLOUD.T.mountEbookManage(m);   /* 콘텐츠 › 관리(운영자) */
+  }
   function renderMy() { $('myContent').innerHTML = mySetHtml(); aiUnlock(S.aiPane, false); }
   /* AI 설정은 두 자리(자동등록 · 마이페이지)에서 보인다 — 바뀌면 지금 보는 쪽만 다시 그린다 */
   const rerenderAi = () => {
@@ -9273,6 +9292,8 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     auth.initialize();
     /* 새 공지 · 이벤트 · 업데이트 — 앱 공지 탭과 같은 셈으로 '공지' 옆 점 */
     if (T.useBoardFeed) { try { const feed = T.useBoardFeed(); T.watch(() => feed.notices.value, (v) => { HM.notices = Array.isArray(v) ? v : []; if (S.route === 'home') renderHome(); }, { immediate: true }); } catch (e) { /* 홈 공지만 비어 보인다 */ } }
+    /* 전자책 — 운영자가 올린 책(올린 것만). 바뀌면 콘텐츠 화면을 다시 그린다(관리 탭은 제 화면이 따로 본다) */
+    if (T.subscribeEbooks) { try { T.subscribeEbooks((rows) => { EB.list = Array.isArray(rows) ? rows : []; if (S.route === 'store' && S.storeTab !== 'manage' && S.storeTab !== 'mobile') renderInfo(); }, () => { /* 책 카드만 비어 보인다 */ }); } catch (e) { /* 책 카드만 비어 보인다 */ } }
     if (T.useBoardNew) { try { const bn = T.useBoardNew(); T.watch(() => bn.any.value, (v) => { const d = $('noticeDot'); if (d) d.hidden = !v; }, { immediate: true }); } catch (e) { /* 점만 못 띄운다 */ } }
     const fromStore = () => {
       if (!CLOUD.on) return;
@@ -9686,6 +9707,17 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'buy-agree': if (S.modal && S.modal.kind === 'buy') { S.modal.agree = t.checked; const b = $('buyPay'); if (b) b.disabled = !t.checked; } break;
       case 'buy-pay': toast('결제는 준비 중입니다 — 결제 연동이 끝나면 열립니다.', 'info'); break;
       case 'store-tab': S.storeTab = v; store.set('wlp.web.storeTab2', v); renderInfo(); break;
+      /* 전자책 무료로받기 — 회원가입 후 로그인한 회원만. 받은 기록을 남기고(마이페이지 › 받은콘텐츠) 새 탭으로 내려받는다 */
+      case 'ebook-get': {
+        if (!S.loggedIn) { toast('회원가입 후 로그인하면 무료로 받을 수 있습니다.', 'info'); openAppLogin(); break; }
+        const b = EB.list.find((x) => x.id === v); if (!b || !CLOUD.T || !CLOUD.T.receiveEbook) break;
+        const w = window.open('', '_blank');   /* 누른 자리에서 창을 먼저 연다 — 주소를 받은 뒤 열면 팝업으로 막힌다 */
+        t.disabled = true;
+        CLOUD.T.receiveEbook(b).then((url) => { if (w) w.location.href = url; else location.href = url; toast('받았습니다. 마이페이지 › 받은콘텐츠에서 다시 받을 수 있습니다.', 'ok'); })
+          .catch((e) => { if (w) w.close(); if (e && e.message === 'login') { toast('회원가입 후 로그인하면 무료로 받을 수 있습니다.', 'info'); openAppLogin(); } else toast(userMsg(e, '받지 못했습니다. 잠시 뒤 다시 해 주세요.'), 'error'); })
+          .finally(() => { t.disabled = false; });
+        break;
+      }
       case 'go-postwin': case 'go-finance': case 'go-more': case 'go-community': case 'go-board': case 'go-manual': {
         const route = act.slice(3);
         const hit = (SUBTABS[route].find((x) => x[2] === t.dataset.name) || [])[0];

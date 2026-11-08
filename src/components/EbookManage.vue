@@ -1,0 +1,222 @@
+<script setup lang="ts">
+// 콘텐츠 › 관리(운영자만) — 전자책 올리고 내리기. 웹 콘텐츠 화면이 띄운다(mountEbookManage).
+// 올린 책은 콘텐츠 › 전자책에 '무료로받기' 카드로 나가고, 받기는 회원가입 · 로그인한 회원만.
+import { computed, onUnmounted, ref } from 'vue';
+import AppConfirm from './AppConfirm.vue';
+import type { ConfirmBox } from '../services/confirmBox';
+import { userMessage } from '../services/userMessage';
+import {
+  EBOOK_MAX_MB,
+  emptyEbook,
+  patchEbook,
+  removeEbook,
+  saveEbook,
+  subscribeEbooks,
+  type Ebook,
+} from '../services/ebookRepository';
+
+const books = ref<Ebook[]>([]);
+const loadErr = ref('');
+const stop = subscribeEbooks((rows) => { books.value = rows; loadErr.value = ''; }, (m) => { loadErr.value = m; }, { all: true });
+onUnmounted(stop);
+
+const TAGS = ['기초', '필수', '실전', '리포트'];
+
+/* 고치는 책 — null 이면 닫힘 */
+const draft = ref<Ebook | null>(null);
+const pdf = ref<File | null>(null);
+const cover = ref<File | null>(null);
+const coverPreview = ref('');
+const progress = ref(0);
+const saving = ref(false);
+const msg = ref('');
+let msgTimer = 0;
+const flash = (t: string) => { msg.value = t; window.clearTimeout(msgTimer); msgTimer = window.setTimeout(() => { msg.value = ''; }, 2600); };
+
+const openNew = () => { draft.value = emptyEbook(); pdf.value = null; cover.value = null; coverPreview.value = ''; progress.value = 0; };
+const openEdit = (b: Ebook) => { draft.value = { ...b }; pdf.value = null; cover.value = null; coverPreview.value = b.coverUrl; progress.value = 0; };
+const close = () => { draft.value = null; };
+
+const onPdf = (e: Event) => {
+  const f = (e.target as HTMLInputElement).files?.[0] ?? null;
+  if (f && f.size > EBOOK_MAX_MB * 1024 * 1024) { flash(`책 파일은 ${EBOOK_MAX_MB}MB 까지 올릴 수 있습니다.`); (e.target as HTMLInputElement).value = ''; return; }
+  pdf.value = f;
+};
+const onCover = (e: Event) => {
+  const f = (e.target as HTMLInputElement).files?.[0] ?? null;
+  cover.value = f;
+  if (coverPreview.value.startsWith('blob:')) URL.revokeObjectURL(coverPreview.value);
+  coverPreview.value = f ? URL.createObjectURL(f) : (draft.value?.coverUrl ?? '');
+};
+
+const sizeText = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1024)).toLocaleString('ko-KR')}KB`);
+
+const save = async (publish: boolean) => {
+  const d = draft.value;
+  if (!d) return;
+  if (!d.title.trim()) { flash('책 제목을 적어 주세요.'); return; }
+  if (publish && !d.filePath && !pdf.value) { flash('책 파일(PDF)을 골라 주세요.'); return; }
+  saving.value = true;
+  progress.value = 0;
+  try {
+    await saveEbook({ ...d, title: d.title.trim(), desc: d.desc.trim(), published: publish }, { pdf: pdf.value, cover: cover.value }, (r) => { progress.value = r; });
+    flash(publish ? '올렸습니다. 콘텐츠 › 전자책에 바로 나갑니다.' : '작성 중으로 담아 두었습니다. 회원에게는 아직 보이지 않습니다.');
+    close();
+  } catch (e) {
+    flash(userMessage(e, '저장하지 못했습니다. 잠시 뒤 다시 해 주세요.'));
+  } finally {
+    saving.value = false;
+  }
+};
+
+const setPublished = async (b: Ebook, on: boolean) => {
+  if (on && !b.filePath) { flash('책 파일이 없어 올릴 수 없습니다 — 고치기에서 파일을 골라 주세요.'); return; }
+  try { await patchEbook(b.id, { published: on }); flash(on ? '올렸습니다.' : '내렸습니다 — 회원에게 보이지 않습니다.'); } catch (e) { flash(userMessage(e, '바꾸지 못했습니다.')); }
+};
+
+/** 차례 바꾸기 — 작은 것이 위 */
+const move = async (b: Ebook, dir: -1 | 1) => {
+  const i = books.value.findIndex((x) => x.id === b.id);
+  const o = books.value[i + dir];
+  if (!o) return;
+  try { await Promise.all([patchEbook(b.id, { order: o.order }), patchEbook(o.id, { order: b.order })]); } catch (e) { flash(userMessage(e, '차례를 바꾸지 못했습니다.')); }
+};
+
+const confirmBox = ref<ConfirmBox | null>(null);
+const askRemove = (b: Ebook) => {
+  confirmBox.value = {
+    title: `'${b.title}' 를 지울까요?`,
+    desc: '책 파일과 표지도 함께 지워집니다. 이미 받은 회원의 받은콘텐츠에서도 다시 받을 수 없게 됩니다.',
+    okLabel: '지우기',
+    skipKey: '',
+    run: async () => { try { await removeEbook(b); flash('지웠습니다.'); } catch (e) { flash(userMessage(e, '지우지 못했습니다.')); } },
+  };
+};
+
+const pct = computed(() => `${Math.round(progress.value * 100)}%`);
+</script>
+
+<template>
+  <section class="ebm">
+    <header class="ebm-head">
+      <h3>전자책 관리<span class="adm-chip">운영</span></h3>
+      <p>올린 책은 콘텐츠 › 전자책에 '무료로받기' 카드로 나갑니다. 받기는 회원가입 후 로그인한 회원만 할 수 있습니다.</p>
+      <button type="button" class="ebm-add" :disabled="!!draft" @click="openNew">＋ 새 책</button>
+    </header>
+
+    <!-- 고치기 · 새 책 -->
+    <div v-if="draft" class="ebm-form">
+      <div class="ebm-cover">
+        <img v-if="coverPreview" :src="coverPreview" alt="" />
+        <span v-else>표지 없음</span>
+      </div>
+      <div class="ebm-fields">
+        <label class="f"><span>제목</span><input v-model="draft.title" type="text" maxlength="60" placeholder="예) 빌라 경매 첫걸음" /></label>
+        <div class="f"><span>꼬리표</span>
+          <div class="ebm-tags">
+            <button v-for="t in ['', ...TAGS]" :key="t" type="button" :class="{ on: draft.tag === t }" @click="draft!.tag = t">{{ t || '없음' }}</button>
+          </div>
+        </div>
+        <label class="f"><span>설명</span><textarea v-model="draft.desc" rows="3" maxlength="300" placeholder="카드에 나가는 짧은 소개" /></label>
+        <!-- 파일 칸 — 브라우저 기본 단추(영어)는 숨기고 우리 단추로 -->
+        <div class="f"><span>표지 그림</span>
+          <span class="ebm-file"><label class="pick">그림고르기<input type="file" accept="image/*" @change="onCover" /></label>
+            <small>{{ cover ? cover.name : draft.coverUrl ? '올린 표지가 있습니다 (새로 고르면 바뀝니다)' : '고른 그림이 없습니다 · 세로 3:4 권장' }}</small></span>
+        </div>
+        <div class="f"><span>책 파일</span>
+          <span class="ebm-file"><label class="pick">파일고르기<input type="file" accept="application/pdf,.pdf,.epub" @change="onPdf" /></label>
+            <small>{{ pdf ? `${pdf.name} · ${sizeText(pdf.size)}` : draft.fileName ? `${draft.fileName} · ${sizeText(draft.fileSize)} (새로 고르면 바뀝니다)` : `PDF · EPUB, ${EBOOK_MAX_MB}MB 까지` }}</small></span>
+        </div>
+        <div v-if="saving" class="ebm-bar" role="progressbar" :aria-valuenow="Math.round(progress * 100)" aria-valuemin="0" aria-valuemax="100"><i :style="{ width: pct }" /><b>{{ pct }}</b></div>
+        <div class="ebm-acts">
+          <button type="button" class="ghost" :disabled="saving" @click="close">닫기</button>
+          <button type="button" class="ghost" :disabled="saving" @click="save(false)">작성중으로담기</button>
+          <button type="button" class="pri" :disabled="saving" @click="save(true)">{{ saving ? '올리는 중' : '올리기' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <p v-if="loadErr" class="ebm-empty">{{ loadErr }}</p>
+    <p v-else-if="!books.length && !draft" class="ebm-empty">올린 책이 없습니다. '＋ 새 책'으로 올려 주세요.</p>
+    <ul v-else class="ebm-list">
+      <li v-for="(b, i) in books" :key="b.id" :class="{ off: !b.published }">
+        <div class="th"><img v-if="b.coverUrl" :src="b.coverUrl" alt="" /><span v-else>표지</span></div>
+        <div class="tx">
+          <b><em v-if="b.tag">[{{ b.tag }}]</em> {{ b.title }}<i :class="['st', b.published ? 'on' : '']">{{ b.published ? '올림' : '내림' }}</i></b>
+          <small v-if="b.desc">{{ b.desc }}</small>
+          <small class="meta">{{ b.fileName ? `${b.fileName} · ${sizeText(b.fileSize)}` : '파일 없음' }} · 받은 회원 {{ (b.downloads || 0).toLocaleString('ko-KR') }}명</small>
+        </div>
+        <div class="ac">
+          <button type="button" class="sq" :disabled="i === 0" aria-label="위로" @click="move(b, -1)">▲</button>
+          <button type="button" class="sq" :disabled="i === books.length - 1" aria-label="아래로" @click="move(b, 1)">▼</button>
+          <button type="button" @click="setPublished(b, !b.published)">{{ b.published ? '내리기' : '올리기' }}</button>
+          <button type="button" @click="openEdit(b)">고치기</button>
+          <button type="button" class="del" @click="askRemove(b)">지우기</button>
+        </div>
+      </li>
+    </ul>
+
+    <p v-if="msg" class="ebm-toast">{{ msg }}</p>
+    <Teleport to="body"><AppConfirm :box="confirmBox" @close="confirmBox = null" /></Teleport>
+  </section>
+</template>
+
+<style scoped>
+.ebm { display: grid; gap: 14px; }
+.ebm-head { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; }
+.ebm-head h3 { margin: 0; display: flex; align-items: center; font-size: 16px; font-weight: 800; color: #111827; }
+.ebm-head p { grid-column: 1; margin: 0; font-size: 13px; color: #6b7280; }
+.ebm-add { grid-column: 2; grid-row: 1 / span 2; height: 38px; padding: 0 16px; border: 1px solid #c9d6f5; border-radius: 8px; background: #fff; color: #2b6df3; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+.ebm-add:hover:not(:disabled) { border-color: #2b6df3; background: #eef3ff; }
+.ebm-add:disabled { opacity: .45; cursor: default; }
+
+.ebm-form { display: grid; grid-template-columns: 150px 1fr; gap: 18px; padding: 18px; border: 1px solid #c9d6f5; border-radius: 12px; background: #f7f9ff; }
+.ebm-cover { width: 150px; aspect-ratio: 3 / 4; border-radius: 8px; background: #e8edf7; display: grid; place-items: center; overflow: hidden; color: #9aa6c4; font-size: 13px; }
+.ebm-cover img { width: 100%; height: 100%; object-fit: cover; }
+.ebm-fields { display: grid; gap: 10px; min-width: 0; }
+.ebm-fields .f { display: grid; grid-template-columns: 72px 1fr; align-items: center; gap: 10px; }
+.ebm-fields .f > span { font-size: 13px; font-weight: 700; color: #4b5563; }
+.ebm-fields input[type='text'], .ebm-fields textarea { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; color: #111827; }
+.ebm-fields textarea { resize: vertical; line-height: 1.6; }
+.ebm-fields :is(input, textarea):focus { outline: none; border-color: #2b6df3; }
+.ebm-fields .f > .ebm-file { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 400; }
+.ebm-file .pick { position: relative; flex: none; display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border: 1px solid #c9d6f5; border-radius: 8px; background: #fff; color: #2b6df3; font-size: 13px; font-weight: 800; cursor: pointer; }
+.ebm-file .pick:hover { border-color: #2b6df3; background: #eef3ff; }
+.ebm-file .pick input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.ebm-file small { min-width: 0; font-size: 13px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ebm-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.ebm-tags button { height: 30px; padding: 0 12px; border: 1px solid #dde3ee; border-radius: 999px; background: #fff; color: #4b5563; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.ebm-tags button.on { border-color: #2b6df3; background: #eef3ff; color: #2b6df3; }
+.ebm-bar { position: relative; height: 22px; margin-left: 82px; border-radius: 6px; background: #e5eaf4; overflow: hidden; }
+.ebm-bar i { position: absolute; inset: 0 auto 0 0; background: #2b6df3; transition: width .2s; }
+.ebm-bar b { position: relative; display: block; text-align: center; line-height: 22px; font-size: 12px; color: #fff; mix-blend-mode: difference; }
+.ebm-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.ebm-acts button { height: 38px; padding: 0 16px; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
+.ebm-acts .ghost { border: 1px solid #dde3ee; background: #fff; color: #4b5563; }
+.ebm-acts .ghost:hover:not(:disabled) { border-color: #2b6df3; color: #2b6df3; }
+.ebm-acts .pri { border: 0; background: #2b6df3; color: #fff; min-width: 96px; }
+.ebm-acts .pri:hover:not(:disabled) { background: #1f5ad6; }
+.ebm-acts button:disabled { opacity: .55; cursor: default; }
+
+.ebm-empty { margin: 0; padding: 28px 0; text-align: center; font-size: 14px; color: #9aa6c4; }
+.ebm-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.ebm-list li { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 14px; padding: 12px 4px; border-top: 1px solid #eef1f6; }
+.ebm-list li:first-child { border-top: 0; }
+.ebm-list li.off .th, .ebm-list li.off .tx > b { opacity: .55; }
+.ebm-list .th { width: 48px; aspect-ratio: 3 / 4; border-radius: 5px; background: #e8edf7; display: grid; place-items: center; overflow: hidden; font-size: 12px; color: #9aa6c4; }
+.ebm-list .th img { width: 100%; height: 100%; object-fit: cover; }
+.ebm-list .tx { display: grid; gap: 3px; min-width: 0; }
+.ebm-list .tx b { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 800; color: #111827; }
+.ebm-list .tx b em { font-style: normal; color: #2b6df3; }
+.ebm-list .tx small { font-size: 13px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ebm-list .tx small.meta { font-size: 12px; color: #9ca3af; }
+.ebm-list .st { padding: 2px 7px; border-radius: 5px; background: #f1f3f8; font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; }
+.ebm-list .st.on { background: #e8f6ee; color: #15803d; }
+.ebm-list .ac { display: flex; gap: 6px; }
+.ebm-list .ac button { height: 30px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; color: #374151; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.ebm-list .ac button.sq { width: 30px; padding: 0; font-size: 12px; }
+.ebm-list .ac button:hover:not(:disabled) { border-color: #2b6df3; color: #2b6df3; }
+.ebm-list .ac button.del { color: #dc2626; } .ebm-list .ac button.del:hover { border-color: #dc2626; color: #dc2626; }
+.ebm-list .ac button:disabled { opacity: .4; cursor: default; }
+.ebm-toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 1200; margin: 0; padding: 10px 16px; border-radius: 8px; background: rgba(17, 24, 39, .92); color: #fff; font-size: 14px; }
+</style>

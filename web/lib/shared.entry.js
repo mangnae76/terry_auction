@@ -243,6 +243,15 @@ export const mountAppAdmin = (el, key, provides = {}) => {
   return () => app.unmount();
 };
 export const mountAppRegion = (el) => mountAppAdmin(el, 'region');
+/* 콘텐츠 › 관리(운영자만) — 전자책 올리고 내리기. 회원 화면의 책 카드 · 받기는 웹이 subscribeEbooks · receiveEbook 으로 그린다 */
+import EbookManage from '../../src/components/EbookManage.vue';
+export const mountEbookManage = (el) => {
+  const app = createApp(EbookManage);
+  app.provide('webEmbed', true);
+  app.mount(el);
+  return () => app.unmount();
+};
+export { subscribeEbooks, receiveEbook } from '../../src/services/ebookRepository';
 
 export const mountAppFieldTrip = (el, onDetail) => {
   const Empty = { render: () => null };
@@ -324,6 +333,7 @@ const APP_PAGE_ROUTES = [
   { path: '/trash', component: () => import('../../src/pages/TrashPage.vue') },
   { path: '/archive', component: () => import('../../src/pages/TrashPage.vue') },
   { path: '/bid-calendar', component: () => import('../../src/pages/BidCalendarPage.vue') },
+  { path: '/my-contents', component: () => import('../../src/pages/MyContentsPage.vue') },   /* 마이페이지 › 받은콘텐츠(웹만) */
   { path: '/terms', component: () => import('../../src/pages/TermsPage.vue') },
   { path: '/withdraw', component: () => import('../../src/pages/WithdrawPage.vue') },
   { path: '/point-history', component: () => import('../../src/pages/PointHistoryPage.vue') },
@@ -343,7 +353,7 @@ const PAGE_OF_PATH = Object.fromEntries(Object.entries(APP_PAGES).map(([k, p]) =
 export const hasAppPage = (key) => !!APP_PAGES[key];
 /** el 안에 앱 화면(key)을 tab 탭으로 띄운다. 돌려주는 함수로 걷고, .setTab(tab) 으로 탭만 바꾼다 */
 /** 하위 탭이 따로 쪽(경로)인 것 — 마이페이지 › 알림은 앱의 알림 화면(/notifications), 입찰 캘린더는 앱의 /bid-calendar 를 그대로 띄운다 */
-const TAB_PATHS = { more: { alerts: '/notifications', calendar: '/bid-calendar' } };
+const TAB_PATHS = { more: { alerts: '/notifications', calendar: '/bid-calendar', contents: '/my-contents' } };
 export const mountAppPage = (el, key, tab, hooks = {}) => {
   const home = APP_PAGES[key];
   const tabPaths = TAB_PATHS[key] || {};

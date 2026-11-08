@@ -35,6 +35,24 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // 전자책(콘텐츠) — 올린 책은 손님도 목록을 본다(받기는 로그인 회원만 — 파일은 Storage 규칙이 막는다).
+    // 운영자만 올리고 고친다. 회원은 처음 받을 때 받은 수(downloads)만 1 올린다
+    match /ebooks/{id} {
+      allow read: if resource.data.published == true || isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (isAllowedUser() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloads'])
+            && request.resource.data.downloads == resource.data.get('downloads', 0) + 1);
+    }
+
+    // 전자책 받은 기록 — '{uid}_{책}' 하나. 내 것만 쓰고 읽는다, 운영자는 모두 읽는다
+    match /ebookReceipts/{rid} {
+      allow read: if isAllowedUser() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create, update: if isAllowedUser()
+        && request.resource.data.uid == request.auth.uid
+        && rid == request.auth.uid + '_' + request.resource.data.ebookId;
+    }
+
     // 오류및제안 게시판(웹 커뮤니티) — 회원이 쓰고 모두 읽는다. 내 글만 고치고 지운다, 조회수는 1씩만, 운영자는 모두 지운다
     match /suggestPosts/{id} {
       allow read: if isAllowedUser();
