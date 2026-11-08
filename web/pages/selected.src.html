@@ -5060,6 +5060,10 @@ span.cal-day.has { cursor: help; }
     { v: '다가구', label: '다가구', icon: I.house, re: /다가구|단독|주택/ },
     { v: '상가', label: '상가', icon: I.shop, re: /상가|근린|점포/ },
   ];
+  /* 물건 하나는 한 종류로만 — '다세대주택' · '연립주택'이 '주택'에 걸려 다가구로도 세이던 것을 막는다.
+     앞에서부터 먼저 맞는 것(앱 utils/propertyType 처럼 다세대 · 연립 · 도시형을 주택보다 먼저 본다) */
+  const TYPE_ORDER = ['아파트', '다세대·연립', '상가', '다가구'];
+  const typeOf = (raw) => { const t = String(raw || ''); const v = TYPE_ORDER.find((k) => PROPERTY_TYPES.find((x) => x.v === k).re.test(t)); return v || ''; };
   /* 앱 utils/propertyType 의 한 글자 표시 */
   /* 웹 카드는 한 글자 대신 이름을 적는다 (묶는 기준은 앱 utils/propertyType 과 같다) */
   const TYPE_NAME = (t) => [[/아파트/, '아파트'], [/도시형|도생/, '도시형'], [/다세대|빌라/, '다세대'], [/근린|상가|점포/, '상가'], [/연립/, '연립'], [/오피스텔/, '오피스텔'], [/다가구/, '다가구'], [/단독|주택/, '단독주택']].find(([re]) => re.test(t))?.[1] ?? (String(t || '').trim() || '기타');
@@ -5140,7 +5144,7 @@ span.cal-day.has { cursor: help; }
 
   const live = () => items.filter((it) => !it.archived && !it.trashed);
   const passesCommon = (it) => {
-    if (S.type) { const t = PROPERTY_TYPES.find((x) => x.v === S.type); if (t && !t.re.test(it.type)) return false; }
+    if (S.type && typeOf(it.type) !== S.type) return false;
     if (S.court && it.court !== S.court) return false;
     if (S.date && !calDayIds().has(it.id)) return false;   /* 달력에서 고른 날 — 그날 일정(매각기일 · 낙찰일 · 잔금기한 · 매도일)이 있는 물건 */
     if (S.q) { const q = S.q.replace(/\s+/g, '').toLowerCase(); if (!`${it.caseNo}${it.addr}${it.bld}${it.unit}${it.court}`.replace(/\s+/g, '').toLowerCase().includes(q)) return false; }
@@ -5334,7 +5338,7 @@ span.cal-day.has { cursor: help; }
     const c = counts();
     const type = PROPERTY_TYPES.find((t) => t.v === S.type) || PROPERTY_TYPES[0];
     $('tbType').innerHTML = `<button type="button" class="chip dd ${S.type ? 'on' : ''}" data-act="pop" data-id="type" aria-expanded="${S.pop === 'type'}" aria-label="유형 고르기">${type.icon}<span class="txt">${esc(type.label)}</span><i class="tri"></i></button>
-      ${S.pop === 'type' ? `<div class="pop" role="menu" aria-label="유형">${PROPERTY_TYPES.map((t) => `<button type="button" class="opt ${S.type === t.v ? 'on' : ''}" data-act="set-type" data-v="${esc(t.v)}">${t.icon}${esc(t.label)}<span class="r">${live().filter((it) => !t.re || t.re.test(it.type)).length}</span></button>`).join('')}</div>` : ''}`;
+      ${S.pop === 'type' ? `<div class="pop" role="menu" aria-label="유형">${PROPERTY_TYPES.map((t) => `<button type="button" class="opt ${S.type === t.v ? 'on' : ''}" data-act="set-type" data-v="${esc(t.v)}">${t.icon}${esc(t.label)}<span class="r">${live().filter((it) => !t.v || typeOf(it.type) === t.v).length}</span></button>`).join('')}</div>` : ''}`;
     $('tbCourt').innerHTML = `<button type="button" class="chip dd ${S.court ? 'on' : ''}" data-act="pop" data-id="court" aria-expanded="${S.pop === 'court'}" aria-label="법원 고르기">${I.court}<span class="txt">${S.court ? esc(S.court.length <= 6 ? S.court : shortCourt(S.court)) : '법원'}</span><i class="tri"></i></button>
       ${S.pop === 'court' ? `<div class="pop" role="menu" aria-label="법원" style="min-width:230px"><button type="button" class="opt ${!S.court ? 'on' : ''}" data-act="set-court" data-v="">${I.court}법원전체<span class="r">${live().length}</span></button>${courts().map((ct) => `<button type="button" class="opt ${S.court === ct ? 'on' : ''}" data-act="set-court" data-v="${esc(ct)}">${esc(ct)}<span class="r">${live().filter((it) => it.court === ct).length}</span></button>`).join('')}</div>` : ''}`;
     $('tbSort').innerHTML = `<button type="button" class="sort-btn ${S.sort === 'route' ? 'on' : ''}" data-act="toggle-sort" aria-label="${S.sort === 'route' ? '정렬: 임장순. 누르면 날짜순으로 바뀝니다' : '정렬: 날짜순. 누르면 임장순으로 바뀝니다'}"${tip(S.sort === 'route' ? '임장순 (누르면 날짜순)' : '날짜순 (누르면 임장순)')}>${S.sort === 'route' ? I.sortRoute : I.sortDate}${S.sort === 'route' ? '임장순' : '날짜순'}${SWAP}</button>
