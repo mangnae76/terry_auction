@@ -288,6 +288,7 @@ import PostWinPage from '../../src/pages/PostWinPage.vue';
 import FinancePage from '../../src/pages/FinancePage.vue';
 import MorePage from '../../src/pages/MorePage.vue';
 import NewsBody from '../../src/components/NewsBody.vue';
+import EventBanner from '../../src/components/EventBanner.vue';
 import SupportBody from '../../src/components/SupportBody.vue';
 import SuggestBoard from '../../src/components/SuggestBoard.vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -299,7 +300,7 @@ const CommunityPage = {
     return () => h('div', { class: 'community-shell' }, route.query.tab === 'faq'
       ? [h(SupportBody, { only: 'faq' })]
       : route.query.tab === 'suggest' ? [h(SuggestBoard)]
-      : [h(NewsBody, { noticeOnly: true })]);   /* 이벤트 배너(포인트 이벤트) · 이벤트 · 업데이트는 서비스 시작 뒤로(2026-11-02) — 공지사항만 */
+      : [h(EventBanner, { onOpen: (id) => router.push(id ? `/post/${id}` : '/community') }), h(NewsBody, { noticeOnly: true })]);   /* 이벤트 배너는 공지사항 위에 다시(2026-11-08) · 이벤트 · 업데이트 목록은 서비스 시작 뒤로(2026-11-02) */
   },
 };
 /** 게시판(웹만) — 오류및제안 · 가입인사 · 사용후기. 같은 게시판 틀(SuggestBoard)에 board 만 다르다(2026-11-05) */

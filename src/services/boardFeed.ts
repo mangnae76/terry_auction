@@ -98,6 +98,8 @@ export const useBoardFeed = () => {
   return {
     events: rowsOf('event', EVENTS),
     notices: rowsOf('notice', NOTICES),
+    /** 웹 공지 — 관리자가 올린 글(DB)만. 코드의 기본 글은 쓰지 않는다(2026-11-08) */
+    noticesDb: rowsOf('notice', []),
     updates: rowsOf('update', UPDATES),
     banners: computed(() => {
       // 배너는 따로 쓰지만, 옛 글(이벤트에 배너 표시)도 그대로 읽는다

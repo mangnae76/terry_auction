@@ -1,13 +1,16 @@
 <script setup lang="ts">
 // 부가서비스 — 공지사항·이벤트·업데이트·포인트를 차례로 적는다.
 // 글은 services/boardNews·pointPolicy 에 있고 여기서는 그리기만 한다.
-import { onUnmounted, ref } from 'vue';
+import { computed, inject, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import ImageLightbox from './ImageLightbox.vue';
 import { useBoardFeed, useBoardNew } from '../services/boardFeed';
 
 /** 관리자가 올린 글 — 아직 없으면 코드의 기본 글을 쓴다 */
-const { events: EVENTS, notices: NOTICES, updates: UPDATES } = useBoardFeed();
+const { events: EVENTS, notices: noticesAll, noticesDb, updates: UPDATES } = useBoardFeed();
+/** 웹은 공지를 DB 글로만 보여 준다 — 앱은 예전처럼(글이 없으면 기본 글) */
+const web = inject('webEmbed', false);
+const NOTICES = computed(() => (web ? noticesDb.value : noticesAll.value));
 /** noticeOnly — 웹 공지는 공지사항만(이벤트 · 업데이트는 서비스 시작 뒤로 미뤘다, 2026-11-02) */
 defineProps<{ noticeOnly?: boolean }>();
 
@@ -55,6 +58,7 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
 
     <section class="nws-card" data-sec="notice">
       <h3 class="nws-h">공지사항<i v-if="noticeNew" class="dot" /></h3>
+      <p v-if="!NOTICES.length" class="nws-empty">지금 올라온 공지사항이 없습니다</p>
       <template v-for="(n, i) in NOTICES" :key="`n${i}`">
         <button type="button" class="nws-row" @click="toggleRow(`n${i}`, n)">
         <span v-if="n.star" class="star">✦</span><span v-else class="tag">{{ n.tag }}</span>
@@ -119,6 +123,7 @@ const openEvent = (key: string, row: { id?: string; body?: string; imageUrl?: st
 .nws-row .chev { flex: none; font-style: normal; font-size: 10px; color: #9aa6c4; }
 /* 언제 올린 글인지 — 줄 오른쪽에 좁게 */
 .nws-row .when { flex: none; font-size: 10px; color: #9aa6c4; letter-spacing: -0.2px; }
+.nws-empty { margin: 0; padding: 14px 0 8px; font-size: 12px; color: #9aa6c4; text-align: center; }
 /* 펼친 글 */
 .nws-open { padding: 4px 0 10px 37px; }
 .nws-open img { width: 100%; border-radius: 8px; margin-bottom: 7px; cursor: zoom-in; }
