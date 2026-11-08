@@ -7834,7 +7834,7 @@ span.cal-day.has { cursor: help; }
     /* 맨 위 주황 막대 안내(다른 화면과 같은 .rg-lead) — 첫 줄은 도우미가 지금 하는 말, 둘째 줄은 쓰는 순서 */
     const say = online ? (msg || '대기 중입니다.') : 'MyAgent가 꺼져 있습니다. 수집할 컴퓨터에서 agent.py 를 켜 주세요.';
     const lead = `<div class="rg-lead sx-lead" role="status" aria-live="polite"><p class="l1">${esc(say)}</p>`
-      + '<p class="l2">① 브라우저 열기 → 읍면동 · 끝 페이지까지 · 현재 화면 수집 중 하나 → 건축연도 채우기 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
+      + '<p class="l2">① 브라우저 열기 → 읍면동 · 끝 페이지까지 · 현재 화면 수집 중 하나 → 건축연도 채우기(응찰자수도 함께) 순서로 누르면, 모은 매각물건이 아래 검색에 바로 쓰입니다.</p></div>';
     return `<div class="sx-top" id="agPanel">${lead}<section class="sx-card sx-collect" aria-label="인근매각사례 데이터수집">${titlebar}`
       /* 먼저 고르는 것 — 읍면동 · 사건번호 수집 상자를 맨 위로(옥션원 줄보다 위, 2026-11-07) */
       + `<div class="sx-manage">${agQueueHtml()}</div>`
