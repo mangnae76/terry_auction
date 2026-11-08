@@ -319,7 +319,7 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
 .ebm-cover { position: relative; align-self: start; aspect-ratio: 3 / 4; border: 2px dashed var(--e-line); border-radius: 10px; background: var(--e-bg2); display: grid; place-items: center; overflow: hidden; text-align: center; color: var(--e-muted); font-size: 13px; line-height: 1.6; padding: 12px; cursor: pointer; transition: border-color .15s, background .15s; }
 .ebm-cover small { display: block; margin-top: 4px; font-size: 12px; opacity: .8; }
 .ebm-cover input, .ebm-drop input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.ebm-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ebm-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }   /* 표지는 자르지 않고 전체를 */
 .ebm-cover em { position: absolute; left: 0; right: 0; bottom: 0; padding: 6px; background: rgba(17, 24, 39, .6); color: #fff; font-style: normal; font-size: 12px; opacity: 0; transition: opacity .15s; }
 .ebm-cover:hover em { opacity: 1; }
 .ebm-cover.has { border-style: solid; padding: 0; }
@@ -393,7 +393,7 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
 .ebm-list tr.cur td { background: var(--e-blue-soft); }
 .ebm-list .ebm-ttl { display: flex; align-items: center; gap: 10px; white-space: normal; min-width: 240px; }
 .ebm-list .ebm-th { flex: none; width: 30px; aspect-ratio: 3 / 4; border-radius: 4px; background: var(--e-bg2); overflow: hidden; }
-.ebm-list .ebm-th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ebm-list .ebm-th img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .ebm-list .ebm-nm { display: grid; gap: 2px; min-width: 0; }
 .ebm-list .ebm-nm b { font-size: 14px; font-weight: 700; }
 .ebm-list .ebm-nm b em { font-style: normal; color: var(--e-blue); }

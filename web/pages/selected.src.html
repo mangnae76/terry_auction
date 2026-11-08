@@ -3357,7 +3357,8 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .eb-dlg .buy-head p { display: flex; gap: 6px; align-items: center; }
 .st-kind-in { padding: 1px 8px; border-radius: 4px; background: #fff4e5; color: #b45309; font-size: 12px; font-weight: 700; }
 .eb-top { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 18px; }
-.eb-cv { width: 150px; aspect-ratio: 3 / 4; border-radius: 8px; object-fit: cover; background: #26345c; }
+.eb-cv { width: 150px; aspect-ratio: 3 / 4; border-radius: 8px; background: #26345c; }
+img.eb-cv { aspect-ratio: auto; height: auto; max-height: 260px; object-fit: contain; background: none; box-shadow: 0 6px 18px rgba(15, 23, 42, .22); }   /* 표지 그림은 자르지 않는다 */
 .eb-cv.navy { display: grid; place-items: center; padding: 12px; color: #fff; text-align: center; } .eb-cv.navy strong { font-size: 17px; line-height: 1.35; }
 .eb-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .eb-side .eb-sum { margin: 0; font-size: 15px; line-height: 1.6; color: var(--text); }
@@ -3368,7 +3369,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .st-empty { margin: 0; padding: 56px 16px; text-align: center; font-size: 15px; color: var(--muted); }   /* 올라온 상품이 없을 때 */
 .st-buy { margin-top: auto; height: 40px; border: 1px solid var(--blue); border-radius: 8px; background: var(--surface); color: var(--blue); font-size: 14px; font-weight: 700; cursor: pointer; }
 .st-buy:hover { background: var(--blue-soft); }
-.st-cover.img { background: #26345c; } .st-cover.img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }   /* 운영자가 올린 표지 그림 */
+.st-cover.img { height: 300px; padding: 18px; background: var(--surface-2); } .st-cover.img img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; border-radius: 4px; box-shadow: 0 6px 18px rgba(15, 23, 42, .22); }   /* 운영자가 올린 표지 그림 — 자르지 않고 전체를 책처럼 */
 .st-free { align-self: flex-start; padding: 1px 8px; border-radius: 4px; background: #e8f6ee; color: #15803d; font-size: 12px; font-weight: 800; }
 .st-buy:disabled { opacity: .55; cursor: default; }
 .st-buy.dl { background: var(--blue); color: #fff; } .st-buy.dl:hover { background: var(--blue); filter: brightness(1.06); }   /* 다운로드 — 무료로받기를 누른 뒤 */
