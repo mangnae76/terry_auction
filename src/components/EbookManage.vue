@@ -5,6 +5,7 @@ import { computed, onUnmounted, ref } from 'vue';
 import AppConfirm from './AppConfirm.vue';
 import type { ConfirmBox } from '../services/confirmBox';
 import { userMessage } from '../services/userMessage';
+import { auth } from '../services/firebase';
 import {
   EBOOK_MAX_MB,
   emptyEbook,
@@ -31,7 +32,19 @@ const progress = ref(0);
 const saving = ref(false);
 const msg = ref('');
 let msgTimer = 0;
-const flash = (t: string) => { msg.value = t; window.clearTimeout(msgTimer); msgTimer = window.setTimeout(() => { msg.value = ''; }, 2600); };
+const flash = (t: string, ms = 2600) => { msg.value = t; window.clearTimeout(msgTimer); msgTimer = window.setTimeout(() => { msg.value = ''; }, ms); };
+/** 막힌 까닭을 사람 말로 — 권한 · 저장소 · 연결을 갈라 알려 준다(원문은 콘솔에만) */
+const why = (e: unknown, fallback: string) => {
+  console.warn('[ebook] 저장 실패', e);
+  const code = String((e as { code?: string })?.code ?? '');
+  const m = e instanceof Error ? e.message : '';
+  if (/permission|insufficient|unauthorized|unauthenticated/i.test(`${code} ${m}`)) {
+    return `이 계정(${auth?.currentUser?.email || '로그인 안 됨'})에는 올릴 권한이 없습니다. 운영자 계정으로 로그인했는지 확인해 주세요.`;
+  }
+  if (/bucket|object-not-found|project-not-found/i.test(code)) return '파일 저장소가 준비되지 않았습니다. 운영자에게 알려 주세요.';
+  if (m === 'timeout' || /unavailable|network|retry-limit/i.test(`${code} ${m}`)) return '서버가 답하지 않습니다. 인터넷 연결을 확인하고 다시 해 주세요.';
+  return userMessage(e, fallback);
+};
 
 const openNew = () => { draft.value = emptyEbook(); pdf.value = null; cover.value = null; coverPreview.value = ''; progress.value = 0; };
 const openEdit = (b: Ebook) => { draft.value = { ...b }; pdf.value = null; cover.value = null; coverPreview.value = b.coverUrl; progress.value = 0; };
@@ -73,7 +86,7 @@ const save = async (publish: boolean) => {
     flash(publish ? '올렸습니다. 콘텐츠 › 전자책에 바로 나갑니다.' : '작성 중으로 담아 두었습니다. 회원에게는 아직 보이지 않습니다.');
     close();
   } catch (e) {
-    flash(userMessage(e, '저장하지 못했습니다. 잠시 뒤 다시 해 주세요.'));
+    flash(why(e, '저장하지 못했습니다. 잠시 뒤 다시 해 주세요.'), 7000);
   } finally {
     saving.value = false;
   }
@@ -81,7 +94,7 @@ const save = async (publish: boolean) => {
 
 const setPublished = async (b: Ebook, on: boolean) => {
   if (on && !b.filePath) { flash('책 파일이 없어 올릴 수 없습니다 — 고치기에서 파일을 골라 주세요.'); return; }
-  try { await patchEbook(b.id, { published: on }); flash(on ? '올렸습니다.' : '내렸습니다 — 회원에게 보이지 않습니다.'); } catch (e) { flash(userMessage(e, '바꾸지 못했습니다.')); }
+  try { await patchEbook(b.id, { published: on }); flash(on ? '올렸습니다.' : '내렸습니다 — 회원에게 보이지 않습니다.'); } catch (e) { flash(why(e, '바꾸지 못했습니다.'), 7000); }
 };
 
 /** 차례 바꾸기 — 작은 것이 위 */

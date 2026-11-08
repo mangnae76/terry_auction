@@ -116,7 +116,11 @@ export const saveEbook = async (
     next.coverUrl = await getDownloadURL(storageRef(storage, path));   // 표지는 손님도 본다 — 주소를 글에 적어 둔다
   }
   const { id: _omit, ...data } = next;
-  await setDoc(doc(firestore, BOOKS, id), data);
+  // 서버가 끝내 답하지 않으면(연결 끊김 · 다른 창이 막음) 20초 뒤 알려 준다 — '올리는 중'에 멈춰 있지 않게
+  await Promise.race([
+    setDoc(doc(firestore, BOOKS, id), data),
+    new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 20000)),
+  ]);
   return next;
 };
 
