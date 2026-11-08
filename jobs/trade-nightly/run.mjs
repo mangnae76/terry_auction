@@ -52,9 +52,19 @@ const writeLandingStats = async (db, fs) => {
     snap.docs.forEach((d) => { const pl = d.get('payload'); addLandingDoc(acc, d.id, pl && pl.rows); docs += 1; });
     last = snap.docs[snap.docs.length - 1];
   }
-  const out = { trades: acc.trades, complexes: acc.complexKeys.size, districts: acc.lawds.size, docs, at: Date.now(), source: 'nightly' };
-  await db.collection('publicStats').doc('landing').set(out);
-  log(`대문 숫자 — 실거래 ${out.trades.toLocaleString()}건 · 단지 ${out.complexes.toLocaleString()}곳 · 시군구 ${out.districts} · 문서 ${docs.toLocaleString()}장`);
+  const ref = db.collection('publicStats').doc('landing');
+  // 전일 대비 — 어제 적은 건수(baseTrades)와의 차이. 같은 날 다시 세면(손으로 COUNT_ONLY) 어제 기준을 그대로 쓴다
+  const prev = (await ref.get()).data() ?? {};
+  const now = Date.now();
+  const kstDay = (ms) => new Date(ms + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const sameDay = prev.at && kstDay(prev.at) === kstDay(now);
+  const base = Number(sameDay && prev.baseTrades > 0 ? prev.baseTrades : prev.trades) || 0;
+  const out = {
+    trades: acc.trades, complexes: acc.complexKeys.size, districts: acc.lawds.size, docs, at: now, source: 'nightly',
+    baseTrades: base || acc.trades, dayDelta: base > 0 ? acc.trades - base : 0,
+  };
+  await ref.set(out);
+  log(`대문 숫자 — 실거래 ${out.trades.toLocaleString()}건(전일 대비 ${out.dayDelta >= 0 ? '+' : ''}${out.dayDelta.toLocaleString()}) · 단지 ${out.complexes.toLocaleString()}곳 · 시군구 ${out.districts} · 문서 ${docs.toLocaleString()}장`);
 };
 
 /** 'lawd:kind,…' → [{ lawdCd5, path }] */

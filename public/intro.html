@@ -80,7 +80,10 @@
   .ld-stats b { display: block; margin: 8px 0 6px; font-size: clamp(22px, 2.4vw, 30px); font-weight: 900; color: var(--navy); white-space: nowrap; font-variant-numeric: tabular-nums; }   /* 또르륵 올라가는 동안 숫자 폭이 흔들리지 않게 */
   .ld-stats b span { font-size: 15px; font-weight: 700; margin-left: 2px; color: var(--ink); }   /* 단위(건 · 곳 · +)는 검정 */
   .ld-stats em { font-style: normal; font-size: 12px; color: #9aa3b2; }
-  .ld-stats #ldTools { color: var(--orange); }   /* 분석 및 활용 도구 숫자는 마이턴옥션 글자와 같은 주황(2026-11-03) */
+  .ld-stats #ldTools { color: var(--orange); }
+  .ld-up { margin-left: 6px; font-style: normal; font-size: 12px; font-weight: 700; color: #16a34a; white-space: nowrap; font-variant-numeric: tabular-nums; }   /* 전일 대비 +몇 — 또르륵 올라간다 */
+  .ld-up.pop { animation: ldUpPop .6s ease-out; }
+  @keyframes ldUpPop { 0% { opacity: 0; transform: translateY(4px); } 100% { opacity: 1; transform: none; } }   /* 분석 및 활용 도구 숫자는 마이턴옥션 글자와 같은 주황(2026-11-03) */
   /* 오른쪽 — 우리 진행 단계(세로 줄). AI 가 하는 단계는 주황 AI 표시 */
   .ld-steps { border: 1px solid var(--line); border-radius: 20px; background: var(--soft); padding: 20px 22px; }   /* 상자 · 안쪽 글자를 20% 남짓 줄였다(2026-11-03) */
   .ld-steps-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }   /* 제목 오른쪽에 설명 한 줄 */
@@ -365,7 +368,7 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
         <!-- 숫자 줄 — 「무료로 시작하기」 · 위 선 · 숫자 · 아래 선 · 「경매가 처음이신가요?」 사이 네 간격을 똑같이(sp) -->
         <i class="sp" aria-hidden="true"></i><i class="ln" aria-hidden="true"></i><i class="sp" aria-hidden="true"></i>
         <div class="ld-stats">
-          <div><small>전국 실거래 데이터</small><b class="num" id="ldTrades">집계 중</b><em>국토부 실거래가 누적</em></div>
+          <div><small>전국 실거래 데이터</small><b class="num" id="ldTrades">집계 중</b><em>국토부 실거래가 누적<i class="ld-up" id="ldTradesUp" hidden title="어제 새벽 적재보다 늘어난 건수"></i></em></div>
           <div><small>분석 가능한 단지</small><b class="num" id="ldPlaces">집계 중</b><em>연립·다세대·아파트·오피스텔</em></div>
           <div><small>분석 및 활용 도구</small><b class="num" id="ldTools">-</b><em><a href="#tools" class="ld-tools-link" id="ldToolsOpen">전체 보기 →</a></em></div>
         </div>
@@ -819,6 +822,19 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
     // 새로고침마다 '집계 중' → 숫자로 바뀌어 보였다(2026-11-03) — 지난번 숫자를 이 브라우저에 남겨 두고 들어오자마자 그 숫자까지 또르륵 올리고,
     // 서버 값이 다르면 거기서 이어 올린다. 못 읽으면 남겨 둔 숫자 그대로(처음 온 사람은 '집계 중')
     const LD_KEY = 'ld.stats';
+    /** 전일 대비 +몇 — '국토부 실거래가 누적' 옆 작은 초록 글씨. 0부터 또르륵. 늘지 않았으면 숨긴다 */
+    const ldUp = (n) => {
+      const el = $q('ldTradesUp'); if (!el) return;
+      if (!(n > 0)) { el.hidden = true; return; }
+      el.hidden = false; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+      const fmt = (v) => `전일 +${Math.round(v).toLocaleString('ko-KR')}`;
+      if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmt(n); return; }
+      cancelAnimationFrame(el.__raf);
+      const t0 = performance.now(); const D = 1600;
+      const step = (now) => { const k = Math.max(0, Math.min(1, (now - t0) / D)); el.textContent = fmt(n * (1 - Math.pow(1 - k, 3))); if (k < 1) el.__raf = requestAnimationFrame(step); };
+      el.__raf = requestAnimationFrame(step);
+      clearTimeout(el.__end); el.__end = setTimeout(() => { cancelAnimationFrame(el.__raf); el.textContent = fmt(n); }, D + 200);
+    };
     const ldSaved = (() => { try { return JSON.parse(localStorage.getItem(LD_KEY) || 'null') || {}; } catch (e) { return {}; } })();
     if (ldSaved.trades > 0) ldCount($q('ldTrades'), ldSaved.trades, '건');
     if (ldSaved.complexes > 0) ldCount($q('ldPlaces'), ldSaved.complexes, '곳');
@@ -827,7 +843,8 @@ input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display:
       .then((d) => {
         const f = d && d.fields; if (!f) return;
         const n = (k) => Number((f[k] && (f[k].integerValue ?? f[k].doubleValue)) || 0);
-        const trades = n('trades'); const complexes = n('complexes');
+        const trades = n('trades'); const complexes = n('complexes'); const delta = n('dayDelta');
+        ldUp(delta);
         if (trades > 0 && trades !== ldSaved.trades) ldCount($q('ldTrades'), trades, '건');
         if (complexes > 0 && complexes !== ldSaved.complexes) ldCount($q('ldPlaces'), complexes, '곳');
         try { localStorage.setItem(LD_KEY, JSON.stringify({ trades: trades || ldSaved.trades || 0, complexes: complexes || ldSaved.complexes || 0 })); } catch (e) { /* 그만 */ }
