@@ -105,7 +105,7 @@ const casePreset = computed(() => (auction.value?.address ? { address: auction.v
         <nav class="adm-view-tabs" role="tablist">
           <button type="button" role="tab" :class="{ on: tab === 'demand' }" :aria-selected="tab === 'demand'" @click="tab = 'demand'">수요분석</button>
           <button type="button" role="tab" :class="{ on: tab === 'price' }" :aria-selected="tab === 'price'" @click="tab = 'price'">시세분석</button>
-          <button v-if="saleOn" type="button" role="tab" :class="{ on: tab === 'sale' }" :aria-selected="tab === 'sale'" @click="tab = 'sale'">매각분석</button>
+          <button v-if="saleOn" type="button" role="tab" :class="{ on: tab === 'sale' }" :aria-selected="tab === 'sale'" @click="tab = 'sale'">매각분석<span class="adm-chip">운영</span></button>
         </nav>
         <div id="admCrumbSlot" class="adm-crumb-slot" />
       </div>

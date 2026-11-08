@@ -1528,6 +1528,8 @@ body.has-subtabs .toolbar-shell { top: calc(var(--stick-top) + var(--gnb-h) + va
 .sub-crumb:empty { display: none; }
 .subtab { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 var(--tab-px); border: 0; border-radius: 0; background: transparent; font-size: var(--tab-fs); font-weight: 600; color: var(--text-2); white-space: nowrap; transition: color .15s; }
 .subtab svg { width: 16px; height: 16px; }
+/* 어드민만 보이는 탭 · 칸 — 이름 옆 작은 주황 '운영' 칩(일반 회원에게는 그 칸이 아예 없다). 손품조사 매각분석 탭도 같은 꼴(SonpumAnalysisPage) */
+.adm-chip { display: inline-flex; align-items: center; height: 18px; margin-left: 5px; padding: 0 6px; border-radius: 999px; background: rgba(240, 138, 36, .14); color: #e8771a; font-size: 12px; font-weight: 700; line-height: 1; vertical-align: 1px; }
 .subtab:hover { color: var(--text); }
 .subtab.soon, .subtab.soon:hover { color: var(--muted); cursor: default; gap: 4px; }   /* 준비 중 — 잠금 아이콘, 눌러도 옮기지 않는다 */
 .subtab.soon svg { width: 12px; height: 12px; }
@@ -5314,7 +5316,7 @@ span.cal-day.has { cursor: help; }
       const headOf = (cls) => { const m = document.querySelector(`.gnb .g-menu.${cls}`); return m ? `<b class="g-col-h">${esc(m.textContent.trim())}</b>` : ''; };
       /* 운영자만 보는 칸(경매사례)은 운영자가 아니면 뺀다 */
       const megaItems = (cls, items) => items.filter(([t]) => !(cls === 'm3' && t === '매각분석' && !agIsAdmin()));
-      $('gMegaIn').innerHTML = MEGA.map(([cls, items]) => `<nav class="g-col ${cls}">${headOf(cls)}${megaItems(cls, items).map(([t, act, name]) => `<a href="#" class="${act && act === here ? 'on' : ''}" data-act="${act || 'soon'}" data-name="${esc(name || t)}">${esc(t)}</a>`).join('')}</nav>`).join('');
+      $('gMegaIn').innerHTML = MEGA.map(([cls, items]) => `<nav class="g-col ${cls}">${headOf(cls)}${megaItems(cls, items).map(([t, act, name]) => `<a href="#" class="${act && act === here ? 'on' : ''}" data-act="${act || 'soon'}" data-name="${esc(name || t)}">${esc(t)}${cls === 'm3' && t === '매각분석' ? '<span class="adm-chip">운영</span>' : ''}</a>`).join('')}</nav>`).join('');
     }
   }
 
@@ -6484,7 +6486,7 @@ span.cal-day.has { cursor: help; }
     paintSaveMark();
     $('subTabsIn').innerHTML = tabs ? whereTag() + tabs.filter((x) => (x[3] !== 'hide' || x[0] === cur) && (x[3] !== 'admin' || agIsAdmin())).map(([k, ic, t, flag]) => (flag === 'soon'
       ? `<button type="button" class="subtab soon" role="tab" aria-disabled="true" data-act="soon" data-name="${t}"><span class="soon-in" data-tip="준비 중">${t}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></button>`
-      : `<button type="button" class="subtab ${curOn === k ? 'on' : ''}" role="tab" aria-selected="${curOn === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}</button>`)).join('') : '';
+      : `<button type="button" class="subtab ${curOn === k ? 'on' : ''}" role="tab" aria-selected="${curOn === k}" data-act="subtab" data-v="${k}">${ic ? I[ic] || '' : ''}${t}${flag === 'admin' ? '<span class="adm-chip">운영</span>' : ''}</button>`)).join('') : '';
     if (tabs) syncStickTop();
     alignSubTabs();
     syncMapLock();
