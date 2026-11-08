@@ -293,6 +293,7 @@ button { cursor: pointer; }
 .g-util .u-link svg, .g-util .u-ico { color: rgba(255, 255, 255, 0.78) !important; }
 .g-util .u-link svg { width: 13px; height: 13px; }
 .g-util .u-link.pay, .g-util .u-link.pay svg { color: #9fc0ff !important; }
+.g-util .u-link.adm, .g-util .u-link.adm svg { color: #f5a35c !important; }   /* 운영 — 어드민만 보이는 칸은 주황 */
 .g-util .u-link:hover, .g-util .u-ico:hover { background: rgba(255, 255, 255, 0.12); color: #fff !important; }
 .g-util .u-link:hover svg { color: #fff !important; }
 .g-util .u-ico { width: 20px; height: 20px; }
@@ -4728,6 +4729,8 @@ span.cal-day.has { cursor: help; }
       <button type="button" class="u-link pay" data-act="go-more" data-name="결제하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>결제하기</button>
       <!-- 웹 이용가이드 — public/guide/index.html(/guide/)을 새 탭으로 연다. 주소는 WEB_GUIDE_URL 한곳 -->
       <button type="button" class="u-link" data-act="web-guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5M9 8h7M9 12h5"/></svg>이용가이드</button>
+      <!-- 운영 바로가기 — 어드민 계정에만 보인다(일반 회원에게는 숨김). 운영 화면에서는 '플랫폼(웹)' 탭으로 돌아온다(2026-11-08) -->
+      <a class="u-link adm" id="gAdmin" href="/admin/board" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></svg>운영</a>
       <span class="u-sep" aria-hidden="true"></span>
       <button type="button" class="u-ico u-bell" data-act="go-more" data-name="알림" data-tip="알림" data-tip-pos="below" aria-label="알림">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16s-2-1.5-2-6.5Z"/><path d="M10.3 19a2 2 0 0 0 3.4 0"/></svg><span class="dot"></span>
@@ -5273,6 +5276,8 @@ span.cal-day.has { cursor: help; }
     $('gLogin').style.visibility = '';
     $('gOut').hidden = !inNow;
     $('gJoin').hidden = inNow;
+    /* 운영 바로가기 — 어드민 로그인일 때만(로그인 확인 전이나 아직 준비가 안 됐으면 숨김) */
+    { const a = $('gAdmin'); if (a) { try { a.hidden = !(S.authReady && S.loggedIn && agIsAdmin()); } catch (e) { a.hidden = true; } } }
     document.querySelector('.g-arrow').setAttribute('aria-expanded', String(S.pop === 'user'));
     /* 주황 ▼(회원정보 메뉴)는 로그인했을 때만 보인다 — 자리는 그대로 두어 옆 글자가 움직이지 않게 */
     { const ar = document.querySelector('.g-arrow'); ar.style.visibility = inNow ? '' : 'hidden'; ar.disabled = !S.loggedIn; }
