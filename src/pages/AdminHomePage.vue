@@ -19,96 +19,8 @@ type Tool = {
 };
 type Group = { title: string; hint: string; tone: 'blue' | 'violet' | 'green' | 'amber'; tools: Tool[] };
 
-const GROUPS: Group[] = [
-  {
-    // 앱 하단 메뉴에 있던 '시장정보' — 제 묶음으로 떼어 맨 앞에 둔다
-    title: '부동산 시장정보',
-    hint: '시장에 지금 무슨 일이 벌어지고 있나',
-    tone: 'amber',
-    tools: [
-      {
-        title: '지역별 거래량 랭킹',
-        sub: '시군구 · 읍면동',
-        desc: '시도·시군구를 골라 거래량 많은 곳부터 줄 세워 지도와 함께 본다.',
-        path: '/trade-stats',
-        icon: 'trade',
-      },
-      {
-        title: 'KB 주택가격지수',
-        sub: '전국 · 서울',
-        desc: '한국은행 ECOS의 KB 주택가격지수로 시장 흐름을 본다.',
-        path: '/admin/housing-index',
-        icon: 'trade',
-      },
-    ],
-  },
-  {
-    title: '실거래가 분석',
-    hint: '실거래 통계로 수요공급을 분석한다',
-    tone: 'blue',
-    tools: [
-      {
-        title: '실거래 분석',
-        sub: '지역 단위',
-        desc: '지역 세부 단위(읍면동)의 거래량·평균가를 통해 수요공급을 분석한다.',
-        path: '/admin/region-demand',
-        icon: 'trade',
-      },
-      {
-        title: '실거래가 조건 분석',
-        sub: '해당 읍 · 면 · 동',
-        desc: '해당 읍면동에 세부 개별성을 걸러 비교 데이터를 알아본다.',
-        path: '/admin/dong-trades',
-        icon: 'filter',
-      },
-      {
-        title: '경매지번 공동주택가 및 실거래가',
-        sub: '지번 · 단지',
-        desc: '주소를 입력하여 공동주택가와 실거래가 데이터를 분석한다.',
-        path: '/admin/case-trades',
-        icon: 'lot',
-      },
-    ],
-  },
-  {
-    title: '낙찰가율 분석',
-    hint: '남들이 얼마에 받아 갔는지로 가늠한다',
-    tone: 'violet',
-    tools: [
-      {
-        title: '인근 매각 물건 분석',
-        desc: '인근 매각 물건의 낙찰가율을 분석한다.',
-        path: '',
-        icon: 'near',
-      },
-      {
-        title: '동일 지번 매각 물건 분석',
-        desc: '동일 번지 매각 물건 분석을 통해 낙찰가율을 분석한다.',
-        path: '',
-        icon: 'lot',
-      },
-    ],
-  },
-  {
-    title: '수익분석',
-    hint: '얼마를 쓰고 얼마가 남는지 센다',
-    tone: 'green',
-    tools: [
-      {
-        title: '경매 수익분석',
-        desc: '비용과 세금을 넣어 입찰가와 세후 순이익을 맞춰 본다.',
-        path: '',
-        icon: 'bid',
-      },
-      {
-        title: '자금관리 · 세금',
-        desc: '들어간 돈과 내야 할 세금을 한곳에서 들여다본다.',
-        path: '',
-        icon: 'money',
-      },
-    ],
-  },
-];
+// 분석 묶음(부동산 시장정보 · 실거래가 분석 · 낙찰가율 분석 · 수익분석)은 모두 뺐다(2026-11-08) — 같은 기능은 웹 플랫폼(시장분석 · 물건목록)에 있다
+const GROUPS: Group[] = [];
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -134,7 +46,7 @@ const openTool = (tool: Tool) => {
           <small class="adm-brand-tag">관리자 도구</small>
         </div>
         <nav class="adm-top-nav">
-          <button type="button" class="adm-top-link" @click="router.push('/auctions/watchlist')">선정물건</button>
+          <a class="adm-top-link" href="/web">플랫폼</a>
           <button type="button" class="adm-top-link ops" @click="router.push('/admin/board')">운영</button>
           <span class="adm-who">{{ who }}</span>
         </nav>
@@ -144,7 +56,7 @@ const openTool = (tool: Tool) => {
     <div class="adm-body">
       <div class="adm-head">
         <h1>분석 도구</h1>
-        <p>물건 상세 분석 전에 지역과 시세를 알아봅니다.</p>
+        <p>분석 도구는 플랫폼(시장분석 · 물건목록)으로 옮겼습니다. 오른쪽 위 플랫폼으로 들어가세요.</p>
       </div>
 
       <div class="adm-groups">
@@ -233,7 +145,7 @@ const openTool = (tool: Tool) => {
 .adm-top-link {
   border: 1px solid #ffffff4d; background: #ffffff1a; border-radius: 8px;
   padding: 6px 12px; font-family: inherit; font-size: 12.5px; font-weight: 700;
-  color: #fff; cursor: pointer;
+  color: #fff; cursor: pointer; text-decoration: none;   /* 플랫폼 단추는 링크(<a>) — 밑줄 없이 */
 }
 .adm-top-link:hover { border-color: #b9cdf7; color: #2b6df3; }
 /* 운영 — 글을 올리는 자리라 눈에 띄게 */
