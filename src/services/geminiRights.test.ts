@@ -132,3 +132,13 @@ describe('웹 결과 탭 칸(세입자 · 확인할 일 · 진행 단계)', () =
     expect(lastFieldOf('{"doc')).toBeNull();
   });
 });
+
+describe('rightsPromptFor — 붙인 서류만 적는다', () => {
+  it('매각물건명세서만 붙이면 나머지는 찾지 말라고', async () => {
+    const { rightsPromptFor } = await import('./geminiRights');
+    const p = rightsPromptFor(['매각물건명세서']);
+    expect(p).toContain('첨부한 서류: 매각물건명세서');
+    expect(p).toContain('붙이지 않은 서류(등기사항전부(요약)증명서 · 현황조사서 · 전입세대확인서 · 송달내역)는 찾지 말고');
+    expect(p).not.toContain('{{첨부한 서류}}');
+  });
+});

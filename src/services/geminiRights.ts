@@ -207,11 +207,12 @@ const RESPONSE_SCHEMA = {
  *  · 값마다 근거(evidence)를 달게 했다 — 어느 서류 어느 줄에서 봤는지.
  *  · 말소기준권리 판단 규칙을 글로 박아 넣었다. 그냥 물으면 전세권·가등기에서 흔들린다.
  */
+/** 프롬프트의 '첨부한 서류' 자리 — 보낼 때 실제로 붙인 서류 이름으로 바꾼다(rightsPromptFor) */
+const DOC_LIST_MARK = '{{첨부한 서류}}';
 export const RIGHTS_PROMPT = [
   '너는 한국 부동산 경매의 권리분석을 하는 사람이다. 첨부한 서류 사진·PDF 를 읽고 JSON 으로만 답하라.',
   '',
-  '첨부되는 서류 (없는 것도 있다):',
-  ...Object.values(DOC_LABELS).map((v) => `- ${v}`),
+  DOC_LIST_MARK,
   '',
   '0단계 — 분석하기 전에 서류가 이 물건 것인지부터 확인한다 (docCheck, 답의 맨 앞)',
   '- 이 물건의 사건번호 · 소재지는 맨 아래 「이미 읽어 둔 값」의 사건번호 · 소재지다.',
@@ -351,6 +352,18 @@ export const RIGHTS_PROMPT = [
   '- 마지막 문장은 늘 같은 뜻으로 — 입찰 전에 법원 원문과 최신 변동사항을 다시 확인하라고 적는다.',
 ].join('\n');
 
+/** 실제로 붙인 서류만 적은 프롬프트 — 없는 서류 이름까지 늘어놓으면 AI 가 그 서류를 찾느라 오래 생각했다.
+ *  등기부 · 전입세대 등이 없으면 그 내용은 아래 '이미 읽어 둔 값'(PDF 로 등록할 때 읽은 것)으로 대신한다 */
+export const rightsPromptFor = (labels: string[]): string => {
+  const names = [...new Set(labels.filter(Boolean))];
+  const missing = Object.values(DOC_LABELS).filter((v) => !names.includes(v));
+  const block = [
+    `첨부한 서류: ${names.join(' · ') || '없음'}`,
+    missing.length ? `붙이지 않은 서류(${missing.join(' · ')})는 찾지 말고, 그 내용은 맨 아래 「이미 읽어 둔 값」으로 대신한다. missingDocs 에는 판단에 꼭 필요했던 것만 적는다.` : '',
+  ].filter(Boolean).join('\n');
+  return RIGHTS_PROMPT.replace(DOC_LIST_MARK, block);
+};
+
 export type RightsDocPart = { mimeType: string; base64: string; label: string };
 
 /** 보내는 내용을 브라우저 콘솔에 접어서 찍는다 — 무엇이 넘어갔는지 그대로 보려고 */
@@ -378,8 +391,12 @@ const wait = (ms: number) => new Promise((done) => { setTimeout(done, ms); });
  *  - 소식 없이 기다리는 최대 시간: AI 가 서류를 읽고 생각하는 동안은 아무것도 안 오니 넉넉히
  *  - 처음부터 끝까지 기다리는 최대 시간: 그래도 끝이 안 나면 끊고 까닭을 알린다 (대기 화면이 영원히 돌지 않게) */
 const RIGHTS_IDLE_MS = 300_000;   // 5분 — 생각이 길어도 기다린다(사용자 요청 2026-11-01)
-/** 생각 토큰 상한 — gemini-flash 는 0 ~ 24,576 */
-const RIGHTS_THINK_BUDGET = 8192;
+/** 생각 토큰 상한 — gemini-flash 는 0 ~ 24,576.
+ *  8,192 로 두니 매각물건명세서 한 장에도 생각만 1분 넘게 했다(2026-11-08). 가르는 규칙은 프롬프트에 다 적혀 있어
+ *  오래 생각할 일이 아니다 — 서류 한 장이면 1,024, 한 장 늘 때마다 1,024 씩, 4,096 까지 */
+const RIGHTS_THINK_PER_DOC = 1024;
+const RIGHTS_THINK_MAX = 4096;
+const thinkBudgetFor = (docs: number) => Math.min(RIGHTS_THINK_MAX, Math.max(1, docs) * RIGHTS_THINK_PER_DOC);
 const RIGHTS_TOTAL_MS = 600_000;  // 10분 — 답 없음 5분보다 넉넉하게
 
 type StreamChunk = {
@@ -506,15 +523,17 @@ export const askRightsAnalysis = async (
   if (!key) throw new GeminiError('AI 키가 없습니다 — 더보기 > AI 자동 분석에서 등록해 주세요');
   if (parts.length === 0) throw new GeminiError('분석할 서류가 없습니다 — 서류를 한 장이라도 올려 주세요');
 
+  const prompt = rightsPromptFor(parts.map((p) => p.label));
   const promptText = facts
-    ? `${RIGHTS_PROMPT}\n\n이미 읽어 둔 값 (서류와 어긋나면 서류가 맞다. 다만 아래에 있는 권리를 빠뜨리지 마라)\n${facts}`
-    : RIGHTS_PROMPT;
+    ? `${prompt}\n\n이미 읽어 둔 값 (서류와 어긋나면 서류가 맞다. 다만 아래에 있는 권리를 빠뜨리지 마라)\n${facts}`
+    : prompt;
+  const thinkBudget = thinkBudgetFor(parts.length);
   const generationConfig = {
     // topK 1 — 늘 가장 그럴듯한 쪽만 고르게 해서 볼 때마다 답이 달라지는 것을 줄인다
     temperature: 0, topK: 1, responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA,
     // 생각하는 동안에도 요약을 조금씩 보내게 — 안 보내면 생각이 2분을 넘을 때 '답이 없다'로 끊겼다.
     // 생각 양은 상한을 둔다 — 정해 두지 않으면 서류가 클 때 몇 분씩 생각한다 (권리분석은 규칙대로 가르는 일이라 이만하면 된다)
-    thinkingConfig: { includeThoughts: true, thinkingBudget: RIGHTS_THINK_BUDGET },
+    thinkingConfig: { includeThoughts: true, thinkingBudget: thinkBudget },
   };
   const payload = JSON.stringify({
     contents: [{
@@ -562,7 +581,7 @@ export const askRightsAnalysis = async (
     let errMsg = '';
     const st = newStreamStats();
     // eslint-disable-next-line no-console
-    console.log(`%c[AI 권리분석] ${attempt + 1}번째 요청 — ${model} · 생각 상한 ${RIGHTS_THINK_BUDGET.toLocaleString('ko-KR')} 토큰`, 'color:#2563eb;font-weight:700');
+    console.log(`%c[AI 권리분석] ${attempt + 1}번째 요청 — ${model} · 생각 상한 ${thinkBudget.toLocaleString('ko-KR')} 토큰`, 'color:#2563eb;font-weight:700');
     tellStage('send');
     try {
       res = await fetch(`${GEMINI_API}/models/${model}:streamGenerateContent?alt=sse`, {
