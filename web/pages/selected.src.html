@@ -8140,10 +8140,24 @@ span.cal-day.has { cursor: help; }
     /* 카드는 선정물건 물건정보의 고정카드 그대로(같은 함수) — 단계 단추 바로 오른쪽에 물건카드교체 */
     return itemHeadHtml(it, cardPickHtml('sale', saleItemId));
   }
+  /* 물건으로 — 기억해 둔 물건으로 들어오거나 그 물건 주소가 바뀌면(PDF 다시 올리기) 그 동네로 다시 조회한다.
+     전에는 물건카드를 새로 고를 때만 조회해서, 새로고침 · 다시 올리기 뒤엔 빈 화면으로 남았다(2026-11-08) */
+  let saleAutoKey = '';
+  function saleAutoQuery() {
+    if (saleMode !== 'item' || !saleItemId || !agSaleOpen()) return;
+    const it = salePicks().find((x) => x.id === saleItemId); if (!it) return;
+    const key = `${it.id}|${it.addr}`; if (saleAutoKey === key) return; saleAutoKey = key;
+    saleRegionOf(it, (r) => {
+      if (saleMode !== 'item' || saleItemId !== it.id || !agSaleOpen()) return;
+      if (r) { saleGoRegion(r); renderMarket(); return; }
+      toast(/^\d{4}타경\d+/.test(String(it.addr || '')) ? `${it.caseNo} 주소가 비어 있어(파일 이름으로 들어감) 지역을 찾지 못했습니다. 물건등록에서 같은 PDF를 다시 올리면 주소가 채워집니다.` : `${it.caseNo} 주소에서 지역을 찾지 못했습니다. 지역으로에서 골라 조회해 주세요.`, 'info');
+    });
+  }
   function salePickCard(id) {
     const it = salePicks().find((x) => x.id === id); saleCardOpen = false;
     if (!it) { renderMarket(); return; }
     saleItemId = id; try { localStorage.setItem(SALE_ITEM_KEY, id); } catch (e) { /* 그만 */ }
+    saleAutoKey = `${it.id}|${it.addr}`;   /* 아래에서 바로 조회한다 — 자동 조회가 한 번 더 돌지 않게 */
     saleMode = 'item'; try { localStorage.setItem(SALE_MODE_KEY, 'item'); } catch (e) { /* 그만 */ }
     if (it.apr > 0) SX.my = Number(it.apr).toLocaleString('ko-KR');
     renderMarket();
@@ -8231,7 +8245,7 @@ span.cal-day.has { cursor: help; }
     /* 경매사례 — 같은 틀에 고정카드(카드교체) */
     const saleCard = S.route === 'market' && S.marketTab === 'sale' && agIsAdmin();
     el.classList.toggle('sx-fixcard', saleCard);
-    if (saleCard) { el.innerHTML = saleTopHtml(); shell.hidden = false; return; }   /* 조회 띠(+ 물건으로일 때 고정카드) */
+    if (saleCard) { el.innerHTML = saleTopHtml(); shell.hidden = false; saleAutoQuery(); return; }   /* 조회 띠(+ 물건으로일 때 고정카드) */
     let id = ''; try { id = localStorage.getItem('son.pick') || ''; } catch (e) { /* 그만 */ }
     const on = false;   /* 시장분석 손품조사는 이제 사건 카드 없이 주소 검색(지역분석과 같은 검색창) — 머리 카드는 선정물건 손품조사에만 */
     const it = on && id ? byId(id) : null;
