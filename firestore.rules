@@ -45,6 +45,15 @@ service cloud.firestore {
             && request.resource.data.downloads == resource.data.get('downloads', 0) + 1);
     }
 
+    // 전자책 파일 조각 — 파일 저장소 대신 글 여러 개에 나눠 담은 책 파일. 운영자만 쓰고,
+    // 회원은 올린 무료 책(price 0)의 조각만 읽는다
+    match /ebookParts/{pid} {
+      allow read: if isAdmin() || (isAllowedUser()
+        && get(/databases/$(database)/documents/ebooks/$(resource.data.book)).data.published == true
+        && get(/databases/$(database)/documents/ebooks/$(resource.data.book)).data.get('price', 0) == 0);
+      allow write: if isAdmin();
+    }
+
     // 전자책 받은 기록 — '{uid}_{책}' 하나. 내 것만 쓰고 읽는다, 운영자는 모두 읽는다
     match /ebookReceipts/{rid} {
       allow read: if isAllowedUser() && (resource.data.uid == request.auth.uid || isAdmin());

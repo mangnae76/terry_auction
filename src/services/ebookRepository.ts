@@ -4,10 +4,12 @@
 // 받기는 회원가입 · 로그인한 회원만 — 받을 때마다 'ebookReceipts/{uid}_{책}' 에 남기고, 처음 받을 때만 받은 수를 1 올린다.
 // Storage 파일 주소는 글에 적지 않는다 — 받을 때 로그인한 회원에게만 꺼내 준다. 드라이브 링크는 무료 책용(글에 그대로 보인다).
 import {
+  Bytes,
   collection,
   deleteDoc,
   doc,
   getDoc,
+  getDocFromServer,
   increment,
   onSnapshot,
   query,
@@ -16,13 +18,16 @@ import {
   where,
   type Unsubscribe,
 } from 'firebase/firestore';
-import { deleteObject, getDownloadURL, ref as storageRef, uploadBytesResumable } from 'firebase/storage';
+import { deleteObject, getDownloadURL, ref as storageRef } from 'firebase/storage';
 import { auth, firestore, firestoreDisabledReason, storage } from './firebase';
 
 const BOOKS = 'ebooks';
 const RECEIPTS = 'ebookReceipts';
-/** 올릴 수 있는 파일 크기 — 규칙(storage.rules)과 같이 맞춘다 */
-export const EBOOK_MAX_MB = 100;
+/** 책 파일 조각 — 파일 저장소(결제 계정 필요) 대신 Firestore 글 여러 개에 나눠 담는다(글 하나 1MB 한도) */
+const PARTS = 'ebookParts';
+const PART_BYTES = 900 * 1024;
+/** 올릴 수 있는 파일 크기 — 조각 글로 담으니 무료 DB 용량(1GB)을 생각해 50MB 까지 */
+export const EBOOK_MAX_MB = 50;
 
 export type Ebook = {
   id: string;
@@ -42,6 +47,8 @@ export type Ebook = {
   filePath: string;
   fileName: string;
   fileSize: number;
+  /** 조각 수 — filePath 가 'parts:…' 이면 ebookParts 글 이만큼에 나눠 담겼다 */
+  fileParts: number;
   published: boolean;
   order: number;
   downloads: number;
@@ -58,7 +65,7 @@ export type EbookReceipt = { id: string; uid: string; ebookId: string; title: st
 export const newEbookId = (): string => `eb${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 export const emptyEbook = (): Ebook => ({
-  id: '', title: '', desc: '', tag: '', kind: 'ebook', price: 0, coverUrl: '', coverPath: '', link: '', filePath: '', fileName: '', fileSize: 0,
+  id: '', title: '', desc: '', tag: '', kind: 'ebook', price: 0, coverUrl: '', coverPath: '', link: '', filePath: '', fileName: '', fileSize: 0, fileParts: 0,
   published: false, order: Date.now(), downloads: 0, createdAt: '', updatedAt: '',
 });
 
@@ -107,21 +114,35 @@ export const subscribeEbooks = (
   );
 };
 
-const extOf = (name: string, fallback: string) => (/\.([a-z0-9]{2,5})$/i.exec(name)?.[1] ?? fallback).toLowerCase();
+const PARTS_PREFIX = 'parts:';
+const partId = (bookId: string, key: string, n: number) => `${bookId}_${key}_${n}`;
+const inTime = <T>(p: Promise<T>, ms = 60000): Promise<T> => Promise.race([p, new Promise<T>((_, no) => setTimeout(() => no(new Error('timeout')), ms))]);
 
-/** 파일 하나 올리기 — 몇 % 올렸는지 onProgress(0~1) 로 알린다 */
-const upload = (path: string, file: File, onProgress?: (r: number) => void, download = false): Promise<void> => new Promise((resolve, reject) => {
-  if (!storage) { reject(new Error('파일 저장소가 연결되지 않았습니다.')); return; }
-  const task = uploadBytesResumable(storageRef(storage, path), file, {
-    contentType: file.type || 'application/octet-stream',
-    // 책 파일은 열 때 새 탭에 띄우지 않고 바로 내려받게 — 원래 파일 이름 그대로
-    ...(download ? { contentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}` } : {}),
-  });
-  task.on('state_changed', (s) => onProgress?.(s.totalBytes ? s.bytesTransferred / s.totalBytes : 0), reject, () => resolve());
-});
+/** 책 파일을 조각 글로 담는다 — onProgress(0~1) */
+const writeParts = async (bookId: string, file: File, onProgress?: (r: number) => void): Promise<{ key: string; parts: number }> => {
+  if (!firestore) throw new Error('연결되지 않았습니다.');
+  const buf = new Uint8Array(await file.arrayBuffer());
+  const key = Date.now().toString(36);
+  const parts = Math.max(1, Math.ceil(buf.length / PART_BYTES));
+  for (let n = 0; n < parts; n += 1) {
+    const data = Bytes.fromUint8Array(buf.subarray(n * PART_BYTES, (n + 1) * PART_BYTES));
+    await inTime(setDoc(doc(firestore, PARTS, partId(bookId, key, n)), { book: bookId, key, n, data }));
+    onProgress?.((n + 1) / parts);
+  }
+  return { key, parts };
+};
+
+/** 예전 조각 지우기 — 파일을 바꾸거나 책을 지울 때 */
+const dropParts = async (bookId: string, filePath: string, parts: number) => {
+  if (!firestore || !filePath.startsWith(PARTS_PREFIX)) return;
+  const key = filePath.slice(PARTS_PREFIX.length);
+  for (let n = 0; n < parts; n += 1) {
+    try { await deleteDoc(doc(firestore, PARTS, partId(bookId, key, n))); } catch { /* 이미 없으면 그만 */ }
+  }
+};
 
 const dropFile = async (path: string) => {
-  if (!storage || !path) return;
+  if (!storage || !path || path.startsWith(PARTS_PREFIX)) return;
   try { await deleteObject(storageRef(storage, path)); } catch { /* 이미 없으면 그만 */ }
 };
 
@@ -140,10 +161,11 @@ export const saveEbook = async (
   const next: Ebook = { ...book, id, updatedAt: now, createdAt: book.createdAt || now };
   if (files.pdf) {
     if (files.pdf.size > EBOOK_MAX_MB * 1024 * 1024) throw new Error(`파일이 ${EBOOK_MAX_MB}MB 보다 큽니다.`);
-    const path = `ebooks/${id}/${Date.now()}.${extOf(files.pdf.name, 'pdf')}`;
-    await upload(path, files.pdf, onProgress, true);
-    if (book.filePath && book.filePath !== path) await dropFile(book.filePath);
+    const { key, parts } = await writeParts(id, files.pdf, onProgress);
+    const path = `${PARTS_PREFIX}${key}`;
+    if (book.filePath && book.filePath !== path) { await dropParts(id, book.filePath, book.fileParts || 0); await dropFile(book.filePath); }
     next.filePath = path;
+    next.fileParts = parts;
     next.fileName = files.pdf.name;
     next.fileSize = files.pdf.size;
   }
@@ -172,15 +194,22 @@ export const patchEbook = async (id: string, patch: Partial<Pick<Ebook, 'publish
 export const removeEbook = async (book: Ebook): Promise<void> => {
   if (!firestore) throw new Error(firestoreDisabledReason ?? '연결되지 않았습니다.');
   await deleteDoc(doc(firestore, BOOKS, book.id));
+  await dropParts(book.id, book.filePath, book.fileParts || 0);
   await dropFile(book.filePath);
   await dropFile(book.coverPath);
 };
 
 /**
- * 받기 — 로그인한 회원만(유료 · 무료 회원 모두 무료 책은 받는다). 유료 책은 아직 받지 못한다. 받은 기록을 남기고(처음이면 받은 수 +1) 파일 주소를 돌려준다.
+ * 받기 — 로그인한 회원만(유료 · 무료 회원 모두 무료 책은 받는다). 유료 책은 아직 받지 못한다.
+ * 받은 기록을 남기고(처음이면 받은 수 +1) 실제로 내려받는다.
+ *  - 구글드라이브 링크면 win(누른 자리에서 미리 연 새 창)에서 드라이브로
+ *  - 조각 글이면 모아서 PDF 파일로 바로 저장(원래 파일 이름)
  * 로그인 전이면 'login' 을 던진다 — 화면이 로그인 창을 띄운다.
  */
-export const receiveEbook = async (book: Pick<Ebook, 'id' | 'title' | 'filePath' | 'price' | 'link'>): Promise<string> => {
+export const downloadEbook = async (
+  book: Pick<Ebook, 'id' | 'title' | 'filePath' | 'price' | 'link' | 'fileName' | 'fileParts'>,
+  win?: Window | null,
+): Promise<void> => {
   const uid = auth?.currentUser?.uid;
   if (!uid) throw new Error('login');
   if (isPaidEbook(book)) throw new Error('유료 콘텐츠는 결제를 붙인 뒤 받을 수 있습니다.');   // 규칙(firestore.rules)도 막는다
@@ -191,9 +220,35 @@ export const receiveEbook = async (book: Pick<Ebook, 'id' | 'title' | 'filePath'
   const first = !(await getDoc(rref)).exists();
   await setDoc(rref, { uid, ebookId: book.id, title: book.title, receivedAt: new Date().toISOString() });
   if (first) { try { await updateDoc(doc(firestore, BOOKS, book.id), { downloads: increment(1) }); } catch { /* 받은 수는 못 올려도 받기는 그대로 */ } }
-  if (book.link) return ebookLinkUrl(book.link);   // 구글드라이브에서 바로
-  if (!storage) throw new Error('연결되지 않았습니다.');
-  return getDownloadURL(storageRef(storage, book.filePath));
+
+  if (book.link) {   // 구글드라이브에서 바로
+    const url = ebookLinkUrl(book.link);
+    if (win) win.location.href = url; else window.location.href = url;
+    return;
+  }
+  win?.close();
+  let blob: Blob;
+  if (book.filePath.startsWith(PARTS_PREFIX)) {
+    const key = book.filePath.slice(PARTS_PREFIX.length);
+    const chunks: Uint8Array[] = [];
+    for (let n = 0; n < (book.fileParts || 0); n += 1) {
+      const snap = await inTime(getDocFromServer(doc(firestore, PARTS, partId(book.id, key, n))));
+      const data = snap.get('data') as Bytes | undefined;
+      if (!data) throw new Error('책 파일 일부를 찾지 못했습니다. 운영자에게 알려 주세요.');
+      chunks.push(data.toUint8Array());
+    }
+    blob = new Blob(chunks as BlobPart[], { type: /\.epub$/i.test(book.fileName) ? 'application/epub+zip' : 'application/pdf' });
+  } else {
+    if (!storage) throw new Error('연결되지 않았습니다.');
+    blob = await (await fetch(await getDownloadURL(storageRef(storage, book.filePath)))).blob();
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = book.fileName || `${book.title}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
 };
 
 /** 내가 받은 책 — 콘텐츠 › 내콘텐츠 */

@@ -9749,11 +9749,11 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       }
       case 'ebook-dl': {
         if (!S.loggedIn) { toast('회원가입 후 로그인하면 무료로 받을 수 있습니다.', 'info'); openAppLogin(); break; }
-        const b = EB.list.find((x) => x.id === v); if (!b || !CLOUD.T || !CLOUD.T.receiveEbook) break;
-        const w = window.open('', '_blank');   /* 누른 자리에서 새 창을 먼저 연다 — 주소를 받은 뒤 열면 팝업으로 막힌다 */
+        const b = EB.list.find((x) => x.id === v); if (!b || !CLOUD.T || !CLOUD.T.downloadEbook) break;
+        const w = b.link ? window.open('', '_blank') : null;   /* 드라이브 링크면 누른 자리에서 새 창을 먼저 연다 — 늦게 열면 팝업으로 막힌다. 파일이면 바로 저장 */
         t.disabled = true; t.textContent = '받는 중';
         /* 구글드라이브 링크면 드라이브에서 바로 받는다 — 받은 기록은 콘텐츠 › 내콘텐츠에 남는다 */
-        CLOUD.T.receiveEbook(b).then((url) => { if (w) w.location.href = url; else location.href = url; toast('다운로드를 시작했습니다. 콘텐츠 › 내콘텐츠에서 다시 받을 수 있습니다.', 'ok'); })
+        CLOUD.T.downloadEbook(b, w).then(() => { toast('다운로드를 시작했습니다. 콘텐츠 › 내콘텐츠에서 다시 받을 수 있습니다.', 'ok'); })
           .catch((e) => { if (w) w.close(); if (e && e.message === 'login') { toast('회원가입 후 로그인하면 무료로 받을 수 있습니다.', 'info'); openAppLogin(); } else toast(userMsg(e, '받지 못했습니다. 잠시 뒤 다시 해 주세요.'), 'error'); })
           .finally(() => { t.disabled = false; t.textContent = '다운로드'; });
         break;

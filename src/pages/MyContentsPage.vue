@@ -2,7 +2,7 @@
 // 콘텐츠 › 내콘텐츠 · 마이페이지 › 내콘텐츠(웹) — 내가 받은 전자책. 다시받기로 언제든 내려받는다.
 import { onUnmounted, ref } from 'vue';
 import { userMessage } from '../services/userMessage';
-import { getEbook, isPaidEbook, receiveEbook, subscribeMyReceipts, type EbookReceipt } from '../services/ebookRepository';
+import { getEbook, isPaidEbook, downloadEbook, subscribeMyReceipts, type EbookReceipt } from '../services/ebookRepository';
 
 const rows = ref<EbookReceipt[]>([]);
 const err = ref('');
@@ -15,13 +15,12 @@ const msg = ref('');
 const again = async (r: EbookReceipt) => {
   if (busy.value) return;
   busy.value = r.id;
-  const w = window.open('', '_blank');   // 누른 자리에서 새 창을 먼저 연다 — 주소를 받은 뒤 열면 팝업으로 막힌다
+  const w = window.open('', '_blank');   // 누른 자리에서 새 창을 먼저 연다(드라이브 링크용) — 파일이면 downloadEbook 이 닫는다
   try {
     const book = await getEbook(r.ebookId);
     if (!book || !book.published) throw new Error('지금은 받을 수 없는 책입니다. 운영자가 내렸거나 지웠습니다.');
     if (isPaidEbook(book)) throw new Error('유료로 바뀐 책입니다. 결제를 붙인 뒤 받을 수 있습니다.');
-    const url = await receiveEbook(book);
-    if (w) w.location.href = url; else window.location.href = url;   // 구글드라이브 · 저장소 어느 쪽이든 새 창에서 받는다
+    await downloadEbook(book, w);
   } catch (e) {
     w?.close();
     msg.value = userMessage(e, '받지 못했습니다. 잠시 뒤 다시 해 주세요.');

@@ -243,7 +243,7 @@ export const mountAppAdmin = (el, key, provides = {}) => {
   return () => app.unmount();
 };
 export const mountAppRegion = (el) => mountAppAdmin(el, 'region');
-/* 콘텐츠 › 관리(운영자만) — 전자책 올리고 내리기. 회원 화면의 책 카드 · 받기는 웹이 subscribeEbooks · receiveEbook 으로 그린다 */
+/* 콘텐츠 › 관리(운영자만) — 전자책 올리고 내리기. 회원 화면의 책 카드 · 받기는 웹이 subscribeEbooks · downloadEbook 으로 그린다 */
 import EbookManage from '../../src/components/EbookManage.vue';
 export const mountEbookManage = (el) => {
   const app = createApp(EbookManage);
@@ -259,7 +259,7 @@ export const mountMyContents = (el) => {
   app.mount(el);
   return () => app.unmount();
 };
-export { subscribeEbooks, receiveEbook, subscribeMyReceipts } from '../../src/services/ebookRepository';
+export { subscribeEbooks, downloadEbook, subscribeMyReceipts } from '../../src/services/ebookRepository';
 
 export const mountAppFieldTrip = (el, onDetail) => {
   const Empty = { render: () => null };
