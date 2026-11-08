@@ -6353,15 +6353,18 @@ span.cal-day.has { cursor: help; }
     }
     if (m.kind === 'buy') {
       /* 스토어 구매하기 — 금액 · 결제 수단 / 구매자 정보(내 정보에서 채움) / 환불 안내 / 약관 동의 / 결제. 결제 연동(PG) 전이라 결제는 '준비 중' */
-      const x = STORE_ITEMS[m.i] || STORE_ITEMS[0];
+      /* 유료 전자책(m.ebook)이면 그 책 — 아니면 스토어 자리표시 상품 */
+      const eb = m.ebook ? EB.list.find((b) => b.id === m.ebook) : null;
+      const x = eb ? { tag: eb.tag, title: eb.title } : (STORE_ITEMS[m.i] || STORE_ITEMS[0]);
+      const price = eb ? `${(Number(eb.price) || 0).toLocaleString('ko-KR')}원` : '가격미정';
       const fld = (id, label, val, ph, type = 'text') => `<label class="buy-fld" for="${id}">${label}<input id="${id}" type="${type}" value="${esc(val || '')}" placeholder="${ph}"></label>`;
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog buy-dlg" role="dialog" aria-modal="true" aria-labelledby="buyT">
-        <div class="buy-head"><div><h2 id="buyT">구매하기</h2><p>[${esc(x.tag)}] ${esc(x.title)} · ${x.kind === 'ebook' ? '전자책' : '리포트'}</p></div><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
-        <dl class="buy-box buy-sum"><div><dt>상품 금액</dt><dd><b>가격미정</b></dd></div><div><dt>결제 수단</dt><dd>카드 · 간편결제</dd></div></dl>
+        <div class="buy-head"><div><h2 id="buyT">구매하기</h2><p>${x.tag ? `[${esc(x.tag)}] ` : ''}${esc(x.title)}</p></div><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
+        <dl class="buy-box buy-sum"><div><dt>상품 금액</dt><dd><b>${price}</b></dd></div><div><dt>결제 수단</dt><dd>카드, 카카오페이, 네이버페이 등</dd></div></dl>
         <div class="buy-box buy-who"><div class="buy-who-h"><b>구매자 정보</b><small>내 정보에서 채웠습니다</small></div>
           ${fld('buyName', '이름', m.name ?? S.userName, '이름')}${fld('buyPhone', '연락처', m.phone, '010-0000-0000', 'tel')}${fld('buyEmail', '이메일', m.email ?? (CLOUD.auth && CLOUD.auth.email), 'name@example.com', 'email')}</div>
-        <div class="buy-refund">환불 안내<br>결제 후 7일 이내, 내려받기 전이면 전액 환불합니다.<br>내려받은 뒤에는 환불이 제한될 수 있습니다.</div>
-        <label class="buy-agree"><input type="checkbox" id="buyAgree" data-act="buy-agree" ${m.agree ? 'checked' : ''}><span><a href="#" data-act="doc" data-v="terms">이용약관</a> 및 <a href="#" data-act="doc" data-v="refund">환불정책</a>에 동의합니다 <em>*</em></span></label>
+        <div class="buy-refund">환불 안내<br>다운로드 전 결제 후 7일 이내에 100% 환불이 가능합니다.<br>파일을 다운로드하신 경우 환불이 제한될 수 있습니다.</div>
+        <label class="buy-agree"><input type="checkbox" id="buyAgree" data-act="buy-agree" ${m.agree ? 'checked' : ''}><span><a href="#" data-act="doc" data-v="terms">이용약관</a> 및 <a href="#" data-act="doc" data-v="refund">환불정책</a>에 동의합니다. <em>*</em></span></label>
         <button type="button" class="buy-pay" id="buyPay" data-act="buy-pay" ${m.agree ? '' : 'disabled'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M2.5 10h19M6.5 15h4"/></svg>카드·간편결제로 결제하기</button>
       </div></div>`;
       return;
@@ -8735,10 +8738,10 @@ span.cal-day.has { cursor: help; }
     const list = STORE_ITEMS.filter((x) => tab === 'all' || x.kind === tab);
     const ebooks = tab === 'all' || tab === 'ebook' ? EB.list : [];
     /* 운영자가 올린 책 — 표지 그림이 있으면 그것, 없으면 남색 표지에 제목 */
-    /* 무료(0원)는 로그인한 회원 누구나 바로 받고, 유료는 결제를 붙이기 전까지 결제준비중 */
+    /* 무료(0원)는 로그인한 회원 누구나 바로 받고, 유료는 구매하기 창(결제 연동 전이라 결제는 준비 중) */
     const ebPaid = (b) => (Number(b.price) || 0) > 0;
     const ebCard = (b) => `<article class="st-card">${b.coverUrl ? `<div class="st-cover img"><img src="${esc(b.coverUrl)}" alt="" loading="lazy"><span class="st-kind">전자책</span></div>` : `<div class="st-cover navy"><span class="st-kind">전자책</span><strong>${esc(b.title)}</strong></div>`}`
-      + `<div class="st-body"><h3>${b.tag ? `<em>[${esc(b.tag)}]</em> ` : ''}${esc(b.title)}</h3><p>${esc(b.desc || '')}</p>${ebPaid(b) ? `<span class="st-price">${Number(b.price).toLocaleString('ko-KR')}원</span><button type="button" class="st-buy" disabled>결제준비중</button>` : `<span class="st-free">무료</span><button type="button" class="st-buy" data-act="ebook-get" data-v="${esc(b.id)}">무료로받기</button>`}</div></article>`;
+      + `<div class="st-body"><h3>${b.tag ? `<em>[${esc(b.tag)}]</em> ` : ''}${esc(b.title)}</h3><p>${esc(b.desc || '')}</p>${ebPaid(b) ? `<span class="st-price">${Number(b.price).toLocaleString('ko-KR')}원</span><button type="button" class="st-buy" data-act="ebook-buy" data-v="${esc(b.id)}">구매하기</button>` : `<span class="st-free">무료</span><button type="button" class="st-buy" data-act="ebook-get" data-v="${esc(b.id)}">무료로받기</button>`}</div></article>`;
     const card = (x) => `<article class="st-card"><div class="st-cover ${x.tone}"><span class="st-kind">${x.kind === 'ebook' ? '전자책' : '리포트'}</span><strong>${x.cover.map(esc).join('<br>')}</strong><small>${esc(x.sub)}</small></div>`
       + `<div class="st-body"><h3><em>[${esc(x.tag)}]</em> ${esc(x.title)}</h3><p>${esc(x.desc)}</p><span class="st-soon">가격미정</span><button type="button" class="st-buy" data-act="store-buy" data-v="${STORE_ITEMS.indexOf(x)}">구매하기</button></div></article>`;
     return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>콘텐츠</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트를 준비하고 있습니다.</p></div>`
@@ -9707,6 +9710,11 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'mobile-slide': showSlide(Number(v) || 0); startSlides(); break;
       case 'mobile-more': if (MOBILE_LANDING_URL) location.href = MOBILE_LANDING_URL; else toast('‘앱 소개 페이지’는 준비 중입니다.', 'info'); break;
       case 'store-buy': if (!S.loggedIn) { toast('로그인한 뒤 구매할 수 있습니다.', 'info'); openAppLogin(); break; } S.modal = { kind: 'buy', i: Number(v) || 0 }; renderModal(); break;
+      case 'ebook-buy': {
+        if (!S.loggedIn) { toast('회원가입 후 로그인하면 구매할 수 있습니다.', 'info'); openAppLogin(); break; }
+        if (!EB.list.some((b) => b.id === v)) break;
+        S.modal = { kind: 'buy', ebook: v }; renderModal(); break;
+      }
       case 'buy-agree': if (S.modal && S.modal.kind === 'buy') { S.modal.agree = t.checked; const b = $('buyPay'); if (b) b.disabled = !t.checked; } break;
       case 'buy-pay': toast('결제는 준비 중입니다 — 결제 연동이 끝나면 열립니다.', 'info'); break;
       case 'store-tab': S.storeTab = v; store.set('wlp.web.storeTab2', v); renderInfo(); break;
