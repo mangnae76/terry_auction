@@ -5,6 +5,7 @@ import { userMessage } from '../services/userMessage';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import BrandLogo from '../components/BrandLogo.vue';
 import AdminTopTabs from '../components/AdminTopTabs.vue';
+import AdminInquiryBox from '../components/AdminInquiryBox.vue';
 import DateTimeField from '../components/DateTimeField.vue';
 import { useAuthStore } from '../stores/authStore';
 import { OPS_MENU, opsItem } from '../services/adminMenu';
@@ -354,8 +355,11 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         <template v-if="/permission|insufficient/i.test(err)"> — 지금 계정 {{ auth.email || '(로그인 안 됨)' }}</template>
       </p>
 
+      <!-- 문의함 · 제보 처리 — 고객센터 › 1:1 문의(DB inquiries) -->
+      <AdminInquiryBox v-if="menu === 'inquiries' || menu === 'reports'" :key="menu" :mode="menu" />
+
       <!-- 아직 만들지 않은 칸 -->
-      <section v-if="!menuKind" class="adb-card ops-soon">
+      <section v-else-if="!menuKind" class="adb-card ops-soon">
         <h2>준비 중입니다</h2>
         <p>{{ menuItem?.desc }}</p>
         <p v-if="menuItem?.need" class="ops-need">먼저 있어야 하는 것 — {{ menuItem.need }}</p>

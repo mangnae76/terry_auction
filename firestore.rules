@@ -232,6 +232,24 @@ service cloud.firestore {
         && agentData().dongs is map && agentData().dongs.size() <= 3000;
     }
 
+    // 1:1 문의 · 정보 오류 제보 — 회원은 제 글만 쓰고 보고, 답변대기일 때만 지운다. 답은 운영자만 단다(운영 › 문의함 · 제보 처리)
+    match /inquiries/{id} {
+      allow read: if isAdmin() || (isAllowedUser() && resource.data.uid == request.auth.uid);
+      allow create: if isAllowedUser()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'nickname', 'kind', 'title', 'body', 'caseNumber', 'status', 'createdAt'])
+        && request.resource.data.status == 'open'
+        && request.resource.data.kind in ['이용문의', '결제문의', '오류신고', '정보오류제보', '제휴문의', '기타']
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 100
+        && request.resource.data.body is string && request.resource.data.body.size() > 0 && request.resource.data.body.size() <= 2000
+        && request.resource.data.caseNumber is string && request.resource.data.caseNumber.size() <= 40;
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'answer', 'answeredAt', 'answeredBy'])
+        && request.resource.data.status == 'answered'
+        && request.resource.data.answer is string && request.resource.data.answer.size() <= 2000;
+      allow delete: if isAdmin() || (isAllowedUser() && resource.data.uid == request.auth.uid && resource.data.status == 'open');
+    }
+
     // 회원탈퇴 신청 — 본인은 신청 · (처리 전) 취소만, 목록을 보고 처리하는 건 운영자
     match /withdrawRequests/{uid} {
       allow get: if request.auth != null && (request.auth.uid == uid || isAdmin());

@@ -59,8 +59,8 @@ export const OPS_MENU: OpsGroup[] = [
   {
     title: '고객 응대',
     items: [
-      { key: 'inquiries', label: '문의함', desc: '1:1 문의 받고 답하기', need: '문의 자리와 받는 창구' },
-      { key: 'reports', label: '제보 처리', desc: '경공매 정보 오류 신고 받기', need: '제보 자리' },
+      { key: 'inquiries', label: '문의함', desc: '1:1 문의 받고 답하기 — 회원은 고객센터 › 1:1 문의에서 남긴다', ready: true },
+      { key: 'reports', label: '제보 처리', desc: '경공매 정보 오류 신고 받기 — 1:1 문의의 정보오류제보', ready: true },
     ],
   },
   {

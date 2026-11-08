@@ -4,6 +4,7 @@
 import { computed, inject, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppToast from './AppToast.vue';
+import InquiryBox from './InquiryBox.vue';
 import {
   SUPPORT_CONTACTS,
   SUPPORT_FAQ,
@@ -104,6 +105,9 @@ const openContact = (c: ContactWay) => {
           </div>
         </section>
   
+        <!-- 1:1 문의 쓰기 · 내 문의(웹) — DB inquiries, 운영 › 문의함에서 답한다 -->
+        <InquiryBox v-if="showRest && webEmbed" />
+
         <!-- 1:1 문의 -->
         <section v-if="showRest" class="sup-card">
           <h2 class="sup-h2">1:1 고객문의 안내</h2>
