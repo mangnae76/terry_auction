@@ -7,6 +7,7 @@ import BrandLogo from '../components/BrandLogo.vue';
 import AdminTopTabs from '../components/AdminTopTabs.vue';
 import AdminInquiryBox from '../components/AdminInquiryBox.vue';
 import AdminSiteConfigBox from '../components/AdminSiteConfigBox.vue';
+import AdminAccessBox from '../components/AdminAccessBox.vue';
 import DateTimeField from '../components/DateTimeField.vue';
 import { useAuthStore } from '../stores/authStore';
 import { OPS_MENU, opsItem } from '../services/adminMenu';
@@ -360,6 +361,8 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
       <AdminInquiryBox v-if="menu === 'inquiries' || menu === 'reports'" :key="menu" :mode="menu" />
       <!-- 점검 모드 · 앱 시작 팝업 — DB siteConfig/main, 웹 · 앱은 SiteNotice 가 따라간다 -->
       <AdminSiteConfigBox v-else-if="menu === 'maintenance' || menu === 'popup'" :key="menu" :mode="menu" />
+      <!-- 접근 권한 관리 — 운영자 계정(DB adminConfig/main) -->
+      <AdminAccessBox v-else-if="menu === 'access'" />
 
       <!-- 아직 만들지 않은 칸 -->
       <section v-else-if="!menuKind" class="adb-card ops-soon">

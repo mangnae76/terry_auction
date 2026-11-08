@@ -9327,6 +9327,7 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     /* 점검 화면 · 시작 팝업(운영 › 점검 모드 · 앱 시작 팝업) — 앱과 같은 부품을 맨 위에 */
     if (T.mountSiteNotice) { try { const el = document.createElement('div'); el.id = 'siteNotice'; document.body.appendChild(el); T.mountSiteNotice(el); } catch (e) { /* 안내만 안 뜬다 */ } }
     window.addEventListener('myturn:login', () => { openAppLogin(); });   /* 점검 화면의 '운영자로그인' */
+    window.addEventListener('admins:changed', () => { render(); });   /* 운영자 목록(DB adminConfig)이 오면 운영 단추 · 칩을 다시 그린다 */
     if (T.subscribeEbooks) { try { T.subscribeEbooks((rows) => { EB.list = Array.isArray(rows) ? rows : []; if (S.route === 'store' && S.storeTab !== 'manage' && S.storeTab !== 'mine' && (S.storeTab !== 'mobile' || EB.list.some((b) => b.kind === 'mobile'))) renderInfo(); }, () => { /* 책 카드만 비어 보인다 */ }); } catch (e) { /* 책 카드만 비어 보인다 */ } }
     if (T.useBoardNew) { try { const bn = T.useBoardNew(); T.watch(() => bn.any.value, (v) => { const d = $('noticeDot'); if (d) d.hidden = !v; }, { immediate: true }); } catch (e) { /* 점만 못 띄운다 */ } }
     const fromStore = () => {

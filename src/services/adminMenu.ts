@@ -49,7 +49,7 @@ export const OPS_MENU: OpsGroup[] = [
     title: '회원',
     items: [
       { key: 'members', label: '회원 관리', desc: '회원 목록·검색·상태 보기', need: '운영자용 읽기 규칙' },
-      { key: 'access', label: '접근 권한 관리', desc: '쓸 수 있는 계정 더하고 빼기', need: '허용 계정 목록을 코드 밖으로' },
+      { key: 'access', label: '접근 권한 관리', desc: '운영자 계정 더하고 빼기', ready: true },
       { key: 'passes', label: '이용권 관리', desc: '기간 주기·늘리기·끊기', need: '결제 만료일 저장 (지금은 임시값)' },
       { key: 'pointLedger', label: '포인트 지급·회수', desc: '손으로 넣고 빼기, 사유 남기기', need: '포인트 원장 자리' },
       { key: 'coupons', label: '쿠폰 관리', desc: '쿠폰 만들고 뿌리고 쓴 내역 보기', need: '쿠폰 자리' },

@@ -1,3 +1,5 @@
+import { computed, ref } from 'vue';
+
 // 이 앱을 쓸 수 있는 계정.
 //
 // 화면 차단(라우터 가드)은 눈가림일 뿐이고, 진짜 차단은 firestore.rules가 한다.
@@ -9,9 +11,23 @@ export const ALLOWED_EMAILS = [
   'hansun440@gmail.com',
 ];
 
-/** 운영자 — firestore.rules 의 isAdmin 과 같이 맞춘다(게시판 글 지우기 · 운영자 표시) */
-export const ADMIN_EMAILS = ['dark_0417@nate.com', 'mangnae760723@gmail.com', 'hansun440@gmail.com'];   // hansun440 — 2026-11-02 운영자로 추가
-export const isAdminEmail = (email?: string | null): boolean => !!email && ADMIN_EMAILS.includes(email.toLowerCase());
+/** 운영자 — 기본 2계정은 코드 · 규칙에 박아 둔다(모두 빼서 아무도 못 들어가는 일을 막으려고, 운영 화면에서 못 뺀다).
+ *  나머지는 DB adminConfig/main.admins(운영 › 접근 권한 관리에서 더하고 뺀다, services/adminConfigRepository).
+ *  firestore.rules 의 isAdmin() 도 같은 셈이다 */
+export const BASE_ADMIN_EMAILS = ['mangnae760723@gmail.com', 'dark_0417@nate.com'];
+/** DB 문서가 생기기 전 운영자(2026-11-02 추가) — 처음 저장할 때 DB 목록으로 옮긴다. 규칙도 문서가 없을 때만 인정한다 */
+export const LEGACY_ADMIN_EMAILS = ['hansun440@gmail.com'];
+/** DB 에서 받은 운영자 — null 이면 아직 문서가 없다(예전 목록으로 본다) */
+const extraAdmins = ref<string[] | null>(null);
+export const setExtraAdmins = (list: string[] | null) => {
+  extraAdmins.value = list ? list.map((e) => String(e).trim().toLowerCase()).filter(Boolean) : null;
+};
+/** 기본 계정을 뺀 운영자(DB 또는 예전 목록) */
+export const extraAdminList = computed(() => extraAdmins.value ?? LEGACY_ADMIN_EMAILS);
+export const isAdminEmail = (email?: string | null): boolean => {
+  const e = (email ?? '').trim().toLowerCase();
+  return !!e && (BASE_ADMIN_EMAILS.includes(e) || extraAdminList.value.includes(e));
+};
 
 /** 모든 가입자에게 연다(2026-11-02 사용자 요청 '다 열어줘'). 다시 3계정만 쓰게 하려면 false 로 두고,
  *  firestore.rules 의 isAllowedUser() 도 허용 목록 줄로 되돌려 함께 배포한다 */

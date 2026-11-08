@@ -17,6 +17,7 @@ import {
 import { useAuthStore } from './authStore';
 import { stageLabelOf } from '../utils/stageLabel';
 import { startUiPrefSync } from '../services/uiPrefSync';
+import { startAdminSync } from '../services/adminConfigRepository';
 import { mergeReimport } from '../services/pdfReimport';
 import { changedLabels, editDetailOn } from '../services/editFieldLabels';
 import { editLogTag } from '../services/editLogText';
@@ -941,6 +942,8 @@ export const useAuctionStore = defineStore('auction', () => {
   const resubscribeForUid = (uid: string) => {
     // 화면 설정(정렬 · 읽음 표시 · 마지막 물건 …)을 내 설정 DB 와 맞춘다 — 웹 · 앱 같이
     void startUiPrefSync(uid);
+    // 운영자 목록(DB adminConfig) — 운영자면 받아 깔고, 아니면 막혀 빈 목록
+    startAdminSync(uid);
     if (unsubscribeRealtime) {
       unsubscribeRealtime();
       unsubscribeRealtime = null;
