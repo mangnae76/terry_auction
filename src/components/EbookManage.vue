@@ -38,6 +38,9 @@ const why = (e: unknown, fallback: string) => {
   console.warn('[ebook] 저장 실패', e);
   const code = String((e as { code?: string })?.code ?? '');
   const m = e instanceof Error ? e.message : '';
+  const res = String((e as { customData?: { serverResponse?: string } })?.customData?.serverResponse ?? '');
+  // 저장소 402 — 프로젝트 결제 계정이 닫히면 파일 저장소 전체가 멈춘다(규칙 · 계정과 무관)
+  if (/billing|"code":\s*402/i.test(`${m} ${res}`)) return '파일 저장소가 멈춰 있습니다. Firebase 결제 계정(Blaze)이 닫혀 있어 책 파일을 올릴 수 없습니다.';
   if (/permission|insufficient|unauthorized|unauthenticated/i.test(`${code} ${m}`)) {
     return `이 계정(${auth?.currentUser?.email || '로그인 안 됨'})에는 올릴 권한이 없습니다. 운영자 계정으로 로그인했는지 확인해 주세요.`;
   }
