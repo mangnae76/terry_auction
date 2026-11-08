@@ -1,12 +1,12 @@
 <script setup lang="ts">
-// 관리자 화면 머리 탭 — 운영(/admin/board) · 플랫폼(웹 /web). 관리자 도구 탭은 뺐다 — /admin 은 운영으로 간다(2026-11-08)
+// 관리자 화면 머리 탭 — 운영(/admin/board) · 플랫폼(웹)(/web). '앱에서 보기'는 뺐다 — 웹 플랫폼에서 본다. 관리자 도구 탭은 뺐다 — /admin 은 운영으로 간다(2026-11-08)
 import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
 const router = useRouter();
 const TABS: Array<{ key: string; label: string; to: string; ext?: boolean }> = [
   { key: 'board', label: '운영', to: '/admin/board' },
-  { key: 'web', label: '플랫폼', to: '/web', ext: true },
+  { key: 'web', label: '플랫폼(웹)', to: '/web', ext: true },
 ];
 const on = (t: { key: string; to: string }) => (t.key === 'board' ? route.path.startsWith('/admin/board') : false);
 const go = (t: { to: string; ext?: boolean }) => { if (t.ext) window.location.href = t.to; else void router.push(t.to); };

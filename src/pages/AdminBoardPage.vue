@@ -3,7 +3,6 @@ import { userMessage } from '../services/userMessage';
 // 운영 — 이벤트·공지사항·업데이트 올리기.
 // 여기서 저장하면 앱의 더보기 › 공지 탭에 바로 나간다.
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
 import BrandLogo from '../components/BrandLogo.vue';
 import AdminTopTabs from '../components/AdminTopTabs.vue';
 import DateTimeField from '../components/DateTimeField.vue';
@@ -26,7 +25,6 @@ import {
   type BoardPost,
 } from '../services/boardRepository';
 
-const router = useRouter();
 const auth = useAuthStore();
 const who = computed(() => auth.nickname || auth.email || '');
 
@@ -322,7 +320,6 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
         </div>
         <AdminTopTabs />
         <nav class="adm-top-nav">
-          <button type="button" class="adm-top-link" @click="router.push('/more')">앱에서 보기</button>
           <span class="adm-who">{{ who }}</span>
         </nav>
       </div>
