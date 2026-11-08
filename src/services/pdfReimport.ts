@@ -25,8 +25,12 @@ const fillEmpty = (old: Obj, full: Obj): Obj => {
 };
 
 /** 이미 있는 물건(old) + 새 PDF로 다시 만든 물건(full) → 저장할 물건 */
-/** 지난번 읽기가 실패한 물건 — 주소 자리에 파일 이름('2026타경503385_프리스틴')이 들어가 있다 */
-export const isFailedRead = (a: Pick<AuctionDetail, 'address'>): boolean => /^\d{4}타경\d+/.test(String(a.address ?? '').trim());
+/** 지난번 읽기가 실패한 물건 — 주소 자리에 파일 이름('2026타경503385_프리스틴' · '프린트')이 들어가 있다 */
+export const isFailedRead = (a: Pick<AuctionDetail, 'address' | 'importMeta'>): boolean => {
+  const addr = String(a.address ?? '').trim();
+  const file = String(a.importMeta?.pdfFileName ?? '').replace(/\.pdf$/i, '').trim();
+  return /^\d{4}타경\d+/.test(addr) || (!!file && addr === file);
+};
 
 export const mergeReimport = (old: AuctionDetail, full: AuctionDetail): AuctionDetail => {
   // 지난번 읽기가 실패했으면(옥션원 양식을 못 읽던 때 등) 새 PDF 값이 앞선다 — 사용자가 적은 칸(메모 · 사진 · 입찰가 등)은

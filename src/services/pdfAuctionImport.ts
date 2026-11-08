@@ -5,6 +5,7 @@ import { formatNumber, parseKoreanPriceText } from '../utils/numberFormat';
 import { pickCurrentRound } from '../utils/auctionSchedule';
 import { apiPath } from './apiBase';
 import { applyAuction1, isAuction1Pdf } from './pdfAuction1';
+import { applyCourtSite, isCourtSitePdf } from './pdfCourtSite';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -1221,7 +1222,7 @@ const parseBuildingHeader = (text: string) => {
   };
 };
 
-/** PDF 글 → 물건 칸. 옥션원 인쇄본이면 옥션원 자리에서 한 번 더 읽어 고친다(pdfAuction1) */
+/** PDF 글 → 물건 칸. 옥션원 · 법원경매정보 인쇄본이면 그 양식 자리에서 한 번 더 읽어 고친다(pdfAuction1 · pdfCourtSite) */
 export const parseAuctionPdfText = (
   text: string,
   sourceName: string,
@@ -1230,7 +1231,9 @@ export const parseAuctionPdfText = (
   sourceFileId?: string,
 ): ParsedPdfAuction => {
   const base = parseAuctionPdfTextBase(text, sourceName, sourceUrl, sourceFolderUrl, sourceFileId);
-  return isAuction1Pdf(text) ? applyAuction1(text, base) : base;
+  if (isAuction1Pdf(text)) return applyAuction1(text, base);
+  if (isCourtSitePdf(text)) return applyCourtSite(text, base);   // 법원경매정보 물건상세검색 인쇄본
+  return base;
 };
 
 const parseAuctionPdfTextBase = (

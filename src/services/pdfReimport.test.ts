@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeReimport } from './pdfReimport';
+import { isFailedRead, mergeReimport } from './pdfReimport';
 import type { AuctionDetail } from '../types/auction';
 
 const A = (o: Record<string, unknown>) => o as unknown as AuctionDetail;
@@ -71,5 +71,13 @@ describe('mergeReimport — 지난번 읽기가 실패한 물건(주소 자리�
   it('사용자가 적은 칸은 남는다', () => {
     expect(m.fieldSurvey.surveyMemo).toBe('내 메모');
     expect(m.metrics.myBidValue).toBe(90000000);
+  });
+});
+
+describe('isFailedRead — 주소가 파일 이름이면 읽기 실패', () => {
+  it('사건번호로 시작하거나 PDF 파일 이름과 같으면', () => {
+    expect(isFailedRead(A({ address: '2026타경1_빌라' }))).toBe(true);
+    expect(isFailedRead(A({ address: '프린트', importMeta: { source: 'pdf', pdfFieldKeys: [], pdfFileName: '프린트.pdf' } }))).toBe(true);
+    expect(isFailedRead(A({ address: '인천광역시 서해구 검암동 644-1', importMeta: { source: 'pdf', pdfFieldKeys: [], pdfFileName: '프린트.pdf' } }))).toBe(false);
   });
 });

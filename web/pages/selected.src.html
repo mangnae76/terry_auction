@@ -8150,7 +8150,7 @@ span.cal-day.has { cursor: help; }
     saleRegionOf(it, (r) => {
       if (saleMode !== 'item' || saleItemId !== it.id || !agSaleOpen()) return;
       if (r) { saleGoRegion(r); renderMarket(); return; }
-      toast(/^\d{4}타경\d+/.test(String(it.addr || '')) ? `${it.caseNo} 주소가 비어 있어(파일 이름으로 들어감) 지역을 찾지 못했습니다. 물건등록에서 같은 PDF를 다시 올리면 주소가 채워집니다.` : `${it.caseNo} 주소에서 지역을 찾지 못했습니다. 지역으로에서 골라 조회해 주세요.`, 'info');
+      toast((/^\d{4}타경\d+/.test(String(it.addr || '')) || !/\s/.test(String(it.addr || '').trim())) ? `${it.caseNo} 주소가 비어 있어(파일 이름으로 들어감) 지역을 찾지 못했습니다. 물건등록에서 같은 PDF를 다시 올리면 주소가 채워집니다.` : `${it.caseNo} 주소에서 지역을 찾지 못했습니다. 지역으로에서 골라 조회해 주세요.`, 'info');
     });
   }
   function salePickCard(id) {
@@ -8166,7 +8166,7 @@ span.cal-day.has { cursor: help; }
       if (saleItemId !== id || !agSaleOpen()) return;
       if (r) { saleGoRegion(r); renderMarket(); return; }
       /* 주소에서 지역을 못 찾았다 — 대개 PDF 읽기가 실패해 주소 자리에 파일 이름이 들어간 물건 */
-      toast(/^\d{4}타경\d+/.test(String(it.addr || '')) ? `${it.caseNo} 주소가 비어 있어(파일 이름으로 들어감) 지역을 찾지 못했습니다. 물건등록에서 같은 PDF를 다시 올리면 주소가 채워집니다.` : `${it.caseNo} 주소에서 지역을 찾지 못했습니다. 지역으로에서 골라 조회해 주세요.`, 'info');
+      toast((/^\d{4}타경\d+/.test(String(it.addr || '')) || !/\s/.test(String(it.addr || '').trim())) ? `${it.caseNo} 주소가 비어 있어(파일 이름으로 들어감) 지역을 찾지 못했습니다. 물건등록에서 같은 PDF를 다시 올리면 주소가 채워집니다.` : `${it.caseNo} 주소에서 지역을 찾지 못했습니다. 지역으로에서 골라 조회해 주세요.`, 'info');
     });
     toast(it.apr > 0 ? `${it.caseNo} 감정가 ${Number(it.apr).toLocaleString('ko-KR')}원을 경매물건 감정가에 넣었습니다.` : `${it.caseNo} — 감정가가 없어 경매물건 감정가는 그대로 둡니다.`, 'info');
   }
