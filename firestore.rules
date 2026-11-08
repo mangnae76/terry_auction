@@ -232,6 +232,18 @@ service cloud.firestore {
         && agentData().dongs is map && agentData().dongs.size() <= 3000;
     }
 
+    // 점검 모드 · 시작 팝업 — 로그인 전 화면에도 띄워야 해서 누구나 읽고, 운영자만 고친다(운영 › 점검 모드 · 앱 시작 팝업)
+    match /siteConfig/{id} {
+      allow read: if true;
+      allow write: if isAdmin() && id == 'main'
+        && request.resource.data.keys().hasOnly(['maintenance', 'popup', 'updatedAt', 'updatedBy'])
+        && request.resource.data.maintenance is map && request.resource.data.maintenance.keys().hasOnly(['on', 'message', 'until'])
+        && request.resource.data.maintenance.message is string && request.resource.data.maintenance.message.size() <= 500
+        && request.resource.data.popup is map && request.resource.data.popup.keys().hasOnly(['on', 'title', 'body', 'linkUrl', 'startAt', 'endAt', 'version'])
+        && request.resource.data.popup.title is string && request.resource.data.popup.title.size() <= 60
+        && request.resource.data.popup.body is string && request.resource.data.popup.body.size() <= 500;
+    }
+
     // 1:1 문의 · 정보 오류 제보 — 회원은 제 글만 쓰고 보고, 답변대기일 때만 지운다. 답은 운영자만 단다(운영 › 문의함 · 제보 처리)
     match /inquiries/{id} {
       allow read: if isAdmin() || (isAllowedUser() && resource.data.uid == request.auth.uid);

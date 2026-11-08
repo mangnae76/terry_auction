@@ -9324,6 +9324,9 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     /* 새 공지 · 이벤트 · 업데이트 — 앱 공지 탭과 같은 셈으로 '공지' 옆 점 */
     if (T.useBoardFeed) { try { const feed = T.useBoardFeed(); T.watch(() => feed.notices.value, (v) => { HM.notices = Array.isArray(v) ? v : []; if (S.route === 'home') renderHome(); }, { immediate: true }); } catch (e) { /* 홈 공지만 비어 보인다 */ } }
     /* 전자책 — 운영자가 올린 책(올린 것만). 바뀌면 콘텐츠 화면을 다시 그린다(관리 탭은 제 화면이 따로 본다) */
+    /* 점검 화면 · 시작 팝업(운영 › 점검 모드 · 앱 시작 팝업) — 앱과 같은 부품을 맨 위에 */
+    if (T.mountSiteNotice) { try { const el = document.createElement('div'); el.id = 'siteNotice'; document.body.appendChild(el); T.mountSiteNotice(el); } catch (e) { /* 안내만 안 뜬다 */ } }
+    window.addEventListener('myturn:login', () => { openAppLogin(); });   /* 점검 화면의 '운영자로그인' */
     if (T.subscribeEbooks) { try { T.subscribeEbooks((rows) => { EB.list = Array.isArray(rows) ? rows : []; if (S.route === 'store' && S.storeTab !== 'manage' && S.storeTab !== 'mine' && (S.storeTab !== 'mobile' || EB.list.some((b) => b.kind === 'mobile'))) renderInfo(); }, () => { /* 책 카드만 비어 보인다 */ }); } catch (e) { /* 책 카드만 비어 보인다 */ } }
     if (T.useBoardNew) { try { const bn = T.useBoardNew(); T.watch(() => bn.any.value, (v) => { const d = $('noticeDot'); if (d) d.hidden = !v; }, { immediate: true }); } catch (e) { /* 점만 못 띄운다 */ } }
     const fromStore = () => {

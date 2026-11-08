@@ -251,6 +251,15 @@ export const mountEbookManage = (el) => {
   app.mount(el);
   return () => app.unmount();
 };
+/* 점검 화면 · 시작 팝업 — 앱 AppShell 과 같은 부품(SiteNotice)을 웹 맨 위에 붙인다. 운영자 로그인은 'myturn:login' 으로 웹 로그인 창을 연다 */
+import SiteNotice from '../../src/components/SiteNotice.vue';
+export const mountSiteNotice = (el) => {
+  const app = createApp(SiteNotice);
+  app.use(getActivePinia());
+  app.provide('webEmbed', true);
+  app.mount(el);
+  return () => app.unmount();
+};
 /* 콘텐츠 › 내콘텐츠 — 내가 받은 책(마이페이지 › 받은콘텐츠와 같은 화면) */
 import MyContentsPage from '../../src/pages/MyContentsPage.vue';
 export const mountMyContents = (el) => {

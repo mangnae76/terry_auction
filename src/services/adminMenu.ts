@@ -31,13 +31,13 @@ export const OPS_MENU: OpsGroup[] = [
       },
       { key: 'notice', label: '공지 관리', desc: '점검·정책처럼 알려야 하는 것', ready: true },
       { key: 'update', label: '업데이트 관리', desc: '새로 붙은 기능·고친 것', ready: true },
-      { key: 'popup', label: '앱 시작 팝업', desc: '앱을 열 때 한 번 뜨는 안내', need: '배너 구조를 그대로 쓰면 됩니다' },
+      { key: 'popup', label: '앱 시작 팝업', desc: '웹 · 앱을 열 때 한 번 뜨는 안내', ready: true },
     ],
   },
   {
     title: '서비스 값',
     items: [
-      { key: 'maintenance', label: '점검 모드', desc: '점검 중 안내를 띄우고 쓰기를 막는다', need: '점검 상태를 담을 자리 하나' },
+      { key: 'maintenance', label: '점검 모드', desc: '점검 중 안내를 띄우고 쓰기를 막는다', ready: true },
       { key: 'plans', label: '요금제 관리', desc: '기준가와 기간별 할인율', need: '지금은 billingPlans.ts 에 적혀 있습니다' },
       { key: 'points', label: '포인트 정책 관리', desc: '적립율·등급 기준·쓰는 단위', need: '지금은 pointPolicy.ts 에 적혀 있습니다' },
       { key: 'trial', label: '무료체험 관리', desc: '체험 일수와 안내 글', need: '지금은 trialInfo.ts 에 적혀 있습니다' },
