@@ -41,8 +41,8 @@ export const OPS_MENU: OpsGroup[] = [
       { key: 'plans', label: '요금제 관리', desc: '기준가와 기간별 할인율', need: '지금은 billingPlans.ts 에 적혀 있습니다' },
       { key: 'points', label: '포인트 정책 관리', desc: '적립율·등급 기준·쓰는 단위', need: '지금은 pointPolicy.ts 에 적혀 있습니다' },
       { key: 'trial', label: '무료체험 관리', desc: '체험 일수와 안내 글', need: '지금은 trialInfo.ts 에 적혀 있습니다' },
-      { key: 'faq', label: 'FAQ 관리', desc: '고객센터 도움말 묶음', need: '지금은 supportFaq.ts 에 적혀 있습니다' },
-      { key: 'legal', label: '약관 관리', desc: '이용약관·개인정보처리방침 판 올리기', need: '지금은 legalTerms.ts 에 적혀 있습니다' },
+      { key: 'faq', label: 'FAQ 관리', desc: '고객센터 · 커뮤니티 FAQ 질문과 답', ready: true },
+      { key: 'legal', label: '약관 관리', desc: '이용약관 · 개인정보처리방침 · 환불 · 저작권 · 사업제휴 글, 판 올리기', ready: true },
     ],
   },
   {

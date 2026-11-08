@@ -29,6 +29,7 @@ export { taxChainOf, taxRateOf, taxDeductOf, incomeTaxOf, localTaxOf, afterTaxPr
 export { TERMS_CHAPTERS, TERMS_EFFECTIVE, PRIVACY_SECTIONS, PRIVACY_OFFICER, PRIVACY_CHILD, PRIVACY_EFFECTIVE } from '../../src/services/legalTerms';
 /* 약관 · 정책 창 글 — 대문(intro.html)과 웹이 같이 쓴다 */
 export { legalDoc } from '../../src/services/legalDocs';
+export { startContentSync } from '../../src/services/contentRepository';   /* FAQ · 약관 DB 판 — 껍데기가 켜 둔다 */
 export { POINT_CAUTIONS } from '../../src/services/pointPolicy';
 // 새 공지 · 이벤트 · 업데이트가 있는지(앱 공지 탭의 빨간 점과 같은 셈) — 머리띠 '공지' 옆 점
 export { useBoardNew, useBoardFeed } from '../../src/services/boardFeed';   /* useBoardFeed — 웹 홈 공지사항 */

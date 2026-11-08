@@ -4,6 +4,7 @@
 import { PRIVACY_CHILD, PRIVACY_CHILD_TITLE, PRIVACY_EFFECTIVE, PRIVACY_OFFICER, PRIVACY_OFFICER_TITLE, PRIVACY_SECTIONS, TERMS_CHAPTERS, TERMS_EFFECTIVE, type PrivacyBlock } from './legalTerms';
 import { POINT_CAUTIONS } from './pointPolicy';
 import { POINTS_OPEN } from './billingPlans';
+import { legalFromDb } from './contentRepository';
 
 export type LegalDocKey = 'terms' | 'privacy' | 'refund' | 'copyright' | 'partner';
 export const LEGAL_DOC_KEYS: LegalDocKey[] = ['terms', 'copyright', 'privacy', 'refund', 'partner'];
@@ -126,5 +127,7 @@ const DOCS: Record<LegalDocKey, { title: string; body: () => string }> = {
 /** 창 제목 · 본문(HTML) — 모르는 열쇠면 null */
 export const legalDoc = (key: string): { title: string; html: string } | null => {
   const d = DOCS[key as LegalDocKey];
-  return d ? { title: d.title, html: d.body() } : null;
+  if (!d) return null;
+  const db = legalFromDb(key);   // 운영 › 약관 관리에서 올린 판이 있으면 그것(contentRepository)
+  return { title: d.title, html: db?.html || d.body() };
 };

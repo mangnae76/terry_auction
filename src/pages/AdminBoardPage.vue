@@ -10,6 +10,8 @@ import AdminSiteConfigBox from '../components/AdminSiteConfigBox.vue';
 import AdminAccessBox from '../components/AdminAccessBox.vue';
 import AdminMembersBox from '../components/AdminMembersBox.vue';
 import AdminLeaveBox from '../components/AdminLeaveBox.vue';
+import AdminFaqBox from '../components/AdminFaqBox.vue';
+import AdminLegalBox from '../components/AdminLegalBox.vue';
 import DateTimeField from '../components/DateTimeField.vue';
 import { useAuthStore } from '../stores/authStore';
 import { OPS_MENU, opsItem } from '../services/adminMenu';
@@ -368,6 +370,9 @@ const move = async (p: BoardPost, dir: -1 | 1) => {
       <!-- 회원 관리 · 탈퇴 처리 — DB users · withdrawRequests(운영자 읽기) -->
       <AdminMembersBox v-else-if="menu === 'members'" />
       <AdminLeaveBox v-else-if="menu === 'leave'" />
+      <!-- FAQ · 약관 — DB contentDocs/faq · legalDocs -->
+      <AdminFaqBox v-else-if="menu === 'faq'" />
+      <AdminLegalBox v-else-if="menu === 'legal'" />
 
       <!-- 아직 만들지 않은 칸 -->
       <section v-else-if="!menuKind" class="adb-card ops-soon">

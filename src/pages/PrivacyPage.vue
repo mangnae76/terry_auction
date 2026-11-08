@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // 개인정보 처리방침 — 글은 services/legalTerms 에 있고 여기서는 그리기만 한다.
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
+import { legalFromDb } from '../services/contentRepository';
 import AppMobileBottomNav from '../components/AppMobileBottomNav.vue';
 import {
   PRIVACY_CHILD,
@@ -12,6 +14,8 @@ import {
 } from '../services/legalTerms';
 
 const router = useRouter();
+/** 운영 › 약관 관리에서 올린 판 — 있으면 그것을, 없으면 아래 코드 글 */
+const dbDoc = computed(() => legalFromDb('privacy'));
 </script>
 
 <template>
@@ -22,7 +26,9 @@ const router = useRouter();
       <span class="tms-crumb">마이페이지 › 처리방침</span>
     </header>
 
-    <div class="tms-body">
+    <!-- eslint-disable-next-line vue/no-v-html -->
+    <div v-if="dbDoc" class="tms-body"><section class="tms-card tms-db" v-html="dbDoc.html" /></div>
+    <div v-else class="tms-body">
       <section v-for="sec in PRIVACY_SECTIONS" :key="sec.title" class="tms-card">
         <h2 class="tms-chapter">{{ sec.title }}</h2>
         <template v-for="(b, i) in sec.blocks" :key="i">
@@ -102,4 +108,11 @@ const router = useRouter();
 .tms-table th { background: #f5f7fb; font-weight: 700; color: #111827; }
 .tms-note { margin: 4px 0 0; font-size: 11.5px; line-height: 1.6; color: #6b7280; word-break: keep-all; }
 .tms-items li { white-space: pre-line; }
+.tms-db :deep(h3) { margin: 18px 0 8px; font-size: 15px; font-weight: 800; color: #111827; }
+.tms-db :deep(h3:first-child) { margin-top: 0; }
+.tms-db :deep(h4) { margin: 12px 0 6px; font-size: 14px; font-weight: 800; color: #1f3a72; }
+.tms-db :deep(p), .tms-db :deep(li) { font-size: 13px; line-height: 1.7; color: #374151; }
+.tms-db :deep(ol), .tms-db :deep(ul) { margin: 4px 0; padding-left: 20px; }
+.tms-db :deep(table) { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tms-db :deep(th), .tms-db :deep(td) { border: 1px solid #e5e7eb; padding: 6px; }
 </style>

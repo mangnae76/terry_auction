@@ -12,7 +12,9 @@ import {
   type ContactWay,
   type FaqItem,
   type GuideItem,
+  visibleFaq,
 } from '../services/supportFaq';
+import { faqFromDb } from '../services/contentRepository';
 import { POLICIES } from '../services/boardNews';
 
 const router = useRouter();
@@ -28,8 +30,10 @@ const FIRST = 8;
 const showAll = ref(false);
 /** 분류마다 꼬리표 색 — 서비스 · 기능은 파랑, 회원·결제는 주황, AI·설정은 회색 */
 const TAG_TONE: Record<FaqItem['tag'], string> = { 서비스: 'info', '회원·결제': 'pay', 기능: 'info', 'AI·설정': 'etc' };
-const faqs = computed<FaqItem[]>(() => (showAll.value ? SUPPORT_FAQ : SUPPORT_FAQ.slice(0, FIRST)));
-const rest = computed(() => Math.max(0, SUPPORT_FAQ.length - FIRST));
+/* 운영 › FAQ 관리에서 올린 목록이 있으면 그것, 없으면 코드 글(supportFaq) */
+const allFaq = computed<FaqItem[]>(() => (faqFromDb.value ? visibleFaq(faqFromDb.value) : SUPPORT_FAQ));
+const faqs = computed<FaqItem[]>(() => (showAll.value ? allFaq.value : allFaq.value.slice(0, FIRST)));
+const rest = computed(() => Math.max(0, allFaq.value.length - FIRST));
 
 /** 누른 줄만 답이 열린다 */
 const openQ = ref('');

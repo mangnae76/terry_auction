@@ -243,6 +243,25 @@ service cloud.firestore {
         && request.resource.data.admins is list && request.resource.data.admins.size() <= 20;
     }
 
+    // FAQ · 약관 — 로그인 전 화면(대문 · 가입)에도 보여야 해서 누구나 읽고, 운영자만 고친다(운영 › FAQ 관리 · 약관 관리)
+    match /contentDocs/{id} {
+      allow read: if true;
+      allow write: if isAdmin() && id == 'faq'
+        && request.resource.data.keys().hasOnly(['items', 'updatedAt', 'updatedBy'])
+        && request.resource.data.items is list && request.resource.data.items.size() <= 200;
+    }
+    match /legalDocs/{key} {
+      allow read: if true;
+      allow write: if isAdmin() && key in ['terms', 'privacy', 'refund', 'copyright', 'partner']
+        && request.resource.data.keys().hasOnly(['markup', 'html', 'effective', 'updatedAt', 'updatedBy'])
+        && request.resource.data.html is string && request.resource.data.html.size() <= 300000
+        && request.resource.data.markup is string && request.resource.data.markup.size() <= 300000;
+      // 지난 판 — 운영자만 보고 더한다(고치거나 지우지 않는다)
+      match /history/{hid} {
+        allow read, create: if isAdmin();
+      }
+    }
+
     // 점검 모드 · 시작 팝업 — 로그인 전 화면에도 띄워야 해서 누구나 읽고, 운영자만 고친다(운영 › 점검 모드 · 앱 시작 팝업)
     match /siteConfig/{id} {
       allow read: if true;

@@ -2,12 +2,14 @@
 import { onMounted, onUnmounted } from 'vue';
 import { RouterView } from 'vue-router';
 import SiteNotice from '../components/SiteNotice.vue';
+import { startContentSync } from '../services/contentRepository';
 import { useAuctionStore } from '../stores/auctionStore';
 
 const auctionStore = useAuctionStore();
 
 onMounted(() => {
   auctionStore.initializeStorage();
+  startContentSync();   // FAQ · 약관(운영 › FAQ 관리 · 약관 관리) DB 판
 });
 
 onUnmounted(() => {

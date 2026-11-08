@@ -55,6 +55,10 @@ const ALL_FAQ: FaqItem[] = [
 ];
 /** 화면 세 곳(커뮤니티 · 고객센터 · 이용가이드 faq.json)이 보는 목록 — 포인트 질문은 서비스 오픈 때까지 뺀다(지우지 않음) */
 export const SUPPORT_FAQ: FaqItem[] = ALL_FAQ.filter((f) => POINTS_OPEN || !f.points);
+/** 운영 › FAQ 관리가 처음 불러오는 글 — 포인트 글까지 다(포인트 글은 POINTS_OPEN 전까지 화면에서 빠진다) */
+export const FAQ_SEED: FaqItem[] = ALL_FAQ;
+/** 화면에 보일 FAQ — 포인트를 붙이기 전엔 포인트 글을 뺀다 */
+export const visibleFaq = (items: FaqItem[]): FaqItem[] => items.filter((f) => POINTS_OPEN || !f.points);
 
 /** 이용방법 안내 — 두 묶음 */
 export interface GuideItem {

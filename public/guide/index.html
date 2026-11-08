@@ -1776,6 +1776,24 @@ fetch('faq.json', { cache: 'no-cache' })
     setFaq(list);
     const y = window.scrollY; render(); window.scrollTo(0, y);   /* FAQ 만 바뀌어도 보던 자리는 그대로 */
   })
+  .catch(() => {})
+  /* 운영 › FAQ 관리에서 저장한 목록(DB contentDocs/faq)이 있으면 그것 — 누구나 읽는 자리라 로그인 없이 받는다. 없으면 위 faq.json 그대로 */
+  .then(() => fetch('https://firestore.googleapis.com/v1/projects/terryauction-6b374/databases/(default)/documents/contentDocs/faq', { cache: 'no-cache' }))
+  .then((r) => (r && r.ok ? r.json() : null))
+  .then((j) => {
+    const vals = j && j.fields && j.fields.items && j.fields.items.arrayValue && j.fields.items.arrayValue.values;
+    if (!Array.isArray(vals)) return;
+    const s = (f, k) => (f[k] && f[k].stringValue) || '';
+    const list = vals.map((v) => (v.mapValue && v.mapValue.fields) || {})
+      .filter((f) => POINTS_OPEN || !(f.points && f.points.booleanValue))
+      .map((f) => ({ cat: s(f, 'tag'), q: s(f, 'q'), a: s(f, 'a') }))
+      .filter((x) => x.q && x.a);
+    if (!list.length) return;
+    const txt = JSON.stringify(list);
+    try { localStorage.setItem(FAQ_KEY, txt); } catch (e) { /* 그만 */ }
+    setFaq(list);
+    const y = window.scrollY; render(); window.scrollTo(0, y);
+  })
   .catch(() => {});
 })();
 </script>
