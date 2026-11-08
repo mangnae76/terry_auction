@@ -50,7 +50,9 @@ service cloud.firestore {
       allow read: if isAllowedUser() && (resource.data.uid == request.auth.uid || isAdmin());
       allow create, update: if isAllowedUser()
         && request.resource.data.uid == request.auth.uid
-        && rid == request.auth.uid + '_' + request.resource.data.ebookId;
+        && rid == request.auth.uid + '_' + request.resource.data.ebookId
+        // 무료 책만 — 유료(price 1 이상)는 결제를 붙인 뒤 연다
+        && get(/databases/$(database)/documents/ebooks/$(request.resource.data.ebookId)).data.get('price', 0) == 0;
     }
 
     // 오류및제안 게시판(웹 커뮤니티) — 회원이 쓰고 모두 읽는다. 내 글만 고치고 지운다, 조회수는 1씩만, 운영자는 모두 지운다

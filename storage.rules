@@ -13,9 +13,11 @@ service firebase.storage {
         ];
     }
 
-    // 전자책 파일 — 받기는 로그인한 회원만, 올리기 · 지우기는 운영자만(100MB 까지 — ebookRepository EBOOK_MAX_MB 와 같게)
+    // 전자책 파일 — 받기는 로그인한 회원만(무료 책), 올리기 · 지우기는 운영자만(100MB 까지 — ebookRepository EBOOK_MAX_MB 와 같게)
     match /ebooks/{id}/{file} {
-      allow read: if request.auth != null;
+      // 무료 책(price 0)만 회원이 받는다 — 유료는 결제를 붙인 뒤 연다
+      allow read: if isAdmin() || (request.auth != null
+        && firestore.get(/databases/(default)/documents/ebooks/$(id)).data.get('price', 0) == 0);
       allow create, update: if isAdmin() && request.resource.size < 100 * 1024 * 1024;
       allow delete: if isAdmin();
     }

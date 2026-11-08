@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // 콘텐츠 › 관리(운영자만) — 전자책 올리고 내리기. 웹 콘텐츠 화면이 띄운다(mountEbookManage).
-// 올린 책은 콘텐츠 › 전자책에 '무료로받기' 카드로 나가고, 받기는 회원가입 · 로그인한 회원만.
+// 올린 책은 콘텐츠 › 전자책 카드로 나간다 — 무료는 '무료로받기'(회원가입 · 로그인한 회원 누구나), 유료는 결제준비중.
 import { computed, onUnmounted, ref } from 'vue';
 import AppConfirm from './AppConfirm.vue';
 import type { ConfirmBox } from '../services/confirmBox';
@@ -9,6 +9,7 @@ import { auth } from '../services/firebase';
 import {
   EBOOK_MAX_MB,
   emptyEbook,
+  isPaidEbook,
   patchEbook,
   removeEbook,
   saveEbook,
@@ -49,8 +50,8 @@ const why = (e: unknown, fallback: string) => {
   return userMessage(e, fallback);
 };
 
-const openNew = () => { draft.value = emptyEbook(); pdf.value = null; cover.value = null; coverPreview.value = ''; progress.value = 0; };
-const openEdit = (b: Ebook) => { draft.value = { ...b }; pdf.value = null; cover.value = null; coverPreview.value = b.coverUrl; progress.value = 0; };
+const openNew = () => { draft.value = emptyEbook(); paid.value = false; pdf.value = null; cover.value = null; coverPreview.value = ''; progress.value = 0; };
+const openEdit = (b: Ebook) => { draft.value = { ...emptyEbook(), ...b }; paid.value = isPaidEbook(b); pdf.value = null; cover.value = null; coverPreview.value = b.coverUrl; progress.value = 0; };
 const close = () => { draft.value = null; };
 
 /** 책 파일 받기 — 고르기 단추와 끌어다 놓기 상자가 같이 쓴다 */
@@ -75,17 +76,30 @@ const onCover = (e: Event) => {
   coverPreview.value = f ? URL.createObjectURL(f) : (draft.value?.coverUrl ?? '');
 };
 
+// 가격 — 유료를 고르면 금액 칸이 열린다(천 단위 쉼표)
+const paid = ref(false);
+const setPaid = (on: boolean) => { paid.value = on; if (!on && draft.value) draft.value.price = 0; };
+const priceText = computed(() => (draft.value?.price ? draft.value.price.toLocaleString('ko-KR') : ''));
+const onPrice = (e: Event) => {
+  const el = e.target as HTMLInputElement;
+  const n = Number(el.value.replace(/[^0-9]/g, '')) || 0;
+  if (draft.value) draft.value.price = n;
+  el.value = n ? n.toLocaleString('ko-KR') : '';
+};
+const priceLabel = (b: Ebook) => (isPaidEbook(b) ? `${Number(b.price).toLocaleString('ko-KR')}원` : '무료');
+
 const sizeText = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)}MB` : `${Math.max(1, Math.round(n / 1024)).toLocaleString('ko-KR')}KB`);
 
 const save = async (publish: boolean) => {
   const d = draft.value;
   if (!d) return;
   if (!d.title.trim()) { flash('책 제목을 적어 주세요.'); return; }
+  if (paid.value && !(d.price > 0)) { flash('유료 금액을 적어 주세요.'); return; }
   if (publish && !d.filePath && !pdf.value) { flash('책 파일(PDF)을 골라 주세요.'); return; }
   saving.value = true;
   progress.value = 0;
   try {
-    await saveEbook({ ...d, title: d.title.trim(), desc: d.desc.trim(), published: publish }, { pdf: pdf.value, cover: cover.value }, (r) => { progress.value = r; });
+    await saveEbook({ ...d, title: d.title.trim(), desc: d.desc.trim(), price: paid.value ? d.price : 0, published: publish }, { pdf: pdf.value, cover: cover.value }, (r) => { progress.value = r; });
     flash(publish ? '올렸습니다. 콘텐츠 › 전자책에 바로 나갑니다.' : '작성 중으로 담아 두었습니다. 회원에게는 아직 보이지 않습니다.');
     close();
   } catch (e) {
@@ -143,6 +157,17 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
             <button v-for="t in ['', ...TAGS]" :key="t" type="button" :class="{ on: draft.tag === t }" @click="draft!.tag = t">{{ t || '없음' }}</button>
           </div>
         </div>
+        <!-- 가격 — 무료(0원)면 로그인한 회원 누구나 바로 받고, 유료면 결제를 붙인 뒤 받는다 -->
+        <div class="f"><span>가격</span>
+          <div class="ebm-price">
+            <div class="ebm-tags">
+              <button type="button" :class="{ on: !paid }" @click="setPaid(false)">무료</button>
+              <button type="button" :class="{ on: paid }" @click="setPaid(true)">유료</button>
+            </div>
+            <label v-if="paid" class="amt"><input :value="priceText" type="text" inputmode="numeric" maxlength="9" placeholder="0" @input="onPrice" /><em>원</em></label>
+            <small v-if="paid">결제는 아직 붙이지 않았습니다. 지금은 카드에 결제준비중으로 나갑니다.</small>
+          </div>
+        </div>
         <!-- 설명 — 300자가 다 보이는 높이, 오른쪽 아래 글자 수 -->
         <label class="f top"><span>설명</span><span class="ebm-desc"><textarea v-model="draft.desc" rows="7" maxlength="300" placeholder="카드에 나가는 소개 (300자까지)" /><small>{{ draft.desc.length.toLocaleString('ko-KR') }} / 300</small></span></label>
         <!-- 파일 칸 — 브라우저 기본 단추(영어)는 숨기고 우리 단추로 -->
@@ -181,7 +206,7 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
       <li v-for="(b, i) in books" :key="b.id" :class="{ off: !b.published }">
         <div class="th"><img v-if="b.coverUrl" :src="b.coverUrl" alt="" /><span v-else>표지</span></div>
         <div class="tx">
-          <b><em v-if="b.tag">[{{ b.tag }}]</em> {{ b.title }}<i :class="['st', b.published ? 'on' : '']">{{ b.published ? '올림' : '내림' }}</i></b>
+          <b><em v-if="b.tag">[{{ b.tag }}]</em> {{ b.title }}<i :class="['st', b.published ? 'on' : '']">{{ b.published ? '올림' : '내림' }}</i><i :class="['st', 'pr', { paid: isPaidEbook(b) }]">{{ priceLabel(b) }}</i></b>
           <small v-if="b.desc">{{ b.desc }}</small>
           <small class="meta">{{ b.fileName ? `${b.fileName} · ${sizeText(b.fileSize)}` : '파일 없음' }} · 받은 회원 {{ (b.downloads || 0).toLocaleString('ko-KR') }}명</small>
         </div>
@@ -259,6 +284,13 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
 .ebm-list .tx small { font-size: 13px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ebm-list .tx small.meta { font-size: 12px; color: #9ca3af; }
 .ebm-list .st { padding: 2px 7px; border-radius: 5px; background: #f1f3f8; font-style: normal; font-size: 12px; font-weight: 700; color: #6b7280; }
+.ebm-price { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ebm-price .amt { display: inline-flex; align-items: center; gap: 6px; }
+.ebm-price .amt input { width: 130px; height: 34px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 8px; font: inherit; font-size: 14px; text-align: right; }
+.ebm-price .amt em { font-style: normal; font-size: 14px; color: #4b5563; }
+.ebm-price small { flex-basis: 100%; font-size: 12px; color: #9aa6c4; }
+.ebm-list .st.pr { background: #e8f6ee; color: #15803d; }
+.ebm-list .st.pr.paid { background: #eef3ff; color: #2b6df3; }
 .ebm-list .st.on { background: #e8f6ee; color: #15803d; }
 .ebm-list .ac { display: flex; gap: 6px; }
 .ebm-list .ac button { height: 30px; padding: 0 10px; border: 1px solid #dde3ee; border-radius: 6px; background: #fff; color: #374151; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }

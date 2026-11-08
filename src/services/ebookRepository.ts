@@ -30,6 +30,8 @@ export type Ebook = {
   desc: string;
   /** 꼬리표 — 기초 · 필수 · 실전 … (카드 제목 앞 [ ]) */
   tag: string;
+  /** 값 — 0 이면 무료(로그인한 회원 누구나 바로 받음), 1 이상이면 유료(결제 뒤 받기 — 결제는 아직 붙이지 않음) */
+  price: number;
   coverUrl: string;
   coverPath: string;
   filePath: string;
@@ -47,9 +49,12 @@ export type EbookReceipt = { id: string; uid: string; ebookId: string; title: st
 export const newEbookId = (): string => `eb${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 export const emptyEbook = (): Ebook => ({
-  id: '', title: '', desc: '', tag: '', coverUrl: '', coverPath: '', filePath: '', fileName: '', fileSize: 0,
+  id: '', title: '', desc: '', tag: '', price: 0, coverUrl: '', coverPath: '', filePath: '', fileName: '', fileSize: 0,
   published: false, order: Date.now(), downloads: 0, createdAt: '', updatedAt: '',
 });
+
+/** 유료인가 — 값이 1원 이상 */
+export const isPaidEbook = (b: Pick<Ebook, 'price'>): boolean => (Number(b.price) || 0) > 0;
 
 /** 책 목록 — 운영자는 내린 책까지 다(all), 회원 · 손님은 올린 책만 */
 export const subscribeEbooks = (
@@ -139,12 +144,13 @@ export const removeEbook = async (book: Ebook): Promise<void> => {
 };
 
 /**
- * 받기 — 로그인한 회원만. 받은 기록을 남기고(처음이면 받은 수 +1) 파일 주소를 돌려준다.
+ * 받기 — 로그인한 회원만(유료 · 무료 회원 모두 무료 책은 받는다). 유료 책은 아직 받지 못한다. 받은 기록을 남기고(처음이면 받은 수 +1) 파일 주소를 돌려준다.
  * 로그인 전이면 'login' 을 던진다 — 화면이 로그인 창을 띄운다.
  */
-export const receiveEbook = async (book: Pick<Ebook, 'id' | 'title' | 'filePath'>): Promise<string> => {
+export const receiveEbook = async (book: Pick<Ebook, 'id' | 'title' | 'filePath' | 'price'>): Promise<string> => {
   const uid = auth?.currentUser?.uid;
   if (!uid) throw new Error('login');
+  if (isPaidEbook(book)) throw new Error('유료 콘텐츠는 결제를 붙인 뒤 받을 수 있습니다.');   // 규칙(firestore.rules)도 막는다
   if (!firestore || !storage) throw new Error('연결되지 않았습니다.');
   if (!book.filePath) throw new Error('아직 파일이 올라오지 않은 책입니다.');
   const rid = `${uid}_${book.id}`;
