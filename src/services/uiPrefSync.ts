@@ -21,6 +21,15 @@ export const SYNCED_UI_KEYS = [
   'wlp.web.storeTab2',       // 스토어 탭
   'ta.web.agent.fold',       // 수집 도우미 판 접힘(관리자)
   'ta.web.agent.reg',        // 수집 도우미 지역(관리자)
+  // 매각분석(관리자) — 이 브라우저에만 남던 조회 조건 · 거르기 · 저장 · 제외 표시(2026-11-08)
+  'ta.web.sale.q',           // 조회 띠 지역 · 종류 · 기간
+  'ta.web.sale.applied',     // 조회를 누른 때의 조건(새로고침해도 결과 그대로)
+  'ta.web.sale.mode',        // 물건으로 · 지역으로
+  'ta.web.sale.item',        // 물건으로 — 고른 물건
+  'ta.web.sale.map',         // 반경 · 엘베 · 층 · 기준 · 유사도
+  'ta.web.sale.mapSaved',    // [저장]한 거르기 조건
+  'ta.web.sale.drop',        // 표에서 '제외'로 체크한 사례
+  'ta.web.sale.x',           // 경매물건 감정가 · 표 정렬
 ];
 const SYNCED = new Set(SYNCED_UI_KEYS);
 

@@ -3346,7 +3346,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .st-body h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--text); }
 .st-body h3 em { font-style: normal; color: var(--blue); }
 .st-body p { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
-.st-soon { align-self: flex-start; padding: 1px 8px; border-radius: 4px; background: var(--surface-2); color: var(--text-2); font-size: 12px; font-weight: 700; }
+.st-empty { margin: 0; padding: 56px 16px; text-align: center; font-size: 15px; color: var(--muted); }   /* 올라온 상품이 없을 때 */
 .st-buy { margin-top: auto; height: 40px; border: 1px solid var(--blue); border-radius: 8px; background: var(--surface); color: var(--blue); font-size: 14px; font-weight: 700; cursor: pointer; }
 .st-buy:hover { background: var(--blue-soft); }
 .st-cover.img { background: #26345c; } .st-cover.img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }   /* 운영자가 올린 표지 그림 */
@@ -6362,8 +6362,9 @@ span.cal-day.has { cursor: help; }
       /* 스토어 구매하기 — 금액 · 결제 수단 / 구매자 정보(내 정보에서 채움) / 환불 안내 / 약관 동의 / 결제. 결제 연동(PG) 전이라 결제는 '준비 중' */
       /* 유료 전자책(m.ebook)이면 그 책 — 아니면 스토어 자리표시 상품 */
       const eb = m.ebook ? EB.list.find((b) => b.id === m.ebook) : null;
-      const x = eb ? { tag: eb.tag, title: eb.title } : (STORE_ITEMS[m.i] || STORE_ITEMS[0]);
-      const price = eb ? `${(Number(eb.price) || 0).toLocaleString('ko-KR')}원` : '가격미정';
+      if (!eb) { S.modal = null; root.innerHTML = ''; return; }   /* 콘텐츠 › 관리에서 내렸거나 지운 상품 */
+      const x = { tag: eb.tag, title: eb.title };
+      const price = `${(Number(eb.price) || 0).toLocaleString('ko-KR')}원`;
       const fld = (id, label, val, ph, type = 'text') => `<label class="buy-fld" for="${id}">${label}<input id="${id}" type="${type}" value="${esc(val || '')}" placeholder="${ph}"></label>`;
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog buy-dlg" role="dialog" aria-modal="true" aria-labelledby="buyT">
         <div class="buy-head"><div><h2 id="buyT">구매하기</h2><p>${x.tag ? `[${esc(x.tag)}] ` : ''}${esc(x.title)}</p></div><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
@@ -6391,22 +6392,9 @@ span.cal-day.has { cursor: help; }
       setTimeout(() => { const ok = $('dlgOk'); if (ok) ok.focus(); }, 20);
       return;
     }
-    const cts = courts();
-    root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog reg" role="dialog" aria-modal="true" aria-labelledby="regT">
-      <div class="reg-head"><h2 id="regT">선정물건등록</h2><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
-      <div class="reg-tabs" role="tablist"><button type="button" class="${m.tab === 'case' ? 'on' : ''}" data-act="reg-tab" data-v="case">사건번호로등록</button><button type="button" class="${m.tab === 'pdf' ? 'on' : ''}" data-act="reg-tab" data-v="pdf">PDF로등록</button></div>
-      ${m.tab === 'case' ? `<div class="reg-body">
-        <div class="field"><label for="regCourt">법원</label><select id="regCourt">${cts.map((c) => `<option ${c === m.court ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
-        <div class="field ${m.err ? 'err' : ''}"><label for="regNo">사건번호</label><div class="case-row"><select id="regYear" aria-label="사건연도">${[2026, 2025, 2024, 2023].map((y) => `<option ${String(y) === m.year ? 'selected' : ''}>${y}</option>`).join('')}</select><input id="regNo" inputmode="numeric" placeholder="타경 뒤 숫자 (예: 502233)" value="${esc(m.no || '')}"></div>${m.err ? `<div class="msg">${esc(m.err)}</div>` : '<div class="hint">예: 2026타경502233 → 연도 2026, 번호 502233</div>'}</div>
-        <div class="field"><label for="regItem">물건번호 <span>(없으면 안 넣기)</span></label><input id="regItem" inputmode="numeric" placeholder="여러 물건이 있는 사건만" value="${esc(m.item || '')}"></div>
-        <div class="note">${I.info}<span>등록하면 손품조사 단계 카드가 생깁니다. 감정가·최저가·기일은 대법원 법원경매정보에서 자동으로 채우도록 연결할 예정입니다.</span></div>
-      </div>` : `<div class="reg-body">
-        <label class="drop" id="drop">${I.file}<b>${m.file ? esc(m.file) : '상세정보 PDF를 끌어다 놓으세요'}</b><span>${m.file ? '가져오기를 누르면 카드가 생깁니다.' : '또는 눌러서 파일 고르기'}</span><input type="file" id="regFile" accept="application/pdf"></label>
-        <div class="note">${I.info}<span>앱의 PDF 가져오기와 같은 방식으로 사건번호·주소·감정가·최저가를 읽어 옵니다.</span></div>
-      </div>`}
-      <div class="reg-foot"><button type="button" class="btn" data-act="modal-close">취소</button><button type="button" class="btn primary" data-act="reg-submit" ${m.tab === 'pdf' && !m.file ? 'disabled' : ''}>${m.tab === 'pdf' ? '가져오기' : '등록'}</button></div>
-    </div></div>`;
-    if (m.tab === 'case') setTimeout(() => { const el = $('regNo'); if (el) el.focus(); }, 20);
+    /* 모르는 창은 닫는다 — 예전 '선정물건등록' 임시 창(사건번호로등록 · 저장 없이 화면에만 줄을 넣던 것)은 지웠다.
+       등록은 물건등록 화면(PDF · 직접입력)이 계정에 저장한다(2026-11-08) */
+    S.modal = null; root.innerHTML = '';
   }
 
   function toast(text, tone = 'success') {
@@ -8260,6 +8248,19 @@ span.cal-day.has { cursor: help; }
     S.layout = store.get('wlp.web.layout', S.layout); S.sort = store.get('wlp.web.sort', S.sort);
     if (S.storeTab) S.storeTab = store.get('wlp.web.storeTab2', S.storeTab);
     try { R.mode = localStorage.getItem('wlp.web.regMode') === 'manual' ? 'manual' : 'auto'; } catch (e) { /* 그만 */ }
+    /* 매각분석 — 조회 조건 · 거르기 · 저장 · 제외 표시도 계정 DB 에서 받은 값으로(다른 PC 에서 고른 것 그대로) */
+    try {
+      const j = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } };
+      Object.assign(saleSeg, j(SALE_Q_KEY, {}));
+      const ap = j(SALE_APPLIED_KEY, null); saleApplied = ap && typeof ap === 'object' && ap.sido ? ap : null;
+      saleMode = localStorage.getItem(SALE_MODE_KEY) === 'region' ? 'region' : 'item';
+      saleItemId = localStorage.getItem(SALE_ITEM_KEY) || '';
+      Object.assign(SXM, j(SXM_KEY, {})); if (!SXM_RADII.includes(Number(SXM.radius))) SXM.radius = 100;
+      sxSaved = j(SXM_SAVED_KEY, null);
+      sxDrop.clear(); (j(SX_DROP_KEY, []) || []).forEach((k) => sxDrop.add(k)); sxDropVer += 1;
+      const x = j(SX_KEY, {}); ['my', 'sort', 'desc'].forEach((k) => { if (x[k] !== undefined) SX[k] = x[k]; });
+      saleAutoKey = '';
+    } catch (e) { /* 이 브라우저 값 그대로 */ }
     render();
   });
   function renderMarket() {
@@ -8745,25 +8746,16 @@ span.cal-day.has { cursor: help; }
       </section>`;
   }
   /* ===== 스토어 · 모바일앱 — 웹 안내 화면 =====
-     스토어는 아직 파는 상품이 없다 — 표지 카드는 자리표시(준비중)이고 가격 · 구매는 막아 둔다. 상품이 정해지면 STORE_ITEMS 만 바꾼다.
+     상품은 운영자가 콘텐츠 › 관리에서 올린 것(DB ebooks)만 — 코드에 적어 두던 자리표시 상품(STORE_ITEMS)은 지웠다(2026-11-08).
      모바일앱 소개는 우리 앱에 실제로 있는 기능만 적는다(숫자 · 남의 글을 지어내지 않는다) */
   if (!S.storeTab) S.storeTab = store.get('wlp.web.storeTab2', 'mobile');   /* 기본은 모바일앱(2026-11-02) */
   const STORE_TABS = [['all', '전체'], ['ebook', '전자책'], ['report', '리포트'], ['mobile', '모바일앱'], ['mine', '내콘텐츠'], ['manage', '관리', 'admin']];   /* 내콘텐츠 — 내가 받은 책(로그인). 관리 — 운영자만(전자책 올리고 내리기, EbookManage) */
   /* 운영자가 올린 전자책(DB) — 무료로받기 카드. subscribeEbooks 가 채운다(올린 책만) */
   const EB = { list: [], ready: new Set(), mine: 0, mineUid: '', mineStop: null };   /* mine — 내콘텐츠(받은 책) 개수 */   /* ready — 무료로받기를 눌러 다운로드 단추로 바뀐 책 */
   let ebmStop = null;   /* 관리 탭에 띄운 앱 화면 — 다시 그리기 전에 걷는다 */   /* 모바일앱 — 위 메뉴에 따로 있던 화면을 탭으로 옮겼다 */
-  const STORE_ITEMS = [
-    { kind: 'ebook', tone: 'navy', tag: '기초', cover: ['경매', '첫걸음'], sub: '사건 보는 법부터 입찰까지', title: '경매 첫걸음', desc: '처음 경매를 시작하는 분을 위한 입문서' },
-    { kind: 'ebook', tone: 'blue', tag: '필수', cover: ['권리분석', '핵심 정리'], sub: '말소기준권리와 인수 권리', title: '권리분석 핵심 정리', desc: '입찰 전에 꼭 확인할 권리관계' },
-    { kind: 'ebook', tone: 'green', tag: '실전', cover: ['명도', '완전정복'], sub: '협의부터 강제집행까지', title: '명도 완전정복', desc: '협의 · 내용증명 · 인도명령 · 강제집행 순서' },
-    { kind: 'ebook', tone: 'navy', tag: '실전', cover: ['매매사업자', '세금 가이드'], sub: '필요경비 · 사업경비 · 종합소득세', title: '매매사업자 세금 가이드', desc: '낙찰부터 매도까지 세금 흐름' },
-    { kind: 'report', tone: 'blue', tag: '리포트', cover: ['지역별', '시장 리포트'], sub: '시장분석 데이터로 정리', title: '지역별 시장 리포트', desc: '실거래 흐름과 지역 순위를 한 권으로' },
-    { kind: 'report', tone: 'green', tag: '리포트', cover: ['임장', '체크리스트'], sub: '현장에서 바로 쓰는 점검표', title: '임장 체크리스트', desc: '현장조사 항목을 빠짐없이' },
-  ];
   const storeHtml = () => {
     const adm = (() => { try { return agIsAdmin(); } catch (e) { return false; } })();
     const tab = S.storeTab === 'manage' && !adm ? 'all' : S.storeTab;   /* 관리 탭은 운영자만 — 아니면 전체로 */
-    const list = STORE_ITEMS.filter((x) => tab === 'all' || x.kind === tab);
     /* 운영자가 고른 분류(kind) 탭에 나간다 — 전체 탭엔 다. 분류가 없던 책은 전자책 */
     const ebKind = (b) => (b.kind === 'report' || b.kind === 'mobile' ? b.kind : 'ebook');
     const ebooks = EB.list.filter((b) => tab === 'all' || ebKind(b) === tab);
@@ -8773,15 +8765,14 @@ span.cal-day.has { cursor: help; }
     const ebPaid = (b) => (Number(b.price) || 0) > 0;
     const ebCard = (b) => `<article class="st-card">${b.coverUrl ? `<div class="st-cover img"><img src="${esc(b.coverUrl)}" alt="" loading="lazy"><span class="st-kind">${EB_KIND_LABEL[ebKind(b)]}</span></div>` : `<div class="st-cover navy"><span class="st-kind">${EB_KIND_LABEL[ebKind(b)]}</span><strong>${esc(b.title)}</strong></div>`}`
       + `<div class="st-body"><h3>${b.tag ? `<em>[${esc(b.tag)}]</em> ` : ''}${esc(b.title)}</h3><p>${esc(b.desc || '')}</p>${ebPaid(b) ? `<span class="st-price">${Number(b.price).toLocaleString('ko-KR')}원</span><button type="button" class="st-buy" data-act="ebook-buy" data-v="${esc(b.id)}">구매하기</button>` : `<span class="st-free">무료</span>${EB.ready.has(b.id) ? `<button type="button" class="st-buy dl" data-act="ebook-dl" data-v="${esc(b.id)}">다운로드</button>` : `<button type="button" class="st-buy" data-act="ebook-get" data-v="${esc(b.id)}">무료로받기</button>`}`}</div></article>`;
-    const card = (x) => `<article class="st-card"><div class="st-cover ${x.tone}"><span class="st-kind">${x.kind === 'ebook' ? '전자책' : '리포트'}</span><strong>${x.cover.map(esc).join('<br>')}</strong><small>${esc(x.sub)}</small></div>`
-      + `<div class="st-body"><h3><em>[${esc(x.tag)}]</em> ${esc(x.title)}</h3><p>${esc(x.desc)}</p><span class="st-soon">가격미정</span><button type="button" class="st-buy" data-act="store-buy" data-v="${STORE_ITEMS.indexOf(x)}">구매하기</button></div></article>`;
     return `<section class="info-box"><div class="info-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>콘텐츠</h2><p>경매 공부와 실전에 바로 쓰는 전자책 · 리포트를 준비하고 있습니다.</p></div>`
       + `<nav class="st-tabs" role="tablist">${STORE_TABS.filter(([, , f]) => f !== 'admin' || adm).map(([k, t, f]) => `<button type="button" role="tab" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}" data-act="store-tab" data-v="${k}">${t}${k === 'mine' && S.loggedIn ? `<span class="st-cnt">${EB.mine.toLocaleString('ko-KR')}</span>` : ''}${f === 'admin' ? '<span class="adm-chip">운영</span>' : ''}</button>`).join('')}</nav>`
       + (tab === 'mobile' ? `${ebooks.length ? `<div class="st-grid">${ebooks.map(ebCard).join('')}</div>` : ''}<div class="st-mobile">${mobileHtml()}</div></section>`
         : tab === 'manage' ? `<div class="st-manage" id="ebmMount"></div></section>`
         : tab === 'mine' ? (S.loggedIn ? `<div class="st-manage" id="mycMount"></div></section>`
           : `<div class="st-mine-out"><p>로그인하면 받은 콘텐츠를 여기서 다시 받을 수 있습니다.</p><button type="button" class="st-buy" data-act="store-login">로그인</button></div></section>`)
-        : `<div class="st-grid">${ebooks.map(ebCard).join('')}${list.map(card).join('')}</div></section>`);
+        : ebooks.length ? `<div class="st-grid">${ebooks.map(ebCard).join('')}</div></section>`
+        : `<p class="st-empty">아직 올라온 콘텐츠가 없습니다. 곧 전자책 · 리포트를 올려 드리겠습니다.</p></section>`);
   };
   /* 핵심 가치 — 서비스 목표 장(소개서)과 같은 네 가지. 앱 소개 페이지(public/app/index.html VALUES)와 같이 고친다 */
   const MOBILE_VALUES = [['현장에서 바로', '조사한 내용을 현관 앞에서 펼쳐 보고 그 자리에서 고칩니다'], ['기록은 남는다', '적고 찍은 모든 것이 사건카드에 쌓여 잊히지 않습니다'],
@@ -9749,7 +9740,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       case 'web-guide': if (WEB_GUIDE_URL) window.open(WEB_GUIDE_URL, '_blank', 'noopener'); else toast('‘이용가이드’는 준비 중입니다.', 'info'); break;   /* 하던 화면은 그대로 두고 새 탭 */
       case 'mobile-slide': showSlide(Number(v) || 0); startSlides(); break;
       case 'mobile-more': if (MOBILE_LANDING_URL) location.href = MOBILE_LANDING_URL; else toast('‘앱 소개 페이지’는 준비 중입니다.', 'info'); break;
-      case 'store-buy': if (!S.loggedIn) { toast('로그인한 뒤 구매할 수 있습니다.', 'info'); openAppLogin(); break; } S.modal = { kind: 'buy', i: Number(v) || 0 }; renderModal(); break;
       case 'ebook-buy': {
         if (!S.loggedIn) { toast('회원가입 후 로그인하면 구매할 수 있습니다.', 'info'); openAppLogin(); break; }
         if (!EB.list.some((b) => b.id === v)) break;
@@ -9904,8 +9894,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       /* 목록 비우기 — 한 번 묻는다. 읽어 온 줄만 지우고 등록한 선정물건은 그대로다 */
       case 'rg-clear': askConfirm({ title: '목록을 비울까요?', desc: '읽어 온 목록만 지웁니다. 이미 등록한 물건은 물건목록에 그대로 남습니다.', okLabel: '비우기', skipKey: '', run: () => { R.rows = []; R.banner = ''; R.missing = []; renderRegister(); toast('목록을 비웠습니다.'); } }); break;
       case 'missing-trash': { const ids = R.missing.map((m) => m.id); ids.forEach((x) => update(x, { trashed: true })); R.missing = []; render(); toast(`${ids.length}건을 휴지통으로 보냈습니다.`); break; }
-      case 'reg-tab': readReg(); S.modal.tab = v; S.modal.err = ''; renderModal(); break;
-      case 'reg-submit': submitRegister(); break;
       case 'modal-ok': {
         const m = S.modal; const skip = $('skipToday');
         if (skip && skip.checked && m.skipKey) { const all = store.get(SKIP_KEY, {}); all[m.skipKey] = TODAY_YMD; store.set(SKIP_KEY, all); }
@@ -9918,36 +9906,15 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
     }
   });
 
-  function readReg() {
-    const m = S.modal; if (!m || m.kind !== 'register') return;
-    const g = (id) => { const el = $(id); return el ? el.value.trim() : null; };
-    const c = g('regCourt'); const y = g('regYear'); const n = g('regNo'); const i = g('regItem');
-    if (c !== null) m.court = c; if (y !== null) m.year = y; if (n !== null) m.no = n; if (i !== null) m.item = i;
-  }
-  function submitRegister() {
-    const m = S.modal;
-    if (m.tab === 'pdf') { S.modal = null; renderModal(); toast(`‘${m.file}’을 PDF 가져오기로 넘깁니다 (다음 단계에서 연결).`, 'info'); return; }
-    readReg();
-    if (!/^\d{1,7}$/.test(m.no)) { m.err = '타경 뒤 숫자만 적어 주세요. 예: 502233'; renderModal(); return; }
-    const caseNo = `${m.year}타경${m.no}`;
-    if (items.some((x) => x.caseNo === caseNo && x.court === m.court && !x.trashed)) { m.err = '이미 등록한 사건입니다.'; renderModal(); return; }
-    items = [mk({ date: plus(21), court: m.court, caseNo: m.item ? `${caseNo}(${m.item})` : caseNo, type: '다세대', addr: '주소를 불러오는 중', bld: '', unit: '', apr: 0, round: '신건', min: 0, mine: 0, status: '손품' }), ...items];
-    S.modal = null; renderModal();
-    S.stage = 'all'; S.type = ''; S.court = ''; S.date = ''; S.q = ''; $('q').value = '';
-    render(); toast(`${caseNo}을 손품조사로 등록했습니다.`);
-  }
-
   document.addEventListener('input', (e) => {
     if (e.target.id === 'q') { S.q = e.target.value; renderToolbar(); renderContent(); return; }
     if (e.target.id === 'agQIn') { AG.qDraft = e.target.value; return; }
     if (e.target.dataset && e.target.dataset.rk) { sxRangeInput(e.target); return; }
     if (e.target.id === 'sxSim') { SXM.sim = Number(e.target.value); const v = $('sxSimV'); if (v) v.textContent = `${SXM.sim}%`; const d = $('sxSimD'); if (d && CLOUD.T && CLOUD.T.simDefText) d.textContent = CLOUD.T.simDefText(SXM.sim); return; }
     if (e.target.id === 'agCovQ') { AG.covQ = e.target.value; const tb = $('agCovBody'); if (tb) tb.innerHTML = agCovRows(); return; }
-    if (S.modal && S.modal.kind === 'register') readReg();
   });
   document.addEventListener('change', (e) => {
     if (e.target.id === 'pdfInput') { const fs = [...(e.target.files || [])]; e.target.value = ''; parseFiles(fs); return; }
-    if (e.target.id === 'regFile' && e.target.files && e.target.files[0]) { S.modal.file = e.target.files[0].name; renderModal(); return; }
     if (e.target.id === 'sxFile') { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) void sxReadFile(f); return; }
     if (e.target.id === 'sxSim') { SXM.sim = Number(e.target.value); sxSaveM(); agPaintTable(); return; }
     if (e.target.dataset && e.target.dataset.rk) { sxRangeInput(e.target); sxSaveM(); agPaintTable(); return; }
@@ -9965,7 +9932,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       agPaint(true); return;
     }
     if (e.target.dataset && e.target.dataset.act === 'ag-lot') { agLotSel = e.target.value; try { localStorage.setItem(AG_LOT_KEY, agLotSel); } catch (err) { /* 그만 */ } agPaintTable(true); return; }
-    if (S.modal && S.modal.kind === 'register') readReg();
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -9974,7 +9940,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
       if (S.pick) { S.pick = false; S.picked = new Set(); render(); }
     }
     if (e.key === '/' && !e.target.closest('input, textarea, select')) { e.preventDefault(); $('q').focus(); }
-    if (e.key === 'Enter' && e.target.id === 'regNo') submitRegister();
     if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('rg-empty')) { e.preventDefault(); $('pdfInput').click(); }
     if (e.key === 'Enter' && (e.target.id === 'loginPw' || e.target.id === 'loginEmail')) { e.preventDefault(); document.querySelector('[data-act="login-submit"]').click(); }
     if (e.key === 'Enter' && e.target.id === 'agQIn') { e.preventDefault(); agQueueAdd(); }
@@ -10033,9 +9998,6 @@ if (S.modal && S.modal.kind === 'aiset') renderModal(); else if (S.route === 'my
   document.addEventListener('dragover', (e) => { const d = e.target.closest('#rgDrop'); if (d) { e.preventDefault(); d.classList.add('over'); } });
   document.addEventListener('dragleave', (e) => { const d = e.target.closest('#rgDrop'); if (d && !d.contains(e.relatedTarget)) d.classList.remove('over'); });
   document.addEventListener('drop', (e) => { const d = e.target.closest('#rgDrop'); if (!d) return; e.preventDefault(); d.classList.remove('over'); const fs = [...((e.dataTransfer && e.dataTransfer.files) || [])]; if (fs.length) parseFiles(fs); });
-  document.addEventListener('dragover', (e) => { const d = e.target.closest('#drop'); if (d) { e.preventDefault(); d.classList.add('over'); } });
-  document.addEventListener('dragleave', (e) => { const d = e.target.closest('#drop'); if (d) d.classList.remove('over'); });
-  document.addEventListener('drop', (e) => { const d = e.target.closest('#drop'); if (!d) return; e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) { S.modal.file = f.name; renderModal(); } });
 
   /* 붙었을 때 그림자 — 선정물건 · 선정물건등록 두 상자 모두. 하위 탭이 있으면 탭 줄 높이만큼 아래에서 붙는다 */
   /* 붙었을 때 그림자 — 틀 고정 모듈과 짝. 상자가 제 고정 자리(top)에 닿았으면 붙은 것이다 (화면·머리 높이와 상관없이) */
