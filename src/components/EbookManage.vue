@@ -127,7 +127,8 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
             <button v-for="t in ['', ...TAGS]" :key="t" type="button" :class="{ on: draft.tag === t }" @click="draft!.tag = t">{{ t || '없음' }}</button>
           </div>
         </div>
-        <label class="f"><span>설명</span><textarea v-model="draft.desc" rows="3" maxlength="300" placeholder="카드에 나가는 짧은 소개" /></label>
+        <!-- 설명 — 300자가 다 보이는 높이, 오른쪽 아래 글자 수 -->
+        <label class="f top"><span>설명</span><span class="ebm-desc"><textarea v-model="draft.desc" rows="7" maxlength="300" placeholder="카드에 나가는 소개 (300자까지)" /><small>{{ draft.desc.length.toLocaleString('ko-KR') }} / 300</small></span></label>
         <!-- 파일 칸 — 브라우저 기본 단추(영어)는 숨기고 우리 단추로 -->
         <div class="f"><span>표지 그림</span>
           <span class="ebm-file"><label class="pick">그림고르기<input type="file" accept="image/*" @change="onCover" /></label>
@@ -199,7 +200,10 @@ const pct = computed(() => `${Math.round(progress.value * 100)}%`);
 .ebm-fields .f { display: grid; grid-template-columns: 72px 1fr; align-items: center; gap: 10px; }
 .ebm-fields .f > span { font-size: 13px; font-weight: 700; color: #4b5563; }
 .ebm-fields input[type='text'], .ebm-fields textarea { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; font: inherit; font-size: 14px; color: #111827; }
-.ebm-fields textarea { resize: vertical; line-height: 1.6; }
+.ebm-fields textarea { resize: vertical; min-height: 170px; line-height: 1.7; }
+.ebm-fields .f.top { align-items: start; } .ebm-fields .f.top > span:first-child { padding-top: 9px; }
+.ebm-fields .f > .ebm-desc { position: relative; display: block; font-weight: 400; }
+.ebm-desc small { position: absolute; right: 10px; bottom: 8px; font-size: 12px; color: #9ca3af; pointer-events: none; }
 .ebm-fields :is(input, textarea):focus { outline: none; border-color: #2b6df3; }
 .ebm-fields .f > .ebm-file { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 400; }
 .ebm-file .pick { position: relative; flex: none; display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border: 1px solid #c9d6f5; border-radius: 8px; background: #fff; color: #2b6df3; font-size: 13px; font-weight: 800; cursor: pointer; }
