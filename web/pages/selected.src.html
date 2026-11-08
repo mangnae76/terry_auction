@@ -3354,7 +3354,7 @@ body.trip-full :is(.foot, .foot-note) { display: none; }
 .st-more svg { width: 14px; height: 14px; margin-left: 2px; pointer-events: none; }
 .st-more { display: inline-flex; align-items: center; margin: 0; padding: 0; border: 0; background: none; color: var(--blue); font-size: 13px; font-weight: 700; cursor: pointer; } .st-more:hover { text-decoration: underline; }
 /* 콘텐츠 자세히보기 창 */
-.dialog.eb-dlg { width: min(640px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 18px; }
+.dialog.eb-dlg { width: min(720px, 100%); max-height: calc(100vh - 40px); overflow-y: auto; padding: 26px 28px 28px; display: flex; flex-direction: column; gap: 18px; }
 .eb-dlg .buy-head h2 { font-size: 20px; line-height: 1.4; } .eb-dlg .buy-head h2 em { font-style: normal; color: var(--blue); }
 .eb-dlg .buy-head p { display: flex; gap: 6px; align-items: center; }
 .st-kind-in { padding: 1px 8px; border-radius: 4px; background: #fff4e5; color: #b45309; font-size: 12px; font-weight: 700; }
@@ -3368,7 +3368,7 @@ img.eb-cv { aspect-ratio: auto; height: auto; max-height: 260px; object-fit: con
 .eb-left .eb-cv { width: 170px; }
 .eb-left .st-buy { margin-top: 4px; width: 100%; }
 .eb-left small { font-size: 12px; line-height: 1.5; color: var(--muted); text-align: center; }
-.eb-body { padding: 16px 18px; border-radius: 12px; background: var(--surface-2); font-size: 14px; line-height: 1.8; color: var(--text); white-space: pre-line; word-break: break-word; }   /* 내용 — 줄바꿈 · 빈 줄 그대로 */
+.eb-body { padding: 14px 16px; border-radius: 12px; background: var(--surface-2); font-size: 14px; line-height: 1.8; color: var(--text); white-space: pre-line; word-break: break-word; }   /* 내용 — 줄바꿈 · 빈 줄 그대로 */
 @media (max-width: 560px) { .eb-top { grid-template-columns: 1fr; } .eb-left { justify-self: center; } }
 .st-empty { margin: 0; padding: 56px 16px; text-align: center; font-size: 15px; color: var(--muted); }   /* 올라온 상품이 없을 때 */
 .st-buy { margin-top: auto; height: 40px; border: 1px solid var(--blue); border-radius: 8px; background: var(--surface); color: var(--blue); font-size: 14px; font-weight: 700; cursor: pointer; }
@@ -6390,8 +6390,7 @@ span.cal-day.has { cursor: help; }
       root.innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="dialog eb-dlg" role="dialog" aria-modal="true" aria-labelledby="ebT">
         <div class="buy-head"><div><h2 id="ebT">${eb.tag ? `<em>[${esc(eb.tag)}]</em> ` : ''}${esc(eb.title)}</h2><p><span class="st-kind-in">${kind}</span>${ebPriceTag(eb)}</p></div><button type="button" class="x" data-act="modal-close" aria-label="닫기">${I.x}</button></div>
         <div class="eb-top"><div class="eb-left">${eb.coverUrl ? `<img class="eb-cv" src="${esc(eb.coverUrl)}" alt="">` : `<div class="eb-cv navy"><strong>${esc(eb.title)}</strong></div>`}${ebAction(eb)}<small>회원가입 후 로그인한 회원만 받을 수 있습니다.</small></div>
-          <div class="eb-side">${ebSummary(eb) ? `<p class="eb-sum">${esc(ebSummary(eb))}</p>` : ''}</div></div>
-        ${(eb.desc || '').trim() ? `<div class="eb-body">${ebBodyHtml(eb.desc)}</div>` : ''}
+          <div class="eb-side">${ebSummary(eb) ? `<p class="eb-sum">${esc(ebSummary(eb))}</p>` : ''}${(eb.desc || '').trim() ? `<div class="eb-body">${ebBodyHtml(eb.desc)}</div>` : ''}</div></div>
       </div></div>`;
       return;
     }
